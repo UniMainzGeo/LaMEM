@@ -1,0 +1,671 @@
+# ----------------------------------------------------------------------------------------------------------------------
+# A basic parameter file for FDSTAG setups
+# ----------------------------------------------------------------------------------------------------------------------
+#
+# 	Contents:
+#	(A) General options
+#	(B) Setup dependent options
+#	(C) Material properties settings
+#	(D) Command line options
+#		1) LaMEM CL options
+#		2) General Petsc CL options
+#		3) Solver CL options
+#
+# ----------------------------------------------------------------------------------------------------------------------
+#
+#	Quick checklist:
+# 		>> OutputFilename
+#		>> save_breakpoints
+#		>> 
+#
+
+
+
+
+# --- (A) General options ----------------------------------------------------------------------------------------------
+
+
+# --- Input/output---
+OutputFile					=	DetFoldingErosion		
+save_timesteps				= 	1			# save every X timesteps
+time_end					=	5000			# last timestep
+save_breakpoints			= 	5 			#  -1: don't save breakpoints + initial particles
+											#   0: save initial particles only !
+											# 0+n: after how many timesteps we save a breakpointfile
+SaveParticles 				=	0			# save particles files yes (1) or no (0) (require a significant amount of disc space!)											
+LoadInitialParticlesFromDisc=	0			# Load an initial particle distribution file from disc, yes (1) or no (0)
+
+
+
+# --- Numerics-related stuff ---
+CFL							=	10.0		# Courant-criteria, dt-based criterium. max timestep is dt = min(dx,dy,dz)/max(Vx,Vy,Vz)*CFL.  Typically 0.5-1.0
+dt_max						=	10e3		# Maximum timestep employed by the code [in years if dimensional]
+		
+
+
+# --- Model setup and noise ---
+Setup.Model					=	9			# 0-Diapir
+											# 1-Single Layer Fold
+											# 2-Falling block, 
+											# 4-multilayer detachment fold,
+											# 5-Single layer growth rate
+											# 9-Multilayer Folding with Interfaces
+
+
+# --- Number of elements in x,y,z-direction ---
+
+# on one proc: 
+nel_x						=   8     
+nel_y						= 	16    
+
+# on 256 proc: 
+#nel_x						=   40     
+#nel_y						= 	40    
+
+nel_z						= 	80
+
+
+
+
+# --- Geometry --- 
+DimensionalUnits			=	1			# Dimensionless (=0) or SI-dimensional units (=1)? 
+											# If you use dimensional units, make sure to select characteristic values that make sense. 
+
+Characteristic.Length		=	10e3			# [m]		
+Characteristic.Viscosity 	=	1e21		# [Pa.s]
+Characteristic.Temperature	=	1			# [K]
+Characteristic.Stress      	=   1e6			# [Pa]
+
+# on one proc:
+#L							=	7.5e3		# Length (y-direction)
+#W							=	15.0e3		# Width  (x-direction)
+
+# on 256 procs
+L							=	100.0e3		# Length (y-direction)
+W							=	50.0e3		# Width  (x-direction)
+
+
+H							=	10.0e3		# Height (z-direction)
+
+
+x_left						=	0.0e3		# Left side of domain
+y_front						=	0.0e3		# Front side of domain
+z_bot						=	0.0e3		# Bottom of box
+
+
+
+# --- Boundary conditions ---
+BC.Eyy						=	1.0e-14		# BG strainrate in y-direction
+BC.Exx						=	0.0e-15		# BG Strainrate in x-direction
+BC.LeftBound				=	1			# 0 - free surface, 1-free slip with BG strainrate Eyy, 2 - no slip, 5 - growthrate 2D, 7 - growthrate 3D
+BC.RightBound				=	1			# 0 - free surface, 1-free slip with BG strainrate Eyy, 2 - no slip, 5 - growthrate 2D, 7 - growthrate 3D
+BC.FrontBound				=	1			# 0 - free surface, 1-free slip with BG strainrate Exx, 2 - no slip, 5 - growthrate 2D, 7 - growthrate 3D
+BC.BackBound				=	1			# 0 - free surface, 1-free slip with BG strainrate Exx, 2 - no slip, 5 - growthrate 2D, 7 - growthrate 3D
+BC.LowerBound				=	1			# 0 - free surface, 1-free slip,2 - no slip, 5 - growthrate 2D, 7 - growthrate 3D
+BC.UpperBound				=	1			# 0 - free surface, 1-free slip,2 - no slip, 5 - growthrate 2D, 7 - growthrate 3D
+Temp_top	    			=   0			# Temperature @ top
+Temp_bottom				=   1000		# Temperature @ bottom; side BC's are flux-free by default
+
+
+
+# --- Phase distribution ---
+NumPartX					=	4			#  Particles/Cell in x-direction
+NumPartY					=	4			#  Particles/Cell in y-direction
+NumPartZ					=	6			#  Particles/Cell in z-direction
+
+
+
+# --- Properties that are defined over the whole domain ---
+Gravity						=	10			# [m/s2] - gravitational acceleration 
+
+
+
+# --- Solver options ---
+StokesSolver   				= 	1  			# 1 - Powell-Hesteness iterations
+											# 2 - Schur Complement Reduction
+											# 3 - Fully Coupled Solver 
+
+VelocitySolver 				= 	1  			# 0 - User defined
+											# 1 - Direct (MUMPS if we run on >1 procs; Build-in solver on 1 proc)
+											# 2 - Galerkin geometric multigrid
+											# 3 - Fieldsplit + Algebraic Multigrid (ML)
+
+
+# --- (B) Setup dependent options --------------------------------------------------------------------------------------
+
+# --- Fast erosion salt diapir setup ---
+UseInternalFreeSurface		=	1			# 0-no; 1-yes
+StickyAirPhase 				=	8			# which of the phases describes the sticky air?
+InitialFreeSurfaceHeight	=	6.5e3 		# The height of the initial free surface
+
+# -- Parameters of the erosion model --
+ErosionModel 							=	2			# 0-none [default]; 1-infinitely fast; 2-FE_Erosion [finite element based erosion model]
+FE_ErosionCode.dt						=	1e3			# Approximate timestep used in the FD_Erosion model [years]
+FE_ErosionCode.ResolutionFactorX		= 	20 			# How much higher is the resolution of the erosion model in X-direction, compared to that of the 3D model?
+FE_ErosionCode.ResolutionFactorY		= 	20 			# How much higher is the resolution of the erosion model in Y-direction, compared to that of the 3D model?
+FE_ErosionCode.InitialRandomNoise_m 	=	2;			# what is the amplitude of the random noise on the erosion surface [in meters]?
+FE_ErosionCode.InitialUpliftedSide_m 	=	50;		# By how much meters is the right side of the eroded surface uplifed [in meters]?
+FE_ErosionCode.rain_m_year 				=	0.3;		# rain in m/year
+FE_ErosionCode.k0 						=	3e-12;		# base erodability in equation k=k0+c*q^n
+FE_ErosionCode.c 						=	5e1;		# prefactor for fluvial discharge in equation above
+FE_ErosionCode.n 						=	2;			# streampower exponent in equation above
+ 
+
+
+#Hinterface 					=	0.3			# interface between salt and overburden [only for Diapir setup]
+ampl2D 						=	0.0		# Amplitude of 2D sinusoidal pertubation on the interface [only for Diapir and Folding setups]
+amplNoise					=	150			# Amplitude of noise @ interface between salt and overburden [only for Diapir and Folding setups]
+
+FSSA						= 	0.5			# The "free surface stabilization algorithm" - in case you use sticky air
+											# in combination with FDSTAG. Set it to 1.0 for stabilization or to 0.0 for
+											# no stabilization. Allows you to use much larger time steps /out getting
+											# the drunken sailor instability. Still somewhat under development though.
+
+# --- Viscosity Cutoff ---
+LowerViscosityCutoff		=	1e15
+UpperViscosityCutoff		=	1e25
+
+# --- Number of phases --- 
+num_phases 					=	9			# Detailed settings see below
+
+
+# --- (C) Material properties of phases --------------------------------------------------------------------------------
+
+	# Sticky air layer [9]----------------
+	<MaterialStart>
+		phase_id 			=	8
+		attribute 			= 	VISCOSITY
+		type 				= 	power_law
+		eta0       			= 	1e17	
+		N_exp				=	1
+		e0					=	1e-15
+	<MaterialEnd>
+	<MaterialStart>
+		phase_id			= 	8
+		attribute 			= 	ELASTICITY
+		type 				= 	constant
+		shear        			= 	5e100
+	<MaterialEnd>
+	<MaterialStart>
+		phase_id			= 	8
+		attribute 			= 	PLASTICITY
+		type 				= 	DruckerPrager
+		Cohesion        		= 	50e600
+		FrictionAngle			= 	0
+	<MaterialEnd>
+	
+	<MaterialStart>
+		phase_id			= 	8
+		attribute 			= 	DENSITY
+		type 				= 	temperature_dependent
+		rho0        			= 	0
+		alpha 				=	0
+	<MaterialEnd>
+	<MaterialStart>
+		phase_id			= 	8
+		attribute 			= 	ENERGY
+		type 				= 	constant
+		ThermalConductivity		= 	3
+		HeatCapacity			=	1050
+		RadioactiveHeat			=	0
+		ShearHeating			=	0
+	<MaterialEnd>
+	
+	# Define properties of overburden 7 [8]----------------
+	<MaterialStart>
+		phase_id 			=	7
+		attribute 			= 	VISCOSITY
+		type 				= 	power_law
+		eta0       			= 	1e23	
+		N_exp				=	1
+		e0				=	1e-15
+	<MaterialEnd>
+	<MaterialStart>
+		phase_id			= 	7
+		attribute 			= 	ELASTICITY
+		type 				= 	constant
+		shear        			= 	5e100
+	<MaterialEnd>
+	<MaterialStart>
+		phase_id			= 	7
+		attribute 			= 	PLASTICITY
+		type 				= 	DruckerPrager
+		Cohesion        		= 	50e600
+		FrictionAngle			= 	0
+	<MaterialEnd>
+	
+	<MaterialStart>
+		phase_id			= 	7
+		attribute 			= 	DENSITY
+		type 				= 	temperature_dependent
+		rho0        			= 	2700
+		alpha 				=	0
+	<MaterialEnd>
+	<MaterialStart>
+		phase_id			= 	7
+		attribute 			= 	ENERGY
+		type 				= 	constant
+		ThermalConductivity		= 	3
+		HeatCapacity			=	1050
+		RadioactiveHeat			=	0
+		ShearHeating			=	0
+	<MaterialEnd>
+	
+	# Define properties of overburden 6 [7]----------------
+	<MaterialStart>
+		phase_id 			=	6
+		attribute 			= 	VISCOSITY
+		type 				= 	power_law
+		eta0       			= 	1e21	
+		N_exp				=	1
+		e0				=	1e-15
+	<MaterialEnd>
+	<MaterialStart>
+		phase_id			= 	6
+		attribute 			= 	ELASTICITY
+		type 				= 	constant
+		shear        			= 	5e100
+	<MaterialEnd>
+	<MaterialStart>
+		phase_id			= 	6
+		attribute 			= 	PLASTICITY
+		type 				= 	DruckerPrager
+		Cohesion        		= 	50e600
+		FrictionAngle			= 	0
+	<MaterialEnd>
+	
+	<MaterialStart>
+		phase_id			= 	6
+		attribute 			= 	DENSITY
+		type 				= 	temperature_dependent
+		rho0        			= 	2700
+		alpha 				=	0
+	<MaterialEnd>
+	<MaterialStart>
+		phase_id			= 	6
+		attribute 			= 	ENERGY
+		type 				= 	constant
+		ThermalConductivity		= 	3
+		HeatCapacity			=	1050
+		RadioactiveHeat			=	0
+		ShearHeating			=	0
+	<MaterialEnd>
+	
+	# Define properties of overburden 5 [6]----------------
+	<MaterialStart>
+		phase_id 			=	5
+		attribute 			= 	VISCOSITY
+		type 				= 	power_law
+		eta0       			= 	1e23	
+		N_exp				=	1
+		e0					=	1e-15
+	<MaterialEnd>
+	<MaterialStart>
+		phase_id			= 	5
+		attribute 			= 	ELASTICITY
+		type 				= 	constant
+		shear        			= 	5e100
+	<MaterialEnd>
+	<MaterialStart>
+		phase_id			= 	5
+		attribute 			= 	PLASTICITY
+		type 				= 	DruckerPrager
+		Cohesion        		= 	50e600
+		FrictionAngle			= 	0
+	<MaterialEnd>
+	
+	<MaterialStart>
+		phase_id			= 	5
+		attribute 			= 	DENSITY
+		type 				= 	temperature_dependent
+		rho0        			= 	2700
+		alpha 				=	0
+	<MaterialEnd>
+	<MaterialStart>
+		phase_id			= 	5
+		attribute 			= 	ENERGY
+		type 				= 	constant
+		ThermalConductivity		= 	3
+		HeatCapacity			=	1050
+		RadioactiveHeat			=	0
+		ShearHeating			=	0
+	<MaterialEnd>
+	
+	# Define properties of overburden 4 [5]----------------
+	<MaterialStart>
+		phase_id 			=	4
+		attribute 			= 	VISCOSITY
+		type 				= 	power_law
+		eta0       			= 	1e22	
+		N_exp				=	1
+		e0				=	1e-15
+	<MaterialEnd>
+	<MaterialStart>
+		phase_id			= 	4
+		attribute 			= 	ELASTICITY
+		type 				= 	constant
+		shear        			= 	5e100
+	<MaterialEnd>
+	<MaterialStart>
+		phase_id			= 	4
+		attribute 			= 	PLASTICITY
+		type 				= 	DruckerPrager
+		Cohesion        		= 	50e600
+		FrictionAngle			= 	0
+	<MaterialEnd>
+	
+	<MaterialStart>
+		phase_id			= 	4
+		attribute 			= 	DENSITY
+		type 				= 	temperature_dependent
+		rho0        			= 	2700
+		alpha 				=	0
+	<MaterialEnd>
+	<MaterialStart>
+		phase_id			= 	4
+		attribute 			= 	ENERGY
+		type 				= 	constant
+		ThermalConductivity		= 	3
+		HeatCapacity			=	1050
+		RadioactiveHeat			=	0
+		ShearHeating			=	0
+	<MaterialEnd>
+	
+	# Define properties of overburden 3 [4]----------------
+	<MaterialStart>
+		phase_id 			=	3
+		attribute 			= 	VISCOSITY
+		type 				= 	power_law
+		eta0       			= 	1e23	
+		N_exp				=	1
+		e0				=	1e-15
+	<MaterialEnd>
+	<MaterialStart>
+		phase_id			= 	3
+		attribute 			= 	ELASTICITY
+		type 				= 	constant
+		shear        			= 	5e100
+	<MaterialEnd>
+	<MaterialStart>
+		phase_id			= 	3
+		attribute 			= 	PLASTICITY
+		type 				= 	DruckerPrager
+		Cohesion        		= 	50e600
+		FrictionAngle			= 	0
+	<MaterialEnd>
+	
+	<MaterialStart>
+		phase_id			= 	3
+		attribute 			= 	DENSITY
+		type 				= 	temperature_dependent
+		rho0        			= 	2700
+		alpha 				=	0
+	<MaterialEnd>
+	<MaterialStart>
+		phase_id			= 	3
+		attribute 			= 	ENERGY
+		type 				= 	constant
+		ThermalConductivity		= 	3
+		HeatCapacity			=	1050
+		RadioactiveHeat			=	0
+		ShearHeating			=	0
+	<MaterialEnd>
+
+	# Define properties of overburden 2 [3]----------------
+	<MaterialStart>
+		phase_id 			=	2
+		attribute 			= 	VISCOSITY
+		type 				= 	power_law
+		eta0       			= 	1e22	
+		N_exp				=	1
+		e0				=	1e-15
+	<MaterialEnd>
+	<MaterialStart>
+		phase_id			= 	2
+		attribute 			= 	ELASTICITY
+		type 				= 	constant
+		shear        			= 	5e100
+	<MaterialEnd>
+	<MaterialStart>
+		phase_id			= 	2
+		attribute 			= 	PLASTICITY
+		type 				= 	DruckerPrager
+		Cohesion        		= 	50e600
+		FrictionAngle			= 	0
+	<MaterialEnd>
+	
+	<MaterialStart>
+		phase_id			= 	2
+		attribute 			= 	DENSITY
+		type 				= 	temperature_dependent
+		rho0        			= 	2700
+		alpha 				=	0
+	<MaterialEnd>
+	<MaterialStart>
+		phase_id			= 	2
+		attribute 			= 	ENERGY
+		type 				= 	constant
+		ThermalConductivity		= 	3
+		HeatCapacity			=	1050
+		RadioactiveHeat			=	0
+		ShearHeating			=	0
+	<MaterialEnd>
+
+	# Define properties of overburden 1 [2]----------------
+	<MaterialStart>
+		phase_id 			=	1
+		attribute 			= 	VISCOSITY
+		type 				= 	power_law
+		eta0       			= 	1e23	
+		N_exp				=	1
+		e0				=	1e-15	
+	<MaterialEnd>
+	<MaterialStart>
+		phase_id			= 	1
+		attribute 			= 	ELASTICITY
+		type 				= 	constant
+		shear        			= 	5e100
+	<MaterialEnd>
+	<MaterialStart>
+		phase_id			= 	1
+		attribute 			= 	PLASTICITY
+		type 				= 	DruckerPrager
+		Cohesion        		= 	50e600
+		FrictionAngle			= 	0
+	<MaterialEnd>
+	
+	<MaterialStart>
+		phase_id			= 	1
+		attribute 			= 	DENSITY
+		type 				= 	temperature_dependent
+		rho0        			= 	2700
+		alpha 				=	0
+	<MaterialEnd>
+	<MaterialStart>
+		phase_id			= 	1
+		attribute 			= 	ENERGY
+		type 				= 	constant
+		ThermalConductivity		= 	3
+		HeatCapacity			=	1050
+		RadioactiveHeat			=	0
+		ShearHeating			=	0
+	<MaterialEnd>
+
+	# Define properties of salt layer [1]-----------------
+	<MaterialStart>
+		phase_id 			=	0
+		attribute 			= 	VISCOSITY
+		type 				= 	constant 					
+		eta0       			= 	1e19	
+	<MaterialEnd>
+	<MaterialStart>
+		phase_id			= 	0
+		attribute 			= 	ELASTICITY
+		type 				= 	constant
+		shear        			= 	5e100
+	<MaterialEnd>
+	<MaterialStart>
+		phase_id			= 	0
+		attribute 			= 	PLASTICITY
+		type 				= 	DruckerPrager
+		Cohesion        		= 	40e600
+		FrictionAngle			= 	0
+	<MaterialEnd>
+	<MaterialStart>
+		phase_id 			= 	0
+		attribute 			= 	DENSITY
+		type 				= 	temperature_dependent
+		rho0        			= 	2700
+		alpha 				=	0
+	<MaterialEnd>
+	<MaterialStart>
+		phase_id			= 	0
+		attribute 			= 	ENERGY
+		type 				= 	constant
+		ThermalConductivity		= 	3
+		HeatCapacity			=	1050
+		RadioactiveHeat			=	0
+		ShearHeating			=	0
+	<MaterialEnd>
+
+
+# === (D) Command line options =========================================================================================
+<PetscOptionsStart>
+
+# --- 1) LaMEM command line options ---
+	
+	# --- element type ---
+	-vpt_element FDSTAG
+	 
+	 # change viscosities from values 'officially' specified in this routine
+	 -SetMaterialProperties 
+	 -mu_0 1e19
+	 -mu_1 1e23
+	 -mu_2 1e20
+	 -mu_3 1e23
+	 -mu_4 1e21
+	 -mu_5 1e23
+	 -mu_6 1e23
+	 -mu_7 1e20
+	 
+	 
+	 # MUMPS direct solver options
+	 -mat_mumps_icntl_14 25 		# reserve more memory for internal vectors in MUMPS
+	 
+	
+	# --- general ---
+	-VTKOutputFiles 1 							#  if VTKOutputFiles 1 and MatlabOutputFiles 0 => it hangs 
+	-MatlabOutputFiles 1						# 
+	#-restart 0 								# 
+	#-fileno									# restart a simulation with file no
+	
+	
+	
+	# --- visualization ---
+	-AVDPhaseViewer 1							# visualization of phases 
+	-AVDPhaseViewer_factor 4					# resolution
+	
+	
+	# --- particles / erosion ---
+	#-InjectSpecificPhaseBelowFreeSurface		# In case we want to inject a very specific phase. Add command-line options
+	#-ParticleInjectionPhase 0 					# -InjectSpecificPhaseBelowFreeSurface	-ParticleInjectionPhase <num>
+	-AddRandomNoiseParticles 0					# Adding noise to the particles (1) or not (0)
+
+
+
+# --- 2) General Petsc options ---
+	-options_left								# show me all options that were not used, even in optimized mode
+	#-da_processors_z 1 							# how many processors in vertical direction ? 
+	#-log_summary								# NOTE: this MUST be set from the command line once you start LaMEM, e.g. ../bin/LaMEM -ParamFile SaltDiapirs_BasicSetup.dat -log_summary. 
+										# It is the only command-line parameter that cannot be set inside this *.dat file as PETSC needs to know about it once it initializes the code. 
+
+#  --- 3) Solver options ---
+	# -vs_fieldsplit_mg_levels_ksp_type chebyshev
+	-fc_ksp_max_it 200
+
+#  --- 4) SET UP RELATED options
+
+	# interface between salt and overburden:
+     	-Hinterface 0.3
+        
+     	# Other interfaces
+     	-Layer1_bottom 0.3
+     	-Layer1_top    0.35
+        
+     	-Layer2_bottom 0.35
+     	-Layer2_top    0.4
+        
+     	-Layer3_bottom 0.4
+     	-Layer3_top    0.45
+        
+     	-Layer4_bottom 0.45
+     	-Layer4_top    0.5
+        
+     	-Layer5_bottom 0.5
+     	-Layer5_top    0.55
+        
+		-Layer6_bottom 0.55
+		-Layer6_top    0.60
+		
+		-Layer7_bottom 0.6
+		-Layer7_top    0.65
+
+<PetscOptionsEnd>
+# ======================================================================================================================
+
+#--- USER defined solver settings -------------------------------------------------------------------------------------- 
+# 
+#  a) Coupled solver settings:
+# 
+# 	# i) general
+# 	-use_stokes_monitor
+# 	-fc_ksp_type gcr
+# 
+# 	# ii) stopping condition
+# 		-use_stokes_residual 
+# 	
+# 		# sub options:						# only valid when using -use_stokes_residual. 
+# 		-use_stokes_norm Linf 				#L2 Linf scaledL2
+# 
+# 		# use relative norm					# use the relative instead of the absolute norm
+# 		-use_stokes_relative_norm
+# 
+# 	# iii) tolerances
+# 	-fc_ksp_rtol 1.0e-6 
+# 	-fc_ksp_atol 1.0e-11 					# used if we don't use <use_stokes_relative_norm>
+# 
+# 
+# 	# iv) control the total number of iterations
+# 	#-fc_ksp_max_it 20
+# 
+# 	# v) eigenvalues
+# 	#-fc_ksp_compute_eigenvalues
+# 	#-fc_ksp_compute_eigenvalues_explicitly
+# 	#-fc_ksp_plot_eigenvalues -draw_pause -1
+# 	#-fc_ksp_plot_eigenvalues_explicitly -draw_pause -1
+# 
+# 	# vi) show why it has converged
+# 	-fc_ksp_converged_reason
+# 
+# 
+#  b) Coupled preconditioner: 				# Use block upper triangular implemented with fieldsplit
+# 	-fc_pc_type fieldsplit 					# fieldsplit can be avoided in favor of coupled multigrid)
+# 	-fc_pc_fieldsplit_type SCHUR
+# 	-fc_pc_fieldsplit_schur_factorization_type UPPER
+# 
+# 
+#  c) Velocity block solver options: 		# Block diagonal fieldsplit (not tuned) with ML AMG solver for each block
+# 	-vs_ksp_type gcr
+# 	-vs_ksp_rtol 1e-3
+# 	-vs_pc_type fieldsplit 					# fieldsplit can be avoided in favor of coupled multigrid
+# 
+# 	-vs_fieldsplit_ksp_type preonly
+# 	-vs_fieldsplit_pc_type ml 				# ml can be tuned here
+# 	
+# 	-vs_pc_fieldsplit_block_size 3
+# 	-vs_pc_fieldsplit_type ADDITIVE
+# 
+#  d) Pressure block solver options: 		# Don't change this because it's a direct solver for Schur complement 
+# 											# preconditioner of our choice
+# 	-ps_ksp_type preonly
+# 	-ps_pc_type jacobi

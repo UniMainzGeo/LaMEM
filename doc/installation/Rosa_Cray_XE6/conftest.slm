@@ -1,0 +1,11 @@
+#!/bin/bash
+
+#SBATCH --job-name="conftest" 
+#SBATCH --ntasks=1
+#SBATCH --time=00:02:00 
+
+#======START=============================== 
+
+aprun -n 1 ./conftest
+
+#======END=================================

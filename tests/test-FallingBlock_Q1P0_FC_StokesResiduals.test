@@ -1,0 +1,3 @@
+EXEC            = ../bin/LaMEM -ParamFile ./input/FallingBlock_FC_StokesResiduals.dat -vpt_element Q1P0 -AddRandomNoiseParticles 0 -time_end 1 -BC.UpperBound 1
+NPROCS          = 1
+TEST_TYPE       = tolerance_diff_pl,1.0e-4

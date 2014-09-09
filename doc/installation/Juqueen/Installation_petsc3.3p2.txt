@@ -1,0 +1,1302 @@
+PETSc 3.3p2 installation instructions on JUQUEEN IBM BLUE GENE/P 
+
+These instructions are based on Anton's instructions for Jugene, see
+/Jugene_IBM_Blue_Gene_P/INSTALL.txt
+
+(09/08/12 by tobibaumann)
+
+
+
+============================================================================
+1) Login to Juqueen, using the machine for which you uploaded the ssh_id file
+	ssh YOUR_LOGIN_NAME@juqueen.fz-juelich.de
+	
+Note that YOU_LOGIN_NAME is not your usual login name but rather something you have been given in an email from Juelich. 
+
+
+2) Modify .profile to include Petsc directories
+   After modification logout and login again for changes to take effect
+
+
+	# ======================
+	# PETSC 3.3_p2 
+	# ======================
+	export PETSC_DIR=${HOME}/LIB/petsc-3.3-p2
+	export PETSC_ARCH=PETSC_IBM_BGP_XL_OPT
+
+============================================================================
+3) Place to $HOME/LIB the following files:
+
+	petsc-3.3-p2.tar
+	run_ex22
+	petsc-3.3-p2.patch
+
+============================================================================
+4) Unpack tarballs & copy batch scripts to Petsc directories
+
+	a) tar -xvf petsc-3.1-p8.tar
+	b) Apply the patch:
+      patch -p0 < petsc-3.3-p2.patch
+
+
+============================================================================
+5) Enter directory and configure Petsc (using ml and superlu_dist coarse solver)
+
+	a) use ./configure --help to show all configuring options
+
+	b) put "export PATH=$PATH:/usr/local/cmake/bin" to .profile, save, logout, login again, continue
+	
+	c) cd $PETSC_DIR
+		
+./config/configure.py \
+--download-f-blas-lapack=1 \
+--known-memcmp-ok=1 \
+--with-batch=1 \
+--known-mpi-shared-libraries=0 \
+--with-x=0 \
+--with-debugging=0 \
+--with-shared-libraries=0 \
+--with-dynamic-loading=0 \
+--with-mpi-compilers=1 \
+--with-fc=mpixlf77_r \
+--with-cc=mpixlc_r \
+--with-cxx=mpixlcxx_r \
+--COPTFLAGS="-O3 -qstrict -qarch=qp -qtune=qp" \
+--FOPTFLAGS="-O3 -qstrict -qarch=qp -qtune=qp" \
+--CXXOPTFLAGS="-O3 -qstrict -qarch=qp -qtune=qp" \
+--download-superlu_dist=1 \
+--download-parmetis=1 \
+--download-metis=1 \
+--download-ml=1 \
+--download-mumps=1 \
+--download-blacs=1 \
+--download-scalapack=1 \
+--with-cmake=cmake
+		
+		# "--with-cmake=/usr/local/cmake/bin" didn't work; 
+		# instead put "export PATH=$PATH:/usr/local/cmake/bin"
+		# to your .profile and use  "-with-cmake=cmake"
+
+		*** see all options below ***
+
+*** please review this part *******************
+	d) you may also use some of these options:
+
+		--with-c++-support=1 \
+		--with-fortran=1 \
+		--with-large-file-io=1 \
+		--download-hypre=1 \
+		--with-fortran-kernels=1 \
+		--with-fc=mpif90 \
+************************************************
+
+	
+	
+	
+============================================================================
+6) Run configuration executable from Petsc directory
+
+
+	a) create a submission file "run_conftest.job":
+
+		----------------------------------------------------------------------
+		# @ job_name = run_conftest
+		# @ comment = "run_conftest"
+		# @ error = $(job_name).$(jobid).out
+		# @ output = $(job_name).$(jobid).out
+		# @ environment = COPY_ALL
+		# @ wall_clock_limit = 00:10:00
+		# @ notification = always
+		# @ notify_user = your@mail.address
+		# @ job_type = bluegene
+		# @ bg_size = 32
+		# @ queue
+		
+		
+		# use --np TO SPECIFY THE TOTAL NUMBER OF PROCESSORS
+		runjob --np 1 --ranks-per-node 1 --exe conftest-PETSC_IBM_BGP_XL_OPT
+		-----------------------------------------------------------------------
+
+	b) submit you job
+	
+		llsubmit run_conftest.job
+
+
+	c) you can see whether it's done or not with "llq -u <username>"
+	
+	
+	
+============================================================================	
+7) Wait for completion and finalize configuration
+	
+	./reconfigure-PETSC_IBM_BGP_XL_OPT.py
+	
+	
+============================================================================
+
+		
+============================================================================
+8) Compile Petsc library
+
+	Follow the instructions given by Petsc
+
+
+============================================================================
+9) Test Petsc installation
+*** please review this part *******************
+
+	For instance, use examples contributed by D. May
+	a) cd $PETSC_DIR/src/ksp/ksp/examples/tutorials/
+	b) make ex42
+	c) create a job file:
+		touch test_petsc_ex42.job:
+		
+		--------------------------------------------------------------------
+		# @ job_name = petsc_test
+		# @ comment = "petsc_test"
+		# @ error = $(job_name).$(jobid).out
+		# @ output = $(job_name).$(jobid).out
+		# @ environment = COPY_ALL
+		# @ wall_clock_limit = 00:10:00
+		# @ notification = always
+		# @ notify_user = your@mail.address
+		# @ job_type = bluegene
+		# @ bg_size = 32
+		# @ queue
+	
+		# use --np TO SPECIFY THE TOTAL NUMBER OF PROCESSORS
+		runjob --ranks-per-node 1 --exe ex42 --args -options_file ex42-fsschur.opts
+		--------------------------------------------------------------------
+		
+		>>> also try different optionfiles:
+					
+			ex42-mgfs2.opts
+			ex42-mgfs.opts
+			ex42-mgschur_nestedfs.opts
+			ex42-mgschur.opts 
+************************************************
+
+
+============================================================================
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+===============================================================================
+             Configuring PETSc to compile on your system                       
+===============================================================================
+[?1034hConfigure Help
+   Comma seperated lists should be given between [] (use \[ \] in tcsh/csh)
+      For example: --with-mpi-lib=\[/usr/local/lib/libmpich.a,/usr/local/lib/libpmpich.a\]
+   Options beginning with --known- are to provide values you already know
+      For example:--known-endian=big
+   Options beginning with --with- indicate that you are requesting something
+      For example: --with-c-support=1
+   <prog> means a program name or a full path to a program
+      For example:--with-cmake=/Users/bsmith/bin/cmake
+   <bool> means a boolean, use either 0 or 1
+   <dir> means a directory
+      For example: --with-external-packages-dir=/Users/bsmith/external
+   For packages use --with-PACKAGE-dir=<dir> OR
+      --with-PACKAGE-include=<dir> --with-PACKAGE-lib=<lib> OR --download-PACKAGE
+------------------------------------------------------------------------------------------
+Script:
+  --help
+       Print this help message  current: 1
+  --h
+       Print this help message  current: 0
+Framework:
+  --configModules
+       A list of Python modules with a Configure class  current: PETSc.Configure
+  --ignoreCompileOutput=<bool>
+       Ignore compiler output  current: 1
+  --ignoreLinkOutput=<bool>
+       Ignore linker output  current: 1
+  --ignoreWarnings=<bool>
+       Ignore compiler and linker warnings  current: 0
+  --doCleanup=<bool>
+       Delete any configure generated files (turn off for debugging)  current: 1
+  --with-alternatives=<bool>
+       Provide a choice among alternative package installations  current: 0
+  --search-dirs
+       A list of directories used to search for executables  current: ['/homeb/hmz30/hmz303', '/opt/ibmcmp/vacpp/11.1/bin', '/opt/ibmcmp/xlf/13.1/bin']
+  --package-dirs
+       A list of directories used to search for packages  current: ['/homeb/hmz30/hmz303']
+  --with-external-packages-dir=<dir>
+       Location to install downloaded packages
+  --with-batch=<bool>
+       Machine using cross-compilers or a batch system to submit jobs  current: 0
+  --with-file-create-pause=<bool>
+       Add 1 sec pause between config temp file delete/recreate  current: 0
+PETSc:
+  --prefix=<dir>
+       Specifiy location to install PETSc (eg. /usr/local)  current: 
+  --with-default-arch=<bool>
+       Allow using the last configured arch without setting PETSC_ARCH  current: 1
+  --with-single-library=<bool>
+       Put all PETSc code into the single -lpetsc library  current: 1
+  --with-iphone=<bool>
+       Build an iPhone version of PETSc  current: 0
+  --PETSC_ARCH=<string>
+       The configuration name
+  --with-petsc-arch=<string>
+       The configuration name
+  --PETSC_DIR=<root-dir>
+       The root directory of the PETSc installation
+  --with-make=<prog>
+       Specify make  current: make
+  --with-make-np=<np>
+       Default number of threads to use for parallel builds
+  --with-clanguage=<C or C++>
+       Specify C or C++ language  current: C
+  --with-c++-support=<bool>
+       When building C, compile C++ portions of external libraries (e.g. Prometheus)  current: 0
+  --with-c-support=<bool>
+       When building with C++, compile so may be used directly from C  current: 0
+  --with-fortran=<bool>
+       Create and install the Fortran wrappers  current: 1
+  --with-errorchecking=<bool>
+       Specify error checking/exceptions in libraries  current: 1
+  --with-chud=<bool>
+       On Apple builds with CHUD profiling (broken)  current: 0
+  --with-fortran-datatypes=<bool>
+       Declare PETSc objects in Fortran like type(Vec) instead of Vec  current: 0
+  --with-fortran-interfaces=<bool>
+       Generate Fortran interface definitions for PETSc functions  current: 0
+  --known-level1-dcache-size=<int>
+       Size in bytes of Level 1 data cache
+  --known-level1-dcache-linesize=<int>
+       Size in bytes of each line of the Level 1 data cache
+  --known-level1-dcache-assoc=<int>
+       Associativity of the Level 1 data cache, 0 for full associative
+  --with-etags=<bool>
+       Build etags if they do not exist  current: 1
+  --with-shared-libraries=<bool>
+       Make PETSc libraries shared -- libpetsc.so (Unix/Linux) or libpetsc.dylib (Mac)  current: 0
+  --with-dynamic-loading=<bool>
+       Make PETSc libraries dynamic -- uses dlopen() to access libraries, rarely needed  current: 0
+  --with-debugger=<gdb,dbx,etc>
+       Debugger to use in PETSc
+  --DATAFILESPATH=<dir>
+       Specifiy location of PETSc datafiles, e.g. test matrices
+  --with-precision=<single,double,__float128>
+       Specify numerical precision  current: double
+  --with-scalar-type=<real or complex>
+       Specify real or complex numbers  current: real
+  --with-mixed-precision=<bool>
+       Allow single precision linear solve  current: 0
+  --with-log=<bool>
+       Activate logging code in PETSc  current: 1
+  --with-info=<bool>
+       Activate PetscInfo() (i.e. -info)  code in PETSc  current: 1
+  --with-ctable=<bool>
+       Activate CTABLE hashing for certain search functions - to conserve memory  current: 1
+  --with-fortran-kernels=<bool>
+       Use Fortran for linear algebra kernels  current: 0
+  --with-64-bit-indices=<bool>
+       Use 64 bit integers (long long) for indexing in vectors and matrices  current: 0
+  --with-is-color-value-type=<char,short>
+       char, short can store 256, 65536 colors  current: short
+  --with-timer=<default,mpi,ibm,dec,asci-red,nt>
+       Use high precision timer
+  --with-proc-filesystem=<bool>
+       Use the /proc filesystem for system statistics  current: 1
+  --with-memalign=<4,8,16,32,64>
+       Specify alignment of arrays allocated by PETSc  current: 16
+  --with-cmake=<prog>
+       Specify cmake  current: cmake
+  --download-cmake=<no,yes,filename>
+       Download and install cmake  current: no
+Windows:
+  --with-windows-graphics=<bool>
+       Enable check for Windows Graphics  current: 1
+Compilers:
+  --with-cpp=<prog>
+       Specify the C preprocessor
+  --CPP=<prog>
+       Specify the C preprocessor
+  --CPPFLAGS=<string>
+       Specify the C preprocessor options  current: 
+  --with-cc=<prog>
+       Specify the C compiler
+  --CC=<prog>
+       Specify the C compiler
+  --CFLAGS=<string>
+       Specify the C compiler options
+  --CC_LINKER_FLAGS=<string>
+       Specify the C linker flags  current: []
+  --CXXPP=<prog>
+       Specify the C++ preprocessor
+  --CXXCPPFLAGS=<string>
+       Specify the C++ preprocessor options
+  --with-cxx=<prog>
+       Specify the C++ compiler
+  --CXX=<prog>
+       Specify the C++ compiler
+  --CXXFLAGS=<string>
+       Specify the C++ compiler options
+  --CXX_CXXFLAGS=<string>
+       Specify the C++ compiler-only options  current: 
+  --CXX_LINKER_FLAGS=<string>
+       Specify the C++ linker flags  current: []
+  --with-fc=<prog>
+       Specify the Fortran compiler
+  --FC=<prog>
+       Specify the Fortran compiler
+  --FFLAGS=<string>
+       Specify the Fortran compiler options
+  --FC_LINKER_FLAGS=<string>
+       Specify the FC linker flags  current: []
+  --with-gnu-compilers=<bool>
+       Try to use GNU compilers  current: 1
+  --with-vendor-compilers=<vendor as string>
+       Try to use vendor compilers (no argument all vendors, 0 no vendors)  current: 
+  --with-large-file-io=<bool>
+       Allow IO with files greater then 2 GB  current: 0
+  --CUDAPP=<prog>
+       Specify the CUDA preprocessor
+  --CUDAPPFLAGS=<string>
+       Specify the CUDA preprocessor options
+  --CUDAC=<prog>
+       Specify the CUDA compiler
+  --CUDAFLAGS=<string>
+       Specify the CUDA compiler options
+  --CUDAC_LINKER_FLAGS=<string>
+       Specify the CUDA linker flags  current: []
+  --with-shared-ld=<prog>
+       Specify the shared linker
+  --LD_SHARED=<prog>
+       Specify the shared linker
+  --LDFLAGS=<string>
+       Specify the linker options  current: 
+  --with-ar=<prog>
+       Specify the archiver
+  --AR=<prog>
+       Specify the archiver flags
+  --AR_FLAGS=<string>
+       Specify the archiver flags
+  --with-ranlib=<prog>
+       Specify ranlib
+  --with-pic=<bool>
+       Compile with -fPIC or equivalent flag if possible  current: 0
+  --sharedLibraryFlags=<string>
+       Specify the shared library flags  current: []
+  --dynamicLibraryFlags=<string>
+       Specify the dynamic library flags  current: []
+  --LIBS=<string>
+       Specify extra libraries for all links
+  --with-clib-autodetect=<bool>
+       Autodetect C compiler libraries  current: 1
+  --with-fortranlib-autodetect=<bool>
+       Autodetect Fortran compiler libraries  current: 1
+  --with-cxxlib-autodetect=<bool>
+       Autodetect C++ compiler libraries  current: 1
+  --with-dependencies=<bool>
+       Compile with -MMD or equivalent flag if possible  current: 1
+Compiler Flags:
+  --optionsModule=<module name>
+       The Python module used to determine compiler options and versions  current: PETSc.compilerOptions
+  --with-debugging=<bool>
+       Specify debugging version of libraries  current: 1
+  --C_VERSION=<string>
+       The version of the C compiler  current: Unknown
+  --CXX_VERSION=<string>
+       The version of the C++ compiler  current: Unknown
+  --FC_VERSION=<string>
+       The version of the Fortran compiler  current: Unknown
+  --CUDA_VERSION=<string>
+       The version of the CUDA compiler  current: Unknown
+  --COPTFLAGS=<string>
+       Override the debugging/optimization flags for the C compiler
+  --CXXOPTFLAGS=<string>
+       Override the debugging/optimization flags for the C++ compiler
+  --FOPTFLAGS=<string>
+       Override the debugging/optimization flags for the Fortran compiler
+  --CUDAOPTFLAGS=<string>
+       Override the debugging/optimization flags for the CUDA compiler
+  --with-gcov=<bool>
+       Specify that GNUs coverage tool gcov is used  current: 0
+SourceControl:
+  --with-hg=<prog>
+       Specify the Mercurial executable  current: hg
+  --with-cvs=<prog>
+       Specify the CVS executable  current: cvs
+  --with-svn=<prog>
+       Specify the Subversion executable  current: svn
+Types:
+  --known-endian=<big or little>
+       Are bytes stored in big or little endian?
+Visibility:
+  --with-visibility=<bool>
+       Use compiler visibility flags to limit symbol visibility  current: 0
+Functions:
+  --known-memcmp-ok=<bool>
+       Does memcmp() work correctly?
+MPI:
+  --with-mpi=<bool>
+       Indicate if you wish to test for MPI  current: 1
+  --with-mpi-dir=<dir>
+       Indicate the root directory of the MPI installation
+  --with-mpi-include=<dirs>
+       Indicate the directory of the MPI include files
+  --with-mpi-lib=<libraries: e.g. [/Users/..../libmpi.a,...]>
+       Indicate the MPI libraries
+  --download-mpich=<no,yes,filename>
+       Download and install MPICH-2  current: no
+  --download-openmpi=<no,yes,filename>
+       Download and install OpenMPI  current: no
+  --with-mpiexec=<prog>
+       The utility used to launch MPI jobs
+  --with-mpi-compilers=<bool>
+       Try to use the MPI compilers, e.g. mpicc  current: 1
+  --known-mpi-shared-libraries=<bool>
+       Indicates the MPI libraries are shared (the usual test will be skipped)
+  --download-mpich-pm=<hydra, gforker or mpd>
+       Launcher for MPI processes  current: hydra
+  --download-mpich-device=<ch3:nemesis or see mpich2 docs>
+       Communicator for MPI processes  current: ch3:sock
+  --download-mpich-mpe=<bool>
+       Install MPE with MPICH  current: 0
+  --download-mpich-shared=<bool>
+       Install MPICH with shared libraries  current: 0
+  --with-mpiuni-fortran-binding=<bool>
+       Build the MPIUni Fortran bindings  current: 1
+X:
+  --with-x=<bool>
+       Indicate if you wish to test for X  current: 1
+  --with-x-dir=<dir>
+       Indicate the root directory of the X installation
+  --with-x-include=<dirs>
+       Indicate the directory of the X include files
+  --with-x-lib=<libraries: e.g. [/Users/..../libx.a,...]>
+       Indicate the X libraries
+  --with-xt=<bool>
+       Activate Xt  current: 0
+PAPI:
+  --with-papi=<bool>
+       Indicate if you wish to test for papi  current: 0
+  --with-papi-dir=<dir>
+       Indicate the root directory of the papi installation
+  --with-papi-include=<dirs>
+       Indicate the directory of the papi include files
+  --with-papi-lib=<libraries: e.g. [/Users/..../libpapi.a,...]>
+       Indicate the papi libraries
+CHACO:
+  --with-chaco=<bool>
+       Indicate if you wish to test for Chaco  current: 0
+  --with-chaco-dir=<dir>
+       Indicate the root directory of the Chaco installation
+  --with-chaco-include=<dirs>
+       Indicate the directory of the Chaco include files
+  --with-chaco-lib=<libraries: e.g. [/Users/..../libchaco.a,...]>
+       Indicate the Chaco libraries
+  --download-chaco=<no,yes,filename>
+       Download and install Chaco  current: no
+METIS:
+  --with-metis=<bool>
+       Indicate if you wish to test for metis  current: 0
+  --with-metis-dir=<dir>
+       Indicate the root directory of the metis installation
+  --with-metis-include=<dirs>
+       Indicate the directory of the metis include files
+  --with-metis-lib=<libraries: e.g. [/Users/..../libmetis.a,...]>
+       Indicate the metis libraries
+  --download-metis=<no,yes,filename>
+       Download and install metis  current: no
+SOWING:
+  --with-sowing=<bool>
+       Indicate if you wish to test for sowing  current: 0
+  --with-sowing-dir=<dir>
+       Indicate the root directory of the sowing installation
+  --with-sowing-include=<dirs>
+       Indicate the directory of the sowing include files
+  --with-sowing-lib=<libraries: e.g. [/Users/..../libsowing.a,...]>
+       Indicate the sowing libraries
+  --download-sowing=<no,yes,filename>
+       Download and install sowing  current: no
+  --download-sowing-cc=<prog>
+       C compiler for sowing configure
+  --download-sowing-cxx=<prog>
+       CXX compiler for sowing configure
+  --download-sowing-cpp=<prog>
+       CPP for sowing configure
+  --download-sowing-cxxcpp=<prog>
+       CXX CPP for sowing configure
+  --download-sowing-configure-options=<options>
+       additional options for sowing configure
+PTHREADCLASSES:
+  --with-pthreadclasses=<bool>
+       Indicate if you wish to test for pthreadclasses  current: 0
+  --with-pthreadclasses-dir=<dir>
+       Indicate the root directory of the pthreadclasses installation
+  --with-pthreadclasses-include=<dirs>
+       Indicate the directory of the pthreadclasses include files
+  --with-pthreadclasses-lib=<libraries: e.g. [/Users/..../libpthreadclasses.a,...]>
+       Indicate the pthreadclasses libraries
+PTHREAD:
+  --with-pthread=<bool>
+       Indicate if you wish to test for pthread  current: 1
+  --with-pthread-dir=<dir>
+       Indicate the root directory of the pthread installation
+  --with-pthread-include=<dirs>
+       Indicate the directory of the pthread include files
+  --with-pthread-lib=<libraries: e.g. [/Users/..../libpthread.a,...]>
+       Indicate the pthread libraries
+HWLOC:
+  --with-hwloc=<bool>
+       Indicate if you wish to test for hwloc  current: 0
+  --with-hwloc-dir=<dir>
+       Indicate the root directory of the hwloc installation
+  --with-hwloc-include=<dirs>
+       Indicate the directory of the hwloc include files
+  --with-hwloc-lib=<libraries: e.g. [/Users/..../libhwloc.a,...]>
+       Indicate the hwloc libraries
+  --download-hwloc=<no,yes,filename>
+       Download and install hwloc  current: no
+PARTY:
+  --with-party=<bool>
+       Indicate if you wish to test for PARTY  current: 0
+  --with-party-dir=<dir>
+       Indicate the root directory of the PARTY installation
+  --with-party-include=<dirs>
+       Indicate the directory of the PARTY include files
+  --with-party-lib=<libraries: e.g. [/Users/..../libparty.a,...]>
+       Indicate the PARTY libraries
+  --download-party=<no,yes,filename>
+       Download and install PARTY  current: no
+CUDA:
+  --with-cuda=<bool>
+       Indicate if you wish to test for cuda  current: 0
+  --with-cuda-dir=<dir>
+       Indicate the root directory of the cuda installation
+  --with-cuda-include=<dirs>
+       Indicate the directory of the cuda include files
+  --with-cuda-lib=<libraries: e.g. [/Users/..../libcuda.a,...]>
+       Indicate the cuda libraries
+  --with-cuda-arch=<arch>
+       Target architecture for nvcc, e.g. sm_13
+  --with-cuda-only=<bool>
+       Allows CUDA compiles without Thrust and Cusp  current: 1
+CUSP:
+  --with-cusp=<bool>
+       Indicate if you wish to test for cusp  current: 0
+  --with-cusp-dir=<dir>
+       Indicate the root directory of the cusp installation
+  --with-cusp-include=<dirs>
+       Indicate the directory of the cusp include files
+  --with-cusp-lib=<libraries: e.g. [/Users/..../libcusp.a,...]>
+       Indicate the cusp libraries
+THRUST:
+  --with-thrust=<bool>
+       Indicate if you wish to test for thrust  current: 0
+  --with-thrust-dir=<dir>
+       Indicate the root directory of the thrust installation
+  --with-thrust-include=<dirs>
+       Indicate the directory of the thrust include files
+  --with-thrust-lib=<libraries: e.g. [/Users/..../libthrust.a,...]>
+       Indicate the thrust libraries
+PTSCOTCH:
+  --with-ptscotch=<bool>
+       Indicate if you wish to test for PTScotch  current: 0
+  --with-ptscotch-dir=<dir>
+       Indicate the root directory of the PTScotch installation
+  --with-ptscotch-include=<dirs>
+       Indicate the directory of the PTScotch include files
+  --with-ptscotch-lib=<libraries: e.g. [/Users/..../libptscotch.a,...]>
+       Indicate the PTScotch libraries
+  --download-ptscotch=<no,yes,filename>
+       Download and install PTScotch  current: no
+AFTERIMAGE:
+  --with-afterimage=<bool>
+       Indicate if you wish to test for afterimage  current: 0
+  --with-afterimage-dir=<dir>
+       Indicate the root directory of the afterimage installation
+  --with-afterimage-include=<dirs>
+       Indicate the directory of the afterimage include files
+  --with-afterimage-lib=<libraries: e.g. [/Users/..../libafterimage.a,...]>
+       Indicate the afterimage libraries
+PROMETHEUS:
+  --with-prometheus=<bool>
+       Indicate if you wish to test for Prometheus  current: 0
+  --with-prometheus-dir=<dir>
+       Indicate the root directory of the Prometheus installation
+  --with-prometheus-include=<dirs>
+       Indicate the directory of the Prometheus include files
+  --with-prometheus-lib=<libraries: e.g. [/Users/..../libprometheus.a,...]>
+       Indicate the Prometheus libraries
+  --download-prometheus=<no,yes,filename>
+       Download and install Prometheus  current: no
+BLAS/LAPACK:
+  --with-blas-lapack-dir=<dir>
+       Indicate the directory containing BLAS and LAPACK libraries
+  --with-blas-lapack-lib=<libraries: e.g. [/Users/..../liblapack.a,libblas.a,...]>
+       Indicate the library containing BLAS and LAPACK
+  --with-blas-lib=<libraries: e.g. [/Users/..../libblas.a,...]>
+       Indicate the library(s) containing BLAS
+  --with-lapack-lib=<libraries: e.g. [/Users/..../liblapack.a,...]>
+       Indicate the library(s) containing LAPACK
+  --download-f-blas-lapack=<no,yes,filename>
+       Automatically install a Fortran version of BLAS/LAPACK  current: no
+  --known-64-bit-blas-indices=<bool>
+       Indicate if using 64 bit integer BLAS  current: 0
+F2CBLASLAPACK:
+  --with-f2cblaslapack=<bool>
+       Indicate if you wish to test for f2cblaslapack  current: 0
+  --with-f2cblaslapack-dir=<dir>
+       Indicate the root directory of the f2cblaslapack installation
+  --with-f2cblaslapack-include=<dirs>
+       Indicate the directory of the f2cblaslapack include files
+  --with-f2cblaslapack-lib=<libraries: e.g. [/Users/..../libf2cblaslapack.a,...]>
+       Indicate the f2cblaslapack libraries
+  --download-f2cblaslapack=<no,yes,filename>
+       Download and install f2cblaslapack  current: no
+PARMETIS:
+  --with-parmetis=<bool>
+       Indicate if you wish to test for parmetis  current: 0
+  --with-parmetis-dir=<dir>
+       Indicate the root directory of the parmetis installation
+  --with-parmetis-include=<dirs>
+       Indicate the directory of the parmetis include files
+  --with-parmetis-lib=<libraries: e.g. [/Users/..../libparmetis.a,...]>
+       Indicate the parmetis libraries
+  --download-parmetis=<no,yes,filename>
+       Download and install parmetis  current: no
+PCBDDC:
+  --with-pcbddc=<bool>
+       Indicate if you wish to test for pcbddc  current: 0
+  --with-pcbddc-dir=<dir>
+       Indicate the root directory of the pcbddc installation
+  --with-pcbddc-include=<dirs>
+       Indicate the directory of the pcbddc include files
+  --with-pcbddc-lib=<libraries: e.g. [/Users/..../libpcbddc.a,...]>
+       Indicate the pcbddc libraries
+HYPRE:
+  --with-hypre=<bool>
+       Indicate if you wish to test for hypre  current: 0
+  --with-hypre-dir=<dir>
+       Indicate the root directory of the hypre installation
+  --with-hypre-include=<dirs>
+       Indicate the directory of the hypre include files
+  --with-hypre-lib=<libraries: e.g. [/Users/..../libhypre.a,...]>
+       Indicate the hypre libraries
+  --download-hypre=<no,yes,filename>
+       Download and install hypre  current: no
+NUMPY:
+  --with-numpy=<bool>
+       Indicate if you wish to test for Numpy  current: 0
+  --with-numpy-dir=<dir>
+       Indicate the root directory of the Numpy installation
+  --with-numpy-include=<dirs>
+       Indicate the directory of the Numpy include files
+  --with-numpy-lib=<libraries: e.g. [/Users/..../libnumpy.a,...]>
+       Indicate the Numpy libraries
+  --download-numpy=<no,yes,filename>
+       Download and install Numpy  current: no
+SIEVE:
+  --with-sieve=<bool>
+       Indicate if you wish to test for Sieve  current: 0
+  --with-sieve-dir=<dir>
+       Indicate the root directory of the Sieve installation
+  --with-sieve-include=<dirs>
+       Indicate the directory of the Sieve include files
+  --with-sieve-lib=<libraries: e.g. [/Users/..../libsieve.a,...]>
+       Indicate the Sieve libraries
+Sieve:
+  --with-opt-sieve=<bool>
+       Use IMesh which are optimized for interval point sets  current: 1
+  --with-sieve-memory-logging=<bool>
+       Turn on memory logging for Sieve objects  current: 0
+BOOST:
+  --with-boost=<bool>
+       Indicate if you wish to test for boost  current: 0
+  --with-boost-dir=<dir>
+       Indicate the root directory of the boost installation
+  --with-boost-include=<dirs>
+       Indicate the directory of the boost include files
+  --with-boost-lib=<libraries: e.g. [/Users/..../libboost.a,...]>
+       Indicate the boost libraries
+  --download-boost=<no,yes,filename>
+       Download and install boost  current: no
+FFTW:
+  --with-fftw=<bool>
+       Indicate if you wish to test for fftw  current: 0
+  --with-fftw-dir=<dir>
+       Indicate the root directory of the fftw installation
+  --with-fftw-include=<dirs>
+       Indicate the directory of the fftw include files
+  --with-fftw-lib=<libraries: e.g. [/Users/..../libfftw.a,...]>
+       Indicate the fftw libraries
+  --download-fftw=<no,yes,filename>
+       Download and install fftw  current: no
+LGRIND:
+  --with-lgrind=<bool>
+       Indicate if you wish to test for lgrind  current: 0
+  --with-lgrind-dir=<dir>
+       Indicate the root directory of the lgrind installation
+  --with-lgrind-include=<dirs>
+       Indicate the directory of the lgrind include files
+  --with-lgrind-lib=<libraries: e.g. [/Users/..../liblgrind.a,...]>
+       Indicate the lgrind libraries
+  --download-lgrind=<no,yes,filename>
+       Download and install lgrind  current: no
+CCAFE:
+  --with-ccafe=<bool>
+       Indicate if you wish to test for ccafe  current: 0
+  --with-ccafe-dir=<dir>
+       Indicate the root directory of the ccafe installation
+  --with-ccafe-include=<dirs>
+       Indicate the directory of the ccafe include files
+  --with-ccafe-lib=<libraries: e.g. [/Users/..../libccafe.a,...]>
+       Indicate the ccafe libraries
+YAML:
+  --with-yaml=<bool>
+       Indicate if you wish to test for yaml  current: 0
+  --with-yaml-dir=<dir>
+       Indicate the root directory of the yaml installation
+  --with-yaml-include=<dirs>
+       Indicate the directory of the yaml include files
+  --with-yaml-lib=<libraries: e.g. [/Users/..../libyaml.a,...]>
+       Indicate the yaml libraries
+  --download-yaml=<no,yes,filename>
+       Download and install yaml  current: no
+BABEL:
+  --with-babel=<bool>
+       Indicate if you wish to test for babel  current: 0
+  --with-babel-dir=<dir>
+       Indicate the root directory of the babel installation
+  --with-babel-include=<dirs>
+       Indicate the directory of the babel include files
+  --with-babel-lib=<libraries: e.g. [/Users/..../libbabel.a,...]>
+       Indicate the babel libraries
+PETSC4PY:
+  --with-petsc4py=<bool>
+       Indicate if you wish to test for petsc4py  current: 0
+  --with-petsc4py-dir=<dir>
+       Indicate the root directory of the petsc4py installation
+  --with-petsc4py-include=<dirs>
+       Indicate the directory of the petsc4py include files
+  --with-petsc4py-lib=<libraries: e.g. [/Users/..../libpetsc4py.a,...]>
+       Indicate the petsc4py libraries
+  --download-petsc4py=<no,yes,filename>
+       Download and install petsc4py  current: no
+TXPETSCGPU:
+  --with-txpetscgpu=<bool>
+       Indicate if you wish to test for txpetscgpu  current: 0
+  --with-txpetscgpu-dir=<dir>
+       Indicate the root directory of the txpetscgpu installation
+  --with-txpetscgpu-include=<dirs>
+       Indicate the directory of the txpetscgpu include files
+  --with-txpetscgpu-lib=<libraries: e.g. [/Users/..../libtxpetscgpu.a,...]>
+       Indicate the txpetscgpu libraries
+  --download-txpetscgpu=<no,yes,filename>
+       Download and install txpetscgpu  current: no
+SCALAPACK:
+  --with-scalapack=<bool>
+       Indicate if you wish to test for SCALAPACK  current: 0
+  --with-scalapack-dir=<dir>
+       Indicate the root directory of the SCALAPACK installation
+  --with-scalapack-include=<dirs>
+       Indicate the directory of the SCALAPACK include files
+  --with-scalapack-lib=<libraries: e.g. [/Users/..../libscalapack.a,...]>
+       Indicate the SCALAPACK libraries
+  --download-scalapack=<no,yes,filename>
+       Download and install SCALAPACK  current: no
+BLACS:
+  --with-blacs=<bool>
+       Indicate if you wish to test for blacs  current: 0
+  --with-blacs-dir=<dir>
+       Indicate the root directory of the blacs installation
+  --with-blacs-include=<dirs>
+       Indicate the directory of the blacs include files
+  --with-blacs-lib=<libraries: e.g. [/Users/..../libblacs.a,...]>
+       Indicate the blacs libraries
+  --download-blacs=<no,yes,filename>
+       Download and install blacs  current: no
+AMS:
+  --with-ams=<bool>
+       Indicate if you wish to test for ams  current: 0
+  --with-ams-dir=<dir>
+       Indicate the root directory of the ams installation
+  --with-ams-include=<dirs>
+       Indicate the directory of the ams include files
+  --with-ams-lib=<libraries: e.g. [/Users/..../libams.a,...]>
+       Indicate the ams libraries
+  --download-ams=<no,yes,filename>
+       Download and install ams  current: no
+JAVA:
+  --with-java=<bool>
+       Indicate if you wish to test for java  current: 0
+  --with-java-dir=<dir>
+       Indicate the root directory of the java installation
+  --with-java-include=<dirs>
+       Indicate the directory of the java include files
+  --with-java-lib=<libraries: e.g. [/Users/..../libjava.a,...]>
+       Indicate the java libraries
+TETGEN:
+  --with-tetgen=<bool>
+       Indicate if you wish to test for tetgen  current: 0
+  --with-tetgen-dir=<dir>
+       Indicate the root directory of the tetgen installation
+  --with-tetgen-include=<dirs>
+       Indicate the directory of the tetgen include files
+  --with-tetgen-lib=<libraries: e.g. [/Users/..../libtetgen.a,...]>
+       Indicate the tetgen libraries
+  --download-tetgen=<no,yes,filename>
+       Download and install tetgen  current: no
+OSKI:
+  --with-oski=<bool>
+       Indicate if you wish to test for oski  current: 0
+  --with-oski-dir=<dir>
+       Indicate the root directory of the oski installation
+  --with-oski-include=<dirs>
+       Indicate the directory of the oski include files
+  --with-oski-lib=<libraries: e.g. [/Users/..../liboski.a,...]>
+       Indicate the oski libraries
+  --download-oski=<no,yes,filename>
+       Download and install oski  current: no
+C2HTML:
+  --with-c2html=<bool>
+       Indicate if you wish to test for c2html  current: 0
+  --with-c2html-dir=<dir>
+       Indicate the root directory of the c2html installation
+  --with-c2html-include=<dirs>
+       Indicate the directory of the c2html include files
+  --with-c2html-lib=<libraries: e.g. [/Users/..../libc2html.a,...]>
+       Indicate the c2html libraries
+  --download-c2html=<no,yes,filename>
+       Download and install c2html  current: no
+SUPERLU:
+  --with-superlu=<bool>
+       Indicate if you wish to test for SuperLU  current: 0
+  --with-superlu-dir=<dir>
+       Indicate the root directory of the SuperLU installation
+  --with-superlu-include=<dirs>
+       Indicate the directory of the SuperLU include files
+  --with-superlu-lib=<libraries: e.g. [/Users/..../libsuperlu.a,...]>
+       Indicate the SuperLU libraries
+  --download-superlu=<no,yes,filename>
+       Download and install SuperLU  current: no
+DSCPACK:
+  --with-dscpack=<bool>
+       Indicate if you wish to test for Dscpack  current: 0
+  --with-dscpack-dir=<dir>
+       Indicate the root directory of the Dscpack installation
+  --with-dscpack-include=<dirs>
+       Indicate the directory of the Dscpack include files
+  --with-dscpack-lib=<libraries: e.g. [/Users/..../libdscpack.a,...]>
+       Indicate the Dscpack libraries
+CPROTO:
+  --with-cproto=<bool>
+       Indicate if you wish to test for cproto  current: 0
+  --with-cproto-dir=<dir>
+       Indicate the root directory of the cproto installation
+  --with-cproto-include=<dirs>
+       Indicate the directory of the cproto include files
+  --with-cproto-lib=<libraries: e.g. [/Users/..../libcproto.a,...]>
+       Indicate the cproto libraries
+  --download-cproto=<no,yes,filename>
+       Download and install cproto  current: no
+SUPERLU_DIST:
+  --with-superlu_dist=<bool>
+       Indicate if you wish to test for SuperLU_DIST  current: 0
+  --with-superlu_dist-dir=<dir>
+       Indicate the root directory of the SuperLU_DIST installation
+  --with-superlu_dist-include=<dirs>
+       Indicate the directory of the SuperLU_DIST include files
+  --with-superlu_dist-lib=<libraries: e.g. [/Users/..../libsuperlu_dist.a,...]>
+       Indicate the SuperLU_DIST libraries
+  --download-superlu_dist=<no,yes,filename>
+       Download and install SuperLU_DIST  current: no
+GENERATOR:
+  --with-generator=<bool>
+       Indicate if you wish to test for Generator  current: 0
+  --with-generator-dir=<dir>
+       Indicate the root directory of the Generator installation
+  --with-generator-include=<dirs>
+       Indicate the directory of the Generator include files
+  --with-generator-lib=<libraries: e.g. [/Users/..../libgenerator.a,...]>
+       Indicate the Generator libraries
+  --download-generator=<no,yes,filename>
+       Download and install Generator  current: no
+EXPAT:
+  --with-expat=<bool>
+       Indicate if you wish to test for expat  current: 0
+  --with-expat-dir=<dir>
+       Indicate the root directory of the expat installation
+  --with-expat-include=<dirs>
+       Indicate the directory of the expat include files
+  --with-expat-lib=<libraries: e.g. [/Users/..../libexpat.a,...]>
+       Indicate the expat libraries
+  --download-expat=<no,yes,filename>
+       Download and install expat  current: no
+ADIC:
+  --with-adic=<bool>
+       Activate ADIC  current: 0
+  --with-adic-path=<dir>
+       Full path of adic executable
+MATLAB_ENGINE:
+  --with-matlab-engine=<bool>
+       Activate Matlab Engine (need --with-matlab also)   current: 0
+  --with-matlab-engine-dir=<dir>
+       Indicate the root directory of the MatlabEngine installation
+  --with-matlab-engine-include=<dirs>
+       Indicate the directory of the MatlabEngine include files
+  --with-matlab-engine-lib=<libraries: e.g. [/Users/..../libmatlab-engine.a,...]>
+       Indicate the MatlabEngine libraries
+Matlab:
+  --with-matlab=<bool>
+       Activate Matlab  current: 0
+  --with-matlab-engine=<bool>
+       Activate Matlab Engine (need --with-matlab also)   current: 0
+  --with-matlab-dir=<root dir>
+       Specify the root directory of the Matlab installation
+  --with-matlab-arch=<string>
+       Use Matlab Architecture (default use first-found)
+SPOOLES:
+  --with-spooles=<bool>
+       Indicate if you wish to test for spooles  current: 0
+  --with-spooles-dir=<dir>
+       Indicate the root directory of the spooles installation
+  --with-spooles-include=<dirs>
+       Indicate the directory of the spooles include files
+  --with-spooles-lib=<libraries: e.g. [/Users/..../libspooles.a,...]>
+       Indicate the spooles libraries
+  --download-spooles=<no,yes,filename>
+       Download and install spooles  current: no
+ZOLTAN:
+  --with-zoltan=<bool>
+       Indicate if you wish to test for Zoltan  current: 0
+  --with-zoltan-dir=<dir>
+       Indicate the root directory of the Zoltan installation
+  --with-zoltan-include=<dirs>
+       Indicate the directory of the Zoltan include files
+  --with-zoltan-lib=<libraries: e.g. [/Users/..../libzoltan.a,...]>
+       Indicate the Zoltan libraries
+  --download-zoltan=<no,yes,filename>
+       Download and install Zoltan  current: no
+PVODE:
+  --with-pvode=<bool>
+       Indicate if you wish to test for PVODE  current: 0
+  --with-pvode-dir=<dir>
+       Indicate the root directory of the PVODE installation
+  --with-pvode-include=<dirs>
+       Indicate the directory of the PVODE include files
+  --with-pvode-lib=<libraries: e.g. [/Users/..../libpvode.a,...]>
+       Indicate the PVODE libraries
+MATHEMATICA:
+  --with-mathematica=<bool>
+       Indicate if you wish to test for Mathematica  current: 0
+  --with-mathematica-dir=<dir>
+       Indicate the root directory of the Mathematica installation
+  --with-mathematica-include=<dirs>
+       Indicate the directory of the Mathematica include files
+  --with-mathematica-lib=<libraries: e.g. [/Users/..../libmathematica.a,...]>
+       Indicate the Mathematica libraries
+VALGRIND:
+  --with-valgrind=<bool>
+       Indicate if you wish to test for valgrind  current: 1
+  --with-valgrind-dir=<dir>
+       Indicate the root directory of the valgrind installation
+  --with-valgrind-include=<dirs>
+       Indicate the directory of the valgrind include files
+  --with-valgrind-lib=<libraries: e.g. [/Users/..../libvalgrind.a,...]>
+       Indicate the valgrind libraries
+TRIANGLE:
+  --with-triangle=<bool>
+       Indicate if you wish to test for Triangle  current: 0
+  --with-triangle-dir=<dir>
+       Indicate the root directory of the Triangle installation
+  --with-triangle-include=<dirs>
+       Indicate the directory of the Triangle include files
+  --with-triangle-lib=<libraries: e.g. [/Users/..../libtriangle.a,...]>
+       Indicate the Triangle libraries
+  --download-triangle=<no,yes,filename>
+       Download and install Triangle  current: no
+MUMPS:
+  --with-mumps=<bool>
+       Indicate if you wish to test for MUMPS  current: 0
+  --with-mumps-dir=<dir>
+       Indicate the root directory of the MUMPS installation
+  --with-mumps-include=<dirs>
+       Indicate the directory of the MUMPS include files
+  --with-mumps-lib=<libraries: e.g. [/Users/..../libmumps.a,...]>
+       Indicate the MUMPS libraries
+  --download-mumps=<no,yes,filename>
+       Download and install MUMPS  current: no
+  --with-mumps-serial
+       Use serial build of MUMPS  current: 0
+PAMI:
+  --with-pami=<bool>
+       Indicate if you wish to test for pami  current: 0
+  --with-pami-dir=<dir>
+       Indicate the root directory of the pami installation
+  --with-pami-include=<dirs>
+       Indicate the directory of the pami include files
+  --with-pami-lib=<libraries: e.g. [/Users/..../libpami.a,...]>
+       Indicate the pami libraries
+ML:
+  --with-ml=<bool>
+       Indicate if you wish to test for ml  current: 0
+  --with-ml-dir=<dir>
+       Indicate the root directory of the ml installation
+  --with-ml-include=<dirs>
+       Indicate the directory of the ml include files
+  --with-ml-lib=<libraries: e.g. [/Users/..../libml.a,...]>
+       Indicate the ml libraries
+  --download-ml=<no,yes,filename>
+       Download and install ml  current: no
+P3DLIB:
+  --with-p3dlib=<bool>
+       Indicate if you wish to test for P3Dlib  current: 0
+  --with-p3dlib-dir=<dir>
+       Indicate the root directory of the P3Dlib installation
+  --with-p3dlib-include=<dirs>
+       Indicate the directory of the P3Dlib include files
+  --with-p3dlib-lib=<libraries: e.g. [/Users/..../libp3dlib.a,...]>
+       Indicate the P3Dlib libraries
+  --download-p3dlib=<no,yes,filename>
+       Download and install P3Dlib  current: no
+SPRNG:
+  --with-sprng=<bool>
+       Indicate if you wish to test for sprng  current: 0
+  --with-sprng-dir=<dir>
+       Indicate the root directory of the sprng installation
+  --with-sprng-include=<dirs>
+       Indicate the directory of the sprng include files
+  --with-sprng-lib=<libraries: e.g. [/Users/..../libsprng.a,...]>
+       Indicate the sprng libraries
+  --download-sprng=<no,yes,filename>
+       Download and install sprng  current: no
+OPENMP:
+  --with-openmp=<bool>
+       Indicate if you wish to test for openmp  current: 0
+  --with-openmp-dir=<dir>
+       Indicate the root directory of the openmp installation
+  --with-openmp-include=<dirs>
+       Indicate the directory of the openmp include files
+  --with-openmp-lib=<libraries: e.g. [/Users/..../libopenmp.a,...]>
+       Indicate the openmp libraries
+PASTIX:
+  --with-pastix=<bool>
+       Indicate if you wish to test for PaStiX  current: 0
+  --with-pastix-dir=<dir>
+       Indicate the root directory of the PaStiX installation
+  --with-pastix-include=<dirs>
+       Indicate the directory of the PaStiX include files
+  --with-pastix-lib=<libraries: e.g. [/Users/..../libpastix.a,...]>
+       Indicate the PaStiX libraries
+  --download-pastix=<no,yes,filename>
+       Download and install PaStiX  current: no
+MPI4PY:
+  --with-mpi4py=<bool>
+       Indicate if you wish to test for mpi4py  current: 0
+  --with-mpi4py-dir=<dir>
+       Indicate the root directory of the mpi4py installation
+  --with-mpi4py-include=<dirs>
+       Indicate the directory of the mpi4py include files
+  --with-mpi4py-lib=<libraries: e.g. [/Users/..../libmpi4py.a,...]>
+       Indicate the mpi4py libraries
+  --download-mpi4py=<no,yes,filename>
+       Download and install mpi4py  current: no
+SUNDIALS:
+  --with-sundials=<bool>
+       Indicate if you wish to test for sundials  current: 0
+  --with-sundials-dir=<dir>
+       Indicate the root directory of the sundials installation
+  --with-sundials-include=<dirs>
+       Indicate the directory of the sundials include files
+  --with-sundials-lib=<libraries: e.g. [/Users/..../libsundials.a,...]>
+       Indicate the sundials libraries
+  --download-sundials=<no,yes,filename>
+       Download and install sundials  current: no
+PLAPACK:
+  --with-plapack=<bool>
+       Indicate if you wish to test for PLAPACK  current: 0
+  --with-plapack-dir=<dir>
+       Indicate the root directory of the PLAPACK installation
+  --with-plapack-include=<dirs>
+       Indicate the directory of the PLAPACK include files
+  --with-plapack-lib=<libraries: e.g. [/Users/..../libplapack.a,...]>
+       Indicate the PLAPACK libraries
+  --download-plapack=<no,yes,filename>
+       Download and install PLAPACK  current: no
+FFC:
+  --with-ffc=<bool>
+       Indicate if you wish to test for FFC  current: 0
+  --with-ffc-dir=<dir>
+       Indicate the root directory of the FFC installation
+  --with-ffc-include=<dirs>
+       Indicate the directory of the FFC include files
+  --with-ffc-lib=<libraries: e.g. [/Users/..../libffc.a,...]>
+       Indicate the FFC libraries
+  --download-ffc=<no,yes,filename>
+       Download and install FFC  current: no
+FIAT:
+  --with-fiat=<bool>
+       Indicate if you wish to test for fiat  current: 0
+  --with-fiat-dir=<dir>
+       Indicate the root directory of the fiat installation
+  --with-fiat-include=<dirs>
+       Indicate the directory of the fiat include files
+  --with-fiat-lib=<libraries: e.g. [/Users/..../libfiat.a,...]>
+       Indicate the fiat libraries
+  --download-fiat=<no,yes,filename>
+       Download and install fiat  current: no
+SCIENTIFICPYTHON:
+  --with-scientificpython=<bool>
+       Indicate if you wish to test for scientificpython  current: 0
+  --with-scientificpython-dir=<dir>
+       Indicate the root directory of the scientificpython installation
+  --with-scientificpython-include=<dirs>
+       Indicate the directory of the scientificpython include files
+  --with-scientificpython-lib=<libraries: e.g. [/Users/..../libscientificpython.a,...]>
+       Indicate the scientificpython libraries
+  --download-scientificpython=<no,yes,filename>
+       Download and install scientificpython  current: no
+CTETGEN:
+  --with-ctetgen=<bool>
+       Indicate if you wish to test for ctetgen  current: 0
+  --with-ctetgen-dir=<dir>
+       Indicate the root directory of the ctetgen installation
+  --with-ctetgen-include=<dirs>
+       Indicate the directory of the ctetgen include files
+  --with-ctetgen-lib=<libraries: e.g. [/Users/..../libctetgen.a,...]>
+       Indicate the ctetgen libraries
+  --download-ctetgen=<no,yes,filename>
+       Download and install ctetgen  current: no
+SERVER:
+  --with-server=<bool>
+       Indicate if you wish to test for server  current: 0
+  --with-server-dir=<dir>
+       Indicate the root directory of the server installation
+  --with-server-include=<dirs>
+       Indicate the directory of the server include files
+  --with-server-lib=<libraries: e.g. [/Users/..../libserver.a,...]>
+       Indicate the server libraries
+MPE:
+  --with-mpe=<bool>
+       Indicate if you wish to test for mpe  current: 0
+  --with-mpe-dir=<dir>
+       Indicate the root directory of the mpe installation
+  --with-mpe-include=<dirs>
+       Indicate the directory of the mpe include files
+  --with-mpe-lib=<libraries: e.g. [/Users/..../libmpe.a,...]>
+       Indicate the mpe libraries
+  --download-mpe=<no,yes,filename>
+       Download and install mpe  current: no
+SUGGAR:
+  --with-suggar=<bool>
+       Indicate if you wish to test for Suggar  current: 0
+  --with-suggar-dir=<dir>
+       Indicate the root directory of the Suggar installation
+  --with-suggar-include=<dirs>
+       Indicate the directory of the Suggar include files
+  --with-suggar-lib=<libraries: e.g. [/Users/..../libsuggar.a,...]>
+       Indicate the Suggar libraries
+  --download-suggar=<no,yes,filename>
+       Download and install Suggar  current: no
+SPAI:
+  --with-spai=<bool>
+       Indicate if you wish to test for spai  current: 0
+  --with-spai-dir=<dir>
+       Indicate the root directory of the spai installation
+  --with-spai-include=<dirs>
+       Indicate the directory of the spai include files
+  --with-spai-lib=<libraries: e.g. [/Users/..../libspai.a,...]>
+       Indicate the spai libraries
+  --download-spai=<no,yes,filename>
+       Download and install spai  current: no
+PARMS:
+  --with-parms=<bool>
+       Indicate if you wish to test for pARMS  current: 0
+  --with-parms-dir=<dir>
+       Indicate the root directory of the pARMS installation
+  --with-parms-include=<dirs>
+       Indicate the directory of the pARMS include files
+  --with-parms-lib=<libraries: e.g. [/Users/..../libparms.a,...]>
+       Indicate the pARMS libraries
+  --download-parms=<no,yes,filename>
+       Download and install pARMS  current: no
+CHOLMOD:
+  --with-cholmod=<bool>
+       Indicate if you wish to test for CHOLMOD  current: 0
+  --with-cholmod-dir=<dir>
+       Indicate the root directory of the CHOLMOD installation
+  --with-cholmod-include=<dirs>
+       Indicate the directory of the CHOLMOD include files
+  --with-cholmod-lib=<libraries: e.g. [/Users/..../libcholmod.a,...]>
+       Indicate the CHOLMOD libraries
+EXODUSII:
+  --with-exodusii=<bool>
+       Indicate if you wish to test for exodusii  current: 0
+  --with-exodusii-dir=<dir>
+       Indicate the root directory of the exodusii installation
+  --with-exodusii-include=<dirs>
+       Indicate the directory of the exodusii include files
+  --with-exodusii-lib=<libraries: e.g. [/Users/..../libexodusii.a,...]>
+       Indicate the exodusii libraries
+  --download-exodusii=<no,yes,filename>
+       Download and install exodusii  current: no
+NETCDF:
+  --with-netcdf=<bool>
+       Indicate if you wish to test for netcdf  current: 0
+  --with-netcdf-dir=<dir>
+       Indicate the root directory of the netcdf installation
+  --with-netcdf-include=<dirs>
+       Indicate the directory of the netcdf include files
+  --with-netcdf-lib=<libraries: e.g. [/Users/..../libnetcdf.a,...]>
+       Indicate the netcdf libraries
+  --download-netcdf=<no,yes,filename>
+       Download and install netcdf  current: no
+  --download-netcdf-version=<string>
+       Version number of NETCDF to download  current: 4.1.1
+  --download-netcdf-shared=<bool>
+       Install NETCDF with shared libraries  current: 0
+HDF5:
+  --with-hdf5=<bool>
+       Indicate if you wish to test for hdf5  current: 0
+  --with-hdf5-dir=<dir>
+       Indicate the root directory of the hdf5 installation
+  --with-hdf5-include=<dirs>
+       Indicate the directory of the hdf5 include files
+  --with-hdf5-lib=<libraries: e.g. [/Users/..../libhdf5.a,...]>
+       Indicate the hdf5 libraries
+  --download-hdf5=<no,yes,filename>
+       Download and install hdf5  current: no
+MOAB:
+  --with-moab=<bool>
+       Indicate if you wish to test for MOAB  current: 0
+  --with-moab-dir=<dir>
+       Indicate the root directory of the MOAB installation
+  --with-moab-include=<dirs>
+       Indicate the directory of the MOAB include files
+  --with-moab-lib=<libraries: e.g. [/Users/..../libmoab.a,...]>
+       Indicate the MOAB libraries
+  --download-moab=<no,yes,filename>
+       Download and install MOAB  current: no
+  --download-moab-version=<string>
+       Version number of MOAB to download  current: 3.99-10-18-2010
+  --download-moab-shared=<bool>
+       Install MOAB with shared libraries  current: 0
+UMFPACK:
+  --with-umfpack=<bool>
+       Indicate if you wish to test for UMFPACK  current: 0
+  --with-umfpack-dir=<dir>
+       Indicate the root directory of the UMFPACK installation
+  --with-umfpack-include=<dirs>
+       Indicate the directory of the UMFPACK include files
+  --with-umfpack-lib=<libraries: e.g. [/Users/..../libumfpack.a,...]>
+       Indicate the UMFPACK libraries
+  --download-umfpack=<no,yes,filename>
+       Download and install UMFPACK  current: no

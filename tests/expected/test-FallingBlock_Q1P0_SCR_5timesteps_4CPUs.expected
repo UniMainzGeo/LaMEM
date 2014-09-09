@@ -1,0 +1,386 @@
+ Parsing input file : ./input/FallingBlock_SCR.dat 
+# Adding PetscOption: -vpt_element Q1P0 
+# Adding PetscOption: -restart 0 
+# Adding PetscOption: -save_breakpoints 0 
+# Adding PetscOption: -scr_ksp_rtol 1.0e-4 
+# Adding PetscOption: -scr_ksp_atol 1.0e-13 
+# Adding PetscOption: -scr_pc_type bjacobi 
+# Adding PetscOption: -vs_ksp_type fgmres 
+# Adding PetscOption: -vs_pc_type fieldsplit 
+# Adding PetscOption: -vs_fieldsplit_ksp_type fgmres 
+# Adding PetscOption: -vs_fieldsplit_ksp_rtol 1.0e-2 
+# Adding PetscOption: -vs_pc_fieldsplit_block_size 3 
+# Adding PetscOption: -vs_pc_fieldsplit_type SYMMETRIC_MULTIPLICATIVE 
+# -------------------------------------------------------------------------- 
+#                   Lithosphere and Mantle Evolution Model                   
+#              Current Revision: 5396 - 2014-07-07 19:53:48		     
+#  Modified items: Utils.h, 
+#     Compiled: Date: Jul 11 2014 - Time: 19:03:12 - Mode:  	    
+# -------------------------------------------------------------------------- 
+# --------------------------------------------------------------------------
+# Phase material parameters read from ./input/FallingBlock_SCR.dat: 
+#    phase_1 (id=1), VISCOSITY, constant [0,0,0] = 1.000000e+03 
+#    phase_1 (id=1), ELASTICITY, constant [0,1,0] = 5.000000e+10, 1.000000e+00 
+#    phase_1 (id=1), DENSITY, temperature-dependent [0,2,0] = 2.000000e+00, 0.000000e+00, 0.000000e+00 
+#    phase_1 (id=1), ENERGY, constant [0,3,0] = 3.000000e+00 1.050000e+03 0.000000e+00 0.000000e+00 
+#    phase_0 (id=0), VISCOSITY, constant [1,0,0] = 1.000000e+00 
+#    phase_0 (id=0), ELASTICITY, constant [1,1,0] = 5.000000e+10, 1.000000e+00 
+#    phase_0 (id=0), DENSITY, temperature-dependent [1,2,0] = 1.000000e+00, 0.000000e+00, 0.000000e+00 
+#    phase_0 (id=0), ENERGY, constant [1,3,0] = 3.000000e+00 1.050000e+03 0.000000e+00 0.000000e+00 
+ Stokes solver             : Schur Complement Reduction
+ Velocity solver           : User-defined (set options with prefix vs_)
+ Note: Galerkin geometric multigrid is deactivated for user-defined solver 
+ Element-type used         : Q1P0 ;  [Q1P0 Q2Pm1_global Q2Pm1_local Q1Q1 FDSTAG] (change with -vpt_element)
+ Total # of cpu's          : 4 
+ Total # of velocity dof's : 2187 
+ Computing mean material per element using arithmetic averaging from integration points 
+ Employing code in a Lagrangian manner 
+ Gravity angle with z-axis =  0 
+ Approximate Aspect ratio of cells [dx/dz, dy/dz] = [1 1] 
+ Number of tracers/cell in [x,y,z]-direction = [2,2,2] 
+ NumSurfaceNodes=1  nz=9 
+ # Not employing nonlinear iterations 
+ BC employed: BC.[Left Right; Front Back; Lower Upper]=[1 1; 1 1; 1 2] 
+# Initial time step: 0.001 years 
+ Input is assumed to be in non-dimensional units 
+ Fine Grid parameters, nel=[8,8,8], cpu=[1,2,2] 
+# Finished initializing Stokes matrices : 0.00704598 s 
+# Not adding random noise to initial particle distribution. 
+Initialized particles 
+#rank=0, Attributing 1024 particles to elements took 0.00243282 s 
+The total # of particles present is 4096 
+ *** Using a falling block setup *** 
+ Falling block coordinates:  [left,right]=[0.250000,0.750000]; [front,back]=[0.250000,0.750000]; [bottom,top]=[0.250000,0.750000] 
+Saved initial particle distribution to directory ./InitialParticles 
+The total memory used by integration points is 1.081344e+00 MB
+The max memory used by integration points is 2.703360e-01 MB
+The min memory used by integration points is 2.703360e-01 MB
+#  Interpolating meshes and temperatures took 0.00045085 s 
+#  Forming FEM stiffness matrix mx,my,mz=(9, 9, 9) ...   finished. [0.0144379 s]
+ minDiagonalRatio=1 [Critical = 0.55; change with -CriticalDiagonalRatio]  
+#  Forming stiffness matrixes took 0.0146899 s 
+SCR: Viscosity structure info: min(0)=1.000000e+00 : max(82)=1.000000e+03 : contrast=1.000000e+03 
+  Residual norms for scr_ solve.
+  0 KSP Residual norm 7.127496234549e-03 
+  1 KSP Residual norm 3.140965140228e-04 
+  2 KSP Residual norm 9.101188125806e-05 
+  3 KSP Residual norm 4.652957483673e-05 
+  4 KSP Residual norm 1.961570328581e-05 
+  5 KSP Residual norm 1.174146564132e-05 
+  6 KSP Residual norm 7.455914709798e-06 
+  7 KSP Residual norm 3.826482710135e-06 
+  8 KSP Residual norm 2.878004942808e-06 
+  9 KSP Residual norm 1.851103276510e-06 
+ 10 KSP Residual norm 1.181123735322e-06 
+ 11 KSP Residual norm 9.020903685388e-07 
+ 12 KSP Residual norm 7.970605883015e-07 
+ 13 KSP Residual norm 6.531358457460e-07 
+Linear solve converged due to CONVERGED_RTOL iterations 13
+# Time: p solve = 1.92e-01 
+# Time: u solve = 1.81e-02 
+#  Finished Stokes solve after 0.231191 s 
+------------------------------------------
+Stokes solver summary: 
+  divergence: 
+    Div_min = 9.588197199571e-11 
+    Div_max = 8.301503848829e-08 
+    |Div|_2 = 6.568581892901e-07 
+    |Div|_1 = 1.098293310908e-05 
+  momentum: 
+    mRes_min = 0.000000000000e+00 
+    mRes_max = 4.855585571399e-08 
+    |mRes|_2 = 1.639874583927e-07 
+    |mRes|_1 = 2.385415610742e-06 
+  velocity: 
+    u_min   = -2.847822764863e-03 
+    u_max   = 3.147525407269e-03 
+    |u|_2   = 5.121448692896e-02 
+    |u|_1   = 1.453776274094e+00 
+  pressure: 
+    p_min   = -6.017046336164e-01 
+    p_max   = 5.234574064629e-01 
+    |p|_2   = 7.488503256442e+00 
+    |p|_1   = 1.465027746841e+02 
+------------------------------------------
+The total memory used by integration points is 1.081344e+00 MB
+The max memory used by integration points is 2.703360e-01 MB
+The min memory used by integration points is 2.703360e-01 MB
+#  Solving for velocity took 0.247797 s 
+#  Forming temperature stiffness matrix mx,my,mz=(9, 9, 9) ...  finished. 
+#  Forming temperature stiffness matrixes took 0.00209284 s 
+#  Solving for temperature took 0.00037694 s 
+The total memory used by integration points is 1.081344e+00 MB
+The max memory used by integration points is 2.703360e-01 MB
+The min memory used by integration points is 2.703360e-01 MB
+The total memory used by particles is 1.146880e+00 MB
+The max memory used by particles is 2.867200e-01 MB
+The min memory used by particles is 2.867200e-01 MB
+#  Updating properties @ integration points and particles took 0.00311494 s 
+AdvectionMethod = 1 
+  Starting particle advection 
+  Finished particle advection 
+Minimum z-level phase 1 0.281247 
+# Writing output to existing directory Timestep_000000 
+# Saved MATLAB output in file Timestep_000000/FB_test.0.1000000.out 
+# Saved Paraview VTS Velocity output in file FB_test_velocity_step000000-mesh.pvts 
+# Saved Paraview VTS Temperature output in file FB_test_temperature_step000000-mesh.pvts 
+# Saved Paraview VTS Surface Topography output in file FB_test_Surface_topography_step000000-mesh.pvts 
+# Saved Paraview VTS Bottom Topography output in file FB_test_Bottom_topography_step000000-mesh.pvts 
+# Saved Paraview VTS point-wise quadrature output in file FB_test_quadrature_step000000-mesh.pvts 
+ Maximum velocity  0.00314753    
+ Time = 0.001, dt=1e-05   
+# Finished timestep 0 out of 5 in 0.271361 s
+  
+#  Interpolating meshes and temperatures took 0.000427961 s 
+#  Forming FEM stiffness matrix mx,my,mz=(9, 9, 9) ...   finished. [0.013592 s]
+ minDiagonalRatio=0.999949 [Critical = 0.55; change with -CriticalDiagonalRatio]  
+#  Forming stiffness matrixes took 0.013747 s 
+SCR: Viscosity structure info: min(0)=1.000000e+00 : max(82)=1.000000e+03 : contrast=1.000000e+03 
+  Residual norms for scr_ solve.
+  0 KSP Residual norm 6.579005236383e-07 
+Linear solve converged due to CONVERGED_RTOL iterations 0
+# Time: p solve = 1.25e-02 
+# Time: u solve = 2.64e-03 
+#  Finished Stokes solve after 0.0350621 s 
+------------------------------------------
+Stokes solver summary: 
+  divergence: 
+    Div_min = 1.508805190526e-10 
+    Div_max = 8.110616191367e-08 
+    |Div|_2 = 6.577064094795e-07 
+    |Div|_1 = 1.105815264204e-05 
+  momentum: 
+    mRes_min = 0.000000000000e+00 
+    mRes_max = 2.758129700542e-08 
+    |mRes|_2 = 1.193261297747e-07 
+    |mRes|_1 = 1.340666967457e-06 
+  velocity: 
+    u_min   = -2.847916935207e-03 
+    u_max   = 3.147522923049e-03 
+    |u|_2   = 5.121434208519e-02 
+    |u|_1   = 1.453772420983e+00 
+  pressure: 
+    p_min   = -6.017046336164e-01 
+    p_max   = 5.234574064629e-01 
+    |p|_2   = 7.488503256442e+00 
+    |p|_1   = 1.465027746841e+02 
+------------------------------------------
+The total memory used by integration points is 1.081344e+00 MB
+The max memory used by integration points is 2.703360e-01 MB
+The min memory used by integration points is 2.703360e-01 MB
+#  Solving for velocity took 0.050663 s 
+#  Forming temperature stiffness matrix mx,my,mz=(9, 9, 9) ...  finished. 
+#  Forming temperature stiffness matrixes took 0.00216579 s 
+#  Solving for temperature took 0.000204086 s 
+The total memory used by integration points is 1.081344e+00 MB
+The max memory used by integration points is 2.703360e-01 MB
+The min memory used by integration points is 2.703360e-01 MB
+The total memory used by particles is 1.146880e+00 MB
+The max memory used by particles is 2.867200e-01 MB
+The min memory used by particles is 2.867200e-01 MB
+#  Updating properties @ integration points and particles took 0.00321412 s 
+AdvectionMethod = 1 
+  Starting particle advection 
+  Finished particle advection 
+Minimum z-level phase 1 0.281247 
+# Created output directory Timestep_000001 
+# Saved MATLAB output in file Timestep_000001/FB_test.0.1000001.out 
+# Saved Paraview VTS Velocity output in file FB_test_velocity_step000001-mesh.pvts 
+# Saved Paraview VTS Temperature output in file FB_test_temperature_step000001-mesh.pvts 
+# Saved Paraview VTS Surface Topography output in file FB_test_Surface_topography_step000001-mesh.pvts 
+# Saved Paraview VTS Bottom Topography output in file FB_test_Bottom_topography_step000001-mesh.pvts 
+# Saved Paraview VTS point-wise quadrature output in file FB_test_quadrature_step000001-mesh.pvts 
+ Maximum velocity  0.00314752    
+ Time = 0.00101, dt=1e-05   
+# Finished timestep 1 out of 5 in 0.0661151 s
+  
+#  Interpolating meshes and temperatures took 0.00041008 s 
+#  Forming FEM stiffness matrix mx,my,mz=(9, 9, 9) ...   finished. [0.013622 s]
+ minDiagonalRatio=0.999949 [Critical = 0.55; change with -CriticalDiagonalRatio]  
+#  Forming stiffness matrixes took 0.0137789 s 
+SCR: Viscosity structure info: min(0)=1.000000e+00 : max(82)=1.000000e+03 : contrast=1.000000e+03 
+  Residual norms for scr_ solve.
+  0 KSP Residual norm 6.579143639516e-07 
+Linear solve converged due to CONVERGED_RTOL iterations 0
+# Time: p solve = 1.19e-02 
+# Time: u solve = 7.30e-05 
+#  Finished Stokes solve after 0.031723 s 
+------------------------------------------
+Stokes solver summary: 
+  divergence: 
+    Div_min = 1.517187701266e-10 
+    Div_max = 8.110207774182e-08 
+    |Div|_2 = 6.577071624891e-07 
+    |Div|_1 = 1.105822704347e-05 
+  momentum: 
+    mRes_min = 0.000000000000e+00 
+    mRes_max = 2.759336700689e-08 
+    |mRes|_2 = 1.194657031844e-07 
+    |mRes|_1 = 1.406567483926e-06 
+  velocity: 
+    u_min   = -2.847916935207e-03 
+    u_max   = 3.147522923049e-03 
+    |u|_2   = 5.121434208519e-02 
+    |u|_1   = 1.453772420983e+00 
+  pressure: 
+    p_min   = -6.017046336164e-01 
+    p_max   = 5.234574064629e-01 
+    |p|_2   = 7.488503256442e+00 
+    |p|_1   = 1.465027746841e+02 
+------------------------------------------
+The total memory used by integration points is 1.081344e+00 MB
+The max memory used by integration points is 2.703360e-01 MB
+The min memory used by integration points is 2.703360e-01 MB
+#  Solving for velocity took 0.0473819 s 
+#  Forming temperature stiffness matrix mx,my,mz=(9, 9, 9) ...  finished. 
+#  Forming temperature stiffness matrixes took 0.00201488 s 
+#  Solving for temperature took 0.000224113 s 
+The total memory used by integration points is 1.081344e+00 MB
+The max memory used by integration points is 2.703360e-01 MB
+The min memory used by integration points is 2.703360e-01 MB
+The total memory used by particles is 1.146880e+00 MB
+The max memory used by particles is 2.867200e-01 MB
+The min memory used by particles is 2.867200e-01 MB
+#  Updating properties @ integration points and particles took 0.00321484 s 
+AdvectionMethod = 1 
+  Starting particle advection 
+  Finished particle advection 
+Minimum z-level phase 1 0.281247 
+# Created output directory Timestep_000002 
+# Saved MATLAB output in file Timestep_000002/FB_test.0.1000002.out 
+# Saved Paraview VTS Velocity output in file FB_test_velocity_step000002-mesh.pvts 
+# Saved Paraview VTS Temperature output in file FB_test_temperature_step000002-mesh.pvts 
+# Saved Paraview VTS Surface Topography output in file FB_test_Surface_topography_step000002-mesh.pvts 
+# Saved Paraview VTS Bottom Topography output in file FB_test_Bottom_topography_step000002-mesh.pvts 
+# Saved Paraview VTS point-wise quadrature output in file FB_test_quadrature_step000002-mesh.pvts 
+ Maximum velocity  0.00314752    
+ Time = 0.00102, dt=1e-05   
+# Finished timestep 2 out of 5 in 0.063189 s
+  
+#  Interpolating meshes and temperatures took 0.000417948 s 
+#  Forming FEM stiffness matrix mx,my,mz=(9, 9, 9) ...   finished. [0.0140641 s]
+ minDiagonalRatio=0.999948 [Critical = 0.55; change with -CriticalDiagonalRatio]  
+#  Forming stiffness matrixes took 0.0142019 s 
+SCR: Viscosity structure info: min(0)=1.000000e+00 : max(82)=1.000000e+03 : contrast=1.000000e+03 
+  Residual norms for scr_ solve.
+  0 KSP Residual norm 6.579282843000e-07 
+Linear solve converged due to CONVERGED_RTOL iterations 0
+# Time: p solve = 1.21e-02 
+# Time: u solve = 8.01e-05 
+#  Finished Stokes solve after 0.033 s 
+------------------------------------------
+Stokes solver summary: 
+  divergence: 
+    Div_min = 1.525570211963e-10 
+    Div_max = 8.109799357066e-08 
+    |Div|_2 = 6.577079258003e-07 
+    |Div|_1 = 1.105830144490e-05 
+  momentum: 
+    mRes_min = 0.000000000000e+00 
+    mRes_max = 2.760543719831e-08 
+    |mRes|_2 = 1.199328047881e-07 
+    |mRes|_1 = 1.521883543813e-06 
+  velocity: 
+    u_min   = -2.847916935207e-03 
+    u_max   = 3.147522923049e-03 
+    |u|_2   = 5.121434208519e-02 
+    |u|_1   = 1.453772420983e+00 
+  pressure: 
+    p_min   = -6.017046336164e-01 
+    p_max   = 5.234574064629e-01 
+    |p|_2   = 7.488503256442e+00 
+    |p|_1   = 1.465027746841e+02 
+------------------------------------------
+The total memory used by integration points is 1.081344e+00 MB
+The max memory used by integration points is 2.703360e-01 MB
+The min memory used by integration points is 2.703360e-01 MB
+#  Solving for velocity took 0.049288 s 
+#  Forming temperature stiffness matrix mx,my,mz=(9, 9, 9) ...  finished. 
+#  Forming temperature stiffness matrixes took 0.00214887 s 
+#  Solving for temperature took 0.000239134 s 
+The total memory used by integration points is 1.081344e+00 MB
+The max memory used by integration points is 2.703360e-01 MB
+The min memory used by integration points is 2.703360e-01 MB
+The total memory used by particles is 1.146880e+00 MB
+The max memory used by particles is 2.867200e-01 MB
+The min memory used by particles is 2.867200e-01 MB
+#  Updating properties @ integration points and particles took 0.00327897 s 
+AdvectionMethod = 1 
+  Starting particle advection 
+  Finished particle advection 
+Minimum z-level phase 1 0.281247 
+# Created output directory Timestep_000003 
+# Saved MATLAB output in file Timestep_000003/FB_test.0.1000003.out 
+# Saved Paraview VTS Velocity output in file FB_test_velocity_step000003-mesh.pvts 
+# Saved Paraview VTS Temperature output in file FB_test_temperature_step000003-mesh.pvts 
+# Saved Paraview VTS Surface Topography output in file FB_test_Surface_topography_step000003-mesh.pvts 
+# Saved Paraview VTS Bottom Topography output in file FB_test_Bottom_topography_step000003-mesh.pvts 
+# Saved Paraview VTS point-wise quadrature output in file FB_test_quadrature_step000003-mesh.pvts 
+ Maximum velocity  0.00314752    
+ Time = 0.00103, dt=1e-05   
+# Finished timestep 3 out of 5 in 0.0650048 s
+  
+#  Interpolating meshes and temperatures took 0.000427008 s 
+#  Forming FEM stiffness matrix mx,my,mz=(9, 9, 9) ...   finished. [0.0143931 s]
+ minDiagonalRatio=0.999948 [Critical = 0.55; change with -CriticalDiagonalRatio]  
+#  Forming stiffness matrixes took 0.0145829 s 
+SCR: Viscosity structure info: min(0)=1.000000e+00 : max(82)=1.000000e+03 : contrast=1.000000e+03 
+  Residual norms for scr_ solve.
+  0 KSP Residual norm 6.579422846695e-07 
+Linear solve converged due to CONVERGED_RTOL iterations 0
+# Time: p solve = 1.25e-02 
+# Time: u solve = 7.39e-05 
+#  Finished Stokes solve after 0.033175 s 
+------------------------------------------
+Stokes solver summary: 
+  divergence: 
+    Div_min = 1.533952722610e-10 
+    Div_max = 8.109390940020e-08 
+    |Div|_2 = 6.577086994130e-07 
+    |Div|_1 = 1.105837584633e-05 
+  momentum: 
+    mRes_min = 0.000000000000e+00 
+    mRes_max = 2.761750762131e-08 
+    |mRes|_2 = 1.207236324538e-07 
+    |mRes|_1 = 1.642156255037e-06 
+  velocity: 
+    u_min   = -2.847916935207e-03 
+    u_max   = 3.147522923049e-03 
+    |u|_2   = 5.121434208519e-02 
+    |u|_1   = 1.453772420983e+00 
+  pressure: 
+    p_min   = -6.017046336164e-01 
+    p_max   = 5.234574064629e-01 
+    |p|_2   = 7.488503256442e+00 
+    |p|_1   = 1.465027746841e+02 
+------------------------------------------
+The total memory used by integration points is 1.081344e+00 MB
+The max memory used by integration points is 2.703360e-01 MB
+The min memory used by integration points is 2.703360e-01 MB
+#  Solving for velocity took 0.049711 s 
+#  Forming temperature stiffness matrix mx,my,mz=(9, 9, 9) ...  finished. 
+#  Forming temperature stiffness matrixes took 0.00215292 s 
+#  Solving for temperature took 0.000216961 s 
+The total memory used by integration points is 1.081344e+00 MB
+The max memory used by integration points is 2.703360e-01 MB
+The min memory used by integration points is 2.703360e-01 MB
+The total memory used by particles is 1.146880e+00 MB
+The max memory used by particles is 2.867200e-01 MB
+The min memory used by particles is 2.867200e-01 MB
+#  Updating properties @ integration points and particles took 0.00370407 s 
+AdvectionMethod = 1 
+  Starting particle advection 
+  Finished particle advection 
+Minimum z-level phase 1 0.281247 
+# Created output directory Timestep_000004 
+# Saved MATLAB output in file Timestep_000004/FB_test.0.1000004.out 
+# Saved Paraview VTS Velocity output in file FB_test_velocity_step000004-mesh.pvts 
+# Saved Paraview VTS Temperature output in file FB_test_temperature_step000004-mesh.pvts 
+# Saved Paraview VTS Surface Topography output in file FB_test_Surface_topography_step000004-mesh.pvts 
+# Saved Paraview VTS Bottom Topography output in file FB_test_Bottom_topography_step000004-mesh.pvts 
+# Saved Paraview VTS point-wise quadrature output in file FB_test_quadrature_step000004-mesh.pvts 
+ Maximum velocity  0.00314752    
+ Time = 0.00104, dt=1e-05   
+# Finished timestep 4 out of 5 in 0.0662661 s
+  
+# Total time required: 0.558184 s 

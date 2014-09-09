@@ -1,0 +1,73 @@
+#====================================================
+#
+# Include file for LaMEM Makefile
+# developed by Boris Kaus & Dave May
+#              Swiss Federal Institute of Technology
+#			   CH-8050, Zurich
+#              Switzerland
+#
+# Revision by Anton Popov
+#====================================================
+
+# Define compilation mode
+# deb - debug (default)
+# opt - optimized
+
+mode = deb
+
+#====================================================
+
+# Define LaMEM flags & include directories
+LAMEM_FLAGS = -I./fdstag -I. -DPARTICLES -DTEMPERATURE -DSYMMETRIZE_MATRIX_AT_ELEMENTLEVEL 
+
+#====================================================
+
+# Define additional warning & dependency generation flags (compiler-dependent)
+
+PLATFORM = $(shell uname -m)
+
+# IBM machine (XLC compiler assumed)
+ifeq ($(PLATFORM), ppc64)
+	LAMEM_FLAGS += -qmakedep=gcc -qinfo=nouse
+endif
+
+# Intel or AMD machine
+ifeq ($(PLATFORM), x86_64)
+   # Detect compilers
+   ifneq ($(shell mpicc --version 2>&1 | grep -c pgcc), 0)
+      # PORTLAND GROUP
+      DEPEN_FLAGS = -MM
+      LAMEM_FLAGS += -c99
+   endif
+   ifneq ($(shell mpicc --version 2>&1 | grep -c icc), 0)
+      # INTEL
+      DEPEN_FLAGS = -MM
+      LAMEM_FLAGS += -std=c99 -Wmissing-prototypes
+   endif
+   ifneq ($(shell mpicc --version 2>&1 | grep -c gcc), 0)
+      # GNU
+      DEPEN_FLAGS = -MM
+      LAMEM_FLAGS += -std=c99 -pedantic -Wall -W -Wmissing-prototypes \
+      -Wconversion -Wshadow -Wunused-but-set-variable -Wpointer-arith \
+      -Wcast-qual -Wcast-align -Wwrite-strings -Wnested-externs -Winline \
+      -Werror=implicit-function-declaration
+   endif
+endif
+
+#====================================================
+
+# Add SVN version number and date to the code
+# Is svn available on the system ? (yes/no)
+
+SVN_AVAILABLE = yes
+
+#====================================================
+
+# Environment required for documentation 
+# Define paths to most current pdflatex and bitex implementation
+
+PDFLATEX = /usr/local/texlive/2013/bin/x86_64-darwin/pdflatex
+BIBTEX = /usr/local/texlive/2013/bin/x86_64-darwin/bibtex
+
+#====================================================
+

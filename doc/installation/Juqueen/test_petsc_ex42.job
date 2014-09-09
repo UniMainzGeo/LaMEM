@@ -1,0 +1,15 @@
+# @ job_name = petsc_test
+# @ comment = "petsc_test"
+# @ error = $(job_name).$(jobid).out
+# @ output = $(job_name).$(jobid).out
+# @ environment = COPY_ALL
+# @ wall_clock_limit = 00:10:00
+# @ notification = never
+# @ notify_user = your@name.de
+# @ job_type = bluegene
+# @ bg_size = 32
+# @ queue
+
+
+# use --np TO SPECIFY THE TOTAL NUMBER OF PROCESSORS
+runjob --ranks-per-node 1 --exe ex42 --args -options_file ex42-mgfs.opts

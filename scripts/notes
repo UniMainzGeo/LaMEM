@@ -1,0 +1,23 @@
+[USAGE: convert_vts_ascii2binary2.py]
+
+1) Converting a single file
+
+pvpython convert_vts_ascii2binary2.py -f ./Timestep_000003/subdomain-FallingBlock3D_temperature_step000003-mesh-p000003.vts
+
+2) Converting a set of files in one place
+
+pvpython convert_vts_ascii2binary2.py -p subdomain-FallingBlock3D_temperature_step000003-
+
+NOTE: Don't specify the full path. This is a design flaw and will be revised later.
+If you don't like this, or the file names don't have the timestep to identify them from data obtained from a different time step,
+alternatively, you can copy the script into the directory you wish to convert and do something like
+
+pvpython convert_vts_ascii2binary2.py -p subdomain-FallingBlock3D_temperature_
+
+3) Converting a set of files living in multiple directories
+
+pvpython convert_vts_ascii2binary2.py -d ./Timestep_ -p subdomain-FallingBlock3D_temperature
+
+Note that adding the option 
+  -r True 
+will remove the files *_ascii_vts which created following conversion.

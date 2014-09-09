@@ -1,0 +1,556 @@
+ Parsing input file : ./input/SaltDiapirs_BasicSetup.dat 
+# Adding PetscOption: -vpt_element FDSTAG 
+# Adding PetscOption: -AVDPhaseViewer 1 
+# Adding PetscOption: -AVDPhaseViewer_factor 4 
+# Adding PetscOption: -AddRandomNoiseParticles 1 
+# Adding PetscOption: -options_left 
+# -------------------------------------------------------------------------- 
+#                   Lithosphere and Mantle Evolution Model                   
+#              Current Revision: 5056 - 2014-01-02 20:44:20		     
+#  Modified items: LaMEM_Particles.c, fdstag/JacRes.c, 
+#     Compiled: Date: Jan  8 2014 - Time: 13:25:33 - Mode:  	    
+# -------------------------------------------------------------------------- 
+# LithColDepth[0] = 0 
+# LithColDens[0] = 0 
+# LithColDens[1] = 0 
+# --------------------------------------------------------------------------
+# Phase material parameters read from ./input/SaltDiapirs_BasicSetup.dat: 
+#    phase_0 (id=0), VISCOSITY, constant [0,0,0] = 1.000000e+18 
+#    phase_0 (id=0), ELASTICITY, constant [0,1,0] = 5.000000e+100, 1.000000e+00 
+#    phase_0 (id=0), DENSITY, temperature-dependent [0,2,0] = 2.200000e+03, 0.000000e+00, 0.000000e+00 
+#    phase_0 (id=0), ENERGY, constant [0,3,0] = 3.000000e+00 1.050000e+03 0.000000e+00 0.000000e+00 
+#    phase_0 (id=0), PLASTICITY, constant [0,4,0] = inf 0.000000e+00 0.000000e+00 0.000000e+00 inf 0.000000e+00
+#    phase_5 (id=5), VISCOSITY, power-law [1,0,0] = 1.000000e+16, 1.000000e+00 1.000000e-15 
+#    phase_5 (id=5), ELASTICITY, constant [1,1,0] = 5.000000e+100, 1.000000e+00 
+#    phase_5 (id=5), DENSITY, temperature-dependent [1,2,0] = 0.000000e+00, 0.000000e+00, 0.000000e+00 
+#    phase_5 (id=5), ENERGY, constant [1,3,0] = 3.000000e+00 1.050000e+03 0.000000e+00 0.000000e+00 
+#    phase_5 (id=5), PLASTICITY, constant [1,4,0] = inf 0.000000e+00 0.000000e+00 0.000000e+00 inf 0.000000e+00
+#    phase_4 (id=4), VISCOSITY, power-law [2,0,0] = 1.000000e+19, 1.000000e+00 1.000000e-15 
+#    phase_4 (id=4), ELASTICITY, constant [2,1,0] = 5.000000e+100, 1.000000e+00 
+#    phase_4 (id=4), DENSITY, temperature-dependent [2,2,0] = 2.700000e+03, 0.000000e+00, 0.000000e+00 
+#    phase_4 (id=4), ENERGY, constant [2,3,0] = 3.000000e+00 1.050000e+03 0.000000e+00 0.000000e+00 
+#    phase_4 (id=4), PLASTICITY, constant [2,4,0] = inf 0.000000e+00 0.000000e+00 0.000000e+00 inf 0.000000e+00
+#    phase_3 (id=3), VISCOSITY, power-law [3,0,0] = 1.000000e+19, 1.000000e+00 1.000000e-15 
+#    phase_3 (id=3), ELASTICITY, constant [3,1,0] = 5.000000e+100, 1.000000e+00 
+#    phase_3 (id=3), DENSITY, temperature-dependent [3,2,0] = 2.700000e+03, 0.000000e+00, 0.000000e+00 
+#    phase_3 (id=3), ENERGY, constant [3,3,0] = 3.000000e+00 1.050000e+03 0.000000e+00 0.000000e+00 
+#    phase_3 (id=3), PLASTICITY, constant [3,4,0] = inf 0.000000e+00 0.000000e+00 0.000000e+00 inf 0.000000e+00
+#    phase_2 (id=2), VISCOSITY, power-law [4,0,0] = 1.000000e+19, 1.000000e+00 1.000000e-15 
+#    phase_2 (id=2), ELASTICITY, constant [4,1,0] = 5.000000e+100, 1.000000e+00 
+#    phase_2 (id=2), DENSITY, temperature-dependent [4,2,0] = 2.700000e+03, 0.000000e+00, 0.000000e+00 
+#    phase_2 (id=2), ENERGY, constant [4,3,0] = 3.000000e+00 1.050000e+03 0.000000e+00 0.000000e+00 
+#    phase_2 (id=2), PLASTICITY, constant [4,4,0] = inf 0.000000e+00 0.000000e+00 0.000000e+00 inf 0.000000e+00
+#    phase_1 (id=1), VISCOSITY, power-law [5,0,0] = 1.000000e+19, 1.000000e+00 1.000000e-15 
+#    phase_1 (id=1), ELASTICITY, constant [5,1,0] = 5.000000e+100, 1.000000e+00 
+#    phase_1 (id=1), DENSITY, temperature-dependent [5,2,0] = 2.700000e+03, 0.000000e+00, 0.000000e+00 
+#    phase_1 (id=1), ENERGY, constant [5,3,0] = 3.000000e+00 1.050000e+03 0.000000e+00 0.000000e+00 
+#    phase_1 (id=1), PLASTICITY, constant [5,4,0] = inf 0.000000e+00 0.000000e+00 0.000000e+00 inf 0.000000e+00
+ Stokes solver             : Fully Coupled
+ Velocity solver           : Fieldsplit + Algebraic Multigrid (ML)
+ Element-type used         : FDSTAG;  [Q1P0 Q2Pm1_global Q2Pm1_local Q1Q1 FDSTAG] (change with -vpt_element)
+ Total # of cpu's          : 2 
+ Total # of velocity dof's : 4131 
+ Computing mean material per element using arithmetic averaging from integration points 
+ Employing code in an Eulerian manner 
+ Gravity angle with z-axis =  0 
+ Approximate Aspect ratio of cells [dx/dz, dy/dz] = [1 1] 
+ Number of tracers/cell in [x,y,z]-direction = [4,4,4] 
+ NumSurfaceNodes=1  nz=9 
+ # Not employing nonlinear iterations 
+ BC employed: BC.[Left Right; Front Back; Lower Upper]=[1 1; 1 1; 1 0] 
+# Initial time step: 0.001 years 
+ Input is assumed to be in dimensional units: 
+  Characteristic Length 	= 5000 [m] 
+  Characteristic Stress 	= 1e+06 [Pa] 
+  Characteristic Temperature 	= 1  [Celcius/K] 
+  Characteristic Viscosity 	= 1e+19 [Pa.s] 
+  Characteristic Time 	= 1e+13 [s] 
+ Fine Grid parameters, nel=[16,8,8], cpu=[2,1,1] 
+# Finished initializing Stokes matrices : 0.00718117 s 
+# Not adding random noise to initial particle distribution. 
+Initialized particles 
+#rank=0, Attributing 32768 particles to elements took 0.0561039 s 
+The total # of particles present is 65536 
+ Saving initial mesh to file 
+ Mesh size: 17 9 9 
+ Saved Initial Mesh to file ./InitialMesh/InitialMesh.0.out 
+Saved initial particle distribution to directory ./InitialParticles 
+The total memory used by integration points is 2.703360e-01 MB
+The max memory used by integration points is 1.351680e-01 MB
+The min memory used by integration points is 1.351680e-01 MB
+# Correcting particle phase due to internal free surface motion...  Corrected 10240 Particles... [0.001011 s]
+#  Computing material properties from particles for FDSTAG ...   [0.026418 s] 
+#  Interpolating meshes and temperatures took 0.0285139 s 
+#  Forming FD stiffness matrix mx,my,mz=(17, 9, 9) ...  
+#  FDSTAG: Time to insert stencil into operators 2.1710e-03 
+#  FDSTAG: Time to insert bc's into operators 1.3494e-04 
+#  FDSTAG: Time to assemble operators 4.2510e-04 
+#  Forming stiffness matrixes took 0.00400496 s 
+FC: Viscosity structure info: min(384)=1.000000e-03 : max(128)=1.000000e+00 : contrast=1.000000e+03 
+Using unpreconditioned (true) Stokes residual to define the FC stopping condition 
+StokesResidual: Using L_inf 
+Stopping conditions: 
+Velocity: RTOL: 1.000000e-06	ATOL: 1.000000e-16	minATOL: 1.000000e-05		fc_ksp_min_it 4
+Pressure: RTOL: 1.000000e-06	ATOL: 1.000000e-16	minATOL: 1.000000e-05		fc_ksp_min_it 4
+StokesResidual: Monitor activated 
+# FC: using nonzero initial guess 
+  Residual norms for fc_ solve.
+  # KSP Iterations      /  L2_norm             scaled_L2_norm      Linf_norm           /  ... for each   2 blocks  [fc_] 
+  0 KSP Residual norms  /  2.979255732634e+03  4.635324964038e+01  1.350000000000e+02  /  0.000000000000e+00  0.000000000000e+00  0.000000000000e+00  /  [fc_] 
+  1 KSP Residual norms  /  2.418221394906e+03  3.762430286730e+01  1.096061764299e+02  /  1.164776873854e+03  3.639927730793e+01  6.728577270679e+01  /  [fc_] 
+  2 KSP Residual norms  /  2.372793270674e+01  3.691750178267e-01  1.344770235670e+00  /  2.619231425741e+02  8.185098205442e+00  3.035287177629e+01  /  [fc_] 
+  3 KSP Residual norms  /  7.059273549928e+00  1.098328906630e-01  6.907603815294e-01  /  1.143474150377e+02  3.573356719929e+00  1.476058320977e+01  /  [fc_] 
+  4 KSP Residual norms  /  7.233065693711e+00  1.125368648597e-01  5.482427768021e-01  /  4.903665318711e+01  1.532395412097e+00  4.421163687386e+00  /  [fc_] 
+  5 KSP Residual norms  /  2.040170999144e+00  3.174234242347e-02  1.588836384096e-01  /  2.086318425772e+01  6.519745080537e-01  2.108931639590e+00  /  [fc_] 
+  6 KSP Residual norms  /  5.138883431498e-01  7.995417914743e-03  3.720019996450e-02  /  8.186090184864e+00  2.558153182770e-01  1.208232123948e+00  /  [fc_] 
+  7 KSP Residual norms  /  2.314043257774e-01  3.600342986044e-03  1.955786674612e-02  /  2.908967256597e+00  9.090522676866e-02  2.370569528692e-01  /  [fc_] 
+  8 KSP Residual norms  /  1.480567963223e-01  2.303566479946e-03  1.308295320930e-02  /  1.276527866293e+00  3.989149582166e-02  1.107026957058e-01  /  [fc_] 
+  9 KSP Residual norms  /  6.319640395700e-02  9.832518427020e-04  5.401327066576e-03  /  5.810097516119e-01  1.815655473787e-02  5.778909110117e-02  /  [fc_] 
+ 10 KSP Residual norms  /  1.496497666913e-02  2.328350976414e-04  1.300870163053e-03  /  9.031014582974e-02  2.822192057179e-03  9.271621838377e-03  /  [fc_] 
+ 11 KSP Residual norms  /  6.289250698770e-03  9.785236107718e-05  5.531013399080e-04  /  4.951580730920e-02  1.547368978412e-03  5.750662583959e-03  /  [fc_] 
+ 12 KSP Residual norms  /  1.036881931740e-03  1.613250131670e-05  1.135216314846e-04  /  1.047343059024e-02  3.272947059450e-04  1.241792489325e-03  /  [fc_] 
+ 13 KSP Residual norms  /  6.315225967321e-04  9.825650164641e-06  5.229209342584e-05  /  2.955103321097e-03  9.234697878429e-05  4.403205919114e-04  /  [fc_] 
+ 14 KSP Residual norms  /  4.173155099452e-04  6.492873303691e-06  3.348787007400e-05  /  1.113885207339e-03  3.480891272935e-05  1.204092330363e-04  /  [fc_] 
+ 15 KSP Residual norms  /  7.219133629198e-05  1.123201004989e-06  5.925937704375e-06  /  3.259544997750e-04  1.018607811797e-05  2.697099319229e-05  /  [fc_] 
+ 16 KSP Residual norms  /  3.214083391668e-05  5.000685513064e-07  2.713385748308e-06  /  1.743056964338e-04  5.447053013555e-06  2.090332080935e-05  /  [fc_] 
+ 17 KSP Residual norms  /  7.629556516744e-06  1.187057337818e-07  6.550253195927e-07  /  8.477051987906e-05  2.649078746220e-06  8.832447012497e-06  /  [fc_] 
+Velocity convergence reason: RTOL 
+Pressure convergence reason: RTOL 
+Linear solve converged due to CONVERGED_HAPPY_BREAKDOWN iterations 17
+#  Finished Stokes solve after 0.280641 s 
+------------------------------------------
+Stokes solver summary: 
+  divergence: 
+    Div_min = 1.545901645583e-08 
+    Div_max = 8.832446698304e-06 
+    |Div|_2 = 8.477051933216e-05 
+    |Div|_1 = 2.097313073449e-03 
+  momentum: 
+    mRes_min = 0.000000000000e+00 
+    mRes_max = 6.550536681971e-07 
+    |mRes|_2 = 7.629549831308e-06 
+    |mRes|_1 = 2.612712217459e-04 
+  velocity: 
+    u_min   = -8.142084364580e-02 
+    u_max   = 8.142086210169e-02 
+    |u|_2   = 1.214102196149e+00 
+    |u|_1   = 4.174942609308e+01 
+  pressure: 
+    p_min   = -6.439011184271e-01 
+    p_max   = 7.255204276677e+01 
+    |p|_2   = 1.204382559667e+03 
+    |p|_1   = 2.708116058164e+04 
+------------------------------------------
+The total memory used by integration points is 2.703360e-01 MB
+The max memory used by integration points is 1.351680e-01 MB
+The min memory used by integration points is 1.351680e-01 MB
+#  Solving for velocity took 0.286037 s 
+#  Forming FD stiffness matrix for energy equation with mx,my,mz=(17, 9, 9) with Top/Bottom T=[0,1000]...  
+#  Forming temperature stiffness matrixes took 0.000300169 s 
+#  Solving for temperature took 0.000662088 s 
+The total memory used by integration points is 2.703360e-01 MB
+The max memory used by integration points is 1.351680e-01 MB
+The min memory used by integration points is 1.351680e-01 MB
+The total memory used by particles is 1.835008e+01 MB
+The max memory used by particles is 9.175040e+00 MB
+The min memory used by particles is 9.175040e+00 MB
+#  Updating properties @ integration points and particles took 0.053973 s 
+AdvectionMethod = 0 
+  Starting particle advection 
+  Finished particle advection 
+# Advecting internal free surface ...  [0.000259 s] 
+Applying infinitely fast erosion to internal free surface of the model. Average free surface height = 3499.988505 m 
+# Correcting particle phase due to internal free surface motion...  Corrected 0 Particles... [0.000758 s]
+Minimum z-level phase 1 1171.58 
+# Writing output to existing directory Timestep_000000 
+# Saved MATLAB output in file Timestep_000000/SaltDiapirs_Basic.0.1000000.out 
+# Saved Paraview VTS Velocity output in file SaltDiapirs_Basic_velocity_step000000-mesh.pvts 
+# Saved Paraview VTS Temperature output in file SaltDiapirs_Basic_temperature_step000000-mesh.pvts 
+# Saved Paraview VTS Surface Topography output in file SaltDiapirs_Basic_Surface_topography_step000000-mesh.pvts 
+# Saved Paraview VTS Bottom Topography output in file SaltDiapirs_Basic_Bottom_topography_step000000-mesh.pvts 
+# Saved Paraview VTS point-wise quadrature output in file SaltDiapirs_Basic_quadrature_step000000-mesh.pvts 
+AVD3d: Loaded 65536 of 65536 LaMEM points
+# AVD3d: Initialisation 2.9908e-02 (sec)
+# AVD3d: Voronoi generator 2.4791e-03 (sec)
+#AVD3d PMemory usage: 
+#  points:  2.0972 [1.0486/1.0486] (MB) 
+#  cells:   1.8866 [0.9433/0.9433] (MB) 
+#  chains:  6.5208 [3.2604/3.2604] (MB) 
+#  [total]: 10.5046 [5.2523/5.2523] (MB) 
+# AVD3d: VTR writer 5.4710e-03 (sec)
+# Saved Paraview VTS phases output in file SaltDiapirs_Basic_phases_step000000.pvtr 
+ Starting GetParticleNodes 
+#rank=0, Attributing 32768 particles to elements took 0.0201209 s 
+The total # of particles present is 65536 
+ Finished GetParticleNodes 
+ Maximum velocity  0.128472   [cm/year]  
+ Time = 316.881, dt=1000  [Years]  
+# Finished timestep 0 out of 4 in 0.449966 s
+  
+  
+**********************  
+ Created a global breakpoint file BreakPoint_Global_VCoord_0.breakpoint 
+  # particles = 32768 | rank[0] 
+**********************  
+  
+# Correcting particle phase due to internal free surface motion...  Corrected 0 Particles... [0.001093 s]
+#  Computing material properties from particles for FDSTAG ...   [0.0656688 s] 
+#  Interpolating meshes and temperatures took 0.0683861 s 
+#  Forming FD stiffness matrix mx,my,mz=(17, 9, 9) ...  
+#  FDSTAG: Time to insert stencil into operators 2.2008e-03 
+#  FDSTAG: Time to insert bc's into operators 1.4114e-04 
+#  FDSTAG: Time to assemble operators 1.0490e-04 
+#  Forming stiffness matrixes took 0.00338697 s 
+FC: Viscosity structure info: min(384)=1.000000e-03 : max(128)=1.000000e+00 : contrast=1.000000e+03 
+Using unpreconditioned (true) Stokes residual to define the FC stopping condition 
+StokesResidual: Using L_inf 
+Stopping conditions: 
+Velocity: RTOL: 1.000000e-06	ATOL: 1.000000e-16	minATOL: 1.000000e-05		fc_ksp_min_it 4
+Pressure: RTOL: 1.000000e-06	ATOL: 1.000000e-16	minATOL: 1.000000e-05		fc_ksp_min_it 4
+StokesResidual: Monitor activated 
+# FC: using nonzero initial guess 
+  Residual norms for fc_ solve.
+  # KSP Iterations      /  L2_norm             scaled_L2_norm      Linf_norm           /  ... for each   2 blocks  [fc_] 
+  0 KSP Residual norms  /  5.861704192110e-01  9.120030709639e-03  5.530405933614e-02  /  8.477051933216e-05  2.649078729130e-06  8.832446698304e-06  /  [fc_] 
+  1 KSP Residual norms  /  6.924834918375e-02  1.077412046820e-03  6.556094845394e-03  /  1.891886112125e-01  5.912144100391e-03  1.200794104453e-02  /  [fc_] 
+  2 KSP Residual norms  /  7.999165900914e-03  1.244563633321e-04  7.607996720912e-04  /  6.791903704701e-02  2.122469907719e-03  5.045960368718e-03  /  [fc_] 
+  3 KSP Residual norms  /  1.404586527522e-03  2.185349489759e-05  1.337043841596e-04  /  2.693561475921e-02  8.417379612255e-04  2.163126869188e-03  /  [fc_] 
+  4 KSP Residual norms  /  7.101603841094e-04  1.104914935927e-05  5.128448089319e-05  /  5.930593048626e-03  1.853310327696e-04  5.270356077601e-04  /  [fc_] 
+  5 KSP Residual norms  /  5.449079211430e-04  8.478041217840e-06  3.732136588413e-05  /  2.736830270450e-03  8.552594595155e-05  2.278005619491e-04  /  [fc_] 
+  6 KSP Residual norms  /  1.850701118832e-04  2.879444353543e-06  1.272519877298e-05  /  1.487327613688e-03  4.647898792776e-05  1.689583723407e-04  /  [fc_] 
+  7 KSP Residual norms  /  2.875703603890e-05  4.474211648994e-07  2.545331153932e-06  /  4.303738046928e-04  1.344918139665e-05  3.636498938499e-05  /  [fc_] 
+  8 KSP Residual norms  /  3.971404462999e-05  6.178976194620e-07  2.914312923855e-06  /  1.329538389964e-04  4.154807468638e-06  1.519116632383e-05  /  [fc_] 
+  9 KSP Residual norms  /  2.649940206427e-05  4.122953883250e-07  1.937280635082e-06  /  4.638117452460e-05  1.449411703894e-06  5.227907702485e-06  /  [fc_] 
+ 10 KSP Residual norms  /  2.187807817049e-06  3.403937459882e-08  1.895088075173e-07  /  1.339900395484e-05  4.187188735888e-07  1.399412274656e-06  /  [fc_] 
+ 11 KSP Residual norms  /  2.773272048900e-06  4.314841797407e-08  2.513848379423e-07  /  5.580699063298e-06  1.743968457281e-07  6.371113242931e-07  /  [fc_] 
+ 12 KSP Residual norms  /  4.250436637679e-07  6.613113080183e-09  3.313494883900e-08  /  2.505555771604e-06  7.829861786262e-08  2.153966226442e-07  /  [fc_] 
+ 13 KSP Residual norms  /  1.260924719665e-07  1.961830858229e-09  9.719399064789e-09  /  1.525121055473e-06  4.766003298353e-08  1.441800909847e-07  /  [fc_] 
+ 14 KSP Residual norms  /  1.074517839108e-07  1.671806588929e-09  1.090864640800e-08  /  1.063218732012e-06  3.322558537538e-08  9.711187014049e-08  /  [fc_] 
+ 15 KSP Residual norms  /  1.911193900059e-07  2.973563061076e-09  1.991037279573e-08  /  5.873177860842e-07  1.835368081513e-08  4.565777232864e-08  /  [fc_] 
+ 16 KSP Residual norms  /  3.612188615657e-08  5.620084198064e-10  3.589836959651e-09  /  2.413385578289e-07  7.541829932153e-09  2.705773637851e-08  /  [fc_] 
+ 17 KSP Residual norms  /  2.310364507981e-08  3.594619341523e-10  2.085550773881e-09  /  7.722247416911e-08  2.413202317785e-09  8.426755765675e-09  /  [fc_] 
+Velocity convergence reason: RTOL 
+Pressure convergence reason: RTOL 
+Linear solve converged due to CONVERGED_HAPPY_BREAKDOWN iterations 17
+#  Finished Stokes solve after 0.271693 s 
+------------------------------------------
+Stokes solver summary: 
+  divergence: 
+    Div_min = 1.363353874240e-12 
+    Div_max = 8.426755820912e-09 
+    |Div|_2 = 7.722247417153e-08 
+    |Div|_1 = 1.753796962815e-06 
+  momentum: 
+    mRes_min = 0.000000000000e+00 
+    mRes_max = 2.085641881422e-09 
+    |mRes|_2 = 2.310365899992e-08 
+    |mRes|_1 = 7.528024518408e-07 
+  velocity: 
+    u_min   = -7.752644478953e-02 
+    u_max   = 7.752644467627e-02 
+    |u|_2   = 1.127299622999e+00 
+    |u|_1   = 3.864343048925e+01 
+  pressure: 
+    p_min   = -6.438679493473e-01 
+    p_max   = 7.254808880581e+01 
+    |p|_2   = 1.204381544146e+03 
+    |p|_1   = 2.708105663911e+04 
+------------------------------------------
+The total memory used by integration points is 2.703360e-01 MB
+The max memory used by integration points is 1.351680e-01 MB
+The min memory used by integration points is 1.351680e-01 MB
+#  Solving for velocity took 0.276574 s 
+#  Forming FD stiffness matrix for energy equation with mx,my,mz=(17, 9, 9) with Top/Bottom T=[0,1000]...  
+#  Forming temperature stiffness matrixes took 0.000298977 s 
+#  Solving for temperature took 0.000532866 s 
+The total memory used by integration points is 2.703360e-01 MB
+The max memory used by integration points is 1.351680e-01 MB
+The min memory used by integration points is 1.351680e-01 MB
+The total memory used by particles is 1.835008e+01 MB
+The max memory used by particles is 9.175040e+00 MB
+The min memory used by particles is 9.175040e+00 MB
+#  Updating properties @ integration points and particles took 0.0540578 s 
+AdvectionMethod = 0 
+  Starting particle advection 
+  Finished particle advection 
+# Advecting internal free surface ...  [0.000275 s] 
+Applying infinitely fast erosion to internal free surface of the model. Average free surface height = 3499.955374 m 
+# Correcting particle phase due to internal free surface motion...  Corrected 0 Particles... [0.000756 s]
+Minimum z-level phase 1 1170.87 
+# Writing output to existing directory Timestep_000001 
+# Saved MATLAB output in file Timestep_000001/SaltDiapirs_Basic.0.1000001.out 
+# Saved Paraview VTS Velocity output in file SaltDiapirs_Basic_velocity_step000001-mesh.pvts 
+# Saved Paraview VTS Temperature output in file SaltDiapirs_Basic_temperature_step000001-mesh.pvts 
+# Saved Paraview VTS Surface Topography output in file SaltDiapirs_Basic_Surface_topography_step000001-mesh.pvts 
+# Saved Paraview VTS Bottom Topography output in file SaltDiapirs_Basic_Bottom_topography_step000001-mesh.pvts 
+# Saved Paraview VTS point-wise quadrature output in file SaltDiapirs_Basic_quadrature_step000001-mesh.pvts 
+AVD3d: Loaded 65536 of 65536 LaMEM points
+# AVD3d: Initialisation 2.9125e-02 (sec)
+# AVD3d: Voronoi generator 2.5351e-03 (sec)
+#AVD3d PMemory usage: 
+#  points:  2.0972 [1.0486/1.0486] (MB) 
+#  cells:   1.8866 [0.9433/0.9433] (MB) 
+#  chains:  6.5208 [3.2604/3.2604] (MB) 
+#  [total]: 10.5046 [5.2523/5.2523] (MB) 
+# AVD3d: VTR writer 5.4679e-03 (sec)
+# Saved Paraview VTS phases output in file SaltDiapirs_Basic_phases_step000001.pvtr 
+ Starting GetParticleNodes 
+#rank=0, Attributing 32768 particles to elements took 0.030298 s 
+The total # of particles present is 65536 
+ Finished GetParticleNodes 
+ Maximum velocity  0.122327   [cm/year]  
+ Time = 1316.88, dt=1000  [Years]  
+# Finished timestep 1 out of 4 in 0.494728 s
+  
+# Correcting particle phase due to internal free surface motion...  Corrected 0 Particles... [0.001092 s]
+#  Computing material properties from particles for FDSTAG ...   [0.0520759 s] 
+#  Interpolating meshes and temperatures took 0.0555191 s 
+#  Forming FD stiffness matrix mx,my,mz=(17, 9, 9) ...  
+#  FDSTAG: Time to insert stencil into operators 3.8819e-03 
+#  FDSTAG: Time to insert bc's into operators 2.2912e-04 
+#  FDSTAG: Time to assemble operators 1.4281e-04 
+#  Forming stiffness matrixes took 0.00560904 s 
+FC: Viscosity structure info: min(384)=1.000000e-03 : max(128)=1.000000e+00 : contrast=1.000000e+03 
+Using unpreconditioned (true) Stokes residual to define the FC stopping condition 
+StokesResidual: Using L_inf 
+Stopping conditions: 
+Velocity: RTOL: 1.000000e-06	ATOL: 1.000000e-16	minATOL: 1.000000e-05		fc_ksp_min_it 4
+Pressure: RTOL: 1.000000e-06	ATOL: 1.000000e-16	minATOL: 1.000000e-05		fc_ksp_min_it 4
+StokesResidual: Monitor activated 
+# FC: using nonzero initial guess 
+  Residual norms for fc_ solve.
+  # KSP Iterations      /  L2_norm             scaled_L2_norm      Linf_norm           /  ... for each   2 blocks  [fc_] 
+  0 KSP Residual norms  /  1.172593986962e-01  1.824400007327e-03  1.524292769328e-02  /  7.722247417153e-08  2.413202317860e-09  8.426755820912e-09  /  [fc_] 
+  1 KSP Residual norms  /  2.062517785728e-02  3.209002864787e-04  2.680874524460e-03  /  4.464402615077e-02  1.395125817211e-03  3.542118160203e-03  /  [fc_] 
+  2 KSP Residual norms  /  1.069501048290e-03  1.664001130852e-05  1.363023150797e-04  /  1.108596318758e-02  3.464363496118e-04  7.566172326672e-04  /  [fc_] 
+  3 KSP Residual norms  /  2.741045405703e-04  4.264701434470e-06  2.937068753422e-05  /  4.994475579189e-03  1.560773618497e-04  4.814356280529e-04  /  [fc_] 
+  4 KSP Residual norms  /  2.589118684917e-04  4.028323699638e-06  2.359087403649e-05  /  1.720923136652e-03  5.377884802037e-05  1.714902218208e-04  /  [fc_] 
+  5 KSP Residual norms  /  1.826215517266e-04  2.841348019967e-06  1.701895658416e-05  /  7.902625173154e-04  2.469570366611e-05  7.114991859586e-05  /  [fc_] 
+  6 KSP Residual norms  /  7.810473111115e-05  1.215205549370e-06  7.328995575448e-06  /  2.256390914033e-04  7.051221606352e-06  2.767946182363e-05  /  [fc_] 
+  7 KSP Residual norms  /  5.191613438193e-06  8.077458779415e-08  4.810248895139e-07  /  7.296076101187e-05  2.280023781621e-06  1.010900290558e-05  /  [fc_] 
+  8 KSP Residual norms  /  6.030999866264e-06  9.383432221672e-08  5.796570277301e-07  /  2.257519189963e-05  7.054747468635e-07  2.216276290358e-06  /  [fc_] 
+  9 KSP Residual norms  /  1.549921333288e-06  2.411471083127e-08  1.501080182698e-07  /  8.984912966455e-06  2.807785302017e-07  9.042345446173e-07  /  [fc_] 
+ 10 KSP Residual norms  /  3.095211659954e-07  4.815736936983e-09  2.770705229599e-08  /  2.143635983880e-06  6.698862449624e-08  2.202118533873e-07  /  [fc_] 
+ 11 KSP Residual norms  /  1.969420434523e-07  3.064155790601e-09  1.693936143709e-08  /  1.058095743741e-06  3.306549199191e-08  8.672317292022e-08  /  [fc_] 
+ 12 KSP Residual norms  /  4.953288697818e-08  7.706657237773e-10  4.666824583302e-09  /  3.739450779992e-07  1.168578368748e-08  4.092413298020e-08  /  [fc_] 
+ 13 KSP Residual norms  /  1.361598918739e-08  2.118466498160e-10  1.256748771501e-09  /  1.818550923503e-07  5.682971635946e-09  1.777343405661e-08  /  [fc_] 
+ 14 KSP Residual norms  /  8.313739641650e-09  1.293507116000e-10  6.289191306285e-10  /  5.507127955962e-08  1.720977486238e-09  7.879292181123e-09  /  [fc_] 
+ 15 KSP Residual norms  /  1.727624976026e-09  2.687954273998e-11  1.626054817353e-10  /  2.141787020446e-08  6.693084438895e-10  1.858949196430e-09  /  [fc_] 
+Velocity convergence reason: RTOL 
+Pressure convergence reason: RTOL 
+Linear solve converged due to CONVERGED_HAPPY_BREAKDOWN iterations 15
+#  Finished Stokes solve after 0.264622 s 
+------------------------------------------
+Stokes solver summary: 
+  divergence: 
+    Div_min = 1.915446967704e-13 
+    Div_max = 1.858949577604e-09 
+    |Div|_2 = 2.141787028659e-08 
+    |Div|_1 = 5.169364482295e-07 
+  momentum: 
+    mRes_min = 0.000000000000e+00 
+    mRes_max = 1.627142864891e-10 
+    |mRes|_2 = 1.727645234836e-09 
+    |mRes|_1 = 6.082626651127e-08 
+  velocity: 
+    u_min   = -7.809773526975e-02 
+    u_max   = 7.809773510976e-02 
+    |u|_2   = 1.135547947664e+00 
+    |u|_1   = 3.892496760538e+01 
+  pressure: 
+    p_min   = -6.438642294089e-01 
+    p_max   = 7.254921542158e+01 
+    |p|_2   = 1.204371040592e+03 
+    |p|_1   = 2.708059420879e+04 
+------------------------------------------
+The total memory used by integration points is 2.703360e-01 MB
+The max memory used by integration points is 1.351680e-01 MB
+The min memory used by integration points is 1.351680e-01 MB
+#  Solving for velocity took 0.273121 s 
+#  Forming FD stiffness matrix for energy equation with mx,my,mz=(17, 9, 9) with Top/Bottom T=[0,1000]...  
+#  Forming temperature stiffness matrixes took 0.000600815 s 
+#  Solving for temperature took 0.000470161 s 
+The total memory used by integration points is 2.703360e-01 MB
+The max memory used by integration points is 1.351680e-01 MB
+The min memory used by integration points is 1.351680e-01 MB
+The total memory used by particles is 1.835008e+01 MB
+The max memory used by particles is 9.175040e+00 MB
+The min memory used by particles is 9.175040e+00 MB
+#  Updating properties @ integration points and particles took 0.0543799 s 
+AdvectionMethod = 0 
+  Starting particle advection 
+  Finished particle advection 
+# Advecting internal free surface ...  [0.000230 s] 
+Applying infinitely fast erosion to internal free surface of the model. Average free surface height = 3499.922000 m 
+# Correcting particle phase due to internal free surface motion...  Corrected 0 Particles... [0.000750 s]
+Minimum z-level phase 1 1170.16 
+# Writing output to existing directory Timestep_000002 
+# Saved MATLAB output in file Timestep_000002/SaltDiapirs_Basic.0.1000002.out 
+# Saved Paraview VTS Velocity output in file SaltDiapirs_Basic_velocity_step000002-mesh.pvts 
+# Saved Paraview VTS Temperature output in file SaltDiapirs_Basic_temperature_step000002-mesh.pvts 
+# Saved Paraview VTS Surface Topography output in file SaltDiapirs_Basic_Surface_topography_step000002-mesh.pvts 
+# Saved Paraview VTS Bottom Topography output in file SaltDiapirs_Basic_Bottom_topography_step000002-mesh.pvts 
+# Saved Paraview VTS point-wise quadrature output in file SaltDiapirs_Basic_quadrature_step000002-mesh.pvts 
+AVD3d: Loaded 65536 of 65536 LaMEM points
+# AVD3d: Initialisation 2.7312e-02 (sec)
+# AVD3d: Voronoi generator 2.4149e-03 (sec)
+#AVD3d PMemory usage: 
+#  points:  2.0972 [1.0486/1.0486] (MB) 
+#  cells:   1.8866 [0.9433/0.9433] (MB) 
+#  chains:  6.5208 [3.2604/3.2604] (MB) 
+#  [total]: 10.5046 [5.2523/5.2523] (MB) 
+# AVD3d: VTR writer 5.9841e-03 (sec)
+# Saved Paraview VTS phases output in file SaltDiapirs_Basic_phases_step000002.pvtr 
+ Starting GetParticleNodes 
+#rank=0, Attributing 32768 particles to elements took 0.0220811 s 
+The total # of particles present is 65536 
+ Finished GetParticleNodes 
+ Maximum velocity  0.123229   [cm/year]  
+ Time = 2316.88, dt=1000  [Years]  
+# Finished timestep 2 out of 4 in 0.464061 s
+  
+# Correcting particle phase due to internal free surface motion...  Corrected 0 Particles... [0.002580 s]
+#  Computing material properties from particles for FDSTAG ...   [0.050463 s] 
+#  Interpolating meshes and temperatures took 0.0544729 s 
+#  Forming FD stiffness matrix mx,my,mz=(17, 9, 9) ...  
+#  FDSTAG: Time to insert stencil into operators 2.0790e-03 
+#  FDSTAG: Time to insert bc's into operators 1.1706e-04 
+#  FDSTAG: Time to assemble operators 9.2983e-05 
+#  Forming stiffness matrixes took 0.00304484 s 
+FC: Viscosity structure info: min(384)=1.000000e-03 : max(128)=1.000000e+00 : contrast=1.000000e+03 
+Using unpreconditioned (true) Stokes residual to define the FC stopping condition 
+StokesResidual: Using L_inf 
+Stopping conditions: 
+Velocity: RTOL: 1.000000e-06	ATOL: 1.000000e-16	minATOL: 1.000000e-05		fc_ksp_min_it 4
+Pressure: RTOL: 1.000000e-06	ATOL: 1.000000e-16	minATOL: 1.000000e-05		fc_ksp_min_it 4
+StokesResidual: Monitor activated 
+# FC: using nonzero initial guess 
+  Residual norms for fc_ solve.
+  # KSP Iterations      /  L2_norm             scaled_L2_norm      Linf_norm           /  ... for each   2 blocks  [fc_] 
+  0 KSP Residual norms  /  1.181134430802e-01  1.837687800013e-03  1.536097639907e-02  /  2.141787028659e-08  6.693084464560e-10  1.858949577604e-09  /  [fc_] 
+  1 KSP Residual norms  /  2.077317768134e-02  3.232029665462e-04  2.701349339301e-03  /  4.496729646889e-02  1.405228014653e-03  3.567018466592e-03  /  [fc_] 
+  2 KSP Residual norms  /  1.077700357464e-03  1.676758163453e-05  1.374253255408e-04  /  1.116882239067e-02  3.490256997083e-04  7.617736458289e-04  /  [fc_] 
+  3 KSP Residual norms  /  2.762835296475e-04  4.298603601226e-06  2.961959458322e-05  /  5.032754334853e-03  1.572735729642e-04  4.848115468470e-04  /  [fc_] 
+  4 KSP Residual norms  /  2.611625243922e-04  4.063340906676e-06  2.388547113004e-05  /  1.731510260884e-03  5.410969565262e-05  1.723691482809e-04  /  [fc_] 
+  5 KSP Residual norms  /  1.839480908454e-04  2.861987201175e-06  1.720760408069e-05  /  7.943996478380e-04  2.482498899494e-05  7.135005973354e-05  /  [fc_] 
+  6 KSP Residual norms  /  7.907006422403e-05  1.230224846397e-06  7.448092540291e-06  /  2.269755105432e-04  7.092984704474e-06  2.793479977194e-05  /  [fc_] 
+  7 KSP Residual norms  /  5.369472070229e-06  8.354183112985e-08  5.005166931891e-07  /  7.366792385261e-05  2.302122620394e-06  1.021540268777e-05  /  [fc_] 
+  8 KSP Residual norms  /  5.970621572973e-06  9.289491642113e-08  5.773448708552e-07  /  2.272932030637e-05  7.102912595742e-07  2.269779311252e-06  /  [fc_] 
+  9 KSP Residual norms  /  1.518237374386e-06  2.362175064645e-08  1.486182642801e-07  /  9.062581773113e-06  2.832056804098e-07  9.093341877642e-07  /  [fc_] 
+ 10 KSP Residual norms  /  3.123320255352e-07  4.859470166234e-09  2.810406223860e-08  /  2.161594767391e-06  6.754983648096e-08  2.213929404288e-07  /  [fc_] 
+ 11 KSP Residual norms  /  1.969214477055e-07  3.063835348222e-09  1.693583321643e-08  /  1.064872960751e-06  3.327728002346e-08  8.667944980510e-08  /  [fc_] 
+ 12 KSP Residual norms  /  5.030397910181e-08  7.826628898181e-10  4.755083672415e-09  /  3.760147983911e-07  1.175046244972e-08  4.161433025345e-08  /  [fc_] 
+ 13 KSP Residual norms  /  1.381114283313e-08  2.148829805211e-10  1.277778047846e-09  /  1.834628454597e-07  5.733213920617e-09  1.787987215208e-08  /  [fc_] 
+ 14 KSP Residual norms  /  8.275228919005e-09  1.287515360673e-10  6.385350851408e-10  /  5.576216117112e-08  1.742567536597e-09  7.818937425689e-09  /  [fc_] 
+ 15 KSP Residual norms  /  1.769215444334e-09  2.752663501173e-11  1.665821448562e-10  /  2.191282629787e-08  6.847758218083e-10  1.881458222243e-09  /  [fc_] 
+Velocity convergence reason: RTOL 
+Pressure convergence reason: RTOL 
+Linear solve converged due to CONVERGED_HAPPY_BREAKDOWN iterations 15
+#  Finished Stokes solve after 0.251271 s 
+------------------------------------------
+Stokes solver summary: 
+  divergence: 
+    Div_min = 4.387601393319e-13 
+    Div_max = 1.881458128183e-09 
+    |Div|_2 = 2.191282627280e-08 
+    |Div|_1 = 5.314370904028e-07 
+  momentum: 
+    mRes_min = 0.000000000000e+00 
+    mRes_max = 1.667217475187e-10 
+    |mRes|_2 = 1.769186549611e-09 
+    |mRes|_1 = 6.219981817047e-08 
+  velocity: 
+    u_min   = -7.867305796249e-02 
+    u_max   = 7.867305780067e-02 
+    |u|_2   = 1.143851753785e+00 
+    |u|_1   = 3.920839374565e+01 
+  pressure: 
+    p_min   = -6.438604805621e-01 
+    p_max   = 7.255035107654e+01 
+    |p|_2   = 1.204360458811e+03 
+    |p|_1   = 2.708012836266e+04 
+------------------------------------------
+The total memory used by integration points is 2.703360e-01 MB
+The max memory used by integration points is 1.351680e-01 MB
+The min memory used by integration points is 1.351680e-01 MB
+#  Solving for velocity took 0.2555 s 
+#  Forming FD stiffness matrix for energy equation with mx,my,mz=(17, 9, 9) with Top/Bottom T=[0,1000]...  
+#  Forming temperature stiffness matrixes took 0.000299931 s 
+#  Solving for temperature took 0.000447035 s 
+The total memory used by integration points is 2.703360e-01 MB
+The max memory used by integration points is 1.351680e-01 MB
+The min memory used by integration points is 1.351680e-01 MB
+The total memory used by particles is 1.835008e+01 MB
+The max memory used by particles is 9.175040e+00 MB
+The min memory used by particles is 9.175040e+00 MB
+#  Updating properties @ integration points and particles took 0.0538051 s 
+AdvectionMethod = 0 
+  Starting particle advection 
+  Finished particle advection 
+# Advecting internal free surface ...  [0.000294 s] 
+Applying infinitely fast erosion to internal free surface of the model. Average free surface height = 3499.888384 m 
+# Correcting particle phase due to internal free surface motion...  Corrected 0 Particles... [0.000756 s]
+Minimum z-level phase 1 1169.44 
+# Writing output to existing directory Timestep_000003 
+# Saved MATLAB output in file Timestep_000003/SaltDiapirs_Basic.0.1000003.out 
+# Saved Paraview VTS Velocity output in file SaltDiapirs_Basic_velocity_step000003-mesh.pvts 
+# Saved Paraview VTS Temperature output in file SaltDiapirs_Basic_temperature_step000003-mesh.pvts 
+# Saved Paraview VTS Surface Topography output in file SaltDiapirs_Basic_Surface_topography_step000003-mesh.pvts 
+# Saved Paraview VTS Bottom Topography output in file SaltDiapirs_Basic_Bottom_topography_step000003-mesh.pvts 
+# Saved Paraview VTS point-wise quadrature output in file SaltDiapirs_Basic_quadrature_step000003-mesh.pvts 
+AVD3d: Loaded 65536 of 65536 LaMEM points
+# AVD3d: Initialisation 4.3636e-02 (sec)
+# AVD3d: Voronoi generator 3.3290e-03 (sec)
+#AVD3d PMemory usage: 
+#  points:  2.0972 [1.0486/1.0486] (MB) 
+#  cells:   1.8866 [0.9433/0.9433] (MB) 
+#  chains:  6.5208 [3.2604/3.2604] (MB) 
+#  [total]: 10.5046 [5.2523/5.2523] (MB) 
+# AVD3d: VTR writer 6.2029e-03 (sec)
+# Saved Paraview VTS phases output in file SaltDiapirs_Basic_phases_step000003.pvtr 
+ Starting GetParticleNodes 
+#rank=0, Attributing 32768 particles to elements took 0.0190871 s 
+The total # of particles present is 65536 
+ Finished GetParticleNodes 
+ Maximum velocity  0.124137   [cm/year]  
+ Time = 3316.88, dt=1000  [Years]  
+# Finished timestep 3 out of 4 in 0.458782 s
+  
+# Total time required: 2.10994 s 
+#PETSc Option Table entries:
+-AVDPhaseViewer 1
+-AVDPhaseViewer_factor 4
+-AddRandomNoiseParticles 0
+-ErosionModel 1
+-ParamFile ./input/SaltDiapirs_BasicSetup.dat
+-fc_ksp_converged_reason
+-fc_ksp_max_it 1000
+-fc_ksp_min_it 4
+-fc_ksp_p_atol 1.0e-16
+-fc_ksp_p_min_atol 1.0e-5
+-fc_ksp_p_rtol 1.0e-6
+-fc_ksp_type gcr
+-fc_ksp_v_atol 1.0e-16
+-fc_ksp_v_min_atol 1.0e-5
+-fc_ksp_v_rtol 1.0e-6
+-fc_pc_fieldsplit_schur_factorization_type UPPER
+-fc_pc_fieldsplit_type SCHUR
+-fc_pc_type fieldsplit
+-options_left
+-ps_ksp_type preonly
+-ps_pc_type jacobi
+-restart 0
+-use_stokes_monitor
+-use_stokes_norm Linf
+-use_stokes_residual
+-vpt_element FDSTAG
+-vs_fieldsplit_ksp_type preonly
+-vs_fieldsplit_pc_type ml
+-vs_ksp_max_it 1000
+-vs_ksp_rtol 1.0e-3
+-vs_ksp_type gcr
+-vs_pc_fieldsplit_block_size 3
+-vs_pc_fieldsplit_type ADDITIVE
+-vs_pc_type fieldsplit
+#End of PETSc Option Table entries
+There are no unused options.

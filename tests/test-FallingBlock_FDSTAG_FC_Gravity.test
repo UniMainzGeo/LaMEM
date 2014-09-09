@@ -1,0 +1,3 @@
+EXEC            = ../bin/LaMEM -ParamFile ./input/FallingBlock_FC.dat -vpt_element FDSTAG -AddRandomNoiseParticles 0 -time_end 1 -BC.UpperBound 1 -get_GravityField 1 -get_Misfit 1 -VelocitySolver 3 -fc_ksp_type gcr -ps_pc_type jacobi -use_stokes_residual -use_stokes_monitor -fc_ksp_monitor false
+NPROCS          = 4
+TEST_TYPE       = tolerance_diff_pl,6.0e-7

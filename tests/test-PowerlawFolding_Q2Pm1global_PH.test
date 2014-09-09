@@ -1,0 +1,3 @@
+EXEC            = ../bin/LaMEM -ParamFile ./input/powerlaw_folding2D.dat -vpt_element Q2Pm1_global -restart 0 -ph_tol 1e-8 -AddRandomNoiseParticles 0
+NPROCS          = 1
+TEST_TYPE       = tolerance_diff_pl,2.0e-3

@@ -1,0 +1,249 @@
+\documentclass{scrartcl}
+\usepackage[utf8]{inputenc}
+\usepackage{tocloft}
+\usepackage[usenames,dvipsnames]{color}
+\usepackage{hyperref}
+\usepackage{cprotect}
+\usepackage{fancyvrb}
+\usepackage{fouriernc}
+\usepackage[condensed]{cabin}
+\usepackage[T1]{fontenc}
+\usepackage{amsmath}
+\usepackage{svn-multi}
+\usepackage[comma,authoryear]{natbib} 
+\bibliographystyle{plainnat}  
+ % ------------------------------------------------------------------------------------------------------------------------- 
+% Version control
+\svnid{$Id$}
+
+
+% no subsubsections in table of contents
+\addtocontents{toc}{\protect\setcounter{tocdepth}{2}}
+
+% lamemfunction macro:
+\newcommand{\lamemfunction}[1]{\subsubsection{Function: #1}}
+\cMakeRobust{\lamemfunction}
+
+%TOC: adjust space for subsections
+\setlength{\cftsubsecnumwidth}{3em}
+\renewcommand{\cftsecfont}{\sffamily\bfseries}
+
+% hyperlinks
+\hypersetup{
+    colorlinks=true, %set true if you want colored links
+    linktoc=all,     %set to all if you want both sections and subsections linked
+    linkcolor=NavyBlue,  %choose some color if you want links to stand out
+    citecolor=Orange,
+}
+
+ % ------------------------------------------------------------------------------------------------------------------------- 
+\title{LaMEM \\ Lithospheric And Mantle Evolution Model}
+\subtitle{- Developers documentation -}
+\author{\svnfileauthor}
+\date{\svntoday}
+\begin{document}
+\maketitle
+\tableofcontents
+ % -------------------------------------------------------------------------------------------------------------------------
+
+
+
+% ========================================================================================
+\section{Introduction}
+This is an attempt to improve the documentation of LaMEM. Of course, nobody likes writing documentations. On the other hand, everybody commits small descriptions of latest updates to the version control system. However, from my perspective, these descriptions get lost very soon in the history of changes. Maybe we can simply copy and paste these short descriptions into this document too.
+
+\subsection{In a nutshell}
+To reduce efforts, parts of this manual, such as the code section (sec. \ref{sec:code}) can be created automatically. All you need to do is 
+\begin{Verbatim}
+make doc
+\end{Verbatim}
+
+This will invoke a shell script that collects header information of all source files  (\texttt{*.c}) stored in \texttt{/src} and \texttt{/src/fdstag/}.  Everything written in any commented part  within the following flags will be interpreted as LaTeX and will be appended to this file.
+\vspace{2mm}
+\begin{Verbatim}[frame=single,label=*.c file]
+/* 
+...
+#START_DOC#
+Your latex style documentation including formulas
+#END_DOC#
+...
+*/
+\end{Verbatim}
+
+\paragraph{Requirements:}
+\begin{itemize}
+\item LaTeX installation (TexLive 2013, see \ref{sec:mac1},\ref{sec:mac2},\ref{sec:ubuntu})
+\item Do you already have a installation?  To find your installation, type:
+\begin{Verbatim}
+which pdflatex
+which bibtex
+\end{Verbatim}
+Make sure it's the current version. 
+
+\item Modify paths of LaTeX installation in \verb- Makefile.in-:
+\vspace{2mm}
+\begin{Verbatim}[frame=single,label=Makefile.in]
+...
+PDFLATEX = /usr/local/texlive/2013/bin/x86_64-darwin/pdflatex
+BIBTEX = /usr/local/texlive/2013/bin/x86_64-darwin/bibtex
+...
+\end{Verbatim}
+\end{itemize}
+
+\subsection{Install LaTeX on Mac}\label{sec:mac1}
+Visit \url{http://www.tug.org/mactex/} and install \verb-MacTeX.pkg- using your mouse and drag \& drop.
+
+\subsection{Install LaTeX on Mac (MacPorts)}\label{sec:mac2}
+\begin{Verbatim}
+sudo port install texlive
+\end{Verbatim}
+See \url{http://www.macports.org/}.
+
+\subsection{Install LaTeX on Ubuntu}\label{sec:ubuntu}
+\begin{Verbatim}
+sudo apt-get install texlive
+\end{Verbatim}
+See \url{http://wiki.ubuntuusers.de/Tex_Live}.
+
+ % ========================================================================================
+\section{How to contribute to this document} 
+
+\begin{itemize}
+\item Between \verb-#START_DOC#- and \verb-#END_DOC#- you can write anything with LaTeX code (formulas, items, ... ).
+
+\item Underscores cause problems. Since many functionnames contain underscores I propose the following \textbf{standard}: \verb-\lamemfunction{...}- . The macro makes use of the package \texttt{cprotect} and introduces a subsubsection with the functionname.
+\begin{verbatim}
+\lamemfunction{\verb- function_name1 -}
+Description1
+\lamemfunction{\verb- function_name2 -}
+Description2
+\end{verbatim}
+\item For anything else that contains underscores please use the verbatim environment 
+\begin{verbatim}
+\verb-text_with_underscores-
+\end{verbatim}
+\item Include PATHs of pdflatex and bibtex to Makefile.in (use TexLive 2013 on Mac ) 
+\item Citations: \citep{petsc-web-page} or \citet{petsc-user-ref} 
+\item Figures: \textbf{No} raster graphics such as bitmaps, jpgs, etc.. Preferably scalable vector graphics (\verb-*.svg-) should be used, it's \verb-*.xml- code, so SVN can track the changes. You can use inkscape, illustrator, etc. to create your \verb-*.svg- files.
+\end{itemize}
+
+
+ % ========================================================================================
+\section{Installation}
+
+\subsection{MPI with valgrind support on Mac OS}
+\begin{Verbatim}[frame=single]
+./configure \
+CC=wcc \
+CXX=wc++ \
+F77=wfc \
+FC=wfc \
+CPPFLAGS='-I/opt/valgrind/include/valgrind' \
+--prefix=/opt/mpi/mpich2-debug \
+--enable-f77 \
+--enable-fc \
+--enable-cxx \
+--enable-threads=runtime \
+--enable-g=dbg,mem,meminit \
+--enable-debuginfo \
+--enable-fast=none \
+--with-thread-package=pthreads
+\end{Verbatim}
+
+
+\subsection{Petsc with valgrind support on Mac OS}
+\begin{Verbatim}[frame=single]
+./configure \
+--prefix=/opt/petsc/petsc-3.3-p2-int32-debug \
+--download-f-blas-lapack=1 \
+--with-debugging=1 \
+--with-valgrind=1 \
+--with-valgrind-dir=/opt/valgrind \
+--COPTFLAGS="-g -O0" \
+--FOPTFLAGS="-g -O0" \
+--CXXOPTFLAGS="-g -O0" \
+--with-large-file-io=1 \
+--with-cc=mpicc \
+--with-cxx=mpicxx \
+--with-fc=mpif90 \
+--download-ml=1 \
+--download-hypre=1 \
+--download-blacs=1 \
+--download-scalapack=1 \
+--download-metis=1 \
+--download-parmetis=1 \
+--download-mumps=1 \
+--download-superlu_dist=1
+\end{Verbatim} 
+ 
+
+ % ========================================================================================
+\section{Debugging}
+
+\subsection{Valgrind}
+Use the script \verb-ValgrindCheck.sh - in \verb- /doc/valgrind/- to test your LaMEM Version for memory leaks.
+
+\begin{itemize}
+\item  It's a script to launch parallel MPI applications on Linux under valgrind with MPI wrappers.
+\item Invocation pattern:
+\begin{verbatim}
+ValgrindCheck.sh num_proc "exec_path prog_args" outfile_name
+\end{verbatim}
+\item All errors and screen output will be redirected to the file: \verb-outfile_name.out-
+\item Valgrind errors \& warnings will be written to a separate file for each MPI task: \verb-outfile_name.pid.xml- (pid - system process ID of MPI task, assigned automatically)
+\item To visualize memory check summary in human readable format use Valkyrie GUI.
+\end{itemize}
+ 
+
+
+
+
+\subsection{Parallel debugger: ddt on gaia}
+
+
+
+ 
+ % ========================================================================================
+\section{General structure} 
+This a good place for a general callgraph etc.
+
+
+
+
+ 
+ % ========================================================================================
+\section{Physics}
+\begin{eqnarray}
+\label{eq:Stokes_stokes}
+\frac{\partial \sigma_{ij}^\prime}{\partial x_j} - \frac{\partial P }{\partial x_i} + \rho g_i &= &0 \\
+\label{eq:Stokes_massconservation}
+\nabla \cdot \vec{v} &= &0 \\
+\label{eq:Stokes_hookslaw}
+\sigma_{ij}^\prime &= &2\,\eta\,\dot{\epsilon}_{ij}, 
+\end{eqnarray}
+ % ========================================================================================
+\section{Numerical implementation}
+
+
+
+
+% ========================================================================================
+\section{Solvers}
+ 
+ 
+ 
+ % ========================================================================================
+\section{Output}
+ \subsection{Formats}
+
+
+
+
+
+ % ========================================================================================
+\include{code}
+
+
+ % ========================================================================================
+\bibliography{citations}
+\end{document}

@@ -1,0 +1,69 @@
+How to run PARAVIEW on SITH and GAIA in Client-Server mode
+==============================================================
+
+
+Boris Kaus, Feb. 26 2014
+
+
+Aim:
+———
+Explain how to run paraview in parallel on SITH or GAIA and visualize your runs on your local machine.
+The advantage of using SITH and GAIA over JUVIS is that we have massively more memory on our machines.
+
+
+Installation:
+—————
+Download the binaries from the PARAVIEW webpage and make sure to unpack the same version on your local machine and on SITH/GAIA.
+Make sure that pvserver on SITH/GAIA links to the correct version (maybe modify your .bashrc file)
+
+
+
+Howto:
+—————
+
+1) First create a local ssh tunnel from your machine to SITH/GAIA:
+
+ssh -f  lkausb@gaia.geo.uni-mainz.de -L 11111:gaia.geo.uni-mainz.de:11111 -N
+
+changing the username to yours.
+
+2) Login to gaia the usual way
+
+ssh lkausb@gaia.geo.uni-mainz.de 
+
+And start paraview in parallel on gaia, by starting an interactive slurm job (for 120 minutes on 16 cores)
+
+	salloc -n 16 --time=600
+
+and in a next step, pvserver with 16 cores:
+
+	mpiexec -n 16 pvserver
+
+
+3) Start PARAVIEW on your mac. 
+
+4) CONNECT to server in PARAVIEW.
+
+The first time you you do thus you’ll have to create a new connection
+
+Create a new connection to gaia:
+	Add server -> 
+		Name:			GAIA_TUNNEL (whatever you want)
+		Server Type:		Client/Server [default]
+		Host:			localhost [default]
+		Port:			11111 [default]
+	Configure -> Manual
+
+
+5) Connect to the GAIA_TUNNEL, and it should work
+
+
+
+
+
+
+
+
+
+
+

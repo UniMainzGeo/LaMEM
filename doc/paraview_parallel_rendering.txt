@@ -1,0 +1,161 @@
+Parallel rendering in Paraview via a remote machine.
+
+This document describes how to use Paraview to perform visualization and remote rendering in parallel, on a distributed memory machine
+Specifically we will focus on our description of how to perform the parallel rendering on the Vis Cluster (eiger) at CSCS.
+
+Information about can be found here
+  http://user.cscs.ch/hardware/eiger_dalco_sm_system
+For information about running jobs on eiger, see
+  http://user.cscs.ch/how_to_run_a_batch_job/eiger_dalco_sm_system
+
+
+Step 1: Launching the paraview GUI
+
+Log into eiger, being sure to use the -X command with ssh to enable the X window display to be 
+forwared to your remote machine. Note you ALWAYS have to gain access to eiger via ela.
+X forwarding is required for both ssh connections
+
+>ssh -X dmay@ela.cscs.ch
+>ssh -X eiger
+
+e.g. From musashi I log into ela
+  [musashi 10:45 AM] ~ $ ssh -X dmay@ela.cscs.ch
+and then from ela I log into eiger
+  dmay@ela3:~> ssh -X eiger
+
+
+Once on eiger, you need to load the appropriate modules for the gcc, mpi and paraview.
+Note that simply loading paraview is not sufficient. The paraview modules DO NOT load
+the modules is depends on.
+
+module load gcc
+module load mvapich2
+module load paraview
+
+Now laucnch paraview
+
+>paraview &
+
+If all goes well, the GUI should appear.
+
+
+
+Step 2: Create a server
+
+In paraview, do
+  File > Connect 
+Then click the box "Add Server"
+Choose the name of the server
+  eiger_pv
+and select the server type to be
+  Client/Server (reverse connection)
+Leave the port number as
+  11111
+
+Click the "Configure" button
+and choose the "Startup Type" to be
+  manual
+Click the "save" button.
+
+
+
+Step 3: Connect to the server
+In paraview, do
+  File > Connect
+Select the server "eiger_pv" and click the box, "Connect"
+At this point, paraview is waiting for the server to be launched
+
+
+
+Step 4: Launch the server
+
+The server which is needed to be launched is called pvserver.
+The location of pvserver (for the currently loaded paraview  module)
+can be determined via the command
+  >which pvserver
+At the time of writing, the default paraview module used is 3.10 and the location
+of pvserver is
+  /apps/eiger/ParaView/3.10/bin/pvserver
+
+To start the pvserver, we need to launch the job via the batch queuing syste.
+On eiger, this is PBSPro (note, it's not slurm like on rosa)
+For parallel rendering, we must launch pvserver as a parallel job.
+
+I use this pbs script (which I'll name launch_pvserver.pbs) to launch pvserver on 24 cpus.
+Note that modules are loaded in the PBS script.
+
+
+#!/bin/bash
+#PBS -N TestPVServer
+#PBS -m abe
+#PBS -l select=24:mem=512mb
+#PBS -l walltime=00:10:00
+
+#PBS -l cput=00:59:00
+#PBS -r n
+
+module load gcc
+module load mvapich2
+module load paraview
+
+mpiexec.hydra -rmk pbs /apps/eiger/ParaView/3.10/bin/pvserver -rc --client-host=eiger.cscs.ch --use-offscreen-rendering -display :0.0
+
+The script is launched via
+  >qsub launch_pvserver.pbs
+
+When your pvserver job gets launched, the paraview GUI session you have running will connect and the
+parallel rendering can be performed. 
+
+
+Note that when you launched pvserver, you had to specify a walltime. After the walltime elapses,
+pvserver will quit and the connection will be lost - so choose your walltime carefully, use paraview
+efficiently and save lots of state files as you develop your images.
+
+
+
+
+Trouble shooting:
+
++ Launching the paraview GUI gives me a dynamic library error related to mpich
+- You probably didn't load the correct mpi module. To find out which mpi paraview
+was compiled with, do this
+
+>which paraview
+>ldd FULL_PATH_TO_PARAVIEW_RETURNED_BY_WHICH_PARAVIEW
+
+This should indicate the mpi library used and will indicate which mpi module you should load
+
++ Is my paraview setup actually working in parallel?
+- One way to check is to load the data in serial (and do some rendering) and compare the time for 
+loading and rendering when you have connected to pvserver.
+
+I also find this information which provides an additional test.
+Taken 
+  from http://www.paraview.org/pipermail/paraview/2007-July/005436.html
+
+>Verify that you are actually doing parallel rendering.  Start by running
+>in client/server mode (don't bother with parallel standalone: its
+>usefulness is basically limited to debugging).  Go to 3D View
+>Properties, verify that the checkbox next to "Composite" is checked and
+>move the slider all the way to the left (0 MBytes).  If everything is
+>working right, parallel rendering should now always be used.  The
+>easiest way to verify that is to observe the subsampling, which only
+>happens on interactive rendering when rendering in parallel.  Make sure
+>that the checkbox next to "Subsample Rate" is checked and move the
+>slider to the right to 4 Pixels or more.  Now when you rotate your 3D
+>rendering, it should look pixilated.
+
+
+
+~ Dave May, 
+  July 15, 2011
+
+
+
+
+
+
+
+
+
+

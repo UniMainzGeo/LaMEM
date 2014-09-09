@@ -1,0 +1,177 @@
+# -------------------------------------------------------------------------- 
+#                   Lithosphere and Mantle Evolution Model                   
+#              Current Revision: 4812 - 2013-10-01 23:57:18		     
+#  Modified items: LaMEM_Particles.c, Elements.c, Assembly_FDSTAG.c, fdstag/JacRes.c, 
+#     Compiled: Date: Oct  9 2013 - Time: 23:02:54 - Mode:  	    
+# -------------------------------------------------------------------------- 
+ Parsing input file : ./input/FallingBlock_FC.dat 
+# Adding PetscOption: -vpt_element Q1P0 
+# Adding PetscOption: -restart 0 
+# Adding PetscOption: -save_breakpoints 0 
+# Adding PetscOption: -fc_ksp_type fgmres 
+# Adding PetscOption: -fc_ksp_monitor 
+# Adding PetscOption: -use_stokes_residual false 
+# Adding PetscOption: -use_stokes_monitor false 
+# Adding PetscOption: -ps_ksp_type preonly 
+# Adding PetscOption: -ps_pc_type lu 
+# LithColDepth[0] = 0 
+# LithColDens[0] = 0 
+# LithColDens[1] = 0 
+# --------------------------------------------------------------------------
+# Phase material parameters read from ./input/FallingBlock_FC.dat: 
+#    phase_1 (id=1), VISCOSITY, constant [0,0,0] = 1.000000e+03 
+#    phase_1 (id=1), ELASTICITY, constant [0,1,0] = 5.000000e+10, 1.000000e+00 
+#    phase_1 (id=1), DENSITY, temperature-dependent [0,2,0] = 2.000000e+00, 0.000000e+00, 0.000000e+00 
+#    phase_1 (id=1), ENERGY, constant [0,3,0] = 3.000000e+00 1.050000e+03 0.000000e+00 0.000000e+00 
+#    phase_0 (id=0), VISCOSITY, constant [1,0,0] = 1.000000e+00 
+#    phase_0 (id=0), ELASTICITY, constant [1,1,0] = 5.000000e+10, 1.000000e+00 
+#    phase_0 (id=0), DENSITY, temperature-dependent [1,2,0] = 1.000000e+00, 0.000000e+00, 0.000000e+00 
+#    phase_0 (id=0), ENERGY, constant [1,3,0] = 3.000000e+00 1.050000e+03 0.000000e+00 0.000000e+00 
+ Stokes solver             : Fully Coupled
+ Velocity solver           : Direct (Build-in direct solver)
+ Element-type used         : FDSTAG;  [Q1P0 Q2Pm1_global Q2Pm1_local Q1Q1 FDSTAG] (change with -vpt_element)
+ Total # of cpu's          : 1 
+ Total # of velocity dof's : 2187 
+ Computing mean material per element using arithmetic averaging from integration points 
+ Employing code in an Eulerian manner 
+ Gravity angle with z-axis =  0 
+ Approximate Aspect ratio of cells [dx/dz, dy/dz] = [1 1] 
+ Number of tracers/cell in [x,y,z]-direction = [2,2,2] 
+ NumSurfaceNodes=1  nz=9 
+ # Not employing nonlinear iterations 
+ BC employed: BC.[Left Right; Front Back; Lower Upper]=[1 1; 1 1; 1 1] 
+# Initial time step: 0.001 years 
+ Input is assumed to be in non-dimensional units 
+ Fine Grid parameters, nel=[8,8,8], cpu=[1,1,1] 
+# Finished initializing Stokes matrices : 0.00396204 s 
+# Not adding random noise to initial particle distribution. 
+Initialized particles 
+#rank=0, Attributing 4096 particles to elements took 0.00262094 s 
+The total # of particles present is 4096 
+ *** Using a falling block setup *** 
+ Falling block coordinates:  [left,right]=[0.250000,0.750000]; [front,back]=[0.250000,0.750000]; [bottom,top]=[0.250000,0.750000] 
+Saved initial particle distribution to directory ./InitialParticles 
+The total memory used by integration points is 1.351680e-01 MB
+The max memory used by integration points is 1.351680e-01 MB
+The min memory used by integration points is 1.351680e-01 MB
+#  Computing material properties from particles for FDSTAG ...   [0.00327992 s] 
+#  Interpolating meshes and temperatures took 0.0034821 s 
+#  Forming FD stiffness matrix mx,my,mz=(9, 9, 9) ...  
+#  FDSTAG: Time to insert stencil into operators 2.0008e-03 
+#  FDSTAG: Time to insert bc's into operators 6.8903e-05 
+#  FDSTAG: Time to assemble operators 1.9598e-04 
+#  Forming stiffness matrixes took 0.00279188 s 
+FC: Viscosity structure info: min(0)=1.000000e+00 : max(146)=1.000000e+03 : contrast=1.000000e+03 
+# FC: using nonzero initial guess 
+  Residual norms for fc_ solve.
+  0 KSP Residual norm 2.513961017995e+01 
+  1 KSP Residual norm 3.596494828722e+00 
+  2 KSP Residual norm 2.143711400548e-01 
+  3 KSP Residual norm 9.977429001260e-02 
+  4 KSP Residual norm 4.381876447613e-02 
+  5 KSP Residual norm 1.337559172156e-02 
+  6 KSP Residual norm 1.094423212449e-02 
+  7 KSP Residual norm 3.468091577333e-03 
+  8 KSP Residual norm 2.112925810058e-03 
+  9 KSP Residual norm 8.530602566805e-04 
+ 10 KSP Residual norm 7.249605612365e-04 
+ 11 KSP Residual norm 1.849610295184e-04 
+Linear solve converged due to CONVERGED_RTOL iterations 11
+#  Finished Stokes solve after 0.023792 s 
+------------------------------------------
+Stokes solver summary: 
+  divergence: 
+    Div_min = 4.565051987893e-07 
+    Div_max = 2.803035094579e-05 
+    |Div|_2 = 1.849610295133e-04 
+    |Div|_1 = 2.904383280699e-03 
+  momentum: 
+    mRes_min = 0.000000000000e+00 
+    mRes_max = 1.148030559506e-10 
+    |mRes|_2 = 1.356382706343e-09 
+    |mRes|_1 = 2.777042381623e-08 
+  velocity: 
+    u_min   = -2.093890418970e-03 
+    u_max   = 3.786223264037e-03 
+    |u|_2   = 4.127938280107e-02 
+    |u|_1   = 1.079984334813e+00 
+  pressure: 
+    p_min   = -5.270963145694e-01 
+    p_max   = 5.270963145694e-01 
+    |p|_2   = 7.526204395753e+00 
+    |p|_1   = 1.477347033790e+02 
+------------------------------------------
+The total memory used by integration points is 1.351680e-01 MB
+The max memory used by integration points is 1.351680e-01 MB
+The min memory used by integration points is 1.351680e-01 MB
+#  Solving for velocity took 0.0275729 s 
+#  Forming FD stiffness matrix for energy equation with mx,my,mz=(9, 9, 9) with Top/Bottom T=[0,1]...  
+#  Forming temperature stiffness matrixes took 0.00022006 s 
+#  Solving for temperature took 0.000440836 s 
+The total memory used by integration points is 1.351680e-01 MB
+The max memory used by integration points is 1.351680e-01 MB
+The min memory used by integration points is 1.351680e-01 MB
+The total memory used by particles is 1.146880e+00 MB
+The max memory used by particles is 1.146880e+00 MB
+The min memory used by particles is 1.146880e+00 MB
+#  Updating properties @ integration points and particles took 0.00697589 s 
+AdvectionMethod = 0 
+  Starting particle advection 
+  Finished particle advection 
+Minimum z-level phase 1 0.281248 
+# Writing output to existing directory Timestep_000000 
+# Saved MATLAB output in file Timestep_000000/FB_test.0.1000000.out 
+# Saved Paraview VTS Velocity output in file FB_test_velocity_step000000-mesh.pvts 
+# Saved Paraview VTS Temperature output in file FB_test_temperature_step000000-mesh.pvts 
+# Saved Paraview VTS Surface Topography output in file FB_test_Surface_topography_step000000-mesh.pvts 
+# Saved Paraview VTS Bottom Topography output in file FB_test_Bottom_topography_step000000-mesh.pvts 
+# Saved Paraview VTS point-wise quadrature output in file FB_test_quadrature_step000000-mesh.pvts 
+ Starting GetParticleNodes 
+#rank=0, Attributing 4096 particles to elements took 0.002249 s 
+The total # of particles present is 4096 
+ Finished GetParticleNodes 
+ Maximum velocity  0.00378622    
+ Time = 0.001, dt=1e-05   
+# Finished timestep 0 out of 1 in 0.047863 s
+  
+# Total time required: 0.067703 s 
+#PETSc Option Table entries:
+-AddRandomNoiseParticles 0
+-BC.UpperBound 1
+-ParamFile ./input/FallingBlock_FC.dat
+-fc_ksp_converged_reason
+-fc_ksp_max_it 1000
+-fc_ksp_min_it 4
+-fc_ksp_monitor
+-fc_ksp_p_atol 1.0e-16
+-fc_ksp_p_min_atol 1.0e-5
+-fc_ksp_p_rtol 1.0e-6
+-fc_ksp_type fgmres
+-fc_ksp_v_atol 1.0e-16
+-fc_ksp_v_min_atol 1.0e-5
+-fc_ksp_v_rtol 1.0e-6
+-fc_pc_fieldsplit_schur_factorization_type UPPER
+-fc_pc_fieldsplit_type SCHUR
+-fc_pc_type fieldsplit
+-options_left
+-ps_ksp_type preonly
+-ps_pc_type lu
+-restart 0
+-save_breakpoints 0
+-time_end 1
+-use_stokes_monitor false
+-use_stokes_norm Linf
+-use_stokes_residual false
+-vpt_element FDSTAG
+-vs_ksp_type preonly
+-vs_pc_type lu
+#End of PETSc Option Table entries
+There are 8 unused database options. They are:
+Option left: name:-fc_ksp_min_it value: 4
+Option left: name:-fc_ksp_p_atol value: 1.0e-16
+Option left: name:-fc_ksp_p_min_atol value: 1.0e-5
+Option left: name:-fc_ksp_p_rtol value: 1.0e-6
+Option left: name:-fc_ksp_v_atol value: 1.0e-16
+Option left: name:-fc_ksp_v_min_atol value: 1.0e-5
+Option left: name:-fc_ksp_v_rtol value: 1.0e-6
+Option left: name:-use_stokes_norm value: Linf

@@ -1,0 +1,32 @@
+-restart 0 
+-mumax 1e0 
+-SolverType 2 
+
+-A11_ksp_type fgmres 
+-A11_pc_type fieldsplit 
+-A11_fieldsplit_pc_type ml 
+-A11_fieldsplit_ksp_rtol 1e-2
+-A11_pc_fieldsplit_type ADDITIVE 
+-levels 1  
+-A11_ksp_monitor
+-A11_ksp_converged_reason 
+-A11_fieldsplit_ksp_converged_reason
+-A11_pc_fieldsplit_block_size 3  
+-A11_fieldsplit_ksp_type richardson
+-A11_fieldsplit_ksp_maxit 4
+
+-A11_fieldsplit_mg_coarse_pc_type lu
+-A11_fieldsplit_mg_coarse_pc_factor_mat_solver_package mumps
+
+-fc_ksp_atol 1.0e-13 
+-fc_ksp_rtol 1e-5 
+-use_stokes_relative_norm 
+-use_stokes_norm_L2 
+
+
+
+-vpt_element FDSTAG 
+-save_breakpoints 0 
+-fc_ksp_view
+-MatlabOutputFiles 0 
+-VTKOutputFiles 0 

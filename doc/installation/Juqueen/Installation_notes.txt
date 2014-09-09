@@ -1,0 +1,10 @@
+
+JUQUEEN_OPT.py can be used to install petsc with optimized blas/lapack.
+
+NOTE: you must dounload ml-6.2 first from here: http://ftp.mcs.anl.gov/pub/petsc/externalpackages/ 
+
+Then purge all occurrences of "## _" string in all files, 
+
+and point out PETSc  to the downloaded ML version explicitly.
+
+ 

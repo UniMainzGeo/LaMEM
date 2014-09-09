@@ -1,0 +1,30 @@
+Loading particles in parallel from Matlab generated files
+
+Steps to make it work:
+
+1. Run LaMEM with -SavePartitioning 1 with a certain processor configuration (only for a few seconds on a local machine to get PETSc processor configuration for matlab)
+	i.e. mpiexec -n 8 LaMEM -nel_x 150 -nel_y 50 -nel_z 40 -SavePartitioning 1
+	Until you see this (a couple of sec):
+	# --- Save processor partitioning ---
+
+	A file called ProcessorPartitioning_(nproc)cpu_(nprocx).(nprocy).(nprocz).bin was created in the simulation directory.
+
+2. Create a model setup in Matlab using Parallel_CreatePhases.m in a similar way as the OLD way of setting up phase information. In addition, you need to set:
+	LaMEM_Parallel_output = 1;												% Output files for parallel reading in LaMEM
+	Parallel_partition = 'ProcessorPartitioning_8cpu_4.1.2.bin'; 			% Such that Matlab outputs the file consistent with the parallel configuration
+
+	Paraview_output = 1; 													% Allows you to visualize quickly the model setup in paraview; it creates a file called VTK_ModelSetup_paraview_binary.vtr
+	
+3. Run LaMEM and enabling the option: 
+LoadInitialParticlesFromDisc 			=	2		# Load an initial particle distribution file from disc (InitialParticles), yes (1) or no (0)
+													# Load Matlab generated particles in parallel (2)
+													
+ (see Subduction3D_FDSTAG_loadMatlab.dat as an example for ParamFile)
+Example:
+1) Load particles from Matlab files:
+ mpiexec -n 8 LaMEM -nel_x 150 -nel_y 50 -nel_z 40 -LoadInitialParticlesFromDisc 2
+ 
+2) Load particles from InitialParticles directory
+ mpiexec -n 8 LaMEM -nel_x 150 -nel_y 50 -nel_z 40 -LoadInitialParticlesFromDisc 1
+
+Note: you can generate a couple of ProcessorPartitioning files with different processor configurations and use them later.

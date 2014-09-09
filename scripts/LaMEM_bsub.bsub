@@ -1,0 +1,15 @@
+#!/bin/sh
+# -- This is an example lsf job submission script --
+# -- To run LaMEM on MOGON 
+# you run the script with  bsub < LaMEM_bsub.bsub
+ 
+#BSUB -J LaMEM              # job name
+#BSUB -o LaMEM_1.out        # name of output file
+#BSUB -W 0:01               # Walltime hh:mm
+#BSUB -M 3000000            # Requested memory [bytes]
+#BSUB -q short              # queue [short or long]
+#BSUB -n 2		    # number of cores	
+#BSUB -a intelmpi           # intel MPI is being used
+
+mpirun.lsf ./LaMEM -vpt_element FDSTAG -log_summary
+

@@ -1,0 +1,183 @@
+# Standard falling block test
+
+# Define number of elements in x,y & z-direction (should be uneven!)
+nel_x						=	8     
+nel_y						= 	8    
+nel_z						= 	8
+
+# Geometry
+DimensionalUnits				=	0			# Dimensionless (=0) or SI-dimensional units (=1)?
+L						=	1			# Length (y-direction)
+W						=	1			# Width  (x-direction)
+H						=	1			# Height (z-direction)
+x_left						=	0			# Left side of domain
+y_front						=	0			# Front side of domain
+z_bot						=	0			# Bottom of box
+
+# Define model setup and noise
+Setup.Model					=	2			# 0-Diapir, 1-Single Layer Fold, 2-Falling block, 3-from Particle file (defined below), 4-multilayer detachment fold, 5-Single Layer Growthrate
+ampl2D						=	0	 		# Amplitude of 2D sinuoidal perturbtion
+ampl3D						=	0.0			# Amplitude of 3D sinuoidal perturbtion
+amplNoise					=	0.0	 		# Amplitude of noise @ interface
+
+# Define input/output and numerics-related stuff
+OutputFile					=	FB_test		
+save_timesteps				=	1				# save every ? timesteps
+time_end					=	3				# last timestep
+CFL							=	1				# CFL, dt-based criterium
+dt_max						=	1e-5	  	   	# Maximum timestep [years if dimensional]
+	
+# Boundary conditions
+BC.Eyy						=	0.0				# BG strainrate in y-direction
+BC.Exx						=	0.0				# BG Strainrate in x-direction
+BC.LeftBound				=	1				# 0 - free surface, 1-free slip with BG strainrate Eyy, 2 - no slip, 5 - growthrate 2D, 7 - growthrate 3D
+BC.RightBound				=	1				# 0 - free surface, 1-free slip with BG strainrate Eyy, 2 - no slip, 5 - growthrate 2D, 7 - growthrate 3D
+BC.FrontBound				=	1				# 0 - free surface, 1-free slip with BG strainrate Exx, 2 - no slip, 5 - growthrate 2D, 7 - growthrate 3D
+BC.BackBound				=	1				# 0 - free surface, 1-free slip with BG strainrate Exx, 2 - no slip, 5 - growthrate 2D, 7 - growthrate 3D
+BC.LowerBound				=	1				# 0 - free surface, 1-free slip, 				  2 - no slip, 5 - growthrate 2D, 7 - growthrate 3D
+BC.UpperBound				=	2				# 0 - free surface, 1-free slip, 				  2 - no slip, 5 - growthrate 2D, 7 - growthrate 3D
+Temp_top	    			=   0				# Temperature @ top
+Temp_bottom					=   1 				# Temperature @ bottom; side BC's are flux-free
+
+# Grid advection method
+GridAdvectionMethod			= 		1 			# 0-Fully Eulerian, 1-Fully Lagrangian, 2-ALE with remeshing @ surface layer
+FactorSurfaceLayer			= 		0.3 		# How thick is the surface layer (if option 2 is selected above) ?
+
+
+# --- Gravity field ---
+get_Misfit 					= 	0
+get_GravityField			=	0
+GravityField_RefDatFile 	= 	input/ReferenceData/GravityField_FallingBlock_FC_REF.bin
+GravityField_SaveRef		=	0
+GravityField_SaveDebug		= 	0
+GravityField_SaveVTK		=	1
+GravityField_survey_nx		= 	31
+GravityField_survey_ny		=	31
+GravityField_survey_xs		=	0.0
+GravityField_survey_xm		= 	1.0
+GravityField_survey_ys		=	0.0
+GravityField_survey_ym		= 	1.0
+GravityField_survey_z		=	1.1
+GravityField_num_intp		= 	2
+
+
+
+# Define Stokes Solver
+StokesSolver 				=	3   # 1 - Powell-Hesteness iterations; 2 - Schur Complement Reduction; 3 - Fully Coupled Solver 
+VelocitySolver              =   1   # 0 - User defined; 1 - Direct (MUMPS); 2 - Galerkin geometric multigrid; 3 - Fieldsplit + Algebraic Multigrid (ML)
+
+<PetscOptionsStart>
+	# Fine-tune solver options here (add command-line Petsc Options)
+	-vpt_element Q1P0			# Type of element [Q2Pm1_global; Q2Pm1_local; Q1P0]
+	
+	-restart 0
+	-save_breakpoints 0
+
+	# set options that deviate from defaults
+	-fc_ksp_type fgmres 
+	-fc_ksp_monitor
+	-use_stokes_residual false
+	-use_stokes_monitor false
+	
+	-ps_ksp_type preonly
+	-ps_pc_type lu
+
+<PetscOptionsEnd>
+    
+# Phase distribution
+NumPartX				=		2			# Particles/Cell in x-direction
+NumPartY				=		2			# Particles/Cell in y-direction
+NumPartZ				=		2			# Particles/Cell in z-direction
+
+# Properties that are defined over the whole domain:
+Gravity					=	1;									# [m/s2] - gravitational acceleration 
+PlasticityModel			=	0;									#  not implemented yet
+Xi						=	0;									# [ ] - Shear heating factor - not implemented yet
+
+# Define phase transitions for particles
+num_phase_transitions			=	0				# The number of phase transitions present
+LowerViscosityCutoff			=	0.1
+UpperViscosityCutoff			=	1e4
+
+# Define material properties for all phases -------------------------------------------------
+num_phases					=	2		# Total number of phases defined in code
+
+	# Define properties of upper layer-------------------
+	<MaterialStart>
+		phase_id 			=	1
+		attribute 			= 	VISCOSITY
+		type 				= 	constant 					#power_law
+		eta0       			= 	1e3	
+		N_exp       		= 	3	
+	<MaterialEnd>
+	<MaterialStart>
+		phase_id			= 	1
+		attribute 			= 	DENSITY
+		type 				= 	temperature_dependent
+		rho0        		= 	2
+		alpha 				=	0
+	<MaterialEnd>
+	<MaterialStart>
+		phase_id			= 	1
+		attribute 			= 	ELASTICITY
+		type 				= 	constant
+		shear        		= 	5e10
+	<MaterialEnd>
+	<MaterialStart>
+		phase_id			= 	1
+		attribute 			= 	ENERGY
+		type 				= 	constant
+		ThermalConductivity	= 	3
+		HeatCapacity		=	1050
+		RadioactiveHeat		=	0
+		ShearHeating		=	0
+	<MaterialEnd>
+	<MaterialStart>
+		phase_id			= 	1
+		attribute 			= 	PLASTICITY
+		type 				= 	constant
+		Cohesion        		= 	20e60
+		FrictionAngle		= 	30
+	<MaterialEnd>
+	
+	
+	# Define properties of lower layer -----------------
+	<MaterialStart>
+		phase_id 			=	0
+		attribute 			= 	VISCOSITY
+		type 				= 	constant 					#power_law
+		eta0       			= 	1	
+		N_exp       		= 	1
+	<MaterialEnd>
+	<MaterialStart>
+		phase_id 			= 	0
+		attribute 			= 	DENSITY
+		type 				= 	temperature_dependent
+		rho0        		= 	1
+		alpha 				=	0
+	<MaterialEnd>
+	<MaterialStart>
+		phase_id			= 	0
+		attribute 			= 	ELASTICITY
+		type 				= 	constant
+		shear        		= 	5e10
+	<MaterialEnd>
+	<MaterialStart>
+		phase_id			= 	0
+		attribute 			= 	ENERGY
+		type 				= 	constant
+		ThermalConductivity	= 	3
+		HeatCapacity		=	1050
+		RadioactiveHeat		=	0
+		ShearHeating		=	0
+	<MaterialEnd>
+	<MaterialStart>
+		phase_id			= 	0
+		attribute 			= 	PLASTICITY
+		type 				= 	constant
+		Cohesion        	= 	20e60
+		FrictionAngle		= 	30
+	<MaterialEnd>
+
+	
+# End of defining material properties for all phases ----------------------------------------

@@ -1,0 +1,4 @@
+EXEC            = ../bin/LaMEM -ParamFile input/Subduction3D_FDSTAG_LoadMatlabParticles_pushingBC.dat -time_end 1 -da_proc_z 1 -LoadInitialParticlesFromDisc 2 -AddPushing 0 -restart 0
+NPROCS          = 4
+TEST_TYPE       = tolerance_diff_pl,1.0e-4
+

@@ -1,0 +1,37 @@
+--------------------------------
+How to perform the repartioning
+--------------------------------
+
+(1)	 Compile Repartition in LaMEM/utils/Repartitioning/
+-> 	 make all
+	 (created an executable in LaMEM/bin called Repartition)
+
+
+(2)	 For repartitioning A cpus -> B cpus for Timestep <TS>, run the following in the same simulation directory:
+->	 mpiexec -n A LaMEM -ParamFile <filename> -SaveParticles 1 -SavePartitioning 1 -save_breakpoints -1 -time_end 1
+
+(2a) Rename ProcessorPartitioning.bin as ProcessorPartitioning_init.bin
+	 You need to wait until first timestep is finished in order to save particles to files (need for repartitioning)
+
+(2b) Run LaMEM with a target configuration
+->	 mpiexec -n B LaMEM -ParamFile <filename> -SaveParticles 0 -SavePartitioning 1 -save_breakpoints -1 -time_end 1
+
+(2c) Rename ProcessorPartitioning.bin as ProcessorPartitioning_target.bin
+	 You can cancel the run immediately after the message # --- Save processor partitioning ---
+
+
+(3)	 Run Repartition in the simulation directory 
+	 This directory should include the following files:
+	 - ProcessorPartitioning_init.bin (Processor geometry "A")
+ 	 - ProcessorPartitioning_target.bin (Processor geometry "B")
+ 	 - As many Particles.*.10000<TS>.out files as indicated by "A"
+->	 ./Repartition -timestep <TS> (Sequential program!)
+
+
+(4)  Run LaMEM on B cpus with new InitialParticles
+->	 mpiexec -n B LaMEM -ParamFile <filename> -SaveParticles 0 -LoadInitialParticlesFromDisc 1
+
+Note: for repartitioning on different no. of cores (i.e. different B cpus) just repeat steps 2b-4 with the desired no. of cores B
+
+--------------------------------
+Adina & Tobib, 15/05/2013

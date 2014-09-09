@@ -1,0 +1,4 @@
+EXEC            = ../bin/LaMEM -ParamFile input/subduction3D.dat  -restart 0 -vpt_element Q1P0 -time_end 1 -GridAdvectionMethod 0 -AddRandomNoiseParticles 0 -vs_fieldsplit_mg_levels_pc_type sor -vs_fieldsplit_1_pc_type sor
+NPROCS          = 4
+TEST_TYPE       = tolerance_diff_pl,1.0e-4
+

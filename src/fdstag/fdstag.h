@@ -1,0 +1,322 @@
+//---------------------------------------------------------------------------
+//........   PARALLEL STAGGERED GRID USING PETSC DISTRIBUTED ARRAYS  ........
+//---------------------------------------------------------------------------
+#ifndef __fdstag_h__
+#define __fdstag_h__
+//---------------------------------------------------------------------------
+#define _num_neighb_ 27
+//---------------------------------------------------------------------------
+
+// mesh segments data
+typedef struct
+{
+	PetscInt     nsegs;  // number of segments
+	PetscInt    *istart; // indices of the first nodes plus last index
+	PetscScalar *xstart; // coordinates of the first nodes plus total size
+	PetscScalar *biases; // biases for each segment
+
+} MeshSeg1D;
+
+//---------------------------------------------------------------------------
+// MeshSeg1D functions
+//---------------------------------------------------------------------------
+
+PetscErrorCode MeshSeg1DCreate(
+	MeshSeg1D  *ms,
+	PetscScalar beg,
+	PetscScalar end,
+	PetscInt    tncels,
+	MeshSegInp *mseg);
+
+PetscErrorCode MeshSeg1DDestroy(MeshSeg1D *ms);
+
+// (partially) mesh a segment with (optionally) biased element size
+PetscErrorCode MeshSeg1DGenCoord(
+	MeshSeg1D   *ms,     // segments description
+	PetscInt     iseg,   // segment index
+	PetscInt     nl,     // number of nodes to be generated
+	PetscInt     istart, // index of the first node
+	PetscScalar *crd);   // coordinates of the nodes
+
+//---------------------------------------------------------------------------
+// finite difference discretization / domain decomposition data for single direction
+typedef struct
+{
+	PetscInt      nproc;       // number of processors
+	PetscInt      rank;        // rank of current processor
+
+	PetscInt     *starts;      // index of first node (cell) on all processors + last index
+	PetscInt      pstart;      // index of first node (cell) on this processors
+
+	PetscInt      tnods;       // total number of nodes
+	PetscInt      tcels;       // total number of cells (tnods-1)
+
+	PetscInt      nnods;       // number of local nodes
+	PetscInt      ncels;       // number of local cells
+
+	PetscScalar  *ncoor;       // coordinates of local nodes (+ 1 layer of ghost points)
+	PetscScalar  *ccoor;       // coordinates of local cells (+ 1 layer of ghost points)
+	PetscScalar  *nbuff;       // memory buffer for node coordinates
+	PetscScalar  *cbuff;       // memory buffer for cells coordinates
+
+	PetscMPIInt   grprev;      // global rank of previous process (-1 for first processor)
+	PetscMPIInt   grnext;      // global rank of next process (-1 for last processor)
+
+	PetscMPIInt   color;       // color of processor column in base direction
+
+} Discret1D;
+
+//---------------------------------------------------------------------------
+// Discret1D functions
+//---------------------------------------------------------------------------
+
+PetscErrorCode Discret1DCreate(
+	Discret1D  *ds,
+	PetscInt    nproc,     // number of processors
+	PetscInt    rank,      // processor rank
+	PetscInt   *nnodProc,  // number of nodes per processor
+	PetscInt    color,     // column color
+	PetscMPIInt grprev,    // global rank of previous process
+	PetscMPIInt grnext);   // global rank of next process
+
+PetscErrorCode Discret1DDestroy(Discret1D *ds);
+
+PetscErrorCode Discret1DGenCoord(Discret1D *ds, MeshSeg1D *ms);
+
+PetscErrorCode Discret1DView(Discret1D *ds, const char *name);
+
+PetscErrorCode Discret1DGetMinCellSize(Discret1D *ds, PetscScalar *sz);
+
+PetscErrorCode Discret1DGetColumnComm(Discret1D *ds, MPI_Comm *comm);
+
+
+//---------------------------------------------------------------------------
+
+typedef enum { IDXNONE, IDXCOUPLED, IDXUNCOUPLED } idxtype;
+
+// global indexing of the DOF
+typedef struct
+{
+	// local vectors containing global indices of the local & ghost nodes
+	// NOTE: get rid of these vectors, replace with 1D arrays
+	Vec ivx, ivy, ivz, ip;
+
+	PetscInt numdof;   // local number of DOF (X-Y-Z-velocities + Pressure)
+	PetscInt istart;   // global index of the first DOF
+	PetscInt numdofp;  // local number of pressure DOF (decoupled only)
+	PetscInt istartp;  // global index of the first pressure DOF (decoupled only)
+
+	idxtype  idxmod;   // indexing mode
+
+} DOFIndex;
+
+//---------------------------------------------------------------------------
+// staggered grid data structure
+typedef struct
+{
+	// local discretization data (coordinates, indexing & domain decomposition)
+	Discret1D dsx;
+	Discret1D dsy;
+	Discret1D dsz;
+
+	MeshSeg1D msx;
+	MeshSeg1D msy;
+	MeshSeg1D msz;
+
+	//========================================================================
+	// NOTE!
+	// At late optimization stages get rid of these DM objects
+	// in favor of the general vector scatter operations.
+	// Though, residual vector assembly can already be done without DMs.
+	//========================================================================
+
+	// distributed arrays (partitioning and communication layouts)
+	DM DA_CEN;              // central points
+	DM DA_COR;              // corner points
+	DM DA_XY, DA_XZ, DA_YZ; // edges
+	DM DA_X,  DA_Y,  DA_Z;  // face velocities & residuals
+
+	DOFIndex dofcoupl;
+	DOFIndex dofsplit;
+
+	// local number of local grid points
+	PetscInt nCells;  // cells
+	PetscInt nCorns;  // corners
+	PetscInt nXYEdg;  // XY-edges
+	PetscInt nXZEdg;  // XZ-edges
+	PetscInt nYZEdg;  // YZ-edges
+	PetscInt nXFace;  // X-faces
+	PetscInt nYFace;  // Y-faces
+	PetscInt nZFace;  // Z-faces
+
+	// number of local and ghost points
+//	PetscInt nCellsGh; // cells
+//	PetscInt nXFaceGh; // X-faces
+//	PetscInt nYFaceGh; // Y-faces
+//	PetscInt nZFaceGh; // Z-faces
+
+//	PetscInt numdofGh; // number of local & ghost DOF
+//	PetscInt istartGh; // global index of the first DOF in ghosted storage
+
+	PetscMPIInt neighb[_num_neighb_]; // global ranks of neighboring process
+	PetscScalar mdx, mdy, mdz;        // minimum cell sizes
+
+} FDSTAG;
+
+//---------------------------------------------------------------------------
+// DOFIndex functions
+//---------------------------------------------------------------------------
+
+PetscErrorCode DOFIndexCreate(DOFIndex *id, FDSTAG *fs, idxtype idxmod);
+
+PetscErrorCode DOFIndexDestroy(DOFIndex *id);
+
+//---------------------------------------------------------------------------
+// FDSTAG functions
+//---------------------------------------------------------------------------
+
+PetscErrorCode FDSTAGCreate(
+	FDSTAG  *fs,
+	PetscInt Nx, PetscInt Ny, PetscInt Nz,
+	PetscInt Px, PetscInt Py, PetscInt Pz);
+
+PetscErrorCode FDSTAGDestroy(FDSTAG *fs);
+
+// generate coordinates of local nodes and cells from segment data
+PetscErrorCode FDSTAGGenCoord(FDSTAG *fs, UserContext *usr);
+
+// set global indices of the local and ghost nodes
+PetscErrorCode FDSTAGSetGlobInd(FDSTAG * fs);
+
+// return an array with the global ranks of adjacent processes (including itself)
+PetscErrorCode FDSTAGGetNeighbProc(FDSTAG *fs);
+
+// get local & global ranks of a domain containing a point (only neighbors are checked)
+PetscErrorCode FDSTAGGetPointRanks(FDSTAG *fs, PetscScalar *X, PetscInt *lrank, PetscMPIInt *grank);
+
+// compute minimum cell size in each direction
+PetscErrorCode FDSTAGGetMinCellSize(FDSTAG *fs);
+
+//---------------------------------------------------------------------------
+// MACROS
+//---------------------------------------------------------------------------
+
+// get sub-domain ranks, starting node IDs, and number of nodes for output
+#define GET_OUTPUT_RANGE(r, n, s, ds) { r = ds.rank; s = ds.starts[r]; n = ds.starts[r+1] - s + 1; }
+
+// get loop bounds for node discretization
+#define GET_NODE_RANGE(n, s, ds) { n = ds.nnods; s = ds.pstart; }
+
+// get loop bounds for cell discretization
+#define GET_CELL_RANGE(n, s, ds) { n = ds.ncels; s = ds.pstart; }
+
+// get loop bounds for node discretization (including BOUNDARY ghost points)
+#define GET_NODE_RANGE_GHOST_BND(n, s, ds) { n = ds.nnods; s = ds.pstart; if(ds.grprev == -1) { s--; n++; } if(ds.grnext == -1) n++; }
+
+// get loop bounds for cell discretization (including BOUNDARY ghost points)
+#define GET_CELL_RANGE_GHOST_BND(n, s, ds) { n = ds.ncels; s = ds.pstart; if(ds.grprev == -1) { s--; n++; } if(ds.grnext == -1) n++; }
+
+// get loop bounds for node discretization (including INTERNAL ghost points)
+#define GET_NODE_RANGE_GHOST_INT(n, s, ds) { n = ds.nnods + 2; s = ds.pstart - 1; if(ds.grprev == -1) { s++; n--; } if(ds.grnext == -1) n--; }
+
+// get loop bounds for cell discretization (including INTERNAL ghost points)
+#define GET_CELL_RANGE_GHOST_INT(n, s, ds) { n = ds.ncels + 2; s = ds.pstart - 1; if(ds.grprev == -1) { s++; n--; } if(ds.grnext == -1) n--; }
+
+// get loop bounds for node discretization (including ALL ghost points)
+#define GET_NODE_RANGE_GHOST_ALL(n, s, ds) { n = ds.nnods + 2; s = ds.pstart - 1; }
+
+// get loop bounds for cell discretization (including ALL ghost points)
+#define GET_CELL_RANGE_GHOST_ALL(n, s, ds) { n = ds.ncels + 2; s = ds.pstart - 1; }
+
+//---------------------------------------------------------------------------
+
+// get coordinate of i-th CELL (center)
+#define COORD_CELL(i, s, ds) (ds.ccoor[(i-s)])
+
+// get coordinate of i-th NODE
+#define COORD_NODE(i, s, ds) (ds.ncoor[(i-s)])
+
+// get size of i-th CELL control volume (distance between two bounding nodes)
+#define SIZE_CELL(i, s, ds) (ds.ncoor[(i-s)+1] - ds.ncoor[(i-s)])
+
+// get size of i-th NODE control volume (distance between two neighboring cell centers)
+#define SIZE_NODE(i, s, ds) (ds.ccoor[(i-s)] - ds.ccoor[(i-s)-1])
+
+// get interpolation weight for the end of i-th CELL control volume (w_beg = 1 - w_end)
+#define WEIGHT_CELL(i, s, ds) ((ds.ccoor[(i-s)] - ds.ncoor[(i-s)])/(ds.ncoor[(i-s)+1] - ds.ncoor[(i-s)]))
+
+// get interpolation weight for the end of i-th NODE control volume (w_beg = 1 - w_end)
+#define WEIGHT_NODE(i, s, ds) ((ds.ncoor[(i-s)] - ds.ccoor[(i-s)-1])/(ds.ccoor[(i-s)] - ds.ccoor[(i-s)-1]))
+
+// get interpolation weight for a point in the i-th CELL control volume (local index)
+#define WEIGHT_POINT_CELL(i, x, ds) (1.0 - PetscAbsScalar(x - ds.ccoor[i])/(ds.ncoor[i+1] - ds.ncoor[i]))
+
+// get interpolation weight for a point in the i-th NODE control volume (local index)
+#define WEIGHT_POINT_NODE(i, x, ds) (1.0 - PetscAbsScalar(x - ds.ncoor[i])/(ds.ccoor[i] - ds.ccoor[i-1]))
+
+// return relative rank of a point
+#define GET_POINT_RANK(x, r, ds) { r = 1; if(x < ds.ncoor[0]) r--; else if(x > ds.ncoor[ds.ncels]) r++; }
+
+// get consecutive index from I, J, K indices
+#define GET_CELL_ID(ID, i, j, k, m, n) { ID = i + (j)*(m) + (k)*(m)*(n); }
+
+// get I, J, K indices from consecutive index
+#define GET_CELL_IJK(ID, i, j, k, m, n) \
+	(k) = (ID)/((m)*(n));               \
+	(j) = (ID - (k)*(m)*(n))/m;         \
+	(i) =  ID - (k)*(m)*(n) - (j)*(m);
+
+// get bounds of the local domain (coordinates of the first and the last nodes)
+//#define GET_DOMAIN_BOUNDS(xb, xe, ds) { xb = ds.ncoor[0]; xe = ds.ncoor[ds.ncels]; }
+
+//---------------------------------------------------------------------------
+
+// initialize standard access loop
+#define START_STD_LOOP \
+	for(k = sz; k < sz+nz; k++) \
+	{	for(j = sy; j < sy+ny; j++) \
+		{	for(i = sx; i < sx+nx; i++) \
+			{
+
+// finalize standard access loop
+#define END_STD_LOOP \
+			} \
+		} \
+	}
+
+//---------------------------------------------------------------------------
+
+// access operation
+#define GLOBAL_TO_LOCAL(dm, gvec, lvec) \
+	ierr = DMGlobalToLocalBegin(dm, gvec, INSERT_VALUES, lvec); CHKERRQ(ierr); \
+	ierr = DMGlobalToLocalEnd  (dm, gvec, INSERT_VALUES, lvec); CHKERRQ(ierr);
+
+// assembly operation
+#define LOCAL_TO_GLOBAL(dm, lvec, gvec) \
+	ierr = VecZeroEntries(gvec); CHKERRQ(ierr); \
+	ierr = DMLocalToGlobalBegin(dm, lvec, ADD_VALUES, gvec); CHKERRQ(ierr); \
+	ierr = DMLocalToGlobalEnd  (dm, lvec, ADD_VALUES, gvec); CHKERRQ(ierr);
+
+// create and initialize local vector, scatter ghost values, access array
+#define GET_INIT_LOCAL_VECTOR(dm, gvec, lvec, array) \
+	ierr = DMGetLocalVector(dm, &lvec); CHKERRQ(ierr); \
+	ierr = DMGlobalToLocalBegin(dm, gvec, INSERT_VALUES, lvec); CHKERRQ(ierr); \
+	ierr = DMGlobalToLocalEnd  (dm, gvec, INSERT_VALUES, lvec); CHKERRQ(ierr); \
+	ierr = DMDAVecGetArray(dm, lvec, &array); CHKERRQ(ierr);
+
+// close access & return local vector
+#define RESTORE_LOCAL_VECTOR(dm, lvec, array) \
+	ierr = DMDAVecRestoreArray(dm, lvec, &array); CHKERRQ(ierr); \
+	ierr = DMRestoreLocalVector(dm, &lvec);
+
+//---------------------------------------------------------------------------
+#endif
+
+
+/*
+ void splitPointSlot(
+	PetscInt     points,
+	PetscInt     n,
+	PetscScalar *weights,
+	PetscInt    *slots);
+ */

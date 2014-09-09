@@ -1,0 +1,4 @@
+Before you proceed with installation (re-installation)
+remove/comment ALL PATH modifications related to valgrind/mpi/petsc in .bash_profile
+Also comment PETSC_DIR, PETSC_ARCH environmental variables.
+

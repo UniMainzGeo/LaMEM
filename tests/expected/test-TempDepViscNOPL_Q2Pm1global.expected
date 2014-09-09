@@ -1,0 +1,259 @@
+# -------------------------------------------------------------------------- 
+#                   Lithosphere and Mantle Evolution Model                   
+#              Current Revision: 4812 - 2013-10-01 23:57:18		     
+#  Modified items: LaMEM_Particles.c, Elements.c, Assembly_FDSTAG.c, fdstag/JacRes.c, 
+#     Compiled: Date: Oct  9 2013 - Time: 23:02:54 - Mode:  	    
+# -------------------------------------------------------------------------- 
+ Parsing input file : ./input/TempDepViscNOPL_MG_DAM_NOgridin_benchmark.dat 
+# Adding PetscOption: -vpt_element Q2Pm1_global 
+# LithColDepth[0] = 0 
+# LithColDens[0] = 0 
+# LithColDens[1] = 0 
+# --------------------------------------------------------------------------
+# Phase material parameters read from ./input/TempDepViscNOPL_MG_DAM_NOgridin_benchmark.dat: 
+#    phase_0 (id=0), VISCOSITY, tempdep_nopowerlaw [0,0,0] = 3.200000e-20, 3.000000e+00 1.000000e+00 2.760000e+05 
+#    phase_0 (id=0), DENSITY, temperature-dependent [0,1,0] = 2.700000e+03, 0.000000e+00, 0.000000e+00 
+#    phase_0 (id=0), ENERGY, constant [0,2,0] = 2.100000e+00 1.050000e+03 4.000000e-07 0.000000e+00 
+#    phase_1 (id=1), VISCOSITY, tempdep_nopowerlaw [1,0,0] = 3.160000e-26, 3.300000e+00 1.000000e+00 1.900000e+05 
+#    phase_1 (id=1), DENSITY, temperature-dependent [1,1,0] = 2.700000e+03, 0.000000e+00, 0.000000e+00 
+#    phase_1 (id=1), ENERGY, constant [1,2,0] = 2.500000e+00 1.050000e+03 1.400000e-06 0.000000e+00 
+ Stokes solver             : Schur Complement Reduction
+ Velocity solver           : Galerkin geometric multigrid
+ Element-type used         : Q2Pm1_global;  [Q1P0 Q2Pm1_global Q2Pm1_local Q1Q1 FDSTAG] (change with -vpt_element)
+ Total # of cpu's          : 4 
+ Total # of velocity dof's : 8019 
+ Computing mean material per element using arithmetic averaging from integration points 
+ Employing code in a Lagrangian manner 
+ Gravity angle with z-axis =  0 
+ Approximate Aspect ratio of cells [dx/dz, dy/dz] = [4 4] 
+ Number of tracers/cell in [x,y,z]-direction = [3,3,3] 
+ NumSurfaceNodes=33  nz=33 
+ # Not employing nonlinear iterations 
+ BC employed: BC.[Left Right; Front Back; Lower Upper]=[6 1; 1 1; 5 0] 
+# Initial time step: 0.001 years 
+ Input is assumed to be in dimensional units: 
+  Characteristic Length 	= 30000 [m] 
+  Characteristic Stress 	= 1e+12 [Pa] 
+  Characteristic Temperature 	= 623  [Celcius/K] 
+  Characteristic Viscosity 	= 1e+26 [Pa.s] 
+  Characteristic Time 	= 1e+14 [s] 
+ Fine Grid parameters, nel=[4,4,16], cpu=[1,1,4] 
+# Finished initializing Stokes matrices : 0.0913899 s 
+# Not adding random noise to initial particle distribution. 
+Initialized particles 
+#rank=0, Attributing 1728 particles to elements took 0.0419981 s 
+The total # of particles present is 6912 
+ You are using the OLD way of setting tracer properties. This piece of code will be REMOVED in a future version of LaMEM - Please change your input scripts!! 
+ Reading phase distribution from binary file: input/ParticlesInput_Tbenchmark_2phase.dat   
+ Maximum phase-number detected: 1   maxtemp = 1, num_phases = 3 
+ Saving initial mesh to file 
+ Mesh size: 9 9 33 
+ Saved Initial Mesh to file ./InitialMesh/InitialMesh.0.out 
+Saved initial particle distribution to directory ./InitialParticles 
+The total memory used by integration points is 1.824768e+00 MB
+The max memory used by integration points is 4.561920e-01 MB
+The min memory used by integration points is 4.561920e-01 MB
+#  Interpolating meshes and temperatures took 0.000945091 s 
+#  Solving for velocity took 1.38144e+09 s 
+#  Forming temperature stiffness matrix mx,my,mz=(9, 9, 33) ...  finished. 
+#  Forming temperature stiffness matrixes took 0.0148559 s 
+#  Solving for temperature took 0.00605989 s 
+The total memory used by integration points is 1.824768e+00 MB
+The max memory used by integration points is 4.561920e-01 MB
+The min memory used by integration points is 4.561920e-01 MB
+The total memory used by particles is 1.935360e+00 MB
+The max memory used by particles is 4.838400e-01 MB
+The min memory used by particles is 4.838400e-01 MB
+#  Updating properties @ integration points and particles took 0.010767 s 
+AdvectionMethod = 1 
+  Starting particle advection 
+  Finished particle advection 
+Minimum z-level phase 1 -14687.5 
+# Writing output to existing directory Timestep_000000 
+# Saved MATLAB output in file Timestep_000000/ThinSheet_Output.0.1000000.out 
+# Saved Paraview VTS Velocity output in file ThinSheet_Output_velocity_step000000-mesh.pvts 
+# Saved Paraview VTS Temperature output in file ThinSheet_Output_temperature_step000000-mesh.pvts 
+# Saved Paraview VTS Surface Topography output in file ThinSheet_Output_Surface_topography_step000000-mesh.pvts 
+# Saved Paraview VTS Bottom Topography output in file ThinSheet_Output_Bottom_topography_step000000-mesh.pvts 
+# Saved Paraview VTS point-wise quadrature output in file ThinSheet_Output_quadrature_step000000-mesh.pvts 
+ Maximum velocity  0   [cm/year]  
+ Time = 1e+09, dt=500  [Years]  
+# Finished timestep 0 out of 4 in 0.0498891 s
+  
+  
+**********************  
+ Created a global breakpoint file BreakPoint_Global_VCoord_0.breakpoint 
+  # particles = 1728 | rank[0] 
+**********************  
+  
+#  Interpolating meshes and temperatures took 0.001055 s 
+#  Solving for velocity took 1.38144e+09 s 
+#  Forming temperature stiffness matrix mx,my,mz=(9, 9, 33) ...  finished. 
+#  Forming temperature stiffness matrixes took 0.014647 s 
+#  Solving for temperature took 0.00383711 s 
+The total memory used by integration points is 1.824768e+00 MB
+The max memory used by integration points is 4.561920e-01 MB
+The min memory used by integration points is 4.561920e-01 MB
+The total memory used by particles is 1.935360e+00 MB
+The max memory used by particles is 4.838400e-01 MB
+The min memory used by particles is 4.838400e-01 MB
+#  Updating properties @ integration points and particles took 0.016484 s 
+AdvectionMethod = 1 
+  Starting particle advection 
+  Finished particle advection 
+Minimum z-level phase 1 -14687.5 
+# Writing output to existing directory Timestep_000001 
+# Saved MATLAB output in file Timestep_000001/ThinSheet_Output.0.1000001.out 
+# Saved Paraview VTS Velocity output in file ThinSheet_Output_velocity_step000001-mesh.pvts 
+# Saved Paraview VTS Temperature output in file ThinSheet_Output_temperature_step000001-mesh.pvts 
+# Saved Paraview VTS Surface Topography output in file ThinSheet_Output_Surface_topography_step000001-mesh.pvts 
+# Saved Paraview VTS Bottom Topography output in file ThinSheet_Output_Bottom_topography_step000001-mesh.pvts 
+# Saved Paraview VTS point-wise quadrature output in file ThinSheet_Output_quadrature_step000001-mesh.pvts 
+ Maximum velocity  0   [cm/year]  
+ Time = 2e+09, dt=500  [Years]  
+# Finished timestep 1 out of 4 in 0.052053 s
+  
+#  Interpolating meshes and temperatures took 0.000620127 s 
+#  Solving for velocity took 1.38144e+09 s 
+#  Forming temperature stiffness matrix mx,my,mz=(9, 9, 33) ...  finished. 
+#  Forming temperature stiffness matrixes took 0.012054 s 
+#  Solving for temperature took 0.00288987 s 
+The total memory used by integration points is 1.824768e+00 MB
+The max memory used by integration points is 4.561920e-01 MB
+The min memory used by integration points is 4.561920e-01 MB
+The total memory used by particles is 1.935360e+00 MB
+The max memory used by particles is 4.838400e-01 MB
+The min memory used by particles is 4.838400e-01 MB
+#  Updating properties @ integration points and particles took 0.014935 s 
+AdvectionMethod = 1 
+  Starting particle advection 
+  Finished particle advection 
+Minimum z-level phase 1 -14687.5 
+# Writing output to existing directory Timestep_000002 
+# Saved MATLAB output in file Timestep_000002/ThinSheet_Output.0.1000002.out 
+# Saved Paraview VTS Velocity output in file ThinSheet_Output_velocity_step000002-mesh.pvts 
+# Saved Paraview VTS Temperature output in file ThinSheet_Output_temperature_step000002-mesh.pvts 
+# Saved Paraview VTS Surface Topography output in file ThinSheet_Output_Surface_topography_step000002-mesh.pvts 
+# Saved Paraview VTS Bottom Topography output in file ThinSheet_Output_Bottom_topography_step000002-mesh.pvts 
+# Saved Paraview VTS point-wise quadrature output in file ThinSheet_Output_quadrature_step000002-mesh.pvts 
+ Maximum velocity  0   [cm/year]  
+ Time = 3e+09, dt=500  [Years]  
+# Finished timestep 2 out of 4 in 0.04352 s
+  
+#  Interpolating meshes and temperatures took 0.00067687 s 
+#  Forming FEM stiffness matrix mx,my,mz=(9, 9, 33) ...   finished. [0.104273 s]
+ minDiagonalRatio=1 [Critical = 0.55; change with -CriticalDiagonalRatio]  
+#  Forming stiffness matrixes took 0.106508 s 
+SCR: Viscosity structure info: min(40)=9.478029e-02 : max(980)=1.088740e+03 : contrast=1.148698e+04 
+  Residual norms for scr_ solve.
+  0 KSP Residual norm 8.888729290415e-03 
+  1 KSP Residual norm 1.720299096535e-06 
+  2 KSP Residual norm 1.227488751462e-06 
+  3 KSP Residual norm 3.035836581194e-07 
+  4 KSP Residual norm 1.042240018654e-07 
+  5 KSP Residual norm 3.478067472724e-08 
+  6 KSP Residual norm 1.117473446242e-08 
+  7 KSP Residual norm 3.959765664267e-09 
+  8 KSP Residual norm 1.514174393440e-09 
+  9 KSP Residual norm 6.725420036431e-10 
+ 10 KSP Residual norm 2.862251444087e-10 
+ 11 KSP Residual norm 1.058742428725e-10 
+ 12 KSP Residual norm 4.642995814261e-11 
+ 13 KSP Residual norm 1.880471598379e-11 
+ 14 KSP Residual norm 7.182962614557e-12 
+ 15 KSP Residual norm 2.663384107997e-12 
+ 16 KSP Residual norm 1.290644199502e-12 
+ 17 KSP Residual norm 5.133052975560e-13 
+ 18 KSP Residual norm 2.241663770196e-13 
+ 19 KSP Residual norm 1.071132522671e-13 
+ 20 KSP Residual norm 4.569358074189e-14 
+ 21 KSP Residual norm 1.730436430441e-14 
+ 22 KSP Residual norm 7.519855019658e-15 
+Linear solve converged due to CONVERGED_RTOL iterations 22
+# Time: p solve = 3.81e+00 
+# Time: u solve = 1.36e-01 
+#  Finished Stokes solve after 4.30894 s 
+------------------------------------------
+Stokes solver summary: 
+  divergence: 
+    Div_min = 3.049440985201e-13 
+    Div_max = 6.091909675462e-08 
+    |Div|_2 = 2.550949987186e-07 
+    |Div|_1 = 4.811447446698e-06 
+  momentum: 
+    mRes_min = 1.627333000487e-14 
+    mRes_max = 9.517069529502e-06 
+    |mRes|_2 = 3.966617132297e-05 
+    |mRes|_1 = 8.145975042014e-04 
+  velocity: 
+    u_min   = -1.000000049636e-01 
+    u_max   = 1.000029360847e-01 
+    |u|_2   = 4.303023671096e+00 
+    |u|_1   = 2.673026964753e+02 
+  pressure: 
+    p_min   = -1.563083256553e-01 
+    p_max   = 2.177499980389e+02 
+    |p|_2   = 8.759448195203e+02 
+    |p|_1   = 3.991591873639e+03 
+------------------------------------------
+The total memory used by integration points is 1.824768e+00 MB
+The max memory used by integration points is 4.561920e-01 MB
+The min memory used by integration points is 4.561920e-01 MB
+#  Solving for velocity took 4.42405 s 
+#  Forming temperature stiffness matrix mx,my,mz=(9, 9, 33) ...  finished. 
+#  Forming temperature stiffness matrixes took 0.016377 s 
+#  Solving for temperature took 0.00284815 s 
+The total memory used by integration points is 1.824768e+00 MB
+The max memory used by integration points is 4.561920e-01 MB
+The min memory used by integration points is 4.561920e-01 MB
+The total memory used by particles is 1.935360e+00 MB
+The max memory used by particles is 4.838400e-01 MB
+The min memory used by particles is 4.838400e-01 MB
+#  Updating properties @ integration points and particles took 0.014667 s 
+AdvectionMethod = 1 
+  Starting particle advection 
+  Finished particle advection 
+Minimum z-level phase 1 -14687.2 
+# Writing output to existing directory Timestep_000003 
+# Saved MATLAB output in file Timestep_000003/ThinSheet_Output.0.1000003.out 
+# Saved Paraview VTS Velocity output in file ThinSheet_Output_velocity_step000003-mesh.pvts 
+# Saved Paraview VTS Temperature output in file ThinSheet_Output_temperature_step000003-mesh.pvts 
+# Saved Paraview VTS Surface Topography output in file ThinSheet_Output_Surface_topography_step000003-mesh.pvts 
+# Saved Paraview VTS Bottom Topography output in file ThinSheet_Output_Bottom_topography_step000003-mesh.pvts 
+# Saved Paraview VTS point-wise quadrature output in file ThinSheet_Output_quadrature_step000003-mesh.pvts 
+ Maximum velocity  0.0946756   [cm/year]  
+ Time = 3e+09, dt=500  [Years]  
+# Finished timestep 3 out of 4 in 4.47919 s
+  
+# Total time required: 4.80355 s 
+#PETSc Option Table entries:
+-AddRandomNoiseParticles 0
+-ParamFile ./input/TempDepViscNOPL_MG_DAM_NOgridin_benchmark.dat
+-options_left
+-restart 0
+-scr_ksp_converged_reason
+-scr_ksp_max_it 1000
+-scr_ksp_monitor
+-scr_ksp_rtol 1e-12
+-scr_ksp_type fgmres
+-scr_pc_type sor
+-vpt_element Q2Pm1_global
+-vs_ksp_max_it 1000
+-vs_ksp_rtol 1.0e-6
+-vs_ksp_type fgmres
+-vs_mg_coarse_ksp_type preonly
+-vs_mg_coarse_pc_redundant_number 2
+-vs_mg_coarse_pc_type redundant
+-vs_mg_coarse_redundant_pc_factor_mat_solver_package mumps
+-vs_mg_levels_ksp_max_it 4
+-vs_mg_levels_ksp_type gmres
+-vs_mg_levels_pc_fieldsplit_block_size 3
+-vs_mg_levels_pc_fieldsplit_type ADDITIVE
+-vs_mg_levels_pc_type fieldsplit
+-vs_pc_mg_cycle_type v
+-vs_pc_mg_galerkin
+-vs_pc_mg_levels 2
+-vs_pc_mg_type multiplicative
+-vs_pc_type mg
+#End of PETSc Option Table entries
+There are no unused options.

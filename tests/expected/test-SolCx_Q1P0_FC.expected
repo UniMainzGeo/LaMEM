@@ -1,0 +1,196 @@
+# -------------------------------------------------------------------------- 
+#                   Lithosphere and Mantle Evolution Model                   
+#              Current Revision: 4812 - 2013-10-01 23:57:18		     
+#  Modified items: LaMEM_Particles.c, Elements.c, Assembly_FDSTAG.c, fdstag/JacRes.c, 
+#     Compiled: Date: Oct  9 2013 - Time: 23:02:54 - Mode:  	    
+# -------------------------------------------------------------------------- 
+ Stokes solver             : Fully Coupled
+ Velocity solver           : Direct (Build-in direct solver)
+ Input is assumed to be in non-dimensional units 
+ Element-type used         : Q1P0 ;  [Q1P0 Q2Pm1_global Q2Pm1_local Q1Q1 FDSTAG] (change with -vpt_element)
+ Total # of cpu's          : 1 
+ Total # of velocity dof's : 729 
+ Computing mean material per element using arithmetic averaging from integration points 
+ Employing code in an Eulerian manner 
+ Gravity angle with z-axis =  0 
+ Approximate Aspect ratio of cells [dx/dz, dy/dz] = [1 4] 
+ Number of tracers/cell in [x,y,z]-direction = [2,2,2] 
+ NumSurfaceNodes=1  nz=9 
+ # Not employing nonlinear iterations 
+ BC employed: BC.[Left Right; Front Back; Lower Upper]=[1 1; 1 1; 1 1] 
+# Initial time step: 0.001 years 
+ Input is assumed to be in non-dimensional units 
+ Fine Grid parameters, nel=[8,2,8], cpu=[1,1,1] 
+# Finished initializing Stokes matrices : 0.00370002 s 
+# Not adding random noise to initial particle distribution. 
+Initialized particles 
+#rank=0, Attributing 1024 particles to elements took 0.00079608 s 
+The total # of particles present is 1024 
+ *** Using a falling block setup *** 
+ Falling block coordinates:  [left,right]=[0.250000,0.750000]; [front,back]=[0.000000,0.500000]; [bottom,top]=[0.250000,0.750000] 
+Saved initial particle distribution to directory ./InitialParticles 
+The total memory used by integration points is 2.703360e-01 MB
+The max memory used by integration points is 2.703360e-01 MB
+The min memory used by integration points is 2.703360e-01 MB
+#  Interpolating meshes and temperatures took 0.000286818 s 
+
+
+ --------------------------------------------------------------------------------  
+ 
+             PERFORMING BENCHMARK OF LaMEM VERSUS ANALYTICAL SOLUTION              
+  using:                             SolCx                                        
+ 
+   with:      rho   = -1*sin(1*PI*z)*cos(1*PI*x)                                  
+              eta   = 1 if x<x_c & eta=eta_b for x>x_c                            
+    and:      x_c   = 0.5     (change with -SolCx_xc ... )                         
+              eta_b = 1     (change with -mumax ...    )                          
+
+ --------------------------------------------------------------------------------  
+ 
+ 
+#  Forming FEM stiffness matrix mx,my,mz=(9, 3, 9) ...   finished. [0.00536895 s]
+ minDiagonalRatio=1 [Critical = 0.55; change with -CriticalDiagonalRatio]  
+#  Forming stiffness matrixes took 0.00547099 s 
+FC: Viscosity structure info: min(0)=1.000000e+00 : max(0)=1.000000e+00 : contrast=1.000000e+00 
+Using unpreconditioned (true) Stokes residual to define the FC stopping condition 
+StokesResidual: Using L_inf 
+Stopping conditions: 
+Velocity: RTOL: 1.000000e-06	ATOL: 1.000000e-16	minATOL: 1.000000e-05		fc_ksp_min_it 4
+Pressure: RTOL: 1.000000e-06	ATOL: 1.000000e-16	minATOL: 1.000000e-05		fc_ksp_min_it 4
+StokesResidual: Monitor activated 
+# FC: using nonzero initial guess 
+  Residual norms for fc_ solve.
+  # KSP Iterations      /  L2_norm             scaled_L2_norm      Linf_norm           /  ... for each   2 blocks  [fc_] 
+  0 KSP Residual norms  /  3.489293345210e-02  1.292330868596e-03  7.034661114526e-03  /  0.000000000000e+00  0.000000000000e+00  0.000000000000e+00  /  [fc_] 
+  1 KSP Residual norms  /  3.442182133113e-04  1.274882271523e-05  6.939681593172e-05  /  3.448520991918e-03  3.048090723061e-04  5.864159355335e-04  /  [fc_] 
+  2 KSP Residual norms  /  1.157904210234e-16  4.288534111979e-18  3.472157457385e-17  /  6.516119147543e-18  5.759490045309e-19  1.572093150104e-18  /  [fc_] 
+  3 KSP Residual norms  /  1.663124141364e-17  6.159719042088e-19  3.350881266907e-18  /  2.463827172404e-18  2.177736126598e-19  5.610601838377e-19  /  [fc_] 
+  4 KSP Residual norms  /  1.663123937022e-17  6.159718285267e-19  3.353287762607e-18  /  2.301090300168e-18  2.033895694214e-19  4.323882151551e-19  /  [fc_] 
+Velocity convergence reason: ATOL + RTOL
+Pressure convergence reason: ATOL + RTOL
+Linear solve converged due to CONVERGED_HAPPY_BREAKDOWN iterations 4
+#  Finished Stokes solve after 0.00859904 s 
+------------------------------------------
+Stokes solver summary: 
+  divergence: 
+    Div_min = 0.000000000000e+00 
+    Div_max = 8.673617379884e-19 
+    |Div|_2 = 3.284189337229e-18 
+    |Div|_1 = 2.951415676396e-17 
+  momentum: 
+    mRes_min = 0.000000000000e+00 
+    mRes_max = 1.908195823574e-17 
+    |mRes|_2 = 6.443476627998e-17 
+    |mRes|_1 = 8.061564134629e-16 
+  velocity: 
+    u_min   = -2.549239988484e-02 
+    u_max   = 2.549239988484e-02 
+    |u|_2   = 2.792552492374e-01 
+    |u|_1   = 4.634744956256e+00 
+  pressure: 
+    p_min   = -1.531179267004e-01 
+    p_max   = 1.531179267004e-01 
+    |p|_2   = 9.004366226593e-01 
+    |p|_1   = 8.364436831730e+00 
+------------------------------------------
+The total memory used by integration points is 2.703360e-01 MB
+The max memory used by integration points is 2.703360e-01 MB
+The min memory used by integration points is 2.703360e-01 MB
+#  Solving for velocity took 0.0159049 s 
+The total memory used by integration points is 2.703360e-01 MB
+The max memory used by integration points is 2.703360e-01 MB
+The min memory used by integration points is 2.703360e-01 MB
+
+
+ --------------------------------------------------------------------------------  
+
+  LaMEM STOKES BENCHMARK RESULTS:                                                 
+
+       dx = 0.125        [node spacing in x-direction   ]
+       dy = 0.5        [node spacing  in y-direction   ] 
+       dz = 0.125        [node spacing  in z-direction   ] 
+
+  |Vx |_1 = 0.000115125 
+  |Vy |_1 = 1.60457e-18 
+  |Vz |_1 = 0.000115125 
+
+  |u  |_1 = 0.000121284   [velocity                      ]
+  |P  |_1 = 0.011497   [pressure                      ]
+  |e  |_1 = 0.00734363   [strain rate                   ]
+  |P  |_2 = 2.62719e-08   [pressure                      ]
+
+ --------------------------------------------------------------------------------  
+
+The total memory used by integration points is 2.703360e-01 MB
+The max memory used by integration points is 2.703360e-01 MB
+The min memory used by integration points is 2.703360e-01 MB
+#  Forming temperature stiffness matrix mx,my,mz=(9, 3, 9) ...  finished. 
+#  Forming temperature stiffness matrixes took 0.00101805 s 
+#  Solving for temperature took 0.122144 s 
+The total memory used by integration points is 2.703360e-01 MB
+The max memory used by integration points is 2.703360e-01 MB
+The min memory used by integration points is 2.703360e-01 MB
+The total memory used by particles is 2.867200e-01 MB
+The max memory used by particles is 2.867200e-01 MB
+The min memory used by particles is 2.867200e-01 MB
+#  Updating properties @ integration points and particles took 0.00344205 s 
+AdvectionMethod = 0 
+  Starting particle advection 
+  Finished particle advection 
+# Volume-averaged quantities: 
+# Txx = 3.01544e-19 Exx = 1.50772e-19 Volume = 1 Mu_xx=1 
+# Tyy = 1.27894e-35 Eyy = 6.39469e-36 Volume = 1 Mu_yy=1 
+# Tzz = -5.79371e-19 Ezz = -2.89685e-19 Volume = 1 Mu_zz=1 
+# Txz = 2.16375e-18 Exz = 2.16375e-18 Volume = 1 Mu_xz=0.5 
+# Txy = 2.08859e-20 Exy = 2.08859e-20 Volume = 1 Mu_xy=0.5 
+# Tyz = -1.47663e-19 Eyz = -1.47663e-19 Volume = 1 Mu_yz=0.5 
+Minimum z-level phase 1 0.281238 
+# Writing output to existing directory Timestep_000000 
+# Saved MATLAB output in file Timestep_000000/AnalyticalBenchmark_SolCx.0.1000000.out 
+# Saved Paraview VTS Velocity output in file AnalyticalBenchmark_SolCx_velocity_step000000-mesh.pvts 
+# Saved Paraview VTS Temperature output in file AnalyticalBenchmark_SolCx_temperature_step000000-mesh.pvts 
+# Saved Paraview VTS Surface Topography output in file AnalyticalBenchmark_SolCx_Surface_topography_step000000-mesh.pvts 
+# Saved Paraview VTS Bottom Topography output in file AnalyticalBenchmark_SolCx_Bottom_topography_step000000-mesh.pvts 
+# Saved Paraview VTS point-wise quadrature output in file AnalyticalBenchmark_SolCx_quadrature_step000000-mesh.pvts 
+ Starting GetParticleNodes 
+#rank=0, Attributing 1024 particles to elements took 0.000706196 s 
+The total # of particles present is 1024 
+ Finished GetParticleNodes 
+ Maximum velocity  0.0254924    
+ Time = 0.001, dt=0.21793   
+# Finished timestep 0 out of 1 in 0.161789 s
+  
+# Total time required: 0.170071 s 
+#PETSc Option Table entries:
+-AddRandomNoiseParticles 0
+-Benchmark_SolCx
+-DisplayAverageQuantities
+-StokesSolver 3
+-fc_ksp_converged_reason
+-fc_ksp_max_it 1000
+-fc_ksp_min_it 4
+-fc_ksp_p_atol 1.0e-16
+-fc_ksp_p_min_atol 1.0e-5
+-fc_ksp_p_rtol 1.0e-6
+-fc_ksp_type gcr
+-fc_ksp_v_atol 1.0e-16
+-fc_ksp_v_min_atol 1.0e-5
+-fc_ksp_v_rtol 1.0e-6
+-fc_pc_fieldsplit_schur_factorization_type UPPER
+-fc_pc_fieldsplit_type SCHUR
+-fc_pc_type fieldsplit
+-mumax 1
+-nnode_x 9
+-nnode_y 3
+-nnode_z 9
+-options_left
+-ps_ksp_type preonly
+-ps_pc_type jacobi
+-use_stokes_monitor
+-use_stokes_norm Linf
+-use_stokes_residual
+-vpt_element Q1P0
+-vs_ksp_type preonly
+-vs_pc_type lu
+#End of PETSc Option Table entries
+There are no unused options.

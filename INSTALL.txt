@@ -1,0 +1,37 @@
+INSTALLATION GUIDE OF LAMEM
+
+
+[0] INSTALL PETSC
+
+Installation guides of PETSc on different platforms can be found in ../doc/installation/
+
+# Set paths in .bash_profile
+export PETSC_DEB=/opt/petsc/petsc-3.4.2-int32-debug
+export PETSC_OPT=/opt/petsc/petsc-3.4.2-int32-opt
+
+NOTES:
+
+[1] DEBUG & OPTIMIZED
+
+No more PETSC_DIR and no more switching between the debug and optimized versions with .bash_profile is necessary.
+Makefile is now supporting building both versions simultaneously.
+type 'make mode=deb all' (or simply 'make all', mode=deb is the default) to build everything in debug mode
+type 'make mode=opt all' to build everything in optimized mode
+
+[2] SVN
+
+Also it's not necessary to do svn updates explicitly.
+type 'make update' to update to latest version, and to write a new Version.h file.
+
+[3] VIEW ENVIRONMENT
+type 'make mode=deb print' or 'make mode=opt print' to view your environmental variables.
+
+[4] TESTS
+
+Tests are also separated. In the tests directory:
+type 'make mode=deb check' to perform tests in debug mode.
+type 'make mode=opt check' or (or simply 'make check', mode=opt is the default) to perform tests in optimized mode.
+
+Take care that mode=deb is the default for LaMEM, and mode=opt is the default for tests.
+
+------------------------------------------------------------------------------------------

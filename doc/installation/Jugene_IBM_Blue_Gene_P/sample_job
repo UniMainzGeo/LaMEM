@@ -1,0 +1,28 @@
+# @ job_name = sample_job
+
+# @ error = $(job_name).$(jobid).out
+
+# @ output = $(job_name).$(jobid).out
+
+# @ environment = COPY_ALL
+
+# @ wall_clock_limit = 00:10:00 [change this]
+
+# @ notification = never
+
+# @ job_type = bluegene
+
+# @ bg_connection = TORUS [MESH, PREFER_TORUS]
+
+# @ bg_size = 32 [64, 128, 256 512 number of processors requested]
+
+# @ queue
+
+mpirun -exe ./sample -mode SMP [DUAL, VN] -args "executable arguments are placed here"
+
+Execution modes:
+DUAL - 2 MPI tasks per procesor,  ~1  GB memory for each
+VN   - 4 MPI tasks per procesor,  474 MB memory for each
+
+Connection options:
+TORUS is not possible for small partitions (up to 8 node cards, 32 processors each, 4 cores each)

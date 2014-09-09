@@ -1,0 +1,77 @@
+=====================
+
+Installation of LaMEM to debug under Eclipse on OSX 
+(can be modified for different projects with Makefiles, and for Linux platform)
+
+Anton Popov
+popov@uni-mainz.de
+
+=====================
+Eclipse Installation:
+=====================
+
+0. Download and unpack into Applications folder: 
+      eclipse-parallel-indigo-SR1-incubation-macosx-cocoa-x86_64.tar.gz
+
+1. Go to eclipse folder and create file eclipse.command, put the string inside:
+      /Applications/eclipse/eclipse &
+
+2. Change permissions, execute in console chmod 755 eclipse.command
+
+3. Drag eclipse.command to desktop
+
+4. Right click desktop icon -> Get Info -> Name & Extension, change to Eclipse (optional)
+
+5. Change desktop icon to original Eclipse logo with Command+c, Command+v (optional)
+
+===============================
+Configuring and building LaMEM:
+===============================
+
+0. Start Eclipse by double clicking desktop icon
+
+1. Right click in Project Explorer -> New -> Project -> C/C++ -> Makefile Project with Existing Code
+
+2. Click Next and set Project Name (LaMEM) and location of LaMEM ROOT! directory (not just src), click Finish
+
+3. Right click on your project in the Explorer, select Properties -> C/C++ Build
+
+4. Builder Settings tab -> Build directory -> File System, select path to LaMEM/src
+
+5. Behaviour tab -> Build (incremental build) set to LaMEM, set Clean to clean_all
+
+6. Unfold C/C++ Build -> Settings -> Binary Parser (select Mach-O 64 Parser)
+
+7. Add the following paths to your project:
+    $PETSC_DIR/include (just type this in console after echo command)
+    $PETSC_DIR/$PETSC_ARCH/include
+    Also include path to mpi.h if you use it separate from petsc (use locate mpi.h to find out)
+    Place real paths instead of PETSC_DIR and PETSC_ARCH (expand variables)
+
+    Each path can be added as follows:
+    In the project properties select Path and Symbols -> Includes -> Add
+    Place directory path here, also check boxes:
+       Add to all configurations 
+       Add to all languages
+
+8. Build LaMEM by clicking Hammer icon
+
+============================
+Running and debugging LaMEM:
+============================
+
+0. Run -> Run configurations -> double click C/C++ application -> Main tab -> Browse,
+   select full path to LaMEM executable (in LaMEM/bin directory) 
+
+1. Swich to Arguments tab -> Program aruments, 
+      insert all command line options that you want to use with LaMEM
+   Arguments tab -> Working directory -> File System, 
+      select full path to LaMEM/tests directory (to avoid copying input files) 
+
+2. Switch to debugging perspective: Window -> Open Perspective -> Debug, then click the bug icon 
+
+===============================
+
+Also helpful: 
+   Eclipse->Preferences->General->Editors, check box Show line numbers
+                       ->C/C++->Editor, uncheck box Highlight inactive code

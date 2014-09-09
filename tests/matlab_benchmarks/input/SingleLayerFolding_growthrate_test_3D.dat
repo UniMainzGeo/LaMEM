@@ -1,0 +1,192 @@
+# det_folding_growthrate.dat
+#	Test a folding setup by checking analytical growthrate
+# This files specifies input parameters for the StokesMG code
+# [Note: only 5 lines of comments are allowed here]
+#
+
+# Define number of elements in x,y & z-direction @ coarsest level (should be uneven!)
+nel_x				=	5     
+nel_y				= 	5    
+nel_z				= 	13
+levels				= 	1			# number of multigrid levels
+
+# Geometry
+DimensionalUnits	=	0			# Dimensionless (=0) or SI-dimensional units (=1)?
+L					=	10			# Length (y-direction)
+W					=	10			# Width  (x-direction)
+H					=	61			# Height (z-direction)
+x_left				=	0			# Left side of domain
+y_front				=	0			# Front side of domain
+z_bot					=	0			# Bottom of box
+
+# Define model setup and noise
+Setup.Model				=	5			# 0-Diapir, 1-Single Layer Fold, 2-Falling block, 3-from Particle file (defined below), 4-multilayer detachment fold, 5-Single Layer Growthrate
+ampl2D					=	0.00	 		# Amplitude of 2D sinuoidal perturbtion
+ampl3D					=	0.001			# Amplitude of 3D sinuoidal perturbtion
+amplNoise				=	0.0	 		# Amplitude of noise @ interface
+
+# Define input/output and numerics-related stuff
+OutputFile				=	SingleLayerFolding_3D_Growthrate		
+save_timesteps			=	1			# save every ? timesteps
+time_end				=	2			# last timestep
+CFL					=	1			# CFL, dt-based criterium
+dt_max				=	1e-5	  	   	# Maximum timestep [years if dimensional]
+	
+# Boundary conditions
+BC.Eyy					=	0.25		# BG strainrate in y-direction
+BC.Exx					=	0.75		# BG Strainrate in x-direction
+BC.LeftBound			=	7			# 0 - free surface, 1-free slip with BG strainrate Eyy, 2 - no slip, 5 - growthrate 2D, 7 - growthrate 3D
+BC.RightBound			=	7			# 0 - free surface, 1-free slip with BG strainrate Eyy, 2 - no slip, 5 - growthrate 2D, 7 - growthrate 3D
+BC.FrontBound			=	7			# 0 - free surface, 1-free slip with BG strainrate Exx, 2 - no slip, 5 - growthrate 2D, 7 - growthrate 3D
+BC.BackBound			=	7			# 0 - free surface, 1-free slip with BG strainrate Exx, 2 - no slip, 5 - growthrate 2D, 7 - growthrate 3D
+BC.LowerBound			=	7			# 0 - free surface, 1-free slip, 				  2 - no slip, 5 - growthrate 2D, 7 - growthrate 3D
+BC.UpperBound			=	0			# 0 - free surface, 1-free slip, 				  2 - no slip, 5 - growthrate 2D, 7 - growthrate 3D
+Temp_top	    		=   	0			# Temperature @ top
+Temp_bottom				=   	1000 			# Temperature @ bottom; side BC's are flux-free
+
+# Grid advection method
+GridAdvectionMethod			= 	1 			# 0-Fully Eulerian, 1-Fully Lagrangian, 2-ALE with remeshing @ surface layer
+FactorSurfaceLayer			= 	0.3 			# How thick is the surface layer (if option 2 is selected above) ?
+num_subdt    				=   	1			# The number of sub-timesteps performed if ALE/free surface is selected
+
+
+# Define solver and set options for Uzawa
+# --- Solver options ---
+StokesSolver   				= 	1  			# 1 - Powell-Hesteness iterations
+											# 2 - Schur Complement Reduction
+											# 3 - Fully Coupled Solver 
+
+VelocitySolver 				= 	1  			# 0 - User defined
+											# 1 - Direct (MUMPS if we run on >1 procs; Build-in solver on 1 proc)
+											# 2 - Galerkin geometric multigrid
+											# 3 - Fieldsplit + Algebraic Multigrid (ML)
+
+NonlinearIterationsAccuracy	= 	1e-5		# Stopping criterium for power-law loop
+MaxNonlinearIterations		= 	25			# Maximum number of nonlinear iterations
+
+
+<PetscOptionsStart>
+	# Fine-tune solver options here (add command-line Petsc Options)
+	-vpt_element Q2Pm1_global			# Type of element [Q2Pm1_global; Q2Pm1_local; Q1P0]
+	
+	# info for folding simulation:
+	-nzbot				11
+	-nzlay				5
+	-nztop				11
+	
+	-restart 			0
+	-save_breakpoints 	0
+	
+	-ph_kappa 1e8
+	
+<PetscOptionsEnd>
+    
+# Phase distribution
+ParticleInput 			=   	0			# Use particles to track properties? 0-no; 1-yes
+SaveTracers 			=   0                 # Write particles to disk?
+NumPartX				=	1			# Particles/Cell in x-direction
+NumPartY				=	1			# Particles/Cell in y-direction
+NumPartZ				=	1			# Particles/Cell in z-direction
+
+# Read initial grid from file?
+InitialMeshFromFile 		=   	0			# In case you want to hand-modify the initial grid
+InitialMeshFileName 		=   	Grid_in.dat		# Make sure the size of this grid matches! 
+InitialMantleLevel		=	0			# Set to zero to deactivate
+
+# Properties that are defined over the whole domain:
+Gravity				=	0;									# [m/s2] - gravitational acceleration 
+PlasticityModel			=	0;									#  not implemented yet
+Xi					=	0;									# [ ] - Shear heating factor - not implemented yet
+
+# Define characteristic values, used if DimensionalUnits==1, otherwise ignored
+Characteristic.Length				=	1e3			# [m]
+Characteristic.Viscosity      		=	1e21			# [Pa.s]
+Characteristic.Temperature    		=	1000			# [K]
+Characteristic.Stress          		=   	1e6			# [Pa]
+
+# Define phase transitions for particles
+num_phase_transitions			=	0				# The number of phase transitions present
+
+# Define material properties for all phases -------------------------------------------------
+num_phases					=	2		# Total number of phases defined in code
+
+	# Define properties of layer-------------------
+	<MaterialStart>
+		phase_id 			=	1
+		attribute 			= 	VISCOSITY
+		type 				= 	constant 					#power_law
+		eta0       			= 	100
+		N_exp       		= 	3	
+	<MaterialEnd>
+	<MaterialStart>
+		phase_id			= 	1
+		attribute 			= 	DENSITY
+		type 				= 	temperature_dependent
+		rho0        		= 	3000
+		alpha 			=	0
+	<MaterialEnd>
+	<MaterialStart>
+		phase_id			= 	1
+		attribute 			= 	ELASTICITY
+		type 				= 	constant
+		shear        		= 	5e10
+	<MaterialEnd>
+	<MaterialStart>
+		phase_id			= 	1
+		attribute 			= 	ENERGY
+		type 				= 	constant
+		ThermalConductivity	= 	3
+		HeatCapacity		=	1050
+		RadioactiveHeat		=	0
+		ShearHeating		=	0
+	<MaterialEnd>
+	<MaterialStart>
+		phase_id			= 	1
+		attribute 			= 	PLASTICITY
+		type 				= 	constant
+		Cohesion        		= 	20e60
+		FrictionAngle		= 	30
+	<MaterialEnd>
+
+	
+	# Define properties of matrix -----------------
+	<MaterialStart>
+		phase_id 			=	0
+		attribute 			= 	VISCOSITY
+		type 				= 	constant 					#power_law
+		eta0       			= 	1	
+		N_exp       		= 	1
+	<MaterialEnd>
+	<MaterialStart>
+		phase_id 			= 	0
+		attribute 			= 	DENSITY
+		type 				= 	temperature_dependent
+		rho0        		= 	3000
+		alpha 			=	0
+	<MaterialEnd>
+	<MaterialStart>
+		phase_id			= 	0
+		attribute 			= 	ELASTICITY
+		type 				= 	constant
+		shear        		= 	5e10
+	<MaterialEnd>
+	<MaterialStart>
+		phase_id			= 	0
+		attribute 			= 	ENERGY
+		type 				= 	constant
+		ThermalConductivity	= 	3
+		HeatCapacity		=	1050
+		RadioactiveHeat		=	0
+		ShearHeating		=	0
+	<MaterialEnd>
+	<MaterialStart>
+		phase_id			= 	0
+		attribute 			= 	PLASTICITY
+		type 				= 	constant
+		Cohesion        		= 	20e60
+		FrictionAngle		= 	30
+	<MaterialEnd>
+
+
+	
+# End of defining material properties for all phases ----------------------------------------	

@@ -1,0 +1,169 @@
+# FallingBlock.dat
+#	FallingBlock setup to test the code  
+#
+
+# Define number of elements in x,y & z-direction @ coarsest level (should be uneven!)
+nnode_x						=	5     
+nnode_y						= 	5   
+nnode_z						= 	5
+levels						= 	2			# number of multigrid levels
+
+# Geometry
+DimensionalUnits			=	1;			# Dimensionless (=0) or SI-dimensional units (=1)?
+L							=	1000e3		# Length (y-direction)
+W							=	1000e3		# Width  (x-direction)
+H							=	1000e3		# Height (z-direction)
+x_left						=	0e3		    # Left side of domain
+y_front						=	0			# Front side of domain
+z_bot						=	0			# Bottom of box
+
+# Define model setup and noise
+Setup.Model					=	2						# 0-Diapir, 1-Single Layer Fold, 2-Falling block, 3-Particle file (defined below), 4-multilayer detachment fold, 6-subduction w/sticky air
+ampl2D						=	0e3 					# Amplitude of 2D sinuoidal perturbation [m]
+ampl3D						=	0e2						# Amplitude of 3D sinuoidal perturbation [m]
+amplNoise					=	0e2						# Amplitude of noise @ interface  [m]
+
+# Define input/output and numerics-related stuff
+OutputFile					=	FallingBlock3D		
+save_timesteps				=	1			# save every ? timesteps
+time_end					=	10			# last timestep
+CFL							=	1.0e-1		# CFL, dt-based criterium 
+dt_max						=	5e4  	    # Maximum timestep [years if dimensional]
+		
+# Boundary conditions
+BC.Eyy						=	0e-15		# BG strainrate in y-direction
+BC.Exx						=	0e-15		# BG Strainrate in x-direction
+BC.LeftBound				=	1			# 0 - free surface, 1-free slip with BG strainrate Eyy, 2 - no slip
+BC.RightBound				=	1			# 0 - free surface, 1-free slip with BG strainrate Eyy, 2 - no slip
+BC.FrontBound				=	1			# 0 - free surface, 1-free slip with BG strainrate Exx, 2 - no slip
+BC.BackBound				=	1			# 0 - free surface, 1-free slip with BG strainrate Exx, 2 - no slip
+BC.LowerBound				=	1			# 0 - free surface, 1-free slip, 						2 - no slip
+BC.UpperBound				=	1			# 0 - free surface, 1-free slip, 						2 - no slip
+Temp_top	    			=   0;			# Temperature @ top
+Temp_bottom   				=   1000;		# Temperature @ bottom; side BC's are flux-free
+
+# Grid advection method
+GridAdvectionMethod 		= 	0 		# 0-Fully Eulerian, 1-Fully Lagrangian, 2-ALE with remeshing @ surface layer
+FactorSurfaceLayer  		= 	0.3 	# How thick is the surface layer (if option 2 is selected above) ?
+
+# Define solver and set options for Uzawa
+SolverType               =	5		# 2-KSP, 3-Direct [serial!],  4 - MUMPS, 5 - GMG with galerking coarsening
+UzawaSolver              =	3		# 1-Schur/FGMRES;  2-Old way (CG);  3-Powell Hesteness iterations
+MaximumDivergence        =   1e-10    # Cutoff divergence
+Uzawa_RelInnerAccuracy   =   1e-8    # Cutoff inner error for preconditioning step in Uzawa iterations
+Uzawa_MaxInnerIterations =   50		# Maximum number of inner iterations
+ 
+UpperViscosityCutoff 	= 1.0e20
+LowerViscosityCutoff 	= 1.0
+ 
+<PetscOptionsStart>
+	#-vpt_element Q2Pm1_Local 			# Type of element [Q2Pm1_global; Q2Pm1_local; Q1P0]
+  -vpt_element Q1P0 
+	#
+	-time_end 1 
+	-gmg_ksp_type fgmres 
+	-gmg_mg_levels_pc_type fieldsplit 
+	-gmg_mg_levels_ksp_max_it 20 
+	-gmg_mg_levels_fieldsplit_pc_type ilu 
+	-gmg_mg_levels_fieldsplit_ksp_type fgmres 
+	-gmg_mg_levels_fieldsplit_ksp_max_it 20 
+	-gmg_ksp_monitor
+	-assemble_inverse_mass_matrix
+	-ph_max_it 10 
+	-ph_kappa 1.0e5
+<PetscOptionsEnd>
+  
+    
+# Phase distribution
+ParticleInput 				=   1						# Use particles to track properties? 0-no; 1-yes
+SaveTracers 				=   0             			# Write particles to disk?
+NumPartX					=	2						# Particles/Cell in x-direction
+NumPartY					=	2						# Particles/Cell in y-direction
+NumPartZ					=	2						# Particles/Cell in z-direction
+
+# Read initial grid from file?
+InitialMeshFromFile 		=   0				#   In case you want to hand-modify the initial grid
+ 
+# Properties that are defined over the whole domain:
+Gravity						=	10;				# [m/s2] - gravitational acceleration 
+PlasticityModel				=	0;				#  not implemented yet
+Xi							=	0;				# [ ] - Shear heating factor - not implemented yet
+
+# Define characteristic values, used if DimensionalUnits==1, otherwise ignored
+Characteristic.Length		=	1e6			# [m]
+Characteristic.Viscosity 	=	1e0		# [Pa.s]
+Characteristic.Temperature	=	1000		# [K]
+Characteristic.Stress      	=   1e6			# [Pa]	
+
+
+# Define phase transitions for particles
+num_phase_trans				=	0			# The number of phase transitions present
+
+# Define material properties for all phases -------------------------------------------------
+num_phases					=	2		# Total number of phases defined in code
+
+	# Define properties of Matrix-------------------
+	<MaterialStart>
+		phase_id 			=	0
+		attribute 			= 	VISCOSITY
+		type 				= 	constant
+		eta0       			= 	1.0e0
+	<MaterialEnd>
+	<MaterialStart>
+		phase_id			= 	0
+		attribute 			= 	DENSITY
+		type 				= 	temperature_dependent
+		rho0        		= 	3000
+		alpha 				=	0
+	<MaterialEnd>
+	<MaterialStart>
+		phase_id			= 	0
+		attribute 			= 	ELASTICITY
+		type 				= 	constant
+		shear        		= 	5e10
+	<MaterialEnd>
+	<MaterialStart>
+		phase_id			= 	0
+		attribute 			= 	ENERGY
+		type 				= 	constant
+		ThermalConductivity	= 	3
+		HeatCapacity		=	1050
+		RadioactiveHeat		=	0
+		ShearHeating		=	0
+	<MaterialEnd>
+	
+	# Define properties of Block -----------------
+	<MaterialStart>
+		phase_id 			=	1
+		attribute 			= 	VISCOSITY
+		type 				= 	constant
+		eta0       			= 	1.0e6
+	<MaterialEnd>
+	<MaterialStart>
+		phase_id			= 	1
+		attribute 			= 	ELASTICITY
+		type 				= 	constant
+		shear        		= 	5e10
+	<MaterialEnd>
+	<MaterialStart>
+		phase_id 			= 	1
+		attribute 			= 	DENSITY
+		type 				= 	temperature_dependent
+		rho0        		= 	3100
+		alpha 				=	0
+	<MaterialEnd>
+	
+	<MaterialStart>
+		phase_id			= 	1
+		attribute 			= 	ENERGY
+		type 				= 	constant
+		ThermalConductivity	= 	3
+		HeatCapacity		=	1050
+		RadioactiveHeat		=	0
+		ShearHeating		=	0
+	<MaterialEnd>
+
+	# End of defining material properties for all phases ----------------------------------------
+
+
+

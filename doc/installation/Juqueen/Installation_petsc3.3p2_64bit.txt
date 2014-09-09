@@ -1,0 +1,130 @@
+PETSc 3.3p2 installation instructions on JUQUEEN IBM BLUE GENE/Q, using 64-bit indices 
+
+(10/02/12 by BorisKaus)
+
+
+
+============================================================================
+1) Login to Juqueen, using the machine for which you uploaded the ssh_id file
+	ssh YOUR_LOGIN_NAME@juqueen.fz-juelich.de
+	
+Note that YOU_LOGIN_NAME is not your usual login name but rather something you have been given in an email from Juelich. 
+
+
+2) Modify .profile to include Petsc directories
+   After modification logout and login again for changes to take effect
+
+
+	# ======================
+	# PETSC 3.3_p2 
+	# ======================
+	export PETSC_DIR=${HOME}/LIB/petsc-3.3-p2
+	export PETSC_ARCH=PETSC_IBM_BGP_XL_OPT_64BIT
+
+============================================================================
+3) Place to $HOME/LIB the following files:
+
+	petsc-3.3-p2.tar
+	run_ex22
+	petsc-3.3-p2.patch
+
+============================================================================
+4) Unpack tarballs & copy batch scripts to Petsc directories
+
+	a) tar -xvf petsc-3.1-p8.tar
+	b) Apply the patch:
+      patch -p0 < petsc-3.3-p2.patch
+
+
+============================================================================
+5) Enter directory and configure Petsc (using ml and superlu_dist coarse solver)
+
+	a) use ./configure -help to show all configuring options
+
+	b) put "export PATH=$PATH:/usr/local/cmake/bin" to .profile, save, logout, login again, continue
+	
+	c) cd $PETSC_DIR
+		
+./config/configure.py \
+--with-64-bit-indices \
+--download-f-blas-lapack=1 \
+--known-memcmp-ok=1 \
+--with-batch=1 \
+--known-mpi-shared-libraries=0 \
+--with-x=0 \
+--with-debugging=0 \
+--with-shared-libraries=0 \
+--with-dynamic-loading=0 \
+--with-mpi-compilers=1 \
+--with-fc=mpixlf77_r \
+--with-cc=mpixlc_r \
+--with-cxx=mpixlcxx_r \
+--COPTFLAGS="-O3 -qstrict -qarch=qp -qtune=qp" \
+--FOPTFLAGS="-O3 -qstrict -qarch=qp -qtune=qp" \
+--CXXOPTFLAGS="-O3 -qstrict -qarch=qp -qtune=qp" \
+--download-superlu_dist=1 \
+--download-parmetis=1 \
+--download-metis=1 \
+--download-blacs=1 \
+--download-scalapack=1 \
+--with-cmake=cmake
+
+# Note:  ML and MUMPS can currently NOT be compiled with 64bit indices
+		
+	
+============================================================================
+6) Run configuration executable from Petsc directory
+
+
+	a) create a submission file "run_conftest.job":
+
+		----------------------------------------------------------------------
+		# @ job_name = run_conftest
+		# @ comment = "run_conftest"
+		# @ error = $(job_name).$(jobid).out
+		# @ output = $(job_name).$(jobid).out
+		# @ environment = COPY_ALL
+		# @ wall_clock_limit = 00:10:00
+		# @ notification = always
+		# @ notify_user = your@mail.address
+		# @ job_type = bluegene
+		# @ bg_size = 32
+		# @ queue
+		
+		
+		# use --np TO SPECIFY THE TOTAL NUMBER OF PROCESSORS
+		runjob --np 1 --ranks-per-node 1 --exe conftest-PETSC_IBM_BGP_XL_OPT_64BIT.py
+		-----------------------------------------------------------------------
+
+	b) submit you job
+	
+		llsubmit run_conftest.job
+
+
+	c) you can see whether it's done or not with "llq -u <username>"
+	
+	
+	
+============================================================================	
+7) Wait for completion and finalize configuration
+	
+	./reconfigure-PETSC_IBM_BGP_XL_OPT_64BIT.py
+	
+	
+============================================================================
+
+		
+============================================================================
+8) Compile Petsc library
+
+	Follow the instructions given by Petsc
+
+============================================================================
+
+
+
+
+
+
+
+

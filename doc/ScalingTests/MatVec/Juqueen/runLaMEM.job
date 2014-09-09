@@ -1,0 +1,16 @@
+# @ job_name = ScalingFDSTAG32_8core
+# @ comment = "LaMEM scaling test"
+# @ error = $(job_name).out
+# @ output = $(job_name).out
+# @ environment = COPY_ALL
+# @ wall_clock_limit = 00:10:00
+# @ notification = never
+# @ notify_user = kaus@uni-mainz.de
+# @ job_type = bluegene
+# @ bg_size = 32
+# @ bg_connectivity = MESH
+# @ queue
+
+
+# use --np TO SPECIFY THE TOTAL NUMBER OF PROCESSORS
+runjob --ranks-per-node 16 --np 8 : ./LaMEM -restart 0 -StokesSolver 4 -save_breakpoints -1 -log_summary -vpt_element FDSTAG -nel_x 64 -nel_y 64 -nel_z 64

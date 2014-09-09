@@ -1,0 +1,131 @@
+DEVELOPPING LaMEM WITH ECLIPSE
+January 2012, kaus@uni-mainz.de
+----------------------------
+
+Eclipse is a very powerful open-source programming environment that works across platforms (Unix, Mac, Windows), and that makes debugging LaMEM much easier (set breakpoints etc.). Configuring Eclipse to work properly with an existing LaMEM directory is however a bit tricky.
+
+Here we describe how to configure it and allow serial debugging (a parallel debugger for Eclipse exists as well but we haven't fully figured out yet how to link this).
+
+1) The description given below is for a Mac OX X 10.6.8 (Snow Leopard, 64 bit). It likely works for later Mac versions as well. Linux might be similar, but windows could be tricky.
+
+2) It is assumed that you have checked out a LaMEM version from the repository, for example in:
+/WORK/LaMEM which has the following directory structure (version of Jan. 2 2012, working with petsc 3.1):
+/bin
+/Cascade
+/doc
+/input_models
+/matlab
+/PetscExt
+/scripts
+/src
+/tests
+/utils
+
+The source code & makefile are in the /src directory.
+
+3) It is also assumed that you have Petsc correctly installed and that the environmental variables (PETSC_DIR, PETSC_ARCH) are present in the environmental variables, such that you can compile and run LaMEM from the command line. Verify this by opening a new terminal window, go to the src directory of LaMEM:
+cd WORK/LaMEM
+and type:
+make clean_all; make LaMEM
+
+Upon typing
+./LaMEM
+
+the code should run for a timestep & perform a falling block test.
+
+4) Download eclipse 
+Download Eclipse IDE for C/C++ developers
+from http://www.eclipse.org/downloads/ for Mac OS X 64 Bit
+
+5) Install eclipse
+untag it within the /Downloads folder and it will create a directory 
+/eclipse
+with various subdirectories. Move the whole directory to your
+/Applications
+directory (for example by using your mouse)
+The executable ./eclipse is located within this directory
+
+6) Run eclipse
+Do NOT run eclipse by double-clicking on the eclipse symbol, as in this case you will not have the same environmental variables within eclipse as on the command line. As a result you'll run into problems while linking your code with PETSC.
+
+Instead, open a terminal window and run eclipse from the command line:
+/Applications/eclipse/./eclipse &
+
+7) Eclipse will open (my version is Eclipse Indigo) and will ask you what your workspace is. The default it indicates is fine.
+The welcome screen will open. Go to the "Workbench", which is the default working environment.
+
+8) Now, we need to create a project for LaMEM. Go to 
+File -> New -> Project 
+and select
+C/C++ -> Makefile Project with Existing Code   
+
+Click "Next"
+
+Indicate "LaMEM" as Project Name
+and browse to your LaMEM directory as the "Existing Code Location". In my example this would be:
+/Users/kausb/WORK/LaMEM
+
+Click "Finish" 
+
+9) At this stage, on the left hand side in the "Project Explorer" you see LaMEM, which you can expand to see the full directory structure. You can look at the c-code (e.g. in the /src directory), but things don't fully work yet as we haven't told Eclipse yet how to compile the code or which PETSC files to include.
+
+10) Right click on LaMEM in the "Project Explorer" (or click while holding the control key) and select "Properties" to open the "Properties for LaMEM" window.
+Select C/C++ Build
+
+- Under the SubTab "Behavior" change 
+	Build (Incremental build) from "all" to "LaMEM_debug"  which is LaMEM with little optimization and lots of debug info.
+	Clean from "clean" to "clean_all" 
+as these are the commands that we currently use within LaMEM.
+
+- Under the submenu /C/C++ Build -> Settings, select the "Mach-O 64 Parser" to allow debugging on a 64 Bit Mac (without this it doesn't work).
+
+- Under the submenu /C/C++ General -> Paths and Symbols
+you will have to add the correct PETSC include directories. You will find those by typing on the command line 
+$PETSC_DIR/include
+and 
+$PETSC_DIR/$PETSC_ARCH/include
+
+In my case, those are:
+/Users/kausb/Software/PETSC/petsc-3.1-p5/include
+/Users/kausb/Software/PETSC/petsc-3.1-p5/darwin9.8.0-c-debug/include
+
+You have to ADD these two directories (the full ones) to the "Includes" tab by selecting "AddÉ" 
+Make sure to tick the boxes
+"Add to all configurations" &
+"Add to all languages"
+
+Once you say OK it will ask to rebuild the index, which you should do (and make default).
+
+
+This adds all PETSC header files to your project, which means there is much less red if you look at for example LaMEM.c in the project explorer.
+
+
+11) Next we should prepare running LaMEM from within Eclipse.
+Go to 
+Run -> Run Configurations É
+And select "C/C++ Application" and create a new one (which will be called LaMEM default). 
+
+- Add as C/C++ Application the ./LaMEM binary within the /src directory
+- Under "Arguments" you can add the usual LaMEM command-line arguments (e.g. -vpt_element Q1Q1). A good argument to add at all times is -restart 0
+- Under "Arguments" change the working directory to ${workspace_loc:LaMEM/bin}. In this way, the code will always be run from within the LaMEM ./bin directory. Input should therefore be specified relative to this directory and if necessary input files should be copied here,
+
+
+12) If everything is OK you should be able to run LaMEM now by selecting 
+Run->Run 
+and the "Console" tab should show the falling block setup. 
+You can change input parameters for LaMEM in Run-> Run Configuration->Arguments
+
+
+13) You should also be able to run LaMEM in debug mode (Run->Debug), which will change the perspective into the Debug perspective. As in MATLAB, you can add debug points, run until that stage, check the variables etc.
+
+
+
+
+
+
+
+
+
+
+
+ 

@@ -1,0 +1,109 @@
+==============================================
+LaMEM - Lithosphere and Mantle Evolution Model
+
+A 3D numerical code that can be used to model various geodynamical 
+processes such as mantle-lithosphere interaction.
+
+The code solves the Stokes equations, using either a finite element or 
+a staggered finite difference discretization, and employs particles 
+to track phase information. A range of multigrid  and iterative solvers
+are available.   
+
+Originally developed by:                  
+  Boris J.P. Kaus (ETH Zurich, Switzerland). 2007-
+  boris.kaus@erdw.ethz.ch
+
+Further-development:    
+  Dave A. May (ETH Zurich, Switzerland). 2009-
+  dave.may@erdw.ethz.ch
+
+
+This version is compatible with PETSc version 3.1-p8
+The code cannot be distributed, used for commercial purposes or handed on,
+without the explicit agreement of Boris Kaus.
+
+0. Directory structure
+----------------------
+Cascade 	- 	surface erosion model [WILL BE REMOVED IN FUTURE]
+PetscExt	-	Petsc extensions required for the Fully Coupled and Schur Complement Reduction solvers 
+bin			-	Directory containing the binary (LaMEM) after compiling
+doc			-	Some documentation (remains incomplete)
+input_models-	Various input models (run with ../bin/LaMEM -ParamFile *.dat)
+matlab 		-	Various matlab files to change initial mesh and read binary output into matlab.
+scripts 	-	Various scripts, currently mainly related to Paraview VTK files.
+src			-	LaMEM source code.
+tests		-	Directory with various benchmarks. Some require MATLAB (run LaMEM_MATLAB_BENCHMARKS).
+utils		-	Various non-essential files.
+
+
+
+1. Dependencies
+---------------
+
+Essential dependencies-
+  i) Portable, Extensible Toolkit for Scientific computation (PETSc);
+PETSc is a suite of datastructures which facilitate rapid development of parallel applications
+which focus on the numerical solution of partial differentiatl equations. 
+Download from http://www.mcs.anl.gov/petsc
+  
+Optional dependencies-
+  i) Cascade; A surface process evolution model written by Jean Braun.
+  ii) PetscExt; Linear algebra Extensions for PETSc written by Dave A. May.
+
+1) Dependency Installation
+
+  i) PETSc: 
+- See, 
+  http://www.mcs.anl.gov/petsc/petsc-as/documentation/installation.html
+for installation instructions.
+
+  ii) Cascade:
+- Enter the cascade source directory
+  cd cascade
+
+- Edit Cascade/Makefile and add the appropriate f90 compiler 
+  F77 = mpif90
+
+- Then simply type
+  make LaMEM
+ 
+  iii) PetscExt:
+- untar the correct version (PetscExt-3.1).  
+  
+- Set the environment variable
+  export PETSCEXT_DIR=`pwd`/PetscExt/v3.1  (bash)
+  setenv PETSCEXT_DIR pwd`/PetscExt/v3.1   (tcsh)
+
+- Enter the source directory, ./PetscExt/v3.1
+
+- To configure the code, simply do
+  ./config/configure.py
+
+- To build the source, do
+  make all
+
+- You should verify the build is correct. To do this do
+  make check 
+
+
+2) Building LaMEM
+- The default build of LaMEM uses the PetscExt solvers. To disable linking against the PetscExt 
+libraries, edit makefile and change the line, 
+  WITH_PETSCEXT = -DUSE_PETSCEXT
+to be 
+  #WITH_PETSCEXT = -DUSE_PETSCEXT
+
+- To build LaMEM without cascade,  type
+  make LaMEM
+
+- Once build, you can verify that it works with:
+./LaMEM
+which will run a falling block test with default parameters.
+
+
+
+
+Last updated,
+  $Author$
+  $Date$
+
