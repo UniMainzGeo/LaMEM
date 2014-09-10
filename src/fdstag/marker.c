@@ -117,6 +117,9 @@ PetscErrorCode ADVMarkInit(AdvCtx *actx, FDSTAG *fs, UserContext *user)
 	else if(user->msetup == SPHERES)    { ierr = ADVMarkInitSpheres      (actx, fs, user); CHKERRQ(ierr); }
 	else SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER,"# *** Incorrect option for initialization of markers \n");
 
+	// check phase IDs of all the markers
+	ierr = ADVMarkCheckPhaseIDs(actx, user); CHKERRQ(ierr);
+
 	// compute host cells for all the markers
 	ierr = ADVMapMarkersCells(actx, fs);
 
@@ -1088,6 +1091,29 @@ PetscErrorCode ADVMarkInitSpheres(AdvCtx *actx, FDSTAG *fs, UserContext *user)
 			{
 				actx->markers[imark].phase = 1;
 			}
+		}
+	}
+
+	PetscFunctionReturn(0);
+}
+//---------------------------------------------------------------------------
+#undef __FUNCT__
+#define __FUNCT__ "ADVMarkCheckPhaseIDs"
+PetscErrorCode ADVMarkCheckPhaseIDs(AdvCtx *actx, UserContext *user)
+{
+ 	// check phase IDs of all the markers
+	PetscInt i, maxid;
+
+	PetscFunctionBegin;
+
+	maxid = user->num_phases - 1;
+
+	// check that every marker has a valid phase ID
+	for(i = 0; i < actx->nummark; i++)
+	{
+		if(actx->markers[i].phase > maxid)
+		{
+			SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "ERROR! Wrong Phase ID for marker!\n");
 		}
 	}
 

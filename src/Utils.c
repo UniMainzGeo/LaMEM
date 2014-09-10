@@ -686,7 +686,10 @@ PetscErrorCode   LaMEMReadInputFile( UserContext *user )
 	/* Read material properties - This manner of setting material properties will be disabled in the near future, and
 	 * replaced with a more general routine
 	 */
-	parse_GetInt( fp, "num_phases", &user->num_phases, &found );
+
+	// no need for that anymore (will be counted automatically)
+//	parse_GetInt( fp, "num_phases", &user->num_phases, &found );
+
 	parse_GetDouble( fp, "LowerViscosityCutoff", &user->LowerViscosityCutoff, &found );
 	parse_GetDouble( fp, "UpperViscosityCutoff", &user->UpperViscosityCutoff, &found );
 
@@ -883,11 +886,29 @@ PetscErrorCode   LaMEMReadInputFile( UserContext *user )
 		PetscInt attr_match, type_match;
 		PetscInt p_idx, a_idx, t_idx;
 
-
 		MaterialGetAllPhases( user->PhaseMaterialProperties, &n_phases, &phases );
-		for( PP=0; PP<n_phases; PP++ ) {
+
+		// check total number of phases found
+		if(n_phases > max_num_phases)
+		{
+			SETERRQ2(PETSC_COMM_WORLD, PETSC_ERR_USER, "Too many phases in the input file! Actual: %lld, Maximum: %lld\n", n_phases, max_num_phases);
+		}
+
+		// store total number of phases
+		user->num_phases = n_phases;
+
+		for( PP=0; PP<n_phases; PP++ )
+		{
 			p = phases[PP];
+
+			// check phase numbering
+			if(p->phase_number != PP)
+			{
+				SETERRQ2(PETSC_COMM_WORLD, PETSC_ERR_USER, "Phase numbering must be sequential in the input file! ID: %lld, Index: %lld\n", p->phase_number, PP);
+			}
+
 			p_idx = p->P_id;
+
 			PhaseGetAllAttributes( p, &n_attrs, &attrs );
 
 			for( AA=0; AA<n_attrs; AA++ ) {
@@ -898,7 +919,6 @@ PetscErrorCode   LaMEMReadInputFile( UserContext *user )
 				for( TT=0; TT<n_types; TT++ ) {
 					t = types[TT];
 					t_idx = t->T_id;
-
 
 					AttributeCompare( a, "VISCOSITY", &attr_match );
 					if( attr_match == _TRUE ) {

@@ -17,6 +17,9 @@ PetscErrorCode ADVMarkRandomNoise(AdvCtx *actx, FDSTAG *fs, UserContext *user);
 // save all local markers to disk (parallel output)
 PetscErrorCode ADVMarkSave(AdvCtx *actx, FDSTAG *fs, UserContext *user);
 
+// check phase IDs of all the markers
+PetscErrorCode ADVMarkCheckPhaseIDs(AdvCtx *actx, UserContext *user);
+
 //---------------------------------------------------------------------------
 
 // Specific initialization routines
