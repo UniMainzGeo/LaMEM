@@ -331,7 +331,8 @@ PetscErrorCode LaMEMLib_FDSTAG(PetscBool InputParamFile, const char *ParamFile, 
 	ierr = VecZeroEntries(jrctx.gsol); CHKERRQ(ierr);
 
 	// WARNING! NON-DIMENSIONAL INPUT ASSUMED!
-	ComputeScaling(&jrctx.scal, 1.0, 1.0, 1.0, 1.0, 1.0);
+	ComputeScaling(&jrctx.scal, user.Characteristic.kg,  user.Characteristic.Time, user.Characteristic.Length, user.Characteristic.Temperature, user.Characteristic.Force);
+
 
 	// WARNING! NO TEMPERATURE! Set local temperature vector to unity (ad-hoc)
 	ierr = VecSet(jrctx.lT, 1.0); CHKERRQ(ierr);
