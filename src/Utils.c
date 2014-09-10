@@ -2021,7 +2021,7 @@ PetscErrorCode InitializeCode( UserContext *user )
 	PetscPrintf(PETSC_COMM_WORLD,";  [Q1P0 Q2Pm1_global Q2Pm1_local Q1Q1 FDSTAG] (change with -vpt_element)\n");
 
 	PetscPrintf(PETSC_COMM_WORLD," Total # of cpu's          : %lld \n",(LLD)size);
-
+	PetscPrintf(PETSC_COMM_WORLD," Resolution [nx,ny,nz]     : %lld x %lld x %lld \n",(LLD)(nx), (LLD)(ny), (LLD)(nz));
 	PetscPrintf(PETSC_COMM_WORLD," Total # of velocity dof's : %lld \n",(LLD)(nx*ny*nz*3));
 
 	/* Info about material averaging method employed */
