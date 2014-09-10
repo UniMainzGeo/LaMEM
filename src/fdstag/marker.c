@@ -288,7 +288,7 @@ PetscErrorCode ADVMarkSave(AdvCtx *actx, FDSTAG *fs, UserContext *user)
 
 	if(!user->SaveParticles) PetscFunctionReturn(0);
 
-	PetscPrintf(PETSC_COMM_WORLD,"# Saving markers in parallel to files: ./%s/%s.xxx.dat \n",
+	PetscPrintf(PETSC_COMM_WORLD,"# Saving markers in parallel to files: ./%s/%s.xxx.out \n",
 		user->SaveInitialParticlesDirectory, user->ParticleFilename);
 
 	// initialize file header for MATLAB compatibility
@@ -327,7 +327,7 @@ PetscErrorCode ADVMarkSave(AdvCtx *actx, FDSTAG *fs, UserContext *user)
 	ierr = LaMEM_CreateOutputDirectory(user->SaveInitialParticlesDirectory); CHKERRQ(ierr);
 
 	// compile input file name
-	asprintf(&SaveFileName, "./%s/%s.%lld.dat",
+	asprintf(&SaveFileName, "./%s/%s.%lld.out",
 		user->SaveInitialParticlesDirectory,
 		user->ParticleFilename, (LLD)actx->iproc);
 
@@ -370,11 +370,11 @@ PetscErrorCode ADVMarkInitFileParallel(AdvCtx *actx, FDSTAG *fs, UserContext *us
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
 
-	PetscPrintf(PETSC_COMM_WORLD,"# Loading markers in parallel from files: ./%s/%s.xxx.dat \n",
+	PetscPrintf(PETSC_COMM_WORLD,"# Loading markers in parallel from files: ./%s/%s.xxx.out \n",
 		user->LoadInitialParticlesDirectory, user->ParticleFilename);
 
 	// compile input file name
-	asprintf(&LoadFileName, "./%s/%s.%lld.dat",
+	asprintf(&LoadFileName, "./%s/%s.%lld.out",
 		user->LoadInitialParticlesDirectory,
 		user->ParticleFilename, (LLD)actx->iproc);
 
