@@ -84,18 +84,18 @@ for num=1:Nproc
     num_particles = size(part_x,1)* size(part_x,2) * size(part_x,3); 
     
     % Information vector per processor
-    lvec_info(1)  = Nproc;
-    lvec_info(2)  = num_particles;
-    lvec_info(3)  = num_prop;
-    lvec_info(4)  = Nprocx;
-    lvec_info(5)  = Nprocy;
-    lvec_info(6)  = Nprocz;
-    lvec_info(7)  = A.nump_x;
-    lvec_info(8)  = A.nump_y;
-    lvec_info(9)  = A.nump_z;
-    lvec_info(10) = A.npart_x;
-    lvec_info(11) = A.npart_y;
-    lvec_info(12) = A.npart_z;
+    %lvec_info(1)  = Nproc;
+    lvec_info(1)  = num_particles;
+    %lvec_info(2)  = num_prop;
+    lvec_info(2)  = Nprocx;
+    lvec_info(3)  = Nprocy;
+    lvec_info(4)  = Nprocz;
+%     lvec_info(5)  = A.nump_x;
+%     lvec_info(6)  = A.nump_y;
+%     lvec_info(7)  = A.nump_z;
+%     lvec_info(8) = A.npart_x;
+%     lvec_info(9) = A.npart_y;
+%     lvec_info(10) = A.npart_z;
     
     part_x   = part_x(:);
     part_y   = part_y(:);
@@ -116,6 +116,7 @@ for num=1:Nproc
     fname = sprintf('./MatlabInputParticles/Particles.%d.out', num-1);
     disp(['Writing file -> ',fname])
     lvec_output    = [lvec_info(:); lvec_prtcls(:)];
+    system(['rm ',fname])                        % delete file first
     PetscBinaryWrite(fname,lvec_output);
     
     %         % For debugging - Ascii output
