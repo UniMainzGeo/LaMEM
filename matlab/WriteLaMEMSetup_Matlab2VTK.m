@@ -90,15 +90,15 @@ for k=1:size(A.Phase,3)
     end
 end
 
-% disp(['Writing Temp information... '])
-% fprintf(fid,'\t\t\t\t<DataArray type=\"Float64\" Name=\"Temp\" NumberOfComponents=\"1\" format=\"ascii\">\n');
-% for k=1:size(A.Phase,3)
-%     for j=1:size(A.Phase,2)
-%         for i=1:size(A.Phase,1)
-%             fprintf(fid,'\t\t\t\t\t %d\n', A.Temp(i,j,k));
-%         end
-%     end
-% end
+disp(['Writing Temp information... '])
+fprintf(fid,'\t\t\t\t<DataArray type=\"Float64\" Name=\"Temp\" NumberOfComponents=\"1\" format=\"ascii\">\n');
+for k=1:size(A.Phase,3)
+    for j=1:size(A.Phase,2)
+        for i=1:size(A.Phase,1)
+            fprintf(fid,'\t\t\t\t\t %d\n', A.Temp(i,j,k));
+        end
+    end
+end
 
 fprintf(fid,'\t\t\t\t</DataArray>\n');
             
@@ -161,6 +161,9 @@ else
     fprintf(fid,'\t\t\t\t<DataArray type=\"Int16\" Name=\"Phase\" NumberOfComponents=\"1\" format=\"appended\"  offset=\"%ld\"/>\n',int64(offset));
     offset = offset + 1*sizeof_UInt32 + sizeof_UInt16*(size(A.Phase,1)*size(A.Phase,2)*size(A.Phase,3));
 end
+fprintf(fid,'\t\t\t\t<DataArray type=\"Float32\" Name=\"Temp\" NumberOfComponents=\"1\" format=\"appended\"  offset=\"%ld\"/>\n',int64(offset));
+offset = offset + 1*sizeof_UInt32 + sizeof_Float32*(size(A.Phase,1)*size(A.Phase,2)*size(A.Phase,3));
+ 
 
 fprintf(fid,'\t\t\t</PointData>\n');
 fprintf(fid,'\t\t</Piece>\n');
@@ -203,6 +206,10 @@ else
     fwrite(fid,int16(A.Phase(:)),'int16');
 
 end
+
+fwrite(fid,int32(size(A.Phase,1)*size(A.Phase,2)*size(A.Phase,3)*sizeof_Float32),'float32');
+fwrite(fid,int8(A.Temp(:)),'float32');
+
 
 fprintf(fid,'</VTKFile>\n');
 end
