@@ -115,49 +115,7 @@ LowerViscosityCutoff			=	1e-3
 UpperViscosityCutoff			=	1e12
 
 # Define material properties for all phases -------------------------------------------------
-num_phases					=	2		# Total number of phases defined in code
 
-	# Define properties of block -------------------
-	<MaterialStart>
-		phase_id 			=	1
-		attribute 			= 	VISCOSITY
-		type 				= 	constant
-#		type 				= 	power_law
-		eta0       			= 	10
-		N_exp       		= 	3
-		e0 					=	0.1	
-	<MaterialEnd>
-	<MaterialStart>
-		phase_id			= 	1
-		attribute 			= 	DENSITY
-		type 				= 	temperature_dependent
-		rho0        		= 	2
-		alpha 				=	0
-	<MaterialEnd>
-	<MaterialStart>
-		phase_id			= 	1
-		attribute 			= 	ELASTICITY
-		type 				= 	constant
-		shear        		= 	5e10
-	<MaterialEnd>
-	<MaterialStart>
-		phase_id			= 	1
-		attribute 			= 	ENERGY
-		type 				= 	constant
-		ThermalConductivity	= 	3
-		HeatCapacity		=	1050
-		RadioactiveHeat		=	0
-		ShearHeating		=	0
-	<MaterialEnd>
-	<MaterialStart>
-		phase_id			= 	1
-		attribute 			= 	PLASTICITY
-		type 				= 	constant
-		Cohesion        	= 	20e60
-		FrictionAngle		= 	30
-	<MaterialEnd>
-	
-	
 	# Define properties of matrix -----------------
 	<MaterialStart>
 		phase_id 			=	0
@@ -198,5 +156,45 @@ num_phases					=	2		# Total number of phases defined in code
 		FrictionAngle		= 	30
 	<MaterialEnd>
 
+
+	# Define properties of block -------------------
+	<MaterialStart>
+		phase_id 			=	1
+		attribute 			= 	VISCOSITY
+		type 				= 	constant
+#		type 				= 	power_law
+		eta0       			= 	10
+		N_exp       		= 	3
+		e0 					=	0.1	
+	<MaterialEnd>
+	<MaterialStart>
+		phase_id			= 	1
+		attribute 			= 	DENSITY
+		type 				= 	temperature_dependent
+		rho0        		= 	2
+		alpha 				=	0
+	<MaterialEnd>
+	<MaterialStart>
+		phase_id			= 	1
+		attribute 			= 	ELASTICITY
+		type 				= 	constant
+		shear        		= 	5e10
+	<MaterialEnd>
+	<MaterialStart>
+		phase_id			= 	1
+		attribute 			= 	ENERGY
+		type 				= 	constant
+		ThermalConductivity	= 	3
+		HeatCapacity		=	1050
+		RadioactiveHeat		=	0
+		ShearHeating		=	0
+	<MaterialEnd>
+	<MaterialStart>
+		phase_id			= 	1
+		attribute 			= 	PLASTICITY
+		type 				= 	constant
+		Cohesion        	= 	20e60
+		FrictionAngle		= 	30
+	<MaterialEnd>
 	
 # End of defining material properties for all phases ----------------------------------------

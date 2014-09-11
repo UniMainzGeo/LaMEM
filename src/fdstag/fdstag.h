@@ -267,7 +267,7 @@ PetscErrorCode FDSTAGGetMinCellSize(FDSTAG *fs);
 	(i) =  ID - (k)*(m)*(n) - (j)*(m);
 
 // get bounds of the local domain (coordinates of the first and the last nodes)
-//#define GET_DOMAIN_BOUNDS(xb, xe, ds) { xb = ds.ncoor[0]; xe = ds.ncoor[ds.ncels]; }
+#define GET_DOMAIN_BOUNDS(xs, xe, ds) { xs = ds.ncoor[0]; xe = ds.ncoor[ds.ncels]; }
 
 //---------------------------------------------------------------------------
 

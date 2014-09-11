@@ -15,16 +15,16 @@ PetscErrorCode ADVMarkInitCoord(AdvCtx *actx, FDSTAG *fs, UserContext *user);
 PetscErrorCode ADVMarkRandomNoise(AdvCtx *actx, FDSTAG *fs, UserContext *user);
 
 // save all local markers to disk (parallel output)
-PetscErrorCode ADVMarkSave(AdvCtx *actx, FDSTAG *fs, UserContext *user);
+PetscErrorCode ADVMarkSave(AdvCtx *actx, UserContext *user);
 
 // check phase IDs of all the markers
-PetscErrorCode ADVMarkCheckPhaseIDs(AdvCtx *actx, UserContext *user);
+PetscErrorCode ADVMarkCheckMarkers(AdvCtx *actx, FDSTAG *fs, UserContext *user);
 
 //---------------------------------------------------------------------------
 
 // Specific initialization routines
 
-PetscErrorCode ADVMarkInitFileParallel (AdvCtx *actx, FDSTAG *fs, UserContext *user);
+PetscErrorCode ADVMarkInitFileParallel (AdvCtx *actx,             UserContext *user);
 PetscErrorCode ADVMarkInitFileRedundant(AdvCtx *actx, FDSTAG *fs, UserContext *user);
 PetscErrorCode ADVMarkInitDiapir       (AdvCtx *actx, FDSTAG *fs, UserContext *user);
 PetscErrorCode ADVMarkInitBlock        (AdvCtx *actx, FDSTAG *fs, UserContext *user);

@@ -748,9 +748,9 @@ PetscErrorCode ADVMapMarkersCells(AdvCtx *actx, FDSTAG *fs)
 		X = actx->markers[i].X;
 
 		// find I, J, K indices by bisection algorithm
-		I = FindPointInCell(fs->dsx.ncoor, 0, M + 1, X[0]);
-		J = FindPointInCell(fs->dsy.ncoor, 0, N + 1, X[1]);
-		K = FindPointInCell(fs->dsz.ncoor, 0, P + 1, X[2]);
+		I = FindPointInCell(fs->dsx.ncoor, 0, M, X[0]);
+		J = FindPointInCell(fs->dsy.ncoor, 0, N, X[1]);
+		K = FindPointInCell(fs->dsz.ncoor, 0, P, X[2]);
 
 		// compute and store consecutive index
 		GET_CELL_ID(ID, I, J, K, M, N);

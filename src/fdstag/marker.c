@@ -106,7 +106,7 @@ PetscErrorCode ADVMarkInit(AdvCtx *actx, FDSTAG *fs, UserContext *user)
 	}
 
 	// initialize marker phase, temperature, etc.
-	if     (user->msetup == PARALLEL)   { ierr = ADVMarkInitFileParallel (actx, fs, user); CHKERRQ(ierr); }
+	if     (user->msetup == PARALLEL)   { ierr = ADVMarkInitFileParallel (actx,     user); CHKERRQ(ierr); }
 	else if(user->msetup == REDUNDANT)  { ierr = ADVMarkInitFileRedundant(actx, fs, user); CHKERRQ(ierr); }
 	else if(user->msetup == DIAPIR)     { ierr = ADVMarkInitDiapir       (actx, fs, user); CHKERRQ(ierr); }
 	else if(user->msetup == BLOCK)      { ierr = ADVMarkInitBlock        (actx, fs, user); CHKERRQ(ierr); }
@@ -117,11 +117,11 @@ PetscErrorCode ADVMarkInit(AdvCtx *actx, FDSTAG *fs, UserContext *user)
 	else if(user->msetup == SPHERES)    { ierr = ADVMarkInitSpheres      (actx, fs, user); CHKERRQ(ierr); }
 	else SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER,"# *** Incorrect option for initialization of markers \n");
 
-	// check phase IDs of all the markers
-	ierr = ADVMarkCheckPhaseIDs(actx, user); CHKERRQ(ierr);
-
 	// compute host cells for all the markers
 	ierr = ADVMapMarkersCells(actx, fs);
+
+	// check marker distribution
+	ierr = ADVMarkCheckMarkers(actx, fs, user); CHKERRQ(ierr);
 
 	PetscPrintf(PETSC_COMM_WORLD,"# Finished marker initialization routine\n");
 
@@ -275,13 +275,13 @@ PetscErrorCode ADVMarkRandomNoise(AdvCtx *actx, FDSTAG *fs, UserContext *user)
 //---------------------------------------------------------------------------
 #undef __FUNCT__
 #define __FUNCT__ "ADVMarkSave"
-PetscErrorCode ADVMarkSave(AdvCtx *actx, FDSTAG *fs, UserContext *user)
+PetscErrorCode ADVMarkSave(AdvCtx *actx, UserContext *user)
 {
 	int          fd;
 	PetscInt     imark;
 	char        *SaveFileName;
 	PetscViewer  view_out;
-	PetscScalar *markbuf, *markptr, header, info[4], chLen, chTemp;
+	PetscScalar *markbuf, *markptr, header, chLen, chTemp;
 
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
@@ -293,12 +293,6 @@ PetscErrorCode ADVMarkSave(AdvCtx *actx, FDSTAG *fs, UserContext *user)
 
 	// initialize file header for MATLAB compatibility
 	header = -1;
-
-	// create the info buffer
-	info[0] = (PetscInt) actx->nummark; // number of local markers
-	info[1] = (PetscInt) fs->dsx.nproc; // number of processors x direction
-	info[2] = (PetscInt) fs->dsy.nproc; // number of processors y direction
-	info[3] = (PetscInt) fs->dsz.nproc; // number of processors z direction
 
 	// create write buffer
 	ierr = PetscMalloc((size_t)(5*actx->nummark)*sizeof(PetscScalar), &markbuf); CHKERRQ(ierr);
@@ -338,9 +332,9 @@ PetscErrorCode ADVMarkSave(AdvCtx *actx, FDSTAG *fs, UserContext *user)
 	free(SaveFileName);
 
 	// write binary output
-	ierr = PetscBinaryWrite(fd, &header, 1,               PETSC_SCALAR, PETSC_FALSE); CHKERRQ(ierr);
-	ierr = PetscBinaryWrite(fd, info,    4,               PETSC_SCALAR, PETSC_FALSE); CHKERRQ(ierr);
-	ierr = PetscBinaryWrite(fd, markbuf, 5*actx->nummark, PETSC_SCALAR, PETSC_FALSE); CHKERRQ(ierr);
+	ierr = PetscBinaryWrite(fd, &header,        1,               PETSC_SCALAR, PETSC_FALSE); CHKERRQ(ierr);
+	ierr = PetscBinaryWrite(fd, &actx->nummark, 1,               PETSC_SCALAR, PETSC_FALSE); CHKERRQ(ierr);
+	ierr = PetscBinaryWrite(fd, markbuf,        5*actx->nummark, PETSC_SCALAR, PETSC_FALSE); CHKERRQ(ierr);
 
 	// destroy the output viewer
 	ierr = PetscViewerDestroy(&view_out);
@@ -357,15 +351,15 @@ PetscErrorCode ADVMarkSave(AdvCtx *actx, FDSTAG *fs, UserContext *user)
 //---------------------------------------------------------------------------
 #undef __FUNCT__
 #define __FUNCT__ "ADVMarkInitFileParallel"
-PetscErrorCode ADVMarkInitFileParallel(AdvCtx *actx, FDSTAG *fs, UserContext *user)
+PetscErrorCode ADVMarkInitFileParallel(AdvCtx *actx, UserContext *user)
 {
 	// read markers from multiple files on all processors
 
 	int          fd;
 	PetscViewer  view_in;
 	char        *LoadFileName;
-	PetscScalar *markbuf, *markptr, info[4], header, chTemp, chLen;
-	PetscInt     imark, nummark, nprocx, nprocy, nprocz;
+	PetscScalar *markbuf, *markptr, header, chTemp, chLen;
+	PetscInt     imark, nummark;
 
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
@@ -387,19 +381,8 @@ PetscErrorCode ADVMarkInitFileParallel(AdvCtx *actx, FDSTAG *fs, UserContext *us
 	// read (and ignore) the silent undocumented file header
 	ierr = PetscBinaryRead(fd, &header, 1, PETSC_SCALAR); CHKERRQ(ierr);
 
-	// read info
-	ierr = PetscBinaryRead(fd, info, 4, PETSC_SCALAR); CHKERRQ(ierr);
-
-	// interpret info array
-	nummark = (PetscInt)(info[0]); // number of local of markers
-	nprocx  = (PetscInt)(info[1]); // number of processors in x direction
-	nprocy  = (PetscInt)(info[2]); // number of processors in y direction
-	nprocz  = (PetscInt)(info[3]); // number of processors in z direction
-
-	// check processor partitioning
-	if(fs->dsx.nproc != nprocx) SETERRQ2(PETSC_COMM_WORLD, PETSC_ERR_USER, "# ERROR! markers partitioned for %lld processors in X-direction; currently used: %lld processors", (LLD)nprocx, (LLD)fs->dsx.nproc);
-	if(fs->dsy.nproc != nprocy) SETERRQ2(PETSC_COMM_WORLD, PETSC_ERR_USER, "# ERROR! markers partitioned for %lld processors in Y-direction; currently used: %lld processors", (LLD)nprocy, (LLD)fs->dsy.nproc);
-	if(fs->dsz.nproc != nprocz) SETERRQ2(PETSC_COMM_WORLD, PETSC_ERR_USER, "# ERROR! markers partitioned for %lld processors in Z-direction; currently used: %lld processors", (LLD)nprocz, (LLD)fs->dsz.nproc);
+	// read number of local of markers
+	ierr = PetscBinaryRead(fd, &nummark, 1, PETSC_SCALAR); CHKERRQ(ierr);
 
 	// allocate marker storage
 	ierr = ADVReAllocateStorage(actx, nummark); CHKERRQ(ierr);
@@ -1098,24 +1081,113 @@ PetscErrorCode ADVMarkInitSpheres(AdvCtx *actx, FDSTAG *fs, UserContext *user)
 }
 //---------------------------------------------------------------------------
 #undef __FUNCT__
-#define __FUNCT__ "ADVMarkCheckPhaseIDs"
-PetscErrorCode ADVMarkCheckPhaseIDs(AdvCtx *actx, UserContext *user)
+#define __FUNCT__ "ADVMarkCheckMarkers"
+PetscErrorCode ADVMarkCheckMarkers(AdvCtx *actx, FDSTAG *fs, UserContext *user)
 {
- 	// check phase IDs of all the markers
-	PetscInt i, maxid;
+ 	// check initial marker distribution
 
+	PetscScalar *X;
+	PetscBool    error;
+	PetscScalar  xs, ys, zs;
+	PetscScalar  xe, ye, ze;
+	PetscInt    *numMarkCell, rbuf[4], sbuf[4];
+	PetscInt     i, maxid, NumInvalidPhase, numNonLocal, numEmpty, numSparse;
+
+	PetscErrorCode ierr;
 	PetscFunctionBegin;
 
+	// get maximum Phase
 	maxid = user->num_phases - 1;
 
-	// check that every marker has a valid phase ID
+	// get local mesh sizes
+	GET_DOMAIN_BOUNDS(xs, xe, fs->dsx)
+	GET_DOMAIN_BOUNDS(ys, ye, fs->dsy)
+	GET_DOMAIN_BOUNDS(zs, ze, fs->dsz)
+
+	// allocate marker counter array
+	ierr = makeIntArray(&numMarkCell, NULL, fs->nCells); CHKERRQ(ierr);
+
+	// clear error flag
+	error = PETSC_FALSE;
+
+	// count markers with invalid phase ID & non-local markers
+	NumInvalidPhase = 0;
+	numNonLocal     = 0;
+
 	for(i = 0; i < actx->nummark; i++)
 	{
-		if(actx->markers[i].phase > maxid)
-		{
-			SETERRQ3(PETSC_COMM_WORLD, PETSC_ERR_USER, "ERROR! One of the markers (# %i) has Phase ID=%i and the maximum phase for which we specified properties is %i!\n", i, actx->markers[i].phase, maxid);
-		}
+		// marker should have a valid phase ID
+		if(actx->markers[i].phase > maxid) NumInvalidPhase++;
+
+		// get marker coordinates
+		X = actx->markers[i].X;
+
+		// marker must be local (check bounding box)
+		if(X[0] < xs || X[0] > xe
+		|| X[1] < ys || X[1] > ye
+		|| X[2] < zs || X[2] > ze) numNonLocal++;
+
+		// count number of markers in the cells
+		numMarkCell[actx->cellnum[i]]++;
 	}
+
+	// count empty & sparse cells
+	numEmpty  = 0;
+	numSparse = 0;
+
+	for(i = 0; i < fs->nCells; i++)
+	{
+		if(numMarkCell[i] == 0) numEmpty++;
+		if(numMarkCell[i] <  8) numSparse++;
+	}
+
+	// get global figures
+	if(actx->nproc != 1)
+	{
+		sbuf[0] = NumInvalidPhase;
+		sbuf[1] = numNonLocal;
+		sbuf[2] = numEmpty;
+		sbuf[3] = numSparse;
+
+		ierr = MPI_Allreduce(sbuf, rbuf, 4, MPIU_SCALAR, MPI_SUM, actx->icomm); CHKERRQ(ierr);
+
+		NumInvalidPhase = rbuf[0];
+		numNonLocal     = rbuf[1];
+		numEmpty        = rbuf[2];
+		numSparse       = rbuf[3];
+	}
+
+	// print diagnostics
+	if(NumInvalidPhase)
+	{
+		ierr = PetscPrintf(PETSC_COMM_WORLD, "Number of markers that have invalid phase ID: %lld\n", (LLD)NumInvalidPhase); CHKERRQ(ierr);
+		error = PETSC_TRUE;
+	}
+
+	if(numNonLocal)
+	{
+		ierr = PetscPrintf(PETSC_COMM_WORLD, "Number of non-local markers: %lld\n", (LLD)numNonLocal); CHKERRQ(ierr);
+		error = PETSC_TRUE;
+	}
+
+	if(numEmpty)
+	{
+		ierr = PetscPrintf(PETSC_COMM_WORLD, "Number of exactly empty cells: %lld\n", (LLD)numEmpty); CHKERRQ(ierr);
+		error = PETSC_TRUE;
+	}
+
+	if(numSparse)
+	{
+		ierr = PetscPrintf(PETSC_COMM_WORLD, "WARNING! Number of cells with less than 8 markers: %lld.\n", (LLD)numSparse); CHKERRQ(ierr);
+	}
+
+	if(error == PETSC_TRUE)
+	{
+		SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "Problems with initial marker distribution (see the above message)\n");
+	}
+
+	// clear
+	PetscFree(numMarkCell);
 
 	PetscFunctionReturn(0);
 }

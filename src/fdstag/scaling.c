@@ -4,15 +4,40 @@
 #include "LaMEM.h"
 #include "scaling.h"
 //---------------------------------------------------------------------------
-void ComputeScaling(
-	Scaling    * scal,
+#undef __FUNCT__
+#define __FUNCT__ "ScalingCreate"
+PetscErrorCode ScalingCreate(
+	Scaling     *scal,
+	PetscInt     DimensionalUnits,
 	PetscScalar  mass,
 	PetscScalar  time,
 	PetscScalar  length,
 	PetscScalar  temperature,
 	PetscScalar  force)
 {
-	// primary characteristic units
+
+	PetscScalar yr = 1.0, Myr = 1.0, km = 1.0, cm = 1.0, cm_yr = 1.0, MPa = 1.0;
+
+	if(!DimensionalUnits)
+	{
+		// clear primary units
+		mass        =  1.0;
+		time        =  1.0;
+		length      =  1.0;
+		temperature =  1.0;
+		force       =  1.0;
+	}
+	else
+	{
+		yr    = 3600.0*24.0*365.0;
+		Myr   = 1e6*yr;
+		km    = 1e3;
+		cm    = 1e-2;
+		cm_yr = cm/yr;
+		MPa   = 1e6;
+	}
+
+	// set primary characteristic units
 	scal->mass        = mass;
 	scal->time        = time;
 	scal->length      = length;
@@ -42,7 +67,12 @@ void ComputeScaling(
 	scal->expansivity         = 1.0/temperature;
 	scal->pressure_sensivity  = temperature/scal->stress;
 
-	scal->phase               = 1.0;
+	scal->out_time     = time/Myr;
+	scal->out_length   = length/km;
+	scal->out_velocity = scal->velocity/cm_yr;
+	scal->out_stress   = scal->stress/MPa;
+
+	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
 PetscScalar ComputePowerLawScaling(Scaling * scal, PetscScalar n)

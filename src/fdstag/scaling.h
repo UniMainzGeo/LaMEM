@@ -17,7 +17,7 @@ typedef struct
 	PetscScalar volume; // length^3
 	PetscScalar area;   // length^2
 
-	//secondary units
+	// secondary units
 	PetscScalar velocity;         // length / time
 	PetscScalar stress;           // force / area
 	PetscScalar strain_rate;      // 1 / time
@@ -36,18 +36,23 @@ typedef struct
 	PetscScalar expansivity;         // 1 / temperature
 	PetscScalar pressure_sensivity;  // temperature / stress
 
-	PetscScalar phase;
+	// output scaling
+	PetscScalar out_time;     // * -> s   -> Myr
+	PetscScalar out_length;   // * -> m   -> km
+	PetscScalar out_velocity; // * -> m/s -> cm/yr
+	PetscScalar out_stress;   // * -> Pa  -> MPa
 
 } Scaling;
 //---------------------------------------------------------------------------
 
-void ComputeScaling(
-	Scaling * scal,
-	PetscScalar    mass,
-	PetscScalar    time,
-	PetscScalar    length,
-	PetscScalar    temperature,
-	PetscScalar    force);
+PetscErrorCode ScalingCreate(
+	Scaling     *scal,
+	PetscInt     DimensionalUnits,
+	PetscScalar  mass,
+	PetscScalar  time,
+	PetscScalar  length,
+	PetscScalar  temperature,
+	PetscScalar  force);
 
 PetscScalar ComputePowerLawScaling(Scaling * scal, PetscScalar n);
 

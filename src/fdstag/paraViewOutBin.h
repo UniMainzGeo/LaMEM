@@ -169,7 +169,7 @@ typedef struct
 //---------------------------------------------------------------------------
 
 // create ParaView output driver
-PetscErrorCode PVOutCreate(PVOut *pvout, FDSTAG *fs, const char *filename);
+PetscErrorCode PVOutCreate(PVOut *pvout, FDSTAG *fs, Scaling *scal, const char *filename);
 
 // destroy ParaView output driver
 PetscErrorCode PVOutDestroy(PVOut *pvout);

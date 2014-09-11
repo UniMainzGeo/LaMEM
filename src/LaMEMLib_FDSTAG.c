@@ -330,9 +330,15 @@ PetscErrorCode LaMEMLib_FDSTAG(PetscBool InputParamFile, const char *ParamFile, 
 	// zero out global solution vector
 	ierr = VecZeroEntries(jrctx.gsol); CHKERRQ(ierr);
 
-	// WARNING! NON-DIMENSIONAL INPUT ASSUMED!
-	ComputeScaling(&jrctx.scal, user.Characteristic.kg,  user.Characteristic.Time, user.Characteristic.Length, user.Characteristic.Temperature, user.Characteristic.Force);
-
+	// initialize scaling object
+	ierr = ScalingCreate(
+		&jrctx.scal,
+		user.DimensionalUnits,
+		user.Characteristic.kg,
+		user.Characteristic.Time,
+		user.Characteristic.Length,
+		user.Characteristic.Temperature,
+		user.Characteristic.Force); CHKERRQ(ierr);
 
 	// WARNING! NO TEMPERATURE! Set local temperature vector to unity (ad-hoc)
 	ierr = VecSet(jrctx.lT, 1.0); CHKERRQ(ierr);
@@ -349,7 +355,7 @@ PetscErrorCode LaMEMLib_FDSTAG(PetscBool InputParamFile, const char *ParamFile, 
 	jrctx.grav[2] = user.Gravity;
 
 	// create output object for all requested output variables
-	ierr = PVOutCreate(&pvout, &fs, user.OutputFile); CHKERRQ(ierr);
+	ierr = PVOutCreate(&pvout, &fs, &jrctx.scal, user.OutputFile); CHKERRQ(ierr);
 
 	// create advection context
 	ierr = ADVCreate(&actx); CHKERRQ(ierr);
@@ -731,7 +737,7 @@ PetscErrorCode LaMEMLib_FDSTAG(PetscBool InputParamFile, const char *ParamFile, 
 
 
 		// store marker to disk
-		ierr = ADVMarkSave(&actx, &fs, &user);  CHKERRQ(ierr);
+		ierr = ADVMarkSave(&actx, &user);  CHKERRQ(ierr);
 
 
 

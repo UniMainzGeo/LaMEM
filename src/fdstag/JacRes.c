@@ -1781,3 +1781,56 @@ PetscErrorCode FDSTAGCreateScatter(FDSTAG *fs, JacResCtx *jrctx)
 }
 */
 //---------------------------------------------------------------------------
+/*
+ static inline PetscInt constrEdgeNode(
+	PetscInt    ix[],
+	PetscInt    iy[],
+	PetscScalar bx[],
+	PetscScalar by[],
+	PetscScalar vx[],
+	PetscScalar vy[],
+	PetscScalar dx,
+	PetscScalar dy)
+{
+	PetscInt    cx = -1, cy = -1, px = -1, py = -1;
+	PetscScalar epsb = 0.0, eps = 0.0, cfx = 0.0, cfy = 0.0;
+
+	// epsb - is a boundary value for the strain rate component.
+	// For the free surface it should be zero.
+	// Alternatively, if a nonzero boundary stress is required,
+	// this strain rate should be computed from the constitutive model
+	// (probably nonlinear).
+	// Currently only the free surface is implemented, so epsb is set to zero.
+
+	// eps - is a cumulative strain rate from internal and Dirichlet ghost nodes.
+	// It is used for enforcing the Neumann constraints.
+
+	// cfx, cfy - are the strain-rate terms pre-multipliers used in the expansion
+	// of Neumann constraints. They assume values of -1 or 1, depending on which
+	// node along each direction is constrained, first or second (correspondingly).
+
+	// determine primary internal nodes & constrained ghost nodes
+	if(ix[0] == -1) { cx = 0; px = 1; cfx = -1.0; }
+	if(ix[1] == -1) { cx = 1; px = 0; cfx =  1.0; }
+	if(iy[0] == -1) { cy = 0; py = 1; cfy = -1.0; }
+	if(iy[1] == -1) { cy = 1; py = 0; cfy =  1.0; }
+
+	// sort out the internal nodes
+	if(cx == -1 && cy == -1) return 0;
+
+	// compute strain rates from internal nodes
+	if(cx == -1) eps += (vx[1] - vx[0])/dy/2.0;
+	if(cy == -1) eps += (vy[1] - vy[0])/dx/2.0;
+
+	// expand Dirichlet constraints, update strain rates from Dirichlet nodes
+	if(cx != -1 && bx[cx] != DBL_MAX) { vx[cx] = 2.0*bx[cx] - vx[px]; eps += (vx[1] - vx[0])/dy/2.0; }
+	if(cy != -1 && by[cy] != DBL_MAX) { vy[cy] = 2.0*by[cy] - vy[py]; eps += (vy[1] - vy[0])/dx/2.0; }
+
+	// expand Neumann constraints
+	if(cx != -1 && bx[cx] == DBL_MAX) { vx[cx] = vx[px] + 2.0*dy*cfx*(epsb - eps); }
+	if(cy != -1 && by[cy] == DBL_MAX) { vy[cy] = vy[py] + 2.0*dx*cfy*(epsb - eps); }
+
+	return 1;
+}
+//---------------------------------------------------------------------------
+*/

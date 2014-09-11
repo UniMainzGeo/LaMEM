@@ -106,9 +106,14 @@ PetscErrorCode FDSTAGetVorticity(
 
 //-----------------------------------------------------------------------------
 // call this function for local markers only!
-static inline PetscInt FindPointInCell(PetscScalar *px, PetscInt L, PetscInt R, PetscScalar x)
+static inline PetscInt FindPointInCell(
+	PetscScalar *px, // node coordinates
+	PetscInt     L,  // index of the leftmost node
+	PetscInt     R,  // index of the rightmost node
+	PetscScalar  x)  // point coordinate
 {
-	PetscInt M = L + (PetscInt)((x - px[L])/((px[R] - px[L])/(PetscScalar)(R - L)));
+	// get initial guess assuming uniform grid
+	PetscInt M = L + (PetscInt)((x-px[L])/((px[R]-px[L])/(PetscScalar)(R-L)));
 
 	if(M <= L) return L;
 	if(M >= R) return R-1;

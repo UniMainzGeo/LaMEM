@@ -315,7 +315,7 @@ PetscInt OutMaskCountActive(OutMask *omask)
 //---------------------------------------------------------------------------
 #undef __FUNCT__
 #define __FUNCT__ "PVOutCreate"
-PetscErrorCode PVOutCreate(PVOut *pvout, FDSTAG *fs, const char *filename)
+PetscErrorCode PVOutCreate(PVOut *pvout, FDSTAG *fs, Scaling *scal, const char *filename)
 {
 	PetscInt  cnt, maxnc, mkcen, mkedg;
 	OutMask  *omask;
@@ -327,8 +327,8 @@ PetscErrorCode PVOutCreate(PVOut *pvout, FDSTAG *fs, const char *filename)
 	// set file name
 	asprintf(&pvout->outfile, "%s", filename);
 
-	// set output scaling for coordinates (SCALING!!!)
-	pvout->crdScal = 1.0;
+	// set output scaling for coordinates
+	pvout->crdScal = scal->out_length;
 
 	// get output mask
 	omask = &pvout->omask;
