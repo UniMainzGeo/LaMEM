@@ -116,7 +116,6 @@ for num=1:Nproc
     fname = sprintf('./MatlabInputParticles/Particles.%d.out', num-1);
     disp(['Writing file -> ',fname])
     lvec_output    = [lvec_info(:); lvec_prtcls(:)];
-    system(['rm ',fname])                        % delete file first
     PetscBinaryWrite(fname,lvec_output);
     
     %         % For debugging - Ascii output
