@@ -1113,7 +1113,7 @@ PetscErrorCode ADVMarkCheckPhaseIDs(AdvCtx *actx, UserContext *user)
 	{
 		if(actx->markers[i].phase > maxid)
 		{
-			SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "ERROR! Wrong Phase ID for marker!\n");
+			SETERRQ3(PETSC_COMM_WORLD, PETSC_ERR_USER, "ERROR! One of the markers (# %i) has Phase ID=%i and the maximum phase for which we specified properties is %i!\n", i, actx->markers[i].phase, maxid);
 		}
 	}
 
