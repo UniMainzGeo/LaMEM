@@ -21,7 +21,6 @@ PetscErrorCode DarcyPostProcess(NLCtx *nlctx, UserContext *user)
 {
 	FILE        *db;
 	PetscBool   flg;
-	PetscMPIInt nproc, iproc;
 	PetscInt    i, j, k, nx, ny, nz, sx, sy, sz;
 	PetscScalar ***vz, dx, dy, lflux, gflux, L, A, dp, eta, vf, pgrad, K;
 
@@ -32,10 +31,6 @@ PetscErrorCode DarcyPostProcess(NLCtx *nlctx, UserContext *user)
 	FDSTAG    *fs      = nlctx->fs;
 	JacResCtx *jrctx   = nlctx->jrctx;
 	Material_t *phases = jrctx->phases;
-
-	// get number of processors & rank
-	ierr = MPI_Comm_size(PETSC_COMM_WORLD, &nproc); CHKERRQ(ierr);
-	ierr = MPI_Comm_rank(PETSC_COMM_WORLD, &iproc); CHKERRQ(ierr);
 
 	// access z-velocity vector
 	ierr = DMDAVecGetArray(fs->DA_Z, jrctx->lvz, &vz);  CHKERRQ(ierr);
@@ -71,7 +66,7 @@ PetscErrorCode DarcyPostProcess(NLCtx *nlctx, UserContext *user)
 	ierr = DMDAVecRestoreArray(fs->DA_Z, jrctx->lvz, &vz);  CHKERRQ(ierr);
 
 	// compute global flux
-	if(nproc != 1)
+	if(ISParallel(PETSC_COMM_WORLD))
 	{
 		ierr = MPI_Allreduce(&lflux, &gflux, 1, MPIU_SCALAR, MPI_SUM, PETSC_COMM_WORLD); CHKERRQ(ierr);
 	}
@@ -111,7 +106,7 @@ PetscErrorCode DarcyPostProcess(NLCtx *nlctx, UserContext *user)
 	PetscPrintf(PETSC_COMM_WORLD,"# EFFECTIVE PERMEABILITY CONSTANT: %E\n", K);
 	PetscPrintf(PETSC_COMM_WORLD,"# ==============================================\n");
 
-	if(iproc == 0)
+	if(ISRankZero(PETSC_COMM_WORLD))
 	{
 		db = fopen("darcy.dat", "w");
 

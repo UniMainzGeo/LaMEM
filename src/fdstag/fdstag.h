@@ -81,14 +81,21 @@ PetscErrorCode Discret1DCreate(
 
 PetscErrorCode Discret1DDestroy(Discret1D *ds);
 
+// generate local coordinates
 PetscErrorCode Discret1DGenCoord(Discret1D *ds, MeshSeg1D *ms);
 
 PetscErrorCode Discret1DView(Discret1D *ds, const char *name);
 
+// define minimum cell size in the base direction
 PetscErrorCode Discret1DGetMinCellSize(Discret1D *ds, PetscScalar *sz);
 
+// create 1D communicator of the processor column in the base direction
 PetscErrorCode Discret1DGetColumnComm(Discret1D *ds, MPI_Comm *comm);
 
+// gather coordinate array on rank zero of PETSC_COMM_WORLD
+// WARNING! the array only exists on rank zero of PETSC_COMM_WORLD
+// WARNING! the array must be destroyed after use!
+PetscErrorCode Discret1DGatherCoord(Discret1D *ds, PetscScalar **coord);
 
 //---------------------------------------------------------------------------
 

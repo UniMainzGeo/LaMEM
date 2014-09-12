@@ -3399,3 +3399,22 @@ PetscErrorCode ReadMeshSegDir(
 	PetscFunctionReturn(0);
 }
 //==========================================================================================================
+PetscInt ISRankZero(MPI_Comm comm)
+{
+	PetscMPIInt rank;
+
+	MPI_Comm_rank(comm, &rank);
+
+	return (rank == 0);
+}
+//==========================================================================================================
+PetscInt ISParallel(MPI_Comm comm)
+{
+	PetscMPIInt size;
+
+	MPI_Comm_size(comm, &size);
+
+	return (size > 1);
+}
+//==========================================================================================================
+

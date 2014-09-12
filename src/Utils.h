@@ -83,6 +83,14 @@ PetscErrorCode ReadMeshSegDir(
 	PetscScalar  end,
 	PetscInt    *tncels,
 	MeshSegInp  *msi);
+
+//---------------------------------------------------------------------------
+// checks whether processor has a zero rank in the communicator
+PetscInt ISRankZero(MPI_Comm comm);
+
+// check whether communicator is parallel (has more than one rank)
+PetscInt ISParallel(MPI_Comm comm);
+
 //---------------------------------------------------------------------------
 
 #endif

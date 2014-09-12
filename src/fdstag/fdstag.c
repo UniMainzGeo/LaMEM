@@ -368,6 +368,75 @@ PetscErrorCode Discret1DGetColumnComm(Discret1D *ds, MPI_Comm *comm)
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
+#undef __FUNCT__
+#define __FUNCT__ "Discret1DGatherCoord"
+PetscErrorCode Discret1DGatherCoord(Discret1D *ds, PetscScalar **coord)
+{
+	// gather coordinate array on rank zero of PETSC_COMM_WORLD
+	// WARNING! the array only exists on rank zero of PETSC_COMM_WORLD
+	// WARNING! the array must be destroyed after use!
+
+	MPI_Comm     comm;
+	PetscScalar *pcoord   = NULL;
+	PetscInt    *recvcnts = NULL, i;
+
+	PetscErrorCode ierr;
+	PetscFunctionBegin;
+
+	// check for sequential case
+	if(ds->nproc == 1)
+	{
+		// return coordinates on rank zero of PETSC_COMM_WORLD
+		if(ISRankZero(PETSC_COMM_WORLD))
+		{
+			ierr = makeScalArray(&pcoord, NULL, ds->tnods); CHKERRQ(ierr);
+
+			for(i = 0; i < ds->tnods; i++) pcoord[i] = ds->ncoor[i];
+
+			(*coord) = pcoord;
+		}
+
+		PetscFunctionReturn(0);
+	}
+
+	// create column communicator
+	ierr = Discret1DGetColumnComm(ds, &comm); CHKERRQ(ierr);
+
+	// gather coordinates on zero ranks of column communicator
+	if(ISRankZero(comm))
+	{
+		// allocate coordinates
+		ierr = makeScalArray(&pcoord, NULL, ds->tnods); CHKERRQ(ierr);
+
+		// allocate receive counts
+		ierr = makeIntArray(&recvcnts, NULL, ds->nproc); CHKERRQ(ierr);
+
+		// compute receive counts
+		for(i = 0; i < ds->nproc; i++) recvcnts[i] = ds->starts[i+1] - ds->starts[i];
+
+	}
+
+	// gather coordinates
+	ierr = MPI_Gatherv(ds->ncoor, ds->nnods, MPIU_SCALAR,
+		pcoord, recvcnts, ds->starts, MPIU_SCALAR, 0, comm); CHKERRQ(ierr);
+
+	// return coordinates on rank zero of PETSC_COMM_WORLD
+	if(ISRankZero(PETSC_COMM_WORLD))
+	{
+		(*coord) = pcoord;
+	}
+	else
+	{
+		ierr = PetscFree(pcoord); CHKERRQ(ierr);
+	}
+
+	ierr = MPI_Comm_free(&comm); CHKERRQ(ierr);
+
+	ierr = PetscFree(recvcnts); CHKERRQ(ierr);
+
+	PetscFunctionReturn(0);
+}
+//---------------------------------------------------------------------------
 // DOFIndex functions
 //---------------------------------------------------------------------------
 #undef __FUNCT__

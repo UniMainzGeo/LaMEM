@@ -1189,7 +1189,7 @@ PetscErrorCode ADVMarkCheckMarkers(AdvCtx *actx, FDSTAG *fs, UserContext *user)
 	}
 
 	// clear
-	PetscFree(numMarkCell);
+	ierr = PetscFree(numMarkCell); CHKERRQ(ierr);
 
 	PetscFunctionReturn(0);
 }
