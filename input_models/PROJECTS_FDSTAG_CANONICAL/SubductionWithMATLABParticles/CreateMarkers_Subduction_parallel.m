@@ -113,8 +113,6 @@ if (LaMEM_OLD_WAY_output == 1)
     
 end
 
-clearvars -except A Paraview_output LaMEM_Parallel_output Parallel_partition
-
 % PARAVIEW VISUALIZATION
 if (Paraview_output == 1)
     

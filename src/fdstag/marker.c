@@ -358,7 +358,7 @@ PetscErrorCode ADVMarkInitFileParallel(AdvCtx *actx, UserContext *user)
 	int          fd;
 	PetscViewer  view_in;
 	char        *LoadFileName;
-	PetscScalar *markbuf, *markptr, header, chTemp, chLen;
+	PetscScalar *markbuf, *markptr, header, chTemp, chLen, s_nummark;
 	PetscInt     imark, nummark;
 
 	PetscErrorCode ierr;
@@ -382,7 +382,8 @@ PetscErrorCode ADVMarkInitFileParallel(AdvCtx *actx, UserContext *user)
 	ierr = PetscBinaryRead(fd, &header, 1, PETSC_SCALAR); CHKERRQ(ierr);
 
 	// read number of local of markers
-	ierr = PetscBinaryRead(fd, &nummark, 1, PETSC_SCALAR); CHKERRQ(ierr);
+	ierr = PetscBinaryRead(fd, &s_nummark, 1, PETSC_SCALAR); CHKERRQ(ierr);
+	nummark = (PetscInt)s_nummark;
 
 	// allocate marker storage
 	ierr = ADVReAllocateStorage(actx, nummark); CHKERRQ(ierr);
@@ -391,7 +392,7 @@ PetscErrorCode ADVMarkInitFileParallel(AdvCtx *actx, UserContext *user)
 	actx->nummark = nummark;
 
 	// allocate marker buffer
-	ierr = PetscMalloc((size_t)(5*actx->nummark)*sizeof(PetscScalar), &markbuf); CHKERRQ(ierr);
+	ierr = PetscMalloc((size_t)(5*actx->nummark+4)*sizeof(PetscScalar), &markbuf); CHKERRQ(ierr);
 
 	// read markers into buffer
 	ierr = PetscBinaryRead(fd, markbuf, 5*actx->nummark, PETSC_SCALAR); CHKERRQ(ierr);

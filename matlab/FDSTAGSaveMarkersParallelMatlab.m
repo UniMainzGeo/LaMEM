@@ -38,12 +38,19 @@ Nproc                           = Nprocx*Nprocy*Nprocz;
 W  = A.W;
 L  = A.L;
 H  = A.H;
+
+x_left  = A.x(1);
+y_front = A.y(1);
+z_bot   = A.z(1);
+
+
 dx      = W/A.nump_x;
 dy      = L/A.nump_y;
 dz      = H/A.nump_z;
-x       = dx/2 : dx : W-dx/2;
-y       = dy/2 : dy : L-dy/2;
-z       = dz/2 : dz : H-dz/2;
+x       = [dx/2 : dx : W-dx/2] + x_left;
+y       = [dy/2 : dy : L-dy/2] + y_front;
+z       = [dz/2 : dz : H-dz/2] + z_bot;
+
 [X,Y,Z] = meshgrid(x,y,z);
 X       = permute(X,[2 1 3]);
 Y       = permute(Y,[2 1 3]);
@@ -84,19 +91,8 @@ for num=1:Nproc
     num_particles = size(part_x,1)* size(part_x,2) * size(part_x,3); 
     
     % Information vector per processor
-    %lvec_info(1)  = Nproc;
     lvec_info(1)  = num_particles;
-    %lvec_info(2)  = num_prop;
-    lvec_info(2)  = Nprocx;
-    lvec_info(3)  = Nprocy;
-    lvec_info(4)  = Nprocz;
-%     lvec_info(5)  = A.nump_x;
-%     lvec_info(6)  = A.nump_y;
-%     lvec_info(7)  = A.nump_z;
-%     lvec_info(8) = A.npart_x;
-%     lvec_info(9) = A.npart_y;
-%     lvec_info(10) = A.npart_z;
-    
+  
     part_x   = part_x(:);
     part_y   = part_y(:);
     part_z   = part_z(:);
@@ -115,7 +111,9 @@ for num=1:Nproc
     % Output files
     fname = sprintf('./MatlabInputParticles/Particles.%d.out', num-1);
     disp(['Writing file -> ',fname])
-    lvec_output    = [lvec_info(:); lvec_prtcls(:)];
+     lvec_output    = [lvec_info(:); lvec_prtcls(:)];
+    
+    
     PetscBinaryWrite(fname,lvec_output);
     
     %         % For debugging - Ascii output
