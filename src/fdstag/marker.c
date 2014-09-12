@@ -281,7 +281,7 @@ PetscErrorCode ADVMarkSave(AdvCtx *actx, UserContext *user)
 	PetscInt     imark;
 	char        *SaveFileName;
 	PetscViewer  view_out;
-	PetscScalar *markbuf, *markptr, header, chLen, chTemp;
+	PetscScalar *markbuf, *markptr, header, chLen, chTemp, s_nummark;
 
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
@@ -332,9 +332,10 @@ PetscErrorCode ADVMarkSave(AdvCtx *actx, UserContext *user)
 	free(SaveFileName);
 
 	// write binary output
-	ierr = PetscBinaryWrite(fd, &header,        1,               PETSC_SCALAR, PETSC_FALSE); CHKERRQ(ierr);
-	ierr = PetscBinaryWrite(fd, &actx->nummark, 1,               PETSC_SCALAR, PETSC_FALSE); CHKERRQ(ierr);
-	ierr = PetscBinaryWrite(fd, markbuf,        5*actx->nummark, PETSC_SCALAR, PETSC_FALSE); CHKERRQ(ierr);
+	s_nummark = (PetscScalar)actx->nummark;
+	ierr = PetscBinaryWrite(fd, &header,    1,               PETSC_SCALAR, PETSC_FALSE); CHKERRQ(ierr);
+	ierr = PetscBinaryWrite(fd, &s_nummark, 1,               PETSC_SCALAR, PETSC_FALSE); CHKERRQ(ierr);
+	ierr = PetscBinaryWrite(fd, markbuf,    5*actx->nummark, PETSC_SCALAR, PETSC_FALSE); CHKERRQ(ierr);
 
 	// destroy the output viewer
 	ierr = PetscViewerDestroy(&view_out);
@@ -392,7 +393,7 @@ PetscErrorCode ADVMarkInitFileParallel(AdvCtx *actx, UserContext *user)
 	actx->nummark = nummark;
 
 	// allocate marker buffer
-	ierr = PetscMalloc((size_t)(5*actx->nummark+4)*sizeof(PetscScalar), &markbuf); CHKERRQ(ierr);
+	ierr = PetscMalloc((size_t)(5*actx->nummark)*sizeof(PetscScalar), &markbuf); CHKERRQ(ierr);
 
 	// read markers into buffer
 	ierr = PetscBinaryRead(fd, markbuf, 5*actx->nummark, PETSC_SCALAR); CHKERRQ(ierr);
@@ -1150,7 +1151,7 @@ PetscErrorCode ADVMarkCheckMarkers(AdvCtx *actx, FDSTAG *fs, UserContext *user)
 		sbuf[2] = numEmpty;
 		sbuf[3] = numSparse;
 
-		ierr = MPI_Allreduce(sbuf, rbuf, 4, MPIU_SCALAR, MPI_SUM, actx->icomm); CHKERRQ(ierr);
+		ierr = MPI_Allreduce(sbuf, rbuf, 4, MPIU_INT, MPI_SUM, actx->icomm); CHKERRQ(ierr);
 
 		NumInvalidPhase = rbuf[0];
 		numNonLocal     = rbuf[1];
