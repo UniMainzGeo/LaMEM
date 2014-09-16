@@ -25,41 +25,24 @@ else
     mkdir MatlabInputParticles
 end
 
-% HARDCODED parameter - should be changed in future
-% no. of properties particles carry
+% No. of properties the markers carry: x,y,z-coord, phase, T
 num_prop      = 5;
 
-%Read Processor Partitioning
+% Read Processor Partitioning
 [Nprocx,Nprocy,Nprocz,xc,yc,zc] = GetProcessorPartitioning(fname);
 Nproc                           = Nprocx*Nprocy*Nprocz;
 [num,num_i,num_j,num_k]         = get_numscheme(Nprocx,Nprocy,Nprocz);
 
-% Prepare particle coords (still dimensional)
-W  = A.W;
-L  = A.L;
-H  = A.H;
-
-x_left  = A.x(1);
-y_front = A.y(1);
-z_bot   = A.z(1);
-
-
-dx      = W/A.nump_x;
-dy      = L/A.nump_y;
-dz      = H/A.nump_z;
-x       = [dx/2 : dx : W-dx/2] + x_left;
-y       = [dy/2 : dy : L-dy/2] + y_front;
-z       = [dz/2 : dz : H-dz/2] + z_bot;
-
-[X,Y,Z] = meshgrid(x,y,z);
+% Grid
+[X,Y,Z] = meshgrid(A.x,A.y,A.z);
 X       = permute(X,[2 1 3]);
 Y       = permute(Y,[2 1 3]);
 Z       = permute(Z,[2 1 3]);
     
 % Get particles of respective procs    
-[xi,ix_start,ix_end] = get_ind(x,xc,Nprocx,A.nump_x);
-[yi,iy_start,iy_end] = get_ind(y,yc,Nprocy,A.nump_y);
-[zi,iz_start,iz_end] = get_ind(z,zc,Nprocz,A.nump_z);
+[xi,ix_start,ix_end] = get_ind(A.x,xc,Nprocx,A.nump_x);
+[yi,iy_start,iy_end] = get_ind(A.y,yc,Nprocy,A.nump_y);
+[zi,iz_start,iz_end] = get_ind(A.z,zc,Nprocz,A.nump_z);
 
 x_start(num)= ix_start(num_i);
 x_end(num)  = ix_end(num_i);
@@ -76,7 +59,6 @@ zi_cell     = zi/A.npart_z;
 cell_x(num) = xi_cell(num_i);
 cell_y(num) = yi_cell(num_j);
 cell_z(num) = zi_cell(num_k);
-
 
 % Loop over all processors partition
 for num=1:Nproc
@@ -140,18 +122,34 @@ Nprocx=read(fid,1,'int32');
 Nprocy=read(fid,1,'int32');
 Nprocz=read(fid,1,'int32');
 
-xc=read(fid,Nprocx+1,'double');
-yc=read(fid,Nprocy+1,'double');
-zc=read(fid,Nprocz+1,'double');
+nnodx=read(fid,1,'int32');
+nnody=read(fid,1,'int32');
+nnodz=read(fid,1,'int32');
+
+ix=read(fid,Nprocx+1,'int32');
+iy=read(fid,Nprocy+1,'int32');
+iz=read(fid,Nprocz+1,'int32');
 
 CharLength=read(fid,1,'double');
+
+xcoor=read(fid,nnodx,'double');
+ycoor=read(fid,nnody,'double');
+zcoor=read(fid,nnodz,'double');
 
 close(fid);
 
 % Dimensionalize
-xc = xc*CharLength;
-yc = yc*CharLength;
-zc = zc*CharLength;
+xcoor = xcoor*CharLength;
+ycoor = ycoor*CharLength;
+zcoor = zcoor*CharLength;
+
+ix = ix+1;
+iy = iy+1;
+iz = iz+1;
+
+xc = xcoor(ix);
+yc = ycoor(iy);
+zc = zcoor(iz);
 
 end
 

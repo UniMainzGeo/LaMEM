@@ -1,4 +1,7 @@
-# Standard subduction setup
+# ----------------------------------------------------------------------------------------------------------------------
+# A basic parameter file for FDSTAG Canonical setup for subduction
+# NOTE: use CreateMarkers_Subduction.m to generate the input geometry
+# ----------------------------------------------------------------------------------------------------------------------
 
 # Define number of elements in x,y & z-direction
 # Negative number implies corresponding number of mesh segments

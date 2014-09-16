@@ -14,59 +14,6 @@
 
 /*
 #START_DOC#
-
-\lamemfunction{\verb- MRKCreate -}
-Function to allocate memory and 30\% overhead to markers array
-
-\lamemfunction{\verb- MRKDestroy -}
-Function to free memory for markers array
-
-\lamemfunction{\verb- MRKInit -}
-Main marker initialization routine\\
-Variables \verb-Setup.Intern- and \verb-Setup.Extern- must be set one $-1$ and the other one $>-1$
-
-\lamemfunction{\verb- MRKInitIntern -}
-Function to initialize markers internally
-
-\verb-Setup.Intern-:
-\begin{itemize}
-\item[-1)] de-activated
-\item[ 0)] diapir setup (Setup.Model = 0)
-\item[ 1)] falling block (Setup.Model = 2)
-\item[ 2)] subduction setup with air (Setup.Model = 6)
-\item[ 3)] multilayer folding setup (Zagros) (Setup.Model = 9)
-\item[ 4)] 1-layer over detachment (Grasemann \& Schmalholz 2012) (Setup.Model = 10)
-\item[ 5)] slab detachment (Thieulot et al. 2014)
-\item[ 6)] multiple falling spheres
-\end{itemize}
-
-\lamemfunction{\verb- MRKInitExtern -}
-Function to initialize markers externally
-
-\verb-Setup.Extern-:
-\begin{itemize}
-\item[-1)] de-activated
-\item[ 0)] read from ./InitialParticles (parallel)
-\item[ 1)] read from ./MatlabInputParticles (parallel)
-\item[ 2)] read from InputFile (sequential) (Setup.Model = 3)
-\end{itemize}
-
-\lamemfunction{\verb- MRKWrite -}
-Function to write all local markers to disk (parallel output)
-
-\lamemfunction{\verb- MRKRead -}
-Function to read files with markers and phase information\\
-Use this function for markers written with MRKWrite or FDSTAGSaveMarkersParallelMatlab (Matlab)
-
-\lamemfunction{\verb- MRKReadSeq -}
-Function to read one file with phase and temperature information for markers\\
-Use this function for files written Matlab (sequential)\\
-Temperature is assumed to be dimensional in the input file.\\
-Do not to use this option for large markers file - use parallel read for that!
-
-\lamemfunction{\verb- MRKRandomNoise -}
-Function to add random noise to markers
-
 #END_DOC#
 */
 //---------------------------------------------------------------------------

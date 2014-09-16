@@ -412,13 +412,12 @@ PetscErrorCode Discret1DGatherCoord(Discret1D *ds, PetscScalar **coord)
 		ierr = makeIntArray(&recvcnts, NULL, ds->nproc); CHKERRQ(ierr);
 
 		// compute receive counts
-		for(i = 0; i < ds->nproc; i++) recvcnts[i] = ds->starts[i+1] - ds->starts[i];
-
+		for(i = 0; i < ds->nproc-1; i++) recvcnts[i] = ds->starts[i+1] - ds->starts[i];
+		recvcnts[ds->nproc-1] = ds->starts[ds->nproc] - ds->starts[ds->nproc-1] + 1;
 	}
 
 	// gather coordinates
-	ierr = MPI_Gatherv(ds->ncoor, ds->nnods, MPIU_SCALAR,
-		pcoord, recvcnts, ds->starts, MPIU_SCALAR, 0, comm); CHKERRQ(ierr);
+	ierr = MPI_Gatherv(ds->ncoor, ds->nnods, MPIU_SCALAR, pcoord, recvcnts, ds->starts, MPIU_SCALAR, 0, comm); CHKERRQ(ierr);
 
 	// return coordinates on rank zero of PETSC_COMM_WORLD
 	if(ISRankZero(PETSC_COMM_WORLD))
@@ -938,7 +937,53 @@ PetscErrorCode FDSTAGGetMinCellSize(FDSTAG *fs)
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
+#undef __FUNCT__
+#define __FUNCT__ "FDSTAGProcPartitioning"
+PetscErrorCode FDSTAGProcPartitioning(FDSTAG *fs, UserContext *user)
+{
+	PetscScalar *xc,*yc,*zc;
+	int         fid;
+	char        *fname;
 
+	PetscErrorCode ierr;
+	PetscFunctionBegin;
+
+	PetscPrintf(PETSC_COMM_WORLD,"# Save processor partitioning \n");
+
+	// gather global coord
+	ierr = Discret1DGatherCoord(&fs->dsx,&xc); CHKERRQ(ierr);
+	ierr = Discret1DGatherCoord(&fs->dsy,&yc); CHKERRQ(ierr);
+	ierr = Discret1DGatherCoord(&fs->dsz,&zc); CHKERRQ(ierr);
+
+	if(ISRankZero(PETSC_COMM_WORLD))
+	{
+		// save file
+		asprintf(&fname,"ProcessorPartitioning_%lldcpu_%lld.%lld.%lld.bin",(LLD)(fs->dsx.nproc*fs->dsy.nproc*fs->dsz.nproc),(LLD)fs->dsx.nproc,(LLD)fs->dsy.nproc,(LLD)fs->dsz.nproc);
+		PetscBinaryOpen(fname,FILE_MODE_WRITE,&fid);
+		PetscBinaryWrite(fid,&fs->dsx.nproc,1,PETSC_INT,PETSC_FALSE);
+		PetscBinaryWrite(fid,&fs->dsy.nproc,1,PETSC_INT,PETSC_FALSE);
+		PetscBinaryWrite(fid,&fs->dsz.nproc,1,PETSC_INT,PETSC_FALSE);
+		PetscBinaryWrite(fid,&fs->dsx.tnods,1,PETSC_INT,PETSC_FALSE);
+		PetscBinaryWrite(fid,&fs->dsy.tnods,1,PETSC_INT,PETSC_FALSE);
+		PetscBinaryWrite(fid,&fs->dsz.tnods,1,PETSC_INT,PETSC_FALSE);
+		PetscBinaryWrite(fid,fs->dsx.starts,fs->dsx.nproc+1,PETSC_INT,PETSC_FALSE);
+		PetscBinaryWrite(fid,fs->dsy.starts,fs->dsy.nproc+1,PETSC_INT,PETSC_FALSE);
+		PetscBinaryWrite(fid,fs->dsz.starts,fs->dsz.nproc+1,PETSC_INT,PETSC_FALSE);
+		PetscBinaryWrite(fid,&user->Characteristic.Length,1,PETSC_SCALAR,PETSC_FALSE);
+		PetscBinaryWrite(fid,xc,fs->dsx.tnods,PETSC_SCALAR,PETSC_FALSE);
+		PetscBinaryWrite(fid,yc,fs->dsy.tnods,PETSC_SCALAR,PETSC_FALSE);
+		PetscBinaryWrite(fid,zc,fs->dsz.tnods,PETSC_SCALAR,PETSC_FALSE);
+		PetscBinaryClose(fid);
+		free(fname);
+
+		ierr = PetscFree(xc); CHKERRQ(ierr);
+		ierr = PetscFree(yc); CHKERRQ(ierr);
+		ierr = PetscFree(zc); CHKERRQ(ierr);
+	}
+
+	PetscFunctionReturn(0);
+}
+//---------------------------------------------------------------------------
 
 
 /*

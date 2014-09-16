@@ -27,7 +27,7 @@ LaMEMLib - Main routine of LaMEM library
 $Id: LaMEMLib.c 4815 2013-10-06 23:00:33Z lapopov $
 $Date:$
 
-This version is compatible with PETSc version 3.3-p2
+This version is compatible with PETSc version 3.5
 The code cannot be distributed, used for commercial purposes or handed on,
 without the explicit agreement of Boris Kaus.
 */
@@ -315,6 +315,9 @@ PetscErrorCode LaMEMLib_FDSTAG(PetscBool InputParamFile, const char *ParamFile, 
 
 	// generate coordinates of grid nodes/cells
 	ierr = FDSTAGGenCoord(&fs, &user); CHKERRQ(ierr);
+
+	// save processor partitioning
+	if(user.SavePartitioning) { ierr = FDSTAGProcPartitioning(&fs, &user); CHKERRQ(ierr); }
 
 	// create boundary condition context
 	ierr = FDSTAGCreateBCCtx(&cbc, &fs); CHKERRQ(ierr);

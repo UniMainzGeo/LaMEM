@@ -43,7 +43,7 @@ PetscErrorCode MeshSeg1DGenCoord(
 typedef struct
 {
 	PetscInt      nproc;       // number of processors
-	PetscInt      rank;        // rank of current processor
+	PetscMPIInt   rank;        // rank of current processor
 
 	PetscInt     *starts;      // index of first node (cell) on all processors + last index
 	PetscInt      pstart;      // index of first node (cell) on this processors
@@ -319,6 +319,11 @@ PetscErrorCode FDSTAGGetMinCellSize(FDSTAG *fs);
 //---------------------------------------------------------------------------
 #endif
 
+//---------------------------------------------------------------------------
+// UTILITIES
+//---------------------------------------------------------------------------
+// save processor partitioning of the global domain to file
+PetscErrorCode FDSTAGProcPartitioning(FDSTAG *fs, UserContext *user);
 
 /*
  void splitPointSlot(
