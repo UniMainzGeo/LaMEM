@@ -1187,7 +1187,7 @@ PetscErrorCode InitializeCode( UserContext *user )
 	user->MatlabOutputFiles	=	1;		// write MATLAB output
 	user->VTKOutputFiles	=	1;		// write VTK output
 	user->AVDPhaseViewer  	= 	0;
-	user->SavePartitioning  = 	0;		// write partitioning
+	user->SavePartitioning  = 	PETSC_FALSE;		// write partitioning
 	user->x_left 	  		= 	-0.5*(user->W)*0.0;
 	user->y_front	  		= 	-0.5*(user->L)*0.0;
 	user->z_bot 			= 	-0.5*(user->H)*0.0;
@@ -1493,8 +1493,9 @@ PetscErrorCode InitializeCode( UserContext *user )
 	PetscOptionsGetInt(PETSC_NULL ,"-MatlabOutputFiles",			&user->MatlabOutputFiles		, PETSC_NULL);  		//	write matlab output or not?
 	PetscOptionsGetInt(PETSC_NULL ,"-VTKOutputFiles",				&user->VTKOutputFiles			, PETSC_NULL);  		//	write VTK output or not?
 	PetscOptionsGetInt(PETSC_NULL ,"-AVDPhaseViewer",				&user->AVDPhaseViewer			, PETSC_NULL);  		//	write AVDPhase output or not?
-	PetscOptionsGetInt(PETSC_NULL ,"-SavePartitioning",				&user->SavePartitioning        	, PETSC_NULL);
+    PetscOptionsGetBool(PETSC_NULL ,"-SavePartitioning",			&user->SavePartitioning        	, PETSC_NULL);
 
+    
 	PetscOptionsGetInt(PETSC_NULL ,"-LoadInitialParticlesFromDisc",	&user->LoadInitialParticlesFromDisc			, PETSC_NULL);  		//	Load initial particles from file
 
 	PetscOptionsGetReal(PETSC_NULL ,"-CriticalDiagonalRatio", 		&user->CriticalDiagonalRatio 	, PETSC_NULL);		// CriticalDiagonalRatio to induce remeshing if LaMEM is run in a lagrangian mode

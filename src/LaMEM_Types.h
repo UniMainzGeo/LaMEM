@@ -285,10 +285,10 @@ typedef struct {
   sBC						BC;
   char						OutputFile[PETSC_MAX_PATH_LEN], ParamFile[PETSC_MAX_PATH_LEN], ParticleFilename[PETSC_MAX_PATH_LEN];
   char						InitialMeshFileName[PETSC_MAX_PATH_LEN], LoadInitialParticlesDirectory[PETSC_MAX_PATH_LEN], SaveInitialParticlesDirectory[PETSC_MAX_PATH_LEN];
-  PetscBool				    InputParamFile, AnalyticalBenchmark,SkipStokesSolver;
+  PetscBool				    InputParamFile, AnalyticalBenchmark,SkipStokesSolver, SavePartitioning;
   Particles					*ParticlesLocal;
   PetscInt      			*NodesDistributionCPUsFineGrid, MaxNumLocalParticles, NumParticlesToStartInjection, ParticleInjectionPhase;
-  PetscInt					ParticleInput, SaveParticles, DimensionalUnits,SavePartitioning;
+  PetscInt					ParticleInput, SaveParticles, DimensionalUnits;
   PetscInt					PlasticityModel, InitialMantleLevel;
   PetscInt					GridAdvectionMethod, NumSurfaceNodes, num_subdt, num_phase_transitions;
   PetscInt					NumPartX, NumPartY, NumPartZ, NonlinearIterations;
