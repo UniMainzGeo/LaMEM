@@ -412,8 +412,10 @@ PetscErrorCode Discret1DGatherCoord(Discret1D *ds, PetscScalar **coord)
 		ierr = makeIntArray(&recvcnts, NULL, ds->nproc); CHKERRQ(ierr);
 
 		// compute receive counts
-		for(i = 0; i < ds->nproc; i++) recvcnts[i] = ds->starts[i+1] - ds->starts[i];
+		for(i = 0; i < ds->nproc-1; i++) recvcnts[i] = ds->starts[i+1] - ds->starts[i];
 
+		// last element stores index of the last node (not total number of nodes)
+		recvcnts[ds->nproc-1] = ds->starts[ds->nproc] - ds->starts[ds->nproc-1] + 1;
 	}
 
 	// gather coordinates
