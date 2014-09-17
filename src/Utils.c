@@ -550,7 +550,14 @@ PetscErrorCode   LaMEMReadInputFile( UserContext *user )
 	parse_GetInt( fp, "nel_y",   &user->nel_y, &found );
 	parse_GetInt( fp, "nel_z",   &user->nel_z, &found );
 
+	/* Characteristic values, used to non-dimensionalize parameters ------------------------------------------------------------- */
 	parse_GetInt( fp,    "DimensionalUnits", &user->DimensionalUnits, &found );
+	parse_GetDouble( fp, "Characteristic.Length", &data, &found );			if (user->DimensionalUnits==1){		user->Characteristic.Length       = data;	}// read data
+	parse_GetDouble( fp, "Characteristic.Viscosity", &data, &found );		if (user->DimensionalUnits==1){		user->Characteristic.Viscosity    = data;	}// read data
+	parse_GetDouble( fp, "Characteristic.Temperature", &data, &found );		if (user->DimensionalUnits==1){		user->Characteristic.Temperature  = data; 	}// read data
+	parse_GetDouble( fp, "Characteristic.Stress", &data, &found );			if (user->DimensionalUnits==1){		user->Characteristic.Stress  	  = data;	}// read data
+	/* ------------------------------------------------------------------------------------------------------------------------- */
+
 	parse_GetDouble( fp, "L", &user->L, &found );
 	parse_GetDouble( fp, "W", &user->W, &found );
 	parse_GetDouble( fp, "H", &user->H, &found );
@@ -561,9 +568,9 @@ PetscErrorCode   LaMEMReadInputFile( UserContext *user )
 	//==============
 	// MESH SEGMENTS
 	//==============
-	ierr = ReadMeshSegDir(fp, "seg_x", user->x_left,  user->x_left  + user->W, &user->nel_x, &user->mseg_x); CHKERRQ(ierr);
-	ierr = ReadMeshSegDir(fp, "seg_y", user->y_front, user->y_front + user->L, &user->nel_y, &user->mseg_y); CHKERRQ(ierr);
-	ierr = ReadMeshSegDir(fp, "seg_z", user->z_bot,   user->z_bot   + user->H, &user->nel_z, &user->mseg_z); CHKERRQ(ierr);
+	ierr = ReadMeshSegDir(fp, "seg_x", user->x_left,  user->x_left  + user->W, &user->nel_x, &user->mseg_x, user->DimensionalUnits, user->Characteristic.Length); CHKERRQ(ierr);
+	ierr = ReadMeshSegDir(fp, "seg_y", user->y_front, user->y_front + user->L, &user->nel_y, &user->mseg_y, user->DimensionalUnits, user->Characteristic.Length); CHKERRQ(ierr);
+	ierr = ReadMeshSegDir(fp, "seg_z", user->z_bot,   user->z_bot   + user->H, &user->nel_z, &user->mseg_z, user->DimensionalUnits, user->Characteristic.Length); CHKERRQ(ierr);
 
 	// read model setup
 	parse_GetString(fp, "msetup", setup_name, PETSC_MAX_PATH_LEN-1, &found);
@@ -798,13 +805,6 @@ PetscErrorCode   LaMEMReadInputFile( UserContext *user )
 	parse_GetDouble( fp, "Pushing.x_center_block", &user->Pushing.x_center_block, &found );
 	parse_GetDouble( fp, "Pushing.y_center_block", &user->Pushing.y_center_block, &found );
 	parse_GetDouble( fp, "Pushing.z_center_block", &user->Pushing.z_center_block, &found );
-
-	/* Characteristic values, used to non-dimensionalize parameters ------------------------------------------------------------- */
-	parse_GetDouble( fp, "Characteristic.Length", &data, &found );			if (user->DimensionalUnits==1){		user->Characteristic.Length       = data;	}// read data
-	parse_GetDouble( fp, "Characteristic.Viscosity", &data, &found );		if (user->DimensionalUnits==1){		user->Characteristic.Viscosity    = data;	}// read data
-	parse_GetDouble( fp, "Characteristic.Temperature", &data, &found );		if (user->DimensionalUnits==1){		user->Characteristic.Temperature  = data; 	}// read data
-	parse_GetDouble( fp, "Characteristic.Stress", &data, &found );			if (user->DimensionalUnits==1){		user->Characteristic.Stress  	  = data;	}// read data
-	/* ------------------------------------------------------------------------------------------------------------------------- */
 
 	/* -------------------------------------------------------------------------------------------------------------------------
 	 * Read phase transitions related information -
@@ -3322,7 +3322,9 @@ PetscErrorCode ReadMeshSegDir(
 	PetscScalar  beg,
 	PetscScalar  end,
 	PetscInt    *tncels,
-	MeshSegInp  *msi)
+	MeshSegInp  *msi,
+	PetscInt     dim,
+	PetscScalar  charLength)
 {
 	// read mesh refinement data for a direction from the input file
 	// NOTE: parameter "tncels" passes negative number of segments & returns total number of cells
@@ -3396,6 +3398,9 @@ PetscErrorCode ReadMeshSegDir(
 
 	// ... compute total number of cells
 	for(i = 0, (*tncels) = 0; i < msi->nsegs; i++) (*tncels) += msi->ncells[i];
+
+	// nondimensionalize segment delimiters - after error checking
+	if (dim) for(i = 0; i < msi->nsegs-1; i++) msi->delims[i] = msi->delims[i]/charLength;
 
 	PetscFunctionReturn(0);
 }

@@ -10,12 +10,12 @@
 #    * number of cells                                    (n points)
 #    * bias coefficients                                  (n points) 
  
-#nel_x						=	-2    
-nel_x						=   	60    
+nel_x						=	-3    
+#nel_x						=   	60    
 nel_y						= 	40    
 nel_z						= 	20
 
-#seg_x = 0.0 100 10 1.0 3.0
+seg_x = -60e3 30e3 5 50 5 1.0 1.0 1.0
 
 
 # Geometry

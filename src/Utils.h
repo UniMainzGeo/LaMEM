@@ -82,7 +82,9 @@ PetscErrorCode ReadMeshSegDir(
 	PetscScalar  beg,
 	PetscScalar  end,
 	PetscInt    *tncels,
-	MeshSegInp  *msi);
+	MeshSegInp  *msi,
+	PetscInt     dim,
+	PetscScalar  charLength);
 
 //---------------------------------------------------------------------------
 // checks whether processor has a zero rank in the communicator
