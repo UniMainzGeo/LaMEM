@@ -7,10 +7,108 @@
 #include "scaling.h"
 #include "bc.h"
 #include "JacRes.h"
+#include "multigrid.h"
 #include "lsolve.h"
 #include "matrix.h"
+//---------------------------------------------------------------------------
+
+
+	// compute Galerkin multigrid preconditioner
+//	ierr = PCSetOperators(mg->pc, P, P, SAME_NONZERO_PATTERN); CHKERRQ(ierr);
+//	ierr = PCSetUp(mg->pc); CHKERRQ(ierr);
+
+PetscErrorCode PCStokesALCreate(PCStokesALCtx *alctx)
+{
+
+
+	Mat         Avv, Avp; // velocity sub-matrices
+	Mat         Apv, App; // pressure sub-matrices
+	Vec         M;        // diagonal penalty matrix
+	PetscScalar pgamma;   // penalty parameter
+	KSP         ksp;      // internal Krylov solver context
+
+
+}
+
+
+// PetscErrorCode PCStokesALDestroy(PCStokesALCtx *alctx);
+
+/*
+PC       pc;
+KSP     *subksp;
+//	PetscInt n = 2;
+
+PetscErrorCode ierr;
+PetscFunctionBegin;
+
+FDSTAG    *fs   = nlctx->fs;
+BCCtx     *sbc  = nlctx->sbc;
+BlockMat  *bmat = nlctx->bmat;
+
+ierr = PCFieldSplitGetSubKSP(bmat->pc, NULL, &subksp); CHKERRQ(ierr);
+ierr = KSPGetPC(subksp[0], &pc);                       CHKERRQ(ierr);
+ierr = MGCtxCreate(mg, fs, pc, IDXUNCOUPLED);          CHKERRQ(ierr);
+ierr = MGCtxSetup(mg, fs, sbc, IDXUNCOUPLED);          CHKERRQ(ierr);
+ierr = MGCtxSetDiagOnLevels(mg, pc);                   CHKERRQ(ierr);
+
+PetscFree(subksp);
+*/
 
 //---------------------------------------------------------------------------
+
+
+PetscErrorCode VecScatterBlockToMonolithic(Vec f, Vec g, Vec b, ScatterMode mode)
+{
+	// scatter block vectors to monolithic format forward & reverse
+
+	PetscInt     fs,  gs,  bs;
+	PetscScalar *fp, *gp, *bp;
+
+	PetscErrorCode ierr;
+	PetscFunctionBegin;
+
+	// get sizes of the blocks
+	ierr = VecGetLocalSize(f, &fs); CHKERRQ(ierr);
+	ierr = VecGetLocalSize(g, &gs); CHKERRQ(ierr);
+	ierr = VecGetLocalSize(b, &bs); CHKERRQ(ierr);
+
+	if(bs != fs+gs)
+	{
+		SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "Block sizes don't match monolithic format\n");
+	}
+
+	// access vectors
+	ierr = VecGetArray(f, &fp); CHKERRQ(ierr);
+	ierr = VecGetArray(g, &gp); CHKERRQ(ierr);
+	ierr = VecGetArray(b, &bp); CHKERRQ(ierr);
+
+	if(mode == SCATTER_FORWARD)
+	{
+		// block-to-monolithic
+		ierr = PetscMemcpy(bp,    fp, (size_t)fs*sizeof(PetscScalar)); CHKERRQ(ierr);
+		ierr = PetscMemcpy(bp+fs, gp, (size_t)gs*sizeof(PetscScalar)); CHKERRQ(ierr);
+	}
+	else if(mode == SCATTER_REVERSE)
+	{
+		// monolithic-to-block
+		ierr = PetscMemcpy(fp, bp,    (size_t)fs*sizeof(PetscScalar)); CHKERRQ(ierr);
+		ierr = PetscMemcpy(gp, bp+fs, (size_t)gs*sizeof(PetscScalar)); CHKERRQ(ierr);
+	}
+	else
+	{
+		SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "Unknown scatter mode.\n");
+	}
+
+	// restore access
+	ierr = VecRestoreArray(f, &fp); CHKERRQ(ierr);
+	ierr = VecRestoreArray(g, &gp); CHKERRQ(ierr);
+	ierr = VecRestoreArray(b, &bp); CHKERRQ(ierr);
+
+	PetscFunctionReturn(0);
+}
+//---------------------------------------------------------------------------
+
+/*
 #undef __FUNCT__
 #define __FUNCT__ "BlockMatCreate"
 PetscErrorCode BlockMatCreate(BlockMat *bmat, FDSTAG *fs, Vec b)
@@ -134,59 +232,7 @@ PetscErrorCode BlockMatCompute(BlockMat *bmat, FDSTAG *fs, BCCtx *bc, JacResCtx 
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "BlockMatClearSubMat"
-PetscErrorCode BlockMatClearSubMat(BlockMat *bmat)
-{
-	PetscErrorCode ierr;
-	PetscFunctionBegin;
 
-	// zero all matrices
-	ierr = MatZeroEntries(bmat->Avv); CHKERRQ(ierr);
-	ierr = MatZeroEntries(bmat->Avp); CHKERRQ(ierr);
-	ierr = MatZeroEntries(bmat->Apv); CHKERRQ(ierr);
-	ierr = VecZeroEntries(bmat->kIM); CHKERRQ(ierr);
-
-	PetscFunctionReturn(0);
-}
-//---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "BlockMatBlockToMonolithic"
-PetscErrorCode BlockMatBlockToMonolithic(BlockMat *bmat, Vec b)
-{
-
-	PetscErrorCode ierr;
-	PetscFunctionBegin;
-
-	// velocity RHS
-	ierr = VecScatterBegin(bmat->vsv, bmat->wv, b, INSERT_VALUES, SCATTER_REVERSE); CHKERRQ(ierr);
-	ierr = VecScatterEnd  (bmat->vsv, bmat->wv, b, INSERT_VALUES, SCATTER_REVERSE); CHKERRQ(ierr);
-
-	// pressure RHS
-	ierr = VecScatterBegin(bmat->vsp, bmat->wp, b, INSERT_VALUES, SCATTER_REVERSE); CHKERRQ(ierr);
-	ierr = VecScatterEnd  (bmat->vsp, bmat->wp, b, INSERT_VALUES, SCATTER_REVERSE); CHKERRQ(ierr);
-
-	PetscFunctionReturn(0);
-}
-//---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "BlockMatMonolithicToBlock"
-PetscErrorCode BlockMatMonolithicToBlock(BlockMat *bmat, Vec x)
-{
-
-	PetscErrorCode ierr;
-	PetscFunctionBegin;
-
-    // velocity
-	ierr = VecScatterBegin(bmat->vsv, x, bmat->wv, INSERT_VALUES, SCATTER_FORWARD); CHKERRQ(ierr);
-	ierr = VecScatterEnd  (bmat->vsv, x, bmat->wv, INSERT_VALUES, SCATTER_FORWARD); CHKERRQ(ierr);
-
-	// pressure
-	ierr = VecScatterBegin(bmat->vsp, x, bmat->wp, INSERT_VALUES, SCATTER_FORWARD); CHKERRQ(ierr);
-	ierr = VecScatterEnd  (bmat->vsp, x, bmat->wp, INSERT_VALUES, SCATTER_FORWARD); CHKERRQ(ierr);
-
-	PetscFunctionReturn(0);
-}
 //---------------------------------------------------------------------------
 /*
 #undef __FUNCT__
@@ -280,6 +326,7 @@ PetscErrorCode ApplyFieldSplit(PC pc, Vec x, Vec y)
 }
 */
 //---------------------------------------------------------------------------
+/*
 #undef __FUNCT__
 #define __FUNCT__ "PowellHestenes"
 PetscErrorCode PowellHestenes(BlockMat *bmat, Vec r, Vec x)
@@ -380,4 +427,60 @@ PetscErrorCode PowellHestenes(BlockMat *bmat, Vec r, Vec x)
 
 	PetscFunctionReturn(0);
 }
+*/
 //---------------------------------------------------------------------------
+
+
+/*
+
+ #undef __FUNCT__
+#define __FUNCT__ "PCCreate_Jacobi"
+PETSC_EXTERN PetscErrorCode PCCreate_Jacobi(PC pc)
+{
+  PC_Jacobi      *jac;
+  PetscErrorCode ierr;
+
+  PetscFunctionBegin;
+  /
+     Creates the private data structure for this preconditioner and
+     attach it to the PC object.
+  /
+  ierr     = PetscNewLog(pc,&jac);CHKERRQ(ierr);
+  pc->data = (void*)jac;
+
+  /
+     Initialize the pointers to vectors to ZERO; these will be used to store
+     diagonal entries of the matrix for fast preconditioner application.
+  /
+  jac->diag      = 0;
+  jac->diagsqrt  = 0;
+  jac->userowmax = PETSC_FALSE;
+  jac->userowsum = PETSC_FALSE;
+  jac->useabs    = PETSC_FALSE;
+
+  /
+      Set the pointers for the functions that are provided above.
+      Now when the user-level routines (such as PCApply(), PCDestroy(), etc.)
+      are called, they will automatically call these functions.  Note we
+      choose not to provide a couple of these functions since they are
+      not needed.
+  /
+  pc->ops->apply               = PCApply_Jacobi;
+  pc->ops->applytranspose      = PCApply_Jacobi;
+  pc->ops->setup               = PCSetUp_Jacobi;
+  pc->ops->reset               = PCReset_Jacobi;
+  pc->ops->destroy             = PCDestroy_Jacobi;
+  pc->ops->setfromoptions      = PCSetFromOptions_Jacobi;
+  pc->ops->view                = 0;
+  pc->ops->applyrichardson     = 0;
+  pc->ops->applysymmetricleft  = PCApplySymmetricLeftOrRight_Jacobi;
+  pc->ops->applysymmetricright = PCApplySymmetricLeftOrRight_Jacobi;
+
+  ierr = PetscObjectComposeFunction((PetscObject)pc,"PCJacobiSetUseRowMax_C",PCJacobiSetUseRowMax_Jacobi);CHKERRQ(ierr);
+  ierr = PetscObjectComposeFunction((PetscObject)pc,"PCJacobiSetUseRowSum_C",PCJacobiSetUseRowSum_Jacobi);CHKERRQ(ierr);
+  ierr = PetscObjectComposeFunction((PetscObject)pc,"PCJacobiSetUseAbs_C",PCJacobiSetUseAbs_Jacobi);CHKERRQ(ierr);
+  PetscFunctionReturn(0);
+}
+
+
+ */

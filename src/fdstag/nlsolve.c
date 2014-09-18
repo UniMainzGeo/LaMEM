@@ -7,6 +7,7 @@
 #include "scaling.h"
 #include "bc.h"
 #include "JacRes.h"
+#include "multigrid.h"
 #include "lsolve.h"
 #include "nlsolve.h"
 #include "interface.h"
@@ -14,6 +15,7 @@
 #include "LaMEMLib_FDSTAG_private.h"
 #include "Utils.h"
 //---------------------------------------------------------------------------
+/*
 #undef __FUNCT__
 #define __FUNCT__ "NLCtxCreate"
 PetscErrorCode NLCtxCreate(
@@ -45,6 +47,7 @@ PetscErrorCode NLCtxCreate(
 
 	PetscFunctionReturn(0);
 }
+*/
 //---------------------------------------------------------------------------
 #undef __FUNCT__
 #define __FUNCT__ "NLCtxDestroy"
@@ -134,10 +137,10 @@ PetscErrorCode FDSTAGFormJacobian(SNES snes, Vec x, Mat Amat, Mat Pmat, void *ct
 	FDSTAG    *fs    = nlctx->fs;
     BCCtx     *cbc    = nlctx->cbc;
 	JacResCtx *jrctx = nlctx->jrctx;
-	BlockMat  *bmat  = nlctx->bmat;
+//	BlockMat  *bmat  = nlctx->bmat;
 
 	// assemble Picard matrix (preconditioner)
-	ierr = BlockMatCompute(bmat, fs, cbc, jrctx); CHKERRQ(ierr);
+//	ierr = BlockMatCompute(bmat, fs, cbc, jrctx); CHKERRQ(ierr);
 
 	// in case no Jacobian has been set yet (start with Picard)
 	if(nlctx->jactype == NONE)
@@ -265,7 +268,7 @@ PetscErrorCode JacApplyPicard(Mat A, Vec x, Vec y)
 	ierr = MatShellGetContext(A, &nlctx); CHKERRQ(ierr);
 
 	// compute Jacobian times vector product
-	ierr = MatMult(nlctx->bmat->A, x, y); CHKERRQ(ierr);
+//	ierr = MatMult(nlctx->bmat->A, x, y); CHKERRQ(ierr);
 
 	PetscFunctionReturn(0);
 }

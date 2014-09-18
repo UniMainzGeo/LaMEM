@@ -9,9 +9,9 @@
 #include "bc.h"
 #include "JacRes.h"
 #include "paraViewOutBin.h"
+#include "multigrid.h"
 #include "lsolve.h"
 #include "nlsolve.h"
-#include "multigrid.h"
 #include "check_fdstag.h"
 #include "Utils.h"
 //---------------------------------------------------------------------------
@@ -124,6 +124,7 @@ PetscErrorCode DarcyPostProcess(NLCtx *nlctx, UserContext *user)
 #define __FUNCT__ "DoDarcyTests"
 PetscErrorCode DoDarcyTests(NLCtx *nlctx, UserContext *user)
 {
+/*
 	FDSTAG    *fs      = nlctx->fs;
 	BCCtx     *sbc     = nlctx->sbc;
 	JacResCtx *jrctx   = nlctx->jrctx;
@@ -150,7 +151,7 @@ PetscErrorCode DoDarcyTests(NLCtx *nlctx, UserContext *user)
 
 	// compute & output permeability
 	ierr = DarcyPostProcess(nlctx, user); CHKERRQ(ierr);
-
+*/
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
@@ -307,6 +308,7 @@ PetscErrorCode FDSTAGOutputResTest(FDSTAG *fs, JacResCtx *jrctx, Vec f)
 #define __FUNCT__ "BlockSetUpMGVelBlock"
 PetscErrorCode BlockSetUpMGVelBlock(NLCtx *nlctx, MGCtx *mg)
 {
+/*
 	PC       pc;
 	KSP     *subksp;
 //	PetscInt n = 2;
@@ -325,6 +327,7 @@ PetscErrorCode BlockSetUpMGVelBlock(NLCtx *nlctx, MGCtx *mg)
 	ierr = MGCtxSetDiagOnLevels(mg, pc);                   CHKERRQ(ierr);
 
 	PetscFree(subksp);
+*/
 
 	PetscFunctionReturn(0);
 }

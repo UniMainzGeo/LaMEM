@@ -8,7 +8,7 @@
 #include "scaling.h"
 #include "bc.h"
 #include "JacRes.h"
-#include "lsolve.h"
+//#include "lsolve.h"
 #include "matrix.h"
 #include "multigrid.h"
 #include "Utils.h"
@@ -52,7 +52,7 @@ PetscErrorCode MGCheckGrid(FDSTAG *fs, PetscInt *ncels)
 //---------------------------------------------------------------------------
 #undef __FUNCT__
 #define __FUNCT__ "MGCtxCreate"
-PetscErrorCode MGCtxCreate(MGCtx *mg, FDSTAG *fs, PC pc, idxtype idxmod)
+PetscErrorCode MGCtxCreate(MGCtx *mg, FDSTAG *fs, BCCtx *bc, PC pc, idxtype idxmod)
 {
 	PetscInt  i, l, ncors, nlevels;
 	FDSTAG   *fine, *cors;
@@ -128,23 +128,12 @@ PetscErrorCode MGCtxCreate(MGCtx *mg, FDSTAG *fs, PC pc, idxtype idxmod)
 	}
 
 	// create Galerkin multigrid preconditioner
-/*
-	ierr = PCCreate(PETSC_COMM_WORLD, &mg->pc);       CHKERRQ(ierr);
-	ierr = PCSetOptionsPrefix(mg->pc, "gmg_");        CHKERRQ(ierr);
-	ierr = PCSetType(mg->pc, PCMG);                   CHKERRQ(ierr);
-	ierr = PCMGSetLevels(mg->pc, mg->ncors+1, NULL);  CHKERRQ(ierr);
-	ierr = PCMGSetType(mg->pc, PC_MG_MULTIPLICATIVE); CHKERRQ(ierr);
-	ierr = PCMGSetGalerkin(mg->pc, PETSC_TRUE);       CHKERRQ(ierr);
-	ierr = PCSetFromOptions(mg->pc);                  CHKERRQ(ierr);
-*/
-
 	ierr = PCSetOptionsPrefix(pc, "gmg_");        CHKERRQ(ierr);
 	ierr = PCSetType(pc, PCMG);                   CHKERRQ(ierr);
 	ierr = PCMGSetLevels(pc, mg->ncors+1, NULL);  CHKERRQ(ierr);
 	ierr = PCMGSetType(pc, PC_MG_MULTIPLICATIVE); CHKERRQ(ierr);
 	ierr = PCMGSetGalerkin(pc, PETSC_TRUE);       CHKERRQ(ierr);
 	ierr = PCSetFromOptions(pc);                  CHKERRQ(ierr);
-
 
 	// set fine grid
 	fine = fs;
@@ -168,6 +157,10 @@ PetscErrorCode MGCtxCreate(MGCtx *mg, FDSTAG *fs, PC pc, idxtype idxmod)
 		// set fine grid for next step
 		fine = cors;
 	}
+
+	// store fine grid contexts
+	mg->fs = fs;
+	mg->bc = bc;
 
 	PetscFunctionReturn(0);
 }
@@ -202,7 +195,7 @@ PetscErrorCode MGCtxDestroy(MGCtx *mg)
 //---------------------------------------------------------------------------
 #undef __FUNCT__
 #define __FUNCT__ "MGCtxSetup"
-PetscErrorCode MGCtxSetup(MGCtx *mg, FDSTAG *fs, BCCtx *bc, idxtype idxmod)
+PetscErrorCode MGCtxSetup(MGCtx *mg, idxtype idxmod)
 {
 
 	// Matrices are re-assembled here, just in case
@@ -218,8 +211,8 @@ PetscErrorCode MGCtxSetup(MGCtx *mg, FDSTAG *fs, BCCtx *bc, idxtype idxmod)
 	PetscFunctionBegin;
 
 	// set fine grid
-	fine   = fs;
-	bcfine = bc;
+	fine   = mg->fs;
+	bcfine = mg->bc;
 
 	// create & preallocate matrices
 	for(i = 0; i < mg->ncors; i++)
@@ -237,10 +230,6 @@ PetscErrorCode MGCtxSetup(MGCtx *mg, FDSTAG *fs, BCCtx *bc, idxtype idxmod)
 		bcfine = bccors;
 
 	}
-
-	// compute Galerkin multigrid preconditioner
-//	ierr = PCSetOperators(mg->pc, P, P, SAME_NONZERO_PATTERN); CHKERRQ(ierr);
-//	ierr = PCSetUp(mg->pc); CHKERRQ(ierr);
 
 	PetscFunctionReturn(0);
 }

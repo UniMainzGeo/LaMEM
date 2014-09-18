@@ -13,25 +13,25 @@ typedef struct
 	// n   - number of levels
 
 	PetscInt  ncors; // number of coarsening steps (grids)
-	FDSTAG   *mgfs;  // staggered grid for every level (except finest)
 	Mat      *R;     // restriction matrices for every level (except coarsest)
 	Mat      *P;     // prolongation matrices for every level (except finest)
+	FDSTAG   *mgfs;  // staggered grid for every level (except finest)
 	BCCtx    *mgbc;  // boundary condition contexts for every level (except finest)
-//	PC        pc;    // multigrid preconditioner
-
+	FDSTAG   *fs;    // finest level grid
+	BCCtx    *bc;    // finest level boundary conditions
 
 } MGCtx;
 //---------------------------------------------------------------------------
 
 PetscErrorCode MGCheckGrid(FDSTAG *fs, PetscInt *ncels);
 
-PetscErrorCode MGCtxCreate(MGCtx *mg, FDSTAG *fs, PC pc, idxtype idxmod);
+PetscErrorCode MGCtxCreate(MGCtx *mg, FDSTAG *fs, BCCtx *bc, PC pc, idxtype idxmod);
 
 PetscErrorCode MGCtxDestroy(MGCtx *mg);
 
-PetscErrorCode MGCtxSetup(MGCtx *mg, FDSTAG *fs, BCCtx *bc, idxtype idxmod);
+PetscErrorCode MGCtxSetup(MGCtx *mg, idxtype idxmod);
 
-PetscErrorCode MGCtxSetDiagOnLevels(MGCtx *mg, PC pc);
+PetscErrorCode MGCtxSetDiagOnLevels(MGCtx *mg, PC pcmg);
 
 PetscErrorCode SetupRestrictStep(Mat R, FDSTAG *cors, FDSTAG *fine, BCCtx *bccors, idxtype idxmod);
 

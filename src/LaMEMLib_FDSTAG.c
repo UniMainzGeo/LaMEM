@@ -54,6 +54,7 @@ without the explicit agreement of Boris Kaus.
 #include "bc.h"
 #include "JacRes.h"
 #include "paraViewOutBin.h"
+#include "multigrid.h"
 #include "lsolve.h"
 #include "nlsolve.h"
 #include "interface.h"
@@ -92,7 +93,7 @@ PetscErrorCode LaMEMLib_FDSTAG(PetscBool InputParamFile, const char *ParamFile, 
 	SNESLineSearch snesls; // line search context
 //	Vec            res;    // residual operator
 //	Vec            sol;    // nonlinear solution vector
-	BlockMat       bmat;   // block recinditioner matrix
+//	BlockMat       bmat;   // block recinditioner matrix
 
 	KSP            ksp;
 	PC             pc;
@@ -371,13 +372,13 @@ PetscErrorCode LaMEMLib_FDSTAG(PetscBool InputParamFile, const char *ParamFile, 
 	//================================
 
 	// create block preconditioner
-	ierr = BlockMatCreate(&bmat, &fs, jrctx.gsol); CHKERRQ(ierr);
+//	ierr = BlockMatCreate(&bmat, &fs, jrctx.gsol); CHKERRQ(ierr);
 
 	// create residual & solution vectors
 //	ierr = MatGetVecs(bmat.A, &sol, &res); CHKERRQ(ierr);
 
 	// create nonlinear solver context
-	ierr = NLCtxCreate(&nlctx, &bmat, &fs, &cbc, &sbc, &jrctx); CHKERRQ(ierr);
+//	ierr = NLCtxCreate(&nlctx, &bmat, &fs, &cbc, &sbc, &jrctx); CHKERRQ(ierr);
 
 	//=======================
 	// SETUP NONLINEAR SOLVER
@@ -516,9 +517,9 @@ PetscErrorCode LaMEMLib_FDSTAG(PetscBool InputParamFile, const char *ParamFile, 
 
 			ierr = VecScale(jrctx.gres, -1.0); CHKERRQ(ierr);
 
-			ierr = BlockMatCompute(&bmat, &fs, &sbc, &jrctx); CHKERRQ(ierr);
+//			ierr = BlockMatCompute(&bmat, &fs, &sbc, &jrctx); CHKERRQ(ierr);
 
-			ierr = PowellHestenes(&bmat, jrctx.gres, jrctx.gsol); CHKERRQ(ierr);
+//			ierr = PowellHestenes(&bmat, jrctx.gres, jrctx.gsol); CHKERRQ(ierr);
 
 			ierr = FDSTAGFormResidual(NULL, jrctx.gsol, jrctx.gres, &nlctx); CHKERRQ(ierr);
 
@@ -770,7 +771,7 @@ PetscErrorCode LaMEMLib_FDSTAG(PetscBool InputParamFile, const char *ParamFile, 
 	ierr = FDSTAGDestroyBCCtx(&sbc);          CHKERRQ(ierr);
 	ierr = FDSTAGDestroyJacResCtx(&jrctx);    CHKERRQ(ierr);
 	ierr = PVOutDestroy(&pvout);              CHKERRQ(ierr);
-	ierr = BlockMatDestroy(&bmat);            CHKERRQ(ierr);
+//	ierr = BlockMatDestroy(&bmat);            CHKERRQ(ierr);
 	ierr = NLCtxDestroy(&nlctx);              CHKERRQ(ierr);
 	ierr = SNESDestroy(&snes);                CHKERRQ(ierr);
 	ierr = ADVDestroy(&actx);                 CHKERRQ(ierr);

@@ -35,7 +35,6 @@ typedef struct
 	// application contexts
 	Mat            Jac;        // Jacobian matrix (SHELL)
 	Mat            MFFD;       // matrix-free finite difference Jacobian
-	BlockMat      *bmat;       // block preconditioning matrix
 	FDSTAG        *fs;         // staggered-grid layout
 	BCCtx         *cbc;        // boundary condition context
 	BCCtx         *sbc;        // boundary condition context
@@ -47,7 +46,6 @@ typedef struct
 
 PetscErrorCode NLCtxCreate(
 	NLCtx       *nlctx,
-	BlockMat    *bmat,
 	FDSTAG      *fs,
 	BCCtx       *cbc,
 	BCCtx       *sbc,
