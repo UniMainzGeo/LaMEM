@@ -8,6 +8,7 @@
 #include "bc.h"
 #include "JacRes.h"
 #include "multigrid.h"
+#include "matrix.h"
 #include "lsolve.h"
 #include "nlsolve.h"
 #include "interface.h"

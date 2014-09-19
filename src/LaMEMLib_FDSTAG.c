@@ -55,12 +55,12 @@ without the explicit agreement of Boris Kaus.
 #include "JacRes.h"
 #include "paraViewOutBin.h"
 #include "multigrid.h"
+#include "matrix.h"
 #include "lsolve.h"
 #include "nlsolve.h"
 #include "interface.h"
 #include "multigrid.h"
 #include "check_fdstag.h"
-#include "matrix.h"
 #include "advect.h"
 #include "marker.h"
 

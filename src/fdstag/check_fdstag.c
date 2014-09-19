@@ -9,6 +9,7 @@
 #include "bc.h"
 #include "JacRes.h"
 #include "paraViewOutBin.h"
+#include "matrix.h"
 #include "multigrid.h"
 #include "lsolve.h"
 #include "nlsolve.h"

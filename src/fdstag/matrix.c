@@ -140,6 +140,10 @@ PetscErrorCode BMatAssemble(BMat *bmat, BCCtx *bc)
 	ierr = PMatAssemble(bmat->Apv, bc->numSPCPres, bc->SPCListPres); CHKERRQ(ierr);
 	ierr = PMatAssemble(bmat->App, bc->numSPCPres, bc->SPCListPres); CHKERRQ(ierr);
 
+	// assemble block matrix
+	ierr = MatAssemblyBegin(bmat->P, MAT_FINAL_ASSEMBLY); CHKERRQ(ierr);
+	ierr = MatAssemblyEnd  (bmat->P, MAT_FINAL_ASSEMBLY); CHKERRQ(ierr);
+
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
@@ -374,7 +378,7 @@ PetscErrorCode PMatAssembleMonolithic(
 	// are followed by X-Y-Z-P DOF of the second one, and so on.
 	//
 	// Picard Jacobian (J) can be computed as follows when necessary:
-	// J = P + M
+	// J = P - M
 	// P - preconditioner matrix (computed in this function)
 	// M - inverse viscosity matrix (computed in this function)
 	//======================================================================
@@ -480,7 +484,7 @@ PetscErrorCode PMatAssembleMonolithic(
 		ierr = MatSetValues(P, 7, idx, 7, idx, v, ADD_VALUES); CHKERRQ(ierr);
 
 		// store inverse viscosity for compensation
-		ierr = MatSetValue(M, idx[6], idx[6], 1.0/eta, INSERT_VALUES); CHKERRQ(ierr);
+		ierr = MatSetValue(M, idx[6], idx[6], -1.0/eta, INSERT_VALUES); CHKERRQ(ierr);
 	}
 	END_STD_LOOP
 
@@ -901,12 +905,14 @@ PetscErrorCode PMatAssembleBlock(
 	// pgamma - is a penalty parameter
 	//
 	// if pgamma is nonzero:
-	// M   - will contain kappa = 1/(1/(K*dt) + 1/(pgamma*eta)) (penalty matrix)
+	// M   - will contain -kappa (inverse penalty matrix)
 	// Avv - will contain Avv + kappa*Avp*Apv (velocity Schur complement)
+	// kappa = 1/(1/(K*dt) + 1/(pgamma*eta)
 	//
 	// otherwise:
-	// M will contain -1/eta (pressure Schur complement preconditioner)
+	// M will contain -kappa (pressure Schur complement preconditioner)
 	// Avv - will contain unmodified velocity operator
+	// kappa = 1/(K*dt) + 1/eta
 	//======================================================================
 
 	PetscInt    idx[7];
@@ -1002,25 +1008,31 @@ PetscErrorCode PMatAssembleBlock(
 		// constrain local matrix
 		ierr = constrLocalMat(7, pdofidx, cf, v); CHKERRQ(ierr);
 
-		// compute penalty parameter
-		kappa = pgamma*eta;
+		// extract operators, compute penalty terms and preconditioners
+		if(pgamma)
+		{
+			// compute penalty parameter
+			kappa = 1.0/(IKdt + 1.0/(pgamma*eta));
 
-		// get sub-blocks
-		ierr = getVelSchurComp(v, a, d, g, kappa);
+			// get velocity Schur complement
+			ierr = getVelSchurComp(v, a, d, g, kappa); CHKERRQ(ierr);
+		}
+		else
+		{	// compute pressure Schur complement preconditioner
+			kappa = IKdt + 1.0/eta;
 
-		// add to global matrix
-		ierr = MatSetValues(P->Avv, 6, idx,   6, idx,   a, ADD_VALUES);    CHKERRQ(ierr);
-		ierr = MatSetValues(P->Avp, 6, idx,   1, idx+6, g, ADD_VALUES);    CHKERRQ(ierr);
-		ierr = MatSetValues(P->Apv, 1, idx+6, 6, idx,   d, ADD_VALUES);    CHKERRQ(ierr);
-		ierr = MatSetValue (P->App, idx[6], idx[6], -IKdt, INSERT_VALUES); CHKERRQ(ierr);
+			// get sub-matrices
+			ierr = getSubMats(v, a, d, g); CHKERRQ(ierr);
+		}
 
-//		if(kappa)
+		// update global matrices
+		ierr = MatSetValues(P->Avv, 6, idx,   6, idx,   a, ADD_VALUES); CHKERRQ(ierr);
+		ierr = MatSetValues(P->Avp, 6, idx,   1, idx+6, g, ADD_VALUES); CHKERRQ(ierr);
+		ierr = MatSetValues(P->Apv, 1, idx+6, 6, idx,   d, ADD_VALUES); CHKERRQ(ierr);
 
-		// store inverse viscosity for compensation
-		ierr = MatSetValue(M, idx[6], idx[6], 1.0/eta, INSERT_VALUES); CHKERRQ(ierr);
-
-//		kappa
-
+		// pressure diagonal blocks
+		ierr = MatSetValue (P->App, idx[6], idx[6], -IKdt,  INSERT_VALUES); CHKERRQ(ierr);
+		ierr = MatSetValue (M,      idx[6], idx[6], -kappa, INSERT_VALUES); CHKERRQ(ierr);
 
 		// increment iterator
 		iter++;
@@ -1342,7 +1354,6 @@ PetscErrorCode getSubMats(PetscScalar v[],  PetscScalar a[], PetscScalar d[], Pe
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-
 /*
 	// Pressure constraints implementation
 

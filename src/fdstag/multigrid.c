@@ -188,8 +188,6 @@ PetscErrorCode MGCtxDestroy(MGCtx *mg)
 	ierr = PetscFree(mg->P);    CHKERRQ(ierr);
 	ierr = PetscFree(mg->mgbc); CHKERRQ(ierr);
 
-//	ierr = PCDestroy(&mg->pc);  CHKERRQ(ierr);
-
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
