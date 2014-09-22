@@ -117,10 +117,10 @@ PetscErrorCode MGCtxCreate(MGCtx *mg, FDSTAG *fs, BCCtx *bc, PC pc, idxtype idxm
 		ierr = FDSTAGCreate(&mg->mgfs[i], Nx+1, Ny+1, Nz+1, Px, Py, Pz); CHKERRQ(ierr);
 
 		// create bc context
-		ierr = FDSTAGCreateBCCtx(&mg->mgbc[i], &mg->mgfs[i]); CHKERRQ(ierr);
+		ierr = BCCreate(&mg->mgbc[i], &mg->mgfs[i]); CHKERRQ(ierr);
 
 		// setup bc context
-		ierr = FDSTAGInitBC(&mg->mgbc[i], &mg->mgfs[i], idxmod); CHKERRQ(ierr);
+		ierr = BCInit(&mg->mgbc[i], &mg->mgfs[i], idxmod); CHKERRQ(ierr);
 
 
 		// check multigrid restrictions (debug)
@@ -144,8 +144,8 @@ PetscErrorCode MGCtxCreate(MGCtx *mg, FDSTAG *fs, BCCtx *bc, PC pc, idxtype idxm
 		// set coarse grid
 		cors = &mg->mgfs[i];
 
-		if(idxmod == IDXCOUPLED)   { idfine = &fine->dofcoupl; idcors = &cors->dofcoupl; }
-		if(idxmod == IDXUNCOUPLED) { idfine = &fine->dofsplit; idcors = &cors->dofsplit; }
+		if(idxmod == IDXCOUPLED)   { idfine = &fine->cdof; idcors = &cors->cdof; }
+		if(idxmod == IDXUNCOUPLED) { idfine = &fine->udof; idcors = &cors->udof; }
 
 		// constant size preallocation (MAKE SURE SPACE IS ENOUGH)
 		ierr = PMatCreate(idcors->numdof, idfine->numdof, 12, NULL, 4, NULL, &mg->R[i]); CHKERRQ(ierr);
@@ -176,10 +176,10 @@ PetscErrorCode MGCtxDestroy(MGCtx *mg)
 
 	for(i = 0; i < mg->ncors; i++)
 	{
-		ierr = FDSTAGDestroy     (&mg->mgfs[i]); CHKERRQ(ierr);
-		ierr = MatDestroy        (&mg->R[i]);    CHKERRQ(ierr);
-		ierr = MatDestroy        (&mg->P[i]);    CHKERRQ(ierr);
-		ierr = FDSTAGDestroyBCCtx(&mg->mgbc[i]); CHKERRQ(ierr);
+		ierr = FDSTAGDestroy(&mg->mgfs[i]); CHKERRQ(ierr);
+		ierr = MatDestroy   (&mg->R[i]);    CHKERRQ(ierr);
+		ierr = MatDestroy   (&mg->P[i]);    CHKERRQ(ierr);
+		ierr = BCDestroy    (&mg->mgbc[i]); CHKERRQ(ierr);
 
 	}
 
@@ -305,8 +305,8 @@ PetscErrorCode SetupRestrictStep(Mat R, FDSTAG *cors, FDSTAG *fine, BCCtx *bccor
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
 
-	if(idxmod == IDXCOUPLED)   { idfine = &fine->dofcoupl; idcors = &cors->dofcoupl; }
-	if(idxmod == IDXUNCOUPLED) { idfine = &fine->dofsplit; idcors = &cors->dofsplit; }
+	if(idxmod == IDXCOUPLED)   { idfine = &fine->cdof; idcors = &cors->cdof; }
+	if(idxmod == IDXUNCOUPLED) { idfine = &fine->udof; idcors = &cors->udof; }
 
 	// clear restriction matrix coefficients
 	ierr = MatZeroEntries(R); CHKERRQ(ierr);
@@ -525,8 +525,8 @@ PetscErrorCode SetupProlongStep(Mat P, FDSTAG *fine, FDSTAG *cors, BCCtx *bcfine
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
 
-	if(idxmod == IDXCOUPLED)   { idcors = &cors->dofcoupl; idfine = &fine->dofcoupl; }
-	if(idxmod == IDXUNCOUPLED) { idcors = &cors->dofsplit; idfine = &fine->dofsplit; }
+	if(idxmod == IDXCOUPLED)   { idcors = &cors->cdof; idfine = &fine->cdof; }
+	if(idxmod == IDXUNCOUPLED) { idcors = &cors->udof; idfine = &fine->udof; }
 
 	// clear prolongation matrix coefficients
 	ierr = MatZeroEntries(P); CHKERRQ(ierr);

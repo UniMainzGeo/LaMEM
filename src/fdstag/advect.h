@@ -21,6 +21,8 @@
 // Advection context
 typedef struct
 {
+	// staggered grid
+	FDSTAG *fs;
 
 	//=============
 	// COMMUNICATOR
@@ -65,30 +67,30 @@ typedef struct
 
 //---------------------------------------------------------------------------
 
-PetscErrorCode ADVCreate(AdvCtx *actx);
+PetscErrorCode ADVCreate(AdvCtx *actx, FDSTAG *fs);
 
 PetscErrorCode ADVDestroy(AdvCtx *actx);
 
 PetscErrorCode ADVReAllocateStorage(AdvCtx *actx, PetscInt capacity);
 
-PetscErrorCode ADVAdvect(AdvCtx *actx, FDSTAG *fs);
+PetscErrorCode ADVAdvect(AdvCtx *actx);
 
-PetscErrorCode ADVAdvectMarkers(AdvCtx *actx, FDSTAG *fs, JacResCtx *jrctx);
+PetscErrorCode ADVAdvectMarkers(AdvCtx *actx, JacRes *jr);
 
 // project history variables from markers to grid
-PetscErrorCode ADVProjHistMarkGrid(AdvCtx *actx, FDSTAG *fs, JacResCtx *jrctx);
+PetscErrorCode ADVProjHistMarkGrid(AdvCtx *actx, JacRes *jr);
 
 // count number of markers to be sent to each neighbor domain
-PetscErrorCode ADVMapMarkersDomains(AdvCtx *actx, FDSTAG *fs);
+PetscErrorCode ADVMapMarkersDomains(AdvCtx *actx);
 
 // communicate number of markers with neighbor processes
-PetscErrorCode ADVExchangeNumMarkers(AdvCtx *actx, FDSTAG *fs);
+PetscErrorCode ADVExchangeNumMarkers(AdvCtx *actx);
 
 // create send and receive buffers for asynchronous MPI communication
-PetscErrorCode ADVCreateMPIBuffer(AdvCtx *actx, FDSTAG *fs);
+PetscErrorCode ADVCreateMPIBuffer(AdvCtx *actx);
 
 // communicate markers with neighbor processes
-PetscErrorCode ADVExchangeMarkers(AdvCtx *actx, FDSTAG *fs);
+PetscErrorCode ADVExchangeMarkers(AdvCtx *actx);
 
 // free communication buffer
 PetscErrorCode ADVDestroyMPIBuffer(AdvCtx *actx);
@@ -97,12 +99,14 @@ PetscErrorCode ADVDestroyMPIBuffer(AdvCtx *actx);
 PetscErrorCode ADVCollectGarbage(AdvCtx *actx);
 
 // find host cells for local markers
-PetscErrorCode ADVMapMarkersCells(AdvCtx *actx, FDSTAG *fs);
+PetscErrorCode ADVMapMarkersCells(AdvCtx *actx);
 
+/*
 PetscErrorCode FDSTAGetVorticity(
 	FDSTAG *fs,
 	Vec lvx,  Vec lvy,  Vec lvz,  // local (ghosted) velocities
 	Vec gwx,  Vec gwy,  Vec gwz); // global vorticity components
+*/
 
 //-----------------------------------------------------------------------------
 // call this function for local markers only!

@@ -16,6 +16,7 @@
 #include "check_fdstag.h"
 #include "Utils.h"
 //---------------------------------------------------------------------------
+/*
 #undef __FUNCT__
 #define __FUNCT__ "DarcyPostProcess"
 PetscErrorCode DarcyPostProcess(NLCtx *nlctx, UserContext *user)
@@ -125,7 +126,7 @@ PetscErrorCode DarcyPostProcess(NLCtx *nlctx, UserContext *user)
 #define __FUNCT__ "DoDarcyTests"
 PetscErrorCode DoDarcyTests(NLCtx *nlctx, UserContext *user)
 {
-/*
+
 	FDSTAG    *fs      = nlctx->fs;
 	BCCtx     *sbc     = nlctx->sbc;
 	JacResCtx *jrctx   = nlctx->jrctx;
@@ -152,7 +153,7 @@ PetscErrorCode DoDarcyTests(NLCtx *nlctx, UserContext *user)
 
 	// compute & output permeability
 	ierr = DarcyPostProcess(nlctx, user); CHKERRQ(ierr);
-*/
+
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
@@ -292,7 +293,7 @@ PetscErrorCode FDSTAGOutputResTest(FDSTAG *fs, JacResCtx *jrctx, Vec f)
 	ierr = VecRestoreArray(jrctx->gc,   &c);   CHKERRQ(ierr);
 	ierr = VecRestoreArray(f, &res); CHKERRQ(ierr);
 
-/*
+
 	PetscScalar xnorm, ynorm, znorm ,cnorm;
 
 	ierr = VecNorm(jrctx->gfx, NORM_2, &xnorm); CHKERRQ(ierr);
@@ -301,7 +302,7 @@ PetscErrorCode FDSTAGOutputResTest(FDSTAG *fs, JacResCtx *jrctx, Vec f)
 	ierr = VecNorm(jrctx->gc,  NORM_2, &cnorm); CHKERRQ(ierr);
 
 	PetscPrintf(PETSC_COMM_WORLD, "*** xnorm: %12.12e ynorm: %12.12e znorm: %12.12e cnorm: %12.12e***", xnorm, ynorm, znorm, cnorm);
-*/
+
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
@@ -309,7 +310,6 @@ PetscErrorCode FDSTAGOutputResTest(FDSTAG *fs, JacResCtx *jrctx, Vec f)
 #define __FUNCT__ "BlockSetUpMGVelBlock"
 PetscErrorCode BlockSetUpMGVelBlock(NLCtx *nlctx, MGCtx *mg)
 {
-/*
 	PC       pc;
 	KSP     *subksp;
 //	PetscInt n = 2;
@@ -328,12 +328,10 @@ PetscErrorCode BlockSetUpMGVelBlock(NLCtx *nlctx, MGCtx *mg)
 	ierr = MGCtxSetDiagOnLevels(mg, pc);                   CHKERRQ(ierr);
 
 	PetscFree(subksp);
-*/
 
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-/*
 #undef __FUNCT__
 #define __FUNCT__ "FieldSplitTest"
 PetscErrorCode FieldSplitTest(NLCtx *nlctx, PVOut *pvout, Vec InitGuess, PetscScalar time, PetscInt itime)
@@ -472,7 +470,6 @@ PetscErrorCode MGTest(NLCtx *nlctx, PVOut *pvout, Vec InitGuess, PetscScalar tim
 
 	PetscFunctionReturn(0);
 }
-*/
 //---------------------------------------------------------------------------
 PetscScalar InterpolateLinear3D(PetscScalar cx, PetscScalar cy, PetscScalar cz,  BCValues BC)
 {
@@ -497,8 +494,7 @@ PetscScalar InterpolateLinear3D(PetscScalar cx, PetscScalar cy, PetscScalar cz, 
 #undef __FUNCT__
 #define __FUNCT__ "InitVelocityTest"
 PetscErrorCode InitVelocityTest(
-	FDSTAG      *fs,
-	JacResCtx   *jrctx,
+	JacRes      *jr,
 	UserContext *usr,
 	PetscInt     vectDir,
 	PetscInt     gradDir,
@@ -519,6 +515,8 @@ PetscErrorCode InitVelocityTest(
 
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
+
+	FDSTAG *fs = jr->fs;
 
 	// initialize maximal index in all directions
 	mx = fs->dsx.tnods - 2;
@@ -610,25 +608,25 @@ PetscErrorCode InitVelocityTest(
 //---------------------------------------------------------------------------
 #undef __FUNCT__
 #define __FUNCT__ "JacResCtxClearVelocity"
-PetscErrorCode JacResCtxClearVelocity(JacResCtx *jrctx, PetscInt vectDir)
+PetscErrorCode JacResCtxClearVelocity(JacRes *jr, PetscInt vectDir)
 {
 	PetscErrorCode 	ierr;
 	PetscFunctionBegin;
 
 	if(vectDir == 0)
 	{
-		ierr = VecSet(jrctx->lvx, 0.0); CHKERRQ(ierr);
-		ierr = VecSet(jrctx->gvx, 0.0); CHKERRQ(ierr);
+		ierr = VecSet(jr->lvx, 0.0); CHKERRQ(ierr);
+		ierr = VecSet(jr->gvx, 0.0); CHKERRQ(ierr);
 	}
 	if(vectDir == 1)
 	{
-		ierr = VecSet(jrctx->lvy, 0.0); CHKERRQ(ierr);
-		ierr = VecSet(jrctx->gvy, 0.0); CHKERRQ(ierr);
+		ierr = VecSet(jr->lvy, 0.0); CHKERRQ(ierr);
+		ierr = VecSet(jr->gvy, 0.0); CHKERRQ(ierr);
 	}
 	if(vectDir == 2)
 	{
-		ierr = VecSet(jrctx->lvz, 0.0); CHKERRQ(ierr);
-		ierr = VecSet(jrctx->gvz, 0.0); CHKERRQ(ierr);
+		ierr = VecSet(jr->lvz, 0.0); CHKERRQ(ierr);
+		ierr = VecSet(jr->gvz, 0.0); CHKERRQ(ierr);
 	}
 
 	PetscFunctionReturn(0);
@@ -637,8 +635,7 @@ PetscErrorCode JacResCtxClearVelocity(JacResCtx *jrctx, PetscInt vectDir)
 #undef __FUNCT__
 #define __FUNCT__ "StrainRateSingleComp"
 PetscErrorCode StrainRateSingleComp(
-	FDSTAG      *fs,
-	JacResCtx   *jrctx,
+	JacRes      *jr,
 	UserContext *usr,
 	PVOut       *pvout,
 	PetscInt     vectDir,
@@ -649,14 +646,16 @@ PetscErrorCode StrainRateSingleComp(
 	PetscErrorCode 	ierr;
 	PetscFunctionBegin;
 
+	FDSTAG *fs = jr->fs;
+
 	// initialize velocity
-	ierr = InitVelocityTest(fs, jrctx, usr, vectDir, gradDir, -1.0, 1.0); CHKERRQ(ierr);
+	ierr = InitVelocityTest(fs, jr, usr, vectDir, gradDir, -1.0, 1.0); CHKERRQ(ierr);
 
 	// compute effective strain rate & invariant
-	ierr = FDSTAGetEffStrainRate(fs, jrctx); CHKERRQ(ierr);
+	ierr = FDSTAGetEffStrainRate(fs, jr); CHKERRQ(ierr);
 
 	// compute residual
-	ierr = FDSTAGetResidual(fs, jrctx); CHKERRQ(ierr);
+	ierr = FDSTAGetResidual(fs, jr); CHKERRQ(ierr);
 
 	// create output directory
 	char *DirectoryName = NULL;
@@ -665,10 +664,10 @@ PetscErrorCode StrainRateSingleComp(
 	if(DirectoryName) free(DirectoryName);
 
 	// save output
-	ierr = PVOutWriteTimeStep(pvout, jrctx, ttime, itime); CHKERRQ(ierr);
+	ierr = PVOutWriteTimeStep(pvout, jr, ttime, itime); CHKERRQ(ierr);
 
 	// clear velocities
-	ierr = JacResCtxClearVelocity(jrctx, vectDir); CHKERRQ(ierr);
+	ierr = JacResCtxClearVelocity(jr, vectDir); CHKERRQ(ierr);
 
 	PetscFunctionReturn(0);
 }
@@ -676,8 +675,7 @@ PetscErrorCode StrainRateSingleComp(
 #undef __FUNCT__
 #define __FUNCT__ "StrainRateInterpTest"
 PetscErrorCode StrainRateInterpTest(
-	FDSTAG      *fs,
-	JacResCtx   *jrctx,
+	JacRes      *jr,
 	UserContext *usr,
 	PVOut       *pvout)
 {
@@ -688,926 +686,38 @@ PetscErrorCode StrainRateInterpTest(
 	// of the velocity gradient. Strain rate field and second invariant
 	// should give obvious & predictable result in sequence & in parallel.
 
+	FDSTAG *fs = jr->fs;
+
 	// dvx/dx
-	ierr = StrainRateSingleComp(fs, jrctx, usr, pvout, 0, 0, 1.0, 11); CHKERRQ(ierr);
+	ierr = StrainRateSingleComp(fs, jr, usr, pvout, 0, 0, 1.0, 11); CHKERRQ(ierr);
 
 	// dvx/dy
-	ierr = StrainRateSingleComp(fs, jrctx, usr, pvout, 0, 1, 2.0, 12); CHKERRQ(ierr);
+	ierr = StrainRateSingleComp(fs, jr, usr, pvout, 0, 1, 2.0, 12); CHKERRQ(ierr);
 
 	// dvx/dz
-	ierr = StrainRateSingleComp(fs, jrctx, usr, pvout, 0, 2, 3.0, 13); CHKERRQ(ierr);
+	ierr = StrainRateSingleComp(fs, jr, usr, pvout, 0, 2, 3.0, 13); CHKERRQ(ierr);
 
 
 	// dvy/dx
-	ierr = StrainRateSingleComp(fs, jrctx, usr, pvout, 1, 0, 4.0, 21); CHKERRQ(ierr);
+	ierr = StrainRateSingleComp(fs, jr, usr, pvout, 1, 0, 4.0, 21); CHKERRQ(ierr);
 
 	// dvy/dy
-	ierr = StrainRateSingleComp(fs, jrctx, usr, pvout, 1, 1, 5.0, 22); CHKERRQ(ierr);
+	ierr = StrainRateSingleComp(fs, jr, usr, pvout, 1, 1, 5.0, 22); CHKERRQ(ierr);
 
 	// dvy/dz
-	ierr = StrainRateSingleComp(fs, jrctx, usr, pvout, 1, 2, 6.0, 23); CHKERRQ(ierr);
+	ierr = StrainRateSingleComp(fs, jr, usr, pvout, 1, 2, 6.0, 23); CHKERRQ(ierr);
 
 
 	// dvz/dx
-	ierr = StrainRateSingleComp(fs, jrctx, usr, pvout, 2, 0, 7.0, 31); CHKERRQ(ierr);
+	ierr = StrainRateSingleComp(fs, jr, usr, pvout, 2, 0, 7.0, 31); CHKERRQ(ierr);
 
 	// dvz/dy
-	ierr = StrainRateSingleComp(fs, jrctx, usr, pvout, 2, 1, 8.0, 32); CHKERRQ(ierr);
+	ierr = StrainRateSingleComp(fs, jr, usr, pvout, 2, 1, 8.0, 32); CHKERRQ(ierr);
 
 	// dvz/dz
-	ierr = StrainRateSingleComp(fs, jrctx, usr, pvout, 2, 2, 9.0, 33); CHKERRQ(ierr);
-
-	PetscFunctionReturn(0);
-}
-//---------------------------------------------------------------------------
-//---------------------------------------------------------------------------
-//---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "FDSTAGetResMag"
-PetscErrorCode FDSTAGetResMag(FDSTAG *fs, UserContext *usr, Vec f, Vec fmag)
-{
-	Field       ***pf;
-	PetscScalar ***pfmag, fx, fy, fz, res, max, tol;
-	PetscInt    i, j, k, nx, ny, nz, sx, sy, sz, im, jm, km, cnt;
-
-	PetscErrorCode 	ierr;
-	PetscFunctionBegin;
-
-	// initialize
-	tol =  1e-10;
-	max = -1.0;
-	im  = -1;
-	jm  = -1;
-	km  = -1;
-	cnt =  0;
-
-	ierr = DMDAVecGetArray(usr->DA_Vel,            f,    &pf);    CHKERRQ(ierr);
-	ierr = DMDAVecGetArray(usr->FDSTAG.DA_CORNER,  fmag, &pfmag); CHKERRQ(ierr);
-
-	GET_NODE_RANGE(nx, sx, fs->dsx);
-	GET_NODE_RANGE(ny, sy, fs->dsy);
-	GET_NODE_RANGE(nz, sz, fs->dsz);
-
-	START_STD_LOOP
-	{
-		fx  = pf[k][j][i].Vx;
-		fy  = pf[k][j][i].Vy;
-		fz  = pf[k][j][i].Vz;
-		res = sqrt(fx*fx + fy*fy + fz*fz);
-		if(res > max)
-		{	max = res;
-			im  = i;
-			jm  = j;
-			km  = k;
-		}
-		if(res > tol) cnt++;
-		pfmag[k][j][i] = res;
-	}
-	END_STD_LOOP
-
-	PetscPrintf(PETSC_COMM_WORLD, "\n\n\n ");
-	PetscPrintf(PETSC_COMM_WORLD, "***   MAXRES: %12.12e   I: %lld   J: %lld   K: %lld   ***", max, im, jm, km);
-	PetscPrintf(PETSC_COMM_WORLD, "\n\n\n ");
-
-	ierr = DMDAVecRestoreArray(usr->DA_Vel,            f,    &pf);    CHKERRQ(ierr);
-	ierr = DMDAVecRestoreArray(usr->FDSTAG.DA_CORNER,  fmag, &pfmag); CHKERRQ(ierr);
-
-	PetscFunctionReturn(0);
-}
-//---------------------------------------------------------------------------
-/*
-#undef __FUNCT__
-#define __FUNCT__ "FDSTAGCheckPhaseRatios"
-PetscErrorCode FDSTAGCheckPhaseRatios(FDSTAG *fs, JacResCtx *jrctx)
-{
-	// check phase ratios in the FDSTAG data structures
-
-	PetscScalar *phRat, tol, top, bot, sum;
-	PetscInt i, j, k, nx, ny, nz, sx, sy, sz, iter, numPhases;
-
-	PetscFunctionBegin;
-
-	// initialize
-	numPhases = jrctx->numPhases;
-	tol       = 1e-13;
-	top       = 1.0 + tol;
-	bot       = 1.0 - tol;
-	//---------------
-	// central points
-	//---------------
-	iter = 0;
-	GET_CELL_RANGE(nx, sx, fs->dsx)
-	GET_CELL_RANGE(ny, sy, fs->dsy)
-	GET_CELL_RANGE(nz, sz, fs->dsz)
-
-	START_STD_LOOP
-	{
-		phRat = jrctx->svCell[iter++].svDev.phRat;
-		sum = ArraySum(phRat, numPhases);
-		if(sum < bot || sum > top) SETERRQ1(PETSC_COMM_WORLD, PETSC_ERR_USER, "***   SUM: %12.12e   ***", sum);
-	}
-	END_STD_LOOP
-
-	//---------------
-	// xy edge points
-	//---------------
-	iter = 0;
-	GET_NODE_RANGE(nx, sx, fs->dsx)
-	GET_NODE_RANGE(ny, sy, fs->dsy)
-	GET_CELL_RANGE(nz, sz, fs->dsz)
-
-	START_STD_LOOP
-	{
-		phRat = jrctx->svXYEdge[iter++].svDev.phRat;
-		sum = ArraySum(phRat, numPhases);
-		if(sum < bot || sum > top) SETERRQ1(PETSC_COMM_WORLD, PETSC_ERR_USER, "***   SUM: %12.12e   ***", sum);
-	}
-	END_STD_LOOP
-
-	//---------------
-	// xz edge points
-	//---------------
-	iter = 0;
-	GET_NODE_RANGE(nx, sx, fs->dsx)
-	GET_CELL_RANGE(ny, sy, fs->dsy)
-	GET_NODE_RANGE(nz, sz, fs->dsz)
-
-	START_STD_LOOP
-	{
-		phRat = jrctx->svXZEdge[iter++].svDev.phRat;
-		sum = ArraySum(phRat, numPhases);
-		if(sum < bot || sum > top) SETERRQ1(PETSC_COMM_WORLD, PETSC_ERR_USER, "***   SUM: %12.12e   ***", sum);
-	}
-	END_STD_LOOP
-
-	//---------------
-	// yz edge points
-	//---------------
-	iter = 0;
-	GET_CELL_RANGE(nx, sx, fs->dsx)
-	GET_NODE_RANGE(ny, sy, fs->dsy)
-	GET_NODE_RANGE(nz, sz, fs->dsz)
-
-	START_STD_LOOP
-	{
-		phRat = jrctx->svYZEdge[iter++].svDev.phRat;
-		sum = ArraySum(phRat, numPhases);
-		if(sum < bot || sum > top) SETERRQ1(PETSC_COMM_WORLD, PETSC_ERR_USER, "***   SUM: %12.12e   ***", sum);
-	}
-	END_STD_LOOP
+	ierr = StrainRateSingleComp(fs, jr, usr, pvout, 2, 2, 9.0, 33); CHKERRQ(ierr);
 
 	PetscFunctionReturn(0);
 }
 */
-//---------------------------------------------------------------------------
-PetscScalar ArraySum(PetscScalar *a, PetscInt n)
-{
-	PetscInt    i;
-	PetscScalar sum = 0.0;
-	for(i = 0; i < n; i++) sum += a[i];
-	return sum;
-}
-//---------------------------------------------------------------------------
-/*
-#undef __FUNCT__
-#define __FUNCT__ "FDSTAGDumpPhaseRatios"
-PetscErrorCode FDSTAGDumpPhaseRatios(FDSTAG *fs, JacResCtx *jrctx)
-{
-	// check phase ratios in the FDSTAG data structures
-
-	FILE        *db;
-	PetscScalar *phRat, *buff, *ptr;
-	PetscInt     i, j, k, nx, ny, nz, sx, sy, sz, iter, numPhases, buffSz;
-
-	PetscErrorCode ierr;
-	PetscFunctionBegin;
-
-	// initialize
-	numPhases = jrctx->numPhases;
-
-	buffSz = numPhases*(fs->nCells + fs->nXYEdg + fs->nXZEdg + fs->nYZEdg);
-	ierr   = makeScalArray(&buff, NULL, buffSz);
-	ptr    = buff;
-
-	//---------------
-	// central points
-	//---------------
-	iter = 0;
-	GET_CELL_RANGE(nx, sx, fs->dsx)
-	GET_CELL_RANGE(ny, sy, fs->dsy)
-	GET_CELL_RANGE(nz, sz, fs->dsz)
-
-	START_STD_LOOP
-	{
-		phRat = jrctx->svCell[iter++].svDev.phRat;
-		ArrayCopy(phRat, ptr, numPhases);
-		ptr += numPhases;
-	}
-	END_STD_LOOP
-
-	//---------------
-	// xy edge points
-	//---------------
-	iter = 0;
-	GET_NODE_RANGE(nx, sx, fs->dsx)
-	GET_NODE_RANGE(ny, sy, fs->dsy)
-	GET_CELL_RANGE(nz, sz, fs->dsz)
-
-	START_STD_LOOP
-	{
-		phRat = jrctx->svXYEdge[iter++].svDev.phRat;
-		ArrayCopy(phRat, ptr, numPhases);
-		ptr += numPhases;
-	}
-	END_STD_LOOP
-
-	//---------------
-	// xz edge points
-	//---------------
-	iter = 0;
-	GET_NODE_RANGE(nx, sx, fs->dsx)
-	GET_CELL_RANGE(ny, sy, fs->dsy)
-	GET_NODE_RANGE(nz, sz, fs->dsz)
-
-	START_STD_LOOP
-	{
-		phRat = jrctx->svXZEdge[iter++].svDev.phRat;
-		ArrayCopy(phRat, ptr, numPhases);
-		ptr += numPhases;
-	}
-	END_STD_LOOP
-
-	//---------------
-	// yz edge points
-	//---------------
-	iter = 0;
-	GET_CELL_RANGE(nx, sx, fs->dsx)
-	GET_NODE_RANGE(ny, sy, fs->dsy)
-	GET_NODE_RANGE(nz, sz, fs->dsz)
-
-	START_STD_LOOP
-	{
-		phRat = jrctx->svYZEdge[iter++].svDev.phRat;
-		ArrayCopy(phRat, ptr, numPhases);
-		ptr += numPhases;
-	}
-	END_STD_LOOP
-
-	// dump to file
-	db = fopen("phRat.bin","w");
-	fwrite(&buffSz, sizeof(PetscInt), 1, db);
-	fwrite(buff, sizeof(PetscScalar), (size_t)buffSz, db);
-	fclose(db);
-
-	ierr = PetscFree(buff);   CHKERRQ(ierr);
-
-	PetscFunctionReturn(0);
-}
-*/
-//---------------------------------------------------------------------------
-void ArrayCopy(PetscScalar *a, PetscScalar *b, PetscInt n)
-{
-	PetscInt i;
-	for(i = 0; i < n; i++) b[i] = a[i];
-}
-//---------------------------------------------------------------------------
-/*
-#undef __FUNCT__
-#define __FUNCT__ "FDSTAGComparePhaseRatios"
-PetscErrorCode FDSTAGComparePhaseRatios(FDSTAG *fs, JacResCtx *jrctx, PetscScalar rtol, PetscScalar atol)
-{
-
-	// check phase ratios in the FDSTAG data structures
-	FILE        *db;
-	PetscScalar *phRat, *phRatRef, *buff, *ptr;
-	PetscInt     i, j, k, nx, ny, nz, sx, sy, sz, iter, numPhases, buffSz, tx, ty, tz;
-
-	PetscErrorCode ierr;
-	PetscFunctionBegin;
-
-	// initialize
-	numPhases = jrctx->numPhases;
-
-	// read reference from file
-	db = fopen("phRat.bin","r");
-
-	if(db == NULL) SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "cannot open file phRat.bin");
-
-	fread(&buffSz, sizeof(PetscInt), 1, db);
-
-	ierr = makeScalArray(&buff, NULL, buffSz);
-
-	fread(buff, sizeof(PetscScalar), (size_t)buffSz, db);
-
-	fclose(db);
-
-	ptr = buff;
-
-	//---------------
-	// central points
-	//---------------
-	iter = 0;
-	GET_CELL_BOUNDS(nx, sx, fs->dsx)
-	GET_CELL_BOUNDS(ny, sy, fs->dsy)
-	GET_CELL_BOUNDS(nz, sz, fs->dsz)
-
-	tx  = fs->dsx.tnods-1;
-	ty  = fs->dsy.tnods-1;
-	tz  = fs->dsz.tnods-1;
-
-	START_STD_LOOP
-	{
-		phRat    = jrctx->svCell[iter++].svDev.phRat;
-		phRatRef = getPtr(tx, ty, i, j, k, numPhases, ptr);
-		ArrayCompare(phRat, phRatRef, numPhases, rtol, atol);
-
-	}
-	END_STD_LOOP
-
-	ptr += numPhases*tx*ty*tz;
-
-	//---------------
-	// xy edge points
-	//---------------
-	iter = 0;
-	GET_NODE_BOUNDS(nx, sx, fs->dsx)
-	GET_NODE_BOUNDS(ny, sy, fs->dsy)
-	GET_CELL_BOUNDS(nz, sz, fs->dsz)
-
-	tx = fs->dsx.tnods;
-	ty = fs->dsy.tnods;
-	tz = fs->dsz.tnods-1;
-
-	START_STD_LOOP
-	{
-		phRat    = jrctx->svXYEdge[iter++].svDev.phRat;
-		phRatRef = getPtr(tx, ty, i, j, k, numPhases, ptr);
-		ArrayCompare(phRat, phRatRef, numPhases, rtol, atol);
-
-	}
-	END_STD_LOOP
-
-	ptr += numPhases*tx*ty*tz;
-
-	//---------------
-	// xz edge points
-	//---------------
-	iter = 0;
-	GET_NODE_BOUNDS(nx, sx, fs->dsx)
-	GET_CELL_BOUNDS(ny, sy, fs->dsy)
-	GET_NODE_BOUNDS(nz, sz, fs->dsz)
-
-	tx = fs->dsx.tnods;
-	ty = fs->dsy.tnods-1;
-	tz = fs->dsz.tnods;
-
-	START_STD_LOOP
-	{
-		phRat    = jrctx->svXZEdge[iter++].svDev.phRat;
-		phRatRef = getPtr(tx, ty, i, j, k, numPhases, ptr);
-		ArrayCompare(phRat, phRatRef, numPhases, rtol, atol);
-
-	}
-	END_STD_LOOP
-
-	ptr += numPhases*tx*ty*tz;
-
-	//---------------
-	// yz edge points
-	//---------------
-	iter = 0;
-	GET_CELL_BOUNDS(nx, sx, fs->dsx)
-	GET_NODE_BOUNDS(ny, sy, fs->dsy)
-	GET_NODE_BOUNDS(nz, sz, fs->dsz)
-
-	tx = fs->dsx.tnods-1;
-	ty = fs->dsy.tnods;
-	tz = fs->dsz.tnods;
-
-	START_STD_LOOP
-	{
-		phRat    = jrctx->svYZEdge[iter++].svDev.phRat;
-		phRatRef = getPtr(tx, ty, i, j, k, numPhases, ptr);
-		ArrayCompare(phRat, phRatRef, numPhases, rtol, atol);
-
-	}
-	END_STD_LOOP
-
-	ierr = PetscFree(buff); CHKERRQ(ierr);
-
-	PetscFunctionReturn(0);
-}
-*/
-//---------------------------------------------------------------------------
-PetscScalar * getPtr(PetscInt nx, PetscInt ny, PetscInt i, PetscInt j, PetscInt k, PetscInt ndof, PetscScalar *a)
-{
-	return a + ndof*(k*nx*ny + j*nx + i);
-}
-//---------------------------------------------------------------------------
-/*
-#undef __FUNCT__
-#define __FUNCT__ "ArrayCompare"
-PetscErrorCode ArrayCompare(PetscScalar *a, PetscScalar *b, PetscInt n, PetscScalar rtol, PetscScalar atol)
-{
-	PetscInt i;
-	PetscFunctionBegin;
-	for(i = 0; i < n; i++)
-	{	if(!LAMEM_CHECKEQ(a[i], b[i], rtol, atol))
-		{
-			SETERRQ1(PETSC_COMM_WORLD, PETSC_ERR_USER, "***   DIFF: %12.12e   ***", a[i]-b[i]);
-		}
-	}
-	PetscFunctionReturn(0);
-}
-*/
-//---------------------------------------------------------------------------
-//---------------------------------------------------------------------------
-//---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "FDSTAGetResidualTest"
-PetscErrorCode FDSTAGetResidualTest(FDSTAG *fs, JacResCtx *jrctx)
-{
-	PetscInt    i, j, k, nx, ny, nz, sx, sy, sz;
-	PetscScalar ***fx,  ***fy,  ***fz;
-
-	PetscErrorCode ierr;
-	PetscFunctionBegin;
-
-	// clear local residual vectors
-	ierr = VecZeroEntries(jrctx->lfx); CHKERRQ(ierr);
-	ierr = VecZeroEntries(jrctx->lfy); CHKERRQ(ierr);
-	ierr = VecZeroEntries(jrctx->lfz); CHKERRQ(ierr);
-
-	// access work vectors
-	ierr = DMDAVecGetArray(fs->DA_X, jrctx->lfx, &fx);  CHKERRQ(ierr);
-	ierr = DMDAVecGetArray(fs->DA_Y, jrctx->lfy, &fy);  CHKERRQ(ierr);
-	ierr = DMDAVecGetArray(fs->DA_Z, jrctx->lfz, &fz);  CHKERRQ(ierr);
-
-	//-------------------------------
-	// central points
-	//-------------------------------
-	GET_CELL_RANGE(nx, sx, fs->dsx)
-	GET_CELL_RANGE(ny, sy, fs->dsy)
-	GET_CELL_RANGE(nz, sz, fs->dsz)
-
-	START_STD_LOOP
-	{
-		// momentum
-		fx[k][j][i] += 1.0;   fx[k][j][i+1] -= 1.0;
-		fy[k][j][i] += 1.0;   fy[k][j+1][i] -= 1.0;
-		fz[k][j][i] += 1.0;   fz[k+1][j][i] -= 1.0;
-	}
-	END_STD_LOOP
-
-	//-------------------------------
-	// xy edge points
-	//-------------------------------
-	GET_NODE_RANGE(nx, sx, fs->dsx)
-	GET_NODE_RANGE(ny, sy, fs->dsy)
-	GET_CELL_RANGE(nz, sz, fs->dsz)
-
-	START_STD_LOOP
-	{
-		// momentum
-		fx[k][j-1][i] += 1.0;   fx[k][j][i] -= 1.0;
-		fy[k][j][i-1] += 1.0;   fy[k][j][i] -= 1.0;
-	}
-	END_STD_LOOP
-
-	//-------------------------------
-	// xz edge points
-	//-------------------------------
-	GET_NODE_RANGE(nx, sx, fs->dsx)
-	GET_CELL_RANGE(ny, sy, fs->dsy)
-	GET_NODE_RANGE(nz, sz, fs->dsz)
-
-	START_STD_LOOP
-	{
-		// momentum
-		fx[k-1][j][i] += 1.0;   fx[k][j][i] -= 1.0;
-		fz[k][j][i-1] += 1.0;   fz[k][j][i] -= 1.0;
-
-	}
-	END_STD_LOOP
-
-	//-------------------------------
-	// yz edge points
-	//-------------------------------
-	GET_CELL_RANGE(nx, sx, fs->dsx)
-	GET_NODE_RANGE(ny, sy, fs->dsy)
-	GET_NODE_RANGE(nz, sz, fs->dsz)
-
-	START_STD_LOOP
-	{
-		// update momentum residuals
-		fy[k-1][j][i] += 1.0;   fy[k][j][i] -= 1.0;
-		fz[k][j-1][i] += 1.0;   fz[k][j][i] -= 1.0;
-
-	}
-	END_STD_LOOP
-
-	ierr = DMDAVecRestoreArray(fs->DA_X, jrctx->lfx, &fx);  CHKERRQ(ierr);
-	ierr = DMDAVecRestoreArray(fs->DA_Y, jrctx->lfy, &fy);  CHKERRQ(ierr);
-	ierr = DMDAVecRestoreArray(fs->DA_Z, jrctx->lfz, &fz);  CHKERRQ(ierr);
-
-	// assemble global residuals from local contributions
-	LOCAL_TO_GLOBAL(fs->DA_X, jrctx->lfx, jrctx->gfx)
-	LOCAL_TO_GLOBAL(fs->DA_Y, jrctx->lfy, jrctx->gfy)
-	LOCAL_TO_GLOBAL(fs->DA_Z, jrctx->lfz, jrctx->gfz)
-
-	PetscFunctionReturn(0);
-}
-//---------------------------------------------------------------------------
-//---------------------------------------------------------------------------
-//---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "InitVec"
-PetscErrorCode InitVec(DM da, Vec v)
-{
-	Field           ***va;
-	PetscErrorCode  ierr;
-	PetscInt        i, j, k, sx, sy, sz, nx, ny, nz, base;
-
-	PetscFunctionBegin;
-
-	ierr = VecZeroEntries(v); CHKERRQ(ierr);
-
-	ierr = DMDAGetCorners(da, &sx,  &sy,  &sz,  &nx,  &ny,  &nz); CHKERRQ(ierr);
-
-	ierr = DMDAVecGetArray(da, v, &va); CHKERRQ(ierr);
-
-	START_STD_LOOP
-	{
-		base = (i+1)*(j+1) + (j+1)*(k+1) + (i+1)*(k+1) + (i+1)*(j+1)*(k+1);
-		va[k][j][i].Vx = (PetscScalar)(base);
-		va[k][j][i].Vy = (PetscScalar)(base+1);
-		va[k][j][i].Vz = (PetscScalar)(base+2);
-	}
-	END_STD_LOOP
-
-	ierr = DMDAVecRestoreArray(da, v, &va); CHKERRQ(ierr);
-
-	PetscFunctionReturn(0);
-}
-//---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "DumpVec"
-PetscErrorCode DumpVec(DM da, Vec v)
-{
-	FILE            *db;
-	Field           ***va;
-	PetscScalar     *buff;
-	PetscErrorCode  ierr;
-	PetscInt        i, j, k, sx, sy, sz, nx, ny, nz, iter, buffSz;
-
-	PetscFunctionBegin;
-
-	iter = 0;
-
-	ierr = DMDAGetCorners(da, &sx,  &sy,  &sz,  &nx,  &ny,  &nz); CHKERRQ(ierr);
-
-	buffSz = 3*nx*ny*nz;
-
-	ierr = makeScalArray(&buff, NULL, buffSz);
-
-	ierr = DMDAVecGetArray(da, v, &va); CHKERRQ(ierr);
-
-	START_STD_LOOP
-	{
-		buff[iter++] = va[k][j][i].Vx;
-		buff[iter++] = va[k][j][i].Vy;
-		buff[iter++] = va[k][j][i].Vz;
-	}
-	END_STD_LOOP
-
-	// dump to file
-	db = fopen("vec_test.bin","w");
-	fwrite(&nx, sizeof(PetscInt), 1, db);
-	fwrite(&ny, sizeof(PetscInt), 1, db);
-	fwrite(&nz, sizeof(PetscInt), 1, db);
-	fwrite(buff, sizeof(PetscScalar), (size_t)buffSz, db);
-	fclose(db);
-
-	ierr = PetscFree(buff); CHKERRQ(ierr);
-
-	ierr = DMDAVecRestoreArray(da, v, &va); CHKERRQ(ierr);
-
-	PetscFunctionReturn(0);
-}
-//---------------------------------------------------------------------------
-/*
-#undef __FUNCT__
-#define __FUNCT__ "CountVec"
-PetscErrorCode CountVec(DM da, Vec v, PetscScalar rtol, PetscScalar atol)
-{
-	FILE            *db;
-	Field           ***va;
-	PetscScalar     *buff, *vRef, pvec[3];
-	PetscInt        i, j, k, sx, sy, sz, nx, ny, nz, tx, ty, tz, dcnt, cnt, buffSz;
-	PetscErrorCode  ierr;
-	PetscMPIInt     rank;
-	MaxDiff         md;
-	PetscFunctionBegin;
-
-	ierr = MPI_Comm_rank(PETSC_COMM_WORLD, &rank); CHKERRQ(ierr);
-
-	// read reference from file
-	db = fopen("vec_test.bin","r");
-	if(db == NULL) SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "cannot open file vec_test.bin");
-	fread(&tx, sizeof(PetscInt), 1, db);
-	fread(&ty, sizeof(PetscInt), 1, db);
-	fread(&tz, sizeof(PetscInt), 1, db);
-	buffSz = 3*tx*ty*tz;
-	ierr = makeScalArray(&buff, NULL, buffSz);
-	fread(buff, sizeof(PetscScalar), (size_t)buffSz, db);
-	fclose(db);
-
-	// compare
-	db = fopen("vec_comp.out","w");
-	fprintf(db, "Velocity comparison database\n");
-	cnt = 0;
-	ierr = DMDAGetCorners(da, &sx,  &sy,  &sz,  &nx,  &ny,  &nz); CHKERRQ(ierr);
-	ierr = DMDAVecGetArray(da, v, &va); CHKERRQ(ierr);
-	START_STD_LOOP
-	{
-		vRef    = getPtr(tx, ty, i, j, k, 3, buff);
-		pvec[0] = va[k][j][i].Vx;
-		pvec[1] = va[k][j][i].Vy;
-		pvec[2] = va[k][j][i].Vz;
-		dcnt    = ArrayCount(vRef, pvec, 3, rtol, atol);
-		cnt    += dcnt;
-		if(dcnt)
-		{	MDiff(vRef, pvec, &md, 3);
-			fprintf(db, "rank=%lld  i=%lld  j=%lld  k=%lld  sec=%15.15e par=%15.15e, dif=%15.15e\n",(LLD)rank, (LLD)i, (LLD)j, (LLD)k, md.a, md.b, PetscAbsScalar(md.a-md.b));
-			fflush(db);
-		}
-	}
-	END_STD_LOOP
-	fclose(db);
-
-	ierr = PetscPrintf             (PETSC_COMM_WORLD, "\n\n\n"); CHKERRQ(ierr);
-	ierr = PetscSynchronizedPrintf (PETSC_COMM_WORLD, "   *** rank = %lld   cnt = %5lld   ***\n", (LLD)rank, (LLD)cnt); CHKERRQ(ierr);
-	ierr = PetscSynchronizedFlush  (PETSC_COMM_WORLD); CHKERRQ(ierr);
-	ierr = PetscPrintf             (PETSC_COMM_WORLD, "\n\n\n"); CHKERRQ(ierr);
-
-	ierr = PetscFree(buff); CHKERRQ(ierr);
-	ierr = DMDAVecRestoreArray(da, v, &va); CHKERRQ(ierr);
-
-	PetscFunctionReturn(0);
-}
-*/
-//---------------------------------------------------------------------------
-/*
-PetscInt ArrayCount(PetscScalar *a, PetscScalar *b, PetscInt n, PetscScalar rtol, PetscScalar atol)
-{
-	PetscInt    i, cnt = 0;
-	for(i = 0; i < n; i++)
-	{
-		if(!LAMEM_CHECKEQ(a[i], b[i], rtol, atol)) cnt++;
-	}
-	return cnt;
-}
-*/
-//---------------------------------------------------------------------------
-void MDiff(PetscScalar *a, PetscScalar *b, MaxDiff *md, PetscInt n)
-{
-	PetscInt    i;
-	PetscScalar mdiff = DBL_MAX, diff;
-	for(i = 0; i < n; i++)
-	{	diff = PetscAbsScalar(a[i] - b[i]);
-		if(diff && diff < mdiff)
-		{	mdiff = diff;
-			md->a = a[i];
-			md->b = b[i];
-		}
-	}
-}
-//---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "FDSTAGDumpVelocities"
-PetscErrorCode FDSTAGDumpVelocities(FDSTAG *fs, JacResCtx *jrctx)
-{
-	// dump global velocity vectors for comparison
-
-	FILE        *db;
-	PetscScalar *buff;
-	PetscScalar ***vx,  ***vy,  ***vz;
-	PetscInt     i, j, k, nx, ny, nz, sx, sy, sz, iter, buffSz;
-
-	PetscErrorCode ierr;
-	PetscFunctionBegin;
-
-	// initialize
-	buffSz = fs->nXFace + fs->nYFace + fs->nZFace;
-	ierr   = makeScalArray(&buff, NULL, buffSz);
-	iter   = 0;
-
-	ierr = DMDAVecGetArray(fs->DA_X, jrctx->gvx, &vx);  CHKERRQ(ierr);
-	ierr = DMDAVecGetArray(fs->DA_Y, jrctx->gvy, &vy);  CHKERRQ(ierr);
-	ierr = DMDAVecGetArray(fs->DA_Z, jrctx->gvz, &vz);  CHKERRQ(ierr);
-
-	//---------------
-	// x-faces
-	//---------------
-	GET_NODE_RANGE(nx, sx, fs->dsx)
-	GET_CELL_RANGE(ny, sy, fs->dsy)
-	GET_CELL_RANGE(nz, sz, fs->dsz)
-
-	START_STD_LOOP
-	{
-		 buff[iter++] = vx[k][j][i];
-	}
-	END_STD_LOOP
-
-	//---------------
-	// y - faces
-	//---------------
-	GET_CELL_RANGE(nx, sx, fs->dsx)
-	GET_NODE_RANGE(ny, sy, fs->dsy)
-	GET_CELL_RANGE(nz, sz, fs->dsz)
-
-	START_STD_LOOP
-	{
-		 buff[iter++] = vy[k][j][i];
-	}
-	END_STD_LOOP
-
-	//---------------
-	// z - faces
-	//---------------
-	GET_CELL_RANGE(nx, sx, fs->dsx)
-	GET_CELL_RANGE(ny, sy, fs->dsy)
-	GET_NODE_RANGE(nz, sz, fs->dsz)
-
-	START_STD_LOOP
-	{
-		 buff[iter++] = vz[k][j][i];
-	}
-	END_STD_LOOP
-
-	// dump to file
-	db = fopen("vel.bin","w");
-	fwrite(&buffSz, sizeof(PetscInt), 1, db);
-	fwrite(buff, sizeof(PetscScalar), (size_t)buffSz, db);
-	fclose(db);
-
-	ierr = PetscFree(buff);   CHKERRQ(ierr);
-
-	// restore vectors
-	ierr = DMDAVecRestoreArray(fs->DA_X, jrctx->gvx, &vx);  CHKERRQ(ierr);
-	ierr = DMDAVecRestoreArray(fs->DA_Y, jrctx->gvy, &vy);  CHKERRQ(ierr);
-	ierr = DMDAVecRestoreArray(fs->DA_Z, jrctx->gvz, &vz);  CHKERRQ(ierr);
-
-	PetscFunctionReturn(0);
-}
-//---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "FDSTAGCountVelocities"
-PetscErrorCode FDSTAGCountVelocities(FDSTAG *fs, JacResCtx *jrctx, PetscScalar rtol, PetscScalar _atol)
-{
-	// compare global velocity vectors sequential & parallel versions
-
-	FILE        *db;
-	PetscScalar *buff, *ptr, *vRef, a, b;
-	PetscScalar ***vx,  ***vy,  ***vz;
-	PetscInt     i, j, k, nx, ny, nz, sx, sy, sz, tx, ty, tz, buffSz;
-	PetscInt     cx, cy, cz;
-	PetscBool    nonzero;
-
-	PetscMPIInt rank;
-
-	PetscErrorCode ierr;
-	PetscFunctionBegin;
-
-	ierr = MPI_Comm_rank(PETSC_COMM_WORLD, &rank); CHKERRQ(ierr);
-
-	cx = 0;
-	cy = 0;
-	cz = 0;
-
-	// read reference from file
-	db = fopen("vel.bin","r");
-
-	if(db == NULL) SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "cannot open file vel.bin");
-
-	fread(&buffSz, sizeof(PetscInt), 1, db);
-
-	ierr = makeScalArray(&buff, NULL, buffSz);
-
-	fread(buff, sizeof(PetscScalar), (size_t)buffSz, db);
-
-	fclose(db);
-
-	ptr = buff;
-
-	// access velocities
-	ierr = DMDAVecGetArray(fs->DA_X, jrctx->gvx, &vx);  CHKERRQ(ierr);
-	ierr = DMDAVecGetArray(fs->DA_Y, jrctx->gvy, &vy);  CHKERRQ(ierr);
-	ierr = DMDAVecGetArray(fs->DA_Z, jrctx->gvz, &vz);  CHKERRQ(ierr);
-
-	nonzero = PETSC_FALSE;
-
-	db = fopen("vec_comp.out","w");
-	fprintf(db, "Velocity comparison database\n");
-
-	//---------------
-	// x-faces
-	//---------------
-	GET_NODE_RANGE(nx, sx, fs->dsx)
-	GET_CELL_RANGE(ny, sy, fs->dsy)
-	GET_CELL_RANGE(nz, sz, fs->dsz)
-
-	tx = fs->dsx.tnods;
-	ty = fs->dsy.tnods-1;
-	tz = fs->dsz.tnods-1;
-
-	START_STD_LOOP
-	{
-		vRef = getPtr(tx, ty, i, j, k, 1, ptr);
-		a    = (*vRef);
-		b    = vx[k][j][i];
-		if(a || b) nonzero = PETSC_TRUE;
-		if(!LAMEM_CHECKEQ(a, b, rtol, _atol))
-		{	fprintf(db, "x rank=%lld  i=%lld  j=%lld  k=%lld  sec=%15.15e par=%15.15e, dif=%15.15e\n",(LLD)rank, (LLD)i, (LLD)j, (LLD)k, a, b, PetscAbsScalar(a-b));
-			fflush(db);
-			cx++;
-		}
-	}
-	END_STD_LOOP
-
-	ptr += tx*ty*tz;
-
-	//---------------
-	// y - faces
-	//---------------
-	GET_CELL_RANGE(nx, sx, fs->dsx)
-	GET_NODE_RANGE(ny, sy, fs->dsy)
-	GET_CELL_RANGE(nz, sz, fs->dsz)
-
-	tx = fs->dsx.tnods-1;
-	ty = fs->dsy.tnods;
-	tz = fs->dsz.tnods-1;
-
-	START_STD_LOOP
-	{
-		vRef = getPtr(tx, ty, i, j, k, 1, ptr);
-		a    = (*vRef);
-		b    = vy[k][j][i];
-		if(a || b) nonzero = PETSC_TRUE;
-		if(!LAMEM_CHECKEQ(a, b, rtol, _atol))
-		{	fprintf(db, "y rank=%lld  i=%lld  j=%lld  k=%lld  sec=%15.15e par=%15.15e, dif=%15.15e\n",(LLD)rank, (LLD)i, (LLD)j, (LLD)k, a, b, PetscAbsScalar(a-b));
-			fflush(db);
-			cy++;
-		}
-	}
-	END_STD_LOOP
-
-	ptr += tx*ty*tz;
-
-	//---------------
-	// z - faces
-	//---------------
-	GET_CELL_RANGE(nx, sx, fs->dsx)
-	GET_CELL_RANGE(ny, sy, fs->dsy)
-	GET_NODE_RANGE(nz, sz, fs->dsz)
-
-	tx = fs->dsx.tnods-1;
-	ty = fs->dsy.tnods-1;
-//	tz = fs->dsz.tnods;
-
-	START_STD_LOOP
-	{
-		vRef = getPtr(tx, ty, i, j, k, 1, ptr);
-		a    = (*vRef);
-		b    = vz[k][j][i];
-		if(a || b) nonzero = PETSC_TRUE;
-		if(!LAMEM_CHECKEQ(a, b, rtol, _atol))
-		{	fprintf(db, "z rank=%lld  i=%lld  j=%lld  k=%lld  sec=%15.15e par=%15.15e, dif=%15.15e\n",(LLD)rank, (LLD)i, (LLD)j, (LLD)k, a, b, PetscAbsScalar(a-b));
-			fflush(db);
-			cz++;
-		}
-	}
-	END_STD_LOOP
-
-//	ptr += tx*ty*tz;
-
-	fclose(db);
-
-	if(nonzero == PETSC_TRUE) PetscPrintf(PETSC_COMM_WORLD, "\n   *** ELEMENTS ARE NONZERO ***\n");
-
-	ierr = PetscPrintf             (PETSC_COMM_WORLD, "\n\n\n");     CHKERRQ(ierr);
-	ierr = PetscSynchronizedPrintf (PETSC_COMM_WORLD, "   *** rank = %lld   cx = %5lld   cy = %5lld   cz = %5lld   ***\n", (LLD)rank, (LLD)cx, (LLD)cy, (LLD)cz); CHKERRQ(ierr);
-	ierr = PetscSynchronizedFlush  (PETSC_COMM_WORLD, PETSC_STDOUT); CHKERRQ(ierr);
-	ierr = PetscPrintf             (PETSC_COMM_WORLD, "\n\n\n");     CHKERRQ(ierr);
-
-
-	ierr = PetscFree(buff);CHKERRQ(ierr);
-
-	// restore vectors
-	ierr = DMDAVecRestoreArray(fs->DA_X, jrctx->gvx, &vx);  CHKERRQ(ierr);
-	ierr = DMDAVecRestoreArray(fs->DA_Y, jrctx->gvy, &vy);  CHKERRQ(ierr);
-	ierr = DMDAVecRestoreArray(fs->DA_Z, jrctx->gvz, &vz);  CHKERRQ(ierr);
-
-	PetscFunctionReturn(0);
-}
 //---------------------------------------------------------------------------

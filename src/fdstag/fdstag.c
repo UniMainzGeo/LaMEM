@@ -762,8 +762,8 @@ PetscErrorCode FDSTAGCreate(
 	fs->nZFace = ncx*ncy*nnz;
 
 	// setup indexing data
-	ierr = DOFIndexCreate(&fs->dofcoupl, fs, IDXCOUPLED);   CHKERRQ(ierr);
-	ierr = DOFIndexCreate(&fs->dofsplit, fs, IDXUNCOUPLED); CHKERRQ(ierr);
+	ierr = DOFIndexCreate(&fs->cdof, fs, IDXCOUPLED);   CHKERRQ(ierr);
+	ierr = DOFIndexCreate(&fs->udof, fs, IDXUNCOUPLED); CHKERRQ(ierr);
 
 	// compute number of local and ghost points
 	nnx = fs->dsx.nnods+2; ncx = fs->dsx.ncels+2;
@@ -815,8 +815,8 @@ PetscErrorCode FDSTAGDestroy(FDSTAG * fs)
 	ierr = Discret1DDestroy(&fs->dsz); CHKERRQ(ierr);
 
 	// destroy indexing data
-	ierr = DOFIndexDestroy(&fs->dofcoupl); CHKERRQ(ierr);
-	ierr = DOFIndexDestroy(&fs->dofsplit); CHKERRQ(ierr);
+	ierr = DOFIndexDestroy(&fs->cdof); CHKERRQ(ierr);
+	ierr = DOFIndexDestroy(&fs->udof); CHKERRQ(ierr);
 
 	PetscFunctionReturn(0);
 }

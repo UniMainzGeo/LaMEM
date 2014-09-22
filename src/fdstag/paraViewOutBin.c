@@ -469,7 +469,7 @@ void PVOutWriteXMLHeader(FILE *fp, const char *file_type)
 //---------------------------------------------------------------------------
 #undef __FUNCT__
 #define __FUNCT__ "PVOutWriteTimeStep"
-PetscErrorCode PVOutWriteTimeStep(PVOut *pvout, JacResCtx *jrctx, PetscScalar ttime, PetscInt tindx)
+PetscErrorCode PVOutWriteTimeStep(PVOut *pvout, JacRes *jr, PetscScalar ttime, PetscInt tindx)
 {
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
@@ -481,7 +481,7 @@ PetscErrorCode PVOutWriteTimeStep(PVOut *pvout, JacResCtx *jrctx, PetscScalar tt
 	ierr = PVOutWritePVTR(pvout, tindx); CHKERRQ(ierr);
 
 	// write sub-domain data .vtr files
-	ierr = PVOutWriteVTR(pvout, jrctx, tindx); CHKERRQ(ierr);
+	ierr = PVOutWriteVTR(pvout, jr, tindx); CHKERRQ(ierr);
 
 	PetscFunctionReturn(0);
 }
@@ -702,7 +702,7 @@ PetscErrorCode PVOutWritePVTR(PVOut *pvout, PetscInt tindx)
 //---------------------------------------------------------------------------
 #undef __FUNCT__
 #define __FUNCT__ "PVOutWriteVTR"
-PetscErrorCode PVOutWriteVTR(PVOut *pvout, JacResCtx *jrctx, PetscInt tindx)
+PetscErrorCode PVOutWriteVTR(PVOut *pvout, JacRes *jr, PetscInt tindx)
 {
 	FILE          *fp;
 	FDSTAG        *fs;
@@ -797,7 +797,7 @@ PetscErrorCode PVOutWriteVTR(PVOut *pvout, JacResCtx *jrctx, PetscInt tindx)
 	for(i = 0; i < pvout->nvec; i++)
 	{
 		// compute each output vector using its own setup function
-		ierr = outvecs[i].OutVecFunct(jrctx, outbuf); CHKERRQ(ierr);
+		ierr = outvecs[i].OutVecFunct(jr, outbuf); CHKERRQ(ierr);
 		// write vector to output file
 		OutBufDump(outbuf);
 	}

@@ -78,7 +78,7 @@ PetscErrorCode OutBufPut3DVecComp(
 // ...................  Vector output function pointer ......................
 //---------------------------------------------------------------------------
 
-typedef PetscErrorCode (*OutVecFunctPtr)(JacResCtx*, OutBuf*);
+typedef PetscErrorCode (*OutVecFunctPtr)(JacRes*, OutBuf*);
 
 //---------------------------------------------------------------------------
 //...........  Multi-component output vector data structure .................
@@ -178,7 +178,7 @@ PetscErrorCode PVOutDestroy(PVOut *pvout);
 void PVOutWriteXMLHeader(FILE *fp, const char *file_type);
 
 // write all time-step output files to disk (PVTR, VTR) and update time step buffer data
-PetscErrorCode PVOutWriteTimeStep(PVOut *pvout, JacResCtx *jrctx, PetscScalar ttime, PetscInt tindx);
+PetscErrorCode PVOutWriteTimeStep(PVOut *pvout, JacRes *jr, PetscScalar ttime, PetscInt tindx);
 
 // store time stamp and step index to the buffer
 PetscErrorCode PVOutUpdateTimeStepBuffer(PVOut *pvout, PetscScalar ttime, PetscInt tindx);
@@ -194,7 +194,7 @@ PetscErrorCode PVOutWritePVD(PVOut *pvout);
 PetscErrorCode PVOutWritePVTR(PVOut *pvout, PetscInt tindx);
 
 // write sequential VTR files on every processor (called every time step)
-PetscErrorCode PVOutWriteVTR(PVOut *pvout, JacResCtx *jrctx, PetscInt tindx);
+PetscErrorCode PVOutWriteVTR(PVOut *pvout, JacRes *jr, PetscInt tindx);
 
 //---------------------------------------------------------------------------
 #endif

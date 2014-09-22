@@ -5,29 +5,25 @@
 #define __nlsolve_h__
 //---------------------------------------------------------------------------
 
-// Enumeration to store Jacobian types
+// Enumeration of Jacobian types
 typedef enum
 {
 	NONE,
-
-	//===============================================
-	// assembled matrices (Jacobian & preconditioner)
-	//===============================================
-
+	//===================
+	// assembled matrices
+	//===================
 	PICARD,   // constant effective coefficients approximation (viscosity, conductivity, stress)
-	ANALYTIC, // analytic Jacobian with full sparsity pattern
-	APPROX,   // analytic Jacobian truncated to Picard sparsity pattern (possibly with diagonal compensation)
-	FDCOLOR,  // finite difference coloring approximation with full sparsity pattern
-	FDAPPROX, // finite difference coloring approximation truncated to Picard sparsity pattern
-
-	//=======================
-	// matrix-free (Jacobian)
-	//=======================
-
+//	ANALYTIC, // analytic Jacobian with full sparsity pattern
+//	APPROX,   // analytic Jacobian truncated to Picard sparsity pattern (possibly with diagonal compensation)
+//	FDCOLOR,  // finite difference coloring approximation with full sparsity pattern
+//	FDAPPROX, // finite difference coloring approximation truncated to Picard sparsity pattern
+	//============
+	// matrix-free
+	//============
 	MF,  // analytic
 	MFFD // built-in finite difference approximation
 
-} JacobianType;
+} JacType;
 
 //---------------------------------------------------------------------------
 typedef struct
@@ -35,15 +31,20 @@ typedef struct
 	// application contexts
 	Mat            Jac;        // Jacobian matrix (SHELL)
 	Mat            MFFD;       // matrix-free finite difference Jacobian
-	FDSTAG        *fs;         // staggered-grid layout
-	BCCtx         *cbc;        // boundary condition context
-	BCCtx         *sbc;        // boundary condition context
-	JacResCtx     *jrctx;      // Jacobian & residual evaluation context
-	JacobianType   jactype;    // actual type of Jacobian operator
 
-} NLCtx;
+	JacRes *jr;      // Jacobian & residual evaluation context
+
+	PCStokes  pc;
+	SNES           snes;   // nonlinear solver
+	SNESLineSearch snesls; // line search context
+	KSP            ksp;
+//	PC             pc;
+
+	JacType   jactype;    // actual type of Jacobian operator
+
+} NLSolver;
 //---------------------------------------------------------------------------
-
+/*
 PetscErrorCode NLCtxCreate(
 	NLCtx       *nlctx,
 	FDSTAG      *fs,
@@ -91,6 +92,6 @@ PetscErrorCode JacApplyPicard(Mat A, Vec x, Vec y);
 //	PetscReal gnorm, PetscReal f, SNESConvergedReason *reason, void *cctx);
 
 //PetscErrorCode SNESPrintConvergedReason(SNES snes);
-
+*/
 //---------------------------------------------------------------------------
 #endif

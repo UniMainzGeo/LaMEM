@@ -19,12 +19,15 @@
 //---------------------------------------------------------------------------
 #undef __FUNCT__
 #define __FUNCT__ "ADVMarkInit"
-PetscErrorCode ADVMarkInit(AdvCtx *actx, FDSTAG *fs, UserContext *user)
+PetscErrorCode ADVMarkInit(AdvCtx *actx, UserContext *user)
 {
-	PetscInt nmarkx, nmarky, nmarkz, nummark;
+	FDSTAG   *fs;
+	PetscInt  nmarkx, nmarky, nmarkz, nummark;
 
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
+
+	fs = actx->fs;
 
 	PetscPrintf(PETSC_COMM_WORLD,"# Starting marker initialization routine\n");
 
@@ -48,27 +51,27 @@ PetscErrorCode ADVMarkInit(AdvCtx *actx, FDSTAG *fs, UserContext *user)
 	if(user->msetup != PARALLEL
 	&& user->msetup != REDUNDANT)
 	{
-		ierr = ADVMarkInitCoord  (actx, fs, user); CHKERRQ(ierr);
-		ierr = ADVMarkRandomNoise(actx, fs, user); CHKERRQ(ierr);
+		ierr = ADVMarkInitCoord  (actx, user); CHKERRQ(ierr);
+		ierr = ADVMarkRandomNoise(actx, user); CHKERRQ(ierr);
 	}
 
 	// initialize marker phase, temperature, etc.
-	if     (user->msetup == PARALLEL)   { ierr = ADVMarkInitFileParallel (actx,     user); CHKERRQ(ierr); }
-	else if(user->msetup == REDUNDANT)  { ierr = ADVMarkInitFileRedundant(actx, fs, user); CHKERRQ(ierr); }
-	else if(user->msetup == DIAPIR)     { ierr = ADVMarkInitDiapir       (actx, fs, user); CHKERRQ(ierr); }
-	else if(user->msetup == BLOCK)      { ierr = ADVMarkInitBlock        (actx, fs, user); CHKERRQ(ierr); }
-	else if(user->msetup == SUBDUCTION) { ierr = ADVMarkInitSubduction   (actx, fs, user); CHKERRQ(ierr); }
-	else if(user->msetup == FOLDING)    { ierr = ADVMarkInitFolding      (actx, fs, user); CHKERRQ(ierr); }
-	else if(user->msetup == DETACHMENT) { ierr = ADVMarkInitDetachment   (actx, fs, user); CHKERRQ(ierr); }
-	else if(user->msetup == SLAB)       { ierr = ADVMarkInitSlab         (actx, fs, user); CHKERRQ(ierr); }
-	else if(user->msetup == SPHERES)    { ierr = ADVMarkInitSpheres      (actx, fs, user); CHKERRQ(ierr); }
+	if     (user->msetup == PARALLEL)   { ierr = ADVMarkInitFileParallel (actx, user); CHKERRQ(ierr); }
+	else if(user->msetup == REDUNDANT)  { ierr = ADVMarkInitFileRedundant(actx, user); CHKERRQ(ierr); }
+	else if(user->msetup == DIAPIR)     { ierr = ADVMarkInitDiapir       (actx, user); CHKERRQ(ierr); }
+	else if(user->msetup == BLOCK)      { ierr = ADVMarkInitBlock        (actx, user); CHKERRQ(ierr); }
+	else if(user->msetup == SUBDUCTION) { ierr = ADVMarkInitSubduction   (actx, user); CHKERRQ(ierr); }
+	else if(user->msetup == FOLDING)    { ierr = ADVMarkInitFolding      (actx, user); CHKERRQ(ierr); }
+	else if(user->msetup == DETACHMENT) { ierr = ADVMarkInitDetachment   (actx, user); CHKERRQ(ierr); }
+	else if(user->msetup == SLAB)       { ierr = ADVMarkInitSlab         (actx, user); CHKERRQ(ierr); }
+	else if(user->msetup == SPHERES)    { ierr = ADVMarkInitSpheres      (actx, user); CHKERRQ(ierr); }
 	else SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER,"# *** Incorrect option for initialization of markers \n");
 
 	// compute host cells for all the markers
-	ierr = ADVMapMarkersCells(actx, fs);
+	ierr = ADVMapMarkersCells(actx);
 
 	// check marker distribution
-	ierr = ADVMarkCheckMarkers(actx, fs, user); CHKERRQ(ierr);
+	ierr = ADVMarkCheckMarkers(actx, user); CHKERRQ(ierr);
 
 	PetscPrintf(PETSC_COMM_WORLD,"# Finished marker initialization routine\n");
 
@@ -77,7 +80,7 @@ PetscErrorCode ADVMarkInit(AdvCtx *actx, FDSTAG *fs, UserContext *user)
 //---------------------------------------------------------------------------
 #undef __FUNCT__
 #define __FUNCT__ "ADVMarkInitCoord"
-PetscErrorCode ADVMarkInitCoord(AdvCtx *actx, FDSTAG *fs, UserContext *user)
+PetscErrorCode ADVMarkInitCoord(AdvCtx *actx, UserContext *user)
 {
 	//=============================================================
 	// WARNING! THIS MUST BE REDONE TO HANDLE VARIABLE MESH SPACING!
@@ -85,13 +88,15 @@ PetscErrorCode ADVMarkInitCoord(AdvCtx *actx, FDSTAG *fs, UserContext *user)
 	//==============================================================
 
 	// generate coordinates of uniformly distributed markers
-
+	FDSTAG      *fs;
 	PetscScalar  mdx, mdy, mdz;
 	PetscScalar  x, y, z;
 	PetscInt     nmarkx, nmarky, nmarkz;
 	PetscScalar  xs[3], xe[3];
 	PetscInt     i, j, k;
 	PetscInt     imark;
+
+	fs = actx->fs;
 
 	// local number of markers
 	nmarkx = fs->dsx.ncels*user->NumPartX;
@@ -149,7 +154,7 @@ PetscErrorCode ADVMarkInitCoord(AdvCtx *actx, FDSTAG *fs, UserContext *user)
 //---------------------------------------------------------------------------
 #undef __FUNCT__
 #define __FUNCT__ "ADVMarkRandomNoise"
-PetscErrorCode ADVMarkRandomNoise(AdvCtx *actx, FDSTAG *fs, UserContext *user)
+PetscErrorCode ADVMarkRandomNoise(AdvCtx *actx, UserContext *user)
 {
 	//=============================================================
 	// WARNING! THIS MUST BE REDONE TO HANDLE VARIABLE MESH SPACING!
@@ -157,7 +162,7 @@ PetscErrorCode ADVMarkRandomNoise(AdvCtx *actx, FDSTAG *fs, UserContext *user)
 	//==============================================================
 
 	// Add random noise to markers if required
-
+	FDSTAG     *fs;
 	PetscInt    imark;
 	PetscInt    AddRandomNoiseParticles;
 	PetscRandom rctx;
@@ -168,6 +173,8 @@ PetscErrorCode ADVMarkRandomNoise(AdvCtx *actx, FDSTAG *fs, UserContext *user)
 
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
+
+	fs = actx->fs;
 
 	AddRandomNoiseParticles = 0;
 
@@ -381,7 +388,7 @@ PetscErrorCode ADVMarkInitFileParallel(AdvCtx *actx, UserContext *user)
 //---------------------------------------------------------------------------
 #undef __FUNCT__
 #define __FUNCT__ "ADVMarkInitFileRedundant"
-PetscErrorCode ADVMarkInitFileRedundant(AdvCtx *actx, FDSTAG *fs, UserContext *user)
+PetscErrorCode ADVMarkInitFileRedundant(AdvCtx *actx, UserContext *user)
 {
 	//=============================================================
 	// WARNING! THIS MUST BE REDONE TO HANDLE VARIABLE MESH SPACING!
@@ -393,7 +400,7 @@ PetscErrorCode ADVMarkInitFileRedundant(AdvCtx *actx, FDSTAG *fs, UserContext *u
 	// THEREFORE! not to be used for large markers files - use parallel read for that!
 	// temperature is assumed to be dimensional
 	// cell-based uniform marker distribution is assumed
-
+	FDSTAG       *fs;
 	int           fd;
 	PetscViewer   view_in;
 	char         *LoadFileName;
@@ -405,6 +412,8 @@ PetscErrorCode ADVMarkInitFileRedundant(AdvCtx *actx, FDSTAG *fs, UserContext *u
 
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
+
+	fs = actx->fs;
 
 	// compile input file name
 	asprintf(&LoadFileName, "./%s/%s.dat",
@@ -549,13 +558,11 @@ PetscErrorCode ADVMarkInitFileRedundant(AdvCtx *actx, FDSTAG *fs, UserContext *u
 //---------------------------------------------------------------------------
 #undef __FUNCT__
 #define __FUNCT__ "ADVMarkInitDiapir"
-PetscErrorCode ADVMarkInitDiapir(AdvCtx *actx, FDSTAG *fs, UserContext *user)
+PetscErrorCode ADVMarkInitDiapir(AdvCtx *actx, UserContext *user)
 {
 	PetscInt imark;
 
 	PetscFunctionBegin;
-
-	if(fs) fs = NULL;
 
 	// Diapir setup - not done - should have some perturbation
 
@@ -578,7 +585,7 @@ PetscErrorCode ADVMarkInitDiapir(AdvCtx *actx, FDSTAG *fs, UserContext *user)
 //---------------------------------------------------------------------------
 #undef __FUNCT__
 #define __FUNCT__ "ADVMarkInitBlock"
-PetscErrorCode ADVMarkInitBlock(AdvCtx *actx, FDSTAG *fs, UserContext *user)
+PetscErrorCode ADVMarkInitBlock(AdvCtx *actx, UserContext *user)
 {
 	// falling block setup
 
@@ -590,8 +597,6 @@ PetscErrorCode ADVMarkInitBlock(AdvCtx *actx, FDSTAG *fs, UserContext *user)
 
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
-
-	if(fs) fs = NULL;
 
 	// print info
 	PetscPrintf(PETSC_COMM_WORLD,"# FALLING BLOCK SETUP \n");
@@ -671,7 +676,7 @@ PetscErrorCode ADVMarkInitBlock(AdvCtx *actx, FDSTAG *fs, UserContext *user)
 //---------------------------------------------------------------------------
 #undef __FUNCT__
 #define __FUNCT__ "ADVMarkInitSubduction"
-PetscErrorCode ADVMarkInitSubduction(AdvCtx *actx, FDSTAG *fs, UserContext *user)
+PetscErrorCode ADVMarkInitSubduction(AdvCtx *actx, UserContext *user)
 {
 	// subduction setup with air
 
@@ -681,8 +686,6 @@ PetscErrorCode ADVMarkInitSubduction(AdvCtx *actx, FDSTAG *fs, UserContext *user
 	PetscInt    imark, nz;
 
 	PetscFunctionBegin;
-
-	if(fs) fs = NULL;
 
 	// print info
 	PetscPrintf(PETSC_COMM_WORLD,"# SUBDUCTION WITH STICKY AIR SETUP \n");
@@ -748,7 +751,7 @@ PetscErrorCode ADVMarkInitSubduction(AdvCtx *actx, FDSTAG *fs, UserContext *user
 //---------------------------------------------------------------------------
 #undef __FUNCT__
 #define __FUNCT__ "ADVMarkInitFolding"
-PetscErrorCode ADVMarkInitFolding(AdvCtx *actx, FDSTAG *fs, UserContext *user)
+PetscErrorCode ADVMarkInitFolding(AdvCtx *actx, UserContext *user)
 {
 	// multilayer folding setup (Zagros)
 
@@ -757,8 +760,6 @@ PetscErrorCode ADVMarkInitFolding(AdvCtx *actx, FDSTAG *fs, UserContext *user)
 	PetscScalar zbot[10], ztop[10];
 
 	PetscFunctionBegin;
-
-	if(fs) fs = NULL;
 
 	// print info
 	PetscPrintf(PETSC_COMM_WORLD,"# MULTILAYER FOLDING SETUP \n");
@@ -833,7 +834,7 @@ PetscErrorCode ADVMarkInitFolding(AdvCtx *actx, FDSTAG *fs, UserContext *user)
 //---------------------------------------------------------------------------
 #undef __FUNCT__
 #define __FUNCT__ "ADVMarkInitDetachment"
-PetscErrorCode ADVMarkInitDetachment(AdvCtx *actx, FDSTAG *fs, UserContext *user)
+PetscErrorCode ADVMarkInitDetachment(AdvCtx *actx, UserContext *user)
 {
 	// 1-layer over detachment with two linear shaped perturbation (Grasemann & Schmalholz 2012)
 	// one perturbation is fixed in position, the other one's position is varied with -Heterogeneity_Offset
@@ -844,8 +845,6 @@ PetscErrorCode ADVMarkInitDetachment(AdvCtx *actx, FDSTAG *fs, UserContext *user
 	PetscBool   flg, DisplayInfo;
 
 	PetscFunctionBegin;
-
-	if(fs) fs = NULL;
 
 	// print info
 	PetscPrintf(PETSC_COMM_WORLD,"# ONE-LAYER OVER DETACHMENT WITH 2 LINEAR PERTURBATIONS SETUP \n");
@@ -906,7 +905,7 @@ PetscErrorCode ADVMarkInitDetachment(AdvCtx *actx, FDSTAG *fs, UserContext *user
 //---------------------------------------------------------------------------
 #undef __FUNCT__
 #define __FUNCT__ "ADVMarkInitSlab"
-PetscErrorCode ADVMarkInitSlab(AdvCtx *actx, FDSTAG *fs, UserContext *user)
+PetscErrorCode ADVMarkInitSlab(AdvCtx *actx, UserContext *user)
 {
 	// slab detachment (Thieulot et al. 2014)
 	// domain parameters should be given in params file because they are needed to create the grid
@@ -921,8 +920,6 @@ PetscErrorCode ADVMarkInitSlab(AdvCtx *actx, FDSTAG *fs, UserContext *user)
 	PetscScalar dair  = 0.08; // thickness air     L = 40 km
 
 	PetscFunctionBegin;
-
-	if(fs) fs = NULL;
 
 	// print info
 	PetscPrintf(PETSC_COMM_WORLD,"# SLAB DETACHMENT SETUP \n");
@@ -972,7 +969,7 @@ PetscErrorCode ADVMarkInitSlab(AdvCtx *actx, FDSTAG *fs, UserContext *user)
 //---------------------------------------------------------------------------
 #undef __FUNCT__
 #define __FUNCT__ "ADVMarkInitSpheres"
-PetscErrorCode ADVMarkInitSpheres(AdvCtx *actx, FDSTAG *fs, UserContext *user)
+PetscErrorCode ADVMarkInitSpheres(AdvCtx *actx, UserContext *user)
 {
 	// multiple falling spheres
 
@@ -981,7 +978,6 @@ PetscErrorCode ADVMarkInitSpheres(AdvCtx *actx, FDSTAG *fs, UserContext *user)
 	PetscScalar x = 0.0, y = 0.0, z = 0.0;
 	PetscScalar xc[20], yc[20], zc[20];
 
-	if(fs)   fs   = NULL;
 	if(user) user = NULL;
 
  	PetscFunctionBegin;
@@ -1031,10 +1027,10 @@ PetscErrorCode ADVMarkInitSpheres(AdvCtx *actx, FDSTAG *fs, UserContext *user)
 //---------------------------------------------------------------------------
 #undef __FUNCT__
 #define __FUNCT__ "ADVMarkCheckMarkers"
-PetscErrorCode ADVMarkCheckMarkers(AdvCtx *actx, FDSTAG *fs, UserContext *user)
+PetscErrorCode ADVMarkCheckMarkers(AdvCtx *actx, UserContext *user)
 {
  	// check initial marker distribution
-
+	FDSTAG      *fs;
 	PetscScalar *X;
 	PetscBool    error;
 	PetscScalar  xs, ys, zs;
@@ -1044,6 +1040,8 @@ PetscErrorCode ADVMarkCheckMarkers(AdvCtx *actx, FDSTAG *fs, UserContext *user)
 
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
+
+	fs = actx->fs;
 
 	// get maximum Phase
 	maxid = user->num_phases - 1;

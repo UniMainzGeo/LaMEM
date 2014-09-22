@@ -82,21 +82,17 @@ PetscErrorCode LaMEMLib_FDSTAG(PetscBool InputParamFile, const char *ParamFile, 
 	PetscLogDouble     cputime_end, cputime_start_nonlinear;
 
 	AdvCtx         actx;   // advection context
-	NLCtx          nlctx;  // nonlinear solver context
+//	NLCtx          nlctx;  // nonlinear solver context
 	FDSTAG         fs;     // staggered-grid layout
-	JacResCtx      jrctx;  // fdstag Jacobian & residual context
+	JacRes         jr;     // fdstag Jacobian & residual context
 	PVOut          pvout;  // fdstag paraview output driver
 	BCCtx          cbc;    // boundary condition context (coupled)
-	BCCtx          sbc;    // boundary condition context (split)
+	BCCtx          ubc;    // boundary condition context (uncoupled)
 
-	SNES           snes;   // nonlinear solver
-	SNESLineSearch snesls; // line search context
 //	Vec            res;    // residual operator
 //	Vec            sol;    // nonlinear solution vector
 //	BlockMat       bmat;   // block recinditioner matrix
 
-	KSP            ksp;
-	PC             pc;
 
 //	PetscViewer  viewer;
 //	PetscBool    do_restart;
@@ -321,22 +317,22 @@ PetscErrorCode LaMEMLib_FDSTAG(PetscBool InputParamFile, const char *ParamFile, 
 	if(user.SavePartitioning) { ierr = FDSTAGProcPartitioning(&fs, &user); CHKERRQ(ierr); }
 
 	// create boundary condition context
-	ierr = FDSTAGCreateBCCtx(&cbc, &fs); CHKERRQ(ierr);
-	ierr = FDSTAGCreateBCCtx(&sbc, &fs); CHKERRQ(ierr);
-
-	// create Jacobian & residual evaluation context
-	ierr = FDSTAGCreateJacResCtx(&fs, &jrctx, user.num_phases, 0); CHKERRQ(ierr);
+	ierr = BCCreate(&cbc, &fs); CHKERRQ(ierr);
+	ierr = BCCreate(&ubc, &fs); CHKERRQ(ierr);
 
 	// initialize boundary constraint vectors
-	ierr = FDSTAGInitBC(&cbc, &fs, IDXCOUPLED);   CHKERRQ(ierr);
-	ierr = FDSTAGInitBC(&sbc, &fs, IDXUNCOUPLED); CHKERRQ(ierr);
+	ierr = BCInit(&cbc, &fs, IDXCOUPLED);   CHKERRQ(ierr);
+	ierr = BCInit(&ubc, &fs, IDXUNCOUPLED); CHKERRQ(ierr);
+
+	// create Jacobian & residual evaluation context
+	ierr = JacResCreate(&jr, &fs, &cbc, &ubc, user.num_phases, 0); CHKERRQ(ierr);
 
 	// zero out global solution vector
-	ierr = VecZeroEntries(jrctx.gsol); CHKERRQ(ierr);
+	ierr = VecZeroEntries(jr.gsol); CHKERRQ(ierr);
 
 	// initialize scaling object
 	ierr = ScalingCreate(
-		&jrctx.scal,
+		&jr.scal,
 		user.DimensionalUnits,
 		user.Characteristic.kg,
 		user.Characteristic.Time,
@@ -345,27 +341,27 @@ PetscErrorCode LaMEMLib_FDSTAG(PetscBool InputParamFile, const char *ParamFile, 
 		user.Characteristic.Force); CHKERRQ(ierr);
 
 	// WARNING! NO TEMPERATURE! Set local temperature vector to unity (ad-hoc)
-	ierr = VecSet(jrctx.lT, 1.0); CHKERRQ(ierr);
+	ierr = VecSet(jr.lT, 1.0); CHKERRQ(ierr);
 
 	// initialize material properties
-	ierr = FDSTAGInitMaterialProps(&jrctx, &user); CHKERRQ(ierr);
+	ierr = FDSTAGInitMaterialProps(&jr, &user); CHKERRQ(ierr);
 
 	// initialize material parameter limits
-	ierr = SetMatParLim(&jrctx.matLim, &user); CHKERRQ(ierr);
+	ierr = SetMatParLim(&jr.matLim, &user); CHKERRQ(ierr);
 
 	// initialize gravity acceleration
-	jrctx.grav[0] = 0.0;
-	jrctx.grav[1] = 0.0;
-	jrctx.grav[2] = user.Gravity;
+	jr.grav[0] = 0.0;
+	jr.grav[1] = 0.0;
+	jr.grav[2] = user.Gravity;
 
 	// create output object for all requested output variables
-	ierr = PVOutCreate(&pvout, &fs, &jrctx.scal, user.OutputFile); CHKERRQ(ierr);
+	ierr = PVOutCreate(&pvout, &fs, &jr.scal, user.OutputFile); CHKERRQ(ierr);
 
 	// create advection context
-	ierr = ADVCreate(&actx); CHKERRQ(ierr);
+	ierr = ADVCreate(&actx, &fs); CHKERRQ(ierr);
 
 	// initialize markers
-	ierr = ADVMarkInit(&actx, &fs, &user); CHKERRQ(ierr);
+	ierr = ADVMarkInit(&actx, &user); CHKERRQ(ierr);
 
 	//================================
 	// SETUP JACOBIAN & PRECONDITIONER
@@ -383,7 +379,7 @@ PetscErrorCode LaMEMLib_FDSTAG(PetscBool InputParamFile, const char *ParamFile, 
 	//=======================
 	// SETUP NONLINEAR SOLVER
 	//=======================
-
+/*
 	// create nonlinear solver
 	ierr = SNESCreate(PETSC_COMM_WORLD, &snes); CHKERRQ(ierr);
 
@@ -430,7 +426,7 @@ PetscErrorCode LaMEMLib_FDSTAG(PetscBool InputParamFile, const char *ParamFile, 
 //	ierr = PCSetType(pc, PCSHELL);                CHKERRQ(ierr);
 //	ierr = PCShellSetContext(pc, &bmat);          CHKERRQ(ierr);
 //	ierr = PCShellSetApply(pc, &ApplyFieldSplit); CHKERRQ(ierr);
-
+*/
 	//===============
 	// TIME STEP LOOP
 	//===============
@@ -458,16 +454,14 @@ PetscErrorCode LaMEMLib_FDSTAG(PetscBool InputParamFile, const char *ParamFile, 
 		//==========================================================================================
 
 		// set time step
-		jrctx.dt = user.dt;
+		jr.dt = user.dt;
 
-		// copy phase ratios
-//		ierr = FDSTAGInitPhaseRatios (&fs, &jrctx, &user); CHKERRQ(ierr);
 
 		// project properties from markers to grid
-		ierr = ADVProjHistMarkGrid(&actx, &fs, &jrctx); CHKERRQ(ierr);
+		ierr = ADVProjHistMarkGrid(&actx, &jr); CHKERRQ(ierr);
 
 		// compute inverse elastic viscosities
-		ierr = FDSTAGetI2Gdt(&fs, &jrctx); CHKERRQ(ierr);
+		ierr = JacResGetI2Gdt(&jr); CHKERRQ(ierr);
 
 		//=========================================================================================
 		//	NONLINEAR THERMO-MECHANICAL SOLVER
@@ -493,7 +487,7 @@ PetscErrorCode LaMEMLib_FDSTAG(PetscBool InputParamFile, const char *ParamFile, 
 			PetscTime(&cputime_start_nonlinear);
 
 			// solve nonlinear system with SNES
-			ierr = SNESSolve(snes, NULL, jrctx.gsol); CHKERRQ(ierr);
+//			ierr = SNESSolve(snes, NULL, jrctx.gsol); CHKERRQ(ierr);
 
 			// print analyze convergence/divergence reason
 //			ierr = SNESPrintConvergedReason(snes); CHKERRQ(ierr);
@@ -510,18 +504,18 @@ PetscErrorCode LaMEMLib_FDSTAG(PetscBool InputParamFile, const char *ParamFile, 
 		else
 		{
 			// assemble matrix & rhs
-			ierr = VecSet(jrctx.gsol, 0.0); CHKERRQ(ierr);
-			ierr = VecSet(jrctx.gres, 0.0); CHKERRQ(ierr);
+//			ierr = VecSet(jrctx.gsol, 0.0); CHKERRQ(ierr);
+//			ierr = VecSet(jrctx.gres, 0.0); CHKERRQ(ierr);
 
-			ierr = FDSTAGFormResidual(NULL, jrctx.gsol, jrctx.gres, &nlctx); CHKERRQ(ierr);
+//			ierr = FDSTAGFormResidual(NULL, jrctx.gsol, jrctx.gres, &nlctx); CHKERRQ(ierr);
 
-			ierr = VecScale(jrctx.gres, -1.0); CHKERRQ(ierr);
+//			ierr = VecScale(jrctx.gres, -1.0); CHKERRQ(ierr);
 
 //			ierr = BlockMatCompute(&bmat, &fs, &sbc, &jrctx); CHKERRQ(ierr);
 
 //			ierr = PowellHestenes(&bmat, jrctx.gres, jrctx.gsol); CHKERRQ(ierr);
 
-			ierr = FDSTAGFormResidual(NULL, jrctx.gsol, jrctx.gres, &nlctx); CHKERRQ(ierr);
+//			ierr = FDSTAGFormResidual(NULL, jrctx.gsol, jrctx.gres, &nlctx); CHKERRQ(ierr);
 
 		}
 
@@ -683,7 +677,7 @@ PetscErrorCode LaMEMLib_FDSTAG(PetscBool InputParamFile, const char *ParamFile, 
 //			}
 
 			// Paraview output FDSTAG fields
-			ierr = PVOutWriteTimeStep(&pvout, &jrctx, 0.0, itime); CHKERRQ(ierr);
+			ierr = PVOutWriteTimeStep(&pvout, &jr, 0.0, itime); CHKERRQ(ierr);
 
 			// clean up
 			if(DirectoryName) free(DirectoryName);
@@ -766,15 +760,15 @@ PetscErrorCode LaMEMLib_FDSTAG(PetscBool InputParamFile, const char *ParamFile, 
 	}
 
 
-	ierr = FDSTAGDestroy(&fs);                CHKERRQ(ierr);
-	ierr = FDSTAGDestroyBCCtx(&cbc);          CHKERRQ(ierr);
-	ierr = FDSTAGDestroyBCCtx(&sbc);          CHKERRQ(ierr);
-	ierr = FDSTAGDestroyJacResCtx(&jrctx);    CHKERRQ(ierr);
-	ierr = PVOutDestroy(&pvout);              CHKERRQ(ierr);
-//	ierr = BlockMatDestroy(&bmat);            CHKERRQ(ierr);
-	ierr = NLCtxDestroy(&nlctx);              CHKERRQ(ierr);
-	ierr = SNESDestroy(&snes);                CHKERRQ(ierr);
-	ierr = ADVDestroy(&actx);                 CHKERRQ(ierr);
+	ierr = FDSTAGDestroy(&fs);    CHKERRQ(ierr);
+	ierr = BCDestroy(&cbc);       CHKERRQ(ierr);
+	ierr = BCDestroy(&ubc);       CHKERRQ(ierr);
+	ierr = JacResDestroy(&jr);    CHKERRQ(ierr);
+	ierr = PVOutDestroy(&pvout);  CHKERRQ(ierr);
+	ierr = ADVDestroy(&actx);     CHKERRQ(ierr);
+
+//	ierr = NLCtxDestroy(&nlctx);              CHKERRQ(ierr);
+//	ierr = SNESDestroy(&snes);                CHKERRQ(ierr);
 
 //	ierr = VecDestroy(&sol);                  CHKERRQ(ierr);
 //	ierr = VecDestroy(&res);                  CHKERRQ(ierr);

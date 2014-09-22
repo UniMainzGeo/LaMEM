@@ -90,7 +90,7 @@ PetscErrorCode BMatCreate(BMat *bmat,
 	M[3] = bmat->App;
 
 	// create nested matrix
-	ierr = MatCreateNest(PETSC_COMM_WORLD, 2, PETSC_NULL, 2, PETSC_NULL, (const Mat*)M, &bmat->P); CHKERRQ(ierr);
+	ierr = MatCreateNest(PETSC_COMM_WORLD, 2, PETSC_NULL, 2, PETSC_NULL, (const Mat*)M, &bmat->A); CHKERRQ(ierr);
 
 	PetscFunctionReturn(0);
 }
@@ -106,7 +106,7 @@ PetscErrorCode BMatDestroy(BMat *bmat)
 	ierr = MatDestroy(&bmat->Avp); CHKERRQ(ierr);
 	ierr = MatDestroy(&bmat->Apv); CHKERRQ(ierr);
 	ierr = MatDestroy(&bmat->App); CHKERRQ(ierr);
-	ierr = MatDestroy(&bmat->P);   CHKERRQ(ierr);
+	ierr = MatDestroy(&bmat->A);   CHKERRQ(ierr);
 
 	PetscFunctionReturn(0);
 }
@@ -141,8 +141,8 @@ PetscErrorCode BMatAssemble(BMat *bmat, BCCtx *bc)
 	ierr = PMatAssemble(bmat->App, bc->numSPCPres, bc->SPCListPres); CHKERRQ(ierr);
 
 	// assemble block matrix
-	ierr = MatAssemblyBegin(bmat->P, MAT_FINAL_ASSEMBLY); CHKERRQ(ierr);
-	ierr = MatAssemblyEnd  (bmat->P, MAT_FINAL_ASSEMBLY); CHKERRQ(ierr);
+	ierr = MatAssemblyBegin(bmat->A, MAT_FINAL_ASSEMBLY); CHKERRQ(ierr);
+	ierr = MatAssemblyEnd  (bmat->A, MAT_FINAL_ASSEMBLY); CHKERRQ(ierr);
 
 	PetscFunctionReturn(0);
 }
@@ -180,7 +180,7 @@ PetscErrorCode PMatCreateMonolithic(
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
 
-	dof = &fs->dofcoupl;
+	dof = &fs->cdof;
 
 	// get number of local rows & global index of the first row
 	start = dof->istart;
@@ -364,11 +364,9 @@ PetscErrorCode PMatCreateMonolithic(
 #undef __FUNCT__
 #define __FUNCT__ "PMatAssembleMonolithic"
 PetscErrorCode PMatAssembleMonolithic(
-	FDSTAG     *fs,
-	BCCtx      *bc,
-	JacResCtx  *jrctx,
-	Mat         P,
-	Mat         M)
+	JacRes  *jr,
+	Mat      P,
+	Mat      M)
 {
 	//======================================================================
 	// Assemble effective viscosity preconditioning matrix
@@ -383,6 +381,8 @@ PetscErrorCode PMatAssembleMonolithic(
 	// M - inverse viscosity matrix (computed in this function)
 	//======================================================================
 
+	FDSTAG     *fs;
+	BCCtx      *bc;
 	PetscInt    idx[7];
 	PetscScalar v[49];
 	PetscInt    iter, i, j, k, nx, ny, nz, sx, sy, sz;
@@ -398,7 +398,9 @@ PetscErrorCode PMatAssembleMonolithic(
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
 
-	dof = &fs->dofcoupl;
+	fs  = jr->fs;
+	bc  = jr->cbc;   // coupled
+	dof = &fs->cdof; // coupled
 
 	// clear matrix coefficients
 	ierr = MatZeroEntries(P); CHKERRQ(ierr);
@@ -428,8 +430,8 @@ PetscErrorCode PMatAssembleMonolithic(
 	START_STD_LOOP
 	{
 		// get shear & inverse bulk viscosities
-		eta  = jrctx->svCell[iter].svDev.eta;
-		IKdt = jrctx->svCell[iter].svBulk.IKdt;
+		eta  = jr->svCell[iter].svDev.eta;
+		IKdt = jr->svCell[iter].svBulk.IKdt;
 		iter++;
 
 		// get mesh steps
@@ -499,7 +501,7 @@ PetscErrorCode PMatAssembleMonolithic(
 	START_STD_LOOP
 	{
 		// get viscosity
-		eta = jrctx->svXYEdge[iter++].svDev.eta;
+		eta = jr->svXYEdge[iter++].svDev.eta;
 
 		// get mesh steps
 		dx = SIZE_NODE(i, sx, fs->dsx);
@@ -550,7 +552,7 @@ PetscErrorCode PMatAssembleMonolithic(
 	START_STD_LOOP
 	{
 		// get viscosity
-		eta = jrctx->svXZEdge[iter++].svDev.eta;
+		eta = jr->svXZEdge[iter++].svDev.eta;
 
 		// get mesh steps
 		dx = SIZE_NODE(i, sx, fs->dsx);
@@ -601,7 +603,7 @@ PetscErrorCode PMatAssembleMonolithic(
 	START_STD_LOOP
 	{
 		// get viscosity
-		eta = jrctx->svYZEdge[iter++].svDev.eta;
+		eta = jr->svYZEdge[iter++].svDev.eta;
 
 		// get mesh steps
 		dy = SIZE_NODE(j, sy, fs->dsy);
@@ -677,7 +679,7 @@ PetscErrorCode PMatCreateBlock(
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
 
-	dof = &fs->dofsplit;
+	dof = &fs->udof; // uncoupled
 
 	// get number of local rows & global index of the first row
 	lnv    = dof->numdof;
@@ -894,9 +896,7 @@ PetscErrorCode PMatCreateBlock(
 #undef __FUNCT__
 #define __FUNCT__ "PMatAssembleBlock"
 PetscErrorCode PMatAssembleBlock(
-	FDSTAG      *fs,
-	BCCtx       *bc,
-	JacResCtx   *jrctx,
+	JacRes      *jr,
 	BMat        *P,
 	Mat          M,
 	PetscScalar  pgamma)
@@ -914,7 +914,8 @@ PetscErrorCode PMatAssembleBlock(
 	// Avv - will contain unmodified velocity operator
 	// kappa = 1/(K*dt) + 1/eta
 	//======================================================================
-
+	FDSTAG      *fs;
+	BCCtx       *bc;
 	PetscInt    idx[7];
 	PetscScalar v[49], a[36], d[6], g[6];
 	PetscInt    iter, i, j, k, nx, ny, nz, sx, sy, sz;
@@ -930,7 +931,9 @@ PetscErrorCode PMatAssembleBlock(
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
 
-	dof = &fs->dofsplit;
+	fs  = jr->fs;
+	bc  = jr->ubc;   // uncoupled
+	dof = &fs->udof; // uncoupled
 
 	// clear matrix coefficients
 	ierr = BMatClearSubMat(P); CHKERRQ(ierr);
@@ -960,8 +963,8 @@ PetscErrorCode PMatAssembleBlock(
 	START_STD_LOOP
 	{
 		// get shear & inverse bulk viscosities
-		eta  = jrctx->svCell[iter].svDev.eta;
-		IKdt = jrctx->svCell[iter].svBulk.IKdt;
+		eta  = jr->svCell[iter].svDev.eta;
+		IKdt = jr->svCell[iter].svBulk.IKdt;
 
 		// get mesh steps
 		dx = SIZE_CELL(i, sx, fs->dsx);
@@ -1050,7 +1053,7 @@ PetscErrorCode PMatAssembleBlock(
 	START_STD_LOOP
 	{
 		// get viscosity
-		eta = jrctx->svXYEdge[iter++].svDev.eta;
+		eta = jr->svXYEdge[iter++].svDev.eta;
 
 		// get mesh steps
 		dx = SIZE_NODE(i, sx, fs->dsx);
@@ -1101,7 +1104,7 @@ PetscErrorCode PMatAssembleBlock(
 	START_STD_LOOP
 	{
 		// get viscosity
-		eta = jrctx->svXZEdge[iter++].svDev.eta;
+		eta = jr->svXZEdge[iter++].svDev.eta;
 
 		// get mesh steps
 		dx = SIZE_NODE(i, sx, fs->dsx);
@@ -1152,7 +1155,7 @@ PetscErrorCode PMatAssembleBlock(
 	START_STD_LOOP
 	{
 		// get viscosity
-		eta = jrctx->svYZEdge[iter++].svDev.eta;
+		eta = jr->svYZEdge[iter++].svDev.eta;
 
 		// get mesh steps
 		dy = SIZE_NODE(j, sy, fs->dsy);

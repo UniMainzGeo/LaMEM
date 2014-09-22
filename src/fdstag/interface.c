@@ -64,7 +64,7 @@ PetscErrorCode FDSTAGSetCoordDMDA(FDSTAG *fs, DM da)
 //---------------------------------------------------------------------------
 #undef __FUNCT__
 #define __FUNCT__ "FDSTAGInitMaterialProps"
-PetscErrorCode FDSTAGInitMaterialProps(JacResCtx *jrctx, UserContext *usr)
+PetscErrorCode FDSTAGInitMaterialProps(JacRes *jr, UserContext *usr)
 {
 	// initialize material properties in the FDSTAG data structures
 
@@ -77,15 +77,15 @@ PetscErrorCode FDSTAGInitMaterialProps(JacResCtx *jrctx, UserContext *usr)
 	PetscFunctionBegin;
 
 	// access phase properties in user context variables
-	phases          = jrctx->phases;
+	phases          = jr->phases;
 	PhaseProperties = &usr->PhaseProperties;
-	matLim          = &jrctx->matLim;
+	matLim          = &jr->matLim;
 
 	// clear phase properties array
-	memset(phases, 0, sizeof(Material_t)*(size_t)jrctx->numPhases);
+	memset(phases, 0, sizeof(Material_t)*(size_t)jr->numPhases);
 
 	// copy phase parameters
-	for(i = 0; i < jrctx->numPhases; i++)
+	for(i = 0; i < jr->numPhases; i++)
 	{
 		// density and power law parameters
 		phases[i].ID     = i;
@@ -234,7 +234,6 @@ PetscErrorCode FDSTAGInitPhaseRatios(FDSTAG *fs, JacResCtx *jrctx, UserContext *
 
 	PetscFunctionReturn(0);
 }
-*/
 //---------------------------------------------------------------------------
 #undef __FUNCT__
 #define __FUNCT__ "FDSTAGProjectEffVisc"
@@ -528,4 +527,5 @@ PetscErrorCode FDSTAGCopySolution(FDSTAG *fs, JacResCtx *jrctx, UserContext *usr
 
 	PetscFunctionReturn(0);
 }
+*/
 //---------------------------------------------------------------------------

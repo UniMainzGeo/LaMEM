@@ -143,8 +143,8 @@ typedef struct
 	DM DA_XY, DA_XZ, DA_YZ; // edges
 	DM DA_X,  DA_Y,  DA_Z;  // face velocities & residuals
 
-	DOFIndex dofcoupl;
-	DOFIndex dofsplit;
+	DOFIndex cdof; // coupled indexing
+	DOFIndex udof; // uncoupled (block) indexing
 
 	// local number of local grid points
 	PetscInt nCells;  // cells

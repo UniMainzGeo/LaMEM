@@ -7,6 +7,11 @@
 // FDSTAG Jacobian and residual evaluation context
 typedef struct
 {
+	// external handles
+	FDSTAG *fs;  // staggered-grid layout
+	BCCtx  *cbc; // boundary condition context (coupled)
+	BCCtx  *ubc; // boundary condition context (uncoupled)
+
 	// coupled solution & residual vectors
 	Vec gsol, gres; // global
 //	Vec lsol, lres; // local (ghosted)
@@ -34,7 +39,7 @@ typedef struct
 //	Vec gk, ghxy, ghxz, ghyz; // global
 //	Vec lk, lhxy, lhxz, lhyz; // local (ghosted)
 
-	VecScatter g2lctx; // global to local scatter context
+//	VecScatter g2lctx; // global to local scatter context
 
 	// solution variables
 	SolVarCell  *svCell;   // cell centers
@@ -57,33 +62,35 @@ typedef struct
 	// scaling
 	Scaling scal;
 
-} JacResCtx;
+} JacRes;
 //---------------------------------------------------------------------------
 
 // create residual & Jacobian evaluation context
-PetscErrorCode FDSTAGCreateJacResCtx(
-	FDSTAG    *fs,
-	JacResCtx *jrctx,
-	PetscInt   numPhases,
-	PetscInt   numSoft);
+PetscErrorCode JacResCreate(
+	JacRes   *jr,
+	FDSTAG   *fs,
+	BCCtx    *cbc,
+	BCCtx    *ubc,
+	PetscInt  numPhases,
+	PetscInt  numSoft);
 
 // destroy residual & Jacobian evaluation context
-PetscErrorCode FDSTAGDestroyJacResCtx(JacResCtx *jrctx);
+PetscErrorCode JacResDestroy(JacRes *jr);
 
 // compute effective inverse elastic viscosity
-PetscErrorCode FDSTAGetI2Gdt(FDSTAG *fs, JacResCtx *jrctx);
+PetscErrorCode JacResGetI2Gdt(JacRes *jr);
 
 // evaluate effective strain rate components in basic nodes
-PetscErrorCode FDSTAGetEffStrainRate(FDSTAG *fs, JacResCtx *jrctx);
+PetscErrorCode JacResGetEffStrainRate(JacRes *jr);
 
 // compute nonlinear residual vectors
-PetscErrorCode FDSTAGetResidual(FDSTAG *fs, JacResCtx *jrctx);
+PetscErrorCode JacResGetResidual(JacRes *jr);
 
 // copy solution from global to local vectors, enforce boundary constraints
-PetscErrorCode FDSTAGCopySol(FDSTAG *fs, BCCtx *bc, JacResCtx *jrctx, Vec x);
+PetscErrorCode JacResCopySol(JacRes *jr, Vec x);
 
 // copy residuals to global vector
-PetscErrorCode FDSTAGCopyRes(FDSTAG *fs, BCCtx *bc, JacResCtx *jrctx, Vec f);
+PetscErrorCode JacResCopyRes(JacRes *jr, Vec f);
 
 //---------------------------------------------------------------------------
 
@@ -91,7 +98,6 @@ PetscErrorCode FDSTAGCopyRes(FDSTAG *fs, BCCtx *bc, JacResCtx *jrctx, Vec f);
 PetscErrorCode SetMatParLim(MatParLim *matLim, UserContext *usr);
 
 //---------------------------------------------------------------------------
-
 
 /*
 PetscErrorCode FDSTAGScatterSol(FDSTAG *fs, JacResCtx *jrctx);

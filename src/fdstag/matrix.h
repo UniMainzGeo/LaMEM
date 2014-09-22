@@ -14,9 +14,9 @@ PetscErrorCode PMatAssemble(Mat P, PetscInt numRows, const PetscInt rows[]);
 
 typedef struct
 {
+	Mat A;        // block matrix
 	Mat Avv, Avp; // velocity sub-matrices
 	Mat Apv, App; // pressure sub-matrices
-	Mat P;        // block matrix
 
 } BMat;
 
@@ -42,11 +42,9 @@ PetscErrorCode PMatCreateMonolithic(
 	Mat    *M);
 
 PetscErrorCode PMatAssembleMonolithic(
-	FDSTAG     *fs,
-	BCCtx      *bc,
-	JacResCtx  *jrctx,
-	Mat         P,
-	Mat         M);
+	JacRes *jr,
+	Mat     P,
+	Mat     M);
 
 //---------------------------------------------------------------------------
 
@@ -56,9 +54,7 @@ PetscErrorCode PMatCreateBlock(
 	Mat    *M);
 
 PetscErrorCode PMatAssembleBlock(
-	FDSTAG      *fs,
-	BCCtx       *bc,
-	JacResCtx   *jrctx,
+	JacRes      *jr,
 	BMat        *P,
 	Mat          M,
 	PetscScalar  pgamma);

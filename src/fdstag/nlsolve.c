@@ -13,7 +13,7 @@
 #include "nlsolve.h"
 #include "interface.h"
 #include "Assembly_FDSTAG.h"
-#include "LaMEMLib_FDSTAG_private.h"
+//#include "LaMEMLib_FDSTAG_private.h"
 #include "Utils.h"
 //---------------------------------------------------------------------------
 /*
@@ -48,7 +48,7 @@ PetscErrorCode NLCtxCreate(
 
 	PetscFunctionReturn(0);
 }
-*/
+
 //---------------------------------------------------------------------------
 #undef __FUNCT__
 #define __FUNCT__ "NLCtxDestroy"
@@ -94,28 +94,6 @@ PetscErrorCode FDSTAGFormResidual(SNES snes, Vec x, Vec f, void *ctx)
 
 	PetscFunctionReturn(0);
 
-/*
- 	NLCtx       *nlctx = (NLCtx*)ctx;
-	BlockMat    *bmat  = nlctx->bmat;
-	FDSTAG      *fs    = nlctx->fs;
-	JacResCtx   *jrctx = nlctx->jrctx;
-	UserContext *user  = nlctx->user;
-
-	// split monolithic solution vector into velocity and pressure blocks
-	ierr = BlockMatMonolithicToBlock(bmat, x); CHKERRQ(ierr);
-	// copy solution into FDSTAG data structures
-	ierr = FDSTAGCopySolution(fs, jrctx, user, bmat->wv, bmat->wp); CHKERRQ(ierr);
-	// set boundary ghost points
-//	ierr = FDSTAGSetBCGhost(fs, jrctx); CHKERRQ(ierr);
-	// compute effective strain rate
-	ierr = FDSTAGetEffStrainRate(fs, jrctx); CHKERRQ(ierr);
-	// compute residual
-	ierr = FDSTAGetResidual(fs, jrctx); CHKERRQ(ierr);
-	// copy residual into velocity and pressure blocks
-	ierr = FDSTAGCopyResidual(fs, jrctx, user, bmat->wv, bmat->wp);
-	// assemble monolithic residual vector from velocity and pressure blocks
-	ierr = BlockMatBlockToMonolithic(bmat, f); CHKERRQ(ierr);
-*/
 }
 //---------------------------------------------------------------------------
 #undef __FUNCT__
@@ -274,6 +252,8 @@ PetscErrorCode JacApplyPicard(Mat A, Vec x, Vec y)
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
+*/
+
 /*
 //---------------------------------------------------------------------------
 #undef __FUNCT__

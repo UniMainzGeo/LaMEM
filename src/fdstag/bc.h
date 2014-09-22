@@ -29,13 +29,13 @@ typedef struct
 //---------------------------------------------------------------------------
 
 // create boundary condition context
-PetscErrorCode FDSTAGCreateBCCtx(BCCtx *bc, FDSTAG *fs);
+PetscErrorCode BCCreate(BCCtx *bc, FDSTAG *fs);
 
 // destroy boundary condition context
-PetscErrorCode FDSTAGDestroyBCCtx(BCCtx *bc);
+PetscErrorCode BCDestroy(BCCtx *bc);
 
 // initialize boundary constraint vectors
-PetscErrorCode FDSTAGInitBC(BCCtx *bc, FDSTAG *fs, idxtype idxmod);
+PetscErrorCode BCInit(BCCtx *bc, FDSTAG *fs, idxtype idxmod);
 
 //---------------------------------------------------------------------------
 #endif

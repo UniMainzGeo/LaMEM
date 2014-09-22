@@ -65,13 +65,13 @@ Anton, please add a few comments
  */
 #define INTERP_MARKER_TO_EDGES(_TEST_, _UPXY_, _UPXZ_, _UPYZ_, _CP_) \
 	/* clear local vectors */ \
-	ierr = VecZeroEntries(jrctx->ldxy); CHKERRQ(ierr); \
-	ierr = VecZeroEntries(jrctx->ldxz); CHKERRQ(ierr); \
-	ierr = VecZeroEntries(jrctx->ldyz); CHKERRQ(ierr); \
+	ierr = VecZeroEntries(jr->ldxy); CHKERRQ(ierr); \
+	ierr = VecZeroEntries(jr->ldxz); CHKERRQ(ierr); \
+	ierr = VecZeroEntries(jr->ldyz); CHKERRQ(ierr); \
 	/* access 3D layouts of local vectors */ \
-	ierr = DMDAVecGetArray(fs->DA_XY, jrctx->ldxy, &lxy); CHKERRQ(ierr); \
-	ierr = DMDAVecGetArray(fs->DA_XZ, jrctx->ldxz, &lxz); CHKERRQ(ierr); \
-	ierr = DMDAVecGetArray(fs->DA_YZ, jrctx->ldyz, &lyz); CHKERRQ(ierr); \
+	ierr = DMDAVecGetArray(fs->DA_XY, jr->ldxy, &lxy); CHKERRQ(ierr); \
+	ierr = DMDAVecGetArray(fs->DA_XZ, jr->ldxz, &lxz); CHKERRQ(ierr); \
+	ierr = DMDAVecGetArray(fs->DA_YZ, jr->ldyz, &lyz); CHKERRQ(ierr); \
 	/* scan ALL markers*/ \
 	for(jj = 0; jj < actx->nummark; jj++) \
 	{	/* access next marker */ \
@@ -108,29 +108,29 @@ Anton, please add a few comments
 		lyz[Kn+sz][Jn+sy][Ic+sx] += wxc*wyn*wzn*_UPYZ_; \
 	} \
 	/* restore access */ \
-	ierr = DMDAVecRestoreArray(fs->DA_XY, jrctx->ldxy, &lxy); CHKERRQ(ierr); \
-	ierr = DMDAVecRestoreArray(fs->DA_XZ, jrctx->ldxz, &lxz); CHKERRQ(ierr); \
-	ierr = DMDAVecRestoreArray(fs->DA_YZ, jrctx->ldyz, &lyz); CHKERRQ(ierr); \
+	ierr = DMDAVecRestoreArray(fs->DA_XY, jr->ldxy, &lxy); CHKERRQ(ierr); \
+	ierr = DMDAVecRestoreArray(fs->DA_XZ, jr->ldxz, &lxz); CHKERRQ(ierr); \
+	ierr = DMDAVecRestoreArray(fs->DA_YZ, jr->ldyz, &lyz); CHKERRQ(ierr); \
 	/* assemble global vectors */ \
-	LOCAL_TO_GLOBAL(fs->DA_XY, jrctx->ldxy, jrctx->gdxy) \
-	LOCAL_TO_GLOBAL(fs->DA_XZ, jrctx->ldxz, jrctx->gdxz) \
-	LOCAL_TO_GLOBAL(fs->DA_YZ, jrctx->ldyz, jrctx->gdyz) \
+	LOCAL_TO_GLOBAL(fs->DA_XY, jr->ldxy, jr->gdxy) \
+	LOCAL_TO_GLOBAL(fs->DA_XZ, jr->ldxz, jr->gdxz) \
+	LOCAL_TO_GLOBAL(fs->DA_YZ, jr->ldyz, jr->gdyz) \
 	/* access 1D layouts of global vectors */ \
-	ierr = VecGetArray(jrctx->gdxy, &gxy);  CHKERRQ(ierr); \
-	ierr = VecGetArray(jrctx->gdxz, &gxz);  CHKERRQ(ierr); \
-	ierr = VecGetArray(jrctx->gdyz, &gyz);  CHKERRQ(ierr); \
+	ierr = VecGetArray(jr->gdxy, &gxy);  CHKERRQ(ierr); \
+	ierr = VecGetArray(jr->gdxz, &gxz);  CHKERRQ(ierr); \
+	ierr = VecGetArray(jr->gdyz, &gyz);  CHKERRQ(ierr); \
 	/* copy normalized data to residual context */ \
-	for(jj = 0; jj < fs->nXYEdg; jj++) jrctx->svXYEdge[jj]._CP_ = gxy[jj]/jrctx->svXYEdge[jj].ws; \
-	for(jj = 0; jj < fs->nXZEdg; jj++) jrctx->svXZEdge[jj]._CP_ = gxz[jj]/jrctx->svXZEdge[jj].ws; \
-	for(jj = 0; jj < fs->nYZEdg; jj++) jrctx->svYZEdge[jj]._CP_ = gyz[jj]/jrctx->svYZEdge[jj].ws; \
+	for(jj = 0; jj < fs->nXYEdg; jj++) jr->svXYEdge[jj]._CP_ = gxy[jj]/jr->svXYEdge[jj].ws; \
+	for(jj = 0; jj < fs->nXZEdg; jj++) jr->svXZEdge[jj]._CP_ = gxz[jj]/jr->svXZEdge[jj].ws; \
+	for(jj = 0; jj < fs->nYZEdg; jj++) jr->svYZEdge[jj]._CP_ = gyz[jj]/jr->svYZEdge[jj].ws; \
 	/* restore access */ \
-	ierr = VecRestoreArray(jrctx->gdxy, &gxy); CHKERRQ(ierr); \
-	ierr = VecRestoreArray(jrctx->gdxz, &gxz); CHKERRQ(ierr); \
-	ierr = VecRestoreArray(jrctx->gdyz, &gyz); CHKERRQ(ierr);
+	ierr = VecRestoreArray(jr->gdxy, &gxy); CHKERRQ(ierr); \
+	ierr = VecRestoreArray(jr->gdxz, &gxz); CHKERRQ(ierr); \
+	ierr = VecRestoreArray(jr->gdyz, &gyz); CHKERRQ(ierr);
 //---------------------------------------------------------------------------
 #undef __FUNCT__
 #define __FUNCT__ "ADVCreate"
-PetscErrorCode ADVCreate(AdvCtx *actx)
+PetscErrorCode ADVCreate(AdvCtx *actx, FDSTAG *fs)
 {
 	// create advection context
 
@@ -138,6 +138,8 @@ PetscErrorCode ADVCreate(AdvCtx *actx)
 
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
+
+	actx->fs = fs;
 
 	//=============
 	// COMMUNICATOR
@@ -250,24 +252,23 @@ PetscErrorCode ADVReAllocateStorage(AdvCtx *actx, PetscInt nummark)
 //---------------------------------------------------------------------------
 #undef __FUNCT__
 #define __FUNCT__ "ADVAdvect"
-PetscErrorCode ADVAdvect(AdvCtx *actx, FDSTAG *fs)
+PetscErrorCode ADVAdvect(AdvCtx *actx)
 {
 
 	PetscErrorCode ierr;
-
 	PetscFunctionBegin;
 
 	// count number of markers to be sent to each neighbor domain
-	ierr = ADVMapMarkersDomains(actx, fs); CHKERRQ(ierr);
+	ierr = ADVMapMarkersDomains(actx); CHKERRQ(ierr);
 
 	// communicate number of markers with neighbor processes
-	ierr = ADVExchangeNumMarkers(actx, fs); CHKERRQ(ierr);
+	ierr = ADVExchangeNumMarkers(actx); CHKERRQ(ierr);
 
 	// create send and receive buffers for asynchronous MPI communication
-	ierr = ADVCreateMPIBuffer(actx, fs); CHKERRQ(ierr);
+	ierr = ADVCreateMPIBuffer(actx); CHKERRQ(ierr);
 
 	// communicate markers with neighbor processes
-	ierr = ADVExchangeMarkers(actx, fs); CHKERRQ(ierr);
+	ierr = ADVExchangeMarkers(actx); CHKERRQ(ierr);
 
 	// store received markers, collect garbage
 	ierr = ADVCollectGarbage(actx);
@@ -295,7 +296,7 @@ PetscErrorCode ADVAdvectMarkers(AdvCtx *actx, FDSTAG *fs, JacResCtx *jrctx)
 //---------------------------------------------------------------------------
 #undef __FUNCT__
 #define __FUNCT__ "ADVProjHistMarkGrid"
-PetscErrorCode ADVProjHistMarkGrid(AdvCtx *actx, FDSTAG *fs, JacResCtx *jrctx)
+PetscErrorCode ADVProjHistMarkGrid(AdvCtx *actx, JacRes *jr)
 {
 	// Project the following history fields from markers to grid:
 
@@ -305,6 +306,7 @@ PetscErrorCode ADVProjHistMarkGrid(AdvCtx *actx, FDSTAG *fs, JacResCtx *jrctx)
 	// - APS          (centers and edges)
 	// - stress       (centers or edges)
 
+	FDSTAG      *fs;
 	Marker      *P;
 	SolVarCell  *svCell;
 	PetscInt     nx, ny, nz, sx, sy, sz, nCells;
@@ -314,6 +316,8 @@ PetscErrorCode ADVProjHistMarkGrid(AdvCtx *actx, FDSTAG *fs, JacResCtx *jrctx)
 
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
+
+	fs = actx->fs;
 
 	// get number of cells
 	GET_CELL_RANGE(nx, sx, fs->dsx)
@@ -330,10 +334,10 @@ PetscErrorCode ADVProjHistMarkGrid(AdvCtx *actx, FDSTAG *fs, JacResCtx *jrctx)
 	for(jj = 0; jj < nCells; jj++)
 	{
 		// access solution variable
-		svCell = &jrctx->svCell[jj];
+		svCell = &jr->svCell[jj];
 
 		// clear phase ratios
-		for(ii = 0; ii < jrctx->numPhases; ii++) svCell->phRat[ii] = 0.0;
+		for(ii = 0; ii < jr->numPhases; ii++) svCell->phRat[ii] = 0.0;
 
 		// clear history variables
 		svCell->svBulk.pn = 0.0;
@@ -370,7 +374,7 @@ PetscErrorCode ADVProjHistMarkGrid(AdvCtx *actx, FDSTAG *fs, JacResCtx *jrctx)
 		w = wxc*wyc*wzc;
 
 		// access solution variable of the host cell
-		svCell = &jrctx->svCell[ID];
+		svCell = &jr->svCell[ID];
 
 		// update phase ratios
 		svCell->phRat[P->phase] += w;
@@ -389,10 +393,10 @@ PetscErrorCode ADVProjHistMarkGrid(AdvCtx *actx, FDSTAG *fs, JacResCtx *jrctx)
 	for(jj = 0; jj < nCells; jj++)
 	{
 		// access solution variable
-		svCell = &jrctx->svCell[jj];
+		svCell = &jr->svCell[jj];
 
 		// normalize phase ratios
-		w = normVect(jrctx->numPhases, svCell->phRat);
+		w = normVect(jr->numPhases, svCell->phRat);
 
 		// normalize history variables
 		svCell->svBulk.pn /= w;
@@ -413,23 +417,23 @@ PetscErrorCode ADVProjHistMarkGrid(AdvCtx *actx, FDSTAG *fs, JacResCtx *jrctx)
 	// excessive communication, which is proportional to the number of phases.
 
 	// initialize sum of interpolation weights
-	for(jj = 0; jj < fs->nXYEdg; jj++) jrctx->svXYEdge[jj].ws = 1.0;
-	for(jj = 0; jj < fs->nXZEdg; jj++) jrctx->svXZEdge[jj].ws = 1.0;
-	for(jj = 0; jj < fs->nYZEdg; jj++) jrctx->svYZEdge[jj].ws = 1.0;
+	for(jj = 0; jj < fs->nXYEdg; jj++) jr->svXYEdge[jj].ws = 1.0;
+	for(jj = 0; jj < fs->nXZEdg; jj++) jr->svXZEdge[jj].ws = 1.0;
+	for(jj = 0; jj < fs->nYZEdg; jj++) jr->svYZEdge[jj].ws = 1.0;
 
 	// define loop test for phase ratio calculation
 	#define _TEST_ if(P->phase != ii) continue;
 
 	// compute edge phase ratios (consecutively)
-	for(ii = 0; ii < jrctx->numPhases; ii++)
+	for(ii = 0; ii < jr->numPhases; ii++)
 	{
 		INTERP_MARKER_TO_EDGES(_TEST_, 1.0, 1.0, 1.0, phRat[ii])
 	}
 
 	// normalize phase ratios
-	for(jj = 0; jj < fs->nXYEdg; jj++) jrctx->svXYEdge[jj].ws = normVect(jrctx->numPhases, jrctx->svXYEdge[jj].phRat);
-	for(jj = 0; jj < fs->nXZEdg; jj++) jrctx->svXZEdge[jj].ws = normVect(jrctx->numPhases, jrctx->svXZEdge[jj].phRat);
-	for(jj = 0; jj < fs->nYZEdg; jj++) jrctx->svYZEdge[jj].ws = normVect(jrctx->numPhases, jrctx->svYZEdge[jj].phRat);
+	for(jj = 0; jj < fs->nXYEdg; jj++) jr->svXYEdge[jj].ws = normVect(jr->numPhases, jr->svXYEdge[jj].phRat);
+	for(jj = 0; jj < fs->nXZEdg; jj++) jr->svXZEdge[jj].ws = normVect(jr->numPhases, jr->svXZEdge[jj].phRat);
+	for(jj = 0; jj < fs->nYZEdg; jj++) jr->svYZEdge[jj].ws = normVect(jr->numPhases, jr->svYZEdge[jj].phRat);
 
 	// clear loop test
 	#undef  _TEST_
@@ -446,15 +450,18 @@ PetscErrorCode ADVProjHistMarkGrid(AdvCtx *actx, FDSTAG *fs, JacResCtx *jrctx)
 //---------------------------------------------------------------------------
 #undef __FUNCT__
 #define __FUNCT__ "ADVMapMarkersDomains"
-PetscErrorCode ADVMapMarkersDomains(AdvCtx *actx, FDSTAG *fs)
+PetscErrorCode ADVMapMarkersDomains(AdvCtx *actx)
 {
 	// count number of markers to be sent to each neighbor domain
 
-	PetscInt    i, lrank, cnt;
-	PetscMPIInt grank;
+	PetscInt     i, lrank, cnt;
+	PetscMPIInt  grank;
+	FDSTAG      *fs;
 
 	PetscErrorCode  ierr;
 	PetscFunctionBegin;
+
+	fs = actx->fs;
 
 	// clear send counters
 	ierr = PetscMemzero(actx->nsendm, _num_neighb_*sizeof(PetscInt)); CHKERRQ(ierr);
@@ -492,10 +499,10 @@ PetscErrorCode ADVMapMarkersDomains(AdvCtx *actx, FDSTAG *fs)
 //---------------------------------------------------------------------------
 #undef __FUNCT__
 #define __FUNCT__ "ADVExchangeNumMarkers"
-PetscErrorCode ADVExchangeNumMarkers(AdvCtx *actx, FDSTAG *fs)
+PetscErrorCode ADVExchangeNumMarkers(AdvCtx *actx)
 {
 	// communicate number of markers with neighbor processes
-
+	FDSTAG     *fs;
 	PetscInt    k;
 	PetscMPIInt scnt, rcnt;
 	MPI_Request srequest[_num_neighb_];
@@ -503,6 +510,8 @@ PetscErrorCode ADVExchangeNumMarkers(AdvCtx *actx, FDSTAG *fs)
 
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
+
+	fs = actx->fs;
 
 	// zero out message counters
 	scnt = 0;
@@ -538,18 +547,20 @@ PetscErrorCode ADVExchangeNumMarkers(AdvCtx *actx, FDSTAG *fs)
 //---------------------------------------------------------------------------
 #undef __FUNCT__
 #define __FUNCT__ "ADVCreateMPIBuffer"
-PetscErrorCode ADVCreateMPIBuffer(AdvCtx *actx, FDSTAG *fs)
+PetscErrorCode ADVCreateMPIBuffer(AdvCtx *actx)
 {
 	// create send and receive buffers for asynchronous MPI communication
 
 	// NOTE! Currently the memory allocation model is fully dynamic.
 	// Maybe it makes sense to introduce static model with reallocation.
-
+	FDSTAG     *fs;
 	PetscInt    i, cnt, lrank;
 	PetscMPIInt grank;
 
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
+
+	fs = actx->fs;
 
 	// compute buffer pointers
 	actx->nsend = getPtrCnt(_num_neighb_, actx->nsendm, actx->ptsend);
@@ -595,10 +606,10 @@ PetscErrorCode ADVCreateMPIBuffer(AdvCtx *actx, FDSTAG *fs)
 //---------------------------------------------------------------------------
 #undef __FUNCT__
 #define __FUNCT__ "ADVExchangeMarkers"
-PetscErrorCode ADVExchangeMarkers(AdvCtx *actx, FDSTAG *fs)
+PetscErrorCode ADVExchangeMarkers(AdvCtx *actx)
 {
 	// communicate markers with neighbor processes
-
+	FDSTAG     *fs;
 	PetscInt    k;
 	PetscMPIInt scnt, rcnt, nbyte;
 	MPI_Request srequest[_num_neighb_];
@@ -606,6 +617,8 @@ PetscErrorCode ADVExchangeMarkers(AdvCtx *actx, FDSTAG *fs)
 
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
+
+	fs = actx->fs;
 
 	// zero out message counters
 	scnt = 0;
@@ -726,15 +739,18 @@ PetscErrorCode ADVCollectGarbage(AdvCtx *actx)
 //-----------------------------------------------------------------------------
 #undef __FUNCT__
 #define __FUNCT__ "ADVMapMarkersCells"
-PetscErrorCode ADVMapMarkersCells(AdvCtx *actx, FDSTAG *fs)
+PetscErrorCode ADVMapMarkersCells(AdvCtx *actx)
 {
 	// computes local numbers of the host cells containing markers
 	// NOTE: this routine MUST be called for the local markers only
 
+	FDSTAG      *fs;
 	PetscScalar *X;
 	PetscInt     i, ID, I, J, K, M, N, P;
 
 	PetscFunctionBegin;
+
+	fs = actx->fs;
 
 	// get number of cells
 	M = fs->dsx.ncels;
@@ -761,6 +777,7 @@ PetscErrorCode ADVMapMarkersCells(AdvCtx *actx, FDSTAG *fs)
 	PetscFunctionReturn(0);
 }
 //-----------------------------------------------------------------------------
+/*
 #undef __FUNCT__
 #define __FUNCT__ "FDSTAGetVorticity"
 PetscErrorCode FDSTAGetVorticity(
@@ -856,6 +873,7 @@ PetscErrorCode FDSTAGetVorticity(
 
 	PetscFunctionReturn(0);
 }
+*/
 //-----------------------------------------------------------------------------
 // service functions
 //-----------------------------------------------------------------------------

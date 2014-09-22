@@ -7,8 +7,8 @@
 #include "Utils.h"
 //---------------------------------------------------------------------------
 #undef __FUNCT__
-#define __FUNCT__ "FDSTAGCreateBCCtx"
-PetscErrorCode FDSTAGCreateBCCtx(BCCtx *bc, FDSTAG *fs)
+#define __FUNCT__ "BCCreate"
+PetscErrorCode BCCreate(BCCtx *bc, FDSTAG *fs)
 {
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
@@ -39,8 +39,8 @@ PetscErrorCode FDSTAGCreateBCCtx(BCCtx *bc, FDSTAG *fs)
 }
 //---------------------------------------------------------------------------
 #undef __FUNCT__
-#define __FUNCT__ "FDSTAGDestroyBCCtx"
-PetscErrorCode FDSTAGDestroyBCCtx(BCCtx *bc)
+#define __FUNCT__ "BCDestroy"
+PetscErrorCode BCDestroy(BCCtx *bc)
 {
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
@@ -245,8 +245,8 @@ PetscErrorCode FDSTAGInitBC(BCCtx *bc, FDSTAG *fs, idxtype idxmod)
 */
 //---------------------------------------------------------------------------
 #undef __FUNCT__
-#define __FUNCT__ "FDSTAGInitBC"
-PetscErrorCode FDSTAGInitBC(BCCtx *bc, FDSTAG *fs, idxtype idxmod)
+#define __FUNCT__ "BCInit"
+PetscErrorCode BCInit(BCCtx *bc, FDSTAG *fs, idxtype idxmod)
 {
 	// initialize boundary conditions vectors
 
@@ -260,7 +260,7 @@ PetscErrorCode FDSTAGInitBC(BCCtx *bc, FDSTAG *fs, idxtype idxmod)
 	PetscInt    i, j, k, nx, ny, nz, sx, sy, sz;
 	PetscInt    start, ln, numSPC, *SPCList;
 	PetscScalar ***bcvx,  ***bcvy,  ***bcvz;
-	DOFIndex    *id;
+	DOFIndex    *dof;
 
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
@@ -274,12 +274,12 @@ PetscErrorCode FDSTAGInitBC(BCCtx *bc, FDSTAG *fs, idxtype idxmod)
 //	mcy = fs->dsy.tcels - 1;
 //	mcz = fs->dsz.tcels - 1;
 
-	if(idxmod == IDXCOUPLED)   id = &fs->dofcoupl;
-	if(idxmod == IDXUNCOUPLED) id = &fs->dofsplit;
+	if(idxmod == IDXCOUPLED)   dof = &fs->cdof;
+	if(idxmod == IDXUNCOUPLED) dof = &fs->udof;
 
 	// get total number of local matrix rows & global index of the first row
-	start = id->istart;
-	ln    = id->numdof;
+	start = dof->istart;
+	ln    = dof->numdof;
 
 	// allocate SPC arrays
 	ierr = makeIntArray(&SPCList, NULL, ln); CHKERRQ(ierr);
