@@ -13,92 +13,113 @@
 #include "nlsolve.h"
 #include "interface.h"
 #include "Assembly_FDSTAG.h"
-//#include "LaMEMLib_FDSTAG_private.h"
 #include "Utils.h"
 //---------------------------------------------------------------------------
-/*
 #undef __FUNCT__
-#define __FUNCT__ "NLCtxCreate"
-PetscErrorCode NLCtxCreate(
-	NLCtx       *nlctx,
-	BlockMat    *bmat,
-	FDSTAG      *fs,
-	BCCtx       *cbc,
-	BCCtx       *sbc,
-	JacResCtx   *jrctx)
+#define __FUNCT__ "NLSolCreate"
+PetscErrorCode NLSolCreate(NLSol *nl, PCStokes pc, SNES snes)
 {
+	KSP             ksp;
+	PC              shell;
+	SNESLineSearch  ls;
+	JacRes         *jr;
+	DOFIndex       *dof;
+
     PetscErrorCode ierr;
     PetscFunctionBegin;
 
-    // initialize application contexts
-    nlctx->bmat  = bmat,
-    nlctx->fs    = fs;
-    nlctx->cbc    = cbc;
-    nlctx->sbc    = sbc;
-    nlctx->jrctx = jrctx;
+    // access context
+	nl->pc = pc;
+	jr     = pc->jr;
+	dof    = &(jr->fs->cdof);
 
 	// create matrix-free Jacobian operator
-	ierr = MatCreateShell(PETSC_COMM_WORLD, fs->dofcoupl.numdof, fs->dofcoupl.numdof,
-		PETSC_DETERMINE, PETSC_DETERMINE, nlctx, &nlctx->Jac); CHKERRQ(ierr);
+	ierr = MatCreateShell(PETSC_COMM_WORLD, dof->numdof, dof->numdof,
+		PETSC_DETERMINE, PETSC_DETERMINE, nl, &nl->J); CHKERRQ(ierr);
 
-	ierr = MatSetUp(nlctx->Jac); CHKERRQ(ierr);
+	ierr = MatSetUp(nl->P); CHKERRQ(ierr);
 
-	// postpone Jacobian-vector product definition
-	nlctx->jactype = NONE;
+	// create matrix-free Preconditioner operator
+	ierr = MatCreateShell(PETSC_COMM_WORLD, dof->numdof, dof->numdof,
+		PETSC_DETERMINE, PETSC_DETERMINE, nl, &nl->P); CHKERRQ(ierr);
+
+	ierr = MatSetUp(nl->P); CHKERRQ(ierr);
+
+	// setup nonlinear solver
+	ierr = SNESCreate(PETSC_COMM_WORLD, &snes);                     CHKERRQ(ierr);
+	ierr = SNESSetType(snes, SNESNEWTONLS);                         CHKERRQ(ierr);
+	ierr = SNESGetLineSearch(snes, &ls);                            CHKERRQ(ierr);
+	ierr = SNESLineSearchSetType(ls, SNESLINESEARCHBASIC);          CHKERRQ(ierr);
+	ierr = SNESSetFunction(snes, jr->gres, &FormResidual, &nl);     CHKERRQ(ierr);
+	ierr = SNESSetJacobian(snes, nl->J, nl->P, &FormJacobian, &nl); CHKERRQ(ierr);
+	ierr = SNESSetFromOptions(snes);                                CHKERRQ(ierr);
+
+	// setup linear solver & preconditioner
+	ierr = SNESGetKSP(snes, &ksp);         CHKERRQ(ierr);
+	ierr = KSPSetOptionsPrefix(ksp,"st_"); CHKERRQ(ierr);
+	ierr = KSPSetFromOptions(ksp);         CHKERRQ(ierr);
+	ierr = KSPGetPC(ksp, &shell);          CHKERRQ(ierr);
+
+//	ierr = KSPSetConvergenceTest(ksp, &KSPBlockStopTest, &bmat, NULL);CHKERRQ(ierr);
+//	ierr = SNESSetConvergenceTest(snes, SNESBlockStopTest, &nlctx, NULL); CHKERRQ(ierr);
+
+	// set Jacobian type & initial guess
+	nl->jtype = JAC_NONE;
+	ierr = VecSet(jr->gsol, 0.0); CHKERRQ(ierr);
 
 	PetscFunctionReturn(0);
 }
-
 //---------------------------------------------------------------------------
 #undef __FUNCT__
-#define __FUNCT__ "NLCtxDestroy"
-PetscErrorCode NLCtxDestroy(NLCtx *nlctx)
+#define __FUNCT__ "NLSolDestroy"
+PetscErrorCode NLSolDestroy(NLSol *nl)
 {
 	PetscErrorCode ierr;
     PetscFunctionBegin;
 
-	ierr = MatDestroy(&nlctx->Jac);  CHKERRQ(ierr);
-	ierr = MatDestroy(&nlctx->MFFD); CHKERRQ(ierr);
+    ierr = MatDestroy(&nl->J);    CHKERRQ(ierr);
+	ierr = MatDestroy(&nl->P);    CHKERRQ(ierr);
+	ierr = MatDestroy(&nl->MFFD); CHKERRQ(ierr);
 
     PetscFunctionReturn(0);
 }
-
 //---------------------------------------------------------------------------
 #undef __FUNCT__
-#define __FUNCT__ "FDSTAGFormResidual"
-PetscErrorCode FDSTAGFormResidual(SNES snes, Vec x, Vec f, void *ctx)
+#define __FUNCT__ "FormResidual"
+PetscErrorCode FormResidual(SNES snes, Vec x, Vec f, void *ctx)
 {
+	NLSol  *nl;
+	JacRes *jr;
+
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
 
-	// following parameters are not currently used (stop warning messages):
+	// clear unused parameters
 	if(snes) snes = NULL;
 
 	// access context
-	NLCtx       *nlctx = (NLCtx*)ctx;
-	FDSTAG      *fs    = nlctx->fs;
-    BCCtx       *cbc   = nlctx->cbc;
-	JacResCtx   *jrctx = nlctx->jrctx;
+	nl = (NLSol*)ctx;
+	jr = nl->pc->jr;
 
 	// copy solution from global to local vectors, enforce boundary constraints
-	ierr = FDSTAGCopySol(fs, cbc, jrctx, x); CHKERRQ(ierr);
+	ierr = JacResCopySol(jr, x); CHKERRQ(ierr);
 
 	// compute effective strain rate
-	ierr = FDSTAGetEffStrainRate(fs, jrctx); CHKERRQ(ierr);
+	ierr = JacResGetEffStrainRate(jr); CHKERRQ(ierr);
 
 	// compute residual
-	ierr = FDSTAGetResidual(fs, jrctx); CHKERRQ(ierr);
+	ierr = JacResGetResidual(jr); CHKERRQ(ierr);
 
 	// copy residuals to global vector
-	ierr = FDSTAGCopyRes(fs, cbc, jrctx, f); CHKERRQ(ierr);
+	ierr = JacResCopyRes(jr, f); CHKERRQ(ierr);
 
 	PetscFunctionReturn(0);
-
 }
 //---------------------------------------------------------------------------
+/*
 #undef __FUNCT__
-#define __FUNCT__ "FDSTAGFormJacobian"
-PetscErrorCode FDSTAGFormJacobian(SNES snes, Vec x, Mat Amat, Mat Pmat, void *ctx)
+#define __FUNCT__ "FormJacobian"
+PetscErrorCode FormJacobian(SNES snes, Vec x, Mat Amat, Mat Pmat, void *ctx)
 {
 	// Compute FDSTAG Jacobian matrix and preconditioner
 
@@ -112,23 +133,23 @@ PetscErrorCode FDSTAGFormJacobian(SNES snes, Vec x, Mat Amat, Mat Pmat, void *ct
 	if(Pmat) Pmat = NULL;
 
 	// access context
-	NLCtx     *nlctx = (NLCtx*)ctx;
-	FDSTAG    *fs    = nlctx->fs;
-    BCCtx     *cbc    = nlctx->cbc;
-	JacResCtx *jrctx = nlctx->jrctx;
-//	BlockMat  *bmat  = nlctx->bmat;
+	NLSol  *nl = (NLSol*)ctx;
+	JacRes *jr = nl->pc->jr;
 
-	// assemble Picard matrix (preconditioner)
+	// setup preconditioner
 //	ierr = BlockMatCompute(bmat, fs, cbc, jrctx); CHKERRQ(ierr);
 
+
+
+
 	// in case no Jacobian has been set yet (start with Picard)
-	if(nlctx->jactype == NONE)
+	if(nl->jtype == JAC_NONE)
 	{
 		// set Picard Jacobian
-		ierr = MatShellSetOperation(nlctx->Jac, MATOP_MULT, (void(*)(void))JacApplyPicard); CHKERRQ(ierr);
+		ierr = MatShellSetOperation(nl->Jac, MATOP_MULT, (void(*)(void))JacApplyPicard); CHKERRQ(ierr);
 
-		ierr = MatAssemblyBegin(nlctx->Jac, MAT_FINAL_ASSEMBLY); CHKERRQ(ierr);
-		ierr = MatAssemblyEnd  (nlctx->Jac, MAT_FINAL_ASSEMBLY); CHKERRQ(ierr);
+		ierr = MatAssemblyBegin(nl->Jac, MAT_FINAL_ASSEMBLY); CHKERRQ(ierr);
+		ierr = MatAssemblyEnd  (nl->Jac, MAT_FINAL_ASSEMBLY); CHKERRQ(ierr);
 
 		// activate Picard Jacobian type
 		nlctx->jactype = PICARD;
@@ -143,6 +164,27 @@ PetscErrorCode FDSTAGFormJacobian(SNES snes, Vec x, Mat Amat, Mat Pmat, void *ct
 		{
 			// create MFFD Jacobian
 			ierr = JacCreateMFFD(nlctx); CHKERRQ(ierr);
+
+
+
+			// create MFFD shell matrix
+			ierr = MatCreateMFFD(PETSC_COMM_WORLD, fs->dofcoupl.numdof, fs->dofcoupl.numdof,
+				PETSC_DETERMINE, PETSC_DETERMINE, &nlctx->MFFD); CHKERRQ(ierr);
+
+			// Database options
+			// -mat_mffd_type - wp or ds (see MATMFFD_WP or MATMFFD_DS)
+			// -mat_mffd_err <error_rel> - Sets error_rel
+			// -mat_mffd_unim <umin> - Sets umin (for default PETSc routine that computes h only)
+			// -mat_mffd_check_positivity	-
+
+			ierr = MatSetFromOptions(nlctx->MFFD); CHKERRQ(ierr);
+
+			ierr = MatSetUp(nlctx->MFFD); CHKERRQ(ierr);
+
+
+
+
+
 
 			// set MFFD Jacobian
 			ierr = MatShellSetOperation(nlctx->Jac, MATOP_MULT, (void(*)(void))JacApplyMFFD); CHKERRQ(ierr);
@@ -176,19 +218,6 @@ PetscErrorCode JacCreateMFFD(NLCtx *nlctx)
 	// access context
 	FDSTAG *fs = nlctx->fs;
 
-	// create MFFD shell matrix
-	ierr = MatCreateMFFD(PETSC_COMM_WORLD, fs->dofcoupl.numdof, fs->dofcoupl.numdof,
-		PETSC_DETERMINE, PETSC_DETERMINE, &nlctx->MFFD); CHKERRQ(ierr);
-
-	// Database options
-	// -mat_mffd_type - wp or ds (see MATMFFD_WP or MATMFFD_DS)
-	// -mat_mffd_err <error_rel> - Sets error_rel
-	// -mat_mffd_unim <umin> - Sets umin (for default PETSc routine that computes h only)
-	// -mat_mffd_check_positivity	-
-
-	ierr = MatSetFromOptions(nlctx->MFFD); CHKERRQ(ierr);
-
-	ierr = MatSetUp(nlctx->MFFD); CHKERRQ(ierr);
 
 	PetscFunctionReturn(0);
 }
@@ -252,64 +281,11 @@ PetscErrorCode JacApplyPicard(Mat A, Vec x, Vec y)
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
+
 */
 
+//---------------------------------------------------------------------------
 /*
-//---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "JacCreateAnalytic"
-PetscErrorCode JacCreateAnalytic(NLCtx *nlctx)
-{
-
-	PetscErrorCode ierr;
-	PetscFunctionBegin;
-
-	PetscFunctionReturn(0);
-}
-//---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "JacCreateApprox"
-PetscErrorCode JacCreateApprox(NLCtx *nlctx)
-{
-	PetscErrorCode ierr;
-	PetscFunctionBegin;
-
-	PetscFunctionReturn(0);
-}
-//---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "JacCreateFDColor"
-PetscErrorCode JacCreateFDColor(NLCtx *nlctx)
-{
-	PetscErrorCode ierr;
-	PetscFunctionBegin;
-
-
-	PetscFunctionReturn(0);
-}
-//---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "JacCreateFDApprox"
-PetscErrorCode JacCreateFDApprox(NLCtx *nlctx)
-{
-	PetscErrorCode ierr;
-	PetscFunctionBegin;
-
-
-	PetscFunctionReturn(0);
-}
-//---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "JacCreateMF"
-PetscErrorCode JacCreateMF(NLCtx *nlctx)
-{
-	PetscErrorCode ierr;
-	PetscFunctionBegin;
-
-
-	PetscFunctionReturn(0);
-}
-//---------------------------------------------------------------------------
 #undef __FUNCT__
 #define __FUNCT__ "SNESBlockStopTest"
 PetscErrorCode SNESBlockStopTest(SNES snes, PetscInt it, PetscReal xnorm,
@@ -465,6 +441,13 @@ PetscErrorCode SNESPrintConvergedReason(SNES snes)
 */
 //---------------------------------------------------------------------------
 
+/*
+
+
+
+
+
+ */
 
 /*
 
@@ -522,6 +505,7 @@ PetscErrorCode PostCheck(SNESLineSearch,Vec,Vec,Vec,PetscBool*,PetscBool*,void*)
 	PetscErrorCode  MatFDColoringApply(Mat J,MatFDColoring coloring,Vec x1,MatStructure *flag,void *sctx)
 
 	//====================================================================
+
 
 
 //---------------------------------------------------------------------------

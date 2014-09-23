@@ -20,7 +20,7 @@ PetscErrorCode GetLinRes(Mat A, Vec x, Vec rhs, Vec res);
 PetscErrorCode FieldSplitTest(NLCtx *nlctx, PVOut *pvout, Vec InitGuess, PetscScalar time, PetscInt itime);
 
 PetscErrorCode MGTest(NLCtx *nlctx, PVOut *pvout, Vec InitGuess, PetscScalar time, PetscInt itime);
-*/
+
 //---------------------------------------------------------------------------
 typedef struct
 {
@@ -70,6 +70,6 @@ PetscErrorCode StrainRateInterpTest(
 	JacRes      *jr,
 	UserContext *usr,
 	PVOut       *pvout);
-
+*/
 //---------------------------------------------------------------------------
 #endif

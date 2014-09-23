@@ -40,7 +40,8 @@ typedef struct _p_PCStokes
 	PetscErrorCode (*Create) (PCStokes pc);
 	PetscErrorCode (*Setup)  (PCStokes pc);
 	PetscErrorCode (*Destroy)(PCStokes pc);
-	PetscErrorCode (*Apply)  (PC pc, Vec x, Vec y);
+	PetscErrorCode (*Apply)  (Mat P, Vec x, Vec y);
+	PetscErrorCode (*Picard) (Mat J, Vec x, Vec y);
 
 }p_PCStokes;
 
@@ -54,8 +55,6 @@ PetscErrorCode PCStokesCreate(
 PetscErrorCode PCStokesSetup(PCStokes pc);
 
 PetscErrorCode PCStokesDestroy(PCStokes pc);
-
-PetscErrorCode PCStokesSetupShell(PCStokes pc, PC shell);
 
 //---------------------------------------------------------------------------
 
@@ -79,7 +78,9 @@ PetscErrorCode PCStokesALDestroy(PCStokes pc);
 
 PetscErrorCode PCStokesALSetup(PCStokes pc);
 
-PetscErrorCode PCStokesALApply(PC pc, Vec x, Vec y);
+PetscErrorCode PCStokesALApply(Mat P, Vec x, Vec y);
+
+PetscErrorCode PCStokesALPicard(Mat J, Vec x, Vec y);
 
 //---------------------------------------------------------------------------
 
@@ -105,7 +106,9 @@ PetscErrorCode PCStokesBFDestroy(PCStokes pc);
 
 PetscErrorCode PCStokesBFSetup(PCStokes pc);
 
-PetscErrorCode PCStokesBFApply(PC pc, Vec x, Vec y);
+PetscErrorCode PCStokesBFApply(Mat P, Vec x, Vec y);
+
+PetscErrorCode PCStokesBFPicard(Mat J, Vec x, Vec y);
 
 //---------------------------------------------------------------------------
 
@@ -116,6 +119,7 @@ typedef struct
 	Mat   M;   // inverse viscosity matrix (Jacobian compensation)
 	PC    pc;  // internal preconditioner context
 	MGCtx ctx; // multigrid context
+	Vec   w;   // work vector for computing Jacobian action
 
 } PCStokesMG;
 
@@ -127,7 +131,9 @@ PetscErrorCode PCStokesMGDestroy(PCStokes pc);
 
 PetscErrorCode PCStokesMGSetup(PCStokes pc);
 
-PetscErrorCode PCStokesMGApply(PC pc, Vec x, Vec y);
+PetscErrorCode PCStokesMGApply(Mat P, Vec x, Vec y);
+
+PetscErrorCode PCStokesMGPicard(Mat J, Vec x, Vec y);
 
 //---------------------------------------------------------------------------
 
