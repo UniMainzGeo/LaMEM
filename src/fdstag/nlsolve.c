@@ -24,6 +24,7 @@ PetscErrorCode NLSolCreate(NLSol *nl, PCStokes pc, SNES snes)
 	SNESLineSearch  ls;
 	JacRes         *jr;
 	DOFIndex       *dof;
+	PetscBool       flg;
 
     PetscErrorCode ierr;
     PetscFunctionBegin;
@@ -61,7 +62,7 @@ PetscErrorCode NLSolCreate(NLSol *nl, PCStokes pc, SNES snes)
 
 	// setup linear solver & preconditioner
 	ierr = SNESGetKSP(snes, &ksp);         CHKERRQ(ierr);
-	ierr = KSPSetOptionsPrefix(ksp,"st_"); CHKERRQ(ierr);
+	ierr = KSPSetOptionsPrefix(ksp,"js_"); CHKERRQ(ierr);
 	ierr = KSPSetFromOptions(ksp);         CHKERRQ(ierr);
 	ierr = KSPGetPC(ksp, &ipc);            CHKERRQ(ierr);
 	ierr = PCSetType(ipc, PCMAT);          CHKERRQ(ierr);
@@ -72,6 +73,10 @@ PetscErrorCode NLSolCreate(NLSol *nl, PCStokes pc, SNES snes)
 	// set Jacobian type & initial guess
 	nl->jtype = JPICARD;
 	ierr = VecSet(jr->gsol, 0.0); CHKERRQ(ierr);
+
+	// read number of Picard iterations
+	ierr = PetscOptionsGetInt(PETSC_NULL, "-npicard", &nl->nPicIt, &flg); CHKERRQ(ierr);
+	if(flg != PETSC_TRUE) nl->nPicIt = 5;
 
 	PetscFunctionReturn(0);
 }

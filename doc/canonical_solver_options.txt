@@ -1,0 +1,32 @@
+##################################
+# ALL CONTROLS USE PETSc OPTIONS
+# NO DUPLICATION IN THE INPUT FILE
+##################################
+
+* SNES uses standard prefix
+
+* MFFD Jacobian is activated after a fixed number of Picard iterations.
+  Number of Picard iterations is provided via option -npicard 3
+
+* MFFD Jacobian options are set via prefix -fd_
+
+* Jacobian linear solver is controlled via prefix -js_ 
+  From now on only "coupled" velocity-pressure iterations are supported.
+
+* Stokes preconditioner type is selected via option -pstokes,
+  which can currently assume the following values:
+
+   [1] -pstokes al - augmented Lagrangian (artificial compressibility)
+        KSP prefix is -al_
+        Penalty parameter is set via option -pgamma 1e3 (applied to the viscosity scaling matrix).
+        
+   [2] -pstokes bf - block factorization (Schur complement based a.k.a. fieldsplit).
+        PC prefix -bf_
+        Option setting pattern is standard for PETSc fieldsplit preconditioner,
+        unless Galerking Geometric multigrid is selected for the velocity.
+        In this case multigrid PC is controlled via prefix -gmg_
+        Coarse solver KSP prefix is -crs_
+        Selecting velocity multigrid is done with the flag -velgmg
+        
+   [3] -pstokes mg - coupled velocity-pressure Galerking Geometric multigrid
+        (same as above -gmg_ and -crs_)
