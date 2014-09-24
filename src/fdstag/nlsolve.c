@@ -20,7 +20,7 @@
 PetscErrorCode NLSolCreate(NLSol *nl, PCStokes pc, SNES snes)
 {
 	KSP             ksp;
-	PC              shell;
+	PC              ipc;
 	SNESLineSearch  ls;
 	JacRes         *jr;
 	DOFIndex       *dof;
@@ -35,15 +35,20 @@ PetscErrorCode NLSolCreate(NLSol *nl, PCStokes pc, SNES snes)
 
 	// create matrix-free Jacobian operator
 	ierr = MatCreateShell(PETSC_COMM_WORLD, dof->numdof, dof->numdof,
-		PETSC_DETERMINE, PETSC_DETERMINE, nl, &nl->J); CHKERRQ(ierr);
-
-	ierr = MatSetUp(nl->P); CHKERRQ(ierr);
+		PETSC_DETERMINE, PETSC_DETERMINE, NULL, &nl->J); CHKERRQ(ierr);
+	ierr = MatSetUp(nl->J);                              CHKERRQ(ierr);
 
 	// create matrix-free Preconditioner operator
 	ierr = MatCreateShell(PETSC_COMM_WORLD, dof->numdof, dof->numdof,
-		PETSC_DETERMINE, PETSC_DETERMINE, nl, &nl->P); CHKERRQ(ierr);
+		PETSC_DETERMINE, PETSC_DETERMINE, NULL, &nl->P); CHKERRQ(ierr);
+	ierr = MatSetUp(nl->P);                              CHKERRQ(ierr);
 
-	ierr = MatSetUp(nl->P); CHKERRQ(ierr);
+	// create finite-difference Jacobian
+	ierr = MatCreateMFFD(PETSC_COMM_WORLD, dof->numdof, dof->numdof,
+		PETSC_DETERMINE, PETSC_DETERMINE, &nl->MFFD); CHKERRQ(ierr);
+	ierr = MatSetOptionsPrefix(nl->MFFD,"fd_");       CHKERRQ(ierr);
+	ierr = MatSetFromOptions(nl->MFFD);               CHKERRQ(ierr);
+	ierr = MatSetUp(nl->MFFD);                        CHKERRQ(ierr);
 
 	// setup nonlinear solver
 	ierr = SNESCreate(PETSC_COMM_WORLD, &snes);                     CHKERRQ(ierr);
@@ -58,13 +63,14 @@ PetscErrorCode NLSolCreate(NLSol *nl, PCStokes pc, SNES snes)
 	ierr = SNESGetKSP(snes, &ksp);         CHKERRQ(ierr);
 	ierr = KSPSetOptionsPrefix(ksp,"st_"); CHKERRQ(ierr);
 	ierr = KSPSetFromOptions(ksp);         CHKERRQ(ierr);
-	ierr = KSPGetPC(ksp, &shell);          CHKERRQ(ierr);
+	ierr = KSPGetPC(ksp, &ipc);            CHKERRQ(ierr);
+	ierr = PCSetType(ipc, PCMAT);          CHKERRQ(ierr);
 
 //	ierr = KSPSetConvergenceTest(ksp, &KSPBlockStopTest, &bmat, NULL);CHKERRQ(ierr);
 //	ierr = SNESSetConvergenceTest(snes, SNESBlockStopTest, &nlctx, NULL); CHKERRQ(ierr);
 
 	// set Jacobian type & initial guess
-	nl->jtype = JAC_NONE;
+	nl->jtype = JPICARD;
 	ierr = VecSet(jr->gsol, 0.0); CHKERRQ(ierr);
 
 	PetscFunctionReturn(0);
@@ -116,131 +122,54 @@ PetscErrorCode FormResidual(SNES snes, Vec x, Vec f, void *ctx)
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-/*
 #undef __FUNCT__
 #define __FUNCT__ "FormJacobian"
 PetscErrorCode FormJacobian(SNES snes, Vec x, Mat Amat, Mat Pmat, void *ctx)
 {
 	// Compute FDSTAG Jacobian matrix and preconditioner
 
-	PetscInt it, maxit = 5;
+	PetscInt it;
 
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
 
-	// clear unused parameters
-	if(Amat) Amat = NULL;
-	if(Pmat) Pmat = NULL;
-
 	// access context
-	NLSol  *nl = (NLSol*)ctx;
-	JacRes *jr = nl->pc->jr;
+	NLSol    *nl = (NLSol*)ctx;
+	PCStokes  pc = nl->pc;
+	JacRes   *jr = pc->jr;
 
 	// setup preconditioner
-//	ierr = BlockMatCompute(bmat, fs, cbc, jrctx); CHKERRQ(ierr);
+	ierr = PCStokesSetup(pc);                                                CHKERRQ(ierr);
+	ierr = MatShellSetOperation(Pmat, MATOP_MULT, (void(*)(void))pc->Apply); CHKERRQ(ierr);
+	ierr = MatShellSetContext(Pmat, pc->data);                               CHKERRQ(ierr);
 
+	// switch Jacobian after fixed number of iterations
+	ierr = SNESGetIterationNumber(snes, &it); CHKERRQ(ierr);
+	if(it == nl->nPicIt) nl->jtype = JMFFD;
 
-
-
-	// in case no Jacobian has been set yet (start with Picard)
-	if(nl->jtype == JAC_NONE)
+	// setup Jacobian ...
+	if(nl->jtype == JPICARD)
 	{
-		// set Picard Jacobian
-		ierr = MatShellSetOperation(nl->Jac, MATOP_MULT, (void(*)(void))JacApplyPicard); CHKERRQ(ierr);
+		// ... Picard
+		ierr = MatShellSetOperation(Amat, MATOP_MULT, (void(*)(void))pc->Picard); CHKERRQ(ierr);
+		ierr = MatShellSetContext(Amat, pc->data);                                CHKERRQ(ierr);
 
-		ierr = MatAssemblyBegin(nl->Jac, MAT_FINAL_ASSEMBLY); CHKERRQ(ierr);
-		ierr = MatAssemblyEnd  (nl->Jac, MAT_FINAL_ASSEMBLY); CHKERRQ(ierr);
-
-		// activate Picard Jacobian type
-		nlctx->jactype = PICARD;
 	}
-	// switch form Picard to MFFD Newton after fixed number of iterations
-	else if(nlctx->jactype == PICARD)
+	else if(nl->jtype == JMFFD)
 	{
-		// get iteration number
-		ierr = SNESGetIterationNumber(snes, &it); CHKERRQ(ierr);
-
-		if(it == maxit)
-		{
-			// create MFFD Jacobian
-			ierr = JacCreateMFFD(nlctx); CHKERRQ(ierr);
-
-
-
-			// create MFFD shell matrix
-			ierr = MatCreateMFFD(PETSC_COMM_WORLD, fs->dofcoupl.numdof, fs->dofcoupl.numdof,
-				PETSC_DETERMINE, PETSC_DETERMINE, &nlctx->MFFD); CHKERRQ(ierr);
-
-			// Database options
-			// -mat_mffd_type - wp or ds (see MATMFFD_WP or MATMFFD_DS)
-			// -mat_mffd_err <error_rel> - Sets error_rel
-			// -mat_mffd_unim <umin> - Sets umin (for default PETSc routine that computes h only)
-			// -mat_mffd_check_positivity	-
-
-			ierr = MatSetFromOptions(nlctx->MFFD); CHKERRQ(ierr);
-
-			ierr = MatSetUp(nlctx->MFFD); CHKERRQ(ierr);
-
-
-
-
-
-
-			// set MFFD Jacobian
-			ierr = MatShellSetOperation(nlctx->Jac, MATOP_MULT, (void(*)(void))JacApplyMFFD); CHKERRQ(ierr);
-
-			ierr = MatAssemblyBegin(nlctx->Jac, MAT_FINAL_ASSEMBLY); CHKERRQ(ierr);
-			ierr = MatAssemblyEnd  (nlctx->Jac, MAT_FINAL_ASSEMBLY); CHKERRQ(ierr);
-
-			// activate MFFD Jacobian type
-			nlctx->jactype = MFFD;
-		}
+		// ... matrix-free finite-difference (MMFD)
+		ierr = MatMFFDSetFunction(nl->MFFD, (PetscErrorCode (*)(void*,Vec,Vec))SNESComputeFunction, snes); CHKERRQ(ierr);
+		ierr = MatMFFDSetBase(nl->MFFD, x, jr->gres);                                                      CHKERRQ(ierr);
+		ierr = MatShellSetOperation(Amat, MATOP_MULT, (void(*)(void))JacApplyMFFD);                        CHKERRQ(ierr);
+		ierr = MatShellSetContext(Amat, (void*)&nl->MFFD);                                                 CHKERRQ(ierr);
 	}
 
-	// setup MFFD Jacobian if necessary
-	if(nlctx->jactype == MFFD)
-	{
-		ierr = JacComputeMFFD(nlctx, snes, x); CHKERRQ(ierr);
-	}
+	// assemble Jacobian & preconditioner
+	ierr = MatAssemblyBegin(Amat, MAT_FINAL_ASSEMBLY); CHKERRQ(ierr);
+	ierr = MatAssemblyEnd  (Amat, MAT_FINAL_ASSEMBLY); CHKERRQ(ierr);
 
-	PetscFunctionReturn(0);
-}
-//---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "JacCreateMFFD"
-PetscErrorCode JacCreateMFFD(NLCtx *nlctx)
-{
-	// create matrix-free finite-difference Jacobian approximation
-
-	PetscErrorCode ierr;
-	PetscFunctionBegin;
-
-	// access context
-	FDSTAG *fs = nlctx->fs;
-
-
-	PetscFunctionReturn(0);
-}
-//---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "JacComputeMFFD"
-PetscErrorCode JacComputeMFFD(NLCtx *nlctx, SNES snes, Vec x)
-{
-	PetscErrorCode ierr;
-	PetscFunctionBegin;
-
-	// access context
-	JacResCtx *jrctx = nlctx->jrctx;
-
-	// set residual evaluation function
-	ierr = MatMFFDSetFunction(nlctx->MFFD, (PetscErrorCode (*)(void*,Vec,Vec))SNESComputeFunction, snes); CHKERRQ(ierr);
-
-	// set base vector (current solution)
-	ierr = MatMFFDSetBase(nlctx->MFFD, x, jrctx->gres); CHKERRQ(ierr);
-
-	// assemble matrix
-	ierr = MatAssemblyBegin(nlctx->MFFD, MAT_FINAL_ASSEMBLY); CHKERRQ(ierr);
-	ierr = MatAssemblyEnd  (nlctx->MFFD, MAT_FINAL_ASSEMBLY); CHKERRQ(ierr);
+	ierr = MatAssemblyBegin(Pmat, MAT_FINAL_ASSEMBLY); CHKERRQ(ierr);
+	ierr = MatAssemblyEnd  (Pmat, MAT_FINAL_ASSEMBLY); CHKERRQ(ierr);
 
 	PetscFunctionReturn(0);
 }
@@ -249,41 +178,19 @@ PetscErrorCode JacComputeMFFD(NLCtx *nlctx, SNES snes, Vec x)
 #define __FUNCT__ "JacApplyMFFD"
 PetscErrorCode JacApplyMFFD(Mat A, Vec x, Vec y)
 {
-	NLCtx *nlctx;
+	Mat *MFFD;
 
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
 
 	// access context
-	ierr = MatShellGetContext(A, &nlctx); CHKERRQ(ierr);
+	ierr = MatShellGetContext(A, (void**)&MFFD); CHKERRQ(ierr);
 
 	// compute Jacobian times vector product
-	ierr = MatMult(nlctx->MFFD, x, y); CHKERRQ(ierr);
+	ierr = MatMult((*MFFD), x, y); CHKERRQ(ierr);
 
 	PetscFunctionReturn(0);
 }
-//---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "JacApplyPicard"
-PetscErrorCode JacApplyPicard(Mat A, Vec x, Vec y)
-{
-	NLCtx    *nlctx;
-
-	PetscErrorCode ierr;
-	PetscFunctionBegin;
-
-	// access context
-	ierr = MatShellGetContext(A, &nlctx); CHKERRQ(ierr);
-
-	// compute Jacobian times vector product
-//	ierr = MatMult(nlctx->bmat->A, x, y); CHKERRQ(ierr);
-
-	PetscFunctionReturn(0);
-}
-//---------------------------------------------------------------------------
-
-*/
-
 //---------------------------------------------------------------------------
 /*
 #undef __FUNCT__
@@ -444,14 +351,6 @@ PetscErrorCode SNESPrintConvergedReason(SNES snes)
 /*
 
 
-
-
-
- */
-
-/*
-
-
 	//====================================================================
 
 	// Important SNES functions:
@@ -506,9 +405,5 @@ PetscErrorCode PostCheck(SNESLineSearch,Vec,Vec,Vec,PetscBool*,PetscBool*,void*)
 
 	//====================================================================
 
-
-
 //---------------------------------------------------------------------------
-
-
 */

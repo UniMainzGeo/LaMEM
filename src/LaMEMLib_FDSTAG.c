@@ -81,18 +81,15 @@ PetscErrorCode LaMEMLib_FDSTAG(PetscBool InputParamFile, const char *ParamFile, 
 //	PetscLogDouble     cputime_start, cputime_start0, cputime_end, cputime_start_tstep, cputime_start_nonlinear;
 	PetscLogDouble     cputime_end, cputime_start_nonlinear;
 
-	AdvCtx         actx;   // advection context
-//	NLCtx          nlctx;  // nonlinear solver context
-	FDSTAG         fs;     // staggered-grid layout
-	JacRes         jr;     // fdstag Jacobian & residual context
-	PVOut          pvout;  // fdstag paraview output driver
-	BCCtx          cbc;    // boundary condition context (coupled)
-	BCCtx          ubc;    // boundary condition context (uncoupled)
-
-//	Vec            res;    // residual operator
-//	Vec            sol;    // nonlinear solution vector
-//	BlockMat       bmat;   // block recinditioner matrix
-
+	FDSTAG   fs;    // staggered-grid layout
+	BCCtx    cbc;   // boundary condition context (coupled)
+	BCCtx    ubc;   // boundary condition context (uncoupled)
+	JacRes   jr;    // fdstag Jacobian & residual context
+	AdvCtx   actx;  // advection context
+	PCStokes pc;    // Stokes preconditioner
+	SNES     snes;  // PETSc nonliner solver
+	NLSol    nl;    // nonlinear solver context
+	PVOut    pvout; // fdstag paraview output driver
 
 //	PetscViewer  viewer;
 //	PetscBool    do_restart;
@@ -302,9 +299,9 @@ PetscErrorCode LaMEMLib_FDSTAG(PetscBool InputParamFile, const char *ParamFile, 
 		user.dt = user.dt_max;
 	}
 
-	//===============
-	// STAGGERED-GRID
-	//===============
+	//======================
+	// SETUP DATA STRUCTURES
+	//======================
 
 	// create staggered grid object
 	ierr = FDSTAGCreate(&fs, user.nnode_x, user.nnode_y, user.nnode_z,
@@ -314,7 +311,15 @@ PetscErrorCode LaMEMLib_FDSTAG(PetscBool InputParamFile, const char *ParamFile, 
 	ierr = FDSTAGGenCoord(&fs, &user); CHKERRQ(ierr);
 
 	// save processor partitioning
-	if(user.SavePartitioning) { ierr = FDSTAGProcPartitioning(&fs, &user); CHKERRQ(ierr); }
+	if(user.SavePartitioning)
+	{
+		ierr = FDSTAGProcPartitioning(&fs, &user); CHKERRQ(ierr);
+
+		// return immediately
+		ierr = FDSTAGDestroy(&fs); CHKERRQ(ierr);
+
+		PetscFunctionReturn(0);
+	}
 
 	// create boundary condition context
 	ierr = BCCreate(&cbc, &fs); CHKERRQ(ierr);
@@ -326,9 +331,6 @@ PetscErrorCode LaMEMLib_FDSTAG(PetscBool InputParamFile, const char *ParamFile, 
 
 	// create Jacobian & residual evaluation context
 	ierr = JacResCreate(&jr, &fs, &cbc, &ubc, user.num_phases, 0); CHKERRQ(ierr);
-
-	// zero out global solution vector
-	ierr = VecZeroEntries(jr.gsol); CHKERRQ(ierr);
 
 	// initialize scaling object
 	ierr = ScalingCreate(
@@ -354,79 +356,21 @@ PetscErrorCode LaMEMLib_FDSTAG(PetscBool InputParamFile, const char *ParamFile, 
 	jr.grav[1] = 0.0;
 	jr.grav[2] = user.Gravity;
 
-	// create output object for all requested output variables
-	ierr = PVOutCreate(&pvout, &fs, &jr.scal, user.OutputFile); CHKERRQ(ierr);
-
 	// create advection context
 	ierr = ADVCreate(&actx, &fs); CHKERRQ(ierr);
 
 	// initialize markers
 	ierr = ADVMarkInit(&actx, &user); CHKERRQ(ierr);
 
-	//================================
-	// SETUP JACOBIAN & PRECONDITIONER
-	//================================
+	// create Stokes preconditioner
+	ierr = PCStokesCreate(&pc, &jr); CHKERRQ(ierr);
 
-	// create block preconditioner
-//	ierr = BlockMatCreate(&bmat, &fs, jrctx.gsol); CHKERRQ(ierr);
-
-	// create residual & solution vectors
-//	ierr = MatGetVecs(bmat.A, &sol, &res); CHKERRQ(ierr);
-
-	// create nonlinear solver context
-//	ierr = NLCtxCreate(&nlctx, &bmat, &fs, &cbc, &sbc, &jrctx); CHKERRQ(ierr);
-
-	//=======================
-	// SETUP NONLINEAR SOLVER
-	//=======================
-/*
 	// create nonlinear solver
-	ierr = SNESCreate(PETSC_COMM_WORLD, &snes); CHKERRQ(ierr);
+	ierr = NLSolCreate(&nl, pc, snes); CHKERRQ(ierr);
 
-	ierr = SNESSetType(snes, SNESNEWTONLS); CHKERRQ(ierr);
+	// create output object for all requested output variables
+	ierr = PVOutCreate(&pvout, &fs, &jr.scal, user.OutputFile); CHKERRQ(ierr);
 
-	ierr = SNESGetLineSearch(snes, &snesls); CHKERRQ(ierr);
-
-	ierr = SNESLineSearchSetType(snesls, SNESLINESEARCHBASIC); CHKERRQ(ierr);
-
-	// set initial guess (on subsequent steps the previous solution will be taken)
-//	ierr = VecSet(jrctx.gsol, 0.0); CHKERRQ(ierr);
-
-	// set residual evaluation function
-	ierr = SNESSetFunction(snes, jrctx.gres, &FDSTAGFormResidual, &nlctx); CHKERRQ(ierr);
-
-	// set Jacobian & preconditioner evaluation function
-	ierr = SNESSetJacobian(snes, nlctx.Jac, NULL, &FDSTAGFormJacobian, &nlctx); CHKERRQ(ierr);
-//	SNESSetPicard
-
-	// set block stop test & residual monitor
-//	ierr = SNESSetConvergenceTest(snes, SNESBlockStopTest, &nlctx, NULL); CHKERRQ(ierr);
-
-	// setup snes options from command line
-	ierr = SNESSetFromOptions(snes); CHKERRQ(ierr);
-
-	//=====================================
-	// SETUP LINEAR SOLVER & PRECONDITIONER
-	//=====================================
-
-	// retrieve linear solver
-//	ierr = SNESGetKSP(snes, &ksp); CHKERRQ(ierr);
-
-	// set initial guess flag
-//	ierr = KSPSetInitialGuessNonzero(ksp, PETSC_TRUE); CHKERRQ(ierr);
-
-	// set block stop test & residual monitor
-//	ierr = KSPSetConvergenceTest(ksp, &KSPBlockStopTest, &bmat, NULL);
-
-	// set additional options
-//	ierr = KSPSetFromOptions(ksp); CHKERRQ(ierr);
-
-	// a bit more control on our side, we will be responsible for preconditioning
-//	ierr = KSPGetPC(ksp, &pc);                    CHKERRQ(ierr);
-//	ierr = PCSetType(pc, PCSHELL);                CHKERRQ(ierr);
-//	ierr = PCShellSetContext(pc, &bmat);          CHKERRQ(ierr);
-//	ierr = PCShellSetApply(pc, &ApplyFieldSplit); CHKERRQ(ierr);
-*/
 	//===============
 	// TIME STEP LOOP
 	//===============
@@ -467,58 +411,30 @@ PetscErrorCode LaMEMLib_FDSTAG(PetscBool InputParamFile, const char *ParamFile, 
 		//	NONLINEAR THERMO-MECHANICAL SOLVER
 		//=========================================================================================
 
-// ADHOC (uncomment test)
-//		ierr = StrainRateInterpTest(&fs, &jrctx, &user, &pvout); CHKERRQ(ierr);
-//		ierr = DoMGTests(&nlctx, &pvout); CHKERRQ(ierr);
-//		ierr = DoDarcyTests(&nlctx, &user); CHKERRQ(ierr);
 
 		//=========================================================================================
-
-// ADHOC (delete residual evaluation here)
-//		ierr = VecSet(jrctx.gsol, 0.0); CHKERRQ(ierr);
-//		ierr = VecSet(jrctx.gres, 0.0); CHKERRQ(ierr);
-//		ierr = FDSTAGFormResidual(NULL, jrctx.gsol, jrctx.gres, &nlctx); CHKERRQ(ierr);
-
-// ADHOC (don't skip snes solve here)
-		user.SkipStokesSolver = PETSC_TRUE;
-
 		if(user.SkipStokesSolver != PETSC_TRUE)
 		{
 			PetscTime(&cputime_start_nonlinear);
 
 			// solve nonlinear system with SNES
-//			ierr = SNESSolve(snes, NULL, jrctx.gsol); CHKERRQ(ierr);
+			ierr = SNESSolve(snes, NULL, jr.gsol); CHKERRQ(ierr);
 
 			// print analyze convergence/divergence reason
 //			ierr = SNESPrintConvergedReason(snes); CHKERRQ(ierr);
 
-			// SNESGetIterationNumber(snes,&its);
-			// SNESGetConvergedReason(snes,&reason);
-			// PetscPrintf(PETSC_COMM_WORLD,"%s Number of nonlinear iterations = %D\n",SNESConvergedReasons[reason],its);
+			PetscInt            its;
+			SNESConvergedReason reason;
+
+			ierr = SNESGetIterationNumber(snes, &its);    CHKERRQ(ierr);
+			ierr = SNESGetConvergedReason(snes, &reason); CHKERRQ(ierr);
+
+			PetscPrintf(PETSC_COMM_WORLD,"%s Number of nonlinear iterations = %D\n",SNESConvergedReasons[reason],its);
 
 			PetscTime(&cputime_end);
+
 			PetscPrintf(PETSC_COMM_WORLD,"#  Nonlinear solve took %g s \n", cputime_end - cputime_start_nonlinear);
 		}
-// ADHOC
-
-		else
-		{
-			// assemble matrix & rhs
-//			ierr = VecSet(jrctx.gsol, 0.0); CHKERRQ(ierr);
-//			ierr = VecSet(jrctx.gres, 0.0); CHKERRQ(ierr);
-
-//			ierr = FDSTAGFormResidual(NULL, jrctx.gsol, jrctx.gres, &nlctx); CHKERRQ(ierr);
-
-//			ierr = VecScale(jrctx.gres, -1.0); CHKERRQ(ierr);
-
-//			ierr = BlockMatCompute(&bmat, &fs, &sbc, &jrctx); CHKERRQ(ierr);
-
-//			ierr = PowellHestenes(&bmat, jrctx.gres, jrctx.gsol); CHKERRQ(ierr);
-
-//			ierr = FDSTAGFormResidual(NULL, jrctx.gsol, jrctx.gres, &nlctx); CHKERRQ(ierr);
-
-		}
-
 
 		//==========================================
 		// END OF NONLINEAR THERMO-MECHANICAL SOLVER
@@ -641,8 +557,6 @@ PetscErrorCode LaMEMLib_FDSTAG(PetscBool InputParamFile, const char *ParamFile, 
 		if(user.save_timesteps != 0) LaMEMMod( itime, user.save_timesteps, &SaveOrNot);
 		else                         SaveOrNot = 2;
 
-// ADHOC (comment entire output section)
-
 		if(SaveOrNot == 0)
 		{
 			char *DirectoryName = NULL;
@@ -737,8 +651,6 @@ PetscErrorCode LaMEMLib_FDSTAG(PetscBool InputParamFile, const char *ParamFile, 
 		// store marker to disk
 		ierr = ADVMarkSave(&actx, &user);  CHKERRQ(ierr);
 
-
-
 	}
 
 	//======================
@@ -759,19 +671,16 @@ PetscErrorCode LaMEMLib_FDSTAG(PetscBool InputParamFile, const char *ParamFile, 
 		MaterialDestroy(user.PhaseMaterialProperties);
 	}
 
-
-	ierr = FDSTAGDestroy(&fs);    CHKERRQ(ierr);
-	ierr = BCDestroy(&cbc);       CHKERRQ(ierr);
-	ierr = BCDestroy(&ubc);       CHKERRQ(ierr);
-	ierr = JacResDestroy(&jr);    CHKERRQ(ierr);
-	ierr = PVOutDestroy(&pvout);  CHKERRQ(ierr);
-	ierr = ADVDestroy(&actx);     CHKERRQ(ierr);
-
-//	ierr = NLCtxDestroy(&nlctx);              CHKERRQ(ierr);
-//	ierr = SNESDestroy(&snes);                CHKERRQ(ierr);
-
-//	ierr = VecDestroy(&sol);                  CHKERRQ(ierr);
-//	ierr = VecDestroy(&res);                  CHKERRQ(ierr);
+	// cleanup
+	ierr = FDSTAGDestroy(&fs);   CHKERRQ(ierr);
+	ierr = BCDestroy(&cbc);      CHKERRQ(ierr);
+	ierr = BCDestroy(&ubc);      CHKERRQ(ierr);
+	ierr = JacResDestroy(&jr);   CHKERRQ(ierr);
+	ierr = ADVDestroy(&actx);    CHKERRQ(ierr);
+	ierr = PCStokesDestroy(pc);  CHKERRQ(ierr);
+	ierr = SNESDestroy(&snes);   CHKERRQ(ierr);
+	ierr = NLSolDestroy(&nl);    CHKERRQ(ierr);
+	ierr = PVOutDestroy(&pvout); CHKERRQ(ierr);
 
 	PetscFunctionReturn(0);
 }

@@ -33,8 +33,9 @@ typedef struct _p_PCStokes *PCStokes;
 
 typedef struct _p_PCStokes
 {
-	JacRes *jr;
-	void   *data; // type-specific context
+	JacRes       *jr;
+	void         *data; // type-specific context
+	PCStokesType  ptype;
 
 	// internal operations
 	PetscErrorCode (*Create) (PCStokes pc);
@@ -47,10 +48,9 @@ typedef struct _p_PCStokes
 
 //---------------------------------------------------------------------------
 
-PetscErrorCode PCStokesCreate(
-	PCStokes      pc,
-	JacRes       *jr,
-	PCStokesType  ptype);
+PetscErrorCode PCStokesSetFromOptions(PCStokes pc);
+
+PetscErrorCode PCStokesCreate(PCStokes *p_pc, JacRes *jr);
 
 PetscErrorCode PCStokesSetup(PCStokes pc);
 

@@ -12,15 +12,37 @@
 #include "lsolve.h"
 //---------------------------------------------------------------------------
 #undef __FUNCT__
+#define __FUNCT__ "PCStokesSetFromOptions"
+PetscErrorCode PCStokesSetFromOptions(PCStokes pc)
+{
+	PetscBool found;
+	char      pname[PETSC_MAX_PATH_LEN];
+
+	PetscErrorCode ierr;
+	PetscFunctionBegin;
+
+	ierr = PetscOptionsGetString(PETSC_NULL,"-pstokes", pname, PETSC_MAX_PATH_LEN, &found); CHKERRQ(ierr);
+
+	if(found == PETSC_TRUE)
+	{
+		if     (!strcmp(pname, "al")) pc->ptype = STOKES_AL;
+		else if(!strcmp(pname, "bf")) pc->ptype = STOKES_BF;
+		else if(!strcmp(pname, "mg")) pc->ptype = STOKES_MG;
+		else SETERRQ1(PETSC_COMM_WORLD, PETSC_ERR_USER,"#Incorrect Stokes preconditioner: %s \n", pname);
+	}
+
+	PetscFunctionReturn(0);
+}
+//---------------------------------------------------------------------------
+#undef __FUNCT__
 #define __FUNCT__ "PCStokesCreate"
-PetscErrorCode PCStokesCreate(
-	PCStokes      pc,
-	JacRes       *jr,
-	PCStokesType  ptype)
+PetscErrorCode PCStokesCreate(PCStokes *p_pc, JacRes *jr)
 {
 	//========================================================================
 	// create Stokes preconditioner context
 	//========================================================================
+
+	PCStokes pc;
 
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
@@ -28,10 +50,13 @@ PetscErrorCode PCStokesCreate(
 	// allocate space
 	ierr = PetscMalloc(sizeof(p_PCStokes), &pc); CHKERRQ(ierr);
 
+	// set type
+	ierr = PCStokesSetFromOptions(pc); CHKERRQ(ierr);
+
 	// assign data
 	pc->jr = jr;
 
-	if(ptype == STOKES_AL)
+	if(pc->ptype == STOKES_AL)
 	{
 		// augmented Lagrangian
 		pc->Create  = &PCStokesALCreate;
@@ -40,7 +65,7 @@ PetscErrorCode PCStokesCreate(
 		pc->Apply   = &PCStokesALApply;
 		pc->Picard  = &PCStokesALPicard;
 	}
-	if(ptype == STOKES_BF)
+	else if(pc->ptype == STOKES_BF)
 	{
 		// Block Factorization
 		pc->Create  = &PCStokesBFCreate;
@@ -49,7 +74,7 @@ PetscErrorCode PCStokesCreate(
 		pc->Apply   = &PCStokesBFApply;
 		pc->Picard  = &PCStokesBFPicard;
 	}
-	if(ptype == STOKES_MG)
+	else if(pc->ptype == STOKES_MG)
 	{
 		// Galerkin multigrid
 		pc->Create  = &PCStokesMGCreate;
@@ -61,6 +86,9 @@ PetscErrorCode PCStokesCreate(
 
 	// create actual preconditioner
 	ierr = pc->Create(pc); CHKERRQ(ierr);
+
+	// return preconditioner
+	(*p_pc) = pc;
 
 	PetscFunctionReturn(0);
 }
@@ -457,7 +485,7 @@ PetscErrorCode PCStokesMGCreate(PCStokes pc)
 	ierr = MGCtxCreate(&mg->ctx, jr->fs, jr->cbc, mg->pc, IDXCOUPLED); CHKERRQ(ierr);
 
 	// create work vector
-	ierr = VecDuplicate(mg->w, &jr->gsol); CHKERRQ(ierr);
+	ierr = VecDuplicate(jr->gsol, &mg->w); CHKERRQ(ierr);
 
 	PetscFunctionReturn(0);
 }
