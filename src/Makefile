@@ -43,7 +43,6 @@ CSRC = \
 	LaMEMLib_FDSTAG_private.c \
 	LaMEM_Particles.c \
 	LaMEM_Temperature.c \
-	StokesOperators.c \
 	Elements.c \
 	Quadrature.c \
 	Solvers.c \
