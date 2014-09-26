@@ -32,7 +32,7 @@
 #define particle_props 28
 #endif
 
-#define max_num_phases 15
+#define max_num_phases 32
 #define MaxNumCPU      524288
 #define MaxNumSteps    1000000
 
@@ -61,6 +61,9 @@
 	#define GCC_COMPILER
 
 #endif
+
+#define MAX_NAME_LEN 64
+#define MAX_PATH_LEN 256
 
 //-----------------------------------------------------------------------------
 // EXTERNAL INCLUDES

@@ -11,6 +11,25 @@
 #include "Utils.h"
 //---------------------------------------------------------------------------
 #undef __FUNCT__
+#define __FUNCT__ "PMatSetDiag"
+PetscErrorCode PMatSetDiag(Mat P, PetscInt start, PetscInt ln, PetscScalar d, InsertMode mode)
+{
+	PetscInt i;
+
+	PetscErrorCode ierr;
+	PetscFunctionBegin;
+
+	for(i = 0; i < ln; i++)
+	{
+		ierr = MatSetValue(P, start, start, d, mode); CHKERRQ(ierr);
+
+		start++;
+	}
+
+	PetscFunctionReturn(0);
+}
+//---------------------------------------------------------------------------
+#undef __FUNCT__
 #define __FUNCT__ "PMatCreate"
 PetscErrorCode PMatCreate(
 	PetscInt m, PetscInt n,
@@ -385,6 +404,7 @@ PetscErrorCode PMatAssembleMonolithic(
 	BCCtx      *bc;
 	PetscInt    idx[7];
 	PetscScalar v[49];
+	PetscInt    start, ln;
 	PetscInt    iter, i, j, k, nx, ny, nz, sx, sy, sz;
 	PetscScalar eta, IKdt, E43, E23;
 	PetscScalar dx, dy, dz, bdx, fdx, bdy, fdy, bdz, fdz;
@@ -402,9 +422,12 @@ PetscErrorCode PMatAssembleMonolithic(
 	bc  = jr->cbc;   // coupled
 	dof = &fs->cdof; // coupled
 
+	start = dof->istart;
+	ln    = dof->numdof;
+
 	// clear matrix coefficients
-	ierr = MatZeroEntries(P); CHKERRQ(ierr);
-	ierr = MatZeroEntries(M); CHKERRQ(ierr);
+	ierr = MatZeroEntries(P);                             CHKERRQ(ierr);
+	ierr = PMatSetDiag(M, start, ln, 0.0, INSERT_VALUES); CHKERRQ(ierr);
 
 	// access index vectors
 	ierr = DMDAVecGetArray(fs->DA_X,   dof->ivx,  &ivx);  CHKERRQ(ierr);
@@ -907,7 +930,7 @@ PetscErrorCode PMatAssembleBlock(
 	// if pgamma is nonzero:
 	// M   - will contain -kappa (inverse penalty matrix)
 	// Avv - will contain Avv + kappa*Avp*Apv (velocity Schur complement)
-	// kappa = 1/(1/(K*dt) + 1/(pgamma*eta)
+	// kappa = 1/(1/(K*dt) + 1/(pgamma*eta))
 	//
 	// otherwise:
 	// M will contain -kappa (pressure Schur complement preconditioner)

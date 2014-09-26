@@ -71,6 +71,7 @@ PetscErrorCode ScalingCreate(
 	scal->out_length   = length/km;
 	scal->out_velocity = scal->velocity/cm_yr;
 	scal->out_stress   = scal->stress/MPa;
+	scal->out_phase    = 1.0;
 
 	PetscFunctionReturn(0);
 }

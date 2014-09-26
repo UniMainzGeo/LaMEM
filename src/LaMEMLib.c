@@ -70,8 +70,8 @@ PetscErrorCode LaMEMLib(PetscScalar *LaMEM_OutputParameters, PetscInt *mpi_group
 {
 
 	PetscInt found_data;
-	PetscBool InputParamFile, ElemTypeSet, use_fdstag_canonical;
-	char ParamFile[PETSC_MAX_PATH_LEN], ElemType[PETSC_MAX_PATH_LEN];
+	PetscBool InputParamFile, use_fdstag_canonical;
+	char ParamFile[PETSC_MAX_PATH_LEN];
 
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
@@ -90,18 +90,6 @@ PetscErrorCode LaMEMLib(PetscScalar *LaMEM_OutputParameters, PetscInt *mpi_group
 
 	if(use_fdstag_canonical == PETSC_TRUE)
 	{
-		// check whether basic element type is FDSTAG
-		ierr = PetscOptionsGetString(PETSC_NULL, "-vpt_element", ElemType, PETSC_MAX_PATH_LEN, &ElemTypeSet);
-		if(ElemTypeSet != PETSC_TRUE || strcmp(ElemType, "FDSTAG"))
-		{
-			SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "ERROR! Option -use_fdstag_canonical currently requires setting -vpt_element FDSTAG\n");
-		}
-
-		// using particles is required
-#ifndef PARTICLES
-		SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "ERROR! recompile with -DPARTICLES to activate option -use_fdstag_canonical\n");
-#endif
-
 		// call FDSTAG solution routine
 		ierr = LaMEMLib_FDSTAG(InputParamFile, ParamFile, LaMEM_OutputParameters, mpi_group_id); CHKERRQ(ierr);
 	}

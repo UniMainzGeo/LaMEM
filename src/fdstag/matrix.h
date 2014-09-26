@@ -5,6 +5,8 @@
 #define __matrix_h__
 //---------------------------------------------------------------------------
 
+PetscErrorCode PMatSetDiag(Mat P, PetscInt start, PetscInt ln, PetscScalar d, InsertMode mode);
+
 PetscErrorCode PMatCreate(PetscInt m, PetscInt n, PetscInt d_nz,
 	const PetscInt d_nnz[], PetscInt o_nz, const PetscInt o_nnz[], Mat *P);
 

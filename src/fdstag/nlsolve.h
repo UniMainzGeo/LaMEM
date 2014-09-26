@@ -11,7 +11,7 @@ typedef enum
 	//===================
 	// assembled matrices
 	//===================
-	JPICARD,   // constant effective coefficients approximation (viscosity, conductivity, stress)
+	PICARD,   // constant effective coefficients approximation (viscosity, conductivity, stress)
 //	FDCOLOR,  // finite difference coloring approximation with full sparsity pattern
 //	ANALYTIC, // analytic Jacobian with full sparsity pattern
 //	APPROX,   // analytic Jacobian truncated to Picard sparsity pattern (possibly with diagonal compensation)
@@ -19,8 +19,8 @@ typedef enum
 	//============
 	// matrix-free
 	//============
-	JMF,  // analytic
-	JMFFD // built-in finite difference approximation
+	MF,  // analytic
+	MFFD // built-in finite difference approximation
 
 } JacType;
 
@@ -37,7 +37,7 @@ typedef struct
 } NLSol;
 //---------------------------------------------------------------------------
 
-PetscErrorCode NLSolCreate(NLSol *nl, PCStokes pc, SNES snes);
+PetscErrorCode NLSolCreate(NLSol *nl, PCStokes pc, SNES *p_snes);
 
 PetscErrorCode NLSolDestroy(NLSol *nl);
 

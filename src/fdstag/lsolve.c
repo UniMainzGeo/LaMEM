@@ -16,12 +16,12 @@
 PetscErrorCode PCStokesSetFromOptions(PCStokes pc)
 {
 	PetscBool found;
-	char      pname[PETSC_MAX_PATH_LEN];
+	char      pname[MAX_NAME_LEN];
 
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
 
-	ierr = PetscOptionsGetString(PETSC_NULL,"-pstokes", pname, PETSC_MAX_PATH_LEN, &found); CHKERRQ(ierr);
+	ierr = PetscOptionsGetString(PETSC_NULL,"-pstokes", pname, MAX_NAME_LEN, &found); CHKERRQ(ierr);
 
 	if(found == PETSC_TRUE)
 	{
@@ -250,7 +250,7 @@ PetscErrorCode PCStokesALApply(Mat P, Vec r, Vec z)
 	ierr = MatShellGetContext(P, (void**)&al); CHKERRQ(ierr);
 
 	// extract residual blocks
-	ierr = VecScatterBlockToMonolithic(r, al->f, al->h, SCATTER_REVERSE); CHKERRQ(ierr);
+	ierr = VecScatterBlockToMonolithic(al->f, al->h, r, SCATTER_REVERSE); CHKERRQ(ierr);
 
 	// compose right-hand-side vector: f = f - Avp*M*h
 	ierr = MatMult(al->M, al->h, al->p);     CHKERRQ(ierr);
@@ -266,7 +266,7 @@ PetscErrorCode PCStokesALApply(Mat P, Vec r, Vec z)
 	ierr = MatMult(al->M, al->h, al->p);     CHKERRQ(ierr);
 
 	// compose approximate solution
-	ierr = VecScatterBlockToMonolithic(z, al->u, al->p, SCATTER_FORWARD); CHKERRQ(ierr);
+	ierr = VecScatterBlockToMonolithic(al->u, al->p, z, SCATTER_FORWARD); CHKERRQ(ierr);
 
 	PetscFunctionReturn(0);
 }
@@ -332,11 +332,13 @@ PetscErrorCode PCStokesBFCreate(PCStokes pc)
 	ierr = PCSetType(bf->pc, PCFIELDSPLIT);                                      CHKERRQ(ierr);
 	ierr = PCFieldSplitSetType(bf->pc, PC_COMPOSITE_SCHUR);                      CHKERRQ(ierr);
 	ierr = PCFieldSplitSetSchurFactType(bf->pc, PC_FIELDSPLIT_SCHUR_FACT_UPPER); CHKERRQ(ierr);
-	ierr = PCFieldSplitSetIS(bf->pc, PETSC_NULL, bf->isv);                       CHKERRQ(ierr);
-	ierr = PCFieldSplitSetIS(bf->pc, PETSC_NULL, bf->isp);                       CHKERRQ(ierr);
+	ierr = PCFieldSplitSetIS(bf->pc, "u", bf->isv);                              CHKERRQ(ierr);
+	ierr = PCFieldSplitSetIS(bf->pc, "p", bf->isp);                              CHKERRQ(ierr);
 	ierr = PCFieldSplitSetSchurPre(bf->pc, PC_FIELDSPLIT_SCHUR_PRE_USER, bf->M); CHKERRQ(ierr);
 	ierr = PCSetOptionsPrefix(bf->pc, "bf_");                                    CHKERRQ(ierr);
 	ierr = PCSetFromOptions(bf->pc);                                             CHKERRQ(ierr);
+
+//ierr = PCSetUp(bf->pc); CHKERRQ(ierr);
 
 	// check whether Galerkin multigrid is requested for the velocity block
 	ierr = PetscOptionsHasName(NULL, "-velgmg", &flg);

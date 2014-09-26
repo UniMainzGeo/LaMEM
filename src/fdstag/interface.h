@@ -6,7 +6,7 @@
 //---------------------------------------------------------------------------
 
 // initialize material properties in the FDSTAG data structures
-PetscErrorCode FDSTAGInitMaterialProps(JacRes *jr, UserContext *usr);
+PetscErrorCode InitMaterialProps(JacRes *jr, UserContext *usr);
 
 //---------------------------------------------------------------------------
 #endif

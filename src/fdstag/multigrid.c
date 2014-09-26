@@ -56,7 +56,7 @@ PetscErrorCode MGCtxCreate(MGCtx *mg, FDSTAG *fs, BCCtx *bc, PC pc, idxtype idxm
 {
 	PetscInt  i, l, ncors, nlevels;
 	FDSTAG   *fine, *cors;
-	char      pc_type[PETSC_MAX_PATH_LEN];
+	char      pc_type[MAX_NAME_LEN];
 	PetscBool opt_set;
 	PetscInt  Nx, Ny, Nz;
 	PetscInt  Px, Py, Pz;
@@ -67,7 +67,7 @@ PetscErrorCode MGCtxCreate(MGCtx *mg, FDSTAG *fs, BCCtx *bc, PC pc, idxtype idxm
 	PetscFunctionBegin;
 
 	// get preconditioner type
-	ierr = PetscOptionsGetString(NULL, "-gmg_pc_type", pc_type, PETSC_MAX_PATH_LEN, &opt_set); CHKERRQ(ierr);
+	ierr = PetscOptionsGetString(NULL, "-gmg_pc_type", pc_type, MAX_NAME_LEN, &opt_set); CHKERRQ(ierr);
 
 	// check whether multigrid is requested
 	if(opt_set != PETSC_TRUE || strcmp(pc_type, "mg")) PetscFunctionReturn(0);

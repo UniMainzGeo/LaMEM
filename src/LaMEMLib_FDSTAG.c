@@ -346,7 +346,7 @@ PetscErrorCode LaMEMLib_FDSTAG(PetscBool InputParamFile, const char *ParamFile, 
 	ierr = VecSet(jr.lT, 1.0); CHKERRQ(ierr);
 
 	// initialize material properties
-	ierr = FDSTAGInitMaterialProps(&jr, &user); CHKERRQ(ierr);
+	ierr = InitMaterialProps(&jr, &user); CHKERRQ(ierr);
 
 	// initialize material parameter limits
 	ierr = SetMatParLim(&jr.matLim, &user); CHKERRQ(ierr);
@@ -366,7 +366,7 @@ PetscErrorCode LaMEMLib_FDSTAG(PetscBool InputParamFile, const char *ParamFile, 
 	ierr = PCStokesCreate(&pc, &jr); CHKERRQ(ierr);
 
 	// create nonlinear solver
-	ierr = NLSolCreate(&nl, pc, snes); CHKERRQ(ierr);
+	ierr = NLSolCreate(&nl, pc, &snes); CHKERRQ(ierr);
 
 	// create output object for all requested output variables
 	ierr = PVOutCreate(&pvout, &fs, &jr.scal, user.OutputFile); CHKERRQ(ierr);

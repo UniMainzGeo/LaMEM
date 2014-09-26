@@ -11,8 +11,8 @@
 #include "Utils.h"
 //---------------------------------------------------------------------------
 #undef __FUNCT__
-#define __FUNCT__ "FDSTAGInitMaterialProps"
-PetscErrorCode FDSTAGInitMaterialProps(JacRes *jr, UserContext *usr)
+#define __FUNCT__ "InitMaterialProps"
+PetscErrorCode InitMaterialProps(JacRes *jr, UserContext *usr)
 {
 	// initialize material properties in the FDSTAG data structures
 

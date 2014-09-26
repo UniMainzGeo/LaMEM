@@ -41,6 +41,7 @@ typedef struct
 	PetscScalar out_length;   // * -> m   -> km
 	PetscScalar out_velocity; // * -> m/s -> cm/yr
 	PetscScalar out_stress;   // * -> Pa  -> MPa
+	PetscScalar out_phase;    // unit
 
 } Scaling;
 //---------------------------------------------------------------------------

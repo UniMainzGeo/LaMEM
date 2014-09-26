@@ -119,7 +119,7 @@ PetscErrorCode PVOutWritePhase(JacRes *jr, OutBuf *outbuf)
 		buff[k][j][i] = mID;
 
 	// no scaling is necessary for the phase
-	cf = 1.0;
+	cf = scal->out_phase;
 
 	// access material parameters
 	phases    = jr->phases;
