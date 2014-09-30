@@ -130,7 +130,7 @@ Anton, please add a few comments
 //---------------------------------------------------------------------------
 #undef __FUNCT__
 #define __FUNCT__ "ADVCreate"
-PetscErrorCode ADVCreate(AdvCtx *actx, FDSTAG *fs)
+PetscErrorCode ADVCreate(AdvCtx *actx, FDSTAG *fs, JacRes *jr)
 {
 	// create advection context
 
@@ -140,6 +140,7 @@ PetscErrorCode ADVCreate(AdvCtx *actx, FDSTAG *fs)
 	PetscFunctionBegin;
 
 	actx->fs = fs;
+	actx->jr = jr;
 
 	//=============
 	// COMMUNICATOR
@@ -279,24 +280,96 @@ PetscErrorCode ADVAdvect(AdvCtx *actx)
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-/*
 #undef __FUNCT__
 #define __FUNCT__ "ADVAdvectMarkers"
-PetscErrorCode ADVAdvectMarkers(AdvCtx *actx, FDSTAG *fs, JacResCtx *jrctx)
+PetscErrorCode ADVAdvectMarkers(AdvCtx *actx)
 {
-//	PetscErrorCode ierr;
+	// update marker positions from current velocities & time step
+
+	FDSTAG      *fs;
+	JacRes      *jr;
+	Marker      *P;
+	PetscInt    sx, sy, sz, nx, ny;
+	PetscInt    jj, ID, I, J, K, JI, KI, IJ, KJ, IK, JK;
+	PetscScalar *ncx, *ncy, *ncz;
+	PetscScalar *ccx, *ccy, *ccz;
+	PetscScalar ***lvx, ***lvy, ***lvz;
+	PetscScalar xb, yb, zb, xe, ye, ze;
+	PetscScalar vx, vy, vz, xc, yc, zc, xp, yp, zp, dt;
+
+	PetscErrorCode ierr;
 	PetscFunctionBegin;
 
+	// access context
+	fs = actx->fs;
+	jr = actx->jr;
 
-	// map markers on control volumes of the X, Y, Z -face nodes
+	// starting indices & number of cells
+	sx = fs->dsx.pstart; nx = fs->dsx.ncels;
+	sy = fs->dsy.pstart; ny = fs->dsy.ncels;
+	sz = fs->dsz.pstart;
+
+	// node & cell coordinates
+	ncx = fs->dsx.ncoor; ccx = fs->dsx.ccoor;
+	ncy = fs->dsy.ncoor; ccy = fs->dsy.ccoor;
+	ncz = fs->dsz.ncoor; ccz = fs->dsz.ccoor;
+
+	// current time step
+	dt = jr->dt;
+
+	// access velocity vectors
+	ierr = DMDAVecGetArray(fs->DA_X, jr->lvx, &lvx); CHKERRQ(ierr);
+	ierr = DMDAVecGetArray(fs->DA_Y, jr->lvy, &lvy); CHKERRQ(ierr);
+	ierr = DMDAVecGetArray(fs->DA_Z, jr->lvz, &lvz); CHKERRQ(ierr);
+
+	// scan all markers
+	for(jj = 0; jj < actx->nummark; jj++)
+	{
+		// access next marker
+		P = &actx->markers[jj];
+
+		// get consecutive index of the host cell
+		ID = actx->cellnum[jj];
+
+		// expand I, J, K cell indices
+		GET_CELL_IJK(ID, I, J, K, nx, ny)
+
+		// get marker coordinates
+		xp = P->X[0];
+		yp = P->X[1];
+		zp = P->X[2];
+
+		// get coordinates of cell center
+		xc = ccx[I];
+		yc = ccy[J];
+		zc = ccz[K];
+
+		// map marker on the cell X, Y, Z -face grids
+		IJ = IK = I;
+		JI = JK = J;
+		KI = KJ = K;
+/*
+		put mapping logic here
+		if(xp > xc) In = Ic+1; else In = Ic;
+		if(yp > yc) Jn = Jc+1; else Jn = Jc;
+		if(zp > zc) Kn = Kc+1; else Kn = Kc;
+*/
+		InterpLin3D(vx, lvx, I,  JI, KI, ncx, ccy, ccz)
+		InterpLin3D(vy, lvy, IJ, J,  KJ, ccx, ncy, ccz)
+		InterpLin3D(vz, lvz, IK, JK, K,  ccx, ccy, ncz)
+
+		// update node coordinates
+		P->X[0] = xp + vx*dt;
+		P->X[1] = yp + vy*dt;
+		P->X[2] = zp + vz*dt;
+	}
 
 	PetscFunctionReturn(0);
 }
-*/
 //---------------------------------------------------------------------------
 #undef __FUNCT__
 #define __FUNCT__ "ADVProjHistMarkGrid"
-PetscErrorCode ADVProjHistMarkGrid(AdvCtx *actx, JacRes *jr)
+PetscErrorCode ADVProjHistMarkGrid(AdvCtx *actx)
 {
 	// Project the following history fields from markers to grid:
 
@@ -307,6 +380,7 @@ PetscErrorCode ADVProjHistMarkGrid(AdvCtx *actx, JacRes *jr)
 	// - stress       (centers or edges)
 
 	FDSTAG      *fs;
+	JacRes      *jr;
 	Marker      *P;
 	SolVarCell  *svCell;
 	PetscInt     nx, ny, nz, sx, sy, sz, nCells;
@@ -318,6 +392,7 @@ PetscErrorCode ADVProjHistMarkGrid(AdvCtx *actx, JacRes *jr)
 	PetscFunctionBegin;
 
 	fs = actx->fs;
+	jr = actx->jr;
 
 	// get number of cells
 	GET_CELL_RANGE(nx, sx, fs->dsx)
@@ -777,6 +852,38 @@ PetscErrorCode ADVMapMarkersCells(AdvCtx *actx)
 	PetscFunctionReturn(0);
 }
 //-----------------------------------------------------------------------------
+// service functions
+//-----------------------------------------------------------------------------
+
+//---------------------------------------------------------------------------
+PetscInt getPtrCnt(PetscInt n, PetscInt counts[], PetscInt ptr[])
+{
+	// compute pointers from counts, return total count
+
+	PetscInt i, tcnt = 0;
+
+	for(i = 0; i < n; i++)
+	{
+		ptr[i] = tcnt;
+		tcnt  += counts[i];
+	}
+	return tcnt;
+}
+//---------------------------------------------------------------------------
+void rewindPtr(PetscInt n, PetscInt ptr[])
+{
+	// rewind pointers after using them as access iterators
+
+	PetscInt i, prev = 0, next;
+
+	for(i = 0; i < n; i++)
+	{
+		next   = ptr[i];
+		ptr[i] = prev;
+		prev   = next;
+	}
+}
+//-----------------------------------------------------------------------------
 /*
 #undef __FUNCT__
 #define __FUNCT__ "FDSTAGetVorticity"
@@ -873,119 +980,6 @@ PetscErrorCode FDSTAGetVorticity(
 
 	PetscFunctionReturn(0);
 }
-*/
 //-----------------------------------------------------------------------------
-// service functions
-//-----------------------------------------------------------------------------
-PetscInt getPtrCnt(PetscInt n, PetscInt counts[], PetscInt ptr[])
-{
-	// compute pointers from counts, return total count
-
-	PetscInt i, tcnt = 0;
-
-	for(i = 0; i < n; i++)
-	{
-		ptr[i] = tcnt;
-		tcnt  += counts[i];
-	}
-	return tcnt;
-}
-//---------------------------------------------------------------------------
-void rewindPtr(PetscInt n, PetscInt ptr[])
-{
-	// rewind pointers after using them as access iterators
-
-	PetscInt i, prev = 0, next;
-
-	for(i = 0; i < n; i++)
-	{
-		next   = ptr[i];
-		ptr[i] = prev;
-		prev   = next;
-	}
-}
-//---------------------------------------------------------------------------
-
-
-/*
-	for(ii = 0; ii < jrctx->numPhases; ii++)
-	{
-		// clear
-		ierr = VecZeroEntries(jrctx->ldxy); CHKERRQ(ierr);
-		ierr = VecZeroEntries(jrctx->ldxz); CHKERRQ(ierr);
-		ierr = VecZeroEntries(jrctx->ldyz); CHKERRQ(ierr);
-
-		// access 3D layouts of local vectors
-		ierr = DMDAVecGetArray(fs->DA_XY, jrctx->ldxy, &lxy); CHKERRQ(ierr);
-		ierr = DMDAVecGetArray(fs->DA_XZ, jrctx->ldxz, &lxz); CHKERRQ(ierr);
-		ierr = DMDAVecGetArray(fs->DA_YZ, jrctx->ldyz, &lyz); CHKERRQ(ierr);
-
-		// compute local contributions
-		for(jj = 0; jj < actx->nummark; jj++)
-		{
-			// skip the marker which phase number is different than ii
-			if(actx->markers[jj].phase != ii) continue;
-
-			// get consecutive index of the host cell
-			ID = actx->cellnum[jj];
-
-			// expand I, J, K cell indices
-			GET_CELL_IJK(ID, Ic, Jc, Kc, M, N)
-
-			// get marker coordinates
-			xm  = actx->markers[jj].X[0];
-			ym  = actx->markers[jj].X[1];
-			zm  = actx->markers[jj].X[2];
-
-			// get coordinates of cell center
-			xc = fs->dsx.ccoor[Ic];
-			yc = fs->dsy.ccoor[Jc];
-			zc = fs->dsz.ccoor[Kc];
-
-			// map marker on the control volumes of edge nodes
-			if(xm > xc) In = Ic+1; else In = Ic;
-			if(ym > yc) Jn = Jc+1; else Jn = Jc;
-			if(zm > zc) Kn = Kc+1; else Kn = Kc;
-
-			// get interpolation weights in cell control volumes
-			wxc = WEIGHT_POINT_CELL(Ic, xm, fs->dsx);
-			wyc = WEIGHT_POINT_CELL(Jc, ym, fs->dsy);
-			wzc = WEIGHT_POINT_CELL(Kc, zm, fs->dsz);
-
-			// get interpolation weights in node control volumes
-			wxn = WEIGHT_POINT_CELL(In, xm, fs->dsx);
-			wyn = WEIGHT_POINT_CELL(Jn, ym, fs->dsy);
-			wzn = WEIGHT_POINT_CELL(Kn, zm, fs->dsz);
-
-			// update phase ratios
-			lxy[In][Jn][Kc] += wxn*wyn*wzc;
-			lxz[In][Jc][Kn] += wxn*wyc*wzn;
-			lyz[Ic][Jn][Kn] += wxc*wyn*wzn;
-		}
-
-		// restore access
-		ierr = DMDAVecRestoreArray(fs->DA_XY, jrctx->ldxy, &lxy); CHKERRQ(ierr);
-		ierr = DMDAVecRestoreArray(fs->DA_XZ, jrctx->ldxz, &lxz); CHKERRQ(ierr);
-		ierr = DMDAVecRestoreArray(fs->DA_YZ, jrctx->ldyz, &lyz); CHKERRQ(ierr);
-
-		// assemble
-		LOCAL_TO_GLOBAL(fs->DA_XY, jrctx->ldxy, jrctx->gdxy)
-		LOCAL_TO_GLOBAL(fs->DA_XZ, jrctx->ldxz, jrctx->gdxz)
-		LOCAL_TO_GLOBAL(fs->DA_YZ, jrctx->ldyz, jrctx->gdyz)
-
-		// access 1D layouts of global vectors
-		ierr = VecGetArray(jrctx->gdxy, &gxy);  CHKERRQ(ierr);
-		ierr = VecGetArray(jrctx->gdxz, &gxz);  CHKERRQ(ierr);
-		ierr = VecGetArray(jrctx->gdyz, &gyz);  CHKERRQ(ierr);
-
-		// copy data to residual context
-		for(jj = 0; jj < fs->nXYEdg; jj++) jrctx->svXYEdge[jj].phRat[ii] = gxy[jj];
-		for(jj = 0; jj < fs->nXZEdg; jj++) jrctx->svXZEdge[jj].phRat[ii] = gxz[jj];
-		for(jj = 0; jj < fs->nYZEdg; jj++) jrctx->svYZEdge[jj].phRat[ii] = gyz[jj];
-
-		// restore access
-		ierr = VecRestoreArray(jrctx->gdxy, &gxy); CHKERRQ(ierr);
-		ierr = VecRestoreArray(jrctx->gdxz, &gxz); CHKERRQ(ierr);
-		ierr = VecRestoreArray(jrctx->gdyz, &gyz); CHKERRQ(ierr);
-	}
 */
+

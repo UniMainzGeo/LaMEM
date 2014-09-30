@@ -24,6 +24,9 @@ typedef struct
 	// staggered grid
 	FDSTAG *fs;
 
+	// nonlinear solver context
+	JacRes *jr;
+
 	//=============
 	// COMMUNICATOR
 	//=============
@@ -37,7 +40,7 @@ typedef struct
 	PetscInt  nummark; // local number of markers
 	PetscInt  markcap; // capacity of marker storage
 	Marker 	 *markers; // storage for local markers
-	PetscInt *cellnum; // host cells local numbers
+	PetscInt *cellnum; // host cells local numbers for each marker
 
 	//=========
 	// EXCHANGE
@@ -63,22 +66,29 @@ typedef struct
 	// 3. Synchronize SIMULTANEOUSLY all the phases for a given edge set xy, xz, or yz (large memory requirements)
 	// 4. Duplicate the markers in the overlapping control volumes near the inter-processor boundaries (a compromise, but still more memory)
 
+	// vorticity components
+//	Vec gwx,  gwy,  gwz; // global vorticity components
+
 } AdvCtx;
 
 //---------------------------------------------------------------------------
+// create advection context
+PetscErrorCode ADVCreate(AdvCtx *actx, FDSTAG *fs, JacRes *jr);
 
-PetscErrorCode ADVCreate(AdvCtx *actx, FDSTAG *fs);
-
+// destroy advection context
 PetscErrorCode ADVDestroy(AdvCtx *actx);
 
+// (re)allocate marker storage
 PetscErrorCode ADVReAllocateStorage(AdvCtx *actx, PetscInt capacity);
 
+// perform advection step
 PetscErrorCode ADVAdvect(AdvCtx *actx);
 
-PetscErrorCode ADVAdvectMarkers(AdvCtx *actx, JacRes *jr);
+// update marker positions from current velocities & time step
+PetscErrorCode ADVAdvectMarkers(AdvCtx *actx);
 
 // project history variables from markers to grid
-PetscErrorCode ADVProjHistMarkGrid(AdvCtx *actx, JacRes *jr);
+PetscErrorCode ADVProjHistMarkGrid(AdvCtx *actx);
 
 // count number of markers to be sent to each neighbor domain
 PetscErrorCode ADVMapMarkersDomains(AdvCtx *actx);
@@ -109,7 +119,54 @@ PetscErrorCode FDSTAGetVorticity(
 */
 
 //-----------------------------------------------------------------------------
-// call this function for local markers only!
+// service functions
+//-----------------------------------------------------------------------------
+/*
+PetscErrorCode getPointVelocity(
+	FDSTAG      *fs,
+	PetscScalar ***vx,   // local velocity vectors
+	PetscScalar ***vy,   // ...
+	PetscScalar ***vz,   // ...
+	PetscScalar *x,      // point coordinates
+	PetscScalar *v);      // point velocity
+
+// interpolate scalar field in a cell of 3D grid
+PetscScalar InterpolateLinear3D(
+	PetscScalar ***v,   // interpolated field
+	PetscInt       i,   // cell identifiers
+	PetscInt       j,   // ...
+	PetscInt       k,   // ...
+	PetscInt       sx,  // starting indices
+	PetscInt       sy,  // ...
+	PetscInt       sz,  // ...
+	PetscScalar   *cx,  // grid coordinates
+	PetscScalar   *cy,  // ...
+	PetscScalar   *cz,  // ...
+	PetscScalar    px,  // point coordinates
+	PetscScalar    py,  // ...
+	PetscScalar    pz); // ...
+*/
+// compute pointers from counts, return total count
+PetscInt getPtrCnt(PetscInt n, PetscInt counts[], PetscInt ptr[]);
+
+// rewind pointers after using them as access iterators
+void rewindPtr(PetscInt n, PetscInt ptr[]);
+
+// normalize vector by the inverse sum of its elements
+static inline PetscScalar normVect(PetscInt n, PetscScalar *v)
+{
+	// normalize vector by the inverse sum of its elements
+
+	PetscInt    i;
+	PetscScalar sum = 0.0;
+
+	for(i = 0; i < n; i++) sum  += v[i];
+	for(i = 0; i < n; i++) v[i] /= sum;
+
+	return sum;
+}
+
+// find ID of the cell containing point (call this function for local point only!)
 static inline PetscInt FindPointInCell(
 	PetscScalar *px, // node coordinates
 	PetscInt     L,  // index of the leftmost node
@@ -135,36 +192,22 @@ static inline PetscInt FindPointInCell(
 	return(L);
 }
 //-----------------------------------------------------------------------------
-// service functions
+// MACROS
 //-----------------------------------------------------------------------------
-
-// compute pointers from counts, return total count
-PetscInt getPtrCnt(PetscInt n, PetscInt counts[], PetscInt ptr[]);
-
-// rewind pointers after using them as access iterators
-void rewindPtr(PetscInt n, PetscInt ptr[]);
-
-// normalize vector by the inverse sum of its elements
-static inline PetscScalar normVect(PetscInt n, PetscScalar *v)
-{
-	// normalize vector by the inverse sum of its elements
-
-	PetscInt    i;
-	PetscScalar sum = 0.0;
-
-	for(i = 0; i < n; i++) sum  += v[i];
-	for(i = 0; i < n; i++) v[i] /= sum;
-
-	return sum;
-}
-//-----------------------------------------------------------------------------
-
-/*
-
-// vorticity components
-Vec gwx,  gwy,  gwz; // global vorticity components
-*/
-
-
+#define InterpLin3D(v, lv, i, j, k, cx, cy, cz) \
+	/* get relative coordinates */ \
+	xe = (xp - cx[i-sx])/(cx[i-sx+1] - cx[i-sx]); xb = 1.0 - xe; \
+	ye = (yp - cy[j-sy])/(cy[j-sy+1] - cy[j-sy]); yb = 1.0 - ye; \
+	ze = (zp - cz[k-sz])/(cz[k-sz+1] - cz[k-sz]); zb = 1.0 - ze; \
+	/* interpolate & return result */ \
+	v = \
+	lv[k  ][j  ][i  ]*xb*yb*zb + \
+	lv[k  ][j  ][i+1]*xe*yb*zb + \
+	lv[k  ][j+1][i  ]*xb*ye*zb + \
+	lv[k  ][j+1][i+1]*xe*ye*zb + \
+	lv[k+1][j  ][i  ]*xb*yb*ze + \
+	lv[k+1][j  ][i+1]*xe*yb*ze + \
+	lv[k+1][j+1][i  ]*xb*ye*ze + \
+	lv[k+1][j+1][i+1]*xe*ye*ze;
 //---------------------------------------------------------------------------
 #endif

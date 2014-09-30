@@ -139,6 +139,10 @@ PetscErrorCode FormJacobian(SNES snes, Vec x, Mat Amat, Mat Pmat, void *ctx)
 
 	PetscInt it;
 
+	// clear unused parameters
+	if(Amat) Amat = NULL;
+	if(Pmat) Pmat = NULL;
+
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
 

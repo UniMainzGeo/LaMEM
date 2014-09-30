@@ -421,7 +421,10 @@ PetscErrorCode PCStokesBFSetup(PCStokes pc)
 		ierr = MGCtxSetDiagOnLevels(&bf->vctx, bf->vpc); CHKERRQ(ierr);
 	}
 
+//	ierr = PCView(bf->pc, PETSC_VIEWER_STDOUT_SELF); CHKERRQ(ierr);
+
 	PetscFunctionReturn(0);
+
 }
 //---------------------------------------------------------------------------
 #undef __FUNCT__

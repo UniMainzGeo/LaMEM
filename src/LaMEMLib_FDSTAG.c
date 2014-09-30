@@ -34,14 +34,10 @@ without the explicit agreement of Boris Kaus.
 
 #include "LaMEM.h"
 #include "Version.h"
-#include "Output.h"
 #include "ParaViewOutput.h"
 #include "Material.h"
-#include "Mesh.h"
 #include "Utils.h"
 #include "LaMEM_Initialize.h"
-#include "LaMEM_Particles.h"
-#include "Assembly_FDSTAG.h"
 #include "LaMEMLib_FDSTAG_private.h"
 
 //#include "Breakpoint.h"
@@ -60,7 +56,6 @@ without the explicit agreement of Boris Kaus.
 #include "nlsolve.h"
 #include "interface.h"
 #include "multigrid.h"
-#include "check_fdstag.h"
 #include "advect.h"
 #include "marker.h"
 
@@ -84,12 +79,12 @@ PetscErrorCode LaMEMLib_FDSTAG(PetscBool InputParamFile, const char *ParamFile, 
 	FDSTAG   fs;    // staggered-grid layout
 	BCCtx    cbc;   // boundary condition context (coupled)
 	BCCtx    ubc;   // boundary condition context (uncoupled)
-	JacRes   jr;    // fdstag Jacobian & residual context
+	JacRes   jr;    // Jacobian & residual context
 	AdvCtx   actx;  // advection context
 	PCStokes pc;    // Stokes preconditioner
 	SNES     snes;  // PETSc nonliner solver
 	NLSol    nl;    // nonlinear solver context
-	PVOut    pvout; // fdstag paraview output driver
+	PVOut    pvout; // paraview output driver
 
 //	PetscViewer  viewer;
 //	PetscBool    do_restart;
@@ -118,11 +113,6 @@ PetscErrorCode LaMEMLib_FDSTAG(PetscBool InputParamFile, const char *ParamFile, 
 	user.InputParamFile = InputParamFile;
 	if(InputParamFile == PETSC_TRUE) strcpy(user.ParamFile, ParamFile);
 
-	// create element data structure (T_O___B_E___R_E_M_O_V_E_D)!
-//	ierr = LaMEMVelPressureDACreate(DAVP_Q2PM1G, &C); CHKERRQ(ierr);
-//	ierr = LaMEMVelPressureDAGetInfo( C, &vpt_element_type,0,0,0,0,0,0,0,0,0,0,0,0); CHKERRQ(ierr);
-	__ELEMENT_TYPE__ = ELEMENT_FDSTAG;
-
 	// initialize variables
 	ierr = InitializeCode(&user); CHKERRQ(ierr);
 
@@ -147,19 +137,12 @@ PetscErrorCode LaMEMLib_FDSTAG(PetscBool InputParamFile, const char *ParamFile, 
 //	user.InitialErosionSurfaceFromFile = 0;
 //	user.LoadInitialParticlesFromDisc = 0;
 //	user.remesh = 0;
+
 	//========================================================================================
 	// Setting up the solver
 	//========================================================================================
 
 //	PetscTime(&cputime_start);
-
-	// Initialize DMDA and matrices, that:
-	// (1) Store material properties,
-	// (2) Distribute the structured grid on the various processors
-	// (3) Are required for the velocity and pressure Stokes solution
-
-//	ierr = LaMEM_Initialize_StokesSolver_FDSTAG(&user, vpt_element_type, C); CHKERRQ(ierr);
-
 
 	// Initialize erosion solver and surface if required
 //	ierr = InitializeInternalErosionSurfaceOnRankZero(&user); CHKERRQ(ierr);
@@ -174,79 +157,12 @@ PetscErrorCode LaMEMLib_FDSTAG(PetscBool InputParamFile, const char *ParamFile, 
 //		ierr = SaveInitialErosionSurface(&user,"InitialErosionSurface"); CHKERRQ(ierr);
 //	}
 
-//	PetscTime(&cputime_end);
-//	PetscPrintf(PETSC_COMM_WORLD,"# Finished initializing Stokes matrices : %g s \n",cputime_end - cputime_start);
-//	PetscTime(&cputime_start);
-
-	// create solution vectors
-//	ierr = CreateSolutionVectors(&user); CHKERRQ(ierr);
-
-	// Generate fine-grid mesh
-//	ierr = GenerateMeshFine(user.DA_Vel, &user); CHKERRQ(ierr);
-
-	// Save Partitioning
-//	if(user.SavePartitioning)
-//	{
-//		SaveProcessorPartitioning(&user);
-//	}
 
 //	if (user.BC.InternalBound > 0)
 //	{
 //		DefineInternalBC(&user);
 //	}
 
-	// Create a deformed mesh
-//	ierr = DMDASetUniformCoordinates(user.DA_Vel,user.x_left,user.x_left+user.W,user.y_front,user.y_front + user.L,user.z_bot,user.z_bot + user.H); CHKERRQ(ierr);
-//	ierr = GenerateMeshFine(user.DA_Vel, &user); CHKERRQ(ierr);
-
-	// Set the initial material properties
-//	ierr = SetMaterialProperties(C, &user, user.DA_Vel); CHKERRQ(ierr);
-
-	// INITIALIZE PARTICLES-based routines
-//	if(user.LoadInitialParticlesFromDisc != 0)
-//	{
-//		// [0]. Load particles from InitialParticles directory for FDSTAG if LoadInitialParticlesFromDisc==1
-//		// [1]. Load particles from Matlab generated files if LoadInitialParticlesFromDisc==2
-//
-//		ierr = LoadInitialParticlesFromDisc_FDSTAG(&user); CHKERRQ(ierr);
-//
-//		PetscPrintf(PETSC_COMM_WORLD,"# Successful loading of particles from disc for FDSTAG \n");
-//
-//		if(user.LoadInitialParticlesFromDisc == 2)
-//		{
-//			// Find the element in which particles reside
-//			ierr = GetParticleNodes(C, user.DA_Vel, &user); CHKERRQ(ierr);		// Put the particle to the correct nodes
-//		}
-//
-//	}
-//	else
-//	{
-		// [2]. Particles are initialized internally - works with ALL OTHER cases for Model.Setup
-//		ierr = InitializeParticles_ElementWise(C, user.DA_Vel, &user); 	CHKERRQ(ierr);			// Initialize tracers
-
-		// Find the element in which particles reside
-//		ierr = GetParticleNodes(C, user.DA_Vel, &user);	CHKERRQ(ierr); // Put the particle to the correct elements
-
-		// Set tracer properties from
-//		ierr = SetInitialTracerProperties(user.DA_Vel, &user); CHKERRQ(ierr); // Set initial tracer phases
-
-		// Read the initial mesh from file if asked for
-//		if (user.InitialMeshFromFile == 1)
-//		{
-//			ierr = ReadMeshFromFile(user.DA_Vel, &user); CHKERRQ(ierr);
-//			ierr = InterpolateParticles(C,user.DA_Vel, &user); 				CHKERRQ(ierr);
-//		}
-//
-//		if (user.LoadInitialParticlesFromDisc==1 )
-//		{
-//			// The 'new' way of setting particles
-//			ierr = LoadInitialParticlesFromDisc( &user); CHKERRQ(ierr);
-//
-//			PetscPrintf(PETSC_COMM_WORLD,"# Successful loading of particles from disc \n");
-//
-//		}
-//
-//	}
 
 	// Read the initial mesh from file if asked for
 //	if(user.InitialMeshFromFile == 1)
@@ -268,25 +184,6 @@ PetscErrorCode LaMEMLib_FDSTAG(PetscBool InputParamFile, const char *ParamFile, 
 //		ierr = SaveInitialMesh(&user,user.DA_Vel,"InitialMesh"); CHKERRQ(ierr);
 //	}
 
-
-	// If we are using FDSTAG, the grid MUST be regular and undeformed.
-	// Because of the Finite Element manner in which we create the mesh and particles,
-	// we can actually initialize the mesh and particles in an irregular manner (or even read an arbitrary mesh from file) and set the initial particle
-	// distribution quite accurately in this manner. Yet, at this stage we must ensure that the grid is really undeformed (otherwise we'll have
-	// convergence issues with the code that are not easy to detect).
-
-//	user.ampl2D    = 0;
-//	user.ampl3D    = 0;
-//	user.amplNoise = 0;
-
-//	ierr = GenerateMeshFine(user.DA_Vel, &user); CHKERRQ(ierr);
-
-//	if ((user.save_breakpoints >= 0) && (user.LoadInitialParticlesFromDisc==0))
-//	{
-		// Save the initial particles to disk (every proc saves one file)
-		// Deactivate this by adding -save_breakpoints -1  to the command line (e.g. while performing scaling tests)
-//		ierr = WriteInitialParticlesToDisc( &user ); CHKERRQ(ierr);	// Write the initial particles to the ./InitialParticles directory
-//	}
 
 	// ========================================================================================================================
 
@@ -357,7 +254,7 @@ PetscErrorCode LaMEMLib_FDSTAG(PetscBool InputParamFile, const char *ParamFile, 
 	jr.grav[2] = user.Gravity;
 
 	// create advection context
-	ierr = ADVCreate(&actx, &fs); CHKERRQ(ierr);
+	ierr = ADVCreate(&actx, &fs, &jr); CHKERRQ(ierr);
 
 	// initialize markers
 	ierr = ADVMarkInit(&actx, &user); CHKERRQ(ierr);
@@ -380,15 +277,10 @@ PetscErrorCode LaMEMLib_FDSTAG(PetscBool InputParamFile, const char *ParamFile, 
 	for(itime = user.time_start; itime < user.time_end; itime++)
 	{
 
-
 		//==========================================================================================
 		// Correct particles in case we employ an internal free surface
 //		ierr = CorrectPhasesForInternalFreeSurface( &user);	CHKERRQ(ierr);
-		// compute history-dependent material properties from particles (using distance-based averaging)
-		// THIS IS WHERE PHASE RATIOS ARE INITIALIZED
-//		ierr = ComputeHistoryPropertiesFromParticles_FDSTAG(C, &user); CHKERRQ(ierr);
-		// Update material properties on FDSTAG grid
-//		ierr = UpdateMaterialProperties_FDSTAG(&user); CHKERRQ(ierr);
+
 		//==========================================================================================
 		// Set material properties at integration points in case we are performing a benchmark
 //		if (user.AnalyticalBenchmark == PETSC_TRUE)
@@ -402,7 +294,7 @@ PetscErrorCode LaMEMLib_FDSTAG(PetscBool InputParamFile, const char *ParamFile, 
 
 
 		// project properties from markers to grid
-		ierr = ADVProjHistMarkGrid(&actx, &jr); CHKERRQ(ierr);
+		ierr = ADVProjHistMarkGrid(&actx); CHKERRQ(ierr);
 
 		// compute inverse elastic viscosities
 		ierr = JacResGetI2Gdt(&jr); CHKERRQ(ierr);
@@ -411,8 +303,6 @@ PetscErrorCode LaMEMLib_FDSTAG(PetscBool InputParamFile, const char *ParamFile, 
 		//	NONLINEAR THERMO-MECHANICAL SOLVER
 		//=========================================================================================
 
-
-		//=========================================================================================
 		if(user.SkipStokesSolver != PETSC_TRUE)
 		{
 			PetscTime(&cputime_start_nonlinear);
@@ -436,34 +326,13 @@ PetscErrorCode LaMEMLib_FDSTAG(PetscBool InputParamFile, const char *ParamFile, 
 			PetscPrintf(PETSC_COMM_WORLD,"#  Nonlinear solve took %g s \n", cputime_end - cputime_start_nonlinear);
 		}
 
+//		ierr = CheckVelocityError(&user);
+
+
 		//==========================================
 		// END OF NONLINEAR THERMO-MECHANICAL SOLVER
 		//==========================================
 
-		// access solution
-//		ierr = BlockMatBlockToMonolithic(&bmat, sol); CHKERRQ(ierr);
-//		ierr = VecCopy(bmat.wv, user.sol);            CHKERRQ(ierr);
-//		ierr = VecCopy(bmat.wp, user.Pressure);       CHKERRQ(ierr);
-
-		// In FDSTAG 'sol' gets modified in order to make use of FEM-routines. Since we are going to use sol as initial guess
-		// in the next timestep or when restarting a simulation we need a unmodified version of sol.
-		// This is why we make a copy of sol that will be modified (sol_advect). Later on, we save sol to Breakpointfile NOT sol_advect.
-		// (tobib 20.09.12)
-
-		// NOTE:sol_advect is initialized earlier in the code, as Sarah added an option to do a few thermal steps BEFORE the first stokes step. BK, 28.9.2012
-//		ierr = VecCopy(user.sol, user.sol_advect);	CHKERRQ(ierr);
-
-		// If FDSTAG: interpolate velocities from cell-center to corner points, such that we can use
-		// the Q1P0 routines to compute particle properties and for advection.
-//		FDSTAG_InterpolateVelocityPressureToCornerpoints(&user, user.sol_advect);
-
-		//==========================================================================================
-		// Compute properties @ integration points, such as strain-rate, pressure, stress etc.
-		// Here, we only compute arrays that are necessary for the nonlinear iterations (for speed)
-		// After the iterations are finished, we update all variables (such as finite strain etc.)
-		//==========================================================================================
-
-//		ierr = IntPointProperties( C, user.DA_Vel, sol_advect, user.DA_Pres, Pressure, user.DA_Temp, Temp, &user, user.dt, 0 ); CHKERRQ(ierr);
 
 		//=========================================================================================
 		// In case we perform an analytical benchmark, compare numerical and analytical results
@@ -495,7 +364,6 @@ PetscErrorCode LaMEMLib_FDSTAG(PetscBool InputParamFile, const char *ParamFile, 
 
 		//==========================================================================================
 
-//		ierr = CheckVelocityError(&user);
 
 		//==========================================================================================
 		// Advect tracers
@@ -661,8 +529,6 @@ PetscErrorCode LaMEMLib_FDSTAG(PetscBool InputParamFile, const char *ParamFile, 
 //	PetscTime(&cputime_end);
 //	PetscPrintf(PETSC_COMM_WORLD,"# Total time required: %g s \n",cputime_end - cputime_start0);
 
-	// free memory
-//	ierr = DestroySolutionObjects(&user, &C); CHKERRQ(ierr);
 
 	ierr = PetscFree(user.TimeDependentData); CHKERRQ(ierr);
 
@@ -670,6 +536,14 @@ PetscErrorCode LaMEMLib_FDSTAG(PetscBool InputParamFile, const char *ParamFile, 
 	{
 		MaterialDestroy(user.PhaseMaterialProperties);
 	}
+
+	// Cleanup FD erosion code
+//	if ((user->ErosionParameters.ErosionModel==2) && (rank==0))
+//	{
+		// not good! implement erosion-code-data-structure create and destroy functions
+//		ierr = DMDestroy (&user->ErosionParameters.FE_ErosionCode.DA_FE_ErosionCode);CHKERRQ(ierr);
+//		ierr = VecDestroy(&user->ErosionParameters.FE_ErosionCode.ErosionSurface);   CHKERRQ(ierr);
+//	}
 
 	// cleanup
 	ierr = FDSTAGDestroy(&fs);   CHKERRQ(ierr);
