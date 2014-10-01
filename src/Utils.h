@@ -20,6 +20,8 @@ PetscErrorCode LaMEMReadInputFile( UserContext *user );
 
 PetscErrorCode InitializeCode( UserContext *user );
 
+PetscErrorCode InitializeLinearSolverLegacy( UserContext *user );
+
 PetscErrorCode  StencilToLocalNumbering(Mat,PetscInt,const MatStencil[],PetscInt[]);
 
 PetscErrorCode ComputeGlobalProperties( DM da, UserContext *user, PetscInt itime, Vec Velocity, LaMEMVelPressureDA C );

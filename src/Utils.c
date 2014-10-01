@@ -1127,12 +1127,9 @@ PetscErrorCode InitializeCode( UserContext *user )
 	PetscInt       nx,ny,nz, mod, i, nel_array[3], nel_input_max;
     PetscInt       n_int;
 	PetscScalar    dx, dy, dz, SecYear;
-	PetscBool      found,flg, SolverDiagnostics;
-	PetscMPIInt    nproc;
+	PetscBool      found,flg;
 	char          *all_options;
 	char           setup_name[PETSC_MAX_PATH_LEN];
-
-	MPI_Comm_size( PETSC_COMM_WORLD, &nproc );
 
 	// NEW OPTIONS WILL BE ADDED *** BEFORE *** ALREADY SPECIFIED  
 	PetscOptionsGetAll( &all_options ); /* copy all command line args */
@@ -1639,9 +1636,6 @@ PetscErrorCode InitializeCode( UserContext *user )
 		if(flg == PETSC_TRUE) PetscPrintf(PETSC_COMM_WORLD,"#    time[%lld]	= %g \n",(LLD)i,user->Pushing.time[i]);
 	}
 
-	// Do we want to print info about the solvers?
-	PetscOptionsHasName(PETSC_NULL,"-SolverDiagnostics",&SolverDiagnostics);
-
 	// linear solver options
 	PetscOptionsGetInt( PETSC_NULL, "-StokesSolver", 				&user->StokesSolver, 			PETSC_NULL );
 	PetscOptionsGetInt( PETSC_NULL, "-VelocitySolver", 				&user->VelocitySolver, 			PETSC_NULL );
@@ -1709,6 +1703,264 @@ PetscErrorCode InitializeCode( UserContext *user )
 
 	user->Setup.Diapir_Hi 	 = (user->H-user->z_bot)*user->Hinterface;	// for 0-diapir setup
 	user->Setup.SingleFold_H = 1.0;						    			// for  1-Single-layer folding setup
+
+	// only mess with legacy linear solver settings
+	if(user->use_fdstag_canonical != PETSC_TRUE)
+	{
+		ierr = InitializeLinearSolverLegacy( user ); CHKERRQ(ierr);
+	}
+
+	// set this option to monitor actual option usage
+//	PetscOptionsInsertString("-options_left");
+
+	if (!(user->InputParamFile)){
+
+		ComputeCharacteristicValues(user);
+
+		/* Define phase Material properties in case NO input file is specified (=falling-block test)*/
+		/* viscosity                                     								 density 									*/
+		user->PhaseProperties.mu[0]  = 1.0*user->Characteristic.Viscosity; 		user->PhaseProperties.rho[0] = 1.0*user->Characteristic.Density;
+		user->PhaseProperties.mu[1] = user->mumax; 								user->PhaseProperties.rho[1] = 2.0*user->Characteristic.Density;
+
+		PetscOptionsInsertString("-AddRandomNoiseParticles 0");		// will always give the same results
+	}
+
+
+
+	{
+		// Define material parameters for folding benchmarks, which overrule values from the parameters file
+		PetscScalar	R, nL, nM;
+		R 	= 	100;
+		nL 	=	1;
+		nM 	=	1;
+		PetscOptionsGetReal(PETSC_NULL ,"-FoldingBenchmark_R",  &R	, &found);	// Viscosity contrast
+		if (found== PETSC_TRUE){
+			user->PhaseProperties.mu[1] 			=	R;
+			user->PhaseProperties.mu[0] 			=	1;
+		}
+		PetscOptionsGetReal(PETSC_NULL ,"-FoldingBenchmark_nL", &nL	, &found);	// powerlaw exponent of layer
+		if (found== PETSC_TRUE){
+			user->PhaseProperties.n_exponent[1] 	=	nL;
+		}
+		PetscOptionsGetReal(PETSC_NULL ,"-FoldingBenchmark_nM", &nM	, &found);	// powerlaw exponent of matrix
+		if (found== PETSC_TRUE){
+			user->PhaseProperties.n_exponent[0] 	=	nM;
+		}
+
+	}
+
+	/* print information about simulation */
+	nx = user->nnode_x;
+	ny = user->nnode_y;
+	nz = user->nnode_z;
+	dx = user->W/((double)(nx-1));
+	dy = user->L/((double)(ny-1));
+	dz = user->H/((double)(nz-1));
+
+	MPI_Comm_size(PETSC_COMM_WORLD,&size);
+
+	PetscPrintf(PETSC_COMM_WORLD," Element-type used         : ");
+
+	if( __ELEMENT_TYPE__ == ELEMENT_Q1P0 ){
+		PetscPrintf(PETSC_COMM_WORLD,"Q1P0 ");
+	}
+	if( __ELEMENT_TYPE__ == ELEMENT_Q1Q1 ){
+		PetscPrintf(PETSC_COMM_WORLD,"Q1Q1 ");
+	}
+	if( (__ELEMENT_TYPE__ == ELEMENT_Q2P1) ) {
+		if ( __Q2_TYPE__ == ELEMENT_Q2P1_LOCAL){
+			PetscPrintf(PETSC_COMM_WORLD,"Q2Pm1_local");
+		}
+		if ( __Q2_TYPE__ == ELEMENT_Q2P1_GLOBAL){
+			PetscPrintf(PETSC_COMM_WORLD,"Q2Pm1_global");
+		}
+	}
+	if( __ELEMENT_TYPE__ == ELEMENT_FDSTAG ){
+		PetscPrintf(PETSC_COMM_WORLD,"FDSTAG");
+		user->GridAdvectionMethod  = 0; 			// only works with Eulerian meshes
+	}
+	PetscPrintf(PETSC_COMM_WORLD,";  [Q1P0 Q2Pm1_global Q2Pm1_local Q1Q1 FDSTAG] (change with -vpt_element)\n");
+
+	PetscPrintf(PETSC_COMM_WORLD," Total # of cpu's          : %lld \n",(LLD)size);
+	PetscPrintf(PETSC_COMM_WORLD," Resolution [nx,ny,nz]     : %lld x %lld x %lld \n",(LLD)(nx), (LLD)(ny), (LLD)(nz));
+	PetscPrintf(PETSC_COMM_WORLD," Total # of velocity dof's : %lld \n",(LLD)(nx*ny*nz*3));
+
+	/* Info about material averaging method employed */
+	if (user->MuMeanMethod==0){PetscPrintf(PETSC_COMM_WORLD," Computing material properties at integration points \n"); }
+	if (user->MuMeanMethod==1){PetscPrintf(PETSC_COMM_WORLD," Computing mean material per element using arithmetic averaging from integration points \n"); }
+	if (user->MuMeanMethod==2){PetscPrintf(PETSC_COMM_WORLD," Computing mean material per element using geometric averaging from integration points \n"); }
+	if (user->MuMeanMethod==3){PetscPrintf(PETSC_COMM_WORLD," Computing mean material per element using harmonic  averaging from integration points \n"); }
+
+	/* Info about grid movement method */
+	if (user->GridAdvectionMethod==0){PetscPrintf(PETSC_COMM_WORLD," Employing code in an Eulerian manner \n"); }
+	if (user->GridAdvectionMethod==1){PetscPrintf(PETSC_COMM_WORLD," Employing code in a Lagrangian manner \n"); }
+	if (user->GridAdvectionMethod==2){PetscPrintf(PETSC_COMM_WORLD," Employing code in an ALE manner, with remeshing near surface \n"); }
+
+	if (user->GravityAngle!=90){
+		PetscPrintf(PETSC_COMM_WORLD," Gravity angle with z-axis =  %g \n",user->GravityAngle);
+	}
+
+	/* Info about approximate aspect ratio [useful for multigrid, who would like to have aspect ratios ~1] */
+	PetscPrintf(PETSC_COMM_WORLD," Approximate Aspect ratio of cells [dx/dz, dy/dz] = [%g %g] \n", dx/dz, dy/dz);
+
+	/* Info about particles if used */
+#ifdef PARTICLES
+	if (user->ParticleInput==1){
+		/* Check whether a sufficient amount of particles are specified; if not increase it.
+		 * We need at least as many particles as integration points; thus 2x2x2 for Q1 elements and 3x3x3 for Q2 elements
+		 */
+
+		if( (__ELEMENT_TYPE__ == ELEMENT_Q2P1) ){
+			if (user->NumPartX<3){ user->NumPartX = 3; PetscPrintf(PETSC_COMM_WORLD," WARNING: At least 3 particles required in x-direction for Q2 elements; I have increased this \n");	}
+			if (user->NumPartY<3){ user->NumPartY = 3; PetscPrintf(PETSC_COMM_WORLD," WARNING: At least 3 particles required in y-direction for Q2 elements; I have increased this \n");	}
+			if (user->NumPartZ<3){ user->NumPartZ = 3; PetscPrintf(PETSC_COMM_WORLD," WARNING: At least 3 particles required in z-direction for Q2 elements; I have increased this \n");	}
+		}
+		else if ((__ELEMENT_TYPE__ == ELEMENT_Q1Q1) || (__ELEMENT_TYPE__ == ELEMENT_Q1P0)){
+			if (user->NumPartX<2){ user->NumPartX = 2; PetscPrintf(PETSC_COMM_WORLD," WARNING: At least 2 particles required in x-direction for Q1 elements; I have increased this \n");	}
+			if (user->NumPartY<2){ user->NumPartY = 2; PetscPrintf(PETSC_COMM_WORLD," WARNING: At least 2 particles required in y-direction for Q1 elements; I have increased this \n");	}
+			if (user->NumPartZ<2){ user->NumPartZ = 2; PetscPrintf(PETSC_COMM_WORLD," WARNING: At least 2 particles required in z-direction for Q1 elements; I have increased this \n");	}
+		}
+	}
+
+	PetscPrintf(PETSC_COMM_WORLD," Number of tracers/cell in [x,y,z]-direction = [%lld,%lld,%lld] \n",(LLD)(user->NumPartX),(LLD)(user->NumPartY),(LLD)(user->NumPartZ));
+#endif
+
+
+	/* Compute some useful stuff */
+	user->NumSurfaceNodes = ((PetscInt) (user->FactorSurfaceLayer* ((double) nz)) );
+	LaMEMMod(user->NumSurfaceNodes, 2, &mod); if (mod==0){user->NumSurfaceNodes = user->NumSurfaceNodes-1;};
+	PetscPrintf(PETSC_COMM_WORLD," NumSurfaceNodes=%lld  nz=%lld \n", (LLD)(user->NumSurfaceNodes), (LLD)nz);
+
+	if (user->GridAdvectionMethod != 2  || user->BC.UpperBound != 0){
+		user->num_subdt			  = 1;
+	}
+	PetscOptionsGetInt(PETSC_NULL ,"-num_subdt",	&user->num_subdt	, PETSC_NULL);  		//	# modify number of sub-dt
+
+	if (user->GridAdvectionMethod==2 && user->FactorSurfaceLayer>0 && user->NumSurfaceNodes<2 ){
+		PetscPrintf(PETSC_COMM_WORLD," ***** You selected ALE grid advection, with a surface layer   *****\n");
+		PetscPrintf(PETSC_COMM_WORLD," ***** But the surface layer has 1 node only, which is insufficient  *****\n");
+		PetscPrintf(PETSC_COMM_WORLD," ***** Increasing value to 3  *****\n");
+		user->NumSurfaceNodes=3;
+		PetscPrintf(PETSC_COMM_WORLD," \n");
+	}
+
+	if  (user->ApplyErosion==0){
+		// non zero surface angle is only relevant if erosion is applied to the model
+		user->SurfaceAngle 		   = 0;
+		user->SurfaceNoiseAmplitude= 0;
+	}
+
+	/* Check whether nonlinear iterations are required */
+	user->NonlinearIterations = 0;
+	for ( i=0; i<user->num_phases; i++ ){
+		if ( ((user->PhaseProperties.ViscosityLaw[i] == 4) || (user->PhaseProperties.ViscosityLaw[i] == 2)) && (user->PhaseProperties.n_exponent[i]>1.0) ){
+			/* One of the phases has powerlaw rheology with n>1 */
+			user->NonlinearIterations = 1;
+		}
+		if ( ((user->PhaseProperties.ViscosityLaw[i] == 4) || (user->PhaseProperties.ViscosityLaw[i] == 2)) && (user->PhaseProperties.FrictionAngle[i]>0.0) ){
+			/* One of the phases has powerlaw rheology and we likely have plasticity acting */
+			user->NonlinearIterations = 1;
+		}
+		if ( ((user->PhaseProperties.ViscosityLaw[i] == 4) || (user->PhaseProperties.ViscosityLaw[i] == 2)) && (user->PhaseProperties.Cohesion[i]<1e100) ){
+			/* One of the phases has powerlaw rheology with n>1 */
+			user->NonlinearIterations = 1;
+		}
+	}
+
+
+	if (	user->NonlinearIterations == 1){
+		PetscPrintf(PETSC_COMM_WORLD," # Employing nonlinear iterations \n");
+	}
+	else{
+		PetscPrintf(PETSC_COMM_WORLD," # Not employing nonlinear iterations \n");
+	}
+
+
+	/* Check for periodic boundary conditions */
+	if ( (user->BC.LeftBound==3) || (user->BC.RightBound==3) ){
+		user->BC.LeftBound=3;  user->BC.RightBound=3;			// if one is periodic, they both should be
+		user->BC.BCType_x = DM_BOUNDARY_PERIODIC;
+	}
+	else{
+		user->BC.BCType_x = DM_BOUNDARY_NONE;
+	}
+
+	if ( (user->BC.FrontBound==3) || (user->BC.BackBound==3) ){
+		user->BC.FrontBound=3;  user->BC.BackBound=3;			// if one is periodic, they both should be
+		user->BC.BCType_y = DM_BOUNDARY_PERIODIC;
+	}
+	else{
+		user->BC.BCType_y = DM_BOUNDARY_NONE;
+	}
+
+	if ( (user->BC.UpperBound==3) || (user->BC.LowerBound==3) ){
+		PetscPrintf(PETSC_COMM_WORLD," Periodic BCs are not yet implemented in these directions! \n");
+		MPI_Abort(PETSC_COMM_WORLD,1);
+	}
+	else{
+		user->BC.BCType_z = DM_BOUNDARY_NONE;
+	}
+
+	PetscPrintf(PETSC_COMM_WORLD," BC employed: BC.[Left Right; Front Back; Lower Upper]=[%lld %lld; %lld %lld; %lld %lld] \n",
+			(LLD)(user->BC.LeftBound), (LLD)(user->BC.RightBound), (LLD)(user->BC.FrontBound), (LLD)(user->BC.BackBound), (LLD)(user->BC.LowerBound), (LLD)(user->BC.UpperBound) );
+
+
+	/* Set the density of 'sticky-air' to zero if we eliminate the 'sticky-air' from the system */
+	if (user->ErosionParameters.UseInternalFreeSurface==1){
+		PetscInt 	AirPhase;
+		PetscBool	eliminate_stickyair_from_system;
+
+		eliminate_stickyair_from_system = PETSC_FALSE;
+		ierr 		= 	PetscOptionsGetBool( PETSC_NULL, "-eliminate_stickyair_from_system", &eliminate_stickyair_from_system,PETSC_NULL ); CHKERRQ(ierr);
+		AirPhase 	= 	user->ErosionParameters.StickyAirPhase; 		// sticky air phase
+
+		if ((eliminate_stickyair_from_system) && (user->PhaseProperties.rho[AirPhase]>0)){
+
+			PetscPrintf(PETSC_COMM_WORLD," You eliminate the sticky air phase from the system, but the sticky air density is %f kg/m3 which is inconsistent. I have set air density to 0 kg/m3 !! \n", user->PhaseProperties.rho[AirPhase]);
+			user->PhaseProperties.rho[AirPhase]	=	0.0;		// set to zero
+
+
+		}
+
+	}
+
+	// show initial timestep
+	PetscPrintf(PETSC_COMM_WORLD,"# Initial time step: %g years \n",user->dt);
+
+	/* Compute characteristic values */
+	ComputeCharacteristicValues(user);
+
+	/* Perform non-dimensionalisation of all input parameters */
+	PerformNonDimensionalization(user);
+
+	/* Allocate arrays required for time-dependent data */
+	ierr = PetscMalloc( (size_t)user->time_end*sizeof(GlobalTimeDependentData), 	&user->TimeDependentData); CHKERRQ(ierr);
+	ierr = PetscMemzero(user->TimeDependentData, (size_t)user->time_end*sizeof(GlobalTimeDependentData)); CHKERRQ(ierr);
+
+	user->ErosionParameters.HorizontalFreeSurfaceHeight = user->ErosionParameters.InitialFreeSurfaceHeight;
+
+	ierr = PetscOptionsInsertString( all_options ); CHKERRQ(ierr); /* force command line args in to override defaults */
+
+	ierr = PetscFree(all_options); CHKERRQ(ierr);
+
+	PetscFunctionReturn(0);
+
+}
+/*==========================================================================================================*/
+#undef __FUNCT__
+#define __FUNCT__ "InitializeLinearSolverLegacy"
+PetscErrorCode InitializeLinearSolverLegacy( UserContext *user )
+{
+	PetscBool SolverDiagnostics;
+	PetscMPIInt    nproc;
+
+	PetscErrorCode ierr;
+	PetscFunctionBegin;
+
+	ierr = MPI_Comm_size( PETSC_COMM_WORLD, &nproc ); CHKERRQ(ierr);
+
+	// Do we want to print info about the solvers?
+	ierr = PetscOptionsHasName(PETSC_NULL,"-SolverDiagnostics",&SolverDiagnostics); CHKERRQ(ierr);
 
 	// check solver types selected
 	if(user->StokesSolver   < 1 || user->StokesSolver   > 4) SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "Invalid Stokes solver type");
@@ -1952,245 +2204,8 @@ PetscErrorCode InitializeCode( UserContext *user )
 
 	}
 
-	// set this option to monitor actual option usage
-//	PetscOptionsInsertString("-options_left");
-
-	if (!(user->InputParamFile)){
-
-		ComputeCharacteristicValues(user);
-
-		/* Define phase Material properties in case NO input file is specified (=falling-block test)*/
-		/* viscosity                                     								 density 									*/
-		user->PhaseProperties.mu[0]  = 1.0*user->Characteristic.Viscosity; 		user->PhaseProperties.rho[0] = 1.0*user->Characteristic.Density;
-		user->PhaseProperties.mu[1] = user->mumax; 								user->PhaseProperties.rho[1] = 2.0*user->Characteristic.Density;
-
-		PetscOptionsInsertString("-AddRandomNoiseParticles 0");		// will always give the same results
-	}
-
-
-
-	{
-		// Define material parameters for folding benchmarks, which overrule values from the parameters file
-		PetscScalar	R, nL, nM;
-		R 	= 	100;
-		nL 	=	1;
-		nM 	=	1;
-		PetscOptionsGetReal(PETSC_NULL ,"-FoldingBenchmark_R",  &R	, &found);	// Viscosity contrast
-		if (found== PETSC_TRUE){
-			user->PhaseProperties.mu[1] 			=	R;
-			user->PhaseProperties.mu[0] 			=	1;
-		}
-		PetscOptionsGetReal(PETSC_NULL ,"-FoldingBenchmark_nL", &nL	, &found);	// powerlaw exponent of layer
-		if (found== PETSC_TRUE){
-			user->PhaseProperties.n_exponent[1] 	=	nL;
-		}
-		PetscOptionsGetReal(PETSC_NULL ,"-FoldingBenchmark_nM", &nM	, &found);	// powerlaw exponent of matrix
-		if (found== PETSC_TRUE){
-			user->PhaseProperties.n_exponent[0] 	=	nM;
-		}
-
-	}
-
-	/* print information about simulation */
-	nx = user->nnode_x;
-	ny = user->nnode_y;
-	nz = user->nnode_z;
-	dx = user->W/((double)(nx-1));
-	dy = user->L/((double)(ny-1));
-	dz = user->H/((double)(nz-1));
-
-	MPI_Comm_size(PETSC_COMM_WORLD,&size);
-
-	PetscPrintf(PETSC_COMM_WORLD," Element-type used         : ");
-
-	if( __ELEMENT_TYPE__ == ELEMENT_Q1P0 ){
-		PetscPrintf(PETSC_COMM_WORLD,"Q1P0 ");
-	}
-	if( __ELEMENT_TYPE__ == ELEMENT_Q1Q1 ){
-		PetscPrintf(PETSC_COMM_WORLD,"Q1Q1 ");
-	}
-	if( (__ELEMENT_TYPE__ == ELEMENT_Q2P1) ) {
-		if ( __Q2_TYPE__ == ELEMENT_Q2P1_LOCAL){
-			PetscPrintf(PETSC_COMM_WORLD,"Q2Pm1_local");
-		}
-		if ( __Q2_TYPE__ == ELEMENT_Q2P1_GLOBAL){
-			PetscPrintf(PETSC_COMM_WORLD,"Q2Pm1_global");
-		}
-	}
-	if( __ELEMENT_TYPE__ == ELEMENT_FDSTAG ){
-		PetscPrintf(PETSC_COMM_WORLD,"FDSTAG");
-		user->GridAdvectionMethod  = 0; 			// only works with Eulerian meshes
-	}
-	PetscPrintf(PETSC_COMM_WORLD,";  [Q1P0 Q2Pm1_global Q2Pm1_local Q1Q1 FDSTAG] (change with -vpt_element)\n");
-
-	PetscPrintf(PETSC_COMM_WORLD," Total # of cpu's          : %lld \n",(LLD)size);
-	PetscPrintf(PETSC_COMM_WORLD," Resolution [nx,ny,nz]     : %lld x %lld x %lld \n",(LLD)(nx), (LLD)(ny), (LLD)(nz));
-	PetscPrintf(PETSC_COMM_WORLD," Total # of velocity dof's : %lld \n",(LLD)(nx*ny*nz*3));
-
-	/* Info about material averaging method employed */
-	if (user->MuMeanMethod==0){PetscPrintf(PETSC_COMM_WORLD," Computing material properties at integration points \n"); }
-	if (user->MuMeanMethod==1){PetscPrintf(PETSC_COMM_WORLD," Computing mean material per element using arithmetic averaging from integration points \n"); }
-	if (user->MuMeanMethod==2){PetscPrintf(PETSC_COMM_WORLD," Computing mean material per element using geometric averaging from integration points \n"); }
-	if (user->MuMeanMethod==3){PetscPrintf(PETSC_COMM_WORLD," Computing mean material per element using harmonic  averaging from integration points \n"); }
-
-	/* Info about grid movement method */
-	if (user->GridAdvectionMethod==0){PetscPrintf(PETSC_COMM_WORLD," Employing code in an Eulerian manner \n"); }
-	if (user->GridAdvectionMethod==1){PetscPrintf(PETSC_COMM_WORLD," Employing code in a Lagrangian manner \n"); }
-	if (user->GridAdvectionMethod==2){PetscPrintf(PETSC_COMM_WORLD," Employing code in an ALE manner, with remeshing near surface \n"); }
-
-	if (user->GravityAngle!=90){
-		PetscPrintf(PETSC_COMM_WORLD," Gravity angle with z-axis =  %g \n",user->GravityAngle);
-	}
-
-	/* Info about approximate aspect ratio [useful for multigrid, who would like to have aspect ratios ~1] */
-	PetscPrintf(PETSC_COMM_WORLD," Approximate Aspect ratio of cells [dx/dz, dy/dz] = [%g %g] \n", dx/dz, dy/dz);
-
-	/* Info about particles if used */
-#ifdef PARTICLES
-	if (user->ParticleInput==1){
-		/* Check whether a sufficient amount of particles are specified; if not increase it.
-		 * We need at least as many particles as integration points; thus 2x2x2 for Q1 elements and 3x3x3 for Q2 elements
-		 */
-
-		if( (__ELEMENT_TYPE__ == ELEMENT_Q2P1) ){
-			if (user->NumPartX<3){ user->NumPartX = 3; PetscPrintf(PETSC_COMM_WORLD," WARNING: At least 3 particles required in x-direction for Q2 elements; I have increased this \n");	}
-			if (user->NumPartY<3){ user->NumPartY = 3; PetscPrintf(PETSC_COMM_WORLD," WARNING: At least 3 particles required in y-direction for Q2 elements; I have increased this \n");	}
-			if (user->NumPartZ<3){ user->NumPartZ = 3; PetscPrintf(PETSC_COMM_WORLD," WARNING: At least 3 particles required in z-direction for Q2 elements; I have increased this \n");	}
-		}
-		else if ((__ELEMENT_TYPE__ == ELEMENT_Q1Q1) || (__ELEMENT_TYPE__ == ELEMENT_Q1P0)){
-			if (user->NumPartX<2){ user->NumPartX = 2; PetscPrintf(PETSC_COMM_WORLD," WARNING: At least 2 particles required in x-direction for Q1 elements; I have increased this \n");	}
-			if (user->NumPartY<2){ user->NumPartY = 2; PetscPrintf(PETSC_COMM_WORLD," WARNING: At least 2 particles required in y-direction for Q1 elements; I have increased this \n");	}
-			if (user->NumPartZ<2){ user->NumPartZ = 2; PetscPrintf(PETSC_COMM_WORLD," WARNING: At least 2 particles required in z-direction for Q1 elements; I have increased this \n");	}
-		}
-	}
-
-	PetscPrintf(PETSC_COMM_WORLD," Number of tracers/cell in [x,y,z]-direction = [%lld,%lld,%lld] \n",(LLD)(user->NumPartX),(LLD)(user->NumPartY),(LLD)(user->NumPartZ));
-#endif
-
-
-	/* Compute some useful stuff */
-	user->NumSurfaceNodes = ((PetscInt) (user->FactorSurfaceLayer* ((double) nz)) );
-	LaMEMMod(user->NumSurfaceNodes, 2, &mod); if (mod==0){user->NumSurfaceNodes = user->NumSurfaceNodes-1;};
-	PetscPrintf(PETSC_COMM_WORLD," NumSurfaceNodes=%lld  nz=%lld \n", (LLD)(user->NumSurfaceNodes), (LLD)nz);
-
-	if (user->GridAdvectionMethod != 2  || user->BC.UpperBound != 0){
-		user->num_subdt			  = 1;
-	}
-	PetscOptionsGetInt(PETSC_NULL ,"-num_subdt",	&user->num_subdt	, PETSC_NULL);  		//	# modify number of sub-dt
-
-	if (user->GridAdvectionMethod==2 && user->FactorSurfaceLayer>0 && user->NumSurfaceNodes<2 ){
-		PetscPrintf(PETSC_COMM_WORLD," ***** You selected ALE grid advection, with a surface layer   *****\n");
-		PetscPrintf(PETSC_COMM_WORLD," ***** But the surface layer has 1 node only, which is insufficient  *****\n");
-		PetscPrintf(PETSC_COMM_WORLD," ***** Increasing value to 3  *****\n");
-		user->NumSurfaceNodes=3;
-		PetscPrintf(PETSC_COMM_WORLD," \n");
-	}
-
-	if  (user->ApplyErosion==0){
-		// non zero surface angle is only relevant if erosion is applied to the model
-		user->SurfaceAngle 		   = 0;
-		user->SurfaceNoiseAmplitude= 0;
-	}
-
-	/* Check whether nonlinear iterations are required */
-	user->NonlinearIterations = 0;
-	for ( i=0; i<user->num_phases; i++ ){
-		if ( ((user->PhaseProperties.ViscosityLaw[i] == 4) || (user->PhaseProperties.ViscosityLaw[i] == 2)) && (user->PhaseProperties.n_exponent[i]>1.0) ){
-			/* One of the phases has powerlaw rheology with n>1 */
-			user->NonlinearIterations = 1;
-		}
-		if ( ((user->PhaseProperties.ViscosityLaw[i] == 4) || (user->PhaseProperties.ViscosityLaw[i] == 2)) && (user->PhaseProperties.FrictionAngle[i]>0.0) ){
-			/* One of the phases has powerlaw rheology and we likely have plasticity acting */
-			user->NonlinearIterations = 1;
-		}
-		if ( ((user->PhaseProperties.ViscosityLaw[i] == 4) || (user->PhaseProperties.ViscosityLaw[i] == 2)) && (user->PhaseProperties.Cohesion[i]<1e100) ){
-			/* One of the phases has powerlaw rheology with n>1 */
-			user->NonlinearIterations = 1;
-		}
-	}
-
-
-	if (	user->NonlinearIterations == 1){
-		PetscPrintf(PETSC_COMM_WORLD," # Employing nonlinear iterations \n");
-	}
-	else{
-		PetscPrintf(PETSC_COMM_WORLD," # Not employing nonlinear iterations \n");
-	}
-
-
-	/* Check for periodic boundary conditions */
-	if ( (user->BC.LeftBound==3) || (user->BC.RightBound==3) ){
-		user->BC.LeftBound=3;  user->BC.RightBound=3;			// if one is periodic, they both should be
-		user->BC.BCType_x = DM_BOUNDARY_PERIODIC;
-	}
-	else{
-		user->BC.BCType_x = DM_BOUNDARY_NONE;
-	}
-
-	if ( (user->BC.FrontBound==3) || (user->BC.BackBound==3) ){
-		user->BC.FrontBound=3;  user->BC.BackBound=3;			// if one is periodic, they both should be
-		user->BC.BCType_y = DM_BOUNDARY_PERIODIC;
-	}
-	else{
-		user->BC.BCType_y = DM_BOUNDARY_NONE;
-	}
-
-	if ( (user->BC.UpperBound==3) || (user->BC.LowerBound==3) ){
-		PetscPrintf(PETSC_COMM_WORLD," Periodic BCs are not yet implemented in these directions! \n");
-		MPI_Abort(PETSC_COMM_WORLD,1);
-	}
-	else{
-		user->BC.BCType_z = DM_BOUNDARY_NONE;
-	}
-
-	PetscPrintf(PETSC_COMM_WORLD," BC employed: BC.[Left Right; Front Back; Lower Upper]=[%lld %lld; %lld %lld; %lld %lld] \n",
-			(LLD)(user->BC.LeftBound), (LLD)(user->BC.RightBound), (LLD)(user->BC.FrontBound), (LLD)(user->BC.BackBound), (LLD)(user->BC.LowerBound), (LLD)(user->BC.UpperBound) );
-
-
-	/* Set the density of 'sticky-air' to zero if we eliminate the 'sticky-air' from the system */
-	if (user->ErosionParameters.UseInternalFreeSurface==1){
-		PetscInt 	AirPhase;
-		PetscBool	eliminate_stickyair_from_system;
-
-		eliminate_stickyair_from_system = PETSC_FALSE;
-		ierr 		= 	PetscOptionsGetBool( PETSC_NULL, "-eliminate_stickyair_from_system", &eliminate_stickyair_from_system,PETSC_NULL ); CHKERRQ(ierr);
-		AirPhase 	= 	user->ErosionParameters.StickyAirPhase; 		// sticky air phase
-
-		if ((eliminate_stickyair_from_system) && (user->PhaseProperties.rho[AirPhase]>0)){
-
-			PetscPrintf(PETSC_COMM_WORLD," You eliminate the sticky air phase from the system, but the sticky air density is %f kg/m3 which is inconsistent. I have set air density to 0 kg/m3 !! \n", user->PhaseProperties.rho[AirPhase]);
-			user->PhaseProperties.rho[AirPhase]	=	0.0;		// set to zero
-
-
-		}
-
-	}
-
-	// show initial timestep
-	PetscPrintf(PETSC_COMM_WORLD,"# Initial time step: %g years \n",user->dt);
-
-	/* Compute characteristic values */
-	ComputeCharacteristicValues(user);
-
-	/* Perform non-dimensionalisation of all input parameters */
-	PerformNonDimensionalization(user);
-
-	/* Allocate arrays required for time-dependent data */
-	ierr = PetscMalloc( (size_t)user->time_end*sizeof(GlobalTimeDependentData), 	&user->TimeDependentData); CHKERRQ(ierr);
-	ierr = PetscMemzero(user->TimeDependentData, (size_t)user->time_end*sizeof(GlobalTimeDependentData)); CHKERRQ(ierr);
-
-	user->ErosionParameters.HorizontalFreeSurfaceHeight = user->ErosionParameters.InitialFreeSurfaceHeight;
-
-	ierr = PetscOptionsInsertString( all_options ); CHKERRQ(ierr); /* force command line args in to override defaults */
-
-	ierr = PetscFree(all_options); CHKERRQ(ierr);
-
 	PetscFunctionReturn(0);
-
 }
-/*==========================================================================================================*/
-
-
 /*==========================================================================================================*/
 /* Compute global properties that are interesting to record */
 #undef __FUNCT__
@@ -2426,7 +2441,6 @@ PetscErrorCode ComputeGlobalProperties( DM da, UserContext *user, PetscInt itime
 	PetscFunctionReturn(0);
 }
 /*==========================================================================================================*/
-
 
 /*==========================================================================================================*/
 
