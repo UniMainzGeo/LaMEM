@@ -1549,11 +1549,6 @@ cleanup:
 	ierr = PetscFree(user.ParticlesLocal);    CHKERRQ(ierr);
 	ierr = PetscFree(user.TimeDependentData); CHKERRQ(ierr);
 
-	if(user.InputParamFile)
-	{
-		MaterialDestroy(user.PhaseMaterialProperties);
-	}
-
 	PetscFunctionReturn(0);
 
 }

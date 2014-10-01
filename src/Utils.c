@@ -1110,6 +1110,8 @@ PetscErrorCode   LaMEMReadInputFile( UserContext *user )
 		}
 	}
 	/* ------------------------------------------------------------------------------------------------------------------------- */
+	// destroy attribute database right after use (it's not used anywhere else anymore, because data is copied to internal structures)
+	MaterialDestroy(user->PhaseMaterialProperties);
 
 	PetscFunctionReturn(0);
 }
