@@ -119,24 +119,34 @@ PetscErrorCode LaMEMLib_FDSTAG(PetscBool InputParamFile, const char *ParamFile, 
 	// Give current LaMEM session a specific group ID
 	user.Optimisation.mpi_group_id = *mpi_group_id;
 
-	// Check LaMEM input variables, and stop code if impossible combinations are added
-	ierr = LaMEM_Initialize_CheckInput(); CHKERRQ(ierr);
-
 	//========================================================================================
-	// Test for unsupported options
+	// few parameters that can be reused
 	//========================================================================================
 
-//	user.ParticleInput = 1;
 //	user.save_breakpoints = -1;
 //	user.BC.InternalBound = -1;
 //	user.restart = 0;
 //	user.ErosionParameters.ErosionModel = 0;
 //	user.ErosionParameters.UseInternalFreeSurface = 0;
-//	user.InitialMeshFromFile = 0;
 //	user.SavePartitioning = 0;
-//	user.InitialErosionSurfaceFromFile = 0;
 //	user.LoadInitialParticlesFromDisc = 0;
 //	user.remesh = 0;
+//	user.InitialMeshFromFile == 1
+//	user.Setup.Model == 3
+//	user.EulerianAfterTimestep > 0
+//	user.AnalyticalBenchmark == PETSC_TRUE
+//	user.GridAdvectionMethod
+//	user.NonlinearIterations==1
+//	user.InitialErosionSurfaceFromFile == 1
+//	user.ParticleInput == 1
+//	user.fileno
+//	user.time_start
+//	user.time_end
+//	user.time
+//	user.dt
+//	user.MatlabOutputFiles == 1
+//	user.VTKOutputFiles == 1
+//	user.AVDPhaseViewer
 
 	//========================================================================================
 	// Setting up the solver
@@ -199,6 +209,9 @@ PetscErrorCode LaMEMLib_FDSTAG(PetscBool InputParamFile, const char *ParamFile, 
 	//======================
 	// SETUP DATA STRUCTURES
 	//======================
+
+	// WARNING!
+	// * scaling must be setup right after reading input before creating anything.
 
 	// create staggered grid object
 	ierr = FDSTAGCreate(&fs, user.nnode_x, user.nnode_y, user.nnode_z,
@@ -292,11 +305,8 @@ PetscErrorCode LaMEMLib_FDSTAG(PetscBool InputParamFile, const char *ParamFile, 
 		// set time step
 		jr.dt = user.dt;
 
-
-		// project properties from markers to grid
-		ierr = ADVProjHistMarkGrid(&actx); CHKERRQ(ierr);
-
 		// compute inverse elastic viscosities
+		// GET RID OF THIS UGLY THING! USE EFFECTIVE ELASTIC "STRAIN RATES"
 		ierr = JacResGetI2Gdt(&jr); CHKERRQ(ierr);
 
 		//=========================================================================================
@@ -326,13 +336,12 @@ PetscErrorCode LaMEMLib_FDSTAG(PetscBool InputParamFile, const char *ParamFile, 
 			PetscPrintf(PETSC_COMM_WORLD,"#  Nonlinear solve took %g s \n", cputime_end - cputime_start_nonlinear);
 		}
 
-//		ierr = CheckVelocityError(&user);
+//		ierr = CheckVelocityError(&user); CHKERRQ(ierr);
 
 
 		//==========================================
 		// END OF NONLINEAR THERMO-MECHANICAL SOLVER
 		//==========================================
-
 
 		//=========================================================================================
 		// In case we perform an analytical benchmark, compare numerical and analytical results
@@ -351,31 +360,11 @@ PetscErrorCode LaMEMLib_FDSTAG(PetscBool InputParamFile, const char *ParamFile, 
 
 
 		//==========================================================================================
-		// Update all properties @ integration points and compute properties @ particles
+		// MARKER & FREE SURFACE ADVECTION + EROSION
 		//==========================================================================================
 
-//		PetscTime(&cputime_start);
+//		ierr = ADVAdvect(&actx); CHKERRQ(ierr);
 
-//		ierr = ComputePropertiesAtParticles(C, user.DA_Vel, user.sol_advect, user.DA_Pres, user.Pressure, PETSC_NULL, PETSC_NULL, PETSC_NULL, &user, user.dt); CHKERRQ(ierr);
-
-//		PetscTime(&cputime_end);
-
-//		PetscPrintf(PETSC_COMM_WORLD,"#  Updating properties @ integration points and particles took %g s \n", cputime_end - cputime_start);
-
-		//==========================================================================================
-
-
-		//==========================================================================================
-		// Advect tracers
-		//==========================================================================================
-
-//		PetscPrintf(PETSC_COMM_WORLD,"  Starting particle advection \n");
-//		MPI_Barrier(PETSC_COMM_WORLD);
-
-//		ierr = AdvectParticles(C, user.DA_Vel, &user, user.sol_advect, user.dt); CHKERRQ(ierr);
-
-//		PetscPrintf(PETSC_COMM_WORLD,"  Finished particle advection \n");
-//		MPI_Barrier(PETSC_COMM_WORLD);
 
 		//==========================================================================================
 		// EROSION
@@ -400,8 +389,6 @@ PetscErrorCode LaMEMLib_FDSTAG(PetscBool InputParamFile, const char *ParamFile, 
 
 //			ierr = CorrectPhasesForInternalFreeSurface( &user); CHKERRQ(ierr);
 //		}
-		//==========================================================================================
-
 		//==========================================================================================
 
 		// Advect grid with Background deformation rate in case we use an FDSTAG approach with Exx=Eyy!=0
@@ -530,12 +517,8 @@ PetscErrorCode LaMEMLib_FDSTAG(PetscBool InputParamFile, const char *ParamFile, 
 //	PetscPrintf(PETSC_COMM_WORLD,"# Total time required: %g s \n",cputime_end - cputime_start0);
 
 
-	ierr = PetscFree(user.TimeDependentData); CHKERRQ(ierr);
+//	ierr = PetscFree(user.TimeDependentData); CHKERRQ(ierr);
 
-	if(user.InputParamFile)
-	{
-		MaterialDestroy(user.PhaseMaterialProperties);
-	}
 
 	// Cleanup FD erosion code
 //	if ((user->ErosionParameters.ErosionModel==2) && (rank==0))

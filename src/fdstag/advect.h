@@ -84,11 +84,11 @@ PetscErrorCode ADVReAllocateStorage(AdvCtx *actx, PetscInt capacity);
 // perform advection step
 PetscErrorCode ADVAdvect(AdvCtx *actx);
 
+// project history variables from grid to markers
+PetscErrorCode ADVProjHistGridMark(AdvCtx *actx);
+
 // update marker positions from current velocities & time step
 PetscErrorCode ADVAdvectMarkers(AdvCtx *actx);
-
-// project history variables from markers to grid
-PetscErrorCode ADVProjHistMarkGrid(AdvCtx *actx);
 
 // count number of markers to be sent to each neighbor domain
 PetscErrorCode ADVMapMarkersDomains(AdvCtx *actx);
@@ -102,14 +102,17 @@ PetscErrorCode ADVCreateMPIBuffer(AdvCtx *actx);
 // communicate markers with neighbor processes
 PetscErrorCode ADVExchangeMarkers(AdvCtx *actx);
 
-// free communication buffer
-PetscErrorCode ADVDestroyMPIBuffer(AdvCtx *actx);
-
 // store received markers, collect garbage
 PetscErrorCode ADVCollectGarbage(AdvCtx *actx);
 
+// free communication buffer
+PetscErrorCode ADVDestroyMPIBuffer(AdvCtx *actx);
+
 // find host cells for local markers
 PetscErrorCode ADVMapMarkersCells(AdvCtx *actx);
+
+// project history variables from markers to grid
+PetscErrorCode ADVProjHistMarkGrid(AdvCtx *actx);
 
 /*
 PetscErrorCode FDSTAGetVorticity(
@@ -121,31 +124,7 @@ PetscErrorCode FDSTAGetVorticity(
 //-----------------------------------------------------------------------------
 // service functions
 //-----------------------------------------------------------------------------
-/*
-PetscErrorCode getPointVelocity(
-	FDSTAG      *fs,
-	PetscScalar ***vx,   // local velocity vectors
-	PetscScalar ***vy,   // ...
-	PetscScalar ***vz,   // ...
-	PetscScalar *x,      // point coordinates
-	PetscScalar *v);      // point velocity
 
-// interpolate scalar field in a cell of 3D grid
-PetscScalar InterpolateLinear3D(
-	PetscScalar ***v,   // interpolated field
-	PetscInt       i,   // cell identifiers
-	PetscInt       j,   // ...
-	PetscInt       k,   // ...
-	PetscInt       sx,  // starting indices
-	PetscInt       sy,  // ...
-	PetscInt       sz,  // ...
-	PetscScalar   *cx,  // grid coordinates
-	PetscScalar   *cy,  // ...
-	PetscScalar   *cz,  // ...
-	PetscScalar    px,  // point coordinates
-	PetscScalar    py,  // ...
-	PetscScalar    pz); // ...
-*/
 // compute pointers from counts, return total count
 PetscInt getPtrCnt(PetscInt n, PetscInt counts[], PetscInt ptr[]);
 

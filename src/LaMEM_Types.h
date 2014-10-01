@@ -79,7 +79,6 @@ typedef struct {
 typedef struct{
 	PetscInt    Model, ind_fold_bot, ind_fold_top, ind_Hi_diapir;
 	PetscScalar Diapir_Hi, SingleFold_H, amp_1, amp_2, Qnum, Qana, relerr;
-//	PetscInt	Extern, Intern; // model setup for FDSTAG
 } ModelSetup;
 //-----------------------------------------------------------------------------
 // Structure that holds characteristic values for nondimensionalisation

@@ -68,10 +68,13 @@ PetscErrorCode ADVMarkInit(AdvCtx *actx, UserContext *user)
 	else SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER,"# *** Incorrect option for initialization of markers \n");
 
 	// compute host cells for all the markers
-	ierr = ADVMapMarkersCells(actx);
+	ierr = ADVMapMarkersCells(actx); CHKERRQ(ierr);
 
 	// check marker distribution
 	ierr = ADVMarkCheckMarkers(actx, user); CHKERRQ(ierr);
+
+	// project initial history from markers to grid
+	ierr = ADVProjHistMarkGrid(actx); CHKERRQ(ierr);
 
 	PetscPrintf(PETSC_COMM_WORLD,"# Finished marker initialization routine\n");
 

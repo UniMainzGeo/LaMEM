@@ -209,7 +209,9 @@ PetscErrorCode ADVReAllocateStorage(AdvCtx *actx, PetscInt nummark)
 {
 	// WARNING! This is a very crappy approach. Make sure the overhead is
 	// large enough to prevent memory reallocations. Do marker management
-	// before reallocating, or implement different memory model (e.g. paging).
+	// before reallocating, or implement different memory model (e.g. paging,
+	// or fixed maximum number markers per cell + deleting excessive markers.
+	// The latter has an advantage of maintaining memory locality).
 
 	PetscInt  markcap;
 	Marker   *markers;
@@ -255,9 +257,21 @@ PetscErrorCode ADVReAllocateStorage(AdvCtx *actx, PetscInt nummark)
 #define __FUNCT__ "ADVAdvect"
 PetscErrorCode ADVAdvect(AdvCtx *actx)
 {
+	//=======================================================================
+	// MAJOR ADVECTION ROUTINE
+	//
+	// WARNING!
+	// Currently only implements Forward Euler Explicit algorithm.
+	//=======================================================================
 
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
+
+	// project history INCREMENTS from grid to markers
+	ierr = ADVProjHistGridMark(actx); CHKERRQ(ierr);
+
+	// advect markers (Forward Euler)
+	ierr = ADVAdvectMarkers(actx); CHKERRQ(ierr);
 
 	// count number of markers to be sent to each neighbor domain
 	ierr = ADVMapMarkersDomains(actx); CHKERRQ(ierr);
@@ -272,10 +286,26 @@ PetscErrorCode ADVAdvect(AdvCtx *actx)
 	ierr = ADVExchangeMarkers(actx); CHKERRQ(ierr);
 
 	// store received markers, collect garbage
-	ierr = ADVCollectGarbage(actx);
+	ierr = ADVCollectGarbage(actx); CHKERRQ(ierr);
 
 	// free communication buffer
 	ierr = ADVDestroyMPIBuffer(actx); CHKERRQ(ierr);
+
+	// compute host cells for all the markers received
+	ierr = ADVMapMarkersCells(actx); CHKERRQ(ierr);
+
+	// project advected history from markers to grid
+	ierr = ADVProjHistMarkGrid(actx); CHKERRQ(ierr);
+
+	PetscFunctionReturn(0);
+}
+//---------------------------------------------------------------------------
+#undef __FUNCT__
+#define __FUNCT__ "ADVProjHistGridMark"
+PetscErrorCode ADVProjHistGridMark(AdvCtx *actx)
+{
+	PetscErrorCode ierr;
+	PetscFunctionBegin;
 
 	PetscFunctionReturn(0);
 }
@@ -285,6 +315,8 @@ PetscErrorCode ADVAdvect(AdvCtx *actx)
 PetscErrorCode ADVAdvectMarkers(AdvCtx *actx)
 {
 	// update marker positions from current velocities & time step
+	// WARNING! Forward Euler Explicit algorithm
+	// (need to implement more accurate schemes)
 
 	FDSTAG      *fs;
 	JacRes      *jr;
@@ -344,16 +376,12 @@ PetscErrorCode ADVAdvectMarkers(AdvCtx *actx)
 		yc = ccy[J];
 		zc = ccz[K];
 
-		// map marker on the cell X, Y, Z -face grids
-		IJ = IK = I;
-		JI = JK = J;
-		KI = KJ = K;
-/*
-		put mapping logic here
-		if(xp > xc) In = Ic+1; else In = Ic;
-		if(yp > yc) Jn = Jc+1; else Jn = Jc;
-		if(zp > zc) Kn = Kc+1; else Kn = Kc;
-*/
+		// map marker on the cells of X, Y, Z grids
+		if(xp > xc) { IJ = IK = I; } else { IJ = IK = I-1; }
+		if(yp > yc) { JI = JK = J; } else { JI = JK = J-1; }
+		if(zp > zc) { KI = KJ = K; } else { KI = KJ = K-1; }
+
+		// interpolate velocities form the cells of X, Y, Z grids
 		InterpLin3D(vx, lvx, I,  JI, KI, ncx, ccy, ccz)
 		InterpLin3D(vy, lvy, IJ, J,  KJ, ccx, ncy, ccz)
 		InterpLin3D(vz, lvz, IK, JK, K,  ccx, ccy, ncz)
@@ -364,161 +392,10 @@ PetscErrorCode ADVAdvectMarkers(AdvCtx *actx)
 		P->X[2] = zp + vz*dt;
 	}
 
-	PetscFunctionReturn(0);
-}
-//---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "ADVProjHistMarkGrid"
-PetscErrorCode ADVProjHistMarkGrid(AdvCtx *actx)
-{
-	// Project the following history fields from markers to grid:
-
-	// - phase ratios (centers and edges)
-	// - pressure     (centers)
-	// - temperature  (centers)
-	// - APS          (centers and edges)
-	// - stress       (centers or edges)
-
-	FDSTAG      *fs;
-	JacRes      *jr;
-	Marker      *P;
-	SolVarCell  *svCell;
-	PetscInt     nx, ny, nz, sx, sy, sz, nCells;
-	PetscInt     ii, jj, ID, Ic, Jc, Kc, In, Jn, Kn;
-	PetscScalar *gxy, *gxz, *gyz, ***lxy, ***lxz, ***lyz;
-	PetscScalar  xc, yc, zc, xp, yp, zp, wxc, wyc, wzc, wxn, wyn, wzn, w;
-
-	PetscErrorCode ierr;
-	PetscFunctionBegin;
-
-	fs = actx->fs;
-	jr = actx->jr;
-
-	// get number of cells
-	GET_CELL_RANGE(nx, sx, fs->dsx)
-	GET_CELL_RANGE(ny, sy, fs->dsy)
-	GET_CELL_RANGE(nz, sz, fs->dsz)
-
-	nCells = nx*ny*nz;
-
-	//======
-	// CELLS
-	//======
-
-	// clear history variables
-	for(jj = 0; jj < nCells; jj++)
-	{
-		// access solution variable
-		svCell = &jr->svCell[jj];
-
-		// clear phase ratios
-		for(ii = 0; ii < jr->numPhases; ii++) svCell->phRat[ii] = 0.0;
-
-		// clear history variables
-		svCell->svBulk.pn = 0.0;
-		svCell->svBulk.Tn = 0.0;
-		svCell->svDev.APS = 0.0;
-		svCell->hxx       = 0.0;
-		svCell->hyy       = 0.0;
-		svCell->hzz       = 0.0;
-	}
-
-	// scan ALL markers
-	for(jj = 0; jj < actx->nummark; jj++)
-	{
-		// access next marker
-		P = &actx->markers[jj];
-
-		// get consecutive index of the host cell
-		ID = actx->cellnum[jj];
-
-		// expand I, J, K cell indices
-		GET_CELL_IJK(ID, Ic, Jc, Kc, nx, ny)
-
-		// get marker coordinates
-		xp = P->X[0];
-		yp = P->X[1];
-		zp = P->X[2];
-
-		// get interpolation weights in cell control volumes
-		wxc = WEIGHT_POINT_CELL(Ic, xp, fs->dsx);
-		wyc = WEIGHT_POINT_CELL(Jc, yp, fs->dsy);
-		wzc = WEIGHT_POINT_CELL(Kc, zp, fs->dsz);
-
-		// get total interpolation weight
-		w = wxc*wyc*wzc;
-
-		// access solution variable of the host cell
-		svCell = &jr->svCell[ID];
-
-		// update phase ratios
-		svCell->phRat[P->phase] += w;
-
-		// update history variables
-		svCell->svBulk.pn += w*P->p;
-		svCell->svBulk.Tn += w*P->T;
-		svCell->svDev.APS += w*P->APS;
-		svCell->hxx       += w*P->s.xx;
-		svCell->hyy       += w*P->s.yy;
-		svCell->hzz       += w*P->s.zz;
-
-	}
-
-	// normalize interpolated values
-	for(jj = 0; jj < nCells; jj++)
-	{
-		// access solution variable
-		svCell = &jr->svCell[jj];
-
-		// normalize phase ratios
-		w = normVect(jr->numPhases, svCell->phRat);
-
-		// normalize history variables
-		svCell->svBulk.pn /= w;
-		svCell->svBulk.Tn /= w;
-		svCell->svDev.APS /= w;
-		svCell->hxx       /= w;
-		svCell->hyy       /= w;
-		svCell->hzz       /= w;
-	}
-
-	//======
-	// EDGES
-	//======
-
-	// NOTE: edge phase ratio computation algorithm is the worst possible.
-	// The xy, xz, yz edge points phase ratios are first computed locally,
-	// and then assembled separately for each phase. This step involves
-	// excessive communication, which is proportional to the number of phases.
-
-	// initialize sum of interpolation weights
-	for(jj = 0; jj < fs->nXYEdg; jj++) jr->svXYEdge[jj].ws = 1.0;
-	for(jj = 0; jj < fs->nXZEdg; jj++) jr->svXZEdge[jj].ws = 1.0;
-	for(jj = 0; jj < fs->nYZEdg; jj++) jr->svYZEdge[jj].ws = 1.0;
-
-	// define loop test for phase ratio calculation
-	#define _TEST_ if(P->phase != ii) continue;
-
-	// compute edge phase ratios (consecutively)
-	for(ii = 0; ii < jr->numPhases; ii++)
-	{
-		INTERP_MARKER_TO_EDGES(_TEST_, 1.0, 1.0, 1.0, phRat[ii])
-	}
-
-	// normalize phase ratios
-	for(jj = 0; jj < fs->nXYEdg; jj++) jr->svXYEdge[jj].ws = normVect(jr->numPhases, jr->svXYEdge[jj].phRat);
-	for(jj = 0; jj < fs->nXZEdg; jj++) jr->svXZEdge[jj].ws = normVect(jr->numPhases, jr->svXZEdge[jj].phRat);
-	for(jj = 0; jj < fs->nYZEdg; jj++) jr->svYZEdge[jj].ws = normVect(jr->numPhases, jr->svYZEdge[jj].phRat);
-
-	// clear loop test
-	#undef  _TEST_
-	#define _TEST_
-
-	// interpolate history stress to edges
-	INTERP_MARKER_TO_EDGES(_TEST_, P->s.xy, P->s.xz, P->s.yz, h)
-
-	// interpolates plastic strain to edges
-	INTERP_MARKER_TO_EDGES(_TEST_, P->APS, P->APS, P->APS, svDev.APS)
+	// restore access
+	ierr = DMDAVecRestoreArray(fs->DA_X, jr->lvx, &lvx); CHKERRQ(ierr);
+	ierr = DMDAVecRestoreArray(fs->DA_Y, jr->lvy, &lvy); CHKERRQ(ierr);
+	ierr = DMDAVecRestoreArray(fs->DA_Z, jr->lvz, &lvz); CHKERRQ(ierr);
 
 	PetscFunctionReturn(0);
 }
@@ -852,10 +729,164 @@ PetscErrorCode ADVMapMarkersCells(AdvCtx *actx)
 	PetscFunctionReturn(0);
 }
 //-----------------------------------------------------------------------------
+#undef __FUNCT__
+#define __FUNCT__ "ADVProjHistMarkGrid"
+PetscErrorCode ADVProjHistMarkGrid(AdvCtx *actx)
+{
+	// Project the following history fields from markers to grid:
+
+	// - phase ratios (centers and edges)
+	// - pressure     (centers)
+	// - temperature  (centers)
+	// - APS          (centers and edges)
+	// - stress       (centers or edges)
+
+	FDSTAG      *fs;
+	JacRes      *jr;
+	Marker      *P;
+	SolVarCell  *svCell;
+	PetscInt     nx, ny, nz, sx, sy, sz, nCells;
+	PetscInt     ii, jj, ID, Ic, Jc, Kc, In, Jn, Kn;
+	PetscScalar *gxy, *gxz, *gyz, ***lxy, ***lxz, ***lyz;
+	PetscScalar  xc, yc, zc, xp, yp, zp, wxc, wyc, wzc, wxn, wyn, wzn, w;
+
+	PetscErrorCode ierr;
+	PetscFunctionBegin;
+
+	fs = actx->fs;
+	jr = actx->jr;
+
+	// get number of cells
+	GET_CELL_RANGE(nx, sx, fs->dsx)
+	GET_CELL_RANGE(ny, sy, fs->dsy)
+	GET_CELL_RANGE(nz, sz, fs->dsz)
+
+	nCells = nx*ny*nz;
+
+	//======
+	// CELLS
+	//======
+
+	// clear history variables
+	for(jj = 0; jj < nCells; jj++)
+	{
+		// access solution variable
+		svCell = &jr->svCell[jj];
+
+		// clear phase ratios
+		for(ii = 0; ii < jr->numPhases; ii++) svCell->phRat[ii] = 0.0;
+
+		// clear history variables
+		svCell->svBulk.pn = 0.0;
+		svCell->svBulk.Tn = 0.0;
+		svCell->svDev.APS = 0.0;
+		svCell->hxx       = 0.0;
+		svCell->hyy       = 0.0;
+		svCell->hzz       = 0.0;
+	}
+
+	// scan ALL markers
+	for(jj = 0; jj < actx->nummark; jj++)
+	{
+		// access next marker
+		P = &actx->markers[jj];
+
+		// get consecutive index of the host cell
+		ID = actx->cellnum[jj];
+
+		// expand I, J, K cell indices
+		GET_CELL_IJK(ID, Ic, Jc, Kc, nx, ny)
+
+		// get marker coordinates
+		xp = P->X[0];
+		yp = P->X[1];
+		zp = P->X[2];
+
+		// get interpolation weights in cell control volumes
+		wxc = WEIGHT_POINT_CELL(Ic, xp, fs->dsx);
+		wyc = WEIGHT_POINT_CELL(Jc, yp, fs->dsy);
+		wzc = WEIGHT_POINT_CELL(Kc, zp, fs->dsz);
+
+		// get total interpolation weight
+		w = wxc*wyc*wzc;
+
+		// access solution variable of the host cell
+		svCell = &jr->svCell[ID];
+
+		// update phase ratios
+		svCell->phRat[P->phase] += w;
+
+		// update history variables
+		svCell->svBulk.pn += w*P->p;
+		svCell->svBulk.Tn += w*P->T;
+		svCell->svDev.APS += w*P->APS;
+		svCell->hxx       += w*P->s.xx;
+		svCell->hyy       += w*P->s.yy;
+		svCell->hzz       += w*P->s.zz;
+
+	}
+
+	// normalize interpolated values
+	for(jj = 0; jj < nCells; jj++)
+	{
+		// access solution variable
+		svCell = &jr->svCell[jj];
+
+		// normalize phase ratios
+		w = normVect(jr->numPhases, svCell->phRat);
+
+		// normalize history variables
+		svCell->svBulk.pn /= w;
+		svCell->svBulk.Tn /= w;
+		svCell->svDev.APS /= w;
+		svCell->hxx       /= w;
+		svCell->hyy       /= w;
+		svCell->hzz       /= w;
+	}
+
+	//======
+	// EDGES
+	//======
+
+	// NOTE: edge phase ratio computation algorithm is the worst possible.
+	// The xy, xz, yz edge points phase ratios are first computed locally,
+	// and then assembled separately for each phase. This step involves
+	// excessive communication, which is proportional to the number of phases.
+
+	// initialize sum of interpolation weights
+	for(jj = 0; jj < fs->nXYEdg; jj++) jr->svXYEdge[jj].ws = 1.0;
+	for(jj = 0; jj < fs->nXZEdg; jj++) jr->svXZEdge[jj].ws = 1.0;
+	for(jj = 0; jj < fs->nYZEdg; jj++) jr->svYZEdge[jj].ws = 1.0;
+
+	// define loop test for phase ratio calculation
+	#define _TEST_ if(P->phase != ii) continue;
+
+	// compute edge phase ratios (consecutively)
+	for(ii = 0; ii < jr->numPhases; ii++)
+	{
+		INTERP_MARKER_TO_EDGES(_TEST_, 1.0, 1.0, 1.0, phRat[ii])
+	}
+
+	// normalize phase ratios
+	for(jj = 0; jj < fs->nXYEdg; jj++) jr->svXYEdge[jj].ws = normVect(jr->numPhases, jr->svXYEdge[jj].phRat);
+	for(jj = 0; jj < fs->nXZEdg; jj++) jr->svXZEdge[jj].ws = normVect(jr->numPhases, jr->svXZEdge[jj].phRat);
+	for(jj = 0; jj < fs->nYZEdg; jj++) jr->svYZEdge[jj].ws = normVect(jr->numPhases, jr->svYZEdge[jj].phRat);
+
+	// clear loop test
+	#undef  _TEST_
+	#define _TEST_
+
+	// interpolate history stress to edges
+	INTERP_MARKER_TO_EDGES(_TEST_, P->s.xy, P->s.xz, P->s.yz, h)
+
+	// interpolates plastic strain to edges
+	INTERP_MARKER_TO_EDGES(_TEST_, P->APS, P->APS, P->APS, svDev.APS)
+
+	PetscFunctionReturn(0);
+}
+//---------------------------------------------------------------------------
 // service functions
 //-----------------------------------------------------------------------------
-
-//---------------------------------------------------------------------------
 PetscInt getPtrCnt(PetscInt n, PetscInt counts[], PetscInt ptr[])
 {
 	// compute pointers from counts, return total count
@@ -982,4 +1013,3 @@ PetscErrorCode FDSTAGetVorticity(
 }
 //-----------------------------------------------------------------------------
 */
-
