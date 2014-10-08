@@ -286,7 +286,7 @@ PetscErrorCode ADVMarkSave(AdvCtx *actx, UserContext *user)
 	ierr = PetscViewerBinaryOpen(PETSC_COMM_SELF, SaveFileName, FILE_MODE_WRITE, &view_out); CHKERRQ(ierr);
 	ierr = PetscViewerBinaryGetDescriptor(view_out, &fd);                                    CHKERRQ(ierr);
 
-	free(SaveFileName);
+	ierr = PetscFree(SaveFileName);  CHKERRQ(ierr);
 
 	// write binary output
 	s_nummark = (PetscScalar)actx->nummark;
@@ -298,7 +298,7 @@ PetscErrorCode ADVMarkSave(AdvCtx *actx, UserContext *user)
 	ierr = PetscViewerDestroy(&view_out);
 
 	// destroy buffer
-	ierr = PetscFree(markbuf);
+	ierr = PetscFree(markbuf); CHKERRQ(ierr);
 
 	PetscPrintf(PETSC_COMM_WORLD,"# Finished saving markers in parallel \n");
 
@@ -334,7 +334,7 @@ PetscErrorCode ADVMarkInitFileParallel(AdvCtx *actx, UserContext *user)
 	ierr = PetscViewerBinaryOpen(PETSC_COMM_SELF, LoadFileName, FILE_MODE_READ, &view_in); CHKERRQ(ierr);
 	ierr = PetscViewerBinaryGetDescriptor(view_in, &fd);                                   CHKERRQ(ierr);
 
-	free(LoadFileName);
+	ierr = PetscFree(LoadFileName);  CHKERRQ(ierr);
 
 	// read (and ignore) the silent undocumented file header
 	ierr = PetscBinaryRead(fd, &header, 1, PETSC_SCALAR); CHKERRQ(ierr);
@@ -376,6 +376,9 @@ PetscErrorCode ADVMarkInitFileParallel(AdvCtx *actx, UserContext *user)
 		actx->markers[imark].X[2]  =           markptr[2]/chLen;
 		actx->markers[imark].phase = (PetscInt)markptr[3];
 		actx->markers[imark].T     =           markptr[4]/chTemp;
+
+//        PetscPrintf(PETSC_COMM_WORLD,"# Marker coord = [%f,%f,%f] \n",actx->markers[imark].X[0],actx->markers[imark].X[1],actx->markers[imark].X[2]);
+
 	}
 
 	// free marker buffer
@@ -428,7 +431,7 @@ PetscErrorCode ADVMarkInitFileRedundant(AdvCtx *actx, UserContext *user)
 	ierr = PetscViewerBinaryOpen(PETSC_COMM_SELF, LoadFileName, FILE_MODE_READ, &view_in); CHKERRQ(ierr);
 	ierr = PetscViewerBinaryGetDescriptor(view_in, &fd); CHKERRQ(ierr);
 
-	free(LoadFileName);
+	ierr = PetscFree(LoadFileName);  CHKERRQ(ierr);
 
 	// read (and ignore) the silent undocumented file header
 	ierr = PetscBinaryRead(fd, &header, 1, PETSC_SCALAR); CHKERRQ(ierr);
