@@ -6,11 +6,15 @@
 #    * coordinates of the delimiters between the segments (n-1 points)
 #    * number of cells                                    (n points)
 #    * bias coefficients                                  (n points) 
- 
+
+nel_x						=   64    
+nel_y						= 	64    
+nel_z						= 	64
+
 #nel_x						=	-3    
-nel_x						=   16    
-nel_y						= 	16    
-nel_z						= 	16
+#nel_x						=   32    
+#nel_y						= 	32    
+#nel_z						= 	32
 
 #seg_x = 0.7 0.8 10 4 2 0.3 1.0 3.0
 
@@ -25,30 +29,17 @@ y_front					=	0			# Front side of domain
 z_bot					=	0			# Bottom of box
 
 # --- Model setup and noise ---
+msetup 					= block
 
-msetup = block
-
-#msetup                        = redundant
-#ParticleFilename              = 100x100x100_10percent_channel # File that contains markers distribution (matlab)
-#LoadInitialParticlesDirectory = darcy_markers                 # directory that contains markers distribution (matlab)
-
-
-# Define model setup and noise
-Setup.Model					=	2			# 0-Diapir, 1-Single Layer Fold, 2-Falling block, 3-from Particle file (defined below), 4-multilayer detachment fold, 5-Single Layer Growthrate
-ampl2D						=	0	 		# Amplitude of 2D sinuoidal perturbtion
-ampl3D						=	0.0			# Amplitude of 3D sinuoidal perturbtion
-amplNoise					=	0.0	 		# Amplitude of noise @ interface
 
 # Define input/output and numerics-related stuff
 OutputFile					=	FB_test		
-save_timesteps				=	1				# save every ? timesteps
+save_timesteps				=	0				# save every ? timesteps
 time_end					=	1				# last timestep
 CFL							=	1				# CFL, dt-based criterium
 dt_max						=	1e-5	  	   	# Maximum timestep [years if dimensional]
 	
 # Boundary conditions
-BC.Eyy						=	0.0				# BG strainrate in y-direction
-BC.Exx						=	0.0				# BG Strainrate in x-direction
 BC.LeftBound				=	1				# 0 - free surface, 1-free slip with BG strainrate Eyy, 2 - no slip, 5 - growthrate 2D, 7 - growthrate 3D
 BC.RightBound				=	1				# 0 - free surface, 1-free slip with BG strainrate Eyy, 2 - no slip, 5 - growthrate 2D, 7 - growthrate 3D
 BC.FrontBound				=	1				# 0 - free surface, 1-free slip with BG strainrate Exx, 2 - no slip, 5 - growthrate 2D, 7 - growthrate 3D
@@ -58,44 +49,101 @@ BC.UpperBound				=	1				# 0 - free surface, 1-free slip, 				  2 - no slip, 5 - 
 Temp_top	    			=   0				# Temperature @ top
 Temp_bottom					=   1 				# Temperature @ bottom; side BC's are flux-free
 
-# Grid advection method
-GridAdvectionMethod			= 		0 			# 0-Fully Eulerian, 1-Fully Lagrangian, 2-ALE with remeshing @ surface layer
-FactorSurfaceLayer			= 		0.3 		# How thick is the surface layer (if option 2 is selected above) ?
 
-
-
-# Define Stokes Solver
-StokesSolver 				=	3   # 1 - Powell-Hesteness iterations; 2 - Schur Complement Reduction; 3 - Fully Coupled Solver 
-VelocitySolver              =   0   # 0 - User defined; 1 - Direct (MUMPS); 2 - Galerkin geometric multigrid; 3 - Fieldsplit + Algebraic Multigrid (ML)
 
 <PetscOptionsStart>
+	
+# SNES
+	-npicard 3
+	-snes_monitor
+	-snes_atol 1e-12
+	-snes_rtol 1e-6
+	-snes_stol 1e-6
+	-snes_max_it 25
+	-snes_max_funcs 50000
+	-snes_type 		ksponly
 
-	# KSP
-	-ksp_type preonly
-	-pc_type lu
-	-pc_factor_mat_solver_package mumps
-#	-mat_mumps_icntl_14 200
+# Jacobian KSP
+	-js_ksp_type gcr
+	-js_ksp_max_it 1000
+	-js_ksp_min_it 2
+	-js_ksp_converged_reason
+ 	-js_ksp_monitor
+	-js_ksp_rtol 1e-8
 
-	-ph_gamma  1e3
-	-ph_maxit  50
-	-ph_tol    1e-8
+# Stokes Preconditioner
+#	-pstokes al
+#	-pstokes bf
+	-pstokes mg
+
+# Augmented Lagrangian
+	-pgamma 1e3
+	-al_ksp_type preonly
+	-al_pc_type lu
+	-al_pc_factor_mat_solver_package mumps
+
+# Block Factorization
+
+#	-velgmg
+	
+	# block upper triangular preconditioner
+#	-bf_pc_type fieldsplit
+#	-bf_pc_fieldsplit_type SCHUR
+#	-bf_pc_fieldsplit_schur_factorization_type UPPER
+	
+	# velocity sove mg
+#	-fieldsplit_u_ksp_type preonly
+#	-fieldsplit_u_pc_type none
+
+	# velocity solve gmres preconditioned with mg
+#	-fieldsplit_u_ksp_type gmres
+#	-fieldsplit_u_ksp_rtol 1e-2
+#	-fieldsplit_u_ksp_max_it 3
+#	-fieldsplit_u_pc_type none
+
+	# velocity solve direct
+#	-fieldsplit_u_ksp_type preonly
+#	-fieldsplit_u_pc_type lu
+#	-fieldsplit_u_pc_factor_mat_solver_package mumps
+	
+	# pressure solve is just inverse viscosity approximation to schur complement
+#	-fieldsplit_p_ksp_type preonly
+#	-fieldsplit_p_pc_type jacobi
+
+# MULTIGRID
+
+	-gmg_pc_type mg
+	-gmg_pc_mg_levels 4
+	-gmg_pc_mg_galerkin
+	-gmg_pc_mg_type additive
+	-gmg_pc_mg_cycle_type v
+
+	-gmg_mg_levels_ksp_type richardson
+#	-gmg_mg_levels_ksp_type chebyshev
+#	-gmg_mg_levels_ksp_chebyshev_estimate_eigenvalues
+	
+	-gmg_mg_levels_ksp_richardson_scale 0.5
+	-gmg_mg_levels_ksp_max_it 3
+	#-gmg_mg_levels_pc_type jacobi
+	#-gmg_mg_levels_pc_type chebyshev
+	
+
+# COARSE SOLVER
+
+	-crs_ksp_type preonly
+	-crs_pc_type redundant
+	-crs_pc_redundant_number 1	
+	-crs_redundant_pc_factor_mat_solver_package mumps
+
 
 	# Fine-tune solver options here (add command-line Petsc Options)
-	-vpt_element FDSTAG			# Type of element [Q2Pm1_global; Q2Pm1_local; Q1P0]
 	-use_fdstag_canonical
 	-AddRandomNoiseParticles 0
 	-restart 0
 	-save_breakpoints 0
-	
-#	-snes_mf_operator	
-#	-snes_monitor
-#	-snes_atol 1e-12
-#	-snes_rtol 1e-6
-#	-snes_stol 1e-6
-#	-snes_max_it 25
-#	-snes_max_funcs 50000
+#	-SavePartitioning
 
-	-objects_dump
+#	-objects_dump
 
 <PetscOptionsEnd>
     
@@ -115,7 +163,7 @@ LowerViscosityCutoff			=	1e-3
 UpperViscosityCutoff			=	1e12
 
 # Define material properties for all phases -------------------------------------------------
-num_phases					=	2		# Total number of phases defined in code
+
 	# Define properties of matrix -----------------
 	<MaterialStart>
 		phase_id 			=	0
@@ -155,14 +203,15 @@ num_phases					=	2		# Total number of phases defined in code
 		Cohesion        	= 	20e60
 		FrictionAngle		= 	30
 	<MaterialEnd>
-	
+
+
 	# Define properties of block -------------------
 	<MaterialStart>
 		phase_id 			=	1
 		attribute 			= 	VISCOSITY
 		type 				= 	constant
 #		type 				= 	power_law
-		eta0       			= 	10
+		eta0       			= 	1
 		N_exp       		= 	3
 		e0 					=	0.1	
 	<MaterialEnd>
@@ -195,9 +244,5 @@ num_phases					=	2		# Total number of phases defined in code
 		Cohesion        	= 	20e60
 		FrictionAngle		= 	30
 	<MaterialEnd>
-	
-	
-
-
 	
 # End of defining material properties for all phases ----------------------------------------
