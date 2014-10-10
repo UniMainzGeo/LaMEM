@@ -68,11 +68,9 @@ without the explicit agreement of Boris Kaus.
 PetscErrorCode LaMEMLib_FDSTAG(PetscBool InputParamFile, const char *ParamFile, PetscScalar *LaMEM_OutputParameters, PetscInt *mpi_group_id)
 {
 
-//	LaMEMVelPressureDA C;
 	UserContext        user;
 	PetscInt           SaveOrNot;
 	PetscInt           itime;
-//	DAVPElementType    vpt_element_type;
 //	PetscLogDouble     cputime_start, cputime_start0, cputime_end, cputime_start_tstep, cputime_start_nonlinear;
 	PetscLogDouble     cputime_end, cputime_start_nonlinear;
 
@@ -305,10 +303,6 @@ PetscErrorCode LaMEMLib_FDSTAG(PetscBool InputParamFile, const char *ParamFile, 
 		// set time step
 		jr.dt = user.dt;
 
-		// compute inverse elastic viscosities
-		// GET RID OF THIS UGLY THING! USE EFFECTIVE ELASTIC "STRAIN RATES"
-		ierr = JacResGetI2Gdt(&jr); CHKERRQ(ierr);
-
 		//=========================================================================================
 		//	NONLINEAR THERMO-MECHANICAL SOLVER
 		//=========================================================================================
@@ -316,6 +310,9 @@ PetscErrorCode LaMEMLib_FDSTAG(PetscBool InputParamFile, const char *ParamFile, 
 		if(user.SkipStokesSolver != PETSC_TRUE)
 		{
 			PetscTime(&cputime_start_nonlinear);
+
+			// compute inverse elastic viscosities
+			ierr = JacResGetI2Gdt(&jr); CHKERRQ(ierr);
 
 			// solve nonlinear system with SNES
 			ierr = SNESSolve(snes, NULL, jr.gsol); CHKERRQ(ierr);
@@ -503,7 +500,7 @@ PetscErrorCode LaMEMLib_FDSTAG(PetscBool InputParamFile, const char *ParamFile, 
 //		PetscPrintf(PETSC_COMM_WORLD,"# Finished timestep %lld out of %lld in %g s\n\n",(LLD)itime, (LLD)(user.time_end), cputime_end - cputime_start_tstep);
 
 
-		// store marker to disk
+		// store markers to disk
 		ierr = ADVMarkSave(&actx, &user);  CHKERRQ(ierr);
 
 	}

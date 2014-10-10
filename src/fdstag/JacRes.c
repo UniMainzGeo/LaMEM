@@ -214,6 +214,7 @@ PetscErrorCode JacResDestroy(JacRes *jr)
 PetscErrorCode JacResGetI2Gdt(JacRes *jr)
 {
 	// compute average inverse elastic viscosity in the integration points
+	// WARNING! this should be replaced by the effective elastic strain rates
 
 	PetscInt    i, n;
 	FDSTAG     *fs;
@@ -468,6 +469,107 @@ PetscErrorCode JacResGetEffStrainRate(JacRes *jr)
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
+#undef __FUNCT__
+#define __FUNCT__ "JacResGetVorticity"
+PetscErrorCode JacResGetVorticity(JacRes *jr)
+{
+	// Compute components of the vorticity pseudo-vector
+	// (instantaneous rotation rates around three coordinate axis).
+	// Take care of rotation direction and sign convention.
+	// Throughout LaMEM, right-handed coordinate system is assumed!
+
+	FDSTAG     *fs;
+	PetscInt    i, j, k, nx, ny, nz, sx, sy, sz;
+	PetscScalar dvxdy, dvydx, dvxdz, dvzdx, dvydz, dvzdy;
+	PetscScalar ***lvx, ***lvy, ***lvz;
+	PetscScalar ***gwx, ***gwy, ***gwz;
+
+	PetscErrorCode ierr;
+	PetscFunctionBegin;
+
+	fs = jr->fs;
+
+	// access vectors
+	ierr = DMDAVecGetArray(fs->DA_X,  jr->lvx,  &lvx);  CHKERRQ(ierr);
+	ierr = DMDAVecGetArray(fs->DA_Y,  jr->lvy,  &lvy);  CHKERRQ(ierr);
+	ierr = DMDAVecGetArray(fs->DA_Z,  jr->lvz,  &lvz);  CHKERRQ(ierr);
+	ierr = DMDAVecGetArray(fs->DA_XY, jr->gdxy, &gwz);  CHKERRQ(ierr);
+	ierr = DMDAVecGetArray(fs->DA_XZ, jr->gdxz, &gwy);  CHKERRQ(ierr);
+	ierr = DMDAVecGetArray(fs->DA_YZ, jr->gdyz, &gwx);  CHKERRQ(ierr);
+
+	//-------------------------------
+	// xy edge points (wz)
+	//-------------------------------
+
+	GET_NODE_RANGE(nx, sx, fs->dsx)
+	GET_NODE_RANGE(ny, sy, fs->dsy)
+	GET_CELL_RANGE(nz, sz, fs->dsz)
+
+	START_STD_LOOP
+	{
+		dvxdy = (lvx[k][j][i] - lvx[k][j-1][i])/SIZE_NODE(j, sy, fs->dsy);
+		dvydx = (lvy[k][j][i] - lvy[k][j][i-1])/SIZE_NODE(i, sx, fs->dsx);
+
+		// positive (counter-clockwise) rotation around Z axis X -> Y
+
+		gwz[k][j][i] = dvydx - dvxdy;
+	}
+	END_STD_LOOP
+
+	//-------------------------------
+	// xz edge points (wy)
+	//-------------------------------
+
+	GET_NODE_RANGE(nx, sx, fs->dsx)
+	GET_CELL_RANGE(ny, sy, fs->dsy)
+	GET_NODE_RANGE(nz, sz, fs->dsz)
+
+	START_STD_LOOP
+	{
+		dvxdz = (lvx[k][j][i] - lvx[k-1][j][i])/SIZE_NODE(k, sz, fs->dsz);
+		dvzdx = (lvz[k][j][i] - lvz[k][j][i-1])/SIZE_NODE(i, sx, fs->dsx);
+
+		// positive (counter-clockwise) rotation around Y axis Z -> X
+
+		gwy[k][j][i] = dvxdz - dvzdx;
+	}
+	END_STD_LOOP
+
+	//-------------------------------
+	// yz edge points (wx)
+	//-------------------------------
+
+	GET_CELL_RANGE(nx, sx, fs->dsx)
+	GET_NODE_RANGE(ny, sy, fs->dsy)
+	GET_NODE_RANGE(nz, sz, fs->dsz)
+
+	START_STD_LOOP
+	{
+		dvydz = (lvy[k][j][i] - lvy[k-1][j][i])/SIZE_NODE(k, sz, fs->dsz);
+		dvzdy = (lvz[k][j][i] - lvz[k][j-1][i])/SIZE_NODE(j, sy, fs->dsy);
+
+		// positive (counter-clockwise) rotation around X axis Y -> Z
+
+		gwx[k][j][i] = dvzdy - dvydz;
+	}
+	END_STD_LOOP
+
+	// restore velocity & strain rate component vectors
+	ierr = DMDAVecRestoreArray(fs->DA_X,  jr->lvx,  &lvx);  CHKERRQ(ierr);
+	ierr = DMDAVecRestoreArray(fs->DA_Y,  jr->lvy,  &lvy);  CHKERRQ(ierr);
+	ierr = DMDAVecRestoreArray(fs->DA_Z,  jr->lvz,  &lvz);  CHKERRQ(ierr);
+	ierr = DMDAVecRestoreArray(fs->DA_XY, jr->gdxy, &gwz);  CHKERRQ(ierr);
+	ierr = DMDAVecRestoreArray(fs->DA_XZ, jr->gdxz, &gwy);  CHKERRQ(ierr);
+	ierr = DMDAVecRestoreArray(fs->DA_YZ, jr->gdyz, &gwx);  CHKERRQ(ierr);
+
+	// communicate boundary values
+	GLOBAL_TO_LOCAL(fs->DA_CEN, jr->gdxx, jr->ldxx);
+	GLOBAL_TO_LOCAL(fs->DA_CEN, jr->gdyy, jr->ldyy);
+	GLOBAL_TO_LOCAL(fs->DA_CEN, jr->gdzz, jr->ldzz);
+
+	PetscFunctionReturn(0);
+}
+//-----------------------------------------------------------------------------
 #undef __FUNCT__
 #define __FUNCT__ "JacResGetResidual"
 PetscErrorCode JacResGetResidual(JacRes *jr)

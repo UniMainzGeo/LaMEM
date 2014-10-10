@@ -4,30 +4,21 @@
 #ifndef __solVar_h__
 #define __solVar_h__
 
-
 //---------------------------------------------------------------------------
 //....    Non-Symmetric second rank tensor (gradient & rotation tensors) ....
 //---------------------------------------------------------------------------
-typedef struct {
 
-	PetscScalar _11, _12, _13;
-	PetscScalar _21, _22, _23;
-	PetscScalar _31, _32, _33;
+typedef struct
+{
+	PetscScalar xx, xy, xz;
+	PetscScalar yx, yy, yz;
+	PetscScalar zx, zy, zz;
 
 } Tensor2RN;
 
 //---------------------------------------------------------------------------
 //.......   Symmetric second rank tensor (stress & strain tensors)   ........
 //---------------------------------------------------------------------------
-/*
-typedef struct
-{
-	PetscScalar _11, _12, _13;
-	PetscScalar      _22, _23;
-	PetscScalar           _33;
-
-} Tensor2RS;
-*/
 
 typedef struct
 {
@@ -36,8 +27,6 @@ typedef struct
 	PetscScalar         zz;
 
 } Tensor2RS;
-
-
 
 //---------------------------------------------------------------------------
 //............   Material marker (history variables advection)   ............
@@ -50,7 +39,7 @@ typedef struct
 	PetscScalar p;     // pressure
 	PetscScalar T;     // temperature
 	PetscScalar APS;   // accumulated plastic strain
-	Tensor2RS   s;     // deviatoric stress
+	Tensor2RS   S;     // deviatoric stress
 
 } Marker;
 

@@ -83,6 +83,9 @@ PetscErrorCode JacResGetI2Gdt(JacRes *jr);
 // evaluate effective strain rate components in basic nodes
 PetscErrorCode JacResGetEffStrainRate(JacRes *jr);
 
+// compute components of vorticity vector
+PetscErrorCode JacResGetVorticity(JacRes *jr);
+
 // compute nonlinear residual vectors
 PetscErrorCode JacResGetResidual(JacRes *jr);
 

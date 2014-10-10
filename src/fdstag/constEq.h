@@ -91,4 +91,22 @@ PetscErrorCode GetStressEdge(
 	PetscScalar  d);     // effective shear strain rate component
 
 //---------------------------------------------------------------------------
+// Elastic stress rotation functions
+//---------------------------------------------------------------------------
+
+// compute rotation matrix from axis & angle (Euler-Rodrigues formula)
+void GetRotationMatrix(
+	Tensor2RN   *R,   // rotation matrix
+	PetscScalar  dt,  // time step
+	PetscScalar  wx,  // vorticity vector components
+	PetscScalar  wy,  // ...
+	PetscScalar  wz); // ...
+
+// rotate stress tensor
+void RotateStress(Tensor2RN *R, Tensor2RS *S, Tensor2RS *SR);
+
+// copy symmetric second order tensor B = A
+void Tensor2RSCopy(Tensor2RS *A, Tensor2RS *B);
+
+//---------------------------------------------------------------------------
 #endif

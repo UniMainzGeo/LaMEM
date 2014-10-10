@@ -40,7 +40,7 @@ typedef struct
 	PetscInt  nummark; // local number of markers
 	PetscInt  markcap; // capacity of marker storage
 	Marker 	 *markers; // storage for local markers
-	PetscInt *cellnum; // host cells local numbers for each marker
+	PetscInt *cellnum; // host cells local number for each marker
 
 	//=========
 	// EXCHANGE
@@ -84,10 +84,11 @@ PetscErrorCode ADVReAllocateStorage(AdvCtx *actx, PetscInt capacity);
 // perform advection step
 PetscErrorCode ADVAdvect(AdvCtx *actx);
 
-// project history variables from grid to markers
+// project history INCREMENTS from grid to markers
 PetscErrorCode ADVProjHistGridMark(AdvCtx *actx);
 
 // update marker positions from current velocities & time step
+// rotate history stresses in the local vorticity field
 PetscErrorCode ADVAdvectMarkers(AdvCtx *actx);
 
 // count number of markers to be sent to each neighbor domain
@@ -171,22 +172,4 @@ static inline PetscInt FindPointInCell(
 	return(L);
 }
 //-----------------------------------------------------------------------------
-// MACROS
-//-----------------------------------------------------------------------------
-#define InterpLin3D(v, lv, i, j, k, cx, cy, cz) \
-	/* get relative coordinates */ \
-	xe = (xp - cx[i-sx])/(cx[i-sx+1] - cx[i-sx]); xb = 1.0 - xe; \
-	ye = (yp - cy[j-sy])/(cy[j-sy+1] - cy[j-sy]); yb = 1.0 - ye; \
-	ze = (zp - cz[k-sz])/(cz[k-sz+1] - cz[k-sz]); zb = 1.0 - ze; \
-	/* interpolate & return result */ \
-	v = \
-	lv[k  ][j  ][i  ]*xb*yb*zb + \
-	lv[k  ][j  ][i+1]*xe*yb*zb + \
-	lv[k  ][j+1][i  ]*xb*ye*zb + \
-	lv[k  ][j+1][i+1]*xe*ye*zb + \
-	lv[k+1][j  ][i  ]*xb*yb*ze + \
-	lv[k+1][j  ][i+1]*xe*yb*ze + \
-	lv[k+1][j+1][i  ]*xb*ye*ze + \
-	lv[k+1][j+1][i+1]*xe*ye*ze;
-//---------------------------------------------------------------------------
 #endif

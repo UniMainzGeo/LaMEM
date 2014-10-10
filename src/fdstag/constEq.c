@@ -563,7 +563,79 @@ PetscErrorCode GetStressEdge(
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
+// Elastic stress rotation functions
+//---------------------------------------------------------------------------
+void GetRotationMatrix(
+	Tensor2RN   *R,  // rotation matrix
+	PetscScalar  dt, // time step
+	PetscScalar  wx, // vorticity vector components
+	PetscScalar  wy, // ...
+	PetscScalar  wz) // ...
+{
+	// compute rotation matrix from axis & angle (Euler-Rodrigues formula)
+	// WARNING! Courant criterion for rotation angle should be implemented
 
+	PetscScalar w, theta, ct, st, cf;
+
+	// get length of the instantaneous rotation axis (vorticity intensity)
+	w = sqrt(wx*wx + wy*wy + wz*wz);
+
+	// get unit rotation axis
+	wx /= w;
+	wy /= w;
+	wz /= w;
+
+	// get finite rotation angle (vorticity intensity is twice the average angular velocity)
+	theta = dt*(w/2.0);
+
+	// compute rotation operator using Euler-Rodrigues formula
+	ct = cos(theta);
+	st = sin(theta);
+	cf = 1.0 - ct;
+
+	R->xx =  ct    + cf*wx*wx;   R->xy = -st*wz + cf*wx*wy;   R->xz =  st*wy + cf*wx*wz;
+	R->yx =  st*wz + cf*wy*wx;   R->yy =  ct    + cf*wy*wy;   R->yz = -st*wx + cf*wy*wz;
+	R->zx = -st*wy + cf*wz*wx;   R->zy =  st*wx + cf*wz*wy;   R->zz =  ct    + cf*wz*wz;
+}
+//---------------------------------------------------------------------------
+void RotateStress(Tensor2RN *R, Tensor2RS *S, Tensor2RS *SR)
+{
+	// rotate stress tensor
+	// [SR] = [R] * [S] * [R]^t
+	// SRij = Rik * Skl * Rjl
+
+	PetscScalar dx, dy, dz;
+
+	dx = R->xx*S->xx + R->xy*S->xy + R->xz*S->xz;
+	dy = R->xx*S->xy + R->xy*S->yy + R->xz*S->yz;
+	dz = R->xx*S->xz + R->xy*S->yz + R->xz*S->zz;
+
+	SR->xx = dx*R->xx + dy*R->xy + dz*R->xz;
+	SR->xy = dx*R->yx + dy*R->yy + dz*R->yz;
+	SR->xz = dx*R->zx + dy*R->zy + dz*R->zz;
+
+	dx = R->yx*S->xx + R->yy*S->xy + R->yz*S->xz;
+	dy = R->yx*S->xy + R->yy*S->yy + R->yz*S->yz;
+	dz = R->yx*S->xz + R->yy*S->yz + R->yz*S->zz;
+
+	SR->yy = dx*R->yx + dy*R->yy + dz*R->yz;
+	SR->yz = dx*R->zx + dy*R->zy + dz*R->zz;
+
+	dx = R->zx*S->xx + R->zy*S->xy + R->zz*S->xz;
+	dy = R->zx*S->xy + R->zy*S->yy + R->zz*S->yz;
+	dz = R->zx*S->xz + R->zy*S->yz + R->zz*S->zz;
+
+	SR->zz = dx*R->zx + dy*R->zy + dz*R->zz;
+}
+//---------------------------------------------------------------------------
+void Tensor2RSCopy(Tensor2RS *A, Tensor2RS *B)
+{
+	// copy symmetric second order tensor B = A
+	B->xx = A->xx;
+	B->xy = A->xy; B->yy = A->yy;
+    B->xz = A->xz; B->yz = A->yz; B->zz = A->zz;
+}
+//---------------------------------------------------------------------------
 
 
 // ERROR HANDLING FOR EVALUATION CONTEXT ROUTINE

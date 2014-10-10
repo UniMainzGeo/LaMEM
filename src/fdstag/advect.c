@@ -9,6 +9,7 @@
 #include "bc.h"
 #include "JacRes.h"
 #include "advect.h"
+#include "constEq.h"
 
 /*
 #START_DOC#
@@ -81,31 +82,33 @@ Anton, please add a few comments
 		/* get consecutive index of the host cell */ \
 		ID = actx->cellnum[jj]; \
 		/* expand I, J, K cell indices */ \
-		GET_CELL_IJK(ID, Ic, Jc, Kc, nx, ny) \
+		GET_CELL_IJK(ID, I, J, K, nx, ny) \
 		/* get marker coordinates */ \
 		xp = P->X[0]; \
 		yp = P->X[1]; \
 		zp = P->X[2]; \
 		/* get coordinates of cell center */ \
-		xc = fs->dsx.ccoor[Ic]; \
-		yc = fs->dsy.ccoor[Jc]; \
-		zc = fs->dsz.ccoor[Kc]; \
+		xc = fs->dsx.ccoor[I]; \
+		yc = fs->dsy.ccoor[J]; \
+		zc = fs->dsz.ccoor[K]; \
 		/* map marker on the control volumes of edge nodes */ \
-		if(xp > xc) In = Ic+1; else In = Ic; \
-		if(yp > yc) Jn = Jc+1; else Jn = Jc; \
-		if(zp > zc) Kn = Kc+1; else Kn = Kc; \
-		/* get interpolation weights in cell control volumes */ \
-		wxc = WEIGHT_POINT_CELL(Ic, xp, fs->dsx); \
-		wyc = WEIGHT_POINT_CELL(Jc, yp, fs->dsy); \
-		wzc = WEIGHT_POINT_CELL(Kc, zp, fs->dsz); \
+		if(xp > xc) II = I+1; else II = I; \
+		if(yp > yc) JJ = J+1; else JJ = J; \
+		if(zp > zc) KK = K+1; else KK = K; \
+/*  WARINIG!*/ \
+/*	MAKE SURE WHAT TO CALL HERE WEIGHT_POINT_CELL OR WEIGHT_POINT_NODE */ \
+/* get interpolation weights in cell control volumes */ \
+		wxc = WEIGHT_POINT_CELL(I, xp, fs->dsx); \
+		wyc = WEIGHT_POINT_CELL(J, yp, fs->dsy); \
+		wzc = WEIGHT_POINT_CELL(K, zp, fs->dsz); \
 		/* get interpolation weights in node control volumes */ \
-		wxn = WEIGHT_POINT_CELL(In, xp, fs->dsx); \
-		wyn = WEIGHT_POINT_CELL(Jn, yp, fs->dsy); \
-		wzn = WEIGHT_POINT_CELL(Kn, zp, fs->dsz); \
+		wxn = WEIGHT_POINT_NODE(II, xp, fs->dsx); \
+		wyn = WEIGHT_POINT_NODE(JJ, yp, fs->dsy); \
+		wzn = WEIGHT_POINT_NODE(KK, zp, fs->dsz); \
 		/* update required fields from marker to edge nodes */ \
-		lxy[Kc+sz][Jn+sy][In+sx] += wxn*wyn*wzc*_UPXY_; \
-		lxz[Kn+sz][Jc+sy][In+sx] += wxn*wyc*wzn*_UPXZ_; \
-		lyz[Kn+sz][Jn+sy][Ic+sx] += wxc*wyn*wzn*_UPYZ_; \
+		lxy[sz+K ][sy+JJ][sx+II] += wxn*wyn*wzc*_UPXY_; \
+		lxz[sz+KK][sy+J ][sx+II] += wxn*wyc*wzn*_UPXZ_; \
+		lyz[sz+KK][sy+JJ][sx+I ] += wxc*wyn*wzn*_UPYZ_; \
 	} \
 	/* restore access */ \
 	ierr = DMDAVecRestoreArray(fs->DA_XY, jr->ldxy, &lxy); CHKERRQ(ierr); \
@@ -127,6 +130,22 @@ Anton, please add a few comments
 	ierr = VecRestoreArray(jr->gdxy, &gxy); CHKERRQ(ierr); \
 	ierr = VecRestoreArray(jr->gdxz, &gxz); CHKERRQ(ierr); \
 	ierr = VecRestoreArray(jr->gdyz, &gyz); CHKERRQ(ierr);
+//-----------------------------------------------------------------------------
+#define InterpLin3D(v, lv, i, j, k, cx, cy, cz) \
+	/* get relative coordinates */ \
+	xe = (xp - cx[i])/(cx[i+1] - cx[i]); xb = 1.0 - xe; \
+	ye = (yp - cy[j])/(cy[j+1] - cy[j]); yb = 1.0 - ye; \
+	ze = (zp - cz[k])/(cz[k+1] - cz[k]); zb = 1.0 - ze; \
+	/* interpolate & return result */ \
+	v = \
+	lv[sz+k  ][sy+j  ][sx+i  ]*xb*yb*zb + \
+	lv[sz+k  ][sy+j  ][sx+i+1]*xe*yb*zb + \
+	lv[sz+k  ][sy+j+1][sx+i  ]*xb*ye*zb + \
+	lv[sz+k  ][sy+j+1][sx+i+1]*xe*ye*zb + \
+	lv[sz+k+1][sy+j  ][sx+i  ]*xb*yb*ze + \
+	lv[sz+k+1][sy+j  ][sx+i+1]*xe*yb*ze + \
+	lv[sz+k+1][sy+j+1][sx+i  ]*xb*ye*ze + \
+	lv[sz+k+1][sy+j+1][sx+i+1]*xe*ye*ze;
 //---------------------------------------------------------------------------
 #undef __FUNCT__
 #define __FUNCT__ "ADVCreate"
@@ -270,6 +289,9 @@ PetscErrorCode ADVAdvect(AdvCtx *actx)
 	// project history INCREMENTS from grid to markers
 	ierr = ADVProjHistGridMark(actx); CHKERRQ(ierr);
 
+	// compute current vorticity field
+	ierr = JacResGetVorticity(actx->jr); CHKERRQ(ierr);
+
 	// advect markers (Forward Euler)
 	ierr = ADVAdvectMarkers(actx); CHKERRQ(ierr);
 
@@ -304,8 +326,27 @@ PetscErrorCode ADVAdvect(AdvCtx *actx)
 #define __FUNCT__ "ADVProjHistGridMark"
 PetscErrorCode ADVProjHistGridMark(AdvCtx *actx)
 {
+
+	// project history INCREMENTS from grid to markers
+
+	FDSTAG      *fs;
+	JacRes      *jr;
+	Marker      *P;
+
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
+
+	fs = actx->fs;
+	jr = actx->jr;
+
+
+/*
+	PetscScalar p;     // pressure         -> from center
+	PetscScalar T;     // temperature
+	PetscScalar APS;   // accumulated plastic strain -> joined from center and edges
+	Tensor2RS   s;     // deviatoric stress          -> joined from center and edges
+*/
+
 
 	PetscFunctionReturn(0);
 }
@@ -315,19 +356,23 @@ PetscErrorCode ADVProjHistGridMark(AdvCtx *actx)
 PetscErrorCode ADVAdvectMarkers(AdvCtx *actx)
 {
 	// update marker positions from current velocities & time step
+	// rotate history stresses in the local vorticity field
 	// WARNING! Forward Euler Explicit algorithm
 	// (need to implement more accurate schemes)
 
 	FDSTAG      *fs;
 	JacRes      *jr;
 	Marker      *P;
+	Tensor2RN   R;
+	Tensor2RS   SR;
 	PetscInt    sx, sy, sz, nx, ny;
 	PetscInt    jj, ID, I, J, K, JI, KI, IJ, KJ, IK, JK;
 	PetscScalar *ncx, *ncy, *ncz;
 	PetscScalar *ccx, *ccy, *ccz;
 	PetscScalar ***lvx, ***lvy, ***lvz;
+	PetscScalar ***lwx, ***lwy, ***lwz;
 	PetscScalar xb, yb, zb, xe, ye, ze;
-	PetscScalar vx, vy, vz, xc, yc, zc, xp, yp, zp, dt;
+	PetscScalar vx, vy, vz, wx, wy, wz, xc, yc, zc, xp, yp, zp, dt;
 
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
@@ -353,6 +398,11 @@ PetscErrorCode ADVAdvectMarkers(AdvCtx *actx)
 	ierr = DMDAVecGetArray(fs->DA_X, jr->lvx, &lvx); CHKERRQ(ierr);
 	ierr = DMDAVecGetArray(fs->DA_Y, jr->lvy, &lvy); CHKERRQ(ierr);
 	ierr = DMDAVecGetArray(fs->DA_Z, jr->lvz, &lvz); CHKERRQ(ierr);
+
+	// access vorticity vectors
+	ierr = DMDAVecGetArray(fs->DA_XY, jr->ldxy, &lwz); CHKERRQ(ierr);
+	ierr = DMDAVecGetArray(fs->DA_XZ, jr->ldxz, &lwy); CHKERRQ(ierr);
+	ierr = DMDAVecGetArray(fs->DA_YZ, jr->ldyz, &lwx); CHKERRQ(ierr);
 
 	// scan all markers
 	for(jj = 0; jj < actx->nummark; jj++)
@@ -390,12 +440,36 @@ PetscErrorCode ADVAdvectMarkers(AdvCtx *actx)
 		P->X[0] = xp + vx*dt;
 		P->X[1] = yp + vy*dt;
 		P->X[2] = zp + vz*dt;
+
+/*
+		// map marker on the control volumes of edge nodes
+		if(xp > xc) In = I+1; else In = I;
+		if(yp > yc) Jn = J+1; else Jn = J;
+		if(zp > zc) Kn = K+1; else Kn = K;
+
+		// get vorticity components \
+		lxy[Kc+sz][Jn+sy][In+sx] += wxn*wyn*wzc*_UPXY_; \
+		lxz[Kn+sz][Jc+sy][In+sx] += wxn*wyc*wzn*_UPXZ_; \
+		lyz[Kn+sz][Jn+sy][Ic+sx] += wxc*wyn*wzn*_UPYZ_; \
+*/
+
+		wx = wy = wz = 0.0;
+
+		// rotate stresses on the markers in the local vorticity field
+		GetRotationMatrix(&R, dt, wx, wy, wz);
+		RotateStress(&R, &P->S, &SR);
+		Tensor2RSCopy(&SR, &P->S);
+
+
 	}
 
 	// restore access
-	ierr = DMDAVecRestoreArray(fs->DA_X, jr->lvx, &lvx); CHKERRQ(ierr);
-	ierr = DMDAVecRestoreArray(fs->DA_Y, jr->lvy, &lvy); CHKERRQ(ierr);
-	ierr = DMDAVecRestoreArray(fs->DA_Z, jr->lvz, &lvz); CHKERRQ(ierr);
+	ierr = DMDAVecRestoreArray(fs->DA_X,  jr->lvx,  &lvx); CHKERRQ(ierr);
+	ierr = DMDAVecRestoreArray(fs->DA_Y,  jr->lvy,  &lvy); CHKERRQ(ierr);
+	ierr = DMDAVecRestoreArray(fs->DA_Z,  jr->lvz,  &lvz); CHKERRQ(ierr);
+	ierr = DMDAVecRestoreArray(fs->DA_XY, jr->ldxy, &lwz); CHKERRQ(ierr);
+	ierr = DMDAVecRestoreArray(fs->DA_XZ, jr->ldxz, &lwy); CHKERRQ(ierr);
+	ierr = DMDAVecRestoreArray(fs->DA_YZ, jr->ldyz, &lwx); CHKERRQ(ierr);
 
 	PetscFunctionReturn(0);
 }
@@ -746,7 +820,7 @@ PetscErrorCode ADVProjHistMarkGrid(AdvCtx *actx)
 	Marker      *P;
 	SolVarCell  *svCell;
 	PetscInt     nx, ny, nz, sx, sy, sz, nCells;
-	PetscInt     ii, jj, ID, Ic, Jc, Kc, In, Jn, Kn;
+	PetscInt     ii, jj, ID, I, J, K, II, JJ, KK;
 	PetscScalar *gxy, *gxz, *gyz, ***lxy, ***lxz, ***lyz;
 	PetscScalar  xc, yc, zc, xp, yp, zp, wxc, wyc, wzc, wxn, wyn, wzn, w;
 
@@ -795,7 +869,7 @@ PetscErrorCode ADVProjHistMarkGrid(AdvCtx *actx)
 		ID = actx->cellnum[jj];
 
 		// expand I, J, K cell indices
-		GET_CELL_IJK(ID, Ic, Jc, Kc, nx, ny)
+		GET_CELL_IJK(ID, I, J, K, nx, ny)
 
 		// get marker coordinates
 		xp = P->X[0];
@@ -803,9 +877,9 @@ PetscErrorCode ADVProjHistMarkGrid(AdvCtx *actx)
 		zp = P->X[2];
 
 		// get interpolation weights in cell control volumes
-		wxc = WEIGHT_POINT_CELL(Ic, xp, fs->dsx);
-		wyc = WEIGHT_POINT_CELL(Jc, yp, fs->dsy);
-		wzc = WEIGHT_POINT_CELL(Kc, zp, fs->dsz);
+		wxc = WEIGHT_POINT_CELL(I, xp, fs->dsx);
+		wyc = WEIGHT_POINT_CELL(J, yp, fs->dsy);
+		wzc = WEIGHT_POINT_CELL(K, zp, fs->dsz);
 
 		// get total interpolation weight
 		w = wxc*wyc*wzc;
@@ -820,9 +894,9 @@ PetscErrorCode ADVProjHistMarkGrid(AdvCtx *actx)
 		svCell->svBulk.pn += w*P->p;
 		svCell->svBulk.Tn += w*P->T;
 		svCell->svDev.APS += w*P->APS;
-		svCell->hxx       += w*P->s.xx;
-		svCell->hyy       += w*P->s.yy;
-		svCell->hzz       += w*P->s.zz;
+		svCell->hxx       += w*P->S.xx;
+		svCell->hyy       += w*P->S.yy;
+		svCell->hzz       += w*P->S.zz;
 
 	}
 
@@ -877,9 +951,9 @@ PetscErrorCode ADVProjHistMarkGrid(AdvCtx *actx)
 	#define _TEST_
 
 	// interpolate history stress to edges
-	INTERP_MARKER_TO_EDGES(_TEST_, P->s.xy, P->s.xz, P->s.yz, h)
+	INTERP_MARKER_TO_EDGES(_TEST_, P->S.xy, P->S.xz, P->S.yz, h)
 
-	// interpolates plastic strain to edges
+	// interpolate plastic strain to edges
 	INTERP_MARKER_TO_EDGES(_TEST_, P->APS, P->APS, P->APS, svDev.APS)
 
 	PetscFunctionReturn(0);
@@ -915,101 +989,4 @@ void rewindPtr(PetscInt n, PetscInt ptr[])
 	}
 }
 //-----------------------------------------------------------------------------
-/*
-#undef __FUNCT__
-#define __FUNCT__ "FDSTAGetVorticity"
-PetscErrorCode FDSTAGetVorticity(
-	FDSTAG *fs,
-	Vec lvx,  Vec lvy,  Vec lvz, // local (ghosted) velocities
-	Vec gwx,  Vec gwy,  Vec gwz) // global vorticity components
-{
-	// Compute components of vorticity vector
-	// (instantaneous rotation rate around three coordinate axis).
-	// Take care of rotation direction and sign convention.
-	// Throughout LaMEM, right-handed coordinate system is assumed!
 
-	PetscInt    i, j, k, nx, ny, nz, sx, sy, sz;
-	PetscScalar dvxdy, dvydx, dvxdz, dvzdx, dvydz, dvzdy;
-	PetscScalar ***vx, ***vy, ***vz;
-	PetscScalar ***wx, ***wy, ***wz;
-
-	PetscErrorCode ierr;
-	PetscFunctionBegin;
-
-	// access vectors
-	ierr = DMDAVecGetArray(fs->DA_X,   lvx,  &vx);  CHKERRQ(ierr);
-	ierr = DMDAVecGetArray(fs->DA_Y,   lvy,  &vy);  CHKERRQ(ierr);
-	ierr = DMDAVecGetArray(fs->DA_Z,   lvz,  &vz);  CHKERRQ(ierr);
-	ierr = DMDAVecGetArray(fs->DA_XY,  gwz,  &wz);  CHKERRQ(ierr);
-	ierr = DMDAVecGetArray(fs->DA_XZ,  gwy,  &wy);  CHKERRQ(ierr);
-	ierr = DMDAVecGetArray(fs->DA_YZ,  gwx,  &wx);  CHKERRQ(ierr);
-
-	//-------------------------------
-	// xy edge points (wz)
-	//-------------------------------
-
-	GET_NODE_RANGE(nx, sx, fs->dsx)
-	GET_NODE_RANGE(ny, sy, fs->dsy)
-	GET_CELL_RANGE(nz, sz, fs->dsz)
-
-	START_STD_LOOP
-	{
-		dvxdy = (vx[k][j][i] - vx[k][j-1][i])/SIZE_NODE(j, sy, fs->dsy);
-		dvydx = (vy[k][j][i] - vy[k][j][i-1])/SIZE_NODE(i, sx, fs->dsx);
-
-		// positive (counter-clockwise) rotation around Z axis X -> Y
-
-		wz[k][j][i] = dvydx - dvxdy;
-	}
-	END_STD_LOOP
-
-	//-------------------------------
-	// xz edge points (wy)
-	//-------------------------------
-
-	GET_NODE_RANGE(nx, sx, fs->dsx)
-	GET_CELL_RANGE(ny, sy, fs->dsy)
-	GET_NODE_RANGE(nz, sz, fs->dsz)
-
-	START_STD_LOOP
-	{
-		dvxdz = (vx[k][j][i] - vx[k-1][j][i])/SIZE_NODE(k, sz, fs->dsz);
-		dvzdx = (vz[k][j][i] - vz[k][j][i-1])/SIZE_NODE(i, sx, fs->dsx);
-
-		// positive (counter-clockwise) rotation around Y axis Z -> X
-
-		wy[k][j][i] = dvxdz - dvzdx;
-	}
-	END_STD_LOOP
-
-	//-------------------------------
-	// yz edge points (wx)
-	//-------------------------------
-
-	GET_CELL_RANGE(nx, sx, fs->dsx)
-	GET_NODE_RANGE(ny, sy, fs->dsy)
-	GET_NODE_RANGE(nz, sz, fs->dsz)
-
-	START_STD_LOOP
-	{
-		dvydz = (vy[k][j][i] - vy[k-1][j][i])/SIZE_NODE(k, sz, fs->dsz);
-		dvzdy = (vz[k][j][i] - vz[k][j-1][i])/SIZE_NODE(j, sy, fs->dsy);
-
-		// positive (counter-clockwise) rotation around X axis Y -> Z
-
-		wx[k][j][i] = dvzdy - dvydz;
-	}
-	END_STD_LOOP
-
-	// restore velocity & strain rate component vectors
-	ierr = DMDAVecRestoreArray(fs->DA_X,   lvx,  &vx);  CHKERRQ(ierr);
-	ierr = DMDAVecRestoreArray(fs->DA_Y,   lvy,  &vy);  CHKERRQ(ierr);
-	ierr = DMDAVecRestoreArray(fs->DA_Z,   lvz,  &vz);  CHKERRQ(ierr);
-	ierr = DMDAVecRestoreArray(fs->DA_XY,  gwz,  &wz);  CHKERRQ(ierr);
-	ierr = DMDAVecRestoreArray(fs->DA_XZ,  gwy,  &wy);  CHKERRQ(ierr);
-	ierr = DMDAVecRestoreArray(fs->DA_YZ,  gwx,  &wx);  CHKERRQ(ierr);
-
-	PetscFunctionReturn(0);
-}
-//-----------------------------------------------------------------------------
-*/
