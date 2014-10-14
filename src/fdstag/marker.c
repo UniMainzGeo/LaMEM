@@ -236,6 +236,7 @@ PetscErrorCode ADVMarkSave(AdvCtx *actx, UserContext *user)
 {
 	int          fd;
 	PetscInt     imark;
+	Marker      *P;
 	char        *SaveFileName;
 	PetscViewer  view_out;
 	PetscScalar *markbuf, *markptr, header, chLen, chTemp, s_nummark;
@@ -267,17 +268,18 @@ PetscErrorCode ADVMarkSave(AdvCtx *actx, UserContext *user)
 	// copy data from storage into buffer
 	for(imark = 0, markptr = markbuf; imark < actx->nummark; imark++, markptr += 5)
 	{
-		markptr[0] =              actx->markers[imark].X[0]*chLen;
-		markptr[1] =              actx->markers[imark].X[1]*chLen;
-		markptr[2] =              actx->markers[imark].X[2]*chLen;
-		markptr[3] = (PetscScalar)actx->markers[imark].phase;
-		markptr[4] =              actx->markers[imark].T*chTemp;
+		P          =              &actx->markers[imark];
+		markptr[0] =              P->X[0]*chLen;
+		markptr[1] =              P->X[1]*chLen;
+		markptr[2] =              P->X[2]*chLen;
+		markptr[3] = (PetscScalar)P->phase;
+		markptr[4] =              P->T*chTemp;
 	}
 
 	// create directory
 	ierr = LaMEM_CreateOutputDirectory(user->SaveInitialParticlesDirectory); CHKERRQ(ierr);
 
-	// compile input file name
+	// compile file name
 	asprintf(&SaveFileName, "./%s/%s.%lld.out",
 		user->SaveInitialParticlesDirectory,
 		user->ParticleFilename, (LLD)actx->iproc);
@@ -286,16 +288,15 @@ PetscErrorCode ADVMarkSave(AdvCtx *actx, UserContext *user)
 	ierr = PetscViewerBinaryOpen(PETSC_COMM_SELF, SaveFileName, FILE_MODE_WRITE, &view_out); CHKERRQ(ierr);
 	ierr = PetscViewerBinaryGetDescriptor(view_out, &fd);                                    CHKERRQ(ierr);
 
-	ierr = PetscFree(SaveFileName);  CHKERRQ(ierr);
-
 	// write binary output
 	s_nummark = (PetscScalar)actx->nummark;
 	ierr = PetscBinaryWrite(fd, &header,    1,               PETSC_SCALAR, PETSC_FALSE); CHKERRQ(ierr);
 	ierr = PetscBinaryWrite(fd, &s_nummark, 1,               PETSC_SCALAR, PETSC_FALSE); CHKERRQ(ierr);
 	ierr = PetscBinaryWrite(fd, markbuf,    5*actx->nummark, PETSC_SCALAR, PETSC_FALSE); CHKERRQ(ierr);
 
-	// destroy the output viewer
-	ierr = PetscViewerDestroy(&view_out);
+	// destroy file handle & file name
+	ierr = PetscViewerDestroy(&view_out); CHKERRQ(ierr);
+	free(SaveFileName);
 
 	// destroy buffer
 	ierr = PetscFree(markbuf); CHKERRQ(ierr);
@@ -314,6 +315,7 @@ PetscErrorCode ADVMarkInitFileParallel(AdvCtx *actx, UserContext *user)
 	// read markers from multiple files on all processors
 
 	int          fd;
+	Marker      *P;
 	PetscViewer  view_in;
 	char        *LoadFileName;
 	PetscScalar *markbuf, *markptr, header, chTemp, chLen, s_nummark;
@@ -334,8 +336,6 @@ PetscErrorCode ADVMarkInitFileParallel(AdvCtx *actx, UserContext *user)
 	ierr = PetscViewerBinaryOpen(PETSC_COMM_SELF, LoadFileName, FILE_MODE_READ, &view_in); CHKERRQ(ierr);
 	ierr = PetscViewerBinaryGetDescriptor(view_in, &fd);                                   CHKERRQ(ierr);
 
-	ierr = PetscFree(LoadFileName);  CHKERRQ(ierr);
-
 	// read (and ignore) the silent undocumented file header
 	ierr = PetscBinaryRead(fd, &header, 1, PETSC_SCALAR); CHKERRQ(ierr);
 
@@ -355,8 +355,9 @@ PetscErrorCode ADVMarkInitFileParallel(AdvCtx *actx, UserContext *user)
 	// read markers into buffer
 	ierr = PetscBinaryRead(fd, markbuf, 5*actx->nummark, PETSC_SCALAR); CHKERRQ(ierr);
 
-	// destroy file-handle
+	// destroy file handle & file name
 	ierr = PetscViewerDestroy(&view_in); CHKERRQ(ierr);
+	free(LoadFileName);
 
 	// get characteristic length & temperature
 	if(user->DimensionalUnits)
@@ -371,21 +372,22 @@ PetscErrorCode ADVMarkInitFileParallel(AdvCtx *actx, UserContext *user)
 	// copy buffer to marker storage
 	for(imark = 0, markptr = markbuf; imark < actx->nummark; imark++, markptr += 5)
 	{
-		actx->markers[imark].X[0]  =           markptr[0]/chLen;
-		actx->markers[imark].X[1]  =           markptr[1]/chLen;
-		actx->markers[imark].X[2]  =           markptr[2]/chLen;
-		actx->markers[imark].phase = (PetscInt)markptr[3];
-		actx->markers[imark].T     =           markptr[4]/chTemp;
+		P        =           &actx->markers[imark];
+		P->X[0]  =           markptr[0]/chLen;
+		P->X[1]  =           markptr[1]/chLen;
+		P->X[2]  =           markptr[2]/chLen;
+		P->phase = (PetscInt)markptr[3];
+		P->T     =           markptr[4]/chTemp;
 
-//        PetscPrintf(PETSC_COMM_WORLD,"# Marker coord = [%f,%f,%f] \n",actx->markers[imark].X[0],actx->markers[imark].X[1],actx->markers[imark].X[2]);
-
+//        PetscPrintf(PETSC_COMM_WORLD,"# Marker coord = [%f,%f,%f] \n", P->X[0], P->X[1], P->X[2]);
 	}
 
 	// free marker buffer
 	ierr = PetscFree(markbuf); CHKERRQ(ierr);
 
 	// wait until all processors finished reading markers
-	MPI_Barrier(PETSC_COMM_WORLD);
+	// WARNING! NOT SURE WHETHER THIS IS REALLY NECESSARY
+	ierr = MPI_Barrier(PETSC_COMM_WORLD); CHKERRQ(ierr);
 
 	PetscPrintf(PETSC_COMM_WORLD,"# Finished Loading markers in parallel \n");
 
@@ -406,8 +408,10 @@ PetscErrorCode ADVMarkInitFileRedundant(AdvCtx *actx, UserContext *user)
 	// THEREFORE! not to be used for large markers files - use parallel read for that!
 	// temperature is assumed to be dimensional
 	// cell-based uniform marker distribution is assumed
+
 	FDSTAG       *fs;
 	int           fd;
+	Marker       *P;
 	PetscViewer   view_in;
 	char         *LoadFileName;
 	PetscScalar   x, y, z, mdx, mdy, mdz, maxtemp, header, chTemp;
@@ -430,8 +434,6 @@ PetscErrorCode ADVMarkInitFileRedundant(AdvCtx *actx, UserContext *user)
 
 	ierr = PetscViewerBinaryOpen(PETSC_COMM_SELF, LoadFileName, FILE_MODE_READ, &view_in); CHKERRQ(ierr);
 	ierr = PetscViewerBinaryGetDescriptor(view_in, &fd); CHKERRQ(ierr);
-
-	ierr = PetscFree(LoadFileName);  CHKERRQ(ierr);
 
 	// read (and ignore) the silent undocumented file header
 	ierr = PetscBinaryRead(fd, &header, 1, PETSC_SCALAR); CHKERRQ(ierr);
@@ -464,8 +466,9 @@ PetscErrorCode ADVMarkInitFileRedundant(AdvCtx *actx, UserContext *user)
 	ierr = PetscBinaryRead(fd, phase, nmark, PETSC_SCALAR); CHKERRQ(ierr);
 	ierr = PetscBinaryRead(fd, temp , nmark, PETSC_SCALAR); CHKERRQ(ierr);
 
-	// destroy file-handle
+	// destroy file-handle & file name
 	ierr = PetscViewerDestroy(&view_in); CHKERRQ(ierr);
+	free(LoadFileName);
 
 	// compute spacing of markers grid
 	mdx = user->W/(PetscScalar)nmarkx;
@@ -509,11 +512,12 @@ PetscErrorCode ADVMarkInitFileRedundant(AdvCtx *actx, UserContext *user)
 				&& y >= xs[1] && y <= xe[1]
 				&& z >= xs[2] && z <= xe[2])
 				{
-					actx->markers[imark].X[0]  = x;
-					actx->markers[imark].X[1]  = y;
-					actx->markers[imark].X[2]  = z;
-					actx->markers[imark].phase = (PetscInt)phase[num];
-					actx->markers[imark].T     = temp[num]/chTemp;
+					P        = &actx->markers[imark];
+					P->X[0]  = x;
+					P->X[1]  = y;
+					P->X[2]  = z;
+					P->phase = (PetscInt)phase[num];
+					P->T     = temp[num]/chTemp;
 
 					// increment local counter
 					imark++;
@@ -554,8 +558,9 @@ PetscErrorCode ADVMarkInitFileRedundant(AdvCtx *actx, UserContext *user)
 	ierr = PetscFree(phase); CHKERRQ(ierr);
 	ierr = PetscFree(temp);  CHKERRQ(ierr);
 
-	// wait until all processors finished reading markers - is it necessary?
-	MPI_Barrier(PETSC_COMM_WORLD);
+	// wait until all processors finished reading markers
+	// WARNING! NOT SURE WHETHER THIS IS REALLY NECESSARY
+	ierr = MPI_Barrier(PETSC_COMM_WORLD); CHKERRQ(ierr);
 
 	PetscPrintf(PETSC_COMM_WORLD,"# Finished Loading markers redundantly \n");
 
