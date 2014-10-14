@@ -46,9 +46,9 @@ PetscErrorCode MGCheckGrid(FDSTAG *fs, PetscInt *_ncors)
 	ncors = nlevels-1;
 
 	// print grid statistics
-	nx = fs->dsx.ncels << ncors;
-	ny = fs->dsy.ncels << ncors;
-	nz = fs->dsz.ncels << ncors;
+	nx = fs->dsx.ncels >> ncors;
+	ny = fs->dsy.ncels >> ncors;
+	nz = fs->dsz.ncels >> ncors;
 
 	ierr = PetscPrintf(PETSC_COMM_WORLD, "Coarse grid size per processor [nx=%lld][ny=%lld][nz=%lld] \n", (LLD)nx, (LLD)ny, (LLD)nz); CHKERRQ(ierr);
 	ierr = PetscPrintf(PETSC_COMM_WORLD, "Number of multigrid levels: %lld\n", (LLD)(ncors+1)); CHKERRQ(ierr);
@@ -118,10 +118,6 @@ PetscErrorCode MGCtxCreate(MGCtx *mg, FDSTAG *fs, BCCtx *bc, PC pc, idxtype idxm
 
 		// setup bc context
 		ierr = BCInit(&mg->mgbc[i], &mg->mgfs[i], idxmod); CHKERRQ(ierr);
-
-
-		// check multigrid restrictions (debug)
-		ierr = MGCheckGrid(&mg->mgfs[i], NULL); CHKERRQ(ierr);
 	}
 
 	// create Galerkin multigrid preconditioner
