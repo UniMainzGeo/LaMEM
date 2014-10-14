@@ -23,7 +23,7 @@ typedef struct
 } MGCtx;
 //---------------------------------------------------------------------------
 
-PetscErrorCode MGCheckGrid(FDSTAG *fs, PetscInt *ncels);
+PetscErrorCode MGCheckGrid(FDSTAG *fs, PetscInt *_ncors);
 
 PetscErrorCode MGCtxCreate(MGCtx *mg, FDSTAG *fs, BCCtx *bc, PC pc, idxtype idxmod);
 

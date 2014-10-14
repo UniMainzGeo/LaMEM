@@ -97,6 +97,9 @@ PetscErrorCode Discret1DGetColumnComm(Discret1D *ds, MPI_Comm *comm);
 // WARNING! the array must be destroyed after use!
 PetscErrorCode Discret1DGatherCoord(Discret1D *ds, PetscScalar **coord);
 
+// check multigrid restrictions, get maximum number of coarsening steps
+PetscErrorCode Discret1DCheckMG(Discret1D *ds, const char *dir, PetscInt *_ncors);
+
 //---------------------------------------------------------------------------
 
 typedef enum { IDXNONE, IDXCOUPLED, IDXUNCOUPLED } idxtype;

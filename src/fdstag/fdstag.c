@@ -438,6 +438,43 @@ PetscErrorCode Discret1DGatherCoord(Discret1D *ds, PetscScalar **coord)
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
+#undef __FUNCT__
+#define __FUNCT__ "Discret1DCheckMG"
+PetscErrorCode Discret1DCheckMG(Discret1D *ds, const char *dir, PetscInt *_ncors)
+{
+	PetscInt sz, ncors;
+
+	PetscFunctionBegin;
+
+	// check whether local grid size is an even number
+	if(ds->ncels % 2)
+	{
+		SETERRQ1(PETSC_COMM_WORLD, PETSC_ERR_USER, "Local grid size is an odd number in %s-direction\n", dir);
+	}
+
+	// check uniform local grid size (constant on all processors)
+	if(ds->tcels % ds->nproc)
+	{
+		SETERRQ1(PETSC_COMM_WORLD, PETSC_ERR_USER, "Uniform local grid size doesn't exist in %s-direction\n", dir);
+	}
+
+	// compare actual grid size with uniform value
+	if(ds->tcels/ds->nproc != ds->ncels)
+	{
+		SETERRQ1(PETSC_COMM_WORLD, PETSC_ERR_USER, "Local grid size is not constant on all processors in %s-direction\n", dir);
+	}
+
+	// determine maximum number of coarsening steps
+	sz    = ds->ncels;
+	ncors = 0;
+	while(!(sz % 2)) { sz /= 2; ncors++; }
+
+	// return
+	(*_ncors) = ncors;
+
+	PetscFunctionReturn(0);
+}
+//---------------------------------------------------------------------------
 // DOFIndex functions
 //---------------------------------------------------------------------------
 #undef __FUNCT__

@@ -8,44 +8,53 @@
 #include "scaling.h"
 #include "bc.h"
 #include "JacRes.h"
-//#include "lsolve.h"
 #include "matrix.h"
 #include "multigrid.h"
 #include "Utils.h"
 //---------------------------------------------------------------------------
 #undef __FUNCT__
 #define __FUNCT__ "MGCheckGrid"
-PetscErrorCode MGCheckGrid(FDSTAG *fs, PetscInt *ncels)
+PetscErrorCode MGCheckGrid(FDSTAG *fs, PetscInt *_ncors)
 {
-	PetscInt  nx, ny, nz;
-	PetscInt  lx, ly, lz;
+	// check multigrid mesh restrictions, get actual number of coarsening steps
 
+	PetscBool opt_set;
+	PetscInt  nx, ny, nz, ncors, nlevels;
+
+	PetscErrorCode ierr;
 	PetscFunctionBegin;
 
-	// compute uniform local grid size in every direction (same on all processors)
-	if(fs->dsx.tcels % fs->dsx.nproc) SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "ERROR! number x-cells is not a multiple of number x-processors\n");
-	if(fs->dsy.tcels % fs->dsy.nproc) SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "ERROR! number y-cells is not a multiple of number y-processors\n");
-	if(fs->dsz.tcels % fs->dsz.nproc) SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "ERROR! number z-cells is not a multiple of number z-processors\n");
+	// check discretization in all directions
+	ierr = Discret1DCheckMG(&fs->dsx, "x", &nx); CHKERRQ(ierr);                ncors = nx;
+	ierr = Discret1DCheckMG(&fs->dsy, "y", &ny); CHKERRQ(ierr); if(ny < ncors) ncors = ny;
+	ierr = Discret1DCheckMG(&fs->dsz, "z", &nz); CHKERRQ(ierr); if(nz < ncors) ncors = nz;
 
-	nx = fs->dsx.tcels/fs->dsx.nproc;
-	ny = fs->dsy.tcels/fs->dsy.nproc;
-	nz = fs->dsz.tcels/fs->dsz.nproc;
+	// check number of levels requested on the command line
+	ierr = PetscOptionsGetInt(NULL, "-gmg_pc_mg_levels", &nlevels, &opt_set); CHKERRQ(ierr);
 
-	// get actual grid size in every direction
-	lx = fs->dsx.ncels;
-	ly = fs->dsy.ncels;
-	lz = fs->dsz.ncels;
+	if(opt_set != PETSC_TRUE)
+	{
+		SETERRQ1(PETSC_COMM_WORLD, PETSC_ERR_USER, "Number of multigrid levels is not specified. Use option -gmg_pc_mg_levels. Max # of levels: %lld\n", (LLD)(ncors+1));
 
-	// 1. local grid size must be constant in all directions
-	// 2. local grid size must be power of two
-	// 3. local grid size must be constant on all processors
+	}
+	else if(nlevels < 2 || nlevels > ncors+1)
+	{
+		SETERRQ2(PETSC_COMM_WORLD, PETSC_ERR_USER, "Incorrect # of multigrid levels specified. Requested: %lld. Max. possible: %lld.\n", (LLD)nlevels, (LLD)(ncors+1));
+	}
 
-	if(nx != ny || nx != nz)             SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "ERROR! local grid size is not constant in all directions\n");
-	if(!IS_POWER_OF_TWO(nx))             SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "ERROR! Local grid size is not power of two\n");
-	if(lx != nx || ly != ny || lz != nz) SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "ERROR! local grid size is not constant on all processors\n");
+	// set actual number of coarsening steps
+	ncors = nlevels-1;
 
-	// output local grid size
-	if(ncels) (*ncels) = nx;
+	// print grid statistics
+	nx = fs->dsx.ncels << ncors;
+	ny = fs->dsy.ncels << ncors;
+	nz = fs->dsz.ncels << ncors;
+
+	ierr = PetscPrintf(PETSC_COMM_WORLD, "Coarse grid size per processor [nx=%lld][ny=%lld][nz=%lld] \n", (LLD)nx, (LLD)ny, (LLD)nz); CHKERRQ(ierr);
+	ierr = PetscPrintf(PETSC_COMM_WORLD, "Number of multigrid levels: %lld\n", (LLD)(ncors+1)); CHKERRQ(ierr);
+
+	// return number of coarsening steps
+	(*_ncors) = ncors;
 
 	PetscFunctionReturn(0);
 }
@@ -54,16 +63,15 @@ PetscErrorCode MGCheckGrid(FDSTAG *fs, PetscInt *ncels)
 #define __FUNCT__ "MGCtxCreate"
 PetscErrorCode MGCtxCreate(MGCtx *mg, FDSTAG *fs, BCCtx *bc, PC pc, idxtype idxmod)
 {
-	PetscInt  i, l, ncors, nlevels;
+	PetscInt  i, l, ncors;
 	FDSTAG   *fine, *cors;
 	char      pc_type[MAX_NAME_LEN];
 	PetscBool opt_set;
 	PetscInt  Nx, Ny, Nz;
 	PetscInt  Px, Py, Pz;
-	PetscInt  ncels;
 	DOFIndex  *idfine, *idcors;
 
-	PetscErrorCode 	 ierr;
+	PetscErrorCode ierr;
 	PetscFunctionBegin;
 
 	// get preconditioner type
@@ -72,19 +80,8 @@ PetscErrorCode MGCtxCreate(MGCtx *mg, FDSTAG *fs, BCCtx *bc, PC pc, idxtype idxm
 	// check whether multigrid is requested
 	if(opt_set != PETSC_TRUE || strcmp(pc_type, "mg")) PetscFunctionReturn(0);
 
-	// check multigrid mesh restrictions, store local grid size
-	ierr = MGCheckGrid(fs, &ncels); CHKERRQ(ierr);
-
-	// compute maximum number of coarsening steps (grids)
-	ncors = (PetscInt)round(log((double)ncels)/M_LN2);
-
-	// check for command line overrides
-	ierr =  PetscOptionsGetInt(NULL, "-gmg_pc_mg_levels", &nlevels, &opt_set); CHKERRQ(ierr);
-
-	if(opt_set == PETSC_TRUE)
-	{	if(nlevels < ncors+1) ncors = nlevels-1;
-		else SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "ERROR! too many multigrid layers.\n");
-	}
+	// check multigrid mesh restrictions, get actual number of coarsening steps
+	ierr = MGCheckGrid(fs, &ncors); CHKERRQ(ierr);
 
 	// store actual number of coarsening steps
 	mg->ncors = ncors;
