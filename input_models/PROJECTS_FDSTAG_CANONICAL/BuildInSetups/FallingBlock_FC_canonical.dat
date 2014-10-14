@@ -9,7 +9,7 @@
 
 nel_x						=   64    
 nel_y						= 	64    
-nel_z						= 	64
+nel_z						= 	32
 
 #nel_x						=	-3    
 #nel_x						=   32    
