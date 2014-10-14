@@ -86,70 +86,62 @@ PetscErrorCode ADVMarkInit(AdvCtx *actx, UserContext *user)
 PetscErrorCode ADVMarkInitCoord(AdvCtx *actx, UserContext *user)
 {
 	//=============================================================
-	// WARNING! THIS MUST BE REDONE TO HANDLE VARIABLE MESH SPACING!
-	// SUPPORT FOR CELL-BASED UNIFORM SPACING SHOULD BE IMPLEMENTED
+	// HANDLES VARIABLE MESH SPACING!
 	//==============================================================
 
-	// generate coordinates of uniformly distributed markers
+	// generate coordinates of uniformly distributed markers within a cell
 	FDSTAG      *fs;
-	PetscScalar  mdx, mdy, mdz;
-	PetscScalar  x, y, z;
-	PetscInt     nmarkx, nmarky, nmarkz;
-	PetscScalar  xs[3], xe[3];
-	PetscInt     i, j, k;
+	PetscScalar  x, y, z, dx, dy, dz;
+	PetscInt     i, j, k, ii, jj, kk;
 	PetscInt     imark;
 
+	PetscFunctionBegin;
+
 	fs = actx->fs;
-
-	// local number of markers
-	nmarkx = fs->dsx.ncels*user->NumPartX;
-	nmarky = fs->dsy.ncels*user->NumPartY;
-	nmarkz = fs->dsz.ncels*user->NumPartZ;
-
-	// coordinates of the local domain
-	xs[0] = fs->dsx.ncoor[0];
-	xs[1] = fs->dsy.ncoor[0];
-	xs[2] = fs->dsz.ncoor[0];
-
-	xe[0] = fs->dsx.ncoor[fs->dsx.ncels];
-	xe[1] = fs->dsy.ncoor[fs->dsy.ncels];
-	xe[2] = fs->dsz.ncoor[fs->dsz.ncels];
-
-	// compute spacing of marker grid
-	mdx = (xe[0] - xs[0])/(PetscScalar)nmarkx;
-	mdy = (xe[1] - xs[1])/(PetscScalar)nmarky;
-	mdz = (xe[2] - xs[2])/(PetscScalar)nmarkz;
 
 	// marker counter
 	imark = 0;
 
-	// loop over local markers
-	z = xs[2] + mdz*0.5;
-
-	for(k = 0; k < nmarkz; k++)
+	// create uniform distribution of markers/cell for variable grid
+	for(k = 0; k < fs->dsz.ncels; k++)
 	{
-		y = xs[1] + mdy*0.5;
-
-		for(j = 0; j < nmarky; j++)
+		// spacing of particles
+		dz = (fs->dsz.ncoor[k+1]-fs->dsz.ncoor[k])/user->NumPartZ;
+		for (kk = 0; kk < user->NumPartZ; kk++)
 		{
-			x = xs[0] + mdx*0.5;
+			if (kk == 0) z = fs->dsz.ncoor[k] + dz*0.5;
+			else         z = fs->dsz.ncoor[k] + dz*0.5 + kk*dz;
 
-			for(i = 0; i < nmarkx; i++)
+			for(j = 0; j < fs->dsy.ncels; j++)
 			{
-				// set marker coordinates
-				actx->markers[imark].X[0] = x;
-				actx->markers[imark].X[1] = y;
-				actx->markers[imark].X[2] = z;
+				// spacing of particles
+				dy = (fs->dsy.ncoor[j+1]-fs->dsy.ncoor[j])/user->NumPartY;
+				for (jj = 0; jj < user->NumPartY; jj++)
+				{
+					if (jj == 0) y = fs->dsy.ncoor[j] + dy*0.5;
+					else         y = fs->dsy.ncoor[j] + dy*0.5 + jj*dy;
 
-				// increment local counter
-				imark++;
+					for(i = 0; i < fs->dsx.ncels; i++)
+					{
+						// spacing of particles
+						dx = (fs->dsx.ncoor[i+1]-fs->dsx.ncoor[i])/user->NumPartX;
+						for (ii = 0; ii < user->NumPartX; ii++)
+						{
+							if (ii == 0) x = fs->dsx.ncoor[i] + dx*0.5;
+							else         x = fs->dsx.ncoor[i] + dx*0.5 + ii*dx;
 
-				// update marker grid coordinates
-				x += mdx;
+							// set marker coordinates
+							actx->markers[imark].X[0] = x;
+							actx->markers[imark].X[1] = y;
+							actx->markers[imark].X[2] = z;
+
+							// increment local counter
+							imark++;
+						}
+					}
+				}
 			}
-			y += mdy;
 		}
-		z += mdz;
 	}
 
 	PetscFunctionReturn(0);
