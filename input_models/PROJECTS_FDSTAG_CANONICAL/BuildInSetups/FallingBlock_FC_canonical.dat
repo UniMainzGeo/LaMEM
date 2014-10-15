@@ -118,6 +118,7 @@ Temp_bottom					=   1 				# Temperature @ bottom; side BC's are flux-free
 	-gmg_pc_mg_type multiplicative
 	-gmg_pc_mg_cycle_type v
 	-gmg_pc_view 
+	-gmg_pc_mg_log		# monitors time spend in multigrid if using -log_summary
 	
 	-gmg_mg_levels_ksp_type richardson
 #	-gmg_mg_levels_ksp_type chebyshev
