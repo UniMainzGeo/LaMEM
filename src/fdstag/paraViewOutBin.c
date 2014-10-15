@@ -28,6 +28,9 @@ PetscErrorCode OutBufCreate(
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
 
+	// clear object
+	ierr = PetscMemzero(outbuf, sizeof(OutBuf)); CHKERRQ(ierr);
+
 	// initialize parameters
 	outbuf->fs    = fs;
 	outbuf->fp    = NULL;
@@ -323,6 +326,9 @@ PetscErrorCode PVOutCreate(PVOut *pvout, FDSTAG *fs, Scaling *scal, const char *
 
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
+
+	// clear object
+	ierr = PetscMemzero(pvout, sizeof(PVOut)); CHKERRQ(ierr);
 
 	// set file name
 	asprintf(&pvout->outfile, "%s", filename);

@@ -74,6 +74,9 @@ PetscErrorCode MGCtxCreate(MGCtx *mg, FDSTAG *fs, BCCtx *bc, PC pc, idxtype idxm
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
 
+	// clear object
+	ierr = PetscMemzero(mg, sizeof(MGCtx)); CHKERRQ(ierr);
+
 	// get preconditioner type
 	ierr = PetscOptionsGetString(NULL, "-gmg_pc_type", pc_type, MAX_NAME_LEN, &opt_set); CHKERRQ(ierr);
 

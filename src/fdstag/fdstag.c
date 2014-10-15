@@ -681,6 +681,9 @@ PetscErrorCode FDSTAGCreate(
 	PetscErrorCode 	 ierr;
 	PetscFunctionBegin;
 
+	// clear object
+	ierr = PetscMemzero(fs, sizeof(FDSTAG)); CHKERRQ(ierr);
+
 	dof    = 1;
 	nlayer = 1;
 

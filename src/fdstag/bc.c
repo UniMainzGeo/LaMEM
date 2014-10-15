@@ -13,6 +13,9 @@ PetscErrorCode BCCreate(BCCtx *bc, FDSTAG *fs)
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
 
+	// clear object
+	ierr = PetscMemzero(bc, sizeof(BCCtx)); CHKERRQ(ierr);
+
 	// create boundary conditions vectors (velocity, pressure, temperature)
 	ierr = DMCreateLocalVector(fs->DA_X,   &bc->bcvx);  CHKERRQ(ierr);
 	ierr = DMCreateLocalVector(fs->DA_Y,   &bc->bcvy);  CHKERRQ(ierr);

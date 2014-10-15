@@ -30,6 +30,9 @@ PetscErrorCode NLSolCreate(NLSol *nl, PCStokes pc, SNES *p_snes)
     PetscErrorCode ierr;
     PetscFunctionBegin;
 
+	// clear object
+	ierr = PetscMemzero(nl, sizeof(NLSol)); CHKERRQ(ierr);
+
     // access context
 	nl->pc = pc;
 	jr     = pc->jr;

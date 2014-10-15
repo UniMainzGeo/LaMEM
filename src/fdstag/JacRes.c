@@ -27,6 +27,9 @@ PetscErrorCode JacResCreate(
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
 
+	// clear object
+	ierr = PetscMemzero(jr, sizeof(JacRes)); CHKERRQ(ierr);
+
 	// set external handles
 	jr->fs  = fs;
 	jr->cbc = cbc;
