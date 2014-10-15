@@ -232,11 +232,11 @@ PetscErrorCode MGCtxSetup(MGCtx *mg, idxtype idxmod)
 #define __FUNCT__ "MGCtxSetDiagOnLevels"
 PetscErrorCode MGCtxSetDiagOnLevels(MGCtx *mg, PC pcmg)
 {
-	PetscInt  i, l;
-	KSP       ksp;
-	PC        pc;
-	Mat       A;
-	BCCtx    *bc;
+	PetscInt    i, l;
+	KSP         ksp;
+	PC          pc;
+	Mat         A;
+	BCCtx      *bc;
 
 	PetscErrorCode ierr;
 	PetscFunctionBeginUser;
@@ -281,6 +281,56 @@ PetscErrorCode MGCtxSetDiagOnLevels(MGCtx *mg, PC pcmg)
 		ierr = KSPSetOptionsPrefix(ksp, "crs_");  CHKERRQ(ierr);
 		ierr = KSPSetFromOptions(ksp);            CHKERRQ(ierr);
 		ierr = KSPSetUp(ksp);                     CHKERRQ(ierr);
+	}
+
+	PetscFunctionReturn(0);
+}
+//---------------------------------------------------------------------------
+#undef __FUNCT__
+#define __FUNCT__ "MGCtxDumpMat"
+PetscErrorCode MGCtxDumpMat(MGCtx *mg, PC pcmg)
+{
+	Mat         A;
+	KSP         ksp;
+	PetscBool   flg;
+	PetscInt    i, l;
+	PetscViewer viewer;
+
+	PetscErrorCode ierr;
+	PetscFunctionBeginUser;
+
+	// view multigrid matrices if required
+	ierr = PetscOptionsHasName(NULL, "-gmg_dump", &flg); CHKERRQ(ierr);
+
+	if(flg == PETSC_TRUE)
+	{
+		ierr = PetscPrintf(PETSC_COMM_WORLD, "Dumping multigrid matrices to MATLAB\n"); CHKERRQ(ierr);
+
+		viewer = PETSC_VIEWER_BINARY_(PetscObjectComm((PetscObject)pcmg));
+
+		//===================================
+		// OUTPUT IN THE ORDER FINE -> COARSE
+		//===================================
+
+		// fine grid
+		ierr = PCGetOperators(pcmg, &A, NULL); CHKERRQ(ierr);
+	    ierr = MatView(A, viewer);             CHKERRQ(ierr);
+
+	    // levels
+		for(i = 0, l = mg->ncors-1; i < mg->ncors; i++, l--)
+		{
+			// restriction
+			ierr = MatView(mg->R[i], viewer); CHKERRQ(ierr);
+
+			// prolongation
+			ierr = MatView(mg->P[i], viewer); CHKERRQ(ierr);
+
+			// level matrix
+			ierr = PCMGGetSmoother(pcmg, l, &ksp); CHKERRQ(ierr);
+			ierr = KSPGetOperators(ksp, &A, NULL); CHKERRQ(ierr);
+			ierr = MatView(A, viewer);CHKERRQ(ierr);
+		}
+
 	}
 
 	PetscFunctionReturn(0);

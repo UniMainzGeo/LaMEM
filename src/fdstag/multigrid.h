@@ -12,6 +12,11 @@ typedef struct
 	// n-1 - fine grid
 	// n   - number of levels
 
+	// LaMEM multigrid level numbering:
+	// 0   - fine grid
+	// n-1 - coarse grid
+	// n   - number of levels
+
 	PetscInt  ncors; // number of coarsening steps (grids)
 	Mat      *R;     // restriction matrices for every level (except coarsest)
 	Mat      *P;     // prolongation matrices for every level (except finest)
@@ -32,6 +37,8 @@ PetscErrorCode MGCtxDestroy(MGCtx *mg);
 PetscErrorCode MGCtxSetup(MGCtx *mg, idxtype idxmod);
 
 PetscErrorCode MGCtxSetDiagOnLevels(MGCtx *mg, PC pcmg);
+
+PetscErrorCode MGCtxDumpMat(MGCtx *mg, PC pcmg);
 
 PetscErrorCode SetupRestrictStep(Mat R, FDSTAG *cors, FDSTAG *fine, BCCtx *bccors, idxtype idxmod);
 

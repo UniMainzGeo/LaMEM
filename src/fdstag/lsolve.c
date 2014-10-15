@@ -549,6 +549,9 @@ PetscErrorCode PCStokesMGSetup(PCStokes pc)
 	ierr = MGCtxSetup(&mg->ctx, IDXCOUPLED);       CHKERRQ(ierr);
 	ierr = MGCtxSetDiagOnLevels(&mg->ctx, mg->pc); CHKERRQ(ierr);
 
+	// dump matrices to MATLAB if requested
+	ierr = MGCtxDumpMat(&mg->ctx, mg->pc); CHKERRQ(ierr);
+
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
