@@ -11,9 +11,6 @@ PetscErrorCode ADVMarkInit(AdvCtx *actx, UserContext *user);
 // generate coordinates of uniformly distributed markers
 PetscErrorCode ADVMarkInitCoord(AdvCtx *actx, UserContext *user);
 
-// add random noise to marker coordinates if required
-PetscErrorCode ADVMarkRandomNoise(AdvCtx *actx, UserContext *user);
-
 // save all local markers to disk (parallel output)
 PetscErrorCode ADVMarkSave(AdvCtx *actx, UserContext *user);
 

@@ -47,12 +47,11 @@ PetscErrorCode ADVMarkInit(AdvCtx *actx, UserContext *user)
 		actx->nummark = nummark;
 	}
 
-	// initialize coordinates uniformly for hard-coded setups
+	// initialize coordinates and add random noise if required for hard-coded setups
 	if(user->msetup != PARALLEL
 	&& user->msetup != REDUNDANT)
 	{
 		ierr = ADVMarkInitCoord  (actx, user); CHKERRQ(ierr);
-		ierr = ADVMarkRandomNoise(actx, user); CHKERRQ(ierr);
 	}
 
 	// initialize marker phase, temperature, etc.
@@ -86,7 +85,9 @@ PetscErrorCode ADVMarkInit(AdvCtx *actx, UserContext *user)
 PetscErrorCode ADVMarkInitCoord(AdvCtx *actx, UserContext *user)
 {
 	//=============================================================
+	// Initializes coordinates and adds random noise if required for hard-coded setups
 	// HANDLES VARIABLE MESH SPACING!
+	// WARNING! Random noise only for internal setups
 	//==============================================================
 
 	// generate coordinates of uniformly distributed markers within a cell
@@ -94,10 +95,25 @@ PetscErrorCode ADVMarkInitCoord(AdvCtx *actx, UserContext *user)
 	PetscScalar  x, y, z, dx, dy, dz;
 	PetscInt     i, j, k, ii, jj, kk;
 	PetscInt     imark;
+	PetscRandom  rctx;
+	PetscScalar  cf_rand;
+	PetscInt     AddRandomNoiseParticles;
 
+
+	PetscErrorCode ierr;
 	PetscFunctionBegin;
 
 	fs = actx->fs;
+
+	// random noise
+	AddRandomNoiseParticles = 0;
+	ierr = PetscOptionsGetInt(PETSC_NULL,"-AddRandomNoiseParticles", &AddRandomNoiseParticles, PETSC_NULL); CHKERRQ(ierr);
+
+	if(AddRandomNoiseParticles) PetscPrintf(PETSC_COMM_WORLD, "# Adding random noise to marker distribution \n");
+
+	// initialize the random number generator
+	ierr = PetscRandomCreate(PETSC_COMM_WORLD, &rctx); CHKERRQ(ierr);
+	ierr = PetscRandomSetFromOptions(rctx);            CHKERRQ(ierr);
 
 	// marker counter
 	imark = 0;
@@ -107,24 +123,26 @@ PetscErrorCode ADVMarkInitCoord(AdvCtx *actx, UserContext *user)
 	{
 		// spacing of particles
 		dz = (fs->dsz.ncoor[k+1]-fs->dsz.ncoor[k])/user->NumPartZ;
-		for (kk = 0; kk < user->NumPartZ; kk++)
+		for(j = 0; j < fs->dsy.ncels; j++)
 		{
-			if (kk == 0) z = fs->dsz.ncoor[k] + dz*0.5;
-			else         z = fs->dsz.ncoor[k] + dz*0.5 + kk*dz;
-
-			for(j = 0; j < fs->dsy.ncels; j++)
+			// spacing of particles
+			dy = (fs->dsy.ncoor[j+1]-fs->dsy.ncoor[j])/user->NumPartY;
+			for(i = 0; i < fs->dsx.ncels; i++)
 			{
 				// spacing of particles
-				dy = (fs->dsy.ncoor[j+1]-fs->dsy.ncoor[j])/user->NumPartY;
-				for (jj = 0; jj < user->NumPartY; jj++)
-				{
-					if (jj == 0) y = fs->dsy.ncoor[j] + dy*0.5;
-					else         y = fs->dsy.ncoor[j] + dy*0.5 + jj*dy;
+				dx = (fs->dsx.ncoor[i+1]-fs->dsx.ncoor[i])/user->NumPartX;
 
-					for(i = 0; i < fs->dsx.ncels; i++)
+				// loop over markers in cells
+				for (kk = 0; kk < user->NumPartZ; kk++)
+				{
+					if (kk == 0) z = fs->dsz.ncoor[k] + dz*0.5;
+					else         z = fs->dsz.ncoor[k] + dz*0.5 + kk*dz;
+
+					for (jj = 0; jj < user->NumPartY; jj++)
 					{
-						// spacing of particles
-						dx = (fs->dsx.ncoor[i+1]-fs->dsx.ncoor[i])/user->NumPartX;
+						if (jj == 0) y = fs->dsy.ncoor[j] + dy*0.5;
+						else         y = fs->dsy.ncoor[j] + dy*0.5 + jj*dy;
+
 						for (ii = 0; ii < user->NumPartX; ii++)
 						{
 							if (ii == 0) x = fs->dsx.ncoor[i] + dx*0.5;
@@ -135,6 +153,17 @@ PetscErrorCode ADVMarkInitCoord(AdvCtx *actx, UserContext *user)
 							actx->markers[imark].X[1] = y;
 							actx->markers[imark].X[2] = z;
 
+							if(AddRandomNoiseParticles)
+							{
+								// add random noise
+								ierr = PetscRandomGetValueReal(rctx, &cf_rand); CHKERRQ(ierr);
+								actx->markers[imark].X[0] += (cf_rand-0.5)*dx;
+								ierr = PetscRandomGetValueReal(rctx, &cf_rand); CHKERRQ(ierr);
+								actx->markers[imark].X[1] += (cf_rand-0.5)*dy;
+								ierr = PetscRandomGetValueReal(rctx, &cf_rand); CHKERRQ(ierr);
+								actx->markers[imark].X[2] += (cf_rand-0.5)*dz;
+							}
+
 							// increment local counter
 							imark++;
 						}
@@ -142,78 +171,6 @@ PetscErrorCode ADVMarkInitCoord(AdvCtx *actx, UserContext *user)
 				}
 			}
 		}
-	}
-
-	PetscFunctionReturn(0);
-}
-//---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "ADVMarkRandomNoise"
-PetscErrorCode ADVMarkRandomNoise(AdvCtx *actx, UserContext *user)
-{
-	//=============================================================
-	// WARNING! THIS MUST BE REDONE TO HANDLE VARIABLE MESH SPACING!
-	// SUPPORT FOR CELL-BASED UNIFORM SPACING SHOULD BE IMPLEMENTED
-	//==============================================================
-
-	// Add random noise to markers if required
-	FDSTAG     *fs;
-	PetscInt    imark;
-	PetscInt    AddRandomNoiseParticles;
-	PetscRandom rctx;
-	PetscScalar cf_rand;
-	PetscScalar mdx, mdy, mdz;
-	PetscInt    nmarkx, nmarky, nmarkz;
-	PetscScalar xs[3], xe[3];
-
-	PetscErrorCode ierr;
-	PetscFunctionBegin;
-
-	fs = actx->fs;
-
-	AddRandomNoiseParticles = 0;
-
-	ierr = PetscOptionsGetInt(PETSC_NULL,"-AddRandomNoiseParticles", &AddRandomNoiseParticles, PETSC_NULL); CHKERRQ(ierr);
-
-	if(!AddRandomNoiseParticles) PetscFunctionReturn(0);
-
-	// add random noise
-	PetscPrintf(PETSC_COMM_WORLD, "# Adding random noise to marker distribution \n");
-
-	// local number of markers
-	nmarkx = fs->dsx.ncels*user->NumPartX;
-	nmarky = fs->dsy.ncels*user->NumPartY;
-	nmarkz = fs->dsz.ncels*user->NumPartZ;
-
-	// coordinates of the local domain
-	xs[0] = fs->dsx.ncoor[0];
-	xs[1] = fs->dsy.ncoor[0];
-	xs[2] = fs->dsz.ncoor[0];
-
-	xe[0] = fs->dsx.ncoor[fs->dsx.ncels];
-	xe[1] = fs->dsy.ncoor[fs->dsy.ncels];
-	xe[2] = fs->dsz.ncoor[fs->dsz.ncels];
-
-	// compute spacing of markers grid
-	mdx = (xe[0] - xs[0])/(PetscScalar)nmarkx;
-	mdy = (xe[1] - xs[1])/(PetscScalar)nmarky;
-	mdz = (xe[2] - xs[2])/(PetscScalar)nmarkz;
-
-	// initialize the random number generator
-	ierr = PetscRandomCreate(PETSC_COMM_WORLD, &rctx); CHKERRQ(ierr);
-	ierr = PetscRandomSetFromOptions(rctx);            CHKERRQ(ierr);
-
-	// add random component to the markers
-	for(imark = 0; imark < actx->nummark; imark++)
-	{
-		ierr = PetscRandomGetValueReal(rctx, &cf_rand); CHKERRQ(ierr);
-		actx->markers[imark].X[0] += (cf_rand-0.5)*mdx;
-
-		ierr = PetscRandomGetValueReal(rctx, &cf_rand); CHKERRQ(ierr);
-		actx->markers[imark].X[1] += (cf_rand-0.5)*mdy;
-
-		ierr = PetscRandomGetValueReal(rctx, &cf_rand); CHKERRQ(ierr);
-		actx->markers[imark].X[2] += (cf_rand-0.5)*mdz;
 	}
 
 	// destroy random context
@@ -304,7 +261,10 @@ PetscErrorCode ADVMarkSave(AdvCtx *actx, UserContext *user)
 #define __FUNCT__ "ADVMarkInitFileParallel"
 PetscErrorCode ADVMarkInitFileParallel(AdvCtx *actx, UserContext *user)
 {
-	// read markers from multiple files on all processors
+	//=============================================================
+	// WARNING! Random noise only for internal setups!!
+	// Markers from file are assumed to have the coordinates set
+	//==============================================================
 
 	int          fd;
 	Marker      *P;
@@ -391,26 +351,26 @@ PetscErrorCode ADVMarkInitFileParallel(AdvCtx *actx, UserContext *user)
 PetscErrorCode ADVMarkInitFileRedundant(AdvCtx *actx, UserContext *user)
 {
 	//=============================================================
-	// WARNING! THIS MUST BE REDONE TO HANDLE VARIABLE MESH SPACING!
-	// SUPPORT FOR CELL-BASED UNIFORM SPACING SHOULD BE IMPLEMENTED
+	// HANDLES VARIABLE MESH SPACING!
+	// WARNING! Random noise only for internal setups!!
+	// Markers from file are assumed to have the coordinates set
 	//==============================================================
 
-	// REDUNDANTLY loads the phase and temperature data from a file
+	// REDUNDANTLY loads the X,Y,Z-coord, phase and temperature data from a file
 	// each processor uses its own part after loading, and ignores the rest
 	// THEREFORE! not to be used for large markers files - use parallel read for that!
-	// temperature is assumed to be dimensional
-	// cell-based uniform marker distribution is assumed
+	// coord and temperature are assumed to be dimensional
 
 	FDSTAG       *fs;
 	int           fd;
 	Marker       *P;
 	PetscViewer   view_in;
 	char         *LoadFileName;
-	PetscScalar   x, y, z, mdx, mdy, mdz, maxtemp, header, chTemp;
-	PetscScalar   xs[3], xe[3], info[3], *phase, *temp;
+	PetscScalar   maxtemp, header, chLen, chTemp;
+	PetscScalar   x, y, z, xs[3], xe[3], info[3], *phase, *temp, *xcoor, *ycoor, *zcoor;
 	PetscInt      nmarkx, nmarky, nmarkz, nmark;
 	PetscInt      tmarkx, tmarky, tmarkz, tmark;
-	PetscInt      i, j, k, num, imark, maxphase;
+	PetscInt      i, imark, maxphase;
 
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
@@ -450,11 +410,17 @@ PetscErrorCode ADVMarkInitFileRedundant(AdvCtx *actx, UserContext *user)
 		SETERRQ2(PETSC_COMM_WORLD,PETSC_ERR_USER,"# The file does not contain the expected number of markers [expected = %lld vs. present = %lld] \n", (LLD)tmark, (LLD)nmark);
 	}
 
-	// create buffer for phase & temperature
+	// create buffer for x,y,z, phase & temperature
+	ierr = PetscMalloc((size_t)nmark*sizeof(PetscScalar), &xcoor); CHKERRQ(ierr);
+	ierr = PetscMalloc((size_t)nmark*sizeof(PetscScalar), &ycoor); CHKERRQ(ierr);
+	ierr = PetscMalloc((size_t)nmark*sizeof(PetscScalar), &zcoor); CHKERRQ(ierr);
 	ierr = PetscMalloc((size_t)nmark*sizeof(PetscScalar), &phase); CHKERRQ(ierr);
 	ierr = PetscMalloc((size_t)nmark*sizeof(PetscScalar), &temp);  CHKERRQ(ierr);
 
 	// read phase and temperature into buffer
+	ierr = PetscBinaryRead(fd, xcoor, nmark, PETSC_SCALAR); CHKERRQ(ierr);
+	ierr = PetscBinaryRead(fd, ycoor, nmark, PETSC_SCALAR); CHKERRQ(ierr);
+	ierr = PetscBinaryRead(fd, zcoor, nmark, PETSC_SCALAR); CHKERRQ(ierr);
 	ierr = PetscBinaryRead(fd, phase, nmark, PETSC_SCALAR); CHKERRQ(ierr);
 	ierr = PetscBinaryRead(fd, temp , nmark, PETSC_SCALAR); CHKERRQ(ierr);
 
@@ -462,13 +428,7 @@ PetscErrorCode ADVMarkInitFileRedundant(AdvCtx *actx, UserContext *user)
 	ierr = PetscViewerDestroy(&view_in); CHKERRQ(ierr);
 	free(LoadFileName);
 
-	// compute spacing of markers grid
-	mdx = user->W/(PetscScalar)nmarkx;
-	mdy = user->L/(PetscScalar)nmarky;
-	mdz = user->H/(PetscScalar)nmarkz;
-
 	// fill markers array
-	num      = 0;
 	imark    = 0;
 	maxphase = 0;
 	maxtemp  = 0.0;
@@ -482,60 +442,50 @@ PetscErrorCode ADVMarkInitFileRedundant(AdvCtx *actx, UserContext *user)
 	xe[1] = fs->dsy.ncoor[fs->dsy.ncels];
 	xe[2] = fs->dsz.ncoor[fs->dsz.ncels];
 
-	// set characteristic temperature
-	if(user->DimensionalUnits) chTemp = user->Characteristic.Temperature;
-	else                       chTemp = 1.0;
+	// set characteristic length and temperature
+	if(user->DimensionalUnits)
+	{	chLen  = user->Characteristic.Length;
+		chTemp = user->Characteristic.Temperature;
+	}
+	else
+	{	chLen  = 1.0;
+		chTemp = 1.0;
+	}
 
 	// loop over all markers and put them in the local domain
-	z = user->z_bot + mdz*0.5;
-
-	for(k = 0; k < nmarkz; k++)
+	for(i = 0; i < nmark; i++)
 	{
-		y = user->y_front + mdy*0.5;
+		x  = xcoor[i]/chLen;
+		y  = ycoor[i]/chLen;
+		z  = zcoor[i]/chLen;
 
-		for(j = 0; j < nmarky; j++)
+		// truncate non-local markers
+		if(x >= xs[0] && x <= xe[0]
+		&& y >= xs[1] && y <= xe[1]
+		&& z >= xs[2] && z <= xe[2])
 		{
-			x = user->x_left  + mdx*0.5;
+			P        = &actx->markers[imark];
+			P->X[0]  = x;
+			P->X[1]  = y;
+			P->X[2]  = z;
+			P->phase = (PetscInt)phase[i];
+			P->T     = temp[i]/chTemp;
 
-			for(i = 0; i < nmarkx; i++)
-			{
-				// truncate non-local markers
-				if(x >= xs[0] && x <= xe[0]
-				&& y >= xs[1] && y <= xe[1]
-				&& z >= xs[2] && z <= xe[2])
-				{
-					P        = &actx->markers[imark];
-					P->X[0]  = x;
-					P->X[1]  = y;
-					P->X[2]  = z;
-					P->phase = (PetscInt)phase[num];
-					P->T     = temp[num]/chTemp;
-
-					// increment local counter
-					imark++;
-				}
-
-				// calculate max no of phases
-				if((PetscInt)phase[num] > maxphase)
-				{
-					maxphase = (PetscInt) phase[num];
-				}
-
-				// calculate max temperature
-				if(temp[num] > maxtemp)
-				{
-					maxtemp = temp[num];
-				}
-
-				// increment global counter
-				num++;
-
-				// update marker grid coord
-				x += mdx;
-			}
-			y += mdy;
+			// increment local counter
+			imark++;
 		}
-		z += mdz;
+
+		// calculate max no of phases
+		if((PetscInt)phase[i] > maxphase)
+		{
+			maxphase = (PetscInt) phase[i];
+		}
+
+		// calculate max temperature
+		if(temp[i] > maxtemp)
+		{
+			maxtemp = temp[i];
+		}
 	}
 
 	// error checking
@@ -547,6 +497,9 @@ PetscErrorCode ADVMarkInitFileRedundant(AdvCtx *actx, UserContext *user)
 	PetscPrintf(PETSC_COMM_WORLD,"# Statistics markers: MaxPhase = %lld, MaxTemp = %g, NumberPhases = %lld \n", (LLD)maxphase, maxtemp, (LLD)user->num_phases);
 
 	// free specific allocated memory
+	ierr = PetscFree(xcoor); CHKERRQ(ierr);
+	ierr = PetscFree(ycoor); CHKERRQ(ierr);
+	ierr = PetscFree(zcoor); CHKERRQ(ierr);
 	ierr = PetscFree(phase); CHKERRQ(ierr);
 	ierr = PetscFree(temp);  CHKERRQ(ierr);
 

@@ -27,7 +27,7 @@ LaMEM_Parallel_output  = 0;
 LoadMesh               = 0;  
 
 % Parallel partition file
-Parallel_partition     = 'ProcessorPartitioning_2cpu_2.1.1.bin';
+Parallel_partition     = 'ProcessorPartitioning_1cpu_1.1.1.bin';
 
 %==========================================================================
 % DOMAIN PARAMETERS (DIMENSIONAL)
@@ -110,7 +110,7 @@ Phase(ind)  =   air;
 % TEMPERATURE - in Celcius
 %==========================================================================
 %Temp = (H-Z)./H*0 + 0.5 + (rand(size(Z))-0.5)*0.05 + 0*1000;
-Temp    =   Z; % initialize temperature                 
+Temp    =   zeros(size(Z)); % initialize temperature                 
 
 %==========================================================================
 % PREPARE DATA FOR VISUALIZATION/OUTPUT
@@ -118,6 +118,7 @@ Temp    =   Z; % initialize temperature
 
 % Prepare data for visualization/output
 A = struct('W',[],'L',[],'H',[],'nump_x',[],'nump_y',[],'nump_z',[],'Phase',[],'Temp',[],'x',[],'y',[],'z',[],'npart_x',[],'npart_y',[],'npart_z',[]);
+
 Phase       = permute(Phase,[2 1 3]);
 Temp        = permute(Temp, [2 1 3]);
 
@@ -141,13 +142,16 @@ A.npart_x= npart_x;
 A.npart_y= npart_y;
 A.npart_z= npart_z;
 
+X        = permute(X,[2 1 3]);
+Y        = permute(Y,[2 1 3]);
+Z        = permute(Z,[2 1 3]);
+
 % SAVE DATA IN 1 FILE (redundant)
 if (LaMEM_Redundant_output == 1)
-    PhaseOrig   = Phase;
     PhaseVec(1) = nump_z;
     PhaseVec(2) = nump_y;
     PhaseVec(3) = nump_x;
-    PhaseVec    = [PhaseVec(:); Phase(:); Temp(:)];
+    PhaseVec    = [PhaseVec(:); X(:); Y(:); Z(:); Phase(:); Temp(:)];
     
     % Save data to file
     ParticleOutput  =   'MarkersInput3D.dat';
