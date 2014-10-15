@@ -499,6 +499,7 @@ PetscErrorCode PCStokesMGCreate(PCStokes pc)
 #define __FUNCT__ "PCStokesMGDestroy"
 PetscErrorCode PCStokesMGDestroy(PCStokes pc)
 {
+	PetscBool   flg;
 	PCStokesMG *mg;
 
 	PetscErrorCode ierr;
@@ -506,6 +507,14 @@ PetscErrorCode PCStokesMGDestroy(PCStokes pc)
 
 	// get context
 	mg = (PCStokesMG*)pc->data;
+
+	// view preconditioner if required
+	ierr = PetscOptionsHasName(NULL, "-gmg_pc_view", &flg); CHKERRQ(ierr);
+
+	if(flg == PETSC_TRUE)
+	{
+		ierr = PCView(mg->pc, PETSC_VIEWER_STDOUT_WORLD); CHKERRQ(ierr);
+	}
 
 	ierr = MatDestroy  (&mg->P);   CHKERRQ(ierr);
 	ierr = MatDestroy  (&mg->M);   CHKERRQ(ierr);
