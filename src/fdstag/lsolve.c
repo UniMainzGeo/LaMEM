@@ -50,6 +50,9 @@ PetscErrorCode PCStokesCreate(PCStokes *p_pc, JacRes *jr)
 	// allocate space
 	ierr = PetscMalloc(sizeof(p_PCStokes), &pc); CHKERRQ(ierr);
 
+	// clear object
+	ierr = PetscMemzero(&pc, sizeof(p_PCStokes)); CHKERRQ(ierr);
+
 	// set type
 	ierr = PCStokesSetFromOptions(pc); CHKERRQ(ierr);
 
@@ -117,23 +120,6 @@ PetscErrorCode PCStokesDestroy(PCStokes pc)
 
 	PetscFunctionReturn(0);
 }
-//---------------------------------------------------------------------------
-/*
-#undef __FUNCT__
-#define __FUNCT__ "PCStokesSetupShell"
-PetscErrorCode PCStokesSetupShell(PCStokes pc, PC shell)
-{
-	PetscErrorCode ierr;
-	PetscFunctionBegin;
-
-	// setup shell preconditioner
-	ierr = PCSetType        (shell, PCSHELL);   CHKERRQ(ierr);
-	ierr = PCShellSetContext(shell, pc->data);  CHKERRQ(ierr);
-	ierr = PCShellSetApply  (shell, pc->Apply); CHKERRQ(ierr);
-
-	PetscFunctionReturn(0);
-}
-*/
 //---------------------------------------------------------------------------
 //....................... AUGMENTED LAGRANGIAN ..............................
 //---------------------------------------------------------------------------
@@ -338,8 +324,6 @@ PetscErrorCode PCStokesBFCreate(PCStokes pc)
 	ierr = PCSetOptionsPrefix(bf->pc, "bf_");                                    CHKERRQ(ierr);
 	ierr = PCSetFromOptions(bf->pc);                                             CHKERRQ(ierr);
 
-//ierr = PCSetUp(bf->pc); CHKERRQ(ierr);
-
 	// check whether Galerkin multigrid is requested for the velocity block
 	ierr = PetscOptionsHasName(NULL, "-velgmg", &flg);
 
@@ -373,6 +357,7 @@ PetscErrorCode PCStokesBFCreate(PCStokes pc)
 #define __FUNCT__ "PCStokesBFDestroy"
 PetscErrorCode PCStokesBFDestroy(PCStokes pc)
 {
+	PetscBool   flg;
 	PCStokesBF *bf;
 
 	PetscErrorCode ierr;
@@ -380,6 +365,22 @@ PetscErrorCode PCStokesBFDestroy(PCStokes pc)
 
 	// get context
 	bf = (PCStokesBF*)pc->data;
+
+	// view block factorization preconditioner if required
+	ierr = PetscOptionsHasName(NULL, "-bf_pc_view", &flg); CHKERRQ(ierr);
+
+	if(flg == PETSC_TRUE)
+	{
+		ierr = PCView(bf->pc, PETSC_VIEWER_STDOUT_WORLD); CHKERRQ(ierr);
+	}
+
+	// view multigrid preconditioner if required
+	ierr = PetscOptionsHasName(NULL, "-gmg_pc_view", &flg); CHKERRQ(ierr);
+
+	if(flg == PETSC_TRUE && bf->vtype == VEL_MG)
+	{
+		ierr = PCView(bf->vpc, PETSC_VIEWER_STDOUT_WORLD); CHKERRQ(ierr);
+	}
 
 	ierr = BMatDestroy(&bf->P);   CHKERRQ(ierr);
 	ierr = MatDestroy (&bf->M);   CHKERRQ(ierr);
@@ -389,6 +390,7 @@ PetscErrorCode PCStokesBFDestroy(PCStokes pc)
 
 	if(bf->vtype == VEL_MG)
 	{
+		ierr = PCDestroy   (&bf->vpc);  CHKERRQ(ierr);
 		ierr = MGCtxDestroy(&bf->vctx); CHKERRQ(ierr);
 	}
 
@@ -419,12 +421,12 @@ PetscErrorCode PCStokesBFSetup(PCStokes pc)
 	{
 		ierr = MGCtxSetup(&bf->vctx, IDXUNCOUPLED);      CHKERRQ(ierr);
 		ierr = MGCtxSetDiagOnLevels(&bf->vctx, bf->vpc); CHKERRQ(ierr);
+
+		// dump matrices to MATLAB if requested
+		ierr = MGCtxDumpMat(&bf->vctx, bf->vpc); CHKERRQ(ierr);
 	}
 
-//	ierr = PCView(bf->pc, PETSC_VIEWER_STDOUT_SELF); CHKERRQ(ierr);
-
 	PetscFunctionReturn(0);
-
 }
 //---------------------------------------------------------------------------
 #undef __FUNCT__

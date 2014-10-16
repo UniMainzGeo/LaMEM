@@ -35,7 +35,6 @@ PetscErrorCode MGCheckGrid(FDSTAG *fs, PetscInt *_ncors)
 	if(opt_set != PETSC_TRUE)
 	{
 		SETERRQ1(PETSC_COMM_WORLD, PETSC_ERR_USER, "Number of multigrid levels is not specified. Use option -gmg_pc_mg_levels. Max # of levels: %lld\n", (LLD)(ncors+1));
-
 	}
 	else if(nlevels < 2 || nlevels > ncors+1)
 	{
@@ -143,7 +142,8 @@ PetscErrorCode MGCtxCreate(MGCtx *mg, FDSTAG *fs, BCCtx *bc, PC pc, idxtype idxm
 		if(idxmod == IDXCOUPLED)   { idfine = &fine->cdof; idcors = &cors->cdof; }
 		if(idxmod == IDXUNCOUPLED) { idfine = &fine->udof; idcors = &cors->udof; }
 
-		// constant size preallocation (MAKE SURE SPACE IS ENOUGH)
+		// constant size preallocation
+		// WARNING! ADD PREALLOCATION TO THESE MATRICES
 		ierr = PMatCreate(idcors->numdof, idfine->numdof, 12, NULL, 4, NULL, &mg->R[i]); CHKERRQ(ierr);
 		ierr = PMatCreate(idfine->numdof, idcors->numdof, 8,  NULL, 7, NULL, &mg->P[i]); CHKERRQ(ierr);
 
