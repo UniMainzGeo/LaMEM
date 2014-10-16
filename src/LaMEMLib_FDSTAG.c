@@ -335,6 +335,9 @@ PetscErrorCode LaMEMLib_FDSTAG(PetscBool InputParamFile, const char *ParamFile, 
 
 //		ierr = CheckVelocityError(&user); CHKERRQ(ierr);
 
+		// view nonlinear residual
+		ierr = JacResViewRes(&jr); CHKERRQ(ierr);
+
 
 		//==========================================
 		// END OF NONLINEAR THERMO-MECHANICAL SOLVER

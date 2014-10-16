@@ -95,6 +95,8 @@ PetscErrorCode JacResCopySol(JacRes *jr, Vec x);
 // copy residuals to global vector
 PetscErrorCode JacResCopyRes(JacRes *jr, Vec f);
 
+PetscErrorCode JacResViewRes(JacRes *jr);
+
 //---------------------------------------------------------------------------
 
 // initialize material parameter limits

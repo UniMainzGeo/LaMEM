@@ -1375,6 +1375,48 @@ PetscErrorCode JacResCopyRes(JacRes *jr, Vec f)
 }
 //---------------------------------------------------------------------------
 #undef __FUNCT__
+#define __FUNCT__ "JacResViewRes"
+PetscErrorCode JacResViewRes(JacRes *jr)
+{
+	// #define MAX3(a,b,c) (a > b ? (a > c ? a : c) : (b > c ? b : c))
+
+	PetscBool   flg;
+	PetscScalar dmin, dmax, d2, fx, fy, fz, f2;
+
+	PetscErrorCode ierr;
+	PetscFunctionBegin;
+
+	// view residuals if required
+	ierr = PetscOptionsHasName(NULL, "-res_log", &flg); CHKERRQ(ierr);
+
+	if(flg != PETSC_TRUE) PetscFunctionReturn(0);
+
+	// compute norms
+	ierr = VecMin (jr->gc, NULL,   &dmin); CHKERRQ(ierr);
+	ierr = VecMax (jr->gc, NULL,   &dmax); CHKERRQ(ierr);
+	ierr = VecNorm(jr->gc, NORM_2, &d2);   CHKERRQ(ierr);
+
+	ierr = VecNorm(jr->gfx, NORM_2, &fx);  CHKERRQ(ierr);
+	ierr = VecNorm(jr->gfy, NORM_2, &fy);  CHKERRQ(ierr);
+	ierr = VecNorm(jr->gfz, NORM_2, &fz);  CHKERRQ(ierr);
+
+	f2 = sqrt(fx*fx + fy*fy + fz*fz);
+
+	// print
+	PetscPrintf(PETSC_COMM_WORLD, "------------------------------------------\n");
+	PetscPrintf(PETSC_COMM_WORLD, "Residual summary: \n");
+	PetscPrintf(PETSC_COMM_WORLD, "  Continuity: \n");
+	PetscPrintf(PETSC_COMM_WORLD, "    Div_min  = %12.12e \n", dmin);
+	PetscPrintf(PETSC_COMM_WORLD, "    Div_max  = %12.12e \n", dmax);
+	PetscPrintf(PETSC_COMM_WORLD, "    |Div|_2  = %12.12e \n", d2);
+	PetscPrintf(PETSC_COMM_WORLD, "  Momentum: \n" );
+	PetscPrintf(PETSC_COMM_WORLD, "    |mRes|_2 = %12.12e \n", f2);
+	PetscPrintf(PETSC_COMM_WORLD, "------------------------------------------\n");
+
+	PetscFunctionReturn(0);
+}
+//---------------------------------------------------------------------------
+#undef __FUNCT__
 #define __FUNCT__ "SetMatParLim"
 PetscErrorCode SetMatParLim(MatParLim *matLim, UserContext *usr)
 {
