@@ -46,6 +46,9 @@ typedef struct _p_PCStokes
 
 }p_PCStokes;
 
+// PCStokes - pointer to an opaque structure (to be used in declarations)
+// sizeof(p_PCStokes) - size of the opaque structure
+
 //---------------------------------------------------------------------------
 
 PetscErrorCode PCStokesSetFromOptions(PCStokes pc);

@@ -23,7 +23,6 @@
 // * adding ones to diagonal (PCSetUp) ???
 // * near null space for Stokes
 //---------------------------------------------------------------------------
-
 #undef __FUNCT__
 #define __FUNCT__ "PCStokesSetFromOptions"
 PetscErrorCode PCStokesSetFromOptions(PCStokes pc)
@@ -387,14 +386,6 @@ PetscErrorCode PCStokesBFDestroy(PCStokes pc)
 		ierr = PCView(bf->pc, PETSC_VIEWER_STDOUT_WORLD); CHKERRQ(ierr);
 	}
 
-	// view multigrid preconditioner if required
-	ierr = PetscOptionsHasName(NULL, "-gmg_pc_view", &flg); CHKERRQ(ierr);
-
-	if(flg == PETSC_TRUE && bf->vtype == VEL_MG)
-	{
-		ierr = PCView(bf->vpc, PETSC_VIEWER_STDOUT_WORLD); CHKERRQ(ierr);
-	}
-
 	ierr = BMatDestroy(&bf->P);   CHKERRQ(ierr);
 	ierr = MatDestroy (&bf->M);   CHKERRQ(ierr);
 	ierr = ISDestroy  (&bf->isv); CHKERRQ(ierr);
@@ -403,7 +394,6 @@ PetscErrorCode PCStokesBFDestroy(PCStokes pc)
 
 	if(bf->vtype == VEL_MG)
 	{
-		ierr = PCDestroy   (&bf->vpc);  CHKERRQ(ierr);
 		ierr = MGCtxDestroy(&bf->vctx); CHKERRQ(ierr);
 	}
 
