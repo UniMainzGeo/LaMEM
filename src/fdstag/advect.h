@@ -9,6 +9,18 @@
 
 //---------------------------------------------------------------------------
 
+// marker-to-edge / edge-to-marker interpolation cases
+typedef enum
+{
+	_PHASE_,    // phase ratio
+	_STRESS_,   // deviatoric stress
+	_APS_,      // accumulated plastic strain (plastic strain-rate)
+	_VORTICITY_ // vorticity pseudo-vector components
+
+} InterpCase;
+
+//---------------------------------------------------------------------------
+
 // Set of variables that must be tracked during the advection steps.
 // During the nonlinear iteration, history accumulates on the integration points.
 // During the advection a cumulative update of the history variables is added to
@@ -59,15 +71,16 @@ typedef struct
 	PetscInt  ndel; // number of markers to be deleted from storage
 	PetscInt *idel;	// indices of markers to be deleted
 
-	// Entscheidung treffen:
-
+	// Mapping markers on the control volumes:
 	// 1. Viscosities are computed in the centers & then averaged to edges (BY FAR THE SIMPLEST SOLUTION!!!)
 	// 2. Synchronize SEPARATELY every phase for a given edge set xy, xz, or yz (overwhelming communication)
 	// 3. Synchronize SIMULTANEOUSLY all the phases for a given edge set xy, xz, or yz (large memory requirements)
 	// 4. Duplicate the markers in the overlapping control volumes near the inter-processor boundaries (a compromise, but still more memory)
+	// 5. Viscosity and stresses can also be computed on the markers (a-la Taras)
 
-	// vorticity components
-//	Vec gwx,  gwy,  gwz; // global vorticity components
+	// Accurate advection schemes:
+	// 1. Map markers on the control volumes and communicate with neighbors at every sub-step of an advection scheme
+	// 2. Duplicate makers in the overlapping control volumes (also requires more velocity data from neighbors)
 
 } AdvCtx;
 
@@ -115,12 +128,11 @@ PetscErrorCode ADVMapMarkersCells(AdvCtx *actx);
 // project history variables from markers to grid
 PetscErrorCode ADVProjHistMarkGrid(AdvCtx *actx);
 
-/*
-PetscErrorCode FDSTAGetVorticity(
-	FDSTAG *fs,
-	Vec lvx,  Vec lvy,  Vec lvz,  // local (ghosted) velocities
-	Vec gwx,  Vec gwy,  Vec gwz); // global vorticity components
-*/
+// marker-to-grid projection (cell nodes)
+PetscErrorCode ADVInterpMarkCell(AdvCtx *actx);
+
+// marker-to-grid projection (edge nodes)
+PetscErrorCode ADVInterpMarkEdge(AdvCtx *actx, PetscInt iphase, InterpCase icase);
 
 //-----------------------------------------------------------------------------
 // service functions

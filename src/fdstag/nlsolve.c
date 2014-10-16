@@ -75,7 +75,7 @@ PetscErrorCode NLSolCreate(NLSol *nl, PCStokes pc, SNES *p_snes)
 //	ierr = SNESSetConvergenceTest(snes, SNESBlockStopTest, &nlctx, NULL); CHKERRQ(ierr);
 
 	// set Jacobian type & initial guess
-	nl->jtype = PICARD;
+	nl->jtype = _PICARD_;
 	ierr = VecSet(jr->gsol, 0.0); CHKERRQ(ierr);
 
 	// read number of Picard iterations
@@ -161,17 +161,17 @@ PetscErrorCode FormJacobian(SNES snes, Vec x, Mat Amat, Mat Pmat, void *ctx)
 
 	// switch Jacobian after fixed number of iterations
 	ierr = SNESGetIterationNumber(snes, &it); CHKERRQ(ierr);
-	if(it == nl->nPicIt) nl->jtype = MFFD;
+	if(it == nl->nPicIt) nl->jtype = _MFFD_;
 
 	// setup Jacobian ...
-	if(nl->jtype == PICARD)
+	if(nl->jtype == _PICARD_)
 	{
 		// ... Picard
 		ierr = MatShellSetOperation(nl->J, MATOP_MULT, (void(*)(void))pc->Picard); CHKERRQ(ierr);
 		ierr = MatShellSetContext(nl->J, pc->data);                                CHKERRQ(ierr);
 
 	}
-	else if(nl->jtype == MFFD)
+	else if(nl->jtype == _MFFD_)
 	{
 		// ... matrix-free finite-difference (MMFD)
 		ierr = MatMFFDSetFunction(nl->MFFD, (PetscErrorCode (*)(void*,Vec,Vec))SNESComputeFunction, snes); CHKERRQ(ierr);

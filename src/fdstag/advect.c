@@ -57,79 +57,7 @@ Anton, please add a few comments
 
 #END_DOC#
 */
-//---------------------------------------------------------------------------
-/* Macro for distance-dependent interpolation from markers to edge nodes.
- * Parameters:
- * _TEST_                 - optional loop test
- * _UPXY_, _UPXZ_, _UPYZ_ - fields to be updated from marker to local vectors
- * _CP_                   - field to be copied from global vectors into context
- */
-#define INTERP_MARKER_TO_EDGES(_TEST_, _UPXY_, _UPXZ_, _UPYZ_, _CP_) \
-	/* clear local vectors */ \
-	ierr = VecZeroEntries(jr->ldxy); CHKERRQ(ierr); \
-	ierr = VecZeroEntries(jr->ldxz); CHKERRQ(ierr); \
-	ierr = VecZeroEntries(jr->ldyz); CHKERRQ(ierr); \
-	/* access 3D layouts of local vectors */ \
-	ierr = DMDAVecGetArray(fs->DA_XY, jr->ldxy, &lxy); CHKERRQ(ierr); \
-	ierr = DMDAVecGetArray(fs->DA_XZ, jr->ldxz, &lxz); CHKERRQ(ierr); \
-	ierr = DMDAVecGetArray(fs->DA_YZ, jr->ldyz, &lyz); CHKERRQ(ierr); \
-	/* scan ALL markers*/ \
-	for(jj = 0; jj < actx->nummark; jj++) \
-	{	/* access next marker */ \
-		P = &actx->markers[jj]; \
-		/* perform optional loop test*/ \
-		_TEST_ \
-		/* get consecutive index of the host cell */ \
-		ID = actx->cellnum[jj]; \
-		/* expand I, J, K cell indices */ \
-		GET_CELL_IJK(ID, I, J, K, nx, ny) \
-		/* get marker coordinates */ \
-		xp = P->X[0]; \
-		yp = P->X[1]; \
-		zp = P->X[2]; \
-		/* get coordinates of cell center */ \
-		xc = fs->dsx.ccoor[I]; \
-		yc = fs->dsy.ccoor[J]; \
-		zc = fs->dsz.ccoor[K]; \
-		/* map marker on the control volumes of edge nodes */ \
-		if(xp > xc) II = I+1; else II = I; \
-		if(yp > yc) JJ = J+1; else JJ = J; \
-		if(zp > zc) KK = K+1; else KK = K; \
-/*  WARINIG!*/ \
-/*	MAKE SURE WHAT TO CALL HERE WEIGHT_POINT_CELL OR WEIGHT_POINT_NODE */ \
-/* get interpolation weights in cell control volumes */ \
-		wxc = WEIGHT_POINT_CELL(I, xp, fs->dsx); \
-		wyc = WEIGHT_POINT_CELL(J, yp, fs->dsy); \
-		wzc = WEIGHT_POINT_CELL(K, zp, fs->dsz); \
-		/* get interpolation weights in node control volumes */ \
-		wxn = WEIGHT_POINT_NODE(II, xp, fs->dsx); \
-		wyn = WEIGHT_POINT_NODE(JJ, yp, fs->dsy); \
-		wzn = WEIGHT_POINT_NODE(KK, zp, fs->dsz); \
-		/* update required fields from marker to edge nodes */ \
-		lxy[sz+K ][sy+JJ][sx+II] += wxn*wyn*wzc*_UPXY_; \
-		lxz[sz+KK][sy+J ][sx+II] += wxn*wyc*wzn*_UPXZ_; \
-		lyz[sz+KK][sy+JJ][sx+I ] += wxc*wyn*wzn*_UPYZ_; \
-	} \
-	/* restore access */ \
-	ierr = DMDAVecRestoreArray(fs->DA_XY, jr->ldxy, &lxy); CHKERRQ(ierr); \
-	ierr = DMDAVecRestoreArray(fs->DA_XZ, jr->ldxz, &lxz); CHKERRQ(ierr); \
-	ierr = DMDAVecRestoreArray(fs->DA_YZ, jr->ldyz, &lyz); CHKERRQ(ierr); \
-	/* assemble global vectors */ \
-	LOCAL_TO_GLOBAL(fs->DA_XY, jr->ldxy, jr->gdxy) \
-	LOCAL_TO_GLOBAL(fs->DA_XZ, jr->ldxz, jr->gdxz) \
-	LOCAL_TO_GLOBAL(fs->DA_YZ, jr->ldyz, jr->gdyz) \
-	/* access 1D layouts of global vectors */ \
-	ierr = VecGetArray(jr->gdxy, &gxy);  CHKERRQ(ierr); \
-	ierr = VecGetArray(jr->gdxz, &gxz);  CHKERRQ(ierr); \
-	ierr = VecGetArray(jr->gdyz, &gyz);  CHKERRQ(ierr); \
-	/* copy normalized data to residual context */ \
-	for(jj = 0; jj < fs->nXYEdg; jj++) jr->svXYEdge[jj]._CP_ = gxy[jj]/jr->svXYEdge[jj].ws; \
-	for(jj = 0; jj < fs->nXZEdg; jj++) jr->svXZEdge[jj]._CP_ = gxz[jj]/jr->svXZEdge[jj].ws; \
-	for(jj = 0; jj < fs->nYZEdg; jj++) jr->svYZEdge[jj]._CP_ = gyz[jj]/jr->svYZEdge[jj].ws; \
-	/* restore access */ \
-	ierr = VecRestoreArray(jr->gdxy, &gxy); CHKERRQ(ierr); \
-	ierr = VecRestoreArray(jr->gdxz, &gxz); CHKERRQ(ierr); \
-	ierr = VecRestoreArray(jr->gdyz, &gyz); CHKERRQ(ierr);
+
 //-----------------------------------------------------------------------------
 #define InterpLin3D(v, lv, i, j, k, cx, cy, cz) \
 	/* get relative coordinates */ \
@@ -157,6 +85,9 @@ PetscErrorCode ADVCreate(AdvCtx *actx, FDSTAG *fs, JacRes *jr)
 
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
+
+	// clear object
+	ierr = PetscMemzero(actx, sizeof(AdvCtx)); CHKERRQ(ierr);
 
 	actx->fs = fs;
 	actx->jr = jr;
@@ -293,7 +224,7 @@ PetscErrorCode ADVAdvect(AdvCtx *actx)
 	ierr = JacResGetVorticity(actx->jr); CHKERRQ(ierr);
 
 	// advect markers (Forward Euler)
-	ierr = ADVAdvectMarkers(actx); CHKERRQ(ierr);
+//	ierr = ADVAdvectMarkers(actx); CHKERRQ(ierr);
 
 	// count number of markers to be sent to each neighbor domain
 	ierr = ADVMapMarkersDomains(actx); CHKERRQ(ierr);
@@ -340,9 +271,22 @@ PetscErrorCode ADVProjHistGridMark(AdvCtx *actx)
 	jr = actx->jr;
 
 
+	// velocity
+	// vorticity
+	// pressure
+	// temperature
+	// deviatorc stress
+	// accumulated plastic strain
+
+
+//	ADVInterpCellMark (All fields except vorticity. Single call)
+//	ADVInterpEdgeMark (Interpolates deviatoric stress, vorticity, APS. Multiple calls due to single buffer. Single filed per call.)
+
+
+
 /*
 	PetscScalar p;     // pressure         -> from center
-	PetscScalar T;     // temperature
+	PetscScalar T;     // temperature      -> from center
 	PetscScalar APS;   // accumulated plastic strain -> joined from center and edges
 	Tensor2RS   s;     // deviatoric stress          -> joined from center and edges
 */
@@ -350,15 +294,64 @@ PetscErrorCode ADVProjHistGridMark(AdvCtx *actx)
 
 	PetscFunctionReturn(0);
 }
+
+#undef __FUNCT__
+#define __FUNCT__ "ADVInterpCellMark"
+PetscErrorCode ADVInterpCellMark(AdvCtx *actx)
+{
+
+	PetscErrorCode ierr;
+	PetscFunctionBegin;
+
+	// Interpolates:
+	//
+	//   * deviatoric stress (edge components)
+	//   * plastic strain rate (edge contributions)
+	//   * vorticity
+	//
+	// Multiple calls due to single buffer / single field per call
+	// All calls must precede a call to ADVInterpCellMark
+
+
+//ADVInterpCellMark (All fields except vorticity. Single call)
+	PetscFunctionReturn(0);
+
+}
+
 //---------------------------------------------------------------------------
+#undef __FUNCT__
+#define __FUNCT__ "ADVInterpEdgeMark"
+PetscErrorCode ADVInterpEdgeMark(AdvCtx *actx)
+{
+	// Interpolates:
+	//
+	//   * deviatoric stress (edge components)
+	//   * plastic strain rate (edge contributions)
+	//   * vorticity (c)
+	//
+	// Multiple calls due to single buffer / single field per call
+
+	PetscErrorCode ierr;
+	PetscFunctionBegin;
+
+	PetscFunctionReturn(0);
+}
+//---------------------------------------------------------------------------
+
+
+
+
+/*
 #undef __FUNCT__
 #define __FUNCT__ "ADVAdvectMarkers"
 PetscErrorCode ADVAdvectMarkers(AdvCtx *actx)
 {
 	// update marker positions from current velocities & time step
 	// rotate history stresses in the local vorticity field
+	// integrate accumulated plastic strain (total strain, displacements, etc)
 	// WARNING! Forward Euler Explicit algorithm
 	// (need to implement more accurate schemes)
+
 
 	FDSTAG      *fs;
 	JacRes      *jr;
@@ -436,12 +429,8 @@ PetscErrorCode ADVAdvectMarkers(AdvCtx *actx)
 		InterpLin3D(vy, lvy, IJ, J,  KJ, ccx, ncy, ccz)
 		InterpLin3D(vz, lvz, IK, JK, K,  ccx, ccy, ncz)
 
-		// update node coordinates
-		P->X[0] = xp + vx*dt;
-		P->X[1] = yp + vy*dt;
-		P->X[2] = zp + vz*dt;
 
-/*
+
 		// map marker on the control volumes of edge nodes
 		if(xp > xc) In = I+1; else In = I;
 		if(yp > yc) Jn = J+1; else Jn = J;
@@ -451,16 +440,37 @@ PetscErrorCode ADVAdvectMarkers(AdvCtx *actx)
 		lxy[Kc+sz][Jn+sy][In+sx] += wxn*wyn*wzc*_UPXY_; \
 		lxz[Kn+sz][Jc+sy][In+sx] += wxn*wyc*wzn*_UPXZ_; \
 		lyz[Kn+sz][Jn+sy][Ic+sx] += wxc*wyn*wzn*_UPYZ_; \
-*/
+
 
 		wx = wy = wz = 0.0;
 
-		// rotate stresses on the markers in the local vorticity field
+		// advect marker
+		P->X[0] = xp + vx*dt;
+		P->X[1] = yp + vy*dt;
+		P->X[2] = zp + vz*dt;
+
+		// integrate accumulated plastic strain
+
+		typedef struct
+		{
+			PetscScalar  DII;   // effective strain rate
+			PetscScalar  eta;   // effective tangent viscosity
+			PetscScalar  I2Gdt; // inverse elastic viscosity (1/2G/dt)
+			PetscScalar  Hr;    // shear heating term (partial)
+			PetscScalar  DIIpl; // plastic strain rate
+			PetscScalar  APS;   // accumulated plastic strain
+			PetscScalar  PSR;   // plastic strain-rate contribution
+
+		} SolVarDev;
+
+		// compute rotation matrix from local vorticity field
 		GetRotationMatrix(&R, dt, wx, wy, wz);
+
+		// rotate history stress
 		RotateStress(&R, &P->S, &SR);
+
+		// store advected/rotated stress on the marker
 		Tensor2RSCopy(&SR, &P->S);
-
-
 	}
 
 	// restore access
@@ -473,6 +483,7 @@ PetscErrorCode ADVAdvectMarkers(AdvCtx *actx)
 
 	PetscFunctionReturn(0);
 }
+*/
 //---------------------------------------------------------------------------
 #undef __FUNCT__
 #define __FUNCT__ "ADVMapMarkersDomains"
@@ -815,14 +826,9 @@ PetscErrorCode ADVProjHistMarkGrid(AdvCtx *actx)
 	// - APS          (centers and edges)
 	// - stress       (centers or edges)
 
-	FDSTAG      *fs;
-	JacRes      *jr;
-	Marker      *P;
-	SolVarCell  *svCell;
-	PetscInt     nx, ny, nz, sx, sy, sz, nCells;
-	PetscInt     ii, jj, ID, I, J, K, II, JJ, KK;
-	PetscScalar *gxy, *gxz, *gyz, ***lxy, ***lxz, ***lyz;
-	PetscScalar  xc, yc, zc, xp, yp, zp, wxc, wyc, wzc, wxn, wyn, wzn, w;
+	FDSTAG   *fs;
+	JacRes   *jr;
+	PetscInt  ii, jj;
 
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
@@ -830,16 +836,68 @@ PetscErrorCode ADVProjHistMarkGrid(AdvCtx *actx)
 	fs = actx->fs;
 	jr = actx->jr;
 
-	// get number of cells
-	GET_CELL_RANGE(nx, sx, fs->dsx)
-	GET_CELL_RANGE(ny, sy, fs->dsy)
-	GET_CELL_RANGE(nz, sz, fs->dsz)
-
-	nCells = nx*ny*nz;
-
 	//======
 	// CELLS
 	//======
+
+	ierr = ADVInterpMarkCell(actx); CHKERRQ(ierr);
+
+	//======
+	// EDGES
+	//======
+
+	// NOTE: edge phase ratio computation algorithm is the worst possible.
+	// The xy, xz, yz edge points phase ratios are first computed locally,
+	// and then assembled separately for each phase. This step involves
+	// excessive communication, which is proportional to the number of phases.
+
+	// *****************************************
+	// SO PLEASE KEEP NUMBER OF PHASES MINIMIZED
+	// *****************************************
+
+	// compute edge phase ratios (consecutively)
+	for(ii = 0; ii < jr->numPhases; ii++)
+	{
+		ierr = ADVInterpMarkEdge(actx, ii, _PHASE_); CHKERRQ(ierr);
+	}
+
+	// normalize phase ratios
+	for(jj = 0; jj < fs->nXYEdg; jj++) jr->svXYEdge[jj].ws = normVect(jr->numPhases, jr->svXYEdge[jj].phRat);
+	for(jj = 0; jj < fs->nXZEdg; jj++) jr->svXZEdge[jj].ws = normVect(jr->numPhases, jr->svXZEdge[jj].phRat);
+	for(jj = 0; jj < fs->nYZEdg; jj++) jr->svYZEdge[jj].ws = normVect(jr->numPhases, jr->svYZEdge[jj].phRat);
+
+	// interpolate history stress to edges
+	ierr = ADVInterpMarkEdge(actx, 0, _STRESS_); CHKERRQ(ierr);
+
+	// interpolate plastic strain to edges
+	ierr = ADVInterpMarkEdge(actx, 0, _APS_); CHKERRQ(ierr);
+
+	PetscFunctionReturn(0);
+}
+//---------------------------------------------------------------------------
+#undef __FUNCT__
+#define __FUNCT__ "ADVInterpMarkCell"
+PetscErrorCode ADVInterpMarkCell(AdvCtx *actx)
+{
+	// marker-to-grid projection (cell nodes)
+
+	FDSTAG      *fs;
+	JacRes      *jr;
+	Marker      *P;
+	SolVarCell  *svCell;
+	PetscInt     ii, jj, ID, I, J, K;
+	PetscInt     nx, ny, nCells;
+	PetscScalar  xp, yp, zp, wxc, wyc, wzc, w;
+
+	PetscFunctionBegin;
+
+	fs = actx->fs;
+	jr = actx->jr;
+
+	// number of cells
+	nx     = fs->dsx.ncels;
+	ny     = fs->dsy.ncels;
+	nCells = fs->nCells;
 
 	// clear history variables
 	for(jj = 0; jj < nCells; jj++)
@@ -918,43 +976,139 @@ PetscErrorCode ADVProjHistMarkGrid(AdvCtx *actx)
 		svCell->hzz       /= w;
 	}
 
-	//======
-	// EDGES
-	//======
+	PetscFunctionReturn(0);
+}
+//---------------------------------------------------------------------------
+#undef __FUNCT__
+#define __FUNCT__ "ADVInterpMarkEdge"
+PetscErrorCode ADVInterpMarkEdge(AdvCtx *actx, PetscInt iphase, InterpCase icase)
+{
+	// marker-to-grid projection (edge nodes)
 
-	// NOTE: edge phase ratio computation algorithm is the worst possible.
-	// The xy, xz, yz edge points phase ratios are first computed locally,
-	// and then assembled separately for each phase. This step involves
-	// excessive communication, which is proportional to the number of phases.
+	FDSTAG      *fs;
+	JacRes      *jr;
+	Marker      *P;
+	PetscScalar  UPXY, UPXZ, UPYZ;
+	PetscInt     nx, ny, sx, sy, sz;
+	PetscInt     jj, ID, I, J, K, II, JJ, KK;
+	PetscScalar *gxy, *gxz, *gyz, ***lxy, ***lxz, ***lyz;
+	PetscScalar  xc, yc, zc, xp, yp, zp, wxc, wyc, wzc, wxn, wyn, wzn;
 
-	// initialize sum of interpolation weights
-	for(jj = 0; jj < fs->nXYEdg; jj++) jr->svXYEdge[jj].ws = 1.0;
-	for(jj = 0; jj < fs->nXZEdg; jj++) jr->svXZEdge[jj].ws = 1.0;
-	for(jj = 0; jj < fs->nYZEdg; jj++) jr->svYZEdge[jj].ws = 1.0;
+	PetscErrorCode ierr;
+	PetscFunctionBegin;
 
-	// define loop test for phase ratio calculation
-	#define _TEST_ if(P->phase != ii) continue;
+	fs = actx->fs;
+	jr = actx->jr;
 
-	// compute edge phase ratios (consecutively)
-	for(ii = 0; ii < jr->numPhases; ii++)
+	// starting indices & number of cells
+	sx = fs->dsx.pstart; nx = fs->dsx.ncels;
+	sy = fs->dsy.pstart; ny = fs->dsy.ncels;
+	sz = fs->dsz.pstart;
+
+	// clear local vectors
+	ierr = VecZeroEntries(jr->ldxy); CHKERRQ(ierr);
+	ierr = VecZeroEntries(jr->ldxz); CHKERRQ(ierr);
+	ierr = VecZeroEntries(jr->ldyz); CHKERRQ(ierr);
+
+	// access 3D layouts of local vectors
+	ierr = DMDAVecGetArray(fs->DA_XY, jr->ldxy, &lxy); CHKERRQ(ierr);
+	ierr = DMDAVecGetArray(fs->DA_XZ, jr->ldxz, &lxz); CHKERRQ(ierr);
+	ierr = DMDAVecGetArray(fs->DA_YZ, jr->ldyz, &lyz); CHKERRQ(ierr);
+
+	// set interpolated fields to defaults
+	UPXY = 1.0; UPXZ = 1.0; UPYZ = 1.0;
+
+	// scan ALL markers
+	for(jj = 0; jj < actx->nummark; jj++)
 	{
-		INTERP_MARKER_TO_EDGES(_TEST_, 1.0, 1.0, 1.0, phRat[ii])
+		// access next marker
+		P = &actx->markers[jj];
+
+		// perform phase ID test
+		if(icase == _PHASE_ && P->phase != iphase) continue;
+
+		// get consecutive index of the host cell
+		ID = actx->cellnum[jj];
+
+		// expand I, J, K cell indices
+		GET_CELL_IJK(ID, I, J, K, nx, ny)
+
+		// get marker coordinates
+		xp = P->X[0];
+		yp = P->X[1];
+		zp = P->X[2];
+
+		// get coordinates of cell center
+		xc = fs->dsx.ccoor[I];
+		yc = fs->dsy.ccoor[J];
+		zc = fs->dsz.ccoor[K];
+
+		// map marker on the control volumes of edge nodes
+		if(xp > xc) II = I+1; else II = I;
+		if(yp > yc) JJ = J+1; else JJ = J;
+		if(zp > zc) KK = K+1; else KK = K;
+
+//  WARINIG!
+//	MAKE SURE WHAT TO CALL HERE WEIGHT_POINT_CELL OR WEIGHT_POINT_NODE
+
+		// get interpolation weights in cell control volumes
+		wxc = WEIGHT_POINT_CELL(I, xp, fs->dsx);
+		wyc = WEIGHT_POINT_CELL(J, yp, fs->dsy);
+		wzc = WEIGHT_POINT_CELL(K, zp, fs->dsz);
+
+		// get interpolation weights in node control volumes
+		wxn = WEIGHT_POINT_NODE(II, xp, fs->dsx);
+		wyn = WEIGHT_POINT_NODE(JJ, yp, fs->dsy);
+		wzn = WEIGHT_POINT_NODE(KK, zp, fs->dsz);
+
+		if      (icase == _STRESS_) { UPXY = P->S.xy; UPXZ = P->S.xz; UPYZ = P->S.yz; }
+		else if (icase == _APS_)    { UPXY = P->APS;  UPXZ = P->APS;  UPYZ = P->APS;  }
+
+		// update required fields from marker to edge nodes
+		lxy[sz+K ][sy+JJ][sx+II] += wxn*wyn*wzc*UPXY;
+		lxz[sz+KK][sy+J ][sx+II] += wxn*wyc*wzn*UPXZ;
+		lyz[sz+KK][sy+JJ][sx+I ] += wxc*wyn*wzn*UPYZ;
 	}
 
-	// normalize phase ratios
-	for(jj = 0; jj < fs->nXYEdg; jj++) jr->svXYEdge[jj].ws = normVect(jr->numPhases, jr->svXYEdge[jj].phRat);
-	for(jj = 0; jj < fs->nXZEdg; jj++) jr->svXZEdge[jj].ws = normVect(jr->numPhases, jr->svXZEdge[jj].phRat);
-	for(jj = 0; jj < fs->nYZEdg; jj++) jr->svYZEdge[jj].ws = normVect(jr->numPhases, jr->svYZEdge[jj].phRat);
+	// restore access
+	ierr = DMDAVecRestoreArray(fs->DA_XY, jr->ldxy, &lxy); CHKERRQ(ierr);
+	ierr = DMDAVecRestoreArray(fs->DA_XZ, jr->ldxz, &lxz); CHKERRQ(ierr);
+	ierr = DMDAVecRestoreArray(fs->DA_YZ, jr->ldyz, &lyz); CHKERRQ(ierr);
 
-	// clear loop test
-	#undef  _TEST_
-	#define _TEST_
+	// assemble global vectors
+	LOCAL_TO_GLOBAL(fs->DA_XY, jr->ldxy, jr->gdxy)
+	LOCAL_TO_GLOBAL(fs->DA_XZ, jr->ldxz, jr->gdxz)
+	LOCAL_TO_GLOBAL(fs->DA_YZ, jr->ldyz, jr->gdyz)
 
-	// interpolate history stress to edges
-	INTERP_MARKER_TO_EDGES(_TEST_, P->S.xy, P->S.xz, P->S.yz, h)
+	// access 1D layouts of global vectors
+	ierr = VecGetArray(jr->gdxy, &gxy);  CHKERRQ(ierr);
+	ierr = VecGetArray(jr->gdxz, &gxz);  CHKERRQ(ierr);
+	ierr = VecGetArray(jr->gdyz, &gyz);  CHKERRQ(ierr);
 
-	// interpolate plastic strain to edges
-	INTERP_MARKER_TO_EDGES(_TEST_, P->APS, P->APS, P->APS, svDev.APS)
+	// copy (normalized) data to the residual context
+	if(icase == _PHASE_)
+	{
+		for(jj = 0; jj < fs->nXYEdg; jj++) jr->svXYEdge[jj].phRat[iphase] = gxy[jj];
+		for(jj = 0; jj < fs->nXZEdg; jj++) jr->svXZEdge[jj].phRat[iphase] = gxz[jj];
+		for(jj = 0; jj < fs->nYZEdg; jj++) jr->svYZEdge[jj].phRat[iphase] = gyz[jj];
+	}
+	else if(icase == _STRESS_)
+	{
+		for(jj = 0; jj < fs->nXYEdg; jj++) jr->svXYEdge[jj].h = gxy[jj]/jr->svXYEdge[jj].ws;
+		for(jj = 0; jj < fs->nXZEdg; jj++) jr->svXZEdge[jj].h = gxz[jj]/jr->svXZEdge[jj].ws;
+		for(jj = 0; jj < fs->nYZEdg; jj++) jr->svYZEdge[jj].h = gyz[jj]/jr->svYZEdge[jj].ws;
+	}
+	else if(icase == _APS_)
+	{
+		for(jj = 0; jj < fs->nXYEdg; jj++) jr->svXYEdge[jj].svDev.APS = gxy[jj]/jr->svXYEdge[jj].ws;
+		for(jj = 0; jj < fs->nXZEdg; jj++) jr->svXZEdge[jj].svDev.APS = gxz[jj]/jr->svXZEdge[jj].ws;
+		for(jj = 0; jj < fs->nYZEdg; jj++) jr->svYZEdge[jj].svDev.APS = gyz[jj]/jr->svYZEdge[jj].ws;
+	}
+
+	// restore access
+	ierr = VecRestoreArray(jr->gdxy, &gxy); CHKERRQ(ierr);
+	ierr = VecRestoreArray(jr->gdxz, &gxz); CHKERRQ(ierr);
+	ierr = VecRestoreArray(jr->gdyz, &gyz); CHKERRQ(ierr);
 
 	PetscFunctionReturn(0);
 }

@@ -7,9 +7,9 @@
 #    * number of cells                                    (n points)
 #    * bias coefficients                                  (n points) 
 
-nel_x						=   32    
-nel_y						= 	32    
-nel_z						= 	32
+nel_x						=   16    
+nel_y						= 	16    
+nel_z						= 	16
 
  
 #nel_x						=	-3    
@@ -90,8 +90,8 @@ FactorSurfaceLayer			= 		0.3 		# How thick is the surface layer (if option 2 is 
 
 # Stokes Preconditioner
 #	-pstokes al
-#	-pstokes bf
-	-pstokes mg
+	-pstokes bf
+#	-pstokes mg
 
 # Augmented Lagrangian
 	-pgamma 1e3
@@ -101,6 +101,7 @@ FactorSurfaceLayer			= 		0.3 		# How thick is the surface layer (if option 2 is 
 
 # Block Factorization
 
+	-bf_pc_view
 	-velgmg
 	
 	# block upper triangular preconditioner
@@ -129,15 +130,16 @@ FactorSurfaceLayer			= 		0.3 		# How thick is the surface layer (if option 2 is 
 
 # MULTIGRID
 
+	-gmg_pc_view
 	-gmg_pc_type mg
 	-gmg_pc_mg_levels 3
 	-gmg_pc_mg_galerkin
-	-gmg_pc_mg_type additive
+	-gmg_pc_mg_type multiplicative
 	-gmg_pc_mg_cycle_type v
 
 	-gmg_mg_levels_ksp_type richardson
 	-gmg_mg_levels_ksp_richardson_scale 0.5
-	-gmg_mg_levels_ksp_max_it 15
+	-gmg_mg_levels_ksp_max_it 20
 	-gmg_mg_levels_pc_type jacobi
 
 # COARSE SOLVER

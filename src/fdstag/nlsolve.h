@@ -11,16 +11,16 @@ typedef enum
 	//===================
 	// assembled matrices
 	//===================
-	PICARD,   // constant effective coefficients approximation (viscosity, conductivity, stress)
-//	FDCOLOR,  // finite difference coloring approximation with full sparsity pattern
-//	ANALYTIC, // analytic Jacobian with full sparsity pattern
-//	APPROX,   // analytic Jacobian truncated to Picard sparsity pattern (possibly with diagonal compensation)
-//	FDAPPROX, // finite difference coloring approximation truncated to Picard sparsity pattern
+	_PICARD_,   // constant effective coefficients approximation (viscosity, conductivity, stress)
+//	_FDCOLOR_,  // finite difference coloring approximation with full sparsity pattern
+//	_ANALYTIC_, // analytic Jacobian with full sparsity pattern
+//	_APPROX_,   // analytic Jacobian truncated to Picard sparsity pattern (possibly with diagonal compensation)
+//	_FDAPPROX_, // finite difference coloring approximation truncated to Picard sparsity pattern
 	//============
 	// matrix-free
 	//============
-	MF,  // analytic
-	MFFD // built-in finite difference approximation
+	_MF_,  // analytic
+	_MFFD_ // built-in finite difference approximation
 
 } JacType;
 
