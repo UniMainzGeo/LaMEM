@@ -11,6 +11,19 @@
 #include "matrix.h"
 #include "lsolve.h"
 //---------------------------------------------------------------------------
+// * get rid of AL (as this is a special case of block upper triangular with penalty)
+// * get rid of fieldsplit + matnest (just implement block upper triangular)
+// * add penalty terms to matrix types (block/monolithic)
+// * matrix type (block/monolithic) and penalty should be a parameter
+// * implement Picard Jacobian as a function defined in matrix structure
+// * properly implement Picard Jacobian if penalty is added (as this is screwed up now)
+// * ideally bf & mg should be PETSc preconditioners
+// * preallocation for Stokes restriction/interpolation
+// * restriction/interpolation for FDSTG Laplacian (temperature, Schur complement approximation)
+// * adding ones to diagonal (PCSetUp) ???
+// * near null space for Stokes
+//---------------------------------------------------------------------------
+
 #undef __FUNCT__
 #define __FUNCT__ "PCStokesSetFromOptions"
 PetscErrorCode PCStokesSetFromOptions(PCStokes pc)
@@ -51,7 +64,7 @@ PetscErrorCode PCStokesCreate(PCStokes *p_pc, JacRes *jr)
 	ierr = PetscMalloc(sizeof(p_PCStokes), &pc); CHKERRQ(ierr);
 
 	// clear object
-	ierr = PetscMemzero(&pc, sizeof(p_PCStokes)); CHKERRQ(ierr);
+	ierr = PetscMemzero(pc, sizeof(p_PCStokes)); CHKERRQ(ierr);
 
 	// set type
 	ierr = PCStokesSetFromOptions(pc); CHKERRQ(ierr);
