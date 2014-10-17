@@ -57,23 +57,6 @@ Anton, please add a few comments
 
 #END_DOC#
 */
-
-//-----------------------------------------------------------------------------
-#define InterpLin3D(v, lv, i, j, k, cx, cy, cz) \
-	/* get relative coordinates */ \
-	xe = (xp - cx[i])/(cx[i+1] - cx[i]); xb = 1.0 - xe; \
-	ye = (yp - cy[j])/(cy[j+1] - cy[j]); yb = 1.0 - ye; \
-	ze = (zp - cz[k])/(cz[k+1] - cz[k]); zb = 1.0 - ze; \
-	/* interpolate & return result */ \
-	v = \
-	lv[sz+k  ][sy+j  ][sx+i  ]*xb*yb*zb + \
-	lv[sz+k  ][sy+j  ][sx+i+1]*xe*yb*zb + \
-	lv[sz+k  ][sy+j+1][sx+i  ]*xb*ye*zb + \
-	lv[sz+k  ][sy+j+1][sx+i+1]*xe*ye*zb + \
-	lv[sz+k+1][sy+j  ][sx+i  ]*xb*yb*ze + \
-	lv[sz+k+1][sy+j  ][sx+i+1]*xe*yb*ze + \
-	lv[sz+k+1][sy+j+1][sx+i  ]*xb*ye*ze + \
-	lv[sz+k+1][sy+j+1][sx+i+1]*xe*ye*ze;
 //---------------------------------------------------------------------------
 #undef __FUNCT__
 #define __FUNCT__ "ADVCreate"
@@ -154,8 +137,8 @@ PetscErrorCode ADVDestroy(AdvCtx *actx)
 }
 //---------------------------------------------------------------------------
 #undef __FUNCT__
-#define __FUNCT__ "ADVReAllocateStorage"
-PetscErrorCode ADVReAllocateStorage(AdvCtx *actx, PetscInt nummark)
+#define __FUNCT__ "ADVReAllocStorage"
+PetscErrorCode ADVReAllocStorage(AdvCtx *actx, PetscInt nummark)
 {
 	// WARNING! This is a very crappy approach. Make sure the overhead is
 	// large enough to prevent memory reallocations. Do marker management
@@ -218,51 +201,93 @@ PetscErrorCode ADVAdvect(AdvCtx *actx)
 	PetscFunctionBegin;
 
 	// project history INCREMENTS from grid to markers
-	ierr = ADVProjHistGridMark(actx); CHKERRQ(ierr);
-
-	// compute current vorticity field
-	ierr = JacResGetVorticity(actx->jr); CHKERRQ(ierr);
+	ierr = ADVProjHistGridToMark(actx); CHKERRQ(ierr);
 
 	// advect markers (Forward Euler)
-//	ierr = ADVAdvectMarkers(actx); CHKERRQ(ierr);
+	ierr = ADVAdvectMark(actx); CHKERRQ(ierr);
 
-	// count number of markers to be sent to each neighbor domain
-	ierr = ADVMapMarkersDomains(actx); CHKERRQ(ierr);
+	// exchange markers between the processors
+	ierr = ADVExchange(actx); CHKERRQ(ierr);
 
-	// communicate number of markers with neighbor processes
-	ierr = ADVExchangeNumMarkers(actx); CHKERRQ(ierr);
-
-	// create send and receive buffers for asynchronous MPI communication
-	ierr = ADVCreateMPIBuffer(actx); CHKERRQ(ierr);
-
-	// communicate markers with neighbor processes
-	ierr = ADVExchangeMarkers(actx); CHKERRQ(ierr);
-
-	// store received markers, collect garbage
-	ierr = ADVCollectGarbage(actx); CHKERRQ(ierr);
-
-	// free communication buffer
-	ierr = ADVDestroyMPIBuffer(actx); CHKERRQ(ierr);
-
-	// compute host cells for all the markers received
-	ierr = ADVMapMarkersCells(actx); CHKERRQ(ierr);
-
-	// project advected history from markers to grid
-	ierr = ADVProjHistMarkGrid(actx); CHKERRQ(ierr);
+	// project advected history from markers back to grid
+	ierr = ADVProjHistMarkToGrid(actx); CHKERRQ(ierr);
 
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
 #undef __FUNCT__
-#define __FUNCT__ "ADVProjHistGridMark"
-PetscErrorCode ADVProjHistGridMark(AdvCtx *actx)
+#define __FUNCT__ "ADVExchange"
+PetscErrorCode ADVExchange(AdvCtx *actx)
+{
+	// exchange markers between the processors resulting from the position change
+
+	PetscErrorCode ierr;
+	PetscFunctionBegin;
+
+	// count number of markers to be sent to each neighbor domain
+	ierr = ADVMapMarkToDomains(actx); CHKERRQ(ierr);
+
+	// communicate number of markers with neighbor processes
+	ierr = ADVExchangeNumMark(actx); CHKERRQ(ierr);
+
+	// create send and receive buffers for asynchronous MPI communication
+	ierr = ADVCreateMPIBuff(actx); CHKERRQ(ierr);
+
+	// communicate markers with neighbor processes
+	ierr = ADVExchangeMark(actx); CHKERRQ(ierr);
+
+	// store received markers, collect garbage
+	ierr = ADVCollectGarbage(actx); CHKERRQ(ierr);
+
+	// free communication buffer
+	ierr = ADVDestroyMPIBuff(actx); CHKERRQ(ierr);
+
+	// compute host cells for all the markers received
+	ierr = ADVMapMarkToCells(actx); CHKERRQ(ierr);
+
+	PetscFunctionReturn(0);
+}
+//---------------------------------------------------------------------------
+#undef __FUNCT__
+#define __FUNCT__ "ADVProjHistGridToMark"
+PetscErrorCode ADVProjHistGridToMark(AdvCtx *actx)
 {
 
 	// project history INCREMENTS from grid to markers
 
+	PetscErrorCode ierr;
+	PetscFunctionBegin;
+
+	ierr = ADVInterpFieldToMark(actx, _APS_);       CHKERRQ(ierr);
+
+	ierr = ADVInterpFieldToMark(actx, _STRESS_);    CHKERRQ(ierr);
+
+	ierr = ADVInterpFieldToMark(actx, _VORTICITY_); CHKERRQ(ierr);
+
+	PetscFunctionReturn(0);
+}
+//---------------------------------------------------------------------------
+#undef __FUNCT__
+#define __FUNCT__ "ADVInterpFieldToMark"
+PetscErrorCode ADVInterpFieldToMark(AdvCtx *actx, InterpCase icase)
+{
+	//=======================================================================
+	// interpolate increments of a history field to markers
+	//
+	// WARNING! vorticity case MUST be called after stress case (rotation)
+	//=======================================================================
+
 	FDSTAG      *fs;
 	JacRes      *jr;
 	Marker      *P;
+	Tensor2RN    R;
+	Tensor2RS    SR;
+	SolVarCell  *svCell;
+	PetscScalar  UPXY, UPXZ, UPYZ;
+	PetscInt     nx, ny, sx, sy, sz;
+	PetscInt     jj, ID, I, J, K, II, JJ, KK;
+	PetscScalar *gxy, *gxz, *gyz, ***lxy, ***lxz, ***lyz;
+	PetscScalar  xc, yc, zc, xp, yp, zp, wx, wy, wz, dt;
 
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
@@ -270,102 +295,149 @@ PetscErrorCode ADVProjHistGridMark(AdvCtx *actx)
 	fs = actx->fs;
 	jr = actx->jr;
 
+	// current time step
+	dt = jr->dt;
 
-	// velocity
-	// vorticity
-	// pressure
-	// temperature
-	// deviatorc stress
-	// accumulated plastic strain
+	// starting indices & number of cells
+	sx = fs->dsx.pstart; nx = fs->dsx.ncels;
+	sy = fs->dsy.pstart; ny = fs->dsy.ncels;
+	sz = fs->dsz.pstart;
 
+	// copy history increments into edge buffers
+	if(icase == _VORTICITY_)
+	{
+		// compute current vorticity field
+		ierr = JacResGetResidual(jr); CHKERRQ(ierr);
+	}
+	else
+	{
+		// access 1D layouts of global vectors
+		ierr = VecGetArray(jr->gdxy, &gxy);  CHKERRQ(ierr);
+		ierr = VecGetArray(jr->gdxz, &gxz);  CHKERRQ(ierr);
+		ierr = VecGetArray(jr->gdyz, &gyz);  CHKERRQ(ierr);
 
-//	ADVInterpCellMark (All fields except vorticity. Single call)
-//	ADVInterpEdgeMark (Interpolates deviatoric stress, vorticity, APS. Multiple calls due to single buffer. Single filed per call.)
+		if(icase == _STRESS_)
+		{
+			for(jj = 0; jj < fs->nXYEdg; jj++) gxy[jj] = jr->svXYEdge[jj].s - jr->svXYEdge[jj].h;
+			for(jj = 0; jj < fs->nXZEdg; jj++) gxz[jj] = jr->svXZEdge[jj].s - jr->svXZEdge[jj].h;
+			for(jj = 0; jj < fs->nYZEdg; jj++) gyz[jj] = jr->svYZEdge[jj].s - jr->svYZEdge[jj].h;
+		}
+		else if(icase == _APS_)
+		{
+			for(jj = 0; jj < fs->nXYEdg; jj++) gxy[jj] = jr->svXYEdge[jj].svDev.PSR;
+			for(jj = 0; jj < fs->nXZEdg; jj++) gxz[jj] = jr->svXZEdge[jj].svDev.PSR;
+			for(jj = 0; jj < fs->nYZEdg; jj++) gyz[jj] = jr->svYZEdge[jj].svDev.PSR;
+		}
 
+		// restore access
+		ierr = VecRestoreArray(jr->gdxy, &gxy); CHKERRQ(ierr);
+		ierr = VecRestoreArray(jr->gdxz, &gxz); CHKERRQ(ierr);
+		ierr = VecRestoreArray(jr->gdyz, &gyz); CHKERRQ(ierr);
 
+		// communicate boundary values
+		GLOBAL_TO_LOCAL(fs->DA_XY, jr->gdxy, jr->ldxy);
+		GLOBAL_TO_LOCAL(fs->DA_XZ, jr->gdxz, jr->ldxz);
+		GLOBAL_TO_LOCAL(fs->DA_YZ, jr->gdyz, jr->ldyz);
+	}
 
-/*
-	PetscScalar p;     // pressure         -> from center
-	PetscScalar T;     // temperature      -> from center
-	PetscScalar APS;   // accumulated plastic strain -> joined from center and edges
-	Tensor2RS   s;     // deviatoric stress          -> joined from center and edges
-*/
+	// access 3D layouts of local vectors
+	ierr = DMDAVecGetArray(fs->DA_XY, jr->ldxy, &lxy); CHKERRQ(ierr);
+	ierr = DMDAVecGetArray(fs->DA_XZ, jr->ldxz, &lxz); CHKERRQ(ierr);
+	ierr = DMDAVecGetArray(fs->DA_YZ, jr->ldyz, &lyz); CHKERRQ(ierr);
 
+	// scan ALL markers
+	for(jj = 0; jj < actx->nummark; jj++)
+	{
+		// access next marker
+		P = &actx->markers[jj];
+
+		// get consecutive index of the host cell
+		ID = actx->cellnum[jj];
+
+		// expand I, J, K cell indices
+		GET_CELL_IJK(ID, I, J, K, nx, ny)
+
+		// get marker coordinates
+		xp = P->X[0];
+		yp = P->X[1];
+		zp = P->X[2];
+
+		// get coordinates of cell center
+		xc = fs->dsx.ccoor[I];
+		yc = fs->dsy.ccoor[J];
+		zc = fs->dsz.ccoor[K];
+
+		// map marker on the control volumes of edge nodes
+		if(xp > xc) II = I+1; else II = I;
+		if(yp > yc) JJ = J+1; else JJ = J;
+		if(zp > zc) KK = K+1; else KK = K;
+
+		// access buffer
+		UPXY = lxy[sz+K ][sy+JJ][sx+II];
+		UPXZ = lxz[sz+KK][sy+J ][sx+II];
+		UPYZ = lyz[sz+KK][sy+JJ][sx+I ];
+
+		// access host cell solution variables
+		svCell = &jr->svCell[ID];
+
+		// update history fields on markers
+		if(icase == _STRESS_)
+		{
+			P->S.xx += svCell->sxx - svCell->hxx;
+			P->S.yy += svCell->syy - svCell->hyy;
+			P->S.zz += svCell->szz - svCell->hzz;
+			P->S.xy += UPXY;
+			P->S.xz += UPXZ;
+			P->S.yz += UPYZ;
+		}
+		else if(icase == _APS_)
+		{
+			P->APS += dt*sqrt(svCell->svDev.PSR + UPXY + UPXZ + UPYZ);
+		}
+		else if(icase == _VORTICITY_)
+		{
+			// interpret vorticity components
+			wx = UPYZ;
+			wy = UPXZ;
+			wz = UPXY;
+
+			// compute rotation matrix from local vorticity field
+			GetRotationMatrix(&R, dt, wx, wy, wz);
+
+			// rotate history stress
+			RotateStress(&R, &P->S, &SR);
+
+			// store rotated stress on the marker
+			Tensor2RSCopy(&SR, &P->S);
+		}
+	}
+
+	// restore access
+	ierr = DMDAVecRestoreArray(fs->DA_XY, jr->ldxy, &lxy); CHKERRQ(ierr);
+	ierr = DMDAVecRestoreArray(fs->DA_XZ, jr->ldxz, &lxz); CHKERRQ(ierr);
+	ierr = DMDAVecRestoreArray(fs->DA_YZ, jr->ldyz, &lyz); CHKERRQ(ierr);
 
 	PetscFunctionReturn(0);
 }
-
-#undef __FUNCT__
-#define __FUNCT__ "ADVInterpCellMark"
-PetscErrorCode ADVInterpCellMark(AdvCtx *actx)
-{
-
-	PetscErrorCode ierr;
-	PetscFunctionBegin;
-
-	// Interpolates:
-	//
-	//   * deviatoric stress (edge components)
-	//   * plastic strain rate (edge contributions)
-	//   * vorticity
-	//
-	// Multiple calls due to single buffer / single field per call
-	// All calls must precede a call to ADVInterpCellMark
-
-
-//ADVInterpCellMark (All fields except vorticity. Single call)
-	PetscFunctionReturn(0);
-
-}
-
 //---------------------------------------------------------------------------
 #undef __FUNCT__
-#define __FUNCT__ "ADVInterpEdgeMark"
-PetscErrorCode ADVInterpEdgeMark(AdvCtx *actx)
-{
-	// Interpolates:
-	//
-	//   * deviatoric stress (edge components)
-	//   * plastic strain rate (edge contributions)
-	//   * vorticity (c)
-	//
-	// Multiple calls due to single buffer / single field per call
-
-	PetscErrorCode ierr;
-	PetscFunctionBegin;
-
-	PetscFunctionReturn(0);
-}
-//---------------------------------------------------------------------------
-
-
-
-
-/*
-#undef __FUNCT__
-#define __FUNCT__ "ADVAdvectMarkers"
-PetscErrorCode ADVAdvectMarkers(AdvCtx *actx)
+#define __FUNCT__ "ADVAdvectMark"
+PetscErrorCode ADVAdvectMark(AdvCtx *actx)
 {
 	// update marker positions from current velocities & time step
-	// rotate history stresses in the local vorticity field
-	// integrate accumulated plastic strain (total strain, displacements, etc)
 	// WARNING! Forward Euler Explicit algorithm
 	// (need to implement more accurate schemes)
-
 
 	FDSTAG      *fs;
 	JacRes      *jr;
 	Marker      *P;
-	Tensor2RN   R;
-	Tensor2RS   SR;
+	SolVarCell  *svCell;
 	PetscInt    sx, sy, sz, nx, ny;
 	PetscInt    jj, ID, I, J, K, JI, KI, IJ, KJ, IK, JK;
 	PetscScalar *ncx, *ncy, *ncz;
 	PetscScalar *ccx, *ccy, *ccz;
-	PetscScalar ***lvx, ***lvy, ***lvz;
-	PetscScalar ***lwx, ***lwy, ***lwz;
-	PetscScalar xb, yb, zb, xe, ye, ze;
-	PetscScalar vx, vy, vz, wx, wy, wz, xc, yc, zc, xp, yp, zp, dt;
+	PetscScalar ***lvx, ***lvy, ***lvz, ***lp, ***lT;
+	PetscScalar vx, vy, vz, p, T, xc, yc, zc, xp, yp, zp, dt;
 
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
@@ -373,6 +445,9 @@ PetscErrorCode ADVAdvectMarkers(AdvCtx *actx)
 	// access context
 	fs = actx->fs;
 	jr = actx->jr;
+
+	// current time step
+	dt = jr->dt;
 
 	// starting indices & number of cells
 	sx = fs->dsx.pstart; nx = fs->dsx.ncels;
@@ -384,18 +459,12 @@ PetscErrorCode ADVAdvectMarkers(AdvCtx *actx)
 	ncy = fs->dsy.ncoor; ccy = fs->dsy.ccoor;
 	ncz = fs->dsz.ncoor; ccz = fs->dsz.ccoor;
 
-	// current time step
-	dt = jr->dt;
-
-	// access velocity vectors
-	ierr = DMDAVecGetArray(fs->DA_X, jr->lvx, &lvx); CHKERRQ(ierr);
-	ierr = DMDAVecGetArray(fs->DA_Y, jr->lvy, &lvy); CHKERRQ(ierr);
-	ierr = DMDAVecGetArray(fs->DA_Z, jr->lvz, &lvz); CHKERRQ(ierr);
-
-	// access vorticity vectors
-	ierr = DMDAVecGetArray(fs->DA_XY, jr->ldxy, &lwz); CHKERRQ(ierr);
-	ierr = DMDAVecGetArray(fs->DA_XZ, jr->ldxz, &lwy); CHKERRQ(ierr);
-	ierr = DMDAVecGetArray(fs->DA_YZ, jr->ldyz, &lwx); CHKERRQ(ierr);
+	// access velocity, pressure & temperature vectors
+	ierr = DMDAVecGetArray(fs->DA_X,   jr->lvx, &lvx); CHKERRQ(ierr);
+	ierr = DMDAVecGetArray(fs->DA_Y,   jr->lvy, &lvy); CHKERRQ(ierr);
+	ierr = DMDAVecGetArray(fs->DA_Z,   jr->lvz, &lvz); CHKERRQ(ierr);
+	ierr = DMDAVecGetArray(fs->DA_CEN, jr->lp,  &lp);  CHKERRQ(ierr);
+	ierr = DMDAVecGetArray(fs->DA_CEN, jr->lT,  &lT);  CHKERRQ(ierr);
 
 	// scan all markers
 	for(jj = 0; jj < actx->nummark; jj++)
@@ -419,75 +488,48 @@ PetscErrorCode ADVAdvectMarkers(AdvCtx *actx)
 		yc = ccy[J];
 		zc = ccz[K];
 
-		// map marker on the cells of X, Y, Z grids
+		// map marker on the cells of X, Y, Z & center grids
 		if(xp > xc) { IJ = IK = I; } else { IJ = IK = I-1; }
 		if(yp > yc) { JI = JK = J; } else { JI = JK = J-1; }
 		if(zp > zc) { KI = KJ = K; } else { KI = KJ = K-1; }
 
-		// interpolate velocities form the cells of X, Y, Z grids
-		InterpLin3D(vx, lvx, I,  JI, KI, ncx, ccy, ccz)
-		InterpLin3D(vy, lvy, IJ, J,  KJ, ccx, ncy, ccz)
-		InterpLin3D(vz, lvz, IK, JK, K,  ccx, ccy, ncz)
+		// interpolate velocity, pressure & temperature
+		vx = InterpLin3D(lvx, I,  JI, KI, sx, sy, sz, xp, yp, zp, ncx, ccy, ccz);
+		vy = InterpLin3D(lvy, IJ, J,  KJ, sx, sy, sz, xp, yp, zp, ccx, ncy, ccz);
+		vz = InterpLin3D(lvz, IK, JK, K,  sx, sy, sz, xp, yp, zp, ccx, ccy, ncz);
+		p  = InterpLin3D(lp,  I,  J,  K,  sx, sy, sz, xp, yp, zp, ccx, ccy, ccz);
+		T  = InterpLin3D(lT,  I,  J,  K,  sx, sy, sz, xp, yp, zp, ccx, ccy, ccz);
 
+//		InterpLin3D(vx, lvx, I,  JI, KI, ncx, ccy, ccz)
+//		InterpLin3D(vy, lvy, IJ, J,  KJ, ccx, ncy, ccz)
+//		InterpLin3D(vz, lvz, IK, JK, K,  ccx, ccy, ncz)
 
+		// access host cell solution variables
+		svCell = &jr->svCell[ID];
 
-		// map marker on the control volumes of edge nodes
-		if(xp > xc) In = I+1; else In = I;
-		if(yp > yc) Jn = J+1; else Jn = J;
-		if(zp > zc) Kn = K+1; else Kn = K;
-
-		// get vorticity components \
-		lxy[Kc+sz][Jn+sy][In+sx] += wxn*wyn*wzc*_UPXY_; \
-		lxz[Kn+sz][Jc+sy][In+sx] += wxn*wyc*wzn*_UPXZ_; \
-		lyz[Kn+sz][Jn+sy][Ic+sx] += wxc*wyn*wzn*_UPYZ_; \
-
-
-		wx = wy = wz = 0.0;
+		// update pressure & temperature variables
+		P->p += p - svCell->svBulk.pn;
+		P->T += T - svCell->svBulk.Tn;
 
 		// advect marker
 		P->X[0] = xp + vx*dt;
 		P->X[1] = yp + vy*dt;
 		P->X[2] = zp + vz*dt;
-
-		// integrate accumulated plastic strain
-
-		typedef struct
-		{
-			PetscScalar  DII;   // effective strain rate
-			PetscScalar  eta;   // effective tangent viscosity
-			PetscScalar  I2Gdt; // inverse elastic viscosity (1/2G/dt)
-			PetscScalar  Hr;    // shear heating term (partial)
-			PetscScalar  DIIpl; // plastic strain rate
-			PetscScalar  APS;   // accumulated plastic strain
-			PetscScalar  PSR;   // plastic strain-rate contribution
-
-		} SolVarDev;
-
-		// compute rotation matrix from local vorticity field
-		GetRotationMatrix(&R, dt, wx, wy, wz);
-
-		// rotate history stress
-		RotateStress(&R, &P->S, &SR);
-
-		// store advected/rotated stress on the marker
-		Tensor2RSCopy(&SR, &P->S);
 	}
 
 	// restore access
-	ierr = DMDAVecRestoreArray(fs->DA_X,  jr->lvx,  &lvx); CHKERRQ(ierr);
-	ierr = DMDAVecRestoreArray(fs->DA_Y,  jr->lvy,  &lvy); CHKERRQ(ierr);
-	ierr = DMDAVecRestoreArray(fs->DA_Z,  jr->lvz,  &lvz); CHKERRQ(ierr);
-	ierr = DMDAVecRestoreArray(fs->DA_XY, jr->ldxy, &lwz); CHKERRQ(ierr);
-	ierr = DMDAVecRestoreArray(fs->DA_XZ, jr->ldxz, &lwy); CHKERRQ(ierr);
-	ierr = DMDAVecRestoreArray(fs->DA_YZ, jr->ldyz, &lwx); CHKERRQ(ierr);
+	ierr = DMDAVecRestoreArray(fs->DA_X,   jr->lvx, &lvx); CHKERRQ(ierr);
+	ierr = DMDAVecRestoreArray(fs->DA_Y,   jr->lvy, &lvy); CHKERRQ(ierr);
+	ierr = DMDAVecRestoreArray(fs->DA_Z,   jr->lvz, &lvz); CHKERRQ(ierr);
+	ierr = DMDAVecRestoreArray(fs->DA_CEN, jr->lp,  &lp);  CHKERRQ(ierr);
+	ierr = DMDAVecRestoreArray(fs->DA_CEN, jr->lT,  &lT);  CHKERRQ(ierr);
 
 	PetscFunctionReturn(0);
 }
-*/
 //---------------------------------------------------------------------------
 #undef __FUNCT__
-#define __FUNCT__ "ADVMapMarkersDomains"
-PetscErrorCode ADVMapMarkersDomains(AdvCtx *actx)
+#define __FUNCT__ "ADVMapMarkToDomains"
+PetscErrorCode ADVMapMarkToDomains(AdvCtx *actx)
 {
 	// count number of markers to be sent to each neighbor domain
 
@@ -535,8 +577,8 @@ PetscErrorCode ADVMapMarkersDomains(AdvCtx *actx)
 }
 //---------------------------------------------------------------------------
 #undef __FUNCT__
-#define __FUNCT__ "ADVExchangeNumMarkers"
-PetscErrorCode ADVExchangeNumMarkers(AdvCtx *actx)
+#define __FUNCT__ "ADVExchangeNumMark"
+PetscErrorCode ADVExchangeNumMark(AdvCtx *actx)
 {
 	// communicate number of markers with neighbor processes
 	FDSTAG     *fs;
@@ -583,8 +625,8 @@ PetscErrorCode ADVExchangeNumMarkers(AdvCtx *actx)
 }
 //---------------------------------------------------------------------------
 #undef __FUNCT__
-#define __FUNCT__ "ADVCreateMPIBuffer"
-PetscErrorCode ADVCreateMPIBuffer(AdvCtx *actx)
+#define __FUNCT__ "ADVCreateMPIBuff"
+PetscErrorCode ADVCreateMPIBuff(AdvCtx *actx)
 {
 	// create send and receive buffers for asynchronous MPI communication
 
@@ -642,8 +684,8 @@ PetscErrorCode ADVCreateMPIBuffer(AdvCtx *actx)
 }
 //---------------------------------------------------------------------------
 #undef __FUNCT__
-#define __FUNCT__ "ADVExchangeMarkers"
-PetscErrorCode ADVExchangeMarkers(AdvCtx *actx)
+#define __FUNCT__ "ADVExchangeMark"
+PetscErrorCode ADVExchangeMark(AdvCtx *actx)
 {
 	// communicate markers with neighbor processes
 	FDSTAG     *fs;
@@ -694,8 +736,8 @@ PetscErrorCode ADVExchangeMarkers(AdvCtx *actx)
 }
 //---------------------------------------------------------------------------
 #undef __FUNCT__
-#define __FUNCT__ "ADVDestroyMPIBuffer"
-PetscErrorCode ADVDestroyMPIBuffer(AdvCtx *actx)
+#define __FUNCT__ "ADVDestroyMPIBuff"
+PetscErrorCode ADVDestroyMPIBuff(AdvCtx *actx)
 {
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
@@ -741,7 +783,7 @@ PetscErrorCode ADVCollectGarbage(AdvCtx *actx)
 	if(nrecv)
 	{
 		// make sure space is enough
-		ierr = ADVReAllocateStorage(actx, nummark + nrecv); CHKERRQ(ierr);
+		ierr = ADVReAllocStorage(actx, nummark + nrecv); CHKERRQ(ierr);
 
 		// make sure we have a correct storage pointer
 		markers = actx->markers;
@@ -775,8 +817,8 @@ PetscErrorCode ADVCollectGarbage(AdvCtx *actx)
 }
 //-----------------------------------------------------------------------------
 #undef __FUNCT__
-#define __FUNCT__ "ADVMapMarkersCells"
-PetscErrorCode ADVMapMarkersCells(AdvCtx *actx)
+#define __FUNCT__ "ADVMapMarkToCells"
+PetscErrorCode ADVMapMarkToCells(AdvCtx *actx)
 {
 	// computes local numbers of the host cells containing markers
 	// NOTE: this routine MUST be called for the local markers only
@@ -815,8 +857,8 @@ PetscErrorCode ADVMapMarkersCells(AdvCtx *actx)
 }
 //-----------------------------------------------------------------------------
 #undef __FUNCT__
-#define __FUNCT__ "ADVProjHistMarkGrid"
-PetscErrorCode ADVProjHistMarkGrid(AdvCtx *actx)
+#define __FUNCT__ "ADVProjHistMarkToGrid"
+PetscErrorCode ADVProjHistMarkToGrid(AdvCtx *actx)
 {
 	// Project the following history fields from markers to grid:
 
@@ -840,7 +882,7 @@ PetscErrorCode ADVProjHistMarkGrid(AdvCtx *actx)
 	// CELLS
 	//======
 
-	ierr = ADVInterpMarkCell(actx); CHKERRQ(ierr);
+	ierr = ADVInterpMarkToCell(actx); CHKERRQ(ierr);
 
 	//======
 	// EDGES
@@ -858,7 +900,7 @@ PetscErrorCode ADVProjHistMarkGrid(AdvCtx *actx)
 	// compute edge phase ratios (consecutively)
 	for(ii = 0; ii < jr->numPhases; ii++)
 	{
-		ierr = ADVInterpMarkEdge(actx, ii, _PHASE_); CHKERRQ(ierr);
+		ierr = ADVInterpMarkToEdge(actx, ii, _PHASE_); CHKERRQ(ierr);
 	}
 
 	// normalize phase ratios
@@ -867,17 +909,17 @@ PetscErrorCode ADVProjHistMarkGrid(AdvCtx *actx)
 	for(jj = 0; jj < fs->nYZEdg; jj++) jr->svYZEdge[jj].ws = normVect(jr->numPhases, jr->svYZEdge[jj].phRat);
 
 	// interpolate history stress to edges
-	ierr = ADVInterpMarkEdge(actx, 0, _STRESS_); CHKERRQ(ierr);
+	ierr = ADVInterpMarkToEdge(actx, 0, _STRESS_); CHKERRQ(ierr);
 
 	// interpolate plastic strain to edges
-	ierr = ADVInterpMarkEdge(actx, 0, _APS_); CHKERRQ(ierr);
+	ierr = ADVInterpMarkToEdge(actx, 0, _APS_); CHKERRQ(ierr);
 
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
 #undef __FUNCT__
-#define __FUNCT__ "ADVInterpMarkCell"
-PetscErrorCode ADVInterpMarkCell(AdvCtx *actx)
+#define __FUNCT__ "ADVInterpMarkToCell"
+PetscErrorCode ADVInterpMarkToCell(AdvCtx *actx)
 {
 	// marker-to-grid projection (cell nodes)
 
@@ -980,8 +1022,8 @@ PetscErrorCode ADVInterpMarkCell(AdvCtx *actx)
 }
 //---------------------------------------------------------------------------
 #undef __FUNCT__
-#define __FUNCT__ "ADVInterpMarkEdge"
-PetscErrorCode ADVInterpMarkEdge(AdvCtx *actx, PetscInt iphase, InterpCase icase)
+#define __FUNCT__ "ADVInterpMarkToEdge"
+PetscErrorCode ADVInterpMarkToEdge(AdvCtx *actx, PetscInt iphase, InterpCase icase)
 {
 	// marker-to-grid projection (edge nodes)
 

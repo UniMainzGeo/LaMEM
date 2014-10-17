@@ -566,9 +566,9 @@ PetscErrorCode JacResGetVorticity(JacRes *jr)
 	ierr = DMDAVecRestoreArray(fs->DA_YZ, jr->gdyz, &gwx);  CHKERRQ(ierr);
 
 	// communicate boundary values
-	GLOBAL_TO_LOCAL(fs->DA_CEN, jr->gdxx, jr->ldxx);
-	GLOBAL_TO_LOCAL(fs->DA_CEN, jr->gdyy, jr->ldyy);
-	GLOBAL_TO_LOCAL(fs->DA_CEN, jr->gdzz, jr->ldzz);
+	GLOBAL_TO_LOCAL(fs->DA_XY, jr->gdxy, jr->ldxy);
+	GLOBAL_TO_LOCAL(fs->DA_XZ, jr->gdxz, jr->ldxz);
+	GLOBAL_TO_LOCAL(fs->DA_YZ, jr->gdyz, jr->ldyz);
 
 	PetscFunctionReturn(0);
 }

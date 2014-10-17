@@ -14,7 +14,7 @@ typedef enum
 {
 	_PHASE_,    // phase ratio
 	_STRESS_,   // deviatoric stress
-	_APS_,      // accumulated plastic strain (plastic strain-rate)
+	_APS_,      // accumulated plastic strain
 	_VORTICITY_ // vorticity pseudo-vector components
 
 } InterpCase;
@@ -92,47 +92,52 @@ PetscErrorCode ADVCreate(AdvCtx *actx, FDSTAG *fs, JacRes *jr);
 PetscErrorCode ADVDestroy(AdvCtx *actx);
 
 // (re)allocate marker storage
-PetscErrorCode ADVReAllocateStorage(AdvCtx *actx, PetscInt capacity);
+PetscErrorCode ADVReAllocStorage(AdvCtx *actx, PetscInt capacity);
 
 // perform advection step
 PetscErrorCode ADVAdvect(AdvCtx *actx);
 
+// exchange markers between the processors resulting from the position change
+PetscErrorCode ADVExchange(AdvCtx *actx);
+
 // project history INCREMENTS from grid to markers
-PetscErrorCode ADVProjHistGridMark(AdvCtx *actx);
+PetscErrorCode ADVProjHistGridToMark(AdvCtx *actx);
+
+// interpolate field history increments to markers
+PetscErrorCode ADVInterpFieldToMark(AdvCtx *actx, InterpCase icase);
 
 // update marker positions from current velocities & time step
-// rotate history stresses in the local vorticity field
-PetscErrorCode ADVAdvectMarkers(AdvCtx *actx);
+PetscErrorCode ADVAdvectMark(AdvCtx *actx);
 
 // count number of markers to be sent to each neighbor domain
-PetscErrorCode ADVMapMarkersDomains(AdvCtx *actx);
+PetscErrorCode ADVMapMarkToDomains(AdvCtx *actx);
 
 // communicate number of markers with neighbor processes
-PetscErrorCode ADVExchangeNumMarkers(AdvCtx *actx);
+PetscErrorCode ADVExchangeNumMark(AdvCtx *actx);
 
 // create send and receive buffers for asynchronous MPI communication
-PetscErrorCode ADVCreateMPIBuffer(AdvCtx *actx);
+PetscErrorCode ADVCreateMPIBuff(AdvCtx *actx);
 
 // communicate markers with neighbor processes
-PetscErrorCode ADVExchangeMarkers(AdvCtx *actx);
+PetscErrorCode ADVExchangeMark(AdvCtx *actx);
 
 // store received markers, collect garbage
 PetscErrorCode ADVCollectGarbage(AdvCtx *actx);
 
 // free communication buffer
-PetscErrorCode ADVDestroyMPIBuffer(AdvCtx *actx);
+PetscErrorCode ADVDestroyMPIBuff(AdvCtx *actx);
 
 // find host cells for local markers
-PetscErrorCode ADVMapMarkersCells(AdvCtx *actx);
+PetscErrorCode ADVMapMarkToCells(AdvCtx *actx);
 
-// project history variables from markers to grid
-PetscErrorCode ADVProjHistMarkGrid(AdvCtx *actx);
+// project history fields from markers to grid
+PetscErrorCode ADVProjHistMarkToGrid(AdvCtx *actx);
 
-// marker-to-grid projection (cell nodes)
-PetscErrorCode ADVInterpMarkCell(AdvCtx *actx);
+// marker-to-cell projection
+PetscErrorCode ADVInterpMarkToCell(AdvCtx *actx);
 
-// marker-to-grid projection (edge nodes)
-PetscErrorCode ADVInterpMarkEdge(AdvCtx *actx, PetscInt iphase, InterpCase icase);
+// marker-to-edge projection
+PetscErrorCode ADVInterpMarkToEdge(AdvCtx *actx, PetscInt iphase, InterpCase icase);
 
 //-----------------------------------------------------------------------------
 // service functions
@@ -183,5 +188,59 @@ static inline PetscInt FindPointInCell(
 	}
 	return(L);
 }
+//-----------------------------------------------------------------------------
+static inline PetscScalar InterpLin3D(
+		PetscScalar ***lv,
+		PetscInt    i,
+		PetscInt    j,
+		PetscInt    k,
+		PetscInt    sx,
+		PetscInt    sy,
+		PetscInt    sz,
+		PetscScalar xp,
+		PetscScalar yp,
+		PetscScalar zp,
+		PetscScalar *cx,
+		PetscScalar *cy,
+		PetscScalar *cz)
+{
+	PetscScalar xb, yb, zb, xe, ye, ze, v;
+
+	// get relative coordinates
+	xe = (xp - cx[i])/(cx[i+1] - cx[i]); xb = 1.0 - xe;
+	ye = (yp - cy[j])/(cy[j+1] - cy[j]); yb = 1.0 - ye;
+	ze = (zp - cz[k])/(cz[k+1] - cz[k]); zb = 1.0 - ze;
+
+	// interpolate & return result
+	v =
+	lv[sz+k  ][sy+j  ][sx+i  ]*xb*yb*zb +
+	lv[sz+k  ][sy+j  ][sx+i+1]*xe*yb*zb +
+	lv[sz+k  ][sy+j+1][sx+i  ]*xb*ye*zb +
+	lv[sz+k  ][sy+j+1][sx+i+1]*xe*ye*zb +
+	lv[sz+k+1][sy+j  ][sx+i  ]*xb*yb*ze +
+	lv[sz+k+1][sy+j  ][sx+i+1]*xe*yb*ze +
+	lv[sz+k+1][sy+j+1][sx+i  ]*xb*ye*ze +
+	lv[sz+k+1][sy+j+1][sx+i+1]*xe*ye*ze;
+
+	return v;
+}
+//-----------------------------------------------------------------------------
+/*
+#define InterpLin3D(v, lv, i, j, k, cx, cy, cz) \
+	/ get relative coordinates / \
+	xe = (xp - cx[i])/(cx[i+1] - cx[i]); xb = 1.0 - xe; \
+	ye = (yp - cy[j])/(cy[j+1] - cy[j]); yb = 1.0 - ye; \
+	ze = (zp - cz[k])/(cz[k+1] - cz[k]); zb = 1.0 - ze; \
+	/ interpolate & return result / \
+	v = \
+	lv[sz+k  ][sy+j  ][sx+i  ]*xb*yb*zb + \
+	lv[sz+k  ][sy+j  ][sx+i+1]*xe*yb*zb + \
+	lv[sz+k  ][sy+j+1][sx+i  ]*xb*ye*zb + \
+	lv[sz+k  ][sy+j+1][sx+i+1]*xe*ye*zb + \
+	lv[sz+k+1][sy+j  ][sx+i  ]*xb*yb*ze + \
+	lv[sz+k+1][sy+j  ][sx+i+1]*xe*yb*ze + \
+	lv[sz+k+1][sy+j+1][sx+i  ]*xb*ye*ze + \
+	lv[sz+k+1][sy+j+1][sx+i+1]*xe*ye*ze;
+*/
 //-----------------------------------------------------------------------------
 #endif

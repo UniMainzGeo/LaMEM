@@ -516,7 +516,7 @@ PetscErrorCode GetStressCell(
 	tzz = svCell->dzz - svDev->I2Gdt*(svCell->sxx - svCell->hxx);
 
 	// compute shear heating term contribution
-	svDev->Hr = lim->shearHeatEff*(txx*svCell->sxx + tyy*svCell->syy + tzz*svCell->szz);
+	svDev->Hr = (txx*svCell->sxx + tyy*svCell->syy + tzz*svCell->szz)*lim->shearHeatEff;
 
 	PetscFunctionReturn(0);
 }
@@ -558,7 +558,7 @@ PetscErrorCode GetStressEdge(
 	t = svEdge->d - svDev->I2Gdt*(svEdge->s - svEdge->h);
 
 	// compute shear heating term contribution
-	svDev->Hr = lim->shearHeatEff*2.0*t*svEdge->s;
+	svDev->Hr = 2.0*t*svEdge->s*lim->shearHeatEff;
 
 	PetscFunctionReturn(0);
 }

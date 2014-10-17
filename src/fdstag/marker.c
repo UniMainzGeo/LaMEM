@@ -41,7 +41,7 @@ PetscErrorCode ADVMarkInit(AdvCtx *actx, UserContext *user)
 		nummark = nmarkx*nmarky*nmarkz;
 
 		// allocate storage
-		ierr = ADVReAllocateStorage(actx, nummark); CHKERRQ(ierr);
+		ierr = ADVReAllocStorage(actx, nummark); CHKERRQ(ierr);
 
 		// set number of markers
 		actx->nummark = nummark;
@@ -67,13 +67,13 @@ PetscErrorCode ADVMarkInit(AdvCtx *actx, UserContext *user)
 	else SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER,"# *** Incorrect option for initialization of markers \n");
 
 	// compute host cells for all the markers
-	ierr = ADVMapMarkersCells(actx); CHKERRQ(ierr);
+	ierr = ADVMapMarkToCells(actx); CHKERRQ(ierr);
 
 	// check marker distribution
 	ierr = ADVMarkCheckMarkers(actx, user); CHKERRQ(ierr);
 
 	// project initial history from markers to grid
-	ierr = ADVProjHistMarkGrid(actx); CHKERRQ(ierr);
+	ierr = ADVProjHistMarkToGrid(actx); CHKERRQ(ierr);
 
 	PetscPrintf(PETSC_COMM_WORLD,"# Finished marker initialization routine\n");
 
@@ -296,7 +296,7 @@ PetscErrorCode ADVMarkInitFileParallel(AdvCtx *actx, UserContext *user)
 	nummark = (PetscInt)s_nummark;
 
 	// allocate marker storage
-	ierr = ADVReAllocateStorage(actx, nummark); CHKERRQ(ierr);
+	ierr = ADVReAllocStorage(actx, nummark); CHKERRQ(ierr);
 
 	// set number of markers
 	actx->nummark = nummark;
