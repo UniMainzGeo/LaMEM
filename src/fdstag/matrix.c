@@ -42,7 +42,7 @@ PetscErrorCode PMatCreate(
 
 	// create matrix
 	ierr = MatCreate(PETSC_COMM_WORLD, P); CHKERRQ(ierr);
-	ierr = MatSetType((*P), MATMPIAIJ); CHKERRQ(ierr);
+	ierr = MatSetType((*P), MATAIJ); CHKERRQ(ierr);
 	ierr = MatSetSizes((*P), m, n, PETSC_DETERMINE, PETSC_DETERMINE); CHKERRQ(ierr);
 
 	// preallocate matrix
