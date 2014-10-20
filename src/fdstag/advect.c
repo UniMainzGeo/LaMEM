@@ -307,7 +307,7 @@ PetscErrorCode ADVInterpFieldToMark(AdvCtx *actx, InterpCase icase)
 	if(icase == _VORTICITY_)
 	{
 		// compute current vorticity field
-		ierr = JacResGetResidual(jr); CHKERRQ(ierr);
+		ierr = JacResGetVorticity(jr); CHKERRQ(ierr);
 	}
 	else
 	{
@@ -368,9 +368,9 @@ PetscErrorCode ADVInterpFieldToMark(AdvCtx *actx, InterpCase icase)
 		zc = fs->dsz.ccoor[K];
 
 		// map marker on the control volumes of edge nodes
-		if(xp > xc) II = I+1; else II = I;
-		if(yp > yc) JJ = J+1; else JJ = J;
-		if(zp > zc) KK = K+1; else KK = K;
+		if(xp > xc) { II = I+1; } else { II = I; }
+		if(yp > yc) { JJ = J+1; } else { JJ = J; }
+		if(zp > zc) { KK = K+1; } else { KK = K; }
 
 		// access buffer
 		UPXY = lxy[sz+K ][sy+JJ][sx+II];
@@ -433,7 +433,7 @@ PetscErrorCode ADVAdvectMark(AdvCtx *actx)
 	Marker      *P;
 	SolVarCell  *svCell;
 	PetscInt    sx, sy, sz, nx, ny;
-	PetscInt    jj, ID, I, J, K, JI, KI, IJ, KJ, IK, JK;
+	PetscInt    jj, ID, I, J, K, II, JJ, KK, JI, KI, IJ, KJ, IK, JK;
 	PetscScalar *ncx, *ncy, *ncz;
 	PetscScalar *ccx, *ccy, *ccz;
 	PetscScalar ***lvx, ***lvy, ***lvz, ***lp, ***lT;
@@ -489,20 +489,16 @@ PetscErrorCode ADVAdvectMark(AdvCtx *actx)
 		zc = ccz[K];
 
 		// map marker on the cells of X, Y, Z & center grids
-		if(xp > xc) { IJ = IK = I; } else { IJ = IK = I-1; }
-		if(yp > yc) { JI = JK = J; } else { JI = JK = J-1; }
-		if(zp > zc) { KI = KJ = K; } else { KI = KJ = K-1; }
+		if(xp > xc) { IJ = IK = I; II = I+1; } else { IJ = IK = I-1; II = I; }
+		if(yp > yc) { JI = JK = J; JJ = J+1; } else { JI = JK = J-1; JJ = J; }
+		if(zp > zc) { KI = KJ = K; KK = K+1; } else { KI = KJ = K-1; KK = K; }
 
 		// interpolate velocity, pressure & temperature
 		vx = InterpLin3D(lvx, I,  JI, KI, sx, sy, sz, xp, yp, zp, ncx, ccy, ccz);
 		vy = InterpLin3D(lvy, IJ, J,  KJ, sx, sy, sz, xp, yp, zp, ccx, ncy, ccz);
 		vz = InterpLin3D(lvz, IK, JK, K,  sx, sy, sz, xp, yp, zp, ccx, ccy, ncz);
-		p  = InterpLin3D(lp,  I,  J,  K,  sx, sy, sz, xp, yp, zp, ccx, ccy, ccz);
-		T  = InterpLin3D(lT,  I,  J,  K,  sx, sy, sz, xp, yp, zp, ccx, ccy, ccz);
-
-//		InterpLin3D(vx, lvx, I,  JI, KI, ncx, ccy, ccz)
-//		InterpLin3D(vy, lvy, IJ, J,  KJ, ccx, ncy, ccz)
-//		InterpLin3D(vz, lvz, IK, JK, K,  ccx, ccy, ncz)
+		p  = InterpLin3D(lp,  II, JJ, KK, sx, sy, sz, xp, yp, zp, ccx, ccy, ccz);
+		T  = InterpLin3D(lT,  II, JJ, KK, sx, sy, sz, xp, yp, zp, ccx, ccy, ccz);
 
 		// access host cell solution variables
 		svCell = &jr->svCell[ID];
@@ -1016,6 +1012,7 @@ PetscErrorCode ADVInterpMarkToCell(AdvCtx *actx)
 		svCell->hxx       /= w;
 		svCell->hyy       /= w;
 		svCell->hzz       /= w;
+
 	}
 
 	PetscFunctionReturn(0);
@@ -1089,9 +1086,6 @@ PetscErrorCode ADVInterpMarkToEdge(AdvCtx *actx, PetscInt iphase, InterpCase ica
 		if(xp > xc) II = I+1; else II = I;
 		if(yp > yc) JJ = J+1; else JJ = J;
 		if(zp > zc) KK = K+1; else KK = K;
-
-//  WARINIG!
-//	MAKE SURE WHAT TO CALL HERE WEIGHT_POINT_CELL OR WEIGHT_POINT_NODE
 
 		// get interpolation weights in cell control volumes
 		wxc = WEIGHT_POINT_CELL(I, xp, fs->dsx);
