@@ -80,7 +80,10 @@ PetscErrorCode MGCtxCreate(MGCtx *mg, FDSTAG *fs, BCCtx *bc, PC pc, idxtype idxm
 	ierr = PetscOptionsGetString(NULL, "-gmg_pc_type", pc_type, MAX_NAME_LEN, &opt_set); CHKERRQ(ierr);
 
 	// check whether multigrid is requested
-	if(opt_set != PETSC_TRUE || strcmp(pc_type, "mg")) PetscFunctionReturn(0);
+	if(opt_set != PETSC_TRUE || strcmp(pc_type, "mg"))
+	{
+		SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "-gmg_pc_type option is not defined of specified incorrectly (use -gmg_pc_type mg) \n");
+	}
 
 	// check multigrid mesh restrictions, get actual number of coarsening steps
 	ierr = MGCheckGrid(fs, &ncors); CHKERRQ(ierr);
