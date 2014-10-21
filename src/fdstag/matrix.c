@@ -402,21 +402,33 @@ PetscErrorCode PMatAssembleMonolithic(
 
 	FDSTAG     *fs;
 	BCCtx      *bc;
+	PetscBool   flg;
 	PetscInt    idx[7];
 	PetscScalar v[49];
 	PetscInt    start, ln;
 	PetscInt    iter, i, j, k, nx, ny, nz, sx, sy, sz;
-	PetscScalar eta, IKdt, E43, E23;
+	PetscScalar eta, IKdt, diag;
 	PetscScalar dx, dy, dz, bdx, fdx, bdy, fdy, bdz, fdz;
 	PetscScalar ***ivx, ***ivy, ***ivz, ***ip;
 	PetscScalar ***bcvx, ***bcvy, ***bcvz, ***bcp;
 	PetscInt    pdofidx[7];
 	PetscScalar cf[7];
-	PetscScalar diag;
 	DOFIndex    *dof;
+
+	void (*getStiffMat)(
+		PetscScalar, PetscScalar, PetscScalar*,
+		PetscScalar, PetscScalar, PetscScalar,
+		PetscScalar, PetscScalar, PetscScalar,
+		PetscScalar, PetscScalar, PetscScalar);
 
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
+
+	// set cell stiffness function
+	ierr = PetscOptionsHasName(NULL, "-no_dev_proj", &flg); CHKERRQ(ierr);
+
+	if(flg == PETSC_TRUE) getStiffMat = getStiffMatNoProj;
+	else                  getStiffMat = getStiffMatDevProj;
 
 	fs  = jr->fs;
 	bc  = jr->cbc;   // coupled
@@ -467,21 +479,11 @@ PetscErrorCode PMatAssembleMonolithic(
 		bdy = SIZE_NODE(j, sy, fs->dsy);   fdy = SIZE_NODE(j+1, sy, fs->dsy);
 		bdz = SIZE_NODE(k, sz, fs->dsz);   fdz = SIZE_NODE(k+1, sz, fs->dsz);
 
-		// compute local matrix
-		E43 = 4.0*eta/3.0;
-		E23 = 2.0*eta/3.0;
-
-		// get diagonal element
+		// get pressure diagonal element
 		diag = -IKdt -1.0/eta;
 
-		//       vx_(i)               vx_(i+1)             vy_(j)               vy_(j+1)             vz_(k)               vz_(k+1)             p
-		v[0]  =  E43/dx/bdx; v[1]  = -E43/dx/bdx; v[2]  = -E23/dy/bdx; v[3]  =  E23/dy/bdx; v[4]  = -E23/dz/bdx; v[5]  =  E23/dz/bdx; v[6]  =  1.0/bdx; // fx_(i)   [sxx]
-		v[7]  = -E43/dx/fdx; v[8]  =  E43/dx/fdx; v[9]  =  E23/dy/fdx; v[10] = -E23/dy/fdx; v[11] =  E23/dz/fdx; v[12] = -E23/dz/fdx; v[13] = -1.0/fdx; // fx_(i+1) [sxx]
-		v[14] = -E23/dx/bdy; v[15] =  E23/dx/bdy; v[16] =  E43/dy/bdy; v[17] = -E43/dy/bdy; v[18] = -E23/dz/bdy; v[19] =  E23/dz/bdy; v[20] =  1.0/bdy; // fy_(j)   [syy]
-		v[21] =  E23/dx/fdy; v[22] = -E23/dx/fdy; v[23] = -E43/dy/fdy; v[24] =  E43/dy/fdy; v[25] =  E23/dz/fdy; v[26] = -E23/dz/fdy; v[27] = -1.0/fdy; // fy_(j+1) [syy]
-		v[28] = -E23/dx/bdz; v[29] =  E23/dx/bdz; v[30] = -E23/dy/bdz; v[31] =  E23/dy/bdz; v[32] =  E43/dz/bdz; v[33] = -E43/dz/bdz; v[34] =  1.0/bdz; // fz_(k)   [szz]
-		v[35] =  E23/dx/fdz; v[36] = -E23/dx/fdz; v[37] =  E23/dy/fdz; v[38] = -E23/dy/fdz; v[39] = -E43/dz/fdz; v[40] =  E43/dz/fdz; v[41] = -1.0/fdz; // fz_(k+1) [szz]
-		v[42] =  1.0/dx;     v[43] = -1.0/dx;     v[44] =  1.0/dy;     v[45] = -1.0/dy;     v[46] =  1.0/dz;     v[47] = -1.0/dz;     v[48] =  diag;    // g
+		// compute local matrix
+		getStiffMat(eta, diag, v, dx, dy, dz, fdx, fdy, fdz, bdx, bdy, bdz);
 
 		// get global indices of the points:
 		// vx_(i), vx_(i+1), vy_(j), vy_(j+1), vz_(k), vz_(k+1), p
@@ -503,7 +505,7 @@ PetscErrorCode PMatAssembleMonolithic(
 		pdofidx[6] = -1;   cf[6] = bcp[k][j][i];
 
 		// constrain local matrix
-		ierr = constrLocalMat(7, pdofidx, cf, v); CHKERRQ(ierr);
+		constrLocalMat(7, pdofidx, cf, v);
 
 		// add to global matrix
 		ierr = MatSetValues(P, 7, idx, 7, idx, v, ADD_VALUES); CHKERRQ(ierr);
@@ -554,10 +556,10 @@ PetscErrorCode PMatAssembleMonolithic(
 		pdofidx[3] = 2;   cf[3] = bcvy[k][j][i];
 
 		// apply two-point constraints on the ghost nodes
-		ierr = getTwoPointConstr(4, idx, pdofidx, cf); CHKERRQ(ierr);
+		getTwoPointConstr(4, idx, pdofidx, cf);
 
 		// constrain local matrix
-		ierr = constrLocalMat(4, pdofidx, cf, v); CHKERRQ(ierr);
+		constrLocalMat(4, pdofidx, cf, v);
 
 		// add to global matrix
 		ierr = MatSetValues(P, 4, idx, 4, idx, v, ADD_VALUES); CHKERRQ(ierr);
@@ -605,10 +607,10 @@ PetscErrorCode PMatAssembleMonolithic(
 		pdofidx[3] = 2;   cf[3] = bcvz[k][j][i];
 
 		// apply two-point constraints on the ghost nodes
-		ierr = getTwoPointConstr(4, idx, pdofidx, cf); CHKERRQ(ierr);
+		getTwoPointConstr(4, idx, pdofidx, cf);
 
 		// constrain local matrix
-		ierr = constrLocalMat(4, pdofidx, cf, v); CHKERRQ(ierr);
+		constrLocalMat(4, pdofidx, cf, v);
 
 		// add to global matrix
 		ierr = MatSetValues(P, 4, idx, 4, idx, v, ADD_VALUES); CHKERRQ(ierr);
@@ -656,10 +658,10 @@ PetscErrorCode PMatAssembleMonolithic(
 		pdofidx[3] = 2;   cf[3] = bcvz[k][j][i];
 
 		// apply two-point constraints on the ghost nodes
-		ierr = getTwoPointConstr(4, idx, pdofidx, cf); CHKERRQ(ierr);
+		getTwoPointConstr(4, idx, pdofidx, cf);
 
 		// constrain local matrix
-		ierr = constrLocalMat(4, pdofidx, cf, v); CHKERRQ(ierr);
+		constrLocalMat(4, pdofidx, cf, v);
 
 		// add to global matrix
 		ierr = MatSetValues(P, 4, idx, 4, idx, v, ADD_VALUES); CHKERRQ(ierr);
@@ -939,20 +941,32 @@ PetscErrorCode PMatAssembleBlock(
 	//======================================================================
 	FDSTAG      *fs;
 	BCCtx       *bc;
+	PetscBool   flg;
 	PetscInt    idx[7];
 	PetscScalar v[49], a[36], d[6], g[6];
 	PetscInt    iter, i, j, k, nx, ny, nz, sx, sy, sz;
-	PetscScalar eta, IKdt, E43, E23;
+	PetscScalar eta, IKdt, kappa;
 	PetscScalar dx, dy, dz, bdx, fdx, bdy, fdy, bdz, fdz;
 	PetscScalar ***ivx, ***ivy, ***ivz, ***ip;
 	PetscScalar ***bcvx, ***bcvy, ***bcvz, ***bcp;
-	PetscScalar kappa;
 	PetscInt    pdofidx[7];
 	PetscScalar cf[7];
 	DOFIndex    *dof;
 
+	void (*getStiffMat)(
+		PetscScalar, PetscScalar, PetscScalar*,
+		PetscScalar, PetscScalar, PetscScalar,
+		PetscScalar, PetscScalar, PetscScalar,
+		PetscScalar, PetscScalar, PetscScalar);
+
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
+
+	// set cell stiffness function
+	ierr = PetscOptionsHasName(NULL, "-no_dev_proj", &flg); CHKERRQ(ierr);
+
+	if(flg == PETSC_TRUE) getStiffMat = getStiffMatNoProj;
+	else                  getStiffMat = getStiffMatDevProj;
 
 	fs  = jr->fs;
 	bc  = jr->ubc;   // uncoupled
@@ -1000,17 +1014,7 @@ PetscErrorCode PMatAssembleBlock(
 		bdz = SIZE_NODE(k, sz, fs->dsz);   fdz = SIZE_NODE(k+1, sz, fs->dsz);
 
 		// compute local matrix
-		E43 = 4.0*eta/3.0;
-		E23 = 2.0*eta/3.0;
-
-		//       vx_(i)               vx_(i+1)             vy_(j)               vy_(j+1)             vz_(k)               vz_(k+1)             p
-		v[0]  =  E43/dx/bdx; v[1]  = -E43/dx/bdx; v[2]  = -E23/dy/bdx; v[3]  =  E23/dy/bdx; v[4]  = -E23/dz/bdx; v[5]  =  E23/dz/bdx; v[6]  =  1.0/bdx; // fx_(i)   [sxx]
-		v[7]  = -E43/dx/fdx; v[8]  =  E43/dx/fdx; v[9]  =  E23/dy/fdx; v[10] = -E23/dy/fdx; v[11] =  E23/dz/fdx; v[12] = -E23/dz/fdx; v[13] = -1.0/fdx; // fx_(i+1) [sxx]
-		v[14] = -E23/dx/bdy; v[15] =  E23/dx/bdy; v[16] =  E43/dy/bdy; v[17] = -E43/dy/bdy; v[18] = -E23/dz/bdy; v[19] =  E23/dz/bdy; v[20] =  1.0/bdy; // fy_(j)   [syy]
-		v[21] =  E23/dx/fdy; v[22] = -E23/dx/fdy; v[23] = -E43/dy/fdy; v[24] =  E43/dy/fdy; v[25] =  E23/dz/fdy; v[26] = -E23/dz/fdy; v[27] = -1.0/fdy; // fy_(j+1) [syy]
-		v[28] = -E23/dx/bdz; v[29] =  E23/dx/bdz; v[30] = -E23/dy/bdz; v[31] =  E23/dy/bdz; v[32] =  E43/dz/bdz; v[33] = -E43/dz/bdz; v[34] =  1.0/bdz; // fz_(k)   [szz]
-		v[35] =  E23/dx/fdz; v[36] = -E23/dx/fdz; v[37] =  E23/dy/fdz; v[38] = -E23/dy/fdz; v[39] = -E43/dz/fdz; v[40] =  E43/dz/fdz; v[41] = -1.0/fdz; // fz_(k+1) [szz]
-		v[42] =  1.0/dx;     v[43] = -1.0/dx;     v[44] =  1.0/dy;     v[45] = -1.0/dy;     v[46] =  1.0/dz;     v[47] = -1.0/dz;     v[48] =  0.0;     // g
+		getStiffMat(eta, 0.0, v, dx, dy, dz, fdx, fdy, fdz, bdx, bdy, bdz);
 
 		// get global indices of the points:
 		// vx_(i), vx_(i+1), vy_(j), vy_(j+1), vz_(k), vz_(k+1), p
@@ -1032,7 +1036,7 @@ PetscErrorCode PMatAssembleBlock(
 		pdofidx[6] = -1;   cf[6] = bcp[k][j][i];
 
 		// constrain local matrix
-		ierr = constrLocalMat(7, pdofidx, cf, v); CHKERRQ(ierr);
+		constrLocalMat(7, pdofidx, cf, v);
 
 		// extract operators, compute penalty terms and preconditioners
 		if(pgamma)
@@ -1041,14 +1045,14 @@ PetscErrorCode PMatAssembleBlock(
 			kappa = 1.0/(IKdt + 1.0/(pgamma*eta));
 
 			// get velocity Schur complement
-			ierr = getVelSchurComp(v, a, d, g, kappa); CHKERRQ(ierr);
+			getVelSchurComp(v, a, d, g, kappa);
 		}
 		else
 		{	// compute pressure Schur complement preconditioner
 			kappa = IKdt + 1.0/eta;
 
 			// get sub-matrices
-			ierr = getSubMats(v, a, d, g); CHKERRQ(ierr);
+			getSubMats(v, a, d, g);
 		}
 
 		// update global matrices
@@ -1106,10 +1110,10 @@ PetscErrorCode PMatAssembleBlock(
 		pdofidx[3] = 2;   cf[3] = bcvy[k][j][i];
 
 		// apply two-point constraints on the ghost nodes
-		ierr = getTwoPointConstr(4, idx, pdofidx, cf); CHKERRQ(ierr);
+		getTwoPointConstr(4, idx, pdofidx, cf);
 
 		// constrain local matrix
-		ierr = constrLocalMat(4, pdofidx, cf, v); CHKERRQ(ierr);
+		constrLocalMat(4, pdofidx, cf, v);
 
 		// add to global matrix
 		ierr = MatSetValues(P->Avv, 4, idx, 4, idx, v, ADD_VALUES); CHKERRQ(ierr);
@@ -1157,10 +1161,10 @@ PetscErrorCode PMatAssembleBlock(
 		pdofidx[3] = 2;   cf[3] = bcvz[k][j][i];
 
 		// apply two-point constraints on the ghost nodes
-		ierr = getTwoPointConstr(4, idx, pdofidx, cf); CHKERRQ(ierr);
+		getTwoPointConstr(4, idx, pdofidx, cf);
 
 		// constrain local matrix
-		ierr = constrLocalMat(4, pdofidx, cf, v); CHKERRQ(ierr);
+		constrLocalMat(4, pdofidx, cf, v);
 
 		// add to global matrix
 		ierr = MatSetValues(P->Avv, 4, idx, 4, idx, v, ADD_VALUES); CHKERRQ(ierr);
@@ -1208,10 +1212,10 @@ PetscErrorCode PMatAssembleBlock(
 		pdofidx[3] = 2;   cf[3] = bcvz[k][j][i];
 
 		// apply two-point constraints on the ghost nodes
-		ierr = getTwoPointConstr(4, idx, pdofidx, cf); CHKERRQ(ierr);
+		getTwoPointConstr(4, idx, pdofidx, cf);
 
 		// constrain local matrix
-		ierr = constrLocalMat(4, pdofidx, cf, v); CHKERRQ(ierr);
+		constrLocalMat(4, pdofidx, cf, v);
 
 		// add to global matrix
 		ierr = MatSetValues(P->Avv, 4, idx, 4, idx, v, ADD_VALUES); CHKERRQ(ierr);
@@ -1236,14 +1240,70 @@ PetscErrorCode PMatAssembleBlock(
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "getTwoPointConstr"
-PetscErrorCode getTwoPointConstr(PetscInt n, PetscInt idx[], PetscInt pdofidx[], PetscScalar cf[])
+// SERVICE FUNCTIONS
+//---------------------------------------------------------------------------
+void getStiffMatDevProj(
+	PetscScalar eta, PetscScalar diag,PetscScalar *v,
+	PetscScalar dx,  PetscScalar dy,  PetscScalar dz,
+	PetscScalar fdx, PetscScalar fdy, PetscScalar fdz,
+	PetscScalar bdx, PetscScalar bdy, PetscScalar bdz)
+{
+	// compute cell stiffness matrix with deviatoric projection
+
+	PetscScalar E43 = 4.0*eta/3.0;
+	PetscScalar E23 = 2.0*eta/3.0;
+
+	//       vx_(i)               vx_(i+1)             vy_(j)               vy_(j+1)             vz_(k)               vz_(k+1)             p
+	v[0]  =  E43/dx/bdx; v[1]  = -E43/dx/bdx; v[2]  = -E23/dy/bdx; v[3]  =  E23/dy/bdx; v[4]  = -E23/dz/bdx; v[5]  =  E23/dz/bdx; v[6]  =  1.0/bdx; // fx_(i)   [sxx]
+	v[7]  = -E43/dx/fdx; v[8]  =  E43/dx/fdx; v[9]  =  E23/dy/fdx; v[10] = -E23/dy/fdx; v[11] =  E23/dz/fdx; v[12] = -E23/dz/fdx; v[13] = -1.0/fdx; // fx_(i+1) [sxx]
+	v[14] = -E23/dx/bdy; v[15] =  E23/dx/bdy; v[16] =  E43/dy/bdy; v[17] = -E43/dy/bdy; v[18] = -E23/dz/bdy; v[19] =  E23/dz/bdy; v[20] =  1.0/bdy; // fy_(j)   [syy]
+	v[21] =  E23/dx/fdy; v[22] = -E23/dx/fdy; v[23] = -E43/dy/fdy; v[24] =  E43/dy/fdy; v[25] =  E23/dz/fdy; v[26] = -E23/dz/fdy; v[27] = -1.0/fdy; // fy_(j+1) [syy]
+	v[28] = -E23/dx/bdz; v[29] =  E23/dx/bdz; v[30] = -E23/dy/bdz; v[31] =  E23/dy/bdz; v[32] =  E43/dz/bdz; v[33] = -E43/dz/bdz; v[34] =  1.0/bdz; // fz_(k)   [szz]
+	v[35] =  E23/dx/fdz; v[36] = -E23/dx/fdz; v[37] =  E23/dy/fdz; v[38] = -E23/dy/fdz; v[39] = -E43/dz/fdz; v[40] =  E43/dz/fdz; v[41] = -1.0/fdz; // fz_(k+1) [szz]
+	v[42] =  1.0/dx;     v[43] = -1.0/dx;     v[44] =  1.0/dy;     v[45] = -1.0/dy;     v[46] =  1.0/dz;     v[47] = -1.0/dz;     v[48] =  diag;     // g
+}
+//---------------------------------------------------------------------------
+void getStiffMatNoProj(
+	PetscScalar eta, PetscScalar diag,PetscScalar *v,
+	PetscScalar dx,  PetscScalar dy,  PetscScalar dz,
+	PetscScalar fdx, PetscScalar fdy, PetscScalar fdz,
+	PetscScalar bdx, PetscScalar bdy, PetscScalar bdz)
+{
+	// compute cell stiffness matrix without deviatoric projection
+
+	PetscScalar E2 = 2.0*eta;
+
+	//       vx_(i)               vx_(i+1)             vy_(j)               vy_(j+1)             vz_(k)               vz_(k+1)             p
+	v[0]  =  E2/dx/bdx;  v[1]  = -E2/dx/bdx;  v[2]  =  0.0;        v[3]  =  0.0;        v[4]  =  0.0;        v[5]  =  0.0;        v[6]  =  1.0/bdx; // fx_(i)   [sxx]
+	v[7]  = -E2/dx/fdx;  v[8]  =  E2/dx/fdx;  v[9]  =  0.0;        v[10] =  0.0;        v[11] =  0.0;        v[12] =  0.0;        v[13] = -1.0/fdx; // fx_(i+1) [sxx]
+	v[14] =  0.0;        v[15] =  0.0;        v[16] =  E2/dy/bdy;  v[17] = -E2/dy/bdy;  v[18] =  0.0;        v[19] =  0.0;        v[20] =  1.0/bdy; // fy_(j)   [syy]
+	v[21] =  0.0;        v[22] =  0.0;        v[23] = -E2/dy/fdy;  v[24] =  E2/dy/fdy;  v[25] =  0.0;        v[26] =  0.0;        v[27] = -1.0/fdy; // fy_(j+1) [syy]
+	v[28] =  0.0;        v[29] =  0.0;        v[30] =  0.0;        v[31] =  0.0;        v[32] =  E2/dz/bdz;  v[33] = -E2/dz/bdz;  v[34] =  1.0/bdz; // fz_(k)   [szz]
+	v[35] =  0.0;        v[36] =  0.0;        v[37] =  0.0;        v[38] =  0.0;        v[39] = -E2/dz/fdz;  v[40] =  E2/dz/fdz;  v[41] = -1.0/fdz; // fz_(k+1) [szz]
+	v[42] =  1.0/dx;     v[43] = -1.0/dx;     v[44] =  1.0/dy;     v[45] = -1.0/dy;     v[46] =  1.0/dz;     v[47] = -1.0/dz;     v[48] =  diag;    // g
+}
+//---------------------------------------------------------------------------
+/*
+	// Pressure constraints implementation
+
+	PetscScalar  cbot, ctop;
+	PetscInt     mcz;
+	cbot = 1.0; if(k == 0) 	 cbot = 2.0;
+	ctop = 1.0; if(k == mcz) ctop = 2.0;
+	//       vx_(i)               vx_(i+1)             vy_(j)               vy_(j+1)             vz_(k)               vz_(k+1)             p
+	v[0]  =  E43/dx/bdx; v[1]  = -E43/dx/bdx; v[2]  = -E23/dy/bdx; v[3]  =  E23/dy/bdx; v[4]  = -E23/dz/bdx; v[5]  =  E23/dz/bdx; v[6]  =  1.0/bdx;  // fx_(i)   [sxx]
+	v[7]  = -E43/dx/fdx; v[8]  =  E43/dx/fdx; v[9]  =  E23/dy/fdx; v[10] = -E23/dy/fdx; v[11] =  E23/dz/fdx; v[12] = -E23/dz/fdx; v[13] = -1.0/fdx;  // fx_(i+1) [sxx]
+	v[14] = -E23/dx/bdy; v[15] =  E23/dx/bdy; v[16] =  E43/dy/bdy; v[17] = -E43/dy/bdy; v[18] = -E23/dz/bdy; v[19] =  E23/dz/bdy; v[20] =  1.0/bdy;  // fy_(j)   [syy]
+	v[21] =  E23/dx/fdy; v[22] = -E23/dx/fdy; v[23] = -E43/dy/fdy; v[24] =  E43/dy/fdy; v[25] =  E23/dz/fdy; v[26] = -E23/dz/fdy; v[27] = -1.0/fdy;  // fy_(j+1) [syy]
+	v[28] = -E23/dx/bdz; v[29] =  E23/dx/bdz; v[30] = -E23/dy/bdz; v[31] =  E23/dy/bdz; v[32] =  E43/dz/bdz; v[33] = -E43/dz/bdz; v[34] =  cbot/bdz; // fz_(k)   [szz]
+	v[35] =  E23/dx/fdz; v[36] = -E23/dx/fdz; v[37] =  E23/dy/fdz; v[38] = -E23/dy/fdz; v[39] = -E43/dz/fdz; v[40] =  E43/dz/fdz; v[41] = -ctop/fdz; // fz_(k+1) [szz]
+	v[42] =  1.0/dx;     v[43] = -1.0/dx;     v[44] =  1.0/dy;     v[45] = -1.0/dy;     v[46] =  1.0/dz;     v[47] = -1.0/dz;     v[48] =  0.0;      // g
+*/
+//---------------------------------------------------------------------------
+void getTwoPointConstr(PetscInt n, PetscInt idx[], PetscInt pdofidx[], PetscScalar cf[])
 {
 	// apply two-point constraints on the ghost nodes
 	PetscInt j;
-
-	PetscFunctionBegin;
 
 	for(j = 0; j < n; j++)
 	{
@@ -1269,12 +1329,9 @@ PetscErrorCode getTwoPointConstr(PetscInt n, PetscInt idx[], PetscInt pdofidx[],
 			pdofidx[j] = -1;
 		}
 	}
-	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "constrLocalMat"
-PetscErrorCode constrLocalMat(PetscInt n, PetscInt pdofidx[], PetscScalar cf[], PetscScalar v[])
+void constrLocalMat(PetscInt n, PetscInt pdofidx[], PetscScalar cf[], PetscScalar v[])
 {
 	//=========================================================================
 	// Apply linear constraints to a local matrix
@@ -1305,8 +1362,6 @@ PetscErrorCode constrLocalMat(PetscInt n, PetscInt pdofidx[], PetscScalar cf[], 
 
 	PetscInt i, j, jj, jst;
 
-	PetscFunctionBegin;
-
 	for(i = 0, jj = 0; i < n; i++)
 	{
 		// detect constrained rows
@@ -1331,15 +1386,10 @@ PetscErrorCode constrLocalMat(PetscInt n, PetscInt pdofidx[], PetscScalar cf[], 
 			}
 		}
 	}
-	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "getVelSchurComp"
-PetscErrorCode getVelSchurComp(PetscScalar v[],  PetscScalar a[], PetscScalar d[], PetscScalar g[], PetscScalar k)
+void getVelSchurComp(PetscScalar v[],  PetscScalar a[], PetscScalar d[], PetscScalar g[], PetscScalar k)
 {
-	PetscFunctionBegin;
-
 	// extract divergence operator
 	d[0] = v[42]; d[1] = v[43]; d[2] = v[44]; d[3] = v[45]; d[4] = v[46]; d[5] = v[47];
 
@@ -1353,16 +1403,10 @@ PetscErrorCode getVelSchurComp(PetscScalar v[],  PetscScalar a[], PetscScalar d[
 	a[18] = v[21] + k*g[3]*d[0]; a[19] = v[22] + k*g[3]*d[1]; a[20] = v[23] + k*g[3]*d[2]; a[21] = v[24] + k*g[3]*d[3]; a[22] = v[25] + k*g[3]*d[4]; a[23] = v[26] + k*g[3]*d[5];
 	a[24] = v[28] + k*g[4]*d[0]; a[25] = v[29] + k*g[4]*d[1]; a[26] = v[30] + k*g[4]*d[2]; a[27] = v[31] + k*g[4]*d[3]; a[28] = v[32] + k*g[4]*d[4]; a[29] = v[33] + k*g[4]*d[5];
 	a[30] = v[35] + k*g[5]*d[0]; a[31] = v[36] + k*g[5]*d[1]; a[32] = v[37] + k*g[5]*d[2]; a[33] = v[38] + k*g[5]*d[3]; a[34] = v[39] + k*g[5]*d[4]; a[35] = v[40] + k*g[5]*d[5];
-
-	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "getSubMats"
-PetscErrorCode getSubMats(PetscScalar v[],  PetscScalar a[], PetscScalar d[], PetscScalar g[])
+void getSubMats(PetscScalar v[],  PetscScalar a[], PetscScalar d[], PetscScalar g[])
 {
-	PetscFunctionBegin;
-
 	// extract divergence operator
 	d[0] = v[42]; d[1] = v[43]; d[2] = v[44]; d[3] = v[45]; d[4] = v[46]; d[5] = v[47];
 
@@ -1376,24 +1420,5 @@ PetscErrorCode getSubMats(PetscScalar v[],  PetscScalar a[], PetscScalar d[], Pe
 	a[18] = v[21]; a[19] = v[22]; a[20] = v[23]; a[21] = v[24]; a[22] = v[25]; a[23] = v[26];
 	a[24] = v[28]; a[25] = v[29]; a[26] = v[30]; a[27] = v[31]; a[28] = v[32]; a[29] = v[33];
 	a[30] = v[35]; a[31] = v[36]; a[32] = v[37]; a[33] = v[38]; a[34] = v[39]; a[35] = v[40];
-
-	PetscFunctionReturn(0);
 }
-//---------------------------------------------------------------------------
-/*
-	// Pressure constraints implementation
-
-	PetscScalar  cbot, ctop;
-	PetscInt     mcz;
-	cbot = 1.0; if(k == 0) 	 cbot = 2.0;
-	ctop = 1.0; if(k == mcz) ctop = 2.0;
-	//       vx_(i)               vx_(i+1)             vy_(j)               vy_(j+1)             vz_(k)               vz_(k+1)             p
-	v[0]  =  E43/dx/bdx; v[1]  = -E43/dx/bdx; v[2]  = -E23/dy/bdx; v[3]  =  E23/dy/bdx; v[4]  = -E23/dz/bdx; v[5]  =  E23/dz/bdx; v[6]  =  1.0/bdx;  // fx_(i)   [sxx]
-	v[7]  = -E43/dx/fdx; v[8]  =  E43/dx/fdx; v[9]  =  E23/dy/fdx; v[10] = -E23/dy/fdx; v[11] =  E23/dz/fdx; v[12] = -E23/dz/fdx; v[13] = -1.0/fdx;  // fx_(i+1) [sxx]
-	v[14] = -E23/dx/bdy; v[15] =  E23/dx/bdy; v[16] =  E43/dy/bdy; v[17] = -E43/dy/bdy; v[18] = -E23/dz/bdy; v[19] =  E23/dz/bdy; v[20] =  1.0/bdy;  // fy_(j)   [syy]
-	v[21] =  E23/dx/fdy; v[22] = -E23/dx/fdy; v[23] = -E43/dy/fdy; v[24] =  E43/dy/fdy; v[25] =  E23/dz/fdy; v[26] = -E23/dz/fdy; v[27] = -1.0/fdy;  // fy_(j+1) [syy]
-	v[28] = -E23/dx/bdz; v[29] =  E23/dx/bdz; v[30] = -E23/dy/bdz; v[31] =  E23/dy/bdz; v[32] =  E43/dz/bdz; v[33] = -E43/dz/bdz; v[34] =  cbot/bdz; // fz_(k)   [szz]
-	v[35] =  E23/dx/fdz; v[36] = -E23/dx/fdz; v[37] =  E23/dy/fdz; v[38] = -E23/dy/fdz; v[39] = -E43/dz/fdz; v[40] =  E43/dz/fdz; v[41] = -ctop/fdz; // fz_(k+1) [szz]
-	v[42] =  1.0/dx;     v[43] = -1.0/dx;     v[44] =  1.0/dy;     v[45] = -1.0/dy;     v[46] =  1.0/dz;     v[47] = -1.0/dz;     v[48] =  0.0;      // g
-*/
 //---------------------------------------------------------------------------

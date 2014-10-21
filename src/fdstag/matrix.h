@@ -62,18 +62,34 @@ PetscErrorCode PMatAssembleBlock(
 	PetscScalar  pgamma);
 
 //---------------------------------------------------------------------------
+// SERVICE FUNCTIONS
+//---------------------------------------------------------------------------
+
+// compute cell stiffness matrix with deviatoric projection
+ void getStiffMatDevProj(
+	PetscScalar eta, PetscScalar diag,PetscScalar *v,
+	PetscScalar dx,  PetscScalar dy,  PetscScalar dz,
+	PetscScalar fdx, PetscScalar fdy, PetscScalar fdz,
+	PetscScalar bdx, PetscScalar bdy, PetscScalar bdz);
+
+// compute cell stiffness matrix without deviatoric projection
+void getStiffMatNoProj(
+	PetscScalar eta, PetscScalar diag,PetscScalar *v,
+	PetscScalar dx,  PetscScalar dy,  PetscScalar dz,
+	PetscScalar fdx, PetscScalar fdy, PetscScalar fdz,
+	PetscScalar bdx, PetscScalar bdy, PetscScalar bdz);
 
 // apply two-point constraints on the ghost nodes
-PetscErrorCode getTwoPointConstr(PetscInt n, PetscInt idx[], PetscInt pdofidx[], PetscScalar cf[]);
+void getTwoPointConstr(PetscInt n, PetscInt idx[], PetscInt pdofidx[], PetscScalar cf[]);
 
 // constrain local matrix
-PetscErrorCode constrLocalMat(PetscInt n, PetscInt pdofidx[], PetscScalar cf[], PetscScalar v[]);
+void constrLocalMat(PetscInt n, PetscInt pdofidx[], PetscScalar cf[], PetscScalar v[]);
 
 // get velocity Schur complement from cell center local matrix, extract divergence & gradient sub-matrices
-PetscErrorCode getVelSchurComp(PetscScalar v[],  PetscScalar a[], PetscScalar d[], PetscScalar g[], PetscScalar k);
+void getVelSchurComp(PetscScalar v[],  PetscScalar a[], PetscScalar d[], PetscScalar g[], PetscScalar k);
 
-// extract sub-matrices from stiffeness matrix
-PetscErrorCode getSubMats(PetscScalar v[],  PetscScalar a[], PetscScalar d[], PetscScalar g[]);
+// extract sub-matrices from stiffness matrix
+void getSubMats(PetscScalar v[],  PetscScalar a[], PetscScalar d[], PetscScalar g[]);
 
 //---------------------------------------------------------------------------
 // MACROS
