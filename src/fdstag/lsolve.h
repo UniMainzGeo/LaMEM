@@ -4,56 +4,50 @@
 #ifndef __lsolve_h__
 #define __lsolve_h__
 //---------------------------------------------------------------------------
-
-// Stokes block preconditioner type
+// Stokes preconditioner type
 typedef enum
 {
-	STOKES_AL,  // augmented Lagrangian
-	STOKES_BF,  // block factorization
-	STOKES_MG,  // Galerkin multigrid
-	STOKES_AMG, // coupled algebraic multigrid
-	STOKES_USER // user defined
+	_STOKES_BF_,  // block factorization
+	_STOKES_MG_,  // Galerkin multigrid
+	_STOKES_USER_ // user-defined
 
 } PCStokesType;
 
 //---------------------------------------------------------------------------
 
-// velocity preconditioner type
+// velocity block preconditioner type (bf only)
 typedef enum
 {
-	VEL_MG,  // Galerkin multigrid
-	VEL_AMG, // algebraic multigrid
-	VEL_USER // user-defined
+	_VEL_MG_,  // Galerkin multigrid
+	_VEL_USER_ // user-defined
 
 } PCVelType;
-
 //---------------------------------------------------------------------------
 
 typedef struct _p_PCStokes *PCStokes;
 
 typedef struct _p_PCStokes
 {
-	JacRes       *jr;
+	PCStokesType  type;
+	PMat          pm;   // preconditioner matrix
 	void         *data; // type-specific context
-	PCStokesType  ptype;
 
-	// internal operations
-	PetscErrorCode (*Create) (PCStokes pc);
-	PetscErrorCode (*Setup)  (PCStokes pc);
-	PetscErrorCode (*Destroy)(PCStokes pc);
-	PetscErrorCode (*Apply)  (Mat P, Vec x, Vec y);
-	PetscErrorCode (*Picard) (Mat J, Vec x, Vec y);
+	// operations
+	PetscErrorCode (*Create)  (PCStokes pc);
+	PetscErrorCode (*Setup)   (PCStokes pc);
+	PetscErrorCode (*Destroy) (PCStokes pc);
+	PetscErrorCode (*Apply)   (Mat P, Vec x, Vec y);
 
-}p_PCStokes;
+} p_PCStokes;
 
 // PCStokes - pointer to an opaque structure (to be used in declarations)
 // sizeof(p_PCStokes) - size of the opaque structure
 
 //---------------------------------------------------------------------------
 
-PetscErrorCode PCStokesSetFromOptions(PCStokes pc);
+PetscErrorCode PCStokesCreate(PCStokes *p_pc, PMat pm);
 
-PetscErrorCode PCStokesCreate(PCStokes *p_pc, JacRes *jr);
+PetscErrorCode PCStokesSetFromOptions(PCStokes pc);
 
 PetscErrorCode PCStokesSetup(PCStokes pc);
 
@@ -61,43 +55,12 @@ PetscErrorCode PCStokesDestroy(PCStokes pc);
 
 //---------------------------------------------------------------------------
 
-// Augmented Lagrangian preconditioner context
-typedef struct
-{
-	BMat         P;      // block preconditiong matrix
-	Mat          M;      // diagonal penalty matrix
-	PetscScalar  pgamma; // penalty parameter
-	KSP          ksp;    // internal Krylov solver context
-	Vec          f, h;   // residual blocks
-	Vec          u, p;   // solution blocks
-
-} PCStokesAL;
-
-//---------------------------------------------------------------------------
-
-PetscErrorCode PCStokesALCreate(PCStokes pc);
-
-PetscErrorCode PCStokesALDestroy(PCStokes pc);
-
-PetscErrorCode PCStokesALSetup(PCStokes pc);
-
-PetscErrorCode PCStokesALApply(Mat P, Vec x, Vec y);
-
-PetscErrorCode PCStokesALPicard(Mat J, Vec x, Vec y);
-
-//---------------------------------------------------------------------------
-
 // Block Factorization preconditioner context
 typedef struct
 {
-	BMat       P;     // block preconditiong matrix
-	Mat        M;     // pressure Schur complement preconditioner
-	IS         isv;   // velocity index set
-	IS         isp;   // pressure index set
-	PC         pc;    // internal preconditioner context
-	PCVelType  vtype; // multigrid velocity solver flag
-	MGCtx      vctx;  // velocity multigrid context
-	PC         vpc;   // velocity preconditioner context
+	PCVelType  vtype; // velocity solver type
+	KSP        vksp;  // velocity solver
+	MG         vmg;   // velocity multigrid context
 
 } PCStokesBF;
 
@@ -109,20 +72,14 @@ PetscErrorCode PCStokesBFDestroy(PCStokes pc);
 
 PetscErrorCode PCStokesBFSetup(PCStokes pc);
 
-PetscErrorCode PCStokesBFApply(Mat P, Vec x, Vec y);
-
-PetscErrorCode PCStokesBFPicard(Mat J, Vec x, Vec y);
+PetscErrorCode PCStokesBFApply(Mat JP, Vec x, Vec y);
 
 //---------------------------------------------------------------------------
 
 // Galerkin multigrid preconditioner context
 typedef struct
 {
-	Mat   P;   // monolithic matrix
-	Mat   M;   // inverse viscosity matrix (Jacobian compensation)
-	PC    pc;  // internal preconditioner context
-	MGCtx ctx; // multigrid context
-	Vec   w;   // work vector for computing Jacobian action
+	MG mg; // coupled multigrid context
 
 } PCStokesMG;
 
@@ -134,14 +91,26 @@ PetscErrorCode PCStokesMGDestroy(PCStokes pc);
 
 PetscErrorCode PCStokesMGSetup(PCStokes pc);
 
-PetscErrorCode PCStokesMGApply(Mat P, Vec x, Vec y);
-
-PetscErrorCode PCStokesMGPicard(Mat J, Vec x, Vec y);
+PetscErrorCode PCStokesMGApply(Mat JP, Vec x, Vec y);
 
 //---------------------------------------------------------------------------
 
-// scatter block vectors to monolithic format & reverse
-PetscErrorCode VecScatterBlockToMonolithic(Vec f, Vec g, Vec b, ScatterMode mode);
+// User-defined
+typedef struct
+{
+	PC pc; // general preconditioner object
+
+} PCStokesUser;
+
+//---------------------------------------------------------------------------
+
+PetscErrorCode PCStokesUserCreate(PCStokes pc);
+
+PetscErrorCode PCStokesUserDestroy(PCStokes pc);
+
+PetscErrorCode PCStokesUserSetup(PCStokes pc);
+
+PetscErrorCode PCStokesUserApply(Mat JP, Vec x, Vec y);
 
 //---------------------------------------------------------------------------
 #endif

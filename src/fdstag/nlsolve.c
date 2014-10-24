@@ -33,10 +33,12 @@ PetscErrorCode NLSolCreate(NLSol *nl, PCStokes pc, SNES *p_snes)
 	// clear object
 	ierr = PetscMemzero(nl, sizeof(NLSol)); CHKERRQ(ierr);
 
-    // access context
-	nl->pc = pc;
-	jr     = pc->jr;
-	dof    = &(jr->fs->cdof);
+	// store context
+ 	nl->pc = pc;
+
+ 	// access context
+	jr  = pc->pm->jr;
+	dof = &(jr->fs->cdof);
 
 	// create matrix-free Jacobian operator
 	ierr = MatCreateShell(PETSC_COMM_WORLD, dof->numdof, dof->numdof,
@@ -117,7 +119,7 @@ PetscErrorCode FormResidual(SNES snes, Vec x, Vec f, void *ctx)
 
 	// access context
 	nl = (NLSol*)ctx;
-	jr = nl->pc->jr;
+	jr = nl->pc->pm->jr;
 
 	// copy solution from global to local vectors, enforce boundary constraints
 	ierr = JacResCopySol(jr, x); CHKERRQ(ierr);
@@ -140,6 +142,10 @@ PetscErrorCode FormJacobian(SNES snes, Vec x, Mat Amat, Mat Pmat, void *ctx)
 {
 	// Compute FDSTAG Jacobian matrix and preconditioner
 
+	NLSol    *nl;
+	PCStokes pc;
+	PMat     pm;
+	JacRes   *jr;
 	PetscInt it;
 
 	// clear unused parameters
@@ -150,14 +156,16 @@ PetscErrorCode FormJacobian(SNES snes, Vec x, Mat Amat, Mat Pmat, void *ctx)
 	PetscFunctionBegin;
 
 	// access context
-	NLSol    *nl = (NLSol*)ctx;
-	PCStokes  pc = nl->pc;
-	JacRes   *jr = pc->jr;
+	nl = (NLSol*)ctx;
+	pc = nl->pc;
+	pm = pc->pm;
+	jr = pm->jr;
 
 	// setup preconditioner
-	ierr = PCStokesSetup(pc);                                                CHKERRQ(ierr);
+	ierr = PMatAssemble(pm);                                                  CHKERRQ(ierr);
+	ierr = PCStokesSetup(pc);                                                 CHKERRQ(ierr);
 	ierr = MatShellSetOperation(nl->P, MATOP_MULT, (void(*)(void))pc->Apply); CHKERRQ(ierr);
-	ierr = MatShellSetContext(nl->P, pc->data);                               CHKERRQ(ierr);
+	ierr = MatShellSetContext(nl->P, pc);                                     CHKERRQ(ierr);
 
 	// switch Jacobian after fixed number of iterations
 	ierr = SNESGetIterationNumber(snes, &it); CHKERRQ(ierr);
@@ -167,8 +175,8 @@ PetscErrorCode FormJacobian(SNES snes, Vec x, Mat Amat, Mat Pmat, void *ctx)
 	if(nl->jtype == _PICARD_)
 	{
 		// ... Picard
-		ierr = MatShellSetOperation(nl->J, MATOP_MULT, (void(*)(void))pc->Picard); CHKERRQ(ierr);
-		ierr = MatShellSetContext(nl->J, pc->data);                                CHKERRQ(ierr);
+		ierr = MatShellSetOperation(nl->J, MATOP_MULT, (void(*)(void))pm->Picard); CHKERRQ(ierr);
+		ierr = MatShellSetContext(nl->J, pm->data);                                CHKERRQ(ierr);
 
 	}
 	else if(nl->jtype == _MFFD_)

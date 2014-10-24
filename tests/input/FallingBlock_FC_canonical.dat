@@ -69,7 +69,7 @@ FactorSurfaceLayer			= 		0.3 		# How thick is the surface layer (if option 2 is 
 
 
 <PetscOptionsStart>
-	
+
 # SNES
 	-npicard 3
 	-snes_monitor
@@ -80,77 +80,25 @@ FactorSurfaceLayer			= 		0.3 		# How thick is the surface layer (if option 2 is 
 	-snes_max_funcs 50000
 	-snes_type ksponly
 
-# Jacobian KSP
-	-js_ksp_type gcr
+# Jacobian solver (js)
+	-js_ksp_type fgmres
 	-js_ksp_max_it 1000
-	-js_ksp_min_it 2
 	-js_ksp_converged_reason
  	-js_ksp_monitor
-	-js_ksp_rtol 1e-8
+	-js_ksp_rtol 1e-6
 
-# Stokes Preconditioner
-#	-pstokes al
-	-pstokes bf
-#	-pstokes mg
+	-pcmat_type block
+#	-pcmat_pgamma 1e3
 
-# Augmented Lagrangian
-	-pgamma 1e3
-	-al_ksp_type preonly
-	-al_pc_type lu
-	-al_pc_factor_mat_solver_package mumps
-
-# Block Factorization
-
-	-bf_pc_view
-	-velgmg
-	
-	# block upper triangular preconditioner
-	-bf_pc_type fieldsplit
-	-bf_pc_fieldsplit_type SCHUR
-	-bf_pc_fieldsplit_schur_factorization_type UPPER
-	
-	# velocity sove mg
-	-fieldsplit_u_ksp_type preonly
-	-fieldsplit_u_pc_type none
-
-	# velocity solve gmres preconditioned with mg
-#	-fieldsplit_u_ksp_type gmres
-#	-fieldsplit_u_ksp_rtol 1e-2
-#	-fieldsplit_u_ksp_max_it 3
-#	-fieldsplit_u_pc_type none
-
-	# velocity solve direct
-#	-fieldsplit_u_ksp_type preonly
-#	-fieldsplit_u_pc_type lu
-#	-fieldsplit_u_pc_factor_mat_solver_package mumps
-	
-	# pressure solve is just inverse viscosity approximation to schur complement
-	-fieldsplit_p_ksp_type preonly
-	-fieldsplit_p_pc_type jacobi
-
-# MULTIGRID
-
-	-gmg_pc_view
-	-gmg_pc_type mg
-	-gmg_pc_mg_levels 3
-	-gmg_pc_mg_galerkin
-	-gmg_pc_mg_type multiplicative
-	-gmg_pc_mg_cycle_type v
-
-	-gmg_mg_levels_ksp_type richardson
-	-gmg_mg_levels_ksp_richardson_scale 0.5
-	-gmg_mg_levels_ksp_max_it 20
-	-gmg_mg_levels_pc_type jacobi
-
-# COARSE SOLVER
-
-	-crs_ksp_type preonly
-	-crs_pc_type redundant
-	-crs_pc_redundant_number 1	
-	-crs_redundant_pc_factor_mat_solver_package mumps
+	-jp_type bf
+	-bf_vs_type user
+	-vs_ksp_type preonly
+	-vs_pc_type lu
+	-vs_pc_factor_mat_solver_package mumps
 
 
-	# Fine-tune solver options here (add command-line Petsc Options)
+
+# Additional command-line Petsc Options
 	-use_fdstag_canonical
 	-AddRandomNoiseParticles 0
 	-restart 0

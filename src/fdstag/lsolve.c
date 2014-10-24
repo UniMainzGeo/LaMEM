@@ -11,18 +11,6 @@
 #include "matrix.h"
 #include "lsolve.h"
 //---------------------------------------------------------------------------
-// * get rid of AL (as this is a special case of block upper triangular with penalty)
-// * get rid of fieldsplit + matnest (just implement block upper triangular)
-// * add penalty terms to matrix types (block/monolithic)
-// * matrix type (block/monolithic) and penalty should be a parameter
-// * implement Picard Jacobian as a function defined in matrix structure
-// * properly implement Picard Jacobian if penalty is added (as this is screwed up now)
-// * ideally bf & mg should be PETSc preconditioners
-// * preallocation for Stokes restriction/interpolation
-// * restriction/interpolation for FDSTG Laplacian (temperature, Schur complement approximation)
-// * adding ones to diagonal (PCSetUp) ???
-// * near null space for Stokes
-//---------------------------------------------------------------------------
 #undef __FUNCT__
 #define __FUNCT__ "PCStokesSetFromOptions"
 PetscErrorCode PCStokesSetFromOptions(PCStokes pc)
@@ -33,28 +21,30 @@ PetscErrorCode PCStokesSetFromOptions(PCStokes pc)
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
 
-	ierr = PetscOptionsGetString(PETSC_NULL,"-pstokes", pname, MAX_NAME_LEN, &found); CHKERRQ(ierr);
+	ierr = PetscOptionsGetString(PETSC_NULL,"-jp_type", pname, MAX_NAME_LEN, &found); CHKERRQ(ierr);
 
 	if(found == PETSC_TRUE)
 	{
-		if     (!strcmp(pname, "al")) pc->ptype = STOKES_AL;
-		else if(!strcmp(pname, "bf")) pc->ptype = STOKES_BF;
-		else if(!strcmp(pname, "mg")) pc->ptype = STOKES_MG;
-		else SETERRQ1(PETSC_COMM_WORLD, PETSC_ERR_USER,"#Incorrect Stokes preconditioner: %s \n", pname);
+		if     (!strcmp(pname, "bf"))   pc->type = _STOKES_BF_;
+		else if(!strcmp(pname, "mg"))   pc->type = _STOKES_MG_;
+		else if(!strcmp(pname, "user")) pc->type = _STOKES_USER_;
+		else SETERRQ1(PETSC_COMM_WORLD, PETSC_ERR_USER,"#Incorrect Jacobian preconditioner type: %s \n", pname);
 	}
+	else pc->type =_STOKES_USER_;
 
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
 #undef __FUNCT__
 #define __FUNCT__ "PCStokesCreate"
-PetscErrorCode PCStokesCreate(PCStokes *p_pc, JacRes *jr)
+PetscErrorCode PCStokesCreate(PCStokes *p_pc, PMat pm)
 {
 	//========================================================================
 	// create Stokes preconditioner context
 	//========================================================================
 
 	PCStokes pc;
+	PMatType pm_type;
 
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
@@ -68,38 +58,41 @@ PetscErrorCode PCStokesCreate(PCStokes *p_pc, JacRes *jr)
 	// set type
 	ierr = PCStokesSetFromOptions(pc); CHKERRQ(ierr);
 
-	// assign data
-	pc->jr = jr;
-
-	if(pc->ptype == STOKES_AL)
-	{
-		// augmented Lagrangian
-		pc->Create  = &PCStokesALCreate;
-		pc->Setup   = &PCStokesALSetup;
-		pc->Destroy = &PCStokesALDestroy;
-		pc->Apply   = &PCStokesALApply;
-		pc->Picard  = &PCStokesALPicard;
-	}
-	else if(pc->ptype == STOKES_BF)
+	if(pc->type == _STOKES_BF_)
 	{
 		// Block Factorization
-		pc->Create  = &PCStokesBFCreate;
-		pc->Setup   = &PCStokesBFSetup;
-		pc->Destroy = &PCStokesBFDestroy;
-		pc->Apply   = &PCStokesBFApply;
-		pc->Picard  = &PCStokesBFPicard;
+		pc->Create  = PCStokesBFCreate;
+		pc->Setup   = PCStokesBFSetup;
+		pc->Destroy = PCStokesBFDestroy;
+		pc->Apply   = PCStokesBFApply;
+		pm_type     = _BLOCK_;
 	}
-	else if(pc->ptype == STOKES_MG)
+	else if(pc->type == _STOKES_MG_)
 	{
 		// Galerkin multigrid
-		pc->Create  = &PCStokesMGCreate;
-		pc->Setup   = &PCStokesMGSetup;
-		pc->Destroy = &PCStokesMGDestroy;
-		pc->Apply   = &PCStokesMGApply;
-		pc->Picard  = &PCStokesMGPicard;
+		pc->Create  = PCStokesMGCreate;
+		pc->Setup   = PCStokesMGSetup;
+		pc->Destroy = PCStokesMGDestroy;
+		pc->Apply   = PCStokesMGApply;
+		pm_type     = _MONOLITHIC_;
+	}
+	else if(pc->type == _STOKES_USER_)
+	{
+		// user-defined
+		pc->Create  = PCStokesUserCreate;
+		pc->Setup   = PCStokesUserSetup;
+		pc->Destroy = PCStokesUserDestroy;
+		pc->Apply   = PCStokesUserApply;
+		pm_type     = _MONOLITHIC_;
 	}
 
-	// create actual preconditioner
+	// check matrix type
+	if(pm->type != pm_type) SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "Incorrect Stokes preconditioner matrix type used\n");
+
+	// set matrix
+	pc->pm = pm;
+
+	// create preconditioner
 	ierr = pc->Create(pc); CHKERRQ(ierr);
 
 	// return preconditioner
@@ -133,171 +126,17 @@ PetscErrorCode PCStokesDestroy(PCStokes pc)
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-//....................... AUGMENTED LAGRANGIAN ..............................
-//---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "PCStokesALCreate"
-PetscErrorCode PCStokesALCreate(PCStokes pc)
-{
-	PCStokesAL  *al;
-	JacRes      *jr;
-	DOFIndex    *udof;
-	PetscBool    flg;
-	PetscInt     lnv, lnp;
-	PetscScalar  pgamma;
-
-	PetscErrorCode ierr;
-	PetscFunctionBegin;
-
-	// allocate space
-	ierr = PetscMalloc(sizeof(PCStokesAL), (void**)&al); CHKERRQ(ierr);
-
-	// store context
-	pc->data = (void*)al;
-
-	jr   = pc->jr;
-	udof = &(jr->fs->udof); // uncoupled
-
-	// get number of local velocity & pressure rows
-	lnv = udof->numdof;
-	lnp = udof->numdofp;
-
-	// create matrices
-	ierr = PMatCreateBlock(jr->fs, &al->P, &al->M); CHKERRQ(ierr);
-
-	// read & store penalty parameter
-	ierr = PetscOptionsGetScalar(PETSC_NULL, "-pgamma", &pgamma, &flg); CHKERRQ(ierr);
-	if(flg != PETSC_TRUE) pgamma = 1e-3;
-	al->pgamma = pgamma;
-
-	// create augmented Lagrangian preconditioner solver
-	ierr = KSPCreate(PETSC_COMM_WORLD, &al->ksp); CHKERRQ(ierr);
-	ierr = KSPSetOptionsPrefix(al->ksp,"al_");    CHKERRQ(ierr);
-	ierr = KSPSetFromOptions(al->ksp);            CHKERRQ(ierr);
-
-	// create work vectors
-	ierr = VecCreateMPI(PETSC_COMM_WORLD, lnv, PETSC_DETERMINE, &al->f); CHKERRQ(ierr);
-	ierr = VecCreateMPI(PETSC_COMM_WORLD, lnp, PETSC_DETERMINE, &al->h); CHKERRQ(ierr);
-	ierr = VecDuplicate(al->f, &al->u); CHKERRQ(ierr);
-	ierr = VecDuplicate(al->h, &al->p); CHKERRQ(ierr);
-
-	PetscFunctionReturn(0);
-}
-//---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "PCStokesALDestroy"
-PetscErrorCode PCStokesALDestroy(PCStokes pc)
-{
-	PCStokesAL *al;
-
-	PetscErrorCode ierr;
-	PetscFunctionBegin;
-
-	// get context
-	al = (PCStokesAL*)pc->data;
-
-	ierr = BMatDestroy(&al->P);   CHKERRQ(ierr);
-	ierr = MatDestroy (&al->M);   CHKERRQ(ierr);
-	ierr = KSPDestroy (&al->ksp); CHKERRQ(ierr);
-	ierr = VecDestroy (&al->f);   CHKERRQ(ierr);
-	ierr = VecDestroy (&al->h);   CHKERRQ(ierr);
-	ierr = VecDestroy (&al->u);   CHKERRQ(ierr);
-	ierr = VecDestroy (&al->p);   CHKERRQ(ierr);
-
-	ierr = PetscFree(al); CHKERRQ(ierr);
-
-	PetscFunctionReturn(0);
-}
-//---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "PCStokesALSetup"
-PetscErrorCode PCStokesALSetup(PCStokes pc)
-{
-	PCStokesAL *al;
-
-	PetscErrorCode ierr;
-	PetscFunctionBegin;
-
-	// get context
-	al = (PCStokesAL*)pc->data;
-
-	// assemble matrices
-	ierr = PMatAssembleBlock(pc->jr, &al->P, al->M, al->pgamma); CHKERRQ(ierr);
-
-	// tell to recompute preconditioner
-	ierr = KSPSetOperators(al->ksp, al->P.Avv, al->P.Avv); CHKERRQ(ierr);
-
-	PetscFunctionReturn(0);
-}
-//---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "PCStokesALApply"
-PetscErrorCode PCStokesALApply(Mat P, Vec r, Vec z)
-{
-	//======================================================================
-	// r - residual vector      (input)
-	// z - approximate solution (output)
-	//======================================================================
-
-	PCStokesAL *al;
-
-	PetscErrorCode ierr;
-	PetscFunctionBegin;
-
-	// access data
-	ierr = MatShellGetContext(P, (void**)&al); CHKERRQ(ierr);
-
-	// extract residual blocks
-	ierr = VecScatterBlockToMonolithic(al->f, al->h, r, SCATTER_REVERSE); CHKERRQ(ierr);
-
-	// compose right-hand-side vector: f = f - Avp*M*h
-	ierr = MatMult(al->M, al->h, al->p);     CHKERRQ(ierr);
-	ierr = MatMult(al->P.Avp, al->p, al->u); CHKERRQ(ierr);
-	ierr = VecAXPY(al->f, -1.0, al->u);      CHKERRQ(ierr);
-
-	// solve for velocity: u = Avv\f
-	ierr = KSPSolve(al->ksp, al->f, al->u); CHKERRQ(ierr);
-
-	// solve for pressure: p = M*(h - Apv*u)
-	ierr = MatMult(al->P.Apv, al->u, al->p); CHKERRQ(ierr);
-	ierr = VecAXPY(al->h, -1.0, al->p);      CHKERRQ(ierr);
-	ierr = MatMult(al->M, al->h, al->p);     CHKERRQ(ierr);
-
-	// compose approximate solution
-	ierr = VecScatterBlockToMonolithic(al->u, al->p, z, SCATTER_FORWARD); CHKERRQ(ierr);
-
-	PetscFunctionReturn(0);
-}
-//---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "PCStokesALPicard"
-PetscErrorCode PCStokesALPicard(Mat J, Vec x, Vec y)
-{
-	PCStokesAL *al;
-
-	PetscErrorCode ierr;
-	PetscFunctionBegin;
-
-	ierr = MatShellGetContext(J, (void**)&al); CHKERRQ(ierr);
-
-	// compute action of Picard Jacobian
-	ierr = MatMult(al->P.A, x, y); CHKERRQ(ierr);
-
-	PetscFunctionReturn(0);
-}
-//---------------------------------------------------------------------------
 //........................... BLOCK FACTORIZATION ...........................
 //---------------------------------------------------------------------------
 #undef __FUNCT__
 #define __FUNCT__ "PCStokesBFCreate"
 PetscErrorCode PCStokesBFCreate(PCStokes pc)
 {
+	PC          vpc;
 	PCStokesBF *bf;
 	JacRes     *jr;
-	KSP        *subksp;
-	DOFIndex   *cdof, *udof;
-	PetscInt    sid, lnv, lnp;
 	PetscBool   flg;
+	char        pname[MAX_NAME_LEN];
 
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
@@ -308,58 +147,34 @@ PetscErrorCode PCStokesBFCreate(PCStokes pc)
 	// store context
 	pc->data = (void*)bf;
 
-	jr   = pc->jr;
-	cdof = &(jr->fs->cdof);
-	udof = &(jr->fs->udof);
+	// access context
+	jr = pc->pm->jr;
 
-	// get number of local rows & starting index in global numbering
-	sid = cdof->istart;
-	lnv = udof->numdof;
-	lnp = udof->numdofp;
+	// set velocity solver type
+	ierr = PetscOptionsGetString(PETSC_NULL,"-bf_vs_type", pname, MAX_NAME_LEN, &flg); CHKERRQ(ierr);
 
-	// create matrices
-	ierr = PMatCreateBlock(jr->fs, &bf->P, &bf->M); CHKERRQ(ierr);
-
-	// create index sets
-	ierr = ISCreateStride(PETSC_COMM_WORLD, lnv, sid,       1, &bf->isv); CHKERRQ(ierr);
-	ierr = ISCreateStride(PETSC_COMM_WORLD, lnp, sid + lnv, 1, &bf->isp); CHKERRQ(ierr);
-
-	// setup block factorization preconditioner
-	ierr = PCCreate(PETSC_COMM_WORLD, &bf->pc);                                  CHKERRQ(ierr);
-	ierr = PCSetOperators(bf->pc, bf->P.A, bf->P.A);                             CHKERRQ(ierr);
-	ierr = PCSetType(bf->pc, PCFIELDSPLIT);                                      CHKERRQ(ierr);
-	ierr = PCFieldSplitSetType(bf->pc, PC_COMPOSITE_SCHUR);                      CHKERRQ(ierr);
-	ierr = PCFieldSplitSetSchurFactType(bf->pc, PC_FIELDSPLIT_SCHUR_FACT_UPPER); CHKERRQ(ierr);
-	ierr = PCFieldSplitSetIS(bf->pc, "u", bf->isv);                              CHKERRQ(ierr);
-	ierr = PCFieldSplitSetIS(bf->pc, "p", bf->isp);                              CHKERRQ(ierr);
-	ierr = PCFieldSplitSetSchurPre(bf->pc, PC_FIELDSPLIT_SCHUR_PRE_USER, bf->M); CHKERRQ(ierr);
-	ierr = PCSetOptionsPrefix(bf->pc, "bf_");                                    CHKERRQ(ierr);
-	ierr = PCSetFromOptions(bf->pc);                                             CHKERRQ(ierr);
-
-	// check whether Galerkin multigrid is requested for the velocity block
-	ierr = PetscOptionsHasName(NULL, "-velgmg", &flg);
-
-	// setup velocity multigrid
 	if(flg == PETSC_TRUE)
 	{
-		// set type
-		bf->vtype = VEL_MG;
-
-		// retrieve velocity preconditioner handle
-		ierr = PCSetUp(bf->pc);                              CHKERRQ(ierr);
-		ierr = PCFieldSplitGetSubKSP(bf->pc, NULL, &subksp); CHKERRQ(ierr);
-		ierr = KSPGetPC(subksp[0], &bf->vpc);                CHKERRQ(ierr);
-
-		// create velocity multigrid preconditioner
-		ierr = MGCtxCreate(&bf->vctx, jr->fs, jr->ubc, bf->vpc, IDXUNCOUPLED); CHKERRQ(ierr);
-		ierr = PetscFree(subksp);                                              CHKERRQ(ierr);
-
-		// MatSetNearNullSpace(J, nearNullSpace);
-		// MatNullSpaceCreate
+		if     (!strcmp(pname, "mg"))   bf->vtype = _VEL_MG_;
+		else if(!strcmp(pname, "user")) bf->vtype = _VEL_USER_;
+		else SETERRQ1(PETSC_COMM_WORLD, PETSC_ERR_USER,"#Incorrect velocity solver type: %s \n", pname);
 	}
-	else
+	else bf->vtype = _VEL_USER_;
+
+	// create velocity solver
+	ierr = KSPCreate(PETSC_COMM_WORLD, &bf->vksp); CHKERRQ(ierr);
+	ierr = KSPSetOptionsPrefix(bf->vksp,"vs_");    CHKERRQ(ierr);
+	ierr = KSPSetFromOptions(bf->vksp);            CHKERRQ(ierr);
+
+	// create & set velocity multigrid preconditioner
+	if(bf->vtype == _VEL_MG_)
 	{
-		bf->vtype = VEL_USER;
+		ierr = MGCreate(&bf->vmg, jr->fs, jr->ubc, IDXUNCOUPLED); CHKERRQ(ierr);
+
+		ierr = KSPGetPC(bf->vksp, &vpc);         CHKERRQ(ierr);
+		ierr = PCSetType(vpc, PCSHELL);          CHKERRQ(ierr);
+		ierr = PCShellSetContext(vpc, &bf->vmg); CHKERRQ(ierr);
+		ierr = PCShellSetApply(vpc, MGApply);    CHKERRQ(ierr);
 	}
 
 	PetscFunctionReturn(0);
@@ -369,32 +184,19 @@ PetscErrorCode PCStokesBFCreate(PCStokes pc)
 #define __FUNCT__ "PCStokesBFDestroy"
 PetscErrorCode PCStokesBFDestroy(PCStokes pc)
 {
-	PetscBool   flg;
 	PCStokesBF *bf;
 
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
 
-	// get context
+	// access context
 	bf = (PCStokesBF*)pc->data;
 
-	// view block factorization preconditioner if required
-	ierr = PetscOptionsHasName(NULL, "-bf_pc_view", &flg); CHKERRQ(ierr);
+	ierr = KSPDestroy(&bf->vksp);  CHKERRQ(ierr);
 
-	if(flg == PETSC_TRUE)
+	if(bf->vtype == _VEL_MG_)
 	{
-		ierr = PCView(bf->pc, PETSC_VIEWER_STDOUT_WORLD); CHKERRQ(ierr);
-	}
-
-	ierr = BMatDestroy(&bf->P);   CHKERRQ(ierr);
-	ierr = MatDestroy (&bf->M);   CHKERRQ(ierr);
-	ierr = ISDestroy  (&bf->isv); CHKERRQ(ierr);
-	ierr = ISDestroy  (&bf->isp); CHKERRQ(ierr);
-	ierr = PCDestroy  (&bf->pc);  CHKERRQ(ierr);
-
-	if(bf->vtype == VEL_MG)
-	{
-		ierr = MGCtxDestroy(&bf->vctx); CHKERRQ(ierr);
+		ierr = MGDestroy(&bf->vmg); CHKERRQ(ierr);
 	}
 
 	ierr = PetscFree(bf); CHKERRQ(ierr);
@@ -407,61 +209,64 @@ PetscErrorCode PCStokesBFDestroy(PCStokes pc)
 PetscErrorCode PCStokesBFSetup(PCStokes pc)
 {
 	PCStokesBF *bf;
+	PMatBlock  *P;
 
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
 
-	// get context
+	// access context
 	bf = (PCStokesBF*)pc->data;
+	P  = (PMatBlock*) pc->pm->data;
 
-	// assemble matrices
-	ierr = PMatAssembleBlock(pc->jr, &bf->P, bf->M, 0); CHKERRQ(ierr);
+	ierr = KSPSetOperators(bf->vksp, P->Avv, P->Avv); CHKERRQ(ierr);
 
-	// tell to recompute preconditioner
-	ierr = PCSetOperators(bf->pc, bf->P.A, bf->P.A); CHKERRQ(ierr);
-
-	if(bf->vtype == VEL_MG)
+	if(bf->vtype == _VEL_MG_)
 	{
-		ierr = MGCtxSetup(&bf->vctx, IDXUNCOUPLED);      CHKERRQ(ierr);
-		ierr = MGCtxSetDiagOnLevels(&bf->vctx, bf->vpc); CHKERRQ(ierr);
-
-		// dump matrices to MATLAB if requested
-		ierr = MGCtxDumpMat(&bf->vctx, bf->vpc); CHKERRQ(ierr);
+		ierr = MGSetup(&bf->vmg, P->Avv); CHKERRQ(ierr);
 	}
+
+	ierr = KSPSetUp(bf->vksp); CHKERRQ(ierr);
 
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
 #undef __FUNCT__
 #define __FUNCT__ "PCStokesBFApply"
-PetscErrorCode PCStokesBFApply(Mat P, Vec x, Vec y)
+PetscErrorCode PCStokesBFApply(Mat JP, Vec r, Vec x)
 {
+	//======================================================================
+	// r - residual vector      (input)
+	// x - approximate solution (output)
+	//======================================================================
+
+	PCStokes    pc;
 	PCStokesBF *bf;
+	PMatBlock  *P;
 
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
 
-	ierr = MatShellGetContext(P, (void**)&bf); CHKERRQ(ierr);
+	// access context
+	ierr = MatShellGetContext(JP, (void**)&pc); CHKERRQ(ierr);
 
-	// apply block factorization preconditioner
-	ierr = PCApply(bf->pc, x, y); CHKERRQ(ierr);
+	bf = (PCStokesBF*)pc->data;
+	P  = (PMatBlock*) pc->pm->data;
 
-	PetscFunctionReturn(0);
-}
-//---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "PCStokesBFPicard"
-PetscErrorCode PCStokesBFPicard(Mat J, Vec x, Vec y)
-{
-	PCStokesBF *bf;
+	// extract residual blocks
+	ierr = VecScatterBlockToMonolithic(P->rv, P->rp, r, SCATTER_REVERSE); CHKERRQ(ierr);
 
-	PetscErrorCode ierr;
-	PetscFunctionBegin;
+	ierr = VecPointwiseDivide(P->xp, P->rp, P->S); CHKERRQ(ierr); // xp = (S^-1)*rp
 
-	ierr = MatShellGetContext(J, (void**)&bf); CHKERRQ(ierr);
+	ierr = VecScale(P->xp, -1.0);                  CHKERRQ(ierr); // xp = -xp
 
-	// compute action of Picard Jacobian
-	ierr = MatMult(bf->P.A, x, y); CHKERRQ(ierr);
+	ierr = MatMult(P->Avp, P->xp, P->wv);          CHKERRQ(ierr); // wv = Avp*xp
+
+	ierr = VecAXPY(P->rv, -1.0, P->wv);            CHKERRQ(ierr); // rv = rv - wv
+
+	ierr = KSPSolve(bf->vksp, P->rv, P->xv);       CHKERRQ(ierr); // xv = (Avv^-1)*rv
+
+		// compose approximate solution
+	ierr = VecScatterBlockToMonolithic(P->xv, P->xp, x, SCATTER_FORWARD); CHKERRQ(ierr);
 
 	PetscFunctionReturn(0);
 }
@@ -483,19 +288,12 @@ PetscErrorCode PCStokesMGCreate(PCStokes pc)
 
 	// store context
 	pc->data = (void*)mg;
-	jr       = pc->jr;
 
-	// create matrices
-	ierr = PMatCreateMonolithic(jr->fs, &mg->P, &mg->M); CHKERRQ(ierr);
+	// access context
+	jr = pc->pm->jr;
 
-	// create pc object
-	ierr = PCCreate(PETSC_COMM_WORLD, &mg->pc); CHKERRQ(ierr);
-
-	// create velocity multigrid preconditioner
-	ierr = MGCtxCreate(&mg->ctx, jr->fs, jr->cbc, mg->pc, IDXCOUPLED); CHKERRQ(ierr);
-
-	// create work vector
-	ierr = VecDuplicate(jr->gsol, &mg->w); CHKERRQ(ierr);
+	// create context
+	ierr = MGCreate(&mg->mg, jr->fs, jr->cbc, IDXCOUPLED); CHKERRQ(ierr);
 
 	PetscFunctionReturn(0);
 }
@@ -504,30 +302,16 @@ PetscErrorCode PCStokesMGCreate(PCStokes pc)
 #define __FUNCT__ "PCStokesMGDestroy"
 PetscErrorCode PCStokesMGDestroy(PCStokes pc)
 {
-	PetscBool   flg;
 	PCStokesMG *mg;
 
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
 
-	// get context
+	// access context
 	mg = (PCStokesMG*)pc->data;
 
-	// view preconditioner if required
-	ierr = PetscOptionsHasName(NULL, "-gmg_pc_view", &flg); CHKERRQ(ierr);
-
-	if(flg == PETSC_TRUE)
-	{
-		ierr = PCView(mg->pc, PETSC_VIEWER_STDOUT_WORLD); CHKERRQ(ierr);
-	}
-
-	ierr = MatDestroy  (&mg->P);   CHKERRQ(ierr);
-	ierr = MatDestroy  (&mg->M);   CHKERRQ(ierr);
-	ierr = MGCtxDestroy(&mg->ctx); CHKERRQ(ierr);
-	ierr = PCDestroy   (&mg->pc);  CHKERRQ(ierr);
-	ierr = VecDestroy  (&mg->w);   CHKERRQ(ierr);
-
-	ierr = PetscFree(mg); CHKERRQ(ierr);
+	ierr = MGDestroy(&mg->mg); CHKERRQ(ierr);
+	ierr = PetscFree(mg);      CHKERRQ(ierr);
 
 	PetscFunctionReturn(0);
 }
@@ -537,113 +321,120 @@ PetscErrorCode PCStokesMGDestroy(PCStokes pc)
 PetscErrorCode PCStokesMGSetup(PCStokes pc)
 {
 	PCStokesMG *mg;
+	PMatMono   *P;
 
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
 
-	// get context
+	// acces context
 	mg = (PCStokesMG*)pc->data;
+	P  = (PMatMono*)  pc->pm->data;
 
-	// assemble monolithic matrix
-	ierr = PMatAssembleMonolithic(pc->jr, mg->P, mg->M); CHKERRQ(ierr);
-
-	// tell to recompute preconditioner
-	ierr = PCSetOperators(mg->pc, mg->P, mg->P);  CHKERRQ(ierr);
-
-	// setup multilevel structure
-	ierr = MGCtxSetup(&mg->ctx, IDXCOUPLED);       CHKERRQ(ierr);
-	ierr = MGCtxSetDiagOnLevels(&mg->ctx, mg->pc); CHKERRQ(ierr);
-
-	// dump matrices to MATLAB if requested
-	ierr = MGCtxDumpMat(&mg->ctx, mg->pc); CHKERRQ(ierr);
+	ierr = MGSetup(&mg->mg, P->A); CHKERRQ(ierr);
 
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
 #undef __FUNCT__
 #define __FUNCT__ "PCStokesMGApply"
-PetscErrorCode PCStokesMGApply(Mat P, Vec x, Vec y)
+PetscErrorCode PCStokesMGApply(Mat JP, Vec x, Vec y)
 {
+	PCStokes    pc;
 	PCStokesMG *mg;
 
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
 
-	ierr = MatShellGetContext(P, (void**)&mg); CHKERRQ(ierr);
+	ierr = MatShellGetContext(JP, (void**)&pc); CHKERRQ(ierr);
 
-	// apply block factorization preconditioner
-	ierr = PCApply(mg->pc, x, y); CHKERRQ(ierr);
+	mg = (PCStokesMG*)pc->data;
+
+	// apply multigrid preconditioner
+	ierr = PCApply(mg->mg.pc, x, y); CHKERRQ(ierr);
+
+	PetscFunctionReturn(0);
+}
+//---------------------------------------------------------------------------
+//............................. USER-DEFINED ................................
+//---------------------------------------------------------------------------
+#undef __FUNCT__
+#define __FUNCT__ "PCStokesUserCreate"
+PetscErrorCode PCStokesUserCreate(PCStokes pc)
+{
+	PCStokesUser *user;
+
+	PetscErrorCode ierr;
+	PetscFunctionBegin;
+
+	// allocate space
+	ierr = PetscMalloc(sizeof(PCStokesUser), (void**)&user); CHKERRQ(ierr);
+
+	// store context
+	pc->data = (void*)user;
+
+	// create user-defined preconditioner
+	ierr = PCCreate(PETSC_COMM_WORLD, &user->pc); CHKERRQ(ierr);
+	ierr = PCSetOptionsPrefix(user->pc, "jp_");   CHKERRQ(ierr);
+	ierr = PCSetFromOptions(user->pc);            CHKERRQ(ierr);
 
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
 #undef __FUNCT__
-#define __FUNCT__ "PCStokesMGPicard"
-PetscErrorCode PCStokesMGPicard(Mat J, Vec x, Vec y)
+#define __FUNCT__ "PCStokesUserDestroy"
+PetscErrorCode PCStokesUserDestroy(PCStokes pc)
 {
-	// actual operation is: y = J*x = P*x - M*x
-
-	PCStokesMG *mg;
+	PCStokesUser *user;
 
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
 
-	ierr = MatShellGetContext(J, (void**)&mg); CHKERRQ(ierr);
+	// get context
+	user = (PCStokesUser*)pc->data;
 
-	// compute action of preconditioner matrix
-	ierr = MatMult(mg->P, x, y);     CHKERRQ(ierr);
-	// compute compensation
-	ierr = MatMult(mg->M, x, mg->w); CHKERRQ(ierr);
-	// update result
-	ierr = VecAXPY(y, -1.0, mg->w);  CHKERRQ(ierr);
+	ierr = PCDestroy(&user->pc); CHKERRQ(ierr);
+	ierr = PetscFree(user);      CHKERRQ(ierr);
 
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
 #undef __FUNCT__
-#define __FUNCT__ "VecScatterBlockToMonolithic"
-PetscErrorCode VecScatterBlockToMonolithic(Vec f, Vec g, Vec b, ScatterMode mode)
+#define __FUNCT__ "PCStokesUserSetup"
+PetscErrorCode PCStokesUserSetup(PCStokes pc)
 {
-	// scatter block vectors to monolithic format forward & reverse
-
-	PetscInt     fs,  gs,  bs;
-	PetscScalar *fp, *gp, *bp;
+	PCStokesUser *user;
+	PMatMono     *P;
 
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
 
-	// get sizes of the blocks
-	ierr = VecGetLocalSize(f, &fs); CHKERRQ(ierr);
-	ierr = VecGetLocalSize(g, &gs); CHKERRQ(ierr);
-	ierr = VecGetLocalSize(b, &bs); CHKERRQ(ierr);
+	// access context
+	user = (PCStokesUser*)pc->data;
+	P    = (PMatMono*)    pc->pm->data;
 
-	if(bs != fs+gs)
-	{
-		SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "Block sizes don't match monolithic format\n");
-	}
+	// compute preconditioner
+	ierr = PCSetOperators(user->pc, P->A, P->A);  CHKERRQ(ierr);
+	ierr = PCSetUp(user->pc);                     CHKERRQ(ierr);
 
-	// access vectors
-	ierr = VecGetArray(f, &fp); CHKERRQ(ierr);
-	ierr = VecGetArray(g, &gp); CHKERRQ(ierr);
-	ierr = VecGetArray(b, &bp); CHKERRQ(ierr);
+	PetscFunctionReturn(0);
+}
+//---------------------------------------------------------------------------
+#undef __FUNCT__
+#define __FUNCT__ "PCStokesUserApply"
+PetscErrorCode PCStokesUserApply(Mat JP, Vec x, Vec y)
+{
+	PCStokes      pc;
+	PCStokesUser *user;
 
-	if(mode == SCATTER_FORWARD)
-	{
-		// block-to-monolithic
-		ierr = PetscMemcpy(bp,    fp, (size_t)fs*sizeof(PetscScalar)); CHKERRQ(ierr);
-		ierr = PetscMemcpy(bp+fs, gp, (size_t)gs*sizeof(PetscScalar)); CHKERRQ(ierr);
-	}
-	if(mode == SCATTER_REVERSE)
-	{
-		// monolithic-to-block
-		ierr = PetscMemcpy(fp, bp,    (size_t)fs*sizeof(PetscScalar)); CHKERRQ(ierr);
-		ierr = PetscMemcpy(gp, bp+fs, (size_t)gs*sizeof(PetscScalar)); CHKERRQ(ierr);
-	}
+	PetscErrorCode ierr;
+	PetscFunctionBegin;
 
-	// restore access
-	ierr = VecRestoreArray(f, &fp); CHKERRQ(ierr);
-	ierr = VecRestoreArray(g, &gp); CHKERRQ(ierr);
-	ierr = VecRestoreArray(b, &bp); CHKERRQ(ierr);
+	ierr = MatShellGetContext(JP, (void**)&pc); CHKERRQ(ierr);
+
+	user = (PCStokesUser*)pc->data;
+
+	// apply user-defined preconditioner
+	ierr = PCApply(user->pc, x, y); CHKERRQ(ierr);
 
 	PetscFunctionReturn(0);
 }

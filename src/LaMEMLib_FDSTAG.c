@@ -79,6 +79,7 @@ PetscErrorCode LaMEMLib_FDSTAG(PetscBool InputParamFile, const char *ParamFile, 
 	BCCtx    ubc;   // boundary condition context (uncoupled)
 	JacRes   jr;    // Jacobian & residual context
 	AdvCtx   actx;  // advection context
+	PMat     pm;    // preconditioner matrix
 	PCStokes pc;    // Stokes preconditioner
 	SNES     snes;  // PETSc nonliner solver
 	NLSol    nl;    // nonlinear solver context
@@ -270,8 +271,9 @@ PetscErrorCode LaMEMLib_FDSTAG(PetscBool InputParamFile, const char *ParamFile, 
 	// initialize markers
 	ierr = ADVMarkInit(&actx, &user); CHKERRQ(ierr);
 
-	// create Stokes preconditioner
-	ierr = PCStokesCreate(&pc, &jr); CHKERRQ(ierr);
+	// create Stokes preconditioner & matrix
+	ierr = PMatCreate(&pm, &jr);    CHKERRQ(ierr);
+	ierr = PCStokesCreate(&pc, pm); CHKERRQ(ierr);
 
 	// create nonlinear solver
 	ierr = NLSolCreate(&nl, pc, &snes); CHKERRQ(ierr);
@@ -535,6 +537,7 @@ PetscErrorCode LaMEMLib_FDSTAG(PetscBool InputParamFile, const char *ParamFile, 
 	ierr = JacResDestroy(&jr);   CHKERRQ(ierr);
 	ierr = ADVDestroy(&actx);    CHKERRQ(ierr);
 	ierr = PCStokesDestroy(pc);  CHKERRQ(ierr);
+	ierr = PMatDestroy(pm);      CHKERRQ(ierr);
 	ierr = SNESDestroy(&snes);   CHKERRQ(ierr);
 	ierr = NLSolDestroy(&nl);    CHKERRQ(ierr);
 	ierr = PVOutDestroy(&pvout); CHKERRQ(ierr);

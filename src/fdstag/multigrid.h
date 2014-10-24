@@ -5,6 +5,7 @@
 #define __multigrid_h__
 //---------------------------------------------------------------------------
 // Galerkin multigrid level data structure
+
 typedef struct
 {
 	// PETSc multigrid level numbering:
@@ -17,32 +18,39 @@ typedef struct
 	// n-1 - coarse grid
 	// n   - number of levels
 
-	PetscInt  ncors; // number of coarsening steps (grids)
-	Mat      *R;     // restriction matrices for every level (except coarsest)
-	Mat      *P;     // prolongation matrices for every level (except finest)
-	FDSTAG   *mgfs;  // staggered grid for every level (except finest)
-	BCCtx    *mgbc;  // boundary condition contexts for every level (except finest)
-	FDSTAG   *fs;    // finest level grid
-	BCCtx    *bc;    // finest level boundary conditions
+	PetscInt  ncors;  // number of coarsening steps (grids)
+	Mat      *R;      // restriction matrices for every level (except coarsest)
+	Mat      *P;      // prolongation matrices for every level (except finest)
+	FDSTAG   *mgfs;   // staggered grid for every level (except finest)
+	BCCtx    *mgbc;   // boundary condition contexts for every level (except finest)
+	PC        pc;     // internal preconditioner context
+	FDSTAG   *fs;     // finest level grid
+	BCCtx    *bc;     // finest level boundary conditions
+	idxtype   idxmod; // indexing mode
 
-} MGCtx;
+} MG;
+
 //---------------------------------------------------------------------------
 
-PetscErrorCode MGCheckGrid(FDSTAG *fs, PetscInt *_ncors);
+PetscErrorCode MGCreate(MG *mg, FDSTAG *fs, BCCtx *bc, idxtype idxmod);
 
-PetscErrorCode MGCtxCreate(MGCtx *mg, FDSTAG *fs, BCCtx *bc, PC pc, idxtype idxmod);
+PetscErrorCode MGDestroy(MG *mg);
 
-PetscErrorCode MGCtxDestroy(MGCtx *mg);
+PetscErrorCode MGSetup(MG *mg, Mat A);
 
-PetscErrorCode MGCtxSetup(MGCtx *mg, idxtype idxmod);
+PetscErrorCode MGApply(PC pc, Vec x, Vec y);
 
-PetscErrorCode MGCtxSetDiagOnLevels(MGCtx *mg, PC pcmg);
+//---------------------------------------------------------------------------
 
-PetscErrorCode MGCtxDumpMat(MGCtx *mg, PC pcmg);
+PetscErrorCode MGSetDiagOnLevels(MG *mg);
+
+PetscErrorCode MGDumpMat(MG *mg);
 
 PetscErrorCode SetupRestrictStep(Mat R, FDSTAG *cors, FDSTAG *fine, BCCtx *bccors, idxtype idxmod);
 
 PetscErrorCode SetupProlongStep(Mat P, FDSTAG *fine, FDSTAG *cors, BCCtx *bcfine, idxtype idxmod);
+
+PetscErrorCode CheckMGRestrict(FDSTAG *fs, PetscInt *_ncors);
 
 //---------------------------------------------------------------------------
 #endif

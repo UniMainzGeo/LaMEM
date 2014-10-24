@@ -43,8 +43,8 @@ PetscErrorCode JacResCreate(
 	//========================
 
 	// coupled solution vectors
-	ierr = VecCreateMPI(PETSC_COMM_WORLD, dof->numdof, PETSC_DETERMINE, &jr->gsol);
-	ierr = VecCreateMPI(PETSC_COMM_WORLD, dof->numdof, PETSC_DETERMINE, &jr->gres);
+	ierr = VecCreateMPI(PETSC_COMM_WORLD, dof->numdof, PETSC_DETERMINE, &jr->gsol); CHKERRQ(ierr);
+	ierr = VecCreateMPI(PETSC_COMM_WORLD, dof->numdof, PETSC_DETERMINE, &jr->gres); CHKERRQ(ierr);
 
 	// global velocity components
 	ierr = DMCreateGlobalVector(fs->DA_X, &jr->gvx); CHKERRQ(ierr);

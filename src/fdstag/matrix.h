@@ -5,61 +5,113 @@
 #define __matrix_h__
 //---------------------------------------------------------------------------
 
-PetscErrorCode PMatSetDiag(Mat P, PetscInt start, PetscInt ln, PetscScalar d, InsertMode mode);
+// WARNING! Add MatSetNearNullSpace for all matrix types
 
-PetscErrorCode PMatCreate(PetscInt m, PetscInt n, PetscInt d_nz,
+//---------------------------------------------------------------------------
+
+PetscErrorCode MatAIJCreate(PetscInt m, PetscInt n, PetscInt d_nz,
 	const PetscInt d_nnz[], PetscInt o_nz, const PetscInt o_nnz[], Mat *P);
 
-PetscErrorCode PMatAssemble(Mat P, PetscInt numRows, const PetscInt rows[]);
+PetscErrorCode MatAIJAssemble(Mat P, PetscInt numRows, const PetscInt rows[]);
 
+//---------------------------------------------------------------------------
+// preconditioning matrix storage format
+typedef enum
+{
+	_MONOLITHIC_,
+	_BLOCK_
+
+} PMatType;
+//---------------------------------------------------------------------------
+
+typedef struct _p_PMat *PMat;
+
+typedef struct _p_PMat
+{
+	JacRes     *jr;     // assembly context
+	void       *data;   // type-specific context
+	PMatType    type;   // matrix type
+	PetscScalar pgamma; // penalty parameter
+
+	// operations
+	PetscErrorCode (*Create)  (PMat pm);
+	PetscErrorCode (*Assemble)(PMat pm);
+	PetscErrorCode (*Destroy) (PMat pm);
+	PetscErrorCode (*Picard)  (Mat J, Vec x, Vec y);
+
+	// get cell stiffness matrix
+	void (*getStiffMat)(
+		PetscScalar, PetscScalar, PetscScalar*,
+		PetscScalar, PetscScalar, PetscScalar,
+		PetscScalar, PetscScalar, PetscScalar,
+		PetscScalar, PetscScalar, PetscScalar);
+
+} p_PMat;
+
+// PMat - pointer to an opaque structure (to be used in declarations)
+// sizeof(p_PMat) - size of the opaque structure
+
+//---------------------------------------------------------------------------
+
+PetscErrorCode PMatSetFromOptions(PMat pm);
+
+PetscErrorCode PMatCreate(PMat *p_pm, JacRes *jr);
+
+PetscErrorCode PMatAssemble(PMat pm);
+
+PetscErrorCode PMatDestroy(PMat pm);
+
+//---------------------------------------------------------------------------
+//.........................   MONOLITHIC MATRIX   ...........................
 //---------------------------------------------------------------------------
 
 typedef struct
 {
-	Mat A;        // block matrix
+	Mat A; // monolithic matrix
+	Vec M; // penalty terms compensation matrix
+	Vec w; // work vector for computing Jacobian action
+
+} PMatMono;
+
+PetscErrorCode PMatMonoCreate(PMat pm);
+
+PetscErrorCode PMatMonoAssemble(PMat pm);
+
+PetscErrorCode PMatMonoPicard(Mat J, Vec x, Vec y);
+
+PetscErrorCode PMatMonoDestroy(PMat pm);
+
+//---------------------------------------------------------------------------
+//...........................   BLOCK MATRIX   ..............................
+//---------------------------------------------------------------------------
+
+typedef struct
+{
 	Mat Avv, Avp; // velocity sub-matrices
-	Mat Apv, App; // pressure sub-matrices
+	Mat Apv;      // pressure sub-matrices
+	Vec App;      // ...
+	Vec S;        // Schur complement preconditioner
+	Vec rv, rp;   // residual blocks
+	Vec xv, xp;   // solution blocks
+	Vec wv, wp;   // work vectors
 
-} BMat;
+	void (*getSubMat)(
+		PetscScalar [], PetscScalar [],
+		PetscScalar [], PetscScalar []);
 
-//---------------------------------------------------------------------------
-
-PetscErrorCode BMatCreate(BMat *bmat,
-	PetscInt  lnv,       PetscInt  lnp,
-	PetscInt *Avv_d_nnz, PetscInt *Avv_o_nnz,
-	PetscInt *Avp_d_nnz, PetscInt *Avp_o_nnz,
-	PetscInt *Apv_d_nnz, PetscInt *Apv_o_nnz);
-
-PetscErrorCode BMatDestroy(BMat *bmat);
-
-PetscErrorCode BMatClearSubMat(BMat *bmat);
-
-PetscErrorCode BMatAssemble(BMat *bmat, BCCtx *bc);
+} PMatBlock;
 
 //---------------------------------------------------------------------------
 
-PetscErrorCode PMatCreateMonolithic(
-	FDSTAG *fs,
-	Mat    *P,
-	Mat    *M);
+PetscErrorCode PMatBlockCreate(PMat pm);
 
-PetscErrorCode PMatAssembleMonolithic(
-	JacRes *jr,
-	Mat     P,
-	Mat     M);
+PetscErrorCode PMatBlockAssemble(PMat pm);
 
-//---------------------------------------------------------------------------
+PetscErrorCode PMatBlockPicardClean(Mat J, Vec x, Vec y);
 
-PetscErrorCode PMatCreateBlock(
-	FDSTAG *fs,
-	BMat   *P,
-	Mat    *M);
+PetscErrorCode PMatBlockPicardSchur(Mat J, Vec x, Vec y);
 
-PetscErrorCode PMatAssembleBlock(
-	JacRes      *jr,
-	BMat        *P,
-	Mat          M,
-	PetscScalar  pgamma);
+PetscErrorCode PMatBlockDestroy(PMat pm);
 
 //---------------------------------------------------------------------------
 // SERVICE FUNCTIONS
@@ -67,17 +119,23 @@ PetscErrorCode PMatAssembleBlock(
 
 // compute cell stiffness matrix with deviatoric projection
  void getStiffMatDevProj(
-	PetscScalar eta, PetscScalar diag,PetscScalar *v,
-	PetscScalar dx,  PetscScalar dy,  PetscScalar dz,
-	PetscScalar fdx, PetscScalar fdy, PetscScalar fdz,
-	PetscScalar bdx, PetscScalar bdy, PetscScalar bdz);
+	PetscScalar eta, PetscScalar diag, PetscScalar *v,
+	PetscScalar dx,  PetscScalar dy,   PetscScalar dz,
+	PetscScalar fdx, PetscScalar fdy,  PetscScalar fdz,
+	PetscScalar bdx, PetscScalar bdy,  PetscScalar bdz);
 
 // compute cell stiffness matrix without deviatoric projection
-void getStiffMatNoProj(
-	PetscScalar eta, PetscScalar diag,PetscScalar *v,
-	PetscScalar dx,  PetscScalar dy,  PetscScalar dz,
-	PetscScalar fdx, PetscScalar fdy, PetscScalar fdz,
-	PetscScalar bdx, PetscScalar bdy, PetscScalar bdz);
+void getStiffMatClean(
+	PetscScalar eta, PetscScalar diag, PetscScalar *v,
+	PetscScalar dx,  PetscScalar dy,   PetscScalar dz,
+	PetscScalar fdx, PetscScalar fdy,  PetscScalar fdz,
+	PetscScalar bdx, PetscScalar bdy,  PetscScalar bdz);
+
+// extract sub-matrices from stiffness matrix, compute velocity Schur complement
+void getSubMatSchur(PetscScalar v[],  PetscScalar a[], PetscScalar d[], PetscScalar g[]);
+
+// extract sub-matrices from stiffness matrix
+void getSubMatClean(PetscScalar v[],  PetscScalar a[], PetscScalar d[], PetscScalar g[]);
 
 // apply two-point constraints on the ghost nodes
 void getTwoPointConstr(PetscInt n, PetscInt idx[], PetscInt pdofidx[], PetscScalar cf[]);
@@ -85,11 +143,10 @@ void getTwoPointConstr(PetscInt n, PetscInt idx[], PetscInt pdofidx[], PetscScal
 // constrain local matrix
 void constrLocalMat(PetscInt n, PetscInt pdofidx[], PetscScalar cf[], PetscScalar v[]);
 
-// get velocity Schur complement from cell center local matrix, extract divergence & gradient sub-matrices
-void getVelSchurComp(PetscScalar v[],  PetscScalar a[], PetscScalar d[], PetscScalar g[], PetscScalar k);
+//---------------------------------------------------------------------------
 
-// extract sub-matrices from stiffness matrix
-void getSubMats(PetscScalar v[],  PetscScalar a[], PetscScalar d[], PetscScalar g[]);
+// scatter block vectors to monolithic format & reverse
+PetscErrorCode VecScatterBlockToMonolithic(Vec f, Vec g, Vec b, ScatterMode mode);
 
 //---------------------------------------------------------------------------
 // MACROS
