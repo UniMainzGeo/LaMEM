@@ -257,7 +257,8 @@ PetscErrorCode PCStokesBFApply(Mat JP, Vec r, Vec x)
 
 	ierr = VecPointwiseDivide(P->xp, P->rp, P->S); CHKERRQ(ierr); // xp = (S^-1)*rp
 
-	ierr = VecScale(P->xp, -1.0);                  CHKERRQ(ierr); // xp = -xp
+//	this fucking sign has tremendous influence on convergence rate! it's better this way!
+//	ierr = VecScale(P->xp, -1.0);                  CHKERRQ(ierr); // xp = -xp
 
 	ierr = MatMult(P->Avp, P->xp, P->wv);          CHKERRQ(ierr); // wv = Avp*xp
 

@@ -195,7 +195,7 @@ PetscErrorCode MGSetup(MG *mg, Mat A)
 	}
 
 	// tell to recompute preconditioner
-	ierr = PCSetOperators(mg->pc, NULL, A); CHKERRQ(ierr);
+	ierr = PCSetOperators(mg->pc, A, A); CHKERRQ(ierr);
 
 	// remove constrained rows & columns
 	ierr = MGSetDiagOnLevels(mg); CHKERRQ(ierr);
@@ -206,6 +206,8 @@ PetscErrorCode MGSetup(MG *mg, Mat A)
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
+#undef __FUNCT__
+#define __FUNCT__ "MGApply"
 PetscErrorCode MGApply(PC pc, Vec x, Vec y)
 {
 	MG *mg;

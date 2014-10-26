@@ -81,7 +81,7 @@ PetscErrorCode NLSolCreate(NLSol *nl, PCStokes pc, SNES *p_snes)
 	ierr = VecSet(jr->gsol, 0.0); CHKERRQ(ierr);
 
 	// read number of Picard iterations
-	ierr = PetscOptionsGetInt(PETSC_NULL, "-npicard", &nl->nPicIt, &flg); CHKERRQ(ierr);
+	ierr = PetscOptionsGetInt(PETSC_NULL, "-snes_npicard", &nl->nPicIt, &flg); CHKERRQ(ierr);
 	if(flg != PETSC_TRUE) nl->nPicIt = 5;
 
 	// return solver

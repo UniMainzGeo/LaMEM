@@ -1,32 +1,140 @@
-##################################
-# ALL CONTROLS USE PETSc OPTIONS
-# NO DUPLICATION IN THE INPUT FILE
-##################################
+================================================================================
+OPTIONS & PREFIXES
+================================================================================
 
-* SNES uses standard prefix
+* SNES uses standard prefix -snes_
 
-* MFFD Jacobian is activated after a fixed number of Picard iterations.
-  Number of Picard iterations is provided via option -npicard 3
+* MFFD Jacobian is activated after a fixed number of Picard iterations
+  
+     -snes_npicard [number] - set number of Picard iterations
 
-* MFFD Jacobian options are set via prefix -fd_
+* MFFD Jacobian options are set with prefix -fd_
 
-* Jacobian linear solver is controlled via prefix -js_ 
-  From now on only "coupled" velocity-pressure iterations are supported.
+* Jacobian linear solver is controlled with prefix -js_ 
 
-* Stokes preconditioner type is selected via option -pstokes,
-  which can currently assume the following values:
+* Jacobian preconditioner matrix is controlled with prefix -pcmat_
 
-   [1] -pstokes al - augmented Lagrangian (artificial compressibility)
-        KSP prefix is -al_
-        Penalty parameter is set via option -pgamma 1e3 (applied to the viscosity scaling matrix).
-        
-   [2] -pstokes bf - block factorization (Schur complement based a.k.a. fieldsplit).
-        PC prefix -bf_
-        Option setting pattern is standard for PETSc fieldsplit preconditioner,
-        unless Galerking Geometric multigrid is selected for the velocity.
-        In this case multigrid PC is controlled via prefix -gmg_
-        Coarse solver KSP prefix is -crs_
-        Selecting velocity multigrid is done with the flag -velgmg
-        
-   [3] -pstokes mg - coupled velocity-pressure Galerking Geometric multigrid
-        (same as above -gmg_ and -crs_)
+     -pcmat_type [block, mono] - select matrix type (block or monolithic) (default - mono)
+     -pcmat_pgamma [value]     - set the penalty parameter (pgamma >= 1)  (default - 1)
+     -pcmat_no_dev_proj        - switch off deviatoric projection         (default - not set)
+
+      If matrix type is 'block', and 'pgamma' > 1, velocity Schur complement is assembled
+     
+* Jacobian preconditioner is controlled with prefix -jp
+
+     -jp_type [bf, mg, user] - select preconditioner type (default user)
+     
+      bf   - block factorization (currently only block upper triangular)
+      mg   - coupled Galerkin geometric multigrid
+      user - coupled user-defined preconditioner controlled via options
+         
+     'mg' and 'user' types require 'mono' matrix
+     'bf' type requires 'block' matrix
+      Option prefix for user-defined preconditioner is -jp
+
+* Block factorization preconditioner is controlled with prefix -bf
+
+     -bf_vs_type [mg, user] - select velocity block solver:
+     
+      mg   - Galerkin geometric multigrid
+      user - user-defined preconditioner controlled via options
+      
+      Option prefix for user-defined velocity solver is -vs
+
+ * Galerkin geometric multigrid multigrid option (both coupled and velocity) is -gmg_
+
+ * Coarse solver prefix is -crs_
+ 
+================================================================================
+Examples
+================================================================================
+
+[1] nonlinear & linear solver settings
+
+# SNES
+	-snes_npicard 3
+	-snes_monitor
+	-snes_atol 1e-12
+	-snes_rtol 1e-6
+	-snes_stol 1e-6
+	-snes_max_it 25
+	-snes_max_funcs 50000
+	-snes_type ksponly
+
+# Jacobian solver
+	-js_ksp_type fgmres
+	-js_ksp_max_it 1000
+	-js_ksp_converged_reason
+	-js_ksp_monitor
+	-js_ksp_rtol 1e-6
+
+================================================================================
+
+[2] direct solver for coupled system with penalty
+	(play with -pcmat_pgamma to see the iteration count)
+
+	-pcmat_type mono
+	-pcmat_pgamma 1e3
+
+	-jp_type user
+	-jp_pc_type lu
+	-jp_pc_factor_mat_solver_package mumps
+
+================================================================================
+
+[3] block factorization with penalty and direct solver for velocity block (a-la Powell-Hesteness)
+	(play with -pcmat_pgamma to see the iteration count)
+
+	-pcmat_type block
+	-pcmat_pgamma 1e3
+
+	-jp_type bf
+	
+	-bf_vs_type user
+
+	-vs_ksp_type preonly
+	-vs_pc_type lu
+	-vs_pc_factor_mat_solver_package mumps
+
+================================================================================
+
+[4] multigrid for coupled system
+
+	-pcmat_type mono
+
+	-jp_type mg
+
+================================================================================
+
+[5] block factorization with multigrid for velocity block
+
+	-pcmat_type block
+
+	-jp_type bf
+
+	-bf_vs_type mg
+
+	-vs_ksp_type preonly
+
+================================================================================
+
+[6] multigrid & coarse solver settings (both coupled & velocity)
+
+	-gmg_pc_view
+	-gmg_pc_type mg
+	-gmg_pc_mg_levels 3
+	-gmg_pc_mg_galerkin
+	-gmg_pc_mg_type multiplicative
+	-gmg_pc_mg_cycle_type v
+
+	-gmg_mg_levels_ksp_type richardson
+	-gmg_mg_levels_ksp_richardson_scale 0.5
+	-gmg_mg_levels_ksp_max_it 20
+	-gmg_mg_levels_pc_type jacobi
+
+	-crs_ksp_type preonly
+	-crs_pc_type redundant
+	-crs_pc_redundant_number 1
+	-crs_redundant_pc_factor_mat_solver_package mumps
+
+================================================================================
