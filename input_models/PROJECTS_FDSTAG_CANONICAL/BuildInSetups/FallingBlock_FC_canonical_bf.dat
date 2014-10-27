@@ -7,9 +7,9 @@
 #    * number of cells                                    (n points)
 #    * bias coefficients                                  (n points) 
 
-nel_x						=   64    
-nel_y						= 	64    
-nel_z						= 	64
+nel_x						=   32    
+nel_y						= 	32    
+nel_z						= 	32
 
 #nel_x						=	-3    
 #nel_x						=   32    
@@ -32,8 +32,9 @@ z_bot					=	0			# Bottom of box
 msetup 					= block
 #msetup 					=	spheres
 
+
 # Define input/output and numerics-related stuff
-OutputFile					=	FSpheres_test		
+OutputFile					=	FBlock_test		
 save_timesteps				=	1				# save every ? timesteps
 time_end					=	1				# last timestep
 CFL							=	1				# CFL, dt-based criterium
@@ -72,16 +73,15 @@ Temp_bottom					=   1 				# Temperature @ bottom; side BC's are flux-free
 	-js_ksp_rtol 1e-6
 
 
-#[4] multigrid for coupled system
-	-pcmat_type mono
-#	-pcmat_type block
+[5] block factorization with multigrid for velocity block
 	-pcmat_no_dev_proj
-
-	-jp_type mg
+	-pcmat_type block
+	-jp_type bf
+	-bf_vs_type mg
+	
 
 #[6] multigrid & coarse solver settings (both coupled & velocity)
-
-	#-gmg_pc_view
+	-gmg_pc_view
 	-gmg_pc_type mg
 	-gmg_pc_mg_levels 3
 	-gmg_pc_mg_galerkin
@@ -93,19 +93,39 @@ Temp_bottom					=   1 				# Temperature @ bottom; side BC's are flux-free
 	-gmg_mg_levels_ksp_max_it 20
 	-gmg_mg_levels_pc_type jacobi
 
-	# coarse solver settings (direct solver)
-	-crs_ksp_type preonly
-	-crs_pc_type redundant
-	-crs_pc_redundant_number 1
-	-crs_redundant_pc_factor_mat_solver_package mumps
-		
+
+
+
+# COARSE SOLVER
+#	-crs_ksp_type preonly
+#	-crs_pc_type redundant
+#	-crs_pc_redundant_number 1
+#	-crs_redundant_pc_factor_mat_solver_package mumps
+
+# use GAMG as a coarse grid solver (scales better in parallel and has redistribution)
+#	-crs_ksp_type cg
+#	-crs_pc_type gamg 
+#	-crs_pc_gamg_sym_graph true 
+#	-crs_pc_gamg_agg_nsmooths 0 
+#	-crs_pc_gamg_verbose 1 
+#	-crs_pc_gamg_repartition true 
+
+
+
+
+# VIEWERS
+	#-js_ksp_view
+	#-bf_pc_view
+
 
 	# Fine-tune solver options here (add command-line Petsc Options)
 	-use_fdstag_canonical
 	-AddRandomNoiseParticles 0
 	-restart 0
 	-save_breakpoints 0
+#	-SavePartitioning
 
+#	-objects_dump
 
 <PetscOptionsEnd>
     
