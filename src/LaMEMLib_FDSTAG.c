@@ -332,7 +332,7 @@ PetscErrorCode LaMEMLib_FDSTAG(PetscBool InputParamFile, const char *ParamFile, 
 
 			PetscTime(&cputime_end);
 
-			PetscPrintf(PETSC_COMM_WORLD,"#  Nonlinear solve took %g s \n", cputime_end - cputime_start_nonlinear);
+			PetscPrintf(PETSC_COMM_WORLD,"#  Nonlinear solve took %g s\n", cputime_end - cputime_start_nonlinear);
 		}
 
 //		ierr = CheckVelocityError(&user); CHKERRQ(ierr);
@@ -365,7 +365,7 @@ PetscErrorCode LaMEMLib_FDSTAG(PetscBool InputParamFile, const char *ParamFile, 
 		// MARKER & FREE SURFACE ADVECTION + EROSION
 		//==========================================================================================
 
-//		ierr = ADVAdvect(&actx); CHKERRQ(ierr);
+		ierr = ADVAdvect(&actx); CHKERRQ(ierr);
 
 		// advect pushing block
 		ierr = PBCAdvectBlock(&user); CHKERRQ(ierr);

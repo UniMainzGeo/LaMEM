@@ -41,7 +41,7 @@ OPTIONS & PREFIXES
       
       Option prefix for user-defined velocity solver is -vs
 
- * Galerkin geometric multigrid multigrid option (both coupled and velocity) is -gmg_
+ * Galerkin geometric multigrid option (both coupled and velocity) is -gmg_
 
  * Coarse solver prefix is -crs_
  

@@ -190,19 +190,19 @@ static inline PetscInt FindPointInCell(
 }
 //-----------------------------------------------------------------------------
 static inline PetscScalar InterpLin3D(
-		PetscScalar ***lv,
-		PetscInt    i,
-		PetscInt    j,
-		PetscInt    k,
-		PetscInt    sx,
-		PetscInt    sy,
-		PetscInt    sz,
-		PetscScalar xp,
-		PetscScalar yp,
-		PetscScalar zp,
-		PetscScalar *cx,
-		PetscScalar *cy,
-		PetscScalar *cz)
+	PetscScalar ***lv,
+	PetscInt    i,
+	PetscInt    j,
+	PetscInt    k,
+	PetscInt    sx,
+	PetscInt    sy,
+	PetscInt    sz,
+	PetscScalar xp,
+	PetscScalar yp,
+	PetscScalar zp,
+	PetscScalar *cx,
+	PetscScalar *cy,
+	PetscScalar *cz)
 {
 	PetscScalar xb, yb, zb, xe, ye, ze, v;
 

@@ -433,7 +433,7 @@ PetscErrorCode ADVAdvectMark(AdvCtx *actx)
 	Marker      *P;
 	SolVarCell  *svCell;
 	PetscInt    sx, sy, sz, nx, ny;
-	PetscInt    jj, ID, I, J, K, II, JJ, KK, JI, KI, IJ, KJ, IK, JK;
+	PetscInt    jj, ID, I, J, K, II, JJ, KK;
 	PetscScalar *ncx, *ncy, *ncz;
 	PetscScalar *ccx, *ccy, *ccz;
 	PetscScalar ***lvx, ***lvy, ***lvz, ***lp, ***lT;
@@ -489,14 +489,14 @@ PetscErrorCode ADVAdvectMark(AdvCtx *actx)
 		zc = ccz[K];
 
 		// map marker on the cells of X, Y, Z & center grids
-		if(xp > xc) { IJ = IK = I; II = I+1; } else { IJ = IK = I-1; II = I; }
-		if(yp > yc) { JI = JK = J; JJ = J+1; } else { JI = JK = J-1; JJ = J; }
-		if(zp > zc) { KI = KJ = K; KK = K+1; } else { KI = KJ = K-1; KK = K; }
+		if(xp > xc) { II = I; } else { II = I-1; }
+		if(yp > yc) { JJ = J; } else { JJ = J-1; }
+		if(zp > zc) { KK = K; } else { KK = K-1; }
 
 		// interpolate velocity, pressure & temperature
-		vx = InterpLin3D(lvx, I,  JI, KI, sx, sy, sz, xp, yp, zp, ncx, ccy, ccz);
-		vy = InterpLin3D(lvy, IJ, J,  KJ, sx, sy, sz, xp, yp, zp, ccx, ncy, ccz);
-		vz = InterpLin3D(lvz, IK, JK, K,  sx, sy, sz, xp, yp, zp, ccx, ccy, ncz);
+		vx = InterpLin3D(lvx, I,  JJ, KK, sx, sy, sz, xp, yp, zp, ncx, ccy, ccz);
+		vy = InterpLin3D(lvy, II, J,  KK, sx, sy, sz, xp, yp, zp, ccx, ncy, ccz);
+		vz = InterpLin3D(lvz, II, JJ, K,  sx, sy, sz, xp, yp, zp, ccx, ccy, ncz);
 		p  = InterpLin3D(lp,  II, JJ, KK, sx, sy, sz, xp, yp, zp, ccx, ccy, ccz);
 		T  = InterpLin3D(lT,  II, JJ, KK, sx, sy, sz, xp, yp, zp, ccx, ccy, ccz);
 
@@ -614,8 +614,8 @@ PetscErrorCode ADVExchangeNumMark(AdvCtx *actx)
 	}
 
 	// wait until all communication processes have been terminated
-	ierr = MPI_Waitall(scnt, srequest, MPI_STATUSES_IGNORE); CHKERRQ(ierr);
-	ierr = MPI_Waitall(rcnt, rrequest, MPI_STATUSES_IGNORE); CHKERRQ(ierr);
+	if(scnt) { ierr = MPI_Waitall(scnt, srequest, MPI_STATUSES_IGNORE); CHKERRQ(ierr); }
+	if(rcnt) { ierr = MPI_Waitall(rcnt, rrequest, MPI_STATUSES_IGNORE); CHKERRQ(ierr); }
 
 	PetscFunctionReturn(0);
 }
@@ -641,12 +641,14 @@ PetscErrorCode ADVCreateMPIBuff(AdvCtx *actx)
 	actx->nsend = getPtrCnt(_num_neighb_, actx->nsendm, actx->ptsend);
 	actx->nrecv = getPtrCnt(_num_neighb_, actx->nrecvm, actx->ptrecv);
 
-	// allocate exchange buffers
-	ierr = PetscMalloc((size_t)actx->nsend*sizeof(Marker), &actx->sendbuf); CHKERRQ(ierr);
-	ierr = PetscMalloc((size_t)actx->nrecv*sizeof(Marker), &actx->recvbuf); CHKERRQ(ierr);
+	actx->sendbuf = NULL;
+	actx->recvbuf = NULL;
+	actx->idel    = NULL;
 
-	// allocate array of the deleted (sent) marker indices
-	ierr = PetscMalloc((size_t)actx->ndel*sizeof(PetscInt), &actx->idel); CHKERRQ(ierr);
+	// allocate exchange buffers & array of deleted (sent) marker indices
+	if(actx->nsend) { ierr = PetscMalloc((size_t)actx->nsend*sizeof(Marker),   &actx->sendbuf); CHKERRQ(ierr); }
+	if(actx->nrecv) { ierr = PetscMalloc((size_t)actx->nrecv*sizeof(Marker),   &actx->recvbuf); CHKERRQ(ierr); }
+	if(actx->ndel)  { ierr = PetscMalloc((size_t)actx->ndel *sizeof(PetscInt), &actx->idel);    CHKERRQ(ierr); }
 
 	// copy markers to send buffer, store their indices
 	for(i = 0, cnt = 0; i < actx->nummark; i++)
@@ -725,8 +727,8 @@ PetscErrorCode ADVExchangeMark(AdvCtx *actx)
 	}
 
 	// wait until all communication processes have been terminated
-	ierr = MPI_Waitall(scnt, srequest, MPI_STATUSES_IGNORE); CHKERRQ(ierr);
-	ierr = MPI_Waitall(rcnt, rrequest, MPI_STATUSES_IGNORE); CHKERRQ(ierr);
+	if(scnt) { ierr = MPI_Waitall(scnt, srequest, MPI_STATUSES_IGNORE); CHKERRQ(ierr); }
+	if(rcnt) { ierr = MPI_Waitall(rcnt, rrequest, MPI_STATUSES_IGNORE); CHKERRQ(ierr); }
 
 	PetscFunctionReturn(0);
 }
@@ -1083,9 +1085,9 @@ PetscErrorCode ADVInterpMarkToEdge(AdvCtx *actx, PetscInt iphase, InterpCase ica
 		zc = fs->dsz.ccoor[K];
 
 		// map marker on the control volumes of edge nodes
-		if(xp > xc) II = I+1; else II = I;
-		if(yp > yc) JJ = J+1; else JJ = J;
-		if(zp > zc) KK = K+1; else KK = K;
+		if(xp > xc) { II = I+1; } else { II = I; }
+		if(yp > yc) { JJ = J+1; } else { JJ = J; }
+		if(zp > zc) { KK = K+1; } else { KK = K; }
 
 		// get interpolation weights in cell control volumes
 		wxc = WEIGHT_POINT_CELL(I, xp, fs->dsx);
@@ -1179,4 +1181,5 @@ void rewindPtr(PetscInt n, PetscInt ptr[])
 	}
 }
 //-----------------------------------------------------------------------------
+
 
