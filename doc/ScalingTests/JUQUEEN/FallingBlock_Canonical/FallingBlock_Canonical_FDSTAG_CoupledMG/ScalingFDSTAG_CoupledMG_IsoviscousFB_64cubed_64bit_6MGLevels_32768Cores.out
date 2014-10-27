@@ -1,0 +1,121 @@
+ Parsing input file : FallingBlock_FC_canonical.dat 
+# Adding PetscOption: -npicard 3 
+# Adding PetscOption: -snes_monitor 
+# Adding PetscOption: -snes_atol 1e-12 
+# Adding PetscOption: -snes_rtol 1e-6 
+# Adding PetscOption: -snes_stol 1e-6 
+# Adding PetscOption: -snes_max_it 25 
+# Adding PetscOption: -snes_max_funcs 50000 
+# Adding PetscOption: -snes_type ksponly 
+# Adding PetscOption: -js_ksp_type gcr 
+# Adding PetscOption: -js_ksp_max_it 1000 
+# Adding PetscOption: -js_ksp_min_it 2 
+# Adding PetscOption: -js_ksp_converged_reason 
+# Adding PetscOption: -js_ksp_monitor 
+# Adding PetscOption: -js_ksp_rtol 1e-8 
+# Adding PetscOption: -pstokes mg 
+# Adding PetscOption: -pgamma 1e3 
+# Adding PetscOption: -al_ksp_type preonly 
+# Adding PetscOption: -al_pc_type lu 
+# Adding PetscOption: -al_pc_factor_mat_solver_package mumps 
+# Adding PetscOption: -gmg_pc_type mg 
+# Adding PetscOption: -gmg_pc_mg_levels 4 
+# Adding PetscOption: -gmg_pc_mg_galerkin 
+# Adding PetscOption: -gmg_pc_mg_type multiplicative 
+# Adding PetscOption: -gmg_pc_mg_cycle_type v 
+# Adding PetscOption: -gmg_pc_view 
+# Adding PetscOption: -gmg_pc_mg_log 
+# Adding PetscOption: -gmg_mg_levels_ksp_type richardson 
+# Adding PetscOption: -gmg_mg_levels_ksp_richardson_scale 0.5 
+# Adding PetscOption: -gmg_mg_levels_ksp_max_it 20 
+# Adding PetscOption: -crs_ksp_type preonly 
+# Adding PetscOption: -crs_pc_type gamg - 
+# Adding PetscOption: -crs_pc_gamg_sym_graph true 
+# Adding PetscOption: -crs_pc_gamg_agg_nsmooths 0 
+# Adding PetscOption: -crs_pc_gamg_verbose 1 
+# Adding PetscOption: -crs_pc_gamg_repartition true 
+# Adding PetscOption: -use_fdstag_canonical 
+# Adding PetscOption: -AddRandomNoiseParticles 0 
+# Adding PetscOption: -restart 0 
+# Adding PetscOption: -save_breakpoints 0 
+# -------------------------------------------------------------------------- 
+#                   Lithosphere and Mantle Evolution Model                   
+#              Current Revision: 5486 - 2014-10-15 00:00:33		     
+#  Modified items: LaMEMLib_FDSTAG.c, Mesh.c, 
+#     Compiled: Date: Oct 15 2014 - Time: 10:11:48 - Mode:  	    
+# -------------------------------------------------------------------------- 
+#        STAGGERED-GRID FINITE DIFFERENCE CANONICAL IMPLEMENTATION           
+# -------------------------------------------------------------------------- 
+# --------------------------------------------------------------------------
+# Phase material parameters read from FallingBlock_FC_canonical.dat: 
+#    phase_0 (id=0), VISCOSITY, constant [0,0,0] = 1.000000e+00 
+#    phase_0 (id=0), ELASTICITY, constant [0,1,0] = 5.000000e+10, 1.000000e+00 
+#    phase_0 (id=0), DENSITY, temperature-dependent [0,2,0] = 1.000000e+00, 0.000000e+00, 0.000000e+00 
+#    phase_0 (id=0), ENERGY, constant [0,3,0] = 3.000000e+00 1.050000e+03 0.000000e+00 0.000000e+00 
+#    phase_1 (id=1), VISCOSITY, constant [1,0,0] = 1.000000e+00 
+#    phase_1 (id=1), ELASTICITY, constant [1,1,0] = 5.000000e+10, 1.000000e+00 
+#    phase_1 (id=1), DENSITY, temperature-dependent [1,2,0] = 2.000000e+00, 0.000000e+00, 0.000000e+00 
+#    phase_1 (id=1), ENERGY, constant [1,3,0] = 3.000000e+00 1.050000e+03 0.000000e+00 0.000000e+00 
+ Element-type used         : ;  [Q1P0 Q2Pm1_global Q2Pm1_local Q1Q1 FDSTAG] (change with -vpt_element)
+ Total # of cpu's          : 32768 
+ Resolution [nx,ny,nz]     : 1025 x 1025 x 1025 
+ Total # of velocity dof's : 3230671875 
+ Computing mean material per element using arithmetic averaging from integration points 
+ Employing code in an Eulerian manner 
+ Gravity angle with z-axis =  0 
+ Approximate Aspect ratio of cells [dx/dz, dy/dz] = [1 1] 
+ Number of tracers/cell in [x,y,z]-direction = [2,2,2] 
+ NumSurfaceNodes=205  nz=1025 
+ # Not employing nonlinear iterations 
+ BC employed: BC.[Left Right; Front Back; Lower Upper]=[1 1; 1 1; 1 1] 
+# Initial time step: 0.001 years 
+ Input is assumed to be in non-dimensional units 
+# Starting marker initialization routine
+# FALLING BLOCK SETUP 
+# Setup Parameters: Block coordinates - [left,right]=[0.25,0.75]; [front,back]=[0.25,0.75]; [bottom,top]=[0.25,0.75] 
+# Finished marker initialization routine
+Coarse grid size per processor [nx=1][ny=1][nz=1] 
+Number of multigrid levels: 6
+  0 SNES Function norm 3.840853238540e+04 
+	[0]PCSetUp_GAMG level 0 N=134144, n data rows=1, n data cols=1, nnz/row (ave)=25, np=32768
+	[0]PCGAMGFilterGraph 16% nnz after filtering, with threshold 0, 25 nnz ave. (N=134144)
+	[0]maxIndSetAgg removed 3 of 4 vertices.  0 selected.
+		[0]PCGAMGProlongator_AGG New grid 1310 nodes
+	[0]createLevel repartition: size (active): 32768 --> 26, neq = 0
+[358] ***ASSERTION failed on line 176 of file /homeb/hmz30/hmz300/LIB/petsc-3.5.2/JUQUEEN_OPT_64bit/externalpackages/parmetis-4.0.2-p5/libparmetis/comm.c: j == nnbrs
+[1266] ***ASSERTION failed on line 176 of file /homeb/hmz30/hmz300/LIB/petsc-3.5.2/JUQUEEN_OPT_64bit/externalpackages/parmetis-4.0.2-p5/libparmetis/comm.c: j == nnbrs
+[714] ***ASSERTION failed on line 176 of file /homeb/hmz30/hmz300/LIB/petsc-3.5.2/JUQUEEN_OPT_64bit/externalpackages/parmetis-4.0.2-p5/libparmetis/comm.c: j == nnbrs
+[77] ***ASSERTION failed on line 176 of file /homeb/hmz30/hmz300/LIB/petsc-3.5.2/JUQUEEN_OPT_64bit/externalpackages/parmetis-4.0.2-p5/libparmetis/comm.c: j == nnbrs
+[315] ***ASSERTION failed on line 176 of file /homeb/hmz30/hmz300/LIB/petsc-3.5.2/JUQUEEN_OPT_64bit/externalpackages/parmetis-4.0.2-p5/libparmetis/comm.c: j == nnbrs
+[597] ***ASSERTION failed on line 176 of file /homeb/hmz30/hmz300/LIB/petsc-3.5.2/JUQUEEN_OPT_64bit/externalpackages/parmetis-4.0.2-p5/libparmetis/comm.c: j == nnbrs
+[487] ***ASSERTION failed on line 176 of file /homeb/hmz30/hmz300/LIB/petsc-3.5.2/JUQUEEN_OPT_64bit/externalpackages/parmetis-4.0.2-p5/libparmetis/comm.c: j == nnbrs
+[166] ***ASSERTION failed on line 176 of file /homeb/hmz30/hmz300/LIB/petsc-3.5.2/JUQUEEN_OPT_64bit/externalpackages/parmetis-4.0.2-p5/libparmetis/comm.c: j == nnbrs
+[ 3] ***ASSERTION failed on line 176 of file /homeb/hmz30/hmz300/LIB/petsc-3.5.2/JUQUEEN_OPT_64bit/externalpackages/parmetis-4.0.2-p5/libparmetis/comm.c: j == nnbrs
+[293] ***ASSERTION failed on line 176 of file /homeb/hmz30/hmz300/LIB/petsc-3.5.2/JUQUEEN_OPT_64bit/externalpackages/parmetis-4.0.2-p5/libparmetis/comm.c: j == nnbrs
+[890] ***ASSERTION failed on line 176 of file /homeb/hmz30/hmz300/LIB/petsc-3.5.2/JUQUEEN_OPT_64bit/externalpackages/parmetis-4.0.2-p5/libparmetis/comm.c: j == nnbrs
+[234] ***ASSERTION failed on line 176 of file /homeb/hmz30/hmz300/LIB/petsc-3.5.2/JUQUEEN_OPT_64bit/externalpackages/parmetis-4.0.2-p5/libparmetis/comm.c: j == nnbrs
+[403] ***ASSERTION failed on line 176 of file /homeb/hmz30/hmz300/LIB/petsc-3.5.2/JUQUEEN_OPT_64bit/externalpackages/parmetis-4.0.2-p5/libparmetis/comm.c: j == nnbrs
+[834] ***ASSERTION failed on line 176 of file /homeb/hmz30/hmz300/LIB/petsc-3.5.2/JUQUEEN_OPT_64bit/externalpackages/parmetis-4.0.2-p5/libparmetis/comm.c: j == nnbrs
+[69] ***ASSERTION failed on line 176 of file /homeb/hmz30/hmz300/LIB/petsc-3.5.2/JUQUEEN_OPT_64bit/externalpackages/parmetis-4.0.2-p5/libparmetis/comm.c: j == nnbrs
+[ 0] ***ASSERTION failed on line 176 of file /homeb/hmz30/hmz300/LIB/petsc-3.5.2/JUQUEEN_OPT_64bit/externalpackages/parmetis-4.0.2-p5/libparmetis/comm.c: j == nnbrs
+[868] ***ASSERTION failed on line 176 of file /homeb/hmz30/hmz300/LIB/petsc-3.5.2/JUQUEEN_OPT_64bit/externalpackages/parmetis-4.0.2-p5/libparmetis/comm.c: j == nnbrs
+[353] ***ASSERTION failed on line 176 of file /homeb/hmz30/hmz300/LIB/petsc-3.5.2/JUQUEEN_OPT_64bit/externalpackages/parmetis-4.0.2-p5/libparmetis/comm.c: j == nnbrs
+[1291] ***ASSERTION failed on line 176 of file /homeb/hmz30/hmz300/LIB/petsc-3.5.2/JUQUEEN_OPT_64bit/externalpackages/parmetis-4.0.2-p5/libparmetis/comm.c: j == nnbrs
+[476] ***ASSERTION failed on line 176 of file /homeb/hmz30/hmz300/LIB/petsc-3.5.2/JUQUEEN_OPT_64bit/externalpackages/parmetis-4.0.2-p5/libparmetis/comm.c: j == nnbrs
+[352] ***ASSERTION failed on line 176 of file /homeb/hmz30/hmz300/LIB/petsc-3.5.2/JUQUEEN_OPT_64bit/externalpackages/parmetis-4.0.2-p5/libparmetis/comm.c: j == nnbrs
+[846] ***ASSERTION failed on line 176 of file /homeb/hmz30/hmz300/LIB/petsc-3.5.2/JUQUEEN_OPT_64bit/externalpackages/parmetis-4.0.2-p5/libparmetis/comm.c: j == nnbrs
+[814] ***ASSERTION failed on line 176 of file /homeb/hmz30/hmz300/LIB/petsc-3.5.2/JUQUEEN_OPT_64bit/externalpackages/parmetis-4.0.2-p5/libparmetis/comm.c: j == nnbrs
+[607] ***ASSERTION failed on line 176 of file /homeb/hmz30/hmz300/LIB/petsc-3.5.2/JUQUEEN_OPT_64bit/externalpackages/parmetis-4.0.2-p5/libparmetis/comm.c: j == nnbrs
+[471] ***ASSERTION failed on line 176 of file /homeb/hmz30/hmz300/LIB/petsc-3.5.2/JUQUEEN_OPT_64bit/externalpackages/parmetis-4.0.2-p5/libparmetis/comm.c: j == nnbrs
+[798] ***ASSERTION failed on line 176 of file /homeb/hmz30/hmz300/LIB/petsc-3.5.2/JUQUEEN_OPT_64bit/externalpackages/parmetis-4.0.2-p5/libparmetis/comm.c: j == nnbrs
+[708] ***ASSERTION failed on line 176 of file /homeb/hmz30/hmz300/LIB/petsc-3.5.2/JUQUEEN_OPT_64bit/externalpackages/parmetis-4.0.2-p5/libparmetis/comm.c: j == nnbrs
+[709] ***ASSERTION failed on line 176 of file /homeb/hmz30/hmz300/LIB/petsc-3.5.2/JUQUEEN_OPT_64bit/externalpackages/parmetis-4.0.2-p5/libparmetis/comm.c: j == nnbrs
+[880] ***ASSERTION failed on line 176 of file /homeb/hmz30/hmz300/LIB/petsc-3.5.2/JUQUEEN_OPT_64bit/externalpackages/parmetis-4.0.2-p5/libparmetis/comm.c: j == nnbrs
+[965] ***ASSERTION failed on line 176 of file /homeb/hmz30/hmz300/LIB/petsc-3.5.2/JUQUEEN_OPT_64bit/externalpackages/parmetis-4.0.2-p5/libparmetis/comm.c: j == nnbrs
+[1249] ***ASSERTION failed on line 176 of file /homeb/hmz30/hmz300/LIB/petsc-3.5.2/JUQUEEN_OPT_64bit/externalpackages/parmetis-4.0.2-p5/libparmetis/comm.c: j == nnbrs
+[123] ***ASSERTION failed on line 176 of file /homeb/hmz30/hmz300/LIB/petsc-3.5.2/JUQUEEN_OPT_64bit/externalpackages/parmetis-4.0.2-p5/libparmetis/comm.c: j == nnbrs
+2014-10-17 10:49:45.771 (WARN ) [0x40001118ea0] :1644580:ibm.runjob.client.Job: terminated by signal 6
+2014-10-17 10:49:45.771 (WARN ) [0x40001118ea0] :1644580:ibm.runjob.client.Job: abnormal termination by signal 6 from rank 639
+2014-10-17 10:49:45.772 (WARN ) [0x40001118ea0] :1644580:ibm.runjob.client.Job: 1 INFO RAS event
+2014-10-17 10:49:45.772 (WARN ) [0x40001118ea0] :1644580:ibm.runjob.client.Job: most recent RAS event text: DDR Correctable Error Summary : count=28 MCFIR error status:  [MEMORY_CE] This bit is set when a memory CE is detected on a non-maintenance memory read op;
+2014-10-17 10:49:45.772 (WARN ) [0x40001118ea0] :1644580:ibm.runjob.client.Job: with severity INFO

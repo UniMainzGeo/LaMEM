@@ -1,0 +1,371 @@
+ Parsing input file : FallingBlock_FC_canonical.dat 
+# Adding PetscOption: -npicard 3 
+# Adding PetscOption: -snes_monitor 
+# Adding PetscOption: -snes_atol 1e-12 
+# Adding PetscOption: -snes_rtol 1e-6 
+# Adding PetscOption: -snes_stol 1e-6 
+# Adding PetscOption: -snes_max_it 25 
+# Adding PetscOption: -snes_max_funcs 50000 
+# Adding PetscOption: -snes_type ksponly 
+# Adding PetscOption: -js_ksp_type gcr 
+# Adding PetscOption: -js_ksp_max_it 1000 
+# Adding PetscOption: -js_ksp_min_it 2 
+# Adding PetscOption: -js_ksp_converged_reason 
+# Adding PetscOption: -js_ksp_monitor 
+# Adding PetscOption: -js_ksp_rtol 1e-8 
+# Adding PetscOption: -pstokes mg 
+# Adding PetscOption: -pgamma 1e3 
+# Adding PetscOption: -al_ksp_type preonly 
+# Adding PetscOption: -al_pc_type lu 
+# Adding PetscOption: -al_pc_factor_mat_solver_package mumps 
+# Adding PetscOption: -gmg_pc_type mg 
+# Adding PetscOption: -gmg_pc_mg_levels 4 
+# Adding PetscOption: -gmg_pc_mg_galerkin 
+# Adding PetscOption: -gmg_pc_mg_type multiplicative 
+# Adding PetscOption: -gmg_pc_mg_cycle_type v 
+# Adding PetscOption: -gmg_pc_view 
+# Adding PetscOption: -gmg_pc_mg_log 
+# Adding PetscOption: -gmg_mg_levels_ksp_type richardson 
+# Adding PetscOption: -gmg_mg_levels_ksp_richardson_scale 0.5 
+# Adding PetscOption: -gmg_mg_levels_ksp_max_it 20 
+# Adding PetscOption: -crs_ksp_type preonly 
+# Adding PetscOption: -crs_pc_type gamg - 
+# Adding PetscOption: -crs_pc_gamg_sym_graph true 
+# Adding PetscOption: -crs_pc_gamg_agg_nsmooths 0 
+# Adding PetscOption: -crs_pc_gamg_verbose 1 
+# Adding PetscOption: -crs_pc_gamg_repartition true 
+# Adding PetscOption: -use_fdstag_canonical 
+# Adding PetscOption: -AddRandomNoiseParticles 0 
+# Adding PetscOption: -restart 0 
+# Adding PetscOption: -save_breakpoints 0 
+# -------------------------------------------------------------------------- 
+#                   Lithosphere and Mantle Evolution Model                   
+#              Current Revision: 5486 - 2014-10-15 00:00:33		     
+#  Modified items: LaMEMLib_FDSTAG.c, Mesh.c, 
+#     Compiled: Date: Oct 15 2014 - Time: 10:11:48 - Mode:  	    
+# -------------------------------------------------------------------------- 
+#        STAGGERED-GRID FINITE DIFFERENCE CANONICAL IMPLEMENTATION           
+# -------------------------------------------------------------------------- 
+# --------------------------------------------------------------------------
+# Phase material parameters read from FallingBlock_FC_canonical.dat: 
+#    phase_0 (id=0), VISCOSITY, constant [0,0,0] = 1.000000e+00 
+#    phase_0 (id=0), ELASTICITY, constant [0,1,0] = 5.000000e+10, 1.000000e+00 
+#    phase_0 (id=0), DENSITY, temperature-dependent [0,2,0] = 1.000000e+00, 0.000000e+00, 0.000000e+00 
+#    phase_0 (id=0), ENERGY, constant [0,3,0] = 3.000000e+00 1.050000e+03 0.000000e+00 0.000000e+00 
+#    phase_1 (id=1), VISCOSITY, constant [1,0,0] = 1.000000e+00 
+#    phase_1 (id=1), ELASTICITY, constant [1,1,0] = 5.000000e+10, 1.000000e+00 
+#    phase_1 (id=1), DENSITY, temperature-dependent [1,2,0] = 2.000000e+00, 0.000000e+00, 0.000000e+00 
+#    phase_1 (id=1), ENERGY, constant [1,3,0] = 3.000000e+00 1.050000e+03 0.000000e+00 0.000000e+00 
+ Element-type used         : ;  [Q1P0 Q2Pm1_global Q2Pm1_local Q1Q1 FDSTAG] (change with -vpt_element)
+ Total # of cpu's          : 512 
+ Resolution [nx,ny,nz]     : 257 x 257 x 257 
+ Total # of velocity dof's : 50923779 
+ Computing mean material per element using arithmetic averaging from integration points 
+ Employing code in an Eulerian manner 
+ Gravity angle with z-axis =  0 
+ Approximate Aspect ratio of cells [dx/dz, dy/dz] = [1 1] 
+ Number of tracers/cell in [x,y,z]-direction = [2,2,2] 
+ NumSurfaceNodes=51  nz=257 
+ # Not employing nonlinear iterations 
+ BC employed: BC.[Left Right; Front Back; Lower Upper]=[1 1; 1 1; 1 1] 
+# Initial time step: 0.001 years 
+ Input is assumed to be in non-dimensional units 
+# Starting marker initialization routine
+# FALLING BLOCK SETUP 
+# Setup Parameters: Block coordinates - [left,right]=[0.25,0.75]; [front,back]=[0.25,0.75]; [bottom,top]=[0.25,0.75] 
+# Finished marker initialization routine
+Coarse grid size per processor [nx=4][ny=4][nz=4] 
+Number of multigrid levels: 4
+  0 SNES Function norm 4.795304369902e+03 
+	[0]PCSetUp_GAMG level 0 N=134144, n data rows=1, n data cols=1, nnz/row (ave)=55, np=512
+	[0]PCGAMGFilterGraph 77.1626% nnz after filtering, with threshold 0, 55.3164 nnz ave. (N=134144)
+	[0]maxIndSetAgg removed 48 of 256 vertices.  1 selected.
+		[0]PCGAMGProlongator_AGG New grid 702 nodes
+	[0]createLevel repartition: size (active): 512 --> 1, neq = 1
+		[0]PCSetUp_GAMG 1) N=702, n data cols=1, nnz/row (ave)=21, 1 active pes
+	[0]PCSetUp_GAMG 2 levels, grid complexity = 2.0524
+			PCSetUp_GAMG PC setup max eigen=2.265908e+00 min=8.924682e-02 on level 1 (N=134144)
+    Residual norms for js_ solve.
+    0 KSP Residual norm 4.795304369902e+03 
+    1 KSP Residual norm 2.390093060174e+03 
+    2 KSP Residual norm 7.620219418681e+02 
+    3 KSP Residual norm 3.130420854944e+02 
+    4 KSP Residual norm 2.128674799344e+02 
+    5 KSP Residual norm 1.290134657212e+02 
+    6 KSP Residual norm 5.266075243667e+01 
+    7 KSP Residual norm 2.158524919505e+01 
+    8 KSP Residual norm 6.173181025818e+00 
+    9 KSP Residual norm 2.215219392205e+00 
+   10 KSP Residual norm 1.131341858100e+00 
+   11 KSP Residual norm 3.575040039761e-01 
+   12 KSP Residual norm 1.291921118994e-01 
+   13 KSP Residual norm 4.401464943066e-02 
+   14 KSP Residual norm 4.059284663792e-02 
+   15 KSP Residual norm 3.553634193851e-02 
+   16 KSP Residual norm 1.245546875103e-02 
+   17 KSP Residual norm 6.171008717665e-03 
+   18 KSP Residual norm 2.812549746090e-03 
+   19 KSP Residual norm 1.146704839253e-03 
+   20 KSP Residual norm 4.237265618454e-04 
+   21 KSP Residual norm 2.468680718894e-04 
+   22 KSP Residual norm 7.708037789676e-05 
+   23 KSP Residual norm 3.591992032150e-05 
+  Linear solve converged due to CONVERGED_RTOL iterations 23
+  1 SNES Function norm 3.591989270840e-05 
+CONVERGED_ITS Number of nonlinear iterations = 1
+#  Nonlinear solve took 192.644 s 
+************************************************************************************************************************
+***             WIDEN YOUR WINDOW TO 120 CHARACTERS.  Use 'enscript -r -fCourier9' to print this document            ***
+************************************************************************************************************************
+
+---------------------------------------------- PETSc Performance Summary: ----------------------------------------------
+
+./LaMEM_64bit on a JUQUEEN_OPT_64bit named R63-IC-J02.zam.kfa-juelich.de with 512 processors, by Unknown Wed Oct 15 18:52:50 2014
+Using Petsc Release Version 3.5.2, Sep, 08, 2014 
+
+                         Max       Max/Min        Avg      Total 
+Time (sec):           1.974e+02      1.00001   1.974e+02
+Objects:              9.840e+02      1.00000   9.840e+02
+Flops:                9.350e+09      1.03957   9.204e+09  4.712e+12
+Flops/sec:            4.737e+07      1.03958   4.663e+07  2.388e+10
+MPI Messages:         7.076e+04      3.73964   5.462e+04  2.796e+07
+MPI Message Lengths:  2.585e+08      2.06631   4.120e+03  1.152e+11
+MPI Reductions:       9.910e+02      1.00000
+
+Flop counting convention: 1 flop = 1 real number operation of type (multiply/divide/add/subtract)
+                            e.g., VecAXPY() for real vectors of length N --> 2N flops
+                            and VecAXPY() for complex vectors of length N --> 8N flops
+
+Summary of Stages:   ----- Time ------  ----- Flops -----  --- Messages ---  -- Message Lengths --  -- Reductions --
+                        Avg     %Total     Avg     %Total   counts   %Total     Avg         %Total   counts   %Total 
+ 0:      Main Stage: 1.8271e+01   9.3%  2.0073e+11   4.3%  2.485e+06   8.9%  3.523e+02        8.6%  9.900e+02  99.9% 
+ 1:        MG Apply: 1.7910e+02  90.7%  4.5117e+12  95.7%  2.548e+07  91.1%  3.768e+03       91.4%  0.000e+00   0.0% 
+
+------------------------------------------------------------------------------------------------------------------------
+See the 'Profiling' chapter of the users' manual for details on interpreting output.
+Phase summary info:
+   Count: number of times phase was executed
+   Time and Flops: Max - maximum over all processors
+                   Ratio - ratio of maximum to minimum over all processors
+   Mess: number of messages sent
+   Avg. len: average message length (bytes)
+   Reduct: number of global reductions
+   Global: entire computation
+   Stage: stages of a computation. Set stages with PetscLogStagePush() and PetscLogStagePop().
+      %T - percent time in this phase         %F - percent flops in this phase
+      %M - percent messages in this phase     %L - percent message lengths in this phase
+      %R - percent reductions in this phase
+   Total Mflop/s: 10e-6 * (sum of flops over all processors)/(max time over all processors)
+------------------------------------------------------------------------------------------------------------------------
+Event                Count      Time (sec)     Flops                             --- Global ---  --- Stage ---   Total
+                   Max Ratio  Max     Ratio   Max  Ratio  Mess   Avg len Reduct  %T %F %M %L %R  %T %F %M %L %R Mflop/s
+------------------------------------------------------------------------------------------------------------------------
+
+--- Event Stage 0: Main Stage
+
+VecDotNorm2           23 1.0 1.4141e-01 2.3 1.23e+07 1.0 0.0e+00 0.0e+00 2.3e+01  0  0  0  0  2   0  3  0  0  2 43788
+VecMDot               32 1.0 1.8451e+00 8.2 6.79e+07 1.0 0.0e+00 0.0e+00 3.2e+01  0  1  0  0  3   2 17  0  0  3 18466
+VecNorm               37 1.0 3.0617e-02 4.0 6.98e+06 1.0 0.0e+00 0.0e+00 3.7e+01  0  0  0  0  4   0  2  0  0  4 114407
+VecScale              57 1.0 2.3760e-02 1.1 6.17e+06 1.0 0.0e+00 0.0e+00 0.0e+00  0  0  0  0  0   0  2  0  0  0 130365
+VecCopy                1 1.0 4.1338e-06 1.5 0.00e+00 0.0 0.0e+00 0.0e+00 0.0e+00  0  0  0  0  0   0  0  0  0  0     0
+VecSet               201 1.0 2.6759e-02 1.6 0.00e+00 0.0 0.0e+00 0.0e+00 0.0e+00  0  0  0  0  0   0  0  0  0  0     0
+VecAXPY               72 1.0 1.1603e-01 1.3 1.90e+07 1.0 0.0e+00 0.0e+00 0.0e+00  0  0  0  0  0   1  5  0  0  0 82369
+VecAYPX                1 1.0 2.2479e-03 1.6 1.34e+05 1.0 0.0e+00 0.0e+00 0.0e+00  0  0  0  0  0   0  0  0  0  0 29941
+VecMAXPY              55 1.0 5.1483e-01 1.1 1.36e+08 1.0 0.0e+00 0.0e+00 0.0e+00  0  1  0  0  0   3 34  0  0  0 132337
+VecAssemblyBegin       8 1.0 8.1837e-03 1.1 0.00e+00 0.0 0.0e+00 0.0e+00 2.1e+01  0  0  0  0  2   0  0  0  0  2     0
+VecAssemblyEnd         8 1.0 4.8627e-05 1.2 0.00e+00 0.0 0.0e+00 0.0e+00 0.0e+00  0  0  0  0  0   0  0  0  0  0     0
+VecScatterBegin      140 1.0 8.7409e-02 1.6 0.00e+00 0.0 1.0e+06 3.0e+03 0.0e+00  0  0  4  3  0   0  0 42 32  0     0
+VecScatterEnd        140 1.0 1.4113e+00 8.3 0.00e+00 0.0 0.0e+00 0.0e+00 0.0e+00  0  0  0  0  0   3  0  0  0  0     0
+VecSetRandom           1 1.0 6.4073e-05 1.2 0.00e+00 0.0 0.0e+00 0.0e+00 0.0e+00  0  0  0  0  0   0  0  0  0  0     0
+VecNormalize          11 1.0 5.1486e-04 1.5 1.00e+04 1.2 0.0e+00 0.0e+00 1.1e+01  0  0  0  0  1   0  0  0  0  1  8598
+Warning -- total time of even greater than time of entire stage -- something is wrong with the timer
+MatMult               57 1.0 1.8056e+02 1.0 9.05e+09 1.0 2.6e+07 4.2e+03 0.0e+00 91 97 92 93  0 988227310341089  0 25265
+MatSOR                11 1.0 2.7667e-03 1.3 2.97e+05 1.3 0.0e+00 0.0e+00 0.0e+00  0  0  0  0  0   0  0  0  0  0 44397
+MatConvert             2 1.0 1.5008e-03 1.7 0.00e+00 0.0 0.0e+00 0.0e+00 3.0e+00  0  0  0  0  0   0  0  0  0  0     0
+MatScale               1 1.0 7.5271e-04 1.9 3.66e+04 1.3 1.0e+04 2.3e+02 0.0e+00  0  0  0  0  0   0  0  0  0  0 24034
+MatAssemblyBegin      50 1.0 1.3494e+00 6.9 0.00e+00 0.0 7.8e+04 8.5e+03 5.6e+01  1  0  0  1  6   5  0  3  7  6     0
+MatAssemblyEnd        50 1.0 1.2231e+00 1.0 0.00e+00 0.0 2.9e+05 6.9e+02 1.7e+02  1  0  1  0 17   6  0 11  2 17     0
+MatGetRow           1224 1.2 1.9058e-03 1.4 0.00e+00 0.0 0.0e+00 0.0e+00 0.0e+00  0  0  0  0  0   0  0  0  0  0     0
+MatPartitioning        1 1.0 4.9292e-03 1.0 0.00e+00 0.0 0.0e+00 0.0e+00 2.0e+00  0  0  0  0  0   0  0  0  0  0     0
+MatCoarsen             1 1.0 1.6226e-02 1.1 0.00e+00 0.0 1.9e+05 9.2e+02 1.6e+01  0  0  1  0  2   0  0  8  2  2     0
+MatZeroEntries         7 1.0 3.1297e-02 1.4 0.00e+00 0.0 0.0e+00 0.0e+00 0.0e+00  0  0  0  0  0   0  0  0  0  0     0
+MatTranspose           1 1.0 2.2709e-02 1.0 0.00e+00 0.0 8.1e+04 1.1e+03 1.3e+01  0  0  0  0  1   0  0  3  1  1     0
+MatMatMatMult          3 1.0 7.6979e+00 1.0 5.21e+07 1.1 2.4e+05 1.6e+04 9.6e+01  4  1  1  3 10  42 13 10 40 10  3424
+MatMatMatMultSym       3 1.0 4.5668e+00 1.0 0.00e+00 0.0 2.1e+05 1.3e+04 8.4e+01  2  0  1  2  8  25  0  8 27  8     0
+MatMatMatMultNum       3 1.0 3.1317e+00 1.0 5.21e+07 1.1 2.9e+04 4.2e+04 1.2e+01  2  1  0  1  1  17 13  1 13  1  8417
+MatPtAP                1 1.0 8.5492e-03 1.0 4.01e+04 1.5 6.2e+04 1.3e+02 1.7e+01  0  0  0  0  2   0  0  2  0  2  2194
+MatPtAPSymbolic        1 1.0 4.9497e-03 1.0 0.00e+00 0.0 3.9e+04 1.9e+02 7.0e+00  0  0  0  0  1   0  0  2  0  1     0
+MatPtAPNumeric         1 1.0 3.5991e-03 1.0 4.01e+04 1.5 2.2e+04 1.9e+01 1.0e+01  0  0  0  0  1   0  0  1  0  1  5212
+MatTrnMatMult          1 1.0 6.0417e-01 1.0 6.13e+06 2.3 6.1e+04 2.6e+04 1.9e+01  0  0  0  1  2   3  1  2 16  2  4468
+MatTrnMatMultSym       1 1.0 2.8855e-01 1.0 0.00e+00 0.0 5.1e+04 1.6e+04 1.7e+01  0  0  0  1  2   2  0  2  8  2     0
+MatTrnMatMultNum       1 1.0 3.1569e-01 1.0 6.13e+06 2.3 1.0e+04 7.8e+04 2.0e+00  0  0  0  1  0   2  1  0  8  0  8552
+MatGetLocalMat        15 1.0 4.7920e-01 1.1 0.00e+00 0.0 0.0e+00 0.0e+00 0.0e+00  0  0  0  0  0   2  0  0  0  0     0
+MatGetBrAoCol         13 1.0 9.2963e-01 7.7 0.00e+00 0.0 1.5e+05 2.6e+04 0.0e+00  0  0  1  3  0   1  0  6 39  0     0
+MatGetSymTrans         2 1.0 3.5167e-05 1.3 0.00e+00 0.0 0.0e+00 0.0e+00 0.0e+00  0  0  0  0  0   0  0  0  0  0     0
+SFSetGraph             5 1.0 1.1346e-03 2.5 0.00e+00 0.0 0.0e+00 0.0e+00 0.0e+00  0  0  0  0  0   0  0  0  0  0     0
+SFBcastBegin          17 1.0 4.3569e-03 1.1 0.00e+00 0.0 1.9e+05 9.2e+02 1.0e+00  0  0  1  0  0   0  0  8  2  0     0
+SFBcastEnd            17 1.0 4.7295e-03 1.7 0.00e+00 0.0 0.0e+00 0.0e+00 0.0e+00  0  0  0  0  0   0  0  0  0  0     0
+SFReduceBegin          4 1.0 1.9097e-03 1.5 0.00e+00 0.0 3.3e+04 2.1e+02 4.0e+00  0  0  0  0  0   0  0  1  0  0     0
+SFReduceEnd            4 1.0 3.1883e-04 2.4 0.00e+00 0.0 0.0e+00 0.0e+00 0.0e+00  0  0  0  0  0   0  0  0  0  0     0
+PCGAMGgraph_AGG        1 1.0 7.5124e-02 1.0 3.66e+04 1.3 1.4e+05 1.2e+03 2.7e+01  0  0  1  0  3   0  0  6  2  3   241
+PCGAMGcoarse_AGG       1 1.0 6.3034e-01 1.0 6.13e+06 2.3 3.0e+05 5.9e+03 5.1e+01  0  0  1  2  5   3  1 12 18  5  4283
+PCGAMGProl_AGG         1 1.0 9.6878e-03 1.3 0.00e+00 0.0 3.5e+04 6.0e+02 2.4e+01  0  0  0  0  2   0  0  1  0  2     0
+PCGAMGPOpt_AGG         1 1.0 3.1044e-06 1.7 0.00e+00 0.0 0.0e+00 0.0e+00 0.0e+00  0  0  0  0  0   0  0  0  0  0     0
+PCSetUp                3 1.0 8.6411e+00 1.0 5.90e+07 1.1 8.9e+05 6.7e+03 3.2e+02  4  1  3  5 33  47 15 36 60 33  3406
+Warning -- total time of even greater than time of entire stage -- something is wrong with the timer
+PCApply               23 1.0 1.7951e+02 1.0 8.95e+09 1.0 2.5e+07 4.1e+03 0.0e+00 91 96 91 91  0 980224810251069  0 25133
+KSPGMRESOrthog        10 1.0 3.4666e-03 8.0 6.68e+04 1.2 0.0e+00 0.0e+00 1.0e+01  0  0  0  0  1   0  0  0  0  1  8505
+KSPSetUp               9 1.0 8.0288e-02 1.0 0.00e+00 0.0 0.0e+00 0.0e+00 1.4e+01  0  0  0  0  1   0  0  0  0  1     0
+Warning -- total time of even greater than time of entire stage -- something is wrong with the timer
+KSPSolve               1 1.0 1.8153e+02 1.0 9.29e+09 1.0 2.6e+07 4.2e+03 7.1e+01 92 99 92 93  7 994233310301088  7 25795
+MGSetup Level 0        1 1.0 7.9162e-04 1.8 0.00e+00 0.0 0.0e+00 0.0e+00 2.0e+00  0  0  0  0  0   0  0  0  0  0     0
+MGSetup Level 1        1 1.0 5.3491e-04 1.7 0.00e+00 0.0 0.0e+00 0.0e+00 2.0e+00  0  0  0  0  0   0  0  0  0  0     0
+MGSetup Level 2        1 1.0 5.4554e-04 1.3 0.00e+00 0.0 0.0e+00 0.0e+00 2.0e+00  0  0  0  0  0   0  0  0  0  0     0
+MGSetup Level 3        1 1.0 3.6978e-03 1.1 0.00e+00 0.0 0.0e+00 0.0e+00 2.0e+00  0  0  0  0  0   0  0  0  0  0     0
+Warning -- total time of even greater than time of entire stage -- something is wrong with the timer
+SNESSolve              1 1.0 1.9263e+02 1.0 9.35e+09 1.0 2.7e+07 4.3e+03 4.9e+02 98100 96 99 49 1054234810811161 49 24464
+SNESFunctionEval       2 1.0 4.8362e-01 1.0 0.00e+00 0.0 2.6e+05 2.3e+03 0.0e+00  0  0  1  1  0   3  0 11  6  0     0
+SNESJacobianEval       1 1.0 1.0610e+01 1.0 5.90e+07 1.1 1.0e+06 6.5e+03 4.2e+02  5  1  4  6 42  58 15 40 67 42  2774
+
+--- Event Stage 1: MG Apply
+
+VecScale            2691 1.0 7.2588e-02 2.1 2.84e+07 2.6 0.0e+00 0.0e+00 0.0e+00  0  0  0  0  0   0  0  0  0  0 174989
+VecCopy               23 1.0 1.4297e-04 1.5 0.00e+00 0.0 0.0e+00 0.0e+00 0.0e+00  0  0  0  0  0   0  0  0  0  0     0
+VecSet               253 1.0 7.1929e-03 1.2 0.00e+00 0.0 0.0e+00 0.0e+00 0.0e+00  0  0  0  0  0   0  0  0  0  0     0
+VecAYPX              253 1.0 4.4476e-02 1.2 3.60e+06 1.0 0.0e+00 0.0e+00 0.0e+00  0  0  0  0  0   0  0  0  0  0 40412
+VecAXPBYCZ            92 1.0 7.4403e-04 1.2 1.40e+05 1.2 0.0e+00 0.0e+00 0.0e+00  0  0  0  0  0   0  0  0  0  0 82935
+VecScatterBegin     3082 1.0 1.7729e+00 1.9 0.00e+00 0.0 2.5e+07 4.1e+03 0.0e+00  1  0 91 91  0   1  0100100  0     0
+VecScatterEnd       3082 1.0 5.5898e+0120.9 0.00e+00 0.0 0.0e+00 0.0e+00 0.0e+00 10  0  0  0  0  11  0  0  0  0     0
+MatMult              276 1.0 3.7224e+00 2.3 1.59e+08 1.0 2.1e+06 1.6e+03 0.0e+00  1  2  7  3  0   1  2  8  3  0 21720
+MatMultAdd            92 1.0 1.6564e+00 3.8 3.27e+07 1.0 6.9e+05 6.8e+02 0.0e+00  1  0  2  0  0   1  0  3  0  0 10044
+MatMultTranspose      23 1.0 9.5921e-01994.3 1.18e+04 1.2 1.2e+04 6.2e+01 0.0e+00  0  0  0  0  0   0  0  0  0  0     6
+MatSolve              23 0.0 2.3133e-02 0.0 3.85e+06 0.0 0.0e+00 0.0e+00 0.0e+00  0  0  0  0  0   0  0  0  0  0   166
+MatSOR               276 1.0 1.7638e+02 1.0 8.76e+09 1.0 2.3e+07 4.5e+03 0.0e+00 89 94 81 88  0  98 98 89 96  0 25016
+MatLUFactorSym         1 1.0 1.0761e-02183.0 0.00e+00 0.0 0.0e+00 0.0e+00 0.0e+00  0  0  0  0  0   0  0  0  0  0     0
+MatLUFactorNum         1 1.0 6.0801e-0212998.5 6.82e+06 0.0 0.0e+00 0.0e+00 0.0e+00  0  0  0  0  0   0  0  0  0  0   112
+MatResidual           92 1.0 2.6801e+00 1.8 1.49e+08 1.0 8.2e+05 3.3e+03 0.0e+00  1  2  3  2  0   1  2  3  3  0 28328
+MatGetRowIJ            1 0.0 4.2318e-04 0.0 0.00e+00 0.0 0.0e+00 0.0e+00 0.0e+00  0  0  0  0  0   0  0  0  0  0     0
+MatGetOrdering         1 0.0 3.3743e-03 0.0 0.00e+00 0.0 0.0e+00 0.0e+00 0.0e+00  0  0  0  0  0   0  0  0  0  0     0
+PCSetUp                3 1.0 7.5121e-02247.3 6.82e+06 0.0 0.0e+00 0.0e+00 0.0e+00  0  0  0  0  0   0  0  0  0  0    91
+PCSetUpOnBlocks       23 1.0 7.5187e-02209.9 6.82e+06 0.0 0.0e+00 0.0e+00 0.0e+00  0  0  0  0  0   0  0  0  0  0    91
+PCApply               23 1.0 1.2109e+00 1.0 1.76e+07 2.4 1.4e+06 2.3e+02 0.0e+00  1  0  5  0  0   1  0  6  0  0  3413
+KSPSetUp               2 1.0 3.2506e-06 1.7 0.00e+00 0.0 0.0e+00 0.0e+00 0.0e+00  0  0  0  0  0   0  0  0  0  0     0
+KSPSolve             161 1.0 1.7752e+02 1.0 8.76e+09 1.0 2.4e+07 4.2e+03 0.0e+00 89 94 86 88  0  99 98 95 97  0 24870
+MGSmooth Level 0      23 1.0 1.2138e+00 1.0 1.76e+07 2.4 1.4e+06 2.3e+02 0.0e+00  1  0  5  0  0   1  0  6  0  0  3404
+MGSmooth Level 1      46 1.0 3.5146e+00 1.1 3.78e+08 1.1 9.1e+06 7.6e+02 0.0e+00  2  4 33  6  0   2  4 36  7  0 53545
+MGResid Level 1       23 1.0 4.7681e-02 1.4 6.74e+06 1.1 2.3e+05 7.6e+02 0.0e+00  0  0  1  0  0   0  0  1  0  0 71066
+MGInterp Level 1      46 1.0 3.1646e-02 2.7 5.71e+05 1.1 2.6e+05 1.7e+02 0.0e+00  0  0  1  0  0   0  0  1  0  0  9113
+MGSmooth Level 2      46 1.0 4.1980e+01 1.0 3.11e+09 1.1 9.1e+06 2.7e+03 0.0e+00 21 33 33 22  0  23 35 36 24  0 37414
+MGResid Level 2       23 1.0 8.7530e-01 1.7 5.39e+07 1.1 2.3e+05 2.7e+03 0.0e+00  0  1  1  1  0   0  1  1  1  0 31245
+MGInterp Level 2      46 1.0 2.4184e-01 5.7 4.57e+06 1.1 2.6e+05 6.2e+02 0.0e+00  0  0  1  0  0   0  0  1  0  0  9606
+MGSmooth Level 3      46 1.0 1.3162e+02 1.0 5.26e+09 1.0 4.5e+06 1.5e+04 0.0e+00 66 56 16 61  0  73 59 18 66  0 20148
+MGResid Level 3       23 1.0 1.8486e+00 2.1 8.87e+07 1.0 1.2e+05 1.5e+04 0.0e+00  1  1  0  2  0   1  1  0  2  0 24219
+MGInterp Level 3      46 1.0 1.7149e+00 5.6 3.66e+07 1.0 2.6e+05 2.3e+03 0.0e+00  0  0  1  1  0   0  0  1  1  0 10875
+------------------------------------------------------------------------------------------------------------------------
+
+Memory usage is given in bytes:
+
+Object Type          Creations   Destructions     Memory  Descendants' Mem.
+Reports information only for process 0.
+
+--- Event Stage 0: Main Stage
+
+              Vector   373            292     85912096     0
+      Vector Scatter    55             15      4212260     0
+             MatMFFD     1              1          840     0
+              Matrix    90             28      2823472     0
+ Matrix Partitioning     1              1          720     0
+      Matrix Coarsen     1              1          692     0
+    Distributed Mesh    34             10        50352     0
+Star Forest Bipartite Graph    73             25        21920     0
+     Discrete System    34             10         8640     0
+           Index Set   118            116      2936608     0
+   IS L to G Mapping    32              8      2412928     0
+         PetscRandom     2              2         1360     0
+      Preconditioner    12              4         3952     0
+       Krylov Solver    11              4        34600     0
+     DMKSP interface     1              1          704     0
+                SNES     1              1         1480     0
+      SNESLineSearch     1              1          912     0
+              DMSNES     1              1          720     0
+              Viewer     1              0            0     0
+
+--- Event Stage 1: MG Apply
+
+              Vector   138            138     55253728     0
+              Matrix     1              0            0     0
+           Index Set     3              0            0     0
+========================================================================================================================
+Average time to get PetscTime(): 1.20062e-07
+Average time for MPI_Barrier(): 3.28938e-06
+Average time for zero size MPI_Send(): 1.03887e-05
+#PETSc Option Table entries:
+-AddRandomNoiseParticles 0
+-ParamFile FallingBlock_FC_canonical.dat
+-al_ksp_type preonly
+-al_pc_factor_mat_solver_package mumps
+-al_pc_type lu
+-crs_ksp_type preonly
+-crs_pc_gamg_agg_nsmooths 0
+-crs_pc_gamg_repartition true
+-crs_pc_gamg_sym_graph true
+-crs_pc_gamg_verbose 1
+-crs_pc_type gamg
+-gmg_mg_levels_ksp_max_it 20
+-gmg_mg_levels_ksp_richardson_scale 0.5
+-gmg_mg_levels_ksp_type richardson
+-gmg_pc_mg_cycle_type v
+-gmg_pc_mg_galerkin
+-gmg_pc_mg_levels 4
+-gmg_pc_mg_log
+-gmg_pc_mg_type multiplicative
+-gmg_pc_type mg
+-gmg_pc_view
+-js_ksp_converged_reason
+-js_ksp_max_it 1000
+-js_ksp_min_it 2
+-js_ksp_monitor
+-js_ksp_rtol 1e-8
+-js_ksp_type gcr
+-log_summary
+-nel 256,256,256
+-npicard 3
+-pgamma 1e3
+-pstokes mg
+-restart 0
+-save_breakpoints 0
+-snes_atol 1e-12
+-snes_max_funcs 50000
+-snes_max_it 25
+-snes_monitor
+-snes_rtol 1e-6
+-snes_stol 1e-6
+-snes_type ksponly
+-use_fdstag_canonical
+#End of PETSc Option Table entries
+Compiled with FORTRAN kernels
+Compiled with full precision matrices (default)
+sizeof(short) 2 sizeof(int) 4 sizeof(long) 8 sizeof(void*) 8 sizeof(PetscScalar) 8 sizeof(PetscInt) 8
+Configure options: --known-level1-dcache-size=32768 --known-level1-dcache-linesize=32 --known-level1-dcache-assoc=0 --known-mpi-long-double=1 --known-mpi-int64_t=1 --known-mpi-c-double-complex=1 --prefix=/homeb/hmz30/hmz300/LIB/petsc/3.5.2/JUQUEEN_OPT_64bit PETSC_ARCH=JUQUEEN_OPT_64bit --with-cc=mpixlc_r --with-cxx=mpixlcxx_r --with-fc="mpixlf77_r -qnosave" --with-large-file-io --with-64-bit-indices --with-blas-lapack-lib="-L/bgsys/local/lib -lesslbg -L/bgsys/local/lapack/3.4.2/lib -llapack -L/bgsys/local/lib -lesslbg" --download-superlu_dist=1 --download-parmetis=1 --download-metis=1 --download-hypre=1 --download-blacs=1 --download-scalapack=1 --with-x=0 --with-is-color-value-type=short --with-shared-libraries=0 -COPTFLAGS="-O3 -qstrict -qmaxmem=-1" -CXXOPTFLAGS="-O3 -qstrict -qmaxmem=-1" -FOPTFLAGS="-O3 -qstrict -qmaxmem=-1" --with-debugging=0 --with-fortran-kernels=1 --with-batch=1 --known-mpi-shared-libraries=0 --known-memcmp-ok --known-sizeof-char=1 --known-sizeof-void-p=8 --known-sizeof-short=2 --known-sizeof-int=4 --known-sizeof-long=8 --known-sizeof-size_t=8 --known-sizeof-long-long=8 --known-sizeof-float=4 --known-sizeof-double=8 --known-bits-per-byte=8 --known-sizeof-MPI_Comm=4 --known-sizeof-MPI_Fint=4
+-----------------------------------------
+Libraries compiled on Fri Oct 10 13:43:21 2014 on juqueen3.zam.kfa-juelich.de 
+Machine characteristics: Linux-2.6.32-431.17.1.el6.ppc64-ppc64-with-redhat-6.5-Santiago
+Using PETSc directory: /homeb/hmz30/hmz300/LIB/petsc-3.5.2
+Using PETSc arch: JUQUEEN_OPT_64bit
+-----------------------------------------
+
+Using C compiler: mpixlc_r  -D_LARGEFILE64_SOURCE -D_FILE_OFFSET_BITS=64 -O3 -qstrict -qmaxmem=-1  ${COPTFLAGS} ${CFLAGS}
+Using Fortran compiler: mpixlf77_r -qnosave  -O3 -qstrict -qmaxmem=-1   ${FOPTFLAGS} ${FFLAGS} 
+-----------------------------------------
+
+Using include paths: -I/homeb/hmz30/hmz300/LIB/petsc-3.5.2/JUQUEEN_OPT_64bit/include -I/homeb/hmz30/hmz300/LIB/petsc-3.5.2/include -I/homeb/hmz30/hmz300/LIB/petsc-3.5.2/include -I/homeb/hmz30/hmz300/LIB/petsc-3.5.2/JUQUEEN_OPT_64bit/include -I/bgsys/drivers/V1R2M2/ppc64/comm/include -I/bgsys/drivers/V1R2M2/ppc64/comm/lib/xl -I/bgsys/drivers/V1R2M2/ppc64 -I/bgsys/drivers/V1R2M2/ppc64/comm/sys/include -I/bgsys/drivers/V1R2M2/ppc64/spi/include -I/bgsys/drivers/V1R2M2/ppc64/spi/include/kernel/cnk
+-----------------------------------------
+
+Using C linker: mpixlc_r
+Using Fortran linker: mpixlf77_r -qnosave
+Using libraries: -Wl,-rpath,/homeb/hmz30/hmz300/LIB/petsc-3.5.2/JUQUEEN_OPT_64bit/lib -L/homeb/hmz30/hmz300/LIB/petsc-3.5.2/JUQUEEN_OPT_64bit/lib -lpetsc -Wl,-rpath,/homeb/hmz30/hmz300/LIB/petsc-3.5.2/JUQUEEN_OPT_64bit/lib -L/homeb/hmz30/hmz300/LIB/petsc-3.5.2/JUQUEEN_OPT_64bit/lib -lHYPRE -L/bgsys/drivers/V1R2M2/ppc64/comm/lib -L/bgsys/drivers/V1R2M2/ppc64/comm/lib64 -L/bgsys/drivers/V1R2M2/ppc64/spi/lib -L/bgsys/drivers/V1R2M2/ppc64/comm/sys/lib -L/opt/ibmcmp/xlsmp/bg/3.1/bglib64 -L/opt/ibmcmp/xlmass/bg/7.3/bglib64 -L/opt/ibmcmp/vac/bg/12.1/bglib64 -L/opt/ibmcmp/vacpp/bg/12.1/bglib64 -L/bgsys/drivers/toolchain/V1R2M2_base/gnu-linux/lib/gcc/powerpc64-bgq-linux/4.4.7 -L/bgsys/drivers/toolchain/V1R2M2_base/gnu-linux/lib/gcc -L/bgsys/drivers/toolchain/V1R2M2_base/gnu-linux/powerpc64-bgq-linux/lib -Wl,-rpath,/opt/ibmcmp/lib64/bg/bglib64 -lmpichcxx-xl -libmc++ -lscalapack -lsuperlu_dist_3.3 -L/bgsys/local/lib -lesslbg -L/bgsys/local/lapack/3.4.2/lib -llapack -lesslbg -lparmetis -lmetis -lpthread -L/opt/ibmcmp/xlf/bg/14.1/bglib64 -lmpichf77-xl -lxlf90_r -lxlomp_ser -lxlfmath -lm -lmpichcxx-xl -libmc++ -L/bgsys/drivers/V1R2M2/ppc64/comm/lib -L/bgsys/drivers/V1R2M2/ppc64/comm/lib -L/bgsys/drivers/V1R2M2/ppc64/comm/lib64 -L/bgsys/drivers/V1R2M2/ppc64/comm/lib -L/bgsys/drivers/V1R2M2/ppc64/spi/lib -L/bgsys/drivers/V1R2M2/ppc64/comm/sys/lib -L/bgsys/drivers/V1R2M2/ppc64/spi/lib -L/bgsys/drivers/V1R2M2/ppc64/comm/sys/lib -L/bgsys/drivers/V1R2M2/ppc64/comm/lib64 -L/bgsys/drivers/V1R2M2/ppc64/comm/lib -L/bgsys/drivers/V1R2M2/ppc64/spi/lib -L/bgsys/drivers/V1R2M2/ppc64/comm/lib -L/opt/ibmcmp/xlsmp/bg/3.1/bglib64 -L/opt/ibmcmp/xlmass/bg/7.3/bglib64 -L/opt/ibmcmp/vac/bg/12.1/bglib64 -L/opt/ibmcmp/vacpp/bg/12.1/bglib64 -Wl,-rpath,/opt/ibmcmp/lib64/bg/bglib64 -L/bgsys/drivers/toolchain/V1R2M2_base/gnu-linux/lib/gcc/powerpc64-bgq-linux/4.4.7 -L/bgsys/drivers/toolchain/V1R2M2_base/gnu-linux/lib/gcc -L/bgsys/drivers/toolchain/V1R2M2_base/gnu-linux/powerpc64-bgq-linux/lib -ldl -lmpich-xl -lopa-xl -lmpl-xl -lpami-gcc -lSPI -lSPI_cnk -lrt -lpthread -lstdc++ -lxlopt -lxl -lnss_files -lnss_dns -lresolv -lgcc_eh -ldl  
+-----------------------------------------
+
+2014-10-15 18:52:52.700 (WARN ) [0x40001118ea0] :1636244:ibm.runjob.client.Job: 1 INFO RAS event
+2014-10-15 18:52:52.700 (WARN ) [0x40001118ea0] :1636244:ibm.runjob.client.Job: most recent RAS event text: DDR Correctable Error Summary : count=186 MCFIR error status:  [MEMORY_CE] This bit is set when a memory CE is detected on a non-maintenance memory read op;
+2014-10-15 18:52:52.700 (WARN ) [0x40001118ea0] :1636244:ibm.runjob.client.Job: with severity INFO
