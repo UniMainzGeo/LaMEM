@@ -25,6 +25,13 @@ typedef struct
 	PetscScalar *TPCVals;      // values of TPC
 	PetscScalar *TPCLinComPar; // linear combination parameters
 
+	// dirichlet pushing constraints
+	PetscScalar  xbs[3];       // block start coord
+	PetscScalar  xbe[3];       // block end coord
+	PetscScalar  vval[2];      // dirichlet values for Vx and Vy
+	PetscScalar  theta;        // rotation angle
+	PetscBool    pflag;        // flag for activating pushing
+
 } BCCtx;
 //---------------------------------------------------------------------------
 
@@ -38,4 +45,13 @@ PetscErrorCode BCDestroy(BCCtx *bc);
 PetscErrorCode BCInit(BCCtx *bc, FDSTAG *fs, idxtype idxmod);
 
 //---------------------------------------------------------------------------
+// initialize pushing boundary conditions context
+PetscErrorCode PBCInit(BCCtx *bc, UserContext *user);
+
+// get the spc for pushing - dynamic
+PetscErrorCode PBCGetIndices(BCCtx *bc, FDSTAG *fs, PetscScalar ***pbcvx, PetscScalar ***pbcvy, PetscInt *SPCListPush, PetscInt numSPCPush, PetscInt start);
+
+// advect the pushing block
+PetscErrorCode PBCAdvectBlock(UserContext *user);
+
 #endif

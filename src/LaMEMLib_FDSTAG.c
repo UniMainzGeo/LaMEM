@@ -367,6 +367,8 @@ PetscErrorCode LaMEMLib_FDSTAG(PetscBool InputParamFile, const char *ParamFile, 
 
 //		ierr = ADVAdvect(&actx); CHKERRQ(ierr);
 
+		// advect pushing block
+		ierr = PBCAdvectBlock(&user); CHKERRQ(ierr);
 
 		//==========================================================================================
 		// EROSION
@@ -504,10 +506,8 @@ PetscErrorCode LaMEMLib_FDSTAG(PetscBool InputParamFile, const char *ParamFile, 
 //		PetscTime(&cputime_end);
 //		PetscPrintf(PETSC_COMM_WORLD,"# Finished timestep %lld out of %lld in %g s\n\n",(LLD)itime, (LLD)(user.time_end), cputime_end - cputime_start_tstep);
 
-
 		// store markers to disk
 		ierr = ADVMarkSave(&actx, &user);  CHKERRQ(ierr);
-
 	}
 
 	//======================
@@ -536,7 +536,7 @@ PetscErrorCode LaMEMLib_FDSTAG(PetscBool InputParamFile, const char *ParamFile, 
 	ierr = BCDestroy(&ubc);      CHKERRQ(ierr);
 	ierr = JacResDestroy(&jr);   CHKERRQ(ierr);
 	ierr = ADVDestroy(&actx);    CHKERRQ(ierr);
-	ierr = PCStokesDestroy(pc);  CHKERRQ(ierr);
+	ierr = PCStokesDestroy(pc);  CHKERRQ(ierr); // error destroying this
 	ierr = PMatDestroy(pm);      CHKERRQ(ierr);
 	ierr = SNESDestroy(&snes);   CHKERRQ(ierr);
 	ierr = NLSolDestroy(&nl);    CHKERRQ(ierr);
