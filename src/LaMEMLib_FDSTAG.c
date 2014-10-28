@@ -405,6 +405,9 @@ PetscErrorCode LaMEMLib_FDSTAG(PetscBool InputParamFile, const char *ParamFile, 
 		// Update time state
 		user.time = user.time + user.dt;
 
+      
+        
+        
 		// Compute and store output properties such as velocity root mean square
 //		ierr = ComputeGlobalProperties(user.DA_Vel, &user, itime, user.sol_advect, C); CHKERRQ(ierr);
 
@@ -452,8 +455,8 @@ PetscErrorCode LaMEMLib_FDSTAG(PetscBool InputParamFile, const char *ParamFile, 
 //			}
 
 			// Paraview output FDSTAG fields
-			ierr = PVOutWriteTimeStep(&pvout, &jr, 0.0, itime); CHKERRQ(ierr);
-
+			ierr = PVOutWriteTimeStep(&pvout, &jr, user.time, itime); CHKERRQ(ierr);
+       
 			// clean up
 			if(DirectoryName) free(DirectoryName);
 		}
@@ -504,10 +507,28 @@ PetscErrorCode LaMEMLib_FDSTAG(PetscBool InputParamFile, const char *ParamFile, 
 
 		//==========================================================================================
 
-		// print time step duration
-//		PetscTime(&cputime_end);
-//		PetscPrintf(PETSC_COMM_WORLD,"# Finished timestep %lld out of %lld in %g s\n\n",(LLD)itime, (LLD)(user.time_end), cputime_end - cputime_start_tstep);
-
+        
+        //==========================================================================================
+        // Print some information on screen
+        if (user.Characteristic.Length>1)
+        {
+            // Most likely a setup that runs in natural lengthscales
+            PetscPrintf(PETSC_COMM_WORLD," Time = %g, dt=%g ",user.time*user.Characteristic.Time/user.Characteristic.SecYear, user.dt*user.Characteristic.Time/user.Characteristic.SecYear);
+            if (user.DimensionalUnits==1) { PetscPrintf(PETSC_COMM_WORLD," [Years]  \n"); } else { PetscPrintf(PETSC_COMM_WORLD,"  \n"); }
+        }
+        else
+        {
+            // Lab timescale or non-dimensional units
+            PetscPrintf(PETSC_COMM_WORLD," Time = %g, dt=%g ",user.time*user.Characteristic.Time, user.dt*user.Characteristic.Time);
+            if (user.DimensionalUnits==1) { PetscPrintf(PETSC_COMM_WORLD," [s]  \n"); } else { PetscPrintf(PETSC_COMM_WORLD,"  \n"); }
+        }
+        
+        PetscPrintf(PETSC_COMM_WORLD,"# Finished timestep %lld out of %lld \n",(LLD)itime, (LLD)(user.time_end));
+        PetscPrintf(PETSC_COMM_WORLD,"  \n");
+        
+        //==========================================================================================
+   
+        
 		// store markers to disk
 		ierr = ADVMarkSave(&actx, &user);  CHKERRQ(ierr);
 	}
