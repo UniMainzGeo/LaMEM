@@ -514,7 +514,6 @@ PetscErrorCode JacResGetVorticity(JacRes *jr)
 		dvydx = (lvy[k][j][i] - lvy[k][j][i-1])/SIZE_NODE(i, sx, fs->dsx);
 
 		// positive (counter-clockwise) rotation around Z axis X -> Y
-
 		gwz[k][j][i] = dvydx - dvxdy;
 	}
 	END_STD_LOOP
@@ -533,7 +532,6 @@ PetscErrorCode JacResGetVorticity(JacRes *jr)
 		dvzdx = (lvz[k][j][i] - lvz[k][j][i-1])/SIZE_NODE(i, sx, fs->dsx);
 
 		// positive (counter-clockwise) rotation around Y axis Z -> X
-
 		gwy[k][j][i] = dvxdz - dvzdx;
 	}
 	END_STD_LOOP
@@ -552,7 +550,6 @@ PetscErrorCode JacResGetVorticity(JacRes *jr)
 		dvzdy = (lvz[k][j][i] - lvz[k][j-1][i])/SIZE_NODE(j, sy, fs->dsy);
 
 		// positive (counter-clockwise) rotation around X axis Y -> Z
-
 		gwx[k][j][i] = dvzdy - dvydz;
 	}
 	END_STD_LOOP

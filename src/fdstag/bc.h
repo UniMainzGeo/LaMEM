@@ -25,7 +25,7 @@ typedef struct
 	PetscScalar *TPCVals;      // values of TPC
 	PetscScalar *TPCLinComPar; // linear combination parameters
 
-	// dirichlet pushing constraints
+	// Dirichlet pushing constraints
 	PetscScalar  xbs[3];       // block start coord
 	PetscScalar  xbe[3];       // block end coord
 	PetscScalar  vval[2];      // dirichlet values for Vx and Vy
@@ -45,6 +45,7 @@ PetscErrorCode BCDestroy(BCCtx *bc);
 PetscErrorCode BCInit(BCCtx *bc, FDSTAG *fs, idxtype idxmod);
 
 //---------------------------------------------------------------------------
+
 // initialize pushing boundary conditions context
 PetscErrorCode PBCInit(BCCtx *bc, UserContext *user);
 
@@ -53,5 +54,7 @@ PetscErrorCode PBCGetIndices(BCCtx *bc, FDSTAG *fs, PetscScalar ***pbcvx, PetscS
 
 // advect the pushing block
 PetscErrorCode PBCAdvectBlock(UserContext *user);
+
+//---------------------------------------------------------------------------
 
 #endif

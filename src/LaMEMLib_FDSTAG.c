@@ -290,6 +290,8 @@ PetscErrorCode LaMEMLib_FDSTAG(PetscBool InputParamFile, const char *ParamFile, 
 	for(itime = user.time_start; itime < user.time_end; itime++)
 	{
 
+		PetscPrintf(PETSC_COMM_WORLD,"# Time step %lld -------------------------------------------------------- \n", (LLD)(itime+1));
+
 		//==========================================================================================
 		// Correct particles in case we employ an internal free surface
 //		ierr = CorrectPhasesForInternalFreeSurface( &user);	CHKERRQ(ierr);
@@ -368,7 +370,7 @@ PetscErrorCode LaMEMLib_FDSTAG(PetscBool InputParamFile, const char *ParamFile, 
 		ierr = ADVAdvect(&actx); CHKERRQ(ierr);
 
 		// advect pushing block
-		ierr = PBCAdvectBlock(&user); CHKERRQ(ierr);
+//		ierr = PBCAdvectBlock(&user); CHKERRQ(ierr);
 
 		//==========================================================================================
 		// EROSION

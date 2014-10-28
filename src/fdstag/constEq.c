@@ -580,6 +580,16 @@ void GetRotationMatrix(
 	// get length of the instantaneous rotation axis (vorticity intensity)
 	w = sqrt(wx*wx + wy*wy + wz*wz);
 
+	// round-off
+	if(w <  2.0*DBL_EPSILON)
+	{
+		R->xx = 1.0;   R->xy = 0.0;   R->xz = 0.0;
+		R->yx = 0.0;   R->yy = 1.0;   R->yz = 0.0;
+		R->zx = 0.0;   R->zy = 0.0;   R->zz = 1.0;
+
+		return;
+	}
+
 	// get unit rotation axis
 	wx /= w;
 	wy /= w;
