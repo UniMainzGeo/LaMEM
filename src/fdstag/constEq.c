@@ -574,14 +574,18 @@ void GetRotationMatrix(
 {
 	// compute rotation matrix from axis & angle (Euler-Rodrigues formula)
 	// WARNING! Courant criterion for rotation angle should be implemented
+	// angle tolerance probably should be also larger than machine epsilon
 
 	PetscScalar w, theta, ct, st, cf;
 
 	// get length of the instantaneous rotation axis (vorticity intensity)
 	w = sqrt(wx*wx + wy*wy + wz*wz);
 
+	// get finite rotation angle (vorticity intensity is twice the average angular velocity)
+	theta = dt*(w/2.0);
+
 	// round-off
-	if(w <  2.0*DBL_EPSILON)
+	if(theta <  2.0*DBL_EPSILON)
 	{
 		R->xx = 1.0;   R->xy = 0.0;   R->xz = 0.0;
 		R->yx = 0.0;   R->yy = 1.0;   R->yz = 0.0;
@@ -594,9 +598,6 @@ void GetRotationMatrix(
 	wx /= w;
 	wy /= w;
 	wz /= w;
-
-	// get finite rotation angle (vorticity intensity is twice the average angular velocity)
-	theta = dt*(w/2.0);
 
 	// compute rotation operator using Euler-Rodrigues formula
 	ct = cos(theta);
