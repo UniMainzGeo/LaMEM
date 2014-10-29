@@ -36,15 +36,15 @@ PetscErrorCode FDSTAGInitCode(UserContext *user)
 	user->ampl3D  		= 		1e-2;
 	user->amplNoise 	= 		0.0;
 	user->Hinterface 	=		0.5;			// average interface height for diapir setup [0-1]
-	user->mumax			= 		1.0;
+	user->mumax			= 		1.0;            // REMOVE?
 
 	// set default grid sizes
 	user->nel_x  		=       8;
 	user->nel_y  		=       8;
 	user->nel_z			=       8;
-	user->refinex     	=     	2;
-	user->refiney   	=     	2;
-	user->refinez  		=  		2;
+	user->refinex     	=     	2;              // REMOVE
+	user->refiney   	=     	2;              // REMOVE
+	user->refinez  		=  		2;              // REMOVE
 
 	user->time_start 	=  		0.0;
 	user->time_end 		= 		1.0;
@@ -54,11 +54,11 @@ PetscErrorCode FDSTAGInitCode(UserContext *user)
 	user->CFL 		 	= 		0.5;
 	user->Temp_top  		= 	0.0;
 	user->Temp_bottom 		=	1.0;
-	user->temp_initialize	=	0.0;
+	user->temp_initialize	=	0.0;            // REMOVE
 	user->DimensionalUnits 	= 	0;
-	user->Setup.Model 		=	2; // 0-Diapir, 1-Single Layer Fold, 2-Falling block, 3-Particle file (defined below), 4-multilayer detachment fold, 6-subduction w/sticky air
+	user->Setup.Model 		=	2;              // // REMOVE 0-Diapir, 1-Single Layer Fold, 2-Falling block, 3-Particle file (defined below), 4-multilayer detachment fold, 6-subduction w/sticky air
 	user->Gravity   		= 	1.0;
-	user->GasConstant  		= 	1.0;
+	user->GasConstant  		= 	1.0;            // REMOVE
 	user->BC.Vy_front		=	0;
 	user->BC.Vy_back		=	0;
 	user->BC.Vz_bot 		=	0;
@@ -72,7 +72,7 @@ PetscErrorCode FDSTAGInitCode(UserContext *user)
 	sprintf(user->LoadInitialParticlesDirectory, "InitialParticles");
 
 	// FDSTAG Canonical Model Setup
-	user->msetup = BLOCK;
+	user->msetup            = BLOCK;
 
 	user->MatlabOutputFiles	=	1;		// write MATLAB output
 	user->VTKOutputFiles	=	1;		// write VTK output
@@ -94,8 +94,8 @@ PetscErrorCode FDSTAGInitCode(UserContext *user)
 	user->internalBC_frontel		= 0.0;
 	user->internalBC_backel			= 0.0;
 	user->internalBC_node		    = 0.0;
-	user->zdepth_BC_el			    = 0.0;
-	user->zdepth_BC_node		    = 0.0;
+	user->zdepth_BC_el			    = 0.0;  // REMOVE
+	user->zdepth_BC_node		    = 0.0;  // REMOVE
 	user->BC.InternalBound			=   0;	// 0-free surface, 1-free slip 					, 2-no-slip
 	user->BC.UpperBound				=   1;	// 0-free surface, 1-free slip 					, 2-no-slip
 	user->BC.LowerBound				=	1;	// 0-free surface, 1-free slip					, 2-no-slip
@@ -107,8 +107,8 @@ PetscErrorCode FDSTAGInitCode(UserContext *user)
 	user->ParticleInjectionPhase       = 0;  	// which is the phase of the injected particle?
 	user->ParticleInput = 1;					// 0-do not use particles to track phases; 1-do use particles to track phases
 	user->LoadInitialParticlesFromDisc = 0;		// Read the initial particles from disc
-	user->remesh = 0;
-	user->CriticalDiagonalRatio = 0.55;			// save range is [0.4-1.0]
+	user->remesh = 0;                           // REMOVE
+	user->CriticalDiagonalRatio = 0.55;			// save range is [0.4-1.0] // REMOVE
 
 	// Check if we are performing a benchmark with a build-in analytical benchmark
 	ierr 	 = PetscOptionsGetBool( PETSC_NULL, "-Benchmark_SolCx",   		  		&user->AnalyticalBenchmark, PETSC_NULL); CHKERRQ(ierr);
@@ -116,15 +116,17 @@ PetscErrorCode FDSTAGInitCode(UserContext *user)
 	ierr 	 = PetscOptionsGetBool( PETSC_NULL, "-Benchmark_ArcTanFallingBlock",   &user->AnalyticalBenchmark, PETSC_NULL); CHKERRQ(ierr);
 	ierr 	 = PetscOptionsGetBool( PETSC_NULL, "-Benchmark_VerticalDensityCollumn",   &user->AnalyticalBenchmark, PETSC_NULL); CHKERRQ(ierr);
 
-	user->GridAdvectionMethod  = 0; 	 // 0-Fully Eulerian, 1-Fully Lagrangian, 2-ALE with remeshing @ surface layer
-	user->EulerianAfterTimestep=-1;		//	if >0, you can specify after which timestep to switch to eulerian mode
-	user->FactorSurfaceLayer   = 0.2; 	 // how thick is the surface layer?
-	user->num_subdt			   =  10;    // How many sub-timestep iterations if an ALE mode is selected?
-	user->SaveParticles 	   =  0;	 // Save particles or not?
-	user->num_phase_transitions= 0;
+	user->GridAdvectionMethod  = 0; 	 // 0-Fully Eulerian, 1-Fully Lagrangian, 2-ALE with remeshing @ surface layer      REMOVE
+	user->EulerianAfterTimestep=-1;		//	if >0, you can specify after which timestep to switch to eulerian mode          REMOVE
+	user->FactorSurfaceLayer   = 0.2; 	 // how thick is the surface layer?                                                 REMOVE
+	user->num_subdt			   =  10;    // How many sub-timestep iterations if an ALE mode is selected?                    REMOVE
+
+    user->SaveParticles 	   =  0;	 // Save particles or not?
+	user->num_phase_transitions= 0;         // REMOVE
 	user->InitialMeshFromFile  = 0;		 // In case you want to read an initial mesh from file
 	user->InitialErosionSurfaceFromFile = 0; //
-	user->InitialMantleLevel   = 10;     // for cases in which a lithosphere is modeled with hand-set crustal thickness
+	user->InitialMantleLevel   = 10;     // for cases in which a lithosphere is modeled with hand-set crustal thickness     REMOVE
+    
 	user->dt_max               = 1e6;    // maximum timestep
 	user->dt_temp              = 1e6;    // timestep to initialize temperature
 	user->dt				   = 1e-3;	 // initial timestep
@@ -135,8 +137,9 @@ PetscErrorCode FDSTAGInitCode(UserContext *user)
 	user->Vy_Partx             = 0.5;    // Apply velocity condition at part of the x-domain, if BC=4
 	user->Vy_Partz             = 0.0;      // Apply velocity condition at part of the x-domain, if BC=4
 
-	user->MaximumSurfaceAngle  = 80.0;	 // maximum surface angle allowed
-	user->MuMeanMethod         = 1;      // 0-compute mat. props @ integration points, 1-Arith. element-average, 2-Geom. element-average, 3-Harm. element-average
+	user->MaximumSurfaceAngle  = 80.0;	 // maximum surface angle allowed                                               REMOVE
+	user->MuMeanMethod         = 1;      // 0-compute mat. props @ integration points, 1-Arith. element-average, 2-Geom. element-average, 3-Harm. element-average REMOVE
+    
 	user->NumPartX			   = 2;      // Number of particles per cell in x-direction
 	user->NumPartY			   = 2;      // Number of particles per cell in y-direction
 	user->NumPartZ			   = 2;      // Number of particles per cell in z-direction
@@ -648,19 +651,6 @@ PetscErrorCode FDSTAGInitCode(UserContext *user)
 //	PetscPrintf(PETSC_COMM_WORLD," Resolution [nx,ny,nz]     : %lld x %lld x %lld \n",(LLD)(nx), (LLD)(ny), (LLD)(nz));
 //	PetscPrintf(PETSC_COMM_WORLD," Total # of velocity dof's : %lld \n",(LLD)(nx*ny*nz*3));
 
-	// Info about material averaging method employed
-//	if (user->MuMeanMethod==0){PetscPrintf(PETSC_COMM_WORLD," Computing material properties at integration points \n"); }
-//	if (user->MuMeanMethod==1){PetscPrintf(PETSC_COMM_WORLD," Computing mean material per element using arithmetic averaging from integration points \n"); }
-//	if (user->MuMeanMethod==2){PetscPrintf(PETSC_COMM_WORLD," Computing mean material per element using geometric averaging from integration points \n"); }
-//	if (user->MuMeanMethod==3){PetscPrintf(PETSC_COMM_WORLD," Computing mean material per element using harmonic  averaging from integration points \n"); }
-
-	if(user->GravityAngle != 90.0)
-	{
-		PetscPrintf(PETSC_COMM_WORLD," Gravity angle with z-axis : %g \n", user->GravityAngle);
-	}
-
-	/* Info about approximate aspect ratio [useful for multigrid, who would like to have aspect ratios ~1] */
-	PetscPrintf(PETSC_COMM_WORLD," Approximate Aspect ratio of cells [dx/dz, dy/dz] : [%g %g] \n", dx/dz, dy/dz);
 
 	/* Info about particles if used */
 
@@ -678,23 +668,12 @@ PetscErrorCode FDSTAGInitCode(UserContext *user)
 
 
 	/* Compute some useful stuff */
-	user->NumSurfaceNodes = ((PetscInt) (user->FactorSurfaceLayer* ((double) nz)) );
-	LaMEMMod(user->NumSurfaceNodes, 2, &mod); if (mod==0){user->NumSurfaceNodes = user->NumSurfaceNodes-1;};
-	PetscPrintf(PETSC_COMM_WORLD," NumSurfaceNodes=%lld  nz=%lld \n", (LLD)(user->NumSurfaceNodes), (LLD)nz);
-
 	if (user->GridAdvectionMethod != 2  || user->BC.UpperBound != 0){
 		user->num_subdt			  = 1;
 	}
 	PetscOptionsGetInt(PETSC_NULL ,"-num_subdt",	&user->num_subdt	, PETSC_NULL);  		//	# modify number of sub-dt
 
-	if (user->GridAdvectionMethod==2 && user->FactorSurfaceLayer>0 && user->NumSurfaceNodes<2 ){
-		PetscPrintf(PETSC_COMM_WORLD," ***** You selected ALE grid advection, with a surface layer   *****\n");
-		PetscPrintf(PETSC_COMM_WORLD," ***** But the surface layer has 1 node only, which is insufficient  *****\n");
-		PetscPrintf(PETSC_COMM_WORLD," ***** Increasing value to 3  *****\n");
-		user->NumSurfaceNodes=3;
-		PetscPrintf(PETSC_COMM_WORLD," \n");
-	}
-
+	
 	if  (user->ApplyErosion==0){
 		// non zero surface angle is only relevant if erosion is applied to the model
 		user->SurfaceAngle 		   = 0;
