@@ -1221,7 +1221,7 @@ PetscErrorCode LaMEMLib_Legacy(PetscBool InputParamFile, const char *ParamFile, 
 			if ((user.MatlabOutputFiles==1) || (user.VTKOutputFiles==1) || (user.AVDPhaseViewer))
 			{
 				asprintf(&DirectoryName, "Timestep_%1.6lld",(LLD)itime);
-				ierr = LaMEM_CreateOutputDirectory(DirectoryName); CHKERRQ(ierr);
+				ierr = LaMEMCreateOutputDirectory(DirectoryName); CHKERRQ(ierr);
 			}
 
 			// --- Matlab output (a): regular files ---

@@ -3002,7 +3002,7 @@ PetscErrorCode DebugSave2Bin_GlobalVec(Vec vec_data,const char *filename,PetscIn
 
 	PetscFunctionBegin;
 
-	ierr = LaMEM_CreateOutputDirectory(folder); CHKERRQ(ierr);
+	ierr = LaMEMCreateOutputDirectory(folder); CHKERRQ(ierr);
 
 	sprintf(filename_in,"./%s/Debug_%s_%lld.bin",folder,filename,(LLD)itime);
     ierr = PetscPrintf(PETSC_COMM_WORLD,"--- DEBUG: Write %s \n",filename_in);				CHKERRQ(ierr);
@@ -3023,7 +3023,7 @@ PetscErrorCode DebugSave2Bin_GlobalMat(Mat mat_data,const char *filename,PetscIn
 
 	PetscFunctionBegin;
 
-	ierr = LaMEM_CreateOutputDirectory(folder); CHKERRQ(ierr);
+	ierr = LaMEMCreateOutputDirectory(folder); CHKERRQ(ierr);
 
 	sprintf(filename_in,"./%s/Debug_%s_%lld.bin",folder, filename,(LLD)itime);
 	ierr = PetscPrintf(PETSC_COMM_WORLD,"--- DEBUG: Write %s \n",filename_in);				CHKERRQ(ierr);
@@ -3439,4 +3439,30 @@ PetscInt ISParallel(MPI_Comm comm)
 	return (size > 1);
 }
 //==========================================================================================================
+// Creates an output directory
+#undef __FUNCT__
+#define __FUNCT__ "LaMEMCreateOutputDirectory"
+PetscErrorCode LaMEMCreateOutputDirectory(const char *DirectoryName)
+{
+	PetscErrorCode ierr;
+	PetscFunctionBegin;
 
+	// generate a new directory on rank zero
+	if(ISRankZero(PETSC_COMM_WORLD))
+	{
+		if(mkdir(DirectoryName, S_IRWXU))
+		{
+			PetscPrintf(PETSC_COMM_WORLD," Writing output to existing directory %s \n", DirectoryName);
+		}
+		else
+		{
+			PetscPrintf(PETSC_COMM_WORLD," Created output directory %s \n", DirectoryName);
+		}
+	}
+
+	// all other ranks should wait
+	ierr = MPI_Barrier(PETSC_COMM_WORLD); CHKERRQ(ierr);
+
+	PetscFunctionReturn(0);
+}
+//==========================================================================================================

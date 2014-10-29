@@ -225,71 +225,6 @@ PetscErrorCode PVOutWriteTemperature(JacRes *jr, OutBuf *outbuf)
 }
 //---------------------------------------------------------------------------
 #undef __FUNCT__
-#define __FUNCT__ "PVOutWriteMomentRes"
-PetscErrorCode PVOutWriteMomentRes(JacRes *jr, OutBuf *outbuf)
-{
-	ACCESS_FUNCTION_HEADER
-
-	cf = scal->force;
-
-	// x-residual
-	GLOBAL_TO_LOCAL(outbuf->fs->DA_X, jr->gfx, jr->lfx)
-
-	ierr = FDSTAGInterpXFaceCorner(outbuf->fs, jr->lfx, outbuf->gbcor, iflag); CHKERRQ(ierr);
-	ierr = OutBufPut3DVecComp(outbuf, 3, 0, cf); CHKERRQ(ierr);
-
-	// y-residual
-	GLOBAL_TO_LOCAL(outbuf->fs->DA_Y, jr->gfy, jr->lfy)
-
-	ierr = FDSTAGInterpYFaceCorner(outbuf->fs, jr->lfy, outbuf->gbcor, iflag); CHKERRQ(ierr);
-	ierr = OutBufPut3DVecComp(outbuf, 3, 1, cf); CHKERRQ(ierr);
-
-	// z-residual
-	GLOBAL_TO_LOCAL(outbuf->fs->DA_Z, jr->gfz, jr->lfz)
-
-	ierr = FDSTAGInterpZFaceCorner(outbuf->fs, jr->lfz, outbuf->gbcor, iflag); CHKERRQ(ierr);
-	ierr = OutBufPut3DVecComp(outbuf, 3, 2, cf); CHKERRQ(ierr);
-
-	PetscFunctionReturn(0);
-}
-//---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "PVOutWriteContRes"
-PetscErrorCode PVOutWriteContRes(JacRes *jr, OutBuf *outbuf)
-{
-	ACCESS_FUNCTION_HEADER
-
-	cf  = scal->strain_rate;
-
-	// scatter to local vector
-	GLOBAL_TO_LOCAL(outbuf->fs->DA_CEN, jr->gc, outbuf->lbcen)
-
-	ierr = FDSTAGInterpCenterCorner(outbuf->fs, outbuf->lbcen, outbuf->gbcor, iflag); CHKERRQ(ierr);
-
-	ierr = OutBufPut3DVecComp(outbuf, 1, 0, cf); CHKERRQ(ierr);
-
-	PetscFunctionReturn(0);
-}
-//---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "PVOutWritEnergRes"
-PetscErrorCode PVOutWritEnergRes(JacRes *jr, OutBuf *outbuf)
-{
-	ACCESS_FUNCTION_HEADER
-
-	cf = scal->dissipation_rate;
-
-	// scatter to local vector
-	GLOBAL_TO_LOCAL(outbuf->fs->DA_CEN, jr->ge, outbuf->lbcen)
-
-	ierr = FDSTAGInterpCenterCorner(outbuf->fs, outbuf->lbcen, outbuf->gbcor, iflag); CHKERRQ(ierr);
-
-	ierr = OutBufPut3DVecComp(outbuf, 1, 0, cf); CHKERRQ(ierr);
-
-	PetscFunctionReturn(0);
-}
-//---------------------------------------------------------------------------
-#undef __FUNCT__
 #define __FUNCT__ "PVOutWriteDevStress"
 PetscErrorCode PVOutWriteDevStress(JacRes *jr, OutBuf *outbuf)
 {
@@ -306,7 +241,6 @@ PetscErrorCode PVOutWriteDevStress(JacRes *jr, OutBuf *outbuf)
 	#define _GET_SYZ_ buff[k][j][i] = jr->svYZEdge[iter++].s;
 
 	cf = scal->out_stress;
-
 
 	INTERPOLATE_CENTER(_GET_SXX_)
 
@@ -549,6 +483,73 @@ PetscErrorCode PVOutWriteTotDispl(JacRes *jr, OutBuf *outbuf)
 	ierr = 0; CHKERRQ(ierr);
 	if(jr)  jr = NULL;
 	if(outbuf) outbuf = NULL;
+
+	PetscFunctionReturn(0);
+}
+//---------------------------------------------------------------------------
+// DEBUG VECTORS
+//---------------------------------------------------------------------------
+#undef __FUNCT__
+#define __FUNCT__ "PVOutWriteMomentRes"
+PetscErrorCode PVOutWriteMomentRes(JacRes *jr, OutBuf *outbuf)
+{
+	ACCESS_FUNCTION_HEADER
+
+	cf = scal->force;
+
+	// x-residual
+	GLOBAL_TO_LOCAL(outbuf->fs->DA_X, jr->gfx, jr->lfx)
+
+	ierr = FDSTAGInterpXFaceCorner(outbuf->fs, jr->lfx, outbuf->gbcor, iflag); CHKERRQ(ierr);
+	ierr = OutBufPut3DVecComp(outbuf, 3, 0, cf); CHKERRQ(ierr);
+
+	// y-residual
+	GLOBAL_TO_LOCAL(outbuf->fs->DA_Y, jr->gfy, jr->lfy)
+
+	ierr = FDSTAGInterpYFaceCorner(outbuf->fs, jr->lfy, outbuf->gbcor, iflag); CHKERRQ(ierr);
+	ierr = OutBufPut3DVecComp(outbuf, 3, 1, cf); CHKERRQ(ierr);
+
+	// z-residual
+	GLOBAL_TO_LOCAL(outbuf->fs->DA_Z, jr->gfz, jr->lfz)
+
+	ierr = FDSTAGInterpZFaceCorner(outbuf->fs, jr->lfz, outbuf->gbcor, iflag); CHKERRQ(ierr);
+	ierr = OutBufPut3DVecComp(outbuf, 3, 2, cf); CHKERRQ(ierr);
+
+	PetscFunctionReturn(0);
+}
+//---------------------------------------------------------------------------
+#undef __FUNCT__
+#define __FUNCT__ "PVOutWriteContRes"
+PetscErrorCode PVOutWriteContRes(JacRes *jr, OutBuf *outbuf)
+{
+	ACCESS_FUNCTION_HEADER
+
+	cf  = scal->strain_rate;
+
+	// scatter to local vector
+	GLOBAL_TO_LOCAL(outbuf->fs->DA_CEN, jr->gc, outbuf->lbcen)
+
+	ierr = FDSTAGInterpCenterCorner(outbuf->fs, outbuf->lbcen, outbuf->gbcor, iflag); CHKERRQ(ierr);
+
+	ierr = OutBufPut3DVecComp(outbuf, 1, 0, cf); CHKERRQ(ierr);
+
+	PetscFunctionReturn(0);
+}
+//---------------------------------------------------------------------------
+#undef __FUNCT__
+#define __FUNCT__ "PVOutWritEnergRes"
+PetscErrorCode PVOutWritEnergRes(JacRes *jr, OutBuf *outbuf)
+{
+	ACCESS_FUNCTION_HEADER
+
+	cf = scal->dissipation_rate;
+
+	// scatter to local vector
+	GLOBAL_TO_LOCAL(outbuf->fs->DA_CEN, jr->ge, outbuf->lbcen)
+
+	ierr = FDSTAGInterpCenterCorner(outbuf->fs, outbuf->lbcen, outbuf->gbcor, iflag); CHKERRQ(ierr);
+
+	ierr = OutBufPut3DVecComp(outbuf, 1, 0, cf); CHKERRQ(ierr);
 
 	PetscFunctionReturn(0);
 }

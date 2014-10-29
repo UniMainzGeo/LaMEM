@@ -126,11 +126,29 @@ PetscErrorCode PMatSetFromOptions(PMat pm)
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
 
-	// set cell stiffness function
-	ierr = PetscOptionsHasName(NULL, "-pcmat_no_dev_proj", &flg); CHKERRQ(ierr);
+	// set matrix type
+	ierr = PetscOptionsGetString(PETSC_NULL,"-pcmat_type", pname, MAX_NAME_LEN, &flg); CHKERRQ(ierr);
 
-	if(flg == PETSC_TRUE) pm->getStiffMat = getStiffMatClean;
-	else                  pm->getStiffMat = getStiffMatDevProj;
+	if(flg == PETSC_TRUE)
+	{
+		if(!strcmp(pname, "mono"))
+		{
+			PetscPrintf(PETSC_COMM_WORLD, " Preconditioner matrix type : monolithic\n");
+			pm->type = _MONOLITHIC_;
+		}
+		else if(!strcmp(pname, "block"))
+		{
+			PetscPrintf(PETSC_COMM_WORLD, " Preconditioner matrix type : block\n");
+			pm->type = _BLOCK_;
+		}
+		else SETERRQ1(PETSC_COMM_WORLD, PETSC_ERR_USER,"Incorrect matrix storage format: %s", pname);
+	}
+	else
+	{
+		PetscPrintf(PETSC_COMM_WORLD, " Preconditioner matrix type : monolithic\n");
+
+		pm->type = _MONOLITHIC_;
+	}
 
 	// set penalty parameter
 	pm->pgamma = 1.0;
@@ -141,22 +159,29 @@ PetscErrorCode PMatSetFromOptions(PMat pm)
 	{
 		if(pgamma < 1.0)
 		{
-			SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER,"Penalty parameter [-pcmat_pgamma] is less than unit\n");
+			SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER,"Penalty parameter [-pcmat_pgamma] is less than unit");
 		}
 
 		pm->pgamma = pgamma;
 	}
 
-	// set matrix type
-	ierr = PetscOptionsGetString(PETSC_NULL,"-pcmat_type", pname, MAX_NAME_LEN, &flg); CHKERRQ(ierr);
+	if(pm->pgamma > 1.0)
+	{
+		PetscPrintf(PETSC_COMM_WORLD, " Penalty parameter (pgamma) : %e\n", pm->pgamma);
+	}
+
+	// set cell stiffness function
+	ierr = PetscOptionsHasName(NULL, "-pcmat_no_dev_proj", &flg); CHKERRQ(ierr);
 
 	if(flg == PETSC_TRUE)
 	{
-		if     (!strcmp(pname, "mono"))  pm->type = _MONOLITHIC_;
-		else if(!strcmp(pname, "block")) pm->type = _BLOCK_;
-		else SETERRQ1(PETSC_COMM_WORLD, PETSC_ERR_USER,"Incorrect matrix storage format: %s \n", pname);
+		PetscPrintf(PETSC_COMM_WORLD, " Excluding deviatoric projection from preconditioner\n");
+		pm->getStiffMat = getStiffMatClean;
 	}
-	else pm->type = _MONOLITHIC_;
+	else
+	{
+		pm->getStiffMat = getStiffMatDevProj;
+	}
 
 	PetscFunctionReturn(0);
 }
@@ -168,7 +193,11 @@ PetscErrorCode PMatAssemble(PMat pm)
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
 
+	PetscPrintf(PETSC_COMM_WORLD, " Starting preconditioner assembly\n");
+
 	ierr = pm->Assemble(pm); CHKERRQ(ierr);
+
+	PetscPrintf(PETSC_COMM_WORLD, " Finished preconditioner assembly\n");
 
 	PetscFunctionReturn(0);
 }
@@ -1640,7 +1669,7 @@ PetscErrorCode VecScatterBlockToMonolithic(Vec f, Vec g, Vec b, ScatterMode mode
 
 	if(bs != fs+gs)
 	{
-		SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "Block sizes don't match monolithic format\n");
+		SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "Block sizes don't match monolithic format");
 	}
 
 	// access vectors

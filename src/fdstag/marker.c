@@ -10,7 +10,6 @@
 #include "JacRes.h"
 #include "advect.h"
 #include "marker.h"
-#include "ParaViewOutput.h"
 
 /*
 #START_DOC#
@@ -29,7 +28,7 @@ PetscErrorCode ADVMarkInit(AdvCtx *actx, UserContext *user)
 
 	fs = actx->fs;
 
-	PetscPrintf(PETSC_COMM_WORLD,"# Starting marker initialization routine\n");
+	PetscPrintf(PETSC_COMM_WORLD," Starting marker initialization routine\n");
 
 	// allocate storage for uniform distribution
 	if(user->msetup != PARALLEL)
@@ -64,7 +63,7 @@ PetscErrorCode ADVMarkInit(AdvCtx *actx, UserContext *user)
 	else if(user->msetup == DETACHMENT) { ierr = ADVMarkInitDetachment   (actx, user); CHKERRQ(ierr); }
 	else if(user->msetup == SLAB)       { ierr = ADVMarkInitSlab         (actx, user); CHKERRQ(ierr); }
 	else if(user->msetup == SPHERES)    { ierr = ADVMarkInitSpheres      (actx, user); CHKERRQ(ierr); }
-	else SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER,"# *** Incorrect option for initialization of markers \n");
+	else SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER," *** Incorrect option for initialization of markers");
 
 	// compute host cells for all the markers
 	ierr = ADVMapMarkToCells(actx); CHKERRQ(ierr);
@@ -75,7 +74,7 @@ PetscErrorCode ADVMarkInit(AdvCtx *actx, UserContext *user)
 	// project initial history from markers to grid
 	ierr = ADVProjHistMarkToGrid(actx); CHKERRQ(ierr);
 
-	PetscPrintf(PETSC_COMM_WORLD,"# Finished marker initialization routine\n");
+	PetscPrintf(PETSC_COMM_WORLD," Finished marker initialization routine\n");
 
 	PetscFunctionReturn(0);
 }
@@ -109,7 +108,7 @@ PetscErrorCode ADVMarkInitCoord(AdvCtx *actx, UserContext *user)
 	AddRandomNoiseParticles = 0;
 	ierr = PetscOptionsGetInt(PETSC_NULL,"-AddRandomNoiseParticles", &AddRandomNoiseParticles, PETSC_NULL); CHKERRQ(ierr);
 
-	if(AddRandomNoiseParticles) PetscPrintf(PETSC_COMM_WORLD, "# Adding random noise to marker distribution \n");
+	if(AddRandomNoiseParticles) PetscPrintf(PETSC_COMM_WORLD, " Adding random noise to marker distribution \n");
 
 	// initialize the random number generator
 	ierr = PetscRandomCreate(PETSC_COMM_WORLD, &rctx); CHKERRQ(ierr);
@@ -195,7 +194,7 @@ PetscErrorCode ADVMarkSave(AdvCtx *actx, UserContext *user)
 
 	if(!user->SaveParticles) PetscFunctionReturn(0);
 
-	PetscPrintf(PETSC_COMM_WORLD,"# Saving markers in parallel to files: ./%s/%s.xxx.out \n",
+	PetscPrintf(PETSC_COMM_WORLD," Saving markers in parallel to files: ./%s/%s.xxx.out \n",
 		user->SaveInitialParticlesDirectory, user->ParticleFilename);
 
 	// initialize file header for MATLAB compatibility
@@ -226,7 +225,7 @@ PetscErrorCode ADVMarkSave(AdvCtx *actx, UserContext *user)
 	}
 
 	// create directory
-	ierr = LaMEM_CreateOutputDirectory(user->SaveInitialParticlesDirectory); CHKERRQ(ierr);
+	ierr = LaMEMCreateOutputDirectory(user->SaveInitialParticlesDirectory); CHKERRQ(ierr);
 
 	// compile file name
 	asprintf(&SaveFileName, "./%s/%s.%lld.out",
@@ -250,7 +249,7 @@ PetscErrorCode ADVMarkSave(AdvCtx *actx, UserContext *user)
 	// destroy buffer
 	ierr = PetscFree(markbuf); CHKERRQ(ierr);
 
-	PetscPrintf(PETSC_COMM_WORLD,"# Finished saving markers in parallel \n");
+	PetscPrintf(PETSC_COMM_WORLD," Finished saving markers in parallel \n");
 
 	PetscFunctionReturn(0);
 }
@@ -276,7 +275,7 @@ PetscErrorCode ADVMarkInitFileParallel(AdvCtx *actx, UserContext *user)
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
 
-	PetscPrintf(PETSC_COMM_WORLD,"# Loading markers in parallel from files: ./%s/%s.xxx.out \n",
+	PetscPrintf(PETSC_COMM_WORLD," Loading markers in parallel from files: ./%s/%s.xxx.out \n",
 		user->LoadInitialParticlesDirectory, user->ParticleFilename);
 
 	// compile input file name
@@ -331,7 +330,7 @@ PetscErrorCode ADVMarkInitFileParallel(AdvCtx *actx, UserContext *user)
 		P->phase = (PetscInt)markptr[3];
 		P->T     =           markptr[4]/chTemp;
 
-//        PetscPrintf(PETSC_COMM_WORLD,"# Marker coord = [%f,%f,%f] \n", P->X[0], P->X[1], P->X[2]);
+//        PetscPrintf(PETSC_COMM_WORLD," Marker coord = [%f,%f,%f] \n", P->X[0], P->X[1], P->X[2]);
 	}
 
 	// free marker buffer
@@ -341,7 +340,7 @@ PetscErrorCode ADVMarkInitFileParallel(AdvCtx *actx, UserContext *user)
 	// WARNING! NOT SURE WHETHER THIS IS REALLY NECESSARY
 	ierr = MPI_Barrier(PETSC_COMM_WORLD); CHKERRQ(ierr);
 
-	PetscPrintf(PETSC_COMM_WORLD,"# Finished Loading markers in parallel \n");
+	PetscPrintf(PETSC_COMM_WORLD," Finished Loading markers in parallel \n");
 
 	PetscFunctionReturn(0);
 }
@@ -382,7 +381,7 @@ PetscErrorCode ADVMarkInitFileRedundant(AdvCtx *actx, UserContext *user)
 		user->LoadInitialParticlesDirectory,
 		user->ParticleFilename);
 
-	PetscPrintf(PETSC_COMM_WORLD,"# Loading markers redundantly from file: %s \n", LoadFileName);
+	PetscPrintf(PETSC_COMM_WORLD," Loading markers redundantly from file: %s \n", LoadFileName);
 
 	ierr = PetscViewerBinaryOpen(PETSC_COMM_SELF, LoadFileName, FILE_MODE_READ, &view_in); CHKERRQ(ierr);
 	ierr = PetscViewerBinaryGetDescriptor(view_in, &fd); CHKERRQ(ierr);
@@ -407,7 +406,7 @@ PetscErrorCode ADVMarkInitFileRedundant(AdvCtx *actx, UserContext *user)
 	// check whether file contains the expected number of markers
 	if(tmark != nmark)
 	{
-		SETERRQ2(PETSC_COMM_WORLD,PETSC_ERR_USER,"# The file does not contain the expected number of markers [expected = %lld vs. present = %lld] \n", (LLD)tmark, (LLD)nmark);
+		SETERRQ2(PETSC_COMM_WORLD,PETSC_ERR_USER," The file does not contain the expected number of markers [expected = %lld vs. present = %lld]", (LLD)tmark, (LLD)nmark);
 	}
 
 	// create buffer for x,y,z, phase & temperature
@@ -491,10 +490,10 @@ PetscErrorCode ADVMarkInitFileRedundant(AdvCtx *actx, UserContext *user)
 	// error checking
 	if((maxphase + 1) != user->num_phases)
 	{
-		SETERRQ2(PETSC_COMM_WORLD,PETSC_ERR_USER,"# No. of detected phases %lld does not correspond to the no. of phases given in parameters file %lld \n", (LLD)maxphase, (LLD)user->num_phases);
+		SETERRQ2(PETSC_COMM_WORLD,PETSC_ERR_USER," No. of detected phases %lld does not correspond to the no. of phases given in parameters file %lld", (LLD)maxphase, (LLD)user->num_phases);
 	}
 
-	PetscPrintf(PETSC_COMM_WORLD,"# Statistics markers: MaxPhase = %lld, MaxTemp = %g, NumberPhases = %lld \n", (LLD)maxphase, maxtemp, (LLD)user->num_phases);
+	PetscPrintf(PETSC_COMM_WORLD," Statistics markers: MaxPhase = %lld, MaxTemp = %g, NumberPhases = %lld \n", (LLD)maxphase, maxtemp, (LLD)user->num_phases);
 
 	// free specific allocated memory
 	ierr = PetscFree(xcoor); CHKERRQ(ierr);
@@ -507,7 +506,7 @@ PetscErrorCode ADVMarkInitFileRedundant(AdvCtx *actx, UserContext *user)
 	// WARNING! NOT SURE WHETHER THIS IS REALLY NECESSARY
 	ierr = MPI_Barrier(PETSC_COMM_WORLD); CHKERRQ(ierr);
 
-	PetscPrintf(PETSC_COMM_WORLD,"# Finished Loading markers redundantly \n");
+	PetscPrintf(PETSC_COMM_WORLD," Finished Loading markers redundantly \n");
 
 	PetscFunctionReturn(0);
 }
@@ -523,8 +522,8 @@ PetscErrorCode ADVMarkInitDiapir(AdvCtx *actx, UserContext *user)
 	// Diapir setup - not done - should have some perturbation
 
 	// print info
-	PetscPrintf(PETSC_COMM_WORLD,"# DIAPIR SETUP\n");
-	PetscPrintf(PETSC_COMM_WORLD,"# Setup Parameters: Setup.Diapir_Hi = [%g]\n",user->Setup.Diapir_Hi);
+	PetscPrintf(PETSC_COMM_WORLD," DIAPIR SETUP\n");
+	PetscPrintf(PETSC_COMM_WORLD," Setup Parameters: Setup.Diapir_Hi = [%g]\n",user->Setup.Diapir_Hi);
 
 	for(imark = 0; imark < actx->nummark; imark++)
 	{
@@ -555,7 +554,7 @@ PetscErrorCode ADVMarkInitBlock(AdvCtx *actx, UserContext *user)
 	PetscFunctionBegin;
 
 	// print info
-	PetscPrintf(PETSC_COMM_WORLD,"# FALLING BLOCK SETUP \n");
+	PetscPrintf(PETSC_COMM_WORLD," FALLING BLOCK SETUP \n");
 
 	// number of elements on finest resolution
 	nel_x = user->nel_x;
@@ -576,7 +575,7 @@ PetscErrorCode ADVMarkInitBlock(AdvCtx *actx, UserContext *user)
 	bfront  = ((PetscScalar) (nel_y*0.25))*dy + user->y_front; bback  = bfront  + bly; // front and back side of block
 	bbottom = ((PetscScalar) (nel_z*0.25))*dz + user->z_bot  ; btop   = bbottom + blz; // bottom and top side of block
 
-	PetscPrintf(PETSC_COMM_WORLD,"# Setup Parameters: Block coordinates - [left,right]=[%g,%g]; [front,back]=[%g,%g]; [bottom,top]=[%g,%g] \n",bleft,bright,bfront,bback,bbottom,btop);
+	PetscPrintf(PETSC_COMM_WORLD," Setup Parameters: Block coordinates - [left,right]=[%g,%g]; [front,back]=[%g,%g]; [bottom,top]=[%g,%g] \n",bleft,bright,bfront,bback,bbottom,btop);
 
 	b2D  = PETSC_FALSE;
 	b2Dy = PETSC_FALSE;
@@ -644,7 +643,7 @@ PetscErrorCode ADVMarkInitSubduction(AdvCtx *actx, UserContext *user)
 	PetscFunctionBegin;
 
 	// print info
-	PetscPrintf(PETSC_COMM_WORLD,"# SUBDUCTION WITH STICKY AIR SETUP \n");
+	PetscPrintf(PETSC_COMM_WORLD," SUBDUCTION WITH STICKY AIR SETUP \n");
 
 	// TOTAL number of CELLS and spacing in z-direction
 	nz = user->nel_z;
@@ -671,7 +670,7 @@ PetscErrorCode ADVMarkInitSubduction(AdvCtx *actx, UserContext *user)
 	SlabMaxSubdDepth = 2 * SlabThickness;
 	Slab_Xright      = DistanceFromLeft + SlabLength-(user->H-H_air);
 
-	PetscPrintf(PETSC_COMM_WORLD,"# Setup Parameters: SlabThickness = [%g km] AirThickness = [%g km] H = [%g km] SlabWidthFactor = [%g] \n",SlabThickness*user->Characteristic.Length*0.001, Air_thickness*user->Characteristic.Length*0.001, user->H*user->Characteristic.Length*0.001, Slab_WidthFactor);
+	PetscPrintf(PETSC_COMM_WORLD," Setup Parameters: SlabThickness = [%g km] AirThickness = [%g km] H = [%g km] SlabWidthFactor = [%g] \n",SlabThickness*user->Characteristic.Length*0.001, Air_thickness*user->Characteristic.Length*0.001, user->H*user->Characteristic.Length*0.001, Slab_WidthFactor);
 
 	// loop over local markers
 	for(imark = 0; imark < actx->nummark; imark++)
@@ -718,7 +717,7 @@ PetscErrorCode ADVMarkInitFolding(AdvCtx *actx, UserContext *user)
 	PetscFunctionBegin;
 
 	// print info
-	PetscPrintf(PETSC_COMM_WORLD,"# MULTILAYER FOLDING SETUP \n");
+	PetscPrintf(PETSC_COMM_WORLD," MULTILAYER FOLDING SETUP \n");
 
 	// initialize arrays for fractions
 	for(i = 0;i < 10; i++) { zbot[i] = 0.0; ztop[i] = 0.0; }
@@ -728,43 +727,43 @@ PetscErrorCode ADVMarkInitFolding(AdvCtx *actx, UserContext *user)
 
 	PetscOptionsGetReal(PETSC_NULL,"-Layer1_bottom"      ,&zbot[0], PETSC_NULL);
 	PetscOptionsGetReal(PETSC_NULL,"-Layer1_top"         ,&ztop[0], &flg);
-	if (DisplayInfo && flg) PetscPrintf(PETSC_COMM_WORLD,"# - Adding Layer with Phase=1 from z=[%g,%g]\n",zbot[0],ztop[0]);
+	if (DisplayInfo && flg) PetscPrintf(PETSC_COMM_WORLD," - Adding Layer with Phase=1 from z=[%g,%g]\n",zbot[0],ztop[0]);
 
 	PetscOptionsGetReal(PETSC_NULL,"-Layer2_bottom"      ,&zbot[1], PETSC_NULL);
 	PetscOptionsGetReal(PETSC_NULL,"-Layer2_top"         ,&ztop[1], &flg);
-	if (DisplayInfo && flg) PetscPrintf(PETSC_COMM_WORLD,"# - Adding Layer with Phase=2 from z=[%g,%g]\n",zbot[1],ztop[1]);
+	if (DisplayInfo && flg) PetscPrintf(PETSC_COMM_WORLD," - Adding Layer with Phase=2 from z=[%g,%g]\n",zbot[1],ztop[1]);
 
 	PetscOptionsGetReal(PETSC_NULL,"-Layer3_bottom"      ,&zbot[2], PETSC_NULL);
 	PetscOptionsGetReal(PETSC_NULL,"-Layer3_top"         ,&ztop[2], &flg);
-	if (DisplayInfo && flg) PetscPrintf(PETSC_COMM_WORLD,"# - Adding Layer with Phase=3 from z=[%g,%g]\n",zbot[2],ztop[2]);
+	if (DisplayInfo && flg) PetscPrintf(PETSC_COMM_WORLD," - Adding Layer with Phase=3 from z=[%g,%g]\n",zbot[2],ztop[2]);
 
 	PetscOptionsGetReal(PETSC_NULL,"-Layer4_bottom"      ,&zbot[3], PETSC_NULL);
 	PetscOptionsGetReal(PETSC_NULL,"-Layer4_top"         ,&ztop[3], &flg);
-	if (DisplayInfo && flg) PetscPrintf(PETSC_COMM_WORLD,"# - Adding Layer with Phase=4 from z=[%g,%g]\n",zbot[3],ztop[3]);
+	if (DisplayInfo && flg) PetscPrintf(PETSC_COMM_WORLD," - Adding Layer with Phase=4 from z=[%g,%g]\n",zbot[3],ztop[3]);
 
 	PetscOptionsGetReal(PETSC_NULL,"-Layer5_bottom"      ,&zbot[4], PETSC_NULL);
 	PetscOptionsGetReal(PETSC_NULL,"-Layer5_top"         ,&ztop[4], &flg);
-	if (DisplayInfo && flg) PetscPrintf(PETSC_COMM_WORLD,"# - Adding Layer with Phase=5 from z=[%g,%g]\n",zbot[4],ztop[4]);
+	if (DisplayInfo && flg) PetscPrintf(PETSC_COMM_WORLD," - Adding Layer with Phase=5 from z=[%g,%g]\n",zbot[4],ztop[4]);
 
 	PetscOptionsGetReal(PETSC_NULL,"-Layer6_bottom"      ,&zbot[5], PETSC_NULL);
 	PetscOptionsGetReal(PETSC_NULL,"-Layer6_top"         ,&ztop[5], &flg);
-	if (DisplayInfo && flg) PetscPrintf(PETSC_COMM_WORLD,"# - Adding Layer with Phase=6 from z=[%g,%g]\n",zbot[5],ztop[5]);
+	if (DisplayInfo && flg) PetscPrintf(PETSC_COMM_WORLD," - Adding Layer with Phase=6 from z=[%g,%g]\n",zbot[5],ztop[5]);
 
 	PetscOptionsGetReal(PETSC_NULL,"-Layer7_bottom"      ,&zbot[6], PETSC_NULL);
 	PetscOptionsGetReal(PETSC_NULL,"-Layer7_top"         ,&ztop[6], &flg);
-	if (DisplayInfo && flg) PetscPrintf(PETSC_COMM_WORLD,"# - Adding Layer with Phase=7 from z=[%g,%g]\n",zbot[6],ztop[6]);
+	if (DisplayInfo && flg) PetscPrintf(PETSC_COMM_WORLD," - Adding Layer with Phase=7 from z=[%g,%g]\n",zbot[6],ztop[6]);
 
 	PetscOptionsGetReal(PETSC_NULL,"-Layer8_bottom"      ,&zbot[7], PETSC_NULL);
 	PetscOptionsGetReal(PETSC_NULL,"-Layer8_top"         ,&ztop[7], &flg);
-	if (DisplayInfo && flg) PetscPrintf(PETSC_COMM_WORLD,"# - Adding Layer with Phase=8 from z=[%g,%g]\n",zbot[7],ztop[7]);
+	if (DisplayInfo && flg) PetscPrintf(PETSC_COMM_WORLD," - Adding Layer with Phase=8 from z=[%g,%g]\n",zbot[7],ztop[7]);
 
 	PetscOptionsGetReal(PETSC_NULL,"-Layer9_bottom"      ,&zbot[8], PETSC_NULL);
 	PetscOptionsGetReal(PETSC_NULL,"-Layer9_top"         ,&ztop[8], &flg);
-	if (DisplayInfo && flg) PetscPrintf(PETSC_COMM_WORLD,"# - Adding Layer with Phase=9 from z=[%g,%g]\n",zbot[8],ztop[8]);
+	if (DisplayInfo && flg) PetscPrintf(PETSC_COMM_WORLD," - Adding Layer with Phase=9 from z=[%g,%g]\n",zbot[8],ztop[8]);
 
 	PetscOptionsGetReal(PETSC_NULL,"-Layer10_bottom"      ,&zbot[9], PETSC_NULL);
 	PetscOptionsGetReal(PETSC_NULL,"-Layer10_top"         ,&ztop[9], &flg);
-	if (DisplayInfo && flg) PetscPrintf(PETSC_COMM_WORLD,"# - Adding Layer with Phase=10 from z=[%g,%g]\n",zbot[9],ztop[9]);
+	if (DisplayInfo && flg) PetscPrintf(PETSC_COMM_WORLD," - Adding Layer with Phase=10 from z=[%g,%g]\n",zbot[9],ztop[9]);
 
 	// transform fractions into domain coordinates
 	for(i = 0; i < 10; i++) { zbot[i] = zbot[i]*user->H; ztop[i] = ztop[i]*user->H;}
@@ -803,7 +802,7 @@ PetscErrorCode ADVMarkInitDetachment(AdvCtx *actx, UserContext *user)
 	PetscFunctionBegin;
 
 	// print info
-	PetscPrintf(PETSC_COMM_WORLD,"# ONE-LAYER OVER DETACHMENT WITH 2 LINEAR PERTURBATIONS SETUP \n");
+	PetscPrintf(PETSC_COMM_WORLD," ONE-LAYER OVER DETACHMENT WITH 2 LINEAR PERTURBATIONS SETUP \n");
 
 	DisplayInfo = PETSC_TRUE;
 	PetscOptionsGetReal(PETSC_NULL,"-Heterogeneity_L"      , &Het_L  , PETSC_NULL);
@@ -813,7 +812,7 @@ PetscErrorCode ADVMarkInitDetachment(AdvCtx *actx, UserContext *user)
 
 	PetscOptionsGetReal(PETSC_NULL,"-Layer1_bottom", &zbot, PETSC_NULL);
 	PetscOptionsGetReal(PETSC_NULL,"-Layer1_top"   , &ztop, &flg);
-	if(DisplayInfo && flg) PetscPrintf(PETSC_COMM_WORLD,"# - Adding Layer with Phase = 1 from z=[%g,%g]\n", zbot, ztop);
+	if(DisplayInfo && flg) PetscPrintf(PETSC_COMM_WORLD," - Adding Layer with Phase = 1 from z=[%g,%g]\n", zbot, ztop);
 
 	// transform fractions into domain coordinates
 	zbot = zbot*user->H; ztop = ztop*user->H;
@@ -878,7 +877,7 @@ PetscErrorCode ADVMarkInitSlab(AdvCtx *actx, UserContext *user)
 	PetscFunctionBegin;
 
 	// print info
-	PetscPrintf(PETSC_COMM_WORLD,"# SLAB DETACHMENT SETUP \n");
+	PetscPrintf(PETSC_COMM_WORLD," SLAB DETACHMENT SETUP \n");
 
 	// non-dimensionalization
 	hslab = hslab*user->L;
@@ -886,7 +885,7 @@ PetscErrorCode ADVMarkInitSlab(AdvCtx *actx, UserContext *user)
 	dslab = dslab*user->L;
 	dair  = dair *user->L;
 
-	PetscPrintf(PETSC_COMM_WORLD,"# Setup Parameters: W = [%g km] L = [%g km] H = [%g km] SlabDimensions = [%g km,%g km,%g km] DepthSlab = [%g km] ThicknessAir = [%g km] \n",user->W*user->Characteristic.Length/1000,user->L*user->Characteristic.Length/1000,user->H*user->Characteristic.Length/1000, hslab*user->Characteristic.Length/1000,lslab*user->Characteristic.Length/1000,dslab*user->Characteristic.Length/1000,dslab*user->Characteristic.Length/1000,dair*user->Characteristic.Length/1000);
+	PetscPrintf(PETSC_COMM_WORLD," Setup Parameters: W = [%g km] L = [%g km] H = [%g km] SlabDimensions = [%g km,%g km,%g km] DepthSlab = [%g km] ThicknessAir = [%g km] \n",user->W*user->Characteristic.Length/1000,user->L*user->Characteristic.Length/1000,user->H*user->Characteristic.Length/1000, hslab*user->Characteristic.Length/1000,lslab*user->Characteristic.Length/1000,dslab*user->Characteristic.Length/1000,dslab*user->Characteristic.Length/1000,dair*user->Characteristic.Length/1000);
 
 	// loop over local markers
 	for(imark = 0; imark < actx->nummark; imark++)
@@ -939,7 +938,7 @@ PetscErrorCode ADVMarkInitSpheres(AdvCtx *actx, UserContext *user)
  	PetscFunctionBegin;
 
 	// print info
-	PetscPrintf(PETSC_COMM_WORLD,"# MULTIPLE FALLING SPHERES SETUP \n");
+	PetscPrintf(PETSC_COMM_WORLD," MULTIPLE FALLING SPHERES SETUP \n");
 
 	// get data
 	PetscOptionsGetInt (PETSC_NULL, "-NumSpheres",   &nsphere, PETSC_NULL);
@@ -1086,7 +1085,7 @@ PetscErrorCode ADVMarkCheckMarkers(AdvCtx *actx, UserContext *user)
 
 	if(error == PETSC_TRUE)
 	{
-		SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "Problems with initial marker distribution (see the above message)\n");
+		SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "Problems with initial marker distribution (see the above message)");
 	}
 
 	// clear

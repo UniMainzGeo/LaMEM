@@ -550,7 +550,7 @@ PetscErrorCode ADVMapMarkToDomains(AdvCtx *actx)
 		if(grank == -1)
 		{
 			// currently all the markers must remain in the box
-			SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "ERROR! Marker outflow is currently not implemented!\n");
+			SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "ERROR! Marker outflow is currently not implemented!");
 
 			// otherwise, number of deleted markers should be updated here, i.e.:
 			// cnt++;

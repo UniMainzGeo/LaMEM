@@ -58,6 +58,7 @@ without the explicit agreement of Boris Kaus.
 #include "multigrid.h"
 #include "advect.h"
 #include "marker.h"
+#include "input.h"
 
 //==========================================================================================================
 // LAMEM LIBRARY MODE ROUTINE
@@ -72,7 +73,7 @@ PetscErrorCode LaMEMLib_FDSTAG(PetscBool InputParamFile, const char *ParamFile, 
 	PetscInt           SaveOrNot;
 	PetscInt           itime;
 //	PetscLogDouble     cputime_start, cputime_start0, cputime_end, cputime_start_tstep, cputime_start_nonlinear;
-	PetscLogDouble     cputime_end, cputime_start_nonlinear;
+	PetscLogDouble     cputime_start, cputime_start_nonlinear, cputime_end;
 
 	FDSTAG   fs;    // staggered-grid layout
 	BCCtx    cbc;   // boundary condition context (coupled)
@@ -91,29 +92,29 @@ PetscErrorCode LaMEMLib_FDSTAG(PetscBool InputParamFile, const char *ParamFile, 
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
 
+	PetscTime(&cputime_start);
+
 	if(LaMEM_OutputParameters) LaMEM_OutputParameters = NULL;
 
-//	PetscTime(&cputime_start0);
-
 	// Start code
-	PetscPrintf(PETSC_COMM_WORLD,"# -------------------------------------------------------------------------- \n");
-	PetscPrintf(PETSC_COMM_WORLD,"#                   Lithosphere and Mantle Evolution Model                   \n");
-	PetscPrintf(PETSC_COMM_WORLD,"#              Current Revision: %s - %s		     \n",__SVNREVISION__,__SVNDATE__);
-	PetscPrintf(PETSC_COMM_WORLD,"#  Modified items: %s\n",__SVNMANCHANGES__);
-	PetscPrintf(PETSC_COMM_WORLD,"#     Compiled: Date: %s - Time: %s - Mode:  %s	    \n",__DATE__,__TIME__,__OPTMODE__);
-	PetscPrintf(PETSC_COMM_WORLD,"# -------------------------------------------------------------------------- \n");
-	PetscPrintf(PETSC_COMM_WORLD,"#        STAGGERED-GRID FINITE DIFFERENCE CANONICAL IMPLEMENTATION           \n");
-	PetscPrintf(PETSC_COMM_WORLD,"# -------------------------------------------------------------------------- \n");
+	PetscPrintf(PETSC_COMM_WORLD,"-------------------------------------------------------------------------- \n");
+	PetscPrintf(PETSC_COMM_WORLD,"                   Lithosphere and Mantle Evolution Model                   \n");
+	PetscPrintf(PETSC_COMM_WORLD,"              Current Revision: %s - %s		     \n",__SVNREVISION__,__SVNDATE__);
+	PetscPrintf(PETSC_COMM_WORLD,"  Modified items: %s\n",__SVNMANCHANGES__);
+	PetscPrintf(PETSC_COMM_WORLD,"     Compiled: Date: %s - Time: %s - Mode:  %s	    \n",__DATE__,__TIME__,__OPTMODE__);
+	PetscPrintf(PETSC_COMM_WORLD,"-------------------------------------------------------------------------- \n");
+	PetscPrintf(PETSC_COMM_WORLD,"        STAGGERED-GRID FINITE DIFFERENCE CANONICAL IMPLEMENTATION           \n");
+	PetscPrintf(PETSC_COMM_WORLD,"-------------------------------------------------------------------------- \n");
 
 	// Initialize context
-	PetscMemzero(&user, sizeof(UserContext));
+	ierr = PetscMemzero(&user, sizeof(UserContext)); CHKERRQ(ierr);
 
 	// set input file flag & name
 	user.InputParamFile = InputParamFile;
 	if(InputParamFile == PETSC_TRUE) strcpy(user.ParamFile, ParamFile);
 
 	// initialize variables
-	ierr = InitializeCode(&user); CHKERRQ(ierr);
+	ierr = FDSTAGInitCode(&user); CHKERRQ(ierr);
 
 	// Give current LaMEM session a specific group ID
 	user.Optimisation.mpi_group_id = *mpi_group_id;
@@ -146,6 +147,7 @@ PetscErrorCode LaMEMLib_FDSTAG(PetscBool InputParamFile, const char *ParamFile, 
 //	user.MatlabOutputFiles == 1
 //	user.VTKOutputFiles == 1
 //	user.AVDPhaseViewer
+//  user.PlasticityCutoff
 
 	//========================================================================================
 	// Setting up the solver
@@ -210,7 +212,7 @@ PetscErrorCode LaMEMLib_FDSTAG(PetscBool InputParamFile, const char *ParamFile, 
 	//======================
 
 	// WARNING!
-	// * scaling must be setup right after reading input before creating anything.
+	// scaling must be setup right after reading input before creating anything.
 
 	// create staggered grid object
 	ierr = FDSTAGCreate(&fs, user.nnode_x, user.nnode_y, user.nnode_z,
@@ -218,6 +220,7 @@ PetscErrorCode LaMEMLib_FDSTAG(PetscBool InputParamFile, const char *ParamFile, 
 
 	// generate coordinates of grid nodes/cells
 	ierr = FDSTAGGenCoord(&fs, &user); CHKERRQ(ierr);
+
 
 	// save processor partitioning
 	if(user.SavePartitioning)
@@ -229,6 +232,9 @@ PetscErrorCode LaMEMLib_FDSTAG(PetscBool InputParamFile, const char *ParamFile, 
 
 		PetscFunctionReturn(0);
 	}
+
+	// print essential grid details
+	ierr = FDSTAGView(&fs); CHKERRQ(ierr);
 
 	// create boundary condition context
 	ierr = BCCreate(&cbc, &fs); CHKERRQ(ierr);
@@ -290,7 +296,7 @@ PetscErrorCode LaMEMLib_FDSTAG(PetscBool InputParamFile, const char *ParamFile, 
 	for(itime = user.time_start; itime < user.time_end; itime++)
 	{
 
-		PetscPrintf(PETSC_COMM_WORLD,"# Time step %lld -------------------------------------------------------- \n", (LLD)(itime+1));
+		PetscPrintf(PETSC_COMM_WORLD,"Time step %lld -------------------------------------------------------- \n", (LLD)(itime+1));
 
 		//==========================================================================================
 		// Correct particles in case we employ an internal free surface
@@ -321,20 +327,12 @@ PetscErrorCode LaMEMLib_FDSTAG(PetscBool InputParamFile, const char *ParamFile, 
 			// solve nonlinear system with SNES
 			ierr = SNESSolve(snes, NULL, jr.gsol); CHKERRQ(ierr);
 
-			// print analyze convergence/divergence reason
-//			ierr = SNESPrintConvergedReason(snes); CHKERRQ(ierr);
-
-			PetscInt            its;
-			SNESConvergedReason reason;
-
-			ierr = SNESGetIterationNumber(snes, &its);    CHKERRQ(ierr);
-			ierr = SNESGetConvergedReason(snes, &reason); CHKERRQ(ierr);
-
-			PetscPrintf(PETSC_COMM_WORLD,"%s Number of nonlinear iterations = %D\n",SNESConvergedReasons[reason],its);
+			// print analyze convergence/divergence reason & iteration count
+			ierr = SNESPrintConvergedReason(snes); CHKERRQ(ierr);
 
 			PetscTime(&cputime_end);
 
-			PetscPrintf(PETSC_COMM_WORLD,"#  Nonlinear solve took %g s\n", cputime_end - cputime_start_nonlinear);
+			PetscPrintf(PETSC_COMM_WORLD, " Nonlinear solve took %g s\n", cputime_end - cputime_start_nonlinear);
 		}
 
 //		ierr = CheckVelocityError(&user); CHKERRQ(ierr);
@@ -427,7 +425,9 @@ PetscErrorCode LaMEMLib_FDSTAG(PetscBool InputParamFile, const char *ParamFile, 
 
 			// create directory
 			asprintf(&DirectoryName, "Timestep_%1.6lld",(LLD)itime);
-			ierr = LaMEM_CreateOutputDirectory(DirectoryName); CHKERRQ(ierr);
+//			ierr = LaMEM_CreateOutputDirectory(DirectoryName); CHKERRQ(ierr);
+
+			ierr = LaMEMCreateOutputDirectory(DirectoryName); CHKERRQ(ierr);
 
 			// Matlab output (a) -> regular files
 //			if (user.MatlabOutputFiles==1)
@@ -471,13 +471,6 @@ PetscErrorCode LaMEMLib_FDSTAG(PetscBool InputParamFile, const char *ParamFile, 
 		// Map tracers to new grid
 		//==========================================================================================
 
-//		if ( ((user.GridAdvectionMethod != 1) ) || ((user.remesh==1) ) )
-//		{
-//			PetscPrintf(PETSC_COMM_WORLD," Starting GetParticleNodes \n");
-//			ierr = GetParticleNodes(C, user.DA_Vel, &user); CHKERRQ(ierr);
-//			PetscPrintf(PETSC_COMM_WORLD," Finished GetParticleNodes \n");
-//		}
-		//==========================================================================================
 
 		//==========================================================================================
 		// Perform phase transitions on particles (i.e. change the phase number of particles)
@@ -512,19 +505,18 @@ PetscErrorCode LaMEMLib_FDSTAG(PetscBool InputParamFile, const char *ParamFile, 
         // Print some information on screen
         if (user.Characteristic.Length>1)
         {
-            // Most likely a setup that runs in natural lengthscales
-            PetscPrintf(PETSC_COMM_WORLD," Time = %g, dt=%g ",user.time*user.Characteristic.Time/user.Characteristic.SecYear, user.dt*user.Characteristic.Time/user.Characteristic.SecYear);
+            // Most likely a setup that runs in natural length-scales
+            PetscPrintf(PETSC_COMM_WORLD," Time = %g, dt = %g ",user.time*user.Characteristic.Time/user.Characteristic.SecYear, user.dt*user.Characteristic.Time/user.Characteristic.SecYear);
             if (user.DimensionalUnits==1) { PetscPrintf(PETSC_COMM_WORLD," [Years]  \n"); } else { PetscPrintf(PETSC_COMM_WORLD,"  \n"); }
         }
         else
         {
-            // Lab timescale or non-dimensional units
-            PetscPrintf(PETSC_COMM_WORLD," Time = %g, dt=%g ",user.time*user.Characteristic.Time, user.dt*user.Characteristic.Time);
+            // Lab times-cale or non-dimensional units
+            PetscPrintf(PETSC_COMM_WORLD," Time = %g, dt = %g ",user.time*user.Characteristic.Time, user.dt*user.Characteristic.Time);
             if (user.DimensionalUnits==1) { PetscPrintf(PETSC_COMM_WORLD," [s]  \n"); } else { PetscPrintf(PETSC_COMM_WORLD,"  \n"); }
         }
         
-        PetscPrintf(PETSC_COMM_WORLD,"# Finished timestep %lld out of %lld \n",(LLD)itime, (LLD)(user.time_end));
-        PetscPrintf(PETSC_COMM_WORLD,"  \n");
+        PetscPrintf(PETSC_COMM_WORLD," Finished timestep %lld out of %lld \n",(LLD)(itime+1), (LLD)(user.time_end));
         
         //==========================================================================================
    

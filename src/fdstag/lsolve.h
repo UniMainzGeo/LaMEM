@@ -68,6 +68,8 @@ typedef struct
 
 PetscErrorCode PCStokesBFCreate(PCStokes pc);
 
+PetscErrorCode PCStokesBFSetFromOptions(PCStokes pc);
+
 PetscErrorCode PCStokesBFDestroy(PCStokes pc);
 
 PetscErrorCode PCStokesBFSetup(PCStokes pc);

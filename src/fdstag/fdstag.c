@@ -449,19 +449,19 @@ PetscErrorCode Discret1DCheckMG(Discret1D *ds, const char *dir, PetscInt *_ncors
 	// check whether local grid size is an even number
 	if(ds->ncels % 2)
 	{
-		SETERRQ1(PETSC_COMM_WORLD, PETSC_ERR_USER, "Local grid size is an odd number in %s-direction\n", dir);
+		SETERRQ1(PETSC_COMM_WORLD, PETSC_ERR_USER, "Local grid size is an odd number in %s-direction", dir);
 	}
 
 	// check uniform local grid size (constant on all processors)
 	if(ds->tcels % ds->nproc)
 	{
-		SETERRQ1(PETSC_COMM_WORLD, PETSC_ERR_USER, "Uniform local grid size doesn't exist in %s-direction\n", dir);
+		SETERRQ1(PETSC_COMM_WORLD, PETSC_ERR_USER, "Uniform local grid size doesn't exist in %s-direction", dir);
 	}
 
 	// compare actual grid size with uniform value
 	if(ds->tcels/ds->nproc != ds->ncels)
 	{
-		SETERRQ1(PETSC_COMM_WORLD, PETSC_ERR_USER, "Local grid size is not constant on all processors in %s-direction\n", dir);
+		SETERRQ1(PETSC_COMM_WORLD, PETSC_ERR_USER, "Local grid size is not constant on all processors in %s-direction", dir);
 	}
 
 	// determine maximum number of coarsening steps
@@ -980,12 +980,66 @@ PetscErrorCode FDSTAGGetMinCellSize(FDSTAG *fs)
 }
 //---------------------------------------------------------------------------
 #undef __FUNCT__
+#define __FUNCT__ "FDSTAGGetAspectRatio"
+PetscErrorCode FDSTAGGetAspectRatio(FDSTAG *fs, PetscScalar *maxAspRat)
+{
+	// compute maximum aspect ratio in the grid
+
+	PetscMPIInt nproc;
+	PetscScalar dx, dy, dz, rt, lrt, grt;
+	PetscInt    i, j, k, nx, ny, nz, sx, sy, sz;
+
+	PetscErrorCode ierr;
+	PetscFunctionBegin;
+
+	// get number of processors
+	ierr = MPI_Comm_size(PETSC_COMM_WORLD, &nproc); CHKERRQ(ierr);
+
+	GET_CELL_RANGE(nx, sx, fs->dsx)
+	GET_CELL_RANGE(ny, sy, fs->dsy)
+	GET_CELL_RANGE(nz, sz, fs->dsz)
+
+	lrt = 0.0;
+
+	START_STD_LOOP
+	{
+		// get mesh steps
+		dx = SIZE_CELL(i, sx, fs->dsx);
+		dy = SIZE_CELL(j, sy, fs->dsy);
+		dz = SIZE_CELL(k, sz, fs->dsz);
+
+		if(dx > dy) rt = dx/dy; else rt = dy/dx; if(rt > lrt) lrt = rt;
+		if(dx > dz) rt = dx/dz; else rt = dz/dx; if(rt > lrt) lrt = rt;
+		if(dy > dz) rt = dy/dz; else rt = dz/dy; if(rt > lrt) lrt = rt;
+	}
+	END_STD_LOOP
+
+	// get global aspect ratio
+	if(nproc != 1)
+	{
+		// exchange
+		ierr = MPI_Allreduce(&lrt, &grt, 1, MPIU_SCALAR, MPI_MAX, PETSC_COMM_WORLD); CHKERRQ(ierr);
+
+	}
+	else
+	{
+		// there is no difference between global & local values
+		grt = lrt;
+	}
+
+	// store the result
+	(*maxAspRat) = grt;
+
+	PetscFunctionReturn(0);
+}
+//---------------------------------------------------------------------------
+#undef __FUNCT__
 #define __FUNCT__ "FDSTAGProcPartitioning"
 PetscErrorCode FDSTAGProcPartitioning(FDSTAG *fs, UserContext *user)
 {
-	PetscScalar *xc,*yc,*zc;
 	int         fid;
 	char        *fname;
+	PetscScalar *xc, *yc, *zc, chLen;
 
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
@@ -993,28 +1047,37 @@ PetscErrorCode FDSTAGProcPartitioning(FDSTAG *fs, UserContext *user)
 	PetscPrintf(PETSC_COMM_WORLD,"# Save processor partitioning \n");
 
 	// gather global coord
-	ierr = Discret1DGatherCoord(&fs->dsx,&xc); CHKERRQ(ierr);
-	ierr = Discret1DGatherCoord(&fs->dsy,&yc); CHKERRQ(ierr);
-	ierr = Discret1DGatherCoord(&fs->dsz,&zc); CHKERRQ(ierr);
+	ierr = Discret1DGatherCoord(&fs->dsx, &xc); CHKERRQ(ierr);
+	ierr = Discret1DGatherCoord(&fs->dsy, &yc); CHKERRQ(ierr);
+	ierr = Discret1DGatherCoord(&fs->dsz, &zc); CHKERRQ(ierr);
+
+	// get characteristic length
+	// WARNING! switch scaling
+	chLen = user->Characteristic.Length;
 
 	if(ISRankZero(PETSC_COMM_WORLD))
 	{
 		// save file
-		asprintf(&fname,"ProcessorPartitioning_%lldcpu_%lld.%lld.%lld.bin",(LLD)(fs->dsx.nproc*fs->dsy.nproc*fs->dsz.nproc),(LLD)fs->dsx.nproc,(LLD)fs->dsy.nproc,(LLD)fs->dsz.nproc);
-		PetscBinaryOpen(fname,FILE_MODE_WRITE,&fid);
-		PetscBinaryWrite(fid,&fs->dsx.nproc,1,PETSC_INT,PETSC_FALSE);
-		PetscBinaryWrite(fid,&fs->dsy.nproc,1,PETSC_INT,PETSC_FALSE);
-		PetscBinaryWrite(fid,&fs->dsz.nproc,1,PETSC_INT,PETSC_FALSE);
-		PetscBinaryWrite(fid,&fs->dsx.tnods,1,PETSC_INT,PETSC_FALSE);
-		PetscBinaryWrite(fid,&fs->dsy.tnods,1,PETSC_INT,PETSC_FALSE);
-		PetscBinaryWrite(fid,&fs->dsz.tnods,1,PETSC_INT,PETSC_FALSE);
-		PetscBinaryWrite(fid,fs->dsx.starts,fs->dsx.nproc+1,PETSC_INT,PETSC_FALSE);
-		PetscBinaryWrite(fid,fs->dsy.starts,fs->dsy.nproc+1,PETSC_INT,PETSC_FALSE);
-		PetscBinaryWrite(fid,fs->dsz.starts,fs->dsz.nproc+1,PETSC_INT,PETSC_FALSE);
-		PetscBinaryWrite(fid,&user->Characteristic.Length,1,PETSC_SCALAR,PETSC_FALSE);
-		PetscBinaryWrite(fid,xc,fs->dsx.tnods,PETSC_SCALAR,PETSC_FALSE);
-		PetscBinaryWrite(fid,yc,fs->dsy.tnods,PETSC_SCALAR,PETSC_FALSE);
-		PetscBinaryWrite(fid,zc,fs->dsz.tnods,PETSC_SCALAR,PETSC_FALSE);
+		asprintf(&fname, "ProcessorPartitioning_%lldcpu_%lld.%lld.%lld.bin",
+			(LLD)(fs->dsx.nproc*fs->dsy.nproc*fs->dsz.nproc),
+			(LLD)fs->dsx.nproc, (LLD)fs->dsy.nproc, (LLD)fs->dsz.nproc);
+
+		PetscBinaryOpen(fname, FILE_MODE_WRITE, &fid);
+
+		PetscBinaryWrite(fid, &fs->dsx.nproc, 1,               PETSC_INT,    PETSC_FALSE);
+		PetscBinaryWrite(fid, &fs->dsy.nproc, 1,               PETSC_INT,    PETSC_FALSE);
+		PetscBinaryWrite(fid, &fs->dsz.nproc, 1,               PETSC_INT,    PETSC_FALSE);
+		PetscBinaryWrite(fid, &fs->dsx.tnods, 1,               PETSC_INT,    PETSC_FALSE);
+		PetscBinaryWrite(fid, &fs->dsy.tnods, 1,               PETSC_INT,    PETSC_FALSE);
+		PetscBinaryWrite(fid, &fs->dsz.tnods, 1,               PETSC_INT,    PETSC_FALSE);
+		PetscBinaryWrite(fid, fs->dsx.starts, fs->dsx.nproc+1, PETSC_INT,    PETSC_FALSE);
+		PetscBinaryWrite(fid, fs->dsy.starts, fs->dsy.nproc+1, PETSC_INT,    PETSC_FALSE);
+		PetscBinaryWrite(fid, fs->dsz.starts, fs->dsz.nproc+1, PETSC_INT,    PETSC_FALSE);
+		PetscBinaryWrite(fid, &chLen,         1,               PETSC_SCALAR, PETSC_FALSE);
+		PetscBinaryWrite(fid, xc,             fs->dsx.tnods,   PETSC_SCALAR, PETSC_FALSE);
+		PetscBinaryWrite(fid, yc,             fs->dsy.tnods,   PETSC_SCALAR, PETSC_FALSE);
+		PetscBinaryWrite(fid, zc,             fs->dsz.tnods,   PETSC_SCALAR, PETSC_FALSE);
+
 		PetscBinaryClose(fid);
 		free(fname);
 
@@ -1022,6 +1085,44 @@ PetscErrorCode FDSTAGProcPartitioning(FDSTAG *fs, UserContext *user)
 		ierr = PetscFree(yc); CHKERRQ(ierr);
 		ierr = PetscFree(zc); CHKERRQ(ierr);
 	}
+
+	PetscFunctionReturn(0);
+}
+//---------------------------------------------------------------------------
+#undef __FUNCT__
+#define __FUNCT__ "FDSTAGView"
+PetscErrorCode FDSTAGView(FDSTAG *fs)
+{
+	// print & check essential grid details
+
+	PetscScalar maxAspRat;
+	PetscInt    px, py, pz, tx, ty, tz, nVelDOF, nCells;
+
+	PetscErrorCode ierr;
+	PetscFunctionBegin;
+
+	px = fs->dsx.nproc;
+	py = fs->dsy.nproc;
+	pz = fs->dsz.nproc;
+
+	tx = fs->dsx.tcels;
+	ty = fs->dsy.tcels;
+	tz = fs->dsz.tcels;
+
+	nCells  = fs->nCells;
+	nVelDOF = fs->nXFace + fs->nYFace + fs->nZFace;
+
+	ierr = FDSTAGGetAspectRatio(fs, &maxAspRat); CHKERRQ(ierr);
+
+	PetscPrintf(PETSC_COMM_WORLD, " Processor grid  [nx, ny, nz]   : [%lld, %lld, %lld]\n", (LLD)px, (LLD)py, (LLD)pz);
+	PetscPrintf(PETSC_COMM_WORLD, " Fine grid cells [nx, ny, nz]   : [%lld, %lld, %lld]\n", (LLD)tx, (LLD)ty, (LLD)tz);
+	PetscPrintf(PETSC_COMM_WORLD, " Number of cells                :  %lld\n", (LLD)nCells);
+	PetscPrintf(PETSC_COMM_WORLD, " Number of velocity DOF         :  %lld\n", (LLD)nVelDOF);
+	PetscPrintf(PETSC_COMM_WORLD, " Maximum cell aspect cell ratio :  %7.5f\n",   maxAspRat);
+
+	if(maxAspRat > 2.0) PetscPrintf(PETSC_COMM_WORLD, " WARNING! you are using non-optimal aspect ratio. Expect precision deterioration\n");
+
+	if(maxAspRat > 5.0) SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, " Too large aspect ratio is not supported");
 
 	PetscFunctionReturn(0);
 }

@@ -292,9 +292,6 @@ PetscInt OutMaskCountActive(OutMask *omask)
 	if(omask->velocity)       cnt++; // velocity
 	if(omask->pressure)       cnt++; // pressure
 	if(omask->temperature)    cnt++; // temperature
-	if(omask->moment_res)     cnt++; // momentum residual   (debugging)
-	if(omask->cont_res)       cnt++; // continuity residual (debugging)
-	if(omask->energ_res)      cnt++; // energy residual     (debugging)
 	if(omask->dev_stress)     cnt++; // deviatoric stress tensor
 	if(omask->j2_dev_stress)  cnt++; // deviatoric stress second invariant
 	if(omask->strain_rate)    cnt++; // deviatoric strain rate tensor
@@ -306,10 +303,14 @@ PetscInt OutMaskCountActive(OutMask *omask)
 	if(omask->plast_strain)   cnt++; // accumulated plastic strain
 	if(omask->plast_dissip)   cnt++; // plastic dissipation
 	if(omask->tot_displ)      cnt++; // total displacements
-	if(omask->DII_CEN)        cnt++; // effective strain rate invariant in center  (debugging)
-	if(omask->DII_XY)         cnt++; // effective strain rate invariant on xy-edge (debugging)
-	if(omask->DII_XZ)         cnt++; // effective strain rate invariant on xz-edge (debugging)
-	if(omask->DII_YZ)         cnt++; // effective strain rate invariant on yz-edge (debugging)
+	// === debugging vectors ===============================================
+	if(omask->moment_res)     cnt++; // momentum residual
+	if(omask->cont_res)       cnt++; // continuity residual
+	if(omask->energ_res)      cnt++; // energy residual
+	if(omask->DII_CEN)        cnt++; // effective strain rate invariant in center
+	if(omask->DII_XY)         cnt++; // effective strain rate invariant on xy-edge
+	if(omask->DII_XZ)         cnt++; // effective strain rate invariant on xz-edge
+	if(omask->DII_YZ)         cnt++; // effective strain rate invariant on yz-edge
 
 	return cnt;
 }
@@ -378,9 +379,6 @@ PetscErrorCode PVOutCreate(PVOut *pvout, FDSTAG *fs, Scaling *scal, const char *
 	if(omask->velocity)       OutVecCreate(&outvecs[cnt++], "velocity",       &PVOutWriteVelocity,     3, 0, 0, &maxnc, &mkcen, &mkedg);
 	if(omask->pressure)       OutVecCreate(&outvecs[cnt++], "pressure",       &PVOutWritePressure,     1, 0, 0, &maxnc, &mkcen, &mkedg);
 	if(omask->temperature)    OutVecCreate(&outvecs[cnt++], "temperature",    &PVOutWriteTemperature,  1, 0, 0, &maxnc, &mkcen, &mkedg);
-	if(omask->moment_res)     OutVecCreate(&outvecs[cnt++], "moment_res",     &PVOutWriteMomentRes,    3, 0, 0, &maxnc, &mkcen, &mkedg);
-	if(omask->cont_res)       OutVecCreate(&outvecs[cnt++], "cont_res",       &PVOutWriteContRes,      1, 0, 0, &maxnc, &mkcen, &mkedg);
-	if(omask->energ_res)      OutVecCreate(&outvecs[cnt++], "energ_res",      &PVOutWritEnergRes,      1, 0, 0, &maxnc, &mkcen, &mkedg);
 	if(omask->dev_stress)     OutVecCreate(&outvecs[cnt++], "dev_stress",     &PVOutWriteDevStress,    6, 1, 1, &maxnc, &mkcen, &mkedg);
 	if(omask->j2_dev_stress)  OutVecCreate(&outvecs[cnt++], "j2_dev_stress",  &PVOutWriteJ2DevStress,  1, 1, 0, &maxnc, &mkcen, &mkedg);
 	if(omask->strain_rate)    OutVecCreate(&outvecs[cnt++], "strain_rate",    &PVOutWriteStrainRate,   6, 1, 1, &maxnc, &mkcen, &mkedg);
@@ -392,6 +390,10 @@ PetscErrorCode PVOutCreate(PVOut *pvout, FDSTAG *fs, Scaling *scal, const char *
 	if(omask->plast_strain)   OutVecCreate(&outvecs[cnt++], "plast_strain",   &PVOutWritePlastStrain,  1, 0, 0, &maxnc, &mkcen, &mkedg);
 	if(omask->plast_dissip)   OutVecCreate(&outvecs[cnt++], "plast_dissip",   &PVOutWritePlastDissip,  1, 0, 0, &maxnc, &mkcen, &mkedg);
 	if(omask->tot_displ)      OutVecCreate(&outvecs[cnt++], "tot_displ",      &PVOutWriteTotDispl,     3, 0, 0, &maxnc, &mkcen, &mkedg);
+	// === debugging vectors ===============================================
+	if(omask->moment_res)     OutVecCreate(&outvecs[cnt++], "moment_res",     &PVOutWriteMomentRes,    3, 0, 0, &maxnc, &mkcen, &mkedg);
+	if(omask->cont_res)       OutVecCreate(&outvecs[cnt++], "cont_res",       &PVOutWriteContRes,      1, 0, 0, &maxnc, &mkcen, &mkedg);
+	if(omask->energ_res)      OutVecCreate(&outvecs[cnt++], "energ_res",      &PVOutWritEnergRes,      1, 0, 0, &maxnc, &mkcen, &mkedg);
 	if(omask->DII_CEN)        OutVecCreate(&outvecs[cnt++], "DII_CEN",        &PVOutWriteDII_CEN,      1, 1, 0, &maxnc, &mkcen, &mkedg);
 	if(omask->DII_XY)         OutVecCreate(&outvecs[cnt++], "DII_XY",         &PVOutWriteDII_XY,       1, 0, 1, &maxnc, &mkcen, &mkedg);
 	if(omask->DII_XZ)         OutVecCreate(&outvecs[cnt++], "DII_XZ",         &PVOutWriteDII_XZ,       1, 0, 1, &maxnc, &mkcen, &mkedg);
@@ -814,6 +816,7 @@ PetscErrorCode PVOutWriteVTR(PVOut *pvout, JacRes *jr, PetscInt tindx)
 
 	// close file
 	fclose(fp);
+
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------

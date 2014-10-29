@@ -116,9 +116,6 @@ typedef struct
 	PetscInt velocity;       // velocity
 	PetscInt pressure;       // pressure
 	PetscInt temperature;    // temperature
-	PetscInt moment_res;     // momentum residual   (debugging)
-	PetscInt cont_res;       // continuity residual (debugging)
-	PetscInt energ_res;      // energy residual     (debugging)
 	PetscInt dev_stress;     // deviatoric stress tensor
 	PetscInt j2_dev_stress;  // deviatoric stress second invariant
 	PetscInt strain_rate;    // deviatoric strain rate tensor
@@ -130,10 +127,15 @@ typedef struct
 	PetscInt plast_strain;   // accumulated plastic strain
 	PetscInt plast_dissip;   // plastic dissipation
 	PetscInt tot_displ;      // total displacements
-	PetscInt DII_CEN;        // effective strain rate invariant in center  (debugging)
-	PetscInt DII_XY;         // effective strain rate invariant on xy-edge (debugging)
-	PetscInt DII_XZ;         // effective strain rate invariant on xz-edge (debugging)
-	PetscInt DII_YZ;         // effective strain rate invariant on yz-edge (debugging)
+	PetscInt phrat[max_num_phases]; // phase ratios
+	// === debugging vectors ===============================================
+	PetscInt moment_res;     // momentum residual
+	PetscInt cont_res;       // continuity residual
+	PetscInt energ_res;      // energy residual
+	PetscInt DII_CEN;        // effective strain rate invariant in center
+	PetscInt DII_XY;         // effective strain rate invariant on xy-edge
+	PetscInt DII_XZ;         // effective strain rate invariant on xz-edge
+	PetscInt DII_YZ;         // effective strain rate invariant on yz-edge
 
 	// ... add more output vector identifiers here
 
@@ -197,4 +199,5 @@ PetscErrorCode PVOutWritePVTR(PVOut *pvout, PetscInt tindx);
 PetscErrorCode PVOutWriteVTR(PVOut *pvout, JacRes *jr, PetscInt tindx);
 
 //---------------------------------------------------------------------------
+
 #endif

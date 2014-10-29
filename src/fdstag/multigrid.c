@@ -36,7 +36,7 @@ PetscErrorCode MGCreate(MG *mg, FDSTAG *fs, BCCtx *bc, idxtype idxmod)
 	// check whether multigrid is requested
 	if(opt_set != PETSC_TRUE || strcmp(pc_type, "mg"))
 	{
-		SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "-gmg_pc_type option is not defined of specified incorrectly (use -gmg_pc_type mg) \n");
+		SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "-gmg_pc_type option is not defined of specified incorrectly (use -gmg_pc_type mg)");
 	}
 
 	// check multigrid mesh restrictions, get actual number of coarsening steps
@@ -763,7 +763,7 @@ PetscErrorCode CheckMGRestrict(FDSTAG *fs, PetscInt *_ncors)
 	// check multigrid mesh restrictions, get actual number of coarsening steps
 
 	PetscBool opt_set;
-	PetscInt  nx, ny, nz, ncors, nlevels;
+	PetscInt  nx, ny, nz, Nx, Ny, Nz, ncors, nlevels;
 
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
@@ -778,11 +778,11 @@ PetscErrorCode CheckMGRestrict(FDSTAG *fs, PetscInt *_ncors)
 
 	if(opt_set != PETSC_TRUE)
 	{
-		SETERRQ1(PETSC_COMM_WORLD, PETSC_ERR_USER, "Number of multigrid levels is not specified. Use option -gmg_pc_mg_levels. Max # of levels: %lld\n", (LLD)(ncors+1));
+		SETERRQ1(PETSC_COMM_WORLD, PETSC_ERR_USER, "Number of multigrid levels is not specified. Use option -gmg_pc_mg_levels. Max # of levels: %lld", (LLD)(ncors+1));
 	}
 	else if(nlevels < 2 || nlevels > ncors+1)
 	{
-		SETERRQ2(PETSC_COMM_WORLD, PETSC_ERR_USER, "Incorrect # of multigrid levels specified. Requested: %lld. Max. possible: %lld.\n", (LLD)nlevels, (LLD)(ncors+1));
+		SETERRQ2(PETSC_COMM_WORLD, PETSC_ERR_USER, "Incorrect # of multigrid levels specified. Requested: %lld. Max. possible: %lld", (LLD)nlevels, (LLD)(ncors+1));
 	}
 
 	// set actual number of coarsening steps
@@ -793,8 +793,13 @@ PetscErrorCode CheckMGRestrict(FDSTAG *fs, PetscInt *_ncors)
 	ny = fs->dsy.ncels >> ncors;
 	nz = fs->dsz.ncels >> ncors;
 
-	ierr = PetscPrintf(PETSC_COMM_WORLD, "Coarse grid size per processor [nx=%lld][ny=%lld][nz=%lld] \n", (LLD)nx, (LLD)ny, (LLD)nz); CHKERRQ(ierr);
-	ierr = PetscPrintf(PETSC_COMM_WORLD, "Number of multigrid levels: %lld\n", (LLD)(ncors+1)); CHKERRQ(ierr);
+	Nx = nx*fs->dsx.nproc;
+	Ny = ny*fs->dsy.nproc;
+	Nz = nz*fs->dsz.nproc;
+
+	ierr = PetscPrintf(PETSC_COMM_WORLD, " Total coarse grid size    [nx, ny, nz] : [%lld, %lld, %lld]\n", (LLD)Nx, (LLD)Ny, (LLD)Nz); CHKERRQ(ierr);
+	ierr = PetscPrintf(PETSC_COMM_WORLD, " Coarse grid per processor [nx, ny, nz] : [%lld, %lld, %lld]\n", (LLD)nx, (LLD)ny, (LLD)nz); CHKERRQ(ierr);
+	ierr = PetscPrintf(PETSC_COMM_WORLD, " Number of multigrid levels             : %lld\n", (LLD)(ncors+1)); CHKERRQ(ierr);
 
 	// return number of coarsening steps
 	(*_ncors) = ncors;

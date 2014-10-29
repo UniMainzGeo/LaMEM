@@ -187,7 +187,7 @@ PetscErrorCode GRVCompute( FDSTAG *fs, UserContext *user, JacResCtx *jrctx )
 		ierr = PetscPrintf(PETSC_COMM_WORLD,"#  -- save reference data -- \n");							CHKERRQ(ierr);
 		// --- create directory ---
 		asprintf(&DirectoryName, "ReferenceData_%1.6lld",(LLD)itime);
-		ierr = LaMEM_CreateOutputDirectory(DirectoryName); 												CHKERRQ(ierr);
+		ierr = FDSTAGCreateOutputDirectory(DirectoryName); 												CHKERRQ(ierr);
 		// --- create filename ---
 		asprintf(&FileName,"%s/REF_Gravity.bin",DirectoryName);
 		ierr = PetscPrintf(PETSC_COMM_WORLD,"#     save file: %s \n",FileName);							CHKERRQ(ierr);

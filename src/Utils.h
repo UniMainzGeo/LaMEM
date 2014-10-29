@@ -95,6 +95,8 @@ PetscInt ISRankZero(MPI_Comm comm);
 // check whether communicator is parallel (has more than one rank)
 PetscInt ISParallel(MPI_Comm comm);
 
+PetscErrorCode LaMEMCreateOutputDirectory(const char *DirectoryName);
+
 //---------------------------------------------------------------------------
 
 #endif

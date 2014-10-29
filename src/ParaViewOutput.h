@@ -15,9 +15,6 @@ typedef struct {
 	PetscBool phase, n,C,phi,k,Cp,Q,alpha,FK;
 } LaMEMView_QuadratureFields;
 
-
-
-
 PetscErrorCode DAView3DPVTS(DM da, Vec field, const char NAME[], UserContext *user, const char DirectoryName[],PetscScalar scaling_length);
 PetscErrorCode DAView2DPVTS(DM da, Vec field, const char NAME[], UserContext *user, const char DirectoryName[],PetscScalar scaling_length);
 
@@ -33,7 +30,6 @@ PetscErrorCode ParaviewPVDAppend(const char pvdfilename[],double time,const char
 PetscErrorCode DMViewVTK_write_PieceExtend( FILE *vtk_fp, PetscInt indent_level, DM da, const char local_file_prefix[] );
 PetscErrorCode LaMEM_DMView_3DVTK_StructuredGrid_QuadPoints(LaMEMView_QuadratureFields *view, DM DA_Materials_fine, DM DA_Processors,DM DA_Quadrature, Vec Materials_fine, const char file_prefix[], PetscInt ngp_vel_1D, UserContext *user, const char DirectoryName[] );
 
-PetscErrorCode  LaMEM_CreateOutputDirectory(const char *DirectoryName);
 PetscErrorCode LaMEM_SetQuadraturePointCoords_to_QuadratureDA(DM DA_Quadrature, PetscInt ngp_vel_1D, DM DA_Materials_fine, Vec Materials_fine );
 PetscErrorCode LaMEM_SetDataFromQuadraturePointsToQuadratureDA(DM DA_Quadrature, PetscInt ngp_vel_1D, DM DA_Materials_fine, Vec Materials_fine, Vec DataArray, UserContext *user, PetscInt DataType );
 PetscErrorCode LaMEM_DAView_3DVTK_StructuredGrid_QuadPoints(LaMEMView_QuadratureFields *view, DM DA_Materials_fine, DM DA_Processors, DM DA_Quadrature, Vec Materials_fine, const char file_prefix[], PetscInt ngp_vel_1D, UserContext *user, const char DirectoryName[]);

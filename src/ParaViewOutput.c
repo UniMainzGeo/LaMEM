@@ -39,7 +39,6 @@ without the explicit agreement of Boris Kaus.
 #include "AVDPhaseViewer.h"
 #include "Mesh.h"
 
-
 #undef __FUNCT__
 #define __FUNCT__ "LaMEMView_QuadratureFieldsInit"
 PetscErrorCode LaMEMView_QuadratureFieldsInit( LaMEMView_QuadratureFields *view )
@@ -3103,40 +3102,6 @@ PetscErrorCode ParaviewPVDAppend(const char pvdfilename[],double time,const char
 
 	PetscFunctionReturn(0);
 }
-
-//==========================================================================================================
-// Creates an output directory
-#undef __FUNCT__
-#define __FUNCT__ "LaMEM_CreateOutputDirectory"
-PetscErrorCode LaMEM_CreateOutputDirectory(const char *DirectoryName)
-{
-	PetscMPIInt rank;
-	PetscInt num;
-
-	PetscFunctionBegin;
-
-
-	MPI_Comm_rank( PETSC_COMM_WORLD, &rank );
-
-
-	/* Generate a new directory on proc 0 */
-	if (rank==0){
-		num = mkdir(DirectoryName, S_IRWXU);
-		if (num!=0){
-			PetscPrintf(PETSC_COMM_WORLD,"# Writing output to existing directory %s \n",DirectoryName);
-		}
-		else{
-			PetscPrintf(PETSC_COMM_WORLD,"# Created output directory %s \n",DirectoryName);
-		}
-	}
-
-	// All other procs should wait
-	MPI_Barrier(PETSC_COMM_WORLD);
-
-
-	PetscFunctionReturn(0);
-}
-
 //==========================================================================================================
 // Write a velocity output file and perform scaling/unscaling of the variables
 #undef __FUNCT__

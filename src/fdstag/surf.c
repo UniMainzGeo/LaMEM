@@ -143,7 +143,7 @@ PetscErrorCode FreeSurfGetPartition(
 		// checksum
 		for(i = 0, sum = 0; i < ds->nproc; i++) sum += part[i];
 
-		if(sum != nnod) SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "ERROR! inconsistent free surface partitioning\n");
+		if(sum != nnod) SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "ERROR! inconsistent free surface partitioning");
 	}
 
 	// return partitioning
@@ -318,3 +318,46 @@ PetscErrorCode FreeSurfInterpTopoPoint(PetscScalar *crd_stencil,  PetscScalar *t
 }
 */
 
+
+
+/*
+
+//============================================================================================================================
+#undef __FUNCT__
+#define __FUNCT__ "SetSinusoidalPerturbation"
+// There are some cases in which we set an initial sinusoidal perturbation on the free surface
+PetscErrorCode SetSinusoidalPerturbation(PetscScalar SinusoidalFreeSurfaceAmplitude, UserContext *user)
+{
+	PetscErrorCode ierr;
+	PetscScalar    ***LocalSurfaceTopography, x,z, maxVec;
+	PetscInt	   xs_Z, ys_Z, zs_Z, xm_Z, ym_Z, zm_Z, ix, iy;
+	DM			   cda_SurfaceTopo;
+	Vec			   gc_SurfaceTopo;
+	DMDACoor3d	   ***coors_SurfaceTopo;
+	// nondimensionalize
+	SinusoidalFreeSurfaceAmplitude = SinusoidalFreeSurfaceAmplitude/user->Characteristic.Length;
+	ierr = DMGetCoordinateDM(user->DA_SurfaceTopography,	&cda_SurfaceTopo); 	                         CHKERRQ(ierr);
+	ierr = DMGetCoordinatesLocal(user->DA_SurfaceTopography, &gc_SurfaceTopo); 	                     CHKERRQ(ierr);
+	ierr = DMDAVecGetArray(cda_SurfaceTopo,gc_SurfaceTopo, &coors_SurfaceTopo); 	                     CHKERRQ(ierr);
+	ierr = DMDAVecGetArray(user->DA_SurfaceTopography,user->SurfaceTopography, &LocalSurfaceTopography); CHKERRQ(ierr);
+	ierr = DMDAGetCorners(user->DA_SurfaceTopography,&xs_Z,&ys_Z,&zs_Z,&xm_Z,&ym_Z,&zm_Z);               CHKERRQ(ierr);
+	for (iy=ys_Z; iy<ys_Z+ym_Z; iy++)
+	{	for(ix=xs_Z; ix<xs_Z+xm_Z; ix++)
+		{	// Extract x,y,z coordinates of surface topography
+			x = coors_SurfaceTopo[zs_Z][iy][ix].x;
+//			y = coors_SurfaceTopo[zs_Z][iy][ix].y;
+			z = LocalSurfaceTopography[zs_Z][iy][ix];
+			z = z + cos(x/user->W*2*PETSC_PI)*SinusoidalFreeSurfaceAmplitude;
+			// set topography
+			LocalSurfaceTopography[zs_Z][iy][ix] = z;
+		}
+	}
+	ierr = DMDAVecRestoreArray(user->DA_SurfaceTopography,user->SurfaceTopography, 	&LocalSurfaceTopography	);	CHKERRQ(ierr);
+	ierr = DMDAVecRestoreArray(cda_SurfaceTopo,gc_SurfaceTopo,						&coors_SurfaceTopo		); 	CHKERRQ(ierr);
+	VecMax(user->SurfaceTopography,PETSC_NULL, &maxVec);
+	PetscPrintf(PETSC_COMM_WORLD,"max topo = %f ", maxVec*user->Characteristic.Length/1000.0);
+	PetscFunctionReturn(0);
+}
+
+
+*/

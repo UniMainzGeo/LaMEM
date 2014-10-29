@@ -2,7 +2,6 @@
 //.........   LaMEM - FDSTAG CANONICAL INTERFACE CHECKING ROUTINES   ........
 //---------------------------------------------------------------------------
 #include "LaMEM.h"
-#include "ParaViewOutput.h"
 #include "fdstag.h"
 #include "solVar.h"
 #include "scaling.h"
@@ -389,7 +388,7 @@ PetscErrorCode FieldSplitTest(NLCtx *nlctx, PVOut *pvout, Vec InitGuess, PetscSc
 
 	// create directory
 	asprintf(&DirName, "Timestep_%1.6lld",(LLD)itime);
-	ierr = LaMEM_CreateOutputDirectory(DirName); CHKERRQ(ierr);
+	ierr = FDSTAGCreateOutputDirectory(DirName); CHKERRQ(ierr);
 
 	// Paraview output FDSTAG fields
 	ierr = PVOutWriteTimeStep(pvout, jrctx, time, itime); CHKERRQ(ierr);
@@ -457,7 +456,7 @@ PetscErrorCode MGTest(NLCtx *nlctx, PVOut *pvout, Vec InitGuess, PetscScalar tim
 
 	// create directory
 	asprintf(&DirName, "Timestep_%1.6lld",(LLD)itime);
-	ierr = LaMEM_CreateOutputDirectory(DirName); CHKERRQ(ierr);
+	ierr = FDSTAGCreateOutputDirectory(DirName); CHKERRQ(ierr);
 
 	// Paraview output FDSTAG fields
 	ierr = PVOutWriteTimeStep(pvout, jrctx, time, itime); CHKERRQ(ierr);
@@ -660,7 +659,7 @@ PetscErrorCode StrainRateSingleComp(
 	// create output directory
 	char *DirectoryName = NULL;
 	asprintf(&DirectoryName, "Timestep_%1.6lld",(LLD)itime);
-	ierr = LaMEM_CreateOutputDirectory(DirectoryName); CHKERRQ(ierr);
+	ierr = FDSTAGCreateOutputDirectory(DirectoryName); CHKERRQ(ierr);
 	if(DirectoryName) free(DirectoryName);
 
 	// save output

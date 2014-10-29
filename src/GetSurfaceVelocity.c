@@ -619,7 +619,7 @@ PetscErrorCode GetSurfaceVelocity_InternalFreeSurface(UserContext *user,PetscInt
 	if(user->SurfVelField.SaveRef==1){
 		ierr = PetscPrintf(PETSC_COMM_WORLD,"#  -- save reference data -- \n");					CHKERRQ(ierr);
 		asprintf(&DirectoryName, "ReferenceData_%1.6lld",(LLD)itime);
-		ierr = LaMEM_CreateOutputDirectory(DirectoryName); 										CHKERRQ(ierr);
+		ierr = LaMEMCreateOutputDirectory(DirectoryName); 										CHKERRQ(ierr);
 		asprintf( &FileName,"%s/REF_FreeSurfaceVel.bin",DirectoryName);
 		ierr = PetscPrintf(PETSC_COMM_WORLD,"#     save file: %s \n",FileName);					CHKERRQ(ierr);
 
@@ -645,7 +645,7 @@ PetscErrorCode GetSurfaceVelocity_InternalFreeSurface(UserContext *user,PetscInt
 		ierr = GetMisfit_SurfaceVelocity_InternalFreeSurface(user,gvec_Vx,gvec_Vy,gvec_Vz,PLANE_COMM);CHKERRQ(ierr);
 		}
 
-		// send misfit to all nodes Ð only nodes of PLANE_COMM know about the misfit
+		// send misfit to all nodes ï¿½ only nodes of PLANE_COMM know about the misfit
 		planerank = 1;
 		MPI_Comm_rank(PLANE_COMM,&planerank);
 

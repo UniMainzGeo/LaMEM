@@ -25,12 +25,28 @@ PetscErrorCode PCStokesSetFromOptions(PCStokes pc)
 
 	if(found == PETSC_TRUE)
 	{
-		if     (!strcmp(pname, "bf"))   pc->type = _STOKES_BF_;
-		else if(!strcmp(pname, "mg"))   pc->type = _STOKES_MG_;
-		else if(!strcmp(pname, "user")) pc->type = _STOKES_USER_;
-		else SETERRQ1(PETSC_COMM_WORLD, PETSC_ERR_USER,"#Incorrect Jacobian preconditioner type: %s \n", pname);
+		if(!strcmp(pname, "bf"))
+		{
+			PetscPrintf(PETSC_COMM_WORLD, " Preconditioner type        : block factorization\n");
+			pc->type = _STOKES_BF_;
+		}
+		else if(!strcmp(pname, "mg"))
+		{
+			PetscPrintf(PETSC_COMM_WORLD, " Preconditioner type        : coupled Galerkin geometric multigrid\n");
+			pc->type = _STOKES_MG_;
+		}
+		else if(!strcmp(pname, "user"))
+		{
+			PetscPrintf(PETSC_COMM_WORLD, " Preconditioner type        : user-defined\n");
+			pc->type = _STOKES_USER_;
+		}
+		else SETERRQ1(PETSC_COMM_WORLD, PETSC_ERR_USER,"#Incorrect Jacobian preconditioner type: %s", pname);
 	}
-	else pc->type =_STOKES_USER_;
+	else
+	{
+		PetscPrintf(PETSC_COMM_WORLD, " Preconditioner type        : user-defined\n");
+		pc->type = _STOKES_USER_;
+	}
 
 	PetscFunctionReturn(0);
 }
@@ -55,7 +71,7 @@ PetscErrorCode PCStokesCreate(PCStokes *p_pc, PMat pm)
 	// clear object
 	ierr = PetscMemzero(pc, sizeof(p_PCStokes)); CHKERRQ(ierr);
 
-	// set type
+	// read options
 	ierr = PCStokesSetFromOptions(pc); CHKERRQ(ierr);
 
 	if(pc->type == _STOKES_BF_)
@@ -87,7 +103,7 @@ PetscErrorCode PCStokesCreate(PCStokes *p_pc, PMat pm)
 	}
 
 	// check matrix type
-	if(pm->type != pm_type) SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "Incorrect Stokes preconditioner matrix type used\n");
+	if(pm->type != pm_type) SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "Incorrect Stokes preconditioner matrix type used");
 
 	// set matrix
 	pc->pm = pm;
@@ -135,8 +151,6 @@ PetscErrorCode PCStokesBFCreate(PCStokes pc)
 	PC          vpc;
 	PCStokesBF *bf;
 	JacRes     *jr;
-	PetscBool   flg;
-	char        pname[MAX_NAME_LEN];
 
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
@@ -144,22 +158,17 @@ PetscErrorCode PCStokesBFCreate(PCStokes pc)
 	// allocate space
 	ierr = PetscMalloc(sizeof(PCStokesBF), (void**)&bf); CHKERRQ(ierr);
 
+	// clear object
+	ierr = PetscMemzero(bf, sizeof(PCStokesBF)); CHKERRQ(ierr);
+
 	// store context
 	pc->data = (void*)bf;
 
+	// read options
+	ierr = PCStokesBFSetFromOptions(pc); CHKERRQ(ierr);
+
 	// access context
 	jr = pc->pm->jr;
-
-	// set velocity solver type
-	ierr = PetscOptionsGetString(PETSC_NULL,"-bf_vs_type", pname, MAX_NAME_LEN, &flg); CHKERRQ(ierr);
-
-	if(flg == PETSC_TRUE)
-	{
-		if     (!strcmp(pname, "mg"))   bf->vtype = _VEL_MG_;
-		else if(!strcmp(pname, "user")) bf->vtype = _VEL_USER_;
-		else SETERRQ1(PETSC_COMM_WORLD, PETSC_ERR_USER,"#Incorrect velocity solver type: %s \n", pname);
-	}
-	else bf->vtype = _VEL_USER_;
 
 	// create velocity solver
 	ierr = KSPCreate(PETSC_COMM_WORLD, &bf->vksp); CHKERRQ(ierr);
@@ -175,6 +184,47 @@ PetscErrorCode PCStokesBFCreate(PCStokes pc)
 		ierr = PCSetType(vpc, PCSHELL);          CHKERRQ(ierr);
 		ierr = PCShellSetContext(vpc, &bf->vmg); CHKERRQ(ierr);
 		ierr = PCShellSetApply(vpc, MGApply);    CHKERRQ(ierr);
+	}
+
+	PetscFunctionReturn(0);
+}
+//---------------------------------------------------------------------------
+#undef __FUNCT__
+#define __FUNCT__ "PCStokesBFSetFromOptions"
+PetscErrorCode PCStokesBFSetFromOptions(PCStokes pc)
+{
+	PCStokesBF *bf;
+
+	PetscBool   flg;
+	char        pname[MAX_NAME_LEN];
+
+	PetscErrorCode ierr;
+	PetscFunctionBegin;
+
+	// access context
+	bf = (PCStokesBF*)pc->data;
+
+	// set velocity solver type
+	ierr = PetscOptionsGetString(PETSC_NULL,"-bf_vs_type", pname, MAX_NAME_LEN, &flg); CHKERRQ(ierr);
+
+	if(flg == PETSC_TRUE)
+	{
+		if(!strcmp(pname, "mg"))
+		{
+			PetscPrintf(PETSC_COMM_WORLD, " Velocity preconditioner    : Galerkin geometric multigrid\n");
+			bf->vtype = _VEL_MG_;
+		}
+		else if(!strcmp(pname, "user"))
+		{
+			PetscPrintf(PETSC_COMM_WORLD, " Velocity preconditioner    : user-defined\n");
+			bf->vtype = _VEL_USER_;
+		}
+		else SETERRQ1(PETSC_COMM_WORLD, PETSC_ERR_USER,"#Incorrect velocity solver type: %s", pname);
+	}
+	else
+	{
+		PetscPrintf(PETSC_COMM_WORLD, " Velocity preconditioner    : user-defined\n");
+		bf->vtype = _VEL_USER_;
 	}
 
 	PetscFunctionReturn(0);
@@ -538,105 +588,6 @@ PetscErrorCode KSPBlockStopTest(KSP ksp, PetscInt n, PetscScalar rnorm, KSPConve
 		// continue iterations
 		*reason = KSP_CONVERGED_ITERATING;
 	}
-
-	PetscFunctionReturn(0);
-}
-//---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "PowellHestenes"
-PetscErrorCode PowellHestenes(BlockMat *bmat, Vec r, Vec x)
-{
-	KSP 			ksp;
-	Vec 			f, u, fh, p, dp, d;
-	PetscScalar 	MaximumDivergence, div_max;
-	PetscInt 		PH_MaxInnerIterations, iter;
-	PetscBool 		flg;
-
-	PetscErrorCode ierr;
-	PetscFunctionBegin;
-
-	// read options from command line
-	ierr = PetscOptionsGetScalar(PETSC_NULL, "-ph_tol", &MaximumDivergence,     &flg); CHKERRQ(ierr);
-	if(flg != PETSC_TRUE) MaximumDivergence = 1e-8;
-
-	// create work vectors
-	ierr = VecDuplicate(bmat->wv, &f);   CHKERRQ(ierr);
-	ierr = VecDuplicate(bmat->wv, &u);   CHKERRQ(ierr);
-	ierr = VecDuplicate(bmat->wv, &fh);  CHKERRQ(ierr);
-	ierr = VecDuplicate(bmat->wp, &p);   CHKERRQ(ierr);
-	ierr = VecDuplicate(bmat->wp, &dp);  CHKERRQ(ierr);
-	ierr = VecDuplicate(bmat->wp, &d); CHKERRQ(ierr);
-
-	// Create KSP solver environment
-	ierr = KSPCreate(PETSC_COMM_WORLD, &ksp);          CHKERRQ(ierr);
-	ierr = KSPSetOperators(ksp, bmat->Avv, bmat->Avv); CHKERRQ(ierr);
-	ierr = KSPSetFromOptions(ksp);                     CHKERRQ(ierr);
-
-	// copy rhs vector
-	ierr = BlockMatMonolithicToBlock(bmat, r); CHKERRQ(ierr);
-	ierr = VecCopy(bmat->wv, f);               CHKERRQ(ierr);
-
-// debug ========================================
-//	ierr = VecCopy(bmat->wp, d); CHKERRQ(ierr);
-//	ierr = VecNorm(d, NORM_INFINITY, &div_max); CHKERRQ(ierr);
-//	PetscPrintf(PETSC_COMM_WORLD, "Initial divergence norm = %1.10e \n", div_max);
-//===============================================
-
-	// set initial guess
-	ierr = VecZeroEntries(p); CHKERRQ(ierr);
-
-	// perform Powell-Hesteness iterations
-	iter = 1;
-
-	do
-	{	// compute modified force vector: fh = f - Avp*p
-		ierr = VecCopy(f, fh);           CHKERRQ(ierr);
-		ierr = MatMult(bmat->Avp, p, u); CHKERRQ(ierr);
-		ierr = VecAXPY(fh, -1.0, u);     CHKERRQ(ierr);
-
-		// solve for velocity: u = Avv\fh
-		ierr = KSPSolve(ksp, fh, u);  CHKERRQ(ierr);
-
-		// compute divergence: d = Apv*u
-		ierr = MatMult(bmat->Apv, u, d); CHKERRQ(ierr);
-
-		// compute pressure increment: dp = kIM*div
-		ierr = VecPointwiseMult(dp, bmat->kIM, d); CHKERRQ(ierr);
-
-		// update pressure: p += dP
-		ierr = VecAXPY(p, 1.0, dp); CHKERRQ(ierr);
-
-		// compute divergence norm
-		ierr = VecNorm(d, NORM_INFINITY, &div_max); CHKERRQ(ierr);
-
-		// increment iteration count
-		iter++;
-
-		// print progress
-		PetscPrintf(PETSC_COMM_WORLD, "Powell-Hesteness iteration %4D, max(Div) = %1.10e \n", iter, div_max);
-
-		// check iteration count
-		if(iter == PH_MaxInnerIterations)
-		{
-//			break;
-			SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "Error! Powell-Hesteness iterations did not converge; Check your setup and gamma");
-		}
-
-	} while(div_max > MaximumDivergence);
-
-	// copy velocity & pressure
-	ierr = VecCopy(u, bmat->wv);               CHKERRQ(ierr);
-	ierr = VecCopy(p, bmat->wp);               CHKERRQ(ierr);
-	ierr = BlockMatBlockToMonolithic(bmat, x); CHKERRQ(ierr);
-
-	// cleaning up
-	ierr = VecDestroy(&f);   CHKERRQ(ierr);
-	ierr = VecDestroy(&u);   CHKERRQ(ierr);
-	ierr = VecDestroy(&fh);  CHKERRQ(ierr);
-	ierr = VecDestroy(&p);   CHKERRQ(ierr);
-	ierr = VecDestroy(&dp);  CHKERRQ(ierr);
-	ierr = VecDestroy(&d);   CHKERRQ(ierr);
-	ierr = KSPDestroy(&ksp); CHKERRQ(ierr);
 
 	PetscFunctionReturn(0);
 }

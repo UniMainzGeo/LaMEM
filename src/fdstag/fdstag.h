@@ -207,6 +207,15 @@ PetscErrorCode FDSTAGGetPointRanks(FDSTAG *fs, PetscScalar *X, PetscInt *lrank, 
 // compute minimum cell size in each direction
 PetscErrorCode FDSTAGGetMinCellSize(FDSTAG *fs);
 
+// compute maximum aspect ratio in the grid
+PetscErrorCode FDSTAGGetAspectRatio(FDSTAG *fs, PetscScalar *maxAspRat);
+
+// save processor partitioning of the global domain to file
+PetscErrorCode FDSTAGProcPartitioning(FDSTAG *fs, UserContext *user);
+
+// print & check essential grid details
+PetscErrorCode FDSTAGView(FDSTAG *fs);
+
 //---------------------------------------------------------------------------
 // MACROS
 //---------------------------------------------------------------------------
@@ -322,11 +331,6 @@ PetscErrorCode FDSTAGGetMinCellSize(FDSTAG *fs);
 //---------------------------------------------------------------------------
 #endif
 
-//---------------------------------------------------------------------------
-// UTILITIES
-//---------------------------------------------------------------------------
-// save processor partitioning of the global domain to file
-PetscErrorCode FDSTAGProcPartitioning(FDSTAG *fs, UserContext *user);
 
 /*
  void splitPointSlot(

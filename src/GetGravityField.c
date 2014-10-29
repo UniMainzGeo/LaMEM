@@ -161,7 +161,7 @@ PetscErrorCode GetAiryIsostasy(UserContext *user, const PetscInt ngp_vel,grid3D_
 	if(user->Isostasy.SaveRef==1){
 		ierr = PetscPrintf(PETSC_COMM_WORLD,"#  -- save reference data -- \n");					CHKERRQ(ierr);
 		asprintf(&DirectoryName, "ReferenceData_%1.6lld",(LLD)itime);
-		ierr = LaMEM_CreateOutputDirectory(DirectoryName); 										CHKERRQ(ierr);
+		ierr = LaMEMCreateOutputDirectory(DirectoryName); 										CHKERRQ(ierr);
 		asprintf( &FileName,"%s/REF_IsostaticTopography.bin",DirectoryName);
 		ierr = PetscPrintf(PETSC_COMM_WORLD,"#     save file: %s \n",FileName);					CHKERRQ(ierr);
 		ierr = PetscViewerBinaryOpen(PETSC_COMM_WORLD,FileName, FILE_MODE_WRITE, &view_out);			CHKERRQ(ierr);
@@ -779,7 +779,7 @@ PetscErrorCode GetGravityField(UserContext *user, const PetscInt ngp_vel,PetscIn
 		ierr = PetscPrintf(PETSC_COMM_WORLD,"#  -- save debug data -- \n");								CHKERRQ(ierr);
 		// --- create directory ---
 		asprintf(&DirectoryName, "Timestep_%1.6lld",(LLD)itime);
-		ierr = LaMEM_CreateOutputDirectory(DirectoryName); 												CHKERRQ(ierr);
+		ierr = LaMEMCreateOutputDirectory(DirectoryName); 												CHKERRQ(ierr);
 
 		// --- create filename ---
 		if(user->GravityField.UseAnalytics==PETSC_TRUE){
@@ -827,7 +827,7 @@ PetscErrorCode GetGravityField(UserContext *user, const PetscInt ngp_vel,PetscIn
 		ierr = PetscPrintf(PETSC_COMM_WORLD,"#  -- save reference data -- \n");							CHKERRQ(ierr);
 		// --- create directory ---
 		asprintf(&DirectoryName, "ReferenceData_%1.6lld",(LLD)itime);
-		ierr = LaMEM_CreateOutputDirectory(DirectoryName); 												CHKERRQ(ierr);
+		ierr = LaMEMCreateOutputDirectory(DirectoryName); 												CHKERRQ(ierr);
 		// --- create filename ---
 		asprintf(&FileName,"%s/REF_Gravity.bin",DirectoryName);
 		ierr = PetscPrintf(PETSC_COMM_WORLD,"#     save file: %s \n",FileName);							CHKERRQ(ierr);
@@ -1204,7 +1204,7 @@ PetscErrorCode SaveGravityField2VTK(UserContext *user, Vec lvec_dg, Vec lvec_coo
 
 		// --- create directory ---
 		asprintf(&DirectoryName, "Timestep_%1.6lld",(LLD)itime);
-		ierr = LaMEM_CreateOutputDirectory(DirectoryName); 												CHKERRQ(ierr);
+		ierr = LaMEMCreateOutputDirectory(DirectoryName); 												CHKERRQ(ierr);
 
 		// --- create file name ---
 		if(user->GravityField.UseAnalytics==PETSC_TRUE){

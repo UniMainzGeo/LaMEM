@@ -88,7 +88,8 @@ CSRC = \
 	fdstag/multigrid.c \
 	fdstag/check_fdstag.c \
 	fdstag/bc.c \
-	fdstag/surf.c
+	fdstag/surf.c \
+	fdstag/input.c
 
 #====================================================
 

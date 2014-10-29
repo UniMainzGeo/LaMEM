@@ -55,10 +55,10 @@ PetscErrorCode JacApplyMFFD(Mat A, Vec x, Vec y);
 
 //---------------------------------------------------------------------------
 
+PetscErrorCode SNESPrintConvergedReason(SNES snes);
+
 //PetscErrorCode SNESBlockStopTest(SNES snes, PetscInt it, PetscReal xnorm,
 //	PetscReal gnorm, PetscReal f, SNESConvergedReason *reason, void *cctx);
-
-//PetscErrorCode SNESPrintConvergedReason(SNES snes);
 
 //---------------------------------------------------------------------------
 #endif
