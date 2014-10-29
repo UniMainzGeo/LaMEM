@@ -647,7 +647,7 @@ PetscErrorCode FDSTAGInitCode(UserContext *user)
 
 	MPI_Comm_size(PETSC_COMM_WORLD,&size);
 
-	PetscPrintf(PETSC_COMM_WORLD," Total # of cpu's          : %lld \n",(LLD)size);
+	PetscPrintf(PETSC_COMM_WORLD," Total # of cpu's               : %lld \n",(LLD)size);
 //	PetscPrintf(PETSC_COMM_WORLD," Resolution [nx,ny,nz]     : %lld x %lld x %lld \n",(LLD)(nx), (LLD)(ny), (LLD)(nz));
 //	PetscPrintf(PETSC_COMM_WORLD," Total # of velocity dof's : %lld \n",(LLD)(nx*ny*nz*3));
 
@@ -664,7 +664,7 @@ PetscErrorCode FDSTAGInitCode(UserContext *user)
 		if(user->NumPartZ < 2) { user->NumPartZ = 2; PetscPrintf(PETSC_COMM_WORLD," WARNING: At least 2 particles required in z-direction; Increasing\n"); }
 	}
 
-	PetscPrintf(PETSC_COMM_WORLD," Number of tracers/cell in [x,y,z]-direction : [%lld,%lld,%lld] \n",(LLD)(user->NumPartX),(LLD)(user->NumPartY),(LLD)(user->NumPartZ));
+	PetscPrintf(PETSC_COMM_WORLD," Number of tracers/cell         : [%lld,%lld,%lld] \n",(LLD)(user->NumPartX),(LLD)(user->NumPartY),(LLD)(user->NumPartZ));
 
 
 	/* Compute some useful stuff */
@@ -705,8 +705,6 @@ PetscErrorCode FDSTAGInitCode(UserContext *user)
 		user->BC.BCType_z = DM_BOUNDARY_NONE;
 	}
 
-	PetscPrintf(PETSC_COMM_WORLD," BC employed: BC.[Left Right; Front Back; Lower Upper]=[%lld %lld; %lld %lld; %lld %lld] \n",
-			(LLD)(user->BC.LeftBound), (LLD)(user->BC.RightBound), (LLD)(user->BC.FrontBound), (LLD)(user->BC.BackBound), (LLD)(user->BC.LowerBound), (LLD)(user->BC.UpperBound) );
 
 
 	/* Set the density of 'sticky-air' to zero if we eliminate the 'sticky-air' from the system */
@@ -729,8 +727,17 @@ PetscErrorCode FDSTAGInitCode(UserContext *user)
 	}
 
 	// show initial timestep (WARNING! which years if nondimensional?)
-	PetscPrintf(PETSC_COMM_WORLD," Initial time step: %g years \n",user->dt);
+    if (user->DimensionalUnits==1){
+        PetscPrintf(PETSC_COMM_WORLD," Initial time step              : %g years \n",user->dt);
+    }
+    else{
+        PetscPrintf(PETSC_COMM_WORLD," Initial time step              : %g  \n",user->dt);
+    }
+    // Boundary conditions
+    PetscPrintf(PETSC_COMM_WORLD," BC employed                    : BC.[Left=%lld Right=%lld; Front=%lld Back=%lld; Lower=%lld Upper=%lld] \n",
+                (LLD)(user->BC.LeftBound), (LLD)(user->BC.RightBound), (LLD)(user->BC.FrontBound), (LLD)(user->BC.BackBound), (LLD)(user->BC.LowerBound), (LLD)(user->BC.UpperBound) );
 
+    
 	/* Compute characteristic values */
 	ComputeCharacteristicValues(user);
 
