@@ -1,20 +1,20 @@
 # Download:
 
-curl http://ftp.mcs.anl.gov/pub/petsc/release-snapshots/petsc-3.4.2.tar.gz -o petsc-3.4.2.tar.gz
+curl http://ftp.mcs.anl.gov/pub/petsc/release-snapshots/petsc-3.5.0.tar.gz -o petsc-3.5.0.tar.gz
 
 # Unpack:
 
-tar xvzf petsc-3.4.2.tar.gz
+tar xvzf petsc-3.5.0.tar.gz
 
-cd petsc-3.4.2
+cd petsc-3.5.0
 
 ------------------------------------------------------------------------------------------
 
 # Debug version
 
 ./configure \
---prefix=/opt/petsc/petsc-3.4.2-int32-debug \
---download-f-blas-lapack=1 \
+--prefix=/opt/petsc/petsc-3.5.0-int32-deb \
+--download-fblaslapack=1 \
 --with-debugging=1 \
 --COPTFLAGS="-g -O0" \
 --FOPTFLAGS="-g -O0" \
@@ -30,7 +30,9 @@ cd petsc-3.4.2
 --download-hypre=1 \
 --download-scalapack=1 \
 --download-mumps=1 \
---download-superlu_dist=1
+--download-superlu_dist=1 \
+--download-suitesparse=1
+
 
 make all
 
@@ -41,7 +43,7 @@ sudo make install
 # Optimized version
 
 ./configure \
---prefix=/opt/petsc/petsc-3.4.2-int32-opt \
+--prefix=/opt/petsc/petsc-3.5.0-int32-opt \
 --with-blas-lapack-lib="-Wl,-framework,vecLib" \
 --with-debugging=0 \
 --COPTFLAGS="-O3" \
@@ -58,7 +60,8 @@ sudo make install
 --download-hypre=1 \
 --download-scalapack=1 \
 --download-mumps=1 \
---download-superlu_dist=1
+--download-superlu_dist=1 \
+--download-suitesparse=1
 
 make all
 
@@ -68,8 +71,8 @@ sudo make install
 
 # Set paths in .bash_profile
 
-export PETSC_DEB=/opt/petsc/petsc-3.4.2-int32-debug
-export PETSC_OPT=/opt/petsc/petsc-3.4.2-int32-opt
+export PETSC_DEB=/opt/petsc/petsc-3.5.0-int32-deb
+export PETSC_OPT=/opt/petsc/petsc-3.5.0-int32-opt
 
 NOTES:
 
