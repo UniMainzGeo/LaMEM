@@ -6,6 +6,10 @@
 #include "constEq.h"
 #include "dfzero.h"
 //---------------------------------------------------------------------------
+// * add different viscosity averaging methods (echo info to output)
+// ...
+//---------------------------------------------------------------------------
+
 #undef __FUNCT__
 #define __FUNCT__ "ConstEqCtxSetup"
 PetscErrorCode ConstEqCtxSetup(

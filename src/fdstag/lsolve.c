@@ -11,6 +11,9 @@
 #include "matrix.h"
 #include "lsolve.h"
 //---------------------------------------------------------------------------
+// * implement preconditioners in PETSc
+// * add default solver options
+//---------------------------------------------------------------------------
 #undef __FUNCT__
 #define __FUNCT__ "PCStokesSetFromOptions"
 PetscErrorCode PCStokesSetFromOptions(PCStokes pc)

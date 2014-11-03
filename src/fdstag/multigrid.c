@@ -12,6 +12,11 @@
 #include "multigrid.h"
 #include "Utils.h"
 //---------------------------------------------------------------------------
+// * remove hierarchy of grids & bc-objects (use info from fine level)
+// * preallocate all restriction & interpolation operators
+// * implement fine-level preconditionier completely matrix-free
+// * coordinate- viscosity- residual-dependent restriction & interpolation
+//---------------------------------------------------------------------------
 #undef __FUNCT__
 #define __FUNCT__ "MGCreate"
 PetscErrorCode MGCreate(MG *mg, FDSTAG *fs, BCCtx *bc, idxtype idxmod)

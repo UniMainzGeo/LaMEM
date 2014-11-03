@@ -82,7 +82,7 @@ PetscErrorCode LaMEMLib_FDSTAG(PetscBool InputParamFile, const char *ParamFile, 
 	AdvCtx   actx;  // advection context
 	PMat     pm;    // preconditioner matrix
 	PCStokes pc;    // Stokes preconditioner
-	SNES     snes;  // PETSc nonliner solver
+	SNES     snes;  // PETSc nonlinear solver
 	NLSol    nl;    // nonlinear solver context
 	PVOut    pvout; // paraview output driver
 
@@ -221,7 +221,6 @@ PetscErrorCode LaMEMLib_FDSTAG(PetscBool InputParamFile, const char *ParamFile, 
 	// generate coordinates of grid nodes/cells
 	ierr = FDSTAGGenCoord(&fs, &user); CHKERRQ(ierr);
 
-
 	// save processor partitioning
 	if(user.SavePartitioning)
 	{
@@ -285,7 +284,7 @@ PetscErrorCode LaMEMLib_FDSTAG(PetscBool InputParamFile, const char *ParamFile, 
 	ierr = NLSolCreate(&nl, pc, &snes); CHKERRQ(ierr);
 
 	// create output object for all requested output variables
-	ierr = PVOutCreate(&pvout, &fs, &jr.scal, user.OutputFile); CHKERRQ(ierr);
+	ierr = PVOutCreate(&pvout, &jr, user.OutputFile); CHKERRQ(ierr);
 
 	//===============
 	// TIME STEP LOOP

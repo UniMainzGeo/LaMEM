@@ -11,9 +11,15 @@
 #include "matrix.h"
 #include "lsolve.h"
 #include "nlsolve.h"
-#include "interface.h"
-#include "Assembly_FDSTAG.h"
 #include "Utils.h"
+//---------------------------------------------------------------------------
+// * add bound checking for iterative solution vector in SNES
+// * automatically set -snes_type ksponly (for linear problems)
+// * add line search (PETSc) and whatever load control methods (arc-length?)
+// * closed-form matrix-free Jacobian
+// * residual function scaling
+// * adaptive setting of absolute tolerance based on previous steps residual norms
+//   (also for linear solves)
 //---------------------------------------------------------------------------
 #undef __FUNCT__
 #define __FUNCT__ "NLSolCreate"
@@ -292,9 +298,29 @@ PetscErrorCode SNESPrintConvergedReason(SNES snes)
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-
-
 /*
+#undef __FUNCT__
+#define __FUNCT__ "CheckVelocityError"
+PetscErrorCode CheckVelocityError(UserContext *user)
+{
+	PetscScalar MaxVel, MinVel;
+
+	PetscErrorCode ierr;
+	PetscFunctionBegin;
+
+	// Error detection
+	ierr = VecMax(user->sol_advect, PETSC_NULL, &MaxVel);	CHKERRQ(ierr);
+	ierr = VecMin(user->sol_advect, PETSC_NULL, &MinVel); CHKERRQ(ierr);
+	MaxVel = PetscMax(MaxVel, PetscAbsScalar(MinVel));
+
+	if(isnan(MaxVel))
+	{
+		SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "  *** Emergency stop! Maximum velocity is NaN ***  \n");
+	}
+
+	PetscFunctionReturn(0);
+}
+//---------------------------------------------------------------------------
 #undef __FUNCT__
 #define __FUNCT__ "SNESBlockStopTest"
 PetscErrorCode SNESBlockStopTest(SNES snes, PetscInt it, PetscReal xnorm,
@@ -374,13 +400,6 @@ PetscErrorCode SNESBlockStopTest(SNES snes, PetscInt it, PetscReal xnorm,
 
 	PetscFunctionReturn(0);
 }
-//---------------------------------------------------------------------------
-
-*/
-//---------------------------------------------------------------------------
-
-/*
-
 
 	//====================================================================
 

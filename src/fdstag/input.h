@@ -12,5 +12,16 @@ PetscErrorCode FDSTAGReadInputFile(UserContext *user);
 PetscErrorCode ReadMaterialProperties(UserContext *user);
 
 //---------------------------------------------------------------------------
+PetscErrorCode ReadMeshSegDir(
+	FILE        *fp,
+	const char  *name,
+	PetscScalar  beg,
+	PetscScalar  end,
+	PetscInt    *tncels,
+	MeshSegInp  *msi,
+	PetscInt     dim,
+	PetscScalar  charLength);
+
+//---------------------------------------------------------------------------
 
 #endif

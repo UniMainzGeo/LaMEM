@@ -5,6 +5,8 @@
 #include "fdstag.h"
 #include "Utils.h"
 //---------------------------------------------------------------------------
+// * unify coupled & decoupled indexing objects
+//---------------------------------------------------------------------------
 // MeshSeg1D functions
 //---------------------------------------------------------------------------
 #undef __FUNCT__
@@ -57,6 +59,9 @@ PetscErrorCode MeshSeg1DCreate(
 	ms->istart[ms->nsegs] = tncels;
 	ms->xstart[0]         = beg;
 	ms->xstart[ms->nsegs] = end;
+
+	// compute uniform mesh step
+	ms->h = (end-beg)/(PetscScalar)tncels;
 
 	PetscFunctionReturn(0);
 }
@@ -298,6 +303,9 @@ PetscErrorCode Discret1DGenCoord(Discret1D *ds, MeshSeg1D *ms)
 	for(i = -1; i < ds->ncels+1; i++)
 		ds->ccoor[i] = (ds->ncoor[i] + ds->ncoor[i+1])/2.0;
 
+	// set uniform mesh step
+	ds->h = ms->h;
+
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
@@ -333,30 +341,6 @@ PetscErrorCode Discret1DView(Discret1D *ds, const char *name)
 }
 //---------------------------------------------------------------------------
 #undef __FUNCT__
-#define __FUNCT__ "Discret1DGetMinCellSize"
-PetscErrorCode Discret1DGetMinCellSize(Discret1D *ds, PetscScalar *sz)
-{
-	// compute and return the size of smallest local cell
-
-	PetscInt    i;
-	PetscScalar lsz, msz;
-
-	PetscFunctionBegin;
-
-	msz = SIZE_CELL(0, 0, (*ds));
-
-	for(i = 1; i < ds->ncels; i++)
-	{
-		lsz = SIZE_CELL(i, 0, (*ds));
-		if(lsz < msz) msz = lsz;
-	}
-
-	(*sz) = msz;
-
-	PetscFunctionReturn(0);
-}
-//---------------------------------------------------------------------------
-#undef __FUNCT__
 #define __FUNCT__ "Discret1DGetColumnComm"
 PetscErrorCode Discret1DGetColumnComm(Discret1D *ds, MPI_Comm *comm)
 {
@@ -364,6 +348,68 @@ PetscErrorCode Discret1DGetColumnComm(Discret1D *ds, MPI_Comm *comm)
 	PetscFunctionBegin;
 
 	ierr = MPI_Comm_split(PETSC_COMM_WORLD, ds->color, ds->rank, comm); CHKERRQ(ierr);
+
+	PetscFunctionReturn(0);
+}
+//---------------------------------------------------------------------------
+#undef __FUNCT__
+#define __FUNCT__ "Discret1DGetMinMaxCellSize"
+PetscErrorCode Discret1DGetMinMaxCellSize(Discret1D *ds)
+{
+	// globally compute extreme cell sizes & uniform mesh flag
+	MPI_Comm    comm;
+	PetscInt    i;
+	PetscBool   eql;
+	PetscScalar sz, lminsz, lmaxsz, gminsz, gmaxsz, rtol;
+
+	PetscErrorCode ierr;
+	PetscFunctionBegin;
+
+	rtol = 1e-8;
+
+	// get local values
+	lminsz = lmaxsz = SIZE_CELL(0, 0, (*ds));
+
+	for(i = 1; i < ds->ncels; i++)
+	{
+		sz = SIZE_CELL(i, 0, (*ds));
+
+		if(sz < lminsz) lminsz = sz;
+		if(sz > lmaxsz) lmaxsz = sz;
+	}
+
+	// sort out sequential case
+	if(ds->nproc == 1)
+	{
+		gminsz = lminsz;
+		gmaxsz = lmaxsz;
+	}
+	else
+	{	// create column communicator
+		ierr = Discret1DGetColumnComm(ds, &comm); CHKERRQ(ierr);
+
+		// synchronize
+		ierr = MPI_Allreduce(&lminsz, &gminsz, 1, MPIU_SCALAR, MPI_MIN, comm); CHKERRQ(ierr);
+		ierr = MPI_Allreduce(&lmaxsz, &gmaxsz, 1, MPIU_SCALAR, MPI_MAX, comm); CHKERRQ(ierr);
+
+		ierr = MPI_Comm_free(&comm); CHKERRQ(ierr);
+	}
+
+	// detect uniform mesh
+	if(PetscAbsScalar(gmaxsz-gminsz) < rtol*ds->h)
+	{
+		gmaxsz = gminsz = ds->h;
+		eql = PETSC_TRUE;
+	}
+	else
+	{
+		eql = PETSC_FALSE;
+	}
+
+	// store results
+	ds->h_uni = eql;
+	ds->h_min = gminsz;
+	ds->h_max = gmaxsz;
 
 	PetscFunctionReturn(0);
 }
@@ -880,7 +926,9 @@ PetscErrorCode FDSTAGGenCoord(FDSTAG *fs, UserContext *usr)
 	ierr = Discret1DGenCoord(&fs->dsz, &fs->msz);
 
 	// compute sizes of the smallest cells
-	ierr = FDSTAGGetMinCellSize(fs);
+	ierr = Discret1DGetMinMaxCellSize(&fs->dsx);
+	ierr = Discret1DGetMinMaxCellSize(&fs->dsy);
+	ierr = Discret1DGetMinMaxCellSize(&fs->dsz);
 
 	PetscFunctionReturn(0);
 }
@@ -935,46 +983,6 @@ PetscErrorCode FDSTAGGetPointRanks(FDSTAG *fs, PetscScalar *X, PetscInt *lrank, 
 
 	(*lrank) = rx + 3*ry + 9*rz;
 	(*grank) = fs->neighb[(*lrank)];
-
-	PetscFunctionReturn(0);
-}
-//---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "FDSTAGGetMinCellSize"
-PetscErrorCode FDSTAGGetMinCellSize(FDSTAG *fs)
-{
-	// compute minimum cell size in each direction
-	PetscMPIInt nproc;
-	PetscScalar lsz[3], gsz[3];
-
-	PetscErrorCode ierr;
-	PetscFunctionBegin;
-
-	// get number of processors
-	ierr = MPI_Comm_size(PETSC_COMM_WORLD, &nproc); CHKERRQ(ierr);
-
-	// compute local cell sizes
-	ierr = Discret1DGetMinCellSize(&fs->dsx, &lsz[0]); CHKERRQ(ierr);
-	ierr = Discret1DGetMinCellSize(&fs->dsy, &lsz[1]); CHKERRQ(ierr);
-	ierr = Discret1DGetMinCellSize(&fs->dsz, &lsz[2]); CHKERRQ(ierr);
-
-	// compute & set global cell sizes
-	if(nproc != 1)
-	{
-		// exchange
-		ierr = MPI_Allreduce(lsz, gsz, 3, MPIU_SCALAR, MPI_MIN, PETSC_COMM_WORLD); CHKERRQ(ierr);
-
-		// store the result
-		fs->mdx = gsz[0];
-		fs->mdy = gsz[1];
-		fs->mdz = gsz[2];
-	}
-	else
-	{	// store the result
-		fs->mdx = lsz[0];
-		fs->mdy = lsz[1];
-		fs->mdz = lsz[2];
-	}
 
 	PetscFunctionReturn(0);
 }

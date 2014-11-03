@@ -14,6 +14,7 @@ typedef struct
 	// single-point constraints
 	PetscInt     numSPC;   // number of single point constraints (SPC)
 	PetscInt    *SPCList;  // global indices of SPC (global layout)
+	PetscScalar *SPCVals;  // values of SPC
 
 	PetscInt     numSPCPres;   // number of pressure SPC
 	PetscInt    *SPCListPres;  // global indices of pressure SPC (pressure layout)

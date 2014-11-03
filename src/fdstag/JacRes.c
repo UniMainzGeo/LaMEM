@@ -1108,9 +1108,10 @@ PetscErrorCode JacResCopySol(JacRes *jr, Vec x)
 	FDSTAG      *fs;
 	BCCtx       *bc;
 	DOFIndex    *dof;
-
 	PetscInt    mcx, mcy, mcz;
 	PetscInt    mnx, mny, mnz;
+	PetscInt    n, shift, *setList;
+	PetscScalar *setVals;
 	PetscInt    i, j, k, I, J, K, nx, ny, nz, sx, sy, sz;
 	PetscScalar ***bcvx,  ***bcvy,  ***bcvz, ***bcp;
 	PetscScalar ***ivx,   ***ivy,   ***ivz,  ***ip;
@@ -1153,6 +1154,14 @@ PetscErrorCode JacResCopySol(JacRes *jr, Vec x)
 	iter += fs->nZFace;
 
 	ierr  = PetscMemcpy(p,  iter, (size_t)fs->nCells*sizeof(PetscScalar)); CHKERRQ(ierr);
+
+	// enforce single point constraints
+	n       = bc->numSPC;  // number of single point constraints (SPC)
+	setList = bc->SPCList; // list of constrained DOF global IDs
+	setVals = bc->SPCVals; // values of constrained DOF
+	shift   = dof->istart; // global index of the first DOF (global to local conversion)
+
+	for(i = 0; i < n; i++) sol[setList[i] - shift] = setVals[i];
 
 	// restore access
 	ierr = VecRestoreArray(jr->gvx, &vx);  CHKERRQ(ierr);
@@ -1376,6 +1385,8 @@ PetscErrorCode JacResCopyRes(JacRes *jr, Vec f)
 PetscErrorCode JacResViewRes(JacRes *jr)
 {
 	// #define MAX3(a,b,c) (a > b ? (a > c ? a : c) : (b > c ? b : c))
+
+	// WARNING! show assembled residual (with bc)
 
 	PetscBool   flg;
 	PetscScalar dmin, dmax, d2, fx, fy, fz, f2;

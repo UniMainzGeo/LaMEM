@@ -14,6 +14,7 @@ typedef struct
 	PetscInt    *istart; // indices of the first nodes plus last index
 	PetscScalar *xstart; // coordinates of the first nodes plus total size
 	PetscScalar *biases; // biases for each segment
+	PetscScalar  h;      // uniform mesh step
 
 } MeshSeg1D;
 
@@ -63,6 +64,10 @@ typedef struct
 	PetscMPIInt   grnext;      // global rank of next process (-1 for last processor)
 
 	PetscMPIInt   color;       // color of processor column in base direction
+	PetscScalar   h;           // uniform mesh step
+	PetscBool     h_uni;       // uniform mesh step flag
+	PetscScalar   h_min;       // minimum mesh step
+	PetscScalar   h_max;       // maximum mesh step
 
 } Discret1D;
 
@@ -86,11 +91,11 @@ PetscErrorCode Discret1DGenCoord(Discret1D *ds, MeshSeg1D *ms);
 
 PetscErrorCode Discret1DView(Discret1D *ds, const char *name);
 
-// define minimum cell size in the base direction
-PetscErrorCode Discret1DGetMinCellSize(Discret1D *ds, PetscScalar *sz);
-
 // create 1D communicator of the processor column in the base direction
 PetscErrorCode Discret1DGetColumnComm(Discret1D *ds, MPI_Comm *comm);
+
+// define minimum cell size in the base direction
+PetscErrorCode Discret1DGetMinMaxCellSize(Discret1D *ds);
 
 // gather coordinate array on rank zero of PETSC_COMM_WORLD
 // WARNING! the array only exists on rank zero of PETSC_COMM_WORLD
@@ -169,7 +174,6 @@ typedef struct
 //	PetscInt istartGh; // global index of the first DOF in ghosted storage
 
 	PetscMPIInt neighb[_num_neighb_]; // global ranks of neighboring process
-	PetscScalar mdx, mdy, mdz;        // minimum cell sizes
 
 } FDSTAG;
 
@@ -203,9 +207,6 @@ PetscErrorCode FDSTAGGetNeighbProc(FDSTAG *fs);
 
 // get local & global ranks of a domain containing a point (only neighbors are checked)
 PetscErrorCode FDSTAGGetPointRanks(FDSTAG *fs, PetscScalar *X, PetscInt *lrank, PetscMPIInt *grank);
-
-// compute minimum cell size in each direction
-PetscErrorCode FDSTAGGetMinCellSize(FDSTAG *fs);
 
 // compute maximum aspect ratio in the grid
 PetscErrorCode FDSTAGGetAspectRatio(FDSTAG *fs, PetscScalar *maxAspRat);

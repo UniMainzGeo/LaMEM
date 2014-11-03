@@ -58,6 +58,11 @@ Anton, please add a few comments
 #END_DOC#
 */
 //---------------------------------------------------------------------------
+// * add different advection methods (echo to output)
+// * add different types of GRID->MARKER interpolation (echo to output)
+//   (currently piece-wise constant, alternative - linear)
+// * check weights of distance-dependent MARKER->GRID interpolation
+//---------------------------------------------------------------------------
 #undef __FUNCT__
 #define __FUNCT__ "ADVCreate"
 PetscErrorCode ADVCreate(AdvCtx *actx, FDSTAG *fs, JacRes *jr)

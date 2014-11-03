@@ -89,7 +89,9 @@ CSRC = \
 	fdstag/check_fdstag.c \
 	fdstag/bc.c \
 	fdstag/surf.c \
-	fdstag/input.c
+	fdstag/input.c \
+	fdstag/tssolve.c
+	
 
 #====================================================
 

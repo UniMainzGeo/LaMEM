@@ -7,6 +7,8 @@
 #include "Utils.h"
 #include "input.h"
 //---------------------------------------------------------------------------
+// * add default solver options
+//---------------------------------------------------------------------------
 #undef __FUNCT__
 #define __FUNCT__ "FDSTAGInitCode"
 PetscErrorCode FDSTAGInitCode(UserContext *user)
@@ -17,7 +19,7 @@ PetscErrorCode FDSTAGInitCode(UserContext *user)
 	PetscErrorCode ierr;
 	PetscInt       nx,ny,nz, mod, i, nel_array[3], nel_input_max;
     PetscInt       n_int;
-	PetscScalar    dx, dy, dz, SecYear;
+	PetscScalar    SecYear;
 	PetscBool      found,flg;
 	char          *all_options;
 	char           setup_name[PETSC_MAX_PATH_LEN];
@@ -641,16 +643,15 @@ PetscErrorCode FDSTAGInitCode(UserContext *user)
 	nx = user->nnode_x;
 	ny = user->nnode_y;
 	nz = user->nnode_z;
-	dx = user->W/((double)(nx-1));
-	dy = user->L/((double)(ny-1));
-	dz = user->H/((double)(nz-1));
 
-	MPI_Comm_size(PETSC_COMM_WORLD,&size);
+	ierr = MPI_Comm_size(PETSC_COMM_WORLD,&size); CHKERRQ(ierr);
 
 	PetscPrintf(PETSC_COMM_WORLD," Total # of cpu's               : %lld \n",(LLD)size);
-//	PetscPrintf(PETSC_COMM_WORLD," Resolution [nx,ny,nz]     : %lld x %lld x %lld \n",(LLD)(nx), (LLD)(ny), (LLD)(nz));
-//	PetscPrintf(PETSC_COMM_WORLD," Total # of velocity dof's : %lld \n",(LLD)(nx*ny*nz*3));
 
+	if(user->GravityAngle != 90.0)
+	{
+		PetscPrintf(PETSC_COMM_WORLD," Gravity angle with z-axis : %g \n", user->GravityAngle);
+	}
 
 	/* Info about particles if used */
 
@@ -776,9 +777,9 @@ PetscErrorCode FDSTAGReadInputFile(UserContext *user)
 	PetscFunctionBegin;
 
 	fp = fopen( user->ParamFile, "r" );
-	if( fp == NULL ) {
-		PetscPrintf( PETSC_COMM_WORLD, "FDSTAGReadInputFile: Cannot open input file %s \n", user->ParamFile );
-		MPI_Abort(PETSC_COMM_WORLD,1);
+	if(!fp)
+	{
+		SETERRQ1(PETSC_COMM_WORLD, PETSC_ERR_USER, "Cannot open input file %s", user->ParamFile);
 	}
 
 	parse_GetInt( fp, "nnode_x", &user->nnode_x, &found );
@@ -902,9 +903,6 @@ PetscErrorCode FDSTAGReadInputFile(UserContext *user)
 	parse_GetInt( fp,    "StokesSolver", &user->StokesSolver, &found );
 	parse_GetInt( fp,    "VelocitySolver", &user->VelocitySolver, &found );
 
-	// nonlinear solver options
-	parse_GetDouble( fp, "NonlinearIterationsAccuracy", &user->NonlinearIterationsAccuracy, &found );
-	parse_GetInt( fp, "MaxNonlinearIterations", &user->MaxNonlinearIterations, &found );
 
 	/* Particle related variables */
 	parse_GetInt( fp,    "ParticleInput", &user->ParticleInput, &found );
@@ -934,8 +932,6 @@ PetscErrorCode FDSTAGReadInputFile(UserContext *user)
 	 * replaced with a more general routine
 	 */
 
-	// no need for that anymore (will be counted automatically)
-//	parse_GetInt( fp, "num_phases", &user->num_phases, &found );
 
 	parse_GetDouble( fp, "LowerViscosityCutoff", &user->LowerViscosityCutoff, &found );
 	parse_GetDouble( fp, "UpperViscosityCutoff", &user->UpperViscosityCutoff, &found );
@@ -1365,3 +1361,95 @@ PetscErrorCode ReadMaterialProperties(UserContext *user)
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
+#undef __FUNCT__
+#define __FUNCT__ "ReadMeshSegDir"
+PetscErrorCode ReadMeshSegDir(
+	FILE        *fp,
+	const char  *name,
+	PetscScalar  beg,
+	PetscScalar  end,
+	PetscInt    *tncels,
+	MeshSegInp  *msi,
+	PetscInt     dim,
+	PetscScalar  charLength)
+{
+	// read mesh refinement data for a direction from the input file
+	// NOTE: parameter "tncels" passes negative number of segments & returns total number of cells
+
+	PetscInt    i, jj, arsz, found;
+	PetscScalar buff[3*MaxNumMeshSegs-1];
+
+	PetscFunctionBegin;
+
+	// check whether segments are not specified
+	if((*tncels) > 0)
+	{
+		msi->nsegs = 0;
+		PetscFunctionReturn(0);
+	}
+
+	// set number of segments
+	msi->nsegs = -(*tncels);
+
+	// read segments
+	parse_GetDoubleArray(fp, name, &arsz, buff, &found);
+
+	if(!found) SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "ERROR! Mesh refinement segments are not specified\n");
+
+	if(arsz != 3*msi->nsegs-1) SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "ERROR! Incorrect number entries in the mesh refinement array\n");
+
+	// load the data ... delimiters
+	for(i = 0, jj = 0; i < msi->nsegs-1; i++, jj++) msi->delims[i] = buff[jj];
+
+	// ... number of cells
+	for(i = 0; i < msi->nsegs; i++, jj++) msi->ncells[i] = (PetscInt)buff[jj];
+
+	// ... biases
+	for(i = 0; i < msi->nsegs; i++, jj++) msi->biases[i] = buff[jj];
+
+	// check the data ... delimiter sequence
+	for(i = 1; i < msi->nsegs-1; i++)
+	{
+		if(msi->delims[i] <= msi->delims[i-1])
+		{
+			SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "ERROR! refinement segments are unordered/overlapping\n");
+		}
+	}
+
+	// ... delimiter bounds
+	for(i = 0; i < msi->nsegs-1; i++)
+	{
+		if(msi->delims[i] <= beg || msi->delims[i] >= end)
+		{
+			SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "ERROR! Refinement segments out of bound\n");
+		}
+	}
+
+	// ... number of cells
+	for(i = 0; i < msi->nsegs; i++)
+	{
+		if(msi->ncells[i] <= 0)
+		{
+			SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "ERROR! Number of cells must be non-negative\n");
+		}
+	}
+
+	// ... biases
+	for(i = 0; i < msi->nsegs; i++)
+	{
+		if(!msi->biases[i])
+		{
+			SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "ERROR! Bias factors must be non-zero\n");
+		}
+	}
+
+	// ... compute total number of cells
+	for(i = 0, (*tncels) = 0; i < msi->nsegs; i++) (*tncels) += msi->ncells[i];
+
+	// nondimensionalize segment delimiters - after error checking
+	if (dim) for(i = 0; i < msi->nsegs-1; i++) msi->delims[i] = msi->delims[i]/charLength;
+
+	PetscFunctionReturn(0);
+}
+//---------------------------------------------------------------------------
+

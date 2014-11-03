@@ -532,7 +532,6 @@ PetscErrorCode   LaMEMReadInputFile( UserContext *user )
 	char setup_name[PETSC_MAX_PATH_LEN];
 
 
-	PetscErrorCode ierr;
 	PetscFunctionBegin;
 
 	fp = fopen( user->ParamFile, "r" );
@@ -564,13 +563,6 @@ PetscErrorCode   LaMEMReadInputFile( UserContext *user )
 	parse_GetDouble( fp, "x_left", &user->x_left, &found );
 	parse_GetDouble( fp, "y_front", &user->y_front, &found );
 	parse_GetDouble( fp, "z_bot", &user->z_bot, &found );
-
-	//==============
-	// MESH SEGMENTS
-	//==============
-	ierr = ReadMeshSegDir(fp, "seg_x", user->x_left,  user->x_left  + user->W, &user->nel_x, &user->mseg_x, user->DimensionalUnits, user->Characteristic.Length); CHKERRQ(ierr);
-	ierr = ReadMeshSegDir(fp, "seg_y", user->y_front, user->y_front + user->L, &user->nel_y, &user->mseg_y, user->DimensionalUnits, user->Characteristic.Length); CHKERRQ(ierr);
-	ierr = ReadMeshSegDir(fp, "seg_z", user->z_bot,   user->z_bot   + user->H, &user->nel_z, &user->mseg_z, user->DimensionalUnits, user->Characteristic.Length); CHKERRQ(ierr);
 
 	// read model setup
 	parse_GetString(fp, "msetup", setup_name, PETSC_MAX_PATH_LEN-1, &found);
@@ -3326,97 +3318,6 @@ PetscErrorCode SaveProcessorPartitioning(UserContext *user)
 	// close access
 	ierr = DMDAVecRestoreArray(cda, gc, &coors);                  CHKERRQ(ierr);
 
-
-	PetscFunctionReturn(0);
-}
-//==========================================================================================================
-#undef __FUNCT__
-#define __FUNCT__ "ReadMeshSegDir"
-PetscErrorCode ReadMeshSegDir(
-	FILE        *fp,
-	const char  *name,
-	PetscScalar  beg,
-	PetscScalar  end,
-	PetscInt    *tncels,
-	MeshSegInp  *msi,
-	PetscInt     dim,
-	PetscScalar  charLength)
-{
-	// read mesh refinement data for a direction from the input file
-	// NOTE: parameter "tncels" passes negative number of segments & returns total number of cells
-
-	PetscInt    i, jj, arsz, found;
-	PetscScalar buff[3*MaxNumMeshSegs-1];
-
-	PetscFunctionBegin;
-
-	// check whether segments are not specified
-	if((*tncels) > 0)
-	{
-		msi->nsegs = 0;
-		PetscFunctionReturn(0);
-	}
-
-	// set number of segments
-	msi->nsegs = -(*tncels);
-
-	// read segments
-	parse_GetDoubleArray(fp, name, &arsz, buff, &found);
-
-	if(!found) SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "ERROR! Mesh refinement segments are not specified\n");
-
-	if(arsz != 3*msi->nsegs-1) SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "ERROR! Incorrect number entries in the mesh refinement array\n");
-
-	// load the data ... delimiters
-	for(i = 0, jj = 0; i < msi->nsegs-1; i++, jj++) msi->delims[i] = buff[jj];
-
-	// ... number of cells
-	for(i = 0; i < msi->nsegs; i++, jj++) msi->ncells[i] = (PetscInt)buff[jj];
-
-	// ... biases
-	for(i = 0; i < msi->nsegs; i++, jj++) msi->biases[i] = buff[jj];
-
-	// check the data ... delimiter sequence
-	for(i = 1; i < msi->nsegs-1; i++)
-	{
-		if(msi->delims[i] <= msi->delims[i-1])
-		{
-			SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "ERROR! refinement segments are unordered/overlapping\n");
-		}
-	}
-
-	// ... delimiter bounds
-	for(i = 0; i < msi->nsegs-1; i++)
-	{
-		if(msi->delims[i] <= beg || msi->delims[i] >= end)
-		{
-			SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "ERROR! Refinement segments out of bound\n");
-		}
-	}
-
-	// ... number of cells
-	for(i = 0; i < msi->nsegs; i++)
-	{
-		if(msi->ncells[i] <= 0)
-		{
-			SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "ERROR! Number of cells must be non-negative\n");
-		}
-	}
-
-	// ... biases
-	for(i = 0; i < msi->nsegs; i++)
-	{
-		if(!msi->biases[i])
-		{
-			SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "ERROR! Bias factors must be non-zero\n");
-		}
-	}
-
-	// ... compute total number of cells
-	for(i = 0, (*tncels) = 0; i < msi->nsegs; i++) (*tncels) += msi->ncells[i];
-
-	// nondimensionalize segment delimiters - after error checking
-	if (dim) for(i = 0; i < msi->nsegs-1; i++) msi->delims[i] = msi->delims[i]/charLength;
 
 	PetscFunctionReturn(0);
 }

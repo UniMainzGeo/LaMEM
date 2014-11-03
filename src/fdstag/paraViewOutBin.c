@@ -10,23 +10,23 @@
 #include "paraViewOutBin.h"
 #include "outFunct.h"
 #include "Utils.h"
-
+//---------------------------------------------------------------------------
+// * phase-ratio output
+//
 //---------------------------------------------------------------------------
 //............................. Output buffer ...............................
 //---------------------------------------------------------------------------
 #undef __FUNCT__
 #define __FUNCT__ "OutBufCreate"
-PetscErrorCode OutBufCreate(
-	OutBuf   *outbuf,
-	FDSTAG   *fs,
-	PetscInt  maxnc,
-	PetscBool mkcen,
-	PetscBool mkedg)
+PetscErrorCode OutBufCreate(OutBuf *outbuf, JacRes *jr)
 {
+	FDSTAG   *fs;
 	PetscInt rx, ry, rz, sx, sy, sz, nx, ny, nz;
 
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
+
+	fs = jr->fs;
 
 	// clear object
 	ierr = PetscMemzero(outbuf, sizeof(OutBuf)); CHKERRQ(ierr);
@@ -34,9 +34,6 @@ PetscErrorCode OutBufCreate(
 	// initialize parameters
 	outbuf->fs    = fs;
 	outbuf->fp    = NULL;
-	outbuf->maxnc = maxnc;
-	outbuf->mkcen = mkcen;
-	outbuf->mkedg = mkedg;
 	outbuf->cn    = 0;
 
 	// get local output grid sizes
@@ -45,31 +42,21 @@ PetscErrorCode OutBufCreate(
 	GET_OUTPUT_RANGE(rz, nz, sz, fs->dsz)
 
 	// allocate output buffer
-	ierr = PetscMalloc((size_t)(nx*ny*nz*maxnc)*sizeof(float), &outbuf->buff); CHKERRQ(ierr);
+	ierr = PetscMalloc((size_t)(_max_num_comp_*nx*ny*nz)*sizeof(float), &outbuf->buff); CHKERRQ(ierr);
 
 	// allocate corner buffers
 	ierr = DMCreateGlobalVector(fs->DA_COR, &outbuf->gbcor); CHKERRQ(ierr);
 	ierr = DMCreateLocalVector (fs->DA_COR, &outbuf->lbcor); CHKERRQ(ierr);
 
-	// allocate center buffers
-	if(mkcen)
-	{
-		ierr = DMCreateGlobalVector(fs->DA_CEN, &outbuf->gbcen); CHKERRQ(ierr);
-		ierr = DMCreateLocalVector (fs->DA_CEN, &outbuf->lbcen); CHKERRQ(ierr);
-	}
-
-	// allocate edge buffers
-	if(mkedg)
-	{
-		ierr = DMCreateGlobalVector(fs->DA_XY,  &outbuf->gbxy); CHKERRQ(ierr);
-		ierr = DMCreateLocalVector (fs->DA_XY,  &outbuf->lbxy); CHKERRQ(ierr);
-
-		ierr = DMCreateGlobalVector(fs->DA_XZ,  &outbuf->gbxz); CHKERRQ(ierr);
-		ierr = DMCreateLocalVector (fs->DA_XZ,  &outbuf->lbxz); CHKERRQ(ierr);
-
-		ierr = DMCreateGlobalVector(fs->DA_YZ,  &outbuf->gbyz); CHKERRQ(ierr);
-		ierr = DMCreateLocalVector (fs->DA_YZ,  &outbuf->lbyz); CHKERRQ(ierr);
-	}
+	// set pointers to center & edge buffers (reuse from JacRes object)
+	outbuf->gbcen = jr->gdxx;
+	outbuf->lbcen = jr->ldxx;
+	outbuf->gbxy  = jr->gdxy;
+	outbuf->lbxy  = jr->ldxy;
+	outbuf->gbxz  = jr->gdxz;
+	outbuf->lbxz  = jr->ldxz;
+	outbuf->gbyz  = jr->gdyz;
+	outbuf->lbyz  = jr->ldyz;
 
 	PetscFunctionReturn(0);
 }
@@ -87,26 +74,6 @@ PetscErrorCode OutBufDestroy(OutBuf *outbuf)
 	// free corner buffers
 	ierr = VecDestroy(&outbuf->gbcor); CHKERRQ(ierr);
 	ierr = VecDestroy(&outbuf->lbcor); CHKERRQ(ierr);
-
-	// free center buffers
-	if(outbuf->mkcen)
-	{
-		ierr = VecDestroy(&outbuf->gbcen); CHKERRQ(ierr);
-		ierr = VecDestroy(&outbuf->lbcen); CHKERRQ(ierr);
-	}
-
-	// free edge buffers
-	if(outbuf->mkedg)
-	{
-		ierr = VecDestroy(&outbuf->gbxy); CHKERRQ(ierr);
-		ierr = VecDestroy(&outbuf->lbxy); CHKERRQ(ierr);
-
-		ierr = VecDestroy(&outbuf->gbxz); CHKERRQ(ierr);
-		ierr = VecDestroy(&outbuf->lbxz); CHKERRQ(ierr);
-
-		ierr = VecDestroy(&outbuf->gbyz); CHKERRQ(ierr);
-		ierr = VecDestroy(&outbuf->lbyz); CHKERRQ(ierr);
-	}
 
 	PetscFunctionReturn(0);
 }
@@ -221,18 +188,14 @@ PetscErrorCode OutBufPut3DVecComp(
 //...........  Multi-component output vector data structure .................
 //---------------------------------------------------------------------------
 void OutVecCreate(
-		OutVec         *outvec,
-		const char     *name,
-		OutVecFunctPtr  OutVecFunct,
-		PetscInt        ncomp,
-		PetscInt        cen,
-		PetscInt        edg,
-		PetscInt       *maxnc,
-		PetscInt       *mkcen,
-		PetscInt       *mkedg)
+	OutVec         *outvec,
+	const char     *name,
+	const char     *label,
+	OutVecFunctPtr  OutVecFunct,
+	PetscInt        ncomp)
 {
 	// store name
-	asprintf(&outvec->name, "%s", name);
+	asprintf(&outvec->name, "%s %s", name, label);
 
 	// output function
 	outvec->OutVecFunct = OutVecFunct;
@@ -240,14 +203,6 @@ void OutVecCreate(
 	// number of components
 	outvec->ncomp = ncomp;
 
-	// track maximum number of components
-	if(*maxnc < ncomp) *maxnc = ncomp;
-
-	// track center buffer request
-	if(cen) *mkcen = 1;
-
-	// track edge buffer request
-	if(edg) *mkedg = 1;
 }
 //---------------------------------------------------------------------------
 void OutVecDestroy(OutVec *outvec)
@@ -319,14 +274,17 @@ PetscInt OutMaskCountActive(OutMask *omask)
 //---------------------------------------------------------------------------
 #undef __FUNCT__
 #define __FUNCT__ "PVOutCreate"
-PetscErrorCode PVOutCreate(PVOut *pvout, FDSTAG *fs, Scaling *scal, const char *filename)
+PetscErrorCode PVOutCreate(PVOut *pvout, JacRes *jr, const char *filename)
 {
-	PetscInt  cnt, maxnc, mkcen, mkedg;
+	Scaling  *scal;
 	OutMask  *omask;
 	OutVec   *outvecs;
+	PetscInt  cnt;
 
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
+
+	scal = &jr->scal;
 
 	// clear object
 	ierr = PetscMemzero(pvout, sizeof(PVOut)); CHKERRQ(ierr);
@@ -335,7 +293,7 @@ PetscErrorCode PVOutCreate(PVOut *pvout, FDSTAG *fs, Scaling *scal, const char *
 	asprintf(&pvout->outfile, "%s", filename);
 
 	// set output scaling for coordinates
-	pvout->crdScal = scal->out_length;
+	pvout->crdScal = scal->length;
 
 	// get output mask
 	omask = &pvout->omask;
@@ -345,18 +303,6 @@ PetscErrorCode PVOutCreate(PVOut *pvout, FDSTAG *fs, Scaling *scal, const char *
 
 	// read output mask from file here
 	// ... NOT IMPLEMENTED YET
-
-// ADHOC (uncomment output flags)
-
-//	memset(omask, 0, sizeof(OutMask));
-
-//	omask->DII_CEN        = 1;
-//	omask->DII_XY         = 1;
-//	omask->DII_XZ         = 1;
-//	omask->DII_YZ         = 1;
-//	omask->velocity       = 1;
-//	omask->j2_strain_rate = 1;
-//	omask->strain_rate    = 1;
 
 	// count active output vectors
 	pvout->nvec = OutMaskCountActive(omask);
@@ -369,38 +315,35 @@ PetscErrorCode PVOutCreate(PVOut *pvout, FDSTAG *fs, Scaling *scal, const char *
 
 	// set all output functions & collect information to allocate buffers
 	cnt   = 0;
-	maxnc = 0;
-	mkcen = 0;
-	mkedg = 0;
 
-	if(omask->phase)          OutVecCreate(&outvecs[cnt++], "phase",          &PVOutWritePhase,        1, 1, 0, &maxnc, &mkcen, &mkedg);
-	if(omask->density)        OutVecCreate(&outvecs[cnt++], "density",        &PVOutWriteDensity,      1, 1, 0, &maxnc, &mkcen, &mkedg);
-	if(omask->viscosity)      OutVecCreate(&outvecs[cnt++], "viscosity",      &PVOutWriteViscosity,    1, 1, 0, &maxnc, &mkcen, &mkedg);
-	if(omask->velocity)       OutVecCreate(&outvecs[cnt++], "velocity",       &PVOutWriteVelocity,     3, 0, 0, &maxnc, &mkcen, &mkedg);
-	if(omask->pressure)       OutVecCreate(&outvecs[cnt++], "pressure",       &PVOutWritePressure,     1, 0, 0, &maxnc, &mkcen, &mkedg);
-	if(omask->temperature)    OutVecCreate(&outvecs[cnt++], "temperature",    &PVOutWriteTemperature,  1, 0, 0, &maxnc, &mkcen, &mkedg);
-	if(omask->dev_stress)     OutVecCreate(&outvecs[cnt++], "dev_stress",     &PVOutWriteDevStress,    6, 1, 1, &maxnc, &mkcen, &mkedg);
-	if(omask->j2_dev_stress)  OutVecCreate(&outvecs[cnt++], "j2_dev_stress",  &PVOutWriteJ2DevStress,  1, 1, 0, &maxnc, &mkcen, &mkedg);
-	if(omask->strain_rate)    OutVecCreate(&outvecs[cnt++], "strain_rate",    &PVOutWriteStrainRate,   6, 1, 1, &maxnc, &mkcen, &mkedg);
-	if(omask->j2_strain_rate) OutVecCreate(&outvecs[cnt++], "j2_strain_rate", &PVOutWriteJ2StrainRate, 1, 1, 1, &maxnc, &mkcen, &mkedg);
-	if(omask->vol_rate)       OutVecCreate(&outvecs[cnt++], "vol_rate",       &PVOutWriteVolRate,      1, 1, 0, &maxnc, &mkcen, &mkedg);
-	if(omask->vorticity)      OutVecCreate(&outvecs[cnt++], "vorticity",      &PVOutWriteVorticity,    3, 0, 1, &maxnc, &mkcen, &mkedg);
-	if(omask->ang_vel_mag)    OutVecCreate(&outvecs[cnt++], "ang_vel_mag",    &PVOutWriteAngVelMag,    1, 0, 1, &maxnc, &mkcen, &mkedg);
-	if(omask->tot_strain)     OutVecCreate(&outvecs[cnt++], "tot_strain",     &PVOutWriteTotStrain,    1, 0, 0, &maxnc, &mkcen, &mkedg);
-	if(omask->plast_strain)   OutVecCreate(&outvecs[cnt++], "plast_strain",   &PVOutWritePlastStrain,  1, 0, 0, &maxnc, &mkcen, &mkedg);
-	if(omask->plast_dissip)   OutVecCreate(&outvecs[cnt++], "plast_dissip",   &PVOutWritePlastDissip,  1, 0, 0, &maxnc, &mkcen, &mkedg);
-	if(omask->tot_displ)      OutVecCreate(&outvecs[cnt++], "tot_displ",      &PVOutWriteTotDispl,     3, 0, 0, &maxnc, &mkcen, &mkedg);
+	if(omask->phase)          OutVecCreate(&outvecs[cnt++], "phase",          scal->lbl_phase,            &PVOutWritePhase,        1);
+	if(omask->density)        OutVecCreate(&outvecs[cnt++], "density",        scal->lbl_density,          &PVOutWriteDensity,      1);
+	if(omask->viscosity)      OutVecCreate(&outvecs[cnt++], "viscosity",      scal->lbl_viscosity,        &PVOutWriteViscosity,    1);
+	if(omask->velocity)       OutVecCreate(&outvecs[cnt++], "velocity",       scal->lbl_velocity,         &PVOutWriteVelocity,     3);
+	if(omask->pressure)       OutVecCreate(&outvecs[cnt++], "pressure",       scal->lbl_stress,           &PVOutWritePressure,     1);
+	if(omask->temperature)    OutVecCreate(&outvecs[cnt++], "temperature",    scal->lbl_temperature,      &PVOutWriteTemperature,  1);
+	if(omask->dev_stress)     OutVecCreate(&outvecs[cnt++], "dev_stress",     scal->lbl_stress,           &PVOutWriteDevStress,    6);
+	if(omask->j2_dev_stress)  OutVecCreate(&outvecs[cnt++], "j2_dev_stress",  scal->lbl_stress,           &PVOutWriteJ2DevStress,  1);
+	if(omask->strain_rate)    OutVecCreate(&outvecs[cnt++], "strain_rate",    scal->lbl_strain_rate,      &PVOutWriteStrainRate,   6);
+	if(omask->j2_strain_rate) OutVecCreate(&outvecs[cnt++], "j2_strain_rate", scal->lbl_strain_rate,      &PVOutWriteJ2StrainRate, 1);
+	if(omask->vol_rate)       OutVecCreate(&outvecs[cnt++], "vol_rate",       scal->lbl_strain_rate,      &PVOutWriteVolRate,      1);
+	if(omask->vorticity)      OutVecCreate(&outvecs[cnt++], "vorticity",      scal->lbl_strain_rate,      &PVOutWriteVorticity,    3);
+	if(omask->ang_vel_mag)    OutVecCreate(&outvecs[cnt++], "ang_vel_mag",    "[rad/s]",                  &PVOutWriteAngVelMag,    1);
+	if(omask->tot_strain)     OutVecCreate(&outvecs[cnt++], "tot_strain",     "[ ]",                      &PVOutWriteTotStrain,    1);
+	if(omask->plast_strain)   OutVecCreate(&outvecs[cnt++], "plast_strain",   "[ ]",                      &PVOutWritePlastStrain,  1);
+	if(omask->plast_dissip)   OutVecCreate(&outvecs[cnt++], "plast_dissip",   scal->lbl_dissipation_rate, &PVOutWritePlastDissip,  1);
+	if(omask->tot_displ)      OutVecCreate(&outvecs[cnt++], "tot_displ",      scal->lbl_length,           &PVOutWriteTotDispl,     3);
 	// === debugging vectors ===============================================
-	if(omask->moment_res)     OutVecCreate(&outvecs[cnt++], "moment_res",     &PVOutWriteMomentRes,    3, 0, 0, &maxnc, &mkcen, &mkedg);
-	if(omask->cont_res)       OutVecCreate(&outvecs[cnt++], "cont_res",       &PVOutWriteContRes,      1, 0, 0, &maxnc, &mkcen, &mkedg);
-	if(omask->energ_res)      OutVecCreate(&outvecs[cnt++], "energ_res",      &PVOutWritEnergRes,      1, 0, 0, &maxnc, &mkcen, &mkedg);
-	if(omask->DII_CEN)        OutVecCreate(&outvecs[cnt++], "DII_CEN",        &PVOutWriteDII_CEN,      1, 1, 0, &maxnc, &mkcen, &mkedg);
-	if(omask->DII_XY)         OutVecCreate(&outvecs[cnt++], "DII_XY",         &PVOutWriteDII_XY,       1, 0, 1, &maxnc, &mkcen, &mkedg);
-	if(omask->DII_XZ)         OutVecCreate(&outvecs[cnt++], "DII_XZ",         &PVOutWriteDII_XZ,       1, 0, 1, &maxnc, &mkcen, &mkedg);
-	if(omask->DII_YZ)         OutVecCreate(&outvecs[cnt++], "DII_YZ",         &PVOutWriteDII_YZ,       1, 0, 1, &maxnc, &mkcen, &mkedg);
+	if(omask->moment_res)     OutVecCreate(&outvecs[cnt++], "moment_res",     scal->lbl_force,            &PVOutWriteMomentRes,    3);
+	if(omask->cont_res)       OutVecCreate(&outvecs[cnt++], "cont_res",       scal->lbl_strain_rate,      &PVOutWriteContRes,      1);
+	if(omask->energ_res)      OutVecCreate(&outvecs[cnt++], "energ_res",      scal->lbl_dissipation_rate, &PVOutWritEnergRes,      1);
+	if(omask->DII_CEN)        OutVecCreate(&outvecs[cnt++], "DII_CEN",        scal->lbl_strain_rate,      &PVOutWriteDII_CEN,      1);
+	if(omask->DII_XY)         OutVecCreate(&outvecs[cnt++], "DII_XY",         scal->lbl_strain_rate,      &PVOutWriteDII_XY,       1);
+	if(omask->DII_XZ)         OutVecCreate(&outvecs[cnt++], "DII_XZ",         scal->lbl_strain_rate,      &PVOutWriteDII_XZ,       1);
+	if(omask->DII_YZ)         OutVecCreate(&outvecs[cnt++], "DII_YZ",         scal->lbl_strain_rate,      &PVOutWriteDII_YZ,       1);
 
 	// create output buffer object
-	ierr = OutBufCreate(&pvout->outbuf, fs, maxnc, mkcen, mkedg);
+	ierr = OutBufCreate(&pvout->outbuf, jr);
 
 	//================================
 	// time step buffer

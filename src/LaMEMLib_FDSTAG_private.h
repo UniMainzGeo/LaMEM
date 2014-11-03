@@ -13,9 +13,6 @@ PetscErrorCode CalculateMisfitValues(
 	PetscInt            itime,
 	PetscScalar        *LaMEM_OutputParameters);
 
-PetscErrorCode CalculateTimeStep(UserContext *user, PetscInt itime);
-
-PetscErrorCode CheckVelocityError(UserContext *user);
 
 //-----------------------------------------------------------------------------
 #endif

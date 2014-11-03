@@ -6,6 +6,13 @@
 #include "bc.h"
 #include "Utils.h"
 //---------------------------------------------------------------------------
+// * extend BC input specification
+// * open box & Winkler (with tangential viscous friction)
+// * tangential velocities
+// * extend two-point constraint specification & (possibly) get rid bc-vectors
+// * create bc-object only at fine level, coarse levels should have simple access
+//---------------------------------------------------------------------------
+
 #undef __FUNCT__
 #define __FUNCT__ "BCCreate"
 PetscErrorCode BCCreate(BCCtx *bc, FDSTAG *fs)
@@ -26,6 +33,7 @@ PetscErrorCode BCCreate(BCCtx *bc, FDSTAG *fs)
 	// single-point constraints (combined)
 	bc->numSPC  = 0;
 	bc->SPCList = NULL;
+	bc->SPCVals = NULL;
 
 	// single-point constraints (pressure)
 	bc->numSPCPres  = 0;
@@ -57,6 +65,7 @@ PetscErrorCode BCDestroy(BCCtx *bc)
 
 	// single-point constraints (combined)
 	ierr = PetscFree(bc->SPCList);   CHKERRQ(ierr);
+	ierr = PetscFree(bc->SPCVals);   CHKERRQ(ierr);
 
 	// single-point constraints (pressure)
 	ierr = PetscFree(bc->SPCListPres);   CHKERRQ(ierr);
@@ -262,6 +271,7 @@ PetscErrorCode BCInit(BCCtx *bc, FDSTAG *fs, idxtype idxmod)
 	PetscInt    mnx, mny, mnz;
 	PetscInt    i, j, k, nx, ny, nz, sx, sy, sz;
 	PetscInt    start, ln, numSPC, *SPCList;
+	PetscScalar *SPCVals;
 	PetscScalar ***bcvx,  ***bcvy,  ***bcvz;
 	DOFIndex    *dof;
 
@@ -285,7 +295,8 @@ PetscErrorCode BCInit(BCCtx *bc, FDSTAG *fs, idxtype idxmod)
 	ln    = dof->numdof;
 
 	// allocate SPC arrays
-	ierr = makeIntArray(&SPCList, NULL, ln); CHKERRQ(ierr);
+	ierr = makeIntArray (&SPCList, NULL, ln); CHKERRQ(ierr);
+	ierr = makeScalArray(&SPCVals, NULL, ln); CHKERRQ(ierr);
 
 	// mark all variables unconstrained
 	ierr = VecSet(bc->bcvx, DBL_MAX); CHKERRQ(ierr);
@@ -311,7 +322,13 @@ PetscErrorCode BCInit(BCCtx *bc, FDSTAG *fs, idxtype idxmod)
 
 	START_STD_LOOP
 	{
-		if(i == 0 || i == mnx) { bcvx[k][j][i] = 0.0; SPCList[numSPC++] = start; }
+		if(i == 0 || i == mnx)
+		{
+			bcvx[k][j][i]   = 0.0;
+			SPCList[numSPC] = start;
+			SPCVals[numSPC] = 0.0;
+			numSPC++;
+		}
 		start++;
 	}
 	END_STD_LOOP
@@ -325,7 +342,13 @@ PetscErrorCode BCInit(BCCtx *bc, FDSTAG *fs, idxtype idxmod)
 
 	START_STD_LOOP
 	{
-		if(j == 0 || j == mny) { bcvy[k][j][i] = 0.0; SPCList[numSPC++] = start; }
+		if(j == 0 || j == mny)
+		{
+			bcvy[k][j][i]   = 0.0;
+			SPCList[numSPC] = start;
+			SPCVals[numSPC] = 0.0;
+			numSPC++;
+		}
 		start++;
 	}
 	END_STD_LOOP
@@ -339,7 +362,13 @@ PetscErrorCode BCInit(BCCtx *bc, FDSTAG *fs, idxtype idxmod)
 
 	START_STD_LOOP
 	{
-		if(k == 0 || k == mnz) { bcvz[k][j][i] = 0.0; SPCList[numSPC++] = start; }
+		if(k == 0 || k == mnz)
+		{
+			bcvz[k][j][i]   = 0.0;
+			SPCList[numSPC] = start;
+			SPCVals[numSPC] = 0.0;
+			numSPC++;
+		}
 		start++;
 	}
 	END_STD_LOOP
@@ -355,6 +384,7 @@ PetscErrorCode BCInit(BCCtx *bc, FDSTAG *fs, idxtype idxmod)
 	// store constraints
 	bc->numSPC  = numSPC;
 	bc->SPCList = SPCList;
+	bc->SPCVals = SPCVals;
 
 	PetscFunctionReturn(0);
 }

@@ -6,6 +6,9 @@
 #include "surf.h"
 #include "Utils.h"
 //---------------------------------------------------------------------------
+// * stair-case type of free surface
+// ...
+//---------------------------------------------------------------------------
 #undef __FUNCT__
 #define __FUNCT__ "FreeSurfCreate"
 PetscErrorCode FreeSurfCreate(FDSTAG *fs, UserContext *user)
@@ -27,8 +30,8 @@ PetscErrorCode FreeSurfCreate(FDSTAG *fs, UserContext *user)
 	zs = user->z_bot;   dz = user->H;
 
 	// get partitioning of the free surface in the XY plane
-	ierr = FreeSurfGetPartition(&fs->dsx, xs, dx, fs->mdx, &nx, &lx); CHKERRQ(ierr);
-	ierr = FreeSurfGetPartition(&fs->dsy, ys, dy, fs->mdy, &ny, &ly); CHKERRQ(ierr);
+	ierr = FreeSurfGetPartition(&fs->dsx, xs, dx, fs->dsx.h_min, &nx, &lx); CHKERRQ(ierr);
+	ierr = FreeSurfGetPartition(&fs->dsy, ys, dy, fs->dsy.h_min, &ny, &ly); CHKERRQ(ierr);
 
 	// create a DMDA that holds the surface topography
 	ierr = DMDACreate3d(PETSC_COMM_WORLD,
@@ -96,11 +99,13 @@ PetscErrorCode FreeSurfGetPartition(
 	PetscInt    **l)   // free surface partitioning vector
 {
 	MPI_Comm    comm;
-	PetscScalar step, tol;
+	PetscScalar step, tol, rtol;
 	PetscInt    i, first, last, lnum, nnod, ncel, sum, *part;
 
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
+
+	rtol = 1e-8;
 
 	// compute total number of cells & nodes
 	ncel = (PetscInt)ceil(len/h);
@@ -115,7 +120,7 @@ PetscErrorCode FreeSurfGetPartition(
 	{
 		// compute actual mesh step & geometric tolerance
 		step = len/(PetscScalar)ncel;
-		tol  = step*FLT_EPSILON;
+		tol  = rtol*step;
 
 		// get index of first local node
 		if(ds->grprev != -1) first = (PetscInt)floor((ds->ncoor[0] - beg + tol)/step);
@@ -143,7 +148,7 @@ PetscErrorCode FreeSurfGetPartition(
 		// checksum
 		for(i = 0, sum = 0; i < ds->nproc; i++) sum += part[i];
 
-		if(sum != nnod) SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "ERROR! inconsistent free surface partitioning");
+		if(sum != nnod) SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "Inconsistent free surface partitioning");
 	}
 
 	// return partitioning

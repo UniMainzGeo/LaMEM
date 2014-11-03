@@ -10,6 +10,13 @@
 #include "matrix.h"
 #include "Utils.h"
 //---------------------------------------------------------------------------
+// * pressure Schur complement preconditioners
+// * matrix-free preconditioner action
+// * linear system scaling
+// * temperature scaling
+// * preallocation for temperature & pressure Schur PC
+//---------------------------------------------------------------------------
+
 #undef __FUNCT__
 #define __FUNCT__ "MatAIJCreate"
 PetscErrorCode MatAIJCreate(

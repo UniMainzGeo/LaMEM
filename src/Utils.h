@@ -77,16 +77,6 @@ static inline void GetGlobalIndex( PetscInt nx, PetscInt ny, PetscInt i, PetscIn
 	PetscInt totdof = 3;
 	*ind = totdof*(k*(nx*ny) + j*nx + i) + dof;
 }
-//---------------------------------------------------------------------------
-PetscErrorCode ReadMeshSegDir(
-	FILE        *fp,
-	const char  *name,
-	PetscScalar  beg,
-	PetscScalar  end,
-	PetscInt    *tncels,
-	MeshSegInp  *msi,
-	PetscInt     dim,
-	PetscScalar  charLength);
 
 //---------------------------------------------------------------------------
 // checks whether processor has a zero rank in the communicator

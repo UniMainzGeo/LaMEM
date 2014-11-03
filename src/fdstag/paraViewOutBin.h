@@ -29,6 +29,8 @@
 #define __paraViewOutBin_h__
 //---------------------------------------------------------------------------
 #define _timestep_buff_size_ 4096
+// maximum number of components in the output vector
+#define _max_num_comp_ 6
 //---------------------------------------------------------------------------
 //............................. Output buffer ...............................
 //---------------------------------------------------------------------------
@@ -37,9 +39,6 @@ typedef struct
 	FDSTAG   *fs;    // staggered grid layout
 	FILE     *fp;    // output file handler
 	float    *buff;  // direct output buffer
-	PetscInt  maxnc; // maximum number of components
-	PetscInt  mkcen; // flag to allocate center buffers
-	PetscInt  mkedg; // flag to allocate edge buffers
 	PetscInt  cn;    // current number of elements in the buffer
 	// grid buffer vectors
 	Vec gbcen, gbcor, gbxy, gbxz, gbyz; // global
@@ -47,12 +46,7 @@ typedef struct
 
 } OutBuf;
 //---------------------------------------------------------------------------
-PetscErrorCode OutBufCreate(
-	OutBuf   *outbuf,
-	FDSTAG   *fs,
-	PetscInt  maxnc,
-	PetscBool mkcen,
-	PetscBool mkedg);
+PetscErrorCode OutBufCreate(OutBuf *outbuf, JacRes *jr);
 
 PetscErrorCode OutBufDestroy(OutBuf *outbuf);
 
@@ -91,17 +85,12 @@ typedef struct
 
 } OutVec;
 //---------------------------------------------------------------------------
-
 void OutVecCreate(
 	OutVec         *outvec,
 	const char     *name,
+	const char     *label,
 	OutVecFunctPtr  OutVecFunct,
-	PetscInt        ncomp,
-	PetscInt        cen,
-	PetscInt        edg,
-	PetscInt       *maxnc,
-	PetscInt       *mkcen,
-	PetscInt       *mkedg);
+	PetscInt        ncomp);
 
 void OutVecDestroy(OutVec *outvec);
 
@@ -171,7 +160,7 @@ typedef struct
 //---------------------------------------------------------------------------
 
 // create ParaView output driver
-PetscErrorCode PVOutCreate(PVOut *pvout, FDSTAG *fs, Scaling *scal, const char *filename);
+PetscErrorCode PVOutCreate(PVOut *pvout, JacRes *jr, const char *filename);
 
 // destroy ParaView output driver
 PetscErrorCode PVOutDestroy(PVOut *pvout);

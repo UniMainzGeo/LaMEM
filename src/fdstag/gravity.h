@@ -16,6 +16,7 @@ typedef struct
 	PetscScalar *coord,*dg;
 	PetscMPIInt  rank;
 } GravitySurvey;
+//---------------------------------------------------------------------------
 
 
 #endif

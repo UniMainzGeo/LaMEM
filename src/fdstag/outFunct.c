@@ -119,7 +119,7 @@ PetscErrorCode PVOutWritePhase(JacRes *jr, OutBuf *outbuf)
 		buff[k][j][i] = mID;
 
 	// no scaling is necessary for the phase
-	cf = scal->out_phase;
+	cf = scal->phase;
 
 	// access material parameters
 	phases    = jr->phases;
@@ -174,7 +174,7 @@ PetscErrorCode PVOutWriteVelocity(JacRes *jr, OutBuf *outbuf)
 {
 	ACCESS_FUNCTION_HEADER
 
-	cf = scal->out_velocity;
+	cf = scal->velocity;
 	iflag.use_bound = PETSC_TRUE;
 
 	// x-velocity
@@ -198,7 +198,7 @@ PetscErrorCode PVOutWritePressure(JacRes *jr, OutBuf *outbuf)
 {
 	ACCESS_FUNCTION_HEADER
 
-	cf = scal->out_stress;
+	cf = scal->stress;
 	iflag.use_bound = PETSC_TRUE;
 
 	ierr = FDSTAGInterpCenterCorner(outbuf->fs, jr->lp, outbuf->gbcor, iflag); CHKERRQ(ierr);
@@ -240,7 +240,7 @@ PetscErrorCode PVOutWriteDevStress(JacRes *jr, OutBuf *outbuf)
 	#define _GET_SXZ_ buff[k][j][i] = jr->svXZEdge[iter++].s;
 	#define _GET_SYZ_ buff[k][j][i] = jr->svYZEdge[iter++].s;
 
-	cf = scal->out_stress;
+	cf = scal->stress;
 
 	INTERPOLATE_CENTER(_GET_SXX_)
 
@@ -283,7 +283,7 @@ PetscErrorCode PVOutWriteJ2DevStress(JacRes *jr, OutBuf *outbuf)
 		svDev = &jr->svCell[iter++].svDev; \
 		buff[k][j][i] = 2.0*svDev->eta*svDev->DII;
 
-	cf = scal->out_stress;
+	cf = scal->stress;
 
 	INTERPOLATE_CENTER(_GET_J2_DEV_STRESS_)
 
