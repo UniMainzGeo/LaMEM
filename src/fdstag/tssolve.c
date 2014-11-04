@@ -13,6 +13,35 @@
 // * break-point files
 // ...
 //---------------------------------------------------------------------------
+#undef __FUNCT__
+#define __FUNCT__ "TSSolSetUp"
+PetscErrorCode TSSolSetUp(TSSol *ts, UserContext *usr)
+{
+	PetscFunctionBegin;
+
+	ts->nstep = usr->time_end; // maximum number of steps
+	ts->dtmax = usr->dt_max;   // maximum time step
+	ts->Cmax  = usr->CFL;      // Courant number
+	ts->istep = 0;             // current step index
+	ts->pdt   = 0.0;           // previous time step
+	ts->dt    = usr->dt;       // current time step (to be defined)
+	ts->time  = 0.0;
+
+	if(ts->Cmax > 0.3)
+	{
+		PetscPrintf(PETSC_COMM_WORLD, " WARNING! Large Courant step length Cmax=%7.5f. Consider reducing\n", ts->Cmax);
+	}
+
+	if(ts->Cmax > 0.5)
+	{
+		SETERRQ1(PETSC_COMM_WORLD, PETSC_ERR_USER, " Courant step length Cmax=%7.5f is larger than allowed (%7.5f)", ts->Cmax);
+	}
+
+	PetscFunctionReturn(0);
+}
+//---------------------------------------------------------------------------
+#undef __FUNCT__
+#define __FUNCT__ "getMaxInvStep1DLocal"
 PetscErrorCode getMaxInvStep1DLocal(Discret1D *ds, DM da, Vec gv, PetscInt dir, PetscScalar *_idtmax)
 {
 	PetscScalar v, h, vmax, idt, idtmax;
@@ -121,56 +150,51 @@ PetscErrorCode TSSolGetCourantStep(TSSol *ts, JacRes *jr)
 	// compute time step
 	gidtmax /= ts->Cmax;
 
-	if     (gidtmax < 1.0/ts->dtmax) dt = ts->dtmax;
-	else if(gidtmax > 1.0/ts->dtmin) dt = ts->dtmin;
-	else                             dt = 1.0/gidtmax;
+	if(gidtmax < 1.0/ts->dtmax) dt = ts->dtmax;
+	else                        dt = 1.0/gidtmax;
 
-
-
-	/*
-		PetscScalar pdt;   // previous time step
-		PetscScalar dt;    // current time step (to be defined)
-		PetscScalar dtmin; // minimum time step
-		PetscScalar dtmax; // maximum time step
-		PetscScalar Cmax;  // dimensionless Courant number (should be {significantly} less than unit)
-	*/
-
-
-/*
-	//--------------------------------
-	// print velocity & time step info
-	//--------------------------------
-
-	if(user->Characteristic.Length > 1.0)
-	{
-		PetscPrintf(PETSC_COMM_WORLD," Maximum velocity  %g  ",MaxVel*user->Characteristic.Velocity*user->Characteristic.cmYear);
-		if (user->DimensionalUnits == 1) { PetscPrintf(PETSC_COMM_WORLD," [cm/year]  \n");	} else { PetscPrintf(PETSC_COMM_WORLD,"  \n"); }
-	}
-	else
-	{
-		PetscPrintf(PETSC_COMM_WORLD," Maximum velocity  %g  ",MaxVel*user->Characteristic.Velocity);
-		if (user->DimensionalUnits == 1) { PetscPrintf(PETSC_COMM_WORLD," [m/s]  \n");	} else { PetscPrintf(PETSC_COMM_WORLD,"  \n"); }
-	}
-
-	if(user->Characteristic.Length > 1.0)
-	{
-		// Most likely a setup that runs in natural length scales
-		PetscPrintf(PETSC_COMM_WORLD," Time = %g, dt=%g ",user->time*user->Characteristic.Time/user->Characteristic.SecYear, user->dt*user->Characteristic.Time/user->Characteristic.SecYear);
-		if (user->DimensionalUnits == 1) { PetscPrintf(PETSC_COMM_WORLD," [Years]  \n"); } else { PetscPrintf(PETSC_COMM_WORLD,"  \n"); }
-	}
-	else
-	{
-		// Lab time scale or non-dimensional units
-		PetscPrintf(PETSC_COMM_WORLD," Time = %g, dt=%g ", user->time*user->Characteristic.Time, user->dt*user->Characteristic.Time);
-		if (user->DimensionalUnits == 1) { PetscPrintf(PETSC_COMM_WORLD," [s]  \n"); } else { PetscPrintf(PETSC_COMM_WORLD,"  \n"); }
-	}
-
-*/
+	// store new time step
+	ts->pdt = ts->dt;
+	ts->dt  = dt;
 
 	PetscFunctionReturn(0);
 }
-
 //---------------------------------------------------------------------------
+#undef __FUNCT__
+#define __FUNCT__ "TSSolUpdate"
+PetscErrorCode TSSolUpdate(TSSol *ts, Scaling *scal, PetscBool *done)
+{
+	PetscFunctionBegin;
+
+	//----------------------------------------
+	// update time state, print info to screen
+	//----------------------------------------
+
+	//lbl_time
+
+	// update time
+	ts->time += ts->dt;
+
+	// update time index
+	ts->istep++;
+
+    // print time info
+	PetscPrintf(PETSC_COMM_WORLD," Time = %g%s, dt = %g%s ",
+		ts->time*scal->time, scal->lbl_time,
+		ts->dt  *scal->time, scal->lbl_time);
+
+    PetscPrintf(PETSC_COMM_WORLD," Finished timestep %lld out of %lld \n",(LLD)ts->istep, (LLD)ts->nstep);
+
+    // WARNING! CHECK TIME, NOT INDEX!
+
+    // check to stop time-step loop
+    if(ts->istep == ts->nstep) (*done) = PETSC_TRUE;
+    else                       (*done) = PETSC_TRUE;
+
+	PetscFunctionReturn(0);
+}
+//---------------------------------------------------------------------------
+
 
 /*
 #include "LaMEM.h"

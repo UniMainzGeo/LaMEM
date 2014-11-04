@@ -29,16 +29,22 @@ typedef struct
 	// units = si   - input & output is in SI units.
 	// units = geo  - input & output is in SI units, except:
 	//
-	//    time      - yr
+	//    time      - Myr
 	//    length    - km
 	//    velocity  - cm/yr
 	//    stress    - MPa
 	//    heat_flux - mW/m^2
 	//
-	// WARNING! number of primary units is one more that usual
-	// Newton's 2nd law can be violated for quasi-static problems
-	// Gravity strength must be provided in the units [force/mass]
+	// WARNING!
 	//
+	// * in 'none' mode, characteristic values are ignored
+	//
+	// * in 'geo' mode, user must input characteristic values
+	//   for time & length in Myr & km, respectively. DONT'T FORGET TO IMPLEMENT!
+	//
+	// * number of primary units is one more that usual
+	//   Newton's 2nd law can be violated for quasi-static problems
+	//   Gravity strength must be provided in the units [force/mass]
 	//=======================================================================
 
 	UnitsType   utype;

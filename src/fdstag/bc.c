@@ -6,7 +6,7 @@
 #include "bc.h"
 #include "Utils.h"
 //---------------------------------------------------------------------------
-// * extend BC input specification
+// * replace BC input specification consistently in the entire code
 // * open box & Winkler (with tangential viscous friction)
 // * tangential velocities
 // * extend two-point constraint specification & (possibly) get rid bc-vectors

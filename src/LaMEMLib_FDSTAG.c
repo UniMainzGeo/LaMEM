@@ -69,9 +69,9 @@ without the explicit agreement of Boris Kaus.
 PetscErrorCode LaMEMLib_FDSTAG(PetscBool InputParamFile, const char *ParamFile, PetscScalar *LaMEM_OutputParameters, PetscInt *mpi_group_id)
 {
 
+	PetscBool          done;
 	UserContext        user;
 	PetscInt           SaveOrNot;
-	PetscInt           itime;
 //	PetscLogDouble     cputime_start, cputime_start0, cputime_end, cputime_start_tstep, cputime_start_nonlinear;
 	PetscLogDouble     cputime_start, cputime_start_nonlinear, cputime_end;
 
@@ -188,24 +188,7 @@ PetscErrorCode LaMEMLib_FDSTAG(PetscBool InputParamFile, const char *ParamFile, 
 //		ierr = LoadBreakPoint(C, &user,user.DA_Vel, sol, Temp, Pressure, 0); CHKERRQ(ierr);
 //	}
 
-	// Save initial mesh to file
-//	if (user.save_breakpoints > 0)
-//	{
-//		PetscPrintf(PETSC_COMM_WORLD," Saving initial mesh to file \n");
-//		ierr = SaveInitialMesh(&user,user.DA_Vel,"InitialMesh"); CHKERRQ(ierr);
-//	}
 
-
-	// ========================================================================================================================
-
-	// Beginning of time step
-//	if (user.time_start == 0) { user.PlasticityCutoff = 1; }
-//	else                      { user.PlasticityCutoff = 0; }
-
-	if(user.fileno > 0.0)
-	{
-		user.dt = user.dt_max;
-	}
 
 	//======================
 	// SETUP DATA STRUCTURES
@@ -256,6 +239,9 @@ PetscErrorCode LaMEMLib_FDSTAG(PetscBool InputParamFile, const char *ParamFile, 
 		user.Characteristic.Temperature,
 		user.Characteristic.Force); CHKERRQ(ierr);
 
+	// initialize time stepping parameters
+	ierr = TSSolSetUp(&jr.ts, &user); CHKERRQ(ierr);
+
 	// WARNING! NO TEMPERATURE! Set local temperature vector to unity (ad-hoc)
 	ierr = VecSet(jr.lT, 1.0); CHKERRQ(ierr);
 
@@ -292,10 +278,9 @@ PetscErrorCode LaMEMLib_FDSTAG(PetscBool InputParamFile, const char *ParamFile, 
 
 //	PetscTime(&cputime_start_tstep);
 
-	for(itime = user.time_start; itime < user.time_end; itime++)
+	do
 	{
-
-		PetscPrintf(PETSC_COMM_WORLD,"Time step %lld -------------------------------------------------------- \n", (LLD)(itime+1));
+		PetscPrintf(PETSC_COMM_WORLD,"Time step %lld -------------------------------------------------------- \n", (LLD)(jr.ts.istep+1));
 
 		//==========================================================================================
 		// Correct particles in case we employ an internal free surface
@@ -308,9 +293,6 @@ PetscErrorCode LaMEMLib_FDSTAG(PetscBool InputParamFile, const char *ParamFile, 
 //			ierr = LaMEM_Initialize_AnalyticalSolution(&user, C); CHKERRQ(ierr);
 //		}
 		//==========================================================================================
-
-		// set time step
-		jr.ts.dt = user.dt;
 
 		//=========================================================================================
 		//	NONLINEAR THERMO-MECHANICAL SOLVER
@@ -334,31 +316,26 @@ PetscErrorCode LaMEMLib_FDSTAG(PetscBool InputParamFile, const char *ParamFile, 
 			PetscPrintf(PETSC_COMM_WORLD, " Nonlinear solve took %g s\n", cputime_end - cputime_start_nonlinear);
 		}
 
-//		ierr = CheckVelocityError(&user); CHKERRQ(ierr);
+		//==========================================
+		// END OF NONLINEAR THERMO-MECHANICAL SOLVER
+		//==========================================
 
 		// view nonlinear residual
 		ierr = JacResViewRes(&jr); CHKERRQ(ierr);
 
 
-		//==========================================
-		// END OF NONLINEAR THERMO-MECHANICAL SOLVER
-		//==========================================
-
 		//=========================================================================================
 		// In case we perform an analytical benchmark, compare numerical and analytical results
 //		if (user.AnalyticalBenchmark)
 //		{
-			// Update properties @ integration points (since for speed reasons we do not compute
-			// all strain-rate and stress components in the nonlinear iterations above).
-//			ierr = IntPointProperties( C, user.DA_Vel, user.sol_advect, user.DA_Pres, user.Pressure, PETSC_NULL, PETSC_NULL, &user, user.dt, 1 ); CHKERRQ(ierr);
 
 //			ierr = LaMEM_CompareNumerics_vs_AnalyticalSolution(&user, C, user.sol_advect, user.Pressure); CHKERRQ(ierr);
 
-			// update INTP props once more (to correctly set P values)
-//			ierr = IntPointProperties( C, user.DA_Vel, sol_advect, user.DA_Pres, user.Pressure, user.DA_Temp, Temp, &user, user.dt, 1 ); CHKERRQ(ierr);
 //		}
 		//==========================================================================================
 
+		// select new time step
+		ierr = TSSolGetCourantStep(&jr.ts, &jr); CHKERRQ(ierr);
 
 		//==========================================================================================
 		// MARKER & FREE SURFACE ADVECTION + EROSION
@@ -399,14 +376,6 @@ PetscErrorCode LaMEMLib_FDSTAG(PetscBool InputParamFile, const char *ParamFile, 
 
 		//==========================================================================================
 
-		// Update time state
-		user.time = user.time + user.dt;
-
-      
-        
-        
-		// Compute and store output properties such as velocity root mean square
-//		ierr = ComputeGlobalProperties(user.DA_Vel, &user, itime, user.sol_advect, C); CHKERRQ(ierr);
 
 		// compute gravity misfits
 //		ierr = CalculateMisfitValues(&user, C, itime, LaMEM_OutputParameters); CHKERRQ(ierr);
@@ -415,15 +384,17 @@ PetscErrorCode LaMEMLib_FDSTAG(PetscBool InputParamFile, const char *ParamFile, 
 		// Save data to disk
 		//==========================================================================================
 
-		if(user.save_timesteps != 0) LaMEMMod( itime, user.save_timesteps, &SaveOrNot);
-		else                         SaveOrNot = 2;
+// WARNING SORT OUT THIS MESS!
+//		if(user.save_timesteps != 0) LaMEMMod( itime, user.save_timesteps, &SaveOrNot);
+//		else                         SaveOrNot = 2;
+		SaveOrNot = 0;
 
 		if(SaveOrNot == 0)
 		{
 			char *DirectoryName = NULL;
 
 			// create directory (encode current time & step number)
-			asprintf(&DirectoryName, "Timestep_%1.6lld_%1.6e", (LLD)itime, user.time*jr.scal.time);
+			asprintf(&DirectoryName, "Timestep_%1.6lld_%1.6e", (LLD)jr.ts.istep, jr.ts.time*jr.scal.time);
 
 			ierr = LaMEMCreateOutputDirectory(DirectoryName); CHKERRQ(ierr);
 
@@ -453,21 +424,11 @@ PetscErrorCode LaMEMLib_FDSTAG(PetscBool InputParamFile, const char *ParamFile, 
 //			}
 
 			// Paraview output
-			ierr = PVOutWriteTimeStep(&pvout, &jr, DirectoryName, user.time, itime); CHKERRQ(ierr);
+			ierr = PVOutWriteTimeStep(&pvout, &jr, DirectoryName, jr.ts.time, jr.ts.istep); CHKERRQ(ierr);
        
 			// clean up
 			if(DirectoryName) free(DirectoryName);
 		}
-
-		//==========================================================================================
-		// compute new time step length
-		//==========================================================================================
-
-//		ierr = CalculateTimeStep(&user, itime); CHKERRQ(ierr);
-
-		//==========================================================================================
-		// Map tracers to new grid
-		//==========================================================================================
 
 
 		//==========================================================================================
@@ -498,30 +459,13 @@ PetscErrorCode LaMEMLib_FDSTAG(PetscBool InputParamFile, const char *ParamFile, 
 
 		//==========================================================================================
 
-        
-        //==========================================================================================
-        // Print some information on screen
-        if (user.Characteristic.Length>1)
-        {
-            // Most likely a setup that runs in natural length-scales
-            PetscPrintf(PETSC_COMM_WORLD," Time = %g, dt = %g ",user.time*user.Characteristic.Time/user.Characteristic.SecYear, user.dt*user.Characteristic.Time/user.Characteristic.SecYear);
-            if (user.DimensionalUnits==1) { PetscPrintf(PETSC_COMM_WORLD," [Years]  \n"); } else { PetscPrintf(PETSC_COMM_WORLD,"  \n"); }
-        }
-        else
-        {
-            // Lab times-cale or non-dimensional units
-            PetscPrintf(PETSC_COMM_WORLD," Time = %g, dt = %g ",user.time*user.Characteristic.Time, user.dt*user.Characteristic.Time);
-            if (user.DimensionalUnits==1) { PetscPrintf(PETSC_COMM_WORLD," [s]  \n"); } else { PetscPrintf(PETSC_COMM_WORLD,"  \n"); }
-        }
-        
-        PetscPrintf(PETSC_COMM_WORLD," Finished timestep %lld out of %lld \n",(LLD)(itime+1), (LLD)(user.time_end));
-        
-        //==========================================================================================
-   
-        
 		// store markers to disk
 		ierr = ADVMarkSave(&actx, &user);  CHKERRQ(ierr);
-	}
+
+		// update time state
+		ierr = TSSolUpdate(&jr.ts, &jr.scal, &done); CHKERRQ(ierr);
+
+	} while(done != PETSC_TRUE);
 
 	//======================
 	// END OF TIME STEP LOOP
@@ -559,58 +503,5 @@ PetscErrorCode LaMEMLib_FDSTAG(PetscBool InputParamFile, const char *ParamFile, 
 }
 //==========================================================================================================
 // END OF LAMEM LIBRARY MODE ROUTINE
-//==========================================================================================================
-
-/*
-//	couple of abandoned tests
-				if (user.VelocityTest == PETSC_TRUE)
-				{
-					PetscPrintf(PETSC_COMM_WORLD,"#  ==================================================\n");
-					PetscPrintf(PETSC_COMM_WORLD,"#  *** Testing performance of the Velocity Solver ***\n");
-					PetscPrintf(PETSC_COMM_WORLD,"#  ==================================================\n");
-
-					// test performance of a single velocity solve
-					ierr = VelSolverTest(user.VV_MAT, user.sol, user.rhs, &user); CHKERRQ(ierr);
-
-					// finalize computation
-					goto cleanup;
-				}
-
-				else if (user.StokesSolver==4)
-				{
-					// We don't actually solve anything, but perform a number of MatVec products instead,
-					//	mainly in order to test the scalability of LaMEM on parallel machines.
-
-					PetscInt       numProd, iter;
-					PetscRandom    rctx;
-					PetscLogDouble time_1, time_2;
-
-					ierr = PetscRandomCreate(PETSC_COMM_WORLD, &rctx); CHKERRQ(ierr);
-					ierr = PetscRandomSetFromOptions(rctx);            CHKERRQ(ierr);
-
-					// set random numbers to solution
-					ierr = VecSetRandom(sol,rctx); CHKERRQ(ierr);
-
-					numProd = 5000;
-
-					PetscOptionsGetInt( PETSC_NULL ,"-numProd", &numProd, PETSC_NULL );
-					PetscTime(&time_1);
-
-					for (iter=0; iter<numProd; iter++){
-						ierr = MatMult(user.VV_MAT,sol,rhs);		CHKERRQ(ierr); // rhs= sol*VV
-					}
-					PetscTime(&time_2);
-					PetscPrintf(PETSC_COMM_WORLD,"#  Performed %i MatVec products of rhs = VV*sol in %f seconds [change number of products with -numProd] \n",numProd, time_2-time_1);
-
-					// cleanup
-					ierr = PetscRandomDestroy(&rctx); CHKERRQ(ierr);
-					goto cleanup;
-					cleanup
-
-				}
-
-
-*/
-
 //==========================================================================================================
 

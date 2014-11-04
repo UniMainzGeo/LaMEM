@@ -139,6 +139,8 @@ FactorSurfaceLayer			= 		0.3 		# How thick is the surface layer (if option 2 is 
 	-out_velocity 1
 	-out_pressure 1
 
+	-AVDPhaseViewer 1
+	
 	-objects_dump
 
 <PetscOptionsEnd>
