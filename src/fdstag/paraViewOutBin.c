@@ -217,21 +217,6 @@ void OutMaskSetDefault(OutMask *omask)
 	// clear
 	memset(omask, 0, sizeof(OutMask));
 
-// ADHOC
-/*
-	// activate default output vectors
-	omask->phase          = 1;
-	omask->density        = 1;
-	omask->viscosity      = 1;
-	omask->velocity       = 1;
-	omask->pressure       = 1;
-	omask->dev_stress     = 1;
-	omask->j2_dev_stress  = 1;
-	omask->strain_rate    = 1;
-	omask->j2_strain_rate = 1;
-	omask->moment_res     = 1;
-	omask->cont_res       = 1;
-*/
 	omask->phase          = 1;
 	omask->viscosity      = 1;
 	omask->velocity       = 1;
@@ -241,6 +226,7 @@ void OutMaskSetDefault(OutMask *omask)
 PetscInt OutMaskCountActive(OutMask *omask)
 {
 	PetscInt cnt = 0;
+
 	if(omask->phase)          cnt++; // phase
 	if(omask->density)        cnt++; // density
 	if(omask->viscosity)      cnt++; // effective viscosity
@@ -301,8 +287,19 @@ PetscErrorCode PVOutCreate(PVOut *pvout, JacRes *jr, const char *filename)
 	// activate default vectors
 	OutMaskSetDefault(omask);
 
-	// read output mask from file here
-	// ... NOT IMPLEMENTED YET
+	// create output buffer object
+	ierr = OutBufCreate(&pvout->outbuf, jr);
+
+	// set pvd file flag & offset
+	pvout->offset = 0;
+	pvout->outpvd = 0;
+
+	// read options
+	ierr = PVOutReadFromOptions(pvout);
+
+	//===============
+	// OUTPUT VECTORS
+	//===============
 
 	// count active output vectors
 	pvout->nvec = OutMaskCountActive(omask);
@@ -314,7 +311,7 @@ PetscErrorCode PVOutCreate(PVOut *pvout, JacRes *jr, const char *filename)
 	outvecs = pvout->outvecs;
 
 	// set all output functions & collect information to allocate buffers
-	cnt   = 0;
+	cnt = 0;
 
 	if(omask->phase)          OutVecCreate(&outvecs[cnt++], "phase",          scal->lbl_phase,            &PVOutWritePhase,        1);
 	if(omask->density)        OutVecCreate(&outvecs[cnt++], "density",        scal->lbl_density,          &PVOutWriteDensity,      1);
@@ -342,31 +339,46 @@ PetscErrorCode PVOutCreate(PVOut *pvout, JacRes *jr, const char *filename)
 	if(omask->DII_XZ)         OutVecCreate(&outvecs[cnt++], "DII_XZ",         scal->lbl_strain_rate,      &PVOutWriteDII_XZ,       1);
 	if(omask->DII_YZ)         OutVecCreate(&outvecs[cnt++], "DII_YZ",         scal->lbl_strain_rate,      &PVOutWriteDII_YZ,       1);
 
-	// create output buffer object
-	ierr = OutBufCreate(&pvout->outbuf, jr);
+	PetscFunctionReturn(0);
+}
+//---------------------------------------------------------------------------
+#undef __FUNCT__
+#define __FUNCT__ "PVOutReadFromOptions"
+PetscErrorCode PVOutReadFromOptions(PVOut *pvout)
+{
+	OutMask  *omask;
 
-	//================================
-	// time step buffer
-	// to be replaced by python script
-	//================================
+	PetscErrorCode ierr;
+	PetscFunctionBegin;
 
-	// number of collected time steps
-	pvout->nstep = 0;
+	// get output mask
+	omask = &pvout->omask;
 
-	// buffer counter
-	pvout->bcnt = 0;
+	ierr = PetscOptionsGetInt(NULL, "-out_pvd",            &pvout->outpvd,         NULL); CHKERRQ(ierr);
+	ierr = PetscOptionsGetInt(NULL, "-out_phase",          &omask->phase,          NULL); CHKERRQ(ierr);
+	ierr = PetscOptionsGetInt(NULL, "-out_density",        &omask->density,        NULL); CHKERRQ(ierr);
+	ierr = PetscOptionsGetInt(NULL, "-out_viscosity",      &omask->viscosity,      NULL); CHKERRQ(ierr);
+	ierr = PetscOptionsGetInt(NULL, "-out_velocity",       &omask->velocity,       NULL); CHKERRQ(ierr);
+	ierr = PetscOptionsGetInt(NULL, "-out_pressure",       &omask->pressure,       NULL); CHKERRQ(ierr);
+	ierr = PetscOptionsGetInt(NULL, "-out_temperature",    &omask->temperature,    NULL); CHKERRQ(ierr);
+	ierr = PetscOptionsGetInt(NULL, "-out_dev_stress",     &omask->dev_stress,     NULL); CHKERRQ(ierr);
+	ierr = PetscOptionsGetInt(NULL, "-out_j2_dev_stress",  &omask->j2_dev_stress,  NULL); CHKERRQ(ierr);
+	ierr = PetscOptionsGetInt(NULL, "-out_strain_rate",    &omask->strain_rate,    NULL); CHKERRQ(ierr);
+	ierr = PetscOptionsGetInt(NULL, "-out_j2_strain_rate", &omask->j2_strain_rate, NULL); CHKERRQ(ierr);
+	ierr = PetscOptionsGetInt(NULL, "-out_vol_rate",       &omask->vol_rate,       NULL); CHKERRQ(ierr);
+	ierr = PetscOptionsGetInt(NULL, "-out_vorticity",      &omask->vorticity,      NULL); CHKERRQ(ierr);
+	ierr = PetscOptionsGetInt(NULL, "-out_ang_vel_mag",    &omask->ang_vel_mag,    NULL); CHKERRQ(ierr);
+	ierr = PetscOptionsGetInt(NULL, "-out_tot_strain",     &omask->tot_strain,     NULL); CHKERRQ(ierr);
+	ierr = PetscOptionsGetInt(NULL, "-out_plast_strain",   &omask->plast_strain,   NULL); CHKERRQ(ierr);
+	ierr = PetscOptionsGetInt(NULL, "-out_plast_dissip",   &omask->plast_dissip,   NULL); CHKERRQ(ierr);
+	ierr = PetscOptionsGetInt(NULL, "-out_tot_displ",      &omask->tot_displ,      NULL); CHKERRQ(ierr);
 
-	// time step database name
-	asprintf(&pvout->dbname, "%s_timestep.db", pvout->outfile);
-
-	// buffer for output time stamps
-	ierr = makeScalArray(&pvout->bstamps, NULL, _timestep_buff_size_); CHKERRQ(ierr);
-
-	// buffer for indices of saved time steps
-	ierr = makeIntArray(&pvout->bindexs, NULL, _timestep_buff_size_); CHKERRQ(ierr);
+	if(pvout->outpvd)
+	{
+		PetscPrintf(PETSC_COMM_WORLD, " writing .pvd file to disk\n");
+	}
 
 	PetscFunctionReturn(0);
-
 }
 //---------------------------------------------------------------------------
 #undef __FUNCT__
@@ -377,9 +389,6 @@ PetscErrorCode PVOutDestroy(PVOut *pvout)
 
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
-
-	// write .pvd output file to disk
-	ierr = PVOutWritePVD(pvout);
 
 	// file name
 	LAMEM_FREE(pvout->outfile);
@@ -392,17 +401,6 @@ PetscErrorCode PVOutDestroy(PVOut *pvout)
 
 	// output buffer
 	ierr = OutBufDestroy(&pvout->outbuf); CHKERRQ(ierr);
-
-	//================================
-	// time step buffer
-	// to be replaced by python script
-	//===============================
-
-	LAMEM_FREE(pvout->dbname);
-
-	ierr = PetscFree(pvout->bstamps); CHKERRQ(ierr);
-
-	ierr = PetscFree(pvout->bindexs); CHKERRQ(ierr);
 
 	PetscFunctionReturn(0);
 }
@@ -420,179 +418,97 @@ void PVOutWriteXMLHeader(FILE *fp, const char *file_type)
 //---------------------------------------------------------------------------
 #undef __FUNCT__
 #define __FUNCT__ "PVOutWriteTimeStep"
-PetscErrorCode PVOutWriteTimeStep(PVOut *pvout, JacRes *jr, PetscScalar ttime, PetscInt tindx)
+PetscErrorCode PVOutWriteTimeStep(PVOut *pvout, JacRes *jr, const char *dirName, PetscScalar ttime, PetscInt tindx)
 {
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
 
-	// update time step database (required for .pvd file)
-	ierr = PVOutUpdateTimeStepBuffer(pvout, ttime, tindx); CHKERRQ(ierr);
+	// update .pvd file
+	ierr = PVOutUpdatePVD(pvout, dirName, ttime, tindx);
 
 	// write parallel data .pvtr file
-	ierr = PVOutWritePVTR(pvout, tindx); CHKERRQ(ierr);
+	ierr = PVOutWritePVTR(pvout, dirName); CHKERRQ(ierr);
 
 	// write sub-domain data .vtr files
-	ierr = PVOutWriteVTR(pvout, jr, tindx); CHKERRQ(ierr);
+	ierr = PVOutWriteVTR(pvout, jr, dirName); CHKERRQ(ierr);
 
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
 #undef __FUNCT__
-#define __FUNCT__ "PVOutUpdateTimeStepBuffer"
-PetscErrorCode PVOutUpdateTimeStepBuffer(PVOut *pvout, PetscScalar ttime, PetscInt tindx)
+#define __FUNCT__ "PVOutUpdatePVD"
+PetscErrorCode PVOutUpdatePVD(PVOut *pvout, const char *dirName, PetscScalar ttime, PetscInt tindx)
 {
-	PetscMPIInt rank;
+	FILE        *fp;
+	char        *fname;
 
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
 
-	// only first process generates this file
-	ierr = MPI_Comm_rank(PETSC_COMM_WORLD, &rank); CHKERRQ(ierr);
-	if(rank != 0) PetscFunctionReturn(0);
 
-	// dump time step buffer if necessary
-	if(pvout->bcnt == _timestep_buff_size_)
-	{	ierr = PVOutDumpTimeStepBuffer(pvout); CHKERRQ(ierr); }
 
-	// load time step data to buffer
-	pvout->bstamps[pvout->bcnt] = ttime;
-	pvout->bindexs[pvout->bcnt] = tindx;
+	// only first process generates this file (WARNING! Bottleneck!)
+	if(!ISRankZero(PETSC_COMM_WORLD)) PetscFunctionReturn(0);
 
-	// increment time step & buffer counter
-	pvout->nstep++;
-	pvout->bcnt++;
+	// open outfile.pvd file (write or update mode)
+	asprintf(&fname, "%s.pvd", pvout->outfile);
+	if(!tindx) fp = fopen(fname,"w");
+	else       fp = fopen(fname,"r+");
+	if(fp == NULL) SETERRQ1(PETSC_COMM_WORLD, 1,"cannot open file %s", fname);
+	free(fname);
 
-	PetscFunctionReturn(0);
-}
-//---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "PVOutDumpTimeStepBuffer"
-PetscErrorCode PVOutDumpTimeStepBuffer(PVOut *pvout)
-{
-	FILE *db;
+	if(!tindx)
+	{
+		// write header
+		PVOutWriteXMLHeader(fp, "Collection");
 
-	PetscFunctionBegin;
+		// open time step collection
+		fprintf(fp,"<Collection>\n");
+	}
+	else
+	{
+		// put the file pointer on the next entry
+		ierr = fseek(fp, pvout->offset, SEEK_SET); CHKERRQ(ierr);
+	}
 
-	// return if buffer is empty
-	if(pvout->bcnt == 0) PetscFunctionReturn(0);
+	// add entry to .pvd file (outfile.pvtr in the output directory)
+	fprintf(fp,"\t<DataSet timestep=\"%1.6e\" file=\"%s/%s.pvtr\"/>\n",
+		ttime, dirName, pvout->outfile);
 
-	// open time step database file
-	if (pvout->nstep <= _timestep_buff_size_) db = fopen(pvout->dbname,"w"); // new file (write mode)
-	else                                      db = fopen(pvout->dbname,"a"); // existing file (append mode)
-	if(db == NULL) SETERRQ1(PETSC_COMM_WORLD, 1,"cannot open file %s", pvout->dbname);
-
-	// dump contents of the buffer to database
-	fwrite(pvout->bstamps, sizeof(PetscScalar), (size_t)pvout->bcnt, db);
-	fwrite(pvout->bindexs, sizeof(PetscInt),    (size_t)pvout->bcnt, db);
-
-	// zero out buffer counter
-	pvout->bcnt = 0;
-
-	// close file
-	fclose(db);
-	PetscFunctionReturn(0);
-}
-//---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "PVOutWritePVD"
-PetscErrorCode PVOutWritePVD(PVOut *pvout)
-{
-	FILE          *fp, *db;
-	char          *name;
-	PetscScalar    ttime;
-	PetscInt       tindx, chsz, j, cnt;
-	PetscMPIInt    rank;
-
-	PetscErrorCode ierr;
-	PetscFunctionBegin;
-
-	// only first process generates this file
-	ierr = MPI_Comm_rank(PETSC_COMM_WORLD, &rank); CHKERRQ(ierr);
-	if(rank != 0) PetscFunctionReturn(0);
-
-	// only proceed if at least one time step was stored
-	if(pvout->nstep == 0) PetscFunctionReturn(0);
-
-	// dump the rest of the time step buffer
-	ierr = PVOutDumpTimeStepBuffer(pvout); CHKERRQ(ierr);
-
-	// open outfile.pvd file (write, mode)
-	asprintf(&name, "%s.pvd", pvout->outfile);
-	fp = fopen(name,"w");
-	if(fp == NULL) SETERRQ1(PETSC_COMM_WORLD, 1,"cannot open file %s", name);
-	free(name);
-
-	// open time step database file (read mode)
-	db = fopen(pvout->dbname,"r");
-	if(db == NULL) SETERRQ1(PETSC_COMM_WORLD, 1,"cannot open file %s", pvout->dbname);
-
-	// write header
-	PVOutWriteXMLHeader(fp, "Collection");
-
-	// open time step collection
-	fprintf(fp,"<Collection>\n");
-
-	// write links to time step output files
-	cnt = 0;
-	do
-	{	// get size of next chunk to read
-		if((pvout->nstep - cnt) > _timestep_buff_size_) chsz = _timestep_buff_size_;
-		else 	                                        chsz = (size_t) (pvout->nstep - cnt);
-
-		// load data to buffer
-		fread(pvout->bstamps, sizeof(PetscScalar), (size_t)chsz, db);
-		fread(pvout->bindexs, sizeof(PetscInt),    (size_t)chsz, db);
-
-		// process buffer
-		for(j = 0; j < chsz; j++)
-		{
-			// retrieve next time stamp and index
-			ttime = pvout->bstamps[j];
-			tindx = pvout->bindexs[j];
-
-			// add record to .pvd file (outfile.pvtr in the Temestep_XXXXXX directory)
-			fprintf(fp,"\t<DataSet timestep=\"%1.6e\" file=\"Timestep_%1.6lld/%s.pvtr\"/>\n",
-				ttime, (LLD)tindx, pvout->outfile);
-		}
-		cnt += chsz;
-	} while (cnt != pvout->nstep);
+	// store current position in the file
+	pvout->offset = ftell(fp);
 
 	// close time step collection
 	fprintf(fp,"</Collection>\n");
 	fprintf(fp,"</VTKFile>\n");
 
-	// close files
+	// close file
 	fclose(fp);
-	fclose(db);
 
-	// delete time step database file
-	remove(pvout->dbname);
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
 #undef __FUNCT__
 #define __FUNCT__ "PVOutWritePVTR"
-PetscErrorCode PVOutWritePVTR(PVOut *pvout, PetscInt tindx)
+PetscErrorCode PVOutWritePVTR(PVOut *pvout, const char *dirName)
 {
 	FILE        *fp;
 	FDSTAG      *fs;
 	char        *fname;
 	OutVec      *outvecs;
 	PetscInt     i, rx, ry, rz;
-	PetscMPIInt  rank, nproc, iproc;
+	PetscMPIInt  nproc, iproc;
 
-	PetscErrorCode ierr;
 	PetscFunctionBegin;
 
-	// only first process generates this file (WARNING! Potential Bottleneck!)
-	ierr = MPI_Comm_rank(PETSC_COMM_WORLD, &rank); CHKERRQ(ierr);
-	if(rank != 0)  PetscFunctionReturn(0);
+	// only first process generates this file (WARNING! Bottleneck!)
+	if(!ISRankZero(PETSC_COMM_WORLD)) PetscFunctionReturn(0);
 
 	// access staggered grid layout
 	fs = pvout->outbuf.fs;
 
-	// open outfile.pvtr file in the Temestep_XXXXXX directory (write mode)
-	asprintf(&fname, "Timestep_%1.6lld/%s.pvtr", (LLD)tindx, pvout->outfile);
+	// open outfile.pvtr file in the output directory (write mode)
+	asprintf(&fname, "%s/%s.pvtr", dirName, pvout->outfile);
 	fp = fopen(fname,"w");
 	if(fp == NULL) SETERRQ1(PETSC_COMM_WORLD, 1,"cannot open file %s", fname);
 	free(fname);
@@ -653,7 +569,7 @@ PetscErrorCode PVOutWritePVTR(PVOut *pvout, PetscInt tindx)
 //---------------------------------------------------------------------------
 #undef __FUNCT__
 #define __FUNCT__ "PVOutWriteVTR"
-PetscErrorCode PVOutWriteVTR(PVOut *pvout, JacRes *jr, PetscInt tindx)
+PetscErrorCode PVOutWriteVTR(PVOut *pvout, JacRes *jr, const char *dirName)
 {
 	FILE          *fp;
 	FDSTAG        *fs;
@@ -679,8 +595,8 @@ PetscErrorCode PVOutWriteVTR(PVOut *pvout, JacRes *jr, PetscInt tindx)
 	GET_OUTPUT_RANGE(ry, ny, sy, fs->dsy)
 	GET_OUTPUT_RANGE(rz, nz, sz, fs->dsz)
 
-	// open outfile_p_XXXXXX.vtr file in the Temestep_XXXXXX directory (write mode)
-	asprintf(&fname, "Timestep_%1.6lld/%s_p%1.6lld.vtr", (LLD)tindx, pvout->outfile, (LLD)rank);
+	// open outfile_p_XXXXXX.vtr file in the output directory (write mode)
+	asprintf(&fname, "%s/%s_p%1.6lld.vtr", dirName, pvout->outfile, (LLD)rank);
 	fp = fopen(fname,"w");
 	if(fp == NULL) SETERRQ1(PETSC_COMM_WORLD, 1,"cannot open file %s", fname);
 	free(fname);

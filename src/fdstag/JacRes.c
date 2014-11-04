@@ -219,14 +219,16 @@ PetscErrorCode JacResGetI2Gdt(JacRes *jr)
 	// compute average inverse elastic viscosity in the integration points
 	// WARNING! this should be replaced by the effective elastic strain rates
 
-	PetscInt    i, n;
 	FDSTAG     *fs;
 	SolVarCell *svCell;
 	SolVarEdge *svEdge;
+	PetscInt    i, n;
+	PetscScalar dt;
 
 	PetscFunctionBegin;
 
 	fs = jr->fs;
+	dt = jr->ts.dt;
 
 	//=============
 	// cell centers
@@ -236,7 +238,7 @@ PetscErrorCode JacResGetI2Gdt(JacRes *jr)
 	{	// access solution variables
 		svCell = &jr->svCell[i];
 		// compute & store inverse viscosity
-		svCell->svDev.I2Gdt = GetI2Gdt(jr->numPhases, jr->phases, svCell->phRat, jr->dt);
+		svCell->svDev.I2Gdt = GetI2Gdt(jr->numPhases, jr->phases, svCell->phRat, dt);
 	}
 	//===========
 	// xy - edges
@@ -246,7 +248,7 @@ PetscErrorCode JacResGetI2Gdt(JacRes *jr)
 	{	// access solution variables
 		svEdge = &jr->svXYEdge[i];
 		// compute & store inverse viscosity
-		svEdge->svDev.I2Gdt = GetI2Gdt(jr->numPhases, jr->phases, svEdge->phRat, jr->dt);
+		svEdge->svDev.I2Gdt = GetI2Gdt(jr->numPhases, jr->phases, svEdge->phRat, dt);
 	}
 	//===========
 	// xz - edges
@@ -256,7 +258,7 @@ PetscErrorCode JacResGetI2Gdt(JacRes *jr)
 	{	// access solution variables
 		svEdge = &jr->svXZEdge[i];
 		// compute & store inverse viscosity
-		svEdge->svDev.I2Gdt = GetI2Gdt(jr->numPhases, jr->phases, svEdge->phRat, jr->dt);
+		svEdge->svDev.I2Gdt = GetI2Gdt(jr->numPhases, jr->phases, svEdge->phRat, dt);
 	}
 	//===========
 	// yz - edges
@@ -266,7 +268,7 @@ PetscErrorCode JacResGetI2Gdt(JacRes *jr)
 	{	// access solution variables
 		svEdge = &jr->svYZEdge[i];
 		// compute & store inverse viscosity
-		svEdge->svDev.I2Gdt = GetI2Gdt(jr->numPhases, jr->phases, svEdge->phRat, jr->dt);
+		svEdge->svDev.I2Gdt = GetI2Gdt(jr->numPhases, jr->phases, svEdge->phRat, dt);
 	}
 	PetscFunctionReturn(0);
 }
@@ -622,7 +624,7 @@ PetscErrorCode JacResGetResidual(JacRes *jr)
 	numPhases =  jr->numPhases; // number phases
 	phases    =  jr->phases;    // phase parameters
 	matLim    = &jr->matLim;    // phase parameters limiters
-	dt        =  jr->dt;        // time step
+	dt        =  jr->ts.dt;     // time step
 
 	// clear local residual vectors
 	ierr = VecZeroEntries(jr->lfx); CHKERRQ(ierr);

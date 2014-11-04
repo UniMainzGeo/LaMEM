@@ -5,9 +5,9 @@
 #define __input_h__
 //---------------------------------------------------------------------------
 
-PetscErrorCode FDSTAGInitCode(UserContext *user);
+PetscErrorCode FDSTAGInitCode(JacRes *jr, UserContext *user);
 
-PetscErrorCode FDSTAGReadInputFile(UserContext *user);
+PetscErrorCode FDSTAGReadInputFile(JacRes *jr, UserContext *user);
 
 PetscErrorCode ReadMaterialProperties(UserContext *user);
 

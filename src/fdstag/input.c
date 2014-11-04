@@ -5,19 +5,24 @@
 #include "NonDimensionalisation.h"
 #include "Parsing.h"
 #include "Utils.h"
+#include "fdstag.h"
+#include "solVar.h"
+#include "scaling.h"
+#include "bc.h"
+#include "JacRes.h"
 #include "input.h"
 //---------------------------------------------------------------------------
 // * add default solver options
 //---------------------------------------------------------------------------
 #undef __FUNCT__
 #define __FUNCT__ "FDSTAGInitCode"
-PetscErrorCode FDSTAGInitCode(UserContext *user)
+PetscErrorCode FDSTAGInitCode(JacRes *jr, UserContext *user)
 {
 	// Set default code parameters and read input file, if required
 
 	PetscMPIInt    size;
 	PetscErrorCode ierr;
-	PetscInt       nx,ny,nz, mod, i, nel_array[3], nel_input_max;
+	PetscInt       i, nel_array[3], nel_input_max;
     PetscInt       n_int;
 	PetscScalar    SecYear;
 	PetscBool      found,flg;
@@ -266,7 +271,7 @@ PetscErrorCode FDSTAGInitCode(UserContext *user)
 	/* Read an input file if required */
 	if (user->InputParamFile){
 		//	ReadInputFile(user);
-		FDSTAGReadInputFile(user);		// use the parser, to read the input file
+		FDSTAGReadInputFile(jr, user);		// use the parser, to read the input file
 	}
 
 	/* Change values @ command prompt */
@@ -562,37 +567,6 @@ PetscErrorCode FDSTAGInitCode(UserContext *user)
 	}
 
 
-	/* In case nel_x, nel_y or nel_z is specified, recompute the number of nodes here; this ALWAYS overrides a specification of nnode_x,nnode_y and nnode_z */
-	if (user->nel_x > 0){
-		if( (__ELEMENT_TYPE__ == ELEMENT_Q2P1) ) {
-			user->nnode_x = user->nel_x*2+1;
-		}
-		else {
-			user->nnode_x = user->nel_x+1;
-		}
-	}
-	if (user->nel_y > 0){
-		if( (__ELEMENT_TYPE__ == ELEMENT_Q2P1) ) {
-			user->nnode_y = user->nel_y*2+1;
-		}
-		else {
-			user->nnode_y = user->nel_y+1;
-		}
-	}
-	if (user->nel_z > 0){
-		if( (__ELEMENT_TYPE__ == ELEMENT_Q2P1) ) {
-			user->nnode_z = user->nel_z*2+1;
-		}
-		else {
-			user->nnode_z = user->nel_z+1;
-		}
-	}
-
-	/* If we really insist, we can specify nnode_x from the command line */
-	PetscOptionsGetInt(PETSC_NULL ,"-nnode_x",	&user->nnode_x 		, PETSC_NULL);
-	PetscOptionsGetInt(PETSC_NULL ,"-nnode_y",	&user->nnode_y 		, PETSC_NULL);
-	PetscOptionsGetInt(PETSC_NULL ,"-nnode_z",	&user->nnode_z 		, PETSC_NULL);
-
 	user->Setup.Diapir_Hi 	 = (user->H-user->z_bot)*user->Hinterface;	// for 0-diapir setup
 	user->Setup.SingleFold_H = 1.0;						    			// for  1-Single-layer folding setup
 
@@ -640,10 +614,6 @@ PetscErrorCode FDSTAGInitCode(UserContext *user)
 	}
 
 	/* print information about simulation */
-	nx = user->nnode_x;
-	ny = user->nnode_y;
-	nz = user->nnode_z;
-
 	ierr = MPI_Comm_size(PETSC_COMM_WORLD,&size); CHKERRQ(ierr);
 
 	PetscPrintf(PETSC_COMM_WORLD," Total # of cpu's               : %lld \n",(LLD)size);
@@ -755,13 +725,15 @@ PetscErrorCode FDSTAGInitCode(UserContext *user)
 
 	ierr = PetscFree(all_options); CHKERRQ(ierr);
 
+
+
 	PetscFunctionReturn(0);
 
 }
 //---------------------------------------------------------------------------
 #undef __FUNCT__
 #define __FUNCT__ "FDSTAGReadInputFile"
-PetscErrorCode FDSTAGReadInputFile(UserContext *user)
+PetscErrorCode FDSTAGReadInputFile(JacRes *jr, UserContext *user)
 {
 	 // Parse the input file
 
@@ -782,16 +754,21 @@ PetscErrorCode FDSTAGReadInputFile(UserContext *user)
 		SETERRQ1(PETSC_COMM_WORLD, PETSC_ERR_USER, "Cannot open input file %s", user->ParamFile);
 	}
 
-	parse_GetInt( fp, "nnode_x", &user->nnode_x, &found );
-	parse_GetInt( fp, "nnode_y", &user->nnode_y, &found );
-	parse_GetInt( fp, "nnode_z", &user->nnode_z, &found );
-
 	/* read the # of elements @ coarsest level ; this override any specification of #nodes */
 	parse_GetInt( fp, "nel_x",   &user->nel_x, &found );
 	parse_GetInt( fp, "nel_y",   &user->nel_y, &found );
 	parse_GetInt( fp, "nel_z",   &user->nel_z, &found );
 
+	// only number of cells is a relevant parameter for FDSTAG
+	user->nnode_x = user->nel_x+1;
+	user->nnode_y = user->nel_y+1;
+	user->nnode_z = user->nel_z+1;
+
+
 	/* Characteristic values, used to non-dimensionalize parameters ------------------------------------------------------------- */
+
+	ierr = ScalingReadFromFile(&jr->scal, fp); CHKERRQ(ierr);
+
 	parse_GetInt( fp,    "DimensionalUnits", &user->DimensionalUnits, &found );
 	parse_GetDouble( fp, "Characteristic.Length", &data, &found );			if (user->DimensionalUnits==1){		user->Characteristic.Length       = data;	}// read data
 	parse_GetDouble( fp, "Characteristic.Viscosity", &data, &found );		if (user->DimensionalUnits==1){		user->Characteristic.Viscosity    = data;	}// read data

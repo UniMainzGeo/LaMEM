@@ -3,14 +3,28 @@
 //---------------------------------------------------------------------------
 #ifndef __JacRes_h__
 #define __JacRes_h__
+
 //---------------------------------------------------------------------------
+
+typedef struct
+{
+	PetscScalar pdt;    // previous time step
+	PetscScalar dt;     // current time step (to be defined)
+	PetscScalar dtmin;  // minimum time step
+	PetscScalar dtmax;  // maximum time step
+	PetscScalar Cmax;   // dimensionless Courant number (should be {significantly} less than unit)
+
+} TSSol;
+
+//---------------------------------------------------------------------------
+
 // FDSTAG Jacobian and residual evaluation context
 typedef struct
 {
 	// external handles
-	FDSTAG *fs;  // staggered-grid layout
-	BCCtx  *cbc; // boundary condition context (coupled)
-	BCCtx  *ubc; // boundary condition context (uncoupled)
+	FDSTAG  *fs;   // staggered-grid layout
+	BCCtx   *cbc;  // boundary condition context (coupled)
+	BCCtx   *ubc;  // boundary condition context (uncoupled)
 
 	// coupled solution & residual vectors
 	Vec gsol, gres; // global
@@ -55,12 +69,10 @@ typedef struct
 	Soft_t      *matSoft;   // material softening law parameters
 	MatParLim    matLim;    // phase parameters limiters
 
-	// global parameters
-	PetscScalar dt;          // time step
+	// parameters & controls
+	Scaling     scal;        // scaling
+	TSSol       ts;          // time-stepping parameters
 	PetscScalar grav[SPDIM]; // global gravity components
-
-	// scaling
-	Scaling scal;
 
 } JacRes;
 //---------------------------------------------------------------------------
@@ -103,6 +115,16 @@ PetscErrorCode JacResViewRes(JacRes *jr);
 PetscErrorCode SetMatParLim(MatParLim *matLim, UserContext *usr);
 
 //---------------------------------------------------------------------------
+
+PetscErrorCode TSSolSetUp(TSSol *ts, JacRes *jr);
+
+PetscErrorCode getMaxInvStep1DLocal(Discret1D *ds, DM da, Vec gv, PetscInt dir, PetscScalar *_idtmax);
+
+PetscErrorCode TSSolGetCourantStep(TSSol *ts, JacRes *jr);
+
+//---------------------------------------------------------------------------
+
+
 
 /*
 PetscErrorCode FDSTAGScatterSol(FDSTAG *fs, JacResCtx *jrctx);

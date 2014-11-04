@@ -9,7 +9,7 @@
 // ...
 //---------------------------------------------------------------------------
 #undef __FUNCT__
-#define __FUNCT__ "ScalingCreate"
+#define __FUNCT__ "ScalingReadFromFile"
 PetscErrorCode ScalingReadFromFile(Scaling *scal, FILE *fp)
 {
 	PetscInt flg;
@@ -42,9 +42,9 @@ PetscErrorCode ScalingCreate(
 	PetscScalar  temperature,
 	PetscScalar  force)
 {
-	PetscScalar volume, area, yr, km, cm, cm_yr, MPa, mW_msq;
+	PetscScalar volume, area, yr, km, cm, cm_yr, MPa, mW;
 
-	if(DimensionalUnits && scal->utype  ==_NONE_)
+	if(DimensionalUnits && scal->utype ==_NONE_)
 	{
 		SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "set 'DimensionalUnits' & 'units' options coherently in the input file");
 	}
@@ -122,7 +122,6 @@ PetscErrorCode ScalingCreate(
 		scal->heat_production     = scal->power/mass;
 		scal->expansivity         = 1.0/temperature;
 		scal->pressure_sensivity  = temperature/scal->stress;
-
 		// output labels
 		sprintf(scal->lbl_temperature,      "[K]");
 		sprintf(scal->lbl_force,            "[N]");
@@ -147,13 +146,13 @@ PetscErrorCode ScalingCreate(
 			cm     = 1e-2;
 			cm_yr  = cm/yr;
 			MPa    = 1e6;
-			mW_msq = 1e-3;
+			mW     = 1e-3;
 			// modify scales
-			scal->time       = time/yr;                // internal -> yr
-			scal->length     = length/km;              // internal -> km
-			scal->velocity   = scal->velocity/cm_yr;   // internal -> cm/yr
-			scal->stress     = scal->stress/MPa;       // internal -> MPa
-			scal->heat_flux  = scal->heat_flux/mW_msq; // internal -> mW/m^2
+			scal->time       = time/yr;              // internal -> yr
+			scal->length     = length/km;            // internal -> km
+			scal->velocity   = scal->velocity/cm_yr; // internal -> cm/yr
+			scal->stress     = scal->stress/MPa;     // internal -> MPa
+			scal->heat_flux  = scal->heat_flux/mW;   // internal -> mW/m^2
 			// output labels
 			sprintf(scal->lbl_time,      "[yr]");
 			sprintf(scal->lbl_length  ,  "[km]");

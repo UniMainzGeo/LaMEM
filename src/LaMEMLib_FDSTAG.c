@@ -114,7 +114,7 @@ PetscErrorCode LaMEMLib_FDSTAG(PetscBool InputParamFile, const char *ParamFile, 
 	if(InputParamFile == PETSC_TRUE) strcpy(user.ParamFile, ParamFile);
 
 	// initialize variables
-	ierr = FDSTAGInitCode(&user); CHKERRQ(ierr);
+	ierr = FDSTAGInitCode(&jr, &user); CHKERRQ(ierr);
 
 	// Give current LaMEM session a specific group ID
 	user.Optimisation.mpi_group_id = *mpi_group_id;
@@ -310,7 +310,7 @@ PetscErrorCode LaMEMLib_FDSTAG(PetscBool InputParamFile, const char *ParamFile, 
 		//==========================================================================================
 
 		// set time step
-		jr.dt = user.dt;
+		jr.ts.dt = user.dt;
 
 		//=========================================================================================
 		//	NONLINEAR THERMO-MECHANICAL SOLVER
@@ -422,9 +422,8 @@ PetscErrorCode LaMEMLib_FDSTAG(PetscBool InputParamFile, const char *ParamFile, 
 		{
 			char *DirectoryName = NULL;
 
-			// create directory
-			asprintf(&DirectoryName, "Timestep_%1.6lld",(LLD)itime);
-//			ierr = LaMEM_CreateOutputDirectory(DirectoryName); CHKERRQ(ierr);
+			// create directory (encode current time & step number)
+			asprintf(&DirectoryName, "Timestep_%1.6lld_%1.6e", (LLD)itime, user.time*jr.scal.time);
 
 			ierr = LaMEMCreateOutputDirectory(DirectoryName); CHKERRQ(ierr);
 
@@ -453,8 +452,8 @@ PetscErrorCode LaMEMLib_FDSTAG(PetscBool InputParamFile, const char *ParamFile, 
 //				ierr = WritePhasesOutputFile_VTS(C, &user, itime, DirectoryName); CHKERRQ(ierr);
 //			}
 
-			// Paraview output FDSTAG fields
-			ierr = PVOutWriteTimeStep(&pvout, &jr, user.time, itime); CHKERRQ(ierr);
+			// Paraview output
+			ierr = PVOutWriteTimeStep(&pvout, &jr, DirectoryName, user.time, itime); CHKERRQ(ierr);
        
 			// clean up
 			if(DirectoryName) free(DirectoryName);

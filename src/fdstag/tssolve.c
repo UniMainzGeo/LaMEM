@@ -8,7 +8,6 @@
 #include "bc.h"
 #include "JacRes.h"
 #include "Utils.h"
-#include "tssolve.h"
 //---------------------------------------------------------------------------
 // * change time stepping for requested time interval, not integer number of steps
 // * break-point files

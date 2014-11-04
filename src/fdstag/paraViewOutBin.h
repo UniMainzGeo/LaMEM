@@ -28,7 +28,7 @@
 #ifndef __paraViewOutBin_h__
 #define __paraViewOutBin_h__
 //---------------------------------------------------------------------------
-#define _timestep_buff_size_ 4096
+//#define _timestep_buff_size_ 4096
 // maximum number of components in the output vector
 #define _max_num_comp_ 6
 //---------------------------------------------------------------------------
@@ -146,15 +146,8 @@ typedef struct
 	PetscInt     nvec;    // number of output vectors
 	OutVec      *outvecs; // output vectors
 	OutBuf       outbuf;  // output buffer
-	//================================
-	// time step buffer
-	// to be replaced by python script
-	//================================
-	PetscInt     nstep;   // number of collected time steps
-	PetscInt     bcnt;    // buffer counter
-	char        *dbname;  // time step database name
-	PetscScalar *bstamps; // buffer for output time stamps
-	PetscInt    *bindexs; // buffer for indices of saved time steps
+	long int     offset;  // pvd file offset
+	PetscInt     outpvd;  // pvd file output flag
 
 } PVOut;
 //---------------------------------------------------------------------------
@@ -162,30 +155,28 @@ typedef struct
 // create ParaView output driver
 PetscErrorCode PVOutCreate(PVOut *pvout, JacRes *jr, const char *filename);
 
+// read options
+PetscErrorCode PVOutReadFromOptions(PVOut *pvout);
+
 // destroy ParaView output driver
 PetscErrorCode PVOutDestroy(PVOut *pvout);
 
 // Add standard header to output file
 void PVOutWriteXMLHeader(FILE *fp, const char *file_type);
 
-// write all time-step output files to disk (PVTR, VTR) and update time step buffer data
-PetscErrorCode PVOutWriteTimeStep(PVOut *pvout, JacRes *jr, PetscScalar ttime, PetscInt tindx);
+// write all time-step output files to disk (PVD, PVTR, VTR)
+PetscErrorCode PVOutWriteTimeStep(PVOut *pvout, JacRes *jr, const char *dirName, PetscScalar ttime, PetscInt tindx);
 
-// store time stamp and step index to the buffer
-PetscErrorCode PVOutUpdateTimeStepBuffer(PVOut *pvout, PetscScalar ttime, PetscInt tindx);
-
-// dump time-step buffer to disk
-PetscErrorCode PVOutDumpTimeStepBuffer(PVOut *pvout);
-
-// write final PVD file (time step collection) (called once per simulation)
-PetscErrorCode PVOutWritePVD(PVOut *pvout);
+// update PVD file (called every time step on first processor)
+// WARNING! this is potential bottleneck, get rid of writing every time-step
+PetscErrorCode PVOutUpdatePVD(PVOut *pvout, const char *dirName, PetscScalar ttime, PetscInt tindx);
 
 // write parallel PVTR file (called every time step on first processor)
-// WARNING! this is potential bottleneck, figure out how to get rid of writing every time-step
-PetscErrorCode PVOutWritePVTR(PVOut *pvout, PetscInt tindx);
+// WARNING! this is potential bottleneck, get rid of writing every time-step
+PetscErrorCode PVOutWritePVTR(PVOut *pvout, const char *dirName);
 
 // write sequential VTR files on every processor (called every time step)
-PetscErrorCode PVOutWriteVTR(PVOut *pvout, JacRes *jr, PetscInt tindx);
+PetscErrorCode PVOutWriteVTR(PVOut *pvout, JacRes *jr, const char *dirName);
 
 //---------------------------------------------------------------------------
 
