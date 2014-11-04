@@ -29,12 +29,12 @@ PetscErrorCode TSSolSetUp(TSSol *ts, UserContext *usr)
 
 	if(ts->Cmax > 0.3)
 	{
-		PetscPrintf(PETSC_COMM_WORLD, " WARNING! Large Courant step length Cmax=%7.5f. Consider reducing\n", ts->Cmax);
+		PetscPrintf(PETSC_COMM_WORLD, " WARNING! Large Courant step length Cmax=%7.5f. Consider reducing.\n", ts->Cmax);
 	}
 
 	if(ts->Cmax > 0.5)
 	{
-		SETERRQ1(PETSC_COMM_WORLD, PETSC_ERR_USER, " Courant step length Cmax=%7.5f is larger than allowed (%7.5f)", ts->Cmax);
+		SETERRQ2(PETSC_COMM_WORLD, PETSC_ERR_USER, " Courant step length Cmax=%7.5f is larger than allowed (%7.5f).", ts->Cmax, 0.5);
 	}
 
 	PetscFunctionReturn(0);
@@ -100,13 +100,14 @@ PetscErrorCode getMaxInvStep1DLocal(Discret1D *ds, DM da, Vec gv, PetscInt dir, 
 		vmax = 0.0;
 		for(jj = 0; jj < ln; jj++) { v = PetscAbsScalar(va[jj]); if(v > vmax) vmax = v;	}
 
+        
 		ierr = VecRestoreArray(gv, &va); CHKERRQ(ierr);
 
 		// get inverse time step
 		idt = vmax/ds->h;
 
-		// update maximum inverse time step
-		if(idt > idtmax) idt = idtmax;
+        // update maximum inverse time step
+		if(idt > idtmax) idtmax = idt;
 	}
 
 	// return result
@@ -146,7 +147,7 @@ PetscErrorCode TSSolGetCourantStep(TSSol *ts, JacRes *jr)
 	{
 		gidtmax = lidtmax;
 	}
-
+    
 	// compute time step
 	gidtmax /= ts->Cmax;
 
@@ -185,11 +186,11 @@ PetscErrorCode TSSolUpdate(TSSol *ts, Scaling *scal, PetscBool *done)
 
     PetscPrintf(PETSC_COMM_WORLD," Finished timestep %lld out of %lld \n",(LLD)ts->istep, (LLD)ts->nstep);
 
-    // WARNING! CHECK TIME, NOT INDEX!
+    // WARNING! CHECK TIME, NOT INDEX, IN THE FUTURE!
 
     // check to stop time-step loop
     if(ts->istep == ts->nstep) (*done) = PETSC_TRUE;
-    else                       (*done) = PETSC_TRUE;
+    else                       (*done) = PETSC_FALSE;
 
 	PetscFunctionReturn(0);
 }
