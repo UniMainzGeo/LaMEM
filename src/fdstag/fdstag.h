@@ -189,6 +189,8 @@ PetscErrorCode DOFIndexDestroy(DOFIndex *id);
 // FDSTAG functions
 //---------------------------------------------------------------------------
 
+PetscErrorCode FDSTAGClear(FDSTAG *fs);
+
 PetscErrorCode FDSTAGCreate(
 	FDSTAG  *fs,
 	PetscInt Nx, PetscInt Ny, PetscInt Nz,

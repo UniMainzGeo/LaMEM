@@ -85,6 +85,8 @@ typedef struct
 } JacRes;
 //---------------------------------------------------------------------------
 
+PetscErrorCode JacResClear(JacRes *jr);
+
 // create residual & Jacobian evaluation context
 PetscErrorCode JacResCreate(
 	JacRes   *jr,
@@ -116,6 +118,10 @@ PetscErrorCode JacResCopySol(JacRes *jr, Vec x);
 PetscErrorCode JacResCopyRes(JacRes *jr, Vec f);
 
 PetscErrorCode JacResViewRes(JacRes *jr);
+
+PetscScalar JacResGetTime(JacRes *jr);
+
+PetscInt JacResGetStep(JacRes *jr);
 
 //---------------------------------------------------------------------------
 

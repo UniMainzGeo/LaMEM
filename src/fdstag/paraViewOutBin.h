@@ -152,6 +152,8 @@ typedef struct
 } PVOut;
 //---------------------------------------------------------------------------
 
+PetscErrorCode PVOutClear(PVOut *pvout);
+
 // create ParaView output driver
 PetscErrorCode PVOutCreate(PVOut *pvout, JacRes *jr, const char *filename);
 

@@ -42,7 +42,9 @@ PetscErrorCode ScalingCreate(
 	PetscScalar  temperature,
 	PetscScalar  force)
 {
-	PetscScalar volume, area, yr, km, cm, cm_yr, MPa, mW;
+	// characteristic values must ALWAYS be given in SI units
+
+	PetscScalar volume, area, yr, Myr, km, cm, cm_yr, MPa, mW;
 
 	if(DimensionalUnits && scal->utype ==_NONE_)
 	{
@@ -142,19 +144,20 @@ PetscErrorCode ScalingCreate(
 		else if(scal->utype == _GEO_)
 		{
 			yr     = 3600.0*24.0*365.0;
+			Myr    = 1e6*yr;
 			km     = 1e3;
 			cm     = 1e-2;
 			cm_yr  = cm/yr;
 			MPa    = 1e6;
 			mW     = 1e-3;
 			// modify scales
-			scal->time       = time/yr;              // internal -> yr
+			scal->time       = time/Myr;             // internal -> Myr
 			scal->length     = length/km;            // internal -> km
 			scal->velocity   = scal->velocity/cm_yr; // internal -> cm/yr
 			scal->stress     = scal->stress/MPa;     // internal -> MPa
 			scal->heat_flux  = scal->heat_flux/mW;   // internal -> mW/m^2
 			// output labels
-			sprintf(scal->lbl_time,      "[yr]");
+			sprintf(scal->lbl_time,      "[Myr]");
 			sprintf(scal->lbl_length  ,  "[km]");
 			sprintf(scal->lbl_velocity,  "[cm/yr]");
 			sprintf(scal->lbl_stress  ,  "[MPa]");

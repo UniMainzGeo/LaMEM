@@ -94,8 +94,6 @@ PetscErrorCode LaMEMLib_FDSTAG(PetscBool InputParamFile, const char *ParamFile, 
 
 	PetscTime(&cputime_start);
 
-	if(LaMEM_OutputParameters) LaMEM_OutputParameters = NULL;
-
 	// Start code
 	PetscPrintf(PETSC_COMM_WORLD,"-------------------------------------------------------------------------- \n");
 	PetscPrintf(PETSC_COMM_WORLD,"                   Lithosphere and Mantle Evolution Model                   \n");
@@ -105,6 +103,16 @@ PetscErrorCode LaMEMLib_FDSTAG(PetscBool InputParamFile, const char *ParamFile, 
 	PetscPrintf(PETSC_COMM_WORLD,"-------------------------------------------------------------------------- \n");
 	PetscPrintf(PETSC_COMM_WORLD,"        STAGGERED-GRID FINITE DIFFERENCE CANONICAL IMPLEMENTATION           \n");
 	PetscPrintf(PETSC_COMM_WORLD,"-------------------------------------------------------------------------- \n");
+
+	if(LaMEM_OutputParameters) LaMEM_OutputParameters = NULL;
+
+	ierr = FDSTAGClear(&fs);    CHKERRQ(ierr);
+	ierr = BCClear    (&cbc);   CHKERRQ(ierr);
+	ierr = BCClear    (&ubc);   CHKERRQ(ierr);
+	ierr = JacResClear(&jr);    CHKERRQ(ierr);
+	ierr = ADVClear   (&actx);  CHKERRQ(ierr);
+	ierr = NLSolClear (&nl);    CHKERRQ(ierr);
+	ierr = PVOutClear (&pvout); CHKERRQ(ierr);
 
 	// Initialize context
 	ierr = PetscMemzero(&user, sizeof(UserContext)); CHKERRQ(ierr);
@@ -194,8 +202,18 @@ PetscErrorCode LaMEMLib_FDSTAG(PetscBool InputParamFile, const char *ParamFile, 
 	// SETUP DATA STRUCTURES
 	//======================
 
-	// WARNING!
-	// scaling must be setup right after reading input before creating anything.
+	// initialize scaling object
+	ierr = ScalingCreate(
+		&jr.scal,
+		user.DimensionalUnits,
+		user.Characteristic.kg,
+		user.Characteristic.Time,
+		user.Characteristic.Length,
+		user.Characteristic.Temperature,
+		user.Characteristic.Force); CHKERRQ(ierr);
+
+	// initialize time stepping parameters
+	ierr = TSSolSetUp(&jr.ts, &user); CHKERRQ(ierr);
 
 	// create staggered grid object
 	ierr = FDSTAGCreate(&fs, user.nnode_x, user.nnode_y, user.nnode_z,
@@ -228,19 +246,6 @@ PetscErrorCode LaMEMLib_FDSTAG(PetscBool InputParamFile, const char *ParamFile, 
 
 	// create Jacobian & residual evaluation context
 	ierr = JacResCreate(&jr, &fs, &cbc, &ubc, user.num_phases, 0); CHKERRQ(ierr);
-
-	// initialize scaling object
-	ierr = ScalingCreate(
-		&jr.scal,
-		user.DimensionalUnits,
-		user.Characteristic.kg,
-		user.Characteristic.Time,
-		user.Characteristic.Length,
-		user.Characteristic.Temperature,
-		user.Characteristic.Force); CHKERRQ(ierr);
-
-	// initialize time stepping parameters
-	ierr = TSSolSetUp(&jr.ts, &user); CHKERRQ(ierr);
 
 	// WARNING! NO TEMPERATURE! Set local temperature vector to unity (ad-hoc)
 	ierr = VecSet(jr.lT, 1.0); CHKERRQ(ierr);
@@ -280,7 +285,7 @@ PetscErrorCode LaMEMLib_FDSTAG(PetscBool InputParamFile, const char *ParamFile, 
 
 	do
 	{
-		PetscPrintf(PETSC_COMM_WORLD,"Time step %lld -------------------------------------------------------- \n", (LLD)(jr.ts.istep+1));
+		PetscPrintf(PETSC_COMM_WORLD,"Time step %lld -------------------------------------------------------- \n", (LLD)(JacResGetStep(&jr)+1));
 
 		//==========================================================================================
 		// Correct particles in case we employ an internal free surface
@@ -394,7 +399,7 @@ PetscErrorCode LaMEMLib_FDSTAG(PetscBool InputParamFile, const char *ParamFile, 
 			char *DirectoryName = NULL;
 
 			// create directory (encode current time & step number)
-			asprintf(&DirectoryName, "Timestep_%1.6lld_%1.6e", (LLD)jr.ts.istep, jr.ts.time*jr.scal.time);
+			asprintf(&DirectoryName, "Timestep_%1.6lld_%1.6e", (LLD)JacResGetStep(&jr), JacResGetTime(&jr));
 
 			ierr = LaMEMCreateOutputDirectory(DirectoryName); CHKERRQ(ierr);
 
@@ -424,7 +429,7 @@ PetscErrorCode LaMEMLib_FDSTAG(PetscBool InputParamFile, const char *ParamFile, 
 //			}
 
 			// Paraview output
-			ierr = PVOutWriteTimeStep(&pvout, &jr, DirectoryName, jr.ts.time, jr.ts.istep); CHKERRQ(ierr);
+			ierr = PVOutWriteTimeStep(&pvout, &jr, DirectoryName, JacResGetTime(&jr), JacResGetStep(&jr)); CHKERRQ(ierr);
        
 			// clean up
 			if(DirectoryName) free(DirectoryName);

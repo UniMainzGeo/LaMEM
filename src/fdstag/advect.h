@@ -86,6 +86,9 @@ typedef struct
 
 //---------------------------------------------------------------------------
 // create advection context
+PetscErrorCode ADVClear(AdvCtx *actx);
+
+// create advection context
 PetscErrorCode ADVCreate(AdvCtx *actx, FDSTAG *fs, JacRes *jr);
 
 // destroy advection context
@@ -149,19 +152,8 @@ PetscInt getPtrCnt(PetscInt n, PetscInt counts[], PetscInt ptr[]);
 // rewind pointers after using them as access iterators
 void rewindPtr(PetscInt n, PetscInt ptr[]);
 
-// normalize vector by the inverse sum of its elements
-static inline PetscScalar normVect(PetscInt n, PetscScalar *v)
-{
-	// normalize vector by the inverse sum of its elements
-
-	PetscInt    i;
-	PetscScalar sum = 0.0;
-
-	for(i = 0; i < n; i++) sum  += v[i];
-	for(i = 0; i < n; i++) v[i] /= sum;
-
-	return sum;
-}
+// compute phase ratio array
+PetscScalar getPhaseRatio(PetscInt n, PetscScalar *v);
 
 // find ID of the cell containing point (call this function for local point only!)
 static inline PetscInt FindPointInCell(

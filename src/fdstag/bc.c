@@ -12,10 +12,9 @@
 // * extend two-point constraint specification & (possibly) get rid bc-vectors
 // * create bc-object only at fine level, coarse levels should have simple access
 //---------------------------------------------------------------------------
-
 #undef __FUNCT__
-#define __FUNCT__ "BCCreate"
-PetscErrorCode BCCreate(BCCtx *bc, FDSTAG *fs)
+#define __FUNCT__ "BCClear"
+PetscErrorCode BCClear(BCCtx *bc)
 {
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
@@ -23,28 +22,22 @@ PetscErrorCode BCCreate(BCCtx *bc, FDSTAG *fs)
 	// clear object
 	ierr = PetscMemzero(bc, sizeof(BCCtx)); CHKERRQ(ierr);
 
+	PetscFunctionReturn(0);
+}
+//---------------------------------------------------------------------------
+#undef __FUNCT__
+#define __FUNCT__ "BCCreate"
+PetscErrorCode BCCreate(BCCtx *bc, FDSTAG *fs)
+{
+	PetscErrorCode ierr;
+	PetscFunctionBegin;
+
 	// create boundary conditions vectors (velocity, pressure, temperature)
 	ierr = DMCreateLocalVector(fs->DA_X,   &bc->bcvx);  CHKERRQ(ierr);
 	ierr = DMCreateLocalVector(fs->DA_Y,   &bc->bcvy);  CHKERRQ(ierr);
 	ierr = DMCreateLocalVector(fs->DA_Z,   &bc->bcvz);  CHKERRQ(ierr);
 	ierr = DMCreateLocalVector(fs->DA_CEN, &bc->bcp);   CHKERRQ(ierr);
 	ierr = DMCreateLocalVector(fs->DA_CEN, &bc->bcT);   CHKERRQ(ierr);
-
-	// single-point constraints (combined)
-	bc->numSPC  = 0;
-	bc->SPCList = NULL;
-	bc->SPCVals = NULL;
-
-	// single-point constraints (pressure)
-	bc->numSPCPres  = 0;
-	bc->SPCListPres = NULL;
-
-	// two-point constraints
-	bc->numTPC       = 0;
-	bc->TPCList      = NULL;
-	bc->TPCPrimeDOF  = NULL;
-	bc->TPCVals      = NULL;
-	bc->TPCLinComPar = NULL;
 
 	PetscFunctionReturn(0);
 }

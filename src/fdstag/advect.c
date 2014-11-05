@@ -64,6 +64,19 @@ Anton, please add a few comments
 // * check weights of distance-dependent MARKER->GRID interpolation
 //---------------------------------------------------------------------------
 #undef __FUNCT__
+#define __FUNCT__ "ADVClear"
+PetscErrorCode ADVClear(AdvCtx *actx)
+{
+	PetscErrorCode ierr;
+	PetscFunctionBegin;
+
+	// clear object
+	ierr = PetscMemzero(actx, sizeof(AdvCtx)); CHKERRQ(ierr);
+
+	PetscFunctionReturn(0);
+}
+//---------------------------------------------------------------------------
+#undef __FUNCT__
 #define __FUNCT__ "ADVCreate"
 PetscErrorCode ADVCreate(AdvCtx *actx, FDSTAG *fs, JacRes *jr)
 {
@@ -73,9 +86,6 @@ PetscErrorCode ADVCreate(AdvCtx *actx, FDSTAG *fs, JacRes *jr)
 
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
-
-	// clear object
-	ierr = PetscMemzero(actx, sizeof(AdvCtx)); CHKERRQ(ierr);
 
 	actx->fs = fs;
 	actx->jr = jr;
@@ -907,9 +917,9 @@ PetscErrorCode ADVProjHistMarkToGrid(AdvCtx *actx)
 	}
 
 	// normalize phase ratios
-	for(jj = 0; jj < fs->nXYEdg; jj++) jr->svXYEdge[jj].ws = normVect(jr->numPhases, jr->svXYEdge[jj].phRat);
-	for(jj = 0; jj < fs->nXZEdg; jj++) jr->svXZEdge[jj].ws = normVect(jr->numPhases, jr->svXZEdge[jj].phRat);
-	for(jj = 0; jj < fs->nYZEdg; jj++) jr->svYZEdge[jj].ws = normVect(jr->numPhases, jr->svYZEdge[jj].phRat);
+	for(jj = 0; jj < fs->nXYEdg; jj++) jr->svXYEdge[jj].ws = getPhaseRatio(jr->numPhases, jr->svXYEdge[jj].phRat);
+	for(jj = 0; jj < fs->nXZEdg; jj++) jr->svXZEdge[jj].ws = getPhaseRatio(jr->numPhases, jr->svXZEdge[jj].phRat);
+	for(jj = 0; jj < fs->nYZEdg; jj++) jr->svYZEdge[jj].ws = getPhaseRatio(jr->numPhases, jr->svYZEdge[jj].phRat);
 
 	// interpolate history stress to edges
 	ierr = ADVInterpMarkToEdge(actx, 0, _STRESS_); CHKERRQ(ierr);
@@ -1010,7 +1020,7 @@ PetscErrorCode ADVInterpMarkToCell(AdvCtx *actx)
 		svCell = &jr->svCell[jj];
 
 		// normalize phase ratios
-		w = normVect(jr->numPhases, svCell->phRat);
+		w = getPhaseRatio(jr->numPhases, svCell->phRat);
 
 		// normalize history variables
 		svCell->svBulk.pn /= w;
@@ -1019,7 +1029,6 @@ PetscErrorCode ADVInterpMarkToCell(AdvCtx *actx)
 		svCell->hxx       /= w;
 		svCell->hyy       /= w;
 		svCell->hzz       /= w;
-
 	}
 
 	PetscFunctionReturn(0);
@@ -1186,5 +1195,21 @@ void rewindPtr(PetscInt n, PetscInt ptr[])
 	}
 }
 //-----------------------------------------------------------------------------
+#undef __FUNCT__
+#define __FUNCT__ "getPhaseRatio"
+PetscScalar getPhaseRatio(PetscInt n, PetscScalar *v)
+{
+	// compute phase ratio array
 
+	PetscInt    i;
+	PetscScalar sum = 0.0;
 
+	for(i = 0; i < n; i++) sum  += v[i];
+
+	if(sum == 0.0) SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, " Empty control volume");
+
+	for(i = 0; i < n; i++) v[i] /= sum;
+
+	return sum;
+}
+//-----------------------------------------------------------------------------

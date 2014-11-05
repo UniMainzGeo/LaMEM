@@ -11,6 +11,19 @@
 #include "Utils.h"
 //---------------------------------------------------------------------------
 #undef __FUNCT__
+#define __FUNCT__ "JacResClear"
+PetscErrorCode JacResClear(JacRes *jr)
+{
+	PetscErrorCode ierr;
+	PetscFunctionBegin;
+
+	// clear object
+	ierr = PetscMemzero(jr, sizeof(JacRes)); CHKERRQ(ierr);
+
+	PetscFunctionReturn(0);
+}
+//---------------------------------------------------------------------------
+#undef __FUNCT__
 #define __FUNCT__ "JacResCreate"
 PetscErrorCode JacResCreate(
 	JacRes   *jr,
@@ -26,9 +39,6 @@ PetscErrorCode JacResCreate(
 
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
-
-	// clear object
-	ierr = PetscMemzero(jr, sizeof(JacRes)); CHKERRQ(ierr);
 
 	// set external handles
 	jr->fs  = fs;
@@ -1424,6 +1434,16 @@ PetscErrorCode JacResViewRes(JacRes *jr)
 	PetscPrintf(PETSC_COMM_WORLD, "------------------------------------------\n");
 
 	PetscFunctionReturn(0);
+}
+//---------------------------------------------------------------------------
+PetscScalar JacResGetTime(JacRes *jr)
+{
+	return	jr->ts.time*jr->scal.time;
+}
+//---------------------------------------------------------------------------
+PetscInt JacResGetStep(JacRes *jr)
+{
+	return	jr->ts.istep;
 }
 //---------------------------------------------------------------------------
 #undef __FUNCT__

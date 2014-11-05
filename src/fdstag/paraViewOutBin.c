@@ -259,6 +259,19 @@ PetscInt OutMaskCountActive(OutMask *omask)
 //...................... ParaView output driver object ......................
 //---------------------------------------------------------------------------
 #undef __FUNCT__
+#define __FUNCT__ "PVOutClear"
+PetscErrorCode PVOutClear(PVOut *pvout)
+{
+	PetscErrorCode ierr;
+	PetscFunctionBegin;
+
+	// clear object
+	ierr = PetscMemzero(pvout, sizeof(PVOut)); CHKERRQ(ierr);
+
+	PetscFunctionReturn(0);
+}
+//---------------------------------------------------------------------------
+#undef __FUNCT__
 #define __FUNCT__ "PVOutCreate"
 PetscErrorCode PVOutCreate(PVOut *pvout, JacRes *jr, const char *filename)
 {
@@ -271,9 +284,6 @@ PetscErrorCode PVOutCreate(PVOut *pvout, JacRes *jr, const char *filename)
 	PetscFunctionBegin;
 
 	scal = &jr->scal;
-
-	// clear object
-	ierr = PetscMemzero(pvout, sizeof(PVOut)); CHKERRQ(ierr);
 
 	// set file name
 	asprintf(&pvout->outfile, "%s", filename);

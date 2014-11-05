@@ -37,6 +37,8 @@ typedef struct
 } NLSol;
 //---------------------------------------------------------------------------
 
+PetscErrorCode NLSolClear(NLSol *nl);
+
 PetscErrorCode NLSolCreate(NLSol *nl, PCStokes pc, SNES *p_snes);
 
 PetscErrorCode NLSolDestroy(NLSol *nl);

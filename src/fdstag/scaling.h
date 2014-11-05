@@ -25,8 +25,8 @@ typedef struct
 	// multiply with scale to get scaled output (normally SI units)
 	// divide by scale to convert input into internal units
 	//
-	// units = none - input & output is non-dimensional
-	// units = si   - input & output is in SI units.
+	// units = none - input & output is non-dimensional (unit scaling is done)
+	// units = si   - input & output is in SI units
 	// units = geo  - input & output is in SI units, except:
 	//
 	//    time      - Myr
@@ -37,10 +37,7 @@ typedef struct
 	//
 	// WARNING!
 	//
-	// * in 'none' mode, characteristic values are ignored
-	//
-	// * in 'geo' mode, user must input characteristic values
-	//   for time & length in Myr & km, respectively. DONT'T FORGET TO IMPLEMENT!
+	// * characteristic values must ALWAYS be provided in SI units
 	//
 	// * number of primary units is one more that usual
 	//   Newton's 2nd law can be violated for quasi-static problems
@@ -53,8 +50,8 @@ typedef struct
 	PetscScalar mass;
 	PetscScalar time;
 	PetscScalar length;
-	PetscScalar temperature;       // Kelvin
-	PetscScalar force;             // additional variable for quasi-static case
+	PetscScalar temperature; // Kelvin
+	PetscScalar force;       // additional variable for quasi-static case
 
 	// secondary units
 	PetscScalar velocity;          // length / time
@@ -94,8 +91,6 @@ typedef struct
 } Scaling;
 //---------------------------------------------------------------------------
 
-#undef __FUNCT__
-#define __FUNCT__ "ScalingCreate"
 PetscErrorCode ScalingCreate(
 	Scaling     *scal,
 	PetscInt     DimensionalUnits,

@@ -704,6 +704,19 @@ PetscErrorCode DOFIndexDestroy(DOFIndex *id)
 // FDSTAG functions
 //---------------------------------------------------------------------------
 #undef __FUNCT__
+#define __FUNCT__ "FDSTAGClear"
+PetscErrorCode FDSTAGClear(FDSTAG  *fs)
+{
+	PetscErrorCode ierr;
+	PetscFunctionBegin;
+
+	// clear object
+	ierr = PetscMemzero(fs, sizeof(FDSTAG)); CHKERRQ(ierr);
+
+	PetscFunctionReturn(0);
+}
+//---------------------------------------------------------------------------
+#undef __FUNCT__
 #define __FUNCT__ "FDSTAGCreate"
 PetscErrorCode FDSTAGCreate(
 	FDSTAG  *fs,
@@ -726,9 +739,6 @@ PetscErrorCode FDSTAGCreate(
 
 	PetscErrorCode 	 ierr;
 	PetscFunctionBegin;
-
-	// clear object
-	ierr = PetscMemzero(fs, sizeof(FDSTAG)); CHKERRQ(ierr);
 
 	dof    = 1;
 	nlayer = 1;
@@ -1128,9 +1138,10 @@ PetscErrorCode FDSTAGView(FDSTAG *fs)
 	PetscPrintf(PETSC_COMM_WORLD, " Number of velocity DOF         :  %lld\n", (LLD)nVelDOF);
 	PetscPrintf(PETSC_COMM_WORLD, " Maximum cell aspect cell ratio :  %7.5f\n",   maxAspRat);
 
+	if(maxAspRat > 5.0) SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, " Too large aspect ratio is not supported");
+
 	if(maxAspRat > 2.0) PetscPrintf(PETSC_COMM_WORLD, " WARNING! you are using non-optimal aspect ratio. Expect precision deterioration\n");
 
-	if(maxAspRat > 5.0) SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, " Too large aspect ratio is not supported");
 
 	PetscFunctionReturn(0);
 }

@@ -27,15 +27,16 @@ PetscErrorCode TSSolSetUp(TSSol *ts, UserContext *usr)
 	ts->dt    = usr->dt;       // current time step (to be defined)
 	ts->time  = 0.0;
 
+	if(ts->Cmax > 0.5)
+	{
+		SETERRQ2(PETSC_COMM_WORLD, PETSC_ERR_USER, " Courant step length Cmax=%7.5f is larger than allowed (%7.5f).", ts->Cmax, 0.5);
+	}
+
 	if(ts->Cmax > 0.3)
 	{
 		PetscPrintf(PETSC_COMM_WORLD, " WARNING! Large Courant step length Cmax=%7.5f. Consider reducing.\n", ts->Cmax);
 	}
 
-	if(ts->Cmax > 0.5)
-	{
-		SETERRQ2(PETSC_COMM_WORLD, PETSC_ERR_USER, " Courant step length Cmax=%7.5f is larger than allowed (%7.5f).", ts->Cmax, 0.5);
-	}
 
 	PetscFunctionReturn(0);
 }
@@ -179,7 +180,7 @@ PetscErrorCode TSSolUpdate(TSSol *ts, Scaling *scal, PetscBool *done)
 	ts->istep++;
 
     // print time info
-	PetscPrintf(PETSC_COMM_WORLD," Time = %g%s, dt = %g%s ",
+	PetscPrintf(PETSC_COMM_WORLD," Time = %g%s, dt = %g%s \n",
 		ts->time*scal->time, scal->lbl_time,
 		ts->dt  *scal->time, scal->lbl_time);
 

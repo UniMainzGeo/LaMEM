@@ -36,6 +36,8 @@ typedef struct
 } BCCtx;
 //---------------------------------------------------------------------------
 
+PetscErrorCode BCClear(BCCtx *bc);
+
 // create boundary condition context
 PetscErrorCode BCCreate(BCCtx *bc, FDSTAG *fs);
 

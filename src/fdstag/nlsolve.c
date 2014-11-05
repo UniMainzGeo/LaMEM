@@ -22,6 +22,19 @@
 //   (also for linear solves)
 //---------------------------------------------------------------------------
 #undef __FUNCT__
+#define __FUNCT__ "NLSolClear"
+PetscErrorCode NLSolClear(NLSol *nl)
+{
+	PetscErrorCode ierr;
+	PetscFunctionBegin;
+
+	// clear object
+	ierr = PetscMemzero(nl, sizeof(NLSol)); CHKERRQ(ierr);
+
+	PetscFunctionReturn(0);
+}
+//---------------------------------------------------------------------------
+#undef __FUNCT__
 #define __FUNCT__ "NLSolCreate"
 PetscErrorCode NLSolCreate(NLSol *nl, PCStokes pc, SNES *p_snes)
 {
@@ -35,9 +48,6 @@ PetscErrorCode NLSolCreate(NLSol *nl, PCStokes pc, SNES *p_snes)
 
     PetscErrorCode ierr;
     PetscFunctionBegin;
-
-	// clear object
-	ierr = PetscMemzero(nl, sizeof(NLSol)); CHKERRQ(ierr);
 
 	// store context
  	nl->pc = pc;
