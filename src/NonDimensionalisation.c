@@ -53,7 +53,7 @@ void ComputeCharacteristicValues( UserContext *user )
 		Characteristic_.Temperature	= 1.0;
 		Characteristic_.Viscosity	= 1.0;
 
-		PetscPrintf(PETSC_COMM_WORLD," Input is assumed to be in non-dimensional units \n");
+		PetscPrintf(PETSC_COMM_WORLD," Input units                    : Non-dimensional\n");
 
 		/* Some useful values */
 		Characteristic_.km          = 1.0;
@@ -85,12 +85,12 @@ void ComputeCharacteristicValues( UserContext *user )
 			Characteristic_.Viscosity	= 1e21;		// Pa.s
 		}
 
-		PetscPrintf(PETSC_COMM_WORLD," Input is assumed to be in dimensional units: \n");
-		PetscPrintf(PETSC_COMM_WORLD,"  Characteristic Length 	= %g [m] \n",Characteristic_.Length);
-		PetscPrintf(PETSC_COMM_WORLD,"  Characteristic Stress 	= %g [Pa] \n",Characteristic_.Stress);
-		PetscPrintf(PETSC_COMM_WORLD,"  Characteristic Temperature 	= %g  [Celcius/K] \n",Characteristic_.Temperature);
-		PetscPrintf(PETSC_COMM_WORLD,"  Characteristic Viscosity 	= %g [Pa.s] \n",Characteristic_.Viscosity);
-		PetscPrintf(PETSC_COMM_WORLD,"  Characteristic Time 	= %g [s] \n",Characteristic_.Viscosity/Characteristic_.Stress);
+        PetscPrintf(PETSC_COMM_WORLD," Input units                    : Dimensional \n");
+		PetscPrintf(PETSC_COMM_WORLD,"                                  Characteristic Length 	= %g [m] \n",Characteristic_.Length);
+		PetscPrintf(PETSC_COMM_WORLD,"                                  Characteristic Stress 	= %g [Pa] \n",Characteristic_.Stress);
+		PetscPrintf(PETSC_COMM_WORLD,"                                  Characteristic Temperature 	= %g  [Celcius/K] \n",Characteristic_.Temperature);
+		PetscPrintf(PETSC_COMM_WORLD,"                                  Characteristic Viscosity 	= %g [Pa.s] \n",Characteristic_.Viscosity);
+		PetscPrintf(PETSC_COMM_WORLD,"                                  Characteristic Time 	= %g [s] \n",Characteristic_.Viscosity/Characteristic_.Stress);
 
 		/* Some useful values */
 		Characteristic_.km          = 1000;

@@ -140,20 +140,19 @@ PetscErrorCode PMatSetFromOptions(PMat pm)
 	{
 		if(!strcmp(pname, "mono"))
 		{
-			PetscPrintf(PETSC_COMM_WORLD, " Preconditioner matrix type : monolithic\n");
+			PetscPrintf(PETSC_COMM_WORLD, " Preconditioner matrix type     : monolithic\n");
 			pm->type = _MONOLITHIC_;
 		}
 		else if(!strcmp(pname, "block"))
 		{
-			PetscPrintf(PETSC_COMM_WORLD, " Preconditioner matrix type : block\n");
+			PetscPrintf(PETSC_COMM_WORLD, " Preconditioner matrix type     : block\n");
 			pm->type = _BLOCK_;
 		}
 		else SETERRQ1(PETSC_COMM_WORLD, PETSC_ERR_USER,"Incorrect matrix storage format: %s", pname);
 	}
 	else
 	{
-		PetscPrintf(PETSC_COMM_WORLD, " Preconditioner matrix type : monolithic\n");
-
+		PetscPrintf(PETSC_COMM_WORLD, " Preconditioner matrix type     : monolithic\n");
 		pm->type = _MONOLITHIC_;
 	}
 
@@ -174,7 +173,7 @@ PetscErrorCode PMatSetFromOptions(PMat pm)
 
 	if(pm->pgamma > 1.0)
 	{
-		PetscPrintf(PETSC_COMM_WORLD, " Penalty parameter (pgamma) : %e\n", pm->pgamma);
+		PetscPrintf(PETSC_COMM_WORLD, " Penalty parameter (pgamma)     : %e\n", pm->pgamma);
 	}
 
 	// set cell stiffness function

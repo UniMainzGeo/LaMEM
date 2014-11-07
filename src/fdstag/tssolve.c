@@ -26,7 +26,10 @@ PetscErrorCode TSSolSetUp(TSSol *ts, UserContext *usr)
 	ts->pdt   = 0.0;           // previous time step
 	ts->dt    = usr->dt;       // current time step (to be defined)
 	ts->time  = 0.0;
-
+    
+    
+    PetscPrintf(PETSC_COMM_WORLD, " CFL timestep factor            : %f \n", ts->Cmax);
+    
 	if(ts->Cmax > 0.5)
 	{
 		SETERRQ2(PETSC_COMM_WORLD, PETSC_ERR_USER, " Courant step length Cmax=%7.5f is larger than allowed (%7.5f).", ts->Cmax, 0.5);

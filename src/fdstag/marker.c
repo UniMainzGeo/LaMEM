@@ -52,19 +52,24 @@ PetscErrorCode ADVMarkInit(AdvCtx *actx, UserContext *user)
 	{
 		ierr = ADVMarkInitCoord  (actx, user); CHKERRQ(ierr);
 	}
+    
+    // display info on-screen
+    PetscPrintf(PETSC_COMM_WORLD," Marker setup umployed [msetup] : ");
 
+    
 	// initialize marker phase, temperature, etc.
-	if     (user->msetup == PARALLEL)   { ierr = ADVMarkInitFileParallel (actx, user); CHKERRQ(ierr); }
-	else if(user->msetup == REDUNDANT)  { ierr = ADVMarkInitFileRedundant(actx, user); CHKERRQ(ierr); }
-	else if(user->msetup == DIAPIR)     { ierr = ADVMarkInitDiapir       (actx, user); CHKERRQ(ierr); }
-	else if(user->msetup == BLOCK)      { ierr = ADVMarkInitBlock        (actx, user); CHKERRQ(ierr); }
-	else if(user->msetup == SUBDUCTION) { ierr = ADVMarkInitSubduction   (actx, user); CHKERRQ(ierr); }
-	else if(user->msetup == FOLDING)    { ierr = ADVMarkInitFolding      (actx, user); CHKERRQ(ierr); }
-	else if(user->msetup == DETACHMENT) { ierr = ADVMarkInitDetachment   (actx, user); CHKERRQ(ierr); }
-	else if(user->msetup == SLAB)       { ierr = ADVMarkInitSlab         (actx, user); CHKERRQ(ierr); }
-	else if(user->msetup == SPHERES)    { ierr = ADVMarkInitSpheres      (actx, user); CHKERRQ(ierr); }
+    if     (user->msetup == PARALLEL)   { PetscPrintf(PETSC_COMM_WORLD,"%s\n","parallel");        ierr = ADVMarkInitFileParallel (actx, user); CHKERRQ(ierr); }
+	else if(user->msetup == REDUNDANT)  { PetscPrintf(PETSC_COMM_WORLD,"%s\n","redundant");       ierr = ADVMarkInitFileRedundant(actx, user); CHKERRQ(ierr); }
+	else if(user->msetup == DIAPIR)     { PetscPrintf(PETSC_COMM_WORLD,"%s\n","diapir");          ierr = ADVMarkInitDiapir       (actx, user); CHKERRQ(ierr); }
+	else if(user->msetup == BLOCK)      { PetscPrintf(PETSC_COMM_WORLD,"%s\n","block");           ierr = ADVMarkInitBlock        (actx, user); CHKERRQ(ierr); }
+	else if(user->msetup == SUBDUCTION) { PetscPrintf(PETSC_COMM_WORLD,"%s\n","subduction");      ierr = ADVMarkInitSubduction   (actx, user); CHKERRQ(ierr); }
+	else if(user->msetup == FOLDING)    { PetscPrintf(PETSC_COMM_WORLD,"%s\n","folding");         ierr = ADVMarkInitFolding      (actx, user); CHKERRQ(ierr); }
+	else if(user->msetup == DETACHMENT) { PetscPrintf(PETSC_COMM_WORLD,"%s\n","detachment");      ierr = ADVMarkInitDetachment   (actx, user); CHKERRQ(ierr); }
+	else if(user->msetup == SLAB)       { PetscPrintf(PETSC_COMM_WORLD,"%s\n","slab");            ierr = ADVMarkInitSlab         (actx, user); CHKERRQ(ierr); }
+	else if(user->msetup == SPHERES)    { PetscPrintf(PETSC_COMM_WORLD,"%s\n","spheres");         ierr = ADVMarkInitSpheres      (actx, user); CHKERRQ(ierr); }
 	else SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER," *** Incorrect option for initialization of markers");
 
+    
 	// compute host cells for all the markers
 	ierr = ADVMapMarkToCells(actx); CHKERRQ(ierr);
 
@@ -554,7 +559,7 @@ PetscErrorCode ADVMarkInitBlock(AdvCtx *actx, UserContext *user)
 	PetscFunctionBegin;
 
 	// print info
-	PetscPrintf(PETSC_COMM_WORLD," FALLING BLOCK SETUP \n");
+	PetscPrintf(PETSC_COMM_WORLD,"  FALLING BLOCK SETUP \n");
 
 	// number of elements on finest resolution
 	nel_x = user->nel_x;
@@ -575,7 +580,10 @@ PetscErrorCode ADVMarkInitBlock(AdvCtx *actx, UserContext *user)
 	bfront  = ((PetscScalar) (nel_y*0.25))*dy + user->y_front; bback  = bfront  + bly; // front and back side of block
 	bbottom = ((PetscScalar) (nel_z*0.25))*dz + user->z_bot  ; btop   = bbottom + blz; // bottom and top side of block
 
-	PetscPrintf(PETSC_COMM_WORLD," Setup Parameters: Block coordinates - [left,right]=[%g,%g]; [front,back]=[%g,%g]; [bottom,top]=[%g,%g] \n",bleft,bright,bfront,bback,bbottom,btop);
+	PetscPrintf(PETSC_COMM_WORLD,"      Block coordinates: [left,right]=[%g,%g]; \n",bleft,bright);
+    PetscPrintf(PETSC_COMM_WORLD,"                         [front,back]=[%g,%g]; \n",bfront,bback);
+    PetscPrintf(PETSC_COMM_WORLD,"                         [bottom,top]=[%g,%g]; \n",bbottom,btop);
+    
 
 	b2D  = PETSC_FALSE;
 	b2Dy = PETSC_FALSE;
@@ -643,7 +651,7 @@ PetscErrorCode ADVMarkInitSubduction(AdvCtx *actx, UserContext *user)
 	PetscFunctionBegin;
 
 	// print info
-	PetscPrintf(PETSC_COMM_WORLD," SUBDUCTION WITH STICKY AIR SETUP \n");
+	PetscPrintf(PETSC_COMM_WORLD,"  SUBDUCTION WITH STICKY AIR SETUP \n");
 
 	// TOTAL number of CELLS and spacing in z-direction
 	nz = user->nel_z;
@@ -717,7 +725,7 @@ PetscErrorCode ADVMarkInitFolding(AdvCtx *actx, UserContext *user)
 	PetscFunctionBegin;
 
 	// print info
-	PetscPrintf(PETSC_COMM_WORLD," MULTILAYER FOLDING SETUP \n");
+	PetscPrintf(PETSC_COMM_WORLD,"  MULTILAYER FOLDING SETUP \n");
 
 	// initialize arrays for fractions
 	for(i = 0;i < 10; i++) { zbot[i] = 0.0; ztop[i] = 0.0; }
@@ -802,7 +810,7 @@ PetscErrorCode ADVMarkInitDetachment(AdvCtx *actx, UserContext *user)
 	PetscFunctionBegin;
 
 	// print info
-	PetscPrintf(PETSC_COMM_WORLD," ONE-LAYER OVER DETACHMENT WITH 2 LINEAR PERTURBATIONS SETUP \n");
+	PetscPrintf(PETSC_COMM_WORLD,"  ONE-LAYER OVER DETACHMENT WITH 2 LINEAR PERTURBATIONS SETUP \n");
 
 	DisplayInfo = PETSC_TRUE;
 	PetscOptionsGetReal(PETSC_NULL,"-Heterogeneity_L"      , &Het_L  , PETSC_NULL);
@@ -877,7 +885,7 @@ PetscErrorCode ADVMarkInitSlab(AdvCtx *actx, UserContext *user)
 	PetscFunctionBegin;
 
 	// print info
-	PetscPrintf(PETSC_COMM_WORLD," SLAB DETACHMENT SETUP \n");
+	PetscPrintf(PETSC_COMM_WORLD,"  SLAB DETACHMENT SETUP \n");
 
 	// non-dimensionalization
 	hslab = hslab*user->L;
@@ -938,7 +946,7 @@ PetscErrorCode ADVMarkInitSpheres(AdvCtx *actx, UserContext *user)
  	PetscFunctionBegin;
 
 	// print info
-	PetscPrintf(PETSC_COMM_WORLD," MULTIPLE FALLING SPHERES SETUP \n");
+	PetscPrintf(PETSC_COMM_WORLD,"  MULTIPLE FALLING SPHERES SETUP \n");
 
 	// get data
 	PetscOptionsGetInt (PETSC_NULL, "-NumSpheres",   &nsphere, PETSC_NULL);

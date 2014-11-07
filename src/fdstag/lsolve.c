@@ -30,24 +30,25 @@ PetscErrorCode PCStokesSetFromOptions(PCStokes pc)
 	{
 		if(!strcmp(pname, "bf"))
 		{
-			PetscPrintf(PETSC_COMM_WORLD, " Preconditioner type        : block factorization\n");
+			PetscPrintf(PETSC_COMM_WORLD, " Preconditioner type            : block factorization\n");
+            
 			pc->type = _STOKES_BF_;
 		}
 		else if(!strcmp(pname, "mg"))
 		{
-			PetscPrintf(PETSC_COMM_WORLD, " Preconditioner type        : coupled Galerkin geometric multigrid\n");
+			PetscPrintf(PETSC_COMM_WORLD, " Preconditioner type            : coupled Galerkin geometric multigrid\n");
 			pc->type = _STOKES_MG_;
 		}
 		else if(!strcmp(pname, "user"))
 		{
-			PetscPrintf(PETSC_COMM_WORLD, " Preconditioner type        : user-defined\n");
+			PetscPrintf(PETSC_COMM_WORLD, " Preconditioner type            : user-defined\n");
 			pc->type = _STOKES_USER_;
 		}
 		else SETERRQ1(PETSC_COMM_WORLD, PETSC_ERR_USER,"#Incorrect Jacobian preconditioner type: %s", pname);
 	}
 	else
 	{
-		PetscPrintf(PETSC_COMM_WORLD, " Preconditioner type        : user-defined\n");
+		PetscPrintf(PETSC_COMM_WORLD, " Preconditioner type            : user-defined\n");
 		pc->type = _STOKES_USER_;
 	}
 
@@ -214,19 +215,20 @@ PetscErrorCode PCStokesBFSetFromOptions(PCStokes pc)
 	{
 		if(!strcmp(pname, "mg"))
 		{
-			PetscPrintf(PETSC_COMM_WORLD, " Velocity preconditioner    : Galerkin geometric multigrid\n");
+			PetscPrintf(PETSC_COMM_WORLD, " Velocity preconditioner        : Galerkin geometric multigrid\n");
+
 			bf->vtype = _VEL_MG_;
 		}
 		else if(!strcmp(pname, "user"))
 		{
-			PetscPrintf(PETSC_COMM_WORLD, " Velocity preconditioner    : user-defined\n");
+			PetscPrintf(PETSC_COMM_WORLD, " Velocity preconditioner        : user-defined\n");
 			bf->vtype = _VEL_USER_;
 		}
 		else SETERRQ1(PETSC_COMM_WORLD, PETSC_ERR_USER,"#Incorrect velocity solver type: %s", pname);
 	}
 	else
 	{
-		PetscPrintf(PETSC_COMM_WORLD, " Velocity preconditioner    : user-defined\n");
+		PetscPrintf(PETSC_COMM_WORLD, " Velocity preconditioner        : user-defined\n");
 		bf->vtype = _VEL_USER_;
 	}
 

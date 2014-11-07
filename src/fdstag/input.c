@@ -618,11 +618,6 @@ PetscErrorCode FDSTAGInitCode(JacRes *jr, UserContext *user)
 
 	PetscPrintf(PETSC_COMM_WORLD," Total # of cpu's               : %lld \n",(LLD)size);
 
-	if(user->GravityAngle != 90.0)
-	{
-		PetscPrintf(PETSC_COMM_WORLD," Gravity angle with z-axis : %g \n", user->GravityAngle);
-	}
-
 	/* Info about particles if used */
 
 	if (user->ParticleInput==1)
