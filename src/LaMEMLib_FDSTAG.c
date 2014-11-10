@@ -401,7 +401,7 @@ PetscErrorCode LaMEMLib_FDSTAG(PetscBool InputParamFile, const char *ParamFile, 
 			char *DirectoryName = NULL;
 
 			// create directory (encode current time & step number)
-			asprintf(&DirectoryName, "Timestep_%1.6lld", (LLD)JacResGetStep(&jr));
+			asprintf(&DirectoryName, "Timestep_%1.6lld_%1.6e", (LLD)JacResGetStep(&jr), JacResGetTime(&jr));
 
 			ierr = LaMEMCreateOutputDirectory(DirectoryName); CHKERRQ(ierr);
 
