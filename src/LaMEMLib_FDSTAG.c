@@ -277,6 +277,8 @@ PetscErrorCode LaMEMLib_FDSTAG(PetscBool InputParamFile, const char *ParamFile, 
 	// create output object for all requested output variables
 	ierr = PVOutCreate(&pvout, &jr, user.OutputFile); CHKERRQ(ierr);
 
+	PetscPrintf(PETSC_COMM_WORLD," \n");
+
 	//===============
 	// TIME STEP LOOP
 	//===============
@@ -285,7 +287,7 @@ PetscErrorCode LaMEMLib_FDSTAG(PetscBool InputParamFile, const char *ParamFile, 
 
 	do
 	{
-		PetscPrintf(PETSC_COMM_WORLD,"Time step %lld -------------------------------------------------------- \n", (LLD)(JacResGetStep(&jr)+1));
+		PetscPrintf(PETSC_COMM_WORLD,"Time step %lld -------------------------------------------------------- \n", (LLD)JacResGetStep(&jr));
 
 		//==========================================================================================
 		// Correct particles in case we employ an internal free surface
@@ -390,16 +392,16 @@ PetscErrorCode LaMEMLib_FDSTAG(PetscBool InputParamFile, const char *ParamFile, 
 		//==========================================================================================
 
 // WARNING SORT OUT THIS MESS!
-//		if(user.save_timesteps != 0) LaMEMMod( itime, user.save_timesteps, &SaveOrNot);
-//		else                         SaveOrNot = 2;
-		SaveOrNot = 0;
+
+		if(user.save_timesteps != 0) LaMEMMod( JacResGetStep(&jr), user.save_timesteps, &SaveOrNot);
+		else                         SaveOrNot = 2;
 
 		if(SaveOrNot == 0)
 		{
 			char *DirectoryName = NULL;
 
 			// create directory (encode current time & step number)
-			asprintf(&DirectoryName, "Timestep_%1.6lld_%1.6e", (LLD)JacResGetStep(&jr), JacResGetTime(&jr));
+			asprintf(&DirectoryName, "Timestep_%1.6lld", (LLD)JacResGetStep(&jr));
 
 			ierr = LaMEMCreateOutputDirectory(DirectoryName); CHKERRQ(ierr);
 
@@ -430,7 +432,7 @@ PetscErrorCode LaMEMLib_FDSTAG(PetscBool InputParamFile, const char *ParamFile, 
 
 			// Paraview output
 			ierr = PVOutWriteTimeStep(&pvout, &jr, DirectoryName, JacResGetTime(&jr), JacResGetStep(&jr)); CHKERRQ(ierr);
-       
+
 			// clean up
 			if(DirectoryName) free(DirectoryName);
 		}

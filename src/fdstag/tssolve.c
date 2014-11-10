@@ -109,7 +109,7 @@ PetscErrorCode getMaxInvStep1DLocal(Discret1D *ds, DM da, Vec gv, PetscInt dir, 
 		// get inverse time step
 		idt = vmax/ds->h;
 
-        // update maximum inverse time step
+		// update maximum inverse time step
 		if(idt > idtmax) idtmax = idt;
 	}
 
@@ -182,18 +182,19 @@ PetscErrorCode TSSolUpdate(TSSol *ts, Scaling *scal, PetscBool *done)
 	// update time index
 	ts->istep++;
 
-    // print time info
+	// print time info
 	PetscPrintf(PETSC_COMM_WORLD," Time = %g%s, dt = %g%s \n",
 		ts->time*scal->time, scal->lbl_time,
 		ts->dt  *scal->time, scal->lbl_time);
 
-    PetscPrintf(PETSC_COMM_WORLD," Finished timestep %lld out of %lld \n",(LLD)ts->istep, (LLD)ts->nstep);
+	PetscPrintf(PETSC_COMM_WORLD," Finished timestep %lld out of %lld \n",(LLD)ts->istep-1, (LLD)ts->nstep-1);
+	PetscPrintf(PETSC_COMM_WORLD," \n");
 
-    // WARNING! CHECK TIME, NOT INDEX, IN THE FUTURE!
+	// WARNING! CHECK TIME, NOT INDEX, IN THE FUTURE!
 
-    // check to stop time-step loop
-    if(ts->istep == ts->nstep) (*done) = PETSC_TRUE;
-    else                       (*done) = PETSC_FALSE;
+	// check to stop time-step loop
+	if(ts->istep == ts->nstep) (*done) = PETSC_TRUE;
+	else                       (*done) = PETSC_FALSE;
 
 	PetscFunctionReturn(0);
 }
