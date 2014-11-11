@@ -60,9 +60,6 @@ PetscErrorCode MeshSeg1DCreate(
 	ms->xstart[0]         = beg;
 	ms->xstart[ms->nsegs] = end;
 
-	// compute uniform mesh step
-	ms->h = (end-beg)/(PetscScalar)tncels;
-
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
@@ -76,6 +73,23 @@ PetscErrorCode MeshSeg1DDestroy(MeshSeg1D *ms)
 	ierr = PetscFree(ms->istart); CHKERRQ(ierr);
 	ierr = PetscFree(ms->xstart); CHKERRQ(ierr);
 	ierr = PetscFree(ms->biases); CHKERRQ(ierr);
+
+	PetscFunctionReturn(0);
+}
+//---------------------------------------------------------------------------
+#undef __FUNCT__
+#define __FUNCT__ "MeshSeg1DStretch"
+PetscErrorCode MeshSeg1DStretch(MeshSeg1D *ms, PetscScalar eps)
+{
+	// Stretch grid with constant stretch factor about coordinate origin.
+	// x_new = x_old - eps*x_old
+
+	PetscInt i;
+
+	PetscFunctionBegin;
+
+	// recompute (stretch) coordinates
+	for(i = 0; i < ms->nsegs+1; i++) ms->xstart[i] *= (1.0 - eps);
 
 	PetscFunctionReturn(0);
 }
@@ -148,6 +162,11 @@ PetscErrorCode MeshSeg1DGenCoord(
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
+PetscScalar MeshSeg1DGetUniStep(MeshSeg1D *ms)
+{
+	return (ms->xstart[ms->nsegs] - ms->xstart[0])/(PetscScalar)ms->istart[ms->nsegs];
+}
+//---------------------------------------------------------------------------
 // Discret1D functions
 //---------------------------------------------------------------------------
 #undef __FUNCT__
@@ -161,7 +180,7 @@ PetscErrorCode Discret1DCreate(
 		PetscMPIInt grprev,    // global rank of previous process
 		PetscMPIInt grnext)    // global rank of next process
 {
-	PetscInt       i, n, cnt;
+	PetscInt       i, cnt;
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
 
@@ -203,9 +222,10 @@ PetscErrorCode Discret1DCreate(
 
 	// coordinates of local nodes + 1 layer (left) & 2 layers (right) of ghost points
 	// NOTE: on the last processor there is only one ghost point from the right
-	if(grnext != -1) n = ds->nnods+3;
-	else             n = ds->nnods+2;
-	ierr = makeScalArray(&ds->nbuff, 0, n); CHKERRQ(ierr);
+
+	if(grnext != -1) ds->bufsz = ds->nnods+3;
+	else             ds->bufsz = ds->nnods+2;
+	ierr = makeScalArray(&ds->nbuff, 0, ds->bufsz); CHKERRQ(ierr);
 	ds->ncoor = ds->nbuff + 1;
 
 	// coordinates of local cells + 1 layer (both sides) of ghost points
@@ -303,8 +323,110 @@ PetscErrorCode Discret1DGenCoord(Discret1D *ds, MeshSeg1D *ms)
 	for(i = -1; i < ds->ncels+1; i++)
 		ds->ccoor[i] = (ds->ncoor[i] + ds->ncoor[i+1])/2.0;
 
-	// set uniform mesh step
-	ds->h = ms->h;
+	// compute extreme cell sizes
+	ierr = Discret1DGetMinMaxCellSize(ds, ms);
+
+	PetscFunctionReturn(0);
+}
+//---------------------------------------------------------------------------
+#undef __FUNCT__
+#define __FUNCT__ "Discret1DGetMinMaxCellSize"
+PetscErrorCode Discret1DGetMinMaxCellSize(Discret1D *ds, MeshSeg1D *ms)
+{
+	// globally compute and set extreme cell sizes
+
+	MPI_Comm    comm;
+	PetscInt    i;
+	PetscScalar h, sz, lminsz, lmaxsz, gminsz, gmaxsz, rtol;
+
+	PetscErrorCode ierr;
+	PetscFunctionBegin;
+
+	rtol = 1e-8;
+
+	// get local values
+	lminsz = lmaxsz = SIZE_CELL(0, 0, (*ds));
+
+	for(i = 1; i < ds->ncels; i++)
+	{
+		sz = SIZE_CELL(i, 0, (*ds));
+
+		if(sz < lminsz) lminsz = sz;
+		if(sz > lmaxsz) lmaxsz = sz;
+	}
+
+	// sort out sequential case
+	if(ds->nproc == 1)
+	{
+		gminsz = lminsz;
+		gmaxsz = lmaxsz;
+	}
+	else
+	{	// create column communicator
+		ierr = Discret1DGetColumnComm(ds, &comm); CHKERRQ(ierr);
+
+		// synchronize
+		ierr = MPI_Allreduce(&lminsz, &gminsz, 1, MPIU_SCALAR, MPI_MIN, comm); CHKERRQ(ierr);
+		ierr = MPI_Allreduce(&lmaxsz, &gmaxsz, 1, MPIU_SCALAR, MPI_MAX, comm); CHKERRQ(ierr);
+
+		ierr = MPI_Comm_free(&comm); CHKERRQ(ierr);
+	}
+
+	// detect uniform mesh & store result
+	h = MeshSeg1DGetUniStep(ms);
+
+	if(PetscAbsScalar(gmaxsz-gminsz) < rtol*h)
+	{
+		ds->h_uni = h;
+		ds->h_min = h;
+		ds->h_max = h;
+	}
+	else
+	{
+		ds->h_uni = -1.0;
+		ds->h_min =  gminsz;
+		ds->h_max =  gmaxsz;
+	}
+
+	PetscFunctionReturn(0);
+}
+//---------------------------------------------------------------------------
+#undef __FUNCT__
+#define __FUNCT__ "Discret1DStretch"
+PetscErrorCode Discret1DStretch(Discret1D *ds, MeshSeg1D *ms, PetscScalar eps)
+{
+	// Stretch grid with constant stretch factor about coordinate origin.
+	// x_new = x_old - eps*x_old
+
+	PetscInt    i;
+	PetscScalar h;
+
+	PetscErrorCode ierr;
+	PetscFunctionBegin;
+
+	// recompute segment data
+	ierr = MeshSeg1DStretch(ms, eps); CHKERRQ(ierr);
+
+	// recompute (stretch) node coordinates in the buffer
+	for(i = 0; i < ds->bufsz; i++) ds->nbuff[i] *= (1.0 - eps);
+
+	// recompute cell coordinates
+	for(i = -1; i < ds->ncels+1; i++)
+		ds->ccoor[i] = (ds->ncoor[i] + ds->ncoor[i+1])/2.0;
+
+	// update mesh steps
+	if(ds->h_uni < 0.0)
+	{
+		ds->h_min *= (1.0 - eps);
+		ds->h_max *= (1.0 - eps);
+	}
+	else
+	{
+		h         = MeshSeg1DGetUniStep(ms);
+		ds->h_uni = h;
+		ds->h_min = h;
+		ds->h_max = h;
+	}
 
 	PetscFunctionReturn(0);
 }
@@ -348,68 +470,6 @@ PetscErrorCode Discret1DGetColumnComm(Discret1D *ds, MPI_Comm *comm)
 	PetscFunctionBegin;
 
 	ierr = MPI_Comm_split(PETSC_COMM_WORLD, ds->color, ds->rank, comm); CHKERRQ(ierr);
-
-	PetscFunctionReturn(0);
-}
-//---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "Discret1DGetMinMaxCellSize"
-PetscErrorCode Discret1DGetMinMaxCellSize(Discret1D *ds)
-{
-	// globally compute extreme cell sizes & uniform mesh flag
-	MPI_Comm    comm;
-	PetscInt    i;
-	PetscBool   eql;
-	PetscScalar sz, lminsz, lmaxsz, gminsz, gmaxsz, rtol;
-
-	PetscErrorCode ierr;
-	PetscFunctionBegin;
-
-	rtol = 1e-8;
-
-	// get local values
-	lminsz = lmaxsz = SIZE_CELL(0, 0, (*ds));
-
-	for(i = 1; i < ds->ncels; i++)
-	{
-		sz = SIZE_CELL(i, 0, (*ds));
-
-		if(sz < lminsz) lminsz = sz;
-		if(sz > lmaxsz) lmaxsz = sz;
-	}
-
-	// sort out sequential case
-	if(ds->nproc == 1)
-	{
-		gminsz = lminsz;
-		gmaxsz = lmaxsz;
-	}
-	else
-	{	// create column communicator
-		ierr = Discret1DGetColumnComm(ds, &comm); CHKERRQ(ierr);
-
-		// synchronize
-		ierr = MPI_Allreduce(&lminsz, &gminsz, 1, MPIU_SCALAR, MPI_MIN, comm); CHKERRQ(ierr);
-		ierr = MPI_Allreduce(&lmaxsz, &gmaxsz, 1, MPIU_SCALAR, MPI_MAX, comm); CHKERRQ(ierr);
-
-		ierr = MPI_Comm_free(&comm); CHKERRQ(ierr);
-	}
-
-	// detect uniform mesh
-	if(PetscAbsScalar(gmaxsz-gminsz) < rtol*ds->h)
-	{
-		gmaxsz = gminsz = ds->h;
-		eql = PETSC_TRUE;
-	}
-	else
-	{
-		eql = PETSC_FALSE;
-	}
-
-	// store results
-	ds->h_uni = eql;
-	ds->h_min = gminsz;
-	ds->h_max = gmaxsz;
 
 	PetscFunctionReturn(0);
 }
@@ -931,14 +991,38 @@ PetscErrorCode FDSTAGGenCoord(FDSTAG *fs, UserContext *usr)
 	ierr = MeshSeg1DCreate(&fs->msz, usr->z_bot,   usr->z_bot   + usr->H, usr->nel_z, &usr->mseg_z); CHKERRQ(ierr);
 
 	// generate coordinates
-	ierr = Discret1DGenCoord(&fs->dsx, &fs->msx);
-	ierr = Discret1DGenCoord(&fs->dsy, &fs->msy);
-	ierr = Discret1DGenCoord(&fs->dsz, &fs->msz);
+	ierr = Discret1DGenCoord(&fs->dsx, &fs->msx); CHKERRQ(ierr);
+	ierr = Discret1DGenCoord(&fs->dsy, &fs->msy); CHKERRQ(ierr);
+	ierr = Discret1DGenCoord(&fs->dsz, &fs->msz); CHKERRQ(ierr);
 
-	// compute sizes of the smallest cells
-	ierr = Discret1DGetMinMaxCellSize(&fs->dsx);
-	ierr = Discret1DGetMinMaxCellSize(&fs->dsy);
-	ierr = Discret1DGetMinMaxCellSize(&fs->dsz);
+	PetscFunctionReturn(0);
+}
+//---------------------------------------------------------------------------
+#undef __FUNCT__
+#define __FUNCT__ "FDSTAGStretch"
+PetscErrorCode FDSTAGStretch(FDSTAG *fs, PetscScalar Exx, PetscScalar Eyy, PetscScalar dt)
+{
+	PetscScalar Ezz;
+
+	PetscErrorCode ierr;
+	PetscFunctionBegin;
+
+	// Stretch grid with constant stretch factor about coordinate origin.
+	// The origin point remains fixed, and the displacements of all points are
+	// proportional to the distance from the origin (i.e. coordinate).
+	// The origin (zero) point must remain within domain (checked at input).
+	// Stretch factor is positive at compression, i.e.:
+	// eps = (L_old-L_new)/L_old
+	// L_new = L_old - eps*L_old
+	// x_new = x_old - eps*x_old
+
+	// compute vertical strain rate for mass balance
+	Ezz = -(Exx+Eyy);
+
+	// stretch grid
+	if(Exx) { ierr = Discret1DStretch(&fs->dsx, &fs->msx, Exx*dt); CHKERRQ(ierr); }
+	if(Eyy) { ierr = Discret1DStretch(&fs->dsy, &fs->msy, Eyy*dt); CHKERRQ(ierr); }
+	if(Ezz) { ierr = Discret1DStretch(&fs->dsz, &fs->msz, Ezz*dt); CHKERRQ(ierr); }
 
 	PetscFunctionReturn(0);
 }
@@ -1146,7 +1230,54 @@ PetscErrorCode FDSTAGView(FDSTAG *fs)
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
+#undef __FUNCT__
+#define __FUNCT__ "FDSTAGGetLocalBox"
+PetscErrorCode FDSTAGGetLocalBox(
+	FDSTAG      *fs,
+	PetscScalar *bx,
+	PetscScalar *by,
+	PetscScalar *bz,
+	PetscScalar *ex,
+	PetscScalar *ey,
+	PetscScalar *ez)
+{
+	PetscFunctionBegin;
 
+	if(bx) (*bx) = fs->dsx.ncoor[0];
+	if(by) (*by) = fs->dsy.ncoor[0];
+	if(bz) (*bz) = fs->dsz.ncoor[0];
+
+	if(ex) (*ex) = fs->dsx.ncoor[fs->dsx.ncels];
+	if(ey) (*ey) = fs->dsy.ncoor[fs->dsy.ncels];
+	if(ez) (*ez) = fs->dsz.ncoor[fs->dsz.ncels];
+
+	PetscFunctionReturn(0);
+}
+//---------------------------------------------------------------------------
+#undef __FUNCT__
+#define __FUNCT__ "FDSTAGGetGlobalBox"
+PetscErrorCode FDSTAGGetGlobalBox(
+	FDSTAG      *fs,
+	PetscScalar *bx,
+	PetscScalar *by,
+	PetscScalar *bz,
+	PetscScalar *ex,
+	PetscScalar *ey,
+	PetscScalar *ez)
+{
+	PetscFunctionBegin;
+
+	if(bx) (*bx) = fs->msx.xstart[0];
+	if(by) (*by) = fs->msy.xstart[0];
+	if(bz) (*bz) = fs->msz.xstart[0];
+
+	if(ex) (*ex) = fs->msx.xstart[fs->msx.nsegs];
+	if(ey) (*ey) = fs->msy.xstart[fs->msy.nsegs];
+	if(ez) (*ez) = fs->msz.xstart[fs->msz.nsegs];
+
+	PetscFunctionReturn(0);
+}
+//---------------------------------------------------------------------------
 
 /*
 // Split points into slots according to weights

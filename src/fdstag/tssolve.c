@@ -57,7 +57,7 @@ PetscErrorCode getMaxInvStep1DLocal(Discret1D *ds, DM da, Vec gv, PetscInt dir, 
 	// initialize
 	idtmax = (*_idtmax);
 
-	if(ds->h_uni != PETSC_TRUE)
+	if(ds->h_uni < 0.0)
 	{
 		// compute time step on variable spacing grid
 		PetscScalar ***va;
@@ -107,7 +107,7 @@ PetscErrorCode getMaxInvStep1DLocal(Discret1D *ds, DM da, Vec gv, PetscInt dir, 
 		ierr = VecRestoreArray(gv, &va); CHKERRQ(ierr);
 
 		// get inverse time step
-		idt = vmax/ds->h;
+		idt = vmax/ds->h_uni;
 
 		// update maximum inverse time step
 		if(idt > idtmax) idtmax = idt;
@@ -173,8 +173,6 @@ PetscErrorCode TSSolUpdate(TSSol *ts, Scaling *scal, PetscBool *done)
 	//----------------------------------------
 	// update time state, print info to screen
 	//----------------------------------------
-
-	//lbl_time
 
 	// update time
 	ts->time += ts->dt;

@@ -455,8 +455,6 @@ PetscErrorCode PVOutUpdatePVD(PVOut *pvout, const char *dirName, PetscScalar tti
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
 
-
-
 	// only first process generates this file (WARNING! Bottleneck!)
 	if(!ISRankZero(PETSC_COMM_WORLD)) PetscFunctionReturn(0);
 

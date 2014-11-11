@@ -26,6 +26,9 @@ typedef struct
 	PetscScalar *TPCVals;      // values of TPC
 	PetscScalar *TPCLinComPar; // linear combination parameters
 
+	PetscBool    bgflag;        // flag for activating background strain-rates
+	PetscScalar  Exx, Eyy;     // horizontal background strain-rates
+
 	// Dirichlet pushing constraints
 	PetscScalar  xbs[3];       // block start coord
 	PetscScalar  xbe[3];       // block end coord
@@ -39,7 +42,10 @@ typedef struct
 PetscErrorCode BCClear(BCCtx *bc);
 
 // create boundary condition context
-PetscErrorCode BCCreate(BCCtx *bc, FDSTAG *fs);
+PetscErrorCode BCCreate(BCCtx *bc, FDSTAG *fs, idxtype idxmod);
+
+// set background strain-rates
+PetscErrorCode BCSetStretch(BCCtx *bc, PetscScalar Exx, PetscScalar Eyy);
 
 // destroy boundary condition context
 PetscErrorCode BCDestroy(BCCtx *bc);
@@ -50,13 +56,20 @@ PetscErrorCode BCInit(BCCtx *bc, FDSTAG *fs, idxtype idxmod);
 //---------------------------------------------------------------------------
 
 // initialize pushing boundary conditions context
-PetscErrorCode PBCInit(BCCtx *bc, UserContext *user);
+PetscErrorCode BCSetPush(BCCtx *bc, UserContext *user);
 
-// get the spc for pushing - dynamic
-PetscErrorCode PBCGetIndices(BCCtx *bc, FDSTAG *fs, PetscScalar ***pbcvx, PetscScalar ***pbcvy, PetscInt *SPCListPush, PetscInt numSPCPush, PetscInt start);
+// get the constrained node indices for pushing - dynamic
+PetscErrorCode BCGetPushIdx(
+	BCCtx       *bc,
+	FDSTAG      *fs,
+	PetscScalar ***pbcvx,
+	PetscScalar ***pbcvy,
+	PetscInt    *SPCListPush,
+	PetscInt     numSPCPush,
+	PetscInt     start);
 
 // advect the pushing block
-PetscErrorCode PBCAdvectBlock(UserContext *user);
+PetscErrorCode BCAdvectPushBlock(UserContext *user);
 
 //---------------------------------------------------------------------------
 

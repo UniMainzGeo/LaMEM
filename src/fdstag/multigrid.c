@@ -78,7 +78,7 @@ PetscErrorCode MGCreate(MG *mg, FDSTAG *fs, BCCtx *bc, idxtype idxmod)
 		ierr = FDSTAGCreate(&mg->mgfs[i], Nx+1, Ny+1, Nz+1, Px, Py, Pz); CHKERRQ(ierr);
 
 		// create bc context
-		ierr = BCCreate(&mg->mgbc[i], &mg->mgfs[i]); CHKERRQ(ierr);
+		ierr = BCCreate(&mg->mgbc[i], &mg->mgfs[i], idxmod); CHKERRQ(ierr);
 
 		// setup bc context
 		ierr = BCInit(&mg->mgbc[i], &mg->mgfs[i], idxmod); CHKERRQ(ierr);

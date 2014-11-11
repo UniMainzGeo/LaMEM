@@ -14,7 +14,6 @@ typedef struct
 	PetscInt    *istart; // indices of the first nodes plus last index
 	PetscScalar *xstart; // coordinates of the first nodes plus total size
 	PetscScalar *biases; // biases for each segment
-	PetscScalar  h;      // uniform mesh step
 
 } MeshSeg1D;
 
@@ -31,6 +30,8 @@ PetscErrorCode MeshSeg1DCreate(
 
 PetscErrorCode MeshSeg1DDestroy(MeshSeg1D *ms);
 
+PetscErrorCode MeshSeg1DStretch(MeshSeg1D *ms, PetscScalar eps);
+
 // (partially) mesh a segment with (optionally) biased element size
 PetscErrorCode MeshSeg1DGenCoord(
 	MeshSeg1D   *ms,     // segments description
@@ -39,35 +40,38 @@ PetscErrorCode MeshSeg1DGenCoord(
 	PetscInt     istart, // index of the first node
 	PetscScalar *crd);   // coordinates of the nodes
 
+PetscScalar MeshSeg1DGetUniStep(MeshSeg1D *ms);
+
 //---------------------------------------------------------------------------
 // finite difference discretization / domain decomposition data for single direction
 typedef struct
 {
-	PetscInt      nproc;       // number of processors
-	PetscMPIInt   rank;        // rank of current processor
+	PetscInt      nproc;  // number of processors
+	PetscMPIInt   rank;   // rank of current processor
 
-	PetscInt     *starts;      // index of first node (cell) on all processors + last index
-	PetscInt      pstart;      // index of first node (cell) on this processors
+	PetscInt     *starts; // index of first node (cell) on all processors + last index
+	PetscInt      pstart; // index of first node (cell) on this processors
 
-	PetscInt      tnods;       // total number of nodes
-	PetscInt      tcels;       // total number of cells (tnods-1)
+	PetscInt      tnods;  // total number of nodes
+	PetscInt      tcels;  // total number of cells (tnods-1)
 
-	PetscInt      nnods;       // number of local nodes
-	PetscInt      ncels;       // number of local cells
+	PetscInt      nnods;  // number of local nodes
+	PetscInt      ncels;  // number of local cells
 
-	PetscScalar  *ncoor;       // coordinates of local nodes (+ 1 layer of ghost points)
-	PetscScalar  *ccoor;       // coordinates of local cells (+ 1 layer of ghost points)
-	PetscScalar  *nbuff;       // memory buffer for node coordinates
-	PetscScalar  *cbuff;       // memory buffer for cells coordinates
+	PetscScalar  *ncoor;  // coordinates of local nodes (+ 1 layer of ghost points)
+	PetscScalar  *ccoor;  // coordinates of local cells (+ 1 layer of ghost points)
+	PetscScalar  *nbuff;  // memory buffer for node coordinates
+	PetscScalar  *cbuff;  // memory buffer for cells coordinates
+	PetscInt      bufsz;  // size of node buffer
 
-	PetscMPIInt   grprev;      // global rank of previous process (-1 for first processor)
-	PetscMPIInt   grnext;      // global rank of next process (-1 for last processor)
+	PetscMPIInt   grprev; // global rank of previous process (-1 for first processor)
+	PetscMPIInt   grnext; // global rank of next process (-1 for last processor)
 
-	PetscMPIInt   color;       // color of processor column in base direction
-	PetscScalar   h;           // uniform mesh step
-	PetscBool     h_uni;       // uniform mesh step flag
-	PetscScalar   h_min;       // minimum mesh step
-	PetscScalar   h_max;       // maximum mesh step
+	PetscMPIInt   color;  // color of processor column in base direction
+
+	PetscScalar   h_uni;  // uniform mesh step (negative for non-uniform grid)
+	PetscScalar   h_min;  // minimum mesh step
+	PetscScalar   h_max;  // maximum mesh step
 
 } Discret1D;
 
@@ -89,13 +93,15 @@ PetscErrorCode Discret1DDestroy(Discret1D *ds);
 // generate local coordinates
 PetscErrorCode Discret1DGenCoord(Discret1D *ds, MeshSeg1D *ms);
 
+// define minimum & maximum cell size in the base direction
+PetscErrorCode Discret1DGetMinMaxCellSize(Discret1D *ds, MeshSeg1D *ms);
+
+PetscErrorCode Discret1DStretch(Discret1D *ds, MeshSeg1D *ms, PetscScalar eps);
+
 PetscErrorCode Discret1DView(Discret1D *ds, const char *name);
 
 // create 1D communicator of the processor column in the base direction
 PetscErrorCode Discret1DGetColumnComm(Discret1D *ds, MPI_Comm *comm);
-
-// define minimum cell size in the base direction
-PetscErrorCode Discret1DGetMinMaxCellSize(Discret1D *ds);
 
 // gather coordinate array on rank zero of PETSC_COMM_WORLD
 // WARNING! the array only exists on rank zero of PETSC_COMM_WORLD
@@ -201,8 +207,10 @@ PetscErrorCode FDSTAGDestroy(FDSTAG *fs);
 // generate coordinates of local nodes and cells from segment data
 PetscErrorCode FDSTAGGenCoord(FDSTAG *fs, UserContext *usr);
 
+PetscErrorCode FDSTAGStretch(FDSTAG *fs, PetscScalar Exx, PetscScalar Eyy, PetscScalar dt);
+
 // set global indices of the local and ghost nodes
-PetscErrorCode FDSTAGSetGlobInd(FDSTAG * fs);
+//PetscErrorCode FDSTAGSetGlobInd(FDSTAG * fs);
 
 // return an array with the global ranks of adjacent processes (including itself)
 PetscErrorCode FDSTAGGetNeighbProc(FDSTAG *fs);
@@ -218,6 +226,24 @@ PetscErrorCode FDSTAGProcPartitioning(FDSTAG *fs, UserContext *user);
 
 // print & check essential grid details
 PetscErrorCode FDSTAGView(FDSTAG *fs);
+
+PetscErrorCode FDSTAGGetLocalBox(
+	FDSTAG      *fs,
+	PetscScalar *bx,
+	PetscScalar *by,
+	PetscScalar *bz,
+	PetscScalar *ex,
+	PetscScalar *ey,
+	PetscScalar *ez);
+
+PetscErrorCode FDSTAGGetGlobalBox(
+	FDSTAG      *fs,
+	PetscScalar *bx,
+	PetscScalar *by,
+	PetscScalar *bz,
+	PetscScalar *ex,
+	PetscScalar *ey,
+	PetscScalar *ez);
 
 //---------------------------------------------------------------------------
 // MACROS

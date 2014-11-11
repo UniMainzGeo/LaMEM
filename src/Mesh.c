@@ -3836,8 +3836,10 @@ PetscErrorCode DeformFDSTAGMeshWithBackgroundStrainrate( UserContext *user )
 	PetscErrorCode ierr;
 	PetscScalar		xmin,xmax,ymin,ymax,zmin,zmax;
 
-
-
+	// This function is correct but terribly implicit.
+	// Coordinate origin is constrained (has zero velocity in this settings).
+	// The coordinate origin MUST be within domain!
+	// Otherwise the domain will start moving out of the origin.
 
 	xmin 	=	user->x_left 			;
 	xmax 	=	user->x_left 	+ user->W;
@@ -3862,11 +3864,8 @@ PetscErrorCode DeformFDSTAGMeshWithBackgroundStrainrate( UserContext *user )
 	user->z_bot  	= zmin;
 	user->H 		= zmax-zmin;
 
-
-
 	/* recreate coordinates of FDSTAG mesh */
 	ierr = SetUniformCoordinates_FDSTAG( user ); CHKERRQ(ierr);
-
 
 	PetscFunctionReturn(0);
 }

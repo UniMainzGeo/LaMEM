@@ -237,12 +237,12 @@ PetscErrorCode LaMEMLib_FDSTAG(PetscBool InputParamFile, const char *ParamFile, 
 	ierr = FDSTAGView(&fs); CHKERRQ(ierr);
 
 	// create boundary condition context
-	ierr = BCCreate(&cbc, &fs); CHKERRQ(ierr);
-	ierr = BCCreate(&ubc, &fs); CHKERRQ(ierr);
+	ierr = BCCreate(&cbc, &fs, IDXCOUPLED); CHKERRQ(ierr);
+	ierr = BCCreate(&ubc, &fs, IDXCOUPLED); CHKERRQ(ierr);
 
-	// initialize boundary constraint vectors
-	ierr = BCInit(&cbc, &fs, IDXCOUPLED);   CHKERRQ(ierr);
-	ierr = BCInit(&ubc, &fs, IDXUNCOUPLED); CHKERRQ(ierr);
+	// set background strain-rates
+	ierr = BCSetStretch(&cbc, user.BC.Exx, user.BC.Eyy);
+	ierr = BCSetStretch(&ubc, user.BC.Exx, user.BC.Eyy);
 
 	// create Jacobian & residual evaluation context
 	ierr = JacResCreate(&jr, &fs, &cbc, &ubc, user.num_phases, 0); CHKERRQ(ierr);
@@ -301,6 +301,7 @@ PetscErrorCode LaMEMLib_FDSTAG(PetscBool InputParamFile, const char *ParamFile, 
 //		}
 		//==========================================================================================
 
+
 		//=========================================================================================
 		//	NONLINEAR THERMO-MECHANICAL SOLVER
 		//=========================================================================================
@@ -308,6 +309,10 @@ PetscErrorCode LaMEMLib_FDSTAG(PetscBool InputParamFile, const char *ParamFile, 
 		if(user.SkipStokesSolver != PETSC_TRUE)
 		{
 			PetscTime(&cputime_start_nonlinear);
+
+			// initialize boundary constraint vectors
+			ierr = BCInit(&cbc, &fs, IDXCOUPLED);   CHKERRQ(ierr);
+			ierr = BCInit(&ubc, &fs, IDXUNCOUPLED); CHKERRQ(ierr);
 
 			// compute inverse elastic viscosities
 			ierr = JacResGetI2Gdt(&jr); CHKERRQ(ierr);
