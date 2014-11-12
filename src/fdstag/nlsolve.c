@@ -2,9 +2,10 @@
 //.....................   NONLINEAR SOLVER ROUTINES   .......................
 //---------------------------------------------------------------------------
 #include "LaMEM.h"
+#include "scaling.h"
+#include "tssolve.h"
 #include "fdstag.h"
 #include "solVar.h"
-#include "scaling.h"
 #include "bc.h"
 #include "JacRes.h"
 #include "multigrid.h"

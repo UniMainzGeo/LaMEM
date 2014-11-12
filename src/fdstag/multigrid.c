@@ -6,6 +6,7 @@
 #include "fdstag.h"
 #include "solVar.h"
 #include "scaling.h"
+#include "tssolve.h"
 #include "bc.h"
 #include "JacRes.h"
 #include "matrix.h"
@@ -79,9 +80,11 @@ PetscErrorCode MGCreate(MG *mg, FDSTAG *fs, BCCtx *bc, idxtype idxmod)
 
 		// create bc context
 		ierr = BCCreate(&mg->mgbc[i], &mg->mgfs[i], idxmod); CHKERRQ(ierr);
+// ACHTUNG!
+		SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "Multigrid is broken. Stop");
 
 		// setup bc context
-		ierr = BCInit(&mg->mgbc[i], &mg->mgfs[i], idxmod); CHKERRQ(ierr);
+//		ierr = BCApply(&mg->mgbc[i], &mg->mgfs[i], idxmod); CHKERRQ(ierr);
 	}
 
 	// create Galerkin multigrid preconditioner

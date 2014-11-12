@@ -8,7 +8,6 @@
 typedef struct
 {
 	// boundary conditions vectors (velocity, pressure, temperature)
-	// NOTE: get rid of these vectors, by extending single- and two-point constraint specification
 	Vec bcvx,  bcvy, bcvz, bcp, bcT; // local (ghosted)
 
 	// single-point constraints
@@ -26,15 +25,16 @@ typedef struct
 	PetscScalar *TPCVals;      // values of TPC
 	PetscScalar *TPCLinComPar; // linear combination parameters
 
-	PetscBool    bgflag;        // flag for activating background strain-rates
+	// background strain-rate parameters
+	PetscBool    bgflag;       // flag for activating background strain-rates
 	PetscScalar  Exx, Eyy;     // horizontal background strain-rates
 
-	// Dirichlet pushing constraints
-	PetscScalar  xbs[3];       // block start coord
-	PetscScalar  xbe[3];       // block end coord
-	PetscScalar  vval[2];      // dirichlet values for Vx and Vy
-	PetscScalar  theta;        // rotation angle
-	PetscBool    pflag;        // flag for activating pushing
+	// Dirichlet pushing block constraints
+	PetscBool     pActv;       // flag for activating pushing
+	PetscBool     pAppl;       // flag for applying pushing on a time step
+	PetscScalar   theta;       // rotation angle
+	PetscScalar   Vx, Vy;      // Dirichlet values for Vx and Vy
+	PushingParams *pb;         // major pushing block parameters
 
 } BCCtx;
 //---------------------------------------------------------------------------
@@ -50,26 +50,25 @@ PetscErrorCode BCSetStretch(BCCtx *bc, PetscScalar Exx, PetscScalar Eyy);
 // destroy boundary condition context
 PetscErrorCode BCDestroy(BCCtx *bc);
 
-// initialize boundary constraint vectors
-PetscErrorCode BCInit(BCCtx *bc, FDSTAG *fs, idxtype idxmod);
+// apply boundary conditions
+PetscErrorCode BCApply(BCCtx *bc, FDSTAG *fs, TSSol *ts, Scaling *scal, idxtype idxmod);
+
+// apply constraints on the boundaries
+PetscErrorCode BCApplyBound(BCCtx *bc, FDSTAG *fs);
 
 //---------------------------------------------------------------------------
 
 // initialize pushing boundary conditions context
 PetscErrorCode BCSetPush(BCCtx *bc, UserContext *user);
 
-// get the constrained node indices for pushing - dynamic
-PetscErrorCode BCGetPushIdx(
-	BCCtx       *bc,
-	FDSTAG      *fs,
-	PetscScalar ***pbcvx,
-	PetscScalar ***pbcvy,
-	PetscInt    *SPCListPush,
-	PetscInt     numSPCPush,
-	PetscInt     start);
+// compute pushing parameters
+PetscErrorCode BCCompPush(BCCtx *bc, TSSol *ts, Scaling *scal);
+
+// apply pushing constraints
+PetscErrorCode BCApplyPush(BCCtx *bc, FDSTAG *fs);
 
 // advect the pushing block
-PetscErrorCode BCAdvectPushBlock(UserContext *user);
+PetscErrorCode BCAdvectPush(BCCtx *bc, TSSol *ts);
 
 //---------------------------------------------------------------------------
 

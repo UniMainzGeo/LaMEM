@@ -9,23 +9,6 @@
 
 //---------------------------------------------------------------------------
 
-typedef struct
-{
-	PetscInt    nstep;   // maximum number of steps
-	PetscScalar dtmax;   // maximum time step
-//	PetscScalar dtmin;   // minimum time step
-	PetscScalar Cmax;    // dimensionless Courant number (should be {significantly} less than unit)
-//	PetscScalar timeEnd; // duration of simulation
-
-	PetscInt    istep;   // current step index
-	PetscScalar pdt;     // previous time step
-	PetscScalar dt;      // current time step (to be defined)
-	PetscScalar time;    // current time
-
-} TSSol;
-
-//---------------------------------------------------------------------------
-
 // FDSTAG Jacobian and residual evaluation context
 typedef struct
 {
@@ -123,24 +106,19 @@ PetscScalar JacResGetTime(JacRes *jr);
 
 PetscInt JacResGetStep(JacRes *jr);
 
+PetscErrorCode JacResGetCourantStep(JacRes *jr);
+
+//---------------------------------------------------------------------------
+
+// get maximum inverse time step on local domain
+PetscErrorCode getMaxInvStep1DLocal(Discret1D *ds, DM da, Vec gv, PetscInt dir, PetscScalar *_idtmax);
+
 //---------------------------------------------------------------------------
 
 // initialize material parameter limits
 PetscErrorCode SetMatParLim(MatParLim *matLim, UserContext *usr);
 
 //---------------------------------------------------------------------------
-
-PetscErrorCode TSSolSetUp(TSSol *ts, UserContext *usr);
-
-PetscErrorCode TSSolUpdate(TSSol *ts, Scaling *scal, PetscBool *done);
-
-PetscErrorCode getMaxInvStep1DLocal(Discret1D *ds, DM da, Vec gv, PetscInt dir, PetscScalar *_idtmax);
-
-PetscErrorCode TSSolGetCourantStep(TSSol *ts, JacRes *jr);
-
-//---------------------------------------------------------------------------
-
-
 
 /*
 PetscErrorCode FDSTAGScatterSol(FDSTAG *fs, JacResCtx *jrctx);

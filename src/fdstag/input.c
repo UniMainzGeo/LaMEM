@@ -8,6 +8,7 @@
 #include "fdstag.h"
 #include "solVar.h"
 #include "scaling.h"
+#include "tssolve.h"
 #include "bc.h"
 #include "JacRes.h"
 #include "input.h"
