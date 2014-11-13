@@ -51,6 +51,10 @@ PetscErrorCode BCCreate(BCCtx *bc, FDSTAG *fs, idxtype idxmod)
 	ierr = makeIntArray (&bc->SPCList, NULL, ln); CHKERRQ(ierr);
 	ierr = makeScalArray(&bc->SPCVals, NULL, ln); CHKERRQ(ierr);
 
+	bc->bgActive = PETSC_FALSE;
+	bc->pActive  = PETSC_FALSE;
+	bc->pApply   = PETSC_FALSE;
+
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
@@ -86,13 +90,13 @@ PetscErrorCode BCDestroy(BCCtx *bc)
 //---------------------------------------------------------------------------
 #undef __FUNCT__
 #define __FUNCT__ "BCSetStretch"
-PetscErrorCode BCSetStretch(BCCtx *bc, PetscScalar Exx, PetscScalar Eyy)
+PetscErrorCode BCSetStretch(BCCtx *bc, UserContext *user)
 {
 	PetscFunctionBegin;
 
-	bc->bgflag = PETSC_TRUE;
-	bc->Exx    = Exx;
-	bc->Eyy    = Eyy;
+	bc->bgActive = PETSC_TRUE;
+	bc->Exx      = user->BC.Exx;
+	bc->Eyy      = user->BC.Eyy;
 
 	PetscFunctionReturn(0);
 }
@@ -184,7 +188,7 @@ PetscErrorCode BCApplyBound(BCCtx *bc, FDSTAG *fs)
 //	mcz = fs->dsz.tcels - 1;
 
 	// get boundary velocities
-	if(bc->bgflag == PETSC_TRUE)
+	if(bc->bgActive == PETSC_TRUE)
 	{
 		// get current coordinates of the mesh boundaries
 		ierr = FDSTAGGetGlobalBox(fs, &bx, &by, &bz, &ex, &ey, &ez); CHKERRQ(ierr);
@@ -277,34 +281,36 @@ PetscErrorCode BCSetPush(BCCtx *bc, UserContext *user)
 {
 	PetscFunctionBegin;
 
+	if(user->AddPushing)
+	{
+		bc->pActive = PETSC_TRUE;
+		bc->pb      = &user->Pushing;
+	}
+
 	PetscFunctionReturn(0);
 }
-
 //---------------------------------------------------------------------------
 #undef __FUNCT__
 #define __FUNCT__ "BCCompPush"
 PetscErrorCode BCCompPush(BCCtx *bc, TSSol *ts, Scaling *scal)
 {
 	// MUST be called at the beginning of time step before setting boundary conditions
-	// initialize pushing boundary conditions parameters
+	// compute pushing boundary conditions actual parameters
 
 	PushingParams *pb;
 	PetscInt      i, ichange;
-	PetscScalar   time0, time1, vpush, omega;
-	PetscScalar   charTime, charNVel, charRVel;
 	PetscScalar   Vx, Vy, theta;
-	PetscInt      c_adv, dir;
 
 	PetscFunctionBegin;
 
 	// check if pushing option is activated
-	if(bc->pActv != PETSC_TRUE) PetscFunctionReturn(0);
+	if(bc->pActive != PETSC_TRUE) PetscFunctionReturn(0);
 
 	// access context
 	pb = bc->pb;
 
 	// set boundary conditions flag
-	bc->pAppl = PETSC_FALSE;
+	bc->pApply = PETSC_FALSE;
 
 	// add pushing boundary conditions ONLY within the specified time interval - for that introduce a new flag
 	if(ts->time >= pb->time[0]
@@ -338,30 +344,23 @@ PetscErrorCode BCCompPush(BCCtx *bc, TSSol *ts, Scaling *scal)
 		if(pb->dir[ichange] == 2) Vy = pb->V_push[ichange];
 
 		// set boundary conditions parameters
-		bc->pAppl = PETSC_TRUE;
-		bc->Vx    = Vx;
-		bc->Vy    = Vy;
-		bc->theta = theta;
+		bc->pApply = PETSC_TRUE;
+		bc->Vx     = Vx;
+		bc->Vy     = Vy;
+		bc->theta  = theta;
 
-/*
+		PetscPrintf(PETSC_COMM_WORLD,"Pushing BC: Time interval=[%g-%g] %s, V_push=%g %s, Omega=%g %s, mobile_block=%lld, direction=%lld\n",
+			pb->time             [ichange  ]*scal->time,
+			pb->time             [ichange+1]*scal->time,             scal->lbl_time,
+			pb->V_push           [ichange  ]*scal->velocity,         scal->lbl_velocity,
+			pb->omega            [ichange  ]*scal->angular_velocity, scal->lbl_angular_velocity,
+			(LLD)pb->coord_advect[ichange  ],
+			(LLD)pb->dir         [ichange  ]);
 
- WARNING! NO PRINTING YET
-
-		// print useful info
-		charRVel = 180/M_PI*user->Characteristic.SecYear/user->Characteristic.Time; // rotation velocity in deg/yr
-
-		time0 = pb->time        [ichange  ]*scal->time;
-		time1 = pb->time        [ichange+1]*scal->time;
-		vpush = pb->V_push      [ichange  ]*scal->velocity;
-		omega = pb->omega       [ichange  ]*charRVel;
-		c_adv = pb->coord_advect[ichange  ];
-		dir   = pb->dir         [ichange  ];
-
-		PetscPrintf(PETSC_COMM_WORLD,"#  Pushing BC: Time interval = [%g - %g] Ma, V_push = %g cm/yr, Omega = %g deg/yr, mobile_block = %d, direction = %d\n",time0,time1,vpush,omega,c_adv,dir);
-		PetscPrintf(PETSC_COMM_WORLD,"#  Pushing BC: Block center coordinates x = [%g], y = [%g], z = [%g]\n",user->Pushing.x_center_block*1000,user->Pushing.y_center_block*1000,user->Pushing.z_center_block*1000);
-
-
-*/
+		PetscPrintf(PETSC_COMM_WORLD,"Pushing BC: Block center coordinates [x, y, z]=[%g, %g, %g] %s\n",
+			pb->x_center_block*scal->length,
+			pb->y_center_block*scal->length,
+			pb->z_center_block*scal->length, scal->lbl_length);
 	}
 	PetscFunctionReturn(0);
 }
@@ -387,7 +386,7 @@ PetscErrorCode BCApplyPush(BCCtx *bc, FDSTAG *fs)
 	PetscFunctionBegin;
 
 	// check whether pushing is applied
-	if(bc->pAppl != PETSC_TRUE) PetscFunctionReturn(0);
+	if(bc->pApply != PETSC_TRUE) PetscFunctionReturn(0);
 
 	// prepare block coordinates, sizes & rotation angle parameters
     pb    = bc->pb;
@@ -484,13 +483,12 @@ PetscErrorCode BCApplyPush(BCCtx *bc, FDSTAG *fs)
 #define __FUNCT__ "BCAdvectPush"
 PetscErrorCode BCAdvectPush(BCCtx *bc, TSSol *ts)
 {
-	/*
 	PushingParams *pb;
 	PetscInt      advc, ichange;
 	PetscScalar   xc, yc, zc, Vx, Vy, dx, dy, dt, omega, theta, dtheta;
 
 	// check if pushing option is activated
-	if(bc->pActv != PETSC_TRUE) PetscFunctionReturn(0);
+	if(bc->pActive != PETSC_TRUE) PetscFunctionReturn(0);
 
 	// access context
 	pb = bc->pb;
@@ -551,7 +549,6 @@ PetscErrorCode BCAdvectPush(BCCtx *bc, TSSol *ts)
 	}
 
 	PetscFunctionReturn(0);
-	*/
 }
 //---------------------------------------------------------------------------
 /*

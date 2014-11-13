@@ -5,7 +5,7 @@
 #define __scaling_h__
 //---------------------------------------------------------------------------
 
-#define _lbl_sz_ 13
+#define _lbl_sz_ 23
 
 //---------------------------------------------------------------------------
 
@@ -25,33 +25,40 @@ typedef struct
 	// multiply with scale to get scaled output (normally SI units)
 	// divide by scale to convert input into internal units
 	//
-	// units = none - input & output is non-dimensional (unit scaling is done)
+	// units = none - input & output is non-dimensional
 	// units = si   - input & output is in SI units
 	// units = geo  - input & output is in SI units, except:
 	//
-	//    time      - Myr
-	//    length    - km
-	//    velocity  - cm/yr
-	//    stress    - MPa
-	//    heat_flux - mW/m^2
+	//    time        - Myr
+	//    length      - km
+	//    velocity    - cm/yr
+	//    stress      - MPa
+	//    heat_flux   - mW/m^2
+	//    Temperature - C
 	//
 	// WARNING!
 	//
 	// * characteristic values must ALWAYS be provided in SI units
 	//
-	// * number of primary units is one more that usual
+	// * in all dimensional cases (si & geo) angles are measured in degrees
+	//   angular velocities are measured in degrees per unit time
+	//
+	// * number of primary units is one more than usual
 	//   Newton's 2nd law can be violated for quasi-static problems
 	//   Gravity strength must be provided in the units [force/mass]
 	//=======================================================================
 
-	UnitsType   utype;
+	UnitsType   utype;  // scaling type
+	PetscScalar unit;   // always unit
+	PetscScalar Tshift; // temperature shift (added on input, subtracted on output)
 
 	// primary characteristic units
 	PetscScalar mass;
 	PetscScalar time;
 	PetscScalar length;
-	PetscScalar temperature; // Kelvin
-	PetscScalar force;       // additional variable for quasi-static case
+	PetscScalar temperature;       // Kelvin (if dimensional)
+	PetscScalar force;             // additional variable for quasi-static case
+	PetscScalar angle;             // radian expressed in degrees (if dimensional)
 
 	// secondary units
 	PetscScalar velocity;          // length / time
@@ -62,6 +69,7 @@ typedef struct
 	PetscScalar power;             // energy / time
 	PetscScalar heat_flux;         // power / area
 	PetscScalar dissipation_rate;  // power / volume
+	PetscScalar angular_velocity;  // angle / time
 
 	// material parameters
 	PetscScalar density;            // mass / volume
@@ -72,9 +80,9 @@ typedef struct
 	PetscScalar expansivity;        // 1 / temperature
 	PetscScalar pressure_sensivity; // temperature / stress
 
-	PetscScalar phase;              // unit
-
 	// output labels
+	char lbl_unit            [_lbl_sz_];
+	char lbl_angle           [_lbl_sz_];
 	char lbl_time            [_lbl_sz_];
 	char lbl_length          [_lbl_sz_];
 	char lbl_temperature     [_lbl_sz_];
@@ -84,9 +92,9 @@ typedef struct
 	char lbl_strain_rate     [_lbl_sz_];
 	char lbl_heat_flux       [_lbl_sz_];
 	char lbl_dissipation_rate[_lbl_sz_];
+	char lbl_angular_velocity[_lbl_sz_];
 	char lbl_density         [_lbl_sz_];
 	char lbl_viscosity       [_lbl_sz_];
-	char lbl_phase           [_lbl_sz_];
 
 } Scaling;
 //---------------------------------------------------------------------------

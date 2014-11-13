@@ -64,9 +64,10 @@ void OutBufPutCoordVec(
 // put component of 3D vector to output buffer
 PetscErrorCode OutBufPut3DVecComp(
 	OutBuf      *outbuf,
-	PetscInt     ncomp, // number of components
-	PetscInt     dir,   // component identifier
-	PetscScalar  cf);   // scaling coefficient
+	PetscInt     ncomp,  // number of components
+	PetscInt     dir,    // component identifier
+	PetscScalar  cf,     // scaling coefficient
+	PetscScalar  shift); // shift parameter (subtracted from scaled values)
 
 //---------------------------------------------------------------------------
 // ...................  Vector output function pointer ......................

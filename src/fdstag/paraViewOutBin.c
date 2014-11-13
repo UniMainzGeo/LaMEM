@@ -139,7 +139,8 @@ PetscErrorCode OutBufPut3DVecComp(
 	OutBuf      *outbuf,
 	PetscInt     ncomp, // number of components
 	PetscInt     dir,   // component identifier
-	PetscScalar  cf)    // scaling coefficient
+	PetscScalar  cf,    // scaling coefficient
+	PetscScalar  shift) // shift parameter
 {
 	// put component of 3D vector to output buffer
 	// component data is taken from obuf->gbcor vector
@@ -170,13 +171,27 @@ PetscErrorCode OutBufPut3DVecComp(
 	// set counter
 	cnt = dir;
 	// copy vector component to buffer
-	START_STD_LOOP
-	{	// write
-		buff[cnt] = (float) (cf*arr[k][j][i]);
-		// update counter
-		cnt += ncomp;
+	if(shift != 0.0)
+	{
+		START_STD_LOOP
+		{	// write
+			buff[cnt] = (float) (cf*arr[k][j][i] - shift);
+			// update counter
+			cnt += ncomp;
+		}
+		END_STD_LOOP
 	}
-	END_STD_LOOP
+	else
+	{
+		START_STD_LOOP
+		{	// write
+			buff[cnt] = (float) (cf*arr[k][j][i]);
+			// update counter
+			cnt += ncomp;
+		}
+		END_STD_LOOP
+	}
+
 	// restore access
 	ierr = DMDAVecRestoreArray(fs->DA_COR, outbuf->lbcor, &arr); CHKERRQ(ierr);
 
@@ -324,7 +339,7 @@ PetscErrorCode PVOutCreate(PVOut *pvout, JacRes *jr, const char *filename)
 	// set all output functions & collect information to allocate buffers
 	cnt = 0;
 
-	if(omask->phase)          OutVecCreate(&outvecs[cnt++], "phase",          scal->lbl_phase,            &PVOutWritePhase,        1);
+	if(omask->phase)          OutVecCreate(&outvecs[cnt++], "phase",          scal->lbl_unit,             &PVOutWritePhase,        1);
 	if(omask->density)        OutVecCreate(&outvecs[cnt++], "density",        scal->lbl_density,          &PVOutWriteDensity,      1);
 	if(omask->viscosity)      OutVecCreate(&outvecs[cnt++], "viscosity",      scal->lbl_viscosity,        &PVOutWriteViscosity,    1);
 	if(omask->velocity)       OutVecCreate(&outvecs[cnt++], "velocity",       scal->lbl_velocity,         &PVOutWriteVelocity,     3);
@@ -336,9 +351,9 @@ PetscErrorCode PVOutCreate(PVOut *pvout, JacRes *jr, const char *filename)
 	if(omask->j2_strain_rate) OutVecCreate(&outvecs[cnt++], "j2_strain_rate", scal->lbl_strain_rate,      &PVOutWriteJ2StrainRate, 1);
 	if(omask->vol_rate)       OutVecCreate(&outvecs[cnt++], "vol_rate",       scal->lbl_strain_rate,      &PVOutWriteVolRate,      1);
 	if(omask->vorticity)      OutVecCreate(&outvecs[cnt++], "vorticity",      scal->lbl_strain_rate,      &PVOutWriteVorticity,    3);
-	if(omask->ang_vel_mag)    OutVecCreate(&outvecs[cnt++], "ang_vel_mag",    "[rad/s]",                  &PVOutWriteAngVelMag,    1);
-	if(omask->tot_strain)     OutVecCreate(&outvecs[cnt++], "tot_strain",     "[ ]",                      &PVOutWriteTotStrain,    1);
-	if(omask->plast_strain)   OutVecCreate(&outvecs[cnt++], "plast_strain",   "[ ]",                      &PVOutWritePlastStrain,  1);
+	if(omask->ang_vel_mag)    OutVecCreate(&outvecs[cnt++], "ang_vel_mag",    scal->lbl_angular_velocity, &PVOutWriteAngVelMag,    1);
+	if(omask->tot_strain)     OutVecCreate(&outvecs[cnt++], "tot_strain",     scal->lbl_unit,             &PVOutWriteTotStrain,    1);
+	if(omask->plast_strain)   OutVecCreate(&outvecs[cnt++], "plast_strain",   scal->lbl_unit,             &PVOutWritePlastStrain,  1);
 	if(omask->plast_dissip)   OutVecCreate(&outvecs[cnt++], "plast_dissip",   scal->lbl_dissipation_rate, &PVOutWritePlastDissip,  1);
 	if(omask->tot_displ)      OutVecCreate(&outvecs[cnt++], "tot_displ",      scal->lbl_length,           &PVOutWriteTotDispl,     3);
 	// === debugging vectors ===============================================

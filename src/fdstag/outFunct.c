@@ -120,7 +120,7 @@ PetscErrorCode PVOutWritePhase(JacRes *jr, OutBuf *outbuf)
 		buff[k][j][i] = mID;
 
 	// no scaling is necessary for the phase
-	cf = scal->phase;
+	cf = scal->unit;
 
 	// access material parameters
 	phases    = jr->phases;
@@ -128,7 +128,7 @@ PetscErrorCode PVOutWritePhase(JacRes *jr, OutBuf *outbuf)
 
 	INTERPOLATE_CENTER(_GET_PHASE_)
 
-	ierr = OutBufPut3DVecComp(outbuf, 1, 0, cf); CHKERRQ(ierr);
+	ierr = OutBufPut3DVecComp(outbuf, 1, 0, cf, 0.0); CHKERRQ(ierr);
 
 	PetscFunctionReturn(0);
 }
@@ -146,7 +146,7 @@ PetscErrorCode PVOutWriteDensity(JacRes *jr, OutBuf *outbuf)
 
 	INTERPOLATE_CENTER(_GET_DENSITY_)
 
-	ierr = OutBufPut3DVecComp(outbuf, 1, 0, cf); CHKERRQ(ierr);
+	ierr = OutBufPut3DVecComp(outbuf, 1, 0, cf, 0.0); CHKERRQ(ierr);
 
 	PetscFunctionReturn(0);
 }
@@ -164,7 +164,7 @@ PetscErrorCode PVOutWriteViscosity(JacRes *jr, OutBuf *outbuf)
 
 	INTERPOLATE_CENTER(_GET_VISCOSITY_)
 
-	ierr = OutBufPut3DVecComp(outbuf, 1, 0, cf); CHKERRQ(ierr);
+	ierr = OutBufPut3DVecComp(outbuf, 1, 0, cf, 0.0); CHKERRQ(ierr);
 
 	PetscFunctionReturn(0);
 }
@@ -180,15 +180,15 @@ PetscErrorCode PVOutWriteVelocity(JacRes *jr, OutBuf *outbuf)
 
 	// x-velocity
 	ierr = FDSTAGInterpXFaceCorner(outbuf->fs, jr->lvx, outbuf->gbcor, iflag); CHKERRQ(ierr);
-	ierr = OutBufPut3DVecComp(outbuf, 3, 0, cf); CHKERRQ(ierr);
+	ierr = OutBufPut3DVecComp(outbuf, 3, 0, cf, 0.0); CHKERRQ(ierr);
 
 	// y-velocity
 	ierr = FDSTAGInterpYFaceCorner(outbuf->fs, jr->lvy, outbuf->gbcor, iflag); CHKERRQ(ierr);
-	ierr = OutBufPut3DVecComp(outbuf, 3, 1, cf); CHKERRQ(ierr);
+	ierr = OutBufPut3DVecComp(outbuf, 3, 1, cf, 0.0); CHKERRQ(ierr);
 
 	// z-velocity
 	ierr = FDSTAGInterpZFaceCorner(outbuf->fs, jr->lvz, outbuf->gbcor, iflag); CHKERRQ(ierr);
-	ierr = OutBufPut3DVecComp(outbuf, 3, 2, cf); CHKERRQ(ierr);
+	ierr = OutBufPut3DVecComp(outbuf, 3, 2, cf, 0.0); CHKERRQ(ierr);
 
 	PetscFunctionReturn(0);
 }
@@ -204,7 +204,7 @@ PetscErrorCode PVOutWritePressure(JacRes *jr, OutBuf *outbuf)
 
 	ierr = FDSTAGInterpCenterCorner(outbuf->fs, jr->lp, outbuf->gbcor, iflag); CHKERRQ(ierr);
 
-	ierr = OutBufPut3DVecComp(outbuf, 1, 0, cf); CHKERRQ(ierr);
+	ierr = OutBufPut3DVecComp(outbuf, 1, 0, cf, 0.0); CHKERRQ(ierr);
 
 	PetscFunctionReturn(0);
 }
@@ -220,7 +220,7 @@ PetscErrorCode PVOutWriteTemperature(JacRes *jr, OutBuf *outbuf)
 
 	ierr = FDSTAGInterpCenterCorner(outbuf->fs, jr->lT, outbuf->gbcor, iflag); CHKERRQ(ierr);
 
-	ierr = OutBufPut3DVecComp(outbuf, 1, 0, cf); CHKERRQ(ierr);
+	ierr = OutBufPut3DVecComp(outbuf, 1, 0, cf, scal->Tshift); CHKERRQ(ierr);
 
 	PetscFunctionReturn(0);
 }
@@ -245,27 +245,27 @@ PetscErrorCode PVOutWriteDevStress(JacRes *jr, OutBuf *outbuf)
 
 	INTERPOLATE_CENTER(_GET_SXX_)
 
-	ierr = OutBufPut3DVecComp(outbuf, 6, 0, cf); CHKERRQ(ierr);
+	ierr = OutBufPut3DVecComp(outbuf, 6, 0, cf, 0.0); CHKERRQ(ierr);
 
 	INTERPOLATE_CENTER(_GET_SYY_)
 
-	ierr = OutBufPut3DVecComp(outbuf, 6, 1, cf); CHKERRQ(ierr);
+	ierr = OutBufPut3DVecComp(outbuf, 6, 1, cf, 0.0); CHKERRQ(ierr);
 
 	INTERPOLATE_CENTER(_GET_SZZ_)
 
-	ierr = OutBufPut3DVecComp(outbuf, 6, 2, cf); CHKERRQ(ierr);
+	ierr = OutBufPut3DVecComp(outbuf, 6, 2, cf, 0.0); CHKERRQ(ierr);
 
 	INTERPOLATE_XY_EDGE(_GET_SXY_)
 
-	ierr = OutBufPut3DVecComp(outbuf, 6, 3, cf); CHKERRQ(ierr);
+	ierr = OutBufPut3DVecComp(outbuf, 6, 3, cf, 0.0); CHKERRQ(ierr);
 
 	INTERPOLATE_YZ_EDGE(_GET_SYZ_)
 
-	ierr = OutBufPut3DVecComp(outbuf, 6, 4, cf); CHKERRQ(ierr);
+	ierr = OutBufPut3DVecComp(outbuf, 6, 4, cf, 0.0); CHKERRQ(ierr);
 
 	INTERPOLATE_XZ_EDGE(_GET_SXZ_)
 
-	ierr = OutBufPut3DVecComp(outbuf, 6, 5, cf); CHKERRQ(ierr);
+	ierr = OutBufPut3DVecComp(outbuf, 6, 5, cf, 0.0); CHKERRQ(ierr);
 
 
 	PetscFunctionReturn(0);
@@ -288,7 +288,7 @@ PetscErrorCode PVOutWriteJ2DevStress(JacRes *jr, OutBuf *outbuf)
 
 	INTERPOLATE_CENTER(_GET_J2_DEV_STRESS_)
 
-	ierr = OutBufPut3DVecComp(outbuf, 1, 0, cf); CHKERRQ(ierr);
+	ierr = OutBufPut3DVecComp(outbuf, 1, 0, cf, 0.0); CHKERRQ(ierr);
 
 	PetscFunctionReturn(0);
 }
@@ -313,27 +313,27 @@ PetscErrorCode PVOutWriteStrainRate(JacRes *jr, OutBuf *outbuf)
 
 	INTERPOLATE_CENTER(_GET_DXX_)
 
-	ierr = OutBufPut3DVecComp(outbuf, 6, 0, cf); CHKERRQ(ierr);
+	ierr = OutBufPut3DVecComp(outbuf, 6, 0, cf, 0.0); CHKERRQ(ierr);
 
 	INTERPOLATE_CENTER(_GET_DYY_)
 
-	ierr = OutBufPut3DVecComp(outbuf, 6, 1, cf); CHKERRQ(ierr);
+	ierr = OutBufPut3DVecComp(outbuf, 6, 1, cf, 0.0); CHKERRQ(ierr);
 
 	INTERPOLATE_CENTER(_GET_DZZ_)
 
-	ierr = OutBufPut3DVecComp(outbuf, 6, 2, cf); CHKERRQ(ierr);
+	ierr = OutBufPut3DVecComp(outbuf, 6, 2, cf, 0.0); CHKERRQ(ierr);
 
 	INTERPOLATE_XY_EDGE(_GET_DXY_)
 
-	ierr = OutBufPut3DVecComp(outbuf, 6, 3, cf); CHKERRQ(ierr);
+	ierr = OutBufPut3DVecComp(outbuf, 6, 3, cf, 0.0); CHKERRQ(ierr);
 
 	INTERPOLATE_YZ_EDGE(_GET_DYZ_)
 
-	ierr = OutBufPut3DVecComp(outbuf, 6, 4, cf); CHKERRQ(ierr);
+	ierr = OutBufPut3DVecComp(outbuf, 6, 4, cf, 0.0); CHKERRQ(ierr);
 
 	INTERPOLATE_XZ_EDGE(_GET_DXZ_)
 
-	ierr = OutBufPut3DVecComp(outbuf, 6, 5, cf); CHKERRQ(ierr);
+	ierr = OutBufPut3DVecComp(outbuf, 6, 5, cf, 0.0); CHKERRQ(ierr);
 
 	PetscFunctionReturn(0);
 }
@@ -385,7 +385,7 @@ PetscErrorCode PVOutWriteJ2StrainRate(JacRes *jr, OutBuf *outbuf)
 	// compute & store second invariant
 	ierr = VecSqrtAbs(outbuf->gbcor); CHKERRQ(ierr);
 
-	ierr = OutBufPut3DVecComp(outbuf, 1, 0, cf); CHKERRQ(ierr);
+	ierr = OutBufPut3DVecComp(outbuf, 1, 0, cf, 0.0); CHKERRQ(ierr);
 
 	PetscFunctionReturn(0);
 }
@@ -502,19 +502,19 @@ PetscErrorCode PVOutWriteMomentRes(JacRes *jr, OutBuf *outbuf)
 	GLOBAL_TO_LOCAL(outbuf->fs->DA_X, jr->gfx, jr->lfx)
 
 	ierr = FDSTAGInterpXFaceCorner(outbuf->fs, jr->lfx, outbuf->gbcor, iflag); CHKERRQ(ierr);
-	ierr = OutBufPut3DVecComp(outbuf, 3, 0, cf); CHKERRQ(ierr);
+	ierr = OutBufPut3DVecComp(outbuf, 3, 0, cf, 0.0); CHKERRQ(ierr);
 
 	// y-residual
 	GLOBAL_TO_LOCAL(outbuf->fs->DA_Y, jr->gfy, jr->lfy)
 
 	ierr = FDSTAGInterpYFaceCorner(outbuf->fs, jr->lfy, outbuf->gbcor, iflag); CHKERRQ(ierr);
-	ierr = OutBufPut3DVecComp(outbuf, 3, 1, cf); CHKERRQ(ierr);
+	ierr = OutBufPut3DVecComp(outbuf, 3, 1, cf, 0.0); CHKERRQ(ierr);
 
 	// z-residual
 	GLOBAL_TO_LOCAL(outbuf->fs->DA_Z, jr->gfz, jr->lfz)
 
 	ierr = FDSTAGInterpZFaceCorner(outbuf->fs, jr->lfz, outbuf->gbcor, iflag); CHKERRQ(ierr);
-	ierr = OutBufPut3DVecComp(outbuf, 3, 2, cf); CHKERRQ(ierr);
+	ierr = OutBufPut3DVecComp(outbuf, 3, 2, cf, 0.0); CHKERRQ(ierr);
 
 	PetscFunctionReturn(0);
 }
@@ -532,7 +532,7 @@ PetscErrorCode PVOutWriteContRes(JacRes *jr, OutBuf *outbuf)
 
 	ierr = FDSTAGInterpCenterCorner(outbuf->fs, outbuf->lbcen, outbuf->gbcor, iflag); CHKERRQ(ierr);
 
-	ierr = OutBufPut3DVecComp(outbuf, 1, 0, cf); CHKERRQ(ierr);
+	ierr = OutBufPut3DVecComp(outbuf, 1, 0, cf, 0.0); CHKERRQ(ierr);
 
 	PetscFunctionReturn(0);
 }
@@ -550,7 +550,7 @@ PetscErrorCode PVOutWritEnergRes(JacRes *jr, OutBuf *outbuf)
 
 	ierr = FDSTAGInterpCenterCorner(outbuf->fs, outbuf->lbcen, outbuf->gbcor, iflag); CHKERRQ(ierr);
 
-	ierr = OutBufPut3DVecComp(outbuf, 1, 0, cf); CHKERRQ(ierr);
+	ierr = OutBufPut3DVecComp(outbuf, 1, 0, cf, 0.0); CHKERRQ(ierr);
 
 	PetscFunctionReturn(0);
 }
@@ -569,7 +569,7 @@ PetscErrorCode PVOutWriteDII_CEN(JacRes *jr, OutBuf *outbuf)
 
 	INTERPOLATE_CENTER(_GET_DII_CENTER_)
 
-	ierr = OutBufPut3DVecComp(outbuf, 1, 0, cf); CHKERRQ(ierr);
+	ierr = OutBufPut3DVecComp(outbuf, 1, 0, cf, 0.0); CHKERRQ(ierr);
 
 	PetscFunctionReturn(0);
 }
@@ -588,7 +588,7 @@ PetscErrorCode PVOutWriteDII_XY(JacRes *jr, OutBuf *outbuf)
 
 	INTERPOLATE_XY_EDGE(_GET_DII_XY_EDGE_)
 
-	ierr = OutBufPut3DVecComp(outbuf, 1, 0, cf); CHKERRQ(ierr);
+	ierr = OutBufPut3DVecComp(outbuf, 1, 0, cf, 0.0); CHKERRQ(ierr);
 
 	PetscFunctionReturn(0);
 }
@@ -607,7 +607,7 @@ PetscErrorCode PVOutWriteDII_XZ(JacRes *jr, OutBuf *outbuf)
 
 	INTERPOLATE_XZ_EDGE(_GET_DII_XZ_EDGE_)
 
-	ierr = OutBufPut3DVecComp(outbuf, 1, 0, cf); CHKERRQ(ierr);
+	ierr = OutBufPut3DVecComp(outbuf, 1, 0, cf, 0.0); CHKERRQ(ierr);
 
 	PetscFunctionReturn(0);
 }
@@ -626,7 +626,7 @@ PetscErrorCode PVOutWriteDII_YZ(JacRes *jr, OutBuf *outbuf)
 
 	INTERPOLATE_YZ_EDGE(_GET_DII_YZ_EDGE_)
 
-	ierr = OutBufPut3DVecComp(outbuf, 1, 0, cf); CHKERRQ(ierr);
+	ierr = OutBufPut3DVecComp(outbuf, 1, 0, cf, 0.0); CHKERRQ(ierr);
 
 	PetscFunctionReturn(0);
 }

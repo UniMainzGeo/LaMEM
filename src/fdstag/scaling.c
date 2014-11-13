@@ -44,131 +44,156 @@ PetscErrorCode ScalingCreate(
 {
 	// characteristic values must ALWAYS be given in SI units
 
-	PetscScalar volume, area, yr, Myr, km, cm, cm_yr, MPa, mW;
+	PetscScalar angle, area, volume, stress, energy, power;
+	PetscScalar yr, Myr, km, cm, cm_yr, MPa, mW;
 
 	if(DimensionalUnits && scal->utype ==_NONE_)
 	{
 		SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "set 'DimensionalUnits' & 'units' options coherently in the input file");
 	}
 
+	// unit
+	scal->unit = 1.0; sprintf(scal->lbl_unit, "[ ]");
+
 	if(scal->utype == _NONE_)
 	{
 		//================
 		// NON-DIMENSIONAL
 		//================
+
+		// temperature shift
+		scal->Tshift = 0.0;
+
 		// primary units
 		scal->mass                = 1.0;
-		scal->time                = 1.0;
-		scal->length              = 1.0;
-		scal->temperature         = 1.0;
-		scal->force               = 1.0;
+		scal->time                = 1.0;   sprintf(scal->lbl_time,             "[ ]");
+		scal->length              = 1.0;   sprintf(scal->lbl_length,           "[ ]");
+		scal->temperature         = 1.0;   sprintf(scal->lbl_temperature,      "[ ]");
+		scal->force               = 1.0;   sprintf(scal->lbl_force,            "[ ]");
+		scal->angle               = 1.0;   sprintf(scal->lbl_angle,            "[ ]");
+
 		// secondary units
-		scal->velocity            = 1.0;
-		scal->stress              = 1.0;
-		scal->strain_rate         = 1.0;
+		scal->velocity            = 1.0;   sprintf(scal->lbl_velocity,         "[ ]");
+		scal->stress              = 1.0;   sprintf(scal->lbl_stress,           "[ ]");
+		scal->strain_rate         = 1.0;   sprintf(scal->lbl_strain_rate,      "[ ]");
 		scal->gravity_strength    = 1.0;
 		scal->energy              = 1.0;
 		scal->power               = 1.0;
-		scal->heat_flux           = 1.0;
-		scal->dissipation_rate    = 1.0;
+		scal->heat_flux           = 1.0;   sprintf(scal->lbl_heat_flux,        "[ ]");
+		scal->dissipation_rate    = 1.0;   sprintf(scal->lbl_dissipation_rate, "[ ]");
+		scal->angular_velocity    = 1.0;   sprintf(scal->lbl_angular_velocity, "[ ]");
+
 		// material parameters
-		scal->density             = 1.0;
-		scal->viscosity           = 1.0;
+		scal->density             = 1.0;   sprintf(scal->lbl_density,          "[ ]");
+		scal->viscosity           = 1.0;   sprintf(scal->lbl_viscosity,        "[ ]");
 		scal->cpecific_heat       = 1.0;
 		scal->conductivity        = 1.0;
 		scal->heat_production     = 1.0;
 		scal->expansivity         = 1.0;
 		scal->pressure_sensivity  = 1.0;
-		// output labels
-		sprintf(scal->lbl_time,             "[ ]");
-		sprintf(scal->lbl_length,           "[ ]");
-		sprintf(scal->lbl_temperature,      "[ ]");
-		sprintf(scal->lbl_force,            "[ ]");
-		sprintf(scal->lbl_velocity,         "[ ]");
-		sprintf(scal->lbl_stress,           "[ ]");
-		sprintf(scal->lbl_strain_rate,      "[ ]");
-		sprintf(scal->lbl_heat_flux,        "[ ]");
-		sprintf(scal->lbl_dissipation_rate, "[ ]");
-		sprintf(scal->lbl_density,          "[ ]");
-		sprintf(scal->lbl_viscosity,        "[ ]");
-		sprintf(scal->lbl_phase,            "[ ]");
+
 	}
-	else
+	else if(scal->utype == _SI_)
 	{
-		//============
-		// DIMENSIONAL
-		//============
+		//=========================
+		// SI UNITS (except angles)
+		//=========================
+
+		// additional units
+		angle  = 180.0/M_PI;
+		area   = length*length;
+		volume = area*length;
+		stress = force/area;
+		energy = force*length;
+		power  = energy/time;
+
+		// temperature shift
+		scal->Tshift = 0.0;
+
 		// primary units
 		scal->mass                = mass;
-		scal->time                = time;
-		scal->length              = length;
-		scal->temperature         = temperature;
-		scal->force               = force;
-		// additional units
-		volume                    = length*length*length;
-		area                      = length*length;
+		scal->time                = time;                     sprintf(scal->lbl_time,             "[s]");
+		scal->length              = length;                   sprintf(scal->lbl_length  ,         "[m]");
+		scal->temperature         = temperature;              sprintf(scal->lbl_temperature,      "[K]");
+		scal->force               = force;                    sprintf(scal->lbl_force,            "[N]");
+		scal->angle               = angle;                    sprintf(scal->lbl_angle,            "[deg]");   // @
+
 		// secondary units
-		scal->velocity            = length/time;
-		scal->stress              = force/area;
-		scal->strain_rate         = 1.0/time;
+		scal->velocity            = length/time;              sprintf(scal->lbl_velocity,         "[m/s]");
+		scal->stress              = stress;                   sprintf(scal->lbl_stress ,          "[Pa]");
+		scal->strain_rate         = 1.0/time;                 sprintf(scal->lbl_strain_rate,      "[1/s]");
 		scal->gravity_strength    = force/mass;
-		scal->energy              = force*length;
-		scal->power               = scal->energy/time;
-		scal->heat_flux           = scal->power/area;
-		scal->dissipation_rate    = scal->power/volume;
+		scal->energy              = energy;
+		scal->power               = power;
+		scal->heat_flux           = power/area;               sprintf(scal->lbl_heat_flux,        "[W/m^2]");
+		scal->dissipation_rate    = power/volume;             sprintf(scal->lbl_dissipation_rate, "[W/m^3]");
+		scal->angular_velocity    = angle/time;               printf(scal->lbl_angular_velocity,  "[deg/s]"); // @
+
 		// material parameters
-		scal->density             = mass/volume;
-		scal->viscosity           = scal->stress*time;
-		scal->cpecific_heat       = scal->energy/mass/temperature;
-		scal->conductivity        = scal->power/length/temperature;
-		scal->heat_production     = scal->power/mass;
+		scal->density             = mass/volume;              sprintf(scal->lbl_density,          "[kg/m^3]");
+		scal->viscosity           = stress*time;              sprintf(scal->lbl_viscosity,        "[Pa*s]");
+		scal->cpecific_heat       = energy/mass/temperature;
+		scal->conductivity        = power/length/temperature;
+		scal->heat_production     = power/mass;
 		scal->expansivity         = 1.0/temperature;
-		scal->pressure_sensivity  = temperature/scal->stress;
-		// output labels
-		sprintf(scal->lbl_temperature,      "[K]");
-		sprintf(scal->lbl_force,            "[N]");
-		sprintf(scal->lbl_strain_rate,      "[1/s]");
-		sprintf(scal->lbl_dissipation_rate, "[W/m^3]");
-		sprintf(scal->lbl_density,          "[kg/m^3]");
-		sprintf(scal->lbl_viscosity,        "[Pa*s]");
+		scal->pressure_sensivity  = temperature/stress;
 
-		if(scal->utype == _SI_)
-		{
-			// output labels
-			sprintf(scal->lbl_time,      "[s]");
-			sprintf(scal->lbl_length  ,  "[m]");
-			sprintf(scal->lbl_velocity,  "[m/s]");
-			sprintf(scal->lbl_stress ,   "[Pa]");
-			sprintf(scal->lbl_heat_flux, "[W/m^2]");
-		}
-		else if(scal->utype == _GEO_)
-		{
-			yr     = 3600.0*24.0*365.0;
-			Myr    = 1e6*yr;
-			km     = 1e3;
-			cm     = 1e-2;
-			cm_yr  = cm/yr;
-			MPa    = 1e6;
-			mW     = 1e-3;
-			// modify scales
-			scal->time       = time/Myr;             // internal -> Myr
-			scal->length     = length/km;            // internal -> km
-			scal->velocity   = scal->velocity/cm_yr; // internal -> cm/yr
-			scal->stress     = scal->stress/MPa;     // internal -> MPa
-			scal->heat_flux  = scal->heat_flux/mW;   // internal -> mW/m^2
-			// output labels
-			sprintf(scal->lbl_time,      "[Myr]");
-			sprintf(scal->lbl_length  ,  "[km]");
-			sprintf(scal->lbl_velocity,  "[cm/yr]");
-			sprintf(scal->lbl_stress  ,  "[MPa]");
-			sprintf(scal->lbl_heat_flux, "[mW/m^2]");
-		}
 	}
+	else if(scal->utype == _GEO_)
+	{
+		//=================
+		// GEOLOGICAL UNITS
+		//=================
 
-	// phase
-	scal->phase = 1.0;
-	sprintf(scal->lbl_phase, "[ ]");
+		// additional units
+		angle  = 180.0/M_PI;
+		area   = length*length;
+		volume = area*length;
+		stress = force/area;
+		energy = force*length;
+		power  = energy/time;
 
+		// additional scaling factors
+		yr     = 3600.0*24.0*365.0;
+		Myr    = 1e6*yr;
+		km     = 1e3;
+		cm     = 1e-2;
+		cm_yr  = cm/yr;
+		MPa    = 1e6;
+		mW     = 1e-3;
+
+		// temperature shift
+		scal->Tshift = 273.15;
+
+		// primary units
+		scal->mass                = mass;
+		scal->time                = time/Myr;                 sprintf(scal->lbl_time,             "[Myr]");   // @
+		scal->length              = length/km;                sprintf(scal->lbl_length  ,         "[km]");    // @
+		scal->temperature         = temperature;              sprintf(scal->lbl_temperature,      "[C]");     // @
+		scal->force               = force;                    sprintf(scal->lbl_force,            "[N]");
+		scal->angle               = angle;                    sprintf(scal->lbl_angle,            "[deg]");   // @
+
+		// secondary units
+		scal->velocity            = length/time/cm_yr;        sprintf(scal->lbl_velocity,         "[cm/yr]"); // @
+		scal->stress              = stress/MPa;               sprintf(scal->lbl_stress ,          "[MPa]");   // @
+		scal->strain_rate         = 1.0/time;                 sprintf(scal->lbl_strain_rate,      "[1/s]");
+		scal->gravity_strength    = force/mass;
+		scal->energy              = energy;
+		scal->power               = power;
+		scal->heat_flux           = power/area/mW;            sprintf(scal->lbl_heat_flux,        "[mW/m^2]");  // @
+		scal->dissipation_rate    = power/volume;             sprintf(scal->lbl_dissipation_rate, "[W/m^3]");
+		scal->angular_velocity    = angle/(time/Myr);         sprintf(scal->lbl_angular_velocity, "[deg/Myr]"); // @
+
+		// material parameters
+		scal->density             = mass/volume;              sprintf(scal->lbl_density,          "[kg/m^3]");
+		scal->viscosity           = stress*time;              sprintf(scal->lbl_viscosity,        "[Pa*s]");
+		scal->cpecific_heat       = energy/mass/temperature;
+		scal->conductivity        = power/length/temperature;
+		scal->heat_production     = power/mass;
+		scal->expansivity         = 1.0/temperature;
+		scal->pressure_sensivity  = temperature/stress;
+
+	}
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------

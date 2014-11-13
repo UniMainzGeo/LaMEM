@@ -173,15 +173,14 @@ typedef struct {
 //-----------------------------------------------------------------------------
 // Structure that holds pushing parameters
 typedef struct {
-	PetscScalar		L_block,W_block,H_block;
-	PetscScalar		x_center_block,y_center_block,z_center_block;
-	PetscScalar     V_push[10],omega[10];
-	PetscInt		num_changes,reset_pushing_coord,ind_change;
+	PetscScalar		L_block, W_block, H_block;
+	PetscScalar		x_center_block, y_center_block, z_center_block;
+	PetscScalar     V_push[10], omega[10];
+	PetscInt		num_changes, reset_pushing_coord, ind_change;
 	PetscScalar		time[11];
-	PetscInt	    coord_advect[10],dir[10];
+	PetscInt	    coord_advect[10], dir[10];
 	PetscScalar		theta;
 	Vec 			PV_rhs;
-
 } PushingParams;
 //-----------------------------------------------------------------------------
 // Structure that holds output parameters

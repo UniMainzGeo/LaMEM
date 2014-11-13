@@ -47,6 +47,7 @@ without the explicit agreement of Boris Kaus.
 #include "fdstag.h"
 #include "solVar.h"
 #include "scaling.h"
+#include "tssolve.h"
 #include "bc.h"
 #include "JacRes.h"
 #include "paraViewOutBin.h"
@@ -241,8 +242,13 @@ PetscErrorCode LaMEMLib_FDSTAG(PetscBool InputParamFile, const char *ParamFile, 
 	ierr = BCCreate(&ubc, &fs, IDXCOUPLED); CHKERRQ(ierr);
 
 	// set background strain-rates
-	ierr = BCSetStretch(&cbc, user.BC.Exx, user.BC.Eyy);
-	ierr = BCSetStretch(&ubc, user.BC.Exx, user.BC.Eyy);
+	ierr = BCSetStretch(&cbc, &user);  CHKERRQ(ierr);
+	ierr = BCSetStretch(&ubc, &user);  CHKERRQ(ierr);
+
+	// set pushing block parameters
+	ierr = BCSetPush(&cbc, &user);  CHKERRQ(ierr);
+	ierr = BCSetPush(&ubc, &user);  CHKERRQ(ierr);
+
 
 	// create Jacobian & residual evaluation context
 	ierr = JacResCreate(&jr, &fs, &cbc, &ubc, user.num_phases, 0); CHKERRQ(ierr);
@@ -311,8 +317,8 @@ PetscErrorCode LaMEMLib_FDSTAG(PetscBool InputParamFile, const char *ParamFile, 
 			PetscTime(&cputime_start_nonlinear);
 
 			// initialize boundary constraint vectors
-			ierr = BCInit(&cbc, &fs, IDXCOUPLED);   CHKERRQ(ierr);
-			ierr = BCInit(&ubc, &fs, IDXUNCOUPLED); CHKERRQ(ierr);
+			ierr = BCApply(&cbc, &fs, &jr.ts, &jr.scal, IDXCOUPLED);   CHKERRQ(ierr);
+			ierr = BCApply(&ubc, &fs, &jr.ts, &jr.scal, IDXUNCOUPLED); CHKERRQ(ierr);
 
 			// compute inverse elastic viscosities
 			ierr = JacResGetI2Gdt(&jr); CHKERRQ(ierr);
@@ -347,7 +353,7 @@ PetscErrorCode LaMEMLib_FDSTAG(PetscBool InputParamFile, const char *ParamFile, 
 		//==========================================================================================
 
 		// select new time step
-		ierr = TSSolGetCourantStep(&jr.ts, &jr); CHKERRQ(ierr);
+		ierr = JacResGetCourantStep(&jr); CHKERRQ(ierr);
 
 		//==========================================================================================
 		// MARKER & FREE SURFACE ADVECTION + EROSION
@@ -356,7 +362,9 @@ PetscErrorCode LaMEMLib_FDSTAG(PetscBool InputParamFile, const char *ParamFile, 
 		ierr = ADVAdvect(&actx); CHKERRQ(ierr);
 
 		// advect pushing block
-//		ierr = PBCAdvectBlock(&user); CHKERRQ(ierr);
+		ierr = BCAdvectPush(&cbc, &jr.ts); CHKERRQ(ierr);
+		ierr = BCAdvectPush(&ubc, &jr.ts); CHKERRQ(ierr);
+
 
 		//==========================================================================================
 		// EROSION

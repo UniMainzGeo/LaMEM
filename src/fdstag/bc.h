@@ -26,12 +26,12 @@ typedef struct
 	PetscScalar *TPCLinComPar; // linear combination parameters
 
 	// background strain-rate parameters
-	PetscBool    bgflag;       // flag for activating background strain-rates
+	PetscBool    bgActive;     // flag for activating background strain-rates
 	PetscScalar  Exx, Eyy;     // horizontal background strain-rates
 
 	// Dirichlet pushing block constraints
-	PetscBool     pActv;       // flag for activating pushing
-	PetscBool     pAppl;       // flag for applying pushing on a time step
+	PetscBool     pActive;     // flag for activating pushing
+	PetscBool     pApply;      // flag for applying pushing on a time step
 	PetscScalar   theta;       // rotation angle
 	PetscScalar   Vx, Vy;      // Dirichlet values for Vx and Vy
 	PushingParams *pb;         // major pushing block parameters
@@ -45,7 +45,7 @@ PetscErrorCode BCClear(BCCtx *bc);
 PetscErrorCode BCCreate(BCCtx *bc, FDSTAG *fs, idxtype idxmod);
 
 // set background strain-rates
-PetscErrorCode BCSetStretch(BCCtx *bc, PetscScalar Exx, PetscScalar Eyy);
+PetscErrorCode BCSetStretch(BCCtx *bc, UserContext *user);
 
 // destroy boundary condition context
 PetscErrorCode BCDestroy(BCCtx *bc);
