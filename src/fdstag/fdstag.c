@@ -587,18 +587,18 @@ PetscErrorCode Discret1DCheckMG(Discret1D *ds, const char *dir, PetscInt *_ncors
 #define __FUNCT__ "DOFIndexCreate"
 PetscErrorCode DOFIndexCreate(DOFIndex *id, FDSTAG *fs, idxtype idxmod)
 {
-
 	// compute & set global indices of local & ghost nodes
 
-	//**********************************************************************
+	// **********************************************************************
 	// NOTE:
 	// for the ghost points, store negative global index of the primary DOF
 	// instead of -1
-	//**********************************************************************
+	// **********************************************************************
+
+	PetscInt    NUM[2], SUM[3];
 
 	PetscInt    ln, lnp, start, startp, sum;
 	PetscInt    i, j, k, nx, ny, nz, sx, sy, sz;
-	Vec         givx, givy, givz, gip;
 	PetscScalar ***ivx, ***ivy, ***ivz, ***ip;
 
 	PetscErrorCode ierr;
@@ -606,6 +606,22 @@ PetscErrorCode DOFIndexCreate(DOFIndex *id, FDSTAG *fs, idxtype idxmod)
 
 	// store index mode
 	id->idxmod = idxmod;
+
+	// set local number of dof
+	NUM[0] = id->lnv = fs->nXFace + fs->nYFace + fs->nZFace;
+	NUM[1] = id->lnp = fs->nCells;
+
+	// compute prefix sums
+	ierr = MPI_Scan(NUM, SUM, 2, MPIU_INT, MPI_SUM, PETSC_COMM_WORLD); CHKERRQ(ierr);
+
+	// set starting indices
+	id->stv = SUM[0] - id->lnv;
+    id->stp = SUM[1] - id->lnp;
+
+	id->ln = id->lnv + id->lnp;
+    id->st = id->stv + id->stp;
+
+
 
 	// set local number DOF
 	if(idxmod == IDXCOUPLED)
@@ -640,17 +656,25 @@ PetscErrorCode DOFIndexCreate(DOFIndex *id, FDSTAG *fs, idxtype idxmod)
 	id->numdofp = lnp;
 	id->istartp = startp;
 
-	// create index vectors
-	ierr = DMCreateGlobalVector(fs->DA_X,   &givx); CHKERRQ(ierr);
-	ierr = DMCreateGlobalVector(fs->DA_Y,   &givy); CHKERRQ(ierr);
-	ierr = DMCreateGlobalVector(fs->DA_Z,   &givz); CHKERRQ(ierr);
-	ierr = DMCreateGlobalVector(fs->DA_CEN, &gip);  CHKERRQ(ierr);
+
+
+	// create index vectors (ghosted)
+	ierr = DMCreateLocalVector(fs->DA_X,   &id->ivx); CHKERRQ(ierr);
+	ierr = DMCreateLocalVector(fs->DA_Y,   &id->ivy); CHKERRQ(ierr);
+	ierr = DMCreateLocalVector(fs->DA_Z,   &id->ivz); CHKERRQ(ierr);
+	ierr = DMCreateLocalVector(fs->DA_CEN, &id->ip);  CHKERRQ(ierr);
+
+	// set global indices of the local and ghost nodes (including boundary)
+	ierr = VecSet(id->ivx, -1.0); CHKERRQ(ierr);
+	ierr = VecSet(id->ivy, -1.0); CHKERRQ(ierr);
+	ierr = VecSet(id->ivz, -1.0); CHKERRQ(ierr);
+	ierr = VecSet(id->ip,  -1.0); CHKERRQ(ierr);
 
 	// access index vectors
-	ierr = DMDAVecGetArray(fs->DA_X,   givx, &ivx);  CHKERRQ(ierr);
-	ierr = DMDAVecGetArray(fs->DA_Y,   givy, &ivy);  CHKERRQ(ierr);
-	ierr = DMDAVecGetArray(fs->DA_Z,   givz, &ivz);  CHKERRQ(ierr);
-	ierr = DMDAVecGetArray(fs->DA_CEN, gip,  &ip);   CHKERRQ(ierr);
+	ierr = DMDAVecGetArray(fs->DA_X,   id->ivx, &ivx);  CHKERRQ(ierr);
+	ierr = DMDAVecGetArray(fs->DA_Y,   id->ivy, &ivy);  CHKERRQ(ierr);
+	ierr = DMDAVecGetArray(fs->DA_Z,   id->ivz, &ivz);  CHKERRQ(ierr);
+	ierr = DMDAVecGetArray(fs->DA_CEN, id->ip,  &ip);   CHKERRQ(ierr);
 
 	//=======================================================
 	// compute interlaced global numbering of the local nodes
@@ -714,33 +738,15 @@ PetscErrorCode DOFIndexCreate(DOFIndex *id, FDSTAG *fs, idxtype idxmod)
 	END_STD_LOOP
 
 	// restore access
-	ierr = DMDAVecRestoreArray(fs->DA_X,   givx, &ivx);  CHKERRQ(ierr);
-	ierr = DMDAVecRestoreArray(fs->DA_Y,   givy, &ivy);  CHKERRQ(ierr);
-	ierr = DMDAVecRestoreArray(fs->DA_Z,   givz, &ivz);  CHKERRQ(ierr);
-	ierr = DMDAVecRestoreArray(fs->DA_CEN, gip,  &ip);   CHKERRQ(ierr);
+	ierr = DMDAVecRestoreArray(fs->DA_X,   id->ivx, &ivx);  CHKERRQ(ierr);
+	ierr = DMDAVecRestoreArray(fs->DA_Y,   id->ivy, &ivy);  CHKERRQ(ierr);
+	ierr = DMDAVecRestoreArray(fs->DA_Z,   id->ivz, &ivz);  CHKERRQ(ierr);
+	ierr = DMDAVecRestoreArray(fs->DA_CEN, id->ip,  &ip);   CHKERRQ(ierr);
 
-	// create index vectors (ghosted)
-	ierr = DMCreateLocalVector(fs->DA_X,   &id->ivx); CHKERRQ(ierr);
-	ierr = DMCreateLocalVector(fs->DA_Y,   &id->ivy); CHKERRQ(ierr);
-	ierr = DMCreateLocalVector(fs->DA_Z,   &id->ivz); CHKERRQ(ierr);
-	ierr = DMCreateLocalVector(fs->DA_CEN, &id->ip);  CHKERRQ(ierr);
-
-	// set global indices of the local and ghost nodes (including boundary)
-	ierr = VecSet(id->ivx, -1.0); CHKERRQ(ierr);
-	ierr = VecSet(id->ivy, -1.0); CHKERRQ(ierr);
-	ierr = VecSet(id->ivz, -1.0); CHKERRQ(ierr);
-	ierr = VecSet(id->ip,  -1.0); CHKERRQ(ierr);
-
-	GLOBAL_TO_LOCAL(fs->DA_X,   givx, id->ivx)
-	GLOBAL_TO_LOCAL(fs->DA_Y,   givy, id->ivy)
-	GLOBAL_TO_LOCAL(fs->DA_Z,   givz, id->ivz)
-	GLOBAL_TO_LOCAL(fs->DA_CEN, gip,  id->ip)
-
-	// destroy index vectors
-	ierr = VecDestroy(&givx); CHKERRQ(ierr);
-	ierr = VecDestroy(&givy); CHKERRQ(ierr);
-	ierr = VecDestroy(&givz); CHKERRQ(ierr);
-	ierr = VecDestroy(&gip);  CHKERRQ(ierr);
+	LOCAL_TO_LOCAL(fs->DA_X,   id->ivx)
+	LOCAL_TO_LOCAL(fs->DA_Y,   id->ivy)
+	LOCAL_TO_LOCAL(fs->DA_Z,   id->ivz)
+	LOCAL_TO_LOCAL(fs->DA_CEN, id->ip)
 
 	PetscFunctionReturn(0);
 }
@@ -1198,29 +1204,25 @@ PetscErrorCode FDSTAGView(FDSTAG *fs)
 	// print & check essential grid details
 
 	PetscScalar maxAspRat;
-	PetscInt    px, py, pz, tx, ty, tz, nVelDOF, nCells;
+	PetscInt    px, py, pz, cx, cy, cz, nx, ny, nz, nVelDOF, nCells;
 
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
 
-	px = fs->dsx.nproc;
-	py = fs->dsy.nproc;
-	pz = fs->dsz.nproc;
+	px = fs->dsx.nproc;  cx = fs->dsx.tcels;  nx = fs->dsx.tnods;
+	py = fs->dsy.nproc;  cy = fs->dsy.tcels;  ny = fs->dsy.tnods;
+	pz = fs->dsz.nproc;  cz = fs->dsz.tcels;  nz = fs->dsz.tnods;
 
-	tx = fs->dsx.tcels;
-	ty = fs->dsy.tcels;
-	tz = fs->dsz.tcels;
-
-	nCells  = fs->nCells;
-	nVelDOF = fs->nXFace + fs->nYFace + fs->nZFace;
+	nCells  = cx*cy*cz;
+	nVelDOF = nx*cy*cz + cx*ny*cz + cx*cy*nz;
 
 	ierr = FDSTAGGetAspectRatio(fs, &maxAspRat); CHKERRQ(ierr);
 
 	PetscPrintf(PETSC_COMM_WORLD, " Processor grid  [nx, ny, nz]   : [%lld, %lld, %lld]\n", (LLD)px, (LLD)py, (LLD)pz);
-	PetscPrintf(PETSC_COMM_WORLD, " Fine grid cells [nx, ny, nz]   : [%lld, %lld, %lld]\n", (LLD)tx, (LLD)ty, (LLD)tz);
+	PetscPrintf(PETSC_COMM_WORLD, " Fine grid cells [nx, ny, nz]   : [%lld, %lld, %lld]\n", (LLD)cx, (LLD)cy, (LLD)cz);
 	PetscPrintf(PETSC_COMM_WORLD, " Number of cells                :  %lld\n", (LLD)nCells);
 	PetscPrintf(PETSC_COMM_WORLD, " Number of velocity DOF         :  %lld\n", (LLD)nVelDOF);
-	PetscPrintf(PETSC_COMM_WORLD, " Maximum cell aspect cell ratio :  %7.5f\n",   maxAspRat);
+	PetscPrintf(PETSC_COMM_WORLD, " Maximum cell aspect cell ratio :  %7.5f\n", maxAspRat);
 
 	if(maxAspRat > 5.0) SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, " Too large aspect ratio is not supported");
 

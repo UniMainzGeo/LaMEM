@@ -127,6 +127,9 @@ typedef struct
 	PetscInt numdofp;  // local number of pressure DOF (decoupled only)
 	PetscInt istartp;  // global index of the first pressure DOF (decoupled only)
 
+	PetscInt lnv, lnp, ln;
+	PetscInt stv, stp, st;
+
 	idxtype  idxmod;   // indexing mode
 
 } DOFIndex;
@@ -334,10 +337,15 @@ PetscErrorCode FDSTAGGetGlobalBox(
 
 //---------------------------------------------------------------------------
 
-// access operation
+// scatter operation (two-vectors)
 #define GLOBAL_TO_LOCAL(dm, gvec, lvec) \
 	ierr = DMGlobalToLocalBegin(dm, gvec, INSERT_VALUES, lvec); CHKERRQ(ierr); \
 	ierr = DMGlobalToLocalEnd  (dm, gvec, INSERT_VALUES, lvec); CHKERRQ(ierr);
+
+// scatter operation (one-vector)
+#define LOCAL_TO_LOCAL(dm, lvec) \
+	ierr = DMLocalToLocalBegin(dm, lvec, INSERT_VALUES, lvec); CHKERRQ(ierr); \
+	ierr = DMLocalToLocalEnd  (dm, lvec, INSERT_VALUES, lvec); CHKERRQ(ierr);
 
 // assembly operation
 #define LOCAL_TO_GLOBAL(dm, lvec, gvec) \
