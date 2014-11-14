@@ -127,7 +127,7 @@ PetscErrorCode ScalingCreate(
 		scal->power               = power;
 		scal->heat_flux           = power/area;               sprintf(scal->lbl_heat_flux,        "[W/m^2]");
 		scal->dissipation_rate    = power/volume;             sprintf(scal->lbl_dissipation_rate, "[W/m^3]");
-		scal->angular_velocity    = angle/time;               printf(scal->lbl_angular_velocity,  "[deg/s]"); // @
+		scal->angular_velocity    = angle/time;               sprintf(scal->lbl_angular_velocity, "[deg/s]"); // @
 
 		// material parameters
 		scal->density             = mass/volume;              sprintf(scal->lbl_density,          "[kg/m^3]");
