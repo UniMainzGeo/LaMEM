@@ -238,8 +238,8 @@ PetscErrorCode LaMEMLib_FDSTAG(PetscBool InputParamFile, const char *ParamFile, 
 	ierr = FDSTAGView(&fs); CHKERRQ(ierr);
 
 	// create boundary condition context
-	ierr = BCCreate(&cbc, &fs, IDXCOUPLED); CHKERRQ(ierr);
-	ierr = BCCreate(&ubc, &fs, IDXCOUPLED); CHKERRQ(ierr);
+	ierr = BCCreate(&cbc, &fs, &jr.ts, &jr.scal, IDXCOUPLED); CHKERRQ(ierr);
+	ierr = BCCreate(&ubc, &fs, &jr.ts, &jr.scal, IDXCOUPLED); CHKERRQ(ierr);
 
 	// set background strain-rates
 	ierr = BCSetStretch(&cbc, &user);  CHKERRQ(ierr);
@@ -248,7 +248,6 @@ PetscErrorCode LaMEMLib_FDSTAG(PetscBool InputParamFile, const char *ParamFile, 
 	// set pushing block parameters
 	ierr = BCSetPush(&cbc, &user);  CHKERRQ(ierr);
 	ierr = BCSetPush(&ubc, &user);  CHKERRQ(ierr);
-
 
 	// create Jacobian & residual evaluation context
 	ierr = JacResCreate(&jr, &fs, &cbc, &ubc, user.num_phases, 0); CHKERRQ(ierr);
@@ -317,8 +316,8 @@ PetscErrorCode LaMEMLib_FDSTAG(PetscBool InputParamFile, const char *ParamFile, 
 			PetscTime(&cputime_start_nonlinear);
 
 			// initialize boundary constraint vectors
-			ierr = BCApply(&cbc, &fs, &jr.ts, &jr.scal, IDXCOUPLED);   CHKERRQ(ierr);
-			ierr = BCApply(&ubc, &fs, &jr.ts, &jr.scal, IDXUNCOUPLED); CHKERRQ(ierr);
+			ierr = BCApply(&cbc, &fs, IDXCOUPLED);   CHKERRQ(ierr);
+			ierr = BCApply(&ubc, &fs, IDXUNCOUPLED); CHKERRQ(ierr);
 
 			// compute inverse elastic viscosities
 			ierr = JacResGetI2Gdt(&jr); CHKERRQ(ierr);
@@ -513,7 +512,7 @@ PetscErrorCode LaMEMLib_FDSTAG(PetscBool InputParamFile, const char *ParamFile, 
 	ierr = BCDestroy(&ubc);      CHKERRQ(ierr);
 	ierr = JacResDestroy(&jr);   CHKERRQ(ierr);
 	ierr = ADVDestroy(&actx);    CHKERRQ(ierr);
-	ierr = PCStokesDestroy(pc);  CHKERRQ(ierr); // error destroying this
+	ierr = PCStokesDestroy(pc);  CHKERRQ(ierr);
 	ierr = PMatDestroy(pm);      CHKERRQ(ierr);
 	ierr = SNESDestroy(&snes);   CHKERRQ(ierr);
 	ierr = NLSolDestroy(&nl);    CHKERRQ(ierr);

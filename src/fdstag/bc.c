@@ -29,7 +29,7 @@ PetscErrorCode BCClear(BCCtx *bc)
 //---------------------------------------------------------------------------
 #undef __FUNCT__
 #define __FUNCT__ "BCCreate"
-PetscErrorCode BCCreate(BCCtx *bc, FDSTAG *fs, idxtype idxmod)
+PetscErrorCode BCCreate(BCCtx *bc, FDSTAG *fs, TSSol *ts, Scaling *scal, idxtype idxmod)
 {
 	PetscInt ln;
 
@@ -54,6 +54,9 @@ PetscErrorCode BCCreate(BCCtx *bc, FDSTAG *fs, idxtype idxmod)
 	bc->bgActive = PETSC_FALSE;
 	bc->pActive  = PETSC_FALSE;
 	bc->pApply   = PETSC_FALSE;
+
+	bc->ts   = ts;
+	bc->scal = scal;
 
 	PetscFunctionReturn(0);
 }
@@ -103,7 +106,7 @@ PetscErrorCode BCSetStretch(BCCtx *bc, UserContext *user)
 //---------------------------------------------------------------------------
 #undef __FUNCT__
 #define __FUNCT__ "BCApply"
-PetscErrorCode BCApply(BCCtx *bc, FDSTAG *fs, TSSol *ts, Scaling *scal, idxtype idxmod)
+PetscErrorCode BCApply(BCCtx *bc, FDSTAG *fs, idxtype idxmod)
 {
 	PetscInt    *SPCList;
 	PetscScalar *SPCVals;
@@ -133,7 +136,7 @@ PetscErrorCode BCApply(BCCtx *bc, FDSTAG *fs, TSSol *ts, Scaling *scal, idxtype 
 	ierr = BCApplyBound(bc, fs); CHKERRQ(ierr);
 
 	// compute pushing parameters
-	ierr = BCCompPush(bc, ts, scal); CHKERRQ(ierr);
+	ierr = BCCompPush(bc); CHKERRQ(ierr);
 
 	// apply pushing block constraints
 	ierr = BCApplyPush(bc, fs); CHKERRQ(ierr);
@@ -292,12 +295,14 @@ PetscErrorCode BCSetPush(BCCtx *bc, UserContext *user)
 //---------------------------------------------------------------------------
 #undef __FUNCT__
 #define __FUNCT__ "BCCompPush"
-PetscErrorCode BCCompPush(BCCtx *bc, TSSol *ts, Scaling *scal)
+PetscErrorCode BCCompPush(BCCtx *bc)
 {
 	// MUST be called at the beginning of time step before setting boundary conditions
 	// compute pushing boundary conditions actual parameters
 
 	PushingParams *pb;
+	TSSol         *ts;
+	Scaling       *scal;
 	PetscInt      i, ichange;
 	PetscScalar   Vx, Vy, theta;
 
@@ -306,8 +311,10 @@ PetscErrorCode BCCompPush(BCCtx *bc, TSSol *ts, Scaling *scal)
 	// check if pushing option is activated
 	if(bc->pActive != PETSC_TRUE) PetscFunctionReturn(0);
 
-	// access context
-	pb = bc->pb;
+	// access contexts
+	pb   = bc->pb;
+	ts   = bc->ts;
+	scal = bc->scal;
 
 	// set boundary conditions flag
 	bc->pApply = PETSC_FALSE;

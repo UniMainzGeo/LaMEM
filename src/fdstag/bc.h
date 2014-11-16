@@ -35,6 +35,8 @@ typedef struct
 	PetscScalar   theta;       // rotation angle
 	PetscScalar   Vx, Vy;      // Dirichlet values for Vx and Vy
 	PushingParams *pb;         // major pushing block parameters
+	TSSol         *ts;         // time stepping parameters (to be removed here)
+	Scaling       *scal;       // scaling parameters (to be removed here)
 
 } BCCtx;
 //---------------------------------------------------------------------------
@@ -42,7 +44,7 @@ typedef struct
 PetscErrorCode BCClear(BCCtx *bc);
 
 // create boundary condition context
-PetscErrorCode BCCreate(BCCtx *bc, FDSTAG *fs, idxtype idxmod);
+PetscErrorCode BCCreate(BCCtx *bc, FDSTAG *fs, TSSol *ts, Scaling *scal, idxtype idxmod);
 
 // set background strain-rates
 PetscErrorCode BCSetStretch(BCCtx *bc, UserContext *user);
@@ -51,7 +53,7 @@ PetscErrorCode BCSetStretch(BCCtx *bc, UserContext *user);
 PetscErrorCode BCDestroy(BCCtx *bc);
 
 // apply boundary conditions
-PetscErrorCode BCApply(BCCtx *bc, FDSTAG *fs, TSSol *ts, Scaling *scal, idxtype idxmod);
+PetscErrorCode BCApply(BCCtx *bc, FDSTAG *fs, idxtype idxmod);
 
 // apply constraints on the boundaries
 PetscErrorCode BCApplyBound(BCCtx *bc, FDSTAG *fs);
@@ -62,7 +64,7 @@ PetscErrorCode BCApplyBound(BCCtx *bc, FDSTAG *fs);
 PetscErrorCode BCSetPush(BCCtx *bc, UserContext *user);
 
 // compute pushing parameters
-PetscErrorCode BCCompPush(BCCtx *bc, TSSol *ts, Scaling *scal);
+PetscErrorCode BCCompPush(BCCtx *bc);
 
 // apply pushing constraints
 PetscErrorCode BCApplyPush(BCCtx *bc, FDSTAG *fs);

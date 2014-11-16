@@ -76,15 +76,13 @@ PetscErrorCode MGCreate(MG *mg, FDSTAG *fs, BCCtx *bc, idxtype idxmod)
 		Nz /= 2;
 
 		// create mesh
+		ierr = FDSTAGClear (&mg->mgfs[i]);                               CHKERRQ(ierr);
 		ierr = FDSTAGCreate(&mg->mgfs[i], Nx+1, Ny+1, Nz+1, Px, Py, Pz); CHKERRQ(ierr);
 
 		// create bc context
-		ierr = BCCreate(&mg->mgbc[i], &mg->mgfs[i], idxmod); CHKERRQ(ierr);
-// ACHTUNG!
-		SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "Multigrid is broken. Stop");
+		ierr = BCClear (&mg->mgbc[i]);                                         CHKERRQ(ierr);
+		ierr = BCCreate(&mg->mgbc[i], &mg->mgfs[i], bc->ts, bc->scal, idxmod); CHKERRQ(ierr);
 
-		// setup bc context
-//		ierr = BCApply(&mg->mgbc[i], &mg->mgfs[i], idxmod); CHKERRQ(ierr);
 	}
 
 	// create Galerkin multigrid preconditioner
@@ -191,6 +189,9 @@ PetscErrorCode MGSetup(MG *mg, Mat A)
 		// set coarse grid
 		cors   = &mg->mgfs[i];
 		bccors = &mg->mgbc[i];
+
+		// setup coarse bc context
+		ierr = BCApply(bccors, cors, mg->idxmod); CHKERRQ(ierr);
 
 		// assemble matrices
 		ierr = SetupRestrictStep(mg->R[i], cors, fine, bccors, mg->idxmod); CHKERRQ(ierr);
