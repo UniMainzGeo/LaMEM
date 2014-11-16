@@ -46,17 +46,12 @@ PetscErrorCode OutBufCreate(OutBuf *outbuf, JacRes *jr)
 	ierr = PetscMalloc((size_t)(_max_num_comp_*nx*ny*nz)*sizeof(float), &outbuf->buff); CHKERRQ(ierr);
 
 	// allocate corner buffers
-	ierr = DMCreateGlobalVector(fs->DA_COR, &outbuf->gbcor); CHKERRQ(ierr);
 	ierr = DMCreateLocalVector (fs->DA_COR, &outbuf->lbcor); CHKERRQ(ierr);
 
 	// set pointers to center & edge buffers (reuse from JacRes object)
-	outbuf->gbcen = jr->gdxx;
 	outbuf->lbcen = jr->ldxx;
-	outbuf->gbxy  = jr->gdxy;
 	outbuf->lbxy  = jr->ldxy;
-	outbuf->gbxz  = jr->gdxz;
 	outbuf->lbxz  = jr->ldxz;
-	outbuf->gbyz  = jr->gdyz;
 	outbuf->lbyz  = jr->ldyz;
 
 	PetscFunctionReturn(0);
@@ -73,7 +68,6 @@ PetscErrorCode OutBufDestroy(OutBuf *outbuf)
 	ierr = PetscFree(outbuf->buff); CHKERRQ(ierr);
 
 	// free corner buffers
-	ierr = VecDestroy(&outbuf->gbcor); CHKERRQ(ierr);
 	ierr = VecDestroy(&outbuf->lbcor); CHKERRQ(ierr);
 
 	PetscFunctionReturn(0);
@@ -158,7 +152,7 @@ PetscErrorCode OutBufPut3DVecComp(
 	buff = outbuf->buff;
 
 	// scatter ghost points to local buffer vector from global source vector
-	GLOBAL_TO_LOCAL(fs->DA_COR, outbuf->gbcor, outbuf->lbcor)
+	LOCAL_TO_LOCAL(fs->DA_COR, outbuf->lbcor)
 
 	// access local buffer vector
 	ierr = DMDAVecGetArray(fs->DA_COR, outbuf->lbcor, &arr); CHKERRQ(ierr);

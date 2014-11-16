@@ -303,6 +303,7 @@ PetscErrorCode ADVInterpFieldToMark(AdvCtx *actx, InterpCase icase)
 	PetscInt     nx, ny, sx, sy, sz;
 	PetscInt     jj, ID, I, J, K, II, JJ, KK;
 	PetscScalar *gxy, *gxz, *gyz, ***lxy, ***lxz, ***lyz;
+
 	PetscScalar  xc, yc, zc, xp, yp, zp, wx, wy, wz, dt;
 
 	PetscErrorCode ierr;
@@ -327,6 +328,7 @@ PetscErrorCode ADVInterpFieldToMark(AdvCtx *actx, InterpCase icase)
 	}
 	else
 	{
+/*
 		// access 1D layouts of global vectors
 		ierr = VecGetArray(jr->gdxy, &gxy);  CHKERRQ(ierr);
 		ierr = VecGetArray(jr->gdxz, &gxz);  CHKERRQ(ierr);
@@ -354,6 +356,7 @@ PetscErrorCode ADVInterpFieldToMark(AdvCtx *actx, InterpCase icase)
 		GLOBAL_TO_LOCAL(fs->DA_XY, jr->gdxy, jr->ldxy);
 		GLOBAL_TO_LOCAL(fs->DA_XZ, jr->gdxz, jr->ldxz);
 		GLOBAL_TO_LOCAL(fs->DA_YZ, jr->gdyz, jr->ldyz);
+*/
 	}
 
 	// access 3D layouts of local vectors
@@ -1127,7 +1130,7 @@ PetscErrorCode ADVInterpMarkToEdge(AdvCtx *actx, PetscInt iphase, InterpCase ica
 	ierr = DMDAVecRestoreArray(fs->DA_XY, jr->ldxy, &lxy); CHKERRQ(ierr);
 	ierr = DMDAVecRestoreArray(fs->DA_XZ, jr->ldxz, &lxz); CHKERRQ(ierr);
 	ierr = DMDAVecRestoreArray(fs->DA_YZ, jr->ldyz, &lyz); CHKERRQ(ierr);
-
+/*
 	// assemble global vectors
 	LOCAL_TO_GLOBAL(fs->DA_XY, jr->ldxy, jr->gdxy)
 	LOCAL_TO_GLOBAL(fs->DA_XZ, jr->ldxz, jr->gdxz)
@@ -1162,7 +1165,7 @@ PetscErrorCode ADVInterpMarkToEdge(AdvCtx *actx, PetscInt iphase, InterpCase ica
 	ierr = VecRestoreArray(jr->gdxy, &gxy); CHKERRQ(ierr);
 	ierr = VecRestoreArray(jr->gdxz, &gxz); CHKERRQ(ierr);
 	ierr = VecRestoreArray(jr->gdyz, &gyz); CHKERRQ(ierr);
-
+*/
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------

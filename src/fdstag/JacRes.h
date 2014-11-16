@@ -30,7 +30,7 @@ typedef struct
 	Vec lfx,  lfy, lfz;  // local (ghosted)
 
 	// strain-rate components (also used as buffer vectors)
-	Vec gdxx, gdyy, gdzz, gdxy, gdxz, gdyz; // global
+//	Vec gdxx, gdyy, gdzz, gdxy, gdxz, gdyz; // global
 	Vec ldxx, ldyy, ldzz, ldxy, ldxz, ldyz; // local (ghosted)
 
 	// pressure & temperature

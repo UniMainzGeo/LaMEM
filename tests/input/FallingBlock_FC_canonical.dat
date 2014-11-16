@@ -7,9 +7,9 @@
 #    * number of cells                                    (n points)
 #    * bias coefficients                                  (n points) 
 
-nel_x						=   16    
-nel_y						= 	16    
-nel_z						= 	16
+nel_x						=   18    
+nel_y						= 	18    
+nel_z						= 	18
 
  
 #nel_x						=	-3    
@@ -48,7 +48,7 @@ amplNoise					=	0.0	 		# Amplitude of noise @ interface
 # Define input/output and numerics-related stuff
 OutputFile					=	FB_test		
 save_timesteps				=	1				# save every ? timesteps
-time_end					=	10				# last timestep
+time_end					=	1				# last timestep
 CFL							=	0.25			# CFL, dt-based criterium
 dt_max						=	1e3 	  	   	# Maximum timestep [years if dimensional]
 	
@@ -92,13 +92,13 @@ FactorSurfaceLayer			= 		0.3 		# How thick is the surface layer (if option 2 is 
 
 # Preconditioner
 
-	-pcmat_type block
-	-pcmat_pgamma 1e3
-	-jp_type bf
-	-bf_vs_type user
-	-vs_ksp_type preonly
-	-vs_pc_type lu
-	-vs_pc_factor_mat_solver_package mumps
+#	-pcmat_type block
+#	-pcmat_pgamma 1e3
+#	-jp_type bf
+#	-bf_vs_type user
+#	-vs_ksp_type preonly
+#	-vs_pc_type lu
+#	-vs_pc_factor_mat_solver_package mumps
 
 #	-pcmat_type block
 #	-pcmat_no_dev_proj
@@ -106,23 +106,25 @@ FactorSurfaceLayer			= 		0.3 		# How thick is the surface layer (if option 2 is 
 #	-bf_vs_type mg
 #	-vs_ksp_type preonly
 
+	-pcmat_type mono
+	-jp_type mg
+
 #	-gmg_pc_view
-#	-gmg_pc_type mg
-#	-gmg_pc_mg_levels 3
-#	-gmg_pc_mg_galerkin
-#	-gmg_pc_mg_type multiplicative
-#	-gmg_pc_mg_cycle_type v
+	-gmg_pc_type mg
+	-gmg_pc_mg_levels 2
+	-gmg_pc_mg_galerkin
+	-gmg_pc_mg_type multiplicative
+	-gmg_pc_mg_cycle_type v
 
-#	-gmg_mg_levels_ksp_type richardson
-#	-gmg_mg_levels_ksp_richardson_scale 0.5
-#	-gmg_mg_levels_ksp_max_it 20
-#	-gmg_mg_levels_pc_type jacobi
+	-gmg_mg_levels_ksp_type richardson
+	-gmg_mg_levels_ksp_richardson_scale 0.5
+	-gmg_mg_levels_ksp_max_it 20
+	-gmg_mg_levels_pc_type jacobi
 
-#	-crs_ksp_type preonly
-#	-crs_pc_type redundant
-#	-crs_pc_redundant_number 1
-#	-crs_redundant_pc_factor_mat_solver_package mumps
-
+	-crs_ksp_type preonly
+	-crs_pc_type redundant
+	-crs_pc_redundant_number 1
+	-crs_redundant_pc_factor_mat_solver_package mumps
 
 
 # Additional command-line Petsc Options

@@ -77,14 +77,6 @@ PetscErrorCode JacResCreate(
 	ierr = DMCreateLocalVector(fs->DA_Y, &jr->lfy);  CHKERRQ(ierr);
 	ierr = DMCreateLocalVector(fs->DA_Z, &jr->lfz);  CHKERRQ(ierr);
 
-	// global strain rate components
-	ierr = DMCreateGlobalVector(fs->DA_CEN, &jr->gdxx); CHKERRQ(ierr);
-	ierr = DMCreateGlobalVector(fs->DA_CEN, &jr->gdyy); CHKERRQ(ierr);
-	ierr = DMCreateGlobalVector(fs->DA_CEN, &jr->gdzz); CHKERRQ(ierr);
-	ierr = DMCreateGlobalVector(fs->DA_XY,  &jr->gdxy); CHKERRQ(ierr);
-	ierr = DMCreateGlobalVector(fs->DA_XZ,  &jr->gdxz); CHKERRQ(ierr);
-	ierr = DMCreateGlobalVector(fs->DA_YZ,  &jr->gdyz); CHKERRQ(ierr);
-
 	// local strain rate components
 	ierr = DMCreateLocalVector(fs->DA_CEN, &jr->ldxx); CHKERRQ(ierr);
 	ierr = DMCreateLocalVector(fs->DA_CEN, &jr->ldyy); CHKERRQ(ierr);
@@ -182,13 +174,6 @@ PetscErrorCode JacResDestroy(JacRes *jr)
 	ierr = VecDestroy(&jr->lfx);     CHKERRQ(ierr);
 	ierr = VecDestroy(&jr->lfy);     CHKERRQ(ierr);
 	ierr = VecDestroy(&jr->lfz);     CHKERRQ(ierr);
-
-	ierr = VecDestroy(&jr->gdxx);    CHKERRQ(ierr);
-	ierr = VecDestroy(&jr->gdyy);    CHKERRQ(ierr);
-	ierr = VecDestroy(&jr->gdzz);    CHKERRQ(ierr);
-	ierr = VecDestroy(&jr->gdxy);    CHKERRQ(ierr);
-	ierr = VecDestroy(&jr->gdxz);    CHKERRQ(ierr);
-	ierr = VecDestroy(&jr->gdyz);    CHKERRQ(ierr);
 
 	ierr = VecDestroy(&jr->ldxx);    CHKERRQ(ierr);
 	ierr = VecDestroy(&jr->ldyy);    CHKERRQ(ierr);
@@ -312,12 +297,12 @@ PetscErrorCode JacResGetEffStrainRate(JacRes *jr)
 	ierr = DMDAVecGetArray(fs->DA_Z,   jr->lvz,  &vz);  CHKERRQ(ierr);
 
 	// access global strain-rate components
-	ierr = DMDAVecGetArray(fs->DA_CEN, jr->gdxx, &dxx); CHKERRQ(ierr);
-	ierr = DMDAVecGetArray(fs->DA_CEN, jr->gdyy, &dyy); CHKERRQ(ierr);
-	ierr = DMDAVecGetArray(fs->DA_CEN, jr->gdzz, &dzz); CHKERRQ(ierr);
-	ierr = DMDAVecGetArray(fs->DA_XY,  jr->gdxy, &dxy); CHKERRQ(ierr);
-	ierr = DMDAVecGetArray(fs->DA_XZ,  jr->gdxz, &dxz); CHKERRQ(ierr);
-	ierr = DMDAVecGetArray(fs->DA_YZ,  jr->gdyz, &dyz); CHKERRQ(ierr);
+	ierr = DMDAVecGetArray(fs->DA_CEN, jr->ldxx, &dxx); CHKERRQ(ierr);
+	ierr = DMDAVecGetArray(fs->DA_CEN, jr->ldyy, &dyy); CHKERRQ(ierr);
+	ierr = DMDAVecGetArray(fs->DA_CEN, jr->ldzz, &dzz); CHKERRQ(ierr);
+	ierr = DMDAVecGetArray(fs->DA_XY,  jr->ldxy, &dxy); CHKERRQ(ierr);
+	ierr = DMDAVecGetArray(fs->DA_XZ,  jr->ldxz, &dxz); CHKERRQ(ierr);
+	ierr = DMDAVecGetArray(fs->DA_YZ,  jr->ldyz, &dyz); CHKERRQ(ierr);
 
 	//-------------------------------
 	// central points (dxx, dyy, dzz)
@@ -467,20 +452,20 @@ PetscErrorCode JacResGetEffStrainRate(JacRes *jr)
 	ierr = DMDAVecRestoreArray(fs->DA_X,   jr->lvx,  &vx);  CHKERRQ(ierr);
 	ierr = DMDAVecRestoreArray(fs->DA_Y,   jr->lvy,  &vy);  CHKERRQ(ierr);
 	ierr = DMDAVecRestoreArray(fs->DA_Z,   jr->lvz,  &vz);  CHKERRQ(ierr);
-	ierr = DMDAVecRestoreArray(fs->DA_CEN, jr->gdxx, &dxx); CHKERRQ(ierr);
-	ierr = DMDAVecRestoreArray(fs->DA_CEN, jr->gdyy, &dyy); CHKERRQ(ierr);
-	ierr = DMDAVecRestoreArray(fs->DA_CEN, jr->gdzz, &dzz); CHKERRQ(ierr);
-	ierr = DMDAVecRestoreArray(fs->DA_XY,  jr->gdxy, &dxy); CHKERRQ(ierr);
-	ierr = DMDAVecRestoreArray(fs->DA_XZ,  jr->gdxz, &dxz); CHKERRQ(ierr);
-	ierr = DMDAVecRestoreArray(fs->DA_YZ,  jr->gdyz, &dyz); CHKERRQ(ierr);
+	ierr = DMDAVecRestoreArray(fs->DA_CEN, jr->ldxx, &dxx); CHKERRQ(ierr);
+	ierr = DMDAVecRestoreArray(fs->DA_CEN, jr->ldyy, &dyy); CHKERRQ(ierr);
+	ierr = DMDAVecRestoreArray(fs->DA_CEN, jr->ldzz, &dzz); CHKERRQ(ierr);
+	ierr = DMDAVecRestoreArray(fs->DA_XY,  jr->ldxy, &dxy); CHKERRQ(ierr);
+	ierr = DMDAVecRestoreArray(fs->DA_XZ,  jr->ldxz, &dxz); CHKERRQ(ierr);
+	ierr = DMDAVecRestoreArray(fs->DA_YZ,  jr->ldyz, &dyz); CHKERRQ(ierr);
 
 	// communicate boundary strain-rate values
-	GLOBAL_TO_LOCAL(fs->DA_CEN, jr->gdxx, jr->ldxx);
-	GLOBAL_TO_LOCAL(fs->DA_CEN, jr->gdyy, jr->ldyy);
-	GLOBAL_TO_LOCAL(fs->DA_CEN, jr->gdzz, jr->ldzz);
-	GLOBAL_TO_LOCAL(fs->DA_XY,  jr->gdxy, jr->ldxy);
-	GLOBAL_TO_LOCAL(fs->DA_XZ,  jr->gdxz, jr->ldxz);
-	GLOBAL_TO_LOCAL(fs->DA_YZ,  jr->gdyz, jr->ldyz);
+	LOCAL_TO_LOCAL(fs->DA_CEN, jr->ldxx);
+	LOCAL_TO_LOCAL(fs->DA_CEN, jr->ldyy);
+	LOCAL_TO_LOCAL(fs->DA_CEN, jr->ldzz);
+	LOCAL_TO_LOCAL(fs->DA_XY,  jr->ldxy);
+	LOCAL_TO_LOCAL(fs->DA_XZ,  jr->ldxz);
+	LOCAL_TO_LOCAL(fs->DA_YZ,  jr->ldyz);
 
 	PetscFunctionReturn(0);
 }
@@ -509,9 +494,9 @@ PetscErrorCode JacResGetVorticity(JacRes *jr)
 	ierr = DMDAVecGetArray(fs->DA_X,  jr->lvx,  &lvx);  CHKERRQ(ierr);
 	ierr = DMDAVecGetArray(fs->DA_Y,  jr->lvy,  &lvy);  CHKERRQ(ierr);
 	ierr = DMDAVecGetArray(fs->DA_Z,  jr->lvz,  &lvz);  CHKERRQ(ierr);
-	ierr = DMDAVecGetArray(fs->DA_XY, jr->gdxy, &gwz);  CHKERRQ(ierr);
-	ierr = DMDAVecGetArray(fs->DA_XZ, jr->gdxz, &gwy);  CHKERRQ(ierr);
-	ierr = DMDAVecGetArray(fs->DA_YZ, jr->gdyz, &gwx);  CHKERRQ(ierr);
+	ierr = DMDAVecGetArray(fs->DA_XY, jr->ldxy, &gwz);  CHKERRQ(ierr);
+	ierr = DMDAVecGetArray(fs->DA_XZ, jr->ldxz, &gwy);  CHKERRQ(ierr);
+	ierr = DMDAVecGetArray(fs->DA_YZ, jr->ldyz, &gwx);  CHKERRQ(ierr);
 
 	//-------------------------------
 	// xy edge points (wz)
@@ -571,14 +556,14 @@ PetscErrorCode JacResGetVorticity(JacRes *jr)
 	ierr = DMDAVecRestoreArray(fs->DA_X,  jr->lvx,  &lvx);  CHKERRQ(ierr);
 	ierr = DMDAVecRestoreArray(fs->DA_Y,  jr->lvy,  &lvy);  CHKERRQ(ierr);
 	ierr = DMDAVecRestoreArray(fs->DA_Z,  jr->lvz,  &lvz);  CHKERRQ(ierr);
-	ierr = DMDAVecRestoreArray(fs->DA_XY, jr->gdxy, &gwz);  CHKERRQ(ierr);
-	ierr = DMDAVecRestoreArray(fs->DA_XZ, jr->gdxz, &gwy);  CHKERRQ(ierr);
-	ierr = DMDAVecRestoreArray(fs->DA_YZ, jr->gdyz, &gwx);  CHKERRQ(ierr);
+	ierr = DMDAVecRestoreArray(fs->DA_XY, jr->ldxy, &gwz);  CHKERRQ(ierr);
+	ierr = DMDAVecRestoreArray(fs->DA_XZ, jr->ldxz, &gwy);  CHKERRQ(ierr);
+	ierr = DMDAVecRestoreArray(fs->DA_YZ, jr->ldyz, &gwx);  CHKERRQ(ierr);
 
 	// communicate boundary values
-	GLOBAL_TO_LOCAL(fs->DA_XY, jr->gdxy, jr->ldxy);
-	GLOBAL_TO_LOCAL(fs->DA_XZ, jr->gdxz, jr->ldxz);
-	GLOBAL_TO_LOCAL(fs->DA_YZ, jr->gdyz, jr->ldyz);
+	LOCAL_TO_LOCAL(fs->DA_XY, jr->ldxy);
+	LOCAL_TO_LOCAL(fs->DA_XZ, jr->ldxz);
+	LOCAL_TO_LOCAL(fs->DA_YZ, jr->ldyz);
 
 	PetscFunctionReturn(0);
 }

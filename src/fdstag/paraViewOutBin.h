@@ -41,7 +41,6 @@ typedef struct
 	float    *buff;  // direct output buffer
 	PetscInt  cn;    // current number of elements in the buffer
 	// grid buffer vectors
-	Vec gbcen, gbcor, gbxy, gbxz, gbyz; // global
 	Vec lbcen, lbcor, lbxy, lbxz, lbyz; // local (ghosted)
 
 } OutBuf;
