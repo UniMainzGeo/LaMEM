@@ -22,6 +22,7 @@
 #define __FUNCT__ "MGCreate"
 PetscErrorCode MGCreate(MG *mg, FDSTAG *fs, BCCtx *bc, idxtype idxmod)
 {
+	/*
 	PetscInt  i, l, ncors;
 	FDSTAG   *fine, *cors;
 	char      pc_type[MAX_NAME_LEN];
@@ -124,7 +125,7 @@ PetscErrorCode MGCreate(MG *mg, FDSTAG *fs, BCCtx *bc, idxtype idxmod)
 
 	// store indexing mode
 	mg->idxmod = idxmod;
-
+*/
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
@@ -171,7 +172,7 @@ PetscErrorCode MGSetup(MG *mg, Mat A)
 	// they will be made matrix- distance- dependent.
 	// Currently they depend only on boundary conditions,
 	// so changing boundary condition would also require re-assembly.
-
+/*
 	PetscInt  i;
 	FDSTAG   *fine,   *cors;
 	BCCtx    *bcfine, *bccors;
@@ -211,7 +212,7 @@ PetscErrorCode MGSetup(MG *mg, Mat A)
 
 	// store matrices in the file if requested
 	ierr = MGDumpMat(mg); CHKERRQ(ierr);
-
+*/
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
@@ -344,6 +345,7 @@ PetscErrorCode MGDumpMat(MG *mg)
 #define __FUNCT__ "SetupRestrictStep"
 PetscErrorCode SetupRestrictStep(Mat R, FDSTAG *cors, FDSTAG *fine, BCCtx *bccors, idxtype idxmod)
 {
+/*
 	PetscScalar v[12];
 	PetscInt    idx[12];
 	PetscInt    mx, my, mz;
@@ -556,7 +558,7 @@ PetscErrorCode SetupRestrictStep(Mat R, FDSTAG *cors, FDSTAG *fine, BCCtx *bccor
 
 	// assemble restriction matrix
 	ierr = MatAIJAssemble(R, bccors->numSPC, bccors->SPCList);
-
+*/
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
@@ -564,6 +566,7 @@ PetscErrorCode SetupRestrictStep(Mat R, FDSTAG *cors, FDSTAG *fine, BCCtx *bccor
 #define __FUNCT__ "SetupProlongStep"
 PetscErrorCode SetupProlongStep(Mat P, FDSTAG *fine, FDSTAG *cors, BCCtx *bcfine, idxtype idxmod)
 {
+/*
 	PetscScalar v[8];
 	PetscInt    idx[8];
 	PetscInt    mx, my, mz;
@@ -761,7 +764,7 @@ PetscErrorCode SetupProlongStep(Mat P, FDSTAG *fine, FDSTAG *cors, BCCtx *bcfine
 
 	// assemble prolongation matrix
 	ierr = MatAIJAssemble(P, bcfine->numSPC, bcfine->SPCList);
-
+*/
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------

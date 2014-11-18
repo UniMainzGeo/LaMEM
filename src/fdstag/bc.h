@@ -4,39 +4,66 @@
 #ifndef __bc_h__
 #define __bc_h__
 //---------------------------------------------------------------------------
+// index shift type
+typedef enum
+{
+	LOCAL_TO_GLOBAL,
+	GLOBAL_TO_LOCAL
+
+} ShiftType;
+//---------------------------------------------------------------------------
 // boundary condition context
 typedef struct
 {
+	//=====================================================================
+	// WARNING!
+	//
+	// Global v-p index space can be either coupled or uncoupled
+	// (used to constrain rows & columns of preconditioner matrices).
+	//
+	// Local v-p index space is ALWAYS coupled, since all solvers are coupled
+	// (used to constrain primary unknown & residual vectors).
+	//=====================================================================
+
 	// boundary conditions vectors (velocity, pressure, temperature)
 	Vec bcvx,  bcvy, bcvz, bcp, bcT; // local (ghosted)
 
 	// single-point constraints
-	PetscInt     numSPC;   // number of single point constraints (SPC)
-	PetscInt    *SPCList;  // global indices of SPC (global layout)
-	PetscScalar *SPCVals;  // values of SPC
+	ShiftType    stype;   // current index shift type
+	PetscInt     numSPC;  // total number of constraints
+	PetscInt    *SPCList; // local indices of SPC
+	PetscScalar *SPCVals; // values of SPC
 
-	PetscInt     numSPCPres;   // number of pressure SPC
-	PetscInt    *SPCListPres;  // global indices of pressure SPC (pressure layout)
+	// velocity
+	PetscInt     vNumSPC;
+	PetscInt    *vSPCList;
+	PetscScalar *vSPCVals;
+
+	// pressure
+	PetscInt     pNumSPC;
+	PetscInt    *pSPCList;
+	PetscScalar *pSPCVals;
 
 	// two-point constraints
-	PetscInt     numTPC;       // number of two-point constraints (TPC)
-	PetscInt    *TPCList;      // local indices of TPC (ghosted layout)
-	PetscInt    *TPCPrimeDOF;  // local indices of primary DOF (ghosted layout)
-	PetscScalar *TPCVals;      // values of TPC
-	PetscScalar *TPCLinComPar; // linear combination parameters
+//	PetscInt     numTPC;       // number of two-point constraints (TPC)
+//	PetscInt    *TPCList;      // local indices of TPC (ghosted layout)
+//	PetscInt    *TPCPrimeDOF;  // local indices of primary DOF (ghosted layout)
+//	PetscScalar *TPCVals;      // values of TPC
+//	PetscScalar *TPCLinComPar; // linear combination parameters
 
 	// background strain-rate parameters
-	PetscBool    bgActive;     // flag for activating background strain-rates
-	PetscScalar  Exx, Eyy;     // horizontal background strain-rates
+	PetscBool    bgAct;    // flag for activating background strain-rates
+	PetscScalar  Exx, Eyy; // horizontal background strain-rates
 
 	// Dirichlet pushing block constraints
-	PetscBool     pActive;     // flag for activating pushing
-	PetscBool     pApply;      // flag for applying pushing on a time step
-	PetscScalar   theta;       // rotation angle
-	PetscScalar   Vx, Vy;      // Dirichlet values for Vx and Vy
-	PushingParams *pb;         // major pushing block parameters
-	TSSol         *ts;         // time stepping parameters (to be removed here)
-	Scaling       *scal;       // scaling parameters (to be removed here)
+	PetscBool     pbAct;  // flag for activating pushing
+	PetscBool     pbApp;  // flag for applying pushing on a time step
+	PetscScalar   theta;  // rotation angle
+	PetscScalar   Vx, Vy; // Dirichlet values for Vx and Vy
+	PushingParams *pb;    // major pushing block parameters
+	TSSol         *ts;    // time stepping parameters
+	Scaling       *scal;  // scaling parameters
+
 
 } BCCtx;
 //---------------------------------------------------------------------------
@@ -44,7 +71,7 @@ typedef struct
 PetscErrorCode BCClear(BCCtx *bc);
 
 // create boundary condition context
-PetscErrorCode BCCreate(BCCtx *bc, FDSTAG *fs, TSSol *ts, Scaling *scal, idxtype idxmod);
+PetscErrorCode BCCreate(BCCtx *bc, FDSTAG *fs, TSSol *ts, Scaling *scal);
 
 // set background strain-rates
 PetscErrorCode BCSetStretch(BCCtx *bc, UserContext *user);
@@ -53,10 +80,13 @@ PetscErrorCode BCSetStretch(BCCtx *bc, UserContext *user);
 PetscErrorCode BCDestroy(BCCtx *bc);
 
 // apply boundary conditions
-PetscErrorCode BCApply(BCCtx *bc, FDSTAG *fs, idxtype idxmod);
+PetscErrorCode BCApply(BCCtx *bc, FDSTAG *fs);
 
 // apply constraints on the boundaries
 PetscErrorCode BCApplyBound(BCCtx *bc, FDSTAG *fs);
+
+// shift indices of constrained nodes
+PetscErrorCode BCShiftIndices(BCCtx *bc, FDSTAG *fs, ShiftType stype);
 
 //---------------------------------------------------------------------------
 

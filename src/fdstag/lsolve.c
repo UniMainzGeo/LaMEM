@@ -183,7 +183,7 @@ PetscErrorCode PCStokesBFCreate(PCStokes pc)
 	// create & set velocity multigrid preconditioner
 	if(bf->vtype == _VEL_MG_)
 	{
-		ierr = MGCreate(&bf->vmg, jr->fs, jr->ubc, IDXUNCOUPLED); CHKERRQ(ierr);
+		ierr = MGCreate(&bf->vmg, jr->fs, jr->bc, IDXUNCOUPLED); CHKERRQ(ierr);
 
 		ierr = KSPGetPC(bf->vksp, &vpc);         CHKERRQ(ierr);
 		ierr = PCSetType(vpc, PCSHELL);          CHKERRQ(ierr);
@@ -311,16 +311,16 @@ PetscErrorCode PCStokesBFApply(Mat JP, Vec r, Vec x)
 	// extract residual blocks
 	ierr = VecScatterBlockToMonolithic(P->rv, P->rp, r, SCATTER_REVERSE); CHKERRQ(ierr);
 
-	ierr = VecPointwiseDivide(P->xp, P->rp, P->S); CHKERRQ(ierr); // xp = (S^-1)*rp
+	ierr = MatMult(P->iS, P->rp, P->xp);     CHKERRQ(ierr); // xp = (S^-1)*rp
 
 //	this fucking sign has tremendous influence on convergence rate! it's better this way!
-//	ierr = VecScale(P->xp, -1.0);                  CHKERRQ(ierr); // xp = -xp
+//	ierr = VecScale(P->xp, -1.0);            CHKERRQ(ierr); // xp = -xp
 
-	ierr = MatMult(P->Avp, P->xp, P->wv);          CHKERRQ(ierr); // wv = Avp*xp
+	ierr = MatMult(P->Avp, P->xp, P->wv);    CHKERRQ(ierr); // wv = Avp*xp
 
-	ierr = VecAXPY(P->rv, -1.0, P->wv);            CHKERRQ(ierr); // rv = rv - wv
+	ierr = VecAXPY(P->rv, -1.0, P->wv);      CHKERRQ(ierr); // rv = rv - wv
 
-	ierr = KSPSolve(bf->vksp, P->rv, P->xv);       CHKERRQ(ierr); // xv = (Avv^-1)*rv
+	ierr = KSPSolve(bf->vksp, P->rv, P->xv); CHKERRQ(ierr); // xv = (Avv^-1)*rv
 
 		// compose approximate solution
 	ierr = VecScatterBlockToMonolithic(P->xv, P->xp, x, SCATTER_FORWARD); CHKERRQ(ierr);
@@ -350,7 +350,7 @@ PetscErrorCode PCStokesMGCreate(PCStokes pc)
 	jr = pc->pm->jr;
 
 	// create context
-	ierr = MGCreate(&mg->mg, jr->fs, jr->cbc, IDXCOUPLED); CHKERRQ(ierr);
+	ierr = MGCreate(&mg->mg, jr->fs, jr->bc, IDXCOUPLED); CHKERRQ(ierr);
 
 	PetscFunctionReturn(0);
 }

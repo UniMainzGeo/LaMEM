@@ -118,19 +118,13 @@ typedef enum { IDXNONE, IDXCOUPLED, IDXUNCOUPLED } idxtype;
 // global indexing of the DOF
 typedef struct
 {
+	idxtype  idxmod; // indexing mode
+
+	PetscInt lnv, lnp, ln; // local number of DOF
+	PetscInt stv, stp, st; // starting indices (stv & stp - decoupled layout)
+
 	// local vectors containing global indices of the local & ghost nodes
-	// NOTE: get rid of these vectors, replace with 1D arrays
 	Vec ivx, ivy, ivz, ip;
-
-	PetscInt numdof;   // local number of DOF (X-Y-Z-velocities + Pressure)
-	PetscInt istart;   // global index of the first DOF
-	PetscInt numdofp;  // local number of pressure DOF (decoupled only)
-	PetscInt istartp;  // global index of the first pressure DOF (decoupled only)
-
-	PetscInt lnv, lnp, ln;
-	PetscInt stv, stp, st;
-
-	idxtype  idxmod;   // indexing mode
 
 } DOFIndex;
 
@@ -160,8 +154,7 @@ typedef struct
 	DM DA_XY, DA_XZ, DA_YZ; // edges
 	DM DA_X,  DA_Y,  DA_Z;  // face velocities & residuals
 
-	DOFIndex cdof; // coupled indexing
-	DOFIndex udof; // uncoupled (block) indexing
+	DOFIndex dof; // global variable indexing
 
 	// local number of local grid points
 	PetscInt nCells;  // cells
@@ -190,9 +183,11 @@ typedef struct
 // DOFIndex functions
 //---------------------------------------------------------------------------
 
-PetscErrorCode DOFIndexCreate(DOFIndex *id, FDSTAG *fs, idxtype idxmod);
+PetscErrorCode DOFIndexCreate(DOFIndex *id, FDSTAG *fs);
 
 PetscErrorCode DOFIndexDestroy(DOFIndex *id);
+
+PetscErrorCode DOFIndexCompute(DOFIndex *id, FDSTAG *fs, idxtype idxmod);
 
 //---------------------------------------------------------------------------
 // FDSTAG functions

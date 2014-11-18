@@ -13,9 +13,8 @@
 typedef struct
 {
 	// external handles
-	FDSTAG  *fs;   // staggered-grid layout
-	BCCtx   *cbc;  // boundary condition context (coupled)
-	BCCtx   *ubc;  // boundary condition context (uncoupled)
+	FDSTAG  *fs;  // staggered-grid layout
+	BCCtx   *bc;  // boundary condition context
 
 	// coupled solution & residual vectors
 	Vec gsol, gres; // global
@@ -30,8 +29,15 @@ typedef struct
 	Vec lfx,  lfy, lfz;  // local (ghosted)
 
 	// strain-rate components (also used as buffer vectors)
-//	Vec gdxx, gdyy, gdzz, gdxy, gdxz, gdyz; // global
 	Vec ldxx, ldyy, ldzz, ldxy, ldxz, ldyz; // local (ghosted)
+	Vec                   gdxy, gdxz, gdyz; // global
+	// (ADVInterpMarkToEdge & ADVInterpFieldToMark is the only
+	//  couple of functions where global vectors (gdxy, gdxz, gdyz) are used.
+	//  Get a fuck rid of this ugly averaging between markers & edges!
+	//  In ADVInterpFieldToMark it's easy.
+	//  In ADVInterpMarkToEdge it's impossible because of assembly operation.
+	//  Really really really need to switch to ghost marker approach!
+	//  Also to get communication pattern independent of number of phases.
 
 	// pressure & temperature
 	Vec gp,  gT; // global
@@ -74,8 +80,7 @@ PetscErrorCode JacResClear(JacRes *jr);
 PetscErrorCode JacResCreate(
 	JacRes   *jr,
 	FDSTAG   *fs,
-	BCCtx    *cbc,
-	BCCtx    *ubc,
+	BCCtx    *bc,
 	PetscInt  numPhases,
 	PetscInt  numSoft);
 

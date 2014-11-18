@@ -55,20 +55,20 @@ PetscErrorCode NLSolCreate(NLSol *nl, PCStokes pc, SNES *p_snes)
 
  	// access context
 	jr  = pc->pm->jr;
-	dof = &(jr->fs->cdof);
+	dof = &(jr->fs->dof);
 
 	// create matrix-free Jacobian operator
-	ierr = MatCreateShell(PETSC_COMM_WORLD, dof->numdof, dof->numdof,
+	ierr = MatCreateShell(PETSC_COMM_WORLD, dof->ln, dof->ln,
 		PETSC_DETERMINE, PETSC_DETERMINE, NULL, &nl->J); CHKERRQ(ierr);
 	ierr = MatSetUp(nl->J);                              CHKERRQ(ierr);
 
 	// create matrix-free Preconditioner operator
-	ierr = MatCreateShell(PETSC_COMM_WORLD, dof->numdof, dof->numdof,
+	ierr = MatCreateShell(PETSC_COMM_WORLD, dof->ln, dof->ln,
 		PETSC_DETERMINE, PETSC_DETERMINE, NULL, &nl->P); CHKERRQ(ierr);
 	ierr = MatSetUp(nl->P);                              CHKERRQ(ierr);
 
 	// create finite-difference Jacobian
-	ierr = MatCreateMFFD(PETSC_COMM_WORLD, dof->numdof, dof->numdof,
+	ierr = MatCreateMFFD(PETSC_COMM_WORLD, dof->ln, dof->ln,
 		PETSC_DETERMINE, PETSC_DETERMINE, &nl->MFFD); CHKERRQ(ierr);
 	ierr = MatSetOptionsPrefix(nl->MFFD,"fd_");       CHKERRQ(ierr);
 	ierr = MatSetFromOptions(nl->MFFD);               CHKERRQ(ierr);

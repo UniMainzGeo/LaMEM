@@ -4,6 +4,16 @@
 #ifndef __multigrid_h__
 #define __multigrid_h__
 //---------------------------------------------------------------------------
+typedef struct
+{
+	DOFIndex dof;
+	DM       DA_CEN;
+	DM       DA_X,  DA_Y,  DA_Z;
+	Mat      R;      // restriction matrices for every level (except coarsest)
+	Mat      P;      // prolongation matrices for every level (except finest)
+
+} MGLevel;
+//---------------------------------------------------------------------------
 // Galerkin multigrid level data structure
 
 typedef struct
@@ -27,6 +37,9 @@ typedef struct
 	FDSTAG   *fs;     // finest level grid
 	BCCtx    *bc;     // finest level boundary conditions
 	idxtype   idxmod; // indexing mode
+
+	MGLevel  *lvl;
+
 
 } MG;
 

@@ -29,10 +29,8 @@ PetscErrorCode BCClear(BCCtx *bc)
 //---------------------------------------------------------------------------
 #undef __FUNCT__
 #define __FUNCT__ "BCCreate"
-PetscErrorCode BCCreate(BCCtx *bc, FDSTAG *fs, TSSol *ts, Scaling *scal, idxtype idxmod)
+PetscErrorCode BCCreate(BCCtx *bc, FDSTAG *fs, TSSol *ts, Scaling *scal)
 {
-	PetscInt ln;
-
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
 
@@ -43,17 +41,13 @@ PetscErrorCode BCCreate(BCCtx *bc, FDSTAG *fs, TSSol *ts, Scaling *scal, idxtype
 	ierr = DMCreateLocalVector(fs->DA_CEN, &bc->bcp);   CHKERRQ(ierr);
 	ierr = DMCreateLocalVector(fs->DA_CEN, &bc->bcT);   CHKERRQ(ierr);
 
-	// get number of local rows
-	if(idxmod == IDXCOUPLED)   ln = fs->cdof.numdof;
-	if(idxmod == IDXUNCOUPLED) ln = fs->udof.numdof;
-
 	// allocate SPC arrays
-	ierr = makeIntArray (&bc->SPCList, NULL, ln); CHKERRQ(ierr);
-	ierr = makeScalArray(&bc->SPCVals, NULL, ln); CHKERRQ(ierr);
+	ierr = makeIntArray (&bc->SPCList, NULL, fs->dof.ln); CHKERRQ(ierr);
+	ierr = makeScalArray(&bc->SPCVals, NULL, fs->dof.ln); CHKERRQ(ierr);
 
-	bc->bgActive = PETSC_FALSE;
-	bc->pActive  = PETSC_FALSE;
-	bc->pApply   = PETSC_FALSE;
+	bc->bgAct = PETSC_FALSE;
+	bc->pbAct = PETSC_FALSE;
+	bc->pbApp = PETSC_FALSE;
 
 	bc->ts   = ts;
 	bc->scal = scal;
@@ -69,24 +63,21 @@ PetscErrorCode BCDestroy(BCCtx *bc)
 	PetscFunctionBegin;
 
 	// destroy boundary conditions vectors (velocity, pressure, temperature)
-	ierr = VecDestroy(&bc->bcvx);    CHKERRQ(ierr);
-	ierr = VecDestroy(&bc->bcvy);    CHKERRQ(ierr);
-	ierr = VecDestroy(&bc->bcvz);    CHKERRQ(ierr);
-	ierr = VecDestroy(&bc->bcp);     CHKERRQ(ierr);
-	ierr = VecDestroy(&bc->bcT);     CHKERRQ(ierr);
+	ierr = VecDestroy(&bc->bcvx); CHKERRQ(ierr);
+	ierr = VecDestroy(&bc->bcvy); CHKERRQ(ierr);
+	ierr = VecDestroy(&bc->bcvz); CHKERRQ(ierr);
+	ierr = VecDestroy(&bc->bcp);  CHKERRQ(ierr);
+	ierr = VecDestroy(&bc->bcT);  CHKERRQ(ierr);
 
 	// single-point constraints (combined)
-	ierr = PetscFree(bc->SPCList);   CHKERRQ(ierr);
-	ierr = PetscFree(bc->SPCVals);   CHKERRQ(ierr);
-
-	// single-point constraints (pressure)
-	ierr = PetscFree(bc->SPCListPres);   CHKERRQ(ierr);
+	ierr = PetscFree(bc->SPCList); CHKERRQ(ierr);
+	ierr = PetscFree(bc->SPCVals); CHKERRQ(ierr);
 
 	// two-point constraints
-	ierr = PetscFree(bc->TPCList);      CHKERRQ(ierr);
-	ierr = PetscFree(bc->TPCPrimeDOF);  CHKERRQ(ierr);
-	ierr = PetscFree(bc->TPCVals);      CHKERRQ(ierr);
-	ierr = PetscFree(bc->TPCLinComPar); CHKERRQ(ierr);
+//	ierr = PetscFree(bc->TPCList);      CHKERRQ(ierr);
+//	ierr = PetscFree(bc->TPCPrimeDOF);  CHKERRQ(ierr);
+//	ierr = PetscFree(bc->TPCVals);      CHKERRQ(ierr);
+//	ierr = PetscFree(bc->TPCLinComPar); CHKERRQ(ierr);
 
 	PetscFunctionReturn(0);
 }
@@ -97,29 +88,28 @@ PetscErrorCode BCSetStretch(BCCtx *bc, UserContext *user)
 {
 	PetscFunctionBegin;
 
-	bc->bgActive = PETSC_TRUE;
-	bc->Exx      = user->BC.Exx;
-	bc->Eyy      = user->BC.Eyy;
+	bc->bgAct = PETSC_TRUE;
+	bc->Exx   = user->BC.Exx;
+	bc->Eyy   = user->BC.Eyy;
 
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
 #undef __FUNCT__
 #define __FUNCT__ "BCApply"
-PetscErrorCode BCApply(BCCtx *bc, FDSTAG *fs, idxtype idxmod)
+PetscErrorCode BCApply(BCCtx *bc, FDSTAG *fs)
 {
-	PetscInt    *SPCList;
+	DOFIndex    *dof;
 	PetscScalar *SPCVals;
-	PetscInt    i, ln, start, numSPC;
+	PetscInt    i, ln, lnv, numSPC, vNumSPC, pNumSPC, *SPCList;
 
  	PetscErrorCode ierr;
 	PetscFunctionBegin;
 
- 	// get global index of the first local row & number of local rows
-	if(idxmod == IDXCOUPLED)   { start = fs->cdof.istart; ln = fs->cdof.numdof; }
-	if(idxmod == IDXUNCOUPLED) { start = fs->udof.istart; ln = fs->udof.numdof; }
-
-	// access constraint arrays
+	// access context
+	dof     = &fs->dof;
+	ln      = dof->ln;
+	lnv     = dof->lnv;
 	SPCList = bc->SPCList;
 	SPCVals = bc->SPCVals;
 
@@ -141,17 +131,89 @@ PetscErrorCode BCApply(BCCtx *bc, FDSTAG *fs, idxtype idxmod)
 	// apply pushing block constraints
 	ierr = BCApplyPush(bc, fs); CHKERRQ(ierr);
 
-	// form constraint list
-	for(i = 0, numSPC = 0; i < ln; i++)
+	// form constraint lists
+	numSPC = 0;
+
+	// velocity
+	for(i = 0; i < lnv; i++)
 	{
 		if(SPCVals[i] != DBL_MAX)
 		{
-			SPCList[numSPC] = start + i;
+			SPCList[numSPC] = i;
 			SPCVals[numSPC] = SPCVals[i];
 			numSPC++;
 		}
 	}
-	bc->numSPC = numSPC;
+	vNumSPC = numSPC;
+
+	// pressure
+	for(i = lnv; i < ln; i++)
+	{
+		if(SPCVals[i] != DBL_MAX)
+		{
+			SPCList[numSPC] = i;
+			SPCVals[numSPC] = SPCVals[i];
+			numSPC++;
+		}
+	}
+	pNumSPC = numSPC - vNumSPC;
+
+	// set index (shift) type
+	bc->stype = GLOBAL_TO_LOCAL;
+
+	// store constraint lists
+	bc->numSPC   = numSPC;
+	bc->vNumSPC  = vNumSPC;
+	bc->vSPCList = SPCList;
+	bc->vSPCVals = SPCVals;
+	bc->pNumSPC  = pNumSPC;
+	bc->pSPCList = SPCList + vNumSPC;
+	bc->pSPCVals = SPCVals + vNumSPC;
+
+	PetscFunctionReturn(0);
+}
+//---------------------------------------------------------------------------
+#undef __FUNCT__
+#define __FUNCT__ "BCShiftIndices"
+PetscErrorCode BCShiftIndices(BCCtx *bc, FDSTAG *fs, ShiftType stype)
+{
+	DOFIndex *dof;
+	PetscInt i, vShift, pShift;
+
+	PetscInt vNumSPC, pNumSPC, *vSPCList, *pSPCList;
+
+	// error checking
+	if((stype == LOCAL_TO_GLOBAL && bc->stype == LOCAL_TO_GLOBAL)
+	|| (stype == GLOBAL_TO_LOCAL && bc->stype == GLOBAL_TO_LOCAL))
+	{
+		SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER,"Cannot call same type of index shifting twice in a row");
+	}
+
+	// access context
+	dof      = &fs->dof;
+	vNumSPC  = bc->vNumSPC;
+	vSPCList = bc->vSPCList;
+	pNumSPC  = bc->pNumSPC;
+	pSPCList = bc->pSPCList;
+
+	// get local-to-global index shifts
+	if(dof->idxmod == IDXCOUPLED)   { vShift = dof->st;  pShift = dof->st;             }
+	if(dof->idxmod == IDXUNCOUPLED) { vShift = dof->stv; pShift = dof->stp - dof->lnv; }
+
+	// shift constraint indices
+	if(stype == LOCAL_TO_GLOBAL)
+	{
+		for(i = 0; i < vNumSPC; i++) vSPCList[i] += vShift;
+		for(i = 0; i < pNumSPC; i++) pSPCList[i] += pShift;
+	}
+	else if(stype == GLOBAL_TO_LOCAL)
+	{
+		for(i = 0; i < vNumSPC; i++) vSPCList[i] -= vShift;
+		for(i = 0; i < pNumSPC; i++) pSPCList[i] -= pShift;
+	}
+
+	// switch shit type
+	bc->stype = stype;
 
 	PetscFunctionReturn(0);
 }
@@ -191,7 +253,7 @@ PetscErrorCode BCApplyBound(BCCtx *bc, FDSTAG *fs)
 //	mcz = fs->dsz.tcels - 1;
 
 	// get boundary velocities
-	if(bc->bgActive == PETSC_TRUE)
+	if(bc->bgAct == PETSC_TRUE)
 	{
 		// get current coordinates of the mesh boundaries
 		ierr = FDSTAGGetGlobalBox(fs, &bx, &by, &bz, &ex, &ey, &ez); CHKERRQ(ierr);
@@ -286,8 +348,8 @@ PetscErrorCode BCSetPush(BCCtx *bc, UserContext *user)
 
 	if(user->AddPushing)
 	{
-		bc->pActive = PETSC_TRUE;
-		bc->pb      = &user->Pushing;
+		bc->pbAct = PETSC_TRUE;
+		bc->pb    = &user->Pushing;
 	}
 
 	PetscFunctionReturn(0);
@@ -309,7 +371,7 @@ PetscErrorCode BCCompPush(BCCtx *bc)
 	PetscFunctionBegin;
 
 	// check if pushing option is activated
-	if(bc->pActive != PETSC_TRUE) PetscFunctionReturn(0);
+	if(bc->pbAct != PETSC_TRUE) PetscFunctionReturn(0);
 
 	// access contexts
 	pb   = bc->pb;
@@ -317,7 +379,7 @@ PetscErrorCode BCCompPush(BCCtx *bc)
 	scal = bc->scal;
 
 	// set boundary conditions flag
-	bc->pApply = PETSC_FALSE;
+	bc->pbApp = PETSC_FALSE;
 
 	// add pushing boundary conditions ONLY within the specified time interval - for that introduce a new flag
 	if(ts->time >= pb->time[0]
@@ -351,7 +413,7 @@ PetscErrorCode BCCompPush(BCCtx *bc)
 		if(pb->dir[ichange] == 2) Vy = pb->V_push[ichange];
 
 		// set boundary conditions parameters
-		bc->pApply = PETSC_TRUE;
+		bc->pbApp  = PETSC_TRUE;
 		bc->Vx     = Vx;
 		bc->Vy     = Vy;
 		bc->theta  = theta;
@@ -393,7 +455,7 @@ PetscErrorCode BCApplyPush(BCCtx *bc, FDSTAG *fs)
 	PetscFunctionBegin;
 
 	// check whether pushing is applied
-	if(bc->pApply != PETSC_TRUE) PetscFunctionReturn(0);
+	if(bc->pbApp != PETSC_TRUE) PetscFunctionReturn(0);
 
 	// prepare block coordinates, sizes & rotation angle parameters
     pb    = bc->pb;
@@ -495,7 +557,7 @@ PetscErrorCode BCAdvectPush(BCCtx *bc, TSSol *ts)
 	PetscScalar   xc, yc, zc, Vx, Vy, dx, dy, dt, omega, theta, dtheta;
 
 	// check if pushing option is activated
-	if(bc->pActive != PETSC_TRUE) PetscFunctionReturn(0);
+	if(bc->pbAct != PETSC_TRUE) PetscFunctionReturn(0);
 
 	// access context
 	pb = bc->pb;

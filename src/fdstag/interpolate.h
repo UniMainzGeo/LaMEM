@@ -18,13 +18,13 @@ typedef struct
 //---------------------------------------------------------------------------
 // Interpolation functions:
 //
-// x-face  -> corner   FDSTAGInterpXFaceCorner
-// y-face  -> corner   FDSTAGInterpYFaceCorner
-// z-face  -> corner   FDSTAGInterpZFaceCorner
-// center  -> corner   FDSTAGInterpCenterCorner
-// xy-edge -> corner   FDSTAGInterpXYEdgeCorner
-// xz-edge -> corner   FDSTAGInterpXZEdgeCorner
-// yz-edge -> corner   FDSTAGInterpYZEdgeCorner
+// x-face  -> corner   InterpXFaceCorner
+// y-face  -> corner   InterpYFaceCorner
+// z-face  -> corner   InterpZFaceCorner
+// center  -> corner   InterpCenterCorner
+// xy-edge -> corner   InterpXYEdgeCorner
+// xz-edge -> corner   InterpXZEdgeCorner
+// yz-edge -> corner   InterpYZEdgeCorner
 //
 // All functions perform distance-based interpolation.
 // All functions assume input vectors in local format.

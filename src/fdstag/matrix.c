@@ -17,7 +17,6 @@
 // * temperature scaling
 // * preallocation for temperature & pressure Schur PC
 //---------------------------------------------------------------------------
-
 #undef __FUNCT__
 #define __FUNCT__ "MatAIJCreate"
 PetscErrorCode MatAIJCreate(
@@ -46,11 +45,37 @@ PetscErrorCode MatAIJCreate(
 }
 //---------------------------------------------------------------------------
 #undef __FUNCT__
-#define __FUNCT__ "MatAIJAssemble"
-PetscErrorCode MatAIJAssemble(Mat P, PetscInt numRows, const PetscInt rows[])
+#define __FUNCT__ "MatAIJCreateDiag"
+PetscErrorCode MatAIJCreateDiag(PetscInt m, PetscInt istart, Mat *P)
 {
-	PetscInt    m, n;
-	PetscScalar diag;
+	PetscInt i, ii;
+
+	PetscErrorCode ierr;
+	PetscFunctionBegin;
+
+	// preallocate
+	ierr = MatAIJCreate(m, m, 1, NULL, 0, NULL, P); CHKERRQ(ierr);
+
+	// put explicit zeroes on the diagonal
+	for(i = 0; i < m; i++)
+	{
+		// get global row index
+		ii = istart + i;
+
+		ierr = MatSetValue((*P), ii, ii, 0.0, INSERT_VALUES); CHKERRQ(ierr);
+	}
+
+	// assemble
+	ierr = MatAIJAssemble((*P), 0, NULL, 0.0); CHKERRQ(ierr);
+
+	PetscFunctionReturn(0);
+}
+//---------------------------------------------------------------------------
+#undef __FUNCT__
+#define __FUNCT__ "MatAIJAssemble"
+PetscErrorCode MatAIJAssemble(Mat P, PetscInt numRows, const PetscInt rows[], PetscScalar diag)
+{
+//	PetscInt    m, n;
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
 
@@ -63,9 +88,9 @@ PetscErrorCode MatAIJAssemble(Mat P, PetscInt numRows, const PetscInt rows[])
 	ierr = MatSetOption(P, MAT_NO_OFF_PROC_ZERO_ROWS, PETSC_TRUE);    CHKERRQ(ierr);
 
 	// zero out constrained rows, form unit diagonal for the constrained block
-	ierr = MatGetSize(P, &m, &n); CHKERRQ(ierr);
-	if(m == n) diag = 1.0;
-	else       diag = 0.0;
+//	ierr = MatGetSize(P, &m, &n); CHKERRQ(ierr);
+//	if(m == n) diag = 1.0;
+//	else       diag = 0.0;
 	ierr = MatZeroRows(P, numRows, rows, diag, NULL, NULL); CHKERRQ(ierr);
 
 	PetscFunctionReturn(0);
@@ -196,12 +221,24 @@ PetscErrorCode PMatSetFromOptions(PMat pm)
 #define __FUNCT__ "PMatAssemble"
 PetscErrorCode PMatAssemble(PMat pm)
 {
+	FDSTAG *fs;
+	BCCtx  *bc;
+
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
 
 	PetscPrintf(PETSC_COMM_WORLD, " Starting preconditioner assembly\n");
 
+	fs = pm->jr->fs;
+	bc = pm->jr->bc;
+
+	// shift constrained node indices to global index space
+	ierr = BCShiftIndices(bc, fs, LOCAL_TO_GLOBAL); CHKERRQ(ierr);
+
 	ierr = pm->Assemble(pm); CHKERRQ(ierr);
+
+	// shift constrained node indices back to local index space
+	ierr = BCShiftIndices(bc, fs, GLOBAL_TO_LOCAL); CHKERRQ(ierr);
 
 	PetscPrintf(PETSC_COMM_WORLD, " Finished preconditioner assembly\n");
 
@@ -257,7 +294,7 @@ PetscErrorCode PMatMonoCreate(PMat pm)
 
 	// access contexts
 	fs  = pm->jr->fs;
-	dof = &fs->cdof;
+	dof = &fs->dof;
 
 	// allocate space
 	ierr = PetscMalloc(sizeof(PMatMono), (void**)&P); CHKERRQ(ierr);
@@ -265,9 +302,12 @@ PetscErrorCode PMatMonoCreate(PMat pm)
 	// store context
 	pm->data = (void*)P;
 
+	// compute global indexing
+	ierr = DOFIndexCompute(dof, fs, IDXCOUPLED); CHKERRQ(ierr);
+
 	// get number of local rows & global index of the first row
-	start = dof->istart;
-	ln    = dof->numdof;
+	ln    = dof->ln;
+	start = dof->st;
 
 	// allocate nonzero counter arrays
 	ierr = makeIntArray(&d_nnz, NULL, ln); CHKERRQ(ierr);
@@ -435,7 +475,7 @@ PetscErrorCode PMatMonoCreate(PMat pm)
 
 	// create matrices & vectors
 	ierr = MatAIJCreate(ln, ln, 0, d_nnz, 0, o_nnz, &P->A); CHKERRQ(ierr);
-	ierr = VecDuplicate(pm->jr->gsol, &P->M);               CHKERRQ(ierr);
+	ierr = MatAIJCreateDiag(ln, start, &P->M);              CHKERRQ(ierr);
 	ierr = VecDuplicate(pm->jr->gsol, &P->w);               CHKERRQ(ierr);
 
 	// clear work arrays
@@ -467,11 +507,10 @@ PetscErrorCode PMatMonoAssemble(PMat pm)
 	BCCtx       *bc;
 	DOFIndex    *dof;
 	PMatMono    *P;
-	PetscScalar *M;
 	PetscInt    idx[7];
 	PetscScalar v[49];
-	PetscInt    iter, startp, i, j, k, nx, ny, nz, sx, sy, sz;
-	PetscScalar eta, IKdt, diag, pgamma;
+	PetscInt    iter, i, j, k, nx, ny, nz, sx, sy, sz;
+	PetscScalar eta, IKdt, diag, pgamma, pt;
 	PetscScalar dx, dy, dz, bdx, fdx, bdy, fdy, bdz, fdz;
 	PetscScalar ***ivx, ***ivy, ***ivz, ***ip;
 	PetscScalar ***bcvx, ***bcvy, ***bcvz, ***bcp;
@@ -484,19 +523,15 @@ PetscErrorCode PMatMonoAssemble(PMat pm)
 	// access contexts
 	jr     = pm->jr;
 	fs     = jr->fs;
-	bc     = jr->cbc;   // coupled
-	dof    = &fs->cdof; // coupled
+	bc     = jr->bc;
+	dof    = &fs->dof;
 	P      = (PMatMono*)pm->data;
-
-	// get iterator for pressure degrees of freedom
-	startp = fs->nXFace + fs->nYFace + fs->nZFace;
 
 	// get penalty parameter
 	pgamma = pm->pgamma;
 
 	// clear matrix coefficients
 	ierr = MatZeroEntries(P->A); CHKERRQ(ierr);
-	ierr = VecZeroEntries(P->M); CHKERRQ(ierr);
 
 	// access index vectors
 	ierr = DMDAVecGetArray(fs->DA_X,   dof->ivx,  &ivx);  CHKERRQ(ierr);
@@ -509,9 +544,6 @@ PetscErrorCode PMatMonoAssemble(PMat pm)
 	ierr = DMDAVecGetArray(fs->DA_Y,   bc->bcvy,  &bcvy);  CHKERRQ(ierr);
 	ierr = DMDAVecGetArray(fs->DA_Z,   bc->bcvz,  &bcvz);  CHKERRQ(ierr);
 	ierr = DMDAVecGetArray(fs->DA_CEN, bc->bcp,   &bcp);   CHKERRQ(ierr);
-
-	// access compensation matrix
-	ierr = VecGetArray(P->M, &M); CHKERRQ(ierr);
 
 	//---------------
 	// central points
@@ -539,8 +571,11 @@ PetscErrorCode PMatMonoAssemble(PMat pm)
 		bdy = SIZE_NODE(j, sy, fs->dsy);   fdy = SIZE_NODE(j+1, sy, fs->dsy);
 		bdz = SIZE_NODE(k, sz, fs->dsz);   fdz = SIZE_NODE(k+1, sz, fs->dsz);
 
+		// compute penalty term
+		pt = -1.0/(pgamma*eta);
+
 		// get pressure diagonal element (with penalty)
-		diag = -IKdt -1.0/(pgamma*eta);
+		diag = -IKdt + pt;
 
 		// compute local matrix
 		pm->getStiffMat(eta, diag, v, dx, dy, dz, fdx, fdy, fdz, bdx, bdy, bdz);
@@ -567,11 +602,10 @@ PetscErrorCode PMatMonoAssemble(PMat pm)
 		// constrain local matrix
 		constrLocalMat(7, pdofidx, cf, v);
 
-		// add to global matrix
-		ierr = MatSetValues(P->A, 7, idx, 7, idx, v, ADD_VALUES); CHKERRQ(ierr);
+		// update global & penalty compensation matrices
+		ierr = MatSetValues(P->A, 7, idx, 7, idx, v,  ADD_VALUES);    CHKERRQ(ierr);
+		ierr = MatSetValue (P->M, idx[6], idx[6], pt, INSERT_VALUES); CHKERRQ(ierr);
 
-		// store penalty compensation
-		M[startp++] = -1.0/(pgamma*eta);
 	}
 	END_STD_LOOP
 
@@ -739,18 +773,16 @@ PetscErrorCode PMatMonoAssemble(PMat pm)
 	ierr = DMDAVecRestoreArray(fs->DA_Z,   bc->bcvz,  &bcvz); CHKERRQ(ierr);
 	ierr = DMDAVecRestoreArray(fs->DA_CEN, bc->bcp,   &bcp);  CHKERRQ(ierr);
 
-	// NOTE: set constrained pressure dof before restoring vector
-	ierr = VecRestoreArray(P->M, &M); CHKERRQ(ierr);
-
 	// assemble velocity-pressure matrix, remove constrained rows
-	ierr = MatAIJAssemble(P->A, bc->numSPC, bc->SPCList); CHKERRQ(ierr);
+	ierr = MatAIJAssemble(P->A, bc->numSPC, bc->SPCList, 1.0); CHKERRQ(ierr);
+	ierr = MatAIJAssemble(P->M, bc->numSPC, bc->SPCList, 0.0); CHKERRQ(ierr);
 
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
 #undef __FUNCT__
 #define __FUNCT__ "PMatMonoPicard"
-PetscErrorCode PMatMonoPicard (Mat J, Vec x, Vec r)
+PetscErrorCode PMatMonoPicard(Mat J, Vec x, Vec r)
 {
 	// actual operation is: r = J*x = A*x - M*x
 
@@ -765,7 +797,7 @@ PetscErrorCode PMatMonoPicard (Mat J, Vec x, Vec r)
 	ierr = MatMult(P->A, x, r); CHKERRQ(ierr);
 
 	// compute compensation
-	ierr = VecPointwiseMult(P->w, P->M, x); CHKERRQ(ierr);
+	ierr = MatMult(P->M, x, P->w); CHKERRQ(ierr);
 
 	// update result
 	ierr = VecAXPY(r, -1.0, P->w);  CHKERRQ(ierr);
@@ -786,7 +818,7 @@ PetscErrorCode PMatMonoDestroy(PMat pm)
 	P = (PMatMono*)pm->data;
 
 	ierr = MatDestroy (&P->A); CHKERRQ(ierr);
-	ierr = VecDestroy (&P->M); CHKERRQ(ierr);
+	ierr = MatDestroy (&P->M); CHKERRQ(ierr);
 	ierr = VecDestroy (&P->w); CHKERRQ(ierr);
 	ierr = PetscFree(P);       CHKERRQ(ierr);
 
@@ -815,7 +847,7 @@ PetscErrorCode PMatBlockCreate(PMat pm)
 
 	jr  = pm->jr;
 	fs  = jr->fs;
-	dof = &fs->udof; // uncoupled
+	dof = &fs->dof;
 
 	// allocate space
 	ierr = PetscMalloc(sizeof(PMatBlock), (void**)&P); CHKERRQ(ierr);
@@ -823,11 +855,14 @@ PetscErrorCode PMatBlockCreate(PMat pm)
 	// store context
 	pm->data = (void*)P;
 
+	// compute global indexing
+	ierr = DOFIndexCompute(dof, fs, IDXUNCOUPLED); CHKERRQ(ierr);
+
 	// get number of local rows & global index of the first row
-	lnv    = dof->numdof;
-	startv = dof->istart;
-	lnp    = dof->numdofp;
-	startp = dof->istartp;
+	lnv    = dof->lnv;
+	startv = dof->stv;
+	lnp    = dof->lnp;
+	startp = dof->stp;
 
 	// allocate nonzero counter arrays
 	ierr = makeIntArray(&Avv_d_nnz, NULL, lnv); CHKERRQ(ierr);
@@ -1019,14 +1054,15 @@ PetscErrorCode PMatBlockCreate(PMat pm)
 	ierr = MatAIJCreate(lnv, lnv, 0, Avv_d_nnz, 0, Avv_o_nnz, &P->Avv);  CHKERRQ(ierr);
 	ierr = MatAIJCreate(lnv, lnp, 0, Avp_d_nnz, 0, Avp_o_nnz, &P->Avp);  CHKERRQ(ierr);
 	ierr = MatAIJCreate(lnp, lnv, 0, Apv_d_nnz, 0, Apv_o_nnz, &P->Apv);  CHKERRQ(ierr);
+	ierr = MatAIJCreateDiag(lnp, startp, &P->App);                       CHKERRQ(ierr);
+	ierr = MatAIJCreateDiag(lnp, startp, &P->iS);                        CHKERRQ(ierr);
+
 	ierr = VecCreateMPI(PETSC_COMM_WORLD, lnv, PETSC_DETERMINE, &P->xv); CHKERRQ(ierr);
 	ierr = VecCreateMPI(PETSC_COMM_WORLD, lnp, PETSC_DETERMINE, &P->xp); CHKERRQ(ierr);
 	ierr = VecDuplicate(P->xv, &P->rv);                                  CHKERRQ(ierr);
 	ierr = VecDuplicate(P->xv, &P->wv);                                  CHKERRQ(ierr);
 	ierr = VecDuplicate(P->xp, &P->rp);                                  CHKERRQ(ierr);
 	ierr = VecDuplicate(P->xp, &P->wp);                                  CHKERRQ(ierr);
-	ierr = VecDuplicate(P->xp, &P->App);                                 CHKERRQ(ierr);
-	ierr = VecDuplicate(P->xp, &P->S);                                   CHKERRQ(ierr);
 
 	// free counter arrays
 	ierr = PetscFree(Avv_d_nnz); CHKERRQ(ierr);
@@ -1064,7 +1100,6 @@ PetscErrorCode PMatBlockAssemble(PMat pm)
 	BCCtx       *bc;
 	DOFIndex    *dof;
 	PMatBlock   *P;
-	PetscScalar *App, *S;
 	PetscInt    idx[7];
 	PetscScalar v[49], a[36], d[6], g[6];
 	PetscInt    iter, i, j, k, nx, ny, nz, sx, sy, sz;
@@ -1080,8 +1115,8 @@ PetscErrorCode PMatBlockAssemble(PMat pm)
 
 	jr  = pm->jr;
 	fs  = jr->fs;
-	bc  = jr->ubc;   // uncoupled
-	dof = &fs->udof; // uncoupled
+	bc  = jr->bc;
+	dof = &fs->dof;
 	P   = (PMatBlock*)pm->data;
 
 	// get penalty parameter
@@ -1091,8 +1126,6 @@ PetscErrorCode PMatBlockAssemble(PMat pm)
 	ierr = MatZeroEntries(P->Avv); CHKERRQ(ierr);
 	ierr = MatZeroEntries(P->Avp); CHKERRQ(ierr);
 	ierr = MatZeroEntries(P->Apv); CHKERRQ(ierr);
-	ierr = VecZeroEntries(P->App); CHKERRQ(ierr);
-	ierr = VecZeroEntries(P->S);   CHKERRQ(ierr);
 
 	// access index vectors
 	ierr = DMDAVecGetArray(fs->DA_X,   dof->ivx,  &ivx); CHKERRQ(ierr);
@@ -1105,10 +1138,6 @@ PetscErrorCode PMatBlockAssemble(PMat pm)
 	ierr = DMDAVecGetArray(fs->DA_Y,   bc->bcvy,  &bcvy); CHKERRQ(ierr);
 	ierr = DMDAVecGetArray(fs->DA_Z,   bc->bcvz,  &bcvz); CHKERRQ(ierr);
 	ierr = DMDAVecGetArray(fs->DA_CEN, bc->bcp,   &bcp);  CHKERRQ(ierr);
-
-	// access diagonal matrices
-	ierr = VecGetArray(P->App, &App); CHKERRQ(ierr);
-	ierr = VecGetArray(P->S,   &S);   CHKERRQ(ierr);
 
 	//---------------
 	// central points
@@ -1167,13 +1196,11 @@ PetscErrorCode PMatBlockAssemble(PMat pm)
 		P->getSubMat(v, a, d, g);
 
 		// update global matrices
-		ierr = MatSetValues(P->Avv, 6, idx,   6, idx,   a, ADD_VALUES); CHKERRQ(ierr);
-		ierr = MatSetValues(P->Avp, 6, idx,   1, idx+6, g, ADD_VALUES); CHKERRQ(ierr);
-		ierr = MatSetValues(P->Apv, 1, idx+6, 6, idx,   d, ADD_VALUES); CHKERRQ(ierr);
-
-		// pressure diagonal blocks
-		App[iter] = -IKdt;
-		S  [iter] =  diag;
+		ierr = MatSetValues(P->Avv, 6, idx,   6, idx,   a,    ADD_VALUES);    CHKERRQ(ierr);
+		ierr = MatSetValues(P->Avp, 6, idx,   1, idx+6, g,    ADD_VALUES);    CHKERRQ(ierr);
+		ierr = MatSetValues(P->Apv, 1, idx+6, 6, idx,   d,    ADD_VALUES);    CHKERRQ(ierr);
+		ierr = MatSetValue (P->App, idx[6], idx[6], -IKdt,    INSERT_VALUES); CHKERRQ(ierr);
+		ierr = MatSetValue (P->iS,  idx[6], idx[6], 1.0/diag, INSERT_VALUES); CHKERRQ(ierr);
 
 		// increment iterator
 		iter++;
@@ -1344,14 +1371,12 @@ PetscErrorCode PMatBlockAssemble(PMat pm)
 	ierr = DMDAVecRestoreArray(fs->DA_Z,   bc->bcvz,  &bcvz); CHKERRQ(ierr);
 	ierr = DMDAVecRestoreArray(fs->DA_CEN, bc->bcp,   &bcp);  CHKERRQ(ierr);
 
-	// NOTE: set constrained pressure dof before restoring vectors
-	ierr = VecRestoreArray(P->App, &App); CHKERRQ(ierr);
-	ierr = VecRestoreArray(P->S,   &S);   CHKERRQ(ierr);
-
 	// assemble velocity-pressure matrix blocks, remove constrained rows
-	ierr = MatAIJAssemble(P->Avv, bc->numSPC,     bc->SPCList);     CHKERRQ(ierr);
-	ierr = MatAIJAssemble(P->Avp, bc->numSPC,     bc->SPCList);     CHKERRQ(ierr);
-	ierr = MatAIJAssemble(P->Apv, bc->numSPCPres, bc->SPCListPres); CHKERRQ(ierr);
+	ierr = MatAIJAssemble(P->Avv, bc->vNumSPC, bc->vSPCList, 1.0); CHKERRQ(ierr);
+	ierr = MatAIJAssemble(P->Avp, bc->vNumSPC, bc->vSPCList, 0.0); CHKERRQ(ierr);
+	ierr = MatAIJAssemble(P->Apv, bc->pNumSPC, bc->pSPCList, 0.0); CHKERRQ(ierr);
+	ierr = MatAIJAssemble(P->App, bc->pNumSPC, bc->pSPCList, 1.0); CHKERRQ(ierr);
+	ierr = MatAIJAssemble(P->iS,  bc->pNumSPC, bc->pSPCList, 1.0); CHKERRQ(ierr);
 
 	PetscFunctionReturn(0);
 }
@@ -1378,17 +1403,17 @@ PetscErrorCode PMatBlockPicardClean(Mat J, Vec x, Vec r)
 	// extract solution blocks
 	ierr = VecScatterBlockToMonolithic(P->xv, P->xp, x, SCATTER_REVERSE); CHKERRQ(ierr);
 
-	ierr = MatMult(P->Apv, P->xv, P->rp);          CHKERRQ(ierr); // rp = Apv*xv
+	ierr = MatMult(P->Apv, P->xv, P->rp); CHKERRQ(ierr); // rp = Apv*xv
 
-	ierr = VecPointwiseMult(P->wp, P->App, P->xp); CHKERRQ(ierr); // wp = App*xp
+	ierr = MatMult(P->App, P->xp, P->wp); CHKERRQ(ierr); // wp = App*xp
 
-	ierr = VecAXPY(P->rp, 1.0, P->wp);             CHKERRQ(ierr); // rp = rp + wp
+	ierr = VecAXPY(P->rp, 1.0, P->wp);    CHKERRQ(ierr); // rp = rp + wp
 
-	ierr = MatMult(P->Avp, P->xp, P->rv);          CHKERRQ(ierr); // rv = Avp*xp
+	ierr = MatMult(P->Avp, P->xp, P->rv); CHKERRQ(ierr); // rv = Avp*xp
 
-	ierr = MatMult(P->Avv, P->xv, P->wv);          CHKERRQ(ierr); // wv = Avv*xv
+	ierr = MatMult(P->Avv, P->xv, P->wv); CHKERRQ(ierr); // wv = Avv*xv
 
-	ierr = VecAXPY(P->rv, 1.0, P->wv);             CHKERRQ(ierr); // rv = rv + wv
+	ierr = VecAXPY(P->rv, 1.0, P->wv);    CHKERRQ(ierr); // rv = rv + wv
 
 	// compose coupled residual
 	ierr = VecScatterBlockToMonolithic(P->rv, P->rp, r, SCATTER_FORWARD); CHKERRQ(ierr);
@@ -1418,21 +1443,21 @@ PetscErrorCode PMatBlockPicardSchur(Mat J, Vec x, Vec r)
 	// extract solution blocks
 	ierr = VecScatterBlockToMonolithic(P->xv, P->xp, x, SCATTER_REVERSE); CHKERRQ(ierr);
 
-	ierr = MatMult(P->Apv, P->xv, P->rp);          CHKERRQ(ierr); // rp = Apv*xv
+	ierr = MatMult(P->Apv, P->xv, P->rp); CHKERRQ(ierr); // rp = Apv*xv
 
-	ierr = VecPointwiseDivide(P->wp, P->rp, P->S); CHKERRQ(ierr); // wp = (S^-1)*rp
+	ierr = MatMult(P->iS, P->rp, P->wp);  CHKERRQ(ierr); // wp = (S^-1)*rp
 
-	ierr = VecAXPY(P->wp, 1.0, P->xp);             CHKERRQ(ierr); // wp = wp + xp
+	ierr = VecAXPY(P->wp, 1.0, P->xp);    CHKERRQ(ierr); // wp = wp + xp
 
-	ierr = MatMult(P->Avp, P->wp, P->rv);          CHKERRQ(ierr); // rv = Avp*wp
+	ierr = MatMult(P->Avp, P->wp, P->rv); CHKERRQ(ierr); // rv = Avp*wp
 
-	ierr = VecPointwiseMult(P->wp, P->App, P->xp); CHKERRQ(ierr); // wp = App*xp
+	ierr = MatMult(P->App, P->xp, P->wp); CHKERRQ(ierr); // wp = App*xp
 
-	ierr = VecAXPY(P->rp, 1.0, P->wp);             CHKERRQ(ierr); // rp = rp + wp
+	ierr = VecAXPY(P->rp, 1.0, P->wp);    CHKERRQ(ierr); // rp = rp + wp
 
-	ierr = MatMult(P->Avv, P->xv, P->wv);          CHKERRQ(ierr); // wv = Avv*xv
+	ierr = MatMult(P->Avv, P->xv, P->wv); CHKERRQ(ierr); // wv = Avv*xv
 
-	ierr = VecAXPY(P->rv, 1.0, P->wv);             CHKERRQ(ierr); // rv = rv + wv
+	ierr = VecAXPY(P->rv, 1.0, P->wv);    CHKERRQ(ierr); // rv = rv + wv
 
 	// compose coupled residual
 	ierr = VecScatterBlockToMonolithic(P->rv, P->rp, r, SCATTER_FORWARD); CHKERRQ(ierr);
@@ -1455,8 +1480,8 @@ PetscErrorCode PMatBlockDestroy(PMat pm)
 	ierr = MatDestroy (&P->Avv); CHKERRQ(ierr);
 	ierr = MatDestroy (&P->Avp); CHKERRQ(ierr);
 	ierr = MatDestroy (&P->Apv); CHKERRQ(ierr);
-	ierr = VecDestroy (&P->App); CHKERRQ(ierr);
-	ierr = VecDestroy (&P->S);   CHKERRQ(ierr);
+	ierr = MatDestroy (&P->App); CHKERRQ(ierr);
+	ierr = MatDestroy (&P->iS);   CHKERRQ(ierr);
 	ierr = VecDestroy (&P->rv);  CHKERRQ(ierr);
 	ierr = VecDestroy (&P->rp);  CHKERRQ(ierr);
 	ierr = VecDestroy (&P->xv);  CHKERRQ(ierr);

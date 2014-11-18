@@ -77,8 +77,7 @@ PetscErrorCode LaMEMLib_FDSTAG(PetscBool InputParamFile, const char *ParamFile, 
 	PetscLogDouble     cputime_start, cputime_start_nonlinear, cputime_end;
 
 	FDSTAG   fs;    // staggered-grid layout
-	BCCtx    cbc;   // boundary condition context (coupled)
-	BCCtx    ubc;   // boundary condition context (uncoupled)
+	BCCtx    bc;    // boundary condition context
 	JacRes   jr;    // Jacobian & residual context
 	AdvCtx   actx;  // advection context
 	PMat     pm;    // preconditioner matrix
@@ -108,8 +107,7 @@ PetscErrorCode LaMEMLib_FDSTAG(PetscBool InputParamFile, const char *ParamFile, 
 	if(LaMEM_OutputParameters) LaMEM_OutputParameters = NULL;
 
 	ierr = FDSTAGClear(&fs);    CHKERRQ(ierr);
-	ierr = BCClear    (&cbc);   CHKERRQ(ierr);
-	ierr = BCClear    (&ubc);   CHKERRQ(ierr);
+	ierr = BCClear    (&bc);    CHKERRQ(ierr);
 	ierr = JacResClear(&jr);    CHKERRQ(ierr);
 	ierr = ADVClear   (&actx);  CHKERRQ(ierr);
 	ierr = NLSolClear (&nl);    CHKERRQ(ierr);
@@ -197,8 +195,6 @@ PetscErrorCode LaMEMLib_FDSTAG(PetscBool InputParamFile, const char *ParamFile, 
 //		ierr = LoadBreakPoint(C, &user,user.DA_Vel, sol, Temp, Pressure, 0); CHKERRQ(ierr);
 //	}
 
-
-
 	//======================
 	// SETUP DATA STRUCTURES
 	//======================
@@ -212,6 +208,9 @@ PetscErrorCode LaMEMLib_FDSTAG(PetscBool InputParamFile, const char *ParamFile, 
 		user.Characteristic.Length,
 		user.Characteristic.Temperature,
 		user.Characteristic.Force); CHKERRQ(ierr);
+
+	// initialize material parameter limits
+	ierr = SetMatParLim(&jr.matLim, &user); CHKERRQ(ierr);
 
 	// initialize time stepping parameters
 	ierr = TSSolSetUp(&jr.ts, &user); CHKERRQ(ierr);
@@ -238,28 +237,22 @@ PetscErrorCode LaMEMLib_FDSTAG(PetscBool InputParamFile, const char *ParamFile, 
 	ierr = FDSTAGView(&fs); CHKERRQ(ierr);
 
 	// create boundary condition context
-	ierr = BCCreate(&cbc, &fs, &jr.ts, &jr.scal, IDXCOUPLED); CHKERRQ(ierr);
-	ierr = BCCreate(&ubc, &fs, &jr.ts, &jr.scal, IDXCOUPLED); CHKERRQ(ierr);
+	ierr = BCCreate(&bc, &fs, &jr.ts, &jr.scal); CHKERRQ(ierr);
 
 	// set background strain-rates
-	ierr = BCSetStretch(&cbc, &user);  CHKERRQ(ierr);
-	ierr = BCSetStretch(&ubc, &user);  CHKERRQ(ierr);
+	ierr = BCSetStretch(&bc, &user); CHKERRQ(ierr);
 
 	// set pushing block parameters
-	ierr = BCSetPush(&cbc, &user);  CHKERRQ(ierr);
-	ierr = BCSetPush(&ubc, &user);  CHKERRQ(ierr);
+	ierr = BCSetPush(&bc, &user); CHKERRQ(ierr);
 
 	// create Jacobian & residual evaluation context
-	ierr = JacResCreate(&jr, &fs, &cbc, &ubc, user.num_phases, 0); CHKERRQ(ierr);
+	ierr = JacResCreate(&jr, &fs, &bc, user.num_phases, 0); CHKERRQ(ierr);
 
 	// WARNING! NO TEMPERATURE! Set local temperature vector to unity (ad-hoc)
 	ierr = VecSet(jr.lT, 1.0); CHKERRQ(ierr);
 
 	// initialize material properties
 	ierr = InitMaterialProps(&jr, &user); CHKERRQ(ierr);
-
-	// initialize material parameter limits
-	ierr = SetMatParLim(&jr.matLim, &user); CHKERRQ(ierr);
 
 	// initialize gravity acceleration
 	jr.grav[0] = 0.0;
@@ -316,8 +309,7 @@ PetscErrorCode LaMEMLib_FDSTAG(PetscBool InputParamFile, const char *ParamFile, 
 			PetscTime(&cputime_start_nonlinear);
 
 			// initialize boundary constraint vectors
-			ierr = BCApply(&cbc, &fs, IDXCOUPLED);   CHKERRQ(ierr);
-			ierr = BCApply(&ubc, &fs, IDXUNCOUPLED); CHKERRQ(ierr);
+			ierr = BCApply(&bc, &fs); CHKERRQ(ierr);
 
 			// compute inverse elastic viscosities
 			ierr = JacResGetI2Gdt(&jr); CHKERRQ(ierr);
@@ -361,8 +353,7 @@ PetscErrorCode LaMEMLib_FDSTAG(PetscBool InputParamFile, const char *ParamFile, 
 		ierr = ADVAdvect(&actx); CHKERRQ(ierr);
 
 		// advect pushing block
-		ierr = BCAdvectPush(&cbc, &jr.ts); CHKERRQ(ierr);
-		ierr = BCAdvectPush(&ubc, &jr.ts); CHKERRQ(ierr);
+		ierr = BCAdvectPush(&bc, &jr.ts); CHKERRQ(ierr);
 
 
 		//==========================================================================================
@@ -508,8 +499,7 @@ PetscErrorCode LaMEMLib_FDSTAG(PetscBool InputParamFile, const char *ParamFile, 
 
 	// cleanup
 	ierr = FDSTAGDestroy(&fs);   CHKERRQ(ierr);
-	ierr = BCDestroy(&cbc);      CHKERRQ(ierr);
-	ierr = BCDestroy(&ubc);      CHKERRQ(ierr);
+	ierr = BCDestroy(&bc);       CHKERRQ(ierr);
 	ierr = JacResDestroy(&jr);   CHKERRQ(ierr);
 	ierr = ADVDestroy(&actx);    CHKERRQ(ierr);
 	ierr = PCStokesDestroy(pc);  CHKERRQ(ierr);

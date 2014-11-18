@@ -29,8 +29,7 @@ PetscErrorCode JacResClear(JacRes *jr)
 PetscErrorCode JacResCreate(
 	JacRes   *jr,
 	FDSTAG   *fs,
-	BCCtx    *cbc,
-	BCCtx    *ubc,
+	BCCtx    *bc,
 	PetscInt  numPhases,
 	PetscInt  numSoft)
 {
@@ -42,20 +41,19 @@ PetscErrorCode JacResCreate(
 	PetscFunctionBegin;
 
 	// set external handles
-	jr->fs  = fs;
-	jr->cbc = cbc;
-	jr->ubc = ubc;
+	jr->fs = fs;
+	jr->bc = bc;
 
 	// set indexing object
-	dof = &fs->cdof;
+	dof = &fs->dof;
 
 	//========================
 	// create solution vectors
 	//========================
 
 	// coupled solution vectors
-	ierr = VecCreateMPI(PETSC_COMM_WORLD, dof->numdof, PETSC_DETERMINE, &jr->gsol); CHKERRQ(ierr);
-	ierr = VecCreateMPI(PETSC_COMM_WORLD, dof->numdof, PETSC_DETERMINE, &jr->gres); CHKERRQ(ierr);
+	ierr = VecCreateMPI(PETSC_COMM_WORLD, dof->ln, PETSC_DETERMINE, &jr->gsol); CHKERRQ(ierr);
+	ierr = VecCreateMPI(PETSC_COMM_WORLD, dof->ln, PETSC_DETERMINE, &jr->gres); CHKERRQ(ierr);
 
 	// global velocity components
 	ierr = DMCreateGlobalVector(fs->DA_X, &jr->gvx); CHKERRQ(ierr);
@@ -84,6 +82,10 @@ PetscErrorCode JacResCreate(
 	ierr = DMCreateLocalVector(fs->DA_XY,  &jr->ldxy); CHKERRQ(ierr);
 	ierr = DMCreateLocalVector(fs->DA_XZ,  &jr->ldxz); CHKERRQ(ierr);
 	ierr = DMCreateLocalVector(fs->DA_YZ,  &jr->ldyz); CHKERRQ(ierr);
+
+	ierr = DMCreateGlobalVector(fs->DA_XY,  &jr->gdxy); CHKERRQ(ierr);
+	ierr = DMCreateGlobalVector(fs->DA_XZ,  &jr->gdxz); CHKERRQ(ierr);
+	ierr = DMCreateGlobalVector(fs->DA_YZ,  &jr->gdyz); CHKERRQ(ierr);
 
 	// global pressure & temperature
 	ierr = DMCreateGlobalVector(fs->DA_CEN, &jr->gp); CHKERRQ(ierr);
@@ -181,6 +183,10 @@ PetscErrorCode JacResDestroy(JacRes *jr)
 	ierr = VecDestroy(&jr->ldxy);    CHKERRQ(ierr);
 	ierr = VecDestroy(&jr->ldxz);    CHKERRQ(ierr);
 	ierr = VecDestroy(&jr->ldyz);    CHKERRQ(ierr);
+
+	ierr = VecDestroy(&jr->gdxy);    CHKERRQ(ierr);
+	ierr = VecDestroy(&jr->gdxz);    CHKERRQ(ierr);
+	ierr = VecDestroy(&jr->gdyz);    CHKERRQ(ierr);
 
 	ierr = VecDestroy(&jr->gp);      CHKERRQ(ierr);
 	ierr = VecDestroy(&jr->gT);      CHKERRQ(ierr);
@@ -1108,20 +1114,20 @@ PetscErrorCode JacResCopySol(JacRes *jr, Vec x)
 	DOFIndex    *dof;
 	PetscInt    mcx, mcy, mcz;
 	PetscInt    mnx, mny, mnz;
-	PetscInt    n, shift, *setList;
-	PetscScalar *setVals;
 	PetscInt    i, j, k, I, J, K, nx, ny, nz, sx, sy, sz;
 	PetscScalar ***bcvx,  ***bcvy,  ***bcvz, ***bcp;
 	PetscScalar ***ivx,   ***ivy,   ***ivz,  ***ip;
 	PetscScalar ***lvx, ***lvy, ***lvz, ***lp;
 	PetscScalar *vx, *vy, *vz, *p, *sol, *iter, pmdof, bcval;
+	PetscScalar *vals;
+	PetscInt    num, *list;
 
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
 
 	fs  =  jr->fs;
-	bc  =  jr->cbc;  // coupled
-	dof = &fs->cdof; // coupled
+	bc  =  jr->bc;
+	dof = &fs->dof;
 
 	// initialize maximal index in all directions
 	mnx = fs->dsx.tnods - 1;
@@ -1153,13 +1159,19 @@ PetscErrorCode JacResCopySol(JacRes *jr, Vec x)
 
 	ierr  = PetscMemcpy(p,  iter, (size_t)fs->nCells*sizeof(PetscScalar)); CHKERRQ(ierr);
 
-	// enforce single point constraints
-	n       = bc->numSPC;  // number of single point constraints (SPC)
-	setList = bc->SPCList; // list of constrained DOF global IDs
-	setVals = bc->SPCVals; // values of constrained DOF
-	shift   = dof->istart; // global index of the first DOF (global to local conversion)
+	// enforce single point constraints (velocity)
+	num   = bc->vNumSPC;
+	list  = bc->vSPCList;
+	vals  = bc->vSPCVals;
 
-	for(i = 0; i < n; i++) sol[setList[i] - shift] = setVals[i];
+	for(i = 0; i < num; i++) sol[list[i]] = vals[i];
+
+	// enforce single point constraints (pressure)
+	num   = bc->pNumSPC;
+	list  = bc->pSPCList;
+	vals  = bc->pSPCVals;
+
+	for(i = 0; i < num; i++) sol[list[i]] = vals[i];
 
 	// restore access
 	ierr = VecRestoreArray(jr->gvx, &vx);  CHKERRQ(ierr);
@@ -1328,17 +1340,14 @@ PetscErrorCode JacResCopyRes(JacRes *jr, Vec f)
 {
 	FDSTAG      *fs;
 	BCCtx       *bc;
-	DOFIndex    *dof;
-
-	PetscInt     i, n, shift, *setList;
+	PetscInt    i, num, *list;
 	PetscScalar *fx, *fy, *fz, *c, *res, *iter;
 
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
 
 	fs  = jr->fs;
-	bc  = jr->cbc;   // coupled
-	dof = &fs->cdof; // coupled
+	bc  = jr->bc;
 
 	// access vectors
 	ierr = VecGetArray(jr->gfx, &fx); CHKERRQ(ierr);
@@ -1361,12 +1370,17 @@ PetscErrorCode JacResCopyRes(JacRes *jr, Vec f)
 
 	ierr  = PetscMemcpy(iter, c,  (size_t)fs->nCells*sizeof(PetscScalar)); CHKERRQ(ierr);
 
-	// zero out constrained residuals
-	n       = bc->numSPC;  // number of single point constraints (SPC)
-	setList = bc->SPCList; // list of constrained DOF global IDs
-	shift   = dof->istart; // global index of the first DOF (global to local conversion)
+	// zero out constrained residuals (velocity)
+	num   = bc->vNumSPC;
+	list  = bc->vSPCList;
 
-	for(i = 0; i < n; i++) res[setList[i] - shift] = 0.0;
+	for(i = 0; i < num; i++) res[list[i]] = 0.0;
+
+	// zero out constrained residuals (pressure)
+	num   = bc->pNumSPC;
+	list  = bc->pSPCList;
+
+	for(i = 0; i < num; i++) res[list[i]] = 0.0;
 
 	// restore access
 	ierr = VecRestoreArray(jr->gfx,  &fx); CHKERRQ(ierr);

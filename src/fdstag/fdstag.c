@@ -585,7 +585,7 @@ PetscErrorCode Discret1DCheckMG(Discret1D *ds, const char *dir, PetscInt *_ncors
 //---------------------------------------------------------------------------
 #undef __FUNCT__
 #define __FUNCT__ "DOFIndexCreate"
-PetscErrorCode DOFIndexCreate(DOFIndex *id, FDSTAG *fs, idxtype idxmod)
+PetscErrorCode DOFIndexCreate(DOFIndex *id, FDSTAG *fs)
 {
 	// compute & set global indices of local & ghost nodes
 
@@ -597,15 +597,11 @@ PetscErrorCode DOFIndexCreate(DOFIndex *id, FDSTAG *fs, idxtype idxmod)
 
 	PetscInt    NUM[2], SUM[3];
 
-	PetscInt    ln, lnp, start, startp, sum;
-	PetscInt    i, j, k, nx, ny, nz, sx, sy, sz;
-	PetscScalar ***ivx, ***ivy, ***ivz, ***ip;
-
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
 
-	// store index mode
-	id->idxmod = idxmod;
+	// clear index mode
+	id->idxmod = IDXNONE;
 
 	// set local number of dof
 	NUM[0] = id->lnv = fs->nXFace + fs->nYFace + fs->nZFace;
@@ -621,48 +617,40 @@ PetscErrorCode DOFIndexCreate(DOFIndex *id, FDSTAG *fs, idxtype idxmod)
 	id->ln = id->lnv + id->lnp;
     id->st = id->stv + id->stp;
 
-
-
-	// set local number DOF
-	if(idxmod == IDXCOUPLED)
-	{
-		lnp    = -1;
-		startp = -1;
-
-		ln = fs->nXFace + fs->nYFace + fs->nZFace + fs->nCells;
-	}
-
-	if(idxmod == IDXUNCOUPLED)
-	{
-		lnp = fs->nCells;
-
-		ierr = MPI_Scan(&lnp, &sum, 1, MPIU_INT, MPI_SUM, PETSC_COMM_WORLD); CHKERRQ(ierr);
-
-		startp = sum - lnp;
-
-		ln = fs->nXFace + fs->nYFace + fs->nZFace;
-
-	}
-
-	// compute prefix sum
-	ierr = MPI_Scan(&ln, &sum, 1, MPIU_INT, MPI_SUM, PETSC_COMM_WORLD); CHKERRQ(ierr);
-
-	// compute index of the first DOF on this processor
-	start = sum - ln;
-
-	// store number DOF & first indices
-	id->numdof  = ln;
-	id->istart  = start;
-	id->numdofp = lnp;
-	id->istartp = startp;
-
-
-
 	// create index vectors (ghosted)
 	ierr = DMCreateLocalVector(fs->DA_X,   &id->ivx); CHKERRQ(ierr);
 	ierr = DMCreateLocalVector(fs->DA_Y,   &id->ivy); CHKERRQ(ierr);
 	ierr = DMCreateLocalVector(fs->DA_Z,   &id->ivz); CHKERRQ(ierr);
 	ierr = DMCreateLocalVector(fs->DA_CEN, &id->ip);  CHKERRQ(ierr);
+
+	PetscFunctionReturn(0);
+}
+//---------------------------------------------------------------------------
+#undef __FUNCT__
+#define __FUNCT__ "DOFIndexDestroy"
+PetscErrorCode DOFIndexDestroy(DOFIndex *id)
+{
+	PetscErrorCode 	 ierr;
+	PetscFunctionBegin;
+
+	// destroy index vectors (ghosted)
+	ierr = VecDestroy(&id->ivx); CHKERRQ(ierr);
+	ierr = VecDestroy(&id->ivy); CHKERRQ(ierr);
+	ierr = VecDestroy(&id->ivz); CHKERRQ(ierr);
+	ierr = VecDestroy(&id->ip);  CHKERRQ(ierr);
+
+	PetscFunctionReturn(0);
+}
+//---------------------------------------------------------------------------
+#undef __FUNCT__
+#define __FUNCT__ "DOFIndexCompute"
+PetscErrorCode DOFIndexCompute(DOFIndex *id, FDSTAG *fs, idxtype idxmod)
+{
+	PetscInt    i, j, k, nx, ny, nz, sx, sy, sz, stv, stp;
+	PetscScalar ***ivx, ***ivy, ***ivz, ***ip;
+
+	PetscErrorCode ierr;
+	PetscFunctionBegin;
 
 	// set global indices of the local and ghost nodes (including boundary)
 	ierr = VecSet(id->ivx, -1.0); CHKERRQ(ierr);
@@ -680,6 +668,9 @@ PetscErrorCode DOFIndexCreate(DOFIndex *id, FDSTAG *fs, idxtype idxmod)
 	// compute interlaced global numbering of the local nodes
 	//=======================================================
 
+	if     (idxmod == IDXCOUPLED)   { stv = id->st;  stp = id->st + id->lnv; }
+	else if(idxmod == IDXUNCOUPLED) { stv = id->stv; stp = id->stp;          }
+
 	//---------
 	// X-points
 	//---------
@@ -689,7 +680,7 @@ PetscErrorCode DOFIndexCreate(DOFIndex *id, FDSTAG *fs, idxtype idxmod)
 
 	START_STD_LOOP
 	{
-		ivx[k][j][i] = (PetscScalar)start; start++;
+		ivx[k][j][i] = (PetscScalar)stv; stv++;
 	}
 	END_STD_LOOP
 
@@ -702,7 +693,7 @@ PetscErrorCode DOFIndexCreate(DOFIndex *id, FDSTAG *fs, idxtype idxmod)
 
 	START_STD_LOOP
 	{
-		ivy[k][j][i] = (PetscScalar)start; start++;
+		ivy[k][j][i] = (PetscScalar)stv; stv++;
 	}
 	END_STD_LOOP
 
@@ -715,7 +706,7 @@ PetscErrorCode DOFIndexCreate(DOFIndex *id, FDSTAG *fs, idxtype idxmod)
 
 	START_STD_LOOP
 	{
-		ivz[k][j][i] = (PetscScalar)start; start++;
+		ivz[k][j][i] = (PetscScalar)stv; stv++;
 	}
 	END_STD_LOOP
 
@@ -726,14 +717,9 @@ PetscErrorCode DOFIndexCreate(DOFIndex *id, FDSTAG *fs, idxtype idxmod)
 	GET_CELL_RANGE(ny, sy, fs->dsy)
 	GET_CELL_RANGE(nz, sz, fs->dsz)
 
-	if(idxmod == IDXCOUPLED)
-	{
-		startp = start;
-	}
-
 	START_STD_LOOP
 	{
-		ip[k][j][i] = (PetscScalar)startp; startp++;
+		ip[k][j][i] = (PetscScalar)stp; stp++;
 	}
 	END_STD_LOOP
 
@@ -743,26 +729,14 @@ PetscErrorCode DOFIndexCreate(DOFIndex *id, FDSTAG *fs, idxtype idxmod)
 	ierr = DMDAVecRestoreArray(fs->DA_Z,   id->ivz, &ivz);  CHKERRQ(ierr);
 	ierr = DMDAVecRestoreArray(fs->DA_CEN, id->ip,  &ip);   CHKERRQ(ierr);
 
+	// get ghost point indices
 	LOCAL_TO_LOCAL(fs->DA_X,   id->ivx)
 	LOCAL_TO_LOCAL(fs->DA_Y,   id->ivy)
 	LOCAL_TO_LOCAL(fs->DA_Z,   id->ivz)
 	LOCAL_TO_LOCAL(fs->DA_CEN, id->ip)
 
-	PetscFunctionReturn(0);
-}
-//---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "DOFIndexDestroy"
-PetscErrorCode DOFIndexDestroy(DOFIndex *id)
-{
-	PetscErrorCode 	 ierr;
-	PetscFunctionBegin;
-
-	// destroy index vectors (ghosted)
-	ierr = VecDestroy(&id->ivx); CHKERRQ(ierr);
-	ierr = VecDestroy(&id->ivy); CHKERRQ(ierr);
-	ierr = VecDestroy(&id->ivz); CHKERRQ(ierr);
-	ierr = VecDestroy(&id->ip);  CHKERRQ(ierr);
+	// store index mode
+	id->idxmod = idxmod;
 
 	PetscFunctionReturn(0);
 }
@@ -924,8 +898,7 @@ PetscErrorCode FDSTAGCreate(
 	fs->nZFace = ncx*ncy*nnz;
 
 	// setup indexing data
-	ierr = DOFIndexCreate(&fs->cdof, fs, IDXCOUPLED);   CHKERRQ(ierr);
-	ierr = DOFIndexCreate(&fs->udof, fs, IDXUNCOUPLED); CHKERRQ(ierr);
+	ierr = DOFIndexCreate(&fs->dof, fs); CHKERRQ(ierr);
 
 	// compute number of local and ghost points
 	nnx = fs->dsx.nnods+2; ncx = fs->dsx.ncels+2;
@@ -977,8 +950,7 @@ PetscErrorCode FDSTAGDestroy(FDSTAG * fs)
 	ierr = Discret1DDestroy(&fs->dsz); CHKERRQ(ierr);
 
 	// destroy indexing data
-	ierr = DOFIndexDestroy(&fs->cdof); CHKERRQ(ierr);
-	ierr = DOFIndexDestroy(&fs->udof); CHKERRQ(ierr);
+	ierr = DOFIndexDestroy(&fs->dof);  CHKERRQ(ierr);
 
 	PetscFunctionReturn(0);
 }
@@ -987,7 +959,6 @@ PetscErrorCode FDSTAGDestroy(FDSTAG * fs)
 #define __FUNCT__ "FDSTAGGenCoord"
 PetscErrorCode FDSTAGGenCoord(FDSTAG *fs, UserContext *usr)
 {
-
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
 

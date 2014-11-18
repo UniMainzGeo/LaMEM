@@ -395,7 +395,7 @@ PetscErrorCode PVOutReadFromOptions(PVOut *pvout)
 
 	if(pvout->outpvd)
 	{
-		PetscPrintf(PETSC_COMM_WORLD, " writing .pvd file to disk\n");
+		PetscPrintf(PETSC_COMM_WORLD, " Writing .pvd file to disk\n");
 	}
 
 	PetscFunctionReturn(0);

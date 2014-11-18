@@ -12,7 +12,10 @@
 PetscErrorCode MatAIJCreate(PetscInt m, PetscInt n, PetscInt d_nz,
 	const PetscInt d_nnz[], PetscInt o_nz, const PetscInt o_nnz[], Mat *P);
 
-PetscErrorCode MatAIJAssemble(Mat P, PetscInt numRows, const PetscInt rows[]);
+PetscErrorCode MatAIJCreateDiag(PetscInt m, PetscInt istart, Mat *P);
+
+PetscErrorCode MatAIJAssemble(Mat P, PetscInt numRows, const PetscInt rows[], PetscScalar diag);
+
 
 //---------------------------------------------------------------------------
 // preconditioning matrix storage format
@@ -68,7 +71,8 @@ PetscErrorCode PMatDestroy(PMat pm);
 typedef struct
 {
 	Mat A; // monolithic matrix
-	Vec M; // penalty terms compensation matrix
+	Mat M; // penalty terms compensation matrix
+
 	Vec w; // work vector for computing Jacobian action
 
 } PMatMono;
@@ -88,9 +92,9 @@ PetscErrorCode PMatMonoDestroy(PMat pm);
 typedef struct
 {
 	Mat Avv, Avp; // velocity sub-matrices
-	Mat Apv;      // pressure sub-matrices
-	Vec App;      // ...
-	Vec S;        // Schur complement preconditioner
+	Mat Apv, App; // pressure sub-matrices
+	Mat iS;       // inverse of Schur complement preconditioner
+
 	Vec rv, rp;   // residual blocks
 	Vec xv, xp;   // solution blocks
 	Vec wv, wp;   // work vectors
