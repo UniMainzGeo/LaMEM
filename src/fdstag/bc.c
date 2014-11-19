@@ -183,8 +183,7 @@ PetscErrorCode BCShiftIndices(BCCtx *bc, FDSTAG *fs, ShiftType stype)
 	PetscInt vNumSPC, pNumSPC, *vSPCList, *pSPCList;
 
 	// error checking
-	if((stype == LOCAL_TO_GLOBAL && bc->stype == LOCAL_TO_GLOBAL)
-	|| (stype == GLOBAL_TO_LOCAL && bc->stype == GLOBAL_TO_LOCAL))
+	if(stype == bc->stype)
 	{
 		SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER,"Cannot call same type of index shifting twice in a row");
 	}

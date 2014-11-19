@@ -585,7 +585,7 @@ PetscErrorCode Discret1DCheckMG(Discret1D *ds, const char *dir, PetscInt *_ncors
 //---------------------------------------------------------------------------
 #undef __FUNCT__
 #define __FUNCT__ "DOFIndexCreate"
-PetscErrorCode DOFIndexCreate(DOFIndex *id, FDSTAG *fs)
+PetscErrorCode DOFIndexCreate(DOFIndex *id, DM DA_CEN, DM DA_X, DM DA_Y, DM DA_Z)
 {
 	// compute & set global indices of local & ghost nodes
 
@@ -595,7 +595,7 @@ PetscErrorCode DOFIndexCreate(DOFIndex *id, FDSTAG *fs)
 	// instead of -1
 	// **********************************************************************
 
-	PetscInt    NUM[2], SUM[3];
+	PetscInt nx, ny, nz, NUM[2], SUM[3];
 
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
@@ -603,25 +603,30 @@ PetscErrorCode DOFIndexCreate(DOFIndex *id, FDSTAG *fs)
 	// clear index mode
 	id->idxmod = IDXNONE;
 
-	// set local number of dof
-	NUM[0] = id->lnv = fs->nXFace + fs->nYFace + fs->nZFace;
-	NUM[1] = id->lnp = fs->nCells;
+	// get local number of dof
+	ierr = DMDAGetCorners(DA_X,   NULL, NULL, NULL, &nx, &ny, &nz); CHKERRQ(ierr); id->lnv  = nx*ny*nz;
+	ierr = DMDAGetCorners(DA_Y,   NULL, NULL, NULL, &nx, &ny, &nz); CHKERRQ(ierr); id->lnv += nx*ny*nz;
+	ierr = DMDAGetCorners(DA_Z,   NULL, NULL, NULL, &nx, &ny, &nz); CHKERRQ(ierr); id->lnv += nx*ny*nz;
+	ierr = DMDAGetCorners(DA_CEN, NULL, NULL, NULL, &nx, &ny, &nz); CHKERRQ(ierr); id->lnp  = nx*ny*nz;
+
+	NUM[0] = id->lnv;
+	NUM[1] = id->lnp;
 
 	// compute prefix sums
 	ierr = MPI_Scan(NUM, SUM, 2, MPIU_INT, MPI_SUM, PETSC_COMM_WORLD); CHKERRQ(ierr);
 
 	// set starting indices
 	id->stv = SUM[0] - id->lnv;
-    id->stp = SUM[1] - id->lnp;
+	id->stp = SUM[1] - id->lnp;
 
-	id->ln = id->lnv + id->lnp;
+    id->ln = id->lnv + id->lnp;
     id->st = id->stv + id->stp;
 
 	// create index vectors (ghosted)
-	ierr = DMCreateLocalVector(fs->DA_X,   &id->ivx); CHKERRQ(ierr);
-	ierr = DMCreateLocalVector(fs->DA_Y,   &id->ivy); CHKERRQ(ierr);
-	ierr = DMCreateLocalVector(fs->DA_Z,   &id->ivz); CHKERRQ(ierr);
-	ierr = DMCreateLocalVector(fs->DA_CEN, &id->ip);  CHKERRQ(ierr);
+	ierr = DMCreateLocalVector(DA_X,   &id->ivx); CHKERRQ(ierr);
+	ierr = DMCreateLocalVector(DA_Y,   &id->ivy); CHKERRQ(ierr);
+	ierr = DMCreateLocalVector(DA_Z,   &id->ivz); CHKERRQ(ierr);
+	ierr = DMCreateLocalVector(DA_CEN, &id->ip);  CHKERRQ(ierr);
 
 	PetscFunctionReturn(0);
 }
@@ -644,7 +649,7 @@ PetscErrorCode DOFIndexDestroy(DOFIndex *id)
 //---------------------------------------------------------------------------
 #undef __FUNCT__
 #define __FUNCT__ "DOFIndexCompute"
-PetscErrorCode DOFIndexCompute(DOFIndex *id, FDSTAG *fs, idxtype idxmod)
+PetscErrorCode DOFIndexCompute(DOFIndex *id, DM DA_CEN, DM DA_X, DM DA_Y, DM DA_Z, idxtype idxmod)
 {
 	PetscInt    i, j, k, nx, ny, nz, sx, sy, sz, stv, stp;
 	PetscScalar ***ivx, ***ivy, ***ivz, ***ip;
@@ -659,10 +664,10 @@ PetscErrorCode DOFIndexCompute(DOFIndex *id, FDSTAG *fs, idxtype idxmod)
 	ierr = VecSet(id->ip,  -1.0); CHKERRQ(ierr);
 
 	// access index vectors
-	ierr = DMDAVecGetArray(fs->DA_X,   id->ivx, &ivx);  CHKERRQ(ierr);
-	ierr = DMDAVecGetArray(fs->DA_Y,   id->ivy, &ivy);  CHKERRQ(ierr);
-	ierr = DMDAVecGetArray(fs->DA_Z,   id->ivz, &ivz);  CHKERRQ(ierr);
-	ierr = DMDAVecGetArray(fs->DA_CEN, id->ip,  &ip);   CHKERRQ(ierr);
+	ierr = DMDAVecGetArray(DA_X,   id->ivx, &ivx);  CHKERRQ(ierr);
+	ierr = DMDAVecGetArray(DA_Y,   id->ivy, &ivy);  CHKERRQ(ierr);
+	ierr = DMDAVecGetArray(DA_Z,   id->ivz, &ivz);  CHKERRQ(ierr);
+	ierr = DMDAVecGetArray(DA_CEN, id->ip,  &ip);   CHKERRQ(ierr);
 
 	//=======================================================
 	// compute interlaced global numbering of the local nodes
@@ -674,9 +679,8 @@ PetscErrorCode DOFIndexCompute(DOFIndex *id, FDSTAG *fs, idxtype idxmod)
 	//---------
 	// X-points
 	//---------
-	GET_NODE_RANGE(nx, sx, fs->dsx)
-	GET_CELL_RANGE(ny, sy, fs->dsy)
-	GET_CELL_RANGE(nz, sz, fs->dsz)
+
+	ierr = DMDAGetCorners(DA_X, &sx, &sy, &sz, &nx, &ny, &nz); CHKERRQ(ierr);
 
 	START_STD_LOOP
 	{
@@ -687,9 +691,8 @@ PetscErrorCode DOFIndexCompute(DOFIndex *id, FDSTAG *fs, idxtype idxmod)
 	//---------
 	// Y-points
 	//---------
-	GET_CELL_RANGE(nx, sx, fs->dsx)
-	GET_NODE_RANGE(ny, sy, fs->dsy)
-	GET_CELL_RANGE(nz, sz, fs->dsz)
+
+	ierr = DMDAGetCorners(DA_Y, &sx, &sy, &sz, &nx, &ny, &nz); CHKERRQ(ierr);
 
 	START_STD_LOOP
 	{
@@ -700,9 +703,7 @@ PetscErrorCode DOFIndexCompute(DOFIndex *id, FDSTAG *fs, idxtype idxmod)
 	//---------
 	// Z-points
 	//---------
-	GET_CELL_RANGE(nx, sx, fs->dsx)
-	GET_CELL_RANGE(ny, sy, fs->dsy)
-	GET_NODE_RANGE(nz, sz, fs->dsz)
+	ierr = DMDAGetCorners(DA_Z, &sx, &sy, &sz, &nx, &ny, &nz); CHKERRQ(ierr);
 
 	START_STD_LOOP
 	{
@@ -713,9 +714,7 @@ PetscErrorCode DOFIndexCompute(DOFIndex *id, FDSTAG *fs, idxtype idxmod)
 	//---------
 	// P-points
 	//---------
-	GET_CELL_RANGE(nx, sx, fs->dsx)
-	GET_CELL_RANGE(ny, sy, fs->dsy)
-	GET_CELL_RANGE(nz, sz, fs->dsz)
+	ierr = DMDAGetCorners(DA_CEN, &sx, &sy, &sz, &nx, &ny, &nz); CHKERRQ(ierr);
 
 	START_STD_LOOP
 	{
@@ -724,16 +723,16 @@ PetscErrorCode DOFIndexCompute(DOFIndex *id, FDSTAG *fs, idxtype idxmod)
 	END_STD_LOOP
 
 	// restore access
-	ierr = DMDAVecRestoreArray(fs->DA_X,   id->ivx, &ivx);  CHKERRQ(ierr);
-	ierr = DMDAVecRestoreArray(fs->DA_Y,   id->ivy, &ivy);  CHKERRQ(ierr);
-	ierr = DMDAVecRestoreArray(fs->DA_Z,   id->ivz, &ivz);  CHKERRQ(ierr);
-	ierr = DMDAVecRestoreArray(fs->DA_CEN, id->ip,  &ip);   CHKERRQ(ierr);
+	ierr = DMDAVecRestoreArray(DA_X,   id->ivx, &ivx);  CHKERRQ(ierr);
+	ierr = DMDAVecRestoreArray(DA_Y,   id->ivy, &ivy);  CHKERRQ(ierr);
+	ierr = DMDAVecRestoreArray(DA_Z,   id->ivz, &ivz);  CHKERRQ(ierr);
+	ierr = DMDAVecRestoreArray(DA_CEN, id->ip,  &ip);   CHKERRQ(ierr);
 
 	// get ghost point indices
-	LOCAL_TO_LOCAL(fs->DA_X,   id->ivx)
-	LOCAL_TO_LOCAL(fs->DA_Y,   id->ivy)
-	LOCAL_TO_LOCAL(fs->DA_Z,   id->ivz)
-	LOCAL_TO_LOCAL(fs->DA_CEN, id->ip)
+	LOCAL_TO_LOCAL(DA_X,   id->ivx)
+	LOCAL_TO_LOCAL(DA_Y,   id->ivy)
+	LOCAL_TO_LOCAL(DA_Z,   id->ivz)
+	LOCAL_TO_LOCAL(DA_CEN, id->ip)
 
 	// store index mode
 	id->idxmod = idxmod;
@@ -898,7 +897,7 @@ PetscErrorCode FDSTAGCreate(
 	fs->nZFace = ncx*ncy*nnz;
 
 	// setup indexing data
-	ierr = DOFIndexCreate(&fs->dof, fs); CHKERRQ(ierr);
+	ierr = DOFIndexCreate(&fs->dof, fs->DA_CEN, fs->DA_X, fs->DA_Y, fs->DA_Z); CHKERRQ(ierr);
 
 	// compute number of local and ghost points
 	nnx = fs->dsx.nnods+2; ncx = fs->dsx.ncels+2;

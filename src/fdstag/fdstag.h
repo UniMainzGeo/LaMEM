@@ -183,11 +183,11 @@ typedef struct
 // DOFIndex functions
 //---------------------------------------------------------------------------
 
-PetscErrorCode DOFIndexCreate(DOFIndex *id, FDSTAG *fs);
+PetscErrorCode DOFIndexCreate(DOFIndex *id, DM DA_CEN, DM DA_X, DM DA_Y, DM DA_Z);
 
 PetscErrorCode DOFIndexDestroy(DOFIndex *id);
 
-PetscErrorCode DOFIndexCompute(DOFIndex *id, FDSTAG *fs, idxtype idxmod);
+PetscErrorCode DOFIndexCompute(DOFIndex *id, DM DA_CEN, DM DA_X, DM DA_Y, DM DA_Z, idxtype idxmod);
 
 //---------------------------------------------------------------------------
 // FDSTAG functions

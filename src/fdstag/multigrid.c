@@ -19,6 +19,45 @@
 // * coordinate- viscosity- residual-dependent restriction & interpolation
 //---------------------------------------------------------------------------
 #undef __FUNCT__
+#define __FUNCT__ "MGLevelCreateFine"
+PetscErrorCode MGLevelCreateFine(MGLevel *lvl, FDSTAG *fs)
+{
+	PetscErrorCode ierr;
+	PetscFunctionBegin;
+
+	PetscFunctionReturn(0);
+}
+//---------------------------------------------------------------------------
+#undef __FUNCT__
+#define __FUNCT__ "MGLevelCreateCoarse"
+PetscErrorCode MGLevelCreateCoarse(MGLevel *fine, MGLevel *coarse)
+{
+	PetscErrorCode ierr;
+	PetscFunctionBegin;
+
+
+	PetscFunctionReturn(0);
+}
+//---------------------------------------------------------------------------
+
+/*
+
+
+PetscErrorCode  DMDAGetOwnershipRanges(DM da, const PetscInt *lx[], const PetscInt *ly[], const PetscInt *lz[])
+
+PetscErrorCode  DMDAGetInfo(DM da,
+NULL, PetscInt *M, PetscInt *N, PetscInt *P, PetscInt *m, PetscInt *n, PetscInt *p, NULL, NULL, NULL, NULL, NULL, NULL)
+
+
+PetscErrorCode DMDACreate3d(MPI_Comm comm, DMBoundaryType bx, DMBoundaryType by, DMBoundaryType bz, DMDAStencilType stencil_type,PetscInt M,
+               PetscInt N,PetscInt P,PetscInt m,PetscInt n,PetscInt p,PetscInt dof,PetscInt s,const PetscInt lx[],const PetscInt ly[],const PetscInt lz[],DM *da)
+
+
+ierr = DMDAGetCorners(da, &sx, &sy, &sz, &nx, &ny, &nz); CHKERRQ(ierr);
+
+*/
+
+#undef __FUNCT__
 #define __FUNCT__ "MGCreate"
 PetscErrorCode MGCreate(MG *mg, FDSTAG *fs, BCCtx *bc, idxtype idxmod)
 {
@@ -133,6 +172,7 @@ PetscErrorCode MGCreate(MG *mg, FDSTAG *fs, BCCtx *bc, idxtype idxmod)
 #define __FUNCT__ "MGDestroy"
 PetscErrorCode MGDestroy(MG *mg)
 {
+/*
 	PetscInt  i;
 	PetscBool flg;
 
@@ -160,7 +200,7 @@ PetscErrorCode MGDestroy(MG *mg)
 	ierr = PetscFree(mg->P);    CHKERRQ(ierr);
 	ierr = PetscFree(mg->mgbc); CHKERRQ(ierr);
 	ierr = PCDestroy(&mg->pc);  CHKERRQ(ierr);
-
+*/
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
@@ -245,7 +285,7 @@ PetscErrorCode MGSetDiagOnLevels(MG *mg)
 
 	PetscErrorCode ierr;
 	PetscFunctionBeginUser;
-
+/*
 	// set dummy coarse solver
 	ierr = PCMGGetCoarseSolve(mg->pc, &ksp); CHKERRQ(ierr);
 	ierr = KSPSetType(ksp, KSPPREONLY);      CHKERRQ(ierr);
@@ -287,7 +327,7 @@ PetscErrorCode MGSetDiagOnLevels(MG *mg)
 		ierr = KSPSetFromOptions(ksp);            CHKERRQ(ierr);
 		ierr = KSPSetUp(ksp);                     CHKERRQ(ierr);
 	}
-
+*/
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
@@ -295,6 +335,7 @@ PetscErrorCode MGSetDiagOnLevels(MG *mg)
 #define __FUNCT__ "MGDumpMat"
 PetscErrorCode MGDumpMat(MG *mg)
 {
+/*
 	Mat         A;
 	KSP         ksp;
 	PetscBool   flg;
@@ -337,7 +378,7 @@ PetscErrorCode MGDumpMat(MG *mg)
 		}
 
 	}
-
+*/
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------

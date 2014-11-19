@@ -303,7 +303,7 @@ PetscErrorCode PMatMonoCreate(PMat pm)
 	pm->data = (void*)P;
 
 	// compute global indexing
-	ierr = DOFIndexCompute(dof, fs, IDXCOUPLED); CHKERRQ(ierr);
+	ierr = DOFIndexCompute(dof, fs->DA_CEN, fs->DA_X, fs->DA_Y, fs->DA_Z, IDXCOUPLED); CHKERRQ(ierr);
 
 	// get number of local rows & global index of the first row
 	ln    = dof->ln;
@@ -856,7 +856,7 @@ PetscErrorCode PMatBlockCreate(PMat pm)
 	pm->data = (void*)P;
 
 	// compute global indexing
-	ierr = DOFIndexCompute(dof, fs, IDXUNCOUPLED); CHKERRQ(ierr);
+	ierr = DOFIndexCompute(dof, fs->DA_CEN, fs->DA_X, fs->DA_Y, fs->DA_Z, IDXUNCOUPLED); CHKERRQ(ierr);
 
 	// get number of local rows & global index of the first row
 	lnv    = dof->lnv;
