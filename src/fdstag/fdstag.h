@@ -118,13 +118,12 @@ typedef enum { IDXNONE, IDXCOUPLED, IDXUNCOUPLED } idxtype;
 // global indexing of the DOF
 typedef struct
 {
-	idxtype  idxmod; // indexing mode
-
-	PetscInt lnv, lnp, ln; // local number of DOF
-	PetscInt stv, stp, st; // starting indices (stv & stp - decoupled layout)
-
-	// local vectors containing global indices of the local & ghost nodes
-	Vec ivx, ivy, ivz, ip;
+	idxtype  idxmod;            // indexing mode
+	DM       DA_CEN;            // central points
+	DM       DA_X, DA_Y, DA_Z;  // face points
+	PetscInt lnv, lnp, ln;      // local number of DOF
+	PetscInt stv, stp, st;      // starting indices (stv & stp - decoupled layout)
+	Vec      ivx, ivy, ivz, ip; // index vectors (ghosted)
 
 } DOFIndex;
 
@@ -183,11 +182,11 @@ typedef struct
 // DOFIndex functions
 //---------------------------------------------------------------------------
 
-PetscErrorCode DOFIndexCreate(DOFIndex *id, DM DA_CEN, DM DA_X, DM DA_Y, DM DA_Z);
+PetscErrorCode DOFIndexCreate(DOFIndex *dof, DM DA_CEN, DM DA_X, DM DA_Y, DM DA_Z);
 
-PetscErrorCode DOFIndexDestroy(DOFIndex *id);
+PetscErrorCode DOFIndexDestroy(DOFIndex *dof);
 
-PetscErrorCode DOFIndexCompute(DOFIndex *id, DM DA_CEN, DM DA_X, DM DA_Y, DM DA_Z, idxtype idxmod);
+PetscErrorCode DOFIndexCompute(DOFIndex *dof, idxtype idxmod);
 
 //---------------------------------------------------------------------------
 // FDSTAG functions

@@ -19,56 +19,125 @@
 // * coordinate- viscosity- residual-dependent restriction & interpolation
 //---------------------------------------------------------------------------
 #undef __FUNCT__
-#define __FUNCT__ "MGLevelCreateFine"
-PetscErrorCode MGLevelCreateFine(MGLevel *lvl, FDSTAG *fs)
+#define __FUNCT__ "MGLevelCreate"
+PetscErrorCode MGLevelCreate(MGLevel *lvl, MGLevel *fine, FDSTAG *fs)
 {
+	PetscInt         i, ln, lnfine;
+	PetscInt         Nx,   Ny,   Nz;
+	PetscInt         Px,   Py,   Pz;
+	const PetscInt  *plx, *ply, *plz;
+	PetscInt        *lx,  *ly,  *lz;
+
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
+
+	if(!fine)
+	{
+		// copy data from the staggered grid on the finest level
+		lvl->DA_CEN = fs->DA_CEN;
+		lvl->DA_X   = fs->DA_X;
+		lvl->DA_Y   = fs->DA_Y;
+		lvl->DA_Z   = fs->DA_Z;
+		lvl->dof    = fs->dof;
+		lvl->R      = NULL;
+		lvl->P      = NULL;
+	}
+	else
+	{
+		// get number of cells & processors in the fine grid
+		ierr = DMDAGetInfo(fine->DA_CEN, 0, &Nx, &Ny, &Nz, &Px, &Py, &Pz, 0, 0, 0, 0, 0, 0); CHKERRQ(ierr);
+
+		// get number of cells per processor in fine grid
+		ierr = DMDAGetOwnershipRanges(fine->DA_CEN, &plx, &ply, &plz); CHKERRQ(ierr);
+
+		ierr = makeIntArray(&lx, plx, Px); CHKERRQ(ierr);
+		ierr = makeIntArray(&ly, ply, Py); CHKERRQ(ierr);
+		ierr = makeIntArray(&lz, plz, Pz); CHKERRQ(ierr);
+
+		// coarsen uniformly in every direction
+		Nx /= 2;  for(i = 0; i < Px; i++) lx[i] /= 2;
+		Ny /= 2;  for(i = 0; i < Py; i++) ly[i] /= 2;
+		Nz /= 2;  for(i = 0; i < Pz; i++) lz[i] /= 2;
+
+		// central points (DA_CEN) with boundary ghost points (1-layer stencil box)
+		ierr = DMDACreate3d(PETSC_COMM_WORLD,
+			DM_BOUNDARY_GHOSTED, DM_BOUNDARY_GHOSTED, DM_BOUNDARY_GHOSTED, DMDA_STENCIL_BOX,
+			Nx, Ny, Nz, Px, Py, Pz, 1, 1, lx, ly, lz, &lvl->DA_CEN); CHKERRQ(ierr);
+
+		// X face (DA_X) with boundary ghost points (1-layer stencil box)
+		lx[Px-1]++;
+		ierr = DMDACreate3d(PETSC_COMM_WORLD,
+			DM_BOUNDARY_GHOSTED, DM_BOUNDARY_GHOSTED, DM_BOUNDARY_GHOSTED, DMDA_STENCIL_BOX,
+			Nx+1, Ny, Nz, Px, Py, Pz, 1, 1, lx, ly, lz, &lvl->DA_X); CHKERRQ(ierr);
+		lx[Px-1]--;
+
+		// Y face (DA_Y) with boundary ghost points (1-layer stencil box)
+		ly[Py-1]++;
+		ierr = DMDACreate3d(PETSC_COMM_WORLD,
+			DM_BOUNDARY_GHOSTED, DM_BOUNDARY_GHOSTED, DM_BOUNDARY_GHOSTED, DMDA_STENCIL_BOX,
+			Nx, Ny+1, Nz, Px, Py, Pz, 1, 1, lx, ly, lz, &lvl->DA_Y); CHKERRQ(ierr);
+		ly[Py-1]--;
+
+		// Z face (DA_Z) with boundary ghost points (1-layer stencil box)
+		lz[Pz-1]++;
+		ierr = DMDACreate3d(PETSC_COMM_WORLD,
+			DM_BOUNDARY_GHOSTED, DM_BOUNDARY_GHOSTED, DM_BOUNDARY_GHOSTED, DMDA_STENCIL_BOX,
+			Nx, Ny, Nz+1, Px, Py, Pz, 1, 1, lx, ly, lz, &lvl->DA_Z); CHKERRQ(ierr);
+
+		// clear temporary storage
+		ierr = PetscFree(lx); CHKERRQ(ierr);
+		ierr = PetscFree(ly); CHKERRQ(ierr);
+		ierr = PetscFree(lz); CHKERRQ(ierr);
+
+		// create index arrays
+		ierr = DOFIndexCreate(&lvl->dof, lvl->DA_CEN, lvl->DA_X, lvl->DA_Y, lvl->DA_Z); CHKERRQ(ierr);
+
+		// compute index arrays
+		ierr = DOFIndexCompute(&lvl->dof, fine->dof.idxmod); CHKERRQ(ierr);
+
+		// get matrix sizes
+		if     (lvl->dof.idxmod == IDXCOUPLED)   { ln = lvl->dof.ln;  lnfine = fine->dof.ln;  }
+		else if(lvl->dof.idxmod == IDXUNCOUPLED) { ln = lvl->dof.lnv; lnfine = fine->dof.lnv; }
+
+		// preallocate restriction & prolongation matrices
+		// WARNING! CONSTANT SIZE PREALLOCATION
+		// ADD VARIABLE PREALLOCATION TO THESE MATRICES
+		ierr = MatAIJCreate(ln,     lnfine, 12, NULL, 4, NULL, &lvl->R); CHKERRQ(ierr);
+		ierr = MatAIJCreate(lnfine, ln,     8,  NULL, 7, NULL, &lvl->P); CHKERRQ(ierr);
+	}
 
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
 #undef __FUNCT__
-#define __FUNCT__ "MGLevelCreateCoarse"
-PetscErrorCode MGLevelCreateCoarse(MGLevel *fine, MGLevel *coarse)
+#define __FUNCT__ "MGLevelDestroy"
+PetscErrorCode MGLevelDestroy(MGLevel *lvl)
 {
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
 
+	if(lvl->R)
+	{
+		ierr = DMDestroy(&lvl->DA_CEN);    CHKERRQ(ierr);
+		ierr = DMDestroy(&lvl->DA_X);      CHKERRQ(ierr);
+		ierr = DMDestroy(&lvl->DA_Y);      CHKERRQ(ierr);
+		ierr = DMDestroy(&lvl->DA_Z);      CHKERRQ(ierr);
+		ierr = DOFIndexDestroy(&lvl->dof); CHKERRQ(ierr);
+		ierr = MatDestroy   (&lvl->R);     CHKERRQ(ierr);
+		ierr = MatDestroy   (&lvl->P);     CHKERRQ(ierr);
+	}
 
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-
-/*
-
-
-PetscErrorCode  DMDAGetOwnershipRanges(DM da, const PetscInt *lx[], const PetscInt *ly[], const PetscInt *lz[])
-
-PetscErrorCode  DMDAGetInfo(DM da,
-NULL, PetscInt *M, PetscInt *N, PetscInt *P, PetscInt *m, PetscInt *n, PetscInt *p, NULL, NULL, NULL, NULL, NULL, NULL)
-
-
-PetscErrorCode DMDACreate3d(MPI_Comm comm, DMBoundaryType bx, DMBoundaryType by, DMBoundaryType bz, DMDAStencilType stencil_type,PetscInt M,
-               PetscInt N,PetscInt P,PetscInt m,PetscInt n,PetscInt p,PetscInt dof,PetscInt s,const PetscInt lx[],const PetscInt ly[],const PetscInt lz[],DM *da)
-
-
-ierr = DMDAGetCorners(da, &sx, &sy, &sz, &nx, &ny, &nz); CHKERRQ(ierr);
-
-*/
-
 #undef __FUNCT__
 #define __FUNCT__ "MGCreate"
-PetscErrorCode MGCreate(MG *mg, FDSTAG *fs, BCCtx *bc, idxtype idxmod)
+PetscErrorCode MGCreate(MG *mg, FDSTAG *fs, BCCtx *bc)
 {
-	/*
-	PetscInt  i, l, ncors;
-	FDSTAG   *fine, *cors;
+	PetscInt  i, ii, ncors;
+	MGLevel   *fine;
 	char      pc_type[MAX_NAME_LEN];
 	PetscBool opt_set;
-	PetscInt  Nx, Ny, Nz;
-	PetscInt  Px, Py, Pz;
-	DOFIndex  *idfine, *idcors;
 
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
@@ -88,83 +157,44 @@ PetscErrorCode MGCreate(MG *mg, FDSTAG *fs, BCCtx *bc, idxtype idxmod)
 	// check multigrid mesh restrictions, get actual number of coarsening steps
 	ierr = CheckMGRestrict(fs, &ncors); CHKERRQ(ierr);
 
-	// store actual number of coarsening steps
-	mg->ncors = ncors;
+	// store actual number of levels
+	mg->nlvl = ncors+1;
 
-	// allocate storage for grids & matrices
-	ierr = PetscMalloc(sizeof(FDSTAG)*(size_t)mg->ncors, &mg->mgfs); CHKERRQ(ierr);
-	ierr = PetscMalloc(sizeof(Mat)   *(size_t)mg->ncors, &mg->R);    CHKERRQ(ierr);
-	ierr = PetscMalloc(sizeof(Mat)   *(size_t)mg->ncors, &mg->P);    CHKERRQ(ierr);
-	ierr = PetscMalloc(sizeof(BCCtx) *(size_t)mg->ncors, &mg->mgbc); CHKERRQ(ierr);
+	// allocate levels
+	ierr = PetscMalloc(sizeof(FDSTAG)*(size_t)mg->nlvl, &mg->lvls); CHKERRQ(ierr);
 
-	// get number of processors
-	Px = fs->dsx.nproc;
-	Py = fs->dsy.nproc;
-	Pz = fs->dsz.nproc;
+	// create levels
+	fine = NULL;
 
-	// get fine grid size
-	Nx = fs->dsx.tcels;
-	Ny = fs->dsy.tcels;
-	Nz = fs->dsz.tcels;
-
-	// setup grids & bc contexts
-	for(i = 0; i < mg->ncors; i++)
+	for(i = 0; i < mg->nlvl; i++)
 	{
-		// coarsen uniformly in all directions
-		Nx /= 2;
-		Ny /= 2;
-		Nz /= 2;
+		ierr = MGLevelCreate(&mg->lvls[i], fine, fs); CHKERRQ(ierr);
 
-		// create mesh
-		ierr = FDSTAGClear (&mg->mgfs[i]);                               CHKERRQ(ierr);
-		ierr = FDSTAGCreate(&mg->mgfs[i], Nx+1, Ny+1, Nz+1, Px, Py, Pz); CHKERRQ(ierr);
-
-		// create bc context
-		ierr = BCClear (&mg->mgbc[i]);                                         CHKERRQ(ierr);
-		ierr = BCCreate(&mg->mgbc[i], &mg->mgfs[i], bc->ts, bc->scal, idxmod); CHKERRQ(ierr);
-
+		fine = &mg->lvls[i];
 	}
 
 	// create Galerkin multigrid preconditioner
 	ierr = PCCreate(PETSC_COMM_WORLD, &mg->pc);       CHKERRQ(ierr);
 	ierr = PCSetOptionsPrefix(mg->pc, "gmg_");        CHKERRQ(ierr);
 	ierr = PCSetType(mg->pc, PCMG);                   CHKERRQ(ierr);
-	ierr = PCMGSetLevels(mg->pc, mg->ncors+1, NULL);  CHKERRQ(ierr);
+	ierr = PCMGSetLevels(mg->pc, mg->nlvl, NULL);     CHKERRQ(ierr);
 	ierr = PCMGSetType(mg->pc, PC_MG_MULTIPLICATIVE); CHKERRQ(ierr);
 	ierr = PCMGSetGalerkin(mg->pc, PETSC_TRUE);       CHKERRQ(ierr);
 	ierr = PCSetFromOptions(mg->pc);                  CHKERRQ(ierr);
 
-	// set fine grid
-	fine = fs;
-
-	// create & preallocate matrices
-	for(i = 0, l = mg->ncors; i < mg->ncors; i++, l--)
+	// attach restriction/prolongation matrices to the preconditioner
+	// (loop all levels except finest, since it doesn't contain R & P)
+	for(i = 1, ii = mg->nlvl-1; i < mg->nlvl; i++, ii--)
 	{
-		// set coarse grid
-		cors = &mg->mgfs[i];
-
-		if(idxmod == IDXCOUPLED)   { idfine = &fine->cdof; idcors = &cors->cdof; }
-		if(idxmod == IDXUNCOUPLED) { idfine = &fine->udof; idcors = &cors->udof; }
-
-		// constant size preallocation
-		// WARNING! ADD PREALLOCATION TO THESE MATRICES
-		ierr = MatAIJCreate(idcors->numdof, idfine->numdof, 12, NULL, 4, NULL, &mg->R[i]); CHKERRQ(ierr);
-		ierr = MatAIJCreate(idfine->numdof, idcors->numdof, 8,  NULL, 7, NULL, &mg->P[i]); CHKERRQ(ierr);
-
-		ierr = PCMGSetRestriction  (mg->pc, l, mg->R[i]);
-		ierr = PCMGSetInterpolation(mg->pc, l, mg->P[i]);
-
-		// set fine grid for next step
-		fine = cors;
+		// set operators
+		ierr = PCMGSetRestriction  (mg->pc, ii,   mg->lvls[i].R); CHKERRQ(ierr);
+		ierr = PCMGSetInterpolation(mg->pc, ii-1, mg->lvls[i].P); CHKERRQ(ierr);
 	}
 
 	// store fine grid contexts
 	mg->fs = fs;
 	mg->bc = bc;
 
-	// store indexing mode
-	mg->idxmod = idxmod;
-*/
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
@@ -381,437 +411,11 @@ PetscErrorCode MGDumpMat(MG *mg)
 */
 	PetscFunctionReturn(0);
 }
-//---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "SetupRestrictStep"
-PetscErrorCode SetupRestrictStep(Mat R, FDSTAG *cors, FDSTAG *fine, BCCtx *bccors, idxtype idxmod)
-{
-/*
-	PetscScalar v[12];
-	PetscInt    idx[12];
-	PetscInt    mx, my, mz;
-	PetscInt    row, I, J, K, Ip1, Im1, Jp1, Jm1, Kp1, Km1;
-	PetscInt    i, j, k, nx, ny, nz, sx, sy, sz;
-	PetscScalar ***ivx, ***ivy, ***ivz, ***ip;
-	DOFIndex    *idfine, *idcors;
 
-	PetscErrorCode ierr;
-	PetscFunctionBegin;
-
-	if(idxmod == IDXCOUPLED)   { idfine = &fine->cdof; idcors = &cors->cdof; }
-	if(idxmod == IDXUNCOUPLED) { idfine = &fine->udof; idcors = &cors->udof; }
-
-	// clear restriction matrix coefficients
-	ierr = MatZeroEntries(R); CHKERRQ(ierr);
-
-	// access index vectors in fine grid
-	ierr = DMDAVecGetArray(fine->DA_X,   idfine->ivx, &ivx); CHKERRQ(ierr);
-	ierr = DMDAVecGetArray(fine->DA_Y,   idfine->ivy, &ivy); CHKERRQ(ierr);
-	ierr = DMDAVecGetArray(fine->DA_Z,   idfine->ivz, &ivz); CHKERRQ(ierr);
-	ierr = DMDAVecGetArray(fine->DA_CEN, idfine->ip,  &ip);  CHKERRQ(ierr);
-
-	// get fine grid index bounds
-	mx = fine->dsx.tnods;
-	my = fine->dsy.tnods;
-	mz = fine->dsz.tnods;
-
-	// get global index of the first row in coarse grid
-	row = idcors->istart;
-
-	// set velocity weights
-	v[0]  = 1.0/16.0;
-	v[1]  = 1.0/16.0;
-	v[2]  = 1.0/16.0;
-	v[3]  = 1.0/16.0;
-	v[4]  = 1.0/8.0;
-	v[5]  = 1.0/8.0;
-	v[6]  = 1.0/8.0;
-	v[7]  = 1.0/8.0;
-	v[8]  = 1.0/16.0;
-	v[9]  = 1.0/16.0;
-	v[10] = 1.0/16.0;
-	v[11] = 1.0/16.0;
-
-	//-----------------------
-	// X-points (coarse grid)
-	//-----------------------
-	GET_NODE_RANGE(nx, sx, cors->dsx)
-	GET_CELL_RANGE(ny, sy, cors->dsy)
-	GET_CELL_RANGE(nz, sz, cors->dsz)
-
-	START_STD_LOOP
-	{
-		// get fine grid indices
-		I = 2*i;
-		J = 2*j;
-		K = 2*k;
-
-		Ip1 = I+1; if(Ip1 == mx) Ip1 = I;
-		Im1 = I-1; if(Im1 == -1) Im1 = I;
-
-		idx[0]  = (PetscInt)ivx[K  ][J  ][Im1];
-		idx[1]  = (PetscInt)ivx[K  ][J+1][Im1];
-		idx[2]  = (PetscInt)ivx[K+1][J  ][Im1];
-		idx[3]  = (PetscInt)ivx[K+1][J+1][Im1];
-		idx[4]  = (PetscInt)ivx[K  ][J  ][I  ];
-		idx[5]  = (PetscInt)ivx[K  ][J+1][I  ];
-		idx[6]  = (PetscInt)ivx[K+1][J  ][I  ];
-		idx[7]  = (PetscInt)ivx[K+1][J+1][I  ];
-		idx[8]  = (PetscInt)ivx[K  ][J  ][Ip1];
-		idx[9]  = (PetscInt)ivx[K  ][J+1][Ip1];
-		idx[10] = (PetscInt)ivx[K+1][J  ][Ip1];
-		idx[11] = (PetscInt)ivx[K+1][J+1][Ip1];
-
-		// store full matrix row
-		ierr = MatSetValues(R, 1, &row, 12, idx, v, ADD_VALUES); CHKERRQ(ierr);
-
-		// increment row number
-		row++;
-	}
-	END_STD_LOOP
-
-	//-----------------------
-	// Y-points (coarse grid)
-	//-----------------------
-	GET_CELL_RANGE(nx, sx, cors->dsx)
-	GET_NODE_RANGE(ny, sy, cors->dsy)
-	GET_CELL_RANGE(nz, sz, cors->dsz)
-
-	START_STD_LOOP
-	{
-		// get fine grid indices
-		I = 2*i;
-		J = 2*j;
-		K = 2*k;
-
-		Jp1 = J+1; if(Jp1 == my) Jp1 = J;
-		Jm1 = J-1; if(Jm1 == -1) Jm1 = J;
-
-		idx[0]  = (PetscInt)ivy[K  ][Jm1][I  ];
-		idx[1]  = (PetscInt)ivy[K  ][Jm1][I+1];
-		idx[2]  = (PetscInt)ivy[K+1][Jm1][I  ];
-		idx[3]  = (PetscInt)ivy[K+1][Jm1][I+1];
-		idx[4]  = (PetscInt)ivy[K  ][J  ][I  ];
-		idx[5]  = (PetscInt)ivy[K  ][J  ][I+1];
-		idx[6]  = (PetscInt)ivy[K+1][J  ][I  ];
-		idx[7]  = (PetscInt)ivy[K+1][J  ][I+1];
-		idx[8]  = (PetscInt)ivy[K  ][Jp1][I  ];
-		idx[9]  = (PetscInt)ivy[K  ][Jp1][I+1];
-		idx[10] = (PetscInt)ivy[K+1][Jp1][I  ];
-    	idx[11] = (PetscInt)ivy[K+1][Jp1][I+1];
-
-		// store full matrix row
-		ierr = MatSetValues(R, 1, &row, 12, idx, v, ADD_VALUES); CHKERRQ(ierr);
-
-		// increment row number
-		row++;
-	}
-	END_STD_LOOP
-
-	//-----------------------
-	// Z-points (coarse grid)
-	//-----------------------
-	GET_CELL_RANGE(nx, sx, cors->dsx)
-	GET_CELL_RANGE(ny, sy, cors->dsy)
-	GET_NODE_RANGE(nz, sz, cors->dsz)
-
-	START_STD_LOOP
-	{
-		// get fine grid indices
-		I = 2*i;
-		J = 2*j;
-		K = 2*k;
-
-		Kp1 = K+1; if(Kp1 == mz) Kp1 = K;
-		Km1 = K-1; if(Km1 == -1) Km1 = K;
-
-		idx[0]  = (PetscInt)ivz[Km1][J  ][I  ];
-		idx[1]  = (PetscInt)ivz[Km1][J  ][I+1];
-		idx[2]  = (PetscInt)ivz[Km1][J+1][I  ];
-		idx[3]  = (PetscInt)ivz[Km1][J+1][I+1];
-		idx[4]  = (PetscInt)ivz[K  ][J  ][I  ];
-		idx[5]  = (PetscInt)ivz[K  ][J  ][I+1];
-		idx[6]  = (PetscInt)ivz[K  ][J+1][I  ];
-		idx[7]  = (PetscInt)ivz[K  ][J+1][I+1];
-		idx[8]  = (PetscInt)ivz[Kp1][J  ][I  ];
-		idx[9]  = (PetscInt)ivz[Kp1][J  ][I+1];
-		idx[10] = (PetscInt)ivz[Kp1][J+1][I  ];
-    	idx[11] = (PetscInt)ivz[Kp1][J+1][I+1];
-
-		// store full matrix row
-		ierr = MatSetValues(R, 1, &row, 12, idx, v, ADD_VALUES); CHKERRQ(ierr);
-
-		// increment row number
-		row++;
-	}
-	END_STD_LOOP
-
-	if(idxmod == IDXCOUPLED)
-	{
-		// set pressure weights
-		v[0] = 1.0/8.0;
-		v[1] = 1.0/8.0;
-		v[2] = 1.0/8.0;
-		v[3] = 1.0/8.0;
-		v[4] = 1.0/8.0;
-		v[5] = 1.0/8.0;
-		v[6] = 1.0/8.0;
-		v[7] = 1.0/8.0;
-
-		//-----------------------
-		// P-points (coarse grid)
-		//-----------------------
-		GET_CELL_RANGE(nx, sx, cors->dsx)
-		GET_CELL_RANGE(ny, sy, cors->dsy)
-		GET_CELL_RANGE(nz, sz, cors->dsz)
-
-		START_STD_LOOP
-		{
-			// get fine grid indices
-			I = 2*i;
-			J = 2*j;
-			K = 2*k;
-
-			idx[0] = (PetscInt)ip[K  ][J  ][I  ];
-			idx[1] = (PetscInt)ip[K  ][J  ][I+1];
-			idx[2] = (PetscInt)ip[K  ][J+1][I  ];
-			idx[3] = (PetscInt)ip[K  ][J+1][I+1];
-			idx[4] = (PetscInt)ip[K+1][J  ][I  ];
-			idx[5] = (PetscInt)ip[K+1][J  ][I+1];
-			idx[6] = (PetscInt)ip[K+1][J+1][I  ];
-			idx[7] = (PetscInt)ip[K+1][J+1][I+1];
-
-			// store full matrix row
-			ierr = MatSetValues(R, 1, &row, 8, idx, v, ADD_VALUES); CHKERRQ(ierr);
-
-			// increment row number
-			row++;
-
-		}
-		END_STD_LOOP
-	}
-
-	// restore access
-	ierr = DMDAVecRestoreArray(fine->DA_X,   idfine->ivx,  &ivx); CHKERRQ(ierr);
-	ierr = DMDAVecRestoreArray(fine->DA_Y,   idfine->ivy,  &ivy); CHKERRQ(ierr);
-	ierr = DMDAVecRestoreArray(fine->DA_Z,   idfine->ivz,  &ivz); CHKERRQ(ierr);
-	ierr = DMDAVecRestoreArray(fine->DA_CEN, idfine->ip,   &ip);  CHKERRQ(ierr);
-
-	// assemble restriction matrix
-	ierr = MatAIJAssemble(R, bccors->numSPC, bccors->SPCList);
-*/
-	PetscFunctionReturn(0);
-}
-//---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "SetupProlongStep"
-PetscErrorCode SetupProlongStep(Mat P, FDSTAG *fine, FDSTAG *cors, BCCtx *bcfine, idxtype idxmod)
-{
-/*
-	PetscScalar v[8];
-	PetscInt    idx[8];
-	PetscInt    mx, my, mz;
-	PetscInt    row, I, J, K, I1, J1, K1;
-	PetscInt    i, j, k, nx, ny, nz, sx, sy, sz;
-	PetscScalar ***ivx, ***ivy, ***ivz, ***ip;
-	DOFIndex    *idcors, *idfine;
-
-	PetscErrorCode ierr;
-	PetscFunctionBegin;
-
-	if(idxmod == IDXCOUPLED)   { idcors = &cors->cdof; idfine = &fine->cdof; }
-	if(idxmod == IDXUNCOUPLED) { idcors = &cors->udof; idfine = &fine->udof; }
-
-	// clear prolongation matrix coefficients
-	ierr = MatZeroEntries(P); CHKERRQ(ierr);
-
-	// access index vectors in coarse grid
-	ierr = DMDAVecGetArray(cors->DA_X,   idcors->ivx,  &ivx); CHKERRQ(ierr);
-	ierr = DMDAVecGetArray(cors->DA_Y,   idcors->ivy,  &ivy); CHKERRQ(ierr);
-	ierr = DMDAVecGetArray(cors->DA_Z,   idcors->ivz,  &ivz); CHKERRQ(ierr);
-	ierr = DMDAVecGetArray(cors->DA_CEN, idcors->ip,   &ip);  CHKERRQ(ierr);
-
-	// get coarse grid index bounds
-	mx = cors->dsx.tcels;
-	my = cors->dsy.tcels;
-	mz = cors->dsz.tcels;
-
-	// get global index of the first row in fine grid
-	row = idfine->istart;
-
-	// set velocity weights
-	v[0] = 9.0/32.0;
-	v[1] = 3.0/32.0;
-	v[2] = 3.0/32.0;
-	v[3] = 1.0/32.0;
-	v[4] = 9.0/32.0;
-	v[5] = 3.0/32.0;
-	v[6] = 3.0/32.0;
-	v[7] = 1.0/32.0;
-
-	//---------------------
-	// X-points (fine grid)
-	//---------------------
-	GET_NODE_RANGE(nx, sx, fine->dsx)
-	GET_CELL_RANGE(ny, sy, fine->dsy)
-	GET_CELL_RANGE(nz, sz, fine->dsz)
-
-	START_STD_LOOP
-	{
-		// get coarse grid indices
-		I = i/2;
-		J = j/2;
-		K = k/2;
-
-		if(i % 2) I1 = I+1; else I1 = I;
-
-		if(j % 2) J1 = J+1; else J1 = J-1;
-		if(k % 2) K1 = K+1; else K1 = K-1;
-
-		if(J1 == -1 || J1 == my) J1 = J;
-		if(K1 == -1 || K1 == mz) K1 = K;
-
-		idx[0] = (PetscInt)ivx[K ][J ][I ];
-		idx[1] = (PetscInt)ivx[K ][J1][I ];
-		idx[2] = (PetscInt)ivx[K1][J ][I ];
-		idx[3] = (PetscInt)ivx[K1][J1][I ];
-		idx[4] = (PetscInt)ivx[K ][J ][I1];
-		idx[5] = (PetscInt)ivx[K ][J1][I1];
-		idx[6] = (PetscInt)ivx[K1][J ][I1];
-		idx[7] = (PetscInt)ivx[K1][J1][I1];
-
-		// store full matrix row
-		ierr = MatSetValues(P, 1, &row, 8, idx, v, ADD_VALUES); CHKERRQ(ierr);
-
-		// increment row number
-		row++;
-	}
-	END_STD_LOOP
-
-	//---------------------
-	// Y-points (fine grid)
-	//---------------------
-	GET_CELL_RANGE(nx, sx, fine->dsx)
-	GET_NODE_RANGE(ny, sy, fine->dsy)
-	GET_CELL_RANGE(nz, sz, fine->dsz)
-
-	START_STD_LOOP
-	{
-		// get coarse grid indices
-		I = i/2;
-		J = j/2;
-		K = k/2;
-
-		if(j % 2) J1 = J+1; else J1 = J;
-
-		if(i % 2) I1 = I+1; else I1 = I-1;
-		if(k % 2) K1 = K+1; else K1 = K-1;
-
-		if(I1 == -1 || I1 == mx) I1 = I;
-		if(K1 == -1 || K1 == mz) K1 = K;
-
-		idx[0] = (PetscInt)ivy[K ][J ][I ];
-		idx[1] = (PetscInt)ivy[K ][J ][I1];
-		idx[2] = (PetscInt)ivy[K1][J ][I ];
-		idx[3] = (PetscInt)ivy[K1][J ][I1];
-		idx[4] = (PetscInt)ivy[K ][J1][I ];
-		idx[5] = (PetscInt)ivy[K ][J1][I1];
-		idx[6] = (PetscInt)ivy[K1][J1][I ];
-		idx[7] = (PetscInt)ivy[K1][J1][I1];
-
-		// store full matrix row
-		ierr = MatSetValues(P, 1, &row, 8, idx, v, ADD_VALUES); CHKERRQ(ierr);
-
-		// increment row number
-		row++;
-	}
-	END_STD_LOOP
-
-	//---------------------
-	// Z-points (fine grid)
-	//---------------------
-	GET_CELL_RANGE(nx, sx, fine->dsx)
-	GET_CELL_RANGE(ny, sy, fine->dsy)
-	GET_NODE_RANGE(nz, sz, fine->dsz)
-
-	START_STD_LOOP
-	{
-		// get coarse grid indices
-		I = i/2;
-		J = j/2;
-		K = k/2;
-
-		if(k % 2) K1 = K+1; else K1 = K;
-
-		if(i % 2) I1 = I+1; else I1 = I-1;
-		if(j % 2) J1 = J+1; else J1 = J-1;
-
-		if(I1 == -1 || I1 == mx) I1 = I;
-		if(J1 == -1 || J1 == my) J1 = J;
-
-		idx[0] = (PetscInt)ivz[K ][J ][I ];
-		idx[1] = (PetscInt)ivz[K ][J ][I1];
-		idx[2] = (PetscInt)ivz[K ][J1][I ];
-		idx[3] = (PetscInt)ivz[K ][J1][I1];
-		idx[4] = (PetscInt)ivz[K1][J ][I ];
-		idx[5] = (PetscInt)ivz[K1][J ][I1];
-		idx[6] = (PetscInt)ivz[K1][J1][I ];
-		idx[7] = (PetscInt)ivz[K1][J1][I1];
-
-		// store full matrix row
-		ierr = MatSetValues(P, 1, &row, 8, idx, v, ADD_VALUES); CHKERRQ(ierr);
-
-		// increment row number
-		row++;
-	}
-	END_STD_LOOP
-
-	if(idxmod == IDXCOUPLED)
-	{
-		// set pressure weights (direct injection)
-		v[0] = 1.0;
-
-		//---------------------
-		// P-points (fine grid)
-		//---------------------
-		GET_CELL_RANGE(nx, sx, fine->dsx)
-		GET_CELL_RANGE(ny, sy, fine->dsy)
-		GET_CELL_RANGE(nz, sz, fine->dsz)
-
-		START_STD_LOOP
-		{
-			// get coarse grid indices
-			I = i/2;
-			J = j/2;
-			K = k/2;
-
-			idx[0] = (PetscInt)ip[K][J][I];
-
-			// store full matrix row
-			ierr = MatSetValues(P, 1, &row, 1, idx, v, ADD_VALUES); CHKERRQ(ierr);
-
-			// increment row number
-			row++;
-
-		}
-		END_STD_LOOP
-
-	}
-	// restore access
-	ierr = DMDAVecRestoreArray(cors->DA_X,   idcors->ivx,  &ivx); CHKERRQ(ierr);
-	ierr = DMDAVecRestoreArray(cors->DA_Y,   idcors->ivy,  &ivy); CHKERRQ(ierr);
-	ierr = DMDAVecRestoreArray(cors->DA_Z,   idcors->ivz,  &ivz); CHKERRQ(ierr);
-	ierr = DMDAVecRestoreArray(cors->DA_CEN, idcors->ip,   &ip);  CHKERRQ(ierr);
-
-	// assemble prolongation matrix
-	ierr = MatAIJAssemble(P, bcfine->numSPC, bcfine->SPCList);
-*/
-	PetscFunctionReturn(0);
-}
 //---------------------------------------------------------------------------
 #undef __FUNCT__
 #define __FUNCT__ "CheckMGRestrict"
-PetscErrorCode CheckMGRestrict(FDSTAG *fs, PetscInt *_ncors)
+PetscErrorCode CheckMGRestrict(FDSTAG *fs, PetscInt *pncors)
 {
 	// check multigrid mesh restrictions, get actual number of coarsening steps
 
@@ -855,8 +459,423 @@ PetscErrorCode CheckMGRestrict(FDSTAG *fs, PetscInt *_ncors)
 	ierr = PetscPrintf(PETSC_COMM_WORLD, " Number of multigrid levels             : %lld\n", (LLD)(ncors+1)); CHKERRQ(ierr);
 
 	// return number of coarsening steps
-	(*_ncors) = ncors;
+	(*pncors) = ncors;
 
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
+#undef __FUNCT__
+#define __FUNCT__ "SetupRestrictStep"
+PetscErrorCode SetupRestrictStep(Mat R, MGLevel *lvl, MGLevel *fine)
+{
+	PetscScalar v[12];
+	PetscInt    idx[12];
+	PetscInt    mx, my, mz;
+	PetscInt    row, I, J, K, Ip1, Im1, Jp1, Jm1, Kp1, Km1;
+	PetscInt    i, j, k, nx, ny, nz, sx, sy, sz;
+	PetscScalar ***ivx, ***ivy, ***ivz, ***ip;
+
+	PetscErrorCode ierr;
+	PetscFunctionBegin;
+
+	// clear restriction matrix coefficients
+	ierr = MatZeroEntries(R); CHKERRQ(ierr);
+
+	// access index vectors in fine grid
+	ierr = DMDAVecGetArray(fine->DA_X,   fine->dof.ivx, &ivx); CHKERRQ(ierr);
+	ierr = DMDAVecGetArray(fine->DA_Y,   fine->dof.ivy, &ivy); CHKERRQ(ierr);
+	ierr = DMDAVecGetArray(fine->DA_Z,   fine->dof.ivz, &ivz); CHKERRQ(ierr);
+	ierr = DMDAVecGetArray(fine->DA_CEN, fine->dof.ip,  &ip);  CHKERRQ(ierr);
+
+	// get total number of nodes in the fine grid
+	ierr = DMDAGetInfo(fine->DA_CEN, 0, &mx, &my, &mz, 0, 0, 0, 0, 0, 0, 0, 0, 0); CHKERRQ(ierr);
+
+	mx++;
+	my++;
+	mz++;
+
+	// get global index of the first row in coarse grid
+	if     (lvl->dof.idxmod == IDXCOUPLED)   { row = lvl->dof.st;  }
+	else if(lvl->dof.idxmod == IDXUNCOUPLED) { row = lvl->dof.stv; }
+
+	// set velocity weights
+	v[0]  = 1.0/16.0;
+	v[1]  = 1.0/16.0;
+	v[2]  = 1.0/16.0;
+	v[3]  = 1.0/16.0;
+	v[4]  = 1.0/8.0;
+	v[5]  = 1.0/8.0;
+	v[6]  = 1.0/8.0;
+	v[7]  = 1.0/8.0;
+	v[8]  = 1.0/16.0;
+	v[9]  = 1.0/16.0;
+	v[10] = 1.0/16.0;
+	v[11] = 1.0/16.0;
+
+	//-----------------------
+	// X-points (coarse grid)
+	//-----------------------
+	ierr = DMDAGetCorners(lvl->DA_X, &sx, &sy, &sz, &nx, &ny, &nz); CHKERRQ(ierr);
+
+	START_STD_LOOP
+	{
+		// get fine grid indices
+		I = 2*i;
+		J = 2*j;
+		K = 2*k;
+
+		Ip1 = I+1; if(Ip1 == mx) Ip1 = I;
+		Im1 = I-1; if(Im1 == -1) Im1 = I;
+
+		idx[0]  = (PetscInt)ivx[K  ][J  ][Im1];
+		idx[1]  = (PetscInt)ivx[K  ][J+1][Im1];
+		idx[2]  = (PetscInt)ivx[K+1][J  ][Im1];
+		idx[3]  = (PetscInt)ivx[K+1][J+1][Im1];
+		idx[4]  = (PetscInt)ivx[K  ][J  ][I  ];
+		idx[5]  = (PetscInt)ivx[K  ][J+1][I  ];
+		idx[6]  = (PetscInt)ivx[K+1][J  ][I  ];
+		idx[7]  = (PetscInt)ivx[K+1][J+1][I  ];
+		idx[8]  = (PetscInt)ivx[K  ][J  ][Ip1];
+		idx[9]  = (PetscInt)ivx[K  ][J+1][Ip1];
+		idx[10] = (PetscInt)ivx[K+1][J  ][Ip1];
+		idx[11] = (PetscInt)ivx[K+1][J+1][Ip1];
+
+		// store full matrix row
+		ierr = MatSetValues(R, 1, &row, 12, idx, v, ADD_VALUES); CHKERRQ(ierr);
+
+		// increment row number
+		row++;
+	}
+	END_STD_LOOP
+
+	//-----------------------
+	// Y-points (coarse grid)
+	//-----------------------
+	ierr = DMDAGetCorners(lvl->DA_Y, &sx, &sy, &sz, &nx, &ny, &nz); CHKERRQ(ierr);
+
+	START_STD_LOOP
+	{
+		// get fine grid indices
+		I = 2*i;
+		J = 2*j;
+		K = 2*k;
+
+		Jp1 = J+1; if(Jp1 == my) Jp1 = J;
+		Jm1 = J-1; if(Jm1 == -1) Jm1 = J;
+
+		idx[0]  = (PetscInt)ivy[K  ][Jm1][I  ];
+		idx[1]  = (PetscInt)ivy[K  ][Jm1][I+1];
+		idx[2]  = (PetscInt)ivy[K+1][Jm1][I  ];
+		idx[3]  = (PetscInt)ivy[K+1][Jm1][I+1];
+		idx[4]  = (PetscInt)ivy[K  ][J  ][I  ];
+		idx[5]  = (PetscInt)ivy[K  ][J  ][I+1];
+		idx[6]  = (PetscInt)ivy[K+1][J  ][I  ];
+		idx[7]  = (PetscInt)ivy[K+1][J  ][I+1];
+		idx[8]  = (PetscInt)ivy[K  ][Jp1][I  ];
+		idx[9]  = (PetscInt)ivy[K  ][Jp1][I+1];
+		idx[10] = (PetscInt)ivy[K+1][Jp1][I  ];
+    	idx[11] = (PetscInt)ivy[K+1][Jp1][I+1];
+
+		// store full matrix row
+		ierr = MatSetValues(R, 1, &row, 12, idx, v, ADD_VALUES); CHKERRQ(ierr);
+
+		// increment row number
+		row++;
+	}
+	END_STD_LOOP
+
+	//-----------------------
+	// Z-points (coarse grid)
+	//-----------------------
+	ierr = DMDAGetCorners(lvl->DA_Z, &sx, &sy, &sz, &nx, &ny, &nz); CHKERRQ(ierr);
+
+	START_STD_LOOP
+	{
+		// get fine grid indices
+		I = 2*i;
+		J = 2*j;
+		K = 2*k;
+
+		Kp1 = K+1; if(Kp1 == mz) Kp1 = K;
+		Km1 = K-1; if(Km1 == -1) Km1 = K;
+
+		idx[0]  = (PetscInt)ivz[Km1][J  ][I  ];
+		idx[1]  = (PetscInt)ivz[Km1][J  ][I+1];
+		idx[2]  = (PetscInt)ivz[Km1][J+1][I  ];
+		idx[3]  = (PetscInt)ivz[Km1][J+1][I+1];
+		idx[4]  = (PetscInt)ivz[K  ][J  ][I  ];
+		idx[5]  = (PetscInt)ivz[K  ][J  ][I+1];
+		idx[6]  = (PetscInt)ivz[K  ][J+1][I  ];
+		idx[7]  = (PetscInt)ivz[K  ][J+1][I+1];
+		idx[8]  = (PetscInt)ivz[Kp1][J  ][I  ];
+		idx[9]  = (PetscInt)ivz[Kp1][J  ][I+1];
+		idx[10] = (PetscInt)ivz[Kp1][J+1][I  ];
+    	idx[11] = (PetscInt)ivz[Kp1][J+1][I+1];
+
+		// store full matrix row
+		ierr = MatSetValues(R, 1, &row, 12, idx, v, ADD_VALUES); CHKERRQ(ierr);
+
+		// increment row number
+		row++;
+	}
+	END_STD_LOOP
+
+	if(lvl->dof.idxmod == IDXCOUPLED)
+	{
+		// set pressure weights
+		v[0] = 1.0/8.0;
+		v[1] = 1.0/8.0;
+		v[2] = 1.0/8.0;
+		v[3] = 1.0/8.0;
+		v[4] = 1.0/8.0;
+		v[5] = 1.0/8.0;
+		v[6] = 1.0/8.0;
+		v[7] = 1.0/8.0;
+
+		//-----------------------
+		// P-points (coarse grid)
+		//-----------------------
+		ierr = DMDAGetCorners(lvl->DA_CEN, &sx, &sy, &sz, &nx, &ny, &nz); CHKERRQ(ierr);
+
+		START_STD_LOOP
+		{
+			// get fine grid indices
+			I = 2*i;
+			J = 2*j;
+			K = 2*k;
+
+			idx[0] = (PetscInt)ip[K  ][J  ][I  ];
+			idx[1] = (PetscInt)ip[K  ][J  ][I+1];
+			idx[2] = (PetscInt)ip[K  ][J+1][I  ];
+			idx[3] = (PetscInt)ip[K  ][J+1][I+1];
+			idx[4] = (PetscInt)ip[K+1][J  ][I  ];
+			idx[5] = (PetscInt)ip[K+1][J  ][I+1];
+			idx[6] = (PetscInt)ip[K+1][J+1][I  ];
+			idx[7] = (PetscInt)ip[K+1][J+1][I+1];
+
+			// store full matrix row
+			ierr = MatSetValues(R, 1, &row, 8, idx, v, ADD_VALUES); CHKERRQ(ierr);
+
+			// increment row number
+			row++;
+
+		}
+		END_STD_LOOP
+	}
+
+	// restore access
+	ierr = DMDAVecRestoreArray(fine->DA_X,   fine->dof.ivx, &ivx); CHKERRQ(ierr);
+	ierr = DMDAVecRestoreArray(fine->DA_Y,   fine->dof.ivy, &ivy); CHKERRQ(ierr);
+	ierr = DMDAVecRestoreArray(fine->DA_Z,   fine->dof.ivz, &ivz); CHKERRQ(ierr);
+	ierr = DMDAVecRestoreArray(fine->DA_CEN, fine->dof.ip,  &ip);  CHKERRQ(ierr);
+
+	// assemble restriction matrix
+	ierr = MatAIJAssemble(R, 0, NULL, 0.0); CHKERRQ(ierr);
+
+// WARNING! constraints (or should be set at the level of setting indices & coefficients ?)
+	//	ierr = MatAIJAssemble(R, bccors->numSPC, bccors->SPCList); CHKERRQ(ierr);
+
+	PetscFunctionReturn(0);
+}
+//---------------------------------------------------------------------------
+#undef __FUNCT__
+#define __FUNCT__ "SetupProlongStep"
+PetscErrorCode SetupProlongStep(Mat P, MGLevel *lvl, MGLevel *fine)
+{
+
+	PetscScalar v[8];
+	PetscInt    idx[8];
+	PetscInt    mx, my, mz;
+	PetscInt    row, I, J, K, I1, J1, K1;
+	PetscInt    i, j, k, nx, ny, nz, sx, sy, sz;
+	PetscScalar ***ivx, ***ivy, ***ivz, ***ip;
+
+	PetscErrorCode ierr;
+	PetscFunctionBegin;
+
+	// clear prolongation matrix coefficients
+	ierr = MatZeroEntries(P); CHKERRQ(ierr);
+
+	// access index vectors in coarse grid
+	ierr = DMDAVecGetArray(lvl->DA_X,   lvl->dof.ivx,  &ivx); CHKERRQ(ierr);
+	ierr = DMDAVecGetArray(lvl->DA_Y,   lvl->dof.ivy,  &ivy); CHKERRQ(ierr);
+	ierr = DMDAVecGetArray(lvl->DA_Z,   lvl->dof.ivz,  &ivz); CHKERRQ(ierr);
+	ierr = DMDAVecGetArray(lvl->DA_CEN, lvl->dof.ip,   &ip);  CHKERRQ(ierr);
+
+	// get total number of nodes in the coarse grid
+	ierr = DMDAGetInfo(lvl->DA_CEN, 0, &mx, &my, &mz, 0, 0, 0, 0, 0, 0, 0, 0, 0); CHKERRQ(ierr);
+
+	mx++;
+	my++;
+	mz++;
+
+	// get global index of the first row in the fine grid
+	if     (fine->dof.idxmod == IDXCOUPLED)   { row = fine->dof.st;  }
+	else if(fine->dof.idxmod == IDXUNCOUPLED) { row = fine->dof.stv; }
+
+	// set velocity weights
+	v[0] = 9.0/32.0;
+	v[1] = 3.0/32.0;
+	v[2] = 3.0/32.0;
+	v[3] = 1.0/32.0;
+	v[4] = 9.0/32.0;
+	v[5] = 3.0/32.0;
+	v[6] = 3.0/32.0;
+	v[7] = 1.0/32.0;
+
+	//---------------------
+	// X-points (fine grid)
+	//---------------------
+	ierr = DMDAGetCorners(fine->DA_X, &sx, &sy, &sz, &nx, &ny, &nz); CHKERRQ(ierr);
+
+	START_STD_LOOP
+	{
+		// get coarse grid indices
+		I = i/2;
+		J = j/2;
+		K = k/2;
+
+		if(i % 2) I1 = I+1; else I1 = I;
+
+		if(j % 2) J1 = J+1; else J1 = J-1;
+		if(k % 2) K1 = K+1; else K1 = K-1;
+
+		if(J1 == -1 || J1 == my) J1 = J;
+		if(K1 == -1 || K1 == mz) K1 = K;
+
+		idx[0] = (PetscInt)ivx[K ][J ][I ];
+		idx[1] = (PetscInt)ivx[K ][J1][I ];
+		idx[2] = (PetscInt)ivx[K1][J ][I ];
+		idx[3] = (PetscInt)ivx[K1][J1][I ];
+		idx[4] = (PetscInt)ivx[K ][J ][I1];
+		idx[5] = (PetscInt)ivx[K ][J1][I1];
+		idx[6] = (PetscInt)ivx[K1][J ][I1];
+		idx[7] = (PetscInt)ivx[K1][J1][I1];
+
+		// store full matrix row
+		ierr = MatSetValues(P, 1, &row, 8, idx, v, ADD_VALUES); CHKERRQ(ierr);
+
+		// increment row number
+		row++;
+	}
+	END_STD_LOOP
+
+	//---------------------
+	// Y-points (fine grid)
+	//---------------------
+	ierr = DMDAGetCorners(fine->DA_Y, &sx, &sy, &sz, &nx, &ny, &nz); CHKERRQ(ierr);
+
+	START_STD_LOOP
+	{
+		// get coarse grid indices
+		I = i/2;
+		J = j/2;
+		K = k/2;
+
+		if(j % 2) J1 = J+1; else J1 = J;
+
+		if(i % 2) I1 = I+1; else I1 = I-1;
+		if(k % 2) K1 = K+1; else K1 = K-1;
+
+		if(I1 == -1 || I1 == mx) I1 = I;
+		if(K1 == -1 || K1 == mz) K1 = K;
+
+		idx[0] = (PetscInt)ivy[K ][J ][I ];
+		idx[1] = (PetscInt)ivy[K ][J ][I1];
+		idx[2] = (PetscInt)ivy[K1][J ][I ];
+		idx[3] = (PetscInt)ivy[K1][J ][I1];
+		idx[4] = (PetscInt)ivy[K ][J1][I ];
+		idx[5] = (PetscInt)ivy[K ][J1][I1];
+		idx[6] = (PetscInt)ivy[K1][J1][I ];
+		idx[7] = (PetscInt)ivy[K1][J1][I1];
+
+		// store full matrix row
+		ierr = MatSetValues(P, 1, &row, 8, idx, v, ADD_VALUES); CHKERRQ(ierr);
+
+		// increment row number
+		row++;
+	}
+	END_STD_LOOP
+
+	//---------------------
+	// Z-points (fine grid)
+	//---------------------
+	ierr = DMDAGetCorners(fine->DA_Z, &sx, &sy, &sz, &nx, &ny, &nz); CHKERRQ(ierr);
+
+	START_STD_LOOP
+	{
+		// get coarse grid indices
+		I = i/2;
+		J = j/2;
+		K = k/2;
+
+		if(k % 2) K1 = K+1; else K1 = K;
+
+		if(i % 2) I1 = I+1; else I1 = I-1;
+		if(j % 2) J1 = J+1; else J1 = J-1;
+
+		if(I1 == -1 || I1 == mx) I1 = I;
+		if(J1 == -1 || J1 == my) J1 = J;
+
+		idx[0] = (PetscInt)ivz[K ][J ][I ];
+		idx[1] = (PetscInt)ivz[K ][J ][I1];
+		idx[2] = (PetscInt)ivz[K ][J1][I ];
+		idx[3] = (PetscInt)ivz[K ][J1][I1];
+		idx[4] = (PetscInt)ivz[K1][J ][I ];
+		idx[5] = (PetscInt)ivz[K1][J ][I1];
+		idx[6] = (PetscInt)ivz[K1][J1][I ];
+		idx[7] = (PetscInt)ivz[K1][J1][I1];
+
+		// store full matrix row
+		ierr = MatSetValues(P, 1, &row, 8, idx, v, ADD_VALUES); CHKERRQ(ierr);
+
+		// increment row number
+		row++;
+	}
+	END_STD_LOOP
+
+	if(fine->dof.idxmod == IDXCOUPLED)
+	{
+		// set pressure weights (direct injection)
+		v[0] = 1.0;
+
+		//---------------------
+		// P-points (fine grid)
+		//---------------------
+		ierr = DMDAGetCorners(fine->DA_CEN, &sx, &sy, &sz, &nx, &ny, &nz); CHKERRQ(ierr);
+
+		START_STD_LOOP
+		{
+			// get coarse grid indices
+			I = i/2;
+			J = j/2;
+			K = k/2;
+
+			idx[0] = (PetscInt)ip[K][J][I];
+
+			// store full matrix row
+			ierr = MatSetValues(P, 1, &row, 1, idx, v, ADD_VALUES); CHKERRQ(ierr);
+
+			// increment row number
+			row++;
+
+		}
+		END_STD_LOOP
+
+	}
+	// restore access
+	ierr = DMDAVecRestoreArray(lvl->DA_X,   lvl->dof.ivx, &ivx); CHKERRQ(ierr);
+	ierr = DMDAVecRestoreArray(lvl->DA_Y,   lvl->dof.ivy, &ivy); CHKERRQ(ierr);
+	ierr = DMDAVecRestoreArray(lvl->DA_Z,   lvl->dof.ivz, &ivz); CHKERRQ(ierr);
+	ierr = DMDAVecRestoreArray(lvl->DA_CEN, lvl->dof.ip,  &ip);  CHKERRQ(ierr);
+
+	// assemble prolongation matrix
+	ierr = MatAIJAssemble(P, 0, NULL, 0.0); CHKERRQ(ierr);
+
+// WARNING! constraints (or should be set at the level of setting indices & coefficients ?)
+//	ierr = MatAIJAssemble(P, bcfine->numSPC, bcfine->SPCList); CHKERRQ(ierr);
+
+	PetscFunctionReturn(0);
+}
+//---------------------------------------------------------------------------
+
