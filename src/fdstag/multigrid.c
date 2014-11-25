@@ -18,6 +18,9 @@
 // * implement fine-level preconditionier completely matrix-free
 // * coordinate- viscosity- residual-dependent restriction & interpolation
 //---------------------------------------------------------------------------
+//---------------------------------------------------------------------------
+// MG -functions
+//---------------------------------------------------------------------------
 #undef __FUNCT__
 #define __FUNCT__ "MGLevelCreate"
 PetscErrorCode MGLevelCreate(MGLevel *lvl, MGLevel *fine, FDSTAG *fs)
@@ -123,351 +126,18 @@ PetscErrorCode MGLevelDestroy(MGLevel *lvl)
 		ierr = DMDestroy(&lvl->DA_Y);      CHKERRQ(ierr);
 		ierr = DMDestroy(&lvl->DA_Z);      CHKERRQ(ierr);
 		ierr = DOFIndexDestroy(&lvl->dof); CHKERRQ(ierr);
-		ierr = MatDestroy   (&lvl->R);     CHKERRQ(ierr);
-		ierr = MatDestroy   (&lvl->P);     CHKERRQ(ierr);
+		ierr = MatDestroy(&lvl->R);        CHKERRQ(ierr);
+		ierr = MatDestroy(&lvl->P);        CHKERRQ(ierr);
 	}
 
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
 #undef __FUNCT__
-#define __FUNCT__ "MGCreate"
-PetscErrorCode MGCreate(MG *mg, FDSTAG *fs, BCCtx *bc)
+#define __FUNCT__ "MGLevelSetupRestrict"
+PetscErrorCode MGLevelSetupRestrict(MGLevel *lvl, MGLevel *fine)
 {
-	PetscInt  i, ii, ncors;
-	MGLevel   *fine;
-	char      pc_type[MAX_NAME_LEN];
-	PetscBool opt_set;
-
-	PetscErrorCode ierr;
-	PetscFunctionBegin;
-
-	// clear object
-	ierr = PetscMemzero(mg, sizeof(MG)); CHKERRQ(ierr);
-
-	// get preconditioner type
-	ierr = PetscOptionsGetString(NULL, "-gmg_pc_type", pc_type, MAX_NAME_LEN, &opt_set); CHKERRQ(ierr);
-
-	// check whether multigrid is requested
-	if(opt_set != PETSC_TRUE || strcmp(pc_type, "mg"))
-	{
-		SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "-gmg_pc_type option is not defined of specified incorrectly (use -gmg_pc_type mg)");
-	}
-
-	// check multigrid mesh restrictions, get actual number of coarsening steps
-	ierr = CheckMGRestrict(fs, &ncors); CHKERRQ(ierr);
-
-	// store actual number of levels
-	mg->nlvl = ncors+1;
-
-	// allocate levels
-	ierr = PetscMalloc(sizeof(FDSTAG)*(size_t)mg->nlvl, &mg->lvls); CHKERRQ(ierr);
-
-	// create levels
-	fine = NULL;
-
-	for(i = 0; i < mg->nlvl; i++)
-	{
-		ierr = MGLevelCreate(&mg->lvls[i], fine, fs); CHKERRQ(ierr);
-
-		fine = &mg->lvls[i];
-	}
-
-	// create Galerkin multigrid preconditioner
-	ierr = PCCreate(PETSC_COMM_WORLD, &mg->pc);       CHKERRQ(ierr);
-	ierr = PCSetOptionsPrefix(mg->pc, "gmg_");        CHKERRQ(ierr);
-	ierr = PCSetType(mg->pc, PCMG);                   CHKERRQ(ierr);
-	ierr = PCMGSetLevels(mg->pc, mg->nlvl, NULL);     CHKERRQ(ierr);
-	ierr = PCMGSetType(mg->pc, PC_MG_MULTIPLICATIVE); CHKERRQ(ierr);
-	ierr = PCMGSetGalerkin(mg->pc, PETSC_TRUE);       CHKERRQ(ierr);
-	ierr = PCSetFromOptions(mg->pc);                  CHKERRQ(ierr);
-
-	// attach restriction/prolongation matrices to the preconditioner
-	// (loop all levels except finest, since it doesn't contain R & P)
-	for(i = 1, ii = mg->nlvl-1; i < mg->nlvl; i++, ii--)
-	{
-		// set operators
-		ierr = PCMGSetRestriction  (mg->pc, ii,   mg->lvls[i].R); CHKERRQ(ierr);
-		ierr = PCMGSetInterpolation(mg->pc, ii-1, mg->lvls[i].P); CHKERRQ(ierr);
-	}
-
-	// store fine grid contexts
-	mg->fs = fs;
-	mg->bc = bc;
-
-	PetscFunctionReturn(0);
-}
-//---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "MGDestroy"
-PetscErrorCode MGDestroy(MG *mg)
-{
-/*
-	PetscInt  i;
-	PetscBool flg;
-
-	PetscErrorCode ierr;
-	PetscFunctionBegin;
-
-	// view preconditioner if required
-	ierr = PetscOptionsHasName(NULL, "-gmg_pc_view", &flg); CHKERRQ(ierr);
-
-	if(flg == PETSC_TRUE)
-	{
-		ierr = PCView(mg->pc, PETSC_VIEWER_STDOUT_WORLD); CHKERRQ(ierr);
-	}
-
-	for(i = 0; i < mg->ncors; i++)
-	{
-		ierr = FDSTAGDestroy(&mg->mgfs[i]); CHKERRQ(ierr);
-		ierr = MatDestroy   (&mg->R[i]);    CHKERRQ(ierr);
-		ierr = MatDestroy   (&mg->P[i]);    CHKERRQ(ierr);
-		ierr = BCDestroy    (&mg->mgbc[i]); CHKERRQ(ierr);
-	}
-
-	ierr = PetscFree(mg->mgfs); CHKERRQ(ierr);
-	ierr = PetscFree(mg->R);    CHKERRQ(ierr);
-	ierr = PetscFree(mg->P);    CHKERRQ(ierr);
-	ierr = PetscFree(mg->mgbc); CHKERRQ(ierr);
-	ierr = PCDestroy(&mg->pc);  CHKERRQ(ierr);
-*/
-	PetscFunctionReturn(0);
-}
-//---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "MGSetup"
-PetscErrorCode MGSetup(MG *mg, Mat A)
-{
-	// Matrices are re-assembled here, just in case
-	// they will be made matrix- distance- dependent.
-	// Currently they depend only on boundary conditions,
-	// so changing boundary condition would also require re-assembly.
-/*
-	PetscInt  i;
-	FDSTAG   *fine,   *cors;
-	BCCtx    *bcfine, *bccors;
-
-	PetscErrorCode ierr;
-	PetscFunctionBegin;
-
-	// set fine grid
-	fine   = mg->fs;
-	bcfine = mg->bc;
-
-	// assemble restriction & prolongation matrices
-	for(i = 0; i < mg->ncors; i++)
-	{
-		// set coarse grid
-		cors   = &mg->mgfs[i];
-		bccors = &mg->mgbc[i];
-
-		// setup coarse bc context
-		ierr = BCApply(bccors, cors, mg->idxmod); CHKERRQ(ierr);
-
-		// assemble matrices
-		ierr = SetupRestrictStep(mg->R[i], cors, fine, bccors, mg->idxmod); CHKERRQ(ierr);
-		ierr = SetupProlongStep (mg->P[i], fine, cors, bcfine, mg->idxmod); CHKERRQ(ierr);
-
-		// set fine grid for next step
-		fine   = cors;
-		bcfine = bccors;
-
-	}
-
-	// tell to recompute preconditioner
-	ierr = PCSetOperators(mg->pc, A, A); CHKERRQ(ierr);
-
-	// remove constrained rows & columns
-	ierr = MGSetDiagOnLevels(mg); CHKERRQ(ierr);
-
-	// store matrices in the file if requested
-	ierr = MGDumpMat(mg); CHKERRQ(ierr);
-*/
-	PetscFunctionReturn(0);
-}
-//---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "MGApply"
-PetscErrorCode MGApply(PC pc, Vec x, Vec y)
-{
-	MG *mg;
-
-	PetscErrorCode ierr;
-	PetscFunctionBegin;
-
-	ierr = PCShellGetContext(pc, (void**)&mg); CHKERRQ(ierr);
-
-	// apply multigrid preconditioner
-	ierr = PCApply(mg->pc, x, y); CHKERRQ(ierr);
-
-	PetscFunctionReturn(0);
-}
-//---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "MGSetDiagOnLevels"
-PetscErrorCode MGSetDiagOnLevels(MG *mg)
-{
-	PetscInt    i, l;
-	KSP         ksp;
-	PC          pc;
-	Mat         A;
-	BCCtx      *bc;
-
-	PetscErrorCode ierr;
-	PetscFunctionBeginUser;
-/*
-	// set dummy coarse solver
-	ierr = PCMGGetCoarseSolve(mg->pc, &ksp); CHKERRQ(ierr);
-	ierr = KSPSetType(ksp, KSPPREONLY);      CHKERRQ(ierr);
-	ierr = KSPGetPC(ksp, &pc);               CHKERRQ(ierr);
-	ierr = PCSetType(pc, PCNONE);            CHKERRQ(ierr);
-
-	// setup operators
-	ierr = PCSetUp(mg->pc); CHKERRQ(ierr);
-
-	// constrain operators on all levels except the coarsest & finest
-	for(i = 0, l = mg->ncors-1; i < mg->ncors-1; i++, l--)
-	{
-		// get boundary condition context
-		bc = &mg->mgbc[i];
-
-		// access smoother on every level
-		ierr = PCMGGetSmoother(mg->pc, l, &ksp); CHKERRQ(ierr);
-
-		// get matrix
-		ierr = KSPGetOperators(ksp, &A, NULL); CHKERRQ(ierr);
-
-		// set diagonals for constrained DOF
-		ierr = MatZeroRowsColumns(A, bc->numSPC, bc->SPCList, 1.0, NULL, NULL); CHKERRQ(ierr);
-	}
-
-	// constrain coarse operator
-	if(mg->ncors)
-	{
-		// get bc context for coarse grid
-		bc = &mg->mgbc[mg->ncors-1];
-
-		// constrain coarse operators
-		ierr = PCMGGetCoarseSolve(mg->pc, &ksp); CHKERRQ(ierr);
-		ierr = KSPGetOperators(ksp, &A, NULL); CHKERRQ(ierr);
-		ierr = MatZeroRowsColumns(A, bc->numSPC, bc->SPCList, 1.0, NULL, NULL); CHKERRQ(ierr);
-
-		// setup new solver
-		ierr = KSPSetOptionsPrefix(ksp, "crs_");  CHKERRQ(ierr);
-		ierr = KSPSetFromOptions(ksp);            CHKERRQ(ierr);
-		ierr = KSPSetUp(ksp);                     CHKERRQ(ierr);
-	}
-*/
-	PetscFunctionReturn(0);
-}
-//---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "MGDumpMat"
-PetscErrorCode MGDumpMat(MG *mg)
-{
-/*
-	Mat         A;
-	KSP         ksp;
-	PetscBool   flg;
-	PetscInt    i, l;
-	PetscViewer viewer;
-
-	PetscErrorCode ierr;
-	PetscFunctionBeginUser;
-
-	// view multigrid matrices if required
-	ierr = PetscOptionsHasName(NULL, "-gmg_dump", &flg); CHKERRQ(ierr);
-
-	if(flg == PETSC_TRUE)
-	{
-		ierr = PetscPrintf(PETSC_COMM_WORLD, "Dumping multigrid matrices to MATLAB\n"); CHKERRQ(ierr);
-
-		viewer = PETSC_VIEWER_BINARY_(PetscObjectComm((PetscObject)mg->pc));
-
-		//===================================
-		// OUTPUT IN THE ORDER FINE -> COARSE
-		//===================================
-
-		// fine grid
-		ierr = PCGetOperators(mg->pc, &A, NULL); CHKERRQ(ierr);
-	    ierr = MatView(A, viewer);               CHKERRQ(ierr);
-
-	    // levels
-		for(i = 0, l = mg->ncors-1; i < mg->ncors; i++, l--)
-		{
-			// restriction
-			ierr = MatView(mg->R[i], viewer); CHKERRQ(ierr);
-
-			// prolongation
-			ierr = MatView(mg->P[i], viewer); CHKERRQ(ierr);
-
-			// level matrix
-			ierr = PCMGGetSmoother(mg->pc, l, &ksp); CHKERRQ(ierr);
-			ierr = KSPGetOperators(ksp, &A, NULL);   CHKERRQ(ierr);
-			ierr = MatView(A, viewer);               CHKERRQ(ierr);
-		}
-
-	}
-*/
-	PetscFunctionReturn(0);
-}
-
-//---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "CheckMGRestrict"
-PetscErrorCode CheckMGRestrict(FDSTAG *fs, PetscInt *pncors)
-{
-	// check multigrid mesh restrictions, get actual number of coarsening steps
-
-	PetscBool opt_set;
-	PetscInt  nx, ny, nz, Nx, Ny, Nz, ncors, nlevels;
-
-	PetscErrorCode ierr;
-	PetscFunctionBegin;
-
-	// check discretization in all directions
-	ierr = Discret1DCheckMG(&fs->dsx, "x", &nx); CHKERRQ(ierr);                ncors = nx;
-	ierr = Discret1DCheckMG(&fs->dsy, "y", &ny); CHKERRQ(ierr); if(ny < ncors) ncors = ny;
-	ierr = Discret1DCheckMG(&fs->dsz, "z", &nz); CHKERRQ(ierr); if(nz < ncors) ncors = nz;
-
-	// check number of levels requested on the command line
-	ierr = PetscOptionsGetInt(NULL, "-gmg_pc_mg_levels", &nlevels, &opt_set); CHKERRQ(ierr);
-
-	if(opt_set != PETSC_TRUE)
-	{
-		SETERRQ1(PETSC_COMM_WORLD, PETSC_ERR_USER, "Number of multigrid levels is not specified. Use option -gmg_pc_mg_levels. Max # of levels: %lld", (LLD)(ncors+1));
-	}
-	else if(nlevels < 2 || nlevels > ncors+1)
-	{
-		SETERRQ2(PETSC_COMM_WORLD, PETSC_ERR_USER, "Incorrect # of multigrid levels specified. Requested: %lld. Max. possible: %lld", (LLD)nlevels, (LLD)(ncors+1));
-	}
-
-	// set actual number of coarsening steps
-	ncors = nlevels-1;
-
-	// print grid statistics
-	nx = fs->dsx.ncels >> ncors;
-	ny = fs->dsy.ncels >> ncors;
-	nz = fs->dsz.ncels >> ncors;
-
-	Nx = nx*fs->dsx.nproc;
-	Ny = ny*fs->dsy.nproc;
-	Nz = nz*fs->dsz.nproc;
-
-	ierr = PetscPrintf(PETSC_COMM_WORLD, " Total coarse grid size    [nx, ny, nz] : [%lld, %lld, %lld]\n", (LLD)Nx, (LLD)Ny, (LLD)Nz); CHKERRQ(ierr);
-	ierr = PetscPrintf(PETSC_COMM_WORLD, " Coarse grid per processor [nx, ny, nz] : [%lld, %lld, %lld]\n", (LLD)nx, (LLD)ny, (LLD)nz); CHKERRQ(ierr);
-	ierr = PetscPrintf(PETSC_COMM_WORLD, " Number of multigrid levels             : %lld\n", (LLD)(ncors+1)); CHKERRQ(ierr);
-
-	// return number of coarsening steps
-	(*pncors) = ncors;
-
-	PetscFunctionReturn(0);
-}
-//---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "SetupRestrictStep"
-PetscErrorCode SetupRestrictStep(Mat R, MGLevel *lvl, MGLevel *fine)
-{
+	Mat         R;
 	PetscScalar v[12];
 	PetscInt    idx[12];
 	PetscInt    mx, my, mz;
@@ -477,6 +147,8 @@ PetscErrorCode SetupRestrictStep(Mat R, MGLevel *lvl, MGLevel *fine)
 
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
+
+	R = lvl->R;
 
 	// clear restriction matrix coefficients
 	ierr = MatZeroEntries(R); CHKERRQ(ierr);
@@ -679,10 +351,10 @@ PetscErrorCode SetupRestrictStep(Mat R, MGLevel *lvl, MGLevel *fine)
 }
 //---------------------------------------------------------------------------
 #undef __FUNCT__
-#define __FUNCT__ "SetupProlongStep"
-PetscErrorCode SetupProlongStep(Mat P, MGLevel *lvl, MGLevel *fine)
+#define __FUNCT__ "MGLevelSetupProlong"
+PetscErrorCode MGLevelSetupProlong(MGLevel *lvl, MGLevel *fine)
 {
-
+	Mat P;
 	PetscScalar v[8];
 	PetscInt    idx[8];
 	PetscInt    mx, my, mz;
@@ -692,6 +364,8 @@ PetscErrorCode SetupProlongStep(Mat P, MGLevel *lvl, MGLevel *fine)
 
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
+
+	P = lvl->P;
 
 	// clear prolongation matrix coefficients
 	ierr = MatZeroEntries(P); CHKERRQ(ierr);
@@ -878,4 +552,318 @@ PetscErrorCode SetupProlongStep(Mat P, MGLevel *lvl, MGLevel *fine)
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
+// MG -functions
+//---------------------------------------------------------------------------
+#undef __FUNCT__
+#define __FUNCT__ "MGCreate"
+PetscErrorCode MGCreate(MG *mg, FDSTAG *fs, BCCtx *bc)
+{
+	PetscInt  i, l;
+	MGLevel   *fine;
+	char      pc_type[MAX_NAME_LEN];
+	PetscBool opt_set;
 
+	PetscErrorCode ierr;
+	PetscFunctionBegin;
+
+	// get preconditioner type
+	ierr = PetscOptionsGetString(NULL, "-gmg_pc_type", pc_type, MAX_NAME_LEN, &opt_set); CHKERRQ(ierr);
+
+	// check whether multigrid is requested
+	if(opt_set != PETSC_TRUE || strcmp(pc_type, "mg"))
+	{
+		SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "-gmg_pc_type option is not defined of specified incorrectly (use -gmg_pc_type mg)");
+	}
+
+	// clear object
+	ierr = PetscMemzero(mg, sizeof(MG)); CHKERRQ(ierr);
+
+	// store fine grid contexts
+	mg->fs = fs;
+	mg->bc = bc;
+
+	// check multigrid mesh restrictions & get actual number of levels
+	ierr = MGGetNumLevels(mg); CHKERRQ(ierr);
+
+	// allocate levels
+	ierr = PetscMalloc(sizeof(MGLevel)*(size_t)mg->nlvl, &mg->lvls); CHKERRQ(ierr);
+
+	// create levels
+	fine = NULL;
+
+	for(i = 0; i < mg->nlvl; i++)
+	{
+		ierr = MGLevelCreate(&mg->lvls[i], fine, fs); CHKERRQ(ierr);
+
+		fine = &mg->lvls[i];
+	}
+
+	// create Galerkin multigrid preconditioner
+	ierr = PCCreate(PETSC_COMM_WORLD, &mg->pc);       CHKERRQ(ierr);
+	ierr = PCSetOptionsPrefix(mg->pc, "gmg_");        CHKERRQ(ierr);
+	ierr = PCSetType(mg->pc, PCMG);                   CHKERRQ(ierr);
+	ierr = PCMGSetLevels(mg->pc, mg->nlvl, NULL);     CHKERRQ(ierr);
+	ierr = PCMGSetType(mg->pc, PC_MG_MULTIPLICATIVE); CHKERRQ(ierr);
+	ierr = PCMGSetGalerkin(mg->pc, PETSC_TRUE);       CHKERRQ(ierr);
+	ierr = PCSetFromOptions(mg->pc);                  CHKERRQ(ierr);
+
+	// attach restriction/prolongation matrices to the preconditioner
+	for(i = 1, l = mg->nlvl-1; i < mg->nlvl; i++, l--)
+	{
+		ierr = PCMGSetRestriction  (mg->pc, l, mg->lvls[i].R); CHKERRQ(ierr);
+		ierr = PCMGSetInterpolation(mg->pc, l, mg->lvls[i].P); CHKERRQ(ierr);
+	}
+
+	PetscFunctionReturn(0);
+}
+//---------------------------------------------------------------------------
+#undef __FUNCT__
+#define __FUNCT__ "MGDestroy"
+PetscErrorCode MGDestroy(MG *mg)
+{
+
+	PetscInt  i;
+	PetscBool flg;
+
+	PetscErrorCode ierr;
+	PetscFunctionBegin;
+
+	// view preconditioner if required
+	ierr = PetscOptionsHasName(NULL, "-gmg_pc_view", &flg); CHKERRQ(ierr);
+
+	if(flg == PETSC_TRUE)
+	{
+		ierr = PCView(mg->pc, PETSC_VIEWER_STDOUT_WORLD); CHKERRQ(ierr);
+	}
+
+	for(i = 0; i < mg->nlvl; i++)
+	{
+		ierr = MGLevelDestroy(&mg->lvls[i]); CHKERRQ(ierr);
+	}
+
+	ierr = PetscFree(mg->lvls); CHKERRQ(ierr);
+
+	ierr = PCDestroy(&mg->pc); CHKERRQ(ierr);
+
+	PetscFunctionReturn(0);
+}
+//---------------------------------------------------------------------------
+#undef __FUNCT__
+#define __FUNCT__ "MGSetup"
+PetscErrorCode MGSetup(MG *mg, Mat A)
+{
+	// Matrices are re-assembled here, just in case
+	// they will be made matrix- distance- dependent.
+	// Currently they depend only on boundary conditions,
+	// so changing boundary condition would also require re-assembly.
+
+	PetscInt  i;
+
+	PetscErrorCode ierr;
+	PetscFunctionBegin;
+
+	for(i = 1; i < mg->nlvl; i++)
+	{
+		ierr = MGLevelSetupRestrict(&mg->lvls[i], &mg->lvls[i-1]); CHKERRQ(ierr);
+		ierr = MGLevelSetupProlong (&mg->lvls[i], &mg->lvls[i-1]);  CHKERRQ(ierr);
+	}
+
+	// tell to recompute preconditioner
+	ierr = PCSetOperators(mg->pc, A, A); CHKERRQ(ierr);
+
+	// remove constrained rows & columns
+	// GET RID OF THIS UGLY THING! R & P should fully define coarsening process
+//	ierr = MGSetDiagOnLevels(mg); CHKERRQ(ierr);
+
+	// store matrices in the file if requested
+	ierr = MGDumpMat(mg); CHKERRQ(ierr);
+
+	PetscFunctionReturn(0);
+}
+//---------------------------------------------------------------------------
+#undef __FUNCT__
+#define __FUNCT__ "MGApply"
+PetscErrorCode MGApply(PC pc, Vec x, Vec y)
+{
+	MG *mg;
+
+	PetscErrorCode ierr;
+	PetscFunctionBegin;
+
+	ierr = PCShellGetContext(pc, (void**)&mg); CHKERRQ(ierr);
+
+	// apply multigrid preconditioner
+	ierr = PCApply(mg->pc, x, y); CHKERRQ(ierr);
+
+	PetscFunctionReturn(0);
+}
+//---------------------------------------------------------------------------
+/*
+#undef __FUNCT__
+#define __FUNCT__ "MGSetDiagOnLevels"
+PetscErrorCode MGSetDiagOnLevels(MG *mg)
+{
+	PetscInt    i, l;
+	KSP         ksp;
+	PC          pc;
+	Mat         A;
+	BCCtx      *bc;
+
+	// VERY VERY BAD THING TO HAVE IN THE CODE!
+	// DELIGATE ALL CONTROL TO R & P MATRICES
+
+	PetscErrorCode ierr;
+	PetscFunctionBeginUser;
+
+	// set dummy coarse solver
+	ierr = PCMGGetCoarseSolve(mg->pc, &ksp); CHKERRQ(ierr);
+	ierr = KSPSetType(ksp, KSPPREONLY);      CHKERRQ(ierr);
+	ierr = KSPGetPC(ksp, &pc);               CHKERRQ(ierr);
+	ierr = PCSetType(pc, PCNONE);            CHKERRQ(ierr);
+
+	// force setup operators
+	ierr = PCSetUp(mg->pc); CHKERRQ(ierr);
+
+	// constrain operators on all levels except the coarsest & finest
+	for(i = 0, l = mg->ncors-1; i < mg->ncors-1; i++, l--)
+	{
+		// get boundary condition context
+		bc = &mg->mgbc[i];
+
+		// access smoother on every level
+		ierr = PCMGGetSmoother(mg->pc, l, &ksp); CHKERRQ(ierr);
+
+		// get matrix
+		ierr = KSPGetOperators(ksp, &A, NULL); CHKERRQ(ierr);
+
+		// set diagonals for constrained DOF
+		ierr = MatZeroRowsColumns(A, bc->numSPC, bc->SPCList, 1.0, NULL, NULL); CHKERRQ(ierr);
+	}
+
+
+	// constrain coarse operator
+	if(mg->ncors)
+	{
+		// get bc context for coarse grid
+		bc = &mg->mgbc[mg->ncors-1];
+
+		// constrain coarse operators
+		ierr = PCMGGetCoarseSolve(mg->pc, &ksp); CHKERRQ(ierr);
+		ierr = KSPGetOperators(ksp, &A, NULL); CHKERRQ(ierr);
+		ierr = MatZeroRowsColumns(A, bc->numSPC, bc->SPCList, 1.0, NULL, NULL); CHKERRQ(ierr);
+
+		// setup new solver
+		ierr = KSPSetOptionsPrefix(ksp, "crs_");  CHKERRQ(ierr);
+		ierr = KSPSetFromOptions(ksp);            CHKERRQ(ierr);
+		ierr = KSPSetUp(ksp);                     CHKERRQ(ierr);
+	}
+
+	PetscFunctionReturn(0);
+}
+*/
+//---------------------------------------------------------------------------
+#undef __FUNCT__
+#define __FUNCT__ "MGDumpMat"
+PetscErrorCode MGDumpMat(MG *mg)
+{
+	Mat         A;
+	KSP         ksp;
+	PetscBool   flg;
+	PetscInt    l;
+	PetscViewer viewer;
+
+	PetscErrorCode ierr;
+	PetscFunctionBeginUser;
+
+	// view multigrid matrices if required
+	ierr = PetscOptionsHasName(NULL, "-gmg_dump", &flg); CHKERRQ(ierr);
+
+	if(flg == PETSC_TRUE)
+	{
+		ierr = PetscPrintf(PETSC_COMM_WORLD, "Dumping multigrid matrices to MATLAB\n"); CHKERRQ(ierr);
+
+		viewer = PETSC_VIEWER_BINARY_(PetscObjectComm((PetscObject)mg->pc));
+
+		//===================================
+		// OUTPUT IN THE ORDER FINE -> COARSE
+		//===================================
+
+		for(l = mg->nlvl-1; l >= 0; l--)
+		{
+			if(l != 0)
+			{
+				// restriction
+				ierr = PCMGGetRestriction(mg->pc, l, &A); CHKERRQ(ierr);
+				ierr = MatView(A, viewer);                CHKERRQ(ierr);
+			}
+			if(l != mg->nlvl-1)
+			{
+				// prolongation
+				ierr = PCMGGetInterpolation(mg->pc, l, &A); CHKERRQ(ierr);
+				ierr = MatView(A, viewer);                  CHKERRQ(ierr);
+			}
+
+			// level matrix
+			ierr = PCMGGetSmoother(mg->pc, l, &ksp); CHKERRQ(ierr);
+			ierr = KSPGetOperators(ksp, &A, NULL);   CHKERRQ(ierr);
+			ierr = MatView(A, viewer);               CHKERRQ(ierr);
+		}
+	}
+
+	PetscFunctionReturn(0);
+}
+//---------------------------------------------------------------------------
+#undef __FUNCT__
+#define __FUNCT__ "MGGetNumLevels"
+PetscErrorCode MGGetNumLevels(MG *mg)
+{
+	// check multigrid mesh restrictions, get actual number of coarsening steps
+
+	FDSTAG   *fs;
+	PetscBool opt_set;
+	PetscInt  nx, ny, nz, Nx, Ny, Nz, ncors, nlevels;
+
+	PetscErrorCode ierr;
+	PetscFunctionBegin;
+
+	fs = mg->fs;
+
+	// check discretization in all directions
+	ierr = Discret1DCheckMG(&fs->dsx, "x", &nx); CHKERRQ(ierr);                ncors = nx;
+	ierr = Discret1DCheckMG(&fs->dsy, "y", &ny); CHKERRQ(ierr); if(ny < ncors) ncors = ny;
+	ierr = Discret1DCheckMG(&fs->dsz, "z", &nz); CHKERRQ(ierr); if(nz < ncors) ncors = nz;
+
+	// check number of levels requested on the command line
+	ierr = PetscOptionsGetInt(NULL, "-gmg_pc_mg_levels", &nlevels, &opt_set); CHKERRQ(ierr);
+
+	if(opt_set != PETSC_TRUE)
+	{
+		SETERRQ1(PETSC_COMM_WORLD, PETSC_ERR_USER, "Number of multigrid levels is not specified. Use option -gmg_pc_mg_levels. Max # of levels: %lld", (LLD)(ncors+1));
+	}
+	else if(nlevels < 2 || nlevels > ncors+1)
+	{
+		SETERRQ2(PETSC_COMM_WORLD, PETSC_ERR_USER, "Incorrect # of multigrid levels specified. Requested: %lld. Max. possible: %lld", (LLD)nlevels, (LLD)(ncors+1));
+	}
+
+	// set actual number of coarsening steps
+	ncors = nlevels-1;
+
+	// print grid statistics
+	nx = fs->dsx.ncels >> ncors;
+	ny = fs->dsy.ncels >> ncors;
+	nz = fs->dsz.ncels >> ncors;
+
+	Nx = nx*fs->dsx.nproc;
+	Ny = ny*fs->dsy.nproc;
+	Nz = nz*fs->dsz.nproc;
+
+	ierr = PetscPrintf(PETSC_COMM_WORLD, " Total coarse grid size    [nx, ny, nz] : [%lld, %lld, %lld]\n", (LLD)Nx, (LLD)Ny, (LLD)Nz); CHKERRQ(ierr);
+	ierr = PetscPrintf(PETSC_COMM_WORLD, " Coarse grid per processor [nx, ny, nz] : [%lld, %lld, %lld]\n", (LLD)nx, (LLD)ny, (LLD)nz); CHKERRQ(ierr);
+	ierr = PetscPrintf(PETSC_COMM_WORLD, " Number of multigrid levels             : %lld\n", (LLD)nlevels);                            CHKERRQ(ierr);
+
+	// store number of levels
+	mg->nlvl = nlevels;
+
+	PetscFunctionReturn(0);
+}
+//---------------------------------------------------------------------------

@@ -12,7 +12,7 @@ typedef struct
 	DM        DA_CEN;            // central points array
 	DM        DA_X, DA_Y, DA_Z;  // face points arrays
 	DOFIndex  dof;               // indexing vectors
-	Mat       R, P;              // restriction & prolongation matrices
+	Mat       R, P;              // restriction & prolongation operators (not set on finest grid)
 
 	// ******** fine level ************
 	//     |                   ^
@@ -29,29 +29,37 @@ PetscErrorCode MGLevelCreate(MGLevel *lvl, MGLevel *fine, FDSTAG *fs);
 
 PetscErrorCode MGLevelDestroy(MGLevel *lvl);
 
+PetscErrorCode MGLevelSetupRestrict(MGLevel *lvl, MGLevel *fine);
+
+PetscErrorCode MGLevelSetupProlong(MGLevel *lvl, MGLevel *fine);
+
+// PetscErrorCode MGLevelAllocRestrict(MGLevel *lvl, MGLevel *fine);
+
+// PetscErrorCode MGLevelAllocProlong(MGLevel *lvl, MGLevel *fine);
+
 //---------------------------------------------------------------------------
 
 typedef struct
 {
-	// PETSc multigrid level numbering:
+	// PETSc level numbering (inverse w.r.t. coarsening sequence):
 	// 0   - coarse grid
 	// n-1 - fine grid
-	// n   - number of levels
+	// R & P matrices connect with coarse level (not set on coarsest level).
+	// Coarsening step yields coarse grid operator. Own operator is prescribed.
 
-	// LaMEM multigrid level numbering:
+	// LaMEM level numbering (natural w.r.t. coarsening sequence):
 	// 0   - fine grid
 	// n-1 - coarse grid
-	// n   - number of levels
-
+	// R & P matrices connect with fine level (not set on finest grid).
+	// Coarsening step yields own operator. Fine level operator is prescribed.
 
 	PetscInt  nlvl; // number of levels
-	MGLevel  *lvls; // multigrid levles (except finest)
+	MGLevel  *lvls; // multigrid levles
 
 	PC        pc;   // internal preconditioner context
 
 	FDSTAG   *fs;   // finest level grid
 	BCCtx    *bc;   // finest level boundary conditions
-
 
 } MG;
 
@@ -65,22 +73,11 @@ PetscErrorCode MGSetup(MG *mg, Mat A);
 
 PetscErrorCode MGApply(PC pc, Vec x, Vec y);
 
-PetscErrorCode MGSetDiagOnLevels(MG *mg);
+//PetscErrorCode MGSetDiagOnLevels(MG *mg);
 
 PetscErrorCode MGDumpMat(MG *mg);
 
-//---------------------------------------------------------------------------
-
-PetscErrorCode CheckMGRestrict(FDSTAG *fs, PetscInt *pncors);
-
-// PetscErrorCode PreAllocRestrictStep(Mat R, FDSTAG *cors, FDSTAG *fine, BCCtx *bccors, idxtype idxmod);
-
-// PetscErrorCode PreAllocProlongStep(Mat P, FDSTAG *fine, FDSTAG *cors, BCCtx *bcfine, idxtype idxmod);
-
-PetscErrorCode SetupRestrictStep(Mat R, MGLevel *lvl, MGLevel *fine);
-
-PetscErrorCode SetupProlongStep(Mat P, MGLevel *lvl, MGLevel *fine);
-
+PetscErrorCode MGGetNumLevels(MG *mg);
 
 //---------------------------------------------------------------------------
 #endif
