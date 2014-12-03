@@ -32,7 +32,7 @@ PetscErrorCode FE_ErosionCode_TectonicTimestep( UserContext *user)
     PetscScalar		        L2_Topo;
     PetscLogDouble     		cputime_start, cputime_end,cputime_start0, cputime_end0;
     
-    SecYear = 3600*24*365;
+    SecYear = 3600*24*365.25;
     
     
     PetscTime(&cputime_start);

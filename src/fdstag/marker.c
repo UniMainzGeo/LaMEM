@@ -51,7 +51,7 @@ PetscErrorCode ADVMarkInit(AdvCtx *actx, UserContext *user)
 	if(user->msetup != PARALLEL
 	&& user->msetup != REDUNDANT)
 	{
-		ierr = ADVMarkInitCoord  (actx, user); CHKERRQ(ierr);
+		ierr = ADVMarkInitCoord(actx, user); CHKERRQ(ierr);
 	}
     
     // display info on-screen
@@ -68,6 +68,7 @@ PetscErrorCode ADVMarkInit(AdvCtx *actx, UserContext *user)
 	else if(user->msetup == DETACHMENT) { PetscPrintf(PETSC_COMM_WORLD,"%s\n","detachment");      ierr = ADVMarkInitDetachment   (actx, user); CHKERRQ(ierr); }
 	else if(user->msetup == SLAB)       { PetscPrintf(PETSC_COMM_WORLD,"%s\n","slab");            ierr = ADVMarkInitSlab         (actx, user); CHKERRQ(ierr); }
 	else if(user->msetup == SPHERES)    { PetscPrintf(PETSC_COMM_WORLD,"%s\n","spheres");         ierr = ADVMarkInitSpheres      (actx, user); CHKERRQ(ierr); }
+	else if(user->msetup == BANDS)      { PetscPrintf(PETSC_COMM_WORLD,"%s\n","bands");           ierr = ADVMarkInitBands        (actx, user); CHKERRQ(ierr); }
 	else SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER," *** Incorrect option for initialization of markers");
 
     
@@ -256,6 +257,120 @@ PetscErrorCode ADVMarkSave(AdvCtx *actx, UserContext *user)
 	ierr = PetscFree(markbuf); CHKERRQ(ierr);
 
 	PetscPrintf(PETSC_COMM_WORLD," Finished saving markers in parallel \n");
+
+	PetscFunctionReturn(0);
+}
+//---------------------------------------------------------------------------
+#undef __FUNCT__
+#define __FUNCT__ "ADVMarkCheckMarkers"
+PetscErrorCode ADVMarkCheckMarkers(AdvCtx *actx, UserContext *user)
+{
+ 	// check initial marker distribution
+	FDSTAG      *fs;
+	PetscScalar *X;
+	PetscBool    error;
+	PetscScalar  xs, ys, zs;
+	PetscScalar  xe, ye, ze;
+	PetscInt    *numMarkCell, rbuf[4], sbuf[4];
+	PetscInt     i, maxid, NumInvalidPhase, numNonLocal, numEmpty, numSparse;
+
+	PetscErrorCode ierr;
+	PetscFunctionBegin;
+
+	fs = actx->fs;
+
+	// get maximum Phase
+	maxid = user->num_phases - 1;
+
+	// get local mesh sizes
+	GET_DOMAIN_BOUNDS(xs, xe, fs->dsx)
+	GET_DOMAIN_BOUNDS(ys, ye, fs->dsy)
+	GET_DOMAIN_BOUNDS(zs, ze, fs->dsz)
+
+	// allocate marker counter array
+	ierr = makeIntArray(&numMarkCell, NULL, fs->nCells); CHKERRQ(ierr);
+
+	// clear error flag
+	error = PETSC_FALSE;
+
+	// count markers with invalid phase ID & non-local markers
+	NumInvalidPhase = 0;
+	numNonLocal     = 0;
+
+	for(i = 0; i < actx->nummark; i++)
+	{
+		// marker should have a valid phase ID
+		if(actx->markers[i].phase > maxid) NumInvalidPhase++;
+
+		// get marker coordinates
+		X = actx->markers[i].X;
+
+		// marker must be local (check bounding box)
+		if(X[0] < xs || X[0] > xe
+		|| X[1] < ys || X[1] > ye
+		|| X[2] < zs || X[2] > ze) numNonLocal++;
+
+		// count number of markers in the cells
+		numMarkCell[actx->cellnum[i]]++;
+	}
+
+	// count empty & sparse cells
+	numEmpty  = 0;
+	numSparse = 0;
+
+	for(i = 0; i < fs->nCells; i++)
+	{
+		if(numMarkCell[i] == 0) numEmpty++;
+		if(numMarkCell[i] <  8) numSparse++;
+	}
+
+	// get global figures
+	if(actx->nproc != 1)
+	{
+		sbuf[0] = NumInvalidPhase;
+		sbuf[1] = numNonLocal;
+		sbuf[2] = numEmpty;
+		sbuf[3] = numSparse;
+
+		ierr = MPI_Allreduce(sbuf, rbuf, 4, MPIU_INT, MPI_SUM, actx->icomm); CHKERRQ(ierr);
+
+		NumInvalidPhase = rbuf[0];
+		numNonLocal     = rbuf[1];
+		numEmpty        = rbuf[2];
+		numSparse       = rbuf[3];
+	}
+
+	// print diagnostics
+	if(NumInvalidPhase)
+	{
+		ierr = PetscPrintf(PETSC_COMM_WORLD, "Number of markers that have invalid phase ID: %lld\n", (LLD)NumInvalidPhase); CHKERRQ(ierr);
+		error = PETSC_TRUE;
+	}
+
+	if(numNonLocal)
+	{
+		ierr = PetscPrintf(PETSC_COMM_WORLD, "Number of non-local markers: %lld\n", (LLD)numNonLocal); CHKERRQ(ierr);
+		error = PETSC_TRUE;
+	}
+
+	if(numEmpty)
+	{
+		ierr = PetscPrintf(PETSC_COMM_WORLD, "Number of exactly empty cells: %lld\n", (LLD)numEmpty); CHKERRQ(ierr);
+		error = PETSC_TRUE;
+	}
+
+	if(numSparse)
+	{
+		ierr = PetscPrintf(PETSC_COMM_WORLD, "WARNING! Number of cells with less than 8 markers: %lld.\n", (LLD)numSparse); CHKERRQ(ierr);
+	}
+
+	if(error == PETSC_TRUE)
+	{
+		SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "Problems with initial marker distribution (see the above message)");
+	}
+
+	// clear
+	ierr = PetscFree(numMarkCell); CHKERRQ(ierr);
 
 	PetscFunctionReturn(0);
 }
@@ -990,115 +1105,70 @@ PetscErrorCode ADVMarkInitSpheres(AdvCtx *actx, UserContext *user)
 }
 //---------------------------------------------------------------------------
 #undef __FUNCT__
-#define __FUNCT__ "ADVMarkCheckMarkers"
-PetscErrorCode ADVMarkCheckMarkers(AdvCtx *actx, UserContext *user)
+#define __FUNCT__ "ADVMarkInitBands"
+PetscErrorCode ADVMarkInitBands(AdvCtx *actx, UserContext *user)
 {
- 	// check initial marker distribution
-	FDSTAG      *fs;
-	PetscScalar *X;
-	PetscBool    error;
-	PetscScalar  xs, ys, zs;
-	PetscScalar  xe, ye, ze;
-	PetscInt    *numMarkCell, rbuf[4], sbuf[4];
-	PetscInt     i, maxid, NumInvalidPhase, numNonLocal, numEmpty, numSparse;
+	FDSTAG     *fs;
+	Material_t *phases;
+	Scaling    *scal;
+	Marker     *P;
+	PetscInt    imark;
+	PetscBool   incl;
+	PetscScalar K, H, x, z, dx, dz;
 
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
 
-	fs = actx->fs;
+	fs     =  actx->jr->fs;
+	phases =  actx->jr->phases;
+	scal   = &actx->jr->scal;
 
-	// get maximum Phase
-	maxid = user->num_phases - 1;
+	// get uniform mesh sizes
+	dx = user->W/fs->dsx.tcels;
+	dz = user->H/fs->dsz.tcels;
 
-	// get local mesh sizes
-	GET_DOMAIN_BOUNDS(xs, xe, fs->dsx)
-	GET_DOMAIN_BOUNDS(ys, ye, fs->dsy)
-	GET_DOMAIN_BOUNDS(zs, ze, fs->dsz)
 
-	// allocate marker counter array
-	ierr = makeIntArray(&numMarkCell, NULL, fs->nCells); CHKERRQ(ierr);
+	// initialize layer thickness [km] and Bulk modulus [MPa]
+	H = 5.0;
+	K = 100.0;
 
-	// clear error flag
-	error = PETSC_FALSE;
+	// get layer thickness from options
+	ierr = PetscOptionsGetReal(PETSC_NULL, "-H_layer",   &H, PETSC_NULL);  CHKERRQ(ierr);
+	ierr = PetscOptionsGetReal(PETSC_NULL, "-K_air",     &K, PETSC_NULL);  CHKERRQ(ierr);
+	ierr = PetscOptionsHasName(PETSC_NULL, "-band_incl", &incl);           CHKERRQ(ierr);
 
-	// count markers with invalid phase ID & non-local markers
-	NumInvalidPhase = 0;
-	numNonLocal     = 0;
+	// scale
+	H /= scal->length;
+	K /= scal->stress;
 
-	for(i = 0; i < actx->nummark; i++)
+	// loop over local markers
+	for(imark = 0; imark < actx->nummark; imark++)
 	{
-		// marker should have a valid phase ID
-		if(actx->markers[i].phase > maxid) NumInvalidPhase++;
+		P = &actx->markers[imark];
 
-		// get marker coordinates
-		X = actx->markers[i].X;
+		// get coordinates
+		x = P->X[0];
+		z = P->X[2];
 
-		// marker must be local (check bounding box)
-		if(X[0] < xs || X[0] > xe
-		|| X[1] < ys || X[1] > ye
-		|| X[2] < zs || X[2] > ze) numNonLocal++;
+		// assign phase
+		if     (z >   0) P->phase = 2;
+		else if(z >= -H) P->phase = 1;
+		else             P->phase = 0;
 
-		// count number of markers in the cells
-		numMarkCell[actx->cellnum[i]]++;
+		// automatically set inclusion dimension
+		// 2 elements in x direction time 1 element in z direction
+
+		// check inclusion
+		if(incl == PETSC_TRUE
+		&& z >= -H  && z <= -H + dz
+		&& x >= -dx && x <= dx) P->phase = 0;
+
+		// assign temperature
+		P->T = 0.0;
 	}
 
-	// count empty & sparse cells
-	numEmpty  = 0;
-	numSparse = 0;
-
-	for(i = 0; i < fs->nCells; i++)
-	{
-		if(numMarkCell[i] == 0) numEmpty++;
-		if(numMarkCell[i] <  8) numSparse++;
-	}
-
-	// get global figures
-	if(actx->nproc != 1)
-	{
-		sbuf[0] = NumInvalidPhase;
-		sbuf[1] = numNonLocal;
-		sbuf[2] = numEmpty;
-		sbuf[3] = numSparse;
-
-		ierr = MPI_Allreduce(sbuf, rbuf, 4, MPIU_INT, MPI_SUM, actx->icomm); CHKERRQ(ierr);
-
-		NumInvalidPhase = rbuf[0];
-		numNonLocal     = rbuf[1];
-		numEmpty        = rbuf[2];
-		numSparse       = rbuf[3];
-	}
-
-	// print diagnostics
-	if(NumInvalidPhase)
-	{
-		ierr = PetscPrintf(PETSC_COMM_WORLD, "Number of markers that have invalid phase ID: %lld\n", (LLD)NumInvalidPhase); CHKERRQ(ierr);
-		error = PETSC_TRUE;
-	}
-
-	if(numNonLocal)
-	{
-		ierr = PetscPrintf(PETSC_COMM_WORLD, "Number of non-local markers: %lld\n", (LLD)numNonLocal); CHKERRQ(ierr);
-		error = PETSC_TRUE;
-	}
-
-	if(numEmpty)
-	{
-		ierr = PetscPrintf(PETSC_COMM_WORLD, "Number of exactly empty cells: %lld\n", (LLD)numEmpty); CHKERRQ(ierr);
-		error = PETSC_TRUE;
-	}
-
-	if(numSparse)
-	{
-		ierr = PetscPrintf(PETSC_COMM_WORLD, "WARNING! Number of cells with less than 8 markers: %lld.\n", (LLD)numSparse); CHKERRQ(ierr);
-	}
-
-	if(error == PETSC_TRUE)
-	{
-		SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "Problems with initial marker distribution (see the above message)");
-	}
-
-	// clear
-	ierr = PetscFree(numMarkCell); CHKERRQ(ierr);
+	// make air phase compressible
+//	phases[2].K = K;
 
 	PetscFunctionReturn(0);
 }

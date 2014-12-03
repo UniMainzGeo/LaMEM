@@ -154,7 +154,7 @@ PetscErrorCode ScalingCreate(
 		power  = energy/time;
 
 		// additional scaling factors
-		yr     = 3600.0*24.0*365.0;
+		yr     = 3600.0*24.0*365.25;
 		Myr    = 1e6*yr;
 		km     = 1e3;
 		cm     = 1e-2;

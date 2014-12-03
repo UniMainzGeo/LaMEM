@@ -99,10 +99,6 @@ typedef struct
 	Vec xv, xp;   // solution blocks
 	Vec wv, wp;   // work vectors
 
-	void (*getSubMat)(
-		PetscScalar [], PetscScalar [],
-		PetscScalar [], PetscScalar []);
-
 } PMatBlock;
 
 //---------------------------------------------------------------------------
@@ -122,7 +118,7 @@ PetscErrorCode PMatBlockDestroy(PMat pm);
 //---------------------------------------------------------------------------
 
 // compute cell stiffness matrix with deviatoric projection
- void getStiffMatDevProj(
+void getStiffMatDevProj(
 	PetscScalar eta, PetscScalar diag, PetscScalar *v,
 	PetscScalar dx,  PetscScalar dy,   PetscScalar dz,
 	PetscScalar fdx, PetscScalar fdy,  PetscScalar fdz,
@@ -135,11 +131,11 @@ void getStiffMatClean(
 	PetscScalar fdx, PetscScalar fdy,  PetscScalar fdz,
 	PetscScalar bdx, PetscScalar bdy,  PetscScalar bdz);
 
-// extract sub-matrices from stiffness matrix, compute velocity Schur complement
-void getSubMatSchur(PetscScalar v[],  PetscScalar a[], PetscScalar d[], PetscScalar g[]);
+// compute velocity Schur complement
+void getVelSchur(PetscScalar v[], PetscScalar d[], PetscScalar g[]);
 
 // extract sub-matrices from stiffness matrix
-void getSubMatClean(PetscScalar v[],  PetscScalar a[], PetscScalar d[], PetscScalar g[]);
+void getSubMat(PetscScalar v[],  PetscScalar a[], PetscScalar d[], PetscScalar g[]);
 
 // apply two-point constraints on the ghost nodes
 void getTwoPointConstr(PetscInt n, PetscInt idx[], PetscInt pdofidx[], PetscScalar cf[]);

@@ -96,6 +96,7 @@ PetscErrorCode Discret1DGenCoord(Discret1D *ds, MeshSeg1D *ms);
 // define minimum & maximum cell size in the base direction
 PetscErrorCode Discret1DGetMinMaxCellSize(Discret1D *ds, MeshSeg1D *ms);
 
+// stretch grid with constant stretch factor about coordinate origin.
 PetscErrorCode Discret1DStretch(Discret1D *ds, MeshSeg1D *ms, PetscScalar eps);
 
 PetscErrorCode Discret1DView(Discret1D *ds, const char *name);

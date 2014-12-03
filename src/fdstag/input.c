@@ -324,6 +324,7 @@ PetscErrorCode FDSTAGInitCode(JacRes *jr, UserContext *user)
 		else if(!strcmp(setup_name, "detachment")) user->msetup = DETACHMENT;
 		else if(!strcmp(setup_name, "slab"))       user->msetup = SLAB;
 		else if(!strcmp(setup_name, "spheres"))    user->msetup = SPHERES;
+		else if(!strcmp(setup_name, "bands"))      user->msetup = BANDS;
 		else SETERRQ1(PETSC_COMM_WORLD, PETSC_ERR_USER,"ERROR! Incorrect model setup: %s", setup_name);
 	}
 
@@ -799,6 +800,7 @@ PetscErrorCode FDSTAGReadInputFile(JacRes *jr, UserContext *user)
 		else if(!strcmp(setup_name, "detachment")) user->msetup = DETACHMENT;
 		else if(!strcmp(setup_name, "slab"))       user->msetup = SLAB;
 		else if(!strcmp(setup_name, "spheres"))    user->msetup = SPHERES;
+		else if(!strcmp(setup_name, "bands"))      user->msetup = BANDS;
 		else SETERRQ1(PETSC_COMM_WORLD, PETSC_ERR_USER,"#ERROR! Incorrect model setup: %s", setup_name);
 	}
 

@@ -82,14 +82,14 @@ PetscErrorCode MeshSeg1DDestroy(MeshSeg1D *ms)
 PetscErrorCode MeshSeg1DStretch(MeshSeg1D *ms, PetscScalar eps)
 {
 	// Stretch grid with constant stretch factor about coordinate origin.
-	// x_new = x_old - eps*x_old
+	// x_new = x_old + eps*x_old
 
 	PetscInt i;
 
 	PetscFunctionBegin;
 
 	// recompute (stretch) coordinates
-	for(i = 0; i < ms->nsegs+1; i++) ms->xstart[i] *= (1.0 - eps);
+	for(i = 0; i < ms->nsegs+1; i++) ms->xstart[i] *= (1.0 + eps);
 
 	PetscFunctionReturn(0);
 }
@@ -395,8 +395,8 @@ PetscErrorCode Discret1DGetMinMaxCellSize(Discret1D *ds, MeshSeg1D *ms)
 #define __FUNCT__ "Discret1DStretch"
 PetscErrorCode Discret1DStretch(Discret1D *ds, MeshSeg1D *ms, PetscScalar eps)
 {
-	// Stretch grid with constant stretch factor about coordinate origin.
-	// x_new = x_old - eps*x_old
+	// stretch grid with constant stretch factor about coordinate origin.
+	// x_new = x_old + eps*x_old
 
 	PetscInt    i;
 	PetscScalar h;
@@ -408,7 +408,7 @@ PetscErrorCode Discret1DStretch(Discret1D *ds, MeshSeg1D *ms, PetscScalar eps)
 	ierr = MeshSeg1DStretch(ms, eps); CHKERRQ(ierr);
 
 	// recompute (stretch) node coordinates in the buffer
-	for(i = 0; i < ds->bufsz; i++) ds->nbuff[i] *= (1.0 - eps);
+	for(i = 0; i < ds->bufsz; i++) ds->nbuff[i] *= (1.0 + eps);
 
 	// recompute cell coordinates
 	for(i = -1; i < ds->ncels+1; i++)
@@ -417,8 +417,8 @@ PetscErrorCode Discret1DStretch(Discret1D *ds, MeshSeg1D *ms, PetscScalar eps)
 	// update mesh steps
 	if(ds->h_uni < 0.0)
 	{
-		ds->h_min *= (1.0 - eps);
-		ds->h_max *= (1.0 - eps);
+		ds->h_min *= (1.0 + eps);
+		ds->h_max *= (1.0 + eps);
 	}
 	else
 	{
@@ -993,10 +993,10 @@ PetscErrorCode FDSTAGStretch(FDSTAG *fs, PetscScalar Exx, PetscScalar Eyy, Petsc
 	// The origin point remains fixed, and the displacements of all points are
 	// proportional to the distance from the origin (i.e. coordinate).
 	// The origin (zero) point must remain within domain (checked at input).
-	// Stretch factor is positive at compression, i.e.:
-	// eps = (L_old-L_new)/L_old
-	// L_new = L_old - eps*L_old
-	// x_new = x_old - eps*x_old
+	// Stretch factor is positive at extension, i.e.:
+	// eps = (L_new-L_old)/L_old
+	// L_new = L_old + eps*L_old
+	// x_new = x_old + eps*x_old
 
 	// compute vertical strain rate for mass balance
 	Ezz = -(Exx+Eyy);
@@ -1203,7 +1203,6 @@ PetscErrorCode FDSTAGView(FDSTAG *fs)
 	if(maxAspRat > 5.0) SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, " Too large aspect ratio is not supported");
 
 	if(maxAspRat > 2.0) PetscPrintf(PETSC_COMM_WORLD, " WARNING! you are using non-optimal aspect ratio. Expect precision deterioration\n");
-
 
 	PetscFunctionReturn(0);
 }

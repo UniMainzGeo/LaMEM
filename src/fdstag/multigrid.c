@@ -18,7 +18,6 @@
 // * implement fine-level preconditionier completely matrix-free
 // * coordinate- viscosity- residual-dependent restriction & interpolation
 //---------------------------------------------------------------------------
-//---------------------------------------------------------------------------
 // MG -functions
 //---------------------------------------------------------------------------
 #undef __FUNCT__
@@ -710,7 +709,7 @@ PetscErrorCode MGSetDiagOnLevels(MG *mg)
 	BCCtx      *bc;
 
 	// VERY VERY BAD THING TO HAVE IN THE CODE!
-	// DELIGATE ALL CONTROL TO R & P MATRICES
+	// DELEGATE ALL CONTROL TO R & P MATRICES
 
 	PetscErrorCode ierr;
 	PetscFunctionBeginUser;
@@ -790,23 +789,21 @@ PetscErrorCode MGDumpMat(MG *mg)
 
 		for(l = mg->nlvl-1; l >= 0; l--)
 		{
+			// level matrix
+			ierr = PCMGGetSmoother(mg->pc, l, &ksp); CHKERRQ(ierr);
+			ierr = KSPGetOperators(ksp, &A, NULL);   CHKERRQ(ierr);
+			ierr = MatView(A, viewer);               CHKERRQ(ierr);
+
 			if(l != 0)
 			{
 				// restriction
 				ierr = PCMGGetRestriction(mg->pc, l, &A); CHKERRQ(ierr);
 				ierr = MatView(A, viewer);                CHKERRQ(ierr);
-			}
-			if(l != mg->nlvl-1)
-			{
+
 				// prolongation
 				ierr = PCMGGetInterpolation(mg->pc, l, &A); CHKERRQ(ierr);
 				ierr = MatView(A, viewer);                  CHKERRQ(ierr);
 			}
-
-			// level matrix
-			ierr = PCMGGetSmoother(mg->pc, l, &ksp); CHKERRQ(ierr);
-			ierr = KSPGetOperators(ksp, &A, NULL);   CHKERRQ(ierr);
-			ierr = MatView(A, viewer);               CHKERRQ(ierr);
 		}
 	}
 

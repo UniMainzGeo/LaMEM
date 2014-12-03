@@ -13,7 +13,7 @@
 //---------------------------------------------------------------------------
 // * pressure Schur complement preconditioners
 // * matrix-free preconditioner action
-// * linear system scaling
+// * linear system scaling (fdstag multigrid paper)
 // * temperature scaling
 // * preallocation for temperature & pressure Schur PC
 //---------------------------------------------------------------------------
@@ -1072,10 +1072,6 @@ PetscErrorCode PMatBlockCreate(PMat pm)
 	ierr = PetscFree(Apv_d_nnz); CHKERRQ(ierr);
 	ierr = PetscFree(Apv_o_nnz); CHKERRQ(ierr);
 
-	// set submatrix extraction operation
-	if(pm->pgamma != 1.0) P->getSubMat = getSubMatSchur;
-	else                  P->getSubMat = getSubMatClean;
-
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
@@ -1086,7 +1082,7 @@ PetscErrorCode PMatBlockAssemble(PMat pm)
 	//======================================================================
 	// (pgamma >= 1) - is a penalty parameter
 	//
-	// if pgamma is larger than one, Avv will contain velocity Schur complement:
+	// if pgamma > 1, Avv will contain velocity Schur complement:
 	//
 	//    Avv - Avp*(S^-1)*Apv
 	//
@@ -1170,6 +1166,9 @@ PetscErrorCode PMatBlockAssemble(PMat pm)
 		// compute local matrix
 		pm->getStiffMat(eta, diag, v, dx, dy, dz, fdx, fdy, fdz, bdx, bdy, bdz);
 
+		// compute velocity Schur complement
+		if(pm->pgamma != 1.0) getVelSchur(v, d, g);
+
 		// get global indices of the points:
 		// vx_(i), vx_(i+1), vy_(j), vy_(j+1), vz_(k), vz_(k+1), p
 		idx[0] = (PetscInt) ivx[k][j][i];
@@ -1193,7 +1192,7 @@ PetscErrorCode PMatBlockAssemble(PMat pm)
 		constrLocalMat(7, pdofidx, cf, v);
 
 		// extract operators
-		P->getSubMat(v, a, d, g);
+		getSubMat(v, a, d, g);
 
 		// update global matrices
 		ierr = MatSetValues(P->Avv, 6, idx,   6, idx,   a,    ADD_VALUES);    CHKERRQ(ierr);
@@ -1536,7 +1535,7 @@ void getStiffMatClean(
 	v[42] =  1.0/dx;     v[43] = -1.0/dx;     v[44] =  1.0/dy;     v[45] = -1.0/dy;     v[46] =  1.0/dz;     v[47] = -1.0/dz;     v[48] =  diag;    // g
 }
 //---------------------------------------------------------------------------
-void getSubMatSchur(PetscScalar v[],  PetscScalar a[], PetscScalar d[], PetscScalar g[])
+void getVelSchur(PetscScalar v[], PetscScalar d[], PetscScalar g[])
 {
 	PetscScalar k;
 
@@ -1550,15 +1549,15 @@ void getSubMatSchur(PetscScalar v[],  PetscScalar a[], PetscScalar d[], PetscSca
 	k = -1.0/v[48];
 
 	// compute & extract velocity Schur complement
-	a[0]  = v[0]  + k*g[0]*d[0]; a[1]  = v[1]  + k*g[0]*d[1]; a[2]  = v[2]  + k*g[0]*d[2]; a[3]  = v[3]  + k*g[0]*d[3]; a[4]  = v[4]  + k*g[0]*d[4]; a[5]  = v[5]  + k*g[0]*d[5];
-	a[6]  = v[7]  + k*g[1]*d[0]; a[7]  = v[8]  + k*g[1]*d[1]; a[8]  = v[9]  + k*g[1]*d[2]; a[9]  = v[10] + k*g[1]*d[3]; a[10] = v[11] + k*g[1]*d[4]; a[11] = v[12] + k*g[1]*d[5];
-	a[12] = v[14] + k*g[2]*d[0]; a[13] = v[15] + k*g[2]*d[1]; a[14] = v[16] + k*g[2]*d[2]; a[15] = v[17] + k*g[2]*d[3]; a[16] = v[18] + k*g[2]*d[4]; a[17] = v[19] + k*g[2]*d[5];
-	a[18] = v[21] + k*g[3]*d[0]; a[19] = v[22] + k*g[3]*d[1]; a[20] = v[23] + k*g[3]*d[2]; a[21] = v[24] + k*g[3]*d[3]; a[22] = v[25] + k*g[3]*d[4]; a[23] = v[26] + k*g[3]*d[5];
-	a[24] = v[28] + k*g[4]*d[0]; a[25] = v[29] + k*g[4]*d[1]; a[26] = v[30] + k*g[4]*d[2]; a[27] = v[31] + k*g[4]*d[3]; a[28] = v[32] + k*g[4]*d[4]; a[29] = v[33] + k*g[4]*d[5];
-	a[30] = v[35] + k*g[5]*d[0]; a[31] = v[36] + k*g[5]*d[1]; a[32] = v[37] + k*g[5]*d[2]; a[33] = v[38] + k*g[5]*d[3]; a[34] = v[39] + k*g[5]*d[4]; a[35] = v[40] + k*g[5]*d[5];
+	v[0]  += k*g[0]*d[0]; v[1]  += k*g[0]*d[1]; v[2]  += k*g[0]*d[2]; v[3]  += k*g[0]*d[3]; v[4]  += k*g[0]*d[4]; v[5]  += k*g[0]*d[5];
+	v[7]  += k*g[1]*d[0]; v[8]  += k*g[1]*d[1]; v[9]  += k*g[1]*d[2]; v[10] += k*g[1]*d[3]; v[11] += k*g[1]*d[4]; v[12] += k*g[1]*d[5];
+	v[14] += k*g[2]*d[0]; v[15] += k*g[2]*d[1]; v[16] += k*g[2]*d[2]; v[17] += k*g[2]*d[3]; v[18] += k*g[2]*d[4]; v[19] += k*g[2]*d[5];
+	v[21] += k*g[3]*d[0]; v[22] += k*g[3]*d[1]; v[23] += k*g[3]*d[2]; v[24] += k*g[3]*d[3]; v[25] += k*g[3]*d[4]; v[26] += k*g[3]*d[5];
+	v[28] += k*g[4]*d[0]; v[29] += k*g[4]*d[1]; v[30] += k*g[4]*d[2]; v[31] += k*g[4]*d[3]; v[32] += k*g[4]*d[4]; v[33] += k*g[4]*d[5];
+	v[35] += k*g[5]*d[0]; v[36] += k*g[5]*d[1]; v[37] += k*g[5]*d[2]; v[38] += k*g[5]*d[3]; v[39] += k*g[5]*d[4]; v[40] += k*g[5]*d[5];
 }
 //---------------------------------------------------------------------------
-void getSubMatClean(PetscScalar v[],  PetscScalar a[], PetscScalar d[], PetscScalar g[])
+void getSubMat(PetscScalar v[],  PetscScalar a[], PetscScalar d[], PetscScalar g[])
 {
 	// extract divergence operator
 	d[0] = v[42]; d[1] = v[43]; d[2] = v[44]; d[3] = v[45]; d[4] = v[46]; d[5] = v[47];
@@ -1657,8 +1656,7 @@ void constrLocalMat(PetscInt n, PetscInt pdofidx[], PetscScalar cf[], PetscScala
 
 	for(i = 0, jj = 0; i < n; i++)
 	{
-		// detect constrained rows
-		// NOTE: constrained rows are handled by MatZeroRows after assembly
+		// skip constrained rows (handled by MatZeroRows after assembly)
 		if(cf[i] != DBL_MAX) { jj += n; continue; }
 
 		// store pointer to row beginning
@@ -1672,7 +1670,10 @@ void constrLocalMat(PetscInt n, PetscInt pdofidx[], PetscScalar cf[], PetscScala
 			{
 				// compute linear combination of primary & constrained columns
 				// NOTE: two-point constraints only!
-				if(pdofidx[j] != -1) v[jst + pdofidx[j]] += cf[j]*v[jj];
+				if(pdofidx[j] != -1)
+				{
+					v[jst + pdofidx[j]] += cf[j]*v[jj];
+				}
 
 				// zero out constrained column
 				v[jj] = 0.0;

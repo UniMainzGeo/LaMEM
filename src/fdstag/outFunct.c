@@ -217,7 +217,7 @@ PetscErrorCode PVOutWriteJ2DevStress(JacRes *jr, OutBuf *outbuf)
 	#define GET_J2_STRESS_XZ_EDGE s = jr->svXZEdge[iter++].s; buff[k][j][i] = s*s;
 	#define GET_J2_STRESS_YZ_EDGE s = jr->svYZEdge[iter++].s; buff[k][j][i] = s*s;
 
-	cf = scal->strain_rate;
+	cf = scal->stress;
 
 	iflag.update = PETSC_TRUE;
 

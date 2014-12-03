@@ -150,6 +150,7 @@ void PerformNonDimensionalization( UserContext *user )
 	user->BC.Exx 		= 	user->BC.Exx/user->Characteristic.Strainrate;
 	user->BC.Eyy 		= 	user->BC.Eyy/user->Characteristic.Strainrate;
 	user->time          = 	user->time/user->Characteristic.Time;
+	user->dt            =   user->dt*user->Characteristic.SecYear/user->Characteristic.Time;
 	user->dt_max        =   user->dt_max*user->Characteristic.SecYear/user->Characteristic.Time;
 	user->dt_temp       =   user->dt_temp*user->Characteristic.SecYear/user->Characteristic.Time;
 	user->Temp_top		=	user->Temp_top/user->Characteristic.Temperature;

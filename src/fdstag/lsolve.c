@@ -322,7 +322,7 @@ PetscErrorCode PCStokesBFApply(Mat JP, Vec r, Vec x)
 
 	ierr = KSPSolve(bf->vksp, P->rv, P->xv); CHKERRQ(ierr); // xv = (Avv^-1)*rv
 
-		// compose approximate solution
+	// compose approximate solution
 	ierr = VecScatterBlockToMonolithic(P->xv, P->xp, x, SCATTER_FORWARD); CHKERRQ(ierr);
 
 	PetscFunctionReturn(0);

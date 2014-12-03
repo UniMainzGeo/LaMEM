@@ -577,6 +577,7 @@ PetscErrorCode   LaMEMReadInputFile( UserContext *user )
 		else if(!strcmp(setup_name, "detachment")) user->msetup = DETACHMENT;
 		else if(!strcmp(setup_name, "slab"))       user->msetup = SLAB;
 		else if(!strcmp(setup_name, "spheres"))    user->msetup = SPHERES;
+		else if(!strcmp(setup_name, "bands"))      user->msetup = BANDS;
 		else SETERRQ1(PETSC_COMM_WORLD, PETSC_ERR_USER,"#ERROR! Incorrect model setup: %s \n", setup_name);
 	}
 
@@ -1418,6 +1419,7 @@ PetscErrorCode InitializeCode( UserContext *user )
 		else if(!strcmp(setup_name, "detachment")) user->msetup = DETACHMENT;
 		else if(!strcmp(setup_name, "slab"))       user->msetup = SLAB;
 		else if(!strcmp(setup_name, "spheres"))    user->msetup = SPHERES;
+		else if(!strcmp(setup_name, "bands"))      user->msetup = BANDS;
 		else SETERRQ1(PETSC_COMM_WORLD, PETSC_ERR_USER,"#ERROR! Incorrect model setup: %s \n", setup_name);
 	}
 

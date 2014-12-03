@@ -30,6 +30,7 @@ PetscErrorCode ADVMarkInitFolding      (AdvCtx *actx, UserContext *user);
 PetscErrorCode ADVMarkInitDetachment   (AdvCtx *actx, UserContext *user);
 PetscErrorCode ADVMarkInitSlab         (AdvCtx *actx, UserContext *user);
 PetscErrorCode ADVMarkInitSpheres      (AdvCtx *actx, UserContext *user);
+PetscErrorCode ADVMarkInitBands        (AdvCtx *actx, UserContext *user);
 
 //---------------------------------------------------------------------------
 #endif

@@ -44,13 +44,13 @@ typedef struct
 	// PETSc level numbering (inverse w.r.t. coarsening sequence):
 	// 0   - coarse grid
 	// n-1 - fine grid
-	// R & P matrices connect with coarse level (not set on coarsest level).
+	// R & P matrices connect with coarser level (i.e. not set on coarsest grid).
 	// Coarsening step yields coarse grid operator. Own operator is prescribed.
 
 	// LaMEM level numbering (natural w.r.t. coarsening sequence):
 	// 0   - fine grid
 	// n-1 - coarse grid
-	// R & P matrices connect with fine level (not set on finest grid).
+	// R & P matrices connect with finer level (i.e. not set on finest grid).
 	// Coarsening step yields own operator. Fine level operator is prescribed.
 
 	PetscInt  nlvl; // number of levels

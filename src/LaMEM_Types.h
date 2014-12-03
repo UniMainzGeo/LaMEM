@@ -241,7 +241,8 @@ typedef enum
 	FOLDING,     // multilayer folding setup (Zagros)
 	DETACHMENT,  // 1-layer over detachment (Grasemann & Schmalholz 2012)
 	SLAB,        // slab detachment (Thieulot et al. 2014)
-	SPHERES      // multiple falling spheres
+	SPHERES,     // multiple falling spheres
+	BANDS        // shear band formation 3D
 	// ... add more
 } SetupType;
 //-----------------------------------------------------------------------------

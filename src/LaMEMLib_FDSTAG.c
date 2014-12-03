@@ -381,8 +381,10 @@ PetscErrorCode LaMEMLib_FDSTAG(PetscBool InputParamFile, const char *ParamFile, 
 //		}
 		//==========================================================================================
 
-		// Advect grid with Background deformation rate in case we use an FDSTAG approach with Exx=Eyy!=0
-//		ierr = DeformFDSTAGMeshWithBackgroundStrainrate(&user);	CHKERRQ(ierr);
+
+		// apply background strain-rate bc (dwindlar condition)
+		ierr = FDSTAGStretch(&fs, bc.Exx, bc.Eyy, jr.ts.dt); CHKERRQ(ierr);
+
 
 		//==========================================================================================
 
