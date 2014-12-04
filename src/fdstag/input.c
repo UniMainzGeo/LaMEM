@@ -722,6 +722,9 @@ PetscErrorCode FDSTAGInitCode(JacRes *jr, UserContext *user)
 
 	ierr = PetscFree(all_options); CHKERRQ(ierr);
 
+	// WARNING!!! this object is not freed during the code...however, freeing this object right here might not be good!
+	ierr = PetscFree(user->TimeDependentData); CHKERRQ(ierr);
+
 
 
 	PetscFunctionReturn(0);

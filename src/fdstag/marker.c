@@ -11,6 +11,7 @@
 #include "JacRes.h"
 #include "advect.h"
 #include "marker.h"
+#include "break.h"
 
 /*
 #START_DOC#
@@ -31,6 +32,9 @@ PetscErrorCode ADVMarkInit(AdvCtx *actx, UserContext *user)
 
 	PetscPrintf(PETSC_COMM_WORLD," Starting marker initialization routine\n");
 
+	// restart of simulation - markers read from file
+	if (user->restart==1) user->msetup = RESTART;
+
 	// allocate storage for uniform distribution
 	if(user->msetup != PARALLEL)
 	{
@@ -49,7 +53,8 @@ PetscErrorCode ADVMarkInit(AdvCtx *actx, UserContext *user)
 
 	// initialize coordinates and add random noise if required for hard-coded setups
 	if(user->msetup != PARALLEL
-	&& user->msetup != REDUNDANT)
+	&& user->msetup != REDUNDANT
+	&& user->msetup != RESTART)
 	{
 		ierr = ADVMarkInitCoord(actx, user); CHKERRQ(ierr);
 	}
@@ -69,9 +74,10 @@ PetscErrorCode ADVMarkInit(AdvCtx *actx, UserContext *user)
 	else if(user->msetup == SLAB)       { PetscPrintf(PETSC_COMM_WORLD,"%s\n","slab");            ierr = ADVMarkInitSlab         (actx, user); CHKERRQ(ierr); }
 	else if(user->msetup == SPHERES)    { PetscPrintf(PETSC_COMM_WORLD,"%s\n","spheres");         ierr = ADVMarkInitSpheres      (actx, user); CHKERRQ(ierr); }
 	else if(user->msetup == BANDS)      { PetscPrintf(PETSC_COMM_WORLD,"%s\n","bands");           ierr = ADVMarkInitBands        (actx, user); CHKERRQ(ierr); }
+	else if(user->msetup == RESTART)    { PetscPrintf(PETSC_COMM_WORLD,"%s\n","restart");         ierr = BreakReadMark           (actx      ); CHKERRQ(ierr); }
 	else SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER," *** Incorrect option for initialization of markers");
 
-    
+
 	// compute host cells for all the markers
 	ierr = ADVMapMarkToCells(actx); CHKERRQ(ierr);
 

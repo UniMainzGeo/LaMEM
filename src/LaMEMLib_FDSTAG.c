@@ -60,6 +60,7 @@ without the explicit agreement of Boris Kaus.
 #include "advect.h"
 #include "marker.h"
 #include "input.h"
+#include "break.h"
 
 //==========================================================================================================
 // LAMEM LIBRARY MODE ROUTINE
@@ -135,8 +136,7 @@ PetscErrorCode LaMEMLib_FDSTAG(PetscBool InputParamFile, const char *ParamFile, 
 //	user.restart = 0;
 //	user.ErosionParameters.ErosionModel = 0;
 //	user.ErosionParameters.UseInternalFreeSurface = 0;
-//	user.SavePartitioning = 0;
-//	user.LoadInitialParticlesFromDisc = 0;
+//	user.SavePartitioning = PETSC_FALSE;
 //	user.remesh = 0;
 //	user.InitialMeshFromFile == 1
 //	user.Setup.Model == 3
@@ -189,12 +189,6 @@ PetscErrorCode LaMEMLib_FDSTAG(PetscBool InputParamFile, const char *ParamFile, 
 //		PetscPrintf(PETSC_COMM_WORLD,"# Successful read initial mesh from disc \n");
 //	}
 
-	// Read particles and properties from a breakpoint file if this was requested and if this is possible
-//	if (user.restart == 1)
-//	{
-//		ierr = LoadBreakPoint(C, &user,user.DA_Vel, sol, Temp, Pressure, 0); CHKERRQ(ierr);
-//	}
-
 	//======================
 	// SETUP DATA STRUCTURES
 	//======================
@@ -242,6 +236,9 @@ PetscErrorCode LaMEMLib_FDSTAG(PetscBool InputParamFile, const char *ParamFile, 
 	// set background strain-rates
 	ierr = BCSetStretch(&bc, &user); CHKERRQ(ierr);
 
+	// overwrite grid info if restart and background strain-rates are applied - before marker init
+	if (user.restart==1 && bc.bgAct) { ierr = BreakReadGrid(&user, &fs); CHKERRQ(ierr); }
+
 	// set pushing block parameters
 	ierr = BCSetPush(&bc, &user); CHKERRQ(ierr);
 
@@ -274,6 +271,9 @@ PetscErrorCode LaMEMLib_FDSTAG(PetscBool InputParamFile, const char *ParamFile, 
 
 	// create output object for all requested output variables
 	ierr = PVOutCreate(&pvout, &jr, user.OutputFile); CHKERRQ(ierr);
+
+	// read breakpoint files if restart was requested and if is possible
+	if (user.restart==1) { ierr = BreakReadMain(&user, &actx, &jr); CHKERRQ(ierr); }
 
 	PetscPrintf(PETSC_COMM_WORLD," \n");
 
@@ -332,7 +332,6 @@ PetscErrorCode LaMEMLib_FDSTAG(PetscBool InputParamFile, const char *ParamFile, 
 		// view nonlinear residual
 		ierr = JacResViewRes(&jr); CHKERRQ(ierr);
 
-
 		//=========================================================================================
 		// In case we perform an analytical benchmark, compare numerical and analytical results
 //		if (user.AnalyticalBenchmark)
@@ -354,7 +353,6 @@ PetscErrorCode LaMEMLib_FDSTAG(PetscBool InputParamFile, const char *ParamFile, 
 
 		// advect pushing block
 		ierr = BCAdvectPush(&bc, &jr.ts); CHKERRQ(ierr);
-
 
 		//==========================================================================================
 		// EROSION
@@ -448,34 +446,17 @@ PetscErrorCode LaMEMLib_FDSTAG(PetscBool InputParamFile, const char *ParamFile, 
 		// ParticlePhaseTransitions(&user);
 		//==========================================================================================
 
-		//==========================================================================================
-		// Create breakpoint files, for restarting the code
-
-//		if (user.save_breakpoints > 0)
-//		{
-		// Standard breakpoint file
-//			LaMEMMod( itime, user.save_breakpoints, &SaveOrNot);
-//			if ((SaveOrNot==0))
-//			{
-//				ierr = SaveBreakPoint(&user,user.DA_Vel, user.DA_Pres, sol, Temp, Pressure, itime, 0); CHKERRQ(ierr);
-//			}
-
-		// Incremental breakpoint file
-//			LaMEMMod(itime, user.incr_breakpoints, &SaveOrNot);
-//			if ((itime != 0) && (SaveOrNot==0))
-//			{
-//				ierr = SaveBreakPoint(&user,user.DA_Vel, user.DA_Pres, sol, Temp, Pressure, itime, user.break_point_number); CHKERRQ(ierr);
-//				user.break_point_number = user.break_point_number+1;
-//			}
-//		}
-
-		//==========================================================================================
-
 		// store markers to disk
 		ierr = ADVMarkSave(&actx, &user);  CHKERRQ(ierr);
 
 		// update time state
 		ierr = TSSolUpdate(&jr.ts, &jr.scal, &done); CHKERRQ(ierr);
+
+		// create BREAKPOINT files, for restarting the code
+		if (user.save_breakpoints > 0) LaMEMMod(JacResGetStep(&jr), user.save_breakpoints, &SaveOrNot);
+		else                           SaveOrNot = 2;
+
+		if (SaveOrNot==0) { ierr = BreakWriteMain(&user, &actx); CHKERRQ(ierr); }
 
 	} while(done != PETSC_TRUE);
 
@@ -499,6 +480,7 @@ PetscErrorCode LaMEMLib_FDSTAG(PetscBool InputParamFile, const char *ParamFile, 
 //		ierr = VecDestroy(&user->ErosionParameters.FE_ErosionCode.ErosionSurface);   CHKERRQ(ierr);
 //	}
 
+
 	// cleanup
 	ierr = FDSTAGDestroy(&fs);   CHKERRQ(ierr);
 	ierr = BCDestroy(&bc);       CHKERRQ(ierr);
@@ -509,6 +491,7 @@ PetscErrorCode LaMEMLib_FDSTAG(PetscBool InputParamFile, const char *ParamFile, 
 	ierr = SNESDestroy(&snes);   CHKERRQ(ierr);
 	ierr = NLSolDestroy(&nl);    CHKERRQ(ierr);
 	ierr = PVOutDestroy(&pvout); CHKERRQ(ierr);
+
 
 	PetscFunctionReturn(0);
 }

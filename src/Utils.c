@@ -3386,11 +3386,11 @@ PetscErrorCode LaMEMCreateOutputDirectory(const char *DirectoryName)
 	{
 		if(mkdir(DirectoryName, S_IRWXU))
 		{
-			PetscPrintf(PETSC_COMM_WORLD," Writing output to existing directory %s \n", DirectoryName);
+			PetscPrintf(PETSC_COMM_WORLD," Writing to existing directory %s \n", DirectoryName);
 		}
 		else
 		{
-			PetscPrintf(PETSC_COMM_WORLD," Created output directory %s \n", DirectoryName);
+			PetscPrintf(PETSC_COMM_WORLD," Created new directory %s \n", DirectoryName);
 		}
 	}
 
