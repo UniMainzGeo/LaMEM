@@ -1548,7 +1548,7 @@ void getVelSchur(PetscScalar v[], PetscScalar d[], PetscScalar g[])
 	// get penalty term
 	k = -1.0/v[48];
 
-	// compute & extract velocity Schur complement
+	// compute velocity Schur complement
 	v[0]  += k*g[0]*d[0]; v[1]  += k*g[0]*d[1]; v[2]  += k*g[0]*d[2]; v[3]  += k*g[0]*d[3]; v[4]  += k*g[0]*d[4]; v[5]  += k*g[0]*d[5];
 	v[7]  += k*g[1]*d[0]; v[8]  += k*g[1]*d[1]; v[9]  += k*g[1]*d[2]; v[10] += k*g[1]*d[3]; v[11] += k*g[1]*d[4]; v[12] += k*g[1]*d[5];
 	v[14] += k*g[2]*d[0]; v[15] += k*g[2]*d[1]; v[16] += k*g[2]*d[2]; v[17] += k*g[2]*d[3]; v[18] += k*g[2]*d[4]; v[19] += k*g[2]*d[5];

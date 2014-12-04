@@ -68,6 +68,17 @@ PetscErrorCode InitMaterialProps(JacRes *jr, UserContext *usr)
 		{	// unsupported viscosity law
 			SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "ERROR! Unsupported viscosity law used");
 		}
+
+		// set yield stress (cohesion)
+		phases[i].ch = PhaseProperties->Cohesion[i];
+
+//=============================================
+// ACHTUNG!
+
+	phases[i].Bd = -phases[i].Bd;
+
+//=============================================
+
 	}
 
 	PetscFunctionReturn(0);

@@ -1081,6 +1081,10 @@ PetscErrorCode ReadMaterialProperties(UserContext *user)
 	PetscInt      attr_match, type_match;
 	PetscInt      p_idx, a_idx, t_idx;
 
+	PetscInt      *check_phase;
+	PetscBool      empty_phase;
+
+	PetscErrorCode ierr;
 	PetscFunctionBegin;
 
 	//-----------------------------------------------------------------------
@@ -1110,21 +1114,27 @@ PetscErrorCode ReadMaterialProperties(UserContext *user)
 	// check total number of phases found
 	if(n_phases > max_num_phases)
 	{
-		SETERRQ2(PETSC_COMM_WORLD, PETSC_ERR_USER, "Too many phases in the input file! Actual: %lld, Maximum: %lld", n_phases, max_num_phases);
+		SETERRQ2(PETSC_COMM_WORLD, PETSC_ERR_USER, "Too many phases in the input file! Actual: %lld, Maximum: %lld", (LLD)n_phases, (LLD)max_num_phases);
 	}
+
+	// initialize phase checking array
+	ierr = makeIntArray(&check_phase, NULL, n_phases); CHKERRQ(ierr);
+
+	for(PP = 0; PP < n_phases; PP++) check_phase[PP] = 0;
 
 	// store total number of phases
 	user->num_phases = n_phases;
 
-	for( PP=0; PP<n_phases; PP++ )
+	for(PP = 0; PP < n_phases; PP++)
 	{
 		p = phases[PP];
 
 		// check phase numbering
-		if(p->phase_number != PP)
+		if(p->phase_number > n_phases-1)
 		{
-			SETERRQ2(PETSC_COMM_WORLD, PETSC_ERR_USER, "Phase numbering must be sequential in the input file! ID: %lld, Index: %lld", p->phase_number, PP);
+			SETERRQ2(PETSC_COMM_WORLD, PETSC_ERR_USER, "Phase numbering out of bound! Phase ID: %lld, Maximum ID: %lld", (LLD)p->phase_number, (LLD)(n_phases-1));
 		}
+		check_phase[p->phase_number] = 1;
 
 		p_idx = p->P_id;
 
@@ -1332,6 +1342,26 @@ PetscErrorCode ReadMaterialProperties(UserContext *user)
 
 	// destroy attribute database right after use
 	MaterialDestroy(user->PhaseMaterialProperties);
+
+	// check empty phases
+	empty_phase = PETSC_FALSE;
+
+	for(PP = 0; PP < n_phases; PP++)
+	{
+		if(!check_phase[PP])
+		{
+			PetscPrintf(PETSC_COMM_WORLD, "Phase %lld is not initialized\n", (LLD)PP);
+
+			empty_phase = PETSC_TRUE;
+		}
+	}
+
+	ierr = PetscFree(check_phase); CHKERRQ(ierr);
+
+	if(empty_phase == PETSC_TRUE)
+	{
+		SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "Incorrect phase numbering");
+	}
 
 	PetscFunctionReturn(0);
 }

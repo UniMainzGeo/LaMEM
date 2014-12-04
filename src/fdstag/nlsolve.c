@@ -150,6 +150,20 @@ PetscErrorCode FormResidual(SNES snes, Vec x, Vec f, void *ctx)
 	// copy residuals to global vector
 	ierr = JacResCopyRes(jr, f); CHKERRQ(ierr);
 
+
+//=============================================
+// ACHTUNG!
+
+	PetscInt i;
+
+	for(i = 0; i < jr->numPhases; i++)
+	{
+
+		if(jr->phases->Bd < 0.0) jr->phases->Bd = -jr->phases->Bd;
+	}
+
+//=============================================
+
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------

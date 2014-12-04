@@ -88,12 +88,12 @@ FactorSurfaceLayer			= 		0.3 		# How thick is the surface layer (if option 2 is 
 	-js_ksp_max_it 1000
 	-js_ksp_converged_reason
  	-js_ksp_monitor
-	-js_ksp_rtol 1e-5
+	-js_ksp_rtol 1e-6
 
 # Preconditioner
 
 	-pcmat_type block
-#	-pcmat_pgamma 1e3
+	-pcmat_pgamma 1e3
 	-jp_type bf
 	-bf_vs_type user
 	-vs_ksp_type preonly

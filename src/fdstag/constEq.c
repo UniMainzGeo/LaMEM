@@ -48,6 +48,17 @@ PetscErrorCode ConstEqCtxSetup(
 	ctx->taupl = 0.0;         // plastic yield stress
 	ctx->cfsol = PETSC_TRUE;  // closed-form solution flag
 
+//=============================================
+// ACHTUNG!
+
+if(mat->Bd < 0.0)
+{
+	ctx->A_dif = mat->Bd;
+
+	PetscFunctionReturn(0);
+}
+//=============================================
+
 	// ELASTICITY
 	if(mat->G)
 	{
@@ -157,6 +168,18 @@ PetscErrorCode GetEffVisc(
 
 //	PetscErrorCode ierr;
 	PetscFunctionBegin;
+
+//=============================================
+// ACHTUNG!
+	if(ctx->A_dif < 0.0)
+	{
+		inv_eta_dif = -2.0*ctx->A_dif;
+
+		(*eta) = 1.0/inv_eta_dif;
+
+		PetscFunctionReturn(0);
+	}
+//=============================================
 
 	// initialize viscosity limits
 	eta_min = lim->eta_min;
