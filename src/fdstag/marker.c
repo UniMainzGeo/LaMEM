@@ -1133,6 +1133,10 @@ PetscErrorCode ADVMarkInitBands(AdvCtx *actx, UserContext *user)
 	dx = user->W/fs->dsx.tcels;
 	dz = user->H/fs->dsz.tcels;
 
+    dx = user->W/60;
+    dz = user->H/20;
+
+    
 
 	// initialize layer thickness [km] and Bulk modulus [MPa]
 	H = 5.0;
@@ -1157,9 +1161,9 @@ PetscErrorCode ADVMarkInitBands(AdvCtx *actx, UserContext *user)
 		z = P->X[2];
 
 		// assign phase
-		if     (z >   0) P->phase = 2;
-		else if(z >= -H) P->phase = 1;
-		else             P->phase = 0;
+		if     (z >   0)            P->phase = 2;
+		else if((z >= -H) & (z<=0)) P->phase = 1;
+		else                        P->phase = 0;
 
 		// automatically set inclusion dimension
 		// 2 elements in x direction time 1 element in z direction
