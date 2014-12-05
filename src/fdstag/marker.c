@@ -1120,7 +1120,7 @@ PetscErrorCode ADVMarkInitBands(AdvCtx *actx, UserContext *user)
 	Marker     *P;
 	PetscInt    imark;
 	PetscBool   incl;
-	PetscScalar K, H, x, z, dx, dz;
+	PetscScalar K, H, H_bottom, Inclusion_size, x, z, dx, dz;
 
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
@@ -1133,23 +1133,32 @@ PetscErrorCode ADVMarkInitBands(AdvCtx *actx, UserContext *user)
 	dx = user->W/fs->dsx.tcels;
 	dz = user->H/fs->dsz.tcels;
 
-    dx = user->W/60;
-    dz = user->H/20;
 
     
+	// initialize layer thickness [km], basal layer thickness [km], inclusion size [km] and Bulk modulus [MPa]
+	H               = 5.0;
+    H_bottom        = 2.0;
+    Inclusion_size  = 1.0;
+    K               = 100.0;
+    
 
-	// initialize layer thickness [km] and Bulk modulus [MPa]
-	H = 5.0;
-	K = 100.0;
-
+    
 	// get layer thickness from options
-	ierr = PetscOptionsGetReal(PETSC_NULL, "-H_layer",   &H, PETSC_NULL);  CHKERRQ(ierr);
-	ierr = PetscOptionsGetReal(PETSC_NULL, "-K_air",     &K, PETSC_NULL);  CHKERRQ(ierr);
+    ierr = PetscOptionsGetReal(PETSC_NULL, "-H_bottom",         &H_bottom,          PETSC_NULL);  CHKERRQ(ierr);
+    ierr = PetscOptionsGetReal(PETSC_NULL, "-H_layer",          &H,                 PETSC_NULL);  CHKERRQ(ierr);
+    ierr = PetscOptionsGetReal(PETSC_NULL, "-Inclusion_size",   &Inclusion_size,    PETSC_NULL);  CHKERRQ(ierr);
+    
+    ierr = PetscOptionsGetReal(PETSC_NULL, "-K_air",     &K, PETSC_NULL);  CHKERRQ(ierr);
 	ierr = PetscOptionsHasName(PETSC_NULL, "-band_incl", &incl);           CHKERRQ(ierr);
 
 	// scale
-	H /= scal->length;
-	K /= scal->stress;
+	H               /= scal->length;
+    H_bottom        /= scal->length;
+    Inclusion_size  /= scal->length;
+	K               /= scal->stress;
+
+    dx = Inclusion_size;
+    dz = Inclusion_size;
 
 	// loop over local markers
 	for(imark = 0; imark < actx->nummark; imark++)
@@ -1161,17 +1170,17 @@ PetscErrorCode ADVMarkInitBands(AdvCtx *actx, UserContext *user)
 		z = P->X[2];
 
 		// assign phase
-		if     (z >   0)            P->phase = 2;
-		else if((z >= -H) & (z<=0)) P->phase = 1;
-		else                        P->phase = 0;
+		if     (z >   (H_bottom+H))                  P->phase = 2;
+		else if((z >= H_bottom) & (z<=(H_bottom+H))) P->phase = 1;
+		else                                         P->phase = 0;
 
 		// automatically set inclusion dimension
 		// 2 elements in x direction time 1 element in z direction
 
 		// check inclusion
 		if(incl == PETSC_TRUE
-		&& z >= -H  && z <= -H + dz
-		&& x >= -dx && x <= dx) P->phase = 0;
+		&& z >= H_bottom  && z <= H_bottom + dz
+		&& x >= -dx/2 && x <= dx/2) P->phase = 0;
 
 		// assign temperature
 		P->T = 0.0;
