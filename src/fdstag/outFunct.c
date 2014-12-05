@@ -117,7 +117,10 @@ PetscErrorCode PVOutWriteViscosity(JacRes *jr, OutBuf *outbuf)
 	// macro to copy viscosity to buffer
 	#define GET_VISCOSITY buff[k][j][i] = jr->svCell[iter++].svDev.eta;
 
-	cf = scal->viscosity;
+	// output viscosity logarithm in GEO-mode
+	// (negative scaling requests logarithmic output)
+	if(scal->utype == _GEO_) cf = -scal->viscosity;
+	else                     cf =  scal->viscosity;
 
 	INTERPOLATE_COPY(fs->DA_CEN, outbuf->lbcen, InterpCenterCorner, GET_VISCOSITY, 1, 0)
 
@@ -225,8 +228,8 @@ PetscErrorCode PVOutWriteJ2DevStress(JacRes *jr, OutBuf *outbuf)
 
 	INTERPOLATE_COPY(fs->DA_CEN, outbuf->lbcen, InterpCenterCorner, GET_J2_STRESS_CENTER,  1, 0)
 	INTERPOLATE_COPY(fs->DA_XY,  outbuf->lbxy,  InterpXYEdgeCorner, GET_J2_STRESS_XY_EDGE, 1, 0)
-	INTERPOLATE_COPY(fs->DA_YZ,  outbuf->lbyz,  InterpYZEdgeCorner, GET_J2_STRESS_XZ_EDGE, 1, 0)
-	INTERPOLATE_COPY(fs->DA_XZ,  outbuf->lbxz,  InterpXZEdgeCorner, GET_J2_STRESS_YZ_EDGE, 1, 0)
+	INTERPOLATE_COPY(fs->DA_XZ,  outbuf->lbxz,  InterpXZEdgeCorner, GET_J2_STRESS_XZ_EDGE, 1, 0)
+	INTERPOLATE_COPY(fs->DA_YZ,  outbuf->lbyz,  InterpYZEdgeCorner, GET_J2_STRESS_YZ_EDGE, 1, 0)
 
 	// compute & store second invariant
 	ierr = VecSqrtAbs(outbuf->lbcor); CHKERRQ(ierr);
@@ -258,8 +261,8 @@ PetscErrorCode PVOutWriteStrainRate(JacRes *jr, OutBuf *outbuf)
 	INTERPOLATE_COPY(fs->DA_CEN, outbuf->lbcen, InterpCenterCorner, GET_DYY, 6, 1)
 	INTERPOLATE_COPY(fs->DA_CEN, outbuf->lbcen, InterpCenterCorner, GET_DZZ, 6, 2)
 	INTERPOLATE_COPY(fs->DA_XY,  outbuf->lbxy,  InterpXYEdgeCorner, GET_DXY, 6, 3)
-	INTERPOLATE_COPY(fs->DA_YZ,  outbuf->lbyz,  InterpYZEdgeCorner, GET_DYZ, 6, 4)
 	INTERPOLATE_COPY(fs->DA_XZ,  outbuf->lbxz,  InterpXZEdgeCorner, GET_DXZ, 6, 5)
+	INTERPOLATE_COPY(fs->DA_YZ,  outbuf->lbyz,  InterpYZEdgeCorner, GET_DYZ, 6, 4)
 
 	PetscFunctionReturn(0);
 }
@@ -293,8 +296,8 @@ PetscErrorCode PVOutWriteJ2StrainRate(JacRes *jr, OutBuf *outbuf)
 
 	INTERPOLATE_COPY(fs->DA_CEN, outbuf->lbcen, InterpCenterCorner, GET_J2_STRAIN_RATE_CENTER,  1, 0)
 	INTERPOLATE_COPY(fs->DA_XY,  outbuf->lbxy,  InterpXYEdgeCorner, GET_J2_STRAIN_RATE_XY_EDGE, 1, 0)
-	INTERPOLATE_COPY(fs->DA_YZ,  outbuf->lbyz,  InterpYZEdgeCorner, GET_J2_STRAIN_RATE_XZ_EDGE, 1, 0)
-	INTERPOLATE_COPY(fs->DA_XZ,  outbuf->lbxz,  InterpXZEdgeCorner, GET_J2_STRAIN_RATE_YZ_EDGE, 1, 0)
+	INTERPOLATE_COPY(fs->DA_YZ,  outbuf->lbyz,  InterpYZEdgeCorner, GET_J2_STRAIN_RATE_YZ_EDGE, 1, 0)
+	INTERPOLATE_COPY(fs->DA_XZ,  outbuf->lbxz,  InterpXZEdgeCorner, GET_J2_STRAIN_RATE_XZ_EDGE, 1, 0)
 
 	// compute & store second invariant
 	ierr = VecSqrtAbs(outbuf->lbcor); CHKERRQ(ierr);

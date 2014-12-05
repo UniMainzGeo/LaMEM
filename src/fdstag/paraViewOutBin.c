@@ -131,10 +131,10 @@ void OutBufPutCoordVec(
 #define __FUNCT__ "OutBufPut3DVecComp"
 PetscErrorCode OutBufPut3DVecComp(
 	OutBuf      *outbuf,
-	PetscInt     ncomp, // number of components
-	PetscInt     dir,   // component identifier
-	PetscScalar  cf,    // scaling coefficient
-	PetscScalar  shift) // shift parameter
+	PetscInt     ncomp,  // number of components
+	PetscInt     dir,    // component identifier
+	PetscScalar  cf,     // scaling coefficient
+	PetscScalar  shift) // shift parameter (subtracted from scaled values)
 {
 	// put component of 3D vector to output buffer
 	// component data is taken from obuf->gbcor vector
@@ -164,12 +164,18 @@ PetscErrorCode OutBufPut3DVecComp(
 
 	// set counter
 	cnt = dir;
+
 	// copy vector component to buffer
-	if(shift != 0.0)
+	if(cf < 0.0)
 	{
+		// negative scaling -> logarithmic output
+		cf = -cf;
+
 		START_STD_LOOP
-		{	// write
-			buff[cnt] = (float) (cf*arr[k][j][i] - shift);
+		{
+			// write
+			buff[cnt] = (float) PetscLog10Real(cf*arr[k][j][i] - shift);
+
 			// update counter
 			cnt += ncomp;
 		}
@@ -177,13 +183,18 @@ PetscErrorCode OutBufPut3DVecComp(
 	}
 	else
 	{
+		// positive scaling -> standard output
+
 		START_STD_LOOP
-		{	// write
-			buff[cnt] = (float) (cf*arr[k][j][i]);
+		{
+			// write
+			buff[cnt] = (float) (cf*arr[k][j][i] - shift);
+
 			// update counter
 			cnt += ncomp;
 		}
 		END_STD_LOOP
+
 	}
 
 	// restore access
@@ -340,8 +351,8 @@ PetscErrorCode PVOutCreate(PVOut *pvout, JacRes *jr, const char *filename)
 	if(omask->pressure)       OutVecCreate(&outvecs[cnt++], "pressure",       scal->lbl_stress,           &PVOutWritePressure,     1);
 	if(omask->temperature)    OutVecCreate(&outvecs[cnt++], "temperature",    scal->lbl_temperature,      &PVOutWriteTemperature,  1);
 	if(omask->dev_stress)     OutVecCreate(&outvecs[cnt++], "dev_stress",     scal->lbl_stress,           &PVOutWriteDevStress,    6);
-	if(omask->j2_dev_stress)  OutVecCreate(&outvecs[cnt++], "j2_dev_stress",  scal->lbl_stress,           &PVOutWriteJ2DevStress,  1);
 	if(omask->strain_rate)    OutVecCreate(&outvecs[cnt++], "strain_rate",    scal->lbl_strain_rate,      &PVOutWriteStrainRate,   6);
+	if(omask->j2_dev_stress)  OutVecCreate(&outvecs[cnt++], "j2_dev_stress",  scal->lbl_stress,           &PVOutWriteJ2DevStress,  1);
 	if(omask->j2_strain_rate) OutVecCreate(&outvecs[cnt++], "j2_strain_rate", scal->lbl_strain_rate,      &PVOutWriteJ2StrainRate, 1);
 	if(omask->vol_rate)       OutVecCreate(&outvecs[cnt++], "vol_rate",       scal->lbl_strain_rate,      &PVOutWriteVolRate,      1);
 	if(omask->vorticity)      OutVecCreate(&outvecs[cnt++], "vorticity",      scal->lbl_strain_rate,      &PVOutWriteVorticity,    3);
