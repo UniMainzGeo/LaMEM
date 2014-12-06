@@ -206,6 +206,9 @@ PetscErrorCode LaMEMLib_FDSTAG(PetscBool InputParamFile, const char *ParamFile, 
 	// initialize material parameter limits
 	ierr = SetMatParLim(&jr.matLim, &user); CHKERRQ(ierr);
 
+	// initialize material properties
+	ierr = InitMaterialProps(&jr, &user); CHKERRQ(ierr);
+
 	// initialize time stepping parameters
 	ierr = TSSolSetUp(&jr.ts, &user); CHKERRQ(ierr);
 
@@ -243,13 +246,10 @@ PetscErrorCode LaMEMLib_FDSTAG(PetscBool InputParamFile, const char *ParamFile, 
 	ierr = BCSetPush(&bc, &user); CHKERRQ(ierr);
 
 	// create Jacobian & residual evaluation context
-	ierr = JacResCreate(&jr, &fs, &bc, user.num_phases, 0); CHKERRQ(ierr);
+	ierr = JacResCreate(&jr, &fs, &bc); CHKERRQ(ierr);
 
 	// WARNING! NO TEMPERATURE! Set local temperature vector to unity (ad-hoc)
 	ierr = VecSet(jr.lT, 1.0); CHKERRQ(ierr);
-
-	// initialize material properties
-	ierr = InitMaterialProps(&jr, &user); CHKERRQ(ierr);
 
 	// initialize gravity acceleration
 	jr.grav[0] = 0.0;

@@ -80,9 +80,7 @@ PetscErrorCode JacResClear(JacRes *jr);
 PetscErrorCode JacResCreate(
 	JacRes   *jr,
 	FDSTAG   *fs,
-	BCCtx    *bc,
-	PetscInt  numPhases,
-	PetscInt  numSoft);
+	BCCtx    *bc);
 
 // destroy residual & Jacobian evaluation context
 PetscErrorCode JacResDestroy(JacRes *jr);

@@ -17,32 +17,53 @@ PetscErrorCode InitMaterialProps(JacRes *jr, UserContext *usr)
 {
 	// initialize material properties in the FDSTAG data structures
 
-	PetscInt    i, viscLaw;
-	PetscScalar eta, D, n;
-	Material_t *phases;
-	PhaseProps *PhaseProperties;
-	MatParLim  *matLim;
+	PetscInt     i, viscLaw, plastLaw, numPhases, numSoft;
+	PetscScalar  eta, D, n;
+	Material_t  *phases;
+	PhaseProps  *PhaseProperties;
+	MatParLim   *matLim;
+	Soft_t      *matSoft;
+	Scaling     *scal;
+	PetscBool   quasi_harmonic;
 
+	PetscErrorCode ierr;
 	PetscFunctionBegin;
 
+	ierr = PetscOptionsHasName(PETSC_NULL, "-use_quasi_harmonic_viscosity", &quasi_harmonic); CHKERRQ(ierr);
+
 	// access phase properties in user context variables
-	phases          = jr->phases;
+	numPhases       = usr->num_phases;
 	PhaseProperties = &usr->PhaseProperties;
 	matLim          = &jr->matLim;
+	scal            = &jr->scal;
 
-	// clear phase properties array
-	memset(phases, 0, sizeof(Material_t)*(size_t)jr->numPhases);
-
-	// copy phase parameters
-	for(i = 0; i < jr->numPhases; i++)
+	// compute number of material softening laws
+	for(i = 0, numSoft = 0; i < numPhases; i++)
 	{
-		// density and power law parameters
-		phases[i].ID     = i;
-		phases[i].rho    = PhaseProperties->rho[i];
-		phases[i].frSoft = NULL;
-		phases[i].chSoft = NULL;
+		if(PhaseProperties->PlasticityLaw[i])
+		{
+			if(PhaseProperties->CohesionAfterWeakening[i])      numSoft++;
+			if(PhaseProperties->FrictionAngleAfterWeakening[i]) numSoft++;
+		}
+	}
 
-		// get viscosity law
+	// allocate material parameters & softening laws
+	ierr = PetscMalloc(sizeof(Material_t)*(size_t)numPhases, &phases); CHKERRQ(ierr);
+	ierr = PetscMemzero(phases, sizeof(Material_t)*(size_t)numPhases); CHKERRQ(ierr);
+
+	ierr = PetscMalloc(sizeof(Soft_t)*(size_t)numSoft, &matSoft);      CHKERRQ(ierr);
+	ierr = PetscMemzero(matSoft, sizeof(Soft_t)*(size_t)numSoft);      CHKERRQ(ierr);
+
+	// read phase parameters
+	for(i = 0, numSoft = 0; i < numPhases; i++)
+	{
+		// phase identifier
+		phases[i].ID = i;
+
+		// density parameters
+		phases[i].rho = PhaseProperties->rho[i];
+
+		// viscosity parameters
 		viscLaw = PhaseProperties->ViscosityLaw[i];
 
 		if(viscLaw == 1)
@@ -69,8 +90,43 @@ PetscErrorCode InitMaterialProps(JacRes *jr, UserContext *usr)
 			SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "ERROR! Unsupported viscosity law used");
 		}
 
-		// set yield stress (cohesion)
-		phases[i].ch = PhaseProperties->Cohesion[i];
+		// plasticity parameters
+		plastLaw = PhaseProperties->PlasticityLaw[i];
+
+		if(plastLaw)
+		{
+			// cohesion & friction angle
+			phases[i].ch = PhaseProperties->Cohesion[i];
+			phases[i].fr = PhaseProperties->FrictionAngle[i]/scal->angle;
+
+			// softening laws
+			if(PhaseProperties->CohesionAfterWeakening[i])
+			{
+				// set cohesion softening law
+				matSoft[numSoft].APS1 = PhaseProperties->Weakening_PlasticStrain_Begin[i];
+				matSoft[numSoft].APS2 = PhaseProperties->Weakening_PlasticStrain_End  [i];
+				matSoft[numSoft].A    = 1.0 - PhaseProperties->CohesionAfterWeakening[i]/phases[i].ch;
+
+				// store cohesion softening law
+				phases[i].chSoft = &matSoft[numSoft++];
+			}
+			if(PhaseProperties->FrictionAngleAfterWeakening[i])
+			{
+				// set friction softening law
+				matSoft[numSoft].APS1 = PhaseProperties->Weakening_PlasticStrain_Begin[i];
+				matSoft[numSoft].APS2 = PhaseProperties->Weakening_PlasticStrain_End  [i];
+				matSoft[numSoft].A    = 1.0 - (PhaseProperties->FrictionAngleAfterWeakening[i]/scal->angle)/phases[i].fr;
+
+				// store friction softening law
+				phases[i].frSoft = &matSoft[numSoft++];
+			}
+// ACHTUNG!
+			if(quasi_harmonic == PETSC_TRUE)
+			{
+				phases[i].quasi_harmonic = 1;
+			}
+
+		}
 
 //=============================================
 // ACHTUNG!
@@ -80,6 +136,12 @@ PetscErrorCode InitMaterialProps(JacRes *jr, UserContext *usr)
 //=============================================
 
 	}
+
+	// store material parameters & softening laws
+	jr->numPhases = numPhases;
+	jr->phases    = phases;
+	jr->numSoft   = numSoft;
+	jr->matSoft   = matSoft;
 
 	PetscFunctionReturn(0);
 }

@@ -184,8 +184,8 @@ PetscErrorCode PVOutWriteDevStress(JacRes *jr, OutBuf *outbuf)
 	#define GET_SYY buff[k][j][i] = jr->svCell[iter++].syy;
 	#define GET_SZZ buff[k][j][i] = jr->svCell[iter++].szz;
 	#define GET_SXY buff[k][j][i] = jr->svXYEdge[iter++].s;
-	#define GET_SXZ buff[k][j][i] = jr->svXZEdge[iter++].s;
 	#define GET_SYZ buff[k][j][i] = jr->svYZEdge[iter++].s;
+	#define GET_SXZ buff[k][j][i] = jr->svXZEdge[iter++].s;
 
 	cf = scal->stress;
 
@@ -217,8 +217,8 @@ PetscErrorCode PVOutWriteJ2DevStress(JacRes *jr, OutBuf *outbuf)
 		buff[k][j][i] = 0.5*J2;
 
 	#define GET_J2_STRESS_XY_EDGE s = jr->svXYEdge[iter++].s; buff[k][j][i] = s*s;
-	#define GET_J2_STRESS_XZ_EDGE s = jr->svXZEdge[iter++].s; buff[k][j][i] = s*s;
 	#define GET_J2_STRESS_YZ_EDGE s = jr->svYZEdge[iter++].s; buff[k][j][i] = s*s;
+	#define GET_J2_STRESS_XZ_EDGE s = jr->svXZEdge[iter++].s; buff[k][j][i] = s*s;
 
 	cf = scal->stress;
 
@@ -228,8 +228,8 @@ PetscErrorCode PVOutWriteJ2DevStress(JacRes *jr, OutBuf *outbuf)
 
 	INTERPOLATE_COPY(fs->DA_CEN, outbuf->lbcen, InterpCenterCorner, GET_J2_STRESS_CENTER,  1, 0)
 	INTERPOLATE_COPY(fs->DA_XY,  outbuf->lbxy,  InterpXYEdgeCorner, GET_J2_STRESS_XY_EDGE, 1, 0)
-	INTERPOLATE_COPY(fs->DA_XZ,  outbuf->lbxz,  InterpXZEdgeCorner, GET_J2_STRESS_XZ_EDGE, 1, 0)
 	INTERPOLATE_COPY(fs->DA_YZ,  outbuf->lbyz,  InterpYZEdgeCorner, GET_J2_STRESS_YZ_EDGE, 1, 0)
+	INTERPOLATE_COPY(fs->DA_XZ,  outbuf->lbxz,  InterpXZEdgeCorner, GET_J2_STRESS_XZ_EDGE, 1, 0)
 
 	// compute & store second invariant
 	ierr = VecSqrtAbs(outbuf->lbcor); CHKERRQ(ierr);
@@ -252,8 +252,8 @@ PetscErrorCode PVOutWriteStrainRate(JacRes *jr, OutBuf *outbuf)
 	#define GET_DYY buff[k][j][i] = jr->svCell[iter++].dyy;
 	#define GET_DZZ buff[k][j][i] = jr->svCell[iter++].dzz;
 	#define GET_DXY buff[k][j][i] = jr->svXYEdge[iter++].d;
-	#define GET_DXZ buff[k][j][i] = jr->svXZEdge[iter++].d;
 	#define GET_DYZ buff[k][j][i] = jr->svYZEdge[iter++].d;
+	#define GET_DXZ buff[k][j][i] = jr->svXZEdge[iter++].d;
 
 	cf = scal->strain_rate;
 
@@ -261,8 +261,8 @@ PetscErrorCode PVOutWriteStrainRate(JacRes *jr, OutBuf *outbuf)
 	INTERPOLATE_COPY(fs->DA_CEN, outbuf->lbcen, InterpCenterCorner, GET_DYY, 6, 1)
 	INTERPOLATE_COPY(fs->DA_CEN, outbuf->lbcen, InterpCenterCorner, GET_DZZ, 6, 2)
 	INTERPOLATE_COPY(fs->DA_XY,  outbuf->lbxy,  InterpXYEdgeCorner, GET_DXY, 6, 3)
-	INTERPOLATE_COPY(fs->DA_XZ,  outbuf->lbxz,  InterpXZEdgeCorner, GET_DXZ, 6, 5)
 	INTERPOLATE_COPY(fs->DA_YZ,  outbuf->lbyz,  InterpYZEdgeCorner, GET_DYZ, 6, 4)
+	INTERPOLATE_COPY(fs->DA_XZ,  outbuf->lbxz,  InterpXZEdgeCorner, GET_DXZ, 6, 5)
 
 	PetscFunctionReturn(0);
 }
@@ -285,8 +285,8 @@ PetscErrorCode PVOutWriteJ2StrainRate(JacRes *jr, OutBuf *outbuf)
 		buff[k][j][i] = 0.5*J2;
 
 	#define GET_J2_STRAIN_RATE_XY_EDGE d = jr->svXYEdge[iter++].d; buff[k][j][i] = d*d;
-	#define GET_J2_STRAIN_RATE_XZ_EDGE d = jr->svXZEdge[iter++].d; buff[k][j][i] = d*d;
 	#define GET_J2_STRAIN_RATE_YZ_EDGE d = jr->svYZEdge[iter++].d; buff[k][j][i] = d*d;
+	#define GET_J2_STRAIN_RATE_XZ_EDGE d = jr->svXZEdge[iter++].d; buff[k][j][i] = d*d;
 
 	cf = scal->strain_rate;
 

@@ -57,6 +57,9 @@ if(mat->Bd < 0.0)
 
 	PetscFunctionReturn(0);
 }
+
+ctx->quasi_harmonic = mat->quasi_harmonic;
+
 //=============================================
 
 	// ELASTICITY
@@ -101,6 +104,10 @@ if(mat->Bd < 0.0)
 	// apply strain softening to friction and cohesion
 	ch = ApplyStrainSoft(mat->chSoft, APS, mat->ch);
 	fr = ApplyStrainSoft(mat->frSoft, APS, mat->fr);
+
+	// compute cohesion and friction coefficient
+	ch = cos(fr)*ch;
+	fr = sin(fr);
 
 	// fit to limits
 	if(ch < lim->minCh) ch = lim->minCh;
@@ -152,6 +159,53 @@ PetscErrorCode GetEffVisc(
 	PetscScalar *eta,
 	PetscScalar *DIIpl)
 {
+	// ACHTUNG! THIS WILL ONLY WORK FOR VISCO-PLASTIC MATERIAL
+
+	PetscScalar eta_ln, eta_pl;
+
+	PetscFunctionBegin;
+
+	// initialize plastic strain-rate
+	(*DIIpl) = 0.0;
+
+	//=============================================
+	// ACHTUNG! initial guess is computed with constant viscosities
+
+	if(ctx->A_dif < 0.0)
+	{
+		(*eta) = -1.0/(2.0*ctx->A_dif);
+
+		PetscFunctionReturn(0);
+	}
+	//=============================================
+
+	// get linear viscosity
+	eta_ln = 1.0/(2.0*ctx->A_dif);
+
+	// get plastic viscosity
+	eta_pl = ctx->taupl/(2.0*ctx->DII);
+
+	// check plasticity condition
+	if(eta_pl && eta_ln > eta_pl)
+	{
+		if(ctx->quasi_harmonic) (*eta) = 1.0/(1.0/eta_pl + 1.0/eta_ln);
+		else                    (*eta) = eta_pl;
+
+	}
+	else
+	{
+		(*eta) = eta_ln;
+	}
+
+	// enforce constraints
+	if((*eta) < lim->eta_min) (*eta) = lim->eta_min;
+	if((*eta) > lim->eta_max) (*eta) = lim->eta_max;
+
+	PetscFunctionReturn(0);
+
+	//=============================================
+
+/*
 	// "isolated" viscosity for each creep mechanism can be computed by
 	// assuming that single creep mechanism consumes entire strain rate.
 
@@ -166,20 +220,8 @@ PetscErrorCode GetEffVisc(
 	PetscScalar inv_eta_els, inv_eta_dif, inv_eta_dis, inv_eta_prl;
 	PetscScalar inv_eta_top, eta_top, inv_eta_bot, eta_bot, etapl, res;
 
-//	PetscErrorCode ierr;
+	PetscErrorCode ierr;
 	PetscFunctionBegin;
-
-//=============================================
-// ACHTUNG!
-	if(ctx->A_dif < 0.0)
-	{
-		inv_eta_dif = -2.0*ctx->A_dif;
-
-		(*eta) = 1.0/inv_eta_dif;
-
-		PetscFunctionReturn(0);
-	}
-//=============================================
 
 	// initialize viscosity limits
 	eta_min = lim->eta_min;
@@ -337,6 +379,7 @@ PetscErrorCode GetEffVisc(
 	(*eta) = B;
 
 	PetscFunctionReturn(0);
+*/
 }
 //---------------------------------------------------------------------------
 PetscScalar ApplyStrainSoft(Soft_t *sl, PetscScalar APS, PetscScalar par)

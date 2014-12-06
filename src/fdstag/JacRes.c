@@ -29,13 +29,11 @@ PetscErrorCode JacResClear(JacRes *jr)
 PetscErrorCode JacResCreate(
 	JacRes   *jr,
 	FDSTAG   *fs,
-	BCCtx    *bc,
-	PetscInt  numPhases,
-	PetscInt  numSoft)
+	BCCtx    *bc)
 {
 	DOFIndex    *dof;
 	PetscScalar *svBuff;
-	PetscInt     i, n, svBuffSz;
+	PetscInt     i, n, svBuffSz, numPhases;
 
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
@@ -46,6 +44,9 @@ PetscErrorCode JacResCreate(
 
 	// set indexing object
 	dof = &fs->dof;
+
+	// phases must be initialized before calling this function
+	numPhases = jr->numPhases;
 
 	//========================
 	// create solution vectors
@@ -134,15 +135,6 @@ PetscErrorCode JacResCreate(
 	n = fs->nYZEdg;
 	for(i = 0; i < n; i++) { jr->svYZEdge[i].phRat = svBuff; svBuff += numPhases; }
 
-	//=================
-	// phase parameters
-	//=================
-
-	jr->numPhases = numPhases;
-	ierr = PetscMalloc(sizeof(Material_t)*(size_t)numPhases, &jr->phases); CHKERRQ(ierr);
-
-	jr->numSoft = numSoft;
-	ierr = PetscMalloc(sizeof(Soft_t)*(size_t)numSoft, &jr->matSoft); CHKERRQ(ierr);
 
 	// create scatter context
 //	ierr = FDSTAGCreateScatter(fs, jrctx); CHKERRQ(ierr);

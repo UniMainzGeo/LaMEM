@@ -1133,15 +1133,11 @@ PetscErrorCode ADVMarkInitBands(AdvCtx *actx, UserContext *user)
 	dx = user->W/fs->dsx.tcels;
 	dz = user->H/fs->dsz.tcels;
 
-
-    
 	// initialize layer thickness [km], basal layer thickness [km], inclusion size [km] and Bulk modulus [MPa]
 	H               = 5.0;
     H_bottom        = 2.0;
     Inclusion_size  = 1.0;
     K               = 100.0;
-    
-
     
 	// get layer thickness from options
     ierr = PetscOptionsGetReal(PETSC_NULL, "-H_bottom",         &H_bottom,          PETSC_NULL);  CHKERRQ(ierr);
@@ -1173,9 +1169,6 @@ PetscErrorCode ADVMarkInitBands(AdvCtx *actx, UserContext *user)
 		if     (z >   (H_bottom+H))                  P->phase = 2;
 		else if((z >= H_bottom) & (z<=(H_bottom+H))) P->phase = 1;
 		else                                         P->phase = 0;
-
-		// automatically set inclusion dimension
-		// 2 elements in x direction time 1 element in z direction
 
 		// check inclusion
 		if(incl == PETSC_TRUE
