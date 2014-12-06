@@ -18,6 +18,9 @@ typedef struct
 	PetscScalar  taupl; // plastic yield stress
 	PetscBool    cfsol; // closed-form solution flag
 
+// ACHTUNG!
+	PetscInt     quasi_harmonic;
+
 } ConstEqCtx;
 
 //---------------------------------------------------------------------------

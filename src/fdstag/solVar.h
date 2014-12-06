@@ -156,6 +156,9 @@ typedef struct
 	PetscScalar  k;       // thermal conductivity
 	PetscScalar  A;       // radiogenic heat production
 
+// ACHTUNG!
+	PetscInt     quasi_harmonic;
+
 } Material_t;
 
 //---------------------------------------------------------------------------
