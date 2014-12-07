@@ -299,7 +299,11 @@ PetscErrorCode FDSTAGInitCode(JacRes *jr, UserContext *user)
 		user->nel_y = nel_array[1];
 		user->nel_z = nel_array[2];
 	}
-
+    user->nnode_x  = user->nel_x +  1;
+    user->nnode_y  = user->nel_y +  1;
+    user->nnode_z  = user->nel_z +  1;
+    
+    
 	PetscOptionsGetInt(PETSC_NULL ,"-refinex",		&user->refinex		, PETSC_NULL);
 	PetscOptionsGetInt(PETSC_NULL ,"-refiney",		&user->refiney		, PETSC_NULL);
 	PetscOptionsGetInt(PETSC_NULL ,"-refinez",		&user->refinez		, PETSC_NULL);
