@@ -191,11 +191,38 @@ PetscErrorCode GetEffVisc(
 		if(ctx->quasi_harmonic) (*eta) = 1.0/(1.0/eta_pl + 1.0/eta_ln);
 		else                    (*eta) = eta_pl;
 
+		// compute plastic strain rate
+		(*DIIpl) = ctx->DII - ctx->taupl/(2.0*eta_ln);
+
 	}
 	else
 	{
 		(*eta) = eta_ln;
 	}
+
+/*
+	// check whether plasticity is activated
+	if(eta_pl)
+	{
+		// always use quasi-harmonic mean viscosity (no matter above or below yield)
+		(*eta) = 1.0/(1.0/eta_pl + 1.0/eta_ln);
+
+		// nevertheless compute plastic strain rate correctly (only above yield)
+		if(eta_ln > eta_pl)
+		{
+			(*DIIpl) = ctx->DII - ctx->taupl/(2.0*eta_ln);
+
+			if((*DIIpl) < 0.0) SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "Negative plastic strain rate");
+
+		}
+
+	}
+	else
+	{
+		// this is just Newtonian case
+		(*eta) = eta_ln;
+	}
+*/
 
 	// enforce constraints
 	if((*eta) < lim->eta_min) (*eta) = lim->eta_min;

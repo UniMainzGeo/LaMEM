@@ -367,12 +367,14 @@ PetscErrorCode PVOutWriteTotStrain(JacRes *jr, OutBuf *outbuf)
 #define __FUNCT__ "PVOutWritePlastStrain"
 PetscErrorCode PVOutWritePlastStrain(JacRes *jr, OutBuf *outbuf)
 {
-	PetscErrorCode ierr;
-	PetscFunctionBegin;
+	COPY_FUNCTION_HEADER
 
-	ierr = 0; CHKERRQ(ierr);
-	if(jr)  jr = NULL;
-	if(outbuf) outbuf = NULL;
+	// macro to copy accumulated plastic strain (APS) to buffer
+	#define GET_APS buff[k][j][i] = jr->svCell[iter++].svDev.APS;
+
+	cf = scal->unit;
+
+	INTERPOLATE_COPY(fs->DA_CEN, outbuf->lbcen, InterpCenterCorner, GET_APS, 1, 0)
 
 	PetscFunctionReturn(0);
 }
