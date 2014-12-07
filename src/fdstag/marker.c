@@ -1114,73 +1114,66 @@ PetscErrorCode ADVMarkInitSpheres(AdvCtx *actx, UserContext *user)
 #define __FUNCT__ "ADVMarkInitBands"
 PetscErrorCode ADVMarkInitBands(AdvCtx *actx, UserContext *user)
 {
-	FDSTAG     *fs;
-	Material_t *phases;
-	Scaling    *scal;
 	Marker     *P;
 	PetscInt    imark;
-	PetscBool   incl;
-	PetscScalar K, H, H_bottom, Inclusion_size, x, z, dx, dz;
+	PetscBool   use_inc;
+	PetscScalar H, Hb, size, offset, length, x, y, z, scal;
 
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
 
-	fs     =  actx->jr->fs;
-	phases =  actx->jr->phases;
-	scal   = &actx->jr->scal;
+	scal = actx->jr->scal.length;
 
-	// get uniform mesh sizes
-	dx = user->W/fs->dsx.tcels;
-	dz = user->H/fs->dsz.tcels;
+	// set default values
+	H      = 10.0;               // layer thickness               [km]
+    Hb     = 2.0;                // basal layer thickness         [km]
+    size   = 1.0;                // inclusion size in XZ-plane    [km]
+    offset = 0.0;                // inclusion offset along X axis [km]
+    length = (user->L*scal)/2.0; // inclusion length along Y axis [km]
+    
+    // get layer thickness
+    ierr = PetscOptionsGetReal(PETSC_NULL, "-H_layer",  &H,  PETSC_NULL);  CHKERRQ(ierr);
+    ierr = PetscOptionsGetReal(PETSC_NULL, "-H_bottom", &Hb, PETSC_NULL);  CHKERRQ(ierr);
 
-	// initialize layer thickness [km], basal layer thickness [km], inclusion size [km] and Bulk modulus [MPa]
-	H               = 5.0;
-    H_bottom        = 2.0;
-    Inclusion_size  = 1.0;
-    K               = 100.0;
-    
-	// get layer thickness from options
-    ierr = PetscOptionsGetReal(PETSC_NULL, "-H_bottom",         &H_bottom,          PETSC_NULL);  CHKERRQ(ierr);
-    ierr = PetscOptionsGetReal(PETSC_NULL, "-H_layer",          &H,                 PETSC_NULL);  CHKERRQ(ierr);
-    ierr = PetscOptionsGetReal(PETSC_NULL, "-Inclusion_size",   &Inclusion_size,    PETSC_NULL);  CHKERRQ(ierr);
-    
-    ierr = PetscOptionsGetReal(PETSC_NULL, "-K_air",     &K, PETSC_NULL);  CHKERRQ(ierr);
-	ierr = PetscOptionsHasName(PETSC_NULL, "-band_incl", &incl);           CHKERRQ(ierr);
+    // get inclusion parameters
+    ierr = PetscOptionsHasName(PETSC_NULL, "-Inclusion_use", &use_inc); CHKERRQ(ierr);
+    if(use_inc == PETSC_TRUE)
+    {
+    	ierr = PetscOptionsGetReal(PETSC_NULL, "-Inclusion_size",   &size,   PETSC_NULL); CHKERRQ(ierr);
+    	ierr = PetscOptionsGetReal(PETSC_NULL, "-Inclusion_offset", &offset, PETSC_NULL); CHKERRQ(ierr);
+    	ierr = PetscOptionsGetReal(PETSC_NULL, "-Inclusion_length", &length, PETSC_NULL); CHKERRQ(ierr);
+    }
 
 	// scale
-	H               /= scal->length;
-    H_bottom        /= scal->length;
-    Inclusion_size  /= scal->length;
-	K               /= scal->stress;
+	H      /= scal;
+    Hb     /= scal;
+	size   /= scal;
+    offset /= scal;
+    length /= scal;
 
-    dx = Inclusion_size;
-    dz = Inclusion_size;
-
-	// loop over local markers
+    // loop over local markers
 	for(imark = 0; imark < actx->nummark; imark++)
 	{
 		P = &actx->markers[imark];
 
 		// get coordinates
 		x = P->X[0];
+		y = P->X[1];
 		z = P->X[2];
 
-		// assign phase
-		if     (z >   (H_bottom+H))                  P->phase = 2;
-		else if((z >= H_bottom) & (z<=(H_bottom+H))) P->phase = 1;
-		else                                         P->phase = 0;
+		// assign phase in layers
+		if     (z >  Hb + H)            P->phase = 2; // air
+		else if(z >= Hb && z <= Hb + H) P->phase = 1; // matrix
+		else                            P->phase = 0; // basal layer
 
 		// check inclusion
-		if(incl == PETSC_TRUE
-		&& z >= H_bottom  && z <= H_bottom + dz
-		&& x >= -dx/2 && x <= dx/2) P->phase = 0;
+		if(use_inc == PETSC_TRUE && z >= Hb && z <= Hb + size
+		&& ((y <= length         && x >= -(offset + size)/2.0 && x <= -(offset - size)/2.0)
+		||  (y >= user->L-length && x >=  (offset - size)/2.0 && x <=  (offset + size)/2.0))) P->phase = 0;
 
 		// assign temperature
 		P->T = 0.0;
 	}
-
-	// make air phase compressible
-//	phases[2].K = K;
 
 	PetscFunctionReturn(0);
 }
