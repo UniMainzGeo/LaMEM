@@ -51,14 +51,7 @@ PetscErrorCode ConstEqCtxSetup(
 //=============================================
 // ACHTUNG!
 
-if(mat->Bd < 0.0)
-{
-	ctx->A_dif = mat->Bd;
-
-	PetscFunctionReturn(0);
-}
-
-ctx->quasi_harmonic = mat->quasi_harmonic;
+	ctx->quasi_harmonic = mat->quasi_harmonic;
 
 //=============================================
 
@@ -159,70 +152,54 @@ PetscErrorCode GetEffVisc(
 	PetscScalar *eta,
 	PetscScalar *DIIpl)
 {
-	// ACHTUNG! THIS WILL ONLY WORK FOR VISCO-PLASTIC MATERIAL
+	// ACHTUNG! THIS WILL ONLY WORK FOR LINEAR VISCO-ELASTO_PLASTIC MATERIAL
 
-	PetscScalar eta_ln, eta_pl;
+	PetscScalar eta_ve, inv_eta_els, inv_eta_dif, eta_pl;
+	PetscBool   check_pl;
 
 	PetscFunctionBegin;
 
-	// initialize plastic strain-rate
-	(*DIIpl) = 0.0;
-
-	//=============================================
-	// ACHTUNG! initial guess is computed with constant viscosities
-
+	// ACHTUNG! initial guess is computed without plasticity
 	if(ctx->A_dif < 0.0)
 	{
-		(*eta) = -1.0/(2.0*ctx->A_dif);
+		ctx->A_dif = -ctx->A_dif;
 
-		PetscFunctionReturn(0);
+		check_pl = PETSC_FALSE;
 	}
-	//=============================================
+	else
+	{
+		check_pl = PETSC_TRUE;
+	}
 
-	// get linear viscosity
-	eta_ln = 1.0/(2.0*ctx->A_dif);
+	// elasticity
+	inv_eta_els = 2.0*ctx->A_els;
+
+	// diffusion
+	inv_eta_dif = 2.0*ctx->A_dif;
+
+	// compute visco-elastic viscosity
+	eta_ve = 1.0/(inv_eta_els + inv_eta_dif);
+
+	// initialize plastic strain-rate
+	(*DIIpl) = 0.0;
 
 	// get plastic viscosity
 	eta_pl = ctx->taupl/(2.0*ctx->DII);
 
 	// check plasticity condition
-	if(eta_pl && eta_ln > eta_pl)
+	if(check_pl == PETSC_TRUE && eta_pl && eta_ve > eta_pl)
 	{
-		if(ctx->quasi_harmonic) (*eta) = 1.0/(1.0/eta_pl + 1.0/eta_ln);
+		if(ctx->quasi_harmonic) (*eta) = 1.0/(1.0/eta_pl + 1.0/eta_ve);
 		else                    (*eta) = eta_pl;
 
 		// compute plastic strain rate
-		(*DIIpl) = ctx->DII - ctx->taupl/(2.0*eta_ln);
+		(*DIIpl) = ctx->DII - ctx->taupl/(2.0*eta_ve);
 
 	}
 	else
 	{
-		(*eta) = eta_ln;
+		(*eta) = eta_ve;
 	}
-
-/*
-	// check whether plasticity is activated
-	if(eta_pl)
-	{
-		// always use quasi-harmonic mean viscosity (no matter above or below yield)
-		(*eta) = 1.0/(1.0/eta_pl + 1.0/eta_ln);
-
-		// nevertheless compute plastic strain rate correctly (only above yield)
-		if(eta_ln > eta_pl)
-		{
-			(*DIIpl) = ctx->DII - ctx->taupl/(2.0*eta_ln);
-
-			if((*DIIpl) < 0.0) SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "Negative plastic strain rate");
-
-		}
-
-	}
-	else
-	{
-		// this is just Newtonian case
-		(*eta) = eta_ln;
-	}
-*/
 
 	// enforce constraints
 	if((*eta) < lim->eta_min) (*eta) = lim->eta_min;
