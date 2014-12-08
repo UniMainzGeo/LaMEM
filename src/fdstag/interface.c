@@ -90,6 +90,10 @@ PetscErrorCode InitMaterialProps(JacRes *jr, UserContext *usr)
 			SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "Unsupported viscosity law used");
 		}
 
+		// elasticity parameters
+		phases[i].K = PhaseProperties->ElasticBulkModule[i];  // bulk modulus
+		phases[i].G = PhaseProperties->ElasticShearModule[i]; // shear modulus
+
 		// plasticity parameters
 		plastLaw = PhaseProperties->PlasticityLaw[i];
 
@@ -125,7 +129,6 @@ PetscErrorCode InitMaterialProps(JacRes *jr, UserContext *usr)
 			{
 				phases[i].quasi_harmonic = 1;
 			}
-
 		}
 
 //=============================================

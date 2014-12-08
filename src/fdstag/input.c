@@ -1094,6 +1094,8 @@ PetscErrorCode ReadMaterialProperties(UserContext *user)
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
 
+	ierr = PetscMemzero(&user->PhaseProperties, sizeof(PhaseProps)); CHKERRQ(ierr);
+
 	//-----------------------------------------------------------------------
 	// Read material parameters from the input file (new, more general, input format for material properties)
 	//
@@ -1245,6 +1247,7 @@ PetscErrorCode ReadMaterialProperties(UserContext *user)
 						PetscPrintf(PETSC_COMM_WORLD,"    %s (id=%lld), ELASTICITY, constant [%lld,%lld,%lld] = %e, %e \n", p->name, (LLD)(p->phase_number), (LLD)p_idx,(LLD)a_idx,(LLD)t_idx, shear,bulk );
 
 						user->PhaseProperties.ElasticShearModule[p->phase_number] 		= shear; 	// add to PhaseProperties
+						user->PhaseProperties.ElasticBulkModule[p->phase_number] 		= bulk; 	// add to PhaseProperties
 
 					}
 					// others

@@ -190,6 +190,8 @@ void PerformNonDimensionalization( UserContext *user )
 			user->PhaseProperties.E[i]					=	user->PhaseProperties.E[i]/user->Characteristic.Jmol;
 
 			user->PhaseProperties.ElasticShearModule[i]		=	user->PhaseProperties.ElasticShearModule[i]/user->Characteristic.Stress;
+			user->PhaseProperties.ElasticBulkModule[i]		=	user->PhaseProperties.ElasticBulkModule[i]/user->Characteristic.Stress;
+
 			user->PhaseProperties.Cohesion[i]				=	user->PhaseProperties.Cohesion[i]/user->Characteristic.Stress;
 			user->PhaseProperties.CohesionAfterWeakening[i]	=	user->PhaseProperties.CohesionAfterWeakening[i]/user->Characteristic.Stress;
 

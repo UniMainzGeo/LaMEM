@@ -59,7 +59,8 @@ typedef struct {
 	PetscInt	ViscosityLaw[max_num_phases],		DensityLaw[max_num_phases],	  	  PlasticityLaw[max_num_phases];
 	PetscScalar mu[max_num_phases], 	  			rho[max_num_phases], 			  n_exponent[max_num_phases];
 	PetscScalar A[max_num_phases], E[max_num_phases];
-	PetscScalar	ElasticShearModule[max_num_phases],	Cohesion[max_num_phases],		  FrictionAngle[max_num_phases];
+	PetscScalar	ElasticShearModule[max_num_phases],	ElasticBulkModule[max_num_phases];
+	PetscScalar Cohesion[max_num_phases],		  FrictionAngle[max_num_phases];
 	PetscScalar	T_Conductivity[max_num_phases],		HeatCapacity[max_num_phases],	  RadioactiveHeat[max_num_phases];
 	PetscScalar	ThermalExpansivity[max_num_phases], FrankKamenetskii[max_num_phases], Density_T0[max_num_phases];
 	PetscScalar Powerlaw_e0[max_num_phases];
