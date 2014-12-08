@@ -557,6 +557,7 @@ PetscErrorCode MGLevelSetupProlong(MGLevel *lvl, MGLevel *fine)
 #define __FUNCT__ "MGCreate"
 PetscErrorCode MGCreate(MG *mg, FDSTAG *fs, BCCtx *bc)
 {
+	KSP       ksp;
 	PetscInt  i, l;
 	MGLevel   *fine;
 	char      pc_type[MAX_NAME_LEN];
@@ -605,6 +606,11 @@ PetscErrorCode MGCreate(MG *mg, FDSTAG *fs, BCCtx *bc)
 	ierr = PCMGSetType(mg->pc, PC_MG_MULTIPLICATIVE); CHKERRQ(ierr);
 	ierr = PCMGSetGalerkin(mg->pc, PETSC_TRUE);       CHKERRQ(ierr);
 	ierr = PCSetFromOptions(mg->pc);                  CHKERRQ(ierr);
+
+	// setup coarse solver
+	ierr = PCMGGetCoarseSolve(mg->pc, &ksp); CHKERRQ(ierr);
+	ierr = KSPSetOptionsPrefix(ksp, "crs_");  CHKERRQ(ierr);
+	ierr = KSPSetFromOptions(ksp);            CHKERRQ(ierr);
 
 	// attach restriction/prolongation matrices to the preconditioner
 	for(i = 1, l = mg->nlvl-1; i < mg->nlvl; i++, l--)
@@ -669,6 +675,9 @@ PetscErrorCode MGSetup(MG *mg, Mat A)
 
 	// tell to recompute preconditioner
 	ierr = PCSetOperators(mg->pc, A, A); CHKERRQ(ierr);
+
+	// force setup operators
+	ierr = PCSetUp(mg->pc); CHKERRQ(ierr);
 
 	// remove constrained rows & columns
 	// GET RID OF THIS UGLY THING! R & P should fully define coarsening process

@@ -16,6 +16,8 @@
 // * linear system scaling (fdstag multigrid paper)
 // * temperature scaling
 // * preallocation for temperature & pressure Schur PC
+// * figure out why block factorization with penalty
+//   doesn't work with non-homogeneous Dirichlet BC
 //---------------------------------------------------------------------------
 #undef __FUNCT__
 #define __FUNCT__ "MatAIJCreate"
