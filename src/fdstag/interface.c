@@ -124,20 +124,12 @@ PetscErrorCode InitMaterialProps(JacRes *jr, UserContext *usr)
 				// store friction softening law
 				phases[i].frSoft = &matSoft[numSoft++];
 			}
-// ACHTUNG!
+
 			if(quasi_harmonic == PETSC_TRUE)
 			{
 				phases[i].quasi_harmonic = 1;
 			}
 		}
-
-//=============================================
-// ACHTUNG!
-
-	phases[i].Bd = -phases[i].Bd;
-
-//=============================================
-
 	}
 
 	// store material parameters & softening laws

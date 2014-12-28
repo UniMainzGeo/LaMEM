@@ -189,8 +189,14 @@ PetscErrorCode GetEffVisc(
 	// check plasticity condition
 	if(check_pl == PETSC_TRUE && eta_pl && eta_ve > eta_pl)
 	{
-		if(ctx->quasi_harmonic) (*eta) = 1.0/(1.0/eta_pl + 1.0/eta_ve);
-		else                    (*eta) = eta_pl;
+		if(ctx->quasi_harmonic)
+		{
+			(*eta) = 1.0/(1.0/eta_pl + 1.0/eta_ve);
+		}
+		else
+		{
+			(*eta) = eta_pl;
+		}
 
 		// compute plastic strain rate
 		(*DIIpl) = ctx->DII - ctx->taupl/(2.0*eta_ve);
