@@ -85,6 +85,23 @@ PetscErrorCode InitMaterialProps(JacRes *jr, UserContext *usr)
 			// store reference strain rate
 			matLim->DII_ref = D;
 		}
+		else if(viscLaw == 4)
+		{
+			// temperature-dependent power-law creep parameters
+			eta = PhaseProperties->A[i];
+			D   = PhaseProperties->Powerlaw_e0[i];
+			n   = PhaseProperties->n_exponent[i];
+
+			// convert power-law creep parameters to dislocation creep parameters
+			phases[i].Bn = pow(2.0*eta, -n)*pow(D, 1-n);
+			phases[i].n  = n;
+
+			// store activation energy
+			phases[i].En = PhaseProperties->E[i];
+
+			// store reference strain rate
+			matLim->DII_ref = D;
+		}
 		else
 		{	// unsupported viscosity law
 			SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "Unsupported viscosity law used");

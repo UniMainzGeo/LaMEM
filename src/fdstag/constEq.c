@@ -48,12 +48,8 @@ PetscErrorCode ConstEqCtxSetup(
 	ctx->taupl = 0.0;         // plastic yield stress
 	ctx->cfsol = PETSC_TRUE;  // closed-form solution flag
 
-//=============================================
-// ACHTUNG!
-
+	// set quasi-harmonic viscosity averaging in plastic mode
 	ctx->quasi_harmonic = mat->quasi_harmonic;
-
-//=============================================
 
 	// ELASTICITY
 	if(mat->G)

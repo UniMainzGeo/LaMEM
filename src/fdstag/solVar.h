@@ -156,7 +156,6 @@ typedef struct
 	PetscScalar  k;       // thermal conductivity
 	PetscScalar  A;       // radiogenic heat production
 
-	PetscScalar  eta0;           // reference viscosity
 	PetscInt     quasi_harmonic; // use quasi-harmonic mean viscosity
 
 } Material_t;

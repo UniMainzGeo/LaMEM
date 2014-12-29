@@ -186,7 +186,14 @@ void PerformNonDimensionalization( UserContext *user )
 			user->PhaseProperties.mu[i]					=	user->PhaseProperties.mu[i] /user->Characteristic.Viscosity;
 			user->PhaseProperties.FrankKamenetskii[i]   =	user->PhaseProperties.FrankKamenetskii[i]/(1.0/user->Characteristic.Temperature);
 			user->PhaseProperties.Powerlaw_e0[i] 		=	user->PhaseProperties.Powerlaw_e0[i]/(user->Characteristic.Strainrate);
-			user->PhaseProperties.A[i]					=	user->PhaseProperties.A[i]/((pow(user->Characteristic.Stress,(-user->PhaseProperties.n_exponent[i])))/user->Characteristic.Time);
+
+// I don't understand why this is interpreted as real pre-exponential factor of the stress-dependent dislocation creep.
+// Why then all rheologies that use this "A" variable, also define the reference strain rate "Powerlaw_e0"?
+// What if I want a standard temperature-dependent power-low rheology?
+// I reinterpret this as a reference viscosity similar to "mu", since no one else is using it (a.p.)
+//			user->PhaseProperties.A[i]					=	user->PhaseProperties.A[i]/((pow(user->Characteristic.Stress,(-user->PhaseProperties.n_exponent[i])))/user->Characteristic.Time);
+			user->PhaseProperties.A[i]					=	user->PhaseProperties.A[i]/user->Characteristic.Viscosity;
+
 			user->PhaseProperties.E[i]					=	user->PhaseProperties.E[i]/user->Characteristic.Jmol;
 
 			user->PhaseProperties.ElasticShearModule[i]		=	user->PhaseProperties.ElasticShearModule[i]/user->Characteristic.Stress;
