@@ -51,6 +51,8 @@ typedef struct
 //	PetscScalar *TPCVals;      // values of TPC
 //	PetscScalar *TPCLinComPar; // linear combination parameters
 
+	PetscScalar  Tbot, Ttop; // temperature on top and bottom boundaries
+
 	// background strain-rate parameters
 	PetscBool    bgAct;    // flag for activating background strain-rates
 	PetscScalar  Exx, Eyy; // horizontal background strain-rates

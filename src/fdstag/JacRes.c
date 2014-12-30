@@ -626,7 +626,7 @@ PetscErrorCode JacResGetResidual(JacRes *jr)
 	ierr = VecZeroEntries(jr->lfz); CHKERRQ(ierr);
 
 	// access work vectors
-	ierr = DMDAVecGetArray(fs->DA_CEN, jr->gc,   &gc);   CHKERRQ(ierr);
+	ierr = DMDAVecGetArray(fs->DA_CEN, jr->gc,   &gc);  CHKERRQ(ierr);
 	ierr = DMDAVecGetArray(fs->DA_CEN, jr->lp,   &p);   CHKERRQ(ierr);
 	ierr = DMDAVecGetArray(fs->DA_CEN, jr->lT,   &T);   CHKERRQ(ierr);
 	ierr = DMDAVecGetArray(fs->DA_CEN, jr->ldxx, &dxx); CHKERRQ(ierr);
@@ -1459,6 +1459,8 @@ PetscErrorCode SetMatParLim(MatParLim *matLim, UserContext *usr)
 	matLim->minFr        = 0.0;
 	matLim->tauUlt       = DBL_MAX;
 	matLim->shearHeatEff = 1.0;
+	matLim->quasiHarmAvg = PETSC_FALSE;
+	matLim->initGuessFlg = PETSC_TRUE;
 
 	PetscFunctionReturn(0);
 }
@@ -1586,7 +1588,60 @@ PetscErrorCode getMaxInvStep1DLocal(Discret1D *ds, DM da, Vec gv, PetscInt dir, 
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
+#undef __FUNCT__
+#define __FUNCT__ "JacResInitTemp"
+PetscErrorCode JacResInitTemp(JacRes *jr)
+{
+	PetscScalar *T, ***lT;
+	FDSTAG      *fs;
+	PetscInt     jj, n, bc;
+	PetscInt     mcx, mcy, mcz;
+	PetscInt     i, j, k, I, J, K, nx, ny, nz, sx, sy, sz;
 
+	PetscErrorCode ierr;
+	PetscFunctionBegin;
+
+	// access context
+	fs = jr->fs;
+
+	// copy temperatures from context storage to global vector
+	ierr = VecGetArray(jr->gT, &T);  CHKERRQ(ierr);
+
+	for(jj = 0, n = fs->nCells; jj < n; jj++) T[jj] = jr->svCell[jj].svBulk.Tn;
+
+	ierr = VecRestoreArray(jr->gT, &T);  CHKERRQ(ierr);
+
+	// scatter temperature to inter-processor ghost points
+	GLOBAL_TO_LOCAL(fs->DA_CEN, jr->gT, jr->lT)
+
+	// set temperature in boundary ghost points
+	mcx = fs->dsx.tcels - 1;
+	mcy = fs->dsy.tcels - 1;
+	mcz = fs->dsz.tcels - 1;
+
+	ierr = DMDAVecGetArray(fs->DA_CEN, jr->lT, &lT);  CHKERRQ(ierr);
+
+	GET_CELL_RANGE_GHOST_ALL(nx, sx, fs->dsx)
+	GET_CELL_RANGE_GHOST_ALL(ny, sy, fs->dsy)
+	GET_CELL_RANGE_GHOST_ALL(nz, sz, fs->dsz)
+
+	START_STD_LOOP
+	{
+		bc = 0;
+
+		I = i; if(I < 0) { I = 0; bc = 1; } if(I > mcx) { I = mcx; bc = 1; }
+		J = j; if(J < 0) { J = 0; bc = 1; } if(J > mcy) { J = mcy; bc = 1; }
+		K = k; if(K < 0) { K = 0; bc = 1; } if(K > mcz) { K = mcz; bc = 1; }
+
+		if(bc) lT[k][j][i] = lT[K][J][I];
+	}
+	END_STD_LOOP
+
+	ierr = DMDAVecRestoreArray(fs->DA_CEN, jr->lT, &lT);  CHKERRQ(ierr);
+
+	PetscFunctionReturn(0);
+}
+//---------------------------------------------------------------------------
 
 /*
 #undef __FUNCT__

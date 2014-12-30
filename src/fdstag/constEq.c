@@ -48,9 +48,6 @@ PetscErrorCode ConstEqCtxSetup(
 	ctx->taupl = 0.0;         // plastic yield stress
 	ctx->cfsol = PETSC_TRUE;  // closed-form solution flag
 
-	// set quasi-harmonic viscosity averaging in plastic mode
-	ctx->quasi_harmonic = mat->quasi_harmonic;
-
 	// ELASTICITY
 	if(mat->G)
 	{
@@ -148,59 +145,65 @@ PetscErrorCode GetEffVisc(
 	PetscScalar *eta,
 	PetscScalar *DIIpl)
 {
-	// ACHTUNG! THIS WILL ONLY WORK FOR LINEAR VISCO-ELASTO_PLASTIC MATERIAL
+	// ACHTUNG! THIS WILL ONLY WORK FOR:
+	//  * LINEAR VISCO-ELASTO-PLASTIC MATERIAL
+	//  * POWER-LAW MATERIAL
 
-	PetscScalar eta_ve, inv_eta_els, inv_eta_dif, eta_pl;
-	PetscBool   check_pl;
+	PetscScalar eta_ve, inv_eta_els, inv_eta_dif, inv_eta_dis, eta_pl;
 
 	PetscFunctionBegin;
 
-	// ACHTUNG! initial guess is computed without plasticity
-	if(ctx->A_dif < 0.0)
+	if(ctx->A_dis)
 	{
-		ctx->A_dif = -ctx->A_dif;
-
-		check_pl = PETSC_FALSE;
-	}
-	else
-	{
-		check_pl = PETSC_TRUE;
-	}
-
-	// elasticity
-	inv_eta_els = 2.0*ctx->A_els;
-
-	// diffusion
-	inv_eta_dif = 2.0*ctx->A_dif;
-
-	// compute visco-elastic viscosity
-	eta_ve = 1.0/(inv_eta_els + inv_eta_dif);
-
-	// initialize plastic strain-rate
-	(*DIIpl) = 0.0;
-
-	// get plastic viscosity
-	eta_pl = ctx->taupl/(2.0*ctx->DII);
-
-	// check plasticity condition
-	if(check_pl == PETSC_TRUE && eta_pl && eta_ve > eta_pl)
-	{
-		if(ctx->quasi_harmonic)
+		// compute power-law viscosity (use reference strain-rate as initial guess)
+		if(lim->initGuessFlg == PETSC_TRUE)
 		{
-			(*eta) = 1.0/(1.0/eta_pl + 1.0/eta_ve);
+			inv_eta_dis = 2.0*pow(ctx->A_dis, 1.0/ctx->N_dis)*pow(lim->DII_ref, 1.0 - 1.0/ctx->N_dis);
 		}
 		else
 		{
-			(*eta) = eta_pl;
+			inv_eta_dis = 2.0*pow(ctx->A_dis, 1.0/ctx->N_dis)*pow(ctx->DII, 1.0 - 1.0/ctx->N_dis);
 		}
 
-		// compute plastic strain rate
-		(*DIIpl) = ctx->DII - ctx->taupl/(2.0*eta_ve);
-
+		(*eta) = 1.0/inv_eta_dis;
 	}
 	else
 	{
-		(*eta) = eta_ve;
+		// elasticity
+		inv_eta_els = 2.0*ctx->A_els;
+
+		// diffusion
+		inv_eta_dif = 2.0*ctx->A_dif;
+
+		// compute visco-elastic viscosity
+		eta_ve = 1.0/(inv_eta_els + inv_eta_dif);
+
+		// initialize plastic strain-rate
+		(*DIIpl) = 0.0;
+
+		// get plastic viscosity
+		eta_pl = ctx->taupl/(2.0*ctx->DII);
+
+		// check plasticity condition (not for initial guess)
+		if(lim->initGuessFlg == PETSC_TRUE && eta_pl && eta_ve > eta_pl)
+		{
+			if(lim->quasiHarmAvg == PETSC_TRUE)
+			{
+				(*eta) = 1.0/(1.0/eta_pl + 1.0/eta_ve);
+			}
+			else
+			{
+				(*eta) = eta_pl;
+			}
+
+			// compute plastic strain rate
+			(*DIIpl) = ctx->DII - ctx->taupl/(2.0*eta_ve);
+
+		}
+		else
+		{
+			(*eta) = eta_ve;
+		}
 	}
 
 	// enforce constraints

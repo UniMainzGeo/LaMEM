@@ -156,8 +156,6 @@ typedef struct
 	PetscScalar  k;       // thermal conductivity
 	PetscScalar  A;       // radiogenic heat production
 
-	PetscInt     quasi_harmonic; // use quasi-harmonic mean viscosity
-
 } Material_t;
 
 //---------------------------------------------------------------------------
@@ -186,6 +184,9 @@ typedef struct
 	PetscScalar tauUlt; // ultimate yield stress
 	// thermo-mechanical coupling controls
 	PetscScalar shearHeatEff; // shear heating efficiency parameter [0 - 1]
+	// rheology controls
+	PetscBool   quasiHarmAvg; // plasticity quasi-harmonic averaging flag
+	PetscBool   initGuessFlg; // initial guess computation flag
 
 } MatParLim;
 

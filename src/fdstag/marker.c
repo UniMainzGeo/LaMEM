@@ -200,7 +200,7 @@ PetscErrorCode ADVMarkSave(AdvCtx *actx, UserContext *user)
 	Marker      *P;
 	char        *SaveFileName;
 	PetscViewer  view_out;
-	PetscScalar *markbuf, *markptr, header, chLen, chTemp, s_nummark;
+	PetscScalar *markbuf, *markptr, header, chLen, chTemp, Tshift, s_nummark;
 
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
@@ -226,6 +226,9 @@ PetscErrorCode ADVMarkSave(AdvCtx *actx, UserContext *user)
 		chTemp = 1.0;
 	}
 
+	// temperature shift
+	Tshift = actx->jr->scal.Tshift;
+
 	// copy data from storage into buffer
 	for(imark = 0, markptr = markbuf; imark < actx->nummark; imark++, markptr += 5)
 	{
@@ -234,7 +237,7 @@ PetscErrorCode ADVMarkSave(AdvCtx *actx, UserContext *user)
 		markptr[1] =              P->X[1]*chLen;
 		markptr[2] =              P->X[2]*chLen;
 		markptr[3] = (PetscScalar)P->phase;
-		markptr[4] =              P->T*chTemp;
+		markptr[4] =             (P->T - Tshift)*chTemp;
 	}
 
 	// create directory
@@ -396,7 +399,7 @@ PetscErrorCode ADVMarkInitFileParallel(AdvCtx *actx, UserContext *user)
 	Marker      *P;
 	PetscViewer  view_in;
 	char        *LoadFileName;
-	PetscScalar *markbuf, *markptr, header, chTemp, chLen, s_nummark;
+	PetscScalar *markbuf, *markptr, header, chTemp, chLen, Tshift, s_nummark;
 	PetscInt     imark, nummark;
 
 	PetscErrorCode ierr;
@@ -447,6 +450,9 @@ PetscErrorCode ADVMarkInitFileParallel(AdvCtx *actx, UserContext *user)
 		chTemp = 1.0;
 	}
 
+	// temperature shift
+	Tshift = actx->jr->scal.Tshift;
+
 	// copy buffer to marker storage
 	for(imark = 0, markptr = markbuf; imark < actx->nummark; imark++, markptr += 5)
 	{
@@ -455,9 +461,7 @@ PetscErrorCode ADVMarkInitFileParallel(AdvCtx *actx, UserContext *user)
 		P->X[1]  =           markptr[1]/chLen;
 		P->X[2]  =           markptr[2]/chLen;
 		P->phase = (PetscInt)markptr[3];
-		P->T     =           markptr[4]/chTemp;
-
-//        PetscPrintf(PETSC_COMM_WORLD," Marker coord = [%f,%f,%f] \n", P->X[0], P->X[1], P->X[2]);
+		P->T     =          (markptr[4] + Tshift)/chTemp;
 	}
 
 	// free marker buffer
@@ -492,7 +496,7 @@ PetscErrorCode ADVMarkInitFileRedundant(AdvCtx *actx, UserContext *user)
 	Marker       *P;
 	PetscViewer   view_in;
 	char         *LoadFileName;
-	PetscScalar   maxtemp, header, chLen, chTemp;
+	PetscScalar   maxtemp, header, chLen, chTemp, Tshift;
 	PetscScalar   x, y, z, xs[3], xe[3], info[3], *phase, *temp, *xcoor, *ycoor, *zcoor;
 	PetscInt      nmarkx, nmarky, nmarkz, nmark;
 	PetscInt      tmarkx, tmarky, tmarkz, tmark;
@@ -578,6 +582,9 @@ PetscErrorCode ADVMarkInitFileRedundant(AdvCtx *actx, UserContext *user)
 		chTemp = 1.0;
 	}
 
+	// temperature shift
+	Tshift = actx->jr->scal.Tshift;
+
 	// loop over all markers and put them in the local domain
 	for(i = 0; i < nmark; i++)
 	{
@@ -595,7 +602,7 @@ PetscErrorCode ADVMarkInitFileRedundant(AdvCtx *actx, UserContext *user)
 			P->X[1]  = y;
 			P->X[2]  = z;
 			P->phase = (PetscInt)phase[i];
-			P->T     = temp[i]/chTemp;
+			P->T     = (temp[i] + Tshift)/chTemp;
 
 			// increment local counter
 			imark++;

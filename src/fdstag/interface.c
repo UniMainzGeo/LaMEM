@@ -29,8 +29,6 @@ PetscErrorCode InitMaterialProps(JacRes *jr, UserContext *usr)
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
 
-	ierr = PetscOptionsHasName(PETSC_NULL, "-use_quasi_harmonic_viscosity", &quasi_harmonic); CHKERRQ(ierr);
-
 	// access phase properties in user context variables
 	numPhases       = usr->num_phases;
 	PhaseProperties = &usr->PhaseProperties;
@@ -142,10 +140,6 @@ PetscErrorCode InitMaterialProps(JacRes *jr, UserContext *usr)
 				phases[i].frSoft = &matSoft[numSoft++];
 			}
 
-			if(quasi_harmonic == PETSC_TRUE)
-			{
-				phases[i].quasi_harmonic = 1;
-			}
 		}
 	}
 
@@ -154,6 +148,14 @@ PetscErrorCode InitMaterialProps(JacRes *jr, UserContext *usr)
 	jr->phases    = phases;
 	jr->numSoft   = numSoft;
 	jr->matSoft   = matSoft;
+
+	// read additional options
+	ierr = PetscOptionsHasName(PETSC_NULL, "-use_quasi_harmonic_viscosity", &quasi_harmonic); CHKERRQ(ierr);
+
+	if(quasi_harmonic == PETSC_TRUE)
+	{
+		matLim->quasiHarmAvg = PETSC_TRUE;
+	}
 
 	PetscFunctionReturn(0);
 }

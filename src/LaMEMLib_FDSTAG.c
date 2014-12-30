@@ -248,9 +248,6 @@ PetscErrorCode LaMEMLib_FDSTAG(PetscBool InputParamFile, const char *ParamFile, 
 	// create Jacobian & residual evaluation context
 	ierr = JacResCreate(&jr, &fs, &bc); CHKERRQ(ierr);
 
-	// WARNING! NO TEMPERATURE! Set local temperature vector to unity (ad-hoc)
-	ierr = VecSet(jr.lT, 1.0); CHKERRQ(ierr);
-
 	// initialize gravity acceleration
 	jr.grav[0] = 0.0;
 	jr.grav[1] = 0.0;
@@ -261,6 +258,9 @@ PetscErrorCode LaMEMLib_FDSTAG(PetscBool InputParamFile, const char *ParamFile, 
 
 	// initialize markers
 	ierr = ADVMarkInit(&actx, &user); CHKERRQ(ierr);
+
+	// initialize temperature
+	ierr = JacResInitTemp(&jr); CHKERRQ(ierr);
 
 	// create Stokes preconditioner & matrix
 	ierr = PMatCreate(&pm, &jr);    CHKERRQ(ierr);
@@ -324,6 +324,9 @@ PetscErrorCode LaMEMLib_FDSTAG(PetscBool InputParamFile, const char *ParamFile, 
 
 			PetscPrintf(PETSC_COMM_WORLD, " Nonlinear solve took %g s\n", cputime_end - cputime_start_nonlinear);
 		}
+
+		// sswitch off initial guess flag
+		jr.matLim.initGuessFlg = PETSC_FALSE;
 
 		//==========================================
 		// END OF NONLINEAR THERMO-MECHANICAL SOLVER
