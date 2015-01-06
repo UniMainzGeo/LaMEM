@@ -72,6 +72,10 @@ PetscErrorCode ConstEqCtxSetup(
 	// DISLOCATION CREEP (POWER LAW)
 	if(mat->Bn)
 	{
+// ACHTUNG
+//		if(lim->initGuessFlg == PETSC_TRUE)
+//		Q          = 0.0;
+//		else
 		Q          = (mat->En + p*mat->Vn)/RT;
 		ctx->N_dis =  mat->n;
 		ctx->A_dis =  mat->Bn*exp(-Q);
@@ -158,7 +162,7 @@ PetscErrorCode GetEffVisc(
 		// compute power-law viscosity (use reference strain-rate as initial guess)
 		if(lim->initGuessFlg == PETSC_TRUE)
 		{
-			inv_eta_dis = 2.0*pow(ctx->A_dis, 1.0/ctx->N_dis)*pow(lim->DII_ref, 1.0 - 1.0/ctx->N_dis);
+			inv_eta_dis = 2.0*pow(ctx->A_dis, 1.0/ctx->N_dis)*pow(lim->DII_ref*10.0, 1.0 - 1.0/ctx->N_dis);
 		}
 		else
 		{

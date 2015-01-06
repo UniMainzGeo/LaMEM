@@ -324,8 +324,13 @@ PetscErrorCode LaMEMLib_FDSTAG(PetscBool InputParamFile, const char *ParamFile, 
 
 			PetscPrintf(PETSC_COMM_WORLD, " Nonlinear solve took %g s\n", cputime_end - cputime_start_nonlinear);
 		}
+		else
+		{
+			// just evaluate initial residual
+			ierr = FormResidual(snes, jr.gsol, jr.gres, &nl); CHKERRQ(ierr);
+		}
 
-		// sswitch off initial guess flag
+		// switch off initial guess flag
 		jr.matLim.initGuessFlg = PETSC_FALSE;
 
 		//==========================================

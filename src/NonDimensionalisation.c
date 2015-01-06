@@ -194,7 +194,8 @@ void PerformNonDimensionalization( UserContext *user )
 //			user->PhaseProperties.A[i]					=	user->PhaseProperties.A[i]/((pow(user->Characteristic.Stress,(-user->PhaseProperties.n_exponent[i])))/user->Characteristic.Time);
 			user->PhaseProperties.A[i]					=	user->PhaseProperties.A[i]/user->Characteristic.Viscosity;
 
-			user->PhaseProperties.E[i]					=	user->PhaseProperties.E[i]/user->Characteristic.Jmol;
+// Don't scale activation energy, only scale gas constant with characteristic temperature (a.p)
+//			user->PhaseProperties.E[i]					=	user->PhaseProperties.E[i]/user->Characteristic.Jmol;
 
 			user->PhaseProperties.ElasticShearModule[i]		=	user->PhaseProperties.ElasticShearModule[i]/user->Characteristic.Stress;
 			user->PhaseProperties.ElasticBulkModule[i]		=	user->PhaseProperties.ElasticBulkModule[i]/user->Characteristic.Stress;
