@@ -1,4 +1,4 @@
-function a = FDSTAGSaveMarkersParallelMatlab(A,fname)
+function FDSTAGSaveMarkersParallelMatlab(A,fname)
 % This function saves model setup into a parallel configuration
 %       A - structure built with ParallelMatlab_CreatePhases.m and contais:
 %            W - width of domain in X-dir
