@@ -30,7 +30,9 @@ PetscErrorCode ConstEqCtxSetup(
 
 	PetscFunctionBegin;
 
-	RT = lim->Rugc*T;
+	if(T) RT = lim->Rugc*T;
+	else  RT = 1.0;
+
 	ln = 0;
 	nl = 0;
 
