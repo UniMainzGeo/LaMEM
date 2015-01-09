@@ -191,7 +191,7 @@ PetscErrorCode GetEffVisc(
 		eta_pl = ctx->taupl/(2.0*ctx->DII);
 
 		// check plasticity condition (not for initial guess)
-		if(lim->initGuessFlg == PETSC_TRUE && eta_pl && eta_ve > eta_pl)
+		if(lim->initGuessFlg != PETSC_TRUE && eta_pl && eta_ve > eta_pl)
 		{
 			if(lim->quasiHarmAvg == PETSC_TRUE)
 			{
