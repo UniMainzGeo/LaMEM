@@ -169,11 +169,11 @@ PetscErrorCode ADVMarkInitCoord(AdvCtx *actx, UserContext *user)
 							{
 								// add random noise
 								ierr = PetscRandomGetValueReal(rctx, &cf_rand); CHKERRQ(ierr);
-								actx->markers[imark].X[0] += (cf_rand-0.5)*dx;
+								actx->markers[imark].X[0] += (cf_rand-0.5)*dx/( (PetscScalar) user->NumPartX);
 								ierr = PetscRandomGetValueReal(rctx, &cf_rand); CHKERRQ(ierr);
-								actx->markers[imark].X[1] += (cf_rand-0.5)*dy;
+								actx->markers[imark].X[1] += (cf_rand-0.5)*dy/( (PetscScalar) user->NumPartY);
 								ierr = PetscRandomGetValueReal(rctx, &cf_rand); CHKERRQ(ierr);
-								actx->markers[imark].X[2] += (cf_rand-0.5)*dz;
+								actx->markers[imark].X[2] += (cf_rand-0.5)*dz/( (PetscScalar) user->NumPartZ);
 							}
 
 							// increment local counter
