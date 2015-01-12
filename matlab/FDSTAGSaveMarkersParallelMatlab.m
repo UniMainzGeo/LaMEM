@@ -40,9 +40,9 @@ Y       = permute(Y,[2 1 3]);
 Z       = permute(Z,[2 1 3]);
     
 % Get particles of respective procs    
-[xi,ix_start,ix_end] = get_ind(A.x,xc,Nprocx,A.nump_x);
-[yi,iy_start,iy_end] = get_ind(A.y,yc,Nprocy,A.nump_y);
-[zi,iz_start,iz_end] = get_ind(A.z,zc,Nprocz,A.nump_z);
+[xi,ix_start,ix_end] = get_ind(A.x,xc,Nprocx);
+[yi,iy_start,iy_end] = get_ind(A.y,yc,Nprocy);
+[zi,iz_start,iz_end] = get_ind(A.z,zc,Nprocz);
 
 x_start(num)= ix_start(num_i);
 x_end(num)  = ix_end(num_i);
@@ -52,13 +52,13 @@ z_start(num)= iz_start(num_k);
 z_end(num)  = iz_end(num_k);
 
 % Partition grid cells
-xi_cell     = xi/A.npart_x;
-yi_cell     = yi/A.npart_y;
-zi_cell     = zi/A.npart_z;
+% xi_cell     = xi/A.npart_x;
+% yi_cell     = yi/A.npart_y;
+% zi_cell     = zi/A.npart_z;
 
-cell_x(num) = xi_cell(num_i);
-cell_y(num) = yi_cell(num_j);
-cell_z(num) = zi_cell(num_k);
+% cell_x(num) = xi_cell(num_i);
+% cell_y(num) = yi_cell(num_j);
+% cell_z(num) = zi_cell(num_k);
 
 % Loop over all processors partition
 
@@ -181,11 +181,11 @@ end
 end
 
 % --------------------------------------
-function [xi,ix_start,ix_end] = get_ind(x,xc,Nprocx,nump_x)
+function [xi,ix_start,ix_end] = get_ind(x,xc,Nprocx)
     if Nprocx == 1
-        xi       = nump_x;
+        xi       = length(x);
         ix_start = 1;
-        ix_end   = nump_x;
+        ix_end   = length(x);
     else
         for k= 1:Nprocx
                 if k==1
