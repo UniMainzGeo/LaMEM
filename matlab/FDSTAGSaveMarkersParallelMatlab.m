@@ -61,6 +61,7 @@ cell_y(num) = yi_cell(num_j);
 cell_z(num) = zi_cell(num_k);
 
 % Loop over all processors partition
+
 for num=1:Nproc
     
     part_x   = X(x_start(num):x_end(num),y_start(num):y_end(num),z_start(num):z_end(num));
@@ -75,20 +76,29 @@ for num=1:Nproc
     % Information vector per processor
     lvec_info(1)  = num_particles;
   
-    part_x   = part_x(:);
-    part_y   = part_y(:);
-    part_z   = part_z(:);
-    part_phs = part_phs(:);
-    part_T   = part_T(:);
+%     part_x   = part_x(:);
+%     part_y   = part_y(:);
+%     part_z   = part_z(:);
+%     part_phs = part_phs(:);
+%     part_T   = part_T(:);
     
-    for i=1:num_particles
-        lvec_prtcls((i-1)*num_prop+ 1) = part_x(i);      %x
-        lvec_prtcls((i-1)*num_prop+ 2) = part_y(i);      %y
-        lvec_prtcls((i-1)*num_prop+ 3) = part_z(i);      %z
-        lvec_prtcls((i-1)*num_prop+ 4) = part_phs(i);    %phase
-        lvec_prtcls((i-1)*num_prop+ 5) = part_T(i);      %T
-        
-    end
+    
+    lvec_prtcls = zeros(1,num_prop*num_particles);
+    
+    lvec_prtcls(1:num_prop:end) = part_x(:);
+    lvec_prtcls(2:num_prop:end) = part_y(:);
+    lvec_prtcls(3:num_prop:end) = part_z(:);
+    lvec_prtcls(4:num_prop:end) = part_phs(:);
+    lvec_prtcls(5:num_prop:end) = part_T(:);
+
+%     for i=1:num_particles
+%         lvec_prtcls((i-1)*num_prop+ 1) = part_x(i);      %x
+%         lvec_prtcls((i-1)*num_prop+ 2) = part_y(i);      %y
+%         lvec_prtcls((i-1)*num_prop+ 3) = part_z(i);      %z
+%         lvec_prtcls((i-1)*num_prop+ 4) = part_phs(i);    %phase
+%         lvec_prtcls((i-1)*num_prop+ 5) = part_T(i);      %T
+%         
+%     end
     
     % Output files
     fname = sprintf('./MatlabInputParticles/Particles.%d.out', num-1);
@@ -107,7 +117,7 @@ for num=1:Nproc
     %         fclose(fid);
     
    
-    clearvars part_x part_y part_z part_phs lvec_info lvec_prtcls id_sort No_id_vec No_id lvec_output
+     clear part_x part_y part_z part_phs lvec_info lvec_prtcls id_sort No_id_vec No_id lvec_output
 end
 
 end
