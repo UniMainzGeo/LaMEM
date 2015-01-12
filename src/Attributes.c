@@ -1096,7 +1096,7 @@ void ConstantElasticityReadFromFile(Material M,
 
 	/* parse contents */
 	MaterialTypeParser_FindDouble( "shear", fp, start_mat, end_mat, 1.0, &type_data->shear, &value_found );
-	MaterialTypeParser_FindDouble( "bulk",  fp, start_mat, end_mat, 1.0, &type_data->bulk,  &value_found );
+	MaterialTypeParser_FindDouble( "bulk",  fp, start_mat, end_mat, 0.0, &type_data->bulk,  &value_found );
 
 	/* set output */
 	*data = (void*)type_data;
