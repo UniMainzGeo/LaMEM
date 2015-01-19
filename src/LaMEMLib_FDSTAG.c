@@ -331,7 +331,12 @@ PetscErrorCode LaMEMLib_FDSTAG(PetscBool InputParamFile, const char *ParamFile, 
 		}
 
 		// switch off initial guess flag
-		jr.matLim.initGuessFlg = PETSC_FALSE;
+		if(!JacResGetStep(&jr))
+		{
+			jr.matLim.initGuessFlg = PETSC_FALSE;
+
+//			ierr = SNESActEW(snes); CHKERRQ(ierr);
+		}
 
 		//==========================================
 		// END OF NONLINEAR THERMO-MECHANICAL SOLVER

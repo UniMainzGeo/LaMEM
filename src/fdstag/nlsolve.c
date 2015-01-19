@@ -108,6 +108,47 @@ PetscErrorCode NLSolCreate(NLSol *nl, PCStokes pc, SNES *p_snes)
 }
 //---------------------------------------------------------------------------
 #undef __FUNCT__
+#define __FUNCT__ "SNESActEW"
+PetscErrorCode SNESActEW(SNES snes)
+{
+	// activate Eisenstat-Walker method
+
+    PetscErrorCode ierr;
+    PetscFunctionBegin;
+
+	ierr = SNESKSPSetUseEW(snes, PETSC_TRUE); CHKERRQ(ierr);
+
+	ierr = SNESKSPSetParametersEW(snes,
+		PETSC_DEFAULT,
+		1e-3,
+		1e-2,
+		PETSC_DEFAULT,
+		PETSC_DEFAULT,
+		PETSC_DEFAULT,
+		PETSC_DEFAULT); CHKERRQ(ierr);
+/*
+	PetscInt  version;
+	PetscReal rtol_0;
+	PetscReal rtol_max;
+	PetscReal pgamma;
+	PetscReal alpha;
+	PetscReal alpha2;
+	PetscReal threshold;
+
+	ierr = SNESKSPGetParametersEW(snes,
+		&version,
+		&rtol_0,
+		&rtol_max,
+		&pgamma,
+		&alpha,
+		&alpha2,
+		&threshold); CHKERRQ(ierr);
+*/
+
+	PetscFunctionReturn(0);
+}
+//---------------------------------------------------------------------------
+#undef __FUNCT__
 #define __FUNCT__ "NLSolDestroy"
 PetscErrorCode NLSolDestroy(NLSol *nl)
 {

@@ -921,9 +921,9 @@ PetscErrorCode ADVProjHistMarkToGrid(AdvCtx *actx)
 	}
 
 	// normalize phase ratios
-	for(jj = 0; jj < fs->nXYEdg; jj++) jr->svXYEdge[jj].ws = getPhaseRatio(jr->numPhases, jr->svXYEdge[jj].phRat);
-	for(jj = 0; jj < fs->nXZEdg; jj++) jr->svXZEdge[jj].ws = getPhaseRatio(jr->numPhases, jr->svXZEdge[jj].phRat);
-	for(jj = 0; jj < fs->nYZEdg; jj++) jr->svYZEdge[jj].ws = getPhaseRatio(jr->numPhases, jr->svYZEdge[jj].phRat);
+	for(jj = 0; jj < fs->nXYEdg; jj++)  { ierr = getPhaseRatio(jr->numPhases, jr->svXYEdge[jj].phRat, &jr->svXYEdge[jj].ws); CHKERRQ(ierr); }
+	for(jj = 0; jj < fs->nXZEdg; jj++)  { ierr = getPhaseRatio(jr->numPhases, jr->svXZEdge[jj].phRat, &jr->svXZEdge[jj].ws); CHKERRQ(ierr); }
+	for(jj = 0; jj < fs->nYZEdg; jj++)  { ierr = getPhaseRatio(jr->numPhases, jr->svYZEdge[jj].phRat, &jr->svYZEdge[jj].ws); CHKERRQ(ierr); }
 
 	// interpolate history stress to edges
 	ierr = ADVInterpMarkToEdge(actx, 0, _STRESS_); CHKERRQ(ierr);
@@ -948,6 +948,7 @@ PetscErrorCode ADVInterpMarkToCell(AdvCtx *actx)
 	PetscInt     nx, ny, nCells;
 	PetscScalar  xp, yp, zp, wxc, wyc, wzc, w;
 
+	PetscErrorCode ierr;
 	PetscFunctionBegin;
 
 	fs = actx->fs;
@@ -1024,7 +1025,7 @@ PetscErrorCode ADVInterpMarkToCell(AdvCtx *actx)
 		svCell = &jr->svCell[jj];
 
 		// normalize phase ratios
-		w = getPhaseRatio(jr->numPhases, svCell->phRat);
+		ierr = getPhaseRatio(jr->numPhases, svCell->phRat, &w); CHKERRQ(ierr);
 
 		// normalize history variables
 		svCell->svBulk.pn /= w;
@@ -1201,19 +1202,26 @@ void rewindPtr(PetscInt n, PetscInt ptr[])
 //-----------------------------------------------------------------------------
 #undef __FUNCT__
 #define __FUNCT__ "getPhaseRatio"
-PetscScalar getPhaseRatio(PetscInt n, PetscScalar *v)
+PetscErrorCode getPhaseRatio(PetscInt n, PetscScalar *v, PetscScalar *rsum)
 {
 	// compute phase ratio array
 
 	PetscInt    i;
 	PetscScalar sum = 0.0;
 
+	PetscFunctionBegin;
+
 	for(i = 0; i < n; i++) sum  += v[i];
 
-	if(sum == 0.0) SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, " Empty control volume");
+	if(sum == 0.0)
+	{
+		SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, " Empty control volume");
+	}
 
 	for(i = 0; i < n; i++) v[i] /= sum;
 
-	return sum;
+	(*rsum) = sum;
+
+	PetscFunctionReturn(0);
 }
 //-----------------------------------------------------------------------------

@@ -1448,6 +1448,7 @@ PetscErrorCode SetMatParLim(MatParLim *matLim, UserCtx *usr)
 
 	matLim->eta_min      = usr->LowerViscosityCutoff;
 	matLim->eta_max      = usr->UpperViscosityCutoff;
+	matLim->eta_ref      = usr->InitViscosity;
 	matLim->TRef         = 0.0;
 	// no activation energy scaling! scale with characteristic temperature only
 	matLim->Rugc         = 8.3144621*usr->Characteristic.Temperature;
@@ -1462,8 +1463,6 @@ PetscErrorCode SetMatParLim(MatParLim *matLim, UserCtx *usr)
 	matLim->shearHeatEff = 1.0;
 	matLim->quasiHarmAvg = PETSC_FALSE;
 	matLim->initGuessFlg = PETSC_TRUE;
-
-//	Characteristic_.Temperature
 
 	PetscFunctionReturn(0);
 }

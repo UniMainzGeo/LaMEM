@@ -342,6 +342,7 @@ void PerformNonDimension( UserCtx *user )
 
 	user->LowerViscosityCutoff = user->LowerViscosityCutoff/user->Characteristic.Viscosity;
 	user->UpperViscosityCutoff = user->UpperViscosityCutoff/user->Characteristic.Viscosity;
+	user->InitViscosity        = user->InitViscosity/user->Characteristic.Viscosity;
 
 	/* Nondimensionalize material properties */
 	for (i=0;i<user->num_phases; i++){

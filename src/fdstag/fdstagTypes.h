@@ -155,7 +155,8 @@ typedef struct {
 
 	// optimization
 	PetscInt         mpi_group_id; //migrated from OptimiseParams
-	PetscScalar      LowerViscosityCutoff, UpperViscosityCutoff; // JacRes
+	PetscScalar		LowerViscosityCutoff, UpperViscosityCutoff, InitViscosity;// JacRes
+
 	//PetscInt         MaxNonlinearIterations;
 	//PetscScalar      NonlinearIterationsAccuracy;
 	//PetscInt         StokesSolver;   // 1 - Powell-Hesteness iterations; 2 - Schur Complement Reduction; 3 - Fully Coupled Solver; 4 - MatVec Test;

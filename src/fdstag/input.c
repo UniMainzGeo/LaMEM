@@ -182,6 +182,7 @@ PetscErrorCode FDSTAGInitCode(JacRes *jr, UserCtx *user)
 
 	user->LowerViscosityCutoff  = 1.0;		// lowermost viscosity cutoff in model
 	user->UpperViscosityCutoff  = 1e30;		// uppermost viscosity cutoff in model
+	user->InitViscosity         = 0.0;		// initial viscosity
 
 	user->num_phases 		   = 2;  // the default # of phases. In case we set props from the command line, and we use a folding setup combined with FDSTAG we might have to do something smarter (check the setup and increase this)
 
@@ -412,6 +413,7 @@ PetscErrorCode FDSTAGInitCode(JacRes *jr, UserCtx *user)
 
 	PetscOptionsGetReal(PETSC_NULL ,"-LowerViscosityCutoff", &user->LowerViscosityCutoff	, PETSC_NULL);		// lower viscosity cutoff
 	PetscOptionsGetReal(PETSC_NULL ,"-UpperViscosityCutoff", &user->UpperViscosityCutoff	, PETSC_NULL);		// upper viscosity cutoff
+	PetscOptionsGetReal(PETSC_NULL ,"-InitViscosity",        &user->InitViscosity	        , PETSC_NULL);		// upper viscosity cutoff
 
 	PetscOptionsGetReal(PETSC_NULL ,"-GravityAngle", &user->GravityAngle	, PETSC_NULL);		// Gravity angle in x-z plane
 
@@ -950,6 +952,7 @@ PetscErrorCode FDSTAGReadInputFile(JacRes *jr, UserCtx *user)
 
 	parse_GetDouble( fp, "LowerViscosityCutoff", &user->LowerViscosityCutoff, &found );
 	parse_GetDouble( fp, "UpperViscosityCutoff", &user->UpperViscosityCutoff, &found );
+	parse_GetDouble( fp, "InitViscosity",        &user->InitViscosity,        &found );
 
 	parse_GetDouble( fp, "Gravity", &user->Gravity, &found );
 /*	parse_GetInt( fp,    "PlasticityModel", &user->PlasticityModel, &found );

@@ -94,5 +94,7 @@ PetscErrorCode SNESPrintConvergedReason(SNES snes);
 //PetscErrorCode SNESBlockStopTest(SNES snes, PetscInt it, PetscReal xnorm,
 //	PetscReal gnorm, PetscReal f, SNESConvergedReason *reason, void *cctx);
 
+PetscErrorCode SNESActEW(SNES snes);
+
 //---------------------------------------------------------------------------
 #endif

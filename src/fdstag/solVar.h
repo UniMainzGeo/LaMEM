@@ -167,6 +167,8 @@ typedef struct
 	// viscosity limits (and inverses)
 	PetscScalar eta_min;
 	PetscScalar eta_max;
+	// reference viscosity (initial guess)
+	PetscScalar eta_ref;
 	// reference temperature
 	PetscScalar TRef;
 	// universal gas constant
@@ -192,8 +194,6 @@ typedef struct
 
 //---------------------------------------------------------------------------
 #endif
-
-
 
 /*
 

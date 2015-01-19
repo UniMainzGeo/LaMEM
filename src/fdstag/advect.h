@@ -153,7 +153,7 @@ PetscInt getPtrCnt(PetscInt n, PetscInt counts[], PetscInt ptr[]);
 void rewindPtr(PetscInt n, PetscInt ptr[]);
 
 // compute phase ratio array
-PetscScalar getPhaseRatio(PetscInt n, PetscScalar *v);
+PetscErrorCode getPhaseRatio(PetscInt n, PetscScalar *v, PetscScalar *rsum);
 
 // find ID of the cell containing point (call this function for local point only!)
 static inline PetscInt FindPointInCell(

@@ -159,12 +159,24 @@ PetscErrorCode GetEffVisc(
 
 	PetscFunctionBegin;
 
+	// initialize
+	(*eta)   = 0.0;
+	(*DIIpl) = 0.0;
+
+	// set reference viscosity as initial guess (is )
+	if(lim->eta_ref && lim->initGuessFlg == PETSC_TRUE)
+	{
+		(*eta) = lim->eta_ref;
+
+		PetscFunctionReturn(0);
+	}
+
 	if(ctx->A_dis)
 	{
 		// compute power-law viscosity (use reference strain-rate as initial guess)
 		if(lim->initGuessFlg == PETSC_TRUE)
 		{
-			inv_eta_dis = 2.0*pow(ctx->A_dis, 1.0/ctx->N_dis)*pow(lim->DII_ref*10.0, 1.0 - 1.0/ctx->N_dis);
+			inv_eta_dis = 2.0*pow(ctx->A_dis, 1.0/ctx->N_dis)*pow(lim->DII_ref, 1.0 - 1.0/ctx->N_dis);
 		}
 		else
 		{
@@ -183,9 +195,6 @@ PetscErrorCode GetEffVisc(
 
 		// compute visco-elastic viscosity
 		eta_ve = 1.0/(inv_eta_els + inv_eta_dif);
-
-		// initialize plastic strain-rate
-		(*DIIpl) = 0.0;
 
 		// get plastic viscosity
 		eta_pl = ctx->taupl/(2.0*ctx->DII);
