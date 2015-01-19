@@ -19,7 +19,7 @@
 /*
 #undef __FUNCT__
 #define __FUNCT__ "DarcyPostProcess"
-PetscErrorCode DarcyPostProcess(NLCtx *nlctx, UserContext *user)
+PetscErrorCode DarcyPostProcess(NLCtx *nlctx, UserCtx *user)
 {
 	FILE        *db;
 	PetscBool   flg;
@@ -124,7 +124,7 @@ PetscErrorCode DarcyPostProcess(NLCtx *nlctx, UserContext *user)
 //---------------------------------------------------------------------------
 #undef __FUNCT__
 #define __FUNCT__ "DoDarcyTests"
-PetscErrorCode DoDarcyTests(NLCtx *nlctx, UserContext *user)
+PetscErrorCode DoDarcyTests(NLCtx *nlctx, UserCtx *user)
 {
 
 	FDSTAG    *fs      = nlctx->fs;
@@ -495,7 +495,7 @@ PetscScalar InterpolateLinear3D(PetscScalar cx, PetscScalar cy, PetscScalar cz, 
 #define __FUNCT__ "InitVelocityTest"
 PetscErrorCode InitVelocityTest(
 	JacRes      *jr,
-	UserContext *usr,
+	UserCtx     *usr,
 	PetscInt     vectDir,
 	PetscInt     gradDir,
 	PetscScalar  begVal,
@@ -636,7 +636,7 @@ PetscErrorCode JacResCtxClearVelocity(JacRes *jr, PetscInt vectDir)
 #define __FUNCT__ "StrainRateSingleComp"
 PetscErrorCode StrainRateSingleComp(
 	JacRes      *jr,
-	UserContext *usr,
+	UserCtx     *usr,
 	PVOut       *pvout,
 	PetscInt     vectDir,
 	PetscInt     gradDir,
@@ -676,7 +676,7 @@ PetscErrorCode StrainRateSingleComp(
 #define __FUNCT__ "StrainRateInterpTest"
 PetscErrorCode StrainRateInterpTest(
 	JacRes      *jr,
-	UserContext *usr,
+	UserCtx     *usr,
 	PVOut       *pvout)
 {
 	PetscErrorCode 	ierr;

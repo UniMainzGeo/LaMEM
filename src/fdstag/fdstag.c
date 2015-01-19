@@ -962,7 +962,7 @@ PetscErrorCode FDSTAGDestroy(FDSTAG * fs)
 //---------------------------------------------------------------------------
 #undef __FUNCT__
 #define __FUNCT__ "FDSTAGGenCoord"
-PetscErrorCode FDSTAGGenCoord(FDSTAG *fs, UserContext *usr)
+PetscErrorCode FDSTAGGenCoord(FDSTAG *fs, UserCtx *usr)
 {
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
@@ -1119,7 +1119,7 @@ PetscErrorCode FDSTAGGetAspectRatio(FDSTAG *fs, PetscScalar *maxAspRat)
 //---------------------------------------------------------------------------
 #undef __FUNCT__
 #define __FUNCT__ "FDSTAGProcPartitioning"
-PetscErrorCode FDSTAGProcPartitioning(FDSTAG *fs, UserContext *user)
+PetscErrorCode FDSTAGProcPartitioning(FDSTAG *fs, UserCtx *user)
 {
 	int         fid;
 	char        *fname;

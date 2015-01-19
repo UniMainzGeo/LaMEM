@@ -312,7 +312,7 @@ PetscErrorCode SNESPrintConvergedReason(SNES snes)
 /*
 #undef __FUNCT__
 #define __FUNCT__ "CheckVelocityError"
-PetscErrorCode CheckVelocityError(UserContext *user)
+PetscErrorCode CheckVelocityError(UserCtx *user)
 {
 	PetscScalar MaxVel, MinVel;
 

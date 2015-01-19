@@ -121,7 +121,7 @@ PetscErrorCode getMaxInvStep1DLocal(Discret1D *ds, DM da, Vec gv, PetscInt dir, 
 //---------------------------------------------------------------------------
 
 // initialize material parameter limits
-PetscErrorCode SetMatParLim(MatParLim *matLim, UserContext *usr);
+PetscErrorCode SetMatParLim(MatParLim *matLim, UserCtx *usr);
 
 //---------------------------------------------------------------------------
 

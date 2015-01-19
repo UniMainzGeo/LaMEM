@@ -203,7 +203,7 @@ PetscErrorCode FDSTAGCreate(
 PetscErrorCode FDSTAGDestroy(FDSTAG *fs);
 
 // generate coordinates of local nodes and cells from segment data
-PetscErrorCode FDSTAGGenCoord(FDSTAG *fs, UserContext *usr);
+PetscErrorCode FDSTAGGenCoord(FDSTAG *fs, UserCtx *usr);
 
 PetscErrorCode FDSTAGStretch(FDSTAG *fs, PetscScalar Exx, PetscScalar Eyy, PetscScalar dt);
 
@@ -220,7 +220,7 @@ PetscErrorCode FDSTAGGetPointRanks(FDSTAG *fs, PetscScalar *X, PetscInt *lrank, 
 PetscErrorCode FDSTAGGetAspectRatio(FDSTAG *fs, PetscScalar *maxAspRat);
 
 // save processor partitioning of the global domain to file
-PetscErrorCode FDSTAGProcPartitioning(FDSTAG *fs, UserContext *user);
+PetscErrorCode FDSTAGProcPartitioning(FDSTAG *fs, UserCtx *user);
 
 // print & check essential grid details
 PetscErrorCode FDSTAGView(FDSTAG *fs);

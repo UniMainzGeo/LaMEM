@@ -5,11 +5,13 @@
 #define __input_h__
 //---------------------------------------------------------------------------
 
-PetscErrorCode FDSTAGInitCode(JacRes *jr, UserContext *user);
+PetscErrorCode FDSTAGInitCode(JacRes *jr, UserCtx *user);
 
-PetscErrorCode FDSTAGReadInputFile(JacRes *jr, UserContext *user);
+PetscErrorCode FDSTAGReadInputFile(JacRes *jr, UserCtx *user);
 
-PetscErrorCode ReadMaterialProperties(UserContext *user);
+PetscErrorCode ReadMaterialProperties(UserCtx *user);
+
+PetscErrorCode FDSTAGInitMaterialProp(UserCtx *user );
 
 //---------------------------------------------------------------------------
 PetscErrorCode ReadMeshSegDir(

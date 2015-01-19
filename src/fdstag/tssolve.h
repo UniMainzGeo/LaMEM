@@ -22,7 +22,7 @@ typedef struct
 
 //---------------------------------------------------------------------------
 
-PetscErrorCode TSSolSetUp(TSSol *ts, UserContext *usr);
+PetscErrorCode TSSolSetUp(TSSol *ts, UserCtx *usr);
 
 PetscErrorCode TSSolUpdate(TSSol *ts, Scaling *scal, PetscBool *done);
 

@@ -16,7 +16,7 @@
 //---------------------------------------------------------------------------
 #undef __FUNCT__
 #define __FUNCT__ "GRVSurveyCreate"
-PetscErrorCode GRVSurveyCreate( UserContext *user, GravitySurvey *survey)
+PetscErrorCode GRVSurveyCreate( UserCtx *user, GravitySurvey *survey)
 {
 	PetscInt            n, i, j;
 	PetscInt            i,n;
@@ -101,7 +101,7 @@ PetscErrorCode GRVSurveyDestroy( GravitySurvey survey)
 //---------------------------------------------------------------------------
 #undef __FUNCT__
 #define __FUNCT__ "GRVCompute"
-PetscErrorCode GRVCompute( FDSTAG *fs, UserContext *user, JacResCtx *jrctx )
+PetscErrorCode GRVCompute( FDSTAG *fs, UserCtx *user, JacResCtx *jrctx )
 {
 	PetscInt            iter, i, j, k, nx, ny, nz, sx, sy, sz;
 	PetscScalar         x,y,z,dxh,dyh,dzh;

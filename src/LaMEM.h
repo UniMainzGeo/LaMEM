@@ -110,6 +110,11 @@
 //-----------------------------------------------------------------------------
 
 #include "Attributes.h"
+
+// used only in FDSTAG Canonical
+#include "fdstagTypes.h"
+
+// LaMEM Legacy
 #include "LaMEM_Types.h"
 #include "LaMEMVelPressureDA.h"
 #include "LaMEMVelPressureDA_private.h"

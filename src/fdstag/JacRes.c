@@ -1440,7 +1440,7 @@ PetscInt JacResGetStep(JacRes *jr)
 //---------------------------------------------------------------------------
 #undef __FUNCT__
 #define __FUNCT__ "SetMatParLim"
-PetscErrorCode SetMatParLim(MatParLim *matLim, UserContext *usr)
+PetscErrorCode SetMatParLim(MatParLim *matLim, UserCtx *usr)
 {
 	// initialize material parameter limits
 

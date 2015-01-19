@@ -113,6 +113,10 @@ PetscErrorCode ScalingReadFromFile(Scaling *scal, FILE *fp);
 PetscScalar ComputePowerLawScaling(Scaling * scal, PetscScalar n);
 
 //---------------------------------------------------------------------------
+// compute characteristic values - migrated from NonDimensionalisation.c
+void ComputeCharValues(UserCtx *user );
 
+// perform non-dimensionalization - migrated from NonDimensionalisation.c
+void PerformNonDimension(UserCtx *user );
 
 #endif

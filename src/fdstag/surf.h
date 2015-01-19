@@ -5,9 +5,9 @@
 #define __surf_h__
 //---------------------------------------------------------------------------
 
-PetscErrorCode FreeSurfCreate(FDSTAG *fs, UserContext *user);
+PetscErrorCode FreeSurfCreate(FDSTAG *fs, UserCtx *user);
 
-PetscErrorCode FreeSurfDestroy(UserContext *user);
+PetscErrorCode FreeSurfDestroy(UserCtx *user);
 
 // map uniform free surface onto non-uniform computational grid
 PetscErrorCode FreeSurfGetPartition(
@@ -19,10 +19,10 @@ PetscErrorCode FreeSurfGetPartition(
 	PetscInt    **l);  // free surface partitioning vector
 
 // project velocities from the grid on the free surface
-PetscErrorCode FreeSurfGetVel(UserContext *user);
+PetscErrorCode FreeSurfGetVel(UserCtx *user);
 
 // advect topography on the free surface mesh
-PetscErrorCode FreeSurfAdvect(FDSTAG *fs, UserContext *user);
+PetscErrorCode FreeSurfAdvect(FDSTAG *fs, UserCtx *user);
 
 PetscInt InterpTriangle(
 	PetscScalar *x,   // x-coordinates of triangle

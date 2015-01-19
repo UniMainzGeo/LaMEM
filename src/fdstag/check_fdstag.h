@@ -5,9 +5,9 @@
 #define __check_fdstag_h__
 //---------------------------------------------------------------------------
 /*
-PetscErrorCode DoDarcyTests(NLCtx *nlctx, UserContext *user);
+PetscErrorCode DoDarcyTests(NLCtx *nlctx, UserCtx *user);
 
-PetscErrorCode DarcyPostProcess(NLCtx *nlctx, UserContext *user);
+PetscErrorCode DarcyPostProcess(NLCtx *nlctx, UserCtx *user);
 
 PetscErrorCode DoMGTests(NLCtx *nlctx, PVOut *pvout);
 
@@ -49,7 +49,7 @@ PetscScalar InterpolateLinear3D(PetscScalar cx, PetscScalar cy, PetscScalar cz, 
 
 PetscErrorCode InitVelocityTest(
 	JacRes      *jr,
-	UserContext *usr,
+	UserCtx     *usr,
 	PetscInt     vectDir,
 	PetscInt     gradDir,
 	PetscScalar  begVal,
@@ -59,7 +59,7 @@ PetscErrorCode JacResCtxClearVelocity(JacRes *jr, PetscInt vectDir);
 
 PetscErrorCode StrainRateSingleComp(
 	JacRes      *jr,
-	UserContext *usr,
+	UserCtx     *usr,
 	PVOut       *pvout,
 	PetscInt     vectDir,
 	PetscInt     gradDir,
@@ -68,7 +68,7 @@ PetscErrorCode StrainRateSingleComp(
 
 PetscErrorCode StrainRateInterpTest(
 	JacRes      *jr,
-	UserContext *usr,
+	UserCtx     *usr,
 	PVOut       *pvout);
 */
 //---------------------------------------------------------------------------

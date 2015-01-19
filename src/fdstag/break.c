@@ -18,7 +18,7 @@
 //---------------------------------------------------------------------------
 #undef __FUNCT__
 #define __FUNCT__ "BreakWriteMain"
-PetscErrorCode BreakWriteMain(UserContext *user, AdvCtx *actx)
+PetscErrorCode BreakWriteMain(UserCtx *user, AdvCtx *actx)
 {
 	// staggered grid
 	FDSTAG *fs;
@@ -57,7 +57,7 @@ PetscErrorCode BreakWriteMain(UserContext *user, AdvCtx *actx)
 //---------------------------------------------------------------------------
 #undef __FUNCT__
 #define __FUNCT__ "BreakReadMain"
-PetscErrorCode BreakReadMain(UserContext *user, AdvCtx *actx, JacRes *jr)
+PetscErrorCode BreakReadMain(UserCtx *user, AdvCtx *actx, JacRes *jr)
 {
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
@@ -250,7 +250,7 @@ PetscErrorCode BreakReadSol(JacRes *jr)
 //---------------------------------------------------------------------------
 #undef __FUNCT__
 #define __FUNCT__ "BreakWriteGrid"
-PetscErrorCode BreakWriteGrid(UserContext *user, FDSTAG *fs, AdvCtx *actx)
+PetscErrorCode BreakWriteGrid(UserCtx *user, FDSTAG *fs, AdvCtx *actx)
 {
 	int         fid;
 	char        *fname;
@@ -291,7 +291,7 @@ PetscErrorCode BreakWriteGrid(UserContext *user, FDSTAG *fs, AdvCtx *actx)
 //---------------------------------------------------------------------------
 #undef __FUNCT__
 #define __FUNCT__ "BreakReadGrid"
-PetscErrorCode BreakReadGrid(UserContext *user, FDSTAG *fs)
+PetscErrorCode BreakReadGrid(UserCtx *user, FDSTAG *fs)
 {
 	int         fid;
 	char        *fname;
@@ -393,7 +393,7 @@ PetscErrorCode BreakReadDiscret1D(int fid, Discret1D ds)
 //---------------------------------------------------------------------------
 #undef __FUNCT__
 #define __FUNCT__ "BreakWriteInfo"
-PetscErrorCode BreakWriteInfo(UserContext *user, AdvCtx *actx, JacRes *jr)
+PetscErrorCode BreakWriteInfo(UserCtx *user, AdvCtx *actx, JacRes *jr)
 {
 	int         fid;
 	char        *fname;
@@ -442,7 +442,7 @@ PetscErrorCode BreakWriteInfo(UserContext *user, AdvCtx *actx, JacRes *jr)
 //---------------------------------------------------------------------------
 #undef __FUNCT__
 #define __FUNCT__ "BreakReadInfo"
-PetscErrorCode BreakReadInfo(UserContext *user, AdvCtx *actx, JacRes *jr)
+PetscErrorCode BreakReadInfo(UserCtx *user, AdvCtx *actx, JacRes *jr)
 {
 	int         fid;
 	char        *fname;

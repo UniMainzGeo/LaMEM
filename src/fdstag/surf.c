@@ -11,7 +11,7 @@
 //---------------------------------------------------------------------------
 #undef __FUNCT__
 #define __FUNCT__ "FreeSurfCreate"
-PetscErrorCode FreeSurfCreate(FDSTAG *fs, UserContext *user)
+PetscErrorCode FreeSurfCreate(FDSTAG *fs, UserCtx *user)
 {
 	// here we must make sure that local part of the free surface
 	// COMPLETELY overlaps the local part of computational domain
@@ -55,11 +55,11 @@ PetscErrorCode FreeSurfCreate(FDSTAG *fs, UserContext *user)
 	// by default the free surface is coincident with the top mesh boundary
 	z_surface = user->z_bot	+ user->H;
 
-	// otherwise use specified free surface height
+/*	// otherwise use specified free surface height
 	if(user->ErosionParameters.UseInternalFreeSurface == 1)
 	{
 		z_surface = user->ErosionParameters.InitialFreeSurfaceHeight;
-	}
+	}*/
 
 	// initialize (internal) surface topography
 	ierr = VecSet(user->SurfaceTopography, z_surface); CHKERRQ(ierr);
@@ -74,7 +74,7 @@ PetscErrorCode FreeSurfCreate(FDSTAG *fs, UserContext *user)
 //---------------------------------------------------------------------------
 #undef __FUNCT__
 #define __FUNCT__ "FreeSurfDestroy"
-PetscErrorCode FreeSurfDestroy(UserContext *user)
+PetscErrorCode FreeSurfDestroy(UserCtx *user)
 {
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
@@ -160,11 +160,11 @@ PetscErrorCode FreeSurfGetPartition(
 //---------------------------------------------------------------------------
 #undef __FUNCT__
 #define __FUNCT__ "FreeSurfGetVel"
-PetscErrorCode FreeSurfGetVel(UserContext *user)
+PetscErrorCode FreeSurfGetVel(UserCtx *user)
 {
 	// project velocities from the grid on the free surface
 
-	PetscErrorCode ierr;
+	//PetscErrorCode ierr;
 	PetscFunctionBegin;
 
 
@@ -173,12 +173,12 @@ PetscErrorCode FreeSurfGetVel(UserContext *user)
 //---------------------------------------------------------------------------
 #undef __FUNCT__
 #define __FUNCT__ "FreeSurfAdvect"
-PetscErrorCode FreeSurfAdvect(FDSTAG *fs, UserContext *user)
+PetscErrorCode FreeSurfAdvect(FDSTAG *fs, UserCtx *user)
 {
 	// advect topography on the free surface mesh
 
 	DM          cda;
-	Vec         gc, lc, ltopo, lvx, lvy, lvz;
+	Vec         gc, ltopo, lvx, lvy, lvz;
 	PetscInt    i, j, sx, sy, nx, ny, iz;
 	DMDACoor3d  ***coors;
 	PetscScalar ***topo, ***vx, ***vy, ***vz;
@@ -331,7 +331,7 @@ PetscErrorCode FreeSurfInterpTopoPoint(PetscScalar *crd_stencil,  PetscScalar *t
 #undef __FUNCT__
 #define __FUNCT__ "SetSinusoidalPerturbation"
 // There are some cases in which we set an initial sinusoidal perturbation on the free surface
-PetscErrorCode SetSinusoidalPerturbation(PetscScalar SinusoidalFreeSurfaceAmplitude, UserContext *user)
+PetscErrorCode SetSinusoidalPerturbation(PetscScalar SinusoidalFreeSurfaceAmplitude, UserCtx *user)
 {
 	PetscErrorCode ierr;
 	PetscScalar    ***LocalSurfaceTopography, x,z, maxVec;

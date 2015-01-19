@@ -84,7 +84,7 @@ PetscErrorCode BCDestroy(BCCtx *bc)
 //---------------------------------------------------------------------------
 #undef __FUNCT__
 #define __FUNCT__ "BCSetStretch"
-PetscErrorCode BCSetStretch(BCCtx *bc, UserContext *user)
+PetscErrorCode BCSetStretch(BCCtx *bc, UserCtx *user)
 {
 	PetscFunctionBegin;
 
@@ -341,7 +341,7 @@ PetscErrorCode BCApplyBound(BCCtx *bc, FDSTAG *fs)
 //---------------------------------------------------------------------------
 #undef __FUNCT__
 #define __FUNCT__ "BCSetPush"
-PetscErrorCode BCSetPush(BCCtx *bc, UserContext *user)
+PetscErrorCode BCSetPush(BCCtx *bc, UserCtx *user)
 {
 	PetscFunctionBegin;
 
@@ -361,7 +361,7 @@ PetscErrorCode BCCompPush(BCCtx *bc)
 	// MUST be called at the beginning of time step before setting boundary conditions
 	// compute pushing boundary conditions actual parameters
 
-	PushingParams *pb;
+	PushParams    *pb;
 	TSSol         *ts;
 	Scaling       *scal;
 	PetscInt      i, ichange;
@@ -441,7 +441,7 @@ PetscErrorCode BCApplyPush(BCCtx *bc, FDSTAG *fs)
 	// only x, y velocities are constrained!!
 	// constraining vz makes a bad case - will not converge.
 
-	PushingParams *pb;
+	PushParams    *pb;
 	PetscScalar   xc, yc, zc;
 	PetscScalar	  dx, dy, dz;
 	PetscScalar   px, py, pz;
@@ -551,7 +551,7 @@ PetscErrorCode BCApplyPush(BCCtx *bc, FDSTAG *fs)
 #define __FUNCT__ "BCAdvectPush"
 PetscErrorCode BCAdvectPush(BCCtx *bc, TSSol *ts)
 {
-	PushingParams *pb;
+	PushParams    *pb;
 	PetscInt      advc, ichange;
 	PetscScalar   xc, yc, zc, Vx, Vy, dx, dy, dt, omega, theta, dtheta;
 

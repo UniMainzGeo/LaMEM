@@ -2,7 +2,7 @@
 //....................... FILE INPUT / INITIALIZATION .......................
 //---------------------------------------------------------------------------
 #include "LaMEM.h"
-#include "NonDimensionalisation.h"
+//#include "NonDimensionalisation.h"
 #include "Parsing.h"
 #include "Utils.h"
 #include "fdstag.h"
@@ -17,15 +17,15 @@
 //---------------------------------------------------------------------------
 #undef __FUNCT__
 #define __FUNCT__ "FDSTAGInitCode"
-PetscErrorCode FDSTAGInitCode(JacRes *jr, UserContext *user)
+PetscErrorCode FDSTAGInitCode(JacRes *jr, UserCtx *user)
 {
 	// Set default code parameters and read input file, if required
 
 	PetscMPIInt    size;
 	PetscErrorCode ierr;
 	PetscInt       i, nel_array[3], nel_input_max;
-    PetscInt       n_int;
-	PetscScalar    SecYear;
+    //PetscInt       n_int;
+	//PetscScalar    SecYear;
 	PetscBool      found,flg;
 	char          *all_options;
 	char           setup_name[PETSC_MAX_PATH_LEN];
@@ -33,40 +33,44 @@ PetscErrorCode FDSTAGInitCode(JacRes *jr, UserContext *user)
 	// NEW OPTIONS WILL BE ADDED *** BEFORE *** ALREADY SPECIFIED
 	PetscOptionsGetAll( &all_options ); /* copy all command line args */
 
-	SecYear 			=	3600*24*365.25;		// seconds per year
+	//SecYear 			=	3600*24*365.25;		// seconds per year
 
 	/* Set default values */
 	user->W 		  	= 		1.0;
 	user->L 			= 		1.0;
 	user->H 		 	= 		1.0;
 	user->y_front 		= 		0.0;
+/*
 	user->ampl2D 	  	= 		0.0;
 	user->ampl3D  		= 		1e-2;
 	user->amplNoise 	= 		0.0;
 	user->Hinterface 	=		0.5;			// average interface height for diapir setup [0-1]
 	user->mumax			= 		1.0;            // REMOVE?
+*/
 
 	// set default grid sizes
 	user->nel_x  		=       8;
 	user->nel_y  		=       8;
 	user->nel_z			=       8;
+/*
 	user->refinex     	=     	2;              // REMOVE
 	user->refiney   	=     	2;              // REMOVE
 	user->refinez  		=  		2;              // REMOVE
+*/
 
-	user->time_start 	=  		0.0;
+	//user->time_start 	=  		0.0;
 	user->time_end 		= 		1.0;
-	user->time_end_temp	= 		1;
+	//user->time_end_temp	= 		1;
 	user->save_timesteps=		1;
-	user->time		  	=   	0.0;
+	//user->time		  	=   	0.0;
 	user->CFL 		 	= 		0.5;
 	user->Temp_top  		= 	0.0;
 	user->Temp_bottom 		=	1.0;
-	user->temp_initialize	=	0.0;            // REMOVE
+	//user->temp_initialize	=	0.0;            // REMOVE
 	user->DimensionalUnits 	= 	0;
-	user->Setup.Model 		=	2;              // // REMOVE 0-Diapir, 1-Single Layer Fold, 2-Falling block, 3-Particle file (defined below), 4-multilayer detachment fold, 6-subduction w/sticky air
+	user->msetup            =   BLOCK; // default model setup - falling block test
 	user->Gravity   		= 	1.0;
-	user->GasConstant  		= 	1.0;            // REMOVE
+	//user->GasConstant  		= 	1.0;            // REMOVE
 	user->BC.Vy_front		=	0;
 	user->BC.Vy_back		=	0;
 	user->BC.Vz_bot 		=	0;
@@ -82,9 +86,9 @@ PetscErrorCode FDSTAGInitCode(JacRes *jr, UserContext *user)
 	// FDSTAG Canonical Model Setup
 	user->msetup            = BLOCK;
 
-	user->MatlabOutputFiles	=	1;		// write MATLAB output
+/*	user->MatlabOutputFiles	=	1;		// write MATLAB output
 	user->VTKOutputFiles	=	1;		// write VTK output
-	user->AVDPhaseViewer  	= 	0;
+	user->AVDPhaseViewer  	= 	0;*/
 	user->SavePartitioning  = 	PETSC_FALSE;		// write partitioning
 	user->x_left 	  		= 	-0.5*(user->W)*0.0;
 	user->y_front	  		= 	-0.5*(user->L)*0.0;
@@ -92,18 +96,22 @@ PetscErrorCode FDSTAGInitCode(JacRes *jr, UserContext *user)
 
 	// linear solver settings
 	user->SkipStokesSolver     = PETSC_FALSE;
+/*
 	user->StokesSolver         = 1; // 1 - Powell-Hesteness iterations; 2 - Schur Complement Reduction; 3 - Fully Coupled Solver; 4 - MatVec Test;
 	user->VelocitySolver       = 1; // 0 - User defined; 1 - Direct (MUMPS); 2 - Galerkin geometric multigrid; 3 - Fieldsplit + Algebraic Multigrid (ML), 4 - GCR & HYPRE preconditioner on full velocity block
 	user->VelocityTest         = PETSC_FALSE; // Request to perform single velocity solve for test purposes & quit
 	user->ScaleSystem          = PETSC_FALSE; // Request to scale linear system before solution
+*/
 	user->use_fdstag_canonical = PETSC_TRUE;  // request native staggered grid discretization
 
+/*
 	user->internalBC_coord			= 0.0;
 	user->internalBC_frontel		= 0.0;
 	user->internalBC_backel			= 0.0;
 	user->internalBC_node		    = 0.0;
 	user->zdepth_BC_el			    = 0.0;  // REMOVE
 	user->zdepth_BC_node		    = 0.0;  // REMOVE
+*/
 	user->BC.InternalBound			=   0;	// 0-free surface, 1-free slip 					, 2-no-slip
 	user->BC.UpperBound				=   1;	// 0-free surface, 1-free slip 					, 2-no-slip
 	user->BC.LowerBound				=	1;	// 0-free surface, 1-free slip					, 2-no-slip
@@ -111,42 +119,52 @@ PetscErrorCode FDSTAGInitCode(JacRes *jr, UserContext *user)
 	user->BC.RightBound				=	1;	// 0-free surface, 1-free slip w. BG strainrate	, 2-no-slip
 	user->BC.FrontBound				=	1;	// 0-free surface, 1-free slip w. BG strainrate	, 2-no-slip
 	user->BC.BackBound				=	1;	// 0-free surface, 1-free slip w. BG strainrate	, 2-no-slip
+/*
 	user->NumParticlesToStartInjection = 0;  	// how many particles should an element have before we start injecting particles?
 	user->ParticleInjectionPhase       = 0;  	// which is the phase of the injected particle?
 	user->ParticleInput = 1;					// 0-do not use particles to track phases; 1-do use particles to track phases
 	user->LoadInitialParticlesFromDisc = 0;		// Read the initial particles from disc
 	user->remesh = 0;                           // REMOVE
 	user->CriticalDiagonalRatio = 0.55;			// save range is [0.4-1.0] // REMOVE
+*/
 
-	// Check if we are performing a benchmark with a build-in analytical benchmark
+/*	// Check if we are performing a benchmark with a build-in analytical benchmark
 	ierr 	 = PetscOptionsGetBool( PETSC_NULL, "-Benchmark_SolCx",   		  		&user->AnalyticalBenchmark, PETSC_NULL); CHKERRQ(ierr);
 	ierr 	 = PetscOptionsGetBool( PETSC_NULL, "-Benchmark_FallingBlock",   		&user->AnalyticalBenchmark, PETSC_NULL); CHKERRQ(ierr);
 	ierr 	 = PetscOptionsGetBool( PETSC_NULL, "-Benchmark_ArcTanFallingBlock",   &user->AnalyticalBenchmark, PETSC_NULL); CHKERRQ(ierr);
-	ierr 	 = PetscOptionsGetBool( PETSC_NULL, "-Benchmark_VerticalDensityCollumn",   &user->AnalyticalBenchmark, PETSC_NULL); CHKERRQ(ierr);
+	ierr 	 = PetscOptionsGetBool( PETSC_NULL, "-Benchmark_VerticalDensityCollumn",   &user->AnalyticalBenchmark, PETSC_NULL); CHKERRQ(ierr);*/
 
+/*
 	user->GridAdvectionMethod  = 0; 	 // 0-Fully Eulerian, 1-Fully Lagrangian, 2-ALE with remeshing @ surface layer      REMOVE
 	user->EulerianAfterTimestep=-1;		//	if >0, you can specify after which timestep to switch to eulerian mode          REMOVE
 	user->FactorSurfaceLayer   = 0.2; 	 // how thick is the surface layer?                                                 REMOVE
 	user->num_subdt			   =  10;    // How many sub-timestep iterations if an ALE mode is selected?                    REMOVE
+*/
 
     user->SaveParticles 	   =  0;	 // Save particles or not?
+/*
 	user->num_phase_transitions= 0;         // REMOVE
 	user->InitialMeshFromFile  = 0;		 // In case you want to read an initial mesh from file
 	user->InitialErosionSurfaceFromFile = 0; //
 	user->InitialMantleLevel   = 10;     // for cases in which a lithosphere is modeled with hand-set crustal thickness     REMOVE
+*/
     
 	user->dt_max               = 1e6;    // maximum timestep
-	user->dt_temp              = 1e6;    // timestep to initialize temperature
+
+	//user->dt_temp              = 1e6;    // timestep to initialize temperature
 	user->dt				   = 1e-3;	 // initial timestep
-	user->Vx_Front             = 8.0;      // x-velocity at front boundary if BC==3 @ this boundary
+/*	user->Vx_Front             = 8.0;      // x-velocity at front boundary if BC==3 @ this boundary
 	user->Vx_Back              = 0.0;      // x-velocity at back boundary if BC==3 @ this boundary
 	user->Vy_Front             = 4.0;      // y-velocity at front boundary if BC==4 @ this boundary
 	user->Vy_Back              = 0.0;      // y-velocity at back boundary if BC==4 @ this boundary
 	user->Vy_Partx             = 0.5;    // Apply velocity condition at part of the x-domain, if BC=4
 	user->Vy_Partz             = 0.0;      // Apply velocity condition at part of the x-domain, if BC=4
+*/
 
+/*
 	user->MaximumSurfaceAngle  = 80.0;	 // maximum surface angle allowed                                               REMOVE
 	user->MuMeanMethod         = 1;      // 0-compute mat. props @ integration points, 1-Arith. element-average, 2-Geom. element-average, 3-Harm. element-average REMOVE
+*/
     
 	user->NumPartX			   = 2;      // Number of particles per cell in x-direction
 	user->NumPartY			   = 2;      // Number of particles per cell in y-direction
@@ -154,13 +172,13 @@ PetscErrorCode FDSTAGInitCode(JacRes *jr, UserContext *user)
 
 	user->restart			   = 1; 	 // Are we restarting a simulation?
 	user->save_breakpoints	   = 10;		 // After how many steps do we make a breakpoint?
-	if (user->AnalyticalBenchmark){
+/*	if (user->AnalyticalBenchmark){
 		user->restart 		   = 0;		// don't restart and don't create breakpoint files if we perform an analytical benchmark
 		user->save_breakpoints = 0;
-	}
+	}*/
 	user->break_point_number   = 0;		 // The number of the breakpoint file
-	user->incr_breakpoints 	   = 100;		 // After how many steps should an incremental breakpointfile be created?
-	user->fileno   			   = 0;
+/*	user->incr_breakpoints 	   = 100;		 // After how many steps should an incremental breakpointfile be created?
+	user->fileno   			   = 0;*/
 
 	user->LowerViscosityCutoff  = 1.0;		// lowermost viscosity cutoff in model
 	user->UpperViscosityCutoff  = 1e30;		// uppermost viscosity cutoff in model
@@ -168,6 +186,7 @@ PetscErrorCode FDSTAGInitCode(JacRes *jr, UserContext *user)
 	user->num_phases 		   = 2;  // the default # of phases. In case we set props from the command line, and we use a folding setup combined with FDSTAG we might have to do something smarter (check the setup and increase this)
 
 	user->GravityAngle 		   	= 	0.0;		// angle of gravity with z-axis (can be changed in the x-z plane)
+/*
 	user->FSSA					=	0.0;		// Free Surface Stabilization Algorithm parameter used in FDSTAG, to stabilize an internal free surface [should be between 0-1]
 
 	user->ArtTemp               = PETSC_FALSE;
@@ -182,7 +201,8 @@ PetscErrorCode FDSTAGInitCode(JacRes *jr, UserContext *user)
 	user->baselevelx1 			=  0;      	//
 	user->baselevely0 			=  0;     	//
 	user->baselevely1 			=  0;      	//
-	user->ErosionParameters.UseInternalFreeSurface 	= 0;	// don't use by default
+*/
+/*	user->ErosionParameters.UseInternalFreeSurface 	= 0;	// don't use by default
 	user->ErosionParameters.StickyAirPhase 			= 1;	// sticky air phase
 	user->ErosionParameters.ErosionModel 			= 0;	// none by default
 	user->ErosionParameters.SedimentationModel 		= 0;	// no sedimentation by default; 1-constant rate sedimentation
@@ -209,7 +229,7 @@ PetscErrorCode FDSTAGInitCode(JacRes *jr, UserContext *user)
 	user->Output.temperature			=   1;
 	user->Output.surface_topography		=   1;
 	user->Output.bottom_topography		=   1;
-	user->Output.quadrature				=   1;
+	user->Output.quadrature				=   1;*/
 
 	// Default Pushing BC parameters
 	user->AddPushing					=	0;
@@ -238,7 +258,7 @@ PetscErrorCode FDSTAGInitCode(JacRes *jr, UserContext *user)
 	user->GravityField.LithColDens[0]  =   2670.0;
 	user->GravityField.LithColDepth[0] =   30.0e3;
 
-	// Default isostasy parameters
+/*	// Default isostasy parameters
 	user->Isostasy.GetIt            = 0;
 	user->Isostasy.SaveRef          = 0;
 	user->Isostasy.corr_topo        = 0.0;
@@ -251,23 +271,25 @@ PetscErrorCode FDSTAGInitCode(JacRes *jr, UserContext *user)
 	user->SurfVelField.SaveRef		=	0;
 	user->SurfVelField.VxStdDev		=	1.0;
 	user->SurfVelField.VyStdDev		=	1.0;
-	user->SurfVelField.VzStdDev		=	1.0;
+	user->SurfVelField.VzStdDev		=	1.0;*/
 	sprintf(user->GravityField.RefDatFile2load, "ReferenceData/SurfVelField_REF.bin");
 
 
+/*
 	// Default optimisation parameters
 	user->Optimisation.GetIt		=	0;
 	user->Optimisation.MisfitGravity=	0.0;
 	user->Optimisation.MisfitSurfVel=	0.0;
 	user->Optimisation.MisfitTiso   =	0.0;
 	user->Optimisation.mpi_group_id	=	0;
+*/
 
 
-	user->DA_Materials = PETSC_NULL;
-	user->Materials    = PETSC_NULL;
+/*	user->DA_Materials = PETSC_NULL;
+	user->Materials    = PETSC_NULL;*/
 
-	/* Initialize material properties */
-	LaMEMInitializeMaterialProperties(user);
+	// initialize material properties
+	ierr = FDSTAGInitMaterialProp(user); CHKERRQ(ierr);
 
 	/* Read an input file if required */
 	if (user->InputParamFile){
@@ -282,10 +304,10 @@ PetscErrorCode FDSTAGInitCode(JacRes *jr, UserContext *user)
 	PetscOptionsGetReal(PETSC_NULL,"-H"      ,	&user->H 			, PETSC_NULL);
 	PetscOptionsGetReal(PETSC_NULL,"-He"      ,	&user->H 			, PETSC_NULL);
 	PetscOptionsGetReal(PETSC_NULL,"-y_front" ,	&user->y_front 			, PETSC_NULL);
-	PetscOptionsGetReal(PETSC_NULL,"-ampl2D" ,	&user->ampl2D 		, PETSC_NULL);
+/*	PetscOptionsGetReal(PETSC_NULL,"-ampl2D" ,	&user->ampl2D 		, PETSC_NULL);
 	PetscOptionsGetReal(PETSC_NULL,"-ampl3D" ,	&user->ampl3D 		, PETSC_NULL);
 	PetscOptionsGetReal(PETSC_NULL,"-amplNoise",&user->amplNoise	, PETSC_NULL);
-	PetscOptionsGetReal(PETSC_NULL,"-mumax"  ,	&user->mumax 		, PETSC_NULL);
+	PetscOptionsGetReal(PETSC_NULL,"-mumax"  ,	&user->mumax 		, PETSC_NULL);*/
 
 	PetscOptionsGetInt(PETSC_NULL ,"-nel_x",	&user->nel_x 		, PETSC_NULL);
 	PetscOptionsGetInt(PETSC_NULL ,"-nel_y",	&user->nel_y 		, PETSC_NULL);
@@ -299,16 +321,16 @@ PetscErrorCode FDSTAGInitCode(JacRes *jr, UserContext *user)
 		user->nel_y = nel_array[1];
 		user->nel_z = nel_array[2];
 	}
-    user->nnode_x  = user->nel_x +  1;
+	user->nnode_x  = user->nel_x +  1;
     user->nnode_y  = user->nel_y +  1;
     user->nnode_z  = user->nel_z +  1;
     
     
-	PetscOptionsGetInt(PETSC_NULL ,"-refinex",		&user->refinex		, PETSC_NULL);
+/*	PetscOptionsGetInt(PETSC_NULL ,"-refinex",		&user->refinex		, PETSC_NULL);
 	PetscOptionsGetInt(PETSC_NULL ,"-refiney",		&user->refiney		, PETSC_NULL);
-	PetscOptionsGetInt(PETSC_NULL ,"-refinez",		&user->refinez		, PETSC_NULL);
+	PetscOptionsGetInt(PETSC_NULL ,"-refinez",		&user->refinez		, PETSC_NULL);*/
 	PetscOptionsGetInt(PETSC_NULL ,"-time_end",	&user->time_end 	, PETSC_NULL);
-	PetscOptionsGetInt(PETSC_NULL ,"-time_end_temp",	&user->time_end_temp 	, PETSC_NULL);
+/*	PetscOptionsGetInt(PETSC_NULL ,"-time_end_temp",	&user->time_end_temp 	, PETSC_NULL);*/
 
 	PetscOptionsGetInt(PETSC_NULL ,"-save_timesteps",	&user->save_timesteps 	, PETSC_NULL);
 	PetscOptionsGetReal(PETSC_NULL,"-CFL"    ,		&user->CFL 			, PETSC_NULL);
@@ -332,16 +354,18 @@ PetscErrorCode FDSTAGInitCode(JacRes *jr, UserContext *user)
 		else SETERRQ1(PETSC_COMM_WORLD, PETSC_ERR_USER,"ERROR! Incorrect model setup: %s", setup_name);
 	}
 
-	PetscOptionsGetInt(PETSC_NULL ,"-Setup.Model",	&user->Setup.Model 	, PETSC_NULL);	// 		0-diapir, 1-single layer folding
-	PetscOptionsGetInt(PETSC_NULL ,"-GridAdvectionMethod",	&user->GridAdvectionMethod 	, PETSC_NULL);	// 		0 - eulerian, 2-ALE, 1-Lagrangian
+	//PetscOptionsGetInt(PETSC_NULL ,"-Setup.Model",	&user->Setup.Model 	, PETSC_NULL);	// 		0-diapir, 1-single layer folding
+	//PetscOptionsGetInt(PETSC_NULL ,"-GridAdvectionMethod",	&user->GridAdvectionMethod 	, PETSC_NULL);	// 		0 - eulerian, 2-ALE, 1-Lagrangian
 	PetscOptionsGetBool( PETSC_NULL,"-SkipStokesSolver",&user->SkipStokesSolver,PETSC_NULL );
 
+/*
 	PetscOptionsGetInt(PETSC_NULL ,"-internalBC_coord",&user->internalBC_coord	, PETSC_NULL);	//
 	PetscOptionsGetInt(PETSC_NULL ,"-internalBC_frontel",&user->internalBC_frontel	, PETSC_NULL);	//
 	PetscOptionsGetInt(PETSC_NULL ,"-internalBC_backel",&user->internalBC_backel	, PETSC_NULL);	//
 	PetscOptionsGetInt(PETSC_NULL ,"-internalBC_node",&user->internalBC_node	, PETSC_NULL);	//
 	PetscOptionsGetInt(PETSC_NULL ,"-zdepth_BC_el",&user->zdepth_BC_el	, PETSC_NULL);	//
 	PetscOptionsGetInt(PETSC_NULL ,"-zdepth_BC_node",&user->zdepth_BC_node	, PETSC_NULL);	//
+*/
 	PetscOptionsGetInt(PETSC_NULL ,"-BC.InternalBound",&user->BC.InternalBound	, PETSC_NULL);	//
 	PetscOptionsGetInt(PETSC_NULL ,"-BC.UpperBound",&user->BC.UpperBound	, PETSC_NULL);	//
 	PetscOptionsGetInt(PETSC_NULL ,"-BC.LowerBound",&user->BC.LowerBound	, PETSC_NULL);	//
@@ -359,6 +383,7 @@ PetscErrorCode FDSTAGInitCode(JacRes *jr, UserContext *user)
 	PetscOptionsGetReal(PETSC_NULL ,"-BC.Exx",			&user->BC.Exx 		, PETSC_NULL);	//  	y-velocity @ front boundary
 	PetscOptionsGetReal(PETSC_NULL ,"-BC.Eyy",			&user->BC.Eyy 		, PETSC_NULL);	//  	y-velocity @ front boundary
 
+/*
 	PetscOptionsGetReal(PETSC_NULL ,"-Vx_Front",	&user->Vx_Front		, PETSC_NULL);	// Vx_Front in cm/year
 	PetscOptionsGetReal(PETSC_NULL ,"-Vx_Back",		&user->Vx_Back		, PETSC_NULL);	// Vx_Back in cm/year
 	PetscOptionsGetReal(PETSC_NULL ,"-Vy_Front",	&user->Vx_Front		, PETSC_NULL);	// Vy_Front in cm/year
@@ -366,12 +391,14 @@ PetscErrorCode FDSTAGInitCode(JacRes *jr, UserContext *user)
 	PetscOptionsGetReal(PETSC_NULL ,"-Vy_Partx",	&user->Vy_Partx		, PETSC_NULL);	// Vy_Partx for BC=4
 	PetscOptionsGetReal(PETSC_NULL ,"-Vy_Partz",	&user->Vy_Partz		, PETSC_NULL);	// Vy_Partz for BC=4
 	PetscOptionsGetInt(PETSC_NULL ,"-MuMeanMethod",	&user->MuMeanMethod	, PETSC_NULL);  // Specify element-averaging of effective material properties.
+*/
 	PetscOptionsGetInt(PETSC_NULL ,"-NumPartX",	&user->NumPartX	, PETSC_NULL);  		//	# of tracers per cell in x-direction
 	PetscOptionsGetInt(PETSC_NULL ,"-NumPartY",	&user->NumPartY	, PETSC_NULL);  		//	# of tracers per cell in y-direction
 	PetscOptionsGetInt(PETSC_NULL ,"-NumPartZ",	&user->NumPartZ	, PETSC_NULL);  		//	# of tracers per cell in z-direction
 	PetscOptionsGetInt(PETSC_NULL ,"-restart",	&user->restart	, PETSC_NULL);  		//	# restart a simulation if possible?
-	PetscOptionsGetInt(PETSC_NULL ,"-fileno",	&user->fileno	, PETSC_NULL);  		//	# restart a simulation with file no ...
+	//PetscOptionsGetInt(PETSC_NULL ,"-fileno",	&user->fileno	, PETSC_NULL);  		//	# restart a simulation with file no ...
 	PetscOptionsGetInt(PETSC_NULL ,"-save_breakpoints",	&user->save_breakpoints	, PETSC_NULL);  	//	After how many steps do we create a breakpoint file?
+/*
 	PetscOptionsGetInt(PETSC_NULL ,"-ApplyErosion",	      &user->ApplyErosion		, PETSC_NULL);  //	Apply erosion or not?
 	PetscOptionsGetReal(PETSC_NULL ,"-fluvial_erosion",	  &user->fluvial_erosion		, PETSC_NULL);	//  fluvial erosion rate
 	PetscOptionsGetReal(PETSC_NULL ,"-diffusion_erosion", &user->diffusion_erosion			, PETSC_NULL);	//  diffusion erosion rate
@@ -381,6 +408,7 @@ PetscErrorCode FDSTAGInitCode(JacRes *jr, UserContext *user)
 
 	PetscOptionsGetReal(PETSC_NULL ,"-NonlinearIterationsAccuracy", &user->NonlinearIterationsAccuracy	, PETSC_NULL);		// accuracy of nonlinear iterations
 	PetscOptionsGetInt(PETSC_NULL ,"-MaxNonlinearIterations",		&user->MaxNonlinearIterations		, PETSC_NULL);  	//	maximum number of nonlinear iterations
+*/
 
 	PetscOptionsGetReal(PETSC_NULL ,"-LowerViscosityCutoff", &user->LowerViscosityCutoff	, PETSC_NULL);		// lower viscosity cutoff
 	PetscOptionsGetReal(PETSC_NULL ,"-UpperViscosityCutoff", &user->UpperViscosityCutoff	, PETSC_NULL);		// upper viscosity cutoff
@@ -388,27 +416,29 @@ PetscErrorCode FDSTAGInitCode(JacRes *jr, UserContext *user)
 	PetscOptionsGetReal(PETSC_NULL ,"-GravityAngle", &user->GravityAngle	, PETSC_NULL);		// Gravity angle in x-z plane
 
 
-	PetscOptionsGetInt(PETSC_NULL ,"-incr_breakpoints",		&user->incr_breakpoints		, PETSC_NULL);  	//	save incr_breakpoints breakpoints
+/*	PetscOptionsGetInt(PETSC_NULL ,"-incr_breakpoints",		&user->incr_breakpoints		, PETSC_NULL);  	//	save incr_breakpoints breakpoints
 	PetscOptionsGetReal(PETSC_NULL ,"-MaximumSurfaceAngle", &user->MaximumSurfaceAngle	, PETSC_NULL);		// MaximumSurfaceAngle
 
 	PetscOptionsGetInt(PETSC_NULL ,"-ParticleInjectionPhase",		&user->ParticleInjectionPhase	, PETSC_NULL);  		//	which phase do we inject?
 	PetscOptionsGetInt(PETSC_NULL ,"-MatlabOutputFiles",			&user->MatlabOutputFiles		, PETSC_NULL);  		//	write matlab output or not?
 	PetscOptionsGetInt(PETSC_NULL ,"-VTKOutputFiles",				&user->VTKOutputFiles			, PETSC_NULL);  		//	write VTK output or not?
 	PetscOptionsGetInt(PETSC_NULL ,"-AVDPhaseViewer",				&user->AVDPhaseViewer			, PETSC_NULL);  		//	write AVDPhase output or not?
-    PetscOptionsGetBool(PETSC_NULL ,"-SavePartitioning",			&user->SavePartitioning        	, PETSC_NULL);
+    */
+	PetscOptionsGetBool(PETSC_NULL ,"-SavePartitioning",			&user->SavePartitioning        	, PETSC_NULL);
 
 
-	PetscOptionsGetInt(PETSC_NULL ,"-LoadInitialParticlesFromDisc",	&user->LoadInitialParticlesFromDisc			, PETSC_NULL);  		//	Load initial particles from file
+	//PetscOptionsGetInt(PETSC_NULL ,"-LoadInitialParticlesFromDisc",	&user->LoadInitialParticlesFromDisc			, PETSC_NULL);  		//	Load initial particles from file
 
-	PetscOptionsGetReal(PETSC_NULL ,"-CriticalDiagonalRatio", 		&user->CriticalDiagonalRatio 	, PETSC_NULL);		// CriticalDiagonalRatio to induce remeshing if LaMEM is run in a lagrangian mode
+	//PetscOptionsGetReal(PETSC_NULL ,"-CriticalDiagonalRatio", 		&user->CriticalDiagonalRatio 	, PETSC_NULL);		// CriticalDiagonalRatio to induce remeshing if LaMEM is run in a lagrangian mode
 	PetscOptionsGetInt(PETSC_NULL ,"-SaveParticles",				&user->SaveParticles			, PETSC_NULL);  		//	save particles to disk?
-	PetscOptionsGetInt(PETSC_NULL ,"-EulerianAfterTimestep",				&user->EulerianAfterTimestep			, PETSC_NULL);  		//	switch to Eulerian mode after timestep ?? - decativated if <0 (default)
+	//PetscOptionsGetInt(PETSC_NULL ,"-EulerianAfterTimestep",				&user->EulerianAfterTimestep			, PETSC_NULL);  		//	switch to Eulerian mode after timestep ?? - decativated if <0 (default)
 
+/*
 	PetscOptionsGetInt(PETSC_NULL  ,"-UseInternalFreeSurface",		&user->ErosionParameters.UseInternalFreeSurface	, PETSC_NULL);  	//	use the internal free surface
 	PetscOptionsGetInt(PETSC_NULL  ,"-ErosionModel",				&user->ErosionParameters.ErosionModel	, PETSC_NULL);  			//	which erosion model do we employ? [0-none; 1-fast]
 
 
-	/*set the FD erosion parameters from the command-line */
+	set the FD erosion parameters from the command-line
 	PetscOptionsGetInt(PETSC_NULL  ,"-FE_ErosionCode.ResolutionFactorX",			&user->ErosionParameters.FE_ErosionCode.ResolutionFactorX		, PETSC_NULL);  			// how much larger is the FD erosion code resolution compared to the mechanical code?
 	PetscOptionsGetInt(PETSC_NULL  ,"-FE_ErosionCode.ResolutionFactorY",			&user->ErosionParameters.FE_ErosionCode.ResolutionFactorY		, PETSC_NULL);  			// how much larger is the FD erosion code resolution compared to the mechanical code?
 	PetscOptionsGetReal(PETSC_NULL ,"-FE_ErosionCode.InitialRandomNoise_m", 	&user->ErosionParameters.FE_ErosionCode.InitialRandomNoise_m 	, PETSC_NULL);
@@ -428,7 +458,7 @@ PetscErrorCode FDSTAGInitCode(JacRes *jr, UserContext *user)
 
     PetscOptionsGetRealArray(PETSC_NULL,"-FE_ErosionCode.location_river",user->ErosionParameters.FE_ErosionCode.location_river,&n_int, &flg);
     if (found){
-    	/* print info if we select river parameters */
+    	 print info if we select river parameters
 
     	printf("==========================================================================================\n");
     	printf("in file utils.c \n");
@@ -441,10 +471,11 @@ PetscErrorCode FDSTAGInitCode(JacRes *jr, UserContext *user)
 
     	printf("==========================================================================================\n");
     }
+*/
 
 
 
-	PetscOptionsGetInt(PETSC_NULL  ,"-StickyAirPhase",				&user->ErosionParameters.StickyAirPhase			, PETSC_NULL);  														 //	which phase is sticky air?
+/*	PetscOptionsGetInt(PETSC_NULL  ,"-StickyAirPhase",				&user->ErosionParameters.StickyAirPhase			, PETSC_NULL);  														 //	which phase is sticky air?
 	PetscOptionsGetReal(PETSC_NULL ,"-FSSA", 						&user->FSSA 									, PETSC_NULL);		// FSSA parameter [should be between 0-1]
 	PetscOptionsGetBool(PETSC_NULL, "-ArtificialTemperature", 	    &user->ArtTemp,    PETSC_NULL );
 
@@ -463,7 +494,7 @@ PetscErrorCode FDSTAGInitCode(JacRes *jr, UserContext *user)
 	PetscOptionsGetReal( PETSC_NULL,"-SurfVelField_VyStdDev",         &user->SurfVelField.VyStdDev,PETSC_NULL );
 	PetscOptionsGetReal( PETSC_NULL,"-SurfVelField_VzStdDev",         &user->SurfVelField.VzStdDev,PETSC_NULL );
 	 // --- Optimization related input parameters ---
-	PetscOptionsGetInt( PETSC_NULL ,"-get_Misfit", 					&user->Optimisation.GetIt,		PETSC_NULL );
+	PetscOptionsGetInt( PETSC_NULL ,"-get_Misfit", 					&user->Optimisation.GetIt,		PETSC_NULL );*/
 
 	// --- Gravity related input parameters ---
 	PetscOptionsGetInt( PETSC_NULL ,"-get_GravityField",			&user->GravityField.GetIt, 	   	PETSC_NULL );
@@ -483,9 +514,9 @@ PetscErrorCode FDSTAGInitCode(JacRes *jr, UserContext *user)
 	PetscOptionsGetBool( PETSC_NULL,"-GravityField_UseAnalytics",	&user->GravityField.UseAnalytics,PETSC_NULL );
 	PetscOptionsGetString(PETSC_NULL,"-GravityField_RefDatFile",  *(&user->GravityField.RefDatFile2load),PETSC_MAX_PATH_LEN,PETSC_NULL);
 	PetscOptionsGetReal( PETSC_NULL,"-GravityField_StdDev",         &user->GravityField.StdDev,PETSC_NULL );
-	ierr = GetLithColumnFromCommandLine(user);CHKERRQ(ierr);
+	//ierr = GetLithColumnFromCommandLine(user);CHKERRQ(ierr);
 
-	// --- Isostasy related parameters ---
+/*	// --- Isostasy related parameters ---
 	PetscOptionsGetInt( PETSC_NULL ,"-ComputeAiryIsostasy", 		&user->Isostasy.GetIt,   	PETSC_NULL );
 
 	// --- Output related parameters ---
@@ -493,7 +524,7 @@ PetscErrorCode FDSTAGInitCode(JacRes *jr, UserContext *user)
 	PetscOptionsGetInt(PETSC_NULL,"-Output.temperature" 		,	&user->Output.temperature			, PETSC_NULL);
 	PetscOptionsGetInt(PETSC_NULL,"-Output.surface_topography" 	,	&user->Output.surface_topography	, PETSC_NULL);
 	PetscOptionsGetInt(PETSC_NULL,"-Output.bottom_topography" 	,	&user->Output.surface_topography	, PETSC_NULL);
-	PetscOptionsGetInt(PETSC_NULL,"-Output.quadrature" 			,	&user->Output.quadrature			, PETSC_NULL);
+	PetscOptionsGetInt(PETSC_NULL,"-Output.quadrature" 			,	&user->Output.quadrature			, PETSC_NULL);*/
 
 	// --- Pushing BC related parameters ---
 	PetscOptionsGetInt(PETSC_NULL,"-AddPushing" 			 ,	&user->AddPushing				, PETSC_NULL);
@@ -539,15 +570,15 @@ PetscErrorCode FDSTAGInitCode(JacRes *jr, UserContext *user)
 		if(flg == PETSC_TRUE) PetscPrintf(PETSC_COMM_WORLD,"#    time[%lld]	= %g \n",(LLD)i,user->Pushing.time[i]);
 	}
 
-	// linear solver options
+/*	// linear solver options
 	PetscOptionsGetInt( PETSC_NULL, "-StokesSolver", 				&user->StokesSolver, 			PETSC_NULL );
 	PetscOptionsGetInt( PETSC_NULL, "-VelocitySolver", 				&user->VelocitySolver, 			PETSC_NULL );
 	PetscOptionsGetBool( PETSC_NULL, "-VelocityTest", 				&user->VelocityTest, 			PETSC_NULL );
-	PetscOptionsGetBool( PETSC_NULL, "-ScaleSystem", 				&user->ScaleSystem, 			PETSC_NULL );
+	PetscOptionsGetBool( PETSC_NULL, "-ScaleSystem", 				&user->ScaleSystem, 			PETSC_NULL );*/
 	PetscOptionsGetBool( PETSC_NULL, "-use_fdstag_canonical", 	    &user->use_fdstag_canonical,    PETSC_NULL );
 
 	// --- Get material properties from command line
-	ierr = GetMaterialPropertiesFromCommandLine(user);
+	//ierr = GetMaterialPropertiesFromCommandLine(user);
 
 	/* In case we use FDSTAG, we need at least 2 elements (not 1)! */
 	// If FDSTAG is used, dt must be different to 0 to avoid zero division at "ComputeStiffnessMatrixRHSTemperature_FDSTAG"
@@ -566,15 +597,17 @@ PetscErrorCode FDSTAGInitCode(JacRes *jr, UserContext *user)
 		}
 	}
 
+/*
 	// Ensure that sticky air phase is not larger than the max. number of phases
 	if (user->ErosionParameters.StickyAirPhase > (user->num_phases-1)){
 		PetscPrintf(PETSC_COMM_WORLD," The sticky air phase is %i but the maximum phase in the model setup is %i. I changed sticky air phase to %i. \n",user->ErosionParameters.StickyAirPhase, (user->num_phases-1),(user->num_phases-1));
 		user->ErosionParameters.StickyAirPhase = (user->num_phases-1);
 	}
+*/
 
 
-	user->Setup.Diapir_Hi 	 = (user->H-user->z_bot)*user->Hinterface;	// for 0-diapir setup
-	user->Setup.SingleFold_H = 1.0;						    			// for  1-Single-layer folding setup
+	//user->Setup_Diapir_Hi 	 = (user->H-user->z_bot)*user->Hinterface;	// for 0-diapir setup
+	//user->Setup.SingleFold_H = 1.0;						    			// for  1-Single-layer folding setup
 
 
 	// set this option to monitor actual option usage
@@ -583,20 +616,19 @@ PetscErrorCode FDSTAGInitCode(JacRes *jr, UserContext *user)
 	if (!(user->InputParamFile))
 	{
 
-		// defined in NonDimensionalisation.h
-
-		ComputeCharacteristicValues(user);
+		// defined in scaling.h
+		ComputeCharValues(user);
 
 		/* Define phase Material properties in case NO input file is specified (=falling-block test)*/
 		/* viscosity                                     								 density 									*/
 		user->PhaseProperties.mu[0]  = 1.0*user->Characteristic.Viscosity; 		user->PhaseProperties.rho[0] = 1.0*user->Characteristic.Density;
-		user->PhaseProperties.mu[1] = user->mumax; 								user->PhaseProperties.rho[1] = 2.0*user->Characteristic.Density;
+		user->PhaseProperties.mu[1] =  10.0*user->Characteristic.Viscosity; 	user->PhaseProperties.rho[1] = 2.0*user->Characteristic.Density;
 
 		PetscOptionsInsertString("-AddRandomNoiseParticles 0");		// will always give the same results
 	}
 
 
-
+/*
 	{
 		// Define material parameters for folding benchmarks, which overrule values from the parameters file
 		PetscScalar	R, nL, nM;
@@ -617,7 +649,7 @@ PetscErrorCode FDSTAGInitCode(JacRes *jr, UserContext *user)
 			user->PhaseProperties.n_exponent[0] 	=	nM;
 		}
 
-	}
+	}*/
 
 	/* print information about simulation */
 	ierr = MPI_Comm_size(PETSC_COMM_WORLD,&size); CHKERRQ(ierr);
@@ -639,7 +671,7 @@ PetscErrorCode FDSTAGInitCode(JacRes *jr, UserContext *user)
 	PetscPrintf(PETSC_COMM_WORLD," Number of tracers/cell         : [%lld,%lld,%lld] \n",(LLD)(user->NumPartX),(LLD)(user->NumPartY),(LLD)(user->NumPartZ));
 
 
-	/* Compute some useful stuff */
+/*	 Compute some useful stuff
 	if (user->GridAdvectionMethod != 2  || user->BC.UpperBound != 0){
 		user->num_subdt			  = 1;
 	}
@@ -650,9 +682,9 @@ PetscErrorCode FDSTAGInitCode(JacRes *jr, UserContext *user)
 		// non zero surface angle is only relevant if erosion is applied to the model
 		user->SurfaceAngle 		   = 0;
 		user->SurfaceNoiseAmplitude= 0;
-	}
+	}*/
 
-	/* Check for periodic boundary conditions */
+/*	 Check for periodic boundary conditions
 	if ( (user->BC.LeftBound==3) || (user->BC.RightBound==3) ){
 		user->BC.LeftBound=3;  user->BC.RightBound=3;			// if one is periodic, they both should be
 		user->BC.BCType_x = DM_BOUNDARY_PERIODIC;
@@ -675,11 +707,11 @@ PetscErrorCode FDSTAGInitCode(JacRes *jr, UserContext *user)
 	}
 	else{
 		user->BC.BCType_z = DM_BOUNDARY_NONE;
-	}
+	}*/
 
 
 
-	/* Set the density of 'sticky-air' to zero if we eliminate the 'sticky-air' from the system */
+/*	 Set the density of 'sticky-air' to zero if we eliminate the 'sticky-air' from the system
 	if (user->ErosionParameters.UseInternalFreeSurface==1){
 		PetscInt 	AirPhase;
 		PetscBool	eliminate_stickyair_from_system;
@@ -696,7 +728,7 @@ PetscErrorCode FDSTAGInitCode(JacRes *jr, UserContext *user)
 
 		}
 
-	}
+	}*/
 
 	// show initial timestep (WARNING! which years if nondimensional?)
     if (user->DimensionalUnits==1){
@@ -711,23 +743,23 @@ PetscErrorCode FDSTAGInitCode(JacRes *jr, UserContext *user)
 
     
 	/* Compute characteristic values */
-	ComputeCharacteristicValues(user);
+	ComputeCharValues(user);
 
 	/* Perform non-dimensionalisation of all input parameters */
-	PerformNonDimensionalization(user);
+	PerformNonDimension(user);
 
-	/* Allocate arrays required for time-dependent data */
+/*	 Allocate arrays required for time-dependent data
 	ierr = PetscMalloc( (size_t)user->time_end*sizeof(GlobalTimeDependentData), 	&user->TimeDependentData); CHKERRQ(ierr);
 	ierr = PetscMemzero(user->TimeDependentData, (size_t)user->time_end*sizeof(GlobalTimeDependentData)); CHKERRQ(ierr);
 
 	user->ErosionParameters.HorizontalFreeSurfaceHeight = user->ErosionParameters.InitialFreeSurfaceHeight;
 
-	ierr = PetscOptionsInsertString( all_options ); CHKERRQ(ierr); /* force command line args in to override defaults */
+	ierr = PetscOptionsInsertString( all_options ); CHKERRQ(ierr);  force command line args in to override defaults
 
 	ierr = PetscFree(all_options); CHKERRQ(ierr);
 
 	// WARNING!!! this object is not freed during the code...however, freeing this object right here might not be good!
-	ierr = PetscFree(user->TimeDependentData); CHKERRQ(ierr);
+	ierr = PetscFree(user->TimeDependentData); CHKERRQ(ierr);*/
 
 
 
@@ -737,7 +769,7 @@ PetscErrorCode FDSTAGInitCode(JacRes *jr, UserContext *user)
 //---------------------------------------------------------------------------
 #undef __FUNCT__
 #define __FUNCT__ "FDSTAGReadInputFile"
-PetscErrorCode FDSTAGReadInputFile(JacRes *jr, UserContext *user)
+PetscErrorCode FDSTAGReadInputFile(JacRes *jr, UserCtx *user)
 {
 	 // Parse the input file
 
@@ -745,8 +777,9 @@ PetscErrorCode FDSTAGReadInputFile(JacRes *jr, UserContext *user)
 	PetscInt found;
 	double d_values[1000], data;
 	PetscInt i_values[1000];
-	PetscInt nv, iphase,i;
-	const PetscInt max_vals = 1000;
+	PetscInt nv, i;
+	//PetscInt iphase;
+	//const PetscInt max_vals = 1000;
 	char setup_name[PETSC_MAX_PATH_LEN];
 
 	PetscErrorCode ierr;
@@ -811,29 +844,29 @@ PetscErrorCode FDSTAGReadInputFile(JacRes *jr, UserContext *user)
 		else SETERRQ1(PETSC_COMM_WORLD, PETSC_ERR_USER,"#ERROR! Incorrect model setup: %s", setup_name);
 	}
 
-	parse_GetInt( fp,    "Setup.Model", &user->Setup.Model, &found );
-	parse_GetDouble( fp, "ampl2D", &user->ampl2D, &found );
-	parse_GetDouble( fp, "ampl3D", &user->ampl3D, &found );
-	parse_GetDouble( fp, "amplNoise", &user->amplNoise, &found );
-	parse_GetDouble( fp, "Hinterface", &user->Hinterface, &found );
+	//parse_GetInt( fp,    "Setup.Model", &user->Setup.Model, &found );
+	//parse_GetDouble( fp, "ampl2D", &user->ampl2D, &found );
+	//parse_GetDouble( fp, "ampl3D", &user->ampl3D, &found );
+	//parse_GetDouble( fp, "amplNoise", &user->amplNoise, &found );
+	//parse_GetDouble( fp, "Hinterface", &user->Hinterface, &found );
 
 	parse_GetString( fp, "OutputFile", user->OutputFile, PETSC_MAX_PATH_LEN-1, &found );
 	parse_GetInt( fp,    "save_timesteps", &user->save_timesteps, &found );
 	parse_GetInt( fp,    "time_end", &user->time_end, &found );
-	parse_GetInt( fp,    "time_end_temp", &user->time_end_temp, &found );
+	//parse_GetInt( fp,    "time_end_temp", &user->time_end_temp, &found );
 	parse_GetDouble( fp, "CFL", &user->CFL, &found );
 	parse_GetDouble( fp, "dt_max", &user->dt_max, &found );
-	parse_GetDouble( fp, "dt_temp", &user->dt_temp, &found );
+	//parse_GetDouble( fp, "dt_temp", &user->dt_temp, &found );
 
 	parse_GetDouble( fp, "BC.Eyy", &user->BC.Eyy, &found );
 	parse_GetDouble( fp, "BC.Exx", &user->BC.Exx, &found );
 
-	parse_GetInt( fp, "internalBC_coord", &user->internalBC_coord, &found );
+/*	parse_GetInt( fp, "internalBC_coord", &user->internalBC_coord, &found );
 	parse_GetInt( fp, "internalBC_frontel", &user->internalBC_frontel, &found );
 	parse_GetInt( fp, "internalBC_backel", &user->internalBC_backel, &found );
 	parse_GetInt( fp, "internalBC_node", &user->internalBC_node, &found );
 	parse_GetInt( fp, "zdepth_BC_el", &user->zdepth_BC_el, &found );
-	parse_GetInt( fp, "zdepth_BC_node", &user->zdepth_BC_node, &found );
+	parse_GetInt( fp, "zdepth_BC_node", &user->zdepth_BC_node, &found );*/
 	parse_GetInt( fp, "BC.InternalBound", &user->BC.InternalBound, &found );
 	parse_GetInt( fp, "BC.LeftBound", &user->BC.LeftBound, &found );
 	parse_GetInt( fp, "BC.RightBound", &user->BC.RightBound, &found );
@@ -843,9 +876,9 @@ PetscErrorCode FDSTAGReadInputFile(JacRes *jr, UserContext *user)
 	parse_GetInt( fp, "BC.UpperBound", &user->BC.UpperBound, &found );
 	parse_GetDouble( fp, "Temp_top", &user->Temp_top, &found );
 	parse_GetDouble( fp, "Temp_bottom", &user->Temp_bottom, &found );
-	parse_GetInt( fp, "temp_initialize", &user->temp_initialize, &found );
+	//parse_GetInt( fp, "temp_initialize", &user->temp_initialize, &found );
 
-	parse_GetInt( fp, "UseInternalFreeSurface", 		&user->ErosionParameters.UseInternalFreeSurface, 		&found );
+/*	parse_GetInt( fp, "UseInternalFreeSurface", 		&user->ErosionParameters.UseInternalFreeSurface, 		&found );
 	parse_GetInt( fp, "StickyAirPhase", 				&user->ErosionParameters.StickyAirPhase, 				&found );
 	parse_GetDouble( fp, "FSSA", 	 					&user->FSSA, 											&found );	// FSSA parameter
 	parse_GetDouble( fp, "InitialFreeSurfaceHeight", 	&user->ErosionParameters.InitialFreeSurfaceHeight, 		&found );
@@ -875,20 +908,20 @@ PetscErrorCode FDSTAGReadInputFile(JacRes *jr, UserContext *user)
 	parse_GetDouble( fp, "SedimentationRate_cmYr", 	 	&user->ErosionParameters.SedimentationRate_cmYr, 		&found );
 	parse_GetInt( fp, 		"PhaseFirstSedimentedLayer", 		&user->ErosionParameters.PhaseFirstSedimentedLayer, 	&found );
 	parse_GetInt( fp, 		"PhaseLastSedimentedLayer", 		&user->ErosionParameters.PhaseLastSedimentedLayer, 		&found );
-	parse_GetDouble( fp, 	"SedimentLayerThicknessYears", 		&user->ErosionParameters.SedimentLayerThicknessYears, 	&found );
+	parse_GetDouble( fp, 	"SedimentLayerThicknessYears", 		&user->ErosionParameters.SedimentLayerThicknessYears, 	&found );*/
 
-	parse_GetInt( fp,    "GridAdvectionMethod", &user->GridAdvectionMethod, &found );
+/*	parse_GetInt( fp,    "GridAdvectionMethod", &user->GridAdvectionMethod, &found );
 	parse_GetDouble( fp, "FactorSurfaceLayer", &user->FactorSurfaceLayer, &found );
 	parse_GetInt( fp,    "num_subdt", &user->num_subdt, &found );
 
 	// linear solver options
 	parse_GetInt( fp,    "StokesSolver", &user->StokesSolver, &found );
-	parse_GetInt( fp,    "VelocitySolver", &user->VelocitySolver, &found );
+	parse_GetInt( fp,    "VelocitySolver", &user->VelocitySolver, &found );*/
 
 
 	/* Particle related variables */
 	parse_GetInt( fp,    "ParticleInput", &user->ParticleInput, &found );
-	parse_GetInt( fp,    "LoadInitialParticlesFromDisc", &user->LoadInitialParticlesFromDisc, &found );
+	//parse_GetInt( fp,    "LoadInitialParticlesFromDisc", &user->LoadInitialParticlesFromDisc, &found );
 	parse_GetString( fp, "ParticleFilename", user->ParticleFilename, PETSC_MAX_PATH_LEN-1, &found );
 	parse_GetString( fp, "LoadInitialParticlesDirectory", user->LoadInitialParticlesDirectory, PETSC_MAX_PATH_LEN-1, &found );
 	if (!found){
@@ -904,11 +937,11 @@ PetscErrorCode FDSTAGReadInputFile(JacRes *jr, UserContext *user)
 	parse_GetInt( fp,    "NumPartY", &user->NumPartY, &found );
 	parse_GetInt( fp,    "NumPartZ", &user->NumPartZ, &found );
 
-	parse_GetInt( fp,    "InitialMeshFromFile", &user->InitialMeshFromFile, &found );
+/*	parse_GetInt( fp,    "InitialMeshFromFile", &user->InitialMeshFromFile, &found );
 	parse_GetString( fp, "InitialMeshFileName", user->InitialMeshFileName, PETSC_MAX_PATH_LEN-1, &found );
 	parse_GetInt( fp,    "InitialMantleLevel", &user->InitialMantleLevel, &found );
 
-	parse_GetInt( fp,    "InitialErosionSurfaceFromFile", &user->InitialErosionSurfaceFromFile, &found );
+	parse_GetInt( fp,    "InitialErosionSurfaceFromFile", &user->InitialErosionSurfaceFromFile, &found );*/
 
 	/* Read material properties - This manner of setting material properties will be disabled in the near future, and
 	 * replaced with a more general routine
@@ -919,11 +952,11 @@ PetscErrorCode FDSTAGReadInputFile(JacRes *jr, UserContext *user)
 	parse_GetDouble( fp, "UpperViscosityCutoff", &user->UpperViscosityCutoff, &found );
 
 	parse_GetDouble( fp, "Gravity", &user->Gravity, &found );
-	parse_GetInt( fp,    "PlasticityModel", &user->PlasticityModel, &found );
+/*	parse_GetInt( fp,    "PlasticityModel", &user->PlasticityModel, &found );
 	parse_GetDouble( fp, "Xi", &user->Xi, &found );
-	parse_GetDouble( fp, "GasConstant", &user->GasConstant, &found );
+	parse_GetDouble( fp, "GasConstant", &user->GasConstant, &found );*/
 
-	// --- SurfaceVelocity related input parameters ---
+/*	// --- SurfaceVelocity related input parameters ---
 	parse_GetInt( fp,    "get_SurfVelField", 	&user->SurfVelField.GetIt, 		&found );
 	parse_GetInt( fp,    "SurfVelField_SaveRef", &user->SurfVelField.SaveRef,	&found );
 	parse_GetString( fp, "SurfVelField_RefDatFile", user->SurfVelField.RefDatFile2load, PETSC_MAX_PATH_LEN-1, &found );
@@ -931,7 +964,7 @@ PetscErrorCode FDSTAGReadInputFile(JacRes *jr, UserContext *user)
 	parse_GetDouble( fp, "SurfVelField_VyStdDev", &user->SurfVelField.VyStdDev, &found );
 	parse_GetDouble( fp, "SurfVelField_VzStdDev", &user->SurfVelField.VzStdDev, &found );
 	// --- Optimization related input parameters ---
-	parse_GetInt( fp,    "get_Misfit", 				&user->Optimisation.GetIt, 		&found );
+	parse_GetInt( fp,    "get_Misfit", 				&user->Optimisation.GetIt, 		&found );*/
 
 	// --- Gravity related input parameters ---
 	parse_GetInt( fp,    "get_GravityField", 		&user->GravityField.GetIt, 		&found );
@@ -970,7 +1003,7 @@ PetscErrorCode FDSTAGReadInputFile(JacRes *jr, UserContext *user)
 		}
 	}
 
-	// --- Isostasy related input parameters ---
+/*	// --- Isostasy related input parameters ---
 	parse_GetInt( fp,    "get_AiryIsostasy", &user->Isostasy.GetIt, &found );
 	parse_GetInt( fp,    "Isostasy_SaveRef", &user->Isostasy.SaveRef, &found );
 	parse_GetInt( fp, "Isostasy_ref_xi", &user->Isostasy.ref_xi, &found );
@@ -988,7 +1021,7 @@ PetscErrorCode FDSTAGReadInputFile(JacRes *jr, UserContext *user)
 	parse_GetInt( fp,    "Output.temperature", &user->Output.temperature, &found );
 	parse_GetInt( fp,    "Output.surface_topography", &user->Output.surface_topography, &found );
 	parse_GetInt( fp,    "Output.bottom_topography", &user->Output.bottom_topography, &found );
-	parse_GetInt( fp,    "Output.quadrature", &user->Output.quadrature, &found );
+	parse_GetInt( fp,    "Output.quadrature", &user->Output.quadrature, &found );*/
 
 	// --- Pushing related input parameters ---
 	parse_GetInt( fp,    "AddPushing", &user->AddPushing, &found );
@@ -1029,7 +1062,7 @@ PetscErrorCode FDSTAGReadInputFile(JacRes *jr, UserContext *user)
 	/* -------------------------------------------------------------------------------------------------------------------------
 	 * Read phase transitions related information -
 	 * The input structure of this is also likely to change but at a later stage
-	 */
+
 	parse_GetInt( fp,    "num_phase_transitions", &user->num_phase_transitions, &found );
 
 	parse_GetIntAllInstances( fp,    "TransitionType", &nv, i_values, max_vals, &found );	//	if( nv != user->num_phase_transitions ) {  PetscPrintf( PETSC_COMM_WORLD, "# Warning: num_phase_transitions is inconsistent\n");  }
@@ -1065,7 +1098,7 @@ PetscErrorCode FDSTAGReadInputFile(JacRes *jr, UserContext *user)
 	parse_GetIntAllInstances( fp,    "TransformedPhase", &nv, i_values, max_vals, &found );	//	if( nv != user->num_phase_transitions ) {  PetscPrintf( PETSC_COMM_WORLD, "# Warning: num_phase_transitions is inconsistent\n");  }
 	for( iphase=0; iphase<user->num_phase_transitions; iphase++ ) {
 		user->PhaseTransitions[iphase].TransformedPhase = i_values[iphase] ;
-	}
+	}*/
 	/* ------------------------------------------------------------------------------------------------------------------------- */
 
 	fclose(fp);
@@ -1077,7 +1110,7 @@ PetscErrorCode FDSTAGReadInputFile(JacRes *jr, UserContext *user)
 //---------------------------------------------------------------------------
 #undef __FUNCT__
 #define __FUNCT__ "ReadMaterialProperties"
-PetscErrorCode ReadMaterialProperties(UserContext *user)
+PetscErrorCode ReadMaterialProperties(UserCtx *user)
 {
 	PetscInt      found_data;
 	PetscInt      n_phases,n_attrs, n_types;
@@ -1466,5 +1499,95 @@ PetscErrorCode ReadMeshSegDir(
 
 	PetscFunctionReturn(0);
 }
+//---------------------------------------------------------------------------
+// after PetscErrorCode  LaMEMInitializeMaterialProperties( UserContext *user ) in Utils.c line 430
+/* Set initial material properties
+*/
+#undef __FUNCT__
+#define __FUNCT__ "FDSTAGInitMaterialProp"
+PetscErrorCode FDSTAGInitMaterialProp(UserCtx *user )
+{
+	PetscInt 	i;
+
+	for( i=0; i<user->num_phases; i++ ){
+
+		if (user->DimensionalUnits==1){
+			user->PhaseProperties.ViscosityLaw[i]			=	1;		// constant viscosity
+			user->PhaseProperties.mu[i]  					=	1e20;
+			user->PhaseProperties.n_exponent[i]  			=	1.0;
+			user->PhaseProperties.FrankKamenetskii[i]		=	0.0;
+			user->PhaseProperties.Powerlaw_e0[i]  			=	1.0;
+			user->PhaseProperties.A[i]						=	1e-20;
+			user->PhaseProperties.E[i]						=	1.0;
+
+			user->PhaseProperties.DensityLaw[i]				=	1;		// T-dependent density
+			user->PhaseProperties.rho[i]  					=	2800;
+			user->PhaseProperties.Density_T0[i]				=	273;	// Kelvin (temperature at which rho=rho0, in eq. rho=rho0*(1-alpha*(T-T0)))
+			user->PhaseProperties.ThermalExpansivity[i]		=	0;		// no coupling mechanics - thermics
+
+
+			user->PhaseProperties.PlasticityLaw[i]					=	0;		// none
+			user->PhaseProperties.Cohesion[i]  						=	1e100;	// effectively switches off plasticity
+			user->PhaseProperties.CohesionAfterWeakening[i]			=	1e100;	// effectively switches off plasticity
+			user->PhaseProperties.Weakening_PlasticStrain_Begin[i]	=	0;		//
+			user->PhaseProperties.Weakening_PlasticStrain_End[i]	=	0;		//
+			user->PhaseProperties.FrictionAngle[i] 					=	0;		// effectively switches off plasticity
+			user->PhaseProperties.FrictionAngleAfterWeakening[i] 	=	0;		// effectively switches off plasticity
+
+			user->PhaseProperties.ElasticShearModule[i]  	=	1e100;  // will make the model effectively viscous
+
+			user->PhaseProperties.T_Conductivity[i] 		=	3;		// reasonable value
+			user->PhaseProperties.HeatCapacity[i]			=	1050;	// reasonable value
+			user->PhaseProperties.RadioactiveHeat[i] 		=	0;
+		}
+		else{
+			user->PhaseProperties.ViscosityLaw[i]			=	1;		// constant viscosity
+			user->PhaseProperties.mu[i]  					=	1;
+			user->PhaseProperties.n_exponent[i]  			=	1.0;
+			user->PhaseProperties.FrankKamenetskii[i]		=	0.0;
+			user->PhaseProperties.Powerlaw_e0[i]  			=	1.0;
+			user->PhaseProperties.A[i]						=	1.0;
+			user->PhaseProperties.E[i]						=	1.0;
+
+			user->PhaseProperties.DensityLaw[i]				=	1;		// T-dependent density
+			user->PhaseProperties.rho[i]  					=	1;
+			user->PhaseProperties.Density_T0[i]				=	0;	// Kelvin (temperature at which rho=rho0, in eq. rho=rho0*(1-alpha*(T-T0)))
+			user->PhaseProperties.ThermalExpansivity[i]		=	0;		// no coupling mechanics - thermics
+
+
+			user->PhaseProperties.PlasticityLaw[i]					=	0;		// none
+			user->PhaseProperties.Cohesion[i]  						=	1e100;	// effectively switches off plasticity
+			user->PhaseProperties.CohesionAfterWeakening[i]			=	1e100;	// effectively switches off plasticity
+			user->PhaseProperties.Weakening_PlasticStrain_Begin[i]	=	0;		//
+			user->PhaseProperties.Weakening_PlasticStrain_End[i]	=	0;		//
+			user->PhaseProperties.FrictionAngle[i] 					=	0;		// effectively switches off plasticity
+			user->PhaseProperties.FrictionAngleAfterWeakening[i] 	=	0;		// effectively switches off plasticity
+
+			user->PhaseProperties.ElasticShearModule[i]  	=	1e100;  // will make the model effectively viscous
+
+			user->PhaseProperties.T_Conductivity[i] 		=	1;		// reasonable value
+			user->PhaseProperties.HeatCapacity[i]			=	1;	// reasonable value
+			user->PhaseProperties.RadioactiveHeat[i] 		=	0;
+
+		}
+
+
+	}
+
+	if (user->DimensionalUnits==1){
+		// Add a higher density and viscosity to phase 1
+		user->PhaseProperties.rho[1] = 3000;
+		user->PhaseProperties.mu[1]  = 1e25;
+	}
+	else {
+		// Add a higher density and viscosity to phase 1
+		user->PhaseProperties.rho[1] = 2;
+		user->PhaseProperties.mu[1]  = 1e3;
+	}
+
+
+	PetscFunctionReturn(0);
+}
+
 //---------------------------------------------------------------------------
 

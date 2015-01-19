@@ -62,7 +62,7 @@ typedef struct
 	PetscBool     pbApp;  // flag for applying pushing on a time step
 	PetscScalar   theta;  // rotation angle
 	PetscScalar   Vx, Vy; // Dirichlet values for Vx and Vy
-	PushingParams *pb;    // major pushing block parameters
+	PushParams    *pb;    // major pushing block parameters
 	TSSol         *ts;    // time stepping parameters
 	Scaling       *scal;  // scaling parameters
 
@@ -76,7 +76,7 @@ PetscErrorCode BCClear(BCCtx *bc);
 PetscErrorCode BCCreate(BCCtx *bc, FDSTAG *fs, TSSol *ts, Scaling *scal);
 
 // set background strain-rates
-PetscErrorCode BCSetStretch(BCCtx *bc, UserContext *user);
+PetscErrorCode BCSetStretch(BCCtx *bc, UserCtx *user);
 
 // destroy boundary condition context
 PetscErrorCode BCDestroy(BCCtx *bc);
@@ -93,7 +93,7 @@ PetscErrorCode BCShiftIndices(BCCtx *bc, FDSTAG *fs, ShiftType stype);
 //---------------------------------------------------------------------------
 
 // initialize pushing boundary conditions context
-PetscErrorCode BCSetPush(BCCtx *bc, UserContext *user);
+PetscErrorCode BCSetPush(BCCtx *bc, UserCtx *user);
 
 // compute pushing parameters
 PetscErrorCode BCCompPush(BCCtx *bc);

@@ -217,37 +217,6 @@ typedef struct {
 	Vec 	Corner_Pressure, 	Corner_Density, 	Corner_HeatCapacity, 	Corner_Conductivity, 			Corner_RadioactiveHeat;
 } FDSTAG_MaterialProperties;
 //-----------------------------------------------------------------------------
-// Mesh segments input data structures
-typedef struct
-{
-	PetscInt    nsegs;                    // number of segments
-	PetscScalar delims[MaxNumMeshSegs-1]; // coordinates of the delimiters
-	PetscInt    ncells[MaxNumMeshSegs  ]; // number of cells for each segment
-	PetscScalar biases[MaxNumMeshSegs  ]; // biases for each segment
-} MeshSegInp;
-//-----------------------------------------------------------------------------
-/* variables that need to be stored in the breakpoint file:
- * HorizontalFreeSurfaceHeight
- *
- */
-//-----------------------------------------------------------------------------
-// marker initialization type enumeration
-typedef enum
-{
-	PARALLEL,    // read coordinates, phase and temperature from files in parallel
-	REDUNDANT,   // read phase and temperature from file redundantly (uniform coordinates)
-	DIAPIR,      // diapir setup
-	BLOCK,       // falling block
-	SUBDUCTION,  // subduction setup with air
-	FOLDING,     // multilayer folding setup (Zagros)
-	DETACHMENT,  // 1-layer over detachment (Grasemann & Schmalholz 2012)
-	SLAB,        // slab detachment (Thieulot et al. 2014)
-	SPHERES,     // multiple falling spheres
-	BANDS,       // shear band formation 3D
-	RESTART      // restart of simulation
-	// ... add more
-} SetupType;
-//-----------------------------------------------------------------------------
 typedef struct {
   PetscScalar				W,L,H,x_left,y_front,z_bot,ampl2D,ampl3D,amplNoise,mumax, Hinterface, amp;
   PetscScalar				LowerViscosityCutoff, UpperViscosityCutoff;

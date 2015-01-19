@@ -11,7 +11,7 @@
 //---------------------------------------------------------------------------
 #undef __FUNCT__
 #define __FUNCT__ "TSSolSetUp"
-PetscErrorCode TSSolSetUp(TSSol *ts, UserContext *usr)
+PetscErrorCode TSSolSetUp(TSSol *ts, UserCtx *usr)
 {
 	PetscFunctionBegin;
 

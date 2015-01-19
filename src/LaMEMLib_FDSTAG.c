@@ -72,7 +72,7 @@ PetscErrorCode LaMEMLib_FDSTAG(PetscBool InputParamFile, const char *ParamFile, 
 {
 
 	PetscBool          done;
-	UserContext        user;
+	UserCtx            user;
 	PetscInt           SaveOrNot;
 //	PetscLogDouble     cputime_start, cputime_start0, cputime_end, cputime_start_tstep, cputime_start_nonlinear;
 	PetscLogDouble     cputime_start, cputime_start_nonlinear, cputime_end;
@@ -115,7 +115,7 @@ PetscErrorCode LaMEMLib_FDSTAG(PetscBool InputParamFile, const char *ParamFile, 
 	ierr = PVOutClear (&pvout); CHKERRQ(ierr);
 
 	// Initialize context
-	ierr = PetscMemzero(&user, sizeof(UserContext)); CHKERRQ(ierr);
+	ierr = PetscMemzero(&user, sizeof(UserCtx)); CHKERRQ(ierr);
 
 	// set input file flag & name
 	user.InputParamFile = InputParamFile;
@@ -125,7 +125,7 @@ PetscErrorCode LaMEMLib_FDSTAG(PetscBool InputParamFile, const char *ParamFile, 
 	ierr = FDSTAGInitCode(&jr, &user); CHKERRQ(ierr);
 
 	// Give current LaMEM session a specific group ID
-	user.Optimisation.mpi_group_id = *mpi_group_id;
+	user.mpi_group_id = *mpi_group_id;
 
 	//========================================================================================
 	// few parameters that can be reused

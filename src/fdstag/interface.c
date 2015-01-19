@@ -13,14 +13,14 @@
 //---------------------------------------------------------------------------
 #undef __FUNCT__
 #define __FUNCT__ "InitMaterialProps"
-PetscErrorCode InitMaterialProps(JacRes *jr, UserContext *usr)
+PetscErrorCode InitMaterialProps(JacRes *jr, UserCtx *usr)
 {
 	// initialize material properties in the FDSTAG data structures
 
 	PetscInt     i, viscLaw, plastLaw, numPhases, numSoft;
 	PetscScalar  eta, D, n;
 	Material_t  *phases;
-	PhaseProps  *PhaseProperties;
+	PhProps     *PhaseProperties;
 	MatParLim   *matLim;
 	Soft_t      *matSoft;
 	Scaling     *scal;
