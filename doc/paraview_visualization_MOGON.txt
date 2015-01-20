@@ -1,0 +1,47 @@
+How to run PARAVIEW on MOGON in Client-Server mode
+==============================================================
+WIKI PAGE:
+https://mogon.zdv.uni-mainz.de/dokuwiki/paraview_visualize
+
+
+Adina Pusok, 20 Jan 2015
+
+
+Aim:
+———
+Explain how to run Paraview in parallel on MOGON and visualize your
+runs on your local machine. No need to transfer data from Mogon.
+
+
+Instructions:
+—————
+
+1. Follow instructions in the wiki page https://mogon.zdv.uni-mainz.de/dokuwiki/paraview_visualize
+for paraview installed on Platform MPI CE (this is compatible with the
+current compilers and petsc3.5.2 needed for LaMEM Canonical). 
+
+You should have the following modules ("module list"):
+  1) gcc/4.8.2                                           4) software/petsc/3.5.1/gcc_4.8.2_platformmpi_9.1.2
+  2) mpi/platform_mpi_ce/9.1.2                           5) software/paraview/platform_mpi_ce/4.2.0_offscreen
+  3) acml/5.3.0/gfortran/gfortran64_fma4
+
+
+2. You need to use Paraview 4.2.0 as client (i.e. same version as the installation on Mogon)
+
+
+3. The Port number changes (because of $get_free_pv_port). So make
+sure you specify it correctly when you do the server configuration
+(i.e you will not be able to reuse server configurations like we can
+do for Gaia or Sith). 
+
+
+4. Use for Host: 
+				mogon1.zdv.uni-mainz.de (for login01) 
+				mogon2.zdv.uni-mainz.de (for login02)
+If you are outside university, you first need to connect to the uni servers through vpn (see https://www.zdv.uni-mainz.de/4240.php) 
+
+
+5. Checking the resources available: 
+
+"bqueues -l visualize" 
+summary of resources on "visualize" queue: 128 cpus or 2 nodes, 512Gb memory, max time limit = 5h
