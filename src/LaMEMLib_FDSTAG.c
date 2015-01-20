@@ -213,8 +213,7 @@ PetscErrorCode LaMEMLib_FDSTAG(PetscBool InputParamFile, const char *ParamFile, 
 	ierr = TSSolSetUp(&jr.ts, &user); CHKERRQ(ierr);
 
 	// create staggered grid object
-	ierr = FDSTAGCreate(&fs, user.nnode_x, user.nnode_y, user.nnode_z,
-		user.cpu_x, user.cpu_y, user.cpu_z); CHKERRQ(ierr);
+	ierr = FDSTAGCreate(&fs, user.nnode_x, user.nnode_y, user.nnode_z); CHKERRQ(ierr);
 
 	// generate coordinates of grid nodes/cells
 	ierr = FDSTAGGenCoord(&fs, &user); CHKERRQ(ierr);

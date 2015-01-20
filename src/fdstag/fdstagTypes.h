@@ -1,10 +1,12 @@
-// LaMEM user data structures definitions
-
+//---------------------------------------------------------------------------
+//..........................   FDSTAG DATA TYPES  ...........................
+//---------------------------------------------------------------------------
 #ifndef __fdstagTypes_h__
 #define __fdstagTypes_h__
 //-----------------------------------------------------------------------------
-//-----------------------------------------------------------------------------
-typedef struct {
+// Structure that holds boundary conditions info
+typedef struct
+{
 	PetscScalar    Vy_front, Vy_back, Vx_left, Vx_right, Vz_bot, Vz_top, Exx, Eyy;
 	PetscInt       UpperBound, LowerBound, LeftBound, RightBound, FrontBound, BackBound, InternalBound;
 	DMBoundaryType BCType_x;
@@ -12,62 +14,70 @@ typedef struct {
 	DMBoundaryType BCType_z;
 } SBC;
 //-----------------------------------------------------------------------------
-//-----------------------------------------------------------------------------
 // Defines physical properties for each of the phases
-typedef struct {
-	PetscInt	ViscosityLaw[max_num_phases],		DensityLaw[max_num_phases],	  	  PlasticityLaw[max_num_phases];
-	PetscScalar mu[max_num_phases], 	  			rho[max_num_phases], 			  n_exponent[max_num_phases];
-	PetscScalar A[max_num_phases], E[max_num_phases];
-	PetscScalar	ElasticShearModule[max_num_phases],	ElasticBulkModule[max_num_phases];
-	PetscScalar Cohesion[max_num_phases],		  FrictionAngle[max_num_phases];
-	PetscScalar	T_Conductivity[max_num_phases],		HeatCapacity[max_num_phases],	  RadioactiveHeat[max_num_phases];
-	PetscScalar	ThermalExpansivity[max_num_phases], FrankKamenetskii[max_num_phases], Density_T0[max_num_phases];
-	PetscScalar Powerlaw_e0[max_num_phases];
-	PetscScalar	CohesionAfterWeakening[max_num_phases];
-	PetscScalar FrictionAngleAfterWeakening[max_num_phases];
-	PetscScalar	Weakening_PlasticStrain_Begin[max_num_phases];
-	PetscScalar Weakening_PlasticStrain_End[max_num_phases];
-	PetscScalar	Ra[max_num_phases];
+typedef struct
+{
+	PetscInt     ViscosityLaw[max_num_phases];
+	PetscInt     DensityLaw[max_num_phases];
+	PetscInt     PlasticityLaw[max_num_phases];
+	PetscScalar  mu[max_num_phases];
+	PetscScalar  rho[max_num_phases];
+	PetscScalar  n_exponent[max_num_phases];
+	PetscScalar  A[max_num_phases];
+	PetscScalar  E[max_num_phases];
+	PetscScalar  ElasticShearModule[max_num_phases];
+	PetscScalar  ElasticBulkModule[max_num_phases];
+	PetscScalar  Cohesion[max_num_phases];
+	PetscScalar  FrictionAngle[max_num_phases];
+	PetscScalar  T_Conductivity[max_num_phases];
+	PetscScalar  HeatCapacity[max_num_phases];
+	PetscScalar  RadioactiveHeat[max_num_phases];
+	PetscScalar  ThermalExpansivity[max_num_phases];
+	PetscScalar  FrankKamenetskii[max_num_phases];
+	PetscScalar  Density_T0[max_num_phases];
+	PetscScalar  Powerlaw_e0[max_num_phases];
+	PetscScalar  CohesionAfterWeakening[max_num_phases];
+	PetscScalar  FrictionAngleAfterWeakening[max_num_phases];
+	PetscScalar  Weakening_PlasticStrain_Begin[max_num_phases];
+	PetscScalar  Weakening_PlasticStrain_End[max_num_phases];
+	PetscScalar  Ra[max_num_phases];
 } PhProps;
 //-----------------------------------------------------------------------------
-//-----------------------------------------------------------------------------
 // Structure that holds characteristic values for nondimensionalisation
-typedef struct {
-	PetscScalar Length, Time, Stress, Velocity, Temperature, Viscosity;
-	PetscScalar Density, kg, Strainrate, ThermalExpansivity, km, SecYear, cmYear, Myrs, MPa, Force, Watt;
-	PetscScalar T_conductivity, RadioactiveHeat, Joule, HeatCapacity, Jmol;
+typedef struct
+{
+	PetscScalar  Length, Time, Stress, Velocity, Temperature, Viscosity;
+	PetscScalar  Density, kg, Strainrate, ThermalExpansivity, km, SecYear, cmYear, Myrs, MPa, Force, Watt;
+	PetscScalar  T_conductivity, RadioactiveHeat, Joule, HeatCapacity, Jmol;
 } nonDimUnits;
 //-----------------------------------------------------------------------------
-//-----------------------------------------------------------------------------
-// Structure that holds gravity parameters
-typedef struct {
-	PetscInt		GetIt;
-	PetscInt		SaveDebug,SaveVTK,SaveRef;
-	PetscBool		UseNumerics, UseAnalytics;
-	PetscInt		survey_nx, survey_ny;
-	PetscScalar		survey_xs, survey_xm;
-	PetscScalar		survey_ys, survey_ym;
-	PetscScalar		survey_z ;
-	PetscScalar     ReferenceDensity;
-	PetscScalar     StdDev;
-	PetscScalar		LithColDens[9],LithColDepth[8];
-	PetscInt		num_intp,LithColNum;
-	char			RefDatFile2load[PETSC_MAX_PATH_LEN];
+// Structure that holds gravity parameters - not yet used
+typedef struct
+{
+	PetscInt     GetIt;
+	PetscInt     SaveDebug,SaveVTK,SaveRef;
+	PetscBool    UseNumerics, UseAnalytics;
+	PetscInt     survey_nx, survey_ny;
+	PetscScalar  survey_xs, survey_xm;
+	PetscScalar  survey_ys, survey_ym;
+	PetscScalar  survey_z ;
+	PetscScalar  ReferenceDensity;
+	PetscScalar  StdDev;
+	PetscScalar  LithColDens[9],LithColDepth[8];
+	PetscInt     num_intp,LithColNum;
+	char         RefDatFile2load[PETSC_MAX_PATH_LEN];
 } gravityParams;
 //-----------------------------------------------------------------------------
-//-----------------------------------------------------------------------------
 // Structure that holds pushing parameters
-typedef struct {
-	PetscScalar		L_block, W_block, H_block;
-	PetscScalar		x_center_block, y_center_block, z_center_block;
-	PetscScalar     V_push[10], omega[10];
-	PetscInt		num_changes, reset_pushing_coord, ind_change;
-	PetscScalar		time[11];
-	PetscInt	    coord_advect[10], dir[10];
-	PetscScalar		theta;
-	Vec 			PV_rhs;
+typedef struct
+{
+	PetscScalar  L_block, W_block, H_block;
+	PetscScalar  x_center_block, y_center_block, z_center_block;
+	PetscScalar  V_push[10], omega[10], time[11];
+	PetscScalar  theta;
+	PetscInt     num_changes, reset_pushing_coord, ind_change;
+	PetscInt     coord_advect[10], dir[10];
 } PushParams;
-//-----------------------------------------------------------------------------
 //-----------------------------------------------------------------------------
 // Mesh segments input data structures
 typedef struct
@@ -77,10 +87,6 @@ typedef struct
 	PetscInt    ncells[MaxNumMeshSegs  ]; // number of cells for each segment
 	PetscScalar biases[MaxNumMeshSegs  ]; // biases for each segment
 } MeshSegInp;
-//-----------------------------------------------------------------------------
-/* variables that need to be stored in the breakpoint file:
- * HorizontalFreeSurfaceHeight
- */
 //-----------------------------------------------------------------------------
 // marker initialization type enumeration
 typedef enum
@@ -99,6 +105,7 @@ typedef enum
 	// ... add more
 } SetupType;
 //-----------------------------------------------------------------------------
+// Structure that holds user input data
 typedef struct {
 
 	// mesh segments
@@ -114,9 +121,9 @@ typedef struct {
 	PetscScalar      x_left, y_front, z_bot;
 	PetscInt         nel_x, nel_y, nel_z;
 	PetscInt         NumPartX, NumPartY, NumPartZ;
-	PetscScalar      Setup_Diapir_Hi; //migrated from ModelSetup - for 'DIAPIR' setup
-	PetscInt         nnode_x, nnode_y, nnode_z; // NOT NECESSARY
-	PetscInt         cpu_x, cpu_y, cpu_z; // NOT NECESSARY - only used in FDSTAGCreate - not even initialized
+	PetscScalar      Setup_Diapir_Hi; // for 'DIAPIR' setup
+	PetscInt         nnode_x, nnode_y, nnode_z; // NOT NECESSARY if -nel is specified
+	//PetscInt         cpu_x, cpu_y, cpu_z; // not necessary - only used in FDSTAGCreate - not even initialized
 	//PetscInt         finest_nnode_x, finest_nnode_y, finest_nnode_z, finest_nelx, finest_nely, finest_nelz;
 	//PetscInt         remesh;
 	//PetscInt         refinex, refiney, refinez;
@@ -155,7 +162,7 @@ typedef struct {
 
 	// optimization
 	PetscInt         mpi_group_id; //migrated from OptimiseParams
-	PetscScalar		LowerViscosityCutoff, UpperViscosityCutoff, InitViscosity;// JacRes
+	PetscScalar      LowerViscosityCutoff, UpperViscosityCutoff, InitViscosity;// JacRes
 
 	//PetscInt         MaxNonlinearIterations;
 	//PetscScalar      NonlinearIterationsAccuracy;
@@ -163,7 +170,7 @@ typedef struct {
 	//PetscInt         VelocitySolver; // 0 - User defined; 1 - Direct (MUMPS); 2 - Galerkin geometric multigrid; 3 - Fieldsplit + Algebraic Multigrid (ML)
 	//PetscBool        VelocityTest;   // Request to perform single velocity solve for test purposes
 	//PetscBool        ScaleSystem;    // Request to scale linear system before solution
-	PetscBool        use_fdstag_canonical; // request native staggered grid discretization ?? is it necessary
+	PetscBool        use_fdstag_canonical; // request native staggered grid discretization
 
 	// restart
 	PetscInt         save_breakpoints, break_point_number;
@@ -175,7 +182,7 @@ typedef struct {
 	char             LoadInitialParticlesDirectory[PETSC_MAX_PATH_LEN];
 	char             SaveInitialParticlesDirectory[PETSC_MAX_PATH_LEN];
 	PetscInt         SaveParticles;
-	PetscInt         ParticleInput;
+	PetscInt         ParticleInput; // this needs to be connected in relation to marker setups
 
 	// input/output
 	char             OutputFile[PETSC_MAX_PATH_LEN];
@@ -191,7 +198,7 @@ typedef struct {
 	//PetscInt         InitialMantleLevel;
 	//PetscInt         GridAdvectionMethod, NumSurfaceNodes, num_subdt, num_phase_transitions;
 	//PetscInt         LoadInitialParticlesFromDisc;
-	//PetscInt         MuMeanMethod, ApplyErosion;
+	//PetscInt         MuMeanMethod;
 	//char             InitialMeshFileName[PETSC_MAX_PATH_LEN];
 	//PetscBool        AnalyticalBenchmark;
 	//PetscInt         *NodesDistributionCPUsFineGrid;
@@ -228,19 +235,10 @@ typedef struct {
 	Vec              Pressure;
 	Vec              ViscosityScaling;
 
-	// other - not bothered to sort
-//PetscScalar 				SurfaceAngle, SurfaceNoiseAmplitude;
-//PetscScalar 				fluvial_erosion, diffusion_erosion;
-//DM						DA_Materials, DA_Processors, DA_Quadrature;		// DA that contains material properties, and that is used to distribute grid
-//DM 						DA_Vel, DA_Pres;								// DA's that store Pressure-Velocity Stokes solutions
-//DM 						DA_Temp;										// DA for temperature solution
-//DM 						DA_BottomTopography;		// DA that stores the surface topography
-//Mat 						VV_MAT,  VP_MAT;								// Matrices that contain P-V coefficients for Stokes
-//Mat 						PV_MAT,  PP_MAT;								// Matrices that contain P-V coefficients for Stokes
-//Mat	 					approx_S;										// Preconditioning matrix for Stokes
-//Mat						TEMP_MAT;										// Matrix that contains coefficients for Temperature
-//Vec						Materials;				                        // Contains material properties
-
+	// other - erosion
+	//PetscInt         ApplyErosion;
+	//PetscScalar      SurfaceAngle, SurfaceNoiseAmplitude;
+	//PetscScalar      fluvial_erosion, diffusion_erosion;
 
 } UserCtx;
 //-----------------------------------------------------------------------------

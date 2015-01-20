@@ -197,8 +197,7 @@ PetscErrorCode FDSTAGClear(FDSTAG *fs);
 
 PetscErrorCode FDSTAGCreate(
 	FDSTAG  *fs,
-	PetscInt Nx, PetscInt Ny, PetscInt Nz,
-	PetscInt Px, PetscInt Py, PetscInt Pz);
+	PetscInt Nx, PetscInt Ny, PetscInt Nz);
 
 PetscErrorCode FDSTAGDestroy(FDSTAG *fs);
 

@@ -7,7 +7,11 @@
 
 PetscErrorCode FDSTAGInitCode(JacRes *jr, UserCtx *user);
 
+PetscErrorCode FDSTAGSetDefaultValues(UserCtx *user);
+
 PetscErrorCode FDSTAGReadInputFile(JacRes *jr, UserCtx *user);
+
+PetscErrorCode FDSTAGReadCommLine(UserCtx *user );
 
 PetscErrorCode ReadMaterialProperties(UserCtx *user);
 

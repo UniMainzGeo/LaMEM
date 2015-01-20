@@ -765,8 +765,7 @@ PetscErrorCode FDSTAGClear(FDSTAG  *fs)
 #define __FUNCT__ "FDSTAGCreate"
 PetscErrorCode FDSTAGCreate(
 	FDSTAG  *fs,
-	PetscInt Nx, PetscInt Ny, PetscInt Nz,
-	PetscInt Px, PetscInt Py, PetscInt Pz)
+	PetscInt Nx, PetscInt Ny, PetscInt Nz)
 {
 	// Create object with all necessary arrays to handle FDSTAG discretization.
 
@@ -781,6 +780,7 @@ PetscErrorCode FDSTAGCreate(
 	PetscInt        *lx,  *ly,  *lz;
 	PetscInt         rx,   ry,   rz;
 	PetscInt         cx,   cy,   cz;
+	PetscInt         Px,   Py,   Pz;
 
 	PetscErrorCode 	 ierr;
 	PetscFunctionBegin;
