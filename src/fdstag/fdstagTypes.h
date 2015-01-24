@@ -93,6 +93,7 @@ typedef enum
 {
 	PARALLEL,    // read coordinates, phase and temperature from files in parallel
 	REDUNDANT,   // read phase and temperature from file redundantly (uniform coordinates)
+	POLYGONS,    // read polygons from file redundantly
 	DIAPIR,      // diapir setup
 	BLOCK,       // falling block
 	SUBDUCTION,  // subduction setup with air

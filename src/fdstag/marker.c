@@ -54,18 +54,20 @@ PetscErrorCode ADVMarkInit(AdvCtx *actx, UserCtx *user)
 	// initialize coordinates and add random noise if required for hard-coded setups
 	if(user->msetup != PARALLEL
 	&& user->msetup != REDUNDANT
-	&& user->msetup != RESTART)
+	&& user->msetup != RESTART
+	&& user->msetup != POLYGONS)
 	{
 		ierr = ADVMarkInitCoord(actx, user); CHKERRQ(ierr);
 	}
     
     // display info on-screen
-    PetscPrintf(PETSC_COMM_WORLD," Marker setup umployed [msetup] : ");
+    PetscPrintf(PETSC_COMM_WORLD," Marker setup employed [msetup] : ");
 
     
 	// initialize marker phase, temperature, etc.
     if     (user->msetup == PARALLEL)   { PetscPrintf(PETSC_COMM_WORLD,"%s\n","parallel");        ierr = ADVMarkInitFileParallel (actx, user); CHKERRQ(ierr); }
 	else if(user->msetup == REDUNDANT)  { PetscPrintf(PETSC_COMM_WORLD,"%s\n","redundant");       ierr = ADVMarkInitFileRedundant(actx, user); CHKERRQ(ierr); }
+	else if(user->msetup == POLYGONS)   { PetscPrintf(PETSC_COMM_WORLD,"%s\n","polygons");        ierr = ADVMarkInitFilePolygons (actx, user); CHKERRQ(ierr); }
 	else if(user->msetup == DIAPIR)     { PetscPrintf(PETSC_COMM_WORLD,"%s\n","diapir");          ierr = ADVMarkInitDiapir       (actx, user); CHKERRQ(ierr); }
 	else if(user->msetup == BLOCK)      { PetscPrintf(PETSC_COMM_WORLD,"%s\n","block");           ierr = ADVMarkInitBlock        (actx, user); CHKERRQ(ierr); }
 	else if(user->msetup == SUBDUCTION) { PetscPrintf(PETSC_COMM_WORLD,"%s\n","subduction");      ierr = ADVMarkInitSubduction   (actx, user); CHKERRQ(ierr); }
@@ -1184,4 +1186,650 @@ PetscErrorCode ADVMarkInitBands(AdvCtx *actx, UserCtx *user)
 
 	PetscFunctionReturn(0);
 }
+
 //---------------------------------------------------------------------------
+#undef __FUNCT__
+#define __FUNCT__ "ADVMarkInitFilePolygons"
+PetscErrorCode ADVMarkInitFilePolygons(AdvCtx *actx, UserCtx *user)
+{
+	// REDUNDANTLY loads a file with 2D-polygons that coincide with the marker planes
+	// each processor uses the full polygonal shapes, but only handles the local markers
+
+	FDSTAG       *fs;
+	int           fd;	
+	PetscViewer   view_in;
+	char         *LoadFileName;
+	PetscScalar   header;
+	PetscInt      tstart[3],tend[3], nmark[3], nidx[3];
+	PetscInt      k,kvol,VolN,Nmax,Lmax,kpoly;
+	PetscScalar   VolInfo[4];
+	Polygon2D     Poly;
+	PetscBool    *polyin, *polybnd;
+	PetscInt     *idx;
+	PetscScalar  *X,*PolyL;
+
+	PetscInt      imark,j,i;
+	PetscScalar   dx,dy,dz;
+	PetscScalar   chLen,chTemp;
+
+	PetscErrorCode ierr;
+	PetscFunctionBegin;
+
+	fs = actx->fs;
+	
+
+
+
+	// set characteristic length and temperature
+	if(user->DimensionalUnits)
+	{	chLen  = user->Characteristic.Length;
+		chTemp = user->Characteristic.Temperature;
+	}
+	else
+	{	chLen  = 1.0;
+		chTemp = 1.0;
+	}
+
+	
+	
+	// initialize markers
+	
+	// marker counter
+	imark = 0;
+
+	dx = user->W / (PetscScalar)(user->NumPartX * fs->dsx.tcels);
+	dy = user->L / (PetscScalar)(user->NumPartY * fs->dsy.tcels);
+	dz = user->H / (PetscScalar)(user->NumPartZ * fs->dsz.tcels);
+	
+	
+	PetscPrintf(PETSC_COMM_WORLD," dx %g dy %g dz %g  \n", dx,dy,dz);
+	PetscPrintf(PETSC_COMM_WORLD," x0 %g y0 %g z0 %g  \n", fs->dsx.ncoor[0],fs->dsy.ncoor[0],fs->dsz.ncoor[0]);
+
+
+
+	// create uniform distribution of markers/cell for variable grid
+	for(k = 0; k < fs->dsz.ncels; k++)
+	{
+		for(j = 0; j < fs->dsy.ncels; j++)
+		{
+			for(i = 0; i < fs->dsx.ncels; i++)
+			{
+
+				// set marker coordinates
+				actx->markers[imark].X[0] = fs->dsx.ncoor[0] + dx*0.5 + i*dx;
+				actx->markers[imark].X[1] = fs->dsy.ncoor[0] + dy*0.5 + j*dy;
+				actx->markers[imark].X[2] = fs->dsz.ncoor[0] + dz*0.5 + k*dz;
+
+				// increment local counter
+				imark++;
+			}
+		}
+	}
+
+
+	// get first global index of marker plane
+	tstart[0] = fs->dsx.pstart * user->NumPartX;
+	tstart[1] = fs->dsy.pstart * user->NumPartY;
+	tstart[2] = fs->dsz.pstart * user->NumPartZ;
+
+	// get local number of markers per direction
+	nmark[0]  = fs->dsx.ncels * user->NumPartX;
+	nmark[1]  = fs->dsy.ncels * user->NumPartY;
+	nmark[2]  = fs->dsz.ncels * user->NumPartZ;
+
+	// get last global index of marker plane
+	for (k=0;k<3;k++)
+	{
+		tend[k]   = tstart[k] + nmark[k] - 1;
+	}
+
+	// how many markers on the marker plane ?
+	nidx[0] = nmark[1] * nmark[2];
+	nidx[1] = nmark[0] * nmark[2];
+	nidx[2] = nmark[0] * nmark[1];
+
+
+	// compile input file name
+	asprintf(&LoadFileName, "./%s/%s",
+		user->LoadInitialParticlesDirectory,
+		user->ParticleFilename);
+
+//	PetscPrintf(PETSC_COMM_WORLD," Loading polygons redundantly from file: %s \n", LoadFileName);
+
+	ierr = PetscViewerBinaryOpen(PETSC_COMM_SELF, LoadFileName, FILE_MODE_READ, &view_in); CHKERRQ(ierr);
+	ierr = PetscViewerBinaryGetDescriptor(view_in, &fd); CHKERRQ(ierr);
+
+	// read (and ignore) the silent undocumented file header
+	ierr = PetscBinaryRead(fd, &header, 1, PETSC_SCALAR); CHKERRQ(ierr);
+
+	// read number of volumes
+	ierr = PetscBinaryRead(fd, VolInfo, 3, PETSC_SCALAR); CHKERRQ(ierr);
+	VolN = (PetscInt)(VolInfo[0]);
+	Nmax = (PetscInt)(VolInfo[1]);
+	Lmax = (PetscInt)(VolInfo[2]);
+//PetscPrintf(PETSC_COMM_WORLD," >>> DEBUG: VolN %d Nmax %d  Lmax %d \n", VolN,Nmax,Lmax);
+
+
+    // allocate space for the polygons
+	ierr = PetscMalloc((size_t)Nmax  *sizeof(PetscScalar),&PolyL); CHKERRQ(ierr);
+	ierr = PetscMalloc((size_t)Lmax*2*sizeof(PetscScalar),&Poly.X); CHKERRQ(ierr);
+
+
+	// loop over all volumes
+	for (kvol=0; kvol<VolN; kvol++)
+	{
+		// read volume header
+		ierr = PetscBinaryRead(fd, VolInfo, 4, PETSC_SCALAR); CHKERRQ(ierr);
+		Poly.dir   = (PetscInt)(VolInfo[0]); // normal vector of polygon plane
+		Poly.phase = (PetscInt)(VolInfo[1]); // phase that polygon defines
+		Poly.num   = (PetscInt)(VolInfo[2]); // number of polygon slices defining the volume
+		Poly.idxs  = (PetscInt)(VolInfo[3]); // index of first polygon slice
+		
+PetscPrintf(PETSC_COMM_WORLD," >>> DEBUG: dir %d phase %d  num %d idxs %d\n", Poly.dir,Poly.phase,Poly.num,Poly.idxs);
+		ierr = PetscBinaryRead(fd, PolyL, Poly.num, PETSC_SCALAR); CHKERRQ(ierr);
+
+
+PetscPrintf(PETSC_COMM_WORLD," >>> DEBUG: PolyL: 0-5: %lld %lld %lld %lld %lld %lld \n",(LLD)PolyL[0],(LLD)PolyL[1],(LLD)PolyL[2],(LLD)PolyL[3],(LLD)PolyL[4],(LLD)PolyL[5] );
+
+		// define axes the span the polygon plane
+		if (Poly.dir==0)
+		{
+			Poly.ax[0] = 1; Poly.ax[1] = 2;
+		}
+		if (Poly.dir==1)
+		{
+			Poly.ax[0] = 0; Poly.ax[1] = 2;
+		}
+		if (Poly.dir==2)
+		{
+			Poly.ax[0] = 0; Poly.ax[1] = 1;
+		}
+
+		// allocate index array
+		ierr = PetscMalloc((size_t)nidx[Poly.dir]*sizeof(PetscInt),&idx); CHKERRQ(ierr);
+	 	ierr = PetscMalloc((size_t)nidx[Poly.dir]*sizeof(PetscBool),&polyin); CHKERRQ(ierr);
+	    ierr = PetscMalloc((size_t)nidx[Poly.dir]*sizeof(PetscBool),&polybnd); CHKERRQ(ierr);
+   	    ierr = PetscMalloc((size_t)nidx[Poly.dir]*2*sizeof(PetscScalar),&X); CHKERRQ(ierr);
+//PetscPrintf(PETSC_COMM_WORLD," >>> DEBUG: A, nidx: %d\n",nidx[Poly.dir]);
+		// loop through all slices
+		for (kpoly=0; kpoly<Poly.num;kpoly++)
+		{
+			// read polygon
+//			PetscPrintf(PETSC_COMM_WORLD," >>> DEBUG: A1 idsx %d lidx %d tstart %d\n",Poly.idxs,Poly.lidx,tstart[Poly.dir]);
+			Poly.len  = (PetscInt)(PolyL[kpoly]);
+			Poly.gidx = (PetscInt)(Poly.idxs+kpoly);
+			Poly.lidx = (PetscInt)(Poly.idxs+kpoly-tstart[Poly.dir]);
+//PetscPrintf(PETSC_COMM_WORLD," >>> DEBUG: A2: PolyL 0 1 2: %d %d %d len %d  gidx %d lidx %d \n",PolyL[0],PolyL[1],PolyL[2], Poly.len,Poly.gidx,Poly.lidx);
+			ierr = PetscBinaryRead(fd, Poly.X, Poly.len*2, PETSC_SCALAR); CHKERRQ(ierr);
+//PetscPrintf(PETSC_COMM_WORLD," >>> DEBUG: B\n");
+			// check if slice is part of local proc
+			if (Poly.gidx  >= tstart[Poly.dir] && Poly.gidx <= tend[Poly.dir])
+			{
+
+//PetscPrintf(PETSC_COMM_WORLD," >>> DEBUG: B1: %d  %d %d %d %d %d %d %d\n",idx[0],idx[1],idx[2],idx[3],idx[4],idx[5],idx[6],idx[7]);
+				// get local markers on plane with polygon
+	            ADVMarkSecIdx(actx,user,Poly.dir,Poly.lidx, idx);
+
+//PetscPrintf(PETSC_COMM_WORLD," >>> DEBUG: B2 markers on plane %d\n",nidx[Poly.dir]);
+	            for (k=0;k<nidx[Poly.dir];k++)
+	            {
+//		            PetscPrintf(PETSC_COMM_WORLD," >>> DEBUG: B2 k=%d nummark[%d]\n",k,idx[k]);
+	            	X[k*2]   = actx->markers[idx[k]].X[Poly.ax[0]] * chLen;
+	            	X[k*2+1] = actx->markers[idx[k]].X[Poly.ax[1]] * chLen;
+	            }
+				//PetscPrintf(PETSC_COMM_WORLD," >>> DEBUG: B3: poly.X[0,1,n-1,n] %g %g %g %g\n",Poly.X[0],Poly.X[1], Poly.X[Poly.len-2],Poly.X[Poly.len-1]);
+//		PetscPrintf(PETSC_COMM_WORLD," >>> DEBUG: B3: poly.X[0,1,n-1,n] %g %g %g %g\n",X[0],X[1], X[39998], X[39999]);
+				
+				
+	            // find markers in local polygon (polyin & polybnd are initialized internally )
+				ierr = inpoly(nidx[Poly.dir], X, Poly.X, Poly.len, polyin, polybnd); CHKERRQ(ierr);
+//PetscPrintf(PETSC_COMM_WORLD," >>> DEBUG: B4\n");
+	            // set phase
+	            for (k=0;k<nidx[Poly.dir];k++)
+	            {
+//            		PetscPrintf(PETSC_COMM_WORLD," >>> DEBUG: B4a ,polyin %lld polybnd %lld\n",(LLD)polyin[k],(LLD)polybnd[k]);
+	            	if (polyin[k] || polybnd[k])
+	            	{
+	            		actx->markers[idx[k]].phase = Poly.phase;
+	            		
+	            		PetscPrintf(PETSC_COMM_WORLD," >>> DEBUG: B4 ,phase %d \n",Poly.phase);
+	            	}
+	            }
+			}
+		}
+
+		PetscPrintf(PETSC_COMM_WORLD," Created volume %lld with %lld slices\n",(LLD)kvol,(LLD)Poly.num);
+		// free
+		PetscFree(idx);
+		PetscFree(polyin);
+		PetscFree(polybnd);
+		PetscFree(X);
+	}
+
+	PetscFree(PolyL);
+	PetscFree(Poly.X);
+
+	// wait until all processors finished reading markers
+	// WARNING! NOT SURE WHETHER THIS IS REALLY NECESSARY
+	ierr = MPI_Barrier(PETSC_COMM_WORLD); CHKERRQ(ierr);
+
+	PetscPrintf(PETSC_COMM_WORLD," Finished setting markers with polygons\n");
+	PetscFunctionReturn(0);
+}
+
+//---------------------------------------------------------------------------
+#undef __FUNCT__
+#define __FUNCT__ "ADVMarkSecIdx"
+void ADVMarkSecIdx(AdvCtx *actx, UserCtx *user, PetscInt dir, PetscInt Islice, PetscInt *idx)
+{
+	FDSTAG   *fs;
+	PetscInt i,ix,iy,iz,nmarkx,nmarky,nmarkz;
+	PetscInt d,c;
+	
+	
+		// get fdstag info
+	fs = actx->fs;
+	
+/*	
+	PetscInt Num[fs->dsy.ncels*fs->dsz.ncels];
+	PetscInt mNum[user->NumPartY*user->NumPartZ];
+//	PetscInt Im[user->NumPartY*user->NumPartZ*fs->dsy.ncels*fs->dsz.ncels];
+	PetscInt in, iC, iSlice,mRow,CellRow,ICell,im,lenNum,nt;
+
+
+
+	
+	nt = user->NumPartX * user->NumPartY * user->NumPartZ;
+	lenNum = fs->dsy.ncels*fs->dsz.ncels;
+
+*/
+
+
+	// get local number of markers
+	nmarkx  = fs->dsx.ncels * user->NumPartX;
+	nmarky  = fs->dsy.ncels * user->NumPartY;
+	nmarkz  = fs->dsz.ncels * user->NumPartZ;
+	
+
+
+	if (dir == 0)
+	{
+
+/*
+		// for yz slices
+	
+		CellRow = Islice/user->NumPartX;   // index of the cell row
+		mRow    = Islice % user->NumPartX; // row index inside the cell
+		ICell   = 0;                       // c index
+
+		// Cell numbering of a particular plane in yz
+		iSlice = CellRow;
+		c      = iSlice;
+	
+		for (in=0; in < lenNum; in++)
+		{
+			Num[in] = c;
+			c += fs->dsx.ncels;
+		}
+	
+		// Numbering of marker inside the cell
+		iSlice = mRow;
+		c = iSlice;
+
+		for (in=0; in < (user->NumPartY*user->NumPartZ); in++)
+		{
+			mNum[in] = c;
+			c += user->NumPartX;
+		}
+	
+		// Get marker numbering
+		c = 1;
+		for (iC=0; iC < lenNum ; iC++) // Go over cells in the plane
+		{
+			ICell = Num[iC];
+			for (im=0; im<(user->NumPartY*user->NumPartZ);im++)
+			{
+				idx[c] = ICell*nt +mNum[im];
+				c++;
+			}
+		}
+*/
+	
+	
+	
+
+		// yz plane
+		d = 0;
+		c = Islice;
+		for(iz=0; iz<nmarkz; iz++)
+		{
+			for (iy=0; iy<nmarky; iy++)
+			{
+				idx[d] =c;
+				c += nmarkx;
+				d++;
+
+			}
+//						PetscPrintf(PETSC_COMM_WORLD," >>> DEBUG: B1inside: %d %d \n",c,idx[d]);
+		}
+		
+
+	}
+	else if (dir == 1)
+	{
+		// xz plane
+		d = 0;
+		c = Islice *nmarkx;
+		for(iz=0; iz<nmarkz;iz++ )
+		{
+			for(ix=0; ix<nmarkx;ix++)
+			{
+				idx[d] = c;
+				c++;
+				d++;
+			}
+			c += nmarkx*nmarky-nmarkx;
+		}
+	}
+	else if (dir == 2)
+	{
+		// xy plane
+		if (dir == 0)
+		d = 0;
+		for(i=0; i<(nmarkx*nmarky);i++)
+		{
+			idx[d] = i + (Islice*nmarkx*nmarky);
+			d++;
+		}
+	}
+
+	else
+	{
+	// Error
+	}
+
+	return;
+}
+
+//---------------------------------------------------------------------------
+#undef __FUNCT__
+#define __FUNCT__ "inpoly"
+PetscErrorCode inpoly(PetscInt N, PetscScalar *X, PetscScalar *node, PetscInt Nnode, PetscBool *in, PetscBool *bnd)
+{
+
+    PetscScalar *cnect;
+	PetscScalar *Xtemp , *nodetemp;
+	PetscBool *cn , *on;
+    PetscScalar *x, *y;
+    PetscInt *index;
+    PetscScalar tol, tol1 , eps = 2.2204e-016, temp , minix=10e20, maxix=-10e20, miniy=10e20, maxiy=-10e20, norminf=-10e20;
+    PetscScalar x1, x2 , y1, y2, xmin, xmax , ymin, ymax, XX, YY , x2x1 , y2y1;
+    PetscScalar lim , ub;
+    PetscInt i , j, l , i2 , ind , k ;
+    PetscInt n1 , n2 , lower , upper, start;
+    PetscInt N1, Ncnect;
+
+	PetscErrorCode ierr;
+	PetscFunctionBegin;
+
+
+
+	// constants
+	N1 = N-1;
+	Ncnect = Nnode;
+
+	// allocate and initialize temporary arrays
+	ierr = PetscMalloc((size_t)N*2*sizeof(PetscScalar),&Xtemp);
+	for(i = 0; i < 2*N; i++)
+	{
+		Xtemp[i] = X[i];
+	}
+
+	ierr = PetscMalloc((size_t)Nnode*2*sizeof(PetscScalar),&nodetemp);
+	for(i = 0; i < 2*Nnode; i++)
+	{
+		nodetemp[i] = node[i];
+	}
+
+	ierr = PetscMalloc((size_t)Ncnect*2*sizeof(PetscScalar),&cnect);
+	for (i = 0; i < Ncnect - 1; i++)
+	{
+		i2            = 2*i;
+		cnect[i2]     = i + 1;
+		cnect[i2 + 1] = i + 2;
+	}
+	cnect[Nnode*2-2] = Nnode;
+	cnect[Nnode*2-1] = 1.0;
+
+    // Temporary vectors
+    ierr = PetscMalloc((size_t)N*sizeof(PetscBool),&cn); CHKERRQ(ierr);
+	ierr = PetscMalloc((size_t)N*sizeof(PetscBool),&on); CHKERRQ(ierr);
+	ierr = PetscMalloc((size_t)N*sizeof(PetscScalar),&x); CHKERRQ(ierr);
+	ierr = PetscMalloc((size_t)N*sizeof(PetscScalar),&y); CHKERRQ(ierr);
+	ierr = PetscMalloc((size_t)N*sizeof(PetscInt),&index); CHKERRQ(ierr);
+
+
+	// unmodified code of Darren Engwirda & Sebastien Paris ---
+    for (i = 0; i < 2*N ; i=i+2)
+    {
+        temp  = Xtemp[i];
+        if(temp < minix)
+        {
+            minix = temp;
+        }
+        if(temp > maxix)
+        {
+            maxix = temp;
+        }
+        temp  = X[i + 1];
+        if(temp < miniy)
+        {
+            miniy = temp;
+        }
+        if(temp > maxiy)
+        {
+            maxiy = temp;
+        }
+    }
+    for (i = 0 ; i < 2*Nnode ; i = i + 2)
+    {
+        temp = fabs(node[i]);
+        if(temp > norminf)
+        {
+            norminf = temp;
+        }
+        temp = fabs(node[i + 1]);
+        if(temp > norminf)
+        {
+            norminf = temp;
+        }
+    }
+    tol  = norminf*eps;
+    lim  = norminf + tol;
+	tol1 = tol + 1.0;
+
+    if ((maxix - minix) > (maxiy - miniy))
+    {
+        for (i = 0; i < 2*N ; i=i+2)
+        {
+            temp             = Xtemp[i];
+            Xtemp[i]         = Xtemp[i + 1];
+            Xtemp[i + 1]     = temp;
+        }
+        for (i = 0 ; i < 2*Nnode ; i=i+2)
+        {
+            temp             = nodetemp[i];
+            nodetemp[i]      = nodetemp[i + 1];
+            nodetemp[i + 1]  = temp;
+        }
+    }
+    for (i = 0 ; i< N ; i++)
+    {
+        cn[i]    = 0;
+        on[i]    = 0;
+        y[i]     = Xtemp[2*i + 1];
+        index[i] = i;
+
+        in[i]    = 0; // added this to initialize *in and *bnd
+        bnd[i]   = 0;
+    }
+
+    qsindex( y , index , 0 , N1 );
+    for (i = 0 ; i < N ; i++)
+    {
+        x[i]     = Xtemp[2*index[i]];
+    }
+
+    for (k = 0 ; k < Ncnect ; k++)
+    {
+        n1   = 2*(((PetscInt) cnect[2*k]) - 1);
+        n2   = 2*(((PetscInt) cnect[2*k + 1]) - 1);
+        x1   = nodetemp[n1];
+        y1   = nodetemp[n1 + 1];
+        x2   = nodetemp[n2];
+        y2   = nodetemp[n2 + 1];
+		x2x1 = x2 - x1;
+		y2y1 = y2 - y1;
+
+        if (x1 > x2)
+        {
+            xmin = x2;
+            xmax = x1;
+        }
+        else
+        {
+            xmin = x1;
+            xmax = x2;
+        }
+        if (y1 > y2)
+        {
+            ymin = y2;
+            ymax = y1;
+        }
+        else
+        {
+            ymin = y1;
+            ymax = y2;
+        }
+        if (y[0] == ymin)
+        {
+            start = 0;
+        }
+        else if (y[N1] <= ymin)
+        {
+            start = N1;
+        }
+        else
+        {
+            lower = 0;
+            upper = N1;
+            start = ((lower+upper)/2);
+            for (l = 0 ; l < N ; l++)
+            {
+                if (y[start] < ymin)
+                {
+                    lower = start;
+                    start = ((lower+upper)/2);
+                }
+                else if (y[start-1]<ymin)
+                {
+                    break;
+                }
+                else
+                {
+                    upper = start;
+                    start = ((lower+upper)/2);
+                }
+            }
+            start--;
+        }
+
+		start = max(0 , start);
+        for (j = start ; j < N ; j++)
+        {
+            YY = y[j];
+            if (YY <= ymax)
+            {
+                if (YY >= ymin)
+                {
+                    XX = x[j];
+
+                    if (XX >= xmin)
+                    {
+                        if (XX <= xmax)
+                        {
+                            on[j] = on[j] || ( fabs( (y2 - YY)*(x1 - XX) - (y1 - YY)*(x2 - XX) ) < tol );
+                            if (YY < ymax)
+                            {
+                                ub = ( x2x1*(y1 - YY) - y2y1*(x1 - XX) )/( (XX - lim)*y2y1 );
+                                if ( (ub > -tol) && (ub < tol1 ) )
+                                {
+                                    cn[j] = !cn[j];
+                                }
+                            }
+                        }
+                    }
+                    else if (YY < ymax)
+                    {
+                        cn[j] = !cn[j];
+                    }
+                }
+            }
+            else
+            {
+                break;
+            }
+        }
+    }
+    for(i = 0 ; i < N ; i++)
+    {
+        ind      = index[i];
+        in[ind]  = (cn[i] || on[i]);
+        bnd[ind] = on[i];
+    }
+	// code --------------------------
+
+    PetscFree(cn);
+    PetscFree(on);
+    PetscFree(x);
+    PetscFree(y);
+    PetscFree(index);
+    PetscFree(Xtemp);
+    PetscFree(nodetemp);
+    PetscFree(cnect);
+
+
+	PetscFunctionReturn(ierr);
+}
+//---------------------------------------------------------------------------
+void qsindex (PetscScalar  *a, PetscInt *index , PetscInt lo, PetscInt hi)
+{
+//  lo is the lower index, hi is the upper index
+//  of the region of array a that is to be sorted
+
+    PetscInt i=lo, j=hi , ind;
+    PetscScalar x=a[(lo+hi)/2] , h;
+
+    // partition
+    do
+    {
+        while (a[i]<x) i++;
+        while (a[j]>x) j--;
+        if (i<=j)
+        {
+            h        = a[i];
+			a[i]     = a[j];
+			a[j]     = h;
+			ind      = index[i];
+			index[i] = index[j];
+			index[j] = ind;
+            i++;
+			j--;
+        }
+    }
+	while (i<=j);
+
+    // recursion
+    if (lo<j) qsindex(a , index , lo , j);
+    if (i<hi) qsindex(a , index , i , hi);
+}

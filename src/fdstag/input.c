@@ -251,6 +251,7 @@ PetscErrorCode FDSTAGReadInputFile(JacRes *jr, UserCtx *user)
 	{
 		if     (!strcmp(setup_name, "parallel"))   user->msetup = PARALLEL;
 		else if(!strcmp(setup_name, "redundant"))  user->msetup = REDUNDANT;
+		else if(!strcmp(setup_name, "polygons"))   user->msetup = POLYGONS;
 		else if(!strcmp(setup_name, "diapir"))     user->msetup = DIAPIR;
 		else if(!strcmp(setup_name, "block"))      user->msetup = BLOCK;
 		else if(!strcmp(setup_name, "subduction")) user->msetup = SUBDUCTION;
@@ -831,6 +832,7 @@ PetscErrorCode FDSTAGReadCommLine(UserCtx *user )
 	if(found == PETSC_TRUE)
 	{	if     (!strcmp(setup_name, "parallel"))   user->msetup = PARALLEL;
 		else if(!strcmp(setup_name, "redundant"))  user->msetup = REDUNDANT;
+		else if(!strcmp(setup_name, "polygons"))   user->msetup = POLYGONS;
 		else if(!strcmp(setup_name, "diapir"))     user->msetup = DIAPIR;
 		else if(!strcmp(setup_name, "block"))      user->msetup = BLOCK;
 		else if(!strcmp(setup_name, "subduction")) user->msetup = SUBDUCTION;
