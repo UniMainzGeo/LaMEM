@@ -17,6 +17,7 @@ typedef struct
 	PetscInt    gidx; // global plane index (consistent with planes of markers)
 	PetscInt    lidx; // local plane index (consistent with planes of markers)
 	PetscInt       n; // number of polygon nodes
+	PetscInt   nmark; // number of markers in current volume
 	PetscScalar   *X; // coordinates of the polygon x1,y1,x2,y2,...xn,yn
 
 } Polygon2D;
@@ -57,7 +58,7 @@ PetscErrorCode ADVMarkInitBands        (AdvCtx *actx, UserCtx *user);
 
 void ADVMarkSecIdx(AdvCtx *actx, UserCtx *user, PetscInt dir, PetscInt Nslice, PetscInt *idx);
 PetscErrorCode inpoly(PetscInt N, PetscScalar *X, PetscScalar *node, PetscInt Nnode, PetscBool *in, PetscBool *bnd);
-void qsindex (PetscScalar  *a, PetscInt *index , PetscInt lo, PetscInt hi);
+void qsindex (PetscScalar  *a, PetscInt *idx , PetscInt lo, PetscInt hi);
 
 //---------------------------------------------------------------------------
 

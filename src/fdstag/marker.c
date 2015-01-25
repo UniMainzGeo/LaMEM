@@ -1193,14 +1193,14 @@ PetscErrorCode ADVMarkInitBands(AdvCtx *actx, UserCtx *user)
 PetscErrorCode ADVMarkInitFilePolygons(AdvCtx *actx, UserCtx *user)
 {
 	// REDUNDANTLY loads a file with 2D-polygons that coincide with the marker planes
-	// each processor uses the full polygonal shapes, but only handles the local markers
+	// each processor uses the full polygonal shapes to find assign phase ids to local markers
 
 	FDSTAG       *fs;
 	int           fd;	
 	PetscViewer   view_in;
 	char         *LoadFileName;
 	PetscScalar   header;
-	PetscInt      tstart[3],tend[3], nmark[3], nidx[3];
+	PetscInt      tstart[3],tend[3], nmark[3], nidx[3], nidxmax;
 	PetscInt      k,kvol,VolN,Nmax,Lmax,kpoly;
 	PetscScalar   VolInfo[4];
 	Polygon2D     Poly;
@@ -1208,31 +1208,28 @@ PetscErrorCode ADVMarkInitFilePolygons(AdvCtx *actx, UserCtx *user)
 	PetscInt     *idx;
 	PetscScalar  *X,*PolyL;
 
-	PetscInt      imark,j,i;
+	PetscInt      nmark_all,imark,j,i;
 	PetscScalar   dx,dy,dz;
-	PetscScalar   chLen,chTemp;
+	PetscScalar   chLen;//,chTemp;
 
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
 
+	// get marker context
 	fs = actx->fs;
 	
-
-
-
 	// set characteristic length and temperature
 	if(user->DimensionalUnits)
 	{	chLen  = user->Characteristic.Length;
-		chTemp = user->Characteristic.Temperature;
+//		chTemp = user->Characteristic.Temperature;
 	}
 	else
 	{	chLen  = 1.0;
-		chTemp = 1.0;
+//		chTemp = 1.0;
 	}
 
 	
-	
-	// initialize markers
+	// --- initialize markers ---
 	
 	// marker counter
 	imark = 0;
@@ -1240,32 +1237,25 @@ PetscErrorCode ADVMarkInitFilePolygons(AdvCtx *actx, UserCtx *user)
 	dx = user->W / (PetscScalar)(user->NumPartX * fs->dsx.tcels);
 	dy = user->L / (PetscScalar)(user->NumPartY * fs->dsy.tcels);
 	dz = user->H / (PetscScalar)(user->NumPartZ * fs->dsz.tcels);
-	
-	
-	PetscPrintf(PETSC_COMM_WORLD," dx %g dy %g dz %g  \n", dx,dy,dz);
-	PetscPrintf(PETSC_COMM_WORLD," x0 %g y0 %g z0 %g  \n", fs->dsx.ncoor[0],fs->dsy.ncoor[0],fs->dsz.ncoor[0]);
-
-
 
 	// create uniform distribution of markers/cell for variable grid
-	for(k = 0; k < fs->dsz.ncels; k++)
+	for(k = 0; k < fs->dsz.ncels*user->NumPartZ; k++)
 	{
-		for(j = 0; j < fs->dsy.ncels; j++)
+		for(j = 0; j < fs->dsy.ncels*user->NumPartY; j++)
 		{
-			for(i = 0; i < fs->dsx.ncels; i++)
+			for(i = 0; i < fs->dsx.ncels*user->NumPartX; i++)
 			{
-
 				// set marker coordinates
 				actx->markers[imark].X[0] = fs->dsx.ncoor[0] + dx*0.5 + i*dx;
 				actx->markers[imark].X[1] = fs->dsy.ncoor[0] + dy*0.5 + j*dy;
 				actx->markers[imark].X[2] = fs->dsz.ncoor[0] + dz*0.5 + k*dz;
-
 				// increment local counter
 				imark++;
 			}
 		}
 	}
 
+	// --- local grid/marker info ---
 
 	// get first global index of marker plane
 	tstart[0] = fs->dsx.pstart * user->NumPartX;
@@ -1284,9 +1274,9 @@ PetscErrorCode ADVMarkInitFilePolygons(AdvCtx *actx, UserCtx *user)
 	}
 
 	// how many markers on the marker plane ?
-	nidx[0] = nmark[1] * nmark[2];
-	nidx[1] = nmark[0] * nmark[2];
-	nidx[2] = nmark[0] * nmark[1];
+	nidx[0] = nmark[1] * nmark[2]; nidxmax = nidx[0];
+	nidx[1] = nmark[0] * nmark[2]; if (nidx[1] > nidxmax) nidxmax = nidx[1];
+	nidx[2] = nmark[0] * nmark[1]; if (nidx[2] > nidxmax) nidxmax = nidx[2];
 
 
 	// compile input file name
@@ -1294,8 +1284,7 @@ PetscErrorCode ADVMarkInitFilePolygons(AdvCtx *actx, UserCtx *user)
 		user->LoadInitialParticlesDirectory,
 		user->ParticleFilename);
 
-//	PetscPrintf(PETSC_COMM_WORLD," Loading polygons redundantly from file: %s \n", LoadFileName);
-
+	PetscPrintf(PETSC_COMM_WORLD," Loading polygons redundantly from file: %s \n", LoadFileName);
 	ierr = PetscViewerBinaryOpen(PETSC_COMM_SELF, LoadFileName, FILE_MODE_READ, &view_in); CHKERRQ(ierr);
 	ierr = PetscViewerBinaryGetDescriptor(view_in, &fd); CHKERRQ(ierr);
 
@@ -1307,15 +1296,20 @@ PetscErrorCode ADVMarkInitFilePolygons(AdvCtx *actx, UserCtx *user)
 	VolN = (PetscInt)(VolInfo[0]);
 	Nmax = (PetscInt)(VolInfo[1]);
 	Lmax = (PetscInt)(VolInfo[2]);
-//PetscPrintf(PETSC_COMM_WORLD," >>> DEBUG: VolN %d Nmax %d  Lmax %d \n", VolN,Nmax,Lmax);
 
-
-    // allocate space for the polygons
+    // allocate space for index array & the coordinates of the largest polygon
 	ierr = PetscMalloc((size_t)Nmax  *sizeof(PetscScalar),&PolyL); CHKERRQ(ierr);
 	ierr = PetscMalloc((size_t)Lmax*2*sizeof(PetscScalar),&Poly.X); CHKERRQ(ierr);
 
+	// allocate temporary arrays
+	ierr = PetscMalloc((size_t)nidxmax*sizeof(PetscInt),&idx); CHKERRQ(ierr);
+	ierr = PetscMalloc((size_t)nidxmax*sizeof(PetscBool),&polyin); CHKERRQ(ierr);
+	ierr = PetscMalloc((size_t)nidxmax*sizeof(PetscBool),&polybnd); CHKERRQ(ierr);
+	ierr = PetscMalloc((size_t)nidxmax*2*sizeof(PetscScalar),&X); CHKERRQ(ierr);
 
-	// loop over all volumes
+
+
+	// --- loop over all volumes ---
 	for (kvol=0; kvol<VolN; kvol++)
 	{
 		// read volume header
@@ -1324,93 +1318,77 @@ PetscErrorCode ADVMarkInitFilePolygons(AdvCtx *actx, UserCtx *user)
 		Poly.phase = (PetscInt)(VolInfo[1]); // phase that polygon defines
 		Poly.num   = (PetscInt)(VolInfo[2]); // number of polygon slices defining the volume
 		Poly.idxs  = (PetscInt)(VolInfo[3]); // index of first polygon slice
-		
-PetscPrintf(PETSC_COMM_WORLD," >>> DEBUG: dir %d phase %d  num %d idxs %d\n", Poly.dir,Poly.phase,Poly.num,Poly.idxs);
-		ierr = PetscBinaryRead(fd, PolyL, Poly.num, PETSC_SCALAR); CHKERRQ(ierr);
-
-
-PetscPrintf(PETSC_COMM_WORLD," >>> DEBUG: PolyL: 0-5: %lld %lld %lld %lld %lld %lld \n",(LLD)PolyL[0],(LLD)PolyL[1],(LLD)PolyL[2],(LLD)PolyL[3],(LLD)PolyL[4],(LLD)PolyL[5] );
+		Poly.nmark = 0;
 
 		// define axes the span the polygon plane
 		if (Poly.dir==0)
 		{
 			Poly.ax[0] = 1; Poly.ax[1] = 2;
 		}
-		if (Poly.dir==1)
+		else if (Poly.dir==1)
 		{
 			Poly.ax[0] = 0; Poly.ax[1] = 2;
 		}
-		if (Poly.dir==2)
+		else if (Poly.dir==2)
 		{
 			Poly.ax[0] = 0; Poly.ax[1] = 1;
 		}
+		else
+		{
+			SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "The 'Dir' argument is wrong; should be 0, 1 or 2.");
+		}
 
-		// allocate index array
-		ierr = PetscMalloc((size_t)nidx[Poly.dir]*sizeof(PetscInt),&idx); CHKERRQ(ierr);
-	 	ierr = PetscMalloc((size_t)nidx[Poly.dir]*sizeof(PetscBool),&polyin); CHKERRQ(ierr);
-	    ierr = PetscMalloc((size_t)nidx[Poly.dir]*sizeof(PetscBool),&polybnd); CHKERRQ(ierr);
-   	    ierr = PetscMalloc((size_t)nidx[Poly.dir]*2*sizeof(PetscScalar),&X); CHKERRQ(ierr);
-//PetscPrintf(PETSC_COMM_WORLD," >>> DEBUG: A, nidx: %d\n",nidx[Poly.dir]);
-		// loop through all slices
+		// get lengths of polygons (PetscScalar !)
+		ierr = PetscBinaryRead(fd, PolyL, Poly.num, PETSC_SCALAR); CHKERRQ(ierr);
+		
+		// --- loop through all slices ---
 		for (kpoly=0; kpoly<Poly.num;kpoly++)
 		{
 			// read polygon
-//			PetscPrintf(PETSC_COMM_WORLD," >>> DEBUG: A1 idsx %d lidx %d tstart %d\n",Poly.idxs,Poly.lidx,tstart[Poly.dir]);
 			Poly.len  = (PetscInt)(PolyL[kpoly]);
 			Poly.gidx = (PetscInt)(Poly.idxs+kpoly);
 			Poly.lidx = (PetscInt)(Poly.idxs+kpoly-tstart[Poly.dir]);
-//PetscPrintf(PETSC_COMM_WORLD," >>> DEBUG: A2: PolyL 0 1 2: %d %d %d len %d  gidx %d lidx %d \n",PolyL[0],PolyL[1],PolyL[2], Poly.len,Poly.gidx,Poly.lidx);
 			ierr = PetscBinaryRead(fd, Poly.X, Poly.len*2, PETSC_SCALAR); CHKERRQ(ierr);
-//PetscPrintf(PETSC_COMM_WORLD," >>> DEBUG: B\n");
+
 			// check if slice is part of local proc
 			if (Poly.gidx  >= tstart[Poly.dir] && Poly.gidx <= tend[Poly.dir])
 			{
-
-//PetscPrintf(PETSC_COMM_WORLD," >>> DEBUG: B1: %d  %d %d %d %d %d %d %d\n",idx[0],idx[1],idx[2],idx[3],idx[4],idx[5],idx[6],idx[7]);
-				// get local markers on plane with polygon
+				// get local markers that locate on polygon plane
 	            ADVMarkSecIdx(actx,user,Poly.dir,Poly.lidx, idx);
-
-//PetscPrintf(PETSC_COMM_WORLD," >>> DEBUG: B2 markers on plane %d\n",nidx[Poly.dir]);
 	            for (k=0;k<nidx[Poly.dir];k++)
 	            {
-//		            PetscPrintf(PETSC_COMM_WORLD," >>> DEBUG: B2 k=%d nummark[%d]\n",k,idx[k]);
 	            	X[k*2]   = actx->markers[idx[k]].X[Poly.ax[0]] * chLen;
 	            	X[k*2+1] = actx->markers[idx[k]].X[Poly.ax[1]] * chLen;
 	            }
-				//PetscPrintf(PETSC_COMM_WORLD," >>> DEBUG: B3: poly.X[0,1,n-1,n] %g %g %g %g\n",Poly.X[0],Poly.X[1], Poly.X[Poly.len-2],Poly.X[Poly.len-1]);
-//		PetscPrintf(PETSC_COMM_WORLD," >>> DEBUG: B3: poly.X[0,1,n-1,n] %g %g %g %g\n",X[0],X[1], X[39998], X[39999]);
-				
 				
 	            // find markers in local polygon (polyin & polybnd are initialized internally )
 				ierr = inpoly(nidx[Poly.dir], X, Poly.X, Poly.len, polyin, polybnd); CHKERRQ(ierr);
-//PetscPrintf(PETSC_COMM_WORLD," >>> DEBUG: B4\n");
-	            // set phase
+
+	            // set marker phase 
 	            for (k=0;k<nidx[Poly.dir];k++)
 	            {
-//            		PetscPrintf(PETSC_COMM_WORLD," >>> DEBUG: B4a ,polyin %lld polybnd %lld\n",(LLD)polyin[k],(LLD)polybnd[k]);
 	            	if (polyin[k] || polybnd[k])
 	            	{
 	            		actx->markers[idx[k]].phase = Poly.phase;
-	            		
-	            		PetscPrintf(PETSC_COMM_WORLD," >>> DEBUG: B4 ,phase %d \n",Poly.phase);
+	            		Poly.nmark++;
 	            	}
 	            }
 			}
 		}
-
-		PetscPrintf(PETSC_COMM_WORLD," Created volume %lld with %lld slices\n",(LLD)kvol,(LLD)Poly.num);
-		// free
-		PetscFree(idx);
-		PetscFree(polyin);
-		PetscFree(polybnd);
-		PetscFree(X);
+		ierr = MPI_Allreduce(&Poly.nmark, &nmark_all, 1, MPIU_INT, MPI_SUM, PETSC_COMM_WORLD); CHKERRQ(ierr);
+		PetscPrintf(PETSC_COMM_WORLD," Created vol[%lld/%lld]: phase %lld, %lld slices; found %lld markers \n",(LLD)kvol,(LLD)VolN, (LLD)Poly.phase, (LLD)Poly.num,(LLD)nmark_all);
 	}
+
+	// free
+	PetscFree(idx);
+	PetscFree(polyin);
+	PetscFree(polybnd);
+	PetscFree(X);
 
 	PetscFree(PolyL);
 	PetscFree(Poly.X);
 
 	// wait until all processors finished reading markers
-	// WARNING! NOT SURE WHETHER THIS IS REALLY NECESSARY
 	ierr = MPI_Barrier(PETSC_COMM_WORLD); CHKERRQ(ierr);
 
 	PetscPrintf(PETSC_COMM_WORLD," Finished setting markers with polygons\n");
@@ -1561,7 +1539,7 @@ PetscErrorCode inpoly(PetscInt N, PetscScalar *X, PetscScalar *node, PetscInt Nn
 	PetscScalar *Xtemp , *nodetemp;
 	PetscBool *cn , *on;
     PetscScalar *x, *y;
-    PetscInt *index;
+    PetscInt *idx;
     PetscScalar tol, tol1 , eps = 2.2204e-016, temp , minix=10e20, maxix=-10e20, miniy=10e20, maxiy=-10e20, norminf=-10e20;
     PetscScalar x1, x2 , y1, y2, xmin, xmax , ymin, ymax, XX, YY , x2x1 , y2y1;
     PetscScalar lim , ub;
@@ -1606,7 +1584,7 @@ PetscErrorCode inpoly(PetscInt N, PetscScalar *X, PetscScalar *node, PetscInt Nn
 	ierr = PetscMalloc((size_t)N*sizeof(PetscBool),&on); CHKERRQ(ierr);
 	ierr = PetscMalloc((size_t)N*sizeof(PetscScalar),&x); CHKERRQ(ierr);
 	ierr = PetscMalloc((size_t)N*sizeof(PetscScalar),&y); CHKERRQ(ierr);
-	ierr = PetscMalloc((size_t)N*sizeof(PetscInt),&index); CHKERRQ(ierr);
+	ierr = PetscMalloc((size_t)N*sizeof(PetscInt),&idx); CHKERRQ(ierr);
 
 
 	// unmodified code of Darren Engwirda & Sebastien Paris ---
@@ -1668,16 +1646,16 @@ PetscErrorCode inpoly(PetscInt N, PetscScalar *X, PetscScalar *node, PetscInt Nn
         cn[i]    = 0;
         on[i]    = 0;
         y[i]     = Xtemp[2*i + 1];
-        index[i] = i;
+        idx[i]   = i;
 
         in[i]    = 0; // added this to initialize *in and *bnd
         bnd[i]   = 0;
     }
 
-    qsindex( y , index , 0 , N1 );
+    qsindex( y , idx , 0 , N1 );
     for (i = 0 ; i < N ; i++)
     {
-        x[i]     = Xtemp[2*index[i]];
+        x[i]     = Xtemp[2*idx[i]];
     }
 
     for (k = 0 ; k < Ncnect ; k++)
@@ -1783,17 +1761,16 @@ PetscErrorCode inpoly(PetscInt N, PetscScalar *X, PetscScalar *node, PetscInt Nn
     }
     for(i = 0 ; i < N ; i++)
     {
-        ind      = index[i];
+        ind      = idx[i];
         in[ind]  = (cn[i] || on[i]);
         bnd[ind] = on[i];
     }
-	// code --------------------------
 
     PetscFree(cn);
     PetscFree(on);
     PetscFree(x);
     PetscFree(y);
-    PetscFree(index);
+    PetscFree(idx);
     PetscFree(Xtemp);
     PetscFree(nodetemp);
     PetscFree(cnect);
@@ -1802,7 +1779,7 @@ PetscErrorCode inpoly(PetscInt N, PetscScalar *X, PetscScalar *node, PetscInt Nn
 	PetscFunctionReturn(ierr);
 }
 //---------------------------------------------------------------------------
-void qsindex (PetscScalar  *a, PetscInt *index , PetscInt lo, PetscInt hi)
+void qsindex (PetscScalar  *a, PetscInt *idx , PetscInt lo, PetscInt hi)
 {
 //  lo is the lower index, hi is the upper index
 //  of the region of array a that is to be sorted
@@ -1820,9 +1797,9 @@ void qsindex (PetscScalar  *a, PetscInt *index , PetscInt lo, PetscInt hi)
             h        = a[i];
 			a[i]     = a[j];
 			a[j]     = h;
-			ind      = index[i];
-			index[i] = index[j];
-			index[j] = ind;
+			ind      = idx[i];
+			idx[i] = idx[j];
+			idx[j] = ind;
             i++;
 			j--;
         }
@@ -1830,6 +1807,6 @@ void qsindex (PetscScalar  *a, PetscInt *index , PetscInt lo, PetscInt hi)
 	while (i<=j);
 
     // recursion
-    if (lo<j) qsindex(a , index , lo , j);
-    if (i<hi) qsindex(a , index , i , hi);
+    if (lo<j) qsindex(a , idx , lo , j);
+    if (i<hi) qsindex(a , idx , i , hi);
 }
