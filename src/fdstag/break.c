@@ -27,6 +27,7 @@ PetscErrorCode BreakWriteMain(UserCtx *user, AdvCtx *actx)
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
 
+	PetscPrintf(PETSC_COMM_WORLD,"******************************************** \n");
 	PetscPrintf(PETSC_COMM_WORLD," Writing Breakpoint files... \n");
 
 	// initialize context
@@ -50,6 +51,7 @@ PetscErrorCode BreakWriteMain(UserCtx *user, AdvCtx *actx)
 	ierr = MPI_Barrier(PETSC_COMM_WORLD); CHKERRQ(ierr);
 
 	PetscPrintf(PETSC_COMM_WORLD," Finished writing breakpoint files \n");
+	PetscPrintf(PETSC_COMM_WORLD,"******************************************** \n");
 	PetscPrintf(PETSC_COMM_WORLD," \n");
 
 	PetscFunctionReturn(0);

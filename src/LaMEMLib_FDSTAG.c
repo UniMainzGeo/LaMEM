@@ -465,10 +465,10 @@ PetscErrorCode LaMEMLib_FDSTAG(PetscBool InputParamFile, const char *ParamFile, 
 		ierr = TSSolUpdate(&jr.ts, &jr.scal, &done); CHKERRQ(ierr);
 
 		// create BREAKPOINT files, for restarting the code
-		if (user.save_breakpoints > 0) LaMEMMod(JacResGetStep(&jr), user.save_breakpoints, &SaveOrNot);
+		if (user.save_breakpoints > 0) LaMEMMod(JacResGetStep(&jr)-1, user.save_breakpoints, &SaveOrNot);
 		else                           SaveOrNot = 2;
 
-		if (SaveOrNot==0) { ierr = BreakWriteMain(&user, &actx); CHKERRQ(ierr); }
+		if (SaveOrNot == 0) { ierr = BreakWriteMain(&user, &actx); CHKERRQ(ierr); }
 
 	} while(done != PETSC_TRUE);
 
