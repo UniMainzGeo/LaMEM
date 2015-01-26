@@ -1237,7 +1237,7 @@ PetscErrorCode ADVMarkInitFilePolygons(AdvCtx *actx, UserCtx *user)
 	icelly = 0;
 	icellz = 0;
 
-	// initialize wise adaptive distribution of markers/cell for variable grid
+	// initialize makers in a processor wise manner
 	for(imarkz = 0; imarkz < fs->dsz.ncels*user->NumPartZ; imarkz++)
 	{
 		if (!(imarkz%user->NumPartZ))
