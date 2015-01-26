@@ -1208,8 +1208,8 @@ PetscErrorCode ADVMarkInitFilePolygons(AdvCtx *actx, UserCtx *user)
 	PetscInt     *idx;
 	PetscScalar  *X,*PolyL;
 
-	PetscInt      nmark_all,imark,j,i;
-	PetscScalar   dx,dy,dz;
+	PetscInt      nmark_all,imark,imarkx,imarky,imarkz,icellx,icelly,icellz;
+	PetscScalar   dx=0.0,dy=0.0,dz=0.0,x=0.0,y=0.0,z=0.0;
 	PetscScalar   chLen;//,chTemp;
 
 	PetscErrorCode ierr;
@@ -1232,23 +1232,58 @@ PetscErrorCode ADVMarkInitFilePolygons(AdvCtx *actx, UserCtx *user)
 	// --- initialize markers ---
 	
 	// marker counter
-	imark = 0;
+	imark  = 0;
+	icellx = 0;
+	icelly = 0;
+	icellz = 0;
 
-	dx = user->W / (PetscScalar)(user->NumPartX * fs->dsx.tcels);
-	dy = user->L / (PetscScalar)(user->NumPartY * fs->dsy.tcels);
-	dz = user->H / (PetscScalar)(user->NumPartZ * fs->dsz.tcels);
-
-	// create uniform distribution of markers/cell for variable grid
-	for(k = 0; k < fs->dsz.ncels*user->NumPartZ; k++)
+	// initialize wise adaptive distribution of markers/cell for variable grid
+	for(imarkz = 0; imarkz < fs->dsz.ncels*user->NumPartZ; imarkz++)
 	{
-		for(j = 0; j < fs->dsy.ncels*user->NumPartY; j++)
+		if (!(imarkz%user->NumPartZ))
 		{
-			for(i = 0; i < fs->dsx.ncels*user->NumPartX; i++)
+			dz = (fs->dsz.ncoor[icellz+1] - fs->dsz.ncoor[icellz]) / (PetscScalar) (user->NumPartZ);
+			z  = fs->dsz.ncoor[icellz] + 0.5*dz;
+			icellz++;
+		}
+		else
+		{
+			z += dz;
+		}
+		icelly = 0;
+
+		for(imarky = 0; imarky < fs->dsy.ncels*user->NumPartY; imarky++)
+		{
+			if (!(imarky%user->NumPartY))
 			{
+				dy = (fs->dsy.ncoor[icelly+1] - fs->dsy.ncoor[icelly]) / (PetscScalar) (user->NumPartY);
+				y  = fs->dsy.ncoor[icelly] + 0.5*dy;
+				icelly++;
+			}
+			else
+			{
+				y += dy;
+			}
+			icellx = 0;
+
+			for(imarkx = 0; imarkx < fs->dsx.ncels*user->NumPartX; imarkx++)
+			{
+				if (!(imarkx%user->NumPartX))
+				{
+					dx = (fs->dsx.ncoor[icellx+1] - fs->dsx.ncoor[icellx]) / (PetscScalar) (user->NumPartX);
+					x  = fs->dsx.ncoor[icellx] + 0.5*dx;
+					icellx++;
+				}
+				else
+				{
+					x += dx;
+				}
+
 				// set marker coordinates
-				actx->markers[imark].X[0] = fs->dsx.ncoor[0] + dx*0.5 + i*dx;
-				actx->markers[imark].X[1] = fs->dsy.ncoor[0] + dy*0.5 + j*dy;
-				actx->markers[imark].X[2] = fs->dsz.ncoor[0] + dz*0.5 + k*dz;
+				actx->markers[imark].X[0] = x;
+				actx->markers[imark].X[1] = y;
+				actx->markers[imark].X[2] = z;
+
 				// increment local counter
 				imark++;
 			}
@@ -1392,7 +1427,7 @@ PetscErrorCode ADVMarkInitFilePolygons(AdvCtx *actx, UserCtx *user)
 	ierr = MPI_Barrier(PETSC_COMM_WORLD); CHKERRQ(ierr);
 
 	PetscPrintf(PETSC_COMM_WORLD," Finished setting markers with polygons\n");
-	PetscFunctionReturn(0);
+	PetscFunctionReturn(ierr);
 }
 
 //---------------------------------------------------------------------------
@@ -1404,79 +1439,16 @@ void ADVMarkSecIdx(AdvCtx *actx, UserCtx *user, PetscInt dir, PetscInt Islice, P
 	PetscInt i,ix,iy,iz,nmarkx,nmarky,nmarkz;
 	PetscInt d,c;
 	
-	
-		// get fdstag info
+	// get fdstag info
 	fs = actx->fs;
-	
-/*	
-	PetscInt Num[fs->dsy.ncels*fs->dsz.ncels];
-	PetscInt mNum[user->NumPartY*user->NumPartZ];
-//	PetscInt Im[user->NumPartY*user->NumPartZ*fs->dsy.ncels*fs->dsz.ncels];
-	PetscInt in, iC, iSlice,mRow,CellRow,ICell,im,lenNum,nt;
-
-
-
-	
-	nt = user->NumPartX * user->NumPartY * user->NumPartZ;
-	lenNum = fs->dsy.ncels*fs->dsz.ncels;
-
-*/
-
 
 	// get local number of markers
 	nmarkx  = fs->dsx.ncels * user->NumPartX;
 	nmarky  = fs->dsy.ncels * user->NumPartY;
 	nmarkz  = fs->dsz.ncels * user->NumPartZ;
-	
 
-
-	if (dir == 0)
+	if (dir == 0) // yz plane
 	{
-
-/*
-		// for yz slices
-	
-		CellRow = Islice/user->NumPartX;   // index of the cell row
-		mRow    = Islice % user->NumPartX; // row index inside the cell
-		ICell   = 0;                       // c index
-
-		// Cell numbering of a particular plane in yz
-		iSlice = CellRow;
-		c      = iSlice;
-	
-		for (in=0; in < lenNum; in++)
-		{
-			Num[in] = c;
-			c += fs->dsx.ncels;
-		}
-	
-		// Numbering of marker inside the cell
-		iSlice = mRow;
-		c = iSlice;
-
-		for (in=0; in < (user->NumPartY*user->NumPartZ); in++)
-		{
-			mNum[in] = c;
-			c += user->NumPartX;
-		}
-	
-		// Get marker numbering
-		c = 1;
-		for (iC=0; iC < lenNum ; iC++) // Go over cells in the plane
-		{
-			ICell = Num[iC];
-			for (im=0; im<(user->NumPartY*user->NumPartZ);im++)
-			{
-				idx[c] = ICell*nt +mNum[im];
-				c++;
-			}
-		}
-*/
-	
-	
-	
-
-		// yz plane
 		d = 0;
 		c = Islice;
 		for(iz=0; iz<nmarkz; iz++)
@@ -1486,16 +1458,11 @@ void ADVMarkSecIdx(AdvCtx *actx, UserCtx *user, PetscInt dir, PetscInt Islice, P
 				idx[d] =c;
 				c += nmarkx;
 				d++;
-
 			}
-//						PetscPrintf(PETSC_COMM_WORLD," >>> DEBUG: B1inside: %d %d \n",c,idx[d]);
 		}
-		
-
 	}
-	else if (dir == 1)
+	else if (dir == 1) // xz plane
 	{
-		// xz plane
 		d = 0;
 		c = Islice *nmarkx;
 		for(iz=0; iz<nmarkz;iz++ )
@@ -1509,9 +1476,8 @@ void ADVMarkSecIdx(AdvCtx *actx, UserCtx *user, PetscInt dir, PetscInt Islice, P
 			c += nmarkx*nmarky-nmarkx;
 		}
 	}
-	else if (dir == 2)
+	else if (dir == 2) // xy plane
 	{
-		// xy plane
 		if (dir == 0)
 		d = 0;
 		for(i=0; i<(nmarkx*nmarky);i++)
@@ -1519,11 +1485,6 @@ void ADVMarkSecIdx(AdvCtx *actx, UserCtx *user, PetscInt dir, PetscInt Islice, P
 			idx[d] = i + (Islice*nmarkx*nmarky);
 			d++;
 		}
-	}
-
-	else
-	{
-	// Error
 	}
 
 	return;
@@ -1541,7 +1502,7 @@ PetscErrorCode inpoly(PetscInt N, PetscScalar *X, PetscScalar *node, PetscInt Nn
     PetscScalar *x, *y;
     PetscInt *idx;
     PetscScalar tol, tol1 , eps = 2.2204e-016, temp , minix=10e20, maxix=-10e20, miniy=10e20, maxiy=-10e20, norminf=-10e20;
-    PetscScalar x1, x2 , y1, y2, xmin, xmax , ymin, ymax, XX, YY , x2x1 , y2y1;
+    PetscScalar X1, X2 , Y1, Y2, xmin, xmax , ymin, ymax, XX, YY , x2x1 , y2y1;
     PetscScalar lim , ub;
     PetscInt i , j, l , i2 , ind , k ;
     PetscInt n1 , n2 , lower , upper, start;
@@ -1662,32 +1623,32 @@ PetscErrorCode inpoly(PetscInt N, PetscScalar *X, PetscScalar *node, PetscInt Nn
     {
         n1   = 2*(((PetscInt) cnect[2*k]) - 1);
         n2   = 2*(((PetscInt) cnect[2*k + 1]) - 1);
-        x1   = nodetemp[n1];
-        y1   = nodetemp[n1 + 1];
-        x2   = nodetemp[n2];
-        y2   = nodetemp[n2 + 1];
-		x2x1 = x2 - x1;
-		y2y1 = y2 - y1;
+        X1   = nodetemp[n1];
+        Y1   = nodetemp[n1 + 1];
+        X2   = nodetemp[n2];
+        Y2   = nodetemp[n2 + 1];
+		x2x1 = X2 - X1;
+		y2y1 = Y2 - Y1;
 
-        if (x1 > x2)
+        if (X1 > X2)
         {
-            xmin = x2;
-            xmax = x1;
+            xmin = X2;
+            xmax = X1;
         }
         else
         {
-            xmin = x1;
-            xmax = x2;
+            xmin = X1;
+            xmax = X2;
         }
-        if (y1 > y2)
+        if (Y1 > Y2)
         {
-            ymin = y2;
-            ymax = y1;
+            ymin = Y2;
+            ymax = Y1;
         }
         else
         {
-            ymin = y1;
-            ymax = y2;
+            ymin = Y1;
+            ymax = Y2;
         }
         if (y[0] == ymin)
         {
@@ -1736,10 +1697,10 @@ PetscErrorCode inpoly(PetscInt N, PetscScalar *X, PetscScalar *node, PetscInt Nn
                     {
                         if (XX <= xmax)
                         {
-                            on[j] = on[j] || ( fabs( (y2 - YY)*(x1 - XX) - (y1 - YY)*(x2 - XX) ) < tol );
+                            on[j] = on[j] || ( fabs( (Y2 - YY)*(X1 - XX) - (Y1 - YY)*(X2 - XX) ) < tol );
                             if (YY < ymax)
                             {
-                                ub = ( x2x1*(y1 - YY) - y2y1*(x1 - XX) )/( (XX - lim)*y2y1 );
+                                ub = ( x2x1*(Y1 - YY) - y2y1*(X1 - XX) )/( (XX - lim)*y2y1 );
                                 if ( (ub > -tol) && (ub < tol1 ) )
                                 {
                                     cn[j] = !cn[j];
