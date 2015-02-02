@@ -850,8 +850,8 @@ PetscErrorCode ADVMarkInitFolding(AdvCtx *actx, UserCtx *user)
 	// multilayer folding setup (Zagros)
 
 	PetscInt    i, imark;
-	PetscBool   flg, DisplayInfo;
-	PetscScalar zbot[10], ztop[10];
+	PetscBool   flg, DisplayInfo, FoldingSetupDimensionalUnits;
+	PetscScalar zbot[10], ztop[10], BottomStepPerturbation_Amplitude;
 
 	PetscFunctionBegin;
 
@@ -864,6 +864,9 @@ PetscErrorCode ADVMarkInitFolding(AdvCtx *actx, UserCtx *user)
 	// get input data
 	DisplayInfo = PETSC_TRUE;
 
+    PetscOptionsHasName(PETSC_NULL,"-FoldingSetupDimensionalUnits"      ,&FoldingSetupDimensionalUnits);
+    if (DisplayInfo && FoldingSetupDimensionalUnits) PetscPrintf(PETSC_COMM_WORLD,"   Assuming that the folding setup is given in dimensional units \n");
+    
 	PetscOptionsGetReal(PETSC_NULL,"-Layer1_bottom"      ,&zbot[0], PETSC_NULL);
 	PetscOptionsGetReal(PETSC_NULL,"-Layer1_top"         ,&ztop[0], &flg);
 	if (DisplayInfo && flg) PetscPrintf(PETSC_COMM_WORLD," - Adding Layer with Phase=1 from z=[%g,%g]\n",zbot[0],ztop[0]);
@@ -904,9 +907,16 @@ PetscErrorCode ADVMarkInitFolding(AdvCtx *actx, UserCtx *user)
 	PetscOptionsGetReal(PETSC_NULL,"-Layer10_top"         ,&ztop[9], &flg);
 	if (DisplayInfo && flg) PetscPrintf(PETSC_COMM_WORLD," - Adding Layer with Phase=10 from z=[%g,%g]\n",zbot[9],ztop[9]);
 
-	// transform fractions into domain coordinates
-	for(i = 0; i < 10; i++) { zbot[i] = zbot[i]*user->H; ztop[i] = ztop[i]*user->H;}
-
+    if (FoldingSetupDimensionalUnits)
+    {
+     for(i = 0; i < 10; i++) { zbot[i] = zbot[i]/user->Characteristic.Length; ztop[i] = ztop[i]/user->Characteristic.Length;}
+    }
+    else
+    {
+        // transform fractions into domain coordinates
+        for(i = 0; i < 10; i++) { zbot[i] = zbot[i]*user->H; ztop[i] = ztop[i]*user->H;}
+    }
+                        
 	// loop over local markers
 	for(imark = 0; imark < actx->nummark; imark++)
 	{
@@ -923,6 +933,46 @@ PetscErrorCode ADVMarkInitFolding(AdvCtx *actx, UserCtx *user)
 		}
 	}
 
+    
+    BottomStepPerturbation_Amplitude = 0.1;
+    PetscOptionsGetReal(PETSC_NULL,"-BottomStepPerturbation_Amplitude"         ,&BottomStepPerturbation_Amplitude, &flg);
+    if (flg) PetscPrintf(PETSC_COMM_WORLD,"   Using bottom step like perturbation with amplitude %f  \n", BottomStepPerturbation_Amplitude);
+    
+    
+    if (FoldingSetupDimensionalUnits) BottomStepPerturbation_Amplitude = BottomStepPerturbation_Amplitude/user->Characteristic.Length;
+    
+    
+    if (DisplayInfo && flg){
+        PetscScalar BottomStepPerturbation_X;
+        
+        
+        
+        // add a step-like pertubation at the bottom layer
+        BottomStepPerturbation_X = 0;
+        PetscOptionsGetReal(PETSC_NULL,"-BottomStepPerturbation_X"         ,&BottomStepPerturbation_X, &flg);
+        
+        if (FoldingSetupDimensionalUnits) BottomStepPerturbation_X = BottomStepPerturbation_X/user->Characteristic.Length;
+
+        
+        // loop over local markers
+        for(imark = 0; imark < actx->nummark; imark++)
+        {
+            if (actx->markers[imark].phase > 0){
+                if (actx->markers[imark].X[0]<BottomStepPerturbation_X){
+                    if ( actx->markers[imark].X[2]< (BottomStepPerturbation_Amplitude+zbot[0]) ){
+                        actx->markers[imark].phase = 0;
+                    }
+                }
+            }
+        }
+        
+        
+    }
+        
+    
+    
+    
+    
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
