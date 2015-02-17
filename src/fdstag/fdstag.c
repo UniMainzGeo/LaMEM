@@ -1200,7 +1200,7 @@ PetscErrorCode FDSTAGView(FDSTAG *fs)
 	PetscPrintf(PETSC_COMM_WORLD, " Number of velocity DOF         :  %lld\n", (LLD)nVelDOF);
 	PetscPrintf(PETSC_COMM_WORLD, " Maximum cell aspect cell ratio :  %7.5f\n", maxAspRat);
 
-	if(maxAspRat > 5.0) SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, " Too large aspect ratio is not supported");
+	if(maxAspRat > 10.0) SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, " Too large aspect ratio is not supported");
 
 	if(maxAspRat > 2.0) PetscPrintf(PETSC_COMM_WORLD, " WARNING! you are using non-optimal aspect ratio. Expect precision deterioration\n");
 
