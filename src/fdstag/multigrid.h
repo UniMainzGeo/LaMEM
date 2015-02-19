@@ -9,10 +9,16 @@
 
 typedef struct
 {
-	DM        DA_CEN;            // central points array
-	DM        DA_X, DA_Y, DA_Z;  // face points arrays
-	DOFIndex  dof;               // indexing vectors
-	Mat       R, P;              // restriction & prolongation operators (not set on finest grid)
+	// Constrained DOF stores parent DOF index in the boundary condition vector.
+	// Parent DOF index is the only nonzero that is set in the row of R-matrix
+	// and column of P-matrix to impose the constraints in a coarse grid operator
+	// automatically. The finest grid uses standard boundary condition vectors.
+
+	DM        DA_CEN;                // central points array
+	DM        DA_X, DA_Y, DA_Z;      // face points arrays
+	DOFIndex  dof;                   // indexing vectors
+	Vec       bcvx, bcvy, bcvz, bcp; // restricted boundary condition vectors
+	Mat       R, P;                  // restriction & prolongation operators (not set on finest grid)
 
 	// ******** fine level ************
 	//     |                   ^
@@ -25,9 +31,11 @@ typedef struct
 
 //---------------------------------------------------------------------------
 
-PetscErrorCode MGLevelCreate(MGLevel *lvl, MGLevel *fine, FDSTAG *fs);
+PetscErrorCode MGLevelCreate(MGLevel *lvl, MGLevel *fine, FDSTAG *fs, BCCtx *bc);
 
 PetscErrorCode MGLevelDestroy(MGLevel *lvl);
+
+PetscErrorCode MGLevelRestrictBC(MGLevel *lvl, MGLevel *fine);
 
 PetscErrorCode MGLevelSetupRestrict(MGLevel *lvl, MGLevel *fine);
 
@@ -80,4 +88,9 @@ PetscErrorCode MGDumpMat(MG *mg);
 PetscErrorCode MGGetNumLevels(MG *mg);
 
 //---------------------------------------------------------------------------
+
+void getRowRestrict(PetscScalar parent, PetscInt n, PetscInt idx[], PetscScalar bc[], PetscScalar v[], PetscScalar vs[]);
+
+//---------------------------------------------------------------------------
+
 #endif

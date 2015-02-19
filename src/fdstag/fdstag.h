@@ -119,6 +119,13 @@ typedef enum { IDXNONE, IDXCOUPLED, IDXUNCOUPLED } idxtype;
 // global indexing of the DOF
 typedef struct
 {
+	//=====================================================================
+	//
+	// index vectors contain global DOF numbers
+	// boundary ghost points are marked by -1
+	//
+	//=====================================================================
+
 	idxtype  idxmod;            // indexing mode
 	DM       DA_CEN;            // central points
 	DM       DA_X, DA_Y, DA_Z;  // face points

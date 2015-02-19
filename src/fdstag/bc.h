@@ -16,13 +16,21 @@ typedef enum
 typedef struct
 {
 	//=====================================================================
-	// WARNING!
 	//
 	// Global v-p index space can be either coupled or uncoupled
 	// (used to constrain rows & columns of preconditioner matrices).
 	//
 	// Local v-p index space is ALWAYS coupled, since all solvers are coupled
 	// (used to constrain primary unknown & residual vectors).
+	//
+	// Boundary condition vectors contain prescribed DOF values
+	//    *Internal points (marked with positive number in the index arrays)
+	//        DBL_MAX   - active DOF flag
+	//        otherwise - single-point constraint value
+	//    *Boundary ghost point (marked with -1 in the index arrays)
+	//        DBL_MAX   - free-slip (zero-flux) condition flag
+	//        otherwise - two-point constraint value
+	//
 	//=====================================================================
 
 	// boundary conditions vectors (velocity, pressure, temperature)
