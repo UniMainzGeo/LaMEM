@@ -3,6 +3,7 @@
 //---------------------------------------------------------------------------
 #include "LaMEM.h"
 #include "fdstag.h"
+#include "solVar.h"
 #include "scaling.h"
 #include "tssolve.h"
 #include "bc.h"

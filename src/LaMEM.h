@@ -32,7 +32,8 @@
 #define particle_props 28
 #endif
 
-#define max_num_phases 32
+#define max_num_phases 32 // max no of phases
+#define max_num_soft   10 // max no of soft laws
 #define MaxNumCPU      524288
 #define MaxNumSteps    1000000
 

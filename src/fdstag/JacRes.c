@@ -1451,12 +1451,15 @@ PetscErrorCode SetMatParLim(MatParLim *matLim, UserCtx *usr)
 	matLim->eta_ref      = usr->InitViscosity;
 	matLim->TRef         = 0.0;
 	// no activation energy scaling! scale with characteristic temperature only
-	matLim->Rugc         = 8.3144621*usr->Characteristic.Temperature;
+	matLim->Rugc         = 8.3144621;
 	matLim->eta_atol     = 0.0;
 	matLim->eta_rtol     = 1e-8;
 	matLim->DII_atol     = 0.0;
 	matLim->DII_rtol     = 1e-8;
-	matLim->DII_ref      = 1.0;
+
+	if (usr->DII_ref) matLim->DII_ref      = usr->DII_ref;
+	else              matLim->DII_ref      = 1.0;
+
 	matLim->minCh        = 0.0;
 	matLim->minFr        = 0.0;
 	matLim->tauUlt       = DBL_MAX;

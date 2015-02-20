@@ -60,6 +60,7 @@ without the explicit agreement of Boris Kaus.
 #include "advect.h"
 #include "marker.h"
 #include "input.h"
+#include "matProps.h"
 #include "break.h"
 
 //==========================================================================================================
@@ -193,21 +194,32 @@ PetscErrorCode LaMEMLib_FDSTAG(PetscBool InputParamFile, const char *ParamFile, 
 	// SETUP DATA STRUCTURES
 	//======================
 
-	// initialize scaling object
-	ierr = ScalingCreate(
-		&jr.scal,
-		user.DimensionalUnits,
-		user.Characteristic.kg,
-		user.Characteristic.Time,
-		user.Characteristic.Length,
-		user.Characteristic.Temperature,
-		user.Characteristic.Force); CHKERRQ(ierr);
-
-	// initialize material parameter limits
+	// initialize material parameter limits and softening laws
 	ierr = SetMatParLim(&jr.matLim, &user); CHKERRQ(ierr);
 
-	// initialize material properties
-	ierr = InitMaterialProps(&jr, &user); CHKERRQ(ierr);
+	if(user.new_input==1)
+	{
+		// set material softening parameters
+		ierr = SetMatSoftening(&jr, &user); CHKERRQ(ierr);
+
+		// initialize scaling object and perform non-dimensionalization
+		ierr = ScalingMain(&jr.scal, &jr.matLim, jr.phases, jr.numPhases, &user); CHKERRQ(ierr);
+	}
+	else
+	{
+		// initialize scaling object
+		ierr = ScalingCreate(
+			&jr.scal,
+			user.DimensionalUnits,
+			user.Characteristic.kg,
+			user.Characteristic.Time,
+			user.Characteristic.Length,
+			user.Characteristic.Temperature,
+			user.Characteristic.Force); CHKERRQ(ierr);
+
+		// initialize material properties - used as an interface between OLD/NEW material properties
+		ierr = InitMaterialProps(&jr, &user); CHKERRQ(ierr);
+	}
 
 	// initialize time stepping parameters
 	ierr = TSSolSetUp(&jr.ts, &user); CHKERRQ(ierr);

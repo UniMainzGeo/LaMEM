@@ -165,6 +165,9 @@ typedef struct {
 	PetscInt         mpi_group_id; //migrated from OptimiseParams
 	PetscScalar      LowerViscosityCutoff, UpperViscosityCutoff, InitViscosity;// JacRes
 
+	// initial guess
+	PetscScalar      DII_ref;
+
 	//PetscInt         MaxNonlinearIterations;
 	//PetscScalar      NonlinearIterationsAccuracy;
 	//PetscInt         StokesSolver;   // 1 - Powell-Hesteness iterations; 2 - Schur Complement Reduction; 3 - Fully Coupled Solver; 4 - MatVec Test;
@@ -177,6 +180,9 @@ typedef struct {
 	PetscInt         save_breakpoints, break_point_number;
 	PetscInt         restart;
 	//PetscInt         incr_breakpoints, fileno;
+
+	// new material input
+	PetscInt         new_input;
 
 	//markers
 	char             ParticleFilename[PETSC_MAX_PATH_LEN];

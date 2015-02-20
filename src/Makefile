@@ -91,6 +91,7 @@ CSRC = \
 	fdstag/break.c \
 	fdstag/surf.c \
 	fdstag/input.c \
+	fdstag/matProps.c \
 	fdstag/tssolve.c
 	
 

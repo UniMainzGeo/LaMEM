@@ -2,8 +2,8 @@
 //....................... FILE INPUT / INITIALIZATION .......................
 //---------------------------------------------------------------------------
 #include "LaMEM.h"
-#include "Parsing.h"
-#include "Utils.h"
+#include "Parsing.h" // dependency on
+#include "Utils.h"   // dependency on
 #include "fdstag.h"
 #include "solVar.h"
 #include "scaling.h"
@@ -11,6 +11,7 @@
 #include "bc.h"
 #include "JacRes.h"
 #include "input.h"
+#include "matProps.h"
 //---------------------------------------------------------------------------
 // set default code parameters and read input file, if required
 #undef __FUNCT__
@@ -27,16 +28,28 @@ PetscErrorCode FDSTAGInitCode(JacRes *jr, UserCtx *user)
 	PetscOptionsGetAll( &all_options ); // copy all command line args
 
 	// set default values for parameters
-	ierr = FDSTAGSetDefaultValues(user); CHKERRQ(ierr);
-
-	// initialize material properties
-	ierr = FDSTAGInitMaterialProp(user); CHKERRQ(ierr);
+	ierr = InputSetDefaultValues(user); CHKERRQ(ierr);
 
 	// read an input file if required - using the parser
-	ierr = FDSTAGReadInputFile(jr, user); CHKERRQ(ierr);
+	ierr = InputReadFile(jr, user); CHKERRQ(ierr);
+
+	// read additional options
+	if(user->new_input == 1)
+	{
+		// initialize and read material properties from file
+		ierr = MatPropInit(jr, user); CHKERRQ(ierr);
+	}
+	else
+	{
+		// initialize material properties
+		ierr = InitMaterialProp(user); CHKERRQ(ierr);
+
+		// read material properties from file
+		ierr = ReadMaterialProperties(user); CHKERRQ(ierr);
+	}
 
 	// read command line options
-	ierr = FDSTAGReadCommLine(user); CHKERRQ(ierr);
+	ierr = InputReadCommLine(user); CHKERRQ(ierr);
 
 	// set this option to monitor actual option usage
 	PetscOptionsInsertString("-options_left");
@@ -73,27 +86,34 @@ PetscErrorCode FDSTAGInitCode(JacRes *jr, UserCtx *user)
 	PetscPrintf(PETSC_COMM_WORLD," BC employed                    : BC.[Left=%lld Right=%lld; Front=%lld Back=%lld; Lower=%lld Upper=%lld] \n",
 			(LLD)(user->BC.LeftBound), (LLD)(user->BC.RightBound), (LLD)(user->BC.FrontBound), (LLD)(user->BC.BackBound), (LLD)(user->BC.LowerBound), (LLD)(user->BC.UpperBound) );
 
-	// compute characteristic values - should be done in scaling.c
-	ComputeCharValues(user);
-
-	// compute material prop for default setup
-	if (!(user->InputParamFile))
+	// scaling is done here in OLD way
+	if(!user->new_input)
 	{
-		// define phase material properties for default setup (Falling Block Test)*/
-		user->PhaseProperties.mu[0] = 1.0*user->Characteristic.Viscosity; user->PhaseProperties.rho[0] = 1.0*user->Characteristic.Density;
-		user->PhaseProperties.mu[1] = 1.0*user->Characteristic.Viscosity; user->PhaseProperties.rho[1] = 2.0*user->Characteristic.Density;
-	}
+		// initialize scaling
+		ScalingCharValues(user);
 
-	// perform non-dimensionalisation of all input parameters - should be done in scaling.c
-	PerformNonDimension(user);
+		// perform scaling of input parameters
+		ScalingInputOLD(user);
+
+		// compute material prop for default setup
+		if (!(user->InputParamFile))
+		{
+			// define phase material properties for default setup (Falling Block Test)
+			user->PhaseProperties.mu[0] = 1.0*user->Characteristic.Viscosity; user->PhaseProperties.rho[0] = 1.0*user->Characteristic.Density;
+			user->PhaseProperties.mu[1] = 1.0*user->Characteristic.Viscosity; user->PhaseProperties.rho[1] = 2.0*user->Characteristic.Density;
+		}
+
+		// perform scaling of material properties parameters
+		ScalingMatPropOLD(user);
+	}
 
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
 // set default values for parameters
 #undef __FUNCT__
-#define __FUNCT__ "FDSTAGSetDefaultValues"
-PetscErrorCode FDSTAGSetDefaultValues(UserCtx *user)
+#define __FUNCT__ "InputSetDefaultValues"
+PetscErrorCode InputSetDefaultValues(UserCtx *user)
 {
 	// domain
 	user->W                = 1.0;
@@ -125,7 +145,7 @@ PetscErrorCode FDSTAGSetDefaultValues(UserCtx *user)
 	// temperature
 	user->Temp_top         = 0.0;
 	user->Temp_bottom      = 1.0;
-	user->GasConstant      = 1.0;            // REMOVE
+	//user->GasConstant      = 1.0;            // REMOVE
 
 	user->Gravity          = 1.0;
 	user->GravityAngle     = 0.0; // angle of gravity with z-axis (can be changed in the x-z plane)
@@ -168,10 +188,14 @@ PetscErrorCode FDSTAGSetDefaultValues(UserCtx *user)
 	user->save_breakpoints   = 10; // After how many steps do we make a breakpoint?
 	user->break_point_number = 0;  // The number of the breakpoint file
 
+	// new material input
+	user->new_input          = 0;
+
 	// optimization
 	user->LowerViscosityCutoff  = 1.0;  // lowermost viscosity cutoff in model
 	user->UpperViscosityCutoff  = 1e30; // uppermost viscosity cutoff in model
 	user->InitViscosity         = 0.0;  // initial viscosity
+	user->DII_ref               = 0.0;  // initial guess strain rate
 
 	user->mpi_group_id = 0;
 
@@ -187,8 +211,8 @@ PetscErrorCode FDSTAGSetDefaultValues(UserCtx *user)
 }
 //---------------------------------------------------------------------------
 #undef __FUNCT__
-#define __FUNCT__ "FDSTAGReadInputFile"
-PetscErrorCode FDSTAGReadInputFile(JacRes *jr, UserCtx *user)
+#define __FUNCT__ "InputReadFile"
+PetscErrorCode InputReadFile(JacRes *jr, UserCtx *user)
 {
 	 // parse the input file
 
@@ -265,10 +289,14 @@ PetscErrorCode FDSTAGReadInputFile(JacRes *jr, UserCtx *user)
 
 	parse_GetString( fp, "OutputFile", user->OutputFile, PETSC_MAX_PATH_LEN-1, &found );
 	parse_GetInt( fp,    "save_breakpoints", &user->save_breakpoints, &found );
+	parse_GetInt( fp,    "restart", &user->restart, &found );
 	parse_GetInt( fp,    "save_timesteps", &user->save_timesteps, &found );
 	parse_GetInt( fp,    "time_end", &user->time_end, &found );
 	parse_GetDouble( fp, "CFL", &user->CFL, &found );
 	parse_GetDouble( fp, "dt_max", &user->dt_max, &found );
+
+	// new material input
+	parse_GetInt( fp,    "new_input", &user->new_input, &found );
 
 	// Particle related variables
 	parse_GetInt( fp,    "ParticleInput", &user->ParticleInput, &found );
@@ -306,8 +334,11 @@ PetscErrorCode FDSTAGReadInputFile(JacRes *jr, UserCtx *user)
 	parse_GetDouble( fp, "UpperViscosityCutoff", &user->UpperViscosityCutoff, &found );
 	parse_GetDouble( fp, "InitViscosity",        &user->InitViscosity,        &found );
 
+	// initial guess strain rate
+	parse_GetDouble( fp, "DII_ref",              &user->DII_ref,        &found );
+
 	parse_GetDouble( fp, "Gravity", &user->Gravity, &found );
-	parse_GetDouble( fp, "GasConstant", &user->GasConstant, &found );
+	//parse_GetDouble( fp, "GasConstant", &user->GasConstant, &found );
 
 	// Pushing Parameters
 	parse_GetInt( fp,    "AddPushing", &user->AddPushing, &found );
@@ -327,7 +358,325 @@ PetscErrorCode FDSTAGReadInputFile(JacRes *jr, UserCtx *user)
 
 	fclose(fp);
 
-	ierr = ReadMaterialProperties(user); CHKERRQ(ierr);
+	PetscFunctionReturn(0);
+}
+//---------------------------------------------------------------------------
+// change values from the command line
+#undef __FUNCT__
+#define __FUNCT__ "InputReadCommLine"
+PetscErrorCode InputReadCommLine(UserCtx *user )
+{
+	PetscInt       i, nel_array[3], nel_input_max;
+	PetscBool      found,flg;
+	char           setup_name[PETSC_MAX_PATH_LEN];
+
+	PetscErrorCode ierr;
+	PetscFunctionBegin;
+
+	PetscOptionsGetReal(PETSC_NULL,"-W"      , &user->W      , PETSC_NULL);
+	PetscOptionsGetReal(PETSC_NULL,"-L"      , &user->L      , PETSC_NULL);
+	PetscOptionsGetReal(PETSC_NULL,"-H"      , &user->H      , PETSC_NULL);
+	PetscOptionsGetReal(PETSC_NULL,"-y_front", &user->y_front, PETSC_NULL);
+
+	PetscOptionsGetInt(PETSC_NULL ,"-nel_x",   &user->nel_x,   PETSC_NULL);
+	PetscOptionsGetInt(PETSC_NULL ,"-nel_y",   &user->nel_y,   PETSC_NULL);
+	PetscOptionsGetInt(PETSC_NULL ,"-nel_z",   &user->nel_z,   PETSC_NULL);
+
+	// alternative: specify the # of elements as -nel 8,16,32  which gives nel_x=8, nel_y=16, nel_z=32
+	nel_input_max=3;
+	ierr = PetscOptionsGetIntArray(PETSC_NULL,"-nel", nel_array, &nel_input_max, &found); CHKERRQ(ierr);
+
+	if (found==PETSC_TRUE) {
+		user->nel_x = nel_array[0];
+		user->nel_y = nel_array[1];
+		user->nel_z = nel_array[2];
+	}
+	user->nnode_x = user->nel_x + 1;
+	user->nnode_y = user->nel_y + 1;
+	user->nnode_z = user->nel_z + 1;
+
+	PetscOptionsGetInt(PETSC_NULL ,"-time_end",       &user->time_end,       PETSC_NULL);
+	PetscOptionsGetInt(PETSC_NULL ,"-save_timesteps", &user->save_timesteps, PETSC_NULL);
+	PetscOptionsGetReal(PETSC_NULL,"-CFL",            &user->CFL,            PETSC_NULL);
+	PetscOptionsGetReal(PETSC_NULL,"-dt",             &user->dt,             PETSC_NULL);
+	PetscOptionsGetReal(PETSC_NULL,"-dt_max",         &user->dt_max,         PETSC_NULL);
+
+	// FDSTAG Canonical Model Setup
+	PetscOptionsGetString(PETSC_NULL,"-msetup", setup_name, PETSC_MAX_PATH_LEN, &found);
+	if(found == PETSC_TRUE)
+	{	if     (!strcmp(setup_name, "parallel"))   user->msetup = PARALLEL;
+		else if(!strcmp(setup_name, "redundant"))  user->msetup = REDUNDANT;
+		else if(!strcmp(setup_name, "polygons"))   user->msetup = POLYGONS;
+		else if(!strcmp(setup_name, "diapir"))     user->msetup = DIAPIR;
+		else if(!strcmp(setup_name, "block"))      user->msetup = BLOCK;
+		else if(!strcmp(setup_name, "subduction")) user->msetup = SUBDUCTION;
+		else if(!strcmp(setup_name, "folding"))    user->msetup = FOLDING;
+		else if(!strcmp(setup_name, "detachment")) user->msetup = DETACHMENT;
+		else if(!strcmp(setup_name, "slab"))       user->msetup = SLAB;
+		else if(!strcmp(setup_name, "spheres"))    user->msetup = SPHERES;
+		else if(!strcmp(setup_name, "bands"))      user->msetup = BANDS;
+		else SETERRQ1(PETSC_COMM_WORLD, PETSC_ERR_USER,"ERROR! Incorrect model setup: %s", setup_name);
+	}
+
+	// boundary conditions
+	PetscOptionsGetInt(PETSC_NULL, "-BC.InternalBound", &user->BC.InternalBound, PETSC_NULL);
+	PetscOptionsGetInt(PETSC_NULL, "-BC.UpperBound",    &user->BC.UpperBound,    PETSC_NULL);
+	PetscOptionsGetInt(PETSC_NULL, "-BC.LowerBound",    &user->BC.LowerBound,    PETSC_NULL);
+	PetscOptionsGetInt(PETSC_NULL, "-BC.LeftBound",     &user->BC.LeftBound,     PETSC_NULL);
+	PetscOptionsGetInt(PETSC_NULL, "-BC.RightBound",    &user->BC.RightBound,    PETSC_NULL);
+	PetscOptionsGetInt(PETSC_NULL, "-BC.FrontBound",    &user->BC.FrontBound,    PETSC_NULL);
+	PetscOptionsGetInt(PETSC_NULL, "-BC.BackBound",     &user->BC.BackBound,     PETSC_NULL);
+	PetscOptionsGetReal(PETSC_NULL,"-BC.Vy_front",      &user->BC.Vy_front,      PETSC_NULL); // y-velocity @ front boundary
+	PetscOptionsGetReal(PETSC_NULL,"-BC.Vy_back",       &user->BC.Vy_back,       PETSC_NULL); // y-velocity @ front boundary
+	PetscOptionsGetReal(PETSC_NULL,"-BC.Vz_top",        &user->BC.Vz_top,        PETSC_NULL); // y-velocity @ front boundary
+	PetscOptionsGetReal(PETSC_NULL,"-BC.Vz_bot",        &user->BC.Vz_bot,        PETSC_NULL); // y-velocity @ front boundary
+	PetscOptionsGetReal(PETSC_NULL,"-BC.Vx_left",       &user->BC.Vx_left,       PETSC_NULL); // y-velocity @ front boundary
+	PetscOptionsGetReal(PETSC_NULL,"-BC.Vx_right",      &user->BC.Vx_right,      PETSC_NULL); // y-velocity @ front boundary
+
+	PetscOptionsGetReal(PETSC_NULL,"-BC.Exx",           &user->BC.Exx,           PETSC_NULL); // Exx background strain-rate
+	PetscOptionsGetReal(PETSC_NULL,"-BC.Eyy",           &user->BC.Eyy,           PETSC_NULL); // Eyy background strain-rate
+
+	// number of markers
+	PetscOptionsGetInt(PETSC_NULL,"-NumPartX",          &user->NumPartX,         PETSC_NULL); // # of tracers per cell in x-direction
+	PetscOptionsGetInt(PETSC_NULL,"-NumPartY",          &user->NumPartY,         PETSC_NULL); // # of tracers per cell in y-direction
+	PetscOptionsGetInt(PETSC_NULL,"-NumPartZ",          &user->NumPartZ,         PETSC_NULL); // # of tracers per cell in z-direction
+
+	// flags
+	PetscOptionsGetInt(PETSC_NULL,"-new_input",        &user->new_input,          PETSC_NULL); // # restart a simulation if possible?
+	PetscOptionsGetInt(PETSC_NULL,"-restart",          &user->restart,          PETSC_NULL); // # restart a simulation if possible?
+	PetscOptionsGetInt(PETSC_NULL,"-save_breakpoints", &user->save_breakpoints, PETSC_NULL); // after how many steps do we create a breakpoint file?
+	PetscOptionsGetInt(PETSC_NULL,"-SaveParticles",    &user->SaveParticles,    PETSC_NULL); // save particles to disk?
+
+	PetscOptionsGetBool(PETSC_NULL,"-SavePartitioning",&user->SavePartitioning, PETSC_NULL);
+	PetscOptionsGetBool(PETSC_NULL,"-SkipStokesSolver",&user->SkipStokesSolver, PETSC_NULL);
+
+	// optimization
+	PetscOptionsGetReal(PETSC_NULL,"-LowerViscosityCutoff", &user->LowerViscosityCutoff, PETSC_NULL); // lower viscosity cutoff
+	PetscOptionsGetReal(PETSC_NULL,"-UpperViscosityCutoff", &user->UpperViscosityCutoff, PETSC_NULL); // upper viscosity cutoff
+	PetscOptionsGetReal(PETSC_NULL,"-InitViscosity",        &user->InitViscosity,        PETSC_NULL); // upper viscosity cutoff
+
+	// initial guess strain rate
+	PetscOptionsGetReal(PETSC_NULL,"-DII_ref",              &user->DII_ref,        PETSC_NULL);
+
+	// gravity
+	PetscOptionsGetReal(PETSC_NULL ,"-GravityAngle",   &user->GravityAngle,     PETSC_NULL); // Gravity angle in x-z plane
+
+	// pushing boundary conditions related parameters
+	PetscOptionsGetInt(PETSC_NULL,"-AddPushing"                 , &user->AddPushing                 , PETSC_NULL);
+	PetscOptionsGetInt(PETSC_NULL,"-Pushing.num_changes"        , &user->Pushing.num_changes        , PETSC_NULL);
+	PetscOptionsGetInt(PETSC_NULL,"-Pushing.reset_pushing_coord", &user->Pushing.reset_pushing_coord, PETSC_NULL);
+	PetscOptionsGetReal(PETSC_NULL,"-Pushing.L_block"           , &user->Pushing.L_block            , PETSC_NULL);
+	PetscOptionsGetReal(PETSC_NULL,"-Pushing.W_block"           , &user->Pushing.W_block            , PETSC_NULL);
+	PetscOptionsGetReal(PETSC_NULL,"-Pushing.H_block"           , &user->Pushing.H_block            , PETSC_NULL);
+	PetscOptionsGetReal(PETSC_NULL,"-Pushing.x_center_block"    , &user->Pushing.x_center_block     , PETSC_NULL);
+	PetscOptionsGetReal(PETSC_NULL,"-Pushing.y_center_block"    , &user->Pushing.y_center_block     , PETSC_NULL);
+	PetscOptionsGetReal(PETSC_NULL,"-Pushing.z_center_block"    , &user->Pushing.z_center_block     , PETSC_NULL);
+
+	// pushing - array variables
+	char matprop_opt[PETSC_MAX_PATH_LEN];
+	flg = PETSC_FALSE;
+
+	for(i=0;i<user->Pushing.num_changes;i++){
+		// v_push in cm/year
+		sprintf(matprop_opt,"-Pushing.V_push_%lld",(LLD)i);
+		ierr = PetscOptionsGetReal(PETSC_NULL ,matprop_opt,&user->Pushing.V_push[i], &flg); CHKERRQ(ierr);
+		if(flg == PETSC_TRUE) PetscPrintf(PETSC_COMM_WORLD,"#    V_push[%lld] = %g \n",(LLD)i,user->Pushing.V_push[i]);
+
+		// rate of rotation deg/yr
+		sprintf(matprop_opt,"-Pushing.omega_%lld",(LLD)i);
+		ierr = PetscOptionsGetReal(PETSC_NULL ,matprop_opt,&user->Pushing.omega[i], &flg); CHKERRQ(ierr);
+		if(flg == PETSC_TRUE) PetscPrintf(PETSC_COMM_WORLD,"#    Omega[%lld] = %g \n",(LLD)i,user->Pushing.omega[i]);
+
+		// advect block or not for each time segment
+		sprintf(matprop_opt,"-Pushing.coord_advect_%lld",(LLD)i);
+		ierr = PetscOptionsGetInt(PETSC_NULL ,matprop_opt,&user->Pushing.coord_advect[i], &flg); CHKERRQ(ierr);
+		if(flg == PETSC_TRUE) PetscPrintf(PETSC_COMM_WORLD,"#    Coord_advect[%lld] = %g \n",(LLD)i,user->Pushing.coord_advect[i]);
+
+		// direction of pushing
+				sprintf(matprop_opt,"-Pushing.dir_%lld",(LLD)i);
+				ierr = PetscOptionsGetInt(PETSC_NULL ,matprop_opt,&user->Pushing.dir[i], &flg); CHKERRQ(ierr);
+				if(flg == PETSC_TRUE) PetscPrintf(PETSC_COMM_WORLD,"#    Direction[%lld] = %g \n",(LLD)i,user->Pushing.dir[i]);
+	}
+
+	for(i=0;i<user->Pushing.num_changes+1;i++){
+		// time intervals is a num_changes+1 array
+		sprintf(matprop_opt,"-Pushing.time_%lld",(LLD)i);
+		ierr = PetscOptionsGetReal(PETSC_NULL ,matprop_opt,&user->Pushing.time[i], &flg); CHKERRQ(ierr);
+		if(flg == PETSC_TRUE) PetscPrintf(PETSC_COMM_WORLD,"#    Time[%lld] = %g \n",(LLD)i,user->Pushing.time[i]);
+	}
+
+	// use LaMEM canonical
+	PetscOptionsGetBool(PETSC_NULL,"-use_fdstag_canonical", &user->use_fdstag_canonical, PETSC_NULL );
+
+	// get material properties from command line - de-activated
+	//ierr = GetMaterialPropertiesFromCommandLine(user);
+
+	PetscFunctionReturn(0);
+}
+//---------------------------------------------------------------------------
+#undef __FUNCT__
+#define __FUNCT__ "ReadMeshSegDir"
+PetscErrorCode ReadMeshSegDir(
+	FILE        *fp,
+	const char  *name,
+	PetscScalar  beg,
+	PetscScalar  end,
+	PetscInt    *tncels,
+	MeshSegInp  *msi,
+	PetscInt     dim,
+	PetscScalar  charLength)
+{
+	// read mesh refinement data for a direction from the input file
+	// NOTE: parameter "tncels" passes negative number of segments & returns total number of cells
+
+	PetscInt    i, jj, arsz, found;
+	PetscScalar buff[3*MaxNumMeshSegs-1];
+
+	PetscFunctionBegin;
+
+	// check whether segments are not specified
+	if((*tncels) > 0)
+	{
+		msi->nsegs = 0;
+		PetscFunctionReturn(0);
+	}
+
+	// set number of segments
+	msi->nsegs = -(*tncels);
+
+	// read segments
+	parse_GetDoubleArray(fp, name, &arsz, buff, &found);
+
+	if(!found) SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "ERROR! Mesh refinement segments are not specified\n");
+
+	if(arsz != 3*msi->nsegs-1) SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "ERROR! Incorrect number entries in the mesh refinement array\n");
+
+	// load the data ... delimiters
+	for(i = 0, jj = 0; i < msi->nsegs-1; i++, jj++) msi->delims[i] = buff[jj];
+
+	// ... number of cells
+	for(i = 0; i < msi->nsegs; i++, jj++) msi->ncells[i] = (PetscInt)buff[jj];
+
+	// ... biases
+	for(i = 0; i < msi->nsegs; i++, jj++) msi->biases[i] = buff[jj];
+
+	// check the data ... delimiter sequence
+	for(i = 1; i < msi->nsegs-1; i++)
+	{
+		if(msi->delims[i] <= msi->delims[i-1])
+		{
+			SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "ERROR! refinement segments are unordered/overlapping\n");
+		}
+	}
+
+	// ... delimiter bounds
+	for(i = 0; i < msi->nsegs-1; i++)
+	{
+		if(msi->delims[i] <= beg || msi->delims[i] >= end)
+		{
+			SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "ERROR! Refinement segments out of bound\n");
+		}
+	}
+
+	// ... number of cells
+	for(i = 0; i < msi->nsegs; i++)
+	{
+		if(msi->ncells[i] <= 0)
+		{
+			SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "ERROR! Number of cells must be non-negative\n");
+		}
+	}
+
+	// ... biases
+	for(i = 0; i < msi->nsegs; i++)
+	{
+		if(!msi->biases[i])
+		{
+			SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "ERROR! Bias factors must be non-zero\n");
+		}
+	}
+
+	// ... compute total number of cells
+	for(i = 0, (*tncels) = 0; i < msi->nsegs; i++) (*tncels) += msi->ncells[i];
+
+	// nondimensionalize segment delimiters - after error checking
+	if (dim) for(i = 0; i < msi->nsegs-1; i++) msi->delims[i] = msi->delims[i]/charLength;
+
+	PetscFunctionReturn(0);
+}
+//---------------------------------------------------------------------------
+// after PetscErrorCode  LaMEMInitializeMaterialProperties( UserContext *user ) in Utils.c line 430
+// Set initial material properties
+#undef __FUNCT__
+#define __FUNCT__ "InitMaterialProp"
+PetscErrorCode InitMaterialProp(UserCtx *user )
+{
+	PetscInt i;
+
+	for( i=0; i<user->num_phases; i++ )
+	{
+		if (user->DimensionalUnits==1)
+		{
+			user->PhaseProperties.ViscosityLaw[i]                  = 1;     // constant viscosity
+			user->PhaseProperties.mu[i]                            = 1e20;
+			user->PhaseProperties.n_exponent[i]                    = 1.0;
+			user->PhaseProperties.FrankKamenetskii[i]              = 0.0;
+			user->PhaseProperties.Powerlaw_e0[i]                   = 1.0;
+			user->PhaseProperties.A[i]                             = 1e-20;
+			user->PhaseProperties.E[i]                             = 1.0;
+			user->PhaseProperties.DensityLaw[i]                    = 1;     // T-dependent density
+			user->PhaseProperties.rho[i]                           = 2800;
+			user->PhaseProperties.Density_T0[i]                    = 273;   // Kelvin (temperature at which rho=rho0, in eq. rho=rho0*(1-alpha*(T-T0)))
+			user->PhaseProperties.ThermalExpansivity[i]            = 0;     // no coupling mechanics - thermics
+			user->PhaseProperties.PlasticityLaw[i]                 = 0;     // none
+			user->PhaseProperties.Cohesion[i]                      = 1e100; // effectively switches off plasticity
+			user->PhaseProperties.CohesionAfterWeakening[i]        = 1e100; // effectively switches off plasticity
+			user->PhaseProperties.Weakening_PlasticStrain_Begin[i] = 0;
+			user->PhaseProperties.Weakening_PlasticStrain_End[i]   = 0;
+			user->PhaseProperties.FrictionAngle[i]                 = 0;     // effectively switches off plasticity
+			user->PhaseProperties.FrictionAngleAfterWeakening[i]   = 0;     // effectively switches off plasticity
+			user->PhaseProperties.ElasticShearModule[i]            = 1e100; // will make the model effectively viscous
+			user->PhaseProperties.T_Conductivity[i]                = 3;     // reasonable value
+			user->PhaseProperties.HeatCapacity[i]                  = 1050;  // reasonable value
+			user->PhaseProperties.RadioactiveHeat[i]               = 0;
+		}
+		else
+		{
+			user->PhaseProperties.ViscosityLaw[i]                  = 1;     // constant viscosity
+			user->PhaseProperties.mu[i]                            = 1;
+			user->PhaseProperties.n_exponent[i]                    = 1.0;
+			user->PhaseProperties.FrankKamenetskii[i]              = 0.0;
+			user->PhaseProperties.Powerlaw_e0[i]                   = 1.0;
+			user->PhaseProperties.A[i]                             = 1.0;
+			user->PhaseProperties.E[i]                             = 1.0;
+			user->PhaseProperties.DensityLaw[i]                    = 1;     // T-dependent density
+			user->PhaseProperties.rho[i]                           = 1;
+			user->PhaseProperties.Density_T0[i]                    = 0;     // Kelvin (temperature at which rho=rho0, in eq. rho=rho0*(1-alpha*(T-T0)))
+			user->PhaseProperties.ThermalExpansivity[i]            = 0;     // no coupling mechanics - thermics
+			user->PhaseProperties.PlasticityLaw[i]                 = 0;     // none
+			user->PhaseProperties.Cohesion[i]                      = 1e100; // effectively switches off plasticity
+			user->PhaseProperties.CohesionAfterWeakening[i]        = 1e100; // effectively switches off plasticity
+			user->PhaseProperties.Weakening_PlasticStrain_Begin[i] = 0;
+			user->PhaseProperties.Weakening_PlasticStrain_End[i]   = 0;
+			user->PhaseProperties.FrictionAngle[i]                 = 0;     // effectively switches off plasticity
+			user->PhaseProperties.FrictionAngleAfterWeakening[i]   = 0;     // effectively switches off plasticity
+			user->PhaseProperties.ElasticShearModule[i]            = 1e100; // will make the model effectively viscous
+			user->PhaseProperties.T_Conductivity[i]                = 1;     // reasonable value
+			user->PhaseProperties.HeatCapacity[i]                  = 1;     // reasonable value
+			user->PhaseProperties.RadioactiveHeat[i]               = 0;
+		}
+	}
+
+	if (user->DimensionalUnits==1){
+		// Add a higher density and viscosity to phase 1
+		user->PhaseProperties.rho[1] = 3000;
+		user->PhaseProperties.mu[1]  = 1e25;
+	}
+	else {
+		// Add a higher density and viscosity to phase 1
+		user->PhaseProperties.rho[1] = 2;
+		user->PhaseProperties.mu[1]  = 1e3;
+	}
 
 	PetscFunctionReturn(0);
 }
@@ -620,320 +969,3 @@ PetscErrorCode ReadMaterialProperties(UserCtx *user)
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "ReadMeshSegDir"
-PetscErrorCode ReadMeshSegDir(
-	FILE        *fp,
-	const char  *name,
-	PetscScalar  beg,
-	PetscScalar  end,
-	PetscInt    *tncels,
-	MeshSegInp  *msi,
-	PetscInt     dim,
-	PetscScalar  charLength)
-{
-	// read mesh refinement data for a direction from the input file
-	// NOTE: parameter "tncels" passes negative number of segments & returns total number of cells
-
-	PetscInt    i, jj, arsz, found;
-	PetscScalar buff[3*MaxNumMeshSegs-1];
-
-	PetscFunctionBegin;
-
-	// check whether segments are not specified
-	if((*tncels) > 0)
-	{
-		msi->nsegs = 0;
-		PetscFunctionReturn(0);
-	}
-
-	// set number of segments
-	msi->nsegs = -(*tncels);
-
-	// read segments
-	parse_GetDoubleArray(fp, name, &arsz, buff, &found);
-
-	if(!found) SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "ERROR! Mesh refinement segments are not specified\n");
-
-	if(arsz != 3*msi->nsegs-1) SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "ERROR! Incorrect number entries in the mesh refinement array\n");
-
-	// load the data ... delimiters
-	for(i = 0, jj = 0; i < msi->nsegs-1; i++, jj++) msi->delims[i] = buff[jj];
-
-	// ... number of cells
-	for(i = 0; i < msi->nsegs; i++, jj++) msi->ncells[i] = (PetscInt)buff[jj];
-
-	// ... biases
-	for(i = 0; i < msi->nsegs; i++, jj++) msi->biases[i] = buff[jj];
-
-	// check the data ... delimiter sequence
-	for(i = 1; i < msi->nsegs-1; i++)
-	{
-		if(msi->delims[i] <= msi->delims[i-1])
-		{
-			SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "ERROR! refinement segments are unordered/overlapping\n");
-		}
-	}
-
-	// ... delimiter bounds
-	for(i = 0; i < msi->nsegs-1; i++)
-	{
-		if(msi->delims[i] <= beg || msi->delims[i] >= end)
-		{
-			SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "ERROR! Refinement segments out of bound\n");
-		}
-	}
-
-	// ... number of cells
-	for(i = 0; i < msi->nsegs; i++)
-	{
-		if(msi->ncells[i] <= 0)
-		{
-			SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "ERROR! Number of cells must be non-negative\n");
-		}
-	}
-
-	// ... biases
-	for(i = 0; i < msi->nsegs; i++)
-	{
-		if(!msi->biases[i])
-		{
-			SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "ERROR! Bias factors must be non-zero\n");
-		}
-	}
-
-	// ... compute total number of cells
-	for(i = 0, (*tncels) = 0; i < msi->nsegs; i++) (*tncels) += msi->ncells[i];
-
-	// nondimensionalize segment delimiters - after error checking
-	if (dim) for(i = 0; i < msi->nsegs-1; i++) msi->delims[i] = msi->delims[i]/charLength;
-
-	PetscFunctionReturn(0);
-}
-//---------------------------------------------------------------------------
-// after PetscErrorCode  LaMEMInitializeMaterialProperties( UserContext *user ) in Utils.c line 430
-// Set initial material properties
-#undef __FUNCT__
-#define __FUNCT__ "FDSTAGInitMaterialProp"
-PetscErrorCode FDSTAGInitMaterialProp(UserCtx *user )
-{
-	PetscInt i;
-
-	for( i=0; i<user->num_phases; i++ )
-	{
-		if (user->DimensionalUnits==1)
-		{
-			user->PhaseProperties.ViscosityLaw[i]                  = 1;     // constant viscosity
-			user->PhaseProperties.mu[i]                            = 1e20;
-			user->PhaseProperties.n_exponent[i]                    = 1.0;
-			user->PhaseProperties.FrankKamenetskii[i]              = 0.0;
-			user->PhaseProperties.Powerlaw_e0[i]                   = 1.0;
-			user->PhaseProperties.A[i]                             = 1e-20;
-			user->PhaseProperties.E[i]                             = 1.0;
-			user->PhaseProperties.DensityLaw[i]                    = 1;     // T-dependent density
-			user->PhaseProperties.rho[i]                           = 2800;
-			user->PhaseProperties.Density_T0[i]                    = 273;   // Kelvin (temperature at which rho=rho0, in eq. rho=rho0*(1-alpha*(T-T0)))
-			user->PhaseProperties.ThermalExpansivity[i]            = 0;     // no coupling mechanics - thermics
-			user->PhaseProperties.PlasticityLaw[i]                 = 0;     // none
-			user->PhaseProperties.Cohesion[i]                      = 1e100; // effectively switches off plasticity
-			user->PhaseProperties.CohesionAfterWeakening[i]        = 1e100; // effectively switches off plasticity
-			user->PhaseProperties.Weakening_PlasticStrain_Begin[i] = 0;
-			user->PhaseProperties.Weakening_PlasticStrain_End[i]   = 0;
-			user->PhaseProperties.FrictionAngle[i]                 = 0;     // effectively switches off plasticity
-			user->PhaseProperties.FrictionAngleAfterWeakening[i]   = 0;     // effectively switches off plasticity
-			user->PhaseProperties.ElasticShearModule[i]            = 1e100; // will make the model effectively viscous
-			user->PhaseProperties.T_Conductivity[i]                = 3;     // reasonable value
-			user->PhaseProperties.HeatCapacity[i]                  = 1050;  // reasonable value
-			user->PhaseProperties.RadioactiveHeat[i]               = 0;
-		}
-		else
-		{
-			user->PhaseProperties.ViscosityLaw[i]                  = 1;     // constant viscosity
-			user->PhaseProperties.mu[i]                            = 1;
-			user->PhaseProperties.n_exponent[i]                    = 1.0;
-			user->PhaseProperties.FrankKamenetskii[i]              = 0.0;
-			user->PhaseProperties.Powerlaw_e0[i]                   = 1.0;
-			user->PhaseProperties.A[i]                             = 1.0;
-			user->PhaseProperties.E[i]                             = 1.0;
-			user->PhaseProperties.DensityLaw[i]                    = 1;     // T-dependent density
-			user->PhaseProperties.rho[i]                           = 1;
-			user->PhaseProperties.Density_T0[i]                    = 0;     // Kelvin (temperature at which rho=rho0, in eq. rho=rho0*(1-alpha*(T-T0)))
-			user->PhaseProperties.ThermalExpansivity[i]            = 0;     // no coupling mechanics - thermics
-			user->PhaseProperties.PlasticityLaw[i]                 = 0;     // none
-			user->PhaseProperties.Cohesion[i]                      = 1e100; // effectively switches off plasticity
-			user->PhaseProperties.CohesionAfterWeakening[i]        = 1e100; // effectively switches off plasticity
-			user->PhaseProperties.Weakening_PlasticStrain_Begin[i] = 0;
-			user->PhaseProperties.Weakening_PlasticStrain_End[i]   = 0;
-			user->PhaseProperties.FrictionAngle[i]                 = 0;     // effectively switches off plasticity
-			user->PhaseProperties.FrictionAngleAfterWeakening[i]   = 0;     // effectively switches off plasticity
-			user->PhaseProperties.ElasticShearModule[i]            = 1e100; // will make the model effectively viscous
-			user->PhaseProperties.T_Conductivity[i]                = 1;     // reasonable value
-			user->PhaseProperties.HeatCapacity[i]                  = 1;     // reasonable value
-			user->PhaseProperties.RadioactiveHeat[i]               = 0;
-		}
-	}
-
-	if (user->DimensionalUnits==1){
-		// Add a higher density and viscosity to phase 1
-		user->PhaseProperties.rho[1] = 3000;
-		user->PhaseProperties.mu[1]  = 1e25;
-	}
-	else {
-		// Add a higher density and viscosity to phase 1
-		user->PhaseProperties.rho[1] = 2;
-		user->PhaseProperties.mu[1]  = 1e3;
-	}
-
-	PetscFunctionReturn(0);
-}
-//---------------------------------------------------------------------------
-// change values from the command line
-#undef __FUNCT__
-#define __FUNCT__ "FDSTAGReadCommLine"
-PetscErrorCode FDSTAGReadCommLine(UserCtx *user )
-{
-	PetscInt       i, nel_array[3], nel_input_max;
-	PetscBool      found,flg;
-	char           setup_name[PETSC_MAX_PATH_LEN];
-
-	PetscErrorCode ierr;
-	PetscFunctionBegin;
-
-	PetscOptionsGetReal(PETSC_NULL,"-W"      , &user->W      , PETSC_NULL);
-	PetscOptionsGetReal(PETSC_NULL,"-L"      , &user->L      , PETSC_NULL);
-	PetscOptionsGetReal(PETSC_NULL,"-H"      , &user->H      , PETSC_NULL);
-	PetscOptionsGetReal(PETSC_NULL,"-y_front", &user->y_front, PETSC_NULL);
-
-	PetscOptionsGetInt(PETSC_NULL ,"-nel_x",   &user->nel_x,   PETSC_NULL);
-	PetscOptionsGetInt(PETSC_NULL ,"-nel_y",   &user->nel_y,   PETSC_NULL);
-	PetscOptionsGetInt(PETSC_NULL ,"-nel_z",   &user->nel_z,   PETSC_NULL);
-
-	// alternative: specify the # of elements as -nel 8,16,32  which gives nel_x=8, nel_y=16, nel_z=32
-	nel_input_max=3;
-	ierr = PetscOptionsGetIntArray(PETSC_NULL,"-nel", nel_array, &nel_input_max, &found); CHKERRQ(ierr);
-
-	if (found==PETSC_TRUE) {
-		user->nel_x = nel_array[0];
-		user->nel_y = nel_array[1];
-		user->nel_z = nel_array[2];
-	}
-	user->nnode_x = user->nel_x + 1;
-	user->nnode_y = user->nel_y + 1;
-	user->nnode_z = user->nel_z + 1;
-
-	PetscOptionsGetInt(PETSC_NULL ,"-time_end",       &user->time_end,       PETSC_NULL);
-	PetscOptionsGetInt(PETSC_NULL ,"-save_timesteps", &user->save_timesteps, PETSC_NULL);
-	PetscOptionsGetReal(PETSC_NULL,"-CFL",            &user->CFL,            PETSC_NULL);
-	PetscOptionsGetReal(PETSC_NULL,"-dt",             &user->dt,             PETSC_NULL);
-	PetscOptionsGetReal(PETSC_NULL,"-dt_max",         &user->dt_max,         PETSC_NULL);
-
-	// FDSTAG Canonical Model Setup
-	PetscOptionsGetString(PETSC_NULL,"-msetup", setup_name, PETSC_MAX_PATH_LEN, &found);
-	if(found == PETSC_TRUE)
-	{	if     (!strcmp(setup_name, "parallel"))   user->msetup = PARALLEL;
-		else if(!strcmp(setup_name, "redundant"))  user->msetup = REDUNDANT;
-		else if(!strcmp(setup_name, "polygons"))   user->msetup = POLYGONS;
-		else if(!strcmp(setup_name, "diapir"))     user->msetup = DIAPIR;
-		else if(!strcmp(setup_name, "block"))      user->msetup = BLOCK;
-		else if(!strcmp(setup_name, "subduction")) user->msetup = SUBDUCTION;
-		else if(!strcmp(setup_name, "folding"))    user->msetup = FOLDING;
-		else if(!strcmp(setup_name, "detachment")) user->msetup = DETACHMENT;
-		else if(!strcmp(setup_name, "slab"))       user->msetup = SLAB;
-		else if(!strcmp(setup_name, "spheres"))    user->msetup = SPHERES;
-		else if(!strcmp(setup_name, "bands"))      user->msetup = BANDS;
-		else SETERRQ1(PETSC_COMM_WORLD, PETSC_ERR_USER,"ERROR! Incorrect model setup: %s", setup_name);
-	}
-
-	// boundary conditions
-	PetscOptionsGetInt(PETSC_NULL, "-BC.InternalBound", &user->BC.InternalBound, PETSC_NULL);
-	PetscOptionsGetInt(PETSC_NULL, "-BC.UpperBound",    &user->BC.UpperBound,    PETSC_NULL);
-	PetscOptionsGetInt(PETSC_NULL, "-BC.LowerBound",    &user->BC.LowerBound,    PETSC_NULL);
-	PetscOptionsGetInt(PETSC_NULL, "-BC.LeftBound",     &user->BC.LeftBound,     PETSC_NULL);
-	PetscOptionsGetInt(PETSC_NULL, "-BC.RightBound",    &user->BC.RightBound,    PETSC_NULL);
-	PetscOptionsGetInt(PETSC_NULL, "-BC.FrontBound",    &user->BC.FrontBound,    PETSC_NULL);
-	PetscOptionsGetInt(PETSC_NULL, "-BC.BackBound",     &user->BC.BackBound,     PETSC_NULL);
-	PetscOptionsGetReal(PETSC_NULL,"-BC.Vy_front",      &user->BC.Vy_front,      PETSC_NULL); // y-velocity @ front boundary
-	PetscOptionsGetReal(PETSC_NULL,"-BC.Vy_back",       &user->BC.Vy_back,       PETSC_NULL); // y-velocity @ front boundary
-	PetscOptionsGetReal(PETSC_NULL,"-BC.Vz_top",        &user->BC.Vz_top,        PETSC_NULL); // y-velocity @ front boundary
-	PetscOptionsGetReal(PETSC_NULL,"-BC.Vz_bot",        &user->BC.Vz_bot,        PETSC_NULL); // y-velocity @ front boundary
-	PetscOptionsGetReal(PETSC_NULL,"-BC.Vx_left",       &user->BC.Vx_left,       PETSC_NULL); // y-velocity @ front boundary
-	PetscOptionsGetReal(PETSC_NULL,"-BC.Vx_right",      &user->BC.Vx_right,      PETSC_NULL); // y-velocity @ front boundary
-
-	PetscOptionsGetReal(PETSC_NULL,"-BC.Exx",           &user->BC.Exx,           PETSC_NULL); // Exx background strain-rate
-	PetscOptionsGetReal(PETSC_NULL,"-BC.Eyy",           &user->BC.Eyy,           PETSC_NULL); // Eyy background strain-rate
-
-	// number of markers
-	PetscOptionsGetInt(PETSC_NULL,"-NumPartX",          &user->NumPartX,         PETSC_NULL); // # of tracers per cell in x-direction
-	PetscOptionsGetInt(PETSC_NULL,"-NumPartY",          &user->NumPartY,         PETSC_NULL); // # of tracers per cell in y-direction
-	PetscOptionsGetInt(PETSC_NULL,"-NumPartZ",          &user->NumPartZ,         PETSC_NULL); // # of tracers per cell in z-direction
-
-	// flags
-	PetscOptionsGetInt(PETSC_NULL,"-restart",          &user->restart,          PETSC_NULL); // # restart a simulation if possible?
-	PetscOptionsGetInt(PETSC_NULL,"-save_breakpoints", &user->save_breakpoints, PETSC_NULL); // after how many steps do we create a breakpoint file?
-	PetscOptionsGetInt(PETSC_NULL,"-SaveParticles",    &user->SaveParticles,    PETSC_NULL); // save particles to disk?
-
-	PetscOptionsGetBool(PETSC_NULL,"-SavePartitioning",&user->SavePartitioning, PETSC_NULL);
-	PetscOptionsGetBool(PETSC_NULL,"-SkipStokesSolver",&user->SkipStokesSolver, PETSC_NULL);
-
-	// optimization
-	PetscOptionsGetReal(PETSC_NULL,"-LowerViscosityCutoff", &user->LowerViscosityCutoff, PETSC_NULL); // lower viscosity cutoff
-	PetscOptionsGetReal(PETSC_NULL,"-UpperViscosityCutoff", &user->UpperViscosityCutoff, PETSC_NULL); // upper viscosity cutoff
-	PetscOptionsGetReal(PETSC_NULL,"-InitViscosity",        &user->InitViscosity,        PETSC_NULL); // upper viscosity cutoff
-
-	// gravity
-	PetscOptionsGetReal(PETSC_NULL ,"-GravityAngle",   &user->GravityAngle,     PETSC_NULL); // Gravity angle in x-z plane
-
-	// pushing boundary conditions related parameters
-	PetscOptionsGetInt(PETSC_NULL,"-AddPushing"                 , &user->AddPushing                 , PETSC_NULL);
-	PetscOptionsGetInt(PETSC_NULL,"-Pushing.num_changes"        , &user->Pushing.num_changes        , PETSC_NULL);
-	PetscOptionsGetInt(PETSC_NULL,"-Pushing.reset_pushing_coord", &user->Pushing.reset_pushing_coord, PETSC_NULL);
-	PetscOptionsGetReal(PETSC_NULL,"-Pushing.L_block"           , &user->Pushing.L_block            , PETSC_NULL);
-	PetscOptionsGetReal(PETSC_NULL,"-Pushing.W_block"           , &user->Pushing.W_block            , PETSC_NULL);
-	PetscOptionsGetReal(PETSC_NULL,"-Pushing.H_block"           , &user->Pushing.H_block            , PETSC_NULL);
-	PetscOptionsGetReal(PETSC_NULL,"-Pushing.x_center_block"    , &user->Pushing.x_center_block     , PETSC_NULL);
-	PetscOptionsGetReal(PETSC_NULL,"-Pushing.y_center_block"    , &user->Pushing.y_center_block     , PETSC_NULL);
-	PetscOptionsGetReal(PETSC_NULL,"-Pushing.z_center_block"    , &user->Pushing.z_center_block     , PETSC_NULL);
-
-	// pushing - array variables
-	char matprop_opt[PETSC_MAX_PATH_LEN];
-	flg = PETSC_FALSE;
-
-	for(i=0;i<user->Pushing.num_changes;i++){
-		// v_push in cm/year
-		sprintf(matprop_opt,"-Pushing.V_push_%lld",(LLD)i);
-		ierr = PetscOptionsGetReal(PETSC_NULL ,matprop_opt,&user->Pushing.V_push[i], &flg); CHKERRQ(ierr);
-		if(flg == PETSC_TRUE) PetscPrintf(PETSC_COMM_WORLD,"#    V_push[%lld] = %g \n",(LLD)i,user->Pushing.V_push[i]);
-
-		// rate of rotation deg/yr
-		sprintf(matprop_opt,"-Pushing.omega_%lld",(LLD)i);
-		ierr = PetscOptionsGetReal(PETSC_NULL ,matprop_opt,&user->Pushing.omega[i], &flg); CHKERRQ(ierr);
-		if(flg == PETSC_TRUE) PetscPrintf(PETSC_COMM_WORLD,"#    Omega[%lld] = %g \n",(LLD)i,user->Pushing.omega[i]);
-
-		// advect block or not for each time segment
-		sprintf(matprop_opt,"-Pushing.coord_advect_%lld",(LLD)i);
-		ierr = PetscOptionsGetInt(PETSC_NULL ,matprop_opt,&user->Pushing.coord_advect[i], &flg); CHKERRQ(ierr);
-		if(flg == PETSC_TRUE) PetscPrintf(PETSC_COMM_WORLD,"#    Coord_advect[%lld] = %g \n",(LLD)i,user->Pushing.coord_advect[i]);
-
-		// direction of pushing
-				sprintf(matprop_opt,"-Pushing.dir_%lld",(LLD)i);
-				ierr = PetscOptionsGetInt(PETSC_NULL ,matprop_opt,&user->Pushing.dir[i], &flg); CHKERRQ(ierr);
-				if(flg == PETSC_TRUE) PetscPrintf(PETSC_COMM_WORLD,"#    Direction[%lld] = %g \n",(LLD)i,user->Pushing.dir[i]);
-	}
-
-	for(i=0;i<user->Pushing.num_changes+1;i++){
-		// time intervals is a num_changes+1 array
-		sprintf(matprop_opt,"-Pushing.time_%lld",(LLD)i);
-		ierr = PetscOptionsGetReal(PETSC_NULL ,matprop_opt,&user->Pushing.time[i], &flg); CHKERRQ(ierr);
-		if(flg == PETSC_TRUE) PetscPrintf(PETSC_COMM_WORLD,"#    Time[%lld] = %g \n",(LLD)i,user->Pushing.time[i]);
-	}
-
-	// use LaMEM canonical
-	PetscOptionsGetBool(PETSC_NULL,"-use_fdstag_canonical", &user->use_fdstag_canonical, PETSC_NULL );
-
-	// get material properties from command line - de-activated
-	//ierr = GetMaterialPropertiesFromCommandLine(user);
-
-	PetscFunctionReturn(0);
-}
-//---------------------------------------------------------------------------
-

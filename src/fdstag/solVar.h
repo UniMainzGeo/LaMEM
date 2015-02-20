@@ -133,7 +133,7 @@ typedef struct
 	PetscScalar  Bd;      // pre-exponential constant
 	PetscScalar  Ed;      // activation energy
 	PetscScalar  Vd;      // activation volume
-	// disclocation creep parameters
+	// dislocation creep parameters
 	PetscScalar  Bn;      // pre-exponential constant
 	PetscScalar  n;       // power law exponent
 	PetscScalar  En;      // activation energy

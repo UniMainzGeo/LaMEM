@@ -2,11 +2,44 @@
 //..........................   SCALING ROUTINES   ...........................
 //---------------------------------------------------------------------------
 #include "LaMEM.h"
-#include "scaling.h"
 #include "Parsing.h"
+#include "solVar.h"
+#include "scaling.h"
 //---------------------------------------------------------------------------
-// * replace scaling consistently (at the input level)
-// ...
+// perform scaling (non-dimensional)
+#undef __FUNCT__
+#define __FUNCT__ "ScalingMain"
+PetscErrorCode ScalingMain(Scaling *scal, MatParLim *matLim, Material_t  *phases, PetscInt numPhases, UserCtx *usr)
+{
+	PetscErrorCode ierr;
+	PetscFunctionBegin;
+
+	// compute characteristic values - change with ScalingCreate
+	ScalingCharValues(usr);
+
+	// initialize scaling object
+	ierr = ScalingCreate(
+		scal,
+		usr->DimensionalUnits,
+		usr->Characteristic.kg,
+		usr->Characteristic.Time,
+		usr->Characteristic.Length,
+		usr->Characteristic.Temperature,
+		usr->Characteristic.Force); CHKERRQ(ierr);
+
+	// perform scaling of input parameters
+	ScalingInput(scal, usr);
+
+	// perform scaling of material properties parameters
+	ScalingMatProp(scal, phases, numPhases);
+
+	// scale material parameter limits
+	ScalingMatParLim(scal, matLim);
+
+	// should include material properties for default setup (Falling Block Test)?
+
+	PetscFunctionReturn(0);
+}
 //---------------------------------------------------------------------------
 #undef __FUNCT__
 #define __FUNCT__ "ScalingReadFromFile"
@@ -197,7 +230,7 @@ PetscErrorCode ScalingCreate(
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-PetscScalar ComputePowerLawScaling(Scaling * scal, PetscScalar n)
+PetscScalar ScalingComputePowerLaw(Scaling * scal, PetscScalar n)
 {
 	// power law constant scaling: 1 / stress^n / time
 
@@ -205,7 +238,7 @@ PetscScalar ComputePowerLawScaling(Scaling * scal, PetscScalar n)
 }
 //---------------------------------------------------------------------------
 // compute characteristic values - migrated from NonDimensionalisation.c
-void ComputeCharValues( UserCtx *user )
+void ScalingCharValues( UserCtx *user )
 {
 	nonDimUnits Characteristic_;
 
@@ -282,8 +315,137 @@ void ComputeCharValues( UserCtx *user )
 	user->Characteristic = Characteristic_;
 }
 //---------------------------------------------------------------------------
-// transforms input parameters into ND parameters - migrated from NonDimensionalisation.c
-void PerformNonDimension(UserCtx *user)
+// scaling of input parameters (UserCtx)
+void ScalingInput(Scaling *scal, UserCtx *user)
+{
+	PetscScalar length, velocity, strainrate;
+	PetscScalar time, temperature, viscosity;
+	PetscScalar angle;
+	PetscInt    i;
+
+	// define inverse characteristic values - for optimization
+	length          = 1/scal->length;
+	velocity        = 1/scal->velocity;
+	strainrate      = 1/scal->strain_rate;
+	time            = 1/scal->time;
+	temperature     = 1/scal->temperature;
+	viscosity       = 1/scal->viscosity;
+	angle           = 1/scal->angle;
+
+	// domain
+	user->W               = user->W       *length;
+	user->L               = user->L       *length;
+	user->H               = user->H       *length;
+	user->x_left          = user->x_left  *length;
+	user->y_front         = user->y_front *length;
+	user->z_bot           = user->z_bot   *length;
+	user->Setup_Diapir_Hi = user->Setup_Diapir_Hi*length;
+
+	// boundary conditions
+	user->BC.Vy_front   = user->BC.Vy_front*velocity;
+	user->BC.Vy_back    = user->BC.Vy_back *velocity;
+	user->BC.Vz_top     = user->BC.Vz_top  *velocity;
+	user->BC.Vz_bot     = user->BC.Vz_bot  *velocity;
+	user->BC.Vx_left    = user->BC.Vx_left *velocity;
+	user->BC.Vx_right   = user->BC.Vx_right*velocity;
+	user->BC.Exx        = user->BC.Exx     *strainrate;
+	user->BC.Eyy        = user->BC.Eyy     *strainrate;
+
+	// time-stepping
+	user->dt            = user->dt    *time;
+	user->dt_max        = user->dt_max*time;
+
+	// temperature
+	user->Temp_top      = user->Temp_top   *temperature;
+	user->Temp_bottom   = user->Temp_bottom*temperature;
+
+	// gravity
+	user->Gravity       = user->Gravity*length*time*time;
+
+	// optimization
+	user->LowerViscosityCutoff = user->LowerViscosityCutoff*viscosity;
+	user->UpperViscosityCutoff = user->UpperViscosityCutoff*viscosity;
+	user->InitViscosity        = user->InitViscosity       *viscosity;
+
+	// pushing block parameters
+	user->Pushing.L_block        = user->Pushing.L_block       *length;
+	user->Pushing.W_block        = user->Pushing.W_block       *length;
+	user->Pushing.H_block        = user->Pushing.H_block       *length;
+	user->Pushing.x_center_block = user->Pushing.x_center_block*length;
+	user->Pushing.y_center_block = user->Pushing.y_center_block*length;
+	user->Pushing.z_center_block = user->Pushing.z_center_block*length;
+	for (i = 0; i < user->Pushing.num_changes; i++){
+		user->Pushing.V_push[i] = user->Pushing.V_push[i]*velocity;
+		user->Pushing.omega[i]  = user->Pushing.omega[i] *angle*time; //[radians]
+	}
+	for (i=0;i<user->Pushing.num_changes+1; i++){
+		user->Pushing.time[i]   = user->Pushing.time[i]*time;
+	}
+}
+//---------------------------------------------------------------------------
+// scaling material parameters
+// Note: 1) activation energy is not scaled, only scale gas constant with characteristic temperature (a.p)
+//          (i.e (E+p'V*)/RT', where E is dimensional and V* must have same units as E)
+//          phases[i].Ed; phases[i].En; phases[i].Ep are not scaled
+//       2) activation volume is scaled for energy (i.e. cm3/mol -> J/mol, V*energy/length^3)
+
+void ScalingMatProp(Scaling *scal, Material_t *phases, PetscInt numPhases)
+{
+	PetscInt     i;
+	PetscScalar  length, powerlaw, stress;
+
+	length      = 1/scal->length;
+	stress      = 1/scal->stress;
+
+	// scale dimensional parameters
+	for(i = 0; i < numPhases; i++)
+	{
+		phases[i].rho     = phases[i].rho/scal->density;
+		// diffusion creep
+		phases[i].Bd      = phases[i].Bd*(2*scal->viscosity);
+		phases[i].Vd      = phases[i].Vd*(scal->energy*length*length*length);
+		// dislocation creep (power-law)
+		powerlaw          = ScalingComputePowerLaw(scal, phases[i].n);
+		phases[i].Bn      = phases[i].Bn/powerlaw;
+		phases[i].Vn      = phases[i].Vn*(scal->energy*length*length*length);
+		// Peierls creep
+		phases[i].Bp      = phases[i].Bp/scal->strain_rate;
+		phases[i].Vp      = phases[i].Vp*(scal->energy*length*length*length);
+		phases[i].taup    = phases[i].taup*stress;
+
+		// elasticity
+		phases[i].G       = phases[i].G*stress;
+		phases[i].K       = phases[i].K*stress;
+
+		// plasticity
+		phases[i].ch      = phases[i].ch*stress;
+		phases[i].fr      = phases[i].fr/scal->angle;
+
+		// temperature
+		phases[i].alpha   = phases[i].alpha*scal->temperature;
+		phases[i].Cp      = phases[i].Cp/scal->cpecific_heat;
+		phases[i].k       = phases[i].k/scal->conductivity;
+		phases[i].A       = phases[i].A/scal->heat_production;
+	}
+}
+//---------------------------------------------------------------------------
+// scaling material parameter limits
+void ScalingMatParLim(Scaling *scal, MatParLim *matLim)
+{
+	// scale gas constant
+	matLim->Rugc = matLim->Rugc*scal->temperature;
+
+	// scale viscosity limits
+	matLim->eta_max = matLim->eta_max/scal->viscosity;
+	matLim->eta_min = matLim->eta_min/scal->viscosity;
+	matLim->eta_ref = matLim->eta_ref/scal->viscosity;
+
+	// scale reference strain rate - read at the input level
+	matLim->DII_ref = matLim->DII_ref/scal->strain_rate;
+}
+//---------------------------------------------------------------------------
+// OLD - scaling of input parameters (UserCtx)
+void ScalingInputOLD(UserCtx *user)
 {
 	PetscInt i;
 
@@ -322,6 +484,27 @@ void PerformNonDimension(UserCtx *user)
 	user->UpperViscosityCutoff = user->UpperViscosityCutoff/user->Characteristic.Viscosity;
 	user->InitViscosity        = user->InitViscosity/user->Characteristic.Viscosity;
 
+	// pushing block parameters
+	user->Pushing.L_block        = user->Pushing.L_block/user->Characteristic.Length;
+	user->Pushing.W_block        = user->Pushing.W_block/user->Characteristic.Length;
+	user->Pushing.H_block        = user->Pushing.H_block/user->Characteristic.Length;
+	user->Pushing.x_center_block = user->Pushing.x_center_block/user->Characteristic.Length;
+	user->Pushing.y_center_block = user->Pushing.y_center_block/user->Characteristic.Length;
+	user->Pushing.z_center_block = user->Pushing.z_center_block/user->Characteristic.Length;
+	for (i = 0; i < user->Pushing.num_changes; i++){
+		user->Pushing.V_push[i] = user->Pushing.V_push[i]*1e-2/user->Characteristic.SecYear/user->Characteristic.Velocity;
+		user->Pushing.omega[i]  = user->Pushing.omega[i]*(M_PI/180.0)/(user->Characteristic.SecYear/user->Characteristic.Time); //[radians]
+	}
+	for (i=0;i<user->Pushing.num_changes+1; i++){
+		user->Pushing.time[i]   = user->Pushing.time[i]*1e6*user->Characteristic.SecYear/user->Characteristic.Time; //from Myr
+	}
+}
+//---------------------------------------------------------------------------
+// OLD - scaling material parameters
+void ScalingMatPropOLD(UserCtx *user)
+{
+	PetscInt i;
+
 	// material properties
 	for (i = 0; i < user->num_phases; i++)
 	{
@@ -353,21 +536,4 @@ void PerformNonDimension(UserCtx *user)
 		user->PhaseProperties.Density_T0[i]             = user->PhaseProperties.Density_T0[i]/user->Characteristic.Temperature;
 		user->PhaseProperties.ThermalExpansivity[i]     = user->PhaseProperties.ThermalExpansivity[i]/(1.0/user->Characteristic.Temperature);
 	}
-
-	// pushing block parameters
-	user->Pushing.L_block        = user->Pushing.L_block/user->Characteristic.Length;
-	user->Pushing.W_block        = user->Pushing.W_block/user->Characteristic.Length;
-	user->Pushing.H_block        = user->Pushing.H_block/user->Characteristic.Length;
-	user->Pushing.x_center_block = user->Pushing.x_center_block/user->Characteristic.Length;
-	user->Pushing.y_center_block = user->Pushing.y_center_block/user->Characteristic.Length;
-	user->Pushing.z_center_block = user->Pushing.z_center_block/user->Characteristic.Length;
-	for (i = 0; i < user->Pushing.num_changes; i++){
-		user->Pushing.V_push[i] = user->Pushing.V_push[i]*1e-2/user->Characteristic.SecYear/user->Characteristic.Velocity;
-		user->Pushing.omega[i]  = user->Pushing.omega[i]*(M_PI/180.0)/(user->Characteristic.SecYear/user->Characteristic.Time); //[radians]
-	}
-	for (i=0;i<user->Pushing.num_changes+1; i++){
-		user->Pushing.time[i]   = user->Pushing.time[i]*1e6*user->Characteristic.SecYear/user->Characteristic.Time; //from Myr
-	}
 }
-/*==========================================================================================================*/
-

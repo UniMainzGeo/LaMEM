@@ -98,6 +98,8 @@ typedef struct
 
 } Scaling;
 //---------------------------------------------------------------------------
+// scaling routines
+PetscErrorCode ScalingMain(Scaling *scal, MatParLim *matLim, Material_t  *phases, PetscInt numPhases, UserCtx *usr);
 
 PetscErrorCode ScalingCreate(
 	Scaling     *scal,
@@ -110,13 +112,25 @@ PetscErrorCode ScalingCreate(
 
 PetscErrorCode ScalingReadFromFile(Scaling *scal, FILE *fp);
 
-PetscScalar ComputePowerLawScaling(Scaling * scal, PetscScalar n);
+PetscScalar ScalingComputePowerLaw(Scaling * scal, PetscScalar n);
 
 //---------------------------------------------------------------------------
-// compute characteristic values - migrated from NonDimensionalisation.c
-void ComputeCharValues(UserCtx *user );
+// compute characteristic values
+void ScalingCharValues(UserCtx *user);
 
-// perform non-dimensionalization - migrated from NonDimensionalisation.c
-void PerformNonDimension(UserCtx *user );
+// scaling of input parameters (UserCtx)
+void ScalingInput(Scaling *scal, UserCtx *user);
+
+// scaling material parameters
+void ScalingMatProp(Scaling *scal, Material_t *phases, PetscInt numPhases);
+
+// scaling material parameter limits
+void ScalingMatParLim(Scaling *scal, MatParLim *matLim);
+
+// OLD - scaling of input parameters (UserCtx)
+void ScalingInputOLD(UserCtx *user);
+
+// OLD - scaling material parameters
+void ScalingMatPropOLD(UserCtx *user);
 
 #endif
