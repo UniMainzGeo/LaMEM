@@ -47,6 +47,14 @@ PetscErrorCode MGLevelSetupProlong(MGLevel *lvl, MGLevel *fine);
 
 //---------------------------------------------------------------------------
 
+// setup row of restriction matrix
+void getRowRestrict(PetscScalar parent, PetscInt n, PetscInt idx[], PetscScalar bc[], PetscScalar v[], PetscScalar vs[]);
+
+// setup row of prolongation matrix
+void getRowProlong(PetscInt parent, PetscScalar pbc, PetscInt n, PetscScalar bc[], PetscScalar v[], PetscScalar vs[]);
+
+//---------------------------------------------------------------------------
+
 typedef struct
 {
 	// PETSc level numbering (inverse w.r.t. coarsening sequence):
@@ -84,14 +92,6 @@ PetscErrorCode MGApply(PC pc, Vec x, Vec y);
 PetscErrorCode MGDumpMat(MG *mg);
 
 PetscErrorCode MGGetNumLevels(MG *mg);
-
-//---------------------------------------------------------------------------
-
-// setup row of restriction matrix
-void getRowRestrict(PetscScalar parent, PetscInt n, PetscInt idx[], PetscScalar bc[], PetscScalar v[], PetscScalar vs[]);
-
-// setup row of prolongation matrix
-void getRowProlong(PetscInt parent, PetscScalar pbc, PetscInt n, PetscScalar bc[], PetscScalar v[], PetscScalar vs[]);
 
 //---------------------------------------------------------------------------
 #endif
