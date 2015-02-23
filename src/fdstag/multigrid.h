@@ -41,9 +41,9 @@ PetscErrorCode MGLevelSetupRestrict(MGLevel *lvl, MGLevel *fine);
 
 PetscErrorCode MGLevelSetupProlong(MGLevel *lvl, MGLevel *fine);
 
-// PetscErrorCode MGLevelAllocRestrict(MGLevel *lvl, MGLevel *fine);
+PetscErrorCode MGLevelAllocRestrict(MGLevel *lvl, MGLevel *fine);
 
-// PetscErrorCode MGLevelAllocProlong(MGLevel *lvl, MGLevel *fine);
+PetscErrorCode MGLevelAllocProlong(MGLevel *lvl, MGLevel *fine);
 
 //---------------------------------------------------------------------------
 
