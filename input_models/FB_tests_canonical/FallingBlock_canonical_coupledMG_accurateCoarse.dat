@@ -53,14 +53,14 @@ Temp_bottom					=   1 				# Temperature @ bottom; side BC's are flux-free
 
 <PetscOptionsStart>
 	-dt 100
-	#-pcmat_no_dev_proj
+	-pcmat_no_dev_proj
 	
 # SNES
 	-npicard 3
 	-snes_monitor
 	-snes_atol 1e-12
 	-js_ksp_rtol 1e-8
-	-js_ksp_atol 1e-8
+	-js_ksp_atol 1e-3
 	-snes_max_it 25
 	-snes_max_funcs 50000
 	-snes_type 		ksponly
@@ -71,7 +71,9 @@ Temp_bottom					=   1 				# Temperature @ bottom; side BC's are flux-free
 	-js_ksp_min_it 2
 	-js_ksp_converged_reason
  	-js_ksp_monitor_true_residual
-	-js_ksp_rtol 1e-5
+	-js_ksp_rtol 1e-20
+	-js_ksp_atol 1e-5
+	
 
 # Stokes Preconditioner
 	-pstokes mg

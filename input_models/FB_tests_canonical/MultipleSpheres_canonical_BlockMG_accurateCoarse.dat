@@ -144,7 +144,7 @@ NumPartY				=	2   # Particles/Cell in y-direction
 NumPartZ				=	2	# Particles/Cell in z-direction
 
 # Properties that are defined over the whole domain:
-Gravity					=  -1;									# [m/s2] - gravitational acceleration 
+Gravity					=  -9.8;									# [m/s2] - gravitational acceleration 
 PlasticityModel			=	0;									#  not implemented yet
 Xi						=	0;									# [ ] - Shear heating factor - not implemented yet
 
