@@ -131,6 +131,12 @@ void getStiffMatClean(
 	PetscScalar fdx, PetscScalar fdy,  PetscScalar fdz,
 	PetscScalar bdx, PetscScalar bdy,  PetscScalar bdz);
 
+void addDensGradStabil(
+	PetscScalar fssa, PetscScalar *v,
+	PetscScalar rho,  PetscScalar dt,   PetscScalar *grav,
+	PetscScalar fdx,  PetscScalar fdy,  PetscScalar fdz,
+	PetscScalar bdx,  PetscScalar bdy,  PetscScalar bdz);
+
 // compute velocity Schur complement
 void getVelSchur(PetscScalar v[], PetscScalar d[], PetscScalar g[]);
 

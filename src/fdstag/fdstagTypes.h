@@ -226,7 +226,7 @@ typedef struct {
 	Vec              SurfaceTopography;
 	Vec              SurfaceTopography_Vx, SurfaceTopography_Vy, SurfaceTopography_Vz;
 	Vec              BottomTopography;
-	//PetscScalar      FSSA;
+	PetscScalar      FSSA;
 	//PetscScalar      FactorSurfaceLayer;
 
 	// pushing

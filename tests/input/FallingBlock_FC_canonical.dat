@@ -151,6 +151,8 @@ FactorSurfaceLayer			= 		0.3 		# How thick is the surface layer (if option 2 is 
 	
 	-objects_dump
 
+#	-FSSA 1.0
+
 <PetscOptionsEnd>
     
 # Phase distribution

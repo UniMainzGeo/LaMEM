@@ -417,6 +417,10 @@ PetscErrorCode PVOutWriteMomentRes(JacRes *jr, OutBuf *outbuf)
 
 	cf = scal->force;
 
+//	ierr = VecZeroEntries(jr->gfx); CHKERRQ(ierr);
+//	ierr = VecZeroEntries(jr->gfy); CHKERRQ(ierr);
+//	ierr = VecZeroEntries(jr->gfz); CHKERRQ(ierr);
+
 	GLOBAL_TO_LOCAL(outbuf->fs->DA_X, jr->gfx, jr->lfx)
 	GLOBAL_TO_LOCAL(outbuf->fs->DA_Y, jr->gfy, jr->lfy)
 	GLOBAL_TO_LOCAL(outbuf->fs->DA_Z, jr->gfz, jr->lfz)

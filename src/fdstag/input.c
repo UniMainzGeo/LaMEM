@@ -207,6 +207,8 @@ PetscErrorCode InputSetDefaultValues(UserCtx *user)
 	user->Pushing.reset_pushing_coord   = 0;
 	user->Pushing.theta                 = 0.0;
 
+	user->FSSA					=	0.0;
+
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
@@ -294,6 +296,7 @@ PetscErrorCode InputReadFile(JacRes *jr, UserCtx *user)
 	parse_GetInt( fp,    "time_end", &user->time_end, &found );
 	parse_GetDouble( fp, "CFL", &user->CFL, &found );
 	parse_GetDouble( fp, "dt_max", &user->dt_max, &found );
+	parse_GetDouble( fp, "FSSA", &user->FSSA, &found );	// FSSA parameter
 
 	// new material input
 	parse_GetInt( fp,    "new_input", &user->new_input, &found );
@@ -400,6 +403,7 @@ PetscErrorCode InputReadCommLine(UserCtx *user )
 	PetscOptionsGetReal(PETSC_NULL,"-CFL",            &user->CFL,            PETSC_NULL);
 	PetscOptionsGetReal(PETSC_NULL,"-dt",             &user->dt,             PETSC_NULL);
 	PetscOptionsGetReal(PETSC_NULL,"-dt_max",         &user->dt_max,         PETSC_NULL);
+	PetscOptionsGetReal(PETSC_NULL,"-FSSA",           &user->FSSA,           PETSC_NULL); // FSSA parameter [should be between 0-1]
 
 	// FDSTAG Canonical Model Setup
 	PetscOptionsGetString(PETSC_NULL,"-msetup", setup_name, PETSC_MAX_PATH_LEN, &found);

@@ -39,11 +39,6 @@ without the explicit agreement of Boris Kaus.
 #include "Utils.h"
 #include "LaMEM_Initialize.h"
 #include "LaMEMLib_FDSTAG_private.h"
-
-//#include "Breakpoint.h"
-//#include "LaMEM_FE_ErosionCode.h"
-//#include "LaMEM_AnalyticalSolutions.h"
-
 #include "fdstag.h"
 #include "solVar.h"
 #include "scaling.h"
@@ -263,6 +258,9 @@ PetscErrorCode LaMEMLib_FDSTAG(PetscBool InputParamFile, const char *ParamFile, 
 	jr.grav[0] = 0.0;
 	jr.grav[1] = 0.0;
 	jr.grav[2] = user.Gravity;
+
+	// initialize stabilization parameter
+	jr.FSSA = user.FSSA;
 
 	// create advection context
 	ierr = ADVCreate(&actx, &fs, &jr); CHKERRQ(ierr);

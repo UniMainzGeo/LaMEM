@@ -597,9 +597,9 @@ PetscErrorCode JacResGetResidual(JacRes *jr)
 	PetscScalar XZ, XZ1, XZ2, XZ3, XZ4;
 	PetscScalar YZ, YZ1, YZ2, YZ3, YZ4;
 	PetscScalar bdx, fdx, bdy, fdy, bdz, fdz;
-	PetscScalar gx, gy, gz, sxx, syy, szz, sxy, sxz, syz;
-	PetscScalar J2Inv, theta, rho, IKdt, alpha, Tc, pc, Tn, pn, dt;
-	PetscScalar ***fx,  ***fy,  ***fz,  ***gc;
+	PetscScalar gx, gy, gz, tx, ty, tz, sxx, syy, szz, sxy, sxz, syz;
+	PetscScalar J2Inv, theta, rho, IKdt, alpha, Tc, pc, Tn, pn, dt, fssa, *grav;
+	PetscScalar ***fx,  ***fy,  ***fz, ***vx,  ***vy,  ***vz, ***gc;
 	PetscScalar ***dxx, ***dyy, ***dzz, ***dxy, ***dxz, ***dyz, ***p, ***T;
 
 	PetscErrorCode ierr;
@@ -619,6 +619,8 @@ PetscErrorCode JacResGetResidual(JacRes *jr)
 	phases    =  jr->phases;    // phase parameters
 	matLim    = &jr->matLim;    // phase parameters limiters
 	dt        =  jr->ts.dt;     // time step
+	fssa      =  jr->FSSA;      // density gradient penalty parameter
+    grav      =  jr->grav;      // gravity acceleration
 
 	// clear local residual vectors
 	ierr = VecZeroEntries(jr->lfx); CHKERRQ(ierr);
@@ -638,6 +640,9 @@ PetscErrorCode JacResGetResidual(JacRes *jr)
 	ierr = DMDAVecGetArray(fs->DA_X,   jr->lfx,  &fx);  CHKERRQ(ierr);
 	ierr = DMDAVecGetArray(fs->DA_Y,   jr->lfy,  &fy);  CHKERRQ(ierr);
 	ierr = DMDAVecGetArray(fs->DA_Z,   jr->lfz,  &fz);  CHKERRQ(ierr);
+	ierr = DMDAVecGetArray(fs->DA_X,   jr->lvx,  &vx);  CHKERRQ(ierr);
+	ierr = DMDAVecGetArray(fs->DA_Y,   jr->lvy,  &vy);  CHKERRQ(ierr);
+	ierr = DMDAVecGetArray(fs->DA_Z,   jr->lvz,  &vz);  CHKERRQ(ierr);
 
 	//-------------------------------
 	// central points
@@ -723,15 +728,14 @@ PetscErrorCode JacResGetResidual(JacRes *jr)
 		Tn    = svBulk->Tn;    // temperature history
 
 		// compute gravity terms
+		gx = rho*grav[0];
+		gy = rho*grav[1];
+		gz = rho*grav[2];
 
-		// WARNING! correct signs of body forces in the entire code!
-
-//		gx = -rho*jr->grav[0]/2.0;
-//		gy = -rho*jr->grav[1]/2.0;
-//		gz = -rho*jr->grav[2]/2.0;
-		gx =  rho*jr->grav[0]/2.0;
-		gy =  rho*jr->grav[1]/2.0;
-		gz =  rho*jr->grav[2]/2.0;
+		// compute stabilization terms (lumped approximation)
+		tx = fssa*dt*gx;
+		ty = fssa*dt*gy;
+		tz = fssa*dt*gz;
 
 		//=========
 		// RESIDUAL
@@ -743,12 +747,9 @@ PetscErrorCode JacResGetResidual(JacRes *jr)
 		bdz = SIZE_NODE(k, sz, fs->dsz);   fdz = SIZE_NODE(k+1, sz, fs->dsz);
 
 		// momentum
-//		fx[k][j][i] += sxx/bdx + gx;   fx[k][j][i+1] -= sxx/fdx - gx;
-//		fy[k][j][i] += syy/bdy + gy;   fy[k][j+1][i] -= syy/fdy - gy;
-//		fz[k][j][i] += szz/bdz + gz;   fz[k+1][j][i] -= szz/fdz - gz;
-		fx[k][j][i] -= sxx/bdx + gx;   fx[k][j][i+1] += sxx/fdx - gx;
-		fy[k][j][i] -= syy/bdy + gy;   fy[k][j+1][i] += syy/fdy - gy;
-		fz[k][j][i] -= szz/bdz + gz;   fz[k+1][j][i] += szz/fdz - gz;
+		fx[k][j][i] -= (sxx + vx[k][j][i]*tx)/bdx + gx/2.0;   fx[k][j][i+1] += (sxx + vx[k][j][i+1]*tx)/fdx - gx/2.0;
+		fy[k][j][i] -= (syy + vy[k][j][i]*ty)/bdy + gy/2.0;   fy[k][j+1][i] += (syy + vy[k][j+1][i]*ty)/fdy - gy/2.0;
+		fz[k][j][i] -= (szz + vz[k][j][i]*tz)/bdz + gz/2.0;   fz[k+1][j][i] += (szz + vz[k+1][j][i]*tz)/fdz - gz/2.0;
 
 //****************************************
 // ADHOC (HARD-CODED PRESSURE CONSTRAINTS)
@@ -859,8 +860,6 @@ PetscErrorCode JacResGetResidual(JacRes *jr)
 		bdy = SIZE_CELL(j-1, sy, fs->dsy);   fdy = SIZE_CELL(j, sy, fs->dsy);
 
 		// momentum
-//		fx[k][j-1][i] += sxy/bdy;   fx[k][j][i] -= sxy/fdy;
-//		fy[k][j][i-1] += sxy/bdx;   fy[k][j][i] -= sxy/fdx;
 		fx[k][j-1][i] -= sxy/bdy;   fx[k][j][i] += sxy/fdy;
 		fy[k][j][i-1] -= sxy/bdx;   fy[k][j][i] += sxy/fdx;
 
@@ -963,8 +962,6 @@ PetscErrorCode JacResGetResidual(JacRes *jr)
 		bdz = SIZE_CELL(k-1, sz, fs->dsz);   fdz = SIZE_CELL(k, sz, fs->dsz);
 
 		// momentum
-//		fx[k-1][j][i] += sxz/bdz;   fx[k][j][i] -= sxz/fdz;
-//		fz[k][j][i-1] += sxz/bdx;   fz[k][j][i] -= sxz/fdx;
 		fx[k-1][j][i] -= sxz/bdz;   fx[k][j][i] += sxz/fdz;
 		fz[k][j][i-1] -= sxz/bdx;   fz[k][j][i] += sxz/fdx;
 
@@ -1067,8 +1064,6 @@ PetscErrorCode JacResGetResidual(JacRes *jr)
 		bdz = SIZE_CELL(k-1, sz, fs->dsz);   fdz = SIZE_CELL(k, sz, fs->dsz);
 
 		// update momentum residuals
-//		fy[k-1][j][i] += syz/bdz;   fy[k][j][i] -= syz/fdz;
-//		fz[k][j-1][i] += syz/bdy;   fz[k][j][i] -= syz/fdy;
 		fy[k-1][j][i] -= syz/bdz;   fy[k][j][i] += syz/fdz;
 		fz[k][j-1][i] -= syz/bdy;   fz[k][j][i] += syz/fdy;
 
@@ -1088,6 +1083,9 @@ PetscErrorCode JacResGetResidual(JacRes *jr)
 	ierr = DMDAVecRestoreArray(fs->DA_X,   jr->lfx,  &fx);  CHKERRQ(ierr);
 	ierr = DMDAVecRestoreArray(fs->DA_Y,   jr->lfy,  &fy);  CHKERRQ(ierr);
 	ierr = DMDAVecRestoreArray(fs->DA_Z,   jr->lfz,  &fz);  CHKERRQ(ierr);
+	ierr = DMDAVecRestoreArray(fs->DA_X,   jr->lvx,  &vx);  CHKERRQ(ierr);
+	ierr = DMDAVecRestoreArray(fs->DA_Y,   jr->lvy,  &vy);  CHKERRQ(ierr);
+	ierr = DMDAVecRestoreArray(fs->DA_Z,   jr->lvz,  &vz);  CHKERRQ(ierr);
 
 	// assemble global residuals from local contributions
 	LOCAL_TO_GLOBAL(fs->DA_X, jr->lfx, jr->gfx)

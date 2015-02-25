@@ -512,7 +512,7 @@ PetscErrorCode PMatMonoAssemble(PMat pm)
 	PetscInt    idx[7];
 	PetscScalar v[49];
 	PetscInt    iter, i, j, k, nx, ny, nz, sx, sy, sz;
-	PetscScalar eta, IKdt, diag, pgamma, pt;
+	PetscScalar eta, rho, IKdt, diag, pgamma, pt, dt, fssa, *grav;
 	PetscScalar dx, dy, dz, bdx, fdx, bdy, fdy, bdz, fdz;
 	PetscScalar ***ivx, ***ivy, ***ivz, ***ip;
 	PetscScalar ***bcvx, ***bcvy, ***bcvz, ***bcp;
@@ -528,6 +528,11 @@ PetscErrorCode PMatMonoAssemble(PMat pm)
 	bc     = jr->bc;
 	dof    = &fs->dof;
 	P      = (PMatMono*)pm->data;
+
+	// get density gradient stabilization parameters
+	dt   = jr->ts.dt; // time step
+	fssa = jr->FSSA;  // density gradient penalty parameter
+    grav = jr->grav;  // gravity acceleration
 
 	// get penalty parameter
 	pgamma = pm->pgamma;
@@ -558,9 +563,10 @@ PetscErrorCode PMatMonoAssemble(PMat pm)
 
 	START_STD_LOOP
 	{
-		// get shear & inverse bulk viscosities
+		// get density, shear & inverse bulk viscosities
 		eta  = jr->svCell[iter].svDev.eta;
 		IKdt = jr->svCell[iter].svBulk.IKdt;
+		rho  = jr->svCell[iter].svBulk.rho;
 		iter++;
 
 		// get mesh steps
@@ -581,6 +587,9 @@ PetscErrorCode PMatMonoAssemble(PMat pm)
 
 		// compute local matrix
 		pm->getStiffMat(eta, diag, v, dx, dy, dz, fdx, fdy, fdz, bdx, bdy, bdz);
+
+		// compute density gradient stabilization terms
+		addDensGradStabil(fssa, v, rho, dt, grav, fdx, fdy, fdz, bdx, bdy, bdz);
 
 		// get global indices of the points:
 		// vx_(i), vx_(i+1), vy_(j), vy_(j+1), vz_(k), vz_(k+1), p
@@ -1101,7 +1110,7 @@ PetscErrorCode PMatBlockAssemble(PMat pm)
 	PetscInt    idx[7];
 	PetscScalar v[49], a[36], d[6], g[6];
 	PetscInt    iter, i, j, k, nx, ny, nz, sx, sy, sz;
-	PetscScalar eta, IKdt, diag, pgamma;
+	PetscScalar eta, rho, IKdt, diag, pgamma, dt, fssa, *grav;
 	PetscScalar dx, dy, dz, bdx, fdx, bdy, fdy, bdz, fdz;
 	PetscScalar ***ivx, ***ivy, ***ivz, ***ip;
 	PetscScalar ***bcvx, ***bcvy, ***bcvz, ***bcp;
@@ -1116,6 +1125,11 @@ PetscErrorCode PMatBlockAssemble(PMat pm)
 	bc  = jr->bc;
 	dof = &fs->dof;
 	P   = (PMatBlock*)pm->data;
+
+	// get density gradient stabilization parameters
+	dt   = jr->ts.dt; // time step
+	fssa = jr->FSSA;  // density gradient penalty parameter
+    grav = jr->grav;  // gravity acceleration
 
 	// get penalty parameter
 	pgamma = pm->pgamma;
@@ -1148,9 +1162,10 @@ PetscErrorCode PMatBlockAssemble(PMat pm)
 
 	START_STD_LOOP
 	{
-		// get shear & inverse bulk viscosities
+		// get density, shear & inverse bulk viscosities
 		eta  = jr->svCell[iter].svDev.eta;
 		IKdt = jr->svCell[iter].svBulk.IKdt;
+		rho  = jr->svCell[iter].svBulk.rho;
 
 		// get mesh steps
 		dx = SIZE_CELL(i, sx, fs->dsx);
@@ -1167,6 +1182,9 @@ PetscErrorCode PMatBlockAssemble(PMat pm)
 
 		// compute local matrix
 		pm->getStiffMat(eta, diag, v, dx, dy, dz, fdx, fdy, fdz, bdx, bdy, bdz);
+
+		// compute density gradient stabilization terms
+		addDensGradStabil(fssa, v, rho, dt, grav, fdx, fdy, fdz, bdx, bdy, bdz);
 
 		// compute velocity Schur complement
 		if(pm->pgamma != 1.0) getVelSchur(v, d, g);
@@ -1514,7 +1532,7 @@ void getStiffMatDevProj(
 	v[21] =  E23/dx/fdy; v[22] = -E23/dx/fdy; v[23] = -E43/dy/fdy; v[24] =  E43/dy/fdy; v[25] =  E23/dz/fdy; v[26] = -E23/dz/fdy; v[27] = -1.0/fdy; // fy_(j+1) [syy]
 	v[28] = -E23/dx/bdz; v[29] =  E23/dx/bdz; v[30] = -E23/dy/bdz; v[31] =  E23/dy/bdz; v[32] =  E43/dz/bdz; v[33] = -E43/dz/bdz; v[34] =  1.0/bdz; // fz_(k)   [szz]
 	v[35] =  E23/dx/fdz; v[36] = -E23/dx/fdz; v[37] =  E23/dy/fdz; v[38] = -E23/dy/fdz; v[39] = -E43/dz/fdz; v[40] =  E43/dz/fdz; v[41] = -1.0/fdz; // fz_(k+1) [szz]
-	v[42] =  1.0/dx;     v[43] = -1.0/dx;     v[44] =  1.0/dy;     v[45] = -1.0/dy;     v[46] =  1.0/dz;     v[47] = -1.0/dz;     v[48] =  diag;     // g
+	v[42] =  1.0/dx;     v[43] = -1.0/dx;     v[44] =  1.0/dy;     v[45] = -1.0/dy;     v[46] =  1.0/dz;     v[47] = -1.0/dz;     v[48] =  diag;    // g
 }
 //---------------------------------------------------------------------------
 void getStiffMatClean(
@@ -1535,6 +1553,31 @@ void getStiffMatClean(
 	v[28] =  0.0;        v[29] =  0.0;        v[30] =  0.0;        v[31] =  0.0;        v[32] =  E2/dz/bdz;  v[33] = -E2/dz/bdz;  v[34] =  1.0/bdz; // fz_(k)   [szz]
 	v[35] =  0.0;        v[36] =  0.0;        v[37] =  0.0;        v[38] =  0.0;        v[39] = -E2/dz/fdz;  v[40] =  E2/dz/fdz;  v[41] = -1.0/fdz; // fz_(k+1) [szz]
 	v[42] =  1.0/dx;     v[43] = -1.0/dx;     v[44] =  1.0/dy;     v[45] = -1.0/dy;     v[46] =  1.0/dz;     v[47] = -1.0/dz;     v[48] =  diag;    // g
+}
+//---------------------------------------------------------------------------
+void addDensGradStabil(
+	PetscScalar fssa, PetscScalar *v,
+	PetscScalar rho,  PetscScalar dt,   PetscScalar *grav,
+	PetscScalar fdx,  PetscScalar fdy,  PetscScalar fdz,
+	PetscScalar bdx,  PetscScalar bdy,  PetscScalar bdz)
+{
+	PetscScalar cf = fssa*dt*rho;
+
+	// add stabilization terms
+	v[0 ] -= cf*grav[0]/bdx;
+	v[8 ] += cf*grav[0]/fdx;
+	v[16] -= cf*grav[1]/bdy;
+	v[24] += cf*grav[1]/fdy;
+	v[32] -= cf*grav[2]/bdz;
+	v[40] += cf*grav[2]/fdz;
+/*
+	fx[k][j][i]   -= vx[k][j][i]  *tx/bdx
+	fx[k][j][i+1] += vx[k][j][i+1]*tx/fdx
+	fy[k][j][i]   -= vy[k][j][i]  *ty/bdy
+	fy[k][j+1][i] += vy[k][j+1][i]*ty/fdy
+	fz[k][j][i]   -= vz[k][j][i]  *tz/bdz
+	fz[k+1][j][i] += vz[k+1][j][i]*tz/fdz
+*/
 }
 //---------------------------------------------------------------------------
 void getVelSchur(PetscScalar v[], PetscScalar d[], PetscScalar g[])

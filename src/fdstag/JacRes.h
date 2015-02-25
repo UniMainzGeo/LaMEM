@@ -71,6 +71,9 @@ typedef struct
 	TSSol       ts;          // time-stepping parameters
 	PetscScalar grav[SPDIM]; // global gravity components
 
+	PetscScalar FSSA;        // density gradient penalty parameter
+	//                          (a.k.a. free-surface-stabilization-algorithm)
+
 } JacRes;
 //---------------------------------------------------------------------------
 

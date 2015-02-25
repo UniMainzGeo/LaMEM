@@ -403,6 +403,8 @@ PetscErrorCode PVOutReadFromOptions(PVOut *pvout)
 	ierr = PetscOptionsGetInt(NULL, "-out_plast_strain",   &omask->plast_strain,   NULL); CHKERRQ(ierr);
 	ierr = PetscOptionsGetInt(NULL, "-out_plast_dissip",   &omask->plast_dissip,   NULL); CHKERRQ(ierr);
 	ierr = PetscOptionsGetInt(NULL, "-out_tot_displ",      &omask->tot_displ,      NULL); CHKERRQ(ierr);
+	ierr = PetscOptionsGetInt(NULL, "-out_moment_res",     &omask->moment_res,     NULL); CHKERRQ(ierr);
+	ierr = PetscOptionsGetInt(NULL, "-out_cont_res",       &omask->cont_res,       NULL); CHKERRQ(ierr);
 
 	if(pvout->outpvd)
 	{
