@@ -46,6 +46,7 @@ typedef struct {
 	PetscScalar rnorm_init;
 	PetscInt    winwidth;
 	PetscScalar rnorm_win[_max_win_size_];
+	PetscScalar rnormdiff_win[_max_win_size_];
 	PetscScalar	epsfrac,eps;
 } WinStopCtx;
 //---------------------------------------------------------------------------

@@ -548,7 +548,7 @@ PetscErrorCode KSPWinStopTest(KSP ksp, PetscInt thisit, PetscScalar thisnorm, KS
 	PetscScalar       diffnorm,rtol,atol,dtol,ttol;
 	WinStopCtx       *winstop = (WinStopCtx*) mctx;
 	PetscBool         winnorm =  PETSC_FALSE;
-	PetscScalar       rnormdiff_win[_max_win_size_];
+
 
 	*reason = KSP_CONVERGED_ITERATING;
 
@@ -585,16 +585,16 @@ PetscErrorCode KSPWinStopTest(KSP ksp, PetscInt thisit, PetscScalar thisnorm, KS
 		if (inow == 0) ilast = winstop->winwidth-1;
 		else           ilast = inow-1;
 		
-		rnormdiff_win[ilast] = winstop->rnorm_win[ilast] - winstop->rnorm_win[inow];
+		winstop->rnormdiff_win[ilast] = winstop->rnorm_win[ilast] - winstop->rnorm_win[inow];
 		
-		PetscPrintf(PETSC_COMM_WORLD,"rnormdiff_win[%lld]=%g \n",(LLD)(ilast), rnormdiff_win[ilast]);
+		PetscPrintf(PETSC_COMM_WORLD,"rnormdiff_win[%lld]=%g \n",(LLD)(ilast), winstop->rnormdiff_win[ilast]);
 	}
 
 	// windwidth !>= 1
 	// compute the criterion as soon as we have enough iterations
 	if (thisit >= winstop->winwidth)
 	{
-		diffnorm = getStdv(rnormdiff_win, winstop->winwidth-1);
+		diffnorm = getStdv(winstop->rnormdiff_win, winstop->winwidth-1);
 		PetscPrintf(PETSC_COMM_WORLD,"var=%g \n",diffnorm);
 		winnorm  = PETSC_TRUE;
 	}
