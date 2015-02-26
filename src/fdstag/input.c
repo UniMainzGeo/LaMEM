@@ -36,8 +36,14 @@ PetscErrorCode FDSTAGInitCode(JacRes *jr, UserCtx *user)
 	// read additional options
 	if(user->new_input == 1)
 	{
+		// read softening laws from file
+		ierr = MatSoftInit(jr, user); CHKERRQ(ierr);
+
 		// initialize and read material properties from file
 		ierr = MatPropInit(jr, user); CHKERRQ(ierr);
+
+		// points every phase to the correct softening laws
+		ierr = MatSoftSet(jr); CHKERRQ(ierr);
 	}
 	else
 	{

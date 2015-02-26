@@ -200,8 +200,8 @@ PetscErrorCode JacResDestroy(JacRes *jr)
 	ierr = PetscFree(jr->svBuff);   CHKERRQ(ierr);
 
 	// phase parameters
-	ierr = PetscFree(jr->phases);  CHKERRQ(ierr);
-	ierr = PetscFree(jr->matSoft); CHKERRQ(ierr);
+	//ierr = PetscFree(jr->phases);  CHKERRQ(ierr);
+	//ierr = PetscFree(jr->matSoft); CHKERRQ(ierr);
 
 	PetscFunctionReturn(0);
 }

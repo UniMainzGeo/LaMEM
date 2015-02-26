@@ -11,51 +11,41 @@
 #include "Parsing.h" // dependency on 'is_comment_line' and 'key_matches'
 #include "matProps.h"
 //---------------------------------------------------------------------------
-// initialize material properties from file
+// initialize MATERIAL PARAMETERS from file
 #undef __FUNCT__
 #define __FUNCT__ "MatPropInit"
 PetscErrorCode MatPropInit(JacRes *jr, UserCtx *usr)
 {
 	FILE        *fp;
-	Material_t  *phases, m;
-	PetscInt    i, numPhases;
-	PetscInt    ils, ile, count, count1;
+	Material_t   m;
+	PetscInt     i, ils, ile, count, count1;
 	PetscInt    *ls,*le;
 	PetscInt    *check_phase;
-	PetscBool   empty_phase;
+	PetscBool    empty_phase;
 
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
-
-	// number of phases
-	numPhases = usr->num_phases;
 
 	// print overview of material parameters read from file
 	PetscPrintf(PETSC_COMM_WORLD,"Phase material parameters read from %s: \n",usr->ParamFile);
 
 	// allocate memory for arrays to store line info - with overhead
-	ierr = PetscMalloc((size_t)(_max_over_phases_+numPhases)*sizeof(PetscScalar), &ls); CHKERRQ(ierr);
-	ierr = PetscMalloc((size_t)(_max_over_phases_+numPhases)*sizeof(PetscScalar), &le); CHKERRQ(ierr);
+	ierr = PetscMalloc((size_t)(max_num_phases+_max_overhead_)*sizeof(PetscScalar), &ls); CHKERRQ(ierr);
+	ierr = PetscMalloc((size_t)(max_num_phases+_max_overhead_)*sizeof(PetscScalar), &le); CHKERRQ(ierr);
 
 	// open file, count and get the positions of the material structures in file - check of file was done before
 	fp = fopen(usr->ParamFile, "r" );
 
 	// read number of cells
-	getLineStruct(fp, ls, le, &count, &count1);
+	getLineStruct(fp, ls, le, &count, &count1,"<MaterialStart>","<MaterialEnd>");
 
 	// error checking
 	if(count != count1  ) SETERRQ2(PETSC_COMM_WORLD, PETSC_ERR_USER, "Incomplete material structures! <MaterialStart>: %lld, <MaterialEnd>: %lld", (LLD)count, (LLD)count1);
-	if(count > numPhases) SETERRQ2(PETSC_COMM_WORLD, PETSC_ERR_USER, "More phases found than specified! Actual: %lld, Specified: %lld", (LLD)count, (LLD)numPhases);
-	if(count < numPhases) SETERRQ2(PETSC_COMM_WORLD, PETSC_ERR_USER, "Less phases found than specified! Actual: %lld, Specified: %lld", (LLD)count, (LLD)numPhases);
-
-	// allocate material parameters
-	ierr = PetscMalloc(sizeof(Material_t)*(size_t)numPhases, &phases); CHKERRQ(ierr);
-	ierr = PetscMemzero(phases, sizeof(Material_t)*(size_t)numPhases); CHKERRQ(ierr);
+	if(count > max_num_phases) SETERRQ2(PETSC_COMM_WORLD, PETSC_ERR_USER, "More phases found than maximum allowed! Actual: %lld, Max allowed: %lld", (LLD)count, (LLD)max_num_phases);
 
 	// initialize phase checking array
 	ierr = PetscMalloc(sizeof(PetscInt)*(size_t)count, &check_phase); CHKERRQ(ierr);
-	ierr = PetscMemzero(&m, sizeof(PetscInt)*(size_t)count); CHKERRQ(ierr);
-
+	ierr = PetscMemzero(check_phase, sizeof(PetscInt)*(size_t)count); CHKERRQ(ierr);
 	for(i = 0; i < count; i++) check_phase[i] = 0;
 
 	// read each individual phase
@@ -72,7 +62,7 @@ PetscErrorCode MatPropInit(JacRes *jr, UserCtx *usr)
 		ierr = MatPropGetStruct( fp, &m, ils, ile); CHKERRQ(ierr);
 
 		// set material structure
-		phases[m.ID] = m;
+		jr->phases[m.ID] = m;
 
 		// for error check
 		check_phase[m.ID] = 1;
@@ -97,8 +87,7 @@ PetscErrorCode MatPropInit(JacRes *jr, UserCtx *usr)
 		SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "Incorrect phase numbering");
 	}
 
-	jr->numPhases = numPhases;
-	jr->phases    = phases;
+	jr->numPhases = count;
 
 	// free memory
 	fclose(fp);
@@ -111,75 +100,10 @@ PetscErrorCode MatPropInit(JacRes *jr, UserCtx *usr)
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-// set material softening parameters
-#undef __FUNCT__
-#define __FUNCT__ "SetMatSoftening"
-PetscErrorCode SetMatSoftening(JacRes *jr, UserCtx *usr)
-{
-	PetscInt     i, numPhases, numSoft;
-	Soft_t      *matSoft, *chSoft, *frSoft;
-	PetscBool   quasi_harmonic;
-
-	PetscErrorCode ierr;
-	PetscFunctionBegin;
-
-	// access phase properties in user context variables
-	numPhases       = usr->num_phases;
-	chSoft          = jr->phases->chSoft;
-	frSoft          = jr->phases->frSoft;
-
-	// compute number of material softening laws
-	for(i = 0, numSoft = 0; i < numPhases; i++)
-	{
-		if(chSoft[i].A) numSoft++;
-		if(frSoft[i].A) numSoft++;
-	}
-
-	// allocate softening laws
-	ierr = PetscMalloc(sizeof(Soft_t)*(size_t)numSoft, &matSoft);      CHKERRQ(ierr);
-	ierr = PetscMemzero(matSoft, sizeof(Soft_t)*(size_t)numSoft);      CHKERRQ(ierr);
-
-	// read phase parameters
-	for(i = 0, numSoft = 0; i < numPhases; i++)
-	{
-		// store cohesion softening law
-		if(chSoft[i].A) { // matSoft[numSoft++] = &phases[i].chSoft;
-			matSoft[numSoft].A    = chSoft[i].A;
-			matSoft[numSoft].APS1 = chSoft[i].APS1;
-			matSoft[numSoft].APS2 = chSoft[i].APS2;
-			numSoft++;
-		}
-
-		// store friction softening law
-		if(frSoft[i].A) { // matSoft[numSoft++] = &phases[i].frSoft;
-			matSoft[numSoft].A    = frSoft[i].A;
-			matSoft[numSoft].APS1 = frSoft[i].APS1;
-			matSoft[numSoft].APS2 = frSoft[i].APS2;
-			numSoft++;
-		}
-	}
-
-	// store softening laws
-	jr->numSoft   = numSoft;
-	jr->matSoft   = matSoft;
-
-	// read additional options
-	ierr = PetscOptionsHasName(PETSC_NULL, "-use_quasi_harmonic_viscosity", &quasi_harmonic); CHKERRQ(ierr);
-
-	if(quasi_harmonic == PETSC_TRUE)
-	{
-		jr->matLim.quasiHarmAvg = PETSC_TRUE;
-	}
-
-	PetscFunctionReturn(0);
-}
-//---------------------------------------------------------------------------
 // set initial material properties
 void MatPropSet(Material_t *m, PetscInt dim)
 {
-	Soft_t     mSoft;
-
-	if (dim==1)
+	if (dim==1) // dimensional
 	{
 		m->rho                           = 2800;
 		// diffusion creep
@@ -205,18 +129,16 @@ void MatPropSet(Material_t *m, PetscInt dim)
 		// plasticity
 		m->ch                            = 1e100; // effectively switches off plasticity
 		m->fr                            = 0.0;     // effectively switches off plasticity
-		mSoft.A                          = 0.0;     // no strain weakening
-		mSoft.APS1                       = 0.0;
-		mSoft.APS2                       = 0.0;
-		m->chSoft                        = &mSoft;     // no strain weakening
-		m->frSoft                        = &mSoft;     // no strain weakening
+		m->chSoftID                      = -1;     // no law
+		m->frSoftID                      = -1;     // no law
+
 		// temperature
 		m->alpha                         = 0.0;     // coeff. of thermal expansion
 		m->Cp                            = 0.0;     // heat capacity
 		m->k                             = 0.0;     // thermal conductivity
 		m->A                             = 0.0;     // radiogenic heat production
 	}
-	else
+	else //non-dimensional
 	{
 		m->rho                           = 1.0;
 
@@ -247,13 +169,8 @@ void MatPropSet(Material_t *m, PetscInt dim)
 		// plasticity
 		m->ch                            = 1e100; // effectively switches off plasticity
 		m->fr                            = 0.0;     // effectively switches off plasticity
-		mSoft.A                          = 0.0;     // no strain weakening
-		mSoft.APS1                       = 0.0;
-		mSoft.APS2                       = 0.0;
-		m->chSoft                        = &mSoft;     // no strain weakening
-		m->frSoft                        = &mSoft;     // no strain weakening
-
-		PetscPrintf(PETSC_COMM_WORLD,"chSoft.APS1 %g: \n",m->chSoft->APS1);
+		m->chSoftID                      = -1;     // no law
+		m->frSoftID                      = -1;     // no law
 
 		// temperature
 		m->alpha                         = 0.0;     // coeff. of thermal expansion
@@ -270,11 +187,10 @@ PetscErrorCode MatPropGetStruct( FILE *fp, Material_t *m, PetscInt ils, PetscInt
 	PetscInt    err;
 	PetscInt    found, found1, found2, found3;
 	PetscScalar eta, eta0, e0;
-	PetscScalar chW, frW, startW, endW;
+
 	PetscFunctionBegin;
 
 	// Find material properties in file with error checking
-
 	// id
 	getMatPropInt   ( fp, ils, ile, "ID",                   &m->ID,      &found);
 	if (!found) {err = 1; MatPropErrorCheck(m->ID,err);}
@@ -344,29 +260,8 @@ PetscErrorCode MatPropGetStruct( FILE *fp, Material_t *m, PetscInt ils, PetscInt
 	if (!found && found1) {err = 6; MatPropErrorCheck(m->ID,err);}
 
 	// plasticity - strain weakening
-	// set cohesion reduction ratio
-	getMatPropScalar( fp, ils, ile, "cohesionWeakening",    &chW,       &found); found1 = found;
-	if (found1) m->chSoft->A    = 1.0 - chW/m->ch;
-
-	// set friction angle reduction ratio
-	getMatPropScalar( fp, ils, ile, "frictionWeakening",    &frW,       &found); found2 = found;
-	if (found2) m->frSoft->A    = 1.0 - frW/m->fr;
-
-	//PetscPrintf(PETSC_COMM_WORLD,"chSoft.APS1 %g: \n",m.chSoft->APS1);
-
-	getMatPropScalar( fp, ils, ile, "WeakeningPS_Begin",    &startW,    &found);
-
-	// set cohesion softening law
-	if (found && found1) m->chSoft->APS1    = startW;
-	if (found && found2) m->frSoft->APS1    = startW;
-
-	//PetscPrintf(PETSC_COMM_WORLD,"chSoft.APS1 %g: \n",m.chSoft->APS1);
-
-	getMatPropScalar( fp, ils, ile, "WeakeningPS_End",      &endW,      &found);
-
-	// set cohesion softening law
-	if (found && found1) m->chSoft->APS2    = endW;
-	if (found && found2) m->frSoft->APS2    = endW;
+	getMatPropInt   ( fp, ils, ile, "chSoftID",            &m->chSoftID,      &found);
+	getMatPropInt   ( fp, ils, ile, "frSoftID",            &m->frSoftID,      &found);
 
 	// energy
 	getMatPropScalar( fp, ils, ile, "alpha",                &m->alpha,   &found);
@@ -408,17 +303,183 @@ void MatPropPrint(Material_t *m, PetscScalar eta)
 	PetscPrintf(PETSC_COMM_WORLD,"    Phase [%lld]: (peirl) Bp = %g, Ep = %g, Vp = %g, taup = %g, gamma = %g, q = %g \n", (LLD)(m->ID), m->Bp, m->Ep, m->Vp, m->taup, m->gamma, m->q);
 	PetscPrintf(PETSC_COMM_WORLD,"    Phase [%lld]: (elast) G = %g, K = %g, Kp = %g \n", (LLD)(m->ID), m->G, m->K, m->Kp);
 	PetscPrintf(PETSC_COMM_WORLD,"    Phase [%lld]: (plast) cohesion = %g, friction angle = %g \n", (LLD)(m->ID),m->ch, m->fr);
-	PetscPrintf(PETSC_COMM_WORLD,"    Phase [%lld]: (sweak) [A, APS1, APS2] cohesionWeak = [%g, %g, %g], frictionWeak = [%g, %g, %g] \n", (LLD)(m->ID),m->chSoft->A, m->chSoft->APS1, m->chSoft->APS2,m->frSoft->A, m->frSoft->APS1, m->frSoft->APS2);
+	PetscPrintf(PETSC_COMM_WORLD,"    Phase [%lld]: (sweak) cohesion SoftLaw = %lld, friction SoftLaw = %lld \n", (LLD)(m->ID),(LLD)m->chSoftID, (LLD)m->frSoftID);
 	PetscPrintf(PETSC_COMM_WORLD,"    Phase [%lld]: (temp ) alpha = %g, cp = %g, k = %g, A = %g \n", (LLD)(m->ID),m->alpha, m->Cp,m->k, m->A);
 	PetscPrintf(PETSC_COMM_WORLD,"    \n");
 }
 //---------------------------------------------------------------------------
+// initialize SOFTENING LAWS from file
+#undef __FUNCT__
+#define __FUNCT__ "MatSoftInit"
+PetscErrorCode MatSoftInit(JacRes *jr, UserCtx *usr)
+{
+	FILE        *fp;
+	Soft_t       soft;
+	PetscInt     i, ils, ile, count, count1;
+	PetscInt    *ls,*le;
+	PetscInt    *check_soft;
+	PetscBool    empty_soft;
+
+	PetscErrorCode ierr;
+	PetscFunctionBegin;
+
+	// print overview of softening laws from file
+	PetscPrintf(PETSC_COMM_WORLD,"Softening laws read from %s: \n",usr->ParamFile);
+
+	// allocate memory for arrays to store line info - with overhead
+	ierr = PetscMalloc((size_t)(max_num_soft+_max_overhead_)*sizeof(PetscScalar), &ls); CHKERRQ(ierr);
+	ierr = PetscMalloc((size_t)(max_num_soft+_max_overhead_)*sizeof(PetscScalar), &le); CHKERRQ(ierr);
+
+	// open file, count and get the positions of the material structures in file - check of file was done before
+	fp = fopen(usr->ParamFile, "r" );
+
+	// read number of cells
+	getLineStruct(fp, ls, le, &count, &count1,"<SofteningStart>","<SofteningEnd>");
+
+	// error checking
+	if(count != count1  ) SETERRQ2(PETSC_COMM_WORLD, PETSC_ERR_USER, "Incomplete softening-law structures! <SofteningStart>: %lld, <SofteningEnd>: %lld", (LLD)count, (LLD)count1);
+	if(count > max_num_soft) SETERRQ2(PETSC_COMM_WORLD, PETSC_ERR_USER, "More softening laws found than max allowed! Actual: %lld, Max allowed: %lld", (LLD)count, (LLD)max_num_soft);
+
+	// initialize phase checking array
+	ierr = PetscMalloc(sizeof(PetscInt)*(size_t)count, &check_soft); CHKERRQ(ierr);
+	ierr = PetscMemzero(check_soft, sizeof(PetscInt)*(size_t)count); CHKERRQ(ierr);
+	for(i = 0; i < count; i++) check_soft[i] = 0;
+
+	// read each individual phase
+	for(i = 0; i < count; i++)
+	{
+		// set position in the file
+		ils = ls[i];
+		ile = le[i];
+
+		// read from file or set default values zero
+		ierr = MatSoftGetStruct( fp, &soft, ils, ile); CHKERRQ(ierr);
+
+		// set structure
+		jr->matSoft[soft.ID] = soft;
+
+		// for error check
+		check_soft[soft.ID] = 1;
+	}
+
+	PetscPrintf(PETSC_COMM_WORLD,"--------------------------------------------------------------------------\n");
+
+	// check empty soft laws
+	empty_soft = PETSC_FALSE;
+
+	for(i = 0; i < count; i++)
+	{
+		if(!check_soft[i])
+		{
+			PetscPrintf(PETSC_COMM_WORLD, "Softening law %lld is not initialized\n", (LLD)i);
+			empty_soft = PETSC_TRUE;
+		}
+	}
+
+	if(empty_soft == PETSC_TRUE)
+	{
+		SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "Incorrect softening laws numbering");
+	}
+
+	// store softening laws
+	jr->numSoft = count;
+
+	// free memory
+	fclose(fp);
+
+	// free arrays
+	ierr = PetscFree(ls         ); CHKERRQ(ierr);
+	ierr = PetscFree(le         ); CHKERRQ(ierr);
+	ierr = PetscFree(check_soft);  CHKERRQ(ierr);
+
+	PetscFunctionReturn(0);
+}
+//---------------------------------------------------------------------------
+// Find softening laws in file
+#undef __FUNCT__
+#define __FUNCT__ "MatSoftGetStruct"
+PetscErrorCode MatSoftGetStruct( FILE *fp, Soft_t *s, PetscInt ils, PetscInt ile)
+{
+	PetscInt    found;
+	PetscFunctionBegin;
+
+	// softening law id
+	getMatPropInt   ( fp, ils, ile, "softID",               &s->ID,       &found);
+	if (!found) SETERRQ (PETSC_COMM_WORLD, PETSC_ERR_USER, "MatSoftError: No softening law ID specified! ");
+
+	// softening ratio
+	getMatPropScalar( fp, ils, ile, "A",                    &s->A,        &found);
+
+	// softening begin & end
+	getMatPropScalar( fp, ils, ile, "APS1",                 &s->APS1,     &found);
+	getMatPropScalar( fp, ils, ile, "APS2",                 &s->APS2,     &found);
+
+	PetscPrintf(PETSC_COMM_WORLD,"    SoftLaw [%lld]: A = %g, APS1 = %g, APS2 = %g \n", (LLD)(s->ID), s->A, s->APS1, s->APS2);
+
+	PetscFunctionReturn(0);
+}
+//---------------------------------------------------------------------------
+// set material softening parameters in phases
+#undef __FUNCT__
+#define __FUNCT__ "MatSoftSet"
+PetscErrorCode MatSoftSet(JacRes *jr)
+{
+	PetscInt     i, numPhases, numSoft;
+	Soft_t      *matSoft, msoft;
+	Material_t  *phases;
+
+	PetscFunctionBegin;
+
+	// access phase properties in user context variables
+	numPhases       = jr->numPhases;
+	numSoft         = jr->numSoft;
+	phases          = jr->phases;
+	matSoft         = jr->matSoft;
+
+	// set zero values if there are no laws specified
+	msoft.ID   = -1;
+	msoft.A    = 0.0;
+	msoft.APS1 = 0.0;
+	msoft.APS2 = 0.0;
+
+	// read phase parameters
+	for(i = 0; i < numPhases; i++)
+	{
+		// cohesion softening law
+		if(phases[i].chSoftID>-1)
+		{
+			if (phases[i].chSoftID > numSoft-1)
+				{
+				SETERRQ2(PETSC_COMM_WORLD, PETSC_ERR_USER, "MatSoftError: Softening law specified (%lld) is non-existent for phase ID: %lld! ",(LLD)phases[i].chSoftID, (LLD)i);
+				}
+			phases[i].chSoft = &matSoft[phases[i].chSoftID];
+		}
+		else
+		{
+			phases[i].chSoft = &msoft;
+		}
+
+		// friction softening law
+		if(phases[i].frSoftID>-1) {
+			if (phases[i].frSoftID > numSoft-1)
+				{
+				SETERRQ2(PETSC_COMM_WORLD, PETSC_ERR_USER, "MatSoftError: Softening law specified (%lld) is non-existent for phase ID: %lld! ",(LLD)phases[i].frSoftID, (LLD)i);
+				}
+			phases[i].frSoft = &matSoft[phases[i].frSoftID];
+		}
+		else
+		{
+			phases[i].frSoft = &msoft;
+		}
+	}
+
+	PetscFunctionReturn(0);
+}
+//---------------------------------------------------------------------------
 // get the positions in the file for the material structures
-void getLineStruct( FILE *fp, PetscInt *ls, PetscInt *le, PetscInt *count, PetscInt *count1)
+void getLineStruct( FILE *fp, PetscInt *ls, PetscInt *le, PetscInt *count, PetscInt *count1, const char key[], const char key_end[])
 {
 	char line[MAX_LINE_LEN], next[MAX_LINE_LEN];
-	char key[] = "<MaterialStart>";
-	char key_end[] = "<MaterialEnd>";
 	PetscInt comment, start_match, end_match;
 	PetscInt i = 0, ii = 0;
 

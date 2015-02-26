@@ -35,6 +35,9 @@ PetscErrorCode InitMaterialProps(JacRes *jr, UserCtx *usr)
 	matLim          = &jr->matLim;
 	scal            = &jr->scal;
 
+	phases          = jr->phases;
+	matSoft         = jr->matSoft;
+
 	// compute number of material softening laws
 	for(i = 0, numSoft = 0; i < numPhases; i++)
 	{
@@ -44,13 +47,6 @@ PetscErrorCode InitMaterialProps(JacRes *jr, UserCtx *usr)
 			if(PhaseProperties->FrictionAngleAfterWeakening[i]) numSoft++;
 		}
 	}
-
-	// allocate material parameters & softening laws
-	ierr = PetscMalloc(sizeof(Material_t)*(size_t)numPhases, &phases); CHKERRQ(ierr);
-	ierr = PetscMemzero(phases, sizeof(Material_t)*(size_t)numPhases); CHKERRQ(ierr);
-
-	ierr = PetscMalloc(sizeof(Soft_t)*(size_t)numSoft, &matSoft);      CHKERRQ(ierr);
-	ierr = PetscMemzero(matSoft, sizeof(Soft_t)*(size_t)numSoft);      CHKERRQ(ierr);
 
 	// read phase parameters
 	for(i = 0, numSoft = 0; i < numPhases; i++)
@@ -145,9 +141,7 @@ PetscErrorCode InitMaterialProps(JacRes *jr, UserCtx *usr)
 
 	// store material parameters & softening laws
 	jr->numPhases = numPhases;
-	jr->phases    = phases;
 	jr->numSoft   = numSoft;
-	jr->matSoft   = matSoft;
 
 	// read additional options
 	ierr = PetscOptionsHasName(PETSC_NULL, "-use_quasi_harmonic_viscosity", &quasi_harmonic); CHKERRQ(ierr);

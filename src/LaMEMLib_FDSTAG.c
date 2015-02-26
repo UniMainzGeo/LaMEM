@@ -71,7 +71,7 @@ PetscErrorCode LaMEMLib_FDSTAG(PetscBool InputParamFile, const char *ParamFile, 
 	UserCtx            user;
 	PetscInt           SaveOrNot;
 //	PetscLogDouble     cputime_start, cputime_start0, cputime_end, cputime_start_tstep, cputime_start_nonlinear;
-	PetscLogDouble     cputime_start, cputime_start_nonlinear, cputime_end;
+	PetscLogDouble     cputime_start, cputime_end, cputime_start_nonlinear, cputime_end_nonlinear;
 
 	FDSTAG   fs;    // staggered-grid layout
 	BCCtx    bc;    // boundary condition context
@@ -194,9 +194,6 @@ PetscErrorCode LaMEMLib_FDSTAG(PetscBool InputParamFile, const char *ParamFile, 
 
 	if(user.new_input==1)
 	{
-		// set material softening parameters
-		ierr = SetMatSoftening(&jr, &user); CHKERRQ(ierr);
-
 		// initialize scaling object and perform non-dimensionalization
 		ierr = ScalingMain(&jr.scal, &jr.matLim, jr.phases, jr.numPhases, &user); CHKERRQ(ierr);
 	}
@@ -329,9 +326,9 @@ PetscErrorCode LaMEMLib_FDSTAG(PetscBool InputParamFile, const char *ParamFile, 
 			// print analyze convergence/divergence reason & iteration count
 			ierr = SNESPrintConvergedReason(snes); CHKERRQ(ierr);
 
-			PetscTime(&cputime_end);
+			PetscTime(&cputime_end_nonlinear);
 
-			PetscPrintf(PETSC_COMM_WORLD, " Nonlinear solve took %g s\n", cputime_end - cputime_start_nonlinear);
+			PetscPrintf(PETSC_COMM_WORLD, " Nonlinear solve took %g s\n", cputime_end_nonlinear - cputime_start_nonlinear);
 		}
 		else
 		{
@@ -514,6 +511,8 @@ PetscErrorCode LaMEMLib_FDSTAG(PetscBool InputParamFile, const char *ParamFile, 
 	ierr = NLSolDestroy(&nl);    CHKERRQ(ierr);
 	ierr = PVOutDestroy(&pvout); CHKERRQ(ierr);
 
+	PetscTime(&cputime_end);
+	PetscPrintf(PETSC_COMM_WORLD, " Simulation took %g s\n", cputime_end - cputime_start);
 
 	PetscFunctionReturn(0);
 }

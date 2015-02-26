@@ -61,9 +61,9 @@ typedef struct
 
 	// phase parameters
 	PetscInt     numPhases; // number phases
-	Material_t  *phases;    // phase parameters
+	Material_t   phases[max_num_phases];    // phase parameters
 	PetscInt     numSoft;   // number material softening laws
-	Soft_t      *matSoft;   // material softening law parameters
+	Soft_t       matSoft[max_num_soft];   // material softening law parameters
 	MatParLim    matLim;    // phase parameters limiters
 
 	// parameters & controls

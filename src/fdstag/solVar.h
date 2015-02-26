@@ -110,6 +110,7 @@ typedef struct
 
 typedef struct
 {
+	PetscInt    ID;
 	PetscScalar APS1; // begin of softening APS
 	PetscScalar APS2; // end of softening APS
 	PetscScalar A;    // reduction ratio
@@ -148,6 +149,8 @@ typedef struct
 	// plasticity parameters
 	PetscScalar  fr;      // friction coefficient
 	PetscScalar  ch;      // cohesion
+	PetscInt     chSoftID;// id of softening law
+	PetscInt     frSoftID;// id of softening law
 	Soft_t      *frSoft;  // friction softening law parameters
 	Soft_t      *chSoft;  // cohesion softening law parameters
 	// thermal parameters

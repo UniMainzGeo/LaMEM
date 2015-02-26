@@ -11,6 +11,8 @@
 #define __FUNCT__ "ScalingMain"
 PetscErrorCode ScalingMain(Scaling *scal, MatParLim *matLim, Material_t  *phases, PetscInt numPhases, UserCtx *usr)
 {
+	PetscBool   quasi_harmonic;
+
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
 
@@ -36,7 +38,13 @@ PetscErrorCode ScalingMain(Scaling *scal, MatParLim *matLim, Material_t  *phases
 	// scale material parameter limits
 	ScalingMatParLim(scal, matLim);
 
-	// should include material properties for default setup (Falling Block Test)?
+	// read additional options
+	ierr = PetscOptionsHasName(PETSC_NULL, "-use_quasi_harmonic_viscosity", &quasi_harmonic); CHKERRQ(ierr);
+
+	if(quasi_harmonic == PETSC_TRUE)
+	{
+		matLim->quasiHarmAvg = PETSC_TRUE;
+	}
 
 	PetscFunctionReturn(0);
 }
@@ -360,7 +368,7 @@ void ScalingInput(Scaling *scal, UserCtx *user)
 	user->Temp_bottom   = user->Temp_bottom*temperature;
 
 	// gravity
-	user->Gravity       = user->Gravity*length*time*time;
+	user->Gravity       = user->Gravity*length*scal->time*scal->time;
 
 	// optimization
 	user->LowerViscosityCutoff = user->LowerViscosityCutoff*viscosity;
@@ -402,7 +410,7 @@ void ScalingMatProp(Scaling *scal, Material_t *phases, PetscInt numPhases)
 	{
 		phases[i].rho     = phases[i].rho/scal->density;
 		// diffusion creep
-		phases[i].Bd      = phases[i].Bd*(2*scal->viscosity);
+		phases[i].Bd      = phases[i].Bd*scal->viscosity;
 		phases[i].Vd      = phases[i].Vd*(scal->energy*length*length*length);
 		// dislocation creep (power-law)
 		powerlaw          = ScalingComputePowerLaw(scal, phases[i].n);

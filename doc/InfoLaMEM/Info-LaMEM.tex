@@ -1,0 +1,828 @@
+% main packages
+\RequirePackage{lineno} 
+\documentclass[a4paper,11pt]{article}
+\usepackage[margin=2cm]{geometry}
+\usepackage{amsmath}
+\usepackage{natbib}
+\usepackage{graphicx}
+\usepackage{setspace}
+\usepackage{multirow}
+\usepackage{datetime}
+\usepackage{longtable}
+
+% color
+\usepackage{color, colortbl}
+\definecolor{Gray}{gray}{0.9}
+
+% hyperref
+\usepackage{hyperref}
+\hypersetup{
+    colorlinks=true, %set true if you want colored links
+    linktoc=all,         %set to all if you want both sections and subsections linked
+    linkcolor=blue,  %choose some color if you want links to stand out
+}
+
+% shortkeys
+\newcommand{\degreec}{\ensuremath{^\circ}}
+\newcommand{\Pas}{\text{Pa.s}}
+\newcommand{\reffig}{Fig. \ref}
+\newcommand{\reftab}{Table \ref}
+\newcommand{\refeq}{Equation (\ref)}
+
+% other packages
+\usepackage{courier}
+\usepackage{tabularx}
+\usepackage{wrapfig,lipsum,booktabs}
+\usepackage{arydshln}
+\usepackage{mathabx}
+\usepackage{subfigure}
+\usepackage{fancyheadings}
+\usepackage[titletoc]{appendix}
+\bibliographystyle{plainnat}
+\usepackage{cleveref}
+\usepackage{float}
+
+\def\imagetop#1{\vtop{\null\hbox{#1}}}
+
+% graphics path
+\DeclareGraphicsExtensions{.pdf,.png,.jpg}
+\graphicspath{{figures/}}
+
+% italics citations
+\usepackage{etoolbox}
+\makeatletter
+\patchcmd{\NAT@test}{\else\NAT@nm}{\else\NAT@nmfmt{\NAT@nm}}{}{}
+\let\NAT@up\itshape
+\makeatother
+
+% title
+\title{User Info for LaMEM canonical\\ \large - please update this document periodically -}
+\date{\today}
+%\author{put together by Adina P\"{u}s\"{o}k}
+
+% ---------------------------------- BEGIN DOCUMENT  ---------------------------------- %
+\begin{document}
+\maketitle
+\tableofcontents
+
+\newpage
+
+\pagestyle{fancyplain}
+\rhead[\fancyplain{}{\slshape \rightmark}]{\thepage}
+\lhead[\thepage]{\fancyplain{}%
+{\slshape \leftmark}}
+\cfoot{}
+
+%\doublespacing
+
+% ---------------------------------- INSTALLATION  ---------------------------------- %
+%%% Installation
+\section{Installation and compilation}
+Before you proceed with installation or re-installation \textbf{remove/comment ALL PATH} modifications related to \texttt{valgrind/mpi/petsc} in \texttt{.bash\_profile}.
+Also comment \texttt{PETSC\_DIR}, \texttt{PETSC\_ARCH} environmental variables.\\
+
+\textbf{Important:} Current version of LaMEM is compiled with \texttt{petsc3.5}.\\
+
+All installation instructions can be found in \texttt{LaMEM/doc/installation/}. \\
+
+% ---------------------------------- INSTALLATION ON MAC  ---------------------------------- %
+\subsection{Installation on Mac}
+
+% ---------------------------------- GCC INST.  ---------------------------------- %
+\subsubsection{gcc compilers}
+
+\begin{enumerate}
+\item Install \texttt{macports} from:
+
+\indent \texttt{http://www.macports.org/install.php}\\
+
+Use Mac OS X Package (.pkg) Installer:\\
+\indent \texttt{sudo port -v selfupdate}
+   
+\item Install compilers and debugger
+
+\indent \texttt{sudo port install gcc47}\\
+\indent \texttt{sudo port install gdb}
+
+\item Create links
+   
+\indent \texttt{sudo ln -s /opt/local/bin/gcc-mp-4.7 /opt/local/bin/gcc}\\
+\indent \texttt{sudo ln -s /opt/local/bin/gfortran-mp-4.7 /opt/local/bin/gfortran}\\
+\indent \texttt{sudo ln -s /opt/local/bin/g++-mp-4.7 /opt/local/bin/g++} \\ 
+\indent \texttt{sudo ln -s /opt/local/bin/ggdb /opt/local/bin/gdb}\\
+   
+Your compiler commands will be: 
+
+\indent \texttt{gcc}      - C compiler\\
+\indent \texttt{g++}      - C++ compiler\\
+\indent \texttt{gfortran} - Fortran compiler\\ 
+\indent \texttt{gdb}      - GNU debugger
+
+\end{enumerate}
+
+% ---------------------------------- MPICH2 INST.  ---------------------------------- %
+\subsubsection{mpich2}
+
+\begin{enumerate}
+\item Download:
+
+\indent \texttt{\scriptsize curl http://www.mpich.org/static/tarballs/1.4.1p1/mpich2-1.4.1p1.tar.gz -o mpich2-1.4.1p1.tar.gz}
+
+\item Unpack:
+
+\indent \texttt{tar xvzf mpich2-1.4.1p1.tar.gz}\\
+\indent \texttt{cd mpich2-1.4.1p1}
+
+\item Configure and install
+
+\indent \texttt{./configure \textbackslash}\\
+\indent \texttt{CC=gcc \textbackslash}\\
+\indent \texttt{CXX=g++ \textbackslash}\\
+\indent \texttt{F77=gfortran \textbackslash}\\
+\indent \texttt{FC=gfortran \textbackslash}\\
+\indent \texttt{--prefix=/opt/mpich2 \textbackslash}\\
+\indent \texttt{--enable-f77 \textbackslash}\\
+\indent \texttt{--enable-fc \textbackslash}\\
+\indent \texttt{--enable-cxx \textbackslash}\\
+\indent \texttt{--enable-threads=runtime \textbackslash}\\
+\indent \texttt{--enable-g=none \textbackslash}\\
+\indent \texttt{--enable-fast=O2 \textbackslash}\\
+\indent \texttt{--with-thread-package=pthreads \textbackslash}\\
+\indent \texttt{--with-pm=hydra}\\
+
+\indent \texttt{make}\\
+\indent \texttt{sudo make install}\\
+
+\item Set path in \texttt{.bash\_profile}
+
+\indent \texttt{export PATH=/opt/mpich2/bin:\$PATH}
+
+\end{enumerate}
+
+% ---------------------------------- PETSC INST.  ---------------------------------- %
+\subsubsection{petsc}
+
+Current version of LaMEM is compiled with \texttt{petsc3.5}.\\
+
+\begin{enumerate}
+\item Download:
+
+\indent \texttt{\scriptsize curl http://ftp.mcs.anl.gov/pub/petsc/release-snapshots/petsc-3.5.0.tar.gz -o petsc-3.5.0.tar.gz}
+
+\item Unpack:
+
+\indent \texttt{tar xvzf petsc-3.5.0.tar.gz}\\
+\indent \texttt{cd petsc-3.5.0}
+
+\begin{enumerate}
+\item Debug version
+
+\indent \texttt{./configure \textbackslash}\\
+\indent \texttt{--prefix=/opt/petsc/petsc-3.5.0-int32-deb \textbackslash}\\
+\indent \texttt{--download-fblaslapack=1 \textbackslash}\\
+\indent \texttt{--with-debugging=1 \textbackslash}\\
+\indent \texttt{--COPTFLAGS="-g -O0" \textbackslash}\\
+\indent \texttt{--FOPTFLAGS="-g -O0" \textbackslash}\\
+\indent \texttt{--CXXOPTFLAGS="-g -O0" \textbackslash}\\
+\indent \texttt{--with-large-file-io=1 \textbackslash}\\
+\indent \texttt{--with-cc=mpicc \textbackslash}\\
+\indent \texttt{--with-cxx=mpicxx \textbackslash}\\
+\indent \texttt{--with-fc=mpif90 \textbackslash}\\
+\indent \texttt{--with-shared-libraries=0 \textbackslash}\\
+\indent \texttt{--download-metis=1 \textbackslash}\\
+\indent \texttt{--download-parmetis=1 \textbackslash}\\
+\indent \texttt{--download-ml=1 \textbackslash}\\
+\indent \texttt{--download-hypre=1 \textbackslash}\\
+\indent \texttt{--download-scalapack=1 \textbackslash}\\
+\indent \texttt{--download-mumps=1 \textbackslash}\\
+\indent \texttt{--download-superlu\_dist=1 \textbackslash}\\
+\indent \texttt{--download-suitesparse=1 }\\
+
+
+\indent \texttt{make all}
+
+\indent \texttt{sudo make install}
+
+\item Optimized version
+
+\indent \texttt{./configure \textbackslash}\\
+\indent \texttt{--prefix=/opt/petsc/petsc-3.5.0-int32-opt \textbackslash}\\
+\indent \texttt{--with-blas-lapack-lib="-Wl,-framework,vecLib" \textbackslash}\\
+\indent \texttt{--with-debugging=0 \textbackslash}\\
+\indent \texttt{--COPTFLAGS="-O3" \textbackslash}\\
+\indent \texttt{--FOPTFLAGS="-O3" \textbackslash}\\
+\indent \texttt{--CXXOPTFLAGS="-O3" \textbackslash}\\
+\indent \texttt{--with-large-file-io=1 \textbackslash}\\
+\indent \texttt{--with-cc=mpicc \textbackslash}\\
+\indent \texttt{--with-cxx=mpicxx \textbackslash}\\
+\indent \texttt{--with-fc=mpif90 \textbackslash}\\
+\indent \texttt{--with-shared-libraries=0 \textbackslash}\\
+\indent \texttt{--download-metis=1 \textbackslash}\\
+\indent \texttt{--download-parmetis=1 \textbackslash}\\
+\indent \texttt{--download-ml=1 \textbackslash}\\
+\indent \texttt{--download-hypre=1 \textbackslash}\\
+\indent \texttt{--download-scalapack=1 \textbackslash}\\
+\indent \texttt{--download-mumps=1 \textbackslash}\\
+\indent \texttt{--download-superlu\_dist=1 \textbackslash}\\
+\indent \texttt{--download-suitesparse=1 }\\
+
+\indent \texttt{make all}
+
+\indent \texttt{sudo make install}
+
+\end{enumerate}
+
+\item Set paths in \texttt{.bash\_profile}:
+
+\indent \texttt{export PETSC\_DEB=/opt/petsc/petsc-3.5.0-int32-deb}\\
+\indent \texttt{export PETSC\_OPT=/opt/petsc/petsc-3.5.0-int32-opt}\\
+
+\textbf{Note:} No more \texttt{PETSC\_DIR} and no more switching between the debug and optimized versions. Makefile is now supporting building both versions simultaneously.
+
+\end{enumerate}
+
+% ---------------------------------- INSTALLATION ON CLUSTERS  ---------------------------------- %
+\subsection{Installation on clusters}
+
+If modules and/or paths to compilers and petsc are not provided, please refer to installation instructions found in \texttt{LaMEM/doc/installation/}.\\
+\\
+Currently, just add these modules or paths to .bashrc (Gaia, Sith and Mogon) and logout/login for them to take effect.\\
+\\
+\textbf{Gaia and Sith:}
+
+Add this to .bashrc:\\
+\indent \texttt{\# PETSC 3.5.0}\\
+\indent \texttt{export PETSC\_DEB=/opt/petsc/petsc-3.5.0-int32-deb}\\
+\indent \texttt{export PETSC\_OPT=/opt/petsc/petsc-3.5.0-int32-opt}\\
+\\
+\textbf{Mogon:}
+
+Add this to .bashrc:\\
+\indent \texttt{\# MODULES}\\
+\indent \texttt{module load gcc/4.8.2}\\ 
+\indent \texttt{module load mpi/platform\_mpi\_ce/9.1.2}\\ 
+\indent \texttt{module load acml/5.3.0/gfortran/gfortran64\_fma4 }\\
+\indent \texttt{module load software/petsc/3.5.1/gcc\_4.8.2\_platformmpi\_9.1.2}
+
+% ---------------------------------- LAMEM REPOSITORY  ---------------------------------- %
+\subsection{Get a local copy of LaMEM}
+
+To get access to LaMEM repository, you should have an account on Gaia (if it does not work, contact Boris for account info):\\
+
+\indent \texttt{ssh USERNAME@gaia.geo.uni-mainz.de}
+
+\begin{enumerate}
+\item If you want to checkout a new LaMEM repository, use this command:
+
+\indent \texttt{\footnotesize svn co svn+ssh://USERNAME@gaia.geo.uni-mainz.de/local/home/lkausb/svn/LaMEM/trunk ./LaMEM}
+
+\item If you have a version of LaMEM that you checked out previously already and are using, you don't have to delete that. Instead, go to the \texttt{./LaMEM} directory and type
+
+\indent \texttt{\footnotesize svn relocate svn+ssh://USERNAME@gaia.geo.uni-mainz.de/local/home/lkausb/svn/LaMEM/trunk}\\
+
+If SVN complains that it doesn't know a 'relocate command', you have an older version of svn and we have to do two steps:
+
+\begin{enumerate}
+\item \texttt{\tiny svn switch --relocate svn+ssh://USERNAME@musashi.ethz.ch/var/svn svn+ssh://USERNAME@gaia.geo.uni-mainz.de/local/home/lkausb/svn}
+\item \texttt{\scriptsize svn switch svn+ssh://lkausb@gaia.geo.uni-mainz.de/local/home/lkausb/svn/LaMEM/trunk}
+\end{enumerate}
+
+\item If you are using  the 'Versions' software, make a right-click on the 'bookmark' of your LaMEM directory, and select "Edit Bookmark". Then, change 'Location' to:\\
+\indent \texttt{\footnotesize svn+ssh://USERNAME@gaia.geo.uni-mainz.de/local/home/lkausb/svn/LaMEM/trunk}\\
+and change your username and password to the ones on GAIA. After 'save', it should automatically relink it.\\
+
+You can verify that everything is correct by typing:
+\indent \texttt{svn info} in the LaMEM directory. It should have as URL:\\
+\indent \texttt{\footnotesize URL: svn+ssh://username@gaia.geo.uni-mainz.de/local/home/lkausb/svn/LaMEM/trunk}
+
+\end{enumerate}
+
+% ---------------------------------- COMPILING LAMEM  ---------------------------------- %
+\subsection{Compilation of LaMEM}
+
+Once the compilers and pets have been installed, you can now compile LaMEM. Go to \texttt{./LaMEM/src} directory and do the following:\\
+
+\textbf{debug mode}: \indent \texttt{make mode=deb all}\\ 
+or simply \texttt{make all}, \texttt{mode=deb} is the default to build everything in debug mode.\\
+
+\textbf{optimized mode}: \indent \texttt{make mode=opt all}\\
+to build everything in optimized mode.\\
+
+\textbf{Note:} No more \texttt{PETSC\_DIR} and no more switching between the debug and optimized versions with \texttt{.bash\_profile}. Makefile is now supporting building both versions simultaneously.
+
+\begin{enumerate}
+\item SVN\\
+Also it's not necessary to do svn updates explicitly.\\
+\indent \texttt{make update} 
+to update to latest version, and to write a new Version.h file.
+
+\item VIEW ENVIRONMENT\\
+\indent \texttt{make mode=deb print}\\
+or \\
+\indent \texttt{make mode=opt print} \\
+to view your environmental variables.
+
+\item TESTS (not yet in LaMEM canonical)\\
+\\
+Running tests, type in the \texttt{./LaMEM/tests} directory:\\
+\indent \texttt{make mode=deb check} to perform tests in debug mode.\\
+\indent \texttt{make mode=opt check} or (or simply \texttt{make check}, \texttt{mode=opt} is the default) to perform tests in optimized mode.
+
+\textbf{Note:} Take care that \texttt{mode=deb} is the default for LaMEM, and \texttt{mode=opt} is the default for tests.
+\end{enumerate}
+
+% ---------------------------------- RUNNING LAMEM ---------------------------------- %
+\subsection{Running LaMEM}
+
+The LaMEM executable is located in \texttt{/LaMEM/bin/deb/} for the debug version and \texttt{/LaMEM/bin/opt/} for the optimized version. You can run LaMEM by typing (give the path to the right LaMEM executable):\\
+\indent \texttt{mpiexec -n <no\_cpu> LaMEM -ParamFile <input\_file> <command\_line\_options>}\\
+
+% ---------------------------------- PHYSICS ---------------------------------- %
+%%% PHYSICS
+\section{Physics}
+
+%%% SOLVERS
+%\section{Solvers}
+
+% ---------------------------------- INPUT PARAMETERS ---------------------------------- %
+\newpage
+%%% INPUT
+\section{Input Parameters}
+
+Examples of input files can be found in \texttt{/LaMEM/input\_models/PROJECTS\_FDSTAG\_CANONICAL/}. In this sections, all possible input parameters are explained.
+
+% ---------------------------------- GENERAL INPUT PARAMETERS  ---------------------------------- %
+\subsection{General input parameters}
+\indent \textit{Setting Input Parameters in input file and/or from command line}\\
+
+The general command to run LaMEM is:\\
+\indent \texttt{mpiexec -n <no\_cpu> LaMEM -ParamFile <input\_file> <extra command line options>}\\
+
+\textbf{NOTE:}\\
+\indent In general, parameters can be specified in the input file or from the command line. The command line options need to have a "\texttt{-}" prefix (i.e. \texttt{-L 10 -W 100 -H 90}). 
+
+\indent If multiple definitions of the same parameter, command line options overwrite input file options! Some input parameters are not needed anymore, such as: \texttt{num\_phases}. \\
+
+\indent Table \ref{tab:input0} lists all major parameters. Please add new LaMEM parameters or options to this table.
+
+%%% Input table
+\begin{table}[!htbp]
+\begin{center}
+\scriptsize
+{\renewcommand{\arraystretch}{1.3}
+  \begin{longtable}{ p{4cm} l c p{7cm} }
+  \hline
+Variable &Name&Type&Comments \\
+\hline
+\texttt{nel\_x}&\# of cells in x-dir&int&Negative number implies corresponding number of mesh segments for variable grid spacing\\
+\texttt{nel\_y}&\# of cells in y-dir&int& same as for \texttt{nel\_x} \\
+\texttt{nel\_z}&\# of cells in z-dir&int& same as for \texttt{nel\_x} \\
+\texttt{seg\_x}&&scalar array& Array includes: 1. coordinates of the delimiters between the segments (n-1 points); 2. number of cells (n points); 3. bias coefficients (n points). See \hyperref[sec:variablegridspacing]{Variable grid spacing}\\
+\texttt{seg\_y}&&scalar array& same as for \texttt{seg\_x}\\
+\texttt{seg\_z}&&scalar array& same as for \texttt{seg\_x}\\
+\texttt{DimensionalUnits}&dimensional indicator&int&0 - non-dimensional, 1 - dimensional; See \hyperref[sec:scaling]{Scaling} \\
+\texttt{L}&length (y-dir)&scalar& domain size in y-dir\\
+\texttt{W}&width (x-dir)&scalar& domain size in x-dir\\
+\texttt{H}&height (z-dir)&scalar& domain size in z-dir\\
+\texttt{x\_left}&coord of left corner&scalar&the x-coords: \texttt{(x\_left:nel\_x:x\_left+W)} \\
+\texttt{y\_front}&coord of front corner&scalar& the y-coords: \texttt{(y\_front:nel\_y:y\_front+L)}\\
+\texttt{z\_bot}&coord of bottom corner&scalar& the z-coords: \texttt{(z\_bottom:nel\_z:z\_bottom+H)}\\
+\texttt{msetup}&model setup&string&See \hyperref[sec:modelsetup]{Model Setup}\\
+\texttt{ParticleFilename}&name of markers file&string&See (parallel and redundant input) \\
+\texttt{\tiny LoadInitialParticlesDirectory}&name of directory&string&directory where the marker files are \\
+\texttt{NumPartX}&\# of markers/cell (x-dir)&int& min = 2 \\
+\texttt{NumPartY}&\# of markers/cell (y-dir)&int& min = 2 \\
+\texttt{NumPartZ}&\# of markers/cell (z-dir)&int& min = 2 \\
+\texttt{OutputFile}&name of output file&string& \\
+\texttt{save\_timesteps}&save every \# timesteps&int& example: \texttt{save\_timesteps = 10} will save output every 10 time steps \\
+\texttt{time\_end}&\# of timesteps&int&the simulation will finish after (0+\texttt{time\_end}) \\
+\texttt{save\_breakpoints}&save every \# breakpoints&int&needed to restart simulation; example: \texttt{save\_breakpoints = 10} will save breakpoint files every 10 time steps \\
+\texttt{SaveParticles}&save markers indicator&int&1 - save markers to file after every time step \\
+\texttt{-AddRandomNoiseParticles}&flag for random noise&int&if \texttt{TRUE}, will add some random noise to marker distribution \\
+\texttt{-restart}&restart flag&int&0-no restart; 1-restart simulation from the last saved breakpoint. If \texttt{restart = 1}, but no breakpoint files were found, it will start the simulation from beginning. \\
+\texttt{-SavePartitioning}&proc partitioning flag&bool&if \texttt{TRUE}, the domain partitioning between processors will be printed to file. Warning: simulation will be stopped after the file was created. \\
+\texttt{CFL}&Courant criterion&scalar&should be < 1 (generally taken as 0.5) \\
+\texttt{dt\_max}&max. time step&scalar& time step is calculated internally with the CFL, but this is the maximum admisable\\
+\texttt{DII\_ref}&initial reference strain rate&scalar&needed for initial guess in non-linear solve \\
+\texttt{LowerViscosityCutoff}&lower viscosity cutoff&scalar&min viscosity allowed in the simulation \\
+\texttt{UpperViscosityCutoff}&upper viscosity cutoff&scalar&max viscosity allowed in the simulation \\
+\texttt{InitViscosity}&initial reference viscosity&scalar&needed for initial guess in non-linear solve  \\
+\texttt{<Characteristic Values>}&Scaling&struct&See \hyperref[sec:scaling]{Scaling} \\
+\texttt{<BoundaryConditions>}&Boundary conditions&struct&See \hyperref[sec:bc]{Boundary Conditions} \\
+\texttt{<Output>}&Output&struct&See \hyperref[sec:output]{Output} \\
+\texttt{<Pushing>}&Pushing BC&struct&See \hyperref[sec:pushing]{Pushing BC} \\
+\texttt{<Softening Laws>}&Softening Laws&struct&See \hyperref[sec:softlaws]{Softening Laws} \\
+\texttt{<Material Properties>}&Material parameters&struct&See \hyperref[sec:material]{Material Properties} \\
+\texttt{<PetscOptions>}&Petsc and solver options&struct&See \hyperref[sec:petsc]{Petsc and Solvers} \\
+\texttt{\tiny -use\_quasi\_harmonic\_viscosity}&flag &bool& flag to compute quasi-harmonic viscosities\\
+%%\texttt{}&&& \\
+\hline  
+
+  \end{longtable}
+  }
+  \addtocounter{table}{-1}
+  \caption{Major parameters to be set in input file/command line. Note, if you set them from the command line, every parameter name should have a "\texttt{-}" prefix (i.e. \texttt{-L 10 -W 100 -H 90})}
+  \label{tab:input0}
+  \end{center}
+\end{table}
+
+% ----------------------------------VARIABLE GRID SPACING  ---------------------------------- %
+\subsection{Variable grid spacing}
+\label{sec:variablegridspacing}
+
+% ---------------------------------- PETSC AND SOLVER OPTIONS ---------------------------------- %
+\subsection{PETSc and solver options}
+\label{sec:petsc}
+
+%%%% Solvers table
+%\begin{table}[!h]
+%\begin{center}
+%\footnotesize
+%{\renewcommand{\arraystretch}{1.3}
+%  \begin{tabular}{ l l c l }
+%  \hline
+%Variable (1) &Name&Type&Comments \\
+%\hline
+%\texttt{<PetscOptions>}&&& \\
+%\texttt{-res\_log}&&& \\
+%\texttt{-darcy\_test}&&& \\
+%\texttt{-load\_init}&&& \\
+%\texttt{-test\_coupled}&&& \\
+%\texttt{-test\_uncoupled}&&& \\
+%\texttt{-dump\_init}&&& \\
+%\texttt{-pcmat\_no\_dev\_proj}&&& \\
+%\texttt{-gmg\_pc\_view}&&& \\
+%\texttt{-gmg\_dump}&&& \\
+%\texttt{-options\_left}&&& \\
+%%%\texttt{}&&& \\
+%\hline  
+%
+%  \end{tabular}
+%  }
+%  \caption{Options and variables to be set in input file/command line.}
+%  \label{tab:solver}
+%  \end{center}
+%\end{table}
+
+% ---------------------------------- BOUNDARY CONDITIONS  ---------------------------------- %
+\subsection{Boundary Conditions}
+\label{sec:bc}
+
+%\begin{table}[!h]
+%\begin{center}
+%\footnotesize
+%{\renewcommand{\arraystretch}{1.3}
+%  \begin{tabular}{ l l c l }
+%  \hline
+%Variable (1) &Name&Type&Comments \\
+%\hline
+%\texttt{BC.Exx}&&& \\
+%\texttt{BC.Eyy}&&& \\
+%\texttt{BC.LeftBound}&&& \\
+%\texttt{BC.RightBound}&&& \\
+%\texttt{BC.FrontBound}&&& \\
+%\texttt{BC.BackBound}&&& \\
+%\texttt{BC.LowerBound}&&& \\
+%\texttt{BC.UpperBound}&&& \\
+%\texttt{Temp\_top}&&& \\
+%\texttt{Temp\_bottom}&&& \\
+%\hline  
+%
+%  \end{tabular}
+%  }
+%  \caption{Options and variables to be set in input file/command line.}
+%  \label{tab:input2}
+%  \end{center}
+%\end{table}
+
+% ---------------------------------- PUSHING BC  ---------------------------------- %
+\subsection{Pushing BC}
+\label{sec:pushing}
+
+%\begin{table}[!h]
+%\begin{center}
+%\footnotesize
+%{\renewcommand{\arraystretch}{1.3}
+%  \begin{tabular}{ l l c l }
+%  \hline
+%Variable (2) &Name&Type&Comments \\
+%\hline
+%\texttt{AddPushing}&&& \\
+%\texttt{Pushing.num\_changes}&&& \\
+%\texttt{Pushing.time}&&& \\
+%\texttt{Pushing.V\_push}&&& \\
+%\texttt{Pushing.dir}&&& \\
+%\texttt{Pushing.omega}&&& \\
+%\texttt{Pushing.coord\_advect}&&& \\
+%\texttt{Pushing.reset\_pushing\_coord}&&& \\
+%\texttt{Pushing.theta}&&& \\
+%\texttt{Pushing.L\_block}&&& \\
+%\texttt{Pushing.W\_block}&&& \\
+%\texttt{Pushing.H\_block}&&& \\
+%\texttt{Pushing.x\_center\_block}&&& \\
+%\texttt{Pushing.y\_center\_block}&&& \\
+%\texttt{Pushing.z\_center\_block}&&& \\
+%\hline  
+%  \end{tabular}
+%  }
+%  \caption{Options and variables to be set in input file/command line.}
+%  \label{tab:input3}
+%  \end{center}
+%\end{table}
+
+% ---------------------------------- OUTPUT  ---------------------------------- %
+\subsection{Output}
+\label{sec:output}
+
+% ---------------------------------- SCALING  ---------------------------------- %
+\newpage
+% Scaling
+\subsection{Scaling, characteristic values and units}
+\label{sec:scaling}
+
+The units in the input file should be consistent with the type of units requested. \\
+
+To run a \textbf{non-dimensional setup} set these parameters in the input file:\\
+\begin{tabular}{l l}
+\indent \texttt{DimensionalUnits} &\texttt{= 0} \\
+\indent \texttt{units} &\texttt{= none} \\
+\end{tabular}
+\\
+
+To run a \textbf{dimensional setup}, set:\\
+\begin{tabular}{l l}
+\indent \texttt{DimensionalUnits} &\texttt{= 1} \\
+\indent \texttt{units} &\texttt{= si  \# all input parameters are given in SI units}\\
+&\\
+\indent OR&\\
+&\\
+\indent \texttt{DimensionalUnits} &\texttt{= 1} \\
+\indent \texttt{units} &\texttt{= geo  \# all input parameters are given in geological units}\\ 
+\end{tabular}\\
+\\
+If \texttt{DimensionalUnits = 1}, the following parameters (characteristic values) \textbf{must} also be specified in input:
+
+\begin{tabular}{l l}
+\indent \texttt{Characteristic.Length} &\texttt{= 1 \# depends on domain size } \\
+\indent \texttt{Characteristic.Viscosity} &\texttt{= 1  \# }\\
+\indent \texttt{Characteristic.Temperature} &\texttt{= 1 \# } \\
+\indent \texttt{Characteristic.Stress} &\texttt{= 1  \#  }\\ 
+\end{tabular}\\
+\\
+%%% Scaling table 2
+\begin{wraptable}[11]{r}{8cm}
+%\begin{center}
+\footnotesize
+{\renewcommand{\arraystretch}{1.3}
+  \begin{tabular}{| c | c c c |}
+  \hline
+  &\multicolumn{3}{c |}{ \texttt{units}} \\
+  \hline  
+Parameter&\texttt{none}&\texttt{si}&\texttt{geo} \\
+\hline
+mass&-&kg&kg\\
+time&-&s&Myr\\
+length&-&m&km\\
+temperature&-&K&C\\
+force&-&N&N\\
+angle&-&deg&deg\\
+velocity&-&m/s&cm/yr\\
+stress&-&Pa&MPa\\
+strain rate&-&1/s&1/s\\
+heat flux&-&W/m$^2$&mW/m$^2$\\
+dissipation rate&-&W/m$^3$&W/m$^3$\\
+angular velocity&-&deg/s&deg/Myr\\
+density&-&kg/m$^3$&kg/m$^3$\\
+viscosity&-&Pa.s&Pa.s\\
+\hline
+&\multicolumn{3}{l |}{Derived units}\\
+\hline
+gravity strength&\multicolumn{3}{l |}{= force/mass}\\
+energy&\multicolumn{3}{l |}{= force*length}\\
+power&\multicolumn{3}{l |}{= energy/time}\\
+specific heat&\multicolumn{3}{l |}{= energy/mass/temperature}\\
+conductivity&\multicolumn{3}{l |}{= power/length/temperature}\\
+heat production&\multicolumn{3}{l |}{= power/mass}\\
+expansivity&\multicolumn{3}{l |}{= 1/temperature}\\
+pressure sensitivity&\multicolumn{3}{l |}{= temperature/stress}\\
+  \hline  
+  \end{tabular}
+  }
+  \caption{Setting dimensional units in input file.}
+  \label{tab:scaling2}
+  %\end{center}
+\end{wraptable}
+
+Characteristic values are dependent on model setup (check how they are set in the examples in \texttt{/LaMEM/input\_models/}). They are needed to perform the non-dimensionalization (scaling) of the model. For this, all input parameters, characteristic values and material parameters should have consistent units!\\
+
+\reftab{tab:scaling2} shows in which units parameters should be given. Note: degrees for angles are the preferred units, also for \texttt{units = si}. 
+
+% ---------------------------------- SOFTENING LAWS  ---------------------------------- %
+\newpage
+%%% Strain weaking laws 
+\subsection{Softening laws}
+\label{sec:softlaws}
+
+Every softening law should be defined in the input file in a structure beginning with \texttt{<SofteningStart>} and ending with \texttt{<SofteningEnd>}, and should have a unique phase identifier (\texttt{softID}), a softening ratio (\texttt{A}), a start of softening (\texttt{APS1}) and an end of softening (\texttt{APS2}) such as below. \\
+\\
+Each parameter is explained in \reftab{tab:soft}. Maximum number of softening laws: 10 (this number can be changes in LaMEM.h - max\_num\_soft).\\
+
+\indent \texttt{<SofteningStart>}\\
+\indent \indent \texttt{softID = 1}\\
+\indent \indent \texttt{A \hspace{2.7pc}= 0.5}\\
+\indent \indent \texttt{APS1 \hspace{0.5pc} = 1}\\
+\indent \indent \texttt{APS2 \hspace{0.5pc} = 3}\\
+\indent \texttt{<SofteningEnd>}\\
+
+%%% Softening laws table
+\begin{table}[!h]
+\begin{center}
+\footnotesize
+{\renewcommand{\arraystretch}{1.3}
+  \begin{tabular}{p{3cm} p{3cm} c p{5cm}}
+ \hline
+\text{Parameters to define}&Definition&Dimen. values&Comments \\
+ \hline  
+\texttt{softID}&soft law id&0 - 9&always set this parameter\\
+\texttt{A}&softening ratio&[0,1]&\texttt{A = 1 - a/a0}, where \texttt{a} - is cohesion(or friction angle) after softening, and \texttt{a0} is cohesion (or friction angle) before softening and specific for each material\\
+\texttt{APS1}&weakening plastic strain (begin)&&\\
+\texttt{APS2}&weakening plastic strain (end)&&\\
+ \hline
+     \end{tabular}
+     }
+  \caption{List of parameters needed to define a softening law.}
+  \label{tab:soft}
+  \end{center}
+\end{table}
+
+% ---------------------------------- MATERIAL PARAMETERS ---------------------------------- %
+%%% Material Parameters
+\subsection{Material parameters}
+\label{sec:material}
+\indent \textit{Setting Material Parameters in input file}\\
+
+Every material phase should be defined in the input file in a structure beginning with \texttt{<MaterialStart>} and ending with \texttt{<MaterialEnd>}, and should have a unique phase identifier (\texttt{ID}), such as below. The principle of setting material parameters, is that, if you specify it, it will be active; you don't specify it, it's not going to be active. All the material parameters and cases are listed in \reftab{tab:matprops}. Maximum number of phases: 32 (this number can be changes in LaMEM.h - max\_num\_phases).\\
+
+\indent \texttt{<MaterialStart>}\\
+\indent \indent \texttt{ID = 1}\\
+\indent \indent \texttt{...}\\
+\indent \texttt{<MaterialEnd>}\\
+
+\textbf{Examples:}\\
+
+1) Viscous falling block with 2 material phases (non-dimensional)\\ 
+{\small
+\indent \texttt{<MaterialStart>}\\
+\indent \indent \texttt{ID = 0}\\
+\indent \indent \texttt{rho0 = 1}\\
+\indent \indent \texttt{eta = 1}\\
+\indent \texttt{<MaterialEnd>}\\
+
+\indent \texttt{<MaterialStart>}\\
+\indent \indent \texttt{ID = 1}\\
+\indent \indent \texttt{rho0 = 2}\\
+\indent \indent \texttt{eta = 1e3}\\
+\indent \texttt{<MaterialEnd>}\\}
+
+2) Power-law material (non-dimensional)\\ 
+{\small
+\indent \texttt{<MaterialStart>}\\
+\indent \indent \texttt{ID = 0}\\
+\indent \indent \texttt{rho0 = 1}\\
+\indent \indent \texttt{Bn = 0.5}\\
+\indent \indent \texttt{n = 3}\\
+\indent \texttt{<MaterialEnd>}\\
+\indent \indent OR\\
+\indent \texttt{<MaterialStart>}\\
+\indent \indent \texttt{ID = 0}\\
+\indent \indent \texttt{rho0 = 1}\\
+\indent \indent \texttt{eta0 = 1e3}\\
+\indent \indent \texttt{e0 = 1e-5}\\
+\indent \indent \texttt{n  = 3}\\
+\indent \texttt{<MaterialEnd>}\\}
+
+3) Defining a visco-elasto-plastic material phase with T-dependence (no strain weakening or radiogenic heat production)\\
+
+\begin{tabular}{l l l}
+\small
+\indent \texttt{<MaterialStart>}&&\\
+\indent \indent \texttt{ID}&\texttt{= 0}&\texttt{\# phase id}\\
+\indent \indent \texttt{rho0 }&\texttt{= 3000}&\texttt{\# density [kg/m3]}\\
+&&\\
+\indent \indent \texttt{\# creep}&&\\
+\indent \indent \texttt{eta  }&\texttt{= 1e20}&\texttt{\# 	ref. viscosity [Pa.s]}\\
+\indent \indent \texttt{eta0 }&\texttt{= 1e18}&\texttt{\# 	ref. viscosity [Pa.s]}\\
+\indent \indent \texttt{e0 }&\texttt{= 1e-15}&\texttt{\# ref. strain rate [1/s]}\\
+\indent \indent \texttt{n }&\texttt{= 3}&\texttt{\# power-law exponent}\\
+\indent \indent \texttt{Ed}&\texttt{= 3e5}&\texttt{\# activation energy [J/mol]}\\
+\indent \indent \texttt{En}&\texttt{= 5.4e5}&\texttt{\# activation energy [J/mol]}\\
+&&\\
+\indent \indent \texttt{\# elasticity}&&\\
+\indent \indent \texttt{shear }&\texttt{= 5e10}&\texttt{\# elastic shear modulus [Pa]}\\
+&&\\
+\indent \indent \texttt{\# plasticity}&&\\
+\indent \indent \texttt{cohesion }&\texttt{= 4e6}&\texttt{\# cohesion [Pa]}\\
+\indent \indent \texttt{friction }&\texttt{= 30}&\texttt{\# friction angle [deg]}\\
+&&\\
+\indent \indent \texttt{\# temp}&&\\
+\indent \indent \texttt{alpha }&\texttt{= 1e-5}&\texttt{\# coeff. of thermal expansion [1/K]}\\
+\indent \indent \texttt{cp }&\texttt{= 1.2e3}&\texttt{\# heat capacity [J/kg/K]}\\
+\indent \indent \texttt{k }&\texttt{= 2.5}&\texttt{\# thermal conductivity [W/m/K]}\\
+\indent \texttt{<MaterialEnd>}\\
+\end{tabular}\\
+
+%%% Errors
+\textbf{Errors related to material properties input:}
+\begin{enumerate}
+\item Phase \texttt{ID} is not specified
+\item If \texttt{rho0} is not specified - this is an essential parameter
+\item If no creep law is specified (i.e. \texttt{Bd, Bn, and Bp} are all 0). Make sure you set parameters for at least one creep law!
+\item Power-law: 
+	\begin{enumerate}
+	\item If specified (\texttt{eta0, e0}) or (\texttt{Bn}), but not \texttt{n}.
+	\item If specified \texttt{n}, but not all/any (\texttt{eta0, e0}) or (\texttt{Bn}).
+	\end{enumerate}
+\item Peierls creep: if \texttt{Bp} is not defined, but any of the others Peierls parameters is.
+\item Plasticity: if \texttt{cohesion} and \texttt{friction} are not defined together.
+\item Temperature: if \texttt{cp} and \texttt{k} are not defined together.
+
+\end{enumerate}
+
+%%% Material Parameters table
+\begin{table}[H]
+\begin{center}
+\footnotesize
+{\renewcommand{\arraystretch}{1.3}
+  \begin{tabular}{p{2.7cm} p{3cm} p{3cm} c p{5cm}}
+ \hline
+Case&\text{Parameters to define}&Definition&Dimen. values&Comments \\
+ \hline  
+%&\textit{ID}&phase id&0 - 30&always set this parameter\\
+constant density&\texttt{rho0}&reference density&0 - 5000 kg/m$^3$&\\
+
+\hdashline
+linear viscous&\texttt{eta}&reference viscosity&1e-10 - 1e28 Pa.s&either define (\texttt{eta}) or (\texttt{Bd});\\
+(diffusion creep)&\textbf{OR (not both)}&&& if both \texttt{eta} and \texttt{Bd} are defined, \texttt{Bd} has priority\\
+&\texttt{Bd}&diff. creep coeff.&& \texttt{Bd = 1/(2*eta)}\\
+&\texttt{Ed}&diff. creep activation energy&3.0e5 J/mol&(*T) \\
+&\texttt{Vd}&diff. creep activation volume&cm$^3$/mol&(*T) \\
+
+\hdashline
+power-law &\texttt{eta0}&ref. viscosity&1e-10 - 1e28 Pa.s&either define (\texttt{eta0, e0, n}) or  \\
+(dislocation creep)&\texttt{e0}&ref. strain rate&1e-15 s$^{-1}$&(\texttt{Bn, n}); if all are defined, \texttt{Bn} has priority;\\
+&\texttt{n}&power-law exponent&1 - 10&\texttt{e0} and \texttt{n} must be defined together\\
+&\textbf{OR (not both)}&&&\\
+&\texttt{Bn}&disl. creep coeff.&&\texttt{Bn = (2*eta0)$^{-n}$ e0$^{(1-n)}$} \\
+&\texttt{En}&disl. creep activation energy&5.4e5 J/mol&(*T) \\
+&\texttt{Vn}&disl. creep activation volume&cm$^3$/mol&(*T) \\
+
+\hdashline
+Peierls creep&\texttt{Bp}&pre-exponential constant&$\sim$5e11 s$^{-1}$&\\
+&\texttt{Ep}&disl. creep activation energy&5.4e5 J/mol&(*T) \\
+&\texttt{Vp}&disl. creep activation volume&cm$^3$/mol&(*T) \\
+&\texttt{taup}&scaling stress&$\sim$ 1e9-1e10 Pa& more info - Kameyama et al. 1999 \\
+&\texttt{gamma}&approx. parameter&0.1& \\
+&\texttt{q}&stress-dep. param.&2& \\
+
+\hdashline
+elasticity&\texttt{shear}&elastic shear modulus&$\sim$500 kbar&if not specified, no elasticity\\
+&\texttt{bulk}&elastic bulk modulus&$\sim$500 kbar&\\
+&\texttt{Kp}&pressure-dep. param&&\\
+
+\hdashline
+plasticity &\texttt{cohesion}&cohesion&10 MPa&\texttt{cohesion} and \texttt{friction} must be \\
+(Drucker-Prager)&\texttt{friction}&friction angle&0 - 45[30$^\circ$]&defined together; if not specified, no plasticity\\
+&\texttt{chSoftID}&ID for softening law&$<$ numSoft&Strain weakening parameter\\
+&\texttt{frSoftID}&ID for softening law&$<$ numSoft&Strain weakening parameter\\
+
+
+\hdashline
+temperature  (*T)&\texttt{alpha}&coefficient of thermal expansion&10$^{-5}$K$^{-1}$&\texttt{rho=rho0*(1-alpha(T-T0))}; where \texttt{T0} = [0$^\circ$C, 273.15K]\\
+&\texttt{cp}&specific heat (capacity at ct. pressure)&J/kg/K&\\
+&\texttt{k}&thermal conductivity&W/m/K&\\
+&\texttt{A}&radiogenic heat production&10$^{-8}$-10$^{-8}$ W/m$^3$ &\\
+
+ \hline
+     \end{tabular}
+     }
+  \caption{List of material parameters that can be specified for a material phase. \textbf{Notes: 1.} (*T) Temperature-dependent constitutive laws are active only when 'energy' equation is coupled. \textbf{2.} Activation energy and volume can be specified for every creep law.}
+  \label{tab:matprops}
+  \end{center}
+\end{table}
+
+% ---------------------------------- MODEL SETUP  ---------------------------------- %
+%\newpage
+%%% Model Setup
+\section{Model Setup}
+\label{sec:modelsetup}
+
+% ---------------------------------- VISUALIZATION  ---------------------------------- %
+%%% VISUALIZATION
+\section{Visualization}
+
+% ---------------------------------- END DOCUMENT  ---------------------------------- %
+
+% references - should have a references.bib file
+\bibliography{references}
+
+\end{document}
