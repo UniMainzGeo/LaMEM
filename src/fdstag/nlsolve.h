@@ -37,6 +37,19 @@ http://www.mcs.anl.gov/petsc/petsc-current/docs/manualpages/Mat/MatCreateMFFD.ht
 
  */
 
+//---------------------------------------------------------------------------
+// maximum size allowed for the running window
+#define _max_win_size_ 100
+
+//---------------------------------------------------------------------------
+typedef struct {
+	PetscScalar rnorm_init;
+	PetscInt    winwidth;
+	PetscScalar rnorm_win[_max_win_size_];
+	PetscScalar	epsfrac,eps;
+} WinStopCtx;
+//---------------------------------------------------------------------------
+
 // Jacobian type
 typedef enum
 {
@@ -65,8 +78,10 @@ typedef struct
 	PCStokes  pc;     // Stokes preconditioner
 	JacType   jtype;  // actual type of Jacobian operator
 	PetscInt  nPicIt; // number of Picard iteraions before switch to Newton
-
+	WinStopCtx wsCtx;
 } NLSol;
+
+
 //---------------------------------------------------------------------------
 
 PetscErrorCode NLSolClear(NLSol *nl);
@@ -95,6 +110,11 @@ PetscErrorCode SNESPrintConvergedReason(SNES snes);
 //	PetscReal gnorm, PetscReal f, SNESConvergedReason *reason, void *cctx);
 
 PetscErrorCode SNESActEW(SNES snes);
+
+//---------------------------------------------------------------------------
+
+// performs tests for residual norms
+PetscErrorCode KSPWinStopTest(KSP ksp, PetscInt n, PetscScalar rnorm, KSPConvergedReason *reason, void *mctx);
 
 //---------------------------------------------------------------------------
 #endif

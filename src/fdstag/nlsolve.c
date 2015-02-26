@@ -13,6 +13,8 @@
 #include "lsolve.h"
 #include "nlsolve.h"
 #include "Utils.h"
+#include "tools.h"
+
 //---------------------------------------------------------------------------
 // * add bound checking for iterative solution vector in SNES
 // * automatically set -snes_type ksponly (for linear problems)
@@ -45,7 +47,7 @@ PetscErrorCode NLSolCreate(NLSol *nl, PCStokes pc, SNES *p_snes)
 	SNESLineSearch  ls;
 	JacRes         *jr;
 	DOFIndex       *dof;
-	PetscBool       flg;
+	PetscBool       flg, useCustomTest=PETSC_FALSE;
 
     PetscErrorCode ierr;
     PetscFunctionBegin;
@@ -90,7 +92,32 @@ PetscErrorCode NLSolCreate(NLSol *nl, PCStokes pc, SNES *p_snes)
 	ierr = KSPGetPC(ksp, &ipc);            CHKERRQ(ierr);
 	ierr = PCSetType(ipc, PCMAT);          CHKERRQ(ierr);
 
-//	ierr = KSPSetConvergenceTest(ksp, &KSPBlockStopTest, &bmat, NULL);CHKERRQ(ierr);
+
+	// activate custom test for linear iterations?
+	ierr = PetscOptionsGetBool(NULL,"-js_use_custom_test",&useCustomTest,&flg); CHKERRQ(ierr);
+
+	if ( useCustomTest )
+	{
+		PetscPrintf( PETSC_COMM_WORLD, "Using custom test function for residuals\n");
+		nl->wsCtx.epsfrac    = 0.01; // set default to 1 percent
+		nl->wsCtx.eps        = 0.0;
+		nl->wsCtx.rnorm_init = 0.0;
+		nl->wsCtx.winwidth   = 20;
+
+		ierr = PetscOptionsGetInt( PETSC_NULL,"-js_ksp_difftol_winwidth",&nl->wsCtx.winwidth,PETSC_NULL );			CHKERRQ(ierr);
+		ierr = PetscOptionsGetReal( PETSC_NULL,"-js_ksp_difftol_eps"    ,&nl->wsCtx.epsfrac,PETSC_NULL );			CHKERRQ(ierr);
+/*
+		ierr = PetscPrintf( PETSC_COMM_WORLD, "Stopping conditions: \n");
+		PetscPrintf( PETSC_COMM_WORLD, "rtol : %14.12e\n",(double)ctx->rtol);
+		PetscPrintf( PETSC_COMM_WORLD, "atol : %14.12e\n",(double)ctx->atol);
+		PetscPrintf( PETSC_COMM_WORLD, "maxit: %D\n",ctx->maxits);
+		PetscPrintf( PETSC_COMM_WORLD, "difftol_eps: %14.12e\n",nl->wsCtx.epsfrac);
+		PetscPrintf( PETSC_COMM_WORLD, "difftol_winwidth: %D\n",nl->wsCtx.winwidth);
+*/
+//		ierr = KSPStopCondConfig(ksp, &nl->wsCtx); CHKERRQ(ierr);
+		ierr = KSPSetConvergenceTest(ksp, &KSPWinStopTest, &nl->wsCtx, NULL);CHKERRQ(ierr);
+	}
+
 //	ierr = SNESSetConvergenceTest(snes, SNESBlockStopTest, &nlctx, NULL); CHKERRQ(ierr);
 
 	// set Jacobian type & initial guess
@@ -509,3 +536,133 @@ PetscErrorCode PostCheck(SNESLineSearch,Vec,Vec,Vec,PetscBool*,PetscBool*,void*)
 
 //---------------------------------------------------------------------------
 */
+
+//---------------------------------------------------------------------------
+
+#undef __FUNCT__
+#define __FUNCT__ "KSPWinStopTest"
+PetscErrorCode KSPWinStopTest(KSP ksp, PetscInt thisit, PetscScalar thisnorm, KSPConvergedReason *reason, void *mctx)
+{
+	PetscErrorCode    ierr;
+	PetscInt          ind,maxits;
+	PetscScalar       diffnorm,rtol,atol,dtol,ttol;
+	WinStopCtx       *winstop = (WinStopCtx*) mctx;
+	PetscBool         winnorm =  PETSC_FALSE;
+	PetscScalar       rnormdiff_win[_max_win_size_];
+
+	*reason = KSP_CONVERGED_ITERATING;
+
+
+
+	// stop warning messages for unused parameters
+//	if(rnorm) rnorm = 0.0;
+
+	// get maximum iterations
+	ierr = KSPGetTolerances(ksp, &rtol, &atol, &dtol, &maxits); CHKERRQ(ierr);
+
+	// get current iteration number and residual
+//	ierr = KSPGetResidualNorm(ksp, &thisnorm);
+//	ierr = KSPGetIterationNumber(ksp, &thisit);
+
+	// set initial norm
+	if (thisit == 0)
+	{
+		winstop->rnorm_init = thisnorm;
+		winstop->eps = winstop->epsfrac * winstop->rnorm_init;
+	}
+
+	// the total tolerance
+	ttol = PetscMax(rtol * winstop->rnorm_init, atol);
+
+
+	// store norm
+	ind = thisit%winstop->winwidth;
+
+
+	winstop->rnorm_win[ind] = thisnorm;
+
+
+	if (thisit > 0)
+	{
+		rnormdiff_win[ind-1] = winstop->rnorm_win[ind] - winstop->rnorm_win[ind-1];
+	}
+
+	// windwidth !>= 1
+	// compute the criterion as soon as we have enough iterations
+	if (thisit >= winstop->winwidth)
+	{
+		diffnorm = getStdv(rnormdiff_win, winstop->winwidth-1);
+		winnorm  = PETSC_TRUE;
+	}
+	else
+	{
+		diffnorm = 1000.0;
+		winnorm  = PETSC_FALSE;
+	}
+
+	// --- Check norms ---
+
+	// problems?
+	if (PetscIsInfOrNanScalar(thisnorm))
+	{
+		PetscInfo(ksp,"Linear solver has created a not a number (NaN) as the residual norm, declaring divergence \n");
+		*reason = KSP_DIVERGED_NANORINF;
+	}
+
+	// ttol
+	else if (thisnorm <= ttol)
+	{
+		// atol
+		if (thisnorm < atol)
+		{
+		  PetscInfo3(ksp,"Linear solver has converged. Residual norm %14.12e is less than absolute tolerance %14.12e at iteration %D\n",(double)thisnorm,(double)atol,thisit);
+		  *reason = KSP_CONVERGED_ATOL;
+		}
+
+		// rtol
+		else
+		{
+		  if (winstop->rnorm_init)
+		  {
+			PetscInfo4(ksp,"Linear solver has converged. Residual norm %14.12e is less than relative tolerance %14.12e times initial residual norm %14.12e at iteration %D\n",(double)thisnorm,(double)rtol,(double)winstop->rnorm_init,thisit);
+		  }
+		  else
+		  {
+			PetscInfo4(ksp,"Linear solver has converged. Residual norm %14.12e is less than relative tolerance %14.12e times initial right hand side norm %14.12e at iteration %D\n",(double)thisnorm,(double)rtol,(double)winstop->rnorm_init,thisit);
+		  }
+		  *reason = KSP_CONVERGED_RTOL;
+		}
+	}
+
+	// difftol
+	else if (winnorm & (diffnorm < winstop->eps) )
+	{
+		PetscInfo4(ksp,"Linear solver has converged. The standard deviation of the residual differences within the running window %14.12e is less than %g % of the initial right hand side norm %14.12e at iteration %D\n",(double)diffnorm,(double)winstop->eps,(double)winstop->rnorm_init,thisit);
+		*reason = KSP_CONVERGED_ITS;
+	}
+
+	// maxits
+	else if ( thisit == maxits+1 )
+	{
+		PetscInfo2(ksp,"Linear solver has converged. The maximum number of iterations %D has been reached at iteration %D\n",maxits,thisit);
+		*reason = KSP_CONVERGED_ITS;
+	}
+
+
+
+	// divergence
+	else if ( thisnorm >= (dtol * winstop->rnorm_init))
+	{
+		PetscInfo3(ksp,"Linear solver is diverging. Initial right hand size norm %14.12e, current residual norm %14.12e at iteration %D\n",(double)winstop->rnorm_init,(double)thisnorm,thisit);
+		*reason = KSP_DIVERGED_DTOL;
+	}
+
+	// otherwise, continue iterations
+	else
+	{
+		*reason = KSP_CONVERGED_ITERATING;
+	}
+
+	return(0);
+}
+//---------------------------------------------------------------------------
