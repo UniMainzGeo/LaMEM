@@ -58,7 +58,7 @@ Temp_bottom					=   1 				# Temperature @ bottom; side BC's are flux-free
 	-snes_type 		ksponly
 
 # Jacobian KSP
-	-js_ksp_type gcr
+	-js_ksp_type fgmres
 	-js_ksp_max_it 1000
 	-js_ksp_min_it 2
 	-js_ksp_converged_reason
@@ -150,7 +150,7 @@ Xi						=	0;									# [ ] - Shear heating factor - not implemented yet
 
 # Define phase transitions for particles
 num_phase_transitions			=	0				# The number of phase transitions present
-LowerViscosityCutoff			=	1e-3
+LowerViscosityCutoff			=	1e-5
 UpperViscosityCutoff			=	1e12
 
 # Define material properties for all phases -------------------------------------------------
@@ -160,7 +160,7 @@ UpperViscosityCutoff			=	1e12
 		phase_id 			=	0
 		attribute 			= 	VISCOSITY
 		type 				= 	constant
-		eta0       			= 	0.1	
+		eta0       			= 	0.00001	
 		N_exp       		= 	3
 		e0 					=	0.1	
 	<MaterialEnd>

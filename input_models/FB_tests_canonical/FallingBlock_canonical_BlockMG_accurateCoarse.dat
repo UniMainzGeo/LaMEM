@@ -58,7 +58,7 @@ Temp_bottom					=   1 				# Temperature @ bottom; side BC's are flux-free
 	-snes_type 		ksponly
 
 # Jacobian KSP
-	-js_ksp_type gcr
+	-js_ksp_type fgmres
 	-js_ksp_max_it 10000
 	-js_ksp_min_it 2
 	-js_ksp_converged_reason
@@ -84,7 +84,7 @@ Temp_bottom					=   1 				# Temperature @ bottom; side BC's are flux-free
 	-gmg_pc_mg_galerkin
 	-gmg_pc_mg_type multiplicative
 	-gmg_pc_mg_cycle_type v
-	-gmg_pc_view 
+	#-gmg_pc_view 
 	-gmg_pc_mg_log		# monitors time spend in multigrid if using -log_summary
 	
 	-gmg_mg_levels_ksp_type gmres
@@ -160,7 +160,7 @@ UpperViscosityCutoff			=	1e5
 		attribute 			= 	VISCOSITY
 		type 				= 	constant
 #		type 				= 	power_law
-		eta0       			= 	0.01	
+		eta0       			= 	0.00001	
 		N_exp       		= 	3
 		e0 					=	0.1	
 	<MaterialEnd>
