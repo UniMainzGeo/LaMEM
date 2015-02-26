@@ -544,7 +544,7 @@ PetscErrorCode PostCheck(SNESLineSearch,Vec,Vec,Vec,PetscBool*,PetscBool*,void*)
 PetscErrorCode KSPWinStopTest(KSP ksp, PetscInt thisit, PetscScalar thisnorm, KSPConvergedReason *reason, void *mctx)
 {
 	PetscErrorCode    ierr;
-	PetscInt          ind,maxits;
+	PetscInt          ind,inow,ilast,maxits;
 	PetscScalar       diffnorm,rtol,atol,dtol,ttol;
 	WinStopCtx       *winstop = (WinStopCtx*) mctx;
 	PetscBool         winnorm =  PETSC_FALSE;
@@ -574,17 +574,20 @@ PetscErrorCode KSPWinStopTest(KSP ksp, PetscInt thisit, PetscScalar thisnorm, KS
 	// the total tolerance
 	ttol = PetscMax(rtol * winstop->rnorm_init, atol);
 
-
 	// store norm
 	ind = thisit%winstop->winwidth;
-
-
 	winstop->rnorm_win[ind] = thisnorm;
 
 
 	if (thisit > 0)
 	{
-		rnormdiff_win[ind-1] = winstop->rnorm_win[ind] - winstop->rnorm_win[ind-1];
+		inow  = ind;
+		if (inow == 0) ilast = winstop->winwidth-1;
+		else           ilast = inow-1;
+		
+		rnormdiff_win[ilast] = winstop->rnorm_win[ilast] - winstop->rnorm_win[inow];
+		
+		PetscPrintf(PETSC_COMM_WORLD,"rnormdiff_win[%lld]=%g \n",(LLD)(ilast), rnormdiff_win[ilast]);
 	}
 
 	// windwidth !>= 1
@@ -592,6 +595,7 @@ PetscErrorCode KSPWinStopTest(KSP ksp, PetscInt thisit, PetscScalar thisnorm, KS
 	if (thisit >= winstop->winwidth)
 	{
 		diffnorm = getStdv(rnormdiff_win, winstop->winwidth-1);
+		PetscPrintf(PETSC_COMM_WORLD,"var=%g \n",diffnorm);
 		winnorm  = PETSC_TRUE;
 	}
 	else
@@ -599,6 +603,9 @@ PetscErrorCode KSPWinStopTest(KSP ksp, PetscInt thisit, PetscScalar thisnorm, KS
 		diffnorm = 1000.0;
 		winnorm  = PETSC_FALSE;
 	}
+
+
+	PetscPrintf(PETSC_COMM_WORLD,"rnorm[%lld]=%g diffnorm=%g, crit: %g\n",(LLD)thisit,thisnorm, diffnorm, winstop->eps);
 
 	// --- Check norms ---
 
@@ -637,6 +644,7 @@ PetscErrorCode KSPWinStopTest(KSP ksp, PetscInt thisit, PetscScalar thisnorm, KS
 	// difftol
 	else if (winnorm & (diffnorm < winstop->eps) )
 	{
+		PetscPrintf(PETSC_COMM_WORLD,"difftol\n");
 		PetscInfo4(ksp,"Linear solver has converged. The standard deviation of the residual differences within the running window %14.12e is less than %g % of the initial right hand side norm %14.12e at iteration %D\n",(double)diffnorm,(double)winstop->eps,(double)winstop->rnorm_init,thisit);
 		*reason = KSP_CONVERGED_ITS;
 	}
