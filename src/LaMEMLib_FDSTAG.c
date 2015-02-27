@@ -225,7 +225,7 @@ PetscErrorCode LaMEMLib_FDSTAG(PetscBool InputParamFile, const char *ParamFile, 
 	// save processor partitioning
 	if(user.SavePartitioning)
 	{
-		ierr = FDSTAGProcPartitioning(&fs, &user); CHKERRQ(ierr);
+		ierr = FDSTAGProcPartitioning(&fs, &user, &jr.scal); CHKERRQ(ierr);
 
 		// return immediately
 		ierr = FDSTAGDestroy(&fs); CHKERRQ(ierr);

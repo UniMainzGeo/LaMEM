@@ -219,13 +219,15 @@ PetscErrorCode ADVMarkSave(AdvCtx *actx, UserCtx *user)
 	ierr = PetscMalloc((size_t)(5*actx->nummark)*sizeof(PetscScalar), &markbuf); CHKERRQ(ierr);
 
 	// get characteristic length & temperature
-	if(user->DimensionalUnits)
-	{	chLen  = user->Characteristic.Length;
+	if (!user->new_input)
+		{
+		chLen  = user->Characteristic.Length;
 		chTemp = user->Characteristic.Temperature;
-	}
+		}
 	else
-	{	chLen  = 1.0;
-		chTemp = 1.0;
+	{
+		chLen  = actx->jr->scal.length;
+		chTemp = actx->jr->scal.temperature;
 	}
 
 	// temperature shift
@@ -386,6 +388,62 @@ PetscErrorCode ADVMarkCheckMarkers(AdvCtx *actx, UserCtx *user)
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
+#undef __FUNCT__
+#define __FUNCT__ "FDSTAGProcPartitioning"
+PetscErrorCode FDSTAGProcPartitioning(FDSTAG *fs, UserCtx *user, Scaling *scal)
+{
+	int         fid;
+	char        *fname;
+	PetscScalar *xc, *yc, *zc, chLen;
+
+	PetscErrorCode ierr;
+	PetscFunctionBegin;
+
+	PetscPrintf(PETSC_COMM_WORLD,"# Save processor partitioning \n");
+
+	// gather global coord
+	ierr = Discret1DGatherCoord(&fs->dsx, &xc); CHKERRQ(ierr);
+	ierr = Discret1DGatherCoord(&fs->dsy, &yc); CHKERRQ(ierr);
+	ierr = Discret1DGatherCoord(&fs->dsz, &zc); CHKERRQ(ierr);
+
+	// get characteristic length
+	if (!user->new_input) chLen = user->Characteristic.Length;
+	else                  chLen = scal->length;
+
+	if(ISRankZero(PETSC_COMM_WORLD))
+	{
+		// save file
+		asprintf(&fname, "ProcessorPartitioning_%lldcpu_%lld.%lld.%lld.bin",
+			(LLD)(fs->dsx.nproc*fs->dsy.nproc*fs->dsz.nproc),
+			(LLD)fs->dsx.nproc, (LLD)fs->dsy.nproc, (LLD)fs->dsz.nproc);
+
+		PetscBinaryOpen(fname, FILE_MODE_WRITE, &fid);
+
+		PetscBinaryWrite(fid, &fs->dsx.nproc, 1,               PETSC_INT,    PETSC_FALSE);
+		PetscBinaryWrite(fid, &fs->dsy.nproc, 1,               PETSC_INT,    PETSC_FALSE);
+		PetscBinaryWrite(fid, &fs->dsz.nproc, 1,               PETSC_INT,    PETSC_FALSE);
+		PetscBinaryWrite(fid, &fs->dsx.tnods, 1,               PETSC_INT,    PETSC_FALSE);
+		PetscBinaryWrite(fid, &fs->dsy.tnods, 1,               PETSC_INT,    PETSC_FALSE);
+		PetscBinaryWrite(fid, &fs->dsz.tnods, 1,               PETSC_INT,    PETSC_FALSE);
+		PetscBinaryWrite(fid, fs->dsx.starts, fs->dsx.nproc+1, PETSC_INT,    PETSC_FALSE);
+		PetscBinaryWrite(fid, fs->dsy.starts, fs->dsy.nproc+1, PETSC_INT,    PETSC_FALSE);
+		PetscBinaryWrite(fid, fs->dsz.starts, fs->dsz.nproc+1, PETSC_INT,    PETSC_FALSE);
+		PetscBinaryWrite(fid, &chLen,         1,               PETSC_SCALAR, PETSC_FALSE);
+		PetscBinaryWrite(fid, xc,             fs->dsx.tnods,   PETSC_SCALAR, PETSC_FALSE);
+		PetscBinaryWrite(fid, yc,             fs->dsy.tnods,   PETSC_SCALAR, PETSC_FALSE);
+		PetscBinaryWrite(fid, zc,             fs->dsz.tnods,   PETSC_SCALAR, PETSC_FALSE);
+
+		PetscBinaryClose(fid);
+		free(fname);
+
+		ierr = PetscFree(xc); CHKERRQ(ierr);
+		ierr = PetscFree(yc); CHKERRQ(ierr);
+		ierr = PetscFree(zc); CHKERRQ(ierr);
+	}
+
+	PetscFunctionReturn(0);
+}
+//---------------------------------------------------------------------------
 // Specific initialization routines
 //---------------------------------------------------------------------------
 #undef __FUNCT__
@@ -443,13 +501,15 @@ PetscErrorCode ADVMarkInitFileParallel(AdvCtx *actx, UserCtx *user)
 	free(LoadFileName);
 
 	// get characteristic length & temperature
-	if(user->DimensionalUnits)
-	{	chLen  = user->Characteristic.Length;
+	if (!user->new_input)
+		{
+		chLen  = user->Characteristic.Length;
 		chTemp = user->Characteristic.Temperature;
-	}
+		}
 	else
-	{	chLen  = 1.0;
-		chTemp = 1.0;
+	{
+		chLen  = actx->jr->scal.length;
+		chTemp = actx->jr->scal.temperature;
 	}
 
 	// temperature shift
@@ -574,14 +634,16 @@ PetscErrorCode ADVMarkInitFileRedundant(AdvCtx *actx, UserCtx *user)
 	xe[1] = fs->dsy.ncoor[fs->dsy.ncels];
 	xe[2] = fs->dsz.ncoor[fs->dsz.ncels];
 
-	// set characteristic length and temperature
-	if(user->DimensionalUnits)
-	{	chLen  = user->Characteristic.Length;
+	// get characteristic length & temperature
+	if (!user->new_input)
+		{
+		chLen  = user->Characteristic.Length;
 		chTemp = user->Characteristic.Temperature;
-	}
+		}
 	else
-	{	chLen  = 1.0;
-		chTemp = 1.0;
+	{
+		chLen  = actx->jr->scal.length;
+		chTemp = actx->jr->scal.temperature;
 	}
 
 	// temperature shift
@@ -777,6 +839,7 @@ PetscErrorCode ADVMarkInitSubduction(AdvCtx *actx, UserCtx *user)
 	PetscScalar H_air, SlabThickness, SlabWidth, SlabLength;
 	PetscScalar DistanceFromLeft, SlabMaxSubdDepth,Slab_Xright, dz;
 	PetscScalar Air_thickness, Slab_ThicknessFactor, Air_ThicknessFactor, Slab_WidthFactor;
+	PetscScalar chLen;
 	PetscInt    imark, nz;
 
 	PetscFunctionBegin;
@@ -809,7 +872,11 @@ PetscErrorCode ADVMarkInitSubduction(AdvCtx *actx, UserCtx *user)
 	SlabMaxSubdDepth = 2 * SlabThickness;
 	Slab_Xright      = DistanceFromLeft + SlabLength-(user->H-H_air);
 
-	PetscPrintf(PETSC_COMM_WORLD," Setup Parameters: SlabThickness = [%g km] AirThickness = [%g km] H = [%g km] SlabWidthFactor = [%g] \n",SlabThickness*user->Characteristic.Length*0.001, Air_thickness*user->Characteristic.Length*0.001, user->H*user->Characteristic.Length*0.001, Slab_WidthFactor);
+	// get characteristic length
+	if (!user->new_input) chLen  = user->Characteristic.Length;
+	else                  chLen  = actx->jr->scal.length;
+
+	PetscPrintf(PETSC_COMM_WORLD," Setup Parameters: SlabThickness = [%g km] AirThickness = [%g km] H = [%g km] SlabWidthFactor = [%g] \n",SlabThickness*chLen*0.001, Air_thickness*chLen*0.001, user->H*chLen*0.001, Slab_WidthFactor);
 
 	// loop over local markers
 	for(imark = 0; imark < actx->nummark; imark++)
@@ -852,6 +919,7 @@ PetscErrorCode ADVMarkInitFolding(AdvCtx *actx, UserCtx *user)
 	PetscInt    i, imark;
 	PetscBool   flg, DisplayInfo, FoldingSetupDimensionalUnits;
 	PetscScalar zbot[10], ztop[10], BottomStepPerturbation_Amplitude;
+	PetscScalar chLen;
 
 	PetscFunctionBegin;
 
@@ -907,16 +975,20 @@ PetscErrorCode ADVMarkInitFolding(AdvCtx *actx, UserCtx *user)
 	PetscOptionsGetReal(PETSC_NULL,"-Layer10_top"         ,&ztop[9], &flg);
 	if (DisplayInfo && flg) PetscPrintf(PETSC_COMM_WORLD," - Adding Layer with Phase=10 from z=[%g,%g]\n",zbot[9],ztop[9]);
 
-    if (FoldingSetupDimensionalUnits)
-    {
-     for(i = 0; i < 10; i++) { zbot[i] = zbot[i]/user->Characteristic.Length; ztop[i] = ztop[i]/user->Characteristic.Length;}
-    }
-    else
-    {
-        // transform fractions into domain coordinates
-        for(i = 0; i < 10; i++) { zbot[i] = zbot[i]*user->H; ztop[i] = ztop[i]*user->H;}
-    }
-                        
+	// get characteristic length
+	if (!user->new_input) chLen  = user->Characteristic.Length;
+	else                  chLen  = actx->jr->scal.length;
+
+	if (FoldingSetupDimensionalUnits)
+	{
+		for(i = 0; i < 10; i++) { zbot[i] = zbot[i]/chLen; ztop[i] = ztop[i]/chLen;}
+	}
+	else
+	{
+		// transform fractions into domain coordinates
+		for(i = 0; i < 10; i++) { zbot[i] = zbot[i]*user->H; ztop[i] = ztop[i]*user->H;}
+	}
+
 	// loop over local markers
 	for(imark = 0; imark < actx->nummark; imark++)
 	{
@@ -933,46 +1005,33 @@ PetscErrorCode ADVMarkInitFolding(AdvCtx *actx, UserCtx *user)
 		}
 	}
 
-    
-    BottomStepPerturbation_Amplitude = 0.1;
-    PetscOptionsGetReal(PETSC_NULL,"-BottomStepPerturbation_Amplitude"         ,&BottomStepPerturbation_Amplitude, &flg);
-    if (flg) PetscPrintf(PETSC_COMM_WORLD,"   Using bottom step like perturbation with amplitude %f  \n", BottomStepPerturbation_Amplitude);
-    
-    
-    if (FoldingSetupDimensionalUnits) BottomStepPerturbation_Amplitude = BottomStepPerturbation_Amplitude/user->Characteristic.Length;
-    
-    
-    if (DisplayInfo && flg){
-        PetscScalar BottomStepPerturbation_X;
-        
-        
-        
-        // add a step-like pertubation at the bottom layer
-        BottomStepPerturbation_X = 0;
-        PetscOptionsGetReal(PETSC_NULL,"-BottomStepPerturbation_X"         ,&BottomStepPerturbation_X, &flg);
-        
-        if (FoldingSetupDimensionalUnits) BottomStepPerturbation_X = BottomStepPerturbation_X/user->Characteristic.Length;
+	BottomStepPerturbation_Amplitude = 0.1;
+	PetscOptionsGetReal(PETSC_NULL,"-BottomStepPerturbation_Amplitude"         ,&BottomStepPerturbation_Amplitude, &flg);
+	if (flg) PetscPrintf(PETSC_COMM_WORLD,"   Using bottom step like perturbation with amplitude %f  \n", BottomStepPerturbation_Amplitude);
 
-        
-        // loop over local markers
-        for(imark = 0; imark < actx->nummark; imark++)
-        {
-            if (actx->markers[imark].phase > 0){
-                if (actx->markers[imark].X[0]<BottomStepPerturbation_X){
-                    if ( actx->markers[imark].X[2]< (BottomStepPerturbation_Amplitude+zbot[0]) ){
-                        actx->markers[imark].phase = 0;
-                    }
-                }
-            }
-        }
-        
-        
-    }
-        
-    
-    
-    
-    
+	if (FoldingSetupDimensionalUnits) BottomStepPerturbation_Amplitude = BottomStepPerturbation_Amplitude/chLen;
+
+	if (DisplayInfo && flg){
+		PetscScalar BottomStepPerturbation_X;
+
+		// add a step-like pertubation at the bottom layer
+		BottomStepPerturbation_X = 0;
+		PetscOptionsGetReal(PETSC_NULL,"-BottomStepPerturbation_X"         ,&BottomStepPerturbation_X, &flg);
+
+		if (FoldingSetupDimensionalUnits) BottomStepPerturbation_X = BottomStepPerturbation_X/chLen;
+
+		// loop over local markers
+		for(imark = 0; imark < actx->nummark; imark++)
+		{
+			if (actx->markers[imark].phase > 0){
+				if (actx->markers[imark].X[0]<BottomStepPerturbation_X){
+					if ( actx->markers[imark].X[2]< (BottomStepPerturbation_Amplitude+zbot[0]) ){
+						actx->markers[imark].phase = 0;
+					}
+				}
+			}
+		}
+	}
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
@@ -986,6 +1045,7 @@ PetscErrorCode ADVMarkInitDetachment(AdvCtx *actx, UserCtx *user)
 	PetscInt    imark;
 	PetscScalar zbot = 0.0, ztop = 0.0;
 	PetscScalar Het_L, Het_W, Het_A, Het_Off;
+	PetscScalar chLen;
 	PetscBool   flg, DisplayInfo;
 
 	PetscFunctionBegin;
@@ -1006,11 +1066,15 @@ PetscErrorCode ADVMarkInitDetachment(AdvCtx *actx, UserCtx *user)
 	// transform fractions into domain coordinates
 	zbot = zbot*user->H; ztop = ztop*user->H;
 
+	// get characteristic length
+	if (!user->new_input) chLen  = user->Characteristic.Length;
+	else                  chLen  = actx->jr->scal.length;
+
 	// non-dimensionalization
-	Het_L   = Het_L  /user->Characteristic.Length;
-	Het_W   = Het_W  /user->Characteristic.Length;
-	Het_A   = Het_A  /user->Characteristic.Length;
-	Het_Off = Het_Off/user->Characteristic.Length;
+	Het_L   = Het_L  /chLen;
+	Het_W   = Het_W  /chLen;
+	Het_A   = Het_A  /chLen;
+	Het_Off = Het_Off/chLen;
 
 	// loop over local markers
 	for(imark = 0; imark < actx->nummark; imark++)
@@ -1062,11 +1126,20 @@ PetscErrorCode ADVMarkInitSlab(AdvCtx *actx, UserCtx *user)
 	PetscScalar lslab = 0.5;  // length of slab    L = 250 km
 	PetscScalar dslab = 0.5;  // depth of slab     L = 250 km
 	PetscScalar dair  = 0.08; // thickness air     L = 40 km
+	PetscScalar chLen_km;
 
 	PetscFunctionBegin;
 
 	// print info
 	PetscPrintf(PETSC_COMM_WORLD,"  SLAB DETACHMENT SETUP \n");
+
+	// get characteristic length in km
+	if (!user->new_input) chLen_km  = user->Characteristic.Length/1000;
+	else
+	{
+		if (actx->jr->scal.utype == _SI_) chLen_km  = actx->jr->scal.length/1000;
+		else                              chLen_km  = actx->jr->scal.length;
+	}
 
 	// non-dimensionalization
 	hslab = hslab*user->L;
@@ -1074,7 +1147,7 @@ PetscErrorCode ADVMarkInitSlab(AdvCtx *actx, UserCtx *user)
 	dslab = dslab*user->L;
 	dair  = dair *user->L;
 
-	PetscPrintf(PETSC_COMM_WORLD," Setup Parameters: W = [%g km] L = [%g km] H = [%g km] SlabDimensions = [%g km,%g km,%g km] DepthSlab = [%g km] ThicknessAir = [%g km] \n",user->W*user->Characteristic.Length/1000,user->L*user->Characteristic.Length/1000,user->H*user->Characteristic.Length/1000, hslab*user->Characteristic.Length/1000,lslab*user->Characteristic.Length/1000,dslab*user->Characteristic.Length/1000,dslab*user->Characteristic.Length/1000,dair*user->Characteristic.Length/1000);
+	PetscPrintf(PETSC_COMM_WORLD," Setup Parameters: W = [%g km] L = [%g km] H = [%g km] SlabDimensions = [%g km,%g km,%g km] DepthSlab = [%g km] ThicknessAir = [%g km] \n",user->W*chLen_km,user->L*chLen_km,user->H*chLen_km, hslab*chLen_km,lslab*chLen_km,dslab*chLen_km,dslab*chLen_km,dair*chLen_km);
 
 	// loop over local markers
 	for(imark = 0; imark < actx->nummark; imark++)
@@ -1270,17 +1343,10 @@ PetscErrorCode ADVMarkInitFilePolygons(AdvCtx *actx, UserCtx *user)
 	// get marker context
 	fs = actx->fs;
 	
-	// set characteristic length and temperature
-	if(user->DimensionalUnits)
-	{	chLen  = user->Characteristic.Length;
-//		chTemp = user->Characteristic.Temperature;
-	}
-	else
-	{	chLen  = 1.0;
-//		chTemp = 1.0;
-	}
+	// set characteristic length (&temperature)
+	if (!user->new_input) chLen  = user->Characteristic.Length;
+	else                  chLen  = actx->jr->scal.length;
 
-	
 	// --- initialize markers ---
 	
 	// marker counter

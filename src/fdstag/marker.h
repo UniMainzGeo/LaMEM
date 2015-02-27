@@ -36,6 +36,9 @@ PetscErrorCode ADVMarkSave(AdvCtx *actx, UserCtx *user);
 // check phase IDs of all the markers
 PetscErrorCode ADVMarkCheckMarkers(AdvCtx *actx, UserCtx *user);
 
+// save processor partitioning of the global domain to file
+PetscErrorCode FDSTAGProcPartitioning(FDSTAG *fs, UserCtx *user, Scaling *scal);
+
 //---------------------------------------------------------------------------
 
 // Specific initialization routines

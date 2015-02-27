@@ -225,9 +225,6 @@ PetscErrorCode FDSTAGGetPointRanks(FDSTAG *fs, PetscScalar *X, PetscInt *lrank, 
 // compute maximum aspect ratio in the grid
 PetscErrorCode FDSTAGGetAspectRatio(FDSTAG *fs, PetscScalar *maxAspRat);
 
-// save processor partitioning of the global domain to file
-PetscErrorCode FDSTAGProcPartitioning(FDSTAG *fs, UserCtx *user);
-
 // print & check essential grid details
 PetscErrorCode FDSTAGView(FDSTAG *fs);
 

@@ -1118,62 +1118,6 @@ PetscErrorCode FDSTAGGetAspectRatio(FDSTAG *fs, PetscScalar *maxAspRat)
 }
 //---------------------------------------------------------------------------
 #undef __FUNCT__
-#define __FUNCT__ "FDSTAGProcPartitioning"
-PetscErrorCode FDSTAGProcPartitioning(FDSTAG *fs, UserCtx *user)
-{
-	int         fid;
-	char        *fname;
-	PetscScalar *xc, *yc, *zc, chLen;
-
-	PetscErrorCode ierr;
-	PetscFunctionBegin;
-
-	PetscPrintf(PETSC_COMM_WORLD,"# Save processor partitioning \n");
-
-	// gather global coord
-	ierr = Discret1DGatherCoord(&fs->dsx, &xc); CHKERRQ(ierr);
-	ierr = Discret1DGatherCoord(&fs->dsy, &yc); CHKERRQ(ierr);
-	ierr = Discret1DGatherCoord(&fs->dsz, &zc); CHKERRQ(ierr);
-
-	// get characteristic length
-	// WARNING! switch scaling
-	chLen = user->Characteristic.Length;
-
-	if(ISRankZero(PETSC_COMM_WORLD))
-	{
-		// save file
-		asprintf(&fname, "ProcessorPartitioning_%lldcpu_%lld.%lld.%lld.bin",
-			(LLD)(fs->dsx.nproc*fs->dsy.nproc*fs->dsz.nproc),
-			(LLD)fs->dsx.nproc, (LLD)fs->dsy.nproc, (LLD)fs->dsz.nproc);
-
-		PetscBinaryOpen(fname, FILE_MODE_WRITE, &fid);
-
-		PetscBinaryWrite(fid, &fs->dsx.nproc, 1,               PETSC_INT,    PETSC_FALSE);
-		PetscBinaryWrite(fid, &fs->dsy.nproc, 1,               PETSC_INT,    PETSC_FALSE);
-		PetscBinaryWrite(fid, &fs->dsz.nproc, 1,               PETSC_INT,    PETSC_FALSE);
-		PetscBinaryWrite(fid, &fs->dsx.tnods, 1,               PETSC_INT,    PETSC_FALSE);
-		PetscBinaryWrite(fid, &fs->dsy.tnods, 1,               PETSC_INT,    PETSC_FALSE);
-		PetscBinaryWrite(fid, &fs->dsz.tnods, 1,               PETSC_INT,    PETSC_FALSE);
-		PetscBinaryWrite(fid, fs->dsx.starts, fs->dsx.nproc+1, PETSC_INT,    PETSC_FALSE);
-		PetscBinaryWrite(fid, fs->dsy.starts, fs->dsy.nproc+1, PETSC_INT,    PETSC_FALSE);
-		PetscBinaryWrite(fid, fs->dsz.starts, fs->dsz.nproc+1, PETSC_INT,    PETSC_FALSE);
-		PetscBinaryWrite(fid, &chLen,         1,               PETSC_SCALAR, PETSC_FALSE);
-		PetscBinaryWrite(fid, xc,             fs->dsx.tnods,   PETSC_SCALAR, PETSC_FALSE);
-		PetscBinaryWrite(fid, yc,             fs->dsy.tnods,   PETSC_SCALAR, PETSC_FALSE);
-		PetscBinaryWrite(fid, zc,             fs->dsz.tnods,   PETSC_SCALAR, PETSC_FALSE);
-
-		PetscBinaryClose(fid);
-		free(fname);
-
-		ierr = PetscFree(xc); CHKERRQ(ierr);
-		ierr = PetscFree(yc); CHKERRQ(ierr);
-		ierr = PetscFree(zc); CHKERRQ(ierr);
-	}
-
-	PetscFunctionReturn(0);
-}
-//---------------------------------------------------------------------------
-#undef __FUNCT__
 #define __FUNCT__ "FDSTAGView"
 PetscErrorCode FDSTAGView(FDSTAG *fs)
 {
