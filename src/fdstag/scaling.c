@@ -117,6 +117,7 @@ PetscErrorCode ScalingCreate(
 		scal->velocity            = 1.0;   sprintf(scal->lbl_velocity,         "[ ]");
 		scal->stress              = 1.0;   sprintf(scal->lbl_stress,           "[ ]");
 		scal->strain_rate         = 1.0;   sprintf(scal->lbl_strain_rate,      "[ ]");
+		scal->acceleration        = 1.0;
 		scal->gravity_strength    = 1.0;
 		scal->energy              = 1.0;
 		scal->power               = 1.0;
@@ -163,6 +164,7 @@ PetscErrorCode ScalingCreate(
 		scal->velocity            = length/time;              sprintf(scal->lbl_velocity,         "[m/s]");
 		scal->stress              = stress;                   sprintf(scal->lbl_stress ,          "[Pa]");
 		scal->strain_rate         = 1.0/time;                 sprintf(scal->lbl_strain_rate,      "[1/s]");
+		scal->acceleration        = length/time/time; // m/s2
 		scal->gravity_strength    = force/mass;
 		scal->energy              = energy;
 		scal->power               = power;
@@ -218,6 +220,7 @@ PetscErrorCode ScalingCreate(
 		scal->velocity            = length/time/cm_yr;        sprintf(scal->lbl_velocity,         "[cm/yr]"); // @
 		scal->stress              = stress/MPa;               sprintf(scal->lbl_stress ,          "[MPa]");   // @
 		scal->strain_rate         = 1.0/time;                 sprintf(scal->lbl_strain_rate,      "[1/s]");
+		scal->acceleration        = length/time/time; // m/s2
 		scal->gravity_strength    = force/mass;
 		scal->energy              = energy;
 		scal->power               = power;
@@ -328,7 +331,6 @@ void ScalingInput(Scaling *scal, UserCtx *user)
 {
 	PetscScalar length, velocity, strainrate;
 	PetscScalar time, temperature, viscosity;
-	PetscScalar angle;
 	PetscInt    i;
 
 	// define inverse characteristic values - for optimization
@@ -338,7 +340,6 @@ void ScalingInput(Scaling *scal, UserCtx *user)
 	time            = 1/scal->time;
 	temperature     = 1/scal->temperature;
 	viscosity       = 1/scal->viscosity;
-	angle           = 1/scal->angle;
 
 	// domain
 	user->W               = user->W       *length;
@@ -368,7 +369,7 @@ void ScalingInput(Scaling *scal, UserCtx *user)
 	user->Temp_bottom   = user->Temp_bottom*temperature;
 
 	// gravity
-	user->Gravity       = user->Gravity*length*scal->time*scal->time;
+	user->Gravity       = user->Gravity/scal->acceleration;
 
 	// optimization
 	user->LowerViscosityCutoff = user->LowerViscosityCutoff*viscosity;
@@ -384,7 +385,7 @@ void ScalingInput(Scaling *scal, UserCtx *user)
 	user->Pushing.z_center_block = user->Pushing.z_center_block*length;
 	for (i = 0; i < user->Pushing.num_changes; i++){
 		user->Pushing.V_push[i] = user->Pushing.V_push[i]*velocity;
-		user->Pushing.omega[i]  = user->Pushing.omega[i] *angle*time; //[radians]
+		user->Pushing.omega[i]  = user->Pushing.omega[i]/scal->angular_velocity;
 	}
 	for (i=0;i<user->Pushing.num_changes+1; i++){
 		user->Pushing.time[i]   = user->Pushing.time[i]*time;

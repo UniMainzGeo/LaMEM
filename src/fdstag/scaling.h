@@ -62,6 +62,7 @@ typedef struct
 
 	// secondary units
 	PetscScalar velocity;          // length / time
+	PetscScalar acceleration;      // length / time / time
 	PetscScalar stress;            // force / area
 	PetscScalar strain_rate;       // 1 / time
 	PetscScalar gravity_strength;  // force / mass

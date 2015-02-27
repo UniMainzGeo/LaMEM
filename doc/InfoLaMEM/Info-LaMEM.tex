@@ -570,7 +570,7 @@ If \texttt{DimensionalUnits = 1}, the following parameters (characteristic value
 \end{tabular}\\
 \\
 %%% Scaling table 2
-\begin{wraptable}[11]{r}{8cm}
+\begin{wraptable}[16]{r}{8cm}
 %\begin{center}
 \footnotesize
 {\renewcommand{\arraystretch}{1.3}
@@ -587,6 +587,7 @@ temperature&-&K&C\\
 force&-&N&N\\
 angle&-&deg&deg\\
 velocity&-&m/s&cm/yr\\
+acceleration&-&m/s$^2$&m/s$^2$\\
 stress&-&Pa&MPa\\
 strain rate&-&1/s&1/s\\
 heat flux&-&W/m$^2$&mW/m$^2$\\
@@ -615,7 +616,11 @@ pressure sensitivity&\multicolumn{3}{l |}{= temperature/stress}\\
 
 Characteristic values are dependent on model setup (check how they are set in the examples in \texttt{/LaMEM/input\_models/}). They are needed to perform the non-dimensionalization (scaling) of the model. For this, all input parameters, characteristic values and material parameters should have consistent units!\\
 
-\reftab{tab:scaling2} shows in which units parameters should be given. Note: degrees for angles are the preferred units, also for \texttt{units = si}. 
+\reftab{tab:scaling2} shows in which units parameters should be given. \\
+\\
+Note: \\
+1. Degrees for angles are the preferred units, also for \texttt{units = si}. \\
+2. Acceleration should be given in units of m/s$^2$ when dimensional (i.e. g = 10 m/s$^2$).
 
 % ---------------------------------- SOFTENING LAWS  ---------------------------------- %
 \newpage
