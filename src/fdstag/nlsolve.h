@@ -45,8 +45,9 @@ http://www.mcs.anl.gov/petsc/petsc-current/docs/manualpages/Mat/MatCreateMFFD.ht
 typedef struct {
 	PetscScalar rnorm_init;
 	PetscInt    winwidth;
-	PetscScalar rnorm_win[_max_win_size_];
-	PetscScalar rnormdiff_win[_max_win_size_];
+	PetscScalar rnorms[2];
+	PetscScalar rnormdiffs[_max_win_size_];
+	PetscScalar diffnorm;
 	PetscScalar	epsfrac,eps;
 } WinStopCtx;
 //---------------------------------------------------------------------------
@@ -116,6 +117,6 @@ PetscErrorCode SNESActEW(SNES snes);
 
 // performs tests for residual norms
 PetscErrorCode KSPWinStopTest(KSP ksp, PetscInt n, PetscScalar rnorm, KSPConvergedReason *reason, void *mctx);
-
+PetscErrorCode KSPWinStopMonitor(KSP ksp,PetscInt thisit,PetscScalar thisnorm, void *mctx);
 //---------------------------------------------------------------------------
 #endif
