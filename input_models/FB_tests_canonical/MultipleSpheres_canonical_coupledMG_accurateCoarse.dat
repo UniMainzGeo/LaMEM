@@ -60,7 +60,7 @@ Temp_bottom					=   1 				# Temperature @ bottom; side BC's are flux-free
 	-snes_monitor
 	-snes_atol 1e-12
 	-js_ksp_rtol 1e-8
-	-js_ksp_atol 1e-8
+	-js_ksp_atol 1e-3
 	-snes_max_it 25
 	-snes_max_funcs 50000
 	-snes_type 		ksponly
@@ -71,7 +71,9 @@ Temp_bottom					=   1 				# Temperature @ bottom; side BC's are flux-free
 	-js_ksp_min_it 2
 	-js_ksp_converged_reason
  	-js_ksp_monitor_true_residual
-	-js_ksp_rtol 1e-5
+	-js_ksp_rtol 1e-20
+	-js_ksp_atol 1e-5
+	
 
 # Stokes Preconditioner
 	-pstokes mg
@@ -150,95 +152,26 @@ NumPartZ				=	2	# Particles/Cell in z-direction
 
 # Properties that are defined over the whole domain:
 Gravity					=  -9.8;									# [m/s2] - gravitational acceleration 
-PlasticityModel			=	0;									#  not implemented yet
-Xi						=	0;									# [ ] - Shear heating factor - not implemented yet
 
 # Define phase transitions for particles
-num_phase_transitions			=	0				# The number of phase transitions present
 LowerViscosityCutoff			=	1e-5
 UpperViscosityCutoff			=	1e5
 
 # Define material properties for all phases -------------------------------------------------
+new_input = 1
 
-	# Define properties of matrix -----------------
+	# MATRIX --------------------------------
 	<MaterialStart>
-		phase_id 			=	0
-		attribute 			= 	VISCOSITY
-		type 				= 	constant
-#		type 				= 	power_law
-		eta0       			= 	0.001	
-		N_exp       		= 	3
-		e0 					=	0.1	
-	<MaterialEnd>
-	<MaterialStart>
-		phase_id 			= 	0
-		attribute 			= 	DENSITY
-		type 				= 	temperature_dependent
-		rho0        		= 	1
-		alpha 				=	0
-	<MaterialEnd>
-	<MaterialStart>
-		phase_id			= 	0
-		attribute 			= 	ELASTICITY
-		type 				= 	constant
-		shear        		= 	5e10
-	<MaterialEnd>
-	<MaterialStart>
-		phase_id			= 	0
-		attribute 			= 	ENERGY
-		type 				= 	constant
-		ThermalConductivity	= 	3
-		HeatCapacity		=	1050
-		RadioactiveHeat		=	0
-		ShearHeating		=	0
-	<MaterialEnd>
-	<MaterialStart>
-		phase_id			= 	0
-		attribute 			= 	PLASTICITY
-		type 				= 	constant
-		Cohesion        	= 	20e60
-		FrictionAngle		= 	30
-	<MaterialEnd>
-
-
-	# Define properties of block -------------------
-	<MaterialStart>
-		phase_id 			=	1
-		attribute 			= 	VISCOSITY
-		type 				= 	constant
-#		type 				= 	power_law
-		eta0       			= 	1
-		N_exp       		= 	3
-		e0 					=	0.1	
-	<MaterialEnd>
-	<MaterialStart>
-		phase_id			= 	1
-		attribute 			= 	DENSITY
-		type 				= 	temperature_dependent
-		rho0        		= 	1.2
-		alpha 				=	0
-	<MaterialEnd>
-	<MaterialStart>
-		phase_id			= 	1
-		attribute 			= 	ELASTICITY
-		type 				= 	constant
-		shear        		= 	5e10
-	<MaterialEnd>
-	<MaterialStart>
-		phase_id			= 	1
-		attribute 			= 	ENERGY
-		type 				= 	constant
-		ThermalConductivity	= 	3
-		HeatCapacity		=	1050
-		RadioactiveHeat		=	0
-		ShearHeating		=	0
-	<MaterialEnd>
-	<MaterialStart>
-		phase_id			= 	1
-		attribute 			= 	PLASTICITY
-		type 				= 	constant
-		Cohesion        	= 	20e60
-		FrictionAngle		= 	30
+		ID 			=	0		# phase id  [-]
+		rho0        = 	1		# density 
+		eta			= 	1e-5  	# viscosity
 	<MaterialEnd>
 	
+	# BLOCK --------------------------------
+	<MaterialStart>
+		ID 			=	1		# phase id  [-]
+		rho0        = 	1.2		# density 
+		eta			= 	1		# viscosity
+	<MaterialEnd>
+
 # End of defining material properties for all phases ----------------------------------------
