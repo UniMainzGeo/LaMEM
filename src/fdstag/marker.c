@@ -293,7 +293,7 @@ PetscErrorCode ADVMarkCheckMarkers(AdvCtx *actx, UserCtx *user)
 	fs = actx->fs;
 
 	// get maximum Phase
-	maxid = user->num_phases - 1;
+	maxid = actx->jr->numPhases - 1;
 
 	// get local mesh sizes
 	GET_DOMAIN_BOUNDS(xs, xe, fs->dsx)
@@ -686,12 +686,12 @@ PetscErrorCode ADVMarkInitFileRedundant(AdvCtx *actx, UserCtx *user)
 	}
 
 	// error checking
-	if((maxphase + 1) != user->num_phases)
+	if((maxphase + 1) != actx->jr->numPhases)
 	{
-		SETERRQ2(PETSC_COMM_WORLD,PETSC_ERR_USER," No. of detected phases %lld does not correspond to the no. of phases given in parameters file %lld", (LLD)maxphase, (LLD)user->num_phases);
+		SETERRQ2(PETSC_COMM_WORLD,PETSC_ERR_USER," No. of detected phases %lld does not correspond to the no. of phases given in parameters file %lld", (LLD)maxphase, (LLD)actx->jr->numPhases);
 	}
 
-	PetscPrintf(PETSC_COMM_WORLD," Statistics markers: MaxPhase = %lld, MaxTemp = %g, NumberPhases = %lld \n", (LLD)maxphase, maxtemp, (LLD)user->num_phases);
+	PetscPrintf(PETSC_COMM_WORLD," Statistics markers: MaxPhase = %lld, MaxTemp = %g, NumberPhases = %lld \n", (LLD)maxphase, maxtemp, (LLD)actx->jr->numPhases);
 
 	// free specific allocated memory
 	ierr = PetscFree(xcoor); CHKERRQ(ierr);

@@ -52,6 +52,9 @@ PetscErrorCode FDSTAGInitCode(JacRes *jr, UserCtx *user)
 
 		// read material properties from file
 		ierr = ReadMaterialProperties(user); CHKERRQ(ierr);
+
+		// initialize jr numPhases
+		jr->numPhases = user->num_phases;;
 	}
 
 	// read command line options
