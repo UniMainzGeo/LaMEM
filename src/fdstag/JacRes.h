@@ -116,6 +116,8 @@ PetscErrorCode JacResGetCourantStep(JacRes *jr);
 
 PetscErrorCode JacResInitTemp(JacRes *jr);
 
+PetscErrorCode JacResAvgVisc(JacRes *jr);
+
 //---------------------------------------------------------------------------
 
 // get maximum inverse time step on local domain

@@ -183,8 +183,7 @@ PetscErrorCode PCStokesBFCreate(PCStokes pc)
 	// create & set velocity multigrid preconditioner
 	if(bf->vtype == _VEL_MG_)
 	{
-		ierr = MGCreate(&bf->vmg, jr->fs, jr->bc); CHKERRQ(ierr);
-
+		ierr = MGCreate(&bf->vmg, jr);           CHKERRQ(ierr);
 		ierr = KSPGetPC(bf->vksp, &vpc);         CHKERRQ(ierr);
 		ierr = PCSetType(vpc, PCSHELL);          CHKERRQ(ierr);
 		ierr = PCShellSetContext(vpc, &bf->vmg); CHKERRQ(ierr);
@@ -350,7 +349,7 @@ PetscErrorCode PCStokesMGCreate(PCStokes pc)
 	jr = pc->pm->jr;
 
 	// create context
-	ierr = MGCreate(&mg->mg, jr->fs, jr->bc); CHKERRQ(ierr);
+	ierr = MGCreate(&mg->mg, jr); CHKERRQ(ierr);
 
 	PetscFunctionReturn(0);
 }

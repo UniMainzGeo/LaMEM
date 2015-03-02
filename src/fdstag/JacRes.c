@@ -1646,7 +1646,94 @@ PetscErrorCode JacResInitTemp(JacRes *jr)
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
+#undef __FUNCT__
+#define __FUNCT__ "JacResAvgVisc"
+PetscErrorCode JacResAvgVisc(JacRes *jr)
+{
+	FDSTAG      *fs;
+	PetscScalar ***buff;
+	Vec         lbcen;
+	PetscScalar cf, sum, n;
+	PetscInt    i, j, k, nx, ny, nz, sx, sy, sz, iter;
 
+	PetscErrorCode ierr;
+	PetscFunctionBegin;
+
+	// access grid context
+	fs = jr->fs;
+
+	// get cell-center buffer (reuse from JacRes object)
+	lbcen = jr->ldxx;
+
+	// initialize buffer with default value
+	ierr = VecSet(lbcen, -1.0); CHKERRQ(ierr);
+
+	// store viscosities of local cells
+	iter = 0;
+	ierr = DMDAGetCorners(fs->DA_CEN, &sx, &sy, &sz, &nx, &ny, &nz); CHKERRQ(ierr);
+	ierr = DMDAVecGetArray(fs->DA_CEN, lbcen, &buff); CHKERRQ(ierr);
+
+	START_STD_LOOP
+	{
+		buff[k][j][i] = jr->svCell[iter++].svDev.eta;
+	}
+	END_STD_LOOP
+
+	ierr = DMDAVecRestoreArray(fs->DA_CEN, lbcen, &buff); CHKERRQ(ierr);
+
+	// exchange ghost points
+	LOCAL_TO_LOCAL(fs->DA_CEN, lbcen)
+
+	// compute & store average viscosities
+	iter = 0;
+	ierr = DMDAVecGetArray(fs->DA_CEN, lbcen, &buff); CHKERRQ(ierr);
+
+	START_STD_LOOP
+	{
+		n   = 1.0;
+
+// geometric
+		sum = log(buff[k][j][i]);
+		cf = buff[k  ][j  ][i+1]; if(cf != -1.0) { sum += log(cf); n += 1.0; }
+		cf = buff[k  ][j  ][i-1]; if(cf != -1.0) { sum += log(cf); n += 1.0; }
+		cf = buff[k  ][j+1][i  ]; if(cf != -1.0) { sum += log(cf); n += 1.0; }
+		cf = buff[k  ][j-1][i  ]; if(cf != -1.0) { sum += log(cf); n += 1.0; }
+		cf = buff[k+1][j  ][i  ]; if(cf != -1.0) { sum += log(cf); n += 1.0; }
+		cf = buff[k-1][j  ][i  ]; if(cf != -1.0) { sum += log(cf); n += 1.0; }
+		PetscScalar avrg = exp(sum/n);
+/*
+// harmonic
+		sum = 1.0/buff[k][j][i];
+		cf = buff[k  ][j  ][i+1]; if(cf != -1.0) { sum += 1.0/cf; n += 1.0; }
+		cf = buff[k  ][j  ][i-1]; if(cf != -1.0) { sum += 1.0/cf; n += 1.0; }
+		cf = buff[k  ][j+1][i  ]; if(cf != -1.0) { sum += 1.0/cf; n += 1.0; }
+		cf = buff[k  ][j-1][i  ]; if(cf != -1.0) { sum += 1.0/cf; n += 1.0; }
+		cf = buff[k+1][j  ][i  ]; if(cf != -1.0) { sum += 1.0/cf; n += 1.0; }
+		cf = buff[k-1][j  ][i  ]; if(cf != -1.0) { sum += 1.0/cf; n += 1.0; }
+		PetscScalar avrg = 8.0*(1.0/sum);
+
+		PetscScalar init = buff[k][j][i];
+
+		if(init < avrg)
+		{
+			jr->svCell[iter++].etaAvg = init;
+		}
+		else
+		{
+			jr->svCell[iter++].etaAvg = 0.1*avrg;
+		}
+*/
+		jr->svCell[iter++].etaAvg = buff[k][j][i];
+
+
+	}
+	END_STD_LOOP
+
+	ierr = DMDAVecRestoreArray(fs->DA_CEN, lbcen, &buff); CHKERRQ(ierr);
+
+	PetscFunctionReturn(0);
+}
+//---------------------------------------------------------------------------
 /*
 #undef __FUNCT__
 #define __FUNCT__ "FDSTAGScatterSol"

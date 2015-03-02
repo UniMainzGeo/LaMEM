@@ -118,6 +118,9 @@ PetscErrorCode MGLevelCreate(MGLevel *lvl, MGLevel *fine, FDSTAG *fs, BCCtx *bc)
 		ierr = MatAIJCreate(lnfine, ln,     8,  NULL, 7, NULL, &lvl->P); CHKERRQ(ierr);
 	}
 
+	// create inverse viscosity vector
+	ierr = DMCreateGlobalVector(lvl->DA_CEN, &lvl->ieta); CHKERRQ(ierr);
+
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
@@ -142,6 +145,103 @@ PetscErrorCode MGLevelDestroy(MGLevel *lvl)
 		ierr = MatDestroy(&lvl->R);        CHKERRQ(ierr);
 		ierr = MatDestroy(&lvl->P);        CHKERRQ(ierr);
 	}
+
+	ierr = VecDestroy(&lvl->ieta);         CHKERRQ(ierr);
+
+	PetscFunctionReturn(0);
+}
+//---------------------------------------------------------------------------
+#undef __FUNCT__
+#define __FUNCT__ "MGLevelInitInvEta"
+PetscErrorCode MGLevelInitInvEta(MGLevel *lvl, JacRes *jr)
+{
+	// initialize inverse viscosity on fine grid
+
+	PetscScalar ***ieta;
+	PetscInt    i, j, k, nx, ny, nz, sx, sy, sz, iter;
+
+	PetscErrorCode ierr;
+	PetscFunctionBegin;
+
+	// only for coupled multigrid
+	if(lvl->dof.idxmod != IDXCOUPLED) PetscFunctionReturn(0);
+
+	// access inverse viscosity vector
+	ierr = DMDAVecGetArray(lvl->DA_CEN, lvl->ieta, &ieta); CHKERRQ(ierr);
+
+	//----------
+	// P-points
+	//----------
+	iter = 0;
+	ierr = DMDAGetCorners (lvl->DA_CEN, &sx, &sy, &sz, &nx, &ny, &nz); CHKERRQ(ierr);
+
+	START_STD_LOOP
+	{
+//		ieta[k][j][i] = 1.0/jr->svCell[iter++].svDev.eta;
+		ieta[k][j][i] =     jr->svCell[iter++].svDev.eta;
+
+	}
+	END_STD_LOOP
+
+	// restore access
+	ierr = DMDAVecRestoreArray(lvl->DA_CEN, lvl->ieta, &ieta); CHKERRQ(ierr);
+
+	PetscFunctionReturn(0);
+}
+//---------------------------------------------------------------------------
+#undef __FUNCT__
+#define __FUNCT__ "MGLevelRestrictInvEta"
+PetscErrorCode MGLevelRestrictInvEta(MGLevel *lvl, MGLevel *fine)
+{
+	// restrict inverse viscosity from fine to coarse level
+
+	PetscInt    I, J, K;
+	PetscInt    i, j, k, nx, ny, nz, sx, sy, sz;
+	PetscScalar sum, ***cieta, ***fieta;
+
+	PetscErrorCode ierr;
+	PetscFunctionBegin;
+
+	// only for coupled multigrid
+	if(lvl->dof.idxmod != IDXCOUPLED) PetscFunctionReturn(0);
+
+	// access inverse viscosity vector in coarse grid
+	ierr = DMDAVecGetArray(lvl->DA_CEN,  lvl->ieta,  &cieta); CHKERRQ(ierr);
+
+	// access inverse viscosity vector in fine grid
+	ierr = DMDAVecGetArray(fine->DA_CEN, fine->ieta, &fieta); CHKERRQ(ierr);
+
+	//-----------------------
+	// P-points (coarse grid)
+	//-----------------------
+	ierr = DMDAGetCorners(lvl->DA_CEN, &sx, &sy, &sz, &nx, &ny, &nz); CHKERRQ(ierr);
+
+	START_STD_LOOP
+	{
+		// get fine grid indices
+		I = 2*i;
+		J = 2*j;
+		K = 2*k;
+
+		// compute average inverse viscosity
+		sum = fieta[K  ][J  ][I  ]
+		+     fieta[K  ][J  ][I+1]
+		+     fieta[K  ][J+1][I  ]
+		+     fieta[K  ][J+1][I+1]
+		+     fieta[K+1][J  ][I  ]
+		+     fieta[K+1][J  ][I+1]
+		+     fieta[K+1][J+1][I  ]
+		+     fieta[K+1][J+1][I+1];
+
+		cieta[k][j][i] = sum/8.0;
+	}
+	END_STD_LOOP
+
+	// restore access
+	ierr = DMDAVecRestoreArray(lvl->DA_CEN,  lvl->ieta,  &cieta); CHKERRQ(ierr);
+
+	ierr = DMDAVecRestoreArray(fine->DA_CEN, fine->ieta, &fieta); CHKERRQ(ierr);
+
 
 	PetscFunctionReturn(0);
 }
@@ -612,6 +712,7 @@ PetscErrorCode MGLevelSetupProlong(MGLevel *lvl, MGLevel *fine)
 	PetscScalar v[8], bc[8], vsf[8], vsr[4], *vs;
 	PetscInt    row, I, J, K, I1, J1, K1;
 	PetscInt    i, j, k, nx, ny, nz, sx, sy, sz;
+	PetscScalar ***cieta, ***fieta;
 	PetscScalar ***ivx,   ***ivy,   ***ivz,   ***ip;
 	PetscScalar ***fbcvx, ***fbcvy, ***fbcvz, ***fbcp;
 	PetscScalar ***cbcvx, ***cbcvy, ***cbcvz, ***cbcp;
@@ -641,6 +742,12 @@ PetscErrorCode MGLevelSetupProlong(MGLevel *lvl, MGLevel *fine)
 	ierr = DMDAVecGetArray(lvl->DA_Y,    lvl->bcvy,    &cbcvy); CHKERRQ(ierr);
 	ierr = DMDAVecGetArray(lvl->DA_Z,    lvl->bcvz,    &cbcvz); CHKERRQ(ierr);
 	ierr = DMDAVecGetArray(lvl->DA_CEN,  lvl->bcp,     &cbcp);  CHKERRQ(ierr);
+
+	// access inverse viscosity vector in coarse grid
+	ierr = DMDAVecGetArray(lvl->DA_CEN,  lvl->ieta,  &cieta); CHKERRQ(ierr);
+
+	// access inverse viscosity vector in fine grid
+	ierr = DMDAVecGetArray(fine->DA_CEN, fine->ieta, &fieta); CHKERRQ(ierr);
 
 	// get global index of the first row in the fine grid
 	if     (fine->dof.idxmod == IDXCOUPLED)   { row = fine->dof.st;  }
@@ -829,7 +936,7 @@ PetscErrorCode MGLevelSetupProlong(MGLevel *lvl, MGLevel *fine)
 	if(fine->dof.idxmod == IDXCOUPLED)
 	{
 		// set pressure interpolation stencil (direct injection)
-		vsr[0] = 1.0;
+//		vsr[0] = 1.0;
 
 		//---------------------
 		// P-points (fine grid)
@@ -842,6 +949,14 @@ PetscErrorCode MGLevelSetupProlong(MGLevel *lvl, MGLevel *fine)
 			I = i/2;
 			J = j/2;
 			K = k/2;
+
+//			vsr[0] = fieta[k][j][i]/cieta[K][J][I];
+
+//			vsr[0] = cieta[K][J][I]/fieta[k][j][i];
+
+			vsr[0] = 1.0;
+
+
 
 			idx[0] = (PetscInt)ip[K][J][I];
 			bc [0] =         cbcp[K][J][I];
@@ -874,6 +989,10 @@ PetscErrorCode MGLevelSetupProlong(MGLevel *lvl, MGLevel *fine)
 	ierr = DMDAVecRestoreArray(lvl->DA_Y,    lvl->bcvy,     &cbcvy); CHKERRQ(ierr);
 	ierr = DMDAVecRestoreArray(lvl->DA_Z,    lvl->bcvz,     &cbcvz); CHKERRQ(ierr);
 	ierr = DMDAVecRestoreArray(lvl->DA_CEN,  lvl->bcp,      &cbcp);  CHKERRQ(ierr);
+
+	ierr = DMDAVecRestoreArray(lvl->DA_CEN,  lvl->ieta,  &cieta); CHKERRQ(ierr);
+
+	ierr = DMDAVecRestoreArray(fine->DA_CEN, fine->ieta, &fieta); CHKERRQ(ierr);
 
 	// assemble prolongation matrix
 	ierr = MatAIJAssemble(P, 0, NULL, 0.0); CHKERRQ(ierr);
@@ -1359,7 +1478,7 @@ PetscErrorCode MGLevelAllocProlong(MGLevel *lvl, MGLevel *fine)
 //---------------------------------------------------------------------------
 #undef __FUNCT__
 #define __FUNCT__ "MGCreate"
-PetscErrorCode MGCreate(MG *mg, FDSTAG *fs, BCCtx *bc)
+PetscErrorCode MGCreate(MG *mg, JacRes *jr)
 {
 	KSP       ksp;
 	PetscInt  i, l;
@@ -1382,9 +1501,8 @@ PetscErrorCode MGCreate(MG *mg, FDSTAG *fs, BCCtx *bc)
 	// clear object
 	ierr = PetscMemzero(mg, sizeof(MG)); CHKERRQ(ierr);
 
-	// store fine grid contexts
-	mg->fs = fs;
-	mg->bc = bc;
+	// store finest grid context
+	mg->jr = jr;
 
 	// check multigrid mesh restrictions & get actual number of levels
 	ierr = MGGetNumLevels(mg); CHKERRQ(ierr);
@@ -1397,7 +1515,7 @@ PetscErrorCode MGCreate(MG *mg, FDSTAG *fs, BCCtx *bc)
 
 	for(i = 0; i < mg->nlvl; i++)
 	{
-		ierr = MGLevelCreate(&mg->lvls[i], fine, fs, bc); CHKERRQ(ierr);
+		ierr = MGLevelCreate(&mg->lvls[i], fine, jr->fs, jr->bc); CHKERRQ(ierr);
 
 		fine = &mg->lvls[i];
 	}
@@ -1415,6 +1533,16 @@ PetscErrorCode MGCreate(MG *mg, FDSTAG *fs, BCCtx *bc)
 	ierr = PCMGGetCoarseSolve(mg->pc, &ksp); CHKERRQ(ierr);
 	ierr = KSPSetOptionsPrefix(ksp, "crs_");  CHKERRQ(ierr);
 	ierr = KSPSetFromOptions(ksp);            CHKERRQ(ierr);
+
+	/*
+
+PetscErrorCode MatSetNearNullSpace(Mat mat,MatNullSpace nullsp)
+PetscErrorCode  MatNullSpaceCreate(MPI_Comm comm,PetscBool has_cnst,PetscInt n,const Vec vecs[],MatNullSpace *SP)
+PetscErrorCode  MatNullSpaceDestroy(MatNullSpace *sp)
+PetscErrorCode  VecNormalize(Vec x,PetscReal *val)
+
+	 */
+
 
 	// attach restriction/prolongation matrices to the preconditioner
 	for(i = 1, l = mg->nlvl-1; i < mg->nlvl; i++, l--)
@@ -1471,11 +1599,14 @@ PetscErrorCode MGSetup(MG *mg, Mat A)
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
 
+	ierr = MGLevelInitInvEta(mg->lvls, mg->jr); CHKERRQ(ierr);
+
 	for(i = 1; i < mg->nlvl; i++)
 	{
-		ierr = MGLevelRestrictBC   (&mg->lvls[i], &mg->lvls[i-1]); CHKERRQ(ierr);
-		ierr = MGLevelSetupRestrict(&mg->lvls[i], &mg->lvls[i-1]); CHKERRQ(ierr);
-		ierr = MGLevelSetupProlong (&mg->lvls[i], &mg->lvls[i-1]); CHKERRQ(ierr);
+		ierr = MGLevelRestrictBC    (&mg->lvls[i], &mg->lvls[i-1]); CHKERRQ(ierr);
+		ierr = MGLevelRestrictInvEta(&mg->lvls[i], &mg->lvls[i-1]); CHKERRQ(ierr);
+		ierr = MGLevelSetupRestrict (&mg->lvls[i], &mg->lvls[i-1]); CHKERRQ(ierr);
+		ierr = MGLevelSetupProlong  (&mg->lvls[i], &mg->lvls[i-1]); CHKERRQ(ierr);
 	}
 
 	// tell to recompute preconditioner
@@ -1569,7 +1700,7 @@ PetscErrorCode MGGetNumLevels(MG *mg)
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
 
-	fs = mg->fs;
+	fs = mg->jr->fs;
 
 	// check discretization in all directions
 	ierr = Discret1DCheckMG(&fs->dsx, "x", &nx); CHKERRQ(ierr);                ncors = nx;
