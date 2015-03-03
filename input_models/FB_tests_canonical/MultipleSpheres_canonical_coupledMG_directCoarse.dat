@@ -78,7 +78,7 @@ Temp_bottom					=   1 				# Temperature @ bottom; side BC's are flux-free
 	-gmg_pc_mg_log		# monitors time spend in multigrid if using -log_summary
 	
 	
-# RICHARDSON/JACOBI
+# RICHARDSON/JACOBI MG
 	-gmg_mg_levels_ksp_type richardson
 	-gmg_mg_levels_ksp_richardson_scale 0.5
 	-gmg_mg_levels_pc_type jacobi
@@ -86,9 +86,35 @@ Temp_bottom					=   1 				# Temperature @ bottom; side BC's are flux-free
 	
 
 # COARSE SOLVER
-   -crs_ksp_type preonly
-   -crs_pc_type lu
-   -crs_pc_factor_mat_solver_package mumps
+#   -crs_ksp_type preonly
+#   -crs_pc_type lu
+ #  -crs_pc_factor_mat_solver_package mumps
+   
+
+
+   #---- GAMG coarse grid solver
+   
+    -crs_ksp_type gmres
+    -crs_ksp_max_it 20
+   	-crs_pc_type gamg
+#	-crs_ksp_converged_reason
+	-crs_pc_gamg_verbose 3
+	-crs_pc_gamg_coarse_eq_limit 200 
+	-crs_pc_gamg_reuse_interpolation true 
+	-crs_pc_gamg_repartition true 
+	-crs_pc_gamg_type agg
+	-crs_pc_gamg_sym_graph true
+
+	-crs_ksp_rtol 1e-20
+#   	-crs_ksp_monitor
+#	-crs_ksp_convergence_test default 
+#	-crs_ksp_norm_type PRECONDITIONED
+#	-crs_ksp_convergence_test default 
+#	-crs_ksp_converged_reason
+   #----
+   
+	 
+   
    
 	# Fine-tune solver options here (add command-line Petsc Options)
 	-use_fdstag_canonical

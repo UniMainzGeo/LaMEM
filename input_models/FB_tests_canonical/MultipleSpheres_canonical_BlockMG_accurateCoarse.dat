@@ -94,33 +94,18 @@ Temp_bottom					=   1 				# Temperature @ bottom; side BC's are flux-free
 	
 	-gmg_mg_levels_ksp_type richardson
 	-gmg_mg_levels_ksp_richardson_scale 0.5
-	-gmg_mg_levels_ksp_max_it 4
+	-gmg_mg_levels_ksp_max_it 20
 	-gmg_mg_levels_pc_type jacobi
 	#-gmg_mg_levels_pc_type chebyshev
 	
 
-# COARSE SOLVER
-	-crs_ksp_type richardson
-	-crs_ksp_rtol 1e-5
-	-crs_ksp_max_it 20
-	
-	-crs_pc_type gamg
-	-crs_ksp_converged_reason
-	-crs_pc_gamg_verbose 3
-	
- 
-	 -crs_pc_gamg_coarse_eq_limit 200 
-	 -crs_pc_gamg_reuse_interpolation true 
-	 -crs_pc_gamg_repartition true 
-	 -crs_pc_gamg_type agg
-	 
 	
 	
 #	-crs_pc_type bjacobi
 #	-crs_sub_pc_type lu
-	-crs_ksp_monitor_true_residual 
-	-crs_ksp_convergence_test default 
-	-crs_ksp_norm_type PRECONDITIONED
+#	-crs_ksp_monitor_true_residual 
+#	-crs_ksp_convergence_test default 
+#	-crs_ksp_norm_type PRECONDITIONED
 #	-crs_ksp_convergence_test default 
 
 
@@ -130,6 +115,27 @@ Temp_bottom					=   1 				# Temperature @ bottom; side BC's are flux-free
 #	-crs_pc_factor_mat_solver_package mumps
 	
 
+   #---- GAMG coarse grid solver
+   
+    -crs_ksp_type gmres
+    -crs_ksp_max_it 20
+   	-crs_pc_type gamg
+	-crs_ksp_converged_reason
+	-crs_pc_gamg_verbose 3
+	-crs_pc_gamg_coarse_eq_limit 200 
+	-crs_pc_gamg_reuse_interpolation true 
+	-crs_pc_gamg_repartition true 
+	-crs_pc_gamg_type agg
+	-crs_pc_gamg_sym_graph true
+
+	-crs_ksp_rtol 1e-20
+#   	-crs_ksp_monitor
+#	-crs_ksp_convergence_test default 
+#	-crs_ksp_norm_type PRECONDITIONED
+#	-crs_ksp_convergence_test default 
+#	-crs_ksp_converged_reason
+   #----
+   
 
 	# Fine-tune solver options here (add command-line Petsc Options)
 	-use_fdstag_canonical
@@ -180,7 +186,7 @@ new_input = 1
 	<MaterialStart>
 		ID 			=	0		# phase id  [-]
 		rho0        = 	1		# density 
-		eta			= 	0.001	# viscosity
+		eta			= 	1e-5	# viscosity
 	<MaterialEnd>
 	
 	# BLOCK --------------------------------
