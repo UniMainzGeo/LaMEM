@@ -4,6 +4,9 @@
 #ifndef __multigrid_h__
 #define __multigrid_h__
 //---------------------------------------------------------------------------
+// FDSTAG near null space size
+#define _max_nullsp_sz_ 4
+//---------------------------------------------------------------------------
 
 // Galerkin multigrid level data structure
 
@@ -80,11 +83,17 @@ typedef struct
 	PC        pc;   // internal preconditioner context
 	JacRes   *jr;   // finest level context
 
+	PetscInt     nullsp_sz;
+	Vec          crs_vecs[_max_nullsp_sz_]; // near nullspace vectors
+	MatNullSpace crs_nullsp;                // coarse grid near null space
+
 } MG;
 
 //---------------------------------------------------------------------------
 
 PetscErrorCode MGCreate(MG *mg, JacRes *jr);
+
+PetscErrorCode MGGetCoarseNearNullSpace(MG *mg);
 
 PetscErrorCode MGDestroy(MG *mg);
 

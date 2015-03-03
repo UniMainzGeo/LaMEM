@@ -129,7 +129,8 @@ typedef struct
 	idxtype  idxmod;            // indexing mode
 	DM       DA_CEN;            // central points
 	DM       DA_X, DA_Y, DA_Z;  // face points
-	PetscInt lnv, lnp, ln;      // local number of DOF
+	PetscInt lnvx, lnvy, lnvz;  // local number of DOF
+	PetscInt lnv, lnp, ln;      // ...
 	PetscInt stv, stp, st;      // starting indices (stv & stp - decoupled layout)
 	Vec      ivx, ivy, ivz, ip; // index vectors (ghosted)
 
