@@ -1479,7 +1479,6 @@ PetscErrorCode MGLevelAllocProlong(MGLevel *lvl, MGLevel *fine)
 #define __FUNCT__ "MGCreate"
 PetscErrorCode MGCreate(MG *mg, JacRes *jr)
 {
-	KSP       ksp;
 	PetscInt  i, l;
 	MGLevel   *fine;
 	char      pc_type[MAX_NAME_LEN];
@@ -1528,14 +1527,6 @@ PetscErrorCode MGCreate(MG *mg, JacRes *jr)
 	ierr = PCMGSetGalerkin(mg->pc, PETSC_TRUE);       CHKERRQ(ierr);
 	ierr = PCSetFromOptions(mg->pc);                  CHKERRQ(ierr);
 
-	// setup coarse solver
-	ierr = PCMGGetCoarseSolve(mg->pc, &ksp);  CHKERRQ(ierr);
-	ierr = KSPSetOptionsPrefix(ksp, "crs_");  CHKERRQ(ierr);
-	ierr = KSPSetFromOptions(ksp);            CHKERRQ(ierr);
-
-	// get coarse grid near null space
-	ierr = MGGetCoarseNearNullSpace(mg); CHKERRQ(ierr);
-
 	// attach restriction/prolongation matrices to the preconditioner
 	for(i = 1, l = mg->nlvl-1; i < mg->nlvl; i++, l--)
 	{
@@ -1543,60 +1534,8 @@ PetscErrorCode MGCreate(MG *mg, JacRes *jr)
 		ierr = PCMGSetInterpolation(mg->pc, l, mg->lvls[i].P); CHKERRQ(ierr);
 	}
 
-	PetscFunctionReturn(0);
-}
-//---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "MGGetCoarseNearNullSpace"
-PetscErrorCode MGGetCoarseNearNullSpace(MG *mg)
-{
-//	Mat         mat;
-	MGLevel     *lvl;
-	DOFIndex    *dof;
-	PetscScalar *v;
-	PetscInt    i, j, sz, ln, iter, lbsz[_max_nullsp_sz_];
-
-	PetscErrorCode ierr;
-	PetscFunctionBegin;
-
-	// get coarse level
-	lvl = mg->lvls + mg->nlvl - 1;
-	dof = &lvl->dof;
-
-	// create near null space vectors
-	if     (dof->idxmod == IDXCOUPLED)   { mg->nullsp_sz = 4; ln = dof->lnv + dof->lnp; }
-	else if(dof->idxmod == IDXUNCOUPLED) { mg->nullsp_sz = 3; ln = dof->lnv; }
-
-	// set local block sizes & iterator
-	iter    = 0;
-	lbsz[0] = dof->lnvx;
-	lbsz[1] = dof->lnvy;
-	lbsz[2] = dof->lnvz;
-	lbsz[3] = dof->lnp;
-
-	for(i = 0; i < mg->nullsp_sz; i++)
-	{
-		// create
-		ierr = VecCreateMPI(PETSC_COMM_WORLD, ln, PETSC_DETERMINE, &mg->crs_vecs[i]); CHKERRQ(ierr);
-
-		// initialize
-		ierr = VecZeroEntries (mg->crs_vecs[i]);     CHKERRQ(ierr);
-		ierr = VecGetArray    (mg->crs_vecs[i], &v); CHKERRQ(ierr);
-
-		for(j = 0, sz = lbsz[i]; j < sz; j++) v[iter++] = 1.0;
-
-		ierr = VecRestoreArray(mg->crs_vecs[i], &v); CHKERRQ(ierr);
-
-		// normalize
-		ierr = VecNormalize(mg->crs_vecs[i], NULL); CHKERRQ(ierr);
-	}
-
-	// create near null space
-	ierr = MatNullSpaceCreate(PETSC_COMM_WORLD, PETSC_FALSE, mg->nullsp_sz, (const Vec*)mg->crs_vecs, &mg->crs_nullsp); CHKERRQ(ierr);
-
-	// attach near null space to the coarse grid operator matrix
-//	ierr = KSPGetOperators(ksp, &mat, NULL);         CHKERRQ(ierr);
-//	ierr = MatSetNearNullSpace(mat, mg->crs_nullsp); CHKERRQ(ierr);
+	// set coarse solver setup flag
+	mg->crs_setup = PETSC_FALSE;
 
 	PetscFunctionReturn(0);
 }
@@ -1626,14 +1565,98 @@ PetscErrorCode MGDestroy(MG *mg)
 
 	ierr = PetscFree(mg->lvls); CHKERRQ(ierr);
 
-	ierr = MatNullSpaceDestroy(&mg->crs_nullsp); CHKERRQ(ierr);
-
-	for(i = 0; i < mg->nullsp_sz; i++)
+	if(mg->crs_setup == PETSC_TRUE)
 	{
-		ierr = VecDestroy(&mg->crs_vecs[i]); CHKERRQ(ierr);
+		ierr = MatNullSpaceDestroy(&mg->crs_nullsp); CHKERRQ(ierr);
+
+		for(i = 0; i < mg->nullsp_sz; i++)
+		{
+			ierr = VecDestroy(&mg->crs_vecs[i]); CHKERRQ(ierr);
+		}
 	}
 
 	ierr = PCDestroy(&mg->pc); CHKERRQ(ierr);
+
+	PetscFunctionReturn(0);
+}
+
+//---------------------------------------------------------------------------
+#undef __FUNCT__
+#define __FUNCT__ "MGSetupCoarse"
+PetscErrorCode MGSetupCoarse(MG *mg, Mat A)
+{
+	KSP          ksp;
+	PC           pc;
+	Mat          mat;
+	MGLevel     *lvl;
+	DOFIndex    *dof;
+	PetscScalar *v;
+	PetscInt    i, j, sz, ln, iter, lbsz[_max_nullsp_sz_];
+
+	PetscErrorCode ierr;
+	PetscFunctionBegin;
+
+	// skip already configured solver
+	if(mg->crs_setup == PETSC_TRUE)
+	{
+		PetscFunctionReturn(0);
+	}
+
+	// get coarse level
+	lvl = mg->lvls + mg->nlvl - 1;
+	dof = &lvl->dof;
+
+	if     (dof->idxmod == IDXCOUPLED)   { mg->nullsp_sz = 4; ln = dof->lnv + dof->lnp; }
+	else if(dof->idxmod == IDXUNCOUPLED) { mg->nullsp_sz = 3; ln = dof->lnv; }
+
+	// set local block sizes & iterator
+	iter    = 0;
+	lbsz[0] = dof->lnvx;
+	lbsz[1] = dof->lnvy;
+	lbsz[2] = dof->lnvz;
+	lbsz[3] = dof->lnp;
+
+	// create near null space vectors
+	for(i = 0; i < mg->nullsp_sz; i++)
+	{
+		// create
+		ierr = VecCreateMPI(PETSC_COMM_WORLD, ln, PETSC_DETERMINE, &mg->crs_vecs[i]); CHKERRQ(ierr);
+
+		// initialize
+		ierr = VecZeroEntries (mg->crs_vecs[i]);     CHKERRQ(ierr);
+		ierr = VecGetArray    (mg->crs_vecs[i], &v); CHKERRQ(ierr);
+
+		for(j = 0, sz = lbsz[i]; j < sz; j++) v[iter++] = 1.0;
+
+		ierr = VecRestoreArray(mg->crs_vecs[i], &v); CHKERRQ(ierr);
+
+		// normalize
+		ierr = VecNormalize(mg->crs_vecs[i], NULL); CHKERRQ(ierr);
+	}
+
+	// create near null space
+	ierr = MatNullSpaceCreate(PETSC_COMM_WORLD, PETSC_FALSE, mg->nullsp_sz, (const Vec*)mg->crs_vecs, &mg->crs_nullsp); CHKERRQ(ierr);
+
+	// set dummy coarse solver
+	ierr = PCMGGetCoarseSolve(mg->pc, &ksp); CHKERRQ(ierr);
+	ierr = KSPSetType(ksp, KSPPREONLY);      CHKERRQ(ierr);
+	ierr = KSPGetPC(ksp, &pc);               CHKERRQ(ierr);
+	ierr = PCSetType(pc, PCNONE);            CHKERRQ(ierr);
+
+	// force setup operators
+	ierr = PCSetOperators(mg->pc, A, A);     CHKERRQ(ierr);
+	ierr = PCSetUp(mg->pc);                  CHKERRQ(ierr);
+
+	// attach near null space to the coarse grid operator matrix
+	ierr = KSPGetOperators(ksp, &mat, NULL);         CHKERRQ(ierr);
+	ierr = MatSetNearNullSpace(mat, mg->crs_nullsp); CHKERRQ(ierr);
+
+	// set actual coarse solver options
+	ierr = KSPSetOptionsPrefix(ksp, "crs_");  CHKERRQ(ierr);
+	ierr = KSPSetFromOptions(ksp);            CHKERRQ(ierr);
+
+	// set setup flag
+	mg->crs_setup = PETSC_TRUE;
 
 	PetscFunctionReturn(0);
 }
@@ -1661,6 +1684,9 @@ PetscErrorCode MGSetup(MG *mg, Mat A)
 		ierr = MGLevelSetupRestrict (&mg->lvls[i], &mg->lvls[i-1]); CHKERRQ(ierr);
 		ierr = MGLevelSetupProlong  (&mg->lvls[i], &mg->lvls[i-1]); CHKERRQ(ierr);
 	}
+
+	// setup coarse grid solver if necessary
+	ierr = MGSetupCoarse(mg, A); CHKERRQ(ierr);
 
 	// tell to recompute preconditioner
 	ierr = PCSetOperators(mg->pc, A, A); CHKERRQ(ierr);

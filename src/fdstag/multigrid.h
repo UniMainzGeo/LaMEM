@@ -83,7 +83,8 @@ typedef struct
 	PC        pc;   // internal preconditioner context
 	JacRes   *jr;   // finest level context
 
-	PetscInt     nullsp_sz;
+	PetscBool    crs_setup;                 // coarse solver setup flag
+	PetscInt     nullsp_sz;                 // number of nullspace vectors
 	Vec          crs_vecs[_max_nullsp_sz_]; // near nullspace vectors
 	MatNullSpace crs_nullsp;                // coarse grid near null space
 
@@ -93,9 +94,9 @@ typedef struct
 
 PetscErrorCode MGCreate(MG *mg, JacRes *jr);
 
-PetscErrorCode MGGetCoarseNearNullSpace(MG *mg);
-
 PetscErrorCode MGDestroy(MG *mg);
+
+PetscErrorCode MGSetupCoarse(MG *mg, Mat A);
 
 PetscErrorCode MGSetup(MG *mg, Mat A);
 
