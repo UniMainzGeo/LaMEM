@@ -70,6 +70,7 @@ typedef struct
 	PetscScalar power;             // energy / time
 	PetscScalar heat_flux;         // power / area
 	PetscScalar dissipation_rate;  // power / volume
+	PetscScalar activation_volume; // energy / volume
 	PetscScalar angular_velocity;  // angle / time
 
 	// material parameters

@@ -170,6 +170,7 @@ PetscErrorCode ScalingCreate(
 		scal->power               = power;
 		scal->heat_flux           = power/area;               sprintf(scal->lbl_heat_flux,        "[W/m^2]");
 		scal->dissipation_rate    = power/volume;             sprintf(scal->lbl_dissipation_rate, "[W/m^3]");
+		scal->activation_volume   = energy/volume; // J/m3
 		scal->angular_velocity    = angle/time;               sprintf(scal->lbl_angular_velocity, "[deg/s]"); // @
 
 		// material parameters
@@ -226,6 +227,7 @@ PetscErrorCode ScalingCreate(
 		scal->power               = power;
 		scal->heat_flux           = power/area/mW;            sprintf(scal->lbl_heat_flux,        "[mW/m^2]");  // @
 		scal->dissipation_rate    = power/volume;             sprintf(scal->lbl_dissipation_rate, "[W/m^3]");
+		scal->activation_volume   = energy/volume; // J/m3
 		scal->angular_velocity    = angle/(time/Myr);         sprintf(scal->lbl_angular_velocity, "[deg/Myr]"); // @
 
 		// material parameters
@@ -396,52 +398,49 @@ void ScalingInput(Scaling *scal, UserCtx *user)
 // Note: 1) activation energy is not scaled, only scale gas constant with characteristic temperature (a.p)
 //          (i.e (E+p'V*)/RT', where E is dimensional and V* must have same units as E)
 //          phases[i].Ed; phases[i].En; phases[i].Ep are not scaled
-//       2) activation volume is scaled for energy (i.e. cm3/mol -> J/mol, V*energy/length^3)
+//       2) activation volume is scaled to have units of activation energy (i.e.[V] = m3/mol -> scaled [V] = J/mol, same as [E])
 
 void ScalingMatProp(Scaling *scal, Material_t *phases, PetscInt numPhases)
 {
 	PetscInt     i;
-	PetscScalar  length, powerlaw, stress;
-
-	length      = 1/scal->length;
-	stress      = 1/scal->stress;
+	PetscScalar  powerlaw;
 
 	// scale dimensional parameters
 	for(i = 0; i < numPhases; i++)
 	{
-		phases[i].rho     = phases[i].rho/scal->density;
+		phases[i].rho     = phases[i].rho  /scal->density;
 		// diffusion creep
-		phases[i].Bd      = phases[i].Bd*scal->viscosity;
-		phases[i].Vd      = phases[i].Vd*(scal->energy*length*length*length);
+		phases[i].Bd      = phases[i].Bd   *scal->viscosity;
+		phases[i].Vd      = phases[i].Vd   *scal->activation_volume; // scaled Vd = J/mol
 		// dislocation creep (power-law)
 		powerlaw          = ScalingComputePowerLaw(scal, phases[i].n);
-		phases[i].Bn      = phases[i].Bn/powerlaw;
-		phases[i].Vn      = phases[i].Vn*(scal->energy*length*length*length);
+		phases[i].Bn      = phases[i].Bn   /powerlaw;
+		phases[i].Vn      = phases[i].Vn   *scal->activation_volume; // scaled Vd = J/mol
 		// Peierls creep
-		phases[i].Bp      = phases[i].Bp/scal->strain_rate;
-		phases[i].Vp      = phases[i].Vp*(scal->energy*length*length*length);
-		phases[i].taup    = phases[i].taup*stress;
+		phases[i].Bp      = phases[i].Bp   /scal->strain_rate;
+		phases[i].Vp      = phases[i].Vp   *scal->activation_volume; // scaled Vd = J/mol
+		phases[i].taup    = phases[i].taup /scal->stress;
 
 		// elasticity
-		phases[i].G       = phases[i].G*stress;
-		phases[i].K       = phases[i].K*stress;
+		phases[i].G       = phases[i].G    /scal->stress;
+		phases[i].K       = phases[i].K    /scal->stress;
 
 		// plasticity
-		phases[i].ch      = phases[i].ch*stress;
-		phases[i].fr      = phases[i].fr/scal->angle;
+		phases[i].ch      = phases[i].ch   /scal->stress;
+		phases[i].fr      = phases[i].fr   /scal->angle;
 
 		// temperature
-		phases[i].alpha   = phases[i].alpha*scal->temperature;
-		phases[i].Cp      = phases[i].Cp/scal->cpecific_heat;
-		phases[i].k       = phases[i].k/scal->conductivity;
-		phases[i].A       = phases[i].A/scal->heat_production;
+		phases[i].alpha   = phases[i].alpha/scal->expansivity;
+		phases[i].Cp      = phases[i].Cp   /scal->cpecific_heat;
+		phases[i].k       = phases[i].k    /scal->conductivity;
+		phases[i].A       = phases[i].A    /scal->heat_production;
 	}
 }
 //---------------------------------------------------------------------------
 // scaling material parameter limits
 void ScalingMatParLim(Scaling *scal, MatParLim *matLim)
 {
-	// scale gas constant
+	// scale gas constant to have units of activation energy [J/mol]
 	matLim->Rugc = matLim->Rugc*scal->temperature;
 
 	// scale viscosity limits

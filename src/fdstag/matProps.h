@@ -15,16 +15,16 @@
 PetscErrorCode MatPropInit(JacRes *jr, UserCtx *usr);
 
 // get material properties structure in file
-PetscErrorCode MatPropGetStruct(FILE *fp, Material_t *m, PetscInt ils, PetscInt ile);
+PetscErrorCode MatPropGetStruct(FILE *fp, Material_t *m, PetscInt ils, PetscInt ile, UnitsType utype);
 
 // error checking
 PetscErrorCode MatPropErrorCheck(PetscInt id, PetscInt err);
 
 // set default values for material parameters
-void MatPropSet(Material_t *m, PetscInt dim);
+void MatPropSet(Material_t *m);
 
 // print info
-void MatPropPrint(Material_t *m, PetscScalar eta);
+void MatPropPrint(Material_t *m, PetscScalar eta, UnitsType utype);
 
 //---------------------------------------------------------------------------
 //............................ SOFTENING LAWS ...............................

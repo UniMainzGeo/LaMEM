@@ -56,10 +56,10 @@ PetscErrorCode MatPropInit(JacRes *jr, UserCtx *usr)
 		ile = le[i];
 
 		// default values
-		MatPropSet(&m, usr->DimensionalUnits);
+		MatPropSet(&m);
 
 		// read from file
-		ierr = MatPropGetStruct( fp, &m, ils, ile); CHKERRQ(ierr);
+		ierr = MatPropGetStruct( fp, &m, ils, ile, jr->scal.utype); CHKERRQ(ierr);
 
 		// set material structure
 		jr->phases[m.ID] = m;
@@ -101,11 +101,9 @@ PetscErrorCode MatPropInit(JacRes *jr, UserCtx *usr)
 }
 //---------------------------------------------------------------------------
 // set initial material properties
-void MatPropSet(Material_t *m, PetscInt dim)
+void MatPropSet(Material_t *m)
 {
-	if (dim==1) // dimensional
-	{
-		m->rho                           = 2800;
+		m->rho                           = 1.0;
 		// diffusion creep
 		m->Bd                            = 0.0;
 		m->Ed                            = 0.0;
@@ -123,11 +121,11 @@ void MatPropSet(Material_t *m, PetscInt dim)
 		m->gamma                         = 0.0;
 		m->q                             = 0.0;
 		// elasticity
-		m->G                             = 1e100; // will make the model effectively viscous
-		m->K                             = 1e100;
+		m->G                             = 0.0; // will make the model effectively viscous
+		m->K                             = 0.0;
 		m->Kp                            = 0.0;
 		// plasticity
-		m->ch                            = 1e100; // effectively switches off plasticity
+		m->ch                            = 0.0; // effectively switches off plasticity
 		m->fr                            = 0.0;     // effectively switches off plasticity
 		m->chSoftID                      = -1;     // no law
 		m->frSoftID                      = -1;     // no law
@@ -137,52 +135,11 @@ void MatPropSet(Material_t *m, PetscInt dim)
 		m->Cp                            = 0.0;     // heat capacity
 		m->k                             = 0.0;     // thermal conductivity
 		m->A                             = 0.0;     // radiogenic heat production
-	}
-	else //non-dimensional
-	{
-		m->rho                           = 1.0;
-
-		// diffusion creep
-		m->Bd                            = 0.0;
-		m->Ed                            = 0.0;
-		m->Vd                            = 0.0;
-
-		// dislocation creep (power-law) - switched off
-		m->Bn                            = 0;
-		m->n                             = 1.0;
-		m->En                            = 0.0;
-		m->Vn                            = 0.0;
-
-		// Peierls creep - switched off
-		m->Bp                            = 0.0;
-		m->Ep                            = 0.0;
-		m->Vp                            = 0.0;
-		m->taup                          = 0.0;
-		m->gamma                         = 0.0;
-		m->q                             = 0.0;
-
-		// elasticity
-		m->G                             = 1e100; // will make the model effectively viscous
-		m->K                             = 1e100;
-		m->Kp                            = 0.0;
-
-		// plasticity
-		m->ch                            = 1e100; // effectively switches off plasticity
-		m->fr                            = 0.0;     // effectively switches off plasticity
-		m->chSoftID                      = -1;     // no law
-		m->frSoftID                      = -1;     // no law
-
-		// temperature
-		m->alpha                         = 0.0;     // coeff. of thermal expansion
-		m->Cp                            = 0.0;     // heat capacity
-		m->k                             = 0.0;     // thermal conductivity
-		m->A                             = 0.0;     // radiogenic heat production
-	}
 }
 //---------------------------------------------------------------------------
 #undef __FUNCT__
 #define __FUNCT__ "MatPropGetStruct"
-PetscErrorCode MatPropGetStruct( FILE *fp, Material_t *m, PetscInt ils, PetscInt ile)
+PetscErrorCode MatPropGetStruct( FILE *fp, Material_t *m, PetscInt ils, PetscInt ile, UnitsType utype)
 {
 	PetscInt    err;
 	PetscInt    found, found1, found2, found3;
@@ -272,7 +229,7 @@ PetscErrorCode MatPropGetStruct( FILE *fp, Material_t *m, PetscInt ils, PetscInt
 
 	getMatPropScalar( fp, ils, ile, "A",                    &m->A,       &found);
 
-	MatPropPrint(m, eta);
+	MatPropPrint(m, eta, utype);
 
 	PetscFunctionReturn(0);
 }
@@ -295,17 +252,44 @@ PetscErrorCode MatPropErrorCheck(PetscInt id, PetscInt err)
 }
 //---------------------------------------------------------------------------
 // print essential material properties
-void MatPropPrint(Material_t *m, PetscScalar eta)
+void MatPropPrint(Material_t *m, PetscScalar eta, UnitsType utype)
 {
-	PetscPrintf(PETSC_COMM_WORLD,"    Phase [%lld]: rho = %g, eta0 = %g \n", (LLD)(m->ID), m->rho, eta);
-	PetscPrintf(PETSC_COMM_WORLD,"    Phase [%lld]: (diff ) Bd = %g, Ed = %g, Vd = %g \n", (LLD)(m->ID), m->Bd, m->Ed, m->Vd);
-	PetscPrintf(PETSC_COMM_WORLD,"    Phase [%lld]: (disl ) Bn = %g, En = %g, Vn = %g, n = %g \n", (LLD)(m->ID), m->Bn, m->En, m->Vn, m->n);
-	PetscPrintf(PETSC_COMM_WORLD,"    Phase [%lld]: (peirl) Bp = %g, Ep = %g, Vp = %g, taup = %g, gamma = %g, q = %g \n", (LLD)(m->ID), m->Bp, m->Ep, m->Vp, m->taup, m->gamma, m->q);
-	PetscPrintf(PETSC_COMM_WORLD,"    Phase [%lld]: (elast) G = %g, K = %g, Kp = %g \n", (LLD)(m->ID), m->G, m->K, m->Kp);
-	PetscPrintf(PETSC_COMM_WORLD,"    Phase [%lld]: (plast) cohesion = %g, friction angle = %g \n", (LLD)(m->ID),m->ch, m->fr);
-	PetscPrintf(PETSC_COMM_WORLD,"    Phase [%lld]: (sweak) cohesion SoftLaw = %lld, friction SoftLaw = %lld \n", (LLD)(m->ID),(LLD)m->chSoftID, (LLD)m->frSoftID);
-	PetscPrintf(PETSC_COMM_WORLD,"    Phase [%lld]: (temp ) alpha = %g, cp = %g, k = %g, A = %g \n", (LLD)(m->ID),m->alpha, m->Cp,m->k, m->A);
-	PetscPrintf(PETSC_COMM_WORLD,"    \n");
+	if      (utype == _NONE_)
+	{
+		PetscPrintf(PETSC_COMM_WORLD,"    Phase [%lld]: rho = %g [-], eta0 = %g [-]\n", (LLD)(m->ID), m->rho, eta);
+		PetscPrintf(PETSC_COMM_WORLD,"    Phase [%lld]: (diff ) Bd = %g [-], Ed = %g [-], Vd = %g [-] \n", (LLD)(m->ID), m->Bd, m->Ed, m->Vd);
+		PetscPrintf(PETSC_COMM_WORLD,"    Phase [%lld]: (disl ) Bn = %g [-], En = %g [-], Vn = %g [-], n = %g [-] \n", (LLD)(m->ID), m->Bn, m->En, m->Vn, m->n);
+		PetscPrintf(PETSC_COMM_WORLD,"    Phase [%lld]: (peirl) Bp = %g [-], Ep = %g [-], Vp = %g [-], taup = %g [-], gamma = %g [-], q = %g [-] \n", (LLD)(m->ID), m->Bp, m->Ep, m->Vp, m->taup, m->gamma, m->q);
+		PetscPrintf(PETSC_COMM_WORLD,"    Phase [%lld]: (elast) G = %g [-], K = %g [-], Kp = %g [-] \n", (LLD)(m->ID), m->G, m->K, m->Kp);
+		PetscPrintf(PETSC_COMM_WORLD,"    Phase [%lld]: (plast) cohesion = %g [-], friction angle = %g [-] \n", (LLD)(m->ID),m->ch, m->fr);
+		PetscPrintf(PETSC_COMM_WORLD,"    Phase [%lld]: (sweak) cohesion SoftLaw = %lld [-], friction SoftLaw = %lld [-] \n", (LLD)(m->ID),(LLD)m->chSoftID, (LLD)m->frSoftID);
+		PetscPrintf(PETSC_COMM_WORLD,"    Phase [%lld]: (temp ) alpha = %g [-], cp = %g [-], k = %g [-], A = %g [-] \n", (LLD)(m->ID),m->alpha, m->Cp,m->k, m->A);
+		PetscPrintf(PETSC_COMM_WORLD,"    \n");
+	}
+	else if (utype == _SI_)
+	{
+		PetscPrintf(PETSC_COMM_WORLD,"    Phase [%lld]: rho = %g [kg/m3], eta0 = %g [Pa.s]\n", (LLD)(m->ID), m->rho, eta);
+		PetscPrintf(PETSC_COMM_WORLD,"    Phase [%lld]: (diff ) Bd = %g [1/(Pa.s)], Ed = %g [J/mol], Vd = %g [m3/mol] \n", (LLD)(m->ID), m->Bd, m->Ed, m->Vd);
+		PetscPrintf(PETSC_COMM_WORLD,"    Phase [%lld]: (disl ) Bn = %g [1/(Pa^n.s)], En = %g [J/mol], Vn = %g [m3/mol], n = %g [-] \n", (LLD)(m->ID), m->Bn, m->En, m->Vn, m->n);
+		PetscPrintf(PETSC_COMM_WORLD,"    Phase [%lld]: (peirl) Bp = %g [1/s], Ep = %g [J/mol], Vp = %g [m3/mol], taup = %g [Pa], gamma = %g [-], q = %g [-] \n", (LLD)(m->ID), m->Bp, m->Ep, m->Vp, m->taup, m->gamma, m->q);
+		PetscPrintf(PETSC_COMM_WORLD,"    Phase [%lld]: (elast) G = %g [Pa], K = %g [Pa], Kp = %g [-] \n", (LLD)(m->ID), m->G, m->K, m->Kp);
+		PetscPrintf(PETSC_COMM_WORLD,"    Phase [%lld]: (plast) cohesion = %g [Pa], friction angle = %g [deg] \n", (LLD)(m->ID),m->ch, m->fr);
+		PetscPrintf(PETSC_COMM_WORLD,"    Phase [%lld]: (sweak) cohesion SoftLaw = %lld [-], friction SoftLaw = %lld [-] \n", (LLD)(m->ID),(LLD)m->chSoftID, (LLD)m->frSoftID);
+		PetscPrintf(PETSC_COMM_WORLD,"    Phase [%lld]: (temp ) alpha = %g [1/K], cp = %g [J/kg/K], k = %g [W/m/K], A = %g [W/m3] \n", (LLD)(m->ID),m->alpha, m->Cp,m->k, m->A);
+		PetscPrintf(PETSC_COMM_WORLD,"    \n");
+	}
+	else if (utype == _GEO_)
+	{
+		PetscPrintf(PETSC_COMM_WORLD,"    Phase [%lld]: rho = %g [kg/m3], eta0 = %g [Pa.s]\n", (LLD)(m->ID), m->rho, eta);
+		PetscPrintf(PETSC_COMM_WORLD,"    Phase [%lld]: (diff ) Bd = %g [1/(Pa.s)], Ed = %g [J/mol], Vd = %g [m3/mol] \n", (LLD)(m->ID), m->Bd, m->Ed, m->Vd);
+		PetscPrintf(PETSC_COMM_WORLD,"    Phase [%lld]: (disl ) Bn = %g [1/(Pa^n.s)], En = %g [J/mol], Vn = %g [m3/mol], n = %g [-] \n", (LLD)(m->ID), m->Bn, m->En, m->Vn, m->n);
+		PetscPrintf(PETSC_COMM_WORLD,"    Phase [%lld]: (peirl) Bp = %g [1/s], Ep = %g [J/mol], Vp = %g [m3/mol], taup = %g [MPa], gamma = %g [-], q = %g [-] \n", (LLD)(m->ID), m->Bp, m->Ep, m->Vp, m->taup, m->gamma, m->q);
+		PetscPrintf(PETSC_COMM_WORLD,"    Phase [%lld]: (elast) G = %g [MPa], K = %g [MPa], Kp = %g [-] \n", (LLD)(m->ID), m->G, m->K, m->Kp);
+		PetscPrintf(PETSC_COMM_WORLD,"    Phase [%lld]: (plast) cohesion = %g [MPa], friction angle = %g [deg] \n", (LLD)(m->ID),m->ch, m->fr);
+		PetscPrintf(PETSC_COMM_WORLD,"    Phase [%lld]: (sweak) cohesion SoftLaw = %lld [-], friction SoftLaw = %lld [-] \n", (LLD)(m->ID),(LLD)m->chSoftID, (LLD)m->frSoftID);
+		PetscPrintf(PETSC_COMM_WORLD,"    Phase [%lld]: (temp ) alpha = %g [1/K], cp = %g [J/kg/K], k = %g [W/m/K], A = %g [W/m3] \n", (LLD)(m->ID),m->alpha, m->Cp,m->k, m->A);
+		PetscPrintf(PETSC_COMM_WORLD,"    \n");
+	}
 }
 //---------------------------------------------------------------------------
 // initialize SOFTENING LAWS from file

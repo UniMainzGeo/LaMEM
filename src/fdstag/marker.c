@@ -84,7 +84,7 @@ PetscErrorCode ADVMarkInit(AdvCtx *actx, UserCtx *user)
 	ierr = ADVMapMarkToCells(actx); CHKERRQ(ierr);
 
 	// check marker distribution
-	ierr = ADVMarkCheckMarkers(actx, user); CHKERRQ(ierr);
+	ierr = ADVMarkCheckMarkers(actx); CHKERRQ(ierr);
 
 	// project initial history from markers to grid
 	ierr = ADVProjHistMarkToGrid(actx); CHKERRQ(ierr);
@@ -276,7 +276,7 @@ PetscErrorCode ADVMarkSave(AdvCtx *actx, UserCtx *user)
 //---------------------------------------------------------------------------
 #undef __FUNCT__
 #define __FUNCT__ "ADVMarkCheckMarkers"
-PetscErrorCode ADVMarkCheckMarkers(AdvCtx *actx, UserCtx *user)
+PetscErrorCode ADVMarkCheckMarkers(AdvCtx *actx)
 {
  	// check initial marker distribution
 	FDSTAG      *fs;
