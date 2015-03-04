@@ -759,45 +759,45 @@ Every material phase should be defined in the input file in a structure beginnin
 \begin{center}
 \footnotesize
 {\renewcommand{\arraystretch}{1.3}
-  \begin{tabular}{p{2.7cm} p{3cm} p{3cm} c p{5cm}}
+  \begin{tabular}{p{2.7cm} p{2cm} p{3cm} c p{5cm}}
  \hline
-Case&\text{Parameters to define}&Definition&Dimen. values&Comments \\
+Case&\text{Parameters}&Definition&Dimen. values SI [GEO]&Comments \\
  \hline  
 %&\textit{ID}&phase id&0 - 30&always set this parameter\\
 constant density&\texttt{rho0}&reference density&0 - 5000 kg/m$^3$&\\
 
 \hdashline
 linear viscous&\texttt{eta}&reference viscosity&1e-10 - 1e28 Pa.s&either define (\texttt{eta}) or (\texttt{Bd});\\
-(diffusion creep)&\textbf{OR (not both)}&&& if both \texttt{eta} and \texttt{Bd} are defined, \texttt{Bd} has priority\\
-&\texttt{Bd}&diff. creep coeff.&& \texttt{Bd = 1/(2*eta)}\\
+(diffusion creep)&\textbf{OR}&&& if both \texttt{eta} and \texttt{Bd} are defined, \texttt{Bd} has priority\\
+&\texttt{Bd}&diff. creep coeff.&1/(Pa.s)& \texttt{Bd = 1/(2*eta)}\\
 &\texttt{Ed}&diff. creep activation energy&3.0e5 J/mol&(*T) \\
-&\texttt{Vd}&diff. creep activation volume&cm$^3$/mol&(*T) \\
+&\texttt{Vd}&diff. creep activation volume&m$^3$/mol&(*T) \\
 
 \hdashline
 power-law &\texttt{eta0}&ref. viscosity&1e-10 - 1e28 Pa.s&either define (\texttt{eta0, e0, n}) or  \\
 (dislocation creep)&\texttt{e0}&ref. strain rate&1e-15 s$^{-1}$&(\texttt{Bn, n}); if all are defined, \texttt{Bn} has priority;\\
 &\texttt{n}&power-law exponent&1 - 10&\texttt{e0} and \texttt{n} must be defined together\\
-&\textbf{OR (not both)}&&&\\
-&\texttt{Bn}&disl. creep coeff.&&\texttt{Bn = (2*eta0)$^{-n}$ e0$^{(1-n)}$} \\
+&\textbf{OR}&&&\\
+&\texttt{Bn}&disl. creep coeff.&1/(Pa$^n$s)&\texttt{Bn = (2*eta0)$^{-n}$ e0$^{(1-n)}$} \\
 &\texttt{En}&disl. creep activation energy&5.4e5 J/mol&(*T) \\
-&\texttt{Vn}&disl. creep activation volume&cm$^3$/mol&(*T) \\
+&\texttt{Vn}&disl. creep activation volume&m$^3$/mol&(*T) \\
 
 \hdashline
 Peierls creep&\texttt{Bp}&pre-exponential constant&$\sim$5e11 s$^{-1}$&\\
 &\texttt{Ep}&disl. creep activation energy&5.4e5 J/mol&(*T) \\
-&\texttt{Vp}&disl. creep activation volume&cm$^3$/mol&(*T) \\
-&\texttt{taup}&scaling stress&$\sim$ 1e9-1e10 Pa& more info - Kameyama et al. 1999 \\
+&\texttt{Vp}&disl. creep activation volume&m$^3$/mol&(*T) \\
+&\texttt{taup}&scaling stress&$\sim$ 1e9-1e10 Pa [MPa]& more info - Kameyama et al. 1999 \\
 &\texttt{gamma}&approx. parameter&0.1& \\
 &\texttt{q}&stress-dep. param.&2& \\
 
 \hdashline
-elasticity&\texttt{shear}&elastic shear modulus&$\sim$500 kbar&if not specified, no elasticity\\
-&\texttt{bulk}&elastic bulk modulus&$\sim$500 kbar&\\
-&\texttt{Kp}&pressure-dep. param&&\\
+elasticity&\texttt{shear}&elastic shear modulus&Pa [MPa]&if not specified, no elasticity\\
+&\texttt{bulk}&elastic bulk modulus&Pa [MPa]&\\
+&\texttt{Kp}&pressure-dep. param&-&\\
 
 \hdashline
-plasticity &\texttt{cohesion}&cohesion&10 MPa&\texttt{cohesion} and \texttt{friction} must be \\
-(Drucker-Prager)&\texttt{friction}&friction angle&0 - 45[30$^\circ$]&defined together; if not specified, no plasticity\\
+plasticity &\texttt{cohesion}&cohesion&10e6 Pa [MPa]&\texttt{cohesion} and \texttt{friction} must be \\
+(Drucker-Prager)&\texttt{friction}&friction angle&0$^\circ$ - 45$^\circ$ (30$^\circ$)&defined together; if not specified, no plasticity\\
 &\texttt{chSoftID}&ID for softening law&$<$ numSoft&Strain weakening parameter\\
 &\texttt{frSoftID}&ID for softening law&$<$ numSoft&Strain weakening parameter\\
 
@@ -811,7 +811,7 @@ temperature  (*T)&\texttt{alpha}&coefficient of thermal expansion&10$^{-5}$K$^{-
  \hline
      \end{tabular}
      }
-  \caption{List of material parameters that can be specified for a material phase. \textbf{Notes: 1.} (*T) Temperature-dependent constitutive laws are active only when 'energy' equation is coupled. \textbf{2.} Activation energy and volume can be specified for every creep law.}
+  \caption{List of material parameters that can be specified for a material phase. \textbf{Notes: 1.} (*T) Temperature-dependent constitutive laws are active only when 'energy' equation is coupled. \textbf{2.} Activation energy and volume can be specified for every creep law. \textbf{3.} Units are given in SI units. When 'units=geo' use the units given in square brackets when present. }
   \label{tab:matprops}
   \end{center}
 \end{table}
