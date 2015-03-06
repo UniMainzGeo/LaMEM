@@ -7,9 +7,9 @@
 #    * number of cells                                    (n points)
 #    * bias coefficients                                  (n points) 
 
-nel_x						=   18    
-nel_y						= 	18    
-nel_z						= 	18
+nel_x						=   32    
+nel_y						= 	32    
+nel_z						= 	32
 
  
 #nel_x						=	-3    
@@ -84,7 +84,7 @@ FactorSurfaceLayer			= 		0.3 		# How thick is the surface layer (if option 2 is 
 
 # Jacobian solver
 
-	-js_ksp_type fgmres
+	-js_ksp_type gmres
 	-js_ksp_max_it 1000
 	-js_ksp_converged_reason
  	-js_ksp_monitor
@@ -112,7 +112,7 @@ FactorSurfaceLayer			= 		0.3 		# How thick is the surface layer (if option 2 is 
 #	-gmg_pc_view
 #	-gmg_dump
 	-gmg_pc_type mg
-	-gmg_pc_mg_levels 2
+	-gmg_pc_mg_levels 4
 	-gmg_pc_mg_galerkin
 	-gmg_pc_mg_type multiplicative
 	-gmg_pc_mg_cycle_type v
@@ -123,9 +123,8 @@ FactorSurfaceLayer			= 		0.3 		# How thick is the surface layer (if option 2 is 
 	-gmg_mg_levels_pc_type jacobi
 
 	-crs_ksp_type preonly
-	-crs_pc_type redundant
-	-crs_pc_redundant_number 1
-	-crs_redundant_pc_factor_mat_solver_package mumps
+	-crs_pc_type lu
+	-crs_pc_factor_mat_solver_package mumps
 
 
 # Additional command-line Petsc Options
@@ -219,7 +218,7 @@ UpperViscosityCutoff			=	1e12
 		attribute 			= 	VISCOSITY
 		type 				= 	constant
 #		type 				= 	power_law
-		eta0       			= 	1000
+		eta0       			= 	100000
 		N_exp       		= 	3
 		e0 					=	0.1	
 	<MaterialEnd>
