@@ -390,13 +390,13 @@ PetscErrorCode MatSoftGetStruct(FILE *fp,
 }
 //---------------------------------------------------------------------------
 void getLineStruct(
-	FILE *fp, PetscInt *ls, PetscInt *le, PetscInt mux_num,
+	FILE *fp, PetscInt *ls, PetscInt *le, PetscInt max_num,
 	PetscInt *count_starts, PetscInt *count_ends,
 	const char key[], const char key_end[])
 {
 	// get the positions in the file for the material structures
 
-	char line[MAX_LINE_LEN], next[MAX_LINE_LEN];
+	char line[MAX_LINE_LEN];
 	PetscInt comment, start_match, end_match;
 	PetscInt i = 0, ii = 0;
 
@@ -419,40 +419,28 @@ void getLineStruct(
 
 		// find start of material structure
 		start_match = material_key_matches( key, line );
-		if( start_match == _FALSE ) { continue; }
+		if( start_match == _TRUE )
+		{
+			// check bounds
+			if(i+1 > max_num) { i++; return; }
 
-		// check bounds
-		if(i+1 > mux_num) { i++; return; }
-
-		// mark file position and scan until end_match is found
-		ls[i++] = (PetscInt)ftell( fp );
+			// mark file position and scan until end_match is found
+			ls[i++] = (PetscInt)ftell( fp );
+		}
 
 		// find end of material structure
 		end_match = material_key_matches( key_end, line );
-
-		while( end_match == _FALSE )
+		if( end_match == _TRUE )
 		{
-			fgets( next, MAX_LINE_LEN-1, fp );
-
-			// get rid of white space
-			trim(next);
-
-			// if line is blank
-			if( strlen(next) == 0 ) { continue; }
-
-			// is first character a comment ?
-			comment = is_comment_line( next);
-			if( comment == _TRUE ) { continue; }
-
-			end_match = material_key_matches( key_end, next );
-			if( end_match == _FALSE ) { continue; }
-
 			// check bounds
-			if(ii+1 > mux_num) { ii++; return; }
+			if(ii+1 > max_num) { ii++; return; }
 
 			// mark file position
 			le[ii++] = (PetscInt)ftell( fp );
 		}
+
+		// if no match continue
+		if( (start_match == _FALSE) && (end_match == _FALSE) ) { continue; }
 	}
 
 	(*count_starts)  = i;
