@@ -60,11 +60,11 @@ typedef struct
 	PetscScalar *svBuff;   // storage for phRat
 
 	// phase parameters
-	PetscInt     numPhases; // number phases
-	Material_t   phases[max_num_phases];    // phase parameters
-	PetscInt     numSoft;   // number material softening laws
-	Soft_t       matSoft[max_num_soft];   // material softening law parameters
-	MatParLim    matLim;    // phase parameters limiters
+	PetscInt     numPhases;              // number phases
+	Material_t   phases[max_num_phases]; // phase parameters
+	PetscInt     numSoft;                // number material softening laws
+	Soft_t       matSoft[max_num_soft];  // material softening law parameters
+	MatParLim    matLim;                 // phase parameters limiters
 
 	// parameters & controls
 	Scaling     scal;        // scaling

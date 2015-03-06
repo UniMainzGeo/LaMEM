@@ -1,53 +1,51 @@
 //---------------------------------------------------------------------------
-//................ Routines related to Material Properties ..................
+//.................. MATERIAL PARAMETERS READING ROUTINES....................
 //---------------------------------------------------------------------------
 #ifndef __matProps_h__
 #define __matProps_h__
 //---------------------------------------------------------------------------
-// allows some overhead when reading
-#define _max_overhead_ 5
-//---------------------------------------------------------------------------
-
-//---------------------------------------------------------------------------
 //........................... MATERIAL PARAMETERS ...........................
 //---------------------------------------------------------------------------
-// main function
+
+// read all phases
 PetscErrorCode MatPropInit(JacRes *jr, UserCtx *usr);
 
-// get material properties structure in file
-PetscErrorCode MatPropGetStruct(FILE *fp, Material_t *m, PetscInt ils, PetscInt ile, UnitsType utype);
-
-// error checking
-PetscErrorCode MatPropErrorCheck(PetscInt id, PetscInt err);
-
-// set default values for material parameters
-void MatPropSet(Material_t *m);
-
-// print info
-void MatPropPrint(Material_t *m, PetscScalar eta, UnitsType utype);
+// read single phase
+PetscErrorCode MatPropGetStruct(FILE *fp,
+	PetscInt numPhases, Material_t *phases,
+	PetscInt numSoft,   Soft_t     *matSoft,
+	PetscInt ils, PetscInt ile, UnitsType utype);
 
 //---------------------------------------------------------------------------
 //............................ SOFTENING LAWS ...............................
 //---------------------------------------------------------------------------
-// main function
+
+// read all softening laws
 PetscErrorCode MatSoftInit(JacRes *jr, UserCtx *usr);
 
-// get softening laws structure in file
-PetscErrorCode MatSoftGetStruct( FILE *fp, Soft_t *s, PetscInt ils, PetscInt ile);
-
-// points every phase to the correct softening laws
-PetscErrorCode MatSoftSet(JacRes *jr);
+// read single softening laws
+PetscErrorCode MatSoftGetStruct(FILE *fp,
+	PetscInt numSoft, Soft_t *matSoft,
+	PetscInt ils, PetscInt ile);
 
 //---------------------------------------------------------------------------
 //................ Routines to get structure-info from file .................
 //---------------------------------------------------------------------------
+
 // gets the file positions of a structure
-void getLineStruct( FILE *fp, PetscInt *ls, PetscInt *le, PetscInt *count, PetscInt *count1, const char key[], const char key_end[]);
+void getLineStruct(
+	FILE *fp, PetscInt *ls, PetscInt *le, PetscInt mux_num,
+	PetscInt *count_starts, PetscInt *count_ends,
+	const char key[], const char key_end[]);
 
 // gets an integer within specified positions in file
-void getMatPropInt   (FILE *fp, PetscInt ils, PetscInt ile, const char key[], PetscInt *value, PetscInt *found);
+void getMatPropInt(FILE *fp, PetscInt ils, PetscInt ile,
+	const char key[], PetscInt *value, PetscInt *found);
 
 // gets a scalar within specified positions in file
-void getMatPropScalar(FILE *fp, PetscInt ils, PetscInt ile, const char key[], PetscScalar *value, PetscInt *found);
+void getMatPropScalar(FILE *fp, PetscInt ils, PetscInt ile,
+	const char key[], PetscScalar *value, PetscInt *found);
+
+//---------------------------------------------------------------------------
 
 #endif
