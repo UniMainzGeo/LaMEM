@@ -672,9 +672,9 @@ Every material phase should be defined in the input file in a structure beginnin
 \indent \texttt{<MaterialStart>}\\
 \indent \indent \texttt{ID = 1}\\
 \indent \indent \texttt{...}\\
-\indent \texttt{<MaterialEnd>}\\
+\indent \texttt{<MaterialEnd>}
 
-\textbf{Examples:}\\
+\subsubsection{Examples}
 
 1) Viscous falling block with 2 material phases (non-dimensional)\\ 
 {\small
@@ -738,7 +738,7 @@ Every material phase should be defined in the input file in a structure beginnin
 \end{tabular}\\
 
 %%% Errors
-\textbf{Errors related to material properties input:}
+\subsubsection{Errors related to material properties input}
 \begin{enumerate}
 \item Phase \texttt{ID} is not specified
 \item If \texttt{rho0} is not specified - this is an essential parameter
@@ -751,6 +751,48 @@ Every material phase should be defined in the input file in a structure beginnin
 \item Peierls creep: if \texttt{Bp} is not defined, but any of the others Peierls parameters is.
 \item Plasticity: if \texttt{cohesion} and \texttt{friction} are not defined together.
 \item Temperature: if \texttt{cp} and \texttt{k} are not defined together.
+\end{enumerate}
+
+% Predefined profiles
+\subsubsection{Predefined rheological profiles}
+\label{sec:predefined}
+
+Values for each profile can be found in \texttt{matProps.c - SetDiffProfile()} and \texttt{SetDislProfile()}. \textbf{Please check the values in the respective papers/studies when you are using them!}
+
+\begin{enumerate}
+
+\item Diffusion creep - the parameter \texttt{diff\_profile} can be set in the following way:
+\begin{itemize}
+\item \texttt{Dry\_Olivine\_diff\_creep-Hirth\_Kohlstedt\_2003}
+\item \texttt{Wet\_Olivine\_diff\_creep-Hirth\_Kohlstedt\_2003\_constant\_C\_OH}
+\item \texttt{Wet\_Olivine\_diff\_creep-Hirth\_Kohlstedt\_2003}
+\end{itemize}
+
+\item Dislocation creep - the parameter \texttt{disl\_profile} can be set in the following way:
+\begin{itemize}
+\item \texttt{Dry\_Olivine-Ranalli\_1995}
+\item \texttt{Wet\_Olivine-Ranalli\_1995}
+\item \texttt{Quartz\_Diorite-Hansen\_Carter\_1982}
+\item \texttt{Diabase-Caristan\_1982}
+\item \texttt{Tumut\_Pond\_Serpentinite-Raleigh\_Paterson\_1965}
+\item \texttt{Wet\_Quarzite-Ranalli\_1995}
+\item \texttt{Quarzite-Ranalli\_1995}
+\item \texttt{Mafic\_Granulite-Ranalli\_1995}
+\item \texttt{Maryland\_strong\_diabase-Mackwell\_et\_al\_1998}
+\item \texttt{Wet\_Quarzite-Ueda\_et\_al\_2008}
+\item \texttt{Diabase-Huismans\_et\_al\_2001}
+\item \texttt{Granite-Huismans\_et\_al\_2001}
+\item \texttt{Dry\_Upper\_Crust-Schmalholz\_Kaus\_Burg\_2009}
+\item \texttt{Weak\_Lower\_Crust-Schmalholz\_Kaus\_Burg\_2009}
+\item \texttt{Plagioclase\_An75-Ranalli\_1995}
+\item \texttt{Wet\_Olivine\_disl\_creep-Hirth\_Kohlstedt\_2003}
+\item \texttt{Wet\_Olivine\_disl\_creep-Hirth\_Kohlstedt\_2003\_constant\_C\_OH}
+\item \texttt{Dry\_Olivine\_disl\_creep-Hirth\_Kohlstedt\_2003}
+\item \texttt{Olivine-Burg\_Podladchikov\_1999}
+\item \texttt{Wet\_Upper\_Mantle-Burg\_Schmalholz\_2008}
+\item \texttt{Granite-Tirel\_et\_al\_2008}
+%\indent \texttt{}\\
+\end{itemize}
 
 \end{enumerate}
 
@@ -767,15 +809,19 @@ Case&\text{Parameters}&Definition&Dimen. values SI [GEO]&Comments \\
 constant density&\texttt{rho0}&reference density&0 - 5000 kg/m$^3$&\\
 
 \hdashline
-linear viscous&\texttt{eta}&reference viscosity&1e-10 - 1e28 Pa.s&either define (\texttt{eta}) or (\texttt{Bd});\\
-(diffusion creep)&\textbf{OR}&&& if both \texttt{eta} and \texttt{Bd} are defined, \texttt{Bd} has priority\\
+linear viscous&\texttt{diff\_profile}&\hyperref[sec:predefined]{set predefined profile}&string&profiles from the literature - \\
+(diffusion creep)&\textbf{OR}&&&has priority over other definitions\\
+&\texttt{eta}&reference viscosity&1e-10 - 1e28 Pa.s&either (\texttt{eta}) or (\texttt{Bd}) can be defined;\\
+&\textbf{OR}&&& if both \texttt{eta} and \texttt{Bd} are defined, \texttt{Bd} has priority\\
 &\texttt{Bd}&diff. creep coeff.&1/(Pa.s)& \texttt{Bd = 1/(2*eta)}\\
 &\texttt{Ed}&diff. creep activation energy&3.0e5 J/mol&(*T) \\
 &\texttt{Vd}&diff. creep activation volume&m$^3$/mol&(*T) \\
 
 \hdashline
-power-law &\texttt{eta0}&ref. viscosity&1e-10 - 1e28 Pa.s&either define (\texttt{eta0, e0, n}) or  \\
-(dislocation creep)&\texttt{e0}&ref. strain rate&1e-15 s$^{-1}$&(\texttt{Bn, n}); if all are defined, \texttt{Bn} has priority;\\
+power-law &\texttt{disl\_profile}&\hyperref[sec:predefined]{set predefined profile}&string&profiles from the literature - \\
+(dislocation creep)&\textbf{OR}&&&has priority over other definitions\\
+&\texttt{eta0}&ref. viscosity&1e-10 - 1e28 Pa.s&either define (\texttt{eta0, e0, n}) or  \\
+&\texttt{e0}&ref. strain rate&1e-15 s$^{-1}$&(\texttt{Bn, n}); if all are defined, \texttt{Bn} has priority;\\
 &\texttt{n}&power-law exponent&1 - 10&\texttt{e0} and \texttt{n} must be defined together\\
 &\textbf{OR}&&&\\
 &\texttt{Bn}&disl. creep coeff.&1/(Pa$^n$s)&\texttt{Bn = (2*eta0)$^{-n}$ e0$^{(1-n)}$} \\

@@ -29,6 +29,25 @@ PetscErrorCode MatSoftGetStruct(FILE *fp,
 	PetscInt ils, PetscInt ile);
 
 //---------------------------------------------------------------------------
+//............ PREDEFINED RHEOLOGICAL PROFILES (from literature) ............
+//---------------------------------------------------------------------------
+typedef enum
+{
+	_UniAxial_,      // Uni-axial experiment
+	_SimpleShear_,   // Simple shear experiment
+	_None_           // geological-scale units
+} TensorCorrection;
+
+// diffusion creep profiles
+PetscErrorCode SetDiffProfile(Material_t *m, char name[]);
+
+// dislocation creep profiles
+PetscErrorCode SetDislProfile(Material_t *m, char name[]);
+
+// units and tensor correction
+PetscErrorCode SetProfileCorrection(PetscScalar B, PetscScalar n, TensorCorrection tensorCorrection, PetscInt MPa);
+
+//---------------------------------------------------------------------------
 //................ Routines to get structure-info from file .................
 //---------------------------------------------------------------------------
 
@@ -45,6 +64,10 @@ void getMatPropInt(FILE *fp, PetscInt ils, PetscInt ile,
 // gets a scalar within specified positions in file
 void getMatPropScalar(FILE *fp, PetscInt ils, PetscInt ile,
 	const char key[], PetscScalar *value, PetscInt *found);
+
+// gets a string within specified positions in file
+void getMatPropString(FILE *fp, PetscInt ils, PetscInt ile,
+	const char key[], char value[], PetscInt max_L, PetscInt *found );
 
 //---------------------------------------------------------------------------
 

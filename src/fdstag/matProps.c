@@ -64,9 +64,9 @@ PetscErrorCode MatPropInit(JacRes *jr, UserCtx *usr)
 	for(i = 0; i < jr->numPhases; i++)
 	{
 		ierr = MatPropGetStruct(fp,
-			jr->numPhases, jr->phases,
-			jr->numSoft, jr->matSoft,
-			ls[i], le[i], jr->scal.utype); CHKERRQ(ierr);
+				jr->numPhases, jr->phases,
+				jr->numSoft, jr->matSoft,
+				ls[i], le[i], jr->scal.utype); CHKERRQ(ierr);
 	}
 
 	PetscPrintf(PETSC_COMM_WORLD,"--------------------------------------------------------------------------\n");
@@ -84,17 +84,34 @@ PetscErrorCode MatPropInit(JacRes *jr, UserCtx *usr)
 #undef __FUNCT__
 #define __FUNCT__ "MatPropGetStruct"
 PetscErrorCode MatPropGetStruct(FILE *fp,
-	PetscInt numPhases, Material_t *phases,
-	PetscInt numSoft,   Soft_t     *matSoft,
-	PetscInt ils, PetscInt ile, UnitsType utype)
+		PetscInt numPhases, Material_t *phases,
+		PetscInt numSoft,   Soft_t     *matSoft,
+		PetscInt ils, PetscInt ile, UnitsType utype)
 {
 	// read material properties from file with error checking
 	// WARNING! This function assumes correctly defined softening parameters
 
 	Material_t *m;
 	PetscScalar eta, eta0, e0;
-	PetscInt    ID, chSoftID, frSoftID, found;
+	PetscInt    ID = -1, chSoftID, frSoftID, found;
+	char        ndiff[MAX_NAME_LEN], ndisl[MAX_NAME_LEN];
 
+	// output labels
+	char        lbl_rho  [_lbl_sz_];
+	char        lbl_eta  [_lbl_sz_];
+	char        lbl_Bd   [_lbl_sz_];
+	char        lbl_E    [_lbl_sz_];
+	char        lbl_V    [_lbl_sz_];
+	char        lbl_Bn   [_lbl_sz_];
+	char        lbl_Bp   [_lbl_sz_];
+	char        lbl_tau  [_lbl_sz_];
+	char        lbl_fr   [_lbl_sz_];
+	char        lbl_alpha[_lbl_sz_];
+	char        lbl_cp   [_lbl_sz_];
+	char        lbl_k    [_lbl_sz_];
+	char        lbl_A    [_lbl_sz_];
+
+	PetscErrorCode ierr;
 	PetscFunctionBegin;
 
 	// phase ID
@@ -136,19 +153,37 @@ PetscErrorCode MatPropGetStruct(FILE *fp,
 	//============================================================
 	// Newtonian linear diffusion creep
 	//============================================================
-	getMatPropScalar(fp, ils, ile, "eta",       &eta,      &found);
-	getMatPropScalar(fp, ils, ile, "Bd",        &m->Bd,    &found);
-	getMatPropScalar(fp, ils, ile, "Ed",        &m->Ed,    &found);
-	getMatPropScalar(fp, ils, ile, "Vd",        &m->Vd,    &found);
+	getMatPropString(fp, ils, ile, "diff_profile", ndiff, MAX_NAME_LEN-1, &found);
+	if(found)
+	{
+		// set predefined diffusion creep profile
+		ierr = SetDiffProfile(m, ndiff); CHKERRQ(ierr);
+	}
+	else
+	{
+		getMatPropScalar(fp, ils, ile, "eta",       &eta,      &found);
+		getMatPropScalar(fp, ils, ile, "Bd",        &m->Bd,    &found);
+		getMatPropScalar(fp, ils, ile, "Ed",        &m->Ed,    &found);
+		getMatPropScalar(fp, ils, ile, "Vd",        &m->Vd,    &found);
+	}
 	//============================================================
 	// power-law (dislocation) creep
 	//============================================================
-	getMatPropScalar(fp, ils, ile, "eta0",      &eta0,     &found);
-	getMatPropScalar(fp, ils, ile, "e0",        &e0,       &found);
-	getMatPropScalar(fp, ils, ile, "Bn",        &m->Bn,    &found);
-	getMatPropScalar(fp, ils, ile, "n",         &m->n,     &found);
-	getMatPropScalar(fp, ils, ile, "En",        &m->En,    &found);
-	getMatPropScalar(fp, ils, ile, "Vn",        &m->Vn,    &found);
+	getMatPropString(fp, ils, ile, "disl_profile", ndisl, MAX_NAME_LEN-1, &found);
+	if(found)
+	{
+		// set predefined dislocation creep profile
+		ierr = SetDislProfile(m, ndisl); CHKERRQ(ierr);
+	}
+	else
+	{
+		getMatPropScalar(fp, ils, ile, "eta0",      &eta0,     &found);
+		getMatPropScalar(fp, ils, ile, "e0",        &e0,       &found);
+		getMatPropScalar(fp, ils, ile, "Bn",        &m->Bn,    &found);
+		getMatPropScalar(fp, ils, ile, "n",         &m->n,     &found);
+		getMatPropScalar(fp, ils, ile, "En",        &m->En,    &found);
+		getMatPropScalar(fp, ils, ile, "Vn",        &m->Vn,    &found);
+	}
 	//============================================================
 	// Peierls creep
 	//============================================================
@@ -227,45 +262,73 @@ PetscErrorCode MatPropGetStruct(FILE *fp,
 		SETERRQ1(PETSC_COMM_WORLD, PETSC_ERR_USER, "At least one of the parameter (set) Bd (eta), Bn (eta0, e0), G must be specified for phase %lld", (LLD)ID);
 	}
 
-	// print
-	// THIS PART IS A BIT UGLY, CONSIDER STRUCTURING
+	// check units for predefined profile
+	if((strlen(ndiff) || strlen(ndisl)) && utype == _NONE_)
+	{
+		SETERRQ1(PETSC_COMM_WORLD, PETSC_ERR_USER, "Cannot have a predefined creep profile (phase %lld), in a non-dimensional setup!", (LLD)ID);
+	}
 
+	// print
 	if(utype == _NONE_)
 	{
-		PetscPrintf(PETSC_COMM_WORLD,"    Phase [%lld]: rho = %g [-], eta0 = %g [-]\n", (LLD)(m->ID), m->rho, eta);
-		PetscPrintf(PETSC_COMM_WORLD,"    Phase [%lld]: (diff ) Bd = %g [-], Ed = %g [-], Vd = %g [-] \n", (LLD)(m->ID), m->Bd, m->Ed, m->Vd);
-		PetscPrintf(PETSC_COMM_WORLD,"    Phase [%lld]: (disl ) Bn = %g [-], En = %g [-], Vn = %g [-], n = %g [-] \n", (LLD)(m->ID), m->Bn, m->En, m->Vn, m->n);
-		PetscPrintf(PETSC_COMM_WORLD,"    Phase [%lld]: (peirl) Bp = %g [-], Ep = %g [-], Vp = %g [-], taup = %g [-], gamma = %g [-], q = %g [-] \n", (LLD)(m->ID), m->Bp, m->Ep, m->Vp, m->taup, m->gamma, m->q);
-		PetscPrintf(PETSC_COMM_WORLD,"    Phase [%lld]: (elast) G = %g [-], K = %g [-], Kp = %g [-] \n", (LLD)(m->ID), m->G, m->K, m->Kp);
-		PetscPrintf(PETSC_COMM_WORLD,"    Phase [%lld]: (plast) cohesion = %g [-], friction angle = %g [-] \n", (LLD)(m->ID),m->ch, m->fr);
-		PetscPrintf(PETSC_COMM_WORLD,"    Phase [%lld]: (sweak) cohesion SoftLaw = %lld [-], friction SoftLaw = %lld [-] \n", (LLD)(m->ID),(LLD)chSoftID, (LLD)frSoftID);
-		PetscPrintf(PETSC_COMM_WORLD,"    Phase [%lld]: (temp ) alpha = %g [-], cp = %g [-], k = %g [-], A = %g [-] \n", (LLD)(m->ID),m->alpha, m->Cp,m->k, m->A);
-		PetscPrintf(PETSC_COMM_WORLD,"    \n");
+		sprintf(lbl_rho,   "[ ]"         );
+		sprintf(lbl_eta,   "[ ]"         );
+		sprintf(lbl_Bd,    "[ ]"         );
+		sprintf(lbl_E,     "[ ]"         );
+		sprintf(lbl_V,     "[ ]"         );
+		sprintf(lbl_Bn,    "[ ]"         );
+		sprintf(lbl_Bp,    "[ ]"         );
+		sprintf(lbl_tau,   "[ ]"         );
+		sprintf(lbl_fr,    "[ ]"         );
+		sprintf(lbl_alpha, "[ ]"         );
+		sprintf(lbl_cp,    "[ ]"         );
+		sprintf(lbl_k,     "[ ]"         );
+		sprintf(lbl_A,     "[ ]"         );
 	}
 	else if (utype == _SI_)
 	{
-		PetscPrintf(PETSC_COMM_WORLD,"    Phase [%lld]: rho = %g [kg/m3], eta0 = %g [Pa.s]\n", (LLD)(m->ID), m->rho, eta);
-		PetscPrintf(PETSC_COMM_WORLD,"    Phase [%lld]: (diff ) Bd = %g [1/(Pa.s)], Ed = %g [J/mol], Vd = %g [m3/mol] \n", (LLD)(m->ID), m->Bd, m->Ed, m->Vd);
-		PetscPrintf(PETSC_COMM_WORLD,"    Phase [%lld]: (disl ) Bn = %g [1/(Pa^n.s)], En = %g [J/mol], Vn = %g [m3/mol], n = %g [-] \n", (LLD)(m->ID), m->Bn, m->En, m->Vn, m->n);
-		PetscPrintf(PETSC_COMM_WORLD,"    Phase [%lld]: (peirl) Bp = %g [1/s], Ep = %g [J/mol], Vp = %g [m3/mol], taup = %g [Pa], gamma = %g [-], q = %g [-] \n", (LLD)(m->ID), m->Bp, m->Ep, m->Vp, m->taup, m->gamma, m->q);
-		PetscPrintf(PETSC_COMM_WORLD,"    Phase [%lld]: (elast) G = %g [Pa], K = %g [Pa], Kp = %g [-] \n", (LLD)(m->ID), m->G, m->K, m->Kp);
-		PetscPrintf(PETSC_COMM_WORLD,"    Phase [%lld]: (plast) cohesion = %g [Pa], friction angle = %g [deg] \n", (LLD)(m->ID),m->ch, m->fr);
-		PetscPrintf(PETSC_COMM_WORLD,"    Phase [%lld]: (sweak) cohesion SoftLaw = %lld [-], friction SoftLaw = %lld [-] \n", (LLD)(m->ID),(LLD)chSoftID, (LLD)frSoftID);
-		PetscPrintf(PETSC_COMM_WORLD,"    Phase [%lld]: (temp ) alpha = %g [1/K], cp = %g [J/kg/K], k = %g [W/m/K], A = %g [W/m3] \n", (LLD)(m->ID),m->alpha, m->Cp,m->k, m->A);
-		PetscPrintf(PETSC_COMM_WORLD,"    \n");
+		sprintf(lbl_rho,   "[kg/m3]"     );
+		sprintf(lbl_eta,   "[Pa.s]"      );
+		sprintf(lbl_Bd,    "[1/(Pa.s)]"  );
+		sprintf(lbl_E,     "[J/mol]"     );
+		sprintf(lbl_V,     "[m3/mol]"    );
+		sprintf(lbl_Bn,    "[1/(Pa^n.s)]");
+		sprintf(lbl_Bp,    "[1/s]"       );
+		sprintf(lbl_tau,   "[Pa]"        );
+		sprintf(lbl_fr,    "[deg]"       );
+		sprintf(lbl_alpha, "[1/K]"       );
+		sprintf(lbl_cp,    "[J/kg/K]"    );
+		sprintf(lbl_k,     "[W/m/K]"     );
+		sprintf(lbl_A,     "[W/m3]"      );
 	}
 	else if (utype == _GEO_)
 	{
-		PetscPrintf(PETSC_COMM_WORLD,"    Phase [%lld]: rho = %g [kg/m3], eta0 = %g [Pa.s]\n", (LLD)(m->ID), m->rho, eta);
-		PetscPrintf(PETSC_COMM_WORLD,"    Phase [%lld]: (diff ) Bd = %g [1/(Pa.s)], Ed = %g [J/mol], Vd = %g [m3/mol] \n", (LLD)(m->ID), m->Bd, m->Ed, m->Vd);
-		PetscPrintf(PETSC_COMM_WORLD,"    Phase [%lld]: (disl ) Bn = %g [1/(Pa^n.s)], En = %g [J/mol], Vn = %g [m3/mol], n = %g [-] \n", (LLD)(m->ID), m->Bn, m->En, m->Vn, m->n);
-		PetscPrintf(PETSC_COMM_WORLD,"    Phase [%lld]: (peirl) Bp = %g [1/s], Ep = %g [J/mol], Vp = %g [m3/mol], taup = %g [MPa], gamma = %g [-], q = %g [-] \n", (LLD)(m->ID), m->Bp, m->Ep, m->Vp, m->taup, m->gamma, m->q);
-		PetscPrintf(PETSC_COMM_WORLD,"    Phase [%lld]: (elast) G = %g [MPa], K = %g [MPa], Kp = %g [-] \n", (LLD)(m->ID), m->G, m->K, m->Kp);
-		PetscPrintf(PETSC_COMM_WORLD,"    Phase [%lld]: (plast) cohesion = %g [MPa], friction angle = %g [deg] \n", (LLD)(m->ID),m->ch, m->fr);
-		PetscPrintf(PETSC_COMM_WORLD,"    Phase [%lld]: (sweak) cohesion SoftLaw = %lld [-], friction SoftLaw = %lld [-] \n", (LLD)(m->ID),(LLD)chSoftID, (LLD)frSoftID);
-		PetscPrintf(PETSC_COMM_WORLD,"    Phase [%lld]: (temp ) alpha = %g [1/K], cp = %g [J/kg/K], k = %g [W/m/K], A = %g [W/m3] \n", (LLD)(m->ID),m->alpha, m->Cp,m->k, m->A);
-		PetscPrintf(PETSC_COMM_WORLD,"    \n");
+		sprintf(lbl_rho,   "[kg/m3]"     );
+		sprintf(lbl_eta,   "[Pa.s]"      );
+		sprintf(lbl_Bd,    "[1/(Pa.s)]"  );
+		sprintf(lbl_E,     "[J/mol]"     );
+		sprintf(lbl_V,     "[m3/mol]"    );
+		sprintf(lbl_Bn,    "[1/(Pa^n.s)]");
+		sprintf(lbl_Bp,    "[1/s]"       );
+		sprintf(lbl_tau,   "[MPa]"       );
+		sprintf(lbl_fr,    "[deg]"       );
+		sprintf(lbl_alpha, "[1/K]"       );
+		sprintf(lbl_cp,    "[J/kg/K]"    );
+		sprintf(lbl_k,     "[W/m/K]"     );
+		sprintf(lbl_A,     "[W/m3]"      );
 	}
+
+	PetscPrintf(PETSC_COMM_WORLD,"    Phase [%lld]: rho = %g %s, eta0 = %g %s\n", (LLD)(m->ID), lbl_rho, m->rho, eta, lbl_eta);
+	if (strlen(ndiff)) PetscPrintf(PETSC_COMM_WORLD,"    Phase [%lld]: (diff ) diffusion creep profile: %s \n",(LLD)(m->ID), ndiff);
+	PetscPrintf(PETSC_COMM_WORLD,"    Phase [%lld]: (diff ) Bd = %g %s, Ed = %g %s, Vd = %g %s \n", (LLD)(m->ID), m->Bd, lbl_Bd, m->Ed, lbl_E, m->Vd, lbl_V);
+	if (strlen(ndisl)) PetscPrintf(PETSC_COMM_WORLD,"    Phase [%lld]: (disl ) dislocation creep profile: %s \n",(LLD)(m->ID), ndisl);
+	PetscPrintf(PETSC_COMM_WORLD,"    Phase [%lld]: (disl ) Bn = %g %s, En = %g %s, Vn = %g %s, n = %g [ ] \n", (LLD)(m->ID), m->Bn, lbl_Bn, m->En , lbl_E, m->Vn, lbl_V, m->n);
+	PetscPrintf(PETSC_COMM_WORLD,"    Phase [%lld]: (peirl) Bp = %g %s, Ep = %g %s, Vp = %g %s, taup = %g %s, gamma = %g [ ], q = %g [ ] \n", (LLD)(m->ID), m->Bp, lbl_Bp, m->Ep, lbl_E, m->Vp, lbl_V, m->taup, lbl_tau, m->gamma, m->q);
+	PetscPrintf(PETSC_COMM_WORLD,"    Phase [%lld]: (elast) G = %g %s, K = %g %s, Kp = %g [ ] \n", (LLD)(m->ID), m->G, lbl_tau, m->K, lbl_tau, m->Kp);
+	PetscPrintf(PETSC_COMM_WORLD,"    Phase [%lld]: (plast) cohesion = %g %s, friction angle = %g %s \n", (LLD)(m->ID),m->ch, lbl_tau, m->fr, lbl_fr);
+	PetscPrintf(PETSC_COMM_WORLD,"    Phase [%lld]: (sweak) cohesion SoftLaw = %lld [ ], friction SoftLaw = %lld [ ] \n", (LLD)(m->ID),(LLD)chSoftID, (LLD)frSoftID);
+	PetscPrintf(PETSC_COMM_WORLD,"    Phase [%lld]: (temp ) alpha = %g %s, cp = %g %s, k = %g %s, A = %g %s \n", (LLD)(m->ID),m->alpha, lbl_alpha, m->Cp, lbl_cp,m->k, lbl_k, m->A, lbl_A);
+	PetscPrintf(PETSC_COMM_WORLD,"    \n");
 
 	PetscFunctionReturn(0);
 }
@@ -339,8 +402,8 @@ PetscErrorCode MatSoftInit(JacRes *jr, UserCtx *usr)
 #undef __FUNCT__
 #define __FUNCT__ "MatSoftGetStruct"
 PetscErrorCode MatSoftGetStruct(FILE *fp,
-	PetscInt numSoft, Soft_t *matSoft,
-	PetscInt ils, PetscInt ile)
+		PetscInt numSoft, Soft_t *matSoft,
+		PetscInt ils, PetscInt ile)
 {
 	// read softening law from file
 
@@ -389,10 +452,479 @@ PetscErrorCode MatSoftGetStruct(FILE *fp,
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
+// set diffusion creep profiles
+#undef __FUNCT__
+#define __FUNCT__ "SetDiffProfile"
+PetscErrorCode SetDiffProfile(Material_t *m, char name[])
+{
+	TensorCorrection tensorCorrection;
+	PetscInt         MPa;
+	//PetscScalar     d0, p, C_OH_0, r;
+
+	// Predefined rheological diffusion creep (taken from the literature). We assume that the creep law has the form:
+	// Diffusion:   eII = F2*Bd*Tau   * C_OH^r * d^-p *exp( - (Ed + P*Vd)/(R*T))
+	// Dislocation: eII = F2*Bn*Tau^n * C_OH^r        *exp( - (En + P*Vn)/(R*T))
+	//
+	//   eII     -   strain rate             [1/s]
+	//   Tau     -   stress                  [Pa]
+	//   P       -   pressure                [Pa]
+	//   R       -   gas constant            [=8.3145]
+	//   Bd, Bn  -   prefactor               [Pa^(-n)s^(-1)]
+	//   n       -   power-law exponent (n=1 for diffusion creep)
+	//   Ed, En  -   activation Energy       [J/MPA/mol]
+	//   Vd, Vn  -   activation volume       [m^3/mol]
+	//   d       -   grain size              [in mu_m (1e-6 meter)]
+	//   p       -   exponent of grain size
+	//   C_OH    -   water fugacity in H/10^6 Si  (see Hirth & Kohlstedt 2003 for a description)
+	//   r       -   power-law exponent of C_OH term
+	//
+	//   In addition, we take into account that the creeplaws are typically
+	//   measured under uniaxial or triaxial compression, whereas we need them
+	//   in tensorial format (this gives some geometrical factors).
+
+	PetscErrorCode ierr;
+	PetscFunctionBegin;
+
+	if (!strcmp(name,"Dry_Olivine_diff_creep-Hirth_Kohlstedt_2003"))
+	{
+		// after Hirth, G. & Kohlstedt (2003), D. Rheology of the upper mantle and the mantle wedge: A view from the experimentalists.
+		m->Bd            =   1.5e9;
+		m->Ed            =   375e3;
+		m->Vd            =   5e-6;          // Activation volume [m3/mol] varies between (2-10)e-6
+		tensorCorrection =   _SimpleShear_; // Add the transformation from uni-axial -> tensorial form or not?
+		MPa              =   1;             // 0 - units in Pa; 1 - units in MPa
+
+		//d0               =   10e3;          // Basic grain size in micrometer (deactivated if p=0)
+		//p                =   3;             // powerlaw exponent of grain size
+		//C_OH_0           =   1;
+		//r                =   0;
+	}
+
+	else if (!strcmp(name,"Wet_Olivine_diff_creep-Hirth_Kohlstedt_2003_constant_C_OH"))
+	{
+		// after Hirth, G. & Kohlstedt (2003), D. Rheology of the upper mantle and the mantle wedge: A view from the experimentalists.
+		m->Bd            =   1.0e6;
+		m->Ed            =   335e3;
+		m->Vd            =   4e-6;          // Activation volume [m3/mol] varies between (2-10)e-6
+		tensorCorrection =   _SimpleShear_; // Add the transformation from uni-axial -> tensorial form or not?
+		MPa              =   1;             // 0 - units in Pa; 1 - units in MPa
+
+		//d0               =   10e3;          // Basic grain size in micrometer (deactivated if p=0)
+		//p                =   3;             // powerlaw exponent of grain size
+		//C_OH_0           =   1000;
+		//r                =   0;
+	}
+
+	else if (!strcmp(name,"Wet_Olivine_diff_creep-Hirth_Kohlstedt_2003"))
+	{
+		// after Hirth, G. & Kohlstedt (2003), D. Rheology of the upper mantle and the mantle wedge: A view from the experimentalists.
+		m->Bd            =   2.5e7;
+		m->Ed            =   335e3;
+		m->Vd            =   10e-6;         // Activation volume [m3/mol] varies between (2-10)e-6
+		tensorCorrection =   _SimpleShear_; // Add the transformation from uni-axial -> tensorial form or not?
+		MPa              =   1;             // 0 - units in Pa; 1 - units in MPa
+
+		//d0               =   10e3;          // Basic grain size in micrometer (deactivated if p=0)
+		//p                =   3;             // powerlaw exponent of grain size
+		//C_OH_0           =   1000;
+		//r                =   0.8;
+	}
+
+	else
+	{
+		SETERRQ1(PETSC_COMM_WORLD, PETSC_ERR_USER, "No such diffusion creep profile: %s! ",name);
+	}
+
+	// make tensor correction and transform units from MPa if necessary
+	ierr = SetProfileCorrection(m->Bd,1,tensorCorrection,MPa); CHKERRQ(ierr);
+
+	PetscFunctionReturn(0);
+}
+//---------------------------------------------------------------------------
+// set dislocation creep profiles
+#undef __FUNCT__
+#define __FUNCT__ "SetDislProfile"
+PetscErrorCode SetDislProfile(Material_t *m, char name[])
+{
+	TensorCorrection tensorCorrection;
+	PetscInt         MPa;
+	//PetscScalar     C_OH_0, r;
+
+	// Predefined rheological diffusion creep (taken from the literature). We assume that the creeplaw has the form:
+	// Diffusion:   eII = F2*Bd*Tau   * C_OH^r * d^-p *exp( - (Ed + P*Vd)/(R*T))
+	// Dislocation: eII = F2*Bn*Tau^n * C_OH^r        *exp( - (En + P*Vn)/(R*T))
+	//
+	//   eII     -   strain rate             [1/s]
+	//   Tau     -   stress                  [Pa]
+	//   P       -   pressure                [Pa]
+	//   R       -   gas constant            [=8.3145]
+	//   Bd, Bn  -   prefactor               [Pa^(-n)s^(-1)]
+	//   n       -   power-law exponent (n=1 for diffusion creep)
+	//   Ed, En  -   activation Energy       [J/MPA/mol]
+	//   Vd, Vn  -   activation volume       [m^3/mol]
+	//   d       -   grain size              [in mu_m (1e-6 meter)]
+	//   p       -   exponent of grain size
+	//   C_OH    -   water fugacity in H/10^6 Si  (see Hirth & Kohlstedt 2003 for a description)
+	//   r       -   power-law exponent of C_OH term
+	//
+	//   In addition, we take into account that the creeplaws are typically
+	//   measured under uniaxial or triaxial compression, whereas we need them
+	//   in tensorial format (this gives some geometrical factors).
+
+	PetscErrorCode ierr;
+	PetscFunctionBegin;
+
+	if (!strcmp(name,"Dry_Olivine-Ranalli_1995"))
+	{
+		// after Ranalli 1995
+		m->Bn            =   2.5e4;
+		m->n             =   3.5;
+		m->En            =   532e3;
+		m->Vn            =   17e-6;         // Activation volume [m3/mol] varies between (2-10)e-6
+		tensorCorrection =   _UniAxial_;    // Add the transformation from uni-axial -> tensorial form or not?
+		MPa              =   1;             // 0 - units in Pa; 1 - units in MPa
+
+		//C_OH_0           =   1;
+		//r                =   0;
+	}
+
+	else if (!strcmp(name,"Wet_Olivine-Ranalli_1995"))
+	{
+		// after Ranalli 1995
+		m->Bn            =   2.0e3;
+		m->n             =   4.0;
+		m->En            =   471e3;
+		m->Vn            =   0;             // Activation volume [m3/mol] varies between (2-10)e-6
+		tensorCorrection =   _UniAxial_;    // Add the transformation from uni-axial -> tensorial form or not?
+		MPa              =   1;             // 0 - units in Pa; 1 - units in MPa
+
+		//C_OH_0           =   1;
+		//r                =   0;
+	}
+
+	else if (!strcmp(name,"Quartz_Diorite-Hansen_Carter_1982"))
+	{
+		// taken from Carter and Tsenn (1986). Flow properties of continental lithosphere - page 18.
+		m->Bn            =   pow(10,-1.5);
+		m->n             =   2.4;
+		m->En            =   212e3;
+		m->Vn            =   0;             // Activation volume [m3/mol] varies between (2-10)e-6
+		tensorCorrection =   _SimpleShear_; // Add the transformation from uni-axial -> tensorial form or not?
+		MPa              =   1;             // 0 - units in Pa; 1 - units in MPa
+
+		//C_OH_0           =   1;
+		//r                =   0;
+	}
+
+	else if (!strcmp(name,"Diabase-Caristan_1982"))
+	{
+		// Taken from J. de Bremond d'Ars et al./Tectonophysics (1999). Hydrothermalism and Diapirism in the Archaean: gravitational instability constrains. - page 5
+		m->Bn            =   6e-2;
+		m->n             =   3.05;
+		m->En            =   276e3;
+		m->Vn            =   1;             // Activation volume [m3/mol] varies between (2-10)e-6
+		tensorCorrection =   _UniAxial_;    // Add the transformation from uni-axial -> tensorial form or not?
+		MPa              =   0;             // 0 - units in Pa; 1 - units in MPa
+
+		//C_OH_0           =   1;
+		//r                =   0;
+	}
+
+	else if (!strcmp(name,"Tumut_Pond_Serpentinite-Raleigh_Paterson_1965"))
+	{
+		// Taken from J. de Bremond d'Ars et al./Tectonophysics (1999). Hydrothermalism and Diapirism in the Archaean: gravitational instability constrains. - page 5
+		m->Bn            =   6.3e-7;
+		m->n             =   2.8;
+		m->En            =   66e3;
+		m->Vn            =   0;             // Activation volume [m3/mol] varies between (2-10)e-6
+		tensorCorrection =   _UniAxial_;    // Add the transformation from uni-axial -> tensorial form or not?
+		MPa              =   1;             // 0 - units in Pa; 1 - units in MPa
+
+		//C_OH_0           =   1;
+		//r                =   0;
+	}
+
+	else if (!strcmp(name,"Wet_Quarzite-Ranalli_1995"))
+	{
+		// used in LI, Z. H., GERYA, T. V. and BURG, J.-P. (2010),
+		// Influence of tectonic overpressure on PT paths of HPUHP rocks in continental collision zones: thermomechanical modelling.
+		// Journal of Metamorphic Geology, 28: 227247. doi: 10.1111/j.1525-1314.2009.00864.x Table 2
+		// in Ranalli 1995 (page 334 Table 10.3)
+		m->Bn            =   3.2e-4;
+		m->n             =   2.3;
+		m->En            =   154e3;
+		m->Vn            =   0;             // Activation volume [m3/mol] varies between (2-10)e-6
+		tensorCorrection =   _UniAxial_;    // Add the transformation from uni-axial -> tensorial form or not?
+		MPa              =   1;             // 0 - units in Pa; 1 - units in MPa
+
+		//C_OH_0           =   1;
+		//r                =   0;
+	}
+
+	else if (!strcmp(name,"Quarzite-Ranalli_1995"))
+	{
+		// used in LI, Z. H., GERYA, T. V. and BURG, J.-P. (2010),
+		// Influence of tectonic overpressure on PT paths of HPUHP rocks in continental collision zones: thermomechanical modelling.
+		// Journal of Metamorphic Geology, 28: 227247. doi: 10.1111/j.1525-1314.2009.00864.x Table 2
+		// in Ranalli 1995 (page 334 Table 10.3)
+		m->Bn            =   6.7e-6;
+		m->n             =   2.4;
+		m->En            =   156e3;
+		m->Vn            =   0;             // Activation volume [m3/mol] varies between (2-10)e-6
+		tensorCorrection =   _UniAxial_;    // Add the transformation from uni-axial -> tensorial form or not?
+		MPa              =   1;             // 0 - units in Pa; 1 - units in MPa
+
+		//C_OH_0           =   1;
+		//r                =   0;
+	}
+
+	else if (!strcmp(name,"Mafic_Granulite-Ranalli_1995"))
+	{
+		// used in LI, Z. H., GERYA, T. V. and BURG, J.-P. (2010),
+		// Influence of tectonic overpressure on PT paths of HPUHP rocks in continental collision zones: thermomechanical modelling.
+		// Journal of Metamorphic Geology, 28: 227247. doi: 10.1111/j.1525-1314.2009.00864.x Table 2
+		// in Ranalli 1995 (page 334 Table 10.3)
+		m->Bn            =   1.4e4;
+		m->n             =   4.2;
+		m->En            =   445e3;
+		m->Vn            =   0;             // Activation volume [m3/mol] varies between (2-10)e-6
+		tensorCorrection =   _UniAxial_;    // Add the transformation from uni-axial -> tensorial form or not?
+		MPa              =   1;             // 0 - units in Pa; 1 - units in MPa
+
+		//C_OH_0           =   1;
+		//r                =   0;
+	}
+
+	else if (!strcmp(name,"Maryland_strong_diabase-Mackwell_et_al_1998"))
+	{
+		// Mackwell, Zimmerman & Kohlstedt (1998). High-temperature deformation
+		// of dry diabase with application to tectonics on Venus. JGR 103. B1. 975-984. page 980
+		m->Bn            =   8;
+		m->n             =   4.7;
+		m->En            =   485e3;
+		m->Vn            =   0;             // Activation volume [m3/mol] varies between (2-10)e-6
+		tensorCorrection =   _UniAxial_;    // Add the transformation from uni-axial -> tensorial form or not?
+		MPa              =   1;             // 0 - units in Pa; 1 - units in MPa
+
+		//C_OH_0           =   1;
+		//r                =   0;
+	}
+
+	else if (!strcmp(name,"Wet_Quarzite-Ueda_et_al_2008"))
+	{
+		// Parameters used in Ueda et al (PEPI 2008)
+		m->Bn            =   pow(10,-3.5);
+		m->n             =   2.3;
+		m->En            =   154e3;
+		m->Vn            =   0;             // Activation volume [m3/mol] varies between (2-10)e-6
+		tensorCorrection =   _UniAxial_;    // Add the transformation from uni-axial -> tensorial form or not?
+		MPa              =   1;             // 0 - units in Pa; 1 - units in MPa
+
+		//C_OH_0           =   1;
+		//r                =   0;
+	}
+
+	else if (!strcmp(name,"Diabase-Huismans_et_al_2001"))
+	{
+		// parameters used in Huismans et al 2001
+		m->Bn            =   3.2e-20;
+		m->n             =   3.05;
+		m->En            =   276e3;
+		m->Vn            =   0;             // Activation volume [m3/mol] varies between (2-10)e-6
+		tensorCorrection =   _UniAxial_;    // Add the transformation from uni-axial -> tensorial form or not?
+		MPa              =   0;             // 0 - units in Pa; 1 - units in MPa
+
+		//C_OH_0           =   1;
+		//r                =   0;
+	}
+
+	else if (!strcmp(name,"Granite-Huismans_et_al_2001"))
+	{
+		// parameters used in Huismans et al 2001
+		m->Bn            =   3.16e-26;
+		m->n             =   3.3;
+		m->En            =   186.5e3;
+		m->Vn            =   0;             // Activation volume [m3/mol] varies between (2-10)e-6
+		tensorCorrection =   _UniAxial_;    // Add the transformation from uni-axial -> tensorial form or not?
+		MPa              =   0;             // 0 - units in Pa; 1 - units in MPa
+
+		//C_OH_0           =   1;
+		//r                =   0;
+	}
+
+	else if (!strcmp(name,"Dry_Upper_Crust-Schmalholz_Kaus_Burg_2009"))
+	{
+		// granite - Burg And Podladchikov (1999)
+		m->Bn            =   3.16e-26;
+		m->n             =   3.3;
+		m->En            =   190e3;
+		m->Vn            =   0;             // Activation volume [m3/mol] varies between (2-10)e-6
+		tensorCorrection =   _UniAxial_;    // Add the transformation from uni-axial -> tensorial form or not?
+		MPa              =   0;             // 0 - units in Pa; 1 - units in MPa
+
+		//C_OH_0           =   1;
+		//r                =   0;
+	}
+
+	else if (!strcmp(name,"Weak_Lower_Crust-Schmalholz_Kaus_Burg_2009"))
+	{
+		// diabase - Burg And Podladchikov (1999)
+		m->Bn            =   3.2e-20;
+		m->n             =   3.0;
+		m->En            =   276e3;
+		m->Vn            =   0;             // Activation volume [m3/mol] varies between (2-10)e-6
+		tensorCorrection =   _UniAxial_;    // Add the transformation from uni-axial -> tensorial form or not?
+		MPa              =   0;             // 0 - units in Pa; 1 - units in MPa
+
+		//C_OH_0           =   1;
+		//r                =   0;
+	}
+
+	else if (!strcmp(name,"Plagioclase_An75-Ranalli_1995"))
+	{
+		m->Bn            =   3.3e-4;
+		m->n             =   3.2;
+		m->En            =   238e3;
+		m->Vn            =   0;             // Activation volume [m3/mol] varies between (2-10)e-6
+		tensorCorrection =   _UniAxial_;    // Add the transformation from uni-axial -> tensorial form or not?
+		MPa              =   1;             // 0 - units in Pa; 1 - units in MPa
+
+		//C_OH_0           =   1;
+		//r                =   0;
+	}
+
+	else if (!strcmp(name,"Wet_Olivine_disl_creep-Hirth_Kohlstedt_2003"))
+	{
+		// after Hirth, G. & Kohlstedt (2003), D. Rheology of the upper mantle and the mantle wedge: A view from the experimentalists.
+		// Inside the subduction Factory 83?105. Table 1, "wet dislocation" parameters
+		m->Bn            =   1600;
+		m->n             =   3.5;
+		m->En            =   520e3;
+		m->Vn            =   22e-6;         // Activation volume [m3/mol] varies between (2-10)e-6
+		tensorCorrection =   _SimpleShear_; // Add the transformation from uni-axial -> tensorial form or not?
+		MPa              =   1;             // 0 - units in Pa; 1 - units in MPa
+
+		//C_OH_0           =   1000;
+		//r                =   1.2;
+	}
+
+	else if (!strcmp(name,"Wet_Olivine_disl_creep-Hirth_Kohlstedt_2003_constant_C_OH"))
+	{
+		// after Hirth, G. & Kohlstedt (2003), D. Rheology of the upper mantle and the mantle wedge: A view from the experimentalists.
+		// Inside the subduction Factory 83?105. Table 1, "wet dislocation (constant C_OH)" parameters
+		m->Bn            =   90;
+		m->n             =   3.5;
+		m->En            =   480e3;
+		m->Vn            =   11e-6;         // Activation volume [m3/mol] varies between (2-10)e-6
+		tensorCorrection =   _SimpleShear_; // Add the transformation from uni-axial -> tensorial form or not?
+		MPa              =   1;             // 0 - units in Pa; 1 - units in MPa
+
+		//C_OH_0           =   1000;
+		//r                =   1.2;
+	}
+
+	else if (!strcmp(name,"Dry_Olivine_disl_creep-Hirth_Kohlstedt_2003"))
+	{
+		// after Hirth, G. & Kohlstedt (2003), D. Rheology of the upper mantle and the mantle wedge: A view from the experimentalists.
+		// Inside the subduction Factory 83?105. Table 1, "dry dislocation" parameters
+		m->Bn            =   1.1e5;
+		m->n             =   3.5;
+		m->En            =   530e3;
+		// Activation volume varies, according to their table 2:
+		// possible values are between (6-27)e-6  [discarding negatives]
+		m->Vn            =   15e-6;         // Activation volume [m3/mol] varies between (2-10)e-6
+		tensorCorrection =   _SimpleShear_; // Add the transformation from uni-axial -> tensorial form or not?
+		MPa              =   1;             // 0 - units in Pa; 1 - units in MPa
+
+		//C_OH_0           =   1;
+		//r                =   0;
+	}
+
+	else if (!strcmp(name,"Olivine-Burg_Podladchikov_1999"))
+	{
+		// after Burg and Podladchikov 1999
+		m->Bn            =   7.1e-14;
+		m->n             =   3.0;
+		m->En            =   510e3;
+		m->Vn            =   0;             // Activation volume [m3/mol] varies between (2-10)e-6
+		tensorCorrection =   _SimpleShear_; // Add the transformation from uni-axial -> tensorial form or not?
+		MPa              =   0;             // 0 - units in Pa; 1 - units in MPa
+
+		//C_OH_0           =   1;
+		//r                =   0;
+	}
+
+	else if (!strcmp(name,"Wet_Upper_Mantle-Burg_Schmalholz_2008"))
+	{
+		// used in  SchmalholzKausBurg(2009), Geology (wet olivine)
+		m->Bn            =   2e-21;
+		m->n             =   4.0;
+		m->En            =   471e3;
+		m->Vn            =   0;             // Activation volume [m3/mol] varies between (2-10)e-6
+		tensorCorrection =   _SimpleShear_; // Add the transformation from uni-axial -> tensorial form or not?
+		MPa              =   0;             // 0 - units in Pa; 1 - units in MPa
+
+		//C_OH_0           =   1;
+		//r                =   0;
+	}
+
+	else if (!strcmp(name,"Granite-Tirel_et_al_2008"))
+	{
+		// used in  SchmalholzKausBurg(2009), Geology
+		m->Bn            =   1.25e-9;
+		m->n             =   3.2;
+		m->En            =   123e3;
+		m->Vn            =   0;             // Activation volume [m3/mol] varies between (2-10)e-6
+		tensorCorrection =   _SimpleShear_; // Add the transformation from uni-axial -> tensorial form or not?
+		MPa              =   1;             // 0 - units in Pa; 1 - units in MPa
+
+		//C_OH_0           =   1;
+		//r                =   0;
+	}
+
+	else
+	{
+		SETERRQ1(PETSC_COMM_WORLD, PETSC_ERR_USER, "No such dislocation creep profile: %s! ",name);
+	}
+
+	// make tensor correction and transform units from MPa if necessary
+	ierr = SetProfileCorrection(m->Bn,m->n,tensorCorrection,MPa); CHKERRQ(ierr);
+
+	PetscFunctionReturn(0);
+}
+//---------------------------------------------------------------------------
+// set tensor and units correction for rheological profiles
+#undef __FUNCT__
+#define __FUNCT__ "SetProfileCorrection"
+PetscErrorCode SetProfileCorrection(PetscScalar B, PetscScalar n, TensorCorrection tensorCorrection, PetscInt MPa)
+{
+	PetscScalar F2;
+	// Lab. experiments are typically done under simple shear or uni-axial
+	// compression, which requires a correction in order to use them in tensorial format.
+	// An explanation is given in the textbook of Taras Gerya, chapter 6.
+
+	PetscFunctionBegin;
+
+	// Tensor correction
+	if      (tensorCorrection == _UniAxial_)    F2 = pow(1/2,(n-1)/n) / pow(3,(n+1)/2/n); //  F2 = 1/2^((n-1)/n)/3^((n+1)/2/n);
+	else if (tensorCorrection == _SimpleShear_) F2 = pow(1/2,(2*n-1)/n);                  //  F2 = 1/2^((2*n-1)/n);
+	else if (tensorCorrection == _None_)        F2 = 1;
+	else
+	{
+		SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "Unknown tensor correction in creep mechanism profile!");
+	}
+
+	// Units correction from [MPa^(-n)s^(-1)] to [Pa^(-n)s^(-1)] if required
+	if (MPa) B = F2* pow(1e6*pow(B,-1/n),-n); // B = F2*(1e6*B^(-1/n))^(-n);
+	else     B = F2*B;
+
+	PetscFunctionReturn(0);
+}
+//---------------------------------------------------------------------------
 void getLineStruct(
-	FILE *fp, PetscInt *ls, PetscInt *le, PetscInt max_num,
-	PetscInt *count_starts, PetscInt *count_ends,
-	const char key[], const char key_end[])
+		FILE *fp, PetscInt *ls, PetscInt *le, PetscInt max_num,
+		PetscInt *count_starts, PetscInt *count_ends,
+		const char key[], const char key_end[])
 {
 	// get the positions in the file for the material structures
 
@@ -448,7 +980,7 @@ void getLineStruct(
 }
 //---------------------------------------------------------------------------
 void getMatPropInt(FILE *fp, PetscInt ils, PetscInt ile,
-	const char key[], PetscInt *value, PetscInt *found)
+		const char key[], PetscInt *value, PetscInt *found)
 {
 	// get integer within specified positions of the file
 
@@ -496,7 +1028,7 @@ void getMatPropInt(FILE *fp, PetscInt ils, PetscInt ile,
 }
 //---------------------------------------------------------------------------
 void getMatPropScalar(FILE *fp, PetscInt ils, PetscInt ile,
-	const char key[], PetscScalar *value, PetscInt *found)
+		const char key[], PetscScalar *value, PetscInt *found)
 {
 	// get scalar within specified positions of the file
 
@@ -538,6 +1070,60 @@ void getMatPropScalar(FILE *fp, PetscInt ils, PetscInt ile,
 			double_val = (PetscScalar)strtod( line, NULL );
 
 			*value = double_val;
+			*found = _TRUE;
+			return;
+		}
+	}
+}
+//---------------------------------------------------------------------------
+void getMatPropString( FILE *fp, PetscInt ils, PetscInt ile, const char key[], char value[], PetscInt max_L, PetscInt *found )
+{
+	char line[MAX_LINE_LEN];
+	PetscInt comment, pos;
+	PetscInt match, line_L;
+	char LINE[MAX_LINE_LEN];
+
+	// init flag
+	(*found) = _FALSE;
+
+	memset( value, 0, sizeof(char)*(size_t)max_L );
+
+	// reset to start of file
+	rewind( fp );
+
+	while( !feof(fp) ) {
+		fgets( line, MAX_LINE_LEN-1, fp );
+		pos = (PetscInt)ftell( fp );
+
+		// search only within specified positions of the file
+		if ((pos > ils) && (pos < ile))
+		{
+			// get rid of white space
+			trim(line);
+
+			// if line is blank
+			if( strlen(line) == 0 ) { continue; }
+
+			// is first character a comment ?
+			comment = is_comment_line( line );
+			if( comment == _TRUE ) {   continue;  }
+
+			match = key_matches( key, line );
+			if( match == _FALSE ) {   continue;   }
+
+			// strip word and equal sign
+			strip(line);
+			strip_all_whitespace(line, LINE);
+
+			trim_past_comment(LINE);
+			line_L = (PetscInt)strlen( LINE );
+
+			strncpy( value, LINE, (size_t)line_L );
+			if( line_L > max_L ) {
+				printf("parse_GetString: Error, input string is not large enough to hold result \n");
+				return;
+			}
+
 			*found = _TRUE;
 			return;
 		}
