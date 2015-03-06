@@ -190,6 +190,11 @@ PetscErrorCode MatPropGetStruct(FILE *fp,
 		SETERRQ1(PETSC_COMM_WORLD, PETSC_ERR_USER, "Incorrect friction softening law specified for phase %lld", (LLD)ID);
 	}
 
+	if(m->fr && !m->ch)
+	{
+		SETERRQ1(PETSC_COMM_WORLD, PETSC_ERR_USER, "Nonzero cohesion must be specified for phase %lld", (LLD)ID);
+	}
+
 	// set pointers to softening laws
 	if(chSoftID != -1) m->chSoft = matSoft + chSoftID;
 	if(frSoftID != -1) m->frSoft = matSoft + frSoftID;
@@ -219,7 +224,7 @@ PetscErrorCode MatPropGetStruct(FILE *fp,
 	// check that at least one essential deformation mechanism is specified
 	if(!m->Bd && !m->Bn && !m->G)
 	{
-		SETERRQ1(PETSC_COMM_WORLD, PETSC_ERR_USER, "At least one of the parameter (set) Bd, Bn (eta0, e0), G must be specified for phase %lld", (LLD)ID);
+		SETERRQ1(PETSC_COMM_WORLD, PETSC_ERR_USER, "At least one of the parameter (set) Bd (eta), Bn (eta0, e0), G must be specified for phase %lld", (LLD)ID);
 	}
 
 	// print
@@ -233,7 +238,7 @@ PetscErrorCode MatPropGetStruct(FILE *fp,
 		PetscPrintf(PETSC_COMM_WORLD,"    Phase [%lld]: (peirl) Bp = %g [-], Ep = %g [-], Vp = %g [-], taup = %g [-], gamma = %g [-], q = %g [-] \n", (LLD)(m->ID), m->Bp, m->Ep, m->Vp, m->taup, m->gamma, m->q);
 		PetscPrintf(PETSC_COMM_WORLD,"    Phase [%lld]: (elast) G = %g [-], K = %g [-], Kp = %g [-] \n", (LLD)(m->ID), m->G, m->K, m->Kp);
 		PetscPrintf(PETSC_COMM_WORLD,"    Phase [%lld]: (plast) cohesion = %g [-], friction angle = %g [-] \n", (LLD)(m->ID),m->ch, m->fr);
-		PetscPrintf(PETSC_COMM_WORLD,"    Phase [%lld]: (sweak) cohesion SoftLaw = %lld [-], friction SoftLaw = %lld [-] \n", (LLD)(m->ID),(LLD)m->chSoft->ID, (LLD)m->frSoft->ID);
+		PetscPrintf(PETSC_COMM_WORLD,"    Phase [%lld]: (sweak) cohesion SoftLaw = %lld [-], friction SoftLaw = %lld [-] \n", (LLD)(m->ID),(LLD)chSoftID, (LLD)frSoftID);
 		PetscPrintf(PETSC_COMM_WORLD,"    Phase [%lld]: (temp ) alpha = %g [-], cp = %g [-], k = %g [-], A = %g [-] \n", (LLD)(m->ID),m->alpha, m->Cp,m->k, m->A);
 		PetscPrintf(PETSC_COMM_WORLD,"    \n");
 	}
@@ -245,7 +250,7 @@ PetscErrorCode MatPropGetStruct(FILE *fp,
 		PetscPrintf(PETSC_COMM_WORLD,"    Phase [%lld]: (peirl) Bp = %g [1/s], Ep = %g [J/mol], Vp = %g [m3/mol], taup = %g [Pa], gamma = %g [-], q = %g [-] \n", (LLD)(m->ID), m->Bp, m->Ep, m->Vp, m->taup, m->gamma, m->q);
 		PetscPrintf(PETSC_COMM_WORLD,"    Phase [%lld]: (elast) G = %g [Pa], K = %g [Pa], Kp = %g [-] \n", (LLD)(m->ID), m->G, m->K, m->Kp);
 		PetscPrintf(PETSC_COMM_WORLD,"    Phase [%lld]: (plast) cohesion = %g [Pa], friction angle = %g [deg] \n", (LLD)(m->ID),m->ch, m->fr);
-		PetscPrintf(PETSC_COMM_WORLD,"    Phase [%lld]: (sweak) cohesion SoftLaw = %lld [-], friction SoftLaw = %lld [-] \n", (LLD)(m->ID),(LLD)m->chSoft->ID, (LLD)m->frSoft->ID);
+		PetscPrintf(PETSC_COMM_WORLD,"    Phase [%lld]: (sweak) cohesion SoftLaw = %lld [-], friction SoftLaw = %lld [-] \n", (LLD)(m->ID),(LLD)chSoftID, (LLD)frSoftID);
 		PetscPrintf(PETSC_COMM_WORLD,"    Phase [%lld]: (temp ) alpha = %g [1/K], cp = %g [J/kg/K], k = %g [W/m/K], A = %g [W/m3] \n", (LLD)(m->ID),m->alpha, m->Cp,m->k, m->A);
 		PetscPrintf(PETSC_COMM_WORLD,"    \n");
 	}
@@ -257,7 +262,7 @@ PetscErrorCode MatPropGetStruct(FILE *fp,
 		PetscPrintf(PETSC_COMM_WORLD,"    Phase [%lld]: (peirl) Bp = %g [1/s], Ep = %g [J/mol], Vp = %g [m3/mol], taup = %g [MPa], gamma = %g [-], q = %g [-] \n", (LLD)(m->ID), m->Bp, m->Ep, m->Vp, m->taup, m->gamma, m->q);
 		PetscPrintf(PETSC_COMM_WORLD,"    Phase [%lld]: (elast) G = %g [MPa], K = %g [MPa], Kp = %g [-] \n", (LLD)(m->ID), m->G, m->K, m->Kp);
 		PetscPrintf(PETSC_COMM_WORLD,"    Phase [%lld]: (plast) cohesion = %g [MPa], friction angle = %g [deg] \n", (LLD)(m->ID),m->ch, m->fr);
-		PetscPrintf(PETSC_COMM_WORLD,"    Phase [%lld]: (sweak) cohesion SoftLaw = %lld [-], friction SoftLaw = %lld [-] \n", (LLD)(m->ID),(LLD)m->chSoft->ID, (LLD)m->frSoft->ID);
+		PetscPrintf(PETSC_COMM_WORLD,"    Phase [%lld]: (sweak) cohesion SoftLaw = %lld [-], friction SoftLaw = %lld [-] \n", (LLD)(m->ID),(LLD)chSoftID, (LLD)frSoftID);
 		PetscPrintf(PETSC_COMM_WORLD,"    Phase [%lld]: (temp ) alpha = %g [1/K], cp = %g [J/kg/K], k = %g [W/m/K], A = %g [W/m3] \n", (LLD)(m->ID),m->alpha, m->Cp,m->k, m->A);
 		PetscPrintf(PETSC_COMM_WORLD,"    \n");
 	}
