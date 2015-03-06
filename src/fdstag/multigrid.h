@@ -22,7 +22,10 @@ typedef struct
 	DOFIndex  dof;                   // indexing vectors
 	Vec       bcvx, bcvy, bcvz, bcp; // restricted boundary condition vectors
 	Mat       R, P;                  // restriction & prolongation operators (not set on finest grid)
-	Vec       ieta;                  // inverse viscosity
+	Vec       eta;                   // cell viscosity vector
+
+//	Vec       d, dx, dy, dz;         // diagonal coefficient vectors
+
 
 	// ******** fine level ************
 	//     |                   ^
@@ -39,9 +42,9 @@ PetscErrorCode MGLevelCreate(MGLevel *lvl, MGLevel *fine, FDSTAG *fs, BCCtx *bc)
 
 PetscErrorCode MGLevelDestroy(MGLevel *lvl);
 
-PetscErrorCode MGLevelInitInvEta(MGLevel *lvl, JacRes *jr);
+PetscErrorCode MGLevelInitEta(MGLevel *lvl, JacRes *jr);
 
-PetscErrorCode MGLevelRestrictInvEta(MGLevel *lvl, MGLevel *fine);
+PetscErrorCode MGLevelRestrictEta(MGLevel *lvl, MGLevel *fine);
 
 PetscErrorCode MGLevelRestrictBC(MGLevel *lvl, MGLevel *fine);
 

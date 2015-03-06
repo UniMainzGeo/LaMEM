@@ -285,11 +285,15 @@ PetscErrorCode FormJacobian(SNES snes, Vec x, Mat Amat, Mat Pmat, void *ctx)
 	}
 	else if(nl->jtype == _MFFD_)
 	{
+		printf("        ***        \n");
+		printf("USING MMFD JACOBIAN\n");
+		printf("        ***        \n");
+
 		// ... matrix-free finite-difference (MMFD)
 		ierr = MatMFFDSetFunction(nl->MFFD, (PetscErrorCode (*)(void*,Vec,Vec))SNESComputeFunction, snes); CHKERRQ(ierr);
 		ierr = MatMFFDSetBase(nl->MFFD, x, jr->gres);                                                      CHKERRQ(ierr);
-		ierr = MatShellSetOperation(nl->J, MATOP_MULT, (void(*)(void))JacApplyMFFD);                        CHKERRQ(ierr);
-		ierr = MatShellSetContext(nl->J, (void*)&nl->MFFD);                                                 CHKERRQ(ierr);
+		ierr = MatShellSetOperation(nl->J, MATOP_MULT, (void(*)(void))JacApplyMFFD);                       CHKERRQ(ierr);
+		ierr = MatShellSetContext(nl->J, (void*)&nl->MFFD);                                                CHKERRQ(ierr);
 	}
 
 	// assemble Jacobian & preconditioner

@@ -1723,7 +1723,7 @@ PetscErrorCode JacResAvgVisc(JacRes *jr)
 			jr->svCell[iter++].etaAvg = 0.1*avrg;
 		}
 */
-		jr->svCell[iter++].etaAvg = buff[k][j][i];
+		jr->svCell[iter++].etaAvg = avrg;
 
 
 	}

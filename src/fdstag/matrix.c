@@ -575,7 +575,7 @@ PetscErrorCode PMatMonoAssemble(PMat pm)
 		rho  = jr->svCell[iter].svBulk.rho;
 
 // ACHTUNG
-//eta = jr->svCell[iter].etaAvg;
+// eta = jr->svCell[iter].etaAvg;
 
 //PetscScalar	etav = eta;
 

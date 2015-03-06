@@ -7,6 +7,7 @@
 #include "dfzero.h"
 //---------------------------------------------------------------------------
 // * add different viscosity averaging methods (echo info to output)
+// * make sure that Peierls creep is deactivated for isothermal analysis
 // ...
 //---------------------------------------------------------------------------
 
@@ -493,8 +494,15 @@ PetscErrorCode DevConstEq(
 			//=============================
 			svDev->eta   += phRat[i]*eta;
 			svDev->DIIpl += phRat[i]*DIIpl;
+
+//			svDev->eta   += phRat[i]*log(eta);
+//			svDev->DIIpl += phRat[i]*log(DIIpl);
+
 		}
 	}
+
+//	svDev->eta   = exp(svDev->eta);
+//	svDev->DIIpl = exp(svDev->DIIpl);
 
 	PetscFunctionReturn(0);
 }

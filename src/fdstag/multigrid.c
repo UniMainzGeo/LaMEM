@@ -119,7 +119,10 @@ PetscErrorCode MGLevelCreate(MGLevel *lvl, MGLevel *fine, FDSTAG *fs, BCCtx *bc)
 	}
 
 	// create inverse viscosity vector
-	ierr = DMCreateGlobalVector(lvl->DA_CEN, &lvl->ieta); CHKERRQ(ierr);
+	ierr = DMCreateLocalVector(lvl->DA_CEN, &lvl->eta); CHKERRQ(ierr);
+
+
+//	ierr =   MatGetDiagonal(Mat mat, Vec v);
 
 	PetscFunctionReturn(0);
 }
@@ -146,18 +149,18 @@ PetscErrorCode MGLevelDestroy(MGLevel *lvl)
 		ierr = MatDestroy(&lvl->P);        CHKERRQ(ierr);
 	}
 
-	ierr = VecDestroy(&lvl->ieta);         CHKERRQ(ierr);
+	ierr = VecDestroy(&lvl->eta);          CHKERRQ(ierr);
 
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
 #undef __FUNCT__
-#define __FUNCT__ "MGLevelInitInvEta"
-PetscErrorCode MGLevelInitInvEta(MGLevel *lvl, JacRes *jr)
+#define __FUNCT__ "MGLevelInitEta"
+PetscErrorCode MGLevelInitEta(MGLevel *lvl, JacRes *jr)
 {
 	// initialize inverse viscosity on fine grid
 
-	PetscScalar ***ieta;
+	PetscScalar ***eta;
 	PetscInt    i, j, k, nx, ny, nz, sx, sy, sz, iter;
 
 	PetscErrorCode ierr;
@@ -166,8 +169,8 @@ PetscErrorCode MGLevelInitInvEta(MGLevel *lvl, JacRes *jr)
 	// only for coupled multigrid
 	if(lvl->dof.idxmod != IDXCOUPLED) PetscFunctionReturn(0);
 
-	// access inverse viscosity vector
-	ierr = DMDAVecGetArray(lvl->DA_CEN, lvl->ieta, &ieta); CHKERRQ(ierr);
+	// access viscosity vector
+	ierr = DMDAVecGetArray(lvl->DA_CEN, lvl->eta, &eta); CHKERRQ(ierr);
 
 	//----------
 	// P-points
@@ -177,27 +180,27 @@ PetscErrorCode MGLevelInitInvEta(MGLevel *lvl, JacRes *jr)
 
 	START_STD_LOOP
 	{
-//		ieta[k][j][i] = 1.0/jr->svCell[iter++].svDev.eta;
-		ieta[k][j][i] =     jr->svCell[iter++].svDev.eta;
+//		eta[k][j][i] = 1.0/jr->svCell[iter++].svDev.eta;
+		eta[k][j][i] =     jr->svCell[iter++].svDev.eta;
 
 	}
 	END_STD_LOOP
 
 	// restore access
-	ierr = DMDAVecRestoreArray(lvl->DA_CEN, lvl->ieta, &ieta); CHKERRQ(ierr);
+	ierr = DMDAVecRestoreArray(lvl->DA_CEN, lvl->eta, &eta); CHKERRQ(ierr);
 
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
 #undef __FUNCT__
-#define __FUNCT__ "MGLevelRestrictInvEta"
-PetscErrorCode MGLevelRestrictInvEta(MGLevel *lvl, MGLevel *fine)
+#define __FUNCT__ "MGLevelRestrictEta"
+PetscErrorCode MGLevelRestrictEta(MGLevel *lvl, MGLevel *fine)
 {
 	// restrict inverse viscosity from fine to coarse level
 
 	PetscInt    I, J, K;
 	PetscInt    i, j, k, nx, ny, nz, sx, sy, sz;
-	PetscScalar sum, ***cieta, ***fieta;
+	PetscScalar sum, ***ceta, ***feta;
 
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
@@ -205,11 +208,11 @@ PetscErrorCode MGLevelRestrictInvEta(MGLevel *lvl, MGLevel *fine)
 	// only for coupled multigrid
 	if(lvl->dof.idxmod != IDXCOUPLED) PetscFunctionReturn(0);
 
-	// access inverse viscosity vector in coarse grid
-	ierr = DMDAVecGetArray(lvl->DA_CEN,  lvl->ieta,  &cieta); CHKERRQ(ierr);
+	// access viscosity vector in coarse grid
+	ierr = DMDAVecGetArray(lvl->DA_CEN,  lvl->eta,  &ceta); CHKERRQ(ierr);
 
-	// access inverse viscosity vector in fine grid
-	ierr = DMDAVecGetArray(fine->DA_CEN, fine->ieta, &fieta); CHKERRQ(ierr);
+	// access viscosity vector in fine grid
+	ierr = DMDAVecGetArray(fine->DA_CEN, fine->eta, &feta); CHKERRQ(ierr);
 
 	//-----------------------
 	// P-points (coarse grid)
@@ -223,24 +226,24 @@ PetscErrorCode MGLevelRestrictInvEta(MGLevel *lvl, MGLevel *fine)
 		J = 2*j;
 		K = 2*k;
 
-		// compute average inverse viscosity
-		sum = fieta[K  ][J  ][I  ]
-		+     fieta[K  ][J  ][I+1]
-		+     fieta[K  ][J+1][I  ]
-		+     fieta[K  ][J+1][I+1]
-		+     fieta[K+1][J  ][I  ]
-		+     fieta[K+1][J  ][I+1]
-		+     fieta[K+1][J+1][I  ]
-		+     fieta[K+1][J+1][I+1];
+		// compute average viscosity
+		sum = feta[K  ][J  ][I  ]
+		+     feta[K  ][J  ][I+1]
+		+     feta[K  ][J+1][I  ]
+		+     feta[K  ][J+1][I+1]
+		+     feta[K+1][J  ][I  ]
+		+     feta[K+1][J  ][I+1]
+		+     feta[K+1][J+1][I  ]
+		+     feta[K+1][J+1][I+1];
 
-		cieta[k][j][i] = sum/8.0;
+		ceta[k][j][i] = sum/8.0;
 	}
 	END_STD_LOOP
 
 	// restore access
-	ierr = DMDAVecRestoreArray(lvl->DA_CEN,  lvl->ieta,  &cieta); CHKERRQ(ierr);
+	ierr = DMDAVecRestoreArray(lvl->DA_CEN,  lvl->eta,  &ceta); CHKERRQ(ierr);
 
-	ierr = DMDAVecRestoreArray(fine->DA_CEN, fine->ieta, &fieta); CHKERRQ(ierr);
+	ierr = DMDAVecRestoreArray(fine->DA_CEN, fine->eta, &feta); CHKERRQ(ierr);
 
 
 	PetscFunctionReturn(0);
@@ -712,7 +715,7 @@ PetscErrorCode MGLevelSetupProlong(MGLevel *lvl, MGLevel *fine)
 	PetscScalar v[8], bc[8], vsf[8], vsr[4], *vs;
 	PetscInt    row, I, J, K, I1, J1, K1;
 	PetscInt    i, j, k, nx, ny, nz, sx, sy, sz;
-	PetscScalar ***cieta, ***fieta;
+	PetscScalar ***ceta, ***feta;
 	PetscScalar ***ivx,   ***ivy,   ***ivz,   ***ip;
 	PetscScalar ***fbcvx, ***fbcvy, ***fbcvz, ***fbcp;
 	PetscScalar ***cbcvx, ***cbcvy, ***cbcvz, ***cbcp;
@@ -744,10 +747,10 @@ PetscErrorCode MGLevelSetupProlong(MGLevel *lvl, MGLevel *fine)
 	ierr = DMDAVecGetArray(lvl->DA_CEN,  lvl->bcp,     &cbcp);  CHKERRQ(ierr);
 
 	// access inverse viscosity vector in coarse grid
-	ierr = DMDAVecGetArray(lvl->DA_CEN,  lvl->ieta,  &cieta); CHKERRQ(ierr);
+	ierr = DMDAVecGetArray(lvl->DA_CEN,  lvl->eta,  &ceta); CHKERRQ(ierr);
 
 	// access inverse viscosity vector in fine grid
-	ierr = DMDAVecGetArray(fine->DA_CEN, fine->ieta, &fieta); CHKERRQ(ierr);
+	ierr = DMDAVecGetArray(fine->DA_CEN, fine->eta, &feta); CHKERRQ(ierr);
 
 	// get global index of the first row in the fine grid
 	if     (fine->dof.idxmod == IDXCOUPLED)   { row = fine->dof.st;  }
@@ -990,9 +993,8 @@ PetscErrorCode MGLevelSetupProlong(MGLevel *lvl, MGLevel *fine)
 	ierr = DMDAVecRestoreArray(lvl->DA_Z,    lvl->bcvz,     &cbcvz); CHKERRQ(ierr);
 	ierr = DMDAVecRestoreArray(lvl->DA_CEN,  lvl->bcp,      &cbcp);  CHKERRQ(ierr);
 
-	ierr = DMDAVecRestoreArray(lvl->DA_CEN,  lvl->ieta,  &cieta); CHKERRQ(ierr);
-
-	ierr = DMDAVecRestoreArray(fine->DA_CEN, fine->ieta, &fieta); CHKERRQ(ierr);
+	ierr = DMDAVecRestoreArray(lvl->DA_CEN,  lvl->eta,      &ceta);  CHKERRQ(ierr);
+	ierr = DMDAVecRestoreArray(fine->DA_CEN, fine->eta,     &feta);  CHKERRQ(ierr);
 
 	// assemble prolongation matrix
 	ierr = MatAIJAssemble(P, 0, NULL, 0.0); CHKERRQ(ierr);
@@ -1675,14 +1677,14 @@ PetscErrorCode MGSetup(MG *mg, Mat A)
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
 
-	ierr = MGLevelInitInvEta(mg->lvls, mg->jr); CHKERRQ(ierr);
+	ierr = MGLevelInitEta(mg->lvls, mg->jr); CHKERRQ(ierr);
 
 	for(i = 1; i < mg->nlvl; i++)
 	{
-		ierr = MGLevelRestrictBC    (&mg->lvls[i], &mg->lvls[i-1]); CHKERRQ(ierr);
-		ierr = MGLevelRestrictInvEta(&mg->lvls[i], &mg->lvls[i-1]); CHKERRQ(ierr);
-		ierr = MGLevelSetupRestrict (&mg->lvls[i], &mg->lvls[i-1]); CHKERRQ(ierr);
-		ierr = MGLevelSetupProlong  (&mg->lvls[i], &mg->lvls[i-1]); CHKERRQ(ierr);
+		ierr = MGLevelRestrictBC   (&mg->lvls[i], &mg->lvls[i-1]); CHKERRQ(ierr);
+		ierr = MGLevelRestrictEta  (&mg->lvls[i], &mg->lvls[i-1]); CHKERRQ(ierr);
+		ierr = MGLevelSetupRestrict(&mg->lvls[i], &mg->lvls[i-1]); CHKERRQ(ierr);
+		ierr = MGLevelSetupProlong (&mg->lvls[i], &mg->lvls[i-1]); CHKERRQ(ierr);
 	}
 
 	// setup coarse grid solver if necessary
