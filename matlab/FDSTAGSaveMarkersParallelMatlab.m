@@ -70,6 +70,22 @@ for num=1:Nproc
     part_phs = A.Phase(x_start(num):x_end(num),y_start(num):y_end(num),z_start(num):z_end(num));
     part_T   = A.Temp(x_start(num):x_end(num),y_start(num):y_end(num),z_start(num):z_end(num));
     
+    
+    % ADD RANDOM NOISE ON PARTICLES
+    if isfield(A,'RandomNoise')
+        if A.RandomNoise
+            dx = part_x(2,2,2)-part_x(1,1,1);
+            dy = part_y(2,2,2)-part_y(1,1,1);
+            dz = part_z(2,2,2)-part_z(1,1,1);
+            
+            part_x = part_x + (rand(size(part_x))-0.5)*dx*0.5;
+            part_y = part_y + (rand(size(part_y))-0.5)*dy*0.5;
+            part_z = part_z + (rand(size(part_z))-0.5)*dz*0.5;
+        end
+    end
+    
+    
+    
     % No. of particles per processor
     num_particles = size(part_x,1)* size(part_x,2) * size(part_x,3); 
     
