@@ -485,7 +485,7 @@ PetscErrorCode PVOutUpdatePVD(PVOut *pvout, const char *dirName, PetscScalar tti
 	asprintf(&fname, "%s.pvd", pvout->outfile);
 	if(!tindx) fp = fopen(fname,"w");
 	else       fp = fopen(fname,"r+");
-	if(fp == NULL) SETERRQ1(PETSC_COMM_WORLD, 1,"cannot open file %s", fname);
+	if(fp == NULL) SETERRQ1(PETSC_COMM_SELF, 1,"cannot open file %s", fname);
 	free(fname);
 
 	if(!tindx)
@@ -541,7 +541,7 @@ PetscErrorCode PVOutWritePVTR(PVOut *pvout, const char *dirName)
 	// open outfile.pvtr file in the output directory (write mode)
 	asprintf(&fname, "%s/%s.pvtr", dirName, pvout->outfile);
 	fp = fopen(fname,"w");
-	if(fp == NULL) SETERRQ1(PETSC_COMM_WORLD, 1,"cannot open file %s", fname);
+	if(fp == NULL) SETERRQ1(PETSC_COMM_SELF, 1,"cannot open file %s", fname);
 	free(fname);
 
 	// write header
@@ -629,7 +629,7 @@ PetscErrorCode PVOutWriteVTR(PVOut *pvout, JacRes *jr, const char *dirName)
 	// open outfile_p_XXXXXX.vtr file in the output directory (write mode)
 	asprintf(&fname, "%s/%s_p%1.6lld.vtr", dirName, pvout->outfile, (LLD)rank);
 	fp = fopen(fname,"w");
-	if(fp == NULL) SETERRQ1(PETSC_COMM_WORLD, 1,"cannot open file %s", fname);
+	if(fp == NULL) SETERRQ1(PETSC_COMM_SELF, 1,"cannot open file %s", fname);
 	free(fname);
 
 	// link output buffer to file

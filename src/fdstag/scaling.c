@@ -66,7 +66,7 @@ PetscErrorCode ScalingReadFromFile(Scaling *scal, FILE *fp)
 		if     (!strcmp(utype, "none"))   scal->utype = _NONE_;
 		else if(!strcmp(utype, "si"))     scal->utype = _SI_;
 		else if(!strcmp(utype, "geo"))    scal->utype = _GEO_;
-		else SETERRQ1(PETSC_COMM_WORLD, PETSC_ERR_USER, "Incorrect type of units: %s", utype);
+		else SETERRQ1(PETSC_COMM_SELF, PETSC_ERR_USER, "Incorrect type of units: %s", utype);
 	}
 
 	PetscFunctionReturn(0);
@@ -90,7 +90,7 @@ PetscErrorCode ScalingCreate(
 
 	if(DimensionalUnits && scal->utype ==_NONE_)
 	{
-		SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "set 'DimensionalUnits' & 'units' options coherently in the input file");
+		SETERRQ(PETSC_COMM_SELF, PETSC_ERR_USER, "set 'DimensionalUnits' & 'units' options coherently in the input file");
 	}
 
 	// unit

@@ -50,11 +50,11 @@ PetscErrorCode MatPropInit(JacRes *jr, UserCtx *usr)
 	// error checking
 	if(count_starts > max_num_phases || count_ends > max_num_phases)
 	{
-		SETERRQ1(PETSC_COMM_WORLD, PETSC_ERR_USER, "Too many material structures specified! Max allowed: %lld", (LLD)max_num_phases);
+		SETERRQ1(PETSC_COMM_SELF, PETSC_ERR_USER, "Too many material structures specified! Max allowed: %lld", (LLD)max_num_phases);
 	}
 	if(count_starts != count_ends)
 	{
-		SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "Incomplete material structures! <MaterialStart> & <MaterialEnd> don't match");
+		SETERRQ(PETSC_COMM_SELF, PETSC_ERR_USER, "Incomplete material structures! <MaterialStart> & <MaterialEnd> don't match");
 	}
 
 	// store actual number of materials
@@ -120,11 +120,11 @@ PetscErrorCode MatPropGetStruct(FILE *fp,
 	// error checking
 	if(!found)
 	{
-		SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "No phase ID specified! ");
+		 SETERRQ(PETSC_COMM_SELF,PETSC_ERR_USER, "No phase ID specified! ");
 	}
 	if(ID > numPhases - 1)
 	{
-		SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "Incorrect phase numbering!");
+		 SETERRQ(PETSC_COMM_SELF,PETSC_ERR_USER, "Incorrect phase numbering!");
 	}
 
 	// initialize additional parameters
@@ -140,7 +140,7 @@ PetscErrorCode MatPropGetStruct(FILE *fp,
 	// check ID
 	if(m->ID != -1)
 	{
-		SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "Incorrect phase numbering!");
+		 SETERRQ(PETSC_COMM_SELF,PETSC_ERR_USER, "Incorrect phase numbering!");
 	}
 
 	// set ID
@@ -218,16 +218,16 @@ PetscErrorCode MatPropGetStruct(FILE *fp,
 	// check softening laws
 	if(chSoftID > numSoft-1)
 	{
-		SETERRQ1(PETSC_COMM_WORLD, PETSC_ERR_USER, "Incorrect cohesion softening law specified for phase %lld", (LLD)ID);
+		SETERRQ1(PETSC_COMM_SELF, PETSC_ERR_USER, "Incorrect cohesion softening law specified for phase %lld", (LLD)ID);
 	}
 	if(frSoftID > numSoft-1)
 	{
-		SETERRQ1(PETSC_COMM_WORLD, PETSC_ERR_USER, "Incorrect friction softening law specified for phase %lld", (LLD)ID);
+		SETERRQ1(PETSC_COMM_SELF, PETSC_ERR_USER, "Incorrect friction softening law specified for phase %lld", (LLD)ID);
 	}
 
 	if(m->fr && !m->ch)
 	{
-		SETERRQ1(PETSC_COMM_WORLD, PETSC_ERR_USER, "Nonzero cohesion must be specified for phase %lld", (LLD)ID);
+		SETERRQ1(PETSC_COMM_SELF, PETSC_ERR_USER, "Nonzero cohesion must be specified for phase %lld", (LLD)ID);
 	}
 
 	// set pointers to softening laws
@@ -237,19 +237,19 @@ PetscErrorCode MatPropGetStruct(FILE *fp,
 	// check strain-rate dependent creep
 	if((!eta0 && e0) || (eta0 && !e0))
 	{
-		SETERRQ1(PETSC_COMM_WORLD, PETSC_ERR_USER, "eta0 & e0 must be specified simultaneously for phase %lld", (LLD)ID);
+		SETERRQ1(PETSC_COMM_SELF, PETSC_ERR_USER, "eta0 & e0 must be specified simultaneously for phase %lld", (LLD)ID);
 	}
 
 	// check power-law exponent
 	if(!m->n && ((eta0 && e0) || m->Bn))
 	{
-		SETERRQ1(PETSC_COMM_WORLD, PETSC_ERR_USER, "Power-law exponent must be specified for phase %lld", (LLD)ID);
+		SETERRQ1(PETSC_COMM_SELF, PETSC_ERR_USER, "Power-law exponent must be specified for phase %lld", (LLD)ID);
 	}
 
 	// check Peierls creep
 	if(m->Bp && (!m->taup || !m->gamma || !m->q || !m->Ep || !m->Vp))
 	{
-		SETERRQ1(PETSC_COMM_WORLD, PETSC_ERR_USER, "All Peierls creep parameters must be specified simultaneously for phase %lld", (LLD)ID);
+		SETERRQ1(PETSC_COMM_SELF, PETSC_ERR_USER, "All Peierls creep parameters must be specified simultaneously for phase %lld", (LLD)ID);
 	}
 
 	// recompute creep parameters
@@ -259,13 +259,13 @@ PetscErrorCode MatPropGetStruct(FILE *fp,
 	// check that at least one essential deformation mechanism is specified
 	if(!m->Bd && !m->Bn && !m->G)
 	{
-		SETERRQ1(PETSC_COMM_WORLD, PETSC_ERR_USER, "At least one of the parameter (set) Bd (eta), Bn (eta0, e0), G must be specified for phase %lld", (LLD)ID);
+		SETERRQ1(PETSC_COMM_SELF, PETSC_ERR_USER, "At least one of the parameter (set) Bd (eta), Bn (eta0, e0), G must be specified for phase %lld", (LLD)ID);
 	}
 
 	// check units for predefined profile
 	if((strlen(ndiff) || strlen(ndisl)) && utype == _NONE_)
 	{
-		SETERRQ1(PETSC_COMM_WORLD, PETSC_ERR_USER, "Cannot have a predefined creep profile (phase %lld), in a non-dimensional setup!", (LLD)ID);
+		SETERRQ1(PETSC_COMM_SELF, PETSC_ERR_USER, "Cannot have a predefined creep profile (phase %lld), in a non-dimensional setup!", (LLD)ID);
 	}
 
 	// print
@@ -371,11 +371,11 @@ PetscErrorCode MatSoftInit(JacRes *jr, UserCtx *usr)
 	// error checking
 	if(count_starts > max_num_soft || count_ends > max_num_soft)
 	{
-		SETERRQ1(PETSC_COMM_WORLD, PETSC_ERR_USER, "Too many softening laws specified! Max allowed: %lld", (LLD)max_num_soft);
+		SETERRQ1(PETSC_COMM_SELF, PETSC_ERR_USER, "Too many softening laws specified! Max allowed: %lld", (LLD)max_num_soft);
 	}
 	if(count_starts != count_ends)
 	{
-		SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "Incomplete material structures! <SofteningStart> & <SofteningEnd> don't match");
+		 SETERRQ(PETSC_COMM_SELF, PETSC_ERR_USER, "Incomplete material structures! <SofteningStart> & <SofteningEnd> don't match");
 	}
 
 	// store actual number of softening laws
@@ -418,11 +418,11 @@ PetscErrorCode MatSoftGetStruct(FILE *fp,
 	// error checking
 	if(!found)
 	{
-		SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "No softening law ID specified! ");
+		 SETERRQ(PETSC_COMM_SELF, PETSC_ERR_USER, "No softening law ID specified! ");
 	}
 	if(ID > numSoft - 1)
 	{
-		SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "Incorrect softening law numbering!");
+		 SETERRQ(PETSC_COMM_SELF, PETSC_ERR_USER, "Incorrect softening law numbering!");
 	}
 
 	// get pointer to specified softening law
@@ -431,7 +431,7 @@ PetscErrorCode MatSoftGetStruct(FILE *fp,
 	// check ID
 	if(s->ID != -1)
 	{
-		SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "Incorrect softening law numbering!");
+		 SETERRQ(PETSC_COMM_SELF, PETSC_ERR_USER, "Incorrect softening law numbering!");
 	}
 
 	// set ID
@@ -444,7 +444,7 @@ PetscErrorCode MatSoftGetStruct(FILE *fp,
 
 	if(!s->A || !s->APS1 || !s->APS2)
 	{
-		SETERRQ1(PETSC_COMM_WORLD, PETSC_ERR_USER, "All parameters must be specified simultaneously for softening law %lld", (LLD)ID);
+		SETERRQ1(PETSC_COMM_SELF, PETSC_ERR_USER, "All parameters must be specified simultaneously for softening law %lld", (LLD)ID);
 	}
 
 	PetscPrintf(PETSC_COMM_WORLD,"SoftLaw [%lld]: A = %g, APS1 = %g, APS2 = %g \n", (LLD)(s->ID), s->A, s->APS1, s->APS2);
@@ -532,7 +532,7 @@ PetscErrorCode SetDiffProfile(Material_t *m, char name[])
 
 	else
 	{
-		SETERRQ1(PETSC_COMM_WORLD, PETSC_ERR_USER, "No such diffusion creep profile: %s! ",name);
+		SETERRQ1(PETSC_COMM_SELF, PETSC_ERR_USER, "No such diffusion creep profile: %s! ",name);
 	}
 
 	// make tensor correction and transform units from MPa if necessary
@@ -884,7 +884,7 @@ PetscErrorCode SetDislProfile(Material_t *m, char name[])
 
 	else
 	{
-		SETERRQ1(PETSC_COMM_WORLD, PETSC_ERR_USER, "No such dislocation creep profile: %s! ",name);
+		SETERRQ1(PETSC_COMM_SELF, PETSC_ERR_USER, "No such dislocation creep profile: %s! ",name);
 	}
 
 	// make tensor correction and transform units from MPa if necessary
@@ -911,7 +911,7 @@ PetscErrorCode SetProfileCorrection(PetscScalar B, PetscScalar n, TensorCorrecti
 	else if (tensorCorrection == _None_)        F2 = 1;
 	else
 	{
-		SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "Unknown tensor correction in creep mechanism profile!");
+		 SETERRQ(PETSC_COMM_SELF, PETSC_ERR_USER, "Unknown tensor correction in creep mechanism profile!");
 	}
 
 	// Units correction from [MPa^(-n)s^(-1)] to [Pa^(-n)s^(-1)] if required

@@ -148,7 +148,7 @@ PetscErrorCode FreeSurfGetPartition(
 		// checksum
 		for(i = 0, sum = 0; i < ds->nproc; i++) sum += part[i];
 
-		if(sum != nnod) SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "Inconsistent free surface partitioning");
+		if(sum != nnod) SETERRQ(PETSC_COMM_SELF, PETSC_ERR_USER, "Inconsistent free surface partitioning");
 	}
 
 	// return partitioning

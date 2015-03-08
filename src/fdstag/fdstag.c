@@ -555,19 +555,19 @@ PetscErrorCode Discret1DCheckMG(Discret1D *ds, const char *dir, PetscInt *_ncors
 	// check whether local grid size is an even number
 	if(ds->ncels % 2)
 	{
-		SETERRQ1(PETSC_COMM_WORLD, PETSC_ERR_USER, "Local grid size is an odd number in %s-direction", dir);
+		SETERRQ1(PETSC_COMM_SELF, PETSC_ERR_USER, "Local grid size is an odd number in %s-direction", dir);
 	}
 
 	// check uniform local grid size (constant on all processors)
 	if(ds->tcels % ds->nproc)
 	{
-		SETERRQ1(PETSC_COMM_WORLD, PETSC_ERR_USER, "Uniform local grid size doesn't exist in %s-direction", dir);
+		SETERRQ1(PETSC_COMM_SELF, PETSC_ERR_USER, "Uniform local grid size doesn't exist in %s-direction", dir);
 	}
 
 	// compare actual grid size with uniform value
 	if(ds->tcels/ds->nproc != ds->ncels)
 	{
-		SETERRQ1(PETSC_COMM_WORLD, PETSC_ERR_USER, "Local grid size is not constant on all processors in %s-direction", dir);
+		SETERRQ1(PETSC_COMM_SELF, PETSC_ERR_USER, "Local grid size is not constant on all processors in %s-direction", dir);
 	}
 
 	// determine maximum number of coarsening steps
@@ -1146,7 +1146,7 @@ PetscErrorCode FDSTAGView(FDSTAG *fs)
 	PetscPrintf(PETSC_COMM_WORLD, " Number of velocity DOF         :  %lld\n", (LLD)nVelDOF);
 	PetscPrintf(PETSC_COMM_WORLD, " Maximum cell aspect cell ratio :  %7.5f\n", maxAspRat);
 
-	if(maxAspRat > 10.0) SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, " Too large aspect ratio is not supported");
+	if(maxAspRat > 10.0) SETERRQ(PETSC_COMM_SELF, PETSC_ERR_USER, " Too large aspect ratio is not supported");
 
 	if(maxAspRat > 2.0) PetscPrintf(PETSC_COMM_WORLD, " WARNING! you are using non-optimal aspect ratio. Expect precision deterioration\n");
 

@@ -240,7 +240,7 @@ PetscErrorCode InputReadFile(JacRes *jr, UserCtx *user)
 	fp = fopen( user->ParamFile, "r" );
 	if(!fp)
 	{
-		SETERRQ1(PETSC_COMM_WORLD, PETSC_ERR_USER, "Cannot open input file %s", user->ParamFile);
+		SETERRQ1(PETSC_COMM_SELF, PETSC_ERR_USER, "Cannot open input file %s", user->ParamFile);
 	}
 
 	// read number of cells
@@ -292,7 +292,7 @@ PetscErrorCode InputReadFile(JacRes *jr, UserCtx *user)
 		else if(!strcmp(setup_name, "slab"))       user->msetup = SLAB;
 		else if(!strcmp(setup_name, "spheres"))    user->msetup = SPHERES;
 		else if(!strcmp(setup_name, "bands"))      user->msetup = BANDS;
-		else SETERRQ1(PETSC_COMM_WORLD, PETSC_ERR_USER,"#ERROR! Incorrect model setup: %s", setup_name);
+		else SETERRQ1(PETSC_COMM_SELF, PETSC_ERR_USER,"#ERROR! Incorrect model setup: %s", setup_name);
 	}
 
 	parse_GetString( fp, "OutputFile", user->OutputFile, PETSC_MAX_PATH_LEN-1, &found );
@@ -425,7 +425,7 @@ PetscErrorCode InputReadCommLine(UserCtx *user )
 		else if(!strcmp(setup_name, "slab"))       user->msetup = SLAB;
 		else if(!strcmp(setup_name, "spheres"))    user->msetup = SPHERES;
 		else if(!strcmp(setup_name, "bands"))      user->msetup = BANDS;
-		else SETERRQ1(PETSC_COMM_WORLD, PETSC_ERR_USER,"ERROR! Incorrect model setup: %s", setup_name);
+		else SETERRQ1(PETSC_COMM_SELF, PETSC_ERR_USER,"ERROR! Incorrect model setup: %s", setup_name);
 	}
 
 	// boundary conditions
@@ -557,9 +557,9 @@ PetscErrorCode ReadMeshSegDir(
 	// read segments
 	parse_GetDoubleArray(fp, name, &arsz, buff, &found);
 
-	if(!found) SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "ERROR! Mesh refinement segments are not specified\n");
+	if(!found) SETERRQ(PETSC_COMM_SELF, PETSC_ERR_USER, "ERROR! Mesh refinement segments are not specified\n");
 
-	if(arsz != 3*msi->nsegs-1) SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "ERROR! Incorrect number entries in the mesh refinement array\n");
+	if(arsz != 3*msi->nsegs-1) SETERRQ(PETSC_COMM_SELF, PETSC_ERR_USER, "ERROR! Incorrect number entries in the mesh refinement array\n");
 
 	// load the data ... delimiters
 	for(i = 0, jj = 0; i < msi->nsegs-1; i++, jj++) msi->delims[i] = buff[jj];
@@ -575,7 +575,7 @@ PetscErrorCode ReadMeshSegDir(
 	{
 		if(msi->delims[i] <= msi->delims[i-1])
 		{
-			SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "ERROR! refinement segments are unordered/overlapping\n");
+			SETERRQ(PETSC_COMM_SELF, PETSC_ERR_USER, "ERROR! refinement segments are unordered/overlapping\n");
 		}
 	}
 
@@ -584,7 +584,7 @@ PetscErrorCode ReadMeshSegDir(
 	{
 		if(msi->delims[i] <= beg || msi->delims[i] >= end)
 		{
-			SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "ERROR! Refinement segments out of bound\n");
+			SETERRQ(PETSC_COMM_SELF, PETSC_ERR_USER, "ERROR! Refinement segments out of bound\n");
 		}
 	}
 
@@ -593,7 +593,7 @@ PetscErrorCode ReadMeshSegDir(
 	{
 		if(msi->ncells[i] <= 0)
 		{
-			SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "ERROR! Number of cells must be non-negative\n");
+			SETERRQ(PETSC_COMM_SELF, PETSC_ERR_USER, "ERROR! Number of cells must be non-negative\n");
 		}
 	}
 
@@ -602,7 +602,7 @@ PetscErrorCode ReadMeshSegDir(
 	{
 		if(!msi->biases[i])
 		{
-			SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "ERROR! Bias factors must be non-zero\n");
+			SETERRQ(PETSC_COMM_SELF, PETSC_ERR_USER, "ERROR! Bias factors must be non-zero\n");
 		}
 	}
 
@@ -738,7 +738,7 @@ PetscErrorCode ReadMaterialProperties(UserCtx *user)
 	// check total number of phases found
 	if(n_phases > max_num_phases)
 	{
-		SETERRQ2(PETSC_COMM_WORLD, PETSC_ERR_USER, "Too many phases in the input file! Actual: %lld, Maximum: %lld", (LLD)n_phases, (LLD)max_num_phases);
+		SETERRQ2(PETSC_COMM_SELF, PETSC_ERR_USER, "Too many phases in the input file! Actual: %lld, Maximum: %lld", (LLD)n_phases, (LLD)max_num_phases);
 	}
 
 	// initialize phase checking array
@@ -756,7 +756,7 @@ PetscErrorCode ReadMaterialProperties(UserCtx *user)
 		// check phase numbering
 		if(p->phase_number > n_phases-1)
 		{
-			SETERRQ2(PETSC_COMM_WORLD, PETSC_ERR_USER, "Phase numbering out of bound! Phase ID: %lld, Maximum ID: %lld", (LLD)p->phase_number, (LLD)(n_phases-1));
+			SETERRQ2(PETSC_COMM_SELF, PETSC_ERR_USER, "Phase numbering out of bound! Phase ID: %lld, Maximum ID: %lld", (LLD)p->phase_number, (LLD)(n_phases-1));
 		}
 		check_phase[p->phase_number] = 1;
 
@@ -973,7 +973,7 @@ PetscErrorCode ReadMaterialProperties(UserCtx *user)
 
 	if(empty_phase == PETSC_TRUE)
 	{
-		SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "Incorrect phase numbering");
+		SETERRQ(PETSC_COMM_SELF, PETSC_ERR_USER, "Incorrect phase numbering");
 	}
 
 	PetscFunctionReturn(0);

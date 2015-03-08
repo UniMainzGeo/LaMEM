@@ -186,7 +186,7 @@ PetscErrorCode BCShiftIndices(BCCtx *bc, FDSTAG *fs, ShiftType stype)
 	// error checking
 	if(stype == bc->stype)
 	{
-		SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER,"Cannot call same type of index shifting twice in a row");
+		SETERRQ(PETSC_COMM_SELF, PETSC_ERR_USER,"Cannot call same type of index shifting twice in a row");
 	}
 
 	// access context

@@ -77,7 +77,7 @@ PetscErrorCode ADVMarkInit(AdvCtx *actx, UserCtx *user)
 	else if(user->msetup == SPHERES)    { PetscPrintf(PETSC_COMM_WORLD,"%s\n","spheres");         ierr = ADVMarkInitSpheres      (actx, user); CHKERRQ(ierr); }
 	else if(user->msetup == BANDS)      { PetscPrintf(PETSC_COMM_WORLD,"%s\n","bands");           ierr = ADVMarkInitBands        (actx, user); CHKERRQ(ierr); }
 	else if(user->msetup == RESTART)    { PetscPrintf(PETSC_COMM_WORLD,"%s\n","restart");         ierr = BreakReadMark           (actx      ); CHKERRQ(ierr); }
-	else SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER," *** Incorrect option for initialization of markers");
+	else SETERRQ(PETSC_COMM_SELF, PETSC_ERR_USER," *** Incorrect option for initialization of markers");
 
 
 	// compute host cells for all the markers
@@ -379,7 +379,7 @@ PetscErrorCode ADVMarkCheckMarkers(AdvCtx *actx)
 
 	if(error == PETSC_TRUE)
 	{
-		SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "Problems with initial marker distribution (see the above message)");
+		SETERRQ(PETSC_COMM_SELF, PETSC_ERR_USER, "Problems with initial marker distribution (see the above message)");
 	}
 
 	// clear
@@ -599,7 +599,7 @@ PetscErrorCode ADVMarkInitFileRedundant(AdvCtx *actx, UserCtx *user)
 	// check whether file contains the expected number of markers
 	if(tmark != nmark)
 	{
-		SETERRQ2(PETSC_COMM_WORLD,PETSC_ERR_USER," The file does not contain the expected number of markers [expected = %lld vs. present = %lld]", (LLD)tmark, (LLD)nmark);
+		SETERRQ2(PETSC_COMM_SELF,PETSC_ERR_USER," The file does not contain the expected number of markers [expected = %lld vs. present = %lld]", (LLD)tmark, (LLD)nmark);
 	}
 
 	// create buffer for x,y,z, phase & temperature
@@ -688,7 +688,7 @@ PetscErrorCode ADVMarkInitFileRedundant(AdvCtx *actx, UserCtx *user)
 	// error checking
 	if((maxphase + 1) != actx->jr->numPhases)
 	{
-		SETERRQ2(PETSC_COMM_WORLD,PETSC_ERR_USER," No. of detected phases %lld does not correspond to the no. of phases given in parameters file %lld", (LLD)maxphase, (LLD)actx->jr->numPhases);
+		SETERRQ2(PETSC_COMM_SELF,PETSC_ERR_USER," No. of detected phases %lld does not correspond to the no. of phases given in parameters file %lld", (LLD)maxphase, (LLD)actx->jr->numPhases);
 	}
 
 	PetscPrintf(PETSC_COMM_WORLD," Statistics markers: MaxPhase = %lld, MaxTemp = %g, NumberPhases = %lld \n", (LLD)maxphase, maxtemp, (LLD)actx->jr->numPhases);
@@ -1012,25 +1012,36 @@ PetscErrorCode ADVMarkInitFolding(AdvCtx *actx, UserCtx *user)
 	if (FoldingSetupDimensionalUnits) BottomStepPerturbation_Amplitude = BottomStepPerturbation_Amplitude/chLen;
 
 	if (DisplayInfo && flg){
-		PetscScalar BottomStepPerturbation_X;
+		PetscScalar BottomStepPerturbation_X, BottomStepPerturbation_Y;
 
 		// add a step-like pertubation at the bottom layer
 		BottomStepPerturbation_X = 0;
 		PetscOptionsGetReal(PETSC_NULL,"-BottomStepPerturbation_X"         ,&BottomStepPerturbation_X, &flg);
+        if (FoldingSetupDimensionalUnits){
+            BottomStepPerturbation_X = BottomStepPerturbation_X/chLen;
+        }
 
-		if (FoldingSetupDimensionalUnits) BottomStepPerturbation_X = BottomStepPerturbation_X/chLen;
+        BottomStepPerturbation_Y = user->y_front + user->L;
+        PetscOptionsGetReal(PETSC_NULL,"-BottomStepPerturbation_Y"         ,&BottomStepPerturbation_Y, &flg);
+        if (FoldingSetupDimensionalUnits & flg){
+            BottomStepPerturbation_Y = BottomStepPerturbation_Y/chLen;
+        }
+
 
 		// loop over local markers
 		for(imark = 0; imark < actx->nummark; imark++)
 		{
 			if (actx->markers[imark].phase > 0){
-				if (actx->markers[imark].X[0]<BottomStepPerturbation_X){
+				if ((actx->markers[imark].X[0]<BottomStepPerturbation_X) & (actx->markers[imark].X[1]<BottomStepPerturbation_Y)){
 					if ( actx->markers[imark].X[2]< (BottomStepPerturbation_Amplitude+zbot[0]) ){
 						actx->markers[imark].phase = 0;
 					}
 				}
 			}
 		}
+        
+        
+        
 	}
 	PetscFunctionReturn(0);
 }
@@ -1489,7 +1500,7 @@ PetscErrorCode ADVMarkInitFilePolygons(AdvCtx *actx, UserCtx *user)
 		}
 		else
 		{
-			SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "The 'Dir' argument is wrong; should be 0, 1 or 2.");
+			SETERRQ(PETSC_COMM_SELF, PETSC_ERR_USER, "The 'Dir' argument is wrong; should be 0, 1 or 2.");
 		}
 
 		// get lengths of polygons (PetscScalar !)

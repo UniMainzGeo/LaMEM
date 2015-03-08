@@ -110,11 +110,11 @@ PetscErrorCode NLSolCreate(NLSol *nl, PCStokes pc, SNES *p_snes)
 		
 		if ( (nl->wsCtx.winwidth < 1) | (nl->wsCtx.winwidth > _max_win_size_))
 		{
-			SETERRQ1(PETSC_COMM_WORLD, PETSC_ERR_USER, "js_ksp_difftol_winwidth should be between to be between 1 and %lld\n",(LLD) _max_win_size_);
+			SETERRQ1(PETSC_COMM_SELF, PETSC_ERR_USER, "js_ksp_difftol_winwidth should be between to be between 1 and %lld\n",(LLD) _max_win_size_);
 		}
 		if ( (nl->wsCtx.epsfrac < 0.0) | (nl->wsCtx.epsfrac > 1.0) ) 
 		{
-			SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "js_ksp_difftol_eps should be chosen to be between 0 and 1\n");
+			SETERRQ(PETSC_COMM_SELF, PETSC_ERR_USER, "js_ksp_difftol_eps should be chosen to be between 0 and 1\n");
 		}
 		
 		
@@ -417,7 +417,7 @@ PetscErrorCode CheckVelocityError(UserCtx *user)
 
 	if(isnan(MaxVel))
 	{
-		SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "  *** Emergency stop! Maximum velocity is NaN ***  \n");
+		SETERRQ(PETSC_COMM_SELF, PETSC_ERR_USER, "  *** Emergency stop! Maximum velocity is NaN ***  \n");
 	}
 
 	PetscFunctionReturn(0);

@@ -28,7 +28,7 @@ PetscErrorCode TSSolSetUp(TSSol *ts, UserCtx *usr)
 
 	if(ts->Cmax > 0.5)
 	{
-		SETERRQ2(PETSC_COMM_WORLD, PETSC_ERR_USER, " Courant step length Cmax=%7.5f is larger than allowed (%7.5f).", ts->Cmax, 0.5);
+		SETERRQ2(PETSC_COMM_SELF, PETSC_ERR_USER, " Courant step length Cmax=%7.5f is larger than allowed (%7.5f).", ts->Cmax, 0.5);
 	}
 
 	if(ts->Cmax > 0.3)

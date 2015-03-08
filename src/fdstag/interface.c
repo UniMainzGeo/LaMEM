@@ -98,7 +98,7 @@ PetscErrorCode InitMaterialProps(JacRes *jr, UserCtx *usr)
 		}
 		else
 		{	// unsupported viscosity law
-			SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "Unsupported viscosity law used");
+			SETERRQ(PETSC_COMM_SELF, PETSC_ERR_USER, "Unsupported viscosity law used");
 		}
 
 		// elasticity parameters

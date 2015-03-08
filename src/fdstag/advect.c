@@ -569,7 +569,7 @@ PetscErrorCode ADVMapMarkToDomains(AdvCtx *actx)
 		if(grank == -1)
 		{
 			// currently all the markers must remain in the box
-			SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "ERROR! Marker outflow is currently not implemented!");
+			SETERRQ(PETSC_COMM_SELF, PETSC_ERR_USER, "ERROR! Marker outflow is currently not implemented!");
 
 			// otherwise, number of deleted markers should be updated here, i.e.:
 			// cnt++;
@@ -1215,7 +1215,7 @@ PetscErrorCode getPhaseRatio(PetscInt n, PetscScalar *v, PetscScalar *rsum)
 
 	if(sum == 0.0)
 	{
-		SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, " Empty control volume");
+		SETERRQ(PETSC_COMM_SELF, PETSC_ERR_USER, " Empty control volume");
 	}
 
 	for(i = 0; i < n; i++) v[i] /= sum;

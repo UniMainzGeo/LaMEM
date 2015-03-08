@@ -156,7 +156,7 @@ PetscErrorCode GetEffVisc(
 	//  * LINEAR VISCO-ELASTO-PLASTIC MATERIAL
 	//  * POWER-LAW MATERIAL
 
-	PetscScalar eta_ve, inv_eta_els, inv_eta_dif, inv_eta_dis, eta_pl;
+	PetscScalar eta_ve, inv_eta_els, inv_eta_dif, inv_eta_dis, eta_pl, eta_viscous;
 
 	PetscFunctionBegin;
 
@@ -193,6 +193,9 @@ PetscErrorCode GetEffVisc(
 
 		// diffusion
 		inv_eta_dif = 2.0*ctx->A_dif;
+        
+        
+        eta_viscous = 1.0/inv_eta_dif;  // viscous viscosity
 
 		// compute visco-elastic viscosity
 		eta_ve = 1.0/(inv_eta_els + inv_eta_dif);
@@ -202,11 +205,16 @@ PetscErrorCode GetEffVisc(
 
 		// check plasticity condition (not for initial guess)
 		if(lim->initGuessFlg != PETSC_TRUE && eta_pl && eta_ve > eta_pl)
-		{
+  		{
 			if(lim->quasiHarmAvg == PETSC_TRUE)
 			{
-				(*eta) = 1.0/(1.0/eta_pl + 1.0/eta_ve);
-			}
+                PetscScalar eta_viscous;
+                
+                //				(*eta)      = 1.0/(1.0/eta_pl + 1.0/eta_ve);
+                
+                eta_viscous = 1.0/inv_eta_dif;  // viscous viscosity
+                (*eta)      = 1.0/(1.0/eta_pl + 1.0/eta_viscous);
+            }
 			else
 			{
 				(*eta) = eta_pl;
