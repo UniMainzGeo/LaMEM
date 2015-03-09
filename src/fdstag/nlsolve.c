@@ -285,9 +285,9 @@ PetscErrorCode FormJacobian(SNES snes, Vec x, Mat Amat, Mat Pmat, void *ctx)
 	}
 	else if(nl->jtype == _MFFD_)
 	{
-		printf("        ***        \n");
-		printf("USING MMFD JACOBIAN\n");
-		printf("        ***        \n");
+		PetscPrintf(PETSC_COMM_WORLD,"        ***        \n");
+		PetscPrintf(PETSC_COMM_WORLD,"USING MMFD JACOBIAN\n");
+		PetscPrintf(PETSC_COMM_WORLD,"        ***        \n");
 
 		// ... matrix-free finite-difference (MMFD)
 		ierr = MatMFFDSetFunction(nl->MFFD, (PetscErrorCode (*)(void*,Vec,Vec))SNESComputeFunction, snes); CHKERRQ(ierr);
