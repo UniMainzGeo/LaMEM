@@ -1536,6 +1536,7 @@ PetscErrorCode ADVMarkInitFilePolygons(AdvCtx *actx, UserCtx *user)
 	            	{
 	            		actx->markers[idx[k]].phase = Poly.phase;
 	            		Poly.nmark++;
+	            		//PetscPrintf(PETSC_COMM_WORLD," k+1/nmark %lld/%lld \n",(LLD)k+1, (LLD)Poly.nmark);
 	            	}
 	            }
 			}
@@ -1843,6 +1844,16 @@ PetscErrorCode inpoly(PetscInt N, PetscScalar *X, PetscScalar *node, PetscInt Nn
                     {
                         cn[j] = !cn[j];
                     }
+                    
+                    // /!\/!\ Code added by Arthur /!\/!\
+                    // solves a bug, but may trigger another in the future (?)
+                    else if (YY==ymax)
+                    {
+                        cn[j] = 1;
+                    }
+                    
+                    // /!\/!\ Code added by Arthur /!\/!\
+                    
                 }
             }
             else
