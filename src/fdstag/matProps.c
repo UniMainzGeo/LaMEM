@@ -318,8 +318,8 @@ PetscErrorCode MatPropGetStruct(FILE *fp,
 		sprintf(lbl_A,     "[W/m3]"      );
 	}
 
-	PetscPrintf(PETSC_COMM_WORLD,"    Phase [%lld]: rho = %g %s, eta0 = %g %s\n", (LLD)(m->ID), lbl_rho, m->rho, eta, lbl_eta);
-	if (strlen(ndiff)) PetscPrintf(PETSC_COMM_WORLD,"    Phase [%lld]: (diff ) diffusion creep profile: %s \n",(LLD)(m->ID), ndiff);
+	PetscPrintf(PETSC_COMM_WORLD,"    Phase [%lld]: rho = %g %s, eta0 = %g %s\n", (LLD)(m->ID), m->rho, lbl_rho,  eta, lbl_eta);
+    if (strlen(ndiff)) PetscPrintf(PETSC_COMM_WORLD,"    Phase [%lld]: (diff ) diffusion creep profile: %s \n",(LLD)(m->ID), ndiff);
 	PetscPrintf(PETSC_COMM_WORLD,"    Phase [%lld]: (diff ) Bd = %g %s, Ed = %g %s, Vd = %g %s \n", (LLD)(m->ID), m->Bd, lbl_Bd, m->Ed, lbl_E, m->Vd, lbl_V);
 	if (strlen(ndisl)) PetscPrintf(PETSC_COMM_WORLD,"    Phase [%lld]: (disl ) dislocation creep profile: %s \n",(LLD)(m->ID), ndisl);
 	PetscPrintf(PETSC_COMM_WORLD,"    Phase [%lld]: (disl ) Bn = %g %s, En = %g %s, Vn = %g %s, n = %g [ ] \n", (LLD)(m->ID), m->Bn, lbl_Bn, m->En , lbl_E, m->Vn, lbl_V, m->n);
