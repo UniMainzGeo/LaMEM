@@ -9,6 +9,10 @@
 #include "tssolve.h"
 #include "bc.h"
 #include "JacRes.h"
+#include "multigrid.h"
+#include "matrix.h"
+#include "lsolve.h"
+#include "nlsolve.h"
 #include "advect.h"
 #include "marker.h"
 #include "break.h"
@@ -59,13 +63,13 @@ PetscErrorCode ADVMarkInit(AdvCtx *actx, UserCtx *user)
 	{
 		ierr = ADVMarkInitCoord(actx, user); CHKERRQ(ierr);
 	}
-    
-    // display info on-screen
-    PetscPrintf(PETSC_COMM_WORLD," Marker setup employed [msetup] : ");
 
-    
+	// display info on-screen
+	PetscPrintf(PETSC_COMM_WORLD," Marker setup employed [msetup] : ");
+
+
 	// initialize marker phase, temperature, etc.
-    if     (user->msetup == PARALLEL)   { PetscPrintf(PETSC_COMM_WORLD,"%s\n","parallel");        ierr = ADVMarkInitFileParallel (actx, user); CHKERRQ(ierr); }
+	if     (user->msetup == PARALLEL)   { PetscPrintf(PETSC_COMM_WORLD,"%s\n","parallel");        ierr = ADVMarkInitFileParallel (actx, user); CHKERRQ(ierr); }
 	else if(user->msetup == REDUNDANT)  { PetscPrintf(PETSC_COMM_WORLD,"%s\n","redundant");       ierr = ADVMarkInitFileRedundant(actx, user); CHKERRQ(ierr); }
 	else if(user->msetup == POLYGONS)   { PetscPrintf(PETSC_COMM_WORLD,"%s\n","polygons");        ierr = ADVMarkInitFilePolygons (actx, user); CHKERRQ(ierr); }
 	else if(user->msetup == DIAPIR)     { PetscPrintf(PETSC_COMM_WORLD,"%s\n","diapir");          ierr = ADVMarkInitDiapir       (actx, user); CHKERRQ(ierr); }

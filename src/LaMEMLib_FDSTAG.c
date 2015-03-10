@@ -279,7 +279,7 @@ PetscErrorCode LaMEMLib_FDSTAG(PetscBool InputParamFile, const char *ParamFile, 
 	ierr = PVOutCreate(&pvout, &jr, user.OutputFile); CHKERRQ(ierr);
 
 	// read breakpoint files if restart was requested and if is possible
-	if (user.restart==1) { ierr = BreakReadMain(&user, &actx, &jr); CHKERRQ(ierr); }
+	if (user.restart==1) { ierr = BreakReadMain(&user, &actx, &nl.jtype); CHKERRQ(ierr); }
 
 	PetscPrintf(PETSC_COMM_WORLD," \n");
 
@@ -475,7 +475,7 @@ PetscErrorCode LaMEMLib_FDSTAG(PetscBool InputParamFile, const char *ParamFile, 
 		if (user.save_breakpoints > 0) LaMEMMod(JacResGetStep(&jr)-1, user.save_breakpoints, &SaveOrNot);
 		else                           SaveOrNot = 2;
 
-		if (SaveOrNot == 0) { ierr = BreakWriteMain(&user, &actx); CHKERRQ(ierr); }
+		if (SaveOrNot == 0) { ierr = BreakWriteMain(&user, &actx, nl.jtype); CHKERRQ(ierr); }
 
 	} while(done != PETSC_TRUE);
 

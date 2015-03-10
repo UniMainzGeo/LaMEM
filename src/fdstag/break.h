@@ -7,21 +7,23 @@
 //---------------------------------------------------------------------------
 // Routines for writing breakpoint files
 //---------------------------------------------------------------------------
-PetscErrorCode BreakWriteMain     (UserCtx *user, AdvCtx *actx);
-PetscErrorCode BreakWriteMark     (AdvCtx *actx);
+PetscErrorCode BreakWriteMain     (UserCtx *user, AdvCtx *actx, JacType jtype);
+PetscErrorCode BreakWriteInfo     (UserCtx *user, AdvCtx *actx, JacType jtype);
 PetscErrorCode BreakWriteSol      (JacRes *jr);
-PetscErrorCode BreakWriteGrid     (UserCtx *user, FDSTAG *fs, AdvCtx *actx);
-PetscErrorCode BreakWriteInfo     (UserCtx *user, AdvCtx *actx, JacRes *jr);
+PetscErrorCode BreakWriteMark     (AdvCtx *actx);
+PetscErrorCode BreakWriteGrid     (UserCtx *user, AdvCtx *actx);
 PetscErrorCode BreakWriteDiscret1D(int fid, Discret1D ds);
+PetscErrorCode BreakWriteStrech1D (int fid, MeshSeg1D ms);
 
 //---------------------------------------------------------------------------
 // Routines for reading breakpoint files
 //---------------------------------------------------------------------------
-PetscErrorCode BreakReadMain     (UserCtx *user, AdvCtx *actx, JacRes *jr);
-PetscErrorCode BreakReadMark     (AdvCtx *actx);
+PetscErrorCode BreakReadMain     (UserCtx *user, AdvCtx *actx, JacType *jtype);
+PetscErrorCode BreakReadInfo     (UserCtx *user, AdvCtx *actx, JacType *jtype);
 PetscErrorCode BreakReadSol      (JacRes *jr);
+PetscErrorCode BreakReadMark     (AdvCtx *actx);
 PetscErrorCode BreakReadGrid     (UserCtx *user, FDSTAG *fs);
-PetscErrorCode BreakReadInfo     (UserCtx *user, AdvCtx *actx, JacRes *jr);
 PetscErrorCode BreakReadDiscret1D(int fid, Discret1D ds);
+PetscErrorCode BreakReadStrech1D (int fid, MeshSeg1D ms);
 
 #endif
