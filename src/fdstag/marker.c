@@ -1527,16 +1527,17 @@ PetscErrorCode ADVMarkInitFilePolygons(AdvCtx *actx, UserCtx *user)
 			Poly.lidx = (PetscInt)(Poly.idxs+kpoly-tstart[Poly.dir]);
 //			ierr = PetscBinaryRead(fd, Poly.X, Poly.len*2, PETSC_SCALAR); CHKERRQ(ierr);
 
-			for (n=0; n<Poly.len*2;n++)
-			{
-				Poly.X[kpoly] = PolyFile[Fcount]; Fcount++;
-			}
-
-
 
 			// check if slice is part of local proc
 			if (Poly.gidx  >= tstart[Poly.dir] && Poly.gidx <= tend[Poly.dir])
 			{
+
+				// read polygon
+				for (n=0; n<Poly.len*2;n++)
+				{
+					Poly.X[n] = PolyFile[Fcount]; Fcount++;
+				}
+
 				// get local markers that locate on polygon plane
 	            ADVMarkSecIdx(actx,user,Poly.dir,Poly.lidx, idx);
 	            for (k=0;k<nidx[Poly.dir];k++)
@@ -1558,6 +1559,11 @@ PetscErrorCode ADVMarkInitFilePolygons(AdvCtx *actx, UserCtx *user)
 	            		//PetscPrintf(PETSC_COMM_WORLD," k+1/nmark %lld/%lld \n",(LLD)k+1, (LLD)Poly.nmark);
 	            	}
 	            }
+			}
+			else
+			{	
+				// increase counter of the buffer
+				Fcount += Poly.len*2;
 			}
 		}
 		ierr = MPI_Allreduce(&Poly.nmark, &nmark_all, 1, MPIU_INT, MPI_SUM, PETSC_COMM_WORLD); CHKERRQ(ierr);
