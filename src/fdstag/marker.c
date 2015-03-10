@@ -1333,14 +1333,14 @@ PetscErrorCode ADVMarkInitFilePolygons(AdvCtx *actx, UserCtx *user)
 	int           fd;	
 	PetscViewer   view_in;
 	char         *LoadFileName;
-	PetscScalar   header;
+	PetscScalar   header[2];
 	PetscInt      tstart[3],tend[3], nmark[3], nidx[3], nidxmax;
-	PetscInt      k,kvol,VolN,Nmax,Lmax,kpoly;
+	PetscInt      k,n,kvol,Fcount,Fsize,VolN,Nmax,Lmax,kpoly;
 	PetscScalar   VolInfo[4];
 	Polygon2D     Poly;
 	PetscBool    *polyin, *polybnd;
 	PetscInt     *idx;
-	PetscScalar  *X,*PolyL;
+	PetscScalar  *X,*PolyL,*PolyFile;
 
 	PetscInt      nmark_all,imark,imarkx,imarky,imarkz,icellx,icelly,icellz;
 	PetscScalar   dx=0.0,dy=0.0,dz=0.0,x=0.0,y=0.0,z=0.0;
@@ -1452,14 +1452,22 @@ PetscErrorCode ADVMarkInitFilePolygons(AdvCtx *actx, UserCtx *user)
 	ierr = PetscViewerBinaryOpen(PETSC_COMM_SELF, LoadFileName, FILE_MODE_READ, &view_in); CHKERRQ(ierr);
 	ierr = PetscViewerBinaryGetDescriptor(view_in, &fd); CHKERRQ(ierr);
 
-	// read (and ignore) the silent undocumented file header
-	ierr = PetscBinaryRead(fd, &header, 1, PETSC_SCALAR); CHKERRQ(ierr);
+	// read (and ignore) the silent undocumented file header & size of file
+	ierr = PetscBinaryRead(fd, &header, 2, PETSC_SCALAR); CHKERRQ(ierr);
+	Fsize = (PetscInt)(header[1]);
+
+	// allocate space for entire file & initialize counter
+	ierr = PetscMalloc((size_t)Fsize  *sizeof(PetscScalar),&PolyFile); CHKERRQ(ierr);
+	Fcount=0;
+
+	// read entire file 
+	ierr = PetscBinaryRead(fd, &PolyFile, Fsize, PETSC_SCALAR); CHKERRQ(ierr);
 
 	// read number of volumes
-	ierr = PetscBinaryRead(fd, VolInfo, 3, PETSC_SCALAR); CHKERRQ(ierr);
-	VolN = (PetscInt)(VolInfo[0]);
-	Nmax = (PetscInt)(VolInfo[1]);
-	Lmax = (PetscInt)(VolInfo[2]);
+//	ierr = PetscBinaryRead(fd, VolInfo, 3, PETSC_SCALAR); CHKERRQ(ierr);
+	VolN = (PetscInt)(PolyFile[Fcount]); Fcount++;
+	Nmax = (PetscInt)(PolyFile[Fcount]); Fcount++;
+	Lmax = (PetscInt)(PolyFile[Fcount]); Fcount++;
 
     // allocate space for index array & the coordinates of the largest polygon
 	ierr = PetscMalloc((size_t)Nmax  *sizeof(PetscScalar),&PolyL); CHKERRQ(ierr);
@@ -1478,11 +1486,11 @@ PetscErrorCode ADVMarkInitFilePolygons(AdvCtx *actx, UserCtx *user)
 	{
 		PetscTime(&t0);		
 		// read volume header
-		ierr = PetscBinaryRead(fd, VolInfo, 4, PETSC_SCALAR); CHKERRQ(ierr);
-		Poly.dir   = (PetscInt)(VolInfo[0]); // normal vector of polygon plane
-		Poly.phase = (PetscInt)(VolInfo[1]); // phase that polygon defines
-		Poly.num   = (PetscInt)(VolInfo[2]); // number of polygon slices defining the volume
-		Poly.idxs  = (PetscInt)(VolInfo[3]); // index of first polygon slice
+//		ierr = PetscBinaryRead(fd, VolInfo, 4, PETSC_SCALAR); CHKERRQ(ierr);
+		Poly.dir   = (PetscInt)(PolyFile[Fcount]); Fcount++; // normal vector of polygon plane
+		Poly.phase = (PetscInt)(PolyFile[Fcount]); Fcount++; // phase that polygon defines
+		Poly.num   = (PetscInt)(PolyFile[Fcount]); Fcount++; // number of polygon slices defining the volume
+		Poly.idxs  = (PetscInt)(PolyFile[Fcount]); Fcount++; // index of first polygon slice
 		Poly.nmark = 0;
 
 		// define axes the span the polygon plane
@@ -1504,7 +1512,11 @@ PetscErrorCode ADVMarkInitFilePolygons(AdvCtx *actx, UserCtx *user)
 		}
 
 		// get lengths of polygons (PetscScalar !)
-		ierr = PetscBinaryRead(fd, PolyL, Poly.num, PETSC_SCALAR); CHKERRQ(ierr);
+//		ierr = PetscBinaryRead(fd, PolyL, Poly.num, PETSC_SCALAR); CHKERRQ(ierr);
+		for (kpoly=0; kpoly<Poly.num;kpoly++)
+		{
+			PolyL[kpoly] = PolyFile[Fcount]; Fcount++;
+		}
 		
 		// --- loop through all slices ---
 		for (kpoly=0; kpoly<Poly.num;kpoly++)
@@ -1513,7 +1525,14 @@ PetscErrorCode ADVMarkInitFilePolygons(AdvCtx *actx, UserCtx *user)
 			Poly.len  = (PetscInt)(PolyL[kpoly]);
 			Poly.gidx = (PetscInt)(Poly.idxs+kpoly);
 			Poly.lidx = (PetscInt)(Poly.idxs+kpoly-tstart[Poly.dir]);
-			ierr = PetscBinaryRead(fd, Poly.X, Poly.len*2, PETSC_SCALAR); CHKERRQ(ierr);
+//			ierr = PetscBinaryRead(fd, Poly.X, Poly.len*2, PETSC_SCALAR); CHKERRQ(ierr);
+
+			for (n=0; n<Poly.len*2;n++)
+			{
+				Poly.X[kpoly] = PolyFile[Fcount]; Fcount++;
+			}
+
+
 
 			// check if slice is part of local proc
 			if (Poly.gidx  >= tstart[Poly.dir] && Poly.gidx <= tend[Poly.dir])
@@ -1554,6 +1573,9 @@ PetscErrorCode ADVMarkInitFilePolygons(AdvCtx *actx, UserCtx *user)
 
 	PetscFree(PolyL);
 	PetscFree(Poly.X);
+	
+	
+	PetscFree(PolyFile);
 
 	// wait until all processors finished reading markers
 	ierr = MPI_Barrier(PETSC_COMM_WORLD); CHKERRQ(ierr);
