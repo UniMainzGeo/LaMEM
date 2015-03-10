@@ -1461,7 +1461,7 @@ PetscErrorCode ADVMarkInitFilePolygons(AdvCtx *actx, UserCtx *user)
 	Fcount=0;
 
 	// read entire file 
-	ierr = PetscBinaryRead(fd, &PolyFile, Fsize, PETSC_SCALAR); CHKERRQ(ierr);
+	ierr = PetscBinaryRead(fd, PolyFile, Fsize, PETSC_SCALAR); CHKERRQ(ierr);
 
 	// read number of volumes
 //	ierr = PetscBinaryRead(fd, VolInfo, 3, PETSC_SCALAR); CHKERRQ(ierr);
