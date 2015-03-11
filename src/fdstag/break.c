@@ -21,11 +21,56 @@
 
 //---------------------------------------------------------------------------
 #undef __FUNCT__
-#define __FUNCT__ "BreakWriteMain"
-PetscErrorCode BreakWriteMain(UserCtx *user, AdvCtx *actx, JacType jtype)
+#define __FUNCT__ "BreakCheck"
+PetscErrorCode BreakCheck(UserCtx *user)
+{
+	// check if breakpoints exist and restart new simulation is not - very useful for chain jobs
+
+	FILE        *fp;
+	char        *fname;
+
+	PetscFunctionBegin;
+
+	// check info file name on rank 0
+	if(ISRankZero(PETSC_COMM_WORLD))
+	{
+		asprintf(&fname, "./Breakpoint/Breakpoint_info.0.out");
+
+		// return and restart simulation if breakpoints are not available
+		fp = fopen(fname, "r" );
+
+		if(!fp)
+		{
+			// new simulation
+			user->restart = 0;
+			PetscPrintf(PETSC_COMM_WORLD," No breakpoints detected -> starting new simulation \n");
+
+			// free and return
+			free(fname);
+
+			PetscFunctionReturn(0);
+		}
+
+		// free and close files
+		free(fname);
+		fclose(fp);
+	}
+	PetscFunctionReturn(0);
+}
+//---------------------------------------------------------------------------
+#undef __FUNCT__
+#define __FUNCT__ "BreakWrite"
+PetscErrorCode BreakWrite(UserCtx *user, AdvCtx *actx, JacType jtype)
 {
 	// staggered grid
-	JacRes *jr;
+	FDSTAG         *fs;
+	JacRes         *jr;
+	FILE           *fp;
+	char           *fname;
+	PetscInt        n;
+	PetscScalar    *gsol;
+	PetscInt       initGuessFlag, jtypeFlag;
+	PetscLogDouble tstart, tend;
 
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
@@ -33,26 +78,157 @@ PetscErrorCode BreakWriteMain(UserCtx *user, AdvCtx *actx, JacType jtype)
 	PetscPrintf(PETSC_COMM_WORLD,"******************************************** \n");
 	PetscPrintf(PETSC_COMM_WORLD," Writing Breakpoint files... \n");
 
+	// start time counter
+	PetscTime(&tstart);
+
 	// initialize context
 	jr = actx->jr;
+	fs = actx->fs;
 
 	// create directory
 	ierr = LaMEMCreateOutputDirectory("./Breakpoint"); CHKERRQ(ierr);
 
-	// write markers
-	ierr = BreakWriteMark(actx); CHKERRQ(ierr);
+	//============================================================
+	//   MARKERS
+	//============================================================
+	// compile file name
+	asprintf(&fname, "./Breakpoint/Breakpoint_mark.%lld.out",(LLD)actx->iproc);
 
-	// write FDSTAG context only for background strainrate
-	if (jr->bc->bgAct) { ierr = BreakWriteGrid(user, actx); CHKERRQ(ierr); }
+	// open file for binary output
+	fp = fopen(fname, "w" );
 
-	// write solution and other info
-	ierr = BreakWriteSol(jr);              CHKERRQ(ierr);
-	ierr = BreakWriteInfo(user, actx, jtype); CHKERRQ(ierr);
+	// write
+	fwrite(&actx->nummark, sizeof(PetscInt), 1, fp);
+	fwrite(&actx->markcap, sizeof(PetscInt), 1, fp);
+	fwrite( actx->markers, sizeof(Marker)*(size_t)actx->markcap, 1, fp);
+
+	// close and free memory
+	free(fname);
+	fclose(fp);
+
+	//============================================================
+	//   GRID (only for background strainrate)
+	//============================================================
+	if (jr->bc->bgAct)
+	{
+		// compile file name
+		asprintf(&fname, "./Breakpoint/Breakpoint_grid.%lld.out",(LLD)actx->iproc);
+
+		// open file for binary output
+		fp = fopen(fname, "w" );
+
+		//----------------------------------
+		// Domain information
+		//----------------------------------
+		fwrite(&user->W      , sizeof(PetscScalar), 1, fp);
+		fwrite(&user->L      , sizeof(PetscScalar), 1, fp);
+		fwrite(&user->H      , sizeof(PetscScalar), 1, fp);
+		fwrite(&user->x_left , sizeof(PetscScalar), 1, fp);
+		fwrite(&user->y_front, sizeof(PetscScalar), 1, fp);
+		fwrite(&user->z_bot  , sizeof(PetscScalar), 1, fp);
+
+		//----------------------------------
+		// FDSTAG
+		//----------------------------------
+		BreakWriteDiscret1D(fp, fs->dsx, fs->msx);
+		BreakWriteDiscret1D(fp, fs->dsy, fs->msy);
+		BreakWriteDiscret1D(fp, fs->dsz, fs->msz);
+
+		// close and free memory
+		free(fname);
+		fclose(fp);
+	}
+
+	//============================================================
+	//   GSOL - Solution vector
+	//============================================================
+	// set local size of vector
+	n  = actx->fs->dof.ln;
+
+	// compile file name
+	asprintf(&fname, "./Breakpoint/Breakpoint_gsol.%lld.out",(LLD)actx->iproc);
+
+	// open file for binary output
+	fp = fopen(fname, "w" );
+
+	// get vector array
+	ierr = VecGetArray(jr->gsol,&gsol); CHKERRQ(ierr);
+
+	// write to file
+	fwrite( gsol, sizeof(PetscScalar),(size_t)n, fp);
+
+	// restore vector array
+	ierr = VecRestoreArray(jr->gsol,&gsol); CHKERRQ(ierr);
+
+	// close and free memory
+	free(fname);
+	fclose(fp);
+
+	//============================================================
+	//   INFO
+	//============================================================
+	// compile file name
+	asprintf(&fname, "./Breakpoint/Breakpoint_info.%lld.out",(LLD)actx->iproc);
+
+	// open file for binary output
+	fp = fopen(fname, "w" );
+
+	//----------------------------------
+	// Time Stepping
+	//----------------------------------
+	fwrite(&jr->ts.istep , sizeof(PetscInt   ), 1, fp);
+	fwrite(&jr->ts.dt    , sizeof(PetscScalar), 1, fp);
+	fwrite(&jr->ts.time  , sizeof(PetscScalar), 1, fp);
+
+	//----------------------------------
+	// Boundary Conditions
+	//----------------------------------
+	// pushing block center coordinates
+	if (user->AddPushing)
+	{
+		fwrite(&user->Pushing.x_center_block , sizeof(PetscScalar), 1, fp);
+		fwrite(&user->Pushing.y_center_block , sizeof(PetscScalar), 1, fp);
+		fwrite(&user->Pushing.z_center_block , sizeof(PetscScalar), 1, fp);
+	}
+
+	//----------------------------------
+	// Solver options
+	//----------------------------------
+	// store type of solver
+	if      (jtype == _PICARD_) jtypeFlag = 0;
+	else if (jtype == _MF_    ) jtypeFlag = 1;
+	else if (jtype == _MFFD_  ) jtypeFlag = 2;
+	else SETERRQ1(PETSC_COMM_SELF, PETSC_ERR_USER, "Incorrect type of jtype: %lld",(LLD)jtypeFlag);
+
+	fwrite(&jtypeFlag , sizeof(PetscInt), 1, fp);
+
+	// store init guess flag
+	if (jr->matLim.initGuessFlg) initGuessFlag = 1;
+	else                         initGuessFlag = 0;
+
+	fwrite(&initGuessFlag , sizeof(PetscInt), 1, fp);
+
+	//----------------------------------
+	// Other
+	//----------------------------------
+	// store breakpoint number
+	fwrite(&user->break_point_number , sizeof(PetscInt), 1, fp);
+
+	// close and free memory
+	free(fname);
+	fclose(fp);
+
+	//============================================================
+	//   END WRITE BREAKPOINTS
+	//============================================================
 
 	// all other ranks should wait
 	ierr = MPI_Barrier(PETSC_COMM_WORLD); CHKERRQ(ierr);
 
-	PetscPrintf(PETSC_COMM_WORLD," Finished writing breakpoint files \n");
+	// end time counter
+	PetscTime(&tend);
+
+	PetscPrintf(PETSC_COMM_WORLD," Finished writing breakpoint files in %g s\n",tend-tstart);
 	PetscPrintf(PETSC_COMM_WORLD,"******************************************** \n");
 	PetscPrintf(PETSC_COMM_WORLD," \n");
 
@@ -60,244 +236,113 @@ PetscErrorCode BreakWriteMain(UserCtx *user, AdvCtx *actx, JacType jtype)
 }
 //---------------------------------------------------------------------------
 #undef __FUNCT__
-#define __FUNCT__ "BreakReadMain"
-PetscErrorCode BreakReadMain(UserCtx *user, AdvCtx *actx, JacType *jtype)
+#define __FUNCT__ "BreakRead"
+PetscErrorCode BreakRead(UserCtx *user, AdvCtx *actx, JacType *jtype)
 {
+	JacRes      *jr;
+	FILE        *fp;
+	char        *fname;
+	PetscScalar *gsol;
+	PetscInt     n;
+	JacType     j;
+	PetscInt    initGuessFlag, jtypeFlag;
+
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
 
-	// read data from file
-	ierr = BreakReadSol(actx->jr);           CHKERRQ(ierr);
-	ierr = BreakReadInfo(user, actx, jtype); CHKERRQ(ierr);
+	// set context
+	jr = actx->jr;
+
+	//============================================================
+	//   GSOL - Solution vector
+	//============================================================
+	// set local size of vector
+	n  = actx->fs->dof.ln;
+
+	// compile file name
+	asprintf(&fname, "./Breakpoint/Breakpoint_gsol.%lld.out",(LLD)actx->iproc);
+
+	// open file for reading
+	fp = fopen(fname, "r" );
+
+	// get vector array
+	ierr = VecGetArray(jr->gsol,&gsol); CHKERRQ(ierr);
+
+	// read array
+	fread(  gsol, sizeof(PetscScalar),(size_t)n, fp);
+
+	// restore vector array
+	ierr = VecRestoreArray(jr->gsol,&gsol); CHKERRQ(ierr);
+
+	// close and free memory
+	free(fname);
+	fclose(fp);
+
+	//============================================================
+	//   INFO
+	//============================================================
+	// compile file name and open file
+	asprintf(&fname, "./Breakpoint/Breakpoint_info.%lld.out",(LLD)actx->iproc);
+
+	// open file for reading
+	fp = fopen(fname, "r" );
+
+	//----------------------------------
+	// Time Stepping
+	//----------------------------------
+	fread(&jr->ts.istep , sizeof(PetscInt   ), 1, fp);
+	fread(&jr->ts.dt    , sizeof(PetscScalar), 1, fp);
+	fread(&jr->ts.time  , sizeof(PetscScalar), 1, fp);
+
+	//----------------------------------
+	// Boundary Conditions
+	//----------------------------------
+	// pushing block center coordinates
+	if (user->AddPushing)
+	{
+		fread(&user->Pushing.x_center_block , sizeof(PetscScalar), 1, fp);
+		fread(&user->Pushing.y_center_block , sizeof(PetscScalar), 1, fp);
+		fread(&user->Pushing.z_center_block , sizeof(PetscScalar), 1, fp);
+	}
+
+	//----------------------------------
+	// Solver options
+	//----------------------------------
+	// read type of solver
+	fread(&jtypeFlag , sizeof(PetscInt), 1, fp);
+
+	if      (jtypeFlag == 0) j = _PICARD_;
+	else if (jtypeFlag == 1) j = _MF_    ;
+	else if (jtypeFlag == 2) j = _MFFD_  ;
+	else SETERRQ1(PETSC_COMM_SELF, PETSC_ERR_USER, "Incorrect type of jtype: %lld",(LLD)jtypeFlag);
+
+	*jtype = j;
+
+	// read init guess flag
+	fread(&initGuessFlag , sizeof(PetscInt), 1, fp);
+
+	if (initGuessFlag) jr->matLim.initGuessFlg = PETSC_TRUE;
+	else               jr->matLim.initGuessFlg = PETSC_FALSE;
+
+	//----------------------------------
+	// Other
+	//----------------------------------
+	// read breakpoint number
+	fread(&user->break_point_number , sizeof(PetscInt), 1, fp);
+
+	// close and free memory
+	free(fname);
+	fclose(fp);
+
+	//============================================================
+	//   END READ BREAKPOINTS
+	//============================================================
 
 	// all other ranks should wait
 	ierr = MPI_Barrier(PETSC_COMM_WORLD);    CHKERRQ(ierr);
 
-	PetscFunctionReturn(0);
-}
-//---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "BreakWriteMark"
-PetscErrorCode BreakWriteMark(AdvCtx *actx)
-{
-	int          fid;
-	PetscInt     imark, nprop;
-	Marker      *P;
-	char        *fname;
-	PetscScalar *markbuf, *markptr, s_nummark;
-
-	PetscErrorCode ierr;
-	PetscFunctionBegin;
-
-	//----------------------------------
-	// MARKERS
-	//----------------------------------
-	nprop = 13;
-
-	// create write buffer
-	ierr = PetscMalloc((size_t)(nprop*actx->nummark)*sizeof(PetscScalar), &markbuf); CHKERRQ(ierr);
-
-	// copy data from storage into buffer
-	for(imark = 0, markptr = markbuf; imark < actx->nummark; imark++, markptr += nprop)
-	{
-		P           =              &actx->markers[imark];
-		markptr[0]  =              P->X[0];
-		markptr[1]  =              P->X[1];
-		markptr[2]  =              P->X[2];
-		markptr[3]  = (PetscScalar)P->phase;
-		markptr[4]  =              P->T;
-		markptr[5]  =              P->p;
-		markptr[6]  =              P->APS;
-		markptr[7]  =              P->S.xx;
-		markptr[8]  =              P->S.xy;
-		markptr[9]  =              P->S.xz;
-		markptr[10] =              P->S.yy;
-		markptr[11] =              P->S.yz;
-		markptr[12] =              P->S.zz;
-	}
-
-	// compile file name
-	asprintf(&fname, "./Breakpoint/Breakpoint_mark.%lld.out",(LLD)actx->iproc);
-
-	// open file for binary output
-	ierr = PetscBinaryOpen(fname, FILE_MODE_WRITE, &fid); CHKERRQ(ierr);
-
-	// write binary output
-	s_nummark = (PetscScalar)actx->nummark;
-	ierr = PetscBinaryWrite(fid, &s_nummark, 1,                PETSC_SCALAR, PETSC_FALSE); CHKERRQ(ierr);
-	ierr = PetscBinaryWrite(fid, markbuf, nprop*actx->nummark, PETSC_SCALAR, PETSC_FALSE); CHKERRQ(ierr);
-
-	// close fid and free memory
-	ierr = PetscBinaryClose(fid); CHKERRQ(ierr);
-	free(fname);
-
-	// destroy buffer
-	ierr = PetscFree(markbuf); CHKERRQ(ierr);
-
-	PetscFunctionReturn(0);
-}
-//---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "BreakReadMark"
-PetscErrorCode BreakReadMark(AdvCtx *actx)
-{
-	int          fid;
-	PetscInt     imark, nprop, nummark;
-	Marker      *P;
-	char        *fname;
-	PetscScalar *markbuf, *markptr, s_nummark;
-
-	PetscErrorCode ierr;
-	PetscFunctionBegin;
-
-	//----------------------------------
-	// MARKERS
-	//----------------------------------
-	// number of prop in Marker structure
-	nprop = 13;
-
-	// compile file name and open file
-	asprintf(&fname, "./Breakpoint/Breakpoint_mark.%lld.out",(LLD)actx->iproc);
-	ierr = PetscBinaryOpen(fname, FILE_MODE_READ, &fid); CHKERRQ(ierr);
-
-	// read number of local of markers
-	ierr = PetscBinaryRead(fid, &s_nummark, 1, PETSC_SCALAR); CHKERRQ(ierr);
-	nummark = (PetscInt)s_nummark;
-
-	// set number of markers
-	actx->nummark = nummark;
-
-	// allocate marker buffer
-	ierr = PetscMalloc((size_t)(nprop*actx->nummark)*sizeof(PetscScalar), &markbuf); CHKERRQ(ierr);
-
-	// read markers into buffer
-	ierr = PetscBinaryRead(fid, markbuf, nprop*actx->nummark, PETSC_SCALAR); CHKERRQ(ierr);
-
-	// close fid and free memory
-	ierr = PetscBinaryClose(fid); CHKERRQ(ierr);
-	free(fname);
-
-	// copy buffer to marker storage
-	for(imark = 0, markptr = markbuf; imark < actx->nummark; imark++, markptr += nprop)
-	{
-		P        = &actx->markers[imark];
-		P->X[0]  = markptr[0]           ;
-		P->X[1]  = markptr[1]           ;
-		P->X[2]  = markptr[2]           ;
-		P->phase = (PetscInt)markptr[3] ;
-		P->T     = markptr[4]           ;
-		P->p     = markptr[5]           ;
-		P->APS   = markptr[6]           ;
-		P->S.xx  = markptr[7]           ;
-		P->S.xy  = markptr[8]           ;
-		P->S.xz  = markptr[9]           ;
-		P->S.yy  = markptr[10]          ;
-		P->S.yz  = markptr[11]          ;
-		P->S.zz  = markptr[12]          ;
-	}
-
-	// destroy buffer
-	ierr = PetscFree(markbuf); CHKERRQ(ierr);
-
-	PetscFunctionReturn(0);
-}
-//---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "BreakWriteSol"
-PetscErrorCode BreakWriteSol(JacRes *jr)
-{
-	char        *fname;
-	PetscViewer viewer;
-
-	PetscErrorCode ierr;
-	PetscFunctionBegin;
-
-	//----------------------------------
-	// SOLUTION Vector
-	//----------------------------------
-	// compile file name - solution
-	asprintf(&fname, "./Breakpoint/Breakpoint_gsol.out");
-
-	ierr = PetscViewerBinaryOpen(PETSC_COMM_WORLD,fname,FILE_MODE_WRITE,&viewer); CHKERRQ(ierr);
-	ierr = VecView(jr->gsol,viewer); CHKERRQ(ierr);
-	ierr = PetscViewerDestroy(&viewer); CHKERRQ(ierr);
-
-	free(fname);
-
-	PetscFunctionReturn(0);
-}
-//---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "BreakReadSol"
-PetscErrorCode BreakReadSol(JacRes *jr)
-{
-	char        *fname;
-	PetscViewer viewer;
-
-	PetscErrorCode ierr;
-	PetscFunctionBegin;
-
-	//----------------------------------
-	// SOLUTION Vector
-	//----------------------------------
-	// compile file name - solution
-	asprintf(&fname, "./Breakpoint/Breakpoint_gsol.out");
-
-	ierr = PetscViewerBinaryOpen(PETSC_COMM_WORLD,fname,FILE_MODE_READ,&viewer); CHKERRQ(ierr);
-	ierr = VecLoad(jr->gsol,viewer); CHKERRQ(ierr);
-	ierr = PetscViewerDestroy(&viewer); CHKERRQ(ierr);
-
-	free(fname);
-
-	PetscFunctionReturn(0);
-}
-//---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "BreakWriteGrid"
-PetscErrorCode BreakWriteGrid(UserCtx *user, AdvCtx *actx)
-{
-	FDSTAG      *fs;
-	int         fid;
-	char        *fname;
-
-	PetscErrorCode ierr;
-	PetscFunctionBegin;
-
-	fs = actx->fs;
-	//----------------------------------
-	// GRID information
-	//----------------------------------
-	// compile file name
-	asprintf(&fname, "./Breakpoint/Breakpoint_grid.%lld.out",(LLD)actx->iproc);
-	ierr = PetscBinaryOpen(fname, FILE_MODE_WRITE, &fid); CHKERRQ(ierr);
-
-	//----------------------------------
-	// Domain information
-	//----------------------------------
-	PetscBinaryWrite(fid, &user->W,        1,               PETSC_SCALAR, PETSC_FALSE);
-	PetscBinaryWrite(fid, &user->L,        1,               PETSC_SCALAR, PETSC_FALSE);
-	PetscBinaryWrite(fid, &user->H,        1,               PETSC_SCALAR, PETSC_FALSE);
-	PetscBinaryWrite(fid, &user->x_left ,  1,               PETSC_SCALAR, PETSC_FALSE);
-	PetscBinaryWrite(fid, &user->y_front,  1,               PETSC_SCALAR, PETSC_FALSE);
-	PetscBinaryWrite(fid, &user->z_bot  ,  1,               PETSC_SCALAR, PETSC_FALSE);
-
-	//----------------------------------
-	// FDSTAG
-	//----------------------------------
-	ierr = BreakWriteDiscret1D(fid, fs->dsx); CHKERRQ(ierr);
-	ierr = BreakWriteDiscret1D(fid, fs->dsy); CHKERRQ(ierr);
-	ierr = BreakWriteDiscret1D(fid, fs->dsz); CHKERRQ(ierr);
-
-	//----------------------------------
-	// STRETCH
-	//----------------------------------
-	ierr = BreakWriteStrech1D(fid, fs->msx); CHKERRQ(ierr);
-	ierr = BreakWriteStrech1D(fid, fs->msy); CHKERRQ(ierr);
-	ierr = BreakWriteStrech1D(fid, fs->msz); CHKERRQ(ierr);
-
-	// close fid and free memory
-	ierr = PetscBinaryClose(fid); CHKERRQ(ierr);
-	free(fname);
+	PetscPrintf(PETSC_COMM_WORLD," \n");
+	PetscPrintf(PETSC_COMM_WORLD,"RESTART from Time step = %lld \n",(LLD)jr->ts.istep);
 
 	PetscFunctionReturn(0);
 }
@@ -307,7 +352,6 @@ PetscErrorCode BreakWriteGrid(UserCtx *user, AdvCtx *actx)
 PetscErrorCode BreakReadGrid(UserCtx *user, FDSTAG *fs)
 {
 	FILE        *fp;
-	int         fid;
 	char        *fname;
 	PetscMPIInt iproc;
 
@@ -322,270 +366,137 @@ PetscErrorCode BreakReadGrid(UserCtx *user, FDSTAG *fs)
 	// compile file name - fdstag context
 	asprintf(&fname, "./Breakpoint/Breakpoint_grid.%lld.out",(LLD)iproc);
 
-	// return and restart simulation if breakpoints are not available
+	// open file for binary output
 	fp = fopen(fname, "r" );
-	if(!fp)
-	{
-		user->restart = 0;
-		PetscPrintf(PETSC_COMM_WORLD," No breakpoints detected -> starting new simulation \n");
-
-		free(fname);
-		PetscFunctionReturn(0);
-	}
-	fclose(fp);
-
-	ierr = PetscBinaryOpen(fname, FILE_MODE_READ, &fid); CHKERRQ(ierr);
 
 	//----------------------------------
 	// Domain information
 	//----------------------------------
-	PetscBinaryRead(fid, &user->W,        1,               PETSC_SCALAR);
-	PetscBinaryRead(fid, &user->L,        1,               PETSC_SCALAR);
-	PetscBinaryRead(fid, &user->H,        1,               PETSC_SCALAR);
-	PetscBinaryRead(fid, &user->x_left ,  1,               PETSC_SCALAR);
-	PetscBinaryRead(fid, &user->y_front,  1,               PETSC_SCALAR);
-	PetscBinaryRead(fid, &user->z_bot  ,  1,               PETSC_SCALAR);
+	fread(&user->W      , sizeof(PetscScalar), 1, fp);
+	fread(&user->L      , sizeof(PetscScalar), 1, fp);
+	fread(&user->H      , sizeof(PetscScalar), 1, fp);
+	fread(&user->x_left , sizeof(PetscScalar), 1, fp);
+	fread(&user->y_front, sizeof(PetscScalar), 1, fp);
+	fread(&user->z_bot  , sizeof(PetscScalar), 1, fp);
 
 	//----------------------------------
 	// FDSTAG
 	//----------------------------------
-	ierr = BreakReadDiscret1D(fid, fs->dsx); CHKERRQ(ierr);
-	ierr = BreakReadDiscret1D(fid, fs->dsy); CHKERRQ(ierr);
-	ierr = BreakReadDiscret1D(fid, fs->dsz); CHKERRQ(ierr);
+	BreakReadDiscret1D(fp, fs->dsx, fs->msx);
+	BreakReadDiscret1D(fp, fs->dsy, fs->msy);
+	BreakReadDiscret1D(fp, fs->dsz, fs->msz);
 
-	//----------------------------------
-	// STRETCH
-	//----------------------------------
-	ierr = BreakReadStrech1D(fid, fs->msx); CHKERRQ(ierr);
-	ierr = BreakReadStrech1D(fid, fs->msy); CHKERRQ(ierr);
-	ierr = BreakReadStrech1D(fid, fs->msz); CHKERRQ(ierr);
-
-	// close fid and free memory
-	ierr = PetscBinaryClose(fid); CHKERRQ(ierr);
+	// close and free memory
 	free(fname);
+	fclose(fp);
 
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
 #undef __FUNCT__
-#define __FUNCT__ "BreakWriteDiscret1D"
-PetscErrorCode BreakWriteDiscret1D(int fid, Discret1D ds)
+#define __FUNCT__ "BreakReadMark"
+PetscErrorCode BreakReadMark(AdvCtx *actx)
 {
-	PetscFunctionBegin;
-
-	PetscBinaryWrite(fid, &ds.nproc,  1,          PETSC_INT,    PETSC_FALSE);
-	PetscBinaryWrite(fid, &ds.rank,   1,          PETSC_INT,    PETSC_FALSE);
-	PetscBinaryWrite(fid, ds.starts,  ds.nproc+1, PETSC_INT,    PETSC_FALSE);
-	PetscBinaryWrite(fid, &ds.pstart, 1,          PETSC_INT,    PETSC_FALSE);
-	PetscBinaryWrite(fid, ds.ncoor,   ds.nnods+1, PETSC_SCALAR, PETSC_FALSE);
-	PetscBinaryWrite(fid, ds.ccoor,   ds.ncels+1, PETSC_SCALAR, PETSC_FALSE);
-	PetscBinaryWrite(fid, ds.nbuff,   ds.bufsz,   PETSC_SCALAR, PETSC_FALSE);
-	PetscBinaryWrite(fid, ds.cbuff,   ds.ncels+2, PETSC_SCALAR, PETSC_FALSE);
-	PetscBinaryWrite(fid, &ds.bufsz,  1,          PETSC_INT,    PETSC_FALSE);
-	PetscBinaryWrite(fid, &ds.tnods,  1,          PETSC_INT,    PETSC_FALSE);
-	PetscBinaryWrite(fid, &ds.tcels,  1,          PETSC_INT,    PETSC_FALSE);
-	PetscBinaryWrite(fid, &ds.nnods,  1,          PETSC_INT,    PETSC_FALSE);
-	PetscBinaryWrite(fid, &ds.ncels,  1,          PETSC_INT,    PETSC_FALSE);
-	PetscBinaryWrite(fid, &ds.grprev, 1,          PETSC_INT,    PETSC_FALSE);
-	PetscBinaryWrite(fid, &ds.grnext, 1,          PETSC_INT,    PETSC_FALSE);
-	PetscBinaryWrite(fid, &ds.color,  1,          PETSC_INT,    PETSC_FALSE);
-	PetscBinaryWrite(fid, &ds.h_uni,  1,          PETSC_SCALAR, PETSC_FALSE);
-	PetscBinaryWrite(fid, &ds.h_min,  1,          PETSC_SCALAR, PETSC_FALSE);
-	PetscBinaryWrite(fid, &ds.h_max,  1,          PETSC_SCALAR, PETSC_FALSE);
-
-	PetscFunctionReturn(0);
-}
-//---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "BreakReadDiscret1D"
-PetscErrorCode BreakReadDiscret1D(int fid, Discret1D ds)
-{
-	PetscFunctionBegin;
-
-	PetscBinaryRead(fid, &ds.nproc,  1,          PETSC_INT);
-	PetscBinaryRead(fid, &ds.rank,   1,          PETSC_INT);
-	PetscBinaryRead(fid, ds.starts,  ds.nproc+1, PETSC_INT);
-	PetscBinaryRead(fid, &ds.pstart, 1,          PETSC_INT);
-	PetscBinaryRead(fid, ds.ncoor,   ds.nnods+1, PETSC_SCALAR);
-	PetscBinaryRead(fid, ds.ccoor,   ds.ncels+1, PETSC_SCALAR);
-	PetscBinaryRead(fid, ds.nbuff,   ds.bufsz,   PETSC_SCALAR);
-	PetscBinaryRead(fid, ds.cbuff,   ds.ncels+2, PETSC_SCALAR);
-	PetscBinaryRead(fid, &ds.bufsz,  1,          PETSC_INT);
-	PetscBinaryRead(fid, &ds.tnods,  1,          PETSC_INT);
-	PetscBinaryRead(fid, &ds.tcels,  1,          PETSC_INT);
-	PetscBinaryRead(fid, &ds.nnods,  1,          PETSC_INT);
-	PetscBinaryRead(fid, &ds.ncels,  1,          PETSC_INT);
-	PetscBinaryRead(fid, &ds.grprev, 1,          PETSC_INT);
-	PetscBinaryRead(fid, &ds.grnext, 1,          PETSC_INT);
-	PetscBinaryRead(fid, &ds.color,  1,          PETSC_INT);
-	PetscBinaryRead(fid, &ds.h_uni,  1,          PETSC_SCALAR);
-	PetscBinaryRead(fid, &ds.h_min,  1,          PETSC_SCALAR);
-	PetscBinaryRead(fid, &ds.h_max,  1,          PETSC_SCALAR);
-
-	PetscFunctionReturn(0);
-}
-//---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "BreakWriteStrech1D"
-PetscErrorCode BreakWriteStrech1D(int fid, MeshSeg1D ms)
-{
-	PetscFunctionBegin;
-
-	PetscBinaryWrite(fid, &ms.nsegs,  1,           PETSC_INT,       PETSC_FALSE);
-	PetscBinaryWrite(fid, ms.istart,  ms.nsegs+1, PETSC_INT,       PETSC_FALSE);
-	PetscBinaryWrite(fid, ms.xstart,  ms.nsegs+1, PETSC_SCALAR,    PETSC_FALSE);
-
-	PetscFunctionReturn(0);
-}
-//---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "BreakReadStrech1D"
-PetscErrorCode BreakReadStrech1D(int fid, MeshSeg1D ms)
-{
-	PetscFunctionBegin;
-
-	PetscBinaryRead(fid, &ms.nsegs,  1,           PETSC_INT  );
-	PetscBinaryRead(fid, ms.istart,  ms.nsegs+1, PETSC_INT  );
-	PetscBinaryRead(fid, ms.xstart,  ms.nsegs+1, PETSC_SCALAR);
-
-	PetscFunctionReturn(0);
-}
-//---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "BreakWriteInfo"
-PetscErrorCode BreakWriteInfo(UserCtx *user, AdvCtx *actx, JacType jtype)
-{
-	int         fid;
+	FILE        *fp;
 	char        *fname;
-	JacRes      *jr;
-	PetscInt    initGuessFlag, jtypeFlag;
 
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
 
-	jr = actx->jr;
-
 	//----------------------------------
-	// INFORMATION
+	// MARKERS
 	//----------------------------------
-	// compile file name and open file for binary output
-	asprintf(&fname, "./Breakpoint/Breakpoint_info.%lld.out",(LLD)actx->iproc);
-	ierr = PetscBinaryOpen(fname, FILE_MODE_WRITE, &fid); CHKERRQ(ierr);
+	// compile file name
+	asprintf(&fname, "./Breakpoint/Breakpoint_mark.%lld.out",(LLD)actx->iproc);
 
-	//----------------------------------
-	// Advection/Time Stepping
-	//----------------------------------
+	// open file for binary output
+	fp = fopen(fname, "r" );
 
-	PetscBinaryWrite(fid, &jr->ts.istep,   1,               PETSC_INT,    PETSC_FALSE);
-	PetscBinaryWrite(fid, &jr->ts.dt,      1,               PETSC_SCALAR, PETSC_FALSE);
-	PetscBinaryWrite(fid, &jr->ts.time,    1,               PETSC_SCALAR, PETSC_FALSE);
+	// read header
+	fread(&actx->nummark, sizeof(PetscInt), 1, fp);
+	fread(&actx->markcap, sizeof(PetscInt), 1, fp);
 
-	//----------------------------------
-	// Boundary conditions related info
-	//----------------------------------
-	// pushing block center coordinates
-	if (user->AddPushing)
-	{
-		PetscBinaryWrite(fid, &user->Pushing.x_center_block, 1, PETSC_SCALAR, PETSC_FALSE);
-		PetscBinaryWrite(fid, &user->Pushing.y_center_block, 1, PETSC_SCALAR, PETSC_FALSE);
-		PetscBinaryWrite(fid, &user->Pushing.z_center_block, 1, PETSC_SCALAR, PETSC_FALSE);
-	}
+	// allocate memory for markers
+	ierr = PetscMalloc((size_t)actx->markcap*sizeof(Marker), &actx->markers); CHKERRQ(ierr);
+	ierr = PetscMemzero(actx->markers, (size_t)actx->markcap*sizeof(Marker)); CHKERRQ(ierr);
 
-	//----------------------------------
-	// OTHER info
-	//----------------------------------
-	// store type of solver
-	if      (jtype == _PICARD_) jtypeFlag = 0;
-	else if (jtype == _MF_    ) jtypeFlag = 1;
-	else if (jtype == _MFFD_  ) jtypeFlag = 2;
-	else SETERRQ1(PETSC_COMM_SELF, PETSC_ERR_USER, "Incorrect type of jtype: %lld",(LLD)jtypeFlag);
+	// allocate memory for host cell numbers
+	ierr = PetscMalloc((size_t)actx->markcap*sizeof(PetscInt), &actx->cellnum); CHKERRQ(ierr);
+	ierr = PetscMemzero(actx->cellnum, (size_t)actx->markcap*sizeof(PetscInt)); CHKERRQ(ierr);
 
-	PetscBinaryWrite(fid, &jtypeFlag, 1, PETSC_INT, PETSC_FALSE);
+	// read markers
+	fread( actx->markers, sizeof(Marker)*(size_t)actx->markcap, 1, fp);
 
-	// store init guess flag
-	if (jr->matLim.initGuessFlg) initGuessFlag = 1;
-	else                         initGuessFlag = 0;
-	PetscBinaryWrite(fid, &initGuessFlag, 1, PETSC_INT, PETSC_FALSE);
-
-	// store breakpoint number
-	PetscBinaryWrite(fid, &user->break_point_number, 1,     PETSC_INT,    PETSC_FALSE);
-
-	// close fid and free memory
-	ierr = PetscBinaryClose(fid); CHKERRQ(ierr);
+	// close and free memory
 	free(fname);
+	fclose(fp);
 
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "BreakReadInfo"
-PetscErrorCode BreakReadInfo(UserCtx *user, AdvCtx *actx, JacType *jtype)
+void BreakWriteDiscret1D(FILE *fp, Discret1D ds, MeshSeg1D ms)
 {
-	JacType     j;
-	JacRes      *jr;
-	int         fid;
-	char        *fname;
-	PetscInt    initGuessFlag, jtypeFlag;
-
-	PetscErrorCode ierr;
-	PetscFunctionBegin;
-
-	jr = actx->jr;
+	//----------------------------------
+	// FDSTAG DISCRET 1D
+	//----------------------------------
+	fwrite(&ds.nproc  , sizeof(PetscInt),    1                 , fp);
+	fwrite(&ds.rank   , sizeof(PetscInt),    1                 , fp);
+	fwrite(ds.starts  , sizeof(PetscInt),    (size_t)ds.nproc+1, fp);
+	fwrite(&ds.pstart , sizeof(PetscInt),    1                 , fp);
+	fwrite(ds.ncoor   , sizeof(PetscScalar), (size_t)ds.nnods+1, fp);
+	fwrite(ds.ccoor   , sizeof(PetscScalar), (size_t)ds.ncels+1, fp);
+	fwrite(ds.nbuff   , sizeof(PetscScalar), (size_t)ds.bufsz  , fp);
+	fwrite(ds.cbuff   , sizeof(PetscScalar), (size_t)ds.ncels+2, fp);
+	fwrite(&ds.bufsz  , sizeof(PetscInt),    1                 , fp);
+	fwrite(&ds.tnods  , sizeof(PetscInt),    1                 , fp);
+	fwrite(&ds.tcels  , sizeof(PetscInt),    1                 , fp);
+	fwrite(&ds.nnods  , sizeof(PetscInt),    1                 , fp);
+	fwrite(&ds.ncels  , sizeof(PetscInt),    1                 , fp);
+	fwrite(&ds.grprev , sizeof(PetscInt),    1                 , fp);
+	fwrite(&ds.grnext , sizeof(PetscInt),    1                 , fp);
+	fwrite(&ds.color  , sizeof(PetscInt),    1                 , fp);
+	fwrite(&ds.h_uni  , sizeof(PetscScalar), 1                 , fp);
+	fwrite(&ds.h_min  , sizeof(PetscScalar), 1                 , fp);
+	fwrite(&ds.h_max  , sizeof(PetscScalar), 1                 , fp);
 
 	//----------------------------------
-	// INFORMATION
+	// FDSTAG STRETCH 1D
 	//----------------------------------
-	// compile file name and open file
-	asprintf(&fname, "./Breakpoint/Breakpoint_info.%lld.out",(LLD)actx->iproc);
-	ierr = PetscBinaryOpen(fname, FILE_MODE_READ, &fid); CHKERRQ(ierr);
+	fwrite(&ms.nsegs  , sizeof(PetscInt),    1                 , fp);
+	fwrite(ms.istart  , sizeof(PetscInt),    (size_t)ms.nsegs+1, fp);
+	fwrite(ms.xstart  , sizeof(PetscScalar), (size_t)ms.nsegs+1, fp);
+}
+//---------------------------------------------------------------------------
+void BreakReadDiscret1D(FILE *fp, Discret1D ds, MeshSeg1D ms)
+{
+	//----------------------------------
+	// FDSTAG DISCRET 1D
+	//----------------------------------
+	fread(&ds.nproc  , sizeof(PetscInt),    1                 , fp);
+	fread(&ds.rank   , sizeof(PetscInt),    1                 , fp);
+	fread(ds.starts  , sizeof(PetscInt),    (size_t)ds.nproc+1, fp);
+	fread(&ds.pstart , sizeof(PetscInt),    1                 , fp);
+	fread(ds.ncoor   , sizeof(PetscScalar), (size_t)ds.nnods+1, fp);
+	fread(ds.ccoor   , sizeof(PetscScalar), (size_t)ds.ncels+1, fp);
+	fread(ds.nbuff   , sizeof(PetscScalar), (size_t)ds.bufsz  , fp);
+	fread(ds.cbuff   , sizeof(PetscScalar), (size_t)ds.ncels+2, fp);
+	fread(&ds.bufsz  , sizeof(PetscInt),    1                 , fp);
+	fread(&ds.tnods  , sizeof(PetscInt),    1                 , fp);
+	fread(&ds.tcels  , sizeof(PetscInt),    1                 , fp);
+	fread(&ds.nnods  , sizeof(PetscInt),    1                 , fp);
+	fread(&ds.ncels  , sizeof(PetscInt),    1                 , fp);
+	fread(&ds.grprev , sizeof(PetscInt),    1                 , fp);
+	fread(&ds.grnext , sizeof(PetscInt),    1                 , fp);
+	fread(&ds.color  , sizeof(PetscInt),    1                 , fp);
+	fread(&ds.h_uni  , sizeof(PetscScalar), 1                 , fp);
+	fread(&ds.h_min  , sizeof(PetscScalar), 1                 , fp);
+	fread(&ds.h_max  , sizeof(PetscScalar), 1                 , fp);
 
 	//----------------------------------
-	// Advection/Time Stepping
+	// FDSTAG STRETCH 1D
 	//----------------------------------
-	PetscBinaryRead(fid, &jr->ts.istep,   1,               PETSC_INT   );
-	PetscBinaryRead(fid, &jr->ts.dt,      1,               PETSC_SCALAR);
-	PetscBinaryRead(fid, &jr->ts.time,    1,               PETSC_SCALAR);
-
-	//----------------------------------
-	// Boundary conditions related info
-	//----------------------------------
-	// pushing block center coordinates
-	if (user->AddPushing)
-	{
-		PetscBinaryRead(fid, &user->Pushing.x_center_block, 1, PETSC_SCALAR);
-		PetscBinaryRead(fid, &user->Pushing.y_center_block, 1, PETSC_SCALAR);
-		PetscBinaryRead(fid, &user->Pushing.z_center_block, 1, PETSC_SCALAR);
-	}
-
-	//----------------------------------
-	// OTHER info
-	//----------------------------------
-	// read type of solver
-	PetscBinaryRead(fid, &jtypeFlag,                1, PETSC_INT );
-
-	if      (jtypeFlag == 0) j = _PICARD_;
-	else if (jtypeFlag == 1) j = _MF_    ;
-	else if (jtypeFlag == 2) j = _MFFD_  ;
-	else SETERRQ1(PETSC_COMM_SELF, PETSC_ERR_USER, "Incorrect type of jtype: %lld",(LLD)jtypeFlag);
-
-	*jtype = j;
-
-	// read init guess flag
-	PetscBinaryRead(fid, &initGuessFlag,            1, PETSC_INT );
-
-	if (initGuessFlag) jr->matLim.initGuessFlg = PETSC_TRUE;
-	else               jr->matLim.initGuessFlg = PETSC_FALSE;
-
-	// read breakpoint number
-	PetscBinaryRead(fid, &user->break_point_number, 1, PETSC_INT );
-
-	// close fid and free memory
-	ierr = PetscBinaryClose(fid); CHKERRQ(ierr);
-	free(fname);
-
-	PetscPrintf(PETSC_COMM_WORLD," \n");
-	PetscPrintf(PETSC_COMM_WORLD,"RESTART from Time step = %lld \n",(LLD)jr->ts.istep);
-
-	PetscFunctionReturn(0);
+	fread(&ms.nsegs  , sizeof(PetscInt),    1                 , fp);
+	fread(ms.istart  , sizeof(PetscInt),    (size_t)ms.nsegs+1, fp);
+	fread(ms.xstart  , sizeof(PetscScalar), (size_t)ms.nsegs+1, fp);
 }
 //---------------------------------------------------------------------------

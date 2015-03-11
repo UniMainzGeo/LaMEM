@@ -4,26 +4,27 @@
 #ifndef __break_h__
 #define __break_h__
 
-//---------------------------------------------------------------------------
-// Routines for writing breakpoint files
-//---------------------------------------------------------------------------
-PetscErrorCode BreakWriteMain     (UserCtx *user, AdvCtx *actx, JacType jtype);
-PetscErrorCode BreakWriteInfo     (UserCtx *user, AdvCtx *actx, JacType jtype);
-PetscErrorCode BreakWriteSol      (JacRes *jr);
-PetscErrorCode BreakWriteMark     (AdvCtx *actx);
-PetscErrorCode BreakWriteGrid     (UserCtx *user, AdvCtx *actx);
-PetscErrorCode BreakWriteDiscret1D(int fid, Discret1D ds);
-PetscErrorCode BreakWriteStrech1D (int fid, MeshSeg1D ms);
+// check if breakpoints exist and restart new simulation if not
+PetscErrorCode BreakCheck    (UserCtx *user);
 
 //---------------------------------------------------------------------------
-// Routines for reading breakpoint files
+// Write breakpoint files
 //---------------------------------------------------------------------------
-PetscErrorCode BreakReadMain     (UserCtx *user, AdvCtx *actx, JacType *jtype);
-PetscErrorCode BreakReadInfo     (UserCtx *user, AdvCtx *actx, JacType *jtype);
-PetscErrorCode BreakReadSol      (JacRes *jr);
-PetscErrorCode BreakReadMark     (AdvCtx *actx);
-PetscErrorCode BreakReadGrid     (UserCtx *user, FDSTAG *fs);
-PetscErrorCode BreakReadDiscret1D(int fid, Discret1D ds);
-PetscErrorCode BreakReadStrech1D (int fid, MeshSeg1D ms);
+// grid, mark, gsol, info are written together
+PetscErrorCode BreakWrite    (UserCtx *user, AdvCtx *actx, JacType jtype);
+
+//---------------------------------------------------------------------------
+// Read breakpoint files
+//---------------------------------------------------------------------------
+// gsol, info are read together; grid, mark are read separately
+PetscErrorCode BreakRead     (UserCtx *user, AdvCtx *actx, JacType *jtype);
+PetscErrorCode BreakReadGrid (UserCtx *user, FDSTAG *fs);
+PetscErrorCode BreakReadMark (AdvCtx *actx);
+
+//---------------------------------------------------------------------------
+// Read and write FDSTAG 1D structures
+//---------------------------------------------------------------------------
+void BreakWriteDiscret1D (FILE *fp, Discret1D ds, MeshSeg1D ms);
+void BreakReadDiscret1D  (FILE *fp, Discret1D ds, MeshSeg1D ms);
 
 #endif

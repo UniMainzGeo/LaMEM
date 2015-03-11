@@ -40,7 +40,8 @@ PetscErrorCode ADVMarkInit(AdvCtx *actx, UserCtx *user)
 	if (user->restart==1) user->msetup = RESTART;
 
 	// allocate storage for uniform distribution
-	if(user->msetup != PARALLEL)
+	if(user->msetup != PARALLEL
+	&& user->msetup != RESTART)
 	{
 		// get local number of markers
 		nmarkx  = fs->dsx.ncels * user->NumPartX;
