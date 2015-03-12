@@ -1341,13 +1341,15 @@ PetscErrorCode ADVMarkInitFilePolygons(AdvCtx *actx, UserCtx *user)
 	PetscScalar   header[2];
 	PetscInt      tstart[3],tend[3], nmark[3], nidx[3], nidxmax;
 	PetscInt      k,n,kvol,Fcount,Fsize,VolN,Nmax,Lmax,kpoly;
-	PetscScalar   VolInfo[4];
+//	PetscScalar   VolInfo[4];
 	Polygon2D     Poly;
 	PetscBool    *polyin, *polybnd;
 	PetscInt     *idx;
 	PetscScalar  *X,*PolyL,*PolyFile;
 
-	PetscInt      nmark_all,imark,imarkx,imarky,imarkz,icellx,icelly,icellz;
+//	PetscInt      nmark_all;
+	PetscInt      imark,imarkx,imarky,imarkz,icellx,icelly,icellz;
+
 	PetscScalar   dx=0.0,dy=0.0,dz=0.0,x=0.0,y=0.0,z=0.0;
 	PetscScalar   chLen;//,chTemp;
 	PetscLogDouble t0,t1;
@@ -1879,14 +1881,14 @@ PetscErrorCode inpoly(PetscInt N, PetscScalar *X, PetscScalar *node, PetscInt Nn
                         cn[j] = !cn[j];
                     }
                     
-                    // /!\/!\ Code added by Arthur /!\/!\
+                    // !! Code added by Arthur !!
                     // solves a bug, but may trigger another in the future (?)
                     else if (YY==ymax)
                     {
                         cn[j] = 1;
                     }
                     
-                    // /!\/!\ Code added by Arthur /!\/!\
+                    // !! Code added by Arthur !!
                     
                 }
             }
