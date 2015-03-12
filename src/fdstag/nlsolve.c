@@ -139,13 +139,21 @@ PetscErrorCode NLSolCreate(NLSol *nl, PCStokes pc, SNES *p_snes)
 
 //	ierr = SNESSetConvergenceTest(snes, SNESBlockStopTest, &nlctx, NULL); CHKERRQ(ierr);
 
-	// set Jacobian type & initial guess
+	// initialize Jacobian controls
 	nl->jtype = _PICARD_;
-	ierr = VecSet(jr->gsol, 0.0); CHKERRQ(ierr);
+	nl->nPicIt = 5;
+	nl->tolPic = 1e-2;
+	nl->nNwtIt = 25;
+	nl->tolNwt = 1.5;
 
-	// read number of Picard iterations
-	ierr = PetscOptionsGetInt(PETSC_NULL, "-snes_npicard", &nl->nPicIt, &flg); CHKERRQ(ierr);
-	if(flg != PETSC_TRUE) nl->nPicIt = 5;
+	// override from command line
+	ierr = PetscOptionsGetInt   (PETSC_NULL, "-snes_picard_it",  &nl->nPicIt, &flg); CHKERRQ(ierr);
+	ierr = PetscOptionsGetScalar(PETSC_NULL, "-snes_picard_tol", &nl->tolPic, &flg); CHKERRQ(ierr);
+	ierr = PetscOptionsGetInt   (PETSC_NULL, "-snes_newton_it",  &nl->nNwtIt, &flg); CHKERRQ(ierr);
+	ierr = PetscOptionsGetScalar(PETSC_NULL, "-snes_newton_tol", &nl->tolNwt, &flg); CHKERRQ(ierr);
+
+	// set initial guess
+	ierr = VecSet(jr->gsol, 0.0); CHKERRQ(ierr);
 
 	// return solver
 	(*p_snes) = snes;
@@ -246,11 +254,13 @@ PetscErrorCode FormJacobian(SNES snes, Vec x, Mat Amat, Mat Pmat, void *ctx)
 {
 	// Compute FDSTAG Jacobian matrix and preconditioner
 
-	NLSol    *nl;
-	PCStokes pc;
-	PMat     pm;
-	JacRes   *jr;
-	PetscInt it;
+	Vec         r;
+	NLSol       *nl;
+	PCStokes    pc;
+	PMat        pm;
+	JacRes      *jr;
+	PetscInt    it;
+	PetscScalar nrm;
 
 	// clear unused parameters
 	if(Amat) Amat = NULL;
@@ -265,15 +275,60 @@ PetscErrorCode FormJacobian(SNES snes, Vec x, Mat Amat, Mat Pmat, void *ctx)
 	pm = pc->pm;
 	jr = pm->jr;
 
+	//========================
+	// Jacobian type selection
+	//========================
+
+	// get iteration counter and residual norm
+	ierr = SNESGetIterationNumber(snes, &it);     CHKERRQ(ierr);
+	ierr = SNESGetFunction(snes, &r, NULL, NULL); CHKERRQ(ierr);
+	ierr = VecNorm(r, NORM_2, &nrm);              CHKERRQ(ierr);
+
+	// initialize
+	if(!it)
+	{
+		nl->it     = 0;
+		nl->refRes = nrm;
+	}
+	if(nl->jtype == _PICARD_)
+	{
+		// Picard case, check to switch to Newton
+		if(nrm < nl->refRes*nl->tolPic || nl->it > nl->nPicIt)
+		{
+			PetscPrintf(PETSC_COMM_WORLD,"        ***        \n");
+			PetscPrintf(PETSC_COMM_WORLD,"USING MMFD JACOBIAN\n");
+			PetscPrintf(PETSC_COMM_WORLD,"        ***        \n");
+
+			nl->jtype = _MFFD_;
+			nl->it     = 0;
+			nl->refRes = nrm;
+		}
+	}
+	else if(nl->jtype == _MFFD_)
+	{
+		// Newton case, check to switch to Picard
+		if(nrm > nl->refRes*nl->tolNwt || nl->it > nl->nNwtIt)
+		{
+			PetscPrintf(PETSC_COMM_WORLD,"        ***          \n");
+			PetscPrintf(PETSC_COMM_WORLD,"USING PICARD JACOBIAN\n");
+			PetscPrintf(PETSC_COMM_WORLD,"        ***          \n");
+
+			nl->jtype = _PICARD_;
+			nl->it     = 0;
+			nl->refRes = nrm;
+		}
+	}
+
+	// count iterations
+	nl->it++;
+
+	//========================
+
 	// setup preconditioner
 	ierr = PMatAssemble(pm);                                                  CHKERRQ(ierr);
 	ierr = PCStokesSetup(pc);                                                 CHKERRQ(ierr);
 	ierr = MatShellSetOperation(nl->P, MATOP_MULT, (void(*)(void))pc->Apply); CHKERRQ(ierr);
 	ierr = MatShellSetContext(nl->P, pc);                                     CHKERRQ(ierr);
-
-	// switch Jacobian after fixed number of iterations
-	ierr = SNESGetIterationNumber(snes, &it); CHKERRQ(ierr);
-	if(it == nl->nPicIt) nl->jtype = _MFFD_;
 
 	// setup Jacobian ...
 	if(nl->jtype == _PICARD_)
@@ -281,14 +336,9 @@ PetscErrorCode FormJacobian(SNES snes, Vec x, Mat Amat, Mat Pmat, void *ctx)
 		// ... Picard
 		ierr = MatShellSetOperation(nl->J, MATOP_MULT, (void(*)(void))pm->Picard); CHKERRQ(ierr);
 		ierr = MatShellSetContext(nl->J, pm->data);                                CHKERRQ(ierr);
-
 	}
 	else if(nl->jtype == _MFFD_)
 	{
-		PetscPrintf(PETSC_COMM_WORLD,"        ***        \n");
-		PetscPrintf(PETSC_COMM_WORLD,"USING MMFD JACOBIAN\n");
-		PetscPrintf(PETSC_COMM_WORLD,"        ***        \n");
-
 		// ... matrix-free finite-difference (MMFD)
 		ierr = MatMFFDSetFunction(nl->MFFD, (PetscErrorCode (*)(void*,Vec,Vec))SNESComputeFunction, snes); CHKERRQ(ierr);
 		ierr = MatMFFDSetBase(nl->MFFD, x, jr->gres);                                                      CHKERRQ(ierr);

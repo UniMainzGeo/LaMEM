@@ -78,12 +78,18 @@ typedef struct
 	Mat       P;      // preconditioner
 	Mat       MFFD;   // matrix-free finite difference Jacobian
 	PCStokes  pc;     // Stokes preconditioner
-	JacType   jtype;  // actual type of Jacobian operator
-	PetscInt  nPicIt; // number of Picard iteraions before switch to Newton
-	WinStopCtx wsCtx;
+
+	JacType     jtype;   // actual type of Jacobian operator
+	PetscInt    it;      // iteration counter
+	PetscScalar refRes;  // reference residual norm
+	PetscInt    nPicIt;  // number of Picard iteraions before switch to Newton
+	PetscScalar tolPic;  // relative Picard residual reduction tolerance
+	PetscInt    nNwtIt;  // number of Newton iterations before switch to Picard
+	PetscScalar tolNwt;  // Newton divergence tolerance
+
+	WinStopCtx  wsCtx; // window stop criterion context
+
 } NLSol;
-
-
 //---------------------------------------------------------------------------
 
 PetscErrorCode NLSolClear(NLSol *nl);
