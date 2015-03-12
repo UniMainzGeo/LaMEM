@@ -290,7 +290,7 @@ PetscErrorCode FormJacobian(SNES snes, Vec x, Mat Amat, Mat Pmat, void *ctx)
 		nl->it     = 0;
 		nl->refRes = nrm;
 	}
-	if(nl->jtype == _PICARD_)
+	else if(nl->jtype == _PICARD_)
 	{
 		// Picard case, check to switch to Newton
 		if(nrm < nl->refRes*nl->tolPic || nl->it > nl->nPicIt)
