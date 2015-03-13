@@ -1343,7 +1343,7 @@ PetscErrorCode ADVMarkInitFilePolygons(AdvCtx *actx, UserCtx *user)
 	PetscInt      k,n,kvol,Fcount,Fsize,VolN,Nmax,Lmax,kpoly;
 //	PetscScalar   VolInfo[4];
 	Polygon2D     Poly;
-	PetscBool    *polyin, *polybnd;
+	PetscBool    *polyin, *polybnd, AddRandomNoise;
 	PetscInt     *idx;
 	PetscScalar  *X,*PolyL,*PolyFile;
 
@@ -1354,12 +1354,23 @@ PetscErrorCode ADVMarkInitFilePolygons(AdvCtx *actx, UserCtx *user)
 	PetscScalar   chLen;//,chTemp;
 	PetscLogDouble t0,t1;
 	char          normalDir[4] = {"xyz"};
+	PetscRandom  rctx;
+	PetscScalar  cf_rand;
 
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
 
 	// get marker context
 	fs = actx->fs;
+
+	// random noise
+	AddRandomNoise = PETSC_FALSE;
+	ierr = PetscOptionsGetBool(PETSC_NULL,"-AddRandomNoiseParticles" , &AddRandomNoise , PETSC_NULL); CHKERRQ(ierr);
+	if(AddRandomNoise) PetscPrintf(PETSC_COMM_WORLD, " Adding random noise to marker distribution \n");
+
+	// initialize the random number generator
+	ierr = PetscRandomCreate(PETSC_COMM_WORLD, &rctx); CHKERRQ(ierr);
+	ierr = PetscRandomSetFromOptions(rctx);            CHKERRQ(ierr);
 	
 	// set characteristic length (&temperature)
 	if (!user->new_input) chLen  = user->Characteristic.Length;
@@ -1419,6 +1430,18 @@ PetscErrorCode ADVMarkInitFilePolygons(AdvCtx *actx, UserCtx *user)
 				actx->markers[imark].X[0] = x;
 				actx->markers[imark].X[1] = y;
 				actx->markers[imark].X[2] = z;
+				
+				
+				if(AddRandomNoise)
+				{
+					// add random noise
+					ierr = PetscRandomGetValueReal(rctx, &cf_rand); CHKERRQ(ierr);
+					actx->markers[imark].X[0] += (cf_rand-0.5)*dx/( (PetscScalar) user->NumPartX);
+					ierr = PetscRandomGetValueReal(rctx, &cf_rand); CHKERRQ(ierr);
+					actx->markers[imark].X[1] += (cf_rand-0.5)*dy/( (PetscScalar) user->NumPartY);
+					ierr = PetscRandomGetValueReal(rctx, &cf_rand); CHKERRQ(ierr);
+					actx->markers[imark].X[2] += (cf_rand-0.5)*dz/( (PetscScalar) user->NumPartZ);
+				}
 
 				// increment local counter
 				imark++;
@@ -1881,14 +1904,14 @@ PetscErrorCode inpoly(PetscInt N, PetscScalar *X, PetscScalar *node, PetscInt Nn
                         cn[j] = !cn[j];
                     }
                     
-                    // !! Code added by Arthur !!
+                    // Code added by Arthur
                     // solves a bug, but may trigger another in the future (?)
                     else if (YY==ymax)
                     {
                         cn[j] = 1;
                     }
                     
-                    // !! Code added by Arthur !!
+                    // ---
                     
                 }
             }
