@@ -94,6 +94,8 @@ CSRC = \
 	fdstag/matProps.c \
 	fdstag/tssolve.c \
 	fdstag/tools.c \
+	fdstag/sub_comm.c \
+	fdstag/pc_semiredundant.c \
 	
 
 #====================================================

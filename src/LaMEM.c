@@ -36,6 +36,8 @@ static char help[] = "Solves 3D Stokes equations using multigrid .\n\n";
 
 #include "LaMEM.h"
 
+extern PetscErrorCode PCCreate_SemiRedundant(PC);
+
 /*==========================================================================================================*/
 /* Main routine */
 #undef __FUNCT__
@@ -49,6 +51,9 @@ int main(int argc,char **argv )
 	// Initialize PETSC
 	ierr = PetscInitialize(&argc,&argv,(char *)0,help); CHKERRQ(ierr);
 	
+    ierr = PCRegister("pc_semiredundant",PCCreate_SemiRedundant);
+    
+    
 	// call LaMEM main library function
 	ierr = LaMEMLib(&LaMEM_OutputParameters,&mpi_group_id); CHKERRQ(ierr);
 
