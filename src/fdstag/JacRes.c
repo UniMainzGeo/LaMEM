@@ -1099,6 +1099,8 @@ PetscErrorCode JacResGetResidual(JacRes *jr)
 #define __FUNCT__ "JacResCopySol"
 PetscErrorCode JacResCopySol(JacRes *jr, Vec x)
 {
+	// copy solution from global to local vectors, enforce boundary constraints
+
 	FDSTAG      *fs;
 	BCCtx       *bc;
 	DOFIndex    *dof;
@@ -1328,6 +1330,8 @@ PetscErrorCode JacResCopySol(JacRes *jr, Vec x)
 #define __FUNCT__ "JacResCopyRes"
 PetscErrorCode JacResCopyRes(JacRes *jr, Vec f)
 {
+	// copy residuals from local to global vectors, enforce boundary constraints
+
 	FDSTAG      *fs;
 	BCCtx       *bc;
 	PetscInt    i, num, *list;
@@ -1383,12 +1387,81 @@ PetscErrorCode JacResCopyRes(JacRes *jr, Vec f)
 }
 //---------------------------------------------------------------------------
 #undef __FUNCT__
+#define __FUNCT__ "JacResCopyMomentumRes"
+PetscErrorCode JacResCopyMomentumRes(JacRes *jr, Vec f)
+{
+	// copy momentum residuals from global to local vectors for output
+
+	FDSTAG      *fs;
+	PetscScalar *fx, *fy, *fz, *res, *iter;
+
+	PetscErrorCode ierr;
+	PetscFunctionBegin;
+
+	fs  = jr->fs;
+
+	// access vectors
+	ierr = VecGetArray(jr->gfx, &fx); CHKERRQ(ierr);
+	ierr = VecGetArray(jr->gfy, &fy); CHKERRQ(ierr);
+	ierr = VecGetArray(jr->gfz, &fz); CHKERRQ(ierr);
+	ierr = VecGetArray(f, &res);      CHKERRQ(ierr);
+
+	// copy vectors component-wise
+	iter = res;
+
+	ierr  = PetscMemcpy(fx, iter, (size_t)fs->nXFace*sizeof(PetscScalar)); CHKERRQ(ierr);
+	iter += fs->nXFace;
+
+	ierr  = PetscMemcpy(fy, iter, (size_t)fs->nYFace*sizeof(PetscScalar)); CHKERRQ(ierr);
+	iter += fs->nYFace;
+
+	ierr  = PetscMemcpy(fz, iter, (size_t)fs->nZFace*sizeof(PetscScalar)); CHKERRQ(ierr);
+	iter += fs->nZFace;
+
+	// restore access
+	ierr = VecRestoreArray(jr->gfx,  &fx); CHKERRQ(ierr);
+	ierr = VecRestoreArray(jr->gfy,  &fy); CHKERRQ(ierr);
+	ierr = VecRestoreArray(jr->gfz,  &fz); CHKERRQ(ierr);
+	ierr = VecRestoreArray(f, &res);       CHKERRQ(ierr);
+
+	PetscFunctionReturn(0);
+}
+//---------------------------------------------------------------------------
+#undef __FUNCT__
+#define __FUNCT__ "JacResCopyContinuityRes"
+PetscErrorCode JacResCopyContinuityRes(JacRes *jr, Vec f)
+{
+	// copy continuity residuals from global to local vectors for output
+
+	FDSTAG      *fs;
+	PetscScalar *c, *res, *iter;
+
+	PetscErrorCode ierr;
+	PetscFunctionBegin;
+
+	fs  = jr->fs;
+
+	// access vectors
+	ierr = VecGetArray(jr->gc,  &c);  CHKERRQ(ierr);
+	ierr = VecGetArray(f, &res);      CHKERRQ(ierr);
+
+	// copy vectors component-wise
+	iter = res + fs->dof.lnv;
+
+	ierr  = PetscMemcpy(c,  iter, (size_t)fs->nCells*sizeof(PetscScalar)); CHKERRQ(ierr);
+
+	// restore access
+	ierr = VecRestoreArray(jr->gc,   &c);  CHKERRQ(ierr);
+	ierr = VecRestoreArray(f, &res);       CHKERRQ(ierr);
+
+	PetscFunctionReturn(0);
+}
+//---------------------------------------------------------------------------
+#undef __FUNCT__
 #define __FUNCT__ "JacResViewRes"
 PetscErrorCode JacResViewRes(JacRes *jr)
 {
-	// #define MAX3(a,b,c) (a > b ? (a > c ? a : c) : (b > c ? b : c))
-
-	// WARNING! show assembled residual (with bc)
+	// show assembled residual with boundary constraints
 
 	PetscBool   flg;
 	PetscScalar dmin, dmax, d2, fx, fy, fz, f2;
@@ -1401,14 +1474,17 @@ PetscErrorCode JacResViewRes(JacRes *jr)
 
 	if(flg != PETSC_TRUE) PetscFunctionReturn(0);
 
-	// compute norms
-	ierr = VecMin (jr->gc, NULL,   &dmin); CHKERRQ(ierr);
-	ierr = VecMax (jr->gc, NULL,   &dmax); CHKERRQ(ierr);
-	ierr = VecNorm(jr->gc, NORM_2, &d2);   CHKERRQ(ierr);
+	// get constrained residual vectors
+	ierr = JacResCopyMomentumRes  (jr, jr->gres); CHKERRQ(ierr);
+	ierr = JacResCopyContinuityRes(jr, jr->gres); CHKERRQ(ierr);
 
-	ierr = VecNorm(jr->gfx, NORM_2, &fx);  CHKERRQ(ierr);
-	ierr = VecNorm(jr->gfy, NORM_2, &fy);  CHKERRQ(ierr);
-	ierr = VecNorm(jr->gfz, NORM_2, &fz);  CHKERRQ(ierr);
+	// compute norms
+	ierr = VecMin (jr->gc,  NULL,   &dmin); CHKERRQ(ierr);
+	ierr = VecMax (jr->gc,  NULL,   &dmax); CHKERRQ(ierr);
+	ierr = VecNorm(jr->gc,  NORM_2, &d2);   CHKERRQ(ierr);
+	ierr = VecNorm(jr->gfx, NORM_2, &fx);   CHKERRQ(ierr);
+	ierr = VecNorm(jr->gfy, NORM_2, &fy);   CHKERRQ(ierr);
+	ierr = VecNorm(jr->gfz, NORM_2, &fz);   CHKERRQ(ierr);
 
 	f2 = sqrt(fx*fx + fy*fy + fz*fz);
 
@@ -1447,6 +1523,8 @@ PetscErrorCode SetMatParLim(MatParLim *matLim, UserCtx *usr)
 	matLim->eta_min      = usr->LowerViscosityCutoff;
 	matLim->eta_max      = usr->UpperViscosityCutoff;
 	matLim->eta_ref      = usr->InitViscosity;
+	matLim->eta_plast    = usr->PlastViscosity;
+
 	matLim->TRef         = 0.0;
 	// no activation energy scaling! scale with characteristic temperature only
 	matLim->Rugc         = 8.3144621;

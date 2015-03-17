@@ -362,7 +362,7 @@ PetscErrorCode PVOutCreate(PVOut *pvout, JacRes *jr, const char *filename)
 	if(omask->plast_dissip)   OutVecCreate(&outvecs[cnt++], "plast_dissip",   scal->lbl_dissipation_rate, &PVOutWritePlastDissip,  1);
 	if(omask->tot_displ)      OutVecCreate(&outvecs[cnt++], "tot_displ",      scal->lbl_length,           &PVOutWriteTotDispl,     3);
 	// === debugging vectors ===============================================
-	if(omask->moment_res)     OutVecCreate(&outvecs[cnt++], "moment_res",     scal->lbl_force,            &PVOutWriteMomentRes,    3);
+	if(omask->moment_res)     OutVecCreate(&outvecs[cnt++], "moment_res",     scal->lbl_volumetric_force, &PVOutWriteMomentRes,    3);
 	if(omask->cont_res)       OutVecCreate(&outvecs[cnt++], "cont_res",       scal->lbl_strain_rate,      &PVOutWriteContRes,      1);
 	if(omask->energ_res)      OutVecCreate(&outvecs[cnt++], "energ_res",      scal->lbl_dissipation_rate, &PVOutWritEnergRes,      1);
 	if(omask->DII_CEN)        OutVecCreate(&outvecs[cnt++], "DII_CEN",        scal->lbl_strain_rate,      &PVOutWriteDII_CEN,      1);

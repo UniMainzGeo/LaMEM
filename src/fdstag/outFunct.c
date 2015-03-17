@@ -415,11 +415,9 @@ PetscErrorCode PVOutWriteMomentRes(JacRes *jr, OutBuf *outbuf)
 {
 	ACCESS_FUNCTION_HEADER
 
-	cf = scal->force;
+	cf = scal->volumetric_force;
 
-//	ierr = VecZeroEntries(jr->gfx); CHKERRQ(ierr);
-//	ierr = VecZeroEntries(jr->gfy); CHKERRQ(ierr);
-//	ierr = VecZeroEntries(jr->gfz); CHKERRQ(ierr);
+	ierr = JacResCopyMomentumRes(jr, jr->gres); CHKERRQ(ierr);
 
 	GLOBAL_TO_LOCAL(outbuf->fs->DA_X, jr->gfx, jr->lfx)
 	GLOBAL_TO_LOCAL(outbuf->fs->DA_Y, jr->gfy, jr->lfy)
@@ -439,6 +437,8 @@ PetscErrorCode PVOutWriteContRes(JacRes *jr, OutBuf *outbuf)
 	ACCESS_FUNCTION_HEADER
 
 	cf  = scal->strain_rate;
+
+	ierr = JacResCopyContinuityRes(jr, jr->gres); CHKERRQ(ierr);
 
 	GLOBAL_TO_LOCAL(outbuf->fs->DA_CEN, jr->gc, outbuf->lbcen)
 

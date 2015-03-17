@@ -124,6 +124,7 @@ PetscErrorCode ScalingCreate(
 		scal->heat_flux           = 1.0;   sprintf(scal->lbl_heat_flux,        "[ ]");
 		scal->dissipation_rate    = 1.0;   sprintf(scal->lbl_dissipation_rate, "[ ]");
 		scal->angular_velocity    = 1.0;   sprintf(scal->lbl_angular_velocity, "[ ]");
+		scal->volumetric_force    = 1.0;   sprintf(scal->lbl_volumetric_force, "[ ]");
 
 		// material parameters
 		scal->density             = 1.0;   sprintf(scal->lbl_density,          "[ ]");
@@ -170,8 +171,8 @@ PetscErrorCode ScalingCreate(
 		scal->power               = power;
 		scal->heat_flux           = power/area;               sprintf(scal->lbl_heat_flux,        "[W/m^2]");
 		scal->dissipation_rate    = power/volume;             sprintf(scal->lbl_dissipation_rate, "[W/m^3]");
-		scal->activation_volume   = energy/volume; // J/m3
 		scal->angular_velocity    = angle/time;               sprintf(scal->lbl_angular_velocity, "[deg/s]"); // @
+		scal->volumetric_force    = force/volume;             sprintf(scal->lbl_volumetric_force, "[N/m^3]");
 
 		// material parameters
 		scal->density             = mass/volume;              sprintf(scal->lbl_density,          "[kg/m^3]");
@@ -227,8 +228,8 @@ PetscErrorCode ScalingCreate(
 		scal->power               = power;
 		scal->heat_flux           = power/area/mW;            sprintf(scal->lbl_heat_flux,        "[mW/m^2]");  // @
 		scal->dissipation_rate    = power/volume;             sprintf(scal->lbl_dissipation_rate, "[W/m^3]");
-		scal->activation_volume   = energy/volume; // J/m3
 		scal->angular_velocity    = angle/(time/Myr);         sprintf(scal->lbl_angular_velocity, "[deg/Myr]"); // @
+		scal->volumetric_force    = force/volume;             sprintf(scal->lbl_volumetric_force, "[N/m^3]");
 
 		// material parameters
 		scal->density             = mass/volume;              sprintf(scal->lbl_density,          "[kg/m^3]");
@@ -377,6 +378,7 @@ void ScalingInput(Scaling *scal, UserCtx *user)
 	user->LowerViscosityCutoff = user->LowerViscosityCutoff*viscosity;
 	user->UpperViscosityCutoff = user->UpperViscosityCutoff*viscosity;
 	user->InitViscosity        = user->InitViscosity       *viscosity;
+	user->PlastViscosity       = user->PlastViscosity      *viscosity;
 
 	// pushing block parameters
 	user->Pushing.L_block        = user->Pushing.L_block       *length;
@@ -395,10 +397,8 @@ void ScalingInput(Scaling *scal, UserCtx *user)
 }
 //---------------------------------------------------------------------------
 // scaling material parameters
-// Note: 1) activation energy is not scaled, only scale gas constant with characteristic temperature (a.p)
-//          (i.e (E+p'V*)/RT', where E is dimensional and V* must have same units as E)
-//          phases[i].Ed; phases[i].En; phases[i].Ep are not scaled
-//       2) activation volume is scaled to have units of activation energy (i.e.[V] = m3/mol -> scaled [V] = J/mol, same as [E])
+// Note: 1) gas constant is multiplied with characteristic temperature
+//       2) activation volume is multiplied with characteristic stress
 
 void ScalingMatProp(Scaling *scal, Material_t *phases, PetscInt numPhases)
 {
@@ -411,14 +411,14 @@ void ScalingMatProp(Scaling *scal, Material_t *phases, PetscInt numPhases)
 		phases[i].rho     = phases[i].rho  /scal->density;
 		// diffusion creep
 		phases[i].Bd      = phases[i].Bd   *scal->viscosity;
-		phases[i].Vd      = phases[i].Vd   *scal->activation_volume; // scaled Vd = J/mol
+		phases[i].Vd      = phases[i].Vd   *scal->stress;
 		// dislocation creep (power-law)
 		powerlaw          = ScalingComputePowerLaw(scal, phases[i].n);
 		phases[i].Bn      = phases[i].Bn   /powerlaw;
-		phases[i].Vn      = phases[i].Vn   *scal->activation_volume; // scaled Vd = J/mol
+		phases[i].Vn      = phases[i].Vn   *scal->stress;
 		// Peierls creep
 		phases[i].Bp      = phases[i].Bp   /scal->strain_rate;
-		phases[i].Vp      = phases[i].Vp   *scal->activation_volume; // scaled Vd = J/mol
+		phases[i].Vp      = phases[i].Vp   *scal->stress;
 		phases[i].taup    = phases[i].taup /scal->stress;
 
 		// elasticity
@@ -491,6 +491,7 @@ void ScalingInputOLD(UserCtx *user)
 	user->LowerViscosityCutoff = user->LowerViscosityCutoff/user->Characteristic.Viscosity;
 	user->UpperViscosityCutoff = user->UpperViscosityCutoff/user->Characteristic.Viscosity;
 	user->InitViscosity        = user->InitViscosity/user->Characteristic.Viscosity;
+	user->PlastViscosity       = user->PlastViscosity/user->Characteristic.Viscosity;
 
 	// pushing block parameters
 	user->Pushing.L_block        = user->Pushing.L_block/user->Characteristic.Length;

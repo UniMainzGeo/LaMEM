@@ -70,8 +70,8 @@ typedef struct
 	PetscScalar power;             // energy / time
 	PetscScalar heat_flux;         // power / area
 	PetscScalar dissipation_rate;  // power / volume
-	PetscScalar activation_volume; // energy / volume
 	PetscScalar angular_velocity;  // angle / time
+	PetscScalar volumetric_force;  // force / volume
 
 	// material parameters
 	PetscScalar density;            // mass / volume
@@ -95,6 +95,7 @@ typedef struct
 	char lbl_heat_flux       [_lbl_sz_];
 	char lbl_dissipation_rate[_lbl_sz_];
 	char lbl_angular_velocity[_lbl_sz_];
+	char lbl_volumetric_force[_lbl_sz_];
 	char lbl_density         [_lbl_sz_];
 	char lbl_viscosity       [_lbl_sz_];
 

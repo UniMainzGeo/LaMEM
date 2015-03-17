@@ -103,8 +103,14 @@ PetscErrorCode JacResGetResidual(JacRes *jr);
 // copy solution from global to local vectors, enforce boundary constraints
 PetscErrorCode JacResCopySol(JacRes *jr, Vec x);
 
-// copy residuals to global vector
+// copy residuals from local to global vectors, enforce boundary constraints
 PetscErrorCode JacResCopyRes(JacRes *jr, Vec f);
+
+// copy momentum residuals from global to local vectors for output
+PetscErrorCode JacResCopyMomentumRes(JacRes *jr, Vec f);
+
+// copy continuity residuals from global to local vectors for output
+PetscErrorCode JacResCopyContinuityRes(JacRes *jr, Vec f);
 
 PetscErrorCode JacResViewRes(JacRes *jr);
 
