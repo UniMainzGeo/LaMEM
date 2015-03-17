@@ -378,7 +378,7 @@ void ScalingInput(Scaling *scal, UserCtx *user)
 	user->LowerViscosityCutoff = user->LowerViscosityCutoff*viscosity;
 	user->UpperViscosityCutoff = user->UpperViscosityCutoff*viscosity;
 	user->InitViscosity        = user->InitViscosity       *viscosity;
-	user->PlastViscosity       = user->PlastViscosity      *viscosity;
+//	user->PlastViscosity       = user->PlastViscosity      *viscosity;
 
 	// pushing block parameters
 	user->Pushing.L_block        = user->Pushing.L_block       *length;
@@ -491,7 +491,7 @@ void ScalingInputOLD(UserCtx *user)
 	user->LowerViscosityCutoff = user->LowerViscosityCutoff/user->Characteristic.Viscosity;
 	user->UpperViscosityCutoff = user->UpperViscosityCutoff/user->Characteristic.Viscosity;
 	user->InitViscosity        = user->InitViscosity/user->Characteristic.Viscosity;
-	user->PlastViscosity       = user->PlastViscosity/user->Characteristic.Viscosity;
+//	user->PlastViscosity       = user->PlastViscosity/user->Characteristic.Viscosity;
 
 	// pushing block parameters
 	user->Pushing.L_block        = user->Pushing.L_block/user->Characteristic.Length;
