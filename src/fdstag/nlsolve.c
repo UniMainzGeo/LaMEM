@@ -296,12 +296,10 @@ PetscErrorCode FormJacobian(SNES snes, Vec x, Mat Amat, Mat Pmat, void *ctx)
 		if(nrm < nl->refRes*nl->tolPic || nl->it > nl->nPicIt)
 		{
 			PetscPrintf(PETSC_COMM_WORLD,"        ***        \n");
-			PetscPrintf(PETSC_COMM_WORLD,"USING MMFD JACOBIAN\n");
+			PetscPrintf(PETSC_COMM_WORLD,"SWITCH TO USING MMFD JACOBIAN\n");
 			PetscPrintf(PETSC_COMM_WORLD,"        ***        \n");
 
 			nl->jtype = _MFFD_;
-			nl->it     = 0;
-			nl->refRes = nrm;
 		}
 	}
 	else if(nl->jtype == _MFFD_)
@@ -310,15 +308,31 @@ PetscErrorCode FormJacobian(SNES snes, Vec x, Mat Amat, Mat Pmat, void *ctx)
 		if(nrm > nl->refRes*nl->tolNwt || nl->it > nl->nNwtIt)
 		{
 			PetscPrintf(PETSC_COMM_WORLD,"        ***          \n");
-			PetscPrintf(PETSC_COMM_WORLD,"USING PICARD JACOBIAN\n");
+			PetscPrintf(PETSC_COMM_WORLD,"SWITCH TO USING PICARD JACOBIAN\n");
 			PetscPrintf(PETSC_COMM_WORLD,"        ***          \n");
 
 			nl->jtype = _PICARD_;
-			nl->it     = 0;
-			nl->refRes = nrm;
 		}
 	}
+    
+    if ((JacResGetStep(jr)<2) & (nl->it == 0)){
+        // During the first and second timestep of a simulation, always start with picard iterations
+        // that is important as plasticity is only activated during the second timestep, whereas the code might have
+        // switched to MFFD already during the first timestep (and that solution is quite far off the plastic solution).
+        nl->jtype = _PICARD_;
+    }
 
+    /* print info*/
+    if (nl->jtype == _PICARD_)
+    {
+        PetscPrintf(PETSC_COMM_WORLD,"USING PICARD JACOBIAN: ||F||/||F0||=%e \n",nrm/nl->refRes);
+    }
+    else if(nl->jtype == _MFFD_)
+    {
+       PetscPrintf(PETSC_COMM_WORLD,"USING MMFD JACOBIAN:    ||F||/||F0||=%e \n",nrm/nl->refRes);
+    }
+      
+    
 	// count iterations
 	nl->it++;
 
