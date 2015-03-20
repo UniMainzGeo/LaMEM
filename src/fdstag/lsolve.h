@@ -15,6 +15,16 @@ typedef enum
 
 //---------------------------------------------------------------------------
 
+// Stokes preconditioner type
+typedef enum
+{
+	_UPPER_,  // upper triangular factorization
+	_LOWER_   // lower triangular factorization
+
+} PCBFType;
+
+//---------------------------------------------------------------------------
+
 // velocity block preconditioner type (bf only)
 typedef enum
 {
@@ -58,9 +68,10 @@ PetscErrorCode PCStokesDestroy(PCStokes pc);
 // Block Factorization preconditioner context
 typedef struct
 {
-	PCVelType  vtype; // velocity solver type
-	KSP        vksp;  // velocity solver
-	MG         vmg;   // velocity multigrid context
+	PCVelType vtype; // velocity solver type
+	KSP       vksp;  // velocity solver
+	MG        vmg;   // velocity multigrid context
+	PCBFType  type;  // factorization type
 
 } PCStokesBF;
 

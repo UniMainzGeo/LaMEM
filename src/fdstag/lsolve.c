@@ -208,6 +208,32 @@ PetscErrorCode PCStokesBFSetFromOptions(PCStokes pc)
 	// access context
 	bf = (PCStokesBF*)pc->data;
 
+	// set factorization type
+	ierr = PetscOptionsGetString(PETSC_NULL,"-bf_type", pname, MAX_NAME_LEN, &flg); CHKERRQ(ierr);
+
+	if(flg == PETSC_TRUE)
+	{
+		if(!strcmp(pname, "upper"))
+		{
+			PetscPrintf(PETSC_COMM_WORLD, " Block factorization type       : upper \n");
+
+			bf->type = _UPPER_;
+		}
+		else if(!strcmp(pname, "lower"))
+		{
+			PetscPrintf(PETSC_COMM_WORLD, " Block factorization type       : lower \n");
+
+			bf->type = _LOWER_;
+		}
+		else SETERRQ1(PETSC_COMM_SELF, PETSC_ERR_USER,"#Incorrect block factorization type: %s", pname);
+	}
+	else
+	{
+		PetscPrintf(PETSC_COMM_WORLD, " Block factorization type       : upper \n");
+
+		bf->type = _UPPER_;
+	}
+
 	// set velocity solver type
 	ierr = PetscOptionsGetString(PETSC_NULL,"-bf_vs_type", pname, MAX_NAME_LEN, &flg); CHKERRQ(ierr);
 
@@ -222,6 +248,7 @@ PetscErrorCode PCStokesBFSetFromOptions(PCStokes pc)
 		else if(!strcmp(pname, "user"))
 		{
 			PetscPrintf(PETSC_COMM_WORLD, " Velocity preconditioner        : user-defined\n");
+
 			bf->vtype = _VEL_USER_;
 		}
 		else SETERRQ1(PETSC_COMM_SELF, PETSC_ERR_USER,"#Incorrect velocity solver type: %s", pname);
@@ -229,6 +256,7 @@ PetscErrorCode PCStokesBFSetFromOptions(PCStokes pc)
 	else
 	{
 		PetscPrintf(PETSC_COMM_WORLD, " Velocity preconditioner        : user-defined\n");
+
 		bf->vtype = _VEL_USER_;
 	}
 
@@ -310,16 +338,36 @@ PetscErrorCode PCStokesBFApply(Mat JP, Vec r, Vec x)
 	// extract residual blocks
 	ierr = VecScatterBlockToMonolithic(P->rv, P->rp, r, SCATTER_REVERSE); CHKERRQ(ierr);
 
-	ierr = MatMult(P->iS, P->rp, P->xp);     CHKERRQ(ierr); // xp = (S^-1)*rp
+	if(bf->type == _UPPER_)
+	{
+		//=======================
+		// BLOCK UPPER TRIANGULAR
+		//=======================
 
-//	this fucking sign has tremendous influence on convergence rate! it's better this way!
-//	ierr = VecScale(P->xp, -1.0);            CHKERRQ(ierr); // xp = -xp
+		// Schur complement already contains negative sign (no negative sign here)
+		ierr = MatMult(P->iS, P->rp, P->xp);     CHKERRQ(ierr); // xp = (S^-1)*rp
 
-	ierr = MatMult(P->Avp, P->xp, P->wv);    CHKERRQ(ierr); // wv = Avp*xp
+		ierr = MatMult(P->Avp, P->xp, P->wv);    CHKERRQ(ierr); // wv = Avp*xp
 
-	ierr = VecAXPY(P->rv, -1.0, P->wv);      CHKERRQ(ierr); // rv = rv - wv
+		ierr = VecAXPY(P->rv, -1.0, P->wv);      CHKERRQ(ierr); // rv = rv - wv
 
-	ierr = KSPSolve(bf->vksp, P->rv, P->xv); CHKERRQ(ierr); // xv = (Avv^-1)*rv
+		ierr = KSPSolve(bf->vksp, P->rv, P->xv); CHKERRQ(ierr); // xv = (Avv^-1)*rv
+	}
+	else if(bf->type == _LOWER_)
+	{
+		//=======================
+		// BLOCK LOWER TRIANGULAR
+		//=======================
+
+		ierr = KSPSolve(bf->vksp, P->rv, P->xv); CHKERRQ(ierr); // xv = (Avv^-1)*rv
+
+		ierr = MatMult(P->Apv, P->xv, P->wp);    CHKERRQ(ierr); // wp = Apv*xv
+
+		ierr = VecAXPY(P->rp, -1.0, P->wp);      CHKERRQ(ierr); // rp = rp - wp
+
+		// Schur complement already contains negative sign (no negative sign here)
+		ierr = MatMult(P->iS, P->rp, P->xp);     CHKERRQ(ierr); // xp = (S^-1)*rp
+	}
 
 	// compose approximate solution
 	ierr = VecScatterBlockToMonolithic(P->xv, P->xp, x, SCATTER_FORWARD); CHKERRQ(ierr);
