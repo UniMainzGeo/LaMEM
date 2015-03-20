@@ -11,6 +11,7 @@ typedef struct
 	PetscInt     dir; // normal vector of polygon plane
 	PetscInt   ax[2]; // axis that span the polygon plane
 	PetscInt   phase; // phase that the polygon defines
+	PetscInt    type; // type can be of additive or assigning nature
 	PetscInt     num; // number of polygon slices defining the volume
 	PetscInt     len; // number of nodes of polygon
 	PetscInt    idxs; // index of first polygon slice

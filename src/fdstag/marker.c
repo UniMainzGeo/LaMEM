@@ -1345,7 +1345,7 @@ PetscErrorCode ADVMarkInitFilePolygons(AdvCtx *actx, UserCtx *user)
 	Polygon2D     Poly;
 	PetscBool    *polyin, *polybnd, AddRandomNoise;
 	PetscInt     *idx;
-	PetscScalar  *X,*PolyL,*PolyFile;
+	PetscScalar  *X,*PolyLen,*PolyIdx,*PolyFile;
 
 //	PetscInt      nmark_all;
 	PetscInt      imark,imarkx,imarky,imarkz,icellx,icelly,icellz;
@@ -1500,7 +1500,8 @@ PetscErrorCode ADVMarkInitFilePolygons(AdvCtx *actx, UserCtx *user)
 	Lmax = (PetscInt)(PolyFile[Fcount]); Fcount++;
 
     // allocate space for index array & the coordinates of the largest polygon
-	ierr = PetscMalloc((size_t)Nmax  *sizeof(PetscScalar),&PolyL); CHKERRQ(ierr);
+	ierr = PetscMalloc((size_t)Nmax  *sizeof(PetscScalar),&PolyLen); CHKERRQ(ierr);
+	ierr = PetscMalloc((size_t)Nmax  *sizeof(PetscScalar),&PolyIdx); CHKERRQ(ierr);
 	ierr = PetscMalloc((size_t)Lmax*2*sizeof(PetscScalar),&Poly.X); CHKERRQ(ierr);
 
 	// allocate temporary arrays
@@ -1519,8 +1520,9 @@ PetscErrorCode ADVMarkInitFilePolygons(AdvCtx *actx, UserCtx *user)
 //		ierr = PetscBinaryRead(fd, VolInfo, 4, PETSC_SCALAR); CHKERRQ(ierr);
 		Poly.dir   = (PetscInt)(PolyFile[Fcount]); Fcount++; // normal vector of polygon plane
 		Poly.phase = (PetscInt)(PolyFile[Fcount]); Fcount++; // phase that polygon defines
+		Poly.type  = (PetscInt)(PolyFile[Fcount]); Fcount++; // type of assigning the phases
 		Poly.num   = (PetscInt)(PolyFile[Fcount]); Fcount++; // number of polygon slices defining the volume
-		Poly.idxs  = (PetscInt)(PolyFile[Fcount]); Fcount++; // index of first polygon slice
+//		Poly.idxs  = (PetscInt)(PolyFile[Fcount]); Fcount++; // index of first polygon slice
 		Poly.nmark = 0;
 
 		// define axes the span the polygon plane
@@ -1541,20 +1543,31 @@ PetscErrorCode ADVMarkInitFilePolygons(AdvCtx *actx, UserCtx *user)
 			SETERRQ(PETSC_COMM_SELF, PETSC_ERR_USER, "The 'Dir' argument is wrong; should be 0, 1 or 2.");
 		}
 
+
 		// get lengths of polygons (PetscScalar !)
 //		ierr = PetscBinaryRead(fd, PolyL, Poly.num, PETSC_SCALAR); CHKERRQ(ierr);
 		for (kpoly=0; kpoly<Poly.num;kpoly++)
 		{
-			PolyL[kpoly] = PolyFile[Fcount]; Fcount++;
+			PolyIdx[kpoly] = PolyFile[Fcount]; Fcount++;
+		}
+		
+		// get lengths of polygons (PetscScalar !)
+//		ierr = PetscBinaryRead(fd, PolyL, Poly.num, PETSC_SCALAR); CHKERRQ(ierr);
+		for (kpoly=0; kpoly<Poly.num;kpoly++)
+		{
+			PolyLen[kpoly] = PolyFile[Fcount]; Fcount++;
 		}
 		
 		// --- loop through all slices ---
 		for (kpoly=0; kpoly<Poly.num;kpoly++)
 		{
 			// read polygon
-			Poly.len  = (PetscInt)(PolyL[kpoly]);
-			Poly.gidx = (PetscInt)(Poly.idxs+kpoly);
-			Poly.lidx = (PetscInt)(Poly.idxs+kpoly-tstart[Poly.dir]);
+			Poly.len  = (PetscInt)(PolyLen[kpoly]);
+// 			Poly.gidx = (PetscInt)(Poly.idxs+kpoly);
+// 			Poly.lidx = (PetscInt)(Poly.idxs+kpoly-tstart[Poly.dir]);
+			Poly.gidx = (PetscInt)(PolyIdx[kpoly]+kpoly);
+			Poly.lidx = (PetscInt)(PolyIdx[kpoly]+kpoly-tstart[Poly.dir]);
+
 //			ierr = PetscBinaryRead(fd, Poly.X, Poly.len*2, PETSC_SCALAR); CHKERRQ(ierr);
 
 
@@ -1583,8 +1596,15 @@ PetscErrorCode ADVMarkInitFilePolygons(AdvCtx *actx, UserCtx *user)
 	            for (k=0;k<nidx[Poly.dir];k++)
 	            {
 	            	if (polyin[k] || polybnd[k])
-	            	{
-	            		actx->markers[idx[k]].phase = Poly.phase;
+	            	{	
+	            		if (Poly.type == 1)
+	            		{
+	            			actx->markers[idx[k]].phase += Poly.phase;
+	            		}
+	            		else
+	            		{
+	            			actx->markers[idx[k]].phase = Poly.phase;
+	            		}
 	            		Poly.nmark++;
 	            		//PetscPrintf(PETSC_COMM_WORLD," k+1/nmark %lld/%lld \n",(LLD)k+1, (LLD)Poly.nmark);
 	            	}
@@ -1608,7 +1628,8 @@ PetscErrorCode ADVMarkInitFilePolygons(AdvCtx *actx, UserCtx *user)
 	PetscFree(polybnd);
 	PetscFree(X);
 
-	PetscFree(PolyL);
+	PetscFree(PolyIdx);
+	PetscFree(PolyLen);
 	PetscFree(Poly.X);
 	
 	
