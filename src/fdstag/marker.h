@@ -23,6 +23,21 @@ typedef struct
 
 } Polygon2D;
 
+// internal polygon context to avoid allocations inside "polyin"
+typedef struct
+{
+	PetscScalar   *Xtemp;
+	PetscScalar   *nodetemp;
+	PetscScalar   *cnect;
+	PetscBool     *cn;
+	PetscBool     *on;
+	PetscScalar   *x;
+	PetscScalar   *y;
+	PetscInt      *idx;
+} PolyCtx;
+
+
+
 //---------------------------------------------------------------------------
 
 // markers initialization
@@ -61,7 +76,9 @@ PetscErrorCode ADVMarkInitBands        (AdvCtx *actx, UserCtx *user);
 // service functions
 
 void ADVMarkSecIdx(AdvCtx *actx, UserCtx *user, PetscInt dir, PetscInt Nslice, PetscInt *idx);
-PetscErrorCode inpoly(PetscInt N, PetscScalar *X, PetscScalar *node, PetscInt Nnode, PetscBool *in, PetscBool *bnd);
+void inpoly(PolyCtx *polydat, PetscInt N, PetscScalar *X, PetscScalar *node, PetscInt Nnode, PetscBool *in, PetscBool *bnd);
+PetscErrorCode CreatePolyCtx(PolyCtx *polydat, PetscInt N, PetscInt Nnode);
+PetscErrorCode DestroyPolyCtx(PolyCtx polydat);
 void qsindex (PetscScalar  *a, PetscInt *idx , PetscInt lo, PetscInt hi);
 
 //---------------------------------------------------------------------------
