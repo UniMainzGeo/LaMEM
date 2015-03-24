@@ -1567,8 +1567,9 @@ PetscErrorCode ADVMarkInitFilePolygons(AdvCtx *actx, UserCtx *user)
 			Poly.len  = (PetscInt)(PolyLen[kpoly]);
 // 			Poly.gidx = (PetscInt)(Poly.idxs+kpoly);
 // 			Poly.lidx = (PetscInt)(Poly.idxs+kpoly-tstart[Poly.dir]);
-			Poly.gidx = (PetscInt)(PolyIdx[kpoly]+kpoly);
-			Poly.lidx = (PetscInt)(PolyIdx[kpoly]+kpoly-tstart[Poly.dir]);
+			// Poly.gidx = (PetscInt)(PolyIdx[kpoly]+kpoly);
+			Poly.gidx = (PetscInt)(PolyIdx[kpoly]);
+			Poly.lidx = (PetscInt)(PolyIdx[kpoly]-tstart[Poly.dir]);
 
 //			ierr = PetscBinaryRead(fd, Poly.X, Poly.len*2, PETSC_SCALAR); CHKERRQ(ierr);
 
