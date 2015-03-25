@@ -19,7 +19,7 @@ PetscErrorCode ScalingReadFromFile(Scaling *scal, FILE *fp)
 	PetscFunctionBegin;
 
 	// read model setup
-	parse_GetString(fp, "units", utype, MAX_NAME_LEN-1, &flg);
+	parse_GetString(fp, "units", utype, MAX_NAME_LEN, &flg);
 
 	if(flg)
 	{

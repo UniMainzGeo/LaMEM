@@ -565,7 +565,7 @@ PetscErrorCode   LaMEMReadInputFile( UserContext *user )
 	parse_GetDouble( fp, "z_bot", &user->z_bot, &found );
 
 	// read model setup
-	parse_GetString(fp, "msetup", setup_name, PETSC_MAX_PATH_LEN-1, &found);
+	parse_GetString(fp, "msetup", setup_name, PETSC_MAX_PATH_LEN, &found);
 	if(found)
 	{
 		if     (!strcmp(setup_name, "parallel"))   user->msetup = PARALLEL;
@@ -587,7 +587,7 @@ PetscErrorCode   LaMEMReadInputFile( UserContext *user )
 	parse_GetDouble( fp, "amplNoise", &user->amplNoise, &found );
 	parse_GetDouble( fp, "Hinterface", &user->Hinterface, &found );
 
-	parse_GetString( fp, "OutputFile", user->OutputFile, PETSC_MAX_PATH_LEN-1, &found );
+	parse_GetString( fp, "OutputFile", user->OutputFile, PETSC_MAX_PATH_LEN, &found );
 	parse_GetInt( fp,    "save_timesteps", &user->save_timesteps, &found );
 	parse_GetInt( fp,    "time_end", &user->time_end, &found );
 	parse_GetInt( fp,    "time_end_temp", &user->time_end_temp, &found );
@@ -662,12 +662,12 @@ PetscErrorCode   LaMEMReadInputFile( UserContext *user )
 	/* Particle related variables */
 	parse_GetInt( fp,    "ParticleInput", &user->ParticleInput, &found );
 	parse_GetInt( fp,    "LoadInitialParticlesFromDisc", &user->LoadInitialParticlesFromDisc, &found );
-	parse_GetString( fp, "ParticleFilename", user->ParticleFilename, PETSC_MAX_PATH_LEN-1, &found );
-	parse_GetString( fp, "LoadInitialParticlesDirectory", user->LoadInitialParticlesDirectory, PETSC_MAX_PATH_LEN-1, &found );
+	parse_GetString( fp, "ParticleFilename", user->ParticleFilename, PETSC_MAX_PATH_LEN, &found );
+	parse_GetString( fp, "LoadInitialParticlesDirectory", user->LoadInitialParticlesDirectory, PETSC_MAX_PATH_LEN, &found );
 	if (!found){
 		sprintf(user->LoadInitialParticlesDirectory, "InitialParticles");
 	}
-	parse_GetString( fp, "SaveInitialParticlesDirectory", user->SaveInitialParticlesDirectory, PETSC_MAX_PATH_LEN-1, &found );
+	parse_GetString( fp, "SaveInitialParticlesDirectory", user->SaveInitialParticlesDirectory, PETSC_MAX_PATH_LEN, &found );
 	if (!found){
 		sprintf(user->SaveInitialParticlesDirectory, "InitialParticles");
 	}
@@ -678,7 +678,7 @@ PetscErrorCode   LaMEMReadInputFile( UserContext *user )
 	parse_GetInt( fp,    "NumPartZ", &user->NumPartZ, &found );
 
 	parse_GetInt( fp,    "InitialMeshFromFile", &user->InitialMeshFromFile, &found );
-	parse_GetString( fp, "InitialMeshFileName", user->InitialMeshFileName, PETSC_MAX_PATH_LEN-1, &found );
+	parse_GetString( fp, "InitialMeshFileName", user->InitialMeshFileName, PETSC_MAX_PATH_LEN, &found );
 	parse_GetInt( fp,    "InitialMantleLevel", &user->InitialMantleLevel, &found );
 
 	parse_GetInt( fp,    "InitialErosionSurfaceFromFile", &user->InitialErosionSurfaceFromFile, &found );
@@ -701,7 +701,7 @@ PetscErrorCode   LaMEMReadInputFile( UserContext *user )
 	// --- SurfaceVelocity related input parameters ---
 	parse_GetInt( fp,    "get_SurfVelField", 	&user->SurfVelField.GetIt, 		&found );
 	parse_GetInt( fp,    "SurfVelField_SaveRef", &user->SurfVelField.SaveRef,	&found );
-	parse_GetString( fp, "SurfVelField_RefDatFile", user->SurfVelField.RefDatFile2load, PETSC_MAX_PATH_LEN-1, &found );
+	parse_GetString( fp, "SurfVelField_RefDatFile", user->SurfVelField.RefDatFile2load, PETSC_MAX_PATH_LEN, &found );
 	parse_GetDouble( fp, "SurfVelField_VxStdDev", &user->SurfVelField.VxStdDev, &found );
 	parse_GetDouble( fp, "SurfVelField_VyStdDev", &user->SurfVelField.VyStdDev, &found );
 	parse_GetDouble( fp, "SurfVelField_VzStdDev", &user->SurfVelField.VzStdDev, &found );
@@ -722,7 +722,7 @@ PetscErrorCode   LaMEMReadInputFile( UserContext *user )
 	parse_GetDouble( fp, "GravityField_survey_z"	, &user->GravityField.survey_z 	, &found );
 	parse_GetDouble( fp, "GravityField_ReferenceDensity", &user->GravityField.ReferenceDensity, &found );
 	parse_GetInt( fp,    "GravityField_num_intp"	, &user->GravityField.num_intp		, &found );
-	parse_GetString( fp, "GravityField_RefDatFile", user->GravityField.RefDatFile2load, PETSC_MAX_PATH_LEN-1, &found );
+	parse_GetString( fp, "GravityField_RefDatFile", user->GravityField.RefDatFile2load, PETSC_MAX_PATH_LEN, &found );
 	parse_GetDouble( fp, "GravityField_StdDev", &user->GravityField.StdDev, &found );
 	parse_GetInt( fp,    "GravityField_LithColNum", &user->GravityField.LithColNum, &found );
 	parse_GetDoubleArray(fp,"GravityField_LithColDepth",&nv,d_values, &found );
@@ -751,7 +751,7 @@ PetscErrorCode   LaMEMReadInputFile( UserContext *user )
 	parse_GetDouble( fp, "Isostasy_corr_topo", &user->Isostasy.corr_topo,  &found );
 	parse_GetDouble( fp, "Isostasy_TisoStdDev", &user->GravityField.StdDev, &found );
 	parse_GetDouble( fp, "Isostasy_RefRho", &user->Isostasy.ref_rho, &found );
-	parse_GetString( fp, "Isostasy_RefDatFile", user->Isostasy.RefDatFile2load, PETSC_MAX_PATH_LEN-1, &found );
+	parse_GetString( fp, "Isostasy_RefDatFile", user->Isostasy.RefDatFile2load, PETSC_MAX_PATH_LEN, &found );
 
 
 	parse_GetInt( fp,    "save_breakpoints", &user->save_breakpoints, &found );

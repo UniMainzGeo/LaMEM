@@ -1075,7 +1075,7 @@ PetscErrorCode Petsc_DMComposite_BlockStoppingConditionConfiguration( KSP ksp )
 	/* look for norm option choice */
 	/* default */
 	norm_int = 20;
-	ierr = PetscOptionsGetString(PETSC_NULL, "-use_stokes_norm", opt_string, PETSC_MAX_PATH_LEN-1, &flg); CHKERRQ(ierr);
+	ierr = PetscOptionsGetString(PETSC_NULL, "-use_stokes_norm", opt_string, PETSC_MAX_PATH_LEN, &flg); CHKERRQ(ierr);
 	if      (!strcmp(opt_string, "Linf"))     norm_int = 10;
 	else if (!strcmp(opt_string, "L2"))       norm_int = 20;
 	else if (!strcmp(opt_string, "scaledL2")) norm_int = 30;

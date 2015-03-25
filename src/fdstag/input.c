@@ -36,7 +36,7 @@ PetscErrorCode FDSTAGInitCode(JacRes *jr, UserCtx *user)
 	ierr = InputSetDefaultValues(jr, user); CHKERRQ(ierr);
 
 	// check whether input file is specified
-	ierr = PetscOptionsGetString(PETSC_NULL, "-ParamFile", ParamFile, MAX_PATH_LEN-1, &InputParamFile); CHKERRQ(ierr);
+	ierr = PetscOptionsGetString(PETSC_NULL, "-ParamFile", ParamFile, MAX_PATH_LEN, &InputParamFile); CHKERRQ(ierr);
 
 	// read additional PETSc options from input file if required
 	if(InputParamFile == PETSC_TRUE)
@@ -225,7 +225,7 @@ PetscErrorCode InputReadFile(JacRes *jr, UserCtx *user, FILE *fp)
 	double d_values[1000];
 	PetscInt i_values[1000];
 	PetscInt nv, i;
-	char setup_name[PETSC_MAX_PATH_LEN];
+	char setup_name[MAX_NAME_LEN];
 
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
@@ -259,7 +259,7 @@ PetscErrorCode InputReadFile(JacRes *jr, UserCtx *user, FILE *fp)
 	ierr = ReadMeshSegDir(fp, "seg_z", user->z_bot,   user->z_bot   + user->H, &user->nel_z, &user->mseg_z); CHKERRQ(ierr);
 
 	// read model setup
-	parse_GetString(fp, "msetup", setup_name, PETSC_MAX_PATH_LEN-1, &found);
+	parse_GetString(fp, "msetup", setup_name, MAX_NAME_LEN, &found);
 	if(found)
 	{
 		if     (!strcmp(setup_name, "parallel"))   user->msetup = PARALLEL;
@@ -276,7 +276,7 @@ PetscErrorCode InputReadFile(JacRes *jr, UserCtx *user, FILE *fp)
 		else SETERRQ1(PETSC_COMM_SELF, PETSC_ERR_USER,"#ERROR! Incorrect model setup: %s", setup_name);
 	}
 
-	parse_GetString( fp, "OutputFile", user->OutputFile, PETSC_MAX_PATH_LEN-1, &found );
+	parse_GetString( fp, "OutputFile", user->OutputFile, MAX_PATH_LEN, &found );
 	parse_GetInt( fp,    "save_breakpoints", &user->save_breakpoints, &found );
 	parse_GetInt( fp,    "restart", &user->restart, &found );
 	parse_GetInt( fp,    "save_timesteps", &user->save_timesteps, &found );
@@ -287,12 +287,12 @@ PetscErrorCode InputReadFile(JacRes *jr, UserCtx *user, FILE *fp)
 
 	// Particle related variables
 	parse_GetInt( fp,    "ParticleInput", &user->ParticleInput, &found );
-	parse_GetString( fp, "ParticleFilename", user->ParticleFilename, PETSC_MAX_PATH_LEN-1, &found );
-	parse_GetString( fp, "LoadInitialParticlesDirectory", user->LoadInitialParticlesDirectory, PETSC_MAX_PATH_LEN-1, &found );
+	parse_GetString( fp, "ParticleFilename", user->ParticleFilename, MAX_PATH_LEN, &found );
+	parse_GetString( fp, "LoadInitialParticlesDirectory", user->LoadInitialParticlesDirectory, MAX_PATH_LEN, &found );
 	if (!found){
 		sprintf(user->LoadInitialParticlesDirectory, "InitialParticles");
 	}
-	parse_GetString( fp, "SaveInitialParticlesDirectory", user->SaveInitialParticlesDirectory, PETSC_MAX_PATH_LEN-1, &found );
+	parse_GetString( fp, "SaveInitialParticlesDirectory", user->SaveInitialParticlesDirectory, MAX_PATH_LEN, &found );
 	if (!found){
 		sprintf(user->SaveInitialParticlesDirectory, "InitialParticles");
 	}
@@ -353,7 +353,7 @@ PetscErrorCode InputReadCommLine(UserCtx *user )
 {
 	PetscInt       i, nel_array[3], nel_input_max;
 	PetscBool      found,flg;
-	char           setup_name[PETSC_MAX_PATH_LEN];
+	char           setup_name[MAX_NAME_LEN];
 
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
@@ -388,7 +388,7 @@ PetscErrorCode InputReadCommLine(UserCtx *user )
 	PetscOptionsGetReal(PETSC_NULL,"-FSSA",           &user->FSSA,           PETSC_NULL); // FSSA parameter [should be between 0-1]
 
 	// FDSTAG Canonical Model Setup
-	PetscOptionsGetString(PETSC_NULL,"-msetup", setup_name, PETSC_MAX_PATH_LEN, &found);
+	PetscOptionsGetString(PETSC_NULL,"-msetup", setup_name, MAX_NAME_LEN, &found);
 	if(found == PETSC_TRUE)
 	{	if     (!strcmp(setup_name, "parallel"))   user->msetup = PARALLEL;
 		else if(!strcmp(setup_name, "redundant"))  user->msetup = REDUNDANT;
@@ -459,7 +459,7 @@ PetscErrorCode InputReadCommLine(UserCtx *user )
 	PetscOptionsGetReal(PETSC_NULL,"-Pushing.z_center_block"    , &user->Pushing.z_center_block     , PETSC_NULL);
 
 	// pushing - array variables
-	char matprop_opt[PETSC_MAX_PATH_LEN];
+	char matprop_opt[MAX_PATH_LEN];
 	flg = PETSC_FALSE;
 
 	for(i=0;i<user->Pushing.num_changes;i++){

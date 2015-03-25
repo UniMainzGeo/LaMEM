@@ -654,7 +654,9 @@ void parse_GetString( FILE *fp, const char key[], char value[], PetscInt max_L, 
 
 		trim_past_comment(LINE);
 		line_L = (PetscInt)strlen( LINE );
-		if( line_L > max_L ) {
+
+		// one byte for terminating null character should be reserved
+		if( line_L > max_L-1 ) {
 			printf("parse_GetString: Error, input string is not large enough to hold result \n");
 			return;
 		}

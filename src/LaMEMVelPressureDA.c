@@ -88,7 +88,7 @@ PetscErrorCode LaMEMVelPressureDACreate( const DAVPElementType type, LaMEMVelPre
 	If we find a valid option, we will override that specified in the argument, "type".
 	*/
 	flg = PETSC_FALSE;
-	PetscOptionsGetString( PETSC_NULL, "-vpt_element", element_name, PETSC_MAX_PATH_LEN-1, &flg );
+	PetscOptionsGetString( PETSC_NULL, "-vpt_element", element_name, PETSC_MAX_PATH_LEN, &flg );
 	if( flg == PETSC_TRUE ) {
 		PetscInt k, type_k;
 		PetscBool found;

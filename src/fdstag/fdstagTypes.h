@@ -28,7 +28,7 @@ typedef struct
 	PetscScalar  StdDev;
 	PetscScalar  LithColDens[9],LithColDepth[8];
 	PetscInt     num_intp,LithColNum;
-	char         RefDatFile2load[PETSC_MAX_PATH_LEN];
+	char         RefDatFile2load[MAX_PATH_LEN];
 } gravityParams;
 //-----------------------------------------------------------------------------
 // Structure that holds pushing parameters
@@ -149,7 +149,7 @@ typedef struct {
 
 	// input/output
 	char             OutputFile[MAX_PATH_LEN];
-//	char             ParamFile[PETSC_MAX_PATH_LEN];
+//	char             ParamFile[MAX_PATH_LEN];
 //	PetscBool        InputParamFile;
 
 	// flags
@@ -162,7 +162,7 @@ typedef struct {
 	//PetscInt         GridAdvectionMethod, NumSurfaceNodes, num_subdt, num_phase_transitions;
 	//PetscInt         LoadInitialParticlesFromDisc;
 	//PetscInt         MuMeanMethod;
-	//char             InitialMeshFileName[PETSC_MAX_PATH_LEN];
+	//char             InitialMeshFileName[MAX_PATH_LEN];
 	//PetscBool        AnalyticalBenchmark;
 	//PetscInt         *NodesDistributionCPUsFineGrid;
 	//PetscInt         MaxNumLocalParticles;

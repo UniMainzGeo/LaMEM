@@ -146,7 +146,7 @@ PetscErrorCode MatPropGetStruct(FILE *fp,
 	//============================================================
 	// Newtonian linear diffusion creep
 	//============================================================
-	getMatPropString(fp, ils, ile, "diff_profile", ndiff, MAX_NAME_LEN-1, &found);
+	getMatPropString(fp, ils, ile, "diff_profile", ndiff, MAX_NAME_LEN, &found);
 	if(found)
 	{
 		// set predefined diffusion creep profile
@@ -162,7 +162,7 @@ PetscErrorCode MatPropGetStruct(FILE *fp,
 	//============================================================
 	// power-law (dislocation) creep
 	//============================================================
-	getMatPropString(fp, ils, ile, "disl_profile", ndisl, MAX_NAME_LEN-1, &found);
+	getMatPropString(fp, ils, ile, "disl_profile", ndisl, MAX_NAME_LEN, &found);
 	if(found)
 	{
 		// set predefined dislocation creep profile
