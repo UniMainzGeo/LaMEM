@@ -14,43 +14,6 @@ typedef struct
 	DMBoundaryType BCType_z;
 } SBC;
 //-----------------------------------------------------------------------------
-// Defines physical properties for each of the phases
-typedef struct
-{
-	PetscInt     ViscosityLaw[max_num_phases];
-	PetscInt     DensityLaw[max_num_phases];
-	PetscInt     PlasticityLaw[max_num_phases];
-	PetscScalar  mu[max_num_phases];
-	PetscScalar  rho[max_num_phases];
-	PetscScalar  n_exponent[max_num_phases];
-	PetscScalar  A[max_num_phases];
-	PetscScalar  E[max_num_phases];
-	PetscScalar  ElasticShearModule[max_num_phases];
-	PetscScalar  ElasticBulkModule[max_num_phases];
-	PetscScalar  Cohesion[max_num_phases];
-	PetscScalar  FrictionAngle[max_num_phases];
-	PetscScalar  T_Conductivity[max_num_phases];
-	PetscScalar  HeatCapacity[max_num_phases];
-	PetscScalar  RadioactiveHeat[max_num_phases];
-	PetscScalar  ThermalExpansivity[max_num_phases];
-	PetscScalar  FrankKamenetskii[max_num_phases];
-	PetscScalar  Density_T0[max_num_phases];
-	PetscScalar  Powerlaw_e0[max_num_phases];
-	PetscScalar  CohesionAfterWeakening[max_num_phases];
-	PetscScalar  FrictionAngleAfterWeakening[max_num_phases];
-	PetscScalar  Weakening_PlasticStrain_Begin[max_num_phases];
-	PetscScalar  Weakening_PlasticStrain_End[max_num_phases];
-	PetscScalar  Ra[max_num_phases];
-} PhProps;
-//-----------------------------------------------------------------------------
-// Structure that holds characteristic values for nondimensionalisation
-typedef struct
-{
-	PetscScalar  Length, Time, Stress, Velocity, Temperature, Viscosity;
-	PetscScalar  Density, kg, Strainrate, ThermalExpansivity, km, SecYear, cmYear, Myrs, MPa, Force, Watt;
-	PetscScalar  T_conductivity, RadioactiveHeat, Joule, HeatCapacity, Jmol;
-} nonDimUnits;
-//-----------------------------------------------------------------------------
 // Structure that holds gravity parameters - not yet used
 typedef struct
 {
@@ -130,10 +93,6 @@ typedef struct {
 	//PetscInt         refinex, refiney, refinez;
 	//PetscScalar      ampl2D,ampl3D,amplNoise,mumax, Hinterface, amp; // perturbations to grid
 
-	// material properties
-	PetscInt         num_phases;
-	Material         PhaseMaterialProperties;
-	PhProps          PhaseProperties;
 	//PetscInt         num_particle_local;
 	//PetscInt         baselevelx0, baselevely0, baselevelx1, baselevely1;
 
@@ -163,7 +122,7 @@ typedef struct {
 
 	// optimization
 	PetscInt         mpi_group_id; //migrated from OptimiseParams
-	PetscScalar      LowerViscosityCutoff, UpperViscosityCutoff, InitViscosity;// JacRes
+	PetscScalar      LowerViscosityCutoff, UpperViscosityCutoff, InitViscosity, PlastViscosity; // JacRes
 
 	// initial guess
 	PetscScalar      DII_ref;
@@ -181,20 +140,17 @@ typedef struct {
 	PetscInt         restart;
 	//PetscInt         incr_breakpoints, fileno;
 
-	// new material input
-	PetscInt         new_input;
-
 	//markers
-	char             ParticleFilename[PETSC_MAX_PATH_LEN];
-	char             LoadInitialParticlesDirectory[PETSC_MAX_PATH_LEN];
-	char             SaveInitialParticlesDirectory[PETSC_MAX_PATH_LEN];
+	char             ParticleFilename[MAX_PATH_LEN];
+	char             LoadInitialParticlesDirectory[MAX_PATH_LEN];
+	char             SaveInitialParticlesDirectory[MAX_PATH_LEN];
 	PetscInt         SaveParticles;
 	PetscInt         ParticleInput; // this needs to be connected in relation to marker setups
 
 	// input/output
-	char             OutputFile[PETSC_MAX_PATH_LEN];
-	char             ParamFile[PETSC_MAX_PATH_LEN];
-	PetscBool        InputParamFile;
+	char             OutputFile[MAX_PATH_LEN];
+//	char             ParamFile[PETSC_MAX_PATH_LEN];
+//	PetscBool        InputParamFile;
 
 	// flags
 	PetscBool        SkipStokesSolver;
@@ -232,10 +188,6 @@ typedef struct {
 	// pushing
 	PetscInt         AddPushing;
 	PushParams       Pushing;
-
-	// scaling
-	PetscInt         DimensionalUnits;
-	nonDimUnits      Characteristic;
 
 	// solution vectors (part of fdstag canonical implementation, this will be abandoned)
 	Vec              sol, sol_advect;

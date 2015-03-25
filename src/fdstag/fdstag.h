@@ -247,6 +247,8 @@ PetscErrorCode FDSTAGGetGlobalBox(
 	PetscScalar *ey,
 	PetscScalar *ez);
 
+PetscErrorCode FDSTAGProcPartitioning(FDSTAG *fs, PetscScalar chLen);
+
 //---------------------------------------------------------------------------
 // MACROS
 //---------------------------------------------------------------------------

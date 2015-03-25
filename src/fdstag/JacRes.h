@@ -70,7 +70,6 @@ typedef struct
 	Scaling     scal;        // scaling
 	TSSol       ts;          // time-stepping parameters
 	PetscScalar grav[SPDIM]; // global gravity components
-
 	PetscScalar FSSA;        // density gradient penalty parameter
 	//                          (a.k.a. free-surface-stabilization-algorithm)
 
@@ -87,6 +86,9 @@ PetscErrorCode JacResCreate(
 
 // destroy residual & Jacobian evaluation context
 PetscErrorCode JacResDestroy(JacRes *jr);
+
+// initialize and setup scaling object, perform scaling
+PetscErrorCode JacResInitScale(JacRes *jr, UserCtx *usr);
 
 // compute effective inverse elastic viscosity
 PetscErrorCode JacResGetI2Gdt(JacRes *jr);

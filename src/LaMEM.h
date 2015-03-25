@@ -126,7 +126,7 @@
 
 // LaMEM library main function
 PetscErrorCode LaMEMLib(PetscScalar *LaMEM_OutputParameters, PetscInt *mpi_group_id);
-PetscErrorCode LaMEMLib_FDSTAG(PetscBool InputParamFile, const char *ParamFile, PetscScalar *LaMEM_OutputParameters, PetscInt *mpi_group_id);
+PetscErrorCode LaMEMLib_FDSTAG(void *echange_ctx);
 PetscErrorCode LaMEMLib_Legacy(PetscBool InputParamFile, const char *ParamFile, PetscScalar *LaMEM_OutputParameters, PetscInt *mpi_group_id);
 
 //-----------------------------------------------------------------------------

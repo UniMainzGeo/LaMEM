@@ -40,6 +40,8 @@ typedef struct
 	//
 	// * characteristic values must ALWAYS be provided in SI units
 	//
+	// * material parameters must ALWAYS be provided in SI units
+	//
 	// * in all dimensional cases (si & geo) angles are measured in degrees
 	//   angular velocities are measured in degrees per unit time
 	//
@@ -52,9 +54,17 @@ typedef struct
 	PetscScalar unit;   // always unit
 	PetscScalar Tshift; // temperature shift (added on input, subtracted on output)
 
+	// input parameters
+	PetscScalar inp_mass;
+	PetscScalar inp_time;
+	PetscScalar inp_length;
+	PetscScalar inp_temperature;
+	PetscScalar inp_force;
+
 	// primary characteristic units
 	PetscScalar mass;
 	PetscScalar time;
+	PetscScalar time_si;           // time in SI units for material parameter scaling
 	PetscScalar length;
 	PetscScalar temperature;       // Kelvin (if dimensional)
 	PetscScalar force;             // additional variable for quasi-static case
@@ -64,6 +74,7 @@ typedef struct
 	PetscScalar velocity;          // length / time
 	PetscScalar acceleration;      // length / time / time
 	PetscScalar stress;            // force / area
+	PetscScalar stress_si;         // stress in SI units for material parameter scaling
 	PetscScalar strain_rate;       // 1 / time
 	PetscScalar gravity_strength;  // force / mass
 	PetscScalar energy;            // force * length
@@ -80,7 +91,6 @@ typedef struct
 	PetscScalar conductivity;       // power / length / temperature
 	PetscScalar heat_production;    // power / mass
 	PetscScalar expansivity;        // 1 / temperature
-	PetscScalar pressure_sensivity; // temperature / stress
 
 	// output labels
 	char lbl_unit            [_lbl_sz_];
@@ -102,24 +112,12 @@ typedef struct
 } Scaling;
 //---------------------------------------------------------------------------
 // scaling routines
-PetscErrorCode ScalingMain(Scaling *scal, MatParLim *matLim, Material_t  *phases, PetscInt numPhases, UserCtx *usr);
 
-PetscErrorCode ScalingCreate(
-	Scaling     *scal,
-	PetscInt     DimensionalUnits,
-	PetscScalar  mass,
-	PetscScalar  time,
-	PetscScalar  length,
-	PetscScalar  temperature,
-	PetscScalar  force);
+PetscErrorCode ScalingCreate(Scaling *scal);
 
 PetscErrorCode ScalingReadFromFile(Scaling *scal, FILE *fp);
 
-PetscScalar ScalingComputePowerLaw(Scaling * scal, PetscScalar n);
-
 //---------------------------------------------------------------------------
-// compute characteristic values
-void ScalingCharValues(UserCtx *user);
 
 // scaling of input parameters (UserCtx)
 void ScalingInput(Scaling *scal, UserCtx *user);
@@ -130,10 +128,8 @@ void ScalingMatProp(Scaling *scal, Material_t *phases, PetscInt numPhases);
 // scaling material parameter limits
 void ScalingMatParLim(Scaling *scal, MatParLim *matLim);
 
-// OLD - scaling of input parameters (UserCtx)
-void ScalingInputOLD(UserCtx *user);
+void ScalingMeshSegDir(Scaling *scal, MeshSegInp *msi);
 
-// OLD - scaling material parameters
-void ScalingMatPropOLD(UserCtx *user);
+//---------------------------------------------------------------------------
 
 #endif

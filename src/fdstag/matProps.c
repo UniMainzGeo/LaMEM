@@ -14,11 +14,10 @@
 //---------------------------------------------------------------------------
 #undef __FUNCT__
 #define __FUNCT__ "MatPropInit"
-PetscErrorCode MatPropInit(JacRes *jr, UserCtx *usr)
+PetscErrorCode MatPropInit(JacRes *jr, FILE *fp)
 {
 	// initialize MATERIAL PARAMETERS from file
 
-	FILE      *fp;
 	PetscInt  *ls, *le;
 	PetscInt   i, count_starts, count_ends;
 
@@ -26,7 +25,7 @@ PetscErrorCode MatPropInit(JacRes *jr, UserCtx *usr)
 	PetscFunctionBegin;
 
 	// print overview of material parameters read from file
-	PetscPrintf(PETSC_COMM_WORLD,"Phase material parameters read from %s: \n", usr->ParamFile);
+	PetscPrintf(PETSC_COMM_WORLD,"Reading material parameters: \n\n");
 
 	// clear memory
 	ierr = PetscMemzero(jr->phases, sizeof(Material_t)*(size_t)max_num_phases); CHKERRQ(ierr);
@@ -40,9 +39,6 @@ PetscErrorCode MatPropInit(JacRes *jr, UserCtx *usr)
 	// allocate memory for arrays to store line info
 	ierr = makeIntArray(&ls, NULL, max_num_phases); CHKERRQ(ierr);
 	ierr = makeIntArray(&le, NULL, max_num_phases); CHKERRQ(ierr);
-
-	// open file, count and get the positions of the material structures in file - check of file was done before
-	fp = fopen(usr->ParamFile, "r" );
 
 	// read number of entries
 	getLineStruct(fp, ls, le, max_num_phases, &count_starts, &count_ends, "<MaterialStart>","<MaterialEnd>");
@@ -70,9 +66,6 @@ PetscErrorCode MatPropInit(JacRes *jr, UserCtx *usr)
 	}
 
 	PetscPrintf(PETSC_COMM_WORLD,"--------------------------------------------------------------------------\n");
-
-	// free memory
-	fclose(fp);
 
 	// free arrays
 	ierr = PetscFree(ls); CHKERRQ(ierr);
@@ -335,11 +328,10 @@ PetscErrorCode MatPropGetStruct(FILE *fp,
 //---------------------------------------------------------------------------
 #undef __FUNCT__
 #define __FUNCT__ "MatSoftInit"
-PetscErrorCode MatSoftInit(JacRes *jr, UserCtx *usr)
+PetscErrorCode MatSoftInit(JacRes *jr, FILE *fp)
 {
 	// initialize SOFTENING LAWS from file
 
-	FILE        *fp;
 	PetscInt    *ls,*le;
 	PetscInt     i, count_starts, count_ends;
 
@@ -347,7 +339,7 @@ PetscErrorCode MatSoftInit(JacRes *jr, UserCtx *usr)
 	PetscFunctionBegin;
 
 	// print overview of softening laws from file
-	PetscPrintf(PETSC_COMM_WORLD,"Softening laws read from %s: \n",usr->ParamFile);
+	PetscPrintf(PETSC_COMM_WORLD,"Reading softening laws: \n\n");
 
 	// clear memory
 	ierr = PetscMemzero(jr->matSoft, sizeof(Soft_t)*(size_t)max_num_soft); CHKERRQ(ierr);
@@ -361,9 +353,6 @@ PetscErrorCode MatSoftInit(JacRes *jr, UserCtx *usr)
 	// allocate memory for arrays to store line info
 	ierr = makeIntArray(&ls, NULL, max_num_soft); CHKERRQ(ierr);
 	ierr = makeIntArray(&le, NULL, max_num_soft); CHKERRQ(ierr);
-
-	// open file, count and get the positions of the material structures in file - check of file was done before
-	fp = fopen(usr->ParamFile, "r");
 
 	// read number of entries
 	getLineStruct(fp, ls, le, max_num_soft, &count_starts, &count_ends, "<SofteningStart>", "<SofteningEnd>");
@@ -386,11 +375,6 @@ PetscErrorCode MatSoftInit(JacRes *jr, UserCtx *usr)
 	{
 		ierr = MatSoftGetStruct(fp, jr->numSoft, jr->matSoft, ls[i], le[i]); CHKERRQ(ierr);
 	}
-
-	PetscPrintf(PETSC_COMM_WORLD,"--------------------------------------------------------------------------\n");
-
-	// close file
-	fclose(fp);
 
 	// free arrays
 	ierr = PetscFree(ls); CHKERRQ(ierr);

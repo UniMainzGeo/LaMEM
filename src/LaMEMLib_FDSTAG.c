@@ -64,9 +64,8 @@ without the explicit agreement of Boris Kaus.
 
 #undef __FUNCT__
 #define __FUNCT__ "LaMEMLib_FDSTAG"
-PetscErrorCode LaMEMLib_FDSTAG(PetscBool InputParamFile, const char *ParamFile, PetscScalar *LaMEM_OutputParameters, PetscInt *mpi_group_id)
+PetscErrorCode LaMEMLib_FDSTAG(void *echange_ctx)
 {
-
 	PetscBool          done;
 	UserCtx            user;
 	PetscInt           SaveOrNot;
@@ -83,11 +82,10 @@ PetscErrorCode LaMEMLib_FDSTAG(PetscBool InputParamFile, const char *ParamFile, 
 	NLSol    nl;    // nonlinear solver context
 	PVOut    pvout; // paraview output driver
 
-//	PetscViewer  viewer;
-//	PetscBool    do_restart;
-
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
+
+	if(echange_ctx) echange_ctx = NULL;
 
 	PetscTime(&cputime_start);
 
@@ -101,123 +99,27 @@ PetscErrorCode LaMEMLib_FDSTAG(PetscBool InputParamFile, const char *ParamFile, 
 	PetscPrintf(PETSC_COMM_WORLD,"        STAGGERED-GRID FINITE DIFFERENCE CANONICAL IMPLEMENTATION           \n");
 	PetscPrintf(PETSC_COMM_WORLD,"-------------------------------------------------------------------------- \n");
 
-	if(LaMEM_OutputParameters) LaMEM_OutputParameters = NULL;
-
+	// clear objects
 	ierr = FDSTAGClear(&fs);    CHKERRQ(ierr);
 	ierr = BCClear    (&bc);    CHKERRQ(ierr);
 	ierr = JacResClear(&jr);    CHKERRQ(ierr);
 	ierr = ADVClear   (&actx);  CHKERRQ(ierr);
 	ierr = NLSolClear (&nl);    CHKERRQ(ierr);
 	ierr = PVOutClear (&pvout); CHKERRQ(ierr);
-
-	// Initialize context
 	ierr = PetscMemzero(&user, sizeof(UserCtx)); CHKERRQ(ierr);
-
-	// set input file flag & name
-	user.InputParamFile = InputParamFile;
-	if(InputParamFile == PETSC_TRUE) strcpy(user.ParamFile, ParamFile);
 
 	// initialize variables
 	ierr = FDSTAGInitCode(&jr, &user); CHKERRQ(ierr);
 
 	// check restart
-	if(user.restart) { ierr = BreakCheck(&user); CHKERRQ(ierr); }
-
-	// Give current LaMEM session a specific group ID
-	user.mpi_group_id = *mpi_group_id;
-
-	//========================================================================================
-	// few parameters that can be reused
-	//========================================================================================
-
-//	user.save_breakpoints = -1;
-//	user.BC.InternalBound = -1;
-//	user.restart = 0;
-//	user.ErosionParameters.ErosionModel = 0;
-//	user.ErosionParameters.UseInternalFreeSurface = 0;
-//	user.SavePartitioning = PETSC_FALSE;
-//	user.remesh = 0;
-//	user.InitialMeshFromFile == 1
-//	user.Setup.Model == 3
-//	user.EulerianAfterTimestep > 0
-//	user.AnalyticalBenchmark == PETSC_TRUE
-//	user.GridAdvectionMethod
-//	user.NonlinearIterations==1
-//	user.InitialErosionSurfaceFromFile == 1
-//	user.ParticleInput == 1
-//	user.fileno
-//	user.time_start
-//	user.time_end
-//	user.time
-//	user.dt
-//	user.MatlabOutputFiles == 1
-//	user.VTKOutputFiles == 1
-//	user.AVDPhaseViewer
-//  user.PlasticityCutoff
-
-	//========================================================================================
-	// Setting up the solver
-	//========================================================================================
-
-//	PetscTime(&cputime_start);
-
-	// Initialize erosion solver and surface if required
-//	ierr = InitializeInternalErosionSurfaceOnRankZero(&user); CHKERRQ(ierr);
-
-	// Read/store erosion surface
-//	if(user.ErosionParameters.ErosionModel == 2)
-//	{
-//		if (user.InitialErosionSurfaceFromFile == 1)
-//		{
-//			ierr = LoadInitialErosionSurface(&user); CHKERRQ(ierr);
-//		}
-//		ierr = SaveInitialErosionSurface(&user,"InitialErosionSurface"); CHKERRQ(ierr);
-//	}
-
-
-//	if (user.BC.InternalBound > 0)
-//	{
-//		DefineInternalBC(&user);
-//	}
-
-
-	// Read the initial mesh from file if asked for
-//	if(user.InitialMeshFromFile == 1)
-//	{
-//		ierr = ReadMeshFromFile(user.DA_Vel, &user); CHKERRQ(ierr);
-//		PetscPrintf(PETSC_COMM_WORLD,"# Successful read initial mesh from disc \n");
-//	}
+	ierr = BreakCheck(&user); CHKERRQ(ierr);
 
 	//======================
 	// SETUP DATA STRUCTURES
 	//======================
 
-	// initialize material parameter limits and softening laws
-	ierr = SetMatParLim(&jr.matLim, &user); CHKERRQ(ierr);
-
-	if(user.new_input==1)
-	{
-		// initialize scaling object and perform non-dimensionalization
-		ierr = ScalingMain(&jr.scal, &jr.matLim, jr.phases, jr.numPhases, &user); CHKERRQ(ierr);
-	}
-	else
-	{
-		// initialize scaling object
-		ierr = ScalingCreate(
-			&jr.scal,
-			user.DimensionalUnits,
-			user.Characteristic.kg,
-			user.Characteristic.Time,
-			user.Characteristic.Length,
-			user.Characteristic.Temperature,
-			user.Characteristic.Force); CHKERRQ(ierr);
-
-		// initialize material properties - used as an interface between OLD/NEW material properties
-		ierr = InitMaterialProps(&jr, &user); CHKERRQ(ierr);
-	}
-
-	// initialize time stepping parameters
-	ierr = TSSolSetUp(&jr.ts, &user); CHKERRQ(ierr);
+	// initialize and setup scaling object, perform scaling
+	ierr = JacResInitScale(&jr, &user); CHKERRQ(ierr);
 
 	// create staggered grid object
 	ierr = FDSTAGCreate(&fs, user.nnode_x, user.nnode_y, user.nnode_z); CHKERRQ(ierr);
@@ -228,7 +130,7 @@ PetscErrorCode LaMEMLib_FDSTAG(PetscBool InputParamFile, const char *ParamFile, 
 	// save processor partitioning
 	if(user.SavePartitioning)
 	{
-		ierr = FDSTAGProcPartitioning(&fs, &user, &jr.scal); CHKERRQ(ierr);
+		ierr = FDSTAGProcPartitioning(&fs, jr.scal.length); CHKERRQ(ierr);
 
 		// return immediately
 		ierr = FDSTAGDestroy(&fs); CHKERRQ(ierr);
@@ -253,14 +155,6 @@ PetscErrorCode LaMEMLib_FDSTAG(PetscBool InputParamFile, const char *ParamFile, 
 
 	// create Jacobian & residual evaluation context
 	ierr = JacResCreate(&jr, &fs, &bc); CHKERRQ(ierr);
-
-	// initialize gravity acceleration
-	jr.grav[0] = 0.0;
-	jr.grav[1] = 0.0;
-	jr.grav[2] = user.Gravity;
-
-	// initialize stabilization parameter
-	jr.FSSA = user.FSSA;
 
 	// create advection context
 	ierr = ADVCreate(&actx, &fs, &jr); CHKERRQ(ierr);
@@ -408,7 +302,6 @@ PetscErrorCode LaMEMLib_FDSTAG(PetscBool InputParamFile, const char *ParamFile, 
 
 		//==========================================================================================
 
-
 		// compute gravity misfits
 //		ierr = CalculateMisfitValues(&user, C, itime, LaMEM_OutputParameters); CHKERRQ(ierr);
 
@@ -491,18 +384,6 @@ PetscErrorCode LaMEMLib_FDSTAG(PetscBool InputParamFile, const char *ParamFile, 
 //	PetscPrintf(PETSC_COMM_WORLD,"# Total time required: %g s \n",cputime_end - cputime_start0);
 
 
-//	ierr = PetscFree(user.TimeDependentData); CHKERRQ(ierr);
-
-
-	// Cleanup FD erosion code
-//	if ((user->ErosionParameters.ErosionModel==2) && (rank==0))
-//	{
-		// not good! implement erosion-code-data-structure create and destroy functions
-//		ierr = DMDestroy (&user->ErosionParameters.FE_ErosionCode.DA_FE_ErosionCode);CHKERRQ(ierr);
-//		ierr = VecDestroy(&user->ErosionParameters.FE_ErosionCode.ErosionSurface);   CHKERRQ(ierr);
-//	}
-
-
 	// cleanup
 	ierr = FDSTAGDestroy(&fs);   CHKERRQ(ierr);
 	ierr = BCDestroy(&bc);       CHKERRQ(ierr);
@@ -522,4 +403,35 @@ PetscErrorCode LaMEMLib_FDSTAG(PetscBool InputParamFile, const char *ParamFile, 
 //==========================================================================================================
 // END OF LAMEM LIBRARY MODE ROUTINE
 //==========================================================================================================
+
+//========================================================================================
+// few parameters that can be reused
+//========================================================================================
+
+//	user.save_breakpoints = -1;
+//	user.BC.InternalBound = -1;
+//	user.restart = 0;
+//	user.ErosionParameters.ErosionModel = 0;
+//	user.ErosionParameters.UseInternalFreeSurface = 0;
+//	user.SavePartitioning = PETSC_FALSE;
+//	user.remesh = 0;
+//	user.InitialMeshFromFile == 1
+//	user.Setup.Model == 3
+//	user.EulerianAfterTimestep > 0
+//	user.AnalyticalBenchmark == PETSC_TRUE
+//	user.GridAdvectionMethod
+//	user.NonlinearIterations==1
+//	user.InitialErosionSurfaceFromFile == 1
+//	user.ParticleInput == 1
+//	user.fileno
+//	user.time_start
+//	user.time_end
+//	user.time
+//	user.dt
+//	user.MatlabOutputFiles == 1
+//	user.VTKOutputFiles == 1
+//	user.AVDPhaseViewer
+//  user.PlasticityCutoff
+
+//========================================================================================
 

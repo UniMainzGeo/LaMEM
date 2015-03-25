@@ -8,7 +8,7 @@
 //---------------------------------------------------------------------------
 
 // read all phases
-PetscErrorCode MatPropInit(JacRes *jr, UserCtx *usr);
+PetscErrorCode MatPropInit(JacRes *jr, FILE *fp);
 
 // read single phase
 PetscErrorCode MatPropGetStruct(FILE *fp,
@@ -21,7 +21,7 @@ PetscErrorCode MatPropGetStruct(FILE *fp,
 //---------------------------------------------------------------------------
 
 // read all softening laws
-PetscErrorCode MatSoftInit(JacRes *jr, UserCtx *usr);
+PetscErrorCode MatSoftInit(JacRes *jr, FILE *fp);
 
 // read single softening laws
 PetscErrorCode MatSoftGetStruct(FILE *fp,

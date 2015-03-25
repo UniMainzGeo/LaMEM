@@ -31,6 +31,8 @@ PetscErrorCode BreakCheck(UserCtx *user)
 
 	PetscFunctionBegin;
 
+	if(!user->restart) PetscFunctionReturn(0);
+
 	// check info file name on rank 0
 	if(ISRankZero(PETSC_COMM_WORLD))
 	{

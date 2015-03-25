@@ -12,14 +12,19 @@
 #include "JacRes.h"
 #include "input.h"
 #include "matProps.h"
+#include "fdstagTypes.h"
 //---------------------------------------------------------------------------
 // set default code parameters and read input file, if required
 #undef __FUNCT__
 #define __FUNCT__ "FDSTAGInitCode"
 PetscErrorCode FDSTAGInitCode(JacRes *jr, UserCtx *user)
 {
-	PetscMPIInt    size;
-	char          *all_options;
+	FILE      *fp;
+	char      *all_options;
+	char      ParamFile[MAX_PATH_LEN];
+	PetscBool InputParamFile;
+
+	PetscMPIInt  size;
 
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
@@ -28,40 +33,42 @@ PetscErrorCode FDSTAGInitCode(JacRes *jr, UserCtx *user)
 	PetscOptionsGetAll( &all_options ); // copy all command line args
 
 	// set default values for parameters
-	ierr = InputSetDefaultValues(user); CHKERRQ(ierr);
+	ierr = InputSetDefaultValues(jr, user); CHKERRQ(ierr);
 
-	// read an input file if required - using the parser
-	ierr = InputReadFile(jr, user); CHKERRQ(ierr);
+	// check whether input file is specified
+	ierr = PetscOptionsGetString(PETSC_NULL, "-ParamFile", ParamFile, MAX_PATH_LEN-1, &InputParamFile); CHKERRQ(ierr);
 
-	// read additional options
-	if(user->new_input == 1)
+	// read additional PETSc options from input file if required
+	if(InputParamFile == PETSC_TRUE)
 	{
-		// read softening laws from file
-		ierr = MatSoftInit(jr, user); CHKERRQ(ierr);
+		// open file
+		fp = fopen(ParamFile, "r");
 
-		// initialize and read material properties from file
-		ierr = MatPropInit(jr, user); CHKERRQ(ierr);
+		if(!fp)
+		{
+			SETERRQ1(PETSC_COMM_SELF, PETSC_ERR_USER, "Cannot open input file %s", ParamFile);
+		}
+		else
+		{
+			// read an input file using the parser
+			ierr = InputReadFile(jr, user, fp); CHKERRQ(ierr);
+
+			// read softening laws from file
+			ierr = MatSoftInit(jr, fp); CHKERRQ(ierr);
+
+			// initialize and read material properties from file
+			ierr = MatPropInit(jr, fp); CHKERRQ(ierr);
+
+			// close file
+			fclose(fp);
+		}
 	}
-	else
-	{
-		// initialize material properties
-		ierr = InitMaterialProp(user); CHKERRQ(ierr);
 
-		// read material properties from file
-		ierr = ReadMaterialProperties(user); CHKERRQ(ierr);
-
-		// initialize jr numPhases
-		jr->numPhases = user->num_phases;;
-	}
-
-	// read command line options
+	// Interpret command line options
 	ierr = InputReadCommLine(user); CHKERRQ(ierr);
 
-	// set this option to monitor actual option usage
-	PetscOptionsInsertString("-options_left");
-
 	// error check and info print:
-	// we need at least 2 cells in each direction (not 1) and dt>0! - IS THIS NECESSARY?
+	// we need at least 2 cells in each direction (not 1) and dt > 0 ! - IS THIS NECESSARY?
 	if (user->nel_x==1){ user->nel_x=2; PetscPrintf(PETSC_COMM_WORLD," With FDSTAG we need at least 2 elements in the x-direction! I have increased this. \n");}
 	if (user->nel_y==1){ user->nel_y=2; PetscPrintf(PETSC_COMM_WORLD," With FDSTAG we need at least 2 elements in the y-direction! I have increased this. \n");}
 	if (user->dt==0.0) { user->dt=1e-3; PetscPrintf(PETSC_COMM_WORLD," With FDSTAG dt cannot be zero. Value has been changed to dt = 1e-3. \n");}
@@ -81,37 +88,23 @@ PetscErrorCode FDSTAGInitCode(JacRes *jr, UserCtx *user)
 
 	PetscPrintf(PETSC_COMM_WORLD," Number of tracers/cell         : [%lld,%lld,%lld] \n",(LLD)(user->NumPartX),(LLD)(user->NumPartY),(LLD)(user->NumPartZ));
 
-	// show initial timestep (WARNING! which years if nondimensional?)
-	if (user->DimensionalUnits==1){
-		PetscPrintf(PETSC_COMM_WORLD," Initial time step              : %g years \n",user->dt);
+	// show initial timestep
+	if(jr->scal.utype == _GEO_)
+	{
+		PetscPrintf(PETSC_COMM_WORLD," Initial time step              : %g [years] \n",user->dt);
 	}
-	else{
-		PetscPrintf(PETSC_COMM_WORLD," Initial time step              : %g  \n",user->dt);
+	else if(jr->scal.utype == _SI_)
+	{
+		PetscPrintf(PETSC_COMM_WORLD," Initial time step              : %g  [s] \n",user->dt);
 	}
+	else if(jr->scal.utype == _SI_)
+	{
+		PetscPrintf(PETSC_COMM_WORLD," Initial time step              : %g  [ ] \n",user->dt);
+	}
+
 	// boundary conditions
 	PetscPrintf(PETSC_COMM_WORLD," BC employed                    : BC.[Left=%lld Right=%lld; Front=%lld Back=%lld; Lower=%lld Upper=%lld] \n",
 			(LLD)(user->BC.LeftBound), (LLD)(user->BC.RightBound), (LLD)(user->BC.FrontBound), (LLD)(user->BC.BackBound), (LLD)(user->BC.LowerBound), (LLD)(user->BC.UpperBound) );
-
-	// scaling is done here in OLD way
-	if(!user->new_input)
-	{
-		// initialize scaling
-		ScalingCharValues(user);
-
-		// perform scaling of input parameters
-		ScalingInputOLD(user);
-
-		// compute material prop for default setup
-		if (!(user->InputParamFile))
-		{
-			// define phase material properties for default setup (Falling Block Test)
-			user->PhaseProperties.mu[0] = 1.0*user->Characteristic.Viscosity; user->PhaseProperties.rho[0] = 1.0*user->Characteristic.Density;
-			user->PhaseProperties.mu[1] = 1.0*user->Characteristic.Viscosity; user->PhaseProperties.rho[1] = 2.0*user->Characteristic.Density;
-		}
-
-		// perform scaling of material properties parameters
-		ScalingMatPropOLD(user);
-	}
 
 	PetscFunctionReturn(0);
 }
@@ -119,7 +112,7 @@ PetscErrorCode FDSTAGInitCode(JacRes *jr, UserCtx *user)
 // set default values for parameters
 #undef __FUNCT__
 #define __FUNCT__ "InputSetDefaultValues"
-PetscErrorCode InputSetDefaultValues(UserCtx *user)
+PetscErrorCode InputSetDefaultValues(JacRes *jr, UserCtx *user)
 {
 	// domain
 	user->W                = 1.0;
@@ -139,7 +132,7 @@ PetscErrorCode InputSetDefaultValues(UserCtx *user)
 	user->NumPartZ         = 2; // Number of particles per cell in z-direction
 
 	// scaling
-	user->DimensionalUnits = 0;
+	jr->scal.utype = _NONE_;
 
 	// time-stepping
 	user->time_end         = 1.0;
@@ -194,19 +187,20 @@ PetscErrorCode InputSetDefaultValues(UserCtx *user)
 	user->save_breakpoints   = 10; // After how many steps do we make a breakpoint?
 	user->break_point_number = 0;  // The number of the breakpoint file
 
-	// new material input
-	user->new_input          = 0;
-
 	// optimization
 	user->LowerViscosityCutoff  = 1.0;  // lowermost viscosity cutoff in model
 	user->UpperViscosityCutoff  = 1e30; // uppermost viscosity cutoff in model
 	user->InitViscosity         = 0.0;  // initial viscosity
+	user->PlastViscosity        = 0.0;  // plasticity regularization viscosity
 	user->DII_ref               = 0.0;  // initial guess strain rate
 
 	user->mpi_group_id = 0;
 
 	// phases
-	user->num_phases   = 2;  // the default # of phases. In case we set props from the command line, and we use a folding setup combined with FDSTAG we might have to do something smarter (check the setup and increase this)
+	jr->numPhases = 2;  // the default # of phases.
+	// In case we set props from the command line, and we use a folding
+	// setup combined with FDSTAG we might have to do something smarter
+	// (check the setup and increase this)
 
 	// Default Pushing BC parameters
 	user->AddPushing                    = 0;
@@ -215,18 +209,20 @@ PetscErrorCode InputSetDefaultValues(UserCtx *user)
 
 	user->FSSA					=	0.0;
 
+	// set this option to monitor actual option usage
+	PetscOptionsInsertString("-options_left");
+
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
 #undef __FUNCT__
 #define __FUNCT__ "InputReadFile"
-PetscErrorCode InputReadFile(JacRes *jr, UserCtx *user)
+PetscErrorCode InputReadFile(JacRes *jr, UserCtx *user, FILE *fp)
 {
 	 // parse the input file
 
-	FILE *fp;
 	PetscInt found;
-	double d_values[1000], data;
+	double d_values[1000];
 	PetscInt i_values[1000];
 	PetscInt nv, i;
 	char setup_name[PETSC_MAX_PATH_LEN];
@@ -234,19 +230,10 @@ PetscErrorCode InputReadFile(JacRes *jr, UserCtx *user)
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
 
-	// return if no input file
-	if(!user->InputParamFile) PetscFunctionReturn(0);
-
-	fp = fopen( user->ParamFile, "r" );
-	if(!fp)
-	{
-		SETERRQ1(PETSC_COMM_SELF, PETSC_ERR_USER, "Cannot open input file %s", user->ParamFile);
-	}
-
 	// read number of cells
-	parse_GetInt( fp, "nel_x",   &user->nel_x, &found );
-	parse_GetInt( fp, "nel_y",   &user->nel_y, &found );
-	parse_GetInt( fp, "nel_z",   &user->nel_z, &found );
+	parse_GetInt(fp, "nel_x",   &user->nel_x, &found);
+	parse_GetInt(fp, "nel_y",   &user->nel_y, &found);
+	parse_GetInt(fp, "nel_z",   &user->nel_z, &found);
 
 	// only number of cells is a relevant parameter for FDSTAG
 	user->nnode_x = user->nel_x+1;
@@ -255,12 +242,6 @@ PetscErrorCode InputReadFile(JacRes *jr, UserCtx *user)
 
 	// Non-dimensionalization parameters
 	ierr = ScalingReadFromFile(&jr->scal, fp); CHKERRQ(ierr);
-
-	parse_GetInt   ( fp, "DimensionalUnits", &user->DimensionalUnits, &found );
-	parse_GetDouble( fp, "Characteristic.Length",     &data, &found ); if (user->DimensionalUnits==1){ user->Characteristic.Length      = data;}// read data
-	parse_GetDouble( fp, "Characteristic.Viscosity",  &data, &found ); if (user->DimensionalUnits==1){ user->Characteristic.Viscosity   = data;}// read data
-	parse_GetDouble( fp, "Characteristic.Temperature",&data, &found ); if (user->DimensionalUnits==1){ user->Characteristic.Temperature = data;}// read data
-	parse_GetDouble( fp, "Characteristic.Stress",     &data, &found ); if (user->DimensionalUnits==1){ user->Characteristic.Stress      = data;}// read data
 
 	// domain parameters
 	parse_GetDouble( fp, "L", &user->L, &found );
@@ -273,9 +254,9 @@ PetscErrorCode InputReadFile(JacRes *jr, UserCtx *user)
 	//==============
 	// MESH SEGMENTS
 	//==============
-	ierr = ReadMeshSegDir(fp, "seg_x", user->x_left,  user->x_left  + user->W, &user->nel_x, &user->mseg_x, user->DimensionalUnits, user->Characteristic.Length); CHKERRQ(ierr);
-	ierr = ReadMeshSegDir(fp, "seg_y", user->y_front, user->y_front + user->L, &user->nel_y, &user->mseg_y, user->DimensionalUnits, user->Characteristic.Length); CHKERRQ(ierr);
-	ierr = ReadMeshSegDir(fp, "seg_z", user->z_bot,   user->z_bot   + user->H, &user->nel_z, &user->mseg_z, user->DimensionalUnits, user->Characteristic.Length); CHKERRQ(ierr);
+	ierr = ReadMeshSegDir(fp, "seg_x", user->x_left,  user->x_left  + user->W, &user->nel_x, &user->mseg_x); CHKERRQ(ierr);
+	ierr = ReadMeshSegDir(fp, "seg_y", user->y_front, user->y_front + user->L, &user->nel_y, &user->mseg_y); CHKERRQ(ierr);
+	ierr = ReadMeshSegDir(fp, "seg_z", user->z_bot,   user->z_bot   + user->H, &user->nel_z, &user->mseg_z); CHKERRQ(ierr);
 
 	// read model setup
 	parse_GetString(fp, "msetup", setup_name, PETSC_MAX_PATH_LEN-1, &found);
@@ -303,9 +284,6 @@ PetscErrorCode InputReadFile(JacRes *jr, UserCtx *user)
 	parse_GetDouble( fp, "CFL", &user->CFL, &found );
 	parse_GetDouble( fp, "dt_max", &user->dt_max, &found );
 	parse_GetDouble( fp, "FSSA", &user->FSSA, &found );	// FSSA parameter
-
-	// new material input
-	parse_GetInt( fp,    "new_input", &user->new_input, &found );
 
 	// Particle related variables
 	parse_GetInt( fp,    "ParticleInput", &user->ParticleInput, &found );
@@ -342,12 +320,12 @@ PetscErrorCode InputReadFile(JacRes *jr, UserCtx *user)
 	parse_GetDouble( fp, "LowerViscosityCutoff", &user->LowerViscosityCutoff, &found );
 	parse_GetDouble( fp, "UpperViscosityCutoff", &user->UpperViscosityCutoff, &found );
 	parse_GetDouble( fp, "InitViscosity",        &user->InitViscosity,        &found );
+	parse_GetDouble( fp, "PlastViscosity",       &user->PlastViscosity,       &found );
 
 	// initial guess strain rate
 	parse_GetDouble( fp, "DII_ref",              &user->DII_ref,        &found );
 
 	parse_GetDouble( fp, "Gravity", &user->Gravity, &found );
-	//parse_GetDouble( fp, "GasConstant", &user->GasConstant, &found );
 
 	// Pushing Parameters
 	parse_GetInt( fp,    "AddPushing", &user->AddPushing, &found );
@@ -364,8 +342,6 @@ PetscErrorCode InputReadFile(JacRes *jr, UserCtx *user)
 	parse_GetDoubleArray( fp, "Pushing.omega",  &nv, d_values, &found  ); for( i=0; i<user->Pushing.num_changes;   i++ ) { user->Pushing.omega[i]  = d_values[i];}
 	parse_GetIntArray( fp, "Pushing.coord_advect",&nv, i_values, &found); for( i=0; i<user->Pushing.num_changes;   i++ ) { user->Pushing.coord_advect[i] = i_values[i];}
 	parse_GetIntArray( fp, "Pushing.dir",         &nv, i_values, &found); for( i=0; i<user->Pushing.num_changes;   i++ ) { user->Pushing.dir[i]          = i_values[i];}
-
-	fclose(fp);
 
 	PetscFunctionReturn(0);
 }
@@ -452,7 +428,6 @@ PetscErrorCode InputReadCommLine(UserCtx *user )
 	PetscOptionsGetInt(PETSC_NULL,"-NumPartZ",          &user->NumPartZ,         PETSC_NULL); // # of tracers per cell in z-direction
 
 	// flags
-	PetscOptionsGetInt(PETSC_NULL,"-new_input",        &user->new_input,          PETSC_NULL); // # restart a simulation if possible?
 	PetscOptionsGetInt(PETSC_NULL,"-restart",          &user->restart,          PETSC_NULL); // # restart a simulation if possible?
 	PetscOptionsGetInt(PETSC_NULL,"-save_breakpoints", &user->save_breakpoints, PETSC_NULL); // after how many steps do we create a breakpoint file?
 	PetscOptionsGetInt(PETSC_NULL,"-SaveParticles",    &user->SaveParticles,    PETSC_NULL); // save particles to disk?
@@ -464,6 +439,7 @@ PetscErrorCode InputReadCommLine(UserCtx *user )
 	PetscOptionsGetReal(PETSC_NULL,"-LowerViscosityCutoff", &user->LowerViscosityCutoff, PETSC_NULL); // lower viscosity cutoff
 	PetscOptionsGetReal(PETSC_NULL,"-UpperViscosityCutoff", &user->UpperViscosityCutoff, PETSC_NULL); // upper viscosity cutoff
 	PetscOptionsGetReal(PETSC_NULL,"-InitViscosity",        &user->InitViscosity,        PETSC_NULL); // upper viscosity cutoff
+	PetscOptionsGetReal(PETSC_NULL,"-PlastViscosity",       &user->PlastViscosity,       PETSC_NULL); // upper viscosity cutoff
 
 	// initial guess strain rate
 	PetscOptionsGetReal(PETSC_NULL,"-DII_ref",              &user->DII_ref,        PETSC_NULL);
@@ -518,9 +494,6 @@ PetscErrorCode InputReadCommLine(UserCtx *user )
 	// use LaMEM canonical
 	PetscOptionsGetBool(PETSC_NULL,"-use_fdstag_canonical", &user->use_fdstag_canonical, PETSC_NULL );
 
-	// get material properties from command line - de-activated
-	//ierr = GetMaterialPropertiesFromCommandLine(user);
-
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
@@ -532,9 +505,7 @@ PetscErrorCode ReadMeshSegDir(
 	PetscScalar  beg,
 	PetscScalar  end,
 	PetscInt    *tncels,
-	MeshSegInp  *msi,
-	PetscInt     dim,
-	PetscScalar  charLength)
+	MeshSegInp  *msi)
 {
 	// read mesh refinement data for a direction from the input file
 	// NOTE: parameter "tncels" passes negative number of segments & returns total number of cells
@@ -608,373 +579,6 @@ PetscErrorCode ReadMeshSegDir(
 
 	// ... compute total number of cells
 	for(i = 0, (*tncels) = 0; i < msi->nsegs; i++) (*tncels) += msi->ncells[i];
-
-	// nondimensionalize segment delimiters - after error checking
-	if (dim) for(i = 0; i < msi->nsegs-1; i++) msi->delims[i] = msi->delims[i]/charLength;
-
-	PetscFunctionReturn(0);
-}
-//---------------------------------------------------------------------------
-// after PetscErrorCode  LaMEMInitializeMaterialProperties( UserContext *user ) in Utils.c line 430
-// Set initial material properties
-#undef __FUNCT__
-#define __FUNCT__ "InitMaterialProp"
-PetscErrorCode InitMaterialProp(UserCtx *user )
-{
-	PetscInt i;
-
-	for( i=0; i<user->num_phases; i++ )
-	{
-		if (user->DimensionalUnits==1)
-		{
-			user->PhaseProperties.ViscosityLaw[i]                  = 1;     // constant viscosity
-			user->PhaseProperties.mu[i]                            = 1e20;
-			user->PhaseProperties.n_exponent[i]                    = 1.0;
-			user->PhaseProperties.FrankKamenetskii[i]              = 0.0;
-			user->PhaseProperties.Powerlaw_e0[i]                   = 1.0;
-			user->PhaseProperties.A[i]                             = 1e-20;
-			user->PhaseProperties.E[i]                             = 1.0;
-			user->PhaseProperties.DensityLaw[i]                    = 1;     // T-dependent density
-			user->PhaseProperties.rho[i]                           = 2800;
-			user->PhaseProperties.Density_T0[i]                    = 273;   // Kelvin (temperature at which rho=rho0, in eq. rho=rho0*(1-alpha*(T-T0)))
-			user->PhaseProperties.ThermalExpansivity[i]            = 0;     // no coupling mechanics - thermics
-			user->PhaseProperties.PlasticityLaw[i]                 = 0;     // none
-			user->PhaseProperties.Cohesion[i]                      = 1e100; // effectively switches off plasticity
-			user->PhaseProperties.CohesionAfterWeakening[i]        = 1e100; // effectively switches off plasticity
-			user->PhaseProperties.Weakening_PlasticStrain_Begin[i] = 0;
-			user->PhaseProperties.Weakening_PlasticStrain_End[i]   = 0;
-			user->PhaseProperties.FrictionAngle[i]                 = 0;     // effectively switches off plasticity
-			user->PhaseProperties.FrictionAngleAfterWeakening[i]   = 0;     // effectively switches off plasticity
-			user->PhaseProperties.ElasticShearModule[i]            = 1e100; // will make the model effectively viscous
-			user->PhaseProperties.T_Conductivity[i]                = 3;     // reasonable value
-			user->PhaseProperties.HeatCapacity[i]                  = 1050;  // reasonable value
-			user->PhaseProperties.RadioactiveHeat[i]               = 0;
-		}
-		else
-		{
-			user->PhaseProperties.ViscosityLaw[i]                  = 1;     // constant viscosity
-			user->PhaseProperties.mu[i]                            = 1;
-			user->PhaseProperties.n_exponent[i]                    = 1.0;
-			user->PhaseProperties.FrankKamenetskii[i]              = 0.0;
-			user->PhaseProperties.Powerlaw_e0[i]                   = 1.0;
-			user->PhaseProperties.A[i]                             = 1.0;
-			user->PhaseProperties.E[i]                             = 1.0;
-			user->PhaseProperties.DensityLaw[i]                    = 1;     // T-dependent density
-			user->PhaseProperties.rho[i]                           = 1;
-			user->PhaseProperties.Density_T0[i]                    = 0;     // Kelvin (temperature at which rho=rho0, in eq. rho=rho0*(1-alpha*(T-T0)))
-			user->PhaseProperties.ThermalExpansivity[i]            = 0;     // no coupling mechanics - thermics
-			user->PhaseProperties.PlasticityLaw[i]                 = 0;     // none
-			user->PhaseProperties.Cohesion[i]                      = 1e100; // effectively switches off plasticity
-			user->PhaseProperties.CohesionAfterWeakening[i]        = 1e100; // effectively switches off plasticity
-			user->PhaseProperties.Weakening_PlasticStrain_Begin[i] = 0;
-			user->PhaseProperties.Weakening_PlasticStrain_End[i]   = 0;
-			user->PhaseProperties.FrictionAngle[i]                 = 0;     // effectively switches off plasticity
-			user->PhaseProperties.FrictionAngleAfterWeakening[i]   = 0;     // effectively switches off plasticity
-			user->PhaseProperties.ElasticShearModule[i]            = 1e100; // will make the model effectively viscous
-			user->PhaseProperties.T_Conductivity[i]                = 1;     // reasonable value
-			user->PhaseProperties.HeatCapacity[i]                  = 1;     // reasonable value
-			user->PhaseProperties.RadioactiveHeat[i]               = 0;
-		}
-	}
-
-	if (user->DimensionalUnits==1){
-		// Add a higher density and viscosity to phase 1
-		user->PhaseProperties.rho[1] = 3000;
-		user->PhaseProperties.mu[1]  = 1e25;
-	}
-	else {
-		// Add a higher density and viscosity to phase 1
-		user->PhaseProperties.rho[1] = 2;
-		user->PhaseProperties.mu[1]  = 1e3;
-	}
-
-	PetscFunctionReturn(0);
-}
-//---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "ReadMaterialProperties"
-PetscErrorCode ReadMaterialProperties(UserCtx *user)
-{
-	PetscInt      found_data;
-	PetscInt      n_phases,n_attrs, n_types;
-	Phase         *phases, p;
-	Attribute     *attrs, a;
-	AttributeType *types, t;
-	PetscInt      PP,AA,TT;
-	PetscInt      attr_match, type_match;
-	PetscInt      p_idx, a_idx, t_idx;
-
-	PetscInt      *check_phase;
-	PetscBool      empty_phase;
-
-	PetscErrorCode ierr;
-	PetscFunctionBegin;
-
-	ierr = PetscMemzero(&user->PhaseProperties, sizeof(PhaseProps)); CHKERRQ(ierr);
-
-	//-----------------------------------------------------------------------
-	// Read material parameters from the input file (new, more general, input format for material properties)
-	//
-	// At this stage, the new data is read from the input file and added to the phase properties array.
-	//-----------------------------------------------------------------------
-
-	MaterialCreate( &user->PhaseMaterialProperties );
-	MaterialReadFromFile( user->PhaseMaterialProperties, user->ParamFile, &ConstantViscosityReadFromFile,                     &found_data); // Constant viscosity params
-	MaterialReadFromFile( user->PhaseMaterialProperties, user->ParamFile, &PowerLawViscosityReadFromFile,                     &found_data); // Power-law viscosity params
-	MaterialReadFromFile( user->PhaseMaterialProperties, user->ParamFile, &TempDepViscosityReadFromFile,                      &found_data); // Temp-dep viscosity params
-	MaterialReadFromFile( user->PhaseMaterialProperties, user->ParamFile, &TempDepNoPowerLawViscosityReadFromFile,            &found_data); // Temp-dep viscosity params without power law
-	MaterialReadFromFile( user->PhaseMaterialProperties, user->ParamFile, &ConstantElasticityReadFromFile,                    &found_data); // Elasticity params
-	MaterialReadFromFile( user->PhaseMaterialProperties, user->ParamFile, &TemperatureDependentDensityReadFromFile,           &found_data); // Density params
-	MaterialReadFromFile( user->PhaseMaterialProperties, user->ParamFile, &ConvectionDensityReadFromFile,                     &found_data); // Density params
-	MaterialReadFromFile( user->PhaseMaterialProperties, user->ParamFile, &ArtificialTemperatureDependentDensityReadFromFile, &found_data); // Density params
-	MaterialReadFromFile( user->PhaseMaterialProperties, user->ParamFile, &ConstantEnergyReadFromFile, 				         &found_data); // Energy equation params
-	MaterialReadFromFile( user->PhaseMaterialProperties, user->ParamFile, &ConstantPlasticityReadFromFile,                    &found_data); // Plasticity params
-
-	// Print an overview of Material parameters read from file
-	PetscPrintf(PETSC_COMM_WORLD,"Phase material parameters read from %s: \n",user->ParamFile);
-
-	MaterialGetAllPhases( user->PhaseMaterialProperties, &n_phases, &phases );
-
-	// check total number of phases found
-	if(n_phases > max_num_phases)
-	{
-		SETERRQ2(PETSC_COMM_SELF, PETSC_ERR_USER, "Too many phases in the input file! Actual: %lld, Maximum: %lld", (LLD)n_phases, (LLD)max_num_phases);
-	}
-
-	// initialize phase checking array
-	ierr = makeIntArray(&check_phase, NULL, n_phases); CHKERRQ(ierr);
-
-	for(PP = 0; PP < n_phases; PP++) check_phase[PP] = 0;
-
-	// store total number of phases
-	user->num_phases = n_phases;
-
-	for(PP = 0; PP < n_phases; PP++)
-	{
-		p = phases[PP];
-
-		// check phase numbering
-		if(p->phase_number > n_phases-1)
-		{
-			SETERRQ2(PETSC_COMM_SELF, PETSC_ERR_USER, "Phase numbering out of bound! Phase ID: %lld, Maximum ID: %lld", (LLD)p->phase_number, (LLD)(n_phases-1));
-		}
-		check_phase[p->phase_number] = 1;
-
-		p_idx = p->P_id;
-
-		PhaseGetAllAttributes( p, &n_attrs, &attrs );
-
-		for( AA=0; AA<n_attrs; AA++ ) {
-			a = attrs[AA];
-			a_idx = a->A_id;
-			AttributeGetAllTypes( a, &n_types, &types );
-
-			for( TT=0; TT<n_types; TT++ ) {
-				t = types[TT];
-				t_idx = t->T_id;
-
-				AttributeCompare( a, "VISCOSITY", &attr_match );
-				if( attr_match == _TRUE ) {
-					// constant
-					AttributeTypeCompare( t, "constant", &type_match );
-					if( type_match == _TRUE ) {
-						double eta0;
-
-						MaterialGetConstantViscosityParams( user->PhaseMaterialProperties, p_idx,a_idx,t_idx, &eta0 );
-						PetscPrintf(PETSC_COMM_WORLD,"    %s (id=%lld), VISCOSITY, constant [%lld,%lld,%lld] = %e \n", p->name, (LLD)(p->phase_number), (LLD)p_idx,(LLD)a_idx,(LLD)t_idx, eta0 );
-
-						// Add to PhaseProperties
-						user->PhaseProperties.ViscosityLaw[p->phase_number] = 1; 		// constant viscosity
-						user->PhaseProperties.mu[p->phase_number] 			= eta0;
-
-					}
-					AttributeTypeCompare( t, "power_law", &type_match );
-					if( type_match == _TRUE ) {
-						double eta0;
-						double N_exp;
-						double e0;
-
-						MaterialGetPowerLawViscosityParams( user->PhaseMaterialProperties, p_idx,a_idx,t_idx, &eta0, &N_exp, &e0 );
-						PetscPrintf(PETSC_COMM_WORLD,"    %s (id=%lld), VISCOSITY, power-law [%lld,%lld,%lld] = %e, %e %e \n", p->name, (LLD)(p->phase_number), (LLD)p_idx,(LLD)a_idx,(LLD)t_idx, eta0, N_exp, e0 );
-
-
-						// Add to PhaseProperties
-						user->PhaseProperties.ViscosityLaw[p->phase_number] = 2; 		// powerlaw viscosity, given by eta=eta0*(e2nd/e0)^(1/n-1)
-						user->PhaseProperties.mu[p->phase_number] 			= eta0;
-						user->PhaseProperties.n_exponent[p->phase_number] 	= N_exp;
-						user->PhaseProperties.Powerlaw_e0[p->phase_number] 	= e0;		//	e0 in (e2nd/e0)
-
-					}
-					AttributeTypeCompare( t, "temp_dep", &type_match );
-					if( type_match == _TRUE ) {
-						double PreExpFactor;
-						double N_exp;
-						double e0;
-						double ActivationEnergy;
-
-						MaterialGetTempDepViscosityParams( user->PhaseMaterialProperties, p_idx,a_idx,t_idx, &PreExpFactor, &N_exp, &e0, &ActivationEnergy );
-						PetscPrintf(PETSC_COMM_WORLD,"    %s (id=%lld), VISCOSITY, temp-dep [%lld,%lld,%lld] = %e, %e %e %e \n", p->name, (LLD)(p->phase_number), (LLD)p_idx,(LLD)a_idx,(LLD)t_idx, PreExpFactor, N_exp, e0, ActivationEnergy );
-
-						// Add to PhaseProperties
-						user->PhaseProperties.ViscosityLaw[p->phase_number] = 4;
-						user->PhaseProperties.A[p->phase_number] 			= PreExpFactor;
-						user->PhaseProperties.n_exponent[p->phase_number] 	= N_exp;
-						user->PhaseProperties.Powerlaw_e0[p->phase_number] 	= e0;		//	e0 in (e2nd/e0)
-						user->PhaseProperties.E[p->phase_number]			= ActivationEnergy;
-					}
-					AttributeTypeCompare( t, "tempdep_nopowerlaw", &type_match );
-					if( type_match == _TRUE ) {
-						double PreExpFactor;
-						double N_exp;
-						double e0;
-						double ActivationEnergy;
-
-						MaterialGetTempDepNoPowerLawViscosityParams( user->PhaseMaterialProperties, p_idx,a_idx,t_idx, &PreExpFactor, &N_exp, &e0, &ActivationEnergy );
-						PetscPrintf(PETSC_COMM_WORLD,"    %s (id=%lld), VISCOSITY, tempdep_nopowerlaw [%lld,%lld,%lld] = %e, %e %e %e \n", p->name, (LLD)(p->phase_number), (LLD)p_idx,(LLD)a_idx,(LLD)t_idx, PreExpFactor, N_exp, e0, ActivationEnergy );
-
-
-						// Add to PhaseProperties
-						user->PhaseProperties.ViscosityLaw[p->phase_number] = 5;
-						user->PhaseProperties.A[p->phase_number] 			= PreExpFactor;
-						user->PhaseProperties.n_exponent[p->phase_number] 	= N_exp;
-						user->PhaseProperties.Powerlaw_e0[p->phase_number] 	= e0;		//	e0 in (e2nd/e0)
-						user->PhaseProperties.E[p->phase_number]			= ActivationEnergy;
-					}
-					// others
-				}
-				AttributeCompare( a, "ELASTICITY", &attr_match );
-				if( attr_match == _TRUE ) {
-					// constant
-					AttributeTypeCompare( t, "constant", &type_match );
-					if( type_match == _TRUE ) {
-						double shear, bulk;
-
-						MaterialGetConstantElasticityParams( user->PhaseMaterialProperties, p_idx,a_idx,t_idx, &shear, &bulk );
-						PetscPrintf(PETSC_COMM_WORLD,"    %s (id=%lld), ELASTICITY, constant [%lld,%lld,%lld] = %e, %e \n", p->name, (LLD)(p->phase_number), (LLD)p_idx,(LLD)a_idx,(LLD)t_idx, shear,bulk );
-
-						user->PhaseProperties.ElasticShearModule[p->phase_number] 		= shear; 	// add to PhaseProperties
-						user->PhaseProperties.ElasticBulkModule[p->phase_number] 		= bulk; 	// add to PhaseProperties
-
-					}
-					// others
-				}
-				AttributeCompare( a, "DENSITY", &attr_match );
-				if( attr_match == _TRUE ) {
-					// temp dep.
-					AttributeTypeCompare( t, "temperature_dependent", &type_match );
-					if( type_match == _TRUE ) {
-						double rho0, alpha, T0;
-
-						MaterialGetTemperatureDependentDensityParams( user->PhaseMaterialProperties, p_idx,a_idx,t_idx, &rho0, &alpha, &T0 );
-						PetscPrintf(PETSC_COMM_WORLD,"    %s (id=%lld), DENSITY, temperature-dependent [%lld,%lld,%lld] = %e, %e, %e \n", p->name, (LLD)(p->phase_number), (LLD)p_idx,(LLD)a_idx,(LLD)t_idx, rho0,alpha, T0 );
-
-
-						user->PhaseProperties.DensityLaw[p->phase_number] 	= 1; 		// T-dependent density
-						user->PhaseProperties.rho[p->phase_number] 			= rho0; 	// add to PhaseProperties
-						user->PhaseProperties.ThermalExpansivity[p->phase_number] 		= alpha; 	// add to PhaseProperties
-						user->PhaseProperties.Density_T0[p->phase_number] 	= T0; 		// add to PhaseProperties
-
-					}
-					// convection setup
-					AttributeTypeCompare( t, "convection", &type_match );
-					if( type_match == _TRUE ) {
-						double rho0, Ra, T0;
-
-						MaterialGetConvectionDensityParams( user->PhaseMaterialProperties, p_idx,a_idx,t_idx, &rho0, &Ra, &T0 );
-						PetscPrintf(PETSC_COMM_WORLD,"    %s (id=%lld), DENSITY, convection [%lld,%lld,%lld] = %e, %e, %e \n", p->name, (LLD)(p->phase_number), (LLD)p_idx,(LLD)a_idx,(LLD)t_idx, rho0,Ra, T0 );
-
-
-						user->PhaseProperties.DensityLaw[p->phase_number] 	= 2; 				// Density used in Ra-convection simulations where the rhs of the force balance 2 is Ra*T*g instead of rho*g
-						user->PhaseProperties.rho[p->phase_number] 			= rho0; 			// add to PhaseProperties
-						user->PhaseProperties.Ra[p->phase_number] 			= Ra; 				// add to PhaseProperties
-						user->PhaseProperties.Density_T0[p->phase_number] 	= T0; 				// add to PhaseProperties
-					}
-					// artificial temp dep.
-					AttributeTypeCompare( t, "artificial_temperature_dependent", &type_match );
-					if( type_match == _TRUE ) {
-						double rho0;
-
-						MaterialGetArtificialTemperatureDependentDensityParams( user->PhaseMaterialProperties, p_idx,a_idx,t_idx, &rho0);
-						PetscPrintf(PETSC_COMM_WORLD,"    %s (id=%lld), DENSITY, artificial-temperature-dependent [%lld,%lld,%lld] = %e \n", p->name, (LLD)(p->phase_number), (LLD)p_idx,(LLD)a_idx,(LLD)t_idx, rho0);
-
-						user->PhaseProperties.DensityLaw[p->phase_number] 	= 3; 		// artificial T-dependent density
-						user->PhaseProperties.rho[p->phase_number] 			= rho0; 	// add to PhaseProperties
-					}
-					// others
-				}
-				AttributeCompare( a, "ENERGY", &attr_match );
-				if( attr_match == _TRUE ) {
-					// constant
-					AttributeTypeCompare( t, "constant", &type_match );
-					if( type_match == _TRUE ) {
-						double  ThermalConductivity, HeatCapacity, RadioactiveHeat, ShearHeating;
-
-						MaterialGetConstantEnergyParams( user->PhaseMaterialProperties, p_idx,a_idx,t_idx, &ThermalConductivity, &HeatCapacity, &RadioactiveHeat, &ShearHeating);
-						PetscPrintf(PETSC_COMM_WORLD,"    %s (id=%lld), ENERGY, constant [%lld,%lld,%lld] = %e %e %e %e \n", p->name, (LLD)(p->phase_number), (LLD)p_idx,(LLD)a_idx,(LLD)t_idx, ThermalConductivity, HeatCapacity, RadioactiveHeat, ShearHeating);
-
-
-						user->PhaseProperties.T_Conductivity[p->phase_number] 		= ThermalConductivity; 	// add to PhaseProperties
-						user->PhaseProperties.HeatCapacity[p->phase_number] 		= HeatCapacity; 		// add to PhaseProperties
-						user->PhaseProperties.RadioactiveHeat[p->phase_number] 		= RadioactiveHeat; 		// add to PhaseProperties
-
-					}
-					// others
-				}
-				AttributeCompare( a, "PLASTICITY", &attr_match );
-				if( attr_match == _TRUE ) {
-					// constant
-					AttributeTypeCompare( t, "DruckerPrager", &type_match );
-					if( type_match == _TRUE ) {
-						double  Cohesion, FrictionAngle;
-						double Weakening_PlasticStrain_Begin,Weakening_PlasticStrain_End;
-						double  CohesionAfterWeakening, FrictionAngleAfterWeakening;
-
-						MaterialGetConstantPlasticityParams( user->PhaseMaterialProperties, p_idx,a_idx,t_idx, &Cohesion, &FrictionAngle,
-								&Weakening_PlasticStrain_Begin, &Weakening_PlasticStrain_End,
-								&CohesionAfterWeakening, &FrictionAngleAfterWeakening);
-						PetscPrintf(PETSC_COMM_WORLD,"    %s (id=%lld), PLASTICITY, constant [%lld,%lld,%lld] = %e %e %e %e %e %e\n", p->name, (LLD)(p->phase_number), (LLD)p_idx,(LLD)a_idx,(LLD)t_idx,
-								Cohesion, FrictionAngle, Weakening_PlasticStrain_Begin, Weakening_PlasticStrain_End, CohesionAfterWeakening, FrictionAngleAfterWeakening);
-
-						user->PhaseProperties.PlasticityLaw[p->phase_number] 	= 1; 					// Drucker-Prager
-						user->PhaseProperties.Cohesion[p->phase_number] 		= Cohesion; 			// add to PhaseProperties
-						user->PhaseProperties.FrictionAngle[p->phase_number] 	= FrictionAngle; 		// add to PhaseProperties
-
-						user->PhaseProperties.Weakening_PlasticStrain_Begin[p->phase_number] = Weakening_PlasticStrain_Begin; 			// add to PhaseProperties
-						user->PhaseProperties.Weakening_PlasticStrain_End[p->phase_number] 	 = Weakening_PlasticStrain_End; 		  	// add to PhaseProperties
-						user->PhaseProperties.CohesionAfterWeakening[p->phase_number] 	 	 = CohesionAfterWeakening; 		  						// add to PhaseProperties
-						user->PhaseProperties.FrictionAngleAfterWeakening[p->phase_number] 	 = FrictionAngleAfterWeakening; 		  	// add to PhaseProperties
-
-					}
-					// others
-				}
-			}
-		}
-	}
-
-	PetscPrintf(PETSC_COMM_WORLD,"--------------------------------------------------------------------------\n");
-
-	// destroy attribute database right after use
-	MaterialDestroy(user->PhaseMaterialProperties);
-
-	// check empty phases
-	empty_phase = PETSC_FALSE;
-
-	for(PP = 0; PP < n_phases; PP++)
-	{
-		if(!check_phase[PP])
-		{
-			PetscPrintf(PETSC_COMM_WORLD, "Phase %lld is not initialized\n", (LLD)PP);
-
-			empty_phase = PETSC_TRUE;
-		}
-	}
-
-	ierr = PetscFree(check_phase); CHKERRQ(ierr);
-
-	if(empty_phase == PETSC_TRUE)
-	{
-		SETERRQ(PETSC_COMM_SELF, PETSC_ERR_USER, "Incorrect phase numbering");
-	}
 
 	PetscFunctionReturn(0);
 }

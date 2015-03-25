@@ -171,6 +171,8 @@ typedef struct
 	PetscScalar eta_max;
 	// reference viscosity (initial guess)
 	PetscScalar eta_ref;
+	// plasticity regularization viscosity (initial guess)
+	PetscScalar eta_plast;
 	// reference temperature
 	PetscScalar TRef;
 	// universal gas constant

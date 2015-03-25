@@ -135,7 +135,6 @@ PetscErrorCode JacResCreate(
 	n = fs->nYZEdg;
 	for(i = 0; i < n; i++) { jr->svYZEdge[i].phRat = svBuff; svBuff += numPhases; }
 
-
 	// create scatter context
 //	ierr = FDSTAGCreateScatter(fs, jrctx); CHKERRQ(ierr);
 
@@ -199,9 +198,43 @@ PetscErrorCode JacResDestroy(JacRes *jr)
 	ierr = PetscFree(jr->svYZEdge); CHKERRQ(ierr);
 	ierr = PetscFree(jr->svBuff);   CHKERRQ(ierr);
 
-	// phase parameters
-	//ierr = PetscFree(jr->phases);  CHKERRQ(ierr);
-	//ierr = PetscFree(jr->matSoft); CHKERRQ(ierr);
+	PetscFunctionReturn(0);
+}
+//---------------------------------------------------------------------------
+#undef __FUNCT__
+#define __FUNCT__ "JacResInitScale"
+PetscErrorCode JacResInitScale(JacRes *jr, UserCtx *usr)
+{
+	// initialize and setup scaling object, perform scaling
+
+	PetscErrorCode ierr;
+	PetscFunctionBegin;
+
+	// initialize scaling object
+	ierr = ScalingCreate(&jr->scal);  CHKERRQ(ierr);
+
+	// scale input parameters
+	ScalingInput(&jr->scal, usr);
+
+	// initialize gravity acceleration
+	jr->grav[0] = 0.0;
+	jr->grav[1] = 0.0;
+	jr->grav[2] = usr->Gravity;
+
+	// initialize stabilization parameter
+	jr->FSSA = usr->FSSA;
+
+	// initialize time stepping parameters
+	ierr = TSSolSetUp(&jr->ts, usr); CHKERRQ(ierr);
+
+	// initialize material parameter limits
+	ierr = SetMatParLim(&jr->matLim, usr); CHKERRQ(ierr);
+
+	// scale material parameter limits
+	ScalingMatParLim(&jr->scal, &jr->matLim);
+
+	// scale material parameters
+	ScalingMatProp(&jr->scal, jr->phases, jr->numPhases);
 
 	PetscFunctionReturn(0);
 }
@@ -1517,7 +1550,9 @@ PetscInt JacResGetStep(JacRes *jr)
 PetscErrorCode SetMatParLim(MatParLim *matLim, UserCtx *usr)
 {
 	// initialize material parameter limits
+	PetscBool  quasi_harmonic;
 
+	PetscErrorCode ierr;
 	PetscFunctionBegin;
 
 	matLim->eta_min      = usr->LowerViscosityCutoff;
@@ -1526,7 +1561,6 @@ PetscErrorCode SetMatParLim(MatParLim *matLim, UserCtx *usr)
 //	matLim->eta_plast    = usr->PlastViscosity;
 
 	matLim->TRef         = 0.0;
-	// no activation energy scaling! scale with characteristic temperature only
 	matLim->Rugc         = 8.3144621;
 	matLim->eta_atol     = 0.0;
 	matLim->eta_rtol     = 1e-8;
@@ -1542,6 +1576,14 @@ PetscErrorCode SetMatParLim(MatParLim *matLim, UserCtx *usr)
 	matLim->shearHeatEff = 1.0;
 	matLim->quasiHarmAvg = PETSC_FALSE;
 	matLim->initGuessFlg = PETSC_TRUE;
+
+	// read additional options
+	ierr = PetscOptionsHasName(PETSC_NULL, "-use_quasi_harmonic_viscosity", &quasi_harmonic); CHKERRQ(ierr);
+
+	if(quasi_harmonic == PETSC_TRUE)
+	{
+		matLim->quasiHarmAvg = PETSC_TRUE;
+	}
 
 	PetscFunctionReturn(0);
 }

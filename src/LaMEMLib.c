@@ -91,7 +91,7 @@ PetscErrorCode LaMEMLib(PetscScalar *LaMEM_OutputParameters, PetscInt *mpi_group
 	if(use_fdstag_canonical == PETSC_TRUE)
 	{
 		// call FDSTAG solution routine
-		ierr = LaMEMLib_FDSTAG(InputParamFile, ParamFile, LaMEM_OutputParameters, mpi_group_id); CHKERRQ(ierr);
+		ierr = LaMEMLib_FDSTAG(NULL); CHKERRQ(ierr);
 	}
 	else
 	{

@@ -7,15 +7,11 @@
 
 PetscErrorCode FDSTAGInitCode(JacRes *jr, UserCtx *user);
 
-PetscErrorCode InputSetDefaultValues(UserCtx *user);
+PetscErrorCode InputSetDefaultValues(JacRes *jr, UserCtx *user);
 
-PetscErrorCode InputReadFile(JacRes *jr, UserCtx *user);
+PetscErrorCode InputReadFile(JacRes *jr, UserCtx *user, FILE *fp);
 
-PetscErrorCode InputReadCommLine(UserCtx *user );
-
-// old routines to input material properties
-PetscErrorCode InitMaterialProp(UserCtx *user );
-PetscErrorCode ReadMaterialProperties(UserCtx *user);
+PetscErrorCode InputReadCommLine(UserCtx *user);
 
 //---------------------------------------------------------------------------
 PetscErrorCode ReadMeshSegDir(
@@ -24,10 +20,7 @@ PetscErrorCode ReadMeshSegDir(
 	PetscScalar  beg,
 	PetscScalar  end,
 	PetscInt    *tncels,
-	MeshSegInp  *msi,
-	PetscInt     dim,
-	PetscScalar  charLength);
+	MeshSegInp  *msi);
 
 //---------------------------------------------------------------------------
-
 #endif
