@@ -50,7 +50,6 @@ without the explicit agreement of Boris Kaus.
 #include "matrix.h"
 #include "lsolve.h"
 #include "nlsolve.h"
-#include "interface.h"
 #include "multigrid.h"
 #include "advect.h"
 #include "marker.h"
