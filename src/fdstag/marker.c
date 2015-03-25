@@ -1511,7 +1511,10 @@ PetscErrorCode ADVMarkInitFilePolygons(AdvCtx *actx, UserCtx *user)
 	            	{	
 	            		if (Poly.type == 1)
 	            		{
-	            			actx->markers[idx[k]].phase += Poly.phase;
+	            			if ( actx->markers[idx[k]].phase % 2 == 1 ) // avoid adding twice when contours are over imposed (e.g. at grid intersection)
+	            			{
+	            				actx->markers[idx[k]].phase += Poly.phase;
+	            			}
 	            		}
 	            		else
 	            		{
