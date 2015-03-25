@@ -10,7 +10,6 @@
 // * make sure that Peierls creep is deactivated for isothermal analysis
 // ...
 //---------------------------------------------------------------------------
-
 #undef __FUNCT__
 #define __FUNCT__ "ConstEqCtxSetup"
 PetscErrorCode ConstEqCtxSetup(
@@ -31,14 +30,14 @@ PetscErrorCode ConstEqCtxSetup(
 
 	PetscFunctionBegin;
 
-	if(T) RT = lim->Rugc*T;
-	else  RT = 1.0;
+	if(T) RT =  lim->Rugc*T;
+	else  RT = -1.0;
 
 	ln = 0;
 	nl = 0;
 
 	// use reference strain-rate instead of zero
-	if(DII == 0.0) DII = lim->DII_ref;
+	if(DII < lim->DII_ref) DII = lim->DII_ref;
 
 	// initialize
 	ctx->DII   = DII;         // effective strain-rate
@@ -64,7 +63,7 @@ PetscErrorCode ConstEqCtxSetup(
 		ln++;
 	}
 
-	// DIFFUSION CREEP (NEWTONIAN)
+	// LINEAR DIFFUSION CREEP (NEWTONIAN)
 	if(mat->Bd)
 	{
 		Q          = (mat->Ed + p*mat->Vd)/RT;
@@ -75,10 +74,6 @@ PetscErrorCode ConstEqCtxSetup(
 	// DISLOCATION CREEP (POWER LAW)
 	if(mat->Bn)
 	{
-// ACHTUNG
-//		if(lim->initGuessFlg == PETSC_TRUE)
-//		Q          = 0.0;
-//		else
 		Q          = (mat->En + p*mat->Vn)/RT;
 		ctx->N_dis =  mat->n;
 		ctx->A_dis =  mat->Bn*exp(-Q);
@@ -86,7 +81,8 @@ PetscErrorCode ConstEqCtxSetup(
 	}
 
 	// PEIERLS CREEP (LOW TEMPERATURE RATE-DEPENDENT PLASTICITY, POWER-LAW APPROXIMATION)
-	if(mat->Bp)
+	// ONLY EVALUATE FOR TEMPERATURE-DEPENDENT CASES
+	if(mat->Bp && T)
 	{
 		Q          = (mat->Ep + p*mat->Vp)/RT;
 		ctx->N_prl =  Q*pow(1.0-mat->gamma, mat->q-1.0)*mat->q*mat->gamma;
@@ -156,15 +152,18 @@ PetscErrorCode GetEffVisc(
 	//  * LINEAR VISCO-ELASTO-PLASTIC MATERIAL
 	//  * POWER-LAW MATERIAL
 
-	PetscScalar eta_ve, inv_eta_els, inv_eta_dif, inv_eta_dis, eta_pl, eta_viscous;
+	// stabilization parameters
+	PetscScalar cf_eta_min = 10.0;
+
+	PetscScalar eta_ve, DIIve, H;
+	PetscScalar inv_eta_els, inv_eta_dif, inv_eta_dis;
 
 	PetscFunctionBegin;
 
-	// initialize
-	(*eta)   = 0.0;
+	// zero out plastic strain rate
 	(*DIIpl) = 0.0;
 
-	// set reference viscosity as initial guess (is )
+	// set reference viscosity as initial guess
 	if(lim->eta_ref && lim->initGuessFlg == PETSC_TRUE)
 	{
 		(*eta) = lim->eta_ref;
@@ -181,52 +180,64 @@ PetscErrorCode GetEffVisc(
 		}
 		else
 		{
-			inv_eta_dis = 2.0*pow(ctx->A_dis, 1.0/ctx->N_dis)*pow(ctx->DII, 1.0 - 1.0/ctx->N_dis);
+			inv_eta_dis = 2.0*pow(ctx->A_dis, 1.0/ctx->N_dis)*pow(ctx->DII,     1.0 - 1.0/ctx->N_dis);
 		}
 
 		(*eta) = 1.0/inv_eta_dis;
+
 	}
 	else
 	{
 		// elasticity
 		inv_eta_els = 2.0*ctx->A_els;
 
-		// diffusion
+		// linear viscous creep
 		inv_eta_dif = 2.0*ctx->A_dif;
         
-        
-        eta_viscous = 1.0/inv_eta_dif;  // viscous viscosity
-
 		// compute visco-elastic viscosity
 		eta_ve = 1.0/(inv_eta_els + inv_eta_dif);
 
-		// get plastic viscosity
-		eta_pl = ctx->taupl/(2.0*ctx->DII);
+		// visco-elastic prediction
+		(*eta) = eta_ve;
 
-		// check plasticity condition (not for initial guess)
-		if(lim->initGuessFlg != PETSC_TRUE && eta_pl && eta_ve > eta_pl)
+		//===========
+		// PLASTICITY
+		//===========
+
+		if(ctx->taupl && lim->initGuessFlg != PETSC_TRUE)
   		{
+			// compute visco-elastic strain rate
+			DIIve = ctx->taupl/(2.0*eta_ve);
+
 			if(lim->quasiHarmAvg == PETSC_TRUE)
 			{
-                PetscScalar eta_viscous;
-                
-                //				(*eta)      = 1.0/(1.0/eta_pl + 1.0/eta_ve);
-                
-                eta_viscous = 1.0/inv_eta_dif;  // viscous viscosity
-                (*eta)      = 1.0/(1.0/eta_pl + 1.0/eta_viscous);
-            }
+				//====================================
+				// regularized rate-dependent approach
+				//====================================
+
+				// check for nonzero plastic strain rate
+				if(DIIve < ctx->DII)
+				{
+					// store plastic strain rate & viscosity
+					H        = eta_ve/cf_eta_min;
+					(*eta)   = 1.0/(1.0/eta_ve + 1.0/H) + (ctx->taupl/(2.0*ctx->DII))/(1.0 + H/eta_ve);
+					(*DIIpl) = ctx->DII*(1.0 - (*eta)/eta_ve);
+				}
+			}
 			else
 			{
-				(*eta) = eta_pl;
+				//====================================
+				// classical rate-independent approach
+				//====================================
+
+				// check for nonzero plastic strain rate
+				if(DIIve < ctx->DII)
+				{
+					// store plastic strain rate & viscosity
+					(*eta)   = ctx->taupl/(2.0*ctx->DII);
+					(*DIIpl) = ctx->DII - DIIve;
+				}
 			}
-
-			// compute plastic strain rate
-			(*DIIpl) = ctx->DII - ctx->taupl/(2.0*eta_ve);
-
-		}
-		else
-		{
-			(*eta) = eta_ve;
 		}
 	}
 
@@ -238,7 +249,11 @@ PetscErrorCode GetEffVisc(
 
 	//=============================================
 
+
+
 /*
+
+
 	// "isolated" viscosity for each creep mechanism can be computed by
 	// assuming that single creep mechanism consumes entire strain rate.
 
@@ -757,19 +772,14 @@ void Tensor2RSCopy(Tensor2RS *A, Tensor2RS *B)
     B->xz = A->xz; B->yz = A->yz; B->zz = A->zz;
 }
 //---------------------------------------------------------------------------
-
-
-// ERROR HANDLING FOR EVALUATION CONTEXT ROUTINE
-
 /*
+// ERROR HANDLING FOR CONTEXT EVALUATION ROUTINE
 
  #include <math.h>
 #if defined(math_errhandling) \
   && (math_errhandling & MATH_ERREXCEPT)
 #include <fenv.h>
 #endif
-
-
 
 #if defined(math_errhandling) \
   && (math_errhandling & MATH_ERREXCEPT)
@@ -805,14 +815,10 @@ if (fetestexcept(FE_INVALID
   // handle range error
 }
 #endif
-
 */
-
 //---------------------------------------------------------------------------
-
-// ELASTIC VISCOSITY COMPUTATION WITH RESCALING
-
 /*
+// ELASTIC VISCOSITY COMPUTATION WITH RESCALING
 	PetscInt    i;
 	PetscScalar sum = 0.0;
 
@@ -831,13 +837,9 @@ if (fetestexcept(FE_INVALID
 	// re-scale for purely inelastic materials
 	if(sum) svDev->I2Gdt /= sum;
 */
-
 //---------------------------------------------------------------------------
-
-// THERMAL CONSTITUTIVE EQUATIONS EXAMPLE
-
 /*
-//---------------------------------------------------------------------------
+// THERMAL CONSTITUTIVE EQUATIONS EXAMPLE
 void ConstEq::heat(
 			  Material  & mat,   // material properties
               double      T,     // updated temperature   (element average)
@@ -864,6 +866,64 @@ void ConstEq::heat(Material  & mat,   // material properties
 	q[1] = - mat.k*grad[1];
 	q[2] = - mat.k*grad[2];
 }
-//---------------------------------------------------------------------------
-
 */
+//---------------------------------------------------------------------------
+/*
+	ABANDONED PLASTICITY STABILIZATIONS
+	PetscScalar a          = (1.0 + sqrt(5.0))/2.0;
+	PetscScalar cf_eta_max = 1000.0;
+	PetscScalar cf_eta_min = 10.0;
+	PetscScalar k          = log(cf_eta_max - 1.0)/(a - 1.0);
+
+	// penalty function
+	H = (eta_ve/cf_eta_min)*(1.0 + exp(k*(a - ctx->DII/DIIve)));
+
+	// regularized viscosity
+	(*eta)   = 1.0/(1.0/eta_ve + 1.0/H) + (ctx->taupl/(2.0*ctx->DII))/(1.0 + H/eta_ve);
+
+	// plastic strain rate
+	if((*eta) > eta_ve) (*DIIpl) = 0.0;
+	else                (*DIIpl) = ctx->DII*(1.0 - (*eta)/eta_ve);
+
+	// plasticity regularization parameters (WARNING: add input file options!)
+	k = 7.0;
+	a = (1.0 + sqrt(5.0))/2.0;
+	k = 3.0;
+	a = 1.0;
+
+	// compute shifted approximate Heaviside function
+	H = 1.0/(1.0 + exp(k*(a - ctx->DII/DIIve)));
+	// compute regularized effective viscosity
+	(*eta) = 1.0/((1.0-H)/eta_ve + H/eta_pl);
+	(*eta) = 1.0/(1.0/eta_ve + 1.0/eta_pl);
+
+ 	if(ctx->taupl && lim->initGuessFlg != PETSC_TRUE)
+  	{
+		// compute visco-elastic strain rate
+		DIIve = ctx->taupl/(2.0*eta_ve);
+
+		// check for nonzero plastic strain rate
+		if(DIIve < ctx->DII)
+		{
+			// store plastic strain rate
+			(*DIIpl) = ctx->DII - DIIve;
+
+			if(lim->quasiHarmAvg == PETSC_TRUE)
+			{
+				//====================================
+				// regularized rate-dependent approach
+				//====================================
+				(*eta) = (ctx->taupl + 2.0*lim->eta_plast*(*DIIpl))/(2.0*ctx->DII);
+			}
+			else
+			{
+				//====================================
+				// classical rate-independent approach
+				//====================================
+
+				(*eta) = ctx->taupl/(2.0*ctx->DII);
+			}
+		}
+	}
+*/
+//---------------------------------------------------------------------------
