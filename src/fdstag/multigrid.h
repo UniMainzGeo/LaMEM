@@ -21,10 +21,8 @@ typedef struct
 	DM        DA_X, DA_Y, DA_Z;      // face points arrays
 	DOFIndex  dof;                   // indexing vectors
 	Vec       bcvx, bcvy, bcvz, bcp; // restricted boundary condition vectors
+	Vec       eta, etax, etay, etaz; // viscosity vectors
 	Mat       R, P;                  // restriction & prolongation operators (not set on finest grid)
-	Vec       eta;                   // cell viscosity vector
-
-//	Vec       d, dx, dy, dz;         // diagonal coefficient vectors
 
 
 	// ******** fine level ************
@@ -46,6 +44,8 @@ PetscErrorCode MGLevelInitEta(MGLevel *lvl, JacRes *jr);
 
 PetscErrorCode MGLevelRestrictEta(MGLevel *lvl, MGLevel *fine);
 
+PetscErrorCode MGLevelAverageEta(MGLevel *lvl);
+
 PetscErrorCode MGLevelRestrictBC(MGLevel *lvl, MGLevel *fine);
 
 PetscErrorCode MGLevelSetupRestrict(MGLevel *lvl, MGLevel *fine);
@@ -59,10 +59,14 @@ PetscErrorCode MGLevelAllocProlong(MGLevel *lvl, MGLevel *fine);
 //---------------------------------------------------------------------------
 
 // setup row of restriction matrix
-void getRowRestrict(PetscScalar parent, PetscInt n, PetscInt idx[], PetscScalar bc[], PetscScalar v[], PetscScalar vs[]);
+void getRowRestrict(PetscBool scale,
+	PetscScalar parent, PetscInt n, PetscInt idx[], PetscScalar bc[],
+	PetscScalar v[], PetscScalar vs[], PetscScalar eta_fine[], PetscScalar eta_crs);
 
 // setup row of prolongation matrix
-void getRowProlong(PetscInt parent, PetscScalar pbc, PetscInt n, PetscScalar bc[], PetscScalar v[], PetscScalar vs[]);
+void getRowProlong(PetscBool scale,
+	PetscInt parent, PetscScalar parent_bc, PetscInt n, PetscScalar bc[],
+	PetscScalar v[], PetscScalar vs[], PetscScalar eta_crs[], PetscScalar eta_fine);
 
 //---------------------------------------------------------------------------
 
