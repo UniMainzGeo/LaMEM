@@ -278,14 +278,14 @@ PetscErrorCode MatPropGetStruct(FILE *fp,
 		sprintf(lbl_k,     "[ ]"         );
 		sprintf(lbl_A,     "[ ]"         );
 	}
-	else if (utype == _SI_)
+	else
 	{
 		sprintf(lbl_rho,   "[kg/m3]"     );
-		sprintf(lbl_eta,   "[Pa.s]"      );
-		sprintf(lbl_Bd,    "[1/(Pa.s)]"  );
+		sprintf(lbl_eta,   "[Pa*s]"      );
+		sprintf(lbl_Bd,    "[1/(Pa*s)]"  );
 		sprintf(lbl_E,     "[J/mol]"     );
 		sprintf(lbl_V,     "[m3/mol]"    );
-		sprintf(lbl_Bn,    "[1/(Pa^n.s)]");
+		sprintf(lbl_Bn,    "[1/(Pa^n*s)]");
 		sprintf(lbl_Bp,    "[1/s]"       );
 		sprintf(lbl_tau,   "[Pa]"        );
 		sprintf(lbl_fr,    "[deg]"       );
@@ -294,24 +294,8 @@ PetscErrorCode MatPropGetStruct(FILE *fp,
 		sprintf(lbl_k,     "[W/m/K]"     );
 		sprintf(lbl_A,     "[W/m3]"      );
 	}
-	else if (utype == _GEO_)
-	{
-		sprintf(lbl_rho,   "[kg/m3]"     );
-		sprintf(lbl_eta,   "[Pa.s]"      );
-		sprintf(lbl_Bd,    "[1/(Pa.s)]"  );
-		sprintf(lbl_E,     "[J/mol]"     );
-		sprintf(lbl_V,     "[m3/mol]"    );
-		sprintf(lbl_Bn,    "[1/(Pa^n.s)]");
-		sprintf(lbl_Bp,    "[1/s]"       );
-		sprintf(lbl_tau,   "[MPa]"       );
-		sprintf(lbl_fr,    "[deg]"       );
-		sprintf(lbl_alpha, "[1/K]"       );
-		sprintf(lbl_cp,    "[J/kg/K]"    );
-		sprintf(lbl_k,     "[W/m/K]"     );
-		sprintf(lbl_A,     "[W/m3]"      );
-	}
 
-	PetscPrintf(PETSC_COMM_WORLD,"    Phase [%lld]: rho = %g %s, eta0 = %g %s\n", (LLD)(m->ID), m->rho, lbl_rho,  eta, lbl_eta);
+	PetscPrintf(PETSC_COMM_WORLD,"    Phase [%lld]: rho = %g %s, eta = %g %s\n", (LLD)(m->ID), m->rho, lbl_rho,  eta, lbl_eta);
     if (strlen(ndiff)) PetscPrintf(PETSC_COMM_WORLD,"    Phase [%lld]: (diff ) diffusion creep profile: %s \n",(LLD)(m->ID), ndiff);
 	PetscPrintf(PETSC_COMM_WORLD,"    Phase [%lld]: (diff ) Bd = %g %s, Ed = %g %s, Vd = %g %s \n", (LLD)(m->ID), m->Bd, lbl_Bd, m->Ed, lbl_E, m->Vd, lbl_V);
 	if (strlen(ndisl)) PetscPrintf(PETSC_COMM_WORLD,"    Phase [%lld]: (disl ) dislocation creep profile: %s \n",(LLD)(m->ID), ndisl);

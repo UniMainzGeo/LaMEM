@@ -44,15 +44,15 @@ PetscErrorCode ScalingReadFromFile(Scaling *scal, FILE *fp)
 		parse_GetDouble(fp, "Characteristic.Stress",     &stress,      &found);
 
 		// check
-		if(!length)      SETERRQ(PETSC_COMM_SELF, PETSC_ERR_USER, "Define Characteristic.Length parameter\n");
-		if(!viscosity)   SETERRQ(PETSC_COMM_SELF, PETSC_ERR_USER, "Define Characteristic.Viscosity parameter\n");
-		if(!temperature) SETERRQ(PETSC_COMM_SELF, PETSC_ERR_USER, "Define Characteristic.Temperature parameter\n");
-		if(!stress)      SETERRQ(PETSC_COMM_SELF, PETSC_ERR_USER, "Define Characteristic.Stress parameter\n");
+		if(length      == 0.0) SETERRQ(PETSC_COMM_SELF, PETSC_ERR_USER, "Define Characteristic.Length parameter\n");
+		if(viscosity   == 0.0) SETERRQ(PETSC_COMM_SELF, PETSC_ERR_USER, "Define Characteristic.Viscosity parameter\n");
+		if(temperature == 0.0) SETERRQ(PETSC_COMM_SELF, PETSC_ERR_USER, "Define Characteristic.Temperature parameter\n");
+		if(stress      == 0.0) SETERRQ(PETSC_COMM_SELF, PETSC_ERR_USER, "Define Characteristic.Stress parameter\n");
 
 		// print
 		PetscPrintf(PETSC_COMM_WORLD," Characteristic Length      = %g [m] \n",    length);
-		PetscPrintf(PETSC_COMM_WORLD," Characteristic Temperature = %g [C/K] \n",  viscosity);
-		PetscPrintf(PETSC_COMM_WORLD," Characteristic Viscosity   = %g [Pa*s] \n", temperature);
+		PetscPrintf(PETSC_COMM_WORLD," Characteristic Viscosity   = %g [Pa*s] \n", viscosity);
+		PetscPrintf(PETSC_COMM_WORLD," Characteristic Temperature = %g [C/K] \n",  temperature);
 		PetscPrintf(PETSC_COMM_WORLD," Characteristic Stress      = %g [Pa] \n",   stress);
 
 		PetscPrintf(PETSC_COMM_WORLD,"--------------------------------------------------------------------------\n");
@@ -240,7 +240,7 @@ PetscErrorCode ScalingCreate(Scaling *scal)
 
 		// material parameters
 		scal->density             = mass/volume;              sprintf(scal->lbl_density,          "[kg/m^3]");
-		scal->viscosity           = stress*time;              sprintf(scal->lbl_viscosity,        "[Pa*s]");
+		scal->viscosity           = stress*time;              sprintf(scal->lbl_viscosity,        "log[Pa*s]");
 		scal->cpecific_heat       = energy/mass/temperature;
 		scal->conductivity        = power/length/temperature;
 		scal->heat_production     = power/mass;
