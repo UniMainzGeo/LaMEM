@@ -1,0 +1,245 @@
+# 3D Folding/localization test
+
+# Define number of elements in x,y & z-direction
+# Negative number implies corresponding number of mesh segments
+# Data is provided in the variables seg_x, seg_y, seg_z and includes:
+#    * coordinates of the delimiters between the segments (n-1 points)
+#    * number of cells                                    (n points)
+#    * bias coefficients                                  (n points) 
+
+nel_x						=   128
+nel_y						= 	2
+nel_z						= 	48
+
+#nel_x						=   32
+#nel_y						= 	2
+#nel_z						= 	12
+ 
+
+# Geometry
+units 					= 	geo
+Characteristic.Length		=	1e4 		# [m]
+Characteristic.Viscosity 	=	1e20		# [Pa.s]
+Characteristic.Temperature	=	1			# [K]
+Characteristic.Stress      	=   1e6			# [Pa]
+
+
+W						=	40		# Width  (x-direction)
+H						=	15		# Height (z-direction)
+x_left					=	-20		# Left side of domain
+y_front					=	0			# Front side of domain
+z_bot					=	0	# Bottom of box
+
+L						=	0.3125		# Length (y-direction)
+
+# --- Model setup and noise ---
+
+msetup = bands
+
+# Define model setup and noise
+Setup.Model					=	2			# 0-Diapir, 1-Single Layer Fold, 2-Falling block, 3-from Particle file (defined below), 4-multilayer detachment fold, 5-Single Layer Growthrate
+ampl2D						=	0	 		# Amplitude of 2D sinuoidal perturbtion
+ampl3D						=	0.0			# Amplitude of 3D sinuoidal perturbtion
+amplNoise					=	0.0	 		# Amplitude of noise @ interface
+
+# Define input/output and numerics-related stuff
+OutputFile					=	test		
+save_timesteps				=	1				# save every ? timesteps
+time_end					=	100				# last timestep
+CFL							=	0.5			# CFL, dt-based criterium
+dt_max						=	0.01 	  	   	# Maximum timestep [Myr if dimensional]
+	
+# Boundary conditions
+BC.Eyy						=	0.0				# BG strainrate in y-direction
+BC.Exx						=	-1e-15			# BG Strainrate in x-direction
+
+BC.LeftBound				=	1				# 0 - free surface, 1-free slip with BG strainrate Eyy, 2 - no slip, 5 - growthrate 2D, 7 - growthrate 3D
+BC.RightBound				=	1				# 0 - free surface, 1-free slip with BG strainrate Eyy, 2 - no slip, 5 - growthrate 2D, 7 - growthrate 3D
+BC.FrontBound				=	1				# 0 - free surface, 1-free slip with BG strainrate Exx, 2 - no slip, 5 - growthrate 2D, 7 - growthrate 3D
+BC.BackBound				=	1				# 0 - free surface, 1-free slip with BG strainrate Exx, 2 - no slip, 5 - growthrate 2D, 7 - growthrate 3D
+BC.LowerBound				=	1				# 0 - free surface, 1-free slip, 				  2 - no slip, 5 - growthrate 2D, 7 - growthrate 3D
+BC.UpperBound				=	1				# 0 - free surface, 1-free slip, 				  2 - no slip, 5 - growthrate 2D, 7 - growthrate 3D
+Temp_top	    			=   0				# Temperature @ top
+Temp_bottom					=   1 				# Temperature @ bottom; side BC's are flux-free
+
+
+<PetscOptionsStart>
+
+# Time step (Myr)
+-dt 0.001
+
+# layer thickness [km] and bulk modulus of air phase (shear bands setup)
+
+-H_layer 		  10
+-H_bottom 		  0
+-Inclusion_use
+-Inclusion_size	  0.5
+#-Inclusion_offset 10
+#-Inclusion_length 10
+
+#-SkipStokesSolver 1
+
+-use_quasi_harmonic_viscosity
+#-js_use_custom_test
+-FSSA 1.0
+
+# SNES
+
+	-snes_picard_it 5
+	-snes_picard_tol 1e-3
+	-snes_newton_tol 2.0
+
+	-snes_monitor
+	-snes_atol 1e-12
+	-snes_rtol 1e-5
+	-snes_stol 1e-5
+	-snes_max_it 100
+	-snes_max_funcs 500000
+#	-snes_type ksponly
+
+#	-snes_linesearch_monitor
+#	-snes_linesearch_type cp
+#	-snes_linesearch_maxstep 1.0
+	
+
+	-snes_ksp_ew
+	-snes_ksp_ew_rtol0    1e-3
+	-snes_ksp_ew_rtolmax  1e-2
+
+
+-fd_mat_mffd_type wp
+#-fd_mat_mffd_err 1e-6
+
+# Jacobian solver
+
+	-js_ksp_type fgmres
+	-js_ksp_max_it 250
+	-js_ksp_converged_reason
+ 	-js_ksp_monitor
+	-js_ksp_rtol 1e-6
+	
+
+# Preconditioner
+
+	-pcmat_type mono
+	-pcmat_pgamma 1e5
+	-jp_type user
+	-jp_pc_type lu
+	-jp_pc_factor_mat_solver_package mumps
+
+#	-pcmat_type block
+#	-pcmat_pgamma 10.0
+#	-jp_type bf
+#	-bf_vs_type user
+#	-vs_ksp_type preonly
+#	-vs_pc_type lu
+#	-vs_pc_factor_mat_solver_package mumps
+
+#	-pcmat_type block
+#	-pcmat_no_dev_proj
+#	-jp_type bf
+#	-bf_vs_type mg
+#	-vs_ksp_type preonly
+
+#	-pcmat_type mono
+#	-jp_type mg
+
+#	-gmg_pc_view
+#	-gmg_pc_type mg
+#	-gmg_pc_mg_levels 2
+#	-gmg_pc_mg_galerkin
+#	-gmg_pc_mg_type multiplicative
+#	-gmg_pc_mg_cycle_type v
+#
+#	-gmg_mg_levels_ksp_type richardson
+#	-gmg_mg_levels_ksp_richardson_scale 0.5
+#	-gmg_mg_levels_ksp_max_it 20
+#	-gmg_mg_levels_pc_type jacobi
+#
+#	-crs_ksp_type preonly
+#	-crs_pc_type redundant
+#	-crs_pc_redundant_number 1
+#	-crs_redundant_pc_factor_mat_solver_package mumps
+
+
+# Additional command-line Petsc Options
+	-use_fdstag_canonical
+	-AddRandomNoiseParticles 0
+	-restart 0
+	-save_breakpoints 0
+#	-SavePartitioning
+
+	-out_pvd 1
+	-out_phase 1  
+	-out_density 1
+	-out_viscosity 1
+	-out_velocity 1
+	-out_pressure 1
+	-out_temperature 1 
+	-out_dev_stress 1
+	-out_j2_dev_stress 1
+	-out_strain_rate 1
+	-out_j2_strain_rate 1
+	-out_plast_strain 1
+	
+	-AVDPhaseViewer 1
+	
+	-objects_dump
+
+<PetscOptionsEnd>
+    
+# Phase distribution
+NumPartX				=	5   # Particles/Cell in x-direction
+NumPartY				=	5   # Particles/Cell in y-direction
+NumPartZ				=	5	# Particles/Cell in z-direction
+
+# Properties that are defined over the whole domain:
+Gravity					=  -10;									# [m/s2] - gravitational acceleration 
+Xi						=	0;									# [ ] - Shear heating factor - not implemented yet
+
+# Define phase transitions for particles
+num_phase_transitions			=	0				# The number of phase transitions present
+
+LowerViscosityCutoff			= 1e16
+UpperViscosityCutoff			= 1e27
+PlastViscosity                  = 1e19
+DII_ref                         = 1e-16
+
+
+# Define material properties for all phases -------------------------------------------------
+
+	# Define properties of bottom layer -------------------
+	<MaterialStart>
+		ID   = 0
+		rho0 = 3000
+		eta  = 1e20
+	<MaterialEnd>
+
+	# Define properties of matrix -----------------
+	<MaterialStart>
+		ID       = 1
+		rho0     = 3000
+		eta      = 1e25
+		shear    = 4e10
+		cohesion = 20e6
+		friction = 30
+		chSoftID = 0
+		frSoftID = 0
+	<MaterialEnd>
+
+	# Define properties of sticky-air layer -------------------
+	<MaterialStart>
+		ID   = 2
+		rho0 = 1000
+		eta  = 1e20
+	<MaterialEnd>
+
+	# Define strain softening law
+	<SofteningStart>
+		softID = 0
+		A      = 0.7
+		APS1   = 0.01
+		APS2   = 0.1
+	<SofteningEnd>
+
+# End of defining material properties for all phases ----------------------------------------
