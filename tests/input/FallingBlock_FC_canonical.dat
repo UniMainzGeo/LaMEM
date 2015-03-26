@@ -20,11 +20,11 @@ nel_z						= 	32
 #seg_x = 0.7 0.8 10 4 2 0.3 1.0 3.0
 
 # Scaling
-units = si
-Characteristic.Length      = 1
-Characteristic.Viscosity   = 1
-Characteristic.Temperature = 1
-Characteristic.Stress      = 1
+units = none
+#Characteristic.Length      = 1
+#Characteristic.Viscosity   = 1
+#Characteristic.Temperature = 1
+#Characteristic.Stress      = 1
 
 # Geometry
 L						=	1			# Length (y-direction)
@@ -86,13 +86,11 @@ FactorSurfaceLayer			= 		0.3 		# How thick is the surface layer (if option 2 is 
 	-snes_max_funcs 50000
 	-snes_type ksponly
 
-	-snes_ksp_ew
-	-snes_ksp_ew_rtol0    1e-3
-	-snes_ksp_ew_rtolmax  1e-2
+	-res_log
 
 # Jacobian solver
 
-	-js_ksp_type gmres
+	-js_ksp_type fgmres
 	-js_ksp_max_it 1000
 	-js_ksp_converged_reason
  	-js_ksp_monitor
@@ -171,10 +169,9 @@ NumPartZ				=	2	# Particles/Cell in z-direction
 Gravity					=  -1;									# [m/s2] - gravitational acceleration 
 Xi						=	0;									# [ ] - Shear heating factor - not implemented yet
 
-# Define phase transitions for particles
-num_phase_transitions			=	0				# The number of phase transitions present
-LowerViscosityCutoff			=	1e-3
-UpperViscosityCutoff			=	1e12
+LowerViscosityCutoff = 1e-3
+UpperViscosityCutoff = 1e12
+DII_ref              = 1
 
 # Define material properties for all phases -------------------------------------------------
 
@@ -189,7 +186,7 @@ UpperViscosityCutoff			=	1e12
 	<MaterialStart>
 		ID   = 1
 		rho0 = 2
-		eta  = 1e3
+		eta  = 1e5
 	<MaterialEnd>
 
 	
