@@ -91,7 +91,7 @@ PetscErrorCode FDSTAGInitCode(JacRes *jr, UserCtx *user)
 	// show initial timestep
 	if(jr->scal.utype == _GEO_)
 	{
-		PetscPrintf(PETSC_COMM_WORLD," Initial time step              : %g [years] \n",user->dt);
+		PetscPrintf(PETSC_COMM_WORLD," Initial time step              : %g [MYr] \n",user->dt);
 	}
 	else if(jr->scal.utype == _SI_)
 	{
