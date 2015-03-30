@@ -1259,6 +1259,7 @@ PetscErrorCode ADVMarkInitFilePolygons(AdvCtx *actx, UserCtx *user)
 	PetscBool    *polyin, *polybnd, AddRandomNoise;
 	PetscInt     *idx;
 	PetscScalar  *X,*PolyLen,*PolyIdx,*PolyFile;
+	PolyCtx       polydat;
 
 //	PetscInt      nmark_all;
 	PetscInt      imark,imarkx,imarky,imarkz,icellx,icelly,icellz;
@@ -1422,7 +1423,8 @@ PetscErrorCode ADVMarkInitFilePolygons(AdvCtx *actx, UserCtx *user)
 	ierr = PetscMalloc((size_t)nidxmax*sizeof(PetscBool),&polybnd); CHKERRQ(ierr);
 	ierr = PetscMalloc((size_t)nidxmax*2*sizeof(PetscScalar),&X); CHKERRQ(ierr);
 
-
+	// allocate memory for polyin
+//**	ierr = CreatePolyCtx(&polydat, Nmax, Lmax);
 
 	// --- loop over all volumes ---
 	for (kvol=0; kvol<VolN; kvol++)
@@ -1477,8 +1479,8 @@ PetscErrorCode ADVMarkInitFilePolygons(AdvCtx *actx, UserCtx *user)
 			Poly.len  = (PetscInt)(PolyLen[kpoly]);
 // 			Poly.gidx = (PetscInt)(Poly.idxs+kpoly);
 // 			Poly.lidx = (PetscInt)(Poly.idxs+kpoly-tstart[Poly.dir]);
-			Poly.gidx = (PetscInt)(PolyIdx[kpoly]);
-			Poly.lidx = (PetscInt)(PolyIdx[kpoly]-tstart[Poly.dir]);
+			Poly.gidx = (PetscInt)(PolyIdx[kpoly]+kpoly);
+			Poly.lidx = (PetscInt)(PolyIdx[kpoly]+kpoly-tstart[Poly.dir]);
 
 //			ierr = PetscBinaryRead(fd, Poly.X, Poly.len*2, PETSC_SCALAR); CHKERRQ(ierr);
 
@@ -1502,7 +1504,7 @@ PetscErrorCode ADVMarkInitFilePolygons(AdvCtx *actx, UserCtx *user)
 	            }
 				
 	            // find markers in local polygon (polyin & polybnd are initialized internally )
-				ierr = inpoly(nidx[Poly.dir], X, Poly.X, Poly.len, polyin, polybnd); CHKERRQ(ierr);
+	            inpoly(&polydat, nidx[Poly.dir], X, Poly.X, Poly.len, polyin, polybnd);
 
 	            // set marker phase 
 	            for (k=0;k<nidx[Poly.dir];k++)
@@ -1549,6 +1551,9 @@ PetscErrorCode ADVMarkInitFilePolygons(AdvCtx *actx, UserCtx *user)
 	
 	
 	PetscFree(PolyFile);
+
+        // clear polyin memory
+//**        DestroyPolyCtx(polydat);
 
 	// wait until all processors finished reading markers
 	ierr = MPI_Barrier(PETSC_COMM_WORLD); CHKERRQ(ierr);
@@ -1618,14 +1623,15 @@ void ADVMarkSecIdx(AdvCtx *actx, UserCtx *user, PetscInt dir, PetscInt Islice, P
 }
 
 //---------------------------------------------------------------------------
+
 #undef __FUNCT__
 #define __FUNCT__ "inpoly"
-PetscErrorCode inpoly(PetscInt N, PetscScalar *X, PetscScalar *node, PetscInt Nnode, PetscBool *in, PetscBool *bnd)
+void inpoly(PolyCtx *polydat, PetscInt N, PetscScalar *X, PetscScalar *node, PetscInt Nnode, PetscBool *in, PetscBool *bnd)
 {
 
     PetscScalar *cnect;
-	PetscScalar *Xtemp , *nodetemp;
-	PetscBool *cn , *on;
+    PetscScalar *Xtemp , *nodetemp;
+    PetscBool *cn , *on;
     PetscScalar *x, *y;
     PetscInt *idx;
     PetscScalar tol, tol1 , eps = 2.2204e-016, temp , minix=10e20, maxix=-10e20, miniy=10e20, maxiy=-10e20, norminf=-10e20;
@@ -1635,29 +1641,39 @@ PetscErrorCode inpoly(PetscInt N, PetscScalar *X, PetscScalar *node, PetscInt Nn
     PetscInt n1 , n2 , lower , upper, start;
     PetscInt N1, Ncnect;
 
-	PetscErrorCode ierr;
-	PetscFunctionBegin;
-
-
+/*
+    // Retrieve allocated arrays
+	Xtemp = polydat->Xtemp;
+	nodetemp = polydat->nodetemp;
+	cnect = polydat->cnect;
+	cn = polydat->cn;
+	on = polydat->on;
+	x = polydat->x;
+	y = polydat->y;
+	idx = polydat->idx;
+*/
 
 	// constants
 	N1 = N-1;
 	Ncnect = Nnode;
 
 	// allocate and initialize temporary arrays
-	ierr = PetscMalloc((size_t)N*2*sizeof(PetscScalar),&Xtemp);
+//**
+	PetscMalloc((size_t)N*2*sizeof(PetscScalar),&Xtemp);
 	for(i = 0; i < 2*N; i++)
 	{
 		Xtemp[i] = X[i];
 	}
 
-	ierr = PetscMalloc((size_t)Nnode*2*sizeof(PetscScalar),&nodetemp);
+//**
+	PetscMalloc((size_t)Nnode*2*sizeof(PetscScalar),&nodetemp);
 	for(i = 0; i < 2*Nnode; i++)
 	{
 		nodetemp[i] = node[i];
 	}
 
-	ierr = PetscMalloc((size_t)Ncnect*2*sizeof(PetscScalar),&cnect);
+//**
+	PetscMalloc((size_t)Ncnect*2*sizeof(PetscScalar),&cnect);
 	for (i = 0; i < Ncnect - 1; i++)
 	{
 		i2            = 2*i;
@@ -1668,11 +1684,12 @@ PetscErrorCode inpoly(PetscInt N, PetscScalar *X, PetscScalar *node, PetscInt Nn
 	cnect[Nnode*2-1] = 1.0;
 
     // Temporary vectors
-    ierr = PetscMalloc((size_t)N*sizeof(PetscBool),&cn); CHKERRQ(ierr);
-	ierr = PetscMalloc((size_t)N*sizeof(PetscBool),&on); CHKERRQ(ierr);
-	ierr = PetscMalloc((size_t)N*sizeof(PetscScalar),&x); CHKERRQ(ierr);
-	ierr = PetscMalloc((size_t)N*sizeof(PetscScalar),&y); CHKERRQ(ierr);
-	ierr = PetscMalloc((size_t)N*sizeof(PetscInt),&idx); CHKERRQ(ierr);
+//**
+	PetscMalloc((size_t)N*sizeof(PetscBool),&cn);
+	PetscMalloc((size_t)N*sizeof(PetscBool),&on);
+	PetscMalloc((size_t)N*sizeof(PetscScalar),&x);
+	PetscMalloc((size_t)N*sizeof(PetscScalar),&y);
+	PetscMalloc((size_t)N*sizeof(PetscInt),&idx);
 
 
 	// unmodified code of Darren Engwirda & Sebastien Paris ---
@@ -1863,19 +1880,61 @@ PetscErrorCode inpoly(PetscInt N, PetscScalar *X, PetscScalar *node, PetscInt Nn
         in[ind]  = (cn[i] || on[i]);
         bnd[ind] = on[i];
     }
+//**
+     PetscFree(cn);
+     PetscFree(on);
+     PetscFree(x);
+     PetscFree(y);
+     PetscFree(idx);
+     PetscFree(Xtemp);
+     PetscFree(nodetemp);
+     PetscFree(cnect);
 
-    PetscFree(cn);
-    PetscFree(on);
-    PetscFree(x);
-    PetscFree(y);
-    PetscFree(idx);
-    PetscFree(Xtemp);
-    PetscFree(nodetemp);
-    PetscFree(cnect);
 
-
-	PetscFunctionReturn(ierr);
 }
+
+//---------------------------------------------------------------------------
+#undef __FUNCT__
+#define __FUNCT__ "CreatePolyCtx"
+PetscErrorCode CreatePolyCtx(PolyCtx *polydat, PetscInt N, PetscInt Nnode)
+{
+	PetscErrorCode ierr;
+	PetscFunctionBegin;
+
+	// allocate and initialize temporary arrays
+	ierr = PetscMalloc((size_t)N*2*sizeof(PetscScalar),&polydat->Xtemp);
+	ierr = PetscMalloc((size_t)Nnode*2*sizeof(PetscScalar),&polydat->nodetemp);
+	ierr = PetscMalloc((size_t)Nnode*2*sizeof(PetscScalar),&polydat->cnect);
+	// Temporary vectors
+	ierr = PetscMalloc((size_t)N*sizeof(PetscBool),&polydat->cn); CHKERRQ(ierr);
+	ierr = PetscMalloc((size_t)N*sizeof(PetscBool),&polydat->on); CHKERRQ(ierr);
+	ierr = PetscMalloc((size_t)N*sizeof(PetscScalar),&polydat->x); CHKERRQ(ierr);
+	ierr = PetscMalloc((size_t)N*sizeof(PetscScalar),&polydat->y); CHKERRQ(ierr);
+	ierr = PetscMalloc((size_t)N*sizeof(PetscInt),&polydat->idx); CHKERRQ(ierr);
+
+	PetscFunctionReturn(0);
+}
+
+//---------------------------------------------------------------------------
+#undef __FUNCT__
+#define __FUNCT__ "DestroyPolyCtx"
+PetscErrorCode DestroyPolyCtx(PolyCtx polydat)
+{
+	PetscErrorCode ierr;
+	PetscFunctionBegin;
+
+	ierr = PetscFree(polydat.cn); CHKERRQ(ierr);
+	ierr = PetscFree(polydat.on); CHKERRQ(ierr);
+	ierr = PetscFree(polydat.x); CHKERRQ(ierr);
+	ierr = PetscFree(polydat.y); CHKERRQ(ierr);
+	ierr = PetscFree(polydat.idx); CHKERRQ(ierr);
+	ierr = PetscFree(polydat.Xtemp); CHKERRQ(ierr);
+	ierr = PetscFree(polydat.nodetemp); CHKERRQ(ierr);
+	ierr = PetscFree(polydat.cnect); CHKERRQ(ierr);
+
+    PetscFunctionReturn(0);
+}
+
 //---------------------------------------------------------------------------
 void qsindex (PetscScalar  *a, PetscInt *idx , PetscInt lo, PetscInt hi)
 {
