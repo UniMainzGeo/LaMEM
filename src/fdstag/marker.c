@@ -56,6 +56,20 @@ PetscErrorCode ADVMarkInit(AdvCtx *actx, UserCtx *user)
 		actx->nummark = nummark;
 	}
 
+	// initialize variables for marker control
+	actx->nmin = (PetscInt) (user->NumPartX*user->NumPartY*user->NumPartZ*0.5); // min no. of markers/cell -50%
+	actx->nmax = (PetscInt) (user->NumPartX*user->NumPartY*user->NumPartZ*1.5); // max no. of markers/cell +50%
+	actx->avdx = user->NumPartX * 3;
+	actx->avdy = user->NumPartY * 3;
+	actx->avdz = user->NumPartZ * 3;
+
+	// read options from command line
+	PetscOptionsGetInt(PETSC_NULL ,"-markers_min",   &actx->nmin,   PETSC_NULL);
+	PetscOptionsGetInt(PETSC_NULL ,"-markers_max",   &actx->nmax,   PETSC_NULL);
+	PetscOptionsGetInt(PETSC_NULL ,"-markers_avdx",  &actx->avdx,   PETSC_NULL);
+	PetscOptionsGetInt(PETSC_NULL ,"-markers_avdy",  &actx->avdy,   PETSC_NULL);
+	PetscOptionsGetInt(PETSC_NULL ,"-markers_avdz",  &actx->avdz,   PETSC_NULL);
+
 	// initialize coordinates and add random noise if required for hard-coded setups
 	if(user->msetup != PARALLEL
 	&& user->msetup != REDUNDANT

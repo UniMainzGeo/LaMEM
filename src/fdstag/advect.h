@@ -19,6 +19,12 @@ typedef enum
 
 } InterpCase;
 
+typedef struct
+{
+	PetscInt s[8]; // 8 corners
+	PetscInt cell; // entire cell
+} NumCorner;
+
 //---------------------------------------------------------------------------
 
 // Set of variables that must be tracked during the advection steps.
@@ -49,10 +55,10 @@ typedef struct
 	//========
 	// STORAGE
 	//========
-	PetscInt  nummark; // local number of markers
-	PetscInt  markcap; // capacity of marker storage
-	Marker 	 *markers; // storage for local markers
-	PetscInt *cellnum; // host cells local number for each marker
+	PetscInt  nummark;    // local number of markers
+	PetscInt  markcap;    // capacity of marker storage
+	Marker   *markers;    // storage for local markers
+	PetscInt *cellnum;    // host cells local number for each marker
 
 	//=========
 	// EXCHANGE
@@ -69,7 +75,15 @@ typedef struct
 	PetscInt  ptrecv[_num_neighb_]; // receive buffer pointers
 
 	PetscInt  ndel; // number of markers to be deleted from storage
-	PetscInt *idel;	// indices of markers to be deleted
+	PetscInt *idel; // indices of markers to be deleted
+
+	//=========
+	// CONTROL
+	//=========
+	PetscInt  nmin, nmax;          // min and max no. of markers
+	PetscInt  avdx, avdy, avdz;    // grid cells for AVD
+	PetscInt  cinj, cdel;          // counters
+	NumCorner *numcorner;           // hosts local number for each marker
 
 	// Mapping markers on the control volumes:
 	// 1. Viscosities are computed in the centers & then averaged to edges (BY FAR THE SIMPLEST SOLUTION!!!)
@@ -141,6 +155,10 @@ PetscErrorCode ADVInterpMarkToCell(AdvCtx *actx);
 
 // marker-to-edge projection
 PetscErrorCode ADVInterpMarkToEdge(AdvCtx *actx, PetscInt iphase, InterpCase icase);
+
+// inject or delete markers
+PetscErrorCode ADVMarkControl(AdvCtx *actx);
+PetscErrorCode ADVCheckCorners(AdvCtx *actx);
 
 //-----------------------------------------------------------------------------
 // service functions

@@ -106,6 +106,8 @@ PetscErrorCode FDSTAGInitCode(JacRes *jr, UserCtx *user)
 	PetscPrintf(PETSC_COMM_WORLD," BC employed                    : BC.[Left=%lld Right=%lld; Front=%lld Back=%lld; Lower=%lld Upper=%lld] \n",
 			(LLD)(user->BC.LeftBound), (LLD)(user->BC.RightBound), (LLD)(user->BC.FrontBound), (LLD)(user->BC.BackBound), (LLD)(user->BC.LowerBound), (LLD)(user->BC.UpperBound) );
 
+	ierr = PetscFree(all_options); CHKERRQ(ierr);
+
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
