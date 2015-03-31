@@ -376,11 +376,7 @@ PetscErrorCode AVDReAlloc(AVDChain *chain, PetscInt buffer)
 	PetscFunctionBegin;
 
 	// 1. allocate memory for claimed cells
-	ierr = PetscMalloc((size_t)(chain->iclaim + buffer)*sizeof(PetscInt), &temp); CHKERRQ(ierr);
-	ierr = PetscMemzero(temp, (size_t)(chain->iclaim + buffer)*sizeof(PetscInt)); CHKERRQ(ierr);
-
-	// copy current data
-	ierr = PetscMemcpy(temp, chain->claim, (size_t)(chain->nclaimed + buffer)*sizeof(PetscInt)); CHKERRQ(ierr);
+	ierr = makeIntArray(&temp, chain->claim, chain->nclaimed + buffer); CHKERRQ(ierr);
 
 	// delete previous storage
 	ierr = PetscFree(chain->claim); CHKERRQ(ierr);
@@ -390,11 +386,7 @@ PetscErrorCode AVDReAlloc(AVDChain *chain, PetscInt buffer)
 	chain->iclaim    += buffer;
 
 	// 2. allocate memory for boundary cells
-	ierr = PetscMalloc((size_t)(chain->ibound + buffer)*sizeof(PetscInt), &temp); CHKERRQ(ierr);
-	ierr = PetscMemzero(temp, (size_t)(chain->ibound + buffer)*sizeof(PetscInt)); CHKERRQ(ierr);
-
-	// copy current data
-	ierr = PetscMemcpy(temp, chain->bound, (size_t)(chain->length + buffer)*sizeof(PetscInt)); CHKERRQ(ierr);
+	ierr = makeIntArray(&temp, chain->bound, chain->length + buffer); CHKERRQ(ierr);
 
 	// delete previous storage
 	ierr = PetscFree(chain->bound); CHKERRQ(ierr);
