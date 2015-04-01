@@ -152,13 +152,12 @@ PetscErrorCode MatPropGetStruct(FILE *fp,
 		// set predefined diffusion creep profile
 		ierr = SetDiffProfile(m, ndiff); CHKERRQ(ierr);
 	}
-	else
-	{
-		getMatPropScalar(fp, ils, ile, "eta",       &eta,      &found);
-		getMatPropScalar(fp, ils, ile, "Bd",        &m->Bd,    &found);
-		getMatPropScalar(fp, ils, ile, "Ed",        &m->Ed,    &found);
-		getMatPropScalar(fp, ils, ile, "Vd",        &m->Vd,    &found);
-	}
+
+	getMatPropScalar(fp, ils, ile, "eta",       &eta,      &found);
+	getMatPropScalar(fp, ils, ile, "Bd",        &m->Bd,    &found);
+	getMatPropScalar(fp, ils, ile, "Ed",        &m->Ed,    &found);
+	getMatPropScalar(fp, ils, ile, "Vd",        &m->Vd,    &found);
+
 	//============================================================
 	// power-law (dislocation) creep
 	//============================================================
@@ -168,15 +167,14 @@ PetscErrorCode MatPropGetStruct(FILE *fp,
 		// set predefined dislocation creep profile
 		ierr = SetDislProfile(m, ndisl); CHKERRQ(ierr);
 	}
-	else
-	{
-		getMatPropScalar(fp, ils, ile, "eta0",      &eta0,     &found);
-		getMatPropScalar(fp, ils, ile, "e0",        &e0,       &found);
-		getMatPropScalar(fp, ils, ile, "Bn",        &m->Bn,    &found);
-		getMatPropScalar(fp, ils, ile, "n",         &m->n,     &found);
-		getMatPropScalar(fp, ils, ile, "En",        &m->En,    &found);
-		getMatPropScalar(fp, ils, ile, "Vn",        &m->Vn,    &found);
-	}
+
+	getMatPropScalar(fp, ils, ile, "eta0",      &eta0,     &found);
+	getMatPropScalar(fp, ils, ile, "e0",        &e0,       &found);
+	getMatPropScalar(fp, ils, ile, "Bn",        &m->Bn,    &found);
+	getMatPropScalar(fp, ils, ile, "n",         &m->n,     &found);
+	getMatPropScalar(fp, ils, ile, "En",        &m->En,    &found);
+	getMatPropScalar(fp, ils, ile, "Vn",        &m->Vn,    &found);
+
 	//============================================================
 	// Peierls creep
 	//============================================================
