@@ -51,12 +51,6 @@ typedef struct
 
 } AVD3D;
 
-typedef struct
-{
-	PetscInt  area, ind;
-
-} AVDSort;
-
 //---------------------------------------------------------------------------
 // basic AVD routines
 PetscErrorCode AVDCreate     (AVD3D *A);

@@ -58,7 +58,7 @@ PetscErrorCode ADVMarkInit(AdvCtx *actx, UserCtx *user)
 
 	// initialize variables for marker control
 	actx->nmin = (PetscInt) (user->NumPartX*user->NumPartY*user->NumPartZ*0.5); // min no. of markers/cell -50%
-	actx->nmax = (PetscInt) (user->NumPartX*user->NumPartY*user->NumPartZ*1.5); // max no. of markers/cell +50%
+	actx->nmax = (PetscInt) (user->NumPartX*user->NumPartY*user->NumPartZ*2);   // max no. of markers/cell 300%
 	actx->avdx = user->NumPartX * 3;
 	actx->avdy = user->NumPartY * 3;
 	actx->avdz = user->NumPartZ * 3;
@@ -145,7 +145,7 @@ PetscErrorCode ADVMarkInitCoord(AdvCtx *actx, UserCtx *user)
 	if(AddRandomNoiseParticles) PetscPrintf(PETSC_COMM_WORLD, " Adding random noise to marker distribution \n");
 
 	// initialize the random number generator
-	ierr = PetscRandomCreate(PETSC_COMM_WORLD, &rctx); CHKERRQ(ierr);
+	ierr = PetscRandomCreate(PETSC_COMM_SELF, &rctx); CHKERRQ(ierr);
 	ierr = PetscRandomSetFromOptions(rctx);            CHKERRQ(ierr);
 
 	// marker counter
@@ -1297,7 +1297,7 @@ PetscErrorCode ADVMarkInitFilePolygons(AdvCtx *actx, UserCtx *user)
 	if(AddRandomNoise) PetscPrintf(PETSC_COMM_WORLD, " Adding random noise to marker distribution \n");
 
 	// initialize the random number generator
-	ierr = PetscRandomCreate(PETSC_COMM_WORLD, &rctx); CHKERRQ(ierr);
+	ierr = PetscRandomCreate(PETSC_COMM_SELF, &rctx); CHKERRQ(ierr);
 	ierr = PetscRandomSetFromOptions(rctx);            CHKERRQ(ierr);
 	
 	// set characteristic length

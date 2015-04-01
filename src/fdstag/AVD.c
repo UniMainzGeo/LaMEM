@@ -434,14 +434,14 @@ PetscErrorCode AVDLoadPoints(AdvCtx *actx, AVD3D *A, PetscInt ind)
 PetscErrorCode AVDInjectDeletePoints(AdvCtx *actx, AVD3D *A)
 {
 	PetscInt    i, ii, n, ind;
-	PetscInt    j, temp, indtemp, num_chain, hclaim;
+	PetscInt    num_chain, hclaim;
 	PetscInt    npoints, new_nmark = 0;
 	PetscScalar xmin, xmax, ymin, ymax, zmin, zmax;
 	PetscScalar xaxis, yaxis, zaxis;
 	PetscScalar xp, yp, zp;
 	PetscScalar xc, yc, zc;
 	PetscScalar xh, yh, zh;
-	AVDSort     *asort;
+	PetscInt    *area, *sind;
 
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
@@ -454,8 +454,8 @@ PetscErrorCode AVDInjectDeletePoints(AdvCtx *actx, AVD3D *A)
 	else if (npoints > A->mmax) new_nmark = npoints - A->mmax;
 
 	// allocate memory for sorting
-	ierr = PetscMalloc((size_t)(npoints)*sizeof(AVDSort), &asort); CHKERRQ(ierr);
-	ierr = PetscMemzero(asort, (size_t)(npoints)*sizeof(AVDSort)); CHKERRQ(ierr);
+	ierr = makeIntArray(&area, NULL, npoints); CHKERRQ(ierr);
+	ierr = makeIntArray(&sind, NULL, npoints); CHKERRQ(ierr);
 
 	// compute dominant axis
 	for (i = 0; i < npoints; i++)
@@ -557,27 +557,12 @@ PetscErrorCode AVDInjectDeletePoints(AdvCtx *actx, AVD3D *A)
 		A->chain[i].xc[2] = A->chain[i].xc[2]/hclaim;
 
 		// initialize variables for sorting
-		asort[i].ind  = i;
-		asort[i].area = A->chain[i].tclaimed;
+		sind[i] = i;
+		area[i] = A->chain[i].tclaimed;
 	}
 
 	// sort in ascending order
-	for (i = 0; i < (npoints - 1); i++)
-	{
-		for (j = 0; j < npoints - 1 - i; j++)
-		{
-			if (asort[j].area > asort[j+1].area)
-			{
-				temp            = asort[j+1].area;
-				asort[j+1].area = asort[j  ].area;
-				asort[j  ].area = temp;
-
-				indtemp         = asort[j+1].ind;
-				asort[j+1].ind  = asort[j  ].ind;
-				asort[j  ].ind  = indtemp;
-			}
-		}
-	}
+	ierr = PetscSortIntWithArray(npoints,area,sind); CHKERRQ(ierr);
 
 	// inject markers
 	if      (npoints < A->mmin) // inject
@@ -585,7 +570,7 @@ PetscErrorCode AVDInjectDeletePoints(AdvCtx *actx, AVD3D *A)
 		ind = npoints - 1;
 		for (i = 0; i < new_nmark; i++)
 		{
-			num_chain = asort[ind].ind;
+			num_chain = sind[ind];
 
 			// inject same properties as parent marker except for position
 			actx->recvbuf[actx->cinj+i]      = A->points[num_chain];
@@ -603,7 +588,7 @@ PetscErrorCode AVDInjectDeletePoints(AdvCtx *actx, AVD3D *A)
 		ind = 0;
 		for (i = 0; i < new_nmark; i++)
 		{
-			num_chain = asort[ind].ind;
+			num_chain = sind[ind];
 			actx->idel[actx->cdel+i] = A->chain[num_chain].gind;
 			ind++;
 		}
@@ -612,7 +597,8 @@ PetscErrorCode AVDInjectDeletePoints(AdvCtx *actx, AVD3D *A)
 	}
 
 	// free memory
-	ierr = PetscFree(asort); CHKERRQ(ierr);
+	ierr = PetscFree(area); CHKERRQ(ierr);
+	ierr = PetscFree(sind); CHKERRQ(ierr);
 
 	PetscFunctionReturn(0);
 }

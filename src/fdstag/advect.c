@@ -231,6 +231,9 @@ PetscErrorCode ADVAdvect(AdvCtx *actx)
 	// check markers and inject/delete if necessary
 	ierr = ADVMarkControl(actx); CHKERRQ(ierr);
 
+	// check corners and inject 1 particle if empty
+	ierr = ADVCheckCorners(actx);    CHKERRQ(ierr);
+
 	// project advected history from markers back to grid
 	ierr = ADVProjHistMarkToGrid(actx); CHKERRQ(ierr);
 
@@ -967,19 +970,14 @@ PetscErrorCode ADVMarkControl(AdvCtx *actx)
 	// compute host cells for all the markers
 	ierr = ADVMapMarkToCells(actx); CHKERRQ(ierr);
 
-	PetscPrintf(PETSC_COMM_WORLD,"# Marker Control: (AVD Cell) injected %lld markers and deleted %lld markers\n", (LLD)ninj, (LLD)ndel);
+	// print info
+	ierr = PetscTime(&t1); CHKERRQ(ierr);
+	PetscPrintf(PETSC_COMM_WORLD,"# Marker Control: (AVD Cell) injected %lld markers and deleted %lld markers in %1.4e s\n", (LLD)ninj, (LLD)ndel, t1-t0);
 
 	// clear
 	ierr = PetscFree(numMarkCell);   CHKERRQ(ierr);
 	ierr = PetscFree(actx->recvbuf); CHKERRQ(ierr);
 	ierr = PetscFree(actx->idel);    CHKERRQ(ierr);
-
-	// check corners and inject 1 particle if empty
-	ierr = ADVCheckCorners(actx);    CHKERRQ(ierr);
-
-	// print info
-	ierr = PetscTime(&t1); CHKERRQ(ierr);
-	PetscPrintf(PETSC_COMM_WORLD,"# Marker Control: took %1.4e s\n", t1-t0);
 
 	PetscFunctionReturn(0);
 }
@@ -991,8 +989,7 @@ PetscErrorCode ADVCheckCorners(AdvCtx *actx)
 	// check corner marker distribution
 	// if empty insert one marker in center of corner
 	FDSTAG        *fs;
-	Marker         *P, *markers, *recvbuf;
-	PetscInt       nummark, nrecv;
+	Marker         *P, *markers;
 	PetscInt       i, j, ii, ind, nx, ny;
 	PetscInt       ID, I, J, K;
 	PetscScalar    xp, yp, zp;
@@ -1003,9 +1000,17 @@ PetscErrorCode ADVCheckCorners(AdvCtx *actx)
 	PetscInt       ninj = 0, nind = 0, sind = 0;
 	PetscRandom    rctx;
 	PetscScalar    cf_rand;
+	PetscLogDouble t0,t1;
 
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
+
+	PetscBool flag = PETSC_FALSE;
+	PetscOptionsGetBool(PETSC_NULL, "-use_marker_control", &flag, PETSC_NULL);
+
+	if (!flag) PetscFunctionReturn(0);
+
+	ierr = PetscTime(&t0); CHKERRQ(ierr);
 
 	fs     = actx->fs;
 	nx     = fs->dsx.ncels;
@@ -1084,11 +1089,10 @@ PetscErrorCode ADVCheckCorners(AdvCtx *actx)
 
 	// allocate memory for new markers
 	actx->nrecv = ninj;
-
-	if(ninj) { ierr = PetscMalloc((size_t)actx->nrecv*sizeof(Marker),   &actx->recvbuf); CHKERRQ(ierr); }
+	ierr = PetscMalloc((size_t)actx->nrecv*sizeof(Marker),   &actx->recvbuf); CHKERRQ(ierr);
 
 	// initialize the random number generator
-	ierr = PetscRandomCreate(PETSC_COMM_WORLD, &rctx); CHKERRQ(ierr);
+	ierr = PetscRandomCreate(PETSC_COMM_SELF, &rctx); CHKERRQ(ierr);
 	ierr = PetscRandomSetFromOptions(rctx);            CHKERRQ(ierr);
 
 	// inject markers in corners
@@ -1175,35 +1179,15 @@ PetscErrorCode ADVCheckCorners(AdvCtx *actx)
 	ierr = PetscRandomDestroy(&rctx); CHKERRQ(ierr);
 
 	// store new markers
-	nummark = actx->nummark;
-	markers = actx->markers;
-
-	nrecv   = actx->nrecv;
-	recvbuf = actx->recvbuf;
-
-	if(nrecv)
-	{
-		// make sure space is enough
-		ierr = ADVReAllocStorage(actx, nummark + nrecv); CHKERRQ(ierr);
-
-		// make sure we have a correct storage pointer
-		markers = actx->markers;
-
-		// put the rest in the end of marker storage
-		while(nrecv)
-		{
-			markers[nummark++] = recvbuf[nrecv-1];
-			nrecv--;
-		}
-	}
-
-	// store new number of markers
-	actx->nummark = nummark;
+	actx->ndel = 0;
+	ierr = ADVCollectGarbage(actx); CHKERRQ(ierr);
 
 	// compute host cells for all the markers
 	ierr = ADVMapMarkToCells(actx); CHKERRQ(ierr);
 
-	PetscPrintf(PETSC_COMM_WORLD,"# Marker Control: (Corners ) injected %lld markers\n", (LLD)ninj);
+	// print info
+	ierr = PetscTime(&t1); CHKERRQ(ierr);
+	PetscPrintf(PETSC_COMM_WORLD,"# Marker Control: (Corners ) injected %lld markers in %1.4e s [%lld]\n", (LLD)ninj, t1-t0,(LLD)actx->iproc);
 
 	// clear
 	ierr = PetscFree(actx->numcorner);   CHKERRQ(ierr);
