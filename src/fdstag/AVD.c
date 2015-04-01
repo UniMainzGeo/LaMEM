@@ -15,6 +15,7 @@
 #include "JacRes.h"
 #include "advect.h"
 #include "AVD.h"
+#include "Utils.h"
 
 //---------------------------------------------------------------------------
 #undef __FUNCT__
