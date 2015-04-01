@@ -1624,7 +1624,6 @@ void ADVMarkSecIdx(AdvCtx *actx, UserCtx *user, PetscInt dir, PetscInt Islice, P
 	}
 	else if (dir == 2) // xy plane
 	{
-		if (dir == 0)
 		d = 0;
 		for(i=0; i<(nmarkx*nmarky);i++)
 		{
