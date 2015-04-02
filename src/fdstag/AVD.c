@@ -448,6 +448,7 @@ PetscErrorCode AVDInjectDeletePoints(AdvCtx *actx, AVD3D *A)
 
 	npoints = A->npoints;
 	n  = (A->nx+2)*(A->ny+2)*(A->nz+2);
+	
 
 	// allocate memory to injected/deleted markers
 	if      (npoints < A->mmin) new_nmark = A->mmin - npoints;
@@ -456,6 +457,7 @@ PetscErrorCode AVDInjectDeletePoints(AdvCtx *actx, AVD3D *A)
 	// allocate memory for sorting
 	ierr = makeIntArray(&area, NULL, npoints); CHKERRQ(ierr);
 	ierr = makeIntArray(&sind, NULL, npoints); CHKERRQ(ierr);
+	
 
 	// compute dominant axis
 	for (i = 0; i < npoints; i++)
@@ -489,6 +491,7 @@ PetscErrorCode AVDInjectDeletePoints(AdvCtx *actx, AVD3D *A)
 		if ((yaxis > xaxis) && (yaxis > zaxis)) A->chain[i].yh = (ymax+ymin)*0.5;
 		if ((zaxis > xaxis) && (zaxis > yaxis)) A->chain[i].zh = (zmax+zmin)*0.5;
 	}
+
 
 	// create colour - which cells to consider for the half-centroid
 	for (i = 0; i < npoints; i++)
@@ -530,6 +533,7 @@ PetscErrorCode AVDInjectDeletePoints(AdvCtx *actx, AVD3D *A)
 		}
 	}
 
+
 	// calculate half-centroid
 	for (i = 0; i < npoints; i++)
 	{
@@ -560,13 +564,18 @@ PetscErrorCode AVDInjectDeletePoints(AdvCtx *actx, AVD3D *A)
 		sind[i] = i;
 		area[i] = A->chain[i].tclaimed;
 	}
+	
 
 	// sort in ascending order
 	ierr = PetscSortIntWithArray(npoints,area,sind); CHKERRQ(ierr);
+	
 
 	// inject markers
 	if      (npoints < A->mmin) // inject
 	{
+	
+		if (npoints < new_nmark) new_nmark = npoints;
+	
 		ind = npoints - 1;
 		for (i = 0; i < new_nmark; i++)
 		{
@@ -595,6 +604,7 @@ PetscErrorCode AVDInjectDeletePoints(AdvCtx *actx, AVD3D *A)
 		// update total counter
 		actx->cdel +=new_nmark;
 	}
+	
 
 	// free memory
 	ierr = PetscFree(area); CHKERRQ(ierr);
