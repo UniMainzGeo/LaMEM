@@ -249,29 +249,26 @@ PetscErrorCode ADVExchange(AdvCtx *actx)
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
 
-	// delete marker outflow if it happens
-	ierr = ADVMarkDeleteOutflow(actx); CHKERRQ(ierr);
-
 	// count number of markers to be sent to each neighbor domain
-	ierr = ADVMapMarkToDomains(actx);  CHKERRQ(ierr);
+	ierr = ADVMapMarkToDomains(actx); CHKERRQ(ierr);
 
 	// communicate number of markers with neighbor processes
-	ierr = ADVExchangeNumMark(actx);   CHKERRQ(ierr);
+	ierr = ADVExchangeNumMark(actx); CHKERRQ(ierr);
 
 	// create send and receive buffers for asynchronous MPI communication
-	ierr = ADVCreateMPIBuff(actx);     CHKERRQ(ierr);
+	ierr = ADVCreateMPIBuff(actx); CHKERRQ(ierr);
 
 	// communicate markers with neighbor processes
-	ierr = ADVExchangeMark(actx);      CHKERRQ(ierr);
+	ierr = ADVExchangeMark(actx); CHKERRQ(ierr);
 
 	// store received markers, collect garbage
-	ierr = ADVCollectGarbage(actx);    CHKERRQ(ierr);
+	ierr = ADVCollectGarbage(actx); CHKERRQ(ierr);
 
 	// free communication buffer
-	ierr = ADVDestroyMPIBuff(actx);    CHKERRQ(ierr);
+	ierr = ADVDestroyMPIBuff(actx); CHKERRQ(ierr);
 
 	// compute host cells for all the markers received
-	ierr = ADVMapMarkToCells(actx);    CHKERRQ(ierr);
+	ierr = ADVMapMarkToCells(actx); CHKERRQ(ierr);
 
 	PetscFunctionReturn(0);
 }
@@ -1253,7 +1250,7 @@ PetscErrorCode ADVMarkDeleteOutflow(AdvCtx *actx)
 
 	PetscFunctionReturn(0);
 }
-//---------------------------------------------------------------------------
+//-----------------------------------------------------------------------------
 #undef __FUNCT__
 #define __FUNCT__ "ADVProjHistMarkToGrid"
 PetscErrorCode ADVProjHistMarkToGrid(AdvCtx *actx)

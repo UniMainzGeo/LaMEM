@@ -571,11 +571,11 @@ PetscErrorCode AVDInjectDeletePoints(AdvCtx *actx, AVD3D *A)
 	
 
 	// inject markers
-	if      (npoints < A->mmin) // inject
+	if      (npoints < A->mmin)
 	{
-	
+		// do not insert more markers than available voronoi domains
 		if (npoints < new_nmark) new_nmark = npoints;
-	
+
 		ind = npoints - 1;
 		for (i = 0; i < new_nmark; i++)
 		{
