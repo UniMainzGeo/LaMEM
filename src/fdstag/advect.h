@@ -160,6 +160,9 @@ PetscErrorCode ADVInterpMarkToEdge(AdvCtx *actx, PetscInt iphase, InterpCase ica
 PetscErrorCode ADVMarkControl(AdvCtx *actx);
 PetscErrorCode ADVCheckCorners(AdvCtx *actx);
 
+// delete marker outflow
+PetscErrorCode ADVMarkDeleteOutflow(AdvCtx *actx);
+
 //-----------------------------------------------------------------------------
 // service functions
 //-----------------------------------------------------------------------------

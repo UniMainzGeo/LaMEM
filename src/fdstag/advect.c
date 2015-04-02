@@ -249,26 +249,29 @@ PetscErrorCode ADVExchange(AdvCtx *actx)
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
 
+	// delete marker outflow if it happens
+	ierr = ADVMarkDeleteOutflow(actx); CHKERRQ(ierr);
+
 	// count number of markers to be sent to each neighbor domain
-	ierr = ADVMapMarkToDomains(actx); CHKERRQ(ierr);
+	ierr = ADVMapMarkToDomains(actx);  CHKERRQ(ierr);
 
 	// communicate number of markers with neighbor processes
-	ierr = ADVExchangeNumMark(actx); CHKERRQ(ierr);
+	ierr = ADVExchangeNumMark(actx);   CHKERRQ(ierr);
 
 	// create send and receive buffers for asynchronous MPI communication
-	ierr = ADVCreateMPIBuff(actx); CHKERRQ(ierr);
+	ierr = ADVCreateMPIBuff(actx);     CHKERRQ(ierr);
 
 	// communicate markers with neighbor processes
-	ierr = ADVExchangeMark(actx); CHKERRQ(ierr);
+	ierr = ADVExchangeMark(actx);      CHKERRQ(ierr);
 
 	// store received markers, collect garbage
-	ierr = ADVCollectGarbage(actx); CHKERRQ(ierr);
+	ierr = ADVCollectGarbage(actx);    CHKERRQ(ierr);
 
 	// free communication buffer
-	ierr = ADVDestroyMPIBuff(actx); CHKERRQ(ierr);
+	ierr = ADVDestroyMPIBuff(actx);    CHKERRQ(ierr);
 
 	// compute host cells for all the markers received
-	ierr = ADVMapMarkToCells(actx); CHKERRQ(ierr);
+	ierr = ADVMapMarkToCells(actx);    CHKERRQ(ierr);
 
 	PetscFunctionReturn(0);
 }
@@ -1195,7 +1198,62 @@ PetscErrorCode ADVCheckCorners(AdvCtx *actx)
 
 	PetscFunctionReturn(0);
 }
-//-----------------------------------------------------------------------------
+//---------------------------------------------------------------------------
+#undef __FUNCT__
+#define __FUNCT__ "ADVMarkDeleteOutflow"
+PetscErrorCode ADVMarkDeleteOutflow(AdvCtx *actx)
+{
+	// checks if markers are within the box bounds
+	PetscInt     i, lrank, ndel;
+	PetscMPIInt  grank;
+	FDSTAG      *fs;
+
+	PetscErrorCode ierr;
+	PetscFunctionBegin;
+
+	fs = actx->fs;
+
+	// scan markers
+	for(i = 0, ndel = 0; i < actx->nummark; i++)
+	{
+		// get global & local ranks of a marker
+		ierr = FDSTAGGetPointRanks(fs, actx->markers[i].X, &lrank, &grank); CHKERRQ(ierr);
+
+		// count markers outside
+		if(grank == -1) ndel++;
+	}
+
+	// if no need for deletion return
+	if (!ndel) PetscFunctionReturn(0);
+
+	// allocate storage
+	actx->ndel  = ndel;
+	ierr = PetscMalloc((size_t)actx->ndel *sizeof(PetscInt), &actx->idel); CHKERRQ(ierr);
+
+	// save markers indices to be deleted
+	for(i = 0, ndel = 0; i < actx->nummark; i++)
+	{
+		// get global & local ranks of a marker
+		ierr = FDSTAGGetPointRanks(fs, actx->markers[i].X, &lrank, &grank); CHKERRQ(ierr);
+
+		// save markers outside
+		if(grank == -1) actx->idel[ndel++] = i;
+	}
+
+	// delete outside markers
+	actx->nrecv   = 0;
+	actx->recvbuf = NULL;
+	ierr = ADVCollectGarbage(actx); CHKERRQ(ierr);
+
+	// compute host cells for all the markers
+	ierr = ADVMapMarkToCells(actx); CHKERRQ(ierr);
+
+	// clear
+	ierr = PetscFree(actx->idel);   CHKERRQ(ierr);
+
+	PetscFunctionReturn(0);
+}
+//---------------------------------------------------------------------------
 #undef __FUNCT__
 #define __FUNCT__ "ADVProjHistMarkToGrid"
 PetscErrorCode ADVProjHistMarkToGrid(AdvCtx *actx)
