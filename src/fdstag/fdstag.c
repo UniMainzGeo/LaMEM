@@ -483,11 +483,17 @@ PetscErrorCode Discret1DGatherCoord(Discret1D *ds, PetscScalar **coord)
 	// WARNING! the array must be destroyed after use!
 
 	MPI_Comm     comm;
-	PetscScalar *pcoord   = NULL;
-	PetscInt    *recvcnts = NULL, i;
+	PetscInt     i;
+	PetscScalar *pcoord;
+	PetscMPIInt *recvcnts;
+	PetscMPIInt *recvdisp;
 
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
+
+	pcoord   = NULL;
+	recvcnts = NULL;
+	recvdisp = NULL;
 
 	// check for sequential case
 	if(ds->nproc == 1)
@@ -515,17 +521,24 @@ PetscErrorCode Discret1DGatherCoord(Discret1D *ds, PetscScalar **coord)
 		ierr = makeScalArray(&pcoord, NULL, ds->tnods); CHKERRQ(ierr);
 
 		// allocate receive counts
-		ierr = makeIntArray(&recvcnts, NULL, ds->nproc); CHKERRQ(ierr);
+		ierr = makeMPIIntArray(&recvcnts, NULL, ds->nproc) ; CHKERRQ(ierr);
+
+		// allocate receive displacements
+		ierr = makeMPIIntArray(&recvdisp, NULL, ds->nproc) ; CHKERRQ(ierr);
 
 		// compute receive counts
-		for(i = 0; i < ds->nproc-1; i++) recvcnts[i] = ds->starts[i+1] - ds->starts[i];
+		for(i = 0; i < ds->nproc-1; i++) recvcnts[i] = (PetscMPIInt)(ds->starts[i+1] - ds->starts[i]);
 
-		// last element stores index of the last node (not total number of nodes)
-		recvcnts[ds->nproc-1] = ds->starts[ds->nproc] - ds->starts[ds->nproc-1] + 1;
+		// last element in ds->starts stores index of the last node (not total number of nodes)
+		recvcnts[ds->nproc-1] = (PetscMPIInt)(ds->starts[ds->nproc] - ds->starts[ds->nproc-1] + 1);
+
+		// store receive displacements
+		for(i = 0; i < ds->nproc; i++) recvdisp[i] = (PetscMPIInt)ds->starts[i];
 	}
 
 	// gather coordinates
-	ierr = MPI_Gatherv(ds->ncoor, ds->nnods, MPIU_SCALAR, pcoord, recvcnts, ds->starts, MPIU_SCALAR, 0, comm); CHKERRQ(ierr);
+	ierr = MPI_Gatherv(ds->ncoor, (PetscMPIInt)ds->nnods, MPIU_SCALAR,
+		pcoord, recvcnts, recvdisp, MPIU_SCALAR, 0, comm); CHKERRQ(ierr);
 
 	// return coordinates on rank zero of PETSC_COMM_WORLD
 	if(ISRankZero(PETSC_COMM_WORLD))

@@ -46,6 +46,8 @@ PetscErrorCode DMDAViewVTK(const char * filename, DM da);
 
 PetscErrorCode DMDAGetProcessorRank(DM da, PetscInt *rank_x, PetscInt *rank_y, PetscInt *rank_z, PetscInt *rank_col);
 
+PetscErrorCode makeMPIIntArray(PetscMPIInt **arr, const PetscMPIInt *init, const PetscInt n);
+
 PetscErrorCode makeIntArray(PetscInt **arr, const PetscInt *init, const PetscInt n);
 
 PetscErrorCode makeScalArray(PetscScalar **arr, const PetscScalar *init, const PetscInt n);

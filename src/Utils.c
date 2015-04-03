@@ -2976,6 +2976,27 @@ PetscErrorCode DMDAViewVTK(const char * filename, DM da)
 }
 //---------------------------------------------------------------------------
 #undef __FUNCT__
+#define __FUNCT__ "makeMPIIntArray"
+PetscErrorCode makeMPIIntArray(PetscMPIInt **arr, const PetscMPIInt *init, const PetscInt n)
+{
+	PetscMPIInt    *tmp;
+	size_t          sz;
+	PetscErrorCode 	ierr;
+	PetscFunctionBegin;
+	// compute size in bytes
+	sz = (size_t)n*sizeof(PetscMPIInt);
+	// allocate space
+	ierr = PetscMalloc(sz, &tmp); CHKERRQ(ierr);
+	// initialize memory from vector (if required)
+	if(init) { ierr = PetscMemcpy(tmp, init, sz); CHKERRQ(ierr); }
+	// or just clear memory
+	else { ierr = PetscMemzero(tmp, sz); CHKERRQ(ierr); }
+	// return pointer
+	*arr = tmp;
+	PetscFunctionReturn(0);
+}
+//---------------------------------------------------------------------------
+#undef __FUNCT__
 #define __FUNCT__ "makeIntArray"
 PetscErrorCode makeIntArray(PetscInt **arr, const PetscInt *init, const PetscInt n)
 {
