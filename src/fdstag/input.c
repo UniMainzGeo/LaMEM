@@ -164,7 +164,6 @@ PetscErrorCode InputSetDefaultValues(JacRes *jr, UserCtx *user)
 
 	// linear solver settings
 	user->SkipStokesSolver     = PETSC_FALSE;
-	user->use_fdstag_canonical = PETSC_TRUE;  // request native staggered grid discretization
 
 	// boundary conditions
 	user->BC.Vy_front      = 0;
@@ -492,9 +491,6 @@ PetscErrorCode InputReadCommLine(UserCtx *user )
 		ierr = PetscOptionsGetReal(PETSC_NULL ,matprop_opt,&user->Pushing.time[i], &flg); CHKERRQ(ierr);
 		if(flg == PETSC_TRUE) PetscPrintf(PETSC_COMM_WORLD,"#    Time[%lld] = %g \n",(LLD)i,user->Pushing.time[i]);
 	}
-
-	// use LaMEM canonical
-	PetscOptionsGetBool(PETSC_NULL,"-use_fdstag_canonical", &user->use_fdstag_canonical, PETSC_NULL );
 
 	PetscFunctionReturn(0);
 }

@@ -40,6 +40,7 @@ typedef struct
 	FILE     *fp;    // output file handler
 	float    *buff;  // direct output buffer
 	PetscInt  cn;    // current number of elements in the buffer
+
 	// grid buffer vectors
 	Vec lbcen, lbcor, lbxy, lbxz, lbyz; // local (ghosted)
 

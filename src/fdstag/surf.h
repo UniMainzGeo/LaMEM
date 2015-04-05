@@ -5,24 +5,41 @@
 #define __surf_h__
 //---------------------------------------------------------------------------
 
-PetscErrorCode FreeSurfCreate(FDSTAG *fs, UserCtx *user);
+// free surface grid
 
-PetscErrorCode FreeSurfDestroy(UserCtx *user);
+typedef struct
+{
+	JacRes *jr;               // global residual context
+	DM      DA_SURF;          // free surface grid
+	Vec     topo, vx, vy, vz; // topography and velocity vectors (local)
+	Vec     wa, wb;           // work vectors                    (global)
 
-// map uniform free surface onto non-uniform computational grid
-PetscErrorCode FreeSurfGetPartition(
-	Discret1D    *ds,  // discretization
-	PetscScalar   beg, // starting coordinate
-	PetscScalar   len, // domain length
-	PetscScalar   h,   // target mesh step
-	PetscInt     *n,   // total number of nodes
-	PetscInt    **l);  // free surface partitioning vector
+	// flags/parameters
+	PetscBool   UseFreeSurf;
+	PetscScalar InitLevel;
+	PetscInt    AirPhase;
+	PetscScalar MaxAngle;
 
-// project velocities from the grid on the free surface
-PetscErrorCode FreeSurfGetVel(UserCtx *user);
+} FreeSurf;
+
+//---------------------------------------------------------------------------
+
+PetscErrorCode FreeSurfReadFromFile(FreeSurf *surf);
+
+PetscErrorCode FreeSurfCreate(FreeSurf *surf, JacRes *jr);
+
+PetscErrorCode FreeSurfDestroy(FreeSurf *surf);
+
+// get single velocity component on the free surface
+PetscErrorCode FreeSurfGetVelComp(
+	FreeSurf *surf,
+	PetscErrorCode (*interp)(FDSTAG *, Vec, Vec, InterpFlags),
+	Vec vcomp_grid, Vec vcomp_surf);
+
+PetscErrorCode FreeSurfGetTopo(FreeSurf *surf);
 
 // advect topography on the free surface mesh
-PetscErrorCode FreeSurfAdvect(FDSTAG *fs, UserCtx *user);
+PetscErrorCode FreeSurfAdvect(FreeSurf *surf);
 
 PetscInt InterpTriangle(
 	PetscScalar *x,   // x-coordinates of triangle
@@ -38,5 +55,15 @@ PetscInt InterpTriangle(
 #define GET_AREA_TRIANG(x1, x2, x3, y1, y2, y3) PetscAbsScalar((x1-x3)*(y2-y3)-(x2-x3)*(y1-y3))
 
 //---------------------------------------------------------------------------
-
 #endif
+
+/*
+// map uniform free surface onto non-uniform computational grid
+PetscErrorCode FreeSurfGetPartition(
+	Discret1D    *ds,  // discretization
+	PetscScalar   beg, // starting coordinate
+	PetscScalar   len, // domain length
+	PetscScalar   h,   // target mesh step
+	PetscInt     *n,   // total number of nodes
+	PetscInt    **l);  // free surface partitioning vector
+*/

@@ -68,10 +68,14 @@ typedef struct
 	PetscMPIInt   grnext; // global rank of next process (-1 for last processor)
 
 	PetscMPIInt   color;  // color of processor column in base direction
+	MPI_Comm      comm;   // column communicator
 
 	PetscScalar   h_uni;  // uniform mesh step (negative for non-uniform grid)
 	PetscScalar   h_min;  // minimum mesh step
 	PetscScalar   h_max;  // maximum mesh step
+
+	PetscScalar   crdbeg; // coordinate bound (begin)
+	PetscScalar   crdend; // coordinate bound (end)
 
 } Discret1D;
 
@@ -96,13 +100,20 @@ PetscErrorCode Discret1DGenCoord(Discret1D *ds, MeshSeg1D *ms);
 // define minimum & maximum cell size in the base direction
 PetscErrorCode Discret1DGetMinMaxCellSize(Discret1D *ds, MeshSeg1D *ms);
 
+// exchange coordinate bounds to be exactly the same on neighboring processors
+PetscErrorCode Discret1DExcahngeBounds(Discret1D *ds);
+
 // stretch grid with constant stretch factor about coordinate origin.
 PetscErrorCode Discret1DStretch(Discret1D *ds, MeshSeg1D *ms, PetscScalar eps);
 
+// view basic parameters
 PetscErrorCode Discret1DView(Discret1D *ds, const char *name);
 
 // create 1D communicator of the processor column in the base direction
-PetscErrorCode Discret1DGetColumnComm(Discret1D *ds, MPI_Comm *comm);
+PetscErrorCode Discret1DGetColumnComm(Discret1D *ds);
+
+// destroy 1D communicator
+PetscErrorCode Discret1DFreeColumnComm(Discret1D *ds);
 
 // gather coordinate array on rank zero of PETSC_COMM_WORLD
 // WARNING! the array only exists on rank zero of PETSC_COMM_WORLD
@@ -307,7 +318,7 @@ PetscErrorCode FDSTAGProcPartitioning(FDSTAG *fs, PetscScalar chLen);
 #define WEIGHT_POINT_NODE(i, x, ds) (1.0 - PetscAbsScalar(x - ds.ncoor[i])/(ds.ccoor[i] - ds.ccoor[i-1]))
 
 // return relative rank of a point
-#define GET_POINT_RANK(x, r, ds) { r = 1; if(x < ds.ncoor[0]) r--; else if(x > ds.ncoor[ds.ncels]) r++; }
+#define GET_POINT_RANK(x, r, ds) { r = 1; if(x < ds.crdbeg) r--; else if(x >= ds.crdend) r++; }
 
 // get consecutive index from I, J, K indices
 #define GET_CELL_ID(ID, i, j, k, m, n) { ID = i + (j)*(m) + (k)*(m)*(n); }
@@ -319,7 +330,7 @@ PetscErrorCode FDSTAGProcPartitioning(FDSTAG *fs, PetscScalar chLen);
 	(i) =  ID - (k)*(m)*(n) - (j)*(m);
 
 // get bounds of the local domain (coordinates of the first and the last nodes)
-#define GET_DOMAIN_BOUNDS(xs, xe, ds) { xs = ds.ncoor[0]; xe = ds.ncoor[ds.ncels]; }
+#define GET_DOMAIN_BOUNDS(xs, xe, ds) { xs = ds.crdbeg; xe = ds.crdend; }
 
 //---------------------------------------------------------------------------
 
@@ -333,6 +344,19 @@ PetscErrorCode FDSTAGProcPartitioning(FDSTAG *fs, PetscScalar chLen);
 // finalize standard access loop
 #define END_STD_LOOP \
 			} \
+		} \
+	}
+
+//---------------------------------------------------------------------------
+
+// initialize plane access loop
+#define START_PLANE_LOOP \
+	for(j = sy; j < sy+ny; j++) \
+	{	for(i = sx; i < sx+nx; i++) \
+		{
+
+// finalize plane access loop
+#define END_PLANE_LOOP \
 		} \
 	}
 

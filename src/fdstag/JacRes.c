@@ -100,6 +100,9 @@ PetscErrorCode JacResCreate(
 	ierr = DMCreateGlobalVector(fs->DA_CEN, &jr->gc);  CHKERRQ(ierr);
 	ierr = DMCreateGlobalVector(fs->DA_CEN, &jr->ge);  CHKERRQ(ierr);
 
+	// corner buffer
+	ierr = DMCreateLocalVector(fs->DA_COR,  &jr->lbcor); CHKERRQ(ierr);
+
 	//======================================
 	// allocate space for solution variables
 	//======================================
@@ -187,6 +190,8 @@ PetscErrorCode JacResDestroy(JacRes *jr)
 
 	ierr = VecDestroy(&jr->gc);      CHKERRQ(ierr);
 	ierr = VecDestroy(&jr->ge);      CHKERRQ(ierr);
+
+	ierr = VecDestroy(&jr->lbcor);   CHKERRQ(ierr);
 
 	// global to local scatter context
 //	ierr = VecScatterDestroy(&jr->g2lctx); CHKERRQ(ierr);

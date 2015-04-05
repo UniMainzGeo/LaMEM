@@ -46,6 +46,9 @@ typedef struct
 	// global continuity & energy residuals
 	Vec gc, ge;
 
+	// corner buffer
+	Vec lbcor; // local (ghosted)
+
 	// heat conductivity on cells, and shear heating terms on edges
 //	Vec gk, ghxy, ghxz, ghyz; // global
 //	Vec lk, lhxy, lhxz, lhyz; // local (ghosted)

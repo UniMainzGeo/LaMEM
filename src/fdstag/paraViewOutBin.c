@@ -48,8 +48,9 @@ PetscErrorCode OutBufCreate(OutBuf *outbuf, JacRes *jr)
 	// allocate corner buffers
 	ierr = DMCreateLocalVector (fs->DA_COR, &outbuf->lbcor); CHKERRQ(ierr);
 
-	// set pointers to center & edge buffers (reuse from JacRes object)
+	// set pointers to center, corner & edge buffers (reuse from JacRes object)
 	outbuf->lbcen = jr->ldxx;
+	outbuf->lbcor = jr->lbcor;
 	outbuf->lbxy  = jr->ldxy;
 	outbuf->lbxz  = jr->ldxz;
 	outbuf->lbyz  = jr->ldyz;
@@ -66,9 +67,6 @@ PetscErrorCode OutBufDestroy(OutBuf *outbuf)
 
 	// free output buffer
 	ierr = PetscFree(outbuf->buff); CHKERRQ(ierr);
-
-	// free corner buffers
-	ierr = VecDestroy(&outbuf->lbcor); CHKERRQ(ierr);
 
 	PetscFunctionReturn(0);
 }

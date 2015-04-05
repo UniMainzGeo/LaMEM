@@ -45,6 +45,8 @@ without the explicit agreement of Boris Kaus.
 #include "tssolve.h"
 #include "bc.h"
 #include "JacRes.h"
+#include "interpolate.h"
+#include "surf.h"
 #include "paraViewOutBin.h"
 #include "multigrid.h"
 #include "matrix.h"
@@ -72,6 +74,7 @@ PetscErrorCode LaMEMLib_FDSTAG(void *echange_ctx)
 	PetscLogDouble     cputime_start, cputime_end, cputime_start_nonlinear, cputime_end_nonlinear;
 
 	FDSTAG   fs;    // staggered-grid layout
+	FreeSurf surf;  // free-surface grid
 	BCCtx    bc;    // boundary condition context
 	JacRes   jr;    // Jacobian & residual context
 	AdvCtx   actx;  // advection context
@@ -154,6 +157,9 @@ PetscErrorCode LaMEMLib_FDSTAG(void *echange_ctx)
 
 	// create Jacobian & residual evaluation context
 	ierr = JacResCreate(&jr, &fs, &bc); CHKERRQ(ierr);
+
+	// create free surface grid
+	ierr = FreeSurfCreate(&surf, &jr); CHKERRQ(ierr);
 
 	// create advection context
 	ierr = ADVCreate(&actx, &fs, &jr); CHKERRQ(ierr);
@@ -382,17 +388,17 @@ PetscErrorCode LaMEMLib_FDSTAG(void *echange_ctx)
 //	PetscTime(&cputime_end);
 //	PetscPrintf(PETSC_COMM_WORLD,"# Total time required: %g s \n",cputime_end - cputime_start0);
 
-
 	// cleanup
-	ierr = FDSTAGDestroy(&fs);   CHKERRQ(ierr);
-	ierr = BCDestroy(&bc);       CHKERRQ(ierr);
-	ierr = JacResDestroy(&jr);   CHKERRQ(ierr);
-	ierr = ADVDestroy(&actx);    CHKERRQ(ierr);
-	ierr = PCStokesDestroy(pc);  CHKERRQ(ierr);
-	ierr = PMatDestroy(pm);      CHKERRQ(ierr);
-	ierr = SNESDestroy(&snes);   CHKERRQ(ierr);
-	ierr = NLSolDestroy(&nl);    CHKERRQ(ierr);
-	ierr = PVOutDestroy(&pvout); CHKERRQ(ierr);
+	ierr = FDSTAGDestroy(&fs);     CHKERRQ(ierr);
+	ierr = FreeSurfDestroy(&surf); CHKERRQ(ierr);
+	ierr = BCDestroy(&bc);         CHKERRQ(ierr);
+	ierr = JacResDestroy(&jr);     CHKERRQ(ierr);
+	ierr = ADVDestroy(&actx);      CHKERRQ(ierr);
+	ierr = PCStokesDestroy(pc);    CHKERRQ(ierr);
+	ierr = PMatDestroy(pm);        CHKERRQ(ierr);
+	ierr = SNESDestroy(&snes);     CHKERRQ(ierr);
+	ierr = NLSolDestroy(&nl);      CHKERRQ(ierr);
+	ierr = PVOutDestroy(&pvout);   CHKERRQ(ierr);
 
 	PetscTime(&cputime_end);
 	PetscPrintf(PETSC_COMM_WORLD, " Simulation took %g s\n", cputime_end - cputime_start);

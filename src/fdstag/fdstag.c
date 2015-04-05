@@ -235,6 +235,9 @@ PetscErrorCode Discret1DCreate(
 	// column color
 	ds->color = (PetscMPIInt) color;
 
+	// column communicator
+	ds->comm = MPI_COMM_NULL;
+
 	// global rank of previous process (-1 if none)
 	ds->grprev = grprev;
 
@@ -253,9 +256,10 @@ PetscErrorCode Discret1DDestroy(Discret1D *ds)
 	PetscFunctionBegin;
 
 	// free memory buffers
-	ierr = PetscFree(ds->nbuff);  CHKERRQ(ierr);
-	ierr = PetscFree(ds->cbuff);  CHKERRQ(ierr);
-	ierr = PetscFree(ds->starts); CHKERRQ(ierr);
+	ierr = PetscFree(ds->nbuff);        CHKERRQ(ierr);
+	ierr = PetscFree(ds->cbuff);        CHKERRQ(ierr);
+	ierr = PetscFree(ds->starts);       CHKERRQ(ierr);
+	ierr = Discret1DFreeColumnComm(ds); CHKERRQ(ierr);
 
 	PetscFunctionReturn(0);
 }
@@ -324,7 +328,13 @@ PetscErrorCode Discret1DGenCoord(Discret1D *ds, MeshSeg1D *ms)
 		ds->ccoor[i] = (ds->ncoor[i] + ds->ncoor[i+1])/2.0;
 
 	// compute extreme cell sizes
-	ierr = Discret1DGetMinMaxCellSize(ds, ms);
+	ierr = Discret1DGetMinMaxCellSize(ds, ms); CHKERRQ(ierr);
+
+	// exchange domain bounds
+	ierr = Discret1DExcahngeBounds(ds); CHKERRQ(ierr);
+
+	// free column communicator (optimization)
+	ierr = Discret1DFreeColumnComm(ds); CHKERRQ(ierr);
 
 	PetscFunctionReturn(0);
 }
@@ -335,13 +345,16 @@ PetscErrorCode Discret1DGetMinMaxCellSize(Discret1D *ds, MeshSeg1D *ms)
 {
 	// globally compute and set extreme cell sizes
 
-	MPI_Comm    comm;
 	PetscInt    i;
 	PetscScalar h, sz, lminsz, lmaxsz, gminsz, gmaxsz, rtol;
 
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
 
+	// create communicator if necessary
+	ierr = Discret1DGetColumnComm(ds);  CHKERRQ(ierr);
+
+	// set tolerance
 	rtol = 1e-8;
 
 	// get local values
@@ -362,14 +375,9 @@ PetscErrorCode Discret1DGetMinMaxCellSize(Discret1D *ds, MeshSeg1D *ms)
 		gmaxsz = lmaxsz;
 	}
 	else
-	{	// create column communicator
-		ierr = Discret1DGetColumnComm(ds, &comm); CHKERRQ(ierr);
-
-		// synchronize
-		ierr = MPI_Allreduce(&lminsz, &gminsz, 1, MPIU_SCALAR, MPI_MIN, comm); CHKERRQ(ierr);
-		ierr = MPI_Allreduce(&lmaxsz, &gmaxsz, 1, MPIU_SCALAR, MPI_MAX, comm); CHKERRQ(ierr);
-
-		ierr = MPI_Comm_free(&comm); CHKERRQ(ierr);
+	{	// synchronize
+		ierr = MPI_Allreduce(&lminsz, &gminsz, 1, MPIU_SCALAR, MPI_MIN, ds->comm); CHKERRQ(ierr);
+		ierr = MPI_Allreduce(&lmaxsz, &gmaxsz, 1, MPIU_SCALAR, MPI_MAX, ds->comm); CHKERRQ(ierr);
 	}
 
 	// detect uniform mesh & store result
@@ -386,6 +394,48 @@ PetscErrorCode Discret1DGetMinMaxCellSize(Discret1D *ds, MeshSeg1D *ms)
 		ds->h_uni = -1.0;
 		ds->h_min =  gminsz;
 		ds->h_max =  gmaxsz;
+	}
+
+	PetscFunctionReturn(0);
+}
+//---------------------------------------------------------------------------
+#undef __FUNCT__
+#define __FUNCT__ "Discret1DExcahngeBounds"
+PetscErrorCode Discret1DExcahngeBounds(Discret1D *ds)
+{
+	// exchange coordinate bounds to be exactly the same on neighboring processors
+
+	MPI_Request srequest, rrequest;
+
+	PetscErrorCode ierr;
+	PetscFunctionBegin;
+
+	// create communicator if necessary
+	ierr = Discret1DGetColumnComm(ds); CHKERRQ(ierr);
+
+	// set coordinate bounds
+	ds->crdbeg = ds->ncoor[0];
+	ds->crdend = ds->ncoor[ds->ncels];
+
+	// exchange coordinate bounds
+	if(ds->grnext != -1)
+	{
+		ierr = MPI_Isend(&ds->crdend, 1, MPIU_SCALAR, ds->rank+1, 0, ds->comm, &srequest); CHKERRQ(ierr);
+	}
+
+	if(ds->grprev != -1)
+	{
+		ierr = MPI_Irecv(&ds->crdbeg, 1, MPIU_SCALAR, ds->rank-1, 0, ds->comm, &rrequest); CHKERRQ(ierr);
+	}
+
+	if(ds->grnext != -1)
+	{
+		ierr =  MPI_Wait(&srequest, MPI_STATUSES_IGNORE);  CHKERRQ(ierr);
+	}
+
+	if(ds->grprev != -1)
+	{
+		ierr =  MPI_Wait(&rrequest, MPI_STATUSES_IGNORE);  CHKERRQ(ierr);
 	}
 
 	PetscFunctionReturn(0);
@@ -428,6 +478,10 @@ PetscErrorCode Discret1DStretch(Discret1D *ds, MeshSeg1D *ms, PetscScalar eps)
 		ds->h_max = h;
 	}
 
+	// recompute coordinate bounds
+	ds->crdbeg *= (1.0 + eps);
+	ds->crdend *= (1.0 + eps);
+
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
@@ -464,12 +518,39 @@ PetscErrorCode Discret1DView(Discret1D *ds, const char *name)
 //---------------------------------------------------------------------------
 #undef __FUNCT__
 #define __FUNCT__ "Discret1DGetColumnComm"
-PetscErrorCode Discret1DGetColumnComm(Discret1D *ds, MPI_Comm *comm)
+PetscErrorCode Discret1DGetColumnComm(Discret1D *ds)
 {
+	// This function is called every time the column communicator is needed.
+	// Nothing is done if communicator already exists or in sequential case.
+
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
 
-	ierr = MPI_Comm_split(PETSC_COMM_WORLD, ds->color, ds->rank, comm); CHKERRQ(ierr);
+	if(ds->nproc != 1 && ds->comm == MPI_COMM_NULL)
+	{
+		ierr = MPI_Comm_split(PETSC_COMM_WORLD, ds->color, ds->rank, &ds->comm); CHKERRQ(ierr);
+	}
+
+	PetscFunctionReturn(0);
+}
+//---------------------------------------------------------------------------
+#undef __FUNCT__
+#define __FUNCT__ "Discret1DFreeColumnComm"
+PetscErrorCode Discret1DFreeColumnComm(Discret1D *ds)
+{
+	// This function is called either in the destructor or when it's likely
+	// that communicator is no longer necessary. Calling it is safe, because
+	// the constructor will be called anyways when necessary.
+
+	PetscErrorCode ierr;
+	PetscFunctionBegin;
+
+	if(ds->comm != MPI_COMM_NULL)
+	{
+		ierr = MPI_Comm_free(&ds->comm); CHKERRQ(ierr);
+
+		ds->comm = MPI_COMM_NULL;
+	}
 
 	PetscFunctionReturn(0);
 }
@@ -482,7 +563,6 @@ PetscErrorCode Discret1DGatherCoord(Discret1D *ds, PetscScalar **coord)
 	// WARNING! the array only exists on rank zero of PETSC_COMM_WORLD
 	// WARNING! the array must be destroyed after use!
 
-	MPI_Comm     comm;
 	PetscInt     i;
 	PetscScalar *pcoord;
 	PetscMPIInt *recvcnts;
@@ -495,64 +575,55 @@ PetscErrorCode Discret1DGatherCoord(Discret1D *ds, PetscScalar **coord)
 	recvcnts = NULL;
 	recvdisp = NULL;
 
+	// create column communicator
+	ierr = Discret1DGetColumnComm(ds); CHKERRQ(ierr);
+
 	// check for sequential case
 	if(ds->nproc == 1)
 	{
-		// return coordinates on rank zero of PETSC_COMM_WORLD
+		// copy coordinates on rank zero of PETSC_COMM_WORLD
 		if(ISRankZero(PETSC_COMM_WORLD))
 		{
-			ierr = makeScalArray(&pcoord, NULL, ds->tnods); CHKERRQ(ierr);
-
-			for(i = 0; i < ds->tnods; i++) pcoord[i] = ds->ncoor[i];
-
-			(*coord) = pcoord;
+			ierr = makeScalArray(&pcoord, ds->ncoor, ds->tnods); CHKERRQ(ierr);
 		}
-
-		PetscFunctionReturn(0);
-	}
-
-	// create column communicator
-	ierr = Discret1DGetColumnComm(ds, &comm); CHKERRQ(ierr);
-
-	// gather coordinates on zero ranks of column communicator
-	if(ISRankZero(comm))
-	{
-		// allocate coordinates
-		ierr = makeScalArray(&pcoord, NULL, ds->tnods); CHKERRQ(ierr);
-
-		// allocate receive counts
-		ierr = makeMPIIntArray(&recvcnts, NULL, ds->nproc) ; CHKERRQ(ierr);
-
-		// allocate receive displacements
-		ierr = makeMPIIntArray(&recvdisp, NULL, ds->nproc) ; CHKERRQ(ierr);
-
-		// compute receive counts
-		for(i = 0; i < ds->nproc-1; i++) recvcnts[i] = (PetscMPIInt)(ds->starts[i+1] - ds->starts[i]);
-
-		// last element in ds->starts stores index of the last node (not total number of nodes)
-		recvcnts[ds->nproc-1] = (PetscMPIInt)(ds->starts[ds->nproc] - ds->starts[ds->nproc-1] + 1);
-
-		// store receive displacements
-		for(i = 0; i < ds->nproc; i++) recvdisp[i] = (PetscMPIInt)ds->starts[i];
-	}
-
-	// gather coordinates
-	ierr = MPI_Gatherv(ds->ncoor, (PetscMPIInt)ds->nnods, MPIU_SCALAR,
-		pcoord, recvcnts, recvdisp, MPIU_SCALAR, 0, comm); CHKERRQ(ierr);
-
-	// return coordinates on rank zero of PETSC_COMM_WORLD
-	if(ISRankZero(PETSC_COMM_WORLD))
-	{
-		(*coord) = pcoord;
 	}
 	else
 	{
-		ierr = PetscFree(pcoord); CHKERRQ(ierr);
+		// gather coordinates on ranks zero of column communicator
+		if(ISRankZero(ds->comm))
+		{
+			// allocate coordinates
+			ierr = makeScalArray(&pcoord, NULL, ds->tnods); CHKERRQ(ierr);
+
+			// allocate receive counts
+			ierr = makeMPIIntArray(&recvcnts, NULL, ds->nproc) ; CHKERRQ(ierr);
+
+			// allocate receive displacements
+			ierr = makeMPIIntArray(&recvdisp, NULL, ds->nproc) ; CHKERRQ(ierr);
+
+			// compute receive counts
+			for(i = 0; i < ds->nproc; i++) recvcnts[i] = (PetscMPIInt)(ds->starts[i+1] - ds->starts[i]);
+
+			// ds->starts[ds->nproc] stores index of last node (not total number of nodes)
+			recvcnts[ds->nproc-1]++;
+
+			// store receive displacements
+			for(i = 0; i < ds->nproc; i++) recvdisp[i] = (PetscMPIInt)ds->starts[i];
+		}
+
+		// gather coordinates
+		ierr = MPI_Gatherv(ds->ncoor, (PetscMPIInt)ds->nnods, MPIU_SCALAR,
+			pcoord, recvcnts, recvdisp, MPIU_SCALAR, 0, ds->comm); CHKERRQ(ierr);
+
+		// free memory
+		if(!ISRankZero(PETSC_COMM_WORLD))
+		{	ierr = PetscFree(pcoord);   CHKERRQ(ierr); }
+			ierr = PetscFree(recvcnts); CHKERRQ(ierr);
+			ierr = PetscFree(recvcnts); CHKERRQ(ierr);
 	}
 
-	ierr = MPI_Comm_free(&comm); CHKERRQ(ierr);
-
-	ierr = PetscFree(recvcnts); CHKERRQ(ierr);
+	// return coordinates
+	(*coord) = pcoord;
 
 	PetscFunctionReturn(0);
 }

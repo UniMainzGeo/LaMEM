@@ -54,24 +54,24 @@ typedef struct
 // marker initialization type enumeration
 typedef enum
 {
-	PARALLEL,    // read coordinates, phase and temperature from files in parallel
-	REDUNDANT,   // read phase and temperature from file redundantly (uniform coordinates)
-	POLYGONS,    // read polygons from file redundantly
-	DIAPIR,      // diapir setup
-	BLOCK,       // falling block
-	SUBDUCTION,  // subduction setup with air
-	FOLDING,     // multilayer folding setup (Zagros)
-	DETACHMENT,  // 1-layer over detachment (Grasemann & Schmalholz 2012)
-	SLAB,        // slab detachment (Thieulot et al. 2014)
-	SPHERES,     // multiple falling spheres
-	BANDS,       // shear band formation 3D
-	RESTART      // restart of simulation
+	PARALLEL,   // read coordinates, phase and temperature from files in parallel
+	REDUNDANT,  // read phase and temperature from file redundantly (uniform coordinates)
+	POLYGONS,   // read polygons from file redundantly
+	DIAPIR,     // diapir setup
+	BLOCK,      // falling block
+	SUBDUCTION, // subduction setup with air
+	FOLDING,    // multilayer folding setup (Zagros)
+	DETACHMENT, // 1-layer over detachment (Grasemann & Schmalholz 2012)
+	SLAB,       // slab detachment (Thieulot et al. 2014)
+	SPHERES,    // multiple falling spheres
+	BANDS,      // shear band formation 3D
+	RESTART     // restart of simulation
 	// ... add more
 } SetupType;
 //-----------------------------------------------------------------------------
 // Structure that holds user input data
-typedef struct {
-
+typedef struct
+{
 	// mesh segments
 	MeshSegInp       mseg_x;
 	MeshSegInp       mseg_y;
@@ -88,9 +88,7 @@ typedef struct {
 	PetscScalar      Setup_Diapir_Hi; // for 'DIAPIR' setup
 	PetscInt         nnode_x, nnode_y, nnode_z; // NOT NECESSARY if -nel is specified
 	//PetscInt         cpu_x, cpu_y, cpu_z; // not necessary - only used in FDSTAGCreate - not even initialized
-	//PetscInt         finest_nnode_x, finest_nnode_y, finest_nnode_z, finest_nelx, finest_nely, finest_nelz;
 	//PetscInt         remesh;
-	//PetscInt         refinex, refiney, refinez;
 	//PetscScalar      ampl2D,ampl3D,amplNoise,mumax, Hinterface, amp; // perturbations to grid
 
 	//PetscInt         num_particle_local;
@@ -100,7 +98,6 @@ typedef struct {
 	SBC              BC;
 	//PetscInt         internalBC_frontel, internalBC_backel, internalBC_node, zdepth_BC_el, zdepth_BC_node, internalBC, internalBC_coord;
 	//PetscScalar      Vx_Front, Vy_Front, Vy_Back, Vx_Back, Vy_Partx, Vy_Partz;
-	//PetscScalar      MaximumSurfaceAngle;
 
 	// time-stepping
 	PetscInt         save_timesteps;
@@ -133,7 +130,7 @@ typedef struct {
 	//PetscInt         VelocitySolver; // 0 - User defined; 1 - Direct (MUMPS); 2 - Galerkin geometric multigrid; 3 - Fieldsplit + Algebraic Multigrid (ML)
 	//PetscBool        VelocityTest;   // Request to perform single velocity solve for test purposes
 	//PetscBool        ScaleSystem;    // Request to scale linear system before solution
-	PetscBool        use_fdstag_canonical; // request native staggered grid discretization
+	//PetscBool        use_fdstag_canonical; // request native staggered grid discretization
 
 	// restart
 	PetscInt         save_breakpoints, break_point_number;
@@ -155,6 +152,7 @@ typedef struct {
 	// flags
 	PetscBool        SkipStokesSolver;
 	PetscBool        SavePartitioning;
+
 	//PetscInt         PlasticityCutoff;
 	//PetscBool        ArtTemp;
 	//PetscInt         PlasticityModel;
@@ -177,11 +175,6 @@ typedef struct {
 	PetscScalar      Gravity;
 	PetscScalar      GravityAngle;
 
-	// free surface
-	DM               DA_SurfaceTopography;
-	Vec              SurfaceTopography;
-	Vec              SurfaceTopography_Vx, SurfaceTopography_Vy, SurfaceTopography_Vz;
-	Vec              BottomTopography;
 	PetscScalar      FSSA;
 	//PetscScalar      FactorSurfaceLayer;
 
