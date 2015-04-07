@@ -75,6 +75,7 @@ CSRC = \
 	fdstag/lsolve.c \
 	fdstag/nlsolve.c \
 	fdstag/paraViewOutBin.c \
+	fdstag/paraViewOutSurf.c \
 	fdstag/advect.c \
 	fdstag/marker.c \
 	fdstag/AVD.c \

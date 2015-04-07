@@ -314,14 +314,14 @@ PetscErrorCode PVOutCreate(PVOut *pvout, JacRes *jr, const char *filename)
 	OutMaskSetDefault(omask);
 
 	// create output buffer object
-	ierr = OutBufCreate(&pvout->outbuf, jr);
+	ierr = OutBufCreate(&pvout->outbuf, jr); CHKERRQ(ierr);
 
 	// set pvd file flag & offset
 	pvout->offset = 0;
 	pvout->outpvd = 0;
 
 	// read options
-	ierr = PVOutReadFromOptions(pvout);
+	ierr = PVOutReadFromOptions(pvout); CHKERRQ(ierr);
 
 	//===============
 	// OUTPUT VECTORS
@@ -403,7 +403,7 @@ PetscErrorCode PVOutReadFromOptions(PVOut *pvout)
 
 	if(pvout->outpvd)
 	{
-		PetscPrintf(PETSC_COMM_WORLD, " Writing .pvd file to disk\n");
+		PetscPrintf(PETSC_COMM_WORLD, " Writing grid .pvd file to disk\n");
 	}
 
 	PetscFunctionReturn(0);
@@ -433,17 +433,6 @@ PetscErrorCode PVOutDestroy(PVOut *pvout)
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-void PVOutWriteXMLHeader(FILE *fp, const char *file_type)
-{
-	// write standard header to ParaView XML file
-	fprintf(fp,"<?xml version=\"1.0\"?>\n");
-#ifdef PETSC_WORDS_BIGENDIAN
-	fprintf(fp,"<VTKFile type=\"%s\" version=\"0.1\" byte_order=\"BigEndian\">\n", file_type);
-#else
-	fprintf(fp,"<VTKFile type=\"%s\" version=\"0.1\" byte_order=\"LittleEndian\">\n", file_type);
-#endif
-}
-//---------------------------------------------------------------------------
 #undef __FUNCT__
 #define __FUNCT__ "PVOutWriteTimeStep"
 PetscErrorCode PVOutWriteTimeStep(PVOut *pvout, JacRes *jr, const char *dirName, PetscScalar ttime, PetscInt tindx)
@@ -451,8 +440,11 @@ PetscErrorCode PVOutWriteTimeStep(PVOut *pvout, JacRes *jr, const char *dirName,
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
 
-	// update .pvd file
-	ierr = PVOutUpdatePVD(pvout, dirName, ttime, tindx);
+	// update .pvd file if necessary
+	if(pvout->outpvd)
+	{
+		ierr = UpdatePVDFile(dirName, pvout->outfile, "pvtr", &pvout->offset, ttime, tindx); CHKERRQ(ierr);
+	}
 
 	// write parallel data .pvtr file
 	ierr = PVOutWritePVTR(pvout, dirName); CHKERRQ(ierr);
@@ -462,57 +454,7 @@ PetscErrorCode PVOutWriteTimeStep(PVOut *pvout, JacRes *jr, const char *dirName,
 
 	PetscFunctionReturn(0);
 }
-//---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "PVOutUpdatePVD"
-PetscErrorCode PVOutUpdatePVD(PVOut *pvout, const char *dirName, PetscScalar ttime, PetscInt tindx)
-{
-	FILE        *fp;
-	char        *fname;
 
-	PetscErrorCode ierr;
-	PetscFunctionBegin;
-
-	// only first process generates this file (WARNING! Bottleneck!)
-	if(!ISRankZero(PETSC_COMM_WORLD)) PetscFunctionReturn(0);
-
-	// open outfile.pvd file (write or update mode)
-	asprintf(&fname, "%s.pvd", pvout->outfile);
-	if(!tindx) fp = fopen(fname,"w");
-	else       fp = fopen(fname,"r+");
-	if(fp == NULL) SETERRQ1(PETSC_COMM_SELF, 1,"cannot open file %s", fname);
-	free(fname);
-
-	if(!tindx)
-	{
-		// write header
-		PVOutWriteXMLHeader(fp, "Collection");
-
-		// open time step collection
-		fprintf(fp,"<Collection>\n");
-	}
-	else
-	{
-		// put the file pointer on the next entry
-		ierr = fseek(fp, pvout->offset, SEEK_SET); CHKERRQ(ierr);
-	}
-
-	// add entry to .pvd file (outfile.pvtr in the output directory)
-	fprintf(fp,"\t<DataSet timestep=\"%1.6e\" file=\"%s/%s.pvtr\"/>\n",
-		ttime, dirName, pvout->outfile);
-
-	// store current position in the file
-	pvout->offset = ftell(fp);
-
-	// close time step collection
-	fprintf(fp,"</Collection>\n");
-	fprintf(fp,"</VTKFile>\n");
-
-	// close file
-	fclose(fp);
-
-	PetscFunctionReturn(0);
-}
 //---------------------------------------------------------------------------
 #undef __FUNCT__
 #define __FUNCT__ "PVOutWritePVTR"
@@ -540,7 +482,7 @@ PetscErrorCode PVOutWritePVTR(PVOut *pvout, const char *dirName)
 	free(fname);
 
 	// write header
-	PVOutWriteXMLHeader(fp, "PRectilinearGrid");
+	WriteXMLHeader(fp, "PRectilinearGrid");
 
 	// open rectilinear grid data block (write total grid size)
 	fprintf(fp, "\t<PRectilinearGrid GhostLevel=\"0\" WholeExtent=\"%lld %lld %lld %lld %lld %lld\">\n",
@@ -631,7 +573,7 @@ PetscErrorCode PVOutWriteVTR(PVOut *pvout, JacRes *jr, const char *dirName)
 	OutBufConnectToFile(outbuf, fp);
 
 	// write header
-	PVOutWriteXMLHeader(fp, "RectilinearGrid");
+	WriteXMLHeader(fp, "RectilinearGrid");
 
 	// open rectilinear grid data block (write total grid size)
 	fprintf(fp, "\t<RectilinearGrid WholeExtent=\"%lld %lld %lld %lld %lld %lld\">\n",
@@ -698,6 +640,72 @@ PetscErrorCode PVOutWriteVTR(PVOut *pvout, JacRes *jr, const char *dirName)
 	// close appended data section and file
 	fprintf(fp, "\n\t</AppendedData>\n");
 	fprintf(fp, "</VTKFile>\n");
+
+	// close file
+	fclose(fp);
+
+	PetscFunctionReturn(0);
+}
+//---------------------------------------------------------------------------
+//........................... Service Functions .............................
+//---------------------------------------------------------------------------
+void WriteXMLHeader(FILE *fp, const char *file_type)
+{
+	// write standard header to ParaView XML file
+	fprintf(fp,"<?xml version=\"1.0\"?>\n");
+#ifdef PETSC_WORDS_BIGENDIAN
+	fprintf(fp,"<VTKFile type=\"%s\" version=\"0.1\" byte_order=\"BigEndian\">\n", file_type);
+#else
+	fprintf(fp,"<VTKFile type=\"%s\" version=\"0.1\" byte_order=\"LittleEndian\">\n", file_type);
+#endif
+}
+//---------------------------------------------------------------------------
+#undef __FUNCT__
+#define __FUNCT__ "UpdatePVDFile"
+PetscErrorCode UpdatePVDFile(
+		const char *dirName, const char *outfile, const char *ext,
+		long int *offset, PetscScalar ttime, PetscInt tindx)
+{
+	FILE        *fp;
+	char        *fname;
+
+	PetscErrorCode ierr;
+	PetscFunctionBegin;
+
+	// only first process generates this file (WARNING! Bottleneck!)
+	if(!ISRankZero(PETSC_COMM_WORLD)) PetscFunctionReturn(0);
+
+	// open outfile.pvd file (write or update mode)
+	asprintf(&fname, "%s.pvd", outfile);
+	if(!tindx) fp = fopen(fname,"w");
+	else       fp = fopen(fname,"r+");
+	if(fp == NULL) SETERRQ1(PETSC_COMM_SELF, 1,"cannot open file %s", fname);
+	free(fname);
+
+	if(!tindx)
+	{
+		// write header
+		WriteXMLHeader(fp, "Collection");
+
+		// open time step collection
+		fprintf(fp,"<Collection>\n");
+	}
+	else
+	{
+		// put the file pointer on the next entry
+		ierr = fseek(fp, (*offset), SEEK_SET); CHKERRQ(ierr);
+	}
+
+	// add entry to .pvd file
+	fprintf(fp,"\t<DataSet timestep=\"%1.6e\" file=\"%s/%s.%s\"/>\n",
+		ttime, dirName, outfile, ext);
+
+	// store current position in the file
+	(*offset) = ftell(fp);
+
+	// close time step collection
+	fprintf(fp,"</Collection>\n");
+	fprintf(fp,"</VTKFile>\n");
 
 	// close file
 	fclose(fp);

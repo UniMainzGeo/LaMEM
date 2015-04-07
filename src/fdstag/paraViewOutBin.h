@@ -163,15 +163,8 @@ PetscErrorCode PVOutReadFromOptions(PVOut *pvout);
 // destroy ParaView output driver
 PetscErrorCode PVOutDestroy(PVOut *pvout);
 
-// Add standard header to output file
-void PVOutWriteXMLHeader(FILE *fp, const char *file_type);
-
 // write all time-step output files to disk (PVD, PVTR, VTR)
 PetscErrorCode PVOutWriteTimeStep(PVOut *pvout, JacRes *jr, const char *dirName, PetscScalar ttime, PetscInt tindx);
-
-// update PVD file (called every time step on first processor)
-// WARNING! this is potential bottleneck, get rid of writing every time-step
-PetscErrorCode PVOutUpdatePVD(PVOut *pvout, const char *dirName, PetscScalar ttime, PetscInt tindx);
 
 // write parallel PVTR file (called every time step on first processor)
 // WARNING! this is potential bottleneck, get rid of writing every time-step
@@ -179,6 +172,19 @@ PetscErrorCode PVOutWritePVTR(PVOut *pvout, const char *dirName);
 
 // write sequential VTR files on every processor (called every time step)
 PetscErrorCode PVOutWriteVTR(PVOut *pvout, JacRes *jr, const char *dirName);
+
+//---------------------------------------------------------------------------
+//........................... Service Functions .............................
+//---------------------------------------------------------------------------
+
+// Add standard header to output file
+void WriteXMLHeader(FILE *fp, const char *file_type);
+
+// update PVD file (called every time step on first processor)
+// WARNING! this is potential bottleneck, get rid of writing every time-step
+PetscErrorCode UpdatePVDFile(
+		const char *dirName, const char *outfile, const char *ext,
+		long int *offset, PetscScalar ttime, PetscInt tindx);
 
 //---------------------------------------------------------------------------
 
