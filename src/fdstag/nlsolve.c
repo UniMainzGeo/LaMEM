@@ -140,17 +140,17 @@ PetscErrorCode NLSolCreate(NLSol *nl, PCStokes pc, SNES *p_snes)
 //	ierr = SNESSetConvergenceTest(snes, SNESBlockStopTest, &nlctx, NULL); CHKERRQ(ierr);
 
 	// initialize Jacobian controls
-	nl->jtype = _PICARD_;
-	nl->nPicIt = 5;
-	nl->tolPic = 1e-2;
-	nl->nNwtIt = 25;
-	nl->tolNwt = 1.5;
+	nl->jtype   = _PICARD_;
+	nl->nPicIt  = 5;
+	nl->rtolPic = 1e-2;
+	nl->nNwtIt  = 35;
+	nl->rtolNwt  = 1.1;
 
 	// override from command line
-	ierr = PetscOptionsGetInt   (PETSC_NULL, "-snes_picard_it",  &nl->nPicIt, &flg); CHKERRQ(ierr);
-	ierr = PetscOptionsGetScalar(PETSC_NULL, "-snes_picard_tol", &nl->tolPic, &flg); CHKERRQ(ierr);
-	ierr = PetscOptionsGetInt   (PETSC_NULL, "-snes_newton_it",  &nl->nNwtIt, &flg); CHKERRQ(ierr);
-	ierr = PetscOptionsGetScalar(PETSC_NULL, "-snes_newton_tol", &nl->tolNwt, &flg); CHKERRQ(ierr);
+	ierr = PetscOptionsGetInt   (PETSC_NULL, "-snes_Picard_max_it",             &nl->nPicIt, &flg); CHKERRQ(ierr);
+	ierr = PetscOptionsGetScalar(PETSC_NULL, "-snes_PicardSwitchToNewton_rtol", &nl->rtolPic,&flg); CHKERRQ(ierr);
+	ierr = PetscOptionsGetInt   (PETSC_NULL, "-snes_NewtonSwitchToPicard_it",   &nl->nNwtIt, &flg); CHKERRQ(ierr);
+	ierr = PetscOptionsGetScalar(PETSC_NULL, "-snes_NewtonSwitchToPicard_rtol", &nl->rtolNwt, &flg); CHKERRQ(ierr);
 
 	// set initial guess
 	ierr = VecSet(jr->gsol, 0.0); CHKERRQ(ierr);
@@ -259,7 +259,7 @@ PetscErrorCode FormJacobian(SNES snes, Vec x, Mat Amat, Mat Pmat, void *ctx)
 	PCStokes    pc;
 	PMat        pm;
 	JacRes      *jr;
-	PetscInt    it;
+	PetscInt    it, it_newton;
 	PetscScalar nrm;
 
 	// clear unused parameters
@@ -274,7 +274,8 @@ PetscErrorCode FormJacobian(SNES snes, Vec x, Mat Amat, Mat Pmat, void *ctx)
 	pc = nl->pc;
 	pm = pc->pm;
 	jr = pm->jr;
-
+    it_newton = 0;
+    
 	//========================
 	// Jacobian type selection
 	//========================
@@ -284,19 +285,22 @@ PetscErrorCode FormJacobian(SNES snes, Vec x, Mat Amat, Mat Pmat, void *ctx)
 	ierr = SNESGetFunction(snes, &r, NULL, NULL); CHKERRQ(ierr);
 	ierr = VecNorm(r, NORM_2, &nrm);              CHKERRQ(ierr);
 
-	// initialize
+    
+    // initialize
 	if(!it)
 	{
 		nl->it     = 0;
 		nl->refRes = nrm;
-	}
+        nl->jtype = _PICARD_;
+  	}
 	else if(nl->jtype == _PICARD_)
 	{
 		// Picard case, check to switch to Newton
-		if(nrm < nl->refRes*nl->tolPic || nl->it > nl->nPicIt)
-		{
+		//if(nrm < nl->refRes*nl->tolPic || nl->it > nl->nPicIt)
+        if(nrm < (nl->refRes*nl->rtolPic) )
+        {
 			PetscPrintf(PETSC_COMM_WORLD,"        ***        \n");
-			PetscPrintf(PETSC_COMM_WORLD,"SWITCH TO USING MMFD JACOBIAN\n");
+			PetscPrintf(PETSC_COMM_WORLD,"SWITCH TO USING MMFD JACOBIAN; ||F||/||F0||=%e,  PicIt=%i\n",nrm/nl->refRes,nl->nPicIt);
 			PetscPrintf(PETSC_COMM_WORLD,"        ***        \n");
 
 			nl->jtype = _MFFD_;
@@ -305,15 +309,16 @@ PetscErrorCode FormJacobian(SNES snes, Vec x, Mat Amat, Mat Pmat, void *ctx)
 	else if(nl->jtype == _MFFD_)
 	{
 		// Newton case, check to switch to Picard
-		if(nrm > nl->refRes*nl->tolNwt || nl->it > nl->nNwtIt)
+		if(nrm > nl->refRes*nl->rtolNwt || it_newton > nl->nNwtIt)
 		{
 			PetscPrintf(PETSC_COMM_WORLD,"        ***          \n");
-			PetscPrintf(PETSC_COMM_WORLD,"SWITCH TO USING PICARD JACOBIAN\n");
+			PetscPrintf(PETSC_COMM_WORLD,"SWITCH TO USING PICARD JACOBIAN  ||F||/||F0||=%e,  PicIt=%i\n \n",nrm/nl->refRes,nl->nNwtIt);
 			PetscPrintf(PETSC_COMM_WORLD,"        ***          \n");
 
 			nl->jtype = _PICARD_;
 		}
 	}
+   
     
     if ((JacResGetStep(jr)<2) & (nl->it == 0)){
         // During the first and second timestep of a simulation, always start with picard iterations
@@ -325,13 +330,15 @@ PetscErrorCode FormJacobian(SNES snes, Vec x, Mat Amat, Mat Pmat, void *ctx)
     /* print info*/
     if (nl->jtype == _PICARD_)
     {
-        PetscPrintf(PETSC_COMM_WORLD,"USING PICARD JACOBIAN: ||F||/||F0||=%e \n",nrm/nl->refRes);
+        PetscPrintf(PETSC_COMM_WORLD,"USING PICARD JACOBIAN for iteration %i,  ||F||/||F0||=%e \n",nl->it, nrm/nl->refRes);
     }
     else if(nl->jtype == _MFFD_)
     {
-       PetscPrintf(PETSC_COMM_WORLD,"USING MMFD JACOBIAN:    ||F||/||F0||=%e \n",nrm/nl->refRes);
+       PetscPrintf(PETSC_COMM_WORLD,"USING MMFD JACOBIAN for iteration %i,    ||F||/||F0||=%e \n",nl->it, nrm/nl->refRes);
+        it_newton = it_newton+1;
     }
-      
+    
+    
     
 	// count iterations
 	nl->it++;
