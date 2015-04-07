@@ -142,7 +142,6 @@ PetscInt OutMaskCountActive(OutMask *omask);
 typedef struct
 {
 	char        *outfile; // output file name
-	PetscScalar  crdScal; // output scaling for coordinates
 	OutMask      omask;   // output vector mask
 	PetscInt     nvec;    // number of output vectors
 	OutVec      *outvecs; // output vectors

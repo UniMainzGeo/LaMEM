@@ -161,7 +161,7 @@ PetscErrorCode FreeSurfGetVelComp(
 	ierr = VecRestoreArray(surf->wb, &vmerge); CHKERRQ(ierr);
 
 	// compute ghosted version of the velocity component
-	GLOBAL_TO_LOCAL(surf->DA_SURF, surf->wa, vcomp_surf);
+	GLOBAL_TO_LOCAL(surf->DA_SURF, surf->wb, vcomp_surf);
 
 	PetscFunctionReturn(0);
 }

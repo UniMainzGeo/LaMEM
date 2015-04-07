@@ -307,9 +307,6 @@ PetscErrorCode PVOutCreate(PVOut *pvout, JacRes *jr, const char *filename)
 	// set file name
 	asprintf(&pvout->outfile, "%s", filename);
 
-	// set output scaling for coordinates
-	pvout->crdScal = scal->length;
-
 	// get output mask
 	omask = &pvout->omask;
 
@@ -686,9 +683,9 @@ PetscErrorCode PVOutWriteVTR(PVOut *pvout, JacRes *jr, const char *dirName)
 	fprintf(fp,"_");
 
 	// coordinate vectors
-	OutBufPutCoordVec(outbuf, &fs->dsx, pvout->crdScal); OutBufDump(outbuf);
-	OutBufPutCoordVec(outbuf, &fs->dsy, pvout->crdScal); OutBufDump(outbuf);
-	OutBufPutCoordVec(outbuf, &fs->dsz, pvout->crdScal); OutBufDump(outbuf);
+	OutBufPutCoordVec(outbuf, &fs->dsx, jr->scal.length); OutBufDump(outbuf);
+	OutBufPutCoordVec(outbuf, &fs->dsy, jr->scal.length); OutBufDump(outbuf);
+	OutBufPutCoordVec(outbuf, &fs->dsz, jr->scal.length); OutBufDump(outbuf);
 
 	for(i = 0; i < pvout->nvec; i++)
 	{

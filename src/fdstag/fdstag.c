@@ -619,7 +619,7 @@ PetscErrorCode Discret1DGatherCoord(Discret1D *ds, PetscScalar **coord)
 		if(!ISRankZero(PETSC_COMM_WORLD))
 		{	ierr = PetscFree(pcoord);   CHKERRQ(ierr); }
 			ierr = PetscFree(recvcnts); CHKERRQ(ierr);
-			ierr = PetscFree(recvcnts); CHKERRQ(ierr);
+			ierr = PetscFree(recvdisp); CHKERRQ(ierr);
 	}
 
 	// return coordinates
