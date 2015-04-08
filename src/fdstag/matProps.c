@@ -502,7 +502,7 @@ PetscErrorCode SetDiffProfile(Material_t *m, char name[])
 	}
 
 	// make tensor correction and transform units from MPa if necessary
-	ierr = SetProfileCorrection(m->Bd,1,tensorCorrection,MPa); CHKERRQ(ierr);
+	ierr = SetProfileCorrection(&m->Bd,1,tensorCorrection,MPa); CHKERRQ(ierr);
 
 	PetscFunctionReturn(0);
 }
@@ -854,7 +854,7 @@ PetscErrorCode SetDislProfile(Material_t *m, char name[])
 	}
 
 	// make tensor correction and transform units from MPa if necessary
-	ierr = SetProfileCorrection(m->Bn,m->n,tensorCorrection,MPa); CHKERRQ(ierr);
+	ierr = SetProfileCorrection(&m->Bn,m->n,tensorCorrection,MPa); CHKERRQ(ierr);
 
 	PetscFunctionReturn(0);
 }
@@ -862,27 +862,32 @@ PetscErrorCode SetDislProfile(Material_t *m, char name[])
 // set tensor and units correction for rheological profiles
 #undef __FUNCT__
 #define __FUNCT__ "SetProfileCorrection"
-PetscErrorCode SetProfileCorrection(PetscScalar B, PetscScalar n, TensorCorrection tensorCorrection, PetscInt MPa)
+PetscErrorCode SetProfileCorrection(PetscScalar *B, PetscScalar n, TensorCorrection tensorCorrection, PetscInt MPa)
 {
-	PetscScalar F2;
+	PetscScalar F2, Bi;
 	// Lab. experiments are typically done under simple shear or uni-axial
 	// compression, which requires a correction in order to use them in tensorial format.
-	// An explanation is given in the textbook of Taras Gerya, chapter 6.
+	// An explanation is given in the textbook of Taras Gerya, chapter 6, p. 71-78.
 
 	PetscFunctionBegin;
 
+	Bi = *B;
+
 	// Tensor correction
-	if      (tensorCorrection == _UniAxial_)    F2 = pow(1/2,(n-1)/n) / pow(3,(n+1)/2/n); //  F2 = 1/2^((n-1)/n)/3^((n+1)/2/n);
-	else if (tensorCorrection == _SimpleShear_) F2 = pow(1/2,(2*n-1)/n);                  //  F2 = 1/2^((2*n-1)/n);
-	else if (tensorCorrection == _None_)        F2 = 1;
+	// In LaMEM this is added to the pre-factor and not to the effective viscosity as in T. Gerya
+	if      (tensorCorrection == _UniAxial_)    F2 = pow(0.5,(n-1)/n) / pow(3,(n+1)/(2*n)); //  F2 = 1/2^((n-1)/n)/3^((n+1)/2/n);
+	else if (tensorCorrection == _SimpleShear_) F2 = pow(0.5,(2*n-1)/n);                    //  F2 = 1/2^((2*n-1)/n);
+	else if (tensorCorrection == _None_)        F2 = 0.5;
 	else
 	{
 		 SETERRQ(PETSC_COMM_SELF, PETSC_ERR_USER, "Unknown tensor correction in creep mechanism profile!");
 	}
 
 	// Units correction from [MPa^(-n)s^(-1)] to [Pa^(-n)s^(-1)] if required
-	if (MPa) B = F2* pow(1e6*pow(B,-1/n),-n); // B = F2*(1e6*B^(-1/n))^(-n);
-	else     B = F2*B;
+	if (MPa) Bi = pow(2*F2,-n) * pow(1e6*pow(Bi,-1/n),-n);
+	else     Bi = pow(2*F2,-n) * Bi;
+
+	(*B) = Bi;
 
 	PetscFunctionReturn(0);
 }

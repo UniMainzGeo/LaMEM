@@ -45,7 +45,7 @@ PetscErrorCode SetDiffProfile(Material_t *m, char name[]);
 PetscErrorCode SetDislProfile(Material_t *m, char name[]);
 
 // units and tensor correction
-PetscErrorCode SetProfileCorrection(PetscScalar B, PetscScalar n, TensorCorrection tensorCorrection, PetscInt MPa);
+PetscErrorCode SetProfileCorrection(PetscScalar *B, PetscScalar n, TensorCorrection tensorCorrection, PetscInt MPa);
 
 //---------------------------------------------------------------------------
 //................ Routines to get structure-info from file .................
