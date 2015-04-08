@@ -50,10 +50,9 @@ int main(int argc,char **argv )
 
 	// Initialize PETSC
 	ierr = PetscInitialize(&argc,&argv,(char *)0,help); CHKERRQ(ierr);
-	
-    ierr = PCRegister("pc_semiredundant",PCCreate_SemiRedundant);
-    
-    
+
+	ierr = PCRegister("pc_semiredundant",PCCreate_SemiRedundant);
+
 	// call LaMEM main library function
 	ierr = LaMEMLib(&LaMEM_OutputParameters,&mpi_group_id); CHKERRQ(ierr);
 

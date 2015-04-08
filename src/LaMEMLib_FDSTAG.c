@@ -48,6 +48,7 @@ without the explicit agreement of Boris Kaus.
 #include "interpolate.h"
 #include "surf.h"
 #include "paraViewOutBin.h"
+#include "paraViewOutSurf.h"
 #include "multigrid.h"
 #include "matrix.h"
 #include "lsolve.h"
@@ -73,16 +74,17 @@ PetscErrorCode LaMEMLib_FDSTAG(void *echange_ctx)
 //	PetscLogDouble     cputime_start, cputime_start0, cputime_end, cputime_start_tstep, cputime_start_nonlinear;
 	PetscLogDouble     cputime_start, cputime_end, cputime_start_nonlinear, cputime_end_nonlinear;
 
-	FDSTAG   fs;    // staggered-grid layout
-	FreeSurf surf;  // free-surface grid
-	BCCtx    bc;    // boundary condition context
-	JacRes   jr;    // Jacobian & residual context
-	AdvCtx   actx;  // advection context
-	PMat     pm;    // preconditioner matrix
-	PCStokes pc;    // Stokes preconditioner
-	SNES     snes;  // PETSc nonlinear solver
-	NLSol    nl;    // nonlinear solver context
-	PVOut    pvout; // paraview output driver
+	FDSTAG   fs;     // staggered-grid layout
+	FreeSurf surf;   // free-surface grid
+	BCCtx    bc;     // boundary condition context
+	JacRes   jr;     // Jacobian & residual context
+	AdvCtx   actx;   // advection context
+	PMat     pm;     // preconditioner matrix
+	PCStokes pc;     // Stokes preconditioner
+	SNES     snes;   // PETSc nonlinear solver
+	NLSol    nl;     // nonlinear solver context
+	PVOut    pvout;  // paraview output driver
+	PVSurf   pvsurf; // paraview output driver
 
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
@@ -102,13 +104,15 @@ PetscErrorCode LaMEMLib_FDSTAG(void *echange_ctx)
 	PetscPrintf(PETSC_COMM_WORLD,"-------------------------------------------------------------------------- \n");
 
 	// clear objects
-	ierr = FDSTAGClear(&fs);    CHKERRQ(ierr);
-	ierr = BCClear    (&bc);    CHKERRQ(ierr);
-	ierr = JacResClear(&jr);    CHKERRQ(ierr);
-	ierr = ADVClear   (&actx);  CHKERRQ(ierr);
-	ierr = NLSolClear (&nl);    CHKERRQ(ierr);
-	ierr = PVOutClear (&pvout); CHKERRQ(ierr);
-	ierr = PetscMemzero(&user, sizeof(UserCtx)); CHKERRQ(ierr);
+	ierr = FDSTAGClear  (&fs);     CHKERRQ(ierr);
+	ierr = FreeSurfClear(&surf);   CHKERRQ(ierr);
+	ierr = BCClear      (&bc);     CHKERRQ(ierr);
+	ierr = JacResClear  (&jr);     CHKERRQ(ierr);
+	ierr = ADVClear     (&actx);   CHKERRQ(ierr);
+	ierr = NLSolClear   (&nl);     CHKERRQ(ierr);
+	ierr = PVOutClear   (&pvout);  CHKERRQ(ierr);
+	ierr = PVSurfClear  (&pvsurf); CHKERRQ(ierr);
+	ierr = PetscMemzero (&user, sizeof(UserCtx)); CHKERRQ(ierr);
 
 	// initialize variables
 	ierr = FDSTAGInitCode(&jr, &user); CHKERRQ(ierr);
@@ -179,6 +183,9 @@ PetscErrorCode LaMEMLib_FDSTAG(void *echange_ctx)
 
 	// create output object for all requested output variables
 	ierr = PVOutCreate(&pvout, &jr, user.OutputFile); CHKERRQ(ierr);
+
+	// create output object for the free surface
+	ierr = PVSurfCreate(&pvsurf, &surf, user.OutputFile); CHKERRQ(ierr);
 
 	// read breakpoint files if restart was requested and if is possible
 	if (user.restart==1) { ierr = BreakRead(&user, &actx, &nl.jtype); CHKERRQ(ierr); }
@@ -270,7 +277,11 @@ PetscErrorCode LaMEMLib_FDSTAG(void *echange_ctx)
 		// MARKER & FREE SURFACE ADVECTION + EROSION
 		//==========================================================================================
 
+		// advect markers
 		ierr = ADVAdvect(&actx); CHKERRQ(ierr);
+
+		// advect free surface
+		ierr = FreeSurfAdvect(&surf); CHKERRQ(ierr);
 
 		// advect pushing block
 		ierr = BCAdvectPush(&bc, &jr.ts); CHKERRQ(ierr);
@@ -353,13 +364,15 @@ PetscErrorCode LaMEMLib_FDSTAG(void *echange_ctx)
 //				ierr = WritePhasesOutputFile_VTS(C, &user, itime, DirectoryName); CHKERRQ(ierr);
 //			}
 
-			// Paraview output
+			// grid ParaView output
 			ierr = PVOutWriteTimeStep(&pvout, &jr, DirectoryName, JacResGetTime(&jr), JacResGetStep(&jr)); CHKERRQ(ierr);
+
+			// free surface ParaView output
+			ierr = PVSurfWriteTimeStep(&pvsurf, DirectoryName, JacResGetTime(&jr), JacResGetStep(&jr)); CHKERRQ(ierr);
 
 			// clean up
 			if(DirectoryName) free(DirectoryName);
 		}
-
 
 		//==========================================================================================
 		// Perform phase transitions on particles (i.e. change the phase number of particles)
@@ -399,6 +412,7 @@ PetscErrorCode LaMEMLib_FDSTAG(void *echange_ctx)
 	ierr = SNESDestroy(&snes);     CHKERRQ(ierr);
 	ierr = NLSolDestroy(&nl);      CHKERRQ(ierr);
 	ierr = PVOutDestroy(&pvout);   CHKERRQ(ierr);
+	ierr = PVSurfDestroy(&pvsurf); CHKERRQ(ierr);
 
 	PetscTime(&cputime_end);
 	PetscPrintf(PETSC_COMM_WORLD, " Simulation took %g s\n", cputime_end - cputime_start);

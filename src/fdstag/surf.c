@@ -17,6 +17,19 @@
 // ...
 //---------------------------------------------------------------------------
 #undef __FUNCT__
+#define __FUNCT__ "FreeSurfClear"
+PetscErrorCode FreeSurfClear(FreeSurf *surf)
+{
+	PetscErrorCode ierr;
+	PetscFunctionBegin;
+
+	// clear object
+	ierr = PetscMemzero(surf, sizeof(FreeSurf)); CHKERRQ(ierr);
+
+	PetscFunctionReturn(0);
+}
+//---------------------------------------------------------------------------
+#undef __FUNCT__
 #define __FUNCT__ "FreeSurfCreate"
 PetscErrorCode FreeSurfCreate(FreeSurf *surf, JacRes *jr)
 {
@@ -25,6 +38,8 @@ PetscErrorCode FreeSurfCreate(FreeSurf *surf, JacRes *jr)
 
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
+
+	ierr = FreeSurfReadFromOptions(surf); CHKERRQ(ierr);
 
 	// free surface cases only
 	if(surf->UseFreeSurf != PETSC_TRUE) PetscFunctionReturn(0);
@@ -60,11 +75,27 @@ PetscErrorCode FreeSurfCreate(FreeSurf *surf, JacRes *jr)
 }
 //---------------------------------------------------------------------------
 #undef __FUNCT__
+#define __FUNCT__ "FreeSurfReadFromOptions"
+PetscErrorCode FreeSurfReadFromOptions(FreeSurf *surf)
+{
+	PetscFunctionBegin;
+
+	// ad-hoc
+	surf->UseFreeSurf = PETSC_TRUE;
+	surf->InitLevel   = 0.5;
+
+	PetscFunctionReturn(0);
+}
+//---------------------------------------------------------------------------
+#undef __FUNCT__
 #define __FUNCT__ "FreeSurfDestroy"
 PetscErrorCode FreeSurfDestroy(FreeSurf *surf)
 {
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
+
+	// free surface cases only
+	if(surf->UseFreeSurf != PETSC_TRUE) PetscFunctionReturn(0);
 
 	ierr = DMDestroy (&surf->DA_SURF); CHKERRQ(ierr);
 	ierr = VecDestroy(&surf->topo);    CHKERRQ(ierr);
@@ -73,6 +104,34 @@ PetscErrorCode FreeSurfDestroy(FreeSurf *surf)
 	ierr = VecDestroy(&surf->vz);      CHKERRQ(ierr);
 	ierr = VecDestroy(&surf->wa);      CHKERRQ(ierr);
 	ierr = VecDestroy(&surf->wb);      CHKERRQ(ierr);
+
+	PetscFunctionReturn(0);
+}
+//---------------------------------------------------------------------------
+#undef __FUNCT__
+#define __FUNCT__ "FreeSurfAdvect"
+PetscErrorCode FreeSurfAdvect(FreeSurf *surf)
+{
+	// advect topography on the free surface mesh
+
+	JacRes *jr;
+
+	PetscErrorCode ierr;
+	PetscFunctionBegin;
+
+	// free surface cases only
+	if(surf->UseFreeSurf != PETSC_TRUE) PetscFunctionReturn(0);
+
+	// access context
+	jr = surf->jr;
+
+	// get surface velocities
+	ierr = FreeSurfGetVelComp(surf, &InterpXFaceCorner, jr->lvx, surf->vx); CHKERRQ(ierr);
+	ierr = FreeSurfGetVelComp(surf, &InterpYFaceCorner, jr->lvy, surf->vy); CHKERRQ(ierr);
+	ierr = FreeSurfGetVelComp(surf, &InterpZFaceCorner, jr->lvz, surf->vz); CHKERRQ(ierr);
+
+	// advect topography
+	ierr = FreeSurfGetTopo(surf); CHKERRQ(ierr);
 
 	PetscFunctionReturn(0);
 }
@@ -152,41 +211,24 @@ PetscErrorCode FreeSurfGetVelComp(
 	ierr = DMDAVecRestoreArray(surf->DA_SURF, surf->topo, &topo);  CHKERRQ(ierr);
 
 	// merge velocity patches
-	ierr = VecGetArray(surf->wa, &vpatch); CHKERRQ(ierr);
-	ierr = VecGetArray(surf->wb, &vmerge); CHKERRQ(ierr);
-
-	ierr = MPI_Allreduce(vpatch, vmerge, (PetscMPIInt)(nx*ny), MPIU_SCALAR, MPI_SUM, dsz->comm); CHKERRQ(ierr);
-
-	ierr = VecRestoreArray(surf->wa, &vpatch); CHKERRQ(ierr);
-	ierr = VecRestoreArray(surf->wb, &vmerge); CHKERRQ(ierr);
-
 	// compute ghosted version of the velocity component
-	GLOBAL_TO_LOCAL(surf->DA_SURF, surf->wb, vcomp_surf);
+	if(dsz->nproc != 1 )
+	{
+		ierr = VecGetArray(surf->wa, &vpatch); CHKERRQ(ierr);
+		ierr = VecGetArray(surf->wb, &vmerge); CHKERRQ(ierr);
 
-	PetscFunctionReturn(0);
-}
-//---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "FreeSurfAdvect"
-PetscErrorCode FreeSurfAdvect(FreeSurf *surf)
-{
-	// advect topography on the free surface mesh
+		ierr = MPI_Allreduce(vpatch, vmerge, (PetscMPIInt)(nx*ny), MPIU_SCALAR, MPI_SUM, dsz->comm); CHKERRQ(ierr);
 
-	JacRes *jr;
+		ierr = VecRestoreArray(surf->wa, &vpatch); CHKERRQ(ierr);
+		ierr = VecRestoreArray(surf->wb, &vmerge); CHKERRQ(ierr);
 
-	PetscErrorCode ierr;
-	PetscFunctionBegin;
-
-	// access context
-	jr = surf->jr;
-
-	// get surface velocities
-	ierr = FreeSurfGetVelComp(surf, &InterpXFaceCorner, jr->lvx, surf->vx); CHKERRQ(ierr);
-	ierr = FreeSurfGetVelComp(surf, &InterpYFaceCorner, jr->lvy, surf->vy); CHKERRQ(ierr);
-	ierr = FreeSurfGetVelComp(surf, &InterpZFaceCorner, jr->lvz, surf->vz); CHKERRQ(ierr);
-
-	// advect topography
-	ierr = FreeSurfGetTopo(surf); CHKERRQ(ierr);
+		// compute ghosted version of the velocity component
+		GLOBAL_TO_LOCAL(surf->DA_SURF, surf->wb, vcomp_surf);
+	}
+	else
+	{
+		GLOBAL_TO_LOCAL(surf->DA_SURF, surf->wa, vcomp_surf);
+	}
 
 	PetscFunctionReturn(0);
 }
@@ -401,23 +443,6 @@ PetscInt InterpTriangle(
 	return 1;
 }
 //---------------------------------------------------------------------------
-/*
-#undef __FUNCT__
-#define __FUNCT__ "FreeSurfInterpTopoPoint"
-PetscErrorCode FreeSurfInterpTopoPoint(PetscScalar *crd_stencil,  PetscScalar *topo_stencil, PetscScalar *crd_)
-{
-	// search a point within 2 x 2 cell stencil subdivided into 8 triangles
-	// interpolate scalar field
-
-	PetscErrorCode ierr;
-	PetscFunctionBegin;
-
-
-	PetscFunctionReturn(0);
-}
-*/
-
-
 
 /*
 //============================================================================================================================
@@ -531,31 +556,4 @@ PetscErrorCode FreeSurfGetPartition(
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-
-
-<VTKFile type=" StructuredGrid" ...>
-<StructuredGrid WholeExtent=" x1 x2 y1 y2 z1 z2">
-<Piece Extent=" x1 x2 y1 y2 z1 z2">
-<PointData>...</ PointData>
-<CellData>...</ CellData>
-<Points>...</ Points>
-</ Piece>
-</ StructuredGrid>
-</ VTKFile>
-
-
-<VTKFile type=" PStructuredGrid" ...>
-<PStructuredGrid WholeExtent=" x1 x2 y1 y2 z1 z2"
-GhostLevel="#">
-<PPointData>...</ PPointData>
-<PCellData>...</ PCellData>
-<PPoints>...</ PPoints>
-<Piece Extent=" x1 x2 y1 y2 z1 z2"
-Source=" structuredGrid0. vts"/>
-...
-</ PStructuredGrid>
-</ VTKFile>
-
-
-
 */

@@ -24,11 +24,16 @@ typedef struct
 
 //---------------------------------------------------------------------------
 
-PetscErrorCode FreeSurfReadFromFile(FreeSurf *surf);
+PetscErrorCode FreeSurfClear(FreeSurf *surf);
 
 PetscErrorCode FreeSurfCreate(FreeSurf *surf, JacRes *jr);
 
+PetscErrorCode FreeSurfReadFromOptions(FreeSurf *surf);
+
 PetscErrorCode FreeSurfDestroy(FreeSurf *surf);
+
+// advect topography on the free surface mesh
+PetscErrorCode FreeSurfAdvect(FreeSurf *surf);
 
 // get single velocity component on the free surface
 PetscErrorCode FreeSurfGetVelComp(
@@ -37,9 +42,6 @@ PetscErrorCode FreeSurfGetVelComp(
 	Vec vcomp_grid, Vec vcomp_surf);
 
 PetscErrorCode FreeSurfGetTopo(FreeSurf *surf);
-
-// advect topography on the free surface mesh
-PetscErrorCode FreeSurfAdvect(FreeSurf *surf);
 
 PetscInt InterpTriangle(
 	PetscScalar *x,   // x-coordinates of triangle

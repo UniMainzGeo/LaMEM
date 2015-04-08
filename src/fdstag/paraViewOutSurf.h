@@ -24,25 +24,40 @@ typedef struct
 //---------------------------------------------------------------------------
 
 // clear object
-PetscErrorCode PVSurfClear(PVSurf *pvout);
+PetscErrorCode PVSurfClear(PVSurf *pvsurf);
 
 // create ParaView output driver
-PetscErrorCode PVSurfCreate(PVSurf *pvout, FreeSurf *surf, const char *filename);
+PetscErrorCode PVSurfCreate(PVSurf *pvsurf, FreeSurf *surf, const char *filename);
 
 // read options
-PetscErrorCode PVSurfReadFromOptions(PVSurf *pvout);
+PetscErrorCode PVSurfReadFromOptions(PVSurf *pvsurf);
 
 // destroy ParaView output driver
-PetscErrorCode PVSurfDestroy(PVSurf *pvout);
+PetscErrorCode PVSurfDestroy(PVSurf *pvsurf);
 
 // write all time-step output files to disk (PVD, PVTS, VTS)
-PetscErrorCode PVSurfWriteTimeStep(PVSurf *pvout, const char *dirName, PetscScalar ttime, PetscInt tindx);
+PetscErrorCode PVSurfWriteTimeStep(PVSurf *pvsurf, const char *dirName, PetscScalar ttime, PetscInt tindx);
 
 // parallel output file .pvts
-PetscErrorCode PVSurfWritePVTS(PVSurf *pvout, const char *dirName);
+PetscErrorCode PVSurfWritePVTS(PVSurf *pvsurf, const char *dirName);
 
 // sequential output file .vts
-PetscErrorCode PVSurfWriteVTS(PVSurf *pvout, const char *dirName);
+PetscErrorCode PVSurfWriteVTS(PVSurf *pvsurf, const char *dirName);
+
+//---------------------------------------------------------------------------
+
+void OutputBufferWrite(
+	FILE     *fp,
+	float    *buff,
+	PetscInt  cn);
+
+PetscErrorCode PVSurfWriteCoord(PVSurf *pvsurf, FILE *fp);
+
+PetscErrorCode PVSurfWriteVel(PVSurf *pvsurf, FILE *fp);
+
+PetscErrorCode PVSurfWriteTopo(PVSurf *pvsurf, FILE *fp);
+
+// PetscErrorCode PVSurfWriteAmplitude(PVSurf *pvsurf, FILE *fp);
 
 //---------------------------------------------------------------------------
 #endif
