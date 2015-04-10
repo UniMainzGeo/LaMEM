@@ -140,6 +140,18 @@ FactorSurfaceLayer			= 		0.3 		# How thick is the surface layer (if option 2 is 
 	-save_breakpoints 0
 #	-SavePartitioning
 
+
+	-surf_use       1
+	-surf_level     0.5
+	-surf_air_phase 1
+	-surf_max_angle 45.0
+
+	-out_surf_pvd 1
+	-out_surf_velocity 1
+	-out_surf_topography 1
+	-out_surf_amplitude 1
+
+
 	-out_pvd 1
 	-out_phase 1  
 	-out_density 1
@@ -186,7 +198,7 @@ DII_ref              = 1
 	<MaterialStart>
 		ID   = 1
 		rho0 = 2
-		eta  = 1e5
+		eta  = 1e1
 	<MaterialEnd>
 
 	

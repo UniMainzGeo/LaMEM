@@ -28,7 +28,7 @@ PetscErrorCode FreeSurfClear(FreeSurf *surf);
 
 PetscErrorCode FreeSurfCreate(FreeSurf *surf, JacRes *jr);
 
-PetscErrorCode FreeSurfReadFromOptions(FreeSurf *surf);
+PetscErrorCode FreeSurfReadFromOptions(FreeSurf *surf, Scaling *scal);
 
 PetscErrorCode FreeSurfDestroy(FreeSurf *surf);
 

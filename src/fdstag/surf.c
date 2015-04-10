@@ -39,7 +39,7 @@ PetscErrorCode FreeSurfCreate(FreeSurf *surf, JacRes *jr)
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
 
-	ierr = FreeSurfReadFromOptions(surf); CHKERRQ(ierr);
+	ierr = FreeSurfReadFromOptions(surf, &jr->scal); CHKERRQ(ierr);
 
 	// free surface cases only
 	if(surf->UseFreeSurf != PETSC_TRUE) PetscFunctionReturn(0);
@@ -76,13 +76,20 @@ PetscErrorCode FreeSurfCreate(FreeSurf *surf, JacRes *jr)
 //---------------------------------------------------------------------------
 #undef __FUNCT__
 #define __FUNCT__ "FreeSurfReadFromOptions"
-PetscErrorCode FreeSurfReadFromOptions(FreeSurf *surf)
+PetscErrorCode FreeSurfReadFromOptions(FreeSurf *surf, Scaling *scal)
 {
+	PetscErrorCode ierr;
 	PetscFunctionBegin;
 
-	// ad-hoc
-	surf->UseFreeSurf = PETSC_TRUE;
-	surf->InitLevel   = 0.5;
+	// read output flags
+	ierr = PetscOptionsGetBool  (NULL, "-surf_use",       &surf->UseFreeSurf,NULL); CHKERRQ(ierr);
+	ierr = PetscOptionsGetScalar(NULL, "-surf_level",     &surf->InitLevel,  NULL); CHKERRQ(ierr);
+	ierr = PetscOptionsGetInt   (NULL, "-surf_air_phase", &surf->AirPhase,   NULL); CHKERRQ(ierr);
+	ierr = PetscOptionsGetScalar(NULL, "-surf_max_angle", &surf->MaxAngle,   NULL); CHKERRQ(ierr);
+
+	// nondimensionalize
+	surf->InitLevel /= scal->length;
+	surf->MaxAngle  /= scal->angle;
 
 	PetscFunctionReturn(0);
 }
