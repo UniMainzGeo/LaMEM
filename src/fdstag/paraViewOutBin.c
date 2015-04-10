@@ -45,9 +45,6 @@ PetscErrorCode OutBufCreate(OutBuf *outbuf, JacRes *jr)
 	// allocate output buffer
 	ierr = PetscMalloc((size_t)(_max_num_comp_*nx*ny*nz)*sizeof(float), &outbuf->buff); CHKERRQ(ierr);
 
-	// allocate corner buffers
-	ierr = DMCreateLocalVector (fs->DA_COR, &outbuf->lbcor); CHKERRQ(ierr);
-
 	// set pointers to center, corner & edge buffers (reuse from JacRes object)
 	outbuf->lbcen = jr->ldxx;
 	outbuf->lbcor = jr->lbcor;
