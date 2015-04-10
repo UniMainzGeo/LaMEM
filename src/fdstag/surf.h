@@ -43,7 +43,7 @@ PetscErrorCode FreeSurfGetVelComp(
 
 PetscErrorCode FreeSurfGetTopo(FreeSurf *surf);
 
-PetscInt InterpTriangle(
+PetscInt InterpolateTriangle(
 	PetscScalar *x,   // x-coordinates of triangle
 	PetscScalar *y,   // y-coordinates of triangle
 	PetscScalar *f,   // interpolated field
@@ -51,6 +51,15 @@ PetscInt InterpTriangle(
 	PetscScalar  xp,  // x-coordinate of point
 	PetscScalar  yp,  // y-coordinate of point
 	PetscScalar *fp); // field value in the point
+
+PetscInt IntersectTriangularPrism(
+	PetscScalar *x,    // x-coordinates of prism base
+	PetscScalar *y,    // y-coordinates of prism base
+	PetscScalar *z,    // z-coordinates of prism top surface
+	PetscInt    *i,    // indices of base corners
+	PetscScalar  zbot, // z-coordinate of cell bottom plane
+	PetscScalar  ztop, // z-coordinate of cell top plane
+	PetscScalar *v);   // volume of triangular prism inside cell
 
 //---------------------------------------------------------------------------
 

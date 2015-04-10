@@ -234,7 +234,7 @@ void OutVecDestroy(OutVec *outvec)
 void OutMaskSetDefault(OutMask *omask)
 {
 	// clear
-	memset(omask, 0, sizeof(OutMask));
+	PetscMemzero(omask, sizeof(OutMask));
 
 	omask->phase          = 1;
 	omask->viscosity      = 1;

@@ -185,7 +185,7 @@ PetscErrorCode Discret1DCreate(
 	PetscFunctionBegin;
 
 	// initialize
-	memset(ds, 0, sizeof(ds));
+	ierr = PetscMemzero(ds, sizeof(Discret1D)); CHKERRQ(ierr);
 
 	// number of processors
 	ds->nproc = nproc;

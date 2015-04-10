@@ -373,7 +373,7 @@ PetscErrorCode FreeSurfGetTopo(FreeSurf *surf)
 
 		for(jj = 0; jj < 16; jj++)
 		{
-			found = InterpTriangle(cx, cy, cz, tria + 3*jj, X, Y, &Z);
+			found = InterpolateTriangle(cx, cy, cz, tria + 3*jj, X, Y, &Z);
 
 			if(found) break;
 		}
@@ -402,7 +402,7 @@ PetscErrorCode FreeSurfGetTopo(FreeSurf *surf)
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-PetscInt InterpTriangle(
+PetscInt InterpolateTriangle(
 	PetscScalar *x,  // x-coordinates of triangle
 	PetscScalar *y,  // y-coordinates of triangle
 	PetscScalar *f,  // interpolated field
