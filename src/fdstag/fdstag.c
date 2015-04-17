@@ -879,9 +879,9 @@ PetscErrorCode FDSTAGCreate(
 	Py = PETSC_DECIDE;
 	Pz = PETSC_DECIDE;
 
-//	PetscOptionsGetInt(PETSC_NULL, "-da_proc_x", &Px, PETSC_NULL); // fix # of processors in x-direction
-//	PetscOptionsGetInt(PETSC_NULL, "-da_proc_y", &Py, PETSC_NULL); // fix # of processors in y-direction
-//	PetscOptionsGetInt(PETSC_NULL, "-da_proc_z", &Pz, PETSC_NULL); // fix # of processors in z-direction
+	PetscOptionsGetInt(PETSC_NULL, "-cpu_x", &Px, PETSC_NULL); // fix # of processors in x-direction
+	PetscOptionsGetInt(PETSC_NULL, "-cpu_y", &Py, PETSC_NULL); // fix # of processors in y-direction
+	PetscOptionsGetInt(PETSC_NULL, "-cpu_z", &Pz, PETSC_NULL); // fix # of processors in z-direction
 
 	// partition central points (DA_CEN) with boundary ghost points (1-layer stencil box)
 	ierr = DMDACreate3d(PETSC_COMM_WORLD,
