@@ -314,8 +314,8 @@ void ScalingInput(Scaling *scal, UserCtx *user)
 
 	// scale mesh segment delimiters
 	ScalingMeshSegDir(scal, &user->mseg_x);
-	ScalingMeshSegDir(scal, &user->mseg_x);
-	ScalingMeshSegDir(scal, &user->mseg_x);
+	ScalingMeshSegDir(scal, &user->mseg_y);
+	ScalingMeshSegDir(scal, &user->mseg_z);
 
 }
 //---------------------------------------------------------------------------
