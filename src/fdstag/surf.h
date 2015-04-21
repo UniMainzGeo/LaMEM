@@ -41,7 +41,9 @@ PetscErrorCode FreeSurfGetVelComp(
 	PetscErrorCode (*interp)(FDSTAG *, Vec, Vec, InterpFlags),
 	Vec vcomp_grid, Vec vcomp_surf);
 
-PetscErrorCode FreeSurfGetTopo(FreeSurf *surf);
+PetscErrorCode FreeSurfAdvectTopo(FreeSurf *surf);
+
+PetscErrorCode FreeSurfGetAirPhaseRatio(FreeSurf *surf);
 
 PetscInt InterpolateTriangle(
 	PetscScalar *x,   // x-coordinates of triangle
@@ -50,20 +52,34 @@ PetscInt InterpolateTriangle(
 	PetscInt    *i,   // indices of triangle corners
 	PetscScalar  xp,  // x-coordinate of point
 	PetscScalar  yp,  // y-coordinate of point
+	PetscScalar  tol, // relative tolerance
 	PetscScalar *fp); // field value in the point
 
-PetscInt IntersectTriangularPrism(
-	PetscScalar *x,    // x-coordinates of prism base
-	PetscScalar *y,    // y-coordinates of prism base
-	PetscScalar *z,    // z-coordinates of prism top surface
-	PetscInt    *i,    // indices of base corners
-	PetscScalar  zbot, // z-coordinate of cell bottom plane
-	PetscScalar  ztop, // z-coordinate of cell top plane
-	PetscScalar *v);   // volume of triangular prism inside cell
+PetscScalar IntersectTriangularPrism(
+	PetscScalar *x,     // x-coordinates of prism base
+	PetscScalar *y,     // y-coordinates of prism base
+	PetscScalar *z,     // z-coordinates of prism top surface
+	PetscInt    *i,     // indices of base corners
+	PetscScalar  vcell, // total volume of cell
+	PetscScalar  bot,   // z-coordinate of bottom plane
+	PetscScalar  top,   // z-coordinate of top plane
+	PetscScalar  tol);  // relative tolerance
 
 //---------------------------------------------------------------------------
 
 #define GET_AREA_TRIANG(x1, x2, x3, y1, y2, y3) PetscAbsScalar((x1-x3)*(y2-y3)-(x2-x3)*(y1-y3))
+
+#define GET_VOLUME_PRISM(x1, x2, x3, y1, y2, y3, z1, z2, z3, level) \
+	((z1+z2+z3)/3.0 > level ? ((z1+z2+z3)/3.0-level)*PetscAbsScalar((x1-x3)*(y2-y3)-(x2-x3)*(y1-y3)) : 0)
+
+#define INTERSECT_EDGE(x1, y1, z1, x2, y2, z2, xp, yp, zp, level, dh) \
+	zp = level; \
+	w  = z1; if(z2 < w) w = z2; if(zp < w) zp = w; \
+	w  = z1; if(z2 > w) w = z2; if(zp > w) zp = w; \
+	w  = 0.0; \
+	if(PetscAbsScalar(z2-z1) > dh) w = (zp-z1)/(z2-z1); \
+	xp = x1 + w*(x2-x1); \
+	yp = y1 + w*(y2-y1);
 
 //---------------------------------------------------------------------------
 #endif

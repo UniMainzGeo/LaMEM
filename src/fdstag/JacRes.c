@@ -141,6 +141,9 @@ PetscErrorCode JacResCreate(
 	// create scatter context
 //	ierr = FDSTAGCreateScatter(fs, jrctx); CHKERRQ(ierr);
 
+	// default geometry tolerance
+	jr->gtol = 1e-15;
+
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------

@@ -75,6 +75,7 @@ typedef struct
 	PetscScalar grav[SPDIM]; // global gravity components
 	PetscScalar FSSA;        // density gradient penalty parameter
 	//                          (a.k.a. free-surface-stabilization-algorithm)
+	PetscScalar gtol;        // geometry tolerance
 
 } JacRes;
 //---------------------------------------------------------------------------

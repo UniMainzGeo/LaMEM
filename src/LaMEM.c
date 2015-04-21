@@ -38,6 +38,17 @@ static char help[] = "Solves 3D Stokes equations using multigrid .\n\n";
 
 extern PetscErrorCode PCCreate_SemiRedundant(PC);
 
+#include "fdstag.h"
+#include "Utils.h"
+#include "solVar.h"
+#include "scaling.h"
+#include "tssolve.h"
+#include "bc.h"
+#include "JacRes.h"
+#include "advect.h"
+#include "interpolate.h"
+#include "surf.h"
+
 /*==========================================================================================================*/
 /* Main routine */
 #undef __FUNCT__
@@ -58,6 +69,7 @@ int main(int argc,char **argv )
 
 	// cleanup PETSC
 	ierr = PetscFinalize(); CHKERRQ(ierr);
+
 	return 0;
 }
 /* End of code */

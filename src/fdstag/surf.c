@@ -138,7 +138,10 @@ PetscErrorCode FreeSurfAdvect(FreeSurf *surf)
 	ierr = FreeSurfGetVelComp(surf, &InterpZFaceCorner, jr->lvz, surf->vz); CHKERRQ(ierr);
 
 	// advect topography
-	ierr = FreeSurfGetTopo(surf); CHKERRQ(ierr);
+	ierr = FreeSurfAdvectTopo(surf); CHKERRQ(ierr);
+
+	// update phase ratios taking into account free surface motion
+	ierr = FreeSurfGetAirPhaseRatio(surf);
 
 	PetscFunctionReturn(0);
 }
@@ -241,8 +244,8 @@ PetscErrorCode FreeSurfGetVelComp(
 }
 //---------------------------------------------------------------------------
 #undef __FUNCT__
-#define __FUNCT__ "FreeSurfGetTopo"
-PetscErrorCode FreeSurfGetTopo(FreeSurf *surf)
+#define __FUNCT__ "FreeSurfAdvectTopo"
+PetscErrorCode FreeSurfAdvectTopo(FreeSurf *surf)
 {
 	// advect topography on the free surface mesh
 
@@ -251,7 +254,7 @@ PetscErrorCode FreeSurfGetTopo(FreeSurf *surf)
 	PetscInt    I, I1, I2, J, J1, J2;
 	PetscInt    i, j, jj, found, nx, ny, sx, sy, L, mx, my;
 	PetscScalar cx[13], cy[13], cz[13];
-	PetscScalar X, X1, X2, Y, Y1, Y2, Z, Exx, Eyy, step;
+	PetscScalar X, X1, X2, Y, Y1, Y2, Z, Exx, Eyy, step, gtol;
 	PetscScalar ***advect, ***topo, ***vx, ***vy, ***vz;
 
 	// local search grid triangulation
@@ -290,8 +293,9 @@ PetscErrorCode FreeSurfGetTopo(FreeSurf *surf)
 	mx   = fs->dsx.tnods;
 	my   = fs->dsy.tnods;
 	L    = fs->dsz.rank;
+	gtol = jr->gtol;
 
-	// access surface topograpy and velocity
+	// access surface topography and velocity
 	ierr = DMDAVecGetArray(surf->DA_SURF, surf->wa,    &advect); CHKERRQ(ierr);
 	ierr = DMDAVecGetArray(surf->DA_SURF, surf->topo,  &topo);   CHKERRQ(ierr);
 	ierr = DMDAVecGetArray(surf->DA_SURF, surf->vx,    &vx);     CHKERRQ(ierr);
@@ -373,7 +377,7 @@ PetscErrorCode FreeSurfGetTopo(FreeSurf *surf)
 
 		for(jj = 0; jj < 16; jj++)
 		{
-			found = InterpolateTriangle(cx, cy, cz, tria + 3*jj, X, Y, &Z);
+			found = InterpolateTriangle(cx, cy, cz, tria + 3*jj, X, Y, gtol, &Z);
 
 			if(found) break;
 		}
@@ -402,16 +406,129 @@ PetscErrorCode FreeSurfGetTopo(FreeSurf *surf)
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-PetscInt InterpolateTriangle(
-	PetscScalar *x,  // x-coordinates of triangle
-	PetscScalar *y,  // y-coordinates of triangle
-	PetscScalar *f,  // interpolated field
-	PetscInt    *i,  // indices of triangle corners
-	PetscScalar  xp, // x-coordinate of point
-	PetscScalar  yp, // y-coordinate of point
-	PetscScalar *fp) // field value in the point
+#undef __FUNCT__
+#define __FUNCT__ "FreeSurfGetAirPhaseRatio"
+PetscErrorCode FreeSurfGetAirPhaseRatio(FreeSurf *surf)
 {
-	PetscScalar xa, xb, xc, ya, yb, yc, la, lb, lc, A;
+	// compute proper phase ratio of air phase
+
+	JacRes      *jr;
+	FDSTAG      *fs;
+	PetscScalar cx[5], cy[5], cz[5];
+	PetscScalar ***topo, *phRat, vcell, phRatAir, gtol, cf;
+	PetscScalar xleft, xright, yfront, yback, zbot, ztop;
+	PetscInt    L, jj, iter, numPhases, AirPhase;
+	PetscInt    i, j, k, nx, ny, nz, sx, sy, sz;
+
+	// cell triangulation
+	PetscInt tria [] =
+	{
+		0, 1, 4, // 0
+		1, 3, 4, // 1
+		3, 2, 4, // 2
+		2, 0, 4  // 3
+	};
+
+	PetscErrorCode ierr;
+	PetscFunctionBegin;
+
+	// access context
+	jr        = surf->jr;
+	AirPhase  = surf->AirPhase;
+	fs        = jr->fs;
+	gtol      = jr->gtol;
+	numPhases = jr->numPhases;
+	L         = fs->dsz.rank;
+	iter      = 0;
+
+	// access surface topography
+	ierr = DMDAVecGetArray(surf->DA_SURF, surf->topo,  &topo); CHKERRQ(ierr);
+
+	// scan all local cells
+	ierr = DMDAGetCorners(fs->DA_CEN, &sx, &sy, &sz, &nx, &ny, &nz); CHKERRQ(ierr);
+
+	START_STD_LOOP
+	{
+		// get cell bounds
+		xleft  = COORD_NODE(i,   sx, fs->dsx);
+		xright = COORD_NODE(i+1, sx, fs->dsx);
+
+		yfront = COORD_NODE(j,   sy, fs->dsy);
+		yback  = COORD_NODE(j+1, sy, fs->dsy);
+
+		zbot   = COORD_NODE(k,   sz, fs->dsz);
+		ztop   = COORD_NODE(k+1, sz, fs->dsz);
+
+		// get cell volume
+		vcell  = (xright - xleft)*(yback - yfront)*(ztop - zbot);
+
+		// setup coordinate arrays
+		cx[0]  = xleft;
+		cx[1]  = xright;
+		cx[2]  = xleft;
+		cx[3]  = xright;
+		cx[4]  = (xleft + xright)/2.0;
+
+		cy[0]  = yfront;
+		cy[1]  = yfront;
+		cy[2]  = yback;
+		cy[3]  = yback;
+		cy[4]  = (yfront + yback)/2.0;
+
+		cz[0]  = topo[L][j  ][i  ];
+		cz[1]  = topo[L][j  ][i+1];
+		cz[2]  = topo[L][j+1][i  ];
+		cz[3]  = topo[L][j+1][i+1];
+		cz[4]  = (cz[0] + cz[1] + cz[3] + cz[4])/4.0;
+
+		// compute actual air phase ratio in the cell
+		phRatAir = 1.0;
+
+		for(jj = 0; jj < 4; jj++)
+		{
+			phRatAir -= IntersectTriangularPrism(cx, cy, cz, tria + 3*jj, vcell, zbot, ztop, gtol);
+		}
+
+		// normalize cell phase ratio if necessary
+		if(phRat[AirPhase] != 1.0)
+		{
+			// access phase ratio array
+			phRat = jr->svCell[iter++].phRat;
+
+			// get scaling factor
+			cf = (1.0 - phRatAir)/(1.0 - phRat[AirPhase]);
+
+			// scale solid phases
+			for(jj = 0; jj < numPhases; jj++)
+			{
+				if(jj != AirPhase) phRat[jj] *= cf;
+			}
+
+		}
+
+		// WARNING !!!
+		// think what to do if(phRat[AirPhase] == 1.0 && phRatAir != 1.0)
+
+	}
+	END_STD_LOOP
+
+	// restore access
+	ierr = DMDAVecRestoreArray(surf->DA_SURF, surf->topo, &topo); CHKERRQ(ierr);
+
+	PetscFunctionReturn(0);
+}
+//---------------------------------------------------------------------------
+PetscInt InterpolateTriangle(
+	PetscScalar *x,   // x-coordinates of triangle
+	PetscScalar *y,   // y-coordinates of triangle
+	PetscScalar *f,   // interpolated field
+	PetscInt    *i,   // indices of triangle corners
+	PetscScalar  xp,  // x-coordinate of point
+	PetscScalar  yp,  // y-coordinate of point
+	PetscScalar  tol, // relative tolerance
+	PetscScalar *fp)  // field value in the point
+{
+	PetscScalar xa, xb, xc, ya, yb, yc, la, lb, lc, A, S;
 
 	// function returns:
 	// 1 - if point is inside, fp contains the interpolated value
@@ -437,22 +554,136 @@ PetscInt InterpolateTriangle(
 	// triangle a-b-c (total area)
 	A  = GET_AREA_TRIANG(xa, xb, xc, ya, yb, yc);
 
+	// sum
+	S = la + lb + lc;
+
 	// perform point test
-	if(la + lb + lc > A*(1.0 + FLT_EPSILON)) return 0;
+	if(S > A*(1.0 + tol)) return 0;
 
 	// perform interpolation
-	la /= A;
-	lb /= A;
-	lc /= A;
+	la /= S;
+	lb /= S;
+	lc /= S;
 
 	(*fp) = la*f[i[0]] + lb*f[i[1]] + lc*f[i[2]];
 
 	return 1;
 }
 //---------------------------------------------------------------------------
+PetscScalar IntersectTriangularPrism(
+	PetscScalar *x,     // x-coordinates of prism base
+	PetscScalar *y,     // y-coordinates of prism base
+	PetscScalar *z,     // z-coordinates of prism top surface
+	PetscInt    *i,     // indices of base corners
+	PetscScalar  vcell, // total volume of cell
+	PetscScalar  bot,   // z-coordinate of bottom plane
+	PetscScalar  top,   // z-coordinate of top plane
+	PetscScalar  tol)   // relative tolerance
+{
+    // compute prism volume cut by top and bottom horizontal planes
+	// relative to the total volume of the cell
 
+	PetscScalar xa, xb, xc, ya, yb, yc, za, zb, zc;
+	PetscScalar xab, xbc, xca, yab, ybc, yca, zab, zbc, zca;
+	PetscScalar dh, w, vbot, vtop, zmin, zmax;
+
+	// access coordinates
+	xa = x[i[0]];
+	xb = x[i[1]];
+	xc = x[i[2]];
+	ya = y[i[0]];
+	yb = y[i[1]];
+	yc = y[i[2]];
+	za = z[i[0]];
+	zb = z[i[1]];
+	zc = z[i[2]];
+
+	// get absolute tolerance
+	dh = (top-bot)*tol;
+
+	// get vertical coordinate range of the prism top surface
+	zmin = za; if(zb < zmin) zmin = zb; if(zc < zmin) zmin = zc;
+	zmax = za; if(zb > zmax) zmax = zb; if(zc > zmax) zmax = zc;
+
+	// check for empty cell
+	if(zmax <= bot)
+	{
+		return 0.0;
+	}
+
+	// check for filled cell
+	if(zmin >= top)
+	{
+		return 0.25;
+	}
+
+	// get volume above bottom plane
+	vbot = 0.0;
+
+	// determine edge intersection points
+	INTERSECT_EDGE(xa, ya, za, xb, yb, zb, xab, yab, zab, bot, dh); // edge a-b
+	INTERSECT_EDGE(xb, yb, zb, xc, yc, zc, xbc, ybc, zbc, bot, dh); // edge b-c
+	INTERSECT_EDGE(xc, yc, zc, xa, ya, za, xca, yca, zca, bot, dh); // edge c-a
+
+	// compute volume
+	vbot += GET_VOLUME_PRISM(xa,  xab, xca, ya,  yab, yca, za,  zab, zca, bot); // prism a--ab-ca
+	vbot += GET_VOLUME_PRISM(xb,  xbc, xab, yb,  ybc, yab, zb,  zbc, zab, bot); // prism b--bc-ab
+	vbot += GET_VOLUME_PRISM(xc,  xca, xbc, yc,  yca, ybc, zc,  zca, zbc, bot); // prism c--ca-bc
+	vbot += GET_VOLUME_PRISM(xab, xbc, xca, yab, ybc, yca, zab, zbc, zca, bot); // prism ab-bc-ca
+
+	// get volume above top plane
+	vtop = 0.0;
+
+	if(zmax > top)
+	{
+		// determine edge intersection points
+		INTERSECT_EDGE(xa, ya, za, xb, yb, zb, xab, yab, zab, top, dh); // edge a-b
+		INTERSECT_EDGE(xb, yb, zb, xc, yc, zc, xbc, ybc, zbc, top, dh); // edge b-c
+		INTERSECT_EDGE(xc, yc, zc, xa, ya, za, xca, yca, zca, top, dh); // edge c-a
+
+		// compute volume
+		vtop += GET_VOLUME_PRISM(xa,  xab, xca, ya,  yab, yca, za,  zab, zca, top); // prism a--ab-ca
+		vtop += GET_VOLUME_PRISM(xb,  xbc, xab, yb,  ybc, yab, zb,  zbc, zab, top); // prism b--bc-ab
+		vtop += GET_VOLUME_PRISM(xc,  xca, xbc, yc,  yca, ybc, zc,  zca, zbc, top); // prism c--ca-bc
+		vtop += GET_VOLUME_PRISM(xab, xbc, xca, yab, ybc, yca, zab, zbc, zca, top); // prism ab-bc-ca
+	}
+
+	// volume inside cell = volume above bottom plane - volume above top plane
+	return (vbot - vtop)/vcell;
+}
+//---------------------------------------------------------------------------
 /*
-//============================================================================================================================
+{
+	// TEST
+
+	PetscScalar bot, top, gtol, v1, v2;
+
+	PetscScalar x[] = { 1.0, 7.0, 2.0 };
+	PetscScalar y[] = { 2.0, 1.0, 5.0 };
+	PetscScalar z[] = { 1.0, 2.0, 3.0 };
+	PetscInt    i[] = { 0,   1,   2   };
+
+	gtol  = 1e-12;
+
+	bot   = 1.0;
+	top   = 1.5;
+
+	v1 = IntersectTriangularPrism(x, y, z, i, 1.0, bot, top, gtol);
+
+	bot   = 1.5;
+	top   = 3.0;
+
+	v2 = IntersectTriangularPrism(x, y, z, i, 1.0, bot, top, gtol);
+
+
+	printf("\n\n\n v1: %f \n\n\n", v1);
+
+	printf("\n\n\n v2: %f \n\n\n", v2);
+
+	printf("\n\n\n sum: %f \n\n\n", v1+v2);
+
+}
+//---------------------------------------------------------------------------
 #undef __FUNCT__
 #define __FUNCT__ "SetSinusoidalPerturbation"
 // There are some cases in which we set an initial sinusoidal perturbation on the free surface
