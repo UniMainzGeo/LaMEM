@@ -147,7 +147,7 @@ extern PetscInt __Q2_TYPE__;
 
 #define LAMEM_FREE(a) if(a) { free(a); a = NULL; }
 
-#define LAMEM_CHECKEQ(a, b, rtol, atol) (PetscAbsScalar(a-b) <= rtol*(PetscAbsScalar(a) + PetscAbsScalar(b)) + atol)
+#define LAMEM_CHECKEQ(a, b, rtol, atol) (PetscAbsScalar((a)-(b)) <= rtol*(PetscAbsScalar(a) + PetscAbsScalar(b)) + atol)
 
 #define IS_POWER_OF_TWO(x) ((x) && !((x) & ((x) - 1)))
 

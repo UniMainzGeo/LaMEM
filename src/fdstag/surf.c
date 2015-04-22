@@ -449,6 +449,9 @@ PetscErrorCode FreeSurfGetAirPhaseRatio(FreeSurf *surf)
 
 	START_STD_LOOP
 	{
+		// access phase ratio array
+		phRat = jr->svCell[iter++].phRat;
+
 		// get cell bounds
 		xleft  = COORD_NODE(i,   sx, fs->dsx);
 		xright = COORD_NODE(i+1, sx, fs->dsx);
@@ -492,9 +495,6 @@ PetscErrorCode FreeSurfGetAirPhaseRatio(FreeSurf *surf)
 		// normalize cell phase ratio if necessary
 		if(phRat[AirPhase] != 1.0)
 		{
-			// access phase ratio array
-			phRat = jr->svCell[iter++].phRat;
-
 			// get scaling factor
 			cf = (1.0 - phRatAir)/(1.0 - phRat[AirPhase]);
 
