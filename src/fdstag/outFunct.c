@@ -442,7 +442,7 @@ PetscErrorCode PVOutWriteContRes(JacRes *jr, OutBuf *outbuf)
 
 	GLOBAL_TO_LOCAL(outbuf->fs->DA_CEN, jr->gc, outbuf->lbcen)
 
-	INTERPOLATE_ACCESS(jr->gc, InterpCenterCorner, 1, 0, 0.0)
+	INTERPOLATE_ACCESS(outbuf->lbcen, InterpCenterCorner, 1, 0, 0.0)
 
 	PetscFunctionReturn(0);
 }
