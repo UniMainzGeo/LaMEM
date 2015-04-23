@@ -11,14 +11,14 @@
 //---------------------------------------------------------------------------
 typedef struct
 {
-	FreeSurf *surf;       // free surface object
-	char     *outfile;    // output file name
-	float    *buff;       // direct output buffer
-	long int  offset;     // pvd file offset
-	PetscInt  outpvd;     // pvd file output flag
-	PetscInt  velocity;   // velocity output flag
-	PetscInt  topography; // surface topography output flag
-	PetscInt  amplitude;  // topography amplitude output flag
+	FreeSurf   *surf;       // free surface object
+	char       *outfile;    // output file name
+	float      *buff;       // direct output buffer
+	long int    offset;     // pvd file offset
+	PetscInt    outpvd;     // pvd file output flag
+	PetscInt    velocity;   // velocity output flag
+	PetscInt    topography; // surface topography output flag
+	PetscInt    amplitude;  // topography amplitude output flag
 
 } PVSurf;
 //---------------------------------------------------------------------------
@@ -57,7 +57,7 @@ PetscErrorCode PVSurfWriteVel(PVSurf *pvsurf, FILE *fp);
 
 PetscErrorCode PVSurfWriteTopo(PVSurf *pvsurf, FILE *fp);
 
-// PetscErrorCode PVSurfWriteAmplitude(PVSurf *pvsurf, FILE *fp);
+PetscErrorCode PVSurfWriteAmplitude(PVSurf *pvsurf, FILE *fp);
 
 //---------------------------------------------------------------------------
 #endif

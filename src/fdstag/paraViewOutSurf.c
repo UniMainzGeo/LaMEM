@@ -195,10 +195,10 @@ PetscErrorCode PVSurfWritePVTS(PVSurf *pvsurf, const char *dirName)
 		fprintf(fp,"\t\t\t<PDataArray type=\"Float32\" Name=\"topography %s\" NumberOfComponents=\"1\" format=\"appended\"/>\n", scal->lbl_length);
 	}
 
-//	if(pvsurf->amplitude)
-//	{
-//		fprintf(fp,"\t\t\t<PDataArray type=\"Float32\" Name=\"amplitude %s\" NumberOfComponents=\"1\" format=\"appended\"/>\n", scal->lbl_length);
-//	}
+	if(pvsurf->amplitude)
+	{
+		fprintf(fp,"\t\t\t<PDataArray type=\"Float32\" Name=\"amplitude %s\" NumberOfComponents=\"1\" format=\"appended\"/>\n", scal->lbl_length);
+	}
 
 	fprintf(fp, "\t\t</PPointData>\n");
 
@@ -247,80 +247,82 @@ PetscErrorCode PVSurfWriteVTS(PVSurf *pvsurf, const char *dirName)
 	scal = &pvsurf->surf->jr->scal;
 
 	// only ranks zero in z direction generate this file
-	if(fs->dsz.rank) PetscFunctionReturn(0);
-
-	// open outfile_p_XXXXXX.vts file in the output directory (write mode)
-	asprintf(&fname, "%s/%s_p%1.6lld.vts", dirName, pvsurf->outfile, (LLD)fs->dsz.color);
-	fp = fopen(fname,"w");
-	if(fp == NULL) SETERRQ1(PETSC_COMM_SELF, 1,"cannot open file %s", fname);
-	free(fname);
-
-	// get sizes of output grid
-	GET_OUTPUT_RANGE(rx, nx, sx, fs->dsx)
-	GET_OUTPUT_RANGE(ry, ny, sy, fs->dsy)
-
-	// write header
-	WriteXMLHeader(fp, "StructuredGrid");
-
-	// open structured grid data block (write total grid size)
-	fprintf(fp, "\t<StructuredGrid WholeExtent=\"%lld %lld %lld %lld 1 1\">\n",
-		(LLD)(fs->dsx.starts[rx] + 1), (LLD)(fs->dsx.starts[rx+1] + 1),
-		(LLD)(fs->dsy.starts[ry] + 1), (LLD)(fs->dsy.starts[ry+1] + 1));
-
-	// open sub-domain (piece) description block
-	fprintf(fp, "\t\t<Piece Extent=\"%lld %lld %lld %lld 1 1\">\n",
-		(LLD)(fs->dsx.starts[rx] + 1), (LLD)(fs->dsx.starts[rx+1] + 1),
-		(LLD)(fs->dsy.starts[ry] + 1), (LLD)(fs->dsy.starts[ry+1] + 1));
-
-	// write cell data block (empty)
-	fprintf(fp, "\t\t\t<CellData>\n");
-	fprintf(fp, "\t\t\t</CellData>\n");
-
-	// write coordinate block
-	fprintf(fp, "\t\t<Points>\n");
-
-	fprintf(fp,"\t\t\t<DataArray type=\"Float32\" Name=\"Points\" NumberOfComponents=\"3\" format=\"appended\" offset=\"%lld\"/>\n",
-		(LLD)offset);
-
-	offset += sizeof(int) + sizeof(float)*(size_t)(nx*ny*3);
-
-	fprintf(fp, "\t\t</Points>\n");
-
-	// write description of output vectors
-	fprintf(fp, "\t\t<PointData>\n");
-
-	if(pvsurf->velocity)
+	if(!fs->dsz.rank)
 	{
-		fprintf(fp,"\t\t\t<DataArray type=\"Float32\" Name=\"velocity %s\" NumberOfComponents=\"3\" format=\"appended\" offset=\"%lld\"/>\n",
-			scal->lbl_velocity, (LLD)offset);
+		// open outfile_p_XXXXXX.vts file in the output directory (write mode)
+		asprintf(&fname, "%s/%s_p%1.6lld.vts", dirName, pvsurf->outfile, (LLD)fs->dsz.color);
+		fp = fopen(fname,"w");
+		if(fp == NULL) SETERRQ1(PETSC_COMM_SELF, 1,"cannot open file %s", fname);
+		free(fname);
+
+		// get sizes of output grid
+		GET_OUTPUT_RANGE(rx, nx, sx, fs->dsx)
+		GET_OUTPUT_RANGE(ry, ny, sy, fs->dsy)
+
+		// write header
+		WriteXMLHeader(fp, "StructuredGrid");
+
+		// open structured grid data block (write total grid size)
+		fprintf(fp, "\t<StructuredGrid WholeExtent=\"%lld %lld %lld %lld 1 1\">\n",
+			(LLD)(fs->dsx.starts[rx] + 1), (LLD)(fs->dsx.starts[rx+1] + 1),
+			(LLD)(fs->dsy.starts[ry] + 1), (LLD)(fs->dsy.starts[ry+1] + 1));
+
+		// open sub-domain (piece) description block
+		fprintf(fp, "\t\t<Piece Extent=\"%lld %lld %lld %lld 1 1\">\n",
+			(LLD)(fs->dsx.starts[rx] + 1), (LLD)(fs->dsx.starts[rx+1] + 1),
+			(LLD)(fs->dsy.starts[ry] + 1), (LLD)(fs->dsy.starts[ry+1] + 1));
+
+		// write cell data block (empty)
+		fprintf(fp, "\t\t\t<CellData>\n");
+		fprintf(fp, "\t\t\t</CellData>\n");
+
+		// write coordinate block
+		fprintf(fp, "\t\t<Points>\n");
+
+		fprintf(fp,"\t\t\t<DataArray type=\"Float32\" Name=\"Points\" NumberOfComponents=\"3\" format=\"appended\" offset=\"%lld\"/>\n",
+			(LLD)offset);
 
 		offset += sizeof(int) + sizeof(float)*(size_t)(nx*ny*3);
+
+		fprintf(fp, "\t\t</Points>\n");
+
+		// write description of output vectors
+		fprintf(fp, "\t\t<PointData>\n");
+
+		if(pvsurf->velocity)
+		{
+			fprintf(fp,"\t\t\t<DataArray type=\"Float32\" Name=\"velocity %s\" NumberOfComponents=\"3\" format=\"appended\" offset=\"%lld\"/>\n",
+				scal->lbl_velocity, (LLD)offset);
+
+			offset += sizeof(int) + sizeof(float)*(size_t)(nx*ny*3);
+		}
+
+		if(pvsurf->topography)
+		{
+			fprintf(fp,"\t\t\t<DataArray type=\"Float32\" Name=\"topography %s\" NumberOfComponents=\"1\" format=\"appended\" offset=\"%lld\"/>\n",
+				scal->lbl_length, (LLD)offset);
+
+			offset += sizeof(int) + sizeof(float)*(size_t)(nx*ny);
+		}
+
+		if(pvsurf->amplitude)
+		{
+			fprintf(fp,"\t\t\t<DataArray type=\"Float32\" Name=\"amplitude %s\" NumberOfComponents=\"1\" format=\"appended\" offset=\"%lld\"/>\n",
+				scal->lbl_length, (LLD)offset);
+
+			offset += sizeof(int) + sizeof(float)*(size_t)(nx*ny);
+		}
+
+		fprintf(fp, "\t\t</PointData>\n");
+
+		// close sub-domain and grid blocks
+		fprintf(fp, "\t\t</Piece>\n");
+		fprintf(fp, "\t</StructuredGrid>\n");
+
+		// write appended data section
+		fprintf(fp, "\t<AppendedData encoding=\"raw\">\n");
+		fprintf(fp,"_");
 	}
-
-	if(pvsurf->topography)
-	{
-		fprintf(fp,"\t\t\t<DataArray type=\"Float32\" Name=\"topography %s\" NumberOfComponents=\"1\" format=\"appended\" offset=\"%lld\"/>\n",
-			scal->lbl_length, (LLD)offset);
-
-		offset += sizeof(int) + sizeof(float)*(size_t)(nx*ny);
-	}
-
-//	if(pvsurf->amplitude)
-//	{
-//		fprintf(fp,"\t\t\t<DataArray type=\"Float32\" Name=\"amplitude %s\" NumberOfComponents=\"1\" format=\"appended\" offset=\"%lld\"/>\n",
-//			scal->lbl_length, (LLD)offset);
-//		offset += sizeof(int) + sizeof(float)*(size_t)(nx*ny);
-//	}
-
-	fprintf(fp, "\t\t</PointData>\n");
-
-	// close sub-domain and grid blocks
-	fprintf(fp, "\t\t</Piece>\n");
-	fprintf(fp, "\t</StructuredGrid>\n");
-
-	// write appended data section
-	fprintf(fp, "\t<AppendedData encoding=\"raw\">\n");
-	fprintf(fp,"_");
 
 	// write point coordinates
 	ierr = PVSurfWriteCoord (pvsurf, fp); CHKERRQ(ierr);
@@ -328,14 +330,17 @@ PetscErrorCode PVSurfWriteVTS(PVSurf *pvsurf, const char *dirName)
 	// write output vectors
 	if(pvsurf->velocity)   { ierr = PVSurfWriteVel      (pvsurf, fp); CHKERRQ(ierr); }
 	if(pvsurf->topography) { ierr = PVSurfWriteTopo     (pvsurf, fp); CHKERRQ(ierr); }
-//	if(pvsurf->amplitude)  { ierr = PVSurfWriteAmplitude(pvsurf, fp); CHKERRQ(ierr); }
+	if(pvsurf->amplitude)  { ierr = PVSurfWriteAmplitude(pvsurf, fp); CHKERRQ(ierr); }
 
-	// close appended data section and file
-	fprintf(fp, "\n\t</AppendedData>\n");
-	fprintf(fp, "</VTKFile>\n");
+	if(!fs->dsz.rank)
+	{
+		// close appended data section and file
+		fprintf(fp, "\n\t</AppendedData>\n");
+		fprintf(fp, "</VTKFile>\n");
 
-	// close file
-	fclose(fp);
+		// close file
+		fclose(fp);
+	}
 
 	PetscFunctionReturn(0);
 }
@@ -345,6 +350,8 @@ void OutputBufferWrite(
 	float    *buff,
 	PetscInt  cn)
 {
+	if(!cn) return;
+
 	// dump output buffer contents to disk
 	int nbytes;
 
@@ -366,11 +373,12 @@ PetscErrorCode PVSurfWriteCoord(PVSurf *pvsurf, FILE *fp)
 	FDSTAG      *fs;
 	float       *buff;
 	PetscScalar ***topo, cf;
-	PetscInt    i, j, rx, ry, nx, ny, sx, sy, cn;
+	PetscInt    i, j, rx, ry, nx, ny, sx, sy, cn, L;
 
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
 
+	L    = 0;
 	cn   = 0;
 	buff = pvsurf->buff;
 	surf = pvsurf->surf;
@@ -380,18 +388,21 @@ PetscErrorCode PVSurfWriteCoord(PVSurf *pvsurf, FILE *fp)
 	GET_OUTPUT_RANGE(rx, nx, sx, fs->dsx)
 	GET_OUTPUT_RANGE(ry, ny, sy, fs->dsy)
 
-	ierr = DMDAVecGetArray(surf->DA_SURF, surf->topo, &topo); CHKERRQ(ierr);
+	ierr = DMDAVecGetArray(surf->DA_SURF, surf->ltopo, &topo); CHKERRQ(ierr);
 
-	START_PLANE_LOOP
+	if(!fs->dsz.rank)
 	{
-		// store node coordinates
-		buff[cn++] = (float)(cf*COORD_NODE(i, sx, fs->dsx));
-		buff[cn++] = (float)(cf*COORD_NODE(j, sy, fs->dsy));
-		buff[cn++] = (float)(cf*topo[0][j][i]);
+		START_PLANE_LOOP
+		{
+			// store node coordinates
+			buff[cn++] = (float)(cf*COORD_NODE(i, sx, fs->dsx));
+			buff[cn++] = (float)(cf*COORD_NODE(j, sy, fs->dsy));
+			buff[cn++] = (float)(cf*topo[L][j][i]);
+		}
+		END_PLANE_LOOP
 	}
-	END_PLANE_LOOP
 
-	ierr = DMDAVecRestoreArray(surf->DA_SURF, surf->topo, &topo); CHKERRQ(ierr);
+	ierr = DMDAVecRestoreArray(surf->DA_SURF, surf->ltopo, &topo); CHKERRQ(ierr);
 
 	OutputBufferWrite(fp, buff, cn);
 
@@ -406,11 +417,12 @@ PetscErrorCode PVSurfWriteVel(PVSurf *pvsurf, FILE *fp)
 	FDSTAG      *fs;
 	float       *buff;
 	PetscScalar ***vx, ***vy, ***vz, cf;
-	PetscInt    i, j, rx, ry, nx, ny, sx, sy, cn;
+	PetscInt    i, j, rx, ry, nx, ny, sx, sy, cn, L;
 
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
 
+	L    = 0;
 	cn   = 0;
 	buff = pvsurf->buff;
 	surf = pvsurf->surf;
@@ -424,14 +436,17 @@ PetscErrorCode PVSurfWriteVel(PVSurf *pvsurf, FILE *fp)
 	ierr = DMDAVecGetArray(surf->DA_SURF, surf->vy, &vy); CHKERRQ(ierr);
 	ierr = DMDAVecGetArray(surf->DA_SURF, surf->vz, &vz); CHKERRQ(ierr);
 
-	START_PLANE_LOOP
+	if(!fs->dsz.rank)
 	{
-		// store surface velocities
-		buff[cn++] = (float)(cf*vx[0][j][i]);
-		buff[cn++] = (float)(cf*vy[0][j][i]);
-		buff[cn++] = (float)(cf*vz[0][j][i]);
+		START_PLANE_LOOP
+		{
+			// store surface velocities
+			buff[cn++] = (float)(cf*vx[L][j][i]);
+			buff[cn++] = (float)(cf*vy[L][j][i]);
+			buff[cn++] = (float)(cf*vz[L][j][i]);
+		}
+		END_PLANE_LOOP
 	}
-	END_PLANE_LOOP
 
 	ierr = DMDAVecRestoreArray(surf->DA_SURF, surf->vx, &vx); CHKERRQ(ierr);
 	ierr = DMDAVecRestoreArray(surf->DA_SURF, surf->vy, &vy); CHKERRQ(ierr);
@@ -450,11 +465,12 @@ PetscErrorCode PVSurfWriteTopo(PVSurf *pvsurf, FILE *fp)
 	FDSTAG      *fs;
 	float       *buff;
 	PetscScalar ***topo, cf;
-	PetscInt    i, j, rx, ry, nx, ny, sx, sy, cn;
+	PetscInt    i, j, rx, ry, nx, ny, sx, sy, cn, L;
 
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
 
+	L    = 0;
 	cn   = 0;
 	buff = pvsurf->buff;
 	surf = pvsurf->surf;
@@ -464,24 +480,25 @@ PetscErrorCode PVSurfWriteTopo(PVSurf *pvsurf, FILE *fp)
 	GET_OUTPUT_RANGE(rx, nx, sx, fs->dsx)
 	GET_OUTPUT_RANGE(ry, ny, sy, fs->dsy)
 
-	ierr = DMDAVecGetArray(surf->DA_SURF, surf->topo, &topo); CHKERRQ(ierr);
+	ierr = DMDAVecGetArray(surf->DA_SURF, surf->ltopo, &topo); CHKERRQ(ierr);
 
-	START_PLANE_LOOP
+	if(!fs->dsz.rank)
 	{
-		// store surface topography
-		buff[cn++] = (float)(cf*topo[0][j][i]);
+		START_PLANE_LOOP
+		{
+			// store surface topography
+			buff[cn++] = (float)(cf*topo[L][j][i]);
+		}
+		END_PLANE_LOOP
 	}
-	END_PLANE_LOOP
 
-	ierr = DMDAVecRestoreArray(surf->DA_SURF, surf->topo, &topo); CHKERRQ(ierr);
+	ierr = DMDAVecRestoreArray(surf->DA_SURF, surf->ltopo, &topo); CHKERRQ(ierr);
 
 	OutputBufferWrite(fp, buff, cn);
 
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-/*
-WARNING! this function requires communication within one layer of processors!
 #undef __FUNCT__
 #define __FUNCT__ "PVSurfWriteAmplitude"
 PetscErrorCode PVSurfWriteAmplitude(PVSurf *pvsurf, FILE *fp)
@@ -490,11 +507,12 @@ PetscErrorCode PVSurfWriteAmplitude(PVSurf *pvsurf, FILE *fp)
 	FDSTAG      *fs;
 	float       *buff;
 	PetscScalar ***topo, avg_topo, cf;
-	PetscInt    i, j, rx, ry, nx, ny, sx, sy, cn;
+	PetscInt    i, j, rx, ry, nx, ny, sx, sy, cn, L;
 
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
 
+	L    = 0;
 	cn   = 0;
 	buff = pvsurf->buff;
 	surf = pvsurf->surf;
@@ -502,27 +520,28 @@ PetscErrorCode PVSurfWriteAmplitude(PVSurf *pvsurf, FILE *fp)
 	cf   = surf->jr->scal.length;
 
 	// get average topography
-	ierr = VecNorm(surf->wa, NORM_1, &avg_topo); CHKERRQ(ierr);
-
-	avg_topo /= (PetscScalar)(fs->dsx.tnods*fs->dsy.tnods);
+	ierr = VecNorm(surf->gtopo, NORM_1, &avg_topo); CHKERRQ(ierr);
+	avg_topo /= (PetscScalar)(fs->dsx.tnods*fs->dsy.tnods*fs->dsz.nproc);
 
 	GET_OUTPUT_RANGE(rx, nx, sx, fs->dsx)
 	GET_OUTPUT_RANGE(ry, ny, sy, fs->dsy)
 
-	ierr = DMDAVecGetArray(surf->DA_SURF, surf->topo, &topo); CHKERRQ(ierr);
+	ierr = DMDAVecGetArray(surf->DA_SURF, surf->ltopo, &topo); CHKERRQ(ierr);
 
-	START_PLANE_LOOP
+	if(!fs->dsz.rank)
 	{
-		// store topography amplitude
-		buff[cn++] = (float)(cf*(topo[0][j][i] - avg_topo));
+		START_PLANE_LOOP
+		{
+			// store topography amplitude
+			buff[cn++] = (float)(cf*(topo[L][j][i] - avg_topo));
+		}
+		END_PLANE_LOOP
 	}
-	END_PLANE_LOOP
 
-	ierr = DMDAVecRestoreArray(surf->DA_SURF, surf->topo, &topo); CHKERRQ(ierr);
+	ierr = DMDAVecRestoreArray(surf->DA_SURF, surf->ltopo, &topo); CHKERRQ(ierr);
 
 	OutputBufferWrite(fp, buff, cn);
 
 	PetscFunctionReturn(0);
 }
-*/
 //---------------------------------------------------------------------------

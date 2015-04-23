@@ -9,10 +9,11 @@
 
 typedef struct
 {
-	JacRes *jr;               // global residual context
-	DM      DA_SURF;          // free surface grid
-	Vec     topo, vx, vy, vz; // topography and velocity vectors (local)
-	Vec     wa, wb;           // work vectors                    (global)
+	JacRes *jr;             // global residual context
+	DM      DA_SURF;        // free surface grid
+	Vec     ltopo, gtopo;   // topography vectors                (local and global)
+	Vec     vx, vy, vz;     // velocity vectors                  (local)
+	Vec     vpatch, vmerge; // patch and merged velocity vectors (global)
 
 	// flags/parameters
 	PetscBool   UseFreeSurf;

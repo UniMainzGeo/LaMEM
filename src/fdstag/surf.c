@@ -61,15 +61,17 @@ PetscErrorCode FreeSurfCreate(FreeSurf *surf, JacRes *jr)
 		fs->dsx.nproc, fs->dsy.nproc, fs->dsz.nproc,
 		1, 1, lx, ly, NULL, &surf->DA_SURF); CHKERRQ(ierr);
 
-	ierr = DMCreateLocalVector (surf->DA_SURF, &surf->topo); CHKERRQ(ierr);
-	ierr = DMCreateLocalVector (surf->DA_SURF, &surf->vx);   CHKERRQ(ierr);
-	ierr = DMCreateLocalVector (surf->DA_SURF, &surf->vy);   CHKERRQ(ierr);
-	ierr = DMCreateLocalVector (surf->DA_SURF, &surf->vz);   CHKERRQ(ierr);
-	ierr = DMCreateGlobalVector(surf->DA_SURF, &surf->wa);   CHKERRQ(ierr);
-	ierr = DMCreateGlobalVector(surf->DA_SURF, &surf->wb);   CHKERRQ(ierr);
+	ierr = DMCreateLocalVector (surf->DA_SURF, &surf->ltopo);  CHKERRQ(ierr);
+	ierr = DMCreateGlobalVector(surf->DA_SURF, &surf->gtopo);  CHKERRQ(ierr);
+	ierr = DMCreateLocalVector (surf->DA_SURF, &surf->vx);     CHKERRQ(ierr);
+	ierr = DMCreateLocalVector (surf->DA_SURF, &surf->vy);     CHKERRQ(ierr);
+	ierr = DMCreateLocalVector (surf->DA_SURF, &surf->vz);     CHKERRQ(ierr);
+	ierr = DMCreateGlobalVector(surf->DA_SURF, &surf->vpatch); CHKERRQ(ierr);
+	ierr = DMCreateGlobalVector(surf->DA_SURF, &surf->vmerge); CHKERRQ(ierr);
 
 	// set initial internal free surface level
-	ierr = VecSet(surf->topo, surf->InitLevel); CHKERRQ(ierr);
+	ierr = VecSet(surf->ltopo, surf->InitLevel); CHKERRQ(ierr);
+	ierr = VecSet(surf->gtopo, surf->InitLevel); CHKERRQ(ierr);
 
 	PetscFunctionReturn(0);
 }
@@ -105,12 +107,13 @@ PetscErrorCode FreeSurfDestroy(FreeSurf *surf)
 	if(surf->UseFreeSurf != PETSC_TRUE) PetscFunctionReturn(0);
 
 	ierr = DMDestroy (&surf->DA_SURF); CHKERRQ(ierr);
-	ierr = VecDestroy(&surf->topo);    CHKERRQ(ierr);
+	ierr = VecDestroy(&surf->ltopo);   CHKERRQ(ierr);
+	ierr = VecDestroy(&surf->gtopo);   CHKERRQ(ierr);
 	ierr = VecDestroy(&surf->vx);      CHKERRQ(ierr);
 	ierr = VecDestroy(&surf->vy);      CHKERRQ(ierr);
 	ierr = VecDestroy(&surf->vz);      CHKERRQ(ierr);
-	ierr = VecDestroy(&surf->wa);      CHKERRQ(ierr);
-	ierr = VecDestroy(&surf->wb);      CHKERRQ(ierr);
+	ierr = VecDestroy(&surf->vpatch);  CHKERRQ(ierr);
+	ierr = VecDestroy(&surf->vmerge);  CHKERRQ(ierr);
 
 	PetscFunctionReturn(0);
 }
@@ -184,13 +187,13 @@ PetscErrorCode FreeSurfGetVelComp(
 	// load ghost values
 	LOCAL_TO_LOCAL(fs->DA_COR, jr->lbcor)
 
-	// clear buffer vector for surface velocity patch
-	ierr = VecZeroEntries(surf->wa); CHKERRQ(ierr);
+	// clear surface velocity patch vector
+	ierr = VecZeroEntries(surf->vpatch); CHKERRQ(ierr);
 
 	// access topograpy, grid and surface velocity
-	ierr = DMDAVecGetArray(fs->DA_COR,    jr->lbcor,  &vgrid); CHKERRQ(ierr);
-	ierr = DMDAVecGetArray(surf->DA_SURF, surf->wa,   &vsurf); CHKERRQ(ierr);
-	ierr = DMDAVecGetArray(surf->DA_SURF, surf->topo, &topo);  CHKERRQ(ierr);
+	ierr = DMDAVecGetArray(fs->DA_COR,    jr->lbcor,    &vgrid); CHKERRQ(ierr);
+	ierr = DMDAVecGetArray(surf->DA_SURF, surf->vpatch, &vsurf); CHKERRQ(ierr);
+	ierr = DMDAVecGetArray(surf->DA_SURF, surf->ltopo,  &topo);  CHKERRQ(ierr);
 
 	// scan all free surface local points
 	ierr = DMDAGetCorners(fs->DA_COR, &sx, &sy, &sz, &nx, &ny, NULL); CHKERRQ(ierr);
@@ -216,28 +219,28 @@ PetscErrorCode FreeSurfGetVelComp(
 	END_PLANE_LOOP
 
 	// restore access
-	ierr = DMDAVecRestoreArray(fs->DA_COR,    jr->lbcor,  &vgrid); CHKERRQ(ierr);
-	ierr = DMDAVecRestoreArray(surf->DA_SURF, surf->wa,   &vsurf); CHKERRQ(ierr);
-	ierr = DMDAVecRestoreArray(surf->DA_SURF, surf->topo, &topo);  CHKERRQ(ierr);
+	ierr = DMDAVecRestoreArray(fs->DA_COR,    jr->lbcor,    &vgrid); CHKERRQ(ierr);
+	ierr = DMDAVecRestoreArray(surf->DA_SURF, surf->vpatch, &vsurf); CHKERRQ(ierr);
+	ierr = DMDAVecRestoreArray(surf->DA_SURF, surf->ltopo,  &topo);  CHKERRQ(ierr);
 
 	// merge velocity patches
 	// compute ghosted version of the velocity component
 	if(dsz->nproc != 1 )
 	{
-		ierr = VecGetArray(surf->wa, &vpatch); CHKERRQ(ierr);
-		ierr = VecGetArray(surf->wb, &vmerge); CHKERRQ(ierr);
+		ierr = VecGetArray(surf->vpatch, &vpatch); CHKERRQ(ierr);
+		ierr = VecGetArray(surf->vmerge, &vmerge); CHKERRQ(ierr);
 
 		ierr = MPI_Allreduce(vpatch, vmerge, (PetscMPIInt)(nx*ny), MPIU_SCALAR, MPI_SUM, dsz->comm); CHKERRQ(ierr);
 
-		ierr = VecRestoreArray(surf->wa, &vpatch); CHKERRQ(ierr);
-		ierr = VecRestoreArray(surf->wb, &vmerge); CHKERRQ(ierr);
+		ierr = VecRestoreArray(surf->vpatch, &vpatch); CHKERRQ(ierr);
+		ierr = VecRestoreArray(surf->vmerge, &vmerge); CHKERRQ(ierr);
 
 		// compute ghosted version of the velocity component
-		GLOBAL_TO_LOCAL(surf->DA_SURF, surf->wb, vcomp_surf);
+		GLOBAL_TO_LOCAL(surf->DA_SURF, surf->vmerge, vcomp_surf);
 	}
 	else
 	{
-		GLOBAL_TO_LOCAL(surf->DA_SURF, surf->wa, vcomp_surf);
+		GLOBAL_TO_LOCAL(surf->DA_SURF, surf->vpatch, vcomp_surf);
 	}
 
 	PetscFunctionReturn(0);
@@ -296,8 +299,8 @@ PetscErrorCode FreeSurfAdvectTopo(FreeSurf *surf)
 	gtol = jr->gtol;
 
 	// access surface topography and velocity
-	ierr = DMDAVecGetArray(surf->DA_SURF, surf->wa,    &advect); CHKERRQ(ierr);
-	ierr = DMDAVecGetArray(surf->DA_SURF, surf->topo,  &topo);   CHKERRQ(ierr);
+	ierr = DMDAVecGetArray(surf->DA_SURF, surf->gtopo, &advect); CHKERRQ(ierr);
+	ierr = DMDAVecGetArray(surf->DA_SURF, surf->ltopo, &topo);   CHKERRQ(ierr);
 	ierr = DMDAVecGetArray(surf->DA_SURF, surf->vx,    &vx);     CHKERRQ(ierr);
 	ierr = DMDAVecGetArray(surf->DA_SURF, surf->vy,    &vy);     CHKERRQ(ierr);
 	ierr = DMDAVecGetArray(surf->DA_SURF, surf->vz,    &vz);     CHKERRQ(ierr);
@@ -394,14 +397,14 @@ PetscErrorCode FreeSurfAdvectTopo(FreeSurf *surf)
 	END_PLANE_LOOP
 
 	// restore access
-	ierr = DMDAVecRestoreArray(surf->DA_SURF, surf->wa,    &advect); CHKERRQ(ierr);
-	ierr = DMDAVecRestoreArray(surf->DA_SURF, surf->topo,  &topo);   CHKERRQ(ierr);
+	ierr = DMDAVecRestoreArray(surf->DA_SURF, surf->gtopo, &advect); CHKERRQ(ierr);
+	ierr = DMDAVecRestoreArray(surf->DA_SURF, surf->ltopo, &topo);   CHKERRQ(ierr);
 	ierr = DMDAVecRestoreArray(surf->DA_SURF, surf->vx,    &vx);     CHKERRQ(ierr);
 	ierr = DMDAVecRestoreArray(surf->DA_SURF, surf->vy,    &vy);     CHKERRQ(ierr);
 	ierr = DMDAVecRestoreArray(surf->DA_SURF, surf->vz,    &vz);     CHKERRQ(ierr);
 
-	// compute ghosted version of the surface topography
-	GLOBAL_TO_LOCAL(surf->DA_SURF, surf->wa, surf->topo);
+	// compute ghosted version of the advected surface topography
+	GLOBAL_TO_LOCAL(surf->DA_SURF, surf->gtopo, surf->ltopo);
 
 	PetscFunctionReturn(0);
 }
@@ -442,7 +445,7 @@ PetscErrorCode FreeSurfGetAirPhaseRatio(FreeSurf *surf)
 	iter      = 0;
 
 	// access surface topography
-	ierr = DMDAVecGetArray(surf->DA_SURF, surf->topo,  &topo); CHKERRQ(ierr);
+	ierr = DMDAVecGetArray(surf->DA_SURF, surf->ltopo,  &topo); CHKERRQ(ierr);
 
 	// scan all local cells
 	ierr = DMDAGetCorners(fs->DA_CEN, &sx, &sy, &sz, &nx, &ny, &nz); CHKERRQ(ierr);
@@ -513,7 +516,7 @@ PetscErrorCode FreeSurfGetAirPhaseRatio(FreeSurf *surf)
 	END_STD_LOOP
 
 	// restore access
-	ierr = DMDAVecRestoreArray(surf->DA_SURF, surf->topo, &topo); CHKERRQ(ierr);
+	ierr = DMDAVecRestoreArray(surf->DA_SURF, surf->ltopo, &topo); CHKERRQ(ierr);
 
 	PetscFunctionReturn(0);
 }
