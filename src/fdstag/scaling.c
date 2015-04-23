@@ -300,6 +300,7 @@ void ScalingInput(Scaling *scal, UserCtx *user)
 	user->Pushing.x_center_block /= scal->length;
 	user->Pushing.y_center_block /= scal->length;
 	user->Pushing.z_center_block /= scal->length;
+	user->Pushing.theta          /= scal->angle;
 
 	for(i = 0; i < user->Pushing.num_changes; i++)
 	{

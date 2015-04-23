@@ -401,7 +401,7 @@ PetscErrorCode BCCompPush(BCCtx *bc)
 		// initialize parameters for the time step
 		Vx    = 0.0;
 		Vy    = 0.0;
-		theta = pb->theta*PETSC_PI/180.0;
+		theta = pb->theta;
 
 		if(pb->dir[ichange] == 0)
 		{
@@ -418,13 +418,14 @@ PetscErrorCode BCCompPush(BCCtx *bc)
 		bc->Vy     = Vy;
 		bc->theta  = theta;
 
-		PetscPrintf(PETSC_COMM_WORLD,"Pushing BC: Time interval=[%g-%g] %s, V_push=%g %s, Omega=%g %s, mobile_block=%lld, direction=%lld\n",
+		PetscPrintf(PETSC_COMM_WORLD,"Pushing BC: Time interval=[%g-%g] %s, V_push=%g %s, Omega=%g %s, mobile_block=%lld, direction=%lld, theta=%g deg\n",
 			pb->time             [ichange  ]*scal->time,
 			pb->time             [ichange+1]*scal->time,             scal->lbl_time,
 			pb->V_push           [ichange  ]*scal->velocity,         scal->lbl_velocity,
 			pb->omega            [ichange  ]*scal->angular_velocity, scal->lbl_angular_velocity,
 			(LLD)pb->coord_advect[ichange  ],
-			(LLD)pb->dir         [ichange  ]);
+			(LLD)pb->dir         [ichange  ],
+			theta*scal->angle);
 
 		PetscPrintf(PETSC_COMM_WORLD,"Pushing BC: Block center coordinates [x, y, z]=[%g, %g, %g] %s\n",
 			pb->x_center_block*scal->length,
