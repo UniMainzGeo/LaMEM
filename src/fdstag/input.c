@@ -335,6 +335,7 @@ PetscErrorCode InputReadFile(JacRes *jr, UserCtx *user, FILE *fp)
 	parse_GetDouble( fp, "Pushing.L_block", &user->Pushing.L_block, &found );
 	parse_GetDouble( fp, "Pushing.W_block", &user->Pushing.W_block, &found );
 	parse_GetDouble( fp, "Pushing.H_block", &user->Pushing.H_block, &found );
+	parse_GetDouble( fp, "Pushing.theta", &user->Pushing.theta, &found );
 	parse_GetDouble( fp, "Pushing.x_center_block", &user->Pushing.x_center_block, &found );
 	parse_GetDouble( fp, "Pushing.y_center_block", &user->Pushing.y_center_block, &found );
 	parse_GetDouble( fp, "Pushing.z_center_block", &user->Pushing.z_center_block, &found );
@@ -458,6 +459,7 @@ PetscErrorCode InputReadCommLine(UserCtx *user )
 	PetscOptionsGetReal(PETSC_NULL,"-Pushing.x_center_block"    , &user->Pushing.x_center_block     , PETSC_NULL);
 	PetscOptionsGetReal(PETSC_NULL,"-Pushing.y_center_block"    , &user->Pushing.y_center_block     , PETSC_NULL);
 	PetscOptionsGetReal(PETSC_NULL,"-Pushing.z_center_block"    , &user->Pushing.z_center_block     , PETSC_NULL);
+	PetscOptionsGetReal(PETSC_NULL,"-Pushing.theta"             , &user->Pushing.theta              , PETSC_NULL);
 
 	// pushing - array variables
 	char matprop_opt[MAX_PATH_LEN];

@@ -401,7 +401,7 @@ PetscErrorCode BCCompPush(BCCtx *bc)
 		// initialize parameters for the time step
 		Vx    = 0.0;
 		Vy    = 0.0;
-		theta = pb->theta;
+		theta = pb->theta*PETSC_PI/180.0;
 
 		if(pb->dir[ichange] == 0)
 		{
