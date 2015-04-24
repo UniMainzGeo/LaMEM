@@ -161,6 +161,7 @@ PetscErrorCode NLSolCreate(NLSol *nl, PCStokes pc, SNES *p_snes)
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
+/*
 #undef __FUNCT__
 #define __FUNCT__ "SNESActEW"
 PetscErrorCode SNESActEW(SNES snes)
@@ -180,7 +181,7 @@ PetscErrorCode SNESActEW(SNES snes)
 		PETSC_DEFAULT,
 		PETSC_DEFAULT,
 		PETSC_DEFAULT); CHKERRQ(ierr);
-/*
+
 	PetscInt  version;
 	PetscReal rtol_0;
 	PetscReal rtol_max;
@@ -197,10 +198,10 @@ PetscErrorCode SNESActEW(SNES snes)
 		&alpha,
 		&alpha2,
 		&threshold); CHKERRQ(ierr);
-*/
 
 	PetscFunctionReturn(0);
 }
+*/
 //---------------------------------------------------------------------------
 #undef __FUNCT__
 #define __FUNCT__ "NLSolDestroy"
