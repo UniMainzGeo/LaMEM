@@ -114,6 +114,9 @@ PetscErrorCode ADVReAllocStorage(AdvCtx *actx, PetscInt capacity);
 // perform advection step
 PetscErrorCode ADVAdvect(AdvCtx *actx);
 
+// remap markers onto the grid
+PetscErrorCode ADVRemap(AdvCtx *actx);
+
 // exchange markers between the processors resulting from the position change
 PetscErrorCode ADVExchange(AdvCtx *actx);
 

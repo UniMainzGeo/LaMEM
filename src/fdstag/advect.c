@@ -225,6 +225,23 @@ PetscErrorCode ADVAdvect(AdvCtx *actx)
 	// advect markers (Forward Euler)
 	ierr = ADVAdvectMark(actx); CHKERRQ(ierr);
 
+	PetscFunctionReturn(0);
+}
+//---------------------------------------------------------------------------
+#undef __FUNCT__
+#define __FUNCT__ "ADVRemap"
+PetscErrorCode ADVRemap(AdvCtx *actx)
+{
+	//=======================================================================
+	// MAJOR ADVECTION ROUTINE
+	//
+	// WARNING!
+	// Currently only implements Forward Euler Explicit algorithm.
+	//=======================================================================
+
+	PetscErrorCode ierr;
+	PetscFunctionBegin;
+
 	// exchange markers between the processors
 	ierr = ADVExchange(actx); CHKERRQ(ierr);
 

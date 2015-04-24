@@ -143,9 +143,6 @@ PetscErrorCode FreeSurfAdvect(FreeSurf *surf)
 	// advect topography
 	ierr = FreeSurfAdvectTopo(surf); CHKERRQ(ierr);
 
-	// update phase ratios taking into account free surface motion
-	ierr = FreeSurfGetAirPhaseRatio(surf);
-
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
@@ -435,6 +432,9 @@ PetscErrorCode FreeSurfGetAirPhaseRatio(FreeSurf *surf)
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
 
+	// free surface cases only
+	if(surf->UseFreeSurf != PETSC_TRUE) PetscFunctionReturn(0);
+
 	// access context
 	jr        = surf->jr;
 	AirPhase  = surf->AirPhase;
@@ -485,7 +485,7 @@ PetscErrorCode FreeSurfGetAirPhaseRatio(FreeSurf *surf)
 		cz[1]  = topo[L][j  ][i+1];
 		cz[2]  = topo[L][j+1][i  ];
 		cz[3]  = topo[L][j+1][i+1];
-		cz[4]  = (cz[0] + cz[1] + cz[3] + cz[4])/4.0;
+		cz[4]  = (cz[0] + cz[1] + cz[2] + cz[3])/4.0;
 
 		// compute actual air phase ratio in the cell
 		phRatAir = 1.0;
@@ -507,6 +507,8 @@ PetscErrorCode FreeSurfGetAirPhaseRatio(FreeSurf *surf)
 				if(jj != AirPhase) phRat[jj] *= cf;
 			}
 
+			// correct air phase
+			phRat[AirPhase] = phRatAir;
 		}
 
 		// WARNING !!!
