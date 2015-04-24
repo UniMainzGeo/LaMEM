@@ -1634,6 +1634,7 @@ PetscErrorCode JacResGetCourantStep(JacRes *jr)
 	// compute time step
 	gidtmax /= ts->Cmax;
     
+	// WHO ADDED THIS? WHAT'S THE PURPOSE?
     dt = (ts->dt)*1.1;                          // slightly increase timestep
     if (dt > 1.0/gidtmax)   dt = 1.0/gidtmax;   // if dt larger than dt_courant, use courant
     if (dt > ts->dtmax)     dt = ts->dtmax;     // if dt larger than maximum dt use maximum dt
