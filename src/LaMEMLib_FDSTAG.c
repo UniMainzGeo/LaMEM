@@ -171,6 +171,9 @@ PetscErrorCode LaMEMLib_FDSTAG(void *echange_ctx)
 	// initialize markers
 	ierr = ADVMarkInit(&actx, &user); CHKERRQ(ierr);
 
+	// update phase ratios taking into account actual free surface position
+	ierr = FreeSurfGetAirPhaseRatio(&surf);
+
 	// initialize temperature
 	ierr = JacResInitTemp(&jr); CHKERRQ(ierr);
 
@@ -202,32 +205,19 @@ PetscErrorCode LaMEMLib_FDSTAG(void *echange_ctx)
 	{
 		PetscPrintf(PETSC_COMM_WORLD,"Time step %lld -------------------------------------------------------- \n", (LLD)JacResGetStep(&jr));
 
-		//==========================================================================================
-		// Correct particles in case we employ an internal free surface
-//		ierr = CorrectPhasesForInternalFreeSurface( &user);	CHKERRQ(ierr);
-
-		//==========================================================================================
-		// Set material properties at integration points in case we are performing a benchmark
-//		if (user.AnalyticalBenchmark == PETSC_TRUE)
-//		{
-//			ierr = LaMEM_Initialize_AnalyticalSolution(&user, C); CHKERRQ(ierr);
-//		}
-		//==========================================================================================
-
-
-		//=========================================================================================
+		//====================================
 		//	NONLINEAR THERMO-MECHANICAL SOLVER
-		//=========================================================================================
+		//====================================
+
+		// initialize boundary constraint vectors
+		ierr = BCApply(&bc, &fs); CHKERRQ(ierr);
+
+		// compute inverse elastic viscosities
+		ierr = JacResGetI2Gdt(&jr); CHKERRQ(ierr);
 
 		if(user.SkipStokesSolver != PETSC_TRUE)
 		{
 			PetscTime(&cputime_start_nonlinear);
-
-			// initialize boundary constraint vectors
-			ierr = BCApply(&bc, &fs); CHKERRQ(ierr);
-
-			// compute inverse elastic viscosities
-			ierr = JacResGetI2Gdt(&jr); CHKERRQ(ierr);
 
 			// solve nonlinear system with SNES
 			ierr = SNESSolve(snes, NULL, jr.gsol); CHKERRQ(ierr);
@@ -249,83 +239,48 @@ PetscErrorCode LaMEMLib_FDSTAG(void *echange_ctx)
 		if(!JacResGetStep(&jr))
 		{
 			jr.matLim.initGuessFlg = PETSC_FALSE;
-
-//			ierr = SNESActEW(snes); CHKERRQ(ierr);
 		}
-
-		//==========================================
-		// END OF NONLINEAR THERMO-MECHANICAL SOLVER
-		//==========================================
 
 		// view nonlinear residual
 		ierr = JacResViewRes(&jr); CHKERRQ(ierr);
 
-		//=========================================================================================
-		// In case we perform an analytical benchmark, compare numerical and analytical results
-//		if (user.AnalyticalBenchmark)
-//		{
-
-//			ierr = LaMEM_CompareNumerics_vs_AnalyticalSolution(&user, C, user.sol_advect, user.Pressure); CHKERRQ(ierr);
-
-//		}
-		//==========================================================================================
-
 		// select new time step
 		ierr = JacResGetCourantStep(&jr); CHKERRQ(ierr);
 
-		//==========================================================================================
+		//==========================================
 		// MARKER & FREE SURFACE ADVECTION + EROSION
-		//==========================================================================================
-
-		// advect markers
-		ierr = ADVAdvect(&actx); CHKERRQ(ierr);
+		//==========================================
 
 		// advect free surface
 		ierr = FreeSurfAdvect(&surf); CHKERRQ(ierr);
 
+		// advect markers
+		ierr = ADVAdvect(&actx); CHKERRQ(ierr);
+
+		// apply background strain-rate "DWINDLAR" BC (Bob Shaw "Ship of Strangers")
+		ierr = FDSTAGStretch(&fs, bc.Exx, bc.Eyy, jr.ts.dt); CHKERRQ(ierr);
+
+		// remap markers onto (stretched) grid
+		ierr = ADVRemap(&actx);
+
+		// APPLY EROSION AND SEDIMENTATION
+
+		// CHANGE MARKER PHASES IF THEY CROSS FREE SURFACE, UPDATE PHASE RATIOS
+
+		// update phase ratios taking into account actual free surface position
+		ierr = FreeSurfGetAirPhaseRatio(&surf);
+
 		// advect pushing block
 		ierr = BCAdvectPush(&bc, &jr.ts); CHKERRQ(ierr);
 
-		//==========================================================================================
-		// EROSION
-		//==========================================================================================
-//		if ( user.ErosionParameters.UseInternalFreeSurface == 1)
-//		{
-			// In case we have an internal free surface, advect it
-//			ierr = AdvectAndUpdate_InternalFreeSurface( &user, user.sol_advect ); CHKERRQ(ierr);	 // Update internal free surface
-
-			// Apply sedimentation to the internal free surface
-//			ierr = ApplySedimentationToInternalFreeSurface(&user); // Apply sedimentation to internal free surface if requested
-
-//			if(user.ErosionParameters.ErosionModel == 1)
-//			{
-//				ierr = ApplyInfinitelyFastErosionToInternalFreeSurface(&user); // Apply fast erosion to internal free surface if requested
-//			}
-//			else if (user.ErosionParameters.ErosionModel == 2)
-//			{
-				// use FD based erosion code [serial only!]
-//				ierr = ApplySerialErosionCodeToInternalFreeSurface(&user); CHKERRQ(ierr);
-//			}
-
-//			ierr = CorrectPhasesForInternalFreeSurface( &user); CHKERRQ(ierr);
-//		}
-		//==========================================================================================
-
-
-		// apply background strain-rate bc (dwindlar condition)
-		ierr = FDSTAGStretch(&fs, bc.Exx, bc.Eyy, jr.ts.dt); CHKERRQ(ierr);
-
-
-		//==========================================================================================
+		//==================
+		// Save data to disk
+		//==================
 
 		// compute gravity misfits
 //		ierr = CalculateMisfitValues(&user, C, itime, LaMEM_OutputParameters); CHKERRQ(ierr);
 
-		//==========================================================================================
-		// Save data to disk
-		//==========================================================================================
-
-// WARNING SORT OUT THIS MESS!
+// WARNING! SORT OUT THIS MESS!
 
 		if(user.save_timesteps != 0) LaMEMMod( JacResGetStep(&jr), user.save_timesteps, &SaveOrNot);
 		else                         SaveOrNot = 2;
@@ -345,19 +300,6 @@ PetscErrorCode LaMEMLib_FDSTAG(void *echange_ctx)
 //				ierr = WriteOutputFileMatlab(&user, user.DA_Vel, user.DA_Temp, user.sol_advect, NULL, itime, C->ElementType, C->ngp_vel, DirectoryName); CHKERRQ(ierr);
 //  		}
 
-			// Matlab output (b) -> particles (mainly debugging purposes)
-//			if (user.SaveParticles==1)
-//			{
-//				ierr = WriteParticlesToDisc(&user, itime); CHKERRQ(ierr);
-//			}
-
-			// Paraview output (a) -> topography only
-//			if (user.VTKOutputFiles==1)
-//			{
-				// Surface, bottom topography and internal erosion surface if required
-//				ierr = WriteTopographyOutputFile_VTS(&user, itime, DirectoryName); CHKERRQ(ierr);
-//			}
-
 			// Paraview output (b) -> phases only
 //			if (user.AVDPhaseViewer)
 //			{	// Creates a Voronoi diagram and writes the phases as VTS files
@@ -373,11 +315,6 @@ PetscErrorCode LaMEMLib_FDSTAG(void *echange_ctx)
 			// clean up
 			if(DirectoryName) free(DirectoryName);
 		}
-
-		//==========================================================================================
-		// Perform phase transitions on particles (i.e. change the phase number of particles)
-		// ParticlePhaseTransitions(&user);
-		//==========================================================================================
 
 		// store markers to disk
 		ierr = ADVMarkSave(&actx, &user);  CHKERRQ(ierr);
