@@ -155,6 +155,7 @@ PetscErrorCode InputSetDefaultValues(JacRes *jr, UserCtx *user)
 	sprintf(user->OutputFile,                    "FallingBlock3D");
 	sprintf(user->ParticleFilename,              "ParticlesInput.dat");
 	sprintf(user->LoadInitialParticlesDirectory, "InitialParticles");
+	user->PolyInVolSkip[0] = 0;
 
 	// FDSTAG Canonical Default Model Setup
 	user->msetup            = BLOCK;
@@ -345,6 +346,16 @@ PetscErrorCode InputReadFile(JacRes *jr, UserCtx *user, FILE *fp)
 	parse_GetIntArray( fp, "Pushing.coord_advect",&nv, i_values, &found); for( i=0; i<user->Pushing.num_changes;   i++ ) { user->Pushing.coord_advect[i] = i_values[i];}
 	parse_GetIntArray( fp, "Pushing.dir",         &nv, i_values, &found); for( i=0; i<user->Pushing.num_changes;   i++ ) { user->Pushing.dir[i]          = i_values[i];}
 
+
+	// Marker setting: skip certain volumes that are defined in input file
+	parse_GetIntArray( fp, "PolyInVolSkip",         &nv, i_values, &found);
+	if (found==1)
+	{
+		for( i=0; i<=i_values[0];   i++ )
+		{
+			user->PolyInVolSkip[i] = i_values[i];
+		}
+	}
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------

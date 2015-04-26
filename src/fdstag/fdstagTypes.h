@@ -148,7 +148,7 @@ typedef struct
 	char             OutputFile[MAX_PATH_LEN];
 //	char             ParamFile[MAX_PATH_LEN];
 //	PetscBool        InputParamFile;
-
+	PetscInt         PolyInVolSkip[30];
 	// flags
 	PetscBool        SkipStokesSolver;
 	PetscBool        SavePartitioning;
