@@ -654,7 +654,8 @@ PetscScalar IntersectTriangularPrism(
 	}
 
 	// volume inside cell = volume above bottom plane - volume above top plane
-	return (vbot - vtop)/vcell;
+	// NOTE! volume returned by the macro is two times larger than actual value
+	return (vbot - vtop)/2.0/vcell;
 }
 //---------------------------------------------------------------------------
 /*
