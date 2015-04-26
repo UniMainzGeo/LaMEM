@@ -1446,7 +1446,7 @@ PetscErrorCode ADVMarkInitFilePolygons(AdvCtx *actx, UserCtx *user)
 	for (kvol=0; kvol<VolN; kvol++)
 	{
 		PetscTime(&t0);		
-
+/*
 		if (user->PolyInVolSkip[0]>0)
 		{
 			for (i=1; i<= user->PolyInVolSkip[0]; i++)
@@ -1457,7 +1457,7 @@ PetscErrorCode ADVMarkInitFilePolygons(AdvCtx *actx, UserCtx *user)
 
 		if (SkipSetVol)
 		{
-
+*/
 			// read volume header
 	//		ierr = PetscBinaryRead(fd, VolInfo, 4, PETSC_SCALAR); CHKERRQ(ierr);
 			Poly.dir   = (PetscInt)(PolyFile[Fcount]); Fcount++; // normal vector of polygon plane
@@ -1562,7 +1562,7 @@ PetscErrorCode ADVMarkInitFilePolygons(AdvCtx *actx, UserCtx *user)
 					Fcount += Poly.len*2;
 				}
 			}
-
+/*
 		}
 
 		else
@@ -1570,7 +1570,7 @@ PetscErrorCode ADVMarkInitFilePolygons(AdvCtx *actx, UserCtx *user)
 			Fcount += 4 + 2* Poly.num + Poly.len*2*Poly.num;
 			SkipSetVol = PETSC_FALSE;
 		}
-
+*/
 		//ierr = MPI_Allreduce(&Poly.nmark, &nmark_all, 1, MPIU_INT, MPI_SUM, PETSC_COMM_WORLD); CHKERRQ(ierr);
 		PetscTime(&t1);
 		//PetscPrintf(PETSC_COMM_WORLD," Created vol %lld/%lld [%g sec]: phase %lld, %lld slices, %c-normal-dir; found %lld markers \n",(LLD)kvol+1,(LLD)VolN, t1-t0, (LLD)Poly.phase, (LLD)Poly.num, normalDir[Poly.dir], (LLD)nmark_all);
