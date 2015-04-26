@@ -172,7 +172,7 @@ PetscErrorCode LaMEMLib_FDSTAG(void *echange_ctx)
 	ierr = ADVMarkInit(&actx, &user); CHKERRQ(ierr);
 
 	// update phase ratios taking into account actual free surface position
-	ierr = FreeSurfGetAirPhaseRatio(&surf);
+	ierr = FreeSurfGetAirPhaseRatio(&surf); CHKERRQ(ierr);
 
 	// initialize temperature
 	ierr = JacResInitTemp(&jr); CHKERRQ(ierr);
@@ -268,7 +268,7 @@ PetscErrorCode LaMEMLib_FDSTAG(void *echange_ctx)
 		// CHANGE MARKER PHASES IF THEY CROSS FREE SURFACE, UPDATE PHASE RATIOS
 
 		// update phase ratios taking into account actual free surface position
-		ierr = FreeSurfGetAirPhaseRatio(&surf);
+		ierr = FreeSurfGetAirPhaseRatio(&surf); CHKERRQ(ierr);
 
 		// advect pushing block
 		ierr = BCAdvectPush(&bc, &jr.ts); CHKERRQ(ierr);
