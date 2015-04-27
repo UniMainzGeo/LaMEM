@@ -529,10 +529,6 @@ PetscErrorCode PMatMonoAssemble(PMat pm)
 	dof    = &fs->dof;
 	P      = (PMatMono*)pm->data;
 
-// ACHTUNG!
-	ierr = JacResAvgVisc(jr); CHKERRQ(ierr);
-
-
 	// get density gradient stabilization parameters
 	dt   = jr->ts.dt; // time step
 	fssa = jr->FSSA;  // density gradient penalty parameter
@@ -568,17 +564,9 @@ PetscErrorCode PMatMonoAssemble(PMat pm)
 	START_STD_LOOP
 	{
 		// get density, shear & inverse bulk viscosities
-
-// ACHTUNG
 		eta  = jr->svCell[iter].svDev.eta;
 		IKdt = jr->svCell[iter].svBulk.IKdt;
 		rho  = jr->svCell[iter].svBulk.rho;
-
-// ACHTUNG
-// eta = jr->svCell[iter].etaAvg;
-
-//PetscScalar	etav = eta;
-
 
 		iter++;
 
@@ -593,10 +581,7 @@ PetscErrorCode PMatMonoAssemble(PMat pm)
 		bdz = SIZE_NODE(k, sz, fs->dsz);   fdz = SIZE_NODE(k+1, sz, fs->dsz);
 
 		// compute penalty term
-
-// ACHTUNG
 		pt = -1.0/(pgamma*eta);
-//		pt = -1.0/(pgamma*etav);
 
 		// get pressure diagonal element (with penalty)
 		diag = -IKdt + pt;

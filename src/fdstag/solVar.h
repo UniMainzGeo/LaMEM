@@ -86,7 +86,7 @@ typedef struct
 	PetscScalar  hxx, hyy, hzz; // history stress (elastic)
 	PetscScalar  dxx, dyy, dzz; // total deviatoric strain rate
 	PetscScalar *phRat;         // phase ratios in the control volume
-	PetscScalar  etaAvg;        // viscosity averaged over neighboring cells
+	PetscScalar  eta_creep;     // effective creep viscosity (output)
 
 } SolVarCell;
 

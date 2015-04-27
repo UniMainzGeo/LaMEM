@@ -102,7 +102,8 @@ typedef struct
 {
 	PetscInt phase;          // phase
 	PetscInt density;        // density
-	PetscInt viscosity;      // effective viscosity
+	PetscInt visc_total;     // total effective viscosity
+	PetscInt visc_creep;     // creep effective viscosity
 	PetscInt velocity;       // velocity
 	PetscInt pressure;       // pressure
 	PetscInt temperature;    // temperature

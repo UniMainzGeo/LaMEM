@@ -1292,7 +1292,6 @@ void getRowProlong(PetscBool scale,
 	}
 }
 //---------------------------------------------------------------------------
-
 /*
  		// check neighbor points
 		nd = 1;
@@ -1321,25 +1320,17 @@ void getRowProlong(PetscBool scale,
 		d_nnz[iter] = nd;
 		o_nnz[iter] = no;
 		iter++;
- */
-
-
 //---------------------------------------------------------------------------
 #undef __FUNCT__
 #define __FUNCT__ "MGLevelAllocRestrict"
 PetscErrorCode MGLevelAllocRestrict(MGLevel *lvl, MGLevel *fine)
 {
-
-
 	Mat         R;
-
 	PetscInt    ind;
-
 	PetscInt    row, I, J, K;
 	PetscInt    i, j, k, nx, ny, nz, sx, sy, sz;
 
 	PetscScalar ***ivx,   ***ivy,   ***ivz,   ***ip;
-
 
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
@@ -1355,11 +1346,9 @@ PetscErrorCode MGLevelAllocRestrict(MGLevel *lvl, MGLevel *fine)
 	ierr = DMDAVecGetArray(fine->DA_Z,   fine->dof.ivz, &ivz);   CHKERRQ(ierr);
 	ierr = DMDAVecGetArray(fine->DA_CEN, fine->dof.ip,  &ip);    CHKERRQ(ierr);
 
-
 	// get global index of the first row in coarse grid
 	if     (lvl->dof.idxmod == IDXCOUPLED)   { row = lvl->dof.st;  }
 	else if(lvl->dof.idxmod == IDXUNCOUPLED) { row = lvl->dof.stv; }
-
 
 	//-----------------------
 	// X-points (coarse grid)
@@ -1372,7 +1361,7 @@ PetscErrorCode MGLevelAllocRestrict(MGLevel *lvl, MGLevel *fine)
 		I = 2*i;
 		J = 2*j;
 		K = 2*k;
-/*
+
 		// get fine grid stencil
 		idx[0]  = (PetscInt)ivx[K  ][J  ][I-1];
 		idx[1]  = (PetscInt)ivx[K  ][J+1][I-1];
@@ -1386,7 +1375,6 @@ PetscErrorCode MGLevelAllocRestrict(MGLevel *lvl, MGLevel *fine)
 		idx[9]  = (PetscInt)ivx[K  ][J+1][I+1];
 		idx[10] = (PetscInt)ivx[K+1][J  ][I+1];
 		idx[11] = (PetscInt)ivx[K+1][J+1][I+1];
-*/
 
 		// increment row number
 		row++;
@@ -1404,7 +1392,7 @@ PetscErrorCode MGLevelAllocRestrict(MGLevel *lvl, MGLevel *fine)
 		I = 2*i;
 		J = 2*j;
 		K = 2*k;
-/*
+
 		// get fine grid stencil
 		idx[0]  = (PetscInt)ivy[K  ][J-1][I  ];
 		idx[1]  = (PetscInt)ivy[K  ][J-1][I+1];
@@ -1419,7 +1407,6 @@ PetscErrorCode MGLevelAllocRestrict(MGLevel *lvl, MGLevel *fine)
 		idx[10] = (PetscInt)ivy[K+1][J+1][I  ];
     	idx[11] = (PetscInt)ivy[K+1][J+1][I+1];
 
-*/
 		// increment row number
 		row++;
 	}
@@ -1436,7 +1423,7 @@ PetscErrorCode MGLevelAllocRestrict(MGLevel *lvl, MGLevel *fine)
 		I = 2*i;
 		J = 2*j;
 		K = 2*k;
-/*
+
 		// get fine grid stencil
 		idx[0]  = (PetscInt)ivz[K-1][J  ][I  ];
 		idx[1]  = (PetscInt)ivz[K-1][J  ][I+1];
@@ -1450,7 +1437,6 @@ PetscErrorCode MGLevelAllocRestrict(MGLevel *lvl, MGLevel *fine)
 		idx[9]  = (PetscInt)ivz[K+1][J  ][I+1];
 		idx[10] = (PetscInt)ivz[K+1][J+1][I  ];
     	idx[11] = (PetscInt)ivz[K+1][J+1][I+1];
-*/
 
 		// increment row number
 		row++;
@@ -1459,7 +1445,6 @@ PetscErrorCode MGLevelAllocRestrict(MGLevel *lvl, MGLevel *fine)
 
 	if(lvl->dof.idxmod == IDXCOUPLED)
 	{
-
 		//-----------------------
 		// P-points (coarse grid)
 		//-----------------------
@@ -1471,7 +1456,7 @@ PetscErrorCode MGLevelAllocRestrict(MGLevel *lvl, MGLevel *fine)
 			I = 2*i;
 			J = 2*j;
 			K = 2*k;
-/*
+
 			// get fine grid stencil
 			idx[0] = (PetscInt)ip[K  ][J  ][I  ];
 			idx[1] = (PetscInt)ip[K  ][J  ][I+1];
@@ -1481,9 +1466,6 @@ PetscErrorCode MGLevelAllocRestrict(MGLevel *lvl, MGLevel *fine)
 			idx[5] = (PetscInt)ip[K+1][J  ][I+1];
 			idx[6] = (PetscInt)ip[K+1][J+1][I  ];
 			idx[7] = (PetscInt)ip[K+1][J+1][I+1];
-*/
-
-
 
 			// increment row number
 			row++;
@@ -1503,17 +1485,12 @@ PetscErrorCode MGLevelAllocRestrict(MGLevel *lvl, MGLevel *fine)
 	ierr = MatAIJAssemble(R, 0, NULL, 0.0); CHKERRQ(ierr);
 
 	PetscFunctionReturn(0);
-
-
 }
 //---------------------------------------------------------------------------
 #undef __FUNCT__
 #define __FUNCT__ "MGLevelAllocProlong"
 PetscErrorCode MGLevelAllocProlong(MGLevel *lvl, MGLevel *fine)
 {
-
-
-
 	Mat P;
 	PetscInt    ind;
 	PetscInt    row, I, J, K, I1, J1, K1;
@@ -1554,7 +1531,7 @@ PetscErrorCode MGLevelAllocProlong(MGLevel *lvl, MGLevel *fine)
 
 		if(j % 2) J1 = J+1; else J1 = J-1;
 		if(k % 2) K1 = K+1; else K1 = K-1;
-/*
+
 		// setup reduced stencil (even)
 		n      = 4;
 		vs     = vsr;
@@ -1574,7 +1551,6 @@ PetscErrorCode MGLevelAllocProlong(MGLevel *lvl, MGLevel *fine)
 			idx[6] = (PetscInt)ivx[K1][J ][I1];
 			idx[7] = (PetscInt)ivx[K1][J1][I1];
 		}
-*/
 
 		// increment row number
 		row++;
@@ -1595,7 +1571,7 @@ PetscErrorCode MGLevelAllocProlong(MGLevel *lvl, MGLevel *fine)
 
 		if(i % 2) I1 = I+1; else I1 = I-1;
 		if(k % 2) K1 = K+1; else K1 = K-1;
-/*
+
 		// setup reduced stencil (even)
 		n      = 4;
 		vs     = vsr;
@@ -1616,7 +1592,6 @@ PetscErrorCode MGLevelAllocProlong(MGLevel *lvl, MGLevel *fine)
 			idx[7] = (PetscInt)ivy[K1][J1][I1];
 
 		}
-*/
 
 		// increment row number
 		row++;
@@ -1637,7 +1612,7 @@ PetscErrorCode MGLevelAllocProlong(MGLevel *lvl, MGLevel *fine)
 
 		if(i % 2) I1 = I+1; else I1 = I-1;
 		if(j % 2) J1 = J+1; else J1 = J-1;
-/*
+
 		// setup reduced stencil (even)
 		n      = 4;
 		vs     = vsr;
@@ -1657,13 +1632,11 @@ PetscErrorCode MGLevelAllocProlong(MGLevel *lvl, MGLevel *fine)
 			idx[6] = (PetscInt)ivz[K1][J1][I ];
 			idx[7] = (PetscInt)ivz[K1][J1][I1];
 		}
-*/
 
 		// increment row number
 		row++;
 	}
 	END_STD_LOOP
-
 
 	if(fine->dof.idxmod == IDXCOUPLED)
 	{
@@ -1679,10 +1652,8 @@ PetscErrorCode MGLevelAllocProlong(MGLevel *lvl, MGLevel *fine)
 			I = i/2;
 			J = j/2;
 			K = k/2;
-/*
-			idx[0] = (PetscInt)ip[K][J][I];
 
-*/
+			idx[0] = (PetscInt)ip[K][J][I];
 
 			// increment row number
 			row++;
@@ -1698,12 +1669,12 @@ PetscErrorCode MGLevelAllocProlong(MGLevel *lvl, MGLevel *fine)
 	ierr = DMDAVecRestoreArray(lvl->DA_Z,    lvl->dof.ivz,  &ivz);   CHKERRQ(ierr);
 	ierr = DMDAVecRestoreArray(lvl->DA_CEN,  lvl->dof.ip,   &ip);    CHKERRQ(ierr);
 
-
 	// assemble prolongation matrix
 	ierr = MatAIJAssemble(P, 0, NULL, 0.0); CHKERRQ(ierr);
 
 	PetscFunctionReturn(0);
 }
+*/
 //---------------------------------------------------------------------------
 // MG -functions
 //---------------------------------------------------------------------------

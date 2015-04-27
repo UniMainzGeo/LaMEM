@@ -41,7 +41,8 @@ PetscScalar GetConsEqRes(PetscScalar eta, void *pctx);
 PetscErrorCode GetEffVisc(
 	ConstEqCtx  *ctx,
 	MatParLim   *lim,
-	PetscScalar *eta,
+	PetscScalar *eta_total,
+	PetscScalar *eta_creep,
 	PetscScalar *DIIpl);
 
 // apply strain softening to a parameter (friction, cohesion)
@@ -57,6 +58,7 @@ PetscScalar GetI2Gdt(
 // Evaluate deviatoric constitutive equations in control volume
 PetscErrorCode DevConstEq(
 	SolVarDev   *svDev,     // solution variables
+	PetscScalar *eta_creep, // creep viscosity (for output)
 	PetscInt     numPhases, // number phases
 	Material_t  *phases,    // phase parameters
 	PetscScalar *phRat,     // phase ratios

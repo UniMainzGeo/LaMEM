@@ -109,20 +109,39 @@ PetscErrorCode PVOutWriteDensity(JacRes *jr, OutBuf *outbuf)
 }
 //---------------------------------------------------------------------------
 #undef __FUNCT__
-#define __FUNCT__ "PVOutWriteViscosity"
-PetscErrorCode PVOutWriteViscosity(JacRes *jr, OutBuf *outbuf)
+#define __FUNCT__ "PVOutWriteViscTotal"
+PetscErrorCode PVOutWriteViscTotal(JacRes *jr, OutBuf *outbuf)
 {
 	COPY_FUNCTION_HEADER
 
 	// macro to copy viscosity to buffer
-	#define GET_VISCOSITY buff[k][j][i] = jr->svCell[iter++].svDev.eta;
+	#define GET_VISC_TOTAL buff[k][j][i] = jr->svCell[iter++].svDev.eta;
 
 	// output viscosity logarithm in GEO-mode
 	// (negative scaling requests logarithmic output)
 	if(scal->utype == _GEO_) cf = -scal->viscosity;
 	else                     cf =  scal->viscosity;
 
-	INTERPOLATE_COPY(fs->DA_CEN, outbuf->lbcen, InterpCenterCorner, GET_VISCOSITY, 1, 0)
+	INTERPOLATE_COPY(fs->DA_CEN, outbuf->lbcen, InterpCenterCorner, GET_VISC_TOTAL, 1, 0)
+
+	PetscFunctionReturn(0);
+}
+//---------------------------------------------------------------------------
+#undef __FUNCT__
+#define __FUNCT__ "PVOutWriteViscCreep"
+PetscErrorCode PVOutWriteViscCreep(JacRes *jr, OutBuf *outbuf)
+{
+	COPY_FUNCTION_HEADER
+
+	// macro to copy viscosity to buffer
+	#define GET_VISC_CREEP buff[k][j][i] = jr->svCell[iter++].eta_creep;
+
+	// output viscosity logarithm in GEO-mode
+	// (negative scaling requests logarithmic output)
+	if(scal->utype == _GEO_) cf = -scal->viscosity;
+	else                     cf =  scal->viscosity;
+
+	INTERPOLATE_COPY(fs->DA_CEN, outbuf->lbcen, InterpCenterCorner, GET_VISC_CREEP, 1, 0)
 
 	PetscFunctionReturn(0);
 }

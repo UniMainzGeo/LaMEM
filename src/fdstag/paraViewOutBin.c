@@ -234,7 +234,8 @@ void OutMaskSetDefault(OutMask *omask)
 	PetscMemzero(omask, sizeof(OutMask));
 
 	omask->phase          = 1;
-	omask->viscosity      = 1;
+	omask->visc_total     = 1;
+	omask->visc_creep     = 1;
 	omask->velocity       = 1;
 	omask->pressure       = 1;
 }
@@ -245,7 +246,8 @@ PetscInt OutMaskCountActive(OutMask *omask)
 
 	if(omask->phase)          cnt++; // phase
 	if(omask->density)        cnt++; // density
-	if(omask->viscosity)      cnt++; // effective viscosity
+	if(omask->visc_total)     cnt++; // total effective viscosity
+	if(omask->visc_creep)     cnt++; // creep effective viscosity
 	if(omask->velocity)       cnt++; // velocity
 	if(omask->pressure)       cnt++; // pressure
 	if(omask->temperature)    cnt++; // temperature
@@ -338,7 +340,8 @@ PetscErrorCode PVOutCreate(PVOut *pvout, JacRes *jr, const char *filename)
 
 	if(omask->phase)          OutVecCreate(&outvecs[cnt++], "phase",          scal->lbl_unit,             &PVOutWritePhase,        1);
 	if(omask->density)        OutVecCreate(&outvecs[cnt++], "density",        scal->lbl_density,          &PVOutWriteDensity,      1);
-	if(omask->viscosity)      OutVecCreate(&outvecs[cnt++], "viscosity",      scal->lbl_viscosity,        &PVOutWriteViscosity,    1);
+	if(omask->visc_total)     OutVecCreate(&outvecs[cnt++], "visc_total",     scal->lbl_viscosity,        &PVOutWriteViscTotal,    1);
+	if(omask->visc_creep)     OutVecCreate(&outvecs[cnt++], "visc_creep",     scal->lbl_viscosity,        &PVOutWriteViscCreep,    1);
 	if(omask->velocity)       OutVecCreate(&outvecs[cnt++], "velocity",       scal->lbl_velocity,         &PVOutWriteVelocity,     3);
 	if(omask->pressure)       OutVecCreate(&outvecs[cnt++], "pressure",       scal->lbl_stress,           &PVOutWritePressure,     1);
 	if(omask->temperature)    OutVecCreate(&outvecs[cnt++], "temperature",    scal->lbl_temperature,      &PVOutWriteTemperature,  1);
@@ -380,7 +383,8 @@ PetscErrorCode PVOutReadFromOptions(PVOut *pvout)
 	ierr = PetscOptionsGetInt(NULL, "-out_pvd",            &pvout->outpvd,         NULL); CHKERRQ(ierr);
 	ierr = PetscOptionsGetInt(NULL, "-out_phase",          &omask->phase,          NULL); CHKERRQ(ierr);
 	ierr = PetscOptionsGetInt(NULL, "-out_density",        &omask->density,        NULL); CHKERRQ(ierr);
-	ierr = PetscOptionsGetInt(NULL, "-out_viscosity",      &omask->viscosity,      NULL); CHKERRQ(ierr);
+	ierr = PetscOptionsGetInt(NULL, "-out_visc_total",     &omask->visc_total,     NULL); CHKERRQ(ierr);
+	ierr = PetscOptionsGetInt(NULL, "-out_visc_creep",     &omask->visc_creep,     NULL); CHKERRQ(ierr);
 	ierr = PetscOptionsGetInt(NULL, "-out_velocity",       &omask->velocity,       NULL); CHKERRQ(ierr);
 	ierr = PetscOptionsGetInt(NULL, "-out_pressure",       &omask->pressure,       NULL); CHKERRQ(ierr);
 	ierr = PetscOptionsGetInt(NULL, "-out_temperature",    &omask->temperature,    NULL); CHKERRQ(ierr);

@@ -7,7 +7,8 @@
 
 PetscErrorCode PVOutWritePhase       (JacRes*, OutBuf*);
 PetscErrorCode PVOutWriteDensity     (JacRes*, OutBuf*);
-PetscErrorCode PVOutWriteViscosity   (JacRes*, OutBuf*);
+PetscErrorCode PVOutWriteViscTotal   (JacRes*, OutBuf*);
+PetscErrorCode PVOutWriteViscCreep   (JacRes*, OutBuf*);
 PetscErrorCode PVOutWriteVelocity    (JacRes*, OutBuf*);
 PetscErrorCode PVOutWritePressure    (JacRes*, OutBuf*);
 PetscErrorCode PVOutWriteTemperature (JacRes*, OutBuf*);
