@@ -725,7 +725,7 @@ PetscErrorCode ADVMarkInitBlock(AdvCtx *actx, UserCtx *user)
 	for(imark = 0; imark < actx->nummark; imark++)
 	{
 		actx->markers[imark].phase = 0;
-		actx->markers[imark].T     = actx->markers[imark].X[2];
+		actx->markers[imark].T     = 1.0 - actx->markers[imark].X[2];
 
 		if((actx->markers[imark].X[2] > bbottom)
 		&& (actx->markers[imark].X[2] < btop)
