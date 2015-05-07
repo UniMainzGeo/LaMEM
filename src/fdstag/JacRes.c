@@ -25,6 +25,27 @@ PetscErrorCode JacResClear(JacRes *jr)
 }
 //---------------------------------------------------------------------------
 #undef __FUNCT__
+#define __FUNCT__ "JacResSetFromOptions"
+PetscErrorCode JacResSetFromOptions(JacRes *jr)
+{
+	PetscBool   flg;
+	PetscScalar gtol;
+
+	PetscErrorCode ierr;
+	PetscFunctionBegin;
+
+	// set pressure shift flag
+	ierr = PetscOptionsHasName(NULL, "-shift_press", &jr->pShiftAct); CHKERRQ(ierr);
+
+	// set geometry tolerance
+	ierr = PetscOptionsGetScalar(NULL, "-geom_tol", &gtol, &flg); CHKERRQ(ierr);
+
+	if(flg == PETSC_TRUE) jr->gtol = gtol;
+
+	PetscFunctionReturn(0);
+}
+//---------------------------------------------------------------------------
+#undef __FUNCT__
 #define __FUNCT__ "JacResCreate"
 PetscErrorCode JacResCreate(
 	JacRes   *jr,
@@ -143,6 +164,13 @@ PetscErrorCode JacResCreate(
 
 	// default geometry tolerance
 	jr->gtol = 1e-15;
+
+	// deactivate pressure shift
+	jr->pShift    = 0.0;
+	jr->pShiftAct = PETSC_FALSE;
+
+	// change default settings
+	ierr = JacResSetFromOptions(jr); CHKERRQ(ierr);
 
 	PetscFunctionReturn(0);
 }
@@ -305,6 +333,55 @@ PetscErrorCode JacResGetI2Gdt(JacRes *jr)
 		// compute & store inverse viscosity
 		svEdge->svDev.I2Gdt = GetI2Gdt(jr->numPhases, jr->phases, svEdge->phRat, dt);
 	}
+	PetscFunctionReturn(0);
+}
+//---------------------------------------------------------------------------
+#undef __FUNCT__
+#define __FUNCT__ "JacResGetPressShift"
+PetscErrorCode JacResGetPressShift(JacRes *jr)
+{
+	// get average pressure near the top surface
+
+	FDSTAG      *fs;
+	PetscScalar ***p;
+	PetscScalar lpShift, gpShift;
+	PetscInt    i, j, k, nx, ny, nz, sx, sy, sz, mcz;
+
+	PetscErrorCode ierr;
+	PetscFunctionBegin;
+
+	// check if requested
+	if(jr->pShiftAct != PETSC_TRUE) PetscFunctionReturn(0);
+
+	fs      = jr->fs;
+	mcz     = fs->dsz.tcels - 1;
+	lpShift = 0.0;
+
+	ierr = DMDAVecGetArray(fs->DA_CEN, jr->gp, &p);  CHKERRQ(ierr);
+
+	ierr = DMDAGetCorners(fs->DA_CEN, &sx, &sy, &sz, &nx, &ny, &nz); CHKERRQ(ierr);
+
+	START_STD_LOOP
+	{
+		if(k == mcz) lpShift += p[k][j][i];
+	}
+	END_STD_LOOP
+
+	ierr = DMDAVecRestoreArray(fs->DA_CEN, jr->gp, &p);  CHKERRQ(ierr);
+
+	// synchronize
+	if(ISParallel(PETSC_COMM_WORLD))
+	{
+		ierr = MPI_Allreduce(&lpShift, &gpShift, 1, MPIU_SCALAR, MPI_MAX, PETSC_COMM_WORLD); CHKERRQ(ierr);
+	}
+	else
+	{
+		gpShift = lpShift;
+	}
+
+	// store pressure shift
+	jr->pShift = gpShift/(PetscScalar)(fs->dsx.tcels*fs->dsy.tcels);
+
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
@@ -639,7 +716,7 @@ PetscErrorCode JacResGetResidual(JacRes *jr)
 	PetscScalar YZ, YZ1, YZ2, YZ3, YZ4;
 	PetscScalar bdx, fdx, bdy, fdy, bdz, fdz;
 	PetscScalar gx, gy, gz, tx, ty, tz, sxx, syy, szz, sxy, sxz, syz;
-	PetscScalar J2Inv, theta, rho, IKdt, alpha, Tc, pc, Tn, pn, dt, fssa, *grav;
+	PetscScalar J2Inv, theta, rho, IKdt, alpha, Tc, pc, pShift, Tn, pn, dt, fssa, *grav;
 	PetscScalar ***fx,  ***fy,  ***fz, ***vx,  ***vy,  ***vz, ***gc;
 	PetscScalar ***dxx, ***dyy, ***dzz, ***dxy, ***dxz, ***dyz, ***p, ***T;
 	PetscScalar eta_creep;
@@ -663,6 +740,7 @@ PetscErrorCode JacResGetResidual(JacRes *jr)
 	dt        =  jr->ts.dt;     // time step
 	fssa      =  jr->FSSA;      // density gradient penalty parameter
     grav      =  jr->grav;      // gravity acceleration
+	pShift    =  jr->pShift;    // pressure shift
 
 	// clear local residual vectors
 	ierr = VecZeroEntries(jr->lfx); CHKERRQ(ierr);
@@ -748,7 +826,7 @@ PetscErrorCode JacResGetResidual(JacRes *jr)
 		Tc = T[k][j][i];
 
 		// evaluate deviatoric constitutive equations
-		ierr = DevConstEq(svDev, &eta_creep, numPhases, phases, svCell->phRat, matLim, dt, pc, Tc); CHKERRQ(ierr);
+		ierr = DevConstEq(svDev, &eta_creep, numPhases, phases, svCell->phRat, matLim, dt, pc-pShift, Tc); CHKERRQ(ierr);
 
 		// store creep viscosity
 		svCell->eta_creep = eta_creep;
@@ -888,7 +966,7 @@ PetscErrorCode JacResGetResidual(JacRes *jr)
 		Tc = 0.25*(T[k][j][i] + T[k][j][i-1] + T[k][j-1][i] + T[k][j-1][i-1]);
 
 		// evaluate deviatoric constitutive equations
-		ierr = DevConstEq(svDev, &eta_creep, numPhases, phases, svEdge->phRat, matLim, dt, pc, Tc); CHKERRQ(ierr);
+		ierr = DevConstEq(svDev, &eta_creep, numPhases, phases, svEdge->phRat, matLim, dt, pc-pShift, Tc); CHKERRQ(ierr);
 
 		// compute stress, plastic strain rate and shear heating term on edge
 		ierr = GetStressEdge(svEdge, matLim, XY); CHKERRQ(ierr);
@@ -990,7 +1068,7 @@ PetscErrorCode JacResGetResidual(JacRes *jr)
 		Tc = 0.25*(T[k][j][i] + T[k][j][i-1] + T[k-1][j][i] + T[k-1][j][i-1]);
 
 		// evaluate deviatoric constitutive equations
-		ierr = DevConstEq(svDev, &eta_creep, numPhases, phases, svEdge->phRat, matLim, dt, pc, Tc); CHKERRQ(ierr);
+		ierr = DevConstEq(svDev, &eta_creep, numPhases, phases, svEdge->phRat, matLim, dt, pc-pShift, Tc); CHKERRQ(ierr);
 
 		// compute stress, plastic strain rate and shear heating term on edge
 		ierr = GetStressEdge(svEdge, matLim, XZ); CHKERRQ(ierr);
@@ -1092,7 +1170,7 @@ PetscErrorCode JacResGetResidual(JacRes *jr)
 		Tc = 0.25*(T[k][j][i] + T[k][j-1][i] + T[k-1][j][i] + T[k-1][j-1][i]);
 
 		// evaluate deviatoric constitutive equations
-		ierr = DevConstEq(svDev, &eta_creep, numPhases, phases, svEdge->phRat, matLim, dt, pc, Tc); CHKERRQ(ierr);
+		ierr = DevConstEq(svDev, &eta_creep, numPhases, phases, svEdge->phRat, matLim, dt, pc-pShift, Tc); CHKERRQ(ierr);
 
 		// compute stress, plastic strain rate and shear heating term on edge
 		ierr = GetStressEdge(svEdge, matLim, YZ); CHKERRQ(ierr);

@@ -77,10 +77,15 @@ typedef struct
 	//                          (a.k.a. free-surface-stabilization-algorithm)
 	PetscScalar gtol;        // geometry tolerance
 
+	PetscScalar pShift;      // pressure shift for plasticity model and output
+	PetscBool   pShiftAct;   // pressure shift activation flag
+
 } JacRes;
 //---------------------------------------------------------------------------
 
 PetscErrorCode JacResClear(JacRes *jr);
+
+PetscErrorCode JacResSetFromOptions(JacRes *jr);
 
 // create residual & Jacobian evaluation context
 PetscErrorCode JacResCreate(
@@ -96,6 +101,9 @@ PetscErrorCode JacResInitScale(JacRes *jr, UserCtx *usr);
 
 // compute effective inverse elastic viscosity
 PetscErrorCode JacResGetI2Gdt(JacRes *jr);
+
+// get average pressure near the top surface
+PetscErrorCode JacResGetPressShift(JacRes *jr);
 
 // evaluate effective strain rate components in basic nodes
 PetscErrorCode JacResGetEffStrainRate(JacRes *jr);

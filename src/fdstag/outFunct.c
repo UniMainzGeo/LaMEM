@@ -171,7 +171,7 @@ PetscErrorCode PVOutWritePressure(JacRes *jr, OutBuf *outbuf)
 	cf = scal->stress;
 	iflag.use_bound = PETSC_TRUE;
 
-	INTERPOLATE_ACCESS(jr->lp, InterpCenterCorner, 1, 0, 0.0)
+	INTERPOLATE_ACCESS(jr->lp, InterpCenterCorner, 1, 0, jr->pShift)
 
 	PetscFunctionReturn(0);
 }

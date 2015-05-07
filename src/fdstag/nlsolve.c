@@ -237,6 +237,8 @@ PetscErrorCode FormResidual(SNES snes, Vec x, Vec f, void *ctx)
 	// copy solution from global to local vectors, enforce boundary constraints
 	ierr = JacResCopySol(jr, x); CHKERRQ(ierr);
 
+	ierr = JacResGetPressShift(jr); CHKERRQ(ierr);
+
 	// compute effective strain rate
 	ierr = JacResGetEffStrainRate(jr); CHKERRQ(ierr);
 
