@@ -372,7 +372,7 @@ PetscErrorCode JacResGetPressShift(JacRes *jr)
 	// synchronize
 	if(ISParallel(PETSC_COMM_WORLD))
 	{
-		ierr = MPI_Allreduce(&lpShift, &gpShift, 1, MPIU_SCALAR, MPI_MAX, PETSC_COMM_WORLD); CHKERRQ(ierr);
+		ierr = MPI_Allreduce(&lpShift, &gpShift, 1, MPIU_SCALAR, MPI_SUM, PETSC_COMM_WORLD); CHKERRQ(ierr);
 	}
 	else
 	{
