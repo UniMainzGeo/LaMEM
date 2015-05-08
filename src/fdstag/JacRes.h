@@ -80,6 +80,10 @@ typedef struct
 	PetscScalar pShift;      // pressure shift for plasticity model and output
 	PetscBool   pShiftAct;   // pressure shift activation flag
 
+	// temperature parameters
+	DM  DA_T; // temperature cell-centered grid with star stencil
+	Mat Att;  // temperature preconditioner matrix
+
 } JacRes;
 //---------------------------------------------------------------------------
 
@@ -136,6 +140,8 @@ PetscErrorCode JacResGetCourantStep(JacRes *jr);
 
 PetscErrorCode JacResInitTemp(JacRes *jr);
 
+PetscErrorCode JacResCopyTemp(JacRes *jr);
+
 //---------------------------------------------------------------------------
 
 // get maximum inverse time step on local domain
@@ -148,20 +154,23 @@ PetscErrorCode SetMatParLim(MatParLim *matLim, UserCtx *usr);
 
 //---------------------------------------------------------------------------
 
-/*
-PetscErrorCode FDSTAGScatterSol(FDSTAG *fs, JacResCtx *jrctx);
+// PetscErrorCode FDSTAGScatterSol(FDSTAG *fs, JacResCtx *jrctx);
 
-PetscErrorCode FDSTAGScatterRes(FDSTAG *fs, JacResCtx *jrctx);
+// PetscErrorCode FDSTAGScatterRes(FDSTAG *fs, JacResCtx *jrctx);
 
-PetscErrorCode FDSTAGCreateScatter(FDSTAG *fs, JacResCtx *jrctx);
+// PetscErrorCode FDSTAGCreateScatter(FDSTAG *fs, JacResCtx *jrctx);
 
 //---------------------------------------------------------------------------
 // MACROS
 //---------------------------------------------------------------------------
 
-// check existence of the global DOF
-#define CHECK_DOF_INTERNAL(ind, start, num, gidx, lidx) { if(ind != -1) { gidx[num] = ind; lidx[num] = start; num++; } }
-*/
+#define SET_TPC(bc, a, k, j, i, pmdof) { \
+	if(bc[k][j][i] == DBL_MAX) a[k][j][i] = pmdof; \
+	else                       a[k][j][i] = 2.0*bc[k][j][i] - pmdof; }
+
+#define SET_EDGE_CORNER(n, a, K, J, I, k, j, i, pmdof) \
+	a[K][J][I] = a[k][j][I] + a[k][J][i] + a[K][j][i] - 2.0*pmdof;
+
 //---------------------------------------------------------------------------
 #endif
 

@@ -150,8 +150,8 @@ PetscErrorCode LaMEMLib_FDSTAG(void *echange_ctx)
 	// create boundary condition context
 	ierr = BCCreate(&bc, &fs, &jr.ts, &jr.scal); CHKERRQ(ierr);
 
-	// set background strain-rates
-	ierr = BCSetStretch(&bc, &user); CHKERRQ(ierr);
+	// set boundary conditions parameters
+	ierr = BCSetParam(&bc, &user); CHKERRQ(ierr);
 
 	// overwrite grid info if restart and background strain-rates are applied - before marker init
 	if (user.restart==1 && bc.bgAct) { ierr = BreakReadGrid(&user, &fs); CHKERRQ(ierr); }
@@ -211,6 +211,14 @@ PetscErrorCode LaMEMLib_FDSTAG(void *echange_ctx)
 
 		// initialize boundary constraint vectors
 		ierr = BCApply(&bc, &fs); CHKERRQ(ierr);
+
+
+
+// ACHTUNG!
+		// copy to local vector, apply bc constraints
+		ierr = JacResCopyTemp(&jr); CHKERRQ(ierr);
+
+
 
 		// compute inverse elastic viscosities
 		ierr = JacResGetI2Gdt(&jr); CHKERRQ(ierr);
@@ -293,12 +301,6 @@ PetscErrorCode LaMEMLib_FDSTAG(void *echange_ctx)
 			asprintf(&DirectoryName, "Timestep_%1.6lld_%1.6e", (LLD)JacResGetStep(&jr), JacResGetTime(&jr));
 
 			ierr = LaMEMCreateOutputDirectory(DirectoryName); CHKERRQ(ierr);
-
-			// Matlab output (a) -> regular files
-//			if (user.MatlabOutputFiles==1)
-//			{
-//				ierr = WriteOutputFileMatlab(&user, user.DA_Vel, user.DA_Temp, user.sol_advect, NULL, itime, C->ElementType, C->ngp_vel, DirectoryName); CHKERRQ(ierr);
-//  		}
 
 			// Paraview output (b) -> phases only
 //			if (user.AVDPhaseViewer)

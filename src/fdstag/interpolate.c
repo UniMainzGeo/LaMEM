@@ -44,14 +44,6 @@ PetscErrorCode InterpXFaceCorner(FDSTAG *fs, Vec XFace, Vec Corner, InterpFlags 
 			if(k == 0)	{ A1 = A3; A2 = A4; }
 			if(k == mz) { A3 = A1; A4 = A2; }
 		}
-		else
-		{
-			// interpolate given ghost values to boundary edges
-			if(j == 0  && k == 0)   A1 = 0.5*(A2 + A3);
-			if(j == my && k == 0)   A2 = 0.5*(A1 + A4);
-			if(j == 0  && k == mz)  A3 = 0.5*(A1 + A4);
-			if(j == my && k == mz)  A4 = 0.5*(A2 + A3);
-		}
 
 		// get weight coefficients
 		E1 = WEIGHT_NODE(j, sy, fs->dsy); B1 = 1.0 - E1;
@@ -113,14 +105,6 @@ PetscErrorCode InterpYFaceCorner(FDSTAG *fs, Vec YFace, Vec Corner, InterpFlags 
 			if(k == 0)	{ A1 = A3; A2 = A4; }
 			if(k == mz) { A3 = A1; A4 = A2; }
 		}
-		else
-		{
-			// interpolate given ghost values to boundary edges
-			if(i == 0  && k == 0)   A1 = 0.5*(A2 + A3);
-			if(i == mx && k == 0)   A2 = 0.5*(A1 + A4);
-			if(i == 0  && k == mz)  A3 = 0.5*(A1 + A4);
-			if(i == mx && k == mz)  A4 = 0.5*(A2 + A3);
-		}
 
 		// get weight coefficients
 		E1 = WEIGHT_NODE(i, sx, fs->dsx); B1 = 1.0 - E1;
@@ -181,14 +165,6 @@ PetscErrorCode InterpZFaceCorner(FDSTAG *fs, Vec ZFace, Vec Corner, InterpFlags 
 			if(i == mx) { A2 = A1; A4 = A3; }
 			if(j == 0)	{ A1 = A3; A2 = A4; }
 			if(j == my) { A3 = A1; A4 = A2; }
-		}
-		else
-		{
-			// interpolate given ghost values to boundary edges
-			if(i == 0  && j == 0)   A1 = 0.5*(A2 + A3);
-			if(i == mx && j == 0)   A2 = 0.5*(A1 + A4);
-			if(i == 0  && j == my)  A3 = 0.5*(A1 + A4);
-			if(i == mx && j == my)  A4 = 0.5*(A2 + A3);
 		}
 
 		// get weight coefficients
@@ -448,4 +424,33 @@ PetscErrorCode InterpYZEdgeCorner(FDSTAG *fs, Vec YZEdge, Vec Corner, InterpFlag
 
 	PetscFunctionReturn(0);
 }
+//---------------------------------------------------------------------------
+/*
+// velocity extrapolation to boundary edges
+		else
+		{
+			// interpolate given ghost values to boundary edges
+			if(i == 0  && j == 0)   A1 = A2 + A3 - A4;
+			if(i == mx && j == 0)   A2 = A1 + A4 - A3;
+			if(i == 0  && j == my)  A3 = A1 + A4 - A2;
+			if(i == mx && j == my)  A4 = A2 + A3 - A1;
+		}
+		else
+		{
+			// interpolate given ghost values to boundary edges
+			if(i == 0  && k == 0)   A1 = A2 + A3 - A4;
+			if(i == mx && k == 0)   A2 = A1 + A4 - A3;
+			if(i == 0  && k == mz)  A3 = A1 + A4 - A2;
+			if(i == mx && k == mz)  A4 = A2 + A3 - A1;
+		}
+		else
+		{
+			// interpolate given ghost values to boundary edges
+			if(j == 0  && k == 0)   A1 = A2 + A3 - A4;
+			if(j == my && k == 0)   A2 = A1 + A4 - A3;
+			if(j == 0  && k == mz)  A3 = A1 + A4 - A2;
+			if(j == my && k == mz)  A4 = A2 + A3 - A1;
+		}
+
+*/
 //---------------------------------------------------------------------------

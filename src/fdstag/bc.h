@@ -7,8 +7,8 @@
 // index shift type
 typedef enum
 {
-	LOCAL_TO_GLOBAL,
-	GLOBAL_TO_LOCAL
+	_LOCAL_TO_GLOBAL_,
+	_GLOBAL_TO_LOCAL_
 
 } ShiftType;
 //---------------------------------------------------------------------------
@@ -17,20 +17,31 @@ typedef struct
 {
 	//=====================================================================
 	//
-	// Global v-p index space can be either coupled or uncoupled
-	// (used to constrain rows & columns of preconditioner matrices).
+	// Boundary condition vectors contain prescribed DOF values:
 	//
-	// Local v-p index space is ALWAYS coupled, since all solvers are coupled
-	// (used to constrain primary unknown & residual vectors).
-	//
-	// Boundary condition vectors contain prescribed DOF values
 	//    *Internal points (marked with positive number in the index arrays)
 	//        DBL_MAX   - active DOF flag
-	//        otherwise - single-point constraint value
+	//        otherwise - single-point constraint (SPC) value
+	//
 	//    *Boundary ghost point (marked with -1 in the index arrays)
 	//        DBL_MAX   - free-slip (zero-flux) condition flag
-	//        otherwise - two-point constraint value
+	//        otherwise - two-point constraint (TPC) value
 	//
+	// Boundary ghost points require consistent setting of constraints
+	// on the processor boundaries (since PETSc doesn't exchange boundary
+	// ghost point values). Internal ghost points should be synchronized
+	// after initializing the single-point constraints. Synchronization
+	// can be skipped if all ghost points are initialized redundantly
+	// on all the processes (DO THIS!).
+	//
+	// Single point constraints are additionally stored as lists
+	// for constraining matrices and vectors. Matrices require global
+	// index space, vectors require local index space.
+	//
+	// Global v-p index space can be either monolithic or block
+	// Local v-p index space is ALWAYS coupled (since all solvers are coupled)
+	//
+	// NOTE! It may be worth storing TPC also as lists (for speedup).
 	//=====================================================================
 
 	// boundary conditions vectors (velocity, pressure, temperature)
@@ -52,14 +63,13 @@ typedef struct
 	PetscInt    *pSPCList;
 	PetscScalar *pSPCVals;
 
-	// two-point constraints
-//	PetscInt     numTPC;       // number of two-point constraints (TPC)
-//	PetscInt    *TPCList;      // local indices of TPC (ghosted layout)
-//	PetscInt    *TPCPrimeDOF;  // local indices of primary DOF (ghosted layout)
-//	PetscScalar *TPCVals;      // values of TPC
-//	PetscScalar *TPCLinComPar; // linear combination parameters
+	// temperature
+	PetscInt     tNumSPC;
+	PetscInt    *tSPCList;
+	PetscScalar *tSPCVals;
 
-	PetscScalar  Tbot, Ttop; // temperature on top and bottom boundaries
+	// temperature on top and bottom boundaries
+	PetscScalar  Tbot, Ttop;
 
 	// background strain-rate parameters
 	PetscBool    bgAct;    // flag for activating background strain-rates
@@ -74,6 +84,12 @@ typedef struct
 	TSSol         *ts;    // time stepping parameters
 	Scaling       *scal;  // scaling parameters
 
+	// two-point constraints
+//	PetscInt     numTPC;       // number of two-point constraints (TPC)
+//	PetscInt    *TPCList;      // local indices of TPC (ghosted layout)
+//	PetscInt    *TPCPrimeDOF;  // local indices of primary DOF (ghosted layout)
+//	PetscScalar *TPCVals;      // values of TPC
+//	PetscScalar *TPCLinComPar; // linear combination parameters
 
 } BCCtx;
 //---------------------------------------------------------------------------
@@ -84,7 +100,7 @@ PetscErrorCode BCClear(BCCtx *bc);
 PetscErrorCode BCCreate(BCCtx *bc, FDSTAG *fs, TSSol *ts, Scaling *scal);
 
 // set background strain-rates
-PetscErrorCode BCSetStretch(BCCtx *bc, UserCtx *user);
+PetscErrorCode BCSetParam(BCCtx *bc, UserCtx *user);
 
 // destroy boundary condition context
 PetscErrorCode BCDestroy(BCCtx *bc);

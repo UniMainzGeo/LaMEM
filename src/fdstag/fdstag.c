@@ -18,7 +18,6 @@ PetscErrorCode MeshSeg1DCreate(
 	PetscInt    tncels,
 	MeshSegInp *msi)
 {
-
 	PetscInt i, istart;
 
 	PetscErrorCode ierr;
@@ -861,7 +860,7 @@ PetscErrorCode FDSTAGCreate(
 
 	PetscInt         nnx, nny, nnz;
 	PetscInt         ncx, ncy, ncz;
-	PetscInt         dof, nlayer;
+	PetscInt         ndof, nlayer;
 	const PetscInt  *plx, *ply, *plz;
 	PetscInt        *lx,  *ly,  *lz;
 	PetscInt         rx,   ry,   rz;
@@ -871,7 +870,7 @@ PetscErrorCode FDSTAGCreate(
 	PetscErrorCode 	 ierr;
 	PetscFunctionBegin;
 
-	dof    = 1;
+	ndof   = 1;
 	nlayer = 1;
 
 	// get number of processors
@@ -886,7 +885,7 @@ PetscErrorCode FDSTAGCreate(
 	// partition central points (DA_CEN) with boundary ghost points (1-layer stencil box)
 	ierr = DMDACreate3d(PETSC_COMM_WORLD,
 		DM_BOUNDARY_GHOSTED, DM_BOUNDARY_GHOSTED, DM_BOUNDARY_GHOSTED, DMDA_STENCIL_BOX,
-		Nx-1, Ny-1, Nz-1, Px, Py, Pz, dof, nlayer, 0, 0, 0, &fs->DA_CEN); CHKERRQ(ierr);
+		Nx-1, Ny-1, Nz-1, Px, Py, Pz, ndof, nlayer, 0, 0, 0, &fs->DA_CEN); CHKERRQ(ierr);
 
 	// get actual number of processors in every direction (can be different compared to given)
 	ierr = DMDAGetInfo(fs->DA_CEN, 0, 0, 0, 0, &Px, &Py, &Pz, 0, 0, 0, 0, 0, 0); CHKERRQ(ierr);
@@ -903,27 +902,27 @@ PetscErrorCode FDSTAGCreate(
 	// corners (DA_COR) no boundary ghost points (1-layer stencil box)
 	ierr = DMDACreate3d(PETSC_COMM_WORLD,
 		DM_BOUNDARY_NONE, DM_BOUNDARY_NONE, DM_BOUNDARY_NONE, DMDA_STENCIL_BOX,
-		Nx, Ny, Nz, Px, Py, Pz, dof, nlayer, lx, ly, lz, &fs->DA_COR); CHKERRQ(ierr);
+		Nx, Ny, Nz, Px, Py, Pz, ndof, nlayer, lx, ly, lz, &fs->DA_COR); CHKERRQ(ierr);
 
 	// XY edges (DA_XY) no boundary ghost points (1-layer stencil box)
 	lz[Pz-1]--;
 	ierr = DMDACreate3d(PETSC_COMM_WORLD,
 		DM_BOUNDARY_NONE, DM_BOUNDARY_NONE, DM_BOUNDARY_NONE, DMDA_STENCIL_BOX,
-		Nx, Ny, Nz-1, Px, Py, Pz, dof, nlayer, lx, ly, lz, &fs->DA_XY); CHKERRQ(ierr);
+		Nx, Ny, Nz-1, Px, Py, Pz, ndof, nlayer, lx, ly, lz, &fs->DA_XY); CHKERRQ(ierr);
 	lz[Pz-1]++;
 
 	// XZ edges (DA_XZ) no boundary ghost points (1-layer stencil box)
 	ly[Py-1]--;
 	ierr = DMDACreate3d(PETSC_COMM_WORLD,
 		DM_BOUNDARY_NONE, DM_BOUNDARY_NONE, DM_BOUNDARY_NONE, DMDA_STENCIL_BOX,
-		Nx, Ny-1, Nz, Px, Py, Pz, dof, nlayer, lx, ly, lz, &fs->DA_XZ); CHKERRQ(ierr);
+		Nx, Ny-1, Nz, Px, Py, Pz, ndof, nlayer, lx, ly, lz, &fs->DA_XZ); CHKERRQ(ierr);
 	ly[Py-1]++;
 
 	// YZ edges (DA_YZ) no boundary ghost points (1-layer stencil box)
 	lx[Px-1]--;
 	ierr = DMDACreate3d(PETSC_COMM_WORLD,
 		DM_BOUNDARY_NONE, DM_BOUNDARY_NONE, DM_BOUNDARY_NONE, DMDA_STENCIL_BOX,
-		Nx-1, Ny, Nz, Px, Py, Pz, dof, nlayer, lx, ly, lz, &fs->DA_YZ); CHKERRQ(ierr);
+		Nx-1, Ny, Nz, Px, Py, Pz, ndof, nlayer, lx, ly, lz, &fs->DA_YZ); CHKERRQ(ierr);
 	lx[Px-1]++;
 
 
@@ -931,21 +930,21 @@ PetscErrorCode FDSTAGCreate(
 	ly[Py-1]--; lz[Pz-1]--;
 	ierr = DMDACreate3d(PETSC_COMM_WORLD,
 		DM_BOUNDARY_GHOSTED, DM_BOUNDARY_GHOSTED, DM_BOUNDARY_GHOSTED, DMDA_STENCIL_BOX,
-		Nx, Ny-1, Nz-1, Px, Py, Pz, dof, nlayer, lx, ly, lz, &fs->DA_X); CHKERRQ(ierr);
+		Nx, Ny-1, Nz-1, Px, Py, Pz, ndof, nlayer, lx, ly, lz, &fs->DA_X); CHKERRQ(ierr);
 	ly[Py-1]++; lz[Pz-1]++;
 
 	// Y face (DA_Y) with boundary ghost points (1-layer stencil box)
 	lx[Px-1]--; lz[Pz-1]--;
 	ierr = DMDACreate3d(PETSC_COMM_WORLD,
 		DM_BOUNDARY_GHOSTED, DM_BOUNDARY_GHOSTED, DM_BOUNDARY_GHOSTED, DMDA_STENCIL_BOX,
-		Nx-1, Ny, Nz-1, Px, Py, Pz, dof, nlayer, lx, ly, lz, &fs->DA_Y); CHKERRQ(ierr);
+		Nx-1, Ny, Nz-1, Px, Py, Pz, ndof, nlayer, lx, ly, lz, &fs->DA_Y); CHKERRQ(ierr);
 	lx[Px-1]++; lz[Pz-1]++;
 
 	// Z face (DA_Z) with boundary ghost points (1-layer stencil box)
 	lx[Px-1]--; ly[Py-1]--;
 	ierr = DMDACreate3d(PETSC_COMM_WORLD,
 		DM_BOUNDARY_GHOSTED, DM_BOUNDARY_GHOSTED, DM_BOUNDARY_GHOSTED, DMDA_STENCIL_BOX,
-		Nx-1, Ny-1, Nz, Px, Py, Pz, dof, nlayer, lx, ly, lz, &fs->DA_Z); CHKERRQ(ierr);
+		Nx-1, Ny-1, Nz, Px, Py, Pz, ndof, nlayer, lx, ly, lz, &fs->DA_Z); CHKERRQ(ierr);
 	lx[Px-1]++; ly[Py-1]++;
 
 	// get processor ranks

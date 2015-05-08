@@ -149,18 +149,12 @@ PetscErrorCode GetEffVisc(
 	PetscScalar *eta_creep,
 	PetscScalar *DIIpl)
 {
-
-
 	// stabilization parameters
 	PetscScalar cf_eta_min = 10.0;
-
 	PetscScalar eta_ve, DIIve, H;
-
 	PetscScalar inv_eta_els, inv_eta_dif, inv_eta_dis, inv_eta_prl, inv_eta_creep;
 
 	PetscFunctionBegin;
-
-
 
 	//==============
 	// INITIAL GUESS
@@ -197,9 +191,9 @@ PetscErrorCode GetEffVisc(
 	if(ctx->A_prl) inv_eta_prl = 2.0*pow(ctx->A_prl, 1.0/ctx->N_prl)*pow(ctx->DII, 1.0 - 1.0/ctx->N_prl);
 
 	// error handling (ADD MORE!!!)
-	if(isnan(inv_eta_dif)) inv_eta_dif = 0.0;
-	if(isnan(inv_eta_dis)) inv_eta_dis = 0.0;
-	if(isnan(inv_eta_prl)) inv_eta_prl = 0.0;
+	if(PetscIsInfOrNanScalar(inv_eta_dif)) inv_eta_dif = 0.0;
+	if(PetscIsInfOrNanScalar(inv_eta_dis)) inv_eta_dis = 0.0;
+	if(PetscIsInfOrNanScalar(inv_eta_prl)) inv_eta_prl = 0.0;
 
 	//================
 	// NONLINEAR CREEP

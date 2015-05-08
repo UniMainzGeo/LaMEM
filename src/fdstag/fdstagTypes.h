@@ -87,8 +87,7 @@ typedef struct
 	PetscInt         NumPartX, NumPartY, NumPartZ;
 	PetscScalar      Setup_Diapir_Hi; // for 'DIAPIR' setup
 	PetscInt         nnode_x, nnode_y, nnode_z; // NOT NECESSARY if -nel is specified
-	//PetscInt         cpu_x, cpu_y, cpu_z; // not necessary - only used in FDSTAGCreate - not even initialized
-	//PetscInt         remesh;
+
 	//PetscScalar      ampl2D,ampl3D,amplNoise,mumax, Hinterface, amp; // perturbations to grid
 
 	//PetscInt         num_particle_local;
@@ -106,16 +105,9 @@ typedef struct
 	PetscScalar      dt_max;
 	PetscScalar      dt;
 
-	//PetscScalar      time;
-	//PetscInt         itime, time_start;
-	//PetscInt         time_end_temp;
-	//PetscInt         EulerianAfterTimestep, temp_initialize;
-
 	// temperature - not active
 	PetscScalar      Temp_bottom, Temp_top;
 	PetscScalar      GasConstant;
-	//PetscScalar      Xi;
-	//PetscScalar      CriticalDiagonalRatio, dt_temp;
 
 	// optimization
 	PetscInt         mpi_group_id; //migrated from OptimiseParams
@@ -124,18 +116,12 @@ typedef struct
 	// initial guess
 	PetscScalar      DII_ref;
 
-	//PetscInt         MaxNonlinearIterations;
-	//PetscScalar      NonlinearIterationsAccuracy;
-	//PetscInt         StokesSolver;   // 1 - Powell-Hesteness iterations; 2 - Schur Complement Reduction; 3 - Fully Coupled Solver; 4 - MatVec Test;
-	//PetscInt         VelocitySolver; // 0 - User defined; 1 - Direct (MUMPS); 2 - Galerkin geometric multigrid; 3 - Fieldsplit + Algebraic Multigrid (ML)
 	//PetscBool        VelocityTest;   // Request to perform single velocity solve for test purposes
 	//PetscBool        ScaleSystem;    // Request to scale linear system before solution
-	//PetscBool        use_fdstag_canonical; // request native staggered grid discretization
 
 	// restart
 	PetscInt         save_breakpoints, break_point_number;
 	PetscInt         restart;
-	//PetscInt         incr_breakpoints, fileno;
 
 	//markers
 	char             ParticleFilename[MAX_PATH_LEN];
@@ -146,29 +132,11 @@ typedef struct
 
 	// input/output
 	char             OutputFile[MAX_PATH_LEN];
-//	char             ParamFile[MAX_PATH_LEN];
-//	PetscBool        InputParamFile;
 	PetscInt         PolyInVolSkip[30];
 	// flags
 	PetscBool        SkipStokesSolver;
 	PetscBool        SavePartitioning;
 
-	//PetscInt         PlasticityCutoff;
-	//PetscBool        ArtTemp;
-	//PetscInt         PlasticityModel;
-	//PetscInt         InitialMantleLevel;
-	//PetscInt         GridAdvectionMethod, NumSurfaceNodes, num_subdt, num_phase_transitions;
-	//PetscInt         LoadInitialParticlesFromDisc;
-	//PetscInt         MuMeanMethod;
-	//char             InitialMeshFileName[MAX_PATH_LEN];
-	//PetscBool        AnalyticalBenchmark;
-	//PetscInt         *NodesDistributionCPUsFineGrid;
-	//PetscInt         MaxNumLocalParticles;
-	//PetscInt         NumParticlesToStartInjection;
-	//PetscInt         ParticleInjectionPhase;
-	//PetscInt         NonlinearIterations;
-	//PetscInt         MatlabOutputFiles, VTKOutputFiles, AVDPhaseViewer;
-	//PetscInt		   InitialErosionSurfaceFromFile,InitialMeshFromFile;
 
 	// gravity
 	gravityParams    GravityField;
@@ -176,21 +144,10 @@ typedef struct
 	PetscScalar      GravityAngle;
 
 	PetscScalar      FSSA;
-	//PetscScalar      FactorSurfaceLayer;
 
 	// pushing
 	PetscInt         AddPushing;
 	PushParams       Pushing;
-
-	// solution vectors (part of fdstag canonical implementation, this will be abandoned)
-	Vec              sol, sol_advect;
-	Vec              Pressure;
-	Vec              ViscosityScaling;
-
-	// other - erosion
-	//PetscInt         ApplyErosion;
-	//PetscScalar      SurfaceAngle, SurfaceNoiseAmplitude;
-	//PetscScalar      fluvial_erosion, diffusion_erosion;
 
 } UserCtx;
 //-----------------------------------------------------------------------------

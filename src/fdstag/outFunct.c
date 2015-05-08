@@ -477,7 +477,7 @@ PetscErrorCode PVOutWritEnergRes(JacRes *jr, OutBuf *outbuf)
 	// scatter to local vector
 	GLOBAL_TO_LOCAL(outbuf->fs->DA_CEN, jr->ge, outbuf->lbcen)
 
-	INTERPOLATE_ACCESS(jr->ge, InterpCenterCorner, 1, 0, 0.0)
+	INTERPOLATE_ACCESS(outbuf->lbcen, InterpCenterCorner, 1, 0, 0.0)
 
 	PetscFunctionReturn(0);
 }

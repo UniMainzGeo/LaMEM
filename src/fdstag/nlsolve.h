@@ -42,13 +42,15 @@ http://www.mcs.anl.gov/petsc/petsc-current/docs/manualpages/Mat/MatCreateMFFD.ht
 #define _max_win_size_ 100
 
 //---------------------------------------------------------------------------
-typedef struct {
+typedef struct
+{
 	PetscScalar rnorm_init;
 	PetscInt    winwidth;
 	PetscScalar rnorms[2];
 	PetscScalar rnormdiffs[_max_win_size_];
 	PetscScalar diffnorm;
-	PetscScalar	epsfrac,eps;
+	PetscScalar	epsfrac, eps;
+
 } WinStopCtx;
 //---------------------------------------------------------------------------
 
@@ -117,12 +119,11 @@ PetscErrorCode SNESPrintConvergedReason(SNES snes);
 //PetscErrorCode SNESBlockStopTest(SNES snes, PetscInt it, PetscReal xnorm,
 //	PetscReal gnorm, PetscReal f, SNESConvergedReason *reason, void *cctx);
 
-//PetscErrorCode SNESActEW(SNES snes);
-
 //---------------------------------------------------------------------------
 
 // performs tests for residual norms
 PetscErrorCode KSPWinStopTest(KSP ksp, PetscInt n, PetscScalar rnorm, KSPConvergedReason *reason, void *mctx);
 PetscErrorCode KSPWinStopMonitor(KSP ksp,PetscInt thisit,PetscScalar thisnorm, void *mctx);
+
 //---------------------------------------------------------------------------
 #endif
