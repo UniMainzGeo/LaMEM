@@ -719,7 +719,6 @@ PetscErrorCode JacResGetResidual(JacRes *jr)
 	// form the hosting nodes using arithmetic mean.
 	// DII = (0.5*D_ij*D_ij)^0.5
 	// NOTE: we interpolate and average D_ij*D_ij terms instead of D_ij
-	// WARNING: ADD DENSITY STABILIZATON TERMS
 
 	FDSTAG     *fs;
 	SolVarCell *svCell;
@@ -1237,6 +1236,145 @@ PetscErrorCode JacResGetResidual(JacRes *jr)
 	LOCAL_TO_GLOBAL(fs->DA_X, jr->lfx, jr->gfx)
 	LOCAL_TO_GLOBAL(fs->DA_Y, jr->lfy, jr->gfy)
 	LOCAL_TO_GLOBAL(fs->DA_Z, jr->lfz, jr->gfz)
+
+	PetscFunctionReturn(0);
+}
+//---------------------------------------------------------------------------
+
+#define SCATTER_FIELD(da, vec, FIELD) \
+	ierr = DMDAGetCorners (da, &sx, &sy, &sz, &nx, &ny, &nz); CHKERRQ(ierr); \
+	ierr = DMDAVecGetArray(da, vec, &buff); CHKERRQ(ierr); \
+	iter = 0; \
+	START_STD_LOOP \
+		FIELD \
+	END_STD_LOOP \
+	ierr = DMDAVecRestoreArray(da, vec, &buff); CHKERRQ(ierr); \
+	LOCAL_TO_LOCAL(da, vec)
+
+#define GET_KC \
+	GetTempParam(numPhases, phases, jr->svCell[iter++].phRat, &kc, NULL, NULL); \
+	buff[k][j][i] = kc;
+
+#define GET_HRXY buff[k][j][i] = jr->svXYEdge[iter++].svDev.Hr;
+#define GET_HRYZ buff[k][j][i] = jr->svYZEdge[iter++].svDev.Hr;
+#define GET_HRXZ buff[k][j][i] = jr->svXZEdge[iter++].svDev.Hr;
+
+//---------------------------------------------------------------------------
+#undef __FUNCT__
+#define __FUNCT__ "JacResGetTempRes"
+PetscErrorCode JacResGetTempRes(JacRes *jr)
+{
+	// compute temperature residual vector
+
+	FDSTAG     *fs;
+	SolVarCell *svCell;
+	SolVarDev  *svDev;
+	SolVarBulk *svBulk;
+	Material_t *phases;
+	PetscInt    iter, numPhases;
+	PetscInt    Ip1, Im1, Jp1, Jm1, Kp1, Km1;
+	PetscInt    i, j, k, nx, ny, nz, sx, sy, sz, mx, my, mz;
+ 	PetscScalar bkx, fkx, bky, fky, bkz, fkz;
+	PetscScalar bdx, fdx, bdy, fdy, bdz, fdz;
+	PetscScalar bqx, fqx, bqy, fqy, bqz, fqz;
+ 	PetscScalar dx, dy, dz;
+	PetscScalar kc, rho, Cp, A, Tc, Tn, dt, Hr;
+	PetscScalar ***ge, ***T, ***lk, ***hxy, ***hxz, ***hyz, ***buff;
+
+	PetscErrorCode ierr;
+	PetscFunctionBegin;
+
+	// access residual context variables
+	fs        = jr->fs;
+	numPhases = jr->numPhases; // number phases
+	phases    = jr->phases;    // phase parameters
+	dt        = jr->ts.dt;     // time step
+
+	// initialize maximum cell index in all directions
+	mx = fs->dsx.tcels - 1;
+	my = fs->dsy.tcels - 1;
+	mz = fs->dsz.tcels - 1;
+
+	SCATTER_FIELD(fs->DA_CEN, jr->ldxx, GET_KC)
+	SCATTER_FIELD(fs->DA_XY,  jr->ldxy, GET_HRXY)
+	SCATTER_FIELD(fs->DA_XZ,  jr->ldxz, GET_HRYZ)
+	SCATTER_FIELD(fs->DA_YZ,  jr->ldyz, GET_HRXZ)
+
+	// access work vectors
+	ierr = DMDAVecGetArray(fs->DA_CEN, jr->ge,   &ge);  CHKERRQ(ierr);
+	ierr = DMDAVecGetArray(fs->DA_CEN, jr->lT,   &T);   CHKERRQ(ierr);
+	ierr = DMDAVecGetArray(fs->DA_CEN, jr->ldxx, &lk);  CHKERRQ(ierr);
+	ierr = DMDAVecGetArray(fs->DA_XY,  jr->ldxy, &hxy); CHKERRQ(ierr);
+	ierr = DMDAVecGetArray(fs->DA_XZ,  jr->ldxz, &hxz); CHKERRQ(ierr);
+	ierr = DMDAVecGetArray(fs->DA_YZ,  jr->ldyz, &hyz); CHKERRQ(ierr);
+
+	//---------------
+	// central points
+	//---------------
+	iter = 0;
+	ierr = DMDAGetCorners(fs->DA_CEN, &sx, &sy, &sz, &nx, &ny, &nz); CHKERRQ(ierr);
+
+	START_STD_LOOP
+	{
+		// access solution variables
+		svCell = &jr->svCell[iter++];
+		svDev  = &svCell->svDev;
+		svBulk = &svCell->svBulk;
+
+		// access
+		Tc  = T[k][j][i];  // current temperature
+		Tn  = svBulk->Tn;  // temperature history
+		rho = svBulk->rho; // effective density
+
+		// conductivity, heat capacity, radiogenic heat production
+		GetTempParam(numPhases, phases, svCell->phRat, &kc, &Cp, &A);
+
+		// shear heating term
+		Hr = svDev->Hr +
+		(hxy[k][j][i] + hxy[k][j+1][i] + hxy[k][j][i+1] + hxy[k][j+1][i+1] +
+		 hxz[k][j][i] + hxz[k+1][j][i] + hxz[k][j][i+1] + hxz[k+1][j][i+1] +
+		 hyz[k][j][i] + hyz[k+1][j][i] + hyz[k][j+1][i] + hyz[k+1][j+1][i])/4.0;
+
+		// check index bounds
+		Ip1 = i+1; if(Ip1 > mx) Ip1--;
+		Im1 = i-1; if(Im1 < 0)  Im1++;
+		Jp1 = j+1; if(Jp1 > my) Jp1--;
+		Jm1 = j-1; if(Jm1 < 0)  Jm1++;
+		Kp1 = k+1; if(Kp1 > mz) Kp1--;
+		Km1 = k-1; if(Km1 < 0)  Km1++;
+
+		// get mesh steps
+		bdx = SIZE_NODE(i, sx, fs->dsx);          fdx = SIZE_NODE(i+1, sx, fs->dsx);
+		bdy = SIZE_NODE(j, sy, fs->dsy);          fdy = SIZE_NODE(j+1, sy, fs->dsy);
+		bdz = SIZE_NODE(k, sz, fs->dsz);          fdz = SIZE_NODE(k+1, sz, fs->dsz);
+
+		// compute average conductivities
+		bkx = (kc + lk[k  ][j  ][Im1])/2.0;       fkx = (lk[k  ][j  ][Ip1] + kc)/2.0;
+		bky = (kc + lk[k  ][Jm1][i  ])/2.0;       fky = (lk[k  ][Jp1][i  ] + kc)/2.0;
+		bkz = (kc + lk[Km1][j  ][i  ])/2.0;       fkz = (lk[Kp1][j  ][i  ] + kc)/2.0;
+
+		// compute heat fluxes
+		bqx = -bkx*(Tc - T[k]  [j  ][i-1])/bdx;   fqx = -fkx*(T[k]  [j  ][i+1] - Tc)/fdx;
+		bqy = -bky*(Tc - T[k]  [j-1][i  ])/bdy;   fqy = -fky*(T[k]  [j+1][i  ] - Tc)/fdy;
+		bqz = -bkz*(Tc - T[k-1][j  ][i  ])/bdz;   fqz = -fkz*(T[k+1][j  ][i  ] - Tc)/fdz;
+
+		// get mesh steps
+		dx = SIZE_CELL(i, sx, fs->dsx);
+		dy = SIZE_CELL(j, sy, fs->dsy);
+		dz = SIZE_CELL(k, sz, fs->dsz);
+
+		// compute residual
+		ge[k][j][i] = (fqx - bqx)/dx + (fqy - bqy)/dy + (fqz - bqz)/dz + Hr + rho*A - rho*Cp*(Tc - Tn)/dt;
+	}
+	END_STD_LOOP
+
+	// restore access
+	ierr = DMDAVecRestoreArray(fs->DA_CEN, jr->ge,   &ge);  CHKERRQ(ierr);
+	ierr = DMDAVecRestoreArray(fs->DA_CEN, jr->lT,   &T);   CHKERRQ(ierr);
+	ierr = DMDAVecRestoreArray(fs->DA_CEN, jr->ldxx, &lk);  CHKERRQ(ierr);
+	ierr = DMDAVecRestoreArray(fs->DA_XY,  jr->ldxy, &hxy); CHKERRQ(ierr);
+	ierr = DMDAVecRestoreArray(fs->DA_XZ,  jr->ldxz, &hxz); CHKERRQ(ierr);
+	ierr = DMDAVecRestoreArray(fs->DA_YZ,  jr->ldyz, &hyz); CHKERRQ(ierr);
 
 	PetscFunctionReturn(0);
 }

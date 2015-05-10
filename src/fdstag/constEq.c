@@ -607,6 +607,44 @@ void Tensor2RSCopy(Tensor2RS *A, Tensor2RS *B)
     B->xz = A->xz; B->yz = A->yz; B->zz = A->zz;
 }
 //---------------------------------------------------------------------------
+// Temperature parameters functions
+//---------------------------------------------------------------------------
+void GetTempParam(
+	PetscInt     numPhases,
+	Material_t  *phases,
+	PetscScalar *phRat,
+	PetscScalar *k_,  // conductivity
+	PetscScalar *Cp_, // capacity
+	PetscScalar *A_)  // radiogenic heat
+{
+	// compute effective energy parameters in the cell
+
+	PetscInt    i;
+    Material_t  *M;
+	PetscScalar cf, k, Cp, A;
+
+	// initialize
+	k  = 0.0;
+    Cp = 0.0;
+	A  = 0.0;
+
+	// average all phases
+	for(i = 0; i < numPhases; i++)
+	{
+		M   = &phases[i];
+		cf  = phRat[i];
+		k  += cf*M->k;
+		Cp += cf*M->Cp;
+		A  += cf*M->A;
+	}
+
+	// store
+	if(k_)  (*k_)  = k;
+    if(Cp_) (*Cp_) = Cp;
+	if(A_)  (*A_)  = A;
+}
+//---------------------------------------------------------------------------
+
 /*
 // ERROR HANDLING FOR CONTEXT EVALUATION ROUTINE
 

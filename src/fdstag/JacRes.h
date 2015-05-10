@@ -118,6 +118,9 @@ PetscErrorCode JacResGetVorticity(JacRes *jr);
 // compute nonlinear residual vectors
 PetscErrorCode JacResGetResidual(JacRes *jr);
 
+// compute temperature residual vector
+PetscErrorCode JacResGetTempRes(JacRes *jr);
+
 // copy solution from global to local vectors, enforce boundary constraints
 PetscErrorCode JacResCopySol(JacRes *jr, Vec x);
 
