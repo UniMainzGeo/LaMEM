@@ -87,7 +87,7 @@ PetscErrorCode MatPropGetStruct(FILE *fp,
 	Material_t *m;
 	PetscScalar eta, eta0, e0;
 	PetscInt    ID = -1, chSoftID, frSoftID, found;
-	char        ndiff[MAX_NAME_LEN], ndisl[MAX_NAME_LEN];
+	char        ndiff[MAX_NAME_LEN], ndisl[MAX_NAME_LEN], npeir[MAX_NAME_LEN];
 
 	// output labels
 	char        lbl_rho  [_lbl_sz_];
@@ -143,16 +143,25 @@ PetscErrorCode MatPropGetStruct(FILE *fp,
 	// density
 	//============================================================
 	getMatPropScalar(fp, ils, ile, "rho0",      &m->rho,   &found);
+
+	//============================================================
+	// Creep profiles
+	//============================================================
+	// set predefined diffusion creep profile
+	getMatPropString(fp, ils, ile, "diff_profile", ndiff, MAX_NAME_LEN, &found);
+	if(found) { ierr = SetDiffProfile(m, ndiff); CHKERRQ(ierr); }
+
+	// set predefined dislocation creep profile
+	getMatPropString(fp, ils, ile, "disl_profile", ndisl, MAX_NAME_LEN, &found);
+	if(found) { ierr = SetDislProfile(m, ndisl); CHKERRQ(ierr); }
+
+	// set predefined Peierls creep profile
+	getMatPropString(fp, ils, ile, "peir_profile", npeir, MAX_NAME_LEN, &found);
+	if(found) { ierr = SetPeirProfile(m, npeir); CHKERRQ(ierr); }
+
 	//============================================================
 	// Newtonian linear diffusion creep
 	//============================================================
-	getMatPropString(fp, ils, ile, "diff_profile", ndiff, MAX_NAME_LEN, &found);
-	if(found)
-	{
-		// set predefined diffusion creep profile
-		ierr = SetDiffProfile(m, ndiff); CHKERRQ(ierr);
-	}
-
 	getMatPropScalar(fp, ils, ile, "eta",       &eta,      &found);
 	getMatPropScalar(fp, ils, ile, "Bd",        &m->Bd,    &found);
 	getMatPropScalar(fp, ils, ile, "Ed",        &m->Ed,    &found);
@@ -161,13 +170,6 @@ PetscErrorCode MatPropGetStruct(FILE *fp,
 	//============================================================
 	// power-law (dislocation) creep
 	//============================================================
-	getMatPropString(fp, ils, ile, "disl_profile", ndisl, MAX_NAME_LEN, &found);
-	if(found)
-	{
-		// set predefined dislocation creep profile
-		ierr = SetDislProfile(m, ndisl); CHKERRQ(ierr);
-	}
-
 	getMatPropScalar(fp, ils, ile, "eta0",      &eta0,     &found);
 	getMatPropScalar(fp, ils, ile, "e0",        &e0,       &found);
 	getMatPropScalar(fp, ils, ile, "Bn",        &m->Bn,    &found);
@@ -238,7 +240,7 @@ PetscErrorCode MatPropGetStruct(FILE *fp,
 	}
 
 	// check Peierls creep
-	if(m->Bp && (!m->taup || !m->gamma || !m->q || !m->Ep || !m->Vp))
+	if(m->Bp && (!m->taup || !m->gamma || !m->q || !m->Ep))
 	{
 		SETERRQ1(PETSC_COMM_SELF, PETSC_ERR_USER, "All Peierls creep parameters must be specified simultaneously for phase %lld", (LLD)ID);
 	}
@@ -418,35 +420,41 @@ PetscErrorCode MatSoftGetStruct(FILE *fp,
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-// set diffusion creep profiles
+// set diffusion creep profiles from literature
 #undef __FUNCT__
 #define __FUNCT__ "SetDiffProfile"
 PetscErrorCode SetDiffProfile(Material_t *m, char name[])
 {
 	TensorCorrection tensorCorrection;
 	PetscInt         MPa;
-	//PetscScalar     d0, p, C_OH_0, r;
+	PetscScalar      d0, p;
+	PetscScalar      C_OH_0, r;
 
-	// Predefined rheological diffusion creep (taken from the literature). We assume that the creep law has the form:
+	// We assume that the creep law has the form:
 	// Diffusion:   eII = F2*Bd*Tau   * C_OH^r * d^-p *exp( - (Ed + P*Vd)/(R*T))
 	// Dislocation: eII = F2*Bn*Tau^n * C_OH^r        *exp( - (En + P*Vn)/(R*T))
+	//
+	// In LaMEM we include the effect of grain size, H2O and tensor correction in the pre-factor (Bd,Bn) such that:
+	// Diffusion:   Bd  = (2*F2)^(-1) * Bd [Pa] * d^-p * C_OH^r
+	// Dislocation: Bn  = (2*F2)^(-n) * Bd [Pa]        * C_OH^r
 	//
 	//   eII     -   strain rate             [1/s]
 	//   Tau     -   stress                  [Pa]
 	//   P       -   pressure                [Pa]
-	//   R       -   gas constant            [=8.3145]
+	//   R       -   gas constant
 	//   Bd, Bn  -   prefactor               [Pa^(-n)s^(-1)]
 	//   n       -   power-law exponent (n=1 for diffusion creep)
 	//   Ed, En  -   activation Energy       [J/MPA/mol]
 	//   Vd, Vn  -   activation volume       [m^3/mol]
-	//   d       -   grain size              [in mu_m (1e-6 meter)]
+	//   d       -   grain size              [in micro-meters (1e-6 meter)]
 	//   p       -   exponent of grain size
 	//   C_OH    -   water fugacity in H/10^6 Si  (see Hirth & Kohlstedt 2003 for a description)
 	//   r       -   power-law exponent of C_OH term
+	//   MPa     -   transform units: 0 - units in Pa; 1 - units in MPa
 	//
-	//   In addition, we take into account that the creeplaws are typically
-	//   measured under uniaxial or triaxial compression, whereas we need them
-	//   in tensorial format (this gives some geometrical factors).
+	//   In addition, we take into account that the creep-laws are typically
+	//   measured under uniaxial or simple shear, whereas we need them
+	//   in tensorial format (tensorCorrection and F2).
 
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
@@ -456,14 +464,13 @@ PetscErrorCode SetDiffProfile(Material_t *m, char name[])
 		// after Hirth, G. & Kohlstedt (2003), D. Rheology of the upper mantle and the mantle wedge: A view from the experimentalists.
 		m->Bd            =   1.5e9;
 		m->Ed            =   375e3;
-		m->Vd            =   5e-6;          // Activation volume [m3/mol] varies between (2-10)e-6
-		tensorCorrection =   _SimpleShear_; // Add the transformation from uni-axial -> tensorial form or not?
-		MPa              =   1;             // 0 - units in Pa; 1 - units in MPa
-
-		//d0               =   10e3;          // Basic grain size in micrometer (deactivated if p=0)
-		//p                =   3;             // powerlaw exponent of grain size
-		//C_OH_0           =   1;
-		//r                =   0;
+		m->Vd            =   5e-6;
+		tensorCorrection =   _SimpleShear_;
+		MPa              =   1;
+		d0               =   10e3;
+		p                =   3;
+		C_OH_0           =   1;
+		r                =   0;
 	}
 
 	else if (!strcmp(name,"Wet_Olivine_diff_creep-Hirth_Kohlstedt_2003_constant_C_OH"))
@@ -471,14 +478,13 @@ PetscErrorCode SetDiffProfile(Material_t *m, char name[])
 		// after Hirth, G. & Kohlstedt (2003), D. Rheology of the upper mantle and the mantle wedge: A view from the experimentalists.
 		m->Bd            =   1.0e6;
 		m->Ed            =   335e3;
-		m->Vd            =   4e-6;          // Activation volume [m3/mol] varies between (2-10)e-6
-		tensorCorrection =   _SimpleShear_; // Add the transformation from uni-axial -> tensorial form or not?
-		MPa              =   1;             // 0 - units in Pa; 1 - units in MPa
-
-		//d0               =   10e3;          // Basic grain size in micrometer (deactivated if p=0)
-		//p                =   3;             // powerlaw exponent of grain size
-		//C_OH_0           =   1000;
-		//r                =   0;
+		m->Vd            =   4e-6;
+		tensorCorrection =   _SimpleShear_;
+		MPa              =   1;
+		d0               =   10e3;
+		p                =   3;
+		C_OH_0           =   1000;
+		r                =   1;
 	}
 
 	else if (!strcmp(name,"Wet_Olivine_diff_creep-Hirth_Kohlstedt_2003"))
@@ -486,14 +492,14 @@ PetscErrorCode SetDiffProfile(Material_t *m, char name[])
 		// after Hirth, G. & Kohlstedt (2003), D. Rheology of the upper mantle and the mantle wedge: A view from the experimentalists.
 		m->Bd            =   2.5e7;
 		m->Ed            =   335e3;
-		m->Vd            =   10e-6;         // Activation volume [m3/mol] varies between (2-10)e-6
-		tensorCorrection =   _SimpleShear_; // Add the transformation from uni-axial -> tensorial form or not?
-		MPa              =   1;             // 0 - units in Pa; 1 - units in MPa
+		m->Vd            =   10e-6;
+		tensorCorrection =   _SimpleShear_;
+		MPa              =   1;
 
-		//d0               =   10e3;          // Basic grain size in micrometer (deactivated if p=0)
-		//p                =   3;             // powerlaw exponent of grain size
-		//C_OH_0           =   1000;
-		//r                =   0.8;
+		d0               =   10e3;
+		p                =   3;
+		C_OH_0           =   1000;
+		r                =   0.8;
 	}
 
 	else
@@ -504,38 +510,46 @@ PetscErrorCode SetDiffProfile(Material_t *m, char name[])
 	// make tensor correction and transform units from MPa if necessary
 	ierr = SetProfileCorrection(&m->Bd,1,tensorCorrection,MPa); CHKERRQ(ierr);
 
+	// take into account grain size and water content
+	m->Bd *= pow(d0,-p)*pow(C_OH_0,r);
+
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-// set dislocation creep profiles
+// set dislocation creep profiles from literature
 #undef __FUNCT__
 #define __FUNCT__ "SetDislProfile"
 PetscErrorCode SetDislProfile(Material_t *m, char name[])
 {
 	TensorCorrection tensorCorrection;
 	PetscInt         MPa;
-	//PetscScalar     C_OH_0, r;
+	PetscScalar      C_OH_0, r;
 
-	// Predefined rheological diffusion creep (taken from the literature). We assume that the creeplaw has the form:
+	// We assume that the creep law has the form:
 	// Diffusion:   eII = F2*Bd*Tau   * C_OH^r * d^-p *exp( - (Ed + P*Vd)/(R*T))
 	// Dislocation: eII = F2*Bn*Tau^n * C_OH^r        *exp( - (En + P*Vn)/(R*T))
+	//
+	// In LaMEM we include the effect of grain size, H2O and tensor correction in the pre-factor (Bd,Bn) such that:
+	// Diffusion:   Bd  = (2*F2)^(-1) * Bd [Pa] * d^-p * C_OH^r
+	// Dislocation: Bn  = (2*F2)^(-n) * Bd [Pa]        * C_OH^r
 	//
 	//   eII     -   strain rate             [1/s]
 	//   Tau     -   stress                  [Pa]
 	//   P       -   pressure                [Pa]
-	//   R       -   gas constant            [=8.3145]
+	//   R       -   gas constant
 	//   Bd, Bn  -   prefactor               [Pa^(-n)s^(-1)]
 	//   n       -   power-law exponent (n=1 for diffusion creep)
 	//   Ed, En  -   activation Energy       [J/MPA/mol]
 	//   Vd, Vn  -   activation volume       [m^3/mol]
-	//   d       -   grain size              [in mu_m (1e-6 meter)]
+	//   d       -   grain size              [in micro-meters (1e-6 meter)]
 	//   p       -   exponent of grain size
 	//   C_OH    -   water fugacity in H/10^6 Si  (see Hirth & Kohlstedt 2003 for a description)
 	//   r       -   power-law exponent of C_OH term
+	//   MPa     -   transform units: 0 - units in Pa; 1 - units in MPa
 	//
-	//   In addition, we take into account that the creeplaws are typically
-	//   measured under uniaxial or triaxial compression, whereas we need them
-	//   in tensorial format (this gives some geometrical factors).
+	//   In addition, we take into account that the creep-laws are typically
+	//   measured under uniaxial or simple shear, whereas we need them
+	//   in tensorial format (tensorCorrection and F2).
 
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
@@ -546,12 +560,11 @@ PetscErrorCode SetDislProfile(Material_t *m, char name[])
 		m->Bn            =   2.5e4;
 		m->n             =   3.5;
 		m->En            =   532e3;
-		m->Vn            =   17e-6;         // Activation volume [m3/mol] varies between (2-10)e-6
-		tensorCorrection =   _UniAxial_;    // Add the transformation from uni-axial -> tensorial form or not?
-		MPa              =   1;             // 0 - units in Pa; 1 - units in MPa
-
-		//C_OH_0           =   1;
-		//r                =   0;
+		m->Vn            =   17e-6;
+		tensorCorrection =   _UniAxial_;
+		MPa              =   1;
+		C_OH_0           =   1;
+		r                =   0;
 	}
 
 	else if (!strcmp(name,"Wet_Olivine-Ranalli_1995"))
@@ -560,12 +573,11 @@ PetscErrorCode SetDislProfile(Material_t *m, char name[])
 		m->Bn            =   2.0e3;
 		m->n             =   4.0;
 		m->En            =   471e3;
-		m->Vn            =   0;             // Activation volume [m3/mol] varies between (2-10)e-6
-		tensorCorrection =   _UniAxial_;    // Add the transformation from uni-axial -> tensorial form or not?
-		MPa              =   1;             // 0 - units in Pa; 1 - units in MPa
-
-		//C_OH_0           =   1;
-		//r                =   0;
+		m->Vn            =   0;
+		tensorCorrection =   _UniAxial_;
+		MPa              =   1;
+		C_OH_0           =   1;
+		r                =   0;
 	}
 
 	else if (!strcmp(name,"Quartz_Diorite-Hansen_Carter_1982"))
@@ -574,12 +586,11 @@ PetscErrorCode SetDislProfile(Material_t *m, char name[])
 		m->Bn            =   pow(10,-1.5);
 		m->n             =   2.4;
 		m->En            =   212e3;
-		m->Vn            =   0;             // Activation volume [m3/mol] varies between (2-10)e-6
-		tensorCorrection =   _SimpleShear_; // Add the transformation from uni-axial -> tensorial form or not?
-		MPa              =   1;             // 0 - units in Pa; 1 - units in MPa
-
-		//C_OH_0           =   1;
-		//r                =   0;
+		m->Vn            =   0;
+		tensorCorrection =   _SimpleShear_;
+		MPa              =   1;
+		C_OH_0           =   1;
+		r                =   0;
 	}
 
 	else if (!strcmp(name,"Diabase-Caristan_1982"))
@@ -588,12 +599,11 @@ PetscErrorCode SetDislProfile(Material_t *m, char name[])
 		m->Bn            =   6e-2;
 		m->n             =   3.05;
 		m->En            =   276e3;
-		m->Vn            =   1;             // Activation volume [m3/mol] varies between (2-10)e-6
-		tensorCorrection =   _UniAxial_;    // Add the transformation from uni-axial -> tensorial form or not?
-		MPa              =   0;             // 0 - units in Pa; 1 - units in MPa
-
-		//C_OH_0           =   1;
-		//r                =   0;
+		m->Vn            =   1;
+		tensorCorrection =   _UniAxial_;
+		MPa              =   0;
+		C_OH_0           =   1;
+		r                =   0;
 	}
 
 	else if (!strcmp(name,"Tumut_Pond_Serpentinite-Raleigh_Paterson_1965"))
@@ -602,12 +612,11 @@ PetscErrorCode SetDislProfile(Material_t *m, char name[])
 		m->Bn            =   6.3e-7;
 		m->n             =   2.8;
 		m->En            =   66e3;
-		m->Vn            =   0;             // Activation volume [m3/mol] varies between (2-10)e-6
-		tensorCorrection =   _UniAxial_;    // Add the transformation from uni-axial -> tensorial form or not?
-		MPa              =   1;             // 0 - units in Pa; 1 - units in MPa
-
-		//C_OH_0           =   1;
-		//r                =   0;
+		m->Vn            =   0;
+		tensorCorrection =   _UniAxial_;
+		MPa              =   1;
+		C_OH_0           =   1;
+		r                =   0;
 	}
 
 	else if (!strcmp(name,"Wet_Quarzite-Ranalli_1995"))
@@ -619,12 +628,11 @@ PetscErrorCode SetDislProfile(Material_t *m, char name[])
 		m->Bn            =   3.2e-4;
 		m->n             =   2.3;
 		m->En            =   154e3;
-		m->Vn            =   0;             // Activation volume [m3/mol] varies between (2-10)e-6
-		tensorCorrection =   _UniAxial_;    // Add the transformation from uni-axial -> tensorial form or not?
-		MPa              =   1;             // 0 - units in Pa; 1 - units in MPa
-
-		//C_OH_0           =   1;
-		//r                =   0;
+		m->Vn            =   0;
+		tensorCorrection =   _UniAxial_;
+		MPa              =   1;
+		C_OH_0           =   1;
+		r                =   0;
 	}
 
 	else if (!strcmp(name,"Quarzite-Ranalli_1995"))
@@ -636,12 +644,11 @@ PetscErrorCode SetDislProfile(Material_t *m, char name[])
 		m->Bn            =   6.7e-6;
 		m->n             =   2.4;
 		m->En            =   156e3;
-		m->Vn            =   0;             // Activation volume [m3/mol] varies between (2-10)e-6
-		tensorCorrection =   _UniAxial_;    // Add the transformation from uni-axial -> tensorial form or not?
-		MPa              =   1;             // 0 - units in Pa; 1 - units in MPa
-
-		//C_OH_0           =   1;
-		//r                =   0;
+		m->Vn            =   0;
+		tensorCorrection =   _UniAxial_;
+		MPa              =   1;
+		C_OH_0           =   1;
+		r                =   0;
 	}
 
 	else if (!strcmp(name,"Mafic_Granulite-Ranalli_1995"))
@@ -653,12 +660,11 @@ PetscErrorCode SetDislProfile(Material_t *m, char name[])
 		m->Bn            =   1.4e4;
 		m->n             =   4.2;
 		m->En            =   445e3;
-		m->Vn            =   0;             // Activation volume [m3/mol] varies between (2-10)e-6
-		tensorCorrection =   _UniAxial_;    // Add the transformation from uni-axial -> tensorial form or not?
-		MPa              =   1;             // 0 - units in Pa; 1 - units in MPa
-
-		//C_OH_0           =   1;
-		//r                =   0;
+		m->Vn            =   0;
+		tensorCorrection =   _UniAxial_;
+		MPa              =   1;
+		C_OH_0           =   1;
+		r                =   0;
 	}
 
 	else if (!strcmp(name,"Maryland_strong_diabase-Mackwell_et_al_1998"))
@@ -668,12 +674,11 @@ PetscErrorCode SetDislProfile(Material_t *m, char name[])
 		m->Bn            =   8;
 		m->n             =   4.7;
 		m->En            =   485e3;
-		m->Vn            =   0;             // Activation volume [m3/mol] varies between (2-10)e-6
-		tensorCorrection =   _UniAxial_;    // Add the transformation from uni-axial -> tensorial form or not?
-		MPa              =   1;             // 0 - units in Pa; 1 - units in MPa
-
-		//C_OH_0           =   1;
-		//r                =   0;
+		m->Vn            =   0;
+		tensorCorrection =   _UniAxial_;
+		MPa              =   1;
+		C_OH_0           =   1;
+		r                =   0;
 	}
 
 	else if (!strcmp(name,"Wet_Quarzite-Ueda_et_al_2008"))
@@ -682,12 +687,11 @@ PetscErrorCode SetDislProfile(Material_t *m, char name[])
 		m->Bn            =   pow(10,-3.5);
 		m->n             =   2.3;
 		m->En            =   154e3;
-		m->Vn            =   0;             // Activation volume [m3/mol] varies between (2-10)e-6
-		tensorCorrection =   _UniAxial_;    // Add the transformation from uni-axial -> tensorial form or not?
-		MPa              =   1;             // 0 - units in Pa; 1 - units in MPa
-
-		//C_OH_0           =   1;
-		//r                =   0;
+		m->Vn            =   0;
+		tensorCorrection =   _UniAxial_;
+		MPa              =   1;
+		C_OH_0           =   1;
+		r                =   0;
 	}
 
 	else if (!strcmp(name,"Diabase-Huismans_et_al_2001"))
@@ -696,12 +700,11 @@ PetscErrorCode SetDislProfile(Material_t *m, char name[])
 		m->Bn            =   3.2e-20;
 		m->n             =   3.05;
 		m->En            =   276e3;
-		m->Vn            =   0;             // Activation volume [m3/mol] varies between (2-10)e-6
-		tensorCorrection =   _UniAxial_;    // Add the transformation from uni-axial -> tensorial form or not?
-		MPa              =   0;             // 0 - units in Pa; 1 - units in MPa
-
-		//C_OH_0           =   1;
-		//r                =   0;
+		m->Vn            =   0;
+		tensorCorrection =   _UniAxial_;
+		MPa              =   0;
+		C_OH_0           =   1;
+		r                =   0;
 	}
 
 	else if (!strcmp(name,"Granite-Huismans_et_al_2001"))
@@ -710,12 +713,11 @@ PetscErrorCode SetDislProfile(Material_t *m, char name[])
 		m->Bn            =   3.16e-26;
 		m->n             =   3.3;
 		m->En            =   186.5e3;
-		m->Vn            =   0;             // Activation volume [m3/mol] varies between (2-10)e-6
-		tensorCorrection =   _UniAxial_;    // Add the transformation from uni-axial -> tensorial form or not?
-		MPa              =   0;             // 0 - units in Pa; 1 - units in MPa
-
-		//C_OH_0           =   1;
-		//r                =   0;
+		m->Vn            =   0;
+		tensorCorrection =   _UniAxial_;
+		MPa              =   0;
+		C_OH_0           =   1;
+		r                =   0;
 	}
 
 	else if (!strcmp(name,"Dry_Upper_Crust-Schmalholz_Kaus_Burg_2009"))
@@ -724,12 +726,11 @@ PetscErrorCode SetDislProfile(Material_t *m, char name[])
 		m->Bn            =   3.16e-26;
 		m->n             =   3.3;
 		m->En            =   190e3;
-		m->Vn            =   0;             // Activation volume [m3/mol] varies between (2-10)e-6
-		tensorCorrection =   _UniAxial_;    // Add the transformation from uni-axial -> tensorial form or not?
-		MPa              =   0;             // 0 - units in Pa; 1 - units in MPa
-
-		//C_OH_0           =   1;
-		//r                =   0;
+		m->Vn            =   0;
+		tensorCorrection =   _UniAxial_;
+		MPa              =   0;
+		C_OH_0           =   1;
+		r                =   0;
 	}
 
 	else if (!strcmp(name,"Weak_Lower_Crust-Schmalholz_Kaus_Burg_2009"))
@@ -738,12 +739,11 @@ PetscErrorCode SetDislProfile(Material_t *m, char name[])
 		m->Bn            =   3.2e-20;
 		m->n             =   3.0;
 		m->En            =   276e3;
-		m->Vn            =   0;             // Activation volume [m3/mol] varies between (2-10)e-6
-		tensorCorrection =   _UniAxial_;    // Add the transformation from uni-axial -> tensorial form or not?
-		MPa              =   0;             // 0 - units in Pa; 1 - units in MPa
-
-		//C_OH_0           =   1;
-		//r                =   0;
+		m->Vn            =   0;
+		tensorCorrection =   _UniAxial_;
+		MPa              =   0;
+		C_OH_0           =   1;
+		r                =   0;
 	}
 
 	else if (!strcmp(name,"Plagioclase_An75-Ranalli_1995"))
@@ -751,12 +751,11 @@ PetscErrorCode SetDislProfile(Material_t *m, char name[])
 		m->Bn            =   3.3e-4;
 		m->n             =   3.2;
 		m->En            =   238e3;
-		m->Vn            =   0;             // Activation volume [m3/mol] varies between (2-10)e-6
-		tensorCorrection =   _UniAxial_;    // Add the transformation from uni-axial -> tensorial form or not?
-		MPa              =   1;             // 0 - units in Pa; 1 - units in MPa
-
-		//C_OH_0           =   1;
-		//r                =   0;
+		m->Vn            =   0;
+		tensorCorrection =   _UniAxial_;
+		MPa              =   1;
+		C_OH_0           =   1;
+		r                =   0;
 	}
 
 	else if (!strcmp(name,"Wet_Olivine_disl_creep-Hirth_Kohlstedt_2003"))
@@ -766,12 +765,11 @@ PetscErrorCode SetDislProfile(Material_t *m, char name[])
 		m->Bn            =   1600;
 		m->n             =   3.5;
 		m->En            =   520e3;
-		m->Vn            =   22e-6;         // Activation volume [m3/mol] varies between (2-10)e-6
-		tensorCorrection =   _SimpleShear_; // Add the transformation from uni-axial -> tensorial form or not?
-		MPa              =   1;             // 0 - units in Pa; 1 - units in MPa
-
-		//C_OH_0           =   1000;
-		//r                =   1.2;
+		m->Vn            =   22e-6;
+		tensorCorrection =   _SimpleShear_;
+		MPa              =   1;
+		C_OH_0           =   1000;
+		r                =   1.2;
 	}
 
 	else if (!strcmp(name,"Wet_Olivine_disl_creep-Hirth_Kohlstedt_2003_constant_C_OH"))
@@ -781,12 +779,11 @@ PetscErrorCode SetDislProfile(Material_t *m, char name[])
 		m->Bn            =   90;
 		m->n             =   3.5;
 		m->En            =   480e3;
-		m->Vn            =   11e-6;         // Activation volume [m3/mol] varies between (2-10)e-6
-		tensorCorrection =   _SimpleShear_; // Add the transformation from uni-axial -> tensorial form or not?
-		MPa              =   1;             // 0 - units in Pa; 1 - units in MPa
-
-		//C_OH_0           =   1000;
-		//r                =   1.2;
+		m->Vn            =   11e-6;
+		tensorCorrection =   _SimpleShear_;
+		MPa              =   1;
+		C_OH_0           =   1000;
+		r                =   1.2;
 	}
 
 	else if (!strcmp(name,"Dry_Olivine_disl_creep-Hirth_Kohlstedt_2003"))
@@ -796,14 +793,11 @@ PetscErrorCode SetDislProfile(Material_t *m, char name[])
 		m->Bn            =   1.1e5;
 		m->n             =   3.5;
 		m->En            =   530e3;
-		// Activation volume varies, according to their table 2:
-		// possible values are between (6-27)e-6  [discarding negatives]
-		m->Vn            =   15e-6;         // Activation volume [m3/mol] varies between (2-10)e-6
-		tensorCorrection =   _SimpleShear_; // Add the transformation from uni-axial -> tensorial form or not?
-		MPa              =   1;             // 0 - units in Pa; 1 - units in MPa
-
-		//C_OH_0           =   1;
-		//r                =   0;
+		m->Vn            =   15e-6;
+		tensorCorrection =   _SimpleShear_;
+		MPa              =   1;
+		C_OH_0           =   1;
+		r                =   0;
 	}
 
 	else if (!strcmp(name,"Olivine-Burg_Podladchikov_1999"))
@@ -812,12 +806,11 @@ PetscErrorCode SetDislProfile(Material_t *m, char name[])
 		m->Bn            =   7.1e-14;
 		m->n             =   3.0;
 		m->En            =   510e3;
-		m->Vn            =   0;             // Activation volume [m3/mol] varies between (2-10)e-6
-		tensorCorrection =   _SimpleShear_; // Add the transformation from uni-axial -> tensorial form or not?
-		MPa              =   0;             // 0 - units in Pa; 1 - units in MPa
-
-		//C_OH_0           =   1;
-		//r                =   0;
+		m->Vn            =   0;
+		tensorCorrection =   _SimpleShear_;
+		MPa              =   0;
+		C_OH_0           =   1;
+		r                =   0;
 	}
 
 	else if (!strcmp(name,"Wet_Upper_Mantle-Burg_Schmalholz_2008"))
@@ -826,12 +819,11 @@ PetscErrorCode SetDislProfile(Material_t *m, char name[])
 		m->Bn            =   2e-21;
 		m->n             =   4.0;
 		m->En            =   471e3;
-		m->Vn            =   0;             // Activation volume [m3/mol] varies between (2-10)e-6
-		tensorCorrection =   _SimpleShear_; // Add the transformation from uni-axial -> tensorial form or not?
-		MPa              =   0;             // 0 - units in Pa; 1 - units in MPa
-
-		//C_OH_0           =   1;
-		//r                =   0;
+		m->Vn            =   0;
+		tensorCorrection =   _SimpleShear_;
+		MPa              =   0;
+		C_OH_0           =   1;
+		r                =   0;
 	}
 
 	else if (!strcmp(name,"Granite-Tirel_et_al_2008"))
@@ -840,12 +832,11 @@ PetscErrorCode SetDislProfile(Material_t *m, char name[])
 		m->Bn            =   1.25e-9;
 		m->n             =   3.2;
 		m->En            =   123e3;
-		m->Vn            =   0;             // Activation volume [m3/mol] varies between (2-10)e-6
-		tensorCorrection =   _SimpleShear_; // Add the transformation from uni-axial -> tensorial form or not?
-		MPa              =   1;             // 0 - units in Pa; 1 - units in MPa
-
-		//C_OH_0           =   1;
-		//r                =   0;
+		m->Vn            =   0;
+		tensorCorrection =   _SimpleShear_;
+		MPa              =   1;
+		C_OH_0           =   1;
+		r                =   0;
 	}
 
 	else
@@ -855,6 +846,49 @@ PetscErrorCode SetDislProfile(Material_t *m, char name[])
 
 	// make tensor correction and transform units from MPa if necessary
 	ierr = SetProfileCorrection(&m->Bn,m->n,tensorCorrection,MPa); CHKERRQ(ierr);
+
+	// take into account grain size and water content
+	m->Bn *= pow(C_OH_0,r);
+
+	PetscFunctionReturn(0);
+}
+//---------------------------------------------------------------------------
+// set Peierls creep profiles from literature
+#undef __FUNCT__
+#define __FUNCT__ "SetPeirProfile"
+PetscErrorCode SetPeirProfile(Material_t *m, char name[])
+{
+	// We assume that the creep law has the form:
+	// Peierls:   eII = Bp * exp( - (EP + P*VP)/(R*T)*(1-gamma)^q) * (Tau/gamma/taup)^s
+	//            s   = (Ep+p*Vp)/(R*T)*(1-gamma)^(q-1)*q*gamma
+	//
+	// where:
+	// Bp         - pre-exponential constant for the Peierls mechanism [1/s]
+	// Ep         - activation energy [J/mol K]
+	// Vp         - activation volume [m3/mol ]
+	// taup       - Peierl stress [Pa]
+	// gamma      - adjustable constant [-]
+	// q          - stress dependence for Peierls creep [-]
+	// s          - Peierls creep exponent (typical values between 7-11) [-]
+
+	PetscFunctionBegin;
+
+	if (!strcmp(name,"Olivine_Peierls-Kameyama_1999"))
+	{
+		// used in Kameyama et al 1999 (EPSL), vol 168., pp. 159-172
+		// original source: Guyot and Dorn (1967) and Poirier (1985)
+		m->Bp            = 5.7e11;
+		m->Ep            = 5.4e5;
+		m->Vp            = 0.0;
+		m->taup          = 8.5e9;
+		m->gamma         = 0.1;
+		m->q             = 2;
+	}
+
+	else
+	{
+		SETERRQ1(PETSC_COMM_SELF, PETSC_ERR_USER, "No such Peierls creep profile: %s! ",name);
+	}
 
 	PetscFunctionReturn(0);
 }

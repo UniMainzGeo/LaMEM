@@ -58,7 +58,7 @@
 % title
 \title{User Info for LaMEM canonical\\ \large - please update this document periodically -}
 \date{\today}
-%\author{put together by Adina P\"{u}s\"{o}k}
+\author{put together by Adina E. Pusok}
 
 % ---------------------------------- BEGIN DOCUMENT  ---------------------------------- %
 \begin{document}
@@ -757,7 +757,7 @@ Every material phase should be defined in the input file in a structure beginnin
 \subsubsection{Predefined rheological profiles}
 \label{sec:predefined}
 
-Values for each profile can be found in \texttt{matProps.c - SetDiffProfile()} and \texttt{SetDislProfile()}. \textbf{Please check the values in the respective papers/studies when you are using them!}
+Values for each profile can be found in \texttt{matProps.c - SetDiffProfile()}, \texttt{SetDislProfile()} and \texttt{SetPeirProfile()}. \textbf{Please check the values in the respective papers/studies when you are using them!}
 
 \begin{enumerate}
 
@@ -792,6 +792,11 @@ Values for each profile can be found in \texttt{matProps.c - SetDiffProfile()} a
 \item \texttt{Wet\_Upper\_Mantle-Burg\_Schmalholz\_2008}
 \item \texttt{Granite-Tirel\_et\_al\_2008}
 %\indent \texttt{}\\
+\end{itemize}
+
+\item Peierls creep - the parameter \texttt{peir\_profile} can be set in the following way:
+\begin{itemize}
+\item \texttt{Olivine\_Peierls-Kameyama\_1999}
 \end{itemize}
 
 \end{enumerate}

@@ -44,6 +44,9 @@ PetscErrorCode SetDiffProfile(Material_t *m, char name[]);
 // dislocation creep profiles
 PetscErrorCode SetDislProfile(Material_t *m, char name[]);
 
+// Peierls creep profiles
+PetscErrorCode SetPeirProfile(Material_t *m, char name[]);
+
 // units and tensor correction
 PetscErrorCode SetProfileCorrection(PetscScalar *B, PetscScalar n, TensorCorrection tensorCorrection, PetscInt MPa);
 

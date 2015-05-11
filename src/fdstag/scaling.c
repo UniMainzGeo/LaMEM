@@ -280,8 +280,8 @@ void ScalingInput(Scaling *scal, UserCtx *user)
 	user->dt_max          /= scal->time;
 
 	// temperature
-	user->Temp_top        /= scal->temperature;
-	user->Temp_bottom     /= scal->temperature;
+	user->Temp_top        = (user->Temp_top    + scal->Tshift)/scal->temperature;
+	user->Temp_bottom     = (user->Temp_bottom + scal->Tshift)/scal->temperature;
 
 	// gravity
 	user->Gravity         /= scal->acceleration;
