@@ -1343,28 +1343,34 @@ PetscErrorCode JacResGetTempRes(JacRes *jr)
 		Kp1 = k+1; if(Kp1 > mz) Kp1--;
 		Km1 = k-1; if(Km1 < 0)  Km1++;
 
-		// get mesh steps
-		bdx = SIZE_NODE(i, sx, fs->dsx);          fdx = SIZE_NODE(i+1, sx, fs->dsx);
-		bdy = SIZE_NODE(j, sy, fs->dsy);          fdy = SIZE_NODE(j+1, sy, fs->dsy);
-		bdz = SIZE_NODE(k, sz, fs->dsz);          fdz = SIZE_NODE(k+1, sz, fs->dsz);
-
 		// compute average conductivities
-		bkx = (kc + lk[k  ][j  ][Im1])/2.0;       fkx = (lk[k  ][j  ][Ip1] + kc)/2.0;
-		bky = (kc + lk[k  ][Jm1][i  ])/2.0;       fky = (lk[k  ][Jp1][i  ] + kc)/2.0;
-		bkz = (kc + lk[Km1][j  ][i  ])/2.0;       fkz = (lk[Kp1][j  ][i  ] + kc)/2.0;
+		bkx = (kc + lk[k][j][Im1])/2.0;      fkx = (kc + lk[k][j][Ip1])/2.0;
+		bky = (kc + lk[k][Jm1][i])/2.0;      fky = (kc + lk[k][Jp1][i])/2.0;
+		bkz = (kc + lk[Km1][j][i])/2.0;      fkz = (kc + lk[Kp1][j][i])/2.0;
+
+		// get mesh steps
+		bdx = SIZE_NODE(i, sx, fs->dsx);     fdx = SIZE_NODE(i+1, sx, fs->dsx);
+		bdy = SIZE_NODE(j, sy, fs->dsy);     fdy = SIZE_NODE(j+1, sy, fs->dsy);
+		bdz = SIZE_NODE(k, sz, fs->dsz);     fdz = SIZE_NODE(k+1, sz, fs->dsz);
 
 		// compute heat fluxes
-		bqx = -bkx*(Tc - T[k]  [j  ][i-1])/bdx;   fqx = -fkx*(T[k]  [j  ][i+1] - Tc)/fdx;
-		bqy = -bky*(Tc - T[k]  [j-1][i  ])/bdy;   fqy = -fky*(T[k]  [j+1][i  ] - Tc)/fdy;
-		bqz = -bkz*(Tc - T[k-1][j  ][i  ])/bdz;   fqz = -fkz*(T[k+1][j  ][i  ] - Tc)/fdz;
+		bqx = bkx*(Tc - T[k][j][i-1])/bdx;   fqx = fkx*(T[k][j][i+1] - Tc)/fdx;
+		bqy = bky*(Tc - T[k][j-1][i])/bdy;   fqy = fky*(T[k][j+1][i] - Tc)/fdy;
+		bqz = bkz*(Tc - T[k-1][j][i])/bdz;   fqz = fkz*(T[k+1][j][i] - Tc)/fdz;
 
 		// get mesh steps
 		dx = SIZE_CELL(i, sx, fs->dsx);
 		dy = SIZE_CELL(j, sy, fs->dsy);
 		dz = SIZE_CELL(k, sz, fs->dsz);
 
-		// compute residual
-		ge[k][j][i] = (fqx - bqx)/dx + (fqy - bqy)/dy + (fqz - bqz)/dz + Hr + rho*A - rho*Cp*(Tc - Tn)/dt;
+		// original balance equation:
+
+		// rho*Cp*(Tc - Tn)/dt = (fqx - bqx)/dx + (fqy - bqy)/dy + (fqz - bqz)/dz + Hr + rho*A
+
+		// to get positive diagonal in the preconditioner matrix
+		// put right hand side to the left, which gives the following:
+
+		ge[k][j][i] = rho*Cp*(Tc - Tn)/dt - (fqx - bqx)/dx - (fqy - bqy)/dy - (fqz - bqz)/dz - Hr - rho*A;
 	}
 	END_STD_LOOP
 
