@@ -27,8 +27,8 @@
 	buff[k][j][i] = kc;
 
 #define GET_HRXY buff[k][j][i] = jr->svXYEdge[iter++].svDev.Hr;
-#define GET_HRYZ buff[k][j][i] = jr->svYZEdge[iter++].svDev.Hr;
 #define GET_HRXZ buff[k][j][i] = jr->svXZEdge[iter++].svDev.Hr;
+#define GET_HRYZ buff[k][j][i] = jr->svYZEdge[iter++].svDev.Hr;
 
 //---------------------------------------------------------------------------
 #undef __FUNCT__
@@ -59,12 +59,18 @@ PetscErrorCode JacResCreateTempParam(JacRes *jr)
 	// create temperature preconditioner matrix
 	ierr = DMCreateMatrix(jr->DA_T, &jr->Att); CHKERRQ(ierr);
 
-	// temperature
+	// set matrix options (development)
+	ierr = MatSetOption(jr->Att, MAT_NEW_NONZERO_ALLOCATION_ERR, PETSC_TRUE); CHKERRQ(ierr);
+	ierr = MatSetOption(jr->Att, MAT_NEW_NONZERO_LOCATION_ERR, PETSC_TRUE);   CHKERRQ(ierr);
+	ierr = MatSetOption(jr->Att, MAT_KEEP_NONZERO_PATTERN, PETSC_TRUE);       CHKERRQ(ierr);
+	ierr = MatSetOption(jr->Att, MAT_NO_OFF_PROC_ZERO_ROWS, PETSC_TRUE);      CHKERRQ(ierr);
+
+	// temperature vectors
 	ierr = DMCreateGlobalVector(fs->DA_CEN, &jr->gT); CHKERRQ(ierr);
 	ierr = DMCreateLocalVector (fs->DA_CEN, &jr->lT); CHKERRQ(ierr);
 
 	// energy residual
-	ierr = DMCreateGlobalVector(fs->DA_CEN, &jr->ge);  CHKERRQ(ierr);
+	ierr = DMCreateGlobalVector(fs->DA_CEN, &jr->ge); CHKERRQ(ierr);
 
 	PetscFunctionReturn(0);
 }
@@ -144,7 +150,7 @@ PetscErrorCode JacResCopyTemp(JacRes *jr)
 	mcz = fs->dsz.tcels - 1;
 
 	// access vector
-	ierr = VecGetArray(jr->gT,  &T);   CHKERRQ(ierr);
+	ierr = VecGetArray(jr->gT, &T); CHKERRQ(ierr);
 
 	//=================================
 	// enforce single point constraints
@@ -246,8 +252,8 @@ PetscErrorCode JacResGetTempRes(JacRes *jr)
 
 	SCATTER_FIELD(fs->DA_CEN, jr->ldxx, GET_KC)
 	SCATTER_FIELD(fs->DA_XY,  jr->ldxy, GET_HRXY)
-	SCATTER_FIELD(fs->DA_XZ,  jr->ldxz, GET_HRYZ)
-	SCATTER_FIELD(fs->DA_YZ,  jr->ldyz, GET_HRXZ)
+	SCATTER_FIELD(fs->DA_XZ,  jr->ldxz, GET_HRXZ)
+	SCATTER_FIELD(fs->DA_YZ,  jr->ldyz, GET_HRYZ)
 
 	// access work vectors
 	ierr = DMDAVecGetArray(fs->DA_CEN, jr->ge,   &ge);  CHKERRQ(ierr);
@@ -338,171 +344,157 @@ PetscErrorCode JacResGetTempRes(JacRes *jr)
 #define __FUNCT__ "JacResGetTempMat"
 PetscErrorCode JacResGetTempMat(JacRes *jr)
 {
+	// assemble temperature preconditioner matrix
 
+	FDSTAG     *fs;
+	SolVarCell *svCell;
+	SolVarBulk *svBulk;
+	Material_t *phases;
+	PetscInt    iter, numPhases;
+	PetscInt    Ip1, Im1, Jp1, Jm1, Kp1, Km1;
+	PetscInt    i, j, k, nx, ny, nz, sx, sy, sz, mx, my, mz;
 
-	/*
-
-
-	PetscErrorCode  MatSetValuesStencil(
-			Mat        mat,
-			PetscInt   m,
-			const      MatStencil idxm[],
-			PetscInt   n,
-			const      MatStencil idxn[],
-			const      PetscScalar v[],
-			InsertMode addv)
-
-	typedef struct {
-	  PetscInt k,j,i,c;
-	} MatStencil;
-
-
-
-
-
-	//======================================================================
-	// Assemble temperature equation preconditioning matrix
-	//======================================================================
-
-	FDSTAG      *fs;
-	BCCtx       *bc;
-	DOFIndex    *dof;
-	PMatMono    *P;
-	PetscInt    idx[7];
-	PetscScalar v[49];
-	PetscInt    iter, i, j, k, nx, ny, nz, sx, sy, sz;
-	PetscScalar eta, rho, IKdt, diag, pgamma, pt, dt, fssa, *grav;
-	PetscScalar dx, dy, dz, bdx, fdx, bdy, fdy, bdz, fdz;
-	PetscScalar ***ivx, ***ivy, ***ivz, ***ip;
-	PetscScalar ***bcvx, ***bcvy, ***bcvz, ***bcp;
-	PetscInt    pdofidx[7];
-	PetscScalar cf[7];
-
-
-	PetscScalar Cp, lambda;
-
+	PetscScalar bkx, fkx, bky, fky, bkz, fkz;
+	PetscScalar bdx, fdx, bdy, fdy, bdz, fdz;
+ 	PetscScalar dx, dy, dz;
+	PetscScalar v[7], kc, rho, Cp, dt;
+	MatStencil  row[1], col[7];
+	PetscScalar ***lk, ***buff;
 
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
 
-	// access contexts
-	jr     = pm->jr;
-	fs     = jr->fs;
-	bc     = jr->bc;
-	dof    = &fs->dof;
-	P      = (PMatMono*)pm->data;
+	// access residual context variables
+	fs        = jr->fs;
+	numPhases = jr->numPhases; // number phases
+	phases    = jr->phases;    // phase parameters
+	dt        = jr->ts.dt;     // time step
 
-	// get density gradient stabilization parameters
-	dt   = jr->ts.dt; // time step
+	// initialize maximum cell index in all directions
+	mx = fs->dsx.tcels - 1;
+	my = fs->dsy.tcels - 1;
+	mz = fs->dsz.tcels - 1;
 
+	SCATTER_FIELD(fs->DA_CEN, jr->ldxx, GET_KC)
 
-	// clear matrix coefficients
-	ierr = MatZeroEntries(P->A); CHKERRQ(ierr);
-
-	// access index vectors
-	ierr = DMDAVecGetArray(fs->DA_X,   dof->ivx,  &ivx);  CHKERRQ(ierr);
-	ierr = DMDAVecGetArray(fs->DA_Y,   dof->ivy,  &ivy);  CHKERRQ(ierr);
-	ierr = DMDAVecGetArray(fs->DA_Z,   dof->ivz,  &ivz);  CHKERRQ(ierr);
-	ierr = DMDAVecGetArray(fs->DA_CEN, dof->ip,   &ip);   CHKERRQ(ierr);
-
-	// access boundary constraint vectors
-	ierr = DMDAVecGetArray(fs->DA_X,   bc->bcvx,  &bcvx);  CHKERRQ(ierr);
-	ierr = DMDAVecGetArray(fs->DA_Y,   bc->bcvy,  &bcvy);  CHKERRQ(ierr);
-	ierr = DMDAVecGetArray(fs->DA_Z,   bc->bcvz,  &bcvz);  CHKERRQ(ierr);
-	ierr = DMDAVecGetArray(fs->DA_CEN, bc->bcp,   &bcp);   CHKERRQ(ierr);
+	// access work vectors
+	ierr = DMDAVecGetArray(fs->DA_CEN, jr->ldxx, &lk);  CHKERRQ(ierr);
 
 	//---------------
 	// central points
 	//---------------
-
 	iter = 0;
-	GET_CELL_RANGE(nx, sx, fs->dsx)
-	GET_CELL_RANGE(ny, sy, fs->dsy)
-	GET_CELL_RANGE(nz, sz, fs->dsz)
+	ierr = DMDAGetCorners(fs->DA_CEN, &sx, &sy, &sz, &nx, &ny, &nz); CHKERRQ(ierr);
 
 	START_STD_LOOP
 	{
+		// access solution variables
+		svCell = &jr->svCell[iter++];
+		svBulk = &svCell->svBulk;
 
-		// get heat capacity and conductivity
+		// access
+		rho = svBulk->rho; // effective density
 
-//		Cp lambda
+		// conductivity, heat capacity, radiogenic heat production
+		GetTempParam(numPhases, phases, svCell->phRat, &kc, &Cp, NULL);
 
+		// check index bounds
+		Ip1 = i+1; if(Ip1 > mx) Ip1--;
+		Im1 = i-1; if(Im1 < 0)  Im1++;
+		Jp1 = j+1; if(Jp1 > my) Jp1--;
+		Jm1 = j-1; if(Jm1 < 0)  Jm1++;
+		Kp1 = k+1; if(Kp1 > mz) Kp1--;
+		Km1 = k-1; if(Km1 < 0)  Km1++;
 
+		// compute average conductivities
+		bkx = (kc + lk[k][j][Im1])/2.0;      fkx = (kc + lk[k][j][Ip1])/2.0;
+		bky = (kc + lk[k][Jm1][i])/2.0;      fky = (kc + lk[k][Jp1][i])/2.0;
+		bkz = (kc + lk[Km1][j][i])/2.0;      fkz = (kc + lk[Kp1][j][i])/2.0;
 
-		// get density, shear & inverse bulk viscosities
-		eta  = jr->svCell[iter].svDev.eta;
-		IKdt = jr->svCell[iter].svBulk.IKdt;
-		rho  = jr->svCell[iter].svBulk.rho;
-
-		iter++;
+		// get mesh steps
+		bdx = SIZE_NODE(i, sx, fs->dsx);     fdx = SIZE_NODE(i+1, sx, fs->dsx);
+		bdy = SIZE_NODE(j, sy, fs->dsy);     fdy = SIZE_NODE(j+1, sy, fs->dsy);
+		bdz = SIZE_NODE(k, sz, fs->dsz);     fdz = SIZE_NODE(k+1, sz, fs->dsz);
 
 		// get mesh steps
 		dx = SIZE_CELL(i, sx, fs->dsx);
 		dy = SIZE_CELL(j, sy, fs->dsy);
 		dz = SIZE_CELL(k, sz, fs->dsz);
 
-		// get mesh steps for the backward and forward derivatives
-		bdx = SIZE_NODE(i, sx, fs->dsx);   fdx = SIZE_NODE(i+1, sx, fs->dsx);
-		bdy = SIZE_NODE(j, sy, fs->dsy);   fdy = SIZE_NODE(j+1, sy, fs->dsy);
-		bdz = SIZE_NODE(k, sz, fs->dsz);   fdz = SIZE_NODE(k+1, sz, fs->dsz);
+/*
 
-		// compute penalty term
-		pt = -1.0/(pgamma*eta);
+Diffusion term expansion
 
-		// get pressure diagonal element (with penalty)
-		diag = -IKdt + pt;
+		bqx = bkx*(Tc - T[k][j][i-1])/bdx;   fqx = fkx*(T[k][j][i+1] - Tc)/fdx;
+		bqy = bky*(Tc - T[k][j-1][i])/bdy;   fqy = fky*(T[k][j+1][i] - Tc)/fdy;
+		bqz = bkz*(Tc - T[k-1][j][i])/bdz;   fqz = fkz*(T[k+1][j][i] - Tc)/fdz;
 
-		// compute local matrix
-		pm->getStiffMat(eta, diag, v, dx, dy, dz, fdx, fdy, fdz, bdx, bdy, bdz);
+[1]
+		-(fqx - bqx)/dx
+		-(fqy - bqy)/dy
+		-(fqz - bqz)/dz
+[2]
+		(bqx - fqx)/dx
+		(bqy - fqy)/dy
+		(bqz - fqz)/dz
+[3]
+		(bkx*(Tc - T[k][j][i-1])/bdx - fkx*(T[k][j][i+1] - Tc)/fdx)/dx
+		(bky*(Tc - T[k][j-1][i])/bdy - fky*(T[k][j+1][i] - Tc)/fdy)/dy
+		(bkz*(Tc - T[k-1][j][i])/bdz - fkz*(T[k+1][j][i] - Tc)/fdz)/dz
+[4]
+		(bkx*(Tc - T[k][j][i-1])/bdx + fkx*(Tc - T[k][j][i+1])/fdx)/dx
+		(bky*(Tc - T[k][j-1][i])/bdy + fky*(Tc - T[k][j+1][i])/fdy)/dy
+		(bkz*(Tc - T[k-1][j][i])/bdz + fkz*(Tc - T[k+1][j][i])/fdz)/dz
+[5]
+		bkx/bdx/dx*(Tc - T[k][j][i-1]) + fkx/fdx/dx*(Tc - T[k][j][i+1])
+		bky/bdy/dy*(Tc - T[k][j-1][i]) + fky/fdy/dy*(Tc - T[k][j+1][i])
+		bkz/bdz/dz*(Tc - T[k-1][j][i]) + fkz/fdz/dz*(Tc - T[k+1][j][i])
+[6]
+		(bkx/bdx/dx + fkx/fdx/dx)*Tc - bkx/bdx/dx*T[k][j][i-1] - fkx/fdx/dx*T[k][j][i+1]
+		(bky/bdy/dy + fky/fdy/dy)*Tc - bky/bdy/dy*T[k][j-1][i] - fky/fdy/dy*T[k][j+1][i]
+		(bkz/bdz/dz + fkz/fdz/dz)*Tc - bkz/bdz/dz*T[k-1][j][i] - fkz/fdz/dz*T[k+1][j][i]
+[7]
 
-		// compute density gradient stabilization terms
-		addDensGradStabil(fssa, v, rho, dt, grav, fdx, fdy, fdz, bdx, bdy, bdz);
+		(bkx/bdx + fkx/fdx)/dx*Tc - bkx/bdx/dx*T[k][j][i-1] - fkx/fdx/dx*T[k][j][i+1]
+		(bky/bdy + fky/fdy)/dy*Tc - bky/bdy/dy*T[k][j-1][i] - fky/fdy/dy*T[k][j+1][i]
+		(bkz/bdz + fkz/fdz)/dz*Tc - bkz/bdz/dz*T[k-1][j][i] - fkz/fdz/dz*T[k+1][j][i]
 
-		// get global indices of the points:
-		// vx_(i), vx_(i+1), vy_(j), vy_(j+1), vz_(k), vz_(k+1), p
-		idx[0] = (PetscInt) ivx[k][j][i];
-		idx[1] = (PetscInt) ivx[k][j][i+1];
-		idx[2] = (PetscInt) ivy[k][j][i];
-		idx[3] = (PetscInt) ivy[k][j+1][i];
-		idx[4] = (PetscInt) ivz[k][j][i];
-		idx[5] = (PetscInt) ivz[k+1][j][i];
-		idx[6] = (PetscInt) ip[k][j][i];
+*/
 
-		// get boundary constraints
-		pdofidx[0] = -1;   cf[0] = bcvx[k][j][i];
-		pdofidx[1] = -1;   cf[1] = bcvx[k][j][i+1];
-		pdofidx[2] = -1;   cf[2] = bcvy[k][j][i];
-		pdofidx[3] = -1;   cf[3] = bcvy[k][j+1][i];
-		pdofidx[4] = -1;   cf[4] = bcvz[k][j][i];
-		pdofidx[5] = -1;   cf[5] = bcvz[k+1][j][i];
-		pdofidx[6] = -1;   cf[6] = bcp[k][j][i];
+        // set row/column indices
+		row[0].k = k;   row[0].j = j;   row[0].i = i;   row[0].c = 0;
+		col[0].k = k;   col[0].j = j;   col[0].i = i-1; col[0].c = 0;
+		col[1].k = k;   col[1].j = j;   col[1].i = i+1; col[1].c = 0;
+		col[2].k = k;   col[2].j = j-1; col[2].i = i;   col[2].c = 0;
+		col[3].k = k;   col[3].j = j+1; col[3].i = i;   col[3].c = 0;
+		col[4].k = k-1; col[4].j = j;   col[4].i = i;   col[4].c = 0;
+		col[5].k = k+1; col[5].j = j;   col[5].i = i;   col[5].c = 0;
+		col[6].k = k;   col[6].j = j;   col[6].i = i;   col[6].c = 0;
 
-		// constrain local matrix
-		constrLocalMat(7, pdofidx, cf, v);
+		// set values
+		v[0] = -bkx/bdx/dx;
+		v[1] = -fkx/fdx/dx;
+		v[2] = -bky/bdy/dy;
+		v[3] = -fky/fdy/dy;
+		v[4] = -bkz/bdz/dz;
+		v[5] = -fkz/fdz/dz;
+		v[6] =  rho*Cp/dt
+		+       (bkx/bdx + fkx/fdx)/dx
+		+       (bky/bdy + fky/fdy)/dy
+		+       (bkz/bdz + fkz/fdz)/dz;
 
-		// update global & penalty compensation matrices
-		ierr = MatSetValues(P->A, 7, idx, 7, idx, v,  ADD_VALUES);    CHKERRQ(ierr);
-		ierr = MatSetValue (P->M, idx[6], idx[6], pt, INSERT_VALUES); CHKERRQ(ierr);
-
+		// set matrix coefficients
+		ierr = MatSetValuesStencil(jr->Att, 1, row, 7, col, v, ADD_VALUES); CHKERRQ(ierr);
 	}
 	END_STD_LOOP
 
-
 	// restore access
-	ierr = DMDAVecRestoreArray(fs->DA_X,   dof->ivx,  &ivx); CHKERRQ(ierr);
-	ierr = DMDAVecRestoreArray(fs->DA_Y,   dof->ivy,  &ivy); CHKERRQ(ierr);
-	ierr = DMDAVecRestoreArray(fs->DA_Z,   dof->ivz,  &ivz); CHKERRQ(ierr);
-	ierr = DMDAVecRestoreArray(fs->DA_CEN, dof->ip,   &ip);  CHKERRQ(ierr);
+	ierr = DMDAVecRestoreArray(fs->DA_CEN, jr->ldxx, &lk);  CHKERRQ(ierr);
 
-	ierr = DMDAVecRestoreArray(fs->DA_X,   bc->bcvx,  &bcvx); CHKERRQ(ierr);
-	ierr = DMDAVecRestoreArray(fs->DA_Y,   bc->bcvy,  &bcvy); CHKERRQ(ierr);
-	ierr = DMDAVecRestoreArray(fs->DA_Z,   bc->bcvz,  &bcvz); CHKERRQ(ierr);
-	ierr = DMDAVecRestoreArray(fs->DA_CEN, bc->bcp,   &bcp);  CHKERRQ(ierr);
+	// assemble temperature matrix
+	ierr = MatAssemblyBegin(jr->Att, MAT_FINAL_ASSEMBLY); CHKERRQ(ierr);
+	ierr = MatAssemblyEnd  (jr->Att, MAT_FINAL_ASSEMBLY); CHKERRQ(ierr);
 
-	// assemble velocity-pressure matrix, remove constrained rows
-	ierr = MatAIJAssemble(P->A, bc->numSPC, bc->SPCList, 1.0); CHKERRQ(ierr);
-	ierr = MatAIJAssemble(P->M, bc->numSPC, bc->SPCList, 0.0); CHKERRQ(ierr);
-*/
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------

@@ -90,9 +90,6 @@ PetscErrorCode MatAIJAssemble(Mat P, PetscInt numRows, const PetscInt rows[], Pe
 	ierr = MatSetOption(P, MAT_NO_OFF_PROC_ZERO_ROWS, PETSC_TRUE);    CHKERRQ(ierr);
 
 	// zero out constrained rows, form unit diagonal for the constrained block
-//	ierr = MatGetSize(P, &m, &n); CHKERRQ(ierr);
-//	if(m == n) diag = 1.0;
-//	else       diag = 0.0;
 	ierr = MatZeroRows(P, numRows, rows, diag, NULL, NULL); CHKERRQ(ierr);
 
 	PetscFunctionReturn(0);
