@@ -82,6 +82,7 @@ CSRC = \
 	fdstag/constEq.c \
 	fdstag/dfzero.c \
 	fdstag/JacRes.c \
+	fdstag/JacResTemp.c \
 	fdstag/interpolate.c \
 	fdstag/outFunct.c \
 	fdstag/scaling.c \

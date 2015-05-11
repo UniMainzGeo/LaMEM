@@ -18,7 +18,6 @@ typedef struct
 
 	// coupled solution & residual vectors
 	Vec gsol, gres; // global
-//	Vec lsol, lres; // local (ghosted)
 
 	// velocity	components
 	Vec gvx,  gvy, gvz;  // global
@@ -39,21 +38,15 @@ typedef struct
 	//  Really really really need to switch to ghost marker approach!
 	//  Also to get communication pattern independent of number of phases.
 
-	// pressure & temperature
-	Vec gp,  gT; // global
-	Vec lp,  lT; // local (ghosted)
+	// pressure
+	Vec gp; // global
+	Vec lp; // local (ghosted)
 
-	// global continuity & energy residuals
-	Vec gc, ge;
+	// continuity residual
+	Vec gc; // global
 
 	// corner buffer
 	Vec lbcor; // local (ghosted)
-
-	// heat conductivity on cells, and shear heating terms on edges
-//	Vec gk, ghxy, ghxz, ghyz; // global
-//	Vec lk, lhxy, lhxz, lhyz; // local (ghosted)
-
-//	VecScatter g2lctx; // global to local scatter context
 
 	// solution variables
 	SolVarCell  *svCell;   // cell centers
@@ -80,9 +73,19 @@ typedef struct
 	PetscScalar pShift;      // pressure shift for plasticity model and output
 	PetscBool   pShiftAct;   // pressure shift activation flag
 
+	//=======================
 	// temperature parameters
+	//=======================
+
 	DM  DA_T; // temperature cell-centered grid with star stencil
 	Mat Att;  // temperature preconditioner matrix
+
+	// temperature
+	Vec gT; // global
+	Vec lT; // local (ghosted)
+
+	// energy residual
+	Vec ge; // global
 
 } JacRes;
 //---------------------------------------------------------------------------
@@ -118,9 +121,6 @@ PetscErrorCode JacResGetVorticity(JacRes *jr);
 // compute nonlinear residual vectors
 PetscErrorCode JacResGetResidual(JacRes *jr);
 
-// compute temperature residual vector
-PetscErrorCode JacResGetTempRes(JacRes *jr);
-
 // copy solution from global to local vectors, enforce boundary constraints
 PetscErrorCode JacResCopySol(JacRes *jr, Vec x);
 
@@ -141,10 +141,6 @@ PetscInt JacResGetStep(JacRes *jr);
 
 PetscErrorCode JacResGetCourantStep(JacRes *jr);
 
-PetscErrorCode JacResInitTemp(JacRes *jr);
-
-PetscErrorCode JacResCopyTemp(JacRes *jr);
-
 //---------------------------------------------------------------------------
 
 // get maximum inverse time step on local domain
@@ -156,12 +152,26 @@ PetscErrorCode getMaxInvStep1DLocal(Discret1D *ds, DM da, Vec gv, PetscInt dir, 
 PetscErrorCode SetMatParLim(MatParLim *matLim, UserCtx *usr);
 
 //---------------------------------------------------------------------------
+//......................   TEMPERATURE FUNCTIONS   ..........................
+//---------------------------------------------------------------------------
 
-// PetscErrorCode FDSTAGScatterSol(FDSTAG *fs, JacResCtx *jrctx);
+// setup temperature parameters
+PetscErrorCode JacResCreateTempParam(JacRes *jr);
 
-// PetscErrorCode FDSTAGScatterRes(FDSTAG *fs, JacResCtx *jrctx);
+// destroy temperature parameters
+PetscErrorCode JacResDestroyTempParam(JacRes *jr);
 
-// PetscErrorCode FDSTAGCreateScatter(FDSTAG *fs, JacResCtx *jrctx);
+// initialize temperature from markers
+PetscErrorCode JacResInitTemp(JacRes *jr);
+
+// copy temperature from global to local vectors, enforce boundary constraints
+PetscErrorCode JacResCopyTemp(JacRes *jr);
+
+// compute temperature residual vector
+PetscErrorCode JacResGetTempRes(JacRes *jr);
+
+// assemble temperature preconditioner matrix
+PetscErrorCode JacResGetTempMat(JacRes *jr);
 
 //---------------------------------------------------------------------------
 // MACROS
