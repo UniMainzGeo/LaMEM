@@ -34,7 +34,6 @@ http://www.mcs.anl.gov/petsc/petsc-current/docs/manualpages/Mat/MatCreateMFFD.ht
 -mat_mffd_unim <umin> 	- Sets umin (for default PETSc routine that computes h only)
 -mat_mffd_check_positivity	-
 
-
  */
 
 //---------------------------------------------------------------------------

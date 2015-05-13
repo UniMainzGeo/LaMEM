@@ -16,7 +16,6 @@ PetscErrorCode MatAIJCreateDiag(PetscInt m, PetscInt istart, Mat *P);
 
 PetscErrorCode MatAIJAssemble(Mat P, PetscInt numRows, const PetscInt rows[], PetscScalar diag);
 
-
 //---------------------------------------------------------------------------
 // preconditioning matrix storage format
 typedef enum

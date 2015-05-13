@@ -291,12 +291,12 @@ PetscErrorCode JacResGetTempRes(JacRes *jr)
 		 hyz[k][j][i] + hyz[k+1][j][i] + hyz[k][j+1][i] + hyz[k+1][j+1][i])/4.0;
 
 		// check index bounds
-		Ip1 = i+1; if(Ip1 > mx) Ip1--;
 		Im1 = i-1; if(Im1 < 0)  Im1++;
-		Jp1 = j+1; if(Jp1 > my) Jp1--;
+		Ip1 = i+1; if(Ip1 > mx) Ip1--;
 		Jm1 = j-1; if(Jm1 < 0)  Jm1++;
-		Kp1 = k+1; if(Kp1 > mz) Kp1--;
+		Jp1 = j+1; if(Jp1 > my) Jp1--;
 		Km1 = k-1; if(Km1 < 0)  Km1++;
+		Kp1 = k+1; if(Kp1 > mz) Kp1--;
 
 		// compute average conductivities
 		bkx = (kc + lk[k][j][Im1])/2.0;      fkx = (kc + lk[k][j][Ip1])/2.0;
@@ -347,25 +347,26 @@ PetscErrorCode JacResGetTempMat(JacRes *jr)
 	// assemble temperature preconditioner matrix
 
 	FDSTAG     *fs;
+	BCCtx      *bc;
 	SolVarCell *svCell;
 	SolVarBulk *svBulk;
 	Material_t *phases;
 	PetscInt    iter, numPhases;
 	PetscInt    Ip1, Im1, Jp1, Jm1, Kp1, Km1;
 	PetscInt    i, j, k, nx, ny, nz, sx, sy, sz, mx, my, mz;
-
 	PetscScalar bkx, fkx, bky, fky, bkz, fkz;
 	PetscScalar bdx, fdx, bdy, fdy, bdz, fdz;
  	PetscScalar dx, dy, dz;
-	PetscScalar v[7], kc, rho, Cp, dt;
+	PetscScalar v[7], cf[6], kc, rho, Cp, dt;
 	MatStencil  row[1], col[7];
-	PetscScalar ***lk, ***buff;
+	PetscScalar ***lk, ***bcT, ***buff;
 
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
 
 	// access residual context variables
 	fs        = jr->fs;
+	bc        = jr->bc;
 	numPhases = jr->numPhases; // number phases
 	phases    = jr->phases;    // phase parameters
 	dt        = jr->ts.dt;     // time step
@@ -379,6 +380,7 @@ PetscErrorCode JacResGetTempMat(JacRes *jr)
 
 	// access work vectors
 	ierr = DMDAVecGetArray(fs->DA_CEN, jr->ldxx, &lk);  CHKERRQ(ierr);
+	ierr = DMDAVecGetArray(fs->DA_CEN, bc->bcT,  &bcT); CHKERRQ(ierr);
 
 	//---------------
 	// central points
@@ -398,13 +400,13 @@ PetscErrorCode JacResGetTempMat(JacRes *jr)
 		// conductivity, heat capacity, radiogenic heat production
 		GetTempParam(numPhases, phases, svCell->phRat, &kc, &Cp, NULL);
 
-		// check index bounds
-		Ip1 = i+1; if(Ip1 > mx) Ip1--;
-		Im1 = i-1; if(Im1 < 0)  Im1++;
-		Jp1 = j+1; if(Jp1 > my) Jp1--;
-		Jm1 = j-1; if(Jm1 < 0)  Jm1++;
-		Kp1 = k+1; if(Kp1 > mz) Kp1--;
-		Km1 = k-1; if(Km1 < 0)  Km1++;
+		// check index bounds and TPC multipliers
+		Im1 = i-1; cf[0] = 1.0; if(Im1 < 0)  { Im1++; if(bcT[k][j][i-1] != DBL_MAX) cf[0] = -1.0; }
+		Ip1 = i+1; cf[1] = 1.0; if(Ip1 > mx) { Ip1--; if(bcT[k][j][i+1] != DBL_MAX) cf[1] = -1.0; }
+		Jm1 = j-1; cf[2] = 1.0; if(Jm1 < 0)  { Jm1++; if(bcT[k][j-1][i] != DBL_MAX) cf[2] = -1.0; }
+		Jp1 = j+1; cf[3] = 1.0; if(Jp1 > my) { Jp1--; if(bcT[k][j+1][i] != DBL_MAX) cf[3] = -1.0; }
+		Km1 = k-1; cf[4] = 1.0; if(Km1 < 0)  { Km1++; if(bcT[k-1][j][i] != DBL_MAX) cf[4] = -1.0; }
+		Kp1 = k+1; cf[5] = 1.0; if(Kp1 > mz) { Kp1--; if(bcT[k+1][j][i] != DBL_MAX) cf[5] = -1.0; }
 
 		// compute average conductivities
 		bkx = (kc + lk[k][j][Im1])/2.0;      fkx = (kc + lk[k][j][Ip1])/2.0;
@@ -421,8 +423,47 @@ PetscErrorCode JacResGetTempMat(JacRes *jr)
 		dy = SIZE_CELL(j, sy, fs->dsy);
 		dz = SIZE_CELL(k, sz, fs->dsz);
 
-/*
+		// set row/column indices
+		row[0].k = k;   row[0].j = j;   row[0].i = i;   row[0].c = 0;
+		col[0].k = k;   col[0].j = j;   col[0].i = Im1; col[0].c = 0;
+		col[1].k = k;   col[1].j = j;   col[1].i = Ip1; col[1].c = 0;
+		col[2].k = k;   col[2].j = Jm1; col[2].i = i;   col[2].c = 0;
+		col[3].k = k;   col[3].j = Jp1; col[3].i = i;   col[3].c = 0;
+		col[4].k = Km1; col[4].j = j;   col[4].i = i;   col[4].c = 0;
+		col[5].k = Kp1; col[5].j = j;   col[5].i = i;   col[5].c = 0;
+		col[6].k = k;   col[6].j = j;   col[6].i = i;   col[6].c = 0;
 
+		// set values including TPC multipliers
+		v[0] = -bkx/bdx/dx*cf[0];
+		v[1] = -fkx/fdx/dx*cf[1];
+		v[2] = -bky/bdy/dy*cf[2];
+		v[3] = -fky/fdy/dy*cf[3];
+		v[4] = -bkz/bdz/dz*cf[4];
+		v[5] = -fkz/fdz/dz*cf[5];
+		v[6] =  rho*Cp/dt
+		+       (bkx/bdx + fkx/fdx)/dx
+		+       (bky/bdy + fky/fdy)/dy
+		+       (bkz/bdz + fkz/fdz)/dz;
+
+		// set matrix coefficients
+		ierr = MatSetValuesStencil(jr->Att, 1, row, 7, col, v, ADD_VALUES); CHKERRQ(ierr);
+
+		// NOTE! since only TPC are active, no SPC modification is necessary
+	}
+	END_STD_LOOP
+
+	// restore access
+	ierr = DMDAVecRestoreArray(fs->DA_CEN, jr->ldxx, &lk);  CHKERRQ(ierr);
+	ierr = DMDAVecRestoreArray(fs->DA_CEN, bc->bcT, &bcT);  CHKERRQ(ierr);
+
+	// assemble temperature matrix
+	ierr = MatAssemblyBegin(jr->Att, MAT_FINAL_ASSEMBLY); CHKERRQ(ierr);
+	ierr = MatAssemblyEnd  (jr->Att, MAT_FINAL_ASSEMBLY); CHKERRQ(ierr);
+
+	PetscFunctionReturn(0);
+}
+//---------------------------------------------------------------------------
+/*
 Diffusion term expansion
 
 		bqx = bkx*(Tc - T[k][j][i-1])/bdx;   fqx = fkx*(T[k][j][i+1] - Tc)/fdx;
@@ -458,43 +499,5 @@ Diffusion term expansion
 		(bkx/bdx + fkx/fdx)/dx*Tc - bkx/bdx/dx*T[k][j][i-1] - fkx/fdx/dx*T[k][j][i+1]
 		(bky/bdy + fky/fdy)/dy*Tc - bky/bdy/dy*T[k][j-1][i] - fky/fdy/dy*T[k][j+1][i]
 		(bkz/bdz + fkz/fdz)/dz*Tc - bkz/bdz/dz*T[k-1][j][i] - fkz/fdz/dz*T[k+1][j][i]
-
 */
-
-        // set row/column indices
-		row[0].k = k;   row[0].j = j;   row[0].i = i;   row[0].c = 0;
-		col[0].k = k;   col[0].j = j;   col[0].i = i-1; col[0].c = 0;
-		col[1].k = k;   col[1].j = j;   col[1].i = i+1; col[1].c = 0;
-		col[2].k = k;   col[2].j = j-1; col[2].i = i;   col[2].c = 0;
-		col[3].k = k;   col[3].j = j+1; col[3].i = i;   col[3].c = 0;
-		col[4].k = k-1; col[4].j = j;   col[4].i = i;   col[4].c = 0;
-		col[5].k = k+1; col[5].j = j;   col[5].i = i;   col[5].c = 0;
-		col[6].k = k;   col[6].j = j;   col[6].i = i;   col[6].c = 0;
-
-		// set values
-		v[0] = -bkx/bdx/dx;
-		v[1] = -fkx/fdx/dx;
-		v[2] = -bky/bdy/dy;
-		v[3] = -fky/fdy/dy;
-		v[4] = -bkz/bdz/dz;
-		v[5] = -fkz/fdz/dz;
-		v[6] =  rho*Cp/dt
-		+       (bkx/bdx + fkx/fdx)/dx
-		+       (bky/bdy + fky/fdy)/dy
-		+       (bkz/bdz + fkz/fdz)/dz;
-
-		// set matrix coefficients
-		ierr = MatSetValuesStencil(jr->Att, 1, row, 7, col, v, ADD_VALUES); CHKERRQ(ierr);
-	}
-	END_STD_LOOP
-
-	// restore access
-	ierr = DMDAVecRestoreArray(fs->DA_CEN, jr->ldxx, &lk);  CHKERRQ(ierr);
-
-	// assemble temperature matrix
-	ierr = MatAssemblyBegin(jr->Att, MAT_FINAL_ASSEMBLY); CHKERRQ(ierr);
-	ierr = MatAssemblyEnd  (jr->Att, MAT_FINAL_ASSEMBLY); CHKERRQ(ierr);
-
-	PetscFunctionReturn(0);
-}
 //---------------------------------------------------------------------------

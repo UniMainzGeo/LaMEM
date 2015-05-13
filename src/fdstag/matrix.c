@@ -614,7 +614,6 @@ PetscErrorCode PMatMonoAssemble(PMat pm)
 		// update global & penalty compensation matrices
 		ierr = MatSetValues(P->A, 7, idx, 7, idx, v,  ADD_VALUES);    CHKERRQ(ierr);
 		ierr = MatSetValue (P->M, idx[6], idx[6], pt, INSERT_VALUES); CHKERRQ(ierr);
-
 	}
 	END_STD_LOOP
 

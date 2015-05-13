@@ -326,6 +326,10 @@ PetscErrorCode FormJacobian(SNES snes, Vec x, Mat Amat, Mat Pmat, void *ctx)
 	ierr = MatAssemblyBegin(nl->J, MAT_FINAL_ASSEMBLY); CHKERRQ(ierr);
 	ierr = MatAssemblyEnd  (nl->J, MAT_FINAL_ASSEMBLY); CHKERRQ(ierr);
 
+
+
+//	PetscErrorCode  VecAXPY(Vec y,PetscScalar alpha,Vec x)
+
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
