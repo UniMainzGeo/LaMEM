@@ -1664,8 +1664,8 @@ PetscErrorCode JacResGetCourantStep(JacRes *jr)
 
 	// determine maximum local inverse time step
 	ierr = getMaxInvStep1DLocal(&fs->dsx, fs->DA_X, jr->gvx, 0, &lidtmax); CHKERRQ(ierr);
-	ierr = getMaxInvStep1DLocal(&fs->dsy, fs->DA_Y, jr->gvy, 0, &lidtmax); CHKERRQ(ierr);
-	ierr = getMaxInvStep1DLocal(&fs->dsz, fs->DA_Z, jr->gvz, 0, &lidtmax); CHKERRQ(ierr);
+	ierr = getMaxInvStep1DLocal(&fs->dsy, fs->DA_Y, jr->gvy, 1, &lidtmax); CHKERRQ(ierr);
+	ierr = getMaxInvStep1DLocal(&fs->dsz, fs->DA_Z, jr->gvz, 2, &lidtmax); CHKERRQ(ierr);
 
 	// synchronize
 	if(ISParallel(PETSC_COMM_WORLD))
