@@ -166,6 +166,9 @@ PetscErrorCode ADVCheckCorners(AdvCtx *actx);
 // delete marker outflow
 PetscErrorCode ADVMarkDeleteOutflow(AdvCtx *actx);
 
+// change marker phase when crossing free surface
+PetscErrorCode ADVMarkCrossFreeSurf(AdvCtx *actx, FreeSurf *surf);
+
 //-----------------------------------------------------------------------------
 // service functions
 //-----------------------------------------------------------------------------

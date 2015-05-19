@@ -540,9 +540,9 @@ PetscErrorCode ReadMeshSegDir(
 	// read segments
 	parse_GetDoubleArray(fp, name, &arsz, buff, &found);
 
-	if(!found) SETERRQ(PETSC_COMM_SELF, PETSC_ERR_USER, "ERROR! Mesh refinement segments are not specified\n");
+	if(!found) SETERRQ(PETSC_COMM_SELF, PETSC_ERR_USER, "Mesh refinement segments are not specified\n");
 
-	if(arsz != 3*msi->nsegs-1) SETERRQ(PETSC_COMM_SELF, PETSC_ERR_USER, "ERROR! Incorrect number entries in the mesh refinement array\n");
+	if(arsz != 3*msi->nsegs-1) SETERRQ(PETSC_COMM_SELF, PETSC_ERR_USER, "Incorrect number entries in the mesh refinement array\n");
 
 	// load the data ... delimiters
 	for(i = 0, jj = 0; i < msi->nsegs-1; i++, jj++) msi->delims[i] = buff[jj];
@@ -558,7 +558,7 @@ PetscErrorCode ReadMeshSegDir(
 	{
 		if(msi->delims[i] <= msi->delims[i-1])
 		{
-			SETERRQ(PETSC_COMM_SELF, PETSC_ERR_USER, "ERROR! refinement segments are unordered/overlapping\n");
+			SETERRQ(PETSC_COMM_SELF, PETSC_ERR_USER, "Refinement segments are unordered/overlapping\n");
 		}
 	}
 
@@ -567,7 +567,7 @@ PetscErrorCode ReadMeshSegDir(
 	{
 		if(msi->delims[i] <= beg || msi->delims[i] >= end)
 		{
-			SETERRQ(PETSC_COMM_SELF, PETSC_ERR_USER, "ERROR! Refinement segments out of bound\n");
+			SETERRQ(PETSC_COMM_SELF, PETSC_ERR_USER, "Refinement segments out of bound\n");
 		}
 	}
 
@@ -576,7 +576,7 @@ PetscErrorCode ReadMeshSegDir(
 	{
 		if(msi->ncells[i] <= 0)
 		{
-			SETERRQ(PETSC_COMM_SELF, PETSC_ERR_USER, "ERROR! Number of cells must be non-negative\n");
+			SETERRQ(PETSC_COMM_SELF, PETSC_ERR_USER, "Number of cells must be non-negative\n");
 		}
 	}
 
@@ -585,7 +585,7 @@ PetscErrorCode ReadMeshSegDir(
 	{
 		if(!msi->biases[i])
 		{
-			SETERRQ(PETSC_COMM_SELF, PETSC_ERR_USER, "ERROR! Bias factors must be non-zero\n");
+			SETERRQ(PETSC_COMM_SELF, PETSC_ERR_USER, "Bias factors must be non-zero\n");
 		}
 	}
 

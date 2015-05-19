@@ -268,12 +268,17 @@ PetscErrorCode LaMEMLib_FDSTAG(void *echange_ctx)
 		// apply background strain-rate "DWINDLAR" BC (Bob Shaw "Ship of Strangers")
 		ierr = FDSTAGStretch(&fs, bc.Exx, bc.Eyy, jr.ts.dt); CHKERRQ(ierr);
 
+		// apply erosion to the free surface
+		ierr = FreeSurfAppErosion(&surf); CHKERRQ(ierr);
+
+		// apply sedimentation to the free surface
+		ierr = FreeSurfAppSedimentation(&surf); CHKERRQ(ierr);
+
+		// change marker phase when crossing free surface
+		ierr = ADVMarkCrossFreeSurf(&actx, &surf); CHKERRQ(ierr);
+
 		// remap markers onto (stretched) grid
 		ierr = ADVRemap(&actx);
-
-		// APPLY EROSION AND SEDIMENTATION
-
-		// CHANGE MARKER PHASES IF THEY CROSS FREE SURFACE, UPDATE PHASE RATIOS
 
 		// update phase ratios taking into account actual free surface position
 		ierr = FreeSurfGetAirPhaseRatio(&surf); CHKERRQ(ierr);
@@ -367,29 +372,10 @@ PetscErrorCode LaMEMLib_FDSTAG(void *echange_ctx)
 //========================================================================================
 
 //	user.save_breakpoints = -1;
-//	user.BC.InternalBound = -1;
 //	user.restart = 0;
-//	user.ErosionParameters.ErosionModel = 0;
-//	user.ErosionParameters.UseInternalFreeSurface = 0;
-//	user.SavePartitioning = PETSC_FALSE;
-//	user.remesh = 0;
-//	user.InitialMeshFromFile == 1
-//	user.Setup.Model == 3
-//	user.EulerianAfterTimestep > 0
 //	user.AnalyticalBenchmark == PETSC_TRUE
-//	user.GridAdvectionMethod
-//	user.NonlinearIterations==1
 //	user.InitialErosionSurfaceFromFile == 1
-//	user.ParticleInput == 1
-//	user.fileno
-//	user.time_start
-//	user.time_end
-//	user.time
-//	user.dt
-//	user.MatlabOutputFiles == 1
-//	user.VTKOutputFiles == 1
 //	user.AVDPhaseViewer
-//  user.PlasticityCutoff
 
 //========================================================================================
 

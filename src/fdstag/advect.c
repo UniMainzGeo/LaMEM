@@ -9,6 +9,8 @@
 #include "tssolve.h"
 #include "bc.h"
 #include "JacRes.h"
+#include "interpolate.h"
+#include "surf.h"
 #include "advect.h"
 #include "constEq.h"
 #include "marker.h"
@@ -1561,6 +1563,54 @@ PetscErrorCode ADVInterpMarkToEdge(AdvCtx *actx, PetscInt iphase, InterpCase ica
 	ierr = VecRestoreArray(jr->gdxy, &gxy); CHKERRQ(ierr);
 	ierr = VecRestoreArray(jr->gdxz, &gxz); CHKERRQ(ierr);
 	ierr = VecRestoreArray(jr->gdyz, &gyz); CHKERRQ(ierr);
+
+	PetscFunctionReturn(0);
+}
+//---------------------------------------------------------------------------
+#undef __FUNCT__
+#define __FUNCT__ "ADVMarkCrossFreeSurf"
+PetscErrorCode ADVMarkCrossFreeSurf(AdvCtx *actx, FreeSurf *surf)
+{
+	// change marker phase when crossing free surface
+
+	Marker      *P;
+	PetscInt     jj;
+
+	PetscFunctionBegin;
+
+	// WARNING! current version only supports flat free surface in combination
+	// with prescribed sedimentation rate model. General version to be implemented.
+	// The problem with non-sedimentary case is which phase to assign to air marker.
+
+	if(surf->flat != PETSC_TRUE || surf->SedimentModel != 1)
+	{
+		PetscFunctionReturn(0);
+	}
+
+	// scan ALL markers
+	for(jj = 0; jj < actx->nummark; jj++)
+	{
+		// access next marker
+		P = &actx->markers[jj];
+
+		// check marker is above/below the free surface
+		if(P->X[2] > surf->avg_topo)
+		{
+			// above -> sediment turns into air
+			if(P->phase != surf->AirPhase)
+			{
+				P->phase = surf->AirPhase;
+			}
+		}
+		else
+		{
+			// below -> air turns into sediment
+			if(P->phase == surf->AirPhase)
+			{
+				P->phase = surf->phase;
+			}
+		}
+	}
 
 	PetscFunctionReturn(0);
 }

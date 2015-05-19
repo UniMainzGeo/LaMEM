@@ -9,6 +9,8 @@
 #include "tssolve.h"
 #include "bc.h"
 #include "JacRes.h"
+#include "interpolate.h"
+#include "surf.h"
 #include "multigrid.h"
 #include "matrix.h"
 #include "lsolve.h"

@@ -519,9 +519,8 @@ PetscErrorCode PVSurfWriteAmplitude(PVSurf *pvsurf, FILE *fp)
 	fs   = surf->jr->fs;
 	cf   = surf->jr->scal.length;
 
-	// get average topography
-	ierr = VecNorm(surf->gtopo, NORM_1, &avg_topo); CHKERRQ(ierr);
-	avg_topo /= (PetscScalar)(fs->dsx.tnods*fs->dsy.tnods*fs->dsz.nproc);
+	// retrieve average topography
+	avg_topo = surf->avg_topo;
 
 	GET_OUTPUT_RANGE(rx, nx, sx, fs->dsx)
 	GET_OUTPUT_RANGE(ry, ny, sy, fs->dsy)

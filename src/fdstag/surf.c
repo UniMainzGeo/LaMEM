@@ -9,9 +9,10 @@
 #include "tssolve.h"
 #include "bc.h"
 #include "JacRes.h"
-#include "advect.h"
 #include "interpolate.h"
 #include "surf.h"
+#include "advect.h"
+#include "tools.h"
 //---------------------------------------------------------------------------
 // * stair-case type of free surface
 // ...
@@ -84,14 +85,66 @@ PetscErrorCode FreeSurfReadFromOptions(FreeSurf *surf, Scaling *scal)
 	PetscFunctionBegin;
 
 	// read output flags
-	ierr = PetscOptionsGetBool  (NULL, "-surf_use",       &surf->UseFreeSurf,NULL); CHKERRQ(ierr);
-	ierr = PetscOptionsGetScalar(NULL, "-surf_level",     &surf->InitLevel,  NULL); CHKERRQ(ierr);
-	ierr = PetscOptionsGetInt   (NULL, "-surf_air_phase", &surf->AirPhase,   NULL); CHKERRQ(ierr);
-	ierr = PetscOptionsGetScalar(NULL, "-surf_max_angle", &surf->MaxAngle,   NULL); CHKERRQ(ierr);
+	ierr = PetscOptionsGetBool  (NULL, "-surf_use",       &surf->UseFreeSurf, NULL); CHKERRQ(ierr);
+	ierr = PetscOptionsGetScalar(NULL, "-surf_level",     &surf->InitLevel,   NULL); CHKERRQ(ierr);
+	ierr = PetscOptionsGetInt   (NULL, "-surf_air_phase", &surf->AirPhase,    NULL); CHKERRQ(ierr);
+	ierr = PetscOptionsGetScalar(NULL, "-surf_max_angle", &surf->MaxAngle,    NULL); CHKERRQ(ierr);
+
+	// set average topography & flag level
+	surf->avg_topo = surf->InitLevel;
+	surf->flat     = PETSC_TRUE;
 
 	// nondimensionalize
 	surf->InitLevel /= scal->length;
 	surf->MaxAngle  /= scal->angle;
+
+	//======================================
+	// read erosion sedimentation parameters
+	//======================================
+
+	ierr = PetscOptionsGetInt(NULL, "-ErosionModel",   &surf->ErosionModel,   NULL); CHKERRQ(ierr);
+	if(surf->ErosionModel < 0 || surf->ErosionModel > 1)
+	{
+		SETERRQ1(PETSC_COMM_SELF, PETSC_ERR_USER, "Wrong erosion model: %lld\n",
+			(LLD)surf->ErosionModel);
+	}
+
+	ierr = PetscOptionsGetInt(NULL, "-SedimentModel",  &surf->SedimentModel,  NULL); CHKERRQ(ierr);
+	if(surf->SedimentModel < 0 || surf->SedimentModel > 1)
+	{
+		SETERRQ1(PETSC_COMM_SELF, PETSC_ERR_USER, "Wrong sedimentation model: %lld\n",
+			(LLD)surf->SedimentModel);
+	}
+
+	// read prescribed sedimentation rate model parameter
+	if(surf->SedimentModel == 1)
+	{
+		ierr = PetscOptionsGetInt(NULL, "-numRateIntervals",  &surf->numRateIntervals,  NULL); CHKERRQ(ierr);
+		if(surf->numRateIntervals < 1 || surf->numRateIntervals > _max_layers_)
+		{
+			SETERRQ2(PETSC_COMM_SELF, PETSC_ERR_USER, "Out of range number of rate intervals, requested: %lld, range: [1-%lld]\n",
+				(LLD)surf->numRateIntervals, (LLD)_max_layers_);
+		}
+
+		ierr = PetscOptionsGetInt(NULL, "-numPhaseLayers", &surf->numPhaseLayers, NULL); CHKERRQ(ierr);
+		if(surf->numPhaseLayers < 1 || surf->numPhaseLayers > _max_layers_)
+		{
+			SETERRQ2(PETSC_COMM_SELF, PETSC_ERR_USER, "Out of range number of phase layers, requested: %lld, range: [1-%lld]\n",
+				(LLD)surf->numPhaseLayers, (LLD)_max_layers_);
+		}
+
+		ierr = GetScalArrayCheckScale("-RateDelims", "Sedimentation Rates Delimiters",
+			surf->numRateIntervals-1, surf->RateDelims, 0.0, 0.0, scal->time); CHKERRQ(ierr);
+
+		ierr = GetScalArrayCheckScale("-PhaseDelims", "Sediment Phases Delimiters",
+			surf->numPhaseLayers-1, surf->PhaseDelims, 0.0, 0.0, scal->time); CHKERRQ(ierr);
+
+		ierr = GetScalArrayCheckScale("-sedRates", "Sedimentation Rates",
+			surf->numRateIntervals, surf->sedRates, 0.0, 0.0, 0.0); CHKERRQ(ierr);
+
+		ierr = GetIntArrayCheck("-sedPhases", "Sediment Phases",
+			surf->numPhaseLayers, surf->sedPhases, 0, surf->jr->numPhases-1); CHKERRQ(ierr);
+	}
 
 	PetscFunctionReturn(0);
 }
@@ -122,7 +175,7 @@ PetscErrorCode FreeSurfDestroy(FreeSurf *surf)
 #define __FUNCT__ "FreeSurfAdvect"
 PetscErrorCode FreeSurfAdvect(FreeSurf *surf)
 {
-	// advect topography on the free surface mesh
+	// advect topography of the free surface mesh
 
 	JacRes *jr;
 
@@ -254,7 +307,7 @@ PetscErrorCode FreeSurfAdvectTopo(FreeSurf *surf)
 	PetscInt    I, I1, I2, J, J1, J2;
 	PetscInt    i, j, jj, found, nx, ny, sx, sy, L, mx, my;
 	PetscScalar cx[13], cy[13], cz[13];
-	PetscScalar X, X1, X2, Y, Y1, Y2, Z, Exx, Eyy, step, gtol;
+	PetscScalar X, X1, X2, Y, Y1, Y2, Z, Exx, Eyy, step, gtol, avg_topo;
 	PetscScalar ***advect, ***topo, ***vx, ***vy, ***vz;
 
 	// local search grid triangulation
@@ -403,6 +456,14 @@ PetscErrorCode FreeSurfAdvectTopo(FreeSurf *surf)
 	// compute ghosted version of the advected surface topography
 	GLOBAL_TO_LOCAL(surf->DA_SURF, surf->gtopo, surf->ltopo);
 
+	// set flat flag
+	surf->flat = PETSC_FALSE;
+
+	// compute & store average topography
+	ierr = VecNorm(surf->gtopo, NORM_1, &avg_topo); CHKERRQ(ierr);
+	avg_topo /= (PetscScalar)(fs->dsx.tnods*fs->dsy.tnods*fs->dsz.nproc);
+	surf->avg_topo = avg_topo;
+
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
@@ -513,7 +574,6 @@ PetscErrorCode FreeSurfGetAirPhaseRatio(FreeSurf *surf)
 
 		// WARNING !!!
 		// think what to do if(phRat[AirPhase] == 1.0 && phRatAir != 1.0)
-
 	}
 	END_STD_LOOP
 
@@ -522,6 +582,133 @@ PetscErrorCode FreeSurfGetAirPhaseRatio(FreeSurf *surf)
 
 	PetscFunctionReturn(0);
 }
+//---------------------------------------------------------------------------
+#undef __FUNCT__
+#define __FUNCT__ "FreeSurfAppErosion"
+PetscErrorCode FreeSurfAppErosion(FreeSurf *surf)
+{
+	// Apply fast erosion to the internal free surface of the model
+
+	Scaling * scal;
+
+	PetscErrorCode ierr;
+	PetscFunctionBegin;
+
+	scal = &surf->jr->scal;
+
+	if(surf->ErosionModel == 1)
+	{
+		// erase topography
+		ierr = VecSet(surf->ltopo, surf->avg_topo); CHKERRQ(ierr);
+		ierr = VecSet(surf->gtopo, surf->avg_topo); CHKERRQ(ierr);
+
+		// set flag
+		surf->flat = PETSC_TRUE;
+
+		PetscPrintf(PETSC_COMM_WORLD, "Applying infinitely fast erosion to internal free surface. Average free surface height = %e [%]\n",
+			surf->avg_topo*scal->length, scal->lbl_length);
+	}
+
+	PetscFunctionReturn(0);
+}
+//---------------------------------------------------------------------------
+#undef __FUNCT__
+#define __FUNCT__ "FreeSurfAppSedimentation"
+PetscErrorCode FreeSurfAppSedimentation(FreeSurf *surf)
+{
+
+	// Apply sedimentation to the internal free surface.
+	// Currently we only have the option to add a fixed sedimentation rate,
+	// and in this routine we simply advect the internal free surface upwards with
+	// this rate. In the future we can think about adding different sedimentation routines.
+
+	JacRes      *jr;
+	FDSTAG      *fs;
+	PetscScalar ***topo;
+	PetscScalar dt, time, rate, zbot, ztop, z, dz, avg_topo;
+	PetscInt    L, jj, phase;
+	PetscInt    i, j, nx, ny, sx, sy, sz;
+
+	PetscErrorCode ierr;
+	PetscFunctionBegin;
+
+	// access context
+	jr   = surf->jr;
+	fs   = jr->fs;
+	dt   = jr->ts.dt;
+	time = jr->ts.time;
+	L    = fs->dsz.rank;
+
+	// get z-coordinates of the top and bottom boundaries
+	ierr = FDSTAGGetGlobalBox(fs, NULL, NULL, &zbot, NULL, NULL, &ztop); CHKERRQ(ierr);
+
+	if(surf->SedimentModel == 1)
+	{
+		// determine sedimentation rate
+		for(jj = 0; jj < surf->numRateIntervals; jj++)
+		{
+			if(time < surf->RateDelims[jj]) break;
+		}
+
+		rate = surf->sedRates[jj];
+
+		// get incremental thickness of the sediments
+		dz = rate*dt;
+
+		// access topography
+		ierr = DMDAVecGetArray(surf->DA_SURF, surf->gtopo,  &topo);  CHKERRQ(ierr);
+
+		// scan all free surface local points
+		ierr = DMDAGetCorners(fs->DA_COR, &sx, &sy, &sz, &nx, &ny, NULL); CHKERRQ(ierr);
+
+		START_PLANE_LOOP
+		{
+			// get topography
+			z = topo[L][j][i];
+
+			// uniformly advect
+			z += dz;
+
+			// check if internal free surface goes outside the model domain
+			if(z > ztop) z = ztop;
+			if(z < zbot) z = zbot;
+
+			// store advected topography
+			z = topo[L][j][i];
+		}
+		END_PLANE_LOOP
+
+		// restore access
+		ierr = DMDAVecRestoreArray(surf->DA_SURF, surf->gtopo,  &topo);  CHKERRQ(ierr);
+
+		// compute ghosted version of the topography
+		GLOBAL_TO_LOCAL(surf->DA_SURF, surf->gtopo, surf->ltopo);
+
+		// compute & store average topography
+		ierr = VecNorm(surf->gtopo, NORM_1, &avg_topo); CHKERRQ(ierr);
+		avg_topo /= (PetscScalar)(fs->dsx.tnods*fs->dsy.tnods*fs->dsz.nproc);
+		surf->avg_topo = avg_topo;
+
+		// determine sediment layer phase
+		for(jj = 0; jj < surf->numPhaseLayers; jj++)
+		{
+			if(time < surf->PhaseDelims[jj]) break;
+		}
+
+		phase = surf->sedPhases[jj];
+
+		// store the phase that is being sedimented
+		surf->phase = phase;
+
+		// print info
+		PetscPrintf(PETSC_COMM_WORLD, "Applying sedimentation to internal free surface. Phase that is currently being sedimented is %lld   \n",
+			(LLD)phase);
+	}
+
+	PetscFunctionReturn(0);
+}
+//---------------------------------------------------------------------------
+// SERVICE FUNCTIONS
 //---------------------------------------------------------------------------
 PetscInt InterpolateTriangle(
 	PetscScalar *x,   // x-coordinates of triangle

@@ -5,6 +5,10 @@
 #define __surf_h__
 //---------------------------------------------------------------------------
 
+#define _max_layers_ 20
+
+//---------------------------------------------------------------------------
+
 // free surface grid
 
 typedef struct
@@ -16,10 +20,23 @@ typedef struct
 	Vec     vpatch, vmerge; // patch and merged velocity vectors (global)
 
 	// flags/parameters
-	PetscBool   UseFreeSurf;
-	PetscScalar InitLevel;
-	PetscInt    AirPhase;
-	PetscScalar MaxAngle;
+	PetscBool   UseFreeSurf; // free surface activation flag
+	PetscScalar InitLevel;   // initial level
+	PetscScalar avg_topo;    // average topography
+	PetscBool   flat;        // flat free surface flag
+	PetscInt    AirPhase;    // air phase number
+	PetscScalar MaxAngle;    // maximum angle with horizon (smoothed if larger)
+
+	// erosion/sedimentation parameters
+	PetscInt    phase;            // current sediment phase
+	PetscInt    ErosionModel;     // [0-none, 1-infinitely fast, ...]
+	PetscInt    SedimentModel;    // [0-none, 1-prescribed rate, ...]
+	PetscInt    numRateIntervals; // number of sedimentation rate intervals
+	PetscInt    numPhaseLayers;   // number of sediment phase layers
+	PetscScalar RateDelims [_max_layers_-1]; // rate intervals time delimiters
+	PetscScalar PhaseDelims[_max_layers_-1]; // phase layers time delimiters
+	PetscScalar sedRates   [_max_layers_  ]; // sedimentation rates
+	PetscInt    sedPhases  [_max_layers_  ]; // sediment phases
 
 } FreeSurf;
 
@@ -30,6 +47,8 @@ PetscErrorCode FreeSurfClear(FreeSurf *surf);
 PetscErrorCode FreeSurfCreate(FreeSurf *surf, JacRes *jr);
 
 PetscErrorCode FreeSurfReadFromOptions(FreeSurf *surf, Scaling *scal);
+
+PetscErrorCode FreeSurfReadFromFile(FreeSurf *surf, Scaling *scal);
 
 PetscErrorCode FreeSurfDestroy(FreeSurf *surf);
 
@@ -42,9 +61,21 @@ PetscErrorCode FreeSurfGetVelComp(
 	PetscErrorCode (*interp)(FDSTAG *, Vec, Vec, InterpFlags),
 	Vec vcomp_grid, Vec vcomp_surf);
 
+// advect/interpolate topography of the free surface
 PetscErrorCode FreeSurfAdvectTopo(FreeSurf *surf);
 
+// correct phase ratios based on actual position of the free surface
 PetscErrorCode FreeSurfGetAirPhaseRatio(FreeSurf *surf);
+
+// apply erosion to the free surface
+PetscErrorCode FreeSurfAppErosion(FreeSurf *surf);
+
+// apply sedimentation to the free surface
+PetscErrorCode FreeSurfAppSedimentation(FreeSurf *surf);
+
+//---------------------------------------------------------------------------
+// SERVICE FUNCTIONS
+//---------------------------------------------------------------------------
 
 PetscInt InterpolateTriangle(
 	PetscScalar *x,   // x-coordinates of triangle
@@ -66,6 +97,8 @@ PetscScalar IntersectTriangularPrism(
 	PetscScalar  top,   // z-coordinate of top plane
 	PetscScalar  tol);  // relative tolerance
 
+//---------------------------------------------------------------------------
+// MACROS
 //---------------------------------------------------------------------------
 
 // NOTE! this macro computes double of actual area

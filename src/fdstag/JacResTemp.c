@@ -397,7 +397,7 @@ PetscErrorCode JacResGetTempMat(JacRes *jr)
 		// access
 		rho = svBulk->rho; // effective density
 
-		// conductivity, heat capacity, radiogenic heat production
+		// conductivity, heat capacity
 		GetTempParam(numPhases, phases, svCell->phRat, &kc, &Cp, NULL);
 
 		// check index bounds and TPC multipliers

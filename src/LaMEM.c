@@ -45,9 +45,9 @@ extern PetscErrorCode PCCreate_SemiRedundant(PC);
 #include "tssolve.h"
 #include "bc.h"
 #include "JacRes.h"
-#include "advect.h"
 #include "interpolate.h"
 #include "surf.h"
+#include "advect.h"
 
 /*==========================================================================================================*/
 /* Main routine */

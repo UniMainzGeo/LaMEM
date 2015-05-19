@@ -13,6 +13,8 @@
 #include "tssolve.h"
 #include "bc.h"
 #include "JacRes.h"
+#include "interpolate.h"
+#include "surf.h"
 #include "advect.h"
 #include "AVD.h"
 #include "Utils.h"

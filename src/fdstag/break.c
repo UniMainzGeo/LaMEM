@@ -15,6 +15,8 @@
 #include "matrix.h"
 #include "lsolve.h"
 #include "nlsolve.h"
+#include "interpolate.h"
+#include "surf.h"
 #include "advect.h"
 #include "marker.h"
 #include "break.h"
