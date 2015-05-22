@@ -154,7 +154,7 @@ PetscErrorCode LaMEMLib_FDSTAG(void *echange_ctx)
 	ierr = BCSetParam(&bc, &user); CHKERRQ(ierr);
 
 	// overwrite grid info if restart and background strain-rates are applied - before marker init
-	if (user.restart==1 && bc.bgAct) { ierr = BreakReadGrid(&user, &fs); CHKERRQ(ierr); }
+	if (user.restart==1 && bc.bgAct==PETSC_TRUE) { ierr = BreakReadGrid(&user, &fs); CHKERRQ(ierr); }
 
 	// set pushing block parameters
 	ierr = BCSetPush(&bc, &user); CHKERRQ(ierr);
@@ -164,6 +164,9 @@ PetscErrorCode LaMEMLib_FDSTAG(void *echange_ctx)
 
 	// create free surface grid
 	ierr = FreeSurfCreate(&surf, &jr); CHKERRQ(ierr);
+
+	// initialize free surface from breakpoints if restart
+	if (user.restart==1 && surf.UseFreeSurf==PETSC_TRUE) { ierr = BreakReadSurf(&fs, &surf); CHKERRQ(ierr); }
 
 	// create advection context
 	ierr = ADVCreate(&actx, &fs, &jr); CHKERRQ(ierr);
@@ -333,7 +336,7 @@ PetscErrorCode LaMEMLib_FDSTAG(void *echange_ctx)
 		if (user.save_breakpoints > 0) LaMEMMod(JacResGetStep(&jr)-1, user.save_breakpoints, &SaveOrNot);
 		else                           SaveOrNot = 2;
 
-		if (SaveOrNot == 0) { ierr = BreakWrite(&user, &actx, nl.jtype); CHKERRQ(ierr); }
+		if (SaveOrNot == 0) { ierr = BreakWrite(&user, &actx, &surf, nl.jtype); CHKERRQ(ierr); }
 
 	} while(done != PETSC_TRUE);
 

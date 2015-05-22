@@ -431,17 +431,25 @@ PetscErrorCode SetDiffProfile(Material_t *m, char name[])
 	PetscScalar      C_OH_0, r;
 
 	// We assume that the creep law has the form:
-	// Diffusion:   eII = F2*Bd*Tau   * C_OH^r * d^-p *exp( - (Ed + P*Vd)/(R*T))
-	// Dislocation: eII = F2*Bn*Tau^n * C_OH^r        *exp( - (En + P*Vn)/(R*T))
+	// Diffusion:   eII = Ad*Tau   * C_OH^r * d^-p *exp( - (Ed + P*Vd)/(R*T))
+	// Dislocation: eII = An*Tau^n * C_OH^r        *exp( - (En + P*Vn)/(R*T))
+	//
+	// In addition, we take into account that the creep-laws are typically measured under uniaxial or simple shear,
+	// whereas we need them in tensorial format (tensorCorrection and F2) as defined in T. Gerya book.
+	//
+	// The resulting expressions for effective viscosity:
+	// Diffusion:   inv_eta_diff = 2 * [Bd * exp(-(Ed + P*Vd)/(R*T))]
+	// Dislocation: inv_eta_disl = 2 * [Bn * exp(-(En + P*Vn)/(R*T))]^(1/n) * eII^(1-1/n)
 	//
 	// In LaMEM we include the effect of grain size, H2O and tensor correction in the pre-factor (Bd,Bn) such that:
-	// Diffusion:   Bd  = (2*F2)^(-1) * Bd [Pa] * d^-p * C_OH^r
-	// Dislocation: Bn  = (2*F2)^(-n) * Bd [Pa]        * C_OH^r
+	// Diffusion:   Bd  = (2*F2)^(-1) * Ad [Pa] * d^-p * C_OH^r
+	// Dislocation: Bn  = (2*F2)^(-n) * An [Pa]        * C_OH^r
 	//
 	//   eII     -   strain rate             [1/s]
 	//   Tau     -   stress                  [Pa]
 	//   P       -   pressure                [Pa]
 	//   R       -   gas constant
+	//   Ad, An  -   prefactor (Bn before taking into account grain size and water fugacity) [Pa^(-n)s^(-1)]
 	//   Bd, Bn  -   prefactor               [Pa^(-n)s^(-1)]
 	//   n       -   power-law exponent (n=1 for diffusion creep)
 	//   Ed, En  -   activation Energy       [J/MPA/mol]
@@ -451,10 +459,6 @@ PetscErrorCode SetDiffProfile(Material_t *m, char name[])
 	//   C_OH    -   water fugacity in H/10^6 Si  (see Hirth & Kohlstedt 2003 for a description)
 	//   r       -   power-law exponent of C_OH term
 	//   MPa     -   transform units: 0 - units in Pa; 1 - units in MPa
-	//
-	//   In addition, we take into account that the creep-laws are typically
-	//   measured under uniaxial or simple shear, whereas we need them
-	//   in tensorial format (tensorCorrection and F2).
 
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
@@ -491,7 +495,7 @@ PetscErrorCode SetDiffProfile(Material_t *m, char name[])
 	{
 		// after Hirth, G. & Kohlstedt (2003), D. Rheology of the upper mantle and the mantle wedge: A view from the experimentalists.
 		m->Bd            =   2.5e7;
-		m->Ed            =   335e3;
+		m->Ed            =   375e3;
 		m->Vd            =   10e-6;
 		tensorCorrection =   _SimpleShear_;
 		MPa              =   1;
@@ -526,17 +530,25 @@ PetscErrorCode SetDislProfile(Material_t *m, char name[])
 	PetscScalar      C_OH_0, r;
 
 	// We assume that the creep law has the form:
-	// Diffusion:   eII = F2*Bd*Tau   * C_OH^r * d^-p *exp( - (Ed + P*Vd)/(R*T))
-	// Dislocation: eII = F2*Bn*Tau^n * C_OH^r        *exp( - (En + P*Vn)/(R*T))
+	// Diffusion:   eII = Ad*Tau   * C_OH^r * d^-p *exp( - (Ed + P*Vd)/(R*T))
+	// Dislocation: eII = An*Tau^n * C_OH^r        *exp( - (En + P*Vn)/(R*T))
 	//
-	// In LaMEM we include the effect of grain size, H2O and tensor correction in the pre-factor (Bd,Bn) such that:
-	// Diffusion:   Bd  = (2*F2)^(-1) * Bd [Pa] * d^-p * C_OH^r
-	// Dislocation: Bn  = (2*F2)^(-n) * Bd [Pa]        * C_OH^r
+	// In addition, we take into account that the creep-laws are typically measured under uniaxial or simple shear,
+	// whereas we need them in tensorial format (tensorCorrection and F2) as defined in T. Gerya book.
+	//
+	// The resulting expressions for effective viscosity:
+	// Diffusion:   inv_eta_diff = 2 * [Bd * exp(-(Ed + P*Vd)/(R*T))]
+	// Dislocation: inv_eta_disl = 2 * [Bn * exp(-(En + P*Vn)/(R*T))]^(1/n) * eII^(1-1/n)
+	//
+	// In LaMEM we include the effect of grain size (d,p), H2O fugacity (C_OH_0,r) and tensor correction (F2) in the pre-factor (Bd,Bn) such that:
+	// Diffusion:   Bd  = (2*F2)^(-1) * Ad [Pa] * d^-p * C_OH^r
+	// Dislocation: Bn  = (2*F2)^(-n) * An [Pa]        * C_OH^r
 	//
 	//   eII     -   strain rate             [1/s]
 	//   Tau     -   stress                  [Pa]
 	//   P       -   pressure                [Pa]
 	//   R       -   gas constant
+	//   Ad, An  -   prefactor (Bn before taking into account grain size and water fugacity) [Pa^(-n)s^(-1)]
 	//   Bd, Bn  -   prefactor               [Pa^(-n)s^(-1)]
 	//   n       -   power-law exponent (n=1 for diffusion creep)
 	//   Ed, En  -   activation Energy       [J/MPA/mol]
@@ -546,10 +558,6 @@ PetscErrorCode SetDislProfile(Material_t *m, char name[])
 	//   C_OH    -   water fugacity in H/10^6 Si  (see Hirth & Kohlstedt 2003 for a description)
 	//   r       -   power-law exponent of C_OH term
 	//   MPa     -   transform units: 0 - units in Pa; 1 - units in MPa
-	//
-	//   In addition, we take into account that the creep-laws are typically
-	//   measured under uniaxial or simple shear, whereas we need them
-	//   in tensorial format (tensorCorrection and F2).
 
 	PetscErrorCode ierr;
 	PetscFunctionBegin;

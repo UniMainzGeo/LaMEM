@@ -64,7 +64,7 @@ PetscErrorCode BreakCheck(UserCtx *user)
 //---------------------------------------------------------------------------
 #undef __FUNCT__
 #define __FUNCT__ "BreakWrite"
-PetscErrorCode BreakWrite(UserCtx *user, AdvCtx *actx, JacType jtype)
+PetscErrorCode BreakWrite(UserCtx *user, AdvCtx *actx, FreeSurf *surf, JacType jtype)
 {
 	// staggered grid
 	FDSTAG         *fs;
@@ -72,8 +72,7 @@ PetscErrorCode BreakWrite(UserCtx *user, AdvCtx *actx, JacType jtype)
 	FILE           *fp;
 	char           *fname;
 	PetscInt        n;
-	PetscScalar    *gsol;
-	PetscInt       initGuessFlag, jtypeFlag;
+	PetscInt       initGuessFlag, jtypeFlag, sflatFlag;
 	PetscLogDouble tstart, tend;
 
 	PetscErrorCode ierr;
@@ -113,7 +112,7 @@ PetscErrorCode BreakWrite(UserCtx *user, AdvCtx *actx, JacType jtype)
 	//============================================================
 	//   GRID (only for background strainrate)
 	//============================================================
-	if (jr->bc->bgAct)
+	if (jr->bc->bgAct==PETSC_TRUE)
 	{
 		// compile file name
 		asprintf(&fname, "./Breakpoint/Breakpoint_grid.%lld.out",(LLD)actx->iproc);
@@ -144,25 +143,59 @@ PetscErrorCode BreakWrite(UserCtx *user, AdvCtx *actx, JacType jtype)
 	}
 
 	//============================================================
-	//   GSOL - Solution vector
+	//   FREE SURFACE
 	//============================================================
-	// set local size of vector
-	n  = actx->fs->dof.ln;
+	if (surf->UseFreeSurf==PETSC_TRUE)
+	{
+		// compile file name
+		asprintf(&fname, "./Breakpoint/Breakpoint_surf.%lld.out",(LLD)actx->iproc);
 
+		// open file for binary output
+		fp = fopen(fname, "w" );
+
+		// set local size of vector
+		n  = fs->dsx.nnods * fs->dsy.nnods;
+
+		// write vector
+		ierr = BreakWriteVec(fp, surf->gtopo, n); CHKERRQ(ierr);
+
+		// write flat-flag value to file
+		if (surf->flat==PETSC_TRUE) sflatFlag = 1;
+		else                        sflatFlag = 0;
+
+		fwrite(&sflatFlag , sizeof(PetscInt), 1, fp);
+
+		// close and free memory
+		free(fname);
+		fclose(fp);
+	}
+
+	//============================================================
+	//   GSOL - Solution vectors
+	//============================================================
 	// compile file name
 	asprintf(&fname, "./Breakpoint/Breakpoint_gsol.%lld.out",(LLD)actx->iproc);
 
 	// open file for binary output
 	fp = fopen(fname, "w" );
 
-	// get vector array
-	ierr = VecGetArray(jr->gsol,&gsol); CHKERRQ(ierr);
+	//----------------------------------
+	// GSOL - Stokes
+	//----------------------------------
+	// set local size of vector
+	n  = actx->fs->dof.ln;
 
-	// write to file
-	fwrite( gsol, sizeof(PetscScalar),(size_t)n, fp);
+	// write vector
+	ierr = BreakWriteVec(fp, jr->gsol, n); CHKERRQ(ierr);
 
-	// restore vector array
-	ierr = VecRestoreArray(jr->gsol,&gsol); CHKERRQ(ierr);
+	//----------------------------------
+	// GT - Temperature
+	//----------------------------------
+	// set local size of vector
+	n  = fs->dsx.ncels * fs->dsy.ncels * fs->dsz.ncels;
+
+	// write vector
+	ierr = BreakWriteVec(fp, jr->gT, n); CHKERRQ(ierr);
 
 	// close and free memory
 	free(fname);
@@ -244,9 +277,9 @@ PetscErrorCode BreakWrite(UserCtx *user, AdvCtx *actx, JacType jtype)
 PetscErrorCode BreakRead(UserCtx *user, AdvCtx *actx, JacType *jtype)
 {
 	JacRes      *jr;
+	FDSTAG      *fs;
 	FILE        *fp;
 	char        *fname;
-	PetscScalar *gsol;
 	PetscInt     n;
 	JacType     j;
 	PetscInt    initGuessFlag, jtypeFlag;
@@ -256,27 +289,34 @@ PetscErrorCode BreakRead(UserCtx *user, AdvCtx *actx, JacType *jtype)
 
 	// set context
 	jr = actx->jr;
+	fs = actx->fs;
 
 	//============================================================
-	//   GSOL - Solution vector
+	//   Solution vectors
 	//============================================================
-	// set local size of vector
-	n  = actx->fs->dof.ln;
-
 	// compile file name
 	asprintf(&fname, "./Breakpoint/Breakpoint_gsol.%lld.out",(LLD)actx->iproc);
 
 	// open file for reading
 	fp = fopen(fname, "r" );
 
-	// get vector array
-	ierr = VecGetArray(jr->gsol,&gsol); CHKERRQ(ierr);
+	//----------------------------------
+	// GSOL
+	//----------------------------------
+	// set local size of vector
+	n  = fs->dof.ln;
 
-	// read array
-	fread(  gsol, sizeof(PetscScalar),(size_t)n, fp);
+	// read vector
+	ierr = BreakReadVec(fp, jr->gsol, n); CHKERRQ(ierr);
 
-	// restore vector array
-	ierr = VecRestoreArray(jr->gsol,&gsol); CHKERRQ(ierr);
+	//----------------------------------
+	// GT
+	//----------------------------------
+	// set local size of vector
+	n  = fs->dsx.ncels * fs->dsy.ncels * fs->dsz.ncels;
+
+	// read vector
+	ierr = BreakReadVec(fp, jr->gT, n); CHKERRQ(ierr);
 
 	// close and free memory
 	free(fname);
@@ -398,6 +438,52 @@ PetscErrorCode BreakReadGrid(UserCtx *user, FDSTAG *fs)
 }
 //---------------------------------------------------------------------------
 #undef __FUNCT__
+#define __FUNCT__ "BreakReadSurf"
+PetscErrorCode BreakReadSurf(FDSTAG *fs, FreeSurf *surf)
+{
+	FILE        *fp;
+	char        *fname;
+	PetscMPIInt iproc;
+	PetscInt    n;
+	PetscInt    sflatFlag;
+
+	PetscErrorCode ierr;
+	PetscFunctionBegin;
+
+	//----------------------------------
+	// FREE SURFACE
+	//----------------------------------
+	ierr = MPI_Comm_rank(MPI_COMM_WORLD, &iproc); CHKERRQ(ierr);
+
+	// compile file name
+	asprintf(&fname, "./Breakpoint/Breakpoint_surf.%lld.out",(LLD)iproc);
+
+	// open file for reading
+	fp = fopen(fname, "r" );
+
+	// set local size of vector
+	n  = fs->dsx.nnods * fs->dsy.nnods;
+
+	// read vector
+	ierr = BreakReadVec(fp, surf->gtopo, n); CHKERRQ(ierr);
+
+	// read flat-flag value to file
+	fread(&sflatFlag , sizeof(PetscInt), 1, fp);
+
+	if (sflatFlag==1) surf->flat = PETSC_TRUE;
+	else              surf->flat = PETSC_FALSE;
+
+	// close and free memory
+	free(fname);
+	fclose(fp);
+
+	// correct values for ltopo
+	GLOBAL_TO_LOCAL(surf->DA_SURF, surf->gtopo, surf->ltopo);
+
+	PetscFunctionReturn(0);
+}
+//---------------------------------------------------------------------------
+#undef __FUNCT__
 #define __FUNCT__ "BreakReadMark"
 PetscErrorCode BreakReadMark(AdvCtx *actx)
 {
@@ -434,6 +520,48 @@ PetscErrorCode BreakReadMark(AdvCtx *actx)
 	// close and free memory
 	free(fname);
 	fclose(fp);
+
+	PetscFunctionReturn(0);
+}
+//---------------------------------------------------------------------------
+#undef __FUNCT__
+#define __FUNCT__ "BreakWriteVec"
+PetscErrorCode BreakWriteVec(FILE *fp, Vec x, PetscInt n)
+{
+	PetscScalar *xarray;
+
+	PetscErrorCode ierr;
+	PetscFunctionBegin;
+
+	// get vector array
+	ierr = VecGetArray(x, &xarray); CHKERRQ(ierr);
+
+	// write to file
+	fwrite(xarray, sizeof(PetscScalar),(size_t)n, fp);
+
+	// restore vector array
+	ierr = VecRestoreArray(x, &xarray); CHKERRQ(ierr);
+
+	PetscFunctionReturn(0);
+}
+//---------------------------------------------------------------------------
+#undef __FUNCT__
+#define __FUNCT__ "BreakReadVec"
+PetscErrorCode BreakReadVec(FILE *fp, Vec x, PetscInt n)
+{
+	PetscScalar *xarray;
+
+	PetscErrorCode ierr;
+	PetscFunctionBegin;
+
+	// get vector array
+	ierr = VecGetArray(x, &xarray); CHKERRQ(ierr);
+
+	// read array
+	fread(xarray, sizeof(PetscScalar),(size_t)n, fp);
+
+	// restore vector array
+	ierr = VecRestoreArray(x, &xarray); CHKERRQ(ierr);
 
 	PetscFunctionReturn(0);
 }
