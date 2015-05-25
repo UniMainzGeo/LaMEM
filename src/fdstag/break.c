@@ -28,37 +28,71 @@ PetscErrorCode BreakCheck(UserCtx *user)
 {
 	// check if breakpoints exist and restart new simulation is not - very useful for chain jobs
 
+	PetscMPIInt iproc, nproc;
 	FILE        *fp;
 	char        *fname;
+	PetscInt    res, gres;
 
+	PetscErrorCode ierr;
 	PetscFunctionBegin;
 
 	if(!user->restart) PetscFunctionReturn(0);
 
-	// check info file name on rank 0
-	if(ISRankZero(PETSC_COMM_WORLD))
-	{
-		asprintf(&fname, "./Breakpoint/Breakpoint_info.0.out");
+	res = 1;
 
-		// return and restart simulation if breakpoints are not available
+	// check if directory exists
+	struct stat s;
+	int err = stat("./Breakpoint", &s);
+
+	// directory missing
+	if (err==-1) {
+		res = 0;
+	}
+	// directory exists
+	else
+	{
+		// check if breakpoint files are available
+		ierr = MPI_Comm_rank(MPI_COMM_WORLD, &iproc); CHKERRQ(ierr);
+
+		asprintf(&fname, "./Breakpoint/Breakpoint_info.%lld.out",(LLD)iproc);
 		fp = fopen(fname, "r" );
 
 		if(!fp)
 		{
-			// new simulation
-			user->restart = 0;
-			PetscPrintf(PETSC_COMM_WORLD," No breakpoints detected -> starting new simulation \n");
-
-			// free and return
+			res = 0;
 			free(fname);
-
-			PetscFunctionReturn(0);
 		}
-
-		// free and close files
-		free(fname);
-		fclose(fp);
+		else
+		{
+			free(fname);
+			fclose(fp);
+		}
 	}
+
+	// check corrupted results on processors
+	if(ISParallel(PETSC_COMM_WORLD))
+	{
+		ierr = MPI_Allreduce(&res, &gres, 1, MPIU_INT, MPI_SUM, PETSC_COMM_WORLD); CHKERRQ(ierr);
+	}
+	else
+	{
+		gres = res;
+	}
+
+	ierr = MPI_Comm_size(PETSC_COMM_WORLD, &nproc);; CHKERRQ(ierr);
+
+	if ((gres < nproc) && (gres > 0))
+	{
+		SETERRQ(PETSC_COMM_SELF, PETSC_ERR_USER, "Number of breakpoint files does not match number of cpus!");
+	}
+	else if (gres == 0)
+	{
+		user->restart = 0;
+		PetscPrintf(PETSC_COMM_WORLD,"-------------------------------------------------------------------------- \n");
+		PetscPrintf(PETSC_COMM_WORLD," No breakpoints detected -> starting new simulation \n");
+		PetscPrintf(PETSC_COMM_WORLD,"-------------------------------------------------------------------------- \n");
+	}
+
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------

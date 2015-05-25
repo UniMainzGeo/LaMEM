@@ -909,7 +909,7 @@ PetscErrorCode ADVMarkControl(AdvCtx *actx)
 	PetscScalar    xs[3], xe[3];
 	PetscInt       *numMarkCell;
 	PetscInt       ind, i, j, k, M, N;
-	PetscInt       ninj, ndel, npoints;
+	PetscInt       n, ninj, ndel, npoints;
 	PetscLogDouble t0,t1;
 
 	PetscErrorCode ierr;
@@ -939,8 +939,13 @@ PetscErrorCode ADVMarkControl(AdvCtx *actx)
 	ndel = 0;
 	for(i = 0; i < fs->nCells; i++)
 	{
-		if (numMarkCell[i] < actx->nmin) ninj += actx->nmin - numMarkCell[i];
-		if (numMarkCell[i] > actx->nmax) ndel += numMarkCell[i] - actx->nmax;
+		n = numMarkCell[i];
+		if (n < actx->nmin)
+		{
+			if ((actx->nmin - n) > n) ninj += n;
+			else                      ninj += actx->nmin - n;
+		}
+		if (n > actx->nmax) ndel += n - actx->nmax;
 	}
 
 	// if no need for injection/deletion
