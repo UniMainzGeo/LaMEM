@@ -50,7 +50,7 @@ ifeq ($(PLATFORM), x86_64)
       LAMEM_FLAGS += -std=c99 -pedantic -Wall -W -Wmissing-prototypes \
       -Wconversion -Wshadow -Wunused-but-set-variable -Wpointer-arith \
       -Wcast-qual -Wcast-align -Wwrite-strings -Wnested-externs -Winline \
-      -Werror=implicit-function-declaration
+      -Werror=implicit-function-declaration -Wno-unused-result -Wno-inline
    endif
 endif
 

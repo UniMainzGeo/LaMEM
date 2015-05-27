@@ -40,13 +40,13 @@ PetscErrorCode FreeSurfCreate(FreeSurf *surf, JacRes *jr)
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
 
+	// store context
+	surf->jr = jr;
+
 	ierr = FreeSurfReadFromOptions(surf, &jr->scal); CHKERRQ(ierr);
 
 	// free surface cases only
 	if(surf->UseFreeSurf != PETSC_TRUE) PetscFunctionReturn(0);
-
-	// store context
-	surf->jr = jr;
 
 	// access context
 	fs = jr->fs;
@@ -90,13 +90,14 @@ PetscErrorCode FreeSurfReadFromOptions(FreeSurf *surf, Scaling *scal)
 	ierr = PetscOptionsGetInt   (NULL, "-surf_air_phase", &surf->AirPhase,    NULL); CHKERRQ(ierr);
 	ierr = PetscOptionsGetScalar(NULL, "-surf_max_angle", &surf->MaxAngle,    NULL); CHKERRQ(ierr);
 
-	// set average topography & flag level
-	surf->avg_topo = surf->InitLevel;
-	surf->flat     = PETSC_TRUE;
-
 	// nondimensionalize
 	surf->InitLevel /= scal->length;
 	surf->MaxAngle  /= scal->angle;
+
+	// set average topography & flag level
+	surf->avg_topo     = surf->InitLevel;
+	surf->jr->avg_topo = surf->InitLevel;
+	surf->flat         = PETSC_TRUE;
 
 	//======================================
 	// read erosion sedimentation parameters
@@ -119,31 +120,21 @@ PetscErrorCode FreeSurfReadFromOptions(FreeSurf *surf, Scaling *scal)
 	// read prescribed sedimentation rate model parameter
 	if(surf->SedimentModel == 1)
 	{
-		ierr = PetscOptionsGetInt(NULL, "-numRateIntervals",  &surf->numRateIntervals,  NULL); CHKERRQ(ierr);
-		if(surf->numRateIntervals < 1 || surf->numRateIntervals > _max_layers_)
+		ierr = PetscOptionsGetInt(NULL, "-numLayers",  &surf->numLayers,  NULL); CHKERRQ(ierr);
+		if(surf->numLayers < 1 || surf->numLayers > _max_layers_)
 		{
-			SETERRQ2(PETSC_COMM_SELF, PETSC_ERR_USER, "Out of range number of rate intervals, requested: %lld, range: [1-%lld]\n",
-				(LLD)surf->numRateIntervals, (LLD)_max_layers_);
+			SETERRQ2(PETSC_COMM_SELF, PETSC_ERR_USER, "Out of range number of sediment layers, requested: %lld, range: [1-%lld]\n",
+				(LLD)surf->numLayers, (LLD)_max_layers_);
 		}
 
-		ierr = PetscOptionsGetInt(NULL, "-numPhaseLayers", &surf->numPhaseLayers, NULL); CHKERRQ(ierr);
-		if(surf->numPhaseLayers < 1 || surf->numPhaseLayers > _max_layers_)
-		{
-			SETERRQ2(PETSC_COMM_SELF, PETSC_ERR_USER, "Out of range number of phase layers, requested: %lld, range: [1-%lld]\n",
-				(LLD)surf->numPhaseLayers, (LLD)_max_layers_);
-		}
-
-		ierr = GetScalArrayCheckScale("-RateDelims", "Sedimentation Rates Delimiters",
-			surf->numRateIntervals-1, surf->RateDelims, 0.0, 0.0, scal->time); CHKERRQ(ierr);
-
-		ierr = GetScalArrayCheckScale("-PhaseDelims", "Sediment Phases Delimiters",
-			surf->numPhaseLayers-1, surf->PhaseDelims, 0.0, 0.0, scal->time); CHKERRQ(ierr);
+		ierr = GetScalArrayCheckScale("-timeDelims", "Sediment layers time delimiters",
+			surf->numLayers-1, surf->timeDelims, 0.0, 0.0, scal->time); CHKERRQ(ierr);
 
 		ierr = GetScalArrayCheckScale("-sedRates", "Sedimentation Rates",
-			surf->numRateIntervals, surf->sedRates, 0.0, 0.0, 0.0); CHKERRQ(ierr);
+			surf->numLayers, surf->sedRates, 0.0, 0.0, scal->velocity); CHKERRQ(ierr);
 
-		ierr = GetIntArrayCheck("-sedPhases", "Sediment Phases",
-			surf->numPhaseLayers, surf->sedPhases, 0, surf->jr->numPhases-1); CHKERRQ(ierr);
+		ierr = GetIntArrayCheck("-sedPhases", "Sediment layers phase numbers",
+			surf->numLayers, surf->sedPhases, 0, 0); CHKERRQ(ierr);
 	}
 
 	PetscFunctionReturn(0);
@@ -460,9 +451,10 @@ PetscErrorCode FreeSurfAdvectTopo(FreeSurf *surf)
 	surf->flat = PETSC_FALSE;
 
 	// compute & store average topography
-	ierr = VecNorm(surf->gtopo, NORM_1, &avg_topo); CHKERRQ(ierr);
+	ierr = VecSum(surf->gtopo, &avg_topo); CHKERRQ(ierr);
 	avg_topo /= (PetscScalar)(fs->dsx.tnods*fs->dsy.tnods*fs->dsz.nproc);
 	surf->avg_topo = avg_topo;
+	jr  ->avg_topo = avg_topo;
 
 	PetscFunctionReturn(0);
 }
@@ -605,7 +597,7 @@ PetscErrorCode FreeSurfAppErosion(FreeSurf *surf)
 		// set flag
 		surf->flat = PETSC_TRUE;
 
-		PetscPrintf(PETSC_COMM_WORLD, "Applying infinitely fast erosion to internal free surface. Average free surface height = %e [%]\n",
+		PetscPrintf(PETSC_COMM_WORLD, "Applying infinitely fast erosion to internal free surface. Average free surface height = %e %s\n",
 			surf->avg_topo*scal->length, scal->lbl_length);
 	}
 
@@ -644,13 +636,17 @@ PetscErrorCode FreeSurfAppSedimentation(FreeSurf *surf)
 
 	if(surf->SedimentModel == 1)
 	{
-		// determine sedimentation rate
-		for(jj = 0; jj < surf->numRateIntervals; jj++)
+		// determine sedimentation rate & phase number
+		for(jj = 0; jj < surf->numLayers; jj++)
 		{
-			if(time < surf->RateDelims[jj]) break;
+			if(time < surf->timeDelims[jj]) break;
 		}
 
-		rate = surf->sedRates[jj];
+		rate  = surf->sedRates [jj];
+		phase = surf->sedPhases[jj];
+
+		// store the phase that is being sedimented
+		surf->phase = phase;
 
 		// get incremental thickness of the sediments
 		dz = rate*dt;
@@ -685,20 +681,10 @@ PetscErrorCode FreeSurfAppSedimentation(FreeSurf *surf)
 		GLOBAL_TO_LOCAL(surf->DA_SURF, surf->gtopo, surf->ltopo);
 
 		// compute & store average topography
-		ierr = VecNorm(surf->gtopo, NORM_1, &avg_topo); CHKERRQ(ierr);
+		ierr = VecSum(surf->gtopo, &avg_topo); CHKERRQ(ierr);
 		avg_topo /= (PetscScalar)(fs->dsx.tnods*fs->dsy.tnods*fs->dsz.nproc);
 		surf->avg_topo = avg_topo;
-
-		// determine sediment layer phase
-		for(jj = 0; jj < surf->numPhaseLayers; jj++)
-		{
-			if(time < surf->PhaseDelims[jj]) break;
-		}
-
-		phase = surf->sedPhases[jj];
-
-		// store the phase that is being sedimented
-		surf->phase = phase;
+		jr  ->avg_topo = avg_topo;
 
 		// print info
 		PetscPrintf(PETSC_COMM_WORLD, "Applying sedimentation to internal free surface. Phase that is currently being sedimented is %lld   \n",

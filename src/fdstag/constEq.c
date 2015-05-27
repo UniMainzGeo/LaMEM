@@ -373,6 +373,7 @@ PetscErrorCode VolConstEq(
 	Material_t  *phases,    // phase parameters
 	PetscScalar *phRat,     // phase ratios
 	MatParLim   *lim,       // phase parameters limits
+	PetscScalar  depth,     // depth for depth-dependent density model
 	PetscScalar  dt,        // time step
 	PetscScalar  p,         // pressure
 	PetscScalar  T)         // temperature
@@ -381,7 +382,7 @@ PetscErrorCode VolConstEq(
 
 	PetscInt     i;
 	Material_t  *mat;
-	PetscScalar  cf_comp, cf_therm, IKdt;
+	PetscScalar  cf_comp, cf_therm, IKdt, rho;
 
 	PetscFunctionBegin;
 
@@ -420,11 +421,22 @@ PetscErrorCode VolConstEq(
 				cf_therm  = 1.0 - mat->alpha*(T - lim->TRef);
 			}
 
+			// get density
+			if(mat->rho_n)
+			{
+				// depth-dependent density (ad-hoc)
+				rho = mat->rho - (mat->rho - lim->rho_fluid)*mat->rho_n*exp(-mat->rho_c*depth);
+			}
+			else
+			{
+				// temperature & pressure-dependent density
+				rho = mat->rho*cf_comp*cf_therm;
+			}
+
 			// update density, thermal expansion & inverse bulk elastic viscosity
-			svBulk->rho   += phRat[i]*mat->rho*cf_comp*cf_therm;
+			svBulk->rho   += phRat[i]*rho;
 			svBulk->alpha += phRat[i]*mat->alpha;
 			svBulk->IKdt  += phRat[i]*IKdt;
-
 		}
 	}
 

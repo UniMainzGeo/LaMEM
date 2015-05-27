@@ -65,6 +65,7 @@ typedef enum
 	SLAB,       // slab detachment (Thieulot et al. 2014)
 	SPHERES,    // multiple falling spheres
 	BANDS,      // shear band formation 3D
+	DOMES,      // salt domes 2D
 	RESTART     // restart of simulation
 	// ... add more
 } SetupType;

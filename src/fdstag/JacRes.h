@@ -73,6 +73,8 @@ typedef struct
 	PetscScalar pShift;      // pressure shift for plasticity model and output
 	PetscBool   pShiftAct;   // pressure shift activation flag
 
+	PetscScalar avg_topo;    // average topography (a copy from free surface)
+
 	//=======================
 	// temperature parameters
 	//=======================

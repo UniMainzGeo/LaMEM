@@ -28,15 +28,13 @@ typedef struct
 	PetscScalar MaxAngle;    // maximum angle with horizon (smoothed if larger)
 
 	// erosion/sedimentation parameters
-	PetscInt    phase;            // current sediment phase
-	PetscInt    ErosionModel;     // [0-none, 1-infinitely fast, ...]
-	PetscInt    SedimentModel;    // [0-none, 1-prescribed rate, ...]
-	PetscInt    numRateIntervals; // number of sedimentation rate intervals
-	PetscInt    numPhaseLayers;   // number of sediment phase layers
-	PetscScalar RateDelims [_max_layers_-1]; // rate intervals time delimiters
-	PetscScalar PhaseDelims[_max_layers_-1]; // phase layers time delimiters
-	PetscScalar sedRates   [_max_layers_  ]; // sedimentation rates
-	PetscInt    sedPhases  [_max_layers_  ]; // sediment phases
+	PetscInt    phase;         // current sediment phase
+	PetscInt    ErosionModel;  // [0-none, 1-infinitely fast, ...]
+	PetscInt    SedimentModel; // [0-none, 1-prescribed rate, ...]
+	PetscInt    numLayers;     // number of sediment layers
+	PetscScalar timeDelims[_max_layers_-1]; // sediment layers time delimiters
+	PetscScalar sedRates  [_max_layers_  ]; // sedimentation rates
+	PetscInt    sedPhases [_max_layers_  ]; // sediment layers phase numbers
 
 } FreeSurf;
 

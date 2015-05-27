@@ -74,6 +74,7 @@ PetscErrorCode VolConstEq(
 	Material_t  *phases,    // phase parameters
 	PetscScalar *phRat,     // phase ratios
 	MatParLim   *lim,       // phase parameters limits
+	PetscScalar  depth,     // depth for depth-dependent density model
 	PetscScalar  dt,        // time step
 	PetscScalar  p,         // pressure
 	PetscScalar  T);        // temperature

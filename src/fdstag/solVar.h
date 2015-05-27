@@ -125,8 +125,10 @@ typedef struct
 typedef struct
 {
 	PetscInt     ID;      // material ID
-	// physical parameters
+	// density parameters
 	PetscScalar  rho;     // reference density
+	PetscScalar  rho_n;   // depth-dependent density model parameter
+	PetscScalar  rho_c;   // depth-dependent density model parameter
 	// elasticity parameters
 	PetscScalar  K;       // bulk modulus
 	PetscScalar  Kp;      // pressure dependence parameter
@@ -193,6 +195,8 @@ typedef struct
 	// rheology controls
 	PetscBool   quasiHarmAvg; // plasticity quasi-harmonic averaging flag
 	PetscBool   initGuessFlg; // initial guess computation flag
+	// fluid density for depth-dependent density model
+	PetscScalar  rho_fluid;
 
 } MatParLim;
 

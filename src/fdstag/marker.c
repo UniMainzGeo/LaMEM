@@ -97,6 +97,7 @@ PetscErrorCode ADVMarkInit(AdvCtx *actx, UserCtx *user)
 	else if(user->msetup == SLAB)       { PetscPrintf(PETSC_COMM_WORLD,"%s\n","slab");            ierr = ADVMarkInitSlab         (actx, user); CHKERRQ(ierr); }
 	else if(user->msetup == SPHERES)    { PetscPrintf(PETSC_COMM_WORLD,"%s\n","spheres");         ierr = ADVMarkInitSpheres      (actx, user); CHKERRQ(ierr); }
 	else if(user->msetup == BANDS)      { PetscPrintf(PETSC_COMM_WORLD,"%s\n","bands");           ierr = ADVMarkInitBands        (actx, user); CHKERRQ(ierr); }
+	else if(user->msetup == DOMES)      { PetscPrintf(PETSC_COMM_WORLD,"%s\n","domes");           ierr = ADVMarkInitDomes        (actx, user); CHKERRQ(ierr); }
 	else if(user->msetup == RESTART)    { PetscPrintf(PETSC_COMM_WORLD,"%s\n","restart");         ierr = BreakReadMark           (actx      ); CHKERRQ(ierr); }
 	else SETERRQ(PETSC_COMM_SELF, PETSC_ERR_USER," *** Incorrect option for initialization of markers");
 
@@ -1203,32 +1204,32 @@ PetscErrorCode ADVMarkInitBands(AdvCtx *actx, UserCtx *user)
 
 	// set default values
 	H      = 10.0;               // layer thickness               [km]
-    Hb     = 2.0;                // basal layer thickness         [km]
-    size   = 1.0;                // inclusion size in XZ-plane    [km]
-    offset = 0.0;                // inclusion offset along X axis [km]
-    length = (user->L*scal)/2.0; // inclusion length along Y axis [km]
-    
-    // get layer thickness
-    ierr = PetscOptionsGetReal(PETSC_NULL, "-H_layer",  &H,  PETSC_NULL);  CHKERRQ(ierr);
-    ierr = PetscOptionsGetReal(PETSC_NULL, "-H_bottom", &Hb, PETSC_NULL);  CHKERRQ(ierr);
+	Hb     = 2.0;                // basal layer thickness         [km]
+	size   = 1.0;                // inclusion size in XZ-plane    [km]
+	offset = 0.0;                // inclusion offset along X axis [km]
+	length = (user->L*scal)/2.0; // inclusion length along Y axis [km]
 
-    // get inclusion parameters
-    ierr = PetscOptionsHasName(PETSC_NULL, "-Inclusion_use", &use_inc); CHKERRQ(ierr);
-    if(use_inc == PETSC_TRUE)
-    {
-    	ierr = PetscOptionsGetReal(PETSC_NULL, "-Inclusion_size",   &size,   PETSC_NULL); CHKERRQ(ierr);
-    	ierr = PetscOptionsGetReal(PETSC_NULL, "-Inclusion_offset", &offset, PETSC_NULL); CHKERRQ(ierr);
-    	ierr = PetscOptionsGetReal(PETSC_NULL, "-Inclusion_length", &length, PETSC_NULL); CHKERRQ(ierr);
-    }
+	// get layer thickness
+	ierr = PetscOptionsGetReal(PETSC_NULL, "-H_layer",  &H,  PETSC_NULL);  CHKERRQ(ierr);
+	ierr = PetscOptionsGetReal(PETSC_NULL, "-H_bottom", &Hb, PETSC_NULL);  CHKERRQ(ierr);
+
+	// get inclusion parameters
+	ierr = PetscOptionsHasName(PETSC_NULL, "-Inclusion_use", &use_inc); CHKERRQ(ierr);
+	if(use_inc == PETSC_TRUE)
+	{
+		ierr = PetscOptionsGetReal(PETSC_NULL, "-Inclusion_size",   &size,   PETSC_NULL); CHKERRQ(ierr);
+		ierr = PetscOptionsGetReal(PETSC_NULL, "-Inclusion_offset", &offset, PETSC_NULL); CHKERRQ(ierr);
+		ierr = PetscOptionsGetReal(PETSC_NULL, "-Inclusion_length", &length, PETSC_NULL); CHKERRQ(ierr);
+	}
 
 	// scale
 	H      /= scal;
-    Hb     /= scal;
+	Hb     /= scal;
 	size   /= scal;
-    offset /= scal;
-    length /= scal;
+	offset /= scal;
+	length /= scal;
 
-    // loop over local markers
+	// loop over local markers
 	for(imark = 0; imark < actx->nummark; imark++)
 	{
 		P = &actx->markers[imark];
@@ -1255,6 +1256,93 @@ PetscErrorCode ADVMarkInitBands(AdvCtx *actx, UserCtx *user)
 	PetscFunctionReturn(0);
 }
 
+//---------------------------------------------------------------------------
+#undef __FUNCT__
+#define __FUNCT__ "ADVMarkInitDomes"
+PetscErrorCode ADVMarkInitDomes(AdvCtx *actx, UserCtx *user)
+{
+
+	Marker     *P;
+	PetscInt    imark;
+	PetscScalar surf_level, salt_top, salt_bot, x, z, scal, base_top;
+
+	PetscErrorCode ierr;
+	PetscFunctionBegin;
+
+	scal = actx->jr->scal.length;
+
+/*
+	// set default values
+	H      = 10.0;               // layer thickness               [km]
+	Hb     = 2.0;                // basal layer thickness         [km]
+	size   = 1.0;                // inclusion size in XZ-plane    [km]
+	offset = 0.0;                // inclusion offset along X axis [km]
+	length = (user->L*scal)/2.0; // inclusion length along Y axis [km]
+
+	// get layer thickness
+	ierr = PetscOptionsGetReal(PETSC_NULL, "-H_layer",  &H,  PETSC_NULL);  CHKERRQ(ierr);
+	ierr = PetscOptionsGetReal(PETSC_NULL, "-H_bottom", &Hb, PETSC_NULL);  CHKERRQ(ierr);
+
+	// get inclusion parameters
+	ierr = PetscOptionsHasName(PETSC_NULL, "-Inclusion_use", &use_inc); CHKERRQ(ierr);
+	if(use_inc == PETSC_TRUE)
+	{
+		ierr = PetscOptionsGetReal(PETSC_NULL, "-Inclusion_size",   &size,   PETSC_NULL); CHKERRQ(ierr);
+		ierr = PetscOptionsGetReal(PETSC_NULL, "-Inclusion_offset", &offset, PETSC_NULL); CHKERRQ(ierr);
+		ierr = PetscOptionsGetReal(PETSC_NULL, "-Inclusion_length", &length, PETSC_NULL); CHKERRQ(ierr);
+	}
+
+	// scale
+	H      /= scal;
+	Hb     /= scal;
+	size   /= scal;
+	offset /= scal;
+	length /= scal;
+
+*/
+	// get salt layer parameters
+	salt_bot = 0.0;
+	salt_top = 0.0;
+
+	ierr = PetscOptionsGetReal(PETSC_NULL, "-domes_salt_bot", &salt_bot, NULL); CHKERRQ(ierr);
+	ierr = PetscOptionsGetReal(PETSC_NULL, "-domes_salt_top", &salt_top, NULL); CHKERRQ(ierr);
+
+	// scale
+	salt_bot /= scal;
+	salt_top /= scal;
+
+	surf_level = actx->jr->avg_topo;
+
+	// loop over local markers
+	for(imark = 0; imark < actx->nummark; imark++)
+	{
+		P = &actx->markers[imark];
+
+		// get coordinates
+		x = P->X[0];
+		z = P->X[2];
+
+		// water
+		P->phase = 0;
+
+		// sediments
+		if(z <= surf_level) P->phase = 4;
+
+		// salt
+		if(z <= salt_top && z >= salt_bot) P->phase = 2;
+
+		// basement
+		if(x < 0.0) base_top = user->z_bot - (surf_level-user->z_bot)*(2.0*x/user->W);
+		else        base_top = user->z_bot + (surf_level-user->z_bot)*(2.0*x/user->W);
+
+		if(z <= base_top) P->phase = 1;
+
+		// assign temperature
+		P->T = 0.0;
+	}
+
+	PetscFunctionReturn(0);
+}
 //---------------------------------------------------------------------------
 #undef __FUNCT__
 #define __FUNCT__ "ADVMarkInitFilePolygons"
@@ -2006,3 +2094,4 @@ void qsindex (PetscScalar  *a, PetscInt *idx , PetscInt lo, PetscInt hi)
     if (lo<j) qsindex(a , idx , lo , j);
     if (i<hi) qsindex(a , idx , i , hi);
 }
+//---------------------------------------------------------------------------

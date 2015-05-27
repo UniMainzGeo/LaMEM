@@ -113,6 +113,7 @@ PetscErrorCode ScalingCreate(Scaling *scal)
 		scal->time                = 1.0;   sprintf(scal->lbl_time,             "[ ]");
 		scal->time_si             = 1.0;
 		scal->length              = 1.0;   sprintf(scal->lbl_length,           "[ ]");
+		scal->length_si           = 1.0;
 		scal->temperature         = 1.0;   sprintf(scal->lbl_temperature,      "[ ]");
 		scal->force               = 1.0;   sprintf(scal->lbl_force,            "[ ]");
 		scal->angle               = 1.0;   sprintf(scal->lbl_angle,            "[ ]");
@@ -162,6 +163,7 @@ PetscErrorCode ScalingCreate(Scaling *scal)
 		scal->time                = time;                     sprintf(scal->lbl_time,             "[s]");
 		scal->time_si             = time;
 		scal->length              = length;                   sprintf(scal->lbl_length  ,         "[m]");
+		scal->length_si           = length;
 		scal->temperature         = temperature;              sprintf(scal->lbl_temperature,      "[K]");
 		scal->force               = force;                    sprintf(scal->lbl_force,            "[N]");
 		scal->angle               = angle;                    sprintf(scal->lbl_angle,            "[deg]");   // @
@@ -171,7 +173,7 @@ PetscErrorCode ScalingCreate(Scaling *scal)
 		scal->stress              = stress;                   sprintf(scal->lbl_stress ,          "[Pa]");
 		scal->stress_si           = stress;
 		scal->strain_rate         = 1.0/time;                 sprintf(scal->lbl_strain_rate,      "[1/s]");
-		scal->acceleration        = length/time/time; // m/s2
+		scal->acceleration        = length/time/time;
 		scal->gravity_strength    = force/mass;
 		scal->energy              = energy;
 		scal->power               = power;
@@ -220,6 +222,7 @@ PetscErrorCode ScalingCreate(Scaling *scal)
 		scal->time                = time/Myr;                 sprintf(scal->lbl_time,             "[Myr]");   // @
 		scal->time_si             = time;
 		scal->length              = length/km;                sprintf(scal->lbl_length  ,         "[km]");    // @
+		scal->length_si           = length;
 		scal->temperature         = temperature;              sprintf(scal->lbl_temperature,      "[C]");     // @
 		scal->force               = force;                    sprintf(scal->lbl_force,            "[N]");
 		scal->angle               = angle;                    sprintf(scal->lbl_angle,            "[deg]");   // @
@@ -331,6 +334,7 @@ void ScalingMatProp(Scaling *scal, Material_t *phases, PetscInt numPhases)
 	for(i = 0; i < numPhases; i++)
 	{
 		phases[i].rho     /= scal->density;
+		phases[i].rho_c   *= scal->length_si;
 
 		// diffusion creep
 		phases[i].Bd      *= scal->viscosity;
@@ -366,7 +370,8 @@ void ScalingMatProp(Scaling *scal, Material_t *phases, PetscInt numPhases)
 void ScalingMatParLim(Scaling *scal, MatParLim *matLim)
 {
 	// scale gas constant with characteristic temperature
-	matLim->Rugc *= scal->temperature;
+	matLim->Rugc      *= scal->temperature;
+	matLim->rho_fluid /= scal->density;
 }
 //---------------------------------------------------------------------------
 void ScalingMeshSegDir(Scaling *scal, MeshSegInp *msi)

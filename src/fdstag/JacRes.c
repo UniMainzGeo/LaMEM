@@ -705,6 +705,7 @@ PetscErrorCode JacResGetResidual(JacRes *jr)
 	PetscScalar ***fx,  ***fy,  ***fz, ***vx,  ***vy,  ***vz, ***gc;
 	PetscScalar ***dxx, ***dyy, ***dzz, ***dxy, ***dxz, ***dyz, ***p, ***T;
 	PetscScalar eta_creep;
+	PetscScalar depth;
 
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
@@ -824,8 +825,13 @@ PetscErrorCode JacResGetResidual(JacRes *jr)
 		syy = svCell->syy - pc;
 		szz = svCell->szz - pc;
 
+		// compute depth below the free surface
+		depth = jr->avg_topo - COORD_CELL(k, sz, fs->dsz);
+
+		if(depth < 0.0) depth = 0.0;
+
 		// evaluate volumetric constitutive equations
-		ierr = VolConstEq(svBulk, numPhases, phases, svCell->phRat, matLim, dt, pc, Tc); CHKERRQ(ierr);
+		ierr = VolConstEq(svBulk, numPhases, phases, svCell->phRat, matLim, depth, dt, pc, Tc); CHKERRQ(ierr);
 
 		// access
 		theta = svBulk->theta; // volumetric strain rate
@@ -1630,6 +1636,7 @@ PetscErrorCode SetMatParLim(MatParLim *matLim, UserCtx *usr)
 	matLim->shearHeatEff = 1.0;
 	matLim->quasiHarmAvg = PETSC_FALSE;
 	matLim->initGuessFlg = PETSC_TRUE;
+	matLim->rho_fluid    = 0.0;
 
 	// read additional options
 	ierr = PetscOptionsHasName(PETSC_NULL, "-use_quasi_harmonic_viscosity", &quasi_harmonic); CHKERRQ(ierr);
@@ -1638,6 +1645,8 @@ PetscErrorCode SetMatParLim(MatParLim *matLim, UserCtx *usr)
 	{
 		matLim->quasiHarmAvg = PETSC_TRUE;
 	}
+
+	ierr = PetscOptionsGetScalar(NULL, "-rho_fluid", &matLim->rho_fluid, NULL); CHKERRQ(ierr);
 
 	PetscFunctionReturn(0);
 }

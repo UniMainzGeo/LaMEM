@@ -174,6 +174,12 @@ PetscErrorCode LaMEMLib_FDSTAG(void *echange_ctx)
 	// initialize markers
 	ierr = ADVMarkInit(&actx, &user); CHKERRQ(ierr);
 
+
+// ACHTUNG!
+// change marker phase when crossing free surface
+ierr = ADVMarkCrossFreeSurf(&actx, &surf); CHKERRQ(ierr);
+
+
 	// update phase ratios taking into account actual free surface position
 	ierr = FreeSurfGetAirPhaseRatio(&surf); CHKERRQ(ierr);
 
@@ -218,8 +224,8 @@ PetscErrorCode LaMEMLib_FDSTAG(void *echange_ctx)
 
 
 // ACHTUNG!
-		// copy to local vector, apply bc constraints
-		ierr = JacResCopyTemp(&jr); CHKERRQ(ierr);
+// copy to local vector, apply bc constraints
+ierr = JacResCopyTemp(&jr); CHKERRQ(ierr);
 
 
 

@@ -142,7 +142,9 @@ PetscErrorCode MatPropGetStruct(FILE *fp,
 	//============================================================
 	// density
 	//============================================================
-	getMatPropScalar(fp, ils, ile, "rho0",      &m->rho,   &found);
+	getMatPropScalar(fp, ils, ile, "rho0",      &m->rho,   NULL);
+	getMatPropScalar(fp, ils, ile, "rho_n",     &m->rho_n, NULL);
+	getMatPropScalar(fp, ils, ile, "rho_c",     &m->rho_c, NULL);
 
 	//============================================================
 	// Creep profiles
@@ -162,51 +164,57 @@ PetscErrorCode MatPropGetStruct(FILE *fp,
 	//============================================================
 	// Newtonian linear diffusion creep
 	//============================================================
-	getMatPropScalar(fp, ils, ile, "eta",       &eta,      &found);
-	getMatPropScalar(fp, ils, ile, "Bd",        &m->Bd,    &found);
-	getMatPropScalar(fp, ils, ile, "Ed",        &m->Ed,    &found);
-	getMatPropScalar(fp, ils, ile, "Vd",        &m->Vd,    &found);
+	getMatPropScalar(fp, ils, ile, "eta",       &eta,      NULL);
+	getMatPropScalar(fp, ils, ile, "Bd",        &m->Bd,    NULL);
+	getMatPropScalar(fp, ils, ile, "Ed",        &m->Ed,    NULL);
+	getMatPropScalar(fp, ils, ile, "Vd",        &m->Vd,    NULL);
 
 	//============================================================
 	// power-law (dislocation) creep
 	//============================================================
-	getMatPropScalar(fp, ils, ile, "eta0",      &eta0,     &found);
-	getMatPropScalar(fp, ils, ile, "e0",        &e0,       &found);
-	getMatPropScalar(fp, ils, ile, "Bn",        &m->Bn,    &found);
-	getMatPropScalar(fp, ils, ile, "n",         &m->n,     &found);
-	getMatPropScalar(fp, ils, ile, "En",        &m->En,    &found);
-	getMatPropScalar(fp, ils, ile, "Vn",        &m->Vn,    &found);
+	getMatPropScalar(fp, ils, ile, "eta0",      &eta0,     NULL);
+	getMatPropScalar(fp, ils, ile, "e0",        &e0,       NULL);
+	getMatPropScalar(fp, ils, ile, "Bn",        &m->Bn,    NULL);
+	getMatPropScalar(fp, ils, ile, "n",         &m->n,     NULL);
+	getMatPropScalar(fp, ils, ile, "En",        &m->En,    NULL);
+	getMatPropScalar(fp, ils, ile, "Vn",        &m->Vn,    NULL);
 
 	//============================================================
 	// Peierls creep
 	//============================================================
-	getMatPropScalar(fp, ils, ile, "Bp",        &m->Bp,    &found);
-	getMatPropScalar(fp, ils, ile, "taup",      &m->taup,  &found);
-	getMatPropScalar(fp, ils, ile, "gamma",     &m->gamma, &found);
-	getMatPropScalar(fp, ils, ile, "q",         &m->q,     &found);
-	getMatPropScalar(fp, ils, ile, "Ep",        &m->Ep,    &found);
-	getMatPropScalar(fp, ils, ile, "Vp",        &m->Vp,    &found);
+	getMatPropScalar(fp, ils, ile, "Bp",        &m->Bp,    NULL);
+	getMatPropScalar(fp, ils, ile, "taup",      &m->taup,  NULL);
+	getMatPropScalar(fp, ils, ile, "gamma",     &m->gamma, NULL);
+	getMatPropScalar(fp, ils, ile, "q",         &m->q,     NULL);
+	getMatPropScalar(fp, ils, ile, "Ep",        &m->Ep,    NULL);
+	getMatPropScalar(fp, ils, ile, "Vp",        &m->Vp,    NULL);
 	//============================================================
 	// elasticity
 	//============================================================
-	getMatPropScalar(fp, ils, ile, "shear",     &m->G,     &found);
-	getMatPropScalar(fp, ils, ile, "bulk",      &m->K,     &found);
-	getMatPropScalar(fp, ils, ile, "Kp",        &m->Kp,    &found);
+	getMatPropScalar(fp, ils, ile, "shear",     &m->G,     NULL);
+	getMatPropScalar(fp, ils, ile, "bulk",      &m->K,     NULL);
+	getMatPropScalar(fp, ils, ile, "Kp",        &m->Kp,    NULL);
 	//============================================================
 	// plasticity (Drucker-Prager)
 	//============================================================
-	getMatPropScalar(fp, ils, ile, "cohesion",  &m->ch,    &found);
-	getMatPropScalar(fp, ils, ile, "friction",  &m->fr,    &found);
-	getMatPropInt   (fp, ils, ile, "chSoftID",  &chSoftID, &found);
-	getMatPropInt   (fp, ils, ile, "frSoftID",  &frSoftID, &found);
+	getMatPropScalar(fp, ils, ile, "cohesion",  &m->ch,    NULL);
+	getMatPropScalar(fp, ils, ile, "friction",  &m->fr,    NULL);
+	getMatPropInt   (fp, ils, ile, "chSoftID",  &chSoftID, NULL);
+	getMatPropInt   (fp, ils, ile, "frSoftID",  &frSoftID, NULL);
 	//============================================================
 	// energy
 	//============================================================
-	getMatPropScalar(fp, ils, ile, "alpha",     &m->alpha, &found);
-	getMatPropScalar(fp, ils, ile, "cp",        &m->Cp,    &found);
-	getMatPropScalar(fp, ils, ile, "k",         &m->k,     &found);
-	getMatPropScalar(fp, ils, ile, "A",         &m->A,     &found);
+	getMatPropScalar(fp, ils, ile, "alpha",     &m->alpha, NULL);
+	getMatPropScalar(fp, ils, ile, "cp",        &m->Cp,    NULL);
+	getMatPropScalar(fp, ils, ile, "k",         &m->k,     NULL);
+	getMatPropScalar(fp, ils, ile, "A",         &m->A,     NULL);
 	//============================================================
+
+	// check depth-dependent density parameters
+	if((!m->rho_n && m->rho_c) || (m->rho_n && !m->rho_c))
+	{
+		SETERRQ1(PETSC_COMM_SELF, PETSC_ERR_USER, "rho_n & rho_c must be specified simultaneously for phase %lld", (LLD)ID);
+	}
 
 	// check softening laws
 	if(chSoftID > numSoft-1)
@@ -1002,7 +1010,7 @@ void getMatPropInt(FILE *fp, PetscInt ils, PetscInt ile,
 	PetscInt match, int_val;
 
 	// init flag
-	(*found) = _FALSE;
+	if(found) (*found) = _FALSE;
 
 	// reset to start of file
 	rewind( fp );
@@ -1033,8 +1041,10 @@ void getMatPropInt(FILE *fp, PetscInt ils, PetscInt ile,
 
 			int_val = (PetscInt)strtol( line, NULL, 0 );
 
-			*value = int_val;
-			*found = _TRUE;
+			if(found)
+				(*found) = _TRUE;
+				(*value) = int_val;
+
 			return;
 		}
 	}
@@ -1051,7 +1061,7 @@ void getMatPropScalar(FILE *fp, PetscInt ils, PetscInt ile,
 	PetscScalar   double_val;
 
 	// init flag
-	(*found) = _FALSE;
+	if(found) (*found) = _FALSE;
 
 	// reset to start of file
 	rewind( fp );
@@ -1082,8 +1092,10 @@ void getMatPropScalar(FILE *fp, PetscInt ils, PetscInt ile,
 
 			double_val = (PetscScalar)strtod( line, NULL );
 
-			*value = double_val;
-			*found = _TRUE;
+			if(found)
+				(*found) = _TRUE;
+				(*value) = double_val;
+
 			return;
 		}
 	}
@@ -1097,7 +1109,7 @@ void getMatPropString( FILE *fp, PetscInt ils, PetscInt ile, const char key[], c
 	char LINE[MAX_LINE_LEN];
 
 	// init flag
-	(*found) = _FALSE;
+	if(found) (*found) = _FALSE;
 
 	memset( value, 0, sizeof(char)*(size_t)max_L );
 
@@ -1137,7 +1149,7 @@ void getMatPropString( FILE *fp, PetscInt ils, PetscInt ile, const char key[], c
 				return;
 			}
 
-			*found = _TRUE;
+			if(found) (*found) = _TRUE;
 			return;
 		}
 	}

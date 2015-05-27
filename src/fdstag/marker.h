@@ -67,6 +67,7 @@ PetscErrorCode ADVMarkInitDetachment   (AdvCtx *actx, UserCtx *user);
 PetscErrorCode ADVMarkInitSlab         (AdvCtx *actx, UserCtx *user);
 PetscErrorCode ADVMarkInitSpheres      (AdvCtx *actx, UserCtx *user);
 PetscErrorCode ADVMarkInitBands        (AdvCtx *actx, UserCtx *user);
+PetscErrorCode ADVMarkInitDomes        (AdvCtx *actx, UserCtx *user);
 
 //---------------------------------------------------------------------------
 
