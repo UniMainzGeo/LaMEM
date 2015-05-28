@@ -277,13 +277,16 @@ ierr = JacResCopyTemp(&jr); CHKERRQ(ierr);
 		// apply background strain-rate "DWINDLAR" BC (Bob Shaw "Ship of Strangers")
 		ierr = FDSTAGStretch(&fs, bc.Exx, bc.Eyy, jr.ts.dt); CHKERRQ(ierr);
 
+		// exchange markers between the processors (after mesh advection)
+		ierr = ADVExchange(&actx); CHKERRQ(ierr);
+
 		// apply erosion to the free surface
 		ierr = FreeSurfAppErosion(&surf); CHKERRQ(ierr);
 
 		// apply sedimentation to the free surface
 		ierr = FreeSurfAppSedimentation(&surf); CHKERRQ(ierr);
 
-		// change marker phase when crossing free surface
+		// change marker phase when crossing flat surface or free surface with fast sedimentation/erosion
 		ierr = ADVMarkCrossFreeSurf(&actx, &surf); CHKERRQ(ierr);
 
 		// remap markers onto (stretched) grid

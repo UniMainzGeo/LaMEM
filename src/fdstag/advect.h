@@ -22,7 +22,7 @@ typedef enum
 typedef struct
 {
 	PetscInt s[8]; // 8 corners
-	PetscInt cell; // entire cell
+
 } NumCorner;
 
 //---------------------------------------------------------------------------
@@ -58,7 +58,14 @@ typedef struct
 	PetscInt  nummark;    // local number of markers
 	PetscInt  markcap;    // capacity of marker storage
 	Marker   *markers;    // storage for local markers
+
+	//========================
+	// MARKER-CELL INTERACTION
+	//========================
 	PetscInt *cellnum;    // host cells local number for each marker
+	PetscInt *markcell;   // no. of markers/cell
+	PetscInt *markind;    // id (position) of markers clustered for every cell
+	PetscInt *markstart;  // start id in markind for every cell
 
 	//=========
 	// EXCHANGE
@@ -83,7 +90,6 @@ typedef struct
 	PetscInt  nmin, nmax;          // min and max no. of markers
 	PetscInt  avdx, avdy, avdz;    // grid cells for AVD
 	PetscInt  cinj, cdel;          // counters
-	NumCorner *numcorner;           // hosts local number for each marker
 
 	// Mapping markers on the control volumes:
 	// 1. Viscosities are computed in the centers & then averaged to edges (BY FAR THE SIMPLEST SOLUTION!!!)
@@ -149,6 +155,9 @@ PetscErrorCode ADVDestroyMPIBuff(AdvCtx *actx);
 
 // find host cells for local markers
 PetscErrorCode ADVMapMarkToCells(AdvCtx *actx);
+
+// creates arrays to optimize marker-cell interaction
+PetscErrorCode ADVUpdateMarkCell(AdvCtx *actx);
 
 // project history fields from markers to grid
 PetscErrorCode ADVProjHistMarkToGrid(AdvCtx *actx);

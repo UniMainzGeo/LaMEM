@@ -415,17 +415,16 @@ PetscErrorCode AVDLoadPoints(AdvCtx *actx, AVD3D *A, PetscInt ind)
 	PetscFunctionBegin;
 
 	// load particles only within the Voronoi cell
-	ii = 0;
-	for (i = 0; i < actx->nummark; i++)
+	for (i = 0; i < A->npoints; i++)
 	{
-		if (actx->cellnum[i]==ind)
-		{
-			A->points[ii]       = actx->markers[i];
-			A->chain [ii].gind  = i;
+		// get index
+		ii = actx->markind[actx->markstart[ind] + i];
 
-			// increase counter
-			ii++;
-		}
+		// save marker
+		A->points[i] = actx->markers[ii];
+
+		// save index
+		A->chain [i].gind  = ii;
 	}
 
 	PetscFunctionReturn(0);

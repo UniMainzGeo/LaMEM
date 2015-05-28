@@ -57,16 +57,10 @@ PetscErrorCode BreakCheck(UserCtx *user)
 		asprintf(&fname, "./Breakpoint/Breakpoint_info.%lld.out",(LLD)iproc);
 		fp = fopen(fname, "r" );
 
-		if(!fp)
-		{
-			res = 0;
-			free(fname);
-		}
-		else
-		{
-			free(fname);
-			fclose(fp);
-		}
+		if(!fp) res = 0;
+		else    fclose(fp);
+
+		free(fname);
 	}
 
 	// check corrupted results on processors
@@ -547,6 +541,10 @@ PetscErrorCode BreakReadMark(AdvCtx *actx)
 	// allocate memory for host cell numbers
 	ierr = PetscMalloc((size_t)actx->markcap*sizeof(PetscInt), &actx->cellnum); CHKERRQ(ierr);
 	ierr = PetscMemzero(actx->cellnum, (size_t)actx->markcap*sizeof(PetscInt)); CHKERRQ(ierr);
+
+	// allocate memory for id marker arranging per cell
+	ierr = PetscMalloc((size_t)actx->markcap*sizeof(PetscInt), &actx->markind); CHKERRQ(ierr);
+	ierr = PetscMemzero(actx->markind, (size_t)actx->markcap*sizeof(PetscInt)); CHKERRQ(ierr);
 
 	// read markers
 	fread( actx->markers, sizeof(Marker)*(size_t)actx->markcap, 1, fp);
