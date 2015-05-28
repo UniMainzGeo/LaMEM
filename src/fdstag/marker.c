@@ -1271,35 +1271,6 @@ PetscErrorCode ADVMarkInitDomes(AdvCtx *actx, UserCtx *user)
 
 	scal = actx->jr->scal.length;
 
-/*
-	// set default values
-	H      = 10.0;               // layer thickness               [km]
-	Hb     = 2.0;                // basal layer thickness         [km]
-	size   = 1.0;                // inclusion size in XZ-plane    [km]
-	offset = 0.0;                // inclusion offset along X axis [km]
-	length = (user->L*scal)/2.0; // inclusion length along Y axis [km]
-
-	// get layer thickness
-	ierr = PetscOptionsGetReal(PETSC_NULL, "-H_layer",  &H,  PETSC_NULL);  CHKERRQ(ierr);
-	ierr = PetscOptionsGetReal(PETSC_NULL, "-H_bottom", &Hb, PETSC_NULL);  CHKERRQ(ierr);
-
-	// get inclusion parameters
-	ierr = PetscOptionsHasName(PETSC_NULL, "-Inclusion_use", &use_inc); CHKERRQ(ierr);
-	if(use_inc == PETSC_TRUE)
-	{
-		ierr = PetscOptionsGetReal(PETSC_NULL, "-Inclusion_size",   &size,   PETSC_NULL); CHKERRQ(ierr);
-		ierr = PetscOptionsGetReal(PETSC_NULL, "-Inclusion_offset", &offset, PETSC_NULL); CHKERRQ(ierr);
-		ierr = PetscOptionsGetReal(PETSC_NULL, "-Inclusion_length", &length, PETSC_NULL); CHKERRQ(ierr);
-	}
-
-	// scale
-	H      /= scal;
-	Hb     /= scal;
-	size   /= scal;
-	offset /= scal;
-	length /= scal;
-
-*/
 	// get salt layer parameters
 	salt_bot = 0.0;
 	salt_top = 0.0;
@@ -1686,6 +1657,7 @@ PetscErrorCode ADVMarkInitFilePolygons(AdvCtx *actx, UserCtx *user)
 	// destroy random context
 	ierr = PetscRandomDestroy(&rctx);    CHKERRQ(ierr);
 	ierr = PetscViewerDestroy(&view_in); CHKERRQ(ierr);
+	free(LoadFileName);
 
 	// wait until all processors finished reading markers
 	ierr = MPI_Barrier(PETSC_COMM_WORLD); CHKERRQ(ierr);
