@@ -73,6 +73,7 @@ PetscErrorCode ADVMarkInitDomes        (AdvCtx *actx, UserCtx *user);
 
 // service functions
 
+PetscErrorCode ADVMarkSetTempFromFile  (AdvCtx *actx, UserCtx *user);
 void ADVMarkSecIdx(AdvCtx *actx, UserCtx *user, PetscInt dir, PetscInt Nslice, PetscInt *idx);
 void inpoly(PolyCtx *polydat, PetscInt N, PetscScalar *X, PetscScalar *node, PetscInt Nnode, PetscBool *in, PetscBool *bnd);
 

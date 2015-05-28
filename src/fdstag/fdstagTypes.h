@@ -109,6 +109,7 @@ typedef struct
 	// temperature - not active
 	PetscScalar      Temp_bottom, Temp_top;
 	PetscScalar      GasConstant;
+	char             TemperatureFilename[MAX_PATH_LEN];
 
 	// optimization
 	PetscInt         mpi_group_id; //migrated from OptimiseParams

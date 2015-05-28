@@ -252,7 +252,7 @@ typedef struct {
   ModelSetup				Setup;
   PhaseProps    			PhaseProperties;
   sBC						BC;
-  char						OutputFile[PETSC_MAX_PATH_LEN], ParamFile[PETSC_MAX_PATH_LEN], ParticleFilename[PETSC_MAX_PATH_LEN];
+  char						OutputFile[PETSC_MAX_PATH_LEN], ParamFile[PETSC_MAX_PATH_LEN], ParticleFilename[PETSC_MAX_PATH_LEN], TemperatureFilename[PETSC_MAX_PATH_LEN];
   char						InitialMeshFileName[PETSC_MAX_PATH_LEN], LoadInitialParticlesDirectory[PETSC_MAX_PATH_LEN], SaveInitialParticlesDirectory[PETSC_MAX_PATH_LEN];
   PetscBool				    InputParamFile, AnalyticalBenchmark,SkipStokesSolver, SavePartitioning;
   Particles					*ParticlesLocal;

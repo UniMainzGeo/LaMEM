@@ -291,6 +291,10 @@ PetscErrorCode InputReadFile(JacRes *jr, UserCtx *user, FILE *fp)
 	// Particle related variables
 	parse_GetInt( fp,    "ParticleInput", &user->ParticleInput, &found );
 	parse_GetString( fp, "ParticleFilename", user->ParticleFilename, MAX_PATH_LEN, &found );
+	parse_GetString( fp, "TemperatureFilename", user->TemperatureFilename, MAX_PATH_LEN, &found );
+	if (!found){
+		sprintf(user->TemperatureFilename, "noTemperatureFileName");
+	}
 	parse_GetString( fp, "LoadInitialParticlesDirectory", user->LoadInitialParticlesDirectory, MAX_PATH_LEN, &found );
 	if (!found){
 		sprintf(user->LoadInitialParticlesDirectory, "InitialParticles");

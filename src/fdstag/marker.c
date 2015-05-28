@@ -1632,6 +1632,17 @@ PetscErrorCode ADVMarkInitFilePolygons(AdvCtx *actx, UserCtx *user)
 		PetscPrintf(PETSC_COMM_WORLD,"[Rank 0] Created vol %lld/%lld [%g sec]: phase %lld, %lld slices, %c-normal-dir; found %lld markers \n",(LLD)kvol+1,(LLD)VolN, t1-t0, (LLD)Poly.phase, (LLD)Poly.num, normalDir[Poly.dir], (LLD)Poly.nmark);
 	}
 
+	
+	// Set temperature from file if a Temperature file is specified in the input
+	if   (strcmp(user->TemperatureFilename,"noTemperatureFilename") )   
+	{
+		ierr = ADVMarkSetTempFromFile(actx,user);
+		CHKERRQ(ierr);
+	}
+	else
+	{
+	}	
+	
 	// free
 	PetscFree(idx);
 	PetscFree(polyin);
@@ -1659,6 +1670,135 @@ PetscErrorCode ADVMarkInitFilePolygons(AdvCtx *actx, UserCtx *user)
 	PetscPrintf(PETSC_COMM_WORLD," Finished setting markers with polygons\n");
 	PetscFunctionReturn(ierr);
 }
+
+//---------------------------------------------------------------------------
+#undef __FUNCT__
+#define __FUNCT__ "ADVMarkSetTempFromFile"
+PetscErrorCode ADVMarkSetTempFromFile(AdvCtx *actx, UserCtx *user)
+{
+	//PetscPrintf(PETSC_COMM_WORLD," Inside ADVMarkSetTempFromFile \n");
+
+
+
+
+
+	FDSTAG       *fs;
+	int           fd;
+	//Marker       *P;
+
+	PetscViewer   view_in;
+	char         *LoadFileName;
+	PetscScalar   header[2],dim[3];
+	PetscInt      Fsize,  imark,nummark, nmarkx, nmarky, nmarkz;
+	PetscScalar  DX,DY,DZ;
+	PetscScalar  xp,yp,zp, Xc, Yc, Zc, xpL, ypL, zpL;
+	PetscScalar  *Temp;
+	//PetscScalar  *dim;
+	PetscInt Ix,Iy,Iz;
+	PetscErrorCode ierr;
+	PetscFunctionBegin;
+	
+	PetscScalar chTemp;
+	
+	chTemp = actx->jr->scal.temperature;
+	fs = actx->fs;
+
+	// create filename
+	asprintf(&LoadFileName, "./%s/%s",
+	user->LoadInitialParticlesDirectory,
+	user->TemperatureFilename);
+
+
+	PetscPrintf(PETSC_COMM_WORLD," Loading temperature redundantly from file: %s \n", LoadFileName);
+	ierr = PetscViewerBinaryOpen(PETSC_COMM_SELF, LoadFileName, FILE_MODE_READ, &view_in); CHKERRQ(ierr);
+	ierr = PetscViewerBinaryGetDescriptor(view_in, &fd); CHKERRQ(ierr);
+
+
+	// read (and ignore) the silent undocumented file header & size of file
+	ierr = PetscBinaryRead(fd, &header, 2, PETSC_SCALAR); CHKERRQ(ierr);
+	Fsize = (PetscInt)(header[1])-3;
+
+	// allocate space for entire file & initialize counter
+	ierr = PetscMalloc((size_t)Fsize  *sizeof(PetscScalar),&Temp); CHKERRQ(ierr);
+
+
+	// read entire file
+	ierr = PetscBinaryRead(fd, &dim,        3, PETSC_SCALAR); CHKERRQ(ierr);
+	ierr = PetscBinaryRead(fd, Temp, Fsize, PETSC_SCALAR); CHKERRQ(ierr);
+
+	// grid spacing
+	DX = user->W/(dim[0]-1.0);
+	DY = user->L/(dim[1]-1.0);
+	DZ = user->H/(dim[2]-1.0);
+
+
+
+	// get local number of markers
+	nmarkx  = fs->dsx.ncels * user->NumPartX;
+	nmarky  = fs->dsy.ncels * user->NumPartY;
+	nmarkz  = fs->dsz.ncels * user->NumPartZ;
+	nummark = nmarkx*nmarky*nmarkz;
+
+
+	
+	PetscInt nx, ny;
+	nx = (PetscInt)dim[0];
+	ny = (PetscInt)dim[1];
+	//nummark = 2;
+
+	for(imark = 0; imark < nummark; imark++)
+	{
+
+	// get global marker coordinates
+	xp = actx->markers[imark].X[0];
+	yp = actx->markers[imark].X[1];
+	zp = actx->markers[imark].X[2];
+
+	
+
+		// Index of the lower left corner of the element (of the temperature grid) in which the particle
+		// is
+		Ix = floor((xp-user->x_left)/DX);
+		Iy = floor((yp-user->y_front)/DY);
+		Iz = floor((zp-user->z_bot)/DZ);
+
+
+		//T3D_IxIyIz = Temp[Iz*dim[0]*dim[1] + Iy*dim[0] + Ix ];
+
+
+
+		// Coordinate of the first corner (lower left deepest)
+		Xc = user->x_left+Ix*DX;
+		Yc = user->y_front+Iy*DY;
+		Zc = user->z_bot+Iz*DZ;
+
+		// Local coordinate of the particule inside a temperature element
+		xpL = (xp-Xc)/DX;
+		ypL = (yp-Yc)/DY;
+		zpL = (zp-Zc)/DZ;
+
+		// Interpolate value on the particle using trilinear shape functions
+		actx->markers[imark].T = 1.0/chTemp * (
+		(1-xpL) * (1-ypL) * (1-zpL)    * Temp[Iz    *nx*ny + Iy     * nx + Ix ] +
+		  xpL   * (1-ypL) * (1-zpL)    * Temp[Iz    *nx*ny + Iy     * nx + Ix+1 ] +
+		  xpL   *   ypL   * (1-zpL)    * Temp[Iz    *nx*ny + (Iy+1) * nx + Ix+1 ] +
+		(1-xpL) *   ypL   * (1-zpL)    * Temp[Iz    *nx*ny + (Iy+1) * nx + Ix ] +
+		(1-xpL) * (1-ypL) *   zpL      * Temp[(Iz+1)*nx*ny + Iy     * nx + Ix ] +
+		  xpL   * (1-ypL) *   zpL      * Temp[(Iz+1)*nx*ny + Iy     * nx + Ix+1 ] +
+		  xpL   *   ypL   *   zpL      * Temp[(Iz+1)*nx*ny + (Iy+1) * nx + Ix+1 ] +
+		(1-xpL) *   ypL   *   zpL      * Temp[(Iz+1)*nx*ny + (Iy+1) * nx + Ix ] );
+	}
+
+
+	// Clear memory
+	PetscFree(Temp);
+
+
+	PetscFunctionReturn(ierr);
+
+}
+
+
 
 //---------------------------------------------------------------------------
 #undef __FUNCT__
