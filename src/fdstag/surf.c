@@ -637,7 +637,7 @@ PetscErrorCode FreeSurfAppSedimentation(FreeSurf *surf)
 	if(surf->SedimentModel == 1)
 	{
 		// determine sedimentation rate & phase number
-		for(jj = 0; jj < surf->numLayers; jj++)
+		for(jj = 0; jj < surf->numLayers-1; jj++)
 		{
 			if(time < surf->timeDelims[jj]) break;
 		}
