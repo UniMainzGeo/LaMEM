@@ -1683,6 +1683,10 @@ PetscErrorCode ADVMarkInitFilePolygons(AdvCtx *actx, UserCtx *user)
         // clear polyin memory
 //**        DestroyPolyCtx(polydat);
 
+	// destroy random context
+	ierr = PetscRandomDestroy(&rctx);    CHKERRQ(ierr);
+	ierr = PetscViewerDestroy(&view_in); CHKERRQ(ierr);
+
 	// wait until all processors finished reading markers
 	ierr = MPI_Barrier(PETSC_COMM_WORLD); CHKERRQ(ierr);
 
