@@ -670,7 +670,7 @@ PetscErrorCode FreeSurfAppSedimentation(FreeSurf *surf)
 			if(z < zbot) z = zbot;
 
 			// store advected topography
-			z = topo[L][j][i];
+			topo[L][j][i] = z;
 		}
 		END_PLANE_LOOP
 
