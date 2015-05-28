@@ -70,7 +70,7 @@ PetscErrorCode GetScalArrayCheckScale(
 	// check correct number of elements is provided
 	if(nmax != n)
 	{
-		SETERRQ2(PETSC_COMM_SELF, PETSC_ERR_USER, "Wrong number of elements in array \"%s\" , actual: %lld, expected: %lld\n", name, (LLD)nmax, (LLD)n);
+		SETERRQ3(PETSC_COMM_SELF, PETSC_ERR_USER, "Wrong number of elements in array \"%s\" , actual: %lld, expected: %lld\n", name, (LLD)nmax, (LLD)n);
 	}
 
 	// check ranges
@@ -130,7 +130,7 @@ PetscErrorCode GetIntArrayCheck(
 	// check correct number of elements is provided
 	if(nmax != n)
 	{
-		SETERRQ2(PETSC_COMM_SELF, PETSC_ERR_USER, "Wrong number of elements in array \"%s\" , actual: %lld, expected: %lld\n", name, (LLD)nmax, (LLD)n);
+		SETERRQ3(PETSC_COMM_SELF, PETSC_ERR_USER, "Wrong number of elements in array \"%s\" , actual: %lld, expected: %lld\n", name, (LLD)nmax, (LLD)n);
 	}
 
 	// check ranges
