@@ -1557,7 +1557,7 @@ PetscErrorCode JacResViewRes(JacRes *jr)
 	// show assembled residual with boundary constraints
 
 	PetscBool   flg;
-	PetscScalar dmin, dmax, d2, fx, fy, fz, f2;
+	PetscScalar dmin, dmax, d2, fx, fy, fz, f2, div_tol;
 
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
@@ -1591,6 +1591,15 @@ PetscErrorCode JacResViewRes(JacRes *jr)
 	PetscPrintf(PETSC_COMM_WORLD, "  Momentum: \n" );
 	PetscPrintf(PETSC_COMM_WORLD, "    |mRes|_2 = %12.12e \n", f2);
 	PetscPrintf(PETSC_COMM_WORLD, "------------------------------------------\n");
+
+	// stop if divergence more than tolerance
+	ierr = PetscOptionsGetScalar(NULL, "-div_tol",  &div_tol,  NULL); CHKERRQ(ierr);
+
+	if ((div_tol) && (( dmax > div_tol ) || (f2 > div_tol)))
+	{
+		PetscPrintf(PETSC_COMM_WORLD," *** Emergency stop! Maximum divergence or momentum residual is too large; solver did not converge! *** \n");
+		MPI_Abort(PETSC_COMM_WORLD,1);
+	}
 
 	PetscFunctionReturn(0);
 }
