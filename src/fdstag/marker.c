@@ -1326,7 +1326,8 @@ PetscErrorCode ADVMarkInitFilePolygons(AdvCtx *actx, UserCtx *user)
 //	PetscScalar   VolInfo[4];
 	Polygon2D     Poly;
 	PetscBool    *polyin, *polybnd, AddRandomNoise;
-	PetscInt     *idx,i;
+	PetscInt     *idx;
+//	PetscInt      i;
 	PetscScalar  *X,*PolyLen,*PolyIdx,*PolyFile;
 	PolyCtx       polydat;
 
@@ -1339,8 +1340,7 @@ PetscErrorCode ADVMarkInitFilePolygons(AdvCtx *actx, UserCtx *user)
 	char          normalDir[4] = {"xyz"};
 	PetscRandom  rctx;
 	PetscScalar  cf_rand;
-	PetscBool    SkipSetVol=PETSC_FALSE;
-
+//	PetscBool    SkipSetVol=PETSC_FALSE;
 
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
@@ -1495,7 +1495,7 @@ PetscErrorCode ADVMarkInitFilePolygons(AdvCtx *actx, UserCtx *user)
 	ierr = PetscMalloc((size_t)nidxmax*2*sizeof(PetscScalar),&X); CHKERRQ(ierr);
 
 	// allocate memory for polyin
-//**	ierr = CreatePolyCtx(&polydat, Nmax, Lmax);
+//	ierr = CreatePolyCtx(&polydat, Nmax, Lmax);
 
 	// --- loop over all volumes ---
 	for (kvol=0; kvol<VolN; kvol++)
@@ -1631,17 +1631,13 @@ PetscErrorCode ADVMarkInitFilePolygons(AdvCtx *actx, UserCtx *user)
 		//PetscPrintf(PETSC_COMM_WORLD," Created vol %lld/%lld [%g sec]: phase %lld, %lld slices, %c-normal-dir; found %lld markers \n",(LLD)kvol+1,(LLD)VolN, t1-t0, (LLD)Poly.phase, (LLD)Poly.num, normalDir[Poly.dir], (LLD)nmark_all);
 		PetscPrintf(PETSC_COMM_WORLD,"[Rank 0] Created vol %lld/%lld [%g sec]: phase %lld, %lld slices, %c-normal-dir; found %lld markers \n",(LLD)kvol+1,(LLD)VolN, t1-t0, (LLD)Poly.phase, (LLD)Poly.num, normalDir[Poly.dir], (LLD)Poly.nmark);
 	}
-
 	
 	// Set temperature from file if a Temperature file is specified in the input
-	if   (strcmp(user->TemperatureFilename,"noTemperatureFilename") )   
+	if(strcmp(user->TemperatureFilename,"noTemperatureFilename"))
 	{
 		ierr = ADVMarkSetTempFromFile(actx,user);
 		CHKERRQ(ierr);
 	}
-	else
-	{
-	}	
 	
 	// free
 	PetscFree(idx);
@@ -1652,12 +1648,11 @@ PetscErrorCode ADVMarkInitFilePolygons(AdvCtx *actx, UserCtx *user)
 	PetscFree(PolyIdx);
 	PetscFree(PolyLen);
 	PetscFree(Poly.X);
-	
-	
-	PetscFree(PolyFile);
 
-        // clear polyin memory
-//**        DestroyPolyCtx(polydat);
+	PetscFree(PolyFile);
+	
+	// clear polyin memory
+//	DestroyPolyCtx(polydat);
 
 	// destroy random context
 	ierr = PetscRandomDestroy(&rctx);    CHKERRQ(ierr);
@@ -1670,26 +1665,18 @@ PetscErrorCode ADVMarkInitFilePolygons(AdvCtx *actx, UserCtx *user)
 	PetscPrintf(PETSC_COMM_WORLD," Finished setting markers with polygons\n");
 	PetscFunctionReturn(ierr);
 }
-
 //---------------------------------------------------------------------------
 #undef __FUNCT__
 #define __FUNCT__ "ADVMarkSetTempFromFile"
 PetscErrorCode ADVMarkSetTempFromFile(AdvCtx *actx, UserCtx *user)
 {
-	//PetscPrintf(PETSC_COMM_WORLD," Inside ADVMarkSetTempFromFile \n");
-
-
-
-
-
 	FDSTAG       *fs;
-	int           fd;
-	//Marker       *P;
-
-	PetscViewer   view_in;
+	int          fd;
+	Marker       *P;
+	PetscViewer  view_in;
 	char         *LoadFileName;
-	PetscScalar   header[2],dim[3];
-	PetscInt      Fsize,  imark,nummark, nmarkx, nmarky, nmarkz;
+	PetscScalar  header[2],dim[3];
+	PetscInt     Fsize,  imark,nummark, nmarkx, nmarky, nmarkz;
 	PetscScalar  DX,DY,DZ;
 	PetscScalar  xp,yp,zp, Xc, Yc, Zc, xpL, ypL, zpL;
 	PetscScalar  *Temp;
@@ -1697,7 +1684,6 @@ PetscErrorCode ADVMarkSetTempFromFile(AdvCtx *actx, UserCtx *user)
 	PetscInt Ix,Iy,Iz;
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
-	
 	PetscScalar chTemp;
 	
 	chTemp = actx->jr->scal.temperature;
@@ -1708,38 +1694,31 @@ PetscErrorCode ADVMarkSetTempFromFile(AdvCtx *actx, UserCtx *user)
 	user->LoadInitialParticlesDirectory,
 	user->TemperatureFilename);
 
-
 	PetscPrintf(PETSC_COMM_WORLD," Loading temperature redundantly from file: %s \n", LoadFileName);
 	ierr = PetscViewerBinaryOpen(PETSC_COMM_SELF, LoadFileName, FILE_MODE_READ, &view_in); CHKERRQ(ierr);
 	ierr = PetscViewerBinaryGetDescriptor(view_in, &fd); CHKERRQ(ierr);
-
 
 	// read (and ignore) the silent undocumented file header & size of file
 	ierr = PetscBinaryRead(fd, &header, 2, PETSC_SCALAR); CHKERRQ(ierr);
 	Fsize = (PetscInt)(header[1])-3;
 
 	// allocate space for entire file & initialize counter
-	ierr = PetscMalloc((size_t)Fsize  *sizeof(PetscScalar),&Temp); CHKERRQ(ierr);
-
+	ierr = PetscMalloc((size_t)Fsize*sizeof(PetscScalar), &Temp); CHKERRQ(ierr);
 
 	// read entire file
-	ierr = PetscBinaryRead(fd, &dim,        3, PETSC_SCALAR); CHKERRQ(ierr);
+	ierr = PetscBinaryRead(fd, &dim, 3,     PETSC_SCALAR); CHKERRQ(ierr);
 	ierr = PetscBinaryRead(fd, Temp, Fsize, PETSC_SCALAR); CHKERRQ(ierr);
 
 	// grid spacing
-	DX = user->W/(dim[0]-1.0);
-	DY = user->L/(dim[1]-1.0);
-	DZ = user->H/(dim[2]-1.0);
-
-
+	DX = user->W/(dim[0] - 1.0);
+	DY = user->L/(dim[1] - 1.0);
+	DZ = user->H/(dim[2] - 1.0);
 
 	// get local number of markers
 	nmarkx  = fs->dsx.ncels * user->NumPartX;
 	nmarky  = fs->dsy.ncels * user->NumPartY;
 	nmarkz  = fs->dsz.ncels * user->NumPartZ;
 	nummark = nmarkx*nmarky*nmarkz;
-
-
 	
 	PetscInt nx, ny;
 	nx = (PetscInt)dim[0];
@@ -1748,58 +1727,51 @@ PetscErrorCode ADVMarkSetTempFromFile(AdvCtx *actx, UserCtx *user)
 
 	for(imark = 0; imark < nummark; imark++)
 	{
+		// get curent marker
+		P = &actx->markers[imark];
 
-	// get global marker coordinates
-	xp = actx->markers[imark].X[0];
-	yp = actx->markers[imark].X[1];
-	zp = actx->markers[imark].X[2];
+		// get global marker coordinates
+		xp = P->X[0];
+		yp = P->X[1];
+		zp = P->X[2];
 
-	
-
-		// Index of the lower left corner of the element (of the temperature grid) in which the particle
-		// is
-		Ix = floor((xp-user->x_left)/DX);
-		Iy = floor((yp-user->y_front)/DY);
-		Iz = floor((zp-user->z_bot)/DZ);
-
+		// index of the lower left corner of the element (of the temperature grid) in which the particle is
+		Ix = (PetscInt)floor((xp - user->x_left) /DX);
+		Iy = (PetscInt)floor((yp - user->y_front)/DY);
+		Iz = (PetscInt)floor((zp - user->z_bot)  /DZ);
 
 		//T3D_IxIyIz = Temp[Iz*dim[0]*dim[1] + Iy*dim[0] + Ix ];
 
-
-
 		// Coordinate of the first corner (lower left deepest)
-		Xc = user->x_left+Ix*DX;
-		Yc = user->y_front+Iy*DY;
-		Zc = user->z_bot+Iz*DZ;
+		Xc = user->x_left + (PetscScalar)Ix*DX;
+		Yc = user->y_front+ (PetscScalar)Iy*DY;
+		Zc = user->z_bot  + (PetscScalar)Iz*DZ;
 
-		// Local coordinate of the particule inside a temperature element
-		xpL = (xp-Xc)/DX;
-		ypL = (yp-Yc)/DY;
-		zpL = (zp-Zc)/DZ;
+		// Local coordinate of the particle inside a temperature element
+		xpL = (xp - Xc)/DX;
+		ypL = (yp - Yc)/DY;
+		zpL = (zp - Zc)/DZ;
 
 		// Interpolate value on the particle using trilinear shape functions
-		actx->markers[imark].T = 1.0/chTemp * (
-		(1-xpL) * (1-ypL) * (1-zpL)    * Temp[Iz    *nx*ny + Iy     * nx + Ix ] +
-		  xpL   * (1-ypL) * (1-zpL)    * Temp[Iz    *nx*ny + Iy     * nx + Ix+1 ] +
-		  xpL   *   ypL   * (1-zpL)    * Temp[Iz    *nx*ny + (Iy+1) * nx + Ix+1 ] +
-		(1-xpL) *   ypL   * (1-zpL)    * Temp[Iz    *nx*ny + (Iy+1) * nx + Ix ] +
-		(1-xpL) * (1-ypL) *   zpL      * Temp[(Iz+1)*nx*ny + Iy     * nx + Ix ] +
-		  xpL   * (1-ypL) *   zpL      * Temp[(Iz+1)*nx*ny + Iy     * nx + Ix+1 ] +
-		  xpL   *   ypL   *   zpL      * Temp[(Iz+1)*nx*ny + (Iy+1) * nx + Ix+1 ] +
-		(1-xpL) *   ypL   *   zpL      * Temp[(Iz+1)*nx*ny + (Iy+1) * nx + Ix ] );
+		P->T = (
+		(1-xpL) * (1-ypL) * (1-zpL) * Temp[Iz    *nx*ny + Iy     * nx + Ix   ] +
+		  xpL   * (1-ypL) * (1-zpL) * Temp[Iz    *nx*ny + Iy     * nx + Ix+1 ] +
+		  xpL   *   ypL   * (1-zpL) * Temp[Iz    *nx*ny + (Iy+1) * nx + Ix+1 ] +
+		(1-xpL) *   ypL   * (1-zpL) * Temp[Iz    *nx*ny + (Iy+1) * nx + Ix   ] +
+		(1-xpL) * (1-ypL) *   zpL   * Temp[(Iz+1)*nx*ny + Iy     * nx + Ix   ] +
+		  xpL   * (1-ypL) *   zpL   * Temp[(Iz+1)*nx*ny + Iy     * nx + Ix+1 ] +
+		  xpL   *   ypL   *   zpL   * Temp[(Iz+1)*nx*ny + (Iy+1) * nx + Ix+1 ] +
+		(1-xpL) *   ypL   *   zpL   * Temp[(Iz+1)*nx*ny + (Iy+1) * nx + Ix   ] )/chTemp;
 	}
-
 
 	// Clear memory
 	PetscFree(Temp);
 
+	ierr = PetscViewerDestroy(&view_in); CHKERRQ(ierr);
+	free(LoadFileName);
 
 	PetscFunctionReturn(ierr);
-
 }
-
-
-
 //---------------------------------------------------------------------------
 #undef __FUNCT__
 #define __FUNCT__ "ADVMarkSecIdx"
@@ -1858,14 +1830,11 @@ void ADVMarkSecIdx(AdvCtx *actx, UserCtx *user, PetscInt dir, PetscInt Islice, P
 
 	return;
 }
-
 //---------------------------------------------------------------------------
-
 #undef __FUNCT__
 #define __FUNCT__ "inpoly"
 void inpoly(PolyCtx *polydat, PetscInt N, PetscScalar *X, PetscScalar *node, PetscInt Nnode, PetscBool *in, PetscBool *bnd)
 {
-
     PetscScalar *cnect;
     PetscScalar *Xtemp , *nodetemp;
     PetscBool *cn , *on;
@@ -1878,6 +1847,8 @@ void inpoly(PolyCtx *polydat, PetscInt N, PetscScalar *X, PetscScalar *node, Pet
     PetscInt n1 , n2 , lower , upper, start;
     PetscInt N1, Ncnect;
 
+    // WARNING! UNUSED PARAMETER!
+    if(polydat) polydat = NULL;
 /*
     // Retrieve allocated arrays
 	Xtemp = polydat->Xtemp;
@@ -1895,21 +1866,19 @@ void inpoly(PolyCtx *polydat, PetscInt N, PetscScalar *X, PetscScalar *node, Pet
 	Ncnect = Nnode;
 
 	// allocate and initialize temporary arrays
-//**
+
 	PetscMalloc((size_t)N*2*sizeof(PetscScalar),&Xtemp);
 	for(i = 0; i < 2*N; i++)
 	{
 		Xtemp[i] = X[i];
 	}
 
-//**
 	PetscMalloc((size_t)Nnode*2*sizeof(PetscScalar),&nodetemp);
 	for(i = 0; i < 2*Nnode; i++)
 	{
 		nodetemp[i] = node[i];
 	}
 
-//**
 	PetscMalloc((size_t)Ncnect*2*sizeof(PetscScalar),&cnect);
 	for (i = 0; i < Ncnect - 1; i++)
 	{
@@ -1921,13 +1890,11 @@ void inpoly(PolyCtx *polydat, PetscInt N, PetscScalar *X, PetscScalar *node, Pet
 	cnect[Nnode*2-1] = 1.0;
 
     // Temporary vectors
-//**
 	PetscMalloc((size_t)N*sizeof(PetscBool),&cn);
 	PetscMalloc((size_t)N*sizeof(PetscBool),&on);
 	PetscMalloc((size_t)N*sizeof(PetscScalar),&x);
 	PetscMalloc((size_t)N*sizeof(PetscScalar),&y);
 	PetscMalloc((size_t)N*sizeof(PetscInt),&idx);
-
 
 	// unmodified code of Darren Engwirda & Sebastien Paris ---
     for (i = 0; i < 2*N ; i=i+2)
@@ -2111,13 +2078,13 @@ void inpoly(PolyCtx *polydat, PetscInt N, PetscScalar *X, PetscScalar *node, Pet
             }
         }
     }
-    for(i = 0 ; i < N ; i++)
+    for(i = 0; i < N ; i++)
     {
         ind      = idx[i];
         in[ind]  = (cn[i] || on[i]);
         bnd[ind] = on[i];
     }
-//**
+
      PetscFree(cn);
      PetscFree(on);
      PetscFree(x);
@@ -2126,10 +2093,7 @@ void inpoly(PolyCtx *polydat, PetscInt N, PetscScalar *X, PetscScalar *node, Pet
      PetscFree(Xtemp);
      PetscFree(nodetemp);
      PetscFree(cnect);
-
-
 }
-
 //---------------------------------------------------------------------------
 #undef __FUNCT__
 #define __FUNCT__ "CreatePolyCtx"
@@ -2151,7 +2115,6 @@ PetscErrorCode CreatePolyCtx(PolyCtx *polydat, PetscInt N, PetscInt Nnode)
 
 	PetscFunctionReturn(0);
 }
-
 //---------------------------------------------------------------------------
 #undef __FUNCT__
 #define __FUNCT__ "DestroyPolyCtx"
@@ -2171,7 +2134,6 @@ PetscErrorCode DestroyPolyCtx(PolyCtx polydat)
 
     PetscFunctionReturn(0);
 }
-
 //---------------------------------------------------------------------------
 void qsindex (PetscScalar  *a, PetscInt *idx , PetscInt lo, PetscInt hi)
 {
