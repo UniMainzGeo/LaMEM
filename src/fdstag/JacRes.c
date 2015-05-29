@@ -1597,8 +1597,7 @@ PetscErrorCode JacResViewRes(JacRes *jr)
 
 	if ((div_tol) && (( dmax > div_tol ) || (f2 > div_tol)))
 	{
-		PetscPrintf(PETSC_COMM_WORLD," *** Emergency stop! Maximum divergence or momentum residual is too large; solver did not converge! *** \n");
-		MPI_Abort(PETSC_COMM_WORLD,1);
+		SETERRQ(PETSC_COMM_SELF, PETSC_ERR_USER, " *** Emergency stop! Maximum divergence or momentum residual is too large; solver did not converge! *** \n");
 	}
 
 	PetscFunctionReturn(0);
