@@ -63,7 +63,6 @@ typedef struct
 	// MARKER-CELL INTERACTION
 	//========================
 	PetscInt *cellnum;    // host cells local number for each marker
-	PetscInt *markcell;   // no. of markers/cell
 	PetscInt *markind;    // id (position) of markers clustered for every cell
 	PetscInt *markstart;  // start id in markind for every cell
 

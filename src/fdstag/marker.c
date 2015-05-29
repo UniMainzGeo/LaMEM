@@ -297,7 +297,7 @@ PetscErrorCode ADVMarkCheckMarkers(AdvCtx *actx)
 	PetscBool    error;
 	PetscScalar  xs, ys, zs;
 	PetscScalar  xe, ye, ze;
-	PetscInt     rbuf[4], sbuf[4];
+	PetscInt     *numMarkCell, rbuf[4], sbuf[4];
 	PetscInt     i, maxid, NumInvalidPhase, numNonLocal, numEmpty, numSparse;
 
 	PetscErrorCode ierr;
@@ -312,6 +312,9 @@ PetscErrorCode ADVMarkCheckMarkers(AdvCtx *actx)
 	GET_DOMAIN_BOUNDS(xs, xe, fs->dsx)
 	GET_DOMAIN_BOUNDS(ys, ye, fs->dsy)
 	GET_DOMAIN_BOUNDS(zs, ze, fs->dsz)
+
+	// allocate marker counter array
+	ierr = makeIntArray(&numMarkCell, NULL, fs->nCells); CHKERRQ(ierr);
 
 	// clear error flag
 	error = PETSC_FALSE;
@@ -334,7 +337,7 @@ PetscErrorCode ADVMarkCheckMarkers(AdvCtx *actx)
 		|| X[2] < zs || X[2] > ze) numNonLocal++;
 
 		// count number of markers in the cells
-		actx->markcell[actx->cellnum[i]]++;
+		numMarkCell[actx->cellnum[i]]++;
 	}
 
 	// count empty & sparse cells
@@ -343,8 +346,8 @@ PetscErrorCode ADVMarkCheckMarkers(AdvCtx *actx)
 
 	for(i = 0; i < fs->nCells; i++)
 	{
-		if(actx->markcell[i] == 0) numEmpty++;
-		if(actx->markcell[i] <  8) numSparse++;
+		if(numMarkCell[i] == 0) numEmpty++;
+		if(numMarkCell[i] <  8) numSparse++;
 	}
 
 	// get global figures
@@ -391,6 +394,9 @@ PetscErrorCode ADVMarkCheckMarkers(AdvCtx *actx)
 	{
 		SETERRQ(PETSC_COMM_SELF, PETSC_ERR_USER, "Problems with initial marker distribution (see the above message)");
 	}
+
+	// clear
+	ierr = PetscFree(numMarkCell); CHKERRQ(ierr);
 
 	PetscFunctionReturn(0);
 }
