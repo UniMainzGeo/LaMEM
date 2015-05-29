@@ -56,6 +56,19 @@ Temp_top	    			=   0				# Temperature @ top
 Temp_bottom					=   1 				# Temperature @ bottom; side BC's are flux-free
 
 
+# Phase distribution
+NumPartX   = 2   # Particles/Cell in x-direction
+NumPartY   = 1   # Particles/Cell in y-direction
+NumPartZ   = 3   # Particles/Cell in z-direction
+
+# Properties that are defined over the whole domain:
+Gravity =  -10.0; # [m/s2] - gravitational acceleration
+Xi      =   0;    # [ ]    - Shear heating factor - not implemented yet
+
+LowerViscosityCutoff = 1e18
+UpperViscosityCutoff = 1e27
+DII_ref              = 1e-15
+
 <PetscOptionsStart>
 
 -dt 0.2
@@ -198,18 +211,6 @@ Temp_bottom					=   1 				# Temperature @ bottom; side BC's are flux-free
 
 <PetscOptionsEnd>
     
-# Phase distribution
-NumPartX   = 2   # Particles/Cell in x-direction
-NumPartY   = 1   # Particles/Cell in y-direction
-NumPartZ   = 3   # Particles/Cell in z-direction
-
-# Properties that are defined over the whole domain:
-Gravity =  -10.0; # [m/s2] - gravitational acceleration
-Xi      =   0;    # [ ]    - Shear heating factor - not implemented yet
-
-LowerViscosityCutoff = 1e18
-UpperViscosityCutoff = 1e27
-DII_ref              = 1e-15
 
 # Define material properties for all phases -------------------------------------------------
 
@@ -238,8 +239,8 @@ DII_ref              = 1e-15
 	<MaterialStart>
 		ID    = 3
 		rho0  = 2700.0
-#		rho_n = 0.4173
-#		rho_c = 4.0032e-4
+		rho_n = 0.4173
+		rho_c = 4.0032e-4
 		eta   = 1e23
 	<MaterialEnd>
 
@@ -247,8 +248,8 @@ DII_ref              = 1e-15
 	<MaterialStart>
 		ID    = 4
 		rho0  = 2700.0
-#		rho_n = 0.4173
-#		rho_c = 4.0032e-4
+		rho_n = 0.4173
+		rho_c = 4.0032e-4
 		eta   = 1e23
 	<MaterialEnd>
 
