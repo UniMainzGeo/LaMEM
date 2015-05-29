@@ -951,7 +951,7 @@ PetscErrorCode ADVMarkControl(AdvCtx *actx)
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
 
-	PetscBool flag = PETSC_FALSE;
+	PetscBool flag = PETSC_TRUE;
 	PetscOptionsGetBool(PETSC_NULL, "-use_marker_control", &flag, PETSC_NULL);
 
 	if (!flag) PetscFunctionReturn(0);
