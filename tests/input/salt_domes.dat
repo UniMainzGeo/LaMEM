@@ -43,8 +43,6 @@ CFL             = 0.3  # CFL, dt-based criterium
 dt_max          = 0.2  # Maximum timestep
 
 # Boundary conditions
-BC.Eyy						=	0.0				# BG strainrate in y-direction
-BC.Exx						=	0.0				# BG Strainrate in x-direction
 BC.LeftBound				=	1				# 0 - free surface, 1-free slip with BG strainrate Eyy, 2 - no slip, 5 - growthrate 2D, 7 - growthrate 3D
 BC.RightBound				=	1				# 0 - free surface, 1-free slip with BG strainrate Eyy, 2 - no slip, 5 - growthrate 2D, 7 - growthrate 3D
 BC.FrontBound				=	1				# 0 - free surface, 1-free slip with BG strainrate Exx, 2 - no slip, 5 - growthrate 2D, 7 - growthrate 3D
