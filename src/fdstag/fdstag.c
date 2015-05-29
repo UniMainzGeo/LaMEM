@@ -1066,35 +1066,6 @@ PetscErrorCode FDSTAGGenCoord(FDSTAG *fs, UserCtx *usr)
 }
 //---------------------------------------------------------------------------
 #undef __FUNCT__
-#define __FUNCT__ "FDSTAGStretch"
-PetscErrorCode FDSTAGStretch(FDSTAG *fs, PetscScalar Exx, PetscScalar Eyy, PetscScalar dt)
-{
-	PetscScalar Ezz;
-
-	PetscErrorCode ierr;
-	PetscFunctionBegin;
-
-	// Stretch grid with constant stretch factor about coordinate origin.
-	// The origin point remains fixed, and the displacements of all points are
-	// proportional to the distance from the origin (i.e. coordinate).
-	// The origin (zero) point must remain within domain (checked at input).
-	// Stretch factor is positive at extension, i.e.:
-	// eps = (L_new-L_old)/L_old
-	// L_new = L_old + eps*L_old
-	// x_new = x_old + eps*x_old
-
-	// compute vertical strain rate for mass balance
-	Ezz = -(Exx+Eyy);
-
-	// stretch grid
-	if(Exx) { ierr = Discret1DStretch(&fs->dsx, &fs->msx, Exx*dt); CHKERRQ(ierr); }
-	if(Eyy) { ierr = Discret1DStretch(&fs->dsy, &fs->msy, Eyy*dt); CHKERRQ(ierr); }
-	if(Ezz) { ierr = Discret1DStretch(&fs->dsz, &fs->msz, Ezz*dt); CHKERRQ(ierr); }
-
-	PetscFunctionReturn(0);
-}
-//---------------------------------------------------------------------------
-#undef __FUNCT__
 #define __FUNCT__ "FDSTAGGetNeighbProc"
 PetscErrorCode FDSTAGGetNeighbProc(FDSTAG *fs)
 {

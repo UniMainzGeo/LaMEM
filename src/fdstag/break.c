@@ -73,7 +73,7 @@ PetscErrorCode BreakCheck(UserCtx *user)
 		gres = res;
 	}
 
-	ierr = MPI_Comm_size(PETSC_COMM_WORLD, &nproc);; CHKERRQ(ierr);
+	ierr = MPI_Comm_size(PETSC_COMM_WORLD, &nproc); CHKERRQ(ierr);
 
 	if ((gres < nproc) && (gres > 0))
 	{
@@ -140,7 +140,7 @@ PetscErrorCode BreakWrite(UserCtx *user, AdvCtx *actx, FreeSurf *surf, JacType j
 	//============================================================
 	//   GRID (only for background strainrate)
 	//============================================================
-	if (jr->bc->bgAct==PETSC_TRUE)
+	if(jr->bc->ExxAct == PETSC_TRUE || jr->bc->EyyAct == PETSC_TRUE)
 	{
 		// compile file name
 		asprintf(&fname, "./Breakpoint/Breakpoint_grid.%lld.out",(LLD)actx->iproc);

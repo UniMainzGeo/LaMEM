@@ -4,6 +4,10 @@
 #ifndef __bc_h__
 #define __bc_h__
 //---------------------------------------------------------------------------
+
+#define _max_periods_ 20
+
+//---------------------------------------------------------------------------
 // index shift type
 typedef enum
 {
@@ -44,8 +48,12 @@ typedef struct
 	// NOTE! It may be worth storing TPC also as lists (for speedup).
 	//=====================================================================
 
+	FDSTAG   *fs;   // staggered grid
+	TSSol    *ts;   // time stepping parameters
+	Scaling  *scal; // scaling parameters
+
 	// boundary conditions vectors (velocity, pressure, temperature)
-	Vec bcvx,  bcvy, bcvz, bcp, bcT; // local (ghosted)
+	Vec bcvx, bcvy, bcvz, bcp, bcT; // local (ghosted)
 
 	// single-point constraints
 	ShiftType    stype;   // current index shift type
@@ -71,9 +79,16 @@ typedef struct
 	// temperature on top and bottom boundaries
 	PetscScalar  Tbot, Ttop;
 
-	// background strain-rate parameters
-	PetscBool    bgAct;    // flag for activating background strain-rates
-	PetscScalar  Exx, Eyy; // horizontal background strain-rates
+	// horizontal background strain-rate parameters
+	PetscBool    ExxAct;
+	PetscInt     ExxNumPeriods;
+	PetscScalar  ExxTimeDelims [_max_periods_-1];
+	PetscScalar  ExxStrainRates[_max_periods_  ];
+
+	PetscBool    EyyAct;
+	PetscInt     EyyNumPeriods;
+	PetscScalar  EyyTimeDelims [_max_periods_-1];
+	PetscScalar  EyyStrainRates[_max_periods_  ];
 
 	// Dirichlet pushing block constraints
 	PetscBool     pbAct;  // flag for activating pushing
@@ -81,8 +96,6 @@ typedef struct
 	PetscScalar   theta;  // rotation angle
 	PetscScalar   Vx, Vy; // Dirichlet values for Vx and Vy
 	PushParams    *pb;    // major pushing block parameters
-	TSSol         *ts;    // time stepping parameters
-	Scaling       *scal;  // scaling parameters
 
 	// two-point constraints
 //	PetscInt     numTPC;       // number of two-point constraints (TPC)
@@ -102,17 +115,27 @@ PetscErrorCode BCCreate(BCCtx *bc, FDSTAG *fs, TSSol *ts, Scaling *scal);
 // set background strain-rates
 PetscErrorCode BCSetParam(BCCtx *bc, UserCtx *user);
 
+// set parameters from PETSc options
+PetscErrorCode BCReadFromOptions(BCCtx *bc);
+
+// get current background strain rates
+PetscErrorCode BCGetBGStrainRates(
+	BCCtx       *bc,
+	PetscScalar *Exx_,
+	PetscScalar *Eyy_,
+	PetscScalar *Ezz_);
+
 // destroy boundary condition context
 PetscErrorCode BCDestroy(BCCtx *bc);
 
 // apply boundary conditions
-PetscErrorCode BCApply(BCCtx *bc, FDSTAG *fs);
+PetscErrorCode BCApply(BCCtx *bc);
 
 // apply constraints on the boundaries
-PetscErrorCode BCApplyBound(BCCtx *bc, FDSTAG *fs);
+PetscErrorCode BCApplyBound(BCCtx *bc);
 
 // shift indices of constrained nodes
-PetscErrorCode BCShiftIndices(BCCtx *bc, FDSTAG *fs, ShiftType stype);
+PetscErrorCode BCShiftIndices(BCCtx *bc, ShiftType stype);
 
 //---------------------------------------------------------------------------
 
@@ -123,10 +146,13 @@ PetscErrorCode BCSetPush(BCCtx *bc, UserCtx *user);
 PetscErrorCode BCCompPush(BCCtx *bc);
 
 // apply pushing constraints
-PetscErrorCode BCApplyPush(BCCtx *bc, FDSTAG *fs);
+PetscErrorCode BCApplyPush(BCCtx *bc);
 
 // advect the pushing block
-PetscErrorCode BCAdvectPush(BCCtx *bc, TSSol *ts);
+PetscErrorCode BCAdvectPush(BCCtx *bc);
+
+// stretch staggered grid if background strain rates are defined
+PetscErrorCode BCStretchGrid(BCCtx *bc);
 
 //---------------------------------------------------------------------------
 

@@ -220,7 +220,6 @@ PetscErrorCode PMatSetFromOptions(PMat pm)
 #define __FUNCT__ "PMatAssemble"
 PetscErrorCode PMatAssemble(PMat pm)
 {
-	FDSTAG *fs;
 	BCCtx  *bc;
 
 	PetscErrorCode ierr;
@@ -228,16 +227,15 @@ PetscErrorCode PMatAssemble(PMat pm)
 
 	PetscPrintf(PETSC_COMM_WORLD, " Starting preconditioner assembly\n");
 
-	fs = pm->jr->fs;
 	bc = pm->jr->bc;
 
 	// shift constrained node indices to global index space
-	ierr = BCShiftIndices(bc, fs, _LOCAL_TO_GLOBAL_); CHKERRQ(ierr);
+	ierr = BCShiftIndices(bc, _LOCAL_TO_GLOBAL_); CHKERRQ(ierr);
 
 	ierr = pm->Assemble(pm); CHKERRQ(ierr);
 
 	// shift constrained node indices back to local index space
-	ierr = BCShiftIndices(bc, fs, _GLOBAL_TO_LOCAL_); CHKERRQ(ierr);
+	ierr = BCShiftIndices(bc,  _GLOBAL_TO_LOCAL_); CHKERRQ(ierr);
 
 	PetscPrintf(PETSC_COMM_WORLD, " Finished preconditioner assembly\n");
 

@@ -103,38 +103,26 @@ PetscErrorCode FreeSurfReadFromOptions(FreeSurf *surf, Scaling *scal)
 	// read erosion sedimentation parameters
 	//======================================
 
-	ierr = PetscOptionsGetInt(NULL, "-ErosionModel",   &surf->ErosionModel,   NULL); CHKERRQ(ierr);
-	if(surf->ErosionModel < 0 || surf->ErosionModel > 1)
-	{
-		SETERRQ1(PETSC_COMM_SELF, PETSC_ERR_USER, "Wrong erosion model: %lld\n",
-			(LLD)surf->ErosionModel);
-	}
+	ierr = GetIntDataItemCheck("-ErosionModel", "Erosion model",
+		_NOT_FOUND_EXIT_, 1, &surf->ErosionModel, 0, 1); CHKERRQ(ierr);
 
-	ierr = PetscOptionsGetInt(NULL, "-SedimentModel",  &surf->SedimentModel,  NULL); CHKERRQ(ierr);
-	if(surf->SedimentModel < 0 || surf->SedimentModel > 1)
-	{
-		SETERRQ1(PETSC_COMM_SELF, PETSC_ERR_USER, "Wrong sedimentation model: %lld\n",
-			(LLD)surf->SedimentModel);
-	}
+	ierr = GetIntDataItemCheck("-SedimentModel", "Sedimentation model",
+		_NOT_FOUND_EXIT_, 1, &surf->SedimentModel, 0, 1); CHKERRQ(ierr);
 
 	// read prescribed sedimentation rate model parameter
 	if(surf->SedimentModel == 1)
 	{
-		ierr = PetscOptionsGetInt(NULL, "-numLayers",  &surf->numLayers,  NULL); CHKERRQ(ierr);
-		if(surf->numLayers < 1 || surf->numLayers > _max_layers_)
-		{
-			SETERRQ2(PETSC_COMM_SELF, PETSC_ERR_USER, "Out of range number of sediment layers, requested: %lld, range: [1-%lld]\n",
-				(LLD)surf->numLayers, (LLD)_max_layers_);
-		}
+		ierr = GetIntDataItemCheck("-numLayers", "Number of sediment layers",
+			_NOT_FOUND_ERROR_, 1, &surf->numLayers, 1, _max_layers_); CHKERRQ(ierr);
 
-		ierr = GetScalArrayCheckScale("-timeDelims", "Sediment layers time delimiters",
-			surf->numLayers-1, surf->timeDelims, 0.0, 0.0, scal->time); CHKERRQ(ierr);
+		ierr = GetScalDataItemCheckScale("-timeDelims", "Sediment layers time delimiters",
+			_NOT_FOUND_ERROR_, surf->numLayers-1, surf->timeDelims, 0.0, 0.0, scal->time); CHKERRQ(ierr);
 
-		ierr = GetScalArrayCheckScale("-sedRates", "Sedimentation Rates",
-			surf->numLayers, surf->sedRates, 0.0, 0.0, scal->velocity); CHKERRQ(ierr);
+		ierr = GetScalDataItemCheckScale("-sedRates", "Sedimentation Rates",
+			_NOT_FOUND_ERROR_, surf->numLayers, surf->sedRates, 0.0, 0.0, scal->velocity); CHKERRQ(ierr);
 
-		ierr = GetIntArrayCheck("-sedPhases", "Sediment layers phase numbers",
-			surf->numLayers, surf->sedPhases, 0, 0); CHKERRQ(ierr);
+		ierr = GetIntDataItemCheck("-sedPhases", "Sediment layers phase numbers",
+			_NOT_FOUND_ERROR_, surf->numLayers, surf->sedPhases, 0, 0); CHKERRQ(ierr);
 	}
 
 	PetscFunctionReturn(0);
@@ -331,13 +319,14 @@ PetscErrorCode FreeSurfAdvectTopo(FreeSurf *surf)
 	// access context
 	jr   = surf->jr;
 	fs   = jr->fs;
-	Exx  = jr->bc->Exx;
-	Eyy  = jr->bc->Eyy;
 	step = jr->ts.dt;
 	mx   = fs->dsx.tnods;
 	my   = fs->dsy.tnods;
 	L    = fs->dsz.rank;
 	gtol = jr->gtol;
+
+	// get current background strain rates
+	ierr = BCGetBGStrainRates(jr->bc, &Exx, &Eyy, NULL); CHKERRQ(ierr);
 
 	// access surface topography and velocity
 	ierr = DMDAVecGetArray(surf->DA_SURF, surf->gtopo, &advect); CHKERRQ(ierr);

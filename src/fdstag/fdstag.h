@@ -223,8 +223,6 @@ PetscErrorCode FDSTAGDestroy(FDSTAG *fs);
 // generate coordinates of local nodes and cells from segment data
 PetscErrorCode FDSTAGGenCoord(FDSTAG *fs, UserCtx *usr);
 
-PetscErrorCode FDSTAGStretch(FDSTAG *fs, PetscScalar Exx, PetscScalar Eyy, PetscScalar dt);
-
 // set global indices of the local and ghost nodes
 //PetscErrorCode FDSTAGSetGlobInd(FDSTAG * fs);
 

@@ -8,6 +8,7 @@
 #include "tssolve.h"
 #include "bc.h"
 #include "Utils.h"
+#include "tools.h"
 //---------------------------------------------------------------------------
 // * replace BC input specification consistently in the entire code
 // * open box & Winkler (with tangential viscous friction)
@@ -50,10 +51,12 @@ PetscErrorCode BCCreate(BCCtx *bc, FDSTAG *fs, TSSol *ts, Scaling *scal)
 	ierr = makeIntArray (&bc->tSPCList, NULL, fs->dof.lnp); CHKERRQ(ierr);
 	ierr = makeScalArray(&bc->tSPCVals, NULL, fs->dof.lnp); CHKERRQ(ierr);
 
-	bc->bgAct = PETSC_FALSE;
-	bc->pbAct = PETSC_FALSE;
-	bc->pbApp = PETSC_FALSE;
+	bc->ExxAct = PETSC_FALSE;
+	bc->EyyAct = PETSC_FALSE;
+	bc->pbAct  = PETSC_FALSE;
+	bc->pbApp  = PETSC_FALSE;
 
+	bc->fs   = fs;
 	bc->ts   = ts;
 	bc->scal = scal;
 
@@ -97,9 +100,6 @@ PetscErrorCode BCSetParam(BCCtx *bc, UserCtx *user)
 {
 	PetscFunctionBegin;
 
-	bc->bgAct = PETSC_TRUE;
-	bc->Exx   = user->BC.Exx;
-	bc->Eyy   = user->BC.Eyy;
 	bc->Tbot  = user->Temp_bottom;
 	bc->Ttop  = user->Temp_top;
 
@@ -107,9 +107,106 @@ PetscErrorCode BCSetParam(BCCtx *bc, UserCtx *user)
 }
 //---------------------------------------------------------------------------
 #undef __FUNCT__
-#define __FUNCT__ "BCApply"
-PetscErrorCode BCApply(BCCtx *bc, FDSTAG *fs)
+#define __FUNCT__ "BCReadFromOptions"
+PetscErrorCode BCReadFromOptions(BCCtx *bc)
 {
+	// set parameters from PETSc options
+
+	Scaling *scal;
+
+	PetscErrorCode ierr;
+	PetscFunctionBegin;
+
+	scal = bc->scal;
+
+	// x-direction background strain rate
+
+	ierr = GetIntDataItemCheck("-ExxNumPeriods", "Number of Exx background strain rate periods",
+		_NOT_FOUND_EXIT_, 1, &bc->ExxNumPeriods, 1, _max_periods_); CHKERRQ(ierr);
+
+	if(bc->ExxNumPeriods)
+	{
+		bc->ExxAct = PETSC_TRUE;
+
+		ierr = GetScalDataItemCheckScale("-ExxTimeDelims", "Exx background strain rate time delimiters",
+			_NOT_FOUND_ERROR_, bc->ExxNumPeriods-1, bc->ExxTimeDelims, 0.0, 0.0, scal->time); CHKERRQ(ierr);
+
+		ierr = GetScalDataItemCheckScale("-ExxStrainRates", "Exx background strain rates",
+			_NOT_FOUND_ERROR_, bc->ExxNumPeriods, bc->ExxStrainRates, 0.0, 0.0, scal->strain_rate); CHKERRQ(ierr);
+	}
+
+	// y-direction background strain rate
+
+	ierr = GetIntDataItemCheck("-EyyNumPeriods", "Number of Eyy background strain rate periods",
+		_NOT_FOUND_EXIT_, 1, &bc->EyyNumPeriods, 1, _max_periods_); CHKERRQ(ierr);
+
+	if(bc->EyyNumPeriods)
+	{
+		bc->EyyAct = PETSC_TRUE;
+
+		ierr = GetScalDataItemCheckScale("-EyyTimeDelims", "Eyy background strain rate time delimiters",
+			_NOT_FOUND_ERROR_, bc->EyyNumPeriods-1, bc->EyyTimeDelims, 0.0, 0.0, scal->time); CHKERRQ(ierr);
+
+		ierr = GetScalDataItemCheckScale("-EyyStrainRates", "Eyy background strain rates",
+			_NOT_FOUND_ERROR_, bc->EyyNumPeriods, bc->EyyStrainRates, 0.0, 0.0, scal->strain_rate); CHKERRQ(ierr);
+	}
+
+	PetscFunctionReturn(0);
+}
+//---------------------------------------------------------------------------
+#undef __FUNCT__
+#define __FUNCT__ "BCGetBGStrainRates"
+PetscErrorCode BCGetBGStrainRates(BCCtx *bc, PetscScalar *Exx_, PetscScalar *Eyy_, PetscScalar *Ezz_)
+{
+	// get current background strain rates
+
+	PetscInt    jj;
+	PetscScalar time, Exx, Eyy, Ezz;
+
+	// initialize
+	time = bc->ts->time;
+	Exx  = 0.0;
+	Eyy  = 0.0;
+	Ezz  = 0.0;
+
+	// x-direction background strain rate
+	if(bc->ExxAct == PETSC_TRUE)
+	{
+		for(jj = 0; jj < bc->ExxNumPeriods-1; jj++)
+		{
+			if(time < bc->ExxTimeDelims[jj]) break;
+		}
+
+		Exx = bc->EyyStrainRates[jj];
+	}
+
+	// y-direction background strain rate
+	if(bc->EyyAct == PETSC_TRUE)
+	{
+		for(jj = 0; jj < bc->EyyNumPeriods-1; jj++)
+		{
+			if(time < bc->EyyTimeDelims[jj]) break;
+		}
+
+		Eyy = bc->EyyStrainRates[jj];
+	}
+
+	// z-direction background strain rate
+	Ezz = -(Exx+Eyy);
+
+	// store result
+	if(Exx_) (*Exx_) = Exx;
+	if(Eyy_) (*Eyy_) = Eyy;
+	if(Ezz_) (*Ezz_) = Ezz;
+
+	PetscFunctionReturn(0);
+}
+//---------------------------------------------------------------------------
+#undef __FUNCT__
+#define __FUNCT__ "BCApply"
+PetscErrorCode BCApply(BCCtx *bc)
+{
+	FDSTAG      *fs;
 	DOFIndex    *dof;
 	PetscScalar *SPCVals;
 	PetscInt    i, ln, lnv, numSPC, vNumSPC, pNumSPC, *SPCList;
@@ -118,6 +215,7 @@ PetscErrorCode BCApply(BCCtx *bc, FDSTAG *fs)
 	PetscFunctionBegin;
 
 	// access context
+	fs      = bc->fs;
 	dof     = &fs->dof;
 	ln      = dof->ln;
 	lnv     = dof->lnv;
@@ -134,13 +232,13 @@ PetscErrorCode BCApply(BCCtx *bc, FDSTAG *fs)
 	for(i = 0; i < ln; i++) SPCVals[i] = DBL_MAX;
 
 	// apply boundary constraints
-	ierr = BCApplyBound(bc, fs); CHKERRQ(ierr);
+	ierr = BCApplyBound(bc); CHKERRQ(ierr);
 
 	// compute pushing parameters
 	ierr = BCCompPush(bc); CHKERRQ(ierr);
 
 	// apply pushing block constraints
-	ierr = BCApplyPush(bc, fs); CHKERRQ(ierr);
+	ierr = BCApplyPush(bc); CHKERRQ(ierr);
 
 	// exchange ghost point constraints
 	// AVOID THIS BY SETTING CONSTRAINTS REDUNDANTLY
@@ -198,8 +296,9 @@ PetscErrorCode BCApply(BCCtx *bc, FDSTAG *fs)
 //---------------------------------------------------------------------------
 #undef __FUNCT__
 #define __FUNCT__ "BCShiftIndices"
-PetscErrorCode BCShiftIndices(BCCtx *bc, FDSTAG *fs, ShiftType stype)
+PetscErrorCode BCShiftIndices(BCCtx *bc, ShiftType stype)
 {
+	FDSTAG   *fs;
 	DOFIndex *dof;
 	PetscInt i, vShift, pShift;
 
@@ -212,6 +311,7 @@ PetscErrorCode BCShiftIndices(BCCtx *bc, FDSTAG *fs, ShiftType stype)
 	}
 
 	// access context
+	fs       = bc->fs;
 	dof      = &fs->dof;
 	vNumSPC  = bc->vNumSPC;
 	vSPCList = bc->vSPCList;
@@ -242,7 +342,7 @@ PetscErrorCode BCShiftIndices(BCCtx *bc, FDSTAG *fs, ShiftType stype)
 //---------------------------------------------------------------------------
 #undef __FUNCT__
 #define __FUNCT__ "BCApplyBound"
-PetscErrorCode BCApplyBound(BCCtx *bc, FDSTAG *fs)
+PetscErrorCode BCApplyBound(BCCtx *bc)
 {
 	// initialize boundary conditions vectors
 
@@ -255,6 +355,7 @@ PetscErrorCode BCApplyBound(BCCtx *bc, FDSTAG *fs)
 	//    ONLY ZERO BOUNDARY HEAT FLUXES ARE IMPLEMENTED
 	//    TWO-POINT CONSTRAINTS MUST BE SET ON CROSS-PROCESSOR GHOST POINTS
 	// *************************************************************
+	FDSTAG      *fs;
 	PetscScalar Tbot, Ttop;
 	PetscScalar Exx, Eyy, Ezz;
 	PetscScalar bx,  by,  bz;
@@ -270,6 +371,9 @@ PetscErrorCode BCApplyBound(BCCtx *bc, FDSTAG *fs)
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
 
+	// access context
+	fs = bc->fs;
+
 	// initialize maximal index in all directions
 	mnx = fs->dsx.tnods - 1;
 	mny = fs->dsy.tnods - 1;
@@ -278,30 +382,18 @@ PetscErrorCode BCApplyBound(BCCtx *bc, FDSTAG *fs)
 //	mcy = fs->dsy.tcels - 1;
 	mcz = fs->dsz.tcels - 1;
 
+	// get current coordinates of the mesh boundaries
+	ierr = FDSTAGGetGlobalBox(fs, &bx, &by, &bz, &ex, &ey, &ez); CHKERRQ(ierr);
+
+	// get background strain rates
+	ierr = BCGetBGStrainRates(bc, &Exx, &Eyy, &Ezz); CHKERRQ(ierr);
+
 	// get boundary velocities
-	if(bc->bgAct == PETSC_TRUE)
-	{
-		// get current coordinates of the mesh boundaries
-		ierr = FDSTAGGetGlobalBox(fs, &bx, &by, &bz, &ex, &ey, &ez); CHKERRQ(ierr);
-
-		// get background strain rates
-		Exx =   bc->Exx;
-		Eyy =   bc->Eyy;
-		Ezz = -(Exx+Eyy);
-
-		// get boundary velocities
-		// coordinate origin is assumed to be fixed
-		// velocity is a product of strain rate and coordinate
-		vbx = bx*Exx;   vex = ex*Exx;
-		vby = by*Eyy;   vey = ey*Eyy;
-		vbz = bz*Ezz;   vez = ez*Ezz;
-	}
-	else
-	{
-		vbx = 0.0;   vex = 0.0;
-		vby = 0.0;   vey = 0.0;
-		vbz = 0.0;   vez = 0.0;
-	}
+	// coordinate origin is assumed to be fixed
+	// velocity is a product of strain rate and coordinate
+	vbx = bx*Exx;   vex = ex*Exx;
+	vby = by*Eyy;   vey = ey*Eyy;
+	vbz = bz*Ezz;   vez = ez*Ezz;
 
 	// get boundary temperatures
 	Tbot = bc->Tbot;
@@ -484,20 +576,21 @@ PetscErrorCode BCCompPush(BCCtx *bc)
 //---------------------------------------------------------------------------
 #undef __FUNCT__
 #define __FUNCT__ "BCApplyPush"
-PetscErrorCode BCApplyPush(BCCtx *bc, FDSTAG *fs)
+PetscErrorCode BCApplyPush(BCCtx *bc)
 {
 	// initialize internal (pushing) boundary conditions vectors
 	// only x, y velocities are constrained!!
 	// constraining vz makes a bad case - will not converge.
 
-	PushParams    *pb;
-	PetscScalar   xc, yc, zc;
-	PetscScalar	  dx, dy, dz;
-	PetscScalar   px, py, pz;
-	PetscScalar   rx, ry, rz;
-	PetscScalar   costh, sinth;
-	PetscScalar   ***bcvx,  ***bcvy, *SPCVals;
-	PetscInt      i, j, k, nx, ny, nz, sx, sy, sz, iter;
+	FDSTAG      *fs;
+	PushParams  *pb;
+	PetscScalar xc, yc, zc;
+	PetscScalar	dx, dy, dz;
+	PetscScalar px, py, pz;
+	PetscScalar rx, ry, rz;
+	PetscScalar costh, sinth;
+	PetscScalar ***bcvx,  ***bcvy, *SPCVals;
+	PetscInt    i, j, k, nx, ny, nz, sx, sy, sz, iter;
 
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
@@ -506,7 +599,8 @@ PetscErrorCode BCApplyPush(BCCtx *bc, FDSTAG *fs)
 	if(bc->pbApp != PETSC_TRUE) PetscFunctionReturn(0);
 
 	// prepare block coordinates, sizes & rotation angle parameters
-    pb    = bc->pb;
+	fs    = bc->fs;
+	pb    = bc->pb;
     xc    = pb->x_center_block;
 	yc    = pb->y_center_block;
 	zc    = pb->z_center_block;
@@ -598,17 +692,19 @@ PetscErrorCode BCApplyPush(BCCtx *bc, FDSTAG *fs)
 //---------------------------------------------------------------------------
 #undef __FUNCT__
 #define __FUNCT__ "BCAdvectPush"
-PetscErrorCode BCAdvectPush(BCCtx *bc, TSSol *ts)
+PetscErrorCode BCAdvectPush(BCCtx *bc)
 {
-	PushParams    *pb;
-	PetscInt      advc, ichange;
-	PetscScalar   xc, yc, zc, Vx, Vy, dx, dy, dt, omega, theta, dtheta;
+	TSSol        *ts;
+	PushParams   *pb;
+	PetscInt     advc, ichange;
+	PetscScalar  xc, yc, zc, Vx, Vy, dx, dy, dt, omega, theta, dtheta;
 
 	// check if pushing option is activated
 	if(bc->pbAct != PETSC_TRUE) PetscFunctionReturn(0);
 
 	// access context
 	pb = bc->pb;
+	ts = bc->ts;
 
 	// check time interval
 	if(ts->time >= pb->time[0]
@@ -664,6 +760,43 @@ PetscErrorCode BCAdvectPush(BCCtx *bc, TSSol *ts)
 			pb->z_center_block = zc;
 		}
 	}
+
+	PetscFunctionReturn(0);
+}
+//---------------------------------------------------------------------------
+#undef __FUNCT__
+#define __FUNCT__ "BCStretchGrid"
+PetscErrorCode BCStretchGrid(BCCtx *bc)
+{
+	// apply background strain-rate "DWINDLAR" BC (Bob Shaw "Ship of Strangers")
+
+	// Stretch grid with constant stretch factor about coordinate origin.
+	// The origin point remains fixed, and the displacements of all points are
+	// proportional to the distance from the origin (i.e. coordinate).
+	// The origin (zero) point must remain within domain (checked at input).
+	// Stretch factor is positive at extension, i.e.:
+	// eps = (L_new-L_old)/L_old
+	// L_new = L_old + eps*L_old
+	// x_new = x_old + eps*x_old
+
+	TSSol       *ts;
+	FDSTAG      *fs;
+	PetscScalar Exx, Eyy, Ezz;
+
+	PetscErrorCode ierr;
+	PetscFunctionBegin;
+
+	// access context
+	fs = bc->fs;
+	ts = bc->ts;
+
+	// get background strain rates
+	ierr = BCGetBGStrainRates(bc, &Exx, &Eyy, &Ezz); CHKERRQ(ierr);
+
+	// stretch grid
+	if(Exx) { ierr = Discret1DStretch(&fs->dsx, &fs->msx, Exx*ts->dt); CHKERRQ(ierr); }
+	if(Eyy) { ierr = Discret1DStretch(&fs->dsy, &fs->msy, Eyy*ts->dt); CHKERRQ(ierr); }
+	if(Ezz) { ierr = Discret1DStretch(&fs->dsz, &fs->msz, Ezz*ts->dt); CHKERRQ(ierr); }
 
 	PetscFunctionReturn(0);
 }

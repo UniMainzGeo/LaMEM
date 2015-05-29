@@ -154,10 +154,19 @@ PetscErrorCode LaMEMLib_FDSTAG(void *echange_ctx)
 	ierr = BCSetParam(&bc, &user); CHKERRQ(ierr);
 
 	// overwrite grid info if restart and background strain-rates are applied - before marker init
-	if (user.restart==1 && bc.bgAct==PETSC_TRUE) { ierr = BreakReadGrid(&user, &fs); CHKERRQ(ierr); }
+	// get rid of this!
+	if(user.restart == 1
+	&&(bc.ExxAct    == PETSC_TRUE
+	|| bc.EyyAct    == PETSC_TRUE))
+	{
+		ierr = BreakReadGrid(&user, &fs); CHKERRQ(ierr);
+	}
 
 	// set pushing block parameters
 	ierr = BCSetPush(&bc, &user); CHKERRQ(ierr);
+
+	// set parameters from PETSc options
+	ierr = BCReadFromOptions(&bc); CHKERRQ(ierr);
 
 	// create Jacobian & residual evaluation context
 	ierr = JacResCreate(&jr, &fs, &bc); CHKERRQ(ierr);
@@ -166,7 +175,7 @@ PetscErrorCode LaMEMLib_FDSTAG(void *echange_ctx)
 	ierr = FreeSurfCreate(&surf, &jr); CHKERRQ(ierr);
 
 	// initialize free surface from breakpoints if restart
-	if (user.restart==1 && surf.UseFreeSurf==PETSC_TRUE) { ierr = BreakReadSurf(&fs, &surf); CHKERRQ(ierr); }
+	if (user.restart == 1 && surf.UseFreeSurf == PETSC_TRUE) { ierr = BreakReadSurf(&fs, &surf); CHKERRQ(ierr); }
 
 	// create advection context
 	ierr = ADVCreate(&actx, &fs, &jr); CHKERRQ(ierr);
@@ -219,7 +228,7 @@ ierr = ADVMarkCrossFreeSurf(&actx, &surf); CHKERRQ(ierr);
 		//====================================
 
 		// initialize boundary constraint vectors
-		ierr = BCApply(&bc, &fs); CHKERRQ(ierr);
+		ierr = BCApply(&bc); CHKERRQ(ierr);
 
 
 
@@ -275,7 +284,7 @@ ierr = JacResCopyTemp(&jr); CHKERRQ(ierr);
 		ierr = ADVAdvect(&actx); CHKERRQ(ierr);
 
 		// apply background strain-rate "DWINDLAR" BC (Bob Shaw "Ship of Strangers")
-		ierr = FDSTAGStretch(&fs, bc.Exx, bc.Eyy, jr.ts.dt); CHKERRQ(ierr);
+		ierr = BCStretchGrid(&bc); CHKERRQ(ierr);
 
 		// exchange markers between the processors (after mesh advection)
 		ierr = ADVExchange(&actx); CHKERRQ(ierr);
@@ -296,7 +305,7 @@ ierr = JacResCopyTemp(&jr); CHKERRQ(ierr);
 		ierr = FreeSurfGetAirPhaseRatio(&surf); CHKERRQ(ierr);
 
 		// advect pushing block
-		ierr = BCAdvectPush(&bc, &jr.ts); CHKERRQ(ierr);
+		ierr = BCAdvectPush(&bc); CHKERRQ(ierr);
 
 		//==================
 		// Save data to disk

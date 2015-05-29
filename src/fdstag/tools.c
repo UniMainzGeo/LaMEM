@@ -35,18 +35,19 @@ PetscScalar getStdv(PetscScalar *data, PetscInt n)
 // read arrays from PETSC options database with error checking
 //---------------------------------------------------------------------------
 #undef __FUNCT__
-#define __FUNCT__ "GetScalArrayCheckScale"
-PetscErrorCode GetScalArrayCheckScale(
+#define __FUNCT__ "GetScalDataItemCheckScale"
+PetscErrorCode GetScalDataItemCheckScale(
 	const char  ident[],
 	const char  name[],
+	exitType    extp,
 	PetscInt    n,
-	PetscScalar a[],
+	PetscScalar *a,
 	PetscScalar amin,
 	PetscScalar amax,
 	PetscScalar scal)
 {
 	PetscInt  i;
-	PetscBool set;
+	PetscBool found;
 	PetscInt  nmax;
 
 	PetscErrorCode ierr;
@@ -59,18 +60,25 @@ PetscErrorCode GetScalArrayCheckScale(
 	nmax = n;
 
 	// read array
-	ierr = PetscOptionsGetRealArray(NULL, ident,  a, &nmax, &set); CHKERRQ(ierr);
+	ierr = PetscOptionsGetRealArray(NULL, ident,  a, &nmax, &found); CHKERRQ(ierr);
 
-	// check array exists
-	if(set != PETSC_TRUE)
+	// check data item exists
+	if(found != PETSC_TRUE)
 	{
-		SETERRQ1(PETSC_COMM_SELF, PETSC_ERR_USER, "Array \"%s\" is not found\n", name);
+		if(extp == _NOT_FOUND_ERROR_)
+		{
+			SETERRQ1(PETSC_COMM_SELF, PETSC_ERR_USER, "Data item \"%s\" is not found\n", name);
+		}
+		else if(extp == _NOT_FOUND_EXIT_)
+		{
+			PetscFunctionReturn(0);
+		}
 	}
 
 	// check correct number of elements is provided
 	if(nmax != n)
 	{
-		SETERRQ3(PETSC_COMM_SELF, PETSC_ERR_USER, "Wrong number of elements in array \"%s\" , actual: %lld, expected: %lld\n", name, (LLD)nmax, (LLD)n);
+		SETERRQ3(PETSC_COMM_SELF, PETSC_ERR_USER, "Wrong number of elements in data item \"%s\" , actual: %lld, expected: %lld\n", name, (LLD)nmax, (LLD)n);
 	}
 
 	// check ranges
@@ -80,8 +88,8 @@ PetscErrorCode GetScalArrayCheckScale(
 		{
 			if(a[i] < amin || a[i] > amax)
 			{
-				SETERRQ5(PETSC_COMM_SELF, PETSC_ERR_USER, "Element %lld of array \"%s\" is out of bound, actual: %e, range: [%e - %e]\n",
-					(LLD)i, name, a[i], amin, amax);
+				SETERRQ5(PETSC_COMM_SELF, PETSC_ERR_USER, "Data item \"%s\" is out of bound, actual: %e, range: [%e - %e], element %lld\n",
+					name, a[i], amin, amax, (LLD)i);
 			}
 		}
 	}
@@ -96,17 +104,18 @@ PetscErrorCode GetScalArrayCheckScale(
 }
 //---------------------------------------------------------------------------
 #undef __FUNCT__
-#define __FUNCT__ "GetIntArrayCheck"
-PetscErrorCode GetIntArrayCheck(
+#define __FUNCT__ "GetIntDataItemCheck"
+PetscErrorCode GetIntDataItemCheck(
 	const char  ident[],
 	const char  name[],
+	exitType    extp,
 	PetscInt    n,
-	PetscInt    a[],
+	PetscInt    *a,
 	PetscInt    amin,
 	PetscInt    amax)
 {
 	PetscInt  i;
-	PetscBool set;
+	PetscBool found;
 	PetscInt  nmax;
 
 	PetscErrorCode ierr;
@@ -119,18 +128,25 @@ PetscErrorCode GetIntArrayCheck(
 	nmax = n;
 
 	// read array
-	ierr = PetscOptionsGetIntArray(NULL, ident,  a, &nmax, &set); CHKERRQ(ierr);
+	ierr = PetscOptionsGetIntArray(NULL, ident,  a, &nmax, &found); CHKERRQ(ierr);
 
-	// check array exists
-	if(set != PETSC_TRUE)
+	// check data item exists
+	if(found != PETSC_TRUE)
 	{
-		SETERRQ1(PETSC_COMM_SELF, PETSC_ERR_USER, "Array \"%s\" is undefined\n", name);
+		if(extp == _NOT_FOUND_ERROR_)
+		{
+			SETERRQ1(PETSC_COMM_SELF, PETSC_ERR_USER, "Data item \"%s\" is not found\n", name);
+		}
+		else if(extp == _NOT_FOUND_EXIT_)
+		{
+			PetscFunctionReturn(0);
+		}
 	}
 
 	// check correct number of elements is provided
 	if(nmax != n)
 	{
-		SETERRQ3(PETSC_COMM_SELF, PETSC_ERR_USER, "Wrong number of elements in array \"%s\" , actual: %lld, expected: %lld\n", name, (LLD)nmax, (LLD)n);
+		SETERRQ3(PETSC_COMM_SELF, PETSC_ERR_USER, "Wrong number of elements in data item \"%s\", actual: %lld, expected: %lld\n", name, (LLD)nmax, (LLD)n);
 	}
 
 	// check ranges
@@ -140,11 +156,12 @@ PetscErrorCode GetIntArrayCheck(
 		{
 			if(a[i] < amin || a[i] > amax)
 			{
-				SETERRQ5(PETSC_COMM_SELF, PETSC_ERR_USER, "Element %lld of array \"%s\" is out of bound, actual: %lld, range: [%lld - %lld]\n",
-					(LLD)i, name, (LLD)a[i], (LLD)amin, (LLD)amax);
+				SETERRQ5(PETSC_COMM_SELF, PETSC_ERR_USER, "Data item \"%s\" is out of bound, actual: %lld, range: [%lld - %lld], element %lld\n",
+					name, (LLD)a[i], (LLD)amin, (LLD)amax, (LLD)i);
 			}
 		}
 	}
+
 
 	PetscFunctionReturn(0);
 }
