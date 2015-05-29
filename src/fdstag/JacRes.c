@@ -1593,6 +1593,7 @@ PetscErrorCode JacResViewRes(JacRes *jr)
 	PetscPrintf(PETSC_COMM_WORLD, "------------------------------------------\n");
 
 	// stop if divergence more than tolerance
+	div_tol = 0.0;
 	ierr = PetscOptionsGetScalar(NULL, "-div_tol",  &div_tol,  NULL); CHKERRQ(ierr);
 
 	if ((div_tol) && (( dmax > div_tol ) || (f2 > div_tol)))
