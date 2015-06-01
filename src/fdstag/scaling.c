@@ -370,8 +370,9 @@ void ScalingMatProp(Scaling *scal, Material_t *phases, PetscInt numPhases)
 void ScalingMatParLim(Scaling *scal, MatParLim *matLim)
 {
 	// scale gas constant with characteristic temperature
-	matLim->Rugc      *= scal->temperature;
-	matLim->rho_fluid /= scal->density;
+	matLim->Rugc        *= scal->temperature;
+	matLim->rho_fluid   /= scal->density;
+	matLim->theta_north /= scal->angle;
 }
 //---------------------------------------------------------------------------
 void ScalingMeshSegDir(Scaling *scal, MeshSegInp *msi)

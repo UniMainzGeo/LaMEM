@@ -1646,6 +1646,7 @@ PetscErrorCode SetMatParLim(MatParLim *matLim, UserCtx *usr)
 	matLim->quasiHarmAvg = PETSC_FALSE;
 	matLim->initGuessFlg = PETSC_TRUE;
 	matLim->rho_fluid    = 0.0;
+	matLim->theta_north  = 90.0; // by default y-axis
 
 	// read additional options
 	ierr = PetscOptionsHasName(PETSC_NULL, "-use_quasi_harmonic_viscosity", &quasi_harmonic); CHKERRQ(ierr);
@@ -1656,6 +1657,8 @@ PetscErrorCode SetMatParLim(MatParLim *matLim, UserCtx *usr)
 	}
 
 	ierr = PetscOptionsGetScalar(NULL, "-rho_fluid", &matLim->rho_fluid, NULL); CHKERRQ(ierr);
+
+	ierr = PetscOptionsGetScalar(NULL, "-theta_north", &matLim->theta_north, NULL); CHKERRQ(ierr);
 
 	PetscFunctionReturn(0);
 }

@@ -434,7 +434,10 @@ PetscErrorCode PVOutWriteTotDispl(JacRes *jr, OutBuf *outbuf)
 PetscErrorCode PVOutWriteSHmax(JacRes *jr, OutBuf *outbuf)
 {
 	SolVarCell  *svCell;
-	PetscScalar ***lsxy, sxx, syy, sxy;
+	PetscScalar ***lsxy, sxx, syy, sxy, theta_north;
+
+	// get direction to the North
+	theta_north = jr->matLim.theta_north;
 
 	COPY_FUNCTION_HEADER
 
@@ -457,7 +460,7 @@ PetscErrorCode PVOutWriteSHmax(JacRes *jr, OutBuf *outbuf)
 		sxx = svCell->sxx; \
 		syy = svCell->syy; \
 		sxy = (lsxy[k][j][i] + lsxy[k][j][i+1] + lsxy[k][j+1][i] + lsxy[k][j+1][i+1])/4.0; \
-		buff[k][j][i] = atan2(2.0*sxy, sxx-syy)/2.0;
+		buff[k][j][i] = -(atan2(2.0*sxy, sxx-syy)/2.0 + M_PI/2.0 - theta_north);
 
 	COPY_TO_LOCAL_BUFFER(fs->DA_XY, outbuf->lbxy, GET_SXY)
 

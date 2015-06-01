@@ -197,6 +197,8 @@ typedef struct
 	PetscBool   initGuessFlg; // initial guess computation flag
 	// fluid density for depth-dependent density model
 	PetscScalar  rho_fluid;
+	// direction to the North for stress orientation
+	PetscScalar  theta_north;
 
 } MatParLim;
 
