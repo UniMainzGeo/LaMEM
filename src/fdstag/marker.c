@@ -1642,14 +1642,19 @@ PetscErrorCode ADVMarkInitFilePolygons(AdvCtx *actx, UserCtx *user)
 		//PetscPrintf(PETSC_COMM_WORLD," Created vol %lld/%lld [%g sec]: phase %lld, %lld slices, %c-normal-dir; found %lld markers \n",(LLD)kvol+1,(LLD)VolN, t1-t0, (LLD)Poly.phase, (LLD)Poly.num, normalDir[Poly.dir], (LLD)nmark_all);
 		PetscPrintf(PETSC_COMM_WORLD,"[Rank 0] Created vol %lld/%lld [%g sec]: phase %lld, %lld slices, %c-normal-dir; found %lld markers \n",(LLD)kvol+1,(LLD)VolN, t1-t0, (LLD)Poly.phase, (LLD)Poly.num, normalDir[Poly.dir], (LLD)Poly.nmark);
 	}
-	
+
+
+// This part causes a crash for me as I havn't defined a temperature file: Please resolve
 	// Set temperature from file if a Temperature file is specified in the input
-	if(strcmp(user->TemperatureFilename,"noTemperatureFilename"))
+/*	if(strcmp(user->TemperatureFilename,"noTemperatureFilename"))
 	{
 		ierr = ADVMarkSetTempFromFile(actx,user);
 		CHKERRQ(ierr);
 	}
-	
+*/	
+
+
+
 	// free
 	PetscFree(idx);
 	PetscFree(polyin);
