@@ -118,7 +118,7 @@ typedef struct
 	PetscInt plast_strain;   // accumulated plastic strain
 	PetscInt plast_dissip;   // plastic dissipation
 	PetscInt tot_displ;      // total displacements
-	PetscInt phrat[max_num_phases]; // phase ratios
+	PetscInt SHmax;          // maximum horizontal stress
 	// === debugging vectors ===============================================
 	PetscInt moment_res;     // momentum residual
 	PetscInt cont_res;       // continuity residual
@@ -129,6 +129,7 @@ typedef struct
 	PetscInt DII_YZ;         // effective strain rate invariant on yz-edge
 
 	// ... add more output vector identifiers here
+//	PetscInt phrat[max_num_phases]; // phase ratios
 
 } OutMask;
 //---------------------------------------------------------------------------

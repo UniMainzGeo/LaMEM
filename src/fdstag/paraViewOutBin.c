@@ -262,6 +262,7 @@ PetscInt OutMaskCountActive(OutMask *omask)
 	if(omask->plast_strain)   cnt++; // accumulated plastic strain
 	if(omask->plast_dissip)   cnt++; // plastic dissipation
 	if(omask->tot_displ)      cnt++; // total displacements
+	if(omask->SHmax)          cnt++; // maximum horizontal stress
 	// === debugging vectors ===============================================
 	if(omask->moment_res)     cnt++; // momentum residual
 	if(omask->cont_res)       cnt++; // continuity residual
@@ -356,6 +357,7 @@ PetscErrorCode PVOutCreate(PVOut *pvout, JacRes *jr, const char *filename)
 	if(omask->plast_strain)   OutVecCreate(&outvecs[cnt++], "plast_strain",   scal->lbl_unit,             &PVOutWritePlastStrain,  1);
 	if(omask->plast_dissip)   OutVecCreate(&outvecs[cnt++], "plast_dissip",   scal->lbl_dissipation_rate, &PVOutWritePlastDissip,  1);
 	if(omask->tot_displ)      OutVecCreate(&outvecs[cnt++], "tot_displ",      scal->lbl_length,           &PVOutWriteTotDispl,     3);
+	if(omask->SHmax)          OutVecCreate(&outvecs[cnt++], "SHmax",          scal->lbl_unit,             &PVOutWriteSHmax,        3);
 	// === debugging vectors ===============================================
 	if(omask->moment_res)     OutVecCreate(&outvecs[cnt++], "moment_res",     scal->lbl_volumetric_force, &PVOutWriteMomentRes,    3);
 	if(omask->cont_res)       OutVecCreate(&outvecs[cnt++], "cont_res",       scal->lbl_strain_rate,      &PVOutWriteContRes,      1);
@@ -396,6 +398,7 @@ PetscErrorCode PVOutReadFromOptions(PVOut *pvout)
 	ierr = PetscOptionsGetInt(NULL, "-out_vorticity",      &omask->vorticity,      NULL); CHKERRQ(ierr);
 	ierr = PetscOptionsGetInt(NULL, "-out_ang_vel_mag",    &omask->ang_vel_mag,    NULL); CHKERRQ(ierr);
 	ierr = PetscOptionsGetInt(NULL, "-out_tot_strain",     &omask->tot_strain,     NULL); CHKERRQ(ierr);
+	ierr = PetscOptionsGetInt(NULL, "-out_shmax",          &omask->SHmax,          NULL); CHKERRQ(ierr);
 	ierr = PetscOptionsGetInt(NULL, "-out_plast_strain",   &omask->plast_strain,   NULL); CHKERRQ(ierr);
 	ierr = PetscOptionsGetInt(NULL, "-out_plast_dissip",   &omask->plast_dissip,   NULL); CHKERRQ(ierr);
 	ierr = PetscOptionsGetInt(NULL, "-out_tot_displ",      &omask->tot_displ,      NULL); CHKERRQ(ierr);

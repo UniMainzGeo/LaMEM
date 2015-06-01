@@ -45,7 +45,7 @@
 	iflag.update    = PETSC_FALSE; \
 	iflag.use_bound = PETSC_FALSE;
 //---------------------------------------------------------------------------
-#define INTERPOLATE_COPY(da, vec, IFUNCT, FIELD, ncomp, dir) \
+#define COPY_TO_LOCAL_BUFFER(da, vec, FIELD) \
 	ierr = DMDAGetCorners (da, &sx, &sy, &sz, &nx, &ny, &nz); CHKERRQ(ierr); \
 	ierr = DMDAVecGetArray(da, vec, &buff); CHKERRQ(ierr); \
 	iter = 0; \
@@ -53,7 +53,10 @@
 		FIELD \
 	END_STD_LOOP \
 	ierr = DMDAVecRestoreArray(da, vec, &buff); CHKERRQ(ierr); \
-	LOCAL_TO_LOCAL(da, vec) \
+	LOCAL_TO_LOCAL(da, vec)
+//---------------------------------------------------------------------------
+#define INTERPOLATE_COPY(da, vec, IFUNCT, FIELD, ncomp, dir) \
+	COPY_TO_LOCAL_BUFFER(da, vec, FIELD) \
 	ierr = IFUNCT(fs, vec, outbuf->lbcor, iflag); CHKERRQ(ierr); \
 	if(iflag.update != PETSC_TRUE) \
 	{	ierr = OutBufPut3DVecComp(outbuf, ncomp, dir, cf, 0.0); CHKERRQ(ierr); }
@@ -422,6 +425,54 @@ PetscErrorCode PVOutWriteTotDispl(JacRes *jr, OutBuf *outbuf)
 	ierr = 0; CHKERRQ(ierr);
 	if(jr)  jr = NULL;
 	if(outbuf) outbuf = NULL;
+
+	PetscFunctionReturn(0);
+}
+//---------------------------------------------------------------------------
+#undef __FUNCT__
+#define __FUNCT__ "PVOutWriteSHmax"
+PetscErrorCode PVOutWriteSHmax(JacRes *jr, OutBuf *outbuf)
+{
+	SolVarCell  *svCell;
+	PetscScalar ***lsxy, sxx, syy, sxy;
+
+	COPY_FUNCTION_HEADER
+
+	#define GET_SHMAX_CENTER \
+		svCell = &jr->svCell[iter++]; \
+		sxx = svCell->sxx; \
+		syy = svCell->syy; \
+		sxy = (lsxy[k][j][i] + lsxy[k][j][i+1] + lsxy[k][j+1][i] + lsxy[k][j+1][i+1])/4.0; \
+		buff[k][j][i] = (sxx+syy)/2.0 + sqrt((sxx-syy)*(sxx-syy)/4.0 + sxy*sxy);
+
+	#define GET_SHMIN_CENTER \
+		svCell = &jr->svCell[iter++]; \
+		sxx = svCell->sxx; \
+		syy = svCell->syy; \
+		sxy = (lsxy[k][j][i] + lsxy[k][j][i+1] + lsxy[k][j+1][i] + lsxy[k][j+1][i+1])/4.0; \
+		buff[k][j][i] = (sxx+syy)/2.0 - sqrt((sxx-syy)*(sxx-syy)/4.0 + sxy*sxy);
+
+	#define GET_THETA_CENTER \
+		svCell = &jr->svCell[iter++]; \
+		sxx = svCell->sxx; \
+		syy = svCell->syy; \
+		sxy = (lsxy[k][j][i] + lsxy[k][j][i+1] + lsxy[k][j+1][i] + lsxy[k][j+1][i+1])/4.0; \
+		buff[k][j][i] = atan2(2.0*sxy, sxx-syy)/2.0;
+
+	COPY_TO_LOCAL_BUFFER(fs->DA_XY, outbuf->lbxy, GET_SXY)
+
+	ierr = DMDAVecGetArray(fs->DA_XY, outbuf->lbxy, &lsxy); CHKERRQ(ierr);
+
+	cf = scal->stress;
+
+	INTERPOLATE_COPY(fs->DA_CEN, outbuf->lbcen, InterpCenterCorner, GET_SHMAX_CENTER, 3, 0)
+	INTERPOLATE_COPY(fs->DA_CEN, outbuf->lbcen, InterpCenterCorner, GET_SHMIN_CENTER, 3, 1)
+
+	cf = scal->unit;
+
+	INTERPOLATE_COPY(fs->DA_CEN, outbuf->lbcen, InterpCenterCorner, GET_THETA_CENTER, 3, 2)
+
+	ierr = DMDAVecRestoreArray(fs->DA_XY, outbuf->lbxy, &lsxy); CHKERRQ(ierr);
 
 	PetscFunctionReturn(0);
 }
