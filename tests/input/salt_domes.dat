@@ -181,8 +181,9 @@ DII_ref              = 1e-15
 
 # salt domes setup
 
-	-domes_salt_bot -4.5
-	-domes_salt_top -4.2
+	-domes_anhydrite_bot -4.5
+	-domes_anhydrite_top -4.2
+	-domes_anhydrite_phase 5
 	-rho_fluid 1000.0
 
 # output flags
@@ -244,6 +245,13 @@ DII_ref              = 1e-15
 		rho_n = 0.4173
 		rho_c = 4.0032e-4
 		eta   = 1e23
+	<MaterialEnd>
+
+	# Anhydrite -----------------
+	<MaterialStart>
+		ID   = 5
+		rho0 = 2300.0
+		eta  = 1e19
 	<MaterialEnd>
 
 #===============================================================================

@@ -1261,26 +1261,31 @@ PetscErrorCode ADVMarkInitBands(AdvCtx *actx, UserCtx *user)
 #define __FUNCT__ "ADVMarkInitDomes"
 PetscErrorCode ADVMarkInitDomes(AdvCtx *actx, UserCtx *user)
 {
+	// water phase    -> 0
+	// basement phase -> 1
+	// salt phase     -> 2
 
 	Marker     *P;
-	PetscInt    imark;
-	PetscScalar surf_level, salt_top, salt_bot, x, z, scal, base_top;
+	PetscInt    imark, anhydrite_phase;
+	PetscScalar surf_level, anhydrite_bot, anhydrite_top, x, z, scal, base_top;
 
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
 
 	scal = actx->jr->scal.length;
 
-	// get salt layer parameters
-	salt_bot = 0.0;
-	salt_top = 0.0;
+	// get anhydrite layer parameters (by default salt)
+	anhydrite_bot   = user->z_bot;
+	anhydrite_top   = user->z_bot;
+	anhydrite_phase = 2;
 
-	ierr = PetscOptionsGetReal(PETSC_NULL, "-domes_salt_bot", &salt_bot, NULL); CHKERRQ(ierr);
-	ierr = PetscOptionsGetReal(PETSC_NULL, "-domes_salt_top", &salt_top, NULL); CHKERRQ(ierr);
+	ierr = PetscOptionsGetReal(PETSC_NULL, "-domes_anhydrite_bot",   &anhydrite_bot,   NULL); CHKERRQ(ierr);
+	ierr = PetscOptionsGetReal(PETSC_NULL, "-domes_anhydrite_top",   &anhydrite_top,   NULL); CHKERRQ(ierr);
+	ierr = PetscOptionsGetInt (PETSC_NULL, "-domes_anhydrite_phase", &anhydrite_phase, NULL); CHKERRQ(ierr);
 
 	// scale
-	salt_bot /= scal;
-	salt_top /= scal;
+	anhydrite_bot /= scal;
+	anhydrite_top /= scal;
 
 	surf_level = actx->jr->avg_topo;
 
@@ -1296,11 +1301,11 @@ PetscErrorCode ADVMarkInitDomes(AdvCtx *actx, UserCtx *user)
 		// water
 		P->phase = 0;
 
-		// sediments
-		if(z <= surf_level) P->phase = 4;
-
 		// salt
-		if(z <= salt_top && z >= salt_bot) P->phase = 2;
+		if(z <= surf_level) P->phase = 2;
+
+		// anhydrite
+		if(z < anhydrite_top && z > anhydrite_bot) P->phase = anhydrite_phase;
 
 		// basement
 		if(x < 0.0) base_top = user->z_bot - (surf_level-user->z_bot)*(2.0*x/user->W);
