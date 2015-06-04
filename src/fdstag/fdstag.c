@@ -1200,7 +1200,7 @@ PetscErrorCode FDSTAGView(FDSTAG *fs)
 	PetscPrintf(PETSC_COMM_WORLD, " Number of velocity DOF         :  %lld\n", (LLD)nVelDOF);
 	PetscPrintf(PETSC_COMM_WORLD, " Maximum cell aspect cell ratio :  %7.5f\n", maxAspRat);
 
-	if(maxAspRat > 10.0) SETERRQ(PETSC_COMM_SELF, PETSC_ERR_USER, " Too large aspect ratio is not supported");
+	if(maxAspRat > 50.0) SETERRQ(PETSC_COMM_SELF, PETSC_ERR_USER, " Too large aspect ratio is not supported");
 
 	if(maxAspRat > 2.0) PetscPrintf(PETSC_COMM_WORLD, " WARNING! you are using non-optimal aspect ratio. Expect precision deterioration\n");
 
@@ -1262,10 +1262,13 @@ PetscErrorCode FDSTAGProcPartitioning(FDSTAG *fs, PetscScalar chLen)
 	int         fid;
 	char        *fname;
 	PetscScalar *xc, *yc, *zc;
-
-	PetscErrorCode ierr;
-	PetscFunctionBegin;
-
+    PetscMPIInt rank;
+    PetscErrorCode ierr;
+	
+    PetscFunctionBegin;
+    
+    MPI_Comm_rank(PETSC_COMM_WORLD, &rank);
+    
 	PetscPrintf(PETSC_COMM_WORLD,"# Save processor partitioning \n");
 
 	// gather global coord
@@ -1273,8 +1276,9 @@ PetscErrorCode FDSTAGProcPartitioning(FDSTAG *fs, PetscScalar chLen)
 	ierr = Discret1DGatherCoord(&fs->dsy, &yc); CHKERRQ(ierr);
 	ierr = Discret1DGatherCoord(&fs->dsz, &zc); CHKERRQ(ierr);
 
-	if(ISRankZero(PETSC_COMM_WORLD))
+	if(rank == 0)
 	{
+        PetscPrintf(PETSC_COMM_SELF,"# Save processor partitioning file on rank 0 \n");
 		// save file
 		asprintf(&fname, "ProcessorPartitioning_%lldcpu_%lld.%lld.%lld.bin",
 			(LLD)(fs->dsx.nproc*fs->dsy.nproc*fs->dsz.nproc),
@@ -1303,7 +1307,8 @@ PetscErrorCode FDSTAGProcPartitioning(FDSTAG *fs, PetscScalar chLen)
 		ierr = PetscFree(yc); CHKERRQ(ierr);
 		ierr = PetscFree(zc); CHKERRQ(ierr);
 	}
-
+    MPI_Barrier(PETSC_COMM_WORLD);
+    
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
