@@ -169,12 +169,17 @@ PetscErrorCode PVOutWriteVelocity(JacRes *jr, OutBuf *outbuf)
 #define __FUNCT__ "PVOutWritePressure"
 PetscErrorCode PVOutWritePressure(JacRes *jr, OutBuf *outbuf)
 {
+	PetscScalar pShift;
+
 	ACCESS_FUNCTION_HEADER
 
 	cf = scal->stress;
 	iflag.use_bound = PETSC_TRUE;
 
-	INTERPOLATE_ACCESS(jr->lp, InterpCenterCorner, 1, 0, jr->pShift)
+	// scale pressure shift
+	pShift = cf*jr->pShift;
+
+	INTERPOLATE_ACCESS(jr->lp, InterpCenterCorner, 1, 0, pShift)
 
 	PetscFunctionReturn(0);
 }

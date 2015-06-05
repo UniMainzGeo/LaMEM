@@ -129,7 +129,7 @@ PetscErrorCode OutBufPut3DVecComp(
 	PetscInt     ncomp,  // number of components
 	PetscInt     dir,    // component identifier
 	PetscScalar  cf,     // scaling coefficient
-	PetscScalar  shift) // shift parameter (subtracted from scaled values)
+	PetscScalar  shift)  // shift parameter (subtracted from scaled values)
 {
 	// put component of 3D vector to output buffer
 	// component data is taken from obuf->gbcor vector
