@@ -872,9 +872,11 @@ PetscErrorCode JacResGetResidual(JacRes *jr)
 //		if(k == 0)   fz[k][j][i]   += -p[k-1][j][i]/bdz;
 //		if(k == mcz) fz[k+1][j][i] -= -p[k+1][j][i]/fdz;
 
-		// mass
-		gc[k][j][i] = -IKdt*(pc - pn) - theta + alpha*(Tc - Tn)/dt;
-
+		// mass - currently T-dependency is deactivated
+//		gc[k][j][i] = -IKdt*(pc - pn) - theta + alpha*(Tc - Tn)/dt;
+        
+        gc[k][j][i] = -IKdt*(pc - pn) - theta ;
+        
 	}
 	END_STD_LOOP
 

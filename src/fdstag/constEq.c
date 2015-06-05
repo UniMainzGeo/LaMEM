@@ -435,7 +435,7 @@ PetscErrorCode VolConstEq(
 
 			// update density, thermal expansion & inverse bulk elastic viscosity
 			svBulk->rho   += phRat[i]*rho;
-			//svBulk->alpha += phRat[i]*mat->alpha;
+			svBulk->alpha += phRat[i]*mat->alpha;
 			svBulk->IKdt  += phRat[i]*IKdt;
 		}
 	}
