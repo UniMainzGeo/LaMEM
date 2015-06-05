@@ -37,7 +37,7 @@ PetscErrorCode ConstEqCtxSetup(
 	nl = 0;
 
 	// use reference strain-rate instead of zero
-	if(DII < lim->DII_ref) DII = lim->DII_ref;
+	if(DII == 0.0) DII = lim->DII_ref;
 
 	// initialize
 	ctx->DII   = DII;         // effective strain-rate
