@@ -1556,7 +1556,7 @@ void addDensGradStabil(
 	PetscScalar fdx,  PetscScalar fdy,  PetscScalar fdz,
 	PetscScalar bdx,  PetscScalar bdy,  PetscScalar bdz)
 {
-	PetscScalar cf = fssa*dt*rho;
+	PetscScalar cf = -fssa*dt*rho;
 
 	// add stabilization terms
 	v[0 ] -= cf*grav[0]/bdx;

@@ -847,9 +847,9 @@ PetscErrorCode JacResGetResidual(JacRes *jr)
 		gz = rho*grav[2];
 
 		// compute stabilization terms (lumped approximation)
-		tx = fssa*dt*gx;
-		ty = fssa*dt*gy;
-		tz = fssa*dt*gz;
+		tx = -fssa*dt*gx;
+		ty = -fssa*dt*gy;
+		tz = -fssa*dt*gz;
 
 		//=========
 		// RESIDUAL
