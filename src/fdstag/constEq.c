@@ -190,7 +190,7 @@ PetscErrorCode GetEffVisc(
 	// Peierls
 	if(ctx->A_prl) inv_eta_prl = 2.0*pow(ctx->A_prl, 1.0/ctx->N_prl)*pow(ctx->DII, 1.0 - 1.0/ctx->N_prl);
 
-	// error handling (ADD MORE!!!)
+	// error handling
 	if(PetscIsInfOrNanScalar(inv_eta_dif)) inv_eta_dif = 0.0;
 	if(PetscIsInfOrNanScalar(inv_eta_dis)) inv_eta_dis = 0.0;
 	if(PetscIsInfOrNanScalar(inv_eta_prl)) inv_eta_prl = 0.0;
@@ -252,9 +252,18 @@ PetscErrorCode GetEffVisc(
 			// check for nonzero plastic strain rate
 			if(DIIve < ctx->DII)
 			{
+
 				// store plastic strain rate & viscosity
 				(*eta_total)  = ctx->taupl/(2.0*ctx->DII);
 				(*DIIpl)      = ctx->DII - DIIve;
+
+				// lower viscosity bound
+				if((*eta_total) < lim->eta_min)
+				{
+					(*eta_total) = lim->eta_min;
+					(*DIIpl)     = ctx->DII*(1.0 - lim->eta_min/eta_ve);
+				}
+
 			}
 		}
 	}
