@@ -114,6 +114,9 @@ fprintf(fid,'\t\t\t</PointData>\n');
 fprintf(fid,'\t\t</Piece>\n');
 fprintf(fid,'\t</RectilinearGrid>\n');
 fprintf(fid,'</VTKFile>\n');
+
+fclose(fid);
+
 end
 
 
@@ -220,4 +223,7 @@ fwrite(fid,(A.Temp(:)),'float32');
 
 
 fprintf(fid,'</VTKFile>\n');
+
+fclose(fid);
+
 end
