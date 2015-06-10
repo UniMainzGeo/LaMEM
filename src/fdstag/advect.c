@@ -1046,6 +1046,7 @@ PetscErrorCode ADVCheckCorners(AdvCtx *actx)
 	NumCorner      *numcorner;
 	PetscInt       i, j, ii, ind, nx, ny;
 	PetscInt       n, p, I, J, K;
+	PetscScalar    dx, dy, dz, *X;
 	PetscScalar    xp, yp, zp;
 	PetscScalar    xc, yc, zc;
 	PetscScalar    xs, ys, zs;
@@ -1211,7 +1212,12 @@ PetscErrorCode ADVCheckCorners(AdvCtx *actx)
 				// calculate the closest (parent marker)
 				for (ii = 0; ii < n; ii++)
 				{
-					x = (markers[ii].X[0]-xp)*(markers[ii].X[0]-xp)+(markers[ii].X[1]-yp)*(markers[ii].X[1]-yp)+(markers[ii].X[2]-zp)*(markers[ii].X[2]-zp);
+					X  = markers[ii].X;
+					dx = X[0] - xp;
+					dy = X[1] - yp;
+					dz = X[2] - zp;
+					x  = dx*dx + dy*dy + dz*dz;
+
 					if (ii == 0)    { sumind = x; sind = ii; }
 					if (x < sumind) { sumind = x; sind = ii; }
 				}
