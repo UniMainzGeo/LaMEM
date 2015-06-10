@@ -1646,12 +1646,12 @@ PetscErrorCode ADVMarkInitFilePolygons(AdvCtx *actx, UserCtx *user)
 
 // This part causes a crash for me as I havn't defined a temperature file: Please resolve
 	// Set temperature from file if a Temperature file is specified in the input
-/*	if(strcmp(user->TemperatureFilename,"noTemperatureFilename"))
+	if(strcmp(user->TemperatureFilename,"noTemperatureFileName")!=0)
 	{
 		ierr = ADVMarkSetTempFromFile(actx,user);
 		CHKERRQ(ierr);
 	}
-*/	
+	
 
 
 
