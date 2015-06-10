@@ -102,9 +102,9 @@ PetscErrorCode AVDCreate(AVD3D *A)
 	for (p=0; p < npoints; p++)
 	{
 		// initialize dominant axis for half-centroid
-		A->chain[p].xh = 0.0;
-		A->chain[p].yh = 0.0;
-		A->chain[p].zh = 0.0;
+		A->chain[p].xh[0] = 0.0;
+		A->chain[p].xh[1] = 0.0;
+		A->chain[p].xh[2] = 0.0;
 
 		// allocate memory for chains
 		A->chain[p].iclaim  = A->buffer;
@@ -439,10 +439,8 @@ PetscErrorCode AVDInjectDeletePoints(AdvCtx *actx, AVD3D *A)
 	PetscInt    npoints, new_nmark = 0;
 	PetscScalar xmin, xmax, ymin, ymax, zmin, zmax;
 	PetscScalar xaxis, yaxis, zaxis;
-	PetscScalar xp, yp, zp;
-	PetscScalar xc, yc, zc;
-	PetscScalar xh, yh, zh;
-	PetscInt    *area, *sind;
+	PetscScalar xp[3], xc[3], xh[3];
+	PetscInt    *area, *sind, axis;
 
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
@@ -483,57 +481,54 @@ PetscErrorCode AVDInjectDeletePoints(AdvCtx *actx, AVD3D *A)
 				if (A->cell[ii].x[2] > zmax) zmax = A->cell[ii].x[2];
 			}
 		}
+
+		// initialize dominant axis
+		A->chain[i].axis = -1;
+
 		// dominant axis
 		xaxis = xmax-xmin;
 		yaxis = ymax-ymin;
 		zaxis = zmax-zmin;
 
-		if ((xaxis > yaxis) && (xaxis > zaxis)) A->chain[i].xh = (xmax+xmin)*0.5;
-		if ((yaxis > xaxis) && (yaxis > zaxis)) A->chain[i].yh = (ymax+ymin)*0.5;
-		if ((zaxis > xaxis) && (zaxis > yaxis)) A->chain[i].zh = (zmax+zmin)*0.5;
+		if ((xaxis > yaxis) && (xaxis > zaxis)) { A->chain[i].xh[0] = (xmax+xmin)*0.5; A->chain[i].axis = 0; }
+		if ((yaxis > xaxis) && (yaxis > zaxis)) { A->chain[i].xh[1] = (ymax+ymin)*0.5; A->chain[i].axis = 1; }
+		if ((zaxis > xaxis) && (zaxis > yaxis)) { A->chain[i].xh[2] = (zmax+zmin)*0.5; A->chain[i].axis = 2; }
 	}
-
 
 	// create colour - which cells to consider for the half-centroid
 	for (i = 0; i < npoints; i++)
 	{
 		// half axis
-		xh = A->chain[i].xh;
-		yh = A->chain[i].yh;
-		zh = A->chain[i].zh;
+		xh[0] = A->chain[i].xh[0];
+		xh[1] = A->chain[i].xh[1];
+		xh[2] = A->chain[i].xh[2];
 
 		// point coordinate
-		xp = A->points[i].X[0];
-		yp = A->points[i].X[1];
-		zp = A->points[i].X[2];
+		xp[0] = A->points[i].X[0];
+		xp[1] = A->points[i].X[1];
+		xp[2] = A->points[i].X[2];
+
+		axis = A->chain[i].axis;
 
 		for (ii = 0; ii < n; ii++)
 		{
 			if (A->cell[ii].p == i)
 			{
 				// cell coordinate
-				xc = A->cell[ii].x[0];
-				yc = A->cell[ii].x[1];
-				zc = A->cell[ii].x[2];
+				xc[0] = A->cell[ii].x[0];
+				xc[1] = A->cell[ii].x[1];
+				xc[2] = A->cell[ii].x[2];
 
 				// mark coloring
-				if      (xh) {
-					if      ((xh < xp) && (xc < xh)) A->cell[ii].col = 1;
-					else if ((xh > xp) && (xc > xh)) A->cell[ii].col = 1;
+				if (axis==-1) A->cell[ii].col = 1;
+				else
+				{
+					if      ((xh[axis] <= xp[axis]) && (xc[axis] <= xh[axis])) A->cell[ii].col = 1;
+					else if ((xh[axis] >= xp[axis]) && (xc[axis] >= xh[axis])) A->cell[ii].col = 1;
 				}
-				else if (yh) {
-					if      ((yh < yp) && (yc < yh)) A->cell[ii].col = 1;
-					else if ((yh > yp) && (yc > yh)) A->cell[ii].col = 1;
-				}
-				else if (zh) {
-					if      ((zh < zp) && (zc < zh)) A->cell[ii].col = 1;
-					else if ((zh > zp) && (zc > zh)) A->cell[ii].col = 1;
-				}
-				else                                 A->cell[ii].col = 1;
 			}
 		}
 	}
-
 
 	// calculate half-centroid
 	for (i = 0; i < npoints; i++)

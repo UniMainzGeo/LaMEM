@@ -33,7 +33,8 @@ typedef struct
 	PetscBool   done;                   // flag
 	PetscInt    gind;                   // marker index in actx->markers
 	PetscScalar xc[3];                  // centroid coordinates
-	PetscScalar xh, yh, zh;             // half-axis of the centroid
+	PetscScalar xh[3];                  // half-axis of the centroid
+	PetscInt    axis;                   // dominant axis of centroid cell
 
 } AVDChain;
 

@@ -60,7 +60,7 @@ PetscErrorCode ADVMarkInit(AdvCtx *actx, UserCtx *user)
 
 	// initialize variables for marker control
 	actx->nmin = (PetscInt) (user->NumPartX*user->NumPartY*user->NumPartZ*0.5); // min no. of markers/cell -50%
-	actx->nmax = (PetscInt) (user->NumPartX*user->NumPartY*user->NumPartZ*2);   // max no. of markers/cell 300%
+	actx->nmax = (PetscInt) (user->NumPartX*user->NumPartY*user->NumPartZ*2);   // max no. of markers/cell 200%
 	actx->avdx = user->NumPartX * 3;
 	actx->avdy = user->NumPartY * 3;
 	actx->avdz = user->NumPartZ * 3;
