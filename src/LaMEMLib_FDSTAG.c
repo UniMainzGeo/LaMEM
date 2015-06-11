@@ -299,7 +299,7 @@ ierr = JacResCopyTemp(&jr); CHKERRQ(ierr);
 		ierr = ADVMarkCrossFreeSurf(&actx, &surf); CHKERRQ(ierr);
 
 		// remap markers onto (stretched) grid
-		ierr = ADVRemap(&actx);
+		ierr = ADVRemap(&actx); CHKERRQ(ierr);
 
 		// update phase ratios taking into account actual free surface position
 		ierr = FreeSurfGetAirPhaseRatio(&surf); CHKERRQ(ierr);
