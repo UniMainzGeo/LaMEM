@@ -1606,14 +1606,19 @@ PetscErrorCode ADVMarkInitFilePolygons(AdvCtx *actx, UserCtx *user)
 					{
 						if (polyin[k] || polybnd[k])
 						{
-							if (Poly.type == 1)
+							if (Poly.type == 1) // additive
+							{
+								actx->markers[idx[k]].phase += Poly.phase;
+
+							}
+							else if (Poly.type == 2) // grid additive
 							{
 								if ( actx->markers[idx[k]].phase % 2 == 1 ) // avoid adding twice when contours are over imposed (e.g. at grid intersection)
 								{
 									actx->markers[idx[k]].phase += Poly.phase;
 								}
 							}
-							else
+							else // overwriting
 							{
 								actx->markers[idx[k]].phase = Poly.phase;
 							}
@@ -1640,7 +1645,7 @@ PetscErrorCode ADVMarkInitFilePolygons(AdvCtx *actx, UserCtx *user)
 		//ierr = MPI_Allreduce(&Poly.nmark, &nmark_all, 1, MPIU_INT, MPI_SUM, PETSC_COMM_WORLD); CHKERRQ(ierr);
 		PetscTime(&t1);
 		//PetscPrintf(PETSC_COMM_WORLD," Created vol %lld/%lld [%g sec]: phase %lld, %lld slices, %c-normal-dir; found %lld markers \n",(LLD)kvol+1,(LLD)VolN, t1-t0, (LLD)Poly.phase, (LLD)Poly.num, normalDir[Poly.dir], (LLD)nmark_all);
-		PetscPrintf(PETSC_COMM_WORLD,"[Rank 0] Created vol %lld/%lld [%g sec]: phase %lld, %lld slices, %c-normal-dir; found %lld markers \n",(LLD)kvol+1,(LLD)VolN, t1-t0, (LLD)Poly.phase, (LLD)Poly.num, normalDir[Poly.dir], (LLD)Poly.nmark);
+		PetscPrintf(PETSC_COMM_WORLD,"[Rank 0] Created vol %lld/%lld [%g sec]: phase %lld, type %lld, %lld slices, %c-normal-dir; found %lld markers \n",(LLD)kvol+1,(LLD)VolN, t1-t0, (LLD)Poly.phase, (LLD)Poly.type,(LLD)Poly.num, normalDir[Poly.dir], (LLD)Poly.nmark);
 	}
 
 
