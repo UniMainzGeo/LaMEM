@@ -98,6 +98,7 @@ CSRC = \
 	fdstag/tools.c \
 	fdstag/sub_comm.c \
 	fdstag/pc_semiredundant.c \
+	fdstag/objFunct.c \
 	
 
 #====================================================
