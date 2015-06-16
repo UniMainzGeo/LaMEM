@@ -91,7 +91,7 @@ PetscErrorCode ObjFunctCreate(ObjFunct *objf, FreeSurf *surf)
 		for (k = 0; k <_max_num_obs_; k++)
 		{
 			objf->ocUse[k] = (PetscInt) header[k+2]; 
-			if ( (objf->ocUse[k] == 0) & (objf->otUse[k] == PETSC_TRUE) )
+			if ( (objf->ocUse[k] == 0) && (objf->otUse[k] == PETSC_TRUE) )
 			{
 				PetscPrintf(PETSC_COMM_WORLD," WARNING: Requested field is not part in input file -> Remove from obective function \n");
 				objf->otUse[k] = PETSC_FALSE;
