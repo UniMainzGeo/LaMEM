@@ -233,6 +233,10 @@ ierr = ADVMarkCrossFreeSurf(&actx, &surf); CHKERRQ(ierr);
 
 
 // ACHTUNG!
+
+// initialize temperature
+ierr = JacResInitTemp(&jr); CHKERRQ(ierr);
+
 // copy to local vector, apply bc constraints
 ierr = JacResCopyTemp(&jr); CHKERRQ(ierr);
 
