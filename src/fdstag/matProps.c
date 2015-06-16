@@ -317,6 +317,187 @@ PetscErrorCode MatPropGetStruct(FILE *fp,
 
 	PetscFunctionReturn(0);
 }
+
+//---------------------------------------------------------------------------
+#undef __FUNCT__
+#define __FUNCT__ "MatPropSetLibCall"
+PetscErrorCode MatPropSetLibCall(JacRes *jr, ModParam *mod)
+{
+	// overwrite MATERIAL PARAMETERS with model parameters provided by a calling function
+
+	PetscInt 	id,im;
+	PetscScalar eta, eta0, e0;
+	Material_t  *m;
+
+
+	PetscFunctionBegin;
+	
+	// does a calling function provide model parameters?
+	if(mod->use != PETSC_TRUE) PetscFunctionReturn(0);
+
+	// set material properties
+	if(mod->use == PETSC_TRUE) {
+		PetscPrintf(PETSC_COMM_WORLD,"# --------------------------------------------------------------------------\n");
+		PetscPrintf(PETSC_COMM_WORLD,"# Material properties set from calling function: \n");
+
+
+		for(im=0;im<mod->mdN;im++)
+		{
+
+			id = mod->phs[im];
+			// get pointer to specified phase
+			m = jr->phases + id;
+
+			// linear viscosity
+			if(mod->typ[im] == _ETA_) 
+			{
+
+				// initialize additional parameters
+				eta      =  0.0;
+				eta0     =  0.0;
+				e0       =  0.0;
+				eta = mod->val[im];
+
+				// check strain-rate dependent creep
+				if((!eta0 && e0) || (eta0 && !e0))
+				{
+					SETERRQ1(PETSC_COMM_SELF, PETSC_ERR_USER, "eta0 & e0 must be specified simultaneously for phase %lld", (LLD)id);
+				}
+
+				// check power-law exponent
+				if(!m->n && ((eta0 && e0) || m->Bn))
+				{
+					SETERRQ1(PETSC_COMM_SELF, PETSC_ERR_USER, "Power-law exponent must be specified for phase %lld", (LLD)id);
+				}
+
+				// check Peierls creep
+				if(m->Bp && (!m->taup || !m->gamma || !m->q || !m->Ep))
+				{
+					SETERRQ1(PETSC_COMM_SELF, PETSC_ERR_USER, "All Peierls creep parameters must be specified simultaneously for phase %lld", (LLD)id);
+				}
+
+				// recompute creep parameters
+				if(eta)        m->Bd = 1.0/(2.0*eta);
+				if(eta0 && e0) m->Bn = pow (2.0*eta0, -m->n)*pow(e0, 1 - m->n);
+
+				// check that at least one essential deformation mechanism is specified
+				if(!m->Bd && !m->Bn && !m->G)
+				{
+					SETERRQ1(PETSC_COMM_SELF, PETSC_ERR_USER, "At least one of the parameter (set) Bd (eta), Bn (eta0, e0), G must be specified for phase %lld", (LLD)id);
+				}
+
+				PetscPrintf(PETSC_COMM_WORLD,"#    eta[%lld]	= %g \n",(LLD)id,eta);
+			}
+
+			// constant density
+			else if(mod->typ[im] == _RHO0_) 
+			{
+				m->rho = mod->val[im];
+				PetscPrintf(PETSC_COMM_WORLD,"#    rho0[%lld]	= %g \n",(LLD)id,&m->rho);
+			}
+
+			else
+			{
+				PetscPrintf(PETSC_COMM_WORLD,"WARNING: inversion parameter type is not implemented \n");
+			}		
+
+		}
+		PetscPrintf(PETSC_COMM_WORLD,"# --------------------------------------------------------------------------\n");
+	}
+
+	PetscFunctionReturn(0);
+}
+
+//---------------------------------------------------------------------------
+#undef __FUNCT__
+#define __FUNCT__ "MatPropReadCL"
+PetscErrorCode MatPropReadCL(JacRes *jr)
+{
+	// overwrite MATERIAL PARAMETERS with command line options
+
+	PetscErrorCode 	ierr;
+	PetscBool		flg,get_options;
+	PetscInt 		id;
+	char 			matprop_opt[PETSC_MAX_PATH_LEN];
+	PetscScalar eta, eta0, e0;
+	Material_t *m;
+
+
+	PetscFunctionBegin;
+
+	// print overview of material parameters read from file
+	PetscPrintf(PETSC_COMM_WORLD,"Overwrite material parameters with command line options: \n\n");
+
+
+	flg = PETSC_FALSE;
+	get_options = PETSC_FALSE;
+
+	ierr = PetscOptionsGetBool( PETSC_NULL, "-SetMaterialProperties", &get_options, PETSC_NULL ); 					CHKERRQ(ierr);
+
+
+	if(get_options) {
+		PetscPrintf(PETSC_COMM_WORLD,"# --------------------------------------------------------------------------\n");
+		PetscPrintf(PETSC_COMM_WORLD,"# Material properties set from command line: \n");
+
+		for(id=0;id<jr->numPhases;id++){
+
+
+			// get pointer to specified phase
+			m = jr->phases + id;
+
+
+			// initialize additional parameters
+			eta      =  0.0;
+			eta0     =  0.0;
+			e0       =  0.0;
+
+			// linear viscosity
+			sprintf(matprop_opt,"-eta_%lld",(LLD)id);
+			ierr = PetscOptionsGetReal(PETSC_NULL ,matprop_opt,&eta	, &flg); 				CHKERRQ(ierr);
+
+				// check strain-rate dependent creep
+				if((!eta0 && e0) || (eta0 && !e0))
+				{
+					SETERRQ1(PETSC_COMM_SELF, PETSC_ERR_USER, "eta0 & e0 must be specified simultaneously for phase %lld", (LLD)id);
+				}
+
+				// check power-law exponent
+				if(!m->n && ((eta0 && e0) || m->Bn))
+				{
+					SETERRQ1(PETSC_COMM_SELF, PETSC_ERR_USER, "Power-law exponent must be specified for phase %lld", (LLD)id);
+				}
+
+				// check Peierls creep
+				if(m->Bp && (!m->taup || !m->gamma || !m->q || !m->Ep))
+				{
+					SETERRQ1(PETSC_COMM_SELF, PETSC_ERR_USER, "All Peierls creep parameters must be specified simultaneously for phase %lld", (LLD)id);
+				}
+
+				// recompute creep parameters
+				if(eta)        m->Bd = 1.0/(2.0*eta);
+				if(eta0 && e0) m->Bn = pow (2.0*eta0, -m->n)*pow(e0, 1 - m->n);
+
+				// check that at least one essential deformation mechanism is specified
+				if(!m->Bd && !m->Bn && !m->G)
+				{
+					SETERRQ1(PETSC_COMM_SELF, PETSC_ERR_USER, "At least one of the parameter (set) Bd (eta), Bn (eta0, e0), G must be specified for phase %lld", (LLD)id);
+				}
+
+			if(flg == PETSC_TRUE) PetscPrintf(PETSC_COMM_WORLD,"#    eta[%lld]	= %g \n",(LLD)id,eta);
+
+			// constant density
+			sprintf(matprop_opt,"-rho0_%lld",(LLD)id);
+			ierr = PetscOptionsGetReal(PETSC_NULL ,matprop_opt,&m->rho	, &flg);			CHKERRQ(ierr);
+			if(flg == PETSC_TRUE) PetscPrintf(PETSC_COMM_WORLD,"#    rho0[%lld]	= %g \n",(LLD)id,&m->rho);
+
+
+
+		}
+		PetscPrintf(PETSC_COMM_WORLD,"# --------------------------------------------------------------------------\n");
+	}
+
+	PetscFunctionReturn(0);
+}
 //---------------------------------------------------------------------------
 #undef __FUNCT__
 #define __FUNCT__ "MatSoftInit"

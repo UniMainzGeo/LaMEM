@@ -6,7 +6,6 @@
 //---------------------------------------------------------------------------
 //........................... MATERIAL PARAMETERS ...........................
 //---------------------------------------------------------------------------
-
 // read all phases
 PetscErrorCode MatPropInit(JacRes *jr, FILE *fp);
 
@@ -15,6 +14,12 @@ PetscErrorCode MatPropGetStruct(FILE *fp,
 	PetscInt numPhases, Material_t *phases,
 	PetscInt numSoft,   Soft_t     *matSoft,
 	PetscInt ils, PetscInt ile, UnitsType utype);
+
+// read phases from command line
+PetscErrorCode MatPropReadCL(JacRes *jr);
+
+// assign phases from calling function
+PetscErrorCode MatPropSetLibCall(JacRes *jr, ModParam *mod);
 
 //---------------------------------------------------------------------------
 //............................ SOFTENING LAWS ...............................

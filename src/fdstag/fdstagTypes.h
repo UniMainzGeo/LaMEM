@@ -69,6 +69,75 @@ typedef enum
 	RESTART     // restart of simulation
 	// ... add more
 } SetupType;
+
+//-----------------------------------------------------------------------------
+// model parameter type enumeration
+#define _max_num_ModParam_type_ 30
+#define _max_num_MatParam_type_ 30
+typedef enum // List of model parameter types (30)
+{
+	//============================================================
+	// density
+	//============================================================
+	_RHO0_,
+	_RHON_,
+	_RHOC_,
+	//============================================================
+	// Newtonian linear diffusion creep
+	//============================================================
+	_ETA_,
+	_BD_,
+	_ED_,
+	_VD_,
+	//============================================================
+	// power-law (dislocation) creep
+	//============================================================
+	_ETA0_,
+	_E0_,
+	_BN_,
+	_N_,
+	_EN_,
+	_VN_,
+	//============================================================
+	// Peierls creep
+	//============================================================
+	_BP_,
+	_TAUP_,
+	_GAMMA_,
+	_Q_,
+	_EP_,
+	_VP_,
+	//============================================================
+	// elasticity
+	//============================================================
+	_SHEAR_,
+	_BULK_,
+	_KP_,
+	//============================================================
+	// plasticity (Drucker-Prager)
+	//============================================================
+	_COHESION_,
+	_FRICTION_,
+	_CHSOFTID_,
+	_FRSOFTID_,
+	//============================================================
+	// energy
+	//============================================================
+	_ALPHA_,
+	_CP_,
+	_K_,
+	_A_
+} ModParamTypes;
+//-----------------------------------------------------------------------------
+// Structure that holds inversion parameters
+typedef struct
+{
+	PetscBool        use;                           // activate resetting model parameters
+	PetscInt         mdN;				// number of model parameters
+	PetscInt 	*phs;				// model phase number
+	PetscInt        *typ;				// model parameter type 
+	PetscScalar 	*val;				// model value
+} ModParam;
 //-----------------------------------------------------------------------------
 // Structure that holds user input data
 typedef struct
