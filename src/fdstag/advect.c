@@ -535,6 +535,11 @@ PetscErrorCode ADVAdvectMark(AdvCtx *actx)
 		vx = InterpLin3D(lvx, I,  JJ, KK, sx, sy, sz, xp, yp, zp, ncx, ccy, ccz);
 		vy = InterpLin3D(lvy, II, J,  KK, sx, sy, sz, xp, yp, zp, ccx, ncy, ccz);
 		vz = InterpLin3D(lvz, II, JJ, K,  sx, sy, sz, xp, yp, zp, ccx, ccy, ncz);
+
+// ACHTUNG!
+// compute p & T increments first, then interpolate them!
+// or just use piecewise-constant updates
+
 		p  = InterpLin3D(lp,  II, JJ, KK, sx, sy, sz, xp, yp, zp, ccx, ccy, ccz);
 		T  = InterpLin3D(lT,  II, JJ, KK, sx, sy, sz, xp, yp, zp, ccx, ccy, ccz);
 
@@ -543,7 +548,9 @@ PetscErrorCode ADVAdvectMark(AdvCtx *actx)
 
 		// update pressure & temperature variables
 		P->p += p - svCell->svBulk.pn;
-		P->T += T - svCell->svBulk.Tn;
+// ACHTUNG!
+// deactivated for now
+//		P->T += T - svCell->svBulk.Tn;
 
 		// advect marker
 		P->X[0] = xp + vx*dt;
