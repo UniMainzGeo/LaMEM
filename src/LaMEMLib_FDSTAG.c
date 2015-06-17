@@ -360,6 +360,9 @@ ierr = JacResCopyTemp(&jr); CHKERRQ(ierr);
 
 		if (SaveOrNot == 0) { ierr = BreakWrite(&user, &actx, &surf, nl.jtype); CHKERRQ(ierr); }
 
+		// check marker phases
+		ierr = ADVCheckMarkPhases(&actx, jr.numPhases); CHKERRQ(ierr);
+
 	} while(done != PETSC_TRUE);
 
 	//======================
