@@ -336,6 +336,8 @@ void ScalingMatProp(Scaling *scal, Material_t *phases, PetscInt numPhases)
 		phases[i].rho     /= scal->density;
 		phases[i].rho_c   *= scal->length_si;
 
+        phases[i].beta   /= (1.0/scal->stress_si);      // [1/Pa]
+
 		// diffusion creep
 		phases[i].Bd      *= scal->viscosity;
 		phases[i].Vd      *= scal->stress_si;

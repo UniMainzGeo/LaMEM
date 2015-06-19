@@ -701,7 +701,7 @@ PetscErrorCode JacResGetResidual(JacRes *jr)
 	PetscScalar YZ, YZ1, YZ2, YZ3, YZ4;
 	PetscScalar bdx, fdx, bdy, fdy, bdz, fdz;
 	PetscScalar gx, gy, gz, tx, ty, tz, sxx, syy, szz, sxy, sxz, syz;
-	PetscScalar J2Inv, theta, rho, IKdt, alpha, Tc, pc, pShift, Tn, pn, dt, fssa, *grav;
+	PetscScalar J2Inv, theta, rho, IKdt, alpha, Tc, pc, pc_shifted, pShift, Tn, pn, dt, fssa, *grav;
 	PetscScalar ***fx,  ***fy,  ***fz, ***vx,  ***vy,  ***vz, ***gc;
 	PetscScalar ***dxx, ***dyy, ***dzz, ***dxy, ***dxz, ***dyz, ***p, ***T;
 	PetscScalar eta_creep;
@@ -831,7 +831,7 @@ PetscErrorCode JacResGetResidual(JacRes *jr)
 		if(depth < 0.0) depth = 0.0;
 
 		// evaluate volumetric constitutive equations
-		ierr = VolConstEq(svBulk, numPhases, phases, svCell->phRat, matLim, depth, dt, pc, Tc); CHKERRQ(ierr);
+		ierr = VolConstEq(svBulk, numPhases, phases, svCell->phRat, matLim, depth, dt, pc-pShift , Tc); CHKERRQ(ierr);
 
 		// access
 		theta = svBulk->theta; // volumetric strain rate

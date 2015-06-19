@@ -82,6 +82,7 @@ typedef enum // List of model parameter types (30)
 	_RHO0_,
 	_RHON_,
 	_RHOC_,
+    _BETA_,
 	//============================================================
 	// Newtonian linear diffusion creep
 	//============================================================

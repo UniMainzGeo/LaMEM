@@ -422,6 +422,12 @@ PetscErrorCode VolConstEq(
 				if(mat->Kp) cf_comp = pow(1.0 + mat->Kp*(p/mat->K), 1.0/mat->Kp);
 				else        cf_comp = 1.0 + p/mat->K;
 			}
+            
+            // ro/ro_0 = (1 + beta*P)
+            if(mat->beta)
+            {
+                cf_comp = 1.0 + p*mat->beta;        // negative sign as compressive pressures (increasing depth) is negative in LaMEM
+            }
 
 			// thermal expansion correction
 			// ro/ro_0 = 1 - alpha*(T - TRef)

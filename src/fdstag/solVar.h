@@ -129,6 +129,7 @@ typedef struct
 	PetscScalar  rho;     // reference density
 	PetscScalar  rho_n;   // depth-dependent density model parameter
 	PetscScalar  rho_c;   // depth-dependent density model parameter
+    PetscScalar  beta;    // pressure-dependent density model parameter
 	// elasticity parameters
 	PetscScalar  K;       // bulk modulus
 	PetscScalar  Kp;      // pressure dependence parameter
