@@ -147,8 +147,7 @@ PetscErrorCode MatPropGetStruct(FILE *fp,
 	getMatPropScalar(fp, ils, ile, "rho0",      &m->rho,   NULL);
 	getMatPropScalar(fp, ils, ile, "rho_n",     &m->rho_n, NULL);
 	getMatPropScalar(fp, ils, ile, "rho_c",     &m->rho_c, NULL);
-    getMatPropScalar(fp, ils, ile, "beta",      &m->beta,  NULL);   // pressure-dependence of density
-    
+	getMatPropScalar(fp, ils, ile, "beta",      &m->beta,  NULL); // pressure-dependence of density
 
 	//============================================================
 	// Creep profiles
@@ -302,14 +301,14 @@ PetscErrorCode MatPropGetStruct(FILE *fp,
 		sprintf(lbl_tau,   "[Pa]"        );
 		sprintf(lbl_fr,    "[deg]"       );
 		sprintf(lbl_alpha, "[1/K]"       );
-        sprintf(lbl_beta,  "[1/Pa]"      );
-        sprintf(lbl_cp,    "[J/kg/K]"    );
+		sprintf(lbl_beta,  "[1/Pa]"      );
+		sprintf(lbl_cp,    "[J/kg/K]"    );
 		sprintf(lbl_k,     "[W/m/K]"     );
 		sprintf(lbl_A,     "[W/m3]"      );
 	}
 
 	PetscPrintf(PETSC_COMM_WORLD,"    Phase [%lld]: rho = %g %s, eta = %g %s, beta = %g %s\n", (LLD)(m->ID), m->rho, lbl_rho,  eta, lbl_eta, m->beta, lbl_beta);
-    if (strlen(ndiff)) PetscPrintf(PETSC_COMM_WORLD,"    Phase [%lld]: (diff ) diffusion creep profile: %s \n",(LLD)(m->ID), ndiff);
+	if (strlen(ndiff)) PetscPrintf(PETSC_COMM_WORLD,"    Phase [%lld]: (diff ) diffusion creep profile: %s \n",(LLD)(m->ID), ndiff);
 	PetscPrintf(PETSC_COMM_WORLD,"    Phase [%lld]: (diff ) Bd = %g %s, Ed = %g %s, Vd = %g %s \n", (LLD)(m->ID), m->Bd, lbl_Bd, m->Ed, lbl_E, m->Vd, lbl_V);
 	if (strlen(ndisl)) PetscPrintf(PETSC_COMM_WORLD,"    Phase [%lld]: (disl ) dislocation creep profile: %s \n",(LLD)(m->ID), ndisl);
 	PetscPrintf(PETSC_COMM_WORLD,"    Phase [%lld]: (disl ) Bn = %g %s, En = %g %s, Vn = %g %s, n = %g [ ] \n", (LLD)(m->ID), m->Bn, lbl_Bn, m->En , lbl_E, m->Vn, lbl_V, m->n);

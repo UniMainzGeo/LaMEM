@@ -701,7 +701,7 @@ PetscErrorCode JacResGetResidual(JacRes *jr)
 	PetscScalar YZ, YZ1, YZ2, YZ3, YZ4;
 	PetscScalar bdx, fdx, bdy, fdy, bdz, fdz;
 	PetscScalar gx, gy, gz, tx, ty, tz, sxx, syy, szz, sxy, sxz, syz;
-	PetscScalar J2Inv, theta, rho, IKdt, alpha, Tc, pc, pc_shifted, pShift, Tn, pn, dt, fssa, *grav;
+	PetscScalar J2Inv, theta, rho, IKdt, alpha, Tc, pc, pShift, Tn, pn, dt, fssa, *grav;
 	PetscScalar ***fx,  ***fy,  ***fz, ***vx,  ***vy,  ***vz, ***gc;
 	PetscScalar ***dxx, ***dyy, ***dzz, ***dxy, ***dxz, ***dyz, ***p, ***T;
 	PetscScalar eta_creep;
@@ -725,7 +725,7 @@ PetscErrorCode JacResGetResidual(JacRes *jr)
 	matLim    = &jr->matLim;    // phase parameters limiters
 	dt        =  jr->ts.dt;     // time step
 	fssa      =  jr->FSSA;      // density gradient penalty parameter
-    grav      =  jr->grav;      // gravity acceleration
+	grav      =  jr->grav;      // gravity acceleration
 	pShift    =  jr->pShift;    // pressure shift
 
 	// clear local residual vectors
