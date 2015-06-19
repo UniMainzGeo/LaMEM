@@ -574,9 +574,7 @@ void GetRotationMatrix(
 	// round-off
 	if(theta <  2.0*DBL_EPSILON)
 	{
-		R->xx = 1.0;   R->xy = 0.0;   R->xz = 0.0;
-		R->yx = 0.0;   R->yy = 1.0;   R->yz = 0.0;
-		R->zx = 0.0;   R->zy = 0.0;   R->zz = 1.0;
+		Tensor2RNUnit(R);
 
 		return;
 	}
@@ -671,6 +669,356 @@ void GetTempParam(
 	if(A_)  (*A_)  = A;
 }
 //---------------------------------------------------------------------------
+// Infinite Strain Axis (ISA) calculation functions
+
+// Kaminski et. al, 2004. D-Rex, a program for calculation of seismic
+// anisotropy due to crystal lattice preferred orientation in the convective
+// upper mantle, Gophys. J. Int, 158, 744-752.
+
+//---------------------------------------------------------------------------
+void Tensor2RNEigen(Tensor2RN *L, PetscScalar tol, PetscScalar eval[])
+{
+	//========================================
+	// WARNING! TRACE OF TENSOR L MUST BE ZERO
+	//========================================
+
+	PetscScalar I2, I3, p, q, D, theta, l1, l2, l3, cx, t, sd, r, s;
+
+	// get invariants
+	I2 = L->xx*L->yy + L->yy*L->zz + L->xx*L->zz
+	-    L->xy*L->yx - L->yz*L->zy - L->xz*L->zx;
+
+	I3 = L->xx*(L->yy*L->zz - L->yz*L->zy)
+	+    L->xy*(L->yz*L->zx - L->yx*L->zz)
+	+    L->xz*(L->yx*L->zy - L->yy*L->zx);
+
+	// get discriminant
+	p =  I2;
+	q = -I3;
+	D = (q*q)/4.0 + (p*p*p)/27.0;
+
+	if(fabs(D) < tol)
+	{
+		//================================
+		// three (nearly) zero eigenvalues
+		//================================
+
+		l1 = 0.0;
+		l2 = 0.0;
+		l3 = 0.0;
+		cx = 0.0;
+	}
+	else if(D < 0.0)
+	{
+		//=======================
+		// three real eigenvalues
+		//=======================
+
+		theta = acos((3.0*q)/(2.0*p)*sqrt(-3.0/p));
+
+		l1 = 2.0*sqrt(-p/3.0)*cos( theta            /3.0);
+		l2 = 2.0*sqrt(-p/3.0)*cos((theta - 2.0*M_PI)/3.0);
+		l3 = 2.0*sqrt(-p/3.0)*cos((theta - 4.0*M_PI)/3.0);
+		cx = 0.0;
+
+	}
+	else
+	{
+		//===============================================
+		// one real eigenvalue and two complex conjugates
+		//===============================================
+
+		sd = sqrt(D);
+		r  = pow(-q/2.0 + sd, 1.0/3.0);
+		s  = pow(-q/2.0 - sd, 1.0/3.0);
+
+		// get real parts of eigenvalues
+		l1 =  r + s;
+		l2 = -l1/2.0;
+		l3 =  l2;
+
+		// get modulus of imaginary part of complex conjugate pair
+		cx = fabs(r-s)*sqrt(3.0)/2.0;
+
+		// complex eigenvalues are:
+		// l2 = -(r+s)/2 + cx*i
+		// l3 = -(r+s)/2 - cx*i
+	}
+
+	// sort eigenvalues
+	if(l2 > l1) { t = l1; l1 = l2; l2 = t; }
+	if(l3 > l1) { t = l1; l1 = l3; l3 = t; }
+	if(l3 > l2) { t = l2; l2 = l3; l3 = t; }
+
+	// store result
+	eval[0] = l1;
+	eval[1] = l2;
+	eval[2] = l3;
+	eval[3] = cx;
+}
+
+//---------------------------------------------------------------------------
+void getISA(Tensor2RN *pL, PetscScalar vel[], PetscScalar ISA[])
+{
+	Tensor2RS   Cs;
+	Tensor2RN   L, L2, I, F, Ft, C;
+	PetscScalar l1, l2, l3, cx, D, eval[4], evect[9];
+
+	// copy velocity gradient, normalize, remove trace
+	Tensor2RNCopy(pL, &L);
+	Tensor2RNScale(&L);
+	Tensor2RNTrace(&L);
+
+	// get eigenvalues
+	Tensor2RNEigen(&L, 1e-9, eval);
+
+	l1 = eval[0];
+	l2 = eval[1];
+	l3 = eval[2];
+	cx = eval[3];
+
+	// get denominator of Sylvester's formula
+	D = (l1 - l2)*(l1 - l3) + cx*cx;
+
+	if(!l1)
+	{
+		// simple shear case -> ISA has same direction as velocity
+		ISA[0] = vel[0];
+		ISA[1] = vel[1];
+		ISA[2] = vel[2];
+	}
+	else if(D < 1e-13)
+	{
+		// too close (multiple) eigenvalues -> ISA is undefined
+		ISA[0] = 0.0;
+		ISA[1] = 0.0;
+		ISA[2] = 0.0;
+	}
+	else
+	{
+		// ISA is defined by l2 & l3 eigenvalues
+		// compute deformation gradient
+		Tensor2RNUnit(&I);
+		Tensor2RNProduct(&L, &L, &L2);
+		Tensor2RNSum3(&L2, 1.0/D, &L, -(l2 + l3)/D, &I, (l2*l3 + cx*cx)/D, &F);
+
+		// compute right Cauchy-Green deformation tensor
+		Tensor2RNTranspose(&F, &Ft);
+		Tensor2RNProduct(&Ft, &F, &C);
+		Tensor2RNCopySym(&C, &Cs);
+
+		// perform spectral decomposition
+		// WARNING! add additional checks and global convergence statistics
+		Tensor2RSSpectral(&Cs, eval, evect, 1e-13, 15);
+
+		// ISA is the eigenvector corresponding to the largest eigenvalue
+		ISA[0] = evect[0];
+		ISA[1] = evect[1];
+		ISA[2] = evect[2];
+	}
+}
+//---------------------------------------------------------------------------
+void Tensor2RNScale(Tensor2RN *A)
+{
+	// A = A / |A|
+
+	PetscScalar s, k;
+
+	s = fabs(A->xx) + fabs(A->xy) + fabs(A->xz);           k = s;
+	s = fabs(A->yx) + fabs(A->yy) + fabs(A->yz); if(s > k) k = s;
+	s = fabs(A->zx) + fabs(A->zy) + fabs(A->zz); if(s > k) k = s;
+
+	A->xx /= k; A->xy /= k; A->xz /= k;
+	A->yx /= k; A->yy /= k; A->yz /= k;
+	A->zx /= k; A->zy /= k; A->zz /= k;
+}
+//---------------------------------------------------------------------------
+void Tensor2RNTrace(Tensor2RN *A)
+{
+	// A = A - tr[A]/3*I
+
+	PetscScalar tr;
+
+	tr = (A->xx + A->yy + A->zz)/3.0;
+
+	A->xx -= tr;
+	A->yy -= tr;
+	A->zz -= tr;
+}
+//---------------------------------------------------------------------------
+void Tensor2RNProduct(Tensor2RN *A, Tensor2RN *B, Tensor2RN *C)
+{
+	// C = A*B
+
+	C->xx = A->xx*B->xx + A->xy*B->yx + A->xz*B->zx;
+	C->xy = A->xx*B->xy + A->xy*B->yy + A->xz*B->zy;
+	C->xz = A->xx*B->xz + A->xy*B->yz + A->xz*B->zz;
+	C->yx = A->yx*B->xx + A->yy*B->yx + A->yz*B->zx;
+	C->yy = A->yx*B->xy + A->yy*B->yy + A->yz*B->zy;
+	C->yz = A->yx*B->xz + A->yy*B->yz + A->yz*B->zz;
+	C->zx = A->zx*B->xx + A->zy*B->yx + A->zz*B->zx;
+	C->zy = A->zx*B->xy + A->zy*B->yy + A->zz*B->zy;
+	C->zz = A->zx*B->xz + A->zy*B->yz + A->zz*B->zz;
+}
+//---------------------------------------------------------------------------
+void Tensor2RNTranspose(Tensor2RN *A, Tensor2RN *B)
+{
+	// B = A^t
+
+	B->xx = A->xx; B->xy = A->yx; B->xz = A->zx;
+	B->yx = A->xy; B->yy = A->yy; B->yz = A->zy;
+	B->zx = A->xz; B->zy = A->yz; B->zz = A->zz;
+}
+//---------------------------------------------------------------------------
+void Tensor2RNCopy(Tensor2RN *A, Tensor2RN *B)
+{
+	// B = A
+
+	B->xx = A->xx; B->xy = A->xy; B->xz = A->xz;
+	B->yx = A->yx; B->yy = A->yy; B->yz = A->yz;
+	B->zx = A->zx; B->zy = A->zy; B->zz = A->zz;
+}
+//---------------------------------------------------------------------------
+
+void Tensor2RNCopySym(Tensor2RN *A, Tensor2RS *B)
+{
+	// B = A
+
+	B->xx = A->xx;
+	B->xy = A->xy; B->yy = A->yy;
+	B->xz = A->xz; B->yz = A->yz; B->zz = A->zz;
+}
+
+//---------------------------------------------------------------------------
+void Tensor2RNUnit(Tensor2RN *A)
+{
+	// A = I
+
+	A->xx = 1.0; A->xy = 0.0; A->xz = 0.0;
+	A->yx = 0.0; A->yy = 1.0; A->yz = 0.0;
+	A->zx = 0.0; A->zy = 0.0; A->zz = 1.0;
+}
+//---------------------------------------------------------------------------
+void Tensor2RNSum3(
+	Tensor2RN *A, PetscScalar ka,
+	Tensor2RN *B, PetscScalar kb,
+	Tensor2RN *C, PetscScalar kc,
+	Tensor2RN *R)
+{
+	// R = ka*A + kb*B + kc*C
+
+	R->xx = ka*A->xx + kb*B->xx + kc*C->xx;
+	R->xy = ka*A->xy + kb*B->xy + kc*C->xy;
+	R->xz = ka*A->xz + kb*B->xz + kc*C->xz;
+	R->yx = ka*A->yx + kb*B->yx + kc*C->yx;
+	R->yy = ka*A->yy + kb*B->yy + kc*C->yy;
+	R->yz = ka*A->yz + kb*B->yz + kc*C->yz;
+	R->zx = ka*A->zx + kb*B->zx + kc*C->zx;
+	R->zy = ka*A->zy + kb*B->zy + kc*C->zy;
+	R->zz = ka*A->zz + kb*B->zz + kc*C->zz;
+}
+//---------------------------------------------------------------------------
+void Tensor2RNView(Tensor2RN *A, const char *msg)
+{
+	printf("%s: \n\n", msg);
+	printf("%f %f %f \n",   A->xx, A->xy, A->xz);
+	printf("%f %f %f \n",   A->yx, A->yy, A->yz);
+	printf("%f %f %f \n\n", A->zx, A->zy, A->zz);
+}
+//---------------------------------------------------------------------------
+void Tensor2RSView(Tensor2RS *A, const char *msg)
+{
+	printf("%s: \n\n", msg);
+	printf("%f %f %f \n",   A->xx, A->xy, A->xz);
+	printf("%f %f %f \n",   A->xy, A->yy, A->yz);
+	printf("%f %f %f \n\n", A->xz, A->yz, A->zz);
+}
+//---------------------------------------------------------------------------
+
+void Tensor2RSSpectral(
+	Tensor2RS   *A,      // symmetric tensor
+	PetscScalar eval[],  // eigenvalues (sorted)
+	PetscScalar evect[], // eigenvectors (corresponding)
+	PetscScalar tol,     // stop tolerance for Jacoby rotation
+	PetscInt    itmax)   // maximum number rotations
+{
+	//=====================================
+	// algorithm for spectral decomposition
+	//=====================================
+	PetscInt    iter, opt;
+	PetscScalar atmp, ntmp[3];
+
+	PetscScalar f, max, theta, t, c, s, tau, w, z;
+	PetscScalar a1, a2, a3, a12, a13, a23, *n1, *n2, *n3;
+
+	// macro for single Jacoby rotation
+	#define JAC_ROT(pp, qq, pq, rp, rq, vp, vq) \
+	{	theta = 0.5*(qq - pp)/pq; \
+		t     = 1.0/(fabs(theta) + sqrt(theta*theta + 1.0)); \
+		if(theta < 0.0) t = -t; \
+		c = 1.0/sqrt(t*t + 1.0); s = t*c; tau = s/(1.0 + c); \
+		pp -= t*pq;  qq += t*pq;   pq     = 0.0; \
+		w  =  rp;     z  = rq;     rp    -= s*(z + tau*w);  rq    += s*(w - tau*z); \
+		w  =  vp[0];  z  = vq[0];  vp[0] -= s*(z + tau*w);  vq[0] += s*(w - tau*z); \
+		w  =  vp[1];  z  = vq[1];  vp[1] -= s*(z + tau*w);  vq[1] += s*(w - tau*z); \
+		w  =  vp[2];  z  = vq[2];  vp[2] -= s*(z + tau*w);  vq[2] += s*(w - tau*z); \
+	}
+
+	// macro for swapping two principal values & principal directions
+	#define SWAP_EIG_PAIR(ai, aj, ni, nj) \
+	{	atmp    = ai;    ai    = aj;    aj    = atmp; \
+		ntmp[0] = ni[0]; ni[0] = nj[0]; nj[0] = ntmp[0]; \
+		ntmp[1] = ni[1]; ni[1] = nj[1]; nj[1] = ntmp[1]; \
+		ntmp[2] = ni[2]; ni[2] = nj[2]; nj[2] = ntmp[2]; \
+	}
+
+	// copy tensor components
+	a1  = A->xx;
+	a12 = A->xy; a2  = A->yy;
+	a13 = A->xz; a23 = A->yz; a3 = A->zz;
+
+	// initialize principal directions
+	n1 = evect;
+	n2 = evect + 3;
+	n3 = evect + 6;
+
+	n1[0] = 1.0; n2[0] = 0.0; n3[0] = 0.0;
+	n1[1] = 0.0; n2[1] = 1.0; n3[1] = 0.0;
+	n1[2] = 0.0; n2[2] = 0.0; n3[2] = 1.0;
+
+	// zero out off-diagonal component by Jacoby rotations
+	iter = 0;
+	do
+	{	// select maximum off-diagonal component
+		f = fabs(a12);               max = f;  opt = 1;
+		f = fabs(a13); if(f > max) { max = f;  opt = 2; }
+		f = fabs(a23); if(f > max) { max = f;  opt = 3; }
+
+		// check convergence
+		if(max < tol) break;
+
+		// perform Jacoby rotation
+		if     (opt == 1) JAC_ROT(a1, a2, a12, a13, a23, n1, n2) // a12 term
+		else if(opt == 2) JAC_ROT(a1, a3, a13, a12, a23, n1, n3) // a13 term
+		else              JAC_ROT(a2, a3, a23, a12, a13, n2, n3) // a23 term
+
+	} while(++iter < itmax);
+
+	// sort principal values in descending order & permute principal directions
+	if(a2 > a1) SWAP_EIG_PAIR(a1, a2, n1, n2)
+	if(a3 > a1) SWAP_EIG_PAIR(a1, a3, n1, n3)
+	if(a3 > a2) SWAP_EIG_PAIR(a2, a3, n2, n3)
+
+	// store eigenvalues
+	eval[0] = a1;
+	eval[1] = a2;
+	eval[2] = a3;
+}
+//---------------------------------------------------------------------------
+
+
+
+
 
 /*
 // ERROR HANDLING FOR CONTEXT EVALUATION ROUTINE
@@ -1107,3 +1455,27 @@ void ConstEq::heat(Material  & mat,   // material properties
 	}
 */
 //---------------------------------------------------------------------------
+/*
+Tensor2RS A, SR;
+Tensor2RN L, Lt, LLt, R, D;
+L.xx =  1.0;     L.xy =  2.0;     L.xz =  3.0;
+L.yx =  4.0;     L.yy =  5.0;     L.yz =  6.0;
+L.zx =  7.0;     L.zy =  8.0;     L.zz =  9.0;
+A.xx =  1.0000; A.xy = 0.5000; A.xz = 1.0/3.0;
+A.yy =  1.0000; A.yz = 2.0/3.0;
+A.zz = -2.0000;
+Tensor2RNView(&L, "A");
+Tensor2RNUnit(&R); Tensor2RNView(&R, "B = I");
+Tensor2RNCopy(&L, &R); Tensor2RNView(&R, "B = A");
+Tensor2RNDivide(&R, 2.0); Tensor2RNView(&R, "B = A/2");
+Tensor2RNTranspose(&L, &Lt); Tensor2RNView(&Lt, "B = A^t");
+Tensor2RNProduct(&L, &Lt, &LLt); Tensor2RNView(&LLt, "C = A*B");
+Tensor2RNSum3(&L, 1.0, &Lt, 1.0, &LLt, 1.0, &R); Tensor2RNView(&R, "D = A + B + C");
+Tensor2RSView(&A, "S");
+RotateStress(&L, &A, &SR); Tensor2RSView(&SR, "S' = A*S*A^t");
+Tensor2RNDeviator(&L, &D); Tensor2RNView(&D, "D = A - tr[A]/3*I");
+Tensor2RSDeviator(&L, &SR); Tensor2RSView(&SR, "D = (A + A^t)/2 - tr[A]/3*I");
+
+
+
+*/

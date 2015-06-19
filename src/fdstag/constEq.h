@@ -124,4 +124,45 @@ void GetTempParam(
 	PetscScalar *A_); // radiogenic heat
 
 //---------------------------------------------------------------------------
+// Infinite Strain Axis (ISA) calculation functions
+//---------------------------------------------------------------------------
+
+void Tensor2RNScale(Tensor2RN *A);
+
+void Tensor2RNTrace(Tensor2RN *A);
+
+void Tensor2RNProduct(Tensor2RN *A, Tensor2RN *B, Tensor2RN *C);
+
+void Tensor2RNTranspose(Tensor2RN *A, Tensor2RN *B);
+
+void Tensor2RNCopy(Tensor2RN *A, Tensor2RN *B);
+
+void Tensor2RNCopySym(Tensor2RN *A, Tensor2RS *B);
+
+void Tensor2RNUnit(Tensor2RN *A);
+
+void Tensor2RNDivide(Tensor2RN *A, PetscScalar k);
+
+void Tensor2RNSum3(
+	Tensor2RN *A, PetscScalar ka,
+	Tensor2RN *B, PetscScalar kb,
+	Tensor2RN *C, PetscScalar kc,
+	Tensor2RN *R);
+
+void Tensor2RNView(Tensor2RN *A, const char *msg);
+
+void Tensor2RSView(Tensor2RS *A, const char *msg);
+
+void Tensor2RNEigen(Tensor2RN *L, PetscScalar tol, PetscScalar eval[]);
+
+void Tensor2RSSpectral(
+	Tensor2RS   *A,      // symmetric tensor
+	PetscScalar eval[],  // eigenvalues (sorted)
+	PetscScalar evect[], // eigenvectors (corresponding)
+	PetscScalar atol,    // stop tolerance for Jacoby rotation
+	PetscInt    itmax);  // maximum number rotations
+
+void getISA(Tensor2RN *L, PetscScalar vel[], PetscScalar ISA[]);
+
+//---------------------------------------------------------------------------
 #endif
