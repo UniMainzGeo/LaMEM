@@ -429,15 +429,11 @@ PetscErrorCode MatPropSetFromCL(JacRes *jr)
 
 	PetscFunctionBegin;
 
-	// print overview of material parameters read from file
-	PetscPrintf(PETSC_COMM_WORLD,"Overwrite material parameters with command line options: \n\n");
-
 
 	flg = PETSC_FALSE;
 	get_options = PETSC_FALSE;
 
 	ierr = PetscOptionsGetBool( PETSC_NULL, "-SetMaterialProperties", &get_options, PETSC_NULL ); 					CHKERRQ(ierr);
-
 
 	if(get_options) {
 		PetscPrintf(PETSC_COMM_WORLD,"# --------------------------------------------------------------------------\n");
