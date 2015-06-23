@@ -40,16 +40,18 @@ PetscErrorCode ObjFunctCreate(ObjFunct *objf, FreeSurf *surf)
 	int            fd;
 	PetscViewer    view_in;
 	PetscScalar ***field,***qual;
+	PetscBool      flg,get_options;
 
 
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
 
+	// compute misift?
+	ierr = PetscOptionsGetBool( PETSC_NULL, "-objf_compute", &get_options, PETSC_NULL ); CHKERRQ(ierr);
+	if(objf->CompMfit != PETSC_TRUE) PetscFunctionReturn(0);
+
 	// set context
 	objf->surf = surf;
-
-	// compute misift?
-	if(objf->CompMfit != PETSC_TRUE) PetscFunctionReturn(0);
 
 	// define names for observational constraints
 	objf->on[_VELX_] = "velx";
@@ -178,6 +180,9 @@ PetscErrorCode ObjFunctReadFromOptions(ObjFunct *objf)
 	PetscInt       k;
 	char           otname [MAX_NAME_LEN];
 	PetscFunctionBegin;
+
+
+	// destroy asprintf
 
 	// read filename of observation file
 	asprintf(&objf->infile, "%s", "obs.bin");
