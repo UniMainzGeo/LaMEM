@@ -36,8 +36,8 @@ typedef struct
 	PetscInt	ocN;				// total number of observational constraints
 	PetscScalar	err[_max_num_obs_];	    	// array containing individual sums of errors
 	PetscScalar	errtot;				// total error
-	Vec         	obs[_max_num_obs_];		// vectors containing the observations
-	Vec         	qul[_max_num_obs_];		// vectors containing quality info (quality/sigma)^2, where quality (0..1)
+	Vec         obs[_max_num_obs_];		// vectors containing the observations
+	Vec         qul[_max_num_obs_];		// vectors containing quality info (quality/sigma)^2, where quality (0..1)
 
 	// missing ...
 	// (data) covariance matrix

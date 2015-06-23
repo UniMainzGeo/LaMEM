@@ -40,14 +40,14 @@ PetscErrorCode ObjFunctCreate(ObjFunct *objf, FreeSurf *surf)
 	int            fd;
 	PetscViewer    view_in;
 	PetscScalar ***field,***qual;
-	PetscBool      flg,get_options;
+	PetscBool      flg;
 
 
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
 
 	// compute misift?
-	ierr = PetscOptionsGetBool( PETSC_NULL, "-objf_compute", &get_options, PETSC_NULL ); CHKERRQ(ierr);
+	ierr = PetscOptionsGetBool( PETSC_NULL, "-objf_compute", &objf->CompMfit, &flg ); CHKERRQ(ierr);
 	if(objf->CompMfit != PETSC_TRUE) PetscFunctionReturn(0);
 
 	// set context
@@ -74,6 +74,10 @@ PetscErrorCode ObjFunctCreate(ObjFunct *objf, FreeSurf *surf)
 
 	// final size of buffer (number of observation types * gridsize)
 	buffsize = 2 * objf->otN * gnx * gny;
+
+
+	// number of observational constraints
+	objf->ocN  = objf->otN * gnx * gny;
 
 	// allocate input buffer
 	ierr = PetscMalloc((size_t)(buffsize)*sizeof(PetscScalar), &readbuff); CHKERRQ(ierr);
@@ -207,6 +211,7 @@ PetscErrorCode ObjFunctReadFromOptions(ObjFunct *objf)
 		{
 			objf->otN++;
 			VecDuplicate(objf->surf->vx,&objf->obs[k]);
+			VecDuplicate(objf->surf->vx,&objf->qul[k]);
 		}
 	}
 
@@ -293,10 +298,27 @@ PetscErrorCode ObjFunctCompErr(ObjFunct *objf)
 	{
 		// compute weighted least squares
 		// quality = (quality'/sigma)^2, where sigma is stdv and quality' goes from 0..1
-		if(objf->otUse[_VELX_] == PETSC_TRUE) {objf->err[_VELX_] += pow((oc_vx[L][j][i] - md_vx[L][j][i]),2) * ql_vx[L][j][i];}
-		if(objf->otUse[_VELY_] == PETSC_TRUE) {objf->err[_VELY_] += pow((oc_vy[L][j][i] - md_vy[L][j][i]),2) * ql_vy[L][j][i];}
-		if(objf->otUse[_VELZ_] == PETSC_TRUE) {objf->err[_VELZ_] += pow((oc_vz[L][j][i] - md_vz[L][j][i]),2) * ql_vz[L][j][i];}
-		if(objf->otUse[_TOPO_] == PETSC_TRUE) {objf->err[_TOPO_] += pow((oc_topo[L][j][i] - md_topo[L][j][i]),2) * ql_topo[L][j][i];}
+		if(objf->otUse[_VELX_] == PETSC_TRUE)
+		{
+			objf->err[_VELX_] += pow((oc_vx[L][j][i] - md_vx[L][j][i]),2) * ql_vx[L][j][i];
+			if(ql_vx[L][j][i] == 0.0) objf->ocN --;
+		}
+
+		if(objf->otUse[_VELY_] == PETSC_TRUE)
+		{
+			objf->err[_VELY_] += pow((oc_vy[L][j][i] - md_vy[L][j][i]),2) * ql_vy[L][j][i];
+			if(ql_vy[L][j][i] == 0.0) objf->ocN --;
+		}
+		if(objf->otUse[_VELZ_] == PETSC_TRUE)
+		{
+			objf->err[_VELZ_] += pow((oc_vz[L][j][i] - md_vz[L][j][i]),2) * ql_vz[L][j][i];
+			if(ql_vz[L][j][i] == 0.0) objf->ocN --;
+		}
+		if(objf->otUse[_TOPO_] == PETSC_TRUE)
+		{
+			objf->err[_TOPO_] += pow((oc_topo[L][j][i] - md_topo[L][j][i]),2) * ql_topo[L][j][i];
+			if(ql_topo[L][j][i] == 0.0) objf->ocN --;
+		}
 		
 		// other fields go here
 	}
@@ -347,8 +369,10 @@ PetscErrorCode ObjFunctCompErr(ObjFunct *objf)
 	}
 
 	// MPI_Allreduce of errors
-	ierr = MPI_Allreduce(objf->err,objf->err,objf->otN,MPI_DOUBLE, MPI_SUM, PETSC_COMM_WORLD);  CHKERRQ(ierr);
-
+	if (ISParallel(PETSC_COMM_WORLD))
+	{
+		ierr = MPI_Allreduce(objf->err,objf->err,objf->otN,MPI_DOUBLE, MPI_SUM, PETSC_COMM_WORLD);  CHKERRQ(ierr);
+	}
 	// total least squares error 
 	objf->errtot = 0.0;
 	for (k=0; k<_max_num_obs_; k++)
