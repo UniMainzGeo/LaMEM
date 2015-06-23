@@ -125,9 +125,20 @@
 //-----------------------------------------------------------------------------
 
 // LaMEM library main function
-PetscErrorCode LaMEMLib(PetscScalar *LaMEM_OutputParameters, PetscInt *mpi_group_id);
-PetscErrorCode LaMEMLib_FDSTAG(void *echange_ctx);
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+
+PetscErrorCode LaMEMLib(ModParam *IOparam, PetscInt *mpi_group_id);
+PetscErrorCode LaMEMLib_FDSTAG(ModParam *IOparam, PetscInt *mpi_group_id);
 PetscErrorCode LaMEMLib_Legacy(PetscBool InputParamFile, const char *ParamFile, PetscScalar *LaMEM_OutputParameters, PetscInt *mpi_group_id);
+
+
+#ifdef __cplusplus
+}
+#endif
 
 //-----------------------------------------------------------------------------
 // GLOBAL VARIABLES

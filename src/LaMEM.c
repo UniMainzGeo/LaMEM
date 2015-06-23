@@ -56,8 +56,11 @@ extern PetscErrorCode PCCreate_SemiRedundant(PC);
 int main(int argc,char **argv )
 {
 	PetscErrorCode 	ierr;
-	PetscScalar		LaMEM_OutputParameters=0.0;
 	PetscInt		mpi_group_id=0;
+	ModParam        IOparam;
+
+	// IOparam is not used by default
+	IOparam.use = 0;
 
 	// Initialize PETSC
 	ierr = PetscInitialize(&argc,&argv,(char *)0,help); CHKERRQ(ierr);
@@ -65,7 +68,7 @@ int main(int argc,char **argv )
 	ierr = PCRegister("pc_semiredundant",PCCreate_SemiRedundant);
 
 	// call LaMEM main library function
-	ierr = LaMEMLib(&LaMEM_OutputParameters,&mpi_group_id); CHKERRQ(ierr);
+	ierr = LaMEMLib(&IOparam,&mpi_group_id); CHKERRQ(ierr);
 
 	// cleanup PETSC
 	ierr = PetscFinalize(); CHKERRQ(ierr);

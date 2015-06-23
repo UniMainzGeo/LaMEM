@@ -17,7 +17,7 @@
 // set default code parameters and read input file, if required
 #undef __FUNCT__
 #define __FUNCT__ "FDSTAGInitCode"
-PetscErrorCode FDSTAGInitCode(JacRes *jr, UserCtx *user)
+PetscErrorCode FDSTAGInitCode(JacRes *jr, UserCtx *user, ModParam *iop)
 {
 	FILE      *fp;
 	char      *all_options;
@@ -63,6 +63,12 @@ PetscErrorCode FDSTAGInitCode(JacRes *jr, UserCtx *user)
 			fclose(fp);
 		}
 	}
+
+	// Interpret command line options and overwrite material properties
+	ierr = MatPropSetFromCL(jr); CHKERRQ(ierr);
+
+	// Interpret IO parameter structure to set material properties
+	ierr = MatPropSetFromLibCall(jr, iop); CHKERRQ(ierr);
 
 	// Interpret command line options
 	ierr = InputReadCommLine(user); CHKERRQ(ierr);

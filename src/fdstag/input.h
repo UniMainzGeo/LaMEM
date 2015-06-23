@@ -5,7 +5,7 @@
 #define __input_h__
 //---------------------------------------------------------------------------
 
-PetscErrorCode FDSTAGInitCode(JacRes *jr, UserCtx *user);
+PetscErrorCode FDSTAGInitCode(JacRes *jr, UserCtx *user, ModParam *IOparam);
 
 PetscErrorCode InputSetDefaultValues(JacRes *jr, UserCtx *user);
 

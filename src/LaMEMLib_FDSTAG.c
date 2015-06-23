@@ -59,6 +59,7 @@ without the explicit agreement of Boris Kaus.
 #include "input.h"
 #include "matProps.h"
 #include "break.h"
+#include "objFunct.h"
 
 //==========================================================================================================
 // LAMEM LIBRARY MODE ROUTINE
@@ -66,7 +67,7 @@ without the explicit agreement of Boris Kaus.
 
 #undef __FUNCT__
 #define __FUNCT__ "LaMEMLib_FDSTAG"
-PetscErrorCode LaMEMLib_FDSTAG(void *echange_ctx)
+PetscErrorCode LaMEMLib_FDSTAG(ModParam *IOparam, PetscInt *mpi_group_id)
 {
 	PetscBool          done;
 	UserCtx            user;
@@ -85,11 +86,12 @@ PetscErrorCode LaMEMLib_FDSTAG(void *echange_ctx)
 	NLSol    nl;     // nonlinear solver context
 	PVOut    pvout;  // paraview output driver
 	PVSurf   pvsurf; // paraview output driver
+	ObjFunct objf;   // objective function
 
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
 
-	if(echange_ctx) echange_ctx = NULL;
+	//if(echange_ctx) echange_ctx = NULL;
 
 	PetscTime(&cputime_start);
 
@@ -115,7 +117,7 @@ PetscErrorCode LaMEMLib_FDSTAG(void *echange_ctx)
 	ierr = PetscMemzero (&user, sizeof(UserCtx)); CHKERRQ(ierr);
 
 	// initialize variables
-	ierr = FDSTAGInitCode(&jr, &user); CHKERRQ(ierr);
+	ierr = FDSTAGInitCode(&jr, &user, IOparam); CHKERRQ(ierr);
 
 	// check restart
 	ierr = BreakCheck(&user); CHKERRQ(ierr);
@@ -311,6 +313,19 @@ ierr = JacResCopyTemp(&jr); CHKERRQ(ierr);
 		// advect pushing block
 		ierr = BCAdvectPush(&bc); CHKERRQ(ierr);
 
+
+		//===================
+		// OBJECTIVE FUNCTION
+		//===================
+
+		// create objective function object
+		ierr = ObjFunctCreate(&objf, &surf); CHKERRQ(ierr);
+
+		// transfer misfit value to IO structure
+		IOparam->mfit = objf.errtot;
+
+
+
 		//==================
 		// Save data to disk
 		//==================
@@ -327,8 +342,15 @@ ierr = JacResCopyTemp(&jr); CHKERRQ(ierr);
 		{
 			char *DirectoryName = NULL;
 
+
 			// create directory (encode current time & step number)
 			asprintf(&DirectoryName, "Timestep_%1.6lld_%1.6e", (LLD)JacResGetStep(&jr), JacResGetTime(&jr));
+
+			// redefine filename in case of inversion setup
+			if (IOparam->use == 1)
+			{
+				asprintf(&DirectoryName, "Timestep_%1.6lld", (LLD)IOparam->mID);
+			}
 
 			ierr = LaMEMCreateOutputDirectory(DirectoryName); CHKERRQ(ierr);
 
@@ -374,6 +396,7 @@ ierr = JacResCopyTemp(&jr); CHKERRQ(ierr);
 //	PetscPrintf(PETSC_COMM_WORLD,"# Total time required: %g s \n",cputime_end - cputime_start0);
 
 	// cleanup
+	ierr = ObjFunctClear(&objf);   CHKERRQ(ierr);
 	ierr = FDSTAGDestroy(&fs);     CHKERRQ(ierr);
 	ierr = FreeSurfDestroy(&surf); CHKERRQ(ierr);
 	ierr = BCDestroy(&bc);         CHKERRQ(ierr);

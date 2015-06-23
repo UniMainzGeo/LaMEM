@@ -16,10 +16,10 @@ PetscErrorCode MatPropGetStruct(FILE *fp,
 	PetscInt ils, PetscInt ile, UnitsType utype);
 
 // read phases from command line
-PetscErrorCode MatPropReadCL(JacRes *jr);
+PetscErrorCode MatPropSetFromCL(JacRes *jr);
 
 // assign phases from calling function
-PetscErrorCode MatPropSetLibCall(JacRes *jr, ModParam *mod);
+PetscErrorCode MatPropSetFromLibCall(JacRes *jr, ModParam *mod);
 
 //---------------------------------------------------------------------------
 //............................ SOFTENING LAWS ...............................

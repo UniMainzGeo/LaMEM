@@ -76,68 +76,47 @@ typedef enum
 #define _max_num_MatParam_type_ 30
 typedef enum // List of model parameter types (30)
 {
-	//============================================================
-	// density
-	//============================================================
-	_RHO0_,
-	_RHON_,
-	_RHOC_,
-	_BETA_,
-	//============================================================
-	// Newtonian linear diffusion creep
-	//============================================================
-	_ETA_,
-	_BD_,
-	_ED_,
-	_VD_,
-	//============================================================
-	// power-law (dislocation) creep
-	//============================================================
-	_ETA0_,
-	_E0_,
-	_BN_,
-	_N_,
-	_EN_,
-	_VN_,
-	//============================================================
-	// Peierls creep
-	//============================================================
-	_BP_,
-	_TAUP_,
-	_GAMMA_,
-	_Q_,
-	_EP_,
-	_VP_,
-	//============================================================
-	// elasticity
-	//============================================================
-	_SHEAR_,
-	_BULK_,
-	_KP_,
-	//============================================================
-	// plasticity (Drucker-Prager)
-	//============================================================
-	_COHESION_,
-	_FRICTION_,
-	_CHSOFTID_,
-	_FRSOFTID_,
-	//============================================================
-	// energy
-	//============================================================
-	_ALPHA_,
-	_CP_,
-	_K_,
-	_A_
-} ModParamTypes;
+	// -- material model parameter types --
+	_RHO0_, _RHON_, _RHOC_,                             // density
+	_ETA_, _BD_, _ED_, _VD_,                            // Newtonian linear diffusion creep
+	_ETA0_,	_E0_, _BN_, _N_, _EN_, _VN_,                // power-law (dislocation) creep
+	_BP_, _TAUP_, _GAMMA_, _Q_, _EP_, _VP_,             // Peierls creep
+	_SHEAR_, _BULK_, _KP_,                              // elasticity
+	_COHESION_, _FRICTION_, _CHSOFTID_, _FRSOFTID_,     // plasticity (Drucker-Prager)
+	_ALPHA_, _CP_, _K_, _A_                             // energy
+	// -- others --
+	// ... (geometry, pushing box , etc. ...)
+
+} PTypes;
+
+/*
+const char *PTypesName[] ={
+		// -- material model parameter types --
+		"rho0","rho_n","rho_c",                        // density
+		"eta","Bd","Ed","Vd",                          // newtonian linear diffiusion
+		"eta0","e0","Bn","n","En","Vn",                // power-law (dislocation) creep
+		"Bp","taup","gamma","q","Ep","Vp",             // Peierls creep
+		"shear","bulk","Kp",                           // elasticity
+		"cohesion","friction","chSoftID","frSoftID",   // plasticity (Drucker Prager)
+		"alpha","cp","k","A"                           // energy
+
+		// -- others --
+		// ... (geometry, pushing box , etc. ...)
+};
+*/
 //-----------------------------------------------------------------------------
 // Structure that holds inversion parameters
 typedef struct
 {
-	PetscBool        use;                           // activate resetting model parameters
+	PetscInt         use;               // activate resetting model parameters
 	PetscInt         mdN;				// number of model parameters
-	PetscInt 	*phs;				// model phase number
+	PetscInt         mID;            // current model number
+	PetscInt        *phs;				// model phase number
 	PetscInt        *typ;				// model parameter type 
-	PetscScalar 	*val;				// model value
+	PetscScalar     *val;				// model value
+	PetscScalar     *grd;				// gradient value
+	PetscScalar      mfit;              // misfit value for current model parameters
+	char           **name; 	            // names of all possible model parameters
 } ModParam;
 //-----------------------------------------------------------------------------
 // Structure that holds user input data

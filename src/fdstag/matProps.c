@@ -324,8 +324,8 @@ PetscErrorCode MatPropGetStruct(FILE *fp,
 
 //---------------------------------------------------------------------------
 #undef __FUNCT__
-#define __FUNCT__ "MatPropSetLibCall"
-PetscErrorCode MatPropSetLibCall(JacRes *jr, ModParam *mod)
+#define __FUNCT__ "MatPropSetFromLibCall"
+PetscErrorCode MatPropSetFromLibCall(JacRes *jr, ModParam *mod)
 {
 	// overwrite MATERIAL PARAMETERS with model parameters provided by a calling function
 
@@ -337,10 +337,10 @@ PetscErrorCode MatPropSetLibCall(JacRes *jr, ModParam *mod)
 	PetscFunctionBegin;
 	
 	// does a calling function provide model parameters?
-	if(mod->use != PETSC_TRUE) PetscFunctionReturn(0);
+	if(mod->use == 0) PetscFunctionReturn(0);
 
 	// set material properties
-	if(mod->use == PETSC_TRUE) {
+	if(mod->use == 1) {
 		PetscPrintf(PETSC_COMM_WORLD,"# --------------------------------------------------------------------------\n");
 		PetscPrintf(PETSC_COMM_WORLD,"# Material properties set from calling function: \n");
 
@@ -414,8 +414,8 @@ PetscErrorCode MatPropSetLibCall(JacRes *jr, ModParam *mod)
 
 //---------------------------------------------------------------------------
 #undef __FUNCT__
-#define __FUNCT__ "MatPropReadCL"
-PetscErrorCode MatPropReadCL(JacRes *jr)
+#define __FUNCT__ "MatPropSetFromCL"
+PetscErrorCode MatPropSetFromCL(JacRes *jr)
 {
 	// overwrite MATERIAL PARAMETERS with command line options
 
