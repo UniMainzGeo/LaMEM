@@ -101,9 +101,6 @@ PetscErrorCode LaMEMLib(ModParam *iop, PetscInt *mpi_group_id)
 		ierr = LaMEMLib_Legacy(InputParamFile, ParamFile, LaMEM_OutputParameters, mpi_group_id); CHKERRQ(ierr);
 	}
 	
-
-
-
 	PetscFunctionReturn(0);
 }
 //==========================================================================================================
@@ -275,7 +272,7 @@ PetscErrorCode LaMEMLib_Legacy(PetscBool InputParamFile, const char *ParamFile, 
 	ierr = VecSet(Temp,           0.0);                          CHKERRQ(ierr);
 	ierr = VecSet(rhs_Temp_local, 0.0);                          CHKERRQ(ierr);
 #endif
-	PetscPrintf(PETSC_COMM_WORLD,"DEBUG A -------------------------------------------------------------------------- \n");
+
 	// Create a vector that holds the inverse of viscosity (for scaling)
 	ierr = VecDuplicate(Pressure, &ViscosityScaling); CHKERRQ(ierr);
 
@@ -398,7 +395,7 @@ PetscErrorCode LaMEMLib_Legacy(PetscBool InputParamFile, const char *ParamFile, 
 		ierr = SaveInitialMesh(&user,user.DA_Vel,"InitialMesh"); CHKERRQ(ierr);
 	}
 
-	PetscPrintf(PETSC_COMM_WORLD,"DEBUG B -------------------------------------------------------------------------- \n");
+
 	// If we are using FDSTAG, the grid MUST be regular and undeformed.
 	// Because of the Finite Element manner in which we create the mesh and particles,
 	// we can actually initialize the mesh and particles in an irregular manner (or even read an arbitrary mesh from file) and set the initial particle
@@ -444,7 +441,7 @@ PetscErrorCode LaMEMLib_Legacy(PetscBool InputParamFile, const char *ParamFile, 
 	{
 		user.dt = user.dt_max;
 	}
-	PetscPrintf(PETSC_COMM_WORLD,"DEBUG C -------------------------------------------------------------------------- \n");
+
 	//===============
 	// TIME STEP LOOP
 	//===============
@@ -528,7 +525,7 @@ PetscErrorCode LaMEMLib_Legacy(PetscBool InputParamFile, const char *ParamFile, 
 			}
 
 		}
-		PetscPrintf(PETSC_COMM_WORLD,"DEBUG D -------------------------------------------------------------------------- \n");
+
 		//=========================================================================================
 		//	NONLINEAR THERMO-MECHANICAL SOLVER
 		//=========================================================================================
