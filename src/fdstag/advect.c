@@ -1254,7 +1254,7 @@ PetscErrorCode ADVCheckCorners(AdvCtx *actx)
 				ierr = PetscRandomGetValueReal(rctx, &cf_rand); CHKERRQ(ierr);
 				xp[1] += (cf_rand-0.5)*((xc[1]-xs[1])*0.5)*0.5;
 				ierr = PetscRandomGetValueReal(rctx, &cf_rand); CHKERRQ(ierr);
-				xp[2] += (cf_rand-0.5)*((xc[2]-xs[1])*0.5)*0.5;
+				xp[2] += (cf_rand-0.5)*((xc[2]-xs[2])*0.5)*0.5;
 
 				// calculate the closest (parent marker)
 				for (ii = 0; ii < n; ii++)
