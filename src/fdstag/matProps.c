@@ -341,7 +341,7 @@ PetscErrorCode MatPropSetFromLibCall(JacRes *jr, ModParam *mod)
 
 	// set material properties
 	if(mod->use == 1) {
-		PetscPrintf(PETSC_COMM_WORLD,"# --------------------------------------------------------------------------\n");
+		PetscPrintf(PETSC_COMM_WORLD,"# ------------------------------------------------------------------------\n");
 		PetscPrintf(PETSC_COMM_WORLD,"# Material properties set from calling function: \n");
 
 
@@ -397,7 +397,7 @@ PetscErrorCode MatPropSetFromLibCall(JacRes *jr, ModParam *mod)
 			else if(mod->typ[im] == _RHO0_) 
 			{
 				m->rho = mod->val[im];
-				PetscPrintf(PETSC_COMM_WORLD,"#    rho0[%lld]	= %g \n",(LLD)id,&m->rho);
+				PetscPrintf(PETSC_COMM_WORLD,"#    rho0[%lld] = %g \n",(LLD)id,m->rho);
 			}
 
 			else
@@ -406,7 +406,7 @@ PetscErrorCode MatPropSetFromLibCall(JacRes *jr, ModParam *mod)
 			}		
 
 		}
-		PetscPrintf(PETSC_COMM_WORLD,"# --------------------------------------------------------------------------\n");
+		PetscPrintf(PETSC_COMM_WORLD,"# ------------------------------------------------------------------------\n");
 	}
 
 	PetscFunctionReturn(0);

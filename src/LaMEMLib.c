@@ -73,7 +73,6 @@ PetscErrorCode LaMEMLib(ModParam *iop, PetscInt *mpi_group_id)
 	PetscBool InputParamFile, use_fdstag_canonical;
 	char ParamFile[PETSC_MAX_PATH_LEN];
 	PetscScalar *LaMEM_OutputParameters;
-	PetscInt k;
 
 	PetscErrorCode ierr;
 	PetscFunctionBegin;

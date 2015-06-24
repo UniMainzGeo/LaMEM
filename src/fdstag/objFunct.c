@@ -231,13 +231,34 @@ PetscErrorCode ObjFunctCompErr(ObjFunct *objf)
 	PetscScalar      ***oc_vx,***oc_vy,***oc_vz,***oc_topo;
 	PetscScalar      ***md_vx,***md_vy,***md_vz,***md_topo;
 	PetscScalar      ***ql_vx,***ql_vy,***ql_vz,***ql_topo;
-
+	PetscScalar      lenScal,velScal;
+	PetscViewer       view_out;
 	PetscFunctionBegin;
 
 	// surface object
 	surf = objf->surf;
 
+	// scaling
+	velScal = surf->jr->scal.velocity;
+	lenScal = surf->jr->scal.length;
+
+
+
+
 	// fill vectors with observations and respective quality weights
+
+
+/*
+
+	PetscPrintf(PETSC_COMM_WORLD," lenscal: %g , velscal: %g \n",lenScal,velScal);
+	ierr = PetscViewerBinaryOpen(PETSC_COMM_WORLD,"residual_obs.bin", FILE_MODE_WRITE, &view_out);	CHKERRQ(ierr);
+	ierr = VecView(objf->obs[_VELX_],view_out);														CHKERRQ(ierr);
+	ierr = PetscViewerDestroy(&view_out);															CHKERRQ(ierr);
+
+	ierr = PetscViewerBinaryOpen(PETSC_COMM_WORLD,"residual_mod.bin", FILE_MODE_WRITE, &view_out);	CHKERRQ(ierr);
+	ierr = VecView(surf->vx,view_out);														CHKERRQ(ierr);
+	ierr = PetscViewerDestroy(&view_out);															CHKERRQ(ierr);
+*/
 
 
 	// access buffer within local domain
@@ -300,23 +321,23 @@ PetscErrorCode ObjFunctCompErr(ObjFunct *objf)
 		// quality = (quality'/sigma)^2, where sigma is stdv and quality' goes from 0..1
 		if(objf->otUse[_VELX_] == PETSC_TRUE)
 		{
-			objf->err[_VELX_] += pow((oc_vx[L][j][i] - md_vx[L][j][i]),2) * ql_vx[L][j][i];
+			objf->err[_VELX_] += pow((oc_vx[L][j][i] - md_vx[L][j][i]*velScal),2) * ql_vx[L][j][i];
 			if(ql_vx[L][j][i] == 0.0) objf->ocN --;
 		}
 
 		if(objf->otUse[_VELY_] == PETSC_TRUE)
 		{
-			objf->err[_VELY_] += pow((oc_vy[L][j][i] - md_vy[L][j][i]),2) * ql_vy[L][j][i];
+			objf->err[_VELY_] += pow((oc_vy[L][j][i] - md_vy[L][j][i]*velScal),2) * ql_vy[L][j][i];
 			if(ql_vy[L][j][i] == 0.0) objf->ocN --;
 		}
 		if(objf->otUse[_VELZ_] == PETSC_TRUE)
 		{
-			objf->err[_VELZ_] += pow((oc_vz[L][j][i] - md_vz[L][j][i]),2) * ql_vz[L][j][i];
+			objf->err[_VELZ_] += pow((oc_vz[L][j][i] - md_vz[L][j][i]*velScal),2) * ql_vz[L][j][i];
 			if(ql_vz[L][j][i] == 0.0) objf->ocN --;
 		}
 		if(objf->otUse[_TOPO_] == PETSC_TRUE)
 		{
-			objf->err[_TOPO_] += pow((oc_topo[L][j][i] - md_topo[L][j][i]),2) * ql_topo[L][j][i];
+			objf->err[_TOPO_] += pow((oc_topo[L][j][i] - md_topo[L][j][i]*lenScal),2) * ql_topo[L][j][i];
 			if(ql_topo[L][j][i] == 0.0) objf->ocN --;
 		}
 		
