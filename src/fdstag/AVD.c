@@ -195,9 +195,8 @@ PetscErrorCode AVDCellInit(AVD3D *A)
 		ind = i+j*mx+k*mx*my;
 
 		if (A->cell[ind].p == AVD_CELL_MASK) {
-			printf("Inserting cells into boundary cells is not permitted \n");
-			exit(1);
-		}
+            SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "Inserting cells into boundary cells is not permitted \n");
+     	}
 
 		A->cell[ind].p                   = p;         // particle index
 		A->chain[p].nclaimed             = 1;         // number of claimed cells, currently just the one the point initially resides within
