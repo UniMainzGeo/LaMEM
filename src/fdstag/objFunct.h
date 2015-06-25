@@ -6,6 +6,7 @@
 //---------------------------------------------------------------------------
 // maximum number of obervational types
 #define _max_num_obs_ 7
+#define _max_len_name_ 8
 
 
 typedef enum 	// observation type
@@ -28,8 +29,7 @@ typedef struct
 	char       *infile;     	// input file name
 	PetscBool   CompMfit;		// Compute misfit?
 
-//	const char *on[] = {"velx","vely","velz"};
-	const char *on[_max_num_obs_];			//observation name
+	const char  *on[_max_num_obs_];			//static array of pointers
 	PetscBool 	otUse[_max_num_obs_];		// array of boolean USED flags
 	PetscInt  	otN;				// number of USED observation types
 	PetscInt	ocUse[_max_num_obs_];		// number of observational constraints (individual fields)
@@ -45,8 +45,8 @@ typedef struct
 } ObjFunct;
 //---------------------------------------------------------------------------
 
-// clear object
-PetscErrorCode ObjFunctClear(ObjFunct *objf);
+// destroy object
+PetscErrorCode ObjFunctClean(ObjFunct *objf);
 
 // create objective function object
 PetscErrorCode ObjFunctCreate(ObjFunct *objf, FreeSurf *surf);

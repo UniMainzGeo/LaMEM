@@ -390,7 +390,7 @@ PetscErrorCode MatPropSetFromLibCall(JacRes *jr, ModParam *mod)
 					SETERRQ1(PETSC_COMM_SELF, PETSC_ERR_USER, "At least one of the parameter (set) Bd (eta), Bn (eta0, e0), G must be specified for phase %lld", (LLD)id);
 				}
 
-				PetscPrintf(PETSC_COMM_WORLD,"#    eta[%lld] = %5.5f \n",(LLD)id,eta);
+				PetscPrintf(PETSC_COMM_WORLD,"#    eta[%lld] = %g \n",(LLD)id,eta);
 			}
 
 			// constant density

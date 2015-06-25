@@ -14,14 +14,23 @@
 #include "Utils.h"
 //---------------------------------------------------------------------------
 #undef __FUNCT__
-#define __FUNCT__ "ObjFunctClear"
-PetscErrorCode ObjFunctClear(ObjFunct *objf)
+#define __FUNCT__ "ObjFunctClean"
+PetscErrorCode ObjFunctClean(ObjFunct *objf)
 {
 	PetscErrorCode ierr;
+	PetscInt       k;
 	PetscFunctionBegin;
 
-	// clear object
-	ierr = PetscMemzero(objf, sizeof(ObjFunct)); CHKERRQ(ierr);
+	// clean object
+
+	for (k=0;k< objf->ocN; k++)
+	{
+		if (objf->otUse[k] == PETSC_TRUE)
+		{
+			ierr = VecDestroy(&objf->obs[k]); CHKERRQ(ierr);
+			ierr = VecDestroy(&objf->qul[k]); CHKERRQ(ierr);
+		}
+	}
 
 	PetscFunctionReturn(0);
 }
@@ -42,28 +51,41 @@ PetscErrorCode ObjFunctCreate(ObjFunct *objf, FreeSurf *surf)
 	PetscScalar ***field,***qual;
 	PetscBool      flg;
 
+	const char           *velx_name="velx";
+	const char           *vely_name="vely";
+	const char           *velz_name="velz";
+	const char           *topo_name="topo";
+	const char           *boug_name="boug";
+	const char           *isa_name="isa";
+	const char           *shmax_name="shmax";
 
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
+
+
 
 	// compute misift?
 	ierr = PetscOptionsGetBool( PETSC_NULL, "-objf_compute", &objf->CompMfit, &flg ); CHKERRQ(ierr);
 	if(objf->CompMfit != PETSC_TRUE) PetscFunctionReturn(0);
 
+
+
+
 	PetscPrintf(PETSC_COMM_WORLD,"# ------------------------------------------------------------------------\n");
 	PetscPrintf(PETSC_COMM_WORLD,"# Objective function: \n");
+
 
 	// set context
 	objf->surf = surf;
 
 	// define names for observational constraints
-	objf->on[_VELX_] = "velx";
-	objf->on[_VELY_] = "vely";
-	objf->on[_VELZ_] = "velz";
-	objf->on[_TOPO_] = "topo";
-	objf->on[_BOUG_] = "boug";
-	objf->on[_ISA_]  = "isa";
-	objf->on[_SHMAX_] = "shmax";
+	objf->on[_VELX_] = velx_name;
+	objf->on[_VELY_] = vely_name;
+	objf->on[_VELZ_] = velz_name;
+	objf->on[_TOPO_] = topo_name;
+	objf->on[_BOUG_] = boug_name;
+	objf->on[_ISA_]  = isa_name;
+	objf->on[_SHMAX_] = shmax_name;
 
 	// read options
 	ierr = ObjFunctReadFromOptions(objf); CHKERRQ(ierr);
@@ -216,6 +238,7 @@ PetscErrorCode ObjFunctReadFromOptions(ObjFunct *objf)
 		ierr = PetscOptionsGetBool(NULL, otname, &objf->otUse[k], &found); CHKERRQ(ierr);
 		if (found)
 		{
+			objf->otUse[k] = PETSC_TRUE;
 			objf->otN++;
 			VecDuplicate(objf->surf->vx,&objf->obs[k]);
 			VecDuplicate(objf->surf->vx,&objf->qul[k]);
