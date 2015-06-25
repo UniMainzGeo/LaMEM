@@ -57,6 +57,9 @@ PetscErrorCode ObjFunctReadFromOptions(ObjFunct *objf);
 // compute error
 PetscErrorCode ObjFunctCompErr(ObjFunct *objf);
 
+// compute weighted Least square error for surface vectors
+PetscErrorCode VecErrSurf(Vec *err, Vec mod, ObjFunct *objf, PetscInt field ,PetscScalar scal);
+
 //---------------------------------------------------------------------------
 
 #endif
