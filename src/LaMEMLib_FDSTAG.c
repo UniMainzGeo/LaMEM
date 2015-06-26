@@ -396,7 +396,7 @@ ierr = JacResCopyTemp(&jr); CHKERRQ(ierr);
 //	PetscPrintf(PETSC_COMM_WORLD,"# Total time required: %g s \n",cputime_end - cputime_start0);
 
 	// cleanup
-	ierr = ObjFunctClear(&objf);   CHKERRQ(ierr);
+	ierr = ObjFunctClean(&objf);   CHKERRQ(ierr);
 	ierr = FDSTAGDestroy(&fs);     CHKERRQ(ierr);
 	ierr = FreeSurfDestroy(&surf); CHKERRQ(ierr);
 	ierr = BCDestroy(&bc);         CHKERRQ(ierr);
