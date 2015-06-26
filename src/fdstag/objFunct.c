@@ -23,7 +23,7 @@ PetscErrorCode ObjFunctClean(ObjFunct *objf)
 
 	if(objf->CompMfit != PETSC_TRUE) PetscFunctionReturn(0);
 
-	// clean object
+	// free vectors
 	for (k=0;k<_max_num_obs_; k++)
 	{
 		if (objf->otUse[k] == PETSC_TRUE)
@@ -32,6 +32,9 @@ PetscErrorCode ObjFunctClean(ObjFunct *objf)
 			ierr = VecDestroy(&objf->qul[k]); CHKERRQ(ierr);
 		}
 	}
+
+	// free asprintf allocated char
+	free(objf->infile);
 
 	PetscFunctionReturn(0);
 }
@@ -52,6 +55,7 @@ PetscErrorCode ObjFunctCreate(ObjFunct *objf, FreeSurf *surf)
 	PetscScalar ***field,***qual;
 	PetscBool      flg;
 
+	const char  *on[_max_num_obs_];			//static array of pointers
 	const char           *velx_name="velx";
 	const char           *vely_name="vely";
 	const char           *velz_name="velz";
@@ -80,16 +84,16 @@ PetscErrorCode ObjFunctCreate(ObjFunct *objf, FreeSurf *surf)
 	objf->surf = surf;
 
 	// define names for observational constraints
-	objf->on[_VELX_] = velx_name;
-	objf->on[_VELY_] = vely_name;
-	objf->on[_VELZ_] = velz_name;
-	objf->on[_TOPO_] = topo_name;
-	objf->on[_BOUG_] = boug_name;
-	objf->on[_ISA_]  = isa_name;
-	objf->on[_SHMAX_] = shmax_name;
+	on[_VELX_] = velx_name;
+	on[_VELY_] = vely_name;
+	on[_VELZ_] = velz_name;
+	on[_TOPO_] = topo_name;
+	on[_BOUG_] = boug_name;
+	on[_ISA_]  = isa_name;
+	on[_SHMAX_] = shmax_name;
 
 	// read options
-	ierr = ObjFunctReadFromOptions(objf); CHKERRQ(ierr);
+	ierr = ObjFunctReadFromOptions(objf, on); CHKERRQ(ierr);
 
 	// access staggered grid layout
 	fs = surf->jr->fs;
@@ -129,7 +133,7 @@ PetscErrorCode ObjFunctCreate(ObjFunct *objf, FreeSurf *surf)
 				objf->otUse[k] = PETSC_FALSE;
 			}
 			if (objf->ocUse[k])
-				PetscPrintf(PETSC_COMM_WORLD,"# Observational constraint [%lld]: %s\n",(LLD)k,objf->on[k] );
+				PetscPrintf(PETSC_COMM_WORLD,"# Observational constraint [%lld]: %s\n",(LLD)k,on[k] );
 		}
 
 		// checks
@@ -207,7 +211,7 @@ PetscErrorCode ObjFunctCreate(ObjFunct *objf, FreeSurf *surf)
 //---------------------------------------------------------------------------
 #undef __FUNCT__
 #define __FUNCT__ "ObjFunctReadFromOptions"
-PetscErrorCode ObjFunctReadFromOptions(ObjFunct *objf)
+PetscErrorCode ObjFunctReadFromOptions(ObjFunct *objf, const char *on[])
 {
 	PetscErrorCode ierr;
 	PetscBool      found;
@@ -235,14 +239,14 @@ PetscErrorCode ObjFunctReadFromOptions(ObjFunct *objf)
 		objf->otUse[k] =PETSC_FALSE;
 
 		// read output flags and allocate memory
-		sprintf(otname,"-objf_use_%s",objf->on[k]);
+		sprintf(otname,"-objf_use_%s",on[k]);
 		ierr = PetscOptionsGetBool(NULL, otname, &objf->otUse[k], &found); CHKERRQ(ierr);
 		if (found)
 		{
 			objf->otUse[k] = PETSC_TRUE;
 			objf->otN++;
-			VecDuplicate(objf->surf->vx,&objf->obs[k]);
-			VecDuplicate(objf->surf->vx,&objf->qul[k]);
+			ierr = VecDuplicate(objf->surf->vx,&objf->obs[k]); CHKERRQ(ierr);
+			ierr = VecDuplicate(objf->surf->vx,&objf->qul[k]); CHKERRQ(ierr);
 		}
 	}
 

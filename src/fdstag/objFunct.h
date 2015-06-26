@@ -29,7 +29,7 @@ typedef struct
 	char       *infile;     	// input file name
 	PetscBool   CompMfit;		// Compute misfit?
 
-	const char  *on[_max_num_obs_];			//static array of pointers
+//	const char  *on[_max_num_obs_];			//static array of pointers
 	PetscBool 	otUse[_max_num_obs_];		// array of boolean USED flags
 	PetscInt  	otN;				// number of USED observation types
 	PetscInt	ocUse[_max_num_obs_];		// number of observational constraints (individual fields)
@@ -52,7 +52,7 @@ PetscErrorCode ObjFunctClean(ObjFunct *objf);
 PetscErrorCode ObjFunctCreate(ObjFunct *objf, FreeSurf *surf);
 
 // read command line options
-PetscErrorCode ObjFunctReadFromOptions(ObjFunct *objf);
+PetscErrorCode ObjFunctReadFromOptions(ObjFunct *objf, const char *on[]);
 
 // compute error
 PetscErrorCode ObjFunctCompErr(ObjFunct *objf);
