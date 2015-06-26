@@ -108,15 +108,14 @@ const char *PTypesName[] ={
 // Structure that holds inversion parameters
 typedef struct
 {
-	PetscInt         use;               // activate resetting model parameters
-	PetscInt         mdN;				// number of model parameters
-	PetscInt         mID;            // current model number
-	PetscInt        *phs;				// model phase number
-	PetscInt        *typ;				// model parameter type 
-	PetscScalar     *val;				// model value
-	PetscScalar     *grd;				// gradient value
-	PetscScalar      mfit;              // misfit value for current model parameters
-	char           **name; 	            // names of all possible model parameters
+	PetscInt         use;  // use inersion parameters to redefine model parameters
+	PetscInt         mdN;  // number of model parameters
+	PetscInt         mID;  // current model number
+	PetscInt        *phs;  // model phase number
+	PetscInt        *typ;  // model parameter type 
+	PetscScalar     *val;  // model value
+	PetscScalar     *grd;  // gradient value
+	PetscScalar      mfit; // misfit value for current model parameters
 } ModParam;
 //-----------------------------------------------------------------------------
 // Structure that holds user input data
