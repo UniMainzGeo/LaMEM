@@ -360,6 +360,10 @@ PetscErrorCode ObjFunctCompErr(ObjFunct *objf)
 	objf->errtot = sqrt( objf->errtot / (PetscScalar) (objf->ocN * objf->surf->jr->fs->dsz.nproc) ) ;
 	PetscPrintf(PETSC_COMM_WORLD,"# Total error = %g \n",objf->errtot);
 
+	// Destroy error vectors
+	ierr = VecDestroy(&err_vx);  CHKERRQ(ierr);
+	ierr = VecDestroy(&err_vy);  CHKERRQ(ierr);
+
 	PetscFunctionReturn(0);
 }
 
