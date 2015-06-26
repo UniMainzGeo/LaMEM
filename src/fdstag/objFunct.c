@@ -304,8 +304,6 @@ PetscErrorCode ObjFunctCompErr(ObjFunct *objf)
 	ierr = VecErrSurf(&err_vx, surf->vx, objf, _VELX_,velScal);  CHKERRQ(ierr);
 	ierr = VecErrSurf(&err_vy, surf->vy, objf, _VELY_,velScal);  CHKERRQ(ierr);
 /*
-	ierr = VecErrSurf(&err_vz, surf->vz, objf, _VELZ_,velScal);  CHKERRQ(ierr);
-	ierr = VecErrSurf(&err_topo, surf->ltopo, objf, _TOPO_,lenScal);  CHKERRQ(ierr);
 	// BOUGUER
 	// ISA
 	// SHMAX
@@ -336,9 +334,6 @@ PetscErrorCode ObjFunctCompErr(ObjFunct *objf)
 	ierr = VecView(err_vy,view_out);																CHKERRQ(ierr);
 	ierr = PetscViewerDestroy(&view_out);															CHKERRQ(ierr);
 
-
-	ierr = VecDestroy(&err_vx);	CHKERRQ(ierr);
-	ierr = VecDestroy(&err_vy);	CHKERRQ(ierr);
 */
 
 
