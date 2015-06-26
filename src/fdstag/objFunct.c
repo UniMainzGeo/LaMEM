@@ -21,9 +21,10 @@ PetscErrorCode ObjFunctClean(ObjFunct *objf)
 	PetscInt       k;
 	PetscFunctionBegin;
 
-	// clean object
+	if(objf->CompMfit != PETSC_TRUE) PetscFunctionReturn(0);
 
-	for (k=0;k< objf->ocN; k++)
+	// clean object
+	for (k=0;k<_max_num_obs_; k++)
 	{
 		if (objf->otUse[k] == PETSC_TRUE)
 		{
