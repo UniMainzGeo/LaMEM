@@ -340,7 +340,7 @@ PetscErrorCode ObjFunctCompErr(ObjFunct *objf)
 	// MPI_Allreduce of errors
 	if (ISParallel(PETSC_COMM_WORLD))
 	{
-		ierr = MPI_Allreduce(objf->err,objf->err,objf->otN,MPI_DOUBLE, MPI_SUM, PETSC_COMM_WORLD);  CHKERRQ(ierr);
+		ierr = MPI_Allreduce(MPI_IN_PLACE,objf->err,_max_num_obs_,MPI_DOUBLE, MPI_SUM, PETSC_COMM_WORLD);  CHKERRQ(ierr);
 	}
 	// total least squares error 
 	objf->errtot = 0.0;
