@@ -416,6 +416,7 @@ ierr = JacResCopyTemp(&jr); CHKERRQ(ierr);
 	ierr = NLSolDestroy(&nl);      CHKERRQ(ierr);
 	ierr = PVOutDestroy(&pvout);   CHKERRQ(ierr);
 	ierr = PVSurfDestroy(&pvsurf); CHKERRQ(ierr);
+	ierr = PVMarkDestroy(&pvmark); CHKERRQ(ierr);
 
 	PetscTime(&cputime_end);
 	PetscPrintf(PETSC_COMM_WORLD, " Simulation took %g s\n", cputime_end - cputime_start);

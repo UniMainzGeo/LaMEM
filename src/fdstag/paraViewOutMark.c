@@ -39,6 +39,18 @@ PetscErrorCode PVMarkCreate(PVMark *pvmark, AdvCtx *actx, const char *filename)
 }
 //---------------------------------------------------------------------------
 #undef __FUNCT__
+#define __FUNCT__ "PVMarkDestroy"
+PetscErrorCode PVMarkDestroy(PVMark *pvmark)
+{
+	PetscFunctionBegin;
+
+	// file name
+	LAMEM_FREE(pvmark->outfile);
+
+	PetscFunctionReturn(0);
+}
+//---------------------------------------------------------------------------
+#undef __FUNCT__
 #define __FUNCT__ "PVMarkReadFromOptions"
 PetscErrorCode PVMarkReadFromOptions(PVMark *pvmark)
 {

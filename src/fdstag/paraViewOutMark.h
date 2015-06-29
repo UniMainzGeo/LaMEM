@@ -19,6 +19,9 @@ typedef struct
 // create ParaView output driver
 PetscErrorCode PVMarkCreate(PVMark *pvmark, AdvCtx *actx, const char *filename);
 
+// free memory
+PetscErrorCode PVMarkDestroy(PVMark *pvmark);
+
 // read options
 PetscErrorCode PVMarkReadFromOptions(PVMark *pvmark);
 
