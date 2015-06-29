@@ -113,7 +113,7 @@ PetscErrorCode ObjFunctCreate(ObjFunct *objf, FreeSurf *surf)
 	ierr = PetscMalloc((size_t)(buffsize)*sizeof(PetscScalar), &readbuff); CHKERRQ(ierr);
 
 	// Read file on single core (rank 0)
-	if(!fs->dsx.rank)
+	if(ISRankZero(PETSC_COMM_WORLD))
 	{
 		// load observations file
 		PetscPrintf(PETSC_COMM_WORLD,"# Load observations: %s \n", objf->infile);
@@ -152,7 +152,7 @@ PetscErrorCode ObjFunctCreate(ObjFunct *objf, FreeSurf *surf)
 	// broadcast buffer to all cpus
 	if (ISParallel(PETSC_COMM_WORLD))
 	{
-		ierr = MPI_Bcast(readbuff,buffsize, MPI_DOUBLE,(PetscMPIInt)0, PETSC_COMM_WORLD); CHKERRQ(ierr);
+		ierr = MPI_Bcast(readbuff, (PetscMPIInt)buffsize, MPIU_SCALAR,(PetscMPIInt)0, PETSC_COMM_WORLD); CHKERRQ(ierr);
 	}
 
 	// get local output grid sizes
@@ -336,15 +336,17 @@ PetscErrorCode ObjFunctCompErr(ObjFunct *objf)
 
 */
 
-
+/*
 	// MPI_Allreduce of errors
 	if (ISParallel(PETSC_COMM_WORLD))
 	{
 		ierr = MPI_Allreduce(MPI_IN_PLACE,objf->err,_max_num_obs_,MPI_DOUBLE, MPI_SUM, PETSC_COMM_WORLD);  CHKERRQ(ierr);
 	}
+*/
+
 	// total least squares error 
 	objf->errtot = 0.0;
-	for (k=0; k<_max_num_obs_; k++)
+	for(k = 0; k < _max_num_obs_; k++)
 	{
 		if(objf->otUse[k] == PETSC_TRUE)
 		{
