@@ -156,13 +156,14 @@ PetscErrorCode ObjFunctCreate(ObjFunct *objf, FreeSurf *surf)
 	}
 
 	// get local output grid sizes
-	ierr = DMDAGetCorners(fs->DA_COR, &sx, &sy, NULL, &nx, &ny, NULL); CHKERRQ(ierr);
+	ierr = DMDAGetCorners(surf->DA_SURF, &sx, &sy, NULL, &nx, &ny, NULL); CHKERRQ(ierr);
 	L=fs->dsz.rank;
 
 	// fill vectors with observations and respective quality weights
 	cnt = 0;
 	for (k=0; k<_max_num_obs_; k++)
 	{
+
 
 		startf = cnt*gnx*gny;
 		startq = (cnt+objf->otN)*gnx*gny;
@@ -177,8 +178,8 @@ PetscErrorCode ObjFunctCreate(ObjFunct *objf, FreeSurf *surf)
 			START_PLANE_LOOP
 			{
 
-				indf = startf + (sx+i) + gnx*(sy+j);
-				indq = startq + (sx+i) + gnx*(sy+j);
+				indf = startf + (i) + gnx*(j);
+				indq = startq + (i) + gnx*(j);
 
 				// get field
 				field[L][j][i] = readbuff[indf];
@@ -245,8 +246,10 @@ PetscErrorCode ObjFunctReadFromOptions(ObjFunct *objf, const char *on[])
 		{
 			objf->otUse[k] = PETSC_TRUE;
 			objf->otN++;
-			ierr = VecDuplicate(objf->surf->vx,&objf->obs[k]); CHKERRQ(ierr);
-			ierr = VecDuplicate(objf->surf->vx,&objf->qul[k]); CHKERRQ(ierr);
+			ierr = VecDuplicate(objf->surf->gtopo,&objf->obs[k]); CHKERRQ(ierr);
+			ierr = VecDuplicate(objf->surf->gtopo,&objf->qul[k]); CHKERRQ(ierr);
+			ierr = VecSet(objf->obs[k],0.0);  CHKERRQ(ierr);
+			ierr = VecSet(objf->qul[k],0.0);  CHKERRQ(ierr);
 		}
 	}
 
@@ -255,26 +258,67 @@ PetscErrorCode ObjFunctReadFromOptions(ObjFunct *objf, const char *on[])
 //---------------------------------------------------------------------------
 #undef __FUNCT__
 #define __FUNCT__ "VecErrSurf"
-PetscErrorCode VecErrSurf(Vec *err, Vec mod, ObjFunct *objf, PetscInt field ,PetscScalar scal)
+PetscErrorCode VecErrSurf(Vec mod, ObjFunct *objf, PetscInt field ,PetscScalar scal)
 {
 	PetscErrorCode    ierr;
+	PetscScalar       ***lfield,***gfield;
+	Vec               err;
+	FreeSurf          *surf;
+	FDSTAG            *fs;
+	PetscInt          L,i,j,sx,sy,nx,ny;
 
 	PetscFunctionBegin;
-	ierr = VecDuplicate(mod,err);  CHKERRQ(ierr);
 
-	//err = -scal*mod + obs
-	ierr = VecWAXPY(*err, -scal, mod, objf->obs[field]);  CHKERRQ(ierr);
+	fs   = objf->surf->jr->fs;
+	surf = objf->surf;
 
-	//err^2
-	ierr = VecPow(*err, 2.0);  CHKERRQ(ierr);
+
+	// create vector to store errors
+	ierr = VecDuplicate(objf->obs[field],&err);  CHKERRQ(ierr);
+
+	// initialize
+	ierr = VecSet(err, 0.0);  CHKERRQ(ierr);
+	objf->err[field] = 0.0;
+
+	// get local output grid sizes
+	ierr = DMDAGetCorners(surf->DA_SURF, &sx, &sy, NULL, &nx, &ny, NULL); CHKERRQ(ierr);
+	L=fs->dsz.rank;
+
+	ierr = VecSet(surf->vpatch, 0.0);  CHKERRQ(ierr);
+
+
+	// access buffer within local domain
+	ierr = DMDAVecGetArray(surf->DA_SURF, mod,          &lfield);  CHKERRQ(ierr);
+	ierr = DMDAVecGetArray(surf->DA_SURF, surf->vpatch,  &gfield );  CHKERRQ(ierr);
+
+	// access buffer within local domain
+	START_PLANE_LOOP
+	{
+		// get field
+		gfield[L][j][i] = lfield[L][j][i];
+	}
+	END_PLANE_LOOP
+
+	// restore access
+	ierr = DMDAVecRestoreArray(surf->DA_SURF, mod,         &lfield);  CHKERRQ(ierr);
+	ierr = DMDAVecRestoreArray(surf->DA_SURF, surf->vpatch, &gfield );  CHKERRQ(ierr);
+
+	// err = -scal*mod + obs
+	ierr = VecWAXPY(err, -scal, surf->vpatch, objf->obs[field]);  CHKERRQ(ierr);
+
+	// err^2
+	ierr = VecPow(err, 2.0);  CHKERRQ(ierr);
 
 	// err = err * qual
-	ierr = VecPointwiseMult(*err, *err, objf->qul[field]);  CHKERRQ(ierr);
+	ierr = VecPointwiseMult(err, err, objf->qul[field]);  CHKERRQ(ierr);
 
 	// sum
-	ierr = VecSum(*err, &objf->err[field]);  CHKERRQ(ierr);
+	ierr = VecSum(err, &objf->err[field]);  CHKERRQ(ierr);
 
-	PetscPrintf(PETSC_COMM_WORLD,"# Error[%lld] = %g \n",(LLD)field,objf->err[field]);
+	//PetscSynchronizedPrintf(PETSC_COMM_SELF,"# rank[%lld,%lld,%lld] Error[%lld] = %g \n",(LLD)fs->dsx.rank,(LLD)fs->dsy.rank,(LLD)fs->dsz.rank, (LLD)field, objf->err[field]/(PetscScalar)fs->dsz.nproc);
+
+
+	ierr = VecDestroy(&err);  CHKERRQ(ierr);
 
 	PetscFunctionReturn(0);
 }
@@ -288,8 +332,6 @@ PetscErrorCode ObjFunctCompErr(ObjFunct *objf)
 	PetscErrorCode    ierr;
 	PetscInt          k;
 	PetscScalar      lenScal,velScal;
-	PetscViewer       view_out;
-	Vec              err_vx,err_vy;
 	PetscFunctionBegin;
 
 	// surface object
@@ -301,13 +343,14 @@ PetscErrorCode ObjFunctCompErr(ObjFunct *objf)
 
 
 	// compute weighted error of surface fields
-	ierr = VecErrSurf(&err_vx, surf->vx, objf, _VELX_,velScal);  CHKERRQ(ierr);
-	ierr = VecErrSurf(&err_vy, surf->vy, objf, _VELY_,velScal);  CHKERRQ(ierr);
+	ierr = VecErrSurf(surf->vx, objf, _VELX_,velScal);  CHKERRQ(ierr);
+	ierr = VecErrSurf(surf->vy, objf, _VELY_,velScal);  CHKERRQ(ierr);
 /*
 	// BOUGUER
 	// ISA
 	// SHMAX
 */
+
 
 /*
 	ierr = PetscViewerBinaryOpen(PETSC_COMM_WORLD,"residual_obs.bin", FILE_MODE_WRITE, &view_out);	CHKERRQ(ierr);
@@ -333,8 +376,8 @@ PetscErrorCode ObjFunctCompErr(ObjFunct *objf)
 	ierr = PetscViewerBinaryOpen(PETSC_COMM_WORLD,"err_modvy.bin", FILE_MODE_WRITE, &view_out);	CHKERRQ(ierr);
 	ierr = VecView(err_vy,view_out);																CHKERRQ(ierr);
 	ierr = PetscViewerDestroy(&view_out);															CHKERRQ(ierr);
-
 */
+
 
 /*
 	// MPI_Allreduce of errors
@@ -357,9 +400,6 @@ PetscErrorCode ObjFunctCompErr(ObjFunct *objf)
 	objf->errtot = sqrt( objf->errtot / (PetscScalar) (objf->ocN * objf->surf->jr->fs->dsz.nproc) ) ;
 	PetscPrintf(PETSC_COMM_WORLD,"# Total error = %g \n",objf->errtot);
 
-	// Destroy error vectors
-	ierr = VecDestroy(&err_vx);  CHKERRQ(ierr);
-	ierr = VecDestroy(&err_vy);  CHKERRQ(ierr);
 
 	PetscFunctionReturn(0);
 }
