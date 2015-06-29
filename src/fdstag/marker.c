@@ -17,6 +17,9 @@
 #include "nlsolve.h"
 #include "advect.h"
 #include "marker.h"
+#include "paraViewOutBin.h"
+#include "paraViewOutSurf.h"
+#include "paraViewOutMark.h"
 #include "break.h"
 
 /*

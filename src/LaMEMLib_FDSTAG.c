@@ -56,6 +56,7 @@ without the explicit agreement of Boris Kaus.
 #include "multigrid.h"
 #include "advect.h"
 #include "marker.h"
+#include "paraViewOutMark.h"
 #include "input.h"
 #include "matProps.h"
 #include "break.h"
@@ -86,6 +87,7 @@ PetscErrorCode LaMEMLib_FDSTAG(ModParam *IOparam, PetscInt *mpi_group_id)
 	NLSol    nl;     // nonlinear solver context
 	PVOut    pvout;  // paraview output driver
 	PVSurf   pvsurf; // paraview output driver
+	PVMark   pvmark; // paraview output driver
 	ObjFunct objf;   // objective function
 
 	PetscErrorCode ierr;
@@ -210,8 +212,11 @@ ierr = ADVMarkCrossFreeSurf(&actx, &surf); CHKERRQ(ierr);
 	// create output object for the free surface
 	ierr = PVSurfCreate(&pvsurf, &surf, user.OutputFile); CHKERRQ(ierr);
 
+	// create output object for the markers - for debugging
+	ierr = PVMarkCreate(&pvmark, &actx, user.OutputFile); CHKERRQ(ierr);
+
 	// read breakpoint files if restart was requested and if is possible
-	if (user.restart==1) { ierr = BreakRead(&user, &actx, &nl.jtype); CHKERRQ(ierr); }
+	if (user.restart==1) { ierr = BreakRead(&user, &actx, &pvout, &pvsurf, &pvmark, &nl.jtype); CHKERRQ(ierr); }
 
 	PetscPrintf(PETSC_COMM_WORLD," \n");
 
@@ -366,6 +371,9 @@ ierr = JacResCopyTemp(&jr); CHKERRQ(ierr);
 			// free surface ParaView output
 			ierr = PVSurfWriteTimeStep(&pvsurf, DirectoryName, JacResGetTime(&jr), JacResGetStep(&jr)); CHKERRQ(ierr);
 
+			// marker ParaView output
+			ierr = PVMarkWriteTimeStep(&pvmark, DirectoryName, JacResGetTime(&jr), JacResGetStep(&jr)); CHKERRQ(ierr);
+
 			// clean up
 			if(DirectoryName) free(DirectoryName);
 		}
@@ -380,7 +388,7 @@ ierr = JacResCopyTemp(&jr); CHKERRQ(ierr);
 		if (user.save_breakpoints > 0) LaMEMMod(JacResGetStep(&jr)-1, user.save_breakpoints, &SaveOrNot);
 		else                           SaveOrNot = 2;
 
-		if (SaveOrNot == 0) { ierr = BreakWrite(&user, &actx, &surf, nl.jtype); CHKERRQ(ierr); }
+		if (SaveOrNot == 0) { ierr = BreakWrite(&user, &actx, &surf, &pvout, &pvsurf, &pvmark, nl.jtype); CHKERRQ(ierr); }
 
 		// check marker phases
 		ierr = ADVCheckMarkPhases(&actx, jr.numPhases); CHKERRQ(ierr);

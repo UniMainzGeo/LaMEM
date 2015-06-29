@@ -11,13 +11,24 @@ PetscErrorCode BreakCheck    (UserCtx *user);
 // Write breakpoint files
 //---------------------------------------------------------------------------
 // grid, mark, gsol, gtopo, info are written together
-PetscErrorCode BreakWrite    (UserCtx *user, AdvCtx *actx, FreeSurf *surf, JacType jtype);
-
+PetscErrorCode BreakWrite(UserCtx *user,
+						AdvCtx    *actx,
+						FreeSurf  *surf,
+						PVOut     *pvout,
+						PVSurf    *pvsurf,
+						PVMark    *pvmark,
+						JacType    jtype);
 //---------------------------------------------------------------------------
 // Read breakpoint files
 //---------------------------------------------------------------------------
 // gsol, info are read together; grid, topo, mark are read separately
-PetscErrorCode BreakRead     (UserCtx *user, AdvCtx *actx, JacType *jtype);
+PetscErrorCode BreakRead(UserCtx *user,
+						AdvCtx   *actx,
+						PVOut    *pvout,
+						PVSurf   *pvsurf,
+						PVMark   *pvmark,
+						JacType  *jtype);
+
 PetscErrorCode BreakReadGrid (UserCtx *user, FDSTAG *fs);
 PetscErrorCode BreakReadSurf (FDSTAG *fs, FreeSurf *surf);
 PetscErrorCode BreakReadMark (AdvCtx *actx);

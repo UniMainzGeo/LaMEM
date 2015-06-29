@@ -19,6 +19,9 @@
 #include "surf.h"
 #include "advect.h"
 #include "marker.h"
+#include "paraViewOutBin.h"
+#include "paraViewOutSurf.h"
+#include "paraViewOutMark.h"
 #include "break.h"
 
 //---------------------------------------------------------------------------
@@ -92,7 +95,7 @@ PetscErrorCode BreakCheck(UserCtx *user)
 //---------------------------------------------------------------------------
 #undef __FUNCT__
 #define __FUNCT__ "BreakWrite"
-PetscErrorCode BreakWrite(UserCtx *user, AdvCtx *actx, FreeSurf *surf, JacType jtype)
+PetscErrorCode BreakWrite(UserCtx *user, AdvCtx *actx, FreeSurf *surf, PVOut *pvout, PVSurf *pvsurf, PVMark *pvmark, JacType jtype)
 {
 	// staggered grid
 	FDSTAG         *fs;
@@ -279,6 +282,18 @@ PetscErrorCode BreakWrite(UserCtx *user, AdvCtx *actx, FreeSurf *surf, JacType j
 	// store breakpoint number
 	fwrite(&user->break_point_number , sizeof(PetscInt), 1, fp);
 
+	//============================================================
+	//   OUTPUT
+	//============================================================
+	// offsets for pvd files
+	if (pvout->outpvd)  fwrite(&pvout->offset  , sizeof(long int), 1, fp);
+
+	if ((pvsurf->surf->UseFreeSurf==PETSC_TRUE) && (pvsurf->outpvd))
+	{
+		fwrite(&pvsurf->offset , sizeof(long int), 1, fp);
+	}
+	if (pvmark->outmark && pvmark->outpvd) fwrite(&pvmark->offset , sizeof(long int), 1, fp);
+
 	// close and free memory
 	free(fname);
 	fclose(fp);
@@ -302,7 +317,7 @@ PetscErrorCode BreakWrite(UserCtx *user, AdvCtx *actx, FreeSurf *surf, JacType j
 //---------------------------------------------------------------------------
 #undef __FUNCT__
 #define __FUNCT__ "BreakRead"
-PetscErrorCode BreakRead(UserCtx *user, AdvCtx *actx, JacType *jtype)
+PetscErrorCode BreakRead(UserCtx *user, AdvCtx *actx, PVOut *pvout, PVSurf *pvsurf, PVMark *pvmark, JacType *jtype)
 {
 	JacRes      *jr;
 	FDSTAG      *fs;
@@ -402,6 +417,22 @@ PetscErrorCode BreakRead(UserCtx *user, AdvCtx *actx, JacType *jtype)
 	// read breakpoint number
 	fread(&user->break_point_number , sizeof(PetscInt), 1, fp);
 
+	//============================================================
+	//   OUTPUT
+	//============================================================
+	// offsets for pvd files
+	// general
+	if (pvout->outpvd) fread(&pvout->offset, sizeof(long int), 1, fp);
+
+	// free surface
+	if ((pvsurf->surf->UseFreeSurf==PETSC_TRUE) && (pvsurf->outpvd))
+	{
+		fread(&pvsurf->offset, sizeof(long int), 1, fp);
+	}
+
+	// markers
+	if (pvmark->outmark && pvmark->outpvd) fread(&pvmark->offset, sizeof(long int), 1, fp);
+
 	// close and free memory
 	free(fname);
 	fclose(fp);
@@ -413,8 +444,15 @@ PetscErrorCode BreakRead(UserCtx *user, AdvCtx *actx, JacType *jtype)
 	// all other ranks should wait
 	ierr = MPI_Barrier(PETSC_COMM_WORLD);    CHKERRQ(ierr);
 
-	PetscPrintf(PETSC_COMM_WORLD," \n");
-	PetscPrintf(PETSC_COMM_WORLD,"RESTART from Time step = %lld \n",(LLD)jr->ts.istep);
+	if (jr->ts.istep >= jr->ts.nstep)
+	{
+		SETERRQ1(PETSC_COMM_SELF, PETSC_ERR_USER, "Restart from time step = %lld is not possible because time_end was already reached!",(LLD)jr->ts.istep);
+	}
+	else
+	{
+		PetscPrintf(PETSC_COMM_WORLD," \n");
+		PetscPrintf(PETSC_COMM_WORLD,"RESTART from Time step = %lld \n",(LLD)jr->ts.istep);
+	}
 
 	PetscFunctionReturn(0);
 }

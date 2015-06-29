@@ -104,7 +104,7 @@ PetscErrorCode MatPropGetStruct(FILE *fp,
 	char        lbl_k    [_lbl_sz_];
 	char        lbl_A    [_lbl_sz_];
     char        lbl_beta [_lbl_sz_];
-    
+
 
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
@@ -285,6 +285,7 @@ PetscErrorCode MatPropGetStruct(FILE *fp,
 		sprintf(lbl_tau,   "[ ]"         );
 		sprintf(lbl_fr,    "[ ]"         );
 		sprintf(lbl_alpha, "[ ]"         );
+		sprintf(lbl_beta,  "[ ]"         );
 		sprintf(lbl_cp,    "[ ]"         );
 		sprintf(lbl_k,     "[ ]"         );
 		sprintf(lbl_A,     "[ ]"         );
