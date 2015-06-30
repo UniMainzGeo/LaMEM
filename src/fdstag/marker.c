@@ -136,7 +136,7 @@ PetscErrorCode ADVMarkInitCoord(AdvCtx *actx, UserCtx *user)
 	PetscInt     imark;
 	PetscRandom  rctx;
 	PetscScalar  cf_rand;
-	PetscInt     AddRandomNoiseParticles;
+	PetscBool    AddRandomNoiseParticles;
 
 
 	PetscErrorCode ierr;
@@ -145,10 +145,10 @@ PetscErrorCode ADVMarkInitCoord(AdvCtx *actx, UserCtx *user)
 	fs = actx->fs;
 
 	// random noise
-	AddRandomNoiseParticles = 0;
-	ierr = PetscOptionsGetInt(PETSC_NULL,"-AddRandomNoiseParticles", &AddRandomNoiseParticles, PETSC_NULL); CHKERRQ(ierr);
+	AddRandomNoiseParticles = PETSC_FALSE;
+	ierr = PetscOptionsGetBool(PETSC_NULL,"-AddRandomNoiseParticles", &AddRandomNoiseParticles, PETSC_NULL); CHKERRQ(ierr);
 
-	if(AddRandomNoiseParticles) PetscPrintf(PETSC_COMM_WORLD, " Adding random noise to marker distribution \n");
+	if(AddRandomNoiseParticles==PETSC_TRUE) PetscPrintf(PETSC_COMM_WORLD, " Adding random noise to marker distribution \n");
 
 	// initialize the random number generator
 	ierr = PetscRandomCreate(PETSC_COMM_SELF, &rctx); CHKERRQ(ierr);
@@ -195,12 +195,13 @@ PetscErrorCode ADVMarkInitCoord(AdvCtx *actx, UserCtx *user)
 							if(AddRandomNoiseParticles)
 							{
 								// add random noise
+								// decrease/increase amount of noise by changing A in: (cf_rand-0.5)*dx/A
 								ierr = PetscRandomGetValueReal(rctx, &cf_rand); CHKERRQ(ierr);
-								actx->markers[imark].X[0] += (cf_rand-0.5)*dx/( (PetscScalar) user->NumPartX);
+								actx->markers[imark].X[0] += (cf_rand-0.5)*dx/1;
 								ierr = PetscRandomGetValueReal(rctx, &cf_rand); CHKERRQ(ierr);
-								actx->markers[imark].X[1] += (cf_rand-0.5)*dy/( (PetscScalar) user->NumPartY);
+								actx->markers[imark].X[1] += (cf_rand-0.5)*dy/1;
 								ierr = PetscRandomGetValueReal(rctx, &cf_rand); CHKERRQ(ierr);
-								actx->markers[imark].X[2] += (cf_rand-0.5)*dz/( (PetscScalar) user->NumPartZ);
+								actx->markers[imark].X[2] += (cf_rand-0.5)*dz/1;
 							}
 
 							// increment local counter

@@ -32,7 +32,7 @@ PetscErrorCode PVMarkCreate(PVMark *pvmark, AdvCtx *actx, const char *filename)
 	// set file name
 	asprintf(&pvmark->outfile, "%s_mark", filename);
 
-	// set pvd file offset
+	// set .pvd file offset
 	pvmark->offset = 0;
 
 	PetscFunctionReturn(0);
@@ -84,10 +84,10 @@ PetscErrorCode PVMarkWriteTimeStep(PVMark *pvmark, const char *dirName, PetscSca
 		ierr = UpdatePVDFile(dirName, pvmark->outfile, "pvtu", &pvmark->offset, ttime, tindx); CHKERRQ(ierr);
 	}
 
-	// write parallel data .pvts file
+	// write parallel data .pvtu file
 	ierr = PVMarkWritePVTU(pvmark, dirName); CHKERRQ(ierr);
 
-	// write sub-domain data .vts files
+	// write sub-domain data .vtu files
 	ierr = PVMarkWriteVTU(pvmark, dirName); CHKERRQ(ierr);
 
 	PetscFunctionReturn(0);
@@ -288,10 +288,12 @@ PetscErrorCode PVMarkWritePVTU(PVMark *pvmark, const char *dirName)
 	fprintf( fp, "\t\t\t\t<DataArray type=\"Int32\" Name=\"types\" format=\"appended\" />\n");
 	fprintf( fp, "\t\t\t</Cells>\n");
 
+	// points
 	fprintf( fp, "\t\t<PPoints>\n");
 	fprintf( fp, "\t\t\t<PDataArray type=\"Float32\" Name=\"Points\" NumberOfComponents=\"3\" format=\"appended\"/>\n");
 	fprintf( fp, "\t\t</PPoints>\n");
 
+	// point data
 	fprintf( fp, "\t\t<PPointData>\n");
 		fprintf(fp,"\t\t\t<PDataArray type=\"Int32\" Name=\"Phase\" NumberOfComponents=\"1\" format=\"appended\"/>\n");
 	fprintf( fp, "\t\t</PPointData>\n");

@@ -25,13 +25,13 @@ PetscErrorCode PVMarkDestroy(PVMark *pvmark);
 // read options
 PetscErrorCode PVMarkReadFromOptions(PVMark *pvmark);
 
-// write all time-step output files to disk (PVD, PVTS, VTS)
+// write all time-step output files to disk (PVD, PVTU, VTU)
 PetscErrorCode PVMarkWriteTimeStep(PVMark *pvmark, const char *dirName, PetscScalar ttime, PetscInt tindx);
 
-// vtu marker output
+// .vtu marker output
 PetscErrorCode PVMarkWriteVTU(PVMark *pvmark, const char *dirName);
 
-// pvtu marker output
+// .pvtu marker output
 PetscErrorCode PVMarkWritePVTU(PVMark *pvmark, const char *dirName);
 
 //---------------------------------------------------------------------------
