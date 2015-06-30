@@ -14,8 +14,8 @@
 #include "Utils.h"
 //---------------------------------------------------------------------------
 #undef __FUNCT__
-#define __FUNCT__ "ObjFunctClean"
-PetscErrorCode ObjFunctClean(ObjFunct *objf)
+#define __FUNCT__ "ObjFunctDestroy"
+PetscErrorCode ObjFunctDestroy(ObjFunct *objf)
 {
 	PetscErrorCode ierr;
 	PetscInt       k;
@@ -26,7 +26,7 @@ PetscErrorCode ObjFunctClean(ObjFunct *objf)
 	// free vectors
 	for (k=0;k<_max_num_obs_; k++)
 	{
-		if (objf->otUse[k] == PETSC_TRUE)
+		if (objf->otUse[k] == 1)
 		{
 			ierr = VecDestroy(&objf->obs[k]); CHKERRQ(ierr);
 			ierr = VecDestroy(&objf->qul[k]); CHKERRQ(ierr);
@@ -54,6 +54,7 @@ PetscErrorCode ObjFunctCreate(ObjFunct *objf, FreeSurf *surf)
 	PetscViewer    view_in;
 	PetscScalar ***field,***qual;
 	PetscBool      flg;
+	PetscInt       useField;
 
 	const char  *on[_max_num_obs_];			//static array of pointers
 	const char           *velx_name="velx";
@@ -94,110 +95,145 @@ PetscErrorCode ObjFunctCreate(ObjFunct *objf, FreeSurf *surf)
 
 	// read options
 	ierr = ObjFunctReadFromOptions(objf, on); CHKERRQ(ierr);
-
-	// access staggered grid layout
-	fs = surf->jr->fs;
-
-	// get global dimensions of the grid
-	gnx = fs->dsx.tnods;
-	gny = fs->dsy.tnods;
-
-	// final size of buffer (number of observation types * gridsize)
-	buffsize = 2 * objf->otN * gnx * gny;
-
-
-	// number of observational constraints
-	objf->ocN  = objf->otN * gnx * gny;
-
-	// allocate input buffer
-	ierr = PetscMalloc((size_t)(buffsize)*sizeof(PetscScalar), &readbuff); CHKERRQ(ierr);
-
-	// Read file on single core (rank 0)
-	if(ISRankZero(PETSC_COMM_WORLD))
+	if(objf->otN != 0)
 	{
-		// load observations file
-		PetscPrintf(PETSC_COMM_WORLD,"# Load observations: %s \n", objf->infile);
-		ierr = PetscViewerBinaryOpen(PETSC_COMM_SELF, objf->infile, FILE_MODE_READ, &view_in); CHKERRQ(ierr);
-		ierr = PetscViewerBinaryGetDescriptor(view_in, &fd); CHKERRQ(ierr);
 
-		// read (and ignore) the silent undocumented file header & size of file 
-		ierr = PetscBinaryRead(fd, &header, 2+_max_num_obs_, PETSC_SCALAR); CHKERRQ(ierr);
-		Fsize = (PetscInt)(header[1]);
-	
-		for (k = 0; k <_max_num_obs_; k++)
+		// Read file on single core (rank 0)
+		if(ISRankZero(PETSC_COMM_WORLD))
 		{
-			objf->ocUse[k] = (PetscInt) header[k+2]; 
-			if ( (objf->ocUse[k] == 0) && (objf->otUse[k] == PETSC_TRUE) )
+			// load observations file
+			PetscPrintf(PETSC_COMM_WORLD,"# Load observations: %s \n", objf->infile);
+			ierr = PetscViewerBinaryOpen(PETSC_COMM_SELF, objf->infile, FILE_MODE_READ, &view_in); CHKERRQ(ierr);
+			ierr = PetscViewerBinaryGetDescriptor(view_in, &fd); CHKERRQ(ierr);
+
+			// read (and ignore) the silent undocumented file header & size of file
+			ierr = PetscBinaryRead(fd, &header, 2+_max_num_obs_, PETSC_SCALAR); CHKERRQ(ierr);
+			Fsize = (PetscInt)(header[1]);
+
+			for (k = 0; k <_max_num_obs_; k++)
 			{
-				PetscPrintf(PETSC_COMM_WORLD,"# WARNING: Requested field is not part in input file -> Remove from obective function \n");
-				objf->otUse[k] = PETSC_FALSE;
+				useField = (PetscInt) header[k+2];
+				if ( (useField == 0) && (objf->otUse[k] == 1) )
+				{
+					PetscPrintf(PETSC_COMM_WORLD,"# WARNING: Requested field [%s] is not found in input file -> Remove from objective function \n",on[k]);
+					objf->otUse[k] = 0;
+					objf->otN--;
+					useField = 0;
+				}
+				else if ( (useField == 1) && (objf->otUse[k] == 0) )
+				{
+					PetscPrintf(PETSC_COMM_WORLD,"# WARNING: Found non-requested field [%s] in input file -> won't be part of objective function \n",on[k]);
+					objf->otUse[k] = 0;
+				}
+				else if ( (useField == 1) && (objf->otUse[k] == 1) )
+				{
+					PetscPrintf(PETSC_COMM_WORLD,"# Observational constraint [%lld]: %s\n",(LLD)k,on[k] );
+					objf->otUse[k] = 1;
+				}
 			}
-			if (objf->ocUse[k])
-				PetscPrintf(PETSC_COMM_WORLD,"# Observational constraint [%lld]: %s\n",(LLD)k,on[k] );
 		}
+
+
+		// broadcast buffer to all cpus
+		if (ISParallel(PETSC_COMM_WORLD))
+		{
+			objf->otUse[_max_num_obs_] = objf->otN;
+			ierr = MPI_Bcast(objf->otUse, (PetscMPIInt)(_max_num_obs_+1), MPIU_2INT,(PetscMPIInt)0, PETSC_COMM_WORLD); CHKERRQ(ierr);
+			objf->otN = objf->otUse[_max_num_obs_];
+		}
+
+
+		// access staggered grid layout
+		fs = surf->jr->fs;
+
+		// get global dimensions of the grid
+		gnx = fs->dsx.tnods;
+		gny = fs->dsy.tnods;
+
+		// final size of buffer (number of observation types * gridsize)
+		buffsize = 2 * objf->otN * gnx * gny;
+
+		// number of observational constraints
+		objf->ocN  = objf->otN * gnx * gny;
 
 		// checks
-		if (Fsize != buffsize){
-			// drop error message
-		}
-
-
-		// read observations into the buffer
-		ierr = PetscBinaryRead(fd, readbuff, buffsize, PETSC_SCALAR); CHKERRQ(ierr);
-
-		// destroy
-		ierr = PetscViewerDestroy(&view_in); CHKERRQ(ierr);
-	}
-
-	// broadcast buffer to all cpus
-	if (ISParallel(PETSC_COMM_WORLD))
-	{
-		ierr = MPI_Bcast(readbuff, (PetscMPIInt)buffsize, MPIU_SCALAR,(PetscMPIInt)0, PETSC_COMM_WORLD); CHKERRQ(ierr);
-	}
-
-	// get local output grid sizes
-	ierr = DMDAGetCorners(surf->DA_SURF, &sx, &sy, NULL, &nx, &ny, NULL); CHKERRQ(ierr);
-	L=fs->dsz.rank;
-
-	// fill vectors with observations and respective quality weights
-	cnt = 0;
-	for (k=0; k<_max_num_obs_; k++)
-	{
-
-
-		startf = cnt*gnx*gny;
-		startq = (cnt+objf->otN)*gnx*gny;
-
-		if(objf->otUse[k] == PETSC_TRUE)
+		if (ISRankZero(PETSC_COMM_WORLD))
 		{
-			// access buffer within local domain
-			ierr = DMDAVecGetArray(surf->DA_SURF, objf->obs[k],  &field);  CHKERRQ(ierr);
-			ierr = DMDAVecGetArray(surf->DA_SURF, objf->qul[k],  &qual );  CHKERRQ(ierr);
-
-			// access buffer within local domain
-			START_PLANE_LOOP
-			{
-
-				indf = startf + (i) + gnx*(j);
-				indq = startq + (i) + gnx*(j);
-
-				// get field
-				field[L][j][i] = readbuff[indf];
-				qual[L][j][i]  = readbuff[indq];
-
-			}
-			END_PLANE_LOOP
-
-			// restore access
-			ierr = DMDAVecRestoreArray(surf->DA_SURF, objf->obs[k],  &field);  CHKERRQ(ierr);
-			ierr = DMDAVecRestoreArray(surf->DA_SURF, objf->qul[k],  &qual );  CHKERRQ(ierr);
-
-			cnt++;
+			if (Fsize != buffsize) PetscPrintf(PETSC_COMM_WORLD,"# WARNING: Filesize does not correspond to the expected file size \n");
 		}
-	}
 
-	// free buffer
-	PetscFree(readbuff);
+		// allocate input buffer
+		ierr = PetscMalloc((size_t)(buffsize)*sizeof(PetscScalar), &readbuff); CHKERRQ(ierr);
+
+
+
+		if(ISRankZero(PETSC_COMM_WORLD))
+		{
+			// read observations into the buffer
+			ierr = PetscBinaryRead(fd, readbuff, buffsize, PETSC_SCALAR); CHKERRQ(ierr);
+
+			// destroy
+			ierr = PetscViewerDestroy(&view_in); CHKERRQ(ierr);
+		}
+
+		// broadcast buffer to all cpus
+		if (ISParallel(PETSC_COMM_WORLD))
+		{
+			ierr = MPI_Bcast(readbuff, (PetscMPIInt)buffsize, MPIU_SCALAR,(PetscMPIInt)0, PETSC_COMM_WORLD); CHKERRQ(ierr);
+		}
+
+
+
+		// get local output grid sizes
+		ierr = DMDAGetCorners(surf->DA_SURF, &sx, &sy, NULL, &nx, &ny, NULL); CHKERRQ(ierr);
+		L=fs->dsz.rank;
+
+		// fill vectors with observations and respective quality weights
+		cnt = 0;
+		for (k=0; k<_max_num_obs_; k++)
+		{
+
+			startf = cnt*gnx*gny;
+			startq = (cnt+objf->otN)*gnx*gny;
+
+			if(objf->otUse[k] == 1)
+			{
+				// access buffer within local domain
+				ierr = DMDAVecGetArray(surf->DA_SURF, objf->obs[k],  &field);  CHKERRQ(ierr);
+				ierr = DMDAVecGetArray(surf->DA_SURF, objf->qul[k],  &qual );  CHKERRQ(ierr);
+
+				// access buffer within local domain
+				START_PLANE_LOOP
+				{
+
+					indf = startf + (i) + gnx*(j);
+					indq = startq + (i) + gnx*(j);
+
+					// get field
+					field[L][j][i] = readbuff[indf];
+					qual[L][j][i]  = readbuff[indq];
+
+				}
+				END_PLANE_LOOP
+
+				// restore access
+				ierr = DMDAVecRestoreArray(surf->DA_SURF, objf->obs[k],  &field);  CHKERRQ(ierr);
+				ierr = DMDAVecRestoreArray(surf->DA_SURF, objf->qul[k],  &qual );  CHKERRQ(ierr);
+
+				cnt++;
+			}
+		}
+
+		// free buffer
+		PetscFree(readbuff);
+	}
+	else
+	{
+		PetscPrintf(PETSC_COMM_WORLD,"# WARNING: No fields requested -> Cannot create objective function \n");
+		objf->errtot = 0.0;
+		PetscPrintf(PETSC_COMM_WORLD,"# Total error = %g \n",objf->errtot);
+		PetscFunctionReturn(0);
+	}
 
 	// compute error
 	ierr = ObjFunctCompErr(objf);  CHKERRQ(ierr);
@@ -215,7 +251,7 @@ PetscErrorCode ObjFunctCreate(ObjFunct *objf, FreeSurf *surf)
 PetscErrorCode ObjFunctReadFromOptions(ObjFunct *objf, const char *on[])
 {
 	PetscErrorCode ierr;
-	PetscBool      found;
+	PetscBool      found, exists;
 	PetscInt       k;
 	char           otname [MAX_NAME_LEN];
 	PetscFunctionBegin;
@@ -237,14 +273,14 @@ PetscErrorCode ObjFunctReadFromOptions(ObjFunct *objf, const char *on[])
 	for (k=0; k<_max_num_obs_; k++)
 	{
 		// initialize
-		objf->otUse[k] =PETSC_FALSE;
+		objf->otUse[k] = 0;
 
 		// read output flags and allocate memory
 		sprintf(otname,"-objf_use_%s",on[k]);
-		ierr = PetscOptionsGetBool(NULL, otname, &objf->otUse[k], &found); CHKERRQ(ierr);
+		ierr = PetscOptionsGetBool(NULL, otname, &exists, &found); CHKERRQ(ierr);
 		if (found)
 		{
-			objf->otUse[k] = PETSC_TRUE;
+			objf->otUse[k] = 1;
 			objf->otN++;
 			ierr = VecDuplicate(objf->surf->gtopo,&objf->obs[k]); CHKERRQ(ierr);
 			ierr = VecDuplicate(objf->surf->gtopo,&objf->qul[k]); CHKERRQ(ierr);
@@ -317,7 +353,6 @@ PetscErrorCode VecErrSurf(Vec mod, ObjFunct *objf, PetscInt field ,PetscScalar s
 
 	//PetscSynchronizedPrintf(PETSC_COMM_SELF,"# rank[%lld,%lld,%lld] Error[%lld] = %g \n",(LLD)fs->dsx.rank,(LLD)fs->dsy.rank,(LLD)fs->dsz.rank, (LLD)field, objf->err[field]/(PetscScalar)fs->dsz.nproc);
 
-
 	ierr = VecDestroy(&err);  CHKERRQ(ierr);
 
 	PetscFunctionReturn(0);
@@ -343,8 +378,12 @@ PetscErrorCode ObjFunctCompErr(ObjFunct *objf)
 
 
 	// compute weighted error of surface fields
-	ierr = VecErrSurf(surf->vx, objf, _VELX_,velScal);  CHKERRQ(ierr);
-	ierr = VecErrSurf(surf->vy, objf, _VELY_,velScal);  CHKERRQ(ierr);
+	if (objf->otUse[_VELX_])	{ ierr = VecErrSurf(surf->vx,    objf, _VELX_,velScal);  CHKERRQ(ierr); }
+	if (objf->otUse[_VELY_])	{ ierr = VecErrSurf(surf->vy,    objf, _VELY_,velScal);  CHKERRQ(ierr); }
+	if (objf->otUse[_VELZ_])	{ ierr = VecErrSurf(surf->vz,    objf, _VELZ_,velScal);  CHKERRQ(ierr);	}
+	if (objf->otUse[_TOPO_])	{ ierr = VecErrSurf(surf->ltopo, objf, _TOPO_,velScal);  CHKERRQ(ierr); }
+
+
 /*
 	// BOUGUER
 	// ISA
@@ -379,25 +418,18 @@ PetscErrorCode ObjFunctCompErr(ObjFunct *objf)
 */
 
 
-/*
-	// MPI_Allreduce of errors
-	if (ISParallel(PETSC_COMM_WORLD))
-	{
-		ierr = MPI_Allreduce(MPI_IN_PLACE,objf->err,_max_num_obs_,MPI_DOUBLE, MPI_SUM, PETSC_COMM_WORLD);  CHKERRQ(ierr);
-	}
-*/
 
 	// total least squares error 
 	objf->errtot = 0.0;
 	for(k = 0; k < _max_num_obs_; k++)
 	{
-		if(objf->otUse[k] == PETSC_TRUE)
+		if(objf->otUse[k] == 1)
 		{
 			objf->errtot += objf->err[k];
 		}
 	}
 
-	objf->errtot = sqrt( objf->errtot / (PetscScalar) (objf->ocN * objf->surf->jr->fs->dsz.nproc) ) ;
+	objf->errtot = sqrt( objf->errtot / (PetscScalar) (objf->ocN * surf->jr->fs->dsz.nproc) ) ;
 	PetscPrintf(PETSC_COMM_WORLD,"# Total error = %g \n",objf->errtot);
 
 

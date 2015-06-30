@@ -25,19 +25,16 @@ typedef enum 	// observation type
 //---------------------------------------------------------------------------
 typedef struct
 {
-	FreeSurf   *surf;       	// free surface object
-	char       *infile;     	// input file name
-	PetscBool   CompMfit;		// Compute misfit?
-
-//	const char  *on[_max_num_obs_];			//static array of pointers
-	PetscBool 	otUse[_max_num_obs_];		// array of boolean USED flags
-	PetscInt  	otN;				// number of USED observation types
-	PetscInt	ocUse[_max_num_obs_];		// number of observational constraints (individual fields)
-	PetscInt	ocN;				// total number of observational constraints
-	PetscScalar	err[_max_num_obs_];	    	// array containing individual sums of errors
-	PetscScalar	errtot;				// total error
-	Vec         obs[_max_num_obs_];		// vectors containing the observations
-	Vec         qul[_max_num_obs_];		// vectors containing quality info (quality/sigma)^2, where quality (0..1)
+	FreeSurf     *surf;                 // free surface object
+	char         *infile;               // input file name
+	PetscBool    CompMfit;              // Compute misfit?
+	PetscInt     otUse[_max_num_obs_+1];// array of boolean USED flags
+	PetscInt     otN;                   // number of USED observation types
+	PetscInt     ocN;                   // total number of observational constraints
+	PetscScalar  err[_max_num_obs_];    // array containing individual sums of errors
+	PetscScalar  errtot;                // total error
+	Vec          obs[_max_num_obs_];    // vectors containing the observations
+	Vec          qul[_max_num_obs_];    // vectors containing quality info (quality/sigma)^2, where quality (0..1)
 
 	// missing ...
 	// (data) covariance matrix
@@ -46,7 +43,7 @@ typedef struct
 //---------------------------------------------------------------------------
 
 // destroy object
-PetscErrorCode ObjFunctClean(ObjFunct *objf);
+PetscErrorCode ObjFunctDestroy(ObjFunct *objf);
 
 // create objective function object
 PetscErrorCode ObjFunctCreate(ObjFunct *objf, FreeSurf *surf);
