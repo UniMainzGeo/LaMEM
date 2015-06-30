@@ -347,14 +347,15 @@ ierr = JacResCopyTemp(&jr); CHKERRQ(ierr);
 		{
 			char *DirectoryName = NULL;
 
-
-			// create directory (encode current time & step number)
-			asprintf(&DirectoryName, "Timestep_%1.6lld_%1.6e", (LLD)JacResGetStep(&jr), JacResGetTime(&jr));
-
 			// redefine filename in case of inversion setup
 			if (IOparam->use == 1)
 			{
 				asprintf(&DirectoryName, "Timestep_%1.6lld", (LLD)IOparam->mID);
+			}
+			else
+			{
+				// create directory (encode current time & step number)
+				asprintf(&DirectoryName, "Timestep_%1.6lld_%1.6e", (LLD)JacResGetStep(&jr), JacResGetTime(&jr));
 			}
 
 			ierr = LaMEMCreateOutputDirectory(DirectoryName); CHKERRQ(ierr);
