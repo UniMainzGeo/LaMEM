@@ -1,4 +1,4 @@
-function [X,Y,Z,xcoor,ycoor,zcoor] = FDSTAGMeshGeneratorMatlab(npartx,nparty,npartz,fname)
+function [X,Y,Z,xcoor,ycoor,zcoor, Xpart, Ypart, Zpart] = FDSTAGMeshGeneratorMatlab(npartx,nparty,npartz,fname, RandomNoise)
 % This function creates a variable mesh for LaMEM setups based on a
 % processor configuration
 %    fname - name of the file with the processor configuration;
@@ -61,6 +61,28 @@ z = z + zcoor(1);
 
 % create mesh grid
 [X,Y,Z] =   meshgrid(x,y,z);
+
+
+% Add random noise to the particles
+dx_vec  =   repmat(dx(:)',[npartx 1]); dx_vec = dx_vec(:)/npartx;
+dy_vec  =   repmat(dy(:)',[nparty 1]); dy_vec = dy_vec(:)/nparty;
+dz_vec  =   repmat(dz(:)',[npartz 1]); dz_vec = dz_vec(:)/npartz;
+
+if RandomNoise
+    [dXNoise,dYNoise,dZNoise] =   meshgrid(dx_vec,dy_vec,dz_vec);
+    
+    dXNoise = dXNoise.*(rand(size(dXNoise))-0.5);
+    dYNoise = dYNoise.*(rand(size(dYNoise))-0.5);
+    dZNoise = dZNoise.*(rand(size(dZNoise))-0.5);
+    
+    Xpart       =   X + dXNoise;
+    Ypart       =   Y + dYNoise;
+    Zpart       =   Z + dZNoise;
+else
+    Xpart = X;
+    Ypart = Y;
+    Zpart = Z;
+end
 
 end
 

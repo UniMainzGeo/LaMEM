@@ -33,12 +33,12 @@ num_prop      = 5;
 Nproc                           = Nprocx*Nprocy*Nprocz;
 [num,num_i,num_j,num_k]         = get_numscheme(Nprocx,Nprocy,Nprocz);
 
-% Grid
-[X,Y,Z] = meshgrid(A.x,A.y,A.z);
-X       = permute(X,[2 1 3]);
-Y       = permute(Y,[2 1 3]);
-Z       = permute(Z,[2 1 3]);
-    
+% Particle coordinates (should be permuted such that it has the same size
+% as A.phase)
+X       = A.Xpart;
+Y       = A.Ypart;
+Z       = A.Zpart;
+
 % Get particles of respective procs    
 [xi,ix_start,ix_end] = get_ind(A.x,xc,Nprocx);
 [yi,iy_start,iy_end] = get_ind(A.y,yc,Nprocy);
@@ -69,34 +69,7 @@ for num=1:Nproc
     part_z   = Z(x_start(num):x_end(num),y_start(num):y_end(num),z_start(num):z_end(num));
     part_phs = A.Phase(x_start(num):x_end(num),y_start(num):y_end(num),z_start(num):z_end(num));
     part_T   = A.Temp(x_start(num):x_end(num),y_start(num):y_end(num),z_start(num):z_end(num));
-    
-    
-    % ADD RANDOM NOISE ON PARTICLES
-    if isfield(A,'RandomNoise')
-        if A.RandomNoise
-            
-            % This takes into account variable gridspacing
-            dx              = part_x(2:end,:,:)-part_x(1:end-1,:,:);
-            dx(end+1,:,:)   = part_x(end,:,:)-part_x(end-1,:,:);
-    
-            dy              = part_y(:,2:end,:)-part_y(:,1:end-1,:);
-            dy(:,end+1,:)   = part_y(:,end,:)-part_y(:,end-1,:);
-            
-            dz              = part_z(:,:,2:end)-part_z(:,:,1:end-1);
-            dz(:,:,end+1)   = part_z(:,:,end)-part_z(:,:,end-1);
-            
-%             dx = part_x(2,2,2)-part_x(1,1,1);
-%             dy = part_y(2,2,2)-part_y(1,1,1);
-%             dz = part_z(2,2,2)-part_z(1,1,1);
-            
-            part_x = part_x + (rand(size(part_x))-0.5).*dx.*0.5;
-            part_y = part_y + (rand(size(part_y))-0.5).*dy.*0.5;
-            part_z = part_z + (rand(size(part_z))-0.5).*dz.*0.5;
-        end
-    end
-    
-    
-    
+
     % No. of particles per processor
     num_particles = size(part_x,1)* size(part_x,2) * size(part_x,3); 
     
