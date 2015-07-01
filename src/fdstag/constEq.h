@@ -127,9 +127,13 @@ void GetTempParam(
 // Infinite Strain Axis (ISA) calculation functions
 //---------------------------------------------------------------------------
 
-void Tensor2RNScale(Tensor2RN *A);
+void Tensor2RNNorm(Tensor2RN *A, PetscScalar *pk);
+
+void Tensor2RNDivide(Tensor2RN *A, PetscScalar k);
 
 void Tensor2RNTrace(Tensor2RN *A);
+
+void Tensor2RNSym(Tensor2RN *A, Tensor2RN *B);
 
 void Tensor2RNProduct(Tensor2RN *A, Tensor2RN *B, Tensor2RN *C);
 
@@ -155,14 +159,17 @@ void Tensor2RSView(Tensor2RS *A, const char *msg);
 
 void Tensor2RNEigen(Tensor2RN *L, PetscScalar tol, PetscScalar eval[]);
 
-void Tensor2RSSpectral(
+void SortEgenAbs(PetscScalar eval[]);
+
+PetscInt Tensor2RSSpectral(
 	Tensor2RS   *A,      // symmetric tensor
 	PetscScalar eval[],  // eigenvalues (sorted)
 	PetscScalar evect[], // eigenvectors (corresponding)
-	PetscScalar atol,    // stop tolerance for Jacoby rotation
+	PetscScalar ttol,    // tight tolerance (convergence condition)
+	PetscScalar ltol,    // loose tolerance (divergence condition)
 	PetscInt    itmax);  // maximum number rotations
 
-void getISA(Tensor2RN *L, PetscScalar vel[], PetscScalar ISA[]);
+PetscInt getISA(Tensor2RN *pL, PetscScalar ISA[], PetscScalar *plnrm);
 
 //---------------------------------------------------------------------------
 #endif

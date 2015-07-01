@@ -201,6 +201,50 @@ PetscErrorCode OutBufPut3DVecComp(
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
+#undef __FUNCT__
+#define __FUNCT__ "OutBufZero3DVecComp"
+PetscErrorCode OutBufZero3DVecComp(
+	OutBuf      *outbuf,
+	PetscInt     ncomp,  // number of components
+	PetscInt     dir)    // component identifier
+{
+	// put zero component to output buffer
+
+	FDSTAG      *fs;
+	float       *buff;
+	PetscInt    ii, nn, rx, ry, rz, sx, sy, sz, nx, ny, nz, cnt;
+
+	PetscFunctionBegin;
+
+	// access grid layout & buffer
+	fs   = outbuf->fs;
+	buff = outbuf->buff;
+
+	// get sub-domain ranks, starting node IDs, and number of nodes
+	GET_OUTPUT_RANGE(rx, nx, sx, fs->dsx)
+	GET_OUTPUT_RANGE(ry, ny, sy, fs->dsy)
+	GET_OUTPUT_RANGE(rz, nz, sz, fs->dsz)
+
+	// set counter
+	cnt = dir;
+
+	// get total number of output nodes
+	nn = nx*ny*nz;
+
+	for(ii = 0; ii < nn; ii++)
+	{
+		buff[cnt] = 0.0;
+
+		cnt += ncomp;
+
+	}
+
+	// update number of elements in the buffer
+	outbuf->cn += nn;
+
+	PetscFunctionReturn(0);
+}
+//---------------------------------------------------------------------------
 //...........  Multi-component output vector data structure .................
 //---------------------------------------------------------------------------
 void OutVecCreate(
@@ -263,6 +307,8 @@ PetscInt OutMaskCountActive(OutMask *omask)
 	if(omask->plast_dissip)   cnt++; // plastic dissipation
 	if(omask->tot_displ)      cnt++; // total displacements
 	if(omask->SHmax)          cnt++; // maximum horizontal stress
+	if(omask->ISA)            cnt++; // Infinite Strain Axis
+	if(omask->GOL)            cnt++; // Grain Orientation Lag
 	// === debugging vectors ===============================================
 	if(omask->moment_res)     cnt++; // momentum residual
 	if(omask->cont_res)       cnt++; // continuity residual
@@ -358,6 +404,8 @@ PetscErrorCode PVOutCreate(PVOut *pvout, JacRes *jr, const char *filename)
 	if(omask->plast_dissip)   OutVecCreate(&outvecs[cnt++], "plast_dissip",   scal->lbl_dissipation_rate, &PVOutWritePlastDissip,  1);
 	if(omask->tot_displ)      OutVecCreate(&outvecs[cnt++], "tot_displ",      scal->lbl_length,           &PVOutWriteTotDispl,     3);
 	if(omask->SHmax)          OutVecCreate(&outvecs[cnt++], "SHmax",          scal->lbl_unit,             &PVOutWriteSHmax,        3);
+	if(omask->ISA)            OutVecCreate(&outvecs[cnt++], "ISA",            scal->lbl_unit,             &PVOutWriteISA,          3);
+	if(omask->GOL)            OutVecCreate(&outvecs[cnt++], "GOL",            scal->lbl_unit,             &PVOutWriteGOL,          1);
 	// === debugging vectors ===============================================
 	if(omask->moment_res)     OutVecCreate(&outvecs[cnt++], "moment_res",     scal->lbl_volumetric_force, &PVOutWriteMomentRes,    3);
 	if(omask->cont_res)       OutVecCreate(&outvecs[cnt++], "cont_res",       scal->lbl_strain_rate,      &PVOutWriteContRes,      1);
@@ -399,6 +447,8 @@ PetscErrorCode PVOutReadFromOptions(PVOut *pvout)
 	ierr = PetscOptionsGetInt(NULL, "-out_ang_vel_mag",    &omask->ang_vel_mag,    NULL); CHKERRQ(ierr);
 	ierr = PetscOptionsGetInt(NULL, "-out_tot_strain",     &omask->tot_strain,     NULL); CHKERRQ(ierr);
 	ierr = PetscOptionsGetInt(NULL, "-out_shmax",          &omask->SHmax,          NULL); CHKERRQ(ierr);
+	ierr = PetscOptionsGetInt(NULL, "-out_isa",            &omask->ISA,            NULL); CHKERRQ(ierr);
+	ierr = PetscOptionsGetInt(NULL, "-out_gol",            &omask->GOL,            NULL); CHKERRQ(ierr);
 	ierr = PetscOptionsGetInt(NULL, "-out_plast_strain",   &omask->plast_strain,   NULL); CHKERRQ(ierr);
 	ierr = PetscOptionsGetInt(NULL, "-out_plast_dissip",   &omask->plast_dissip,   NULL); CHKERRQ(ierr);
 	ierr = PetscOptionsGetInt(NULL, "-out_tot_displ",      &omask->tot_displ,      NULL); CHKERRQ(ierr);

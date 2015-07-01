@@ -1621,7 +1621,7 @@ PetscInt JacResGetStep(JacRes *jr)
 PetscErrorCode SetMatParLim(MatParLim *matLim, UserCtx *usr)
 {
 	// initialize material parameter limits
-	PetscBool  quasi_harmonic;
+	PetscBool  flg;
 
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
@@ -1649,11 +1649,12 @@ PetscErrorCode SetMatParLim(MatParLim *matLim, UserCtx *usr)
 	matLim->initGuessFlg = PETSC_TRUE;
 	matLim->rho_fluid    = 0.0;
 	matLim->theta_north  = 90.0; // by default y-axis
+	matLim->warn         = PETSC_TRUE;
 
 	// read additional options
-	ierr = PetscOptionsHasName(PETSC_NULL, "-use_quasi_harmonic_viscosity", &quasi_harmonic); CHKERRQ(ierr);
+	ierr = PetscOptionsHasName(PETSC_NULL, "-use_quasi_harmonic_viscosity", &flg); CHKERRQ(ierr);
 
-	if(quasi_harmonic == PETSC_TRUE)
+	if(flg == PETSC_TRUE)
 	{
 		matLim->quasiHarmAvg = PETSC_TRUE;
 	}
@@ -1661,6 +1662,13 @@ PetscErrorCode SetMatParLim(MatParLim *matLim, UserCtx *usr)
 	ierr = PetscOptionsGetScalar(NULL, "-rho_fluid", &matLim->rho_fluid, NULL); CHKERRQ(ierr);
 
 	ierr = PetscOptionsGetScalar(NULL, "-theta_north", &matLim->theta_north, NULL); CHKERRQ(ierr);
+
+	ierr = PetscOptionsHasName(PETSC_NULL, "-stop_warnings", &flg); CHKERRQ(ierr);
+
+	if(flg == PETSC_TRUE)
+	{
+		matLim->warn = PETSC_FALSE;
+	}
 
 	PetscFunctionReturn(0);
 }
@@ -1785,6 +1793,349 @@ PetscErrorCode getMaxInvStep1DLocal(Discret1D *ds, DM da, Vec gv, PetscInt dir, 
 
 	// return result
 	(*_idtmax) = idtmax;
+
+	PetscFunctionReturn(0);
+}
+//---------------------------------------------------------------------------
+// Infinite Strain Axis (ISA) computation functions
+//---------------------------------------------------------------------------
+#undef __FUNCT__
+#define __FUNCT__ "getGradientVel"
+PetscErrorCode getGradientVel(
+	FDSTAG *fs, PetscScalar ***lvx, PetscScalar ***lvy, PetscScalar ***lvz,
+	PetscInt i, PetscInt j, PetscInt k, PetscInt sx, PetscInt sy, PetscInt sz,
+	Tensor2RN *L, PetscScalar *vel, PetscScalar *pvnrm)
+{
+	// compute velocity gradient and normalized velocities at cell center
+
+	PetscScalar vnrm, dx, dy, dz, we[6], wb[6], vx[6], vy[6], vz[6], vxc, vyc, vzc;
+
+	PetscFunctionBegin;
+
+	// get cell sizes
+	dx = SIZE_NODE(i, sx, fs->dsx);
+	dy = SIZE_NODE(j, sy, fs->dsy);
+	dz = SIZE_NODE(k, sz, fs->dsz);
+
+	// get interpolation weights
+	we[0] = WEIGHT_NODE(i,   sx, fs->dsx); wb[0] = 1.0 - we[0];
+	we[1] = WEIGHT_NODE(i+1, sx, fs->dsx); wb[1] = 1.0 - we[1];
+	we[2] = WEIGHT_NODE(j,   sy, fs->dsy); wb[2] = 1.0 - we[2];
+	we[3] = WEIGHT_NODE(j+1, sy, fs->dsy); wb[3] = 1.0 - we[3];
+	we[4] = WEIGHT_NODE(k,   sz, fs->dsz); wb[4] = 1.0 - we[4];
+	we[5] = WEIGHT_NODE(k+1, sz, fs->dsz); wb[5] = 1.0 - we[5];
+
+	// get velocities at cell center
+	vxc = (lvx[k][j][i] + lvx[k][j][i+1])/2.0;
+	vyc = (lvy[k][j][i] + lvy[k][j+1][i])/2.0;
+    vzc = (lvz[k][j][i] + lvz[k+1][j][i])/2.0;
+
+	// x - velocity stencil
+	vx[0] = lvx[k][j][i];
+	vx[1] = lvx[k][j][i+1];
+	vx[2] = wb[2]*(lvx[k][j-1][i] + lvx[k][j-1][i+1])/2.0 + we[2]*vxc;
+	vx[3] = we[3]*(lvx[k][j+1][i] + lvx[k][j+1][i+1])/2.0 + wb[3]*vxc;
+	vx[4] = wb[4]*(lvx[k-1][j][i] + lvx[k-1][j][i+1])/2.0 + we[4]*vxc;
+	vx[5] = we[5]*(lvx[k+1][j][i] + lvx[k+1][j][i+1])/2.0 + wb[5]*vxc;
+
+	// y - velocity stencil
+	vy[0] = wb[0]*(lvy[k][j][i-1] + lvy[k][j+1][i-1])/2.0 + we[0]*vyc;
+	vy[1] = we[1]*(lvy[k][j][i+1] + lvy[k][j+1][i+1])/2.0 + wb[1]*vyc;
+	vy[2] = lvy[k][j][i];
+	vy[3] = lvy[k][j+1][i];
+	vy[4] = wb[4]*(lvy[k-1][j][i] + lvy[k-1][j+1][i])/2.0 + we[4]*vyc;
+	vy[5] = we[5]*(lvy[k+1][j][i] + lvy[k+1][j+1][i])/2.0 + wb[5]*vyc;
+
+	// z - velocity stencil
+	vz[0] = wb[0]*(lvz[k][j][i-1] + lvz[k+1][j][i-1])/2.0 + we[0]*vzc;
+	vz[1] = we[1]*(lvz[k][j][i+1] + lvz[k+1][j][i+1])/2.0 + wb[1]*vzc;
+	vz[2] = wb[2]*(lvz[k][j-1][i] + lvz[k+1][j-1][i])/2.0 + we[2]*vzc;
+	vz[3] = we[3]*(lvz[k][j+1][i] + lvz[k+1][j+1][i])/2.0 + wb[3]*vzc;
+	vz[4] = lvz[k][j][i];
+	vz[5] = lvz[k+1][j][i];
+
+	// compute velocity gradient tensor
+	L->xx = (vx[1]-vx[0])/dx; L->xy = (vx[3]-vx[2])/dy; L->xz = (vx[5]-vx[4])/dz;
+	L->yx = (vy[1]-vy[0])/dx; L->yy = (vy[3]-vy[2])/dy; L->yz = (vy[5]-vy[4])/dz;
+	L->zx = (vz[1]-vz[0])/dx; L->zy = (vz[3]-vz[2])/dy; L->zz = (vz[5]-vz[4])/dz;
+
+	// get normalized velocities
+	vnrm = sqrt(vxc*vxc + vyc*vyc + vzc*vzc);
+
+	if(vnrm)
+	{
+		vel[0] = vxc/vnrm;
+		vel[1] = vyc/vnrm;
+		vel[2] = vzc/vnrm;
+	}
+
+	if(pvnrm) (*pvnrm) = vnrm;
+
+	PetscFunctionReturn(0);
+}
+//---------------------------------------------------------------------------
+#undef __FUNCT__
+#define __FUNCT__ "JacResGetISA"
+PetscErrorCode JacResGetISA(JacRes *jr)
+{
+	// compute Infinite Strain Axis (ISA) orientation to the North
+
+	FDSTAG      *fs;
+	Tensor2RN   L;
+	PetscInt    i, j, k, nx, ny, nz, sx, sy, sz, code, nSDFail, gnSDFail;
+	PetscScalar theta_north, costh, sinth;
+	PetscScalar vel[3], ISA[3];
+	PetscScalar ***lvx, ***lvy, ***lvz;
+	PetscScalar ***isx, ***isy;
+
+	PetscErrorCode ierr;
+	PetscFunctionBegin;
+
+	// access context
+	fs = jr->fs;
+
+	// set number of spectral decomposition failures
+	nSDFail = 0;
+
+	// get rotation matrix for northward coordinate system
+	theta_north = jr->matLim.theta_north;
+	costh       = cos(theta_north);
+	sinth       = sin(theta_north);
+
+	// access vectors
+	ierr = DMDAVecGetArray(fs->DA_X,   jr->lvx,  &lvx); CHKERRQ(ierr);
+	ierr = DMDAVecGetArray(fs->DA_Y,   jr->lvy,  &lvy); CHKERRQ(ierr);
+	ierr = DMDAVecGetArray(fs->DA_Z,   jr->lvz,  &lvz); CHKERRQ(ierr);
+	ierr = DMDAVecGetArray(fs->DA_CEN, jr->ldxx, &isx); CHKERRQ(ierr);
+	ierr = DMDAVecGetArray(fs->DA_CEN, jr->ldyy, &isy); CHKERRQ(ierr);
+
+	ierr = DMDAGetCorners(fs->DA_CEN, &sx, &sy, &sz, &nx, &ny, &nz); CHKERRQ(ierr);
+
+	START_STD_LOOP
+	{
+		// get gradient and velocities at cell center
+		ierr = getGradientVel(fs, lvx, lvy, lvz, i, j, k, sx, sy, sz, &L, vel, NULL);
+
+		// get normalized direction of Infinite Strain Axis (ISA)
+		code = getISA(&L, ISA, NULL);
+
+		if(code == -2)
+		{
+			// spectral decomposition failed (report to adjust tolerances)
+			nSDFail++;
+		}
+		else if(code == 1)
+		{
+			// simple shear case (ISA & velocity are codirected)
+			ISA[0] = vel[0];
+			ISA[1] = vel[1];
+			ISA[2] = vel[2];
+		}
+
+		// choose common sense for all ISA orientations (important for averaging)
+		if(ISA[0] < 0.0)
+		{
+			ISA[0] = -ISA[0];
+			ISA[1] = -ISA[1];
+		}
+
+		// store horizontal projection of ISA rotated to the northward system
+		// rescaling is skipped (length of bar indicates horizontal projection)
+
+		isx[k][j][i] =  costh*ISA[0] + sinth*ISA[1];
+		isy[k][j][i] = -sinth*ISA[0] + costh*ISA[1];
+
+	}
+	END_STD_LOOP
+
+	// print warning
+	if(jr->matLim.warn == PETSC_TRUE)
+	{
+		if(ISParallel(PETSC_COMM_WORLD))
+		{
+			MPI_Reduce(&nSDFail, &gnSDFail, 1, MPIU_SCALAR, MPI_SUM, 0, PETSC_COMM_WORLD);
+		}
+		else
+		{
+			gnSDFail = nSDFail;
+		}
+
+		if(gnSDFail)
+		{
+			PetscPrintf(PETSC_COMM_WORLD,"Warning! ISA spectral decomposition failed in %lld points. Adjust tolerances!\n",(LLD)gnSDFail);
+		}
+	}
+
+	// restore access
+	ierr = DMDAVecRestoreArray(fs->DA_X,   jr->lvx,  &lvx); CHKERRQ(ierr);
+	ierr = DMDAVecRestoreArray(fs->DA_Y,   jr->lvy,  &lvy); CHKERRQ(ierr);
+	ierr = DMDAVecRestoreArray(fs->DA_Z,   jr->lvz,  &lvz); CHKERRQ(ierr);
+	ierr = DMDAVecRestoreArray(fs->DA_CEN, jr->ldxx, &isx); CHKERRQ(ierr);
+	ierr = DMDAVecRestoreArray(fs->DA_CEN, jr->ldyy, &isy); CHKERRQ(ierr);
+
+	// communicate boundary values
+	LOCAL_TO_LOCAL(fs->DA_CEN, jr->ldxx);
+	LOCAL_TO_LOCAL(fs->DA_CEN, jr->ldyy);
+
+	PetscFunctionReturn(0);
+}
+//---------------------------------------------------------------------------
+#undef __FUNCT__
+#define __FUNCT__ "JacResGetGOL"
+PetscErrorCode JacResGetGOL(JacRes *jr)
+{
+	// compute Grain Orientation Lag (GOL) parameter
+
+	FDSTAG      *fs;
+	Tensor2RN   L;
+	PetscInt    mcx, mcy, mcz;
+	PetscInt    i, j, k, nx, ny, nz, sx, sy, sz, code;
+	PetscScalar bdx, fdx, bdy, fdy, bdz, fdz;
+	PetscScalar lnrm, vnrm, theta, gol, max_gol, dtheta[6], vel[3], ISA[3];
+	PetscScalar ***lvx, ***lvy, ***lvz;
+	PetscScalar ***ptheta, ***pgol;
+
+	PetscErrorCode ierr;
+	PetscFunctionBegin;
+
+	// access context
+	fs = jr->fs;
+
+	// get cell index bounds
+	mcx = fs->dsx.tcels - 1;
+	mcy = fs->dsy.tcels - 1;
+	mcz = fs->dsz.tcels - 1;
+
+	// set maximum value of GOL parameter
+	max_gol = 10.0;
+
+	// access vectors
+	ierr = DMDAVecGetArray(fs->DA_X,   jr->lvx,  &lvx);    CHKERRQ(ierr);
+	ierr = DMDAVecGetArray(fs->DA_Y,   jr->lvy,  &lvy);    CHKERRQ(ierr);
+	ierr = DMDAVecGetArray(fs->DA_Z,   jr->lvz,  &lvz);    CHKERRQ(ierr);
+	ierr = DMDAVecGetArray(fs->DA_CEN, jr->ldxx, &pgol);   CHKERRQ(ierr);
+	ierr = DMDAVecGetArray(fs->DA_CEN, jr->ldyy, &ptheta); CHKERRQ(ierr);
+
+	//==========================================================
+	// compute strain rate norm and angle between ISA & velocity
+	//==========================================================
+
+	ierr = DMDAGetCorners(fs->DA_CEN, &sx, &sy, &sz, &nx, &ny, &nz); CHKERRQ(ierr);
+
+	START_STD_LOOP
+	{
+		// get gradient and velocities at cell center
+		ierr = getGradientVel(fs, lvx, lvy, lvz, i, j, k, sx, sy, sz, &L, vel, &vnrm);
+
+		// get normalized direction of Infinite Strain Axis (ISA)
+		code = getISA(&L, ISA, &lnrm);
+
+		if(code == 1)
+		{
+			// simple shear case (ISA & velocity are codirected)
+			ISA[0] = vel[0];
+			ISA[1] = vel[1];
+			ISA[2] = vel[2];
+		}
+
+		// get angle between ISA and velocity
+		if(code == -1 || !vnrm)
+		{
+			// ~~~ ISA and (or) velocity is undefined ~~~
+
+			theta = DBL_MAX;
+		}
+		else
+		{
+			// ~~~ both ISA and velocity are defined ~~~
+
+			// get angle between ISA and velocity
+			theta = acos(vel[0]*ISA[0] + vel[1]*ISA[1] + vel[2]*ISA[2]);
+
+			// ISA has only direction but no sense, hence angle varies within [0, pi/2]
+			if(theta > M_PI_2) theta = M_PI - theta;
+		}
+
+		// store strain rate norm & angle
+		pgol  [k][j][i] = lnrm;
+		ptheta[k][j][i] = theta;
+	}
+	END_STD_LOOP
+
+	// restore access
+	ierr = DMDAVecRestoreArray(fs->DA_CEN, jr->ldyy, &ptheta); CHKERRQ(ierr);
+
+	// communicate boundary values
+	LOCAL_TO_LOCAL(fs->DA_CEN, jr->ldyy);
+
+	//=====================================================
+	// compute GOL parameter using Eulerian advection terms
+	//=====================================================
+
+	ierr = DMDAVecGetArray(fs->DA_CEN, jr->ldyy, &ptheta); CHKERRQ(ierr);
+
+	START_STD_LOOP
+	{
+		// get angle in current cell
+		theta = ptheta[k][j][i];
+
+		if(theta != DBL_MAX)
+		{
+			// get angles in neighbor cells
+			if(i == 0)   { dtheta[0] = 0.0; } else { dtheta[0] = ptheta[k][j][i-1]; }
+			if(i == mcx) { dtheta[1] = 0.0; } else { dtheta[1] = ptheta[k][j][i+1]; }
+			if(j == 0)   { dtheta[2] = 0.0; } else { dtheta[2] = ptheta[k][j-1][i]; }
+			if(j == mcy) { dtheta[3] = 0.0; } else { dtheta[3] = ptheta[k][j+1][i]; }
+			if(k == 0)   { dtheta[4] = 0.0; } else { dtheta[4] = ptheta[k-1][j][i]; }
+			if(k == mcz) { dtheta[5] = 0.0; } else { dtheta[5] = ptheta[k+1][j][i]; }
+
+			// filter undefined angles
+			if(dtheta[0] == DBL_MAX) dtheta[0] = M_PI_2;
+			if(dtheta[1] == DBL_MAX) dtheta[1] = M_PI_2;
+			if(dtheta[2] == DBL_MAX) dtheta[2] = M_PI_2;
+			if(dtheta[3] == DBL_MAX) dtheta[3] = M_PI_2;
+			if(dtheta[4] == DBL_MAX) dtheta[4] = M_PI_2;
+			if(dtheta[5] == DBL_MAX) dtheta[5] = M_PI_2;
+
+			// get mesh steps for the backward and forward derivatives
+			bdx = SIZE_NODE(i, sx, fs->dsx);   fdx = SIZE_NODE(i+1, sx, fs->dsx);
+			bdy = SIZE_NODE(j, sy, fs->dsy);   fdy = SIZE_NODE(j+1, sy, fs->dsy);
+			bdz = SIZE_NODE(k, sz, fs->dsz);   fdz = SIZE_NODE(k+1, sz, fs->dsz);
+
+			// get Eulerian material time derivative
+			gol = (lvx[k][j][i]*(theta - dtheta[0])/bdx + lvx[k][j][i+1]*(dtheta[1] - theta)/fdx
+			+      lvy[k][j][i]*(theta - dtheta[2])/bdy + lvy[k][j+1][i]*(dtheta[3] - theta)/fdy
+			+      lvz[k][j][i]*(theta - dtheta[4])/bdz + lvz[k+1][j][i]*(dtheta[5] - theta)/fdz)/2.0;
+
+			// get strain rate norm
+			lnrm = pgol[k][j][i];
+
+			// get GOL parameter
+			gol = fabs(gol)/lnrm;
+
+			// impose limit
+			if(gol > max_gol) gol = max_gol;
+		}
+		else
+		{
+			// ISA and (or) velocity is undefined, set GOL parameter to maximum
+			gol = max_gol;
+		}
+
+		// store GOL parameter
+		pgol[k][j][i] = gol;
+	}
+	END_STD_LOOP
+
+	// restore access
+	ierr = DMDAVecRestoreArray(fs->DA_X,   jr->lvx,  &lvx);    CHKERRQ(ierr);
+	ierr = DMDAVecRestoreArray(fs->DA_Y,   jr->lvy,  &lvy);    CHKERRQ(ierr);
+	ierr = DMDAVecRestoreArray(fs->DA_Z,   jr->lvz,  &lvz);    CHKERRQ(ierr);
+	ierr = DMDAVecRestoreArray(fs->DA_CEN, jr->ldxx, &gol);    CHKERRQ(ierr);
+	ierr = DMDAVecRestoreArray(fs->DA_CEN, jr->ldyy, &ptheta); CHKERRQ(ierr);
+
+	// communicate boundary values
+	LOCAL_TO_LOCAL(fs->DA_CEN, jr->ldxx);
 
 	PetscFunctionReturn(0);
 }

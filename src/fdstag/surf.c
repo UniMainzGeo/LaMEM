@@ -187,6 +187,9 @@ PetscErrorCode FreeSurfGetVelComp(
 {
 	// project velocity component from grid faces on the free surface
 
+	// WARNING! this function has a problem if surface is placed on top boundary
+	// most likely FindPointInCell has an issue
+
 	JacRes      *jr;
 	FDSTAG      *fs;
 	Discret1D   *dsz;

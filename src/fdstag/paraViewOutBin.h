@@ -69,6 +69,11 @@ PetscErrorCode OutBufPut3DVecComp(
 	PetscScalar  cf,     // scaling coefficient
 	PetscScalar  shift); // shift parameter (subtracted from scaled values)
 
+PetscErrorCode OutBufZero3DVecComp(
+	OutBuf      *outbuf,
+	PetscInt     ncomp,  // number of components
+	PetscInt     dir);   // component identifier
+
 //---------------------------------------------------------------------------
 // ...................  Vector output function pointer ......................
 //---------------------------------------------------------------------------
@@ -119,6 +124,8 @@ typedef struct
 	PetscInt plast_dissip;   // plastic dissipation
 	PetscInt tot_displ;      // total displacements
 	PetscInt SHmax;          // maximum horizontal stress
+	PetscInt ISA;            // Infinite Strain Axis
+	PetscInt GOL;            // Grain Orientation Lag
 	// === debugging vectors ===============================================
 	PetscInt moment_res;     // momentum residual
 	PetscInt cont_res;       // continuity residual

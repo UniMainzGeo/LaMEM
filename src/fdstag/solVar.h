@@ -199,7 +199,10 @@ typedef struct
 	// fluid density for depth-dependent density model
 	PetscScalar  rho_fluid;
 	// direction to the North for stress orientation
+	// counter-clockwise positive measured from x-axis
 	PetscScalar  theta_north;
+	// print warning messages
+	PetscBool    warn;
 
 } MatParLim;
 

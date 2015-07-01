@@ -24,7 +24,8 @@ PetscErrorCode PVOutWritePlastStrain (JacRes*, OutBuf*);
 PetscErrorCode PVOutWritePlastDissip (JacRes*, OutBuf*);
 PetscErrorCode PVOutWriteTotDispl    (JacRes*, OutBuf*);
 PetscErrorCode PVOutWriteSHmax       (JacRes*, OutBuf*);
-
+PetscErrorCode PVOutWriteISA         (JacRes*, OutBuf*);
+PetscErrorCode PVOutWriteGOL         (JacRes*, OutBuf*);
 // === debug	 vectors ===============================================
 PetscErrorCode PVOutWriteMomentRes   (JacRes*, OutBuf*);
 PetscErrorCode PVOutWriteContRes     (JacRes*, OutBuf*);

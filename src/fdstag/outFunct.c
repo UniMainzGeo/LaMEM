@@ -251,7 +251,7 @@ PetscErrorCode PVOutWriteJ2DevStress(JacRes *jr, OutBuf *outbuf)
 
 	iflag.update = PETSC_TRUE;
 
-	ierr = VecSet(outbuf->lbcor, 0.0);
+	ierr = VecSet(outbuf->lbcor, 0.0); CHKERRQ(ierr);
 
 	INTERPOLATE_COPY(fs->DA_CEN, outbuf->lbcen, InterpCenterCorner, GET_J2_STRESS_CENTER,  1, 0)
 	INTERPOLATE_COPY(fs->DA_XY,  outbuf->lbxy,  InterpXYEdgeCorner, GET_J2_STRESS_XY_EDGE, 1, 0)
@@ -319,7 +319,7 @@ PetscErrorCode PVOutWriteJ2StrainRate(JacRes *jr, OutBuf *outbuf)
 
 	iflag.update = PETSC_TRUE;
 
-	ierr = VecSet(outbuf->lbcor, 0.0);
+	ierr = VecSet(outbuf->lbcor, 0.0); CHKERRQ(ierr);
 
 	INTERPOLATE_COPY(fs->DA_CEN, outbuf->lbcen, InterpCenterCorner, GET_J2_STRAIN_RATE_CENTER,  1, 0)
 	INTERPOLATE_COPY(fs->DA_XY,  outbuf->lbxy,  InterpXYEdgeCorner, GET_J2_STRAIN_RATE_XY_EDGE, 1, 0)
@@ -460,12 +460,18 @@ PetscErrorCode PVOutWriteSHmax(JacRes *jr, OutBuf *outbuf)
 		sxy = (lsxy[k][j][i] + lsxy[k][j][i+1] + lsxy[k][j+1][i] + lsxy[k][j+1][i+1])/4.0; \
 		buff[k][j][i] = (sxx+syy)/2.0 - sqrt((sxx-syy)*(sxx-syy)/4.0 + sxy*sxy);
 
+	// internal angles are counter-clockwise positive
+	// GMT requests clockwise positive, hence minus sign
+
+	// formula gives angle between x-axis and maximum stress
+	// GMT requests direction of minimum stress, hence pi/2 correction
+
 	#define GET_THETA_CENTER \
 		svCell = &jr->svCell[iter++]; \
 		sxx = svCell->sxx; \
 		syy = svCell->syy; \
 		sxy = (lsxy[k][j][i] + lsxy[k][j][i+1] + lsxy[k][j+1][i] + lsxy[k][j+1][i+1])/4.0; \
-		buff[k][j][i] = -(atan2(2.0*sxy, sxx-syy)/2.0 + M_PI/2.0 - theta_north);
+		buff[k][j][i] = -(atan2(2.0*sxy, sxx-syy)/2.0 + M_PI_2 - theta_north);
 
 	COPY_TO_LOCAL_BUFFER(fs->DA_XY, outbuf->lbxy, GET_SXY)
 
@@ -481,6 +487,41 @@ PetscErrorCode PVOutWriteSHmax(JacRes *jr, OutBuf *outbuf)
 	INTERPOLATE_COPY(fs->DA_CEN, outbuf->lbcen, InterpCenterCorner, GET_THETA_CENTER, 3, 2)
 
 	ierr = DMDAVecRestoreArray(fs->DA_XY, outbuf->lbxy, &lsxy); CHKERRQ(ierr);
+
+	PetscFunctionReturn(0);
+}
+//---------------------------------------------------------------------------
+#undef __FUNCT__
+#define __FUNCT__ "PVOutWriteISA"
+PetscErrorCode PVOutWriteISA(JacRes *jr, OutBuf *outbuf)
+{
+	ACCESS_FUNCTION_HEADER
+
+	cf = scal->unit;
+
+	// compute Infinite Strain Axis (ISA)
+	ierr = JacResGetISA(jr); CHKERRQ(ierr);
+
+	INTERPOLATE_ACCESS(jr->ldxx, InterpCenterCorner, 3, 0, 0.0)
+	INTERPOLATE_ACCESS(jr->ldyy, InterpCenterCorner, 3, 1, 0.0)
+
+	ierr = OutBufZero3DVecComp(outbuf, 3, 2); CHKERRQ(ierr);
+
+	PetscFunctionReturn(0);
+}
+//---------------------------------------------------------------------------
+#undef __FUNCT__
+#define __FUNCT__ "PVOutWriteGOL"
+PetscErrorCode PVOutWriteGOL(JacRes *jr, OutBuf *outbuf)
+{
+	ACCESS_FUNCTION_HEADER
+
+	cf = scal->unit;
+
+	// compute Grain Orientation Lag (GOL) parameter
+	ierr = JacResGetGOL(jr); CHKERRQ(ierr);
+
+	INTERPOLATE_ACCESS(jr->ldxx, InterpCenterCorner, 1, 0, 0.0)
 
 	PetscFunctionReturn(0);
 }

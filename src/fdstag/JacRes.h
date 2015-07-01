@@ -149,6 +149,22 @@ PetscErrorCode JacResGetCourantStep(JacRes *jr);
 PetscErrorCode getMaxInvStep1DLocal(Discret1D *ds, DM da, Vec gv, PetscInt dir, PetscScalar *_idtmax);
 
 //---------------------------------------------------------------------------
+// Infinite Strain Axis (ISA) computation functions
+//---------------------------------------------------------------------------
+
+// compute velocity gradient and normalized velocities at cell center
+PetscErrorCode getGradientVel(
+	FDSTAG *fs, PetscScalar ***lvx, PetscScalar ***lvy, PetscScalar ***lvz,
+	PetscInt i, PetscInt j, PetscInt k, PetscInt sx, PetscInt sy, PetscInt sz,
+	Tensor2RN *L, PetscScalar *vel, PetscScalar *pvnrm);
+
+// compute Infinite Strain Axis (ISA)
+PetscErrorCode JacResGetISA(JacRes *jr);
+
+// compute Grain Orientation Lag (GOL) parameter
+PetscErrorCode JacResGetGOL(JacRes *jr);
+
+//---------------------------------------------------------------------------
 
 // initialize material parameter limits
 PetscErrorCode SetMatParLim(MatParLim *matLim, UserCtx *usr);
