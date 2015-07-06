@@ -1,4 +1,4 @@
-function FDSTAGSaveMarkersParallelMatlab(A,fname)
+function FDSTAGSaveMarkersParallelMatlab(A,fname, Is64BIT)
 % This function saves model setup into a parallel configuration
 %       A - structure built with ParallelMatlab_CreatePhases.m and contais:
 %            W - width of domain in X-dir
@@ -17,6 +17,7 @@ function FDSTAGSaveMarkersParallelMatlab(A,fname)
 %            npart_z - no. of particles/cell in Z-dir
 %       fname - name of the file with the processor configuration;
 %               in LaMEM this is saved with -SavePartitioning 1
+%       Is64BIT - logical(1) if you are reading a 64 bit file
 
 
 % ----------- Function begin ----------- %
@@ -29,7 +30,7 @@ end
 num_prop      = 5;
 
 % Read Processor Partitioning
-[Nprocx,Nprocy,Nprocz,xc,yc,zc] = GetProcessorPartitioning(fname);
+[Nprocx,Nprocy,Nprocz,xc,yc,zc] = GetProcessorPartitioning(fname, Is64BIT);
 Nproc                           = Nprocx*Nprocy*Nprocz;
 [num,num_i,num_j,num_k]         = get_numscheme(Nprocx,Nprocy,Nprocz);
 
@@ -124,27 +125,36 @@ end
 % ----------- Function end ----------- %
 
 % --------------------------------------
-function [Nprocx,Nprocy,Nprocz,xc,yc,zc] = GetProcessorPartitioning(test)
+function [Nprocx,Nprocy,Nprocz,xc,yc,zc] = GetProcessorPartitioning(test, Is64BIT)
 % Read Processor Partitioning
 fid=PetscOpenFile(test);
 
-Nprocx=read(fid,1,'int32');
-Nprocy=read(fid,1,'int32');
-Nprocz=read(fid,1,'int32');
+if Is64BIT
+    % In case file was written  by 64 BIT compiled PETSC version
+    Precision_INT       = 'int64';
+    Precision_SCALAR    = 'float64';
+else
+    Precision_INT       = 'int32';
+    Precision_SCALAR    = 'double';
+end
 
-nnodx=read(fid,1,'int32');
-nnody=read(fid,1,'int32');
-nnodz=read(fid,1,'int32');
+Nprocx=read(fid,1,Precision_INT);
+Nprocy=read(fid,1,Precision_INT);
+Nprocz=read(fid,1,Precision_INT);
 
-ix=read(fid,Nprocx+1,'int32');
-iy=read(fid,Nprocy+1,'int32');
-iz=read(fid,Nprocz+1,'int32');
+nnodx=read(fid,1,Precision_INT);
+nnody=read(fid,1,Precision_INT);
+nnodz=read(fid,1,Precision_INT);
 
-CharLength=read(fid,1,'double');
+ix=read(fid,Nprocx+1,Precision_INT);
+iy=read(fid,Nprocy+1,Precision_INT);
+iz=read(fid,Nprocz+1,Precision_INT);
 
-xcoor=read(fid,nnodx,'double');
-ycoor=read(fid,nnody,'double');
-zcoor=read(fid,nnodz,'double');
+CharLength=read(fid,1,Precision_SCALAR);
+
+xcoor=read(fid,nnodx,Precision_SCALAR);
+ycoor=read(fid,nnody,Precision_SCALAR);
+zcoor=read(fid,nnodz,Precision_SCALAR);
 
 close(fid);
 
