@@ -27,6 +27,8 @@ if strcmp(format,'ASCII')
     WriteVTKModelSetup_ASCII(A);
 elseif strcmp(format,'BINARY')
     WriteVTKModelSetup_BINARY(A);
+elseif strcmp(format,'VTU_BINARY')
+    WriteVTUModelSetup_BINARY(A);
 else
     disp(['Required INCORRECT output format. Correct format: ASCII or BINARY '])
 end
@@ -222,6 +224,106 @@ fwrite(fid,int32(size(A.Phase,1)*size(A.Phase,2)*size(A.Phase,3)*sizeof_Float32)
 fwrite(fid,(A.Temp(:)),'float32');
 
 
+fprintf(fid,'</VTKFile>\n');
+
+fclose(fid);
+
+end
+
+%% =======================================================================
+function a = WriteVTUModelSetup_BINARY(A)
+% Write rectilinear file in BINARY format
+
+% Definitions and initialization
+sizeof_Float32  =   4;      
+sizeof_Float64  =   4;     
+sizeof_UInt64   =   8; 
+sizeof_UInt32   =   4; 
+sizeof_UInt16   =   2; 
+sizeof_UInt8    =   1; 
+
+offset = 0;
+
+connect = A.nump_x*A.nump_y*A.nump_z;
+
+fname_vtk   = 'VTU_ModelSetup_paraview_binary.vtu';
+fid         = fopen(fname_vtk,'w','b');           % 'b': BigEndian
+
+fprintf(fid,'<?xml version="1.0"?> \n');
+fprintf(fid,'<VTKFile type="UnstructuredGrid" version="0.1" byte_order="BigEndian" >\n');
+
+fprintf(fid,'\t<UnstructuredGrid>\n');
+fprintf(fid,'\t\t<Piece NumberOfPoints=\"%d\" NumberOfCells=\"%d\">\n',connect,connect);
+
+fprintf(fid,'\t\t\t<Cells>\n');
+
+fprintf(fid,'\t\t\t\t<DataArray type=\"Int32\" Name=\"connectivity\" format=\"appended\"  offset=\"%ld\"/>\n',int64(offset));
+offset = offset + 1*sizeof_UInt32 + sizeof_UInt32*connect; 
+
+fprintf(fid,'\t\t\t\t<DataArray type=\"Int32\" Name=\"offsets\" format=\"appended\"  offset=\"%ld\"/>\n',int64(offset));
+offset = offset + 1*sizeof_UInt32 + sizeof_UInt32*connect; 
+
+fprintf(fid,'\t\t\t\t<DataArray type=\"Int32\" Name=\"types\" format=\"appended\"  offset=\"%ld\"/>\n',int64(offset));
+offset = offset + 1*sizeof_UInt32 + sizeof_UInt32*connect; 
+
+fprintf(fid,'\t\t\t</Cells>\n');
+
+fprintf(fid,'\t\t\t<CellData></CellData>\n');
+
+fprintf(fid,'\t\t\t<Points>\n');
+
+fprintf(fid,'\t\t\t\t<DataArray type=\"Float32\" NumberOfComponents=\"3\" format=\"appended\"  offset=\"%ld\"/>\n',int64(offset));
+offset = offset + 1*sizeof_UInt32 + sizeof_Float32*(connect*3); 
+
+fprintf(fid,'\t\t\t</Points>\n');
+
+fprintf(fid,'\t\t\t<PointData Scalars=\"\">\n');
+
+fprintf(fid,'\t\t\t\t<DataArray type=\"Int32\" Name=\"Phase\" format=\"appended\"  offset=\"%ld\"/>\n',int64(offset));
+offset = offset + 1*sizeof_UInt32 + sizeof_UInt32*connect; 
+
+fprintf(fid,'\t\t\t\t<DataArray type=\"Float32\" Name=\"Temp\" format=\"appended\"  offset=\"%ld\"/>\n',int64(offset));
+
+fprintf(fid,'\t\t\t</PointData>\n');
+
+fprintf(fid,'\t\t</Piece>\n');
+fprintf(fid,'\t</UnstructuredGrid>\n');
+
+%%% ---------------- Appended ---------------- data %%%
+fprintf(fid,'  <AppendedData encoding=\"raw\">\n');
+fprintf(fid,'_');
+
+disp(['Writing Appended data for binary output in Paraview... '])
+
+% Connectivity
+x = 0:connect-1;
+fwrite(fid,int32(connect*sizeof_UInt32),'int32');
+fwrite(fid,x(:),'int32');
+
+% Offsets
+x = x+1;
+fwrite(fid,int32(connect*sizeof_UInt32),'int32');
+fwrite(fid,x(:),'int32');
+
+% Types
+x = ones(connect,1);
+fwrite(fid,int32(connect*sizeof_UInt32),'int32');
+fwrite(fid,x(:),'int32');
+
+% X, Y, Z coord
+C = [A.Xpart(:) A.Ypart(:) A.Zpart(:)];
+fwrite(fid,int32(3*connect*sizeof_Float32),'int32');
+fwrite(fid,C','float32');
+
+% Phase
+fwrite(fid,int32(connect*sizeof_UInt32),'int32');
+fwrite(fid,(A.Phase(:)),'int32');
+
+% Temperature
+fwrite(fid,int32(connect*sizeof_Float32),'int32');
+fwrite(fid,(A.Temp(:)),'float32');
+
+fprintf(fid,'\n\t</AppendedData>\n');
 fprintf(fid,'</VTKFile>\n');
 
 fclose(fid);
