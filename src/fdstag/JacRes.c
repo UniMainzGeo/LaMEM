@@ -2082,12 +2082,12 @@ PetscErrorCode JacResGetGOL(JacRes *jr)
 		if(theta != DBL_MAX)
 		{
 			// get angles in neighbor cells
-			if(i == 0)   { dtheta[0] = 0.0; } else { dtheta[0] = ptheta[k][j][i-1]; }
-			if(i == mcx) { dtheta[1] = 0.0; } else { dtheta[1] = ptheta[k][j][i+1]; }
-			if(j == 0)   { dtheta[2] = 0.0; } else { dtheta[2] = ptheta[k][j-1][i]; }
-			if(j == mcy) { dtheta[3] = 0.0; } else { dtheta[3] = ptheta[k][j+1][i]; }
-			if(k == 0)   { dtheta[4] = 0.0; } else { dtheta[4] = ptheta[k-1][j][i]; }
-			if(k == mcz) { dtheta[5] = 0.0; } else { dtheta[5] = ptheta[k+1][j][i]; }
+			if(i == 0)   { dtheta[0] = theta; } else { dtheta[0] = ptheta[k][j][i-1]; }
+			if(i == mcx) { dtheta[1] = theta; } else { dtheta[1] = ptheta[k][j][i+1]; }
+			if(j == 0)   { dtheta[2] = theta; } else { dtheta[2] = ptheta[k][j-1][i]; }
+			if(j == mcy) { dtheta[3] = theta; } else { dtheta[3] = ptheta[k][j+1][i]; }
+			if(k == 0)   { dtheta[4] = theta; } else { dtheta[4] = ptheta[k-1][j][i]; }
+			if(k == mcz) { dtheta[5] = theta; } else { dtheta[5] = ptheta[k+1][j][i]; }
 
 			// filter undefined angles
 			if(dtheta[0] == DBL_MAX) dtheta[0] = M_PI_2;
