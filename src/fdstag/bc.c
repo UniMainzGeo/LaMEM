@@ -177,7 +177,7 @@ PetscErrorCode BCGetBGStrainRates(BCCtx *bc, PetscScalar *Exx_, PetscScalar *Eyy
 			if(time < bc->ExxTimeDelims[jj]) break;
 		}
 
-		Exx = bc->EyyStrainRates[jj];
+		Exx = bc->ExxStrainRates[jj];
 	}
 
 	// y-direction background strain rate
