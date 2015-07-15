@@ -176,7 +176,7 @@ PetscErrorCode LaMEMLib_FDSTAG(ModParam *IOparam, PetscInt *mpi_group_id)
 	ierr = JacResCreate(&jr, &fs, &bc); CHKERRQ(ierr);
 
 	// create free surface grid
-	ierr = FreeSurfCreate(&surf, &jr); CHKERRQ(ierr);
+	ierr = FreeSurfCreate(&surf, &jr, &user); CHKERRQ(ierr);
 
 	// initialize free surface from breakpoints if restart
 	if (user.restart == 1 && surf.UseFreeSurf == PETSC_TRUE) { ierr = BreakReadSurf(&fs, &surf); CHKERRQ(ierr); }

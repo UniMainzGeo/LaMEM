@@ -1653,7 +1653,6 @@ PetscErrorCode ADVMarkInitFilePolygons(AdvCtx *actx, UserCtx *user)
 	}
 
 
-// This part causes a crash for me as I havn't defined a temperature file: Please resolve
 	// Set temperature from file if a Temperature file is specified in the input
 	if(strcmp(user->TemperatureFilename,"noTemperatureFileName")!=0)
 	{
@@ -1779,14 +1778,14 @@ PetscErrorCode ADVMarkSetTempFromFile(AdvCtx *actx, UserCtx *user)
 
 		// Interpolate value on the particle using trilinear shape functions
 		P->T = (
-		(1-xpL) * (1-ypL) * (1-zpL) * Temp[Iz    *nx*ny + Iy     * nx + Ix   ] +
-		  xpL   * (1-ypL) * (1-zpL) * Temp[Iz    *nx*ny + Iy     * nx + Ix+1 ] +
-		  xpL   *   ypL   * (1-zpL) * Temp[Iz    *nx*ny + (Iy+1) * nx + Ix+1 ] +
-		(1-xpL) *   ypL   * (1-zpL) * Temp[Iz    *nx*ny + (Iy+1) * nx + Ix   ] +
-		(1-xpL) * (1-ypL) *   zpL   * Temp[(Iz+1)*nx*ny + Iy     * nx + Ix   ] +
-		  xpL   * (1-ypL) *   zpL   * Temp[(Iz+1)*nx*ny + Iy     * nx + Ix+1 ] +
+		(1.0-xpL) * (1.0-ypL) * (1.0-zpL) * Temp[Iz    *nx*ny + Iy     * nx + Ix   ] +
+		  xpL   * (1.0-ypL) * (1.0-zpL) * Temp[Iz    *nx*ny + Iy     * nx + Ix+1 ] +
+		  xpL   *   ypL   * (1.0-zpL) * Temp[Iz    *nx*ny + (Iy+1) * nx + Ix+1 ] +
+		(1.0-xpL) *   ypL   * (1.0-zpL) * Temp[Iz    *nx*ny + (Iy+1) * nx + Ix   ] +
+		(1.0-xpL) * (1.0-ypL) *   zpL   * Temp[(Iz+1)*nx*ny + Iy     * nx + Ix   ] +
+		  xpL   * (1.0-ypL) *   zpL   * Temp[(Iz+1)*nx*ny + Iy     * nx + Ix+1 ] +
 		  xpL   *   ypL   *   zpL   * Temp[(Iz+1)*nx*ny + (Iy+1) * nx + Ix+1 ] +
-		(1-xpL) *   ypL   *   zpL   * Temp[(Iz+1)*nx*ny + (Iy+1) * nx + Ix   ] )/chTemp;
+		(1.0-xpL) *   ypL   *   zpL   * Temp[(Iz+1)*nx*ny + (Iy+1) * nx + Ix   ] )/chTemp;
 	}
 
 	// Clear memory

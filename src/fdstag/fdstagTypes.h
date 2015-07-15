@@ -198,6 +198,10 @@ typedef struct
 	// pushing
 	PetscInt         AddPushing;
 	PushParams       Pushing;
+	
+	// topography
+	char             TopoFilename[MAX_PATH_LEN];
+	
 
 } UserCtx;
 //-----------------------------------------------------------------------------

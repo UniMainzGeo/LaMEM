@@ -301,6 +301,10 @@ PetscErrorCode InputReadFile(JacRes *jr, UserCtx *user, FILE *fp)
 	if (!found){
 		sprintf(user->TemperatureFilename, "noTemperatureFileName");
 	}
+	parse_GetString( fp, "TopoFilename", user->TopoFilename, MAX_PATH_LEN, &found );
+	if (!found){
+		sprintf(user->TopoFilename, "noTopoFileName");
+	}
 	parse_GetString( fp, "LoadInitialParticlesDirectory", user->LoadInitialParticlesDirectory, MAX_PATH_LEN, &found );
 	if (!found){
 		sprintf(user->LoadInitialParticlesDirectory, "InitialParticles");

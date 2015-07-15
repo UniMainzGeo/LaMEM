@@ -32,7 +32,7 @@ PetscErrorCode FreeSurfClear(FreeSurf *surf)
 //---------------------------------------------------------------------------
 #undef __FUNCT__
 #define __FUNCT__ "FreeSurfCreate"
-PetscErrorCode FreeSurfCreate(FreeSurf *surf, JacRes *jr)
+PetscErrorCode FreeSurfCreate(FreeSurf *surf, JacRes *jr, UserCtx *user)
 {
 	FDSTAG         *fs;
 	const PetscInt *lx, *ly;
@@ -73,6 +73,16 @@ PetscErrorCode FreeSurfCreate(FreeSurf *surf, JacRes *jr)
 	// set initial internal free surface level
 	ierr = VecSet(surf->ltopo, surf->InitLevel); CHKERRQ(ierr);
 	ierr = VecSet(surf->gtopo, surf->InitLevel); CHKERRQ(ierr);
+
+
+	// Set topo rom file if a Topo file is specified in the input
+	PetscPrintf(PETSC_COMM_WORLD, "FileName: %s\n",user->TopoFilename);
+	if(strcmp(user->TopoFilename,"noTopoFileName")!=0)
+	{
+		ierr = FreeSurfSetTopoFromFile(surf,user);
+		CHKERRQ(ierr);
+	}
+
 
 	PetscFunctionReturn(0);
 }
@@ -682,6 +692,155 @@ PetscErrorCode FreeSurfAppSedimentation(FreeSurf *surf)
 		PetscPrintf(PETSC_COMM_WORLD, "Applying sedimentation to internal free surface. Phase that is currently being sedimented is %lld   \n",
 			(LLD)phase);
 	}
+
+	PetscFunctionReturn(0);
+}
+//---------------------------------------------------------------------------
+#undef __FUNCT__
+#define __FUNCT__ "FreeSurfSetTopoFromFile"
+PetscErrorCode FreeSurfSetTopoFromFile(
+	FreeSurf *surf, UserCtx *user)
+{
+	
+	JacRes      *jr;
+	FDSTAG      *fs;
+	Discret1D   *dsz;
+	PetscInt    i, j, nx, ny, sx, sy, sz, level;
+	PetscScalar ***topo;
+	PetscScalar avg_topo;
+	char         *LoadFileName;
+	PetscScalar  xp,yp, Xc, Yc, xpL, ypL;
+	PetscInt 	nxTopo, nyTopo;
+	PetscInt     Fsize;
+	PetscInt Ix,Iy;
+	PetscScalar  DX,DY;
+	
+	PetscScalar  *Topo;
+	PetscScalar  chLen;
+	int          fd;
+	PetscScalar  header[2],dim[2];
+
+	PetscViewer  view_in;
+
+	PetscErrorCode ierr;
+	PetscFunctionBegin;
+
+	// access context
+	jr    = surf->jr;
+	fs    = jr->fs;
+	dsz   = &fs->dsz;
+	level = dsz->rank;
+
+
+	// characteristic length
+	chLen  = jr->scal.length;
+
+	// create column communicator
+	ierr = Discret1DGetColumnComm(dsz); CHKERRQ(ierr);
+
+	// set interpolation flags
+	//iflag.update    = PETSC_FALSE;
+	//iflag.use_bound = PETSC_TRUE;
+
+	// interpolate velocity component from grid faces to corners
+	//ierr = interp(fs, vcomp_grid, jr->lbcor, iflag); CHKERRQ(ierr);
+
+	// load ghost values
+	LOCAL_TO_LOCAL(fs->DA_COR, jr->lbcor)
+
+	// access topography, grid and surface velocity
+	ierr = DMDAVecGetArray(surf->DA_SURF, surf->gtopo,  &topo);  CHKERRQ(ierr);
+
+	// scan all free surface local points
+	ierr = DMDAGetCorners(fs->DA_COR, &sx, &sy, &sz, &nx, &ny, NULL); CHKERRQ(ierr);
+
+
+	// ****** Read file ******
+	// create filename
+	asprintf(&LoadFileName, "./%s/%s",
+	user->LoadInitialParticlesDirectory,
+	user->TopoFilename);
+
+	PetscPrintf(PETSC_COMM_WORLD," Loading topo redundantly from file: %s \n", LoadFileName);
+	ierr = PetscViewerBinaryOpen(PETSC_COMM_SELF, LoadFileName, FILE_MODE_READ, &view_in); CHKERRQ(ierr);
+	ierr = PetscViewerBinaryGetDescriptor(view_in, &fd); CHKERRQ(ierr);
+
+	// read (and ignore) the silent undocumented file header & size of file
+	ierr = PetscBinaryRead(fd, &header, 2, PETSC_SCALAR); CHKERRQ(ierr);
+	Fsize = (PetscInt)(header[1])-2;
+
+	// allocate space for entire file & initialize counter
+	ierr = PetscMalloc((size_t)Fsize*sizeof(PetscScalar), &Topo); CHKERRQ(ierr);
+
+	// read entire file
+	ierr = PetscBinaryRead(fd, &dim, 2,     PETSC_SCALAR); CHKERRQ(ierr);
+	ierr = PetscBinaryRead(fd, Topo, Fsize, PETSC_SCALAR); CHKERRQ(ierr);
+
+	// grid spacing
+	DX = user->W/(dim[0] - 1.0);
+	DY = user->L/(dim[1] - 1.0);
+
+	nxTopo = (PetscInt)dim[0];
+	nyTopo = (PetscInt)dim[1];
+
+	START_PLANE_LOOP
+	{
+		
+		xp = COORD_NODE(i,   sx, fs->dsx);
+		yp = COORD_NODE(j,   sy, fs->dsy);
+		// index of the lower left corner of the element (of the temperature grid) in which the particle is
+		Ix = (PetscInt)floor((xp - user->x_left) /DX);
+		Iy = (PetscInt)floor((yp - user->y_front)/DY);
+		
+		// Take care of boundaries
+		if (Ix == nxTopo-1)
+		{
+			Ix =nxTopo-2;
+		}
+		if (Iy == nyTopo-1)
+		{
+			Iy = nyTopo-2;
+		}
+		
+		// Coordinate of the first corner (lower left deepest)
+		Xc = user->x_left + (PetscScalar)Ix*DX;
+		Yc = user->y_front+ (PetscScalar)Iy*DY;
+		
+		
+		// Local coordinate of the particle inside a temperature element
+		// Using the bilinear element in Kwon and Bang, p.161
+		xpL = ( (xp - Xc)/DX )*2-1;
+		ypL = ( (yp - Yc)/DY )*2-1;
+		//zpL = (zp - Zc)/DZ;
+		
+		// Interpolate value on the particle using trilinear shape functions
+		topo[level][j][i] = (
+		1.0/4.0 * (1.0-xpL) * (1.0-ypL)  * Topo[Iy     * nxTopo + Ix   ] +
+		1.0/4.0 * (1.0+xpL) * (1.0-ypL)  * Topo[Iy     * nxTopo + Ix+1 ] +
+		1.0/4.0 * (1.0+xpL) * (1.0+ypL)  * Topo[(Iy+1) * nxTopo + Ix+1 ] +
+		1.0/4.0 * (1.0-xpL) * (1.0+ypL)  * Topo[(Iy+1) * nxTopo + Ix   ])/chLen;
+		
+	}
+	END_PLANE_LOOP
+	
+	
+
+	// restore access
+	ierr = DMDAVecRestoreArray(surf->DA_SURF, surf->gtopo,  &topo);  CHKERRQ(ierr);
+
+
+	// compute ghosted version of the advected surface topography
+	GLOBAL_TO_LOCAL(surf->DA_SURF, surf->gtopo, surf->ltopo);
+
+	// set flat flag
+	surf->flat = PETSC_FALSE;
+
+	// compute & store average topography
+	ierr = VecSum(surf->gtopo, &avg_topo); CHKERRQ(ierr);
+	avg_topo /= (PetscScalar)(fs->dsx.tnods*fs->dsy.tnods*fs->dsz.nproc);
+	surf->avg_topo = avg_topo;
+	jr  ->avg_topo = avg_topo;
+
 
 	PetscFunctionReturn(0);
 }
