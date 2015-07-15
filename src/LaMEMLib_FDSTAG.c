@@ -218,6 +218,18 @@ ierr = ADVMarkCrossFreeSurf(&actx, &surf); CHKERRQ(ierr);
 	// read breakpoint files if restart was requested and if is possible
 	if (user.restart==1) { ierr = BreakRead(&user, &actx, &pvout, &pvsurf, &pvmark, &nl.jtype); CHKERRQ(ierr); }
 
+
+	//===================
+	// OBJECTIVE FUNCTION
+	//===================
+
+	// create objective function object
+	ierr = ObjFunctCreate(&objf, &surf); CHKERRQ(ierr);
+
+	// transfer misfit value to IO structure
+	IOparam->mfit = objf.errtot;
+
+
 	PetscPrintf(PETSC_COMM_WORLD," \n");
 
 	//===============
@@ -317,18 +329,6 @@ ierr = JacResCopyTemp(&jr); CHKERRQ(ierr);
 
 		// advect pushing block
 		ierr = BCAdvectPush(&bc); CHKERRQ(ierr);
-
-
-		//===================
-		// OBJECTIVE FUNCTION
-		//===================
-
-		// create objective function object
-		ierr = ObjFunctCreate(&objf, &surf); CHKERRQ(ierr);
-
-		// transfer misfit value to IO structure
-		IOparam->mfit = objf.errtot;
-
 
 
 		//==================
