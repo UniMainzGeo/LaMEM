@@ -100,6 +100,7 @@ CSRC = \
 	fdstag/sub_comm.c \
 	fdstag/pc_semiredundant.c \
 	fdstag/objFunct.c \
+	fdstag/AVDView.c
 	
 
 #====================================================

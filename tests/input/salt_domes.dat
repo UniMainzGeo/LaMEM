@@ -36,8 +36,8 @@ msetup = domes
 # Define input/output and numerics-related stuff
 OutputFile      = domes
 save_timesteps  = 1    # save every ? timesteps
-time_end        = 1500 # last timestep
-#time_end       = 1 # last timestep
+#time_end        = 1500 # last timestep
+time_end       = 1 # last timestep
 
 CFL             = 0.3  # CFL, dt-based criterium
 dt_max          = 0.2  # Maximum timestep
@@ -79,6 +79,8 @@ DII_ref              = 1e-15
 	-restart 0
 	-save_breakpoints 0
 
+	-theta_north 80.0
+	
 #	-SkipStokesSolver 1
 #	-shift_press
 #	-SavePartitioning
@@ -201,7 +203,8 @@ DII_ref              = 1e-15
 	-out_j2_strain_rate 1
 	-out_moment_res 1
 	-out_cont_res 1
-
+	-out_shmax 1
+	
 <PetscOptionsEnd>
     
 #===============================================================================

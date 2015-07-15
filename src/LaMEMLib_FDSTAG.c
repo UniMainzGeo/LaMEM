@@ -61,6 +61,8 @@ without the explicit agreement of Boris Kaus.
 #include "matProps.h"
 #include "break.h"
 #include "objFunct.h"
+#include "AVDView.h"
+
 
 //==========================================================================================================
 // LAMEM LIBRARY MODE ROUTINE
@@ -89,6 +91,7 @@ PetscErrorCode LaMEMLib_FDSTAG(ModParam *IOparam, PetscInt *mpi_group_id)
 	PVSurf   pvsurf; // paraview output driver
 	PVMark   pvmark; // paraview output driver
 	ObjFunct objf;   // objective function
+	AVDView  avdout;
 
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
@@ -232,6 +235,8 @@ ierr = ADVMarkCrossFreeSurf(&actx, &surf); CHKERRQ(ierr);
 
 	PetscPrintf(PETSC_COMM_WORLD," \n");
 
+	ierr = AVDViewCreate(&avdout); CHKERRQ(ierr);
+
 	//===============
 	// TIME STEP LOOP
 	//===============
@@ -360,11 +365,8 @@ ierr = JacResCopyTemp(&jr); CHKERRQ(ierr);
 
 			ierr = LaMEMCreateOutputDirectory(DirectoryName); CHKERRQ(ierr);
 
-			// Paraview output (b) -> phases only
-//			if (user.AVDPhaseViewer)
-//			{	// Creates a Voronoi diagram and writes the phases as VTS files
-//				ierr = WritePhasesOutputFile_VTS(C, &user, itime, DirectoryName); CHKERRQ(ierr);
-//			}
+			// AVD phase output
+			ierr = AVDViewWriteStep(&avdout, &actx, DirectoryName, JacResGetTime(&jr), JacResGetStep(&jr)); CHKERRQ(ierr);
 
 			// grid ParaView output
 			ierr = PVOutWriteTimeStep(&pvout, &jr, DirectoryName, JacResGetTime(&jr), JacResGetStep(&jr)); CHKERRQ(ierr);
