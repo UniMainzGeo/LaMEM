@@ -31,8 +31,31 @@
 #include "advect.h"
 #include "paraViewOutBin.h"
 #include "AVDView.h"
+#include "Utils.h"
 //---------------------------------------------------------------------------
 #define __AVD_DEBUG_MODE
+//---------------------------------------------------------------------------
+// ........................... AVDPoint3D ...................................
+//---------------------------------------------------------------------------
+void AVDPoint3DCreate(const PetscInt npoints, AVDPoint3D *P)
+{
+	AVDPoint3D points;
+
+	points = (AVDPoint3D) malloc( sizeof(struct _p_AVDPoint3D)*(size_t)(npoints) );
+	memset( points, 0, sizeof(struct _p_AVDPoint3D)*(size_t)(npoints) );
+
+	*P = points;
+}
+//---------------------------------------------------------------------------
+void AVDPoint3DDestroy(AVDPoint3D *P)
+{
+	AVDPoint3D points;
+
+	if (!P) { return; }
+	points = *P;
+	free(points);
+	*P = NULL;
+}
 //---------------------------------------------------------------------------
 // ........................... AVDCell3D ....................................
 //---------------------------------------------------------------------------
@@ -75,32 +98,7 @@ void AVDCell3DDestroy(AVDCell3D *C)
 	free(cells);
 	*C = NULL;
 }
-//---------------------------------------------------------------------------
-void AVDCell3DReset(AVD3D A)
-{
-	PetscInt i,j,k;
-	PetscInt mx,my,mz;
 
-	mx = A->mx_mesh;
-	my = A->my_mesh;
-	mz = A->mz_mesh;
-
-	for (k=0; k<mz; k++) {
-		for (j=0; j<my; j++) {
-			for (i=0; i<mx; i++) {
-				PetscInt ii = i + j * mx + k * mx*my;
-
-				A->cells[ii].p = -1;
-				A->cells[ii].done = AVD_FALSE;
-
-				if ( (i==0) || (i==mx-1) ) { A->cells[ii].p = AVD_CELL_MASK; }
-				if ( (j==0) || (j==my-1) ) { A->cells[ii].p = AVD_CELL_MASK; }
-				if ( (k==0) || (k==mz-1) ) { A->cells[ii].p = AVD_CELL_MASK; }
-
-			}
-		}
-	}
-}
 //---------------------------------------------------------------------------
 // ........................... AVDChain3D ...................................
 //---------------------------------------------------------------------------
@@ -144,60 +142,74 @@ void AVDChain3DDestroy(const PetscInt npoints, AVDChain3D *CH)
 	*CH = NULL;
 }
 //---------------------------------------------------------------------------
-// ........................... AVDPoint3D ...................................
-//---------------------------------------------------------------------------
-void AVDPoint3DCreate(const PetscInt npoints, AVDPoint3D *P)
-{
-	AVDPoint3D points;
-
-	points = (AVDPoint3D) malloc( sizeof(struct _p_AVDPoint3D)*(size_t)(npoints) );
-	memset( points, 0, sizeof(struct _p_AVDPoint3D)*(size_t)(npoints) );
-
-	*P = points;
-}
-//---------------------------------------------------------------------------
-void AVDPoint3DDestroy(AVDPoint3D *P)
-{
-	AVDPoint3D points;
-
-	if (!P) { return; }
-	points = *P;
-	free(points);
-	*P = NULL;
-}
-//---------------------------------------------------------------------------
 // ............................... AVD3D ....................................
 //---------------------------------------------------------------------------
-void AVD3DCreate(
-	const PetscInt mx,
-	const PetscInt my,
-	const PetscInt mz,
-	const PetscInt buffer,
-	AVD3D          *A)
+#undef __FUNCT__
+#define __FUNCT__ "AVDViewCreate"
+PetscErrorCode AVDViewCreate(AVD3D *A, AdvCtx *actx, PetscInt refine)
 {
-	// i = (xp - (x0-dx) )/mx_mesh
+	AVD3D          avd3D;
+	FDSTAG         *fs;
+	PetscLogDouble tb, te;
+	PetscScalar    bx, by, bz, ex, ey, ez;
+	PetscInt       nx, ny, nz;
+	PetscInt       i, count, claimed;
 
-	AVD3D avd3D;
+	PetscErrorCode ierr;
+	PetscFunctionBegin;
 
-	avd3D = (AVD3D) malloc( sizeof(struct _p_AVD3D) );
-	memset( avd3D, 0, sizeof(struct _p_AVD3D) );
+	// access context
+	fs = actx->fs;
 
-	avd3D->buffer = buffer;
-	avd3D->mx = mx;
-	avd3D->my = my;
-	avd3D->mz = mz;
+	ierr = PetscTime(&tb); CHKERRQ(ierr);
 
-	avd3D->mx_mesh = mx+2;
-	avd3D->my_mesh = my+2;
-	avd3D->mz_mesh = mz+2;
+	// compute local grid resolution
+	ierr = FDSTAGGetLocalBox(fs, &bx, &by, &bz, &ex, &ey, &ez); CHKERRQ(ierr);
 
-	AVDCell3DCreate(
-		(const PetscInt)avd3D->mx_mesh,
-		(const PetscInt)avd3D->my_mesh,
-		(const PetscInt)avd3D->mz_mesh,
-		&avd3D->cells);
+	nx = refine*(PetscInt)((ex - bx)/fs->dsx.h_min);
+	ny = refine*(PetscInt)((ey - by)/fs->dsy.h_min);
+	nz = refine*(PetscInt)((ez - bz)/fs->dsz.h_min);
 
-	*A = avd3D;
+	// allocate space, setup structures
+	AVD3DAllocate(nx, ny, nz, 1, actx->nummark, &avd3D);
+
+	AVD3DSetDomainSize(avd3D, bx, ex, by, ey, bz, ez);
+
+	ierr = AVD3DSetParallelExtent(avd3D, fs->dsx.nproc, fs->dsy.nproc, fs->dsy.nproc); CHKERRQ(ierr);
+
+	ierr = AVD3DLoadPoints(avd3D, actx); CHKERRQ(ierr);
+
+	AVD3DResetCells(avd3D);
+
+	ierr = AVD3DInit(avd3D); CHKERRQ(ierr);
+
+	// assign all cells to points
+	count   = avd3D->npoints;
+	claimed = 1;
+
+	while(claimed != 0)
+	{
+		claimed = 0;
+
+		for(i = 0; i < count; i++)
+		{
+			AVD3DClaimCells(avd3D, i);
+
+			claimed += avd3D->chains[i].num_claimed;
+
+			AVD3DUpdateChain(avd3D, i);
+		}
+	}
+
+	ierr = PetscTime(&te); CHKERRQ(ierr);
+
+	PetscPrintf(PETSC_COMM_WORLD,"AVD generator complete in %1.4e (sec)\n", te-tb);
+
+	ierr = AVD3DReportMemory(avd3D); CHKERRQ(ierr);
+
+	(*A) = avd3D;
+
+	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
 void AVD3DDestroy(AVD3D *A)
@@ -227,6 +239,44 @@ void AVD3DDestroy(AVD3D *A)
 
 	free(aa);
 	*A = NULL;
+}
+//---------------------------------------------------------------------------
+void AVD3DAllocate(
+	const PetscInt mx,
+	const PetscInt my,
+	const PetscInt mz,
+	const PetscInt buffer,
+	const PetscInt npoints,
+	AVD3D          *A)
+{
+
+	AVD3D avd3D;
+
+	avd3D = (AVD3D) malloc( sizeof(struct _p_AVD3D) );
+	memset( avd3D, 0, sizeof(struct _p_AVD3D) );
+
+	avd3D->buffer = buffer;
+	avd3D->mx = mx;
+	avd3D->my = my;
+	avd3D->mz = mz;
+
+	avd3D->mx_mesh = mx+2;
+	avd3D->my_mesh = my+2;
+	avd3D->mz_mesh = mz+2;
+
+	AVDCell3DCreate(
+		(const PetscInt)avd3D->mx_mesh,
+		(const PetscInt)avd3D->my_mesh,
+		(const PetscInt)avd3D->mz_mesh,
+		&avd3D->cells);
+
+	avd3D->npoints = npoints;
+
+	AVDPoint3DCreate(npoints, &avd3D->points);
+
+	AVDChain3DCreate(npoints, (const PetscInt)avd3D->buffer, &avd3D->chains);
+
+	(*A) = avd3D;
 }
 //---------------------------------------------------------------------------
 PetscErrorCode AVD3DSetParallelExtent(AVD3D A, PetscInt M, PetscInt N, PetscInt P)
@@ -304,31 +354,75 @@ void AVD3DSetDomainSize(AVD3D A,
 	A->dz = (z1-z0)/(PetscScalar)A->mz;
 }
 //---------------------------------------------------------------------------
-void AVD3DSetPoints(AVD3D A, const PetscInt npoints, AVDPoint3D points)
+#undef __FUNCT__
+#define __FUNCT__ "AVD3DLoadPoints"
+PetscErrorCode AVD3DLoadPoints(AVD3D A, AdvCtx *actx)
 {
+	// load viewer points from markers
+	// WARNING! Redundant copy of all markers coordinates & phases
+	// can use markers directly
 
-	if (A->chains) {
-		printf("Deallocating existing chains\n");
-		AVDChain3DDestroy(A->npoints,&A->chains);
+	Marker     *markers, *M;
+	AVDPoint3D  points, P;
+	PetscInt    i, npoints;
+
+	PetscFunctionBegin;
+
+	npoints = A->npoints;
+	points  = A->points;
+	markers = actx->markers;
+
+	for(i = 0; i < npoints; i++)
+	{
+		M        = markers + i;
+		P        = points  + i;
+		P->x     = M->X[0];
+		P->y     = M->X[1];
+		P->z     = M->X[2];
+		P->phase = M->phase;
 	}
 
-	AVDChain3DCreate(npoints,(const PetscInt)A->buffer,&A->chains);
+	PetscFunctionReturn(0);
+}
+//---------------------------------------------------------------------------
+void AVD3DResetCells(AVD3D A)
+{
+	PetscInt i,j,k;
+	PetscInt mx,my,mz;
 
-	A->npoints = npoints;
-	A->points = points;
+	mx = A->mx_mesh;
+	my = A->my_mesh;
+	mz = A->mz_mesh;
+
+	for (k=0; k<mz; k++) {
+		for (j=0; j<my; j++) {
+			for (i=0; i<mx; i++) {
+				PetscInt ii = i + j * mx + k * mx*my;
+
+				A->cells[ii].p = -1;
+				A->cells[ii].done = AVD_FALSE;
+
+				if ( (i==0) || (i==mx-1) ) { A->cells[ii].p = AVD_CELL_MASK; }
+				if ( (j==0) || (j==my-1) ) { A->cells[ii].p = AVD_CELL_MASK; }
+				if ( (k==0) || (k==mz-1) ) { A->cells[ii].p = AVD_CELL_MASK; }
+
+			}
+		}
+	}
 }
 //---------------------------------------------------------------------------
 #undef __FUNCT__
 #define __FUNCT__ "AVD3DInit"
-PetscErrorCode AVD3DInit(AVD3D A, const PetscInt npoints, AVDPoint3D points)
+PetscErrorCode AVD3DInit(AVD3D A)
 {
-	PetscInt p, i, j, k;
-	PetscInt mx, my, mz, ind;
+	// i = (xp - (x0-dx) )/mx_mesh
 
-	if (npoints != A->npoints)
-	{
-		SETERRQ2(PETSC_COMM_SELF, PETSC_ERR_USER, "AVD3dInit: npoints != A->npoints\n", (LLD)npoints, (LLD)A->npoints);
-	}
+	AVDPoint3D points;
+	PetscInt   p, i, j, k, npoints;
+	PetscInt   mx, my, mz, ind;
+
+	npoints = A->npoints;
+	points  = A->points;
 
 	mx = A->mx_mesh;
 	my = A->my_mesh;
@@ -356,7 +450,7 @@ PetscErrorCode AVD3DInit(AVD3D A, const PetscInt npoints, AVDPoint3D points)
 		ind = i+j*mx+k*mx*my;
 		if (A->cells[ind].p == AVD_CELL_MASK)
 		{
-			SETERRQ(PETSC_COMM_SELF, PETSC_ERR_USER, "AVD3dInit: Inserting cells into boundary cells - this is not permitted\n");
+			SETERRQ(PETSC_COMM_SELF, PETSC_ERR_USER, "AVD3dInit: Inserting points into boundary cells - this is not permitted\n");
 		}
 
 		A->cells[i+j*mx+k*mx*my].p = p; // particle index
@@ -585,8 +679,12 @@ PetscErrorCode AVD3DReportMemory(AVD3D A)
 	+                       sizeof(PetscInt)            *(size_t)nchains)/1048576.0;
 
 	// get global sum on rank zero
-	ierr = PetscMemzero(gmem, sizeof(PetscScalar)*3); CHKERRQ(ierr);
+	gmem[0] = 0;
+	gmem[1] = 0;
+	gmem[2] = 0;
+
 	ierr = MPI_Reduce(lmem, gmem, 3, MPIU_SCALAR, MPI_SUM, 0, PETSC_COMM_WORLD); CHKERRQ(ierr);
+
 	sum  = gmem[0] + gmem[1] + gmem[2];
 
 	// output
@@ -602,229 +700,132 @@ PetscErrorCode AVD3DReportMemory(AVD3D A)
 // .......................... AVD ParaView Output ...........................
 //---------------------------------------------------------------------------
 #undef __FUNCT__
-#define __FUNCT__ "AVDViewCreate"
-PetscErrorCode AVDViewCreate(AVDView *avdout)
+#define __FUNCT__ "PVAVDCreate"
+PetscErrorCode PVAVDCreate(PVAVD *pvavd, AdvCtx *actx, const char *filename)
 {
+	PetscErrorCode ierr;
 	PetscFunctionBegin;
 
-	avdout->offset = 0;          // pvd file offset
-	avdout->outpvd = 1;          // pvd file output flag
-	avdout->avdAct = PETSC_TRUE; // output activation flag
+	ierr = PVAVDReadFromOptions(pvavd); CHKERRQ(ierr);
+
+	if(!pvavd->outavd) PetscFunctionReturn(0);
+
+	pvavd->actx = actx;
+
+	asprintf(&pvavd->outfile, "%s_phase", filename);
+
+	pvavd->offset = 0;
 
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
 #undef __FUNCT__
-#define __FUNCT__ "AVDViewWriteStep"
-PetscErrorCode AVDViewWriteStep(AVDView *avdout, AdvCtx *actx, const char DirectoryName[], PetscScalar ttime, PetscInt tindx)
+#define __FUNCT__ "PVAVDDestroy"
+PetscErrorCode PVAVDDestroy(PVAVD *pvavd)
 {
+	PetscFunctionBegin;
 
+	if(!pvavd->outavd) PetscFunctionReturn(0);
+
+	LAMEM_FREE(pvavd->outfile);
+
+	PetscFunctionReturn(0);
+}
+//---------------------------------------------------------------------------
+#undef __FUNCT__
+#define __FUNCT__ "PVAVDReadFromOptions"
+PetscErrorCode PVAVDReadFromOptions(PVAVD *pvavd)
+{
+	PetscErrorCode ierr;
+	PetscFunctionBegin;
+
+	pvavd->outavd = 0; // AVD output flag
+
+	ierr = PetscOptionsGetInt(NULL, "-out_avd", &pvavd->outavd, NULL); CHKERRQ(ierr);
+
+	if(!pvavd->outavd) PetscFunctionReturn(0);
+
+	pvavd->refine = 2; // Voronoi Diagram refinement factor
+	pvavd->outpvd = 0; // pvd file output flag
+
+	ierr = PetscOptionsGetInt(NULL, "-out_avd_ref", &pvavd->refine, NULL); CHKERRQ(ierr);
+	ierr = PetscOptionsGetInt(NULL, "-out_avd_pvd", &pvavd->outpvd, NULL); CHKERRQ(ierr);
+
+	if(pvavd->outpvd)
+	{
+		PetscPrintf(PETSC_COMM_WORLD, " Writing AVD3D .pvd file to disk\n");
+	}
+
+	PetscFunctionReturn(0);
+}
+//---------------------------------------------------------------------------
+#undef __FUNCT__
+#define __FUNCT__ "PVAVDWriteTimeStep"
+PetscErrorCode PVAVDWriteTimeStep(PVAVD *pvavd, const char *dirName, PetscScalar ttime, PetscInt tindx)
+{
 	// Create a 3D Voronoi diagram from particles with phase information
 	// write the file to disk and perform scaling/unscaling of the variables
+
+	AVD3D A;
 
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
 
-	if(avdout->avdAct != PETSC_TRUE) PetscFunctionReturn(0);
+	if(!pvavd->outavd) PetscFunctionReturn(0);
+
+	// create Approximate Voronoi Diagram from particles
+	ierr = AVDViewCreate(&A, pvavd->actx, pvavd->refine); CHKERRQ(ierr);
 
 	// update .pvd file if necessary
-	if(avdout->outpvd)
+	if(pvavd->outpvd)
 	{
-		ierr = UpdatePVDFile(DirectoryName, "phase", "pvtr", &avdout->offset, ttime, tindx); CHKERRQ(ierr);
+		ierr = UpdatePVDFile(dirName, pvavd->outfile, "pvtr", &pvavd->offset, ttime, tindx); CHKERRQ(ierr);
 	}
 
-	ierr = AVDViewExecute(actx, "phase", DirectoryName); CHKERRQ(ierr);
+	ierr = PVAVDWritePVTR(pvavd, A, dirName); CHKERRQ(ierr);
+
+	ierr = PVAVDWriteVTR(pvavd, A, dirName); CHKERRQ(ierr);
+
+	// cleanup
+	AVD3DDestroy(&A);
 
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
 #undef __FUNCT__
-#define __FUNCT__ "AVDViewWriteVTR"
-PetscErrorCode AVDViewWriteVTR(AVD3D A, const char name[], const char DirectoryName[], PetscScalar scaling)
+#define __FUNCT__ "PVAVDWritePVTR"
+PetscErrorCode PVAVDWritePVTR(PVAVD *pvavd, AVD3D A, const char *dirName)
 {
-	// WARNING! writing single entry at a time is too slow. Use buffers instead!
-
-	PetscMPIInt rank;
-	FILE*	fp;
-	char *fname;
-	PetscInt  i,j,k;
-	PetscInt offset,L;
-	PetscInt r2d,pi,pj,pk;
+	FILE        *fp;
+	char        *fname;
+	PetscMPIInt inproc, irank;
+	PetscInt    r2d, p, pi, pj, pk, nproc, rank;
 
 	PetscFunctionBegin;
-
-	MPI_Comm_rank(PETSC_COMM_WORLD,&rank);
-
-	asprintf(&fname,"%s/%s_p%1.6d.vtr", DirectoryName, name, rank);
-	fp = fopen(fname,"w");
-	if(fp == NULL) SETERRQ1(PETSC_COMM_SELF, 1,"cannot open file %s", fname);
-	free(fname);
-
-	pk = rank/(A->M*A->N);
-	r2d = rank - pk*(A->M*A->N);
-	pj = r2d/(A->M);
-	pi = r2d - pj*A->M;
-
-	fprintf(fp, "<?xml version=\"1.0\"?>\n");
-#ifdef PETSC_WORDS_BIGENDIAN
-	fprintf(fp, "<VTKFile type=\"RectilinearGrid\" version=\"0.1\" byte_order=\"BigEndian\">\n");
-#else
-	fprintf(fp, "<VTKFile type=\"RectilinearGrid\" version=\"0.1\" byte_order=\"LittleEndian\">\n");
-#endif
-  fprintf(fp, "  <RectilinearGrid WholeExtent=\"%lld %lld %lld %lld %lld %lld\" >\n",
-		  (LLD)(A->ownership_ranges_i[pi]),(LLD)(A->ownership_ranges_i[pi+1]),
-		  (LLD)(A->ownership_ranges_j[pj]),(LLD)(A->ownership_ranges_j[pj+1]),
-		  (LLD)(A->ownership_ranges_k[pk]),(LLD)(A->ownership_ranges_k[pk+1]));
-	fprintf(fp, "    <Piece Extent=\"%lld %lld %lld %lld %lld %lld\" >\n",
-			(LLD)(A->ownership_ranges_i[pi]),(LLD)(A->ownership_ranges_i[pi+1]),
-			(LLD)(A->ownership_ranges_j[pj]),(LLD)(A->ownership_ranges_j[pj+1]),
-			(LLD)(A->ownership_ranges_k[pk]),(LLD)(A->ownership_ranges_k[pk+1]));
-
-	offset = 0;
-
-	fprintf(fp, "    <Coordinates>\n");
-	// X
-	fprintf(fp, "      <DataArray type=\"Float32\" NumberOfComponents=\"1\" format=\"appended\" offset=\"%lld\"/>\n",(LLD)offset);
-	offset = offset + (PetscInt)sizeof(PetscInt) + (PetscInt)sizeof(float)*(A->mx+1);
-
-	fprintf(fp, "      <DataArray type=\"Float32\" NumberOfComponents=\"1\" format=\"appended\" offset=\"%lld\"/>\n",(LLD)offset);
-	offset = offset + (PetscInt)sizeof(PetscInt) + (PetscInt)sizeof(float)*(A->my+1);
-
-	fprintf(fp, "      <DataArray type=\"Float32\" NumberOfComponents=\"1\" format=\"appended\" offset=\"%lld\"/>\n",(LLD)offset);
-	offset = offset + (PetscInt)sizeof(PetscInt) + (PetscInt)sizeof(float)*(A->mz+1);
-
-	fprintf(fp, "    </Coordinates>\n");
-
-	fprintf(fp, "    <CellData>\n");
-
-	// Distinguish 32-bit and 64-bit integers
-
-#if defined(PETSC_USE_64BIT_INDICES)
-	// pid
-	fprintf(fp, "      <DataArray type=\"Int64\" Name=\"pid\" NumberOfComponents=\"1\" format=\"appended\" offset=\"%lld\"/>\n",(LLD)offset);
-	offset = offset + (PetscInt)sizeof(PetscInt) + (PetscInt)sizeof(PetscInt)*(A->mx * A->my * A->mz);
-	// phase
-	fprintf(fp, "      <DataArray type=\"Int64\" Name=\"phase\" NumberOfComponents=\"1\" format=\"appended\" offset=\"%lld\"/>\n",(LLD)offset);
-	offset = offset + (PetscInt)sizeof(PetscInt) + (PetscInt)sizeof(PetscInt)*(A->mx * A->my * A->mz);
-#else
-	// pid
-	fprintf(fp, "      <DataArray type=\"Int32\" Name=\"pid\" NumberOfComponents=\"1\" format=\"appended\" offset=\"%lld\"/>\n",(LLD)offset);
-	offset = offset + (PetscInt)sizeof(PetscInt) + (PetscInt)sizeof(PetscInt)*(A->mx * A->my * A->mz);
-	// phase
-	fprintf(fp, "      <DataArray type=\"Int32\" Name=\"phase\" NumberOfComponents=\"1\" format=\"appended\" offset=\"%lld\"/>\n",(LLD)offset);
-	offset = offset + (PetscInt)sizeof(PetscInt) + (PetscInt)sizeof(PetscInt)*(A->mx * A->my * A->mz);
-#endif
-
-	fprintf(fp, "    </CellData>\n");
-
-	fprintf(fp, "    <PointData>\n");
-	fprintf(fp, "    </PointData>\n");
-
-	fprintf(fp, "    </Piece>\n");
-  fprintf(fp, "  </RectilinearGrid>\n");
-
-
-	fprintf(fp,"  <AppendedData encoding=\"raw\">\n");
-	fprintf(fp,"_");
-
-	// X
-	L = (PetscInt)sizeof(float)*(A->mx+1);
-	fwrite(&L, sizeof(PetscInt), 1, fp);
-	for( i=0; i<A->mx+1; i++ ) {
-		float val = (float)((A->x0 + (i)*A->dx)*scaling);
-		fwrite(&val,sizeof(float),1,fp);
-	}
-
-	// Y
-	L = (PetscInt)sizeof(float)*(A->my+1);
-	fwrite(&L, sizeof(PetscInt), 1, fp);
-	for( i=0; i<A->my+1; i++ ) {
-		float val = (float)((A->y0 + (i)*A->dy)*scaling);
-		fwrite(&val,sizeof(float),1,fp);
-	}
-
-	// Z
-	L = (PetscInt)sizeof(float)*(A->mz+1);
-	fwrite(&L, sizeof(PetscInt), 1, fp);
-	for( i=0; i<A->mz+1; i++ ) {
-		float val = (float)((A->z0 + (i)*A->dz)*scaling);
-		fwrite(&val,sizeof(float),1,fp);
-	}
-
-	// pid
-	L = (PetscInt)sizeof(PetscInt)*(A->mz*A->my*A->mx);
-	fwrite(&L, sizeof(PetscInt), 1, fp);
-	for (k=1; k<A->mz+1; k++) {
-		for (j=1; j<A->my+1; j++) {
-			for (i=1; i<A->mx+1; i++) {
-				PetscInt ii = i + j*A->mx_mesh + k*A->mx_mesh*A->my_mesh;
-				PetscInt val = A->cells[ii].p;
-				fwrite(&val,sizeof(PetscInt),1,fp);
-			}
-		}
-	}
-
-	// phase
-	L = (PetscInt)sizeof(PetscInt)*(A->mz*A->my*A->mx);
-	fwrite(&L, sizeof(PetscInt), 1, fp);
-	for (k=1; k<A->mz+1; k++) {
-		for (j=1; j<A->my+1; j++) {
-			for (i=1; i<A->mx+1; i++) {
-				PetscInt ii = i + j*A->mx_mesh + k*A->mx_mesh*A->my_mesh;
-				PetscInt phase;
-
-				phase = A->points[ A->cells[ii].p ].phase;
-				fwrite(&phase,sizeof(PetscInt),1,fp);
-			}
-		}
-	}
-	fprintf(fp,"\n  </AppendedData>\n");
-
-
-	fprintf(fp, "</VTKFile>\n");
-
-	fclose( fp );
-
-	PetscFunctionReturn(0);
-}
-//---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "AVDViewWritePVTR"
-PetscErrorCode AVDViewWritePVTR(AVD3D A, const char name[], const char DirectoryName[])
-{
-	PetscMPIInt nproc,rank;
-	FILE*	fp;
-	char *fname;
-	PetscInt r2d,p,pi,pj,pk;
-
-	PetscFunctionBegin;
-
-	MPI_Comm_size(PETSC_COMM_WORLD,&nproc);
-	MPI_Comm_rank(PETSC_COMM_WORLD,&rank);
 
 	// only first process generates this file (WARNING! Bottleneck!)
-	if(rank) PetscFunctionReturn(0);
+	if(!ISRankZero(PETSC_COMM_WORLD)) PetscFunctionReturn(0);
 
-	asprintf(&fname,"%s/%s_p%1.6d.pvtr", DirectoryName, name, rank);
+	MPI_Comm_size(PETSC_COMM_WORLD, &inproc); nproc = (PetscInt)inproc;
+	MPI_Comm_rank(PETSC_COMM_WORLD, &irank);  rank  = (PetscInt)irank;
+
+	// open outfile.pvts file in the output directory (write mode)
+	asprintf(&fname, "%s/%s.pvtr", dirName, pvavd->outfile);
 	fp = fopen(fname,"w");
 	if(fp == NULL) SETERRQ1(PETSC_COMM_SELF, 1,"cannot open file %s", fname);
 	free(fname);
 
-	pk = rank/(A->M*A->N);
+	pk  = rank/(A->M*A->N);
 	r2d = rank - pk*(A->M*A->N);
-	pj = r2d/(A->M);
-	pi = r2d - pj*A->M;
+	pj  = r2d/(A->M);
+	pi  = r2d - pj*A->M;
 
-	fprintf(fp, "<?xml version=\"1.0\"?>\n");
-#ifdef PETSC_WORDS_BIGENDIAN
-	fprintf(fp, "<VTKFile type=\"PRectilinearGrid\" version=\"0.1\" byte_order=\"BigEndian\">\n");
-#else
-	fprintf(fp, "<VTKFile type=\"PRectilinearGrid\" version=\"0.1\" byte_order=\"LittleEndian\">\n");
-#endif
-  fprintf(fp, "  <PRectilinearGrid WholeExtent=\"%lld %lld %lld %lld %lld %lld\" GhostLevel=\"0\" >\n",
-					0LL,(LLD)(A->gmx),
-					0LL,(LLD)(A->gmy),
-					0LL,(LLD)(A->gmz));
+	WriteXMLHeader(fp, "PRectilinearGrid");
+
+	fprintf(fp, "  <PRectilinearGrid WholeExtent=\"%lld %lld %lld %lld %lld %lld\" GhostLevel=\"0\" >\n",
+		0LL,(LLD)(A->gmx),
+		0LL,(LLD)(A->gmy),
+		0LL,(LLD)(A->gmz));
 
 	fprintf(fp, "    <PCoordinates>\n");
 	fprintf(fp, "      <PDataArray type=\"Float32\" NumberOfComponents=\"1\" format=\"appended\" />\n");
@@ -834,39 +835,28 @@ PetscErrorCode AVDViewWritePVTR(AVD3D A, const char name[], const char Directory
 
 	fprintf(fp, "    <PCellData>\n");
 
-	// Distinguish 32-bit and 64-bit integers
-
-#if defined(PETSC_USE_64BIT_INDICES)
-	fprintf(fp, "      <PDataArray type=\"Int64\" Name=\"pid\" NumberOfComponents=\"1\" format=\"appended\" />\n");
-	fprintf(fp, "      <PDataArray type=\"Int64\" Name=\"phase\" NumberOfComponents=\"1\" format=\"appended\" />\n");
-#else
-	fprintf(fp, "      <PDataArray type=\"Int32\" Name=\"pid\" NumberOfComponents=\"1\" format=\"appended\" />\n");
-	fprintf(fp, "      <PDataArray type=\"Int32\" Name=\"phase\" NumberOfComponents=\"1\" format=\"appended\" />\n");
-#endif
+	fprintf(fp, "      <PDataArray type=\"UInt8\" Name=\"phase\" NumberOfComponents=\"1\" format=\"appended\" />\n");
 
 	fprintf(fp, "    </PCellData>\n");
 
 	fprintf(fp, "    <PPointData>\n");
 	fprintf(fp, "    </PPointData>\n");
 
-	for (p=0; p<nproc; p++) {
+	for(p=0; p<nproc; p++)
+	{
 		pk = p/(A->M*A->N);
 		r2d = p - pk*(A->M*A->N);
 		pj = r2d/(A->M);
 		pi = r2d - pj*A->M;
 
-		asprintf(&fname,"%s-p%1.6lld.vtr",name,(LLD)p);
-		fprintf(fp, "    <Piece Extent=\"%lld %lld %lld %lld %lld %lld\" Source=\"%s\" />\n",
+		fprintf(fp, "    <Piece Extent=\"%lld %lld %lld %lld %lld %lld\" Source=\"%s_p%1.6lld.vtr\" />\n",
 				(LLD)(A->ownership_ranges_i[pi]),(LLD)(A->ownership_ranges_i[pi+1]),
 				(LLD)(A->ownership_ranges_j[pj]),(LLD)(A->ownership_ranges_j[pj+1]),
 				(LLD)(A->ownership_ranges_k[pk]),(LLD)(A->ownership_ranges_k[pk+1]),
-						fname );
-
-		free(fname);
+				pvavd->outfile, (LLD)p );
 	}
 
 	fprintf(fp, "  </PRectilinearGrid>\n");
-
 
 	fprintf(fp, "</VTKFile>\n");
 
@@ -875,150 +865,127 @@ PetscErrorCode AVDViewWritePVTR(AVD3D A, const char name[], const char Directory
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-// ............................ LaMEM Interface .............................
-//---------------------------------------------------------------------------
 #undef __FUNCT__
-#define __FUNCT__ "AVDViewLoadPoints"
-PetscErrorCode AVDViewLoadPoints(AdvCtx *actx, PetscInt *_nump, AVDPoint3D *_points)
+#define __FUNCT__ "PVAVDWriteVTR"
+PetscErrorCode PVAVDWriteVTR(PVAVD *pvavd, AVD3D A, const char *dirName)
 {
-	// WARNING! Redundant copy of all markers coordinates & phases
+	// WARNING! writing single entry at a time is too slow. Use buffers instead!
 
-	PetscInt    i;
-	Marker     *P;
-	AVDPoint3D  points;
+	PetscMPIInt   irank;
+	FILE          *fp;
+	char          *fname;
+	PetscInt      i, j, k, ii;
+	PetscInt      r2d, pi, pj, pk, rank;
+	PetscScalar   chLen;
+	float         crd;
+	unsigned char phase;
+	int           offset, L;
 
 	PetscFunctionBegin;
 
-	// create viewer points
-	AVDPoint3DCreate(actx->nummark, &points);
+	// access context
+	chLen = pvavd->actx->jr->scal.length;
 
-	// scan all local markers
-	for(i = 0; i < actx->nummark; i++)
-	{
-		// access next marker
-		P = &actx->markers[i];
+	MPI_Comm_rank(PETSC_COMM_WORLD, &irank);  rank = (PetscInt)irank;
 
-		// copy coordinates & phase
-		points[i].x     = P->X[0];
-		points[i].y     = P->X[1];
-		points[i].z     = P->X[2];
-		points[i].phase = P->phase;
+	// open outfile_p_XXXXXX.vtr file in the output directory (write mode)
+	asprintf(&fname, "%s/%s_p%1.6lld.vtr", dirName, pvavd->outfile, (LLD)rank);
+	fp = fopen(fname,"w");
+	if(fp == NULL) SETERRQ1(PETSC_COMM_SELF, 1,"cannot open file %s", fname);
+	free(fname);
+
+	pk  = rank/(A->M*A->N);
+	r2d = rank - pk*(A->M*A->N);
+	pj  = r2d/(A->M);
+	pi  = r2d - pj*A->M;
+
+	// write header
+	WriteXMLHeader(fp, "RectilinearGrid");
+
+  fprintf(fp, "  <RectilinearGrid WholeExtent=\"%lld %lld %lld %lld %lld %lld\" >\n",
+		  (LLD)(A->ownership_ranges_i[pi]),(LLD)(A->ownership_ranges_i[pi+1]),
+		  (LLD)(A->ownership_ranges_j[pj]),(LLD)(A->ownership_ranges_j[pj+1]),
+		  (LLD)(A->ownership_ranges_k[pk]),(LLD)(A->ownership_ranges_k[pk+1]));
+
+	fprintf(fp, "    <Piece Extent=\"%lld %lld %lld %lld %lld %lld\" >\n",
+			(LLD)(A->ownership_ranges_i[pi]),(LLD)(A->ownership_ranges_i[pi+1]),
+			(LLD)(A->ownership_ranges_j[pj]),(LLD)(A->ownership_ranges_j[pj+1]),
+			(LLD)(A->ownership_ranges_k[pk]),(LLD)(A->ownership_ranges_k[pk+1]));
+
+	offset = 0;
+
+	fprintf(fp, "    <Coordinates>\n");
+
+	// X
+	fprintf(fp, "      <DataArray type=\"Float32\" NumberOfComponents=\"1\" format=\"appended\" offset=\"%lld\"/>\n",(LLD)offset);
+	offset += (int)(sizeof(int) + sizeof(float)*(size_t)(A->mx+1));
+	// Y
+	fprintf(fp, "      <DataArray type=\"Float32\" NumberOfComponents=\"1\" format=\"appended\" offset=\"%lld\"/>\n",(LLD)offset);
+	offset += (int)(sizeof(int) + sizeof(float)*(size_t)(A->my+1));
+	// Z
+	fprintf(fp, "      <DataArray type=\"Float32\" NumberOfComponents=\"1\" format=\"appended\" offset=\"%lld\"/>\n",(LLD)offset);
+	offset += (int)(sizeof(int) + sizeof(float)*(size_t)(A->mz+1));
+
+	fprintf(fp, "    </Coordinates>\n");
+
+	fprintf(fp, "    <CellData>\n");
+
+	// phase
+	fprintf(fp, "      <DataArray type=\"UInt8\" Name=\"phase\" NumberOfComponents=\"1\" format=\"appended\" offset=\"%lld\"/>\n",(LLD)offset);
+
+	fprintf(fp, "    </CellData>\n");
+
+	fprintf(fp, "    <PointData>\n");
+	fprintf(fp, "    </PointData>\n");
+
+	fprintf(fp, "    </Piece>\n");
+  fprintf(fp, "  </RectilinearGrid>\n");
+
+	fprintf(fp,"  <AppendedData encoding=\"raw\">\n");
+	fprintf(fp,"_");
+
+	// X
+	L = (int)sizeof(float)*(int)(A->mx+1);
+	fwrite(&L, sizeof(int), 1, fp);
+	for( i=0; i<A->mx+1; i++ ) {
+		crd = (float)((A->x0 + (PetscScalar)i*A->dx)*chLen);
+		fwrite(&crd,sizeof(float),1,fp);
 	}
 
-	(*_nump)   = actx->nummark;
-	(*_points) = points;
+	// Y
+	L = (int)sizeof(float)*(int)(A->my+1);
+	fwrite(&L, sizeof(int), 1, fp);
+	for( i=0; i<A->my+1; i++ ) {
+		crd = (float)((A->y0 + (PetscScalar)i*A->dy)*chLen);
+		fwrite(&crd,sizeof(float),1,fp);
+	}
 
-	PetscFunctionReturn(0);
-}
-//---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "AVDViewExecute"
-PetscErrorCode AVDViewExecute(AdvCtx *actx, const char NAME[], const char DirectoryName[])
-{
-	AVD3D          A;
-	FDSTAG         *fs;
-	Scaling        *scal;
-	AVDPoint3D     points;
-	PetscLogDouble t0, t1;
-	PetscScalar    bx, by, bz, ex, ey, ez;
-	PetscInt       nx, ny, nz;
-	PetscInt       i, npoints, count, claimed, refine;
+	// Z
+	L = (int)sizeof(float)*(int)(A->mz+1);
+	fwrite(&L, sizeof(int), 1, fp);
+	for( i=0; i<A->mz+1; i++ ) {
+		crd = (float)((A->z0 + (PetscScalar)i*A->dz)*chLen);
+		fwrite(&crd,sizeof(float),1,fp);
+	}
 
-	PetscErrorCode ierr;
-	PetscFunctionBegin;
-
-	// access
-	fs   =  actx->fs;
-	scal = &actx->jr->scal;
-
-	//===============
-	// initialization
-	//===============
-
-	ierr = PetscTime(&t0); CHKERRQ(ierr);
-
-	// load particles to the viewer
-	ierr = AVDViewLoadPoints(actx, &npoints, &points); CHKERRQ(ierr);
-
-	// get sizes of local domain
-	ierr = FDSTAGGetLocalBox(fs, &bx, &by, &bz, &ex, &ey, &ez); CHKERRQ(ierr);
-
-	// get grid refinement factor
-	refine = 2;
-	ierr = PetscOptionsGetInt(PETSC_NULL,"-AVDPhaseViewer_factor", &refine, PETSC_NULL); CHKERRQ(ierr);
-
-	// get Voronoi grid resolution (locally constant)
-	nx = refine*(PetscInt)((ex - bx)/fs->dsx.h_min);
-	ny = refine*(PetscInt)((ey - by)/fs->dsy.h_min);
-	nz = refine*(PetscInt)((ez - bz)/fs->dsz.h_min);
-
-	// build up AVD data structure
-	AVD3DCreate(nx, ny,	nz, 1, &A);
-
-	ierr = AVD3DSetParallelExtent(A, fs->dsx.nproc, fs->dsy.nproc, fs->dsy.nproc); CHKERRQ(ierr);
-
-	AVD3DSetDomainSize(A, bx, by, bz, ex, ey, ez);
-
-	// set points
-	AVD3DSetPoints(A, npoints, points);
-
-	// reset cells
-	AVDCell3DReset(A);
-
-	ierr = AVD3DInit(A, npoints, points); CHKERRQ(ierr);
-
-	ierr = PetscTime(&t1); CHKERRQ(ierr);
-
-	PetscPrintf(PETSC_COMM_WORLD,"AVD3D: Initialisation %1.4e (sec)\n", t1-t0);
-
-	//===========
-	// generation
-	//===========
-
-	ierr = PetscTime(&t0); CHKERRQ(ierr);
-
-	count   = npoints;
-	claimed = 1;
-
-	while(claimed != 0)
-	{
-		claimed = 0;
-
-		for(i = 0; i < count; i++)
-		{
-			AVD3DClaimCells(A, i);
-
-			claimed += A->chains[i].num_claimed;
-
-			AVD3DUpdateChain(A, i);
+	// phase
+	L = (int)sizeof(unsigned char)*(int)(A->mz*A->my*A->mx);
+	fwrite(&L, sizeof(int), 1, fp);
+	for (k=1; k<A->mz+1; k++) {
+		for (j=1; j<A->my+1; j++) {
+			for (i=1; i<A->mx+1; i++)
+			{
+				ii    = i + j*A->mx_mesh + k*A->mx_mesh*A->my_mesh;
+				phase = (unsigned char)A->points[A->cells[ii].p].phase;
+				fwrite(&phase,sizeof(unsigned char),1,fp);
+			}
 		}
 	}
+	fprintf(fp,"\n  </AppendedData>\n");
 
-	ierr = PetscTime(&t1); CHKERRQ(ierr);
+	fprintf(fp, "</VTKFile>\n");
 
-	PetscPrintf(PETSC_COMM_WORLD,"AVD3D: Voronoi generator %1.4e (sec)\n", t1-t0);
-
-	ierr = AVD3DReportMemory(A); CHKERRQ(ierr);
-
-	//================
-	// ParaView output
-	//================
-
-	ierr = PetscTime(&t0); CHKERRQ(ierr);
-
-	ierr = AVDViewWritePVTR(A, NAME, DirectoryName); CHKERRQ(ierr);
-
-	ierr = AVDViewWriteVTR(A, NAME, DirectoryName, scal->length); CHKERRQ(ierr);
-
-	ierr = PetscTime(&t1); CHKERRQ(ierr);
-
-	PetscPrintf(PETSC_COMM_WORLD,"# AVD3d: VTR writer %1.4e (sec)\n", t1-t0);
-
-	//========
-	// cleanup
-	//========
-
-	AVD3DDestroy(&A);
+	fclose( fp );
 
 	PetscFunctionReturn(0);
 }

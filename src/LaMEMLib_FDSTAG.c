@@ -88,10 +88,10 @@ PetscErrorCode LaMEMLib_FDSTAG(ModParam *IOparam, PetscInt *mpi_group_id)
 	SNES     snes;   // PETSc nonlinear solver
 	NLSol    nl;     // nonlinear solver context
 	PVOut    pvout;  // paraview output driver
-	PVSurf   pvsurf; // paraview output driver
-	PVMark   pvmark; // paraview output driver
+	PVSurf   pvsurf; // paraview output driver for surface
+	PVMark   pvmark; // paraview output driver for markers
+	PVAVD    pvavd;  // paraview output driver for AVD
 	ObjFunct objf;   // objective function
-//	AVDView  avdout;
 
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
@@ -218,6 +218,9 @@ ierr = ADVMarkCrossFreeSurf(&actx, &surf); CHKERRQ(ierr);
 	// create output object for the markers - for debugging
 	ierr = PVMarkCreate(&pvmark, &actx, user.OutputFile); CHKERRQ(ierr);
 
+	// AVD output driver
+	ierr = PVAVDCreate(&pvavd, &actx, user.OutputFile); CHKERRQ(ierr);
+
 	// read breakpoint files if restart was requested and if is possible
 	if (user.restart==1) { ierr = BreakRead(&user, &actx, &pvout, &pvsurf, &pvmark, &nl.jtype); CHKERRQ(ierr); }
 
@@ -235,7 +238,6 @@ ierr = ADVMarkCrossFreeSurf(&actx, &surf); CHKERRQ(ierr);
 
 	PetscPrintf(PETSC_COMM_WORLD," \n");
 
-//	ierr = AVDViewCreate(&avdout); CHKERRQ(ierr);
 
 	//===============
 	// TIME STEP LOOP
@@ -366,7 +368,7 @@ ierr = JacResCopyTemp(&jr); CHKERRQ(ierr);
 			ierr = LaMEMCreateOutputDirectory(DirectoryName); CHKERRQ(ierr);
 
 			// AVD phase output
-//			ierr = AVDViewWriteStep(&avdout, &actx, DirectoryName, JacResGetTime(&jr), JacResGetStep(&jr)); CHKERRQ(ierr);
+			ierr = PVAVDWriteTimeStep(&pvavd, DirectoryName, JacResGetTime(&jr), JacResGetStep(&jr)); CHKERRQ(ierr);
 
 			// grid ParaView output
 			ierr = PVOutWriteTimeStep(&pvout, &jr, DirectoryName, JacResGetTime(&jr), JacResGetStep(&jr)); CHKERRQ(ierr);
@@ -420,6 +422,8 @@ ierr = JacResCopyTemp(&jr); CHKERRQ(ierr);
 	ierr = PVOutDestroy(&pvout);   CHKERRQ(ierr);
 	ierr = PVSurfDestroy(&pvsurf); CHKERRQ(ierr);
 	ierr = PVMarkDestroy(&pvmark); CHKERRQ(ierr);
+	ierr = PVAVDDestroy(&pvavd);   CHKERRQ(ierr);
+
 
 	PetscTime(&cputime_end);
 	PetscPrintf(PETSC_COMM_WORLD, " Simulation took %g s\n", cputime_end - cputime_start);

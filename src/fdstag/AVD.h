@@ -50,20 +50,20 @@ typedef struct
 	Marker      *points;          // points that we want to compute voronoi diagram (size of npoints)
 	PetscInt    npoints;          // no. markers
 
-} AVD3D;
+} AVD;
 
 //---------------------------------------------------------------------------
 // basic AVD routines
-PetscErrorCode AVDCreate     (AVD3D *A);
-PetscErrorCode AVDDestroy    (AVD3D *A);
-PetscErrorCode AVDCellInit   (AVD3D *A);
-PetscErrorCode AVDClaimCells (AVD3D *A, const PetscInt ip);
-PetscErrorCode AVDUpdateChain(AVD3D *A, const PetscInt ip);
+PetscErrorCode AVDCreate     (AVD *A);
+PetscErrorCode AVDDestroy    (AVD *A);
+PetscErrorCode AVDCellInit   (AVD *A);
+PetscErrorCode AVDClaimCells (AVD *A, const PetscInt ip);
+PetscErrorCode AVDUpdateChain(AVD *A, const PetscInt ip);
 PetscErrorCode AVDReAlloc    (AVDChain *chain,PetscInt buffer);
 
 // routines for marker control
-PetscErrorCode AVDLoadPoints            (AdvCtx *actx, AVD3D *A, PetscInt ind);
-PetscErrorCode AVDInjectDeletePoints    (AdvCtx *actx, AVD3D *A);
+PetscErrorCode AVDLoadPoints            (AdvCtx *actx, AVD *A, PetscInt ind);
+PetscErrorCode AVDInjectDeletePoints    (AdvCtx *actx, AVD *A);
 PetscErrorCode AVDExecuteMarkerInjection(AdvCtx *actx, PetscInt npoints, PetscScalar xs[3], PetscScalar xe[3], PetscInt ind);
 //---------------------------------------------------------------------------
 static inline PetscScalar AVDDistanceTest(PetscScalar x0[3],PetscScalar x1[3],PetscScalar x2[3])

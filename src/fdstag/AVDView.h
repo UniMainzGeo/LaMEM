@@ -36,6 +36,20 @@ typedef struct _p_AVD3D *AVD3D;
 
 //---------------------------------------------------------------------------
 
+struct _p_AVDPoint3D
+{
+	PetscScalar x,y,z;
+	PetscInt    phase;
+};
+
+//---------------------------------------------------------------------------
+
+void AVDPoint3DCreate(const PetscInt npoints, AVDPoint3D *P);
+
+void AVDPoint3DDestroy(AVDPoint3D *P);
+
+//---------------------------------------------------------------------------
+
 struct _p_AVDCell3D
 {
 	PetscInt p;     // particle index which this cell is attributed to
@@ -49,8 +63,6 @@ struct _p_AVDCell3D
 void AVDCell3DCreate(const PetscInt mx, const PetscInt my, const PetscInt mz, AVDCell3D *C);
 
 void AVDCell3DDestroy(AVDCell3D *C);
-
-void AVDCell3DReset(AVD3D A);
 
 //---------------------------------------------------------------------------
 
@@ -76,20 +88,6 @@ void AVDChain3DDestroy(const PetscInt npoints, AVDChain3D *CH);
 
 //---------------------------------------------------------------------------
 
-struct _p_AVDPoint3D
-{
-	PetscScalar x,y,z;
-	PetscInt    phase;
-};
-
-//---------------------------------------------------------------------------
-
-void AVDPoint3DCreate(const PetscInt npoints, AVDPoint3D *P);
-
-void AVDPoint3DDestroy(AVDPoint3D *P);
-
-//---------------------------------------------------------------------------
-
 struct _p_AVD3D
 {
 	PetscScalar x0, x1, y0, y1, z0, z1; // size of domain
@@ -110,14 +108,17 @@ struct _p_AVD3D
 
 //---------------------------------------------------------------------------
 
-void AVD3DCreate(
+PetscErrorCode AVDViewCreate(AVD3D *A, AdvCtx *actx, PetscInt refine);
+
+void AVD3DDestroy(AVD3D *A);
+
+void AVD3DAllocate(
 	const PetscInt mx,
 	const PetscInt my,
 	const PetscInt mz,
 	const PetscInt buffer,
+	const PetscInt npoints,
 	AVD3D          *A);
-
-void AVD3DDestroy(AVD3D *A);
 
 PetscErrorCode AVD3DSetParallelExtent(AVD3D A, PetscInt M, PetscInt N, PetscInt P);
 
@@ -129,9 +130,11 @@ void AVD3DSetDomainSize(AVD3D A,
 	const PetscScalar z0,
 	const PetscScalar z1);
 
-void AVD3DSetPoints(AVD3D A,const PetscInt npoints, AVDPoint3D points);
+PetscErrorCode AVD3DLoadPoints(AVD3D A, AdvCtx *actx);
 
-PetscErrorCode AVD3DInit(AVD3D A, const PetscInt npoints, AVDPoint3D points);
+void AVD3DResetCells(AVD3D A);
+
+PetscErrorCode AVD3DInit(AVD3D A);
 
 void AVD3DClaimCells(AVD3D A,const PetscInt p_i);
 
@@ -143,28 +146,28 @@ PetscErrorCode AVD3DReportMemory(AVD3D A);
 
 typedef struct
 {
+	AdvCtx    *actx;    // advection context
+	char      *outfile; // output file name
+	long int  offset;   // pvd file offset
+	PetscInt  outavd;   // AVD output flag
+	PetscInt  refine;   // Voronoi Diagram refinement factor
+	PetscInt  outpvd;   // pvd file output flag
 
-	long int  offset;  // pvd file offset
-	PetscInt  outpvd;  // pvd file output flag
-	PetscBool avdAct;  // output activation flag
-
-} AVDView;
-
-//---------------------------------------------------------------------------
-
-PetscErrorCode AVDViewCreate(AVDView *avdout);
-
-PetscErrorCode AVDViewWriteStep(AVDView *avdout, AdvCtx *actx, const char DirectoryName[], PetscScalar ttime, PetscInt tindx);
-
-PetscErrorCode AVDViewWriteVTR(AVD3D A, const char name[], const char DirectoryName[], PetscScalar scaling);
-
-PetscErrorCode AVDViewWritePVTR(AVD3D A, const char name[], const char DirectoryName[]);
+} PVAVD;
 
 //---------------------------------------------------------------------------
 
-PetscErrorCode AVDViewLoadPoints(AdvCtx *actx, PetscInt *_nump, AVDPoint3D *_points);
+PetscErrorCode PVAVDCreate(PVAVD *pvavd, AdvCtx *actx, const char *filename);
 
-PetscErrorCode AVDViewExecute(AdvCtx *actx, const char NAME[], const char DirectoryName[]);
+PetscErrorCode PVAVDDestroy(PVAVD *pvavd);
+
+PetscErrorCode PVAVDReadFromOptions(PVAVD *pvavd);
+
+PetscErrorCode PVAVDWriteTimeStep(PVAVD *pvavd, const char *dirName, PetscScalar ttime, PetscInt tindx);
+
+PetscErrorCode PVAVDWritePVTR(PVAVD *pvavd, AVD3D A, const char *dirName);
+
+PetscErrorCode PVAVDWriteVTR(PVAVD *pvavd, AVD3D A, const char *dirName);
 
 //---------------------------------------------------------------------------
 #endif

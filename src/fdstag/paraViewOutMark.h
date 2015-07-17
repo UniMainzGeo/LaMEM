@@ -8,10 +8,10 @@
 //---------------------------------------------------------------------------
 typedef struct
 {
-	AdvCtx     *actx;       // free surface object
+	AdvCtx     *actx;       // advection context
 	char       *outfile;    // output file name
 	long int    offset;     // pvd file offset
-	PetscInt    outmark;    // pvd file output flag
+	PetscInt    outmark;    // marker output flag
 	PetscInt    outpvd;     // pvd file output flag
 } PVMark;
 //---------------------------------------------------------------------------

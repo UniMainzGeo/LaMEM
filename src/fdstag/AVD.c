@@ -22,7 +22,7 @@
 //---------------------------------------------------------------------------
 #undef __FUNCT__
 #define __FUNCT__ "AVDCreate"
-PetscErrorCode AVDCreate(AVD3D *A)
+PetscErrorCode AVDCreate(AVD *A)
 {
 	PetscInt    p, npoints;
 	PetscInt    ind;
@@ -129,7 +129,7 @@ PetscErrorCode AVDCreate(AVD3D *A)
 //---------------------------------------------------------------------------
 #undef __FUNCT__
 #define __FUNCT__ "AVDDestroy"
-PetscErrorCode AVDDestroy(AVD3D *A)
+PetscErrorCode AVDDestroy(AVD *A)
 {
 	PetscInt p;
 
@@ -161,7 +161,7 @@ PetscErrorCode AVDDestroy(AVD3D *A)
 //---------------------------------------------------------------------------
 #undef __FUNCT__
 #define __FUNCT__ "AVDCellInit"
-PetscErrorCode AVDCellInit(AVD3D *A)
+PetscErrorCode AVDCellInit(AVD *A)
 {
 	Marker     *points;
 	PetscInt    npoints;
@@ -214,7 +214,7 @@ PetscErrorCode AVDCellInit(AVD3D *A)
 //---------------------------------------------------------------------------
 #undef __FUNCT__
 #define __FUNCT__ "AVDClaimCells"
-PetscErrorCode AVDClaimCells(AVD3D *A, const PetscInt ip)
+PetscErrorCode AVDClaimCells(AVD *A, const PetscInt ip)
 {
 	PetscInt    i,count;
 	PetscScalar x0[3], x1[3], x2[3], dist;
@@ -294,7 +294,7 @@ PetscErrorCode AVDClaimCells(AVD3D *A, const PetscInt ip)
 //---------------------------------------------------------------------------
 #undef __FUNCT__
 #define __FUNCT__ "AVDUpdateChain"
-PetscErrorCode AVDUpdateChain(AVD3D *A, const PetscInt ip)
+PetscErrorCode AVDUpdateChain(AVD *A, const PetscInt ip)
 {
 	PetscInt i,k;
 	PetscInt count;
@@ -408,7 +408,7 @@ PetscErrorCode AVDReAlloc(AVDChain *chain, PetscInt buffer)
 //---------------------------------------------------------------------------
 #undef __FUNCT__
 #define __FUNCT__ "AVDLoadPoints"
-PetscErrorCode AVDLoadPoints(AdvCtx *actx, AVD3D *A, PetscInt ind)
+PetscErrorCode AVDLoadPoints(AdvCtx *actx, AVD *A, PetscInt ind)
 {
 	PetscInt    i, ii;
 	PetscFunctionBegin;
@@ -431,7 +431,7 @@ PetscErrorCode AVDLoadPoints(AdvCtx *actx, AVD3D *A, PetscInt ind)
 //---------------------------------------------------------------------------
 #undef __FUNCT__
 #define __FUNCT__ "AVDInjectDeletePoints"
-PetscErrorCode AVDInjectDeletePoints(AdvCtx *actx, AVD3D *A)
+PetscErrorCode AVDInjectDeletePoints(AdvCtx *actx, AVD *A)
 {
 	PetscInt    i, ii, n, ind;
 	PetscInt    num_chain, hclaim;
@@ -613,7 +613,7 @@ PetscErrorCode AVDInjectDeletePoints(AdvCtx *actx, AVD3D *A)
 PetscErrorCode AVDExecuteMarkerInjection(AdvCtx *actx, PetscInt npoints, PetscScalar xs[3], PetscScalar xe[3], PetscInt ind)
 {
 
-	AVD3D          A;
+	AVD          A;
 	PetscInt       i,claimed;
 
 	PetscErrorCode ierr;
