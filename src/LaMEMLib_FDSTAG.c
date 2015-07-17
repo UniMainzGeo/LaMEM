@@ -91,7 +91,7 @@ PetscErrorCode LaMEMLib_FDSTAG(ModParam *IOparam, PetscInt *mpi_group_id)
 	PVSurf   pvsurf; // paraview output driver
 	PVMark   pvmark; // paraview output driver
 	ObjFunct objf;   // objective function
-	AVDView  avdout;
+//	AVDView  avdout;
 
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
@@ -235,7 +235,7 @@ ierr = ADVMarkCrossFreeSurf(&actx, &surf); CHKERRQ(ierr);
 
 	PetscPrintf(PETSC_COMM_WORLD," \n");
 
-	ierr = AVDViewCreate(&avdout); CHKERRQ(ierr);
+//	ierr = AVDViewCreate(&avdout); CHKERRQ(ierr);
 
 	//===============
 	// TIME STEP LOOP
@@ -366,7 +366,7 @@ ierr = JacResCopyTemp(&jr); CHKERRQ(ierr);
 			ierr = LaMEMCreateOutputDirectory(DirectoryName); CHKERRQ(ierr);
 
 			// AVD phase output
-			ierr = AVDViewWriteStep(&avdout, &actx, DirectoryName, JacResGetTime(&jr), JacResGetStep(&jr)); CHKERRQ(ierr);
+//			ierr = AVDViewWriteStep(&avdout, &actx, DirectoryName, JacResGetTime(&jr), JacResGetStep(&jr)); CHKERRQ(ierr);
 
 			// grid ParaView output
 			ierr = PVOutWriteTimeStep(&pvout, &jr, DirectoryName, JacResGetTime(&jr), JacResGetStep(&jr)); CHKERRQ(ierr);
