@@ -59,9 +59,9 @@ without the explicit agreement of Boris Kaus.
 #include "paraViewOutMark.h"
 #include "input.h"
 #include "matProps.h"
-#include "break.h"
 #include "objFunct.h"
 #include "AVDView.h"
+#include "break.h"
 
 
 //==========================================================================================================
@@ -222,7 +222,7 @@ ierr = ADVMarkCrossFreeSurf(&actx, &surf); CHKERRQ(ierr);
 	ierr = PVAVDCreate(&pvavd, &actx, user.OutputFile); CHKERRQ(ierr);
 
 	// read breakpoint files if restart was requested and if is possible
-	if (user.restart==1) { ierr = BreakRead(&user, &actx, &pvout, &pvsurf, &pvmark, &nl.jtype); CHKERRQ(ierr); }
+	if (user.restart==1) { ierr = BreakRead(&user, &actx, &pvout, &pvsurf, &pvmark, &pvavd, &nl.jtype); CHKERRQ(ierr); }
 
 
 	//===================
@@ -393,7 +393,7 @@ ierr = JacResCopyTemp(&jr); CHKERRQ(ierr);
 		if (user.save_breakpoints > 0) LaMEMMod(JacResGetStep(&jr)-1, user.save_breakpoints, &SaveOrNot);
 		else                           SaveOrNot = 2;
 
-		if (SaveOrNot == 0) { ierr = BreakWrite(&user, &actx, &surf, &pvout, &pvsurf, &pvmark, nl.jtype); CHKERRQ(ierr); }
+		if (SaveOrNot == 0) { ierr = BreakWrite(&user, &actx, &surf, &pvout, &pvsurf, &pvmark, &pvavd, nl.jtype); CHKERRQ(ierr); }
 
 		// check marker phases
 		ierr = ADVCheckMarkPhases(&actx, jr.numPhases); CHKERRQ(ierr);

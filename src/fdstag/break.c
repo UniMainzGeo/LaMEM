@@ -22,6 +22,7 @@
 #include "paraViewOutBin.h"
 #include "paraViewOutSurf.h"
 #include "paraViewOutMark.h"
+#include "AVDView.h"
 #include "break.h"
 
 //---------------------------------------------------------------------------
@@ -95,7 +96,7 @@ PetscErrorCode BreakCheck(UserCtx *user)
 //---------------------------------------------------------------------------
 #undef __FUNCT__
 #define __FUNCT__ "BreakWrite"
-PetscErrorCode BreakWrite(UserCtx *user, AdvCtx *actx, FreeSurf *surf, PVOut *pvout, PVSurf *pvsurf, PVMark *pvmark, JacType jtype)
+PetscErrorCode BreakWrite(UserCtx *user, AdvCtx *actx, FreeSurf *surf, PVOut *pvout, PVSurf *pvsurf, PVMark *pvmark, PVAVD *pvavd, JacType jtype)
 {
 	// staggered grid
 	FDSTAG         *fs;
@@ -283,16 +284,21 @@ PetscErrorCode BreakWrite(UserCtx *user, AdvCtx *actx, FreeSurf *surf, PVOut *pv
 	fwrite(&user->break_point_number , sizeof(PetscInt), 1, fp);
 
 	//============================================================
-	//   OUTPUT
+	//   OUTPUT - offsets for pvd files
 	//============================================================
-	// offsets for pvd files
+	// general output
 	if (pvout->outpvd)  fwrite(&pvout->offset  , sizeof(long int), 1, fp);
 
+	// free surface
 	if ((pvsurf->surf->UseFreeSurf==PETSC_TRUE) && (pvsurf->outpvd))
 	{
 		fwrite(&pvsurf->offset , sizeof(long int), 1, fp);
 	}
+	// markers
 	if (pvmark->outmark && pvmark->outpvd) fwrite(&pvmark->offset , sizeof(long int), 1, fp);
+
+	// avd
+	if (pvavd->outpvd)  fwrite(&pvavd->offset  , sizeof(long int), 1, fp);
 
 	// close and free memory
 	free(fname);
@@ -317,7 +323,7 @@ PetscErrorCode BreakWrite(UserCtx *user, AdvCtx *actx, FreeSurf *surf, PVOut *pv
 //---------------------------------------------------------------------------
 #undef __FUNCT__
 #define __FUNCT__ "BreakRead"
-PetscErrorCode BreakRead(UserCtx *user, AdvCtx *actx, PVOut *pvout, PVSurf *pvsurf, PVMark *pvmark, JacType *jtype)
+PetscErrorCode BreakRead(UserCtx *user, AdvCtx *actx, PVOut *pvout, PVSurf *pvsurf, PVMark *pvmark, PVAVD *pvavd, JacType *jtype)
 {
 	JacRes      *jr;
 	FDSTAG      *fs;
@@ -418,10 +424,9 @@ PetscErrorCode BreakRead(UserCtx *user, AdvCtx *actx, PVOut *pvout, PVSurf *pvsu
 	fread(&user->break_point_number , sizeof(PetscInt), 1, fp);
 
 	//============================================================
-	//   OUTPUT
+	//   OUTPUT - offsets for pvd files
 	//============================================================
-	// offsets for pvd files
-	// general
+	// general output
 	if (pvout->outpvd) fread(&pvout->offset, sizeof(long int), 1, fp);
 
 	// free surface
@@ -432,6 +437,9 @@ PetscErrorCode BreakRead(UserCtx *user, AdvCtx *actx, PVOut *pvout, PVSurf *pvsu
 
 	// markers
 	if (pvmark->outmark && pvmark->outpvd) fread(&pvmark->offset, sizeof(long int), 1, fp);
+
+	// avd
+	if (pvavd->outpvd) fread(&pvavd->offset, sizeof(long int), 1, fp);
 
 	// close and free memory
 	free(fname);

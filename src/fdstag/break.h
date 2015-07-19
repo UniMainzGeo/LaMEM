@@ -17,6 +17,7 @@ PetscErrorCode BreakWrite(UserCtx *user,
 						PVOut     *pvout,
 						PVSurf    *pvsurf,
 						PVMark    *pvmark,
+						PVAVD     *pvavd,
 						JacType    jtype);
 //---------------------------------------------------------------------------
 // Read breakpoint files
@@ -27,6 +28,7 @@ PetscErrorCode BreakRead(UserCtx *user,
 						PVOut    *pvout,
 						PVSurf   *pvsurf,
 						PVMark   *pvmark,
+						PVAVD    *pvavd,
 						JacType  *jtype);
 
 PetscErrorCode BreakReadGrid (UserCtx *user, FDSTAG *fs);
