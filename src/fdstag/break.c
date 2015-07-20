@@ -298,7 +298,7 @@ PetscErrorCode BreakWrite(UserCtx *user, AdvCtx *actx, FreeSurf *surf, PVOut *pv
 	if (pvmark->outmark && pvmark->outpvd) fwrite(&pvmark->offset , sizeof(long int), 1, fp);
 
 	// avd
-	if (pvavd->outpvd)  fwrite(&pvavd->offset  , sizeof(long int), 1, fp);
+	if (pvavd->outavd && pvavd->outpvd)  fwrite(&pvavd->offset  , sizeof(long int), 1, fp);
 
 	// close and free memory
 	free(fname);
@@ -439,7 +439,7 @@ PetscErrorCode BreakRead(UserCtx *user, AdvCtx *actx, PVOut *pvout, PVSurf *pvsu
 	if (pvmark->outmark && pvmark->outpvd) fread(&pvmark->offset, sizeof(long int), 1, fp);
 
 	// avd
-	if (pvavd->outpvd) fread(&pvavd->offset, sizeof(long int), 1, fp);
+	if (pvavd->outavd && pvavd->outpvd) fread(&pvavd->offset, sizeof(long int), 1, fp);
 
 	// close and free memory
 	free(fname);
