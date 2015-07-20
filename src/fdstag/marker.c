@@ -102,6 +102,7 @@ PetscErrorCode ADVMarkInit(AdvCtx *actx, UserCtx *user)
 	else if(user->msetup == SPHERES)    { PetscPrintf(PETSC_COMM_WORLD,"%s\n","spheres");         ierr = ADVMarkInitSpheres      (actx, user); CHKERRQ(ierr); }
 	else if(user->msetup == BANDS)      { PetscPrintf(PETSC_COMM_WORLD,"%s\n","bands");           ierr = ADVMarkInitBands        (actx, user); CHKERRQ(ierr); }
 	else if(user->msetup == DOMES)      { PetscPrintf(PETSC_COMM_WORLD,"%s\n","domes");           ierr = ADVMarkInitDomes        (actx, user); CHKERRQ(ierr); }
+	else if(user->msetup == ROTATION)   { PetscPrintf(PETSC_COMM_WORLD,"%s\n","rotation");        ierr = ADVMarkInitRotation     (actx, user); CHKERRQ(ierr); }
 	else if(user->msetup == RESTART)    { PetscPrintf(PETSC_COMM_WORLD,"%s\n","restart");         ierr = BreakReadMark           (actx      ); CHKERRQ(ierr); }
 	else SETERRQ(PETSC_COMM_SELF, PETSC_ERR_USER," *** Incorrect option for initialization of markers");
 
@@ -1320,6 +1321,46 @@ PetscErrorCode ADVMarkInitDomes(AdvCtx *actx, UserCtx *user)
 
 		// assign temperature
 		P->T = 0.0;
+	}
+
+	PetscFunctionReturn(0);
+}
+//---------------------------------------------------------------------------
+#undef __FUNCT__
+#define __FUNCT__ "ADVMarkInitRotation"
+PetscErrorCode ADVMarkInitRotation(AdvCtx *actx, UserCtx *user)
+{
+	// falling block setup
+
+	PetscInt    imark;
+	PetscScalar x, z, rad, dist;
+
+	PetscFunctionBegin;
+
+	// print info
+	PetscPrintf(PETSC_COMM_WORLD,"  ROTATION SETUP \n");
+
+	// init skip solver
+	user->SkipStokesSolver = PETSC_TRUE;
+
+	// circle dimensions
+	rad  =  0.15;
+	dist = -0.25;
+
+	// loop over local markers
+	for(imark = 0; imark < actx->nummark; imark++)
+	{
+		actx->markers[imark].phase = 0;
+		actx->markers[imark].T     = 0.0;
+
+		x = actx->markers[imark].X[0];
+		z = actx->markers[imark].X[2];
+
+		if(x*x + (z-dist)*(z-dist)<=rad*rad)
+		{
+			// 2D circle
+			actx->markers[imark].phase = 1;
+		}
 	}
 
 	PetscFunctionReturn(0);

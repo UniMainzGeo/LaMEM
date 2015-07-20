@@ -303,6 +303,9 @@ ierr = JacResCopyTemp(&jr); CHKERRQ(ierr);
 		// select new time step
 		ierr = JacResGetCourantStep(&jr); CHKERRQ(ierr);
 
+		// prescribe velocity if rotation benchmark
+		if (user.msetup == ROTATION) {ierr = JacResSetVelRotation(&jr); CHKERRQ(ierr);}
+
 		//==========================================
 		// MARKER & FREE SURFACE ADVECTION + EROSION
 		//==========================================

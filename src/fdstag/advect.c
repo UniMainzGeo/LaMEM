@@ -15,6 +15,7 @@
 #include "constEq.h"
 #include "marker.h"
 #include "AVD.h"
+#include "cvi.h"
 
 /*
 #START_DOC#
@@ -205,8 +206,19 @@ PetscErrorCode ADVAdvect(AdvCtx *actx)
 	// project history INCREMENTS from grid to markers
 	ierr = ADVProjHistGridToMark(actx); CHKERRQ(ierr);
 
-	// advect markers (Forward Euler)
-	ierr = ADVAdvectMark(actx); CHKERRQ(ierr);
+	PetscBool flag = PETSC_FALSE;
+	PetscOptionsGetBool(PETSC_NULL, "-new_advection", &flag, PETSC_NULL);
+
+	if (!flag)
+	{
+		// advect markers (Forward Euler)
+		ierr = ADVAdvectMark(actx); CHKERRQ(ierr);
+	}
+	else
+	{
+		// advect markers (extended by Adina)
+		ierr = ADVelAdvectMain(actx); CHKERRQ(ierr);
+	}
 
 	PetscFunctionReturn(0);
 }

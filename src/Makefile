@@ -79,6 +79,7 @@ CSRC = \
 	fdstag/paraViewOutMark.c \
 	fdstag/advect.c \
 	fdstag/marker.c \
+	fdstag/cvi.c \
 	fdstag/AVD.c \
 	fdstag/constEq.c \
 	fdstag/dfzero.c \

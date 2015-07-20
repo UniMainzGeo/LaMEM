@@ -2140,3 +2140,108 @@ PetscErrorCode JacResGetGOL(JacRes *jr)
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
+#undef __FUNCT__
+#define __FUNCT__ "JacResSetVelRotation"
+PetscErrorCode JacResSetVelRotation(JacRes *jr)
+{
+	// set velocity for the rotation benchmark
+
+	FDSTAG      *fs;
+	PetscScalar ***lvx, ***lvy, ***lvz;
+	PetscInt    i, j, k, sx, sy, sz, nx, ny, nz;
+	PetscInt    I, J, K, mcx, mcy, mcz, nx1, nz1, sx1, sz1;
+
+	PetscErrorCode ierr;
+	PetscFunctionBegin;
+
+	// access context
+	fs = jr->fs;
+
+	// set time step
+	//jr->ts.dt = 0.5; // WARNING! this should ONLY be used for benchmarking with Matlab
+
+	// initialize maximal index in all directions
+	mcx = fs->dsx.tcels-1;
+	mcy = fs->dsy.tcels-1;
+	mcz = fs->dsz.tcels-1;
+
+	// access vectors
+	ierr = DMDAVecGetArray(fs->DA_X,   jr->lvx,  &lvx);    CHKERRQ(ierr);
+	ierr = DMDAVecGetArray(fs->DA_Y,   jr->lvy,  &lvy);    CHKERRQ(ierr);
+	ierr = DMDAVecGetArray(fs->DA_Z,   jr->lvz,  &lvz);    CHKERRQ(ierr);
+
+	// Vx
+	GET_NODE_RANGE_GHOST_INT(nx, sx, fs->dsx);
+	GET_CELL_RANGE_GHOST_INT(ny, sy, fs->dsy);
+	GET_CELL_RANGE_GHOST_INT(nz, sz, fs->dsz);
+
+	GET_CELL_RANGE(nx1, sz1, fs->dsz);
+
+	START_STD_LOOP
+	{
+		lvx[k][j][i] = -(fs->dsz.ccoor[k-sz1]);
+
+		if (j == 0  ) {J = j-1; lvx[k][J][i] = -(fs->dsz.ccoor[k-sz1]); }
+		if (j == mcy) {J = j+1; lvx[k][J][i] = -(fs->dsz.ccoor[k-sz1]); }
+		if (k == 0  ) {K = k-1; lvx[K][j][i] = -(fs->dsz.ccoor[K-sz1]); }
+		if (k == mcz) {K = k+1; lvx[K][j][i] = -(fs->dsz.ccoor[K-sz1]); }
+
+		if ((j == 0  ) && (k == 0  )) {J = j-1; K = k-1; lvx[K][J][i] = -(fs->dsz.ccoor[K-sz1]); }
+		if ((j == 0  ) && (k == mcz)) {J = j-1; K = k+1; lvx[K][J][i] = -(fs->dsz.ccoor[K-sz1]); }
+		if ((j == mcy) && (k == 0  )) {J = j+1; K = k-1; lvx[K][J][i] = -(fs->dsz.ccoor[K-sz1]); }
+		if ((j == mcy) && (k == mcz)) {J = j+1; K = k+1; lvx[K][J][i] = -(fs->dsz.ccoor[K-sz1]); }
+	}
+	END_STD_LOOP
+
+	// Vy
+	GET_CELL_RANGE_GHOST_INT(nx, sx, fs->dsx);
+	GET_NODE_RANGE_GHOST_INT(ny, sy, fs->dsy);
+	GET_CELL_RANGE_GHOST_INT(nz, sz, fs->dsz);
+
+	START_STD_LOOP
+	{
+		lvy[k][j][i] =  0.0;
+
+		if (i == 0  ) {I = i-1; lvy[k][j][I] = 0.0; }
+		if (i == mcx) {I = i+1; lvy[k][j][I] = 0.0; }
+		if (k == 0  ) {K = k-1; lvy[K][j][i] = 0.0; }
+		if (k == mcz) {K = k+1; lvy[K][j][i] = 0.0; }
+
+		if ((i == 0  ) && (k == 0  )) {I = i-1; K = k-1; lvy[K][j][I] = 0.0; }
+		if ((i == 0  ) && (k == mcz)) {I = i-1; K = k+1; lvy[K][j][I] = 0.0; }
+		if ((i == mcx) && (k == 0  )) {I = i+1; K = k-1; lvy[K][j][I] = 0.0; }
+		if ((i == mcx) && (k == mcz)) {I = i+1; K = k+1; lvy[K][j][I] = 0.0; }
+	}
+	END_STD_LOOP
+
+	// Vz
+	GET_CELL_RANGE_GHOST_INT(nx, sx, fs->dsx);
+	GET_CELL_RANGE_GHOST_INT(ny, sy, fs->dsy);
+	GET_NODE_RANGE_GHOST_INT(nz, sz, fs->dsz);
+
+	GET_CELL_RANGE(nz1, sx1, fs->dsx);
+
+	START_STD_LOOP
+	{
+		lvz[k][j][i] = fs->dsx.ccoor[i-sx1];
+
+		if (i == 0  ) {I = i-1; lvz[k][j][I] = fs->dsx.ccoor[I-sx1]; }
+		if (i == mcx) {I = i+1; lvz[k][j][I] = fs->dsx.ccoor[I-sx1]; }
+		if (j == 0  ) {J = j-1; lvz[k][J][i] = fs->dsx.ccoor[i-sx1]; }
+		if (j == mcy) {J = j+1; lvz[k][J][i] = fs->dsx.ccoor[i-sx1]; }
+
+		if ((i == 0  ) && (j == 0  )) {I = i-1; J = j-1; lvz[k][J][I] = fs->dsx.ccoor[I-sx1]; }
+		if ((i == 0  ) && (j == mcy)) {I = i-1; J = j+1; lvz[k][J][I] = fs->dsx.ccoor[I-sx1]; }
+		if ((i == mcx) && (j == 0  )) {I = i+1; J = j-1; lvz[k][J][I] = fs->dsx.ccoor[I-sx1]; }
+		if ((i == mcx) && (j == mcy)) {I = i+1; J = j+1; lvz[k][J][I] = fs->dsx.ccoor[I-sx1]; }
+	}
+	END_STD_LOOP
+
+	// restore access
+	ierr = DMDAVecRestoreArray(fs->DA_X,   jr->lvx,  &lvx);    CHKERRQ(ierr);
+	ierr = DMDAVecRestoreArray(fs->DA_Y,   jr->lvy,  &lvy);    CHKERRQ(ierr);
+	ierr = DMDAVecRestoreArray(fs->DA_Z,   jr->lvz,  &lvz);    CHKERRQ(ierr);
+
+	PetscFunctionReturn(0);
+}
+//---------------------------------------------------------------------------

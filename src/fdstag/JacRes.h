@@ -143,6 +143,8 @@ PetscInt JacResGetStep(JacRes *jr);
 
 PetscErrorCode JacResGetCourantStep(JacRes *jr);
 
+PetscErrorCode JacResSetVelRotation(JacRes *jr);
+
 //---------------------------------------------------------------------------
 
 // get maximum inverse time step on local domain
