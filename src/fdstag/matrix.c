@@ -225,7 +225,7 @@ PetscErrorCode PMatAssemble(PMat pm)
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
 
-	PetscPrintf(PETSC_COMM_WORLD, " Starting preconditioner assembly\n");
+//	PetscPrintf(PETSC_COMM_WORLD, " Starting preconditioner assembly\n");
 
 	bc = pm->jr->bc;
 
@@ -237,7 +237,7 @@ PetscErrorCode PMatAssemble(PMat pm)
 	// shift constrained node indices back to local index space
 	ierr = BCShiftIndices(bc,  _GLOBAL_TO_LOCAL_); CHKERRQ(ierr);
 
-	PetscPrintf(PETSC_COMM_WORLD, " Finished preconditioner assembly\n");
+//	PetscPrintf(PETSC_COMM_WORLD, " Finished preconditioner assembly\n");
 
 	PetscFunctionReturn(0);
 }
