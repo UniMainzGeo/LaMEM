@@ -35,7 +35,12 @@ PetscErrorCode JacResSetFromOptions(JacRes *jr)
 	PetscFunctionBegin;
 
 	// set pressure shift flag
-	ierr = PetscOptionsHasName(NULL, "-shift_press", &jr->pShiftAct); CHKERRQ(ierr);
+	ierr = PetscOptionsHasName(NULL, "-skip_press_shift", &flg); CHKERRQ(ierr);
+
+	if(flg == PETSC_TRUE)
+	{
+		jr->pShiftAct = PETSC_FALSE;
+	}
 
 	// set geometry tolerance
 	ierr = PetscOptionsGetScalar(NULL, "-geom_tol", &gtol, &flg); CHKERRQ(ierr);
@@ -152,9 +157,9 @@ PetscErrorCode JacResCreate(
 	// default geometry tolerance
 	jr->gtol = 1e-15;
 
-	// deactivate pressure shift
+	// activate pressure shift
 	jr->pShift    = 0.0;
-	jr->pShiftAct = PETSC_FALSE;
+	jr->pShiftAct = PETSC_TRUE;
 
 	// setup temperature parameters
 	ierr = JacResCreateTempParam(jr); CHKERRQ(ierr);
