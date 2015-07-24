@@ -118,6 +118,15 @@ PetscErrorCode SNESPrintConvergedReason(SNES snes);
 //PetscErrorCode SNESBlockStopTest(SNES snes, PetscInt it, PetscReal xnorm,
 //	PetscReal gnorm, PetscReal f, SNESConvergedReason *reason, void *cctx);
 
+PetscErrorCode SNESCoupledTest(
+	SNES                snes,
+	PetscInt            it,
+	PetscReal           xnorm,
+	PetscReal           gnorm,
+	PetscReal           f,
+	SNESConvergedReason *reason,
+	void                *cctx);
+
 //---------------------------------------------------------------------------
 
 // performs tests for residual norms

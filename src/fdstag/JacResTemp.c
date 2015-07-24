@@ -67,10 +67,16 @@ PetscErrorCode JacResCreateTempParam(JacRes *jr)
 
 	// temperature vectors
 	ierr = DMCreateGlobalVector(fs->DA_CEN, &jr->gT); CHKERRQ(ierr);
+	ierr = DMCreateGlobalVector(fs->DA_CEN, &jr->dT); CHKERRQ(ierr);
 	ierr = DMCreateLocalVector (fs->DA_CEN, &jr->lT); CHKERRQ(ierr);
 
 	// energy residual
 	ierr = DMCreateGlobalVector(fs->DA_CEN, &jr->ge); CHKERRQ(ierr);
+
+	// create temperature diffusion solver
+	ierr = KSPCreate(PETSC_COMM_WORLD, &jr->tksp); CHKERRQ(ierr);
+	ierr = KSPSetOptionsPrefix(jr->tksp,"ts_");    CHKERRQ(ierr);
+	ierr = KSPSetFromOptions(jr->tksp);            CHKERRQ(ierr);
 
 	PetscFunctionReturn(0);
 }
@@ -89,9 +95,12 @@ PetscErrorCode JacResDestroyTempParam(JacRes *jr)
 	ierr = MatDestroy(&jr->Att);  CHKERRQ(ierr);
 
 	ierr = VecDestroy(&jr->gT);   CHKERRQ(ierr);
+	ierr = VecDestroy(&jr->dT);   CHKERRQ(ierr);
 	ierr = VecDestroy(&jr->lT);   CHKERRQ(ierr);
 
 	ierr = VecDestroy(&jr->ge);   CHKERRQ(ierr);
+
+	ierr = KSPDestroy(&jr->tksp); CHKERRQ(ierr);
 
 	PetscFunctionReturn(0);
 }

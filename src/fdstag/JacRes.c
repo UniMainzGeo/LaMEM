@@ -1562,9 +1562,10 @@ PetscErrorCode JacResCopyContinuityRes(JacRes *jr, Vec f)
 PetscErrorCode JacResViewRes(JacRes *jr)
 {
 	// show assembled residual with boundary constraints
+	// WARNING! rewrite this function using coupled residual vector directly
 
 	PetscBool   flg;
-	PetscScalar dmin, dmax, d2, fx, fy, fz, f2, div_tol;
+	PetscScalar dmin, dmax, d2, e2, fx, fy, fz, f2, div_tol;
 
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
@@ -1582,6 +1583,7 @@ PetscErrorCode JacResViewRes(JacRes *jr)
 	ierr = VecMin (jr->gc,  NULL,   &dmin); CHKERRQ(ierr);
 	ierr = VecMax (jr->gc,  NULL,   &dmax); CHKERRQ(ierr);
 	ierr = VecNorm(jr->gc,  NORM_2, &d2);   CHKERRQ(ierr);
+	ierr = VecNorm(jr->ge,  NORM_2, &e2);   CHKERRQ(ierr);
 	ierr = VecNorm(jr->gfx, NORM_2, &fx);   CHKERRQ(ierr);
 	ierr = VecNorm(jr->gfy, NORM_2, &fy);   CHKERRQ(ierr);
 	ierr = VecNorm(jr->gfz, NORM_2, &fz);   CHKERRQ(ierr);
@@ -1597,6 +1599,8 @@ PetscErrorCode JacResViewRes(JacRes *jr)
 	PetscPrintf(PETSC_COMM_WORLD, "    |Div|_2  = %12.12e \n", d2);
 	PetscPrintf(PETSC_COMM_WORLD, "  Momentum: \n" );
 	PetscPrintf(PETSC_COMM_WORLD, "    |mRes|_2 = %12.12e \n", f2);
+	PetscPrintf(PETSC_COMM_WORLD, "  Energy: \n" );
+	PetscPrintf(PETSC_COMM_WORLD, "    |eRes|_2 = %12.12e \n", e2);
 	PetscPrintf(PETSC_COMM_WORLD, "------------------------------------------\n");
 
 	// stop if divergence more than tolerance

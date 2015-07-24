@@ -85,9 +85,13 @@ typedef struct
 	// temperature
 	Vec gT; // global
 	Vec lT; // local (ghosted)
+	Vec dT; // global temperature increment
 
 	// energy residual
 	Vec ge; // global
+
+	// temperature diffusion solver
+	KSP tksp;
 
 } JacRes;
 //---------------------------------------------------------------------------

@@ -190,17 +190,17 @@ PetscErrorCode LaMEMLib_FDSTAG(ModParam *IOparam, PetscInt *mpi_group_id)
 	// initialize markers
 	ierr = ADVMarkInit(&actx, &user); CHKERRQ(ierr);
 
-
-// ACHTUNG!
-// change marker phase when crossing free surface
-ierr = ADVMarkCrossFreeSurf(&actx, &surf); CHKERRQ(ierr);
-
+	// change marker phase when crossing free surface
+	ierr = ADVMarkCrossFreeSurf(&actx, &surf); CHKERRQ(ierr);
 
 	// update phase ratios taking into account actual free surface position
 	ierr = FreeSurfGetAirPhaseRatio(&surf); CHKERRQ(ierr);
 
 	// initialize temperature
 	ierr = JacResInitTemp(&jr); CHKERRQ(ierr);
+
+	// copy to local vector, apply bc constraints
+	ierr = JacResCopyTemp(&jr); CHKERRQ(ierr);
 
 	// create Stokes preconditioner & matrix
 	ierr = PMatCreate(&pm, &jr);    CHKERRQ(ierr);
@@ -224,7 +224,6 @@ ierr = ADVMarkCrossFreeSurf(&actx, &surf); CHKERRQ(ierr);
 	// read breakpoint files if restart was requested and if is possible
 	if (user.restart==1) { ierr = BreakRead(&user, &actx, &pvout, &pvsurf, &pvmark, &pvavd, &nl.jtype); CHKERRQ(ierr); }
 
-
 	//===================
 	// OBJECTIVE FUNCTION
 	//===================
@@ -235,9 +234,7 @@ ierr = ADVMarkCrossFreeSurf(&actx, &surf); CHKERRQ(ierr);
 	// transfer misfit value to IO structure
 	IOparam->mfit = objf.errtot;
 
-
 	PetscPrintf(PETSC_COMM_WORLD," \n");
-
 
 	//===============
 	// TIME STEP LOOP
@@ -339,7 +336,6 @@ ierr = JacResCopyTemp(&jr); CHKERRQ(ierr);
 
 		// advect pushing block
 		ierr = BCAdvectPush(&bc); CHKERRQ(ierr);
-
 
 		//==================
 		// Save data to disk
