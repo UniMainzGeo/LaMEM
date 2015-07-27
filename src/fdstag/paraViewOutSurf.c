@@ -186,8 +186,8 @@ PetscErrorCode PVSurfWritePVTS(PVSurf *pvsurf, const char *dirName)
 	FDSTAG      *fs;
 	char        *fname;
 	Scaling     *scal;
-	PetscInt     rx, ry, rz;
-	PetscMPIInt  nproc, iproc;
+	PetscInt     nproc, rx, ry, rz;
+	PetscMPIInt  iproc;
 
 	PetscFunctionBegin;
 
@@ -397,7 +397,7 @@ void OutputBufferWrite(
 	int nbytes;
 
 	// compute number of bytes
-	nbytes = cn*(int)sizeof(float);
+	nbytes = (int)cn*(int)sizeof(float);
 
 	// dump number of bytes
 	fwrite(&nbytes, sizeof(int), 1, fp);

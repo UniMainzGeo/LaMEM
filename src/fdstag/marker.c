@@ -104,7 +104,7 @@ PetscErrorCode ADVMarkInit(AdvCtx *actx, UserCtx *user)
 	}
 
 	// initialize variables for marker control
-	actx->nmin = (PetscInt) (user->NumPartX*user->NumPartY*user->NumPartZ*0.5); // min no. of markers/cell -50%
+	actx->nmin = (PetscInt) (user->NumPartX*user->NumPartY*user->NumPartZ/2); // min no. of markers/cell -50%
 	actx->nmax = (PetscInt) (user->NumPartX*user->NumPartY*user->NumPartZ*3);   // max no. of markers/cell 300%
 	actx->avdx = user->NumPartX * 3;
 	actx->avdy = user->NumPartY * 3;
@@ -204,31 +204,31 @@ PetscErrorCode ADVMarkInitCoord(AdvCtx *actx, UserCtx *user)
 	for(k = 0; k < fs->dsz.ncels; k++)
 	{
 		// spacing of particles
-		dz = (fs->dsz.ncoor[k+1]-fs->dsz.ncoor[k])/user->NumPartZ;
+		dz = (fs->dsz.ncoor[k+1]-fs->dsz.ncoor[k])/(PetscScalar)user->NumPartZ;
 		for(j = 0; j < fs->dsy.ncels; j++)
 		{
 			// spacing of particles
-			dy = (fs->dsy.ncoor[j+1]-fs->dsy.ncoor[j])/user->NumPartY;
+			dy = (fs->dsy.ncoor[j+1]-fs->dsy.ncoor[j])/(PetscScalar)user->NumPartY;
 			for(i = 0; i < fs->dsx.ncels; i++)
 			{
 				// spacing of particles
-				dx = (fs->dsx.ncoor[i+1]-fs->dsx.ncoor[i])/user->NumPartX;
+				dx = (fs->dsx.ncoor[i+1]-fs->dsx.ncoor[i])/(PetscScalar)user->NumPartX;
 
 				// loop over markers in cells
 				for (kk = 0; kk < user->NumPartZ; kk++)
 				{
 					if (kk == 0) z = fs->dsz.ncoor[k] + dz*0.5;
-					else         z = fs->dsz.ncoor[k] + dz*0.5 + kk*dz;
+					else         z = fs->dsz.ncoor[k] + dz*0.5 + (PetscScalar)kk*dz;
 
 					for (jj = 0; jj < user->NumPartY; jj++)
 					{
 						if (jj == 0) y = fs->dsy.ncoor[j] + dy*0.5;
-						else         y = fs->dsy.ncoor[j] + dy*0.5 + jj*dy;
+						else         y = fs->dsy.ncoor[j] + dy*0.5 + (PetscScalar)jj*dy;
 
 						for (ii = 0; ii < user->NumPartX; ii++)
 						{
 							if (ii == 0) x = fs->dsx.ncoor[i] + dx*0.5;
-							else         x = fs->dsx.ncoor[i] + dx*0.5 + ii*dx;
+							else         x = fs->dsx.ncoor[i] + dx*0.5 + (PetscScalar)ii*dx;
 
 							// set marker coordinates
 							actx->markers[imark].X[0] = x;
@@ -753,13 +753,13 @@ PetscErrorCode ADVMarkInitBlock(AdvCtx *actx, UserCtx *user)
 	dz = user->H/((PetscScalar)nel_z);
 
 	// block dimensions
-	blx = ((PetscScalar) (nel_x*0.5))*dx;
-	bly = ((PetscScalar) (nel_y*0.5))*dy;
-	blz = ((PetscScalar) (nel_z*0.5))*dz;
+	blx = 0.5*(PetscScalar)nel_x*dx;
+	bly = 0.5*(PetscScalar)nel_y*dy;
+	blz = 0.5*(PetscScalar)nel_z*dz;
 
-	bleft   = ((PetscScalar) (nel_x*0.25))*dx + user->x_left ; bright = bleft   + blx; // left and right side of block
-	bfront  = ((PetscScalar) (nel_y*0.25))*dy + user->y_front; bback  = bfront  + bly; // front and back side of block
-	bbottom = ((PetscScalar) (nel_z*0.25))*dz + user->z_bot  ; btop   = bbottom + blz; // bottom and top side of block
+	bleft   = 0.25*(PetscScalar)nel_x*dx + user->x_left ; bright = bleft   + blx; // left and right side of block
+	bfront  = 0.25*(PetscScalar)nel_y*dy + user->y_front; bback  = bfront  + bly; // front and back side of block
+	bbottom = 0.25*(PetscScalar)nel_z*dz + user->z_bot  ; btop   = bbottom + blz; // bottom and top side of block
 
 	PetscPrintf(PETSC_COMM_WORLD,"      Block coordinates: [left,right]=[%g,%g]; \n",bleft,bright);
     PetscPrintf(PETSC_COMM_WORLD,"                         [front,back]=[%g,%g]; \n",bfront,bback);
@@ -1662,7 +1662,7 @@ PetscErrorCode ADVMarkInitFilePolygons(AdvCtx *actx, UserCtx *user)
 	// 			Poly.gidx = (PetscInt)(Poly.idxs+kpoly);
 	// 			Poly.lidx = (PetscInt)(Poly.idxs+kpoly-tstart[Poly.dir]);
 				Poly.gidx = (PetscInt)(PolyIdx[kpoly]);
-				Poly.lidx = (PetscInt)(PolyIdx[kpoly]-tstart[Poly.dir]);
+				Poly.lidx = (PetscInt)(PolyIdx[kpoly])-tstart[Poly.dir];
 
 	//			ierr = PetscBinaryRead(fd, Poly.X, Poly.len*2, PETSC_SCALAR); CHKERRQ(ierr);
 
@@ -1942,7 +1942,7 @@ void ADVMarkSecIdx(AdvCtx *actx, UserCtx *user, PetscInt dir, PetscInt Islice, P
 #define __FUNCT__ "inpoly"
 void inpoly(PolyCtx *polydat, PetscInt N, PetscScalar *X, PetscScalar *node, PetscInt Nnode, PetscBool *in, PetscBool *bnd)
 {
-    PetscScalar *cnect;
+    PetscInt *cnect;
     PetscScalar *Xtemp , *nodetemp;
     PetscBool *cn , *on;
     PetscScalar *x, *y;
@@ -1986,7 +1986,7 @@ void inpoly(PolyCtx *polydat, PetscInt N, PetscScalar *X, PetscScalar *node, Pet
 		nodetemp[i] = node[i];
 	}
 
-	PetscMalloc((size_t)Ncnect*2*sizeof(PetscScalar),&cnect);
+	PetscMalloc((size_t)Ncnect*2*sizeof(PetscInt),&cnect);
 	for (i = 0; i < Ncnect - 1; i++)
 	{
 		i2            = 2*i;
@@ -2076,8 +2076,8 @@ void inpoly(PolyCtx *polydat, PetscInt N, PetscScalar *X, PetscScalar *node, Pet
 
     for (k = 0 ; k < Ncnect ; k++)
     {
-        n1   = 2*(((PetscInt) cnect[2*k]) - 1);
-        n2   = 2*(((PetscInt) cnect[2*k + 1]) - 1);
+        n1   = 2*(cnect[2*k]     - 1);
+        n2   = 2*(cnect[2*k + 1] - 1);
         X1   = nodetemp[n1];
         Y1   = nodetemp[n1 + 1];
         X2   = nodetemp[n2];

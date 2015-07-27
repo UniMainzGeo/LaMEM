@@ -126,7 +126,7 @@ void OutBufDump(OutBuf *outbuf)
 	int nbytes;
 
 	// compute number of bytes
-	nbytes = outbuf->cn*(int)sizeof(float);
+	nbytes = (int)outbuf->cn*(int)sizeof(float);
 
 	// dump number of bytes
 	fwrite(&nbytes, sizeof(int), 1, outbuf->fp);

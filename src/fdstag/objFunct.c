@@ -408,7 +408,7 @@ PetscErrorCode ObjFunctCompErr(ObjFunct *objf)
 	FreeSurf         *surf;
 	PetscErrorCode    ierr;
 	PetscInt          k;
-	PetscScalar      lenScal,velScal;
+	PetscScalar       velScal;
 	PetscFunctionBegin;
 
 	// surface object
@@ -416,15 +416,12 @@ PetscErrorCode ObjFunctCompErr(ObjFunct *objf)
 
 	// scaling factors
 	velScal = surf->jr->scal.velocity;
-	lenScal = surf->jr->scal.length;
-
 
 	// compute weighted error of surface fields
 	if (objf->otUse[_VELX_])	{ ierr = VecErrSurf(surf->vx,    objf, _VELX_,velScal);  CHKERRQ(ierr); }
 	if (objf->otUse[_VELY_])	{ ierr = VecErrSurf(surf->vy,    objf, _VELY_,velScal);  CHKERRQ(ierr); }
 	if (objf->otUse[_VELZ_])	{ ierr = VecErrSurf(surf->vz,    objf, _VELZ_,velScal);  CHKERRQ(ierr);	}
 	if (objf->otUse[_TOPO_])	{ ierr = VecErrSurf(surf->ltopo, objf, _TOPO_,velScal);  CHKERRQ(ierr); }
-
 
 /*
 	// BOUGUER
@@ -459,8 +456,6 @@ PetscErrorCode ObjFunctCompErr(ObjFunct *objf)
 	ierr = PetscViewerDestroy(&view_out);															CHKERRQ(ierr);
 */
 
-
-
 	// total least squares error 
 	objf->errtot = 0.0;
 	for(k = 0; k < _max_num_obs_; k++)
@@ -474,9 +469,6 @@ PetscErrorCode ObjFunctCompErr(ObjFunct *objf)
 	objf->errtot = sqrt( objf->errtot / (PetscScalar) (objf->ocN * surf->jr->fs->dsz.nproc) ) ;
 	PetscPrintf(PETSC_COMM_WORLD,"# Total error = %g \n",objf->errtot);
 
-
 	PetscFunctionReturn(0);
 }
-
 //---------------------------------------------------------------------------
-

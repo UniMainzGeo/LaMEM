@@ -99,17 +99,17 @@ PetscErrorCode AVDCreate(AVD *A)
 	for (k=0; k<mz; k++)
 	{
 		// compute z - center coordinate
-		x[2] = s[2] + k*dx[2];
+		x[2] = s[2] + (PetscScalar)k*dx[2];
 
 		for (j=0; j<my; j++)
 		{
 			// compute y - center coordinate
-			x[1] = s[1] + j*dx[1];
+			x[1] = s[1] + (PetscScalar)j*dx[1];
 
 			for (i=0; i<mx; i++)
 			{
 				// compute x - center coordinate
-				x[0] = s[0] + i*dx[0];
+				x[0] = s[0] + (PetscScalar)i*dx[0];
 
 				ind = i + j * mx + k * mx*my;
 				A->cell[ind].ind  = ind;
@@ -593,9 +593,9 @@ PetscErrorCode AVDInjectDeletePoints(AdvCtx *actx, AVD *A)
 		}
 
 		// centroid coordinates
-		A->chain[i].xc[0] = A->chain[i].xc[0]/hclaim;
-		A->chain[i].xc[1] = A->chain[i].xc[1]/hclaim;
-		A->chain[i].xc[2] = A->chain[i].xc[2]/hclaim;
+		A->chain[i].xc[0] = A->chain[i].xc[0]/(PetscScalar)hclaim;
+		A->chain[i].xc[1] = A->chain[i].xc[1]/(PetscScalar)hclaim;
+		A->chain[i].xc[2] = A->chain[i].xc[2]/(PetscScalar)hclaim;
 
 		// initialize variables for sorting
 		sind[i] = i;
@@ -679,9 +679,9 @@ PetscErrorCode AVDExecuteMarkerInjection(AdvCtx *actx, PetscInt npoints, PetscSc
 	A.xe[1] = xe[1];
 	A.xe[2] = xe[2];
 
-	A.dx = (xe[0]-xs[0])/A.nx;
-	A.dy = (xe[1]-xs[1])/A.ny;
-	A.dz = (xe[2]-xs[2])/A.nz;
+	A.dx = (xe[0]-xs[0])/(PetscScalar)A.nx;
+	A.dy = (xe[1]-xs[1])/(PetscScalar)A.ny;
+	A.dz = (xe[2]-xs[2])/(PetscScalar)A.nz;
 
 	// AVD structures
 	ierr = AVDCreate(&A); CHKERRQ(ierr);

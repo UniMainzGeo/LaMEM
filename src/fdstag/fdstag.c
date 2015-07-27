@@ -231,7 +231,7 @@ PetscErrorCode Discret1DCreate(
 	ds->nproc = nproc;
 
 	// rank of current processor
-	ds->rank = rank;
+	ds->rank = (PetscMPIInt)rank;
 
 	// index of first node (cell) on all processors + last index
 	ierr = makeIntArray(&ds->starts, 0, nproc+1); CHKERRQ(ierr);

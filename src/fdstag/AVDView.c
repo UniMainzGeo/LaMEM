@@ -591,9 +591,9 @@ void AVD3DClaimCells(AVD3D A, const PetscInt p_i)
 			z1 = points[cells[cell_num0].p].z;
 
 			// cell centroid
-			x0 = cells[cell_num0].i*dx + (A->x0 - dx + 0.5*dx);
-			y0 = cells[cell_num0].j*dy + (A->y0 - dy + 0.5*dy);
-			z0 = cells[cell_num0].k*dz + (A->z0 - dz + 0.5*dz);
+			x0 = (PetscScalar)cells[cell_num0].i*dx + (A->x0 - dx + 0.5*dx);
+			y0 = (PetscScalar)cells[cell_num0].j*dy + (A->y0 - dy + 0.5*dy);
+			z0 = (PetscScalar)cells[cell_num0].k*dz + (A->z0 - dz + 0.5*dz);
 
 			dist1 = AVD3DDistanceTest(x0,y0,z0,x1,y1,z1,x2,y2,z2);
 			if (dist1 > 0.0) {
