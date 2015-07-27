@@ -126,14 +126,11 @@ LaMEM_LIB = ../lib/${mode}/liblamem.a
 # Create dependencies
 OBJDIR = \
 	../lib \
-	../lib/deb \
-	../lib/opt \
+	../lib/${mode} \
 	../bin \
-	../bin/deb \
-	../bin/opt \
+	../bin/${mode} \
 	../dep \
-	../dep/deb \
-	../dep/opt
+	../dep/${mode}
 
 #====================================================
 
@@ -154,13 +151,12 @@ depend : ${OBJDIR}
 ${OBJDIR} :
 	@mkdir -p ${OBJDIR}
 
-	
 #====================================================
 # Build LaMEM library
 .PHONY : lamemlib
 lamemlib : ${LaMEM_LIB}
-	
-    ${LaMEM_LIB} : ${COBJ}
+
+${LaMEM_LIB} : ${COBJ}
 	@echo "............................................."
 	@echo ".......... Building LaMEM Library ..........."
 	@echo "............................................."
@@ -172,6 +168,7 @@ lamemlib : ${LaMEM_LIB}
 # Link LaMEM executable
 .PHONY : lamem
 lamem : ${LaMEM}
+
 ${LaMEM} : ${OBJDIR} ${LaMEM_LIB} ${LaMEM_OBJ}
 	@echo "............................................."
 	@echo "......... Linking LaMEM Executable .........."

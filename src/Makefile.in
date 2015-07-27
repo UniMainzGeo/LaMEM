@@ -71,8 +71,8 @@ SVN_AVAILABLE = no
 # Environment required for documentation 
 # Define paths to most current pdflatex and bibtex implementation
 
-PDFLATEX = /usr/local/texlive/2013/bin/x86_64-darwin/pdflatex
-BIBTEX = /usr/local/texlive/2013/bin/x86_64-darwin/bibtex
+PDFLATEX = $(shell which pdflatex)
+BIBTEX = $(shell which bibtex)
 
 #====================================================
 
