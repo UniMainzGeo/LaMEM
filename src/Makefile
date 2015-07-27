@@ -142,6 +142,15 @@ all : lamem
 lamemlib : ${LaMEM_LIB}
 
 ${LaMEM_LIB} : ${COBJ}
+	@mkdir -p ../bin
+	@mkdir -p ../bin/opt
+	@mkdir -p ../bin/deb
+	@mkdir -p ../dep
+	@mkdir -p ../dep/opt
+	@mkdir -p ../dep/deb
+	@mkdir -p ../lib
+	@mkdir -p ../lib/opt
+	@mkdir -p ../lib/deb
 	@echo "............................................."
 	@echo ".......... Building LaMEM Library ..........."
 	@echo "............................................."
