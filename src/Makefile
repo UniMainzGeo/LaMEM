@@ -123,6 +123,18 @@ LaMEM_OBJ = ../lib/${mode}/LaMEM.o
 LaMEM_DEP = ../dep/${mode}/LaMEM.d
 LaMEM_LIB = ../lib/${mode}/liblamem.a
 
+# Create dependencies
+OBJDIR = \
+	../lib \
+	../lib/deb \
+	../lib/opt \
+	../bin \
+	../bin/deb \
+	../bin/opt \
+	../dep \
+	../dep/deb \
+	../dep/opt
+
 #====================================================
 
 # Default target (build everything)
@@ -134,23 +146,22 @@ all : lamem
 
 #====================================================
 
-
 #====================================================
+# Build dependencies
+.PHONY : depend
+depend : ${OBJDIR}
 
+${OBJDIR} :
+	@mkdir -p ${OBJDIR}
+
+	
+#====================================================
 # Build LaMEM library
 .PHONY : lamemlib
-lamemlib : ${LaMEM_LIB}
-
-${LaMEM_LIB} : ${COBJ}
-	@mkdir -p ../bin
-	@mkdir -p ../bin/opt
-	@mkdir -p ../bin/deb
-	@mkdir -p ../dep
-	@mkdir -p ../dep/opt
-	@mkdir -p ../dep/deb
-	@mkdir -p ../lib
-	@mkdir -p ../lib/opt
-	@mkdir -p ../lib/deb
+lamemlib : 
+	${depend} ${LaMEM_LIB}
+	
+    ${LaMEM_LIB} : ${COBJ}
 	@echo "............................................."
 	@echo ".......... Building LaMEM Library ..........."
 	@echo "............................................."
@@ -162,8 +173,7 @@ ${LaMEM_LIB} : ${COBJ}
 # Link LaMEM executable
 .PHONY : lamem
 lamem : ${LaMEM}
-
-${LaMEM} : ${LaMEM_LIB} ${LaMEM_OBJ}
+${LaMEM} : ${OBJDIR} ${LaMEM_LIB} ${LaMEM_OBJ}
 	@echo "............................................."
 	@echo "......... Linking LaMEM Executable .........."
 	@echo "............................................."
