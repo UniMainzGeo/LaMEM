@@ -207,9 +207,9 @@ PetscErrorCode BreakWrite(UserCtx *user, AdvCtx *actx, FreeSurf *surf, PVOut *pv
 		//----------------------------------
 		// FDSTAG
 		//----------------------------------
-		BreakWriteDiscret1D(fp, fs->dsx, fs->msx);
-		BreakWriteDiscret1D(fp, fs->dsy, fs->msy);
-		BreakWriteDiscret1D(fp, fs->dsz, fs->msz);
+		BreakWriteDiscret1D(fp, &fs->dsx, &fs->msx);
+		BreakWriteDiscret1D(fp, &fs->dsy, &fs->msy);
+		BreakWriteDiscret1D(fp, &fs->dsz, &fs->msz);
 
 		// close and free memory
 		free(fname);
@@ -542,9 +542,9 @@ PetscErrorCode BreakReadGrid(UserCtx *user, FDSTAG *fs)
 	//----------------------------------
 	// FDSTAG
 	//----------------------------------
-	BreakReadDiscret1D(fp, fs->dsx, fs->msx);
-	BreakReadDiscret1D(fp, fs->dsy, fs->msy);
-	BreakReadDiscret1D(fp, fs->dsz, fs->msz);
+	BreakReadDiscret1D(fp, &fs->dsx, &fs->msx);
+	BreakReadDiscret1D(fp, &fs->dsy, &fs->msy);
+	BreakReadDiscret1D(fp, &fs->dsz, &fs->msz);
 
 	// close and free memory
 	free(fname);
@@ -686,69 +686,56 @@ PetscErrorCode BreakReadVec(FILE *fp, Vec x, PetscInt n)
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-void BreakWriteDiscret1D(FILE *fp, Discret1D ds, MeshSeg1D ms)
+void BreakWriteDiscret1D(FILE *fp, Discret1D *ds, MeshSeg1D *ms)
 {
-	//----------------------------------
-	// FDSTAG DISCRET 1D
-	//----------------------------------
-	fwrite(&ds.nproc  , sizeof(PetscInt),    1                 , fp);
-	fwrite(&ds.rank   , sizeof(PetscInt),    1                 , fp);
-	fwrite(ds.starts  , sizeof(PetscInt),    (size_t)ds.nproc+1, fp);
-	fwrite(&ds.pstart , sizeof(PetscInt),    1                 , fp);
-	fwrite(ds.ncoor   , sizeof(PetscScalar), (size_t)ds.nnods+1, fp);
-	fwrite(ds.ccoor   , sizeof(PetscScalar), (size_t)ds.ncels+1, fp);
-	fwrite(ds.nbuff   , sizeof(PetscScalar), (size_t)ds.bufsz  , fp);
-	fwrite(ds.cbuff   , sizeof(PetscScalar), (size_t)ds.ncels+2, fp);
-	fwrite(&ds.bufsz  , sizeof(PetscInt),    1                 , fp);
-	fwrite(&ds.tnods  , sizeof(PetscInt),    1                 , fp);
-	fwrite(&ds.tcels  , sizeof(PetscInt),    1                 , fp);
-	fwrite(&ds.nnods  , sizeof(PetscInt),    1                 , fp);
-	fwrite(&ds.ncels  , sizeof(PetscInt),    1                 , fp);
-	fwrite(&ds.grprev , sizeof(PetscInt),    1                 , fp);
-	fwrite(&ds.grnext , sizeof(PetscInt),    1                 , fp);
-	fwrite(&ds.color  , sizeof(PetscInt),    1                 , fp);
-	fwrite(&ds.h_uni  , sizeof(PetscScalar), 1                 , fp);
-	fwrite(&ds.h_min  , sizeof(PetscScalar), 1                 , fp);
-	fwrite(&ds.h_max  , sizeof(PetscScalar), 1                 , fp);
+	// write Discret1D
+	fwrite(ds, sizeof(Discret1D), 1, fp);
 
-	//----------------------------------
-	// FDSTAG STRETCH 1D
-	//----------------------------------
-	fwrite(&ms.nsegs  , sizeof(PetscInt),    1                 , fp);
-	fwrite(ms.istart  , sizeof(PetscInt),    (size_t)ms.nsegs+1, fp);
-	fwrite(ms.xstart  , sizeof(PetscScalar), (size_t)ms.nsegs+1, fp);
+	fwrite(ds->starts, sizeof(PetscInt   )*(size_t)(ds->nproc + 1), 1, fp);
+	fwrite(ds->nbuff,  sizeof(PetscScalar)*(size_t)(ds->bufsz    ), 1, fp);
+	fwrite(ds->cbuff,  sizeof(PetscScalar)*(size_t)(ds->ncels + 2), 1, fp);
+
+	// write MeshSeg1D
+	fwrite(ms, sizeof(MeshSeg1D), 1, fp);
+
+	fwrite(ms->istart, sizeof(PetscInt   )*(size_t)(ms->nsegs + 1), 1, fp);
+	fwrite(ms->xstart, sizeof(PetscScalar)*(size_t)(ms->nsegs + 1), 1, fp);
+	fwrite(ms->biases, sizeof(PetscScalar)*(size_t)(ms->nsegs    ), 1, fp);
+
 }
 //---------------------------------------------------------------------------
-void BreakReadDiscret1D(FILE *fp, Discret1D ds, MeshSeg1D ms)
+void BreakReadDiscret1D(FILE *fp, Discret1D *ds, MeshSeg1D *ms)
 {
-	//----------------------------------
-	// FDSTAG DISCRET 1D
-	//----------------------------------
-	fread(&ds.nproc  , sizeof(PetscInt),    1                 , fp);
-	fread(&ds.rank   , sizeof(PetscInt),    1                 , fp);
-	fread(ds.starts  , sizeof(PetscInt),    (size_t)ds.nproc+1, fp);
-	fread(&ds.pstart , sizeof(PetscInt),    1                 , fp);
-	fread(ds.ncoor   , sizeof(PetscScalar), (size_t)ds.nnods+1, fp);
-	fread(ds.ccoor   , sizeof(PetscScalar), (size_t)ds.ncels+1, fp);
-	fread(ds.nbuff   , sizeof(PetscScalar), (size_t)ds.bufsz  , fp);
-	fread(ds.cbuff   , sizeof(PetscScalar), (size_t)ds.ncels+2, fp);
-	fread(&ds.bufsz  , sizeof(PetscInt),    1                 , fp);
-	fread(&ds.tnods  , sizeof(PetscInt),    1                 , fp);
-	fread(&ds.tcels  , sizeof(PetscInt),    1                 , fp);
-	fread(&ds.nnods  , sizeof(PetscInt),    1                 , fp);
-	fread(&ds.ncels  , sizeof(PetscInt),    1                 , fp);
-	fread(&ds.grprev , sizeof(PetscInt),    1                 , fp);
-	fread(&ds.grnext , sizeof(PetscInt),    1                 , fp);
-	fread(&ds.color  , sizeof(PetscInt),    1                 , fp);
-	fread(&ds.h_uni  , sizeof(PetscScalar), 1                 , fp);
-	fread(&ds.h_min  , sizeof(PetscScalar), 1                 , fp);
-	fread(&ds.h_max  , sizeof(PetscScalar), 1                 , fp);
+	Discret1D cpds;
+	MeshSeg1D cpms;
 
-	//----------------------------------
-	// FDSTAG STRETCH 1D
-	//----------------------------------
-	fread(&ms.nsegs  , sizeof(PetscInt),    1                 , fp);
-	fread(ms.istart  , sizeof(PetscInt),    (size_t)ms.nsegs+1, fp);
-	fread(ms.xstart  , sizeof(PetscScalar), (size_t)ms.nsegs+1, fp);
+	// copy
+	cpds = (*ds);
+	cpms = (*ms);
+
+	// read Discret1D
+	fread(ds, sizeof(Discret1D), 1, fp);
+
+	ds->starts = cpds.starts;
+	ds->nbuff  = cpds.nbuff;
+	ds->cbuff  = cpds.cbuff;
+	ds->ncoor  = cpds.nbuff + 1;
+	ds->ccoor  = cpds.cbuff + 1;
+	ds->comm   = cpds.comm;
+
+   	fread(ds->starts, sizeof(PetscInt   )*(size_t)(ds->nproc + 1), 1, fp);
+	fread(ds->nbuff,  sizeof(PetscScalar)*(size_t)(ds->bufsz    ), 1, fp);
+	fread(ds->cbuff,  sizeof(PetscScalar)*(size_t)(ds->ncels + 2), 1, fp);
+
+	// read MeshSeg1D
+	fread(ms, sizeof(MeshSeg1D), 1, fp);
+
+	ms->istart = cpms.istart;
+	ms->xstart = cpms.xstart;
+	ms->biases = cpms.biases;
+
+	fread(ms->istart, sizeof(PetscInt   )*(size_t)(ms->nsegs + 1), 1, fp);
+	fread(ms->xstart, sizeof(PetscScalar)*(size_t)(ms->nsegs + 1), 1, fp);
+	fread(ms->biases, sizeof(PetscScalar)*(size_t)(ms->nsegs    ), 1, fp);
 }
 //---------------------------------------------------------------------------

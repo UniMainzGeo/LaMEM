@@ -158,6 +158,12 @@ PetscErrorCode LaMEMLib_FDSTAG(ModParam *IOparam, PetscInt *mpi_group_id)
 	// set boundary conditions parameters
 	ierr = BCSetParam(&bc, &user); CHKERRQ(ierr);
 
+	// set pushing block parameters
+	ierr = BCSetPush(&bc, &user); CHKERRQ(ierr);
+
+	// set parameters from PETSc options
+	ierr = BCReadFromOptions(&bc); CHKERRQ(ierr);
+
 	// overwrite grid info if restart and background strain-rates are applied - before marker init
 	// get rid of this!
 	if(user.restart == 1
@@ -166,12 +172,6 @@ PetscErrorCode LaMEMLib_FDSTAG(ModParam *IOparam, PetscInt *mpi_group_id)
 	{
 		ierr = BreakReadGrid(&user, &fs); CHKERRQ(ierr);
 	}
-
-	// set pushing block parameters
-	ierr = BCSetPush(&bc, &user); CHKERRQ(ierr);
-
-	// set parameters from PETSc options
-	ierr = BCReadFromOptions(&bc); CHKERRQ(ierr);
 
 	// create Jacobian & residual evaluation context
 	ierr = JacResCreate(&jr, &fs, &bc); CHKERRQ(ierr);
@@ -394,6 +394,9 @@ ierr = JacResCopyTemp(&jr); CHKERRQ(ierr);
 
 		// check marker phases
 		ierr = ADVCheckMarkPhases(&actx, jr.numPhases); CHKERRQ(ierr);
+
+// ACHTUNG!!!
+		done = PETSC_TRUE;
 
 	} while(done != PETSC_TRUE);
 

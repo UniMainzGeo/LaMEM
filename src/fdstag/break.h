@@ -86,7 +86,8 @@ PetscErrorCode BreakReadVec  (FILE *fp, Vec x, PetscInt n);
 //---------------------------------------------------------------------------
 // Read and write FDSTAG 1D structures
 //---------------------------------------------------------------------------
-void BreakWriteDiscret1D (FILE *fp, Discret1D ds, MeshSeg1D ms);
-void BreakReadDiscret1D  (FILE *fp, Discret1D ds, MeshSeg1D ms);
+void BreakWriteDiscret1D(FILE *fp, Discret1D *ds, MeshSeg1D *ms);
+void BreakReadDiscret1D (FILE *fp, Discret1D *ds, MeshSeg1D *ms);
+//---------------------------------------------------------------------------
 
 #endif

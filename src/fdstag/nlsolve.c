@@ -177,7 +177,7 @@ PetscErrorCode NLSolCreate(NLSol *nl, PCStokes pc, SNES *p_snes)
 
 //	ierr = SNESSetConvergenceTest(snes, SNESBlockStopTest, &nl, NULL); CHKERRQ(ierr);
 
-	ierr = SNESSetConvergenceTest(snes, &SNESCoupledTest, &nl, NULL); CHKERRQ(ierr);
+//	ierr = SNESSetConvergenceTest(snes, &SNESCoupledTest, &nl, NULL); CHKERRQ(ierr);
 
 	// initialize Jacobian controls
 	nl->jtype   = _PICARD_;
