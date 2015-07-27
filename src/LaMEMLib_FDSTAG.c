@@ -395,9 +395,6 @@ ierr = JacResCopyTemp(&jr); CHKERRQ(ierr);
 		// check marker phases
 		ierr = ADVCheckMarkPhases(&actx, jr.numPhases); CHKERRQ(ierr);
 
-// ACHTUNG!!!
-		done = PETSC_TRUE;
-
 	} while(done != PETSC_TRUE);
 
 	//======================
