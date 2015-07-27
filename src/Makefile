@@ -158,8 +158,7 @@ ${OBJDIR} :
 #====================================================
 # Build LaMEM library
 .PHONY : lamemlib
-lamemlib : 
-	${depend} ${LaMEM_LIB}
+lamemlib : ${LaMEM_LIB}
 	
     ${LaMEM_LIB} : ${COBJ}
 	@echo "............................................."
