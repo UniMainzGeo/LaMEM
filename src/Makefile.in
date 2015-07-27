@@ -1,19 +1,24 @@
 #====================================================
 #
 # Include file for LaMEM Makefile
-# developed by Boris Kaus & Dave May
-#              Swiss Federal Institute of Technology
-#			   CH-8050, Zurich
-#              Switzerland
+# developed since 2011 at the Johannes Gutenberg University of Mainz
+#
+# by 
+#	Anton Popov
+#	Boris Kaus
+#	Tobias Baumann
+#	Adina Püsök
+#	Arthur Bauville
+#	Naiara Fernandez	
 #
 # Revision by Anton Popov
 #====================================================
 
 # Define compilation mode
-# deb - debug (default)
-# opt - optimized
+# deb - debug 
+# opt - optimized (default)
 
-mode = deb
+mode = opt
 
 #====================================================
 
@@ -59,7 +64,7 @@ endif
 # Add SVN version number and date to the code
 # Is svn available on the system ? (yes/no)
 
-SVN_AVAILABLE = yes
+SVN_AVAILABLE = no
 
 #====================================================
 

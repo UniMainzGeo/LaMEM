@@ -1,15 +1,20 @@
 #====================================================
 #
 # Makefile for LaMEM
-# developed by Boris Kaus & Dave May
-#              Swiss Federal Institute of Technology
-#			   CH-8050, Zurich
-#              Switzerland
+# developed since 2011 at the Johannes Gutenberg University of Mainz
+#
+# by 
+#	Anton Popov
+#	Boris Kaus
+#	Tobias Baumann
+#	Adina Püsök
+#	Arthur Bauville
+#	Naiara Fernandez	
 #
 # Revision by Anton Popov
 # Revision by Tobias Baumann
 #
-# NOTE: See Makefile.in for platform dependant definitions
+# NOTE: See Makefile.in for platform dependent definitions
 #
 #====================================================
 
@@ -126,27 +131,9 @@ LaMEM_LIB = ../lib/${mode}/liblamem.a
 .PHONY : all
 all : lamem
 
+
 #====================================================
 
-# Update local version & include global SVN ID to the code
-.PHONY : update
-update :
-ifeq "$(SVN_AVAILABLE)" "yes"
-	@echo "............................................."
-	@echo ".... Program under svn version control ......"
-	@echo "............................................."
-	@cd ..; svn update
-	rm -f Version.h
-	../scripts/revision.sh 1
-	@echo "-> created Version.h"
-else
-	@echo "............................................."
-	@echo "..... NO svn version control available ......"
-	@echo "............................................."
-	rm -f Version.h
-	../scripts/revision.sh 0
-	@echo "-> created Version.h"
-endif
 
 #====================================================
 

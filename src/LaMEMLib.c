@@ -34,7 +34,7 @@ without the explicit agreement of Boris Kaus.
 
 #include "LaMEM.h"
 
-#include "Version.h"
+//#include "Version.h"
 
 #include "Parsing.h"
 #include "Quadrature.h"
@@ -133,9 +133,13 @@ PetscErrorCode LaMEMLib_Legacy(PetscBool InputParamFile, const char *ParamFile, 
 	// Start code
 	PetscPrintf(PETSC_COMM_WORLD,"# -------------------------------------------------------------------------- \n");
 	PetscPrintf(PETSC_COMM_WORLD,"#                   Lithosphere and Mantle Evolution Model                   \n");
-	PetscPrintf(PETSC_COMM_WORLD,"#              Current Revision: %s - %s		     \n",__SVNREVISION__,__SVNDATE__);
-	PetscPrintf(PETSC_COMM_WORLD,"#  Modified items: %s\n",__SVNMANCHANGES__);
-	PetscPrintf(PETSC_COMM_WORLD,"#     Compiled: Date: %s - Time: %s - Mode:  %s	    \n",__DATE__,__TIME__,__OPTMODE__);
+
+    // THIS ONLY WORKS WITH SVN, NOT UNDER GIT:
+    //PetscPrintf(PETSC_COMM_WORLD,"#              Current Revision: %s - %s		     \n",__SVNREVISION__,__SVNDATE__);
+	//PetscPrintf(PETSC_COMM_WORLD,"#  Modified items: %s\n",__SVNMANCHANGES__);
+    
+
+	PetscPrintf(PETSC_COMM_WORLD,"#     Compiled: Date: %s - Time: %s 	    \n",__DATE__,__TIME__);
 	PetscPrintf(PETSC_COMM_WORLD,"# -------------------------------------------------------------------------- \n");
 
 	ierr = MPI_Comm_rank(PETSC_COMM_WORLD,&rank); CHKERRQ(ierr);
