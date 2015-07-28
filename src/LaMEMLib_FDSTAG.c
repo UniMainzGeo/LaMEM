@@ -222,6 +222,27 @@ PetscErrorCode LaMEMLib_FDSTAG(ModParam *IOparam, PetscInt *mpi_group_id)
 	// read breakpoint files if restart was requested and if is possible
 	if (user.restart==1) { ierr = BreakRead(&user, &actx, &pvout, &pvsurf, &pvmark, &pvavd, &nl.jtype); CHKERRQ(ierr); }
 
+	// finish simulation if time_end was reached
+	if (jr.ts.istep >= jr.ts.nstep)
+	{
+		// cleanup
+		ierr = FDSTAGDestroy(&fs);     CHKERRQ(ierr);
+		ierr = FreeSurfDestroy(&surf); CHKERRQ(ierr);
+		ierr = BCDestroy(&bc);         CHKERRQ(ierr);
+		ierr = JacResDestroy(&jr);     CHKERRQ(ierr);
+		ierr = ADVDestroy(&actx);      CHKERRQ(ierr);
+		ierr = PCStokesDestroy(pc);    CHKERRQ(ierr);
+		ierr = PMatDestroy(pm);        CHKERRQ(ierr);
+		ierr = SNESDestroy(&snes);     CHKERRQ(ierr);
+		ierr = NLSolDestroy(&nl);      CHKERRQ(ierr);
+		ierr = PVOutDestroy(&pvout);   CHKERRQ(ierr);
+		ierr = PVSurfDestroy(&pvsurf); CHKERRQ(ierr);
+		ierr = PVMarkDestroy(&pvmark); CHKERRQ(ierr);
+		ierr = PVAVDDestroy(&pvavd);   CHKERRQ(ierr);
+
+		PetscFunctionReturn(0);
+	}
+
 	//===================
 	// OBJECTIVE FUNCTION
 	//===================

@@ -496,7 +496,9 @@ PetscErrorCode BreakRead(UserCtx *user, AdvCtx *actx, PVOut *pvout, PVSurf *pvsu
 
 	if (jr->ts.istep >= jr->ts.nstep)
 	{
-		SETERRQ1(PETSC_COMM_SELF, PETSC_ERR_USER, "Restart from time step = %lld is not possible because time_end was already reached!",(LLD)jr->ts.istep);
+		PetscPrintf(PETSC_COMM_WORLD," \n");
+		PetscPrintf(PETSC_COMM_WORLD, " Finished simulation: restart from time step %lld is not possible because time_end was already reached! \n",(LLD)jr->ts.istep);
+		PetscPrintf(PETSC_COMM_WORLD," \n");
 	}
 	else
 	{
