@@ -69,12 +69,12 @@ PetscErrorCode TSSolSetUp(TSSol *ts, UserCtx *usr)
 
 	PetscPrintf(PETSC_COMM_WORLD, " CFL timestep factor            : %f \n", ts->Cmax);
 
-	if(ts->Cmax > 0.5)
+	if(ts->Cmax > 1.0)
 	{
 		SETERRQ2(PETSC_COMM_SELF, PETSC_ERR_USER, " Courant step length Cmax=%7.5f is larger than allowed (%7.5f).", ts->Cmax, 0.5);
 	}
 
-	if(ts->Cmax > 0.3)
+	if(ts->Cmax > 0.7)
 	{
 		PetscPrintf(PETSC_COMM_WORLD, " WARNING! Large Courant step length Cmax=%7.5f. Consider reducing.\n", ts->Cmax);
 	}
