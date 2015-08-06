@@ -140,9 +140,6 @@ OBJDIR = \
 .PHONY : all
 all : lamem
 
-
-#====================================================
-
 #====================================================
 # Build dependencies
 .PHONY : depend
@@ -156,7 +153,7 @@ ${OBJDIR} :
 .PHONY : lamemlib
 lamemlib : ${LaMEM_LIB}
 
-${LaMEM_LIB} : ${COBJ}
+${LaMEM_LIB} : ${OBJDIR} ${COBJ}
 	@echo "............................................."
 	@echo ".......... Building LaMEM Library ..........."
 	@echo "............................................."
@@ -169,7 +166,7 @@ ${LaMEM_LIB} : ${COBJ}
 .PHONY : lamem
 lamem : ${LaMEM}
 
-${LaMEM} : ${OBJDIR} ${LaMEM_LIB} ${LaMEM_OBJ}
+${LaMEM} : ${LaMEM_LIB} ${LaMEM_OBJ}
 	@echo "............................................."
 	@echo "......... Linking LaMEM Executable .........."
 	@echo "............................................."
