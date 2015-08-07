@@ -1,16 +1,15 @@
 ==============================================
 LaMEM - Lithosphere and Mantle Evolution Model
 
-A 3D numerical code that can be used to model various thermomechanical 
+A parallel 3D numerical code that can be used to model various thermomechanical 
 geodynamical processes such as mantle-lithosphere interaction for rocks 
 that have visco-elasto-plastic rheologies. The code is build on top of 
-the PETSC package, which deals with a lot 
+PETSc and the current version of the code uses a marker-in-cell 
+approach with a staggered finite difference discretization. 
 
-The code solves the (incompressible) Stokes equations, using a staggered 
-finite difference discretization and employs particles to track phase 
-information. A range of (Galerkin) multigrid and iterative solvers are 
+A range of (Galerkin) multigrid and iterative solvers are 
 available, for both linear and non-linear rheologies, using Picard and 
-quasi-Newton solvers (provided through the PETSC interface).
+quasi-Newton solvers (provided through the PETSc interface).
 
 LaMEM has been tested on over 458'000 cores.
 
@@ -66,12 +65,15 @@ bin             -       Contains binaries after compilation (/deb contains the d
 ---------------
 
 Essential dependencies-
-  i) PETSC
+  i) PETSc 3.5.x
   
 1) Dependency Installation
 - i) PETSc: 
      See http://www.mcs.anl.gov/petsc/petsc-as/documentation/installation.html
      for installation instructions.
+     We also provide detailed installation instructions on how to compile 
+     PETSc (and mpich, gcc, as well as PETSc with the eclipse debugger environment)
+     on various machines in /doc/installation
 
 2) Building LaMEM
 - Set the environment variable
@@ -85,3 +87,8 @@ Essential dependencies-
     ./bin/opt/LaMEM
 
     which will run a falling block test with default parameters.
+
+3) Visualize results
+   We usually use PARAVIEW for this; a serial binary version can be downloaded 
+   from www.paraview.org. Instructions on how to use a parallel version are in /doc
+
