@@ -66,7 +66,9 @@
 #define SPDIM 3
 
 // use this to enable asprintf
-#define _GNU_SOURCE
+#ifndef _GNU_SOURCE
+	#define _GNU_SOURCE
+#endif
 
 // Identify gcc compiler.
 // Take care that other compilers may also define __GNUC__ macro.
