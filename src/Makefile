@@ -67,37 +67,37 @@ CCOMPILER = ${PCC} ${PCC_FLAGS} ${CFLAGS} ${CCPPFLAGS}
 CSRC = \
 	LaMEMLib.c \
 	parsing.c \
-	fdstag/fdstag.c \
-	fdstag/lsolve.c \
-	fdstag/nlsolve.c \
-	fdstag/paraViewOutBin.c \
-	fdstag/paraViewOutSurf.c \
-	fdstag/paraViewOutMark.c \
-	fdstag/advect.c \
-	fdstag/marker.c \
-	fdstag/cvi.c \
-	fdstag/AVD.c \
-	fdstag/constEq.c \
-	fdstag/dfzero.c \
-	fdstag/JacRes.c \
-	fdstag/JacResTemp.c \
-	fdstag/interpolate.c \
-	fdstag/outFunct.c \
-	fdstag/scaling.c \
-	fdstag/matrix.c \
-	fdstag/multigrid.c \
-	fdstag/check_fdstag.c \
-	fdstag/bc.c \
-	fdstag/break.c \
-	fdstag/surf.c \
-	fdstag/input.c \
-	fdstag/matProps.c \
-	fdstag/tssolve.c \
-	fdstag/tools.c \
-	fdstag/sub_comm.c \
-	fdstag/pc_semiredundant.c \
-	fdstag/objFunct.c \
-	fdstag/AVDView.c
+	fdstag.c \
+	lsolve.c \
+	nlsolve.c \
+	paraViewOutBin.c \
+	paraViewOutSurf.c \
+	paraViewOutMark.c \
+	advect.c \
+	marker.c \
+	cvi.c \
+	AVD.c \
+	constEq.c \
+	dfzero.c \
+	JacRes.c \
+	JacResTemp.c \
+	interpolate.c \
+	outFunct.c \
+	scaling.c \
+	matrix.c \
+	multigrid.c \
+	check_fdstag.c \
+	bc.c \
+	break.c \
+	surf.c \
+	input.c \
+	matProps.c \
+	tssolve.c \
+	tools.c \
+	sub_comm.c \
+	pc_semiredundant.c \
+	objFunct.c \
+	AVDView.c
 	
 #====================================================
 
@@ -177,16 +177,6 @@ else
 endif
 	@sed '1s,^,../lib/${mode}/,' < ../dep/${mode}/$*.d.tmp > ../dep/${mode}/$*.d
 	@rm -f ../dep/${mode}/$*.d.tmp
-
-../lib/${mode}/%.o : fdstag/%.c Makefile Makefile.in
-	${CCOMPILER} ${LAMEM_FLAGS} -c $< -o $@ 
-ifeq ($(PLATFORM), ppc64)
-	@mv -f ../lib/${mode}/$*.d ../dep/${mode}/$*.d.tmp
-else
-	@${CCOMPILER} ${DEPEN_FLAGS} ${LAMEM_FLAGS} $< -o ../dep/${mode}/$*.d.tmp
-endif
-	@sed '1s,^,../lib/${mode}/,' < ../dep/${mode}/$*.d.tmp > ../dep/${mode}/$*.d
-	@rm -f ../dep/${mode}/$*.d.tmp
 	
 #====================================================
 
@@ -241,7 +231,6 @@ clean_all :
 	@rm -rf ../bin/$(mode)/*
 	@rm -f ../dep/$(mode)/*
 	@rm -f *.o *.a LaMEM
-	@rm -f fdstag/*.o
 	@rm -f ../lib/*.a
 	@rm -f ../dep/*.d
 
@@ -253,3 +242,14 @@ doc:
 	PDFLATEX=$(PDFLATEX) BIBTEX=$(BIBTEX) ../doc/Manual/./CreateDevelDoc.sh
 
 #====================================================
+
+# building rule for subdirectory
+#../lib/${mode}/%.o : fdstag/%.c Makefile Makefile.in
+#	${CCOMPILER} ${LAMEM_FLAGS} -c $< -o $@ 
+#ifeq ($(PLATFORM), ppc64)
+#	@mv -f ../lib/${mode}/$*.d ../dep/${mode}/$*.d.tmp
+#else
+#	@${CCOMPILER} ${DEPEN_FLAGS} ${LAMEM_FLAGS} $< -o ../dep/${mode}/$*.d.tmp
+#endif
+#	@sed '1s,^,../lib/${mode}/,' < ../dep/${mode}/$*.d.tmp > ../dep/${mode}/$*.d
+#	@rm -f ../dep/${mode}/$*.d.tmp
