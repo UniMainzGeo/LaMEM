@@ -45,7 +45,6 @@
 //---------------------------------------------------------------------------
 #include "LaMEM.h"
 #include "fdstag.h"
-#include "Utils.h"
 #include "solVar.h"
 #include "scaling.h"
 #include "tssolve.h"

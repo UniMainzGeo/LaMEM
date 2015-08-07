@@ -53,7 +53,7 @@
 #include "interpolate.h"
 #include "surf.h"
 #include "objFunct.h"
-#include "Utils.h"
+#include "tools.h"
 //---------------------------------------------------------------------------
 #undef __FUNCT__
 #define __FUNCT__ "ObjFunctDestroy"

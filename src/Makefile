@@ -1,22 +1,44 @@
-#====================================================
-#
-# Makefile for LaMEM
-# developed since 2011 at the Johannes Gutenberg University of Mainz
-#
-# by 
-#	Anton Popov
-#	Boris Kaus
-#	Tobias Baumann
-#	Adina Püsök
-#	Arthur Bauville
-#	Naiara Fernandez	
-#
-# Revision by Anton Popov
-# Revision by Tobias Baumann
-#
-# NOTE: See Makefile.in for platform dependent definitions
-#
-#====================================================
+#==============================================================================
+# 
+#     Copyright (c) 2011-2015, JGU Mainz, Anton Popov, Boris Kaus
+#     All rights reserved.
+# 
+#     This software was developed at:
+# 
+#          Institute of Geosciences
+#          Johannes-Gutenberg University, Mainz
+#          Johann-Joachim-Becherweg 21
+#          55128 Mainz, Germany
+# 
+#     project:    LaMEM
+#     filename:   nlsolve.c
+# 
+#     LaMEM is free software: you can redistribute it and/or modify
+#     it under the terms of the GNU General Public License as published
+#     by the Free Software Foundation, version 3 of the License.
+# 
+#     LaMEM is distributed in the hope that it will be useful,
+#     but WITHOUT ANY WARRANTY; without even the implied warranty of
+#     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+#     See the GNU General Public License for more details.
+# 
+#     You should have received a copy of the GNU General Public License
+#     along with LaMEM. If not, see <http://www.gnu.org/licenses/>.
+# 
+# 
+#     Contact:
+#         Boris Kaus       [kaus@uni-mainz.de]
+#         Anton Popov      [popov@uni-mainz.de]
+# 
+# 
+#     Main development team:
+#          Anton Popov      [popov@uni-mainz.de]
+#          Boris Kaus       [kaus@uni-mainz.de]
+#          Tobias Baumann
+#          Adina Pusok
+#          Arthur Bauville
+# 
+#==============================================================================
 
 # Include platform-specific constants
 
@@ -41,41 +63,10 @@ CCOMPILER = ${PCC} ${PCC_FLAGS} ${CFLAGS} ${CCPPFLAGS}
 
 #====================================================
 
-# Define list of LAMEM library source files
+# Define list of LaMEM library source files
 CSRC = \
 	LaMEMLib.c \
-	LaMEMLib_FDSTAG.c \
-	LaMEMLib_FDSTAG_private.c \
-	LaMEM_Particles.c \
-	LaMEM_Temperature.c \
-	StokesOperators.c \
-	Elements.c \
-	Quadrature.c \
-	Solvers.c \
-	Breakpoint.c \
-	Output.c \
-	ParaViewOutput.c \
-	NonDimensionalisation.c \
-	Material.c \
-	Mesh.c \
-	Assembly.c \
-	Assembly_FDSTAG.c \
-	Utils.c \
 	Parsing.c \
-	Attributes.c \
-	LaMEMVelPressureDA.c \
-	LaMEMVelPressureDA_Q2PM1.c \
-	LaMEMVelPressureDA_Q1P0.c \
-	LaMEMVelPressureDA_Q1Q1.c \
-	LaMEMVelPressureDA_FDSTAG.c \
-	LaMEM_Initialize.c \
-	LaMEM_AnalyticalSolutions.c \
-	ApplyBoundaryConditions.c \
-	AVDPhaseViewer.c \
-	GetGravityField.c \
-	GetSurfaceVelocity.c \
-	LaMEM_FE_ErosionCode.c \
-	Addition_FDSTAG.c \
 	fdstag/fdstag.c \
 	fdstag/lsolve.c \
 	fdstag/nlsolve.c \
@@ -108,7 +99,6 @@ CSRC = \
 	fdstag/objFunct.c \
 	fdstag/AVDView.c
 	
-
 #====================================================
 
 # Generate lists of library object files:
@@ -262,26 +252,4 @@ clean_all :
 doc:
 	PDFLATEX=$(PDFLATEX) BIBTEX=$(BIBTEX) ../doc/Manual/./CreateDevelDoc.sh
 
-#====================================================
-# Alternative generation of dependency files as a separate rule.
-# Has a disadvantage that deeper modification is necessary to
-# the files produced by compiler, i.e. dependency itself should
-# be included in the targets. Also, the files are always built,
-# even when they are not required.
-#../dep/${mode}/%.d : %.c
-#	@${CCOMPILER} ${DEPEN_FLAGS} ${LAMEM_FLAGS} $< -o $@.tmp
-#	@sed -e '1s,^,../lib/${mode}/,' -e 's,:, $@ : ,' < $@.tmp > $@
-#	@rm -f $@.tmp
-#====================================================
-# This test is usually unnecessary
-# make fails at include stage if wrong mode is given 
-#ifneq ($(mode), deb)
-#ifneq ($(mode), opt)
-#	@echo "............................................."
-#	@echo "Error! mode="$(mode)" is invalid"
-#	@echo "Should be either mode=deb or mode=opt"
-#	@echo "............................................."
-#	@exit 1
-#endif
-#endif
 #====================================================

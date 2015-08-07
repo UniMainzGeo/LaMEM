@@ -54,7 +54,7 @@
 #include "paraViewOutBin.h"
 #include "paraViewOutSurf.h"
 #include "outFunct.h"
-#include "Utils.h"
+#include "tools.h"
 //---------------------------------------------------------------------------
 #undef __FUNCT__
 #define __FUNCT__ "PVSurfClear"
