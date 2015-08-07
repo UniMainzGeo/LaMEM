@@ -53,7 +53,7 @@
 #include "JacRes.h"
 #include "matrix.h"
 #include "multigrid.h"
-#include "Utils.h"
+#include "tools.h"
 //---------------------------------------------------------------------------
 // * remove hierarchy of grids & bc-objects (use info from fine level)
 // * preallocate all restriction & interpolation operators

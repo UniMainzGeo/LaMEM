@@ -89,5 +89,24 @@ PetscErrorCode GetIntDataItemCheck(
 	PetscInt    amin,
 	PetscInt    amax);
 
+
+
+PetscErrorCode DMDAGetProcessorRank(DM da, PetscInt *rank_x, PetscInt *rank_y, PetscInt *rank_z, PetscInt *rank_col);
+
+PetscErrorCode makeMPIIntArray(PetscMPIInt **arr, const PetscMPIInt *init, const PetscInt n);
+
+PetscErrorCode makeIntArray(PetscInt **arr, const PetscInt *init, const PetscInt n);
+
+PetscErrorCode makeScalArray(PetscScalar **arr, const PetscScalar *init, const PetscInt n);
+
+//---------------------------------------------------------------------------
+// checks whether processor has a zero rank in the communicator
+PetscInt ISRankZero(MPI_Comm comm);
+
+// check whether communicator is parallel (has more than one rank)
+PetscInt ISParallel(MPI_Comm comm);
+
+PetscErrorCode LaMEMCreateOutputDirectory(const char *DirectoryName);
+
 //---------------------------------------------------------------------------
 #endif
