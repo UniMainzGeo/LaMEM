@@ -44,7 +44,7 @@
 //..............   MARKER PARAVIEW XML OUTPUT ROUTINES   ....................
 //---------------------------------------------------------------------------
 #include "LaMEM.h"
-#include "Utils.h"
+#include "tools.h"
 #include "fdstag.h"
 #include "solVar.h"
 #include "scaling.h"

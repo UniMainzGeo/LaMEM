@@ -1,5 +1,48 @@
-/* Definitions for use with LaMEM */
-/* $Id$ */
+/*@ ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+ **
+ **    Copyright (c) 2011-2015, JGU Mainz, Anton Popov, Boris Kaus
+ **    All rights reserved.
+ **
+ **    This software was developed at:
+ **
+ **         Institute of Geosciences
+ **         Johannes-Gutenberg University, Mainz
+ **         Johann-Joachim-Becherweg 21
+ **         55128 Mainz, Germany
+ **
+ **    project:    LaMEM
+ **    filename:   nlsolve.c
+ **
+ **    LaMEM is free software: you can redistribute it and/or modify
+ **    it under the terms of the GNU General Public License as published
+ **    by the Free Software Foundation, version 3 of the License.
+ **
+ **    LaMEM is distributed in the hope that it will be useful,
+ **    but WITHOUT ANY WARRANTY; without even the implied warranty of
+ **    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
+ **    See the GNU General Public License for more details.
+ **
+ **    You should have received a copy of the GNU General Public License
+ **    along with LaMEM. If not, see <http://www.gnu.org/licenses/>.
+ **
+ **
+ **    Contact:
+ **        Boris Kaus       [kaus@uni-mainz.de]
+ **        Anton Popov      [popov@uni-mainz.de]
+ **
+ **
+ **    Main development team:
+ **         Anton Popov      [popov@uni-mainz.de]
+ **         Boris Kaus       [kaus@uni-mainz.de]
+ **         Tobias Baumann
+ **         Adina Pusok
+ **         Arthur Bauville
+ **
+ ** ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ @*/
+
+//---------------------------------------------------------------------------
+//.........................   Main include file   ...........................
+//---------------------------------------------------------------------------
 
 #ifndef __LaMEM_h__
 #define __LaMEM_h__
@@ -8,30 +51,6 @@
 // DEFINITIONS
 //-----------------------------------------------------------------------------
 
-// temporary global variable
-#define ELEMENT_Q1P0		2
-#define ELEMENT_Q1Q1		3
-#define ELEMENT_Q2P1		1
-#define ELEMENT_FDSTAG		4
-#define ELEMENT_Q2P1_LOCAL	22
-#define ELEMENT_Q2P1_GLOBAL	33
-
-// set maximums based on Q2 storage requirements
-#define MAX_nnel 27
-#define MAX_ngp_vel 27
-#define MAX_nintp_1D 3
-#define MAX_npres 8
-#define MAX_edof 81
-#define MAX_edof_temp 27
-#define MAX_nnode_el_1D 2
-#define MAX_nnel_1D 3
-#define MAX_ndim 3
-
-#ifdef PARTICLES
-#define particle_buffer 1.25
-#define particle_props 28
-#endif
-
 #define max_num_phases 32 // max no of phases
 #define max_num_soft   10 // max no of soft laws
 #define MaxNumCPU      524288
@@ -39,9 +58,6 @@
 
 // maximum number of mesh segments in every direction
 #define MaxNumMeshSegs 10
-
-#define NumMaterialPropsElem 33
-#define NumTimeDepData 	 (8+6*max_num_phases + 2*6)
 
 // cast macros
 #define LLD long long int
@@ -108,15 +124,8 @@
 // INTERNAL TYPE DEFINITIONS
 //-----------------------------------------------------------------------------
 
-#include "Attributes.h"
-
 // used only in FDSTAG Canonical
 #include "fdstagTypes.h"
-
-// LaMEM Legacy
-#include "LaMEM_Types.h"
-#include "LaMEMVelPressureDA.h"
-#include "LaMEMVelPressureDA_private.h"
 
 //-----------------------------------------------------------------------------
 // PROTOTYPES
@@ -128,28 +137,17 @@
 extern "C" {
 #endif
 
-
-PetscErrorCode LaMEMLib(ModParam *IOparam, PetscInt *mpi_group_id);
-PetscErrorCode LaMEMLib_FDSTAG(ModParam *IOparam, PetscInt *mpi_group_id);
-PetscErrorCode LaMEMLib_Legacy(PetscBool InputParamFile, const char *ParamFile, PetscScalar *LaMEM_OutputParameters, PetscInt *mpi_group_id);
-
+PetscErrorCode LaMEMLib(ModParam *IOparam);
 
 #ifdef __cplusplus
 }
 #endif
 
 //-----------------------------------------------------------------------------
-// GLOBAL VARIABLES
-//-----------------------------------------------------------------------------
-
-extern PetscInt __ELEMENT_TYPE__;
-extern PetscInt __Q2_TYPE__;
-
-//-----------------------------------------------------------------------------
 // MACROS
 //-----------------------------------------------------------------------------
 
-#define EMERGENCY_EXIT(message){SETERRQ1(PETSC_COMM_WORLD, PETSC_ERR_SUP,"-> LaMEM error encountered - %s", message);}
+//#define EMERGENCY_EXIT(message){SETERRQ1(PETSC_COMM_WORLD, PETSC_ERR_SUP,"-> LaMEM error encountered - %s", message);}
 
 // invert the value of PETSC_BOOL variable
 #define PETSC_NEGATE(a) ((a == PETSC_TRUE ) ? PETSC_FALSE : PETSC_TRUE)

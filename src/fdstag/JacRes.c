@@ -50,7 +50,7 @@
 #include "bc.h"
 #include "JacRes.h"
 #include "constEq.h"
-#include "Utils.h"
+#include "tools.h"
 //---------------------------------------------------------------------------
 #undef __FUNCT__
 #define __FUNCT__ "JacResClear"

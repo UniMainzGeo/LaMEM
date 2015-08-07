@@ -43,8 +43,8 @@
 //....................... FILE INPUT / INITIALIZATION .......................
 //---------------------------------------------------------------------------
 #include "LaMEM.h"
-#include "Parsing.h" // dependency on
-#include "Utils.h"   // dependency on
+#include "Parsing.h"
+#include "tools.h"
 #include "fdstag.h"
 #include "solVar.h"
 #include "scaling.h"

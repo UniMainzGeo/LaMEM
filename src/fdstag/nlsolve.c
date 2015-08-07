@@ -3,7 +3,7 @@
  **    Copyright (c) 2011-2015, JGU Mainz, Anton Popov, Boris Kaus
  **    All rights reserved.
  **
- **    This sofware was developed at:
+ **    This software was developed at:
  **
  **         Institute of Geosciences
  **         Johannes-Gutenberg University, Mainz
@@ -54,7 +54,6 @@
 #include "matrix.h"
 #include "lsolve.h"
 #include "nlsolve.h"
-#include "Utils.h"
 #include "tools.h"
 
 //---------------------------------------------------------------------------
