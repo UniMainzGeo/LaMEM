@@ -4,12 +4,12 @@ LaMEM - Lithosphere and Mantle Evolution Model
 A parallel 3D numerical code that can be used to model various thermomechanical 
 geodynamical processes such as mantle-lithosphere interaction for rocks 
 that have visco-elasto-plastic rheologies. The code is build on top of 
-the PETSC package and the current version of the code uses a marker-in-cell 
+PETSc and the current version of the code uses a marker-in-cell 
 approach with a staggered finite difference discretization. 
 
 A range of (Galerkin) multigrid and iterative solvers are 
 available, for both linear and non-linear rheologies, using Picard and 
-quasi-Newton solvers (provided through the PETSC interface).
+quasi-Newton solvers (provided through the PETSc interface).
 
 LaMEM has been tested on over 458'000 cores.
 
