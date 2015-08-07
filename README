@@ -4,7 +4,7 @@ LaMEM - Lithosphere and Mantle Evolution Model
 A 3D numerical code that can be used to model various thermomechanical 
 geodynamical processes such as mantle-lithosphere interaction for rocks 
 that have visco-elasto-plastic rheologies. The code is build on top of 
-the PETSC package, which deals with a lot 
+the PETSC package. 
 
 The code solves the (incompressible) Stokes equations, using a staggered 
 finite difference discretization and employs particles to track phase 
