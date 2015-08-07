@@ -65,12 +65,15 @@ bin             -       Contains binaries after compilation (/deb contains the d
 ---------------
 
 Essential dependencies-
-  i) PETSC
+  i) PETSc 3.5.x
   
 1) Dependency Installation
 - i) PETSc: 
      See http://www.mcs.anl.gov/petsc/petsc-as/documentation/installation.html
      for installation instructions.
+     We also provide detailed installation instructions on how to compile 
+     PETSc (and mpich, gcc, as well as PETSc with the eclipse debugger environment)
+     on various machines in /doc/installation
 
 2) Building LaMEM
 - Set the environment variable
@@ -84,3 +87,8 @@ Essential dependencies-
     ./bin/opt/LaMEM
 
     which will run a falling block test with default parameters.
+
+3) Visualize results
+   We usually use PARAVIEW for this; a serial binary version can be downloaded 
+   from www.paraview.org. Instructions on how to use a parallel version are in /doc
+
