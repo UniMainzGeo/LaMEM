@@ -3,7 +3,7 @@
  **    Copyright (c) 2011-2015, JGU Mainz, Anton Popov, Boris Kaus
  **    All rights reserved.
  **
- **    This sofware was developed at:
+ **    This software was developed at:
  **
  **         Institute of Geosciences
  **         Johannes-Gutenberg University, Mainz
@@ -43,7 +43,7 @@
 //..........................   SCALING ROUTINES   ...........................
 //---------------------------------------------------------------------------
 #include "LaMEM.h"
-#include "Parsing.h"
+#include "parsing.h"
 #include "solVar.h"
 #include "scaling.h"
 //---------------------------------------------------------------------------

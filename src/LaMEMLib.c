@@ -11,7 +11,7 @@
  **         55128 Mainz, Germany
  **
  **    project:    LaMEM
- **    filename:   nlsolve.c
+ **    filename:   LaMEMLib.c
  **
  **    LaMEM is free software: you can redistribute it and/or modify
  **    it under the terms of the GNU General Public License as published
@@ -68,7 +68,7 @@
 #include "objFunct.h"
 #include "AVDView.h"
 #include "break.h"
-#include "Parsing.h"
+#include "parsing.h"
 //---------------------------------------------------------------------------
 #undef __FUNCT__
 #define __FUNCT__ "LaMEMLib"

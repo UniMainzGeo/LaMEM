@@ -11,7 +11,7 @@
 #          55128 Mainz, Germany
 # 
 #     project:    LaMEM
-#     filename:   nlsolve.c
+#     filename:   Makefile
 # 
 #     LaMEM is free software: you can redistribute it and/or modify
 #     it under the terms of the GNU General Public License as published
@@ -66,7 +66,7 @@ CCOMPILER = ${PCC} ${PCC_FLAGS} ${CFLAGS} ${CCPPFLAGS}
 # Define list of LaMEM library source files
 CSRC = \
 	LaMEMLib.c \
-	Parsing.c \
+	parsing.c \
 	fdstag/fdstag.c \
 	fdstag/lsolve.c \
 	fdstag/nlsolve.c \

@@ -11,7 +11,7 @@
  **         55128 Mainz, Germany
  **
  **    project:    LaMEM
- **    filename:   nlsolve.c
+ **    filename:   parsing.c
  **
  **    LaMEM is free software: you can redistribute it and/or modify
  **    it under the terms of the GNU General Public License as published
@@ -40,12 +40,18 @@
  **
  ** ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ @*/
 
+/*
+ *  Originally developed by Dave A. May
+ *  Copyright 2011 Geophysical Fluid Dynamics. All rights reserved.
+ *
+ */
+
 //---------------------------------------------------------------------------
 //...................   Input file parsing routines   .......................
 //---------------------------------------------------------------------------
 
 #include "LaMEM.h"
-#include "Parsing.h"
+#include "parsing.h"
 
 // define separators
 const char comments[] = "#!|";
