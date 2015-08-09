@@ -76,7 +76,6 @@ PetscErrorCode LaMEMLib(ModParam *IOparam)
 {
 	PetscBool          done;
 	UserCtx            user;
-	PetscInt           SaveOrNot;
 //	PetscLogDouble     cputime_start, cputime_start0, cputime_end, cputime_start_tstep, cputime_start_nonlinear;
 	PetscLogDouble     cputime_start, cputime_end, cputime_start_nonlinear, cputime_end_nonlinear;
 
@@ -384,16 +383,7 @@ ierr = JacResCopyTemp(&jr); CHKERRQ(ierr);
 		// compute gravity misfits
 //		ierr = CalculateMisfitValues(&user, C, itime, LaMEM_OutputParameters); CHKERRQ(ierr);
 
-// WARNING! SORT OUT THIS MESS!
-
-	// ACHTUNG!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-
-		SaveOrNot = 0;
-
-//		if(user.save_timesteps != 0) LaMEMMod( JacResGetStep(&jr), user.save_timesteps, &SaveOrNot);
-//		else                         SaveOrNot = 2;
-
-		if(SaveOrNot == 0)
+		if(!(JacResGetStep(&jr) % user.save_timesteps))
 		{
 			char *DirectoryName = NULL;
 
@@ -433,15 +423,10 @@ ierr = JacResCopyTemp(&jr); CHKERRQ(ierr);
 		ierr = TSSolUpdate(&jr.ts, &jr.scal, &done); CHKERRQ(ierr);
 
 		// create BREAKPOINT files, for restarting the code
-
-		// ACHTUNG!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-
-		SaveOrNot = 0;
-
-//		if (user.save_breakpoints > 0) LaMEMMod(JacResGetStep(&jr)-1, user.save_breakpoints, &SaveOrNot);
-//		else                           SaveOrNot = 2;
-
-		if (SaveOrNot == 0) { ierr = BreakWrite(&user, &actx, &surf, &pvout, &pvsurf, &pvmark, &pvavd, nl.jtype); CHKERRQ(ierr); }
+		if(user.save_breakpoints && !(JacResGetStep(&jr)-1 % user.save_breakpoints))
+		{
+			ierr = BreakWrite(&user, &actx, &surf, &pvout, &pvsurf, &pvmark, &pvavd, nl.jtype); CHKERRQ(ierr);
+		}
 
 		// check marker phases
 		ierr = ADVCheckMarkPhases(&actx, jr.numPhases); CHKERRQ(ierr);
