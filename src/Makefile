@@ -113,37 +113,64 @@ LaMEM_OBJ = ../lib/${mode}/LaMEM.o
 LaMEM_DEP = ../dep/${mode}/LaMEM.d
 LaMEM_LIB = ../lib/${mode}/liblamem.a
 
-# Create dependencies
-OBJDIR = \
-	../lib \
-	../lib/${mode} \
-	../bin \
-	../bin/${mode} \
-	../dep \
-	../dep/${mode}
-
 #====================================================
 
-# Default target (build everything)
+# Target list
+
+.PHONY: builddir buildlib lamemlib linkexe lamem print clean_all doc
+
+# Default target (build executable)
 
 .DEFAULT_TARGET: all
-.PHONY : all
+
 all : lamem
 
 #====================================================
-# Build dependencies
-.PHONY : depend
-depend : ${OBJDIR}
 
-${OBJDIR} :
-	@mkdir -p ${OBJDIR}
+# directory make rules
+
+../bin :
+	@if [ ! -d $@ ]; then mkdir $@; fi
+
+../lib :
+	@if [ ! -d $@ ]; then mkdir $@; fi
+
+../dep :
+	@if [ ! -d $@ ]; then mkdir $@; fi
+
+../bin/${mode} :
+	@if [ ! -d $@ ]; then mkdir $@; fi
+
+../lib/${mode} :
+	@if [ ! -d $@ ]; then mkdir $@; fi
+
+../dep/${mode} :
+	@if [ ! -d $@ ]; then mkdir $@; fi
+
+
+# build directories
+
+builddir : ../bin ../lib ../dep ../bin/${mode} ../lib/${mode} ../dep/${mode}
 
 #====================================================
-# Build LaMEM library
-.PHONY : lamemlib
-lamemlib : ${LaMEM_LIB}
 
-${LaMEM_LIB} : ${OBJDIR} ${COBJ}
+# force full rebuild when Makefiles are modified
+
+../dep/$(mode)/makefile.stat : Makefile Makefile.in
+	@rm -f ../lib/$(mode)/*
+	@rm -f ../bin/$(mode)/*
+	@rm -f ../dep/$(mode)/*
+	@echo 'makefile timestamp status file' > ../dep/$(mode)/makefile.stat
+	
+#====================================================
+
+# Build LaMEM library
+
+lamemlib : builddir buildlib
+
+buildlib : ${LaMEM_LIB}
+
+${LaMEM_LIB} : ../dep/$(mode)/makefile.stat ${COBJ}
 	@echo "............................................."
 	@echo ".......... Building LaMEM Library ..........."
 	@echo "............................................."
@@ -153,8 +180,10 @@ ${LaMEM_LIB} : ${OBJDIR} ${COBJ}
 #====================================================
 
 # Link LaMEM executable
-.PHONY : lamem
-lamem : ${LaMEM}
+
+lamem : lamemlib linkexe
+
+linkexe : ${LaMEM}
 
 ${LaMEM} : ${LaMEM_LIB} ${LaMEM_OBJ}
 	@echo "............................................."
@@ -168,7 +197,7 @@ ${LaMEM} : ${LaMEM_LIB} ${LaMEM_OBJ}
 # Insert full path to object files in dependency files with sed command
 # NOTE: IBM XL compiler generates dependency as a by-product of compilation
 
-../lib/${mode}/%.o : %.c Makefile Makefile.in
+../lib/${mode}/%.o : %.c
 	${CCOMPILER} ${LAMEM_FLAGS} -c $< -o $@ 
 ifeq ($(PLATFORM), ppc64)
 	@mv -f ../lib/${mode}/$*.d ../dep/${mode}/$*.d.tmp
@@ -185,7 +214,6 @@ endif
 
 #====================================================
 
-.PHONY : print
 print :	
 	@echo "............................................."
 	@echo "........ Environmental variables ............"
@@ -222,29 +250,25 @@ endif
 
 #====================================================
 
-.PHONY : clean_all
 clean_all :
 	@echo "............................................."
 	@echo ".......... Performing full clean ............"
 	@echo "............................................."
 	@rm -f ../lib/$(mode)/*
-	@rm -rf ../bin/$(mode)/*
+	@rm -f ../bin/$(mode)/*
 	@rm -f ../dep/$(mode)/*
-	@rm -f *.o *.a LaMEM
-	@rm -f ../lib/*.a
-	@rm -f ../dep/*.d
 
 #====================================================
 
 # Create automatic documentation
-.PHONY : doc
+
 doc:
 	PDFLATEX=$(PDFLATEX) BIBTEX=$(BIBTEX) ../doc/Manual/./CreateDevelDoc.sh
 
 #====================================================
 
 # building rule for subdirectory
-#../lib/${mode}/%.o : fdstag/%.c Makefile Makefile.in
+#../lib/${mode}/%.o : fdstag/%.c
 #	${CCOMPILER} ${LAMEM_FLAGS} -c $< -o $@ 
 #ifeq ($(PLATFORM), ppc64)
 #	@mv -f ../lib/${mode}/$*.d ../dep/${mode}/$*.d.tmp

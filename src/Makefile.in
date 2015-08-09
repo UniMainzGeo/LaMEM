@@ -87,13 +87,6 @@ endif
 
 #====================================================
 
-# Add SVN version number and date to the code
-# Is svn available on the system ? (yes/no)
-
-SVN_AVAILABLE = no
-
-#====================================================
-
 # Environment required for documentation 
 # Define paths to most current pdflatex and bibtex implementation
 
