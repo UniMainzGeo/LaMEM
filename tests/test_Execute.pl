@@ -337,9 +337,9 @@ sub Comparison_tolerance_diff_pl
                 print LDAT "    status: $com_log \n";
             }
 			else {
-#                print LDAT "comparing line\tOUTPUT   [$output_line_num] $my_line \n";
-#                print LDAT "\t\tEXPECTED [$exp_line_num] $exp_line \n";
-#                print LDAT "    status: passed \n\n";
+                print LDAT "comparing line\tOUTPUT   [$output_line_num] $my_line \n";
+                print LDAT "\t\tEXPECTED [$exp_line_num] $exp_line \n";
+                print LDAT "    status: passed \n\n";
 			}
 			
 			$lc_expected++;

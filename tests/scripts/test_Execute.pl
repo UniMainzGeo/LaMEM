@@ -42,6 +42,7 @@ $debug = 'false';
 sub execute {
 
 
+
 # User must define which mpi to use
 # Examine ${PETSC_DIR}/bmake/${PETSC_ARCH}/petsconf and look for MPIEXEC
 $path_to_mpiexec = '';
@@ -297,6 +298,15 @@ sub Comparison_tolerance_diff_pl
 			$lc_output++;
           next;
         }
+        
+        my $substr = 'took';
+        if (index($my_line, $substr) != -1) {
+            $lc_output++;
+            print "$my_line contains the word 'took' \n";
+            next;
+        }
+
+        
         #  OUTPUT_FILE: check lines are either both contain pointers or both do NOT contain pointers
         my $a_has_ptr = check_line_for_pointer( $my_line );
         if( $a_has_ptr ) {
@@ -309,12 +319,21 @@ sub Comparison_tolerance_diff_pl
 		my $II  = 0;
 		for( $II=$start; $II < $N_lines_expected_file; $II++ ) {
 	        $exp_line = $edata[ $II ];
+            
+
 			# check for comment line
     	    my $e_first_char = substr($exp_line, 0, 1);
         	if( $e_first_char eq '#' ) {
             	next;
         	}
-			# EXP_FILE: check for pointer
+            
+            my $substr = 'took';
+            if (index($exp_line, $substr) != -1) {
+                print "$exp_line contains the word 'took' \n";
+                next;
+            }
+            
+            # EXP_FILE: check for pointer
 	        my $b_has_ptr = check_line_for_pointer( $exp_line );
 			if( $b_has_ptr ) {
 				next;
@@ -337,9 +356,9 @@ sub Comparison_tolerance_diff_pl
                 print LDAT "    status: $com_log \n";
             }
 			else {
-#                print LDAT "comparing line\tOUTPUT   [$output_line_num] $my_line \n";
-#                print LDAT "\t\tEXPECTED [$exp_line_num] $exp_line \n";
-#                print LDAT "    status: passed \n\n";
+                print LDAT "comparing line\tOUTPUT   [$output_line_num] $my_line \n";
+                print LDAT "\t\tEXPECTED [$exp_line_num] $exp_line \n";
+                print LDAT "    status: passed \n\n";
 			}
 			
 			$lc_expected++;

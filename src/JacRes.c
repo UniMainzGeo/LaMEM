@@ -1686,7 +1686,7 @@ PetscErrorCode SetMatParLim(MatParLim *matLim, UserCtx *usr)
 	if(usr->DII_ref) matLim->DII_ref = usr->DII_ref;
     else{
         matLim->DII_ref = 1;
-        PetscPrintf(PETSC_COMM_SELF," WARNING: Reference strain rate DII_ref is not defined. Use a non-dimensional reference value of DII_ref =%f \n",matLim->DII_ref);
+        PetscPrintf(PETSC_COMM_WORLD," WARNING: Reference strain rate DII_ref is not defined. Use a non-dimensional reference value of DII_ref =%f \n",matLim->DII_ref);
     }
         
     

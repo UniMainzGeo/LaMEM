@@ -1,4 +1,0 @@
-EXEC            = ../bin/LaMEM -ParamFile ./input/SaltDiapirs_BasicSetup.dat -restart 0 -AddRandomNoiseParticles 0 -ErosionModel 1 -SedimentationModel 1
-NPROCS          = 2
-TEST_TYPE       = tolerance_diff_pl,1.0e-4
-

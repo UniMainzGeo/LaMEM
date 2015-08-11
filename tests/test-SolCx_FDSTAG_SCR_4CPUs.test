@@ -1,3 +1,0 @@
-EXEC            = ../bin/LaMEM -Benchmark_SolCx -mumax 1 -nnode_x 9 -nnode_y 3 -nnode_z 9 -vpt_element FDSTAG -DisplayAverageQuantities -StokesSolver 2 -vs_ksp_type richardson
-NPROCS          = 4
-TEST_TYPE       = tolerance_diff_pl,1.0e-4

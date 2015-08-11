@@ -1,5 +1,7 @@
 #!/usr/bin/perl
 
+use File::Path;
+
 # Declare the subroutines
 sub trim($);
 sub ltrim($);
@@ -99,7 +101,7 @@ if( $single_test == 0 ) {
   # Test name is the prefix of each .test
   @files = <*.test>;
 }
-print "Testiing the following files:\n";
+print "Testing the following files:\n";
 foreach $file (@files) {
     print "    $file \n";
 }
@@ -109,6 +111,10 @@ foreach $file (@files) {
     $found_EXEC = 'false';
     $found_TEST_TYPE = 'false';
   
+    # remove directories that might spoil output
+    #    rmtree('Timestep*');
+    `rm -rf Timestep*`;
+    
   
     # look for last instance of the fullstop "."
     $file_L = length $file;
@@ -454,6 +460,27 @@ sub Comparison_tolerance_diff_pl
 			$lc_output++;
 			next;
 		}
+        
+        # OUTPUT FILE: check line is not blank
+        if( $my_line =~ /^$/ ) {
+            $lc_output++;
+            next;
+        }
+        
+        # OUTPUT FILE: check line does not contain (sec)
+        my $substr = '(sec)';
+        if (index($my_line, $substr) != -1) {
+            $lc_output++;
+            next;
+        }
+
+        # OUTPUT FILE: check line does not contain Compiled
+        my $substr = 'Compiled';
+        if (index($my_line, $substr) != -1) {
+            $lc_output++;
+            next;
+        }
+
 
 
 		# find the next line in the expected file to check
@@ -475,8 +502,19 @@ sub Comparison_tolerance_diff_pl
 			if( $exp_line =~ /^$/ ) {
 				next;
 			}
-
-
+            # EXP_FILE FILE: check line does not contain (sec)
+            my $substr = '(sec)';
+            if (index($exp_line, $substr) != -1) {
+                $lc_output++;
+                next;
+            }
+            # EXP_FILE FILE: check line does not contain Compiled
+            my $substr = 'Compiled';
+            if (index($exp_line, $substr) != -1) {
+                $lc_output++;
+                next;
+            }
+            
 			$lc_expected = $II;
 			last;
 		}
@@ -495,9 +533,9 @@ sub Comparison_tolerance_diff_pl
                 print LDAT "    status: $com_log \n";
             }
 			else {
-#                print LDAT "comparing line\tOUTPUT   [$output_line_num] $my_line \n";
-#                print LDAT "\t\tEXPECTED [$exp_line_num] $exp_line \n";
-#                print LDAT "    status: passed \n\n";
+                #   print LDAT "comparing line\tOUTPUT   [$output_line_num] $my_line \n";
+                #   print LDAT "\t\tEXPECTED [$exp_line_num] $exp_line \n";
+                #   print LDAT "    status: passed \n\n";
 			}
 			
 			$lc_expected++;

@@ -21,6 +21,7 @@ ifeq ($(mode), deb)
 	@echo "...... Running tests in debug mode .........."
 	@echo "............................................."
 	@ln -sf ../bin/deb/LaMEM ../bin/LaMEM
+	@rm -rf Timestep*
 	@export PETSC_DIR=${PETSC_DEB}; ./scripts/ExecuteTests.pl
 endif
 ifeq ($(mode), opt)
@@ -28,6 +29,7 @@ ifeq ($(mode), opt)
 	@echo "..... Running tests in optimized mode ......."
 	@echo "............................................."
 	@ln -sf ../bin/opt/LaMEM ../bin/LaMEM
+	@rm -rf Timestep*
 	@export PETSC_DIR=${PETSC_OPT}; ./scripts/ExecuteTests.pl
 endif
 
@@ -49,5 +51,12 @@ clean :
 	@rm -f *.xml
 	@rm -rf ./Timestep*
 	@rm -rf ./Initial*
+	@rm -rf ./Breakpoint
 	@rm -f false
 	@rm -f ../bin/LaMEM
+
+../output :
+	@if [ ! -d $@ ]; then mkdir $@; fi
+	
+../log :
+	@if [ ! -d $@ ]; then mkdir $@; fi

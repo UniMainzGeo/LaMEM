@@ -1,3 +1,0 @@
-EXEC            = ../bin/LaMEM -ParamFile ./input/TempDepVisc_MG_DAM_NOgridin_benchmark.dat -AddRandomNoiseParticles 0 -restart 0 
-NPROCS          = 4
-TEST_TYPE       = tolerance_diff_pl,1.0e-3
