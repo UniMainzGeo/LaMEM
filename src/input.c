@@ -256,10 +256,15 @@ PetscErrorCode InputSetDefaultValues(JacRes *jr, UserCtx *user)
 	user->Pushing.reset_pushing_coord   = 0;
 	user->Pushing.theta                 = 0.0;
 
-	user->FSSA					=	0.0;
+	user->FSSA                          =	0.0;
 
 	// set this option to monitor actual option usage
 	PetscOptionsInsertString("-options_left");
+    
+    // Add a few default options
+    PetscOptionsInsertString("-options_left");
+    
+    
 
 	PetscFunctionReturn(0);
 }

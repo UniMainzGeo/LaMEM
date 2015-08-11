@@ -1611,11 +1611,6 @@ PetscErrorCode JacResViewRes(JacRes *jr)
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
 
-	// view residuals if required
-	ierr = PetscOptionsHasName(NULL, "-res_log", &flg); CHKERRQ(ierr);
-
-	if(flg != PETSC_TRUE) PetscFunctionReturn(0);
-
 	// get constrained residual vectors
 	ierr = JacResCopyMomentumRes  (jr, jr->gres); CHKERRQ(ierr);
 	ierr = JacResCopyContinuityRes(jr, jr->gres); CHKERRQ(ierr);
