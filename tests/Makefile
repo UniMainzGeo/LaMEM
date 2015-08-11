@@ -21,6 +21,7 @@ ifeq ($(mode), deb)
 	@echo "...... Running tests in debug mode .........."
 	@echo "............................................."
 	@ln -sf ../bin/deb/LaMEM ../bin/LaMEM
+	@rm -rf Timestep*
 	@export PETSC_DIR=${PETSC_DEB}; ./scripts/ExecuteTests.pl
 endif
 ifeq ($(mode), opt)

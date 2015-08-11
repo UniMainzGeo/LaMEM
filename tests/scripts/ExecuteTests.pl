@@ -1,5 +1,7 @@
 #!/usr/bin/perl
 
+use File::Path;
+
 # Declare the subroutines
 sub trim($);
 sub ltrim($);
@@ -109,6 +111,10 @@ foreach $file (@files) {
     $found_EXEC = 'false';
     $found_TEST_TYPE = 'false';
   
+    # remove directories that might spoil output
+    #    rmtree('Timestep*');
+    `rm -rf Timestep*`;
+    
   
     # look for last instance of the fullstop "."
     $file_L = length $file;

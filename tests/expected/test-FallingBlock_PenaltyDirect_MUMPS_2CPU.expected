@@ -62,12 +62,12 @@ Reading material parameters:
     Phase [1]: (temp ) alpha = 0 [ ], cp = 0 [ ], k = 0 [ ], A = 0 [ ] 
     
 --------------------------------------------------------------------------
- Total # of cpu's               : 1 
+ Total # of cpu's               : 2 
  Number of tracers/cell         : [2,2,2] 
  BC employed                    : BC.[LeftBound=1 RightBound=1; FrontBound=1 BackBound=1; LowerBound=1 UpperBound=1] 
  CFL timestep factor            : 0.500000 
  WARNING: Reference strain rate DII_ref is not defined. Use a non-dimensional reference value of DII_ref =1.000000 
- Processor grid  [nx, ny, nz]   : [1, 1, 1]
+ Processor grid  [nx, ny, nz]   : [1, 1, 2]
  Fine grid cells [nx, ny, nz]   : [16, 16, 16]
  Number of cells                :  4096
  Number of velocity DOF         :  13056
@@ -89,12 +89,12 @@ Reading material parameters:
 Time step 0 -------------------------------------------------------- 
 USING PICARD JACOBIAN for iteration 0,  ||F||/||F0||=1.000000e+00 
     Residual norms for js_ solve.
-    0 KSP Residual norm 2.136002538232e+01 
-    1 KSP Residual norm 1.604711326632e-04 
+    0 KSP Residual norm 2.136002538218e+01 
+    1 KSP Residual norm 1.604711570830e-04 
   Linear solve converged due to CONVERGED_RTOL iterations 1
  SNES Convergence Reason: maximum iterations reached
  Number of iterations : 1
- Nonlinear solve took 1.11339 (sec)
+ Nonlinear solve took 0.357298 (sec)
 ------------------------------------------
 Residual summary: 
   Continuity: 
@@ -107,51 +107,52 @@ Residual summary:
     |eRes|_2 = 0.000000000000e+00 
 ------------------------------------------
  Created new directory Timestep_000000_0.000000e+00 
-AVD generator complete in 4.3324e-02 (sec)
+AVD generator complete in 1.9881e-02 (sec)
 AVD3D memory usage: 
   points:  1.000000 [MB] 
-  cells:   2.861023 [MB] 
-  chains:  3.910164 [MB] 
-  total:   7.771187 [MB] 
+  cells:   2.975464 [MB] 
+  chains:  3.890640 [MB] 
+  total:   7.866104 [MB] 
  Time = 1e-05[ ], dt = 1e-05[ ] 
  Finished timestep 0 out of 1 
  
 Time step 1 -------------------------------------------------------- 
 USING PICARD JACOBIAN for iteration 0,  ||F||/||F0||=1.000000e+00 
     Residual norms for js_ solve.
-    0 KSP Residual norm 3.031253166036e-04 
-    1 KSP Residual norm 4.587130961081e-09 
+    0 KSP Residual norm 3.031254631446e-04 
+    1 KSP Residual norm 4.587076638167e-09 
   Linear solve converged due to CONVERGED_RTOL iterations 1
  SNES Convergence Reason: maximum iterations reached
  Number of iterations : 1
- Nonlinear solve took 1.07262 (sec)
+ Nonlinear solve took 0.170593 (sec)
 ------------------------------------------
 Residual summary: 
   Continuity: 
-    Div_min  = -5.556278795681e-06 
-    Div_max  = 5.556289191386e-06 
-    |Div|_2  = 2.112320274449e-04 
+    Div_min  = -5.556278795692e-06 
+    Div_max  = 5.556289191407e-06 
+    |Div|_2  = 2.112320274451e-04 
   Momentum: 
-    |mRes|_2 = 5.212902649760e-03 
+    |mRes|_2 = 5.212906998939e-03 
   Energy: 
     |eRes|_2 = 0.000000000000e+00 
 ------------------------------------------
  Created new directory Timestep_000001_1.000000e-05 
-AVD generator complete in 5.6826e-02 (sec)
+AVD generator complete in 2.7924e-02 (sec)
 AVD3D memory usage: 
   points:  1.000000 [MB] 
-  cells:   2.861023 [MB] 
-  chains:  4.373520 [MB] 
-  total:   8.234543 [MB] 
+  cells:   2.975464 [MB] 
+  chains:  4.353157 [MB] 
+  total:   8.328621 [MB] 
  Time = 2e-05[ ], dt = 1e-05[ ] 
  Finished timestep 1 out of 1 
  
- Simulation took 2.37984 (sec) 
+ Simulation took 0.648402 (sec) 
 #PETSc Option Table entries:
 -AddRandomNoiseParticles 0
 -FSSA 1.0
 -ParamFile ./input/FallingBlock_mono_PenaltyDirect.dat
 -dt 1e-2
+-jp_pc_factor_mat_solver_package mumps
 -jp_pc_type lu
 -jp_type user
 -js_ksp_atol 1e-10
