@@ -1611,11 +1611,6 @@ PetscErrorCode JacResViewRes(JacRes *jr)
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
 
-	// view residuals if required
-	ierr = PetscOptionsHasName(NULL, "-res_log", &flg); CHKERRQ(ierr);
-
-	if(flg != PETSC_TRUE) PetscFunctionReturn(0);
-
 	// get constrained residual vectors
 	ierr = JacResCopyMomentumRes  (jr, jr->gres); CHKERRQ(ierr);
 	ierr = JacResCopyContinuityRes(jr, jr->gres); CHKERRQ(ierr);
@@ -1689,7 +1684,12 @@ PetscErrorCode SetMatParLim(MatParLim *matLim, UserCtx *usr)
 	matLim->DII_rtol     = 1e-8;
 
 	if(usr->DII_ref) matLim->DII_ref = usr->DII_ref;
-	else SETERRQ(PETSC_COMM_SELF, PETSC_ERR_USER, "Reference strain rate is not defined. Use DII_ref parameter");
+    else{
+        matLim->DII_ref = 1;
+        PetscPrintf(PETSC_COMM_SELF," WARNING: Reference strain rate DII_ref is not defined. Use a non-dimensional reference value of DII_ref =%f \n",matLim->DII_ref);
+    }
+        
+    
 
 	matLim->minCh        = 0.0;
 	matLim->minFr        = 0.0;

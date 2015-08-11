@@ -62,7 +62,7 @@ PetscErrorCode FDSTAGInitCode(JacRes *jr, UserCtx *user, ModParam *iop)
 {
 	FILE      *fp;
 	char      *all_options;
-	char      ParamFile[MAX_PATH_LEN];
+	char      ParamFile[PETSC_MAX_PATH_LEN];
 	PetscBool InputParamFile;
 
 	PetscMPIInt  size;
@@ -77,7 +77,7 @@ PetscErrorCode FDSTAGInitCode(JacRes *jr, UserCtx *user, ModParam *iop)
 	ierr = InputSetDefaultValues(jr, user); CHKERRQ(ierr);
 
 	// check whether input file is specified
-	ierr = PetscOptionsGetString(PETSC_NULL, "-ParamFile", ParamFile, MAX_PATH_LEN, &InputParamFile); CHKERRQ(ierr);
+	ierr = PetscOptionsGetString(PETSC_NULL, "-ParamFile", ParamFile, PETSC_MAX_PATH_LEN, &InputParamFile); CHKERRQ(ierr);
 
 	// read additional PETSc options from input file if required
 	if(InputParamFile == PETSC_TRUE)
@@ -150,7 +150,7 @@ PetscErrorCode FDSTAGInitCode(JacRes *jr, UserCtx *user, ModParam *iop)
 	}
 
 	// boundary conditions
-	PetscPrintf(PETSC_COMM_WORLD," BC employed                    : BC.[Left=%lld Right=%lld; Front=%lld Back=%lld; Lower=%lld Upper=%lld] \n",
+	PetscPrintf(PETSC_COMM_WORLD," BC employed                    : BC.[LeftBound=%lld RightBound=%lld; FrontBound=%lld BackBound=%lld; LowerBound=%lld UpperBound=%lld] \n",
 			(LLD)(user->BC.LeftBound), (LLD)(user->BC.RightBound), (LLD)(user->BC.FrontBound), (LLD)(user->BC.BackBound), (LLD)(user->BC.LowerBound), (LLD)(user->BC.UpperBound) );
 
 	ierr = PetscFree(all_options); CHKERRQ(ierr);
@@ -232,7 +232,7 @@ PetscErrorCode InputSetDefaultValues(JacRes *jr, UserCtx *user)
 
 	user->ParticleInput      = 1;  // 0-do not use particles to track phases; 1-do use particles to track phases ???
 	user->SaveParticles      = 0;  // Save particles or not?
-	user->restart            = 1;  // Are we restarting a simulation?
+	user->restart            = 0;  // Are we restarting a simulation?
 	user->save_breakpoints   = 10; // After how many steps do we make a breakpoint?
 	user->break_point_number = 0;  // The number of the breakpoint file
 
@@ -256,10 +256,15 @@ PetscErrorCode InputSetDefaultValues(JacRes *jr, UserCtx *user)
 	user->Pushing.reset_pushing_coord   = 0;
 	user->Pushing.theta                 = 0.0;
 
-	user->FSSA					=	0.0;
+	user->FSSA                          =	0.0;
 
 	// set this option to monitor actual option usage
 	PetscOptionsInsertString("-options_left");
+    
+    // Add a few default options
+    PetscOptionsInsertString("-options_left");
+    
+    
 
 	PetscFunctionReturn(0);
 }
@@ -327,7 +332,7 @@ PetscErrorCode InputReadFile(JacRes *jr, UserCtx *user, FILE *fp)
 		else SETERRQ1(PETSC_COMM_SELF, PETSC_ERR_USER,"#ERROR! Incorrect model setup: %s", setup_name);
 	}
 
-	parse_GetString( fp, "OutputFile", user->OutputFile, MAX_PATH_LEN, &found );
+	parse_GetString( fp, "OutputFile", user->OutputFile, PETSC_MAX_PATH_LEN, &found );
 	parse_GetInt( fp,    "save_breakpoints", &user->save_breakpoints, &found );
 	parse_GetInt( fp,    "restart", &user->restart, &found );
 	parse_GetInt( fp,    "save_timesteps", &user->save_timesteps, &found );
@@ -338,20 +343,20 @@ PetscErrorCode InputReadFile(JacRes *jr, UserCtx *user, FILE *fp)
 
 	// Particle related variables
 	parse_GetInt( fp,    "ParticleInput", &user->ParticleInput, &found );
-	parse_GetString( fp, "ParticleFilename", user->ParticleFilename, MAX_PATH_LEN, &found );
-	parse_GetString( fp, "TemperatureFilename", user->TemperatureFilename, MAX_PATH_LEN, &found );
+	parse_GetString( fp, "ParticleFilename", user->ParticleFilename, PETSC_MAX_PATH_LEN, &found );
+	parse_GetString( fp, "TemperatureFilename", user->TemperatureFilename, PETSC_MAX_PATH_LEN, &found );
 	if (!found){
 		sprintf(user->TemperatureFilename, "noTemperatureFileName");
 	}
-	parse_GetString( fp, "TopoFilename", user->TopoFilename, MAX_PATH_LEN, &found );
+	parse_GetString( fp, "TopoFilename", user->TopoFilename, PETSC_MAX_PATH_LEN, &found );
 	if (!found){
 		sprintf(user->TopoFilename, "noTopoFileName");
 	}
-	parse_GetString( fp, "LoadInitialParticlesDirectory", user->LoadInitialParticlesDirectory, MAX_PATH_LEN, &found );
+	parse_GetString( fp, "LoadInitialParticlesDirectory", user->LoadInitialParticlesDirectory, PETSC_MAX_PATH_LEN, &found );
 	if (!found){
 		sprintf(user->LoadInitialParticlesDirectory, "InitialParticles");
 	}
-	parse_GetString( fp, "SaveInitialParticlesDirectory", user->SaveInitialParticlesDirectory, MAX_PATH_LEN, &found );
+	parse_GetString( fp, "SaveInitialParticlesDirectory", user->SaveInitialParticlesDirectory, PETSC_MAX_PATH_LEN, &found );
 	if (!found){
 		sprintf(user->SaveInitialParticlesDirectory, "InitialParticles");
 	}
@@ -514,7 +519,7 @@ PetscErrorCode InputReadCommLine(UserCtx *user )
 	PetscOptionsGetReal(PETSC_NULL,"-PlastViscosity",       &user->PlastViscosity,       PETSC_NULL); // upper viscosity cutoff
 
 	// initial guess strain rate
-	PetscOptionsGetReal(PETSC_NULL,"-DII_ref",              &user->DII_ref,        PETSC_NULL);
+    PetscOptionsGetReal(PETSC_NULL,"-DII_ref",              &user->DII_ref,        PETSC_NULL);
 
 	// gravity
 	PetscOptionsGetReal(PETSC_NULL ,"-GravityAngle",   &user->GravityAngle,     PETSC_NULL); // Gravity angle in x-z plane
@@ -532,7 +537,7 @@ PetscErrorCode InputReadCommLine(UserCtx *user )
 	PetscOptionsGetReal(PETSC_NULL,"-Pushing.theta"             , &user->Pushing.theta              , PETSC_NULL);
 
 	// pushing - array variables
-	char matprop_opt[MAX_PATH_LEN];
+	char matprop_opt[PETSC_MAX_PATH_LEN];
 	flg = PETSC_FALSE;
 
 	for(i=0;i<user->Pushing.num_changes;i++){
