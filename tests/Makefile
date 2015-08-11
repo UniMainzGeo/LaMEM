@@ -49,5 +49,6 @@ clean :
 	@rm -f *.xml
 	@rm -rf ./Timestep*
 	@rm -rf ./Initial*
+	@rm -rf ./Breakpoint
 	@rm -f false
 	@rm -f ../bin/LaMEM

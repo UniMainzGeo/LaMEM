@@ -319,7 +319,7 @@ ierr = JacResCopyTemp(&jr); CHKERRQ(ierr);
 
 			PetscTime(&cputime_end_nonlinear);
 
-			PetscPrintf(PETSC_COMM_WORLD, " Nonlinear solve took %g s\n", cputime_end_nonlinear - cputime_start_nonlinear);
+			PetscPrintf(PETSC_COMM_WORLD, " Nonlinear solve took %g (sec)\n", cputime_end_nonlinear - cputime_start_nonlinear);
 		}
 		else
 		{
@@ -459,7 +459,7 @@ ierr = JacResCopyTemp(&jr); CHKERRQ(ierr);
 
 
 	PetscTime(&cputime_end);
-	PetscPrintf(PETSC_COMM_WORLD, " Simulation took %g s\n", cputime_end - cputime_start);
+	PetscPrintf(PETSC_COMM_WORLD, " Simulation took %g (sec) \n", cputime_end - cputime_start);
 
 	PetscFunctionReturn(0);
 }
