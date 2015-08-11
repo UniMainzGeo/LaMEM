@@ -150,7 +150,7 @@ PetscErrorCode FDSTAGInitCode(JacRes *jr, UserCtx *user, ModParam *iop)
 	}
 
 	// boundary conditions
-	PetscPrintf(PETSC_COMM_WORLD," BC employed                    : BC.[Left=%lld Right=%lld; Front=%lld Back=%lld; Lower=%lld Upper=%lld] \n",
+	PetscPrintf(PETSC_COMM_WORLD," BC employed                    : BC.[LeftBound=%lld RightBound=%lld; FrontBound=%lld BackBound=%lld; LowerBound=%lld UpperBound=%lld] \n",
 			(LLD)(user->BC.LeftBound), (LLD)(user->BC.RightBound), (LLD)(user->BC.FrontBound), (LLD)(user->BC.BackBound), (LLD)(user->BC.LowerBound), (LLD)(user->BC.UpperBound) );
 
 	ierr = PetscFree(all_options); CHKERRQ(ierr);
@@ -232,7 +232,7 @@ PetscErrorCode InputSetDefaultValues(JacRes *jr, UserCtx *user)
 
 	user->ParticleInput      = 1;  // 0-do not use particles to track phases; 1-do use particles to track phases ???
 	user->SaveParticles      = 0;  // Save particles or not?
-	user->restart            = 1;  // Are we restarting a simulation?
+	user->restart            = 0;  // Are we restarting a simulation?
 	user->save_breakpoints   = 10; // After how many steps do we make a breakpoint?
 	user->break_point_number = 0;  // The number of the breakpoint file
 
@@ -514,7 +514,7 @@ PetscErrorCode InputReadCommLine(UserCtx *user )
 	PetscOptionsGetReal(PETSC_NULL,"-PlastViscosity",       &user->PlastViscosity,       PETSC_NULL); // upper viscosity cutoff
 
 	// initial guess strain rate
-	PetscOptionsGetReal(PETSC_NULL,"-DII_ref",              &user->DII_ref,        PETSC_NULL);
+    PetscOptionsGetReal(PETSC_NULL,"-DII_ref",              &user->DII_ref,        PETSC_NULL);
 
 	// gravity
 	PetscOptionsGetReal(PETSC_NULL ,"-GravityAngle",   &user->GravityAngle,     PETSC_NULL); // Gravity angle in x-z plane
