@@ -474,6 +474,13 @@ sub Comparison_tolerance_diff_pl
             next;
         }
 
+        # OUTPUT FILE: check line does not contain Compiled
+        my $substr = 'Compiled';
+        if (index($my_line, $substr) != -1) {
+            $lc_output++;
+            next;
+        }
+
 
 
 		# find the next line in the expected file to check
@@ -501,7 +508,13 @@ sub Comparison_tolerance_diff_pl
                 $lc_output++;
                 next;
             }
-
+            # EXP_FILE FILE: check line does not contain Compiled
+            my $substr = 'Compiled';
+            if (index($exp_line, $substr) != -1) {
+                $lc_output++;
+                next;
+            }
+            
 			$lc_expected = $II;
 			last;
 		}
