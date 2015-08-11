@@ -5,8 +5,8 @@
 
 mode = opt
 
-.PHONY : check
-check :
+.PHONY : builddir check
+check : builddir
 ifneq ($(mode), deb)
 ifneq ($(mode), opt)
 	@echo "............................................."
@@ -55,8 +55,11 @@ clean :
 	@rm -f false
 	@rm -f ../bin/LaMEM
 
-../output :
+output :
 	@if [ ! -d $@ ]; then mkdir $@; fi
 	
-../log :
+log :
 	@if [ ! -d $@ ]; then mkdir $@; fi
+
+# build directories
+builddir : output log
