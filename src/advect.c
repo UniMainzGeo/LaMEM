@@ -1116,9 +1116,9 @@ PetscErrorCode ADVCheckCorners(AdvCtx *actx)
 	PetscFunctionBegin;
 
 	PetscBool flag = PETSC_TRUE;
-	PetscOptionsGetBool(PETSC_NULL, "-use_marker_control", &flag, PETSC_NULL);
+	PetscOptionsGetBool(PETSC_NULL, "-no_marker_control", &flag, PETSC_NULL);
 
-	if (!flag) PetscFunctionReturn(0);
+	if (flag) PetscFunctionReturn(0);
 
 	ierr = PetscTime(&t0); CHKERRQ(ierr);
 
