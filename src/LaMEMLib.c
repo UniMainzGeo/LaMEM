@@ -104,10 +104,10 @@ PetscErrorCode LaMEMLib(ModParam *IOparam)
 
 	PetscInt found_data;
 
-	char ParamFile[PETSC_MAX_PATH_LEN];
+	char ParamFile[MAX_PATH_LEN];
 
 	// check whether input file is specified
-	ierr = PetscOptionsGetString(PETSC_NULL, "-ParamFile", ParamFile, PETSC_MAX_PATH_LEN, &InputParamFile); CHKERRQ(ierr);
+	ierr = PetscOptionsGetString(PETSC_NULL, "-ParamFile", ParamFile, MAX_PATH_LEN, &InputParamFile); CHKERRQ(ierr);
 
 	// read additional PETSc options from input file
 	if(InputParamFile == PETSC_TRUE)

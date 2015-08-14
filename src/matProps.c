@@ -464,7 +464,7 @@ PetscErrorCode MatPropSetFromCL(JacRes *jr)
 	PetscErrorCode 	ierr;
 	PetscBool		flg,get_options;
 	PetscInt 		id;
-	char 			matprop_opt[PETSC_MAX_PATH_LEN];
+	char 			matprop_opt[MAX_PATH_LEN];
 	PetscScalar eta, eta0, e0;
 	Material_t *m;
 

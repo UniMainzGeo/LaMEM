@@ -62,7 +62,7 @@ PetscErrorCode FDSTAGInitCode(JacRes *jr, UserCtx *user, ModParam *iop)
 {
 	FILE      *fp;
 	char      *all_options;
-	char      ParamFile[PETSC_MAX_PATH_LEN];
+	char      ParamFile[MAX_PATH_LEN];
 	PetscBool InputParamFile;
 
 	PetscMPIInt  size;
@@ -77,7 +77,7 @@ PetscErrorCode FDSTAGInitCode(JacRes *jr, UserCtx *user, ModParam *iop)
 	ierr = InputSetDefaultValues(jr, user); CHKERRQ(ierr);
 
 	// check whether input file is specified
-	ierr = PetscOptionsGetString(PETSC_NULL, "-ParamFile", ParamFile, PETSC_MAX_PATH_LEN, &InputParamFile); CHKERRQ(ierr);
+	ierr = PetscOptionsGetString(PETSC_NULL, "-ParamFile", ParamFile, MAX_PATH_LEN, &InputParamFile); CHKERRQ(ierr);
 
 	// read additional PETSc options from input file if required
 	if(InputParamFile == PETSC_TRUE)
@@ -332,7 +332,7 @@ PetscErrorCode InputReadFile(JacRes *jr, UserCtx *user, FILE *fp)
 		else SETERRQ1(PETSC_COMM_SELF, PETSC_ERR_USER,"#ERROR! Incorrect model setup: %s", setup_name);
 	}
 
-	parse_GetString( fp, "OutputFile", user->OutputFile, PETSC_MAX_PATH_LEN, &found );
+	parse_GetString( fp, "OutputFile", user->OutputFile, MAX_PATH_LEN, &found );
 	parse_GetInt( fp,    "save_breakpoints", &user->save_breakpoints, &found );
 	parse_GetInt( fp,    "restart", &user->restart, &found );
 	parse_GetInt( fp,    "save_timesteps", &user->save_timesteps, &found );
@@ -343,20 +343,20 @@ PetscErrorCode InputReadFile(JacRes *jr, UserCtx *user, FILE *fp)
 
 	// Particle related variables
 	parse_GetInt( fp,    "ParticleInput", &user->ParticleInput, &found );
-	parse_GetString( fp, "ParticleFilename", user->ParticleFilename, PETSC_MAX_PATH_LEN, &found );
-	parse_GetString( fp, "TemperatureFilename", user->TemperatureFilename, PETSC_MAX_PATH_LEN, &found );
+	parse_GetString( fp, "ParticleFilename", user->ParticleFilename, MAX_PATH_LEN, &found );
+	parse_GetString( fp, "TemperatureFilename", user->TemperatureFilename, MAX_PATH_LEN, &found );
 	if (!found){
 		sprintf(user->TemperatureFilename, "noTemperatureFileName");
 	}
-	parse_GetString( fp, "TopoFilename", user->TopoFilename, PETSC_MAX_PATH_LEN, &found );
+	parse_GetString( fp, "TopoFilename", user->TopoFilename, MAX_PATH_LEN, &found );
 	if (!found){
 		sprintf(user->TopoFilename, "noTopoFileName");
 	}
-	parse_GetString( fp, "LoadInitialParticlesDirectory", user->LoadInitialParticlesDirectory, PETSC_MAX_PATH_LEN, &found );
+	parse_GetString( fp, "LoadInitialParticlesDirectory", user->LoadInitialParticlesDirectory, MAX_PATH_LEN, &found );
 	if (!found){
 		sprintf(user->LoadInitialParticlesDirectory, "InitialParticles");
 	}
-	parse_GetString( fp, "SaveInitialParticlesDirectory", user->SaveInitialParticlesDirectory, PETSC_MAX_PATH_LEN, &found );
+	parse_GetString( fp, "SaveInitialParticlesDirectory", user->SaveInitialParticlesDirectory, MAX_PATH_LEN, &found );
 	if (!found){
 		sprintf(user->SaveInitialParticlesDirectory, "InitialParticles");
 	}
@@ -537,7 +537,7 @@ PetscErrorCode InputReadCommLine(UserCtx *user )
 	PetscOptionsGetReal(PETSC_NULL,"-Pushing.theta"             , &user->Pushing.theta              , PETSC_NULL);
 
 	// pushing - array variables
-	char matprop_opt[PETSC_MAX_PATH_LEN];
+	char matprop_opt[MAX_PATH_LEN];
 	flg = PETSC_FALSE;
 
 	for(i=0;i<user->Pushing.num_changes;i++){

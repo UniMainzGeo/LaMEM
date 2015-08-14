@@ -70,7 +70,7 @@ typedef struct
 	PetscScalar  StdDev;
 	PetscScalar  LithColDens[9],LithColDepth[8];
 	PetscInt     num_intp,LithColNum;
-	char         RefDatFile2load[PETSC_MAX_PATH_LEN];
+	char         RefDatFile2load[MAX_PATH_LEN];
 } gravityParams;
 //-----------------------------------------------------------------------------
 // Structure that holds pushing parameters
@@ -200,7 +200,7 @@ typedef struct
 	// temperature - not active
 	PetscScalar      Temp_bottom, Temp_top;
 	PetscScalar      GasConstant;
-	char             TemperatureFilename[PETSC_MAX_PATH_LEN];
+	char             TemperatureFilename[MAX_PATH_LEN];
 
 	// optimization
 	PetscInt         mpi_group_id; //migrated from OptimiseParams
@@ -217,14 +217,14 @@ typedef struct
 	PetscInt         restart;
 
 	//markers
-	char             ParticleFilename[PETSC_MAX_PATH_LEN];
-	char             LoadInitialParticlesDirectory[PETSC_MAX_PATH_LEN];
-	char             SaveInitialParticlesDirectory[PETSC_MAX_PATH_LEN];
+	char             ParticleFilename[MAX_PATH_LEN];
+	char             LoadInitialParticlesDirectory[MAX_PATH_LEN];
+	char             SaveInitialParticlesDirectory[MAX_PATH_LEN];
 	PetscInt         SaveParticles;
 	PetscInt         ParticleInput; // this needs to be connected in relation to marker setups
 
 	// input/output
-	char             OutputFile[PETSC_MAX_PATH_LEN];
+	char             OutputFile[MAX_PATH_LEN];
 	PetscInt         PolyInVolSkip[30];
 	// flags
 	PetscBool        SkipStokesSolver;
@@ -243,7 +243,7 @@ typedef struct
 	PushParams       Pushing;
 	
 	// topography
-	char             TopoFilename[PETSC_MAX_PATH_LEN];
+	char             TopoFilename[MAX_PATH_LEN];
 	
 
 } UserCtx;
