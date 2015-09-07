@@ -217,7 +217,7 @@ PetscErrorCode AVDViewCreate(AVD3D *A, AdvCtx *actx, PetscInt refine)
 
 	AVD3DSetDomainSize(avd3D, bx, ex, by, ey, bz, ez);
 
-	ierr = AVD3DSetParallelExtent(avd3D, fs->dsx.nproc, fs->dsy.nproc, fs->dsy.nproc); CHKERRQ(ierr);
+	ierr = AVD3DSetParallelExtent(avd3D, fs->dsx.nproc, fs->dsy.nproc, fs->dsz.nproc); CHKERRQ(ierr);
 
 	ierr = AVD3DLoadPoints(avd3D, actx); CHKERRQ(ierr);
 
