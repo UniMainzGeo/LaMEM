@@ -6,8 +6,8 @@ INSTALLATION GUIDE OF LAMEM
 Installation guides of PETSc on different platforms can be found in ../doc/installation/
 
 # Set paths in .bash_profile
-export PETSC_DEB=/opt/petsc/petsc-3.4.2-int32-debug
-export PETSC_OPT=/opt/petsc/petsc-3.4.2-int32-opt
+export PETSC_DEB=/opt/petsc/petsc-3.5.4-int32-debug
+export PETSC_OPT=/opt/petsc/petsc-3.5.4-int32-opt
 
 NOTES:
 
@@ -18,13 +18,18 @@ Makefile is now supporting building both versions simultaneously.
 type 'make mode=deb all' (or simply 'make all', mode=deb is the default) to build everything in debug mode
 type 'make mode=opt all' to build everything in optimized mode
 
-[2] SVN
+[2] GIT
 
-Also it's not necessary to do svn updates explicitly.
-type 'make update' to update to latest version, and to write a new Version.h file.
+Download LaMEM from BitBucket:
+git clone https://UserName@bitbucket.org/bkaus/lamem.git LaMEM/
+replace UserName by your bitbucket username
+
 
 [3] VIEW ENVIRONMENT
+
 type 'make mode=deb print' or 'make mode=opt print' to view your environmental variables.
+if PETSC_OPT or PETSC_DEB are not properly set you will get an error message such as:
+Makefile:58: /opt/petsc/petsc-3.5.4-int32-opt/conf/variables: File or directory not found
 
 [4] TESTS
 
