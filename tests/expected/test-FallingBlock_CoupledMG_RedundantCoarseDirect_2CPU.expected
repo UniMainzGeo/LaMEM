@@ -4,7 +4,6 @@
 # Adding PetscOption: -FSSA 1.0 
 # Adding PetscOption: -AddRandomNoiseParticles 0 
 # Adding PetscOption: -restart 0 
-# Adding PetscOption: -use_marker_control 
 # Adding PetscOption: -snes_type ksponly 
 # Adding PetscOption: -js_ksp_type gmres 
 # Adding PetscOption: -js_ksp_max_it 150 
@@ -49,7 +48,7 @@
 # Adding PetscOption: -objects_dump 
 -------------------------------------------------------------------------- 
                    Lithosphere and Mantle Evolution Model                   
-     Compiled: Date: Aug 11 2015 - Time: 16:52:17 	    
+     Compiled: Date: Sep 17 2015 - Time: 11:51:31 	    
 -------------------------------------------------------------------------- 
         STAGGERED-GRID FINITE DIFFERENCE CANONICAL IMPLEMENTATION           
 -------------------------------------------------------------------------- 
@@ -115,7 +114,7 @@ USING PICARD JACOBIAN for iteration 0,  ||F||/||F0||=1.000000e+00
   Linear solve converged due to CONVERGED_RTOL iterations 7
  SNES Convergence Reason: maximum iterations reached
  Number of iterations : 1
- Nonlinear solve took 1.03504 (sec)
+ Nonlinear solve took 1.23384 (sec)
 ------------------------------------------
 Residual summary: 
   Continuity: 
@@ -128,7 +127,7 @@ Residual summary:
     |eRes|_2 = 0.000000000000e+00 
 ------------------------------------------
  Created new directory Timestep_000000_0.000000e+00 
-AVD generator complete in 1.6822e-01 (sec)
+AVD generator complete in 1.8489e-01 (sec)
 AVD3D memory usage: 
   points:  8.000000 [MB] 
   cells:   21.981812 [MB] 
@@ -152,7 +151,7 @@ USING PICARD JACOBIAN for iteration 0,  ||F||/||F0||=1.000000e+00
   Linear solve converged due to CONVERGED_RTOL iterations 8
  SNES Convergence Reason: maximum iterations reached
  Number of iterations : 1
- Nonlinear solve took 0.845081 (sec)
+ Nonlinear solve took 0.886166 (sec)
 ------------------------------------------
 Residual summary: 
   Continuity: 
@@ -165,7 +164,7 @@ Residual summary:
     |eRes|_2 = 0.000000000000e+00 
 ------------------------------------------
  Created new directory Timestep_000001_1.000000e-05 
-AVD generator complete in 2.1611e-01 (sec)
+AVD generator complete in 2.2263e-01 (sec)
 AVD3D memory usage: 
   points:  8.000000 [MB] 
   cells:   21.981812 [MB] 
@@ -174,7 +173,7 @@ AVD3D memory usage:
  Time = 2e-05[ ], dt = 1e-05[ ] 
  Finished timestep 1 out of 1 
  
- Simulation took 2.61573 (sec) 
+ Simulation took 2.88567 (sec) 
 #PETSc Option Table entries:
 -AddRandomNoiseParticles 0
 -FSSA 1.0
@@ -225,7 +224,6 @@ AVD3D memory usage:
 -pstokes mg
 -restart 0
 -snes_type ksponly
--use_marker_control
 #End of PETSc Option Table entries
 There are 2 unused database options. They are:
 Option left: name:-js_ksp_min_it value: 1
