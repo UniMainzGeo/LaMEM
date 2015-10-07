@@ -294,6 +294,20 @@ PetscErrorCode ADVRemap(AdvCtx *actx)
 
 	// free surface correction
 
+	// print particle density
+	PetscInt i, n, min, max, sum = 0;
+	PetscScalar avrg;
+	min = actx->markstart[1] - actx->markstart[0];
+	max = actx->markstart[1] - actx->markstart[0];
+	for(i = 0; i < actx->fs->nCells; i++)
+	{
+		n = actx->markstart[i+1] - actx->markstart[i];
+		if (n < min) min = n;
+		if (n > max) max = n;
+		sum += n;
+	}
+	avrg = (PetscScalar)sum/actx->fs->nCells;
+	PetscPrintf(PETSC_COMM_SELF,"# MARKER_DENSITY [%lld]: max = %lld min = %lld average = %g\n",(LLD)actx->iproc, (LLD)max, (LLD)min, avrg);
 
 	// project advected history from markers back to grid
 	ierr = ADVProjHistMarkToGrid(actx); CHKERRQ(ierr);
@@ -1084,7 +1098,7 @@ PetscErrorCode ADVMarkControl(AdvCtx *actx)
 
 	// print info
 	ierr = PetscTime(&t1); CHKERRQ(ierr);
-	PetscPrintf(PETSC_COMM_WORLD,"# Marker Control [%lld]: (AVD Cell) injected %lld markers and deleted %lld markers in %1.4e s\n",(LLD)actx->iproc, (LLD)ninj, (LLD)ndel, t1-t0);
+	PetscPrintf(PETSC_COMM_SELF,"# Marker Control [%lld]: (AVD Cell) injected %lld markers and deleted %lld markers in %1.4e s\n",(LLD)actx->iproc, (LLD)ninj, (LLD)ndel, t1-t0);
 
 	// clear
 	ierr = PetscFree(actx->recvbuf); CHKERRQ(ierr);
@@ -1348,9 +1362,12 @@ PetscErrorCode ADVCheckCorners(AdvCtx *actx)
 	// compute host cells for all the markers
 	ierr = ADVMapMarkToCells(actx); CHKERRQ(ierr);
 
+	// update arrays for marker-cell interaction
+	ierr = ADVUpdateMarkCell(actx); CHKERRQ(ierr);
+
 	// print info
 	ierr = PetscTime(&t1); CHKERRQ(ierr);
-	PetscPrintf(PETSC_COMM_WORLD,"# Marker Control [%lld]: (Corners ) injected %lld markers in %1.4e s \n",(LLD)actx->iproc, (LLD)ninj, t1-t0);
+	PetscPrintf(PETSC_COMM_SELF,"# Marker Control [%lld]: (Corners ) injected %lld markers in %1.4e s \n",(LLD)actx->iproc, (LLD)ninj, t1-t0);
 
 	// clear
 	ierr = PetscFree(numcorner);     CHKERRQ(ierr);

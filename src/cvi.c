@@ -70,6 +70,7 @@ PetscErrorCode ADVelAdvectMain(AdvCtx *actx)
 	// MAJOR ADVECTION ROUTINE
 	//=======================================================================
 	AdvVelCtx vi;
+	PetscLogDouble t0,t1;
 
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
@@ -80,8 +81,14 @@ PetscErrorCode ADVelAdvectMain(AdvCtx *actx)
 	// interpolate P,T - needs update
 	ierr = ADVelInterpPT(actx); CHKERRQ(ierr);
 
+	ierr = PetscTime(&t0); CHKERRQ(ierr);
+
 	// velocity advection routine - with different velocity interpolations
 	ierr = ADVelAdvectScheme(actx, &vi); CHKERRQ(ierr);
+
+	// print info
+	ierr = PetscTime(&t1); CHKERRQ(ierr);
+	PetscPrintf(PETSC_COMM_WORLD,"# CVI: Advection and velocity interpolation took %1.4e s\n",(LLD)actx->iproc, t1-t0);
 
 	PetscFunctionReturn(0);
 }
