@@ -48,6 +48,9 @@
 //---------------------------------------------------------------------------
 
 #define _max_periods_ 20
+#define _max_path_points_ 30
+#define _max_poly_points_ 15
+#define _max_bc_blocks_ 3
 
 //---------------------------------------------------------------------------
 // index shift type
@@ -57,6 +60,21 @@ typedef enum
 	_GLOBAL_TO_LOCAL_
 
 } ShiftType;
+//---------------------------------------------------------------------------
+typedef struct
+{
+
+	// path description
+	PetscInt    npath;                       // number of path points
+	PetscScalar theta [  _max_path_points_]; // orientation angles at path points
+	PetscScalar time  [  _max_path_points_]; // times at path points
+	PetscScalar Bezier[4*_max_path_points_]; // coordinates of Bezier path curve
+
+	// block description
+	PetscInt    npoly;                      // number of polygon vertices
+	PetscScalar poly [2*_max_poly_points_]; // polygon coordinates
+
+} BCBlock;
 //---------------------------------------------------------------------------
 // boundary condition context
 typedef struct
@@ -145,6 +163,8 @@ typedef struct
 //	PetscInt    *TPCPrimeDOF;  // local indices of primary DOF (ghosted layout)
 //	PetscScalar *TPCVals;      // values of TPC
 //	PetscScalar *TPCLinComPar; // linear combination parameters
+
+	BCBlock blocks[_max_bc_blocks_];
 
 } BCCtx;
 //---------------------------------------------------------------------------
