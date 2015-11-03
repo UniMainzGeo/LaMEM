@@ -109,4 +109,24 @@ PetscInt ISParallel(MPI_Comm comm);
 PetscErrorCode LaMEMCreateOutputDirectory(const char *DirectoryName);
 
 //---------------------------------------------------------------------------
+
+void polygon_box(
+	PetscInt    *nC,   // number of polygon vertices
+	PetscScalar *cx,   // x-coordinates of polygon vertices
+	PetscScalar *cy,   // y-coordinates of polygon vertices
+	PetscScalar *box); // bounding box of a polygon (optimization)
+
+void in_polygon(
+	PetscInt     nP,   // number of points
+	PetscScalar *px,   // x-coordinates of points
+	PetscScalar *py,   // y-coordinates of points
+	PetscInt     nC,   // number of polygon vertices
+	PetscScalar *cx,   // x-coordinates of polygon vertices
+	PetscScalar *cy,   // y-coordinates of polygon vertices
+	PetscScalar *box,  // bounding box of a polygon (optimization)
+	PetscScalar  gtol, // geometry tolerance
+	PetscInt    *in);  // point location flags (1-inside, 0-outside)
+
+//---------------------------------------------------------------------------
+
 #endif

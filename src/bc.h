@@ -65,16 +65,24 @@ typedef struct
 {
 
 	// path description
-	PetscInt    npath;                       // number of path points
-	PetscScalar theta [  _max_path_points_]; // orientation angles at path points
-	PetscScalar time  [  _max_path_points_]; // times at path points
-	PetscScalar Bezier[4*_max_path_points_]; // coordinates of Bezier path curve
+	PetscInt    npath;                        // number of path points of Bezier curve
+	PetscScalar theta[  _max_path_points_  ]; // orientation angles at path points
+	PetscScalar time [  _max_path_points_  ]; // times at path points
+	PetscScalar path [6*_max_path_points_-4]; // Bezier curve path & control points
 
 	// block description
 	PetscInt    npoly;                      // number of polygon vertices
 	PetscScalar poly [2*_max_poly_points_]; // polygon coordinates
+	PetscScalar bot, top;                   // bottom & top coordinates of the block
 
 } BCBlock;
+//---------------------------------------------------------------------------
+
+PetscErrorCode BCBlockReadFromOptions(BCBlock *bcb);
+
+PetscErrorCode BCBlockGetPosition(BCBlock *bcb, PetscInt *act, PetscScalar t, PetscScalar x[]);
+
+
 //---------------------------------------------------------------------------
 // boundary condition context
 typedef struct

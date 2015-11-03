@@ -348,5 +348,212 @@ PetscErrorCode LaMEMCreateOutputDirectory(const char *DirectoryName)
 
 	PetscFunctionReturn(0);
 }
-//==========================================================================================================
+//---------------------------------------------------------------------------
+//
+// Fast detection points inside a polygonal region
+//
+// Originally written as a MATLAB mexFunction by:
+//
+// A. David Redish      email: adr@nsma.arizona.edu
+// Guillaume Jacquenot  email: guillaume.jacquenot@gmail.com
+//
+// Modified to be callable directly from C by:
+//
+// Anton A. Popov
+//
+// Output is simplified to skip distinguishing points IN and ON the polygon
+//
+//---------------------------------------------------------------------------
+void polygon_box(
+	PetscInt    *pnC,
+	PetscScalar *cx,
+	PetscScalar *cy,
+	PetscScalar *box)
+{
+	PetscInt    iC, nC;
+	PetscScalar ax, bx, ay, by;
+	PetscScalar xmin, xmax, ymin, ymax;
 
+	nC = (*pnC);
+	ax = cx[0];
+	ay = cy[0];
+	bx = cx[nC - 1];
+	by = cy[nC - 1];
+
+	// decrease number of points if the polygon is closed
+	if(ax == bx && ay == by) nC--;
+
+	// calculate bounding box of a polygon
+	xmin = xmax = cx[0];
+	ymin = ymax = cy[0];
+
+	for(iC = 0; iC < nC; iC++)
+	{
+		if(cx[iC] < xmin) xmin = cx[iC];
+		if(cx[iC] > xmax) xmax = cx[iC];
+		if(cy[iC] < ymin) ymin = cy[iC];
+		if(cy[iC] > ymax) ymax = cy[iC];
+	}
+
+	box[0] = xmin;
+	box[1] = xmax;
+	box[2] = ymin;
+	box[3] = ymax;
+
+	(*pnC) = nC;
+}
+//---------------------------------------------------------------------------
+void in_polygon(
+	PetscInt     nP,   // number of points
+	PetscScalar *px,   // x-coordinates of points
+	PetscScalar *py,   // y-coordinates of points
+	PetscInt     nC,   // number of polygon vertices
+	PetscScalar *cx,   // x-coordinates of polygon vertices
+	PetscScalar *cy,   // y-coordinates of polygon vertices
+	PetscScalar *box,  // bounding box of a polygon (optimization)
+	PetscScalar  gtol, // geometry tolerance
+	PetscInt    *in)   // point location flags (1-inside, 0-outside)
+{
+	PetscInt    iP, iC, ind;
+	PetscInt    points_on, points_in;
+	PetscScalar xmin, xmax, ymin, ymax;
+	PetscScalar ax, bx, ay, by;
+	PetscScalar nIntersect, intersecty, tmp;
+
+	// get bounding box
+	xmin = box[0];
+	xmax = box[1];
+	ymin = box[2];
+	ymax = box[3];
+
+	// test whether each point is in polygon
+	for(iP = 0; iP < nP; iP++)
+	{
+		// assume point is outside
+		in[iP] = 0;
+
+		// check bounding box
+		if(px[iP] < xmin) continue;
+		if(px[iP] > xmax) continue;
+		if(py[iP] < ymin) continue;
+		if(py[iP] > ymax) continue;
+
+		// count the number of intersections
+		nIntersect = 0.0;
+		points_on  = 0;
+
+		for(iC = 0; iC < nC; iC++)
+		{
+			// does the line PQ intersect the line AB?
+			if(iC == nC-1)
+			{
+				ax = cx[nC-1];
+				ay = cy[nC-1];
+				bx = cx[0];
+				by = cy[0];
+			}
+			else
+			{
+				ax = cx[iC];
+				ay = cy[iC];
+				bx = cx[iC+1];
+				by = cy[iC+1];
+			}
+
+			if(ax == bx)
+			{
+				// Vertical points
+				if(px[iP] == ax)
+				{
+					// ensure order correct
+					if(ay > by)
+					{
+						tmp = ay; ay = by; by = tmp;
+					}
+					if(py[iP] >= ay && py[iP] <= by)
+					{
+						points_on  = 1;
+						nIntersect = 0.0;
+						break;
+					}
+				}
+			}
+			else
+			{
+				// Non Vertical points
+				if( px[iP] < MIN(ax, bx) || MAX(ax, bx) < px[iP]) continue;
+
+				intersecty = ay + (px[iP] - ax)/(bx - ax)*(by - ay);
+
+				if(fabs(intersecty - py[iP]) < gtol)
+				{
+					points_on  = 1;
+					nIntersect = 0.0;
+					break;
+				}
+				else if(intersecty < py[iP] && (ax == px[iP] || bx == px[iP]))
+				{
+					if(ax == px[iP])
+					{
+						if(iC == 0)
+						{
+							ind = nC-1;
+						}
+						else
+						{
+							ind = iC-1;
+						}
+						if(MIN(bx, cx[ind]) < px[iP] && px[iP] < MAX(bx, cx[ind]))
+						{
+							nIntersect += 1.0;
+						}
+					}
+				}
+				else if (intersecty < py[iP])
+				{
+					nIntersect += 1.0;
+				}
+			}
+		}
+
+		// check if the contour polygon is closed
+		points_in = (PetscInt)(nIntersect - 2.0*floor(nIntersect/2.0));
+		in[iP]    = MAX(points_on, points_in);
+	}
+}
+//---------------------------------------------------------------------------
+/*
+
+	// polygon
+	PetscInt    i;
+	PetscInt    nC   = 5;
+	PetscScalar cx[] = { 0.0, 2.0, 1.0, 0.0, 0.0 };
+	PetscScalar cy[] = { 0.0, 0.0, 1.0, 1.0, 0.0 };
+
+	PetscScalar box[4];
+
+	polygon_box(&nC, cx, cy, box);
+
+	printf("Bounding box: xmin=%f, xmax=%f, ymin=%f, ymax=%f\n", box[0], box[1], box[2], box[3]);
+
+	printf("Number of vertices: %d\n", nC);
+
+	// points
+
+	PetscInt nP = 4;
+
+	PetscScalar px[] = { 0.5, 0.0, 2.0, 1.6 };
+	PetscScalar py[] = { 0.5, 0.5, 0.0, 0.5 };
+
+	// test
+	PetscInt in[3];
+
+	in_polygon(nP, px, py, nC, cx, cy, box, 1e-10, in);
+
+	for(i = 0; i < nP; i++)
+	{
+		if(in[i]) printf("Point %d [x=%f, y=%f] is inside polygon \n", i, px[i], py[i]);
+		else      printf("Point %d [x=%f, y=%f] is outside polygon \n", i, px[i], py[i]);
+	}
+
+*/

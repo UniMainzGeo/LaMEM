@@ -58,6 +58,117 @@
 // * create bc-object only at fine level, coarse levels should have simple access
 //---------------------------------------------------------------------------
 #undef __FUNCT__
+#define __FUNCT__ "BCBlockReadFromOptions"
+PetscErrorCode BCBlockReadFromOptions(BCBlock *bcb)
+{
+	PetscErrorCode ierr;
+	PetscFunctionBegin;
+
+/*
+
+	PetscInt    npath;                       // number of path points
+	PetscScalar theta [  _max_path_points_]; // orientation angles at path points
+	PetscScalar time  [  _max_path_points_]; // times at path points
+	PetscScalar ep[4*_max_path_points_]; // coordinates of Bezier path curve
+
+	// block description
+	PetscInt    npoly;                      // number of polygon vertices
+	PetscScalar poly [2*_max_poly_points_]; // polygon coordinates
+	PetscScalar bot, top;                   // bottom & top coordinates of the block
+
+*/
+
+	PetscFunctionReturn(0);
+}
+//---------------------------------------------------------------------------
+#undef __FUNCT__
+#define __FUNCT__ "BCBlockGetPosition"
+PetscErrorCode BCBlockGetPosition(BCBlock *bcb, PetscInt *act, PetscScalar t, PetscScalar x[])
+{
+	PetscInt     i, n;
+    PetscScalar  r, r2, r3, s, s2, s3;
+	PetscScalar *p, *p1, *p2, *p3, *p4;
+
+	PetscFunctionBegin;
+
+	(*act) = 0;
+	n      = bcb->npath;
+
+	if(t <= bcb->time[0])
+	{
+		p    = bcb->path;
+		x[0] = p[0];
+		x[1] = p[1];
+		x[2] = bcb->theta[0];
+	}
+	else if(t >= bcb->time[n-1])
+	{
+		p    = bcb->path + 6*(n-1);
+		x[0] = p[0];
+		x[1] = p[1];
+		x[2] = bcb->theta[n-1];
+	}
+	else
+	{
+		// find time interval
+		for(i = 0; i < n; i++) if(t >= bcb->time[i]) break;
+
+		// get path and control points
+		p1 = bcb->path + 6*i;
+		p2 = p1 + 2;
+		p3 = p2 + 2;
+		p4 = p3 + 2;
+
+		// compute interpolation parameters
+		r  = t/(bcb->time[i+1] - bcb->time[i]);
+		r2 = r*r;
+	    r3 = r2*r;
+	    s  = 1.0 - r;
+	    s2 = s*s;
+	    s3 = s2*s;
+
+		// interpolate Bezier path and rotation angle
+		x[0] = s3*p1[0] + 3.0*s2*r*p2[0] + 3.0*s*r2*p3[0] + r3*p4[0];
+        x[1] = s3*p1[1] + 3.0*s2*r*p2[1] + 3.0*s*r2*p3[1] + r3*p4[1];
+        x[2] = s*bcb->theta[i] + r*bcb->theta[i+1];
+
+        // set flag
+    	(*act) = 1;
+	}
+
+	PetscFunctionReturn(0);
+}
+
+
+/*
+
+ Returns points laying inside/on bondary of a given polygon.
+ Mex file of inpoly function of Darren Engwirda.
+
+  Usage
+  -----
+
+  [in , bnd] = inpoly(X , node , [cnect])
+
+ Inputs
+ ------
+
+   X                  Point to test if inside/bounds (2 x N).
+   node               Node of Polygon (2 x Nnode) where node(: , i) is linked with node(: , i+1).
+   cnect              ndex of connected noded (default node  = [(1:Nnode-1) , Nnode ; (2:Nnode) , 1])
+
+
+ Outputs
+ -------
+
+   in                 Logical array of X points inside the polygon (1 x N).
+   bnd                Logical array of X points laying on the boundary of the polygon (1 x N).
+
+
+ */
+
+//---------------------------------------------------------------------------
+#undef __FUNCT__
 #define __FUNCT__ "BCClear"
 PetscErrorCode BCClear(BCCtx *bc)
 {
