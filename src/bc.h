@@ -63,7 +63,6 @@ typedef enum
 //---------------------------------------------------------------------------
 typedef struct
 {
-
 	// path description
 	PetscInt    npath;                        // number of path points of Bezier curve
 	PetscScalar theta[  _max_path_points_  ]; // orientation angles at path points
@@ -78,10 +77,11 @@ typedef struct
 } BCBlock;
 //---------------------------------------------------------------------------
 
-PetscErrorCode BCBlockReadFromOptions(BCBlock *bcb);
+PetscErrorCode BCBlockReadFromOptions(BCBlock *bcb, Scaling *scal);
 
-PetscErrorCode BCBlockGetPosition(BCBlock *bcb, PetscInt *act, PetscScalar t, PetscScalar x[]);
+PetscErrorCode BCBlockGetPosition(BCBlock *bcb, PetscScalar t, PetscInt *act, PetscScalar x[]);
 
+PetscErrorCode BCBlockGetPolygon(BCBlock *bcb, PetscScalar Xb[], PetscScalar *cpoly);
 
 //---------------------------------------------------------------------------
 // boundary condition context
@@ -172,7 +172,9 @@ typedef struct
 //	PetscScalar *TPCVals;      // values of TPC
 //	PetscScalar *TPCLinComPar; // linear combination parameters
 
-	BCBlock blocks[_max_bc_blocks_];
+	BCBlock      blocks;  // BC block
+//	PetscInt     bcbAct;  // BC block activation flag
+
 
 } BCCtx;
 //---------------------------------------------------------------------------
@@ -223,6 +225,10 @@ PetscErrorCode BCAdvectPush(BCCtx *bc);
 
 // stretch staggered grid if background strain rates are defined
 PetscErrorCode BCStretchGrid(BCCtx *bc);
+
+//---------------------------------------------------------------------------
+
+PetscErrorCode BCApplyBezier(BCCtx *bc);
 
 //---------------------------------------------------------------------------
 

@@ -59,54 +59,83 @@
 //---------------------------------------------------------------------------
 #undef __FUNCT__
 #define __FUNCT__ "BCBlockReadFromOptions"
-PetscErrorCode BCBlockReadFromOptions(BCBlock *bcb)
+PetscErrorCode BCBlockReadFromOptions(BCBlock *bcb, Scaling *scal)
 {
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
 
-/*
+	//==================
+	// Bezier path curve
+	//==================
 
-	PetscInt    npath;                       // number of path points
-	PetscScalar theta [  _max_path_points_]; // orientation angles at path points
-	PetscScalar time  [  _max_path_points_]; // times at path points
-	PetscScalar ep[4*_max_path_points_]; // coordinates of Bezier path curve
+	ierr = GetIntDataItemCheck("-bcb_npath", "Number of path points of Bezier curve",
+		_NOT_FOUND_EXIT_, 1, &bcb->npath, 1, _max_path_points_); CHKERRQ(ierr);
 
-	// block description
-	PetscInt    npoly;                      // number of polygon vertices
-	PetscScalar poly [2*_max_poly_points_]; // polygon coordinates
-	PetscScalar bot, top;                   // bottom & top coordinates of the block
+	if(bcb->npath)
+	{
+		// angles
+		ierr = GetScalDataItemCheckScale("-bcb_theta", "Orientation angles at path points",
+			_NOT_FOUND_ERROR_, bcb->npath, bcb->theta, 0.0, 0.0, scal->angle); CHKERRQ(ierr);
 
-*/
+		// times
+		ierr = GetScalDataItemCheckScale("-bcb_time", "Times at path points",
+			_NOT_FOUND_ERROR_, bcb->npath, bcb->time, 0.0, 0.0, scal->time); CHKERRQ(ierr);
+
+		// path coordinates
+		ierr = GetScalDataItemCheckScale("-bcb_path", "Bezier curve path & control points",
+			_NOT_FOUND_ERROR_, 6*bcb->npath-4, bcb->path, 0.0, 0.0, scal->length); CHKERRQ(ierr);
+
+		//========
+		// polygon
+		//========
+
+		ierr = GetIntDataItemCheck("-bcb_npoly", "Number of polygon vertices",
+			_NOT_FOUND_EXIT_, 1, &bcb->npoly, 1, _max_poly_points_); CHKERRQ(ierr);
+
+		// polygon coordinates
+		ierr = GetScalDataItemCheckScale("-bcb_poly", "Polygon coordinates",
+			_NOT_FOUND_ERROR_, 2*bcb->npoly, bcb->poly, 0.0, 0.0, scal->length); CHKERRQ(ierr);
+
+		// polygon bottom
+		ierr = GetScalDataItemCheckScale("-bcb_bot", "Polygon bottom coordinate",
+			_NOT_FOUND_ERROR_, 1, &bcb->bot, 0.0, 0.0, scal->length); CHKERRQ(ierr);
+
+		// polygon top
+		ierr = GetScalDataItemCheckScale("-bcb_top", "Polygon top coordinate",
+			_NOT_FOUND_ERROR_, 1, &bcb->top, 0.0, 0.0, scal->length); CHKERRQ(ierr);
+	}
 
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
 #undef __FUNCT__
 #define __FUNCT__ "BCBlockGetPosition"
-PetscErrorCode BCBlockGetPosition(BCBlock *bcb, PetscInt *act, PetscScalar t, PetscScalar x[])
+PetscErrorCode BCBlockGetPosition(BCBlock *bcb, PetscScalar t, PetscInt *act, PetscScalar X[])
 {
-	PetscInt     i, n;
-    PetscScalar  r, r2, r3, s, s2, s3;
-	PetscScalar *p, *p1, *p2, *p3, *p4;
+	PetscInt      i, n;
+    PetscScalar   r, r2, r3, s, s2, s3;
+	PetscScalar  *p1, *p2, *p3, *p4;
+	PetscScalar  *path, *end, *theta, *time;
 
 	PetscFunctionBegin;
 
-	(*act) = 0;
-	n      = bcb->npath;
+	n     = bcb->npath;
+	path  = bcb->path;
+	theta = bcb->theta;
+	time  = bcb->time;
 
-	if(t <= bcb->time[0])
+	if(t <= time[0])
 	{
-		p    = bcb->path;
-		x[0] = p[0];
-		x[1] = p[1];
-		x[2] = bcb->theta[0];
+		X[0] = path[0];
+		X[1] = path[1];
+		X[2] = theta[0];
 	}
-	else if(t >= bcb->time[n-1])
+	else if(t >= time[n-1])
 	{
-		p    = bcb->path + 6*(n-1);
-		x[0] = p[0];
-		x[1] = p[1];
-		x[2] = bcb->theta[n-1];
+		end  = path + 6*(n-1);
+		X[0] = end[0];
+		X[1] = end[1];
+		X[2] = theta[n-1];
 	}
 	else
 	{
@@ -114,13 +143,13 @@ PetscErrorCode BCBlockGetPosition(BCBlock *bcb, PetscInt *act, PetscScalar t, Pe
 		for(i = 0; i < n; i++) if(t >= bcb->time[i]) break;
 
 		// get path and control points
-		p1 = bcb->path + 6*i;
+		p1 = path + 6*i;
 		p2 = p1 + 2;
 		p3 = p2 + 2;
 		p4 = p3 + 2;
 
 		// compute interpolation parameters
-		r  = t/(bcb->time[i+1] - bcb->time[i]);
+		r  = t/(time[i+1] - time[i]);
 		r2 = r*r;
 	    r3 = r2*r;
 	    s  = 1.0 - r;
@@ -128,45 +157,168 @@ PetscErrorCode BCBlockGetPosition(BCBlock *bcb, PetscInt *act, PetscScalar t, Pe
 	    s3 = s2*s;
 
 		// interpolate Bezier path and rotation angle
-		x[0] = s3*p1[0] + 3.0*s2*r*p2[0] + 3.0*s*r2*p3[0] + r3*p4[0];
-        x[1] = s3*p1[1] + 3.0*s2*r*p2[1] + 3.0*s*r2*p3[1] + r3*p4[1];
-        x[2] = s*bcb->theta[i] + r*bcb->theta[i+1];
+		X[0] = s3*p1[0] + 3.0*s2*r*p2[0] + 3.0*s*r2*p3[0] + r3*p4[0];
+        X[1] = s3*p1[1] + 3.0*s2*r*p2[1] + 3.0*s*r2*p3[1] + r3*p4[1];
+        X[2] = s*theta[i] + r*theta[i+1];
+	}
 
-        // set flag
-    	(*act) = 1;
+	// set flag
+	if(act) { if(t < time[0] || t > time[n-1]) (*act) = 1; }
+
+	PetscFunctionReturn(0);
+}
+//---------------------------------------------------------------------------
+#undef __FUNCT__
+#define __FUNCT__ "BCBlockGetPolygon"
+PetscErrorCode BCBlockGetPolygon(BCBlock *bcb, PetscScalar Xb[], PetscScalar *cpoly)
+{
+	PetscInt     i, n;
+	PetscScalar *xa, *xb;
+	PetscScalar  Xa[3], theta, costh, sinth;
+
+	PetscFunctionBegin;
+
+	// get initial polygon position
+	Xa[0] = bcb->path[0];
+	Xa[1] = bcb->path[1];
+	Xa[2] = bcb->theta[0];
+
+	// get rotation matrix
+	theta = Xb[2] - Xa[2];
+	costh = cos(theta);
+	sinth = sin(theta);
+
+	// compute current polygon coordinates
+	for(i = 0; i < bcb->npoly; i++)
+	{
+		// get reference and current points
+		xa = bcb->poly + 2*i;
+		xb = cpoly     + 2*i;
+
+		// rotate & displace
+		RotDispPoint2D(Xa, Xb, costh, sinth, xa, xb);
 	}
 
 	PetscFunctionReturn(0);
 }
-
+//---------------------------------------------------------------------------
+#undef __FUNCT__
+#define __FUNCT__ "BCApplyBezier"
+PetscErrorCode BCApplyBezier(BCCtx *bc)
+{
 
 /*
 
- Returns points laying inside/on bondary of a given polygon.
- Mex file of inpoly function of Darren Engwirda.
+	FDSTAG      *fs;
+	BCBlock      bcb;
 
-  Usage
-  -----
+	PetscScalar px, py, pz;
+	PetscScalar rx, ry, rz;
+	PetscScalar costh, sinth;
+	PetscScalar ***bcvx,  ***bcvy, *SPCVals;
+	PetscInt    i, j, k, nx, ny, nz, sx, sy, sz, iter;
 
-  [in , bnd] = inpoly(X , node , [cnect])
+	PetscErrorCode ierr;
+	PetscFunctionBegin;
 
- Inputs
- ------
+	// check whether pushing is applied
+	if(bc->pbApp != PETSC_TRUE) PetscFunctionReturn(0);
 
-   X                  Point to test if inside/bounds (2 x N).
-   node               Node of Polygon (2 x Nnode) where node(: , i) is linked with node(: , i+1).
-   cnect              ndex of connected noded (default node  = [(1:Nnode-1) , Nnode ; (2:Nnode) , 1])
-
-
- Outputs
- -------
-
-   in                 Logical array of X points inside the polygon (1 x N).
-   bnd                Logical array of X points laying on the boundary of the polygon (1 x N).
+	// prepare block coordinates, sizes & rotation angle parameters
+	fs    = bc->fs;
 
 
- */
+	costh = cos(bc->theta);
+	sinth = sin(bc->theta);
 
+
+	// get rotation pole position and angle
+	ierr = BCBlockGetPosition(bcb, t, NULL, x); CHKERRQ(ierr);
+
+
+
+
+	// access velocity constraint vectors
+	ierr = DMDAVecGetArray(fs->DA_X, bc->bcvx, &bcvx); CHKERRQ(ierr);
+	ierr = DMDAVecGetArray(fs->DA_Y, bc->bcvy, &bcvy); CHKERRQ(ierr);
+
+	// access constraint arrays
+	SPCVals = bc->SPCVals;
+
+	iter = 0;
+
+	//---------
+	// X points
+	//---------
+	GET_NODE_RANGE(nx, sx, fs->dsx)
+	GET_CELL_RANGE(ny, sy, fs->dsy)
+	GET_CELL_RANGE(nz, sz, fs->dsz)
+
+	START_STD_LOOP
+	{
+		// get point coordinates in the block-centered system
+		px = COORD_NODE(i, sx, fs->dsx) - xc;
+		py = COORD_CELL(j, sy, fs->dsy) - yc;
+		pz = COORD_CELL(k, sz, fs->dsz) - zc;
+
+		// get point coordinates in the block-aligned system
+		// rotation matrix R = [ cos() sin() ; -sin() cos() ]
+		rx =  costh*px + sinth*py;
+		ry = -sinth*px + costh*py;
+		rz =  pz;
+
+		// perform point test
+		if(rx >= -dx && rx <= dx
+		&& ry >= -dy && ry <= dy
+		&& rz >= -dz && rz <= dz)
+		{
+			bcvx[k][j][i] = bc->Vx;
+			SPCVals[iter] = bc->Vx;
+		}
+		iter++;
+	}
+	END_STD_LOOP
+
+	//---------
+	// Y points
+	//---------
+	GET_CELL_RANGE(nx, sx, fs->dsx)
+	GET_NODE_RANGE(ny, sy, fs->dsy)
+	GET_CELL_RANGE(nz, sz, fs->dsz)
+
+	START_STD_LOOP
+	{
+		// get point coordinates in the block-centered system
+		px = COORD_CELL(i, sx, fs->dsx) - xc;
+		py = COORD_NODE(j, sy, fs->dsy) - yc;
+		pz = COORD_CELL(k, sz, fs->dsz) - zc;
+
+		// get point coordinates in the block-aligned system
+		// rotation matrix R = [ cos() sin() ; -sin() cos() ]
+		rx =  costh*px + sinth*py;
+		ry = -sinth*px + costh*py;
+		rz =  pz;
+
+		// perform point test
+		if(rx >= -dx && rx <= dx
+		&& ry >= -dy && ry <= dy
+		&& rz >= -dz && rz <= dz)
+		{
+			bcvy[k][j][i] = bc->Vy;
+			SPCVals[iter] = bc->Vy;
+		}
+		iter++;
+	}
+	END_STD_LOOP
+
+	// restore access
+	ierr = DMDAVecRestoreArray(fs->DA_X, bc->bcvx, &bcvx); CHKERRQ(ierr);
+	ierr = DMDAVecRestoreArray(fs->DA_Y, bc->bcvy, &bcvy); CHKERRQ(ierr);
+*/
+	PetscFunctionReturn(0);
+}
+//---------------------------------------------------------------------------
+//---------------------------------------------------------------------------
 //---------------------------------------------------------------------------
 #undef __FUNCT__
 #define __FUNCT__ "BCClear"
@@ -303,6 +455,9 @@ PetscErrorCode BCReadFromOptions(BCCtx *bc)
 			_NOT_FOUND_ERROR_, bc->EyyNumPeriods, bc->EyyStrainRates, 0.0, 0.0, scal->strain_rate); CHKERRQ(ierr);
 	}
 
+	// Bezier block
+	ierr = BCBlockReadFromOptions(&bc->blocks, scal); CHKERRQ(ierr);
+
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
@@ -391,6 +546,9 @@ PetscErrorCode BCApply(BCCtx *bc)
 
 	// apply pushing block constraints
 	ierr = BCApplyPush(bc); CHKERRQ(ierr);
+
+	// apply Bezier block constraints
+	ierr = BCApplyBezier(bc); CHKERRQ(ierr);
 
 	// exchange ghost point constraints
 	// AVOID THIS BY SETTING CONSTRAINTS REDUNDANTLY
