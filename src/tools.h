@@ -121,7 +121,7 @@ void in_polygon(
 	PetscInt     nv,     // number of polygon vertices
 	PetscScalar *vcoord, // coordinates of polygon vertices
 	PetscScalar *box,    // bounding box of a polygon (optimization)
-	PetscScalar  gtol,   // geometry tolerance
+	PetscScalar  atol,   // absolute tolerance
 	PetscInt    *in);    // point location flags (1-inside, 0-outside)
 
 //---------------------------------------------------------------------------

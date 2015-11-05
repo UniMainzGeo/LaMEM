@@ -79,7 +79,7 @@ typedef struct
 
 PetscErrorCode BCBlockReadFromOptions(BCBlock *bcb, Scaling *scal);
 
-PetscErrorCode BCBlockGetPosition(BCBlock *bcb, PetscScalar t, PetscInt *act, PetscScalar x[]);
+PetscErrorCode BCBlockGetPosition(BCBlock *bcb, PetscScalar t, PetscInt *f, PetscScalar x[]);
 
 PetscErrorCode BCBlockGetPolygon(BCBlock *bcb, PetscScalar Xb[], PetscScalar *cpoly);
 
