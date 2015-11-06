@@ -137,7 +137,7 @@ PetscErrorCode BCBlockGetPosition(BCBlock *bcb, PetscScalar t, PetscInt *f, Pets
 	(*f) = 1; if(t < time[0] || t > time[n-1]) { (*f) = 0; PetscFunctionReturn(0); }
 
 	// find time interval
-	for(i = 1; i < n-1; i++) { if(t < bcb->time[i]) break; } i--;
+	for(i = 1; i < n-1; i++) { if(t < time[i]) break; } i--;
 
 	// get path and control points
 	p1 = path + 6*i;
@@ -467,6 +467,29 @@ PetscErrorCode BCReadFromOptions(BCCtx *bc)
 
 	// Bezier block
 	ierr = BCBlockReadFromOptions(&bc->blocks, scal); CHKERRQ(ierr);
+
+
+	if(bc->blocks.npath && (bc->ExxAct == PETSC_TRUE || bc->EyyAct == PETSC_TRUE))
+	{
+		SETERRQ(PETSC_COMM_SELF, PETSC_ERR_USER, "Cannot combine background strain rate with moving block\n");
+	}
+
+/*
+	// boundary velocities
+	ierr = GetIntDataItemCheck("-bvel_face", "boundary velocity face identifier",
+		_NOT_FOUND_EXIT_, 1, &bc->face, 1, 4); CHKERRQ(ierr);
+
+	if(bc->face)
+	{
+		if(bc->face && (bc->blocks.npath || bc->ExxAct = PETSC_TRUE || bc->EyyAct = PETSC_TRUE))
+		{
+			SETERRQ(PETSC_COMM_SELF, PETSC_ERR_USER, "Cannot combine boundary velocity with either background strain rate or moving block\n");
+		}
+	}
+
+	PetscInt     face, bphase;
+	PetscScalar  vtop, vbot, bvel;
+*/
 
 	PetscFunctionReturn(0);
 }

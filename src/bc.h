@@ -48,8 +48,8 @@
 //---------------------------------------------------------------------------
 
 #define _max_periods_ 20
-#define _max_path_points_ 30
-#define _max_poly_points_ 15
+#define _max_path_points_ 50
+#define _max_poly_points_ 100
 #define _max_bc_blocks_ 3
 
 //---------------------------------------------------------------------------
@@ -73,6 +73,10 @@ typedef struct
 	PetscInt    npoly;                      // number of polygon vertices
 	PetscScalar poly [2*_max_poly_points_]; // polygon coordinates
 	PetscScalar bot, top;                   // bottom & top coordinates of the block
+
+	// WARNING bottom coordinate should be advected (how? average?)
+	// Top of the box can be assumed to be the free surface
+	// sticky air nodes should never be constrained (this is easy to check)
 
 } BCBlock;
 //---------------------------------------------------------------------------
@@ -173,8 +177,11 @@ typedef struct
 //	PetscScalar *TPCLinComPar; // linear combination parameters
 
 	BCBlock      blocks;  // BC block
-//	PetscInt     bcbAct;  // BC block activation flag
-
+/*
+	// velocity boundary condition
+	PetscInt     face, bphase;
+	PetscScalar  vtop, vbot, vel;
+*/
 
 } BCCtx;
 //---------------------------------------------------------------------------
