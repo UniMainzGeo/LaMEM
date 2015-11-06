@@ -177,11 +177,11 @@ typedef struct
 //	PetscScalar *TPCLinComPar; // linear combination parameters
 
 	BCBlock      blocks;  // BC block
-/*
+
 	// velocity boundary condition
-	PetscInt     face, bphase;
+	PetscInt     face, phase;
 	PetscScalar  vtop, vbot, vel;
-*/
+
 
 } BCCtx;
 //---------------------------------------------------------------------------

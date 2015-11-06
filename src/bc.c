@@ -474,22 +474,26 @@ PetscErrorCode BCReadFromOptions(BCCtx *bc)
 		SETERRQ(PETSC_COMM_SELF, PETSC_ERR_USER, "Cannot combine background strain rate with moving block\n");
 	}
 
-/*
 	// boundary velocities
-	ierr = GetIntDataItemCheck("-bvel_face", "boundary velocity face identifier",
+	ierr = GetIntDataItemCheck("-bvel_face", "Boundary velocity face identifier",
 		_NOT_FOUND_EXIT_, 1, &bc->face, 1, 4); CHKERRQ(ierr);
 
 	if(bc->face)
 	{
-		if(bc->face && (bc->blocks.npath || bc->ExxAct = PETSC_TRUE || bc->EyyAct = PETSC_TRUE))
+		if(bc->face && (bc->blocks.npath || bc->ExxAct == PETSC_TRUE || bc->EyyAct == PETSC_TRUE))
 		{
 			SETERRQ(PETSC_COMM_SELF, PETSC_ERR_USER, "Cannot combine boundary velocity with either background strain rate or moving block\n");
 		}
-	}
 
-	PetscInt     face, bphase;
-	PetscScalar  vtop, vbot, bvel;
-*/
+		ierr = GetIntDataItemCheck("-bvel_phase", "Boundary velocity phase",
+			_NOT_FOUND_EXIT_, 1, &bc->phase, 0, 0); CHKERRQ(ierr);
+
+		ierr = GetScalDataItemCheckScale("-bvel_vbot", "Boundary velocity bottom level",
+			_NOT_FOUND_ERROR_, 1, &bc->vbot, 0.0, 0.0, scal->length); CHKERRQ(ierr);
+
+		ierr = GetScalDataItemCheckScale("-bvel_vel", "Boundary velocity magnitude",
+			_NOT_FOUND_ERROR_, 1, &bc->vel, 0.0, 0.0, scal->velocity); CHKERRQ(ierr);
+	}
 
 	PetscFunctionReturn(0);
 }
