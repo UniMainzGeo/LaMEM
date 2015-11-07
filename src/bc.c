@@ -328,6 +328,115 @@ PetscErrorCode BCApplyBezier(BCCtx *bc)
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
+#undef __FUNCT__
+#define __FUNCT__ "BCSetupBoundVel"
+PetscErrorCode BCSetupBoundVel(BCCtx *bc, PetscScalar top)
+{
+	PetscScalar bz;
+
+	PetscErrorCode ierr;
+	PetscFunctionBegin;
+
+	// set plate top
+	bc->top = top;
+
+	ierr = FDSTAGGetGlobalBox(bc->fs, NULL, NULL, &bz, NULL, NULL, NULL); CHKERRQ(ierr);
+
+	// compute outflow velocity
+	bc->velout = -bc->velin*(bc->top - bc->bot)/(bc->bot - bz);
+
+	PetscFunctionReturn(0);
+}
+//---------------------------------------------------------------------------
+#undef __FUNCT__
+#define __FUNCT__ "BCApplyBoundVel"
+PetscErrorCode BCApplyBoundVel(BCCtx *bc)
+{
+	FDSTAG      *fs;
+	PetscInt    mnx, mny;
+	PetscInt    i, j, k, nx, ny, nz, sx, sy, sz, iter;
+	PetscScalar ***bcvx,  ***bcvy, *SPCVals;
+	PetscScalar z, bot, top, vel, velin, velout;
+
+	PetscErrorCode ierr;
+	PetscFunctionBegin;
+
+	// check whether constraint is activated
+	if(!bc->face) PetscFunctionReturn(0);
+
+	// access context
+	fs     = bc->fs;
+	bot    = bc->bot;
+	top    = bc->top;
+	velin  = bc->velin;
+	velout = bc->velout;
+
+	// initialize maximal index in all directions
+	mnx = fs->dsx.tnods - 1;
+	mny = fs->dsy.tnods - 1;
+
+	// access velocity constraint vectors
+	ierr = DMDAVecGetArray(fs->DA_X, bc->bcvx, &bcvx); CHKERRQ(ierr);
+	ierr = DMDAVecGetArray(fs->DA_Y, bc->bcvy, &bcvy); CHKERRQ(ierr);
+
+	// access constraint arrays
+	SPCVals = bc->SPCVals;
+
+	iter = 0;
+
+	//---------
+	// X points
+	//---------
+	GET_NODE_RANGE(nx, sx, fs->dsx)
+	GET_CELL_RANGE(ny, sy, fs->dsy)
+	GET_CELL_RANGE(nz, sz, fs->dsz)
+
+	if(bc->face == 1 || bc->face == 2)
+	{
+		START_STD_LOOP
+		{
+			z   = COORD_CELL(k, sz, fs->dsz);
+			vel = 0.0;
+			if(z <= top && z >= bot) vel = velin;
+			if(z < bot)              vel = velout;
+
+			if(bc->face == 1 && i == 0)   { bcvx[k][j][i] = vel; SPCVals[iter] = vel; }
+			if(bc->face == 2 && i == mnx) { bcvx[k][j][i] = vel; SPCVals[iter] = vel; }
+			iter++;
+		}
+		END_STD_LOOP
+	}
+
+	//---------
+	// Y points
+	//---------
+	GET_CELL_RANGE(nx, sx, fs->dsx)
+	GET_NODE_RANGE(ny, sy, fs->dsy)
+	GET_CELL_RANGE(nz, sz, fs->dsz)
+
+	if(bc->face == 3 || bc->face == 4)
+	{
+		START_STD_LOOP
+		{
+			z   = COORD_CELL(k, sz, fs->dsz);
+			vel = 0.0;
+			if(z <= top && z >= bot) vel = velin;
+			if(z < bot)              vel = velout;
+
+			if(bc->face == 3 && j == 0)   { bcvy[k][j][i] = vel; SPCVals[iter] = vel; }
+			if(bc->face == 4 && j == mny) { bcvy[k][j][i] = vel; SPCVals[iter] = vel; }
+			iter++;
+		}
+		END_STD_LOOP
+	}
+
+	// restore access
+	ierr = DMDAVecRestoreArray(fs->DA_X, bc->bcvx, &bcvx); CHKERRQ(ierr);
+	ierr = DMDAVecRestoreArray(fs->DA_Y, bc->bcvy, &bcvy); CHKERRQ(ierr);
+
+	PetscFunctionReturn(0);
+}
+//---------------------------------------------------------------------------
 //---------------------------------------------------------------------------
 //---------------------------------------------------------------------------
 #undef __FUNCT__
@@ -488,11 +597,11 @@ PetscErrorCode BCReadFromOptions(BCCtx *bc)
 		ierr = GetIntDataItemCheck("-bvel_phase", "Boundary velocity phase",
 			_NOT_FOUND_EXIT_, 1, &bc->phase, 0, 0); CHKERRQ(ierr);
 
-		ierr = GetScalDataItemCheckScale("-bvel_vbot", "Boundary velocity bottom level",
-			_NOT_FOUND_ERROR_, 1, &bc->vbot, 0.0, 0.0, scal->length); CHKERRQ(ierr);
+		ierr = GetScalDataItemCheckScale("-bvel_bot", "Boundary velocity bottom level",
+			_NOT_FOUND_ERROR_, 1, &bc->bot, 0.0, 0.0, scal->length); CHKERRQ(ierr);
 
-		ierr = GetScalDataItemCheckScale("-bvel_vel", "Boundary velocity magnitude",
-			_NOT_FOUND_ERROR_, 1, &bc->vel, 0.0, 0.0, scal->velocity); CHKERRQ(ierr);
+		ierr = GetScalDataItemCheckScale("-bvel_velin", "Boundary velocity magnitude",
+			_NOT_FOUND_ERROR_, 1, &bc->velin, 0.0, 0.0, scal->velocity); CHKERRQ(ierr);
 	}
 
 	PetscFunctionReturn(0);
@@ -586,6 +695,9 @@ PetscErrorCode BCApply(BCCtx *bc)
 
 	// apply Bezier block constraints
 	ierr = BCApplyBezier(bc); CHKERRQ(ierr);
+
+	// apply Boundary velocity
+	ierr = BCApplyBoundVel(bc); CHKERRQ(ierr);
 
 	// exchange ghost point constraints
 	// AVOID THIS BY SETTING CONSTRAINTS REDUNDANTLY

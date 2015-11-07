@@ -202,6 +202,8 @@ PetscErrorCode LaMEMLib(ModParam *IOparam)
 	// initialize free surface from breakpoints if restart
 	if (user.restart == 1 && surf.UseFreeSurf == PETSC_TRUE) { ierr = BreakReadSurf(&fs, &surf); CHKERRQ(ierr); }
 
+	ierr = BCSetupBoundVel(&bc, surf.InitLevel); CHKERRQ(ierr);
+
 	// create advection context
 	ierr = ADVCreate(&actx, &fs, &jr); CHKERRQ(ierr);
 

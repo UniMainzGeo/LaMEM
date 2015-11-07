@@ -179,9 +179,9 @@ typedef struct
 	BCBlock      blocks;  // BC block
 
 	// velocity boundary condition
-	PetscInt     face, phase;
-	PetscScalar  vtop, vbot, vel;
-
+	PetscInt     face, phase;   // face & phase identifiers
+	PetscScalar  bot, top;      // bottom & top coordinates of the plate
+	PetscScalar  velin, velout; // inflow & outflow velocities
 
 } BCCtx;
 //---------------------------------------------------------------------------
@@ -237,6 +237,9 @@ PetscErrorCode BCStretchGrid(BCCtx *bc);
 
 PetscErrorCode BCApplyBezier(BCCtx *bc);
 
-//---------------------------------------------------------------------------
+PetscErrorCode BCSetupBoundVel(BCCtx *bc, PetscScalar top);
 
+PetscErrorCode BCApplyBoundVel(BCCtx *bc);
+
+//---------------------------------------------------------------------------
 #endif
