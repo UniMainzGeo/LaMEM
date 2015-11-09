@@ -1100,6 +1100,7 @@ PetscErrorCode ADVCheckCorners(AdvCtx *actx)
 	// check corner marker distribution
 	// if empty insert one marker in center of corner
 	FDSTAG         *fs;
+	BCCtx          *bc;
 	Marker         *P, *markers;
 	NumCorner      *numcorner;
 	PetscInt       i, j, ii, jj, kk, ind, nx, ny, nz, lx[3];
@@ -1114,6 +1115,8 @@ PetscErrorCode ADVCheckCorners(AdvCtx *actx)
 
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
+
+	bc = actx->jr->bc;
 
 	PetscBool flag = PETSC_FALSE;
 	PetscOptionsGetBool(PETSC_NULL, "-use_marker_control", &flag, PETSC_NULL);
@@ -1328,6 +1331,9 @@ PetscErrorCode ADVCheckCorners(AdvCtx *actx)
 				actx->recvbuf[nind].X[0] = xp[0];
 				actx->recvbuf[nind].X[1] = xp[1];
 				actx->recvbuf[nind].X[2] = xp[2];
+
+				// override marker phase (if necessary)
+				ierr = BCOverridePhase(bc, i, actx->recvbuf + nind); CHKERRQ(ierr);
 
 				// increase counter
 				nind++;

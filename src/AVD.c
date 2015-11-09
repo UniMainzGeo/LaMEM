@@ -473,8 +473,9 @@ PetscErrorCode AVDLoadPoints(AdvCtx *actx, AVD *A, PetscInt ind)
 //---------------------------------------------------------------------------
 #undef __FUNCT__
 #define __FUNCT__ "AVDInjectDeletePoints"
-PetscErrorCode AVDInjectDeletePoints(AdvCtx *actx, AVD *A)
+PetscErrorCode AVDInjectDeletePoints(AdvCtx *actx, AVD *A, PetscInt cellID)
 {
+	BCCtx      *bc;
 	PetscInt    i, ii, n, ind;
 	PetscInt    num_chain, hclaim;
 	PetscInt    npoints, new_nmark = 0;
@@ -485,6 +486,8 @@ PetscErrorCode AVDInjectDeletePoints(AdvCtx *actx, AVD *A)
 
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
+
+	bc = actx->jr->bc;
 
 	npoints = A->npoints;
 	n  = (A->nx+2)*(A->ny+2)*(A->nz+2);
@@ -623,6 +626,10 @@ PetscErrorCode AVDInjectDeletePoints(AdvCtx *actx, AVD *A)
 			actx->recvbuf[actx->cinj+i].X[0] = A->chain [num_chain].xc[0];
 			actx->recvbuf[actx->cinj+i].X[1] = A->chain [num_chain].xc[1];
 			actx->recvbuf[actx->cinj+i].X[2] = A->chain [num_chain].xc[2];
+
+			// override marker phase (if necessary)
+			ierr = BCOverridePhase(bc, cellID, actx->recvbuf + actx->cinj + i); CHKERRQ(ierr);
+
 			ind--;
 		}
 		// update total counter
@@ -706,7 +713,7 @@ PetscErrorCode AVDExecuteMarkerInjection(AdvCtx *actx, PetscInt npoints, PetscSc
 	}
 
 	// inject/delete markers
-	ierr = AVDInjectDeletePoints(actx, &A); CHKERRQ(ierr);
+	ierr = AVDInjectDeletePoints(actx, &A, ind); CHKERRQ(ierr);
 
 	// destroy AVD structure
 	AVDDestroy(&A);

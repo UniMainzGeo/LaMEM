@@ -241,5 +241,7 @@ PetscErrorCode BCSetupBoundVel(BCCtx *bc, PetscScalar top);
 
 PetscErrorCode BCApplyBoundVel(BCCtx *bc);
 
+PetscErrorCode BCOverridePhase(BCCtx *bc, PetscInt cellID, Marker *P);
+
 //---------------------------------------------------------------------------
 #endif
