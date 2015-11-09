@@ -114,8 +114,7 @@ PetscErrorCode FreeSurfAppErosion(FreeSurf *surf);
 PetscErrorCode FreeSurfAppSedimentation(FreeSurf *surf);
 
 // Set topography from file
-PetscErrorCode FreeSurfSetTopoFromFile(	FreeSurf *surf, UserCtx *user);
-
+PetscErrorCode FreeSurfSetTopoFromFile(FreeSurf *surf, UserCtx *user);
 
 //---------------------------------------------------------------------------
 // SERVICE FUNCTIONS

@@ -1719,31 +1719,54 @@ PetscErrorCode ADVInterpMarkToEdge(AdvCtx *actx, PetscInt iphase, InterpCase ica
 PetscErrorCode ADVMarkCrossFreeSurf(AdvCtx *actx, FreeSurf *surf)
 {
 	// change marker phase when crossing free surface
-
+	FDSTAG      *fs;
 	Marker      *P;
-	PetscInt     jj;
+	PetscInt    sx, sy, nx, ny;
+	PetscInt    jj, ID, I, J, K, L;
+	PetscScalar ***ltopo, *ncx, *ncy, ptopo, xp, yp, zp;
 
+	PetscErrorCode ierr;
 	PetscFunctionBegin;
+/*
+	// access context
+	fs = actx->fs;
+	L  = fs->dsz.rank;
 
-	// WARNING! current version only supports flat free surface in combination
-	// with prescribed sedimentation rate model. General version to be implemented.
-	// The problem with non-sedimentary case is which phase to assign to air marker.
+	// starting indices & number of cells
+	sx = fs->dsx.pstart; nx = fs->dsx.ncels;
+	sy = fs->dsy.pstart; ny = fs->dsy.ncels;
 
-	if(surf->flat != PETSC_TRUE || surf->SedimentModel != 1)
-	{
-		PetscFunctionReturn(0);
-	}
+	// node & cell coordinates
+	ncx = fs->dsx.ncoor;
+	ncy = fs->dsy.ncoor;
 
-	// scan ALL markers
+	// access topography
+	ierr = DMDAVecGetArray(surf->DA_SURF, surf->ltopo, &ltopo);  CHKERRQ(ierr);
+
+	// scan all markers
 	for(jj = 0; jj < actx->nummark; jj++)
 	{
 		// access next marker
 		P = &actx->markers[jj];
 
+		// get consecutive index of the host cell
+		ID = actx->cellnum[jj];
+
+		// expand I, J, K cell indices
+		GET_CELL_IJK(ID, I, J, K, nx, ny)
+
+		// get marker coordinates
+		xp = P->X[0];
+		yp = P->X[1];
+		zp = P->X[2];
+
+		// interpolate topography
+		ptopo = InterpLin2D(ltopo, I, J, L, sx, sy, xp, yp, ncx, ncy);
+
 		// check marker is above/below the free surface
-		if(P->X[2] > surf->avg_topo)
+		if(zp > ptopo)
 		{
-			// above -> sediment turns into air
+			// above -> rock turns into air
 			if(P->phase != surf->AirPhase)
 			{
 				P->phase = surf->AirPhase;
@@ -1751,14 +1774,25 @@ PetscErrorCode ADVMarkCrossFreeSurf(AdvCtx *actx, FreeSurf *surf)
 		}
 		else
 		{
-			// below -> air turns into sediment
+			// below -> air turns into rock
 			if(P->phase == surf->AirPhase)
 			{
-				P->phase = surf->phase;
+				if(surf->SedimentModel == 1)
+				{
+					// easy case, it turn into a sediment
+					P->phase = surf->phase;
+				}
+				else
+				{
+					// WHAT TO DO HERE?
+				}
 			}
 		}
 	}
 
+	// restore access
+	ierr = DMDAVecRestoreArray(surf->DA_SURF, surf->ltopo, &ltopo);  CHKERRQ(ierr);
+*/
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------

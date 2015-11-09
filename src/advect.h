@@ -298,6 +298,34 @@ static inline PetscScalar InterpLin3D(
 	return v;
 }
 //-----------------------------------------------------------------------------
+static inline PetscScalar InterpLin2D(
+	PetscScalar ***lv,
+	PetscInt    i,
+	PetscInt    j,
+	PetscInt    L,
+	PetscInt    sx,
+	PetscInt    sy,
+	PetscScalar xp,
+	PetscScalar yp,
+	PetscScalar *cx,
+	PetscScalar *cy)
+{
+	PetscScalar xb, yb, zb, xe, ye, v;
+
+	// get relative coordinates
+	xe = (xp - cx[i])/(cx[i+1] - cx[i]); xb = 1.0 - xe;
+	ye = (yp - cy[j])/(cy[j+1] - cy[j]); yb = 1.0 - ye;
+
+	// interpolate & return result
+	v =
+	lv[L][sy+j  ][sx+i  ]*xb*yb +
+	lv[L][sy+j  ][sx+i+1]*xe*yb +
+	lv[L][sy+j+1][sx+i  ]*xb*ye +
+	lv[L][sy+j+1][sx+i+1]*xe*ye;
+
+	return v;
+}
+//-----------------------------------------------------------------------------
 /*
 #define InterpLin3D(v, lv, i, j, k, cx, cy, cz) \
 	/ get relative coordinates / \
