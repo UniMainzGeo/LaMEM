@@ -1423,11 +1423,13 @@ PetscErrorCode ADVMarkInitFilePolygons(AdvCtx *actx, UserCtx *user)
 	PetscInt      k,n,kvol,Fcount,Fsize,VolN,Nmax,Lmax,kpoly;
 //	PetscScalar   VolInfo[4];
 	Polygon2D     Poly;
-	PetscBool    *polyin, *polybnd, AddRandomNoise;
+//	PetscBool    *polyin, *polybnd, AddRandomNoise;
+	PetscBool     AddRandomNoise;
+	PetscInt     *polyin;
 	PetscInt     *idx;
 //	PetscInt      i;
 	PetscScalar  *X,*PolyLen,*PolyIdx,*PolyFile;
-	PolyCtx       polydat;
+//	PolyCtx       polydat;
 
 //	PetscInt      nmark_all;
 	PetscInt      imark,imarkx,imarky,imarkz,icellx,icelly,icellz;
@@ -1589,7 +1591,6 @@ PetscErrorCode ADVMarkInitFilePolygons(AdvCtx *actx, UserCtx *user)
 	// allocate temporary arrays
 	ierr = PetscMalloc((size_t)nidxmax*sizeof(PetscInt),&idx); CHKERRQ(ierr);
 	ierr = PetscMalloc((size_t)nidxmax*sizeof(PetscBool),&polyin); CHKERRQ(ierr);
-	ierr = PetscMalloc((size_t)nidxmax*sizeof(PetscBool),&polybnd); CHKERRQ(ierr);
 	ierr = PetscMalloc((size_t)nidxmax*2*sizeof(PetscScalar),&X); CHKERRQ(ierr);
 
 	// allocate memory for polyin
@@ -1685,13 +1686,27 @@ PetscErrorCode ADVMarkInitFilePolygons(AdvCtx *actx, UserCtx *user)
 						X[k*2+1] = actx->markers[idx[k]].X[Poly.ax[1]] * chLen;
 					}
 
+// NEW POLYGON POINT TEST =====================================================
+					PetscInt    PolyLen;
+					PetscScalar atol;
+					PetscScalar box[4];
+
 					// find markers in local polygon (polyin & polybnd are initialized internally )
-					inpoly(&polydat, nidx[Poly.dir], X, Poly.X, Poly.len, polyin, polybnd);
+//					inpoly(&polydat, nidx[Poly.dir], X, Poly.X, Poly.len, polyin, polybnd);
+
+					// get bounding box of a polygon
+					PolyLen = Poly.len;
+
+					polygon_box(&PolyLen, Poly.X, 1e-12, &atol, box);
+
+					in_polygon(nidx[Poly.dir], X, PolyLen, Poly.X, box, atol, polyin);
+
+//=============================================================================
 
 					// set marker phase
 					for (k=0;k<nidx[Poly.dir];k++)
 					{
-						if (polyin[k] || polybnd[k])
+						if (polyin[k])
 						{
 							if (Poly.type == 1) // additive
 							{
@@ -1743,13 +1758,9 @@ PetscErrorCode ADVMarkInitFilePolygons(AdvCtx *actx, UserCtx *user)
 		CHKERRQ(ierr);
 	}
 	
-
-
-
 	// free
 	PetscFree(idx);
 	PetscFree(polyin);
-	PetscFree(polybnd);
 	PetscFree(X);
 
 	PetscFree(PolyIdx);
@@ -1938,6 +1949,7 @@ void ADVMarkSecIdx(AdvCtx *actx, UserCtx *user, PetscInt dir, PetscInt Islice, P
 	return;
 }
 //---------------------------------------------------------------------------
+/*
 #undef __FUNCT__
 #define __FUNCT__ "inpoly"
 void inpoly(PolyCtx *polydat, PetscInt N, PetscScalar *X, PetscScalar *node, PetscInt Nnode, PetscBool *in, PetscBool *bnd)
@@ -1956,7 +1968,7 @@ void inpoly(PolyCtx *polydat, PetscInt N, PetscScalar *X, PetscScalar *node, Pet
 
     // WARNING! UNUSED PARAMETER!
     if(polydat) polydat = NULL;
-/*
+
     // Retrieve allocated arrays
 	Xtemp = polydat->Xtemp;
 	nodetemp = polydat->nodetemp;
@@ -1966,7 +1978,6 @@ void inpoly(PolyCtx *polydat, PetscInt N, PetscScalar *X, PetscScalar *node, Pet
 	x = polydat->x;
 	y = polydat->y;
 	idx = polydat->idx;
-*/
 
 	// constants
 	N1 = N-1;
@@ -2274,3 +2285,4 @@ void qsindex (PetscScalar  *a, PetscInt *idx , PetscInt lo, PetscInt hi)
     if (i<hi) qsindex(a , idx , i , hi);
 }
 //---------------------------------------------------------------------------
+*/
