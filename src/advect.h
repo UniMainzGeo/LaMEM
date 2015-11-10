@@ -162,7 +162,7 @@ PetscErrorCode ADVReAllocStorage(AdvCtx *actx, PetscInt capacity);
 PetscErrorCode ADVAdvect(AdvCtx *actx);
 
 // remap markers onto the grid
-PetscErrorCode ADVRemap(AdvCtx *actx);
+PetscErrorCode ADVRemap(AdvCtx *actx, FreeSurf *surf);
 
 // exchange markers between the processors resulting from the position change
 PetscErrorCode ADVExchange(AdvCtx *actx);
@@ -218,7 +218,7 @@ PetscErrorCode ADVCheckCorners(AdvCtx *actx);
 PetscErrorCode ADVMarkDeleteOutflow(AdvCtx *actx);
 
 // change marker phase when crossing free surface
-PetscErrorCode ADVMarkCrossFreeSurf(AdvCtx *actx, FreeSurf *surf);
+PetscErrorCode ADVMarkCrossFreeSurf(AdvCtx *actx, FreeSurf *surf, PetscScalar tol);
 
 // check marker phases
 PetscErrorCode ADVCheckMarkPhases(AdvCtx *actx, PetscInt numPhases);
@@ -310,7 +310,7 @@ static inline PetscScalar InterpLin2D(
 	PetscScalar *cx,
 	PetscScalar *cy)
 {
-	PetscScalar xb, yb, zb, xe, ye, v;
+	PetscScalar xb, yb, xe, ye, v;
 
 	// get relative coordinates
 	xe = (xp - cx[i])/(cx[i+1] - cx[i]); xb = 1.0 - xe;
@@ -325,23 +325,5 @@ static inline PetscScalar InterpLin2D(
 
 	return v;
 }
-//-----------------------------------------------------------------------------
-/*
-#define InterpLin3D(v, lv, i, j, k, cx, cy, cz) \
-	/ get relative coordinates / \
-	xe = (xp - cx[i])/(cx[i+1] - cx[i]); xb = 1.0 - xe; \
-	ye = (yp - cy[j])/(cy[j+1] - cy[j]); yb = 1.0 - ye; \
-	ze = (zp - cz[k])/(cz[k+1] - cz[k]); zb = 1.0 - ze; \
-	/ interpolate & return result / \
-	v = \
-	lv[sz+k  ][sy+j  ][sx+i  ]*xb*yb*zb + \
-	lv[sz+k  ][sy+j  ][sx+i+1]*xe*yb*zb + \
-	lv[sz+k  ][sy+j+1][sx+i  ]*xb*ye*zb + \
-	lv[sz+k  ][sy+j+1][sx+i+1]*xe*ye*zb + \
-	lv[sz+k+1][sy+j  ][sx+i  ]*xb*yb*ze + \
-	lv[sz+k+1][sy+j  ][sx+i+1]*xe*yb*ze + \
-	lv[sz+k+1][sy+j+1][sx+i  ]*xb*ye*ze + \
-	lv[sz+k+1][sy+j+1][sx+i+1]*xe*ye*ze;
-*/
 //-----------------------------------------------------------------------------
 #endif

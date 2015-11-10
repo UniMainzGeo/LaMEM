@@ -211,7 +211,7 @@ PetscErrorCode LaMEMLib(ModParam *IOparam)
 	ierr = ADVMarkInit(&actx, &user); CHKERRQ(ierr);
 
 	// change marker phase when crossing free surface
-	ierr = ADVMarkCrossFreeSurf(&actx, &surf); CHKERRQ(ierr);
+	ierr = ADVMarkCrossFreeSurf(&actx, &surf, 0.05); CHKERRQ(ierr);
 
 	// update phase ratios taking into account actual free surface position
 	ierr = FreeSurfGetAirPhaseRatio(&surf); CHKERRQ(ierr);
@@ -366,11 +366,8 @@ ierr = JacResCopyTemp(&jr); CHKERRQ(ierr);
 		// apply sedimentation to the free surface
 		ierr = FreeSurfAppSedimentation(&surf); CHKERRQ(ierr);
 
-		// change marker phase when crossing flat surface or free surface with fast sedimentation/erosion
-		ierr = ADVMarkCrossFreeSurf(&actx, &surf); CHKERRQ(ierr);
-
 		// remap markers onto (stretched) grid
-		ierr = ADVRemap(&actx); CHKERRQ(ierr);
+		ierr = ADVRemap(&actx, &surf); CHKERRQ(ierr);
 
 		// update phase ratios taking into account actual free surface position
 		ierr = FreeSurfGetAirPhaseRatio(&surf); CHKERRQ(ierr);
