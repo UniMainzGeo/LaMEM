@@ -442,7 +442,7 @@ PetscErrorCode BCApplyBoundVel(BCCtx *bc)
 PetscErrorCode BCOverridePhase(BCCtx *bc, PetscInt cellID, Marker *P)
 {
 	FDSTAG     *fs;
-	PetscInt    i, j, k, M, N, mx, my;
+	PetscInt    i, j, k, M, N, mx, my, sx, sy;
 	PetscScalar z;
 
 	PetscFunctionBegin;
@@ -450,6 +450,8 @@ PetscErrorCode BCOverridePhase(BCCtx *bc, PetscInt cellID, Marker *P)
 	fs = bc->fs;
 	M  = fs->dsx.ncels;
 	N  = fs->dsy.ncels;
+	sx = fs->dsx.pstart;
+	sy = fs->dsy.pstart;
 	mx = fs->dsx.tcels-1;
 	my = fs->dsy.tcels-1;
 	z  = P->X[2];
@@ -457,10 +459,10 @@ PetscErrorCode BCOverridePhase(BCCtx *bc, PetscInt cellID, Marker *P)
 	// expand i, j, k cell indices
 	GET_CELL_IJK(cellID, i, j, k, M, N);
 
-	if(((bc->face == 1 && i == 0)
-	||  (bc->face == 2 && i == mx)
-	||  (bc->face == 3 && j == 0)
-	||  (bc->face == 4 && j == my))
+	if(((bc->face == 1 && i + sx == 0)
+	||  (bc->face == 2 && i + sx == mx)
+	||  (bc->face == 3 && j + sy == 0)
+	||  (bc->face == 4 && j + sy == my))
 	&&  (z >= bc->bot && z <= bc->top))
 	{
 		P->phase = bc->phase;
