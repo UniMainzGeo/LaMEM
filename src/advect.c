@@ -1718,6 +1718,7 @@ PetscErrorCode ADVInterpMarkToEdge(AdvCtx *actx, PetscInt iphase, InterpCase ica
 #define __FUNCT__ "ADVMarkCrossFreeSurf"
 PetscErrorCode ADVMarkCrossFreeSurf(AdvCtx *actx, FreeSurf *surf, PetscScalar tol)
 {
+
 	// change marker phase when crossing free surface
 	FDSTAG      *fs;
 	Marker      *P;
