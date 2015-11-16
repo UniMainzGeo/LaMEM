@@ -1961,13 +1961,31 @@ PetscErrorCode JacResGetISA(JacRes *jr)
 
 	ierr = DMDAGetCorners(fs->DA_CEN, &sx, &sy, &sz, &nx, &ny, &nz); CHKERRQ(ierr);
 
+
+	PetscScalar nrm, nrmmin = DBL_MAX, nrmmax = 0.0;
+
+
+
 	START_STD_LOOP
 	{
 		// get gradient and velocities at cell center
 		ierr = getGradientVel(fs, lvx, lvy, lvz, i, j, k, sx, sy, sz, &L, vel, NULL);
 
+		Tensor2RNNorm(&L, &nrm);
+
+		if(nrm == 0.0) nSDFail++;
+
+		if(nrm < nrmmin) nrmmin = nrm;
+		if(nrm > nrmmax) nrmmax = nrm;
+
 		// get normalized direction of Infinite Strain Axis (ISA)
-		code = getISA(&L, ISA, NULL);
+		code = getISA(&L, i, j, k, ISA, NULL);
+
+		if(isnan(ISA[0])
+		|| isnan(ISA[1])
+		|| isnan(ISA[2])) nSDFail++;
+
+
 
 		if(code == -2)
 		{
@@ -1992,12 +2010,17 @@ PetscErrorCode JacResGetISA(JacRes *jr)
 		// store horizontal projection of ISA rotated to the northward system
 		// rescaling is skipped (length of bar indicates horizontal projection)
 
-		isx[k][j][i] =  costh*ISA[0] + sinth*ISA[1];
-		isy[k][j][i] = -sinth*ISA[0] + costh*ISA[1];
+//		isx[k][j][i] =  costh*ISA[0] + sinth*ISA[1];
+//		isy[k][j][i] = -sinth*ISA[0] + costh*ISA[1];
+
+		isx[k][j][i] = ISA[0];
+		isy[k][j][i] = ISA[1];
+
 
 	}
 	END_STD_LOOP
 
+/*
 	// print warning
 	if(jr->matLim.warn == PETSC_TRUE)
 	{
@@ -2015,6 +2038,15 @@ PetscErrorCode JacResGetISA(JacRes *jr)
 			PetscPrintf(PETSC_COMM_WORLD,"Warning! ISA spectral decomposition failed in %lld points. Adjust tolerances!\n",(LLD)gnSDFail);
 		}
 	}
+*/
+
+//	PetscPrintf(PETSC_COMM_WORLD,"*******************************\n");
+//	PetscPrintf(PETSC_COMM_WORLD,"Number of fucked up points %lld\n",(LLD)nSDFail);
+//	PetscPrintf(PETSC_COMM_WORLD,"*******************************\n");
+
+//	PetscPrintf(PETSC_COMM_WORLD,"*******************************\n");
+//	PetscPrintf(PETSC_COMM_WORLD,"nrmmin: %g, nrmmax: %g\n", nrmmin, nrmmax);
+//	PetscPrintf(PETSC_COMM_WORLD,"*******************************\n");
 
 	// restore access
 	ierr = DMDAVecRestoreArray(fs->DA_X,   jr->lvx,  &lvx); CHKERRQ(ierr);
@@ -2066,6 +2098,14 @@ PetscErrorCode JacResGetGOL(JacRes *jr)
 	ierr = DMDAVecGetArray(fs->DA_CEN, jr->ldxx, &pgol);   CHKERRQ(ierr);
 	ierr = DMDAVecGetArray(fs->DA_CEN, jr->ldyy, &ptheta); CHKERRQ(ierr);
 
+
+	PetscInt cnt = 0;
+
+
+
+	PetscScalar dot;
+
+
 	//==========================================================
 	// compute strain rate norm and angle between ISA & velocity
 	//==========================================================
@@ -2078,7 +2118,17 @@ PetscErrorCode JacResGetGOL(JacRes *jr)
 		ierr = getGradientVel(fs, lvx, lvy, lvz, i, j, k, sx, sy, sz, &L, vel, &vnrm);
 
 		// get normalized direction of Infinite Strain Axis (ISA)
-		code = getISA(&L, ISA, &lnrm);
+		code = getISA(&L, i, j, k, ISA, &lnrm);
+
+
+		// return codes:
+		//    -2 - spectral decomposition failed to converge
+		//    -1 - ISA is undefined
+		//     0 - ISA is defined, computed, and returned
+		//     1 - simple shear case (ISA has same direction as velocity)
+
+
+
 
 		if(code == 1)
 		{
@@ -2100,10 +2150,23 @@ PetscErrorCode JacResGetGOL(JacRes *jr)
 			// ~~~ both ISA and velocity are defined ~~~
 
 			// get angle between ISA and velocity
-			theta = acos(vel[0]*ISA[0] + vel[1]*ISA[1] + vel[2]*ISA[2]);
-
 			// ISA has only direction but no sense, hence angle varies within [0, pi/2]
-			if(theta > M_PI_2) theta = M_PI - theta;
+
+			dot = fabs(vel[0]*ISA[0] + vel[1]*ISA[1] + vel[2]*ISA[2]);
+
+
+			if(dot > 1.0 - 2.0*DBL_EPSILON) dot = 1.0 - 2.0*DBL_EPSILON;
+
+			theta = acos(dot);
+
+
+			// DBL_EPSILON;
+
+			if(isnan(theta))
+			{
+				cnt++;
+			}
+
 		}
 
 		// store strain rate norm & angle
@@ -2112,17 +2175,33 @@ PetscErrorCode JacResGetGOL(JacRes *jr)
 	}
 	END_STD_LOOP
 
+
+//	PetscPrintf(PETSC_COMM_WORLD,"*******************************\n");
+//	PetscPrintf(PETSC_COMM_WORLD,"Number of fucked up points %lld\n",(LLD)cnt);
+//	PetscPrintf(PETSC_COMM_WORLD,"*******************************\n");
+
+
 	// restore access
 	ierr = DMDAVecRestoreArray(fs->DA_CEN, jr->ldyy, &ptheta); CHKERRQ(ierr);
 
 	// communicate boundary values
 	LOCAL_TO_LOCAL(fs->DA_CEN, jr->ldyy);
 
+
+
+
+
+
+
+
+
 	//=====================================================
 	// compute GOL parameter using Eulerian advection terms
 	//=====================================================
 
 	ierr = DMDAVecGetArray(fs->DA_CEN, jr->ldyy, &ptheta); CHKERRQ(ierr);
+
+	cnt = 0;
 
 	START_STD_LOOP
 	{
@@ -2163,19 +2242,35 @@ PetscErrorCode JacResGetGOL(JacRes *jr)
 			// get GOL parameter
 			gol = fabs(gol)/lnrm;
 
+			if(isnan(gol)) cnt++;
+
 			// impose limit
-			if(gol > max_gol) gol = max_gol;
+			if(gol > max_gol)
+			{
+				gol = max_gol;
+
+				cnt++;
+			}
 		}
 		else
 		{
 			// ISA and (or) velocity is undefined, set GOL parameter to maximum
 			gol = max_gol;
+
+			cnt++;
 		}
 
 		// store GOL parameter
 		pgol[k][j][i] = gol;
+
+//		pgol[k][j][i] = 1.0;
+
 	}
 	END_STD_LOOP
+
+//	PetscPrintf(PETSC_COMM_WORLD,"*******************************\n");
+//	PetscPrintf(PETSC_COMM_WORLD,"Number of undefined points %lld\n",(LLD)cnt);
+//	PetscPrintf(PETSC_COMM_WORLD,"*******************************\n");
 
 	// restore access
 	ierr = DMDAVecRestoreArray(fs->DA_X,   jr->lvx,  &lvx);    CHKERRQ(ierr);

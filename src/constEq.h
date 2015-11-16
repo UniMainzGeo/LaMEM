@@ -211,7 +211,7 @@ PetscInt Tensor2RSSpectral(
 	PetscScalar ltol,    // loose tolerance (divergence condition)
 	PetscInt    itmax);  // maximum number rotations
 
-PetscInt getISA(Tensor2RN *pL, PetscScalar ISA[], PetscScalar *plnrm);
+PetscInt getISA(Tensor2RN *pL, PetscInt i, PetscInt j, PetscInt k, PetscScalar ISA[], PetscScalar *plnrm);
 
 //---------------------------------------------------------------------------
 #endif

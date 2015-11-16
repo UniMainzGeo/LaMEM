@@ -729,7 +729,7 @@ void Tensor2RNEigen(Tensor2RN *L, PetscScalar tol, PetscScalar eval[])
 	// WARNING! TRACE OF TENSOR L MUST BE ZERO
 	//========================================
 
-	PetscScalar I2, I3, p, q, D, theta, l1, l2, l3, cx, t, sd, r, s;
+	PetscScalar I2, I3, p, q, D, theta, l1, l2, l3, cx, t, sd, r, s, ra, sa;
 
 	// get invariants
 	I2 = L->xx*L->yy + L->yy*L->zz + L->xx*L->zz
@@ -776,8 +776,10 @@ void Tensor2RNEigen(Tensor2RN *L, PetscScalar tol, PetscScalar eval[])
 		//===============================================
 
 		sd = sqrt(D);
-		r  = pow(-q/2.0 + sd, 1.0/3.0);
-		s  = pow(-q/2.0 - sd, 1.0/3.0);
+		ra = -q/2.0 + sd;
+		sa = -q/2.0 - sd;
+		r  =  pow(fabs(ra), 1.0/3.0); if(ra < 0.0) r = -r;
+		s  =  pow(fabs(sa), 1.0/3.0); if(sa < 0.0) s = -s;
 
 		// get real parts of eigenvalues
 		l1 =  r + s;
@@ -826,7 +828,7 @@ void SortEgenAbs(PetscScalar eval[])
 	eval[2] = l3;
 }
 //---------------------------------------------------------------------------
-PetscInt getISA(Tensor2RN *pL, PetscScalar ISA[], PetscScalar *plnrm)
+PetscInt getISA(Tensor2RN *pL, PetscInt i, PetscInt j, PetscInt k, PetscScalar ISA[], PetscScalar *plnrm)
 {
 	// compute direction of Infinite Strain Axis
 
@@ -857,6 +859,36 @@ PetscInt getISA(Tensor2RN *pL, PetscScalar ISA[], PetscScalar *plnrm)
 	Tensor2RNDivide(&L, lnrm);
 	Tensor2RNTrace(&L);
 
+/*
+	if(isnan(L.xx)
+	|| isnan(L.xy)
+	|| isnan(L.xz)
+	|| isnan(L.yx)
+	|| isnan(L.yy)
+	|| isnan(L.yz)
+	|| isnan(L.zx)
+	|| isnan(L.zy)
+	|| isnan(L.zz))
+*/
+
+	if(isinf(L.xx)
+	|| isinf(L.xy)
+	|| isinf(L.xz)
+	|| isinf(L.yx)
+	|| isinf(L.yy)
+	|| isinf(L.yz)
+	|| isinf(L.zx)
+	|| isinf(L.zy)
+	|| isinf(L.zz))
+	{
+//		PetscPrintf(PETSC_COMM_WORLD,"*******************************\n");
+//		PetscPrintf(PETSC_COMM_WORLD, "Velocity gradient is fucked up\n"); exit(1);
+//		PetscPrintf(PETSC_COMM_WORLD,"*******************************\n");
+
+	}
+
+
+
 	// return norm of the velocity gradient if necessary
 	if(plnrm) (*plnrm) = lnrm;
 
@@ -865,8 +897,36 @@ PetscInt getISA(Tensor2RN *pL, PetscScalar ISA[], PetscScalar *plnrm)
 	//========================================
 	if(!lnrm) return -1;
 
+
+//	if(i==11 && j == 3 && k == 0)
+//	{
+
+//		PetscPrintf(PETSC_COMM_WORLD, "enter fucked up cell\n");
+
+//	}
+
+
+
 	// get eigenvalues
 	Tensor2RNEigen(&L, ltol, eval);
+
+
+
+
+/*
+	if(isnan(eval[0])
+	|| isnan(eval[1])
+	|| isnan(eval[2])
+	|| isnan(eval[3])
+	|| isnan(eval[4]))
+	{
+		PetscPrintf(PETSC_COMM_WORLD,"*******************************\n");
+		PetscPrintf(PETSC_COMM_WORLD, "Eigenvalues are fucked up\n");
+		PetscPrintf(PETSC_COMM_WORLD, "i, j, k: %d %d %d\n", i, j, k); exit(1);
+		PetscPrintf(PETSC_COMM_WORLD,"*******************************\n");
+
+	}
+*/
 
 	//==================================================
 	// *** three zero eigenvalues, simple shear case ***
