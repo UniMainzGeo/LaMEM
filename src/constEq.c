@@ -47,6 +47,8 @@
 #include "solVar.h"
 #include "constEq.h"
 #include "dfzero.h"
+#include "tools.h"
+
 //---------------------------------------------------------------------------
 // * add different viscosity averaging methods (echo info to output)
 // * make sure that Peierls creep is deactivated for isothermal analysis
@@ -723,13 +725,28 @@ void GetTempParam(
 // upper mantle, Gophys. J. Int, 158, 744-752.
 
 //---------------------------------------------------------------------------
-void Tensor2RNEigen(Tensor2RN *L, PetscScalar tol, PetscScalar eval[])
+PetscInt Tensor2RNEigen(Tensor2RN *L, PetscScalar tol, PetscScalar eval[])
 {
-	//========================================
-	// WARNING! TRACE OF TENSOR L MUST BE ZERO
-	//========================================
+	//=======================================================================
+	//
+	// compute eigenvalues of a nonsymmetric tensor with zero trace
+	//
+	// WARNING! TENSOR TRACE MUST BE ZERO (NOT CHECKED HERE)
+	//
+	// return codes:
+	//
+	//    0 - three nearly zero eigenvalues (up to a tolerance)
+	//    1 - three real eigenvalues (can be multiple)
+	//    2 - one positive real eigenvalue & a complex conjugate pair
+	//    3 - one negative real eigenvalue & a complex conjugate pair
+	//
+	// three real eigenvalues are sorted in descending order
+	// real eigenvalue always precedes the complex conjugate pair
+	//
+	//=======================================================================
 
-	PetscScalar I2, I3, p, q, D, theta, l1, l2, l3, cx, t, sd, r, s, ra, sa;
+	PetscInt    code;
+	PetscScalar I2, I3, p, q, D, theta, l1, l2, l3, cx, t, sd, r, s;
 
 	// get invariants
 	I2 = L->xx*L->yy + L->yy*L->zz + L->xx*L->zz
@@ -750,10 +767,13 @@ void Tensor2RNEigen(Tensor2RN *L, PetscScalar tol, PetscScalar eval[])
 		// three (nearly) zero eigenvalues
 		//================================
 
-		l1 = 0.0;
-		l2 = 0.0;
-		l3 = 0.0;
-		cx = 0.0;
+		l1   = 0.0;
+		l2   = 0.0;
+		l3   = 0.0;
+		cx   = 0.0;
+
+		// set return code
+		code = 0;
 	}
 	else if(D < 0.0)
 	{
@@ -761,25 +781,31 @@ void Tensor2RNEigen(Tensor2RN *L, PetscScalar tol, PetscScalar eval[])
 		// three real eigenvalues
 		//=======================
 
-		theta = acos((3.0*q)/(2.0*p)*sqrt(-3.0/p));
+		theta = ARCCOS((3.0*q)/(2.0*p)*sqrt(-3.0/p));
 
-		l1 = 2.0*sqrt(-p/3.0)*cos( theta            /3.0);
-		l2 = 2.0*sqrt(-p/3.0)*cos((theta - 2.0*M_PI)/3.0);
-		l3 = 2.0*sqrt(-p/3.0)*cos((theta - 4.0*M_PI)/3.0);
-		cx = 0.0;
+		l1   = 2.0*sqrt(-p/3.0)*cos( theta            /3.0);
+		l2   = 2.0*sqrt(-p/3.0)*cos((theta - 2.0*M_PI)/3.0);
+		l3   = 2.0*sqrt(-p/3.0)*cos((theta - 4.0*M_PI)/3.0);
+		cx   = 0.0;
 
+		// set return code
+		code = 1;
+
+		// sort eigenvalues
+		if(l2 > l1) { t = l1; l1 = l2; l2 = t; }
+		if(l3 > l1) { t = l1; l1 = l3; l3 = t; }
+		if(l3 > l2) { t = l2; l2 = l3; l3 = t; }
 	}
 	else
 	{
-		//===============================================
-		// one real eigenvalue and two complex conjugates
-		//===============================================
+		//=============================================
+		// one real eigenvalue & complex conjugate pair
+		//=============================================
 
 		sd = sqrt(D);
-		ra = -q/2.0 + sd;
-		sa = -q/2.0 - sd;
-		r  =  pow(fabs(ra), 1.0/3.0); if(ra < 0.0) r = -r;
-		s  =  pow(fabs(sa), 1.0/3.0); if(sa < 0.0) s = -s;
+
+		r  = ODDROOT(-q/2.0 + sd, 1.0/3.0);
+		s  = ODDROOT(-q/2.0 - sd, 1.0/3.0);
 
 		// get real parts of eigenvalues
 		l1 =  r + s;
@@ -789,46 +815,25 @@ void Tensor2RNEigen(Tensor2RN *L, PetscScalar tol, PetscScalar eval[])
 		// get modulus of imaginary part of complex conjugate pair
 		cx = fabs(r-s)*sqrt(3.0)/2.0;
 
+		// set return code
+		if(l1 > 0.0) code = 2; // positive real root
+		else         code = 3; // negative real root
+
 		// complex eigenvalues are:
 		// l2 = -(r+s)/2 + cx*i
 		// l3 = -(r+s)/2 - cx*i
 	}
-
-	// sort eigenvalues
-	if(l2 > l1) { t = l1; l1 = l2; l2 = t; }
-	if(l3 > l1) { t = l1; l1 = l3; l3 = t; }
-	if(l3 > l2) { t = l2; l2 = l3; l3 = t; }
 
 	// store result
 	eval[0] = l1;
 	eval[1] = l2;
 	eval[2] = l3;
 	eval[3] = cx;
+
+	return code;
 }
 //---------------------------------------------------------------------------
-void SortEgenAbs(PetscScalar eval[])
-{
-	// sort eigenvalues by absolute value
-
-	PetscScalar t, l1, l2, l3, a1, a2, a3;
-
-	// initialize
-	l1 = eval[0];   a1 = fabs(l1);
-	l2 = eval[1];   a2 = fabs(l2);
-	l3 = eval[2];   a3 = fabs(l3);
-
-	// sort eigenvalues
-	if(a2 > a1) { t = l1; l1 = l2; l2 = t;   t = a1; a1 = a2; a2 = t; }
-	if(a3 > a1) { t = l1; l1 = l3; l3 = t;   t = a1; a1 = a3; a3 = t; }
-	if(a3 > a2) { t = l2; l2 = l3; l3 = t;   t = a2; a2 = a3; a3 = t; }
-
-	// store result
-	eval[0] = l1;
-	eval[1] = l2;
-	eval[2] = l3;
-}
-//---------------------------------------------------------------------------
-PetscInt getISA(Tensor2RN *pL, PetscInt i, PetscInt j, PetscInt k, PetscScalar ISA[], PetscScalar *plnrm)
+PetscInt getISA(Tensor2RN *pL, PetscScalar ISA[], PetscScalar *plnrm)
 {
 	// compute direction of Infinite Strain Axis
 
@@ -853,41 +858,9 @@ PetscInt getISA(Tensor2RN *pL, PetscInt i, PetscInt j, PetscInt k, PetscScalar I
 	ISA[1] = 0.0;
 	ISA[2] = 0.0;
 
-	// copy velocity gradient, normalize, remove trace
+	// copy velocity gradient, compute norm
 	Tensor2RNCopy(pL, &L);
 	Tensor2RNNorm(&L, &lnrm);
-	Tensor2RNDivide(&L, lnrm);
-	Tensor2RNTrace(&L);
-
-/*
-	if(isnan(L.xx)
-	|| isnan(L.xy)
-	|| isnan(L.xz)
-	|| isnan(L.yx)
-	|| isnan(L.yy)
-	|| isnan(L.yz)
-	|| isnan(L.zx)
-	|| isnan(L.zy)
-	|| isnan(L.zz))
-*/
-
-	if(isinf(L.xx)
-	|| isinf(L.xy)
-	|| isinf(L.xz)
-	|| isinf(L.yx)
-	|| isinf(L.yy)
-	|| isinf(L.yz)
-	|| isinf(L.zx)
-	|| isinf(L.zy)
-	|| isinf(L.zz))
-	{
-//		PetscPrintf(PETSC_COMM_WORLD,"*******************************\n");
-//		PetscPrintf(PETSC_COMM_WORLD, "Velocity gradient is fucked up\n"); exit(1);
-//		PetscPrintf(PETSC_COMM_WORLD,"*******************************\n");
-
-	}
-
-
 
 	// return norm of the velocity gradient if necessary
 	if(plnrm) (*plnrm) = lnrm;
@@ -897,41 +870,22 @@ PetscInt getISA(Tensor2RN *pL, PetscInt i, PetscInt j, PetscInt k, PetscScalar I
 	//========================================
 	if(!lnrm) return -1;
 
+	// normalize velocity gradient, remove trace
+	Tensor2RNDivide(&L, lnrm);
+	Tensor2RNTrace(&L);
 
-//	if(i==11 && j == 3 && k == 0)
-//	{
-
-//		PetscPrintf(PETSC_COMM_WORLD, "enter fucked up cell\n");
-
-//	}
-
-
-
-	// get eigenvalues
-	Tensor2RNEigen(&L, ltol, eval);
-
-
-
-
-/*
-	if(isnan(eval[0])
-	|| isnan(eval[1])
-	|| isnan(eval[2])
-	|| isnan(eval[3])
-	|| isnan(eval[4]))
-	{
-		PetscPrintf(PETSC_COMM_WORLD,"*******************************\n");
-		PetscPrintf(PETSC_COMM_WORLD, "Eigenvalues are fucked up\n");
-		PetscPrintf(PETSC_COMM_WORLD, "i, j, k: %d %d %d\n", i, j, k); exit(1);
-		PetscPrintf(PETSC_COMM_WORLD,"*******************************\n");
-
-	}
-*/
+	// get eigenvalues of the velocity gradient
+	code = Tensor2RNEigen(&L, ltol, eval);
 
 	//==================================================
 	// *** three zero eigenvalues, simple shear case ***
 	//==================================================
-	if(!eval[0]) return 1;
+	if(code == 0) return 1;
+
+	//===================================================================
+	// *** negative real + complex pair eigenvalues, ISA is undefined ***
+	//===================================================================
+	if(code == 3) return -1;
 
 	// get denominator of Sylvester's formula
 	l1 = eval[0];
@@ -943,8 +897,9 @@ PetscInt getISA(Tensor2RN *pL, PetscInt i, PetscInt j, PetscInt k, PetscScalar I
 	//===============================================
 	// *** multiple eigenvalues, ISA is undefined ***
 	//===============================================
-	if(D < ttol) return -1;
+	if(fabs(D) < ttol) return -1;
 
+	// three distinct real or one positive real + complex pair eigenvalues
 	// ISA is defined by l2 & l3 eigenvalues
 	// compute deformation gradient
 	// scaling doesn't affect eigenvectors (denominator is set to unit)
@@ -952,7 +907,7 @@ PetscInt getISA(Tensor2RN *pL, PetscInt i, PetscInt j, PetscInt k, PetscScalar I
 
 	Tensor2RNUnit(&I);
 	Tensor2RNProduct(&L, &L, &L2);
-	Tensor2RNSum3(&L2, 1.0, &L, -(l2 + l3), &I, (l2*l3 + cx*cx), &F);
+	Tensor2RNSum3(&L2, 1.0/D, &L, -(l2 + l3)/D, &I, (l2*l3 + cx*cx)/D, &F);
 
 	// compute right Cauchy-Green deformation tensor C = F^t*F
 	Tensor2RNTranspose(&F, &Ft);
@@ -962,97 +917,21 @@ PetscInt getISA(Tensor2RN *pL, PetscInt i, PetscInt j, PetscInt k, PetscScalar I
 	// perform spectral decomposition
 	code = Tensor2RSSpectral(&Cs, eval, evect, ttol, ltol, maxit);
 
+	//=====================================================================
+	// *** spectral decomposition failed to converge, ISA is undefined  ***
+	//=====================================================================
+	if(code) return -2;
+
 	// ISA is the eigenvector corresponding to the largest eigenvalue
 	ISA[0] = evect[0];
 	ISA[1] = evect[1];
 	ISA[2] = evect[2];
-
-	//==================================================
-	// *** spectral decomposition failed to converge ***
-	//==================================================
-	if(code) return -2;
 
 	//===============================================
 	// *** ISA is defined, computed, and returned ***
 	//===============================================
 	return 0;
 }
-//---------------------------------------------------------------------------
-/*
-{
-	Tensor2RN   L;
-	PetscScalar ISA[3], emax;
-
-	//	L.xx = 3.5000; L.xy = -1.0000; L.xz = -0.5000;
-	//	L.yx = 2.0000; L.yy = -1.0000; L.yz = -2.0000;
-	//	L.zx = 1.5000; L.zy =  3.0000; L.zz = -2.5000;
-
-	L.xx =  0.0;     L.xy =  1.0;     L.xz =  0.0;
-	L.yx =  0.0;     L.yy =  0.0;     L.yz =  3.0;
-	L.zx =  1.0;     L.zy =  1.0;     L.zz =  0.0;
-
-	PetscInt code = getISA(&L, ISA, &emax);
-
-	printf("return code: %d\n", code);
-}
-*/
-
-/*
-	double is3 = 1.0/sqrt(3.0);
-
-	double a[3] = {  300.0*is3, 300.0*is3, 300.0*is3};
-	double b[3] = { -is3, is3, is3};
-
-	double na = sqrt(a[0]*a[0] + a[1]*a[1] + a[2]*a[2]);
-	double nb = sqrt(b[0]*b[0] + b[1]*b[1] + b[2]*b[2]);
-
-	a[0] /= na; a[1] /= na; a[2] /= na;
-	b[0] /= nb; b[1] /= nb; b[2] /= nb;
-
-	double angle = acos(a[0]*b[0] + a[1]*b[1] + a[2]*b[2]);
-
-	printf("angle: %f\n", angle*(180.0/M_PI));
-
-	// get x-y projection of b
-
-	double p[3] = { b[0], b[1], 0.0 };
-
-	double np = sqrt(p[0]*p[0] + p[1]*p[1] + p[2]*p[2]);
-
-	p[0] /= np; p[1] /= np; p[2] /= np;
-
-
-	// angle between and x-y projection of b
-
-	angle = acos(a[0]*p[0] + a[1]*p[1] + a[2]*p[2]);
-
-	printf("angle: %f\n", angle*(180.0/M_PI));
-
-	// get normalized vector
-
-	double a[3] = { 2.0, -1.0, 1e-8 };
-
-	double na = sqrt(a[0]*a[0] + a[1]*a[1] + a[2]*a[2]);
-
-	a[0] /= na; a[1] /= na; a[2] /= na;
-
-	// get perpendicular vector with perpendicular x-y projection
-
-	double b[3];
-
-	b[0] = -a[1];
-	b[1] =  a[0];
-	b[2] = -(a[0]*b[0] + a[1]*b[1])/a[2];
-
-	double angle = acos(a[0]*b[0] + a[1]*b[1] + a[2]*b[2]);
-
-	printf("angle: %f\n", angle*(180.0/M_PI));
-
-	if(angle > M_PI_2) angle = M_PI - angle;
-	printf("angle: %f\n", angle*(180.0/M_PI));
-*/
-
-
 //---------------------------------------------------------------------------
 void Tensor2RNNorm(Tensor2RN *A, PetscScalar *pk)
 {
@@ -1172,17 +1051,17 @@ void Tensor2RNSum3(
 void Tensor2RNView(Tensor2RN *A, const char *msg)
 {
 	printf("%s: \n\n", msg);
-	printf("%f %f %f \n",   A->xx, A->xy, A->xz);
-	printf("%f %f %f \n",   A->yx, A->yy, A->yz);
-	printf("%f %f %f \n\n", A->zx, A->zy, A->zz);
+	printf("%g %g %g \n",   A->xx, A->xy, A->xz);
+	printf("%g %g %g \n",   A->yx, A->yy, A->yz);
+	printf("%g %g %g \n\n", A->zx, A->zy, A->zz);
 }
 //---------------------------------------------------------------------------
 void Tensor2RSView(Tensor2RS *A, const char *msg)
 {
 	printf("%s: \n\n", msg);
-	printf("%f %f %f \n",   A->xx, A->xy, A->xz);
-	printf("%f %f %f \n",   A->xy, A->yy, A->yz);
-	printf("%f %f %f \n\n", A->xz, A->yz, A->zz);
+	printf("%g %g %g \n",   A->xx, A->xy, A->xz);
+	printf("%g %g %g \n",   A->xy, A->yy, A->yz);
+	printf("%g %g %g \n\n", A->xz, A->yz, A->zz);
 }
 //---------------------------------------------------------------------------
 PetscInt Tensor2RSSpectral(

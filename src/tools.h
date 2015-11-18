@@ -138,6 +138,25 @@ static inline void RotDispPoint2D(PetscScalar Xa[], PetscScalar Xb[], PetscScala
 	xb[0] = costh*r[0] - sinth*r[1] + Xb[0];
 	xb[1] = sinth*r[0] + costh*r[1] + Xb[1];
 }
+//---------------------------------------------------------------------------
+
+static inline PetscScalar ARCCOS(PetscScalar x)
+{
+	if(x >  1.0 - DBL_EPSILON) x =  1.0 - DBL_EPSILON;
+	if(x < -1.0 + DBL_EPSILON) x = -1.0 + DBL_EPSILON;
+
+	return acos(x);
+}
+
+//---------------------------------------------------------------------------
+
+static inline PetscScalar ODDROOT(PetscScalar x, PetscScalar a)
+{
+
+	if(x < 0.0) return -pow(-x, a);
+	else        return  pow( x, a);
+
+}
 
 //---------------------------------------------------------------------------
 #endif
