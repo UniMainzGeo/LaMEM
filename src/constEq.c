@@ -907,7 +907,7 @@ PetscInt getISA(Tensor2RN *pL, PetscScalar ISA[], PetscScalar *plnrm)
 
 	Tensor2RNUnit(&I);
 	Tensor2RNProduct(&L, &L, &L2);
-	Tensor2RNSum3(&L2, 1.0/D, &L, -(l2 + l3)/D, &I, (l2*l3 + cx*cx)/D, &F);
+	Tensor2RNSum3(&L2, 1.0, &L, -(l2 + l3), &I, (l2*l3 + cx*cx), &F);
 
 	// compute right Cauchy-Green deformation tensor C = F^t*F
 	Tensor2RNTranspose(&F, &Ft);
