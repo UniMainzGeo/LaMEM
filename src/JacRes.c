@@ -1849,6 +1849,12 @@ PetscErrorCode getMaxInvStep1DLocal(Discret1D *ds, DM da, Vec gv, PetscInt dir, 
 //---------------------------------------------------------------------------
 // Infinite Strain Axis (ISA) computation functions
 //---------------------------------------------------------------------------
+#define gradComp(v, dx, bdx1, fdx1, bdx2, fdx2, dvdx, dvdx1, dvdx2, vc) \
+	dvdx  = ( v[9] - v[4])/dx; \
+	dvdx1 = ((v[4] - v[0] + v[9] - v[5])/bdx1 + (v[1] - v[4] + v[6] - v[9])/fdx1)/4.0; \
+	dvdx2 = ((v[4] - v[2] + v[9] - v[7])/bdx2 + (v[3] - v[4] + v[8] - v[9])/fdx2)/4.0; \
+	vc    = ( v[9] + v[4])/2.0;
+//---------------------------------------------------------------------------
 #undef __FUNCT__
 #define __FUNCT__ "getGradientVel"
 PetscErrorCode getGradientVel(
@@ -1858,56 +1864,53 @@ PetscErrorCode getGradientVel(
 {
 	// compute velocity gradient and normalized velocities at cell center
 
-	PetscScalar vnrm, dx, dy, dz, we[6], wb[6], vx[6], vy[6], vz[6], vxc, vyc, vzc;
-
-	PetscFunctionBegin;
+	PetscScalar dx, dy, dz, bdx, fdx, bdy, fdy, bdz, fdz;
+	PetscScalar vnrm, vx[10], vy[10], vz[10], vxc, vyc, vzc;
 
 	// get cell sizes
-	dx = SIZE_NODE(i, sx, fs->dsx);
-	dy = SIZE_NODE(j, sy, fs->dsy);
-	dz = SIZE_NODE(k, sz, fs->dsz);
+	dx = SIZE_CELL(i, sx, fs->dsx);   bdx = SIZE_NODE(i, sx, fs->dsx);   fdx = SIZE_NODE(i+1, sx, fs->dsx);
+	dy = SIZE_CELL(j, sy, fs->dsy);   bdy = SIZE_NODE(j, sy, fs->dsy);   fdy = SIZE_NODE(j+1, sy, fs->dsy);
+	dz = SIZE_CELL(k, sz, fs->dsz);   bdz = SIZE_NODE(k, sz, fs->dsz);   fdz = SIZE_NODE(k+1, sz, fs->dsz);
 
-	// get interpolation weights
-	we[0] = WEIGHT_NODE(i,   sx, fs->dsx); wb[0] = 1.0 - we[0];
-	we[1] = WEIGHT_NODE(i+1, sx, fs->dsx); wb[1] = 1.0 - we[1];
-	we[2] = WEIGHT_NODE(j,   sy, fs->dsy); wb[2] = 1.0 - we[2];
-	we[3] = WEIGHT_NODE(j+1, sy, fs->dsy); wb[3] = 1.0 - we[3];
-	we[4] = WEIGHT_NODE(k,   sz, fs->dsz); wb[4] = 1.0 - we[4];
-	we[5] = WEIGHT_NODE(k+1, sz, fs->dsz); wb[5] = 1.0 - we[5];
+	// vx - stencil
+	vx[0] = lvx[k]  [j-1][i];
+	vx[1] = lvx[k]  [j+1][i];
+	vx[2] = lvx[k-1][j]  [i];
+	vx[3] = lvx[k+1][j]  [i];
+	vx[4] = lvx[k]  [j]  [i];
+	vx[5] = lvx[k]  [j-1][i+1];
+	vx[6] = lvx[k]  [j+1][i+1];
+	vx[7] = lvx[k-1][j]  [i+1];
+	vx[8] = lvx[k+1][j]  [i+1];
+	vx[9] = lvx[k]  [j]  [i+1];
 
-	// get velocities at cell center
-	vxc = (lvx[k][j][i] + lvx[k][j][i+1])/2.0;
-	vyc = (lvy[k][j][i] + lvy[k][j+1][i])/2.0;
-    vzc = (lvz[k][j][i] + lvz[k+1][j][i])/2.0;
+	// vy - stencil
+	vy[0] = lvy[k]  [j]  [i-1];
+	vy[1] = lvy[k]  [j]  [i+1];
+	vy[2] = lvy[k-1][j]  [i];
+	vy[3] = lvy[k+1][j]  [i];
+	vy[4] = lvy[k]  [j]  [i];
+	vy[5] = lvy[k]  [j+1][i-1];
+	vy[6] = lvy[k]  [j+1][i+1];
+	vy[7] = lvy[k-1][j+1][i];
+	vy[8] = lvy[k+1][j+1][i];
+	vy[9] = lvy[k]  [j+1][i];
 
-	// x - velocity stencil
-	vx[0] = lvx[k][j][i];
-	vx[1] = lvx[k][j][i+1];
-	vx[2] = wb[2]*(lvx[k][j-1][i] + lvx[k][j-1][i+1])/2.0 + we[2]*vxc;
-	vx[3] = we[3]*(lvx[k][j+1][i] + lvx[k][j+1][i+1])/2.0 + wb[3]*vxc;
-	vx[4] = wb[4]*(lvx[k-1][j][i] + lvx[k-1][j][i+1])/2.0 + we[4]*vxc;
-	vx[5] = we[5]*(lvx[k+1][j][i] + lvx[k+1][j][i+1])/2.0 + wb[5]*vxc;
+	// vz - stencil
+	vz[0] = lvz[k]  [j]  [i-1];
+	vz[1] = lvz[k]  [j]  [i+1];
+	vz[2] = lvz[k]  [j-1][i];
+	vz[3] = lvz[k]  [j+1][i];
+	vz[4] = lvz[k]  [j]  [i];
+	vz[5] = lvz[k+1][j]  [i-1];
+	vz[6] = lvz[k+1][j]  [i+1];
+	vz[7] = lvz[k+1][j-1][i];
+	vz[8] = lvz[k+1][j+1][i];
+	vz[9] = lvz[k+1][j]  [i];
 
-	// y - velocity stencil
-	vy[0] = wb[0]*(lvy[k][j][i-1] + lvy[k][j+1][i-1])/2.0 + we[0]*vyc;
-	vy[1] = we[1]*(lvy[k][j][i+1] + lvy[k][j+1][i+1])/2.0 + wb[1]*vyc;
-	vy[2] = lvy[k][j][i];
-	vy[3] = lvy[k][j+1][i];
-	vy[4] = wb[4]*(lvy[k-1][j][i] + lvy[k-1][j+1][i])/2.0 + we[4]*vyc;
-	vy[5] = we[5]*(lvy[k+1][j][i] + lvy[k+1][j+1][i])/2.0 + wb[5]*vyc;
-
-	// z - velocity stencil
-	vz[0] = wb[0]*(lvz[k][j][i-1] + lvz[k+1][j][i-1])/2.0 + we[0]*vzc;
-	vz[1] = we[1]*(lvz[k][j][i+1] + lvz[k+1][j][i+1])/2.0 + wb[1]*vzc;
-	vz[2] = wb[2]*(lvz[k][j-1][i] + lvz[k+1][j-1][i])/2.0 + we[2]*vzc;
-	vz[3] = we[3]*(lvz[k][j+1][i] + lvz[k+1][j+1][i])/2.0 + wb[3]*vzc;
-	vz[4] = lvz[k][j][i];
-	vz[5] = lvz[k+1][j][i];
-
-	// compute velocity gradient tensor
-	L->xx = (vx[1]-vx[0])/dx; L->xy = (vx[3]-vx[2])/dy; L->xz = (vx[5]-vx[4])/dz;
-	L->yx = (vy[1]-vy[0])/dx; L->yy = (vy[3]-vy[2])/dy; L->yz = (vy[5]-vy[4])/dz;
-	L->zx = (vz[1]-vz[0])/dx; L->zy = (vz[3]-vz[2])/dy; L->zz = (vz[5]-vz[4])/dz;
+	gradComp(vx, dx, bdy, fdy, bdz, fdz, L->xx, L->xy, L->xz, vxc)
+	gradComp(vy, dy, bdx, fdx, bdz, fdz, L->yy, L->yx, L->yz, vyc)
+	gradComp(vz, dz, bdx, fdx, bdy, fdy, L->zz, L->zx, L->zy, vzc)
 
 	// get normalized velocities
 	vnrm = vxc*vxc + vyc*vyc + vzc*vzc;
@@ -1997,7 +2000,7 @@ PetscErrorCode JacResGetISA(JacRes *jr)
 	{
 		if(ISParallel(PETSC_COMM_WORLD))
 		{
-			MPI_Reduce(&nSDFail, &gnSDFail, 1, MPIU_SCALAR, MPI_SUM, 0, PETSC_COMM_WORLD);
+			MPI_Reduce(&nSDFail, &gnSDFail, 1, MPIU_INT, MPI_SUM, 0, PETSC_COMM_WORLD);
 		}
 		else
 		{
@@ -2053,7 +2056,7 @@ PetscErrorCode JacResGetGOL(JacRes *jr)
 	mcz = fs->dsz.tcels - 1;
 
 	// set maximum value of GOL parameter
-	max_gol = 10.0;
+	max_gol = 1.0;
 
 	// access vectors
 	ierr = DMDAVecGetArray(fs->DA_X,   jr->lvx,  &lvx);    CHKERRQ(ierr);
@@ -2098,8 +2101,6 @@ PetscErrorCode JacResGetGOL(JacRes *jr)
 			// get angle between ISA and velocity
 			theta = ARCCOS(vel[0]*ISA[0] + vel[1]*ISA[1] + vel[2]*ISA[2]);
 
-			// ISA has only direction but no sense, hence angle varies within [0, pi/2]
-			if(theta > M_PI_2) theta = M_PI - theta;
 		}
 
 		// store strain rate norm & angle

@@ -168,6 +168,9 @@ void GetTempParam(
 //---------------------------------------------------------------------------
 // Infinite Strain Axis (ISA) calculation functions
 //---------------------------------------------------------------------------
+void Tensor2RNClear(Tensor2RN *A);
+
+PetscInt Tensor2RNCheckEq(Tensor2RN *A, Tensor2RN *B, PetscScalar tol);
 
 void Tensor2RNNorm(Tensor2RN *A, PetscScalar *pk);
 

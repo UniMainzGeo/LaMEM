@@ -57,6 +57,8 @@
 #include "nlsolve.h"
 #include "check_fdstag.h"
 #include "tools.h"
+#include "constEq.h"
+
 //---------------------------------------------------------------------------
 /*
 #undef __FUNCT__
@@ -758,6 +760,253 @@ PetscErrorCode StrainRateInterpTest(
 
 	// dvz/dz
 	ierr = StrainRateSingleComp(fs, jr, usr, pvout, 2, 2, 9.0, 33); CHKERRQ(ierr);
+
+	PetscFunctionReturn(0);
+}
+//---------------------------------------------------------------------------
+//---------------------------------------------------------------------------
+//---------------------------------------------------------------------------
+PetscScalar InterpolateLinear3D(PetscScalar cx, PetscScalar cy, PetscScalar cz,  BCValues BC)
+{
+	PetscScalar xb, xe, yb, ye, zb, ze;
+
+	// get relative coordinates
+	xe = (cx - BC.cxb)/(BC.cxe - BC.cxb); xb = 1.0 - xe;
+	ye = (cy - BC.cyb)/(BC.cye - BC.cyb); yb = 1.0 - ye;
+	ze = (cz - BC.czb)/(BC.cze - BC.czb); zb = 1.0 - ze;
+
+	return
+	BC.A[0]*xb*yb*zb +
+	BC.A[1]*xe*yb*zb +
+	BC.A[2]*xb*ye*zb +
+	BC.A[3]*xe*ye*zb +
+	BC.A[4]*xb*yb*ze +
+	BC.A[5]*xe*yb*ze +
+	BC.A[6]*xb*ye*ze +
+	BC.A[7]*xe*ye*ze;
+}
+//---------------------------------------------------------------------------
+#undef __FUNCT__
+#define __FUNCT__ "InitVelocityTest"
+PetscErrorCode InitVelocityTest(
+	JacRes      *jr,
+	UserCtx     *usr,
+	PetscInt     vectDir,
+	PetscInt     gradDir,
+	PetscScalar  begVal,
+	PetscScalar  endVal,
+	Tensor2RN    *L)
+{
+	// Initialize velocity vectors to test velocity gradients
+	// Selects the velocity direction x, y, z (0, 1, 2) with vectDir,
+	// and applies constant gradient in the gradDir direction
+	// between the values begVal & endVal (in the positive direction of gradDir).
+	// Initializes boundary ghost points in the tangential directions accordingly.
+
+	DM          DA;
+	BCValues    BC;
+	Vec         lvec;
+	PetscScalar ***larr, cx, cy, cz;
+	PetscInt    i, j, k, nx, ny, nz, sx, sy, sz;
+
+	PetscScalar l[] = {0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0 }, d[3];
+
+	PetscErrorCode ierr;
+	PetscFunctionBegin;
+
+	FDSTAG *fs = jr->fs;
+
+	// assign interpolation data
+	BC.cxb = usr->x_left;  BC.cxe = BC.cxb + usr->W; d[0] = usr->W;
+	BC.cyb = usr->y_front; BC.cye = BC.cyb + usr->L; d[1] = usr->L;
+	BC.czb = usr->z_bot;   BC.cze = BC.czb + usr->H; d[2] = usr->H;
+
+	if(gradDir == 0)
+	{
+		BC.A[0] = BC.A[2] = BC.A[4] = BC.A[6] = begVal;
+		BC.A[1] = BC.A[3] = BC.A[5] = BC.A[7] = endVal;
+	}
+	if(gradDir == 1)
+	{
+		BC.A[0] = BC.A[1] = BC.A[4] = BC.A[5] = begVal;
+		BC.A[2] = BC.A[3] = BC.A[6] = BC.A[7] = endVal;
+	}
+	if(gradDir == 2)
+	{
+		BC.A[0] = BC.A[1] = BC.A[2] = BC.A[3] = begVal;
+		BC.A[4] = BC.A[5] = BC.A[6] = BC.A[7] = endVal;
+	}
+
+	// compute uniform gradient
+	l[vectDir*3 + gradDir] = (endVal - begVal)/d[gradDir];
+
+	L->xx = l[0]; L->xy = l[1]; L->xz = l[2];
+	L->yx = l[3]; L->yy = l[4]; L->yz = l[5];
+	L->zx = l[6]; L->zy = l[7]; L->zz = l[8];
+
+	// get DA & vectors
+	if(vectDir == 0) { DA = fs->DA_X; lvec = jr->lvx; }
+	if(vectDir == 1) { DA = fs->DA_Y; lvec = jr->lvy; }
+	if(vectDir == 2) { DA = fs->DA_Z; lvec = jr->lvz; }
+
+	// access vectors
+	ierr = DMDAVecGetArray(DA, lvec, &larr); CHKERRQ(ierr);
+
+	// get loop bounds
+	ierr = DMDAGetGhostCorners(DA, &sx, &sy, &sz, &nx, &ny, &nz); CHKERRQ(ierr);
+
+	START_STD_LOOP
+	{
+		// get coordinates
+		if(vectDir == 0) cx = fs->dsx.nbuff[(i-sx)]; else cx = fs->dsx.cbuff[(i-sx)];
+		if(vectDir == 1) cy = fs->dsy.nbuff[(j-sy)]; else cy = fs->dsy.cbuff[(j-sy)];
+		if(vectDir == 2) cz = fs->dsz.nbuff[(k-sz)]; else cz = fs->dsz.cbuff[(k-sz)];
+
+		// initialize velocity array
+		larr[k][j][i] = InterpolateLinear3D(cx, cy, cz, BC);
+	}
+	END_STD_LOOP
+
+	// restore access
+	ierr = DMDAVecRestoreArray(DA, lvec, &larr); CHKERRQ(ierr);
+
+	PetscFunctionReturn(0);
+}
+//---------------------------------------------------------------------------
+#undef __FUNCT__
+#define __FUNCT__ "ClearVelocity"
+PetscErrorCode ClearVelocity(JacRes *jr)
+{
+	PetscErrorCode 	ierr;
+	PetscFunctionBegin;
+
+	ierr = VecSet(jr->lvx, 0.0); CHKERRQ(ierr);
+	ierr = VecSet(jr->lvy, 0.0); CHKERRQ(ierr);
+	ierr = VecSet(jr->lvz, 0.0); CHKERRQ(ierr);
+
+	PetscFunctionReturn(0);
+}
+//---------------------------------------------------------------------------
+#undef __FUNCT__
+#define __FUNCT__ "VelGradSingleComp"
+PetscErrorCode VelGradSingleComp(
+	JacRes      *jr,
+	UserCtx     *usr,
+	PetscInt     vectDir,
+	PetscInt     gradDir,
+	PetscScalar  begVal,
+	PetscScalar  endVal)
+{
+	FDSTAG      *fs;
+	Tensor2RN   L, LRef;
+	PetscInt    i, j, k, nx, ny, nz, sx, sy, sz;
+	PetscScalar vel[3];
+	PetscScalar ***lvx, ***lvy, ***lvz;
+
+	PetscErrorCode ierr;
+	PetscFunctionBegin;
+
+	// access context
+	fs = jr->fs;
+
+	// initialize velocity component
+	ierr = InitVelocityTest(jr, usr, vectDir, gradDir, begVal, endVal, &LRef); CHKERRQ(ierr);
+
+	// access vectors
+	ierr = DMDAVecGetArray(fs->DA_X,   jr->lvx,  &lvx); CHKERRQ(ierr);
+	ierr = DMDAVecGetArray(fs->DA_Y,   jr->lvy,  &lvy); CHKERRQ(ierr);
+	ierr = DMDAVecGetArray(fs->DA_Z,   jr->lvz,  &lvz); CHKERRQ(ierr);
+
+	ierr = DMDAGetCorners(fs->DA_CEN, &sx, &sy, &sz, &nx, &ny, &nz); CHKERRQ(ierr);
+
+	START_STD_LOOP
+	{
+		// get gradient and velocities at cell center
+		ierr = getGradientVel(fs, lvx, lvy, lvz, i, j, k, sx, sy, sz, &L, vel, NULL);
+
+		if(!Tensor2RNCheckEq(&L, &LRef, 1e-12))
+		{
+			SETERRQ(PETSC_COMM_SELF, PETSC_ERR_USER, "Velocity gradient test failed");
+		}
+	}
+	END_STD_LOOP
+
+	// restore access
+	ierr = DMDAVecRestoreArray(fs->DA_X,   jr->lvx,  &lvx); CHKERRQ(ierr);
+	ierr = DMDAVecRestoreArray(fs->DA_Y,   jr->lvy,  &lvy); CHKERRQ(ierr);
+	ierr = DMDAVecRestoreArray(fs->DA_Z,   jr->lvz,  &lvz); CHKERRQ(ierr);
+
+	PetscFunctionReturn(0);
+}
+//---------------------------------------------------------------------------
+#undef __FUNCT__
+#define __FUNCT__ "VelGradTest"
+PetscErrorCode VelGradTest(
+	JacRes      *jr,
+	UserCtx     *usr)
+{
+	PetscInt   comp;
+	PetscBool found;
+
+	PetscErrorCode 	ierr;
+	PetscFunctionBegin;
+
+	PetscOptionsGetInt(PETSC_NULL ,"-grad_comp", &comp, &found);
+
+	if(found == PETSC_FALSE) PetscFunctionReturn(0);
+
+	// Initialize velocity field to generate single non-zero component.
+
+	if     (comp == 11)
+	{
+		// dvx/dx
+		ierr = VelGradSingleComp(jr, usr, 0, 0, 0.0, 1.0); CHKERRQ(ierr);
+	}
+	else if(comp == 12)
+	{
+		// dvx/dy
+		ierr = VelGradSingleComp(jr, usr, 0, 1, 0.0, 1.0); CHKERRQ(ierr);
+	}
+	else if(comp == 13)
+	{
+		// dvx/dz
+		ierr = VelGradSingleComp(jr, usr, 0, 2, 0.0, 1.0); CHKERRQ(ierr);
+	}
+	else if(comp == 21)
+	{
+		// dvy/dx
+		ierr = VelGradSingleComp(jr, usr, 1, 0, 0.0, 1.0); CHKERRQ(ierr);
+
+	}
+	else if(comp == 22)
+	{
+		// dvy/dy
+		ierr = VelGradSingleComp(jr, usr, 1, 1, 0.0, 1.0); CHKERRQ(ierr);
+	}
+	else if(comp == 23)
+	{
+		// dvy/dz
+		ierr = VelGradSingleComp(jr, usr, 1, 2, 0.0, 1.0); CHKERRQ(ierr);
+	}
+	else if(comp == 31)
+	{
+		// dvz/dx
+		ierr = VelGradSingleComp(jr, usr, 2, 0, 0.0, 1.0); CHKERRQ(ierr);
+	}
+	else if(comp == 32)
+	{
+		// dvz/dy
+		ierr = VelGradSingleComp(jr, usr, 2, 1, 0.0, 1.0); CHKERRQ(ierr);
+	}
+	else if(comp == 33)
+	{
+		// dvz/dz
+		ierr = VelGradSingleComp(jr, usr, 2, 2, 0.0, 1.0); CHKERRQ(ierr);
+	}
+	else
+	{
+		SETERRQ1(PETSC_COMM_SELF, PETSC_ERR_USER, "Wrong value for -grad_comp option: %lld\n", (LLD)comp);
+	}
 
 	PetscFunctionReturn(0);
 }
