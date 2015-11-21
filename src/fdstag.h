@@ -74,12 +74,10 @@ PetscErrorCode MeshSeg1DDestroy(MeshSeg1D *ms);
 
 PetscErrorCode MeshSeg1DStretch(MeshSeg1D *ms, PetscScalar eps);
 
-// (partially) mesh a segment with (optionally) biased element size
 PetscErrorCode MeshSeg1DGenCoord(
 	MeshSeg1D   *ms,     // segments description
-	PetscInt     iseg,   // segment index
-	PetscInt     nl,     // number of nodes to be generated
-	PetscInt     istart, // index of the first node
+	PetscInt     pstart, // starting node index
+	PetscInt     n,      // number of nodes to be generated
 	PetscScalar *crd);   // coordinates of the nodes
 
 PetscScalar MeshSeg1DGetUniStep(MeshSeg1D *ms);

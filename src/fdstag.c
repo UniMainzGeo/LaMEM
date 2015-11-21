@@ -134,70 +134,75 @@ PetscErrorCode MeshSeg1DStretch(MeshSeg1D *ms, PetscScalar eps)
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
+#define SAVENODE(pstart, inode, cnt, n, crd, x) \
+	{ if(inode >= pstart && inode < pstart + n) { crd[cnt++] = x; if(cnt == n) return 0; } inode++; }
+//---------------------------------------------------------------------------
 #undef __FUNCT__
 #define __FUNCT__ "MeshSeg1DGenCoord"
 PetscErrorCode MeshSeg1DGenCoord(
 	MeshSeg1D   *ms,     // segments description
-	PetscInt     iseg,   // segment index
-	PetscInt     nl,     // number of nodes to be generated
-	PetscInt     istart, // index of the first node
+	PetscInt     pstart, // starting node index
+	PetscInt     n,      // number of nodes to be generated
 	PetscScalar *crd)    // coordinates of the nodes
 {
-	// (partially) mesh a segment with (optionally) biased element size
+	PetscInt    i, ns, iseg, inode, cnt, sum;
+	PetscScalar x, dx, xbeg, xend, bias, avgSz, begSz, endSz;
 
-	PetscInt    i, N, M, sum;
-	PetscScalar xstart, xclose, bias, avgSz, begSz, endSz, dx;
+	inode = 0;
+	cnt   = 0;
 
-	PetscFunctionBegin;
-
-	// total number of nodes in segment (including both ends)
-	N = ms->istart[iseg+1] - ms->istart[iseg] + 1;
-
-	// total number of cells
-	M = N-1;
-
-	// starting & closing coordinates
-	xstart = ms->xstart[iseg];
-	xclose = ms->xstart[iseg+1];
-
-	// bias (last to first cell size ratio > 1 -> growing)
-	bias = ms->biases[iseg];
-
-	// average cell size
-	avgSz = (xclose - xstart)/(PetscScalar)M;
-
-	// uniform case
-	if(bias == 1.0)
+	for(iseg = 0; iseg < ms->nsegs; iseg++)
 	{
-		// generate coordinates of local nodes
-		for(i = 0; i < nl; i++)
+		// coordinate bounds
+		xbeg = ms->xstart[iseg];
+		xend = ms->xstart[iseg+1];
+
+		// number of nodes & cells in the segment
+		ns = ms->istart[iseg+1] - ms->istart[iseg];
+
+		// bias coefficient (last to first cell size ratio > 1 -> growing)
+		bias = ms->biases[iseg];
+
+		// average cell size
+		avgSz = (xend - xbeg)/(PetscScalar)(ns);
+
+		// first node
+		SAVENODE(pstart, inode, cnt, n, crd, xbeg);
+
+		// uniform case
+		if(bias == 1.0)
 		{
-			crd[i] = xstart + (PetscScalar)(istart + i)*avgSz;
+			// generate coordinates of local nodes
+			for(i = 1; i < ns; i++)
+			{
+				x = xbeg + (PetscScalar)i*avgSz;
+
+				SAVENODE(pstart, inode, cnt, n, crd, x);
+			}
+		}
+		// non-uniform case
+		else
+		{
+			// cell size limits
+			begSz = 2.0*avgSz/(1.0 + bias);
+			endSz = bias*begSz;
+
+			// cell size increment (negative for bias < 1)
+			dx = (endSz - begSz)/(PetscScalar)(ns-1);
+
+			// generate coordinates of local nodes
+			for(i = 1, sum = 0; i < ns; i++)
+			{
+				x = xbeg + (PetscScalar)i*begSz + (PetscScalar)sum*dx;
+				sum += i;
+
+				SAVENODE(pstart, inode, cnt, n, crd, x);
+			}
 		}
 	}
-	// non-uniform case
-	else
-	{
-		// cell size limits
-		begSz = 2.0*avgSz/(1.0 + bias);
-		endSz = bias*begSz;
 
-		// cell size increment (negative for bias < 1)
-		dx = (endSz - begSz)/(PetscScalar)(M-1);
-
-		// get accumulated sum of increments
-		for(i = 0, sum = 0; i < istart; i++) sum += i;
-
-		// generate coordinates of local nodes
-		for(i = 0; i < nl; i++)
-		{
-			crd[i] = xstart + (PetscScalar)(istart + i)*begSz + (PetscScalar)sum*dx;
-			sum += istart + i;
-		}
-	}
-
-	// override last node coordinate
-	if(istart+nl == N) crd[nl-1] = xclose;
+	// last node
+	SAVENODE(pstart, inode, cnt, n, crd, xend);
 
 	PetscFunctionReturn(0);
 }
@@ -308,44 +313,22 @@ PetscErrorCode Discret1DDestroy(Discret1D *ds)
 #define __FUNCT__ "Discret1DGenCoord"
 PetscErrorCode Discret1DGenCoord(Discret1D *ds, MeshSeg1D *ms)
 {
-	PetscInt     i, n, nl, pstart, istart;
+	PetscInt     i, n, pstart;
 	PetscScalar *crd, A, B, C;
 
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
 
 	// compute number of nodes to be generated locally
-	pstart = ds->pstart;
 	crd    = ds->ncoor;
 	n      = ds->nnods;
+	pstart = ds->pstart;
 
 	// correct numbers if we need to include internal ghost points
 	if(ds->grprev != -1) { pstart--; crd--; n++; }
 	if(ds->grnext != -1) { n += 2; }
 
-	// apply local filter & expand segment data
-	for(i = 0; n; i++)
-	{
-		// compute number of nodes within this segment
-		nl = ms->istart[i+1] - pstart + 1;
-
-		// skip the non-overlapping segments
-		if(nl < 0) continue;
-
-		// correct if the rest of the mesh completely fits into the segment
-		if(nl > n) nl = n;
-
-		// compute starting index within the segment
-		istart = pstart - ms->istart[i];
-
-		// generate nodal coordinates for the local part of the segment
-		ierr = MeshSeg1DGenCoord(ms, i, nl, istart, crd); CHKERRQ(ierr);
-
-		// update the rest of the local mesh to be generated
-		pstart += nl;
-		crd    += nl;
-		n      -= nl;
-	}
+	ierr = MeshSeg1DGenCoord(ms, pstart, n, crd); CHKERRQ(ierr);
 
 	// set boundary ghost coordinates
 	if(ds->grprev == -1)
@@ -529,7 +512,7 @@ PetscErrorCode Discret1DStretch(Discret1D *ds, MeshSeg1D *ms, PetscScalar eps)
 #define __FUNCT__ "Discret1DView"
 PetscErrorCode Discret1DView(Discret1D *ds, const char *name)
 {
-	PetscInt    i, n;
+	PetscInt    i;
 	PetscMPIInt grank;
 
 	PetscErrorCode ierr;
@@ -544,10 +527,8 @@ PetscErrorCode Discret1DView(Discret1D *ds, const char *name)
 
 	ierr = PetscSynchronizedPrintf(PETSC_COMM_WORLD, "   ***grank=%lld  ", (LLD)grank); CHKERRQ(ierr);
 
-	n = ds->nnods+1; if(ds->grnext != -1) n++;
-
-	for(i = -1; i < n; i++)
-	{	ierr = PetscSynchronizedPrintf(PETSC_COMM_WORLD, "%f ", ds->ncoor[i]); CHKERRQ(ierr);
+	for(i = 0; i < ds->bufsz; i++)
+	{	ierr = PetscSynchronizedPrintf(PETSC_COMM_WORLD, "%f ", ds->nbuff[i]); CHKERRQ(ierr);
 	}
 	ierr = PetscSynchronizedPrintf(PETSC_COMM_WORLD, "\n"); CHKERRQ(ierr);
 	ierr = PetscSynchronizedFlush(PETSC_COMM_WORLD, PETSC_STDOUT); CHKERRQ(ierr);
@@ -1102,6 +1083,10 @@ PetscErrorCode FDSTAGGenCoord(FDSTAG *fs, UserCtx *usr)
 	ierr = Discret1DGenCoord(&fs->dsx, &fs->msx); CHKERRQ(ierr);
 	ierr = Discret1DGenCoord(&fs->dsy, &fs->msy); CHKERRQ(ierr);
 	ierr = Discret1DGenCoord(&fs->dsz, &fs->msz); CHKERRQ(ierr);
+
+
+	ierr = Discret1DView(&fs->dsz, "DSZ"); CHKERRQ(ierr);
+
 
 	PetscFunctionReturn(0);
 }
