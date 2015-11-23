@@ -1084,10 +1084,6 @@ PetscErrorCode FDSTAGGenCoord(FDSTAG *fs, UserCtx *usr)
 	ierr = Discret1DGenCoord(&fs->dsy, &fs->msy); CHKERRQ(ierr);
 	ierr = Discret1DGenCoord(&fs->dsz, &fs->msz); CHKERRQ(ierr);
 
-
-	ierr = Discret1DView(&fs->dsz, "DSZ"); CHKERRQ(ierr);
-
-
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
