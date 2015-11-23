@@ -120,6 +120,8 @@ typedef struct
 	// temperature parameters
 	//=======================
 
+	PetscBool actTemp; // temperature diffusion activation flag
+
 	DM  DA_T; // temperature cell-centered grid with star stencil
 	Mat Att;  // temperature preconditioner matrix
 

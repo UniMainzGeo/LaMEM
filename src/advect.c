@@ -529,7 +529,7 @@ PetscErrorCode ADVAdvectMark(AdvCtx *actx)
 	PetscScalar *ncx, *ncy, *ncz;
 	PetscScalar *ccx, *ccy, *ccz;
 	PetscScalar ***lvx, ***lvy, ***lvz, ***lp, ***lT;
-	PetscScalar vx, vy, vz, p, T, xc, yc, zc, xp, yp, zp, dt;
+	PetscScalar vx, vy, vz, xc, yc, zc, xp, yp, zp, dt;
 
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
@@ -590,21 +590,12 @@ PetscErrorCode ADVAdvectMark(AdvCtx *actx)
 		vy = InterpLin3D(lvy, II, J,  KK, sx, sy, sz, xp, yp, zp, ccx, ncy, ccz);
 		vz = InterpLin3D(lvz, II, JJ, K,  sx, sy, sz, xp, yp, zp, ccx, ccy, ncz);
 
-// ACHTUNG!
-// compute p & T increments first, then interpolate them!
-// or just use piecewise-constant updates
-
-		p  = InterpLin3D(lp,  II, JJ, KK, sx, sy, sz, xp, yp, zp, ccx, ccy, ccz);
-		T  = InterpLin3D(lT,  II, JJ, KK, sx, sy, sz, xp, yp, zp, ccx, ccy, ccz);
-
 		// access host cell solution variables
 		svCell = &jr->svCell[ID];
 
 		// update pressure & temperature variables
-		P->p += p - svCell->svBulk.pn;
-// ACHTUNG!
-// deactivated for now
-//		P->T += T - svCell->svBulk.Tn;
+		P->p += lp[K][J][I] - svCell->svBulk.pn;
+		P->T += lT[K][J][I] - svCell->svBulk.Tn;
 
 		// advect marker
 		P->X[0] = xp + vx*dt;

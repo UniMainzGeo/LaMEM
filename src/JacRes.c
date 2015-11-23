@@ -78,15 +78,16 @@ PetscErrorCode JacResSetFromOptions(JacRes *jr)
 	// set pressure shift flag
 	ierr = PetscOptionsHasName(NULL, "-skip_press_shift", &flg); CHKERRQ(ierr);
 
-	if(flg == PETSC_TRUE)
-	{
-		jr->pShiftAct = PETSC_FALSE;
-	}
+	if(flg == PETSC_TRUE) jr->pShiftAct = PETSC_FALSE;
 
 	// set geometry tolerance
 	ierr = PetscOptionsGetScalar(NULL, "-geom_tol", &gtol, &flg); CHKERRQ(ierr);
 
 	if(flg == PETSC_TRUE) jr->gtol = gtol;
+
+	ierr = PetscOptionsHasName(NULL, "-skip_temp_diff", &flg); CHKERRQ(ierr);
+
+	if(flg == PETSC_TRUE) jr->actTemp = PETSC_FALSE;
 
 	PetscFunctionReturn(0);
 }

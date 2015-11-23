@@ -502,7 +502,7 @@ PetscErrorCode SNESCoupledTest(
 	ierr = JacResGetTempMat(jr);                        CHKERRQ(ierr);
 	ierr = KSPSetOperators(jr->tksp, jr->Att, jr->Att); CHKERRQ(ierr);
 	ierr = KSPSetUp(jr->tksp);                          CHKERRQ(ierr);
-	ierr = KSPSolve(jr->tksp, jr->dT, jr->gT);          CHKERRQ(ierr);
+	ierr = KSPSolve(jr->tksp, jr->ge, jr->dT);          CHKERRQ(ierr);
 	ierr = VecAXPY(jr->gT, -1.0, jr->dT);               CHKERRQ(ierr);
 	ierr = JacResCopyTemp(jr);                          CHKERRQ(ierr);
 
