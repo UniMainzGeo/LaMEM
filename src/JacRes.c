@@ -80,14 +80,14 @@ PetscErrorCode JacResSetFromOptions(JacRes *jr)
 
 	if(flg == PETSC_TRUE) jr->pShiftAct = PETSC_FALSE;
 
+	ierr = PetscOptionsHasName(NULL, "-skip_temp_diff", &flg); CHKERRQ(ierr);
+
+	if(flg == PETSC_TRUE) jr->actTemp = PETSC_FALSE;
+
 	// set geometry tolerance
 	ierr = PetscOptionsGetScalar(NULL, "-geom_tol", &gtol, &flg); CHKERRQ(ierr);
 
 	if(flg == PETSC_TRUE) jr->gtol = gtol;
-
-	ierr = PetscOptionsHasName(NULL, "-skip_temp_diff", &flg); CHKERRQ(ierr);
-
-	if(flg == PETSC_TRUE) jr->actTemp = PETSC_FALSE;
 
 	PetscFunctionReturn(0);
 }
@@ -203,11 +203,14 @@ PetscErrorCode JacResCreate(
 	jr->pShift    = 0.0;
 	jr->pShiftAct = PETSC_TRUE;
 
-	// setup temperature parameters
-	ierr = JacResCreateTempParam(jr); CHKERRQ(ierr);
+	// activate temperature diffusion
+	jr->actTemp = PETSC_TRUE;
 
 	// change default settings
 	ierr = JacResSetFromOptions(jr); CHKERRQ(ierr);
+
+	// setup temperature parameters
+	ierr = JacResCreateTempParam(jr); CHKERRQ(ierr);
 
 	PetscFunctionReturn(0);
 }
@@ -1606,7 +1609,6 @@ PetscErrorCode JacResViewRes(JacRes *jr)
 	// show assembled residual with boundary constraints
 	// WARNING! rewrite this function using coupled residual vector directly
 
-	PetscBool   flg;
 	PetscScalar dmin, dmax, d2, e2, fx, fy, fz, f2, div_tol;
 
 	PetscErrorCode ierr;
@@ -1616,16 +1618,25 @@ PetscErrorCode JacResViewRes(JacRes *jr)
 	ierr = JacResCopyMomentumRes  (jr, jr->gres); CHKERRQ(ierr);
 	ierr = JacResCopyContinuityRes(jr, jr->gres); CHKERRQ(ierr);
 
+
+	if(jr->actTemp != PETSC_TRUE) PetscFunctionReturn(0);
+
+
 	// compute norms
 	ierr = VecMin (jr->gc,  NULL,   &dmin); CHKERRQ(ierr);
 	ierr = VecMax (jr->gc,  NULL,   &dmax); CHKERRQ(ierr);
 	ierr = VecNorm(jr->gc,  NORM_2, &d2);   CHKERRQ(ierr);
-	ierr = VecNorm(jr->ge,  NORM_2, &e2);   CHKERRQ(ierr);
+
 	ierr = VecNorm(jr->gfx, NORM_2, &fx);   CHKERRQ(ierr);
 	ierr = VecNorm(jr->gfy, NORM_2, &fy);   CHKERRQ(ierr);
 	ierr = VecNorm(jr->gfz, NORM_2, &fz);   CHKERRQ(ierr);
 
 	f2 = sqrt(fx*fx + fy*fy + fz*fz);
+
+	if(jr->actTemp == PETSC_TRUE)
+	{
+		ierr = VecNorm(jr->ge,  NORM_2, &e2);   CHKERRQ(ierr);
+	}
 
 	// print
 	PetscPrintf(PETSC_COMM_WORLD, "------------------------------------------\n");
@@ -1636,8 +1647,13 @@ PetscErrorCode JacResViewRes(JacRes *jr)
 	PetscPrintf(PETSC_COMM_WORLD, "    |Div|_2  = %12.12e \n", d2);
 	PetscPrintf(PETSC_COMM_WORLD, "  Momentum: \n" );
 	PetscPrintf(PETSC_COMM_WORLD, "    |mRes|_2 = %12.12e \n", f2);
-	PetscPrintf(PETSC_COMM_WORLD, "  Energy: \n" );
-	PetscPrintf(PETSC_COMM_WORLD, "    |eRes|_2 = %12.12e \n", e2);
+
+	if(jr->actTemp == PETSC_TRUE)
+	{
+		PetscPrintf(PETSC_COMM_WORLD, "  Energy: \n" );
+		PetscPrintf(PETSC_COMM_WORLD, "    |eRes|_2 = %12.12e \n", e2);
+	}
+
 	PetscPrintf(PETSC_COMM_WORLD, "------------------------------------------\n");
 
 	// stop if divergence more than tolerance

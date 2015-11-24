@@ -120,21 +120,15 @@ typedef struct
 	// temperature parameters
 	//=======================
 
-	PetscBool actTemp; // temperature diffusion activation flag
+	PetscBool actTemp;  // temperature diffusion activation flag
+	PetscInt  AirPhase; // air phase number
 
+	Vec lT;   // temperature (box stencil, active even without diffusion)
 	DM  DA_T; // temperature cell-centered grid with star stencil
 	Mat Att;  // temperature preconditioner matrix
-
-	// temperature
-	Vec gT; // global
-	Vec lT; // local (ghosted)
-	Vec dT; // global temperature increment
-
-	// energy residual
-	Vec ge; // global
-
-	// temperature diffusion solver
-	KSP tksp;
+	Vec dT;   // temperature increment (global)
+	Vec ge;   // energy residual (global)
+	KSP tksp; // temperature diffusion solver
 
 } JacRes;
 //---------------------------------------------------------------------------
@@ -222,6 +216,13 @@ PetscErrorCode SetMatParLim(MatParLim *matLim, UserCtx *usr);
 //......................   TEMPERATURE FUNCTIONS   ..........................
 //---------------------------------------------------------------------------
 
+PetscErrorCode JacResGetTempParam(
+	JacRes      *jr,
+	PetscScalar *phRat,
+	PetscScalar *k_,      // conductivity
+	PetscScalar *rho_Cp_, // volumetric heat capacity
+	PetscScalar *rho_A_); // volumetric radiogenic heat
+
 // setup temperature parameters
 PetscErrorCode JacResCreateTempParam(JacRes *jr);
 
@@ -231,8 +232,11 @@ PetscErrorCode JacResDestroyTempParam(JacRes *jr);
 // initialize temperature from markers
 PetscErrorCode JacResInitTemp(JacRes *jr);
 
-// copy temperature from global to local vectors, enforce boundary constraints
-PetscErrorCode JacResCopyTemp(JacRes *jr);
+// correct temperature for diffusion (Newton update)
+PetscErrorCode JacResUpdateTemp(JacRes *jr);
+
+// apply temperature two-point constraints
+PetscErrorCode JacResApplyTempBC(JacRes *jr);
 
 // compute temperature residual vector
 PetscErrorCode JacResGetTempRes(JacRes *jr);

@@ -153,6 +153,9 @@ PetscErrorCode ADVCreate(AdvCtx *actx, FDSTAG *fs, JacRes *jr)
 	actx->ndel = 0;
 	actx->idel = NULL;
 
+	actx->AirPhase = -1;  // air phase number
+	actx->Ttop     = 0.0; // top surface temperature
+
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
@@ -596,6 +599,9 @@ PetscErrorCode ADVAdvectMark(AdvCtx *actx)
 		// update pressure & temperature variables
 		P->p += lp[K][J][I] - svCell->svBulk.pn;
 		P->T += lT[K][J][I] - svCell->svBulk.Tn;
+
+		// override temperature of air phase
+		if(actx->AirPhase != -1 &&  P->phase == actx->AirPhase) P->T = actx->Ttop;
 
 		// advect marker
 		P->X[0] = xp + vx*dt;

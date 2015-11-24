@@ -213,14 +213,16 @@ PetscErrorCode LaMEMLib(ModParam *IOparam)
 	// change marker phase when crossing free surface
 	ierr = ADVMarkCrossFreeSurf(&actx, &surf, 0.05); CHKERRQ(ierr);
 
+	// set air phase to properly treat marker advection & temperature diffusion
+	if(surf.UseFreeSurf == PETSC_TRUE)
+	{
+		actx.AirPhase = surf.AirPhase;
+		jr.AirPhase   = surf.AirPhase;
+		actx.Ttop     = bc.Ttop;
+	}
+
 	// update phase ratios taking into account actual free surface position
 	ierr = FreeSurfGetAirPhaseRatio(&surf); CHKERRQ(ierr);
-
-	// initialize temperature
-	ierr = JacResInitTemp(&jr); CHKERRQ(ierr);
-
-	// copy to local vector, apply bc constraints
-	ierr = JacResCopyTemp(&jr); CHKERRQ(ierr);
 
 	// create Stokes preconditioner & matrix
 	ierr = PMatCreate(&pm, &jr);    CHKERRQ(ierr);
@@ -294,17 +296,8 @@ PetscErrorCode LaMEMLib(ModParam *IOparam)
 		// initialize boundary constraint vectors
 		ierr = BCApply(&bc); CHKERRQ(ierr);
 
-
-
-// ACHTUNG!
-
-// initialize temperature
-ierr = JacResInitTemp(&jr); CHKERRQ(ierr);
-
-// copy to local vector, apply bc constraints
-ierr = JacResCopyTemp(&jr); CHKERRQ(ierr);
-
-
+		// initialize temperature
+		ierr = JacResInitTemp(&jr); CHKERRQ(ierr);
 
 		// compute inverse elastic viscosities
 		ierr = JacResGetI2Gdt(&jr); CHKERRQ(ierr);

@@ -269,7 +269,7 @@ PetscErrorCode BreakWrite(UserCtx *user, AdvCtx *actx, FreeSurf *surf, PVOut *pv
 	n  = fs->dsx.ncels * fs->dsy.ncels * fs->dsz.ncels;
 
 	// write vector
-	ierr = BreakWriteVec(fp, jr->gT, n); CHKERRQ(ierr);
+//	ierr = BreakWriteVec(fp, jr->gT, n); CHKERRQ(ierr);
 
 	// close and free memory
 	free(fname);
@@ -407,7 +407,7 @@ PetscErrorCode BreakRead(UserCtx *user, AdvCtx *actx, PVOut *pvout, PVSurf *pvsu
 	n  = fs->dsx.ncels * fs->dsy.ncels * fs->dsz.ncels;
 
 	// read vector
-	ierr = BreakReadVec(fp, jr->gT, n); CHKERRQ(ierr);
+//	ierr = BreakReadVec(fp, jr->gT, n); CHKERRQ(ierr);
 
 	// close and free memory
 	free(fname);

@@ -276,7 +276,22 @@ PetscErrorCode FormJacobian(SNES snes, Vec x, Mat Amat, Mat Pmat, void *ctx)
 	jr = pm->jr;
     it_newton = 0;
 
-	//========================
+    //===================
+	// Temperature solver
+	//===================
+
+    if(jr->pShiftAct != PETSC_TRUE)
+    {
+
+    	ierr = JacResGetTempRes(jr);                        CHKERRQ(ierr);
+    	ierr = JacResGetTempMat(jr);                        CHKERRQ(ierr);
+    	ierr = KSPSetOperators(jr->tksp, jr->Att, jr->Att); CHKERRQ(ierr);
+    	ierr = KSPSetUp(jr->tksp);                          CHKERRQ(ierr);
+    	ierr = KSPSolve(jr->tksp, jr->ge, jr->dT);          CHKERRQ(ierr);
+    	ierr = JacResUpdateTemp(jr);                        CHKERRQ(ierr);
+     }
+
+    //========================
 	// Jacobian type selection
 	//========================
 
@@ -466,6 +481,7 @@ PetscErrorCode SNESPrintConvergedReason(SNES snes)
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
+/*
 #undef __FUNCT__
 #define __FUNCT__ "SNESCoupledTest"
 PetscErrorCode SNESCoupledTest(
@@ -503,11 +519,11 @@ PetscErrorCode SNESCoupledTest(
 	ierr = KSPSetOperators(jr->tksp, jr->Att, jr->Att); CHKERRQ(ierr);
 	ierr = KSPSetUp(jr->tksp);                          CHKERRQ(ierr);
 	ierr = KSPSolve(jr->tksp, jr->ge, jr->dT);          CHKERRQ(ierr);
-	ierr = VecAXPY(jr->gT, -1.0, jr->dT);               CHKERRQ(ierr);
-	ierr = JacResCopyTemp(jr);                          CHKERRQ(ierr);
+	ierr = JacResUpdateTemp(jr);                        CHKERRQ(ierr);
 
 	PetscFunctionReturn(0);
 }
+*/
 //---------------------------------------------------------------------------
 /*
 #undef __FUNCT__

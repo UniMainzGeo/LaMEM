@@ -154,18 +154,6 @@ void RotateStress(Tensor2RN *R, Tensor2RS *S, Tensor2RS *SR);
 void Tensor2RSCopy(Tensor2RS *A, Tensor2RS *B);
 
 //---------------------------------------------------------------------------
-// Temperature parameters functions
-//---------------------------------------------------------------------------
-
-void GetTempParam(
-	PetscInt     numPhases,
-	Material_t  *phases,
-	PetscScalar *phRat,
-	PetscScalar *k_,  // conductivity
-	PetscScalar *Cp_, // capacity
-	PetscScalar *A_); // radiogenic heat
-
-//---------------------------------------------------------------------------
 // Infinite Strain Axis (ISA) calculation functions
 //---------------------------------------------------------------------------
 void Tensor2RNClear(Tensor2RN *A);

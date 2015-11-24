@@ -167,6 +167,9 @@ PetscErrorCode ADVelInterpPT(AdvCtx *actx)
 		// update pressure & temperature variables
 		P->p += lp[K][J][I] - svCell->svBulk.pn;
 		P->T += lT[K][J][I] - svCell->svBulk.Tn;
+
+		// override temperature of air phase
+		if(actx->AirPhase != -1 &&  P->phase == actx->AirPhase) P->T = actx->Ttop;
 	}
 
 	// restore access

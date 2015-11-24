@@ -143,6 +143,9 @@ typedef struct
 	// 1. Map markers on the control volumes and communicate with neighbors at every sub-step of an advection scheme
 	// 2. Duplicate makers in the overlapping control volumes (also requires more velocity data from neighbors)
 
+	PetscInt    AirPhase; // air phase number
+	PetscScalar Ttop;     // top surface temperature
+
 } AdvCtx;
 
 //---------------------------------------------------------------------------
