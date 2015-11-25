@@ -80,9 +80,9 @@ PetscErrorCode JacResSetFromOptions(JacRes *jr)
 
 	if(flg == PETSC_TRUE) jr->pShiftAct = PETSC_FALSE;
 
-	ierr = PetscOptionsHasName(NULL, "-skip_temp_diff", &flg); CHKERRQ(ierr);
+	ierr = PetscOptionsHasName(NULL, "-act_temp_diff", &flg); CHKERRQ(ierr);
 
-	if(flg == PETSC_TRUE) jr->actTemp = PETSC_FALSE;
+	if(flg == PETSC_TRUE) jr->actTemp = PETSC_TRUE;
 
 	// set geometry tolerance
 	ierr = PetscOptionsGetScalar(NULL, "-geom_tol", &gtol, &flg); CHKERRQ(ierr);
@@ -203,8 +203,11 @@ PetscErrorCode JacResCreate(
 	jr->pShift    = 0.0;
 	jr->pShiftAct = PETSC_TRUE;
 
-	// activate temperature diffusion
-	jr->actTemp = PETSC_TRUE;
+	// switch-off temperature diffusion
+	jr->actTemp = PETSC_FALSE;
+
+	// switch off free surface tracking
+	jr->AirPhase = -1;
 
 	// change default settings
 	ierr = JacResSetFromOptions(jr); CHKERRQ(ierr);

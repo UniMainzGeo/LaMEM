@@ -214,12 +214,15 @@ PetscErrorCode LaMEMLib(ModParam *IOparam)
 	ierr = ADVMarkCrossFreeSurf(&actx, &surf, 0.05); CHKERRQ(ierr);
 
 	// set air phase to properly treat marker advection & temperature diffusion
-	if(surf.UseFreeSurf == PETSC_TRUE)
+	if(surf.UseFreeSurf == PETSC_TRUE && jr.actTemp == PETSC_TRUE)
 	{
 		actx.AirPhase = surf.AirPhase;
 		jr.AirPhase   = surf.AirPhase;
 		actx.Ttop     = bc.Ttop;
 	}
+
+	// check thermal material parameters
+	ierr = JacResCheckTempParam(&jr); CHKERRQ(ierr);
 
 	// update phase ratios taking into account actual free surface position
 	ierr = FreeSurfGetAirPhaseRatio(&surf); CHKERRQ(ierr);

@@ -223,6 +223,9 @@ PetscErrorCode JacResGetTempParam(
 	PetscScalar *rho_Cp_, // volumetric heat capacity
 	PetscScalar *rho_A_); // volumetric radiogenic heat
 
+// check whether thermal material parameters are properly defined
+PetscErrorCode JacResCheckTempParam(JacRes *jr);
+
 // setup temperature parameters
 PetscErrorCode JacResCreateTempParam(JacRes *jr);
 

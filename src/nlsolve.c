@@ -280,9 +280,8 @@ PetscErrorCode FormJacobian(SNES snes, Vec x, Mat Amat, Mat Pmat, void *ctx)
 	// Temperature solver
 	//===================
 
-    if(jr->pShiftAct != PETSC_TRUE)
+    if(jr->actTemp == PETSC_TRUE)
     {
-
     	ierr = JacResGetTempRes(jr);                        CHKERRQ(ierr);
     	ierr = JacResGetTempMat(jr);                        CHKERRQ(ierr);
     	ierr = KSPSetOperators(jr->tksp, jr->Att, jr->Att); CHKERRQ(ierr);

@@ -124,6 +124,41 @@ PetscErrorCode JacResGetTempParam(
 }
 //---------------------------------------------------------------------------
 #undef __FUNCT__
+#define __FUNCT__ "JacResCheckTempParam"
+PetscErrorCode JacResCheckTempParam(JacRes *jr)
+{
+	// check whether thermal material parameters are properly defined
+
+	PetscInt    i, numPhases;
+    Material_t  *phases, *M;
+
+	PetscFunctionBegin;
+
+	// temperature diffusion cases only
+	if(jr->actTemp != PETSC_TRUE) PetscFunctionReturn(0);
+
+	// initialize
+	numPhases = jr->numPhases;
+	phases    = jr->phases;
+
+	// check all phases
+	for(i = 0; i < numPhases; i++)
+	{
+		M = &phases[i];
+
+		// check density of the rock phases
+		if((jr->AirPhase != -1 && i != jr->AirPhase) || jr->AirPhase == -1)
+		{
+			if(M->rho == 0.0) SETERRQ1(PETSC_COMM_SELF, PETSC_ERR_USER, "Define density of phase %lld\n", (LLD)i);
+		}
+			if(M->k   == 0.0) SETERRQ1(PETSC_COMM_SELF, PETSC_ERR_USER, "Define conductivity of phase %lld\n", (LLD)i);
+			if(M->Cp  == 0.0) SETERRQ1(PETSC_COMM_SELF, PETSC_ERR_USER, "Define heat capacity of phase %lld\n", (LLD)i);
+	}
+
+	PetscFunctionReturn(0);
+}
+//---------------------------------------------------------------------------
+#undef __FUNCT__
 #define __FUNCT__ "JacResCreateTempParam"
 PetscErrorCode JacResCreateTempParam(JacRes *jr)
 {
@@ -139,9 +174,6 @@ PetscErrorCode JacResCreateTempParam(JacRes *jr)
 
 	// create local temperature vector using box-stencil central DMDA
 	ierr = DMCreateLocalVector(fs->DA_CEN, &jr->lT); CHKERRQ(ierr);
-
-	// temperature diffusion cases only
-	if(jr->actTemp != PETSC_TRUE) PetscFunctionReturn(0);
 
 	// get cell center grid partitioning
 	ierr = DMDAGetOwnershipRanges(fs->DA_CEN, &lx, &ly, &lz); CHKERRQ(ierr);
@@ -173,9 +205,6 @@ PetscErrorCode JacResCreateTempParam(JacRes *jr)
 	ierr = KSPCreate(PETSC_COMM_WORLD, &jr->tksp); CHKERRQ(ierr);
 	ierr = KSPSetOptionsPrefix(jr->tksp,"ts_");    CHKERRQ(ierr);
 	ierr = KSPSetFromOptions(jr->tksp);            CHKERRQ(ierr);
-
-	// switch off free surface tracking
-	jr->AirPhase = -1;
 
 	PetscFunctionReturn(0);
 }
@@ -521,6 +550,9 @@ PetscErrorCode JacResGetTempMat(JacRes *jr)
 	mz = fs->dsz.tcels - 1;
 
 	SCATTER_FIELD(fs->DA_CEN, jr->ldxx, GET_KC)
+
+	// clear matrix coefficients
+	ierr = MatZeroEntries(jr->Att); CHKERRQ(ierr);
 
 	// access work vectors
 	ierr = DMDAVecGetArray(fs->DA_CEN, jr->ldxx, &lk);  CHKERRQ(ierr);
