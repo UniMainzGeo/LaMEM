@@ -130,7 +130,7 @@ PetscErrorCode ADVelInterpPT(AdvCtx *actx)
 	JacRes      *jr;
 	Marker      *P;
 	SolVarCell  *svCell;
-	PetscInt    nx, ny;
+	PetscInt    nx, ny, sx, sy, sz;
 	PetscInt    jj, ID, I, J, K;
 	PetscScalar ***lp, ***lT;
 
@@ -144,6 +144,9 @@ PetscErrorCode ADVelInterpPT(AdvCtx *actx)
 	// starting indices & number of cells
 	nx = fs->dsx.ncels;
 	ny = fs->dsy.ncels;
+	sx = fs->dsx.pstart;
+	sy = fs->dsy.pstart;
+	sz = fs->dsz.pstart;
 
 	// access velocity, pressure & temperature vectors
 	ierr = DMDAVecGetArray(fs->DA_CEN, jr->lp,  &lp);  CHKERRQ(ierr);
@@ -165,8 +168,8 @@ PetscErrorCode ADVelInterpPT(AdvCtx *actx)
 		svCell = &jr->svCell[ID];
 
 		// update pressure & temperature variables
-		P->p += lp[K][J][I] - svCell->svBulk.pn;
-		P->T += lT[K][J][I] - svCell->svBulk.Tn;
+		P->p += lp[sz+K][sy+J][sx+I] - svCell->svBulk.pn;
+		P->T += lT[sz+K][sy+J][sx+I] - svCell->svBulk.Tn;
 
 		// override temperature of air phase
 		if(actx->AirPhase != -1 &&  P->phase == actx->AirPhase) P->T = actx->Ttop;
