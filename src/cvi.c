@@ -1076,6 +1076,9 @@ PetscErrorCode ADVelInterpSTAG(AdvVelCtx *vi)
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
 
+	// compute host cells for all markers
+	ierr = ADVelMapMarkToCells(vi); CHKERRQ(ierr);
+
 	// access context
 	fs = vi->fs;
 	jr = vi->jr;
