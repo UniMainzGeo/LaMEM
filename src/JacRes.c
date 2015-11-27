@@ -1621,10 +1621,6 @@ PetscErrorCode JacResViewRes(JacRes *jr)
 	ierr = JacResCopyMomentumRes  (jr, jr->gres); CHKERRQ(ierr);
 	ierr = JacResCopyContinuityRes(jr, jr->gres); CHKERRQ(ierr);
 
-
-	if(jr->actTemp != PETSC_TRUE) PetscFunctionReturn(0);
-
-
 	// compute norms
 	ierr = VecMin (jr->gc,  NULL,   &dmin); CHKERRQ(ierr);
 	ierr = VecMax (jr->gc,  NULL,   &dmax); CHKERRQ(ierr);
