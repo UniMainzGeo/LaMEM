@@ -688,3 +688,136 @@ PetscErrorCode PVOutWriteDII_YZ(JacRes *jr, OutBuf *outbuf)
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
+#undef __FUNCT__
+#define __FUNCT__ "getSHmax"
+PetscErrorCode getSHmax(
+	PetscScalar  sxx,
+	PetscScalar  syy,
+	PetscScalar  sxy,
+	PetscScalar  tol,
+	PetscScalar *SHmax,
+	PetscScalar  v[])
+{
+	PetscScalar s1, s2, n;
+
+	// get stress norm
+	n = sxx*sxx + syy*syy + sxy*sxy;
+
+	// zero stress case
+	if(n == 0.0)
+	{
+		v[0]     = 0.0;
+		v[1]     = 0.0;
+		(*SHmax) = 0.0;
+
+		printf("%g\n",   v[0]);
+		printf("%g\n\n", v[1]);
+
+		PetscFunctionReturn(0);
+	}
+
+	// normalize stress
+	sxx /= n;
+	syy /= n;
+	sxy /= n;
+
+	// zero shear stress case
+	if(fabs(sxy) < tol)
+	{
+		if(fabs(sxx-syy) < tol)
+		{
+			v[0]     = 0.0;
+			v[1]     = 0.0;
+			(*SHmax) = sxx;
+		}
+		else if(sxx < syy)
+		{
+			v[0]     = 1.0;
+			v[1]     = 0.0;
+			(*SHmax) = sxx;
+		}
+		else
+		{
+			v[0]     = 0.0;
+			v[1]     = 1.0;
+			(*SHmax) = syy;
+		}
+
+		printf("%g\n",   v[0]);
+		printf("%g\n\n", v[1]);
+
+		PetscFunctionReturn(0);
+	}
+
+	// compute principal stresses (positive in extension)
+	s1 = (sxx+syy)/2.0 + sqrt((sxx-syy)*(sxx-syy)/4.0 + sxy*sxy);
+	s2 = (sxx+syy)/2.0 - sqrt((sxx-syy)*(sxx-syy)/4.0 + sxy*sxy);
+
+	// multiple eigenvalues case
+	if(fabs(s1-s2) < tol)
+	{
+		v[0]     = 0.0;
+		v[1]     = 0.0;
+		(*SHmax) = s1;
+
+		printf("%g\n",   v[0]);
+		printf("%g\n\n", v[1]);
+
+		PetscFunctionReturn(0);
+	}
+
+	// get maximum compressive stress direction and magnitude
+	v[0]     = sxx-s1;
+	v[1]     = sxy;
+	(*SHmax) = s2;
+
+	// normalize direction vector
+	n = sqrt(v[0]*v[0] + v[1]*v[1]);
+
+	v[0] /= n;
+	v[1] /= n;
+
+	// choose common sense for direction vectors
+	if(v[0] < 0.0 || (v[0] == 0.0 && v[1] < 0.0))
+	{
+		v[0] = -v[0];
+		v[1] = -v[1];
+	}
+
+	printf("%g\n",   v[0]);
+	printf("%g\n\n", v[1]);
+
+	PetscFunctionReturn(0);
+}
+//---------------------------------------------------------------------------
+
+/*
+	PetscScalar  sxx = -5.0;
+	PetscScalar  syy =  8.0;
+	PetscScalar  sxy =  0.0;
+
+	PetscScalar  SHmax;
+	PetscScalar  v[2];
+
+	ierr = getSHmax(sxx, syy, sxy, 1e-12, &SHmax, v); CHKERRQ(ierr);
+
+
+	sxx =  5.0;
+	syy = -8.0;
+
+	ierr = getSHmax(sxx, syy, sxy, 1e-12, &SHmax, v); CHKERRQ(ierr);
+
+
+	sxx = -8.0;
+	syy = -8.0;
+
+	ierr = getSHmax(sxx, syy, sxy, 1e-12, &SHmax, v); CHKERRQ(ierr);
+
+	sxx =  5.0;
+	syy = -8.0;
+	sxy =  3.0;
+
+	ierr = getSHmax(sxx, syy, sxy, 1e-12, &SHmax, v); CHKERRQ(ierr);
+*/
+
+//---------------------------------------------------------------------------
