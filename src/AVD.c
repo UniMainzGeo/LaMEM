@@ -716,7 +716,7 @@ PetscErrorCode AVDExecuteMarkerInjection(AdvCtx *actx, PetscInt npoints, PetscSc
 	ierr = AVDInjectDeletePoints(actx, &A, ind); CHKERRQ(ierr);
 
 	// destroy AVD structure
-	AVDDestroy(&A);
+	ierr = AVDDestroy(&A); CHKERRQ(ierr);
 
 	PetscFunctionReturn(0);
 }
