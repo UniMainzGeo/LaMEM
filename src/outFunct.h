@@ -82,14 +82,4 @@ PetscErrorCode PVOutWriteDII_YZ      (JacRes*, OutBuf*);
 
 //---------------------------------------------------------------------------
 
-PetscErrorCode getSHmax(
-	PetscScalar  sxx,
-	PetscScalar  syy,
-	PetscScalar  sxy,
-	PetscScalar  tol,
-	PetscScalar *SHmax,
-	PetscScalar  v[]);
-
-//---------------------------------------------------------------------------
-
 #endif
