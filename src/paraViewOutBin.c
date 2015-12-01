@@ -349,6 +349,7 @@ PetscInt OutMaskCountActive(OutMask *omask)
 	if(omask->plast_dissip)   cnt++; // plastic dissipation
 	if(omask->tot_displ)      cnt++; // total displacements
 	if(omask->SHmax)          cnt++; // maximum horizontal stress
+	if(omask->EHmax)          cnt++; // maximum horizontal stress
 	if(omask->ISA)            cnt++; // Infinite Strain Axis
 	if(omask->GOL)            cnt++; // Grain Orientation Lag
 	// === debugging vectors ===============================================
@@ -448,6 +449,7 @@ PetscErrorCode PVOutCreate(PVOut *pvout, JacRes *jr, const char *filename)
 	if(omask->plast_dissip)   OutVecCreate(&outvecs[cnt++], "plast_dissip",   scal->lbl_dissipation_rate, &PVOutWritePlastDissip,  1);
 	if(omask->tot_displ)      OutVecCreate(&outvecs[cnt++], "tot_displ",      scal->lbl_length,           &PVOutWriteTotDispl,     3);
 	if(omask->SHmax)          OutVecCreate(&outvecs[cnt++], "SHmax",          scal->lbl_unit,             &PVOutWriteSHmax,        3);
+	if(omask->EHmax)          OutVecCreate(&outvecs[cnt++], "EHmax",          scal->lbl_unit,             &PVOutWriteEHmax,        3);
 	if(omask->ISA)            OutVecCreate(&outvecs[cnt++], "ISA",            scal->lbl_unit,             &PVOutWriteISA,          3);
 	if(omask->GOL)            OutVecCreate(&outvecs[cnt++], "GOL",            scal->lbl_unit,             &PVOutWriteGOL,          1);
 	// === debugging vectors ===============================================
@@ -491,6 +493,7 @@ PetscErrorCode PVOutReadFromOptions(PVOut *pvout)
 	ierr = PetscOptionsGetInt(NULL, "-out_ang_vel_mag",    &omask->ang_vel_mag,    NULL); CHKERRQ(ierr);
 	ierr = PetscOptionsGetInt(NULL, "-out_tot_strain",     &omask->tot_strain,     NULL); CHKERRQ(ierr);
 	ierr = PetscOptionsGetInt(NULL, "-out_shmax",          &omask->SHmax,          NULL); CHKERRQ(ierr);
+	ierr = PetscOptionsGetInt(NULL, "-out_ehmax",          &omask->EHmax,          NULL); CHKERRQ(ierr);
 	ierr = PetscOptionsGetInt(NULL, "-out_isa",            &omask->ISA,            NULL); CHKERRQ(ierr);
 	ierr = PetscOptionsGetInt(NULL, "-out_gol",            &omask->GOL,            NULL); CHKERRQ(ierr);
 	ierr = PetscOptionsGetInt(NULL, "-out_plast_strain",   &omask->plast_strain,   NULL); CHKERRQ(ierr);

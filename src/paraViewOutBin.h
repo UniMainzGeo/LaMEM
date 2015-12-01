@@ -166,6 +166,7 @@ typedef struct
 	PetscInt plast_dissip;   // plastic dissipation
 	PetscInt tot_displ;      // total displacements
 	PetscInt SHmax;          // maximum horizontal stress
+	PetscInt EHmax;          // maximum horizontal extension
 	PetscInt ISA;            // Infinite Strain Axis
 	PetscInt GOL;            // Grain Orientation Lag
 	// === debugging vectors ===============================================

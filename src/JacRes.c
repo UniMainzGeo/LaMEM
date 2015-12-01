@@ -2209,6 +2209,162 @@ PetscErrorCode JacResGetGOL(JacRes *jr)
 }
 //---------------------------------------------------------------------------
 #undef __FUNCT__
+#define __FUNCT__ "JacResGetSHmax"
+PetscErrorCode JacResGetSHmax(JacRes *jr)
+{
+	// compute maximum horizontal compressive stress (SHmax) orientation
+
+	FDSTAG      *fs;
+	SolVarCell  *svCell;
+	PetscInt    i, j, k, nx, ny, nz, sx, sy, sz, iter;
+	PetscScalar v1[3], v2[3], sxx, syy, sxy, s1, s2;
+	PetscScalar ***dx, ***dy, ***lsxy;
+
+	PetscErrorCode ierr;
+	PetscFunctionBegin;
+
+	// access context
+	fs = jr->fs;
+
+	// setup shear stress vector
+	ierr = DMDAVecGetArray(fs->DA_XY, jr->ldxy, &lsxy); CHKERRQ(ierr);
+
+	ierr = DMDAGetCorners(fs->DA_XY, &sx, &sy, &sz, &nx, &ny, &nz); CHKERRQ(ierr);
+
+	iter = 0;
+
+	START_STD_LOOP
+	{
+		lsxy[k][j][i] = jr->svXYEdge[iter++].s;
+	}
+	END_STD_LOOP
+
+	ierr = DMDAVecRestoreArray(fs->DA_XY, jr->ldxy, &lsxy); CHKERRQ(ierr);
+
+	LOCAL_TO_LOCAL(fs->DA_XY, jr->ldxy);
+
+	// get SHmax
+	ierr = DMDAVecGetArray(fs->DA_CEN, jr->ldxx, &dx);   CHKERRQ(ierr);
+	ierr = DMDAVecGetArray(fs->DA_CEN, jr->ldyy, &dy);   CHKERRQ(ierr);
+	ierr = DMDAVecGetArray(fs->DA_XY,  jr->ldxy, &lsxy); CHKERRQ(ierr);
+
+	ierr = DMDAGetCorners(fs->DA_CEN, &sx, &sy, &sz, &nx, &ny, &nz); CHKERRQ(ierr);
+
+	iter = 0;
+
+	START_STD_LOOP
+	{
+		svCell = &jr->svCell[iter++];
+		sxx    = svCell->sxx;
+		syy    = svCell->syy;
+		sxy    = (lsxy[k][j][i] + lsxy[k][j][i+1] + lsxy[k][j+1][i] + lsxy[k][j+1][i+1])/4.0;
+
+		// maximum compressive stress orientation is the eigenvector of the SMALLEST eigenvalue
+		// (stress is negative in compression)
+		ierr = Tensor2RS2DSpectral(sxx, syy, sxy, &s1, &s2, v1, v2, 1e-12); CHKERRQ(ierr);
+
+		// get common sense
+		if(v2[0] < 0.0 || (v2[0] == 0.0 && v2[1] < 0.0))
+		{
+			v2[0] = -v2[0];
+			v2[1] = -v2[1];
+		}
+
+		// store direction vector for output
+		dx[k][j][i] = v2[0];
+		dy[k][j][i] = v2[1];
+	}
+	END_STD_LOOP
+
+	ierr = DMDAVecRestoreArray(fs->DA_CEN, jr->ldxx, &dx);   CHKERRQ(ierr);
+	ierr = DMDAVecRestoreArray(fs->DA_CEN, jr->ldyy, &dy);   CHKERRQ(ierr);
+	ierr = DMDAVecRestoreArray(fs->DA_XY,  jr->ldxy, &lsxy); CHKERRQ(ierr);
+
+	LOCAL_TO_LOCAL(fs->DA_CEN, jr->ldxx);
+	LOCAL_TO_LOCAL(fs->DA_CEN, jr->ldyy);
+
+	PetscFunctionReturn(0);
+}
+//---------------------------------------------------------------------------
+#undef __FUNCT__
+#define __FUNCT__ "JacResGetEHmax"
+PetscErrorCode JacResGetEHmax(JacRes *jr)
+{
+	// compute maximum horizontal extension rate (EHmax) orientation
+
+	FDSTAG      *fs;
+	SolVarCell  *svCell;
+	PetscInt    i, j, k, nx, ny, nz, sx, sy, sz, iter;
+	PetscScalar v1[3], v2[3], dxx, dyy, dxy, d1, d2;
+	PetscScalar ***dx, ***dy, ***ldxy;
+
+	PetscErrorCode ierr;
+	PetscFunctionBegin;
+
+	// access context
+	fs = jr->fs;
+
+	// setup shear strain rate vector
+	ierr = DMDAVecGetArray(fs->DA_XY, jr->ldxy, &ldxy); CHKERRQ(ierr);
+
+	ierr = DMDAGetCorners(fs->DA_XY, &sx, &sy, &sz, &nx, &ny, &nz); CHKERRQ(ierr);
+
+	iter = 0;
+
+	START_STD_LOOP
+	{
+		ldxy[k][j][i] = jr->svXYEdge[iter++].d;
+	}
+	END_STD_LOOP
+
+	ierr = DMDAVecRestoreArray(fs->DA_XY, jr->ldxy, &ldxy); CHKERRQ(ierr);
+
+	LOCAL_TO_LOCAL(fs->DA_XY, jr->ldxy);
+
+	// get EHmax
+	ierr = DMDAVecGetArray(fs->DA_CEN, jr->ldxx, &dx);   CHKERRQ(ierr);
+	ierr = DMDAVecGetArray(fs->DA_CEN, jr->ldyy, &dy);   CHKERRQ(ierr);
+	ierr = DMDAVecGetArray(fs->DA_XY,  jr->ldxy, &ldxy); CHKERRQ(ierr);
+
+	ierr = DMDAGetCorners(fs->DA_CEN, &sx, &sy, &sz, &nx, &ny, &nz); CHKERRQ(ierr);
+
+	iter = 0;
+
+	START_STD_LOOP
+	{
+		svCell = &jr->svCell[iter++];
+		dxx    = svCell->dxx;
+		dyy    = svCell->dyy;
+		dxy    = (ldxy[k][j][i] + ldxy[k][j][i+1] + ldxy[k][j+1][i] + ldxy[k][j+1][i+1])/4.0;
+
+		// maximum extension rate orientation is the eigenvector of the LARGEST eigenvalue
+		// (strain rate is positive in extension)
+		ierr = Tensor2RS2DSpectral(dxx, dyy, dxy, &d1, &d2, v1, v2, 1e-12); CHKERRQ(ierr);
+
+		// get common sense
+		if(v1[0] < 0.0 || (v1[0] == 0.0 && v1[1] < 0.0))
+		{
+			v1[0] = -v1[0];
+			v1[1] = -v1[1];
+		}
+
+		// store direction vector for output
+		dx[k][j][i] = v1[0];
+		dy[k][j][i] = v1[1];
+	}
+	END_STD_LOOP
+
+	ierr = DMDAVecRestoreArray(fs->DA_CEN, jr->ldxx, &dx);   CHKERRQ(ierr);
+	ierr = DMDAVecRestoreArray(fs->DA_CEN, jr->ldyy, &dy);   CHKERRQ(ierr);
+	ierr = DMDAVecRestoreArray(fs->DA_XY,  jr->ldxy, &ldxy); CHKERRQ(ierr);
+
+	LOCAL_TO_LOCAL(fs->DA_CEN, jr->ldxx);
+	LOCAL_TO_LOCAL(fs->DA_CEN, jr->ldyy);
+
+	PetscFunctionReturn(0);
+}
+//---------------------------------------------------------------------------
+#undef __FUNCT__
 #define __FUNCT__ "JacResSetVelRotation"
 PetscErrorCode JacResSetVelRotation(JacRes *jr)
 {

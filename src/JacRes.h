@@ -209,6 +209,14 @@ PetscErrorCode JacResGetGOL(JacRes *jr);
 
 //---------------------------------------------------------------------------
 
+// compute maximum horizontal compressive stress (SHmax) orientation
+PetscErrorCode JacResGetSHmax(JacRes *jr);
+
+// compute maximum horizontal extension rate (EHmax) orientation
+PetscErrorCode JacResGetEHmax(JacRes *jr);
+
+//---------------------------------------------------------------------------
+
 // initialize material parameter limits
 PetscErrorCode SetMatParLim(MatParLim *matLim, UserCtx *usr);
 

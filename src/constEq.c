@@ -931,6 +931,19 @@ void Tensor2RNNorm(Tensor2RN *A, PetscScalar *pk)
 	(*pk) = k;
 }
 //---------------------------------------------------------------------------
+void Tensor2RSNorm(Tensor2RS *A, PetscScalar *pk)
+{
+	// k = |A|
+
+	PetscScalar s, k;
+
+	s = fabs(A->xx) + fabs(A->xy) + fabs(A->xz);           k = s;
+	s = fabs(A->xy) + fabs(A->yy) + fabs(A->yz); if(s > k) k = s;
+	s = fabs(A->xz) + fabs(A->yz) + fabs(A->zz); if(s > k) k = s;
+
+	(*pk) = k;
+}
+//---------------------------------------------------------------------------
 void Tensor2RNDivide(Tensor2RN *A, PetscScalar k)
 {
 	// A = A/k
@@ -1066,7 +1079,7 @@ PetscInt Tensor2RSSpectral(
 	// 	 1 - failed to converge to loose tolerance within maximum rotations
 
 	PetscInt    iter, opt, code;
-	PetscScalar atmp, ntmp[3];
+	PetscScalar atmp, ntmp[3], nrm;
 
 	PetscScalar f, max, theta, t, c, s, tau, w, z;
 	PetscScalar a1, a2, a3, a12, a13, a23, *n1, *n2, *n3;
@@ -1094,6 +1107,12 @@ PetscInt Tensor2RSSpectral(
 
 	// set return code
 	code = 0;
+
+	// compute absolute tolerances
+	Tensor2RSNorm(A, &nrm);
+
+	ttol *= nrm;
+	ltol *= nrm;
 
 	// copy tensor components
 	a1  = A->xx;
@@ -1151,6 +1170,63 @@ PetscInt Tensor2RSSpectral(
 	eval[2] = a3;
 
 	return code;
+}
+//---------------------------------------------------------------------------
+#undef __FUNCT__
+#define __FUNCT__ "Tensor2RS2DSpectral"
+PetscErrorCode Tensor2RS2DSpectral(
+	PetscScalar  axx,
+	PetscScalar  ayy,
+	PetscScalar  axy,
+	PetscScalar *pa1,
+	PetscScalar *pa2,
+	PetscScalar  v1[],
+	PetscScalar  v2[],
+	PetscScalar  tol)
+{
+	PetscScalar theta, t, c, s, tau, nrm, sum, a1, a2, a, v[2];
+
+	// get stress norm
+	sum = fabs(axx) + fabs(axy);               nrm = sum;
+	sum = fabs(axy) + fabs(ayy); if(sum > nrm) nrm = sum;
+
+	// initialize eigenvalues & eigenvectors
+	a1 = axx;
+	a2 = ayy;
+
+	v1[0] = 1.0; v2[0] = 0.0;
+	v1[1] = 0.0; v2[1] = 1.0;
+
+	// compute eigenvectors & eigenvalues
+	if(fabs(axy) > tol*nrm)
+	{
+		theta = 0.5*(ayy - axx)/axy;
+		t     = 1.0/(fabs(theta) + sqrt(theta*theta + 1.0));
+		if(theta < 0.0) t = -t;
+
+		a1 -= t*axy;
+		a2 += t*axy;
+
+		c   = 1.0/sqrt(t*t + 1.0);
+		s   = t*c;
+		tau = s/(1.0 + c);
+
+		v1[0] -= s*tau; v2[0] += s;
+		v1[1] -= s;     v2[1] -= s*tau;
+	}
+
+	// sort principal values in descending order & permute principal directions
+	if(a2 > a1)
+	{
+		a    = a1;    a1    = a2;    a2    = a;
+		v[0] = v1[0]; v1[0] = v2[0]; v2[0] = v[0];
+		v[1] = v1[1]; v1[1] = v2[1]; v2[1] = v[1];
+	}
+
+	(*pa1) = a1;
+	(*pa2) = a2;
+
+	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
 /*

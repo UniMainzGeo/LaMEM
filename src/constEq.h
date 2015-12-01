@@ -162,6 +162,8 @@ PetscInt Tensor2RNCheckEq(Tensor2RN *A, Tensor2RN *B, PetscScalar tol);
 
 void Tensor2RNNorm(Tensor2RN *A, PetscScalar *pk);
 
+void Tensor2RSNorm(Tensor2RS *A, PetscScalar *pk);
+
 void Tensor2RNDivide(Tensor2RN *A, PetscScalar k);
 
 void Tensor2RNTrace(Tensor2RN *A);
@@ -201,6 +203,16 @@ PetscInt Tensor2RSSpectral(
 	PetscInt    itmax);  // maximum number rotations
 
 PetscInt getISA(Tensor2RN *pL, PetscScalar ISA[], PetscScalar *plnrm);
+
+PetscErrorCode Tensor2RS2DSpectral(
+	PetscScalar  axx,
+	PetscScalar  ayy,
+	PetscScalar  axy,
+	PetscScalar *pa1,
+	PetscScalar *pa2,
+	PetscScalar  v1[],
+	PetscScalar  v2[],
+	PetscScalar  tol);
 
 //---------------------------------------------------------------------------
 #endif
