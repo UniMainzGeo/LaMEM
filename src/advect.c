@@ -309,6 +309,11 @@ PetscErrorCode ADVRemap(AdvCtx *actx)
 	avrg = (PetscScalar)sum/actx->fs->nCells;
 	PetscPrintf(PETSC_COMM_SELF,"# MARKER_DENSITY [%lld]: max = %lld min = %lld average = %g\n",(LLD)actx->iproc, (LLD)max, (LLD)min, avrg);
 
+//	for(i = 0; i < actx->nummark; i++)
+//	{
+//		PetscPrintf(PETSC_COMM_SELF,"# marker [%lld]: [%g, %g, %g]\n", (LLD)i, actx->markers[i].X[0], actx->markers[i].X[1], actx->markers[i].X[2]);
+//	}
+
 	// project advected history from markers back to grid
 	ierr = ADVProjHistMarkToGrid(actx); CHKERRQ(ierr);
 
