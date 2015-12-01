@@ -175,6 +175,9 @@ PetscErrorCode JacResCreateTempParam(JacRes *jr)
 	// create local temperature vector using box-stencil central DMDA
 	ierr = DMCreateLocalVector(fs->DA_CEN, &jr->lT); CHKERRQ(ierr);
 
+	// temperature diffusion cases only
+	if(jr->actTemp != PETSC_TRUE) PetscFunctionReturn(0);
+
 	// get cell center grid partitioning
 	ierr = DMDAGetOwnershipRanges(fs->DA_CEN, &lx, &ly, &lz); CHKERRQ(ierr);
 
