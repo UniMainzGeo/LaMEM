@@ -138,6 +138,7 @@ PetscErrorCode ADVelRungeKuttaStep (AdvVelCtx *vi, PetscScalar dt, PetscScalar a
 PetscErrorCode ADVelInitCoord      (AdvCtx *actx, VelInterp *interp, PetscInt n);
 PetscErrorCode ADVelRetrieveCoord  (AdvCtx *actx, VelInterp *interp, PetscInt n);
 PetscErrorCode ADVelAdvectCoord    (VelInterp *interp, PetscInt n, PetscScalar dt, PetscInt type);
+PetscErrorCode ADVelResetCoord     (VelInterp *interp, PetscInt n);
 
 // effective velocity
 PetscErrorCode ADVelCalcEffVel     (VelInterp *interp, PetscInt n, PetscScalar a);

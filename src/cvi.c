@@ -270,6 +270,10 @@ PetscErrorCode ADVelAdvectScheme(AdvCtx *actx, AdvVelCtx *vi)
 		// Runge-Kutta step to B
 		ierr = ADVelRungeKuttaStep(vi, dt/2, 1.0, 0); CHKERRQ(ierr);
 
+		// needed for mapping between vi and actx in parallel
+		ierr = ADVelResetCoord(vi->interp, vi->nmark); CHKERRQ(ierr);
+		ierr = ADVelExchange(vi); CHKERRQ(ierr);
+
 		// final position
 		ierr = ADVelAdvectCoord(vi->interp, vi->nmark, dt, 1); CHKERRQ(ierr);
 	}
@@ -305,6 +309,10 @@ PetscErrorCode ADVelAdvectScheme(AdvCtx *actx, AdvVelCtx *vi)
 		// ---------------
 		// Runge-Kutta step to B
 		ierr = ADVelRungeKuttaStep(vi, dt, 1.0, 0); CHKERRQ(ierr);
+
+		// needed for mapping between vi and actx in parallel
+		ierr = ADVelResetCoord(vi->interp, vi->nmark); CHKERRQ(ierr);
+		ierr = ADVelExchange(vi); CHKERRQ(ierr);
 
 		// final position
 		ierr = ADVelAdvectCoord(vi->interp, vi->nmark, dt/6, 1); CHKERRQ(ierr);
@@ -526,9 +534,9 @@ PetscErrorCode ADVelAdvectCoord(VelInterp *interp, PetscInt n, PetscScalar dt, P
 		if (type==1)
 		{
 			// final advection of marker
-			interp[jj].x[0] = interp[jj].x0[0] + interp[jj].v_eff[0]*dt;
-			interp[jj].x[1] = interp[jj].x0[1] + interp[jj].v_eff[1]*dt;
-			interp[jj].x[2] = interp[jj].x0[2] + interp[jj].v_eff[2]*dt;
+			interp[jj].x[0] += interp[jj].v_eff[0]*dt;
+			interp[jj].x[1] += interp[jj].v_eff[1]*dt;
+			interp[jj].x[2] += interp[jj].v_eff[2]*dt;
 		}
 		else
 		{
@@ -537,6 +545,24 @@ PetscErrorCode ADVelAdvectCoord(VelInterp *interp, PetscInt n, PetscScalar dt, P
 			interp[jj].x[1] = interp[jj].x0[1] + interp[jj].v[1]*dt;
 			interp[jj].x[2] = interp[jj].x0[2] + interp[jj].v[2]*dt;
 		}
+	}
+
+	PetscFunctionReturn(0);
+}
+//---------------------------------------------------------------------------
+#undef __FUNCT__
+#define __FUNCT__ "ADVelResetCoord"
+PetscErrorCode ADVelResetCoord(VelInterp *interp, PetscInt n)
+{
+	PetscInt     jj;
+
+	// scan all markers
+	for(jj = 0; jj < n; jj++)
+	{
+		// reset coord
+		interp[jj].x[0] = interp[jj].x0[0];
+		interp[jj].x[1] = interp[jj].x0[1];
+		interp[jj].x[2] = interp[jj].x0[2];
 	}
 
 	PetscFunctionReturn(0);
