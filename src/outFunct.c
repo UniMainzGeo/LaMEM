@@ -593,12 +593,31 @@ PetscErrorCode PVOutWriteContRes(JacRes *jr, OutBuf *outbuf)
 #define __FUNCT__ "PVOutWritEnergRes"
 PetscErrorCode PVOutWritEnergRes(JacRes *jr, OutBuf *outbuf)
 {
+	FDSTAG      *fs;
+	PetscScalar ***lbcen, ***ge;
+	PetscInt    i, j, k, nx, ny, nz, sx, sy, sz;
+
 	ACCESS_FUNCTION_HEADER
 
 	cf = scal->dissipation_rate;
 
-	// scatter to local vector
-	GLOBAL_TO_LOCAL(outbuf->fs->DA_CEN, jr->ge, outbuf->lbcen)
+	fs = jr->fs;
+
+	ierr = DMDAVecGetArray(fs->DA_CEN, outbuf->lbcen,  &lbcen); CHKERRQ(ierr);
+	ierr = DMDAVecGetArray(jr->DA_T,   jr->ge,         &ge);    CHKERRQ(ierr);
+
+	ierr = DMDAGetCorners(fs->DA_CEN, &sx, &sy, &sz, &nx, &ny, &nz); CHKERRQ(ierr);
+
+	START_STD_LOOP
+	{
+		lbcen[k][j][i] = ge[k][j][i];
+	}
+	END_STD_LOOP
+
+	ierr = DMDAVecRestoreArray(fs->DA_CEN, outbuf->lbcen,  &lbcen); CHKERRQ(ierr);
+	ierr = DMDAVecRestoreArray(jr->DA_T,   jr->ge,         &ge);    CHKERRQ(ierr);
+
+	LOCAL_TO_LOCAL(fs->DA_CEN, outbuf->lbcen)
 
 	INTERPOLATE_ACCESS(outbuf->lbcen, InterpCenterCorner, 1, 0, 0.0)
 

@@ -1634,7 +1634,8 @@ PetscErrorCode JacResViewRes(JacRes *jr)
 
 	if(jr->actTemp == PETSC_TRUE)
 	{
-		ierr = VecNorm(jr->ge,  NORM_2, &e2);   CHKERRQ(ierr);
+    	ierr = JacResGetTempRes(jr);         CHKERRQ(ierr);
+		ierr = VecNorm(jr->ge, NORM_2, &e2); CHKERRQ(ierr);
 	}
 
 	// print
