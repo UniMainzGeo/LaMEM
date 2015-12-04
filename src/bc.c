@@ -956,10 +956,11 @@ PetscErrorCode BCApplyBound(BCCtx *bc)
 	GET_CELL_RANGE_GHOST_INT(ny, sy, fs->dsy)
 	GET_CELL_RANGE_GHOST_INT(nz, sz, fs->dsz)
 
+	// only positive temperature! negative will set zero-flux BC automatically
 	START_STD_LOOP
 	{
-		if(k == 0)   { bcT[k-1][j][i] = Tbot; }
-		if(k == mcz) { bcT[k+1][j][i] = Ttop; }
+		if(Tbot >= 0.0 && k == 0)   { bcT[k-1][j][i] = Tbot; }
+		if(Ttop >= 0.0 && k == mcz) { bcT[k+1][j][i] = Ttop; }
 	}
 	END_STD_LOOP
 
