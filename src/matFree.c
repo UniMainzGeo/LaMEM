@@ -303,7 +303,7 @@ PetscErrorCode JacApplyJacobian(Mat A, Vec x, Vec y)
 	// copy solution from global to local vectors, enforce boundary constraints
 	ierr = JacResCopySol(jr, x); CHKERRQ(ierr);
 
-//	ierr = JacResGetDIIderivatives(jr); CHKERRQ(ierr);
+	ierr = JacResGetJ2Derivatives(jr); CHKERRQ(ierr);
 
 //	ierr = JacResJacobianMatFree(jr); CHKERRQ(ierr);
 
@@ -324,7 +324,7 @@ PetscErrorCode JacResGetJ2Derivatives(JacRes *jr)
 	PetscInt    i, j, k, nx, ny, nz, sx, sy, sz, iter;
 	PetscScalar dx, dy, dz, dxx, dyy, dzz, dxy, dxz, dyz;
 	PetscScalar ***vx,  ***vy,  ***vz;
-	PetscScalar ***cellSum, ***xyEdSum, ***xzEdSum, ***yzEdSum;
+	PetscScalar ***centerSum, ***xyEdgeSum, ***xzEdgeSum, ***yzEdgeSum;
 
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
@@ -337,10 +337,10 @@ PetscErrorCode JacResGetJ2Derivatives(JacRes *jr)
 	ierr = DMDAVecGetArray(fs->DA_Z,   jr->lvz,  &vz);  CHKERRQ(ierr);
 
 	// access vectors that store sum of the derivatives-vector products
-	ierr = DMDAVecGetArray(fs->DA_CEN, jr->ldxx, &cellSum); CHKERRQ(ierr);
-	ierr = DMDAVecGetArray(fs->DA_XY,  jr->ldxy, &xyEdSum); CHKERRQ(ierr);
-	ierr = DMDAVecGetArray(fs->DA_XZ,  jr->ldxz, &xzEdSum); CHKERRQ(ierr);
-	ierr = DMDAVecGetArray(fs->DA_YZ,  jr->ldyz, &yzEdSum); CHKERRQ(ierr);
+	ierr = DMDAVecGetArray(fs->DA_CEN, jr->ldxx, &centerSum); CHKERRQ(ierr);
+	ierr = DMDAVecGetArray(fs->DA_XY,  jr->ldxy, &xyEdgeSum); CHKERRQ(ierr);
+	ierr = DMDAVecGetArray(fs->DA_XZ,  jr->ldxz, &xzEdgeSum); CHKERRQ(ierr);
+	ierr = DMDAVecGetArray(fs->DA_YZ,  jr->ldyz, &yzEdgeSum); CHKERRQ(ierr);
 
 	//-------------------------------
 	// central points (dxx, dyy, dzz)
@@ -359,19 +359,16 @@ PetscErrorCode JacResGetJ2Derivatives(JacRes *jr)
 		dy = SIZE_CELL(j, sy, fs->dsy);
 		dz = SIZE_CELL(k, sz, fs->dsz);
 
-		// get normalized strain rates
-		dxx = (svCell->dxx + svCell->hxx*svDev->I2Gdt)/svDev->DII;
-		dyy = (svCell->dyy + svCell->hyy*svDev->I2Gdt)/svDev->DII;
-		dzz = (svCell->dzz + svCell->hzz*svDev->I2Gdt)/svDev->DII;
+		// get effective deviatoric strain rates
+		dxx = svCell->dxx + svCell->hxx*svDev->I2Gdt;
+		dyy = svCell->dyy + svCell->hyy*svDev->I2Gdt;
+		dzz = svCell->dzz + svCell->hzz*svDev->I2Gdt;
 
-		// compute & store sum of the derivatives-vector products
-		cellSum[k][j][i] =
-		vx[k][j][i+1]*(2.0*dxx/3.0 -     dyy/3.0 -     dzz/3.0)/dx -
-		vx[k][j][i]  *(2.0*dxx/3.0 -     dyy/3.0 -     dzz/3.0)/dx +
-		vy[k][j+1][i]*(   -dxx/3.0 + 2.0*dyy/3.0 -     dzz/3.0)/dy -
-		vy[k][j][i]  *(   -dxx/3.0 + 2.0*dyy/3.0 -     dzz/3.0)/dy +
-		vz[k+1][j][i]*(   -dxx/3.0 -     dyy/3.0 + 2.0*dzz/3.0)/dz -
-		vz[k][j][i]  *(   -dxx/3.0 -     dyy/3.0 + 2.0*dzz/3.0)/dz;
+		// compute & store sum of the derivative-vector products
+		centerSum[k][j][i] =
+		dxx*(vx[k][j][i+1] - vx[k][j][i])/dx +
+		dyy*(vy[k][j+1][i] - vy[k][j][i])/dy +
+		dzz*(vz[k+1][j][i] - vz[k][j][i])/dz;
 	}
 	END_STD_LOOP
 
@@ -390,18 +387,14 @@ PetscErrorCode JacResGetJ2Derivatives(JacRes *jr)
 		// get mesh steps
 		dx = SIZE_NODE(i, sx, fs->dsx);
 		dy = SIZE_NODE(j, sy, fs->dsy);
-/*
-		// compute velocity gradients
-		dvxdy = (vx[k][j][i] - vx[k][j-1][i])/dy;
-		dvydx = (vy[k][j][i] - vy[k][j][i-1])/dx;
 
-		// compute & store total strain rate
-		xy = 0.5*(dvxdy + dvydx);
-		svEdge->d = xy;
+		// get effective deviatoric strain rate
+		dxy = svEdge->d + svEdge->h*svDev->I2Gdt;
 
-		// compute & store effective deviatoric strain rate
-		dxy[k][j][i] = xy + svEdge->h*svDev->I2Gdt;
-*/
+		// compute & store sum of the derivative-vector products
+		xyEdgeSum[k][j][i] =
+		dxy*(vx[k][j][i] - vx[k][j-1][i])/dy +
+		dxy*(vy[k][j][i] - vy[k][j][i-1])/dx;
 	}
 	END_STD_LOOP
 
@@ -421,15 +414,13 @@ PetscErrorCode JacResGetJ2Derivatives(JacRes *jr)
 		dx = SIZE_NODE(i, sx, fs->dsx);
 		dz = SIZE_NODE(k, sz, fs->dsz);
 
-		// get normalized strain rate
-		dxx = (svEdge->d + svEdge->h*svDev->I2Gdt)/svDev->DII;
+		// get effective deviatoric strain rate
+		dxz = svEdge->d + svEdge->h*svDev->I2Gdt;
 
-		// compute & store sum of the derivatives-vector products
-        xzEdSum[k][j][i] = 0.0;
-
-//vx[k][j][i] - vx[k-1][j][i])/dz;
-//vz[k][j][i] - vz[k][j][i-1])/dx;
-
+		// compute & store sum of the derivative-vector products
+		xzEdgeSum[k][j][i] =
+		dxz*(vx[k][j][i] - vx[k-1][j][i])/dz +
+		dxz*(vz[k][j][i] - vz[k][j][i-1])/dx;
 	}
 	END_STD_LOOP
 
@@ -448,31 +439,27 @@ PetscErrorCode JacResGetJ2Derivatives(JacRes *jr)
 		// get mesh steps
 		dy = SIZE_NODE(j, sy, fs->dsy);
 		dz = SIZE_NODE(k, sz, fs->dsz);
-/*
-		// compute velocity gradients
-		dvydz = (vy[k][j][i] - vy[k-1][j][i])/dz;
-		dvzdy = (vz[k][j][i] - vz[k][j-1][i])/dy;
 
-		// compute & store total strain rate
-		yz = 0.5*(dvydz + dvzdy);
-		svEdge->d = yz;
+		// get effective deviatoric strain rate
+		dyz = svEdge->d + svEdge->h*svDev->I2Gdt;
 
-		// compute & store effective deviatoric strain rate
-		dyz[k][j][i] = yz + svEdge->h*svDev->I2Gdt;
-*/
+		// compute & store sum of the derivative-vector products
+		yzEdgeSum[k][j][i] =
+		dyz*(vy[k][j][i] - vy[k-1][j][i])/dz +
+		dyz*(vz[k][j][i] - vz[k][j-1][i])/dy;
 	}
 	END_STD_LOOP
 
 	// restore vectors
-	ierr = DMDAVecRestoreArray(fs->DA_X,   jr->lvx,  &vx);      CHKERRQ(ierr);
-	ierr = DMDAVecRestoreArray(fs->DA_Y,   jr->lvy,  &vy);      CHKERRQ(ierr);
-	ierr = DMDAVecRestoreArray(fs->DA_Z,   jr->lvz,  &vz);      CHKERRQ(ierr);
-	ierr = DMDAVecRestoreArray(fs->DA_CEN, jr->ldxx, &cellSum); CHKERRQ(ierr);
-	ierr = DMDAVecRestoreArray(fs->DA_XY,  jr->ldxy, &xyEdSum); CHKERRQ(ierr);
-	ierr = DMDAVecRestoreArray(fs->DA_XZ,  jr->ldxz, &xzEdSum); CHKERRQ(ierr);
-	ierr = DMDAVecRestoreArray(fs->DA_YZ,  jr->ldyz, &yzEdSum); CHKERRQ(ierr);
+	ierr = DMDAVecRestoreArray(fs->DA_X,   jr->lvx,  &vx);        CHKERRQ(ierr);
+	ierr = DMDAVecRestoreArray(fs->DA_Y,   jr->lvy,  &vy);        CHKERRQ(ierr);
+	ierr = DMDAVecRestoreArray(fs->DA_Z,   jr->lvz,  &vz);        CHKERRQ(ierr);
+	ierr = DMDAVecRestoreArray(fs->DA_CEN, jr->ldxx, &centerSum);   CHKERRQ(ierr);
+	ierr = DMDAVecRestoreArray(fs->DA_XY,  jr->ldxy, &xyEdgeSum); CHKERRQ(ierr);
+	ierr = DMDAVecRestoreArray(fs->DA_XZ,  jr->ldxz, &xzEdgeSum); CHKERRQ(ierr);
+	ierr = DMDAVecRestoreArray(fs->DA_YZ,  jr->ldyz, &yzEdgeSum); CHKERRQ(ierr);
 
-	// communicate boundary strain-rate values
+	// communicate boundary values
 	LOCAL_TO_LOCAL(fs->DA_CEN, jr->ldxx);
 	LOCAL_TO_LOCAL(fs->DA_XY,  jr->ldxy);
 	LOCAL_TO_LOCAL(fs->DA_XZ,  jr->ldxz);
@@ -692,3 +679,13 @@ PetscErrorCode JacResJacobianMatFree(JacRes *jr)
 	PetscFunctionReturn(0);
 }
 //-----------------------------------------------------------------------------
+/*
+		cellSum[k][j][i] =
+		vx[k][j][i+1]*(2.0*dxx/3.0 -     dyy/3.0 -     dzz/3.0)/dx -
+		vx[k][j][i]  *(2.0*dxx/3.0 -     dyy/3.0 -     dzz/3.0)/dx +
+		vy[k][j+1][i]*(   -dxx/3.0 + 2.0*dyy/3.0 -     dzz/3.0)/dy -
+		vy[k][j][i]  *(   -dxx/3.0 + 2.0*dyy/3.0 -     dzz/3.0)/dy +
+		vz[k+1][j][i]*(   -dxx/3.0 -     dyy/3.0 + 2.0*dzz/3.0)/dz -
+		vz[k][j][i]  *(   -dxx/3.0 -     dyy/3.0 + 2.0*dzz/3.0)/dz;
+*/
+

@@ -1691,7 +1691,6 @@ PetscErrorCode SetMatParLim(MatParLim *matLim, UserCtx *usr)
 	matLim->eta_min      = usr->LowerViscosityCutoff;
 	matLim->eta_max      = usr->UpperViscosityCutoff;
 	matLim->eta_ref      = usr->InitViscosity;
-//	matLim->eta_plast    = usr->PlastViscosity;
 
 	matLim->TRef         = 0.0;
 	matLim->Rugc         = 8.3144621;
@@ -1701,12 +1700,11 @@ PetscErrorCode SetMatParLim(MatParLim *matLim, UserCtx *usr)
 	matLim->DII_rtol     = 1e-8;
 
 	if(usr->DII_ref) matLim->DII_ref = usr->DII_ref;
-    else{
-        matLim->DII_ref = 1;
-        PetscPrintf(PETSC_COMM_WORLD," WARNING: Reference strain rate DII_ref is not defined. Use a non-dimensional reference value of DII_ref =%f \n",matLim->DII_ref);
-    }
-        
-    
+	else
+	{
+		matLim->DII_ref = 1.0;
+		PetscPrintf(PETSC_COMM_WORLD," WARNING: Reference strain rate DII_ref is not defined. Use a non-dimensional reference value of DII_ref =%f \n",matLim->DII_ref);
+	}
 
 	matLim->minCh        = 0.0;
 	matLim->minFr        = 0.0;
@@ -1717,6 +1715,7 @@ PetscErrorCode SetMatParLim(MatParLim *matLim, UserCtx *usr)
 	matLim->rho_fluid    = 0.0;
 	matLim->theta_north  = 90.0; // by default y-axis
 	matLim->warn         = PETSC_TRUE;
+	matLim->jac_mat_free = PETSC_FALSE;
 
 	// read additional options
 	ierr = PetscOptionsHasName(PETSC_NULL, "-use_quasi_harmonic_viscosity", &flg); CHKERRQ(ierr);
@@ -1732,10 +1731,12 @@ PetscErrorCode SetMatParLim(MatParLim *matLim, UserCtx *usr)
 
 	ierr = PetscOptionsHasName(PETSC_NULL, "-stop_warnings", &flg); CHKERRQ(ierr);
 
-	if(flg == PETSC_TRUE)
-	{
-		matLim->warn = PETSC_FALSE;
-	}
+	if(flg == PETSC_TRUE) matLim->warn = PETSC_FALSE;
+
+	// set Jacobian flag
+	ierr = PetscOptionsHasName(NULL, "-jac_mat_free", &flg); CHKERRQ(ierr);
+
+	if(flg == PETSC_TRUE) matLim->jac_mat_free = PETSC_TRUE;
 
 	PetscFunctionReturn(0);
 }

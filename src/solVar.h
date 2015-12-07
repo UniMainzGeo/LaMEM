@@ -97,6 +97,8 @@ typedef struct
 	PetscScalar  DIIpl; // plastic strain rate
 	PetscScalar  APS;   // accumulated plastic strain
 	PetscScalar  PSR;   // plastic strain-rate contribution
+	PetscScalar  dEta;  // dEta/dDII derivative (Jacobian)
+	PetscScalar  fr;    // effective friction coefficient (Jacobian)
 
 } SolVarDev;
 
@@ -244,6 +246,8 @@ typedef struct
 	PetscScalar  theta_north;
 	// print warning messages
 	PetscBool    warn;
+	// matrix-free closed-form jacobian
+	PetscBool   jac_mat_free;
 
 } MatParLim;
 

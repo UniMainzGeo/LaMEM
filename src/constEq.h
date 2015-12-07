@@ -59,6 +59,7 @@ typedef struct
 	PetscScalar  N_prl; // Peierls exponent
 	PetscScalar  taupl; // plastic yield stress
 	PetscBool    cfsol; // closed-form solution flag
+	PetscScalar  fr;    // effective friction coefficient
 
 } ConstEqCtx;
 
@@ -86,6 +87,15 @@ PetscErrorCode GetEffVisc(
 	PetscScalar *eta_total,
 	PetscScalar *eta_creep,
 	PetscScalar *DIIpl);
+
+PetscErrorCode GetEffViscJac(
+	ConstEqCtx  *ctx,
+	MatParLim   *lim,
+	PetscScalar *eta_total,
+	PetscScalar *eta_creep,
+	PetscScalar *DIIpl,
+	PetscScalar *dEta,
+	PetscScalar *fr);
 
 // apply strain softening to a parameter (friction, cohesion)
 PetscScalar ApplyStrainSoft(Soft_t *sl, PetscScalar APS, PetscScalar par);

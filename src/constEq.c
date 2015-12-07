@@ -93,6 +93,7 @@ PetscErrorCode ConstEqCtxSetup(
 	ctx->N_prl = 1.0;         // Peierls exponent
 	ctx->taupl = 0.0;         // plastic yield stress
 	ctx->cfsol = PETSC_TRUE;  // closed-form solution flag
+	ctx->fr    = 0.0;         // effective friction coefficient
 
 	// ELASTICITY
 	if(mat->G)
@@ -146,12 +147,21 @@ PetscErrorCode ConstEqCtxSetup(
 	if(ch < lim->minCh) ch = lim->minCh;
 	if(fr < lim->minFr) fr = lim->minFr;
 
+	// store friction for Jacobian
+	ctx->fr = fr;
+
 	// compute yield stress
 	if(p < 0.0) ctx->taupl = ch;        // Von-Mises model for extension
 	else        ctx->taupl = ch + p*fr; // Drucker-Prager model for compression
 
 	// correct for ultimate yield stress
-	if(ctx->taupl > lim->tauUlt) ctx->taupl = lim->tauUlt;
+	if(ctx->taupl > lim->tauUlt)
+	{
+		ctx->taupl = lim->tauUlt;
+
+		// switch-off pressure dependence of yield stress
+		ctx->fr = fr;
+	}
 
 	// set iteration flag (linear + nonlinear, or more than one nonlinear)
 	if((nl && ln) || nl > 1) ctx->cfsol = PETSC_FALSE;
@@ -206,6 +216,141 @@ PetscErrorCode GetEffVisc(
 
 	// zero out plastic strain rate
 	(*DIIpl) = 0.0;
+
+	// set reference viscosity as initial guess
+	if(lim->eta_ref && lim->initGuessFlg == PETSC_TRUE)
+	{
+		(*eta_total) = lim->eta_ref;
+		(*eta_creep) = lim->eta_ref;
+
+		PetscFunctionReturn(0);
+	}
+
+	//=====================
+	// ISOLATED VISCOSITIES
+	//=====================
+
+	inv_eta_els = 0.0;
+	inv_eta_dif = 0.0;
+	inv_eta_dis = 0.0;
+	inv_eta_prl = 0.0;
+
+	// elasticity
+	if(ctx->A_els) inv_eta_els = 2.0*ctx->A_els;
+	// diffusion
+	if(ctx->A_dif) inv_eta_dif = 2.0*ctx->A_dif;
+	// dislocation
+	if(ctx->A_dis) inv_eta_dis = 2.0*pow(ctx->A_dis, 1.0/ctx->N_dis)*pow(ctx->DII, 1.0 - 1.0/ctx->N_dis);
+	// Peierls
+	if(ctx->A_prl) inv_eta_prl = 2.0*pow(ctx->A_prl, 1.0/ctx->N_prl)*pow(ctx->DII, 1.0 - 1.0/ctx->N_prl);
+
+	// error handling
+	if(PetscIsInfOrNanScalar(inv_eta_dif)) inv_eta_dif = 0.0;
+	if(PetscIsInfOrNanScalar(inv_eta_dis)) inv_eta_dis = 0.0;
+	if(PetscIsInfOrNanScalar(inv_eta_prl)) inv_eta_prl = 0.0;
+
+	//================
+	// NONLINEAR CREEP
+	//================
+
+	// get creep viscosity (old and good quasi-harmonic mean)
+	inv_eta_creep = inv_eta_dif + inv_eta_dis + inv_eta_prl;
+
+	// enforce limits
+	if(inv_eta_creep < 1.0/lim->eta_max) inv_eta_creep = 1.0/lim->eta_max;
+	if(inv_eta_creep > 1.0/lim->eta_min) inv_eta_creep = 1.0/lim->eta_min;
+
+	// store creep viscosity for output
+	(*eta_creep) = 1.0/inv_eta_creep;
+
+	//===========
+	// ELASTICITY
+	//===========
+
+	// compute visco-elastic viscosity
+	eta_ve = 1.0/(inv_eta_els + inv_eta_creep);
+
+	// visco-elastic prediction
+	(*eta_total) = eta_ve;
+
+	//===========
+	// PLASTICITY
+	//===========
+
+	if(ctx->taupl && lim->initGuessFlg != PETSC_TRUE)
+	{
+		// compute visco-elastic strain rate
+		DIIve = ctx->taupl/(2.0*eta_ve);
+
+		if(lim->quasiHarmAvg == PETSC_TRUE)
+		{
+			//====================================
+			// regularized rate-dependent approach
+			//====================================
+
+			// check for nonzero plastic strain rate
+			if(DIIve < ctx->DII)
+			{
+				// store plastic strain rate & viscosity
+				H            = eta_ve/cf_eta_min;
+				(*eta_total) = 1.0/(1.0/eta_ve + 1.0/H) + (ctx->taupl/(2.0*ctx->DII))/(1.0 + H/eta_ve);
+				(*DIIpl)     = ctx->DII*(1.0 - (*eta_total)/eta_ve);
+			}
+		}
+		else
+		{
+			//====================================
+			// classical rate-independent approach
+			//====================================
+
+			// check for nonzero plastic strain rate
+			if(DIIve < ctx->DII)
+			{
+
+				// store plastic strain rate & viscosity
+				(*eta_total)  = ctx->taupl/(2.0*ctx->DII);
+				(*DIIpl)      = ctx->DII - DIIve;
+
+				// lower viscosity bound
+				if((*eta_total) < lim->eta_min)
+				{
+					(*eta_total) = lim->eta_min;
+					(*DIIpl)     = ctx->DII*(1.0 - lim->eta_min/eta_ve);
+				}
+
+			}
+		}
+	}
+
+	PetscFunctionReturn(0);
+}
+//---------------------------------------------------------------------------
+#undef __FUNCT__
+#define __FUNCT__ "GetEffViscJac"
+PetscErrorCode GetEffViscJac(
+	ConstEqCtx  *ctx,
+	MatParLim   *lim,
+	PetscScalar *eta_total,
+	PetscScalar *eta_creep,
+	PetscScalar *DIIpl,
+	PetscScalar *dEta,
+	PetscScalar *fr)
+{
+	// stabilization parameters
+	PetscScalar cf_eta_min = 10.0;
+	PetscScalar eta_ve, DIIve, H;
+	PetscScalar inv_eta_els, inv_eta_dif, inv_eta_dis, inv_eta_prl, inv_eta_creep;
+
+	PetscFunctionBegin;
+
+	// initialize
+	(*DIIpl) = 0.0;
+	(*dEta)  = 0.0;
+	(*fr)    = 0.0;
+
+	//==============
+	// INITIAL GUESS
+	//==============
 
 	// set reference viscosity as initial guess
 	if(lim->eta_ref && lim->initGuessFlg == PETSC_TRUE)
@@ -370,7 +515,7 @@ PetscErrorCode DevConstEq(
 	PetscInt     i;
 	ConstEqCtx   ctx;
 	Material_t  *mat;
-	PetscScalar  DII, APS, eta_total, eta_creep_phase, DIIpl;
+	PetscScalar  DII, APS, eta_total, eta_creep_phase, DIIpl, dEta, fr;
 
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
@@ -383,6 +528,11 @@ PetscErrorCode DevConstEq(
 	svDev->eta   = 0.0;
 	svDev->DIIpl = 0.0;
 	(*eta_creep) = 0.0;
+
+	svDev->dEta = 0.0;
+	svDev->fr   = 0.0;
+	dEta        = 0.0;
+	fr          = 0.0;
 
 	// scan all phases
 	for(i = 0; i < numPhases; i++)
@@ -397,23 +547,24 @@ PetscErrorCode DevConstEq(
 			ierr = ConstEqCtxSetup(&ctx, mat, lim, DII, APS, dt, p, T); CHKERRQ(ierr);
 
 			// solve effective viscosity & plastic strain rate
-			ierr = GetEffVisc(&ctx, lim, &eta_total, &eta_creep_phase, &DIIpl); CHKERRQ(ierr);
+			if(lim->jac_mat_free)
+			{
+				ierr = GetEffViscJac(&ctx, lim, &eta_total, &eta_creep_phase, &DIIpl, &dEta, &fr); CHKERRQ(ierr);
+			}
+			else
+			{
+				ierr = GetEffVisc(&ctx, lim, &eta_total, &eta_creep_phase, &DIIpl); CHKERRQ(ierr);
+			}
 
-			//=============================
-			// ADD GEOMETRIC AVERAGING HERE
-			//=============================
+			// average parameters
 			svDev->eta   += phRat[i]*eta_total;
 			svDev->DIIpl += phRat[i]*DIIpl;
 			(*eta_creep) += phRat[i]*eta_creep_phase;
 
-//			svDev->eta   += phRat[i]*log(eta);
-//			svDev->DIIpl += phRat[i]*log(DIIpl);
-
+			svDev->dEta += phRat[i]*dEta;
+			svDev->fr   += phRat[i]*fr;
 		}
 	}
-
-//	svDev->eta   = exp(svDev->eta);
-//	svDev->DIIpl = exp(svDev->DIIpl);
 
 	PetscFunctionReturn(0);
 }
