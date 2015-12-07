@@ -69,7 +69,7 @@ PetscErrorCode ConstEqCtxSetup(
 	// setup nonlinear constitutive equation evaluation context
 	// evaluate dependence on constant parameters (pressure, temperature)
 
-	PetscInt    ln, nl;
+	PetscInt    ln, nl, pd;
 	PetscScalar Q, RT, ch, fr;
 
 	PetscFunctionBegin;
@@ -79,6 +79,7 @@ PetscErrorCode ConstEqCtxSetup(
 
 	ln = 0;
 	nl = 0;
+	pd = 0; // pressure-dependence flag
 
 	// use reference strain-rate instead of zero
 	if(DII == 0.0) DII = lim->DII_ref;
@@ -147,21 +148,15 @@ PetscErrorCode ConstEqCtxSetup(
 	if(ch < lim->minCh) ch = lim->minCh;
 	if(fr < lim->minFr) fr = lim->minFr;
 
-	// store friction for Jacobian
-	ctx->fr = fr;
-
 	// compute yield stress
-	if(p < 0.0) ctx->taupl = ch;        // Von-Mises model for extension
-	else        ctx->taupl = ch + p*fr; // Drucker-Prager model for compression
+	if(p < 0.0) { ctx->taupl = ch;        pd = 0; } // Von-Mises model for extension
+	else        { ctx->taupl = ch + p*fr; pd = 1; } // Drucker-Prager model for compression
 
 	// correct for ultimate yield stress
-	if(ctx->taupl > lim->tauUlt)
-	{
-		ctx->taupl = lim->tauUlt;
+	if(ctx->taupl > lim->tauUlt) { ctx->taupl = lim->tauUlt; pd = 0; }
 
-		// switch-off pressure dependence of yield stress
-		ctx->fr = fr;
-	}
+	// store friction coefficient for a pressure-dependent plasticity model
+	if(pd) ctx->fr = fr;
 
 	// set iteration flag (linear + nonlinear, or more than one nonlinear)
 	if((nl && ln) || nl > 1) ctx->cfsol = PETSC_FALSE;
@@ -337,9 +332,8 @@ PetscErrorCode GetEffViscJac(
 	PetscScalar *fr)
 {
 	// stabilization parameters
-	PetscScalar cf_eta_min = 10.0;
-	PetscScalar eta_ve, DIIve, H;
-	PetscScalar inv_eta_els, inv_eta_dif, inv_eta_dis, inv_eta_prl, inv_eta_creep;
+	PetscScalar eta_ve, eta_pl, eta_dis, eta_prl, cf;
+	PetscScalar inv_eta_els, inv_eta_dif, inv_eta_dis, inv_eta_prl;
 
 	PetscFunctionBegin;
 
@@ -385,28 +379,35 @@ PetscErrorCode GetEffViscJac(
 	if(PetscIsInfOrNanScalar(inv_eta_prl)) inv_eta_prl = 0.0;
 
 	//================
-	// NONLINEAR CREEP
+	// CREEP VISCOSITY
 	//================
 
-	// get creep viscosity (old and good quasi-harmonic mean)
-	inv_eta_creep = inv_eta_dif + inv_eta_dis + inv_eta_prl;
-
-	// enforce limits
-	if(inv_eta_creep < 1.0/lim->eta_max) inv_eta_creep = 1.0/lim->eta_max;
-	if(inv_eta_creep > 1.0/lim->eta_min) inv_eta_creep = 1.0/lim->eta_min;
-
 	// store creep viscosity for output
-	(*eta_creep) = 1.0/inv_eta_creep;
+	(*eta_creep) = lim->eta_min + 1.0/(inv_eta_dif + inv_eta_dis + inv_eta_prl + 1.0/lim->eta_max);
 
-	//===========
-	// ELASTICITY
-	//===========
+	//========================
+	// VISCO-ELASTIC VISCOSITY
+	//========================
 
 	// compute visco-elastic viscosity
-	eta_ve = 1.0/(inv_eta_els + inv_eta_creep);
+	eta_ve = lim->eta_min + 1.0/(inv_eta_els + inv_eta_dif + inv_eta_dis + inv_eta_prl + 1.0/lim->eta_max);
 
-	// visco-elastic prediction
+	// set visco-elastic prediction
 	(*eta_total) = eta_ve;
+
+	// get viscosity derivatives
+	if(inv_eta_dis)
+	{
+		eta_dis  = 1.0/inv_eta_dis;
+		cf       = eta_ve/eta_dis;
+		(*dEta) += cf*cf*(1.0/ctx->N_dis - 1.0)*eta_dis;
+	}
+	if(inv_eta_prl)
+	{
+		eta_prl  = 1.0/inv_eta_prl;
+		cf       = eta_ve/eta_prl;
+		(*dEta) += cf*cf*(1.0/ctx->N_prl - 1.0)*eta_prl;
+	}
 
 	//===========
 	// PLASTICITY
@@ -414,46 +415,17 @@ PetscErrorCode GetEffViscJac(
 
 	if(ctx->taupl && lim->initGuessFlg != PETSC_TRUE)
 	{
-		// compute visco-elastic strain rate
-		DIIve = ctx->taupl/(2.0*eta_ve);
+		// compute plastic viscosity
+		eta_pl = ctx->taupl/(2.0*ctx->DII);
 
-		if(lim->quasiHarmAvg == PETSC_TRUE)
+		// check for plastic yielding
+		if(eta_pl < eta_ve)
 		{
-			//====================================
-			// regularized rate-dependent approach
-			//====================================
-
-			// check for nonzero plastic strain rate
-			if(DIIve < ctx->DII)
-			{
-				// store plastic strain rate & viscosity
-				H            = eta_ve/cf_eta_min;
-				(*eta_total) = 1.0/(1.0/eta_ve + 1.0/H) + (ctx->taupl/(2.0*ctx->DII))/(1.0 + H/eta_ve);
-				(*DIIpl)     = ctx->DII*(1.0 - (*eta_total)/eta_ve);
-			}
-		}
-		else
-		{
-			//====================================
-			// classical rate-independent approach
-			//====================================
-
-			// check for nonzero plastic strain rate
-			if(DIIve < ctx->DII)
-			{
-
-				// store plastic strain rate & viscosity
-				(*eta_total)  = ctx->taupl/(2.0*ctx->DII);
-				(*DIIpl)      = ctx->DII - DIIve;
-
-				// lower viscosity bound
-				if((*eta_total) < lim->eta_min)
-				{
-					(*eta_total) = lim->eta_min;
-					(*DIIpl)     = ctx->DII*(1.0 - lim->eta_min/eta_ve);
-				}
-
-			}
+			// store plastic strain rate, viscosity, derivative & effective friction
+			(*eta_total) = eta_pl;
+			(*DIIpl)     = ctx->DII*(1.0 - eta_pl/eta_ve);
+			(*dEta)      = -eta_pl/2.0;
+			(*fr)        =  ctx->fr;
 		}
 	}
 
