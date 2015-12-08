@@ -399,13 +399,13 @@ PetscErrorCode GetEffViscJac(
 	if(inv_eta_dis)
 	{
 		eta_dis  = 1.0/inv_eta_dis;
-		cf       = eta_ve/eta_dis;
+		cf       = (eta_ve - lim->eta_min)/eta_dis;
 		(*dEta) += cf*cf*(1.0/ctx->N_dis - 1.0)*eta_dis;
 	}
 	if(inv_eta_prl)
 	{
 		eta_prl  = 1.0/inv_eta_prl;
-		cf       = eta_ve/eta_prl;
+		cf       = (eta_ve - lim->eta_min)/eta_prl;
 		(*dEta) += cf*cf*(1.0/ctx->N_prl - 1.0)*eta_prl;
 	}
 
@@ -422,8 +422,8 @@ PetscErrorCode GetEffViscJac(
 		if(eta_pl < eta_ve)
 		{
 			// store plastic strain rate, viscosity, derivative & effective friction
-			(*eta_total) = eta_pl;
-			(*DIIpl)     = ctx->DII*(1.0 - eta_pl/eta_ve);
+			(*eta_total) =  eta_pl;
+			(*DIIpl)     =  ctx->DII*(1.0 - eta_pl/eta_ve);
 			(*dEta)      = -eta_pl/2.0;
 			(*fr)        =  ctx->fr;
 		}
