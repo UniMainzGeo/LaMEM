@@ -50,6 +50,7 @@
 #include "tssolve.h"
 #include "bc.h"
 #include "JacRes.h"
+#include "matFree.h"
 #include "multigrid.h"
 #include "matrix.h"
 #include "lsolve.h"
@@ -294,13 +295,24 @@ PetscErrorCode FormJacobian(SNES snes, Vec x, Mat Amat, Mat Pmat, void *ctx)
 	{
 		// Picard case, check to switch to Newton
 		//if(nrm < nl->refRes*nl->tolPic || nl->it > nl->nPicIt)
-        if(nrm < (nl->refRes*nl->rtolPic) )
-        {
-			PetscPrintf(PETSC_COMM_WORLD,"        ***        \n");
-			PetscPrintf(PETSC_COMM_WORLD,"SWITCH TO USING MMFD JACOBIAN; ||F||/||F0||=%e,  PicIt=%i\n",nrm/nl->refRes,nl->nPicIt);
-			PetscPrintf(PETSC_COMM_WORLD,"        ***        \n");
+		if(nrm < nl->refRes*nl->rtolPic)
+		{
+			if(jr->matLim.jac_mat_free == PETSC_TRUE)
+			{
+				PetscPrintf(PETSC_COMM_WORLD,"===================================================\n");
+				PetscPrintf(PETSC_COMM_WORLD,"SWITCH TO MF JACOBIAN: ||F||/||F0||=%e, PicIt=%lld \n", nrm/nl->refRes, (LLD)nl->nPicIt);
+				PetscPrintf(PETSC_COMM_WORLD,"===================================================\n");
 
-			nl->jtype = _MFFD_;
+				nl->jtype = _MF_;
+			}
+			else
+			{
+				PetscPrintf(PETSC_COMM_WORLD,"=====================================================\n");
+				PetscPrintf(PETSC_COMM_WORLD,"SWITCH TO MMFD JACOBIAN: ||F||/||F0||=%e, PicIt=%lld \n", nrm/nl->refRes, (LLD)nl->nPicIt);
+				PetscPrintf(PETSC_COMM_WORLD,"=====================================================\n");
+
+				nl->jtype = _MFFD_;
+			}
 		}
 	}
 	else if(nl->jtype == _MFFD_)
@@ -308,15 +320,15 @@ PetscErrorCode FormJacobian(SNES snes, Vec x, Mat Amat, Mat Pmat, void *ctx)
 		// Newton case, check to switch to Picard
 		if(nrm > nl->refRes*nl->rtolNwt || it_newton > nl->nNwtIt)
 		{
-			PetscPrintf(PETSC_COMM_WORLD,"        ***          \n");
-			PetscPrintf(PETSC_COMM_WORLD,"SWITCH TO USING PICARD JACOBIAN  ||F||/||F0||=%e,  PicIt=%i\n \n",nrm/nl->refRes,nl->nNwtIt);
-			PetscPrintf(PETSC_COMM_WORLD,"        ***          \n");
+			PetscPrintf(PETSC_COMM_WORLD,"=======================================================\n");
+			PetscPrintf(PETSC_COMM_WORLD,"SWITCH TO PICARD JACOBIAN: ||F||/||F0||=%e, PicIt=%lld \n", nrm/nl->refRes, (LLD)nl->nNwtIt);
+			PetscPrintf(PETSC_COMM_WORLD,"=======================================================\n");
 
 			nl->jtype = _PICARD_;
 		}
 	}
 
-	if((JacResGetStep(jr) < 2) && (nl->it == 0))
+	if(JacResGetStep(jr) < 2 && nl->it == 0)
 	{
 		// During the first and second timestep of a simulation, always start with picard iterations
 		// that is important as plasticity is only activated during the second timestep, whereas the code might have
@@ -327,11 +339,16 @@ PetscErrorCode FormJacobian(SNES snes, Vec x, Mat Amat, Mat Pmat, void *ctx)
 	// print info
 	if(nl->jtype == _PICARD_)
 	{
-		PetscPrintf(PETSC_COMM_WORLD,"USING PICARD JACOBIAN for iteration %i,  ||F||/||F0||=%e \n",nl->it, nrm/nl->refRes);
+		PetscPrintf(PETSC_COMM_WORLD,"USING PICARD JACOBIAN for iteration %lld, ||F||/||F0||=%e \n", (LLD)nl->it, nrm/nl->refRes);
 	}
 	else if(nl->jtype == _MFFD_)
 	{
-		PetscPrintf(PETSC_COMM_WORLD,"USING MMFD JACOBIAN for iteration %i,    ||F||/||F0||=%e \n",nl->it, nrm/nl->refRes);
+		PetscPrintf(PETSC_COMM_WORLD,"USING MMFD JACOBIAN for iteration %lld, ||F||/||F0||=%e \n", (LLD)nl->it, nrm/nl->refRes);
+		it_newton++;
+	}
+	else if(nl->jtype == _MF_)
+	{
+		PetscPrintf(PETSC_COMM_WORLD,"USING MF JACOBIAN for iteration %lld, ||F||/||F0||=%e \n", (LLD)nl->it, nrm/nl->refRes);
 		it_newton++;
 	}
 
@@ -344,7 +361,7 @@ PetscErrorCode FormJacobian(SNES snes, Vec x, Mat Amat, Mat Pmat, void *ctx)
 	ierr = MatShellSetOperation(nl->P, MATOP_MULT, (void(*)(void))pc->Apply); CHKERRQ(ierr);
 	ierr = MatShellSetContext(nl->P, pc);                                     CHKERRQ(ierr);
 
-	// setup Jacobian ...
+	// setup Jacobian
 	if(nl->jtype == _PICARD_)
 	{
 		// ... Picard
@@ -358,6 +375,12 @@ PetscErrorCode FormJacobian(SNES snes, Vec x, Mat Amat, Mat Pmat, void *ctx)
 		ierr = MatMFFDSetBase(nl->MFFD, x, jr->gres);                                                      CHKERRQ(ierr);
 		ierr = MatShellSetOperation(nl->J, MATOP_MULT, (void(*)(void))JacApplyMFFD);                       CHKERRQ(ierr);
 		ierr = MatShellSetContext(nl->J, (void*)&nl->MFFD);                                                CHKERRQ(ierr);
+	}
+	else if(nl->jtype == _MF_)
+	{
+		// ... matrix-free closed-form
+		ierr = MatShellSetOperation(nl->J, MATOP_MULT, (void(*)(void))JacApplyJacobian); CHKERRQ(ierr);
+		ierr = MatShellSetContext(nl->J, (void*)jr);                                     CHKERRQ(ierr);
 	}
 
 	// assemble Jacobian & preconditioner
