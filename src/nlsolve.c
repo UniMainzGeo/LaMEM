@@ -204,13 +204,13 @@ PetscErrorCode NLSolCreate(NLSol *nl, PCStokes pc, SNES *p_snes)
 PetscErrorCode NLSolDestroy(NLSol *nl)
 {
 	PetscErrorCode ierr;
-    PetscFunctionBegin;
+ 	PetscFunctionBegin;
 
-    ierr = MatDestroy(&nl->J);    CHKERRQ(ierr);
+	ierr = MatDestroy(&nl->J);    CHKERRQ(ierr);
 	ierr = MatDestroy(&nl->P);    CHKERRQ(ierr);
 	ierr = MatDestroy(&nl->MFFD); CHKERRQ(ierr);
 
-    PetscFunctionReturn(0);
+	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
 #undef __FUNCT__
@@ -231,7 +231,7 @@ PetscErrorCode FormResidual(SNES snes, Vec x, Vec f, void *ctx)
 	jr = nl->pc->pm->jr;
 
 	// copy solution from global to local vectors, enforce boundary constraints
-	ierr = JacResCopySol(jr, x); CHKERRQ(ierr);
+	ierr = JacResCopySol(jr, x, 1); CHKERRQ(ierr);
 
 	ierr = JacResGetPressShift(jr); CHKERRQ(ierr);
 
@@ -390,6 +390,82 @@ PetscErrorCode FormJacobian(SNES snes, Vec x, Mat Amat, Mat Pmat, void *ctx)
 	ierr = MatAssemblyBegin(nl->J, MAT_FINAL_ASSEMBLY); CHKERRQ(ierr);
 	ierr = MatAssemblyEnd  (nl->J, MAT_FINAL_ASSEMBLY); CHKERRQ(ierr);
 
+	// ACHTUNG!!!
+/*
+	if(JacResGetStep(jr) == 1)
+//	if(nl->it == 1)
+	{
+		Vec       z, wm, wmf;
+		Mat       J;
+		DOFIndex *dof;
+
+		// access context
+		dof = &(jr->fs->dof);
+
+		// create matrix-free Jacobian operator
+		ierr = MatCreateShell(PETSC_COMM_WORLD, dof->ln, dof->ln,
+			PETSC_DETERMINE, PETSC_DETERMINE, NULL, &J); CHKERRQ(ierr);
+		ierr = MatSetUp(J);                              CHKERRQ(ierr);
+
+		// setup vectors
+		ierr = VecDuplicate(r, &z);    CHKERRQ(ierr);
+		ierr = VecDuplicate(r, &wm);   CHKERRQ(ierr);
+		ierr = VecDuplicate(r, &wmf);  CHKERRQ(ierr);
+
+		ierr = VecDuplicate(r, &nl->diff); CHKERRQ(ierr);
+
+		ierr = VecCopy(r, z);          CHKERRQ(ierr);
+		ierr = VecZeroEntries(wm);     CHKERRQ(ierr);
+		ierr = VecZeroEntries(wmf);    CHKERRQ(ierr);
+		ierr = VecZeroEntries(nl->diff);   CHKERRQ(ierr);
+
+		PetscPrintf(PETSC_COMM_WORLD,"=======================================================\n");
+
+		ierr = VecNorm(z, NORM_2, &nrm); CHKERRQ(ierr);
+
+		PetscPrintf(PETSC_COMM_WORLD, "Norm of the vector to be multiplied: %g\n", nrm);
+
+		// assembled Jacobian
+		ierr = MatShellSetOperation(J, MATOP_MULT, (void(*)(void))pm->Picard); CHKERRQ(ierr);
+		ierr = MatShellSetContext(J, pm->data);                                CHKERRQ(ierr);
+
+		ierr = MatAssemblyBegin(J, MAT_FINAL_ASSEMBLY); CHKERRQ(ierr);
+		ierr = MatAssemblyEnd  (J, MAT_FINAL_ASSEMBLY); CHKERRQ(ierr);
+
+		ierr = MatMult(J, z, wm); CHKERRQ(ierr);
+
+		ierr = VecNorm(wm, NORM_2, &nrm); CHKERRQ(ierr);
+
+		PetscPrintf(PETSC_COMM_WORLD, "Norm of the assembled residual vector: %g\n", nrm);
+
+		// matrix-free Jacobian
+		ierr = MatShellSetOperation(J, MATOP_MULT, (void(*)(void))JacApplyPicard); CHKERRQ(ierr);
+		ierr = MatShellSetContext(J, (void*)jr);                                  CHKERRQ(ierr);
+
+		ierr = MatAssemblyBegin(J, MAT_FINAL_ASSEMBLY); CHKERRQ(ierr);
+		ierr = MatAssemblyEnd  (J, MAT_FINAL_ASSEMBLY); CHKERRQ(ierr);
+
+		ierr = MatMult(J, z, wmf); CHKERRQ(ierr);
+
+		ierr = VecNorm(wmf, NORM_2, &nrm); CHKERRQ(ierr);
+
+		PetscPrintf(PETSC_COMM_WORLD, "Norm of the matrix-free residual vector: %g\n", nrm);
+
+		// difference
+		ierr =  VecWAXPY(nl->diff, -1.0, wm, wmf); CHKERRQ(ierr);
+
+		ierr = VecNorm(nl->diff, NORM_2, &nrm); CHKERRQ(ierr);
+
+		PetscPrintf(PETSC_COMM_WORLD, "Norm of the difference vector: %g\n", nrm);
+
+		PetscPrintf(PETSC_COMM_WORLD,"=======================================================\n");
+
+		ierr = MatDestroy(&J);    CHKERRQ(ierr);
+		ierr = VecDestroy(&z);    CHKERRQ(ierr);
+		ierr = VecDestroy(&wm);   CHKERRQ(ierr);
+		ierr = VecDestroy(&wmf);  CHKERRQ(ierr);
+	}
+*/
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------

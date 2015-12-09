@@ -1242,12 +1242,13 @@ PetscErrorCode ADVMarkInitBands(AdvCtx *actx, UserCtx *user)
 	Marker     *P;
 	PetscInt    imark;
 	PetscBool   use_inc;
-	PetscScalar H, Hb, size, offset, length, x, y, z, scal;
+	PetscScalar H, Hb, size, offset, length, x, y, z, scal, Tshift;
 
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
 
-	scal = actx->jr->scal.length;
+	scal   = actx->jr->scal.length;
+	Tshift = actx->jr->scal.Tshift;
 
 	// set default values
 	H      = 10.0;               // layer thickness               [km]
@@ -1297,7 +1298,7 @@ PetscErrorCode ADVMarkInitBands(AdvCtx *actx, UserCtx *user)
 		||  (y >= user->L-length && x >=  (offset - size)/2.0 && x <=  (offset + size)/2.0))) P->phase = 0;
 
 		// assign temperature
-		P->T = 0.0;
+		P->T = Tshift;
 	}
 
 	PetscFunctionReturn(0);

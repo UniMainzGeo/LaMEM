@@ -1266,7 +1266,7 @@ PetscErrorCode JacResGetResidual(JacRes *jr)
 //---------------------------------------------------------------------------
 #undef __FUNCT__
 #define __FUNCT__ "JacResCopySol"
-PetscErrorCode JacResCopySol(JacRes *jr, Vec x)
+PetscErrorCode JacResCopySol(JacRes *jr, Vec x, PetscInt appSPC)
 {
 	// copy solution from global to local vectors, enforce boundary constraints
 
@@ -1308,14 +1308,16 @@ PetscErrorCode JacResCopySol(JacRes *jr, Vec x)
 	list  = bc->vSPCList;
 	vals  = bc->vSPCVals;
 
-	for(i = 0; i < num; i++) sol[list[i]] = vals[i];
+	if(appSPC) { for(i = 0; i < num; i++) sol[list[i]] = vals[i]; }
+	else       { for(i = 0; i < num; i++) sol[list[i]] = 0.0;     }
 
 	// pressure
 	num   = bc->pNumSPC;
 	list  = bc->pSPCList;
 	vals  = bc->pSPCVals;
 
-	for(i = 0; i < num; i++) sol[list[i]] = vals[i];
+	if(appSPC) { for(i = 0; i < num; i++) sol[list[i]] = vals[i]; }
+	else       { for(i = 0; i < num; i++) sol[list[i]] = 0.0;     }
 
 	// copy vectors component-wise
 	iter = sol;

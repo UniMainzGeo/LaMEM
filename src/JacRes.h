@@ -165,7 +165,7 @@ PetscErrorCode JacResGetVorticity(JacRes *jr);
 PetscErrorCode JacResGetResidual(JacRes *jr);
 
 // copy solution from global to local vectors, enforce boundary constraints
-PetscErrorCode JacResCopySol(JacRes *jr, Vec x);
+PetscErrorCode JacResCopySol(JacRes *jr, Vec x, PetscInt appSPC);
 
 // copy residuals from local to global vectors, enforce boundary constraints
 PetscErrorCode JacResCopyRes(JacRes *jr, Vec f);
