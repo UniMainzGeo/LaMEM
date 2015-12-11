@@ -1,0 +1,20 @@
+    Residual norms for js_ solve.
+    0 KSP unpreconditioned resid norm 5.115238025508e+03 true resid norm 5.115238025508e+03 ||r(i)||/||b|| 1.000000000000e+00
+    1 KSP unpreconditioned resid norm 5.087452976797e+03 true resid norm 5.087452976796e+03 ||r(i)||/||b|| 9.945681806843e-01
+    2 KSP unpreconditioned resid norm 4.911609994795e+03 true resid norm 4.911609994795e+03 ||r(i)||/||b|| 9.601918757842e-01
+    3 KSP unpreconditioned resid norm 1.833144319409e+03 true resid norm 1.833144319409e+03 ||r(i)||/||b|| 3.583693095546e-01
+    4 KSP unpreconditioned resid norm 1.159064211589e+03 true resid norm 1.159064211589e+03 ||r(i)||/||b|| 2.265904745408e-01
+    5 KSP unpreconditioned resid norm 2.271990003025e+02 true resid norm 2.271990003025e+02 ||r(i)||/||b|| 4.441611498225e-02
+    6 KSP unpreconditioned resid norm 9.178225737244e+01 true resid norm 9.178225737241e+01 ||r(i)||/||b|| 1.794291036208e-02
+    7 KSP unpreconditioned resid norm 3.930760313400e+01 true resid norm 3.930760313404e+01 ||r(i)||/||b|| 7.684413303551e-03
+    8 KSP unpreconditioned resid norm 1.288753743602e+01 true resid norm 1.288753743601e+01 ||r(i)||/||b|| 2.519440419339e-03
+    9 KSP unpreconditioned resid norm 6.620566185614e+00 true resid norm 6.620566185614e+00 ||r(i)||/||b|| 1.294283111089e-03
+   10 KSP unpreconditioned resid norm 2.781091298898e+00 true resid norm 2.781091298911e+00 ||r(i)||/||b|| 5.436875635196e-04
+   11 KSP unpreconditioned resid norm 1.068279390362e+00 true resid norm 1.068279390339e+00 ||r(i)||/||b|| 2.088425572791e-04
+   12 KSP unpreconditioned resid norm 5.094080773268e-01 true resid norm 5.094080773187e-01 ||r(i)||/||b|| 9.958638772593e-05
+   13 KSP unpreconditioned resid norm 1.704698850473e-01 true resid norm 1.704698850405e-01 ||r(i)||/||b|| 3.332589494183e-05
+   14 KSP unpreconditioned resid norm 9.306355242235e-02 true resid norm 9.306355245679e-02 ||r(i)||/||b|| 1.819339627848e-05
+   15 KSP unpreconditioned resid norm 3.238303712800e-02 true resid norm 3.238303711295e-02 ||r(i)||/||b|| 6.330699950124e-06
+   16 KSP unpreconditioned resid norm 1.207255952272e-02 true resid norm 1.207255952310e-02 ||r(i)||/||b|| 2.360116863165e-06
+   17 KSP unpreconditioned resid norm 6.840334982722e-03 true resid norm 6.840334997826e-03 ||r(i)||/||b|| 1.337246666473e-06
+   18 KSP unpreconditioned resid norm 1.762280632844e-03 true resid norm 1.762280637831e-03 ||r(i)||/||b|| 3.445158620270e-07

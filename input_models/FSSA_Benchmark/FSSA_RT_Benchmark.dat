@@ -1,0 +1,241 @@
+#===============================================================================
+# FSSA RT benchmark setup of Kaus et al. 20??
+#===============================================================================
+
+# Define number of elements in x,y & z-direction
+# Negative number implies corresponding number of mesh segments
+# Data is provided in the variables seg_x, seg_y, seg_z and includes:
+#    * coordinates of the delimiters between the segments (n-1 points)
+#    * number of cells                                    (n points)
+#    * bias coefficients                                  (n points) 
+
+# Numerical resolution
+nel_x 						= 50
+nel_y 						= 2
+nel_z						= 50
+
+# Scaling
+units 						= geo
+Characteristic.Length      	= 100e3
+Characteristic.Viscosity   	= 1e20
+Characteristic.Temperature 	= 1300
+Characteristic.Stress      	= 1e8
+
+# Geometry [in km if units=geo]
+L       					=  5.0 		# Length (y-direction)
+W       					=  500.0  	# Width  (x-direction)
+H       					=  600.0   	# Height (z-direction)
+x_left  					=  -250  			# Left side of domain
+y_front		 				=   0.0   		# Front side of domain
+z_bot   					=  -500   	# Bottom of box
+
+# Model setup and noise
+#msetup = domes
+msetup                        = parallel
+ParticleFilename              = Particles                       # File that contains markers distribution (matlab)
+LoadInitialParticlesDirectory = MatlabInputParticles        	# directory that contains markers distribution (matlab)
+
+
+# Define input/output and numerics-related stuff
+OutputFile      				= FSSA_Bench
+save_timesteps  				= 1    	# save every ? timesteps
+time_end        				= 1500 		# last timestep
+#time_end       				= 1 		# last timestep
+
+CFL             				= 0.5  		# CFL, dt-based criterium
+dt_max          				= 1  		# Maximum timestep [Myrs]
+
+# Boundary conditions
+BC.LeftBound				=	1				# 0 - free surface, 1-free slip with BG strainrate Eyy, 2 - no slip, 5 - growthrate 2D, 7 - growthrate 3D
+BC.RightBound				=	1				# 0 - free surface, 1-free slip with BG strainrate Eyy, 2 - no slip, 5 - growthrate 2D, 7 - growthrate 3D
+BC.FrontBound				=	1				# 0 - free surface, 1-free slip with BG strainrate Exx, 2 - no slip, 5 - growthrate 2D, 7 - growthrate 3D
+BC.BackBound				=	1				# 0 - free surface, 1-free slip with BG strainrate Exx, 2 - no slip, 5 - growthrate 2D, 7 - growthrate 3D
+BC.LowerBound				=	2				# 0 - free surface, 1-free slip, 				  2 - no slip, 5 - growthrate 2D, 7 - growthrate 3D
+BC.UpperBound				=	1				# 0 - free surface, 1-free slip, 				  2 - no slip, 5 - growthrate 2D, 7 - growthrate 3D
+Temp_top	    			=   20				# Temperature @ top
+Temp_bottom					=   20 				# Temperature @ bottom; side BC's are flux-free
+
+# Phase distribution
+NumPartX   					= 	10   # Particles/Cell in x-direction
+NumPartY   					= 	10   # Particles/Cell in y-direction
+NumPartZ   					= 	10   # Particles/Cell in z-direction
+
+# Properties that are defined over the whole domain:
+Gravity 					=  -10.0; # [m/s2] - gravitational acceleration
+
+LowerViscosityCutoff 		= 	1e16
+UpperViscosityCutoff 		= 	1e23
+DII_ref              		= 	1e-15
+
+#===============================================================================
+# ............................ PETSc options ...................................
+#===============================================================================
+
+<PetscOptionsStart>
+
+	-dt 1e-3
+	-use_fdstag_canonical
+	-use_marker_control
+	-objects_dump
+	-AddRandomNoiseParticles 0
+	-restart 0
+	-save_breakpoints 0
+
+#	-SkipStokesSolver 1
+	-shift_press
+#	-SavePartitioning
+#	-AVDPhaseViewer 1
+	-FSSA -1.0
+
+# variable background strain rate
+
+#	-ExxNumPeriods  2
+#	-ExxTimeDelims  100.0
+#	-ExxStrainRates 0.0,1e-15
+
+#	-EyyNumPeriods  2
+#	-EyyTimeDelims  200.0
+#	-EyyStrainRates 0.0,1e-16
+
+# SNES
+	-snes_PicardSwitchToNewton_rtol 5e-4 		# relative tolerance to switch to Newton (1e-2)
+	-snes_NewtonSwitchToPicard_it  	35 			# number of Newton iterations after which we switch back to Picard until the residual is reduced to snes_PicardSwitchToNewton_rtol (35)
+	-snes_NewtonSwitchToPicard_rtol 1.1			# relative tolerance compared to first iteration step after which to switch to Picard again (1.1) 
+
+#	-snes_ksp_ew
+#	-snes_ksp_ew_rtol0 1e-4
+	-snes_npicard 5
+	-snes_monitor
+	-snes_atol 1e-6
+	-snes_rtol 1e-6
+	-snes_stol 1e-10
+	-snes_max_it 15
+	-snes_max_funcs 5000000
+	-snes_max_linear_solve_fail 10000
+#	-mat_mffd_err 1e-4
+	
+	-snes_type ksponly # for linear viscous
+	-snes_linesearch_monitor
+	-snes_linesearch_type l2
+	-snes_linesearch_maxstep 1.0
+	
+	-res_log
+
+# Jacobian solver
+
+	-js_ksp_type gmres
+	-js_ksp_max_it 200
+	-js_ksp_converged_reason
+ 	-js_ksp_monitor
+	-js_ksp_rtol 1e-18
+	-js_ksp_atol 1e-5
+
+# Preconditioner
+
+#	-pcmat_type block
+#	-pcmat_pgamma 1e3
+#	-jp_type bf
+#	-bf_vs_type user
+#	-vs_ksp_type preonly
+#	-vs_pc_type lu
+#	-vs_pc_factor_mat_solver_package mumps
+
+#	-pcmat_type block
+#	-pcmat_no_dev_proj
+#	-jp_type bf
+#	-bf_vs_type mg
+#	-vs_ksp_type preonly
+
+#	-pcmat_type mono
+#	-jp_type mg
+
+#	-gmg_pc_view
+#	-gmg_dump
+#	-gmg_pc_type mg
+#	-gmg_pc_mg_levels 4
+#	-gmg_pc_mg_galerkin
+#	-gmg_pc_mg_type multiplicative
+#	-gmg_pc_mg_cycle_type v
+
+#	-gmg_mg_levels_ksp_type richardson
+#	-gmg_mg_levels_ksp_richardson_scale 0.5
+#	-gmg_mg_levels_ksp_max_it 20
+#	-gmg_mg_levels_pc_type jacobi
+
+#	-crs_ksp_type preonly
+#	-crs_pc_type lu
+#	-crs_pc_factor_mat_solver_package mumps
+
+	-pcmat_type mono
+	-pcmat_pgamma 1e5
+
+	-jp_type user
+	-jp_pc_type lu
+#	-jp_pc_factor_mat_solver_package mumps
+
+
+
+# internal free surface
+	-surf_use        1
+	-surf_level      0
+	-surf_air_phase  2
+	-surf_max_angle  45.0
+
+	-out_surf_pvd        1
+	-out_surf_velocity   1
+	-out_surf_topography 1
+	-out_surf_amplitude  1
+
+
+# output flags
+
+	-out_pvd 1
+	-out_phase 1  
+	-out_density 1
+	-out_viscosity 1
+	-out_velocity 1
+	-out_pressure 1
+	-out_temperature 1 
+	-out_dev_stress 1
+	-out_j2_dev_stress 1
+	-out_strain_rate 1
+	-out_j2_strain_rate 1
+	-out_moment_res 1
+	-out_cont_res 1
+
+<PetscOptionsEnd>
+    
+#===============================================================================
+# ............................ Material Parameters .............................
+#===============================================================================
+
+	# Lithosphere -----------------
+	<MaterialStart>
+		ID   	= 	0
+		
+		rho0 	= 	3300.0
+		eta  	= 	1e21
+
+	<MaterialEnd>
+
+	# Asthenosphere -------------------
+	<MaterialStart>
+		ID   	= 	1
+
+		rho0 	= 	3200.0
+		eta    	= 	1e20
+	<MaterialEnd>
+
+
+	#  Sticky air -----------------
+	<MaterialStart>
+		ID    = 2
+
+		rho0  = 0
+		eta    = 1e16
+	<MaterialEnd>
+
+		
+		
+#===============================================================================
+

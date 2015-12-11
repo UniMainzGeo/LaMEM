@@ -1,0 +1,10 @@
+    Residual norms for js_ solve.
+    0 KSP unpreconditioned resid norm 5.115238025508e+03 true resid norm 5.115238025508e+03 ||r(i)||/||b|| 1.000000000000e+00
+    1 KSP unpreconditioned resid norm 3.983111881297e+03 true resid norm 3.983111881297e+03 ||r(i)||/||b|| 7.786757647317e-01
+    2 KSP unpreconditioned resid norm 3.886564609953e+02 true resid norm 3.886564609952e+02 ||r(i)||/||b|| 7.598013211842e-02
+    3 KSP unpreconditioned resid norm 2.626727179586e+02 true resid norm 2.626727179587e+02 ||r(i)||/||b|| 5.135102543593e-02
+    4 KSP unpreconditioned resid norm 1.403019928922e+01 true resid norm 1.403019928924e+01 ||r(i)||/||b|| 2.742824325921e-03
+    5 KSP unpreconditioned resid norm 2.250335916524e+00 true resid norm 2.250335916530e+00 ||r(i)||/||b|| 4.399278988207e-04
+    6 KSP unpreconditioned resid norm 6.521008117078e-01 true resid norm 6.521008117010e-01 ||r(i)||/||b|| 1.274820073766e-04
+    7 KSP unpreconditioned resid norm 1.517272334118e-02 true resid norm 1.517272334100e-02 ||r(i)||/||b|| 2.966181293098e-06
+    8 KSP unpreconditioned resid norm 1.874843461984e-03 true resid norm 1.874843461128e-03 ||r(i)||/||b|| 3.665212550773e-07

@@ -1,0 +1,1220 @@
+ Parsing input file : MultipleSpheres_canonical_BlockMG_accurateCoarse.dat 
+# Adding PetscOption: -dt 100 
+# Adding PetscOption: -pcmat_no_dev_proj 
+# Adding PetscOption: -npicard 3 
+# Adding PetscOption: -snes_monitor 
+# Adding PetscOption: -snes_atol 1e-12 
+# Adding PetscOption: -snes_rtol 1e-6 
+# Adding PetscOption: -snes_stol 1e-6 
+# Adding PetscOption: -snes_max_it 25 
+# Adding PetscOption: -snes_max_funcs 50000 
+# Adding PetscOption: -snes_type ksponly 
+# Adding PetscOption: -js_ksp_type fgmres 
+# Adding PetscOption: -js_ksp_max_it 1000 
+# Adding PetscOption: -js_ksp_min_it 2 
+# Adding PetscOption: -js_ksp_converged_reason 
+# Adding PetscOption: -js_ksp_monitor_true_residual 
+# Adding PetscOption: -js_ksp_rtol 1e-5 
+# Adding PetscOption: -js_ksp_view 
+# Adding PetscOption: -pcmat_type block 
+# Adding PetscOption: -jp_type bf 
+# Adding PetscOption: -bf_vs_type mg 
+# Adding PetscOption: -vs_ksp_type gmres 
+# Adding PetscOption: -vs_ksp_rtol 1e-2 
+# Adding PetscOption: -vs_ksp_monitor 
+# Adding PetscOption: -gmg_pc_type mg 
+# Adding PetscOption: -gmg_pc_mg_levels 3 
+# Adding PetscOption: -gmg_pc_mg_galerkin 
+# Adding PetscOption: -gmg_pc_mg_type multiplicative 
+# Adding PetscOption: -gmg_pc_mg_cycle_type v 
+# Adding PetscOption: -gmg_pc_view 
+# Adding PetscOption: -gmg_pc_mg_log 
+# Adding PetscOption: -gmg_mg_levels_ksp_type richardson 
+# Adding PetscOption: -gmg_mg_levels_ksp_richardson_scale 0.5 
+# Adding PetscOption: -gmg_mg_levels_ksp_max_it 4 
+# Adding PetscOption: -gmg_mg_levels_pc_type jacobi 
+# Adding PetscOption: -crs_ksp_type fgmres 
+# Adding PetscOption: -crs_ksp_rtol 1e-3 
+# Adding PetscOption: -crs_ksp_max_it 20 
+# Adding PetscOption: -crs_pc_type gamg 
+# Adding PetscOption: -crs_ksp_converged_reason 
+# Adding PetscOption: -crs_pc_gamg_verbose 3 
+# Adding PetscOption: -crs_pc_gamg_coarse_eq_limit 20 
+# Adding PetscOption: -crs_pc_gamg_reuse_interpolation true 
+# Adding PetscOption: -crs_pc_gamg_repartition true 
+# Adding PetscOption: -use_fdstag_canonical 
+# Adding PetscOption: -AddRandomNoiseParticles 0 
+# Adding PetscOption: -restart 0 
+# Adding PetscOption: -save_breakpoints 0 
+# Adding PetscOption: -out_pvd 1 
+# Adding PetscOption: -out_phase 1 
+# Adding PetscOption: -out_density 1 
+# Adding PetscOption: -out_viscosity 1 
+# Adding PetscOption: -out_velocity 1 
+# Adding PetscOption: -out_pressure 1 
+# Adding PetscOption: -out_temperature 1 
+# Adding PetscOption: -out_dev_stress 1 
+# Adding PetscOption: -out_j2_dev_stress 1 
+# Adding PetscOption: -out_strain_rate 1 
+# Adding PetscOption: -out_j2_strain_rate 1 
+# Adding PetscOption: -out_plast_strain 1 
+# Adding PetscOption: -AVDPhaseViewer 1 
+# Adding PetscOption: -objects_dump 
+-------------------------------------------------------------------------- 
+                   Lithosphere and Mantle Evolution Model                   
+              Current Revision: 5494 - 2014-10-15 18:22:16		     
+  Modified items: LaMEMLib_FDSTAG.c, Mesh.c, 
+     Compiled: Date: Feb 26 2015 - Time: 22:03:18 - Mode:  	    
+-------------------------------------------------------------------------- 
+        STAGGERED-GRID FINITE DIFFERENCE CANONICAL IMPLEMENTATION           
+-------------------------------------------------------------------------- 
+Softening laws read from MultipleSpheres_canonical_BlockMG_accurateCoarse.dat: 
+--------------------------------------------------------------------------
+Phase material parameters read from MultipleSpheres_canonical_BlockMG_accurateCoarse.dat: 
+    Phase [0]: rho = 1, eta0 = 0.001 
+    Phase [0]: (diff ) Bd = 500, Ed = 0, Vd = 0 
+    Phase [0]: (disl ) Bn = 0, En = 0, Vn = 0, n = 1 
+    Phase [0]: (peirl) Bp = 0, Ep = 0, Vp = 0, taup = 0, gamma = 0, q = 0 
+    Phase [0]: (elast) G = 1e+100, K = 1e+100, Kp = 0 
+    Phase [0]: (plast) cohesion = 1e+100, friction angle = 0 
+    Phase [0]: (sweak) cohesion SoftLaw = -1, friction SoftLaw = -1 
+    Phase [0]: (temp ) alpha = 0, cp = 0, k = 0, A = 0 
+    
+    Phase [1]: rho = 1.2, eta0 = 1 
+    Phase [1]: (diff ) Bd = 0.5, Ed = 0, Vd = 0 
+    Phase [1]: (disl ) Bn = 0, En = 0, Vn = 0, n = 1 
+    Phase [1]: (peirl) Bp = 0, Ep = 0, Vp = 0, taup = 0, gamma = 0, q = 0 
+    Phase [1]: (elast) G = 1e+100, K = 1e+100, Kp = 0 
+    Phase [1]: (plast) cohesion = 1e+100, friction angle = 0 
+    Phase [1]: (sweak) cohesion SoftLaw = -1, friction SoftLaw = -1 
+    Phase [1]: (temp ) alpha = 0, cp = 0, k = 0, A = 0 
+    
+--------------------------------------------------------------------------
+ Total # of cpu's               : 64 
+ Number of tracers/cell         : [2,2,2] 
+ Initial time step              : 100  
+ BC employed                    : BC.[Left=1 Right=1; Front=1 Back=1; Lower=1 Upper=1] 
+ Input units                    : Non-dimensional
+ CFL timestep factor            : 0.500000 
+ WARNING! Large Courant step length Cmax=0.50000. Consider reducing.
+ Processor grid  [nx, ny, nz]   : [4, 4, 4]
+ Fine grid cells [nx, ny, nz]   : [128, 128, 128]
+ Number of cells                :  2097152
+ Number of velocity DOF         :  6340608
+ Maximum cell aspect cell ratio :  1.00000
+ Starting marker initialization routine
+ Marker setup employed [msetup] : spheres
+  MULTIPLE FALLING SPHERES SETUP 
+ Finished marker initialization routine
+ Preconditioner matrix type     : block
+ Excluding deviatoric projection from preconditioner
+ Preconditioner type            : block factorization
+ Velocity preconditioner        : Galerkin geometric multigrid
+ Total coarse grid size    [nx, ny, nz] : [16, 16, 16]
+ Coarse grid per processor [nx, ny, nz] : [4, 4, 4]
+ Number of multigrid levels             : 4
+ Writing .pvd file to disk
+ 
+Time step 0 -------------------------------------------------------- 
+  0 SNES Function norm 1.426646815532e+04 
+ Starting preconditioner assembly
+ Finished preconditioner assembly
+[0]PCSetUp_GAMG pc_gamg->setup_count=0 pc->setupcalled=0
+	[0]PCSetUp_GAMG level 0 N=13056, n data rows=1, n data cols=1, nnz/row (ave)=65, np=64
+	[0]PCGAMGFilterGraph 87.8999% nnz after filtering, with threshold 0, 65.7656 nnz ave. (N=13056)
+[0]PCGAMGCoarsen_AGG square graph
+[0]PCGAMGCoarsen_AGG square graph done
+[0]PCGAMGCoarsen_AGG coarsen graph
+	[0]maxIndSetAgg removed 1536 of 13056 vertices. (48 local)  87 selected.
+[0]PCGAMGCoarsen_AGG coarsen graph done
+[0]PCGAMGCoarsen_AGG PCGAMGCoarsen_AGG done
+		[0]PCGAMGProlongator_AGG New grid 87 nodes
+			PCGAMGOptprol_AGG smooth P0: max eigen=2.843991e+00 min=4.645352e-02 PC=jacobi
+	[0]createLevel repartition: size (active): 64 --> 2, neq = 87
+		[0]PCSetUp_GAMG 1) N=87, n data cols=1, nnz/row (ave)=33, 2 active pes
+	[0]PCGAMGFilterGraph 100% nnz after filtering, with threshold 0, 33.9195 nnz ave. (N=87)
+[0]PCGAMGCoarsen_AGG square graph
+[0]PCGAMGCoarsen_AGG square graph done
+[0]PCGAMGCoarsen_AGG coarsen graph
+	[0]maxIndSetAgg removed 0 of 87 vertices. (0 local)  1 selected.
+[0]PCGAMGCoarsen_AGG coarsen graph done
+[0]PCGAMGCoarsen_AGG PCGAMGCoarsen_AGG done
+		[0]PCGAMGProlongator_AGG New grid 1 nodes
+			PCGAMGOptprol_AGG smooth P0: max eigen=1.904032e+00 min=1.137859e-02 PC=jacobi
+	[0]createLevel repartition: size (active): 2 --> 1, neq = 1
+		[0]PCSetUp_GAMG 2) N=1, n data cols=1, nnz/row (ave)=1, 1 active pes
+	[0]PCSetUp_GAMG 3 levels, grid complexity = 1.00344
+    Residual norms for js_ solve.
+    0 KSP unpreconditioned resid norm 1.426646815532e+04 true resid norm 1.426646815532e+04 ||r(i)||/||b|| 1.000000000000e+00
+        Linear solve converged due to CONVERGED_ITS iterations 20
+  Residual norms for vs_ solve.
+  0 KSP Residual norm 3.366565213902e+01 
+        Linear solve converged due to CONVERGED_ITS iterations 20
+  1 KSP Residual norm 5.018563040233e+00 
+        Linear solve converged due to CONVERGED_ITS iterations 20
+  2 KSP Residual norm 7.641620738417e-01 
+        Linear solve converged due to CONVERGED_ITS iterations 20
+  3 KSP Residual norm 2.457869763975e-01 
+    1 KSP unpreconditioned resid norm 1.426610202903e+04 true resid norm 1.426610202903e+04 ||r(i)||/||b|| 9.999743365858e-01
+        Linear solve converged due to CONVERGED_ITS iterations 20
+  Residual norms for vs_ solve.
+  0 KSP Residual norm 1.237411448203e-01 
+        Linear solve converged due to CONVERGED_ITS iterations 20
+  1 KSP Residual norm 2.021602587997e-02 
+        Linear solve converged due to CONVERGED_ITS iterations 20
+  2 KSP Residual norm 3.064200522447e-03 
+        Linear solve converged due to CONVERGED_ITS iterations 20
+  3 KSP Residual norm 1.070368092904e-03 
+    2 KSP unpreconditioned resid norm 1.426311552467e+04 true resid norm 1.426311552467e+04 ||r(i)||/||b|| 9.997649992549e-01
+        Linear solve converged due to CONVERGED_ITS iterations 20
+  Residual norms for vs_ solve.
+  0 KSP Residual norm 1.247180045119e-01 
+        Linear solve converged due to CONVERGED_ITS iterations 20
+  1 KSP Residual norm 2.647420703592e-02 
+        Linear solve converged due to CONVERGED_ITS iterations 20
+  2 KSP Residual norm 4.778975394087e-03 
+        Linear solve converged due to CONVERGED_ITS iterations 20
+  3 KSP Residual norm 1.551184474477e-03 
+        Linear solve converged due to CONVERGED_ITS iterations 20
+  4 KSP Residual norm 6.713446714684e-04 
+    3 KSP unpreconditioned resid norm 1.413676081042e+04 true resid norm 1.413676081042e+04 ||r(i)||/||b|| 9.909082371698e-01
+        Linear solve converged due to CONVERGED_ITS iterations 20
+  Residual norms for vs_ solve.
+  0 KSP Residual norm 5.649994446538e-02 
+        Linear solve converged due to CONVERGED_ITS iterations 20
+  1 KSP Residual norm 1.286018631473e-02 
+        Linear solve converged due to CONVERGED_ITS iterations 20
+  2 KSP Residual norm 3.556797799019e-03 
+        Linear solve converged due to CONVERGED_ITS iterations 20
+  3 KSP Residual norm 2.471656771721e-03 
+        Linear solve converged due to CONVERGED_ITS iterations 20
+  4 KSP Residual norm 1.356264340585e-03 
+        Linear solve converged due to CONVERGED_ITS iterations 20
+  5 KSP Residual norm 7.760377857005e-04 
+        Linear solve converged due to CONVERGED_ITS iterations 20
+  6 KSP Residual norm 6.119973485034e-04 
+        Linear solve converged due to CONVERGED_ITS iterations 20
+  7 KSP Residual norm 3.806727180493e-04 
+    4 KSP unpreconditioned resid norm 1.373540528725e+04 true resid norm 1.373540528725e+04 ||r(i)||/||b|| 9.627754492367e-01
+        Linear solve converged due to CONVERGED_ITS iterations 20
+  Residual norms for vs_ solve.
+  0 KSP Residual norm 5.632079919421e-02 
+        Linear solve converged due to CONVERGED_ITS iterations 20
+  1 KSP Residual norm 1.741163960091e-02 
+        Linear solve converged due to CONVERGED_ITS iterations 20
+  2 KSP Residual norm 7.335086994191e-03 
+        Linear solve converged due to CONVERGED_ITS iterations 20
+  3 KSP Residual norm 4.451239667714e-03 
+        Linear solve converged due to CONVERGED_ITS iterations 20
+  4 KSP Residual norm 2.149729888276e-03 
+        Linear solve converged due to CONVERGED_ITS iterations 20
+  5 KSP Residual norm 1.251801256889e-03 
+        Linear solve converged due to CONVERGED_ITS iterations 20
+  6 KSP Residual norm 7.521215510051e-04 
+        Linear solve converged due to CONVERGED_ITS iterations 20
+  7 KSP Residual norm 4.616610090747e-04 
+    5 KSP unpreconditioned resid norm 1.160893227306e+04 true resid norm 1.160893227306e+04 ||r(i)||/||b|| 8.137215284592e-01
+        Linear solve converged due to CONVERGED_ITS iterations 20
+  Residual norms for vs_ solve.
+  0 KSP Residual norm 5.672198577484e-02 
+        Linear solve converged due to CONVERGED_ITS iterations 20
+  1 KSP Residual norm 1.301391324903e-02 
+        Linear solve converged due to CONVERGED_ITS iterations 20
+  2 KSP Residual norm 3.661233657155e-03 
+        Linear solve converged due to CONVERGED_ITS iterations 20
+  3 KSP Residual norm 1.763669725551e-03 
+        Linear solve converged due to CONVERGED_ITS iterations 20
+  4 KSP Residual norm 1.003653500779e-03 
+        Linear solve converged due to CONVERGED_ITS iterations 20
+  5 KSP Residual norm 6.426901268851e-04 
+        Linear solve converged due to CONVERGED_ITS iterations 20
+  6 KSP Residual norm 5.308736210607e-04 
+    6 KSP unpreconditioned resid norm 9.158804776806e+03 true resid norm 9.158804776807e+03 ||r(i)||/||b|| 6.419812301894e-01
+        Linear solve converged due to CONVERGED_ITS iterations 20
+  Residual norms for vs_ solve.
+  0 KSP Residual norm 5.613746747648e-02 
+        Linear solve converged due to CONVERGED_ITS iterations 20
+  1 KSP Residual norm 1.322829412360e-02 
+        Linear solve converged due to CONVERGED_ITS iterations 20
+  2 KSP Residual norm 5.830104628255e-03 
+        Linear solve converged due to CONVERGED_ITS iterations 20
+  3 KSP Residual norm 2.951619633229e-03 
+        Linear solve converged due to CONVERGED_ITS iterations 20
+  4 KSP Residual norm 1.498148471255e-03 
+        Linear solve converged due to CONVERGED_ITS iterations 20
+  5 KSP Residual norm 1.090076378588e-03 
+        Linear solve converged due to CONVERGED_ITS iterations 20
+  6 KSP Residual norm 7.234056914266e-04 
+        Linear solve converged due to CONVERGED_ITS iterations 20
+  7 KSP Residual norm 4.906308200657e-04 
+    7 KSP unpreconditioned resid norm 4.866796370577e+03 true resid norm 4.866796370576e+03 ||r(i)||/||b|| 3.411353333981e-01
+        Linear solve converged due to CONVERGED_ITS iterations 20
+  Residual norms for vs_ solve.
+  0 KSP Residual norm 4.822348476775e-02 
+        Linear solve converged due to CONVERGED_ITS iterations 20
+  1 KSP Residual norm 1.141291885687e-02 
+        Linear solve converged due to CONVERGED_ITS iterations 20
+  2 KSP Residual norm 5.215717240512e-03 
+        Linear solve converged due to CONVERGED_ITS iterations 20
+  3 KSP Residual norm 3.079026553898e-03 
+        Linear solve converged due to CONVERGED_ITS iterations 20
+  4 KSP Residual norm 1.837790109883e-03 
+        Linear solve converged due to CONVERGED_ITS iterations 20
+  5 KSP Residual norm 1.489581702102e-03 
+        Linear solve converged due to CONVERGED_ITS iterations 20
+  6 KSP Residual norm 9.702833800925e-04 
+        Linear solve converged due to CONVERGED_ITS iterations 20
+  7 KSP Residual norm 8.094800285102e-04 
+        Linear solve converged due to CONVERGED_ITS iterations 20
+  8 KSP Residual norm 6.250243960874e-04 
+        Linear solve converged due to CONVERGED_ITS iterations 20
+  9 KSP Residual norm 4.349325453694e-04 
+    8 KSP unpreconditioned resid norm 2.898693581469e+03 true resid norm 2.898693581470e+03 ||r(i)||/||b|| 2.031822837939e-01
+        Linear solve converged due to CONVERGED_ITS iterations 20
+  Residual norms for vs_ solve.
+  0 KSP Residual norm 4.735182345039e-02 
+        Linear solve converged due to CONVERGED_ITS iterations 20
+  1 KSP Residual norm 1.089881915656e-02 
+        Linear solve converged due to CONVERGED_ITS iterations 20
+  2 KSP Residual norm 4.731475810514e-03 
+        Linear solve converged due to CONVERGED_ITS iterations 20
+  3 KSP Residual norm 2.108899083901e-03 
+        Linear solve converged due to CONVERGED_ITS iterations 20
+  4 KSP Residual norm 1.411917244202e-03 
+        Linear solve converged due to CONVERGED_ITS iterations 20
+  5 KSP Residual norm 1.063974463478e-03 
+        Linear solve converged due to CONVERGED_ITS iterations 20
+  6 KSP Residual norm 6.040879117473e-04 
+        Linear solve converged due to CONVERGED_ITS iterations 20
+  7 KSP Residual norm 4.375386916079e-04 
+    9 KSP unpreconditioned resid norm 1.809858751320e+03 true resid norm 1.809858751322e+03 ||r(i)||/||b|| 1.268610234586e-01
+        Linear solve converged due to CONVERGED_ITS iterations 20
+  Residual norms for vs_ solve.
+  0 KSP Residual norm 3.504641927742e-02 
+        Linear solve converged due to CONVERGED_ITS iterations 20
+  1 KSP Residual norm 8.554162809710e-03 
+        Linear solve converged due to CONVERGED_ITS iterations 20
+  2 KSP Residual norm 5.017625690584e-03 
+        Linear solve converged due to CONVERGED_ITS iterations 20
+  3 KSP Residual norm 3.412354877965e-03 
+        Linear solve converged due to CONVERGED_ITS iterations 20
+  4 KSP Residual norm 2.409836210525e-03 
+        Linear solve converged due to CONVERGED_ITS iterations 20
+  5 KSP Residual norm 2.005286327195e-03 
+        Linear solve converged due to CONVERGED_ITS iterations 20
+  6 KSP Residual norm 1.598126462519e-03 
+        Linear solve converged due to CONVERGED_ITS iterations 20
+  7 KSP Residual norm 7.609741218174e-04 
+        Linear solve converged due to CONVERGED_ITS iterations 20
+  8 KSP Residual norm 5.094835137474e-04 
+        Linear solve converged due to CONVERGED_ITS iterations 20
+  9 KSP Residual norm 3.068158823906e-04 
+   10 KSP unpreconditioned resid norm 9.055318103220e+02 true resid norm 9.055318103213e+02 ||r(i)||/||b|| 6.347273904536e-02
+        Linear solve converged due to CONVERGED_ITS iterations 20
+  Residual norms for vs_ solve.
+  0 KSP Residual norm 3.417096997291e-02 
+        Linear solve converged due to CONVERGED_ITS iterations 20
+  1 KSP Residual norm 7.183742271138e-03 
+        Linear solve converged due to CONVERGED_ITS iterations 20
+  2 KSP Residual norm 2.244806111033e-03 
+        Linear solve converged due to CONVERGED_ITS iterations 20
+  3 KSP Residual norm 1.170267499201e-03 
+        Linear solve converged due to CONVERGED_ITS iterations 20
+  4 KSP Residual norm 7.223467908656e-04 
+        Linear solve converged due to CONVERGED_ITS iterations 20
+  5 KSP Residual norm 4.548375872541e-04 
+        Linear solve converged due to CONVERGED_ITS iterations 20
+  6 KSP Residual norm 3.700270469442e-04 
+        Linear solve converged due to CONVERGED_ITS iterations 20
+  7 KSP Residual norm 2.849834416192e-04 
+   11 KSP unpreconditioned resid norm 5.724105619614e+02 true resid norm 5.724105619616e+02 ||r(i)||/||b|| 4.012279393399e-02
+        Linear solve converged due to CONVERGED_ITS iterations 20
+  Residual norms for vs_ solve.
+  0 KSP Residual norm 5.363263291760e-02 
+        Linear solve converged due to CONVERGED_ITS iterations 20
+  1 KSP Residual norm 1.252004282299e-02 
+        Linear solve converged due to CONVERGED_ITS iterations 20
+  2 KSP Residual norm 4.364502508716e-03 
+        Linear solve converged due to CONVERGED_ITS iterations 20
+  3 KSP Residual norm 3.288367974878e-03 
+        Linear solve converged due to CONVERGED_ITS iterations 20
+  4 KSP Residual norm 2.596886807239e-03 
+        Linear solve converged due to CONVERGED_ITS iterations 20
+  5 KSP Residual norm 2.145966362500e-03 
+        Linear solve converged due to CONVERGED_ITS iterations 20
+  6 KSP Residual norm 1.568284019096e-03 
+        Linear solve converged due to CONVERGED_ITS iterations 20
+  7 KSP Residual norm 1.113756591083e-03 
+        Linear solve converged due to CONVERGED_ITS iterations 20
+  8 KSP Residual norm 8.209035685255e-04 
+        Linear solve converged due to CONVERGED_ITS iterations 20
+  9 KSP Residual norm 3.564345012456e-04 
+   12 KSP unpreconditioned resid norm 2.465872733646e+02 true resid norm 2.465872733660e+02 ||r(i)||/||b|| 1.728439517626e-02
+        Linear solve converged due to CONVERGED_ITS iterations 20
+  Residual norms for vs_ solve.
+  0 KSP Residual norm 3.380109917813e-02 
+        Linear solve converged due to CONVERGED_ITS iterations 20
+  1 KSP Residual norm 5.735616993905e-03 
+        Linear solve converged due to CONVERGED_ITS iterations 20
+  2 KSP Residual norm 2.766837584726e-03 
+        Linear solve converged due to CONVERGED_ITS iterations 20
+  3 KSP Residual norm 1.747372343693e-03 
+        Linear solve converged due to CONVERGED_ITS iterations 20
+  4 KSP Residual norm 1.111994983496e-03 
+        Linear solve converged due to CONVERGED_ITS iterations 20
+  5 KSP Residual norm 7.991065785729e-04 
+        Linear solve converged due to CONVERGED_ITS iterations 20
+  6 KSP Residual norm 5.545755257466e-04 
+        Linear solve converged due to CONVERGED_ITS iterations 20
+  7 KSP Residual norm 4.063088176370e-04 
+        Linear solve converged due to CONVERGED_ITS iterations 20
+  8 KSP Residual norm 3.210741480949e-04 
+   13 KSP unpreconditioned resid norm 1.589164177480e+02 true resid norm 1.589164177476e+02 ||r(i)||/||b|| 1.113915623807e-02
+        Linear solve converged due to CONVERGED_ITS iterations 20
+  Residual norms for vs_ solve.
+  0 KSP Residual norm 3.953415306418e-02 
+        Linear solve converged due to CONVERGED_ITS iterations 20
+  1 KSP Residual norm 7.679199686197e-03 
+        Linear solve converged due to CONVERGED_ITS iterations 20
+  2 KSP Residual norm 4.331586921722e-03 
+        Linear solve converged due to CONVERGED_ITS iterations 20
+  3 KSP Residual norm 2.730242885967e-03 
+        Linear solve converged due to CONVERGED_ITS iterations 20
+  4 KSP Residual norm 1.936693429398e-03 
+        Linear solve converged due to CONVERGED_ITS iterations 20
+  5 KSP Residual norm 1.434599916743e-03 
+        Linear solve converged due to CONVERGED_ITS iterations 20
+  6 KSP Residual norm 9.576753044997e-04 
+        Linear solve converged due to CONVERGED_ITS iterations 20
+  7 KSP Residual norm 7.739939695761e-04 
+        Linear solve converged due to CONVERGED_ITS iterations 20
+  8 KSP Residual norm 4.474264743245e-04 
+        Linear solve converged due to CONVERGED_ITS iterations 20
+  9 KSP Residual norm 3.325648598669e-04 
+   14 KSP unpreconditioned resid norm 7.028855343972e+01 true resid norm 7.028855343944e+01 ||r(i)||/||b|| 4.926836318157e-03
+        Linear solve converged due to CONVERGED_ITS iterations 20
+  Residual norms for vs_ solve.
+  0 KSP Residual norm 3.943292489516e-02 
+        Linear solve converged due to CONVERGED_ITS iterations 20
+  1 KSP Residual norm 7.388641238262e-03 
+        Linear solve converged due to CONVERGED_ITS iterations 20
+  2 KSP Residual norm 3.740664072011e-03 
+        Linear solve converged due to CONVERGED_ITS iterations 20
+  3 KSP Residual norm 2.312123272297e-03 
+        Linear solve converged due to CONVERGED_ITS iterations 20
+  4 KSP Residual norm 1.911530870072e-03 
+        Linear solve converged due to CONVERGED_ITS iterations 20
+  5 KSP Residual norm 1.413258869753e-03 
+        Linear solve converged due to CONVERGED_ITS iterations 20
+  6 KSP Residual norm 9.880097715727e-04 
+        Linear solve converged due to CONVERGED_ITS iterations 20
+  7 KSP Residual norm 7.277079604904e-04 
+        Linear solve converged due to CONVERGED_ITS iterations 20
+  8 KSP Residual norm 4.996296219663e-04 
+        Linear solve converged due to CONVERGED_ITS iterations 20
+  9 KSP Residual norm 3.575161133590e-04 
+   15 KSP unpreconditioned resid norm 4.219579313572e+01 true resid norm 4.219579313584e+01 ||r(i)||/||b|| 2.957690205905e-03
+        Linear solve converged due to CONVERGED_ITS iterations 20
+  Residual norms for vs_ solve.
+  0 KSP Residual norm 5.628753470377e-02 
+        Linear solve converged due to CONVERGED_ITS iterations 20
+  1 KSP Residual norm 9.172904218395e-03 
+        Linear solve converged due to CONVERGED_ITS iterations 20
+  2 KSP Residual norm 4.235456194707e-03 
+        Linear solve converged due to CONVERGED_ITS iterations 20
+  3 KSP Residual norm 1.966812578379e-03 
+        Linear solve converged due to CONVERGED_ITS iterations 20
+  4 KSP Residual norm 1.546545385988e-03 
+        Linear solve converged due to CONVERGED_ITS iterations 20
+  5 KSP Residual norm 1.159648151272e-03 
+        Linear solve converged due to CONVERGED_ITS iterations 20
+  6 KSP Residual norm 8.127602526279e-04 
+        Linear solve converged due to CONVERGED_ITS iterations 20
+  7 KSP Residual norm 6.040469301838e-04 
+        Linear solve converged due to CONVERGED_ITS iterations 20
+  8 KSP Residual norm 3.560964455168e-04 
+   16 KSP unpreconditioned resid norm 2.512011048043e+01 true resid norm 2.512011047966e+01 ||r(i)||/||b|| 1.760779907556e-03
+        Linear solve converged due to CONVERGED_ITS iterations 20
+  Residual norms for vs_ solve.
+  0 KSP Residual norm 8.320716746628e-02 
+        Linear solve converged due to CONVERGED_ITS iterations 20
+  1 KSP Residual norm 1.736958494893e-02 
+        Linear solve converged due to CONVERGED_ITS iterations 20
+  2 KSP Residual norm 7.162956607454e-03 
+        Linear solve converged due to CONVERGED_ITS iterations 20
+  3 KSP Residual norm 3.863331738163e-03 
+        Linear solve converged due to CONVERGED_ITS iterations 20
+  4 KSP Residual norm 2.921453443669e-03 
+        Linear solve converged due to CONVERGED_ITS iterations 20
+  5 KSP Residual norm 1.952411934227e-03 
+        Linear solve converged due to CONVERGED_ITS iterations 20
+  6 KSP Residual norm 1.331306578230e-03 
+        Linear solve converged due to CONVERGED_ITS iterations 20
+  7 KSP Residual norm 1.056008474878e-03 
+        Linear solve converged due to CONVERGED_ITS iterations 20
+  8 KSP Residual norm 7.018985773489e-04 
+   17 KSP unpreconditioned resid norm 1.343981098524e+01 true resid norm 1.343981098428e+01 ||r(i)||/||b|| 9.420559340940e-04
+        Linear solve converged due to CONVERGED_ITS iterations 20
+  Residual norms for vs_ solve.
+  0 KSP Residual norm 4.693437837095e-02 
+        Linear solve converged due to CONVERGED_ITS iterations 20
+  1 KSP Residual norm 7.615199518212e-03 
+        Linear solve converged due to CONVERGED_ITS iterations 20
+  2 KSP Residual norm 4.425006330972e-03 
+        Linear solve converged due to CONVERGED_ITS iterations 20
+  3 KSP Residual norm 1.884500133905e-03 
+        Linear solve converged due to CONVERGED_ITS iterations 20
+  4 KSP Residual norm 1.495536147256e-03 
+        Linear solve converged due to CONVERGED_ITS iterations 20
+  5 KSP Residual norm 1.151974166205e-03 
+        Linear solve converged due to CONVERGED_ITS iterations 20
+  6 KSP Residual norm 9.119421387436e-04 
+        Linear solve converged due to CONVERGED_ITS iterations 20
+  7 KSP Residual norm 6.851039873902e-04 
+        Linear solve converged due to CONVERGED_ITS iterations 20
+  8 KSP Residual norm 4.813506583624e-04 
+        Linear solve converged due to CONVERGED_ITS iterations 20
+  9 KSP Residual norm 3.217735976720e-04 
+   18 KSP unpreconditioned resid norm 8.327549253637e+00 true resid norm 8.327549252944e+00 ||r(i)||/||b|| 5.837148453482e-04
+        Linear solve converged due to CONVERGED_ITS iterations 20
+  Residual norms for vs_ solve.
+  0 KSP Residual norm 3.835447229462e-02 
+        Linear solve converged due to CONVERGED_ITS iterations 20
+  1 KSP Residual norm 6.407343434039e-03 
+        Linear solve converged due to CONVERGED_ITS iterations 20
+  2 KSP Residual norm 3.966571492650e-03 
+        Linear solve converged due to CONVERGED_ITS iterations 20
+  3 KSP Residual norm 3.048864035134e-03 
+        Linear solve converged due to CONVERGED_ITS iterations 20
+  4 KSP Residual norm 2.513523272066e-03 
+        Linear solve converged due to CONVERGED_ITS iterations 20
+  5 KSP Residual norm 1.787884353639e-03 
+        Linear solve converged due to CONVERGED_ITS iterations 20
+  6 KSP Residual norm 1.164655319577e-03 
+        Linear solve converged due to CONVERGED_ITS iterations 20
+  7 KSP Residual norm 7.391232500748e-04 
+        Linear solve converged due to CONVERGED_ITS iterations 20
+  8 KSP Residual norm 5.199321467631e-04 
+        Linear solve converged due to CONVERGED_ITS iterations 20
+  9 KSP Residual norm 3.655490246030e-04 
+   19 KSP unpreconditioned resid norm 4.154055168791e+00 true resid norm 4.154055169782e+00 ||r(i)||/||b|| 2.911761428658e-04
+        Linear solve converged due to CONVERGED_ITS iterations 20
+  Residual norms for vs_ solve.
+  0 KSP Residual norm 3.772003558833e-02 
+        Linear solve converged due to CONVERGED_ITS iterations 20
+  1 KSP Residual norm 8.832365164667e-03 
+        Linear solve converged due to CONVERGED_ITS iterations 20
+  2 KSP Residual norm 3.470194759422e-03 
+        Linear solve converged due to CONVERGED_ITS iterations 20
+  3 KSP Residual norm 1.890243721304e-03 
+        Linear solve converged due to CONVERGED_ITS iterations 20
+  4 KSP Residual norm 1.291635042234e-03 
+        Linear solve converged due to CONVERGED_ITS iterations 20
+  5 KSP Residual norm 1.060064809555e-03 
+        Linear solve converged due to CONVERGED_ITS iterations 20
+  6 KSP Residual norm 8.534582777086e-04 
+        Linear solve converged due to CONVERGED_ITS iterations 20
+  7 KSP Residual norm 6.565611109530e-04 
+        Linear solve converged due to CONVERGED_ITS iterations 20
+  8 KSP Residual norm 5.101038769986e-04 
+        Linear solve converged due to CONVERGED_ITS iterations 20
+  9 KSP Residual norm 3.734361565721e-04 
+   20 KSP unpreconditioned resid norm 2.310137860989e+00 true resid norm 2.310137862082e+00 ||r(i)||/||b|| 1.619278042002e-04
+        Linear solve converged due to CONVERGED_ITS iterations 20
+  Residual norms for vs_ solve.
+  0 KSP Residual norm 3.274272990728e-02 
+        Linear solve converged due to CONVERGED_ITS iterations 20
+  1 KSP Residual norm 7.706103067091e-03 
+        Linear solve converged due to CONVERGED_ITS iterations 20
+  2 KSP Residual norm 2.984299018536e-03 
+        Linear solve converged due to CONVERGED_ITS iterations 20
+  3 KSP Residual norm 1.555632052760e-03 
+        Linear solve converged due to CONVERGED_ITS iterations 20
+  4 KSP Residual norm 1.068293741672e-03 
+        Linear solve converged due to CONVERGED_ITS iterations 20
+  5 KSP Residual norm 7.484388502999e-04 
+        Linear solve converged due to CONVERGED_ITS iterations 20
+  6 KSP Residual norm 4.604109748229e-04 
+        Linear solve converged due to CONVERGED_ITS iterations 20
+  7 KSP Residual norm 2.989118865403e-04 
+   21 KSP unpreconditioned resid norm 1.301353754654e+00 true resid norm 1.301353756246e+00 ||r(i)||/||b|| 9.121765401771e-05
+        Linear solve converged due to CONVERGED_ITS iterations 20
+  Residual norms for vs_ solve.
+  0 KSP Residual norm 2.222584346950e-02 
+        Linear solve converged due to CONVERGED_ITS iterations 20
+  1 KSP Residual norm 6.140501200587e-03 
+        Linear solve converged due to CONVERGED_ITS iterations 20
+  2 KSP Residual norm 2.603575622369e-03 
+        Linear solve converged due to CONVERGED_ITS iterations 20
+  3 KSP Residual norm 1.841505923128e-03 
+        Linear solve converged due to CONVERGED_ITS iterations 20
+  4 KSP Residual norm 1.613116676482e-03 
+        Linear solve converged due to CONVERGED_ITS iterations 20
+  5 KSP Residual norm 1.245912804602e-03 
+        Linear solve converged due to CONVERGED_ITS iterations 20
+  6 KSP Residual norm 9.256436199586e-04 
+        Linear solve converged due to CONVERGED_ITS iterations 20
+  7 KSP Residual norm 7.538411910128e-04 
+        Linear solve converged due to CONVERGED_ITS iterations 20
+  8 KSP Residual norm 4.800547248642e-04 
+        Linear solve converged due to CONVERGED_ITS iterations 20
+  9 KSP Residual norm 3.503794191641e-04 
+        Linear solve converged due to CONVERGED_ITS iterations 20
+ 10 KSP Residual norm 2.584712660980e-04 
+        Linear solve converged due to CONVERGED_ITS iterations 20
+ 11 KSP Residual norm 1.853981063399e-04 
+   22 KSP unpreconditioned resid norm 7.690264305221e-01 true resid norm 7.690264296441e-01 ||r(i)||/||b|| 5.390447174955e-05
+        Linear solve converged due to CONVERGED_ITS iterations 20
+  Residual norms for vs_ solve.
+  0 KSP Residual norm 2.101696857884e-02 
+        Linear solve converged due to CONVERGED_ITS iterations 20
+  1 KSP Residual norm 6.296804952529e-03 
+        Linear solve converged due to CONVERGED_ITS iterations 20
+  2 KSP Residual norm 2.716627909569e-03 
+        Linear solve converged due to CONVERGED_ITS iterations 20
+  3 KSP Residual norm 1.305939529284e-03 
+        Linear solve converged due to CONVERGED_ITS iterations 20
+  4 KSP Residual norm 9.440007512821e-04 
+        Linear solve converged due to CONVERGED_ITS iterations 20
+  5 KSP Residual norm 6.320949928509e-04 
+        Linear solve converged due to CONVERGED_ITS iterations 20
+  6 KSP Residual norm 4.997002038980e-04 
+        Linear solve converged due to CONVERGED_ITS iterations 20
+  7 KSP Residual norm 3.564521761439e-04 
+        Linear solve converged due to CONVERGED_ITS iterations 20
+  8 KSP Residual norm 2.616240699960e-04 
+        Linear solve converged due to CONVERGED_ITS iterations 20
+  9 KSP Residual norm 1.728880273398e-04 
+   23 KSP unpreconditioned resid norm 4.832090926889e-01 true resid norm 4.832090923854e-01 ||r(i)||/||b|| 3.387026747789e-05
+        Linear solve converged due to CONVERGED_ITS iterations 20
+  Residual norms for vs_ solve.
+  0 KSP Residual norm 2.230460284320e-02 
+        Linear solve converged due to CONVERGED_ITS iterations 20
+  1 KSP Residual norm 4.582306696080e-03 
+        Linear solve converged due to CONVERGED_ITS iterations 20
+  2 KSP Residual norm 2.720612512824e-03 
+        Linear solve converged due to CONVERGED_ITS iterations 20
+  3 KSP Residual norm 2.139719674299e-03 
+        Linear solve converged due to CONVERGED_ITS iterations 20
+  4 KSP Residual norm 1.932440078594e-03 
+        Linear solve converged due to CONVERGED_ITS iterations 20
+  5 KSP Residual norm 1.367168343434e-03 
+        Linear solve converged due to CONVERGED_ITS iterations 20
+  6 KSP Residual norm 9.530119789716e-04 
+        Linear solve converged due to CONVERGED_ITS iterations 20
+  7 KSP Residual norm 7.684131592331e-04 
+        Linear solve converged due to CONVERGED_ITS iterations 20
+  8 KSP Residual norm 5.312142825062e-04 
+        Linear solve converged due to CONVERGED_ITS iterations 20
+  9 KSP Residual norm 3.243977017719e-04 
+        Linear solve converged due to CONVERGED_ITS iterations 20
+ 10 KSP Residual norm 2.509739133897e-04 
+        Linear solve converged due to CONVERGED_ITS iterations 20
+ 11 KSP Residual norm 2.202078339434e-04 
+   24 KSP unpreconditioned resid norm 2.465965775172e-01 true resid norm 2.465965776360e-01 ||r(i)||/||b|| 1.728504735379e-05
+        Linear solve converged due to CONVERGED_ITS iterations 20
+  Residual norms for vs_ solve.
+  0 KSP Residual norm 2.172981520467e-02 
+        Linear solve converged due to CONVERGED_ITS iterations 20
+  1 KSP Residual norm 7.040997933979e-03 
+        Linear solve converged due to CONVERGED_ITS iterations 20
+  2 KSP Residual norm 2.810500409526e-03 
+        Linear solve converged due to CONVERGED_ITS iterations 20
+  3 KSP Residual norm 1.753359413351e-03 
+        Linear solve converged due to CONVERGED_ITS iterations 20
+  4 KSP Residual norm 1.184074374610e-03 
+        Linear solve converged due to CONVERGED_ITS iterations 20
+  5 KSP Residual norm 9.240344029780e-04 
+        Linear solve converged due to CONVERGED_ITS iterations 20
+  6 KSP Residual norm 7.428900913185e-04 
+        Linear solve converged due to CONVERGED_ITS iterations 20
+  7 KSP Residual norm 5.652649030466e-04 
+        Linear solve converged due to CONVERGED_ITS iterations 20
+  8 KSP Residual norm 3.783371379549e-04 
+        Linear solve converged due to CONVERGED_ITS iterations 20
+  9 KSP Residual norm 2.580182704091e-04 
+        Linear solve converged due to CONVERGED_ITS iterations 20
+ 10 KSP Residual norm 1.980767204513e-04 
+   25 KSP unpreconditioned resid norm 1.473574007581e-01 true resid norm 1.473574008965e-01 ||r(i)||/||b|| 1.032893350283e-05
+        Linear solve converged due to CONVERGED_ITS iterations 20
+  Residual norms for vs_ solve.
+  0 KSP Residual norm 2.091945251267e-02 
+        Linear solve converged due to CONVERGED_ITS iterations 20
+  1 KSP Residual norm 5.644411297462e-03 
+        Linear solve converged due to CONVERGED_ITS iterations 20
+  2 KSP Residual norm 2.615662630658e-03 
+        Linear solve converged due to CONVERGED_ITS iterations 20
+  3 KSP Residual norm 1.819384746191e-03 
+        Linear solve converged due to CONVERGED_ITS iterations 20
+  4 KSP Residual norm 1.494816819057e-03 
+        Linear solve converged due to CONVERGED_ITS iterations 20
+  5 KSP Residual norm 1.173629569206e-03 
+        Linear solve converged due to CONVERGED_ITS iterations 20
+  6 KSP Residual norm 8.881146164739e-04 
+        Linear solve converged due to CONVERGED_ITS iterations 20
+  7 KSP Residual norm 6.075149770494e-04 
+        Linear solve converged due to CONVERGED_ITS iterations 20
+  8 KSP Residual norm 4.758741638953e-04 
+        Linear solve converged due to CONVERGED_ITS iterations 20
+  9 KSP Residual norm 3.833928082886e-04 
+        Linear solve converged due to CONVERGED_ITS iterations 20
+ 10 KSP Residual norm 2.923735890570e-04 
+        Linear solve converged due to CONVERGED_ITS iterations 20
+ 11 KSP Residual norm 2.053979262018e-04 
+   26 KSP unpreconditioned resid norm 7.581776683221e-02 true resid norm 7.581776718710e-02 ||r(i)||/||b|| 5.314403422185e-06
+  Linear solve converged due to CONVERGED_RTOL iterations 26
+KSP Object:(js_) 64 MPI processes
+  type: fgmres
+    GMRES: restart=30, using Classical (unmodified) Gram-Schmidt Orthogonalization with no iterative refinement
+    GMRES: happy breakdown tolerance 1e-30
+  maximum iterations=1000, initial guess is zero
+  tolerances:  relative=1e-05, absolute=1e-50, divergence=10000
+  right preconditioning
+  using UNPRECONDITIONED norm type for convergence test
+PC Object:(js_) 64 MPI processes
+  type: mat
+  linear system matrix followed by preconditioner matrix:
+  Mat Object:   64 MPI processes
+    type: shell
+    rows=8437760, cols=8437760
+  Mat Object:   64 MPI processes
+    type: shell
+    rows=8437760, cols=8437760
+  1 SNES Function norm 6.492815412700e-01 
+ SNES Convergence Reason: maximum iterations reached
+ Number of iterations : 1
+ Nonlinear solve took 127.065 s
+ Writing to existing directory Timestep_000000_0.000000e+00 
+ Time = 0.000836561[ ], dt = 0.000836561[ ] 
+ Finished timestep 0 out of 0 
+ 
+PC Object:(gmg_) 64 MPI processes
+  type: mg
+    MG: type is MULTIPLICATIVE, levels=4 cycles=v
+      Cycles per PCApply=1
+      Using Galerkin computed coarse grid matrices
+  Coarse grid solver -- level -------------------------------
+    KSP Object:    (crs_)     64 MPI processes
+      type: fgmres
+        GMRES: restart=30, using Classical (unmodified) Gram-Schmidt Orthogonalization with no iterative refinement
+        GMRES: happy breakdown tolerance 1e-30
+      maximum iterations=20, initial guess is zero
+      tolerances:  relative=0.001, absolute=1e-50, divergence=10000
+      right preconditioning
+      using NONE norm type for convergence test
+    PC Object:    (crs_)     64 MPI processes
+      type: gamg
+        MG: type is MULTIPLICATIVE, levels=3 cycles=v
+          Cycles per PCApply=1
+          Using Galerkin computed coarse grid matrices
+      Coarse grid solver -- level -------------------------------
+        KSP Object:        (crs_mg_coarse_)         64 MPI processes
+          type: preonly
+          maximum iterations=1, initial guess is zero
+          tolerances:  relative=1e-05, absolute=1e-50, divergence=10000
+          left preconditioning
+          using NONE norm type for convergence test
+        PC Object:        (crs_mg_coarse_)         64 MPI processes
+          type: bjacobi
+            block Jacobi: number of blocks = 64
+            Local solve is same for all blocks, in the following KSP and PC objects:
+          KSP Object:          (crs_mg_coarse_sub_)           1 MPI processes
+            type: preonly
+            maximum iterations=1, initial guess is zero
+            tolerances:  relative=1e-05, absolute=1e-50, divergence=10000
+            left preconditioning
+            using NONE norm type for convergence test
+          PC Object:          (crs_mg_coarse_sub_)           1 MPI processes
+            type: lu
+              LU: out-of-place factorization
+              tolerance for zero pivot 2.22045e-14
+              using diagonal shift on blocks to prevent zero pivot [INBLOCKS]
+              matrix ordering: nd
+              factor fill ratio given 5, needed 1
+                Factored matrix follows:
+                  Mat Object:                   1 MPI processes
+                    type: seqaij
+                    rows=1, cols=1
+                    package used to perform factorization: petsc
+                    total: nonzeros=1, allocated nonzeros=1
+                    total number of mallocs used during MatSetValues calls =0
+                      not using I-node routines
+            linear system matrix = precond matrix:
+            Mat Object:             1 MPI processes
+              type: seqaij
+              rows=1, cols=1
+              total: nonzeros=1, allocated nonzeros=1
+              total number of mallocs used during MatSetValues calls =0
+                not using I-node routines
+          linear system matrix = precond matrix:
+          Mat Object:           64 MPI processes
+            type: mpiaij
+            rows=1, cols=1
+            total: nonzeros=1, allocated nonzeros=1
+            total number of mallocs used during MatSetValues calls =0
+              not using I-node (on process 0) routines
+      Down solver (pre-smoother) on level 1 -------------------------------
+        KSP Object:        (crs_mg_levels_1_)         64 MPI processes
+          type: chebyshev
+            Chebyshev: eigenvalue estimates:  min = 0.0952016, max = 1.99923
+          maximum iterations=2
+          tolerances:  relative=1e-05, absolute=1e-50, divergence=10000
+          left preconditioning
+          using nonzero initial guess
+          using NONE norm type for convergence test
+        PC Object:        (crs_mg_levels_1_)         64 MPI processes
+          type: sor
+            SOR: type = local_symmetric, iterations = 1, local iterations = 1, omega = 1
+          linear system matrix = precond matrix:
+          Mat Object:           64 MPI processes
+            type: mpiaij
+            rows=87, cols=87
+            total: nonzeros=2951, allocated nonzeros=2951
+            total number of mallocs used during MatSetValues calls =0
+              not using I-node (on process 0) routines
+      Up solver (post-smoother) same as down solver (pre-smoother)
+      Down solver (pre-smoother) on level 2 -------------------------------
+        KSP Object:        (crs_mg_levels_2_)         64 MPI processes
+          type: chebyshev
+            Chebyshev: eigenvalue estimates:  min = 0.1422, max = 2.98619
+          maximum iterations=2
+          tolerances:  relative=1e-05, absolute=1e-50, divergence=10000
+          left preconditioning
+          using nonzero initial guess
+          using NONE norm type for convergence test
+        PC Object:        (crs_mg_levels_2_)         64 MPI processes
+          type: sor
+            SOR: type = local_symmetric, iterations = 1, local iterations = 1, omega = 1
+          linear system matrix = precond matrix:
+          Mat Object:           64 MPI processes
+            type: mpiaij
+            rows=13056, cols=13056
+            total: nonzeros=858636, allocated nonzeros=858636
+            total number of mallocs used during MatSetValues calls =0
+              not using I-node (on process 0) routines
+      Up solver (post-smoother) same as down solver (pre-smoother)
+      linear system matrix = precond matrix:
+      Mat Object:       64 MPI processes
+        type: mpiaij
+        rows=13056, cols=13056
+        total: nonzeros=858636, allocated nonzeros=858636
+        total number of mallocs used during MatSetValues calls =0
+          not using I-node (on process 0) routines
+  Down solver (pre-smoother) on level 1 -------------------------------
+    KSP Object:    (gmg_mg_levels_1_)     64 MPI processes
+      type: richardson
+        Richardson: damping factor=0.5
+      maximum iterations=4
+      tolerances:  relative=1e-05, absolute=1e-50, divergence=10000
+      left preconditioning
+      using nonzero initial guess
+      using NONE norm type for convergence test
+    PC Object:    (gmg_mg_levels_1_)     64 MPI processes
+      type: jacobi
+      linear system matrix = precond matrix:
+      Mat Object:       64 MPI processes
+        type: mpiaij
+        rows=101376, cols=101376
+        total: nonzeros=7.11937e+06, allocated nonzeros=7.11937e+06
+        total number of mallocs used during MatSetValues calls =0
+          not using I-node (on process 0) routines
+  Up solver (post-smoother) same as down solver (pre-smoother)
+  Down solver (pre-smoother) on level 2 -------------------------------
+    KSP Object:    (gmg_mg_levels_2_)     64 MPI processes
+      type: richardson
+        Richardson: damping factor=0.5
+      maximum iterations=4
+      tolerances:  relative=1e-05, absolute=1e-50, divergence=10000
+      left preconditioning
+      using nonzero initial guess
+      using NONE norm type for convergence test
+    PC Object:    (gmg_mg_levels_2_)     64 MPI processes
+      type: jacobi
+      linear system matrix = precond matrix:
+      Mat Object:       64 MPI processes
+        type: mpiaij
+        rows=798720, cols=798720
+        total: nonzeros=5.79656e+07, allocated nonzeros=5.79656e+07
+        total number of mallocs used during MatSetValues calls =0
+          not using I-node (on process 0) routines
+  Up solver (post-smoother) same as down solver (pre-smoother)
+  Down solver (pre-smoother) on level 3 -------------------------------
+    KSP Object:    (gmg_mg_levels_3_)     64 MPI processes
+      type: richardson
+        Richardson: damping factor=0.5
+      maximum iterations=4
+      tolerances:  relative=1e-05, absolute=1e-50, divergence=10000
+      left preconditioning
+      using nonzero initial guess
+      using NONE norm type for convergence test
+    PC Object:    (gmg_mg_levels_3_)     64 MPI processes
+      type: jacobi
+      linear system matrix = precond matrix:
+      Mat Object:       64 MPI processes
+        type: mpiaij
+        rows=6340608, cols=6340608
+        total: nonzeros=9.44195e+07, allocated nonzeros=9.44195e+07
+        total number of mallocs used during MatSetValues calls =0
+          not using I-node (on process 0) routines
+  Up solver (post-smoother) same as down solver (pre-smoother)
+  linear system matrix = precond matrix:
+  Mat Object:   64 MPI processes
+    type: mpiaij
+    rows=6340608, cols=6340608
+    total: nonzeros=9.44195e+07, allocated nonzeros=9.44195e+07
+    total number of mallocs used during MatSetValues calls =0
+      not using I-node (on process 0) routines
+ Simulation took 130.897 s
+************************************************************************************************************************
+***             WIDEN YOUR WINDOW TO 120 CHARACTERS.  Use 'enscript -r -fCourier9' to print this document            ***
+************************************************************************************************************************
+
+---------------------------------------------- PETSc Performance Summary: ----------------------------------------------
+
+./LaMEM on a JUQUEEN_OPT_64bit named R63-IC-J01.zam.kfa-juelich.de with 64 processors, by Unknown Mon Mar  2 16:44:25 2015
+Using Petsc Release Version 3.5.2, Sep, 08, 2014 
+
+                         Max       Max/Min        Avg      Total 
+Time (sec):           1.309e+02      1.00003   1.309e+02
+Objects:              9.670e+02      1.00104   9.660e+02
+Flops:                1.372e+10      1.05721   1.337e+10  8.555e+11
+Flops/sec:            1.048e+08      1.05724   1.021e+08  6.534e+09
+MPI Messages:         1.002e+06      3.68576   5.778e+05  3.698e+07
+MPI Message Lengths:  6.563e+08      2.11566   8.323e+02  3.078e+10
+MPI Reductions:       1.101e+04      1.00000
+
+Flop counting convention: 1 flop = 1 real number operation of type (multiply/divide/add/subtract)
+                            e.g., VecAXPY() for real vectors of length N --> 2N flops
+                            and VecAXPY() for complex vectors of length N --> 8N flops
+
+Summary of Stages:   ----- Time ------  ----- Flops -----  --- Messages ---  -- Message Lengths --  -- Reductions --
+                        Avg     %Total     Avg     %Total   counts   %Total     Avg         %Total   counts   %Total 
+ 0:      Main Stage: 2.0025e+01  15.3%  1.0644e+11  12.4%  3.946e+05   1.1%  7.806e+01        9.4%  1.493e+03  13.6% 
+ 1:        MG Apply: 1.1091e+02  84.7%  7.4911e+11  87.6%  3.658e+07  98.9%  7.543e+02       90.6%  9.518e+03  86.4% 
+
+------------------------------------------------------------------------------------------------------------------------
+See the 'Profiling' chapter of the users' manual for details on interpreting output.
+Phase summary info:
+   Count: number of times phase was executed
+   Time and Flops: Max - maximum over all processors
+                   Ratio - ratio of maximum to minimum over all processors
+   Mess: number of messages sent
+   Avg. len: average message length (bytes)
+   Reduct: number of global reductions
+   Global: entire computation
+   Stage: stages of a computation. Set stages with PetscLogStagePush() and PetscLogStagePop().
+      %T - percent time in this phase         %F - percent flops in this phase
+      %M - percent messages in this phase     %L - percent message lengths in this phase
+      %R - percent reductions in this phase
+   Total Mflop/s: 10e-6 * (sum of flops over all processors)/(max time over all processors)
+------------------------------------------------------------------------------------------------------------------------
+Event                Count      Time (sec)     Flops                             --- Global ---  --- Stage ---   Total
+                   Max Ratio  Max     Ratio   Max  Ratio  Mess   Avg len Reduct  %T %F %M %L %R  %T %F %M %L %R Mflop/s
+------------------------------------------------------------------------------------------------------------------------
+
+--- Event Stage 0: Main Stage
+
+VecMDot              252 1.0 5.2702e+0012.1 2.92e+08 1.0 0.0e+00 0.0e+00 2.5e+02  1  2  0  0  2   9 17  0  0 17  3475
+VecNorm              309 1.0 6.8166e-0113.7 6.18e+07 1.0 0.0e+00 0.0e+00 3.1e+02  0  0  0  0  3   1  4  0  0 21  5678
+VecScale             281 1.0 2.4471e-02 1.0 2.71e+07 1.0 0.0e+00 0.0e+00 0.0e+00  0  0  0  0  0   0  2  0  0  0 69428
+VecCopy               56 1.0 5.4775e-03 1.1 0.00e+00 0.0 0.0e+00 0.0e+00 0.0e+00  0  0  0  0  0   0  0  0  0  0     0
+VecSet               275 1.0 1.1821e-02 1.0 0.00e+00 0.0 0.0e+00 0.0e+00 0.0e+00  0  0  0  0  0   0  0  0  0  0     0
+VecAXPY              188 1.0 3.5340e-02 1.4 3.23e+07 1.0 0.0e+00 0.0e+00 0.0e+00  0  0  0  0  0   0  2  0  0  0 57340
+VecAYPX               27 1.0 3.7881e-02 1.0 3.62e+06 1.0 0.0e+00 0.0e+00 0.0e+00  0  0  0  0  0   0  0  0  0  0  6014
+VecMAXPY             307 1.0 7.8401e-01 1.1 4.35e+08 1.0 0.0e+00 0.0e+00 0.0e+00  1  3  0  0  0   4 26  0  0  0 34807
+VecAssemblyBegin      16 1.0 4.9387e-03 1.2 0.00e+00 0.0 0.0e+00 0.0e+00 4.2e+01  0  0  0  0  0   0  0  0  0  3     0
+VecAssemblyEnd        16 1.0 8.2991e-05 1.0 0.00e+00 0.0 0.0e+00 0.0e+00 0.0e+00  0  0  0  0  0   0  0  0  0  0     0
+VecPointwiseMult      22 1.0 6.1789e-05 1.2 2.64e+03 1.2 0.0e+00 0.0e+00 0.0e+00  0  0  0  0  0   0  0  0  0  0  2340
+VecScatterBegin      643 1.0 2.5290e-01 1.8 0.00e+00 0.0 2.9e+05 7.9e+03 0.0e+00  0  0  1  7  0   1  0 74 80  0     0
+VecScatterEnd        643 1.0 6.8290e-01 2.2 0.00e+00 0.0 0.0e+00 0.0e+00 0.0e+00  0  0  0  0  0   3  0  0  0  0     0
+VecSetRandom           2 1.0 5.3596e-05 1.2 0.00e+00 0.0 0.0e+00 0.0e+00 0.0e+00  0  0  0  0  0   0  0  0  0  0     0
+VecNormalize         254 1.0 6.5941e-0111.4 7.06e+07 1.0 0.0e+00 0.0e+00 2.5e+02  0  1  0  0  2   1  4  0  0 17  6693
+Warning -- total time of even greater than time of entire stage -- something is wrong with the timer
+MatMult               99 1.0 1.1870e+02 1.0 1.34e+10 1.1 3.7e+07 8.1e+02 1.0e+04 91 97 99 97 90 59378293121036667  7014
+MatConvert             4 1.0 2.4556e-03 1.6 0.00e+00 0.0 0.0e+00 0.0e+00 6.0e+00  0  0  0  0  0   0  0  0  0  0     0
+MatScale               6 1.0 6.6949e-04 1.8 3.09e+04 1.2 9.4e+02 2.4e+02 0.0e+00  0  0  0  0  0   0  0  0  0  0  2730
+MatAssemblyBegin      78 1.0 4.3103e-01 6.8 0.00e+00 0.0 2.0e+03 2.7e+04 8.6e+01  0  0  0  0  1   1  0  1  2  6     0
+MatAssemblyEnd        78 1.0 9.0879e-01 1.0 0.00e+00 0.0 2.9e+04 7.1e+02 2.5e+02  1  0  0  0  2   5  0  7  1 17     0
+MatGetRow            726 1.3 9.5632e-04 1.2 0.00e+00 0.0 0.0e+00 0.0e+00 0.0e+00  0  0  0  0  0   0  0  0  0  0     0
+MatPartitioning        2 1.0 1.9975e-02 1.0 0.00e+00 0.0 0.0e+00 0.0e+00 4.0e+00  0  0  0  0  0   0  0  0  0  0     0
+MatCoarsen             2 1.0 7.1882e-03 1.4 0.00e+00 0.0 6.6e+03 6.1e+02 1.0e+01  0  0  0  0  0   0  0  2  0  1     0
+MatZeroEntries         9 1.0 3.5121e-03 1.1 0.00e+00 0.0 0.0e+00 0.0e+00 0.0e+00  0  0  0  0  0   0  0  0  0  0     0
+MatView               12 1.2 2.1307e-01 1.4 0.00e+00 0.0 0.0e+00 0.0e+00 8.0e+00  0  0  0  0  0   1  0  0  0  1     0
+MatAXPY                2 1.0 3.8085e-05 1.3 0.00e+00 0.0 0.0e+00 0.0e+00 0.0e+00  0  0  0  0  0   0  0  0  0  0     0
+MatMatMult             2 1.0 1.0447e-02 1.1 2.88e+04 1.4 5.5e+03 1.6e+02 3.2e+01  0  0  0  0  0   0  0  1  0  2   154
+MatMatMultSym          2 1.0 8.0205e-03 1.1 0.00e+00 0.0 4.6e+03 1.4e+02 2.8e+01  0  0  0  0  0   0  0  1  0  2     0
+MatMatMultNum          2 1.0 2.3574e-03 1.0 2.88e+04 1.4 9.4e+02 2.2e+02 4.0e+00  0  0  0  0  0   0  0  0  0  0   680
+MatMatMatMult          3 1.0 5.0603e+00 1.0 4.37e+07 1.1 2.2e+04 1.8e+04 9.6e+01  4  0  0  1  1  25  3  6 14  6   539
+MatMatMatMultSym       3 1.0 3.2248e+00 1.0 0.00e+00 0.0 2.0e+04 1.4e+04 8.4e+01  2  0  0  1  1  16  0  5 10  6     0
+MatMatMatMultNum       3 1.0 1.8365e+00 1.0 4.37e+07 1.1 2.8e+03 4.6e+04 1.2e+01  1  0  0  0  0   9  3  1  4  1  1484
+MatPtAP                2 1.0 1.6038e-02 1.0 1.86e+05 2.6 1.0e+04 2.8e+02 3.4e+01  0  0  0  0  0   0  0  3  0  2   509
+MatPtAPSymbolic        2 1.0 8.4501e-03 1.0 0.00e+00 0.0 5.4e+03 5.0e+02 1.4e+01  0  0  0  0  0   0  0  1  0  1     0
+MatPtAPNumeric         2 1.0 7.5846e-03 1.0 1.86e+05 2.6 4.7e+03 3.3e+01 2.0e+01  0  0  0  0  0   0  0  1  0  1  1077
+MatTrnMatMult          2 1.0 2.7303e-01 1.0 2.41e+06 2.1 5.6e+03 1.4e+04 3.8e+01  0  0  0  0  0   1  0  1  3  3   413
+MatTrnMatMultSym       2 1.0 1.3443e-01 1.0 0.00e+00 0.0 4.7e+03 8.4e+03 3.4e+01  0  0  0  0  0   1  0  1  1  2     0
+MatTrnMatMultNum       2 1.0 1.3862e-01 1.0 2.41e+06 2.1 9.4e+02 4.1e+04 4.0e+00  0  0  0  0  0   1  0  0  1  0   814
+MatGetLocalMat        22 1.0 2.3908e-01 1.1 0.00e+00 0.0 0.0e+00 0.0e+00 0.0e+00  0  0  0  0  0   1  0  0  0  0     0
+MatGetBrAoCol         18 1.0 1.1853e-01 1.3 0.00e+00 0.0 1.8e+04 2.2e+04 0.0e+00  0  0  0  1  0   1  0  5 14  0     0
+MatGetSymTrans         4 1.0 7.1992e-05 1.5 0.00e+00 0.0 0.0e+00 0.0e+00 0.0e+00  0  0  0  0  0   0  0  0  0  0     0
+SFSetGraph             2 1.0 5.7311e-04 3.5 0.00e+00 0.0 0.0e+00 0.0e+00 0.0e+00  0  0  0  0  0   0  0  0  0  0     0
+SFBcastBegin           8 1.0 3.3388e-03 2.9 0.00e+00 0.0 6.6e+03 6.1e+02 2.0e+00  0  0  0  0  0   0  0  2  0  0     0
+SFBcastEnd             8 1.0 1.9703e-03 2.1 0.00e+00 0.0 0.0e+00 0.0e+00 0.0e+00  0  0  0  0  0   0  0  0  0  0     0
+KSPGMRESOrthog       252 1.0 5.7902e+00 6.1 5.85e+08 1.0 0.0e+00 0.0e+00 2.5e+02  2  4  0  0  2  12 34  0  0 17  6326
+KSPSetUp              11 1.0 7.4086e-03 1.2 0.00e+00 0.0 0.0e+00 0.0e+00 1.8e+01  0  0  0  0  0   0  0  0  0  1     0
+Warning -- total time of even greater than time of entire stage -- something is wrong with the timer
+KSPSolve               1 1.0 1.1926e+02 1.0 1.37e+10 1.1 3.7e+07 8.1e+02 1.0e+04 91100 99 97 91 59680193101036672  7149
+PCGAMGgraph_AGG        2 1.0 2.1514e-02 1.0 2.88e+04 1.2 2.8e+03 1.6e+02 3.0e+01  0  0  0  0  0   0  0  1  0  2    80
+PCGAMGcoarse_AGG       2 1.0 2.8904e-01 1.0 2.41e+06 2.1 1.7e+04 5.0e+03 8.0e+01  0  0  0  0  1   1  0  4  3  5   390
+PCGAMGProl_AGG         2 1.0 9.4736e-03 1.2 0.00e+00 0.0 3.0e+03 4.7e+02 4.8e+01  0  0  0  0  0   0  0  1  0  3     0
+PCGAMGPOpt_AGG         2 1.0 2.4202e-02 1.0 3.74e+05 1.2 1.5e+04 2.1e+02 9.6e+01  0  0  0  0  1   0  0  4  0  6   932
+PCSetUp                3 1.0 5.4793e+00 1.0 4.67e+07 1.1 7.1e+04 7.0e+03 5.3e+02  4  0  0  2  5  27  3 18 17 36   524
+Warning -- total time of even greater than time of entire stage -- something is wrong with the timer
+PCApply               26 1.0 1.1721e+02 1.0 1.32e+10 1.1 3.7e+07 8.0e+02 1.0e+04 90 96 99 96 90 58577092991019667  6993
+MGSetup Level 0        1 1.0 4.1262e-01 1.0 3.00e+06 1.9 4.8e+04 1.9e+03 4.2e+02  0  0  0  0  4   2  0 12  3 28   352
+MGSetup Level 1        1 1.0 8.2507e-04 3.6 0.00e+00 0.0 0.0e+00 0.0e+00 2.0e+00  0  0  0  0  0   0  0  0  0  0     0
+MGSetup Level 2        1 1.0 2.5333e-04 1.0 0.00e+00 0.0 0.0e+00 0.0e+00 2.0e+00  0  0  0  0  0   0  0  0  0  0     0
+MGSetup Level 3        1 1.0 9.7327e-04 2.1 0.00e+00 0.0 0.0e+00 0.0e+00 2.0e+00  0  0  0  0  0   0  0  0  0  0     0
+Warning -- total time of even greater than time of entire stage -- something is wrong with the timer
+SNESSolve              1 1.0 1.2703e+02 1.0 1.37e+10 1.1 3.7e+07 8.3e+02 1.1e+04 97100100 99 97 63480493391058714  6735
+SNESFunctionEval       2 1.0 5.1119e-01 1.1 0.00e+00 0.0 2.4e+04 2.7e+03 0.0e+00  0  0  0  0  0   3  0  6  2  0     0
+SNESJacobianEval       1 1.0 7.2641e+00 1.0 4.67e+07 1.1 9.1e+04 6.2e+03 6.3e+02  6  0  0  2  6  36  3 23 20 42   395
+
+--- Event Stage 1: MG Apply
+
+VecMDot             4640 1.0 2.3298e+0014.4 2.33e+07 1.3 0.0e+00 0.0e+00 4.6e+03  1  0  0  0 42   1  0  0  0 49   545
+VecNorm             4872 1.0 6.1917e-01 6.5 2.34e+06 1.2 0.0e+00 0.0e+00 4.9e+03  0  0  0  0 44   0  0  0  0 51   205
+VecScale            4872 1.0 2.0720e-02 1.1 1.17e+06 1.2 0.0e+00 0.0e+00 0.0e+00  0  0  0  0  0   0  0  0  0  0  3070
+VecCopy            10208 1.0 5.6375e-02 1.1 0.00e+00 0.0 0.0e+00 0.0e+00 0.0e+00  0  0  0  0  0   0  0  0  0  0     0
+VecSet             43155 1.0 8.8087e-02 1.2 0.00e+00 0.0 0.0e+00 0.0e+00 0.0e+00  0  0  0  0  0   0  0  0  0  0     0
+VecAXPY             5800 1.0 4.4865e-01 1.2 4.31e+08 1.0 0.0e+00 0.0e+00 0.0e+00  0  3  0  0  0   0  4  0  0  0 59921
+VecAYPX            79808 1.0 2.6503e+00 1.1 2.27e+08 1.0 0.0e+00 0.0e+00 0.0e+00  2  2  0  0  0   2  2  0  0  0  5301
+VecAXPBYCZ         37120 1.0 1.5422e-01 1.2 2.23e+07 1.2 0.0e+00 0.0e+00 0.0e+00  0  0  0  0  0   0  0  0  0  0  7909
+VecMAXPY            4872 1.0 7.2856e-02 1.2 2.56e+07 1.2 0.0e+00 0.0e+00 0.0e+00  0  0  0  0  0   0  0  0  0  0 19124
+VecPointwiseMult    5568 1.0 1.5918e+00 1.3 2.16e+08 1.0 0.0e+00 0.0e+00 0.0e+00  1  2  0  0  0   1  2  0  0  0  8442
+VecScatterBegin    85840 1.0 5.9613e+00 2.6 0.00e+00 0.0 3.7e+07 7.6e+02 0.0e+00  3  0 99 91  0   4  0100100  0     0
+VecScatterEnd      85840 1.0 3.1597e+01 1.8 0.00e+00 0.0 0.0e+00 0.0e+00 0.0e+00 18  0  0  0  0  22  0  0  0  0     0
+MatMult            66584 1.0 8.9015e+01 1.1 1.02e+10 1.1 3.5e+07 7.8e+02 0.0e+00 64 75 95 89  0  75 85 96 98  0  7178
+MatMultAdd          9976 1.0 1.1701e+01 3.1 3.22e+08 1.0 1.1e+06 4.8e+02 0.0e+00  6  2  3  2  0   7  3  3  2  0  1728
+MatMultTranspose    9280 1.0 3.0898e+0012.9 9.73e+06 1.9 4.9e+05 8.2e+01 0.0e+00  0  0  1  0  0   0  0  1  0  0   157
+MatSolve            4640 0.0 9.0131e-03 0.0 4.64e+03 0.0 0.0e+00 0.0e+00 0.0e+00  0  0  0  0  0   0  0  0  0  0     1
+MatSOR             55680 1.0 5.6891e+00 1.3 5.91e+08 1.3 0.0e+00 0.0e+00 0.0e+00  4  4  0  0  0   4  4  0  0  0  5447
+MatLUFactorSym         1 1.0 8.2064e-05 1.5 0.00e+00 0.0 0.0e+00 0.0e+00 0.0e+00  0  0  0  0  0   0  0  0  0  0     0
+MatLUFactorNum         1 1.0 7.7538e-06 1.7 1.00e+00 0.0 0.0e+00 0.0e+00 0.0e+00  0  0  0  0  0   0  0  0  0  0     0
+MatResidual         9976 1.0 1.1311e+01 1.1 1.30e+09 1.1 4.9e+06 7.1e+02 0.0e+00  8 10 13 11  0  10 11 13 13  0  7250
+MatGetRowIJ            1 0.0 1.0286e-05 0.0 0.00e+00 0.0 0.0e+00 0.0e+00 0.0e+00  0  0  0  0  0   0  0  0  0  0     0
+MatGetOrdering         1 0.0 1.2985e-04 0.0 0.00e+00 0.0 0.0e+00 0.0e+00 0.0e+00  0  0  0  0  0   0  0  0  0  0     0
+KSPGMRESOrthog      4640 1.0 2.4122e+00 9.9 4.67e+07 1.3 0.0e+00 0.0e+00 4.6e+03  1  0  0  0 42   2  0  0  0 49  1054
+KSPSetUp               2 1.0 3.5144e-06 1.6 0.00e+00 0.0 0.0e+00 0.0e+00 0.0e+00  0  0  0  0  0   0  0  0  0  0     0
+KSPSolve            1624 1.0 9.9604e+01 1.1 1.05e+10 1.1 3.5e+07 7.0e+02 9.5e+03 74 76 95 80 86  87 87 96 88100  6531
+PCSetUp                1 1.0 4.0948e-04 1.4 1.00e+00 0.0 0.0e+00 0.0e+00 0.0e+00  0  0  0  0  0   0  0  0  0  0     0
+PCSetUpOnBlocks     4640 1.0 8.1935e-03 1.2 1.00e+00 0.0 0.0e+00 0.0e+00 0.0e+00  0  0  0  0  0   0  0  0  0  0     0
+PCApply            10208 1.0 3.0845e+01 1.1 1.63e+09 1.2 2.7e+07 2.4e+02 6.0e+00 22 11 73 21  0  27 13 74 23  0  3074
+MGSmooth Level 0     232 1.0 3.3056e+01 1.0 1.60e+09 1.2 3.1e+07 2.4e+02 9.5e+03 25 11 85 24 86  29 12 86 27100  2788
+MGSmooth Level 1     464 1.0 3.9088e+00 1.5 3.83e+08 1.1 1.5e+06 7.9e+02 2.0e+00  2  3  4  4  0   3  3  4  4  0  6060
+MGResid Level 1      232 1.0 4.9085e-01 1.5 5.35e+07 1.1 2.2e+05 7.9e+02 0.0e+00  0  0  1  1  0   0  0  1  1  0  6730
+MGInterp Level 1     464 1.0 6.9764e-01 8.5 5.30e+06 1.1 2.4e+05 1.9e+02 0.0e+00  0  0  1  0  0   0  0  1  0  0   472
+MGSmooth Level 2     464 1.0 2.7679e+01 1.3 3.06e+09 1.1 1.5e+06 2.8e+03 2.0e+00 19 23  4 14  0  22 26  4 15  0  6963
+MGResid Level 2      232 1.0 3.9014e+00 1.1 4.28e+08 1.1 2.2e+05 2.8e+03 0.0e+00  3  3  1  2  0   3  4  1  2  0  6894
+MGInterp Level 2     464 1.0 3.8960e+0010.8 4.24e+07 1.1 2.4e+05 6.9e+02 0.0e+00  1  0  1  1  0   1  0  1  1  0   686
+MGSmooth Level 3     464 1.0 3.8645e+01 1.1 5.43e+09 1.0 8.2e+05 1.4e+04 2.0e+00 28 40  2 38  0  33 46  2 42  0  8849
+MGResid Level 3      232 1.0 4.7771e+00 1.0 6.96e+08 1.0 1.2e+05 1.4e+04 0.0e+00  4  5  0  5  0   4  6  0  6  0  9171
+MGInterp Level 3     464 1.0 6.8654e+00 2.6 3.39e+08 1.0 2.4e+05 2.6e+03 0.0e+00  3  3  1  2  0   3  3  1  2  0  3139
+------------------------------------------------------------------------------------------------------------------------
+
+Memory usage is given in bytes:
+
+Object Type          Creations   Destructions     Memory  Descendants' Mem.
+Reports information only for process 0.
+
+--- Event Stage 0: Main Stage
+
+              Vector   429            472    164846816     0
+      Vector Scatter    75             75      4583028     0
+             MatMFFD     1              1          840     0
+              Matrix   136            137    182465848     0
+ Matrix Partitioning     2              2         1440     0
+      Matrix Coarsen     2              2         1384     0
+    Distributed Mesh    22             22       112368     0
+Star Forest Bipartite Graph    46             46        39872     0
+     Discrete System    22             22        19008     0
+           Index Set   126            129      2778864     0
+   IS L to G Mapping    20             20      2646288     0
+         PetscRandom     3              3         2040     0
+       Krylov Solver    14             14       148152     0
+     DMKSP interface     1              1          704     0
+      Preconditioner    15             15        16176     0
+              Viewer     2              1          800     0
+                SNES     1              1         1480     0
+      SNESLineSearch     1              1          912     0
+              DMSNES     1              1          720     0
+
+--- Event Stage 1: MG Apply
+
+              Vector    43              0            0     0
+              Matrix     1              0            0     0
+           Index Set     3              0            0     0
+========================================================================================================================
+Average time to get PetscTime(): 1.14e-07
+Average time for MPI_Barrier(): 2.9045e-06
+Average time for zero size MPI_Send(): 8.21391e-06
+#PETSc Option Table entries:
+-AVDPhaseViewer 1
+-AddRandomNoiseParticles 0
+-ParamFile MultipleSpheres_canonical_BlockMG_accurateCoarse.dat
+-bf_vs_type mg
+-crs_ksp_converged_reason
+-crs_ksp_max_it 20
+-crs_ksp_rtol 1e-3
+-crs_ksp_type fgmres
+-crs_pc_gamg_coarse_eq_limit 20
+-crs_pc_gamg_repartition true
+-crs_pc_gamg_reuse_interpolation true
+-crs_pc_gamg_verbose 3
+-crs_pc_type gamg
+-dt 100
+-gmg_mg_levels_ksp_max_it 4
+-gmg_mg_levels_ksp_richardson_scale 0.5
+-gmg_mg_levels_ksp_type richardson
+-gmg_mg_levels_pc_type jacobi
+-gmg_pc_mg_cycle_type v
+-gmg_pc_mg_galerkin
+-gmg_pc_mg_levels 4
+-gmg_pc_mg_log
+-gmg_pc_mg_type multiplicative
+-gmg_pc_type mg
+-gmg_pc_view
+-jp_type bf
+-js_ksp_converged_reason
+-js_ksp_max_it 1000
+-js_ksp_min_it 2
+-js_ksp_monitor_true_residual
+-js_ksp_rtol 1e-5
+-js_ksp_type fgmres
+-js_ksp_view
+-log_summary
+-nel 128,128,128
+-npicard 3
+-objects_dump
+-options_left
+-out_density 1
+-out_dev_stress 1
+-out_j2_dev_stress 1
+-out_j2_strain_rate 1
+-out_phase 1
+-out_plast_strain 1
+-out_pressure 1
+-out_pvd 1
+-out_strain_rate 1
+-out_temperature 1
+-out_velocity 1
+-out_viscosity 1
+-pcmat_no_dev_proj
+-pcmat_type block
+-restart 0
+-save_breakpoints 0
+-snes_atol 1e-12
+-snes_max_funcs 50000
+-snes_max_it 25
+-snes_monitor
+-snes_rtol 1e-6
+-snes_stol 1e-6
+-snes_type ksponly
+-use_fdstag_canonical
+-vs_ksp_monitor
+-vs_ksp_rtol 1e-2
+-vs_ksp_type gmres
+#End of PETSc Option Table entries
+Compiled with FORTRAN kernels
+Compiled with full precision matrices (default)
+sizeof(short) 2 sizeof(int) 4 sizeof(long) 8 sizeof(void*) 8 sizeof(PetscScalar) 8 sizeof(PetscInt) 8
+Configure options: --known-level1-dcache-size=32768 --known-level1-dcache-linesize=32 --known-level1-dcache-assoc=0 --known-mpi-long-double=1 --known-mpi-int64_t=1 --known-mpi-c-double-complex=1 --prefix=/homeb/hmz30/hmz300/LIB/petsc/3.5.2/JUQUEEN_OPT_64bit PETSC_ARCH=JUQUEEN_OPT_64bit --with-cc=mpixlc_r --with-cxx=mpixlcxx_r --with-fc="mpixlf77_r -qnosave" --with-large-file-io --with-64-bit-indices --with-blas-lapack-lib="-L/bgsys/local/lib -lesslbg -L/bgsys/local/lapack/3.4.2/lib -llapack -L/bgsys/local/lib -lesslbg" --download-superlu_dist=1 --download-parmetis=1 --download-metis=1 --download-hypre=1 --download-blacs=1 --download-scalapack=1 --with-x=0 --with-is-color-value-type=short --with-shared-libraries=0 -COPTFLAGS="-O3 -qstrict -qmaxmem=-1" -CXXOPTFLAGS="-O3 -qstrict -qmaxmem=-1" -FOPTFLAGS="-O3 -qstrict -qmaxmem=-1" --with-debugging=0 --with-fortran-kernels=1 --with-batch=1 --known-mpi-shared-libraries=0 --known-memcmp-ok --known-sizeof-char=1 --known-sizeof-void-p=8 --known-sizeof-short=2 --known-sizeof-int=4 --known-sizeof-long=8 --known-sizeof-size_t=8 --known-sizeof-long-long=8 --known-sizeof-float=4 --known-sizeof-double=8 --known-bits-per-byte=8 --known-sizeof-MPI_Comm=4 --known-sizeof-MPI_Fint=4
+-----------------------------------------
+Libraries compiled on Fri Oct 10 13:43:21 2014 on juqueen3.zam.kfa-juelich.de 
+Machine characteristics: Linux-2.6.32-431.17.1.el6.ppc64-ppc64-with-redhat-6.5-Santiago
+Using PETSc directory: /homeb/hmz30/hmz300/LIB/petsc-3.5.2
+Using PETSc arch: JUQUEEN_OPT_64bit
+-----------------------------------------
+
+Using C compiler: mpixlc_r  -D_LARGEFILE64_SOURCE -D_FILE_OFFSET_BITS=64 -O3 -qstrict -qmaxmem=-1  ${COPTFLAGS} ${CFLAGS}
+Using Fortran compiler: mpixlf77_r -qnosave  -O3 -qstrict -qmaxmem=-1   ${FOPTFLAGS} ${FFLAGS} 
+-----------------------------------------
+
+Using include paths: -I/homeb/hmz30/hmz300/LIB/petsc-3.5.2/JUQUEEN_OPT_64bit/include -I/homeb/hmz30/hmz300/LIB/petsc-3.5.2/include -I/homeb/hmz30/hmz300/LIB/petsc-3.5.2/include -I/homeb/hmz30/hmz300/LIB/petsc-3.5.2/JUQUEEN_OPT_64bit/include -I/bgsys/drivers/V1R2M2/ppc64/comm/include -I/bgsys/drivers/V1R2M2/ppc64/comm/lib/xl -I/bgsys/drivers/V1R2M2/ppc64 -I/bgsys/drivers/V1R2M2/ppc64/comm/sys/include -I/bgsys/drivers/V1R2M2/ppc64/spi/include -I/bgsys/drivers/V1R2M2/ppc64/spi/include/kernel/cnk
+-----------------------------------------
+
+Using C linker: mpixlc_r
+Using Fortran linker: mpixlf77_r -qnosave
+Using libraries: -Wl,-rpath,/homeb/hmz30/hmz300/LIB/petsc-3.5.2/JUQUEEN_OPT_64bit/lib -L/homeb/hmz30/hmz300/LIB/petsc-3.5.2/JUQUEEN_OPT_64bit/lib -lpetsc -Wl,-rpath,/homeb/hmz30/hmz300/LIB/petsc-3.5.2/JUQUEEN_OPT_64bit/lib -L/homeb/hmz30/hmz300/LIB/petsc-3.5.2/JUQUEEN_OPT_64bit/lib -lHYPRE -L/bgsys/drivers/V1R2M2/ppc64/comm/lib -L/bgsys/drivers/V1R2M2/ppc64/comm/lib64 -L/bgsys/drivers/V1R2M2/ppc64/spi/lib -L/bgsys/drivers/V1R2M2/ppc64/comm/sys/lib -L/opt/ibmcmp/xlsmp/bg/3.1/bglib64 -L/opt/ibmcmp/xlmass/bg/7.3/bglib64 -L/opt/ibmcmp/vac/bg/12.1/bglib64 -L/opt/ibmcmp/vacpp/bg/12.1/bglib64 -L/bgsys/drivers/toolchain/V1R2M2_base/gnu-linux/lib/gcc/powerpc64-bgq-linux/4.4.7 -L/bgsys/drivers/toolchain/V1R2M2_base/gnu-linux/lib/gcc -L/bgsys/drivers/toolchain/V1R2M2_base/gnu-linux/powerpc64-bgq-linux/lib -Wl,-rpath,/opt/ibmcmp/lib64/bg/bglib64 -lmpichcxx-xl -libmc++ -lscalapack -lsuperlu_dist_3.3 -L/bgsys/local/lib -lesslbg -L/bgsys/local/lapack/3.4.2/lib -llapack -lesslbg -lparmetis -lmetis -lpthread -L/opt/ibmcmp/xlf/bg/14.1/bglib64 -lmpichf77-xl -lxlf90_r -lxlomp_ser -lxlfmath -lm -lmpichcxx-xl -libmc++ -L/bgsys/drivers/V1R2M2/ppc64/comm/lib -L/bgsys/drivers/V1R2M2/ppc64/comm/lib -L/bgsys/drivers/V1R2M2/ppc64/comm/lib64 -L/bgsys/drivers/V1R2M2/ppc64/comm/lib -L/bgsys/drivers/V1R2M2/ppc64/spi/lib -L/bgsys/drivers/V1R2M2/ppc64/comm/sys/lib -L/bgsys/drivers/V1R2M2/ppc64/spi/lib -L/bgsys/drivers/V1R2M2/ppc64/comm/sys/lib -L/bgsys/drivers/V1R2M2/ppc64/comm/lib64 -L/bgsys/drivers/V1R2M2/ppc64/comm/lib -L/bgsys/drivers/V1R2M2/ppc64/spi/lib -L/bgsys/drivers/V1R2M2/ppc64/comm/lib -L/opt/ibmcmp/xlsmp/bg/3.1/bglib64 -L/opt/ibmcmp/xlmass/bg/7.3/bglib64 -L/opt/ibmcmp/vac/bg/12.1/bglib64 -L/opt/ibmcmp/vacpp/bg/12.1/bglib64 -Wl,-rpath,/opt/ibmcmp/lib64/bg/bglib64 -L/bgsys/drivers/toolchain/V1R2M2_base/gnu-linux/lib/gcc/powerpc64-bgq-linux/4.4.7 -L/bgsys/drivers/toolchain/V1R2M2_base/gnu-linux/lib/gcc -L/bgsys/drivers/toolchain/V1R2M2_base/gnu-linux/powerpc64-bgq-linux/lib -ldl -lmpich-xl -lopa-xl -lmpl-xl -lpami-gcc -lSPI -lSPI_cnk -lrt -lpthread -lstdc++ -lxlopt -lxl -lnss_files -lnss_dns -lresolv -lgcc_eh -ldl  
+-----------------------------------------
+
+#PETSc Option Table entries:
+-AVDPhaseViewer 1
+-AddRandomNoiseParticles 0
+-ParamFile MultipleSpheres_canonical_BlockMG_accurateCoarse.dat
+-bf_vs_type mg
+-crs_ksp_converged_reason
+-crs_ksp_max_it 20
+-crs_ksp_rtol 1e-3
+-crs_ksp_type fgmres
+-crs_pc_gamg_coarse_eq_limit 20
+-crs_pc_gamg_repartition true
+-crs_pc_gamg_reuse_interpolation true
+-crs_pc_gamg_verbose 3
+-crs_pc_type gamg
+-dt 100
+-gmg_mg_levels_ksp_max_it 4
+-gmg_mg_levels_ksp_richardson_scale 0.5
+-gmg_mg_levels_ksp_type richardson
+-gmg_mg_levels_pc_type jacobi
+-gmg_pc_mg_cycle_type v
+-gmg_pc_mg_galerkin
+-gmg_pc_mg_levels 4
+-gmg_pc_mg_log
+-gmg_pc_mg_type multiplicative
+-gmg_pc_type mg
+-gmg_pc_view
+-jp_type bf
+-js_ksp_converged_reason
+-js_ksp_max_it 1000
+-js_ksp_min_it 2
+-js_ksp_monitor_true_residual
+-js_ksp_rtol 1e-5
+-js_ksp_type fgmres
+-js_ksp_view
+-log_summary
+-nel 128,128,128
+-npicard 3
+-objects_dump
+-options_left
+-out_density 1
+-out_dev_stress 1
+-out_j2_dev_stress 1
+-out_j2_strain_rate 1
+-out_phase 1
+-out_plast_strain 1
+-out_pressure 1
+-out_pvd 1
+-out_strain_rate 1
+-out_temperature 1
+-out_velocity 1
+-out_viscosity 1
+-pcmat_no_dev_proj
+-pcmat_type block
+-restart 0
+-save_breakpoints 0
+-snes_atol 1e-12
+-snes_max_funcs 50000
+-snes_max_it 25
+-snes_monitor
+-snes_rtol 1e-6
+-snes_stol 1e-6
+-snes_type ksponly
+-use_fdstag_canonical
+-vs_ksp_monitor
+-vs_ksp_rtol 1e-2
+-vs_ksp_type gmres
+#End of PETSc Option Table entries
+There are 3 unused database options. They are:
+Option left: name:-AVDPhaseViewer value: 1
+Option left: name:-js_ksp_min_it value: 2
+Option left: name:-npicard value: 3
