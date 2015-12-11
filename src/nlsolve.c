@@ -351,7 +351,14 @@ PetscErrorCode FormJacobian(SNES snes, Vec x, Mat Amat, Mat Pmat, void *ctx)
 		PetscPrintf(PETSC_COMM_WORLD,"USING MF JACOBIAN for iteration %lld, ||F||/||F0||=%e \n", (LLD)nl->it, nrm/nl->refRes);
 		it_newton++;
 	}
-
+/*
+	if(ISRankZero(PETSC_COMM_WORLD))
+	{
+		FILE *db = fopen("conv.log", "at");
+		fprintf(db, "%lld %e\n", (LLD)nl->it, nrm/nl->refRes);
+		fclose(db);
+	}
+*/
 	// count iterations
 	nl->it++;
 
