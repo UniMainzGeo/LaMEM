@@ -66,6 +66,7 @@ PetscErrorCode PVOutWritePlastStrain (JacRes*, OutBuf*);
 PetscErrorCode PVOutWritePlastDissip (JacRes*, OutBuf*);
 PetscErrorCode PVOutWriteTotDispl    (JacRes*, OutBuf*);
 PetscErrorCode PVOutWriteSHmax       (JacRes*, OutBuf*);
+PetscErrorCode PVOutWriteEHmax       (JacRes*, OutBuf*);
 PetscErrorCode PVOutWriteISA         (JacRes*, OutBuf*);
 PetscErrorCode PVOutWriteGOL         (JacRes*, OutBuf*);
 // === debug	 vectors ===============================================
@@ -80,4 +81,5 @@ PetscErrorCode PVOutWriteDII_YZ      (JacRes*, OutBuf*);
 // ... add more output functions here
 
 //---------------------------------------------------------------------------
+
 #endif

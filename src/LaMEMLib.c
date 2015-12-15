@@ -202,6 +202,8 @@ PetscErrorCode LaMEMLib(ModParam *IOparam)
 	// initialize free surface from breakpoints if restart
 	if (user.restart == 1 && surf.UseFreeSurf == PETSC_TRUE) { ierr = BreakReadSurf(&fs, &surf); CHKERRQ(ierr); }
 
+	ierr = BCSetupBoundVel(&bc, surf.InitLevel); CHKERRQ(ierr);
+
 	// create advection context
 	ierr = ADVCreate(&actx, &fs, &jr); CHKERRQ(ierr);
 
@@ -209,16 +211,21 @@ PetscErrorCode LaMEMLib(ModParam *IOparam)
 	ierr = ADVMarkInit(&actx, &user); CHKERRQ(ierr);
 
 	// change marker phase when crossing free surface
-	ierr = ADVMarkCrossFreeSurf(&actx, &surf); CHKERRQ(ierr);
+	ierr = ADVMarkCrossFreeSurf(&actx, &surf, 0.05); CHKERRQ(ierr);
+
+	// set air phase to properly treat marker advection & temperature diffusion
+	if(surf.UseFreeSurf == PETSC_TRUE && jr.actTemp == PETSC_TRUE)
+	{
+		actx.AirPhase = surf.AirPhase;
+		jr.AirPhase   = surf.AirPhase;
+		actx.Ttop     = bc.Ttop;
+	}
+
+	// check thermal material parameters
+	ierr = JacResCheckTempParam(&jr); CHKERRQ(ierr);
 
 	// update phase ratios taking into account actual free surface position
 	ierr = FreeSurfGetAirPhaseRatio(&surf); CHKERRQ(ierr);
-
-	// initialize temperature
-	ierr = JacResInitTemp(&jr); CHKERRQ(ierr);
-
-	// copy to local vector, apply bc constraints
-	ierr = JacResCopyTemp(&jr); CHKERRQ(ierr);
 
 	// create Stokes preconditioner & matrix
 	ierr = PMatCreate(&pm, &jr);    CHKERRQ(ierr);
@@ -292,17 +299,8 @@ PetscErrorCode LaMEMLib(ModParam *IOparam)
 		// initialize boundary constraint vectors
 		ierr = BCApply(&bc); CHKERRQ(ierr);
 
-
-
-// ACHTUNG!
-
-// initialize temperature
-ierr = JacResInitTemp(&jr); CHKERRQ(ierr);
-
-// copy to local vector, apply bc constraints
-ierr = JacResCopyTemp(&jr); CHKERRQ(ierr);
-
-
+		// initialize temperature
+		ierr = JacResInitTemp(&jr); CHKERRQ(ierr);
 
 		// compute inverse elastic viscosities
 		ierr = JacResGetI2Gdt(&jr); CHKERRQ(ierr);
@@ -364,11 +362,8 @@ ierr = JacResCopyTemp(&jr); CHKERRQ(ierr);
 		// apply sedimentation to the free surface
 		ierr = FreeSurfAppSedimentation(&surf); CHKERRQ(ierr);
 
-		// change marker phase when crossing flat surface or free surface with fast sedimentation/erosion
-		ierr = ADVMarkCrossFreeSurf(&actx, &surf); CHKERRQ(ierr);
-
 		// remap markers onto (stretched) grid
-		ierr = ADVRemap(&actx); CHKERRQ(ierr);
+		ierr = ADVRemap(&actx, &surf); CHKERRQ(ierr);
 
 		// update phase ratios taking into account actual free surface position
 		ierr = FreeSurfGetAirPhaseRatio(&surf); CHKERRQ(ierr);

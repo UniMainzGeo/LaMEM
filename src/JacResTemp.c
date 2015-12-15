@@ -49,6 +49,7 @@
 #include "tssolve.h"
 #include "bc.h"
 #include "JacRes.h"
+#include "matrix.h"
 #include "constEq.h"
 #include "tools.h"
 //---------------------------------------------------------------------------
@@ -64,13 +65,98 @@
 	LOCAL_TO_LOCAL(da, vec)
 
 #define GET_KC \
-	GetTempParam(numPhases, phases, jr->svCell[iter++].phRat, &kc, NULL, NULL); \
+	ierr = JacResGetTempParam(jr, jr->svCell[iter++].phRat, &kc, NULL, NULL); CHKERRQ(ierr); \
 	buff[k][j][i] = kc;
 
 #define GET_HRXY buff[k][j][i] = jr->svXYEdge[iter++].svDev.Hr;
 #define GET_HRXZ buff[k][j][i] = jr->svXZEdge[iter++].svDev.Hr;
 #define GET_HRYZ buff[k][j][i] = jr->svYZEdge[iter++].svDev.Hr;
 
+//---------------------------------------------------------------------------
+// Temperature parameters functions
+//---------------------------------------------------------------------------
+#undef __FUNCT__
+#define __FUNCT__ "JacResGetTempParam"
+PetscErrorCode JacResGetTempParam(
+		JacRes      *jr,
+		PetscScalar *phRat,
+		PetscScalar *k_,      // conductivity
+		PetscScalar *rho_Cp_, // volumetric heat capacity
+		PetscScalar *rho_A_) // volumetric radiogenic heat
+{
+	// compute effective energy parameters in the cell
+
+	PetscInt    i, numPhases;
+    Material_t  *phases, *M;
+
+	PetscScalar cf, k, rho, rho_Cp, rho_A;
+
+	PetscFunctionBegin;
+
+	// initialize
+	k         = 0.0;
+	rho_Cp    = 0.0;
+	rho_A     = 0.0;
+	numPhases = jr->numPhases;
+	phases    = jr->phases;
+
+	// average all phases
+	for(i = 0; i < numPhases; i++)
+	{
+		M       = &phases[i];
+		cf      =  phRat[i];
+		rho     =  M->rho;
+
+		// override air phase density
+		if(jr->AirPhase != -1 && i == jr->AirPhase) rho = 1.0;
+
+		k      +=  cf*M->k;
+		rho_Cp +=  cf*M->Cp*rho;
+		rho_A  +=  cf*M->A*rho;
+	}
+
+	// store
+	if(k_)      (*k_)      = k;
+    if(rho_Cp_) (*rho_Cp_) = rho_Cp;
+	if(rho_A_)  (*rho_A_)  = rho_A;
+
+	PetscFunctionReturn(0);
+}
+//---------------------------------------------------------------------------
+#undef __FUNCT__
+#define __FUNCT__ "JacResCheckTempParam"
+PetscErrorCode JacResCheckTempParam(JacRes *jr)
+{
+	// check whether thermal material parameters are properly defined
+
+	PetscInt    i, numPhases;
+    Material_t  *phases, *M;
+
+	PetscFunctionBegin;
+
+	// temperature diffusion cases only
+	if(jr->actTemp != PETSC_TRUE) PetscFunctionReturn(0);
+
+	// initialize
+	numPhases = jr->numPhases;
+	phases    = jr->phases;
+
+	// check all phases
+	for(i = 0; i < numPhases; i++)
+	{
+		M = &phases[i];
+
+		// check density of the rock phases
+		if((jr->AirPhase != -1 && i != jr->AirPhase) || jr->AirPhase == -1)
+		{
+			if(M->rho == 0.0) SETERRQ1(PETSC_COMM_SELF, PETSC_ERR_USER, "Define density of phase %lld\n", (LLD)i);
+		}
+			if(M->k   == 0.0) SETERRQ1(PETSC_COMM_SELF, PETSC_ERR_USER, "Define conductivity of phase %lld\n", (LLD)i);
+			if(M->Cp  == 0.0) SETERRQ1(PETSC_COMM_SELF, PETSC_ERR_USER, "Define heat capacity of phase %lld\n", (LLD)i);
+	}
+
+	PetscFunctionReturn(0);
+}
 //---------------------------------------------------------------------------
 #undef __FUNCT__
 #define __FUNCT__ "JacResCreateTempParam"
@@ -85,6 +171,12 @@ PetscErrorCode JacResCreateTempParam(JacRes *jr)
 	PetscFunctionBegin;
 
 	fs = jr->fs;
+
+	// create local temperature vector using box-stencil central DMDA
+	ierr = DMCreateLocalVector(fs->DA_CEN, &jr->lT); CHKERRQ(ierr);
+
+	// temperature diffusion cases only
+	if(jr->actTemp != PETSC_TRUE) PetscFunctionReturn(0);
 
 	// get cell center grid partitioning
 	ierr = DMDAGetOwnershipRanges(fs->DA_CEN, &lx, &ly, &lz); CHKERRQ(ierr);
@@ -106,13 +198,11 @@ PetscErrorCode JacResCreateTempParam(JacRes *jr)
 	ierr = MatSetOption(jr->Att, MAT_KEEP_NONZERO_PATTERN, PETSC_TRUE);       CHKERRQ(ierr);
 	ierr = MatSetOption(jr->Att, MAT_NO_OFF_PROC_ZERO_ROWS, PETSC_TRUE);      CHKERRQ(ierr);
 
-	// temperature vectors
-	ierr = DMCreateGlobalVector(fs->DA_CEN, &jr->gT); CHKERRQ(ierr);
-	ierr = DMCreateGlobalVector(fs->DA_CEN, &jr->dT); CHKERRQ(ierr);
-	ierr = DMCreateLocalVector (fs->DA_CEN, &jr->lT); CHKERRQ(ierr);
+	// temperature solution vector
+	ierr = DMCreateGlobalVector(jr->DA_T, &jr->dT); CHKERRQ(ierr);
 
 	// energy residual
-	ierr = DMCreateGlobalVector(fs->DA_CEN, &jr->ge); CHKERRQ(ierr);
+	ierr = DMCreateGlobalVector(jr->DA_T, &jr->ge); CHKERRQ(ierr);
 
 	// create temperature diffusion solver
 	ierr = KSPCreate(PETSC_COMM_WORLD, &jr->tksp); CHKERRQ(ierr);
@@ -131,13 +221,16 @@ PetscErrorCode JacResDestroyTempParam(JacRes *jr)
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
 
+	ierr = VecDestroy(&jr->lT);   CHKERRQ(ierr);
+
+	// temperature diffusion cases only
+	if(jr->actTemp != PETSC_TRUE) PetscFunctionReturn(0);
+
 	// temperature parameters
 	ierr = DMDestroy (&jr->DA_T); CHKERRQ(ierr);
 	ierr = MatDestroy(&jr->Att);  CHKERRQ(ierr);
 
-	ierr = VecDestroy(&jr->gT);   CHKERRQ(ierr);
 	ierr = VecDestroy(&jr->dT);   CHKERRQ(ierr);
-	ierr = VecDestroy(&jr->lT);   CHKERRQ(ierr);
 
 	ierr = VecDestroy(&jr->ge);   CHKERRQ(ierr);
 
@@ -152,41 +245,96 @@ PetscErrorCode JacResInitTemp(JacRes *jr)
 {
 	// initialize temperature from markers
 
-	PetscScalar *T;
 	FDSTAG      *fs;
-	PetscInt     jj, n;
+	BCCtx       *bc;
+	PetscScalar ***lT, ***bcT, T;
+	PetscInt    i, j, k, nx, ny, nz, sx, sy, sz, iter;
 
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
 
 	// access context
 	fs = jr->fs;
+	bc = jr->bc;
 
-	// copy temperatures from context storage to global vector
-	ierr = VecGetArray(jr->gT, &T);  CHKERRQ(ierr);
+	ierr = VecZeroEntries(jr->lT); CHKERRQ(ierr);
 
-	for(jj = 0, n = fs->nCells; jj < n; jj++) T[jj] = jr->svCell[jj].svBulk.Tn;
+	ierr = DMDAVecGetArray(fs->DA_CEN, jr->lT,  &lT);  CHKERRQ(ierr);
+	ierr = DMDAVecGetArray(fs->DA_CEN, bc->bcT, &bcT); CHKERRQ(ierr);
 
-	ierr = VecRestoreArray(jr->gT, &T);  CHKERRQ(ierr);
+	iter = 0;
+
+	ierr = DMDAGetCorners(fs->DA_CEN, &sx, &sy, &sz, &nx, &ny, &nz); CHKERRQ(ierr);
+
+	START_STD_LOOP
+	{
+		T = bcT[k][j][i];
+
+		if(T == DBL_MAX) T = jr->svCell[iter].svBulk.Tn;
+
+		lT[k][j][i] = T;
+
+		iter++;
+	}
+	END_STD_LOOP
+
+	ierr = DMDAVecRestoreArray(fs->DA_CEN, jr->lT,  &lT);  CHKERRQ(ierr);
+	ierr = DMDAVecRestoreArray(fs->DA_CEN, bc->bcT, &bcT); CHKERRQ(ierr);
+
+	// apply two-point constraints
+	ierr = JacResApplyTempBC(jr); CHKERRQ(ierr);
 
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
 #undef __FUNCT__
-#define __FUNCT__ "JacResCopyTemp"
-PetscErrorCode JacResCopyTemp(JacRes *jr)
+#define __FUNCT__ "JacResUpdateTemp"
+PetscErrorCode JacResUpdateTemp(JacRes *jr)
 {
-	// copy temperature from global to local vectors, enforce boundary constraints
+	// correct temperature for diffusion (Newton update)
+
+	FDSTAG      *fs;
+	PetscScalar ***lT, ***dT;
+	PetscInt    i, j, k, nx, ny, nz, sx, sy, sz;
+
+	PetscErrorCode ierr;
+	PetscFunctionBegin;
+
+	fs = jr->fs;
+
+	ierr = DMDAVecGetArray(fs->DA_CEN, jr->lT, &lT); CHKERRQ(ierr);
+	ierr = DMDAVecGetArray(jr->DA_T,   jr->dT, &dT); CHKERRQ(ierr);
+
+	ierr = DMDAGetCorners(fs->DA_CEN, &sx, &sy, &sz, &nx, &ny, &nz); CHKERRQ(ierr);
+
+	START_STD_LOOP
+	{
+		lT[k][j][i] -= dT[k][j][i];
+	}
+	END_STD_LOOP
+
+	ierr = DMDAVecRestoreArray(fs->DA_CEN, jr->lT, &lT); CHKERRQ(ierr);
+	ierr = DMDAVecRestoreArray(jr->DA_T,   jr->dT, &dT); CHKERRQ(ierr);
+
+	// apply two-point constraints
+	ierr = JacResApplyTempBC(jr); CHKERRQ(ierr);
+
+	PetscFunctionReturn(0);
+}
+//---------------------------------------------------------------------------
+#undef __FUNCT__
+#define __FUNCT__ "JacResApplyTempBC"
+PetscErrorCode JacResApplyTempBC(JacRes *jr)
+{
+	// apply temperature two-point constraints
 
 	FDSTAG      *fs;
 	BCCtx       *bc;
+	PetscScalar pmdof;
+	PetscScalar ***lT, ***bcT;
 	PetscInt    mcx, mcy, mcz;
 	PetscInt    I, J, K, fi, fj, fk;
 	PetscInt    i, j, k, nx, ny, nz, sx, sy, sz;
-	PetscScalar ***lT, ***bcT;
-	PetscScalar *T, pmdof;
-	PetscScalar *vals;
-	PetscInt    num, *list;
 
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
@@ -199,41 +347,14 @@ PetscErrorCode JacResCopyTemp(JacRes *jr)
 	mcy = fs->dsy.tcels - 1;
 	mcz = fs->dsz.tcels - 1;
 
-	// access vector
-	ierr = VecGetArray(jr->gT, &T); CHKERRQ(ierr);
+	// exchange internal ghost points
+	LOCAL_TO_LOCAL(fs->DA_CEN, jr->lT)
 
-	//=================================
-	// enforce single point constraints
-	//=================================
-
-	// temperature
-	num   = bc->tNumSPC;
-	list  = bc->tSPCList;
-	vals  = bc->tSPCVals;
-
-	for(i = 0; i < num; i++) T[list[i]] = vals[i];
-
-	ierr = VecRestoreArray(jr->gT, &T); CHKERRQ(ierr);
-
-	// fill local (ghosted) version of solution vector
-	GLOBAL_TO_LOCAL(fs->DA_CEN, jr->gT, jr->lT)
-
-	// access local solution vector
-	ierr = DMDAVecGetArray(fs->DA_CEN, jr->lT, &lT);  CHKERRQ(ierr);
-
-	// access boundary constraints vector
+	// access local solution & boundary constraints
+	ierr = DMDAVecGetArray(fs->DA_CEN, jr->lT,  &lT);  CHKERRQ(ierr);
 	ierr = DMDAVecGetArray(fs->DA_CEN, bc->bcT, &bcT); CHKERRQ(ierr);
 
-	//==============================
-	// enforce two-point constraints
-	//==============================
-
-	//-----------------------------
-	// central points (temperature)
-	//-----------------------------
-	GET_CELL_RANGE_GHOST_INT(nx, sx, fs->dsx)
-	GET_CELL_RANGE_GHOST_INT(ny, sy, fs->dsy)
-	GET_CELL_RANGE_GHOST_INT(nz, sz, fs->dsz)
+	ierr = DMDAGetGhostCorners(fs->DA_CEN, &sx, &sy, &sz, &nx, &ny, &nz); CHKERRQ(ierr);
 
 	START_STD_LOOP
 	{
@@ -258,8 +379,7 @@ PetscErrorCode JacResCopyTemp(JacRes *jr)
 	END_STD_LOOP
 
 	// restore access
-	ierr = DMDAVecRestoreArray(fs->DA_CEN, jr->lT, &lT);  CHKERRQ(ierr);
-
+	ierr = DMDAVecRestoreArray(fs->DA_CEN, jr->lT,  &lT);  CHKERRQ(ierr);
 	ierr = DMDAVecRestoreArray(fs->DA_CEN, bc->bcT, &bcT); CHKERRQ(ierr);
 
 	PetscFunctionReturn(0);
@@ -272,28 +392,29 @@ PetscErrorCode JacResGetTempRes(JacRes *jr)
 	// compute temperature residual vector
 
 	FDSTAG     *fs;
+	BCCtx      *bc;
 	SolVarCell *svCell;
 	SolVarDev  *svDev;
 	SolVarBulk *svBulk;
-	Material_t *phases;
-	PetscInt    iter, numPhases;
+	PetscInt    iter, num, *list;
 	PetscInt    Ip1, Im1, Jp1, Jm1, Kp1, Km1;
 	PetscInt    i, j, k, nx, ny, nz, sx, sy, sz, mx, my, mz;
  	PetscScalar bkx, fkx, bky, fky, bkz, fkz;
 	PetscScalar bdx, fdx, bdy, fdy, bdz, fdz;
 	PetscScalar bqx, fqx, bqy, fqy, bqz, fqz;
  	PetscScalar dx, dy, dz;
-	PetscScalar kc, rho, Cp, A, Tc, Tn, dt, Hr;
-	PetscScalar ***ge, ***T, ***lk, ***hxy, ***hxz, ***hyz, ***buff;
+	PetscScalar kc, rho_Cp, rho_A, Tc, Tn, dt, Hr;
+	PetscScalar ***ge, ***lT, ***lk, ***hxy, ***hxz, ***hyz, ***buff, *e;
 
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
 
 	// access residual context variables
 	fs        = jr->fs;
-	numPhases = jr->numPhases; // number phases
-	phases    = jr->phases;    // phase parameters
 	dt        = jr->ts.dt;     // time step
+	bc        = jr->bc;
+	num       = bc->tNumSPC;
+	list      = bc->tSPCList;
 
 	// initialize maximum cell index in all directions
 	mx = fs->dsx.tcels - 1;
@@ -306,8 +427,8 @@ PetscErrorCode JacResGetTempRes(JacRes *jr)
 	SCATTER_FIELD(fs->DA_YZ,  jr->ldyz, GET_HRYZ)
 
 	// access work vectors
-	ierr = DMDAVecGetArray(fs->DA_CEN, jr->ge,   &ge);  CHKERRQ(ierr);
-	ierr = DMDAVecGetArray(fs->DA_CEN, jr->lT,   &T);   CHKERRQ(ierr);
+	ierr = DMDAVecGetArray(jr->DA_T,   jr->ge,   &ge);  CHKERRQ(ierr);
+	ierr = DMDAVecGetArray(fs->DA_CEN, jr->lT,   &lT);  CHKERRQ(ierr);
 	ierr = DMDAVecGetArray(fs->DA_CEN, jr->ldxx, &lk);  CHKERRQ(ierr);
 	ierr = DMDAVecGetArray(fs->DA_XY,  jr->ldxy, &hxy); CHKERRQ(ierr);
 	ierr = DMDAVecGetArray(fs->DA_XZ,  jr->ldxz, &hxz); CHKERRQ(ierr);
@@ -327,12 +448,11 @@ PetscErrorCode JacResGetTempRes(JacRes *jr)
 		svBulk = &svCell->svBulk;
 
 		// access
-		Tc  = T[k][j][i];  // current temperature
+		Tc  = lT[k][j][i]; // current temperature
 		Tn  = svBulk->Tn;  // temperature history
-		rho = svBulk->rho; // effective density
 
 		// conductivity, heat capacity, radiogenic heat production
-		GetTempParam(numPhases, phases, svCell->phRat, &kc, &Cp, &A);
+		ierr = JacResGetTempParam(jr, svCell->phRat, &kc, &rho_Cp, &rho_A); CHKERRQ(ierr);
 
 		// shear heating term
 		Hr = svDev->Hr +
@@ -359,9 +479,9 @@ PetscErrorCode JacResGetTempRes(JacRes *jr)
 		bdz = SIZE_NODE(k, sz, fs->dsz);     fdz = SIZE_NODE(k+1, sz, fs->dsz);
 
 		// compute heat fluxes
-		bqx = bkx*(Tc - T[k][j][i-1])/bdx;   fqx = fkx*(T[k][j][i+1] - Tc)/fdx;
-		bqy = bky*(Tc - T[k][j-1][i])/bdy;   fqy = fky*(T[k][j+1][i] - Tc)/fdy;
-		bqz = bkz*(Tc - T[k-1][j][i])/bdz;   fqz = fkz*(T[k+1][j][i] - Tc)/fdz;
+		bqx = bkx*(Tc - lT[k][j][i-1])/bdx;   fqx = fkx*(lT[k][j][i+1] - Tc)/fdx;
+		bqy = bky*(Tc - lT[k][j-1][i])/bdy;   fqy = fky*(lT[k][j+1][i] - Tc)/fdy;
+		bqz = bkz*(Tc - lT[k-1][j][i])/bdz;   fqz = fkz*(lT[k+1][j][i] - Tc)/fdz;
 
 		// get mesh steps
 		dx = SIZE_CELL(i, sx, fs->dsx);
@@ -375,17 +495,24 @@ PetscErrorCode JacResGetTempRes(JacRes *jr)
 		// to get positive diagonal in the preconditioner matrix
 		// put right hand side to the left, which gives the following:
 
-		ge[k][j][i] = rho*Cp*(Tc - Tn)/dt - (fqx - bqx)/dx - (fqy - bqy)/dy - (fqz - bqz)/dz - Hr - rho*A;
+		ge[k][j][i] = rho_Cp*(Tc - Tn)/dt - (fqx - bqx)/dx - (fqy - bqy)/dy - (fqz - bqz)/dz - Hr - rho_A;
 	}
 	END_STD_LOOP
 
 	// restore access
-	ierr = DMDAVecRestoreArray(fs->DA_CEN, jr->ge,   &ge);  CHKERRQ(ierr);
-	ierr = DMDAVecRestoreArray(fs->DA_CEN, jr->lT,   &T);   CHKERRQ(ierr);
+	ierr = DMDAVecRestoreArray(jr->DA_T,   jr->ge,   &ge);  CHKERRQ(ierr);
+	ierr = DMDAVecRestoreArray(fs->DA_CEN, jr->lT,   &lT);  CHKERRQ(ierr);
 	ierr = DMDAVecRestoreArray(fs->DA_CEN, jr->ldxx, &lk);  CHKERRQ(ierr);
 	ierr = DMDAVecRestoreArray(fs->DA_XY,  jr->ldxy, &hxy); CHKERRQ(ierr);
 	ierr = DMDAVecRestoreArray(fs->DA_XZ,  jr->ldxz, &hxz); CHKERRQ(ierr);
 	ierr = DMDAVecRestoreArray(fs->DA_YZ,  jr->ldyz, &hyz); CHKERRQ(ierr);
+
+	// impose primary temperature constraints
+	ierr = VecGetArray(jr->ge, &e); CHKERRQ(ierr);
+
+	for(i = 0; i < num; i++) e[list[i]] = 0.0;
+
+	ierr = VecRestoreArray(jr->ge, &e); CHKERRQ(ierr);
 
 	PetscFunctionReturn(0);
 }
@@ -395,19 +522,18 @@ PetscErrorCode JacResGetTempRes(JacRes *jr)
 PetscErrorCode JacResGetTempMat(JacRes *jr)
 {
 	// assemble temperature preconditioner matrix
+	// COMPLETE SINGLE-POINT CONSTRIANT IMLEMENTATION !!!
 
 	FDSTAG     *fs;
 	BCCtx      *bc;
 	SolVarCell *svCell;
-	SolVarBulk *svBulk;
-	Material_t *phases;
-	PetscInt    iter, numPhases;
+	PetscInt    iter, num, *list;
 	PetscInt    Ip1, Im1, Jp1, Jm1, Kp1, Km1;
 	PetscInt    i, j, k, nx, ny, nz, sx, sy, sz, mx, my, mz;
 	PetscScalar bkx, fkx, bky, fky, bkz, fkz;
 	PetscScalar bdx, fdx, bdy, fdy, bdz, fdz;
  	PetscScalar dx, dy, dz;
-	PetscScalar v[7], cf[6], kc, rho, Cp, dt;
+	PetscScalar v[7], cf[6], kc, rho_Cp, dt;
 	MatStencil  row[1], col[7];
 	PetscScalar ***lk, ***bcT, ***buff;
 
@@ -417,9 +543,9 @@ PetscErrorCode JacResGetTempMat(JacRes *jr)
 	// access residual context variables
 	fs        = jr->fs;
 	bc        = jr->bc;
-	numPhases = jr->numPhases; // number phases
-	phases    = jr->phases;    // phase parameters
 	dt        = jr->ts.dt;     // time step
+	num       = bc->tNumSPC;
+	list      = bc->tSPCList;
 
 	// initialize maximum cell index in all directions
 	mx = fs->dsx.tcels - 1;
@@ -427,6 +553,9 @@ PetscErrorCode JacResGetTempMat(JacRes *jr)
 	mz = fs->dsz.tcels - 1;
 
 	SCATTER_FIELD(fs->DA_CEN, jr->ldxx, GET_KC)
+
+	// clear matrix coefficients
+	ierr = MatZeroEntries(jr->Att); CHKERRQ(ierr);
 
 	// access work vectors
 	ierr = DMDAVecGetArray(fs->DA_CEN, jr->ldxx, &lk);  CHKERRQ(ierr);
@@ -442,13 +571,9 @@ PetscErrorCode JacResGetTempMat(JacRes *jr)
 	{
 		// access solution variables
 		svCell = &jr->svCell[iter++];
-		svBulk = &svCell->svBulk;
-
-		// access
-		rho = svBulk->rho; // effective density
 
 		// conductivity, heat capacity
-		GetTempParam(numPhases, phases, svCell->phRat, &kc, &Cp, NULL);
+		ierr = JacResGetTempParam(jr, svCell->phRat, &kc, &rho_Cp, NULL); CHKERRQ(ierr);
 
 		// check index bounds and TPC multipliers
 		Im1 = i-1; cf[0] = 1.0; if(Im1 < 0)  { Im1++; if(bcT[k][j][i-1] != DBL_MAX) cf[0] = -1.0; }
@@ -490,7 +615,7 @@ PetscErrorCode JacResGetTempMat(JacRes *jr)
 		v[3] = -fky/fdy/dy*cf[3];
 		v[4] = -bkz/bdz/dz*cf[4];
 		v[5] = -fkz/fdz/dz*cf[5];
-		v[6] =  rho*Cp/dt
+		v[6] =  rho_Cp/dt
 		+       (bkx/bdx + fkx/fdx)/dx
 		+       (bky/bdy + fky/fdy)/dy
 		+       (bkz/bdz + fkz/fdz)/dz;
@@ -507,8 +632,7 @@ PetscErrorCode JacResGetTempMat(JacRes *jr)
 	ierr = DMDAVecRestoreArray(fs->DA_CEN, bc->bcT, &bcT);  CHKERRQ(ierr);
 
 	// assemble temperature matrix
-	ierr = MatAssemblyBegin(jr->Att, MAT_FINAL_ASSEMBLY); CHKERRQ(ierr);
-	ierr = MatAssemblyEnd  (jr->Att, MAT_FINAL_ASSEMBLY); CHKERRQ(ierr);
+	ierr = MatAIJAssemble(jr->Att, num, list, 1.0); CHKERRQ(ierr);
 
 	PetscFunctionReturn(0);
 }

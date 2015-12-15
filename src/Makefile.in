@@ -65,17 +65,17 @@ endif
 # Intel or AMD machine
 ifeq ($(PLATFORM), x86_64)
    # Detect compilers
-   ifneq ($(shell mpicc --version 2>&1 | grep -c pgcc), 0)
+   ifneq ($(shell mpicc -v 2>&1 | grep -c pgcc), 0)
       # PORTLAND GROUP
       DEPEN_FLAGS = -MM
       LAMEM_FLAGS += -c99
    endif
-   ifneq ($(shell mpicc --version 2>&1 | grep -c icc), 0)
+   ifneq ($(shell mpicc -v 2>&1 | grep -c icc), 0)
       # INTEL
       DEPEN_FLAGS = -MM
       LAMEM_FLAGS += -std=c99 -Wmissing-prototypes
    endif
-   ifneq ($(shell mpicc --version 2>&1 | grep -c gcc), 0)
+   ifneq ($(shell mpicc -v 2>&1 | grep -c gcc), 0)
       # GNU
       DEPEN_FLAGS = -MM
       LAMEM_FLAGS += -std=c99 -pedantic -Wall -W -Wmissing-prototypes \
@@ -83,7 +83,7 @@ ifeq ($(PLATFORM), x86_64)
       -Wcast-qual -Wcast-align -Wwrite-strings -Wnested-externs -Winline \
       -Werror=implicit-function-declaration -Wno-unused-result -Wno-inline
    endif
-   ifneq ($(shell mpicc --version 2>&1 | grep -c Apple), 0)
+   ifneq ($(shell mpicc -v 2>&1 | grep -c Apple), 0)
       # GNU
       DEPEN_FLAGS = -MM
       LAMEM_FLAGS += -std=c99 -pedantic -Wall -W -Wmissing-prototypes \

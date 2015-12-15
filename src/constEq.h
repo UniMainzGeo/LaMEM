@@ -59,6 +59,7 @@ typedef struct
 	PetscScalar  N_prl; // Peierls exponent
 	PetscScalar  taupl; // plastic yield stress
 	PetscBool    cfsol; // closed-form solution flag
+	PetscScalar  fr;    // effective friction coefficient
 
 } ConstEqCtx;
 
@@ -86,6 +87,15 @@ PetscErrorCode GetEffVisc(
 	PetscScalar *eta_total,
 	PetscScalar *eta_creep,
 	PetscScalar *DIIpl);
+
+PetscErrorCode GetEffViscJac(
+	ConstEqCtx  *ctx,
+	MatParLim   *lim,
+	PetscScalar *eta_total,
+	PetscScalar *eta_creep,
+	PetscScalar *DIIpl,
+	PetscScalar *dEta,
+	PetscScalar *fr);
 
 // apply strain softening to a parameter (friction, cohesion)
 PetscScalar ApplyStrainSoft(Soft_t *sl, PetscScalar APS, PetscScalar par);
@@ -154,22 +164,15 @@ void RotateStress(Tensor2RN *R, Tensor2RS *S, Tensor2RS *SR);
 void Tensor2RSCopy(Tensor2RS *A, Tensor2RS *B);
 
 //---------------------------------------------------------------------------
-// Temperature parameters functions
-//---------------------------------------------------------------------------
-
-void GetTempParam(
-	PetscInt     numPhases,
-	Material_t  *phases,
-	PetscScalar *phRat,
-	PetscScalar *k_,  // conductivity
-	PetscScalar *Cp_, // capacity
-	PetscScalar *A_); // radiogenic heat
-
-//---------------------------------------------------------------------------
 // Infinite Strain Axis (ISA) calculation functions
 //---------------------------------------------------------------------------
+void Tensor2RNClear(Tensor2RN *A);
+
+PetscInt Tensor2RNCheckEq(Tensor2RN *A, Tensor2RN *B, PetscScalar tol);
 
 void Tensor2RNNorm(Tensor2RN *A, PetscScalar *pk);
+
+void Tensor2RSNorm(Tensor2RS *A, PetscScalar *pk);
 
 void Tensor2RNDivide(Tensor2RN *A, PetscScalar k);
 
@@ -199,9 +202,7 @@ void Tensor2RNView(Tensor2RN *A, const char *msg);
 
 void Tensor2RSView(Tensor2RS *A, const char *msg);
 
-void Tensor2RNEigen(Tensor2RN *L, PetscScalar tol, PetscScalar eval[]);
-
-void SortEgenAbs(PetscScalar eval[]);
+PetscInt Tensor2RNEigen(Tensor2RN *L, PetscScalar tol, PetscScalar eval[]);
 
 PetscInt Tensor2RSSpectral(
 	Tensor2RS   *A,      // symmetric tensor
@@ -212,6 +213,16 @@ PetscInt Tensor2RSSpectral(
 	PetscInt    itmax);  // maximum number rotations
 
 PetscInt getISA(Tensor2RN *pL, PetscScalar ISA[], PetscScalar *plnrm);
+
+PetscErrorCode Tensor2RS2DSpectral(
+	PetscScalar  axx,
+	PetscScalar  ayy,
+	PetscScalar  axy,
+	PetscScalar *pa1,
+	PetscScalar *pa2,
+	PetscScalar  v1[],
+	PetscScalar  v2[],
+	PetscScalar  tol);
 
 //---------------------------------------------------------------------------
 #endif

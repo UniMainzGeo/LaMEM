@@ -142,11 +142,9 @@ PetscErrorCode ADVelInterpPT(AdvCtx *actx)
 	JacRes      *jr;
 	Marker      *P;
 	SolVarCell  *svCell;
-	PetscInt    sx, sy, sz, nx, ny;
-	PetscInt    jj, ID, I, J, K, II, JJ, KK;
-	PetscScalar *ccx, *ccy, *ccz;
+	PetscInt    nx, ny, sx, sy, sz;
+	PetscInt    jj, ID, I, J, K;
 	PetscScalar ***lp, ***lT;
-	PetscScalar p, T, xc, yc, zc, xp, yp, zp;
 
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
@@ -156,14 +154,11 @@ PetscErrorCode ADVelInterpPT(AdvCtx *actx)
 	jr = actx->jr;
 
 	// starting indices & number of cells
-	sx = fs->dsx.pstart; nx = fs->dsx.ncels;
-	sy = fs->dsy.pstart; ny = fs->dsy.ncels;
+	nx = fs->dsx.ncels;
+	ny = fs->dsy.ncels;
+	sx = fs->dsx.pstart;
+	sy = fs->dsy.pstart;
 	sz = fs->dsz.pstart;
-
-	// cell coordinates
-	ccx = fs->dsx.ccoor;
-	ccy = fs->dsy.ccoor;
-	ccz = fs->dsz.ccoor;
 
 	// access velocity, pressure & temperature vectors
 	ierr = DMDAVecGetArray(fs->DA_CEN, jr->lp,  &lp);  CHKERRQ(ierr);
@@ -181,36 +176,15 @@ PetscErrorCode ADVelInterpPT(AdvCtx *actx)
 		// expand I, J, K cell indices
 		GET_CELL_IJK(ID, I, J, K, nx, ny)
 
-		// get marker coordinates
-		xp = P->X[0];
-		yp = P->X[1];
-		zp = P->X[2];
-
-		// get coordinates of cell center
-		xc = ccx[I];
-		yc = ccy[J];
-		zc = ccz[K];
-
-		// map marker on the cells of X, Y, Z & center grids
-		if(xp > xc) { II = I; } else { II = I-1; }
-		if(yp > yc) { JJ = J; } else { JJ = J-1; }
-		if(zp > zc) { KK = K; } else { KK = K-1; }
-
-		// ACHTUNG!
-		// compute p & T increments first, then interpolate them!
-		// or just use piecewise-constant updates
-
-		p  = InterpLin3D(lp,  II, JJ, KK, sx, sy, sz, xp, yp, zp, ccx, ccy, ccz);
-		T  = InterpLin3D(lT,  II, JJ, KK, sx, sy, sz, xp, yp, zp, ccx, ccy, ccz);
-
 		// access host cell solution variables
 		svCell = &jr->svCell[ID];
 
 		// update pressure & temperature variables
-		P->p += p - svCell->svBulk.pn;
-		// ACHTUNG!
-		// deactivated for now
-		//		P->T += T - svCell->svBulk.Tn;
+		P->p += lp[sz+K][sy+J][sx+I] - svCell->svBulk.pn;
+		P->T += lT[sz+K][sy+J][sx+I] - svCell->svBulk.Tn;
+
+		// override temperature of air phase
+		if(actx->AirPhase != -1 &&  P->phase == actx->AirPhase) P->T = actx->Ttop;
 	}
 
 	// restore access

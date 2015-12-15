@@ -60,6 +60,8 @@ x_left  =   -250;            % coord of the left margin
 y_front =   0;              % coord of the front margin
 z_bot   =   -500;        % coord of the bottom margin
 
+RandomNoise = logical(0);
+Is64BIT     = logical(0);
 
 
 %==========================================================================
@@ -76,7 +78,9 @@ end
 
 % Load grid from parallel partitioning file 
 if LoadMesh == 1
-    [X,Y,Z,x,y,z] = FDSTAGMeshGeneratorMatlab(npart_x,npart_y,npart_z,Parallel_partition);
+    [X,Y,Z,x,y,z, Xpart, Ypart, Zpart] = FDSTAGMeshGeneratorMatlab(npart_x,npart_y,npart_z,Parallel_partition,RandomNoise,Is64BIT );
+
+     
     
     % Update other variables
     nump_x = size(X,2);
@@ -160,6 +164,10 @@ A.Temp   = Temp;
 A.x      = x(:);
 A.y      = y(:);
 A.z      = z(:);
+A.Xpart  = Xpart(:);
+A.Ypart  = Ypart(:);
+A.Zpart  = Zpart(:);
+
 A.npart_x= npart_x;
 A.npart_y= npart_y;
 A.npart_z= npart_z;
@@ -183,7 +191,7 @@ if (LaMEM_Redundant_output == 1)
 end
 
 % Clearing up some memory for parallel partitioning
-clearvars -except A Paraview_output LaMEM_Parallel_output Parallel_partition
+clearvars -except A Paraview_output LaMEM_Parallel_output Parallel_partition Is64BIT
 
 % PARAVIEW VISUALIZATION
 if (Paraview_output == 1)
@@ -194,7 +202,7 @@ end
 
 % SAVE PARALLEL DATA (parallel)
 if (LaMEM_Parallel_output == 1)
-    FDSTAGSaveMarkersParallelMatlab(A,Parallel_partition);
+    FDSTAGSaveMarkersParallelMatlab(A,Parallel_partition, Is64BIT);
 end
 
 

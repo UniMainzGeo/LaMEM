@@ -78,10 +78,11 @@ PetscErrorCode JacResSetFromOptions(JacRes *jr)
 	// set pressure shift flag
 	ierr = PetscOptionsHasName(NULL, "-skip_press_shift", &flg); CHKERRQ(ierr);
 
-	if(flg == PETSC_TRUE)
-	{
-		jr->pShiftAct = PETSC_FALSE;
-	}
+	if(flg == PETSC_TRUE) jr->pShiftAct = PETSC_FALSE;
+
+	ierr = PetscOptionsHasName(NULL, "-act_temp_diff", &flg); CHKERRQ(ierr);
+
+	if(flg == PETSC_TRUE) jr->actTemp = PETSC_TRUE;
 
 	// set geometry tolerance
 	ierr = PetscOptionsGetScalar(NULL, "-geom_tol", &gtol, &flg); CHKERRQ(ierr);
@@ -202,11 +203,17 @@ PetscErrorCode JacResCreate(
 	jr->pShift    = 0.0;
 	jr->pShiftAct = PETSC_TRUE;
 
-	// setup temperature parameters
-	ierr = JacResCreateTempParam(jr); CHKERRQ(ierr);
+	// switch-off temperature diffusion
+	jr->actTemp = PETSC_FALSE;
+
+	// switch off free surface tracking
+	jr->AirPhase = -1;
 
 	// change default settings
 	ierr = JacResSetFromOptions(jr); CHKERRQ(ierr);
+
+	// setup temperature parameters
+	ierr = JacResCreateTempParam(jr); CHKERRQ(ierr);
 
 	PetscFunctionReturn(0);
 }
@@ -1259,7 +1266,7 @@ PetscErrorCode JacResGetResidual(JacRes *jr)
 //---------------------------------------------------------------------------
 #undef __FUNCT__
 #define __FUNCT__ "JacResCopySol"
-PetscErrorCode JacResCopySol(JacRes *jr, Vec x)
+PetscErrorCode JacResCopySol(JacRes *jr, Vec x, PetscInt appSPC)
 {
 	// copy solution from global to local vectors, enforce boundary constraints
 
@@ -1301,14 +1308,16 @@ PetscErrorCode JacResCopySol(JacRes *jr, Vec x)
 	list  = bc->vSPCList;
 	vals  = bc->vSPCVals;
 
-	for(i = 0; i < num; i++) sol[list[i]] = vals[i];
+	if(appSPC) { for(i = 0; i < num; i++) sol[list[i]] = vals[i]; }
+	else       { for(i = 0; i < num; i++) sol[list[i]] = 0.0;     }
 
 	// pressure
 	num   = bc->pNumSPC;
 	list  = bc->pSPCList;
 	vals  = bc->pSPCVals;
 
-	for(i = 0; i < num; i++) sol[list[i]] = vals[i];
+	if(appSPC) { for(i = 0; i < num; i++) sol[list[i]] = vals[i]; }
+	else       { for(i = 0; i < num; i++) sol[list[i]] = 0.0;     }
 
 	// copy vectors component-wise
 	iter = sol;
@@ -1605,7 +1614,6 @@ PetscErrorCode JacResViewRes(JacRes *jr)
 	// show assembled residual with boundary constraints
 	// WARNING! rewrite this function using coupled residual vector directly
 
-	PetscBool   flg;
 	PetscScalar dmin, dmax, d2, e2, fx, fy, fz, f2, div_tol;
 
 	PetscErrorCode ierr;
@@ -1619,12 +1627,18 @@ PetscErrorCode JacResViewRes(JacRes *jr)
 	ierr = VecMin (jr->gc,  NULL,   &dmin); CHKERRQ(ierr);
 	ierr = VecMax (jr->gc,  NULL,   &dmax); CHKERRQ(ierr);
 	ierr = VecNorm(jr->gc,  NORM_2, &d2);   CHKERRQ(ierr);
-	ierr = VecNorm(jr->ge,  NORM_2, &e2);   CHKERRQ(ierr);
+
 	ierr = VecNorm(jr->gfx, NORM_2, &fx);   CHKERRQ(ierr);
 	ierr = VecNorm(jr->gfy, NORM_2, &fy);   CHKERRQ(ierr);
 	ierr = VecNorm(jr->gfz, NORM_2, &fz);   CHKERRQ(ierr);
 
 	f2 = sqrt(fx*fx + fy*fy + fz*fz);
+
+	if(jr->actTemp == PETSC_TRUE)
+	{
+    	ierr = JacResGetTempRes(jr);         CHKERRQ(ierr);
+		ierr = VecNorm(jr->ge, NORM_2, &e2); CHKERRQ(ierr);
+	}
 
 	// print
 	PetscPrintf(PETSC_COMM_WORLD, "------------------------------------------\n");
@@ -1635,8 +1649,13 @@ PetscErrorCode JacResViewRes(JacRes *jr)
 	PetscPrintf(PETSC_COMM_WORLD, "    |Div|_2  = %12.12e \n", d2);
 	PetscPrintf(PETSC_COMM_WORLD, "  Momentum: \n" );
 	PetscPrintf(PETSC_COMM_WORLD, "    |mRes|_2 = %12.12e \n", f2);
-	PetscPrintf(PETSC_COMM_WORLD, "  Energy: \n" );
-	PetscPrintf(PETSC_COMM_WORLD, "    |eRes|_2 = %12.12e \n", e2);
+
+	if(jr->actTemp == PETSC_TRUE)
+	{
+		PetscPrintf(PETSC_COMM_WORLD, "  Energy: \n" );
+		PetscPrintf(PETSC_COMM_WORLD, "    |eRes|_2 = %12.12e \n", e2);
+	}
+
 	PetscPrintf(PETSC_COMM_WORLD, "------------------------------------------\n");
 
 	// stop if divergence more than tolerance
@@ -1674,7 +1693,6 @@ PetscErrorCode SetMatParLim(MatParLim *matLim, UserCtx *usr)
 	matLim->eta_min      = usr->LowerViscosityCutoff;
 	matLim->eta_max      = usr->UpperViscosityCutoff;
 	matLim->eta_ref      = usr->InitViscosity;
-//	matLim->eta_plast    = usr->PlastViscosity;
 
 	matLim->TRef         = 0.0;
 	matLim->Rugc         = 8.3144621;
@@ -1684,12 +1702,11 @@ PetscErrorCode SetMatParLim(MatParLim *matLim, UserCtx *usr)
 	matLim->DII_rtol     = 1e-8;
 
 	if(usr->DII_ref) matLim->DII_ref = usr->DII_ref;
-    else{
-        matLim->DII_ref = 1;
-        PetscPrintf(PETSC_COMM_WORLD," WARNING: Reference strain rate DII_ref is not defined. Use a non-dimensional reference value of DII_ref =%f \n",matLim->DII_ref);
-    }
-        
-    
+	else
+	{
+		matLim->DII_ref = 1.0;
+		PetscPrintf(PETSC_COMM_WORLD," WARNING: Reference strain rate DII_ref is not defined. Use a non-dimensional reference value of DII_ref =%f \n",matLim->DII_ref);
+	}
 
 	matLim->minCh        = 0.0;
 	matLim->minFr        = 0.0;
@@ -1700,6 +1717,7 @@ PetscErrorCode SetMatParLim(MatParLim *matLim, UserCtx *usr)
 	matLim->rho_fluid    = 0.0;
 	matLim->theta_north  = 90.0; // by default y-axis
 	matLim->warn         = PETSC_TRUE;
+	matLim->jac_mat_free = PETSC_FALSE;
 
 	// read additional options
 	ierr = PetscOptionsHasName(PETSC_NULL, "-use_quasi_harmonic_viscosity", &flg); CHKERRQ(ierr);
@@ -1715,10 +1733,12 @@ PetscErrorCode SetMatParLim(MatParLim *matLim, UserCtx *usr)
 
 	ierr = PetscOptionsHasName(PETSC_NULL, "-stop_warnings", &flg); CHKERRQ(ierr);
 
-	if(flg == PETSC_TRUE)
-	{
-		matLim->warn = PETSC_FALSE;
-	}
+	if(flg == PETSC_TRUE) matLim->warn = PETSC_FALSE;
+
+	// set Jacobian flag
+	ierr = PetscOptionsHasName(NULL, "-jac_mat_free", &flg); CHKERRQ(ierr);
+
+	if(flg == PETSC_TRUE) matLim->jac_mat_free = PETSC_TRUE;
 
 	PetscFunctionReturn(0);
 }
@@ -1849,6 +1869,12 @@ PetscErrorCode getMaxInvStep1DLocal(Discret1D *ds, DM da, Vec gv, PetscInt dir, 
 //---------------------------------------------------------------------------
 // Infinite Strain Axis (ISA) computation functions
 //---------------------------------------------------------------------------
+#define gradComp(v, dx, bdx1, fdx1, bdx2, fdx2, dvdx, dvdx1, dvdx2, vc) \
+	dvdx  = ( v[9] - v[4])/dx; \
+	dvdx1 = ((v[4] - v[0] + v[9] - v[5])/bdx1 + (v[1] - v[4] + v[6] - v[9])/fdx1)/4.0; \
+	dvdx2 = ((v[4] - v[2] + v[9] - v[7])/bdx2 + (v[3] - v[4] + v[8] - v[9])/fdx2)/4.0; \
+	vc    = ( v[9] + v[4])/2.0;
+//---------------------------------------------------------------------------
 #undef __FUNCT__
 #define __FUNCT__ "getGradientVel"
 PetscErrorCode getGradientVel(
@@ -1858,62 +1884,61 @@ PetscErrorCode getGradientVel(
 {
 	// compute velocity gradient and normalized velocities at cell center
 
-	PetscScalar vnrm, dx, dy, dz, we[6], wb[6], vx[6], vy[6], vz[6], vxc, vyc, vzc;
-
-	PetscFunctionBegin;
+	PetscScalar dx, dy, dz, bdx, fdx, bdy, fdy, bdz, fdz;
+	PetscScalar vnrm, vx[10], vy[10], vz[10], vxc, vyc, vzc;
 
 	// get cell sizes
-	dx = SIZE_NODE(i, sx, fs->dsx);
-	dy = SIZE_NODE(j, sy, fs->dsy);
-	dz = SIZE_NODE(k, sz, fs->dsz);
+	dx = SIZE_CELL(i, sx, fs->dsx);   bdx = SIZE_NODE(i, sx, fs->dsx);   fdx = SIZE_NODE(i+1, sx, fs->dsx);
+	dy = SIZE_CELL(j, sy, fs->dsy);   bdy = SIZE_NODE(j, sy, fs->dsy);   fdy = SIZE_NODE(j+1, sy, fs->dsy);
+	dz = SIZE_CELL(k, sz, fs->dsz);   bdz = SIZE_NODE(k, sz, fs->dsz);   fdz = SIZE_NODE(k+1, sz, fs->dsz);
 
-	// get interpolation weights
-	we[0] = WEIGHT_NODE(i,   sx, fs->dsx); wb[0] = 1.0 - we[0];
-	we[1] = WEIGHT_NODE(i+1, sx, fs->dsx); wb[1] = 1.0 - we[1];
-	we[2] = WEIGHT_NODE(j,   sy, fs->dsy); wb[2] = 1.0 - we[2];
-	we[3] = WEIGHT_NODE(j+1, sy, fs->dsy); wb[3] = 1.0 - we[3];
-	we[4] = WEIGHT_NODE(k,   sz, fs->dsz); wb[4] = 1.0 - we[4];
-	we[5] = WEIGHT_NODE(k+1, sz, fs->dsz); wb[5] = 1.0 - we[5];
+	// vx - stencil
+	vx[0] = lvx[k]  [j-1][i];
+	vx[1] = lvx[k]  [j+1][i];
+	vx[2] = lvx[k-1][j]  [i];
+	vx[3] = lvx[k+1][j]  [i];
+	vx[4] = lvx[k]  [j]  [i];
+	vx[5] = lvx[k]  [j-1][i+1];
+	vx[6] = lvx[k]  [j+1][i+1];
+	vx[7] = lvx[k-1][j]  [i+1];
+	vx[8] = lvx[k+1][j]  [i+1];
+	vx[9] = lvx[k]  [j]  [i+1];
 
-	// get velocities at cell center
-	vxc = (lvx[k][j][i] + lvx[k][j][i+1])/2.0;
-	vyc = (lvy[k][j][i] + lvy[k][j+1][i])/2.0;
-    vzc = (lvz[k][j][i] + lvz[k+1][j][i])/2.0;
+	// vy - stencil
+	vy[0] = lvy[k]  [j]  [i-1];
+	vy[1] = lvy[k]  [j]  [i+1];
+	vy[2] = lvy[k-1][j]  [i];
+	vy[3] = lvy[k+1][j]  [i];
+	vy[4] = lvy[k]  [j]  [i];
+	vy[5] = lvy[k]  [j+1][i-1];
+	vy[6] = lvy[k]  [j+1][i+1];
+	vy[7] = lvy[k-1][j+1][i];
+	vy[8] = lvy[k+1][j+1][i];
+	vy[9] = lvy[k]  [j+1][i];
 
-	// x - velocity stencil
-	vx[0] = lvx[k][j][i];
-	vx[1] = lvx[k][j][i+1];
-	vx[2] = wb[2]*(lvx[k][j-1][i] + lvx[k][j-1][i+1])/2.0 + we[2]*vxc;
-	vx[3] = we[3]*(lvx[k][j+1][i] + lvx[k][j+1][i+1])/2.0 + wb[3]*vxc;
-	vx[4] = wb[4]*(lvx[k-1][j][i] + lvx[k-1][j][i+1])/2.0 + we[4]*vxc;
-	vx[5] = we[5]*(lvx[k+1][j][i] + lvx[k+1][j][i+1])/2.0 + wb[5]*vxc;
+	// vz - stencil
+	vz[0] = lvz[k]  [j]  [i-1];
+	vz[1] = lvz[k]  [j]  [i+1];
+	vz[2] = lvz[k]  [j-1][i];
+	vz[3] = lvz[k]  [j+1][i];
+	vz[4] = lvz[k]  [j]  [i];
+	vz[5] = lvz[k+1][j]  [i-1];
+	vz[6] = lvz[k+1][j]  [i+1];
+	vz[7] = lvz[k+1][j-1][i];
+	vz[8] = lvz[k+1][j+1][i];
+	vz[9] = lvz[k+1][j]  [i];
 
-	// y - velocity stencil
-	vy[0] = wb[0]*(lvy[k][j][i-1] + lvy[k][j+1][i-1])/2.0 + we[0]*vyc;
-	vy[1] = we[1]*(lvy[k][j][i+1] + lvy[k][j+1][i+1])/2.0 + wb[1]*vyc;
-	vy[2] = lvy[k][j][i];
-	vy[3] = lvy[k][j+1][i];
-	vy[4] = wb[4]*(lvy[k-1][j][i] + lvy[k-1][j+1][i])/2.0 + we[4]*vyc;
-	vy[5] = we[5]*(lvy[k+1][j][i] + lvy[k+1][j+1][i])/2.0 + wb[5]*vyc;
-
-	// z - velocity stencil
-	vz[0] = wb[0]*(lvz[k][j][i-1] + lvz[k+1][j][i-1])/2.0 + we[0]*vzc;
-	vz[1] = we[1]*(lvz[k][j][i+1] + lvz[k+1][j][i+1])/2.0 + wb[1]*vzc;
-	vz[2] = wb[2]*(lvz[k][j-1][i] + lvz[k+1][j-1][i])/2.0 + we[2]*vzc;
-	vz[3] = we[3]*(lvz[k][j+1][i] + lvz[k+1][j+1][i])/2.0 + wb[3]*vzc;
-	vz[4] = lvz[k][j][i];
-	vz[5] = lvz[k+1][j][i];
-
-	// compute velocity gradient tensor
-	L->xx = (vx[1]-vx[0])/dx; L->xy = (vx[3]-vx[2])/dy; L->xz = (vx[5]-vx[4])/dz;
-	L->yx = (vy[1]-vy[0])/dx; L->yy = (vy[3]-vy[2])/dy; L->yz = (vy[5]-vy[4])/dz;
-	L->zx = (vz[1]-vz[0])/dx; L->zy = (vz[3]-vz[2])/dy; L->zz = (vz[5]-vz[4])/dz;
+	gradComp(vx, dx, bdy, fdy, bdz, fdz, L->xx, L->xy, L->xz, vxc)
+	gradComp(vy, dy, bdx, fdx, bdz, fdz, L->yy, L->yx, L->yz, vyc)
+	gradComp(vz, dz, bdx, fdx, bdy, fdy, L->zz, L->zx, L->zy, vzc)
 
 	// get normalized velocities
-	vnrm = sqrt(vxc*vxc + vyc*vyc + vzc*vzc);
+	vnrm = vxc*vxc + vyc*vyc + vzc*vzc;
 
 	if(vnrm)
 	{
+		vnrm = sqrt(vnrm);
+
 		vel[0] = vxc/vnrm;
 		vel[1] = vyc/vnrm;
 		vel[2] = vzc/vnrm;
@@ -1933,7 +1958,6 @@ PetscErrorCode JacResGetISA(JacRes *jr)
 	FDSTAG      *fs;
 	Tensor2RN   L;
 	PetscInt    i, j, k, nx, ny, nz, sx, sy, sz, code, nSDFail, gnSDFail;
-	PetscScalar theta_north, costh, sinth;
 	PetscScalar vel[3], ISA[3];
 	PetscScalar ***lvx, ***lvy, ***lvz;
 	PetscScalar ***isx, ***isy;
@@ -1946,11 +1970,6 @@ PetscErrorCode JacResGetISA(JacRes *jr)
 
 	// set number of spectral decomposition failures
 	nSDFail = 0;
-
-	// get rotation matrix for northward coordinate system
-	theta_north = jr->matLim.theta_north;
-	costh       = cos(theta_north);
-	sinth       = sin(theta_north);
 
 	// access vectors
 	ierr = DMDAVecGetArray(fs->DA_X,   jr->lvx,  &lvx); CHKERRQ(ierr);
@@ -1969,31 +1988,29 @@ PetscErrorCode JacResGetISA(JacRes *jr)
 		// get normalized direction of Infinite Strain Axis (ISA)
 		code = getISA(&L, ISA, NULL);
 
-		if(code == -2)
-		{
-			// spectral decomposition failed (report to adjust tolerances)
-			nSDFail++;
-		}
-		else if(code == 1)
+		if(code == 1)
 		{
 			// simple shear case (ISA & velocity are codirected)
 			ISA[0] = vel[0];
 			ISA[1] = vel[1];
-			ISA[2] = vel[2];
 		}
 
 		// choose common sense for all ISA orientations (important for averaging)
-		if(ISA[0] < 0.0)
+		if(ISA[0] < 0.0 || (ISA[0] == 0.0 && ISA[1] < 0.0))
 		{
 			ISA[0] = -ISA[0];
 			ISA[1] = -ISA[1];
 		}
 
-		// store horizontal projection of ISA rotated to the northward system
-		// rescaling is skipped (length of bar indicates horizontal projection)
+		// store ISA vector for output
+		isx[k][j][i] = ISA[0];
+		isy[k][j][i] = ISA[1];
 
-		isx[k][j][i] =  costh*ISA[0] + sinth*ISA[1];
-		isy[k][j][i] = -sinth*ISA[0] + costh*ISA[1];
+		// report spectral decomposition failure (to adjust tolerances)
+		if(code == -2)
+		{
+			nSDFail++;
+		}
 
 	}
 	END_STD_LOOP
@@ -2003,7 +2020,7 @@ PetscErrorCode JacResGetISA(JacRes *jr)
 	{
 		if(ISParallel(PETSC_COMM_WORLD))
 		{
-			MPI_Reduce(&nSDFail, &gnSDFail, 1, MPIU_SCALAR, MPI_SUM, 0, PETSC_COMM_WORLD);
+			MPI_Reduce(&nSDFail, &gnSDFail, 1, MPIU_INT, MPI_SUM, 0, PETSC_COMM_WORLD);
 		}
 		else
 		{
@@ -2012,7 +2029,9 @@ PetscErrorCode JacResGetISA(JacRes *jr)
 
 		if(gnSDFail)
 		{
+			PetscPrintf(PETSC_COMM_WORLD,"*****************************************************************************\n",(LLD)gnSDFail);
 			PetscPrintf(PETSC_COMM_WORLD,"Warning! ISA spectral decomposition failed in %lld points. Adjust tolerances!\n",(LLD)gnSDFail);
+			PetscPrintf(PETSC_COMM_WORLD,"*****************************************************************************\n",(LLD)gnSDFail);
 		}
 	}
 
@@ -2057,7 +2076,7 @@ PetscErrorCode JacResGetGOL(JacRes *jr)
 	mcz = fs->dsz.tcels - 1;
 
 	// set maximum value of GOL parameter
-	max_gol = 10.0;
+	max_gol = 1.0;
 
 	// access vectors
 	ierr = DMDAVecGetArray(fs->DA_X,   jr->lvx,  &lvx);    CHKERRQ(ierr);
@@ -2089,7 +2108,7 @@ PetscErrorCode JacResGetGOL(JacRes *jr)
 		}
 
 		// get angle between ISA and velocity
-		if(code == -1 || !vnrm)
+		if(code < 0 || !vnrm)
 		{
 			// ~~~ ISA and (or) velocity is undefined ~~~
 
@@ -2100,10 +2119,8 @@ PetscErrorCode JacResGetGOL(JacRes *jr)
 			// ~~~ both ISA and velocity are defined ~~~
 
 			// get angle between ISA and velocity
-			theta = acos(vel[0]*ISA[0] + vel[1]*ISA[1] + vel[2]*ISA[2]);
+			theta = ARCCOS(vel[0]*ISA[0] + vel[1]*ISA[1] + vel[2]*ISA[2]);
 
-			// ISA has only direction but no sense, hence angle varies within [0, pi/2]
-			if(theta > M_PI_2) theta = M_PI - theta;
 		}
 
 		// store strain rate norm & angle
@@ -2164,7 +2181,11 @@ PetscErrorCode JacResGetGOL(JacRes *jr)
 			gol = fabs(gol)/lnrm;
 
 			// impose limit
-			if(gol > max_gol) gol = max_gol;
+			if(gol > max_gol)
+			{
+				gol = max_gol;
+
+			}
 		}
 		else
 		{
@@ -2174,6 +2195,7 @@ PetscErrorCode JacResGetGOL(JacRes *jr)
 
 		// store GOL parameter
 		pgol[k][j][i] = gol;
+
 	}
 	END_STD_LOOP
 
@@ -2181,11 +2203,167 @@ PetscErrorCode JacResGetGOL(JacRes *jr)
 	ierr = DMDAVecRestoreArray(fs->DA_X,   jr->lvx,  &lvx);    CHKERRQ(ierr);
 	ierr = DMDAVecRestoreArray(fs->DA_Y,   jr->lvy,  &lvy);    CHKERRQ(ierr);
 	ierr = DMDAVecRestoreArray(fs->DA_Z,   jr->lvz,  &lvz);    CHKERRQ(ierr);
-	ierr = DMDAVecRestoreArray(fs->DA_CEN, jr->ldxx, &gol);    CHKERRQ(ierr);
+	ierr = DMDAVecRestoreArray(fs->DA_CEN, jr->ldxx, &pgol);   CHKERRQ(ierr);
 	ierr = DMDAVecRestoreArray(fs->DA_CEN, jr->ldyy, &ptheta); CHKERRQ(ierr);
 
 	// communicate boundary values
 	LOCAL_TO_LOCAL(fs->DA_CEN, jr->ldxx);
+
+	PetscFunctionReturn(0);
+}
+//---------------------------------------------------------------------------
+#undef __FUNCT__
+#define __FUNCT__ "JacResGetSHmax"
+PetscErrorCode JacResGetSHmax(JacRes *jr)
+{
+	// compute maximum horizontal compressive stress (SHmax) orientation
+
+	FDSTAG      *fs;
+	SolVarCell  *svCell;
+	PetscInt    i, j, k, nx, ny, nz, sx, sy, sz, iter;
+	PetscScalar v1[3], v2[3], sxx, syy, sxy, s1, s2;
+	PetscScalar ***dx, ***dy, ***lsxy;
+
+	PetscErrorCode ierr;
+	PetscFunctionBegin;
+
+	// access context
+	fs = jr->fs;
+
+	// setup shear stress vector
+	ierr = DMDAVecGetArray(fs->DA_XY, jr->ldxy, &lsxy); CHKERRQ(ierr);
+
+	ierr = DMDAGetCorners(fs->DA_XY, &sx, &sy, &sz, &nx, &ny, &nz); CHKERRQ(ierr);
+
+	iter = 0;
+
+	START_STD_LOOP
+	{
+		lsxy[k][j][i] = jr->svXYEdge[iter++].s;
+	}
+	END_STD_LOOP
+
+	ierr = DMDAVecRestoreArray(fs->DA_XY, jr->ldxy, &lsxy); CHKERRQ(ierr);
+
+	LOCAL_TO_LOCAL(fs->DA_XY, jr->ldxy);
+
+	// get SHmax
+	ierr = DMDAVecGetArray(fs->DA_CEN, jr->ldxx, &dx);   CHKERRQ(ierr);
+	ierr = DMDAVecGetArray(fs->DA_CEN, jr->ldyy, &dy);   CHKERRQ(ierr);
+	ierr = DMDAVecGetArray(fs->DA_XY,  jr->ldxy, &lsxy); CHKERRQ(ierr);
+
+	ierr = DMDAGetCorners(fs->DA_CEN, &sx, &sy, &sz, &nx, &ny, &nz); CHKERRQ(ierr);
+
+	iter = 0;
+
+	START_STD_LOOP
+	{
+		svCell = &jr->svCell[iter++];
+		sxx    = svCell->sxx;
+		syy    = svCell->syy;
+		sxy    = (lsxy[k][j][i] + lsxy[k][j][i+1] + lsxy[k][j+1][i] + lsxy[k][j+1][i+1])/4.0;
+
+		// maximum compressive stress orientation is the eigenvector of the SMALLEST eigenvalue
+		// (stress is negative in compression)
+		ierr = Tensor2RS2DSpectral(sxx, syy, sxy, &s1, &s2, v1, v2, 1e-12); CHKERRQ(ierr);
+
+		// get common sense
+		if(v2[0] < 0.0 || (v2[0] == 0.0 && v2[1] < 0.0))
+		{
+			v2[0] = -v2[0];
+			v2[1] = -v2[1];
+		}
+
+		// store direction vector for output
+		dx[k][j][i] = v2[0];
+		dy[k][j][i] = v2[1];
+	}
+	END_STD_LOOP
+
+	ierr = DMDAVecRestoreArray(fs->DA_CEN, jr->ldxx, &dx);   CHKERRQ(ierr);
+	ierr = DMDAVecRestoreArray(fs->DA_CEN, jr->ldyy, &dy);   CHKERRQ(ierr);
+	ierr = DMDAVecRestoreArray(fs->DA_XY,  jr->ldxy, &lsxy); CHKERRQ(ierr);
+
+	LOCAL_TO_LOCAL(fs->DA_CEN, jr->ldxx);
+	LOCAL_TO_LOCAL(fs->DA_CEN, jr->ldyy);
+
+	PetscFunctionReturn(0);
+}
+//---------------------------------------------------------------------------
+#undef __FUNCT__
+#define __FUNCT__ "JacResGetEHmax"
+PetscErrorCode JacResGetEHmax(JacRes *jr)
+{
+	// compute maximum horizontal extension rate (EHmax) orientation
+
+	FDSTAG      *fs;
+	SolVarCell  *svCell;
+	PetscInt    i, j, k, nx, ny, nz, sx, sy, sz, iter;
+	PetscScalar v1[3], v2[3], dxx, dyy, dxy, d1, d2;
+	PetscScalar ***dx, ***dy, ***ldxy;
+
+	PetscErrorCode ierr;
+	PetscFunctionBegin;
+
+	// access context
+	fs = jr->fs;
+
+	// setup shear strain rate vector
+	ierr = DMDAVecGetArray(fs->DA_XY, jr->ldxy, &ldxy); CHKERRQ(ierr);
+
+	ierr = DMDAGetCorners(fs->DA_XY, &sx, &sy, &sz, &nx, &ny, &nz); CHKERRQ(ierr);
+
+	iter = 0;
+
+	START_STD_LOOP
+	{
+		ldxy[k][j][i] = jr->svXYEdge[iter++].d;
+	}
+	END_STD_LOOP
+
+	ierr = DMDAVecRestoreArray(fs->DA_XY, jr->ldxy, &ldxy); CHKERRQ(ierr);
+
+	LOCAL_TO_LOCAL(fs->DA_XY, jr->ldxy);
+
+	// get EHmax
+	ierr = DMDAVecGetArray(fs->DA_CEN, jr->ldxx, &dx);   CHKERRQ(ierr);
+	ierr = DMDAVecGetArray(fs->DA_CEN, jr->ldyy, &dy);   CHKERRQ(ierr);
+	ierr = DMDAVecGetArray(fs->DA_XY,  jr->ldxy, &ldxy); CHKERRQ(ierr);
+
+	ierr = DMDAGetCorners(fs->DA_CEN, &sx, &sy, &sz, &nx, &ny, &nz); CHKERRQ(ierr);
+
+	iter = 0;
+
+	START_STD_LOOP
+	{
+		svCell = &jr->svCell[iter++];
+		dxx    = svCell->dxx;
+		dyy    = svCell->dyy;
+		dxy    = (ldxy[k][j][i] + ldxy[k][j][i+1] + ldxy[k][j+1][i] + ldxy[k][j+1][i+1])/4.0;
+
+		// maximum extension rate orientation is the eigenvector of the LARGEST eigenvalue
+		// (strain rate is positive in extension)
+		ierr = Tensor2RS2DSpectral(dxx, dyy, dxy, &d1, &d2, v1, v2, 1e-12); CHKERRQ(ierr);
+
+		// get common sense
+		if(v1[0] < 0.0 || (v1[0] == 0.0 && v1[1] < 0.0))
+		{
+			v1[0] = -v1[0];
+			v1[1] = -v1[1];
+		}
+
+		// store direction vector for output
+		dx[k][j][i] = v1[0];
+		dy[k][j][i] = v1[1];
+	}
+	END_STD_LOOP
+
+	ierr = DMDAVecRestoreArray(fs->DA_CEN, jr->ldxx, &dx);   CHKERRQ(ierr);
+	ierr = DMDAVecRestoreArray(fs->DA_CEN, jr->ldyy, &dy);   CHKERRQ(ierr);
+	ierr = DMDAVecRestoreArray(fs->DA_XY,  jr->ldxy, &ldxy); CHKERRQ(ierr);
+
+	LOCAL_TO_LOCAL(fs->DA_CEN, jr->ldxx);
+	LOCAL_TO_LOCAL(fs->DA_CEN, jr->ldyy);
 
 	PetscFunctionReturn(0);
 }

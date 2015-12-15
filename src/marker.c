@@ -1242,12 +1242,13 @@ PetscErrorCode ADVMarkInitBands(AdvCtx *actx, UserCtx *user)
 	Marker     *P;
 	PetscInt    imark;
 	PetscBool   use_inc;
-	PetscScalar H, Hb, size, offset, length, x, y, z, scal;
+	PetscScalar H, Hb, size, offset, length, x, y, z, scal, Tshift;
 
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
 
-	scal = actx->jr->scal.length;
+	scal   = actx->jr->scal.length;
+	Tshift = actx->jr->scal.Tshift;
 
 	// set default values
 	H      = 10.0;               // layer thickness               [km]
@@ -1297,7 +1298,7 @@ PetscErrorCode ADVMarkInitBands(AdvCtx *actx, UserCtx *user)
 		||  (y >= user->L-length && x >=  (offset - size)/2.0 && x <=  (offset + size)/2.0))) P->phase = 0;
 
 		// assign temperature
-		P->T = 0.0;
+		P->T = Tshift;
 	}
 
 	PetscFunctionReturn(0);
@@ -1421,24 +1422,21 @@ PetscErrorCode ADVMarkInitFilePolygons(AdvCtx *actx, UserCtx *user)
 	PetscScalar   header[2];
 	PetscInt      tstart[3],tend[3], nmark[3], nidx[3], nidxmax;
 	PetscInt      k,n,kvol,Fcount,Fsize,VolN,Nmax,Lmax,kpoly;
-//	PetscScalar   VolInfo[4];
 	Polygon2D     Poly;
-	PetscBool    *polyin, *polybnd, AddRandomNoise;
+	PetscBool     AddRandomNoise;
+	PetscInt     *polyin;
 	PetscInt     *idx;
-//	PetscInt      i;
 	PetscScalar  *X,*PolyLen,*PolyIdx,*PolyFile;
-	PolyCtx       polydat;
-
-//	PetscInt      nmark_all;
 	PetscInt      imark,imarkx,imarky,imarkz,icellx,icelly,icellz;
-
 	PetscScalar   dx=0.0,dy=0.0,dz=0.0,x=0.0,y=0.0,z=0.0;
-	PetscScalar   chLen;//,chTemp;
+	PetscScalar   chLen;
 	PetscLogDouble t0,t1;
 	char          normalDir[4] = {"xyz"};
-	PetscRandom  rctx;
-	PetscScalar  cf_rand;
-//	PetscBool    SkipSetVol=PETSC_FALSE;
+	PetscRandom   rctx;
+	PetscScalar   cf_rand;
+	PetscInt      nPoly;
+	PetscScalar   atol;
+	PetscScalar   box[4];
 
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
@@ -1554,7 +1552,6 @@ PetscErrorCode ADVMarkInitFilePolygons(AdvCtx *actx, UserCtx *user)
 	nidx[1] = nmark[0] * nmark[2]; if (nidx[1] > nidxmax) nidxmax = nidx[1];
 	nidx[2] = nmark[0] * nmark[1]; if (nidx[2] > nidxmax) nidxmax = nidx[2];
 
-
 	// compile input file name
 	asprintf(&LoadFileName, "./%s/%s",
 		user->LoadInitialParticlesDirectory,
@@ -1576,7 +1573,6 @@ PetscErrorCode ADVMarkInitFilePolygons(AdvCtx *actx, UserCtx *user)
 	ierr = PetscBinaryRead(fd, PolyFile, Fsize, PETSC_SCALAR); CHKERRQ(ierr);
 
 	// read number of volumes
-//	ierr = PetscBinaryRead(fd, VolInfo, 3, PETSC_SCALAR); CHKERRQ(ierr);
 	VolN = (PetscInt)(PolyFile[Fcount]); Fcount++;
 	Nmax = (PetscInt)(PolyFile[Fcount]); Fcount++;
 	Lmax = (PetscInt)(PolyFile[Fcount]); Fcount++;
@@ -1589,152 +1585,117 @@ PetscErrorCode ADVMarkInitFilePolygons(AdvCtx *actx, UserCtx *user)
 	// allocate temporary arrays
 	ierr = PetscMalloc((size_t)nidxmax*sizeof(PetscInt),&idx); CHKERRQ(ierr);
 	ierr = PetscMalloc((size_t)nidxmax*sizeof(PetscBool),&polyin); CHKERRQ(ierr);
-	ierr = PetscMalloc((size_t)nidxmax*sizeof(PetscBool),&polybnd); CHKERRQ(ierr);
 	ierr = PetscMalloc((size_t)nidxmax*2*sizeof(PetscScalar),&X); CHKERRQ(ierr);
-
-	// allocate memory for polyin
-//	ierr = CreatePolyCtx(&polydat, Nmax, Lmax);
 
 	// --- loop over all volumes ---
 	for (kvol=0; kvol<VolN; kvol++)
 	{
 		PetscTime(&t0);		
-/*
-		if (user->PolyInVolSkip[0]>0)
+
+		// read volume header
+		Poly.dir   = (PetscInt)(PolyFile[Fcount]); Fcount++; // normal vector of polygon plane
+		Poly.phase = (PetscInt)(PolyFile[Fcount]); Fcount++; // phase that polygon defines
+		Poly.type  = (PetscInt)(PolyFile[Fcount]); Fcount++; // type of assigning the phases
+		Poly.num   = (PetscInt)(PolyFile[Fcount]); Fcount++; // number of polygon slices defining the volume
+		Poly.nmark = 0;
+
+		// define axes the span the polygon plane
+		if (Poly.dir==0)
 		{
-			for (i=1; i<= user->PolyInVolSkip[0]; i++)
-			{
-				if (user->PolyInVolSkip[0] == kvol) SkipSetVol = PETSC_TRUE;
-			}
+			Poly.ax[0] = 1; Poly.ax[1] = 2;
+		}
+		else if (Poly.dir==1)
+		{
+			Poly.ax[0] = 0; Poly.ax[1] = 2;
+		}
+		else if (Poly.dir==2)
+		{
+			Poly.ax[0] = 0; Poly.ax[1] = 1;
+		}
+		else
+		{
+			SETERRQ(PETSC_COMM_SELF, PETSC_ERR_USER, "The 'Dir' argument is wrong; should be 0, 1 or 2.");
 		}
 
-		if (SkipSetVol)
+		// get lengths of polygons (PetscScalar !)
+		for (kpoly=0; kpoly<Poly.num;kpoly++)
 		{
-*/
-			// read volume header
-	//		ierr = PetscBinaryRead(fd, VolInfo, 4, PETSC_SCALAR); CHKERRQ(ierr);
-			Poly.dir   = (PetscInt)(PolyFile[Fcount]); Fcount++; // normal vector of polygon plane
-			Poly.phase = (PetscInt)(PolyFile[Fcount]); Fcount++; // phase that polygon defines
-			Poly.type  = (PetscInt)(PolyFile[Fcount]); Fcount++; // type of assigning the phases
-			Poly.num   = (PetscInt)(PolyFile[Fcount]); Fcount++; // number of polygon slices defining the volume
-	//		Poly.idxs  = (PetscInt)(PolyFile[Fcount]); Fcount++; // index of first polygon slice
-			Poly.nmark = 0;
+			PolyIdx[kpoly] = PolyFile[Fcount]; Fcount++;
+		}
 
-			// define axes the span the polygon plane
-			if (Poly.dir==0)
+		// get lengths of polygons (PetscScalar !)
+		for (kpoly=0; kpoly<Poly.num;kpoly++)
+		{
+			PolyLen[kpoly] = PolyFile[Fcount]; Fcount++;
+		}
+
+		// --- loop through all slices ---
+		for (kpoly=0; kpoly<Poly.num;kpoly++)
+		{
+			// read polygon
+			Poly.len  = (PetscInt)(PolyLen[kpoly]);
+			Poly.gidx = (PetscInt)(PolyIdx[kpoly]);
+			Poly.lidx = (PetscInt)(PolyIdx[kpoly])-tstart[Poly.dir];
+
+			// check if slice is part of local proc
+			if (Poly.gidx  >= tstart[Poly.dir] && Poly.gidx <= tend[Poly.dir])
 			{
-				Poly.ax[0] = 1; Poly.ax[1] = 2;
-			}
-			else if (Poly.dir==1)
-			{
-				Poly.ax[0] = 0; Poly.ax[1] = 2;
-			}
-			else if (Poly.dir==2)
-			{
-				Poly.ax[0] = 0; Poly.ax[1] = 1;
+				// read polygon
+				for (n=0; n<Poly.len*2;n++)
+				{
+					Poly.X[n] = PolyFile[Fcount]; Fcount++;
+				}
+
+				// get local markers that locate on polygon plane
+				ADVMarkSecIdx(actx,user,Poly.dir,Poly.lidx, idx);
+				for (k=0;k<nidx[Poly.dir];k++)
+				{
+					X[k*2]   = actx->markers[idx[k]].X[Poly.ax[0]] * chLen;
+					X[k*2+1] = actx->markers[idx[k]].X[Poly.ax[1]] * chLen;
+				}
+
+				// get bounding box of a polygon
+				nPoly = Poly.len;
+
+				polygon_box(&nPoly, Poly.X, 1e-12, &atol, box);
+
+				in_polygon(nidx[Poly.dir], X, nPoly, Poly.X, box, atol, polyin);
+
+				// set marker phase
+				for (k=0;k<nidx[Poly.dir];k++)
+				{
+					if (polyin[k])
+					{
+						if (Poly.type == 1) // additive
+						{
+							actx->markers[idx[k]].phase += Poly.phase;
+						}
+						else if (Poly.type == 2) // grid additive
+						{
+							if ( actx->markers[idx[k]].phase % 2 == 1 ) // avoid adding twice when contours are over imposed (e.g. at grid intersection)
+							{
+								actx->markers[idx[k]].phase += Poly.phase;
+							}
+						}
+						else // overwriting
+						{
+							actx->markers[idx[k]].phase = Poly.phase;
+						}
+						Poly.nmark++;
+					}
+				}
 			}
 			else
 			{
-				SETERRQ(PETSC_COMM_SELF, PETSC_ERR_USER, "The 'Dir' argument is wrong; should be 0, 1 or 2.");
+				// increase counter of the buffer
+				Fcount += Poly.len*2;
 			}
-
-
-			// get lengths of polygons (PetscScalar !)
-	//		ierr = PetscBinaryRead(fd, PolyL, Poly.num, PETSC_SCALAR); CHKERRQ(ierr);
-			for (kpoly=0; kpoly<Poly.num;kpoly++)
-			{
-				PolyIdx[kpoly] = PolyFile[Fcount]; Fcount++;
-			}
-
-			// get lengths of polygons (PetscScalar !)
-	//		ierr = PetscBinaryRead(fd, PolyL, Poly.num, PETSC_SCALAR); CHKERRQ(ierr);
-			for (kpoly=0; kpoly<Poly.num;kpoly++)
-			{
-				PolyLen[kpoly] = PolyFile[Fcount]; Fcount++;
-			}
-
-
-			// --- loop through all slices ---
-			for (kpoly=0; kpoly<Poly.num;kpoly++)
-			{
-				// read polygon
-				Poly.len  = (PetscInt)(PolyLen[kpoly]);
-	// 			Poly.gidx = (PetscInt)(Poly.idxs+kpoly);
-	// 			Poly.lidx = (PetscInt)(Poly.idxs+kpoly-tstart[Poly.dir]);
-				Poly.gidx = (PetscInt)(PolyIdx[kpoly]);
-				Poly.lidx = (PetscInt)(PolyIdx[kpoly])-tstart[Poly.dir];
-
-	//			ierr = PetscBinaryRead(fd, Poly.X, Poly.len*2, PETSC_SCALAR); CHKERRQ(ierr);
-
-
-				// check if slice is part of local proc
-				if (Poly.gidx  >= tstart[Poly.dir] && Poly.gidx <= tend[Poly.dir])
-				{
-
-					// read polygon
-					for (n=0; n<Poly.len*2;n++)
-					{
-						Poly.X[n] = PolyFile[Fcount]; Fcount++;
-					}
-
-					// get local markers that locate on polygon plane
-					ADVMarkSecIdx(actx,user,Poly.dir,Poly.lidx, idx);
-					for (k=0;k<nidx[Poly.dir];k++)
-					{
-						X[k*2]   = actx->markers[idx[k]].X[Poly.ax[0]] * chLen;
-						X[k*2+1] = actx->markers[idx[k]].X[Poly.ax[1]] * chLen;
-					}
-
-					// find markers in local polygon (polyin & polybnd are initialized internally )
-					inpoly(&polydat, nidx[Poly.dir], X, Poly.X, Poly.len, polyin, polybnd);
-
-					// set marker phase
-					for (k=0;k<nidx[Poly.dir];k++)
-					{
-						if (polyin[k] || polybnd[k])
-						{
-							if (Poly.type == 1) // additive
-							{
-								actx->markers[idx[k]].phase += Poly.phase;
-
-							}
-							else if (Poly.type == 2) // grid additive
-							{
-								if ( actx->markers[idx[k]].phase % 2 == 1 ) // avoid adding twice when contours are over imposed (e.g. at grid intersection)
-								{
-									actx->markers[idx[k]].phase += Poly.phase;
-								}
-							}
-							else // overwriting
-							{
-								actx->markers[idx[k]].phase = Poly.phase;
-							}
-							Poly.nmark++;
-							//PetscPrintf(PETSC_COMM_WORLD," k+1/nmark %lld/%lld \n",(LLD)k+1, (LLD)Poly.nmark);
-						}
-					}
-				}
-				else
-				{
-					// increase counter of the buffer
-					Fcount += Poly.len*2;
-				}
-			}
-/*
 		}
 
-		else
-		{
-			Fcount += 4 + 2* Poly.num + Poly.len*2*Poly.num;
-			SkipSetVol = PETSC_FALSE;
-		}
-*/
-		//ierr = MPI_Allreduce(&Poly.nmark, &nmark_all, 1, MPIU_INT, MPI_SUM, PETSC_COMM_WORLD); CHKERRQ(ierr);
 		PetscTime(&t1);
-		//PetscPrintf(PETSC_COMM_WORLD," Created vol %lld/%lld [%g sec]: phase %lld, %lld slices, %c-normal-dir; found %lld markers \n",(LLD)kvol+1,(LLD)VolN, t1-t0, (LLD)Poly.phase, (LLD)Poly.num, normalDir[Poly.dir], (LLD)nmark_all);
+
 		PetscPrintf(PETSC_COMM_WORLD,"[Rank 0] Created vol %lld/%lld [%g sec]: phase %lld, type %lld, %lld slices, %c-normal-dir; found %lld markers \n",(LLD)kvol+1,(LLD)VolN, t1-t0, (LLD)Poly.phase, (LLD)Poly.type,(LLD)Poly.num, normalDir[Poly.dir], (LLD)Poly.nmark);
 	}
-
 
 	// Set temperature from file if a Temperature file is specified in the input
 	if(strcmp(user->TemperatureFilename,"noTemperatureFileName")!=0)
@@ -1743,13 +1704,9 @@ PetscErrorCode ADVMarkInitFilePolygons(AdvCtx *actx, UserCtx *user)
 		CHKERRQ(ierr);
 	}
 	
-
-
-
 	// free
 	PetscFree(idx);
 	PetscFree(polyin);
-	PetscFree(polybnd);
 	PetscFree(X);
 
 	PetscFree(PolyIdx);
@@ -1758,9 +1715,6 @@ PetscErrorCode ADVMarkInitFilePolygons(AdvCtx *actx, UserCtx *user)
 
 	PetscFree(PolyFile);
 	
-	// clear polyin memory
-//	DestroyPolyCtx(polydat);
-
 	// destroy random context
 	ierr = PetscRandomDestroy(&rctx);    CHKERRQ(ierr);
 	ierr = PetscViewerDestroy(&view_in); CHKERRQ(ierr);
@@ -1938,6 +1892,7 @@ void ADVMarkSecIdx(AdvCtx *actx, UserCtx *user, PetscInt dir, PetscInt Islice, P
 	return;
 }
 //---------------------------------------------------------------------------
+/*
 #undef __FUNCT__
 #define __FUNCT__ "inpoly"
 void inpoly(PolyCtx *polydat, PetscInt N, PetscScalar *X, PetscScalar *node, PetscInt Nnode, PetscBool *in, PetscBool *bnd)
@@ -1956,7 +1911,7 @@ void inpoly(PolyCtx *polydat, PetscInt N, PetscScalar *X, PetscScalar *node, Pet
 
     // WARNING! UNUSED PARAMETER!
     if(polydat) polydat = NULL;
-/*
+
     // Retrieve allocated arrays
 	Xtemp = polydat->Xtemp;
 	nodetemp = polydat->nodetemp;
@@ -1966,7 +1921,6 @@ void inpoly(PolyCtx *polydat, PetscInt N, PetscScalar *X, PetscScalar *node, Pet
 	x = polydat->x;
 	y = polydat->y;
 	idx = polydat->idx;
-*/
 
 	// constants
 	N1 = N-1;
@@ -2274,3 +2228,4 @@ void qsindex (PetscScalar  *a, PetscInt *idx , PetscInt lo, PetscInt hi)
     if (i<hi) qsindex(a , idx , i , hi);
 }
 //---------------------------------------------------------------------------
+*/

@@ -89,8 +89,6 @@ PetscErrorCode GetIntDataItemCheck(
 	PetscInt    amin,
 	PetscInt    amax);
 
-
-
 PetscErrorCode DMDAGetProcessorRank(DM da, PetscInt *rank_x, PetscInt *rank_y, PetscInt *rank_z, PetscInt *rank_col);
 
 PetscErrorCode makeMPIIntArray(PetscMPIInt **arr, const PetscMPIInt *init, const PetscInt n);
@@ -107,6 +105,58 @@ PetscInt ISRankZero(MPI_Comm comm);
 PetscInt ISParallel(MPI_Comm comm);
 
 PetscErrorCode LaMEMCreateOutputDirectory(const char *DirectoryName);
+
+//---------------------------------------------------------------------------
+
+void polygon_box(
+	PetscInt    *pnv,    // number of polygon vertices (can be modified)
+	PetscScalar *vcoord, // coordinates of polygon vertices
+	PetscScalar  rtol,   // relative tolerance
+	PetscScalar *atol,   // absolute tolerance
+	PetscScalar *box);   // bounding box of a polygon
+
+void in_polygon(
+	PetscInt     np,     // number of test points
+	PetscScalar *pcoord, // coordinates of test points
+	PetscInt     nv,     // number of polygon vertices
+	PetscScalar *vcoord, // coordinates of polygon vertices
+	PetscScalar *box,    // bounding box of a polygon (optimization)
+	PetscScalar  atol,   // absolute tolerance
+	PetscInt    *in);    // point location flags (1-inside, 0-outside)
+
+//---------------------------------------------------------------------------
+
+static inline void RotDispPoint2D(PetscScalar Xa[], PetscScalar Xb[], PetscScalar costh, PetscScalar sinth, PetscScalar xa[], PetscScalar xb[])
+{
+	PetscScalar r[2];
+
+	// get radius vector
+	r[0] = xa[0] - Xa[0];
+	r[1] = xa[1] - Xa[1];
+
+	// rotate & translate
+	xb[0] = costh*r[0] - sinth*r[1] + Xb[0];
+	xb[1] = sinth*r[0] + costh*r[1] + Xb[1];
+}
+//---------------------------------------------------------------------------
+
+static inline PetscScalar ARCCOS(PetscScalar x)
+{
+	if(x >  1.0 - DBL_EPSILON) x =  1.0 - DBL_EPSILON;
+	if(x < -1.0 + DBL_EPSILON) x = -1.0 + DBL_EPSILON;
+
+	return acos(x);
+}
+
+//---------------------------------------------------------------------------
+
+static inline PetscScalar ODDROOT(PetscScalar x, PetscScalar a)
+{
+
+	if(x < 0.0) return -pow(-x, a);
+	else        return  pow( x, a);
+
+}
 
 //---------------------------------------------------------------------------
 #endif

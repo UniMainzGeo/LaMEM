@@ -50,6 +50,7 @@
 #include "tssolve.h"
 #include "bc.h"
 #include "JacRes.h"
+#include "matFree.h"
 #include "multigrid.h"
 #include "matrix.h"
 #include "lsolve.h"
@@ -174,9 +175,7 @@ PetscErrorCode NLSolCreate(NLSol *nl, PCStokes pc, SNES *p_snes)
 //		ierr = KSPSetConvergenceTest(ksp, &KSPWinStopTest, &nl->wsCtx, NULL);CHKERRQ(ierr);
 	}
 
-//	ierr = SNESSetConvergenceTest(snes, SNESBlockStopTest, &nl, NULL); CHKERRQ(ierr);
-
-//	ierr = SNESSetConvergenceTest(snes, &SNESCoupledTest, &nl, NULL); CHKERRQ(ierr);
+	ierr = SNESSetConvergenceTest(snes, &SNESCoupledTest, nl, NULL); CHKERRQ(ierr);
 
 	// initialize Jacobian controls
 	nl->jtype   = _PICARD_;
@@ -205,13 +204,13 @@ PetscErrorCode NLSolCreate(NLSol *nl, PCStokes pc, SNES *p_snes)
 PetscErrorCode NLSolDestroy(NLSol *nl)
 {
 	PetscErrorCode ierr;
-    PetscFunctionBegin;
+ 	PetscFunctionBegin;
 
-    ierr = MatDestroy(&nl->J);    CHKERRQ(ierr);
+	ierr = MatDestroy(&nl->J);    CHKERRQ(ierr);
 	ierr = MatDestroy(&nl->P);    CHKERRQ(ierr);
 	ierr = MatDestroy(&nl->MFFD); CHKERRQ(ierr);
 
-    PetscFunctionReturn(0);
+	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
 #undef __FUNCT__
@@ -232,7 +231,7 @@ PetscErrorCode FormResidual(SNES snes, Vec x, Vec f, void *ctx)
 	jr = nl->pc->pm->jr;
 
 	// copy solution from global to local vectors, enforce boundary constraints
-	ierr = JacResCopySol(jr, x); CHKERRQ(ierr);
+	ierr = JacResCopySol(jr, x, 1); CHKERRQ(ierr);
 
 	ierr = JacResGetPressShift(jr); CHKERRQ(ierr);
 
@@ -276,7 +275,7 @@ PetscErrorCode FormJacobian(SNES snes, Vec x, Mat Amat, Mat Pmat, void *ctx)
 	jr = pm->jr;
     it_newton = 0;
 
-	//========================
+    //========================
 	// Jacobian type selection
 	//========================
 
@@ -296,13 +295,24 @@ PetscErrorCode FormJacobian(SNES snes, Vec x, Mat Amat, Mat Pmat, void *ctx)
 	{
 		// Picard case, check to switch to Newton
 		//if(nrm < nl->refRes*nl->tolPic || nl->it > nl->nPicIt)
-        if(nrm < (nl->refRes*nl->rtolPic) )
-        {
-			PetscPrintf(PETSC_COMM_WORLD,"        ***        \n");
-			PetscPrintf(PETSC_COMM_WORLD,"SWITCH TO USING MMFD JACOBIAN; ||F||/||F0||=%e,  PicIt=%i\n",nrm/nl->refRes,nl->nPicIt);
-			PetscPrintf(PETSC_COMM_WORLD,"        ***        \n");
+		if(nrm < nl->refRes*nl->rtolPic)
+		{
+			if(jr->matLim.jac_mat_free == PETSC_TRUE)
+			{
+				PetscPrintf(PETSC_COMM_WORLD,"===================================================\n");
+				PetscPrintf(PETSC_COMM_WORLD,"SWITCH TO MF JACOBIAN: ||F||/||F0||=%e, PicIt=%lld \n", nrm/nl->refRes, (LLD)nl->nPicIt);
+				PetscPrintf(PETSC_COMM_WORLD,"===================================================\n");
 
-			nl->jtype = _MFFD_;
+				nl->jtype = _MF_;
+			}
+			else
+			{
+				PetscPrintf(PETSC_COMM_WORLD,"=====================================================\n");
+				PetscPrintf(PETSC_COMM_WORLD,"SWITCH TO MMFD JACOBIAN: ||F||/||F0||=%e, PicIt=%lld \n", nrm/nl->refRes, (LLD)nl->nPicIt);
+				PetscPrintf(PETSC_COMM_WORLD,"=====================================================\n");
+
+				nl->jtype = _MFFD_;
+			}
 		}
 	}
 	else if(nl->jtype == _MFFD_)
@@ -310,15 +320,15 @@ PetscErrorCode FormJacobian(SNES snes, Vec x, Mat Amat, Mat Pmat, void *ctx)
 		// Newton case, check to switch to Picard
 		if(nrm > nl->refRes*nl->rtolNwt || it_newton > nl->nNwtIt)
 		{
-			PetscPrintf(PETSC_COMM_WORLD,"        ***          \n");
-			PetscPrintf(PETSC_COMM_WORLD,"SWITCH TO USING PICARD JACOBIAN  ||F||/||F0||=%e,  PicIt=%i\n \n",nrm/nl->refRes,nl->nNwtIt);
-			PetscPrintf(PETSC_COMM_WORLD,"        ***          \n");
+			PetscPrintf(PETSC_COMM_WORLD,"=======================================================\n");
+			PetscPrintf(PETSC_COMM_WORLD,"SWITCH TO PICARD JACOBIAN: ||F||/||F0||=%e, PicIt=%lld \n", nrm/nl->refRes, (LLD)nl->nNwtIt);
+			PetscPrintf(PETSC_COMM_WORLD,"=======================================================\n");
 
 			nl->jtype = _PICARD_;
 		}
 	}
 
-	if((JacResGetStep(jr) < 2) && (nl->it == 0))
+	if(JacResGetStep(jr) < 2 && nl->it == 0)
 	{
 		// During the first and second timestep of a simulation, always start with picard iterations
 		// that is important as plasticity is only activated during the second timestep, whereas the code might have
@@ -329,14 +339,26 @@ PetscErrorCode FormJacobian(SNES snes, Vec x, Mat Amat, Mat Pmat, void *ctx)
 	// print info
 	if(nl->jtype == _PICARD_)
 	{
-		PetscPrintf(PETSC_COMM_WORLD,"USING PICARD JACOBIAN for iteration %i,  ||F||/||F0||=%e \n",nl->it, nrm/nl->refRes);
+		PetscPrintf(PETSC_COMM_WORLD,"USING PICARD JACOBIAN for iteration %lld, ||F||/||F0||=%e \n", (LLD)nl->it, nrm/nl->refRes);
 	}
 	else if(nl->jtype == _MFFD_)
 	{
-		PetscPrintf(PETSC_COMM_WORLD,"USING MMFD JACOBIAN for iteration %i,    ||F||/||F0||=%e \n",nl->it, nrm/nl->refRes);
+		PetscPrintf(PETSC_COMM_WORLD,"USING MMFD JACOBIAN for iteration %lld, ||F||/||F0||=%e \n", (LLD)nl->it, nrm/nl->refRes);
 		it_newton++;
 	}
-
+	else if(nl->jtype == _MF_)
+	{
+		PetscPrintf(PETSC_COMM_WORLD,"USING MF JACOBIAN for iteration %lld, ||F||/||F0||=%e \n", (LLD)nl->it, nrm/nl->refRes);
+		it_newton++;
+	}
+/*
+	if(ISRankZero(PETSC_COMM_WORLD))
+	{
+		FILE *db = fopen("conv.log", "at");
+		fprintf(db, "%lld %e\n", (LLD)nl->it, nrm/nl->refRes);
+		fclose(db);
+	}
+*/
 	// count iterations
 	nl->it++;
 
@@ -346,7 +368,7 @@ PetscErrorCode FormJacobian(SNES snes, Vec x, Mat Amat, Mat Pmat, void *ctx)
 	ierr = MatShellSetOperation(nl->P, MATOP_MULT, (void(*)(void))pc->Apply); CHKERRQ(ierr);
 	ierr = MatShellSetContext(nl->P, pc);                                     CHKERRQ(ierr);
 
-	// setup Jacobian ...
+	// setup Jacobian
 	if(nl->jtype == _PICARD_)
 	{
 		// ... Picard
@@ -361,6 +383,12 @@ PetscErrorCode FormJacobian(SNES snes, Vec x, Mat Amat, Mat Pmat, void *ctx)
 		ierr = MatShellSetOperation(nl->J, MATOP_MULT, (void(*)(void))JacApplyMFFD);                       CHKERRQ(ierr);
 		ierr = MatShellSetContext(nl->J, (void*)&nl->MFFD);                                                CHKERRQ(ierr);
 	}
+	else if(nl->jtype == _MF_)
+	{
+		// ... matrix-free closed-form
+		ierr = MatShellSetOperation(nl->J, MATOP_MULT, (void(*)(void))JacApplyJacobian); CHKERRQ(ierr);
+		ierr = MatShellSetContext(nl->J, (void*)jr);                                     CHKERRQ(ierr);
+	}
 
 	// assemble Jacobian & preconditioner
 	ierr = MatAssemblyBegin(nl->P, MAT_FINAL_ASSEMBLY); CHKERRQ(ierr);
@@ -369,6 +397,82 @@ PetscErrorCode FormJacobian(SNES snes, Vec x, Mat Amat, Mat Pmat, void *ctx)
 	ierr = MatAssemblyBegin(nl->J, MAT_FINAL_ASSEMBLY); CHKERRQ(ierr);
 	ierr = MatAssemblyEnd  (nl->J, MAT_FINAL_ASSEMBLY); CHKERRQ(ierr);
 
+	// ACHTUNG!!!
+/*
+	if(JacResGetStep(jr) == 1)
+//	if(nl->it == 1)
+	{
+		Vec       z, wm, wmf;
+		Mat       J;
+		DOFIndex *dof;
+
+		// access context
+		dof = &(jr->fs->dof);
+
+		// create matrix-free Jacobian operator
+		ierr = MatCreateShell(PETSC_COMM_WORLD, dof->ln, dof->ln,
+			PETSC_DETERMINE, PETSC_DETERMINE, NULL, &J); CHKERRQ(ierr);
+		ierr = MatSetUp(J);                              CHKERRQ(ierr);
+
+		// setup vectors
+		ierr = VecDuplicate(r, &z);    CHKERRQ(ierr);
+		ierr = VecDuplicate(r, &wm);   CHKERRQ(ierr);
+		ierr = VecDuplicate(r, &wmf);  CHKERRQ(ierr);
+
+		ierr = VecDuplicate(r, &nl->diff); CHKERRQ(ierr);
+
+		ierr = VecCopy(r, z);          CHKERRQ(ierr);
+		ierr = VecZeroEntries(wm);     CHKERRQ(ierr);
+		ierr = VecZeroEntries(wmf);    CHKERRQ(ierr);
+		ierr = VecZeroEntries(nl->diff);   CHKERRQ(ierr);
+
+		PetscPrintf(PETSC_COMM_WORLD,"=======================================================\n");
+
+		ierr = VecNorm(z, NORM_2, &nrm); CHKERRQ(ierr);
+
+		PetscPrintf(PETSC_COMM_WORLD, "Norm of the vector to be multiplied: %g\n", nrm);
+
+		// assembled Jacobian
+		ierr = MatShellSetOperation(J, MATOP_MULT, (void(*)(void))pm->Picard); CHKERRQ(ierr);
+		ierr = MatShellSetContext(J, pm->data);                                CHKERRQ(ierr);
+
+		ierr = MatAssemblyBegin(J, MAT_FINAL_ASSEMBLY); CHKERRQ(ierr);
+		ierr = MatAssemblyEnd  (J, MAT_FINAL_ASSEMBLY); CHKERRQ(ierr);
+
+		ierr = MatMult(J, z, wm); CHKERRQ(ierr);
+
+		ierr = VecNorm(wm, NORM_2, &nrm); CHKERRQ(ierr);
+
+		PetscPrintf(PETSC_COMM_WORLD, "Norm of the assembled residual vector: %g\n", nrm);
+
+		// matrix-free Jacobian
+		ierr = MatShellSetOperation(J, MATOP_MULT, (void(*)(void))JacApplyPicard); CHKERRQ(ierr);
+		ierr = MatShellSetContext(J, (void*)jr);                                  CHKERRQ(ierr);
+
+		ierr = MatAssemblyBegin(J, MAT_FINAL_ASSEMBLY); CHKERRQ(ierr);
+		ierr = MatAssemblyEnd  (J, MAT_FINAL_ASSEMBLY); CHKERRQ(ierr);
+
+		ierr = MatMult(J, z, wmf); CHKERRQ(ierr);
+
+		ierr = VecNorm(wmf, NORM_2, &nrm); CHKERRQ(ierr);
+
+		PetscPrintf(PETSC_COMM_WORLD, "Norm of the matrix-free residual vector: %g\n", nrm);
+
+		// difference
+		ierr =  VecWAXPY(nl->diff, -1.0, wm, wmf); CHKERRQ(ierr);
+
+		ierr = VecNorm(nl->diff, NORM_2, &nrm); CHKERRQ(ierr);
+
+		PetscPrintf(PETSC_COMM_WORLD, "Norm of the difference vector: %g\n", nrm);
+
+		PetscPrintf(PETSC_COMM_WORLD,"=======================================================\n");
+
+		ierr = MatDestroy(&J);    CHKERRQ(ierr);
+		ierr = VecDestroy(&z);    CHKERRQ(ierr);
+		ierr = VecDestroy(&wm);   CHKERRQ(ierr);
+		ierr = VecDestroy(&wmf);  CHKERRQ(ierr);
+	}
+*/
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
@@ -484,27 +588,31 @@ PetscErrorCode SNESCoupledTest(
 	NLSol  *nl;
 	JacRes *jr;
 
-	// access context
-	nl = (NLSol*)cctx;
-	jr = nl->pc->pm->jr;
-
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
 
 	// call default convergence test
-	ierr =  SNESConvergedDefault(snes, it, xnorm, gnorm, f, reason, NULL); CHKERRQ(ierr);
+	ierr = SNESConvergedDefault(snes, it, xnorm, gnorm, f, reason, NULL); CHKERRQ(ierr);
 
 	//=============================
 	// Temperature diffusion solver
 	//=============================
 
-	ierr = JacResGetTempRes(jr);                        CHKERRQ(ierr);
-	ierr = JacResGetTempMat(jr);                        CHKERRQ(ierr);
-	ierr = KSPSetOperators(jr->tksp, jr->Att, jr->Att); CHKERRQ(ierr);
-	ierr = KSPSetUp(jr->tksp);                          CHKERRQ(ierr);
-	ierr = KSPSolve(jr->tksp, jr->dT, jr->gT);          CHKERRQ(ierr);
-	ierr = VecAXPY(jr->gT, -1.0, jr->dT);               CHKERRQ(ierr);
-	ierr = JacResCopyTemp(jr);                          CHKERRQ(ierr);
+	if(!it) PetscFunctionReturn(0);
+
+	// access context
+   	nl = (NLSol*)cctx;
+   	jr = nl->pc->pm->jr;
+
+    if(jr->actTemp == PETSC_TRUE)
+    {
+    	ierr = JacResGetTempRes(jr);                        CHKERRQ(ierr);
+    	ierr = JacResGetTempMat(jr);                        CHKERRQ(ierr);
+    	ierr = KSPSetOperators(jr->tksp, jr->Att, jr->Att); CHKERRQ(ierr);
+    	ierr = KSPSetUp(jr->tksp);                          CHKERRQ(ierr);
+    	ierr = KSPSolve(jr->tksp, jr->ge, jr->dT);          CHKERRQ(ierr);
+    	ierr = JacResUpdateTemp(jr);                        CHKERRQ(ierr);
+     }
 
 	PetscFunctionReturn(0);
 }

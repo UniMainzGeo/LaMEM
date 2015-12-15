@@ -112,6 +112,49 @@ PetscErrorCode StrainRateInterpTest(
 	JacRes      *jr,
 	UserCtx     *usr,
 	PVOut       *pvout);
+
+//---------------------------------------------------------------------------
+
+typedef struct
+{
+	PetscScalar A[8];
+	PetscScalar cxb, cxe;
+	PetscScalar cyb, cye;
+	PetscScalar czb, cze;
+
+} BCValues;
+
+PetscScalar InterpolateLinear3D(PetscScalar cx, PetscScalar cy, PetscScalar cz,  BCValues BC);
+
+// Initialize velocity vectors to test velocity gradients
+// Selects the velocity direction x, y, z (0, 1, 2) with vectDir,
+// and applies constant gradient in the gradDir direction
+// between the values begVal & endVal (in the positive direction of gradDir).
+// Initializes boundary ghost points in the tangential directions accordingly.
+
+PetscErrorCode InitVelocityTest(
+	JacRes      *jr,
+	UserCtx     *usr,
+	PetscInt     vectDir,
+	PetscInt     gradDir,
+	PetscScalar  begVal,
+	PetscScalar  endVal,
+	Tensor2RN    *L);
+
+PetscErrorCode ClearVelocity(JacRes *jr);
+
+PetscErrorCode VelGradSingleComp(
+		JacRes      *jr,
+		UserCtx     *usr,
+		PetscInt     vectDir,
+		PetscInt     gradDir,
+		PetscScalar  begVal,
+		PetscScalar  endVal);
+
+PetscErrorCode VelGradTest(
+	JacRes      *jr,
+	UserCtx     *usr);
 */
+
 //---------------------------------------------------------------------------
 #endif

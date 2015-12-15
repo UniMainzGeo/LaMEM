@@ -480,55 +480,36 @@ PetscErrorCode PVOutWriteTotDispl(JacRes *jr, OutBuf *outbuf)
 #define __FUNCT__ "PVOutWriteSHmax"
 PetscErrorCode PVOutWriteSHmax(JacRes *jr, OutBuf *outbuf)
 {
-	SolVarCell  *svCell;
-	PetscScalar ***lsxy, sxx, syy, sxy, theta_north;
-
-	// get direction to the North
-	theta_north = jr->matLim.theta_north;
-
-	COPY_FUNCTION_HEADER
-
-	#define GET_SHMAX_CENTER \
-		svCell = &jr->svCell[iter++]; \
-		sxx = svCell->sxx; \
-		syy = svCell->syy; \
-		sxy = (lsxy[k][j][i] + lsxy[k][j][i+1] + lsxy[k][j+1][i] + lsxy[k][j+1][i+1])/4.0; \
-		buff[k][j][i] = (sxx+syy)/2.0 + sqrt((sxx-syy)*(sxx-syy)/4.0 + sxy*sxy);
-
-	#define GET_SHMIN_CENTER \
-		svCell = &jr->svCell[iter++]; \
-		sxx = svCell->sxx; \
-		syy = svCell->syy; \
-		sxy = (lsxy[k][j][i] + lsxy[k][j][i+1] + lsxy[k][j+1][i] + lsxy[k][j+1][i+1])/4.0; \
-		buff[k][j][i] = (sxx+syy)/2.0 - sqrt((sxx-syy)*(sxx-syy)/4.0 + sxy*sxy);
-
-	// internal angles are counter-clockwise positive
-	// GMT requests clockwise positive, hence minus sign
-
-	// formula gives angle between x-axis and maximum stress
-	// GMT requests direction of minimum stress, hence pi/2 correction
-
-	#define GET_THETA_CENTER \
-		svCell = &jr->svCell[iter++]; \
-		sxx = svCell->sxx; \
-		syy = svCell->syy; \
-		sxy = (lsxy[k][j][i] + lsxy[k][j][i+1] + lsxy[k][j+1][i] + lsxy[k][j+1][i+1])/4.0; \
-		buff[k][j][i] = -(atan2(2.0*sxy, sxx-syy)/2.0 + M_PI_2 - theta_north);
-
-	COPY_TO_LOCAL_BUFFER(fs->DA_XY, outbuf->lbxy, GET_SXY)
-
-	ierr = DMDAVecGetArray(fs->DA_XY, outbuf->lbxy, &lsxy); CHKERRQ(ierr);
-
-	cf = scal->stress;
-
-	INTERPOLATE_COPY(fs->DA_CEN, outbuf->lbcen, InterpCenterCorner, GET_SHMAX_CENTER, 3, 0)
-	INTERPOLATE_COPY(fs->DA_CEN, outbuf->lbcen, InterpCenterCorner, GET_SHMIN_CENTER, 3, 1)
+	ACCESS_FUNCTION_HEADER
 
 	cf = scal->unit;
 
-	INTERPOLATE_COPY(fs->DA_CEN, outbuf->lbcen, InterpCenterCorner, GET_THETA_CENTER, 3, 2)
+	// compute maximum horizontal compressive stress (SHmax) orientation
+	ierr = JacResGetSHmax(jr); CHKERRQ(ierr);
 
-	ierr = DMDAVecRestoreArray(fs->DA_XY, outbuf->lbxy, &lsxy); CHKERRQ(ierr);
+	INTERPOLATE_ACCESS(jr->ldxx, InterpCenterCorner, 3, 0, 0.0)
+	INTERPOLATE_ACCESS(jr->ldyy, InterpCenterCorner, 3, 1, 0.0)
+
+	ierr = OutBufZero3DVecComp(outbuf, 3, 2); CHKERRQ(ierr);
+
+	PetscFunctionReturn(0);
+}
+//---------------------------------------------------------------------------
+#undef __FUNCT__
+#define __FUNCT__ "PVOutWriteEHmax"
+PetscErrorCode PVOutWriteEHmax(JacRes *jr, OutBuf *outbuf)
+{
+	ACCESS_FUNCTION_HEADER
+
+	cf = scal->unit;
+
+	// compute maximum horizontal extension rate (EHmax) orientation
+	ierr = JacResGetEHmax(jr); CHKERRQ(ierr);
+
+	INTERPOLATE_ACCESS(jr->ldxx, InterpCenterCorner, 3, 0, 0.0)
+	INTERPOLATE_ACCESS(jr->ldyy, InterpCenterCorner, 3, 1, 0.0)
+
+	ierr = OutBufZero3DVecComp(outbuf, 3, 2); CHKERRQ(ierr);
 
 	PetscFunctionReturn(0);
 }
@@ -612,12 +593,31 @@ PetscErrorCode PVOutWriteContRes(JacRes *jr, OutBuf *outbuf)
 #define __FUNCT__ "PVOutWritEnergRes"
 PetscErrorCode PVOutWritEnergRes(JacRes *jr, OutBuf *outbuf)
 {
+	FDSTAG      *fs;
+	PetscScalar ***lbcen, ***ge;
+	PetscInt    i, j, k, nx, ny, nz, sx, sy, sz;
+
 	ACCESS_FUNCTION_HEADER
 
 	cf = scal->dissipation_rate;
 
-	// scatter to local vector
-	GLOBAL_TO_LOCAL(outbuf->fs->DA_CEN, jr->ge, outbuf->lbcen)
+	fs = jr->fs;
+
+	ierr = DMDAVecGetArray(fs->DA_CEN, outbuf->lbcen,  &lbcen); CHKERRQ(ierr);
+	ierr = DMDAVecGetArray(jr->DA_T,   jr->ge,         &ge);    CHKERRQ(ierr);
+
+	ierr = DMDAGetCorners(fs->DA_CEN, &sx, &sy, &sz, &nx, &ny, &nz); CHKERRQ(ierr);
+
+	START_STD_LOOP
+	{
+		lbcen[k][j][i] = ge[k][j][i];
+	}
+	END_STD_LOOP
+
+	ierr = DMDAVecRestoreArray(fs->DA_CEN, outbuf->lbcen,  &lbcen); CHKERRQ(ierr);
+	ierr = DMDAVecRestoreArray(jr->DA_T,   jr->ge,         &ge);    CHKERRQ(ierr);
+
+	LOCAL_TO_LOCAL(fs->DA_CEN, outbuf->lbcen)
 
 	INTERPOLATE_ACCESS(outbuf->lbcen, InterpCenterCorner, 1, 0, 0.0)
 
@@ -687,4 +687,34 @@ PetscErrorCode PVOutWriteDII_YZ(JacRes *jr, OutBuf *outbuf)
 
 	PetscFunctionReturn(0);
 }
+//---------------------------------------------------------------------------
+/*
+	PetscScalar  sxx = -5.0;
+	PetscScalar  syy =  8.0;
+	PetscScalar  sxy = -3.0;
+
+	PetscScalar  SHmax;
+	PetscScalar  v[2];
+
+	ierr = getSHmax(sxx, syy, sxy, 1e-12, &SHmax, v); CHKERRQ(ierr);
+
+	sxx =  5.0;
+	syy = -8.0;
+	sxy =  0.0;
+
+	ierr = getSHmax(sxx, syy, sxy, 1e-12, &SHmax, v); CHKERRQ(ierr);
+
+	sxx = -8.0;
+	syy = -8.0;
+	sxy =  0.0;
+
+	ierr = getSHmax(sxx, syy, sxy, 1e-12, &SHmax, v); CHKERRQ(ierr);
+
+	sxx = 95.0;
+	syy = -8.0;
+	sxy =  17.0;
+
+	ierr = getSHmax(sxx, syy, sxy, 1e-12, &SHmax, v); CHKERRQ(ierr);
+*/
+
 //---------------------------------------------------------------------------

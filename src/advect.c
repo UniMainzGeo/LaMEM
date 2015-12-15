@@ -153,6 +153,9 @@ PetscErrorCode ADVCreate(AdvCtx *actx, FDSTAG *fs, JacRes *jr)
 	actx->ndel = 0;
 	actx->idel = NULL;
 
+	actx->AirPhase = -1;  // air phase number
+	actx->Ttop     = 0.0; // top surface temperature
+
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
@@ -267,7 +270,7 @@ PetscErrorCode ADVAdvect(AdvCtx *actx)
 //---------------------------------------------------------------------------
 #undef __FUNCT__
 #define __FUNCT__ "ADVRemap"
-PetscErrorCode ADVRemap(AdvCtx *actx)
+PetscErrorCode ADVRemap(AdvCtx *actx, FreeSurf *surf)
 {
 	//=======================================================================
 	// MAJOR ADVECTION REMAPPING
@@ -292,7 +295,8 @@ PetscErrorCode ADVRemap(AdvCtx *actx)
 	// check corners and inject 1 particle if empty
 	ierr = ADVCheckCorners(actx);    CHKERRQ(ierr);
 
-	// free surface correction
+	// change marker phase when crossing flat surface or free surface with fast sedimentation/erosion
+	ierr = ADVMarkCrossFreeSurf(actx, surf, 0.05); CHKERRQ(ierr);
 
 	// analysis
 	ierr = ADVAnalytics(actx); CHKERRQ(ierr);
@@ -531,7 +535,7 @@ PetscErrorCode ADVAdvectMark(AdvCtx *actx)
 	PetscScalar *ncx, *ncy, *ncz;
 	PetscScalar *ccx, *ccy, *ccz;
 	PetscScalar ***lvx, ***lvy, ***lvz, ***lp, ***lT;
-	PetscScalar vx, vy, vz, p, T, xc, yc, zc, xp, yp, zp, dt;
+	PetscScalar vx, vy, vz, xc, yc, zc, xp, yp, zp, dt;
 
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
@@ -592,21 +596,15 @@ PetscErrorCode ADVAdvectMark(AdvCtx *actx)
 		vy = InterpLin3D(lvy, II, J,  KK, sx, sy, sz, xp, yp, zp, ccx, ncy, ccz);
 		vz = InterpLin3D(lvz, II, JJ, K,  sx, sy, sz, xp, yp, zp, ccx, ccy, ncz);
 
-// ACHTUNG!
-// compute p & T increments first, then interpolate them!
-// or just use piecewise-constant updates
-
-		p  = InterpLin3D(lp,  II, JJ, KK, sx, sy, sz, xp, yp, zp, ccx, ccy, ccz);
-		T  = InterpLin3D(lT,  II, JJ, KK, sx, sy, sz, xp, yp, zp, ccx, ccy, ccz);
-
 		// access host cell solution variables
 		svCell = &jr->svCell[ID];
 
 		// update pressure & temperature variables
-		P->p += p - svCell->svBulk.pn;
-// ACHTUNG!
-// deactivated for now
-//		P->T += T - svCell->svBulk.Tn;
+		P->p += lp[sz+K][sy+J][sx+I] - svCell->svBulk.pn;
+		P->T += lT[sz+K][sy+J][sx+I] - svCell->svBulk.Tn;
+
+		// override temperature of air phase
+		if(actx->AirPhase != -1 &&  P->phase == actx->AirPhase) P->T = actx->Ttop;
 
 		// advect marker
 		P->X[0] = xp + vx*dt;
@@ -1102,6 +1100,7 @@ PetscErrorCode ADVCheckCorners(AdvCtx *actx)
 	// check corner marker distribution
 	// if empty insert one marker in center of corner
 	FDSTAG         *fs;
+	BCCtx          *bc;
 	Marker         *P, *markers;
 	NumCorner      *numcorner;
 	PetscInt       i, j, ii, jj, kk, ind, nx, ny, nz, lx[3];
@@ -1116,6 +1115,8 @@ PetscErrorCode ADVCheckCorners(AdvCtx *actx)
 
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
+
+	bc = actx->jr->bc;
 
 	PetscBool flag = PETSC_FALSE;
 	PetscOptionsGetBool(PETSC_NULL, "-use_marker_control", &flag, PETSC_NULL);
@@ -1330,6 +1331,9 @@ PetscErrorCode ADVCheckCorners(AdvCtx *actx)
 				actx->recvbuf[nind].X[0] = xp[0];
 				actx->recvbuf[nind].X[1] = xp[1];
 				actx->recvbuf[nind].X[2] = xp[2];
+
+				// override marker phase (if necessary)
+				ierr = BCOverridePhase(bc, i, actx->recvbuf + nind); CHKERRQ(ierr);
 
 				// increase counter
 				nind++;
@@ -1715,48 +1719,91 @@ PetscErrorCode ADVInterpMarkToEdge(AdvCtx *actx, PetscInt iphase, InterpCase ica
 //---------------------------------------------------------------------------
 #undef __FUNCT__
 #define __FUNCT__ "ADVMarkCrossFreeSurf"
-PetscErrorCode ADVMarkCrossFreeSurf(AdvCtx *actx, FreeSurf *surf)
+PetscErrorCode ADVMarkCrossFreeSurf(AdvCtx *actx, FreeSurf *surf, PetscScalar tol)
 {
+
 	// change marker phase when crossing free surface
-
+	FDSTAG      *fs;
 	Marker      *P;
-	PetscInt     jj;
+	PetscInt    sx, sy, nx, ny;
+	PetscInt    jj, ID, I, J, K, L, AirPhase;
+	PetscScalar ***ltopo, *ncx, *ncy, topo, xp, yp, zp;
 
+	PetscErrorCode ierr;
 	PetscFunctionBegin;
 
-	// WARNING! current version only supports flat free surface in combination
-	// with prescribed sedimentation rate model. General version to be implemented.
-	// The problem with non-sedimentary case is which phase to assign to air marker.
+	// free-surface cases only
+	if(surf->UseFreeSurf != PETSC_TRUE) PetscFunctionReturn(0);
 
-	if(surf->flat != PETSC_TRUE || surf->SedimentModel != 1)
-	{
-		PetscFunctionReturn(0);
-	}
+	// access context
+	fs        = actx->fs;
+	L         = fs->dsz.rank;
+	AirPhase  = surf->AirPhase;
 
-	// scan ALL markers
+	// starting indices & number of cells
+	sx = fs->dsx.pstart; nx = fs->dsx.ncels;
+	sy = fs->dsy.pstart; ny = fs->dsy.ncels;
+
+	// node & cell coordinates
+	ncx = fs->dsx.ncoor;
+	ncy = fs->dsy.ncoor;
+
+	// access topography
+	ierr = DMDAVecGetArray(surf->DA_SURF, surf->ltopo, &ltopo);  CHKERRQ(ierr);
+
+	// scan all markers
 	for(jj = 0; jj < actx->nummark; jj++)
 	{
 		// access next marker
 		P = &actx->markers[jj];
 
-		// check marker is above/below the free surface
-		if(P->X[2] > surf->avg_topo)
+		// get consecutive index of the host cell
+		ID = actx->cellnum[jj];
+
+		// expand I, J, K cell indices
+		GET_CELL_IJK(ID, I, J, K, nx, ny)
+
+		// get marker coordinates
+		xp = P->X[0];
+		yp = P->X[1];
+		zp = P->X[2];
+
+		// compute surface topography at marker position
+		topo = InterpLin2D(ltopo, I, J, L, sx, sy, xp, yp, ncx, ncy);
+
+		// check whether rock marker is above the free surface
+		if(P->phase != AirPhase && zp > topo)
 		{
-			// above -> sediment turns into air
-			if(P->phase != surf->AirPhase)
+			if(surf->ErosionModel == 1)
 			{
-				P->phase = surf->AirPhase;
+				// erosion -> rock turns into air
+				P->phase = AirPhase;
+			}
+			else
+			{
+				// put marker below the free surface
+				P->X[2] = topo - tol*(zp - topo);
 			}
 		}
-		else
+
+		// check whether air marker is below the free surface
+		if(P->phase == AirPhase && zp < topo)
 		{
-			// below -> air turns into sediment
-			if(P->phase == surf->AirPhase)
+			if(surf->SedimentModel == 1)
 			{
+				// sedimentation -> air turns into a sediment
 				P->phase = surf->phase;
+			}
+			else
+			{
+				// put marker above the free surface
+				P->X[2] = topo + tol*(topo - zp);
 			}
 		}
 	}
+
+	// restore access
+	ierr = DMDAVecRestoreArray(surf->DA_SURF, surf->ltopo, &ltopo);  CHKERRQ(ierr);
 
 	PetscFunctionReturn(0);
 }

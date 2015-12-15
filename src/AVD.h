@@ -105,7 +105,7 @@ PetscErrorCode AVDReAlloc    (AVDChain *chain,PetscInt buffer);
 
 // routines for marker control
 PetscErrorCode AVDLoadPoints            (AdvCtx *actx, AVD *A, PetscInt ind);
-PetscErrorCode AVDInjectDeletePoints    (AdvCtx *actx, AVD *A);
+PetscErrorCode AVDInjectDeletePoints    (AdvCtx *actx, AVD *A, PetscInt cellID);
 PetscErrorCode AVDExecuteMarkerInjection(AdvCtx *actx, PetscInt npoints, PetscScalar xs[3], PetscScalar xe[3], PetscInt ind);
 //---------------------------------------------------------------------------
 static inline PetscScalar AVDDistanceTest(PetscScalar x0[3],PetscScalar x1[3],PetscScalar x2[3])

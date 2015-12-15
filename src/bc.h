@@ -48,6 +48,9 @@
 //---------------------------------------------------------------------------
 
 #define _max_periods_ 20
+#define _max_path_points_ 50
+#define _max_poly_points_ 100
+#define _max_bc_blocks_ 3
 
 //---------------------------------------------------------------------------
 // index shift type
@@ -57,6 +60,33 @@ typedef enum
 	_GLOBAL_TO_LOCAL_
 
 } ShiftType;
+//---------------------------------------------------------------------------
+typedef struct
+{
+	// path description
+	PetscInt    npath;                        // number of path points of Bezier curve
+	PetscScalar theta[  _max_path_points_  ]; // orientation angles at path points
+	PetscScalar time [  _max_path_points_  ]; // times at path points
+	PetscScalar path [6*_max_path_points_-4]; // Bezier curve path & control points
+
+	// block description
+	PetscInt    npoly;                      // number of polygon vertices
+	PetscScalar poly [2*_max_poly_points_]; // polygon coordinates
+	PetscScalar bot, top;                   // bottom & top coordinates of the block
+
+	// WARNING bottom coordinate should be advected (how? average?)
+	// Top of the box can be assumed to be the free surface
+	// sticky air nodes should never be constrained (this is easy to check)
+
+} BCBlock;
+//---------------------------------------------------------------------------
+
+PetscErrorCode BCBlockReadFromOptions(BCBlock *bcb, Scaling *scal);
+
+PetscErrorCode BCBlockGetPosition(BCBlock *bcb, PetscScalar t, PetscInt *f, PetscScalar x[]);
+
+PetscErrorCode BCBlockGetPolygon(BCBlock *bcb, PetscScalar Xb[], PetscScalar *cpoly);
+
 //---------------------------------------------------------------------------
 // boundary condition context
 typedef struct
@@ -146,6 +176,13 @@ typedef struct
 //	PetscScalar *TPCVals;      // values of TPC
 //	PetscScalar *TPCLinComPar; // linear combination parameters
 
+	BCBlock      blocks;  // BC block
+
+	// velocity boundary condition
+	PetscInt     face, phase;   // face & phase identifiers
+	PetscScalar  bot, top;      // bottom & top coordinates of the plate
+	PetscScalar  velin, velout; // inflow & outflow velocities
+
 } BCCtx;
 //---------------------------------------------------------------------------
 
@@ -198,4 +235,13 @@ PetscErrorCode BCStretchGrid(BCCtx *bc);
 
 //---------------------------------------------------------------------------
 
+PetscErrorCode BCApplyBezier(BCCtx *bc);
+
+PetscErrorCode BCSetupBoundVel(BCCtx *bc, PetscScalar top);
+
+PetscErrorCode BCApplyBoundVel(BCCtx *bc);
+
+PetscErrorCode BCOverridePhase(BCCtx *bc, PetscInt cellID, Marker *P);
+
+//---------------------------------------------------------------------------
 #endif

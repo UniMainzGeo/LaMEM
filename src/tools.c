@@ -348,5 +348,192 @@ PetscErrorCode LaMEMCreateOutputDirectory(const char *DirectoryName)
 
 	PetscFunctionReturn(0);
 }
-//==========================================================================================================
+//---------------------------------------------------------------------------
+//
+// Fast detection points inside a polygonal region.
+//
+// Originally written as a MATLAB mexFunction by:
+// A. David Redish      email: adr@nsma.arizona.edu
+// Guillaume Jacquenot  email: guillaume.jacquenot@gmail.com
+//
+// Modified to be callable directly from C by:
+// Anton A. Popov       email: popov@uni-mainz.de
+//
+// Output is simplified to skip distinguishing points IN and ON the polygon.
+// Coordinates storage format is changed from strided to interleaved.
+// Bounding box computation is separated from the main test function.
+//
+//---------------------------------------------------------------------------
+void polygon_box(
+	PetscInt    *pnv,    // number of polygon vertices (can be modified)
+	PetscScalar *vcoord, // coordinates of polygon vertices
+	PetscScalar  rtol,   // relative tolerance
+	PetscScalar *atol,   // absolute tolerance
+	PetscScalar *box)    // bounding box of a polygon
+{
+	PetscInt    iv, nv;
+	PetscScalar ax, bx, ay, by, xv, yv;
+	PetscScalar xmin, xmax, ymin, ymax, dmin;
 
+	nv = (*pnv);
+	ax = vcoord[0];
+	ay = vcoord[1];
+	bx = vcoord[2*(nv-1)  ];
+	by = vcoord[2*(nv-1)+1];
+
+	// decrease number of points if the polygon is closed
+	if(ax == bx && ay == by) nv--;
+
+	// calculate bounding box of a polygon
+	xmin = xmax = vcoord[0];
+	ymin = ymax = vcoord[1];
+
+	for(iv = 0; iv < nv; iv++)
+	{
+		// get vertex coordinates
+		xv = vcoord[2*iv  ];
+		yv = vcoord[2*iv+1];
+
+		if(xv < xmin) xmin = xv;
+		if(xv > xmax) xmax = xv;
+		if(yv < ymin) ymin = yv;
+		if(yv > ymax) ymax = yv;
+	}
+
+	box[0] = xmin;
+	box[1] = xmax;
+	box[2] = ymin;
+	box[3] = ymax;
+
+	// get smallest extent of the polygon
+	dmin = xmax-xmin; if(ymax-ymin < dmin) dmin = ymax-ymin;
+
+	// store parameters
+	(*atol) = rtol*dmin; // absolute tolerance
+	(*pnv)  = nv;        // number of vertices
+}
+//---------------------------------------------------------------------------
+void in_polygon(
+	PetscInt     np,     // number of test points
+	PetscScalar *pcoord, // coordinates of test points
+	PetscInt     nv,     // number of polygon vertices
+	PetscScalar *vcoord, // coordinates of polygon vertices
+	PetscScalar *box,    // bounding box of a polygon (optimization)
+	PetscScalar  atol,   // absolute tolerance
+	PetscInt    *in)     // point location flags (1-inside, 0-outside)
+{
+	PetscInt    ip, iv, ind;
+	PetscInt    point_on, point_in;
+	PetscScalar ax, bx, ay, by;
+	PetscScalar nIntersect, intersecty, tmp;
+	PetscScalar xmin, xmax, ymin, ymax, xp, yp, xvind;
+
+	// get bounding box
+	xmin = box[0];
+	xmax = box[1];
+	ymin = box[2];
+	ymax = box[3];
+
+	// test whether each point is in polygon
+	for(ip = 0; ip < np; ip++)
+	{
+		// assume point is outside
+		in[ip] = 0;
+
+		// get point coordinates
+		xp = pcoord[2*ip    ];
+		yp = pcoord[2*ip + 1];
+
+		// check bounding box
+		if(xp < xmin) continue;
+		if(xp > xmax) continue;
+		if(yp < ymin) continue;
+		if(yp > ymax) continue;
+
+		// count the number of intersections
+		nIntersect = 0.0;
+		point_on   = 0;
+
+		for(iv = 0; iv < nv; iv++)
+		{
+			// does the line PQ intersect the line AB?
+			if(iv == nv-1)
+			{
+				ax = vcoord[2*(nv-1)  ];
+				ay = vcoord[2*(nv-1)+1];
+				bx = vcoord[0         ];
+				by = vcoord[1         ];
+			}
+			else
+			{
+				ax = vcoord[2*iv      ];
+				ay = vcoord[2*iv+1    ];
+				bx = vcoord[2*(iv+1)  ];
+				by = vcoord[2*(iv+1)+1];
+			}
+
+			if(ax == bx)
+			{
+				// vertical points
+				if(xp == ax)
+				{
+					// ensure order correct
+					if(ay > by)
+					{
+						tmp = ay; ay = by; by = tmp;
+					}
+					if(yp >= ay && yp <= by)
+					{
+						point_on   = 1;
+						nIntersect = 0.0;
+						break;
+					}
+				}
+			}
+			else
+			{
+				// non-vertical points
+				if(xp < MIN(ax, bx) || MAX(ax, bx) < xp) continue;
+
+				intersecty = ay + (xp - ax)/(bx - ax)*(by - ay);
+
+				if(fabs(intersecty - yp) < atol)
+				{
+					point_on   = 1;
+					nIntersect = 0.0;
+					break;
+				}
+				else if(intersecty < yp && (ax == xp || bx == xp))
+				{
+					if(ax == xp)
+					{
+						if(iv == 0)
+						{
+							ind = nv-1;
+						}
+						else
+						{
+							ind = iv-1;
+						}
+
+						xvind = vcoord[2*ind];
+
+						if(MIN(bx, xvind) < xp && xp < MAX(bx, xvind))
+						{
+							nIntersect += 1.0;
+						}
+					}
+				}
+				else if (intersecty < yp)
+				{
+					nIntersect += 1.0;
+				}
+			}
+		}
+
+		// check if the contour polygon is closed
+		point_in = (PetscInt)(nIntersect - 2.0*floor(nIntersect/2.0));
+		in[ip]   = MAX(point_on, point_in);
+	}
+}
+//---------------------------------------------------------------------------
