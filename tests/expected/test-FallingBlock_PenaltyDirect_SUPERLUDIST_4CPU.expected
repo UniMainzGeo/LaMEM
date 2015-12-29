@@ -34,7 +34,7 @@
 # Adding PetscOption: -objects_dump 
 -------------------------------------------------------------------------- 
                    Lithosphere and Mantle Evolution Model                   
-     Compiled: Date: Sep 17 2015 - Time: 11:51:31 	    
+     Compiled: Date: Dec 21 2015 - Time: 14:55:05 	    
 -------------------------------------------------------------------------- 
         STAGGERED-GRID FINITE DIFFERENCE CANONICAL IMPLEMENTATION           
 -------------------------------------------------------------------------- 
@@ -86,14 +86,14 @@ Reading material parameters:
  Writing AVD3D .pvd file to disk
  
 Time step 0 -------------------------------------------------------- 
-USING PICARD JACOBIAN for iteration 0,  ||F||/||F0||=1.000000e+00 
+USING PICARD JACOBIAN for iteration 0, ||F||/||F0||=1.000000e+00 
     Residual norms for js_ solve.
-    0 KSP Residual norm 2.136002538126e+01 
-    1 KSP Residual norm 1.604701337963e-04 
+    0 KSP Residual norm 2.136002538183e+01 
+    1 KSP Residual norm 1.604698820329e-04 
   Linear solve converged due to CONVERGED_RTOL iterations 1
  SNES Convergence Reason: maximum iterations reached
  Number of iterations : 1
- Nonlinear solve took 0.721641 (sec)
+ Nonlinear solve took 1.55011 (sec)
 ------------------------------------------
 Residual summary: 
   Continuity: 
@@ -102,11 +102,9 @@ Residual summary:
     |Div|_2  = 0.000000000000e+00 
   Momentum: 
     |mRes|_2 = 7.310266752999e+01 
-  Energy: 
-    |eRes|_2 = 0.000000000000e+00 
 ------------------------------------------
  Created new directory Timestep_000000_0.000000e+00 
-AVD generator complete in 1.0876e-02 (sec)
+AVD generator complete in 2.3535e-02 (sec)
 AVD3D memory usage: 
   points:  1.000000 [MB] 
   cells:   3.094482 [MB] 
@@ -116,36 +114,34 @@ AVD3D memory usage:
  Finished timestep 0 out of 1 
  
 Time step 1 -------------------------------------------------------- 
-USING PICARD JACOBIAN for iteration 0,  ||F||/||F0||=1.000000e+00 
+USING PICARD JACOBIAN for iteration 0, ||F||/||F0||=1.000000e+00 
     Residual norms for js_ solve.
-    0 KSP Residual norm 3.031245205098e-04 
-    1 KSP Residual norm 4.581904420507e-09 
+    0 KSP Residual norm 3.031204894348e-04 
+    1 KSP Residual norm 4.587498685347e-09 
   Linear solve converged due to CONVERGED_RTOL iterations 1
  SNES Convergence Reason: maximum iterations reached
  Number of iterations : 1
- Nonlinear solve took 0.460932 (sec)
+ Nonlinear solve took 1.19272 (sec)
 ------------------------------------------
 Residual summary: 
   Continuity: 
-    Div_min  = -5.556278892219e-06 
-    Div_max  = 5.556289094683e-06 
-    |Div|_2  = 2.112320332716e-04 
+    Div_min  = -5.556284040590e-06 
+    Div_max  = 5.556289276658e-06 
+    |Div|_2  = 2.112320230606e-04 
   Momentum: 
-    |mRes|_2 = 5.212905849040e-03 
-  Energy: 
-    |eRes|_2 = 0.000000000000e+00 
+    |mRes|_2 = 5.212908124093e-03 
 ------------------------------------------
  Created new directory Timestep_000001_1.000000e-05 
-AVD generator complete in 1.5747e-02 (sec)
+AVD generator complete in 2.8245e-02 (sec)
 AVD3D memory usage: 
   points:  1.000000 [MB] 
   cells:   3.094482 [MB] 
-  chains:  4.329918 [MB] 
-  total:   8.424400 [MB] 
+  chains:  4.329926 [MB] 
+  total:   8.424408 [MB] 
  Time = 2e-05[ ], dt = 1e-05[ ] 
  Finished timestep 1 out of 1 
  
- Simulation took 1.26985 (sec) 
+ Simulation took 2.90765 (sec) 
 #PETSc Option Table entries:
 -AddRandomNoiseParticles 0
 -FSSA 1.0
