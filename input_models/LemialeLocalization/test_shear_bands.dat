@@ -1,0 +1,198 @@
+# 2D Lemiale benchmark, with a setup that is similar to what was used 
+# in   Kaus          (2009, in press), Tectonophysics
+# and  Lemiale et al (2008          ), PEPI 
+#
+# it consists of a single inclusion with specified lengthscale, subjected to compression 
+# or extension
+
+nel_x						=   128
+nel_y						= 	2
+nel_z						= 	48
+ 
+# Geometry
+units 						= 	geo
+Characteristic.Length		=	1e4 		# [m]
+Characteristic.Viscosity 	=	1e20		# [Pa.s]
+Characteristic.Temperature	=	1			# [K]
+Characteristic.Stress      	=   1e6			# [Pa]
+
+
+W							=	40			# Width  (x-direction)
+H							=	15			# Height (z-direction)
+x_left						=	-20			# Left side of domain
+y_front						=	0			# Front side of domain
+z_bot						=	0			# Bottom of box
+
+L							=	0.3125		# Length (y-direction)
+
+# --- Model setup and noise ---
+msetup 						= 	bands		# Shear band setup, which has additional command-line options 
+
+# Define input/output and numerics-related stuff
+OutputFile					=	test_shear_cf_min_eta_30		
+
+# Timestepping options
+save_timesteps				=	1				# save every ? timesteps
+save_breakpoints 			=	0				# don't save breakpoints
+time_end					=	50				# last timestep
+CFL							=	0.5				# CFL, dt-based criterium
+dt_max						=	0.01 	  	   	# Maximum timestep [Myr if dimensional]
+	
+# Boundary conditions
+BC.LeftBound				=	1				# 0 - free surface, 1-free slip with BG strainrate Eyy, 
+BC.RightBound				=	1				# 0 - free surface, 1-free slip with BG strainrate Eyy, 
+BC.FrontBound				=	1				# 0 - free surface, 1-free slip with BG strainrate Exx, 
+BC.BackBound				=	1				# 0 - free surface, 1-free slip with BG strainrate Exx, 
+BC.LowerBound				=	1				# 0 - free surface, 1-free slip, 				  2 - no slip, 5 - growthrate 2D, 7 - growthrate 3D
+BC.UpperBound				=	1				# 0 - free surface, 1-free slip, 				  2 - no slip, 5 - growthrate 2D, 7 - growthrate 3D
+Temp_top	    			=   0				# Temperature @ top
+Temp_bottom					=   0 				# Temperature @ bottom; side BC's are flux-free
+
+
+<PetscOptionsStart>
+
+	# Define background strain rate values
+	-ExxNumPeriods  1
+	-ExxStrainRates 1e-15
+	
+	# Initial Time step (Myr)
+#	-dt 0.0001
+
+	# Define shear band setup geometry (inclusion etc)
+	-H_layer 		  10
+	-H_bottom 		  0
+	-Inclusion_use
+	-Inclusion_size	  2
+	#-Inclusion_offset 10
+	#-Inclusion_length 10
+
+	# Internal free surface
+	-FSSA 				1.0
+	-surf_use        	1
+	-surf_level      	10
+	-surf_air_phase 	2
+
+	# Dampening for plasticity
+	-use_quasi_harmonic_viscosity
+	-cf_eta_min 50					# dampening plasticity viscosity: requires tuning!
+	
+		
+	# SNES (nonlinear) solveroptions
+	-snes_ksp_ew						# Eisenstat Walker algorithm
+	-snes_monitor			
+	-snes_atol 					1e-8
+	-snes_rtol 					1e-13
+	-snes_stol 					1e-16
+	-snes_max_it 				200
+	-snes_max_funcs 			500000
+	-snes_max_linear_solve_fail 10000
+	#-snes_type ksponly							# Switches off nonlinear iterations
+
+	# Switching from Picard to Newton [LaMEM specific]
+	-snes_PicardSwitchToNewton_rtol 1e-1 		# relative tolerance to switch to Newton (1e-2)
+	-snes_NewtonSwitchToPicard_it  	20			# number of Newton iterations after which we switch back to Picard 
+	-snes_NewtonSwitchToPicard_rtol 1.1			# relative tolerance compared to first iteration step 
+
+	# Linesearch options
+	#-snes_linesearch_monitor
+	-snes_linesearch_type 		cp 				#Linesearch type (one of) shell basic l2 bt cp (SNESLineSearchSetType)  [l2 seems to work better with VEP]
+	-snes_linesearch_maxstep 	1.0				# very important to prevent the code from "blowing up"
+	
+	
+	# Jacobian (linear)  KSP
+	-js_ksp_type fgmres
+#	-js_ksp_gmres_restart 100
+	-js_ksp_max_it 100
+	-js_ksp_converged_reason
+	#-js_ksp_monitor
+	-js_ksp_rtol 1e-2
+	-js_ksp_atol 1e-13
+
+
+	# Jacobian preconditioner (innermost)
+
+	# -- Parallel direct solver --
+	-pcmat_type mono
+	-pcmat_pgamma 1e5
+	-jp_type user
+	-jp_pc_type lu
+	-jp_pc_factor_mat_solver_package mumps
+	# -----
+
+	# Additional command-line Petsc Options
+	-restart 0
+	-save_breakpoints 0
+
+	# Visualization options
+	-out_pvd 1
+	-out_phase 1  
+	-out_density 1
+	-out_viscosity 1
+	-out_velocity 1
+	-out_pressure 1
+	-out_temperature 1 
+	-out_dev_stress 1
+	-out_j2_dev_stress 1
+	-out_strain_rate 1
+	-out_j2_strain_rate 1
+	-out_plast_strain 1
+	-AVDPhaseViewer 1
+	
+	-out_surf_pvd        1
+	-out_surf_velocity   1
+	-out_surf_topography 1
+	-out_surf_amplitude  1
+
+<PetscOptionsEnd>
+    
+# Phase distribution
+NumPartX				=	5   # Particles/Cell in x-direction
+NumPartY				=	5   # Particles/Cell in y-direction
+NumPartZ				=	5	# Particles/Cell in z-direction
+
+# Properties that are defined over the whole domain:
+Gravity					=  -10;									# [m/s2] - gravitational acceleration 
+
+LowerViscosityCutoff			= 1e16
+UpperViscosityCutoff			= 1e27
+#PlastViscosity                  = 1e19
+DII_ref                         = 1e-16
+
+
+# Define material properties for all phases -------------------------------------------------
+
+	# Define properties of bottom layer -------------------
+	<MaterialStart>
+		ID   = 0
+		rho0 = 3000
+		eta  = 1e20
+	<MaterialEnd>
+
+	# Define properties of matrix -----------------
+	<MaterialStart>
+		ID       = 1
+		rho0     = 3000
+		eta      = 1e25
+		shear    = 4e10
+		cohesion = 10e6
+		friction = 30
+		chSoftID = 0
+		frSoftID = 0
+	<MaterialEnd>
+
+	# Define properties of sticky-air layer -------------------
+	<MaterialStart>
+		ID   = 2
+		rho0 = 1000
+		eta  = 1e20
+	<MaterialEnd>
+
+	# Define strain softening law
+	<SofteningStart>
+		softID = 0
+		A      = 0.7
+		APS1   = 0.01
+		APS2   = 0.1
+	<SofteningEnd>
+
+# End of defining material properties for all phases ----------------------------------------

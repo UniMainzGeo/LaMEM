@@ -123,6 +123,7 @@ PetscErrorCode JacResPicardMatFree(JacRes *jr)
 		eta  = jr->svCell[iter].svDev.eta;
 		IKdt = jr->svCell[iter].svBulk.IKdt;
 		rho  = jr->svCell[iter].svBulk.rho;
+		iter++;
 
 		// get mesh steps
 		dx = SIZE_CELL(i, sx, fs->dsx);
@@ -180,7 +181,7 @@ PetscErrorCode JacResPicardMatFree(JacRes *jr)
 	START_STD_LOOP
 	{
 		// get effective viscosity
-		eta = jr->svXZEdge[iter++].svDev.eta;
+		eta = jr->svXYEdge[iter++].svDev.eta;
 
 		// get mesh steps
 		dx = SIZE_NODE(i, sx, fs->dsx);
