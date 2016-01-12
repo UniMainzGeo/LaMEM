@@ -1075,7 +1075,33 @@ PetscErrorCode SetDislProfile(Material_t *m, char name[])
 		C_OH_0           =   1;
 		r                =   0;
 	}
+	
+	else if (!strcmp(name,"Ara_rocksalt-Urai_et_al.(2008)"))
+    {
+        // Ara rocksalt as published in Urai et al.(2008)
+        m->Bn            =   1.82e-9;
+        m->n             =   5;
+        m->En            =   32.4e3;
+        m->Vn            =   0;
+        tensorCorrection =   _UniAxial_;
+        MPa              =   1;
+        C_OH_0           =   1;
+        r                =   0;
+    }
 
+    else if (!strcmp(name,"Polycrystalline Anhydrite - Mueller and Briegel(1978)"))
+    {
+        //
+        m->Bn            =   3.16228e1;
+        m->n             =   2;
+        m->En            =   152.3e3;
+        m->Vn            =   0;
+        tensorCorrection =   _UniAxial_;
+        MPa              =   1;
+        C_OH_0           =   1;
+        r                =   0;
+    }
+    
 	else
 	{
 		SETERRQ1(PETSC_COMM_SELF, PETSC_ERR_USER, "No such dislocation creep profile: %s! ",name);
