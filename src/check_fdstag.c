@@ -58,41 +58,31 @@
 #include "tools.h"
 #include "check_fdstag.h"
 //---------------------------------------------------------------------------
-// JUST A FUCKING TEST
-//---------------------------------------------------------------------------
-
-/*
 #undef __FUNCT__
-#define __FUNCT__ "DoJacTests"
-PetscErrorCode DoJacTests(NLSol *nl)
+#define __FUNCT__ "JacTest"
+PetscErrorCode JacTest(JacRes *jr, Vec diff)
 {
 	Mat          MF, MFFD;
 	DOFIndex    *dof;
 	BCCtx       *bc;
-	PMat         pm;
-	JacRes      *jr;
 	Vec          z, mf, mffd;
 	PetscScalar  nrm, *sol;
 	PetscBool    set;
-	PetscInt     i, num, *list;
+	PetscInt     i, num, *list, pmf, pmffd;
 
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
 
 	// access context
-	pm  = nl->pc->pm;
-	jr  = pm->jr;
 	dof = &(jr->fs->dof);
 	bc  =  jr->bc;
 
 	// read and set debugging flags
-	ierr = PetscOptionsHasName(NULL, "-cell", &set); CHKERRQ(ierr); if(set == PETSC_TRUE) jr->cell = 1;
-	ierr = PetscOptionsHasName(NULL, "-xy",   &set); CHKERRQ(ierr); if(set == PETSC_TRUE) jr->xy   = 1;
-	ierr = PetscOptionsHasName(NULL, "-xz",   &set); CHKERRQ(ierr); if(set == PETSC_TRUE) jr->xz   = 1;
-	ierr = PetscOptionsHasName(NULL, "-yz",   &set); CHKERRQ(ierr); if(set == PETSC_TRUE) jr->yz   = 1;
+	pmf   = 0;
+	pmffd = 0;
 
-	// assemble preconditioner with restrictions
-	ierr = PMatAssemble(pm); CHKERRQ(ierr);
+	ierr = PetscOptionsHasName(NULL, "-mf",   &set); CHKERRQ(ierr); if(set == PETSC_TRUE) pmf      = 1;
+	ierr = PetscOptionsHasName(NULL, "-mffd", &set); CHKERRQ(ierr); if(set == PETSC_TRUE) pmffd    = 1;
 
 	// create matrix-free Jacobian operator
 	ierr = MatCreateShell(PETSC_COMM_WORLD, dof->ln, dof->ln,
@@ -154,7 +144,7 @@ PetscErrorCode DoJacTests(NLSol *nl)
 
 	ierr = VecNorm(mf, NORM_2, &nrm); CHKERRQ(ierr);
 
-	PetscPrintf(PETSC_COMM_WORLD, "Norm of the assembled residual vector: %g\n", nrm);
+	PetscPrintf(PETSC_COMM_WORLD, "Norm of the analytical Jacobian-vector product: %g\n", nrm);
 
 	//===================================
 	// MFFD Jacobian
@@ -163,8 +153,8 @@ PetscErrorCode DoJacTests(NLSol *nl)
 	ierr = VecZeroEntries(mffd); CHKERRQ(ierr);
 
 	// ... matrix-free finite-difference (MMFD)
-	ierr = MatMFFDSetFunction(MFFD, FormResidualMFFD, (void*)nl); CHKERRQ(ierr);
-	ierr = MatMFFDSetBase(MFFD, jr->gsol, jr->gres);              CHKERRQ(ierr);
+	ierr = MatMFFDSetFunction(MFFD, FormResidualMFFD, (void*)jr); CHKERRQ(ierr);
+	ierr = MatMFFDSetBase(MFFD, jr->gsol, NULL);                  CHKERRQ(ierr);
 
 	ierr = MatAssemblyBegin(MFFD, MAT_FINAL_ASSEMBLY); CHKERRQ(ierr);
 	ierr = MatAssemblyEnd  (MFFD, MAT_FINAL_ASSEMBLY); CHKERRQ(ierr);
@@ -173,23 +163,23 @@ PetscErrorCode DoJacTests(NLSol *nl)
 
 	ierr = VecNorm(mffd, NORM_2, &nrm); CHKERRQ(ierr);
 
-	PetscPrintf(PETSC_COMM_WORLD, "Norm of the matrix-free residual vector: %g\n", nrm);
+	PetscPrintf(PETSC_COMM_WORLD, "Norm of the finite difference Jacobian-vector product: %g\n", nrm);
 
 	//===================================
 	// difference
 	//===================================
 
-	ierr =  VecWAXPY(jr->diff, -1.0, mf, mffd); CHKERRQ(ierr);
+	ierr =  VecWAXPY(diff, -1.0, mf, mffd); CHKERRQ(ierr);
 
-	ierr = VecNorm(jr->diff, NORM_2, &nrm); CHKERRQ(ierr);
+	ierr = VecNorm(diff, NORM_2, &nrm); CHKERRQ(ierr);
 
 	PetscPrintf(PETSC_COMM_WORLD, "Norm of the difference vector: %g\n", nrm);
 
 	PetscPrintf(PETSC_COMM_WORLD,"=======================================================\n");
 
 	// ACHTUNG!!!
-//	ierr = VecCopy(wm, jr->diff);          CHKERRQ(ierr);
-//	ierr = VecCopy(wmf, jr->diff);          CHKERRQ(ierr);
+	if(pmf)   { ierr = VecCopy(mf,   diff); CHKERRQ(ierr); }
+	if(pmffd) { ierr = VecCopy(mffd, diff); CHKERRQ(ierr); }
 
 	ierr = MatDestroy(&MF);   CHKERRQ(ierr);
 	ierr = MatDestroy(&MFFD); CHKERRQ(ierr);
@@ -201,8 +191,8 @@ PetscErrorCode DoJacTests(NLSol *nl)
 }
 //---------------------------------------------------------------------------
 #undef __FUNCT__
-#define __FUNCT__ "DoPicardTests"
-PetscErrorCode DoPicardTests(NLSol *nl)
+#define __FUNCT__ "PicardTest"
+PetscErrorCode PicardTest(NLSol *nl, Vec diff)
 {
 	Mat          J;
 	DOFIndex    *dof;
@@ -211,7 +201,6 @@ PetscErrorCode DoPicardTests(NLSol *nl)
 	JacRes      *jr;
 	Vec          z, wm, wmf;
 	PetscScalar  nrm, *sol;
-	PetscBool    set;
 	PetscInt     i, num, *list;
 
 	PetscErrorCode ierr;
@@ -222,12 +211,6 @@ PetscErrorCode DoPicardTests(NLSol *nl)
 	jr  = pm->jr;
 	dof = &(jr->fs->dof);
 	bc  =  jr->bc;
-
-	// read and set debugging flags
-	ierr = PetscOptionsHasName(NULL, "-cell", &set); CHKERRQ(ierr); if(set == PETSC_TRUE) jr->cell = 1;
-	ierr = PetscOptionsHasName(NULL, "-xy",   &set); CHKERRQ(ierr); if(set == PETSC_TRUE) jr->xy   = 1;
-	ierr = PetscOptionsHasName(NULL, "-xz",   &set); CHKERRQ(ierr); if(set == PETSC_TRUE) jr->xz   = 1;
-	ierr = PetscOptionsHasName(NULL, "-yz",   &set); CHKERRQ(ierr); if(set == PETSC_TRUE) jr->yz   = 1;
 
 	// assemble preconditioner with restrictions
 	ierr = PMatAssemble(pm); CHKERRQ(ierr);
@@ -302,17 +285,13 @@ PetscErrorCode DoPicardTests(NLSol *nl)
 	PetscPrintf(PETSC_COMM_WORLD, "Norm of the matrix-free residual vector: %g\n", nrm);
 
 	// difference
-	ierr =  VecWAXPY(jr->diff, -1.0, wm, wmf); CHKERRQ(ierr);
+	ierr =  VecWAXPY(diff, -1.0, wm, wmf); CHKERRQ(ierr);
 
-	ierr = VecNorm(jr->diff, NORM_2, &nrm); CHKERRQ(ierr);
+	ierr = VecNorm(diff, NORM_2, &nrm); CHKERRQ(ierr);
 
 	PetscPrintf(PETSC_COMM_WORLD, "Norm of the difference vector: %g\n", nrm);
 
 	PetscPrintf(PETSC_COMM_WORLD,"=======================================================\n");
-
-	// ACHTUNG!!!
-//	ierr = VecCopy(wm, jr->diff);          CHKERRQ(ierr);
-//	ierr = VecCopy(wmf, jr->diff);          CHKERRQ(ierr);
 
 	ierr = MatDestroy(&J);    CHKERRQ(ierr);
 	ierr = VecDestroy(&z);    CHKERRQ(ierr);
@@ -322,7 +301,6 @@ PetscErrorCode DoPicardTests(NLSol *nl)
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-*/
 /*
 #undef __FUNCT__
 #define __FUNCT__ "DarcyPostProcess"

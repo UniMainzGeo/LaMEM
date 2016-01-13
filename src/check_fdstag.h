@@ -48,9 +48,9 @@
 
 //---------------------------------------------------------------------------
 
-PetscErrorCode DoJacTests(NLSol *nl);
+PetscErrorCode JacTest(JacRes *nl, Vec diff);
 
-PetscErrorCode DoPicardTests(NLSol *nl);
+PetscErrorCode PicardTest(NLSol *nl, Vec diff);
 
 //---------------------------------------------------------------------------
 /*

@@ -97,7 +97,6 @@ PetscErrorCode LaMEMLib(ModParam *IOparam)
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
 
-
 	//=========================================================================
 
 	PetscBool InputParamFile;
@@ -116,7 +115,6 @@ PetscErrorCode LaMEMLib(ModParam *IOparam)
 	}
 
 	//=========================================================================
-
 
 	PetscTime(&cputime_start);
 

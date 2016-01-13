@@ -575,6 +575,7 @@ PetscErrorCode PMatMonoAssemble(PMat pm)
 
 	// clear matrix coefficients
 	ierr = MatZeroEntries(P->A); CHKERRQ(ierr);
+	ierr = MatZeroEntries(P->M); CHKERRQ(ierr);
 
 	// access index vectors
 	ierr = DMDAVecGetArray(fs->DA_X,   dof->ivx,  &ivx);  CHKERRQ(ierr);
@@ -1597,15 +1598,15 @@ void addDensGradStabil(
 	PetscScalar fdx,  PetscScalar fdy,  PetscScalar fdz,
 	PetscScalar bdx,  PetscScalar bdy,  PetscScalar bdz)
 {
-	PetscScalar cf = -fssa*dt*rho;
+	PetscScalar cf = -fssa*dt;
 
 	// add stabilization terms
-	v[0 ] -= cf*grav[0]/bdx;
-	v[8 ] += cf*grav[0]/fdx;
-	v[16] -= cf*grav[1]/bdy;
-	v[24] += cf*grav[1]/fdy;
-	v[32] -= cf*grav[2]/bdz;
-	v[40] += cf*grav[2]/fdz;
+	v[0 ] -= cf*(rho*grav[0])/bdx;
+	v[8 ] += cf*(rho*grav[0])/fdx;
+	v[16] -= cf*(rho*grav[1])/bdy;
+	v[24] += cf*(rho*grav[1])/fdy;
+	v[32] -= cf*(rho*grav[2])/bdz;
+	v[40] += cf*(rho*grav[2])/fdz;
 /*
 	fx[k][j][i]   -= vx[k][j][i]  *tx/bdx
 	fx[k][j][i+1] += vx[k][j][i+1]*tx/fdx

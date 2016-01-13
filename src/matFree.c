@@ -65,7 +65,7 @@ PetscErrorCode JacApplyPicard(Mat A, Vec x, Vec y)
 	ierr = MatShellGetContext(A, (void**)&jr); CHKERRQ(ierr);
 
 	// copy solution from global to local vectors, enforce boundary constraints
-	ierr = JacResCopySol(jr, x, 0); CHKERRQ(ierr);
+	ierr = JacResCopySol(jr, x, _SKIP_SPC_); CHKERRQ(ierr);
 
 	ierr = JacResPicardMatFree(jr); CHKERRQ(ierr);
 
@@ -100,6 +100,7 @@ PetscErrorCode JacResPicardMatFree(JacRes *jr)
 	ierr = VecZeroEntries(jr->lfx); CHKERRQ(ierr);
 	ierr = VecZeroEntries(jr->lfy); CHKERRQ(ierr);
 	ierr = VecZeroEntries(jr->lfz); CHKERRQ(ierr);
+	ierr = VecZeroEntries(jr->gc);  CHKERRQ(ierr);
 
 	// access work vectors
 	ierr = DMDAVecGetArray(fs->DA_CEN, jr->gc,   &gc);  CHKERRQ(ierr);
@@ -153,9 +154,9 @@ PetscErrorCode JacResPicardMatFree(JacRes *jr)
 		szz = 2.0*eta*dzz - pc;
 
 		// compute stabilization terms (lumped approximation)
-		tx = -fssa*dt*rho*grav[0];
-		ty = -fssa*dt*rho*grav[1];
-		tz = -fssa*dt*rho*grav[2];
+		tx = -fssa*dt*(rho*grav[0]);
+		ty = -fssa*dt*(rho*grav[1]);
+		tz = -fssa*dt*(rho*grav[2]);
 
 		// get mesh steps for the backward and forward derivatives
 		bdx = SIZE_NODE(i, sx, fs->dsx);   fdx = SIZE_NODE(i+1, sx, fs->dsx);
@@ -287,8 +288,6 @@ PetscErrorCode JacResPicardMatFree(JacRes *jr)
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-//---------------------------------------------------------------------------
-//---------------------------------------------------------------------------
 #undef __FUNCT__
 #define __FUNCT__ "JacApplyJacobian"
 PetscErrorCode JacApplyJacobian(Mat A, Vec x, Vec y)
@@ -302,7 +301,7 @@ PetscErrorCode JacApplyJacobian(Mat A, Vec x, Vec y)
 	ierr = MatShellGetContext(A, (void**)&jr); CHKERRQ(ierr);
 
 	// copy solution from global to local vectors, enforce boundary constraints
-	ierr = JacResCopySol(jr, x, 0); CHKERRQ(ierr);
+	ierr = JacResCopySol(jr, x, _SKIP_SPC_); CHKERRQ(ierr);
 
 	ierr = JacResGetJ2Derivatives(jr); CHKERRQ(ierr);
 
@@ -509,6 +508,7 @@ PetscErrorCode JacResJacobianMatFree(JacRes *jr)
 	ierr = VecZeroEntries(jr->lfx); CHKERRQ(ierr);
 	ierr = VecZeroEntries(jr->lfy); CHKERRQ(ierr);
 	ierr = VecZeroEntries(jr->lfz); CHKERRQ(ierr);
+	ierr = VecZeroEntries(jr->gc);  CHKERRQ(ierr);
 
 	// access work vectors
 	ierr = DMDAVecGetArray(fs->DA_CEN, jr->gc,   &gc);  CHKERRQ(ierr);
@@ -578,7 +578,7 @@ PetscErrorCode JacResJacobianMatFree(JacRes *jr)
 		// accumulate derivative-vector products (normalized)
 		dJ2v = (centerSum[k][j][i]
 		// x-y plane, i-j indices
-		+       xyEdgeSum[k][j][i]
+		+      (xyEdgeSum[k][j][i]
 		+       xyEdgeSum[k][j+1][i]
 		+       xyEdgeSum[k][j][i+1]
 		+       xyEdgeSum[k][j+1][i+1]
@@ -591,7 +591,7 @@ PetscErrorCode JacResJacobianMatFree(JacRes *jr)
 		+       yzEdgeSum[k][j][i]
 		+       yzEdgeSum[k+1][j][i]
 		+       yzEdgeSum[k][j+1][i]
-		+       yzEdgeSum[k+1][j+1][i])/DII;
+		+       yzEdgeSum[k+1][j+1][i])/4.0)/DII;
 
 		// get effective deviatoric strain rates (normalized)
 		dxx = (svCell->dxx + svCell->hxx*I2Gdt)/DII;
@@ -604,9 +604,9 @@ PetscErrorCode JacResJacobianMatFree(JacRes *jr)
 		szz += (dEta*dJ2v + fr*pc)*dzz;
 
 		// compute stabilization terms (lumped approximation)
-		tx = -fssa*dt*rho*grav[0];
-		ty = -fssa*dt*rho*grav[1];
-		tz = -fssa*dt*rho*grav[2];
+		tx = -fssa*dt*(rho*grav[0]);
+		ty = -fssa*dt*(rho*grav[1]);
+		tz = -fssa*dt*(rho*grav[2]);
 
 		// get mesh steps for the backward and forward derivatives
 		bdx = SIZE_NODE(i, sx, fs->dsx);   fdx = SIZE_NODE(i+1, sx, fs->dsx);
@@ -662,7 +662,7 @@ PetscErrorCode JacResJacobianMatFree(JacRes *jr)
 		// accumulate derivative-vector products (normalized)
 		dJ2v = (xyEdgeSum[k][j][i]
 		// x-y plane, i-j indices (i & j - bounded)
-		+       centerSum[k][J1][I1]
+		+      (centerSum[k][J1][I1]
 		+       centerSum[k][J1][I2]
 		+       centerSum[k][J2][I1]
 		+       centerSum[k][J2][I2]
@@ -675,7 +675,7 @@ PetscErrorCode JacResJacobianMatFree(JacRes *jr)
 		+       yzEdgeSum[k][j][I1]
 		+       yzEdgeSum[k+1][j][I1]
 		+       yzEdgeSum[k][j][I2]
-		+       yzEdgeSum[k+1][j][I2])/DII;
+		+       yzEdgeSum[k+1][j][I2])/4.0)/DII;
 
 		// get effective deviatoric strain rate (normalized)
 		dxy = (svEdge->d + svEdge->h*I2Gdt)/DII;
@@ -735,7 +735,7 @@ PetscErrorCode JacResJacobianMatFree(JacRes *jr)
 		// accumulate derivative-vector product (normalized)
 		dJ2v = (xzEdgeSum[k][j][i]
 		// x-z plane, i-k indices (i & k - bounded)
-		+       centerSum[K1][j][I1]
+		+      (centerSum[K1][j][I1]
 		+       centerSum[K1][j][I2]
 		+       centerSum[K2][j][I1]
 		+       centerSum[K2][j][I2]
@@ -748,7 +748,7 @@ PetscErrorCode JacResJacobianMatFree(JacRes *jr)
 		+       yzEdgeSum[k][j][I1]
 		+       yzEdgeSum[k][j+1][I1]
 		+       yzEdgeSum[k][j][I2]
-		+       yzEdgeSum[k][j+1][I2])/DII;
+		+       yzEdgeSum[k][j+1][I2])/4.0)/DII;
 
 		// get effective deviatoric strain rate (normalized)
 		dxz = (svEdge->d + svEdge->h*I2Gdt)/DII;
@@ -808,7 +808,7 @@ PetscErrorCode JacResJacobianMatFree(JacRes *jr)
 		// accumulate derivative-vector products (normalized)
 		dJ2v = (yzEdgeSum[k][j][i]
 		// y-z plane, j-k indices (j & k - bounded)
-		+       centerSum[K1][J1][i]
+		+      (centerSum[K1][J1][i]
 		+       centerSum[K1][J2][i]
 		+       centerSum[K2][J1][i]
 		+       centerSum[K2][J2][i]
@@ -821,7 +821,7 @@ PetscErrorCode JacResJacobianMatFree(JacRes *jr)
 		+       xzEdgeSum[k][J1][i]
 		+       xzEdgeSum[k][J1][i+1]
 		+       xzEdgeSum[k][J2][i]
-		+       xzEdgeSum[k][J2][i+1])/DII;
+		+       xzEdgeSum[k][J2][i+1])/4.0)/DII;
 
 		// get effective deviatoric strain rate (normalized)
 		dyz = (svEdge->d + svEdge->h*I2Gdt)/DII;

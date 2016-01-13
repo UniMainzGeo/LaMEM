@@ -50,9 +50,16 @@
 #include "tssolve.h"
 #include "bc.h"
 #include "JacRes.h"
+#include "matFree.h"
+#include "multigrid.h"
+#include "matrix.h"
+#include "lsolve.h"
+#include "nlsolve.h"
+#include "tools.h"
+#include "interpolate.h"
+#include "check_fdstag.h"
 #include "paraViewOutBin.h"
 #include "outFunct.h"
-#include "interpolate.h"
 //---------------------------------------------------------------------------
 // WARNING!
 //
@@ -200,6 +207,8 @@ PetscErrorCode PVOutWriteVelocity(JacRes *jr, OutBuf *outbuf)
 	cf = scal->velocity;
 	iflag.use_bound = PETSC_TRUE;
 
+	ierr = JacResCopyVel(jr, jr->gsol, _APPLY_SPC_); CHKERRQ(ierr);
+
 	INTERPOLATE_ACCESS(jr->lvx, InterpXFaceCorner, 3, 0, 0.0)
 	INTERPOLATE_ACCESS(jr->lvy, InterpYFaceCorner, 3, 1, 0.0)
 	INTERPOLATE_ACCESS(jr->lvz, InterpZFaceCorner, 3, 2, 0.0)
@@ -220,6 +229,8 @@ PetscErrorCode PVOutWritePressure(JacRes *jr, OutBuf *outbuf)
 
 	// scale pressure shift
 	pShift = cf*jr->pShift;
+
+	ierr = JacResCopyPres(jr, jr->gsol, _APPLY_SPC_); CHKERRQ(ierr);
 
 	INTERPOLATE_ACCESS(jr->lp, InterpCenterCorner, 1, 0, pShift)
 
@@ -552,6 +563,39 @@ PetscErrorCode PVOutWriteGOL(JacRes *jr, OutBuf *outbuf)
 // DEBUG VECTORS
 //---------------------------------------------------------------------------
 #undef __FUNCT__
+#define __FUNCT__ "PVOutWriteJacTest"
+PetscErrorCode PVOutWriteJacTest(JacRes *jr, OutBuf *outbuf)
+{
+	Vec diff;
+
+	ACCESS_FUNCTION_HEADER
+
+	cf = scal->unit;
+
+	// create test vector
+	ierr = VecDuplicate(jr->gsol, &diff);  CHKERRQ(ierr);
+	ierr = VecSet(diff, 0.0);              CHKERRQ(ierr);
+
+	// test closed-form Jacobian against finite difference approximation
+	ierr = JacTest(jr, diff);
+
+	// view difference
+	ierr = JacResCopyMomentumRes(jr, diff); CHKERRQ(ierr);
+
+	GLOBAL_TO_LOCAL(outbuf->fs->DA_X, jr->gfx, jr->lfx)
+	GLOBAL_TO_LOCAL(outbuf->fs->DA_Y, jr->gfy, jr->lfy)
+	GLOBAL_TO_LOCAL(outbuf->fs->DA_Z, jr->gfz, jr->lfz)
+
+	INTERPOLATE_ACCESS(jr->lfx, InterpXFaceCorner, 3, 0, 0.0)
+	INTERPOLATE_ACCESS(jr->lfy, InterpYFaceCorner, 3, 1, 0.0)
+	INTERPOLATE_ACCESS(jr->lfz, InterpZFaceCorner, 3, 2, 0.0)
+
+	ierr = VecDestroy(&diff); CHKERRQ(ierr);
+
+	PetscFunctionReturn(0);
+}
+//---------------------------------------------------------------------------
+#undef __FUNCT__
 #define __FUNCT__ "PVOutWriteMomentRes"
 PetscErrorCode PVOutWriteMomentRes(JacRes *jr, OutBuf *outbuf)
 {
@@ -623,98 +667,4 @@ PetscErrorCode PVOutWritEnergRes(JacRes *jr, OutBuf *outbuf)
 
 	PetscFunctionReturn(0);
 }
-//---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "PVOutWriteDII_CEN"
-PetscErrorCode PVOutWriteDII_CEN(JacRes *jr, OutBuf *outbuf)
-{
-	COPY_FUNCTION_HEADER
-
-	// macros to copy effective strain rate invariant to buffer
-	#define GET_DII_CENTER buff[k][j][i] = jr->svCell[iter++].svDev.DII;
-
-	cf  = scal->strain_rate;
-
-	INTERPOLATE_COPY(fs->DA_CEN, outbuf->lbcen, InterpCenterCorner, GET_DII_CENTER,  1, 0)
-
-	PetscFunctionReturn(0);
-}
-//---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "PVOutWriteDII_XY"
-PetscErrorCode PVOutWriteDII_XY(JacRes *jr, OutBuf *outbuf)
-{
-	COPY_FUNCTION_HEADER
-
-	// macros to copy effective strain rate invariant to buffer
-	#define GET_DII_XY_EDGE buff[k][j][i] = jr->svXYEdge[iter++].svDev.DII;
-
-	cf = scal->strain_rate;
-
-	INTERPOLATE_COPY(fs->DA_XY, outbuf->lbxy, InterpXYEdgeCorner, GET_DII_XY_EDGE, 1, 0)
-
-	PetscFunctionReturn(0);
-}
-//---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "PVOutWriteDII_XZ"
-PetscErrorCode PVOutWriteDII_XZ(JacRes *jr, OutBuf *outbuf)
-{
-	COPY_FUNCTION_HEADER
-
-	// macros to copy effective strain rate invariant to buffer
-	#define GET_DII_XZ_EDGE buff[k][j][i] = jr->svXZEdge[iter++].svDev.DII;
-
-	cf = scal->strain_rate;
-
-	INTERPOLATE_COPY(fs->DA_XZ, outbuf->lbxz, InterpXZEdgeCorner, GET_DII_XZ_EDGE, 1, 0)
-
-	PetscFunctionReturn(0);
-}
-//---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "PVOutWriteDII_YZ"
-PetscErrorCode PVOutWriteDII_YZ(JacRes *jr, OutBuf *outbuf)
-{
-	COPY_FUNCTION_HEADER
-
-	// macros to copy effective strain rate invariant to buffer
-	#define GET_DII_YZ_EDGE buff[k][j][i] = jr->svYZEdge[iter++].svDev.DII;
-
-	cf = scal->strain_rate;
-
-	INTERPOLATE_COPY(fs->DA_YZ, outbuf->lbyz, InterpYZEdgeCorner, GET_DII_YZ_EDGE, 1, 0)
-
-	PetscFunctionReturn(0);
-}
-//---------------------------------------------------------------------------
-/*
-	PetscScalar  sxx = -5.0;
-	PetscScalar  syy =  8.0;
-	PetscScalar  sxy = -3.0;
-
-	PetscScalar  SHmax;
-	PetscScalar  v[2];
-
-	ierr = getSHmax(sxx, syy, sxy, 1e-12, &SHmax, v); CHKERRQ(ierr);
-
-	sxx =  5.0;
-	syy = -8.0;
-	sxy =  0.0;
-
-	ierr = getSHmax(sxx, syy, sxy, 1e-12, &SHmax, v); CHKERRQ(ierr);
-
-	sxx = -8.0;
-	syy = -8.0;
-	sxy =  0.0;
-
-	ierr = getSHmax(sxx, syy, sxy, 1e-12, &SHmax, v); CHKERRQ(ierr);
-
-	sxx = 95.0;
-	syy = -8.0;
-	sxy =  17.0;
-
-	ierr = getSHmax(sxx, syy, sxy, 1e-12, &SHmax, v); CHKERRQ(ierr);
-*/
-
 //---------------------------------------------------------------------------

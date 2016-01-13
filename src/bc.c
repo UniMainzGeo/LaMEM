@@ -569,7 +569,8 @@ PetscErrorCode BCReadFromOptions(BCCtx *bc)
 {
 	// set parameters from PETSc options
 
-	Scaling *scal;
+	PetscBool  set;
+	Scaling   *scal;
 
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
@@ -637,6 +638,9 @@ PetscErrorCode BCReadFromOptions(BCCtx *bc)
 		ierr = GetScalDataItemCheckScale("-bvel_velin", "Boundary velocity magnitude",
 			_NOT_FOUND_ERROR_, 1, &bc->velin, 0.0, 0.0, scal->velocity); CHKERRQ(ierr);
 	}
+
+	// set open boundary flag
+	ierr = PetscOptionsHasName(NULL, "-open_top_bound", &set); CHKERRQ(ierr); if(set == PETSC_TRUE) bc->top_open = 1;
 
 	PetscFunctionReturn(0);
 }
@@ -858,7 +862,7 @@ PetscErrorCode BCApplyBound(BCCtx *bc)
 //	PetscInt    mcx, mcy, mcz;
 	PetscInt              mcz;
 	PetscInt    mnx, mny, mnz;
-	PetscInt    i, j, k, nx, ny, nz, sx, sy, sz, iter;
+	PetscInt    i, j, k, nx, ny, nz, sx, sy, sz, iter, top_open;
 	PetscScalar ***bcvx,  ***bcvy,  ***bcvz, ***bcT, *SPCVals;
 
 	PetscErrorCode ierr;
@@ -866,6 +870,9 @@ PetscErrorCode BCApplyBound(BCCtx *bc)
 
 	// access context
 	fs = bc->fs;
+
+	// set open boundary flag
+	top_open = bc->top_open;
 
 	// initialize maximal index in all directions
 	mnx = fs->dsx.tnods - 1;
@@ -887,6 +894,12 @@ PetscErrorCode BCApplyBound(BCCtx *bc)
 	vbx = bx*Exx;   vex = ex*Exx;
 	vby = by*Eyy;   vey = ey*Eyy;
 	vbz = bz*Ezz;   vez = ez*Ezz;
+
+	if(top_open)
+	{
+		vbz = 0.0;
+		vez = 0.0;
+	}
 
 	// get boundary temperatures
 	Tbot = bc->Tbot;
@@ -942,8 +955,8 @@ PetscErrorCode BCApplyBound(BCCtx *bc)
 
 	START_STD_LOOP
 	{
-		if(k == 0)   { bcvz[k][j][i] = vbz;	SPCVals[iter] = vbz; }
-		if(k == mnz) { bcvz[k][j][i] = vez; SPCVals[iter] = vez; }
+		if(k == 0)                { bcvz[k][j][i] = vbz; SPCVals[iter] = vbz; }
+		if(k == mnz && !top_open) { bcvz[k][j][i] = vez; SPCVals[iter] = vez; }
 		iter++;
 	}
 	END_STD_LOOP

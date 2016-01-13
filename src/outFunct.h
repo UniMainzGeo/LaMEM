@@ -69,14 +69,11 @@ PetscErrorCode PVOutWriteSHmax       (JacRes*, OutBuf*);
 PetscErrorCode PVOutWriteEHmax       (JacRes*, OutBuf*);
 PetscErrorCode PVOutWriteISA         (JacRes*, OutBuf*);
 PetscErrorCode PVOutWriteGOL         (JacRes*, OutBuf*);
-// === debug	 vectors ===============================================
+// === debug vectors ===============================================
+PetscErrorCode PVOutWriteJacTest     (JacRes*, OutBuf*);
 PetscErrorCode PVOutWriteMomentRes   (JacRes*, OutBuf*);
 PetscErrorCode PVOutWriteContRes     (JacRes*, OutBuf*);
 PetscErrorCode PVOutWritEnergRes     (JacRes*, OutBuf*);
-PetscErrorCode PVOutWriteDII_CEN     (JacRes*, OutBuf*);
-PetscErrorCode PVOutWriteDII_XY      (JacRes*, OutBuf*);
-PetscErrorCode PVOutWriteDII_XZ      (JacRes*, OutBuf*);
-PetscErrorCode PVOutWriteDII_YZ      (JacRes*, OutBuf*);
 
 // ... add more output functions here
 

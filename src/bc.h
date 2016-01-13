@@ -183,6 +183,9 @@ typedef struct
 	PetscScalar  bot, top;      // bottom & top coordinates of the plate
 	PetscScalar  velin, velout; // inflow & outflow velocities
 
+	// open boundary flag
+	PetscInt  top_open;
+
 } BCCtx;
 //---------------------------------------------------------------------------
 

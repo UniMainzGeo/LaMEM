@@ -80,15 +80,7 @@ PetscErrorCode ConstEqCtxSetup(
 // compute residual of the visco-elastic constitutive equation
 PetscScalar GetConsEqRes(PetscScalar eta, void *pctx);
 
-// solve effective viscosity from nonlinear visco-elastic constitutive equations
 PetscErrorCode GetEffVisc(
-	ConstEqCtx  *ctx,
-	MatParLim   *lim,
-	PetscScalar *eta_total,
-	PetscScalar *eta_creep,
-	PetscScalar *DIIpl);
-
-PetscErrorCode GetEffViscJac(
 	ConstEqCtx  *ctx,
 	MatParLim   *lim,
 	PetscScalar *eta_total,
@@ -144,6 +136,12 @@ PetscErrorCode GetStressEdge(
 	SolVarEdge  *svEdge, // solution variables
 	MatParLim   *lim,    // phase parameters limits
 	PetscScalar  d);     // effective shear strain rate component
+
+PetscErrorCode GetStressEdgeCellAvg(
+	SolVarEdge  *svEdge, // solution variables
+	MatParLim   *lim,    // phase parameters limits
+	PetscScalar  cfpl,   // plastic scaling coefficient
+	PetscScalar  d);      // effective shear strain rate component
 
 //---------------------------------------------------------------------------
 // Elastic stress rotation functions

@@ -173,10 +173,7 @@ typedef struct
 	PetscInt moment_res;     // momentum residual
 	PetscInt cont_res;       // continuity residual
 	PetscInt energ_res;      // energy residual
-	PetscInt DII_CEN;        // effective strain rate invariant in center
-	PetscInt DII_XY;         // effective strain rate invariant on xy-edge
-	PetscInt DII_XZ;         // effective strain rate invariant on xz-edge
-	PetscInt DII_YZ;         // effective strain rate invariant on yz-edge
+	PetscInt jac_test;       // matrix-vector Jacobian test
 
 	// ... add more output vector identifiers here
 //	PetscInt phrat[max_num_phases]; // phase ratios
