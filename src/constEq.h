@@ -137,12 +137,6 @@ PetscErrorCode GetStressEdge(
 	MatParLim   *lim,    // phase parameters limits
 	PetscScalar  d);     // effective shear strain rate component
 
-PetscErrorCode GetStressEdgeCellAvg(
-	SolVarEdge  *svEdge, // solution variables
-	MatParLim   *lim,    // phase parameters limits
-	PetscScalar  cfpl,   // plastic scaling coefficient
-	PetscScalar  d);      // effective shear strain rate component
-
 //---------------------------------------------------------------------------
 // Elastic stress rotation functions
 //---------------------------------------------------------------------------

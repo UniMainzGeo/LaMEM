@@ -601,42 +601,6 @@ PetscErrorCode GetStressEdge(
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-// compute stress, plastic strain-rate and shear heating term on edge
-#undef __FUNCT__
-#define __FUNCT__ "GetStressEdgeCellAvg"
-PetscErrorCode GetStressEdgeCellAvg(
-	SolVarEdge  *svEdge, // solution variables
-	MatParLim   *lim,    // phase parameters limits
-	PetscScalar  cfpl,   // plastic scaling coefficient
-	PetscScalar  d)      // effective shear strain rate component
-{
-
-	SolVarDev   *svDev;
-	PetscScalar  t;
-
-	PetscFunctionBegin;
-
-	// access deviatoric variables
-	svDev = &svEdge->svDev;
-
-	// compute shear stress
-	svEdge->s = 2.0*svDev->eta*d;
-
-	// compute plastic strain-rate components
-	t = cfpl*d;
-
-	// store contribution to the second invariant of plastic strain-rate
-	svDev->PSR = t*t;
-
-	// compute dissipative part of total strain rate (viscous + plastic = total - elastic)
-	t = svEdge->d - svDev->I2Gdt*(svEdge->s - svEdge->h);
-
-	// compute shear heating term contribution
-	svDev->Hr = 2.0*t*svEdge->s*lim->shearHeatEff;
-
-	PetscFunctionReturn(0);
-}
-//---------------------------------------------------------------------------
 // Elastic stress rotation functions
 //---------------------------------------------------------------------------
 void GetRotationMatrix(
