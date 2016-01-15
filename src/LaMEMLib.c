@@ -371,14 +371,34 @@ PetscErrorCode LaMEMLib(ModParam *IOparam)
 		// advect pushing block
 		ierr = BCAdvectPush(&bc); CHKERRQ(ierr);
 
+		// compute gravity misfits
+//		ierr = CalculateMisfitValues(&user, C, itime, LaMEM_OutputParameters); CHKERRQ(ierr);
+
+		// ACHTUNG !!!
+		PetscBool          flg;
+		KSP                ksp;
+		KSPConvergedReason reason;
+		PetscBool          stop = PETSC_FALSE;
+
+		ierr = PetscOptionsHasName(NULL, "-stop_linsol_fail", &flg); CHKERRQ(ierr);
+
+		if(flg == PETSC_TRUE)
+		{
+			ierr = SNESGetKSP(snes, &ksp); CHKERRQ(ierr);
+
+			ierr = KSPGetConvergedReason(ksp, &reason);
+
+			if(reason == KSP_DIVERGED_ITS)
+			{
+				stop = PETSC_TRUE;
+			}
+		}
+
 		//==================
 		// Save data to disk
 		//==================
 
-		// compute gravity misfits
-//		ierr = CalculateMisfitValues(&user, C, itime, LaMEM_OutputParameters); CHKERRQ(ierr);
-
-		if(!(JacResGetStep(&jr) % user.save_timesteps))
+		if(!(JacResGetStep(&jr) % user.save_timesteps) || stop == PETSC_TRUE)
 		{
 			char *DirectoryName = NULL;
 
@@ -409,6 +429,11 @@ PetscErrorCode LaMEMLib(ModParam *IOparam)
 
 			// clean up
 			if(DirectoryName) free(DirectoryName);
+		}
+
+		if(stop == PETSC_TRUE)
+		{
+			SETERRQ(PETSC_COMM_SELF, PETSC_ERR_USER, "Linear solver failed. Terminating simulation.\n");
 		}
 
 		// store markers to disk
