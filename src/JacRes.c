@@ -1812,6 +1812,11 @@ PetscErrorCode SetMatParLim(MatParLim *matLim, UserCtx *usr)
 
 	if(flg == PETSC_TRUE) matLim->jac_mat_free = PETSC_TRUE;
 
+	ierr = PetscOptionsGetScalar(NULL, "-shearHeatEff", &matLim->shearHeatEff, NULL); CHKERRQ(ierr);
+
+	if(matLim->shearHeatEff > 1.0) matLim->shearHeatEff = 1.0;
+	if(matLim->shearHeatEff < 0.0) matLim->shearHeatEff = 0.0;
+
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
