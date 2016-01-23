@@ -516,6 +516,48 @@ PetscErrorCode SNESPrintConvergedReason(SNES snes)
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
+void getNst(MatParLim *lim, PetscInt it, PetscReal f, SNESConvergedReason *reason)
+{
+	// skip if not requested
+	if(lim->descent != PETSC_TRUE) return;
+
+	// skip initial test
+	if(!it) { lim->j = 0; return; }
+
+	// increment iteration counter
+	lim->j++;
+
+	// set initial residual for the first iteration
+	if(lim->j == 1)
+	{
+		lim->res = f;
+	}
+	else
+	{
+		// check divergence
+		if(f > lim->dtol*lim->res)
+		{
+			lim->n /= lim->beta;
+
+			if(lim->n < lim->nmin) lim->n = lim->nmin;
+
+			lim->j = 0;
+		}
+
+		// check convergence
+		else if(f < lim->ctol*lim->res || lim->j == lim->nmax)
+		{
+			lim->n *= lim->beta;
+
+			if(lim->n > lim->nmax) lim->n = lim->nmax;
+
+			lim->j = 0;
+		}
+	}
+
+	if(lim->n != lim->nmax) (*reason) = SNES_CONVERGED_ITERATING;
+}
+//---------------------------------------------------------------------------
 #undef __FUNCT__
 #define __FUNCT__ "SNESCoupledTest"
 PetscErrorCode SNESCoupledTest(
@@ -527,6 +569,10 @@ PetscErrorCode SNESCoupledTest(
 	SNESConvergedReason *reason,
 	void                *cctx)
 {
+
+//	PetscErrorCode  SNESGetFunction(SNES snes,Vec *r,PetscErrorCode (**f)(SNES,Vec,Vec,void*),void **ctx)
+//	PetscErrorCode  SNESGetSolution(SNES snes,Vec *x)
+
 	// currently just calls temperature diffusion solver
 	// together with standard convergence test
 	// later should include temperature convergence test as well
@@ -537,18 +583,21 @@ PetscErrorCode SNESCoupledTest(
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
 
+	// access context
+   	nl = (NLSol*)cctx;
+   	jr = nl->pc->pm->jr;
+
 	// call default convergence test
 	ierr = SNESConvergedDefault(snes, it, xnorm, gnorm, f, reason, NULL); CHKERRQ(ierr);
+
+	// set power-law exponent for adaptive descent algorithm, check convergence
+	getNst(&jr->matLim, it, f, reason);
 
 	//=============================
 	// Temperature diffusion solver
 	//=============================
 
 	if(!it) PetscFunctionReturn(0);
-
-	// access context
-   	nl = (NLSol*)cctx;
-   	jr = nl->pc->pm->jr;
 
     if(jr->actTemp == PETSC_TRUE)
     {

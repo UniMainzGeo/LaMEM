@@ -247,6 +247,12 @@ typedef struct
 	// matrix-free closed-form jacobian
 	PetscBool   jac_mat_free;
 
+	// ADAPTIVE DESCENT
+	PetscBool   descent;
+	PetscScalar nmin, nmax, n, beta;
+	PetscScalar ctol, dtol, res;
+	PetscInt    j, jmax;
+
 } MatParLim;
 
 //---------------------------------------------------------------------------

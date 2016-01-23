@@ -1817,6 +1817,27 @@ PetscErrorCode SetMatParLim(MatParLim *matLim, UserCtx *usr)
 	if(matLim->shearHeatEff > 1.0) matLim->shearHeatEff = 1.0;
 	if(matLim->shearHeatEff < 0.0) matLim->shearHeatEff = 0.0;
 
+	// ADAPTIVE DESCENT
+	matLim->descent = PETSC_FALSE;
+	matLim->nmin    = 5.0;
+	matLim->nmax    = 50.0;
+	matLim->beta    = 1.61803398875;
+	matLim->ctol    = 1e-2;
+	matLim->dtol    = 0.95;
+	matLim->jmax    = 3;
+
+	ierr = PetscOptionsHasName  (NULL, "-descent", &matLim->descent   ); CHKERRQ(ierr);
+	ierr = PetscOptionsGetScalar(NULL, "-ad_nmin", &matLim->nmin, NULL); CHKERRQ(ierr);
+	ierr = PetscOptionsGetScalar(NULL, "-ad_nmax", &matLim->nmax, NULL); CHKERRQ(ierr);
+	ierr = PetscOptionsGetScalar(NULL, "-ad_beta", &matLim->beta, NULL); CHKERRQ(ierr);
+	ierr = PetscOptionsGetScalar(NULL, "-ad_ctol", &matLim->ctol, NULL); CHKERRQ(ierr);
+	ierr = PetscOptionsGetScalar(NULL, "-ad_dtol", &matLim->dtol, NULL); CHKERRQ(ierr);
+	ierr = PetscOptionsGetInt   (NULL, "-ad_jmax", &matLim->jmax, NULL); CHKERRQ(ierr);
+
+	matLim->n   = matLim->nmin;
+	matLim->j   = 0;
+	matLim->res = 0.0;
+
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------

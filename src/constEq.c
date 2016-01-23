@@ -301,8 +301,16 @@ PetscErrorCode GetEffVisc(
 
 	if(ctx->taupl && lim->initGuessFlg != PETSC_TRUE)
 	{
-		// compute plastic viscosity
-		eta_pl = ctx->taupl/(2.0*ctx->DII);
+		if(lim->descent == PETSC_TRUE)
+		{
+			// rate-dependent stabilization
+			eta_pl = (ctx->taupl/2.0)*pow(ctx->DII, 1/lim->n - 1.0);
+		}
+		else
+		{
+			// compute plastic viscosity
+			eta_pl = ctx->taupl/(2.0*ctx->DII);
+		}
 
 		// check for plastic yielding
 		if(eta_pl < eta_ve)
