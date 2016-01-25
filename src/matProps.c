@@ -1089,7 +1089,7 @@ PetscErrorCode SetDislProfile(Material_t *m, char name[])
         r                =   0;
     }
 
-    else if (!strcmp(name,"Polycrystalline Anhydrite - Mueller and Briegel(1978)"))
+    else if (!strcmp(name,"Polycrystalline_Anhydrite-Mueller_and_Briegel(1978)"))
     {
         //
         m->Bn            =   3.16228e1;
