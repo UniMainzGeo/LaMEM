@@ -100,7 +100,7 @@ PetscErrorCode BreakCheck(UserCtx *user)
 		// check if breakpoint files are available
 		ierr = MPI_Comm_rank(MPI_COMM_WORLD, &iproc); CHKERRQ(ierr);
 
-		asprintf(&fname, "./Breakpoint/Breakpoint_info.%lld.out",(LLD)iproc);
+		asprintf(&fname, "./Breakpoint/break/Breakpoint_info.%lld.out",(LLD)iproc);
 		fp = fopen(fname, "r" );
 
 		if(!fp) res = 0;
@@ -136,40 +136,135 @@ PetscErrorCode BreakCheck(UserCtx *user)
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
+// Creates multiple breakpoints
 #undef __FUNCT__
-#define __FUNCT__ "BreakWrite"
-PetscErrorCode BreakWrite(UserCtx *user, AdvCtx *actx, FreeSurf *surf, PVOut *pvout, PVSurf *pvsurf, PVMark *pvmark, PVAVD *pvavd, JacType jtype)
+#define __FUNCT__ "BreakCreate"
+PetscErrorCode BreakCreate(UserCtx *user, AdvCtx *actx, FreeSurf *surf, PVOut *pvout, PVSurf *pvsurf, PVMark *pvmark, PVAVD *pvavd, JacType jtype)
 {
-	// staggered grid
-	FDSTAG         *fs;
-	JacRes         *jr;
-	FILE           *fp;
-	char           *fname;
-	PetscInt        n;
-	PetscInt       initGuessFlag, jtypeFlag, sflatFlag;
 	PetscLogDouble tstart, tend;
 
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
 
+	PetscBool flag = PETSC_FALSE;
+	PetscOptionsGetBool(PETSC_NULL, "-secure_breakpoints", &flag, PETSC_NULL);
+
 	PetscPrintf(PETSC_COMM_WORLD,"******************************************** \n");
-	PetscPrintf(PETSC_COMM_WORLD," Writing Breakpoint files... \n");
+	PetscPrintf(PETSC_COMM_WORLD," Creating breakpoint files: \n");
 
 	// start time counter
 	PetscTime(&tstart);
+
+	// create directories
+	ierr = LaMEMCreateOutputDirectory("./Breakpoint/"); CHKERRQ(ierr);
+
+	if (flag)
+	{
+		if(ISRankZero(PETSC_COMM_WORLD))
+		{
+			mkdir("./Breakpoint/break", S_IRWXU);
+			mkdir("./Breakpoint/bprev", S_IRWXU);
+			mkdir("./Breakpoint/tmp", S_IRWXU);
+		}
+
+		// all other ranks should wait
+		ierr = MPI_Barrier(PETSC_COMM_WORLD); CHKERRQ(ierr);
+
+		// write breakpoints
+		PetscPrintf(PETSC_COMM_WORLD,"   > Writing breakpoint files to ./Breakpoint/tmp \n");
+		ierr = BreakWrite(user, actx, surf, pvout, pvsurf, pvmark, pvavd, jtype,0); CHKERRQ(ierr);
+
+		// copy previous breakpoints
+		if(ISRankZero(PETSC_COMM_WORLD))
+		{
+			// delete contents of bprev/
+			// WARNING: this could be replaced with a general function to delete a non-empty directory
+			// LaMEM.h should #include <dirent.h> which allows using functions to manipulate directories (open, read, close)
+			PetscInt i;
+			char *fname;
+
+			for(i = 0; i < actx->nproc; i++)
+			{
+				asprintf(&fname, "./Breakpoint/bprev/Breakpoint_info.%lld.out",(LLD)i); remove(fname); free(fname);
+				asprintf(&fname, "./Breakpoint/bprev/Breakpoint_mark.%lld.out",(LLD)i); remove(fname); free(fname);
+				asprintf(&fname, "./Breakpoint/bprev/Breakpoint_gsol.%lld.out",(LLD)i); remove(fname); free(fname);
+				asprintf(&fname, "./Breakpoint/bprev/Breakpoint_surf.%lld.out",(LLD)i); remove(fname); free(fname);
+			}
+
+			if (rename("./Breakpoint/break" ,"./Breakpoint/bprev"))
+			{
+				SETERRQ(PETSC_COMM_SELF, PETSC_ERR_USER, "Failed to move previous breakpoint files!");
+			}
+			else
+			{
+				PetscPrintf(PETSC_COMM_WORLD,"   > Previous breakpoint files moved to ./Breakpoint/bprev \n");
+			}
+
+			if (rename("./Breakpoint/tmp","./Breakpoint/break" ))
+			{
+				SETERRQ(PETSC_COMM_SELF, PETSC_ERR_USER, "Failed to move current breakpoint files!");
+			}
+			else
+			{
+				PetscPrintf(PETSC_COMM_WORLD,"   > Current breakpoint files moved to ./Breakpoint/break \n");
+			}
+
+			PetscPrintf(PETSC_COMM_WORLD,"   > Removed directory ./Breakpoint/tmp \n");
+		}
+
+		// all other ranks should wait
+		ierr = MPI_Barrier(PETSC_COMM_WORLD); CHKERRQ(ierr);
+	}
+	else
+	{
+		if(ISRankZero(PETSC_COMM_WORLD))
+		{
+			mkdir("./Breakpoint/break", S_IRWXU);
+		}
+
+		// write breakpoints
+		PetscPrintf(PETSC_COMM_WORLD,"   > Writing breakpoint files to ./Breakpoint/break \n");
+		ierr = BreakWrite(user, actx, surf, pvout, pvsurf, pvmark, pvavd, jtype, 1); CHKERRQ(ierr);
+	}
+
+	// end time counter
+	PetscTime(&tend);
+
+	PetscPrintf(PETSC_COMM_WORLD," Finished writing breakpoint files in %g s\n",tend-tstart);
+	PetscPrintf(PETSC_COMM_WORLD,"******************************************** \n");
+	PetscPrintf(PETSC_COMM_WORLD," \n");
+
+	PetscFunctionReturn(0);
+}
+//---------------------------------------------------------------------------
+#undef __FUNCT__
+#define __FUNCT__ "BreakWrite"
+PetscErrorCode BreakWrite(UserCtx *user, AdvCtx *actx, FreeSurf *surf, PVOut *pvout, PVSurf *pvsurf, PVMark *pvmark, PVAVD *pvavd, JacType jtype, PetscInt dir)
+{
+	// staggered grid
+	FDSTAG         *fs;
+	JacRes         *jr;
+	FILE           *fp;
+	char           *dirname;
+	char           *fname;
+	PetscInt        n;
+	PetscInt       initGuessFlag, jtypeFlag, sflatFlag;
+
+	PetscErrorCode ierr;
+	PetscFunctionBegin;
 
 	// initialize context
 	jr = actx->jr;
 	fs = actx->fs;
 
-	// create directory
-	ierr = LaMEMCreateOutputDirectory("./Breakpoint"); CHKERRQ(ierr);
+	if      ( dir == 0) asprintf(&dirname, "./Breakpoint/tmp");
+	else if ( dir == 1) asprintf(&dirname, "./Breakpoint/break" );
 
 	//============================================================
 	//   MARKERS
 	//============================================================
 	// compile file name
-	asprintf(&fname, "./Breakpoint/Breakpoint_mark.%lld.out",(LLD)actx->iproc);
+	asprintf(&fname, "%s/Breakpoint_mark.%lld.out",dirname,(LLD)actx->iproc);
 
 	// open file for binary output
 	fp = fopen(fname, "w" );
@@ -189,7 +284,7 @@ PetscErrorCode BreakWrite(UserCtx *user, AdvCtx *actx, FreeSurf *surf, PVOut *pv
 	if(jr->bc->ExxAct == PETSC_TRUE || jr->bc->EyyAct == PETSC_TRUE)
 	{
 		// compile file name
-		asprintf(&fname, "./Breakpoint/Breakpoint_grid.%lld.out",(LLD)actx->iproc);
+		asprintf(&fname, "%s/Breakpoint_grid.%lld.out",dirname,(LLD)actx->iproc);
 
 		// open file for binary output
 		fp = fopen(fname, "w" );
@@ -222,7 +317,7 @@ PetscErrorCode BreakWrite(UserCtx *user, AdvCtx *actx, FreeSurf *surf, PVOut *pv
 	if (surf->UseFreeSurf==PETSC_TRUE)
 	{
 		// compile file name
-		asprintf(&fname, "./Breakpoint/Breakpoint_surf.%lld.out",(LLD)actx->iproc);
+		asprintf(&fname, "%s/Breakpoint_surf.%lld.out",dirname,(LLD)actx->iproc);
 
 		// open file for binary output
 		fp = fopen(fname, "w" );
@@ -248,7 +343,7 @@ PetscErrorCode BreakWrite(UserCtx *user, AdvCtx *actx, FreeSurf *surf, PVOut *pv
 	//   GSOL - Solution vectors
 	//============================================================
 	// compile file name
-	asprintf(&fname, "./Breakpoint/Breakpoint_gsol.%lld.out",(LLD)actx->iproc);
+	asprintf(&fname, "%s/Breakpoint_gsol.%lld.out",dirname,(LLD)actx->iproc);
 
 	// open file for binary output
 	fp = fopen(fname, "w" );
@@ -263,13 +358,16 @@ PetscErrorCode BreakWrite(UserCtx *user, AdvCtx *actx, FreeSurf *surf, PVOut *pv
 	ierr = BreakWriteVec(fp, jr->gsol, n); CHKERRQ(ierr);
 
 	//----------------------------------
-	// GT - Temperature
+	// dT - Temperature
 	//----------------------------------
-	// set local size of vector
-	n  = fs->dsx.ncels * fs->dsy.ncels * fs->dsz.ncels;
+	if(jr->actTemp == PETSC_TRUE)
+	{
+		// set local size of vector
+		n  = fs->dsx.ncels * fs->dsy.ncels * fs->dsz.ncels;
 
-	// write vector
-//	ierr = BreakWriteVec(fp, jr->gT, n); CHKERRQ(ierr);
+		// write vector
+		ierr = BreakWriteVec(fp, jr->dT, n); CHKERRQ(ierr);
+	}
 
 	// close and free memory
 	free(fname);
@@ -279,7 +377,7 @@ PetscErrorCode BreakWrite(UserCtx *user, AdvCtx *actx, FreeSurf *surf, PVOut *pv
 	//   INFO
 	//============================================================
 	// compile file name
-	asprintf(&fname, "./Breakpoint/Breakpoint_info.%lld.out",(LLD)actx->iproc);
+	asprintf(&fname, "%s/Breakpoint_info.%lld.out",dirname,(LLD)actx->iproc);
 
 	// open file for binary output
 	fp = fopen(fname, "w" );
@@ -349,16 +447,10 @@ PetscErrorCode BreakWrite(UserCtx *user, AdvCtx *actx, FreeSurf *surf, PVOut *pv
 	//============================================================
 	//   END WRITE BREAKPOINTS
 	//============================================================
+	free(dirname);
 
 	// all other ranks should wait
 	ierr = MPI_Barrier(PETSC_COMM_WORLD); CHKERRQ(ierr);
-
-	// end time counter
-	PetscTime(&tend);
-
-	PetscPrintf(PETSC_COMM_WORLD," Finished writing breakpoint files in %g s\n",tend-tstart);
-	PetscPrintf(PETSC_COMM_WORLD,"******************************************** \n");
-	PetscPrintf(PETSC_COMM_WORLD," \n");
 
 	PetscFunctionReturn(0);
 }
@@ -386,7 +478,7 @@ PetscErrorCode BreakRead(UserCtx *user, AdvCtx *actx, PVOut *pvout, PVSurf *pvsu
 	//   Solution vectors
 	//============================================================
 	// compile file name
-	asprintf(&fname, "./Breakpoint/Breakpoint_gsol.%lld.out",(LLD)actx->iproc);
+	asprintf(&fname, "./Breakpoint/break/Breakpoint_gsol.%lld.out",(LLD)actx->iproc);
 
 	// open file for reading
 	fp = fopen(fname, "r" );
@@ -401,13 +493,16 @@ PetscErrorCode BreakRead(UserCtx *user, AdvCtx *actx, PVOut *pvout, PVSurf *pvsu
 	ierr = BreakReadVec(fp, jr->gsol, n); CHKERRQ(ierr);
 
 	//----------------------------------
-	// GT
+	// dT - Temperature
 	//----------------------------------
-	// set local size of vector
-	n  = fs->dsx.ncels * fs->dsy.ncels * fs->dsz.ncels;
+	if(jr->actTemp == PETSC_TRUE)
+	{
+		// set local size of vector
+		n  = fs->dsx.ncels * fs->dsy.ncels * fs->dsz.ncels;
 
-	// read vector
-//	ierr = BreakReadVec(fp, jr->gT, n); CHKERRQ(ierr);
+		// write vector
+		ierr = BreakReadVec(fp, jr->dT, n); CHKERRQ(ierr);
+	}
 
 	// close and free memory
 	free(fname);
@@ -417,7 +512,7 @@ PetscErrorCode BreakRead(UserCtx *user, AdvCtx *actx, PVOut *pvout, PVSurf *pvsu
 	//   INFO
 	//============================================================
 	// compile file name and open file
-	asprintf(&fname, "./Breakpoint/Breakpoint_info.%lld.out",(LLD)actx->iproc);
+	asprintf(&fname, "./Breakpoint/break/Breakpoint_info.%lld.out",(LLD)actx->iproc);
 
 	// open file for reading
 	fp = fopen(fname, "r" );
@@ -526,7 +621,7 @@ PetscErrorCode BreakReadGrid(UserCtx *user, FDSTAG *fs)
 	ierr = MPI_Comm_rank(MPI_COMM_WORLD, &iproc); CHKERRQ(ierr);
 
 	// compile file name - fdstag context
-	asprintf(&fname, "./Breakpoint/Breakpoint_grid.%lld.out",(LLD)iproc);
+	asprintf(&fname, "./Breakpoint/break/Breakpoint_grid.%lld.out",(LLD)iproc);
 
 	// open file for binary output
 	fp = fopen(fname, "r" );
@@ -574,7 +669,7 @@ PetscErrorCode BreakReadSurf(FDSTAG *fs, FreeSurf *surf)
 	ierr = MPI_Comm_rank(MPI_COMM_WORLD, &iproc); CHKERRQ(ierr);
 
 	// compile file name
-	asprintf(&fname, "./Breakpoint/Breakpoint_surf.%lld.out",(LLD)iproc);
+	asprintf(&fname, "./Breakpoint/break/Breakpoint_surf.%lld.out",(LLD)iproc);
 
 	// open file for reading
 	fp = fopen(fname, "r" );
@@ -615,7 +710,7 @@ PetscErrorCode BreakReadMark(AdvCtx *actx)
 	// MARKERS
 	//----------------------------------
 	// compile file name
-	asprintf(&fname, "./Breakpoint/Breakpoint_mark.%lld.out",(LLD)actx->iproc);
+	asprintf(&fname, "./Breakpoint/break/Breakpoint_mark.%lld.out",(LLD)actx->iproc);
 
 	// open file for binary output
 	fp = fopen(fname, "r" );

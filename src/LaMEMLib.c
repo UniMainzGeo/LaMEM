@@ -420,7 +420,7 @@ PetscErrorCode LaMEMLib(ModParam *IOparam)
 		// create BREAKPOINT files, for restarting the code
 		if(user.save_breakpoints>0 && !((JacResGetStep(&jr)-1) % user.save_breakpoints))
 		{
-			ierr = BreakWrite(&user, &actx, &surf, &pvout, &pvsurf, &pvmark, &pvavd, nl.jtype); CHKERRQ(ierr);
+			ierr = BreakCreate(&user, &actx, &surf, &pvout, &pvsurf, &pvmark, &pvavd, nl.jtype); CHKERRQ(ierr);
 		}
 
 		// check marker phases

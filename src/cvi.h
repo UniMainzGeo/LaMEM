@@ -74,7 +74,8 @@ typedef enum
 	NODES,     // bilinear interp to nodes, trilinear interp to markers + correction
 	MINMOD,    // minmod interp to nodes, trilinear interp to markers + correction
 	CorrQ2,    // quadratic interpolation + correction
-	CorrSQ2    // spline quadratic interpolation + correction
+	CorrSQ2,   // spline quadratic interpolation + correction
+	STAG_P     // empirical approach (T. Gerya)
 
 } VelInterpType;
 //-----------------------------------------------------------------------------
@@ -164,6 +165,7 @@ PetscErrorCode ADVelInterpQ2         (AdvVelCtx *vi);
 PetscErrorCode ADVelInterpSQ2        (AdvVelCtx *vi);
 PetscErrorCode ADVelInterpCorrQ2     (AdvVelCtx *vi);
 PetscErrorCode ADVelInterpCorrSQ2    (AdvVelCtx *vi);
+PetscErrorCode ADVelInterpSTAGP      (AdvVelCtx *vi);
 
 //-----------------------------------------------------------------------------
 // service functions

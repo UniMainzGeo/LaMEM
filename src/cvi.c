@@ -126,6 +126,7 @@ PetscErrorCode ADVelReadOptions(AdvVelCtx *vi)
 	else if (val1 == 4) { vi->velinterp = SQ2;    PetscPrintf(PETSC_COMM_WORLD," VelInterp Scheme: %s\n","SQ2 (Spline Quadratic)"           );}
 	else if (val1 == 5) { vi->velinterp = CorrQ2; PetscPrintf(PETSC_COMM_WORLD," VelInterp Scheme: %s\n","CorrQ2 (Corr + Quadratic)"        );}
 	else if (val1 == 6) { vi->velinterp = CorrSQ2;PetscPrintf(PETSC_COMM_WORLD," VelInterp Scheme: %s\n","CorrSQ2 (Corr + Spline Quadratic)");}
+	else if (val1 == 7) { vi->velinterp = STAG_P; PetscPrintf(PETSC_COMM_WORLD," VelInterp Scheme: %s\n","Empirical (STAG + P points)"      );}
 
 	else SETERRQ(PETSC_COMM_SELF, PETSC_ERR_USER," *** Incorrect option for velocity interpolation scheme");
 
@@ -1071,6 +1072,7 @@ PetscErrorCode ADVelInterpMain(AdvVelCtx *vi)
 	else if(vi->velinterp == SQ2    )  { ierr = ADVelInterpSQ2    (vi); CHKERRQ(ierr); }
 	else if(vi->velinterp == CorrQ2 )  { ierr = ADVelInterpCorrQ2 (vi); CHKERRQ(ierr); }
 	else if(vi->velinterp == CorrSQ2)  { ierr = ADVelInterpCorrSQ2(vi); CHKERRQ(ierr); }
+	else if(vi->velinterp == STAG_P )  { ierr = ADVelInterpSTAGP  (vi); CHKERRQ(ierr); }
 	else SETERRQ(PETSC_COMM_SELF, PETSC_ERR_USER," *** Unknown option for velocity interpolation scheme");
 
 	PetscFunctionReturn(0);
@@ -2257,6 +2259,259 @@ PetscErrorCode ADVelInterpSQ2(AdvVelCtx *vi)
 		vi->interp[jj].v[0] = GenInterpQuadratic3D(vxn, x1, y1, z1, xp, yp, zp, 1);
 		vi->interp[jj].v[1] = GenInterpQuadratic3D(vyn, x2, y2, z2, xp, yp, zp, 1);
 		vi->interp[jj].v[2] = GenInterpQuadratic3D(vzn, x3, y3, z3, xp, yp, zp, 1);
+	}
+
+	// restore access
+	ierr = DMDAVecRestoreArray(fs->DA_X,   jr->lvx, &lvx); CHKERRQ(ierr);
+	ierr = DMDAVecRestoreArray(fs->DA_Y,   jr->lvy, &lvy); CHKERRQ(ierr);
+	ierr = DMDAVecRestoreArray(fs->DA_Z,   jr->lvz, &lvz); CHKERRQ(ierr);
+
+	PetscFunctionReturn(0);
+}
+//---------------------------------------------------------------------------
+#undef __FUNCT__
+#define __FUNCT__ "ADVelInterpSTAGP"
+PetscErrorCode ADVelInterpSTAGP(AdvVelCtx *vi)
+{
+	// interpolate velocities from STAG points to markers + pressure points
+
+	FDSTAG      *fs;
+	JacRes      *jr;
+	PetscInt    sx, sy, sz, nx, ny, nz, nmark;
+	PetscInt    jj, ID, I, J, K, II, JJ, KK;
+	PetscInt    IN, JN, KN;
+	PetscScalar *ncx, *ncy, *ncz;
+	PetscScalar *ccx, *ccy, *ccz;
+	PetscScalar v[3], vp[3];
+	PetscScalar ***lvx, ***lvy, ***lvz;
+	PetscScalar xc, yc, zc, xp, yp, zp;
+	PetscScalar vii[12], vxp[8], vyp[8], vzp[8];
+	PetscScalar nxs, nxe, nys, nye, nzs, nze, xpl, ypl, zpl;
+	PetscScalar A, B;
+
+	PetscErrorCode ierr;
+	PetscFunctionBegin;
+
+	// compute host cells for all markers
+	ierr = ADVelMapMarkToCells(vi); CHKERRQ(ierr);
+
+	// coefficients - ALSO READ THEM
+	A = 2.0/3.0;
+	B = 1.0/3.0;
+
+	PetscScalar val=0.0;
+	PetscOptionsGetScalar(PETSC_NULL, "-A", &val, PETSC_NULL);
+	if (val) { A = val; B = 1.0 - A; }
+
+	// access context
+	fs = vi->fs;
+	jr = vi->jr;
+
+	nmark = vi->nmark;
+
+	// starting indices & number of cells
+	sx = fs->dsx.pstart; nx = fs->dsx.ncels;
+	sy = fs->dsy.pstart; ny = fs->dsy.ncels;
+	sz = fs->dsz.pstart; nz = fs->dsz.ncels;
+
+	// node & cell coordinates
+	ncx = fs->dsx.ncoor; ccx = fs->dsx.ccoor;
+	ncy = fs->dsy.ncoor; ccy = fs->dsy.ccoor;
+	ncz = fs->dsz.ncoor; ccz = fs->dsz.ccoor;
+
+	// access velocity, pressure & temperature vectors
+	ierr = DMDAVecGetArray(fs->DA_X,   jr->lvx, &lvx); CHKERRQ(ierr);
+	ierr = DMDAVecGetArray(fs->DA_Y,   jr->lvy, &lvy); CHKERRQ(ierr);
+	ierr = DMDAVecGetArray(fs->DA_Z,   jr->lvz, &lvz); CHKERRQ(ierr);
+
+	// scan all markers
+	for(jj = 0; jj < nmark; jj++)
+	{
+		// get marker coordinates
+		xp = vi->interp[jj].x[0];
+		yp = vi->interp[jj].x[1];
+		zp = vi->interp[jj].x[2];
+
+		// get consecutive index of the host cell
+		ID = vi->cellnum[jj];
+
+		// expand I, J, K cell indices
+		GET_CELL_IJK(ID, I, J, K, nx, ny)
+
+		// get coordinates of cell center
+		xc = ccx[I];
+		yc = ccy[J];
+		zc = ccz[K];
+
+		// map marker on the cells of X, Y, Z & center grids
+		if(xp > xc) { II = I; } else { II = I-1; }
+		if(yp > yc) { JJ = J; } else { JJ = J-1; }
+		if(zp > zc) { KK = K; } else { KK = K-1; }
+
+		// interpolate velocity, pressure & temperature
+		v[0] = InterpLin3D(lvx, I,  JJ, KK, sx, sy, sz, xp, yp, zp, ncx, ccy, ccz);
+		v[1] = InterpLin3D(lvy, II, J,  KK, sx, sy, sz, xp, yp, zp, ccx, ncy, ccz);
+		v[2] = InterpLin3D(lvz, II, JJ, K,  sx, sy, sz, xp, yp, zp, ccx, ccy, ncz);
+
+		// check marker position relative to pressure cube
+		// WARNING! ONLY FOR FREE SLIP BC
+
+		// ----------------
+		// VX
+		// ----------------
+		if(xp > xc) { IN = I+1; } else { IN = I; }
+
+		if (IN == 0)
+		{
+			vii[0] = 2*lvx[sz+KK  ][sy+JJ  ][sx+IN]-lvx[sz+KK  ][sy+JJ  ][sx+IN+1]; vii[1]  = lvx[sz+KK  ][sy+JJ  ][sx+IN  ]; vii[2]  = lvx[sz+KK  ][sy+JJ  ][sx+IN+1];
+			vii[3] = 2*lvx[sz+KK  ][sy+JJ+1][sx+IN]-lvx[sz+KK  ][sy+JJ+1][sx+IN+1]; vii[4]  = lvx[sz+KK  ][sy+JJ+1][sx+IN  ]; vii[5]  = lvx[sz+KK  ][sy+JJ+1][sx+IN+1];
+			vii[6] = 2*lvx[sz+KK+1][sy+JJ  ][sx+IN]-lvx[sz+KK+1][sy+JJ  ][sx+IN+1]; vii[7]  = lvx[sz+KK+1][sy+JJ  ][sx+IN  ]; vii[8]  = lvx[sz+KK+1][sy+JJ  ][sx+IN+1];
+			vii[9] = 2*lvx[sz+KK+1][sy+JJ+1][sx+IN]-lvx[sz+KK+1][sy+JJ+1][sx+IN+1]; vii[10] = lvx[sz+KK+1][sy+JJ+1][sx+IN  ]; vii[11] = lvx[sz+KK+1][sy+JJ+1][sx+IN+1];
+
+			nxs = 2*ccx[IN]-ccx[IN+1]; nxe = ccx[IN];
+		}
+		else if (IN == nx)
+		{
+			vii[0] = lvx[sz+KK  ][sy+JJ  ][sx+IN-1]; vii[1]  = lvx[sz+KK  ][sy+JJ  ][sx+IN  ]; vii[2]  = 2*lvx[sz+KK  ][sy+JJ  ][sx+IN]-lvx[sz+KK  ][sy+JJ  ][sx+IN-1];
+			vii[3] = lvx[sz+KK  ][sy+JJ+1][sx+IN-1]; vii[4]  = lvx[sz+KK  ][sy+JJ+1][sx+IN  ]; vii[5]  = 2*lvx[sz+KK  ][sy+JJ+1][sx+IN]-lvx[sz+KK  ][sy+JJ+1][sx+IN-1];
+			vii[6] = lvx[sz+KK+1][sy+JJ  ][sx+IN-1]; vii[7]  = lvx[sz+KK+1][sy+JJ  ][sx+IN  ]; vii[8]  = 2*lvx[sz+KK+1][sy+JJ  ][sx+IN]-lvx[sz+KK+1][sy+JJ  ][sx+IN-1];
+			vii[9] = lvx[sz+KK+1][sy+JJ+1][sx+IN-1]; vii[10] = lvx[sz+KK+1][sy+JJ+1][sx+IN  ]; vii[11] = 2*lvx[sz+KK+1][sy+JJ+1][sx+IN]-lvx[sz+KK+1][sy+JJ+1][sx+IN-1];
+
+			nxs = ccx[IN-1]; nxe = 2*ccx[IN]-ccx[IN-1];
+		}
+		else
+		{
+			vii[0] = lvx[sz+KK  ][sy+JJ  ][sx+IN-1]; vii[1]  = lvx[sz+KK  ][sy+JJ  ][sx+IN  ]; vii[2]  = lvx[sz+KK  ][sy+JJ  ][sx+IN+1];
+			vii[3] = lvx[sz+KK  ][sy+JJ+1][sx+IN-1]; vii[4]  = lvx[sz+KK  ][sy+JJ+1][sx+IN  ]; vii[5]  = lvx[sz+KK  ][sy+JJ+1][sx+IN+1];
+			vii[6] = lvx[sz+KK+1][sy+JJ  ][sx+IN-1]; vii[7]  = lvx[sz+KK+1][sy+JJ  ][sx+IN  ]; vii[8]  = lvx[sz+KK+1][sy+JJ  ][sx+IN+1];
+			vii[9] = lvx[sz+KK+1][sy+JJ+1][sx+IN-1]; vii[10] = lvx[sz+KK+1][sy+JJ+1][sx+IN  ]; vii[11] = lvx[sz+KK+1][sy+JJ+1][sx+IN+1];
+
+			nxs = ccx[IN-1]; nxe = ccx[IN  ];
+		}
+
+		// get velocities and boundaries
+		vxp[0] = (vii[0] + vii[1] )/2; vxp[1] = (vii[1]  + vii[2] )/2;
+		vxp[2] = (vii[3] + vii[4] )/2; vxp[3] = (vii[4]  + vii[5] )/2;
+		vxp[4] = (vii[6] + vii[7] )/2; vxp[5] = (vii[7]  + vii[8] )/2;
+		vxp[6] = (vii[9] + vii[10])/2; vxp[7] = (vii[10] + vii[11])/2;
+
+		// transform into local coordinates
+		nys = ccy[JJ  ]; nye = ccy[JJ+1];
+		nzs = ccz[KK  ]; nze = ccz[KK+1];
+
+		xpl = (xp-nxs)/(nxe-nxs);
+		ypl = (yp-nys)/(nye-nys);
+		zpl = (zp-nzs)/(nze-nzs);
+
+		// calculate velocity in pressure points
+		vp[0] = GenInterpLin3D(vxp,xpl,ypl,zpl);
+
+		// ----------------
+		// VY
+		// ----------------
+		if(yp > yc) { JN = J+1; } else { JN = J; }
+
+		if (JN == 0)
+		{
+			vii[0] = 2*lvy[sz+KK  ][sy+JN][sx+II  ]-lvy[sz+KK  ][sy+JN+1][sx+II  ]; vii[1]  = lvy[sz+KK  ][sy+JN][sx+II  ]; vii[2]  = lvy[sz+KK  ][sy+JN+1][sx+II  ];
+			vii[3] = 2*lvy[sz+KK  ][sy+JN][sx+II+1]-lvy[sz+KK  ][sy+JN+1][sx+II+1]; vii[4]  = lvy[sz+KK  ][sy+JN][sx+II+1]; vii[5]  = lvy[sz+KK  ][sy+JN+1][sx+II+1];
+			vii[6] = 2*lvy[sz+KK+1][sy+JN][sx+II  ]-lvy[sz+KK+1][sy+JN+1][sx+II  ]; vii[7]  = lvy[sz+KK+1][sy+JN][sx+II  ]; vii[8]  = lvy[sz+KK+1][sy+JN+1][sx+II  ];
+			vii[9] = 2*lvy[sz+KK+1][sy+JN][sx+II+1]-lvy[sz+KK+1][sy+JN+1][sx+II+1]; vii[10] = lvy[sz+KK+1][sy+JN][sx+II+1]; vii[11] = lvy[sz+KK+1][sy+JN+1][sx+II+1];
+
+			nys = 2*ccy[JN]-ccy[JN+1]; nye = ccy[JN];
+		}
+		else if (JN == ny)
+		{
+			vii[0] = lvy[sz+KK  ][sy+JN-1][sx+II  ]; vii[1]  = lvy[sz+KK  ][sy+JN][sx+II  ]; vii[2]  = 2*lvy[sz+KK  ][sy+JN][sx+II  ]-lvy[sz+KK  ][sy+JN-1][sx+II  ];
+			vii[3] = lvy[sz+KK  ][sy+JN-1][sx+II+1]; vii[4]  = lvy[sz+KK  ][sy+JN][sx+II+1]; vii[5]  = 2*lvy[sz+KK  ][sy+JN][sx+II+1]-lvy[sz+KK  ][sy+JN-1][sx+II+1];
+			vii[6] = lvy[sz+KK+1][sy+JN-1][sx+II  ]; vii[7]  = lvy[sz+KK+1][sy+JN][sx+II  ]; vii[8]  = 2*lvy[sz+KK+1][sy+JN][sx+II  ]-lvy[sz+KK+1][sy+JN-1][sx+II  ];
+			vii[9] = lvy[sz+KK+1][sy+JN-1][sx+II+1]; vii[10] = lvy[sz+KK+1][sy+JN][sx+II+1]; vii[11] = 2*lvy[sz+KK+1][sy+JN][sx+II+1]-lvy[sz+KK+1][sy+JN-1][sx+II+1];
+
+			nys = ccy[JN-1]; nye = 2*ccy[JN]-ccy[JN-1];
+		}
+		else
+		{
+			vii[0] = lvy[sz+KK  ][sy+JN-1][sx+II  ]; vii[1]  = lvy[sz+KK  ][sy+JN][sx+II  ]; vii[2]  = lvy[sz+KK  ][sy+JN+1][sx+II  ];
+			vii[3] = lvy[sz+KK  ][sy+JN-1][sx+II+1]; vii[4]  = lvy[sz+KK  ][sy+JN][sx+II+1]; vii[5]  = lvy[sz+KK  ][sy+JN+1][sx+II+1];
+			vii[6] = lvy[sz+KK+1][sy+JN-1][sx+II  ]; vii[7]  = lvy[sz+KK+1][sy+JN][sx+II  ]; vii[8]  = lvy[sz+KK+1][sy+JN+1][sx+II  ];
+			vii[9] = lvy[sz+KK+1][sy+JN-1][sx+II+1]; vii[10] = lvy[sz+KK+1][sy+JN][sx+II+1]; vii[11] = lvy[sz+KK+1][sy+JN+1][sx+II+1];
+
+			nys = ccy[JN-1]; nye = ccy[JN  ];
+		}
+
+		// get velocities and boundaries
+		vyp[0] = (vii[0] + vii[1] )/2; vyp[1] = (vii[3]  + vii[4] )/2;
+		vyp[2] = (vii[1] + vii[2] )/2; vyp[3] = (vii[4]  + vii[5] )/2;
+		vyp[4] = (vii[6] + vii[7] )/2; vyp[5] = (vii[9]  + vii[10])/2;
+		vyp[6] = (vii[7] + vii[8] )/2; vyp[7] = (vii[10] + vii[11])/2;
+
+		// transform into local coordinates
+		nxs = ccx[II  ]; nxe = ccx[II+1];
+		nzs = ccz[KK  ]; nze = ccz[KK+1];
+
+		xpl = (xp-nxs)/(nxe-nxs);
+		ypl = (yp-nys)/(nye-nys);
+		zpl = (zp-nzs)/(nze-nzs);
+
+		// calculate velocity in pressure points
+		vp[1] = GenInterpLin3D(vyp,xpl,ypl,zpl);
+
+		// ----------------
+		// VZ
+		// ----------------
+		if(zp > zc) { KN = K+1; } else { KN = K; }
+
+		if (KN == 0)
+		{
+			vii[0] = 2*lvz[sz+KN][sy+JJ  ][sx+II  ]-lvz[sz+KN+1][sy+JJ  ][sx+II  ]; vii[1]  = lvz[sz+KN][sy+JJ  ][sx+II  ]; vii[2]  = lvz[sz+KN+1][sy+JJ  ][sx+II  ];
+			vii[3] = 2*lvz[sz+KN][sy+JJ  ][sx+II+1]-lvz[sz+KN+1][sy+JJ  ][sx+II+1]; vii[4]  = lvz[sz+KN][sy+JJ  ][sx+II+1]; vii[5]  = lvz[sz+KN+1][sy+JJ  ][sx+II+1];
+			vii[6] = 2*lvz[sz+KN][sy+JJ+1][sx+II  ]-lvz[sz+KN+1][sy+JJ+1][sx+II  ]; vii[7]  = lvz[sz+KN][sy+JJ+1][sx+II  ]; vii[8]  = lvz[sz+KN+1][sy+JJ+1][sx+II  ];
+			vii[9] = 2*lvz[sz+KN][sy+JJ+1][sx+II+1]-lvz[sz+KN+1][sy+JJ+1][sx+II+1]; vii[10] = lvz[sz+KN][sy+JJ+1][sx+II+1]; vii[11] = lvz[sz+KN+1][sy+JJ+1][sx+II+1];
+
+			nzs = 2*ccz[KN]-ccz[KN+1]; nze = ccz[KN];
+		}
+		else if (KN == nz)
+		{
+			vii[0] = lvz[sz+KN-1][sy+JJ  ][sx+II  ]; vii[1]  = lvz[sz+KN][sy+JJ  ][sx+II  ]; vii[2]  = 2*lvz[sz+KN][sy+JJ  ][sx+II  ]-lvz[sz+KN-1][sy+JJ  ][sx+II  ];
+			vii[3] = lvz[sz+KN-1][sy+JJ  ][sx+II+1]; vii[4]  = lvz[sz+KN][sy+JJ  ][sx+II+1]; vii[5]  = 2*lvz[sz+KN][sy+JJ  ][sx+II+1]-lvz[sz+KN-1][sy+JJ  ][sx+II+1];
+			vii[6] = lvz[sz+KN-1][sy+JJ+1][sx+II  ]; vii[7]  = lvz[sz+KN][sy+JJ+1][sx+II  ]; vii[8]  = 2*lvz[sz+KN][sy+JJ+1][sx+II  ]-lvz[sz+KN-1][sy+JJ+1][sx+II  ];
+			vii[9] = lvz[sz+KN-1][sy+JJ+1][sx+II+1]; vii[10] = lvz[sz+KN][sy+JJ+1][sx+II+1]; vii[11] = 2*lvz[sz+KN][sy+JJ+1][sx+II+1]-lvz[sz+KN-1][sy+JJ+1][sx+II+1];
+
+			nzs = ccz[KN-1]; nze = 2*ccz[KN]-ccz[KN-1];
+		}
+		else
+		{
+			vii[0] = lvz[sz+KN-1][sy+JJ  ][sx+II  ]; vii[1]  = lvz[sz+KN][sy+JJ  ][sx+II  ]; vii[2]  = lvz[sz+KN+1][sy+JJ  ][sx+II  ];
+			vii[3] = lvz[sz+KN-1][sy+JJ  ][sx+II+1]; vii[4]  = lvz[sz+KN][sy+JJ  ][sx+II+1]; vii[5]  = lvz[sz+KN+1][sy+JJ  ][sx+II+1];
+			vii[6] = lvz[sz+KN-1][sy+JJ+1][sx+II  ]; vii[7]  = lvz[sz+KN][sy+JJ+1][sx+II  ]; vii[8]  = lvz[sz+KN+1][sy+JJ+1][sx+II  ];
+			vii[9] = lvz[sz+KN-1][sy+JJ+1][sx+II+1]; vii[10] = lvz[sz+KN][sy+JJ+1][sx+II+1]; vii[11] = lvz[sz+KN+1][sy+JJ+1][sx+II+1];
+
+			nzs = ccz[KN-1]; nze = ccz[KN  ];
+		}
+
+		// get velocities and boundaries
+		vzp[0] = (vii[0] + vii[1] )/2; vzp[1] = (vii[3]  + vii[4] )/2;
+		vzp[2] = (vii[6] + vii[7] )/2; vzp[3] = (vii[9]  + vii[10])/2;
+		vzp[4] = (vii[1] + vii[2] )/2; vzp[5] = (vii[4]  + vii[5] )/2;
+		vzp[6] = (vii[7] + vii[8] )/2; vzp[7] = (vii[10] + vii[11])/2;
+
+		// transform into local coordinates
+		nxs = ccx[II  ]; nxe = ccx[II+1];
+		nys = ccy[JJ  ]; nye = ccy[JJ+1];
+
+		xpl = (xp-nxs)/(nxe-nxs);
+		ypl = (yp-nys)/(nye-nys);
+		zpl = (zp-nzs)/(nze-nzs);
+
+		// calculate velocity in pressure points
+		vp[2] = GenInterpLin3D(vzp,xpl,ypl,zpl);
+
+		// interpolate velocity
+		vi->interp[jj].v[0] = A*v[0] + B*vp[0];
+		vi->interp[jj].v[1] = A*v[1] + B*vp[1];
+		vi->interp[jj].v[2] = A*v[2] + B*vp[2];
+
+		//if (vi->interp[jj].v[0]) PetscPrintf(PETSC_COMM_WORLD,"# Vx = %g \n",vi->interp[jj].v[0]);
 	}
 
 	// restore access

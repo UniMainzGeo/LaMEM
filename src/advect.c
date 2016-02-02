@@ -283,17 +283,34 @@ PetscErrorCode ADVRemap(AdvCtx *actx, FreeSurf *surf)
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
 
-	// compute host cells for all the markers received
-	ierr = ADVMapMarkToCells(actx); CHKERRQ(ierr);
+	PetscBool flag = PETSC_FALSE;
+	PetscOptionsGetBool(PETSC_NULL, "-new_mc", &flag, PETSC_NULL);
 
-	// update arrays for marker-cell interaction
-	ierr = ADVUpdateMarkCell(actx); CHKERRQ(ierr);
+	if (!flag)
+	{
+		// compute host cells for all the markers received
+		ierr = ADVMapMarkToCells(actx); CHKERRQ(ierr);
 
-	// check markers and inject/delete if necessary
-	ierr = ADVMarkControl(actx); CHKERRQ(ierr);
+		// update arrays for marker-cell interaction
+		ierr = ADVUpdateMarkCell(actx); CHKERRQ(ierr);
 
-	// check corners and inject 1 particle if empty
-	ierr = ADVCheckCorners(actx);    CHKERRQ(ierr);
+		// check markers and inject/delete if necessary
+		ierr = ADVMarkControl(actx); CHKERRQ(ierr);
+
+		// check corners and inject 1 particle if empty
+		ierr = ADVCheckCorners(actx);    CHKERRQ(ierr);
+	}
+	else
+	{
+		// check markers and inject/delete if necessary in all control volumes
+		ierr = AVDMarkerControl(actx); CHKERRQ(ierr);
+
+		// compute host cells for all the markers received
+		ierr = ADVMapMarkToCells(actx); CHKERRQ(ierr);
+
+		// update arrays for marker-cell interaction
+		ierr = ADVUpdateMarkCell(actx); CHKERRQ(ierr);
+	}
 
 	// change marker phase when crossing flat surface or free surface with fast sedimentation/erosion
 	ierr = ADVMarkCrossFreeSurf(actx, surf, 0.05); CHKERRQ(ierr);

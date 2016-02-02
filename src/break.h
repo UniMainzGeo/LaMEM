@@ -53,14 +53,24 @@ PetscErrorCode BreakCheck    (UserCtx *user);
 // Write breakpoint files
 //---------------------------------------------------------------------------
 // grid, mark, gsol, gtopo, info are written together
-PetscErrorCode BreakWrite(UserCtx *user,
-						AdvCtx    *actx,
-						FreeSurf  *surf,
-						PVOut     *pvout,
-						PVSurf    *pvsurf,
-						PVMark    *pvmark,
-						PVAVD     *pvavd,
-						JacType    jtype);
+PetscErrorCode BreakCreate(UserCtx *user,
+						  AdvCtx    *actx,
+						  FreeSurf  *surf,
+						  PVOut     *pvout,
+						  PVSurf    *pvsurf,
+						  PVMark    *pvmark,
+						  PVAVD     *pvavd,
+						  JacType    jtype);
+
+PetscErrorCode BreakWrite (UserCtx *user,
+						  AdvCtx    *actx,
+						  FreeSurf  *surf,
+						  PVOut     *pvout,
+						  PVSurf    *pvsurf,
+						  PVMark    *pvmark,
+						  PVAVD     *pvavd,
+						  JacType    jtype,
+						  PetscInt   dir);
 //---------------------------------------------------------------------------
 // Read breakpoint files
 //---------------------------------------------------------------------------

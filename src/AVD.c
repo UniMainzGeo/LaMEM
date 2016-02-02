@@ -237,8 +237,8 @@ PetscErrorCode AVDCellInit(AVD *A)
 		ind = i+j*mx+k*mx*my;
 
 		if (A->cell[ind].p == AVD_CELL_MASK) {
-            SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "Inserting cells into boundary cells is not permitted \n");
-     	}
+			SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "Inserting cells into boundary cells is not permitted \n");
+		}
 
 		A->cell[ind].p                   = p;         // particle index
 		A->chain[p].nclaimed             = 1;         // number of claimed cells, currently just the one the point initially resides within
@@ -567,8 +567,8 @@ PetscErrorCode AVDInjectDeletePoints(AdvCtx *actx, AVD *A, PetscInt cellID)
 				if (axis==-1) A->cell[ii].col = 1;
 				else
 				{
-					if      ((xh[axis] <= xp[axis]) && (xc[axis] <= xh[axis])) A->cell[ii].col = 1;
-					else if ((xh[axis] >= xp[axis]) && (xc[axis] >= xh[axis])) A->cell[ii].col = 1;
+					if      ((xh[axis] < xp[axis]) && (xc[axis] < xh[axis])) A->cell[ii].col = 1;
+					else if ((xh[axis] > xp[axis]) && (xc[axis] > xh[axis])) A->cell[ii].col = 1;
 				}
 			}
 		}
@@ -604,7 +604,6 @@ PetscErrorCode AVDInjectDeletePoints(AdvCtx *actx, AVD *A, PetscInt cellID)
 		sind[i] = i;
 		area[i] = A->chain[i].tclaimed;
 	}
-	
 
 	// sort in ascending order
 	ierr = PetscSortIntWithArray(npoints,area,sind); CHKERRQ(ierr);
@@ -626,6 +625,8 @@ PetscErrorCode AVDInjectDeletePoints(AdvCtx *actx, AVD *A, PetscInt cellID)
 			actx->recvbuf[actx->cinj+i].X[0] = A->chain [num_chain].xc[0];
 			actx->recvbuf[actx->cinj+i].X[1] = A->chain [num_chain].xc[1];
 			actx->recvbuf[actx->cinj+i].X[2] = A->chain [num_chain].xc[2];
+
+			PetscPrintf(PETSC_COMM_SELF,"# Marker Control [%lld]: injected [%g,%g,%g]\n",(LLD)actx->iproc, A->chain [num_chain].xc[0], A->chain [num_chain].xc[1], A->chain [num_chain].xc[2]);
 
 			// override marker phase (if necessary)
 			ierr = BCOverridePhase(bc, cellID, actx->recvbuf + actx->cinj + i); CHKERRQ(ierr);
@@ -721,3 +722,661 @@ PetscErrorCode AVDExecuteMarkerInjection(AdvCtx *actx, PetscInt npoints, PetscSc
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
+//---------------------------------------------------------------------------
+// NEW MARKER CONTROL
+//---------------------------------------------------------------------------
+//---------------------------------------------------------------------------
+#undef __FUNCT__
+#define __FUNCT__ "AVDMarkerControl"
+PetscErrorCode AVDMarkerControl(AdvCtx *actx)
+{
+	// check marker distribution and delete or inject markers if necessary
+
+	PetscErrorCode ierr;
+	PetscFunctionBegin;
+
+	PetscBool flag = PETSC_FALSE;
+	PetscOptionsGetBool(PETSC_NULL, "-use_marker_control", &flag, PETSC_NULL);
+
+	if (!flag) PetscFunctionReturn(0);
+
+	PetscPrintf(PETSC_COMM_WORLD,"# NEW Marker Control Routine \n");
+	//PetscPrintf(PETSC_COMM_SELF,"# Breakpoint 1 %lld \n",(LLD)actx->nummark);
+
+	//PetscPrintf(PETSC_COMM_SELF,"# [%lld] Breakpoint 1a %lld \n",(LLD)actx->iproc,(LLD)actx->nummark);
+	ierr = AVDMarkerControlMV(actx, _CELL_); CHKERRQ(ierr); // CELLS
+	//PetscPrintf(PETSC_COMM_SELF,"# [%lld] Breakpoint 1b %lld \n",(LLD)actx->iproc,(LLD)actx->nummark);
+	ierr = AVDMarkerControlMV(actx, _XYED_); CHKERRQ(ierr); // XY Edge
+	//PetscPrintf(PETSC_COMM_SELF,"# [%lld] Breakpoint 1c %lld \n",(LLD)actx->iproc,(LLD)actx->nummark);
+	ierr = AVDMarkerControlMV(actx, _XZED_); CHKERRQ(ierr); // XZ Edge
+	//PetscPrintf(PETSC_COMM_SELF,"# [%lld] Breakpoint 1d %lld \n",(LLD)actx->iproc,(LLD)actx->nummark);
+	ierr = AVDMarkerControlMV(actx, _YZED_); CHKERRQ(ierr); // YZ Edge
+
+	PetscFunctionReturn(0);
+}
+//---------------------------------------------------------------------------
+#undef __FUNCT__
+#define __FUNCT__ "AVDMarkerControlMV"
+PetscErrorCode AVDMarkerControlMV(AdvCtx *actx, VolumeCase vtype)
+{
+	MarkerVolume  mv;
+	PetscInt      dir = -1;
+
+	PetscErrorCode ierr;
+	PetscFunctionBegin;
+
+	if      (vtype == _CELL_) dir = -1;
+	else if (vtype == _XYED_) dir =  2;
+	else if (vtype == _XZED_) dir =  1;
+	else if (vtype == _YZED_) dir =  0;
+
+	//PetscPrintf(PETSC_COMM_SELF,"# [%lld] Breakpoint 2 \n",(LLD)actx->iproc);
+
+	// 1. Create MarkerVolume
+	ierr = AVDCreateMV(actx, &mv, dir); CHKERRQ(ierr);
+
+	//PetscPrintf(PETSC_COMM_SELF,"# [%lld] Breakpoint 3 \n",(LLD)actx->iproc);
+	// 2. Map markers
+	ierr = AVDMapMarkersMV(actx, &mv, dir); CHKERRQ(ierr);
+	//PetscPrintf(PETSC_COMM_SELF,"# [%lld] Breakpoint 4 \n",(LLD)actx->iproc);
+
+	// 3. Marker Control
+	ierr = AVDCheckCellsMV(actx, &mv, dir); CHKERRQ(ierr);
+	//PetscPrintf(PETSC_COMM_SELF,"# [%lld] Breakpoint 5 \n",(LLD)actx->iproc);
+
+	// 4. Free MarkerVolume
+	ierr = AVDDestroyMV(&mv); CHKERRQ(ierr);
+	//PetscPrintf(PETSC_COMM_SELF,"# [%lld] Breakpoint 6 \n",(LLD)actx->iproc);
+
+	PetscFunctionReturn(0);
+}
+//---------------------------------------------------------------------------
+#undef __FUNCT__
+#define __FUNCT__ "AVDCheckCellsMV"
+PetscErrorCode AVDCheckCellsMV(AdvCtx *actx, MarkerVolume *mv, PetscInt dir)
+{
+	// check marker distribution and delete or inject markers if necessary
+	PetscScalar    xs[3], xe[3];
+	PetscInt       ind, i, j, k, M, N;
+	PetscInt       n, ninj, ndel, nmin;
+	PetscLogDouble t0,t1;
+	char           lbl[_lbl_sz_];
+
+	PetscErrorCode ierr;
+	PetscFunctionBegin;
+
+	// record time
+	ierr = PetscTime(&t0); CHKERRQ(ierr);
+
+	// get number of cells
+	M = mv->M;
+	N = mv->N;
+
+	//PetscPrintf(PETSC_COMM_SELF,"# [%lld] Breakpoint 20 \n",(LLD)actx->iproc);
+
+	// calculate storage
+	ninj = 0;
+	ndel = 0;
+	for(ind = 0; ind < mv->ncells; ind++)
+	{
+		// no of markers in cell
+		n = mv->markstart[ind+1] - mv->markstart[ind];
+
+		if (n < actx->nmin)
+		{
+			// expand i, j, k cell indices
+			GET_CELL_IJK(ind, i, j, k, M, N);
+
+			// half-volumes
+			nmin = actx->nmin;
+			if ((dir == 0) && ((i == 0) | (i+1 == mv->M))) { nmin = (PetscInt) (actx->nmin/2+1); }
+			if ((dir == 1) && ((j == 0) | (j+1 == mv->N))) { nmin = (PetscInt) (actx->nmin/2+1); }
+			if ((dir == 2) && ((k == 0) | (k+1 == mv->P))) { nmin = (PetscInt) (actx->nmin/2+1); }
+
+			if (n < nmin)
+			{
+				if ((nmin - n) > n) ninj += n;
+				else                ninj += nmin - n;
+			}
+
+			//PetscPrintf(PETSC_COMM_SELF,"# [%lld] Breakpoint 22 n=%lld ninj=%lld nmin=%lld\n",(LLD)actx->iproc,(LLD)n,(LLD)ninj,(LLD)nmin);
+		}
+		if (n > actx->nmax) ndel += n - actx->nmax;
+	}
+
+	// if no need for injection/deletion
+	if ((!ninj) && (!ndel)) PetscFunctionReturn(0);
+
+	//PetscPrintf(PETSC_COMM_SELF,"# [%lld] Breakpoint 21 ninj=%lld ndel=%lld nmin=%lld\n",(LLD)actx->iproc,(LLD)ninj,(LLD)ndel,(LLD)nmin);
+
+	actx->nrecv = ninj;
+	actx->ndel  = ndel;
+
+	// allocate memory
+	if(ninj) { ierr = PetscMalloc((size_t)actx->nrecv*sizeof(Marker),   &actx->recvbuf); CHKERRQ(ierr); }
+	if(ndel) { ierr = PetscMalloc((size_t)actx->ndel *sizeof(PetscInt), &actx->idel   ); CHKERRQ(ierr); }
+
+	actx->cinj = 0;
+	actx->cdel = 0;
+
+	// inject/delete
+	for(ind = 0; ind < mv->ncells; ind++)
+	{
+		// no of markers in cell
+		n = mv->markstart[ind+1] - mv->markstart[ind];
+
+		if ((n < actx->nmin) || (n > actx->nmax))
+		{
+			// expand i, j, k cell indices
+			GET_CELL_IJK(ind, i, j, k, M, N);
+
+			// get cell coordinates
+			xs[0] = mv->xcoord[i]; xe[0] = mv->xcoord[i+1];
+			xs[1] = mv->ycoord[j]; xe[1] = mv->ycoord[j+1];
+			xs[2] = mv->zcoord[k]; xe[2] = mv->zcoord[k+1];
+
+			// here calculate half volumes minimum
+			nmin = actx->nmin;
+			if ((dir == 0) && ((i == 0) | (i+1 == mv->M))) { nmin = (PetscInt) (actx->nmin/2+1); }
+			if ((dir == 1) && ((j == 0) | (j+1 == mv->N))) { nmin = (PetscInt) (actx->nmin/2+1); }
+			if ((dir == 2) && ((k == 0) | (k+1 == mv->P))) { nmin = (PetscInt) (actx->nmin/2+1); }
+
+			//PetscPrintf(PETSC_COMM_SELF,"# Marker Control [%lld]: n = %lld nmin = %lld cell = %lld\n",(LLD)actx->iproc, (LLD)n, (LLD)nmin, (LLD)ind);
+
+			// inject/delete markers
+			if ((n < nmin) || (n > actx->nmax))
+			{
+				ierr = AVDAlgorithmMV(actx, mv, n, xs, xe, ind, nmin); CHKERRQ(ierr);
+			}
+		}
+	}
+
+	// store new markers
+	ierr = ADVCollectGarbage(actx); CHKERRQ(ierr);
+
+	// clear
+	ierr = PetscFree(actx->recvbuf); CHKERRQ(ierr);
+	ierr = PetscFree(actx->idel);    CHKERRQ(ierr);
+
+	// print info
+	ierr = PetscTime(&t1); CHKERRQ(ierr);
+
+	if      (dir==-1) sprintf(lbl,"CELL");
+	else if (dir== 0) sprintf(lbl,"XYED");
+	else if (dir== 1) sprintf(lbl,"XZED");
+	else if (dir== 2) sprintf(lbl,"YZED");
+
+	PetscPrintf(PETSC_COMM_SELF,"# Marker Control [%lld]: (AVD %s) injected %lld markers and deleted %lld markers in %1.4e s\n",(LLD)actx->iproc,lbl, (LLD)ninj, (LLD)ndel, t1-t0);
+
+	PetscFunctionReturn(0);
+}
+//-----------------------------------------------------------------------------
+#undef __FUNCT__
+#define __FUNCT__ "AVDMapMarkersMV"
+PetscErrorCode AVDMapMarkersMV(AdvCtx *actx, MarkerVolume *mv, PetscInt dir)
+{
+	// creates arrays to optimize marker-cell interaction
+	FDSTAG      *fs;
+	PetscScalar *X;
+	PetscInt     i, ID, I, J, K;
+	PetscInt    *numMarkCell, *m, p;
+
+	PetscErrorCode ierr;
+	PetscFunctionBegin;
+
+	fs = actx->fs;
+
+	// create coordinate arrays
+	if (dir == 0) // x-coord
+	{
+		mv->xcoord[0] = fs->dsx.ncoor[0]; mv->xcoord[mv->M] = fs->dsx.ncoor[fs->dsx.ncels];
+		for(i = 1; i < mv->M; i++) mv->xcoord[i] = fs->dsx.ccoor[i-1];
+	}
+	else for(i = 0; i < mv->M+1; i++) mv->xcoord[i] = fs->dsx.ncoor[i];
+
+	if (dir == 1) // y-coord
+	{
+		mv->ycoord[0] = fs->dsy.ncoor[0]; mv->ycoord[mv->N] = fs->dsy.ncoor[fs->dsy.ncels];
+		for(i = 1; i < mv->N; i++) mv->ycoord[i] = fs->dsy.ccoor[i-1];
+	}
+	else for(i = 0; i < mv->N+1; i++) mv->ycoord[i] = fs->dsy.ncoor[i];
+
+	if (dir == 2) // z-coord
+	{
+		mv->zcoord[0] = fs->dsz.ncoor[0]; mv->zcoord[mv->P] = fs->dsz.ncoor[fs->dsz.ncels];
+		for(i = 1; i < mv->P; i++) mv->zcoord[i] = fs->dsz.ccoor[i-1];
+	}
+	else for(i = 0; i < mv->P+1; i++) mv->zcoord[i] = fs->dsz.ncoor[i];
+
+//	for(i = 0; i < mv->M+1; i++) PetscPrintf(PETSC_COMM_SELF,"# Breakpoint 1 %g %lld \n",mv->xcoord[i], (LLD)mv->M);
+//	for(i = 0; i < mv->N+1; i++) PetscPrintf(PETSC_COMM_SELF,"# Breakpoint 1 %g %lld \n",mv->ycoord[i], (LLD)mv->N);
+//	for(i = 0; i < mv->P+1; i++) PetscPrintf(PETSC_COMM_SELF,"# Breakpoint 1 %g %lld \n",mv->zcoord[i], (LLD)mv->P);
+
+	// loop over all local particles
+	for(i = 0; i < actx->nummark; i++)
+	{
+		// get marker coordinates
+		X = actx->markers[i].X;
+
+		// find I, J, K indices by bisection algorithm
+		I = FindPointInCell(mv->xcoord, 0, mv->M, X[0]);
+		J = FindPointInCell(mv->ycoord, 0, mv->N, X[1]);
+		K = FindPointInCell(mv->zcoord, 0, mv->P, X[2]);
+
+		// compute and store consecutive index
+		GET_CELL_ID(ID, I, J, K, mv->M, mv->N);
+
+		mv->cellnum[i] = ID;
+
+//		if ((X[0]<1) && (X[1]>0))
+//		{
+//			PetscPrintf(PETSC_COMM_SELF,"# Breakpoint 10 %lld [%lld %lld %lld] \n",(LLD)ID,(LLD)I,(LLD)J,(LLD)K);
+//		}
+	}
+
+	// allocate marker counter array
+	ierr = makeIntArray(&numMarkCell, NULL, mv->ncells); CHKERRQ(ierr);
+
+	// count number of markers in the cells
+	for(i = 0; i < actx->nummark; i++) numMarkCell[mv->cellnum[i]]++;
+	//for(i = 0; i < mv->ncells; i++) PetscPrintf(PETSC_COMM_SELF,"# Breakpoint 11 %lld. %lld \n",(LLD)i, (LLD)numMarkCell[i]);
+
+	// store starting indices of markers belonging to a cell
+	mv->markstart[0] = 0;
+	for(i = 1; i < mv->ncells+1; i++) mv->markstart[i] = mv->markstart[i-1]+numMarkCell[i-1];
+
+	// allocate memory for id offset
+	ierr = makeIntArray(&m, NULL, mv->ncells); CHKERRQ(ierr);
+
+	// store marker indices belonging to a cell
+	for(i = 0; i < actx->nummark; i++)
+	{
+		p = mv->markstart[mv->cellnum[i]];
+		mv->markind[p + m[mv->cellnum[i]]] = i;
+		m[mv->cellnum[i]]++;
+	}
+
+	// free memory
+	ierr = PetscFree(m);           CHKERRQ(ierr);
+	ierr = PetscFree(numMarkCell); CHKERRQ(ierr);
+
+	PetscFunctionReturn(0);
+}
+//-----------------------------------------------------------------------------
+#undef __FUNCT__
+#define __FUNCT__ "AVDCreateMV"
+PetscErrorCode AVDCreateMV(AdvCtx *actx, MarkerVolume *mv, PetscInt dir)
+{
+	// allocate memory and info to marker volume control structure
+	FDSTAG      *fs;
+
+	PetscErrorCode ierr;
+	PetscFunctionBegin;
+
+	fs = actx->fs;
+
+	mv->ncells = 0;
+
+	// get number of cells
+	if (dir == 0) mv->M = fs->dsx.ncels+1; else mv->M = fs->dsx.ncels;
+	if (dir == 1) mv->N = fs->dsy.ncels+1; else mv->N = fs->dsy.ncels;
+	if (dir == 2) mv->P = fs->dsz.ncels+1; else mv->P = fs->dsz.ncels;
+
+	// total number of cells
+	mv->ncells = mv->M * mv->N * mv->P;
+
+	// allocate memory for host cell numbers
+	ierr = makeIntArray(&mv->cellnum, NULL, actx->markcap); CHKERRQ(ierr);
+
+	// allocate memory for id marker arranging per cell
+	ierr = makeIntArray(&mv->markind, NULL, actx->markcap); CHKERRQ(ierr);
+
+	// memory for starting indices
+	ierr = makeIntArray(&mv->markstart, NULL, mv->ncells+1); CHKERRQ(ierr);
+
+	// allocate memory for local coordinates
+	ierr = makeScalArray(&mv->xcoord, NULL, mv->M+1); CHKERRQ(ierr);
+	ierr = makeScalArray(&mv->ycoord, NULL, mv->N+1); CHKERRQ(ierr);
+	ierr = makeScalArray(&mv->zcoord, NULL, mv->P+1); CHKERRQ(ierr);
+
+	PetscFunctionReturn(0);
+}
+//-----------------------------------------------------------------------------
+#undef __FUNCT__
+#define __FUNCT__ "AVDDestroyMV"
+PetscErrorCode AVDDestroyMV(MarkerVolume *mv)
+{
+	// free memory
+	PetscErrorCode ierr;
+	PetscFunctionBegin;
+
+	ierr = PetscFree(mv->cellnum);    CHKERRQ(ierr);
+	ierr = PetscFree(mv->markind);    CHKERRQ(ierr);
+	ierr = PetscFree(mv->markstart);  CHKERRQ(ierr);
+
+	ierr = PetscFree(mv->xcoord);    CHKERRQ(ierr);
+	ierr = PetscFree(mv->ycoord);    CHKERRQ(ierr);
+	ierr = PetscFree(mv->zcoord);    CHKERRQ(ierr);
+
+	PetscFunctionReturn(0);
+}
+//---------------------------------------------------------------------------
+#undef __FUNCT__
+#define __FUNCT__ "AVDLoadPointsMV"
+PetscErrorCode AVDLoadPointsMV(AdvCtx *actx, MarkerVolume *mv, AVD *A, PetscInt ind)
+{
+	PetscInt    i, ii;
+	PetscFunctionBegin;
+
+	// load particles only within the Voronoi cell
+	for (i = 0; i < A->npoints; i++)
+	{
+		// get index
+		ii = mv->markind[mv->markstart[ind] + i];
+
+		// save marker
+		A->points[i] = actx->markers[ii];
+
+		//PetscPrintf(PETSC_COMM_SELF,"# Marker Control: points [%g,%g,%g]\n",actx->markers[ii].X[0], actx->markers[ii].X[1], actx->markers[ii].X[2]);
+
+		// save index
+		A->chain [i].gind  = ii;
+	}
+
+	PetscFunctionReturn(0);
+}
+//---------------------------------------------------------------------------
+#undef __FUNCT__
+#define __FUNCT__ "AVDInjectPointsMV"
+PetscErrorCode AVDInjectPointsMV(AdvCtx *actx, AVD *A)
+{
+	FDSTAG     *fs;
+	BCCtx      *bc;
+	PetscInt    i, ii, n, ind, I, J, K, cellID;
+	PetscInt    num_chain, hclaim;
+	PetscInt    npoints, new_nmark = 0;
+	PetscScalar xmin, xmax, ymin, ymax, zmin, zmax;
+	PetscScalar xaxis, yaxis, zaxis;
+	PetscScalar xp[3], xc[3], xh[3];
+	PetscInt    *area, *sind, axis;
+
+	PetscErrorCode ierr;
+	PetscFunctionBegin;
+
+	bc = actx->jr->bc;
+	fs = actx->fs;
+
+	npoints = A->npoints;
+	n  = (A->nx+2)*(A->ny+2)*(A->nz+2);
+
+	// allocate memory for sorting
+	ierr = makeIntArray(&area, NULL, npoints); CHKERRQ(ierr);
+	ierr = makeIntArray(&sind, NULL, npoints); CHKERRQ(ierr);
+
+	// compute dominant axis
+	for (i = 0; i < npoints; i++)
+	{
+		// initialize min and max with the origin of the particle
+		xmin = A->points[i].X[0];
+		xmax = A->points[i].X[0];
+		ymin = A->points[i].X[1];
+		ymax = A->points[i].X[1];
+		zmin = A->points[i].X[2];
+		zmax = A->points[i].X[2];
+
+		for (ii = 0; ii < n; ii++)
+		{
+			if (A->cell[ii].p == i)
+			{
+				if (A->cell[ii].x[0] < xmin) xmin = A->cell[ii].x[0];
+				if (A->cell[ii].x[0] > xmax) xmax = A->cell[ii].x[0];
+				if (A->cell[ii].x[1] < ymin) ymin = A->cell[ii].x[1];
+				if (A->cell[ii].x[1] > ymax) ymax = A->cell[ii].x[1];
+				if (A->cell[ii].x[2] < zmin) zmin = A->cell[ii].x[2];
+				if (A->cell[ii].x[2] > zmax) zmax = A->cell[ii].x[2];
+			}
+		}
+
+		// initialize dominant axis
+		A->chain[i].axis = -1;
+
+		// dominant axis
+		xaxis = xmax-xmin;
+		yaxis = ymax-ymin;
+		zaxis = zmax-zmin;
+
+		if ((xaxis > yaxis) && (xaxis > zaxis)) { A->chain[i].xh[0] = (xmax+xmin)*0.5; A->chain[i].axis = 0; }
+		if ((yaxis > xaxis) && (yaxis > zaxis)) { A->chain[i].xh[1] = (ymax+ymin)*0.5; A->chain[i].axis = 1; }
+		if ((zaxis > xaxis) && (zaxis > yaxis)) { A->chain[i].xh[2] = (zmax+zmin)*0.5; A->chain[i].axis = 2; }
+	}
+
+	// create colour - which cells to consider for the half-centroid
+	for (i = 0; i < npoints; i++)
+	{
+		// half axis
+		xh[0] = A->chain[i].xh[0];
+		xh[1] = A->chain[i].xh[1];
+		xh[2] = A->chain[i].xh[2];
+
+		// point coordinate
+		xp[0] = A->points[i].X[0];
+		xp[1] = A->points[i].X[1];
+		xp[2] = A->points[i].X[2];
+
+		axis = A->chain[i].axis;
+
+		for (ii = 0; ii < n; ii++)
+		{
+			if (A->cell[ii].p == i)
+			{
+				// cell coordinate
+				xc[0] = A->cell[ii].x[0];
+				xc[1] = A->cell[ii].x[1];
+				xc[2] = A->cell[ii].x[2];
+
+				// mark coloring
+				if (axis==-1) A->cell[ii].col = 1;
+				else
+				{
+					if      ((xh[axis] <= xp[axis]) && (xc[axis] <= xh[axis])) A->cell[ii].col = 1;
+					else if ((xh[axis] >= xp[axis]) && (xc[axis] >= xh[axis])) A->cell[ii].col = 1;
+				}
+			}
+		}
+	}
+
+	// calculate half-centroid
+	for (i = 0; i < npoints; i++)
+	{
+		hclaim = 0;
+		for (ii = 0; ii < n; ii++)
+		{
+			if (A->cell[ii].p == i)
+			{
+				// total claimed
+				A->chain[i].tclaimed++;
+
+				if (A->cell[ii].col == 1)
+				{
+					hclaim++;
+					A->chain[i].xc[0] += A->cell[ii].x[0];
+					A->chain[i].xc[1] += A->cell[ii].x[1];
+					A->chain[i].xc[2] += A->cell[ii].x[2];
+				}
+			}
+		}
+
+		// centroid coordinates
+		A->chain[i].xc[0] = A->chain[i].xc[0]/(PetscScalar)hclaim;
+		A->chain[i].xc[1] = A->chain[i].xc[1]/(PetscScalar)hclaim;
+		A->chain[i].xc[2] = A->chain[i].xc[2]/(PetscScalar)hclaim;
+
+		// initialize variables for sorting
+		sind[i] = i;
+		area[i] = A->chain[i].tclaimed;
+	}
+
+	// sort in ascending order
+	ierr = PetscSortIntWithArray(npoints,area,sind); CHKERRQ(ierr);
+
+	// do not insert more markers than available voronoi domains
+	new_nmark = A->mmin - npoints;
+	if (npoints < new_nmark) new_nmark = npoints;
+
+	ind = npoints - 1;
+	for (i = 0; i < new_nmark; i++)
+	{
+		num_chain = sind[ind];
+
+		// inject same properties as parent marker except for position
+		actx->recvbuf[actx->cinj+i]      = A->points[num_chain];
+		actx->recvbuf[actx->cinj+i].X[0] = A->chain [num_chain].xc[0];
+		actx->recvbuf[actx->cinj+i].X[1] = A->chain [num_chain].xc[1];
+		actx->recvbuf[actx->cinj+i].X[2] = A->chain [num_chain].xc[2];
+
+		// print info
+		//PetscPrintf(PETSC_COMM_SELF,"# Marker Control [%lld]: injected [%g,%g,%g]\n",(LLD)actx->iproc, A->chain [num_chain].xc[0], A->chain [num_chain].xc[1], A->chain [num_chain].xc[2]);
+
+		// --- this is not ideal with multiple control volumes (i.e. use mv for BCOverridePhase) ---
+		// find I, J, K indices by bisection algorithm
+		I = FindPointInCell(fs->dsx.ncoor, 0, fs->dsx.ncels, actx->recvbuf[actx->cinj+i].X[0]);
+		J = FindPointInCell(fs->dsy.ncoor, 0, fs->dsy.ncels, actx->recvbuf[actx->cinj+i].X[1]);
+		K = FindPointInCell(fs->dsz.ncoor, 0, fs->dsz.ncels, actx->recvbuf[actx->cinj+i].X[2]);
+
+		// compute and store consecutive index
+		GET_CELL_ID(cellID, I, J, K, fs->dsx.ncels, fs->dsy.ncels);
+
+		// override marker phase (if necessary) - need to calculate cellID
+		ierr = BCOverridePhase(bc, cellID, actx->recvbuf + actx->cinj + i); CHKERRQ(ierr);
+		// -----------------------------------------------------------------------------------------
+
+		ind--;
+	}
+	// update total counter
+	actx->cinj +=new_nmark;
+
+	// free memory
+	ierr = PetscFree(area); CHKERRQ(ierr);
+	ierr = PetscFree(sind); CHKERRQ(ierr);
+
+	PetscFunctionReturn(0);
+}
+//---------------------------------------------------------------------------
+#undef __FUNCT__
+#define __FUNCT__ "AVDDeletePointsMV"
+PetscErrorCode AVDDeletePointsMV(AdvCtx *actx, AVD *A)
+{
+	PetscInt    i, ind;
+	PetscInt    num_chain;
+	PetscInt    npoints, new_nmark = 0;
+	PetscInt    *area, *sind;
+
+	PetscErrorCode ierr;
+	PetscFunctionBegin;
+
+	npoints = A->npoints;
+	new_nmark = npoints - A->mmax;
+
+	// allocate memory for sorting
+	ierr = makeIntArray(&area, NULL, npoints); CHKERRQ(ierr);
+	ierr = makeIntArray(&sind, NULL, npoints); CHKERRQ(ierr);
+
+	// initialize variables for sorting
+	for (i = 0; i < npoints; i++)
+	{
+		sind[i] = i;
+		area[i] = A->chain[i].tclaimed;
+	}
+
+	// sort in ascending order
+	ierr = PetscSortIntWithArray(npoints,area,sind); CHKERRQ(ierr);
+
+		ind = 0;
+		for (i = 0; i < new_nmark; i++)
+		{
+			num_chain = sind[ind];
+			actx->idel[actx->cdel+i] = A->chain[num_chain].gind;
+			ind++;
+
+			// print info
+			PetscPrintf(PETSC_COMM_SELF,"# Marker Control [%lld]: deleted [%g,%g,%g]\n",(LLD)actx->iproc, A->chain [num_chain].xc[0], A->chain [num_chain].xc[1], A->chain [num_chain].xc[2]);
+		}
+		// update total counter
+		actx->cdel +=new_nmark;
+
+	// free memory
+	ierr = PetscFree(area); CHKERRQ(ierr);
+	ierr = PetscFree(sind); CHKERRQ(ierr);
+
+	PetscFunctionReturn(0);
+}
+//---------------------------------------------------------------------------
+#undef __FUNCT__
+#define __FUNCT__ "AVDAlgorithmMV"
+PetscErrorCode AVDAlgorithmMV(AdvCtx *actx, MarkerVolume *mv, PetscInt npoints, PetscScalar xs[3], PetscScalar xe[3], PetscInt ind, PetscInt nmin)
+{
+
+	AVD          A;
+	PetscInt     i,claimed;
+
+	PetscErrorCode ierr;
+	PetscFunctionBegin;
+
+	//PetscPrintf(PETSC_COMM_SELF,"# Marker Control [%lld]: n = %lld nmin = %lld cell = %lld\n",(LLD)actx->iproc, (LLD)npoints, (LLD)nmin, (LLD)ind);
+
+	// initialize some parameters
+	A.nx = actx->avdx;
+	A.ny = actx->avdy;
+	A.nz = actx->avdz;
+
+	A.mmin = nmin;
+	A.mmax = actx->nmax;
+
+	A.npoints = npoints;
+
+	A.xs[0] = xs[0];
+	A.xs[1] = xs[1];
+	A.xs[2] = xs[2];
+
+	A.xe[0] = xe[0];
+	A.xe[1] = xe[1];
+	A.xe[2] = xe[2];
+
+	A.dx = (xe[0]-xs[0])/(PetscScalar)A.nx;
+	A.dy = (xe[1]-xs[1])/(PetscScalar)A.ny;
+	A.dz = (xe[2]-xs[2])/(PetscScalar)A.nz;
+
+	// create AVD structure
+	ierr = AVDCreate(&A); CHKERRQ(ierr);
+
+	// load particles
+	ierr = AVDLoadPointsMV(actx,mv,&A,ind); CHKERRQ(ierr);
+
+	// initialize AVD cells
+	ierr = AVDCellInit(&A); CHKERRQ(ierr);
+
+	// do AVD algorithm
+	claimed = 1;
+	while (claimed!= 0)
+	{
+		claimed = 0;
+		for (i = 0; i < npoints; i++)
+		{
+			ierr = AVDClaimCells(&A,i); CHKERRQ(ierr);
+			claimed += A.chain[i].nclaimed;
+			ierr = AVDUpdateChain(&A,i); CHKERRQ(ierr);
+		}
+	}
+
+	// inject markers
+	if (A.npoints < A.mmin) { ierr = AVDInjectPointsMV(actx, &A); CHKERRQ(ierr); }
+	// delete markers
+	if (A.npoints > A.mmax) { ierr = AVDDeletePointsMV(actx, &A); CHKERRQ(ierr); }
+
+	// destroy AVD structure
+	ierr = AVDDestroy(&A); CHKERRQ(ierr);
+
+	PetscFunctionReturn(0);
+}
+//---------------------------------------------------------------------------
+
