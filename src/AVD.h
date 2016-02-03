@@ -123,12 +123,12 @@ PetscErrorCode AVDClaimCells (AVD *A, const PetscInt ip);
 PetscErrorCode AVDUpdateChain(AVD *A, const PetscInt ip);
 PetscErrorCode AVDReAlloc    (AVDChain *chain,PetscInt buffer);
 
-// routines for marker control
+// routines for old marker control
 PetscErrorCode AVDLoadPoints            (AdvCtx *actx, AVD *A, PetscInt ind);
 PetscErrorCode AVDInjectDeletePoints    (AdvCtx *actx, AVD *A, PetscInt cellID);
 PetscErrorCode AVDExecuteMarkerInjection(AdvCtx *actx, PetscInt npoints, PetscScalar xs[3], PetscScalar xe[3], PetscInt ind);
 
-// new marker control
+// new marker control (for every control volume)
 PetscErrorCode AVDMarkerControl  (AdvCtx *actx);
 PetscErrorCode AVDMarkerControlMV(AdvCtx *actx, VolumeCase vtype);
 PetscErrorCode AVDCheckCellsMV   (AdvCtx *actx, MarkerVolume *mv, PetscInt dir);

@@ -2510,8 +2510,6 @@ PetscErrorCode ADVelInterpSTAGP(AdvVelCtx *vi)
 		vi->interp[jj].v[0] = A*v[0] + B*vp[0];
 		vi->interp[jj].v[1] = A*v[1] + B*vp[1];
 		vi->interp[jj].v[2] = A*v[2] + B*vp[2];
-
-		//if (vi->interp[jj].v[0]) PetscPrintf(PETSC_COMM_WORLD,"# Vx = %g \n",vi->interp[jj].v[0]);
 	}
 
 	// restore access

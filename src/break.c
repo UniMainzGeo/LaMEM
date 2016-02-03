@@ -146,6 +146,7 @@ PetscErrorCode BreakCreate(UserCtx *user, AdvCtx *actx, FreeSurf *surf, PVOut *p
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
 
+	// activate to save multiple breakpoints steps
 	PetscBool flag = PETSC_FALSE;
 	PetscOptionsGetBool(PETSC_NULL, "-secure_breakpoints", &flag, PETSC_NULL);
 
@@ -177,9 +178,11 @@ PetscErrorCode BreakCreate(UserCtx *user, AdvCtx *actx, FreeSurf *surf, PVOut *p
 		// copy previous breakpoints
 		if(ISRankZero(PETSC_COMM_WORLD))
 		{
+			// ***WARNING***
+			// this should be replaced with a general function to delete a non-empty directory
+			// LaMEM.h needs to #include <dirent.h> which allows using functions to manipulate directories (opendir, readdir, closedir)
+
 			// delete contents of bprev/
-			// WARNING: this could be replaced with a general function to delete a non-empty directory
-			// LaMEM.h should #include <dirent.h> which allows using functions to manipulate directories (open, read, close)
 			PetscInt i;
 			char *fname;
 
