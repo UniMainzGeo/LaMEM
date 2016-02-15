@@ -626,7 +626,7 @@ PetscErrorCode AVDInjectDeletePoints(AdvCtx *actx, AVD *A, PetscInt cellID)
 			actx->recvbuf[actx->cinj+i].X[1] = A->chain [num_chain].xc[1];
 			actx->recvbuf[actx->cinj+i].X[2] = A->chain [num_chain].xc[2];
 
-			PetscPrintf(PETSC_COMM_SELF,"# Marker Control [%lld]: injected [%g,%g,%g]\n",(LLD)actx->iproc, A->chain [num_chain].xc[0], A->chain [num_chain].xc[1], A->chain [num_chain].xc[2]);
+			//PetscPrintf(PETSC_COMM_SELF,"# Marker Control [%lld]: injected [%g,%g,%g]\n",(LLD)actx->iproc, A->chain [num_chain].xc[0], A->chain [num_chain].xc[1], A->chain [num_chain].xc[2]);
 
 			// override marker phase (if necessary)
 			ierr = BCOverridePhase(bc, cellID, actx->recvbuf + actx->cinj + i); CHKERRQ(ierr);

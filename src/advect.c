@@ -1101,7 +1101,7 @@ PetscErrorCode ADVMarkControl(AdvCtx *actx)
 
 	// print info
 	ierr = PetscTime(&t1); CHKERRQ(ierr);
-	PetscPrintf(PETSC_COMM_SELF,"# Marker Control [%lld]: (AVD Cell) injected %lld markers and deleted %lld markers in %1.4e s\n",(LLD)actx->iproc, (LLD)ninj, (LLD)ndel, t1-t0);
+	PetscPrintf(PETSC_COMM_WORLD,"# Marker Control [%lld]: (AVD Cell) injected %lld markers and deleted %lld markers in %1.4e s\n",(LLD)actx->iproc, (LLD)ninj, (LLD)ndel, t1-t0);
 
 	// clear
 	ierr = PetscFree(actx->recvbuf); CHKERRQ(ierr);
@@ -1376,7 +1376,7 @@ PetscErrorCode ADVCheckCorners(AdvCtx *actx)
 
 	// print info
 	ierr = PetscTime(&t1); CHKERRQ(ierr);
-	PetscPrintf(PETSC_COMM_SELF,"# Marker Control [%lld]: (Corners ) injected %lld markers in %1.4e s \n",(LLD)actx->iproc, (LLD)ninj, t1-t0);
+	PetscPrintf(PETSC_COMM_WORLD,"# Marker Control [%lld]: (Corners ) injected %lld markers in %1.4e s \n",(LLD)actx->iproc, (LLD)ninj, t1-t0);
 
 	// clear
 	ierr = PetscFree(numcorner);     CHKERRQ(ierr);
