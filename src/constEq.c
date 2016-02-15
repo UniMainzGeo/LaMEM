@@ -196,137 +196,6 @@ PetscErrorCode GetEffVisc(
 	MatParLim   *lim,
 	PetscScalar *eta_total,
 	PetscScalar *eta_creep,
-	PetscScalar *DIIpl)
-{
-	// stabilization parameters
-	PetscScalar cf_eta_min = 10.0;
-	PetscScalar eta_ve, DIIve, H;
-	PetscScalar inv_eta_els, inv_eta_dif, inv_eta_dis, inv_eta_prl, inv_eta_creep;
-
-	PetscFunctionBegin;
-
-	//==============
-	// INITIAL GUESS
-	//==============
-
-	// zero out plastic strain rate
-	(*DIIpl) = 0.0;
-
-	// set reference viscosity as initial guess
-	if(lim->eta_ref && lim->initGuessFlg == PETSC_TRUE)
-	{
-		(*eta_total) = lim->eta_ref;
-		(*eta_creep) = lim->eta_ref;
-
-		PetscFunctionReturn(0);
-	}
-
-	//=====================
-	// ISOLATED VISCOSITIES
-	//=====================
-
-	inv_eta_els = 0.0;
-	inv_eta_dif = 0.0;
-	inv_eta_dis = 0.0;
-	inv_eta_prl = 0.0;
-
-	// elasticity
-	if(ctx->A_els) inv_eta_els = 2.0*ctx->A_els;
-	// diffusion
-	if(ctx->A_dif) inv_eta_dif = 2.0*ctx->A_dif;
-	// dislocation
-	if(ctx->A_dis) inv_eta_dis = 2.0*pow(ctx->A_dis, 1.0/ctx->N_dis)*pow(ctx->DII, 1.0 - 1.0/ctx->N_dis);
-	// Peierls
-	if(ctx->A_prl) inv_eta_prl = 2.0*pow(ctx->A_prl, 1.0/ctx->N_prl)*pow(ctx->DII, 1.0 - 1.0/ctx->N_prl);
-
-	// error handling
-	if(PetscIsInfOrNanScalar(inv_eta_dif)) inv_eta_dif = 0.0;
-	if(PetscIsInfOrNanScalar(inv_eta_dis)) inv_eta_dis = 0.0;
-	if(PetscIsInfOrNanScalar(inv_eta_prl)) inv_eta_prl = 0.0;
-
-	//================
-	// NONLINEAR CREEP
-	//================
-
-	// get creep viscosity (old and good quasi-harmonic mean)
-	inv_eta_creep = inv_eta_dif + inv_eta_dis + inv_eta_prl;
-
-	// enforce limits
-	if(inv_eta_creep < 1.0/lim->eta_max) inv_eta_creep = 1.0/lim->eta_max;
-	if(inv_eta_creep > 1.0/lim->eta_min) inv_eta_creep = 1.0/lim->eta_min;
-
-	// store creep viscosity for output
-	(*eta_creep) = 1.0/inv_eta_creep;
-
-	//===========
-	// ELASTICITY
-	//===========
-
-	// compute visco-elastic viscosity
-	eta_ve = 1.0/(inv_eta_els + inv_eta_creep);
-
-	// visco-elastic prediction
-	(*eta_total) = eta_ve;
-
-	//===========
-	// PLASTICITY
-	//===========
-
-	if(ctx->taupl && lim->initGuessFlg != PETSC_TRUE)
-	{
-		// compute visco-elastic strain rate
-		DIIve = ctx->taupl/(2.0*eta_ve);
-
-		if(lim->quasiHarmAvg == PETSC_TRUE)
-		{
-			//====================================
-			// regularized rate-dependent approach
-			//====================================
-
-			// check for nonzero plastic strain rate
-			if(DIIve < ctx->DII)
-			{
-				// store plastic strain rate & viscosity
-				H            = eta_ve/cf_eta_min;
-				(*eta_total) = 1.0/(1.0/eta_ve + 1.0/H) + (ctx->taupl/(2.0*ctx->DII))/(1.0 + H/eta_ve);
-				(*DIIpl)     = ctx->DII*(1.0 - (*eta_total)/eta_ve);
-			}
-		}
-		else
-		{
-			//====================================
-			// classical rate-independent approach
-			//====================================
-
-			// check for nonzero plastic strain rate
-			if(DIIve < ctx->DII)
-			{
-
-				// store plastic strain rate & viscosity
-				(*eta_total)  = ctx->taupl/(2.0*ctx->DII);
-				(*DIIpl)      = ctx->DII - DIIve;
-
-				// lower viscosity bound
-				if((*eta_total) < lim->eta_min)
-				{
-					(*eta_total) = lim->eta_min;
-					(*DIIpl)     = ctx->DII*(1.0 - lim->eta_min/eta_ve);
-				}
-
-			}
-		}
-	}
-
-	PetscFunctionReturn(0);
-}
-//---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "GetEffViscJac"
-PetscErrorCode GetEffViscJac(
-	ConstEqCtx  *ctx,
-	MatParLim   *lim,
-	PetscScalar *eta_total,
-	PetscScalar *eta_creep,
 	PetscScalar *DIIpl,
 	PetscScalar *dEta,
 	PetscScalar *fr)
@@ -413,10 +282,35 @@ PetscErrorCode GetEffViscJac(
 	// PLASTICITY
 	//===========
 
+/*
+	if(lim->quasiHarmAvg == PETSC_TRUE)
+	{
+		//====================================
+		// regularized rate-dependent approach
+		//====================================
+
+		// check for nonzero plastic strain rate
+		if(DIIve < ctx->DII)
+		{
+			// store plastic strain rate & viscosity
+			H            = eta_ve/cf_eta_min;
+			(*eta_total) = 1.0/(1.0/eta_ve + 1.0/H) + (ctx->taupl/(2.0*ctx->DII))/(1.0 + H/eta_ve);
+			(*DIIpl)     = ctx->DII*(1.0 - (*eta_total)/eta_ve);
+		}
+*/
+
 	if(ctx->taupl && lim->initGuessFlg != PETSC_TRUE)
 	{
-		// compute plastic viscosity
-		eta_pl = ctx->taupl/(2.0*ctx->DII);
+		if(lim->descent == PETSC_TRUE)
+		{
+			// rate-dependent stabilization
+			eta_pl = (ctx->taupl/2.0)*pow(ctx->DII, 1/lim->n - 1.0);
+		}
+		else
+		{
+			// compute plastic viscosity
+			eta_pl = ctx->taupl/(2.0*ctx->DII);
+		}
 
 		// check for plastic yielding
 		if(eta_pl < eta_ve)
@@ -424,7 +318,7 @@ PetscErrorCode GetEffViscJac(
 			// store plastic strain rate, viscosity, derivative & effective friction
 			(*eta_total) =  eta_pl;
 			(*DIIpl)     =  ctx->DII*(1.0 - eta_pl/eta_ve);
-			(*dEta)      = -eta_pl/2.0;
+			(*dEta)      = -eta_pl;
 			(*fr)        =  ctx->fr;
 		}
 	}
@@ -519,14 +413,7 @@ PetscErrorCode DevConstEq(
 			ierr = ConstEqCtxSetup(&ctx, mat, lim, DII, APS, dt, p, T); CHKERRQ(ierr);
 
 			// solve effective viscosity & plastic strain rate
-			if(lim->jac_mat_free)
-			{
-				ierr = GetEffViscJac(&ctx, lim, &eta_total, &eta_creep_phase, &DIIpl, &dEta, &fr); CHKERRQ(ierr);
-			}
-			else
-			{
-				ierr = GetEffVisc(&ctx, lim, &eta_total, &eta_creep_phase, &DIIpl); CHKERRQ(ierr);
-			}
+			ierr = GetEffVisc(&ctx, lim, &eta_total, &eta_creep_phase, &DIIpl, &dEta, &fr); CHKERRQ(ierr);
 
 			// average parameters
 			svDev->eta   += phRat[i]*eta_total;
@@ -1396,418 +1283,4 @@ if (fetestexcept(FE_INVALID
 }
 #endif
 */
-//---------------------------------------------------------------------------
-/*
-// ELASTIC VISCOSITY COMPUTATION WITH RESCALING
-	PetscInt    i;
-	PetscScalar sum = 0.0;
 
-	// initialize inverse deviatoric elastic viscosity
-	svDev->I2Gdt = 0.0;
-
-	// scan all phases
-	for(i = 0; i < numPhases; i++)
-	{	// average elastic materials only
-		if(phases[i].G)
-		{	svDev->I2Gdt += 0.5*svDev->phRat[i]/phases[i].G/dt;
-			sum += svDev->phRat[i];
-		}
-	}
-
-	// re-scale for purely inelastic materials
-	if(sum) svDev->I2Gdt /= sum;
-*/
-//---------------------------------------------------------------------------
-/*
-// THERMAL CONSTITUTIVE EQUATIONS EXAMPLE
-void ConstEq::heat(
-			  Material  & mat,   // material properties
-              double      T,     // updated temperature   (element average)
-              double      Tn,    // converged temperature (element average)
-              double    * grad,  // temperature gradient  (element average)
-              double      step,  // time step
-              double    * q,     // heat flux vector
-              double    & Ud)    // approximation for internal energy rate
-{
-	// compute approximation for internal energy rate
-	Ud = mat.Cp*(T - Tn)/step;
-	// compute heat flux vector
-	q[0] = - mat.k*grad[0];
-	q[1] = - mat.k*grad[1];
-	q[2] = - mat.k*grad[2];
-}
-//---------------------------------------------------------------------------
-void ConstEq::heat(Material  & mat,   // material properties
-              double    * grad,  // temperature gradient  (element average)
-              double    * q)     // heat flux vector
-{
-	// compute heat flux vector
-	q[0] = - mat.k*grad[0];
-	q[1] = - mat.k*grad[1];
-	q[2] = - mat.k*grad[2];
-}
-*/
-//---------------------------------------------------------------------------
-/*
-{
-	// ACHTUNG! THIS WILL ONLY WORK FOR:
-	//  * LINEAR VISCO-ELASTO-PLASTIC MATERIAL
-	//  * POWER-LAW MATERIAL
-
-	// stabilization parameters
-	PetscScalar cf_eta_min = 10.0;
-
-	PetscScalar eta_ve, DIIve, H;
-	PetscScalar inv_eta_els, inv_eta_dif, inv_eta_dis;
-
-	PetscFunctionBegin;
-
-	// zero out plastic strain rate
-	(*DIIpl) = 0.0;
-
-	// set reference viscosity as initial guess
-	if(lim->eta_ref && lim->initGuessFlg == PETSC_TRUE)
-	{
-		(*eta) = lim->eta_ref;
-
-		PetscFunctionReturn(0);
-	}
-
-	if(ctx->A_dis)
-	{
-		// compute power-law viscosity (use reference strain-rate as initial guess)
-		if(lim->initGuessFlg == PETSC_TRUE)
-		{
-			inv_eta_dis = 2.0*pow(ctx->A_dis, 1.0/ctx->N_dis)*pow(lim->DII_ref, 1.0 - 1.0/ctx->N_dis);
-		}
-		else
-		{
-			inv_eta_dis = 2.0*pow(ctx->A_dis, 1.0/ctx->N_dis)*pow(ctx->DII,     1.0 - 1.0/ctx->N_dis);
-		}
-
-		(*eta) = 1.0/inv_eta_dis;
-
-	}
-	else
-	{
-		// elasticity
-		inv_eta_els = 2.0*ctx->A_els;
-
-		// linear viscous creep
-		inv_eta_dif = 2.0*ctx->A_dif;
-
-		// compute visco-elastic viscosity
-		eta_ve = 1.0/(inv_eta_els + inv_eta_dif);
-
-		// visco-elastic prediction
-		(*eta) = eta_ve;
-
-		//===========
-		// PLASTICITY
-		//===========
-
-		if(ctx->taupl && lim->initGuessFlg != PETSC_TRUE)
-  		{
-			// compute visco-elastic strain rate
-			DIIve = ctx->taupl/(2.0*eta_ve);
-
-			if(lim->quasiHarmAvg == PETSC_TRUE)
-			{
-				//====================================
-				// regularized rate-dependent approach
-				//====================================
-
-				// check for nonzero plastic strain rate
-				if(DIIve < ctx->DII)
-				{
-					// store plastic strain rate & viscosity
-					H        = eta_ve/cf_eta_min;
-					(*eta)   = 1.0/(1.0/eta_ve + 1.0/H) + (ctx->taupl/(2.0*ctx->DII))/(1.0 + H/eta_ve);
-					(*DIIpl) = ctx->DII*(1.0 - (*eta)/eta_ve);
-				}
-			}
-			else
-			{
-				//====================================
-				// classical rate-independent approach
-				//====================================
-
-				// check for nonzero plastic strain rate
-				if(DIIve < ctx->DII)
-				{
-					// store plastic strain rate & viscosity
-					(*eta)   = ctx->taupl/(2.0*ctx->DII);
-					(*DIIpl) = ctx->DII - DIIve;
-				}
-			}
-		}
-	}
-
-	// enforce constraints
-	if((*eta) < lim->eta_min) (*eta) = lim->eta_min;
-	if((*eta) > lim->eta_max) (*eta) = lim->eta_max;
-
-	PetscFunctionReturn(0);
-
-	//=============================================
-
-
-	// "isolated" viscosity for each creep mechanism can be computed by
-	// assuming that single creep mechanism consumes entire strain rate.
-
-	// Observations:
-	// [A] viscosity is LARGER (or equal) than quasi-harmonic mean of isolated viscosities
-	// [B] viscosity is SMALLER (or equal) than minimum isolated viscosity
-	// [C] residual is POSITIVE for viscosities SMALLER then solution, and vice-versa
-
-	PetscInt    IFLAG;
-	PetscScalar B, C, R, RE, AE;
-	PetscScalar eta_min, eta_max, inv_eta_min, inv_eta_max;
-	PetscScalar inv_eta_els, inv_eta_dif, inv_eta_dis, inv_eta_prl;
-	PetscScalar inv_eta_top, eta_top, inv_eta_bot, eta_bot, etapl, res;
-
-	PetscErrorCode ierr;
-	PetscFunctionBegin;
-
-	// initialize viscosity limits
-	eta_min = lim->eta_min;
-	eta_max = lim->eta_max;
-
-	// initialize plastic strain-rate
-	(*DIIpl) = 0.0;
-
-	// check for plasticity
-	if(ctx->taupl)
-	{
-		// compute plastic viscosity
-		etapl = ctx->taupl/(2.0*ctx->DII);
-
-		// compute residual (which, if positive, has a meaning of plastic strain-rate)
-		res = GetConsEqRes(etapl, ctx);
-
-		// check for positive plastic strain-rate
-		if(res > 0.0)
-		{
-			(*eta) = etapl; (*DIIpl) = res; PetscFunctionReturn(0);
-		}
-		else
-		{
-			// correct viscosity limits (cannot be larger than plastic viscosity)
-			if(eta_min > etapl)
-			{
-				// minimum is larger than plastic viscosity (return minimum)
-				(*eta) = eta_min; PetscFunctionReturn(0);
-			}
-			if(eta_max > etapl)
-			{
-				// maximum is larger than plastic viscosity (correcting)
-				eta_max = etapl;
-			}
-		}
-	}
-
-	// compute inverses of viscosity limits
-	inv_eta_min = 1.0/eta_min;
-	inv_eta_max = 1.0/eta_max;
-
-	// initialize inverses of isolated viscosities
-	inv_eta_els = 0.0;
-	inv_eta_dif = 0.0;
-	inv_eta_dis = 0.0;
-	inv_eta_prl = 0.0;
-
-	// compute inverses of isolated viscosities
-	// NOTE: these are well-defined functions, safe to evaluate
-
-	// elasticity
-	if(ctx->A_els) inv_eta_els = 2.0*ctx->A_els;
-	// diffusion
-	if(ctx->A_dif) inv_eta_dif = 2.0*ctx->A_dif;
-	// dislocation
-	if(ctx->A_dis) inv_eta_dis = 2.0*pow(ctx->A_dis, 1.0/ctx->N_dis)*pow(ctx->DII, 1.0 - 1.0/ctx->N_dis);
-	// Peierls
-	if(ctx->A_prl) inv_eta_prl = 2.0*pow(ctx->A_prl, 1.0/ctx->N_prl)*pow(ctx->DII, 1.0 - 1.0/ctx->N_prl);
-
-	//=================================
-	// bottom end of viscosity interval
-	//=================================
-
-	// find bottom viscosity estimation (quasi-harmonic mean viscosity)
-	// this is also a closed-form solution for simple cases
-
-	inv_eta_bot = inv_eta_els + inv_eta_dif + inv_eta_dis + inv_eta_prl;
-
-	// truncate bottom viscosity to maximum
-	if(inv_eta_bot < inv_eta_max)
-	{
-		// bottom limit is larger than maximum (no iterations due to [A])
-		(*eta) = eta_max; PetscFunctionReturn(0);
-	}
-
-	// truncate bottom viscosity to minimum
-	if(inv_eta_bot > inv_eta_min)
-	{
-		// bottom limit is smaller than minimum (correcting)
-		inv_eta_bot = inv_eta_min;
-	}
-
-	// initialize bottom end of solution interval
-	eta_bot = 1.0/inv_eta_bot;
-
-	// never iterate if closed-form solution is available
-	if(ctx->cfsol == PETSC_TRUE)
-	{
-		(*eta) = eta_bot; PetscFunctionReturn(0);
-	}
-
-	// check for truncation from the bottom
-	if(GetConsEqRes(eta_bot, ctx) < 0.0)
-	{
-		// no iterations due to [C]
-		(*eta) = eta_bot; PetscFunctionReturn(0);
-	}
-
-	//==============================
-	// top end of viscosity interval
-	//==============================
-
-	// initialize minimum isolated viscosity
-	inv_eta_top = 0.0;
-
-	// find top viscosity estimation (minimum isolated viscosity)
-	if(inv_eta_top < inv_eta_els) inv_eta_top = inv_eta_els;
-	if(inv_eta_top < inv_eta_dif) inv_eta_top = inv_eta_dif;
-	if(inv_eta_top < inv_eta_dis) inv_eta_top = inv_eta_dis;
-	if(inv_eta_top < inv_eta_prl) inv_eta_top = inv_eta_prl;
-
-	// truncate top viscosity to minimum
-	if(inv_eta_top > inv_eta_min)
-	{
-		// top limit is smaller than minimum (no iterations due to [B])
-		(*eta) = eta_min; PetscFunctionReturn(0);
-	}
-
-	// truncate top viscosity to maximum
-	if(inv_eta_top < inv_eta_max)
-	{
-		// top limit is larger than maximum (correcting)
-		inv_eta_top = inv_eta_max;
-	}
-
-	// initialize top end of solution interval
-	eta_top = 1.0/inv_eta_top;
-
-	// check for truncation from the top
-	if(GetConsEqRes(eta_top, ctx) > 0.0)
-	{
-		// no iterations due to [C]
-		(*eta) = eta_top; PetscFunctionReturn(0);
-	}
-
-	//====================
-	// I T E R A T I O N S
-	//====================
-
-	// set initial guess, interval & tolerances
-	B  = eta_bot;
-	C  = eta_top;
-	R  = 0.5*(eta_bot + eta_top); // bisection rule
-	RE = lim->eta_rtol;
-	AE = lim->eta_atol;
-
-	// solve constitutive equation in residual form
-	DFZERO(&GetConsEqRes, ctx, &B, &C, R, RE, AE, &IFLAG);
-
-	// check return code
-	if(IFLAG != 1)
-
-	// assign converged viscosity
-	(*eta) = B;
-
-	PetscFunctionReturn(0);
-}
-*/
-//---------------------------------------------------------------------------
-/*
-	ABANDONED PLASTICITY STABILIZATIONS
-	PetscScalar a          = (1.0 + sqrt(5.0))/2.0;
-	PetscScalar cf_eta_max = 1000.0;
-	PetscScalar cf_eta_min = 10.0;
-	PetscScalar k          = log(cf_eta_max - 1.0)/(a - 1.0);
-
-	// penalty function
-	H = (eta_ve/cf_eta_min)*(1.0 + exp(k*(a - ctx->DII/DIIve)));
-
-	// regularized viscosity
-	(*eta)   = 1.0/(1.0/eta_ve + 1.0/H) + (ctx->taupl/(2.0*ctx->DII))/(1.0 + H/eta_ve);
-
-	// plastic strain rate
-	if((*eta) > eta_ve) (*DIIpl) = 0.0;
-	else                (*DIIpl) = ctx->DII*(1.0 - (*eta)/eta_ve);
-
-	// plasticity regularization parameters (WARNING: add input file options!)
-	k = 7.0;
-	a = (1.0 + sqrt(5.0))/2.0;
-	k = 3.0;
-	a = 1.0;
-
-	// compute shifted approximate Heaviside function
-	H = 1.0/(1.0 + exp(k*(a - ctx->DII/DIIve)));
-	// compute regularized effective viscosity
-	(*eta) = 1.0/((1.0-H)/eta_ve + H/eta_pl);
-	(*eta) = 1.0/(1.0/eta_ve + 1.0/eta_pl);
-
- 	if(ctx->taupl && lim->initGuessFlg != PETSC_TRUE)
-  	{
-		// compute visco-elastic strain rate
-		DIIve = ctx->taupl/(2.0*eta_ve);
-
-		// check for nonzero plastic strain rate
-		if(DIIve < ctx->DII)
-		{
-			// store plastic strain rate
-			(*DIIpl) = ctx->DII - DIIve;
-
-			if(lim->quasiHarmAvg == PETSC_TRUE)
-			{
-				//====================================
-				// regularized rate-dependent approach
-				//====================================
-				(*eta) = (ctx->taupl + 2.0*lim->eta_plast*(*DIIpl))/(2.0*ctx->DII);
-			}
-			else
-			{
-				//====================================
-				// classical rate-independent approach
-				//====================================
-
-				(*eta) = ctx->taupl/(2.0*ctx->DII);
-			}
-		}
-	}
-*/
-//---------------------------------------------------------------------------
-/*
-Tensor2RS A, SR;
-Tensor2RN L, Lt, LLt, R, D;
-L.xx =  1.0;     L.xy =  2.0;     L.xz =  3.0;
-L.yx =  4.0;     L.yy =  5.0;     L.yz =  6.0;
-L.zx =  7.0;     L.zy =  8.0;     L.zz =  9.0;
-A.xx =  1.0000; A.xy = 0.5000; A.xz = 1.0/3.0;
-A.yy =  1.0000; A.yz = 2.0/3.0;
-A.zz = -2.0000;
-Tensor2RNView(&L, "A");
-Tensor2RNUnit(&R); Tensor2RNView(&R, "B = I");
-Tensor2RNCopy(&L, &R); Tensor2RNView(&R, "B = A");
-Tensor2RNDivide(&R, 2.0); Tensor2RNView(&R, "B = A/2");
-Tensor2RNTranspose(&L, &Lt); Tensor2RNView(&Lt, "B = A^t");
-Tensor2RNProduct(&L, &Lt, &LLt); Tensor2RNView(&LLt, "C = A*B");
-Tensor2RNSum3(&L, 1.0, &Lt, 1.0, &LLt, 1.0, &R); Tensor2RNView(&R, "D = A + B + C");
-Tensor2RSView(&A, "S");
-RotateStress(&L, &A, &SR); Tensor2RSView(&SR, "S' = A*S*A^t");
-Tensor2RNDeviator(&L, &D); Tensor2RNView(&D, "D = A - tr[A]/3*I");
-Tensor2RSDeviator(&L, &SR); Tensor2RSView(&SR, "D = (A + A^t)/2 - tr[A]/3*I");
-
-
-
-*/

@@ -212,13 +212,11 @@ typedef struct
 
 typedef struct
 {
-	// viscosity limits (and inverses)
+	// viscosity limits
 	PetscScalar eta_min;
 	PetscScalar eta_max;
 	// reference viscosity (initial guess)
 	PetscScalar eta_ref;
-	// plasticity regularization viscosity (initial guess)
-	PetscScalar eta_plast;
 	// reference temperature
 	PetscScalar TRef;
 	// universal gas constant
@@ -249,104 +247,13 @@ typedef struct
 	// matrix-free closed-form jacobian
 	PetscBool   jac_mat_free;
 
+	// ADAPTIVE DESCENT
+	PetscBool   descent;
+	PetscScalar nmin, nmax, n, beta;
+	PetscScalar ctol, dtol, res;
+	PetscInt    j, jmax;
+
 } MatParLim;
 
 //---------------------------------------------------------------------------
 #endif
-
-/*
-
-
-
-
-static inline void Tensor2RNClear(Tensor2RN *A)
-{
-	// set all components to a constant (A_ij = 0.0)
-	A->_11 = 0.0; A->_12 = 0.0; A->_13 = 0.0;
-	A->_21 = 0.0; A->_22 = 0.0; A->_23 = 0.0;
-	A->_31 = 0.0; A->_32 = 0.0; A->_33 = 0.0;
-}
-
-static inline void Tensor2RNUnit(Tensor2RN *A)
-{
-	// initialize Kronecker's delta (A_ij = delta_ij)
-	A->_11 = 1.0; A->_12 = 0.0; A->_13 = 0.0;
-	A->_21 = 0.0; A->_22 = 1.0; A->_23 = 0.0;
-	A->_31 = 0.0; A->_32 = 0.0; A->_33 = 1.0;
-}
-
-static inline void Tensor2RNCopy(Tensor2RN *A, Tensor2RN *B)
-{
-	// copy one tensor to another (A = B)
-	A->_11 = B->_11;  A->_12 = B->_12;  A->_13 = B->_13;
-	A->_21 = B->_21;  A->_22 = B->_22;  A->_23 = B->_23;
-	A->_31 = B->_31;  A->_32 = B->_32;  A->_33 = B->_33;
-}
-//---------------------------------------------------------------------------
-inline void Tensor2RNScale(Tensor2RN *A, PetscScalar k)
-{
-	// set all components with a constant (A_ij = A_ij*k)
-	A->_11 *= k; A->_12 *= k; A->_13 *= k;
-	A->_21 *= k; A->_22 *= k; A->_23 *= k;
-	A->_31 *= k; A->_32 *= k; A->_33 *= k;
-}
-
-//---------------------------------------------------------------------------
-static inline void Tensor2RNUpdate(Tensor2RN *A, Tensor2RN *B, PetscScalar kb)
-{
-	// copy scaled tensor to another (A = A + kb*B)
-	A->_11 += kb*B->_11;  A->_12 += kb*B->_12;  A->_13 += kb*B->_13;
-	A->_21 += kb*B->_21;  A->_22 += kb*B->_22;  A->_23 += kb*B->_23;
-	A->_31 += kb*B->_31;  A->_32 += kb*B->_32;  A->_33 += kb*B->_33;
-}
-//---------------------------------------------------------------------------
-static inline void Tensor2RNCombine(Tensor2RN *A, Tensor2RN *B, Tensor2RN *C, PetscScalar kb, PetscScalar kc)
-{
-	// form a linear combination of two tensors (A = kb*B + kc*C)
-	A->_11 = kb*B->_11 + kc*C->_11;  A->_12 = kb*B->_12 + kc*C->_12;  A->_13 = kb*B->_13 + kc*C->_13;
-	A->_21 = kb*B->_21 + kc*C->_21;  A->_22 = kb*B->_22 + kc*C->_22;  A->_23 = kb*B->_23 + kc*C->_23;
-	A->_31 = kb*B->_31 + kc*C->_31;  A->_32 = kb*B->_32 + kc*C->_32;  A->_33 = kb*B->_33 + kc*C->_33;
-}
-
-//---------------------------------------------------------------------------
-static inline void Tensor2RNCompGrad(Tensor2RN *A,
-	PetscScalar *ax, PetscScalar *ay, PetscScalar *az,
-	PetscScalar  dx, PetscScalar  dy, PetscScalar  dz)
-{
-	// Compute gradient of a vector field given by component vectors ax, ay, az.
-	// Each component vector is defined on a 6-point stencil with arrangement:
-	// points 0 - 1 are aligned along x axis
-	// points 2 - 3 are aligned along y axis
-	// points 4 - 5 are aligned along z axis
-	A->_11 = (ax[1] - ax[0])/dx;  A->_12 = (ax[3] - ax[2])/dy;  A->_13 = (ax[5] - ax[4])/dz;
-	A->_21 = (ay[1] - ay[0])/dx;  A->_22 = (ay[3] - ay[2])/dy;  A->_23 = (ay[5] - ay[4])/dz;
-	A->_31 = (az[1] - az[0])/dx;  A->_32 = (az[3] - az[2])/dy;  A->_33 = (az[5] - az[4])/dz;
-}
-//---------------------------------------------------------------------------
-static inline PetscScalar Tensor2RNDet(Tensor2RN *A)
-{
-	// compute determinant of a tensor
-	return A->_11*(A->_22*A->_33 - A->_23*A->_32)
-	+      A->_12*(A->_23*A->_31 - A->_21*A->_33)
-	+      A->_13*(A->_21*A->_32 - A->_22*A->_31);
-}
-
-static inline void Tensor2RSClear(Tensor2RS *A)
-{
-	// set all components to a constant (A_ij = 0.0)
-	A->_11 = 0.0;
-	A->_12 = 0.0; A->_22 = 0.0;
-	A->_13 = 0.0; A->_23 = 0.0; A->_33 = 0.0;
-}
-
-static inline void Tensor2RSUpdate(Tensor2RS *A, Tensor2RS *B, PetscScalar kb)
-{
-	// copy scaled tensor to another (A = A + kb*B)
-	A->_11 += kb*B->_11;
-	A->_12 += kb*B->_12;  A->_22 += kb*B->_22;
-	A->_13 += kb*B->_13;  A->_23 += kb*B->_23;  A->_33 += kb*B->_33;
-}
-
-
-*/
-

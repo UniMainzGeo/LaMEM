@@ -50,6 +50,15 @@
 
 //---------------------------------------------------------------------------
 
+typedef enum
+{
+	_APPLY_SPC_,
+	_SKIP_SPC_
+
+} SPCAppType;
+
+//---------------------------------------------------------------------------
+
 // FDSTAG Jacobian and residual evaluation context
 typedef struct
 {
@@ -165,7 +174,13 @@ PetscErrorCode JacResGetVorticity(JacRes *jr);
 PetscErrorCode JacResGetResidual(JacRes *jr);
 
 // copy solution from global to local vectors, enforce boundary constraints
-PetscErrorCode JacResCopySol(JacRes *jr, Vec x, PetscInt appSPC);
+PetscErrorCode JacResCopySol(JacRes *jr, Vec x, SPCAppType appSPC);
+
+// copy solution from global to local vectors, enforce boundary constraints
+PetscErrorCode JacResCopyVel(JacRes *jr, Vec x, SPCAppType appSPC);
+
+// copy solution from global to local vectors, enforce boundary constraints
+PetscErrorCode JacResCopyPres(JacRes *jr, Vec x, SPCAppType appSPC);
 
 // copy residuals from local to global vectors, enforce boundary constraints
 PetscErrorCode JacResCopyRes(JacRes *jr, Vec f);

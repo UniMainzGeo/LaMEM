@@ -45,6 +45,13 @@
 //---------------------------------------------------------------------------
 #ifndef __check_fdstag_h__
 #define __check_fdstag_h__
+
+//---------------------------------------------------------------------------
+
+PetscErrorCode JacTest(JacRes *nl, Vec diff);
+
+PetscErrorCode PicardTest(NLSol *nl, Vec diff);
+
 //---------------------------------------------------------------------------
 /*
 PetscErrorCode DoDarcyTests(NLCtx *nlctx, UserCtx *user);

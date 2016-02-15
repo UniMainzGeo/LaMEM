@@ -356,10 +356,7 @@ PetscInt OutMaskCountActive(OutMask *omask)
 	if(omask->moment_res)     cnt++; // momentum residual
 	if(omask->cont_res)       cnt++; // continuity residual
 	if(omask->energ_res)      cnt++; // energy residual
-	if(omask->DII_CEN)        cnt++; // effective strain rate invariant in center
-	if(omask->DII_XY)         cnt++; // effective strain rate invariant on xy-edge
-	if(omask->DII_XZ)         cnt++; // effective strain rate invariant on xz-edge
-	if(omask->DII_YZ)         cnt++; // effective strain rate invariant on yz-edge
+	if(omask->jac_test)       cnt++; // matrix-vector Jacobian test
 
 	return cnt;
 }
@@ -456,10 +453,7 @@ PetscErrorCode PVOutCreate(PVOut *pvout, JacRes *jr, const char *filename)
 	if(omask->moment_res)     OutVecCreate(&outvecs[cnt++], "moment_res",     scal->lbl_volumetric_force, &PVOutWriteMomentRes,    3);
 	if(omask->cont_res)       OutVecCreate(&outvecs[cnt++], "cont_res",       scal->lbl_strain_rate,      &PVOutWriteContRes,      1);
 	if(omask->energ_res)      OutVecCreate(&outvecs[cnt++], "energ_res",      scal->lbl_dissipation_rate, &PVOutWritEnergRes,      1);
-	if(omask->DII_CEN)        OutVecCreate(&outvecs[cnt++], "DII_CEN",        scal->lbl_strain_rate,      &PVOutWriteDII_CEN,      1);
-	if(omask->DII_XY)         OutVecCreate(&outvecs[cnt++], "DII_XY",         scal->lbl_strain_rate,      &PVOutWriteDII_XY,       1);
-	if(omask->DII_XZ)         OutVecCreate(&outvecs[cnt++], "DII_XZ",         scal->lbl_strain_rate,      &PVOutWriteDII_XZ,       1);
-	if(omask->DII_YZ)         OutVecCreate(&outvecs[cnt++], "DII_YZ",         scal->lbl_strain_rate,      &PVOutWriteDII_YZ,       1);
+	if(omask->jac_test)       OutVecCreate(&outvecs[cnt++], "jac_test",       scal->lbl_unit,             &PVOutWriteJacTest,      3);
 
 	PetscFunctionReturn(0);
 }
@@ -488,20 +482,21 @@ PetscErrorCode PVOutReadFromOptions(PVOut *pvout)
 	ierr = PetscOptionsGetInt(NULL, "-out_j2_dev_stress",  &omask->j2_dev_stress,  NULL); CHKERRQ(ierr);
 	ierr = PetscOptionsGetInt(NULL, "-out_strain_rate",    &omask->strain_rate,    NULL); CHKERRQ(ierr);
 	ierr = PetscOptionsGetInt(NULL, "-out_j2_strain_rate", &omask->j2_strain_rate, NULL); CHKERRQ(ierr);
-	ierr = PetscOptionsGetInt(NULL, "-out_vol_rate",       &omask->vol_rate,       NULL); CHKERRQ(ierr);
-	ierr = PetscOptionsGetInt(NULL, "-out_vorticity",      &omask->vorticity,      NULL); CHKERRQ(ierr);
-	ierr = PetscOptionsGetInt(NULL, "-out_ang_vel_mag",    &omask->ang_vel_mag,    NULL); CHKERRQ(ierr);
-	ierr = PetscOptionsGetInt(NULL, "-out_tot_strain",     &omask->tot_strain,     NULL); CHKERRQ(ierr);
+//	ierr = PetscOptionsGetInt(NULL, "-out_vol_rate",       &omask->vol_rate,       NULL); CHKERRQ(ierr);
+//	ierr = PetscOptionsGetInt(NULL, "-out_vorticity",      &omask->vorticity,      NULL); CHKERRQ(ierr);
+//	ierr = PetscOptionsGetInt(NULL, "-out_ang_vel_mag",    &omask->ang_vel_mag,    NULL); CHKERRQ(ierr);
+//	ierr = PetscOptionsGetInt(NULL, "-out_tot_strain",     &omask->tot_strain,     NULL); CHKERRQ(ierr);
 	ierr = PetscOptionsGetInt(NULL, "-out_shmax",          &omask->SHmax,          NULL); CHKERRQ(ierr);
 	ierr = PetscOptionsGetInt(NULL, "-out_ehmax",          &omask->EHmax,          NULL); CHKERRQ(ierr);
 	ierr = PetscOptionsGetInt(NULL, "-out_isa",            &omask->ISA,            NULL); CHKERRQ(ierr);
 	ierr = PetscOptionsGetInt(NULL, "-out_gol",            &omask->GOL,            NULL); CHKERRQ(ierr);
 	ierr = PetscOptionsGetInt(NULL, "-out_plast_strain",   &omask->plast_strain,   NULL); CHKERRQ(ierr);
-	ierr = PetscOptionsGetInt(NULL, "-out_plast_dissip",   &omask->plast_dissip,   NULL); CHKERRQ(ierr);
-	ierr = PetscOptionsGetInt(NULL, "-out_tot_displ",      &omask->tot_displ,      NULL); CHKERRQ(ierr);
+//	ierr = PetscOptionsGetInt(NULL, "-out_plast_dissip",   &omask->plast_dissip,   NULL); CHKERRQ(ierr);
+//	ierr = PetscOptionsGetInt(NULL, "-out_tot_displ",      &omask->tot_displ,      NULL); CHKERRQ(ierr);
 	ierr = PetscOptionsGetInt(NULL, "-out_moment_res",     &omask->moment_res,     NULL); CHKERRQ(ierr);
 	ierr = PetscOptionsGetInt(NULL, "-out_cont_res",       &omask->cont_res,       NULL); CHKERRQ(ierr);
-    ierr = PetscOptionsGetInt(NULL, "-out_energ_res",       &omask->energ_res,       NULL); CHKERRQ(ierr);
+    ierr = PetscOptionsGetInt(NULL, "-out_energ_res",      &omask->energ_res,      NULL); CHKERRQ(ierr);
+    ierr = PetscOptionsGetInt(NULL, "-out_jac_test",       &omask->jac_test,       NULL); CHKERRQ(ierr);
 
 	if(pvout->outpvd)
 	{

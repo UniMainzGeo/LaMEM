@@ -50,15 +50,256 @@
 #include "tssolve.h"
 #include "bc.h"
 #include "JacRes.h"
-#include "paraViewOutBin.h"
-#include "matrix.h"
+#include "matFree.h"
 #include "multigrid.h"
+#include "matrix.h"
 #include "lsolve.h"
 #include "nlsolve.h"
-#include "check_fdstag.h"
 #include "tools.h"
-#include "constEq.h"
+#include "check_fdstag.h"
+//---------------------------------------------------------------------------
+#undef __FUNCT__
+#define __FUNCT__ "JacTest"
+PetscErrorCode JacTest(JacRes *jr, Vec diff)
+{
+	Mat          MF, MFFD;
+	DOFIndex    *dof;
+	BCCtx       *bc;
+	Vec          z, mf, mffd;
+	PetscScalar  nrm, *sol;
+	PetscBool    set;
+	PetscInt     i, num, *list, pmf, pmffd;
 
+	PetscErrorCode ierr;
+	PetscFunctionBegin;
+
+	// access context
+	dof = &(jr->fs->dof);
+	bc  =  jr->bc;
+
+	// read and set debugging flags
+	pmf   = 0;
+	pmffd = 0;
+
+	ierr = PetscOptionsHasName(NULL, "-mf",   &set); CHKERRQ(ierr); if(set == PETSC_TRUE) pmf      = 1;
+	ierr = PetscOptionsHasName(NULL, "-mffd", &set); CHKERRQ(ierr); if(set == PETSC_TRUE) pmffd    = 1;
+
+	// create matrix-free Jacobian operator
+	ierr = MatCreateShell(PETSC_COMM_WORLD, dof->ln, dof->ln,
+		PETSC_DETERMINE, PETSC_DETERMINE, NULL, &MF); CHKERRQ(ierr);
+	ierr = MatSetUp(MF);                              CHKERRQ(ierr);
+
+	// create finite-difference Jacobian
+	ierr = MatCreateMFFD(PETSC_COMM_WORLD, dof->ln, dof->ln,
+		PETSC_DETERMINE, PETSC_DETERMINE, &MFFD); CHKERRQ(ierr);
+	ierr = MatSetUp(MFFD);                        CHKERRQ(ierr);
+
+	// setup vectors
+	ierr = VecDuplicate(jr->gres, &z);    CHKERRQ(ierr);
+	ierr = VecDuplicate(jr->gres, &mf);   CHKERRQ(ierr);
+	ierr = VecDuplicate(jr->gres, &mffd); CHKERRQ(ierr);
+
+	//===================================
+	// initialize vector to be multiplied
+	//===================================
+
+	ierr = VecCopy    (jr->gsol, z); CHKERRQ(ierr);
+	ierr = VecGetArray(z, &sol);     CHKERRQ(ierr);
+
+	// velocity
+	num   = bc->vNumSPC;
+	list  = bc->vSPCList;
+
+	for(i = 0; i < num; i++) sol[list[i]] = 0.0;
+
+	// pressure
+	num   = bc->pNumSPC;
+	list  = bc->pSPCList;
+
+	for(i = 0; i < num; i++) sol[list[i]] = 0.0;
+
+	ierr = VecRestoreArray(z, &sol); CHKERRQ(ierr);
+	ierr = VecNormalize   (z, NULL); CHKERRQ(ierr);
+
+	PetscPrintf(PETSC_COMM_WORLD,"=======================================================\n");
+
+	ierr = VecNorm(z, NORM_2, &nrm); CHKERRQ(ierr);
+
+	PetscPrintf(PETSC_COMM_WORLD, "Norm of the vector to be multiplied: %g\n", nrm);
+
+	//===================================
+	// MF Jacobian
+	//===================================
+
+	ierr = VecZeroEntries(mf);  CHKERRQ(ierr);
+
+	// analytical Jacobian
+	ierr = MatShellSetOperation(MF, MATOP_MULT, (void(*)(void))JacApplyJacobian); CHKERRQ(ierr);
+	ierr = MatShellSetContext(MF, (void*)jr);                                     CHKERRQ(ierr);
+
+	ierr = MatAssemblyBegin(MF, MAT_FINAL_ASSEMBLY); CHKERRQ(ierr);
+	ierr = MatAssemblyEnd  (MF, MAT_FINAL_ASSEMBLY); CHKERRQ(ierr);
+
+	ierr = MatMult(MF, z, mf); CHKERRQ(ierr);
+
+	ierr = VecNorm(mf, NORM_2, &nrm); CHKERRQ(ierr);
+
+	PetscPrintf(PETSC_COMM_WORLD, "Norm of the analytical Jacobian-vector product: %g\n", nrm);
+
+	//===================================
+	// MFFD Jacobian
+	//===================================
+
+	ierr = VecZeroEntries(mffd); CHKERRQ(ierr);
+
+	// ... matrix-free finite-difference (MMFD)
+	ierr = MatMFFDSetFunction(MFFD, FormResidualMFFD, (void*)jr); CHKERRQ(ierr);
+	ierr = MatMFFDSetBase(MFFD, jr->gsol, NULL);                  CHKERRQ(ierr);
+
+	ierr = MatAssemblyBegin(MFFD, MAT_FINAL_ASSEMBLY); CHKERRQ(ierr);
+	ierr = MatAssemblyEnd  (MFFD, MAT_FINAL_ASSEMBLY); CHKERRQ(ierr);
+
+	ierr = MatMult(MFFD, z, mffd); CHKERRQ(ierr);
+
+	ierr = VecNorm(mffd, NORM_2, &nrm); CHKERRQ(ierr);
+
+	PetscPrintf(PETSC_COMM_WORLD, "Norm of the finite difference Jacobian-vector product: %g\n", nrm);
+
+	//===================================
+	// difference
+	//===================================
+
+	ierr =  VecWAXPY(diff, -1.0, mf, mffd); CHKERRQ(ierr);
+
+	ierr = VecNorm(diff, NORM_2, &nrm); CHKERRQ(ierr);
+
+	PetscPrintf(PETSC_COMM_WORLD, "Norm of the difference vector: %g\n", nrm);
+
+	PetscPrintf(PETSC_COMM_WORLD,"=======================================================\n");
+
+	// ACHTUNG!!!
+	if(pmf)   { ierr = VecCopy(mf,   diff); CHKERRQ(ierr); }
+	if(pmffd) { ierr = VecCopy(mffd, diff); CHKERRQ(ierr); }
+
+	ierr = MatDestroy(&MF);   CHKERRQ(ierr);
+	ierr = MatDestroy(&MFFD); CHKERRQ(ierr);
+	ierr = VecDestroy(&z);    CHKERRQ(ierr);
+	ierr = VecDestroy(&mf);   CHKERRQ(ierr);
+	ierr = VecDestroy(&mffd); CHKERRQ(ierr);
+
+	PetscFunctionReturn(0);
+}
+//---------------------------------------------------------------------------
+#undef __FUNCT__
+#define __FUNCT__ "PicardTest"
+PetscErrorCode PicardTest(NLSol *nl, Vec diff)
+{
+	Mat          J;
+	DOFIndex    *dof;
+	BCCtx       *bc;
+	PMat         pm;
+	JacRes      *jr;
+	Vec          z, wm, wmf;
+	PetscScalar  nrm, *sol;
+	PetscInt     i, num, *list;
+
+	PetscErrorCode ierr;
+	PetscFunctionBegin;
+
+	// access context
+	pm  = nl->pc->pm;
+	jr  = pm->jr;
+	dof = &(jr->fs->dof);
+	bc  =  jr->bc;
+
+	// assemble preconditioner with restrictions
+	ierr = PMatAssemble(pm); CHKERRQ(ierr);
+
+	// create matrix-free Jacobian operator
+	ierr = MatCreateShell(PETSC_COMM_WORLD, dof->ln, dof->ln,
+		PETSC_DETERMINE, PETSC_DETERMINE, NULL, &J); CHKERRQ(ierr);
+	ierr = MatSetUp(J);                              CHKERRQ(ierr);
+
+	// setup vectors
+	ierr = VecDuplicate(jr->gres, &z);    CHKERRQ(ierr);
+	ierr = VecDuplicate(jr->gres, &wm);   CHKERRQ(ierr);
+	ierr = VecDuplicate(jr->gres, &wmf);  CHKERRQ(ierr);
+
+	//===================================
+	// initialize vector to be multiplied
+	//===================================
+
+	ierr = VecCopy    (jr->gsol, z); CHKERRQ(ierr);
+	ierr = VecGetArray(z, &sol);     CHKERRQ(ierr);
+
+	// velocity
+	num   = bc->vNumSPC;
+	list  = bc->vSPCList;
+
+	for(i = 0; i < num; i++) sol[list[i]] = 0.0;
+
+	// pressure
+	num   = bc->pNumSPC;
+	list  = bc->pSPCList;
+
+	for(i = 0; i < num; i++) sol[list[i]] = 0.0;
+
+	ierr = VecRestoreArray(z, &sol); CHKERRQ(ierr);
+	ierr = VecNormalize   (z, NULL); CHKERRQ(ierr);
+
+	//===================================
+
+	ierr = VecZeroEntries(wm);  CHKERRQ(ierr);
+	ierr = VecZeroEntries(wmf); CHKERRQ(ierr);
+
+	PetscPrintf(PETSC_COMM_WORLD,"=======================================================\n");
+
+	ierr = VecNorm(z, NORM_2, &nrm); CHKERRQ(ierr);
+
+	PetscPrintf(PETSC_COMM_WORLD, "Norm of the vector to be multiplied: %g\n", nrm);
+
+	// assembled Jacobian
+	ierr = MatShellSetOperation(J, MATOP_MULT, (void(*)(void))pm->Picard); CHKERRQ(ierr);
+	ierr = MatShellSetContext(J, pm->data);                                CHKERRQ(ierr);
+
+	ierr = MatAssemblyBegin(J, MAT_FINAL_ASSEMBLY); CHKERRQ(ierr);
+	ierr = MatAssemblyEnd  (J, MAT_FINAL_ASSEMBLY); CHKERRQ(ierr);
+
+	ierr = MatMult(J, z, wm); CHKERRQ(ierr);
+
+	ierr = VecNorm(wm, NORM_2, &nrm); CHKERRQ(ierr);
+
+	PetscPrintf(PETSC_COMM_WORLD, "Norm of the assembled residual vector: %g\n", nrm);
+
+	// matrix-free Jacobian
+	ierr = MatShellSetOperation(J, MATOP_MULT, (void(*)(void))JacApplyPicard); CHKERRQ(ierr);
+	ierr = MatShellSetContext(J, (void*)jr);                                   CHKERRQ(ierr);
+
+	ierr = MatAssemblyBegin(J, MAT_FINAL_ASSEMBLY); CHKERRQ(ierr);
+	ierr = MatAssemblyEnd  (J, MAT_FINAL_ASSEMBLY); CHKERRQ(ierr);
+
+	ierr = MatMult(J, z, wmf); CHKERRQ(ierr);
+
+	ierr = VecNorm(wmf, NORM_2, &nrm); CHKERRQ(ierr);
+
+	PetscPrintf(PETSC_COMM_WORLD, "Norm of the matrix-free residual vector: %g\n", nrm);
+
+	// difference
+	ierr =  VecWAXPY(diff, -1.0, wm, wmf); CHKERRQ(ierr);
+
+	ierr = VecNorm(diff, NORM_2, &nrm); CHKERRQ(ierr);
+
+	PetscPrintf(PETSC_COMM_WORLD, "Norm of the difference vector: %g\n", nrm);
+
+	PetscPrintf(PETSC_COMM_WORLD,"=======================================================\n");
+
+	ierr = MatDestroy(&J);    CHKERRQ(ierr);
+	ierr = VecDestroy(&z);    CHKERRQ(ierr);
+	ierr = VecDestroy(&wm);   CHKERRQ(ierr);
+	ierr = VecDestroy(&wmf);  CHKERRQ(ierr);
+
+	PetscFunctionReturn(0);
+}
 //---------------------------------------------------------------------------
 /*
 #undef __FUNCT__
