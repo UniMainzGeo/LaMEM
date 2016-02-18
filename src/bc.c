@@ -471,6 +471,115 @@ PetscErrorCode BCOverridePhase(BCCtx *bc, PetscInt cellID, Marker *P)
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
+#undef __FUNCT__
+#define __FUNCT__ "DBoxReadFromOptions"
+PetscErrorCode DBoxReadFromOptions(DBox *dbox, Scaling *scal)
+{
+	PetscErrorCode ierr;
+	PetscFunctionBegin;
+
+	//========================
+	// Dropping box parameters
+	//========================
+
+	ierr = GetIntDataItemCheck("-dbox_num", "Number of dropping boxes",
+		_NOT_FOUND_EXIT_, 1, &dbox->num, 1, _max_boxes_); CHKERRQ(ierr);
+
+	if(dbox->num)
+	{
+		// boundaries
+		ierr = GetScalDataItemCheckScale("-dbox_bounds", "Dropping box boundaries",
+			_NOT_FOUND_ERROR_, 6*dbox->num, dbox->bounds, 0.0, 0.0, scal->length); CHKERRQ(ierr);
+
+		// vertical velocity
+		ierr = GetScalDataItemCheckScale("-dbox_zvel", "Dropping box vertical velocity",
+			_NOT_FOUND_ERROR_, 1, &dbox->zvel, 0.0, 0.0, scal->velocity); CHKERRQ(ierr);
+
+	}
+
+	PetscFunctionReturn(0);
+}
+//---------------------------------------------------------------------------
+#undef __FUNCT__
+#define __FUNCT__ "BCApplyDBox"
+PetscErrorCode BCApplyDBox(BCCtx *bc)
+{
+	DBox        *dbox;
+	FDSTAG      *fs;
+	PetscInt    jj, i, j, k, nx, ny, nz, sx, sy, sz, iter;
+	PetscScalar ***bcvz, *SPCVals, bounds[6*_max_boxes_], *pbounds;
+	PetscScalar x, y, z, t, vz;
+
+	PetscErrorCode ierr;
+	PetscFunctionBegin;
+
+	// access context
+	fs   = bc->fs;
+	dbox = &bc->dbox;
+
+	// check whether dropping box is activated
+	if(!dbox->num) PetscFunctionReturn(0);
+
+	// copy original coordinates
+	ierr = PetscMemcpy(bounds, dbox->bounds, (size_t)(6*dbox->num)*sizeof(PetscScalar)); CHKERRQ(ierr);
+
+	// integrate box positions
+	t  = bc->ts->time;
+	vz = dbox->zvel;
+
+	for(jj = 0; jj < dbox->num; jj++)
+	{
+		pbounds     = bounds + 6*jj;
+		pbounds[4] += t*vz;
+		pbounds[5] += t*vz;
+	}
+
+	// access velocity constraint vectors
+	ierr = DMDAVecGetArray(fs->DA_Z, bc->bcvz, &bcvz); CHKERRQ(ierr);
+
+	// access constraint arrays
+	SPCVals = bc->SPCVals;
+
+	//---------
+	// Z points
+	//---------
+	GET_CELL_RANGE(nx, sx, fs->dsx)
+	GET_CELL_RANGE(ny, sy, fs->dsy)
+	GET_NODE_RANGE(nz, sz, fs->dsz)
+
+	iter = fs->nXFace + fs->nYFace;
+
+	START_STD_LOOP
+	{
+		// get node coordinates
+		x = COORD_CELL(i, sx, fs->dsx);
+		y = COORD_CELL(j, sy, fs->dsy);
+		z = COORD_NODE(k, sz, fs->dsz);
+
+		// check whether node is inside any of boxes
+		for(jj = 0; jj < dbox->num; jj++)
+		{
+			pbounds = bounds + 6*jj;
+
+			if(x >= pbounds[0] && x <= pbounds[1]
+			&& y >= pbounds[2] && y <= pbounds[3]
+			&& z >= pbounds[4] && z <= pbounds[5])
+			{
+				bcvz[k][j][i] = vz;
+				SPCVals[iter] = vz;
+				break;
+			}
+		}
+		iter++;
+	}
+	END_STD_LOOP
+
+	// restore access
+	ierr = DMDAVecRestoreArray(fs->DA_Z, bc->bcvz, &bcvz); CHKERRQ(ierr);
+
+	PetscFunctionReturn(0);
+}
+//---------------------------------------------------------------------------
 //---------------------------------------------------------------------------
 //---------------------------------------------------------------------------
 #undef __FUNCT__
@@ -642,6 +751,8 @@ PetscErrorCode BCReadFromOptions(BCCtx *bc)
 	// set open boundary flag
 	ierr = PetscOptionsHasName(NULL, "-open_top_bound", &set); CHKERRQ(ierr); if(set == PETSC_TRUE) bc->top_open = 1;
 
+	ierr = DBoxReadFromOptions(&bc->dbox, scal); CHKERRQ(ierr);
+
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
@@ -736,6 +847,9 @@ PetscErrorCode BCApply(BCCtx *bc)
 
 	// apply Boundary velocity
 	ierr = BCApplyBoundVel(bc); CHKERRQ(ierr);
+
+	// apply dropping boxes
+	ierr = BCApplyDBox(bc); CHKERRQ(ierr);
 
 	// exchange ghost point constraints
 	// AVOID THIS BY SETTING CONSTRAINTS REDUNDANTLY
