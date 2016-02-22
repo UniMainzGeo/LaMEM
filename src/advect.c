@@ -286,8 +286,11 @@ PetscErrorCode ADVRemap(AdvCtx *actx, FreeSurf *surf)
 	PetscBool flag = PETSC_FALSE;
 	PetscOptionsGetBool(PETSC_NULL, "-new_mc", &flag, PETSC_NULL);
 
-	if (!flag)
+	if (!flag) // old
 	{
+		// influx BC
+		ierr = ADVInfluxBC(actx); CHKERRQ(ierr);
+
 		// compute host cells for all the markers received
 		ierr = ADVMapMarkToCells(actx); CHKERRQ(ierr);
 
@@ -300,8 +303,11 @@ PetscErrorCode ADVRemap(AdvCtx *actx, FreeSurf *surf)
 		// check corners and inject 1 particle if empty
 		ierr = ADVCheckCorners(actx);    CHKERRQ(ierr);
 	}
-	else
+	else // new
 	{
+		// influx BC
+		ierr = ADVInfluxBC(actx); CHKERRQ(ierr);
+
 		// check markers and inject/delete if necessary in all control volumes
 		ierr = AVDMarkerControl(actx); CHKERRQ(ierr);
 
@@ -1821,6 +1827,127 @@ PetscErrorCode ADVMarkCrossFreeSurf(AdvCtx *actx, FreeSurf *surf, PetscScalar to
 
 	// restore access
 	ierr = DMDAVecRestoreArray(surf->DA_SURF, surf->ltopo, &ltopo);  CHKERRQ(ierr);
+
+	PetscFunctionReturn(0);
+}
+//---------------------------------------------------------------------------
+#undef __FUNCT__
+#define __FUNCT__ "ADVInfluxBC"
+PetscErrorCode ADVInfluxBC(AdvCtx *actx)
+{
+	BCCtx       *bc;
+	Marker      *P;
+	PetscInt     jj, ninj, ndel;
+	PetscScalar  dt, dx, xs;
+
+	PetscErrorCode ierr;
+	PetscFunctionBegin;
+
+	bc = actx->jr->bc;
+
+	//only if influx and name type activated
+	if ((!bc->face) | (bc->velmark.tind==0) | (!bc->velmark.flg)) PetscFunctionReturn(0);
+
+	//PetscPrintf(PETSC_COMM_WORLD,"Influx BC: Breakpoint 2 \n");
+
+	// get current time step
+	dt = actx->jr->ts.dt;
+	dx = dt*bc->velin;
+	xs = actx->fs->msx.xstart[0];
+
+	// calculate storage
+	ninj = 0;
+	ndel = 0;
+
+	// scan all influx markers
+	for(jj = 0; jj < bc->velmark.nummark; jj++)
+	{
+		// access marker
+		P = &bc->velmark.markers[jj];
+
+		// check marker coordinate
+		if ((P->X[0] <= bc->velmark.D) && (P->X[0] >= bc->velmark.D-dx))
+		{
+			// count number of markers
+			ninj++;
+		}
+	}
+
+	// scan all markers
+	for(jj = 0; jj < actx->nummark; jj++)
+	{
+		// access marker
+		P = &actx->markers[jj];
+
+		// check marker coordinate
+		if ((P->X[0] <= xs+dx) && (P->X[0] >= dx) && (P->X[0] <= bc->top) && (P->X[0] >= bc->bot))
+		{
+			ndel++;
+		}
+	}
+
+	// if no need for any operation do not continue
+	if ((!ninj) && (!ndel))
+	{
+		// update start coordinate
+		bc->velmark.D -= dx;
+
+		// return
+		PetscFunctionReturn(0);
+	}
+
+	actx->nrecv = ninj;
+	actx->ndel  = ndel;
+
+	// allocate memory
+	if(ninj) { ierr = PetscMalloc((size_t)actx->nrecv*sizeof(Marker),   &actx->recvbuf); CHKERRQ(ierr); }
+	if(ndel) { ierr = PetscMalloc((size_t)actx->ndel *sizeof(PetscInt), &actx->idel);    CHKERRQ(ierr); }
+
+	// save influx markers
+	ninj = 0;
+	for(jj = 0; jj < bc->velmark.nummark; jj++)
+	{
+		// access marker
+		P = &bc->velmark.markers[jj];
+
+		// check marker coordinate
+		if ((P->X[0] <= bc->velmark.D) && (P->X[0] >= bc->velmark.D-dx))
+		{
+			// save influx markers
+			actx->recvbuf[ninj] = bc->velmark.markers[jj];
+
+			// transform coordinates
+			actx->recvbuf[ninj].X[0] -= bc->velmark.D+dx;
+
+			// update counter
+			ninj++;
+		}
+	}
+
+	// save all markers to be deleted
+	ndel = 0;
+	for(jj = 0; jj < actx->nummark; jj++)
+	{
+		// access marker
+		P = &actx->markers[jj];
+
+		// check marker coordinate
+		if ((P->X[0] <= xs+dx) && (P->X[0] >= dx) && (P->X[0] <= bc->top) && (P->X[0] >= bc->bot))
+		{
+			actx->idel[ndel] = jj;
+			ndel++;
+		}
+	}
+
+	// update start coordinate for influx markers
+	bc->velmark.D -= dx;
+
+	// store new markers
+	ierr = ADVCollectGarbage(actx); CHKERRQ(ierr);
+
+	// clear
+	ierr = PetscFree(actx->recvbuf); CHKERRQ(ierr);
+	ierr = PetscFree(actx->idel   ); CHKERRQ(ierr);
 
 	PetscFunctionReturn(0);
 }

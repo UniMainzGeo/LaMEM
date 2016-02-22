@@ -353,23 +353,42 @@ PetscErrorCode BCSetupBoundVel(BCCtx *bc, PetscScalar top)
 PetscErrorCode BCApplyBoundVel(BCCtx *bc)
 {
 	FDSTAG      *fs;
+	Scaling     *scal;
 	PetscInt    mnx, mny;
 	PetscInt    i, j, k, nx, ny, nz, sx, sy, sz, iter;
-	PetscScalar ***bcvx,  ***bcvy, *SPCVals;
+	PetscScalar ***bcvx,  ***bcvy,  ***bcvz, *SPCVals;
 	PetscScalar z, bot, top, vel, velin, velout;
 
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
 
 	// check whether constraint is activated
-	if(!bc->face) PetscFunctionReturn(0);
+	if ((!bc->face) | (bc->velmark.tind==0)) PetscFunctionReturn(0);
+
+	//PetscPrintf(PETSC_COMM_WORLD,"Influx BC: Breakpoint 1 \n");
 
 	// access context
 	fs     = bc->fs;
+	scal   = bc->scal;
 	bot    = bc->bot;
 	top    = bc->top;
 	velin  = bc->velin;
 	velout = bc->velout;
+
+	// output labels
+	char    lbl_face[_lbl_sz_];
+
+	if      (bc->face == 1) sprintf(lbl_face, "left"  );
+	else if (bc->face == 2) sprintf(lbl_face, "right" );
+	else if (bc->face == 3) sprintf(lbl_face, "front" );
+	else if (bc->face == 4) sprintf(lbl_face, "back"  );
+	else
+	{
+		SETERRQ(PETSC_COMM_SELF, PETSC_ERR_USER, "Face not recognized to impose influx boundary conditions!");
+	}
+
+	PetscPrintf(PETSC_COMM_WORLD,"Influx BC: face = %s, V_in = %g %s, bottom_coord = %g %s, top_coord = %g %s\n",
+		lbl_face, velin*scal->velocity, scal->lbl_velocity, bot*scal->length, scal->lbl_length, top*scal->length, scal->lbl_length);
 
 	// initialize maximal index in all directions
 	mnx = fs->dsx.tnods - 1;
@@ -378,21 +397,23 @@ PetscErrorCode BCApplyBoundVel(BCCtx *bc)
 	// access velocity constraint vectors
 	ierr = DMDAVecGetArray(fs->DA_X, bc->bcvx, &bcvx); CHKERRQ(ierr);
 	ierr = DMDAVecGetArray(fs->DA_Y, bc->bcvy, &bcvy); CHKERRQ(ierr);
+	ierr = DMDAVecGetArray(fs->DA_Z, bc->bcvz, &bcvz); CHKERRQ(ierr);
 
 	// access constraint arrays
 	SPCVals = bc->SPCVals;
 
 	iter = 0;
 
-	//---------
-	// X points
-	//---------
-	GET_NODE_RANGE(nx, sx, fs->dsx)
-	GET_CELL_RANGE(ny, sy, fs->dsy)
-	GET_CELL_RANGE(nz, sz, fs->dsz)
-
 	if(bc->face == 1 || bc->face == 2)
 	{
+		//---------
+		// X points
+		//---------
+		GET_NODE_RANGE(nx, sx, fs->dsx)
+		GET_CELL_RANGE(ny, sy, fs->dsy)
+		GET_CELL_RANGE(nz, sz, fs->dsz)
+
+		// constrain vx
 		START_STD_LOOP
 		{
 			z   = COORD_CELL(k, sz, fs->dsz);
@@ -400,9 +421,35 @@ PetscErrorCode BCApplyBoundVel(BCCtx *bc)
 			if(z <= top && z >= bot) vel = velin;
 			if(z < bot)              vel = velout;
 
-			if(bc->face == 1 && i == 0)   { bcvx[k][j][i] = vel; SPCVals[iter] = vel; }
+			if(bc->face == 1 && i == 0  ) { bcvx[k][j][i] = vel; SPCVals[iter] = vel; }
 			if(bc->face == 2 && i == mnx) { bcvx[k][j][i] = vel; SPCVals[iter] = vel; }
 			iter++;
+		}
+		END_STD_LOOP
+
+		//---------
+		// Z points
+		//---------
+		GET_CELL_RANGE(nx, sx, fs->dsx)
+		GET_CELL_RANGE(ny, sy, fs->dsy)
+		GET_NODE_RANGE(nz, sz, fs->dsz)
+
+		// constrain vz to be 0
+		START_STD_LOOP
+		{
+			z   = COORD_CELL(k, sz, fs->dsz);
+			vel = 0.0;
+
+			if(bc->face == 1 && i == 0  ) { bcvz[k][j][i] = vel; SPCVals[iter] = vel; }
+			if(bc->face == 2 && i == mnx) { bcvz[k][j][i] = vel; SPCVals[iter] = vel; }
+			iter++;
+
+//			if(z <= top && z >= bot)
+//			{
+//				if(bc->face == 1 && i == 0  ) { bcvz[k][j][i] = vel; SPCVals[iter] = vel; }
+//				if(bc->face == 2 && i == mnx) { bcvz[k][j][i] = vel; SPCVals[iter] = vel; }
+//				iter++;
+//			}
 		}
 		END_STD_LOOP
 	}
@@ -447,6 +494,8 @@ PetscErrorCode BCOverridePhase(BCCtx *bc, PetscInt cellID, Marker *P)
 
 	PetscFunctionBegin;
 
+	if ((bc->velmark.flg) | (bc->velmark.tind==0)) PetscFunctionReturn(0);
+
 	fs = bc->fs;
 	M  = fs->dsx.ncels;
 	N  = fs->dsy.ncels;
@@ -465,8 +514,37 @@ PetscErrorCode BCOverridePhase(BCCtx *bc, PetscInt cellID, Marker *P)
 	||  (bc->face == 4 && j + sy == my))
 	&&  (z >= bc->bot && z <= bc->top))
 	{
+		// only phase is changed and not material properties!!! unless during interpolation you take into account all that...however not for history variables...
 		P->phase = bc->phase;
 	}
+
+	PetscFunctionReturn(0);
+}
+//---------------------------------------------------------------------------
+#undef __FUNCT__
+#define __FUNCT__ "BCUpdateInflux"
+PetscErrorCode BCUpdateInflux(BCCtx *bc)
+{
+	PetscFunctionBegin;
+
+	if (!bc->face)
+	{
+		bc->velmark.tind = 0;
+		PetscFunctionReturn(0);
+	}
+
+	// check alternate timesteps
+	if (bc->velmark.tflg)
+	{
+		if (bc->velmark.tind==0) bc->velmark.tind = 1;
+		else                     bc->velmark.tind = 0;
+	}
+	else bc->velmark.tind = 1;
+
+	// check starting timestep
+	if (bc->velmark.tstart >= bc->ts->istep) bc->velmark.tind = 0;
+
+	//PetscPrintf(PETSC_COMM_WORLD,"Influx BC: tind = %lld tstart = %lld istep = %lld\n",(LLD)bc->velmark.tind, (LLD)bc->velmark.tstart, (LLD)bc->ts->istep);
 
 	PetscFunctionReturn(0);
 }
@@ -517,6 +595,9 @@ PetscErrorCode BCCreate(BCCtx *bc, FDSTAG *fs, TSSol *ts, Scaling *scal)
 	bc->ts   = ts;
 	bc->scal = scal;
 
+	// influx bc
+	bc->velmark.tind = 0;
+
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
@@ -541,6 +622,13 @@ PetscErrorCode BCDestroy(BCCtx *bc)
 	// SPC temperature
 	ierr = PetscFree(bc->tSPCList); CHKERRQ(ierr);
 	ierr = PetscFree(bc->tSPCVals); CHKERRQ(ierr);
+
+	// influx boundary conditions
+
+	if ((bc->face) && (bc->velmark.flg))
+	{
+		ierr = PetscFree(bc->velmark.markers); CHKERRQ(ierr);
+	}
 
 	// two-point constraints
 //	ierr = PetscFree(bc->TPCList);      CHKERRQ(ierr);
@@ -637,6 +725,13 @@ PetscErrorCode BCReadFromOptions(BCCtx *bc)
 
 		ierr = GetScalDataItemCheckScale("-bvel_velin", "Boundary velocity magnitude",
 			_NOT_FOUND_ERROR_, 1, &bc->velin, 0.0, 0.0, scal->velocity); CHKERRQ(ierr);
+
+		ierr = PetscOptionsHasName(NULL, "-bvel_influxmark", &bc->velmark.flg ); CHKERRQ(ierr);
+		ierr = PetscOptionsHasName(NULL, "-bvel_alternate",  &bc->velmark.tflg); CHKERRQ(ierr);
+
+		ierr = GetIntDataItemCheck("-bvel_tstart", "Timestep start for influx bc",
+					_NOT_FOUND_EXIT_, 1, &bc->velmark.tstart, 0, 0); CHKERRQ(ierr);
+
 	}
 
 	// set open boundary flag
@@ -733,6 +828,9 @@ PetscErrorCode BCApply(BCCtx *bc)
 
 	// apply Bezier block constraints
 	ierr = BCApplyBezier(bc); CHKERRQ(ierr);
+
+	// update influx bc
+	ierr = BCUpdateInflux(bc); CHKERRQ(ierr);
 
 	// apply Boundary velocity
 	ierr = BCApplyBoundVel(bc); CHKERRQ(ierr);

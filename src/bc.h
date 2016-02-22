@@ -80,6 +80,20 @@ typedef struct
 
 } BCBlock;
 //---------------------------------------------------------------------------
+typedef struct
+{
+	// path description
+	PetscInt    tstart;                // after how many years to start bc (after equilibration)
+	PetscBool   flg;                   // if activated then use influx markers
+	PetscBool   tflg;                  // if activated, use alternate timesteps (for optimization)
+	PetscInt    tind;                  // (for optimization)
+	PetscScalar D;                     // distance
+	PetscInt    nummark;               // local number of markers
+	Marker     *markers;               // storage for local markers
+	char        markdir[MAX_PATH_LEN]; // influx directory - similar as for parallel reading
+
+} BCInflux;
+//---------------------------------------------------------------------------
 
 PetscErrorCode BCBlockReadFromOptions(BCBlock *bcb, Scaling *scal);
 
@@ -182,6 +196,7 @@ typedef struct
 	PetscInt     face, phase;   // face & phase identifiers
 	PetscScalar  bot, top;      // bottom & top coordinates of the plate
 	PetscScalar  velin, velout; // inflow & outflow velocities
+	BCInflux     velmark;
 
 	// open boundary flag
 	PetscInt  top_open;
@@ -245,6 +260,8 @@ PetscErrorCode BCSetupBoundVel(BCCtx *bc, PetscScalar top);
 PetscErrorCode BCApplyBoundVel(BCCtx *bc);
 
 PetscErrorCode BCOverridePhase(BCCtx *bc, PetscInt cellID, Marker *P);
+
+PetscErrorCode BCUpdateInflux(BCCtx *bc);
 
 //---------------------------------------------------------------------------
 #endif

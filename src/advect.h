@@ -226,6 +226,9 @@ PetscErrorCode ADVMarkCrossFreeSurf(AdvCtx *actx, FreeSurf *surf, PetscScalar to
 // check marker phases
 PetscErrorCode ADVCheckMarkPhases(AdvCtx *actx, PetscInt numPhases);
 
+// influx bc
+PetscErrorCode ADVInfluxBC(AdvCtx *actx);
+
 // print for analysis
 PetscErrorCode ADVAnalytics(AdvCtx *actx);
 
