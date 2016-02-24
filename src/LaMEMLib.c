@@ -370,7 +370,7 @@ PetscErrorCode LaMEMLib(ModParam *IOparam)
 		// update phase ratios taking into account actual free surface position
 		// -- This routine requires a modification to also correct phase ratio's at edges and not just at corners --
 		// it has been deactivated temporarily (affects convergence for salt-tectonics setups with brittle overburden)
-		ierr = FreeSurfGetAirPhaseRatio(&surf); CHKERRQ(ierr);
+		//ierr = FreeSurfGetAirPhaseRatio(&surf); CHKERRQ(ierr);
 
 		// advect pushing block
 		ierr = BCAdvectPush(&bc); CHKERRQ(ierr);

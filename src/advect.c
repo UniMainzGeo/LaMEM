@@ -1880,7 +1880,7 @@ PetscErrorCode ADVInfluxBC(AdvCtx *actx)
 		P = &actx->markers[jj];
 
 		// check marker coordinate
-		if ((P->X[0] <= xs+dx) && (P->X[0] >= dx) && (P->X[0] <= bc->top) && (P->X[0] >= bc->bot))
+		if ((P->X[0] <= xs+dx) && (P->X[0] >= xs) && (P->X[0] <= bc->top) && (P->X[0] >= bc->bot))
 		{
 			ndel++;
 		}
@@ -1917,12 +1917,14 @@ PetscErrorCode ADVInfluxBC(AdvCtx *actx)
 			actx->recvbuf[ninj] = bc->velmark.markers[jj];
 
 			// transform coordinates
-			actx->recvbuf[ninj].X[0] -= bc->velmark.D+dx;
+			actx->recvbuf[ninj].X[0] -= bc->velmark.D-dx-xs;
 
 			// update counter
 			ninj++;
 		}
 	}
+
+	//PetscPrintf(PETSC_COMM_WORLD,"Influx BC: X_prev=%g X=%g D=%g dx=%g \n",actx->recvbuf[0].X[0]+bc->velmark.D-dx-xs,actx->recvbuf[0].X[0],bc->velmark.D,dx );
 
 	// save all markers to be deleted
 	ndel = 0;

@@ -403,6 +403,17 @@ PetscErrorCode BreakWrite(UserCtx *user, AdvCtx *actx, FreeSurf *surf, PVOut *pv
 		fwrite(&user->Pushing.z_center_block , sizeof(PetscScalar), 1, fp);
 	}
 
+	// influx boundary conditions
+	if (jr->bc->face)
+	{
+		fwrite(&jr->bc->velmark.tind , sizeof(PetscInt), 1, fp);
+
+		if (jr->bc->velmark.flg)
+		{
+			fwrite(&jr->bc->velmark.D , sizeof(PetscScalar), 1, fp);
+		}
+	}
+
 	//----------------------------------
 	// Solver options
 	//----------------------------------
@@ -536,6 +547,17 @@ PetscErrorCode BreakRead(UserCtx *user, AdvCtx *actx, PVOut *pvout, PVSurf *pvsu
 		fread(&user->Pushing.x_center_block , sizeof(PetscScalar), 1, fp);
 		fread(&user->Pushing.y_center_block , sizeof(PetscScalar), 1, fp);
 		fread(&user->Pushing.z_center_block , sizeof(PetscScalar), 1, fp);
+	}
+
+	// influx boundary conditions
+	if (jr->bc->face)
+	{
+		fread(&jr->bc->velmark.tind , sizeof(PetscInt), 1, fp);
+
+		if (jr->bc->velmark.flg)
+		{
+			fread(&jr->bc->velmark.D , sizeof(PetscScalar), 1, fp);
+		}
 	}
 
 	//----------------------------------
