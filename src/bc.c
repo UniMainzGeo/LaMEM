@@ -753,6 +753,10 @@ PetscErrorCode BCReadFromOptions(BCCtx *bc)
 
 	ierr = DBoxReadFromOptions(&bc->dbox, scal); CHKERRQ(ierr);
 
+	// read no-slip boundary condition mask
+	ierr = GetIntDataItemCheck("-noslip", "no-slip mask",
+		_NOT_FOUND_EXIT_, 6, bc->noslip, 0, 1); CHKERRQ(ierr);
+
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
@@ -958,14 +962,14 @@ PetscErrorCode BCApplyBound(BCCtx *bc)
 	// initialize boundary conditions vectors
 
 	// *************************************************************
-	// WARNING !!!
-	//    AD-HOC FREE-SLIP BOX IS CURRENTLY ASSUMED
+	//    NO-SLIP OR FREE-SLIP TANGENTIAL BOUNDARY VELOCITIES CAN BE SELECTED
 	//    NORMAL VELOCITIES CAN BE SET VIA BACKGROUND STRAIN RATES
 	//    PRESSURE CONSTRAINS ARE CURRENTLY NOT ALLOWED
 	//    TEMPERATURE IS PRESCRIBED ON TOP AND BOTTOM BOUNDARIES
 	//    ONLY ZERO BOUNDARY HEAT FLUXES ARE IMPLEMENTED
 	//    TWO-POINT CONSTRAINTS MUST BE SET ON CROSS-PROCESSOR GHOST POINTS
 	// *************************************************************
+
 	FDSTAG      *fs;
 	PetscScalar Tbot, Ttop;
 	PetscScalar Exx, Eyy, Ezz;
@@ -973,10 +977,10 @@ PetscErrorCode BCApplyBound(BCCtx *bc)
 	PetscScalar ex,  ey,  ez;
 	PetscScalar vbx, vby, vbz;
 	PetscScalar vex, vey, vez;
-//	PetscInt    mcx, mcy, mcz;
-	PetscInt              mcz;
+	PetscInt    mcx, mcy, mcz;
 	PetscInt    mnx, mny, mnz;
 	PetscInt    i, j, k, nx, ny, nz, sx, sy, sz, iter, top_open;
+	PetscInt    nsLeft, nsRight, nsFront, nsBack, nsBottom, nsTop;
 	PetscScalar ***bcvx,  ***bcvy,  ***bcvz, ***bcT, *SPCVals;
 
 	PetscErrorCode ierr;
@@ -988,12 +992,20 @@ PetscErrorCode BCApplyBound(BCCtx *bc)
 	// set open boundary flag
 	top_open = bc->top_open;
 
+	// set no-slip flags
+	nsLeft   = bc->noslip[0];
+	nsRight  = bc->noslip[1];
+	nsFront  = bc->noslip[2];
+	nsBack   = bc->noslip[3];
+	nsBottom = bc->noslip[4];
+	nsTop    = bc->noslip[5];
+
 	// initialize maximal index in all directions
 	mnx = fs->dsx.tnods - 1;
 	mny = fs->dsy.tnods - 1;
 	mnz = fs->dsz.tnods - 1;
-//	mcx = fs->dsx.tcels - 1;
-//	mcy = fs->dsy.tcels - 1;
+	mcx = fs->dsx.tcels - 1;
+	mcy = fs->dsy.tcels - 1;
 	mcz = fs->dsz.tcels - 1;
 
 	// get current coordinates of the mesh boundaries
@@ -1027,6 +1039,10 @@ PetscErrorCode BCApplyBound(BCCtx *bc)
 
 	// access constraint arrays
 	SPCVals = bc->SPCVals;
+
+	//=========================================================================
+	// SPC (normal velocities)
+	//=========================================================================
 
 	iter = 0;
 
@@ -1075,21 +1091,87 @@ PetscErrorCode BCApplyBound(BCCtx *bc)
 	}
 	END_STD_LOOP
 
+	//=========================================================================
+	// TPC (no-slip boundary conditions)
+	//=========================================================================
+
+	//-----------------------------------------------------
+	// X points (TPC only, hence looping over ghost points)
+	//-----------------------------------------------------
+	if(nsFront || nsBack || nsBottom || nsTop)
+	{
+		GET_NODE_RANGE_GHOST_INT(nx, sx, fs->dsx)
+		GET_CELL_RANGE_GHOST_INT(ny, sy, fs->dsy)
+		GET_CELL_RANGE_GHOST_INT(nz, sz, fs->dsz)
+
+		START_STD_LOOP
+		{
+			if(nsFront  && j == 0)   { bcvx[k][j-1][i] = 0.0; }
+			if(nsBack   && j == mcy) { bcvx[k][j+1][i] = 0.0; }
+			if(nsBottom && k == 0)   { bcvx[k-1][j][i] = 0.0; }
+			if(nsTop    && k == mcz) { bcvx[k+1][j][i] = 0.0; }
+		}
+		END_STD_LOOP
+	}
+
+	//-----------------------------------------------------
+	// Y points (TPC only, hence looping over ghost points)
+	//-----------------------------------------------------
+	if(nsLeft || nsRight || nsBottom || nsTop)
+	{
+
+		GET_CELL_RANGE_GHOST_INT(nx, sx, fs->dsx)
+		GET_NODE_RANGE_GHOST_INT(ny, sy, fs->dsy)
+		GET_CELL_RANGE_GHOST_INT(nz, sz, fs->dsz)
+
+		START_STD_LOOP
+		{
+			if(nsLeft   && i == 0)   { bcvy[k][j][i-1] = 0.0; }
+			if(nsRight  && i == mcx) { bcvy[k][j][i+1] = 0.0; }
+			if(nsBottom && k == 0)   { bcvy[k-1][j][i] = 0.0; }
+			if(nsTop    && k == mcz) { bcvy[k+1][j][i] = 0.0; }
+		}
+		END_STD_LOOP
+	}
+
+	//-----------------------------------------------------
+	// Z points (TPC only, hence looping over ghost points)
+	//-----------------------------------------------------
+	if(nsLeft || nsRight || nsFront || nsBack)
+	{
+
+		GET_CELL_RANGE_GHOST_INT(nx, sx, fs->dsx)
+		GET_CELL_RANGE_GHOST_INT(ny, sy, fs->dsy)
+		GET_NODE_RANGE_GHOST_INT(nz, sz, fs->dsz)
+
+		START_STD_LOOP
+		{
+			if(nsLeft  && i == 0)   { bcvz[k][j][i-1] = 0.0; }
+			if(nsRight && i == mcx) { bcvz[k][j][i+1] = 0.0; }
+			if(nsFront && j == 0)   { bcvz[k][j-1][i] = 0.0; }
+			if(nsBack  && j == mcy) { bcvz[k][j+1][i] = 0.0; }
+		}
+		END_STD_LOOP
+	}
+
 	//-----------------------------------------------------
 	// T points (TPC only, hence looping over ghost points)
 	//-----------------------------------------------------
-
-	GET_CELL_RANGE_GHOST_INT(nx, sx, fs->dsx)
-	GET_CELL_RANGE_GHOST_INT(ny, sy, fs->dsy)
-	GET_CELL_RANGE_GHOST_INT(nz, sz, fs->dsz)
-
-	// only positive temperature! negative will set zero-flux BC automatically
-	START_STD_LOOP
+	if(Tbot >= 0.0 || Ttop >= 0.0)
 	{
-		if(Tbot >= 0.0 && k == 0)   { bcT[k-1][j][i] = Tbot; }
-		if(Ttop >= 0.0 && k == mcz) { bcT[k+1][j][i] = Ttop; }
+		GET_CELL_RANGE_GHOST_INT(nx, sx, fs->dsx)
+		GET_CELL_RANGE_GHOST_INT(ny, sy, fs->dsy)
+		GET_CELL_RANGE_GHOST_INT(nz, sz, fs->dsz)
+
+		START_STD_LOOP
+		{
+			// only positive temperature!
+			// negative will set zero-flux BC automatically
+			if(Tbot >= 0.0 && k == 0)   { bcT[k-1][j][i] = Tbot; }
+			if(Ttop >= 0.0 && k == mcz) { bcT[k+1][j][i] = Ttop; }
+		}
+		END_STD_LOOP
 	}
-	END_STD_LOOP
 
 	// restore access
 	ierr = DMDAVecRestoreArray(fs->DA_X,   bc->bcvx, &bcvx); CHKERRQ(ierr);
