@@ -83,14 +83,18 @@ typedef struct
 typedef struct
 {
 	// path description
-	PetscInt    tstart;                // after how many years to start bc (after equilibration)
-	PetscBool   flg;                   // if activated then use influx markers
-	PetscBool   tflg;                  // if activated, use alternate timesteps (for optimization)
-	PetscInt    tind;                  // (for optimization)
-	PetscScalar D;                     // distance
-	PetscInt    nummark;               // local number of markers
-	Marker     *markers;               // storage for local markers
-	char        markdir[MAX_PATH_LEN]; // influx directory - similar as for parallel reading
+	PetscInt    tstart;                       // after how many years to start bc (after equilibration)
+	PetscBool   flg;                          // if activated then use influx markers
+	PetscBool   tflg;                         // if activated, use alternate timesteps (for optimization)
+	PetscInt    tind;                         // (for optimization)
+	PetscScalar D;                            // distance
+	PetscInt    nummark;                      // local number of markers
+	Marker     *markers;                      // storage for local markers
+	char        markdir[MAX_PATH_LEN];        // influx directory - similar as for parallel reading
+	PetscInt    tseg;                         // no. of time intervals
+	PetscScalar time [  _max_path_points_  ]; // time intervals
+	PetscScalar velin[  _max_path_points_  ]; // influx velocities
+	//PetscInt    iseg;
 
 } BCInflux;
 //---------------------------------------------------------------------------

@@ -525,6 +525,11 @@ PetscErrorCode BCOverridePhase(BCCtx *bc, PetscInt cellID, Marker *P)
 #define __FUNCT__ "BCUpdateInflux"
 PetscErrorCode BCUpdateInflux(BCCtx *bc)
 {
+	TSSol         *ts;
+	PetscScalar    bz, vi, vii, ti, tii;
+	PetscInt       i, iseg;
+
+	PetscErrorCode ierr;
 	PetscFunctionBegin;
 
 	if (!bc->face)
@@ -545,6 +550,41 @@ PetscErrorCode BCUpdateInflux(BCCtx *bc)
 	if (bc->velmark.tstart >= bc->ts->istep) bc->velmark.tind = 0;
 
 	//PetscPrintf(PETSC_COMM_WORLD,"Influx BC: tind = %lld tstart = %lld istep = %lld\n",(LLD)bc->velmark.tind, (LLD)bc->velmark.tstart, (LLD)bc->ts->istep);
+
+	// update velocity
+	if (!bc->velmark.tseg) PetscFunctionReturn(0);
+
+	ts   = bc->ts;
+
+	ierr = FDSTAGGetGlobalBox(bc->fs, NULL, NULL, &bz, NULL, NULL, NULL); CHKERRQ(ierr);
+
+	if((ts->time >= bc->velmark.time[0]) && (ts->time <= bc->velmark.time[bc->velmark.tseg]))
+	{
+		// check which time segment
+		iseg = 0;
+
+		for(i = 0; i < bc->velmark.tseg; i++)
+		{
+			if(ts->time >= bc->velmark.time[i] && ts->time <= bc->velmark.time[i+1])
+			{
+				iseg = i;
+			}
+		}
+
+		//bc->velmark.iseg = iseg;
+
+		// initialize parameters for the time step
+		vi  = bc->velmark.velin[iseg  ];
+		vii = bc->velmark.velin[iseg+1];
+		ti  = bc->velmark.time [iseg  ];
+		tii = bc->velmark.time [iseg+1];
+
+		// compute inflow velocity
+		bc->velin = vi + (vii-vi)*(ts->time-ti)/(tii-ti);
+
+		// compute outflow velocity
+		bc->velout = -bc->velin*(bc->top - bc->bot)/(bc->bot - bz);
+	}
 
 	PetscFunctionReturn(0);
 }
@@ -730,8 +770,16 @@ PetscErrorCode BCReadFromOptions(BCCtx *bc)
 		ierr = PetscOptionsHasName(NULL, "-bvel_alternate",  &bc->velmark.tflg); CHKERRQ(ierr);
 
 		ierr = GetIntDataItemCheck("-bvel_tstart", "Timestep start for influx bc",
-					_NOT_FOUND_EXIT_, 1, &bc->velmark.tstart, 0, 0); CHKERRQ(ierr);
+			_NOT_FOUND_EXIT_, 1, &bc->velmark.tstart, 0, 0); CHKERRQ(ierr);
 
+		ierr = GetIntDataItemCheck("-bvel_tseg", "Number of time intervals",
+			_NOT_FOUND_EXIT_, 1, &bc->velmark.tseg, 0, 0); CHKERRQ(ierr);
+
+		ierr = GetScalDataItemCheckScale("-bvel_time", "Time intervals delimiters",
+			_NOT_FOUND_ERROR_, bc->velmark.tseg+1, bc->velmark.time, 0.0, 0.0, scal->time); CHKERRQ(ierr);
+
+		ierr = GetScalDataItemCheckScale("-bvel_time_velin", "Velocity at time delimiters",
+			_NOT_FOUND_ERROR_, bc->velmark.tseg+1, bc->velmark.velin, 0.0, 0.0, scal->velocity); CHKERRQ(ierr);
 	}
 
 	// set open boundary flag
