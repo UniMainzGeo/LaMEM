@@ -434,8 +434,8 @@ PetscErrorCode PVOutCreate(PVOut *pvout, JacRes *jr, const char *filename)
 	if(omask->velocity)       OutVecCreate(&outvecs[cnt++], "velocity",       scal->lbl_velocity,         &PVOutWriteVelocity,     3);
 	if(omask->pressure)       OutVecCreate(&outvecs[cnt++], "pressure",       scal->lbl_stress,           &PVOutWritePressure,     1);
 	if(omask->temperature)    OutVecCreate(&outvecs[cnt++], "temperature",    scal->lbl_temperature,      &PVOutWriteTemperature,  1);
-	if(omask->dev_stress)     OutVecCreate(&outvecs[cnt++], "dev_stress",     scal->lbl_stress,           &PVOutWriteDevStress,    6);
-	if(omask->strain_rate)    OutVecCreate(&outvecs[cnt++], "strain_rate",    scal->lbl_strain_rate,      &PVOutWriteStrainRate,   6);
+	if(omask->dev_stress)     OutVecCreate(&outvecs[cnt++], "dev_stress",     scal->lbl_stress,           &PVOutWriteDevStress,    9);
+	if(omask->strain_rate)    OutVecCreate(&outvecs[cnt++], "strain_rate",    scal->lbl_strain_rate,      &PVOutWriteStrainRate,   9);
 	if(omask->j2_dev_stress)  OutVecCreate(&outvecs[cnt++], "j2_dev_stress",  scal->lbl_stress,           &PVOutWriteJ2DevStress,  1);
 	if(omask->j2_strain_rate) OutVecCreate(&outvecs[cnt++], "j2_strain_rate", scal->lbl_strain_rate,      &PVOutWriteJ2StrainRate, 1);
 	if(omask->vol_rate)       OutVecCreate(&outvecs[cnt++], "vol_rate",       scal->lbl_strain_rate,      &PVOutWriteVolRate,      1);

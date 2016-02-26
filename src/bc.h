@@ -51,6 +51,7 @@
 #define _max_path_points_ 50
 #define _max_poly_points_ 100
 #define _max_bc_blocks_ 3
+#define _max_boxes_ 5
 
 //---------------------------------------------------------------------------
 // index shift type
@@ -106,6 +107,21 @@ PetscErrorCode BCBlockGetPosition(BCBlock *bcb, PetscScalar t, PetscInt *f, Pets
 PetscErrorCode BCBlockGetPolygon(BCBlock *bcb, PetscScalar Xb[], PetscScalar *cpoly);
 
 //---------------------------------------------------------------------------
+
+typedef struct
+{
+	PetscInt    num;                   // number of boxes
+	PetscScalar bounds[6*_max_boxes_]; // box bounds
+	PetscScalar zvel;                  // vertical velocity
+
+} DBox;
+
+//---------------------------------------------------------------------------
+
+PetscErrorCode DBoxReadFromOptions(DBox *dbox, Scaling *scal);
+
+//---------------------------------------------------------------------------
+
 // boundary condition context
 typedef struct
 {
@@ -194,7 +210,8 @@ typedef struct
 //	PetscScalar *TPCVals;      // values of TPC
 //	PetscScalar *TPCLinComPar; // linear combination parameters
 
-	BCBlock      blocks;  // BC block
+	BCBlock      blocks; // BC block
+	DBox         dbox;   // dropping box
 
 	// velocity boundary condition
 	PetscInt     face, phase;   // face & phase identifiers
@@ -204,6 +221,9 @@ typedef struct
 
 	// open boundary flag
 	PetscInt  top_open;
+
+	// no-slip boundary condition mask
+	PetscInt  noslip[6];
 
 } BCCtx;
 //---------------------------------------------------------------------------
@@ -266,6 +286,8 @@ PetscErrorCode BCApplyBoundVel(BCCtx *bc);
 PetscErrorCode BCOverridePhase(BCCtx *bc, PetscInt cellID, Marker *P);
 
 PetscErrorCode BCUpdateInflux(BCCtx *bc);
+
+PetscErrorCode BCApplyDBox(BCCtx *bc);
 
 //---------------------------------------------------------------------------
 #endif
