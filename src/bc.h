@@ -203,6 +203,9 @@ typedef struct
 	// open boundary flag
 	PetscInt  top_open;
 
+	// no-slip boundary condition mask
+	PetscInt  noslip[6];
+
 } BCCtx;
 //---------------------------------------------------------------------------
 
