@@ -337,7 +337,7 @@ PetscScalar ApplyStrainSoft(Soft_t *sl, PetscScalar APS, PetscScalar par)
 	if(APS > sl->APS1 && APS < sl->APS2)
 		k = 1.0 - sl->A*((APS - sl->APS1)/(sl->APS2 - sl->APS1));
 	if(APS >= sl->APS2)
-		k = 1.0 - sl->A;
+		k = 1.0 - sl->A;		// so A=0.99, means 99% softening
 	// apply strain softening
 	return par*k;
 }

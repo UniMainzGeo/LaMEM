@@ -561,6 +561,7 @@ PetscErrorCode BCUpdateInflux(BCCtx *bc)
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
+#undef __FUNCT__
 #define __FUNCT__ "DBoxReadFromOptions"
 PetscErrorCode DBoxReadFromOptions(DBox *dbox, Scaling *scal)
 {
@@ -860,6 +861,12 @@ PetscErrorCode BCReadFromOptions(BCCtx *bc)
 
 		ierr = GetScalDataItemCheckScale("-bvel_time_velin", "Velocity at time delimiters",
 			_NOT_FOUND_ERROR_, bc->velmark.tseg+1, bc->velmark.velin, 0.0, 0.0, scal->velocity); CHKERRQ(ierr);
+
+		ierr = GetScalDataItemCheckScale("-bvel_xright", "Right coord of influx domain",
+					_NOT_FOUND_ERROR_, 1, &bc->velmark.xright, 0.0, 0.0, scal->length); CHKERRQ(ierr);
+
+		ierr = GetScalDataItemCheckScale("-bvel_length", "Length of influx domain",
+							_NOT_FOUND_ERROR_, 1, &bc->velmark.L, 0.0, 0.0, scal->length); CHKERRQ(ierr);
 	}
 
 	// set open boundary flag

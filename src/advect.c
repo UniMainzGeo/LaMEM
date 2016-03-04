@@ -1838,7 +1838,7 @@ PetscErrorCode ADVInfluxBC(AdvCtx *actx)
 	BCCtx       *bc;
 	Marker      *P;
 	PetscInt     jj, ninj, ndel;
-	PetscScalar  dt, dx, xs;
+	PetscScalar  dt, dx, xs, xs0;
 
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
@@ -1851,9 +1851,10 @@ PetscErrorCode ADVInfluxBC(AdvCtx *actx)
 	//PetscPrintf(PETSC_COMM_WORLD,"Influx BC: Breakpoint 2 \n");
 
 	// get current time step
-	dt = actx->jr->ts.dt;
-	dx = dt*bc->velin;
-	xs = actx->fs->msx.xstart[0];
+	dt  = actx->jr->ts.dt;
+	dx  = dt*bc->velin;
+	xs  = actx->fs->msx.xstart[0];
+	xs0 = bc->velmark.xright-bc->velmark.L;
 
 	// calculate storage
 	ninj = 0;
@@ -1917,7 +1918,7 @@ PetscErrorCode ADVInfluxBC(AdvCtx *actx)
 			actx->recvbuf[ninj] = bc->velmark.markers[jj];
 
 			// transform coordinates
-			actx->recvbuf[ninj].X[0] -= bc->velmark.D-dx-xs;
+			actx->recvbuf[ninj].X[0] -= bc->velmark.D-dx-xs0;
 
 			// update counter
 			ninj++;

@@ -1498,7 +1498,7 @@ PetscErrorCode ADVMarkInitInfluxBC(AdvCtx *actx, UserCtx *user)
 	PetscPrintf(PETSC_COMM_WORLD," Finished loading influx BC markers in parallel \n");
 
 	// also initiate distance
-	bc->velmark.D = actx->fs->msx.xstart[actx->fs->msx.nsegs];
+	bc->velmark.D = bc->velmark.xright;
 
 	PetscFunctionReturn(0);
 }

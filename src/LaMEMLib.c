@@ -304,18 +304,29 @@ PetscErrorCode LaMEMLib(ModParam *IOparam)
 		// initialize temperature
 		ierr = JacResInitTemp(&jr); CHKERRQ(ierr);
 
-		// compute inverse elastic viscosities
-		ierr = JacResGetI2Gdt(&jr); CHKERRQ(ierr);
 
 		if(user.SkipStokesSolver != PETSC_TRUE)
 		{
 			PetscTime(&cputime_start_nonlinear);
 
+			PetscBool 			snes_convergence;
+			snes_convergence 	=	PETSC_FALSE;
+
+
+			// compute inverse elastic viscosities (dependent on dt)
+			ierr = JacResGetI2Gdt(&jr); CHKERRQ(ierr);
+
 			// solve nonlinear system with SNES
 			ierr = SNESSolve(snes, NULL, jr.gsol); CHKERRQ(ierr);
 
 			// print analyze convergence/divergence reason & iteration count
-			ierr = SNESPrintConvergedReason(snes); CHKERRQ(ierr);
+			ierr = SNESPrintConvergedReason(snes, &snes_convergence); CHKERRQ(ierr);
+
+			if (!snes_convergence){
+
+				PetscPrintf(PETSC_COMM_WORLD, " **** Nonlinear solver failed to converge *** \n");
+
+			}
 
 			PetscTime(&cputime_end_nonlinear);
 
@@ -370,7 +381,7 @@ PetscErrorCode LaMEMLib(ModParam *IOparam)
 		// update phase ratios taking into account actual free surface position
 		// -- This routine requires a modification to also correct phase ratio's at edges and not just at corners --
 		// it has been deactivated temporarily (affects convergence for salt-tectonics setups with brittle overburden)
-		//ierr = FreeSurfGetAirPhaseRatio(&surf); CHKERRQ(ierr);
+		ierr = FreeSurfGetAirPhaseRatio(&surf); CHKERRQ(ierr);
 
 		// advect pushing block
 		ierr = BCAdvectPush(&bc); CHKERRQ(ierr);

@@ -88,7 +88,7 @@ typedef struct
 	PetscBool   flg;                          // if activated then use influx markers
 	PetscBool   tflg;                         // if activated, use alternate timesteps (for optimization)
 	PetscInt    tind;                         // (for optimization)
-	PetscScalar D;                            // distance
+	PetscScalar D, L, xright;                 // distance
 	PetscInt    nummark;                      // local number of markers
 	Marker     *markers;                      // storage for local markers
 	char        markdir[MAX_PATH_LEN];        // influx directory - similar as for parallel reading
