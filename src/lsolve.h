@@ -167,4 +167,9 @@ PetscErrorCode PCStokesUserSetup(PCStokes pc);
 PetscErrorCode PCStokesUserApply(Mat JP, Vec x, Vec y);
 
 //---------------------------------------------------------------------------
+
+PetscErrorCode PCAttachIS(PC pc, JacRes *jr);
+
+//---------------------------------------------------------------------------
+
 #endif
