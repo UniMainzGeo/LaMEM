@@ -456,11 +456,12 @@ PetscErrorCode JacResGetTempRes(JacRes *jr)
 		// conductivity, heat capacity, radiogenic heat production
 		ierr = JacResGetTempParam(jr, svCell->phRat, &kc, &rho_Cp, &rho_A); CHKERRQ(ierr);
 
-		// shear heating term
+		// shear heating term (effective)
 		Hr = svDev->Hr +
 		(hxy[k][j][i] + hxy[k][j+1][i] + hxy[k][j][i+1] + hxy[k][j+1][i+1] +
 		 hxz[k][j][i] + hxz[k+1][j][i] + hxz[k][j][i+1] + hxz[k+1][j][i+1] +
 		 hyz[k][j][i] + hyz[k+1][j][i] + hyz[k][j+1][i] + hyz[k+1][j+1][i])/4.0;
+		Hr = Hr * jr->matLim.shearHeatEff;
 
 		// check index bounds
 		Im1 = i-1; if(Im1 < 0)  Im1++;

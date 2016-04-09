@@ -473,12 +473,34 @@ PetscErrorCode PVOutWritePlastStrain(JacRes *jr, OutBuf *outbuf)
 #define __FUNCT__ "PVOutWritePlastDissip"
 PetscErrorCode PVOutWritePlastDissip(JacRes *jr, OutBuf *outbuf)
 {
-	PetscErrorCode ierr;
-	PetscFunctionBegin;
+	SolVarCell *svCell;
+	SolVarEdge *svEdge;
+	PetscScalar Hr;
 
-	ierr = 0; CHKERRQ(ierr);
-	if(jr)  jr = NULL;
-	if(outbuf) outbuf = NULL;
+	COPY_FUNCTION_HEADER
+
+	// macros to copy shear heating  to buffer
+	#define GET_SHEAR_HEATING_CENTER \
+		svCell = &jr->svCell[iter++];  \
+		Hr = svCell->svDev.Hr; \
+		buff[k][j][i] = Hr;
+
+	#define GET_SHEAR_HEATING_XY_EDGE svEdge = &jr->svXYEdge[iter++]; Hr = svEdge->svDev.Hr; buff[k][j][i] = Hr;
+	#define GET_SHEAR_HEATING_YZ_EDGE svEdge = &jr->svYZEdge[iter++]; Hr = svEdge->svDev.Hr; buff[k][j][i] = Hr;
+	#define GET_SHEAR_HEATING_XZ_EDGE svEdge = &jr->svXZEdge[iter++]; Hr = svEdge->svDev.Hr; buff[k][j][i] = Hr;
+
+	cf = scal->dissipation_rate;
+
+	iflag.update = PETSC_TRUE;
+
+	ierr = VecSet(outbuf->lbcor, 0.0); CHKERRQ(ierr);
+
+	INTERPOLATE_COPY(fs->DA_CEN, outbuf->lbcen, InterpCenterCorner, GET_SHEAR_HEATING_CENTER,  1, 0)
+	INTERPOLATE_COPY(fs->DA_XY,  outbuf->lbxy,  InterpXYEdgeCorner, GET_SHEAR_HEATING_XY_EDGE, 1, 0)
+	INTERPOLATE_COPY(fs->DA_YZ,  outbuf->lbyz,  InterpYZEdgeCorner, GET_SHEAR_HEATING_YZ_EDGE, 1, 0)
+	INTERPOLATE_COPY(fs->DA_XZ,  outbuf->lbxz,  InterpXZEdgeCorner, GET_SHEAR_HEATING_XZ_EDGE, 1, 0)
+
+	ierr = OutBufPut3DVecComp(outbuf, 1, 0, cf, 0.0); CHKERRQ(ierr);
 
 	PetscFunctionReturn(0);
 }
