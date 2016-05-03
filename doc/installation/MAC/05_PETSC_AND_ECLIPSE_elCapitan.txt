@@ -95,6 +95,26 @@ Yet, that is required for eclipse.
 
 The reason for this is that the latest MAC security protocols (SIP) makes this rather tricky. You have to codesign the gdb binary, and you can test if it works by running an application from the command-line.
 There are quite a few pages that explain how to codesign an application (google).
+
+————beatriz:
+from: http://stackoverflow.com/questions/22640787/debugging-in-eclipse-using-gdb-on-mac-failed-to-execute-mi-command-exec-run —
+1- Create a certificate:
+Start Keychain Access application (/Applications/Utilities/Keychain Access.app)
+Open menu /Keychain Access/Certificate Assistant/Create a Certificate...
+Choose a name (gdb-cert in the example), set Identity Type to "Self Signed Root", set Certificate Type to "Code Signing" and select the "Let me override defaults".
+Click several times on Continue until you get to the Specify a Location For The Certificate screen, then set Keychain to System.
+Using the contextual menu for the certificate, select "Get Info", open the Trust item, and set Code Signing to "Always Trust".
+2- You must quit Keychain Access application (named "taskgated",from activity monitor) and open it again in order to use the certificate.
+3- Assign the certificate to gdb:
+using the following command: $ codesign -s gdb-cert gdb
+
+I did:
+sudo codesign -s gdb-cert $(which gdb) 
+
+—————————————————————————————————————————————————————————————————————
+
+
+
 Yet, a missing step at the end was this one:
 
 sudo dseditgroup -o edit -a YOUR_USER_NAME -t user procmod
