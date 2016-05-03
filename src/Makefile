@@ -98,7 +98,8 @@ CSRC = \
 	pc_semiredundant.c \
 	objFunct.c \
 	AVDView.c \
-	matFree.c
+	matFree.c \
+	nlsolveExplicit.c
 	
 #====================================================
 

@@ -229,6 +229,7 @@ typedef struct
 	// flags
 	PetscBool        SkipStokesSolver;
 	PetscBool        SavePartitioning;
+	PetscBool		 ExplicitSolver; //  True => for the moment, wave propagation
 
 
 	// gravity

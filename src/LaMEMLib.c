@@ -72,6 +72,7 @@
 #include "AVDView.h"
 #include "break.h"
 #include "parsing.h"
+#include "nlsolveExplicit.h"
 //---------------------------------------------------------------------------
 #undef __FUNCT__
 #define __FUNCT__ "LaMEMLib"
@@ -99,6 +100,12 @@ PetscErrorCode LaMEMLib(ModParam *IOparam)
 
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
+
+
+	PetscBool          flg;
+	KSP                ksp;
+	KSPConvergedReason reason;
+	PetscBool          stop = PETSC_FALSE;
 
 	//=========================================================================
 
@@ -306,96 +313,158 @@ PetscErrorCode LaMEMLib(ModParam *IOparam)
 		// compute inverse elastic viscosities
 		ierr = JacResGetI2Gdt(&jr); CHKERRQ(ierr);
 
-		if(user.SkipStokesSolver != PETSC_TRUE)
-		{
-			PetscTime(&cputime_start_nonlinear);
 
-			// solve nonlinear system with SNES
-			ierr = SNESSolve(snes, NULL, jr.gsol); CHKERRQ(ierr);
+		/////////////////////////////////////////////////////////////////////////////////
+		//
+		// ExplicitSolver != PETSC_TRUE => Current LAMEM
+		// ExplicitSolver == PETSC_TRUE => Go to the wave propagation code ( ... working on it)
+		if (user.ExplicitSolver != PETSC_TRUE)		{
+		//
+		/////////////////////////////////////////////////////////////////////////////////
 
-			// print analyze convergence/divergence reason & iteration count
-			ierr = SNESPrintConvergedReason(snes); CHKERRQ(ierr);
 
-			PetscTime(&cputime_end_nonlinear);
+			if(user.SkipStokesSolver != PETSC_TRUE)
+			{
+				PetscTime(&cputime_start_nonlinear);
 
-			PetscPrintf(PETSC_COMM_WORLD, " Nonlinear solve took %g (sec)\n", cputime_end_nonlinear - cputime_start_nonlinear);
+				// solve nonlinear system with SNES
+				ierr = SNESSolve(snes, NULL, jr.gsol); CHKERRQ(ierr);
+
+				// print analyze convergence/divergence reason & iteration count
+				ierr = SNESPrintConvergedReason(snes); CHKERRQ(ierr);
+
+				PetscTime(&cputime_end_nonlinear);
+
+				PetscPrintf(PETSC_COMM_WORLD, " Nonlinear solve took %g (sec)\n", cputime_end_nonlinear - cputime_start_nonlinear);
+			}
+			else
+			{
+				// just evaluate initial residual
+				ierr = FormResidual(snes, jr.gsol, jr.gres, &nl); CHKERRQ(ierr);
+			}
+
+			// switch off initial guess flag
+			if(!JacResGetStep(&jr))
+			{
+				jr.matLim.initGuessFlg = PETSC_FALSE;
+			}
+
+			// view nonlinear residual
+			ierr = JacResViewRes(&jr); CHKERRQ(ierr);
+
+			// select new time step
+			ierr = JacResGetCourantStep(&jr); CHKERRQ(ierr);
+
+			// prescribe velocity if rotation benchmark
+			if (user.msetup == ROTATION) {ierr = JacResSetVelRotation(&jr); CHKERRQ(ierr);}
+
+			//==========================================
+			// MARKER & FREE SURFACE ADVECTION + EROSION
+			//==========================================
+
+			// advect free surface
+			ierr = FreeSurfAdvect(&surf); CHKERRQ(ierr);
+
+			// advect markers
+			ierr = ADVAdvect(&actx); CHKERRQ(ierr);
+
+			// apply background strain-rate "DWINDLAR" BC (Bob Shaw "Ship of Strangers")
+			ierr = BCStretchGrid(&bc); CHKERRQ(ierr);
+
+			// exchange markers between the processors (after mesh advection)
+			ierr = ADVExchange(&actx); CHKERRQ(ierr);
+
+			// apply erosion to the free surface
+			ierr = FreeSurfAppErosion(&surf); CHKERRQ(ierr);
+
+			// apply sedimentation to the free surface
+			ierr = FreeSurfAppSedimentation(&surf); CHKERRQ(ierr);
+
+			// remap markers onto (stretched) grid
+			ierr = ADVRemap(&actx, &surf); CHKERRQ(ierr);
+
+			// update phase ratios taking into account actual free surface position
+			// -- This routine requires a modification to also correct phase ratio's at edges and not just at corners --
+			// it has been deactivated temporarily (affects convergence for salt-tectonics setups with brittle overburden)
+			//ierr = FreeSurfGetAirPhaseRatio(&surf); CHKERRQ(ierr);
+
+			// advect pushing block
+			ierr = BCAdvectPush(&bc); CHKERRQ(ierr);
+
+			// compute gravity misfits
+	//		ierr = CalculateMisfitValues(&user, C, itime, LaMEM_OutputParameters); CHKERRQ(ierr);
+
+			// ACHTUNG !!!
+			//PetscBool          flg;
+			//KSP                ksp;
+			//KSPConvergedReason reason;
+			//PetscBool          stop = PETSC_FALSE;
+
+			ierr = PetscOptionsHasName(NULL, "-stop_linsol_fail", &flg); CHKERRQ(ierr);
+
+			if(flg == PETSC_TRUE)
+			{
+				ierr = SNESGetKSP(snes, &ksp); CHKERRQ(ierr);
+
+				ierr = KSPGetConvergedReason(ksp, &reason);
+
+				if(reason == KSP_DIVERGED_ITS)
+				{
+					stop = PETSC_TRUE;
+				}
+			}
+
+///////////////////////
 		}
 		else
 		{
+			// solve nonlinear system without SNES
+			//ierr = NLSolverExp(&jr); CHKERRQ(ierr);
+
+			//ierr = FormMomentumResidual(&jr); CHKERRQ(ierr);
 			// just evaluate initial residual
-			ierr = FormResidual(snes, jr.gsol, jr.gres, &nl); CHKERRQ(ierr);
-		}
+			ierr = FormMomentumResidual(snes, jr.gsol, jr.gres, &nl); CHKERRQ(ierr);
 
-		// switch off initial guess flag
-		if(!JacResGetStep(&jr))
-		{
-			jr.matLim.initGuessFlg = PETSC_FALSE;
-		}
+			ierr = GetVelocities(&jr, jr.gsol, jr.gres); CHKERRQ(ierr);
 
-		// view nonlinear residual
-		ierr = JacResViewRes(&jr); CHKERRQ(ierr);
+			//
+			// v = v0 + f*dt/rho0
+			// jr->lfx
+			//
 
-		// select new time step
-		ierr = JacResGetCourantStep(&jr); CHKERRQ(ierr);
-
-		// prescribe velocity if rotation benchmark
-		if (user.msetup == ROTATION) {ierr = JacResSetVelRotation(&jr); CHKERRQ(ierr);}
-
-		//==========================================
-		// MARKER & FREE SURFACE ADVECTION + EROSION
-		//==========================================
-
-		// advect free surface
-		ierr = FreeSurfAdvect(&surf); CHKERRQ(ierr);
-
-		// advect markers
-		ierr = ADVAdvect(&actx); CHKERRQ(ierr);
-
-		// apply background strain-rate "DWINDLAR" BC (Bob Shaw "Ship of Strangers")
-		ierr = BCStretchGrid(&bc); CHKERRQ(ierr);
-
-		// exchange markers between the processors (after mesh advection)
-		ierr = ADVExchange(&actx); CHKERRQ(ierr);
-
-		// apply erosion to the free surface
-		ierr = FreeSurfAppErosion(&surf); CHKERRQ(ierr);
-
-		// apply sedimentation to the free surface
-		ierr = FreeSurfAppSedimentation(&surf); CHKERRQ(ierr);
-
-		// remap markers onto (stretched) grid
-		ierr = ADVRemap(&actx, &surf); CHKERRQ(ierr);
-
-		// update phase ratios taking into account actual free surface position
-		// -- This routine requires a modification to also correct phase ratio's at edges and not just at corners --
-		// it has been deactivated temporarily (affects convergence for salt-tectonics setups with brittle overburden)
-		//ierr = FreeSurfGetAirPhaseRatio(&surf); CHKERRQ(ierr);
-
-		// advect pushing block
-		ierr = BCAdvectPush(&bc); CHKERRQ(ierr);
-
-		// compute gravity misfits
-//		ierr = CalculateMisfitValues(&user, C, itime, LaMEM_OutputParameters); CHKERRQ(ierr);
-
-		// ACHTUNG !!!
-		PetscBool          flg;
-		KSP                ksp;
-		KSPConvergedReason reason;
-		PetscBool          stop = PETSC_FALSE;
-
-		ierr = PetscOptionsHasName(NULL, "-stop_linsol_fail", &flg); CHKERRQ(ierr);
-
-		if(flg == PETSC_TRUE)
-		{
-			ierr = SNESGetKSP(snes, &ksp); CHKERRQ(ierr);
-
-			ierr = KSPGetConvergedReason(ksp, &reason);
-
-			if(reason == KSP_DIVERGED_ITS)
+			// switch off initial guess flag
+			if(!JacResGetStep(&jr))
 			{
-				stop = PETSC_TRUE;
+				jr.matLim.initGuessFlg = PETSC_FALSE;
+			}
+
+			// view nonlinear residual
+			ierr = JacResViewRes(&jr); CHKERRQ(ierr);
+
+			//// select new time step
+			//ierr = JacResGetCourantStep(&jr); CHKERRQ(ierr);
+
+			//// prescribe velocity if rotation benchmark
+			//if (user.msetup == ROTATION) {ierr = JacResSetVelRotation(&jr); CHKERRQ(ierr);}
+
+
+			// ACHTUNG !!! ??
+
+			ierr = PetscOptionsHasName(NULL, "-stop_linsol_fail", &flg); CHKERRQ(ierr);
+
+			if(flg == PETSC_TRUE)
+			{
+				ierr = SNESGetKSP(snes, &ksp); CHKERRQ(ierr);
+
+				ierr = KSPGetConvergedReason(ksp, &reason);
+
+				if(reason == KSP_DIVERGED_ITS)
+				{
+					stop = PETSC_TRUE;
+				}
 			}
 		}
+
 
 		//==================
 		// Save data to disk
