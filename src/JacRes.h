@@ -92,6 +92,11 @@ typedef struct
 	Vec gp; // global
 	Vec lp; // local (ghosted)
 
+	// for Explicit
+	PetscBool		 ExplicitSolver; //  True => for the moment, wave propagation
+	Vec gK;
+
+
 	// continuity residual
 	Vec gc; // global
 
@@ -269,6 +274,11 @@ PetscErrorCode JacResGetTempRes(JacRes *jr);
 
 // assemble temperature preconditioner matrix
 PetscErrorCode JacResGetTempMat(JacRes *jr);
+
+
+
+// compute nonlinear momentum residual vector
+PetscErrorCode JacResGetMomentumResidual(JacRes *jr);
 
 //---------------------------------------------------------------------------
 // MACROS

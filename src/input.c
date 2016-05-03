@@ -153,6 +153,9 @@ PetscErrorCode FDSTAGInitCode(JacRes *jr, UserCtx *user, ModParam *iop)
 	PetscPrintf(PETSC_COMM_WORLD," BC employed                    : BC.[LeftBound=%lld RightBound=%lld; FrontBound=%lld BackBound=%lld; LowerBound=%lld UpperBound=%lld] \n",
 			(LLD)(user->BC.LeftBound), (LLD)(user->BC.RightBound), (LLD)(user->BC.FrontBound), (LLD)(user->BC.BackBound), (LLD)(user->BC.LowerBound), (LLD)(user->BC.UpperBound) );
 
+	// Explicit solver (wave propagation)
+	jr->ExplicitSolver = user->ExplicitSolver;
+
 	ierr = PetscFree(all_options); CHKERRQ(ierr);
 
 	PetscFunctionReturn(0);
@@ -264,6 +267,8 @@ PetscErrorCode InputSetDefaultValues(JacRes *jr, UserCtx *user)
     // Add a few default options
     PetscOptionsInsertString("-options_left");
     
+    // Explicit solver (wave propagation)
+    user->ExplicitSolver = PETSC_FALSE;
     
 
 	PetscFunctionReturn(0);
@@ -511,6 +516,8 @@ PetscErrorCode InputReadCommLine(UserCtx *user )
 
 	PetscOptionsGetBool(PETSC_NULL,"-SavePartitioning",&user->SavePartitioning, PETSC_NULL);
 	PetscOptionsGetBool(PETSC_NULL,"-SkipStokesSolver",&user->SkipStokesSolver, PETSC_NULL);
+
+	PetscOptionsGetBool(PETSC_NULL,"-ExplicitSolver",&user->ExplicitSolver, PETSC_NULL);
 
 	// optimization
 	PetscOptionsGetReal(PETSC_NULL,"-LowerViscosityCutoff", &user->LowerViscosityCutoff, PETSC_NULL); // lower viscosity cutoff
