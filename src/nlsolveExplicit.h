@@ -8,6 +8,7 @@
 #ifndef __nlsolveExplicit_h__
 #define __nlsolveExplicit_h__
 
+
 PetscErrorCode GetVelocities(JacRes *jr, UserCtx *user);
 //PetscErrorCode GetPressure2(JacRes *jr);
 //PetscErrorCode GetStress(JacRes *jr);
@@ -27,4 +28,9 @@ PetscErrorCode UpdateHistoryFieldsAndGetAxialStressStrain(JacRes *jr, PetscScala
 PetscErrorCode GetCellCoordinatesSource(JacRes *jr);
 PetscErrorCode GetStressFromSource(JacRes *jr, UserCtx *User, PetscInt i, PetscInt j, PetscInt k, PetscScalar *sxx, PetscScalar *syy, PetscScalar *szz);
 PetscScalar GetBoundaryDamping(UserCtx *user, PetscInt i, PetscInt j, PetscInt k);
+
+PetscErrorCode NLSolverExp(JacRes *jr);
+PetscErrorCode FormMomentumResidual(SNES snes, Vec x, Vec f, void *ctx);
+
+
 #endif

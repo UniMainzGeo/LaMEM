@@ -100,8 +100,6 @@ typedef struct
 	//PetscScalar 	x_rec, y_rec, z_rec;	// Seismic station coordinates (in meters)
 	Station			Station;
 
-
-
 	// continuity residual
 	Vec gc; // global
 
@@ -288,13 +286,9 @@ PetscErrorCode JacResGetTempMat(JacRes *jr);
 // compute nonlinear momentum residual vector
 PetscErrorCode JacResGetMomentumResidualAndPressure(JacRes *jr, UserCtx *user);
 
-
-
 // copy global velocities/pressures vectors to global solution vector
 PetscErrorCode JacResCopySolution(JacRes *jr, Vec x);
 
-/*// copy continuity residual and theta in gK
-PetscErrorCode JacResCopyK(JacRes *jr, Vec K);*/
 
 //---------------------------------------------------------------------------
 // MACROS

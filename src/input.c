@@ -168,11 +168,11 @@ PetscErrorCode FDSTAGInitCode(JacRes *jr, UserCtx *user, ModParam *iop)
 	// Explicit solver (wave propagation)
 	jr->ExplicitSolver = user->ExplicitSolver;
 
+
 	jr->DensityFactor  = user->DensityFactor;
 
 	jr->SeismicSource  = user->SeismicSource;
 	if (jr->SeismicSource == PETSC_TRUE) jr->SourceParams = user->SourceParams;
-
 
 	ierr = PetscFree(all_options); CHKERRQ(ierr);
 
@@ -296,7 +296,6 @@ PetscErrorCode InputSetDefaultValues(JacRes *jr, UserCtx *user)
     user->AB.NyR = 20;
     user->AB.NzL = 20;
     user->AB.NzR = 20;
-    
 
 	PetscFunctionReturn(0);
 }
