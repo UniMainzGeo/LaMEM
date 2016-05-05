@@ -45,6 +45,9 @@
 //---------------------------------------------------------------------------
 #ifndef __fdstagTypes_h__
 #define __fdstagTypes_h__
+
+#define _MAX_AdjointPars_ 50
+#define _MAX_AdjointIndices_ 100
 //-----------------------------------------------------------------------------
 // Structure that holds boundary conditions info
 typedef struct
@@ -160,6 +163,14 @@ typedef struct
 	PetscScalar     *grd;  // gradient value
 	PetscScalar      mfit; // misfit value for current model parameters
 } ModParam;
+
+//-----------------------------------------------------------------------------
+// Structure that holds paramters for the adjoint gradient computation
+typedef struct
+{
+	PetscScalar      grad[_MAX_AdjointPars_]; // Vector containing the gradients (dF/dp = -psi * dr/dp)
+} AdjGrad;
+
 //-----------------------------------------------------------------------------
 // Structure that holds user input data
 typedef struct
@@ -211,6 +222,14 @@ typedef struct
 
 	//PetscBool        VelocityTest;   // Request to perform single velocity solve for test purposes
 	//PetscBool        ScaleSystem;    // Request to scale linear system before solution
+
+	// Compute Adjoint gradients
+	PetscBool 		ComputeAdjointGradients;   // 1=Compute
+	PetscInt		AdjointIndex[_MAX_AdjointIndices_];              // Index in the solution vector where to compute the gradients
+	PetscInt 	    AdjointParameters[_MAX_AdjointPars_];   // 1=Compute
+	PetscInt        AdjointPhases[_MAX_AdjointPars_];              // Index in the solution vector where to compute the gradients
+	PetscInt        AdjointNumPar;
+	PetscInt        AdjointNumInd;
 
 	// restart
 	PetscInt         save_breakpoints, break_point_number;

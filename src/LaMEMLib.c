@@ -69,6 +69,7 @@
 #include "AVDView.h"
 #include "break.h"
 #include "parsing.h"
+#include "adjoint.h"
 //---------------------------------------------------------------------------
 #undef __FUNCT__
 #define __FUNCT__ "LaMEMLib"
@@ -93,6 +94,7 @@ PetscErrorCode LaMEMLib(ModParam *IOparam)
 	PVMark   pvmark; // paraview output driver for markers
 	PVAVD    pvavd;  // paraview output driver for AVD
 	ObjFunct objf;   // objective function
+	AdjGrad  aop;    // Adjoint options
 
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
@@ -264,6 +266,7 @@ PetscErrorCode LaMEMLib(ModParam *IOparam)
 		ierr = PVSurfDestroy(&pvsurf); CHKERRQ(ierr);
 		ierr = PVMarkDestroy(&pvmark); CHKERRQ(ierr);
 		ierr = PVAVDDestroy(&pvavd);   CHKERRQ(ierr);
+		ierr = AdjointDestroy(&aop);   CHKERRQ(ierr);
 
 		PetscFunctionReturn(0);
 	}
@@ -342,6 +345,11 @@ PetscErrorCode LaMEMLib(ModParam *IOparam)
 
 		// view nonlinear residual
 		ierr = JacResViewRes(&jr); CHKERRQ(ierr);
+
+		if(user.ComputeAdjointGradients == PETSC_TRUE)
+		{
+			ierr = CreateAdjoint(&jr, &user, &aop, &nl,&snes); CHKERRQ(ierr);
+		}
 
 		// select new time step
 		ierr = JacResGetCourantStep(&jr); CHKERRQ(ierr);
@@ -487,6 +495,7 @@ PetscErrorCode LaMEMLib(ModParam *IOparam)
 	ierr = PVSurfDestroy(&pvsurf); CHKERRQ(ierr);
 	ierr = PVMarkDestroy(&pvmark); CHKERRQ(ierr);
 	ierr = PVAVDDestroy(&pvavd);   CHKERRQ(ierr);
+	ierr = AdjointDestroy(&aop);     CHKERRQ(ierr);
 
 
 	PetscTime(&cputime_end);
