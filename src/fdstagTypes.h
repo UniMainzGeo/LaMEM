@@ -225,11 +225,14 @@ typedef struct
 
 	// Compute Adjoint gradients
 	PetscBool 		ComputeAdjointGradients;   // 1=Compute
-	PetscInt		AdjointIndex[_MAX_AdjointIndices_];              // Index in the solution vector where to compute the gradients
+	PetscScalar		Adjoint_x[_MAX_AdjointIndices_];              // Index in the solution vector where to compute the gradients
+	PetscScalar		Adjoint_y[_MAX_AdjointIndices_];
+	PetscScalar		Adjoint_z[_MAX_AdjointIndices_];
 	PetscInt 	    AdjointParameters[_MAX_AdjointPars_];   // 1=Compute
 	PetscInt        AdjointPhases[_MAX_AdjointPars_];              // Index in the solution vector where to compute the gradients
 	PetscInt        AdjointNumPar;
 	PetscInt        AdjointNumInd;
+	PetscInt        AdjointVel[_MAX_AdjointIndices_];
 
 	// restart
 	PetscInt         save_breakpoints, break_point_number;

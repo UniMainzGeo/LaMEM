@@ -346,7 +346,10 @@ PetscErrorCode InputReadFile(JacRes *jr, UserCtx *user, FILE *fp)
 
 	// Adjoint gradients
 	parse_GetInt( fp,    "ComputeAdjointGradients", &user->ComputeAdjointGradients, &found );
-	parse_GetIntArray(fp,"AdjointIndex", &nv, i_values, &found); for( i=0; i<100;   i++ ) { user->AdjointIndex[i] = i_values[i];}
+	parse_GetIntArray(fp,   "AdjointVel", &nv, i_values, &found); for( i=0; i<100;   i++ ) { user->AdjointVel[i] = i_values[i];};
+	parse_GetDoubleArray(fp,"Adjoint_x" , &nv, d_values, &found); for( i=0; i<100;   i++ ) { user->Adjoint_x[i] = d_values[i];}
+	parse_GetDoubleArray(fp,"Adjoint_y" , &nv, d_values, &found); for( i=0; i<100;   i++ ) { user->Adjoint_y[i] = d_values[i];}
+	parse_GetDoubleArray(fp,"Adjoint_z" , &nv, d_values, &found); for( i=0; i<100;   i++ ) { user->Adjoint_z[i] = d_values[i];}
 	user->AdjointNumInd = nv;  // Number of indices
 	parse_GetIntArray(fp,"AdjointParameters", &nv, i_values, &found); for( i=0; i<50;   i++ ) { user->AdjointParameters[i] = i_values[i];}
 	parse_GetIntArray(fp,"AdjointPhases", &nv, i_values, &found); for( i=0; i<50;   i++ ) { user->AdjointPhases[i] = i_values[i];}

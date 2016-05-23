@@ -47,7 +47,7 @@
 //---------------------------------------------------------------------------
 
 // make context for adjoint
-PetscErrorCode CreateAdjoint(JacRes *jr, UserCtx *user, AdjGrad *aop, NLSol *nl,SNES *snes);
+PetscErrorCode CreateAdjoint(JacRes *jr, UserCtx *user, AdjGrad *aop, NLSol *nl,SNES snes, AdvCtx *actx);
 
 // To clear the memory
 PetscErrorCode AdjointDestroy(AdjGrad *aop);

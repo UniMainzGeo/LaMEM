@@ -43,36 +43,56 @@
 // COMPUTATION OF ADJOINT GRADIENTS
 //---------------------------------------------------------------------------
 // RECIPE:
-// Objective function    F(x,x(p)) = P * x^T                // p = parameter ; x = converged solution ; Projection vector containing 1 at comparison points
+// Objective function    F(x,x(p)) = P * x^T                // p = parameter ; x = converged solution ; Projection vector containing the proportions of solution influence
 // Derivative I          dF/dx     = P
 // Adjoint operation     psi       = J^-T * dF/dx           // J = converged Jacobain matrix
 // Derivative II         dr/dp     = [r(p+h) - r(p)]/h      // finite difference approximation of derivative of residual r vs parameter
 // Gradients             dF/dp     = -psi^T * dr/dp
 //
 // USAGE:
-// In your *.dat file you need to define:
+// In your .dat file you need to define:
 // ComputeAdjointGradients	       = 1	                    // 1 = Compute gradients 0 = NO
-// AdjointIndex					   = 99 100 101             // Array containing the indices in the solution vector at which you want to compute the gradients in space (best to find them in matlab when creating the setup)
+// Adjoint_x					   = 1.2                    // Array containing the x coordinates of the point where you want to compute the gradients
+// Adjoint_y					   = 0.6                    // Array containing the y coordinates of the point where you want to compute the gradients
+// Adjoint_z					   = 0.4                    // Array containing the z coordinates of the point where you want to compute the gradients
 // AdjointPhases                   = 1 2 1 2                // Array (same length as AdjointParameters) containing the phase of the parameter
 // AdjointParameters               = 2 1 1 1                // Array (same length as AdjointPhases) containing the parameter corresponding to the phase
 //
 //                              Density         Elasticity  Diff creep    Dis creep    Peierl creep
 // Possible parameters: (rho rho_n rho_c beta)   (K Kp G)   (Bd Ed Vd)  (Bn n  En Vn) (taup gamma q )
 //                      ( 1     2     3    4 )   (5  6 7)   ( 8  9 10)  (11 12 13 14) ( 15    16  17)
+//
+// You can control the behaviour of the KSP object for the adjoint with the prefix "as_"
+// IMPORTANT: Since the Adjoint needs the Jacobian matrix for computing the gradients it's crucial to make sure that
+// you compute the Jacobian matrix in the timesteps where you want to compute the gradients
+// (f.e. a linear problem would need a low value for -snes_atol [1e-20] and a low max iteration count -snes_max_it [2] to guarantee the computation of the Jacobian
 //---------------------------------------------------------------------------
 #include "LaMEM.h"
+#include "tools.h"
 #include "fdstag.h"
 #include "solVar.h"
 #include "scaling.h"
 #include "tssolve.h"
 #include "bc.h"
 #include "JacRes.h"
-#include "matFree.h"
+#include "interpolate.h"
+#include "surf.h"
+#include "paraViewOutBin.h"
+#include "paraViewOutSurf.h"
 #include "multigrid.h"
 #include "matrix.h"
 #include "lsolve.h"
 #include "nlsolve.h"
-#include "tools.h"
+#include "multigrid.h"
+#include "advect.h"
+#include "marker.h"
+#include "paraViewOutMark.h"
+#include "input.h"
+#include "matProps.h"
+#include "objFunct.h"
+#include "AVDView.h"
+#include "break.h"
+#include "parsing.h"
 #include "adjoint.h"
 //---------------------------------------------------------------------------
 #undef __FUNCT__
@@ -82,19 +102,21 @@ PetscErrorCode AdjointDestroy(AdjGrad *aop)
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
 
-	// Nothing to clear so far (maybe for the future)
+	ierr = PetscMemzero(aop, sizeof(AdjGrad)); CHKERRQ(ierr);
 
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
 #undef __FUNCT__
 #define __FUNCT__ "CreateAdjoint"
-PetscErrorCode CreateAdjoint(JacRes *jr, UserCtx *user, AdjGrad *aop, NLSol *nl,SNES *snes)
+PetscErrorCode CreateAdjoint(JacRes *jr, UserCtx *user, AdjGrad *aop, NLSol *nl,SNES snes, AdvCtx *actx)
 {
 
 	/* TODO:
 		- It's only valid vor visco-elasicity since the Jacobian is assumed to be symmetric
-		- For some strange reason gives different results in parallel (maybe the summation of the vector is worng in parallel?)
+		- So far only working in sequentiel mode (maybe the summation of the vector is worng in parallel?)
+		- boundary of 1e-10 if Perturb parameter becomes too small
+		- thereotical capable of multiple points but so far only tested for ONE point!
 	*/
 
 	PetscPrintf(PETSC_COMM_WORLD,"Computation of adjoint gradients\n");
@@ -103,55 +125,179 @@ PetscErrorCode CreateAdjoint(JacRes *jr, UserCtx *user, AdjGrad *aop, NLSol *nl,
 	PetscFunctionBegin;
 
 	// Initialize all variables
+	// PCStokes            pc;
+	FDSTAG              *fs;
 	KSP                 ksp;
 	KSPConvergedReason  reason;
-	PetscInt            i, j, sizeSol;
-	PetscScalar         p, Perturb, *tempres, *temprpl, *temppsi;       // Temporary vectors for the computation
+	PetscInt            i, ii, j, lrank, grank, sx, sy, sz, nx, ny, nz, I, J, K, II, JJ, KK;
+	PetscScalar         grd, xb, yb, zb, xe, ye, ze, Perturb, coord_local[3], vx[100], vy[100], vz[100], xc, yc, zc, *iter, *ncx, *ncy, *ncz, *ccx, *ccy, *ccz, ***lvx, ***lvy, ***lvz, *temppro, *tempproX, *tempproY, *tempproZ;       // Temporary vectors for the computation
 	PetscScalar         rhoIni, rho_nIni, rho_cIni, betaIni, KIni, KpIni, GIni, BdIni, EdIni, VdIni, BnIni, nIni, EnIni, VnIni, taupIni, gammaIni, qIni;   // Initialize parameters for which the gradients can be computed
-	Vec 				rpl,sol,psi,pro;
+	Vec 				rpl, sol, psi, pro, proX, proY, proZ, drdp, res, Perturb_vec;
+	PC                  ipc;
+
+	// access context
+	fs = actx->fs;
 
 	// Set perturbation paramter for the finite differences
 	Perturb = 1e-6;
-	p       = 1.0;
-
-	// Get size of the solution vector
-	ierr = VecGetSize(jr->gsol, &sizeSol);
-
-	// Initialize temporary computation arrays
-	PetscScalar tempdrdp[sizeSol], tempap[sizeSol];
 
 	// Create all needed vectors in the same size as the solution vector
 	ierr = VecDuplicate(jr->gsol, &pro); CHKERRQ(ierr);
+	ierr = VecDuplicate(jr->gfx, &proX); CHKERRQ(ierr);
+	ierr = VecDuplicate(jr->gfy, &proY); CHKERRQ(ierr);
+	ierr = VecDuplicate(jr->gfz, &proZ); CHKERRQ(ierr);
 	ierr = VecDuplicate(jr->gsol, &psi); CHKERRQ(ierr);
 	ierr = VecDuplicate(jr->gres, &rpl); CHKERRQ(ierr);
+	ierr = VecDuplicate(jr->gres, &res); CHKERRQ(ierr);
 	ierr = VecDuplicate(jr->gsol, &sol); CHKERRQ(ierr);
+	ierr = VecDuplicate(jr->gsol, &drdp); CHKERRQ(ierr);
+	ierr = VecDuplicate(jr->gsol, &Perturb_vec); CHKERRQ(ierr);
 	ierr = VecCopy(jr->gsol,sol); CHKERRQ(ierr);
+	ierr = VecCopy(jr->gres,res); CHKERRQ(ierr);
+	ierr = VecSet(Perturb_vec,Perturb);
 
-	// Put 1 into the Projection vector where the user defined the computation indices (dF/dx = P)
-	for (i=0; i<=user->AdjointNumInd; i++) {
-		ierr = VecSetValues(pro,1,&user->AdjointIndex[i],&p,INSERT_VALUES);
+	// scan markers
+	for(ii = 0; ii < user->AdjointNumInd; ii++) {
+		// Create coordinate vector
+		coord_local[0] = user->Adjoint_x[ii];
+		coord_local[1] = user->Adjoint_y[ii];
+		coord_local[2] = user->Adjoint_z[ii];
+
+		// get global & local ranks of a marker
+		ierr = FDSTAGGetPointRanks(fs, coord_local, &lrank, &grank); CHKERRQ(ierr);
+
+		if(lrank == -1) {
+		} else {
+			// starting indices & number of cells
+			sx = fs->dsx.pstart; nx = fs->dsx.ncels;
+			sy = fs->dsy.pstart; ny = fs->dsy.ncels;
+			sz = fs->dsz.pstart; nz = fs->dsz.ncels;
+
+			// node & cell coordinates
+			ncx = fs->dsx.ncoor; ccx = fs->dsx.ccoor;
+			ncy = fs->dsy.ncoor; ccy = fs->dsy.ccoor;
+			ncz = fs->dsz.ncoor; ccz = fs->dsz.ccoor;
+
+			// find I, J, K indices by bisection algorithm
+			I = FindPointInCell(ncx, 0, nx, coord_local[0]);
+			J = FindPointInCell(ncy, 0, ny, coord_local[1]);
+			K = FindPointInCell(ncz, 0, nz, coord_local[2]);
+
+			// Access the local velocities
+			ierr = DMDAVecGetArray(fs->DA_X,   jr->lvx, &lvx); CHKERRQ(ierr);
+			ierr = DMDAVecGetArray(fs->DA_Y,   jr->lvy, &lvy); CHKERRQ(ierr);
+			ierr = DMDAVecGetArray(fs->DA_Z,   jr->lvz, &lvz); CHKERRQ(ierr);
+
+			// get coordinates of cell center
+			xc = ccx[I];
+			yc = ccy[J];
+			zc = ccz[K];
+
+			// map marker on the cells of X, Y, Z & center grids
+			if(coord_local[0] > xc) { II = I; } else { II = I-1; }
+			if(coord_local[1] > yc) { JJ = J; } else { JJ = J-1; }
+			if(coord_local[2] > zc) { KK = K; } else { KK = K-1; }
+
+			ierr = VecGetArray(proX, &tempproX);      CHKERRQ(ierr);
+			ierr = VecGetArray(proY, &tempproY);      CHKERRQ(ierr);
+			ierr = VecGetArray(proZ, &tempproZ);      CHKERRQ(ierr);
+
+			if(user->AdjointVel[ii] == 1){                  // Vx
+				// interpolate x velocity
+				vx[ii] = InterpLin3D(lvx, I,  JJ, KK, sx, sy, sz, coord_local[0], coord_local[1], coord_local[2], ncx, ccy, ccz);
+
+				// get relative coordinates
+				xe = (coord_local[0] - ncx[I])/(ncx[I+1] - ncx[I]); xb = 1.0 - xe;
+				ye = (coord_local[1] - ccy[J])/(ccy[J+1] - ccy[J]); yb = 1.0 - ye;
+				ze = (coord_local[2] - ccz[K])/(ccz[K+1] - ccz[K]); zb = 1.0 - ze;
+
+				tempproX[sx+I  ] = xb;
+				tempproX[sx+I+1] = xe;
+
+				tempproY[sy+J  ] = yb;
+				tempproY[sy+J+1] = ye;
+
+				tempproZ[sz+K  ] = zb;
+				tempproZ[sz+K+1] = ze;
+
+			}else if(user->AdjointVel[ii] == 2){                  // Vy
+				// interpolate y velocity
+				vy[ii] = InterpLin3D(lvy, II, J,  KK, sx, sy, sz, coord_local[0], coord_local[1], coord_local[2], ccx, ncy, ccz);
+
+				// get relative coordinates
+				xe = (coord_local[0] - ccx[I])/(ccx[I+1] - ccx[I]); xb = 1.0 - xe;
+				ye = (coord_local[1] - ncy[J])/(ncy[J+1] - ncy[J]); yb = 1.0 - ye;
+				ze = (coord_local[2] - ccz[K])/(ccz[K+1] - ccz[K]); zb = 1.0 - ze;
+
+				tempproX[sx+I  ] = xb;
+				tempproX[sx+I+1] = xe;
+
+				tempproY[sy+J  ] = yb;
+				tempproY[sy+J+1] = ye;
+
+				tempproZ[sz+K  ] = zb;
+				tempproZ[sz+K+1] = ze;
+
+			}else if(user->AdjointVel[ii] == 3){                  // Vz
+				// interpolate z velocity
+				vz[ii] = InterpLin3D(lvz, II, JJ, K,  sx, sy, sz, coord_local[0], coord_local[1], coord_local[2], ccx, ccy, ncz);
+
+				// get relative coordinates
+				xe = (coord_local[0] - ccx[I])/(ccx[I+1] - ccx[I]); xb = 1.0 - xe;
+				ye = (coord_local[1] - ccy[J])/(ccy[J+1] - ccy[J]); yb = 1.0 - ye;
+				ze = (coord_local[2] - ncz[K])/(ncz[K+1] - ncz[K]); zb = 1.0 - ze;
+
+				tempproX[sx+I  ] = xb;
+				tempproX[sx+I+1] = xe;
+
+				tempproY[sy+J  ] = yb;
+				tempproY[sy+J+1] = ye;
+
+				tempproZ[sz+K  ] = zb;
+				tempproZ[sz+K+1] = ze;
+			}
+
+			// Put the proportion into the Projection vector where the user defined the computation coordinates (dF/dx = P)
+			ierr = VecGetArray(pro, &temppro);      CHKERRQ(ierr);
+			iter = temppro;
+
+			ierr  = PetscMemcpy(iter, tempproX, (size_t)fs->nXFace*sizeof(PetscScalar)); CHKERRQ(ierr);
+			iter += fs->nXFace;
+
+			ierr  = PetscMemcpy(iter, tempproY, (size_t)fs->nYFace*sizeof(PetscScalar)); CHKERRQ(ierr);
+			iter += fs->nYFace;
+
+			ierr  = PetscMemcpy(iter, tempproZ, (size_t)fs->nZFace*sizeof(PetscScalar)); CHKERRQ(ierr);
+			iter += fs->nZFace;
+
+			// restore access
+			ierr = VecRestoreArray(proX, &tempproX);      CHKERRQ(ierr);
+			ierr = VecRestoreArray(proY, &tempproY);      CHKERRQ(ierr);
+			ierr = VecRestoreArray(proZ, &tempproZ);      CHKERRQ(ierr);
+			ierr = VecRestoreArray(pro, &temppro);       CHKERRQ(ierr);
+		}
 	}
-	ierr = VecAssemblyBegin(pro);
-	ierr = VecAssemblyEnd(pro);
 
-	// Solve the main adjoint equation with KSP (psi = J^-T * dF/dx)
-	KSPCreate(PETSC_COMM_WORLD,&ksp);
-	KSPSetOperators(ksp,nl->J,nl->P);
-	KSPSetType(ksp,KSPCG);
-	KSPSetInitialGuessNonzero(ksp,PETSC_TRUE);
-	KSPSetFromOptions(ksp);
-	KSPSetUp(ksp);
-	KSPSolve(ksp,pro,psi);
-	KSPGetConvergedReason(ksp,&reason);
-
-	// Extract global residual and psi vector for computation
-	VecGetArray(jr->gres,&tempres);
-	VecGetArray(psi,&temppsi);
+	// Solve the adjoint equation (psi = J^-T * dF/dx)
+	ierr = SNESGetKSP(snes, &ksp);         CHKERRQ(ierr);
+	ierr = KSPSetOptionsPrefix(ksp,"as_"); CHKERRQ(ierr);
+	ierr = KSPSetFromOptions(ksp);         CHKERRQ(ierr);
+	ierr = KSPGetPC(ksp, &ipc);            CHKERRQ(ierr);
+	ierr = PCSetType(ipc, PCMAT);          CHKERRQ(ierr);
+	ierr = KSPSetOperators(ksp,nl->J,nl->P);	CHKERRQ(ierr);
+	ierr = KSPSolve(ksp,pro,psi);	CHKERRQ(ierr);
+	ierr = KSPGetConvergedReason(ksp,&reason);	CHKERRQ(ierr);
 
 	//===============
 	// Parameter loop
 	//===============
 	for(j=0; j<user->AdjointNumPar; j++){
+
+		// Get residual since it is overwritten in VecAYPX
+		ierr = VecDuplicate(jr->gres, &res); CHKERRQ(ierr);
+		ierr = VecDuplicate(jr->gsol, &drdp); CHKERRQ(ierr);
+		ierr = VecDuplicate(jr->gres, &rpl); CHKERRQ(ierr);
+		ierr = VecCopy(jr->gres,res); CHKERRQ(ierr);
 
 		// Get current phase and parameter
 		PetscInt CurPhase = user->AdjointPhases[j];
@@ -226,31 +372,26 @@ PetscErrorCode CreateAdjoint(JacRes *jr, UserCtx *user, AdjGrad *aop, NLSol *nl,
 			// PetscScalar         qIni;
 			qIni = nl->pc->pm->jr->phases[CurPhase].q;
 			nl->pc->pm->jr->phases[CurPhase].q +=  (Perturb*nl->pc->pm->jr->phases[CurPhase].q);
-		}
+		}/*else if (CurPar==18) {
+			// PetscScalar         etaIni;
+			etaIni = nl->pc->pm->jr->phases[CurPhase].eta;
+			nl->pc->pm->jr->phases[CurPhase].eta +=  (Perturb*nl->pc->pm->jr->phases[CurPhase].eta);
+		}*/
 
 		// Compute residual with the converged Jacobian and preconditioner (dr/dp = [r(p+h) - r(p)]/h)
-		ierr = FormResidual(snes, sol, rpl, nl); CHKERRQ(ierr);
+		ierr = FormResidual(snes, sol, rpl, nl); 	       CHKERRQ(ierr);
+		ierr = VecAYPX(res,-1,rpl);                        CHKERRQ(ierr);
+		ierr = VecPointwiseDivide(drdp,res,Perturb_vec);   CHKERRQ(ierr);
 
-		// Exract new residual
-		VecGetArray(rpl,&temprpl);
-
-		// Compute the gradient (dF/dp = psi^T * dr/dp [minus is added in the next line])
-		for (i=0; i<=sizeSol; i++) {
-			tempdrdp[i] 	= (tempres[i] - temprpl[i])/Perturb;
-			tempap[i]   	= temppsi[i] * tempdrdp[i];
-		}
-
-		// Sum the gradient vector up to get the gradient
-		for (i=0; i<=sizeSol; i++) {
-			aop->grad[j] += tempap[i];
-		}
+		// Compute the gradient (dF/dp = -psi^T * dr/dp)
+		ierr = VecDot(psi, drdp, &grd);     CHKERRQ(ierr);
 
 		// Save gradient
-		aop->grad[j] 	= -aop->grad[j];    // Include the minus sign of the equation (dF/dp = -dF/dp)
+		aop->grad[j] 	= -1 * grd;
 
-		// Rebuild the residual vector
-		VecRestoreArray(rpl,&temprpl);
+		// VecView(pro,	PETSC_VIEWER_STDOUT_WORLD );     CHKERRQ(ierr);
 
+		// Print result
 		PetscPrintf(PETSC_COMM_WORLD,"%D.Gradient = %g ; CurPar = %d ; CurPhase = %d\n",j+1,aop->grad[j],CurPar,CurPhase);
 
 		// Set all the used parameter back to its original value
@@ -288,20 +429,29 @@ PetscErrorCode CreateAdjoint(JacRes *jr, UserCtx *user, AdjGrad *aop, NLSol *nl,
 			nl->pc->pm->jr->phases[CurPhase].gamma = gammaIni;
 		}else if (CurPar==17) {
 			nl->pc->pm->jr->phases[CurPhase].q = qIni;
-		}
+		}/*else if (CurPar==18) {
+			nl->pc->pm->jr->phases[CurPhase].eta = etaIni;
+		}*/
+
 	}
 
+	// Print the solution variable at the user defined index
+	for (i=0; i<user->AdjointNumInd; i++) {
+		PetscPrintf(PETSC_COMM_WORLD,"Computation variable = %g \n",vz[i]);
+	}
 	PetscPrintf(PETSC_COMM_WORLD,"Computation was succesful\n------------------------------------------\n");
-
-	// Restore parameter independent vectors
-	VecRestoreArray(jr->gres,&tempres);
-	VecRestoreArray(psi,&temppsi);
 
 	// Clean
 	ierr = VecDestroy(&rpl);
 	ierr = VecDestroy(&psi);
 	ierr = VecDestroy(&sol);
 	ierr = VecDestroy(&pro);
+	ierr = VecDestroy(&proX);
+	ierr = VecDestroy(&proY);
+	ierr = VecDestroy(&proZ);
+	ierr = VecDestroy(&res);
+	ierr = VecDestroy(&drdp);
+	ierr = VecDestroy(&Perturb_vec);
 
 	PetscFunctionReturn(0);
 }
