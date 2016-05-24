@@ -1423,7 +1423,7 @@ PetscErrorCode ADVMarkInitFilePolygons(AdvCtx *actx, UserCtx *user)
 	PetscInt      tstart[3],tend[3], nmark[3], nidx[3], nidxmax;
 	PetscInt      k,n,kvol,Fcount,Fsize,VolN,Nmax,Lmax,kpoly;
 	Polygon2D     Poly;
-	PetscBool     AddRandomNoise;
+	PetscBool     AddRandomNoise, ReducedOutput_Polygons;
 	PetscInt     *polyin;
 	PetscInt     *idx;
 	PetscScalar  *X,*PolyLen,*PolyIdx,*PolyFile;
@@ -1448,6 +1448,12 @@ PetscErrorCode ADVMarkInitFilePolygons(AdvCtx *actx, UserCtx *user)
 	AddRandomNoise = PETSC_FALSE;
 	ierr = PetscOptionsGetBool(PETSC_NULL,"-AddRandomNoiseParticles" , &AddRandomNoise , PETSC_NULL); CHKERRQ(ierr);
 	if(AddRandomNoise) PetscPrintf(PETSC_COMM_WORLD, " Adding random noise to marker distribution \n");
+
+
+	ReducedOutput_Polygons = PETSC_FALSE;
+	ierr = PetscOptionsGetBool(PETSC_NULL,"-ReducedOutput_Polygons" , &ReducedOutput_Polygons , PETSC_NULL); CHKERRQ(ierr);
+	if(ReducedOutput_Polygons) PetscPrintf(PETSC_COMM_WORLD, " Reduced output for Polygons activated \n");
+
 
 	// initialize the random number generator
 	ierr = PetscRandomCreate(PETSC_COMM_SELF, &rctx); CHKERRQ(ierr);
@@ -1587,6 +1593,7 @@ PetscErrorCode ADVMarkInitFilePolygons(AdvCtx *actx, UserCtx *user)
 	ierr = PetscMalloc((size_t)nidxmax*sizeof(PetscBool),&polyin); CHKERRQ(ierr);
 	ierr = PetscMalloc((size_t)nidxmax*2*sizeof(PetscScalar),&X); CHKERRQ(ierr);
 
+
 	// --- loop over all volumes ---
 	for (kvol=0; kvol<VolN; kvol++)
 	{
@@ -1694,7 +1701,9 @@ PetscErrorCode ADVMarkInitFilePolygons(AdvCtx *actx, UserCtx *user)
 
 		PetscTime(&t1);
 
-		PetscPrintf(PETSC_COMM_WORLD,"[Rank 0] Created vol %lld/%lld [%g sec]: phase %lld, type %lld, %lld slices, %c-normal-dir; found %lld markers \n",(LLD)kvol+1,(LLD)VolN, t1-t0, (LLD)Poly.phase, (LLD)Poly.type,(LLD)Poly.num, normalDir[Poly.dir], (LLD)Poly.nmark);
+		if (!ReducedOutput_Polygons){
+			PetscPrintf(PETSC_COMM_WORLD,"[Rank 0] Created vol %lld/%lld [%g sec]: phase %lld, type %lld, %lld slices, %c-normal-dir; found %lld markers \n",(LLD)kvol+1,(LLD)VolN, t1-t0, (LLD)Poly.phase, (LLD)Poly.type,(LLD)Poly.num, normalDir[Poly.dir], (LLD)Poly.nmark);
+		}
 	}
 
 	// Set temperature from file if a Temperature file is specified in the input
