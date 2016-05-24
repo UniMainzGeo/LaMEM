@@ -103,7 +103,7 @@ PetscErrorCode MatPropInit(JacRes *jr, FILE *fp)
 		ierr = MatPropGetStruct(fp,
 				jr->numPhases, jr->phases,
 				jr->numSoft, jr->matSoft,
-				ls[i], le[i], jr->scal.utype); CHKERRQ(ierr);
+				ls[i], le[i], jr->scal.utype); CHKERRQ(ierr); //, jr->ExplicitSolver); CHKERRQ(ierr);
 	}
 
 	PetscPrintf(PETSC_COMM_WORLD,"--------------------------------------------------------------------------\n");
@@ -237,6 +237,12 @@ PetscErrorCode MatPropGetStruct(FILE *fp,
 	//============================================================
 	getMatPropScalar(fp, ils, ile, "shear",     &m->G,     NULL);
 	getMatPropScalar(fp, ils, ile, "bulk",      &m->K,     NULL);
+
+	if (!m->K) //(ExplicitSolver == PETSC_TRUE && !m->K)
+	{
+		SETERRQ1(PETSC_COMM_SELF, PETSC_ERR_USER, "K must be specified for phase %lld", (LLD)ID);
+	}
+
 	getMatPropScalar(fp, ils, ile, "Kp",        &m->Kp,    NULL);
 	//============================================================
 	// plasticity (Drucker-Prager)
