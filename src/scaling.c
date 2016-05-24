@@ -70,7 +70,7 @@ PetscErrorCode ScalingReadFromFile(Scaling *scal, FILE *fp)
 		else SETERRQ1(PETSC_COMM_SELF, PETSC_ERR_USER, "Incorrect type of units: %s", utype);
 	}
 
-	if(scal->utype != _NONE_)
+	if(scal->utype != _NONE_ )
 	{
 		// set
 		length      = 0.0;
@@ -120,7 +120,7 @@ PetscErrorCode ScalingReadFromFile(Scaling *scal, FILE *fp)
 //---------------------------------------------------------------------------
 #undef __FUNCT__
 #define __FUNCT__ "ScalingCreate"
-PetscErrorCode ScalingCreate(Scaling *scal)
+PetscErrorCode ScalingCreate(Scaling *scal, PetscBool ExplicitSolver)
 {
 	// characteristic values must ALWAYS be given in SI units
 	PetscScalar mass, time, length, temperature, force;
@@ -140,7 +140,7 @@ PetscErrorCode ScalingCreate(Scaling *scal)
 	// unit
 	scal->unit = 1.0; sprintf(scal->lbl_unit, "[ ]");
 
-	if(scal->utype == _NONE_)
+	if(scal->utype == _NONE_) // || ExplicitSolver==PETSC_TRUE)
 	{
 		//================
 		// NON-DIMENSIONAL

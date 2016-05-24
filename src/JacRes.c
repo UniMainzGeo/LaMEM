@@ -297,7 +297,7 @@ PetscErrorCode JacResInitScale(JacRes *jr, UserCtx *usr)
 	PetscFunctionBegin;
 
 	// initialize scaling object
-	ierr = ScalingCreate(&jr->scal);  CHKERRQ(ierr);
+	ierr = ScalingCreate(&jr->scal, usr->ExplicitSolver);  CHKERRQ(ierr);
 
 	// scale input parameters
 	ScalingInput(&jr->scal, usr);
@@ -486,7 +486,7 @@ PetscErrorCode JacResGetEffStrainRate(JacRes *jr)
 		svBulk = &svCell->svBulk;
 
 		// get mesh steps
-		dx = SIZE_CELL(i, sx, fs->dsx);
+ 		dx = SIZE_CELL(i, sx, fs->dsx);
 		dy = SIZE_CELL(j, sy, fs->dsy);
 		dz = SIZE_CELL(k, sz, fs->dsz);
 
@@ -1278,8 +1278,8 @@ PetscErrorCode JacResGetResidual(JacRes *jr)
 }
 //-----------------------------------------------------------------------------
 #undef __FUNCT__
-#define __FUNCT__ "JacResGetMomentumResidual"
-PetscErrorCode JacResGetMomentumResidual(JacRes *jr)
+#define __FUNCT__ "JacResGetMomentumResidualAndTheta"
+PetscErrorCode JacResGetMomentumResidualAndTheta(JacRes *jr)
 {
 	// Compute residual of nonlinear momentum conservation
 
@@ -1346,8 +1346,8 @@ PetscErrorCode JacResGetMomentumResidual(JacRes *jr)
 	// access work vectors
 	ierr = DMDAVecGetArray(fs->DA_CEN, jr->gc,   &gc);  CHKERRQ(ierr);
 
-	ierr = DMDAVecGetArray(fs->DA_CEN, jr->lp,   &p);    CHKERRQ(ierr);
-	ierr = DMDAVecGetArray(fs->DA_CEN, jr->gp,   &up);   CHKERRQ(ierr);
+	ierr = DMDAVecGetArray(fs->DA_CEN, jr->lp,   &p);   CHKERRQ(ierr);
+	ierr = DMDAVecGetArray(fs->DA_CEN, jr->gp,   &up);  CHKERRQ(ierr);
 
 	ierr = DMDAVecGetArray(fs->DA_CEN, jr->lT,   &T);   CHKERRQ(ierr);
 	ierr = DMDAVecGetArray(fs->DA_CEN, jr->ldxx, &dxx); CHKERRQ(ierr);
@@ -1435,11 +1435,12 @@ PetscErrorCode JacResGetMomentumResidual(JacRes *jr)
 		ierr = GetStressCell(svCell, matLim, XX, YY, ZZ); CHKERRQ(ierr);
 
 		// compute total Cauchy stresses
+
 		sxx = svCell->sxx - pc;
 		syy = svCell->syy - pc;
 		szz = svCell->szz - pc;
 
-		///////////////////////////////////
+		////////////////////////////////////
 		// Add seismic source?
 
 		if (k==nz/2 && j==ny/2 && i==nx/2)
@@ -1447,10 +1448,10 @@ PetscErrorCode JacResGetMomentumResidual(JacRes *jr)
 			// access residual context variables
 			time	  =  JacResGetTime(jr);
 
-			sxx = sxx + 10*exp(-40*(time*time));
-		    szz = szz - 10*exp(-40*(time*time));
+			sxx = 10*exp(-40*(time*time));
+		    szz = -10*exp(-40*(time*time));
 		}
-		////////////////////////////////////
+		///////////////////////////////////
 
 
 		// compute depth below the free surface
@@ -1515,10 +1516,12 @@ PetscErrorCode JacResGetMomentumResidual(JacRes *jr)
 
 
 		//jr.gp
-		up[k][j][i] = pc-theta/IKdt;
+		//if(IKdt == 0)   up[k][j][i] = pc;
+		//else 			up[k][j][i] = pc-theta/IKdt;
 
 
-		//up[k][j][i] = theta;
+	up[k][j][i] = theta;
+		//up[k][j][i] = theta/IKdt;
 
 
 	}
@@ -1875,6 +1878,67 @@ PetscErrorCode JacResCopySol(JacRes *jr, Vec x, SPCAppType appSPC)
 
 	PetscFunctionReturn(0);
 }
+
+//---------------------------------------------------------------------------
+#undef __FUNCT__
+#define __FUNCT__ "JacResCopyK"
+PetscErrorCode JacResCopyK(JacRes *jr, Vec K)
+{
+	// copy residuals from local to global vectors, enforce boundary constraints
+
+	FDSTAG      *fs;
+	BCCtx       *bc;
+	PetscInt    i, num, *list;
+	PetscScalar *fx, *fy, *fz, *theta, *k, *iter;
+
+	PetscErrorCode ierr;
+	PetscFunctionBegin;
+
+	fs  = jr->fs;
+	bc  = jr->bc;
+
+	// access vectors
+	ierr = VecGetArray(jr->gfx, &fx); 	CHKERRQ(ierr);
+	ierr = VecGetArray(jr->gfy, &fy); 	CHKERRQ(ierr);
+	ierr = VecGetArray(jr->gfz, &fz); 	CHKERRQ(ierr);
+	ierr = VecGetArray(jr->gp, &theta); CHKERRQ(ierr);
+	ierr = VecGetArray(K, &k);      	CHKERRQ(ierr);
+
+	// copy vectors component-wise
+	iter = k;
+
+	ierr  = PetscMemcpy(iter, fx, (size_t)fs->nXFace*sizeof(PetscScalar)); CHKERRQ(ierr);
+	iter += fs->nXFace;
+
+	ierr  = PetscMemcpy(iter, fy, (size_t)fs->nYFace*sizeof(PetscScalar)); CHKERRQ(ierr);
+	iter += fs->nYFace;
+
+	ierr  = PetscMemcpy(iter, fz, (size_t)fs->nZFace*sizeof(PetscScalar)); CHKERRQ(ierr);
+	iter += fs->nZFace;
+
+	ierr  = PetscMemcpy(iter, theta,  (size_t)fs->nCells*sizeof(PetscScalar)); CHKERRQ(ierr);
+
+	// zero out constrained residuals (velocity)
+	num   = bc->vNumSPC;
+	list  = bc->vSPCList;
+
+	for(i = 0; i < num; i++) k[list[i]] = 0.0;
+
+	// zero out constrained residuals (pressure)
+	num   = bc->pNumSPC;
+	list  = bc->pSPCList;
+
+	for(i = 0; i < num; i++) k[list[i]] = 0.0;
+
+	// restore access
+	ierr = VecRestoreArray(jr->gfx,  &fx); 		CHKERRQ(ierr);
+	ierr = VecRestoreArray(jr->gfy,  &fy); 		CHKERRQ(ierr);
+	ierr = VecRestoreArray(jr->gfz,  &fz); 		CHKERRQ(ierr);
+	ierr = VecRestoreArray(jr->gc,   &theta);  	CHKERRQ(ierr);
+	ierr = VecRestoreArray(K, &k);       		CHKERRQ(ierr);
+
+	PetscFunctionReturn(0);
+}
 //---------------------------------------------------------------------------
 #undef __FUNCT__
 #define __FUNCT__ "JacResCopyVel"
@@ -1919,7 +1983,10 @@ PetscErrorCode JacResCopyVel(JacRes *jr, Vec x, SPCAppType appSPC)
 	list  = bc->vSPCList;
 	vals  = bc->vSPCVals;
 
-	if(appSPC == _APPLY_SPC_) { for(i = 0; i < num; i++) sol[list[i]] = vals[i]; }
+	if(appSPC == _APPLY_SPC_) {
+		for(i = 0; i < num; i++) {sol[list[i]] = vals[i];
+		//PetscPrintf(PETSC_COMM_WORLD, "    list[i]  = %i \n", list[i]);
+		}}
 	else                      { for(i = 0; i < num; i++) sol[list[i]] = 0.0;     }
 
 	// copy vectors component-wise
@@ -1938,6 +2005,7 @@ PetscErrorCode JacResCopyVel(JacRes *jr, Vec x, SPCAppType appSPC)
 	ierr = VecRestoreArray(jr->gvy, &vy);  CHKERRQ(ierr);
 	ierr = VecRestoreArray(jr->gvz, &vz);  CHKERRQ(ierr);
 	ierr = VecRestoreArray(x,       &sol); CHKERRQ(ierr);
+
 
 	// fill local (ghosted) version of solution vectors
 	GLOBAL_TO_LOCAL(fs->DA_X,   jr->gvx, jr->lvx)
@@ -2289,38 +2357,68 @@ PetscErrorCode JacResCopyContinuityRes(JacRes *jr, Vec f)
 	PetscFunctionReturn(0);
 }
 
-/*// --------New
+// --------New
 //---------------------------------------------------------------------------
 #undef __FUNCT__
-#define __FUNCT__ "JacResCopyContinuityRes"
-PetscErrorCode JacResCopyVelocity(JacRes *jr, Vec x)
+#define __FUNCT__ "JacResCopySolution"
+PetscErrorCode JacResCopySolution(JacRes *jr, Vec x)
 {
-	// copy global velocities vectors to global solution vector
+	// copy global velocities/pressures vectors to global solution vector
 
 	FDSTAG      *fs;
-	PetscScalar *c, *sol, *iter;
+	BCCtx       *bc;
+	PetscInt    i, num, *list;
+	PetscScalar *vx, *vy, *vz, *p, *sol, *iter;
 
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
 
 	fs  = jr->fs;
+	bc  = jr->bc;
 
 	// access vectors
-	ierr = VecGetArray(jr->gc,  &c);  CHKERRQ(ierr);
-	ierr = VecGetArray(f, &res);      CHKERRQ(ierr);
+	ierr = VecGetArray(jr->gvx, &vx);  CHKERRQ(ierr);
+	ierr = VecGetArray(jr->gvy, &vy);  CHKERRQ(ierr);
+	ierr = VecGetArray(jr->gvz, &vz);  CHKERRQ(ierr);
+	ierr = VecGetArray(jr->gp,  &p);   CHKERRQ(ierr);
+	ierr = VecGetArray(x,       &sol); CHKERRQ(ierr);
 
 	// copy vectors component-wise
-	iter = res + fs->dof.lnv;
+	iter = sol;
 
-	ierr = PetscMemcpy(c,  iter, (size_t)fs->nCells*sizeof(PetscScalar)); CHKERRQ(ierr);
+	ierr  = PetscMemcpy(iter, vx, (size_t)fs->nXFace*sizeof(PetscScalar)); CHKERRQ(ierr);
+	iter += fs->nXFace;
+
+	ierr  = PetscMemcpy(iter, vy, (size_t)fs->nYFace*sizeof(PetscScalar)); CHKERRQ(ierr);
+	iter += fs->nYFace;
+
+	ierr  = PetscMemcpy(iter, vz, (size_t)fs->nZFace*sizeof(PetscScalar)); CHKERRQ(ierr);
+	iter += fs->nZFace;
+
+	ierr  = PetscMemcpy(iter, p,  (size_t)fs->nCells*sizeof(PetscScalar)); CHKERRQ(ierr);
+
+
+	/*// velocity
+	num   = bc->vNumSPC;
+	list  = bc->vSPCList;
+	for(i = 0; i < num; i++) sol[list[i]] = 0.0;
+
+	// pressure
+	num   = bc->pNumSPC;
+	list  = bc->pSPCList;
+	for(i = 0; i < num; i++) sol[list[i]] = 0.0;*/
+
+
 
 	// restore access
-	ierr = VecRestoreArray(jr->gc,   &c);  CHKERRQ(ierr);
-	ierr = VecRestoreArray(f, &res);       CHKERRQ(ierr);
+	ierr = VecRestoreArray(jr->gvx,  &vx); CHKERRQ(ierr);
+	ierr = VecRestoreArray(jr->gvy,  &vy); CHKERRQ(ierr);
+	ierr = VecRestoreArray(jr->gvz,  &vz); CHKERRQ(ierr);
+	ierr = VecRestoreArray(jr->gp,    &p); CHKERRQ(ierr);
+	ierr = VecRestoreArray(x,       &sol); CHKERRQ(ierr);
 
 	PetscFunctionReturn(0);
 }
-*/
 //-----------
 //---------------------------------------------------------------------------
 #undef __FUNCT__

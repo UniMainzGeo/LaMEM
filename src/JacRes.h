@@ -184,6 +184,9 @@ PetscErrorCode JacResCopySol(JacRes *jr, Vec x, SPCAppType appSPC);
 // copy solution from global to local vectors, enforce boundary constraints
 PetscErrorCode JacResCopyVel(JacRes *jr, Vec x, SPCAppType appSPC);
 
+// copy global vectors to solution
+PetscErrorCode JacResCopyVelocity(JacRes *jr, Vec x);
+
 // copy solution from global to local vectors, enforce boundary constraints
 PetscErrorCode JacResCopyPres(JacRes *jr, Vec x, SPCAppType appSPC);
 
@@ -278,7 +281,13 @@ PetscErrorCode JacResGetTempMat(JacRes *jr);
 
 
 // compute nonlinear momentum residual vector
-PetscErrorCode JacResGetMomentumResidual(JacRes *jr);
+PetscErrorCode JacResGetMomentumResidualAndTheta(JacRes *jr);
+
+// copy global velocities/pressures vectors to global solution vector
+PetscErrorCode JacResCopySolution(JacRes *jr, Vec x);
+
+// copy continuity residual and theta in gK
+PetscErrorCode JacResCopyK(JacRes *jr, Vec K);
 
 //---------------------------------------------------------------------------
 // MACROS

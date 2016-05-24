@@ -8,8 +8,8 @@
 #ifndef __nlsolveExplicit_h__
 #define __nlsolveExplicit_h__
 
-PetscErrorCode NLSolverExp(JacRes *jr);
-PetscErrorCode FormMomentumResidual(SNES snes, Vec x, Vec f, void *ctx);
-PetscErrorCode GetVelocities(JacRes *jr, Vec x, Vec f);
+PetscErrorCode GetVelocities(JacRes *jr);
+PetscErrorCode FormMomentumResidualAndTheta(SNES snes, Vec x, Vec gK, void *ctx);
+PetscErrorCode GetPressure(JacRes *jr);
 
 #endif
