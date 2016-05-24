@@ -418,19 +418,25 @@ PetscErrorCode LaMEMLib(ModParam *IOparam)
 		}
 		else
 		{
-			// solve nonlinear system without SNES
-			//ierr = NLSolverExp(&jr); CHKERRQ(ierr);
+//ierr = VecView(jr.gsol,PETSC_VIEWER_STDOUT_WORLD); CHKERRQ(ierr);
 
-			//ierr = FormMomentumResidual(&jr); CHKERRQ(ierr);
-			// just evaluate initial residual
-			ierr = FormMomentumResidual(snes, jr.gsol, jr.gres, &nl); CHKERRQ(ierr);
+			// evaluate momentum residual and theta
+			ierr = FormMomentumResidualAndTheta(snes, jr.gsol, jr.gK, &nl); CHKERRQ(ierr);
 
-			ierr = GetVelocities(&jr, jr.gsol, jr.gres); CHKERRQ(ierr);
+//ierr = VecView(jr.gvx,PETSC_VIEWER_STDOUT_WORLD);CHKERRQ(ierr);
+			ierr = GetPressure(&jr); 	CHKERRQ(ierr);
 
-			//
-			// v = v0 + f*dt/rho0
-			// jr->lfx
-			//
+///ierr = VecView(jr.gvx,PETSC_VIEWER_STDOUT_WORLD);CHKERRQ(ierr);
+			ierr = GetVelocities(&jr);	CHKERRQ(ierr);
+
+//ierr = VecView(jr.gvx,PETSC_VIEWER_STDOUT_WORLD);CHKERRQ(ierr);
+
+			// copy global vector to solution vectors
+			ierr = JacResCopySolution(&jr, jr.gsol); CHKERRQ(ierr);
+
+//ierr = VecView(jr.gsol,PETSC_VIEWER_STDOUT_WORLD);CHKERRQ(ierr);
+
+//ierr = VecView(jr.gp,PETSC_VIEWER_STDOUT_WORLD);CHKERRQ(ierr);
 
 			// switch off initial guess flag
 			if(!JacResGetStep(&jr))
@@ -446,7 +452,6 @@ PetscErrorCode LaMEMLib(ModParam *IOparam)
 
 			//// prescribe velocity if rotation benchmark
 			//if (user.msetup == ROTATION) {ierr = JacResSetVelRotation(&jr); CHKERRQ(ierr);}
-
 
 			// ACHTUNG !!! ??
 
