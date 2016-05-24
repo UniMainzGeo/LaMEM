@@ -281,14 +281,11 @@ PetscErrorCode JacResGetTempRes(JacRes *jr);
 // assemble temperature preconditioner matrix
 PetscErrorCode JacResGetTempMat(JacRes *jr);
 
-
-
 // compute nonlinear momentum residual vector
 PetscErrorCode JacResGetMomentumResidualAndPressure(JacRes *jr, UserCtx *user);
 
 // copy global velocities/pressures vectors to global solution vector
 PetscErrorCode JacResCopySolution(JacRes *jr, Vec x);
-
 
 //---------------------------------------------------------------------------
 // MACROS

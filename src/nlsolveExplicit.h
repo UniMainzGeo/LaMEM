@@ -33,4 +33,8 @@ PetscErrorCode NLSolverExp(JacRes *jr);
 PetscErrorCode FormMomentumResidual(SNES snes, Vec x, Vec f, void *ctx);
 
 
+//PetscErrorCode GetVelocities(JacRes *jr);
+PetscErrorCode FormMomentumResidualAndTheta(SNES snes, Vec x, Vec gK, void *ctx);
+PetscErrorCode GetPressure(JacRes *jr);
+
 #endif

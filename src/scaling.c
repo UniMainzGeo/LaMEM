@@ -304,6 +304,7 @@ PetscErrorCode ScalingCreate(Scaling *scal) //, PetscBool ExplicitSolver)
 
 	PetscFunctionReturn(0);
 }
+
 //---------------------------------------------------------------------------
 // scaling of input parameters (UserCtx)
 void ScalingInput(Scaling *scal, UserCtx *user)
