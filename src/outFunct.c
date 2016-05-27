@@ -209,6 +209,8 @@ PetscErrorCode PVOutWriteVelocity(JacRes *jr, OutBuf *outbuf)
 
 	ierr = JacResCopyVel(jr, jr->gsol, _APPLY_SPC_); CHKERRQ(ierr);
 
+//ierr = VecView(jr->gsol,PETSC_VIEWER_STDOUT_WORLD);CHKERRQ(ierr);
+
 	INTERPOLATE_ACCESS(jr->lvx, InterpXFaceCorner, 3, 0, 0.0)
 	INTERPOLATE_ACCESS(jr->lvy, InterpYFaceCorner, 3, 1, 0.0)
 	INTERPOLATE_ACCESS(jr->lvz, InterpZFaceCorner, 3, 2, 0.0)

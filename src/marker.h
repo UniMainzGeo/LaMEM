@@ -86,6 +86,7 @@ PetscErrorCode ADVMarkInitFileParallel (AdvCtx *actx, UserCtx *user);
 PetscErrorCode ADVMarkInitFileRedundant(AdvCtx *actx, UserCtx *user);
 PetscErrorCode ADVMarkInitFilePolygons (AdvCtx *actx, UserCtx *user);
 PetscErrorCode ADVMarkInitDiapir       (AdvCtx *actx, UserCtx *user);
+PetscErrorCode ADVMarkInitHomo		   (AdvCtx *actx, UserCtx *user);
 PetscErrorCode ADVMarkInitBlock        (AdvCtx *actx, UserCtx *user);
 PetscErrorCode ADVMarkInitSubduction   (AdvCtx *actx, UserCtx *user);
 PetscErrorCode ADVMarkInitFolding      (AdvCtx *actx, UserCtx *user);

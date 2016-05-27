@@ -18,6 +18,49 @@
 
 //---------------------------------------------------------------------------
 #undef __FUNCT__
+#define __FUNCT__ "FormMomentumResidual"
+PetscErrorCode FormMomentumResidual(Vec x, void *ctx)
+{
+	NLSol  *nl;
+	JacRes *jr;
+
+	PetscErrorCode ierr;
+	PetscFunctionBegin;
+
+	// access context
+	nl = (NLSol*)ctx;
+	jr = nl->pc->pm->jr;
+
+    // x=jr->gsol; f=jr->gres;
+
+	// copy solution from global to local vectors, enforce boundary constraints
+
+	ierr = JacResCopySol(jr, x, _APPLY_SPC_); CHKERRQ(ierr);
+
+	ierr = JacResGetPressShift(jr); CHKERRQ(ierr);
+
+	// compute effective strain rate
+	ierr = JacResGetEffStrainRate(jr); CHKERRQ(ierr);
+
+	// compute momentum residual
+	//ierr = JacResGetMomentumResidualAndTheta(jr); CHKERRQ(ierr);
+	ierr = JacResGetMomentumResidual(jr); CHKERRQ(ierr);
+
+	// copy residuals and theta to global vector
+	//ierr = JacResCopyMomentumRes(jr, f); CHKERRQ(ierr);
+	//ierr = JacResCopyRes(jr, f); CHKERRQ(ierr);
+	//ierr = JacResCopyTheta(jr, gK); CHKERRQ(ierr);
+
+
+	//ierr = JacResCopyK(jr, K); CHKERRQ(ierr);
+
+	PetscFunctionReturn(0);
+
+}
+//---------------------------------------------------------------------------
+
+//---------------------------------------------------------------------------
+#undef __FUNCT__
 #define __FUNCT__ "FormMomentumResidualAndTheta"
 PetscErrorCode FormMomentumResidualAndTheta(SNES snes, Vec x, Vec K, void *ctx)
 {
@@ -46,7 +89,8 @@ PetscErrorCode FormMomentumResidualAndTheta(SNES snes, Vec x, Vec K, void *ctx)
 	ierr = JacResGetEffStrainRate(jr); CHKERRQ(ierr);
 
 	// compute momentum residual and theta
-	ierr = JacResGetMomentumResidualAndTheta(jr); CHKERRQ(ierr);
+	//ierr = JacResGetMomentumResidualAndTheta(jr); CHKERRQ(ierr);
+	ierr = JacResGetMomentumResidual(jr); CHKERRQ(ierr);
 
 	// copy residuals and theta to global vector
 	//ierr = JacResCopyMomentumRes(jr, f); CHKERRQ(ierr);
@@ -155,6 +199,11 @@ PetscErrorCode GetVelocities(JacRes *jr)
 	START_STD_LOOP
 	{
 		rho_side=(rho[k][j][i]+rho[k-1][j][i])/2;
+		/*if (vz[k][j][i]!=0) {
+			PetscPrintf(PETSC_COMM_WORLD, "    k  = %i \n", k);
+			PetscPrintf(PETSC_COMM_WORLD, "    j  = %i \n", j);
+			PetscPrintf(PETSC_COMM_WORLD, "    i  = %i \n", i);
+		}*/
 		vz[k][j][i] += fz[k][j][i]*dt/rho_side;
 	}
 	END_STD_LOOP
@@ -227,7 +276,7 @@ PetscErrorCode GetPressure(JacRes *jr)
 		svBulk = &svCell->svBulk;
 		IKdt  = svBulk->IKdt;  // inverse bulk viscosity
 
-		if (IKdt != 0)	p[k][j][i] = p[k][j][i]-up[k][j][i]/IKdt;
+		p[k][j][i] = p[k][j][i]-up[k][j][i]/IKdt;
 	}
 	END_STD_LOOP
 

@@ -325,6 +325,7 @@ PetscErrorCode InputReadFile(JacRes *jr, UserCtx *user, FILE *fp)
 		else if(!strcmp(setup_name, "redundant"))  user->msetup = REDUNDANT;
 		else if(!strcmp(setup_name, "polygons"))   user->msetup = POLYGONS;
 		else if(!strcmp(setup_name, "diapir"))     user->msetup = DIAPIR;
+		else if(!strcmp(setup_name, "homo"))       user->msetup = HOMO;
 		else if(!strcmp(setup_name, "block"))      user->msetup = BLOCK;
 		else if(!strcmp(setup_name, "subduction")) user->msetup = SUBDUCTION;
 		else if(!strcmp(setup_name, "folding"))    user->msetup = FOLDING;
@@ -475,6 +476,7 @@ PetscErrorCode InputReadCommLine(UserCtx *user )
 		else if(!strcmp(setup_name, "redundant"))  user->msetup = REDUNDANT;
 		else if(!strcmp(setup_name, "polygons"))   user->msetup = POLYGONS;
 		else if(!strcmp(setup_name, "diapir"))     user->msetup = DIAPIR;
+		else if(!strcmp(setup_name, "homo"))       user->msetup = HOMO;
 		else if(!strcmp(setup_name, "block"))      user->msetup = BLOCK;
 		else if(!strcmp(setup_name, "subduction")) user->msetup = SUBDUCTION;
 		else if(!strcmp(setup_name, "folding"))    user->msetup = FOLDING;
