@@ -1277,9 +1277,12 @@ PetscErrorCode JacResGetResidual(JacRes *jr)
 	PetscFunctionReturn(0);
 }
 //-----------------------------------------------------------------------------
+//#undef __FUNCT__
+//#define __FUNCT__ "JacResGetMomentumResidualAndTheta"
+//PetscErrorCode JacResGetMomentumResidualAndTheta(JacRes *jr)
 #undef __FUNCT__
-#define __FUNCT__ "JacResGetMomentumResidualAndTheta"
-PetscErrorCode JacResGetMomentumResidualAndTheta(JacRes *jr)
+#define __FUNCT__ "JacResGetMomentumResidual"
+PetscErrorCode JacResGetMomentumResidual(JacRes *jr)
 {
 	// Compute residual of nonlinear momentum conservation
 
@@ -1448,8 +1451,11 @@ PetscErrorCode JacResGetMomentumResidualAndTheta(JacRes *jr)
 			// access residual context variables
 			time	  =  JacResGetTime(jr);
 
-			sxx = 10*exp(-40*(time*time));
-		    szz = -10*exp(-40*(time*time));
+			//sxx = 10*exp(-40*(time*time));
+		    //szz = -10*exp(-40*(time*time));
+
+		    //sxx /= 1e+8; (Characteristic.Stress)
+		    //syy /= 1e+8;
 		}
 		///////////////////////////////////
 
