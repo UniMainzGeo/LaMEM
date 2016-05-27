@@ -135,6 +135,7 @@ PetscErrorCode ADVMarkInit(AdvCtx *actx, UserCtx *user)
 	else if(user->msetup == REDUNDANT)  { PetscPrintf(PETSC_COMM_WORLD,"%s\n","redundant");       ierr = ADVMarkInitFileRedundant(actx, user); CHKERRQ(ierr); }
 	else if(user->msetup == POLYGONS)   { PetscPrintf(PETSC_COMM_WORLD,"%s\n","polygons");        ierr = ADVMarkInitFilePolygons (actx, user); CHKERRQ(ierr); }
 	else if(user->msetup == DIAPIR)     { PetscPrintf(PETSC_COMM_WORLD,"%s\n","diapir");          ierr = ADVMarkInitDiapir       (actx, user); CHKERRQ(ierr); }
+	else if(user->msetup == HOMO)       { PetscPrintf(PETSC_COMM_WORLD,"%s\n","homo");            ierr = ADVMarkInitHomo         (actx, user); CHKERRQ(ierr); }
 	else if(user->msetup == BLOCK)      { PetscPrintf(PETSC_COMM_WORLD,"%s\n","block");           ierr = ADVMarkInitBlock        (actx, user); CHKERRQ(ierr); }
 	else if(user->msetup == SUBDUCTION) { PetscPrintf(PETSC_COMM_WORLD,"%s\n","subduction");      ierr = ADVMarkInitSubduction   (actx, user); CHKERRQ(ierr); }
 	else if(user->msetup == FOLDING)    { PetscPrintf(PETSC_COMM_WORLD,"%s\n","folding");         ierr = ADVMarkInitFolding      (actx, user); CHKERRQ(ierr); }
@@ -719,6 +720,41 @@ PetscErrorCode ADVMarkInitDiapir(AdvCtx *actx, UserCtx *user)
 
 		// temperature
 		actx->markers[imark].T = 0.0;
+	}
+
+	PetscFunctionReturn(0);
+}
+//---------------------------------------------------------------------------
+#undef __FUNCT__
+#define __FUNCT__ "ADVMarkInitHomo"
+PetscErrorCode ADVMarkInitHomo(AdvCtx *actx, UserCtx *user)
+{
+	// homogeneous model
+
+	PetscInt    imark, nel_x, nel_y, nel_z;
+	PetscScalar dx,dy,dz;
+
+	PetscErrorCode ierr;
+	PetscFunctionBegin;
+
+	// print info
+	PetscPrintf(PETSC_COMM_WORLD,"  HOMOGENEOUS SETUP \n");
+
+	// number of elements on finest resolution
+	nel_x = user->nel_x;
+	nel_y = user->nel_y;
+	nel_z = user->nel_z;
+
+	// spacing
+	dx = user->W/((PetscScalar)nel_x);
+	dy = user->L/((PetscScalar)nel_y);
+	dz = user->H/((PetscScalar)nel_z);
+
+	// loop over local markers
+	for(imark = 0; imark < actx->nummark; imark++)
+	{
+		actx->markers[imark].phase = 0;
+		actx->markers[imark].T     = 1.0 - actx->markers[imark].X[2];
 	}
 
 	PetscFunctionReturn(0);

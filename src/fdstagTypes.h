@@ -100,6 +100,7 @@ typedef enum
 	REDUNDANT,  // read phase and temperature from file redundantly (uniform coordinates)
 	POLYGONS,   // read polygons from file redundantly
 	DIAPIR,     // diapir setup
+	HOMO,       // homogebeous model
 	BLOCK,      // falling block
 	SUBDUCTION, // subduction setup with air
 	FOLDING,    // multilayer folding setup (Zagros)

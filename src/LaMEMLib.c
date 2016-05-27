@@ -421,7 +421,9 @@ PetscErrorCode LaMEMLib(ModParam *IOparam)
 //ierr = VecView(jr.gsol,PETSC_VIEWER_STDOUT_WORLD); CHKERRQ(ierr);
 
 			// evaluate momentum residual and theta
-			ierr = FormMomentumResidualAndTheta(snes, jr.gsol, jr.gK, &nl); CHKERRQ(ierr);
+			//ierr = FormMomentumResidualAndTheta(snes, jr.gsol, jr.gK, &nl); CHKERRQ(ierr);
+
+			ierr = FormMomentumResidual(jr.gsol, &nl); CHKERRQ(ierr);
 
 //ierr = VecView(jr.gvx,PETSC_VIEWER_STDOUT_WORLD);CHKERRQ(ierr);
 			ierr = GetPressure(&jr); 	CHKERRQ(ierr);

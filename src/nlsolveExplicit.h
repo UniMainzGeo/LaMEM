@@ -10,6 +10,7 @@
 
 PetscErrorCode GetVelocities(JacRes *jr);
 PetscErrorCode FormMomentumResidualAndTheta(SNES snes, Vec x, Vec gK, void *ctx);
+PetscErrorCode FormMomentumResidual(Vec x, void *ctx);
 PetscErrorCode GetPressure(JacRes *jr);
 
 #endif
