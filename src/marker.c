@@ -824,20 +824,24 @@ PetscErrorCode ADVMarkInitLayer(AdvCtx *actx, UserCtx *user)
 
 //---------------------------------------------------------------------------
 #undef __FUNCT__
-#define __FUNCT__ "ADVMarkInitLayer"
+#define __FUNCT__ "ADVMarkInitHeterogeneous"
 PetscErrorCode ADVMarkInitHeterogeneous(AdvCtx *actx, UserCtx *user)
 {
 	// homogeneous model
 
-	PetscInt    imark, nel_x, nel_y, nel_z;
+	/*PetscInt    imark, nel_x, nel_y, nel_z;
 	PetscScalar dx,dy,dz;
 	PetscScalar bleft, bright, bfront, bback, bbottom, btop;
 	PetscScalar blx, bly, blz;
+
+	PetscInt    imark, nel_x, nel_y, nel_z;
+	PetscScalar dx,dy,dz;
 
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
 
 	// print info
+
 	PetscPrintf(PETSC_COMM_WORLD,"  HETEROGENEOUS SETUP \n");
 
 	// number of elements on finest resolution
@@ -855,12 +859,10 @@ PetscErrorCode ADVMarkInitHeterogeneous(AdvCtx *actx, UserCtx *user)
 	bly = 0.4*(PetscScalar)nel_y*dy;
 	blz = 0.2*(PetscScalar)nel_z*dz;
 
-
-
-
 	bleft   = 0 ; 						   bright = bleft   + blx; // left and right side of block
 	bfront  = 0.25*(PetscScalar)nel_y*dy ; bback  = bfront  + bly; // front and back side of block
 	bbottom = 0.25*(PetscScalar)nel_z*dz;  btop   = bbottom + blz; // bottom and top side of block
+
 
 	// loop over local markers
 	for(imark = 0; imark < actx->nummark; imark++)
@@ -881,12 +883,14 @@ PetscErrorCode ADVMarkInitHeterogeneous(AdvCtx *actx, UserCtx *user)
 			actx->markers[imark].phase = 1;
 			actx->markers[imark].T     = 1.0;
 		}
+
+		actx->markers[imark].T     = 1.0 - actx->markers[imark].X[2];
+
 	}
 
-	PetscFunctionReturn(0);
+	PetscFunctionReturn(0);*/
 }
 //---------------------------------------------------------------------------
-
 #undef __FUNCT__
 #define __FUNCT__ "ADVMarkInitBlock"
 PetscErrorCode ADVMarkInitBlock(AdvCtx *actx, UserCtx *user)
