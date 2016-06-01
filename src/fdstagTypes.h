@@ -163,14 +163,6 @@ typedef struct
 	PetscScalar     *grd;  // gradient value
 	PetscScalar      mfit; // misfit value for current model parameters
 } ModParam;
-
-//-----------------------------------------------------------------------------
-// Structure that holds paramters for the adjoint gradient computation
-typedef struct
-{
-	PetscScalar      grad[_MAX_AdjointPars_]; // Vector containing the gradients (dF/dp = -psi * dr/dp)
-} AdjGrad;
-
 //-----------------------------------------------------------------------------
 // Structure that holds user input data
 typedef struct

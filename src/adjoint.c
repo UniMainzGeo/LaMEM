@@ -52,20 +52,26 @@
 // USAGE:
 // In your .dat file you need to define:
 // ComputeAdjointGradients	       = 1	                    // 1 = Compute gradients 0 = NO
-// Adjoint_x					   = 1.2                    // Array containing the x coordinates of the point where you want to compute the gradients
-// Adjoint_y					   = 0.6                    // Array containing the y coordinates of the point where you want to compute the gradients
-// Adjoint_z					   = 0.4                    // Array containing the z coordinates of the point where you want to compute the gradients
+// Adjoint_x					   = 1.2                    // Array (same length as Adjoint_y, Adjoint_z) containing the x coordinates of the point where you want to compute the gradients
+// Adjoint_y					   = 0.6                    // Array (same length as Adjoint_x, Adjoint_z) containing the y coordinates of the point where you want to compute the gradients
+// Adjoint_z					   = 0.4                    // Array (same length as Adjoint_x, Adjoint_y) containing the z coordinates of the point where you want to compute the gradients
 // AdjointPhases                   = 1 2 1 2                // Array (same length as AdjointParameters) containing the phase of the parameter
 // AdjointParameters               = 2 1 1 1                // Array (same length as AdjointPhases) containing the parameter corresponding to the phase
+// AdjointVel                      = 3                      // Array (same length as Adjoint_x, Adjoint_y, Adjoint_z) containing the related velocity direction in which to compute the gradient
 //
 //                              Density         Elasticity  Diff creep    Dis creep    Peierl creep
 // Possible parameters: (rho rho_n rho_c beta)   (K Kp G)   (Bd Ed Vd)  (Bn n  En Vn) (taup gamma q )
 //                      ( 1     2     3    4 )   (5  6 7)   ( 8  9 10)  (11 12 13 14) ( 15    16  17)
 //
+// Possible Velocities:  (Vx   Vy   Vz
+//                       (1    2    3)
+//
 // You can control the behaviour of the KSP object for the adjoint with the prefix "as_"
+//
 // IMPORTANT: Since the Adjoint needs the Jacobian matrix for computing the gradients it's crucial to make sure that
 // you compute the Jacobian matrix in the timesteps where you want to compute the gradients
-// (f.e. a linear problem would need a low value for -snes_atol [1e-20] and a low max iteration count -snes_max_it [2] to guarantee the computation of the Jacobian
+// (f.e. a linear problem would need a low value for -snes_atol [1e-20] and a low max iteration count -snes_max_it [2] to
+// guarantee the computation of the Jacobian + the option '-snes_type ksponly'
 //---------------------------------------------------------------------------
 #include "LaMEM.h"
 #include "tools.h"
@@ -109,14 +115,12 @@ PetscErrorCode AdjointDestroy(AdjGrad *aop)
 //---------------------------------------------------------------------------
 #undef __FUNCT__
 #define __FUNCT__ "CreateAdjoint"
-PetscErrorCode CreateAdjoint(JacRes *jr, UserCtx *user, AdjGrad *aop, NLSol *nl,SNES snes, AdvCtx *actx)
+PetscErrorCode CreateAdjoint(JacRes *jr, UserCtx *user, AdjGrad *aop, NLSol *nl,SNES snes)
 {
 
 	/* TODO:
-		- It's only valid vor visco-elasicity since the Jacobian is assumed to be symmetric
-		- So far only working in sequentiel mode (maybe the summation of the vector is worng in parallel?)
+		- It's only valid vor visco-elasicity since the Jacobian is assumed to be symmetric (future: Jacobian needs to be transposed)
 		- boundary of 1e-10 if Perturb parameter becomes too small
-		- thereotical capable of multiple points but so far only tested for ONE point!
 	*/
 
 	PetscPrintf(PETSC_COMM_WORLD,"Computation of adjoint gradients\n");
@@ -125,39 +129,156 @@ PetscErrorCode CreateAdjoint(JacRes *jr, UserCtx *user, AdjGrad *aop, NLSol *nl,
 	PetscFunctionBegin;
 
 	// Initialize all variables
-	// PCStokes            pc;
-	FDSTAG              *fs;
 	KSP                 ksp;
 	KSPConvergedReason  reason;
-	PetscInt            i, ii, j, lrank, grank, sx, sy, sz, nx, ny, nz, I, J, K, II, JJ, KK;
-	PetscScalar         grd, xb, yb, zb, xe, ye, ze, Perturb, coord_local[3], vx[100], vy[100], vz[100], xc, yc, zc, *iter, *ncx, *ncy, *ncz, *ccx, *ccy, *ccz, ***lvx, ***lvy, ***lvz, *temppro, *tempproX, *tempproY, *tempproZ;       // Temporary vectors for the computation
-	PetscScalar         rhoIni, rho_nIni, rho_cIni, betaIni, KIni, KpIni, GIni, BdIni, EdIni, VdIni, BnIni, nIni, EnIni, VnIni, taupIni, gammaIni, qIni;   // Initialize parameters for which the gradients can be computed
-	Vec 				rpl, sol, psi, pro, proX, proY, proZ, drdp, res, Perturb_vec;
+	PetscInt            i, j, CurPhase, CurPar;
+	PetscScalar         grd, Perturb, vx[_MAX_AdjointIndices_], vy[_MAX_AdjointIndices_], vz[_MAX_AdjointIndices_];
+	Vec 				rpl, sol, psi, pro, drdp, res, Perturb_vec;
 	PC                  ipc;
 
-	// access context
-	fs = actx->fs;
-
-	// Set perturbation paramter for the finite differences
-	Perturb = 1e-6;
+	// Profile time
+	PetscLogDouble     cputime_start, cputime_end;
+	PetscTime(&cputime_start);
 
 	// Create all needed vectors in the same size as the solution vector
-	ierr = VecDuplicate(jr->gsol, &pro); CHKERRQ(ierr);
-	ierr = VecDuplicate(jr->gfx, &proX); CHKERRQ(ierr);
-	ierr = VecDuplicate(jr->gfy, &proY); CHKERRQ(ierr);
-	ierr = VecDuplicate(jr->gfz, &proZ); CHKERRQ(ierr);
-	ierr = VecDuplicate(jr->gsol, &psi); CHKERRQ(ierr);
-	ierr = VecDuplicate(jr->gres, &rpl); CHKERRQ(ierr);
-	ierr = VecDuplicate(jr->gres, &res); CHKERRQ(ierr);
-	ierr = VecDuplicate(jr->gsol, &sol); CHKERRQ(ierr);
-	ierr = VecDuplicate(jr->gsol, &drdp); CHKERRQ(ierr);
-	ierr = VecDuplicate(jr->gsol, &Perturb_vec); CHKERRQ(ierr);
-	ierr = VecCopy(jr->gsol,sol); CHKERRQ(ierr);
-	ierr = VecCopy(jr->gres,res); CHKERRQ(ierr);
-	ierr = VecSet(Perturb_vec,Perturb);
+	ierr = VecDuplicate(jr->gsol, &pro);	 	 CHKERRQ(ierr);
+	ierr = VecDuplicate(jr->gsol, &psi);	 	 CHKERRQ(ierr);
+	ierr = VecDuplicate(jr->gres, &rpl);		 CHKERRQ(ierr);
+	ierr = VecDuplicate(jr->gres, &res);	 	 CHKERRQ(ierr);
+	ierr = VecDuplicate(jr->gsol, &sol); 		 CHKERRQ(ierr);
+	ierr = VecDuplicate(jr->gsol, &drdp);	 	 CHKERRQ(ierr);
+	ierr = VecCopy(jr->gsol,sol); 				 CHKERRQ(ierr);
+	ierr = VecCopy(jr->gres,res); 				 CHKERRQ(ierr);
 
-	// scan markers
-	for(ii = 0; ii < user->AdjointNumInd; ii++) {
+	//===============
+	// Indexing
+	//===============
+	// Put the proportion into the Projection vector where the user defined the computation coordinates (dF/dx = P)
+	ierr = AdjointPointInPro(jr, user, vx, vy, vz, pro); 		CHKERRQ(ierr);
+
+	//===============
+	// SOLVE
+	//===============
+	// Solve the adjoint equation (psi = J^-T * dF/dx)
+	ierr = SNESGetKSP(snes, &ksp);         		CHKERRQ(ierr);
+	ierr = KSPSetOptionsPrefix(ksp,"as_"); 		CHKERRQ(ierr);
+	ierr = KSPSetFromOptions(ksp);         		CHKERRQ(ierr);
+	ierr = KSPGetPC(ksp, &ipc);            		CHKERRQ(ierr);
+	ierr = PCSetType(ipc, PCMAT);          		CHKERRQ(ierr);
+	ierr = KSPSetOperators(ksp,nl->J,nl->P);	CHKERRQ(ierr);
+	ierr = KSPSolve(ksp,pro,psi);				CHKERRQ(ierr);
+	ierr = KSPGetConvergedReason(ksp,&reason);	CHKERRQ(ierr);
+
+	//===============
+	// Parameter loop
+	//===============
+	for(j = 0; j < user->AdjointNumPar; j++)
+	{
+		// Get residual since it is overwritten in VecAYPX
+		ierr = VecDuplicate(jr->gres, &res);  	CHKERRQ(ierr);
+		ierr = VecCopy(jr->gres,res); 			CHKERRQ(ierr);
+
+		// Set perturbation paramter for the finite differences back to 1e-6
+		aop->Perturb = 1e-6;
+
+		// Get current phase and parameter
+		CurPhase = user->AdjointPhases[j];
+		CurPar   = user->AdjointParameters[j];
+
+		// Perturb the current parameter in the current phase
+		ierr = AdjointPerturbParameter(nl, CurPar, CurPhase, aop);      CHKERRQ(ierr);
+
+		// get the actual used perturbation parameter which is 1e-6*parameter
+		Perturb = aop->Perturb;
+		ierr = VecDuplicate(jr->gsol, &Perturb_vec); CHKERRQ(ierr);
+		ierr = VecSet(Perturb_vec,Perturb);			 CHKERRQ(ierr);
+
+		// Compute residual with the converged Jacobian (dr/dp = [r(p+h) - r(p)]/h)
+		ierr = FormResidual(snes, sol, rpl, nl); 	       CHKERRQ(ierr);
+		ierr = VecAYPX(res,-1,rpl);                        CHKERRQ(ierr);
+		ierr = VecPointwiseDivide(drdp,res,Perturb_vec);   CHKERRQ(ierr);
+
+		// Compute the gradient (dF/dp = -psi^T * dr/dp) & Save gradient
+		ierr = VecDot(drdp,psi,&grd);     CHKERRQ(ierr);
+		aop->grad[j] 	= -1 * grd;
+
+		// Reset perturbed parameter
+		ierr = AdjointResetParameter(nl, CurPar, CurPhase, aop);       CHKERRQ(ierr);
+
+		// Print result
+		PetscPrintf(PETSC_COMM_WORLD,"%D.Gradient = %.12f ; CurPar = %d ; CurPhase = %d\n",j+1,aop->grad[j],CurPar,CurPhase);
+
+		// Destroy overwritten residual vector
+		ierr = VecDestroy(&res);
+	}
+
+	// Print the solution variable at the user defined index
+	for (i=0; i<user->AdjointNumInd; i++)
+	{
+		PetscSynchronizedPrintf(PETSC_COMM_WORLD,"Computation variable = %.12f \n",vz[i]);
+		PetscSynchronizedFlush(PETSC_COMM_WORLD,PETSC_STDOUT);
+	}
+
+	// Clean
+	ierr = VecDestroy(&psi);
+	ierr = VecDestroy(&sol);
+	ierr = VecDestroy(&pro);
+	ierr = VecDestroy(&drdp);
+	ierr = VecDestroy(&rpl);
+	ierr = VecDestroy(&Perturb_vec);
+
+	PetscTime(&cputime_end);
+	PetscPrintf(PETSC_COMM_WORLD,"Computation was succesful & took %g s\n------------------------------------------\n",cputime_end - cputime_start);
+
+	PetscFunctionReturn(0);
+}
+//---------------------------------------------------------------------------
+#undef __FUNCT__
+#define __FUNCT__ "AdjointPointInPro"
+PetscErrorCode AdjointPointInPro(JacRes *jr, UserCtx *user, PetscScalar *vx, PetscScalar *vy, PetscScalar *vz, Vec pro)
+{
+	PetscErrorCode      ierr;
+	FDSTAG              *fs;
+	Vec                 lproX, lproY, lproZ, gproX, gproY, gproZ;
+	PetscScalar         coord_local[3], indar[8], *temppro, ***llproX, ***llproY, ***llproZ, *dggproX, *dggproY, *dggproZ;
+	PetscInt            ii, sx, sy, sz, nx, ny, nz, I, J, K, II, JJ, KK, lrank, grank;
+	PetscScalar         xb, yb, zb, xe, ye, ze, xc, yc, zc, *iter, *ncx, *ncy, *ncz, *ccx, *ccy, *ccz, ***lvx, ***lvy, ***lvz;
+
+	PetscFunctionBegin;
+
+	fs = jr->fs;
+
+	// Access the local velocities
+	ierr = DMDAVecGetArray(fs->DA_X, jr->lvx, &lvx); CHKERRQ(ierr);
+	ierr = DMDAVecGetArray(fs->DA_Y, jr->lvy, &lvy); CHKERRQ(ierr);
+	ierr = DMDAVecGetArray(fs->DA_Z, jr->lvz, &lvz); CHKERRQ(ierr);
+
+	ierr = DMCreateGlobalVector(fs->DA_X, &gproX); CHKERRQ(ierr);
+	ierr = DMCreateGlobalVector(fs->DA_Y, &gproY); CHKERRQ(ierr);
+	ierr = DMCreateGlobalVector(fs->DA_Z, &gproZ); CHKERRQ(ierr);
+
+	ierr = DMCreateLocalVector (fs->DA_X, &lproX); CHKERRQ(ierr);
+	ierr = DMCreateLocalVector (fs->DA_Y, &lproY); CHKERRQ(ierr);
+	ierr = DMCreateLocalVector (fs->DA_Z, &lproZ); CHKERRQ(ierr);
+
+	VecZeroEntries(gproX);
+	VecZeroEntries(gproY);
+	VecZeroEntries(gproZ);
+	VecZeroEntries(lproX);
+	VecZeroEntries(lproY);
+	VecZeroEntries(lproZ);
+
+	indar[0] = 1;
+	indar[1] = 1;
+	indar[2] = 1;
+	indar[3] = 1;
+	indar[4] = 1;
+	indar[5] = 1;
+	indar[6] = 1;
+	indar[7] = 1;
+
+	for(ii = 0; ii < user->AdjointNumInd; ii++)
+	{
 		// Create coordinate vector
 		coord_local[0] = user->Adjoint_x[ii];
 		coord_local[1] = user->Adjoint_y[ii];
@@ -166,8 +287,9 @@ PetscErrorCode CreateAdjoint(JacRes *jr, UserCtx *user, AdjGrad *aop, NLSol *nl,
 		// get global & local ranks of a marker
 		ierr = FDSTAGGetPointRanks(fs, coord_local, &lrank, &grank); CHKERRQ(ierr);
 
-		if(lrank == -1) {
-		} else {
+		// If lrank is not 13 the point is not on this processor
+		if(lrank == 13)
+		{
 			// starting indices & number of cells
 			sx = fs->dsx.pstart; nx = fs->dsx.ncels;
 			sy = fs->dsy.pstart; ny = fs->dsy.ncels;
@@ -183,11 +305,6 @@ PetscErrorCode CreateAdjoint(JacRes *jr, UserCtx *user, AdjGrad *aop, NLSol *nl,
 			J = FindPointInCell(ncy, 0, ny, coord_local[1]);
 			K = FindPointInCell(ncz, 0, nz, coord_local[2]);
 
-			// Access the local velocities
-			ierr = DMDAVecGetArray(fs->DA_X,   jr->lvx, &lvx); CHKERRQ(ierr);
-			ierr = DMDAVecGetArray(fs->DA_Y,   jr->lvy, &lvy); CHKERRQ(ierr);
-			ierr = DMDAVecGetArray(fs->DA_Z,   jr->lvz, &lvz); CHKERRQ(ierr);
-
 			// get coordinates of cell center
 			xc = ccx[I];
 			yc = ccy[J];
@@ -198,260 +315,257 @@ PetscErrorCode CreateAdjoint(JacRes *jr, UserCtx *user, AdjGrad *aop, NLSol *nl,
 			if(coord_local[1] > yc) { JJ = J; } else { JJ = J-1; }
 			if(coord_local[2] > zc) { KK = K; } else { KK = K-1; }
 
-			ierr = VecGetArray(proX, &tempproX);      CHKERRQ(ierr);
-			ierr = VecGetArray(proY, &tempproY);      CHKERRQ(ierr);
-			ierr = VecGetArray(proZ, &tempproZ);      CHKERRQ(ierr);
+			ierr = DMDAVecGetArray(fs->DA_X, lproX, &llproX);      CHKERRQ(ierr);
+			ierr = DMDAVecGetArray(fs->DA_Y, lproY, &llproY);      CHKERRQ(ierr);
+			ierr = DMDAVecGetArray(fs->DA_Z, lproZ, &llproZ);      CHKERRQ(ierr);
 
-			if(user->AdjointVel[ii] == 1){                  // Vx
+			if(user->AdjointVel[ii] == 1)
+			{   // Vx
 				// interpolate x velocity
 				vx[ii] = InterpLin3D(lvx, I,  JJ, KK, sx, sy, sz, coord_local[0], coord_local[1], coord_local[2], ncx, ccy, ccz);
 
 				// get relative coordinates
-				xe = (coord_local[0] - ncx[I])/(ncx[I+1] - ncx[I]); xb = 1.0 - xe;
-				ye = (coord_local[1] - ccy[J])/(ccy[J+1] - ccy[J]); yb = 1.0 - ye;
-				ze = (coord_local[2] - ccz[K])/(ccz[K+1] - ccz[K]); zb = 1.0 - ze;
+				xe = (coord_local[0] - ncx[I ])/(ncx[I +1] - ncx[I ]); xb = 1.0 - xe;
+				ye = (coord_local[1] - ccy[JJ])/(ccy[JJ+1] - ccy[JJ]); yb = 1.0 - ye;
+				ze = (coord_local[2] - ccz[KK])/(ccz[KK+1] - ccz[KK]); zb = 1.0 - ze;
 
-				tempproX[sx+I  ] = xb;
-				tempproX[sx+I+1] = xe;
-
-				tempproY[sy+J  ] = yb;
-				tempproY[sy+J+1] = ye;
-
-				tempproZ[sz+K  ] = zb;
-				tempproZ[sz+K+1] = ze;
-
-			}else if(user->AdjointVel[ii] == 2){                  // Vy
+				llproX[sz+KK  ][sy+JJ  ][sx+I  ] = xb*indar[0];
+				llproX[sz+KK  ][sy+JJ  ][sx+I+1] = xe*indar[1];
+				llproX[sz+KK  ][sy+JJ+1][sx+I  ] = xb*indar[2];
+				llproX[sz+KK  ][sy+JJ+1][sx+I+1] = xe*indar[3];
+				llproX[sz+KK+1][sy+JJ  ][sx+I  ] = xb*indar[4];
+				llproX[sz+KK+1][sy+JJ  ][sx+I+1] = xe*indar[5];
+				llproX[sz+KK+1][sy+JJ+1][sx+I  ] = xb*indar[6];
+				llproX[sz+KK+1][sy+JJ+1][sx+I+1] = xe*indar[7];
+			}
+			else if(user->AdjointVel[ii] == 2)
+			{   // Vy
 				// interpolate y velocity
 				vy[ii] = InterpLin3D(lvy, II, J,  KK, sx, sy, sz, coord_local[0], coord_local[1], coord_local[2], ccx, ncy, ccz);
 
 				// get relative coordinates
-				xe = (coord_local[0] - ccx[I])/(ccx[I+1] - ccx[I]); xb = 1.0 - xe;
-				ye = (coord_local[1] - ncy[J])/(ncy[J+1] - ncy[J]); yb = 1.0 - ye;
-				ze = (coord_local[2] - ccz[K])/(ccz[K+1] - ccz[K]); zb = 1.0 - ze;
+				xe = (coord_local[0] - ccx[II])/(ccx[II+1] - ccx[II]); xb = 1.0 - xe;
+				ye = (coord_local[1] - ncy[J ])/(ncy[J +1] - ncy[J ]); yb = 1.0 - ye;
+				ze = (coord_local[2] - ccz[KK])/(ccz[KK+1] - ccz[KK]); zb = 1.0 - ze;
 
-				tempproX[sx+I  ] = xb;
-				tempproX[sx+I+1] = xe;
-
-				tempproY[sy+J  ] = yb;
-				tempproY[sy+J+1] = ye;
-
-				tempproZ[sz+K  ] = zb;
-				tempproZ[sz+K+1] = ze;
-
-			}else if(user->AdjointVel[ii] == 3){                  // Vz
+				llproY[sz+KK  ][sy+J  ][sx+II  ] = yb*indar[0];
+				llproY[sz+KK  ][sy+J  ][sx+II+1] = yb*indar[1];
+				llproY[sz+KK  ][sy+J+1][sx+II  ] = ye*indar[2];
+				llproY[sz+KK  ][sy+J+1][sx+II+1] = ye*indar[3];
+				llproY[sz+KK+1][sy+J  ][sx+II  ] = yb*indar[4];
+				llproY[sz+KK+1][sy+J  ][sx+II+1] = yb*indar[5];
+				llproY[sz+KK+1][sy+J+1][sx+II  ] = ye*indar[6];
+				llproY[sz+KK+1][sy+J+1][sx+II+1] = ye*indar[7];
+			}
+			else if(user->AdjointVel[ii] == 3)
+			{   // Vz
 				// interpolate z velocity
 				vz[ii] = InterpLin3D(lvz, II, JJ, K,  sx, sy, sz, coord_local[0], coord_local[1], coord_local[2], ccx, ccy, ncz);
 
 				// get relative coordinates
-				xe = (coord_local[0] - ccx[I])/(ccx[I+1] - ccx[I]); xb = 1.0 - xe;
-				ye = (coord_local[1] - ccy[J])/(ccy[J+1] - ccy[J]); yb = 1.0 - ye;
-				ze = (coord_local[2] - ncz[K])/(ncz[K+1] - ncz[K]); zb = 1.0 - ze;
+				xe = (coord_local[0] - ccx[II])/(ccx[II+1] - ccx[II]); xb = 1.0 - xe;
+				ye = (coord_local[1] - ccy[JJ])/(ccy[JJ+1] - ccy[JJ]); yb = 1.0 - ye;
+				ze = (coord_local[2] - ncz[K ])/(ncz[K +1] - ncz[K ]); zb = 1.0 - ze;
 
-				tempproX[sx+I  ] = xb;
-				tempproX[sx+I+1] = xe;
+				llproZ[sz+K  ][sy+JJ  ][sx+II  ] = zb*indar[0];
+				llproZ[sz+K  ][sy+JJ  ][sx+II+1] = zb*indar[1];
+				llproZ[sz+K  ][sy+JJ+1][sx+II  ] = zb*indar[2];
+				llproZ[sz+K  ][sy+JJ+1][sx+II+1] = zb*indar[3];
+				llproZ[sz+K+1][sy+JJ  ][sx+II  ] = ze*indar[4];
+				llproZ[sz+K+1][sy+JJ  ][sx+II+1] = ze*indar[5];
+				llproZ[sz+K+1][sy+JJ+1][sx+II  ] = ze*indar[6];
+				llproZ[sz+K+1][sy+JJ+1][sx+II+1] = ze*indar[7];
 
-				tempproY[sy+J  ] = yb;
-				tempproY[sy+J+1] = ye;
-
-				tempproZ[sz+K  ] = zb;
-				tempproZ[sz+K+1] = ze;
 			}
-
-			// Put the proportion into the Projection vector where the user defined the computation coordinates (dF/dx = P)
-			ierr = VecGetArray(pro, &temppro);      CHKERRQ(ierr);
-			iter = temppro;
-
-			ierr  = PetscMemcpy(iter, tempproX, (size_t)fs->nXFace*sizeof(PetscScalar)); CHKERRQ(ierr);
-			iter += fs->nXFace;
-
-			ierr  = PetscMemcpy(iter, tempproY, (size_t)fs->nYFace*sizeof(PetscScalar)); CHKERRQ(ierr);
-			iter += fs->nYFace;
-
-			ierr  = PetscMemcpy(iter, tempproZ, (size_t)fs->nZFace*sizeof(PetscScalar)); CHKERRQ(ierr);
-			iter += fs->nZFace;
-
-			// restore access
-			ierr = VecRestoreArray(proX, &tempproX);      CHKERRQ(ierr);
-			ierr = VecRestoreArray(proY, &tempproY);      CHKERRQ(ierr);
-			ierr = VecRestoreArray(proZ, &tempproZ);      CHKERRQ(ierr);
-			ierr = VecRestoreArray(pro, &temppro);       CHKERRQ(ierr);
+			ierr = DMDAVecRestoreArray(fs->DA_X, lproX, &llproX);      CHKERRQ(ierr);
+			ierr = DMDAVecRestoreArray(fs->DA_Y, lproY, &llproY);      CHKERRQ(ierr);
+			ierr = DMDAVecRestoreArray(fs->DA_Z, lproZ, &llproZ);      CHKERRQ(ierr);
 		}
 	}
 
-	// Solve the adjoint equation (psi = J^-T * dF/dx)
-	ierr = SNESGetKSP(snes, &ksp);         CHKERRQ(ierr);
-	ierr = KSPSetOptionsPrefix(ksp,"as_"); CHKERRQ(ierr);
-	ierr = KSPSetFromOptions(ksp);         CHKERRQ(ierr);
-	ierr = KSPGetPC(ksp, &ipc);            CHKERRQ(ierr);
-	ierr = PCSetType(ipc, PCMAT);          CHKERRQ(ierr);
-	ierr = KSPSetOperators(ksp,nl->J,nl->P);	CHKERRQ(ierr);
-	ierr = KSPSolve(ksp,pro,psi);	CHKERRQ(ierr);
-	ierr = KSPGetConvergedReason(ksp,&reason);	CHKERRQ(ierr);
+	LOCAL_TO_GLOBAL(fs->DA_X, lproX, gproX);
+	LOCAL_TO_GLOBAL(fs->DA_Y, lproY, gproY);
+	LOCAL_TO_GLOBAL(fs->DA_Z, lproZ, gproZ);
 
-	//===============
-	// Parameter loop
-	//===============
-	for(j=0; j<user->AdjointNumPar; j++){
+	ierr = VecGetArray(gproX, &dggproX);      CHKERRQ(ierr);
+	ierr = VecGetArray(gproY, &dggproY);      CHKERRQ(ierr);
+	ierr = VecGetArray(gproZ, &dggproZ);      CHKERRQ(ierr);
 
-		// Get residual since it is overwritten in VecAYPX
-		ierr = VecDuplicate(jr->gres, &res); CHKERRQ(ierr);
-		ierr = VecDuplicate(jr->gsol, &drdp); CHKERRQ(ierr);
-		ierr = VecDuplicate(jr->gres, &rpl); CHKERRQ(ierr);
-		ierr = VecCopy(jr->gres,res); CHKERRQ(ierr);
+	// Put the proportion into the Projection vector where the user defined the computation coordinates (dF/dx = P)
+	ierr = VecGetArray(pro, &temppro);      CHKERRQ(ierr);
+	iter = temppro;
 
-		// Get current phase and parameter
-		PetscInt CurPhase = user->AdjointPhases[j];
-		PetscInt CurPar   = user->AdjointParameters[j];
+	ierr  = PetscMemcpy(iter, dggproX, (size_t)fs->nXFace*sizeof(PetscScalar)); CHKERRQ(ierr);
+	iter += fs->nXFace;
 
-		// Perturb the parameter in the current phase (more to be included)
-		if(CurPar==1) {
-			// PetscScalar         rhoIni;
-			rhoIni = nl->pc->pm->jr->phases[CurPhase].rho;
-			nl->pc->pm->jr->phases[CurPhase].rho +=  (Perturb*nl->pc->pm->jr->phases[CurPhase].rho);
-		}else if (CurPar==2) {
-			// PetscScalar         rho_nIni;
-			rho_nIni = nl->pc->pm->jr->phases[CurPhase].rho_n;
-			nl->pc->pm->jr->phases[CurPhase].rho_n +=  (Perturb*nl->pc->pm->jr->phases[CurPhase].rho_n);
-		}else if (CurPar==3) {
-			// PetscScalar         rho_cIni;
-			rho_cIni = nl->pc->pm->jr->phases[CurPhase].rho_c;
-			nl->pc->pm->jr->phases[CurPhase].rho_c +=  (Perturb*nl->pc->pm->jr->phases[CurPhase].rho_c);
-		}else if (CurPar==4) {
-			// PetscScalar         betaIni;
-			betaIni = nl->pc->pm->jr->phases[CurPhase].beta;
-			nl->pc->pm->jr->phases[CurPhase].beta +=  (Perturb*nl->pc->pm->jr->phases[CurPhase].beta);
-		}else if (CurPar==5) {
-			// PetscScalar         KIni;
-			KIni = nl->pc->pm->jr->phases[CurPhase].K;
-			nl->pc->pm->jr->phases[CurPhase].K +=  (Perturb*nl->pc->pm->jr->phases[CurPhase].K);
-		}else if (CurPar==6) {
-			// PetscScalar         KpIni;
-			KpIni = nl->pc->pm->jr->phases[CurPhase].Kp;
-			nl->pc->pm->jr->phases[CurPhase].Kp +=  (Perturb*nl->pc->pm->jr->phases[CurPhase].Kp);
-		}else if (CurPar==7) {
-			// PetscScalar         GIni;
-			GIni = nl->pc->pm->jr->phases[CurPhase].G;
-			nl->pc->pm->jr->phases[CurPhase].G +=  (Perturb*nl->pc->pm->jr->phases[CurPhase].G);
-		}else if (CurPar==8) {
-			// PetscScalar         BdIni;
-			BdIni = nl->pc->pm->jr->phases[CurPhase].Bd;
-			nl->pc->pm->jr->phases[CurPhase].Bd +=  (Perturb*nl->pc->pm->jr->phases[CurPhase].Bd);
-		}else if (CurPar==9) {
-			// PetscScalar         EdIni;
-			EdIni = nl->pc->pm->jr->phases[CurPhase].Ed;
-			nl->pc->pm->jr->phases[CurPhase].Ed +=  (Perturb*nl->pc->pm->jr->phases[CurPhase].Ed);
-		}else if (CurPar==10) {
-			// PetscScalar         VdIni;
-			VdIni = nl->pc->pm->jr->phases[CurPhase].Vd;
-			nl->pc->pm->jr->phases[CurPhase].Vd +=  (Perturb*nl->pc->pm->jr->phases[CurPhase].Vd);
-		}else if (CurPar==11) {
-			// PetscScalar         BnIni;
-			BnIni = nl->pc->pm->jr->phases[CurPhase].Bn;
-			nl->pc->pm->jr->phases[CurPhase].Bn +=  (Perturb*nl->pc->pm->jr->phases[CurPhase].Bn);
-		}else if (CurPar==12) {
-			// PetscScalar         nIni;
-			nIni = nl->pc->pm->jr->phases[CurPhase].n;
-			nl->pc->pm->jr->phases[CurPhase].n +=  (Perturb*nl->pc->pm->jr->phases[CurPhase].n);
-		}else if (CurPar==13) {
-			// PetscScalar         EnIni;
-			EnIni = nl->pc->pm->jr->phases[CurPhase].En;
-			nl->pc->pm->jr->phases[CurPhase].En +=  (Perturb*nl->pc->pm->jr->phases[CurPhase].En);
-		}else if (CurPar==14) {
-			// PetscScalar         VnIni;
-			VnIni = nl->pc->pm->jr->phases[CurPhase].Vn;
-			nl->pc->pm->jr->phases[CurPhase].Vn +=  (Perturb*nl->pc->pm->jr->phases[CurPhase].Vn);
-		}else if (CurPar==15) {
-			// PetscScalar         taupIni;
-			taupIni = nl->pc->pm->jr->phases[CurPhase].taup;
-			nl->pc->pm->jr->phases[CurPhase].taup +=  (Perturb*nl->pc->pm->jr->phases[CurPhase].taup);
-		}else if (CurPar==16) {
-			// PetscScalar         gammaIni;
-			gammaIni = nl->pc->pm->jr->phases[CurPhase].gamma;
-			nl->pc->pm->jr->phases[CurPhase].gamma +=  (Perturb*nl->pc->pm->jr->phases[CurPhase].gamma);
-		}else if (CurPar==17) {
-			// PetscScalar         qIni;
-			qIni = nl->pc->pm->jr->phases[CurPhase].q;
-			nl->pc->pm->jr->phases[CurPhase].q +=  (Perturb*nl->pc->pm->jr->phases[CurPhase].q);
-		}/*else if (CurPar==18) {
-			// PetscScalar         etaIni;
-			etaIni = nl->pc->pm->jr->phases[CurPhase].eta;
-			nl->pc->pm->jr->phases[CurPhase].eta +=  (Perturb*nl->pc->pm->jr->phases[CurPhase].eta);
-		}*/
+	ierr  = PetscMemcpy(iter, dggproY, (size_t)fs->nYFace*sizeof(PetscScalar)); CHKERRQ(ierr);
+	iter += fs->nYFace;
 
-		// Compute residual with the converged Jacobian and preconditioner (dr/dp = [r(p+h) - r(p)]/h)
-		ierr = FormResidual(snes, sol, rpl, nl); 	       CHKERRQ(ierr);
-		ierr = VecAYPX(res,-1,rpl);                        CHKERRQ(ierr);
-		ierr = VecPointwiseDivide(drdp,res,Perturb_vec);   CHKERRQ(ierr);
+	ierr  = PetscMemcpy(iter, dggproZ, (size_t)fs->nZFace*sizeof(PetscScalar)); CHKERRQ(ierr);
+	iter += fs->nZFace;
 
-		// Compute the gradient (dF/dp = -psi^T * dr/dp)
-		ierr = VecDot(psi, drdp, &grd);     CHKERRQ(ierr);
+	// restore & destroy
+	ierr = VecRestoreArray(pro, &temppro);         CHKERRQ(ierr);
 
-		// Save gradient
-		aop->grad[j] 	= -1 * grd;
+	ierr = VecRestoreArray(gproX, &dggproX);       CHKERRQ(ierr);
+	ierr = VecRestoreArray(gproY, &dggproY);       CHKERRQ(ierr);
+	ierr = VecRestoreArray(gproZ, &dggproZ);       CHKERRQ(ierr);
 
-		// VecView(pro,	PETSC_VIEWER_STDOUT_WORLD );     CHKERRQ(ierr);
+	ierr = VecDestroy(&lproX);
+	ierr = VecDestroy(&lproY);
+	ierr = VecDestroy(&lproZ);
+	ierr = VecDestroy(&gproX);
+	ierr = VecDestroy(&gproY);
+	ierr = VecDestroy(&gproZ);
 
-		// Print result
-		PetscPrintf(PETSC_COMM_WORLD,"%D.Gradient = %g ; CurPar = %d ; CurPhase = %d\n",j+1,aop->grad[j],CurPar,CurPhase);
+	ierr = DMDAVecRestoreArray(fs->DA_X, jr->lvx, &lvx); CHKERRQ(ierr);
+	ierr = DMDAVecRestoreArray(fs->DA_Y, jr->lvy, &lvy); CHKERRQ(ierr);
+	ierr = DMDAVecRestoreArray(fs->DA_Z, jr->lvz, &lvz); CHKERRQ(ierr);
 
-		// Set all the used parameter back to its original value
-		if (CurPar==1) {
-			nl->pc->pm->jr->phases[CurPhase].rho = rhoIni;
-		}else if (CurPar==2) {
-			nl->pc->pm->jr->phases[CurPhase].rho_n = rho_nIni;
-		}else if (CurPar==3) {
-			nl->pc->pm->jr->phases[CurPhase].rho_c = rho_cIni;
-		}else if (CurPar==4) {
-			nl->pc->pm->jr->phases[CurPhase].beta = betaIni;
-		}else if (CurPar==5) {
-			nl->pc->pm->jr->phases[CurPhase].K = KIni;
-		}else if (CurPar==6) {
-			nl->pc->pm->jr->phases[CurPhase].Kp = KpIni;
-		}else if (CurPar==7) {
-			nl->pc->pm->jr->phases[CurPhase].G = GIni;
-		}else if (CurPar==8) {
-			nl->pc->pm->jr->phases[CurPhase].Bd = BdIni;
-		}else if (CurPar==9) {
-			nl->pc->pm->jr->phases[CurPhase].Ed = EdIni;
-		}else if (CurPar==10) {
-			nl->pc->pm->jr->phases[CurPhase].Vd = VdIni;
-		}else if (CurPar==11) {
-			nl->pc->pm->jr->phases[CurPhase].Bn = BnIni;
-		}else if (CurPar==12) {
-			nl->pc->pm->jr->phases[CurPhase].n = nIni;
-		}else if (CurPar==13) {
-			nl->pc->pm->jr->phases[CurPhase].En = EnIni;
-		}else if (CurPar==14) {
-			nl->pc->pm->jr->phases[CurPhase].Vn = VnIni;
-		}else if (CurPar==15) {
-			nl->pc->pm->jr->phases[CurPhase].taup = taupIni;
-		}else if (CurPar==16) {
-			nl->pc->pm->jr->phases[CurPhase].gamma = gammaIni;
-		}else if (CurPar==17) {
-			nl->pc->pm->jr->phases[CurPhase].q = qIni;
-		}/*else if (CurPar==18) {
-			nl->pc->pm->jr->phases[CurPhase].eta = etaIni;
-		}*/
+	PetscFunctionReturn(0);
+}
+//---------------------------------------------------------------------------
+#undef __FUNCT__
+#define __FUNCT__ "AdjointPerturbParameter"
+PetscErrorCode AdjointPerturbParameter(NLSol *nl, PetscInt CurPar, PetscInt CurPhase, AdjGrad *aop)
+{
+	PetscScalar ini, perturb;
 
+	PetscFunctionBegin;
+
+	// Get the perturbation value
+	perturb = aop->Perturb;
+
+	// Perturb the parameter in the current phase (more to be included)
+	if(CurPar==1)			// rho
+	{
+		ini = nl->pc->pm->jr->phases[CurPhase].rho;
+		nl->pc->pm->jr->phases[CurPhase].rho +=  (perturb*ini);
+	}
+	else if (CurPar==2)	    // rho_n
+	{
+		ini = nl->pc->pm->jr->phases[CurPhase].rho_n;
+		nl->pc->pm->jr->phases[CurPhase].rho_n +=  (perturb*ini);
+	}
+	else if (CurPar==3)	    // rho_c
+	{
+		ini = nl->pc->pm->jr->phases[CurPhase].rho_c;
+		nl->pc->pm->jr->phases[CurPhase].rho_c +=  (perturb*ini);
+	}
+	else if (CurPar==4)	    // beta
+	{
+		ini = nl->pc->pm->jr->phases[CurPhase].beta;
+		nl->pc->pm->jr->phases[CurPhase].beta +=  (perturb*ini);
+	}
+	else if (CurPar==5)	    // K
+	{
+		ini = nl->pc->pm->jr->phases[CurPhase].K;
+		nl->pc->pm->jr->phases[CurPhase].K +=  (perturb*ini);
+	}
+	else if (CurPar==6)	    // Kp
+	{
+		ini = nl->pc->pm->jr->phases[CurPhase].Kp;
+		nl->pc->pm->jr->phases[CurPhase].Kp +=  (perturb*ini);
+	}
+	else if (CurPar==7)	    // G
+	{
+		ini = nl->pc->pm->jr->phases[CurPhase].G;
+		nl->pc->pm->jr->phases[CurPhase].G +=  (perturb*ini);
+	}
+	else if (CurPar==8)	    // Bd
+	{
+		// This kind of perturbs the whole NEWTONIAN viscosity, consider perturbing the parameters directly
+		ini = nl->pc->pm->jr->phases[CurPhase].Bd;
+		PetscScalar BdTemp;
+		BdTemp = (1/ini)/2;
+		BdTemp += perturb*BdTemp;
+		nl->pc->pm->jr->phases[CurPhase].Bd =  (1/BdTemp)/2;
+	}
+	else if (CurPar==9)	    // Ed
+	{
+		ini = nl->pc->pm->jr->phases[CurPhase].Ed;
+		nl->pc->pm->jr->phases[CurPhase].Ed +=  (perturb*ini);
+	}
+	else if (CurPar==10)	// Vd
+	{
+		ini = nl->pc->pm->jr->phases[CurPhase].Vd;
+		nl->pc->pm->jr->phases[CurPhase].Vd +=  (perturb*ini);
+	}
+	else if (CurPar==11)	// Bn
+	{
+		// This kind of perturbs the whole DISLOCATION viscosity, consider perturbing the parameters directly
+		ini = nl->pc->pm->jr->phases[CurPhase].Bn;
+		PetscScalar BnTemp;
+		BnTemp = (1/ini)/2;
+		BnTemp += perturb*BnTemp;
+		nl->pc->pm->jr->phases[CurPhase].Bn =  (1/BnTemp)/2;
+	}
+	else if (CurPar==12)	// n
+	{
+		ini = nl->pc->pm->jr->phases[CurPhase].n;
+		nl->pc->pm->jr->phases[CurPhase].n +=  (perturb*ini);
+	}
+	else if (CurPar==13)	// En
+	{
+		ini = nl->pc->pm->jr->phases[CurPhase].En;
+		nl->pc->pm->jr->phases[CurPhase].En +=  (perturb*ini);
+	}
+	else if (CurPar==14)	// Vn
+	{
+		ini = nl->pc->pm->jr->phases[CurPhase].Vn;
+		nl->pc->pm->jr->phases[CurPhase].Vn +=  (perturb*ini);
+	}
+	else if (CurPar==15)	// taup
+	{
+		ini = nl->pc->pm->jr->phases[CurPhase].taup;
+		nl->pc->pm->jr->phases[CurPhase].taup +=  (perturb*ini);
+	}
+	else if (CurPar==16)	// gamma
+	{
+		ini = nl->pc->pm->jr->phases[CurPhase].gamma;
+		nl->pc->pm->jr->phases[CurPhase].gamma +=  (perturb*ini);
+	}
+	else if (CurPar==17)	// q
+	{
+		ini = nl->pc->pm->jr->phases[CurPhase].q;
+		nl->pc->pm->jr->phases[CurPhase].q +=  (perturb*ini);
 	}
 
-	// Print the solution variable at the user defined index
-	for (i=0; i<user->AdjointNumInd; i++) {
-		PetscPrintf(PETSC_COMM_WORLD,"Computation variable = %g \n",vz[i]);
-	}
-	PetscPrintf(PETSC_COMM_WORLD,"Computation was succesful\n------------------------------------------\n");
+	// Store initial value of current parameter
+	aop->Ini = ini;
+	aop->Perturb = perturb*ini;
 
-	// Clean
-	ierr = VecDestroy(&rpl);
-	ierr = VecDestroy(&psi);
-	ierr = VecDestroy(&sol);
-	ierr = VecDestroy(&pro);
-	ierr = VecDestroy(&proX);
-	ierr = VecDestroy(&proY);
-	ierr = VecDestroy(&proZ);
-	ierr = VecDestroy(&res);
-	ierr = VecDestroy(&drdp);
-	ierr = VecDestroy(&Perturb_vec);
+	PetscFunctionReturn(0);
+}
+//---------------------------------------------------------------------------
+#undef __FUNCT__
+#define __FUNCT__ "AdjointResetParameter"
+PetscErrorCode AdjointResetParameter(NLSol *nl, PetscInt CurPar, PetscInt CurPhase, AdjGrad *aop)
+{
+	PetscScalar ini;
 
+	PetscFunctionBegin;
+
+	// Get initial value of currently perturbed parameter
+	ini = aop->Ini;
+
+	// Set the used parameter back to its original value
+	if (CurPar==1)        { nl->pc->pm->jr->phases[CurPhase].rho   = ini;
+	}else if (CurPar==2)  { nl->pc->pm->jr->phases[CurPhase].rho_n = ini;
+	}else if (CurPar==3)  { nl->pc->pm->jr->phases[CurPhase].rho_c = ini;
+	}else if (CurPar==4)  { nl->pc->pm->jr->phases[CurPhase].beta  = ini;
+	}else if (CurPar==5)  { nl->pc->pm->jr->phases[CurPhase].K     = ini;
+	}else if (CurPar==6)  { nl->pc->pm->jr->phases[CurPhase].Kp    = ini;
+	}else if (CurPar==7)  { nl->pc->pm->jr->phases[CurPhase].G     = ini;
+	}else if (CurPar==8)  { nl->pc->pm->jr->phases[CurPhase].Bd    = ini;
+	}else if (CurPar==9)  { nl->pc->pm->jr->phases[CurPhase].Ed    = ini;
+	}else if (CurPar==10) { nl->pc->pm->jr->phases[CurPhase].Vd    = ini;
+	}else if (CurPar==11) { nl->pc->pm->jr->phases[CurPhase].Bn    = ini;
+	}else if (CurPar==12) { nl->pc->pm->jr->phases[CurPhase].n     = ini;
+	}else if (CurPar==13) { nl->pc->pm->jr->phases[CurPhase].En    = ini;
+	}else if (CurPar==14) { nl->pc->pm->jr->phases[CurPhase].Vn    = ini;
+	}else if (CurPar==15) { nl->pc->pm->jr->phases[CurPhase].taup  = ini;
+	}else if (CurPar==16) { nl->pc->pm->jr->phases[CurPhase].gamma = ini;
+	}else if (CurPar==17) { nl->pc->pm->jr->phases[CurPhase].q     = ini;}
 	PetscFunctionReturn(0);
 }

@@ -45,9 +45,25 @@
 #ifndef __adjoint_h__
 #define __adjoint_h__
 //---------------------------------------------------------------------------
+// Structure that holds paramters for the adjoint gradient computation
+typedef struct
+{
+	PetscScalar      grad[_MAX_AdjointPars_]; // Vector containing the gradients (dF/dp = -psi * dr/dp)   // _MAX_AdjointIndices_ defined in fdstagTypes.h (needed for user input as well)
+	PetscScalar      Ini;                     // Initial value of perturbed parameter
+	PetscScalar      Perturb;                 // Perturbation parameter for the finite differences
+} AdjGrad;
 
 // make context for adjoint
-PetscErrorCode CreateAdjoint(JacRes *jr, UserCtx *user, AdjGrad *aop, NLSol *nl,SNES snes, AdvCtx *actx);
+PetscErrorCode CreateAdjoint(JacRes *jr, UserCtx *user, AdjGrad *aop, NLSol *nl,SNES snes);
+
+// Interpolate the adjoint points and include them into the projection vector
+PetscErrorCode AdjointPointInPro(JacRes *jr, UserCtx *user, PetscScalar *vx, PetscScalar *vy, PetscScalar *vz, Vec pro );
+
+// Perturb the input parameters
+PetscErrorCode AdjointPerturbParameter(NLSol *nl, PetscInt CurPar, PetscInt CurPhase, AdjGrad *aop);
+
+// reset the perturbed input parameter
+PetscErrorCode AdjointResetParameter(NLSol *nl, PetscInt CurPar, PetscInt CurPhase, AdjGrad *aop);
 
 // To clear the memory
 PetscErrorCode AdjointDestroy(AdjGrad *aop);

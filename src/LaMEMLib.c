@@ -348,7 +348,7 @@ PetscErrorCode LaMEMLib(ModParam *IOparam)
 
 		if(user.ComputeAdjointGradients == PETSC_TRUE)
 		{
-			ierr = CreateAdjoint(&jr, &user, &aop, &nl, snes, &actx); CHKERRQ(ierr);
+			ierr = CreateAdjoint(&jr, &user, &aop, &nl, snes); CHKERRQ(ierr);
 		}
 
 		// select new time step
