@@ -463,7 +463,7 @@ PetscErrorCode VolConstEq(
 			// get reference to material parameters table
 			mat = &phases[i];
 
-			// initilaize
+			// initialize
 			IKdt     = 0.0;
 			cf_comp  = 1.0;
 			cf_therm = 1.0;

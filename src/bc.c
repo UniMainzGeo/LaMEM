@@ -607,8 +607,6 @@ PetscErrorCode BCApplySimpleShearVel(BCCtx *bc)
 	fs     		= bc->fs;
 	gamma_xz    = bc->gamma_xz;
 
-	PetscPrintf(PETSC_COMM_WORLD,"SS BC; gamma_xz=%f \n",gamma_xz);
-
 	// initialize maximal index in all directions
 	mnx = fs->dsx.tnods - 1;
 	mny = fs->dsy.tnods - 1;
