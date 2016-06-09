@@ -319,6 +319,15 @@ void ScalingInput(Scaling *scal, UserCtx *user)
 	user->BC.Exx          /= scal->strain_rate;
 	user->BC.Eyy          /= scal->strain_rate;
 
+	// Coordinates of the adjoint comparison point
+	for(i = 0; i < user->AdjointNumInd; i++)
+	{
+		user->Adjoint_x[i] /= scal->length;
+		user->Adjoint_y[i] /= scal->length;
+		user->Adjoint_z[i] /= scal->length;
+	}
+
+
 	// time-stepping
 	user->dt              /= scal->time;
 	user->dt_max          /= scal->time;

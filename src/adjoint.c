@@ -121,6 +121,7 @@ PetscErrorCode CreateAdjoint(JacRes *jr, UserCtx *user, AdjGrad *aop, NLSol *nl,
 	/* TODO:
 		- It's only valid vor visco-elasicity since the Jacobian is assumed to be symmetric (future: Jacobian needs to be transposed)
 		- boundary of 1e-10 if Perturb parameter becomes too small
+		- the only working comparison variable is the velocity
 	*/
 
 	PetscPrintf(PETSC_COMM_WORLD,"Computation of adjoint gradients\n");
@@ -135,10 +136,16 @@ PetscErrorCode CreateAdjoint(JacRes *jr, UserCtx *user, AdjGrad *aop, NLSol *nl,
 	PetscScalar         grd, Perturb, vx[_MAX_AdjointIndices_], vy[_MAX_AdjointIndices_], vz[_MAX_AdjointIndices_];
 	Vec 				rpl, sol, psi, pro, drdp, res, Perturb_vec;
 	PC                  ipc;
+	Scaling             *scal;
+
+	// Set perturbation paramter for the finite differences back to 1e-6
+	aop->Perturb = 1e-6;
 
 	// Profile time
 	PetscLogDouble     cputime_start, cputime_end;
 	PetscTime(&cputime_start);
+
+	scal = &jr->scal;
 
 	// Create all needed vectors in the same size as the solution vector
 	ierr = VecDuplicate(jr->gsol, &pro);	 	 CHKERRQ(ierr);
@@ -178,9 +185,6 @@ PetscErrorCode CreateAdjoint(JacRes *jr, UserCtx *user, AdjGrad *aop, NLSol *nl,
 		ierr = VecDuplicate(jr->gres, &res);  	CHKERRQ(ierr);
 		ierr = VecCopy(jr->gres,res); 			CHKERRQ(ierr);
 
-		// Set perturbation paramter for the finite differences back to 1e-6
-		aop->Perturb = 1e-6;
-
 		// Get current phase and parameter
 		CurPhase = user->AdjointPhases[j];
 		CurPar   = user->AdjointParameters[j];
@@ -195,7 +199,7 @@ PetscErrorCode CreateAdjoint(JacRes *jr, UserCtx *user, AdjGrad *aop, NLSol *nl,
 
 		// Compute residual with the converged Jacobian (dr/dp = [r(p+h) - r(p)]/h)
 		ierr = FormResidual(snes, sol, rpl, nl); 	       CHKERRQ(ierr);
-		ierr = VecAYPX(res,-1,rpl);                        CHKERRQ(ierr);
+		ierr = VecAYPX(res,-1,rpl);        CHKERRQ(ierr);
 		ierr = VecPointwiseDivide(drdp,res,Perturb_vec);   CHKERRQ(ierr);
 
 		// Compute the gradient (dF/dp = -psi^T * dr/dp) & Save gradient
@@ -206,7 +210,7 @@ PetscErrorCode CreateAdjoint(JacRes *jr, UserCtx *user, AdjGrad *aop, NLSol *nl,
 		ierr = AdjointResetParameter(nl, CurPar, CurPhase, aop);       CHKERRQ(ierr);
 
 		// Print result
-		PetscPrintf(PETSC_COMM_WORLD,"%D.Gradient = %.12f ; CurPar = %d ; CurPhase = %d\n",j+1,aop->grad[j],CurPar,CurPhase);
+		PetscPrintf(PETSC_COMM_WORLD,"%D.Gradient = %.12f ; CurPar = %d ; CurPhase = %d\n",j+1,aop->grad[j]*scal->velocity,CurPar,CurPhase);
 
 		// Destroy overwritten residual vector
 		ierr = VecDestroy(&res);
@@ -215,7 +219,7 @@ PetscErrorCode CreateAdjoint(JacRes *jr, UserCtx *user, AdjGrad *aop, NLSol *nl,
 	// Print the solution variable at the user defined index
 	for (i=0; i<user->AdjointNumInd; i++)
 	{
-		PetscSynchronizedPrintf(PETSC_COMM_WORLD,"Computation variable = %.12f \n",vz[i]);
+		PetscSynchronizedPrintf(PETSC_COMM_WORLD,"Computation variable = %.12f\n",vz[i]*scal->velocity);
 		PetscSynchronizedFlush(PETSC_COMM_WORLD,PETSC_STDOUT);
 	}
 
@@ -240,7 +244,7 @@ PetscErrorCode AdjointPointInPro(JacRes *jr, UserCtx *user, PetscScalar *vx, Pet
 	PetscErrorCode      ierr;
 	FDSTAG              *fs;
 	Vec                 lproX, lproY, lproZ, gproX, gproY, gproZ;
-	PetscScalar         coord_local[3], indar[8], *temppro, ***llproX, ***llproY, ***llproZ, *dggproX, *dggproY, *dggproZ;
+	PetscScalar         coord_local[3], *temppro, ***llproX, ***llproY, ***llproZ, *dggproX, *dggproY, *dggproZ;
 	PetscInt            ii, sx, sy, sz, nx, ny, nz, I, J, K, II, JJ, KK, lrank, grank;
 	PetscScalar         xb, yb, zb, xe, ye, ze, xc, yc, zc, *iter, *ncx, *ncy, *ncz, *ccx, *ccy, *ccz, ***lvx, ***lvy, ***lvz;
 
@@ -267,15 +271,6 @@ PetscErrorCode AdjointPointInPro(JacRes *jr, UserCtx *user, PetscScalar *vx, Pet
 	VecZeroEntries(lproX);
 	VecZeroEntries(lproY);
 	VecZeroEntries(lproZ);
-
-	indar[0] = 1;
-	indar[1] = 1;
-	indar[2] = 1;
-	indar[3] = 1;
-	indar[4] = 1;
-	indar[5] = 1;
-	indar[6] = 1;
-	indar[7] = 1;
 
 	for(ii = 0; ii < user->AdjointNumInd; ii++)
 	{
@@ -326,17 +321,15 @@ PetscErrorCode AdjointPointInPro(JacRes *jr, UserCtx *user, PetscScalar *vx, Pet
 
 				// get relative coordinates
 				xe = (coord_local[0] - ncx[I ])/(ncx[I +1] - ncx[I ]); xb = 1.0 - xe;
-				ye = (coord_local[1] - ccy[JJ])/(ccy[JJ+1] - ccy[JJ]); yb = 1.0 - ye;
-				ze = (coord_local[2] - ccz[KK])/(ccz[KK+1] - ccz[KK]); zb = 1.0 - ze;
 
-				llproX[sz+KK  ][sy+JJ  ][sx+I  ] = xb*indar[0];
-				llproX[sz+KK  ][sy+JJ  ][sx+I+1] = xe*indar[1];
-				llproX[sz+KK  ][sy+JJ+1][sx+I  ] = xb*indar[2];
-				llproX[sz+KK  ][sy+JJ+1][sx+I+1] = xe*indar[3];
-				llproX[sz+KK+1][sy+JJ  ][sx+I  ] = xb*indar[4];
-				llproX[sz+KK+1][sy+JJ  ][sx+I+1] = xe*indar[5];
-				llproX[sz+KK+1][sy+JJ+1][sx+I  ] = xb*indar[6];
-				llproX[sz+KK+1][sy+JJ+1][sx+I+1] = xe*indar[7];
+				llproX[sz+KK  ][sy+JJ  ][sx+I  ] = xb;
+				llproX[sz+KK  ][sy+JJ  ][sx+I+1] = xe;
+				llproX[sz+KK  ][sy+JJ+1][sx+I  ] = xb;
+				llproX[sz+KK  ][sy+JJ+1][sx+I+1] = xe;
+				llproX[sz+KK+1][sy+JJ  ][sx+I  ] = xb;
+				llproX[sz+KK+1][sy+JJ  ][sx+I+1] = xe;
+				llproX[sz+KK+1][sy+JJ+1][sx+I  ] = xb;
+				llproX[sz+KK+1][sy+JJ+1][sx+I+1] = xe;
 			}
 			else if(user->AdjointVel[ii] == 2)
 			{   // Vy
@@ -344,18 +337,16 @@ PetscErrorCode AdjointPointInPro(JacRes *jr, UserCtx *user, PetscScalar *vx, Pet
 				vy[ii] = InterpLin3D(lvy, II, J,  KK, sx, sy, sz, coord_local[0], coord_local[1], coord_local[2], ccx, ncy, ccz);
 
 				// get relative coordinates
-				xe = (coord_local[0] - ccx[II])/(ccx[II+1] - ccx[II]); xb = 1.0 - xe;
 				ye = (coord_local[1] - ncy[J ])/(ncy[J +1] - ncy[J ]); yb = 1.0 - ye;
-				ze = (coord_local[2] - ccz[KK])/(ccz[KK+1] - ccz[KK]); zb = 1.0 - ze;
 
-				llproY[sz+KK  ][sy+J  ][sx+II  ] = yb*indar[0];
-				llproY[sz+KK  ][sy+J  ][sx+II+1] = yb*indar[1];
-				llproY[sz+KK  ][sy+J+1][sx+II  ] = ye*indar[2];
-				llproY[sz+KK  ][sy+J+1][sx+II+1] = ye*indar[3];
-				llproY[sz+KK+1][sy+J  ][sx+II  ] = yb*indar[4];
-				llproY[sz+KK+1][sy+J  ][sx+II+1] = yb*indar[5];
-				llproY[sz+KK+1][sy+J+1][sx+II  ] = ye*indar[6];
-				llproY[sz+KK+1][sy+J+1][sx+II+1] = ye*indar[7];
+				llproY[sz+KK  ][sy+J  ][sx+II  ] = yb;
+				llproY[sz+KK  ][sy+J  ][sx+II+1] = yb;
+				llproY[sz+KK  ][sy+J+1][sx+II  ] = ye;
+				llproY[sz+KK  ][sy+J+1][sx+II+1] = ye;
+				llproY[sz+KK+1][sy+J  ][sx+II  ] = yb;
+				llproY[sz+KK+1][sy+J  ][sx+II+1] = yb;
+				llproY[sz+KK+1][sy+J+1][sx+II  ] = ye;
+				llproY[sz+KK+1][sy+J+1][sx+II+1] = ye;
 			}
 			else if(user->AdjointVel[ii] == 3)
 			{   // Vz
@@ -363,19 +354,22 @@ PetscErrorCode AdjointPointInPro(JacRes *jr, UserCtx *user, PetscScalar *vx, Pet
 				vz[ii] = InterpLin3D(lvz, II, JJ, K,  sx, sy, sz, coord_local[0], coord_local[1], coord_local[2], ccx, ccy, ncz);
 
 				// get relative coordinates
-				xe = (coord_local[0] - ccx[II])/(ccx[II+1] - ccx[II]); xb = 1.0 - xe;
-				ye = (coord_local[1] - ccy[JJ])/(ccy[JJ+1] - ccy[JJ]); yb = 1.0 - ye;
 				ze = (coord_local[2] - ncz[K ])/(ncz[K +1] - ncz[K ]); zb = 1.0 - ze;
 
-				llproZ[sz+K  ][sy+JJ  ][sx+II  ] = zb*indar[0];
-				llproZ[sz+K  ][sy+JJ  ][sx+II+1] = zb*indar[1];
-				llproZ[sz+K  ][sy+JJ+1][sx+II  ] = zb*indar[2];
-				llproZ[sz+K  ][sy+JJ+1][sx+II+1] = zb*indar[3];
-				llproZ[sz+K+1][sy+JJ  ][sx+II  ] = ze*indar[4];
-				llproZ[sz+K+1][sy+JJ  ][sx+II+1] = ze*indar[5];
-				llproZ[sz+K+1][sy+JJ+1][sx+II  ] = ze*indar[6];
-				llproZ[sz+K+1][sy+JJ+1][sx+II+1] = ze*indar[7];
+				llproZ[sz+K  ][sy+JJ  ][sx+II  ] = zb;
+				llproZ[sz+K  ][sy+JJ  ][sx+II+1] = zb;
+				llproZ[sz+K  ][sy+JJ+1][sx+II  ] = zb;
+				llproZ[sz+K  ][sy+JJ+1][sx+II+1] = zb;
+				llproZ[sz+K+1][sy+JJ  ][sx+II  ] = ze;
+				llproZ[sz+K+1][sy+JJ  ][sx+II+1] = ze;
+				llproZ[sz+K+1][sy+JJ+1][sx+II  ] = ze;
+				llproZ[sz+K+1][sy+JJ+1][sx+II+1] = ze;
 
+			}
+			else
+			{
+				PetscPrintf(PETSC_COMM_WORLD,"ERROR: Velocity direction is not defined ; Choose between [1-3]\n");
+				PetscFunctionReturn(1);
 			}
 			ierr = DMDAVecRestoreArray(fs->DA_X, lproX, &llproX);      CHKERRQ(ierr);
 			ierr = DMDAVecRestoreArray(fs->DA_Y, lproY, &llproY);      CHKERRQ(ierr);
@@ -440,100 +434,102 @@ PetscErrorCode AdjointPerturbParameter(NLSol *nl, PetscInt CurPar, PetscInt CurP
 	if(CurPar==1)			// rho
 	{
 		ini = nl->pc->pm->jr->phases[CurPhase].rho;
-		nl->pc->pm->jr->phases[CurPhase].rho +=  (perturb*ini);
+		nl->pc->pm->jr->phases[CurPhase].rho +=  perturb;
 	}
 	else if (CurPar==2)	    // rho_n
 	{
 		ini = nl->pc->pm->jr->phases[CurPhase].rho_n;
-		nl->pc->pm->jr->phases[CurPhase].rho_n +=  (perturb*ini);
+		nl->pc->pm->jr->phases[CurPhase].rho_n +=  perturb;
 	}
 	else if (CurPar==3)	    // rho_c
 	{
 		ini = nl->pc->pm->jr->phases[CurPhase].rho_c;
-		nl->pc->pm->jr->phases[CurPhase].rho_c +=  (perturb*ini);
+		nl->pc->pm->jr->phases[CurPhase].rho_c +=  perturb;
 	}
 	else if (CurPar==4)	    // beta
 	{
 		ini = nl->pc->pm->jr->phases[CurPhase].beta;
-		nl->pc->pm->jr->phases[CurPhase].beta +=  (perturb*ini);
+		nl->pc->pm->jr->phases[CurPhase].beta +=  perturb;
 	}
 	else if (CurPar==5)	    // K
 	{
 		ini = nl->pc->pm->jr->phases[CurPhase].K;
-		nl->pc->pm->jr->phases[CurPhase].K +=  (perturb*ini);
+		nl->pc->pm->jr->phases[CurPhase].K +=  perturb;
 	}
 	else if (CurPar==6)	    // Kp
 	{
 		ini = nl->pc->pm->jr->phases[CurPhase].Kp;
-		nl->pc->pm->jr->phases[CurPhase].Kp +=  (perturb*ini);
+		nl->pc->pm->jr->phases[CurPhase].Kp +=  perturb;
 	}
 	else if (CurPar==7)	    // G
 	{
 		ini = nl->pc->pm->jr->phases[CurPhase].G;
-		nl->pc->pm->jr->phases[CurPhase].G +=  (perturb*ini);
+		nl->pc->pm->jr->phases[CurPhase].G +=  perturb;
 	}
 	else if (CurPar==8)	    // Bd
 	{
 		// This kind of perturbs the whole NEWTONIAN viscosity, consider perturbing the parameters directly
 		ini = nl->pc->pm->jr->phases[CurPhase].Bd;
 		PetscScalar BdTemp;
-		BdTemp = (1/ini)/2;
-		BdTemp += perturb*BdTemp;
-		nl->pc->pm->jr->phases[CurPhase].Bd =  (1/BdTemp)/2;
+		BdTemp = (1.0/(ini)) + perturb;   // might actually be 1/(2*ini) or 1/(ini/2)
+		nl->pc->pm->jr->phases[CurPhase].Bd =  (1.0/(BdTemp));
 	}
 	else if (CurPar==9)	    // Ed
 	{
 		ini = nl->pc->pm->jr->phases[CurPhase].Ed;
-		nl->pc->pm->jr->phases[CurPhase].Ed +=  (perturb*ini);
+		nl->pc->pm->jr->phases[CurPhase].Ed +=  perturb;
 	}
 	else if (CurPar==10)	// Vd
 	{
 		ini = nl->pc->pm->jr->phases[CurPhase].Vd;
-		nl->pc->pm->jr->phases[CurPhase].Vd +=  (perturb*ini);
+		nl->pc->pm->jr->phases[CurPhase].Vd +=  perturb;
 	}
 	else if (CurPar==11)	// Bn
 	{
 		// This kind of perturbs the whole DISLOCATION viscosity, consider perturbing the parameters directly
 		ini = nl->pc->pm->jr->phases[CurPhase].Bn;
 		PetscScalar BnTemp;
-		BnTemp = (1/ini)/2;
-		BnTemp += perturb*BnTemp;
-		nl->pc->pm->jr->phases[CurPhase].Bn =  (1/BnTemp)/2;
+		BnTemp = (1.0/(ini)) + perturb;   // might actually be 1/2*ini or 1/(ini/2)
+		nl->pc->pm->jr->phases[CurPhase].Bn =  (1.0/(BnTemp));
 	}
 	else if (CurPar==12)	// n
 	{
 		ini = nl->pc->pm->jr->phases[CurPhase].n;
-		nl->pc->pm->jr->phases[CurPhase].n +=  (perturb*ini);
+		nl->pc->pm->jr->phases[CurPhase].n +=  perturb;
 	}
 	else if (CurPar==13)	// En
 	{
 		ini = nl->pc->pm->jr->phases[CurPhase].En;
-		nl->pc->pm->jr->phases[CurPhase].En +=  (perturb*ini);
+		nl->pc->pm->jr->phases[CurPhase].En +=  perturb;
 	}
 	else if (CurPar==14)	// Vn
 	{
 		ini = nl->pc->pm->jr->phases[CurPhase].Vn;
-		nl->pc->pm->jr->phases[CurPhase].Vn +=  (perturb*ini);
+		nl->pc->pm->jr->phases[CurPhase].Vn +=  perturb;
 	}
 	else if (CurPar==15)	// taup
 	{
 		ini = nl->pc->pm->jr->phases[CurPhase].taup;
-		nl->pc->pm->jr->phases[CurPhase].taup +=  (perturb*ini);
+		nl->pc->pm->jr->phases[CurPhase].taup +=  perturb;
 	}
 	else if (CurPar==16)	// gamma
 	{
 		ini = nl->pc->pm->jr->phases[CurPhase].gamma;
-		nl->pc->pm->jr->phases[CurPhase].gamma +=  (perturb*ini);
+		nl->pc->pm->jr->phases[CurPhase].gamma +=  perturb;
 	}
 	else if (CurPar==17)	// q
 	{
 		ini = nl->pc->pm->jr->phases[CurPhase].q;
-		nl->pc->pm->jr->phases[CurPhase].q +=  (perturb*ini);
+		nl->pc->pm->jr->phases[CurPhase].q +=  perturb;
+	}
+	else
+	{
+		PetscPrintf(PETSC_COMM_WORLD,"ERROR: Definition of the current parameter is not defined ; Choose between [1-17]\n");
+		PetscFunctionReturn(1);
 	}
 
 	// Store initial value of current parameter
 	aop->Ini = ini;
-	aop->Perturb = perturb*ini;
 
 	PetscFunctionReturn(0);
 }
