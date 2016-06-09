@@ -200,6 +200,10 @@ typedef struct
 	PetscScalar  bot, top;      // bottom & top coordinates of the plate
 	PetscScalar  velin, velout; // inflow & outflow velocities
 
+	// simple shear boundary condition
+	PetscInt	simpleshear;
+	PetscScalar	gamma_xz;		// shear rate in xz direction
+
 	// open boundary flag
 	PetscInt  top_open;
 
@@ -269,4 +273,8 @@ PetscErrorCode BCOverridePhase(BCCtx *bc, PetscInt cellID, Marker *P);
 PetscErrorCode BCApplyDBox(BCCtx *bc);
 
 //---------------------------------------------------------------------------
+
+// simple shear BC
+PetscErrorCode 	BCApplySimpleShearVel(BCCtx *bc);
+
 #endif

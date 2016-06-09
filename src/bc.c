@@ -581,6 +581,93 @@ PetscErrorCode BCApplyDBox(BCCtx *bc)
 }
 //---------------------------------------------------------------------------
 //---------------------------------------------------------------------------
+#undef __FUNCT__
+#define __FUNCT__ "BCApplySimpleShearVel"
+PetscErrorCode BCApplySimpleShearVel(BCCtx *bc)
+{
+	FDSTAG      *fs;
+	PetscInt    mnx, mny;
+	PetscInt    i, j, k, nx, ny, nz, sx, sy, sz, iter;
+	PetscScalar ***bcvx,  ***bcvy, *SPCVals;
+	PetscScalar z, gamma_xz, vel;
+
+	/* This routine sets simple shear velocities, such that we have
+	 * constant shear rate gamma.
+	 * This will imply inflow/outflow
+	 *
+	 */
+
+	PetscErrorCode ierr;
+	PetscFunctionBegin;
+
+	// check whether constraint is activated
+	if(!bc->simpleshear) PetscFunctionReturn(0);
+
+	// access context
+	fs     		= bc->fs;
+	gamma_xz    = bc->gamma_xz;
+
+	PetscPrintf(PETSC_COMM_WORLD,"SS BC; gamma_xz=%f \n",gamma_xz);
+
+	// initialize maximal index in all directions
+	mnx = fs->dsx.tnods - 1;
+	mny = fs->dsy.tnods - 1;
+
+	// access velocity constraint vectors
+	ierr = DMDAVecGetArray(fs->DA_X, bc->bcvx, &bcvx); CHKERRQ(ierr);
+	ierr = DMDAVecGetArray(fs->DA_Y, bc->bcvy, &bcvy); CHKERRQ(ierr);
+
+	// access constraint arrays
+	SPCVals = bc->SPCVals;
+
+	iter = 0;
+
+	//---------
+	// X points
+	//---------
+	GET_NODE_RANGE(nx, sx, fs->dsx)
+	GET_CELL_RANGE(ny, sy, fs->dsy)
+	GET_CELL_RANGE(nz, sz, fs->dsz)
+
+	{
+		START_STD_LOOP
+		{
+			z   = COORD_CELL(k, sz, fs->dsz);
+			vel = gamma_xz*z;
+
+			if(i == 0)   { bcvx[k][j][i] = vel; SPCVals[iter] = vel; }
+			if(i == mnx) { bcvx[k][j][i] = vel; SPCVals[iter] = vel; }
+			iter++;
+		}
+		END_STD_LOOP
+	}
+
+	//---------
+	// Y points
+	//---------
+	GET_CELL_RANGE(nx, sx, fs->dsx)
+	GET_NODE_RANGE(ny, sy, fs->dsy)
+	GET_CELL_RANGE(nz, sz, fs->dsz)
+
+	{
+		START_STD_LOOP
+		{
+			z   = COORD_CELL(k, sz, fs->dsz);
+			vel = 0.0;
+			if(j == 0)   { bcvy[k][j][i] = vel; SPCVals[iter] = vel; }
+			if(j == mny) { bcvy[k][j][i] = vel; SPCVals[iter] = vel; }
+			iter++;
+		}
+		END_STD_LOOP
+	}
+
+	// restore access
+	ierr = DMDAVecRestoreArray(fs->DA_X, bc->bcvx, &bcvx); CHKERRQ(ierr);
+	ierr = DMDAVecRestoreArray(fs->DA_Y, bc->bcvy, &bcvy); CHKERRQ(ierr);
+
+	PetscFunctionReturn(0);
+}
+//---------------------------------------------------------------------------
 //---------------------------------------------------------------------------
 #undef __FUNCT__
 #define __FUNCT__ "BCClear"
@@ -751,6 +838,15 @@ PetscErrorCode BCReadFromOptions(BCCtx *bc)
 	// set open boundary flag
 	ierr = PetscOptionsHasName(NULL, "-open_top_bound", &set); CHKERRQ(ierr); if(set == PETSC_TRUE) bc->top_open = 1;
 
+	// set simple shear boundary condition
+	ierr = PetscOptionsHasName(NULL, "-bc_simpleshear", &set); CHKERRQ(ierr); if(set == PETSC_TRUE) bc->simpleshear = 1;
+	if(bc->simpleshear)
+	{
+		ierr = GetScalDataItemCheckScale("-bc_simpleshear_gamma_xz", "Simple shear strain rate",
+					_NOT_FOUND_ERROR_, 1, &bc->gamma_xz, 0.0, 0.0, scal->time); CHKERRQ(ierr);
+	}
+
+
 	ierr = DBoxReadFromOptions(&bc->dbox, scal); CHKERRQ(ierr);
 
 	// read no-slip boundary condition mask
@@ -854,6 +950,10 @@ PetscErrorCode BCApply(BCCtx *bc)
 
 	// apply dropping boxes
 	ierr = BCApplyDBox(bc); CHKERRQ(ierr);
+
+	// apply simple shear BCs
+	ierr = BCApplySimpleShearVel(bc); CHKERRQ(ierr);
+
 
 	// exchange ghost point constraints
 	// AVOID THIS BY SETTING CONSTRAINTS REDUNDANTLY
@@ -977,10 +1077,12 @@ PetscErrorCode BCApplyBound(BCCtx *bc)
 	PetscScalar ex,  ey,  ez;
 	PetscScalar vbx, vby, vbz;
 	PetscScalar vex, vey, vez;
+	PetscScalar gamma_XZ, z;
 	PetscInt    mcx, mcy, mcz;
 	PetscInt    mnx, mny, mnz;
 	PetscInt    i, j, k, nx, ny, nz, sx, sy, sz, iter, top_open;
 	PetscInt    nsLeft, nsRight, nsFront, nsBack, nsBottom, nsTop;
+	PetscInt 	simpleShear;
 	PetscScalar ***bcvx,  ***bcvy,  ***bcvz, ***bcT, *SPCVals;
 
 	PetscErrorCode ierr;
@@ -993,12 +1095,13 @@ PetscErrorCode BCApplyBound(BCCtx *bc)
 	top_open = bc->top_open;
 
 	// set no-slip flags
-	nsLeft   = bc->noslip[0];
-	nsRight  = bc->noslip[1];
-	nsFront  = bc->noslip[2];
-	nsBack   = bc->noslip[3];
-	nsBottom = bc->noslip[4];
-	nsTop    = bc->noslip[5];
+	nsLeft   		= bc->noslip[0];
+	nsRight  		= bc->noslip[1];
+	nsFront  		= bc->noslip[2];
+	nsBack   		= bc->noslip[3];
+	nsBottom 		= bc->noslip[4];
+	nsTop    		= bc->noslip[5];
+	simpleShear	 	= bc->simpleshear;
 
 	// initialize maximal index in all directions
 	mnx = fs->dsx.tnods - 1;
@@ -1113,6 +1216,24 @@ PetscErrorCode BCApplyBound(BCCtx *bc)
 		}
 		END_STD_LOOP
 	}
+	if (simpleShear)
+	{
+		GET_NODE_RANGE_GHOST_INT(nx, sx, fs->dsx)
+		GET_CELL_RANGE_GHOST_INT(ny, sy, fs->dsy)
+		GET_CELL_RANGE_GHOST_INT(nz, sz, fs->dsz)
+
+		gamma_XZ =  bc->gamma_xz;
+
+		START_STD_LOOP
+		{
+			z   = COORD_CELL(k, sz, fs->dsz);
+			if(k == 0)   { bcvx[k-1][j][i] = z*gamma_XZ; }
+			if(k == mcz) { bcvx[k+1][j][i] = z*gamma_XZ; }
+		}
+		END_STD_LOOP
+	}
+
+
 
 	//-----------------------------------------------------
 	// Y points (TPC only, hence looping over ghost points)
