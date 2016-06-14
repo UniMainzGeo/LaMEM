@@ -509,12 +509,19 @@ PetscErrorCode PVOutWritePlastDissip(JacRes *jr, OutBuf *outbuf)
 #define __FUNCT__ "PVOutWriteTotDispl"
 PetscErrorCode PVOutWriteTotDispl(JacRes *jr, OutBuf *outbuf)
 {
-	PetscErrorCode ierr;
-	PetscFunctionBegin;
 
-	ierr = 0; CHKERRQ(ierr);
-	if(jr)  jr = NULL;
-	if(outbuf) outbuf = NULL;
+	COPY_FUNCTION_HEADER
+
+	cf = scal->length;
+
+	// macros to copy displacement in cell to buffer
+	#define GET_DISPLX buff[k][j][i] = jr->svCell[iter++].U[0];
+	#define GET_DISPLY buff[k][j][i] = jr->svCell[iter++].U[1];
+	#define GET_DISPLZ buff[k][j][i] = jr->svCell[iter++].U[2];
+
+	INTERPOLATE_COPY(jr->fs->DA_CEN, outbuf->lbcen, InterpCenterCorner, GET_DISPLX, 3, 0);
+	INTERPOLATE_COPY(jr->fs->DA_CEN, outbuf->lbcen, InterpCenterCorner, GET_DISPLY, 3, 1);
+	INTERPOLATE_COPY(jr->fs->DA_CEN, outbuf->lbcen, InterpCenterCorner, GET_DISPLZ, 3, 2);
 
 	PetscFunctionReturn(0);
 }

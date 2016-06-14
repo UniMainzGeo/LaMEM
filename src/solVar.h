@@ -81,6 +81,7 @@ typedef struct
 	PetscScalar T;     // temperature
 	PetscScalar APS;   // accumulated plastic strain
 	Tensor2RS   S;     // deviatoric stress
+	PetscScalar U[3];  // displacement
 
 } Marker;
 
@@ -130,6 +131,7 @@ typedef struct
 	PetscScalar  dxx, dyy, dzz; // total deviatoric strain rate
 	PetscScalar *phRat;         // phase ratios in the control volume
 	PetscScalar  eta_creep;     // effective creep viscosity (output)
+	PetscScalar  U[3];          // displacement
 
 } SolVarCell;
 

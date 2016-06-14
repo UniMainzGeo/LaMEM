@@ -543,6 +543,11 @@ PetscErrorCode ADVelRetrieveCoord(AdvCtx *actx, VelInterp *interp, PetscInt n)
 		actx->markers[p].X[0] = interp[jj].x[0];
 		actx->markers[p].X[1] = interp[jj].x[1];
 		actx->markers[p].X[2] = interp[jj].x[2];
+
+		// displacement
+		actx->markers[p].U[0] += interp[jj].x[0] - interp[jj].x0[0];
+		actx->markers[p].U[1] += interp[jj].x[1] - interp[jj].x0[1];
+		actx->markers[p].U[2] += interp[jj].x[2] - interp[jj].x0[2];
 	}
 
 	PetscFunctionReturn(0);
