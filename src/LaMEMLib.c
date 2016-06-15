@@ -346,9 +346,9 @@ PetscErrorCode LaMEMLib(ModParam *IOparam)
 		// view nonlinear residual
 		ierr = JacResViewRes(&jr); CHKERRQ(ierr);
 
-		if(user.ComputeAdjointGradients == PETSC_TRUE)
+		if(user.ComputeAdjointGradients != 0)
 		{
-			ierr = CreateAdjoint(&jr, &user, &aop, &nl, snes); CHKERRQ(ierr);
+			ierr = AdjointOptimization(&jr, &aop, &user, &nl, snes); CHKERRQ(ierr);
 		}
 
 		// select new time step

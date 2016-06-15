@@ -216,7 +216,7 @@ typedef struct
 	//PetscBool        ScaleSystem;    // Request to scale linear system before solution
 
 	// Compute Adjoint gradients
-	PetscBool 		ComputeAdjointGradients;   // 1=Compute
+	PetscInt 		ComputeAdjointGradients;   // 1=Compute
 	PetscScalar		Adjoint_x[_MAX_AdjointIndices_];              // Index in the solution vector where to compute the gradients
 	PetscScalar		Adjoint_y[_MAX_AdjointIndices_];
 	PetscScalar		Adjoint_z[_MAX_AdjointIndices_];
@@ -225,6 +225,8 @@ typedef struct
 	PetscInt        AdjointNumPar;
 	PetscInt        AdjointNumInd;
 	PetscInt        AdjointVel[_MAX_AdjointIndices_];
+	PetscScalar		AdjointUpperBound[_MAX_AdjointPars_];
+	PetscScalar		AdjointLowerBound[_MAX_AdjointPars_];
 
 	// restart
 	PetscInt         save_breakpoints, break_point_number;

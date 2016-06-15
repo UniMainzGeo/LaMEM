@@ -48,22 +48,46 @@
 // Structure that holds paramters for the adjoint gradient computation
 typedef struct
 {
-	PetscScalar      grad[_MAX_AdjointPars_]; // Vector containing the gradients (dF/dp = -psi * dr/dp)   // _MAX_AdjointIndices_ defined in fdstagTypes.h (needed for user input as well)
 	PetscScalar      Ini;                     // Initial value of perturbed parameter
 	PetscScalar      Perturb;                 // Perturbation parameter for the finite differences
+	Vec              dF;
+	Vec              xini;
+	Vec 			 pro;
+	Vec              vx, vy, vz;
+	PetscInt         count;
+
+	UserCtx          *user;
+	JacRes           *jr;
+	NLSol            *nl;
+	SNES             snes;
 } AdjGrad;
 
-// make context for adjoint
-PetscErrorCode CreateAdjoint(JacRes *jr, UserCtx *user, AdjGrad *aop, NLSol *nl,SNES snes);
+// Perform the adjoint inversion
+PetscErrorCode AdjointOptimization(JacRes *jr, AdjGrad *aop, UserCtx *user, NLSol *nl,SNES snes);
+
+// Compute the gradients for the adjoint inversion
+PetscErrorCode AdjointComputeGradients(Tao tao, Vec P, Vec grad, void *ctx);
+
+// Compute the objective function that will be minimized
+PetscErrorCode AdjointObjectiveFunction(Tao tao, Vec x, PetscReal *F, void *ctx);
 
 // Interpolate the adjoint points and include them into the projection vector
-PetscErrorCode AdjointPointInPro(JacRes *jr, UserCtx *user, PetscScalar *vx, PetscScalar *vy, PetscScalar *vz, Vec pro );
+PetscErrorCode AdjointPointInPro(JacRes *jr, UserCtx *user, AdjGrad *aop);
 
-// Perturb the input parameters
-PetscErrorCode AdjointPerturbParameter(NLSol *nl, PetscInt CurPar, PetscInt CurPhase, AdjGrad *aop);
+// Perturb the input parameters within the gradient computation
+PetscErrorCode AdjointGradientPerturbParameter(NLSol *nl, PetscInt CurPar, PetscInt CurPhase, AdjGrad *aop);
 
-// reset the perturbed input parameter
-PetscErrorCode AdjointResetParameter(NLSol *nl, PetscInt CurPar, PetscInt CurPhase, AdjGrad *aop);
+// reset the perturbed input parameter within the gradient computation
+PetscErrorCode AdjointGradientResetParameter(NLSol *nl, PetscInt CurPar, PetscInt CurPhase, AdjGrad *aop);
+
+// Perturb the parameters after every inversion iteration
+PetscErrorCode AdjointPerturbParameterVec(NLSol *nl,Vec P, UserCtx *user);
+
+// Extract the intital parameter Vector for the inversion
+PetscErrorCode AdjointExtractParameterVec(NLSol *nl,Vec P, UserCtx *user);
+
+// Read the comparison solution vector
+PetscErrorCode AdjointLoadCompareData(void *ctx);
 
 // To clear the memory
 PetscErrorCode AdjointDestroy(AdjGrad *aop);

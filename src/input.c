@@ -205,7 +205,7 @@ PetscErrorCode InputSetDefaultValues(JacRes *jr, UserCtx *user)
 //	user->PolyInVolSkip[0] = 0;
 
 	// Compute Adjoint gradients
-	user->ComputeAdjointGradients	= PETSC_FALSE;   // 1=Compute
+	user->ComputeAdjointGradients	= 0;
 
 	// FDSTAG Canonical Default Model Setup
 	user->msetup            = BLOCK;
@@ -354,6 +354,8 @@ PetscErrorCode InputReadFile(JacRes *jr, UserCtx *user, FILE *fp)
 	parse_GetIntArray(fp,"AdjointParameters", &nv, i_values, &found); for( i=0; i<50;   i++ ) { user->AdjointParameters[i] = i_values[i];}
 	parse_GetIntArray(fp,"AdjointPhases", &nv, i_values, &found); for( i=0; i<50;   i++ ) { user->AdjointPhases[i] = i_values[i];}
 	user->AdjointNumPar = nv;  // Number of parameters
+	parse_GetDoubleArray(fp,"AdjointLowerBound" , &nv, d_values, &found); for( i=0; i<100;   i++ ) { user->AdjointLowerBound[i] = d_values[i];}
+	parse_GetDoubleArray(fp,"AdjointUpperBound" , &nv, d_values, &found); for( i=0; i<100;   i++ ) { user->AdjointUpperBound[i] = d_values[i];}
 
 	// Particle related variables
 	parse_GetInt( fp,    "ParticleInput", &user->ParticleInput, &found );
@@ -541,9 +543,6 @@ PetscErrorCode InputReadCommLine(UserCtx *user )
 
 	// gravity
 	PetscOptionsGetReal(PETSC_NULL ,"-GravityAngle",   &user->GravityAngle,     PETSC_NULL); // Gravity angle in x-z plane
-
-	// Adjoint gradients
-	PetscOptionsGetBool(PETSC_NULL,"-ComputeAdjointGradients",&user->ComputeAdjointGradients, PETSC_NULL);
 
 	// pushing boundary conditions related parameters
 	PetscOptionsGetInt(PETSC_NULL,"-AddPushing"                 , &user->AddPushing                 , PETSC_NULL);
