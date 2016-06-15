@@ -155,6 +155,9 @@ PetscErrorCode FDSTAGInitCode(JacRes *jr, UserCtx *user, ModParam *iop)
 
 	// Explicit solver (wave propagation)
 	jr->ExplicitSolver = user->ExplicitSolver;
+	jr->SeismicSource  = user->SeismicSource;
+	if (jr->SeismicSource == PETSC_TRUE) jr->SourceParams = user->SourceParams;
+
 
 	ierr = PetscFree(all_options); CHKERRQ(ierr);
 
@@ -209,6 +212,9 @@ PetscErrorCode InputSetDefaultValues(JacRes *jr, UserCtx *user)
 
 	// FDSTAG Canonical Default Model Setup
 	user->msetup            = BLOCK;
+
+	// Seismic source or not
+	user->SeismicSource = PETSC_FALSE;
 
 	// write partitioning
 	user->SavePartitioning  = PETSC_FALSE;
@@ -283,8 +289,8 @@ PetscErrorCode InputReadFile(JacRes *jr, UserCtx *user, FILE *fp)
 	PetscInt found;
 	double d_values[1000];
 	PetscInt i_values[1000];
-	PetscInt nv, i;
-	char setup_name[MAX_NAME_LEN];
+	PetscInt nv, i, source;
+	char setup_name[MAX_NAME_LEN], source_type_name[MAX_NAME_LEN];
 
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
@@ -413,6 +419,26 @@ PetscErrorCode InputReadFile(JacRes *jr, UserCtx *user, FILE *fp)
 	parse_GetDoubleArray( fp, "Pushing.omega",  &nv, d_values, &found  ); for( i=0; i<user->Pushing.num_changes;   i++ ) { user->Pushing.omega[i]  = d_values[i];}
 	parse_GetIntArray( fp, "Pushing.coord_advect",&nv, i_values, &found); for( i=0; i<user->Pushing.num_changes;   i++ ) { user->Pushing.coord_advect[i] = i_values[i];}
 	parse_GetIntArray( fp, "Pushing.dir",         &nv, i_values, &found); for( i=0; i<user->Pushing.num_changes;   i++ ) { user->Pushing.dir[i]          = i_values[i];}
+
+
+	// Seismic source
+	parse_GetInt(fp, "seismic_source",&source, &found);
+	if (found==PETSC_TRUE && source==1)
+	{
+		user->SeismicSource=PETSC_TRUE;
+		parse_GetString(fp,"source_type", source_type_name, MAX_NAME_LEN, &found);
+		if(found == PETSC_TRUE)
+		{
+			if      (!strcmp(source_type_name, "point"))   user->SourceParams.source_type = POINT;
+			else if (!strcmp(source_type_name, "plane"))   user->SourceParams.source_type = PLANE;
+			else SETERRQ1(PETSC_COMM_SELF, PETSC_ERR_USER,"ERROR! Incorrect source type: %s", source_type_name);
+		}
+	}else
+	{
+		user->SeismicSource=PETSC_FALSE;
+	}
+
+
 
 /*
 	// Marker setting: skip certain volumes that are defined in input file

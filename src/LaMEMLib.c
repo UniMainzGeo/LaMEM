@@ -150,6 +150,10 @@ PetscErrorCode LaMEMLib(ModParam *IOparam)
 	// initialize variables
 	ierr = FDSTAGInitCode(&jr, &user, IOparam); CHKERRQ(ierr);
 
+	// check time step if ExplicitSolver
+	ierr = CheckTimeStep(&jr, &user); CHKERRQ(ierr);
+
+
 	// check restart
 	ierr = BreakCheck(&user); CHKERRQ(ierr);
 
@@ -295,7 +299,6 @@ PetscErrorCode LaMEMLib(ModParam *IOparam)
 	//===============
 
 //	PetscTime(&cputime_start_tstep);
-
 	do
 	{
 		PetscPrintf(PETSC_COMM_WORLD,"Time step %lld -------------------------------------------------------- \n", (LLD)JacResGetStep(&jr));
@@ -422,13 +425,13 @@ PetscErrorCode LaMEMLib(ModParam *IOparam)
 
 			// evaluate momentum residual and theta
 			//ierr = FormMomentumResidualAndTheta(snes, jr.gsol, jr.gK, &nl); CHKERRQ(ierr);
-
-			ierr = FormMomentumResidual(jr.gsol, &nl); CHKERRQ(ierr);
+			ierr = FormMomentumResidualAndTheta(jr.gsol, &nl); CHKERRQ(ierr);
 
 //ierr = VecView(jr.gvx,PETSC_VIEWER_STDOUT_WORLD);CHKERRQ(ierr);
 			ierr = GetPressure(&jr); 	CHKERRQ(ierr);
 
 ///ierr = VecView(jr.gvx,PETSC_VIEWER_STDOUT_WORLD);CHKERRQ(ierr);
+			//a=0; b=0; // a and b have to be removed
 			ierr = GetVelocities(&jr);	CHKERRQ(ierr);
 
 //ierr = VecView(jr.gvx,PETSC_VIEWER_STDOUT_WORLD);CHKERRQ(ierr);
