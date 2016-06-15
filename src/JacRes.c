@@ -124,10 +124,10 @@ PetscErrorCode JacResCreate(
 	ierr = VecCreateMPI(PETSC_COMM_WORLD, dof->ln, PETSC_DETERMINE, &jr->gsol); CHKERRQ(ierr);
 	ierr = VecCreateMPI(PETSC_COMM_WORLD, dof->ln, PETSC_DETERMINE, &jr->gres); CHKERRQ(ierr);
 
-	if    (jr->ExplicitSolver == PETSC_TRUE )
+	/*if    (jr->ExplicitSolver == PETSC_TRUE )
 	{
 		ierr = VecCreateMPI(PETSC_COMM_WORLD, dof->ln, PETSC_DETERMINE, &jr->gK); CHKERRQ(ierr);
-	}
+	}*/
 
 	// velocity components
 	ierr = DMCreateGlobalVector(fs->DA_X, &jr->gvx); CHKERRQ(ierr);
@@ -279,10 +279,10 @@ PetscErrorCode JacResDestroy(JacRes *jr)
 	ierr = JacResDestroyTempParam(jr); CHKERRQ(ierr);
 
 	//
-	if    (jr->ExplicitSolver == PETSC_TRUE )
+	/*if    (jr->ExplicitSolver == PETSC_TRUE )
 	{
 		ierr = VecDestroy(&jr->gK);      CHKERRQ(ierr);
-	}
+	}*/
 
 	PetscFunctionReturn(0);
 }
@@ -297,7 +297,8 @@ PetscErrorCode JacResInitScale(JacRes *jr, UserCtx *usr)
 	PetscFunctionBegin;
 
 	// initialize scaling object
-	ierr = ScalingCreate(&jr->scal, usr->ExplicitSolver);  CHKERRQ(ierr);
+	//ierr = ScalingCreate(&jr->scal, usr->ExplicitSolver);  CHKERRQ(ierr);
+	ierr = ScalingCreate(&jr->scal);  CHKERRQ(ierr);
 
 	// scale input parameters
 	ScalingInput(&jr->scal, usr);
@@ -498,6 +499,10 @@ PetscErrorCode JacResGetEffStrainRate(JacRes *jr)
 		// compute & store volumetric strain rate
 		theta = xx + yy + zz;
 		svBulk->theta = theta;
+
+		if (theta!=0) {
+			tr  = theta/3.0;
+		}
 
 		// compute & store total deviatoric strain rates
 
@@ -1277,12 +1282,9 @@ PetscErrorCode JacResGetResidual(JacRes *jr)
 	PetscFunctionReturn(0);
 }
 //-----------------------------------------------------------------------------
-//#undef __FUNCT__
-//#define __FUNCT__ "JacResGetMomentumResidualAndTheta"
-//PetscErrorCode JacResGetMomentumResidualAndTheta(JacRes *jr)
 #undef __FUNCT__
-#define __FUNCT__ "JacResGetMomentumResidual"
-PetscErrorCode JacResGetMomentumResidual(JacRes *jr)
+#define __FUNCT__ "JacResGetMomentumResidualAndTheta"
+PetscErrorCode JacResGetMomentumResidualAndTheta(JacRes *jr)
 {
 	// Compute residual of nonlinear momentum conservation
 
@@ -1313,7 +1315,7 @@ PetscErrorCode JacResGetMomentumResidual(JacRes *jr)
 	PetscScalar YZ, YZ1, YZ2, YZ3, YZ4;
 	PetscScalar bdx, fdx, bdy, fdy, bdz, fdz;
 	PetscScalar gx, gy, gz, tx, ty, tz, sxx, syy, szz, sxy, sxz, syz;
-	PetscScalar J2Inv, theta, rho, IKdt, alpha, Tc, pc, pShift, Tn, dt, fssa, *grav,time;
+	PetscScalar J2Inv, theta, rho, Tc, pc, pShift, dt, fssa, *grav,time;
 	PetscScalar ***fx,  ***fy,  ***fz, ***vx,  ***vy,  ***vz, ***gc;
 	PetscScalar ***dxx, ***dyy, ***dzz, ***dxy, ***dxz, ***dyz, ***p, ***up, ***T;
 	PetscScalar eta_creep;
@@ -1376,6 +1378,7 @@ PetscErrorCode JacResGetMomentumResidual(JacRes *jr)
 
 	START_STD_LOOP
 	{
+
 		// access solution variables
 		svCell = &jr->svCell[iter++];
 		svDev  = &svCell->svDev;
@@ -1434,30 +1437,51 @@ PetscErrorCode JacResGetMomentumResidual(JacRes *jr)
 		// store creep viscosity
 		svCell->eta_creep = eta_creep;
 
+
 		// compute stress, plastic strain rate and shear heating term on cell
 		ierr = GetStressCell(svCell, matLim, XX, YY, ZZ); CHKERRQ(ierr);
 
-		// compute total Cauchy stresses
 
+		// compute total Cauchy stresses
 		sxx = svCell->sxx - pc;
 		syy = svCell->syy - pc;
 		szz = svCell->szz - pc;
 
+
 		////////////////////////////////////
-		// Add seismic source?
+		// Add seismic source
 
-		if (k==nz/2 && j==ny/2 && i==nx/2)
+		if (jr->SeismicSource == PETSC_TRUE)
 		{
-			// access residual context variables
-			time	  =  JacResGetTime(jr);
+			if (jr->SourceParams.source_type == POINT)
+			{
+				if (k==nz/2 && j==ny/2 && i==nx/2)
+				{
+					// access residual context variables
+					time	  =  JacResGetTime(jr);
 
-			//sxx = 10*exp(-40*(time*time));
-		    //szz = -10*exp(-40*(time*time));
-
-		    //sxx /= 1e+8; (Characteristic.Stress)
-		    //syy /= 1e+8;
+					sxx = sxx+10*exp(-40*(time*time));
+					szz = szz-10*exp(-40*(time*time));
+				}
+			}
+			else if (jr->SourceParams.source_type == PLANE)
+			{
+				if (k==0)
+				{
+					time	  =  JacResGetTime(jr);
+					szz = szz + 10*exp(-40*(time*time));
+				}
+				else if (k==nz-1)
+				{
+					time	  =  JacResGetTime(jr);
+					szz = szz - 10*exp(-40*(time*time));
+				}
+			}
 		}
 		///////////////////////////////////
+
+
+
 
 
 		// compute depth below the free surface
@@ -1471,10 +1495,10 @@ PetscErrorCode JacResGetMomentumResidual(JacRes *jr)
 		// access
 		theta = svBulk->theta; // volumetric strain rate
 		rho   = svBulk->rho;   // effective density
-		IKdt  = svBulk->IKdt;  // inverse bulk viscosity
-		alpha = svBulk->alpha; // effective thermal expansion
-//		pn    = svBulk->pn;    // pressure history
-		Tn    = svBulk->Tn;    // temperature history
+		//IKdt  = svBulk->IKdt;  // inverse bulk viscosity
+		//alpha = svBulk->alpha; // effective thermal expansion
+		//pn    = svBulk->pn;    // pressure history
+		//Tn    = svBulk->Tn;    // temperature history
 
 		// compute gravity terms
 		gx = rho*grav[0];
@@ -1499,6 +1523,8 @@ PetscErrorCode JacResGetMomentumResidual(JacRes *jr)
 		fx[k][j][i] -= (sxx + vx[k][j][i]*tx)/bdx + gx/2.0;   fx[k][j][i+1] += (sxx + vx[k][j][i+1]*tx)/fdx - gx/2.0;
 		fy[k][j][i] -= (syy + vy[k][j][i]*ty)/bdy + gy/2.0;   fy[k][j+1][i] += (syy + vy[k][j+1][i]*ty)/fdy - gy/2.0;
 		fz[k][j][i] -= (szz + vz[k][j][i]*tz)/bdz + gz/2.0;   fz[k+1][j][i] += (szz + vz[k+1][j][i]*tz)/fdz - gz/2.0;
+
+
 
 //****************************************
 // ADHOC (HARD-CODED PRESSURE CONSTRAINTS)
@@ -1631,6 +1657,7 @@ PetscErrorCode JacResGetMomentumResidual(JacRes *jr)
 		// momentum
 		fx[k][j-1][i] -= sxy/bdy;   fx[k][j][i] += sxy/fdy;
 		fy[k][j][i-1] -= sxy/bdx;   fy[k][j][i] += sxy/fdx;
+
 
 	}
 	END_STD_LOOP
@@ -1885,7 +1912,7 @@ PetscErrorCode JacResCopySol(JacRes *jr, Vec x, SPCAppType appSPC)
 	PetscFunctionReturn(0);
 }
 
-//---------------------------------------------------------------------------
+/*//---------------------------------------------------------------------------
 #undef __FUNCT__
 #define __FUNCT__ "JacResCopyK"
 PetscErrorCode JacResCopyK(JacRes *jr, Vec K)
@@ -1944,7 +1971,7 @@ PetscErrorCode JacResCopyK(JacRes *jr, Vec K)
 	ierr = VecRestoreArray(K, &k);       		CHKERRQ(ierr);
 
 	PetscFunctionReturn(0);
-}
+}*/
 //---------------------------------------------------------------------------
 #undef __FUNCT__
 #define __FUNCT__ "JacResCopyVel"
@@ -2285,7 +2312,7 @@ PetscErrorCode JacResCopyMomentumRes(JacRes *jr, Vec f)
 	FDSTAG      *fs;
 	BCCtx       *bc;
 	PetscInt    i, num, *list;
-	PetscScalar *fx, *fy, *fz, *c, *res, *iter;
+	PetscScalar *fx, *fy, *fz, *res, *iter;
 
 	PetscErrorCode ierr;
 	PetscFunctionBegin;

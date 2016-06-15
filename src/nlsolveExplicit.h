@@ -9,8 +9,8 @@
 #define __nlsolveExplicit_h__
 
 PetscErrorCode GetVelocities(JacRes *jr);
-PetscErrorCode FormMomentumResidualAndTheta(SNES snes, Vec x, Vec gK, void *ctx);
-PetscErrorCode FormMomentumResidual(Vec x, void *ctx);
+PetscErrorCode FormMomentumResidualAndTheta(Vec x, void *ctx);
 PetscErrorCode GetPressure(JacRes *jr);
+PetscErrorCode CheckTimeStep(JacRes *jr, UserCtx *user);
 
 #endif
