@@ -120,7 +120,7 @@ PetscErrorCode ScalingReadFromFile(Scaling *scal, FILE *fp)
 //---------------------------------------------------------------------------
 #undef __FUNCT__
 #define __FUNCT__ "ScalingCreate"
-PetscErrorCode ScalingCreate(Scaling *scal, PetscBool ExplicitSolver)
+PetscErrorCode ScalingCreate(Scaling *scal) //, PetscBool ExplicitSolver)
 {
 	// characteristic values must ALWAYS be given in SI units
 	PetscScalar mass, time, length, temperature, force;

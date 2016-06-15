@@ -162,6 +162,28 @@ typedef struct
 	PetscScalar      mfit; // misfit value for current model parameters
 } ModParam;
 //-----------------------------------------------------------------------------
+
+
+// Source types
+typedef enum
+{
+	POINT,
+	PLANE,
+	// ... add more
+} SourceType;
+
+
+// Structure that holds source parameters
+typedef struct
+{
+	SourceType  source_type;
+	// ... more options
+} SourceParam;
+
+
+
+
+//-----------------------------------------------------------------------------
 // Structure that holds user input data
 typedef struct
 {
@@ -172,6 +194,7 @@ typedef struct
 
 	// marker initialization type
 	SetupType        msetup;
+	PetscBool		 SeismicSource;
 
 	// domain info
 	PetscScalar      W, L, H;
@@ -230,6 +253,8 @@ typedef struct
 	// flags
 	PetscBool        SkipStokesSolver;
 	PetscBool        SavePartitioning;
+
+
 	PetscBool		 ExplicitSolver; //  True => for the moment, wave propagation
 
 
@@ -247,7 +272,11 @@ typedef struct
 	// topography
 	char             TopoFilename[MAX_PATH_LEN];
 	
+	// source
+	SourceParam SourceParams;
+
 
 } UserCtx;
 //-----------------------------------------------------------------------------
+
 #endif
