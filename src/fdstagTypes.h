@@ -305,6 +305,7 @@ typedef struct
 	PetscBool        SkipStokesSolver;
 	PetscBool        SavePartitioning;
 
+
 	// gravity
 	gravityParams    GravityField;
 	PetscScalar      Gravity;
@@ -319,6 +320,7 @@ typedef struct
 	// topography
 	char             TopoFilename[MAX_PATH_LEN];
 	
+
 	// Explicit solver
 	PetscBool		 ExplicitSolver; //  True => for the moment, wave propagation
 

@@ -156,9 +156,8 @@ typedef struct
 // scaling routines
 
 
-PetscErrorCode ScalingCreate(Scaling *scal); //,PetscBool ExplicitSolver);
 
-//PetscErrorCode ScalingCreate(Scaling *scal,PetscBool ExplicitSolver);
+PetscErrorCode ScalingCreate(Scaling *scal); //,PetscBool ExplicitSolver);
 
 PetscErrorCode ScalingReadFromFile(Scaling *scal, FILE *fp);
 

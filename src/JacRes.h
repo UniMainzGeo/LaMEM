@@ -282,13 +282,19 @@ PetscErrorCode JacResGetTempRes(JacRes *jr);
 PetscErrorCode JacResGetTempMat(JacRes *jr);
 
 // compute nonlinear momentum residual vector
+
 PetscErrorCode JacResGetMomentumResidualAndPressure(JacRes *jr, UserCtx *user);
 
 //PetscErrorCode JacResGetMomentumResidualAndTheta(JacRes *jr);
 PetscErrorCode JacResGetMomentumResidual(JacRes *jr);
 
+
+
 // copy global velocities/pressures vectors to global solution vector
 PetscErrorCode JacResCopySolution(JacRes *jr, Vec x);
+
+/*// copy continuity residual and theta in gK
+PetscErrorCode JacResCopyK(JacRes *jr, Vec K);*/
 
 //---------------------------------------------------------------------------
 // MACROS
