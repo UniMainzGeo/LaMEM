@@ -518,11 +518,48 @@ PetscErrorCode PCStokesUserCreate(PCStokes pc)
 	pc->data = (void*)user;
 
 	// create user-defined preconditioner
+	// attach index sets in case fieldsplit preconditioner needs to be used
+	// set additional options (whatever with -jp_ prefix)
 	ierr = PCCreate(PETSC_COMM_WORLD, &user->pc); CHKERRQ(ierr);
 	ierr = PCSetOptionsPrefix(user->pc, "jp_");   CHKERRQ(ierr);
+	ierr = PCStokesUserAttachIS(pc);              CHKERRQ(ierr);
 	ierr = PCSetFromOptions(user->pc);            CHKERRQ(ierr);
 
 	PetscFunctionReturn(0);
+}
+//---------------------------------------------------------------------------
+#undef __FUNCT__
+#define __FUNCT__ "PCStokesUserAttachIS"
+PetscErrorCode PCStokesUserAttachIS(PCStokes pc)
+{
+	PCStokesUser *user;
+	JacRes       *jr;
+	DOFIndex     *dof;
+	PetscInt      st, lnv, lnp;
+
+	PetscErrorCode ierr;
+	PetscFunctionBegin;
+
+	// access context
+	user = (PCStokesUser*)pc->data;
+	jr   =  pc->pm->jr;
+	dof  = &jr->fs->dof;
+	st   =  dof->st;
+	lnv  =  dof->lnv;
+	lnp  =  dof->lnp;
+
+	// create index sets
+	ierr = ISCreateStride(PETSC_COMM_WORLD, lnv, st,     1, &user->isv); CHKERRQ(ierr);
+	ierr = ISCreateStride(PETSC_COMM_WORLD, lnp, st+lnv, 1, &user->isp); CHKERRQ(ierr);
+
+	// this needs to be defined before index sets can be attached
+	ierr = PCSetType(user->pc, PCFIELDSPLIT); CHKERRQ(ierr);
+
+	// attach index sets
+	ierr = PCFieldSplitSetIS(user->pc, "v", user->isv); CHKERRQ(ierr);
+	ierr = PCFieldSplitSetIS(user->pc, "p", user->isp); CHKERRQ(ierr);
+
+    PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
 #undef __FUNCT__
@@ -537,8 +574,11 @@ PetscErrorCode PCStokesUserDestroy(PCStokes pc)
 	// get context
 	user = (PCStokesUser*)pc->data;
 
-	ierr = PCDestroy(&user->pc); CHKERRQ(ierr);
-	ierr = PetscFree(user);      CHKERRQ(ierr);
+	// cleanup
+	ierr = PCDestroy(&user->pc);  CHKERRQ(ierr);
+	ierr = ISDestroy(&user->isv); CHKERRQ(ierr);
+	ierr = ISDestroy(&user->isp); CHKERRQ(ierr);
+	ierr = PetscFree(user);       CHKERRQ(ierr);
 
 	PetscFunctionReturn(0);
 }
@@ -582,41 +622,6 @@ PetscErrorCode PCStokesUserApply(Mat JP, Vec x, Vec y)
 	ierr = PCApply(user->pc, x, y); CHKERRQ(ierr);
 
 	PetscFunctionReturn(0);
-}
-//---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "PCAttachIS"
-PetscErrorCode PCAttachIS(PC pc, JacRes *jr)
-{
-	DOFIndex    *dof;
-	IS           isv, isp;
-	PetscInt     st, lnv, lnp;
-
-	PetscErrorCode ierr;
-	PetscFunctionBegin;
-
-	// get index ranges
-	dof = &jr->fs->dof;
-	st  =  dof->st;
-	lnv =  dof->lnv;
-	lnp =  dof->lnp;
-
-	// create index sets
-	ierr = ISCreateStride(PETSC_COMM_WORLD, lnv, st,     1, &isv); CHKERRQ(ierr);
-	ierr = ISCreateStride(PETSC_COMM_WORLD, lnp, st+lnv, 1, &isp); CHKERRQ(ierr);
-
-	// this needs to be defined before index sets can be attached
-	ierr = PCSetType(pc, PCFIELDSPLIT); CHKERRQ(ierr);
-
-	// attach index sets
-	ierr = PCFieldSplitSetIS(pc, PETSC_NULL, isv); CHKERRQ(ierr);
-	ierr = PCFieldSplitSetIS(pc, PETSC_NULL, isp); CHKERRQ(ierr);
-
-	// cleanup
-	ierr = ISDestroy(&isv); CHKERRQ(ierr);
-	ierr = ISDestroy(&isp); CHKERRQ(ierr);
-
-    PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
 /*
