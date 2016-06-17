@@ -1453,6 +1453,10 @@ PetscErrorCode JacResGetMomentumResidualAndTheta(JacRes *jr)
 
 		if (jr->SeismicSource == PETSC_TRUE)
 		{
+			PetscScalar t0;
+
+			t0=0.1;
+
 			if (jr->SourceParams.source_type == POINT)
 			{
 				if (k==nz/2 && j==ny/2 && i==nx/2)
@@ -1460,8 +1464,8 @@ PetscErrorCode JacResGetMomentumResidualAndTheta(JacRes *jr)
 					// access residual context variables
 					time	  =  JacResGetTime(jr);
 
-					sxx = sxx+10*exp(-40*(time*time));
-					szz = szz-10*exp(-40*(time*time));
+					sxx = sxx+10*exp(-40*((time-t0)*(time-t0)));
+					szz = szz-10*exp(-40*((time-t0)*(time-t0)));
 				}
 			}
 			else if (jr->SourceParams.source_type == PLANE)
@@ -1469,12 +1473,14 @@ PetscErrorCode JacResGetMomentumResidualAndTheta(JacRes *jr)
 				if (k==0)
 				{
 					time	  =  JacResGetTime(jr);
-					szz = szz + 10*exp(-40*(time*time));
+					szz = 0*szz + 10*exp(-40*((time-t0)*(time-t0)));
+					sxx = 0*sxx -  5*exp(-40*((time-t0)*(time-t0)));
+					syy = 0*syy -  5*exp(-40*((time-t0)*(time-t0)));
 				}
 				else if (k==nz-1)
 				{
-					time	  =  JacResGetTime(jr);
-					szz = szz - 10*exp(-40*(time*time));
+				//	time	  =  JacResGetTime(jr);
+				//	szz = szz - 10*exp(-40*(time*time));
 				}
 			}
 		}
