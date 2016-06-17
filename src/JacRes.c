@@ -500,9 +500,9 @@ PetscErrorCode JacResGetEffStrainRate(JacRes *jr)
 		theta = xx + yy + zz;
 		svBulk->theta = theta;
 
-		if (theta!=0) {
-			tr  = theta/3.0;
-		}
+		//if (theta!=0) {
+		//	tr  = theta/3.0;
+		//}
 
 		// compute & store total deviatoric strain rates
 
