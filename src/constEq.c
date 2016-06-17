@@ -468,13 +468,13 @@ PetscErrorCode VolConstEq(
 			cf_comp  = 1.0;
 			cf_therm = 1.0;
 
-			// elastic compressiblility correction (Murnaghan's equation)
-			// ro/ro_0 = (1 + K'*P/K)^(1/K')
+			// // elastic compressiblility correction (Murnaghan's equation)
+			// // ro/ro_0 = (1 + K'*P/K)^(1/K')
 			if(mat->K)
 			{
 				IKdt = 1.0/mat->K/dt;
-				if(mat->Kp) cf_comp = pow(1.0 + mat->Kp*(p/mat->K), 1.0/mat->Kp);
-				else        cf_comp = 1.0 + p/mat->K;
+				// if(mat->Kp) cf_comp = pow(1.0 + mat->Kp*(p/mat->K), 1.0/mat->Kp);
+				// else        cf_comp = 1.0 + p/mat->K;
 			}
 
 			// ro/ro_0 = (1 + beta*P)

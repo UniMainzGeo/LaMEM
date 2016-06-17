@@ -1454,8 +1454,12 @@ PetscErrorCode JacResGetMomentumResidualAndTheta(JacRes *jr)
 		if (jr->SeismicSource == PETSC_TRUE)
 		{
 			PetscScalar t0;
+			PetscScalar alfa;
+			PetscScalar amplitude;
 
 			t0=0.1;
+			alfa=40.0;
+			amplitude=10.0;
 
 			if (jr->SourceParams.source_type == POINT)
 			{
@@ -1464,8 +1468,8 @@ PetscErrorCode JacResGetMomentumResidualAndTheta(JacRes *jr)
 					// access residual context variables
 					time	  =  JacResGetTime(jr);
 
-					sxx = sxx+10*exp(-40*((time-t0)*(time-t0)));
-					szz = szz-10*exp(-40*((time-t0)*(time-t0)));
+					sxx = sxx+amplitude*exp(-alfa*((time-t0)*(time-t0)));
+					szz = szz-amplitude*exp(-alfa*((time-t0)*(time-t0)));
 				}
 			}
 			else if (jr->SourceParams.source_type == PLANE)
@@ -1473,9 +1477,9 @@ PetscErrorCode JacResGetMomentumResidualAndTheta(JacRes *jr)
 				if (k==0)
 				{
 					time	  =  JacResGetTime(jr);
-					szz = 0*szz + 10*exp(-40*((time-t0)*(time-t0)));
-					sxx = 0*sxx -  5*exp(-40*((time-t0)*(time-t0)));
-					syy = 0*syy -  5*exp(-40*((time-t0)*(time-t0)));
+					szz = 0*szz + amplitude*exp(-alfa*((time-t0)*(time-t0)));
+					sxx = 0*sxx -  amplitude/2.0*exp(-alfa*((time-t0)*(time-t0)));
+					syy = 0*syy -  amplitude/2.0*exp(-alfa*((time-t0)*(time-t0)));
 				}
 				else if (k==nz-1)
 				{
