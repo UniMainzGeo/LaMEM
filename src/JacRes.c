@@ -1487,8 +1487,40 @@ PetscErrorCode JacResGetMomentumResidualAndPressure(JacRes *jr, UserCtx *user)
 		// Add seismic source in the stress field /////////////////////////
 		if (jr->SeismicSource == PETSC_TRUE && jr->SourceParams.source_type!=MOMENT )
 		{
+
 			// trying to apply it like a force term ...
 			ierr = GetStressFromSource(jr,user, i, j, k, &sxx, &syy, &szz);
+
+			PetscScalar t0;
+
+			t0=0.1;
+
+			if (jr->SourceParams.source_type == POINT)
+			{
+				if (k==nz/2 && j==ny/2 && i==nx/2)
+				{
+					// access residual context variables
+					time	  =  JacResGetTime(jr);
+
+					sxx = sxx+10*exp(-40*((time-t0)*(time-t0)));
+					szz = szz-10*exp(-40*((time-t0)*(time-t0)));
+				}
+			}
+			else if (jr->SourceParams.source_type == PLANE)
+			{
+				if (k==0)
+				{
+					time	  =  JacResGetTime(jr);
+					szz = 0*szz + 10*exp(-40*((time-t0)*(time-t0)));
+					sxx = 0*sxx -  5*exp(-40*((time-t0)*(time-t0)));
+					syy = 0*syy -  5*exp(-40*((time-t0)*(time-t0)));
+				}
+				else if (k==nz-1)
+				{
+				//	time	  =  JacResGetTime(jr);
+				//	szz = szz - 10*exp(-40*(time*time));
+				}
+			}
 		}
 		///////////////////////////////////////////////
 
