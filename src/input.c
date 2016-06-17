@@ -356,6 +356,9 @@ PetscErrorCode InputReadFile(JacRes *jr, UserCtx *user, FILE *fp)
 	user->AdjointNumPar = nv;  // Number of parameters
 	parse_GetDoubleArray(fp,"AdjointLowerBound" , &nv, d_values, &found); for( i=0; i<100;   i++ ) { user->AdjointLowerBound[i] = d_values[i];}
 	parse_GetDoubleArray(fp,"AdjointUpperBound" , &nv, d_values, &found); for( i=0; i<100;   i++ ) { user->AdjointUpperBound[i] = d_values[i];}
+	if (found){
+		user->AdjointUseBounds = 1;
+	}
 
 	// Particle related variables
 	parse_GetInt( fp,    "ParticleInput", &user->ParticleInput, &found );

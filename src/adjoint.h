@@ -50,6 +50,7 @@ typedef struct
 {
 	PetscScalar      Ini;                     // Initial value of perturbed parameter
 	PetscScalar      Perturb;                 // Perturbation parameter for the finite differences
+	PetscScalar      Fini;
 	Vec              dF;
 	Vec              xini;
 	Vec 			 pro;

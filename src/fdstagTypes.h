@@ -224,6 +224,7 @@ typedef struct
 	PetscInt        AdjointPhases[_MAX_AdjointPars_];              // Index in the solution vector where to compute the gradients
 	PetscInt        AdjointNumPar;
 	PetscInt        AdjointNumInd;
+	PetscInt        AdjointUseBounds;
 	PetscInt        AdjointVel[_MAX_AdjointIndices_];
 	PetscScalar		AdjointUpperBound[_MAX_AdjointPars_];
 	PetscScalar		AdjointLowerBound[_MAX_AdjointPars_];
