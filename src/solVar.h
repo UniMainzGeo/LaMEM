@@ -241,6 +241,8 @@ typedef struct
 	PetscBool   initGuessFlg; // initial guess computation flag
 	// fluid density for depth-dependent density model
 	PetscScalar  rho_fluid;
+	// rock density if we want to use lithostatic pressure in viscosit calculations
+	PetscScalar  rho_lithos;
 	// direction to the North for stress orientation
 	// counter-clockwise positive measured from x-axis
 	PetscScalar  theta_north;

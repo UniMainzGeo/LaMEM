@@ -758,7 +758,7 @@ PetscErrorCode JacResGetResidual(JacRes *jr)
 	PetscScalar ***fx,  ***fy,  ***fz, ***vx,  ***vy,  ***vz, ***gc;
 	PetscScalar ***dxx, ***dyy, ***dzz, ***dxy, ***dxz, ***dyz, ***p, ***T;
 	PetscScalar eta_creep;
-	PetscScalar depth;
+	PetscScalar depth, rho_lithos;
 
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
@@ -773,13 +773,14 @@ PetscErrorCode JacResGetResidual(JacRes *jr)
 	mz = fs->dsz.tnods - 1;
 
 	// access residual context variables
-	numPhases =  jr->numPhases; // number phases
-	phases    =  jr->phases;    // phase parameters
-	matLim    = &jr->matLim;    // phase parameters limiters
-	dt        =  jr->ts.dt;     // time step
-	fssa      =  jr->FSSA;      // density gradient penalty parameter
-	grav      =  jr->grav;      // gravity acceleration
-	pShift    =  jr->pShift;    // pressure shift
+	numPhases =  jr->numPhases; 	// number phases
+	phases    =  jr->phases;    	// phase parameters
+	matLim    = &jr->matLim;    	// phase parameters limiters
+	dt        =  jr->ts.dt;     	// time step
+	fssa      =  jr->FSSA;      	// density gradient penalty parameter
+	grav      =  jr->grav;      	// gravity acceleration
+	rho_lithos=  matLim->rho_lithos;// density to compute lithostatic pressure in viscosity formulation
+	pShift    =  jr->pShift;    	// pressure shift
 
 	// clear local residual vectors
 	ierr = VecZeroEntries(jr->lfx); CHKERRQ(ierr);
@@ -866,8 +867,13 @@ PetscErrorCode JacResGetResidual(JacRes *jr)
 		// current temperature
 		Tc = T[k][j][i];
 
+		// compute depth below the free surface
+		depth = jr->avg_topo - COORD_CELL(k, sz, fs->dsz);
+
+		if(depth < 0.0) depth = 0.0;
+
 		// evaluate deviatoric constitutive equations
-		ierr = DevConstEq(svDev, &eta_creep, numPhases, phases, svCell->phRat, matLim, dt, pc-pShift, Tc); CHKERRQ(ierr);
+		ierr = DevConstEq(svDev, &eta_creep, numPhases, phases, svCell->phRat, matLim, depth, grav, dt, pc-pShift, Tc); CHKERRQ(ierr);
 
 		// store creep viscosity
 		svCell->eta_creep = eta_creep;
@@ -880,10 +886,7 @@ PetscErrorCode JacResGetResidual(JacRes *jr)
 		syy = svCell->syy - pc;
 		szz = svCell->szz - pc;
 
-		// compute depth below the free surface
-		depth = jr->avg_topo - COORD_CELL(k, sz, fs->dsz);
 
-		if(depth < 0.0) depth = 0.0;
 
 		// evaluate volumetric constitutive equations
 		ierr = VolConstEq(svBulk, numPhases, phases, svCell->phRat, matLim, depth, dt, pc-pShift , Tc); CHKERRQ(ierr);
@@ -1013,8 +1016,13 @@ PetscErrorCode JacResGetResidual(JacRes *jr)
 		// current temperature (x-y plane, i-j indices)
 		Tc = 0.25*(T[k][j][i] + T[k][j][i-1] + T[k][j-1][i] + T[k][j-1][i-1]);
 
+		// compute depth below the free surface
+		depth = jr->avg_topo - COORD_CELL(k, sz, fs->dsz);
+
+		if(depth < 0.0) depth = 0.0;
+
 		// evaluate deviatoric constitutive equations
-		ierr = DevConstEq(svDev, &eta_creep, numPhases, phases, svEdge->phRat, matLim, dt, pc-pShift, Tc); CHKERRQ(ierr);
+		ierr = DevConstEq(svDev, &eta_creep, numPhases, phases, svEdge->phRat, matLim, depth, grav, dt, pc-pShift, Tc); CHKERRQ(ierr);
 
 		// compute stress, plastic strain rate and shear heating term on edge
 		ierr = GetStressEdge(svEdge, matLim, XY); CHKERRQ(ierr);
@@ -1115,8 +1123,13 @@ PetscErrorCode JacResGetResidual(JacRes *jr)
 		// current temperature (x-z plane, i-k indices)
 		Tc = 0.25*(T[k][j][i] + T[k][j][i-1] + T[k-1][j][i] + T[k-1][j][i-1]);
 
+		// compute depth below the free surface
+		depth = jr->avg_topo - COORD_CELL(k, sz, fs->dsz);
+
+		if(depth < 0.0) depth = 0.0;
+
 		// evaluate deviatoric constitutive equations
-		ierr = DevConstEq(svDev, &eta_creep, numPhases, phases, svEdge->phRat, matLim, dt, pc-pShift, Tc); CHKERRQ(ierr);
+		ierr = DevConstEq(svDev, &eta_creep, numPhases, phases, svEdge->phRat, matLim, depth, grav, dt, pc-pShift, Tc); CHKERRQ(ierr);
 
 		// compute stress, plastic strain rate and shear heating term on edge
 		ierr = GetStressEdge(svEdge, matLim, XZ); CHKERRQ(ierr);
@@ -1217,8 +1230,13 @@ PetscErrorCode JacResGetResidual(JacRes *jr)
 		// current temperature (y-z plane, j-k indices)
 		Tc = 0.25*(T[k][j][i] + T[k][j-1][i] + T[k-1][j][i] + T[k-1][j-1][i]);
 
+		// compute depth below the free surface
+		depth = jr->avg_topo - COORD_CELL(k, sz, fs->dsz);
+
+		if(depth < 0.0) depth = 0.0;
+
 		// evaluate deviatoric constitutive equations
-		ierr = DevConstEq(svDev, &eta_creep, numPhases, phases, svEdge->phRat, matLim, dt, pc-pShift, Tc); CHKERRQ(ierr);
+		ierr = DevConstEq(svDev, &eta_creep, numPhases, phases, svEdge->phRat, matLim, depth, grav, dt, pc-pShift, Tc); CHKERRQ(ierr);
 
 		// compute stress, plastic strain rate and shear heating term on edge
 		ierr = GetStressEdge(svEdge, matLim, YZ); CHKERRQ(ierr);
@@ -1787,6 +1805,7 @@ PetscErrorCode SetMatParLim(MatParLim *matLim, UserCtx *usr)
 	matLim->quasiHarmAvg = PETSC_FALSE;
 	matLim->initGuessFlg = PETSC_TRUE;
 	matLim->rho_fluid    = 0.0;
+	matLim->rho_lithos 	 = 0.0;	 // lithostatic density
 	matLim->theta_north  = 90.0; // by default y-axis
 	matLim->warn         = PETSC_TRUE;
 	matLim->jac_mat_free = PETSC_FALSE;
@@ -1799,7 +1818,8 @@ PetscErrorCode SetMatParLim(MatParLim *matLim, UserCtx *usr)
 		matLim->quasiHarmAvg = PETSC_TRUE;
 	}
 
-	ierr = PetscOptionsGetScalar(NULL, "-rho_fluid", &matLim->rho_fluid, NULL); CHKERRQ(ierr);
+	ierr = PetscOptionsGetScalar(NULL, "-rho_fluid",  &matLim->rho_fluid, NULL); CHKERRQ(ierr);
+	ierr = PetscOptionsGetScalar(NULL, "-rho_lithos", &matLim->rho_lithos, NULL); CHKERRQ(ierr);		// specify lithostatic density on commandline (if not set, we don't use this)
 
 	ierr = PetscOptionsGetScalar(NULL, "-theta_north", &matLim->theta_north, NULL); CHKERRQ(ierr);
 

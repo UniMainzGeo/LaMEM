@@ -64,13 +64,14 @@ PetscErrorCode ConstEqCtxSetup(
 	PetscScalar  APS,  // accumulated plastic strain
 	PetscScalar  dt,   // time step
 	PetscScalar  p,    // pressure
+	PetscScalar  p_lithos,    // lithostatic pressure
 	PetscScalar  T)    // temperature
 {
 	// setup nonlinear constitutive equation evaluation context
 	// evaluate dependence on constant parameters (pressure, temperature)
 
 	PetscInt    ln, nl, pd;
-	PetscScalar Q, RT, ch, fr;
+	PetscScalar Q, RT, ch, fr, p_viscosity;
 
 	PetscFunctionBegin;
 
@@ -80,6 +81,12 @@ PetscErrorCode ConstEqCtxSetup(
 	ln = 0;
 	nl = 0;
 	pd = 0; // pressure-dependence flag
+
+	p_viscosity = p;			// pressure used in viscosity evaluation
+	if (p_lithos>0.0){
+		p_viscosity=p_lithos;
+	}
+
 
 	// use reference strain-rate instead of zero
 	if(DII == 0.0) DII = lim->DII_ref;
@@ -112,7 +119,7 @@ PetscErrorCode ConstEqCtxSetup(
 	// LINEAR DIFFUSION CREEP (NEWTONIAN)
 	if(mat->Bd)
 	{
-		Q          = (mat->Ed + p*mat->Vd)/RT;
+		Q          = (mat->Ed + p_viscosity*mat->Vd)/RT;
 		ctx->A_dif =  mat->Bd*exp(-Q);
 		ln++;
 	}
@@ -120,7 +127,7 @@ PetscErrorCode ConstEqCtxSetup(
 	// DISLOCATION CREEP (POWER LAW)
 	if(mat->Bn)
 	{
-		Q          = (mat->En + p*mat->Vn)/RT;
+		Q          = (mat->En + p_viscosity*mat->Vn)/RT;
 		ctx->N_dis =  mat->n;
 		ctx->A_dis =  mat->Bn*exp(-Q);
 		nl++;
@@ -130,7 +137,7 @@ PetscErrorCode ConstEqCtxSetup(
 	// ONLY EVALUATE FOR TEMPERATURE-DEPENDENT CASES
 	if(mat->Bp && T)
 	{
-		Q          = (mat->Ep + p*mat->Vp)/RT;
+		Q          = (mat->Ep + p_viscosity*mat->Vp)/RT;
 		ctx->N_prl =  Q*pow(1.0-mat->gamma, mat->q-1.0)*mat->q*mat->gamma;
 		ctx->A_prl =  mat->Bp/pow(mat->gamma*mat->taup, ctx->N_prl)*exp(-Q*pow(1.0-mat->gamma, mat->q));
 		nl++;
@@ -366,22 +373,24 @@ PetscScalar GetI2Gdt(
 #undef __FUNCT__
 #define __FUNCT__ "DevConstEq"
 PetscErrorCode DevConstEq(
-	SolVarDev   *svDev,     // solution variables
-	PetscScalar *eta_creep, // creep viscosity (for output)
-	PetscInt     numPhases, // number phases
-	Material_t  *phases,    // phase parameters
-	PetscScalar *phRat,     // phase ratios
-	MatParLim   *lim,       // phase parameters limits
-	PetscScalar  dt,        // time step
-	PetscScalar  p,         // pressure
-	PetscScalar  T)         // temperature
+	SolVarDev   *svDev,     	// solution variables
+	PetscScalar *eta_creep, 	// creep viscosity (for output)
+	PetscInt     numPhases, 	// number phases
+	Material_t  *phases,    	// phase parameters
+	PetscScalar *phRat,     	// phase ratios
+	MatParLim   *lim,       	// phase parameters limits
+	PetscScalar  depth,     	// depth below free surface
+	PetscScalar	 grav[SPDIM], 	// g for computation of lithostatic profile
+	PetscScalar  dt,        	// time step
+	PetscScalar  p,         	// pressure
+	PetscScalar  T)         	// temperature
 {
 	// Evaluate deviatoric constitutive equations in control volume
 
 	PetscInt     i;
 	ConstEqCtx   ctx;
 	Material_t  *mat;
-	PetscScalar  DII, APS, eta_total, eta_creep_phase, DIIpl, dEta, fr;
+	PetscScalar  DII, APS, eta_total, eta_creep_phase, DIIpl, dEta, fr, p_lithos;
 
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
@@ -400,6 +409,11 @@ PetscErrorCode DevConstEq(
 	dEta        = 0.0;
 	fr          = 0.0;
 
+	// compute lithostatic pressure, in case we employ that instead of the true P in order to evaluate
+	// pressure-dependent viscosities (better convergence in many cases).
+	p_lithos 	=	-lim->rho_lithos*grav[2]*depth;
+
+
 	// scan all phases
 	for(i = 0; i < numPhases; i++)
 	{
@@ -410,7 +424,7 @@ PetscErrorCode DevConstEq(
 			mat = &phases[i];
 
 			// setup nonlinear constitutive equation evaluation context
-			ierr = ConstEqCtxSetup(&ctx, mat, lim, DII, APS, dt, p, T); CHKERRQ(ierr);
+			ierr = ConstEqCtxSetup(&ctx, mat, lim, DII, APS, dt, p_lithos, p, T); CHKERRQ(ierr);
 
 			// solve effective viscosity & plastic strain rate
 			ierr = GetEffVisc(&ctx, lim, &eta_total, &eta_creep_phase, &DIIpl, &dEta, &fr); CHKERRQ(ierr);
