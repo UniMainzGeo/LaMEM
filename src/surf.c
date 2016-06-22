@@ -515,6 +515,7 @@ PetscErrorCode FreeSurfGetAirPhaseRatio(FreeSurf *surf)
 	PetscScalar xleft, xright, yfront, yback, zbot, ztop;
 	PetscInt    L, jj, iter, numPhases, AirPhase;
 	PetscInt    i, j, k, nx, ny, nz, sx, sy, sz;
+	PetscBool   DeactivateFreeSurfaceCorrection = PETSC_FALSE;
 
 	// cell triangulation
 	PetscInt tria [] =
@@ -530,6 +531,11 @@ PetscErrorCode FreeSurfGetAirPhaseRatio(FreeSurf *surf)
 
 	// free surface cases only
 	if(surf->UseFreeSurf != PETSC_TRUE) PetscFunctionReturn(0);
+
+	// add this to the command line to deactivate the free surface correction
+	PetscOptionsHasName(NULL,"-DeactivateFreeSurfaceCorrection",&DeactivateFreeSurfaceCorrection);
+	if(DeactivateFreeSurfaceCorrection == PETSC_TRUE) PetscFunctionReturn(0);
+
 
 	// access context
 	jr        = surf->jr;
