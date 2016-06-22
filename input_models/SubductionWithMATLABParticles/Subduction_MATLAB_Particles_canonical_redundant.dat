@@ -3,227 +3,330 @@
 # NOTE: use CreateMarkers_Subduction.m to generate the input geometry
 # ----------------------------------------------------------------------------------------------------------------------
 
-# Define number of elements in x,y & z-direction
+# Define number of elements in x, y, z-direction
 # Negative number implies corresponding number of mesh segments
 # Data is provided in the variables seg_x, seg_y, seg_z and includes:
 #    * coordinates of the delimiters between the segments (n-1 points)
 #    * number of cells                                    (n points)
 #    * bias coefficients                                  (n points) 
  
-#nel_x						=	-3    
-nel_x						=   60    
-nel_y						= 	40    
-nel_z						= 	20
+#nel_x						=   -3    
+nel_x						=   64    
+#seg_x 	=  -10 10 6 20 6 1.0 1.0 1.0
+nel_y						=   2    
+#nel_z						=   32 
+nel_z                       			=   -3
+seg_z 	= -100 0 6 20 6 1.0 1.0 1.0
 
-#seg_x = 0.7 0.8 10 4 2 0.3 1.0 3.0
 
 
 # Geometry
-DimensionalUnits				=	1			# Dimensionless (=0) or SI-dimensional units (=1)?
-Characteristic.Length			=	1e6			# [m]		
-Characteristic.Viscosity 		=	1e20		# [Pa.s]
-Characteristic.Temperature		=	1000		# [K]
-Characteristic.Stress      		=   1e6			# [Pa]
+units                           	=	geo    # geology units
+Characteristic.Length			=	1000e3 # [m]				
+Characteristic.Viscosity 		=	1e20   # [Pa s]	
+Characteristic.Temperature		=	1000   # [K]		
+Characteristic.Stress      		=   	1e12   # [Pa]			
 
-L						=	100e3			# Length (y-direction)
-W						=	300e3			# Width  (x-direction)
-H						=	200e3			# Height (z-direction)
-x_left					=	-150e3			# Left side of domain
-y_front					=	0			# Front side of domain
-z_bot					=	0			# Bottom of box
+W					=	500	# Width  (x-direction)
+L					=   	1	# Length (y-direction)
+H					=	130	# Height (z-direction)
 
-# --- Model setup ---
-msetup                        = redundant
-ParticleFilename              = MarkersInput3D 			# File that contains markers distribution (matlab)
-LoadInitialParticlesDirectory = ./                 # directory that contains markers distribution (matlab)
+x_left					=	-250 	# Left side of domain
+y_front					=	0       # Front side of domain
+z_bot					=	-120    # Bottom of box
 
+# Phase distribution
+NumPartX				=	3   	# Particles/Cell in x-direction
+NumPartY				=	3   	# Particles/Cell in y-direction
+NumPartZ				=	3       # Particles/Cell in z-direction
+
+# Properties that are defined over the whole domain:
+Gravity					=  	-10;	# [m/s2] - gravitational acceleration 
+
+# --- Model setup and noise ---
+msetup                        		= 	redundant 	#or [parallel]
+ParticleFilename              		= 	MarkersInput3D 	#Particles(for parallel); File that contains markers distribution (matlab)
+LoadInitialParticlesDirectory 		= 	./ 
 
 # Define input/output and numerics-related stuff
-OutputFile					=	Subduction_test		
-save_timesteps				=	1				# save every ? timesteps
-time_end					=	1				# last timestep
-CFL							=	1				# CFL, dt-based criterium
-dt_max						=	1000	  	   	# Maximum timestep [years if dimensional]
+OutputFile				=	subduction		
+save_timesteps				=	1      	# save every ? timesteps
+time_end				=	2	# last timestep
+CFL					=	0.3	# CFL, dt-based criterium
+dt_max					=	0.1	# Maximum timestep [Myrs]
 	
 # Boundary conditions
-BC.Eyy						=	0.0				# BG strainrate in y-direction
-BC.Exx						=	0.0				# BG Strainrate in x-direction
-BC.LeftBound				=	1				# 0 - free surface, 1-free slip with BG strainrate Eyy, 2 - no slip, 5 - growthrate 2D, 7 - growthrate 3D
-BC.RightBound				=	1				# 0 - free surface, 1-free slip with BG strainrate Eyy, 2 - no slip, 5 - growthrate 2D, 7 - growthrate 3D
-BC.FrontBound				=	1				# 0 - free surface, 1-free slip with BG strainrate Exx, 2 - no slip, 5 - growthrate 2D, 7 - growthrate 3D
-BC.BackBound				=	1				# 0 - free surface, 1-free slip with BG strainrate Exx, 2 - no slip, 5 - growthrate 2D, 7 - growthrate 3D
-BC.LowerBound				=	1				# 0 - free surface, 1-free slip, 				  2 - no slip, 5 - growthrate 2D, 7 - growthrate 3D
-BC.UpperBound				=	1				# 0 - free surface, 1-free slip, 				  2 - no slip, 5 - growthrate 2D, 7 - growthrate 3D
-Temp_top	    			=   0				# Temperature @ top
-Temp_bottom					=   1 				# Temperature @ bottom; side BC's are flux-free
-
-# Grid advection method
-GridAdvectionMethod			= 		0 			# 0-Fully Eulerian, 1-Fully Lagrangian, 2-ALE with remeshing @ surface layer
-FactorSurfaceLayer			= 		0.3 		# How thick is the surface layer (if option 2 is selected above) ?
+Temp_top	    			=   	0	# Temperature @ top
+Temp_bottom				=   	1300 	# Temperature @ bottom; side BC's are flux-free
 
 
-# Define Stokes Solver
-StokesSolver 				=	3   # 1 - Powell-Hesteness iterations; 2 - Schur Complement Reduction; 3 - Fully Coupled Solver 
-VelocitySolver              =   0   # 0 - User defined; 1 - Direct (MUMPS); 2 - Galerkin geometric multigrid; 3 - Fieldsplit + Algebraic Multigrid (ML)
+
+# ----------------------------------------------------
+# Pushing Boundary Conditions by Adina, Sep.9,2015
+# ----------------------------------------------------
+AddPushing				=	0	# 1 - pushing; 0 - no pushing;
+Pushing.num_changes			=	1	# no. of changes in the pushing direction
+Pushing.time				=	0 100	# Time segments [Myr] as an array
+Pushing.V_push				=	5.0	# [cm/yr] as an array
+Pushing.dir				= 	2	# preferred direction of pushing: 0-rotation, 1-Vx direction, 2-Vy direction
+Pushing.omega				=	0 	# rate of rotation [deg/Myr] as an array
+Pushing.coord_advect			=	1 	# 0 - fixed pushing block, 1 - moving pushing block
+Pushing.reset_pushing_coord		= 	0	# 0 - no reset, 1 - reset pushing coord every timestep
+Pushing.theta				= 	0	# angle from which rotation should start
+
+Pushing.L_block				=	50	# Length (x-direction) [km]
+Pushing.W_block				=	1	# Width  (y-direction) [km]
+Pushing.H_block				=	40	# Height (z-direction) [km]
+
+Pushing.x_center_block			=	225	# Coordinates of the center if the block [km]
+Pushing.y_center_block			=   	0.5     # y_weak+W/2	
+Pushing.z_center_block 			=	20
+
+#===============================================================================
+# ............................ PETSc options ...................................
+#===============================================================================
 
 <PetscOptionsStart>
 
-	# KSP
-	-ksp_type preonly
-	-pc_type lu
-	-pc_factor_mat_solver_package mumps
-#	-mat_mumps_icntl_14 200
+	# If you have a non-linear system just switch off the option 	-snes_type ksponly and tune the solver options
+    # From Adina: July 21,2015
 
-	-ph_gamma  1e3
-	-ph_maxit  50
-	-ph_tol    1e-8
+	# SNES (nonlinear) options
+	-snes_ksp_ew			# Eisenstat Walker algorithm
+	-snes_ksp_ew_rtol0 1e-2
+	-snes_ksp_ew_rtolmax 1e-2
+	#-snes_ksp_ew_gamma
+	-snes_monitor			
+	-snes_atol 1e-4
+	-snes_rtol 1e-5
+	-snes_stol 1e-16
+	-snes_max_it 40 
+	-snes_max_funcs 500000
+	-snes_max_linear_solve_fail 10000
+	#-snes_type ksponly
 
-	# Fine-tune solver options here (add command-line Petsc Options)
-	-vpt_element FDSTAG			# Type of element [Q2Pm1_global; Q2Pm1_local; Q1P0]
-	-use_fdstag_canonical
-	-AddRandomNoiseParticles 0
-	-restart 0
-	-save_breakpoints 0
+	# Newton/picard options
+	-snes_PicardSwitchToNewton_rtol 1e-2 		# relative tolerance to switch to Newton (1e-2)
+	-snes_NewtonSwitchToPicard_it  	20		# number of Newton iterations after which we switch back to Picard 
+	-snes_NewtonSwitchToPicard_rtol 1.1		# relative tolerance compared to first iteration step 
+	# Linesearch options
+	-snes_linesearch_monitor
+	-snes_linesearch_type l2 			#Linesearch type (one of) shell basic l2 bt cp (SNESLineSearchSetType)  [l2 seems to work better with VEP]
+	-snes_linesearch_maxstep 1.0			# very important to prevent the code from "blowing up"
 	
-#	-snes_mf_operator	
-#	-snes_monitor
-#	-snes_atol 1e-12
-#	-snes_rtol 1e-6
-#	-snes_stol 1e-6
-#	-snes_max_it 25
-#	-snes_max_funcs 50000
+	# Jacobian (linear) outer KSP
+	-js_ksp_type fgmres
+#	-js_ksp_gmres_restart 100
+	-js_ksp_max_it 30 
+	-js_ksp_converged_reason
+	-js_ksp_monitor
+	-js_ksp_rtol 1e-5
+	-js_ksp_atol 1e-4
+	
+	# Stokes Preconditioner
+	-pstokes mg				# multigrid
 
-	-objects_dump
+	# Matrix type
+	-pcmat_type mono			# monolithic matrix [coupled MG solver]
+	#-pcmat_no_dev_proj          		# Assume that the material is fully incompressible (converges faster)
+	-jp_type mg					# multigrid 
+
+	# Multigrid preconditioner settings
+	-gmg_pc_type mg
+	-gmg_pc_mg_levels 6			# 5 MG levels, gives coarse grid of 32x16x8	
+	-gmg_pc_mg_galerkin			# 	
+	-gmg_pc_mg_type multiplicative
+	-gmg_pc_mg_cycle_type v
+	#-gmg_pc_view 
+	-gmg_pc_mg_log				# monitors time spend in multigrid if using -log_summary @ the end
+	
+	
+	# RICHARDSON/JACOBI MG Smoothener - [Anton's favorite options]
+	-gmg_mg_levels_ksp_type richardson
+	-gmg_mg_levels_ksp_richardson_scale 0.2
+	-gmg_mg_levels_pc_type jacobi
+	-gmg_mg_levels_ksp_max_it 10 
+	
+
+	# DIRECT, REDUNDANT COARSE SOLVER
+	-crs_ksp_type preonly
+   	-crs_pc_type redundant
+	-crs_pc_redundant_number 1				 # split domain in 4 pieces so ever direct solver step is done on 512 cores
+	-crs_redundant_pc_factor_mat_solver_package superlu_dist # uses mumps as local direct solver	[superlu_dist is another option]
+
+	### LATEST additions
+	-InitViscosity 1e20 
+	-div_tol 1e1   # 5e-1
+
+	# pesuo-2d: no MG in y direction
+	-da_refine_y 1
+
+
+	# Additional command-line Petsc Options
+	-use_fdstag_canonical # tell LaMEM to use the new LaMEM version,important!
+#	-restart 0
+#	-SavePartitioning
+
+	# Logfiles
+    	-res_log 1
+    	#-log_summary
+   	#-snes_monitor myfile
+
+	# advect with RK4
+    	-new_advection
+	-advection 0		# marker advection,0-Euler, 1-2th RK, 2-4th RK(Runge-Kutta) 
+	-velinterp 2 		# velocity interpolation, 0-STAG, 1-NODE, 2-minmod,
+
+
+
+	# marker control
+    	-use_marker_control
+	-markers_min 16
+	-markers_max 100
+
+	# activate temperature diffusion
+	#-act_temp_diff
+	#-shearHeatEff 0.5 
+
+	# variable background strain rate
+
+	#-ExxNumPeriods  1
+	#-ExxTimeDelims  100.0
+	#-ExxStrainRates -1e-14
+
+	#-EyyNumPeriods  1
+	#-EyyTimeDelims  100.0
+	#-EyyStrainRates -1e-15
+
+	# internal free surface
+	-surf_use        1
+	-surf_level      0
+	-surf_air_phase  0
+	-FSSA 1.0 
+
+	-out_surf_pvd        1
+	-out_surf_velocity   1
+	-out_surf_topography 1
+	-out_surf_amplitude  1
+
+	-out_plast_dissip 1
+	-out_pvd 1
+	-out_phase 1  
+	-out_density 1
+	-out_viscosity 1
+	-out_velocity 1
+	-out_pressure 1
+    	-out_dev_stress 1
+    	-out_j2_dev_stress 1
+    	-out_strain_rate 1
+    	-out_j2_strain_rate 1
+    	-out_temperature 1
+    	-out_plast_strain 1
+    	-out_ang_vel_mag 1
+    	-out_shmax 1
+    	-out_isa 1
+    	-out_gol 1
+    	-out_tot_displ 1
+    	-out_moment_res 1
+    	-out_cont_res 1
+
+
+	-out_markers 1
+	-out_mark_pvd 1
+
+    	#-out_avd 1
+    	#-out_avd_ref 3
+    	#-out_avd_pvd 1
 
 <PetscOptionsEnd>
-    
-# Phase distribution
-NumPartX				=	3   # Particles/Cell in x-direction
-NumPartY				=	3   # Particles/Cell in y-direction
-NumPartZ				=	3	# Particles/Cell in z-direction
 
-# Properties that are defined over the whole domain:
-Gravity					=  -10;									# [m/s2] - gravitational acceleration 
 
-# Define phase transitions for particles
-num_phase_transitions			=	0				# The number of phase transitions present
+
+# viscosity cutoff and initial strain-rate guess
 LowerViscosityCutoff			=	1e18
-UpperViscosityCutoff			=	1e18
+UpperViscosityCutoff			=	1e22
+DII_ref                         	= 	1e-15    
 
-# Define material properties for all phases -------------------------------------------------
-num_phases					=	3		# Total number of phases defined in code
 
-	# Define properties of mantle -----------------
+
+
+
+#===============================================================================
+# ............................ Material Parameters .............................
+#===============================================================================
+
+    # ------------------- air -------------------
 	<MaterialStart>
-		phase_id 			=	0
-		attribute 			= 	VISCOSITY
-		type 				= 	constant
-		eta0       			= 	1e18	
+	ID   	= 	0
+	rho0	= 	1
+        
+        # creep
+	eta    	= 	1e18
+
+    	# temp
+        #cp          =   1.2e3 # heat capacity
+        #k           =   1e3
 	<MaterialEnd>
+
+
+
+
+    # ------------------- Slab -------------------
 	<MaterialStart>
-		phase_id 			= 	0
-		attribute 			= 	DENSITY
-		type 				= 	temperature_dependent
-		rho0        		= 	2800
-		alpha 				=	0
+	ID   	= 	1
+	rho0	= 	3300
+
+	# creep
+        eta     =   1e22
+
+	# elasticity
+    #    shear   =   3.6e10
+        
+        # Plasticity
+#        cohesion    =   20e6 # cohesion [Pa]
+#        friction    =   30 # friction angle [deg]
+#        frSoftID    =   0 # softening ID
+
+        # temp
+        #cp          =   1.2e3 # heat capacity
+        #k           =   2.5
 	<MaterialEnd>
+
+
+#<SofteningStart>
+#    softID      =   0
+#    A           =   0.9 # softening ratio, A=1-a/a0
+#    APS1        =   0.1 # starting softening of plastic strain
+#    APS2        =   0.5 # ending softening of plastic strain
+#<SofteningEnd>
+
+
+# ------------------- Mantle -------------------
 	<MaterialStart>
-		phase_id			= 	0
-		attribute 			= 	ELASTICITY
-		type 				= 	constant
-		shear        		= 	5e10
+	ID   	= 	2
+	rho0	= 	3200
+
+	# creep
+        eta     =   1e21
+
+	# elasticity
+    #    shear   =   3.6e10
+        
+        # Plasticity
+#        cohesion    =   20e6 # cohesion [Pa]
+#        friction    =   30 # friction angle [deg]
+#        frSoftID    =   0 # softening ID
+
+        # temp
+       #cp          =   1.2e3 # heat capacity
+       # k           =   2.5
 	<MaterialEnd>
-	<MaterialStart>
-		phase_id			= 	0
-		attribute 			= 	ENERGY
-		type 				= 	constant
-		ThermalConductivity	= 	3
-		HeatCapacity		=	1050
-		RadioactiveHeat		=	0
-		ShearHeating		=	0
-	<MaterialEnd>
-	<MaterialStart>
-		phase_id			= 	0
-		attribute 			= 	PLASTICITY
-		type 				= 	constant
-		Cohesion        	= 	20e60
-		FrictionAngle		= 	30
-	<MaterialEnd>
+
+
+
+
+
+
 	
-	
-	# Define properties of slab -------------------
-	<MaterialStart>
-		phase_id 			=	1
-		attribute 			= 	VISCOSITY
-		type 				= 	constant
-		eta0       			= 	1e20
-	<MaterialEnd>
-	<MaterialStart>
-		phase_id			= 	1
-		attribute 			= 	DENSITY
-		type 				= 	temperature_dependent
-		rho0        		= 	3000
-		alpha 				=	0
-	<MaterialEnd>
-	<MaterialStart>
-		phase_id			= 	1
-		attribute 			= 	ELASTICITY
-		type 				= 	constant
-		shear        		= 	5e10
-	<MaterialEnd>
-	<MaterialStart>
-		phase_id			= 	1
-		attribute 			= 	ENERGY
-		type 				= 	constant
-		ThermalConductivity	= 	3
-		HeatCapacity		=	1050
-		RadioactiveHeat		=	0
-		ShearHeating		=	0
-	<MaterialEnd>
-	<MaterialStart>
-		phase_id			= 	1
-		attribute 			= 	PLASTICITY
-		type 				= 	constant
-		Cohesion        	= 	20e60
-		FrictionAngle		= 	30
-	<MaterialEnd>
-	
-	
-	# Define properties of air -----------------
-	<MaterialStart>
-		phase_id 			=	2
-		attribute 			= 	VISCOSITY
-		type 				= 	constant
-		eta0       			= 	1e18	
-	<MaterialEnd>
-	<MaterialStart>
-		phase_id 			= 	2
-		attribute 			= 	DENSITY
-		type 				= 	temperature_dependent
-		rho0        		= 	2800
-		alpha 				=	0
-	<MaterialEnd>
-	<MaterialStart>
-		phase_id			= 	2
-		attribute 			= 	ELASTICITY
-		type 				= 	constant
-		shear        		= 	5e10
-	<MaterialEnd>
-	<MaterialStart>
-		phase_id			= 	2
-		attribute 			= 	ENERGY
-		type 				= 	constant
-		ThermalConductivity	= 	3
-		HeatCapacity		=	1050
-		RadioactiveHeat		=	0
-		ShearHeating		=	0
-	<MaterialEnd>
-	<MaterialStart>
-		phase_id			= 	2
-		attribute 			= 	PLASTICITY
-		type 				= 	constant
-		Cohesion        	= 	20e60
-		FrictionAngle		= 	30
-	<MaterialEnd>
 	
 # End of defining material properties for all phases ----------------------------------------
