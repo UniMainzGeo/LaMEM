@@ -70,7 +70,7 @@ LoadInitialParticlesDirectory  = MatlabInputParticles 	# directory that contains
 # ----------------------------------------------------
 
 OutputFile					=	Rayleigh
-save_timesteps				=	1	# save every X timesteps
+save_timesteps				=	100000	# save every X timesteps
 time_end					=   1     # last timestep
 save_breakpoints			= 	-1    	#  -1: don't save breakpoints + initial particles
 											#   0: save initial particles only !
@@ -84,25 +84,6 @@ dt_max						=	1		# Maximum timestep [Myr]
 # ----------------------------------------------------
 Temp_top	    			=   1		# Temperature @ top [deg C]
 Temp_bottom					= 1 	# Temperature @ bottom; side BC's are flux-free by default [deg C]
-
-# ----------------------------------------------------
-# Adjoint gradients
-# ----------------------------------------------------
-ComputeAdjointGradients	    	= 2 # Compute gradients?
-Adjoint_x					= 1.49 	# x coordinate of the point where to compute the gradient
-Adjoint_y					= 0.0  	# y coordinate of the point where to compute the gradient
-Adjoint_z					= 0.5099 	# z coordinate of the point where to compute the gradient
-#                            (Vx   Vy   Vz
-#                            (1    2    3)
-AdjointVel                  = 3
-# Possible parameters: (rho rho_n rho_c beta) (K Kp G) (Bd Ed Vd) (Bn n  En Vn) (taup gamma q )
-#                      ( 1     2     3    4 ) (5  6 7) ( 8  9 10) (11 12 13 14) ( 15    16  17)
-AdjointParameters               =       1 8    # Important to leave spaces here!!
-AdjointPhases                   =       1 1
-AdjointLowerBound     = 0 0.00001
-AdjointUpperBound     = 10  10
-
-
 
 # ----------------------------------------------------
 # Other Properties 
@@ -140,8 +121,8 @@ new_input = 1
   	# --------------------------
 	<MaterialStart>
 		ID   = 1			# phase id
-		rho0 = 0.000000001		# density [kg/m^3]    #3    0.000000001
-		eta = 0.01						#5  0.01
+		rho0 = 3		# density [kg/m^3]    #3    0.000000001
+		eta = 5						#5  0.01
 		# Bn  = 2.5			# viscosity [Pas]
 		# e0 = 1e-20
 		# n = 3
@@ -199,13 +180,6 @@ new_input = 1
 	-out_surf_velocity 0
 	-out_surf_topography 0
 	-out_surf_amplitude 0
-	
-	-tao_type lmvm
-	-tao_fatol 1e-15
-	-tao_gatol 1e-15
-	-tao_frtol 1e-15
-	-tao_converged_reason
-
 	
 	# Initial timestep in Myrs
 	-dt 1
