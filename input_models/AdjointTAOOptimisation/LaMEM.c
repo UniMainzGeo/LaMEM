@@ -11,7 +11,7 @@
  **         55128 Mainz, Germany
  **
  **    project:    LaMEM
- **    filename:   advect.h
+ **    filename:   LaMEM.c
  **
  **    LaMEM is free software: you can redistribute it and/or modify
  **    it under the terms of the GNU General Public License as published
@@ -39,39 +39,39 @@
  **         Arthur Bauville
  **
  ** ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ @*/
+
 //---------------------------------------------------------------------------
-// COMPUTATION OF ADJOINT GRADIENTS
+// Main routine
 //---------------------------------------------------------------------------
-#ifndef __adjoint_h__
-#define __adjoint_h__
+#include "LaMEM.h"
 //---------------------------------------------------------------------------
-// Structure that holds paramters for the adjoint gradient computation
-typedef struct
+static char help[] = "Solves 3D Stokes equations using multigrid .\n\n";
+//--------------------------------------------------------------------------
+extern PetscErrorCode PCCreate_SemiRedundant(PC);
+//---------------------------------------------------------------------------
+#undef __FUNCT__
+#define __FUNCT__ "main"
+int main(int argc, char **argv)
 {
-	PetscScalar      Ini;                     // Initial value of perturbed parameter
-	PetscScalar      Perturb;                 // Perturbation parameter for the finite differences
-	PetscScalar      CurScal;
-	Vec              dF;
-	Vec 			 pro;
-	Vec              vx, vy, vz;
-} AdjGrad;
+	PetscErrorCode 	ierr;
+	ModParam        IOparam;
 
-// Compute the gradients for the adjoint inversion
-PetscErrorCode AdjointObjectiveAndGradientFunction(AdjGrad *aop, JacRes *jr, NLSol *nl, ModParam *IOparam, SNES snes);
+	// IOparam is not used by default
+	IOparam.use = 0;
 
-// Compute the gradients for the adjoint inversion
-PetscErrorCode AdjointComputeGradients(JacRes *jr, AdjGrad *aop, NLSol *nl, SNES snes, ModParam *IOparam);
+	// Initialize PETSC
+	ierr = PetscInitialize(&argc,&argv,(char *)0, help); CHKERRQ(ierr);
 
-// Interpolate the adjoint points and include them into the projection vector
-PetscErrorCode AdjointPointInPro(JacRes *jr, AdjGrad *aop, ModParam *IOparam);
+	ierr = PCRegister("pc_semiredundant",PCCreate_SemiRedundant);
 
-// Perturb the input parameters within the gradient computation
-PetscErrorCode AdjointGradientPerturbParameter(NLSol *nl, PetscInt CurPar, PetscInt CurPhase, AdjGrad *aop, Scaling *scal);
+	// call LaMEM main library function
+	ierr = LaMEMLib(&IOparam); CHKERRQ(ierr);
 
-// reset the perturbed input parameter within the gradient computation
-PetscErrorCode AdjointGradientResetParameter(NLSol *nl, PetscInt CurPar, PetscInt CurPhase, AdjGrad *aop);
+	// cleanup PETSC
+	ierr = PetscFinalize(); CHKERRQ(ierr);
 
-// To clear the memory
-PetscErrorCode AdjointDestroy(AdjGrad *aop);
-
-#endif
+	return 0;
+}
+//---------------------------------------------------------------------------
+// End of code
+//---------------------------------------------------------------------------

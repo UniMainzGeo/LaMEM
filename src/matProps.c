@@ -375,17 +375,20 @@ PetscErrorCode MatPropSetFromLibCall(JacRes *jr, ModParam *mod)
 	PetscScalar eta, eta0, e0;
 	Material_t  *m;
 
-
 	PetscFunctionBegin;
-	
+
 	// does a calling function provide model parameters?
-	if(mod->use == 0) PetscFunctionReturn(0);
+	if(mod->use == 0 || mod->use == 2 || mod->use == 4) PetscFunctionReturn(0);
 
 	// set material properties
-	if(mod->use == 1) {
+	if(mod->use == 1 || mod->use == 3) {
 		PetscPrintf(PETSC_COMM_WORLD,"# ------------------------------------------------------------------------\n");
 		PetscPrintf(PETSC_COMM_WORLD,"# Material properties set from calling function: \n");
 
+		if(mod->use == 3)
+		{
+			VecGetArray(mod->P,&mod->val);
+		}
 
 		for(im=0;im<mod->mdN;im++)
 		{
@@ -395,14 +398,14 @@ PetscErrorCode MatPropSetFromLibCall(JacRes *jr, ModParam *mod)
 			m = jr->phases + id;
 
 			// linear viscosity
-			if(mod->typ[im] == _ETA_) 
+			if(mod->typ[im] == _ETA_)
 			{
 
 				// initialize additional parameters
 				eta      =  0.0;
 				eta0     =  0.0;
 				e0       =  0.0;
-				eta = mod->val[im];
+				eta 	 =  mod->val[im];
 
 				// check strain-rate dependent creep
 				if((!eta0 && e0) || (eta0 && !e0))
@@ -445,9 +448,15 @@ PetscErrorCode MatPropSetFromLibCall(JacRes *jr, ModParam *mod)
 			else
 			{
 				PetscPrintf(PETSC_COMM_WORLD,"WARNING: inversion parameter type is not implemented \n");
-			}		
+			}
 
 		}
+
+		if(mod->use == 3)
+		{
+			VecRestoreArray(mod->P,&mod->val);
+		}
+
 		PetscPrintf(PETSC_COMM_WORLD,"# ------------------------------------------------------------------------\n");
 	}
 

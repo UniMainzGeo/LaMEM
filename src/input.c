@@ -344,22 +344,6 @@ PetscErrorCode InputReadFile(JacRes *jr, UserCtx *user, FILE *fp)
 	parse_GetDouble( fp, "dt_max", &user->dt_max, &found );
 	parse_GetDouble( fp, "FSSA", &user->FSSA, &found );	// FSSA parameter
 
-	// Adjoint gradients
-	parse_GetInt( fp,    "ComputeAdjointGradients", &user->ComputeAdjointGradients, &found );
-	parse_GetIntArray(fp,   "AdjointVel", &nv, i_values, &found); for( i=0; i<100;   i++ ) { user->AdjointVel[i] = i_values[i];};
-	parse_GetDoubleArray(fp,"Adjoint_x" , &nv, d_values, &found); for( i=0; i<100;   i++ ) { user->Adjoint_x[i] = d_values[i];}
-	parse_GetDoubleArray(fp,"Adjoint_y" , &nv, d_values, &found); for( i=0; i<100;   i++ ) { user->Adjoint_y[i] = d_values[i];}
-	parse_GetDoubleArray(fp,"Adjoint_z" , &nv, d_values, &found); for( i=0; i<100;   i++ ) { user->Adjoint_z[i] = d_values[i];}
-	user->AdjointNumInd = nv;  // Number of indices
-	parse_GetIntArray(fp,"AdjointParameters", &nv, i_values, &found); for( i=0; i<50;   i++ ) { user->AdjointParameters[i] = i_values[i];}
-	parse_GetIntArray(fp,"AdjointPhases", &nv, i_values, &found); for( i=0; i<50;   i++ ) { user->AdjointPhases[i] = i_values[i];}
-	user->AdjointNumPar = nv;  // Number of parameters
-	parse_GetDoubleArray(fp,"AdjointLowerBound" , &nv, d_values, &found); for( i=0; i<100;   i++ ) { user->AdjointLowerBound[i] = d_values[i];}
-	parse_GetDoubleArray(fp,"AdjointUpperBound" , &nv, d_values, &found); for( i=0; i<100;   i++ ) { user->AdjointUpperBound[i] = d_values[i];}
-	if (found){
-		user->AdjointUseBounds = 1;
-	}
-
 	// Particle related variables
 	parse_GetInt( fp,    "ParticleInput", &user->ParticleInput, &found );
 	parse_GetString( fp, "ParticleFilename", user->ParticleFilename, MAX_PATH_LEN, &found );

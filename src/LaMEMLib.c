@@ -346,9 +346,9 @@ PetscErrorCode LaMEMLib(ModParam *IOparam)
 		// view nonlinear residual
 		ierr = JacResViewRes(&jr); CHKERRQ(ierr);
 
-		if(user.ComputeAdjointGradients != 0)
-		{
-			ierr = AdjointOptimization(&jr, &aop, &user, &nl, snes); CHKERRQ(ierr);
+		if(IOparam->use == 2)
+		{	// Compute adjoint gradients
+			ierr = AdjointObjectiveAndGradientFunction(&aop, &jr, &nl, IOparam, snes); CHKERRQ(ierr);
 		}
 
 		// select new time step
@@ -462,7 +462,7 @@ PetscErrorCode LaMEMLib(ModParam *IOparam)
 		ierr = TSSolUpdate(&jr.ts, &jr.scal, &done); CHKERRQ(ierr);
 
 		// create BREAKPOINT files, for restarting the code
-		if(user.save_breakpoints>0 && !((JacResGetStep(&jr)-1) % user.save_breakpoints))
+		if(user.save_breakpoints>0 && !((JacResGetStep(&jr)-1) % user.save_breakpoints) && IOparam->use == 0)
 		{
 			ierr = BreakWrite(&user, &actx, &surf, &pvout, &pvsurf, &pvmark, &pvavd, nl.jtype); CHKERRQ(ierr);
 		}
@@ -479,6 +479,17 @@ PetscErrorCode LaMEMLib(ModParam *IOparam)
 	// print total solution time
 //	PetscTime(&cputime_end);
 //	PetscPrintf(PETSC_COMM_WORLD,"# Total time required: %g s \n",cputime_end - cputime_start0);
+
+	if(IOparam->use == 3)
+	{	// Compute 'full' adjoint inversion
+ 			ierr = AdjointObjectiveAndGradientFunction(&aop, &jr, &nl, IOparam, snes); CHKERRQ(ierr);
+	}
+
+	if(IOparam->use == 4)
+	{	// Assume this as a forward simulation and save the solution vector
+ 		VecDuplicate(jr.gsol, &IOparam->xini);
+		VecCopy(jr.gsol, IOparam->xini);
+	}
 
 	// cleanup
 	ierr = ObjFunctDestroy(&objf); CHKERRQ(ierr);

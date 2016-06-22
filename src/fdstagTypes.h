@@ -154,14 +154,26 @@ const char *PTypesName[] ={
 // Structure that holds inversion parameters
 typedef struct
 {
-	PetscInt         use;  // use inersion parameters to redefine model parameters
+	PetscInt         use;  // 0 = NO 1 = Tobi's inversion 2 = Compute gradients 3 = full inversion 4 = save this forward simulation as comparison simulation
 	PetscInt         mdN;  // number of model parameters
 	PetscInt         mID;  // current model number
 	PetscInt        *phs;  // model phase number
-	PetscInt        *typ;  // model parameter type 
+	PetscInt        *typ;  // model parameter type
 	PetscScalar     *val;  // model value
 	PetscScalar     *grd;  // gradient value
 	PetscScalar      mfit; // misfit value for current model parameters
+
+	// Variables additionally needed for the adjoint TAO solver
+	Vec              xini;      // Comparison velocity field for adjoint inversion
+	Vec              P;			// vector containing parameters (is needed in that form for TAO)
+	PetscInt         Ab;    	// Use adjoint bounds?
+	PetscInt         count;		// iteration counter
+	PetscInt         mdI;    	// number of indices
+	PetscScalar      mfitini; 	// misfit value for current model parameters
+	PetscScalar     *Ax;		// X-coordinates of comparison points
+	PetscScalar     *Ay;		// Y-coordinates of comparison points
+	PetscScalar     *Az;  		// Z-coordinates of comparison points
+	PetscScalar     *Av;		// Velocity components of comparison points
 } ModParam;
 //-----------------------------------------------------------------------------
 // Structure that holds user input data
