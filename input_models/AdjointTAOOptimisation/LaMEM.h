@@ -237,4 +237,5 @@ static inline PetscErrorCode sfpow(PetscScalar a, PetscScalar x, PetscScalar *y)
 //   MPIU_INT    - appropriate MPI Data Type for sending/receiving PetscInt
 //
 //-----------------------------------------------------------------------------
+PetscErrorCode AdjointOptimisation(Tao tao, Vec P, PetscReal *F, Vec grad, void *ctx);
 #endif
