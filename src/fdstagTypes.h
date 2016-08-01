@@ -46,6 +46,8 @@
 #ifndef __fdstagTypes_h__
 #define __fdstagTypes_h__
 //-----------------------------------------------------------------------------
+#define MAX_PUSH_BOX 10
+//-----------------------------------------------------------------------------
 // Structure that holds boundary conditions info
 typedef struct
 {
@@ -76,6 +78,7 @@ typedef struct
 // Structure that holds pushing parameters
 typedef struct
 {
+	PetscInt 	 ID; // pushing box id
 	PetscScalar  L_block, W_block, H_block;
 	PetscScalar  x_center_block, y_center_block, z_center_block;
 	PetscScalar  V_push[10], omega[10], time[11];
@@ -240,7 +243,8 @@ typedef struct
 
 	// pushing
 	PetscInt         AddPushing;
-	PushParams       Pushing;
+	PetscInt 		 nPush; // number of pushing box
+	PushParams       Pushing[MAX_PUSH_BOX];
 	
 	// topography
 	char             TopoFilename[MAX_PATH_LEN];

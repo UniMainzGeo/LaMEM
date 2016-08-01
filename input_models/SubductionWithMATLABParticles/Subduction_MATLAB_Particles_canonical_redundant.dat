@@ -64,23 +64,43 @@ Temp_bottom				=   	1300 	# Temperature @ bottom; side BC's are flux-free
 # ----------------------------------------------------
 # Pushing Boundary Conditions by Adina, Sep.9,2015
 # ----------------------------------------------------
-AddPushing				=	0	# 1 - pushing; 0 - no pushing;
-Pushing.num_changes			=	1	# no. of changes in the pushing direction
-Pushing.time				=	0 100	# Time segments [Myr] as an array
-Pushing.V_push				=	5.0	# [cm/yr] as an array
-Pushing.dir				= 	2	# preferred direction of pushing: 0-rotation, 1-Vx direction, 2-Vy direction
-Pushing.omega				=	0 	# rate of rotation [deg/Myr] as an array
-Pushing.coord_advect			=	1 	# 0 - fixed pushing block, 1 - moving pushing block
-Pushing.reset_pushing_coord		= 	0	# 0 - no reset, 1 - reset pushing coord every timestep
-Pushing.theta				= 	0	# angle from which rotation should start
+AddPushing                  =   0               # 1 - pushing; 0 - no pushing;
 
-Pushing.L_block				=	50	# Length (x-direction) [km]
-Pushing.W_block				=	1	# Width  (y-direction) [km]
-Pushing.H_block				=	40	# Height (z-direction) [km]
+<PushingBlockStart>
+    PushID              =   0                   # pushing block id
+    num_changes         =   1                   # no. of changes in the pushing direction
+    time                =   0 0.5               # Time segments [Myr] as an array
+    V_push              =   -5.0                # [cm/yr] as an array
+    dir                 =   1                   # preferred direction of pushing: 0-rotation, 1-Vx direction, 2-Vy direction
+    omega               =   0                   # rate of rotation [deg/Myr] as an array
+    coord_advect        =   1                   # 0 - fixed pushing block, 1 - moving pushing block
+    reset_pushing_coord =   0                   # 0 - no reset, 1 - reset pushing coord every timestep
+    theta               =   0                   # angle from which rotation should start
+    L_block             =   40                  # Length (x-direction) [km]
+    W_block             =   1                   # Length (y-direction) [km]
+    H_block             =   40                  # Length (z-direction) [km]
+    x_center_block      =   230                 # Coordinates of x center [km]
+    y_center_block      =   0.5                 # Coordinates of y center [km]
+    z_center_block      =   -20                 # Coordinates of z center [km]
+<PushingBlockEnd>
 
-Pushing.x_center_block			=	225	# Coordinates of the center if the block [km]
-Pushing.y_center_block			=   	0.5     # y_weak+W/2	
-Pushing.z_center_block 			=	20
+<PushingBlockStart>
+    PushID              =   1
+    num_changes         =   1
+    time                =   0 100
+    V_push              =   2.5
+    dir                 =   1
+    omega               =   0
+    coord_advect        =   1
+    reset_pushing_coord =   0
+    theta               =   0
+    L_block             =   40
+    W_block             =   1
+    H_block             =   40
+    x_center_block      =   -230
+    y_center_block      =   0.5
+    z_center_block      =   -20
+<PushingBlockEnd>
 
 #===============================================================================
 # ............................ PETSc options ...................................

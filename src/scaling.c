@@ -298,7 +298,7 @@ PetscErrorCode ScalingCreate(Scaling *scal)
 // scaling of input parameters (UserCtx)
 void ScalingInput(Scaling *scal, UserCtx *user)
 {
-	PetscInt i;
+	PetscInt i,ip;
 
 	// domain
 	user->W               /= scal->length;
@@ -338,23 +338,24 @@ void ScalingInput(Scaling *scal, UserCtx *user)
 	user->DII_ref              /= scal->strain_rate;
 
 	// pushing block parameters
-	user->Pushing.L_block        /= scal->length;
-	user->Pushing.W_block        /= scal->length;
-	user->Pushing.H_block        /= scal->length;
-	user->Pushing.x_center_block /= scal->length;
-	user->Pushing.y_center_block /= scal->length;
-	user->Pushing.z_center_block /= scal->length;
-	user->Pushing.theta          /= scal->angle;
-
-	for(i = 0; i < user->Pushing.num_changes; i++)
+	for(ip = 0; ip < user->nPush; ip++)
 	{
-		user->Pushing.V_push[i] /= scal->velocity;
-		user->Pushing.omega[i]  /= scal->angular_velocity;
-	}
-
-	for (i=0; i < user->Pushing.num_changes+1; i++)
-	{
-		user->Pushing.time[i]  /= scal->time;
+		user->Pushing[ip].L_block        /= scal->length;
+		user->Pushing[ip].W_block        /= scal->length;
+		user->Pushing[ip].H_block        /= scal->length;
+		user->Pushing[ip].x_center_block /= scal->length;
+		user->Pushing[ip].y_center_block /= scal->length;
+		user->Pushing[ip].z_center_block /= scal->length;
+		user->Pushing[ip].theta          /= scal->angle;
+		for(i = 0; i < user->Pushing[ip].num_changes; i++)
+		{
+			user->Pushing[ip].V_push[i] /= scal->velocity;
+			user->Pushing[ip].omega[i]  /= scal->angular_velocity;
+		}
+		for (i=0; i < user->Pushing[ip].num_changes+1; i++)
+		{
+			user->Pushing[ip].time[i]  /= scal->time;
+		}
 	}
 
 	// scale mesh segment delimiters

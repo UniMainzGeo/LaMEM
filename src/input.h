@@ -45,6 +45,9 @@
 #ifndef __input_h__
 #define __input_h__
 //---------------------------------------------------------------------------
+PetscErrorCode PushInputReadFile(UserCtx *user, FILE *fp);
+
+PetscErrorCode PushingBlockGetStruct(FILE *fp, PetscInt nPush, PushParams *Pushing, PetscInt ils, PetscInt ile);
 
 PetscErrorCode FDSTAGInitCode(JacRes *jr, UserCtx *user, ModParam *IOparam);
 

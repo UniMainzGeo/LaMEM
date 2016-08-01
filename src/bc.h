@@ -180,10 +180,11 @@ typedef struct
 
 	// Dirichlet pushing block constraints
 	PetscBool     pbAct;  // flag for activating pushing
-	PetscBool     pbApp;  // flag for applying pushing on a time step
+	PetscInt 	  pbApp[MAX_PUSH_BOX]; // flag for applying pushing on a time step
 	PetscScalar   theta;  // rotation angle
 	PetscScalar   Vx, Vy; // Dirichlet values for Vx and Vy
 	PushParams    *pb;    // major pushing block parameters
+	PetscInt 	  nPblo;  // number of pushing blocks
 
 	// two-point constraints
 //	PetscInt     numTPC;       // number of two-point constraints (TPC)
@@ -249,7 +250,7 @@ PetscErrorCode BCShiftIndices(BCCtx *bc, ShiftType stype);
 PetscErrorCode BCSetPush(BCCtx *bc, UserCtx *user);
 
 // compute pushing parameters
-PetscErrorCode BCCompPush(BCCtx *bc);
+PetscErrorCode BCCompPush(BCCtx *bc, PetscInt ip);
 
 // apply pushing constraints
 PetscErrorCode BCApplyPush(BCCtx *bc);
