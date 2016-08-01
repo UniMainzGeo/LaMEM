@@ -169,11 +169,14 @@ typedef struct
 	PetscInt         Ab;    	// Use adjoint bounds?
 	PetscInt         count;		// iteration counter
 	PetscInt         mdI;    	// number of indices
+	PetscInt         Ap;        // 1 = several indices ; 2 = whole domain
+	PetscInt         reg;       // 1 = Tikhonov regularization of the adjoint cost function ; 2 = total variation regularization (TV)
 	PetscScalar      mfitini; 	// misfit value for current model parameters
 	PetscScalar     *Ax;		// X-coordinates of comparison points
 	PetscScalar     *Ay;		// Y-coordinates of comparison points
 	PetscScalar     *Az;  		// Z-coordinates of comparison points
 	PetscScalar     *Av;		// Velocity components of comparison points
+	PetscScalar      *W;         // Array of weights for the regularization
 } ModParam;
 //-----------------------------------------------------------------------------
 // Structure that holds user input data
@@ -226,20 +229,6 @@ typedef struct
 
 	//PetscBool        VelocityTest;   // Request to perform single velocity solve for test purposes
 	//PetscBool        ScaleSystem;    // Request to scale linear system before solution
-
-	// Compute Adjoint gradients
-	PetscInt 		ComputeAdjointGradients;   // 1=Compute
-	PetscScalar		Adjoint_x[_MAX_AdjointIndices_];              // Index in the solution vector where to compute the gradients
-	PetscScalar		Adjoint_y[_MAX_AdjointIndices_];
-	PetscScalar		Adjoint_z[_MAX_AdjointIndices_];
-	PetscInt 	    AdjointParameters[_MAX_AdjointPars_];   // 1=Compute
-	PetscInt        AdjointPhases[_MAX_AdjointPars_];              // Index in the solution vector where to compute the gradients
-	PetscInt        AdjointNumPar;
-	PetscInt        AdjointNumInd;
-	PetscInt        AdjointUseBounds;
-	PetscInt        AdjointVel[_MAX_AdjointIndices_];
-	PetscScalar		AdjointUpperBound[_MAX_AdjointPars_];
-	PetscScalar		AdjointLowerBound[_MAX_AdjointPars_];
 
 	// restart
 	PetscInt         save_breakpoints, break_point_number;

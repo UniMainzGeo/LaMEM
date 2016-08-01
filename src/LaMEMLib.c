@@ -393,6 +393,7 @@ PetscErrorCode LaMEMLib(ModParam *IOparam)
 		// compute gravity misfits
 //		ierr = CalculateMisfitValues(&user, C, itime, LaMEM_OutputParameters); CHKERRQ(ierr);
 
+
 		// ACHTUNG !!!
 		PetscBool          flg;
 		KSP                ksp;
@@ -419,6 +420,7 @@ PetscErrorCode LaMEMLib(ModParam *IOparam)
 
 		if(!(JacResGetStep(&jr) % user.save_timesteps) || stop == PETSC_TRUE)
 		{
+
 			char *DirectoryName = NULL;
 
 			// redefine filename in case of inversion setup

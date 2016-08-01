@@ -445,6 +445,34 @@ PetscErrorCode MatPropSetFromLibCall(JacRes *jr, ModParam *mod)
 				PetscPrintf(PETSC_COMM_WORLD,"#    rho0[%lld] = %5.5f \n",(LLD)id,m->rho);
 			}
 
+			// depth dependent density
+			else if(mod->typ[im] == _RHON_)
+			{
+				m->rho_n = mod->val[im];
+				PetscPrintf(PETSC_COMM_WORLD,"#    rho_n[%lld] = %3.5f \n",(LLD)id,m->rho_n);
+			}
+
+			// depth dependent density
+			else if(mod->typ[im] == _RHOC_)
+			{
+				m->rho_c = mod->val[im];
+				PetscPrintf(PETSC_COMM_WORLD,"#    rho_c[%lld] = %3.5f \n",(LLD)id,m->rho_c);
+			}
+
+			// depth dependent density
+			else if(mod->typ[im] == _N_)
+			{
+				m->n = mod->val[im];
+				PetscPrintf(PETSC_COMM_WORLD,"#    n[%lld] = %3.3f \n",(LLD)id,m->n);
+			}
+
+			// depth dependent density
+			else if(mod->typ[im] == _EN_)
+			{
+				m->En = mod->val[im];
+				PetscPrintf(PETSC_COMM_WORLD,"#    En[%lld] = %7.2f \n",(LLD)id,m->En);
+			}
+
 			else
 			{
 				PetscPrintf(PETSC_COMM_WORLD,"WARNING: inversion parameter type is not implemented \n");

@@ -204,9 +204,6 @@ PetscErrorCode InputSetDefaultValues(JacRes *jr, UserCtx *user)
 	sprintf(user->LoadInitialParticlesDirectory, "InitialParticles");
 //	user->PolyInVolSkip[0] = 0;
 
-	// Compute Adjoint gradients
-	user->ComputeAdjointGradients	= 0;
-
 	// FDSTAG Canonical Default Model Setup
 	user->msetup            = BLOCK;
 
@@ -466,7 +463,6 @@ PetscErrorCode InputReadCommLine(UserCtx *user )
 	PetscOptionsGetReal(PETSC_NULL,"-dt_max",         &user->dt_max,         PETSC_NULL);
 	PetscOptionsGetReal(PETSC_NULL,"-FSSA",           &user->FSSA,           PETSC_NULL); // FSSA parameter [should be between 0-1]
 
-	// Adjoint gradient parameters
 	PetscOptionsGetInt(PETSC_NULL ,"-time_end",       &user->time_end,       PETSC_NULL);
 	PetscOptionsGetInt(PETSC_NULL ,"-time_end",       &user->time_end,       PETSC_NULL);
 
