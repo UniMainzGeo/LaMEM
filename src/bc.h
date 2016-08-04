@@ -48,9 +48,6 @@
 //---------------------------------------------------------------------------
 
 #define _max_periods_ 20
-#define _max_path_points_ 50
-#define _max_poly_points_ 100
-#define _max_bc_blocks_ 3
 #define _max_boxes_ 5
 
 //---------------------------------------------------------------------------
@@ -61,25 +58,6 @@ typedef enum
 	_GLOBAL_TO_LOCAL_
 
 } ShiftType;
-//---------------------------------------------------------------------------
-typedef struct
-{
-	// path description
-	PetscInt    npath;                        // number of path points of Bezier curve
-	PetscScalar theta[  _max_path_points_  ]; // orientation angles at path points
-	PetscScalar time [  _max_path_points_  ]; // times at path points
-	PetscScalar path [6*_max_path_points_-4]; // Bezier curve path & control points
-
-	// block description
-	PetscInt    npoly;                      // number of polygon vertices
-	PetscScalar poly [2*_max_poly_points_]; // polygon coordinates
-	PetscScalar bot, top;                   // bottom & top coordinates of the block
-
-	// WARNING bottom coordinate should be advected (how? average?)
-	// Top of the box can be assumed to be the free surface
-	// sticky air nodes should never be constrained (this is easy to check)
-
-} BCBlock;
 //---------------------------------------------------------------------------
 
 PetscErrorCode BCBlockReadFromOptions(BCBlock *bcb, Scaling *scal);
@@ -193,7 +171,9 @@ typedef struct
 //	PetscScalar *TPCVals;      // values of TPC
 //	PetscScalar *TPCLinComPar; // linear combination parameters
 
-	BCBlock      blocks; // BC block
+	BCBlock      *blocks; // BC block
+	PetscInt 	 nblo;    // number of bezier blocks
+	PetscBool 	 AddBezier;
 	DBox         dbox;   // dropping box
 
 	// velocity boundary condition

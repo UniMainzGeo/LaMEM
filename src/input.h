@@ -49,6 +49,10 @@ PetscErrorCode PushInputReadFile(UserCtx *user, FILE *fp);
 
 PetscErrorCode PushingBlockGetStruct(FILE *fp, PetscInt nPush, PushParams *Pushing, PetscInt ils, PetscInt ile);
 
+PetscErrorCode BezierInputReadFile(UserCtx *user, FILE *fp);
+
+PetscErrorCode BezierBlockGetStruct(FILE *fp, PetscInt nblo, BCBlock *blocks, PetscInt ils, PetscInt ile);
+
 PetscErrorCode FDSTAGInitCode(JacRes *jr, UserCtx *user, ModParam *IOparam);
 
 PetscErrorCode InputSetDefaultValues(JacRes *jr, UserCtx *user);

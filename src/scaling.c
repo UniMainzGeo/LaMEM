@@ -358,6 +358,26 @@ void ScalingInput(Scaling *scal, UserCtx *user)
 		}
 	}
 
+	// bezier block parameters
+	for(ip = 0; ip < user->nblo; ip++)
+	{
+		user->blocks[ip].bot 		   /= scal->length;
+		user->blocks[ip].top 		   /= scal->length;
+		for(i = 0; i < user->blocks[ip].npath; i++)
+		{
+			user->blocks[ip].theta[i] /= scal->angle;
+			user->blocks[ip].time[i]  /= scal->time;
+		}
+		for(i = 0; i < 6*user->blocks[ip].npath - 4; i++)
+		{
+			user->blocks[ip].path[i] /= scal->length;
+		}
+		for(i=0; i < 2*user->blocks[ip].npoly; i++)
+		{
+			user->blocks[ip].poly[i]  /= scal->length;
+		}
+	}
+
 	// scale mesh segment delimiters
 	ScalingMeshSegDir(scal, &user->mseg_x);
 	ScalingMeshSegDir(scal, &user->mseg_y);

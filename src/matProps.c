@@ -1448,7 +1448,7 @@ void getMatPropIntArray(FILE *fp, PetscInt ils, PetscInt ile,const char key[],
 			for(;;)
 			{
 				char *endp;
-				int_val = strtod(_line, &endp);
+				int_val = (PetscInt)strtod(_line, &endp);
 				values[count] = int_val;
 
 				if(endp == _line) break;

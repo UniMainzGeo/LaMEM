@@ -202,7 +202,7 @@ PetscErrorCode BCApplyBezier(BCCtx *bc)
 	FDSTAG      *fs;
 	BCBlock     *bcb;
 	PetscInt    fbeg, fend, npoly, in;
-	PetscInt    i, j, k, nx, ny, nz, sx, sy, sz, iter;
+	PetscInt    i, j, k, nx, ny, nz, sx, sy, sz, iter, ib;
 	PetscScalar ***bcvx,  ***bcvy, *SPCVals;
 	PetscScalar t, dt, theta, costh, sinth, atol, bot, top, vel;
 	PetscScalar Xbeg[3], Xend[3], xbeg[3], xend[3], box[4], cpoly[2*_max_poly_points_];
@@ -210,35 +210,13 @@ PetscErrorCode BCApplyBezier(BCCtx *bc)
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
 
+	// check whether bezier is applied
+	if(bc->AddBezier != PETSC_TRUE) PetscFunctionReturn(0);
+
 	// access context
 	fs    =  bc->fs;
-	bcb   = &bc->blocks;
 	t     =  bc->ts->time;
 	dt    =  bc->ts->dt;
-	bot   =  bcb->bot;
-	top   =  bcb->top;
-	npoly =  bcb->npoly;
-
-	// check whether constraint is activated
-	if(!bcb->npath) PetscFunctionReturn(0);
-
-	// get polygon positions in the beginning & end of the time step
-	ierr = BCBlockGetPosition(bcb, t,    &fbeg, Xbeg); CHKERRQ(ierr);
-	ierr = BCBlockGetPosition(bcb, t+dt, &fend, Xend); CHKERRQ(ierr);
-
-	// check whether constraint applies to the current time step
-	if(!fbeg || !fend) PetscFunctionReturn(0);
-
-	// get current polygon geometry
-	ierr = BCBlockGetPolygon(bcb, Xbeg, cpoly);
-
-	// get bounding box
-	polygon_box(&npoly, cpoly, 1e-12, &atol, box);
-
-	// get time step rotation matrix
-	theta = Xend[2] - Xbeg[2];
-	costh = cos(theta);
-	sinth = sin(theta);
 
 	// access velocity constraint vectors
 	ierr = DMDAVecGetArray(fs->DA_X, bc->bcvx, &bcvx); CHKERRQ(ierr);
@@ -247,80 +225,109 @@ PetscErrorCode BCApplyBezier(BCCtx *bc)
 	// access constraint arrays
 	SPCVals = bc->SPCVals;
 
-	iter = 0;
-
-	//---------
-	// X points
-	//---------
-	GET_NODE_RANGE(nx, sx, fs->dsx)
-	GET_CELL_RANGE(ny, sy, fs->dsy)
-	GET_CELL_RANGE(nz, sz, fs->dsz)
-
-	START_STD_LOOP
+	// loop over all bezier blocks
+	for(ib = 0; ib < bc->nblo; ib++)
 	{
-		// get node coordinates in the beginning of time step
-		xbeg[0] = COORD_NODE(i, sx, fs->dsx);
-		xbeg[1] = COORD_CELL(j, sy, fs->dsy);
-		xbeg[2] = COORD_CELL(k, sz, fs->dsz);
+		bcb   = &bc->blocks[ib];
+		bot   =  bcb->bot;
+		top   =  bcb->top;
+		npoly =  bcb->npoly;
 
-		// perform point test
-		if(xbeg[2] >= bot && xbeg[2] <= top)
+		// get polygon positions in the beginning & end of the time step
+		ierr = BCBlockGetPosition(bcb, t,    &fbeg, Xbeg); CHKERRQ(ierr);
+		ierr = BCBlockGetPosition(bcb, t+dt, &fend, Xend); CHKERRQ(ierr);
+
+		// check whether constraint applies to the current time step
+		if(!fbeg || !fend) continue;
+
+		// print bezier block overview
+		PetscPrintf(PETSC_COMM_WORLD,"Bezier block[%d]: npath = %d, npoly = %d\n",ib, bcb->npath, bcb->npoly);
+
+		// get current polygon geometry
+		ierr = BCBlockGetPolygon(bcb, Xbeg, cpoly);
+
+		// get bounding box
+		polygon_box(&npoly, cpoly, 1e-12, &atol, box);
+
+		// get time step rotation matrix
+		theta = Xend[2] - Xbeg[2];
+		costh = cos(theta);
+		sinth = sin(theta);
+
+		iter = 0;
+
+		//---------
+		// X points
+		//---------
+		GET_NODE_RANGE(nx, sx, fs->dsx)
+		GET_CELL_RANGE(ny, sy, fs->dsy)
+		GET_CELL_RANGE(nz, sz, fs->dsz)
+
+		START_STD_LOOP
 		{
-			in_polygon(1, xbeg, npoly, cpoly, box, atol, &in);
+			// get node coordinates in the beginning of time step
+			xbeg[0] = COORD_NODE(i, sx, fs->dsx);
+			xbeg[1] = COORD_CELL(j, sy, fs->dsy);
+			xbeg[2] = COORD_CELL(k, sz, fs->dsz);
 
-			// check whether point is inside polygon
-			if(in)
+			// perform point test
+			if(xbeg[2] >= bot && xbeg[2] <= top)
 			{
-				// compute point position in the end of time step
-				RotDispPoint2D(Xbeg, Xend, costh, sinth, xbeg, xend);
+				in_polygon(1, xbeg, npoly, cpoly, box, atol, &in);
 
-				// compute & set x-velocity
-				vel = (xend[0] - xbeg[0])/dt;
+				// check whether point is inside polygon
+				if(in)
+				{
+					// compute point position in the end of time step
+					RotDispPoint2D(Xbeg, Xend, costh, sinth, xbeg, xend);
 
-				bcvx[k][j][i] = vel;
-				SPCVals[iter] = vel;
+					// compute & set x-velocity
+					vel = (xend[0] - xbeg[0])/dt;
+
+					bcvx[k][j][i] = vel;
+					SPCVals[iter] = vel;
+				}
 			}
+			iter++;
 		}
-		iter++;
-	}
-	END_STD_LOOP
+		END_STD_LOOP
 
-	//---------
-	// Y points
-	//---------
-	GET_CELL_RANGE(nx, sx, fs->dsx)
-	GET_NODE_RANGE(ny, sy, fs->dsy)
-	GET_CELL_RANGE(nz, sz, fs->dsz)
+		//---------
+		// Y points
+		//---------
+		GET_CELL_RANGE(nx, sx, fs->dsx)
+		GET_NODE_RANGE(ny, sy, fs->dsy)
+		GET_CELL_RANGE(nz, sz, fs->dsz)
 
-	START_STD_LOOP
-	{
-		// get node coordinates in the beginning of time step
-		xbeg[0] = COORD_CELL(i, sx, fs->dsx);
-		xbeg[1] = COORD_NODE(j, sy, fs->dsy);
-		xbeg[2] = COORD_CELL(k, sz, fs->dsz);
-
-		// perform point test
-		if(xbeg[2] >= bot && xbeg[2] <= top)
+		START_STD_LOOP
 		{
-			in_polygon(1, xbeg, npoly, cpoly, box, atol, &in);
+			// get node coordinates in the beginning of time step
+			xbeg[0] = COORD_CELL(i, sx, fs->dsx);
+			xbeg[1] = COORD_NODE(j, sy, fs->dsy);
+			xbeg[2] = COORD_CELL(k, sz, fs->dsz);
 
-			// check whether point is inside polygon
-			if(in)
+			// perform point test
+			if(xbeg[2] >= bot && xbeg[2] <= top)
 			{
-				// compute point position in the end of time step
-				RotDispPoint2D(Xbeg, Xend, costh, sinth, xbeg, xend);
+				in_polygon(1, xbeg, npoly, cpoly, box, atol, &in);
 
-				// compute & set y-velocity
-				vel = (xend[1] - xbeg[1])/dt;
+				// check whether point is inside polygon
+				if(in)
+				{
+					// compute point position in the end of time step
+					RotDispPoint2D(Xbeg, Xend, costh, sinth, xbeg, xend);
 
-				bcvy[k][j][i] = vel;
-				SPCVals[iter] = vel;
+					// compute & set y-velocity
+					vel = (xend[1] - xbeg[1])/dt;
+
+					bcvy[k][j][i] = vel;
+					SPCVals[iter] = vel;
+				}
 			}
+			iter++;
 		}
-		iter++;
+		END_STD_LOOP
 	}
-	END_STD_LOOP
-
 	// restore access
 	ierr = DMDAVecRestoreArray(fs->DA_X, bc->bcvx, &bcvx); CHKERRQ(ierr);
 	ierr = DMDAVecRestoreArray(fs->DA_Y, bc->bcvy, &bcvy); CHKERRQ(ierr);
@@ -753,6 +760,15 @@ PetscErrorCode BCSetParam(BCCtx *bc, UserCtx *user)
 	bc->Tbot  = user->Temp_bottom;
 	bc->Ttop  = user->Temp_top;
 
+	if(user->AddBezier)
+	{
+		bc->AddBezier = PETSC_TRUE;
+		bc->blocks = user->blocks;
+		bc->nblo   = user->nblo;
+	}
+	else
+		bc->AddBezier = PETSC_FALSE;
+
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
@@ -803,10 +819,10 @@ PetscErrorCode BCReadFromOptions(BCCtx *bc)
 	}
 
 	// Bezier block
-	ierr = BCBlockReadFromOptions(&bc->blocks, scal); CHKERRQ(ierr);
+	//ierr = BCBlockReadFromOptions(&bc->blocks, scal); CHKERRQ(ierr);
 
 
-	if(bc->blocks.npath && (bc->ExxAct == PETSC_TRUE || bc->EyyAct == PETSC_TRUE))
+	if(bc->AddBezier && (bc->ExxAct == PETSC_TRUE || bc->EyyAct == PETSC_TRUE))
 	{
 		SETERRQ(PETSC_COMM_SELF, PETSC_ERR_USER, "Cannot combine background strain rate with moving block\n");
 	}
@@ -817,7 +833,7 @@ PetscErrorCode BCReadFromOptions(BCCtx *bc)
 
 	if(bc->face)
 	{
-		if(bc->face && (bc->blocks.npath || bc->ExxAct == PETSC_TRUE || bc->EyyAct == PETSC_TRUE))
+		if(bc->face && (bc->AddBezier || bc->ExxAct == PETSC_TRUE || bc->EyyAct == PETSC_TRUE))
 		{
 			SETERRQ(PETSC_COMM_SELF, PETSC_ERR_USER, "Cannot combine boundary velocity with either background strain rate or moving block\n");
 		}

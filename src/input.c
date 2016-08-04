@@ -104,6 +104,8 @@ PetscErrorCode PushInputReadFile(UserCtx *user, FILE *fp)
 	// free arrays
 	ierr = PetscFree(ls); CHKERRQ(ierr);
 	ierr = PetscFree(le); CHKERRQ(ierr);
+
+	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
 #undef __FUNCT__
@@ -113,6 +115,8 @@ PetscErrorCode PushingBlockGetStruct(FILE *fp, PetscInt nPush, PushParams *Pushi
 	// read pushing box from file
 	PushParams *p;
 	PetscInt   found, ID, nv;
+
+	PetscFunctionBegin;
 
 	// pushing box ID
 	getMatPropInt(fp, ils, ile, "PushID", &ID, &found);
@@ -141,11 +145,114 @@ PetscErrorCode PushingBlockGetStruct(FILE *fp, PetscInt nPush, PushParams *Pushi
 	getMatPropScalar   (fp, ils, ile, "x_center_block", 	 &p->x_center_block, 	  &found);
 	getMatPropScalar   (fp, ils, ile, "y_center_block", 	 &p->y_center_block, 	  &found);
 	getMatPropScalar   (fp, ils, ile, "z_center_block", 	 &p->z_center_block, 	  &found);
-	getMatPropScalArray(fp, ils, ile, "V_push",         &nv, &p->V_push,			  &found);
-	getMatPropScalArray(fp, ils, ile, "omega",          &nv, &p->omega,				  &found);
-	getMatPropScalArray(fp, ils, ile, "time",           &nv, &p->time,  			  &found);
-	getMatPropIntArray (fp, ils, ile, "coord_advect",   &nv, &p->coord_advect,		  &found);
-	getMatPropIntArray (fp, ils, ile, "dir",            &nv, &p->dir,				  &found);
+	getMatPropScalArray(fp, ils, ile, "V_push",         &nv,  p->V_push,			  &found);
+	getMatPropScalArray(fp, ils, ile, "omega",          &nv,  p->omega,				  &found);
+	getMatPropScalArray(fp, ils, ile, "time",           &nv,  p->time,  			  &found);
+	getMatPropIntArray (fp, ils, ile, "coord_advect",   &nv,  p->coord_advect,		  &found);
+	getMatPropIntArray (fp, ils, ile, "dir",            &nv,  p->dir,				  &found);
+
+	PetscFunctionReturn(0);
+}
+//---------------------------------------------------------------------------
+#undef __FUNCT__
+#define __FUNCT__ "BezierInputReadFile"
+PetscErrorCode BezierInputReadFile(UserCtx *user, FILE *fp)
+{
+	// initialize bezier block parameters from file
+	PetscInt *ls, *le;
+	PetscInt i, count_starts, count_ends;
+
+	PetscErrorCode ierr;
+	PetscFunctionBegin;
+
+	// clear memory
+	ierr = PetscMemzero(user->blocks, sizeof(BCBlock)*(size_t)_max_bc_blocks_); CHKERRQ(ierr);
+
+	// initialize ID for consistency check
+	for(i = 0; i < _max_bc_blocks_; i++) user->blocks[i].ID = -1;
+
+	// allocate memory for array to store line info
+	ierr = makeIntArray(&ls, NULL, _max_bc_blocks_); CHKERRQ(ierr);
+	ierr = makeIntArray(&le, NULL, _max_bc_blocks_); CHKERRQ(ierr);
+
+	// read number of entries
+	getLineStruct(fp, ls, le, _max_bc_blocks_, &count_starts, &count_ends, "<BezierBlockStart>", "<BezierBlockEnd>");
+
+	// error checking
+	if(count_starts > MAX_PUSH_BOX || count_ends > _max_bc_blocks_)
+	{
+		SETERRQ1(PETSC_COMM_SELF, PETSC_ERR_USER, "Too many bezier structures specified! Max allowed: %lld", (LLD)_max_bc_blocks_);
+	}
+	if(count_starts != count_ends)
+	{
+		SETERRQ(PETSC_COMM_SELF, PETSC_ERR_USER, "Incomplete bezier structures! <BezierBlockStart> & <BezierBlockEnd> don't match");
+	}
+
+	// store actual number of bezier block
+	user->nblo = count_starts;
+
+	// read each individual bezier block
+	for(i = 0; i< user->nblo; i++)
+	{
+		ierr = BezierBlockGetStruct(fp, user->nblo, user->blocks, ls[i], le[i]); CHKERRQ(ierr);
+	}
+
+	// free arrays
+	ierr = PetscFree(ls); CHKERRQ(ierr);
+	ierr = PetscFree(le); CHKERRQ(ierr);
+
+	PetscFunctionReturn(0);
+}
+//---------------------------------------------------------------------------
+#undef __FUNCT__
+#define __FUNCT__ "BezierBlockGetStruct"
+PetscErrorCode BezierBlockGetStruct(FILE *fp, PetscInt nblo, BCBlock *blocks, PetscInt ils, PetscInt ile)
+{
+	// read bezier block from file
+	BCBlock  *b;
+	PetscInt found, ID, nv;
+
+	PetscFunctionBegin;
+
+	// bezier box ID
+	getMatPropInt(fp, ils, ile, "BezierID", &ID, &found);
+
+	// error checking
+	if(!found) SETERRQ(PETSC_COMM_SELF, PETSC_ERR_USER, "No bezier block ID specified! ");
+	if(ID > nblo-1) SETERRQ(PETSC_COMM_SELF, PETSC_ERR_USER, "Incorrect bezier block numbering!");
+
+	// get pointer to specified bezier block
+	b = blocks + ID;
+
+	// check ID
+	if(b->ID != -1) SETERRQ(PETSC_COMM_SELF, PETSC_ERR_USER, "Incorrect Bezier block numbering!");
+
+	// set ID
+	b->ID = ID;
+
+	// read and store bezier block parameters & error checking
+	getMatPropInt(fp, ils, ile, "npath", &b->npath, &found);
+	if(!found) SETERRQ(PETSC_COMM_SELF,PETSC_ERR_USER, "No npath specified! ");
+	if(b->npath < 1 || b->npath > _max_path_points_) SETERRQ2(PETSC_COMM_SELF,PETSC_ERR_USER, "npath should be range: [%d - %d]\n", 1, _max_path_points_);
+
+	getMatPropScalArray(fp,ils,ile,"theta",&nv, b->theta, &found);
+	if(nv != b->npath) SETERRQ(PETSC_COMM_SELF,PETSC_ERR_USER, "wrong number of theta specified! ");
+
+	getMatPropScalArray(fp,ils,ile,"time",&nv, b->time, &found);
+	if(nv != b->npath) SETERRQ(PETSC_COMM_SELF,PETSC_ERR_USER, "wrong number of time specified! ");
+
+	getMatPropScalArray(fp,ils,ile,"path",&nv, b->path, &found);
+	if(nv != 6*b->npath -4) SETERRQ(PETSC_COMM_SELF,PETSC_ERR_USER, "wrong number of path specified! ");
+
+	getMatPropInt(fp,ils,ile,"npoly",&b->npoly, &found);
+	if(!found) SETERRQ(PETSC_COMM_SELF,PETSC_ERR_USER, "number of polygon not specified! ");
+	if(b->npoly < 1 || b->npoly > _max_poly_points_) SETERRQ2(PETSC_COMM_SELF,PETSC_ERR_USER, "npoly should be range: [%d - %d]\n", 1, _max_poly_points_);
+
+	getMatPropScalArray(fp,ils,ile,"poly",&nv, b->poly, &found);
+	if(nv != 2*b->npoly) SETERRQ(PETSC_COMM_SELF,PETSC_ERR_USER, "wrong number of poly specified! ");
+
+	getMatPropScalar(fp, ils, ile, "bot", &b->bot, &found);
+	getMatPropScalar(fp, ils, ile, "top", &b->top, &found);
 
 	PetscFunctionReturn(0);
 }
@@ -191,6 +298,9 @@ PetscErrorCode FDSTAGInitCode(JacRes *jr, UserCtx *user, ModParam *iop)
 
 			// read pushing parameter from file
 			ierr = PushInputReadFile(user,fp); CHKERRQ(ierr);
+
+			// read bezier parameter from file
+			ierr = BezierInputReadFile(user,fp); CHKERRQ(ierr);
 
 			// read softening laws from file
 			ierr = MatSoftInit(jr, fp); CHKERRQ(ierr);
@@ -354,6 +464,9 @@ PetscErrorCode InputSetDefaultValues(JacRes *jr, UserCtx *user)
 //	user->Pushing.reset_pushing_coord   = 0;
 //	user->Pushing.theta                 = 0.0;
 
+	// default bezier parameters
+	user->AddBezier 					=	0;
+
 	user->FSSA                          =	0.0;
 
 	// set this option to monitor actual option usage
@@ -374,9 +487,6 @@ PetscErrorCode InputReadFile(JacRes *jr, UserCtx *user, FILE *fp)
 	 // parse the input file
 
 	PetscInt found;
-	double d_values[1000];
-	PetscInt i_values[1000];
-	PetscInt nv, i;
 	char setup_name[MAX_NAME_LEN];
 
 	PetscErrorCode ierr;
@@ -491,6 +601,9 @@ PetscErrorCode InputReadFile(JacRes *jr, UserCtx *user, FILE *fp)
 
 	// Pushing Parameters
 	parse_GetInt( fp,    "AddPushing", &user->AddPushing, &found );
+
+	// bezier flag
+	parse_GetInt( fp,    "AddBezier",  &user->AddBezier,  &found );
 
 /*
 	// Marker setting: skip certain volumes that are defined in input file
