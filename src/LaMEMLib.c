@@ -310,7 +310,9 @@ PetscErrorCode LaMEMLib(ModParam *IOparam)
 		if (user.RidgeOn) {
 			// Enforce lithosphere structure for ridge
 			ierr = ADVMarkEnforceRidge(&actx, &surf, &user); CHKERRQ(ierr);
-
+			
+			// Heal plastic strain - howellsm
+			ierr = MarkPlasticHealing(&actx, &user, &jr); CHKERRQ(ierr);
 		}
 
 		if(user.SkipStokesSolver != PETSC_TRUE)

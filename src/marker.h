@@ -99,8 +99,13 @@ PetscErrorCode ADVMarkInitRidge        (AdvCtx *actx, UserCtx *user); // howells
 
 //---------------------------------------------------------------------------
 
-// Enforce ridge structure on markers - howellsm
+// Diker and ridge routines - howellsm
+
+// Enforce ridge structure on markers
 PetscErrorCode ADVMarkEnforceRidge  (AdvCtx *actx, FreeSurf *surf, UserCtx *user);
+
+// Time dependent marker healing
+PetscErrorCode MarkPlasticHealing	(AdvCtx *actx, UserCtx *user, JacRes *jr);
 
 //---------------------------------------------------------------------------
 

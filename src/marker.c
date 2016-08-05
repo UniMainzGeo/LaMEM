@@ -2476,4 +2476,59 @@ PetscErrorCode ADVMarkEnforceRidge(AdvCtx *actx, FreeSurf *surf, UserCtx *user)
 
 	PetscFunctionReturn(0);
 }
+//---------------------------------------------------------------------------
+#undef __FUNCT__
+#define __FUNCT__ "MarkPlasticHealing"
+PetscErrorCode MarkPlasticHealing(AdvCtx *actx, UserCtx *user, JacRes *jr)
+{
+	// Time dependent healing of plastic strain on markers - howellsm
+	FDSTAG      *fs;
+	Marker     	*P;
+	DikeParams  *Dike;
+	PetscInt    imark, I, J, K;
+	PetscInt    nx, ny, nz, sx, sy, sz;
+	PetscScalar x, y, z;
+	PetscScalar tau, dt;
+	PetscErrorCode ierr;
+	PetscFunctionBegin;
+
+	// access context
+	Dike = &user->Dike;
+	fs   = jr->fs;
+
+	// scan all free surface local points
+	ierr = DMDAGetCorners(fs->DA_COR, &sx, &sy, &sz, &nx, &ny, &nz); CHKERRQ(ierr);
+
+	// // get timestep and tau(dt / tau + 1)
+	dt   = jr->ts.dt; 		// time step
+	tau  = user->tauHeal;
+
+	// loop over local markers
+	for (imark = 0; imark < actx->nummark; imark++)
+	{	
+		// get marker
+		P = &actx->markers[imark];
+
+		// get coordinates
+		x = P->X[0];
+		y = P->X[1];
+		z = P->X[2];
+
+		// get indices
+		I = FindPointInCell(fs->dsx.ncoor, 0, nx, x) + sx;
+		J = FindPointInCell(fs->dsy.ncoor, 0, ny, y) + sy;
+		K = FindPointInCell(fs->dsz.ncoor, 0, nz, z) + sz;
+
+		// Dike material gets healed every timestep
+		if (Dike->On == 1 && (I >= Dike->indx && I <= Dike->indx + 1) && (K > Dike->indzBot - 2 && K <= Dike->indzTop  + 1)) {
+			P->APS  = 0;
+		}
+		// Otherwise, time dependant
+		else {
+			P->APS /= (dt / tau + 1);
+		}
+	}
+
+	PetscFunctionReturn(0);
+}
 
