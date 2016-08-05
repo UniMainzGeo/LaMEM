@@ -1146,10 +1146,36 @@ PetscErrorCode BCApplyBound(BCCtx *bc)
 	vby = by*Eyy;   vey = ey*Eyy;
 	vbz = bz*Ezz;   vez = ez*Ezz;
 
-	if(top_open)
-	{
-		vbz = 0.0;
-		vez = 0.0;
+	// BCs for ridge outflow with diking inflow - howellsm
+	if (bc->RidgeAct) {
+		Hl = rb->H_lith;
+		Ha = rb->H_asth;
+		W  = Dike->W;
+		M  = Dike->M;
+		H  = Dike->H;
+
+		if (top_open)
+		{
+			// conservative mantle
+			vez = 0.0;
+			vbz = 2 * rb->Vx * ((Hl + Ha) / W) - (2 * rb->Vx * M * Hl / W);
+		}
+		else {
+			// conservative ocean and mantle
+			vez = - 2 * rb->Vx * ((H - Hl - Ha) / W);
+			vbz = 2 * rb->Vx * ((Hl + Ha) / W) - (2 * rb->Vx * M * Hl / W);
+		}
+	}
+	else {
+		if (top_open)
+		{
+			vbz = 0.0;
+			vez = 0.0;
+		}
+		else {
+			vez = vez / 2;
+			vbz = -vez;
+		}
 	}
 
 	// get boundary temperatures
