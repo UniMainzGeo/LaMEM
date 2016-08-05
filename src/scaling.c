@@ -383,6 +383,17 @@ void ScalingInput(Scaling *scal, UserCtx *user)
 	ScalingMeshSegDir(scal, &user->mseg_y);
 	ScalingMeshSegDir(scal, &user->mseg_z);
 
+	// ridge/dike paramaters - howellsm
+	user->Ridge.H_lith 		/= scal->length;
+	user->Ridge.H_asth 		/= scal->length;
+	user->Ridge.L_axis 		/= scal->length;
+	user->Ridge.L_double 	/= scal->length;
+	user->Ridge.L_notch 	/= scal->length;
+	user->Ridge.L_trough 	/= scal->length;
+	user->Ridge.Vx 			/= scal->velocity;
+	user->tauHeal 			/= scal->time;
+	user->Dike.Vx           = user->Ridge.Vx;
+
 }
 //---------------------------------------------------------------------------
 // scaling material parameters

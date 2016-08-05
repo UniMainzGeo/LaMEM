@@ -95,6 +95,7 @@ PetscErrorCode ADVMarkInitSpheres      (AdvCtx *actx, UserCtx *user);
 PetscErrorCode ADVMarkInitBands        (AdvCtx *actx, UserCtx *user);
 PetscErrorCode ADVMarkInitDomes        (AdvCtx *actx, UserCtx *user);
 PetscErrorCode ADVMarkInitRotation     (AdvCtx *actx, UserCtx *user);
+PetscErrorCode ADVMarkInitRidge        (AdvCtx *actx, UserCtx *user); // howellsm
 
 //---------------------------------------------------------------------------
 

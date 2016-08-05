@@ -145,6 +145,7 @@ PetscErrorCode ADVMarkInit(AdvCtx *actx, UserCtx *user)
 	else if(user->msetup == DOMES)      { PetscPrintf(PETSC_COMM_WORLD,"%s\n","domes");           ierr = ADVMarkInitDomes        (actx, user); CHKERRQ(ierr); }
 	else if(user->msetup == ROTATION)   { PetscPrintf(PETSC_COMM_WORLD,"%s\n","rotation");        ierr = ADVMarkInitRotation     (actx, user); CHKERRQ(ierr); }
 	else if(user->msetup == RESTART)    { PetscPrintf(PETSC_COMM_WORLD,"%s\n","restart");         ierr = BreakReadMark           (actx      ); CHKERRQ(ierr); }
+	else if(user->msetup == RIDGE)      { PetscPrintf(PETSC_COMM_WORLD,"%s\n","ridge");           ierr = ADVMarkInitRidge        (actx, user); CHKERRQ(ierr); } // howellsm
 	else SETERRQ(PETSC_COMM_SELF, PETSC_ERR_USER," *** Incorrect option for initialization of markers");
 
 
@@ -2238,3 +2239,114 @@ void qsindex (PetscScalar  *a, PetscInt *idx , PetscInt lo, PetscInt hi)
 }
 //---------------------------------------------------------------------------
 */
+
+//---------------------------------------------------------------------------
+#undef __FUNCT__
+#define __FUNCT__ "ADVMarkInitRidge"
+PetscErrorCode ADVMarkInitRidge(AdvCtx *actx, UserCtx *user)
+{
+	// Rigde structure initialization - howellsm
+
+	Marker     	*P;
+	RidgeParams *rb;
+	DikeParams  *Dike;
+	FDSTAG      *fs;
+	PetscInt    imark;
+	PetscScalar Hl, Ha, La, Ld, Ln, Lt, Lr;
+	PetscScalar x, y, z, Tshift;
+	PetscScalar xmin, xmax, zmax, slope;
+
+	PetscErrorCode ierr;
+	PetscFunctionBegin;
+
+	// get context
+	fs 	 = actx->fs;
+	rb 	 = &user->Ridge;
+	Dike = &user->Dike;
+
+	// get scaling factors
+	Tshift     = actx->jr->scal.Tshift;
+
+	// Get ridge geometry properties
+	Hl = rb->H_lith;
+	Ha = rb->H_asth;
+	La = rb->L_axis;
+	Ld = rb->L_double;
+	Ln = rb->L_notch;
+	Lt = rb->L_trough;
+	Lr = rb->L_damp;
+
+	// loop over local markers and assign phases
+	for (imark = 0; imark < actx->nummark; imark++)
+	{
+		// get marker
+		P = &actx->markers[imark];
+
+		// get coordinates
+		x = P->X[0];
+		y = P->X[1];
+		z = P->X[2];
+
+		// get coordinates
+		x = P->X[0];
+		y = P->X[1];
+		z = P->X[2];
+
+		// seed random APS to aid in initital faulting
+		P->APS  = 0.2 / ((rand() % 100) + 1);
+		
+		// assign phase in layers
+		if (z >  Ha + Hl) {
+			P->phase = 2; // water
+		}
+		else if (z >= Ha && z <= Hl + Ha) {
+			P->phase = 1; // lith
+		}
+		else {
+			P->phase = 0; // asth
+		}
+
+		// Assign phases for sloped lithosphere
+		if (z <= Ha) {
+			if (x >= La) {
+				// sloping east
+				slope = Hl / Ld;
+				xmin  = La + Ln / 2;
+				xmax  = La + (Ln / 2 + Lt);
+				zmax  = Ha - slope * (x - xmin);
+				if (x >= xmin && x <= xmax && z >= zmax) {
+					P->phase = 1;
+				}
+				// thickened east
+				zmax  = Ha - slope * (xmax - xmin);
+				slope = (Hl / Ld) / Lr; // slow thickening rate outside trough
+				zmax  = zmax - slope * (x - xmax);
+				if (x > xmax && z >= zmax) {
+					P->phase = 1;
+				}
+			} // end if east
+			else {
+				// sloping west
+				slope = Hl / Ld;
+				xmin  = La - (Ln / 2 + Lt);
+				xmax  = La - Ln / 2;
+				zmax  = Ha - slope * (xmax - x);
+				if (x >= xmin && x <= xmax && z >= zmax) {
+					P->phase = 1;
+				}
+				// thickened west
+				zmax  = Ha - slope * (xmax - xmin);
+				slope = (Hl / Ld) / Lr; // slow thickening rate outside trough
+				zmax  = zmax - slope * (xmin - x);
+				if (x <= xmin && z >= zmax) {
+					P->phase = 1;
+				}
+			} // end if west
+		} // end if in range
+
+		// // assign temperature
+		// P->T = Tshift;
+	}
+
+	PetscFunctionReturn(0);
+}
