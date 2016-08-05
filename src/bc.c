@@ -1146,7 +1146,7 @@ PetscErrorCode BCApplyBound(BCCtx *bc)
 	vby = by*Eyy;   vey = ey*Eyy;
 	vbz = bz*Ezz;   vez = ez*Ezz;
 
-	// BCs for ridge outflow with diking inflow - howellsm
+	// BCs for ridge outflow and mantle inflow - howellsm
 	if (bc->RidgeAct) {
 		Hl = rb->H_lith;
 		Ha = rb->H_asth;
@@ -1154,16 +1154,33 @@ PetscErrorCode BCApplyBound(BCCtx *bc)
 		M  = Dike->M;
 		H  = Dike->H;
 
-		if (top_open)
-		{
-			// conservative mantle
-			vez = 0.0;
-			vbz = 2 * rb->Vx * ((Hl + Ha) / W) - (2 * rb->Vx * M * Hl / W);
+		// If the dike is on, M needs to be removed from mantle inflow
+		if (bc->DikeAct) {
+			if (top_open)
+			{
+				// conservative mantle
+				vez = 0.0;
+				vbz = 2 * rb->Vx * ((Hl + Ha) / W) - (2 * rb->Vx * M * Hl / W);
+			}
+			else {
+				// conservative ocean and mantle
+				vez = - 2 * rb->Vx * ((H - Hl - Ha) / W);
+				vbz = 2 * rb->Vx * ((Hl + Ha) / W) - (2 * rb->Vx * M * Hl / W);
+			}
 		}
-		else {
-			// conservative ocean and mantle
-			vez = - 2 * rb->Vx * ((H - Hl - Ha) / W);
-			vbz = 2 * rb->Vx * ((Hl + Ha) / W) - (2 * rb->Vx * M * Hl / W);
+		// Conservative mantle and water inflow
+		else{
+			if (top_open)
+			{
+				// conservative mantle
+				vez = 0.0;
+				vbz = 2 * rb->Vx * ((Hl + Ha) / W);
+			}
+			else {
+				// conservative ocean and mantle
+				vez = - 2 * rb->Vx * ((H - Hl - Ha) / W);
+				vbz = 2 * rb->Vx * ((Hl + Ha) / W);
+			}
 		}
 	}
 	else {
