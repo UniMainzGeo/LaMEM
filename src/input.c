@@ -475,7 +475,31 @@ PetscErrorCode InputSetDefaultValues(JacRes *jr, UserCtx *user)
     // Add a few default options
     PetscOptionsInsertString("-options_left");
     
-    
+    // Default for Ridge - howellsm
+	user->RidgeOn  			= 0;
+	user->Ridge.On 			= 0;
+	user->Ridge.H_lith 		= 3.0;
+	user->Ridge.H_asth   	= 12.5;
+	user->Ridge.L_axis 		= 0.0;
+	user->Ridge.L_double  	= 5.0;
+	user->Ridge.L_notch 	= 5.0;
+	user->Ridge.L_trough  	= 5.0;
+	user->Ridge.L_damp    	= 10.0;
+	user->Ridge.Vx   		= 3.0;
+	user->tauHeal   		= 0.0;
+
+	// Default for Dike -  howellsm
+	user->Dike.On 	      	= 0;
+	user->Dike.indx       	= 0;
+	user->Dike.indzTop    	= 0;
+	user->Dike.indzBot    	= 0;
+	user->Dike.height 		= 0;
+
+	user->Dike.xDike 		= 0.0;
+	user->Dike.M 	 		= 0.0;
+	user->Dike.H 	 		= 0.0;
+	user->Dike.W 	 		= 0.0;
+	user->Dike.Vx 	 		= 0.0;
 
 	PetscFunctionReturn(0);
 }
@@ -537,6 +561,7 @@ PetscErrorCode InputReadFile(JacRes *jr, UserCtx *user, FILE *fp)
 		else if(!strcmp(setup_name, "bands"))      user->msetup = BANDS;
 		else if(!strcmp(setup_name, "domes"))      user->msetup = DOMES;
 		else if(!strcmp(setup_name, "rotation"))   user->msetup = ROTATION;
+		else if(!strcmp(setup_name, "ridge"))      user->msetup = RIDGE; // howellsm
 		else SETERRQ1(PETSC_COMM_SELF, PETSC_ERR_USER,"#ERROR! Incorrect model setup: %s", setup_name);
 	}
 
@@ -604,6 +629,26 @@ PetscErrorCode InputReadFile(JacRes *jr, UserCtx *user, FILE *fp)
 
 	// bezier flag
 	parse_GetInt( fp,    "AddBezier",  &user->AddBezier,  &found );
+	
+	// Ridge varaiables - howellsm
+	parse_GetInt( 	fp, "Ridge.On"			, &user->RidgeOn 		,  &found );
+	parse_GetDouble(fp, "Ridge.H_lith"		, &user->Ridge.H_lith	,  &found );
+	parse_GetDouble(fp, "Ridge.H_asth"		, &user->Ridge.H_asth	,  &found );
+	parse_GetDouble(fp, "Ridge.L_axis"		, &user->Ridge.L_axis 	,  &found );
+	parse_GetDouble(fp, "Ridge.L_double"	, &user->Ridge.L_double	,  &found );
+	parse_GetDouble(fp, "Ridge.L_notch"		, &user->Ridge.L_notch 	,  &found );
+	parse_GetDouble(fp, "Ridge.L_trough"	, &user->Ridge.L_trough	,  &found );
+	parse_GetDouble(fp, "Ridge.L_damp"		, &user->Ridge.L_damp 	,  &found );
+	parse_GetDouble(fp, "Ridge.Vx"			, &user->Ridge.Vx 		,  &found );
+	parse_GetDouble(fp, "tauHeal"			, &user->tauHeal 		,  &found );
+
+	// Dike varaiables - howellsm
+	parse_GetInt(	fp, "Dike.On"	, &user->DikeOn 	, &found );
+	parse_GetInt(	fp, "Dike.indx"	, &user->Dike.indx 	, &found );
+	parse_GetDouble(fp, "Dike.xDike", &user->Dike.xDike	, &found );
+	parse_GetDouble(fp, "Dike.M"   	, &user->Dike.M		, &found );
+	parse_GetDouble(fp, "Dike.H"	, &user->Dike.H		, &found );
+	parse_GetDouble(fp, "Dike.W"	, &user->Dike.W 	, &found );
 
 /*
 	// Marker setting: skip certain volumes that are defined in input file
@@ -675,6 +720,7 @@ PetscErrorCode InputReadCommLine(UserCtx *user )
 		else if(!strcmp(setup_name, "spheres"))    user->msetup = SPHERES;
 		else if(!strcmp(setup_name, "bands"))      user->msetup = BANDS;
 		else if(!strcmp(setup_name, "domes"))      user->msetup = DOMES;
+		else if(!strcmp(setup_name, "ridge"))      user->msetup = RIDGE; // howellsm
 		else SETERRQ1(PETSC_COMM_SELF, PETSC_ERR_USER,"ERROR! Incorrect model setup: %s", setup_name);
 	}
 
@@ -720,6 +766,26 @@ PetscErrorCode InputReadCommLine(UserCtx *user )
 
 	// gravity
 	PetscOptionsGetReal(PETSC_NULL ,"-GravityAngle",   &user->GravityAngle,     PETSC_NULL); // Gravity angle in x-z plane
+
+	// Ridge varaiables - howellsm
+	PetscOptionsGetInt(PETSC_NULL , "-Ridge.On"			, &user->RidgeOn 		, PETSC_NULL);
+	PetscOptionsGetReal(PETSC_NULL, "-Ridge.H_lith"		, &user->Ridge.H_lith	, PETSC_NULL);
+	PetscOptionsGetReal(PETSC_NULL, "-Ridge.H_asth"		, &user->Ridge.H_asth	, PETSC_NULL);
+	PetscOptionsGetReal(PETSC_NULL, "-Ridge.L_axis"		, &user->Ridge.L_axis 	, PETSC_NULL);
+	PetscOptionsGetReal(PETSC_NULL, "-Ridge.L_double"	, &user->Ridge.L_double	, PETSC_NULL);
+	PetscOptionsGetReal(PETSC_NULL, "-Ridge.L_notch"	, &user->Ridge.L_notch 	, PETSC_NULL);
+	PetscOptionsGetReal(PETSC_NULL, "-Ridge.L_trough"	, &user->Ridge.L_trough	, PETSC_NULL);
+	PetscOptionsGetReal(PETSC_NULL, "-Ridge.L_damp"		, &user->Ridge.L_damp 	, PETSC_NULL);
+	PetscOptionsGetReal(PETSC_NULL, "-Ridge.Vx"			, &user->Ridge.Vx 		, PETSC_NULL);
+	PetscOptionsGetReal(PETSC_NULL, "-tauHeal"			, &user->tauHeal 		, PETSC_NULL);
+
+	// Dike varaiables - howellsm
+	PetscOptionsGetInt(PETSC_NULL , "-Dike.On"		, &user->DikeOn 	, PETSC_NULL);
+	PetscOptionsGetInt(PETSC_NULL , "-Dike.indx"	, &user->Dike.indx 	, PETSC_NULL);
+	PetscOptionsGetReal(PETSC_NULL, "-Dike.xDike"  	, &user->Dike.xDike	, PETSC_NULL);
+	PetscOptionsGetReal(PETSC_NULL, "-Dike.M"   	, &user->Dike.M		, PETSC_NULL);
+	PetscOptionsGetReal(PETSC_NULL, "-Dike.H"		, &user->Dike.H		, PETSC_NULL);
+	PetscOptionsGetReal(PETSC_NULL, "-Dike.W"		, &user->Dike.W 	, PETSC_NULL);
 
 	PetscFunctionReturn(0);
 }

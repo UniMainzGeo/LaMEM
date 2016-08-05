@@ -90,6 +90,28 @@ typedef struct
 	PetscInt     coord_advect[10], dir[10];
 } PushParams;
 //---------------------------------------------------------------------------
+// Structure that holds ridge parameters - howellsm
+typedef struct
+{
+	PetscScalar H_lith, H_asth, L_axis, L_double, L_notch, L_trough;
+	PetscScalar L_damp, Vx;
+	PetscInt    On;
+
+	// For finding the lithosphere and enforcing the ridge
+	Vec     	topo;
+	PetscScalar avg_topo;
+} RidgeParams;
+//-----------------------------------------------------------------------------
+// Structure that holds dike parameters - howellsm
+typedef struct
+{
+	PetscScalar M, H, W, xDike;
+	PetscInt    On, indx;
+	PetscInt    indzTop, indzBot, height;
+	PetscScalar Vx;
+
+} DikeParams;
+//-----------------------------------------------------------------------------
 typedef struct
 {
 	PetscInt 	ID; 						  // bezier block id
@@ -136,7 +158,8 @@ typedef enum
 	BANDS,      // shear band formation 3D
 	DOMES,      // salt domes 2D
 	ROTATION,   // rotation benchmark 2D
-	RESTART     // restart of simulation
+	RESTART,    // restart of simulation
+	RIDGE		// Mid ocean ridge - howellsm
 	// ... add more
 } SetupType;
 
@@ -277,6 +300,15 @@ typedef struct
 
 	// topography
 	char             TopoFilename[MAX_PATH_LEN];
+
+	// ridge - howellsm
+	PetscInt         RidgeOn;
+	RidgeParams      Ridge;
+	PetscScalar		 tauHeal;
+
+	// dike - howellsm
+	PetscInt         DikeOn;
+	DikeParams       Dike;
 	
 
 } UserCtx;
