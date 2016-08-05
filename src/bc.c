@@ -1098,11 +1098,20 @@ PetscErrorCode BCApplyBound(BCCtx *bc)
 	PetscInt 	simpleShear;
 	PetscScalar ***bcvx,  ***bcvy,  ***bcvz, ***bcT, *SPCVals;
 
+	// For ridge problem - howellsm
+	PetscScalar Ha, Hl, M, W, H;
+	RidgeParams *rb;
+	DikeParams *Dike;
+
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
 
 	// access context
 	fs = bc->fs;
+
+	// get ridge /dike parameters - howellsm
+	rb   = bc->rb;
+	Dike = bc->Dike;
 
 	// set open boundary flag
 	top_open = bc->top_open;
@@ -1171,8 +1180,15 @@ PetscErrorCode BCApplyBound(BCCtx *bc)
 
 	START_STD_LOOP
 	{
-		if(i == 0)   { bcvx[k][j][i] = vbx; SPCVals[iter] = vbx; }
-		if(i == mnx) { bcvx[k][j][i] = vex; SPCVals[iter] = vex; }
+		// Set dirichlet outflow condition on side boundaries for ridge - howellsm
+		if (bc->RidgeAct == PETSC_TRUE) { 
+			if (i == 0)   { bcvx[k][j][i] = -rb->Vx; SPCVals[iter] = -rb->Vx; }
+			if (i == mnx) { bcvx[k][j][i] = rb->Vx; SPCVals[iter] = rb->Vx; }
+		}
+		else {
+			if (i == 0)   { bcvx[k][j][i] = vbx; SPCVals[iter] = vbx; }
+			if (i == mnx) { bcvx[k][j][i] = vex; SPCVals[iter] = vex; }
+		}
 		iter++;
 	}
 	END_STD_LOOP
