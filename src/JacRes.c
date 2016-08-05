@@ -760,10 +760,18 @@ PetscErrorCode JacResGetResidual(JacRes *jr)
 	PetscScalar eta_creep;
 	PetscScalar depth, rho_lithos;
 
+	// Dike structures - howellsm
+	DikeParams *Dike;
+	BCCtx *bc;
+
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
 
 	fs = jr->fs;
+
+	// access dike - howellsm
+	bc   = jr->bc;
+	Dike = bc->Dike;
 
 //	PetscInt mcz = fs->dsz.tcels - 1;
 
@@ -933,7 +941,23 @@ PetscErrorCode JacResGetResidual(JacRes *jr)
 		// mass - currently T-dependency is deactivated
 //		gc[k][j][i] = -IKdt*(pc - pn) - theta + alpha*(Tc - Tn)/dt;
         
-        gc[k][j][i] = -IKdt*(pc - pn) - theta ;
+		//==================
+		// Diking - howellsm
+		//==================
+
+		// If the dike is on, add M dependent divergience to continuity in correct elements
+		if (Dike->On == 1) {
+			if (i == Dike->indx &&  k > Dike->indzBot - 2 && k <= Dike->indzTop  + 1) {
+				gc[k][j][i] = -IKdt * (pc - pn) - theta + Dike->M * 2 * Dike->Vx / bdx;
+			}
+
+			else {
+				gc[k][j][i] = -IKdt * (pc - pn) - theta;
+			}
+		}
+		else {
+			gc[k][j][i] = -IKdt * (pc - pn) - theta;
+		}
         
 	}
 	END_STD_LOOP
