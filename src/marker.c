@@ -2350,3 +2350,130 @@ PetscErrorCode ADVMarkInitRidge(AdvCtx *actx, UserCtx *user)
 
 	PetscFunctionReturn(0);
 }
+//---------------------------------------------------------------------------
+#undef __FUNCT__
+#define __FUNCT__ "ADVMarkEnforceRidge"
+PetscErrorCode ADVMarkEnforceRidge(AdvCtx *actx, FreeSurf *surf, UserCtx *user)
+{
+	// Enforce rigde structure on markers - howellsm
+	JacRes 		*jr;
+	FDSTAG      *fs;
+	Marker     	*P;
+	RidgeParams *rb;
+	DikeParams  *Dike;
+	PetscInt    imark, L, I, J, topoIndx;
+	PetscInt    nx, ny, sx, sy, sz;
+	PetscScalar ***topo;
+	PetscScalar Hl, Ha, La, Ld, Ln, Lt, Lr;
+	PetscScalar x, y, z, ztopo, Tshift;
+	PetscScalar xmin, xmax, zmax, slope;
+
+	PetscErrorCode ierr;
+	PetscFunctionBegin;
+
+	// access context
+	rb 	 = &user->Ridge;
+	Dike = &user->Dike;
+	jr   = surf->jr;
+	fs   = jr->fs;
+	L    = fs->dsz.rank;
+
+	// get scaling factors
+	Tshift  = actx->jr->scal.Tshift;
+
+	// access topography of the free surface mesh
+	ierr = DMDAVecGetArray(surf->DA_SURF, surf->ltopo,  &topo);  CHKERRQ(ierr);
+
+	// scan all free surface local points
+	ierr = DMDAGetCorners(fs->DA_COR, &sx, &sy, &sz, &nx, &ny, NULL); CHKERRQ(ierr);
+
+	// Get ridge parameters
+	Hl = rb->H_lith;
+	Ha = rb->H_asth;
+	La = rb->L_axis;
+	Ld = rb->L_double;
+	Ln = rb->L_notch;
+	Lt = rb->L_trough;
+	Lr = rb->L_damp;
+
+	// loop over local markers and assign phases
+	for (imark = 0; imark < actx->nummark; imark++)
+	{
+		// Get marker
+		P = &actx->markers[imark];
+
+		// get coordinates
+		x = P->X[0];
+		y = P->X[1];
+		z = P->X[2];
+
+		// Get marker index
+		I = FindPointInCell(fs->dsx.ncoor, 0, nx, x) + sx;
+		J = FindPointInCell(fs->dsy.ncoor, 0, ny, y) + sy;
+
+		// Get topography depth at marker index from free surface
+		ztopo = topo[L][J][I];
+		topoIndx = floor(user->nel_z * ((ztopo - user->z_bot) / user->H ));
+
+		// If the dike is on, update its position with the free surface 
+		if (Dike->On == 1 && I == Dike->indx && topoIndx != Dike->indzTop) {
+			Dike->indzTop = topoIndx;
+			Dike->indzBot = Dike->indzTop - Dike->height;
+		}
+
+		// assign phase in layers
+		if (z > ztopo) {
+			P->phase = 2; // water
+		}
+		else if (z > ztopo - Hl) {
+			P->phase = 1; // lith
+		}
+		else {
+			P->phase = 0; // asth
+		}
+
+		// Assign phases
+		if (z < ztopo - Hl && z >= 0) {
+			if (x >= La) {
+				// sloping east
+				slope = Hl / Ld;
+				xmin  = La + Ln / 2;
+				xmax  = La + (Ln / 2 + Lt);
+				zmax  = (ztopo - Hl) - slope * (x - xmin);
+				if (x >= xmin && x <= xmax && z >= zmax) {
+					P->phase = 1;
+				}
+				// thickened east
+				zmax  = (ztopo - Hl) - slope * Lt;
+				slope = (Hl / Ld) / Lr; // slow thickening rate outside trough
+				zmax  = zmax - slope * (x - xmax);
+				if (x > xmax && z >= zmax) {
+					P->phase = 1;
+				}
+			} // end if east
+			else {
+				// sloping west
+				slope = Hl / Ld;
+				xmin  = La - (Ln / 2 + Lt);
+				xmax  = La - Ln / 2;
+				zmax  = (ztopo - Hl) - slope * (xmax - x);
+				if (x >= xmin && x <= xmax && z >= zmax) {
+					P->phase = 1;
+				}
+				// thickened west
+				zmax  = (ztopo - Hl) - slope * Lt;
+				slope = (Hl / Ld) / Lr; // slow thickening rate outside trough
+				zmax  = zmax - slope * (xmin - x);
+				if (x < xmin && z >= zmax) {
+					P->phase = 1;
+				}
+			} // end if west
+		} // end if in range
+
+		// // assign temperature
+		// P->T = Tshift;
+	}
+
+	PetscFunctionReturn(0);
+}
+

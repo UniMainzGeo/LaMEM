@@ -99,6 +99,11 @@ PetscErrorCode ADVMarkInitRidge        (AdvCtx *actx, UserCtx *user); // howells
 
 //---------------------------------------------------------------------------
 
+// Enforce ridge structure on markers - howellsm
+PetscErrorCode ADVMarkEnforceRidge  (AdvCtx *actx, FreeSurf *surf, UserCtx *user);
+
+//---------------------------------------------------------------------------
+
 // service functions
 
 PetscErrorCode ADVMarkSetTempFromFile  (AdvCtx *actx, UserCtx *user);

@@ -306,6 +306,12 @@ PetscErrorCode LaMEMLib(ModParam *IOparam)
 		// initialize temperature
 		ierr = JacResInitTemp(&jr); CHKERRQ(ierr);
 
+		// Handle ridge setup and healing if ridge is on - howellsm
+		if (user.RidgeOn) {
+			// Enforce lithosphere structure for ridge
+			ierr = ADVMarkEnforceRidge(&actx, &surf, &user); CHKERRQ(ierr);
+
+		}
 
 		if(user.SkipStokesSolver != PETSC_TRUE)
 		{
