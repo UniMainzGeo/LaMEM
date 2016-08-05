@@ -191,6 +191,14 @@ typedef struct
 	// no-slip boundary condition mask
 	PetscInt  noslip[6];
 
+	// Dirichlet ridge outflow BC - howellsm
+	PetscBool	  RidgeAct; // flag for activating ridge
+	RidgeParams   *rb;
+
+	// Dike variables for ridge BCs - howellsm
+	PetscBool	  DikeAct; // flag for activating dike
+	DikeParams   *Dike;
+
 } BCCtx;
 //---------------------------------------------------------------------------
 
@@ -257,5 +265,16 @@ PetscErrorCode BCApplyDBox(BCCtx *bc);
 
 // simple shear BC
 PetscErrorCode 	BCApplySimpleShearVel(BCCtx *bc);
+
+//---------------------------------------------------------------------------
+
+// initialize ridge boundary conditions context - howellsm
+PetscErrorCode BCSetRidge(BCCtx *bc, UserCtx *user);
+
+// initialize dike boundary conditions context - howellsm
+PetscErrorCode BCSetDike(BCCtx *bc, UserCtx *user);
+
+//---------------------------------------------------------------------------
+
 
 #endif

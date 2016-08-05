@@ -1336,6 +1336,59 @@ PetscErrorCode BCSetPush(BCCtx *bc, UserCtx *user)
 }
 //---------------------------------------------------------------------------
 #undef __FUNCT__
+#define __FUNCT__ "BCSetRidge"
+PetscErrorCode BCSetRidge(BCCtx *bc, UserCtx *user)
+{
+	// Set up ridge case - howellsm
+	PetscFunctionBegin;
+
+	// Set flags & set up ctx
+	if (user->RidgeOn)
+	{
+		bc->RidgeAct 	= PETSC_TRUE;
+		bc->rb    		= &user->Ridge;
+	}
+
+	PetscFunctionReturn(0);
+}
+//---------------------------------------------------------------------------
+#undef __FUNCT__
+#define __FUNCT__ "BCSetDike"
+PetscErrorCode BCSetDike(BCCtx *bc, UserCtx *user)
+{
+	// Set up dike - howellsm
+	DikeParams  *Dike;
+	RidgeParams *Ridge;
+
+	PetscFunctionBegin;
+
+	// set up ctx
+	bc->Dike = &user->Dike;
+	Dike     = &user->Dike;
+
+	// set flags
+	if (user->DikeOn)
+	{
+		bc->DikeAct = PETSC_TRUE;
+		Dike->On    = 1;	
+	}
+
+	Dike->W = user->W;
+	Dike->H = user->H;
+
+	// Get ridge context
+	Ridge = &user->Ridge;
+
+	// Locate dike
+	Dike->indx 	  = floor(user->nel_x * ((Dike->xDike - user->x_left) / user->W ));
+	Dike->indzTop = floor(user->nel_z * ((Ridge->H_asth + Ridge->H_lith - user->z_bot) / user->H ));
+	Dike->indzBot = floor(user->nel_z * ((Ridge->H_asth - user->z_bot) / user->H ));
+	Dike->height  = Dike->indzTop - Dike->indzBot;
+
+	PetscFunctionReturn(0);
+}
+//---------------------------------------------------------------------------
+#undef __FUNCT__
 #define __FUNCT__ "BCCompPush"
 PetscErrorCode BCCompPush(BCCtx *bc,PetscInt ip)
 {

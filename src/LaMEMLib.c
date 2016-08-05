@@ -208,6 +208,12 @@ PetscErrorCode LaMEMLib(ModParam *IOparam)
 	// initialize markers
 	ierr = ADVMarkInit(&actx, &user); CHKERRQ(ierr);
 
+	// set ridge parameters - howellsm
+	ierr = BCSetRidge(&bc, &user); CHKERRQ(ierr);
+
+	// set dike parameters - howellsm
+	ierr = BCSetDike(&bc, &user); CHKERRQ(ierr);
+
 	// change marker phase when crossing free surface
 	ierr = ADVMarkCrossFreeSurf(&actx, &surf, 0.05); CHKERRQ(ierr);
 
