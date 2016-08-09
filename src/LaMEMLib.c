@@ -306,15 +306,6 @@ PetscErrorCode LaMEMLib(ModParam *IOparam)
 		// initialize temperature
 		ierr = JacResInitTemp(&jr); CHKERRQ(ierr);
 
-		// Handle ridge setup and healing if ridge is on - howellsm
-		if (user.RidgeOn) {
-			// Enforce lithosphere structure for ridge
-			ierr = ADVMarkEnforceRidge(&actx, &surf, &user); CHKERRQ(ierr);
-			
-			// Heal plastic strain - howellsm
-			ierr = MarkPlasticHealing(&actx, &user, &jr); CHKERRQ(ierr);
-		}
-
 		if(user.SkipStokesSolver != PETSC_TRUE)
 		{
 			PetscTime(&cputime_start_nonlinear);
@@ -372,6 +363,15 @@ PetscErrorCode LaMEMLib(ModParam *IOparam)
 
 		// advect markers
 		ierr = ADVAdvect(&actx); CHKERRQ(ierr);
+
+		// Handle ridge setup and healing if ridge is on - howellsm
+		if (user.RidgeOn) {
+			// Enforce lithosphere structure for ridge
+			ierr = ADVMarkEnforceRidge(&actx, &surf, &user); CHKERRQ(ierr);
+			
+			// Heal plastic strain - howellsm
+			ierr = MarkPlasticHealing(&actx, &user, &jr); CHKERRQ(ierr);
+		}
 
 		// apply background strain-rate "DWINDLAR" BC (Bob Shaw "Ship of Strangers")
 		ierr = BCStretchGrid(&bc); CHKERRQ(ierr);

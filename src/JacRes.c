@@ -763,6 +763,7 @@ PetscErrorCode JacResGetResidual(JacRes *jr)
 	// Dike structures - howellsm
 	DikeParams *Dike;
 	BCCtx *bc;
+	PetscScalar dXX, dYY, dZZ;
 
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
@@ -855,12 +856,28 @@ PetscErrorCode JacResGetResidual(JacRes *jr)
 		YZ3 = dyz[k][j+1][i];
 		YZ4 = dyz[k+1][j+1][i];
 
-		// compute second invariant
-		J2Inv = 0.5*(XX*XX + YY*YY + ZZ*ZZ) +
-		0.25*(XY1*XY1 + XY2*XY2 + XY3*XY3 + XY4*XY4) +
-		0.25*(XZ1*XZ1 + XZ2*XZ2 + XZ3*XZ3 + XZ4*XZ4) +
-		0.25*(YZ1*YZ1 + YZ2*YZ2 + YZ3*YZ3 + YZ4*YZ4);
+		// // If inside the dike, remove the deviatoric strain rate contribution of
+		// // opening, assuming all divergence in the x-direction - howellsm
+		// if (Dike->On == 1 && ((i == Dike->indx) && (k > Dike->indzBot - 2 && k <= Dike->indzTop  + 1))) {
+		// 	// Calculate corrections
+		// 	bdx = SIZE_NODE(i, sx, fs->dsx);
+		// 	dXX = XX - (2.0 / 3.0) * (2.0 * Dike->Vx * Dike->M / bdx);
+		// 	dYY = YY + (1.0 / 3.0) * (2.0 * Dike->Vx * Dike->M / bdx);
+		// 	dZZ = ZZ + (1.0 / 3.0) * (2.0 * Dike->Vx * Dike->M / bdx);
 
+		// 	// compute second invariant
+		// 	J2Inv = 0.5*(dXX*dXX + dYY*dYY + dZZ*dZZ) +
+		// 	0.25*(XY1*XY1 + XY2*XY2 + XY3*XY3 + XY4*XY4) +
+		// 	0.25*(XZ1*XZ1 + XZ2*XZ2 + XZ3*XZ3 + XZ4*XZ4) +
+		// 	0.25*(YZ1*YZ1 + YZ2*YZ2 + YZ3*YZ3 + YZ4*YZ4);
+		// }
+		// else {
+			// compute second invariant
+			J2Inv = 0.5*(XX*XX + YY*YY + ZZ*ZZ) +
+			0.25*(XY1*XY1 + XY2*XY2 + XY3*XY3 + XY4*XY4) +
+			0.25*(XZ1*XZ1 + XZ2*XZ2 + XZ3*XZ3 + XZ4*XZ4) +
+			0.25*(YZ1*YZ1 + YZ2*YZ2 + YZ3*YZ3 + YZ4*YZ4);
+		// }
 
 		// store square root of second invariant
 		svDev->DII = sqrt(J2Inv);
@@ -893,8 +910,6 @@ PetscErrorCode JacResGetResidual(JacRes *jr)
 		sxx = svCell->sxx - pc;
 		syy = svCell->syy - pc;
 		szz = svCell->szz - pc;
-
-
 
 		// evaluate volumetric constitutive equations
 		ierr = VolConstEq(svBulk, numPhases, phases, svCell->phRat, matLim, depth, dt, pc-pShift , Tc); CHKERRQ(ierr);
