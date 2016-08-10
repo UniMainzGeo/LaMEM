@@ -95,7 +95,7 @@ typedef struct
 {
 	PetscScalar H_lith, H_asth, L_axis, L_double, L_notch, L_trough;
 	PetscScalar L_damp, Vx;
-	PetscInt    On;
+	PetscInt    On, Enforce, Heal;
 
 	// For finding the lithosphere and enforcing the ridge
 	Vec     	topo;

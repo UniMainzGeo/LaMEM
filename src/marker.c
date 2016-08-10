@@ -2395,7 +2395,7 @@ PetscErrorCode ADVMarkEnforceRidge(AdvCtx *actx, FreeSurf *surf, UserCtx *user)
 	Ln = rb->L_notch;
 	Lt = rb->L_trough;
 	Lr = rb->L_damp;
-
+	
 	// loop over local markers and assign phases
 	for (imark = 0; imark < actx->nummark; imark++)
 	{
@@ -2520,7 +2520,7 @@ PetscErrorCode MarkPlasticHealing(AdvCtx *actx, UserCtx *user, JacRes *jr)
 		K = FindPointInCell(fs->dsz.ncoor, 0, nz, z) + sz;
 
 		// Dike material gets healed every timestep
-		if (Dike->On == 1 && (I >= Dike->indx && I <= Dike->indx + 1) && (K > Dike->indzBot - 2 && K <= Dike->indzTop  + 1)) {
+		if (Dike->On == 1 && (I >= Dike->indx -1 && I <= Dike->indx + 1) && (K > Dike->indzBot - 2 && K <= Dike->indzTop  + 1)) {
 			P->APS  = 0;
 		}
 		// Otherwise, time dependant

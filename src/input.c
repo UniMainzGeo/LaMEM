@@ -477,6 +477,8 @@ PetscErrorCode InputSetDefaultValues(JacRes *jr, UserCtx *user)
     
     // Default for Ridge - howellsm
 	user->RidgeOn  			= 0;
+	user->Ridge.Enforce  	= 0;
+	user->Ridge.Heal  		= 0;
 	user->Ridge.On 			= 0;
 	user->Ridge.H_lith 		= 3.0;
 	user->Ridge.H_asth   	= 12.5;
@@ -632,6 +634,9 @@ PetscErrorCode InputReadFile(JacRes *jr, UserCtx *user, FILE *fp)
 	
 	// Ridge varaiables - howellsm
 	parse_GetInt( 	fp, "Ridge.On"			, &user->RidgeOn 		,  &found );
+	parse_GetInt( 	fp, "Ridge.On"			, &user->Ridge.On 		,  &found );
+	parse_GetInt( 	fp, "Ridge.Enforce"		, &user->Ridge.Enforce	,  &found );
+	parse_GetInt( 	fp, "Ridge.Heal"		, &user->Ridge.Heal		,  &found );
 	parse_GetDouble(fp, "Ridge.H_lith"		, &user->Ridge.H_lith	,  &found );
 	parse_GetDouble(fp, "Ridge.H_asth"		, &user->Ridge.H_asth	,  &found );
 	parse_GetDouble(fp, "Ridge.L_axis"		, &user->Ridge.L_axis 	,  &found );
@@ -769,6 +774,9 @@ PetscErrorCode InputReadCommLine(UserCtx *user )
 
 	// Ridge varaiables - howellsm
 	PetscOptionsGetInt(PETSC_NULL , "-Ridge.On"			, &user->RidgeOn 		, PETSC_NULL);
+	PetscOptionsGetInt(PETSC_NULL , "-Ridge.On"			, &user->Ridge.On 		, PETSC_NULL);
+	PetscOptionsGetInt(PETSC_NULL , "-Ridge.Enforce"	, &user->Ridge.Enforce	, PETSC_NULL);
+	PetscOptionsGetInt(PETSC_NULL , "-Ridge.Heal"		, &user->Ridge.Heal		, PETSC_NULL);
 	PetscOptionsGetReal(PETSC_NULL, "-Ridge.H_lith"		, &user->Ridge.H_lith	, PETSC_NULL);
 	PetscOptionsGetReal(PETSC_NULL, "-Ridge.H_asth"		, &user->Ridge.H_asth	, PETSC_NULL);
 	PetscOptionsGetReal(PETSC_NULL, "-Ridge.L_axis"		, &user->Ridge.L_axis 	, PETSC_NULL);

@@ -366,11 +366,15 @@ PetscErrorCode LaMEMLib(ModParam *IOparam)
 
 		// Handle ridge setup and healing if ridge is on - howellsm
 		if (user.RidgeOn) {
-			// Enforce lithosphere structure for ridge
-			ierr = ADVMarkEnforceRidge(&actx, &surf, &user); CHKERRQ(ierr);
-			
-			// Heal plastic strain - howellsm
-			ierr = MarkPlasticHealing(&actx, &user, &jr); CHKERRQ(ierr);
+			if (user.Ridge.Enforce ){
+				// Enforce lithosphere structure for ridge
+				ierr = ADVMarkEnforceRidge(&actx, &surf, &user); CHKERRQ(ierr);
+			}
+
+			if (user.Ridge.Heal ){
+				// Heal plastic strain - howellsm
+				ierr = MarkPlasticHealing(&actx, &user, &jr); CHKERRQ(ierr);
+			}
 		}
 
 		// apply background strain-rate "DWINDLAR" BC (Bob Shaw "Ship of Strangers")

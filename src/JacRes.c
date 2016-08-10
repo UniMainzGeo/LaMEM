@@ -877,9 +877,8 @@ PetscErrorCode JacResGetResidual(JacRes *jr)
 			0.25*(XY1*XY1 + XY2*XY2 + XY3*XY3 + XY4*XY4) +
 			0.25*(XZ1*XZ1 + XZ2*XZ2 + XZ3*XZ3 + XZ4*XZ4) +
 			0.25*(YZ1*YZ1 + YZ2*YZ2 + YZ3*YZ3 + YZ4*YZ4);
-		// }
-
 		// store square root of second invariant
+			
 		svDev->DII = sqrt(J2Inv);
 
 		//=======================
