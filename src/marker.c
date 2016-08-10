@@ -781,14 +781,14 @@ PetscErrorCode ADVMarkInitLayer(AdvCtx *actx, UserCtx *user)
 	PetscPrintf(PETSC_COMM_WORLD,"  LAYERED SETUP \n");
 
 	// number of elements on finest resolution
-	nel_x = user->nel_x;
-	nel_y = user->nel_y;
-	nel_z = user->nel_z;
+	//nel_x = user->nel_x;
+	//nel_y = user->nel_y;
+	//nel_z = user->nel_z;
 
 	// spacing
-	dx = user->W/((PetscScalar)nel_x);
-	dy = user->L/((PetscScalar)nel_y);
-	dz = user->H/((PetscScalar)nel_z);
+	//dx = user->W/((PetscScalar)nel_x);
+	//dy = user->L/((PetscScalar)nel_y);
+	//dz = user->H/((PetscScalar)nel_z);
 
 	blz = 0.5*(PetscScalar)nel_z*dz;
 	user->z_bot = 2000; //<----------------------- change !!!

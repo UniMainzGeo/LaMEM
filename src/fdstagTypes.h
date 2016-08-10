@@ -340,10 +340,6 @@ typedef struct
 	// Seismic station coordinates (in meters)
 	Station Station;
 
-
-
-
-
 } UserCtx;
 //-----------------------------------------------------------------------------
 

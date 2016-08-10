@@ -528,6 +528,8 @@ PetscErrorCode JacResGetEffStrainRate(JacRes *jr)
 
 		// compute & store effective deviatoric strain rates
 
+		//PetscPrintf(PETSC_COMM_WORLD, "    [k,j,i]  = [%i,%i,%i]  hxx  = %12.12e hyy =  %12.12e hzz =  %12.12e \n", k,j,i,svCell->hxx, svCell->hyy, svCell->hzz);
+
 		dxx[k][j][i] = xx + svCell->hxx*svDev->I2Gdt;
 		dyy[k][j][i] = yy + svCell->hyy*svDev->I2Gdt;
 		dzz[k][j][i] = zz + svCell->hzz*svDev->I2Gdt;
@@ -1329,9 +1331,14 @@ PetscErrorCode JacResGetMomentumResidualAndPressure(JacRes *jr, UserCtx *user)
 	PetscScalar YZ, YZ1, YZ2, YZ3, YZ4;
 	PetscScalar bdx, fdx, bdy, fdy, bdz, fdz;
 	PetscScalar gx, gy, gz, tx, ty, tz, sxx, syy, szz, sxy, sxz, syz;
-	PetscScalar J2Inv, theta, rho, Tc, pc, pShift, dt, fssa, *grav, time;
-	PetscScalar ***fx,  ***fy,  ***fz, ***vx,  ***vy,  ***vz;
-	PetscScalar ***dxx, ***dyy, ***dzz, ***dxy, ***dxz, ***dyz, ***T, ***lp, ***gp;
+	//PetscScalar J2Inv, theta, rho, Tc, pc, pShift, dt, fssa, *grav, time;
+	//PetscScalar ***fx,  ***fy,  ***fz, ***vx,  ***vy,  ***vz;
+	PetscScalar ***lp, ***gp;
+
+	PetscScalar J2Inv, theta, rho, Tc, pc, pShift, dt, fssa, *grav,time;
+	PetscScalar ***fx,  ***fy,  ***fz, ***vx,  ***vy,  ***vz, ***gc;
+	PetscScalar ***dxx, ***dyy, ***dzz, ***dxy, ***dxz, ***dyz, ***p, ***T; //, ***up;
+
 	PetscScalar eta_creep;
 	PetscScalar depth;
 
@@ -1341,6 +1348,9 @@ PetscErrorCode JacResGetMomentumResidualAndPressure(JacRes *jr, UserCtx *user)
 	PetscFunctionBegin;
 
 	fs = jr->fs;
+
+
+//	PetscInt mcz = fs->dsz.tcels - 1;
 
 	// initialize maximum node index in all directions
 	mx = fs->dsx.tnods - 1;
@@ -1364,6 +1374,11 @@ PetscErrorCode JacResGetMomentumResidualAndPressure(JacRes *jr, UserCtx *user)
 	// access work vectors
 	ierr = DMDAVecGetArray(fs->DA_CEN, jr->lp,   &lp);   CHKERRQ(ierr);
 	ierr = DMDAVecGetArray(fs->DA_CEN, jr->gp,   &gp);   CHKERRQ(ierr);
+	ierr = DMDAVecGetArray(fs->DA_CEN, jr->gc,   &gc);  CHKERRQ(ierr);
+
+	ierr = DMDAVecGetArray(fs->DA_CEN, jr->lp,   &p);   CHKERRQ(ierr);
+	//ierr = DMDAVecGetArray(fs->DA_CEN, jr->gp,   &up);  CHKERRQ(ierr);
+
 	ierr = DMDAVecGetArray(fs->DA_CEN, jr->lT,   &T);   CHKERRQ(ierr);
 	ierr = DMDAVecGetArray(fs->DA_CEN, jr->ldxx, &dxx); CHKERRQ(ierr);
 	ierr = DMDAVecGetArray(fs->DA_CEN, jr->ldyy, &dyy); CHKERRQ(ierr);
@@ -1388,6 +1403,11 @@ PetscErrorCode JacResGetMomentumResidualAndPressure(JacRes *jr, UserCtx *user)
 	GET_CELL_RANGE(nx, sx, fs->dsx)
 	GET_CELL_RANGE(ny, sy, fs->dsy)
 	GET_CELL_RANGE(nz, sz, fs->dsz)
+
+	// source point position (to improve getting from input file)
+	i_src = nx/2;
+	j_src = ny/2;
+	k_src = nz/2;
 
 	START_STD_LOOP
 	{
@@ -1438,8 +1458,13 @@ PetscErrorCode JacResGetMomentumResidualAndPressure(JacRes *jr, UserCtx *user)
 		// CONSTITUTIVE EQUATIONS
 		//=======================
 
+
 		// access current pressure
 		pc = lp[k][j][i];
+
+// access current pressure
+pc = p[k][j][i];
+
 
 		// access current temperature
 		Tc = T[k][j][i];
@@ -1466,7 +1491,10 @@ PetscErrorCode JacResGetMomentumResidualAndPressure(JacRes *jr, UserCtx *user)
 		//-----------
 
 		// evaluate deviatoric constitutive equations
+		// !! look with the correct pressure here
 		ierr = DevConstEq(svDev, &eta_creep, numPhases, phases, svCell->phRat, matLim, dt, pc-pShift, Tc); CHKERRQ(ierr);
+
+
 
 		// store creep viscosity
 		svCell->eta_creep = eta_creep;
@@ -1477,12 +1505,36 @@ PetscErrorCode JacResGetMomentumResidualAndPressure(JacRes *jr, UserCtx *user)
 		ierr = GetStressCell(svCell, matLim, XX, YY, ZZ); CHKERRQ(ierr);
 
 
-		// compute total Cauchy stresses
+
+// I moved that here to compute the pressure
+// compute depth below the free surface
+depth = jr->avg_topo - COORD_CELL(k, sz, fs->dsz);
+
+if(depth < 0.0) depth = 0.0;
+
+// evaluate volumetric constitutive equations
+ierr = VolConstEq(svBulk, numPhases, phases, svCell->phRat, matLim, depth, dt, pc-pShift , Tc); CHKERRQ(ierr);
+///////////////////////////////////
+
+
+//------------------------------------------
+// get pressure
+//------------------------------------------
+p[k][j][i] -= svBulk->theta/svBulk->IKdt;
+pc = p[k][j][i];
+//PetscPrintf(PETSC_COMM_WORLD, "    p[%i,%i,%i]  = %12.12e \n", i,j,k, p[k][j][i]);
+//------------------------------------------
+
+
+
+//		// compute total Cauchy stresses
 		sxx = svCell->sxx - pc;
 		syy = svCell->syy - pc;
 		szz = svCell->szz - pc;
+		//PetscPrintf(PETSC_COMM_WORLD, "    sxx[%i,%i,%i]  = %12.12e \n", i,j,k, sxx);
 
 		//PetscPrintf(PETSC_COMM_WORLD, "    sxx[%i,%i,%i]  = %12.12e \n", i,j,k, sxx);
+
 
 		// Add seismic source in the stress field /////////////////////////
 		if (jr->SeismicSource == PETSC_TRUE && jr->SourceParams.source_type!=MOMENT )
@@ -1495,40 +1547,55 @@ PetscErrorCode JacResGetMomentumResidualAndPressure(JacRes *jr, UserCtx *user)
 			PetscScalar alfa;
 			PetscScalar amplitude;
 
-			t0=0.1;
+			t0=1.0;
 			alfa=40.0;
 			amplitude=10.0;
 
+			time	  =  JacResGetTime(jr);
+
 			if (jr->SourceParams.source_type == POINT)
 			{
-				if (k==nz/2 && j==ny/2 && i==nx/2)
+				if (k==k_src && j==j_src && i==i_src)
 				{
-					// access residual context variables
-					time	  =  JacResGetTime(jr);
-
-					sxx = sxx+amplitude*exp(-alfa*((time-t0)*(time-t0)));
-					szz = szz-amplitude*exp(-alfa*((time-t0)*(time-t0)));
+					sxx = 0*sxx+amplitude*exp(-alfa*((time-t0)*(time-t0)));
+					szz = 0*szz-amplitude*exp(-alfa*((time-t0)*(time-t0)));
 				}
 			}
 			else if (jr->SourceParams.source_type == PLANE)
 			{
-				if (k==0)
+				if (k==1)
 				{
-					time	  =  JacResGetTime(jr);
-					szz = 0*szz + amplitude*exp(-alfa*((time-t0)*(time-t0)));
-					sxx = 0*sxx -  amplitude/2.0*exp(-alfa*((time-t0)*(time-t0)));
-					syy = 0*syy -  amplitude/2.0*exp(-alfa*((time-t0)*(time-t0)));
-				}
-				else if (k==nz-1)
-				{
-				//	time	  =  JacResGetTime(jr);
-				//	szz = szz - 10*exp(-40*(time*time));
+					//szz = 0*szz + amplitude*exp(-alfa*((time-t0)*(time-t0)));
+					//sxx = 0*sxx -  amplitude/2.0*exp(-alfa*((time-t0)*(time-t0)));
+					//syy = 0*syy -  amplitude/2.0*exp(-alfa*((time-t0)*(time-t0)));
+
+					szz = 		amplitude;
+					sxx =	- 	amplitude/2.0;
+					syy = 	-  	amplitude/2.0;
 				}
 			}
 		}
 		///////////////////////////////////////////////
 
 		// USE REAL DENSITY HERE !!!
+
+		///////////////////////////////////
+
+		//PetscPrintf(PETSC_COMM_WORLD, "    szz after apply the source[%i,%i,%i] in time=%12.12e: %12.12e \n", i,j,k,time, szz);
+
+
+
+// I moved that before to compute the pressure
+//		// compute depth below the free surface
+//		depth = jr->avg_topo - COORD_CELL(k, sz, fs->dsz);
+//
+//		if(depth < 0.0) depth = 0.0;
+//
+//		// evaluate volumetric constitutive equations
+//		ierr = VolConstEq(svBulk, numPhases, phases, svCell->phRat, matLim, depth, dt, pc-pShift , Tc); CHKERRQ(ierr);
+		////////////////////////////////////////////////
+
+
 
 		// access
 		theta = svBulk->theta; // volumetric strain rate
@@ -1554,6 +1621,8 @@ PetscErrorCode JacResGetMomentumResidualAndPressure(JacRes *jr, UserCtx *user)
 		//=========
 		// RESIDUAL
 		//=========
+
+		//PetscPrintf(PETSC_COMM_WORLD, "    szz used for the ressidual [%i,%i,%i]  = %12.12e \n", i,j,k, szz);
 
 		// get mesh steps for the backward and forward derivatives
 		bdx = SIZE_NODE(i, sx, fs->dsx);   fdx = SIZE_NODE(i+1, sx, fs->dsx);
@@ -1620,7 +1689,16 @@ PetscErrorCode JacResGetMomentumResidualAndPressure(JacRes *jr, UserCtx *user)
 	ierr = DMDAVecRestoreArray(fs->DA_CEN, jr->gp, &gp);   CHKERRQ(ierr);
 
 
+
 	// PRESSURE BC (IF ANY) SHOULD BE APPLIED HERE!
+
+	//up[k][j][i] = theta;
+	//p[k][j][i] = pc;
+
+	//PetscPrintf(PETSC_COMM_WORLD, "    [k,j,i]  = [%i,%i,%i]  theta  = %12.12e  \n", k,j,i,theta);
+
+		//up[k][j][i] = theta/IKdt;
+
 
 	GLOBAL_TO_LOCAL(fs->DA_CEN, jr->gp, jr->lp);
 
@@ -1831,6 +1909,9 @@ PetscErrorCode JacResGetMomentumResidualAndPressure(JacRes *jr, UserCtx *user)
 		bdz = SIZE_CELL(k-1, sz, fs->dsz);   fdz = SIZE_CELL(k, sz, fs->dsz);
 
 		// momentum
+
+		//PetscPrintf(PETSC_COMM_WORLD, "    sxz used for the ressidual [%i,%i,%i]  = %12.12e \n", i,j,k, sxz);
+
 		fx[k-1][j][i] -= sxz/bdz;   fx[k][j][i] += sxz/fdz;
 		fz[k][j][i-1] -= sxz/bdx;   fz[k][j][i] += sxz/fdx;
 
@@ -1937,7 +2018,10 @@ PetscErrorCode JacResGetMomentumResidualAndPressure(JacRes *jr, UserCtx *user)
 		bdy = SIZE_CELL(j-1, sy, fs->dsy);   fdy = SIZE_CELL(j, sy, fs->dsy);
 		bdz = SIZE_CELL(k-1, sz, fs->dsz);   fdz = SIZE_CELL(k, sz, fs->dsz);
 
-		// momentum
+		// update momentum residuals
+
+		//PetscPrintf(PETSC_COMM_WORLD, "    syz used for the ressidual [%i,%i,%i]  = %12.12e \n", i,j,k, syz);
+
 		fy[k-1][j][i] -= syz/bdz;   fy[k][j][i] += syz/fdz;
 		fz[k][j-1][i] -= syz/bdy;   fz[k][j][i] += syz/fdy;
 
@@ -1947,8 +2031,19 @@ PetscErrorCode JacResGetMomentumResidualAndPressure(JacRes *jr, UserCtx *user)
 	}
 	END_STD_LOOP
 
+
+	//PetscPrintf(PETSC_COMM_WORLD, "    p[%i,%i,%i]  = %12.12e \n", 2,2,1, p[1][2][2]);
+
 	// restore vectors
+
 	ierr = DMDAVecRestoreArray(fs->DA_CEN, jr->lp,   &lp);  CHKERRQ(ierr);
+
+	ierr = DMDAVecRestoreArray(fs->DA_CEN, jr->gc,   &gc);  CHKERRQ(ierr);
+
+	ierr = DMDAVecRestoreArray(fs->DA_CEN, jr->lp,   &p);  CHKERRQ(ierr);
+	//ierr = DMDAVecRestoreArray(fs->DA_CEN, jr->gp,   &up);   CHKERRQ(ierr);
+
+
 	ierr = DMDAVecRestoreArray(fs->DA_CEN, jr->lT,   &T);   CHKERRQ(ierr);
 	ierr = DMDAVecRestoreArray(fs->DA_CEN, jr->ldxx, &dxx); CHKERRQ(ierr);
 	ierr = DMDAVecRestoreArray(fs->DA_CEN, jr->ldyy, &dyy); CHKERRQ(ierr);
@@ -1963,10 +2058,17 @@ PetscErrorCode JacResGetMomentumResidualAndPressure(JacRes *jr, UserCtx *user)
 	ierr = DMDAVecRestoreArray(fs->DA_Y,   jr->lvy,  &vy);  CHKERRQ(ierr);
 	ierr = DMDAVecRestoreArray(fs->DA_Z,   jr->lvz,  &vz);  CHKERRQ(ierr);
 
+
+//GLOBAL_TO_LOCAL(fs->DA_CEN, jr->gp, jr->lp)
+
 	// assemble global residuals from local contributions
 	LOCAL_TO_GLOBAL(fs->DA_X, jr->lfx, jr->gfx)
 	LOCAL_TO_GLOBAL(fs->DA_Y, jr->lfy, jr->gfy)
 	LOCAL_TO_GLOBAL(fs->DA_Z, jr->lfz, jr->gfz)
+
+
+LOCAL_TO_GLOBAL(fs->DA_CEN, jr->lp, jr->gp)
+
 
 	PetscFunctionReturn(0);
 }

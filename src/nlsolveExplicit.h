@@ -9,6 +9,7 @@
 #define __nlsolveExplicit_h__
 
 PetscErrorCode GetVelocities(JacRes *jr, UserCtx *user);
+//PetscErrorCode GetVelocities(JacRes *jr);
 //PetscErrorCode GetPressure2(JacRes *jr);
 //PetscErrorCode GetStress(JacRes *jr);
 //PetscErrorCode JacResGetMomentumResidual2(JacRes *jr);
@@ -18,7 +19,6 @@ PetscErrorCode FormMomentumResidualPressureAndVelocities(JacRes *jr, UserCtx *us
 PetscErrorCode CheckTimeStep(JacRes *jr, UserCtx *user);
 PetscErrorCode ChangeTimeStep(JacRes *jr, UserCtx *user);
 PetscErrorCode CheckElasticProperties(JacRes *jr, UserCtx *user);
-PetscErrorCode ShowValues(JacRes *jr, UserCtx *user, PetscInt n);
 PetscErrorCode SaveVelocitiesForSeismicStation(JacRes *jr, UserCtx *user);
 //PetscErrorCode PutSeismicSource(JacRes *jr, AdvCtx *actx, UserCtx *user);
 PetscErrorCode PrintStress(JacRes *jr);
@@ -27,4 +27,17 @@ PetscErrorCode UpdateHistoryFieldsAndGetAxialStressStrain(JacRes *jr, PetscScala
 PetscErrorCode GetCellCoordinatesSource(JacRes *jr);
 PetscErrorCode GetStressFromSource(JacRes *jr, UserCtx *User, PetscInt i, PetscInt j, PetscInt k, PetscScalar *sxx, PetscScalar *syy, PetscScalar *szz);
 PetscScalar GetBoundaryDamping(UserCtx *user, PetscInt i, PetscInt j, PetscInt k);
+//PetscErrorCode FormMomentumResidualPressureAndVelocities(JacRes *jr);
+//PetscErrorCode GetPressure(JacRes *jr);
+PetscErrorCode CheckTimeStep(JacRes *jr, UserCtx *user);
+PetscErrorCode CheckElasticProperties(JacRes *jr, UserCtx *user);
+//PetscErrorCode ShowValues(JacRes *jr, PetscInt n); //, UserCtx *user);
+PetscErrorCode ShowValues(JacRes *jr, UserCtx *user, PetscInt n);
+
+PetscErrorCode SaveVelocitiesForSeismicStation(JacRes *jr, UserCtx *user);
+//PetscErrorCode PutSeismicSource(JacRes *jr, AdvCtx *actx, UserCtx *user);
+PetscErrorCode PrintStress(JacRes *jr);
+PetscErrorCode UpdateHistoryFields(JacRes *jr);
+PetscErrorCode ModifyStress(JacRes *jr);
+
 #endif

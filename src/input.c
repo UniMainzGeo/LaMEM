@@ -538,6 +538,11 @@ PetscErrorCode InputReadFile(JacRes *jr, UserCtx *user, FILE *fp)
 		user->SeismicSource=PETSC_FALSE;
 	}
 
+	// Seismic station coordinates
+	parse_GetDouble( fp, "x_rec", &user->Station.x, &found );
+	parse_GetDouble( fp, "y_rec", &user->Station.y, &found );
+	parse_GetDouble( fp, "z_rec", &user->Station.z, &found );
+
 
 	// Seismic station coordinates
 	parse_GetDouble( fp, "x_rec", &user->Station.x, &found );

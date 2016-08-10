@@ -107,13 +107,9 @@ PetscErrorCode LaMEMLib(ModParam *IOparam)
 	KSPConvergedReason reason;
 	PetscBool          stop = PETSC_FALSE;
 
-
-
 	char           *fname;
 	FILE *fseism;
 	PetscScalar axial_stress, axial_strain;
-
-
 
 	//=========================================================================
 
@@ -158,6 +154,10 @@ PetscErrorCode LaMEMLib(ModParam *IOparam)
 	// initialize variables
 	ierr = FDSTAGInitCode(&jr, &user, IOparam); CHKERRQ(ierr);
 
+	// check time step if ExplicitSolver
+	if (user.ExplicitSolver == PETSC_TRUE)		{
+		ierr = CheckTimeStep(&jr, &user); CHKERRQ(ierr);
+	}
 
 	// check restart
 	ierr = BreakCheck(&user); CHKERRQ(ierr);
@@ -309,7 +309,6 @@ PetscErrorCode LaMEMLib(ModParam *IOparam)
 
 	PetscPrintf(PETSC_COMM_WORLD," \n");
 
-
 	if (user.ExplicitSolver == PETSC_TRUE) {
 
 		// File to save seismic signals at a given point of the model - Now used to save traces - Now used to save axial stress / step
@@ -326,6 +325,14 @@ PetscErrorCode LaMEMLib(ModParam *IOparam)
 		// Get the coordinates of the force term source
 		GetCellCoordinatesSource(&jr);
 	}
+
+
+	//// For wave propagation
+	//ierr = CreateFileSeismogram(fseism);  CHKERRQ(ierr);
+			fseism = fopen("seismogram.txt","w");
+			if(fseism == NULL) SETERRQ1(PETSC_COMM_SELF, 1,"cannot open file %s", "seismogram.txt");
+			user.Station.output_file = fseism;
+
 
 	//===============
 	// TIME STEP LOOP
@@ -496,31 +503,10 @@ PetscErrorCode LaMEMLib(ModParam *IOparam)
 			fprintf(fseism, "%12.12e %12.12e\n", jr.ts.time, axial_stress);
 
 
-
-//ierr = ShowValues(&jr,&user, 5); CHKERRQ(ierr);
-
 			//ierr = SaveVelocitiesForSeismicStation(&jr, &user); CHKERRQ(ierr);
 
 			// copy global vector to solution vectors
 			ierr = JacResCopySolution(&jr, jr.gsol); CHKERRQ(ierr);
-
-
-/*if (JacResGetStep(&jr) == 4.0)//to remove all
-{
-	PetscScalar *x;
-	PetscInt *list;
-	ierr = VecGetArray(jr.gsol,&x); CHKERRQ(ierr);
-	list  = jr.bc->pSPCList;
-	//for(PetscInt q = jr.bc->vNumSPC; q < jr.bc->vNumSPC + jr.bc->pNumSPC; q++) PetscPrintf(PETSC_COMM_WORLD, "    %12.12e \n", x[list[q]]);
-	for(PetscInt q = 3*jr.bc->vNumSPC+80; q < 3*jr.bc->vNumSPC+80 + 300; q++) PetscPrintf(PETSC_COMM_WORLD, "    %12.12e \n", x[q]);
-	//for(PetscInt q = 0; q < jr.bc->vNumSPC; q++) PetscPrintf(PETSC_COMM_WORLD, "    %12.12e \n", x[q]);
-	//for (int q =0; q< 200; q++) PetscPrintf(PETSC_COMM_WORLD, "    %12.12e \n", x[q]);
-	//ierr = ShowValues(&jr,&user, 6); CHKERRQ(ierr);
-}*/
-
-
-
-//ierr = ShowValues(&jr,&user, 6); CHKERRQ(ierr);
 
 			// switch off initial guess flag
 			if(!JacResGetStep(&jr))
@@ -532,7 +518,8 @@ PetscErrorCode LaMEMLib(ModParam *IOparam)
 			ierr = JacResViewRes(&jr); CHKERRQ(ierr);
 
 			// check elastic properties remain constant - just to check the code (to be removed)
-			//ierr = CheckElasticProperties(&jr, &user); CHKERRQ(ierr);
+			ierr = CheckElasticProperties(&jr, &user); CHKERRQ(ierr);
+
 
 			//// select new time step
 			//ierr = JacResGetCourantStep(&jr); CHKERRQ(ierr);
@@ -573,8 +560,6 @@ PetscErrorCode LaMEMLib(ModParam *IOparam)
 			}
 		}
 
-//ierr = ShowValues(&jr, &user, 6); CHKERRQ(ierr);
-
 		//==================
 		// Save data to disk
 		//==================
@@ -599,18 +584,14 @@ PetscErrorCode LaMEMLib(ModParam *IOparam)
 			// AVD phase output
 			ierr = PVAVDWriteTimeStep(&pvavd, DirectoryName, JacResGetTime(&jr), JacResGetStep(&jr)); CHKERRQ(ierr);
 
-
-//ierr = ShowValues(&jr,&user,7); CHKERRQ(ierr);
-
 			// grid ParaView output
 			ierr = PVOutWriteTimeStep(&pvout, &jr, DirectoryName, JacResGetTime(&jr), JacResGetStep(&jr)); CHKERRQ(ierr);
+
 
 // -->ierr = ShowValues(&jr,&user,8); CHKERRQ(ierr);
 
 			// free surface ParaView output
 			ierr = PVSurfWriteTimeStep(&pvsurf, DirectoryName, JacResGetTime(&jr), JacResGetStep(&jr)); CHKERRQ(ierr);
-
-//ierr = ShowValues(&jr,&user,9); CHKERRQ(ierr);
 
 			// marker ParaView output
 			ierr = PVMarkWriteTimeStep(&pvmark, DirectoryName, JacResGetTime(&jr), JacResGetStep(&jr)); CHKERRQ(ierr);
@@ -641,11 +622,6 @@ PetscErrorCode LaMEMLib(ModParam *IOparam)
 		// check marker phases
 		ierr = ADVCheckMarkPhases(&actx, jr.numPhases); CHKERRQ(ierr);
 
-
-//ierr = ShowValues(&jr,&user,9); CHKERRQ(ierr);
-
-
-
 	} while(done != PETSC_TRUE);
 
 	//======================
@@ -653,12 +629,9 @@ PetscErrorCode LaMEMLib(ModParam *IOparam)
 	//======================
 
 
-
-
-	/*// For wave propagation, close seismogram file
-	//fclose(fseism);
-	free(fname);
-	fclose(fseism);*/
+	// For wave propagation
+	//Close seismogram file
+	fclose(fseism);
 
 
 
