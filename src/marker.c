@@ -731,8 +731,8 @@ PetscErrorCode ADVMarkInitHomo(AdvCtx *actx, UserCtx *user)
 {
 	// homogeneous model
 
-	PetscInt    imark, nel_x, nel_y, nel_z;
-	PetscScalar dx,dy,dz;
+	PetscInt    imark; //, nel_x, nel_y, nel_z;
+	//PetscScalar dx,dy,dz;
 
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
@@ -741,14 +741,14 @@ PetscErrorCode ADVMarkInitHomo(AdvCtx *actx, UserCtx *user)
 	PetscPrintf(PETSC_COMM_WORLD,"  HOMOGENEOUS SETUP \n");
 
 	// number of elements on finest resolution
-	nel_x = user->nel_x;
-	nel_y = user->nel_y;
-	nel_z = user->nel_z;
+	//nel_x = user->nel_x;
+	//nel_y = user->nel_y;
+	//nel_z = user->nel_z;
 
 	// spacing
-	dx = user->W/((PetscScalar)nel_x);
-	dy = user->L/((PetscScalar)nel_y);
-	dz = user->H/((PetscScalar)nel_z);
+	//dx = user->W/((PetscScalar)nel_x);
+	//dy = user->L/((PetscScalar)nel_y);
+	//dz = user->H/((PetscScalar)nel_z);
 
 	// loop over local markers
 	for(imark = 0; imark < actx->nummark; imark++)

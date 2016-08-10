@@ -92,11 +92,12 @@ typedef struct
 	Vec gp; // global
 	Vec lp; // local (ghosted)
 
-	// for Explicit
-	PetscBool		 ExplicitSolver; 	// True => at the moment, wave propagation
-	//Vec gK;
-	PetscBool 		SeismicSource;		// true or false
-	SourceParam 			SourceParams;		// seismic source parameters
+	// for wave propagation
+	PetscBool		ExplicitSolver; 		// True => at the moment, wave propagation
+	PetscBool 		SeismicSource;			// true or false
+	SourceParam 	SourceParams;			// seismic source parameters
+	//PetscScalar 	x_rec, y_rec, z_rec;	// Seismic station coordinates (in meters)
+	Station			Station;
 
 
 
@@ -284,7 +285,9 @@ PetscErrorCode JacResGetTempMat(JacRes *jr);
 
 
 // compute nonlinear momentum residual vector
-PetscErrorCode JacResGetMomentumResidualAndTheta(JacRes *jr);
+PetscErrorCode JacResGetMomentumResidualAndPressure(JacRes *jr);
+
+
 
 // copy global velocities/pressures vectors to global solution vector
 PetscErrorCode JacResCopySolution(JacRes *jr, Vec x);

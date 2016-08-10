@@ -107,6 +107,8 @@ PetscErrorCode LaMEMLib(ModParam *IOparam)
 	KSPConvergedReason reason;
 	PetscBool          stop = PETSC_FALSE;
 
+	FILE      *fseism;
+
 	//=========================================================================
 
 	PetscBool InputParamFile;
@@ -151,7 +153,9 @@ PetscErrorCode LaMEMLib(ModParam *IOparam)
 	ierr = FDSTAGInitCode(&jr, &user, IOparam); CHKERRQ(ierr);
 
 	// check time step if ExplicitSolver
-	ierr = CheckTimeStep(&jr, &user); CHKERRQ(ierr);
+	if (user.ExplicitSolver == PETSC_TRUE)		{
+		ierr = CheckTimeStep(&jr, &user); CHKERRQ(ierr);
+	}
 
 
 	// check restart
@@ -294,6 +298,18 @@ PetscErrorCode LaMEMLib(ModParam *IOparam)
 
 	PetscPrintf(PETSC_COMM_WORLD," \n");
 
+
+
+
+	//// For wave propagation
+	//ierr = CreateFileSeismogram(fseism);  CHKERRQ(ierr);
+			fseism = fopen("seismogram.txt","w");
+			if(fseism == NULL) SETERRQ1(PETSC_COMM_SELF, 1,"cannot open file %s", "seismogram.txt");
+			user.Station.output_file = fseism;
+
+
+
+
 	//===============
 	// TIME STEP LOOP
 	//===============
@@ -421,27 +437,43 @@ PetscErrorCode LaMEMLib(ModParam *IOparam)
 		}
 		else
 		{
-//ierr = VecView(jr.gsol,PETSC_VIEWER_STDOUT_WORLD); CHKERRQ(ierr);
 
-			// evaluate momentum residual and theta
-			//ierr = FormMomentumResidualAndTheta(snes, jr.gsol, jr.gK, &nl); CHKERRQ(ierr);
-			ierr = FormMomentumResidualAndTheta(jr.gsol, &nl); CHKERRQ(ierr);
+ierr = ShowValues(&jr,1); CHKERRQ(ierr);
 
-//ierr = VecView(jr.gvx,PETSC_VIEWER_STDOUT_WORLD);CHKERRQ(ierr);
-			ierr = GetPressure(&jr); 	CHKERRQ(ierr);
+			// copy solution from global to local vectors, enforce boundary constraints
+			ierr = JacResCopySol(&jr, jr.gsol, _APPLY_SPC_); CHKERRQ(ierr);
 
-///ierr = VecView(jr.gvx,PETSC_VIEWER_STDOUT_WORLD);CHKERRQ(ierr);
-			//a=0; b=0; // a and b have to be removed
-			ierr = GetVelocities(&jr);	CHKERRQ(ierr);
 
-//ierr = VecView(jr.gvx,PETSC_VIEWER_STDOUT_WORLD);CHKERRQ(ierr);
+ierr = ShowValues(&jr,2); CHKERRQ(ierr);
+
+			// Put seismic source
+			//ierr = PutSeismicSource(&jr, &actx, &user); 	CHKERRQ(ierr);
+			//ierr =  SolveEquationsWave(&jr);
+			//ierr = VecView(jr.gsol,PETSC_VIEWER_STDOUT_WORLD); CHKERRQ(ierr);
+			//ierr = GetPressure2(&jr); 	CHKERRQ(ierr);
+
+			// evaluate momentum residual and pressure
+			ierr = FormMomentumResidualPressureAndVelocities(&jr); CHKERRQ(ierr);
+
+
+//ierr = ShowValues(&jr,3); CHKERRQ(ierr);
+
+			//ierr = GetVelocities(&jr);	CHKERRQ(ierr);
+
+			//ierr = GetPressure(&jr); 	CHKERRQ(ierr);
+
+//ierr = ShowValues(&jr,4); CHKERRQ(ierr);
+
+			// update history fields
+			ierr = UpdateHistoryFields(&jr); 	CHKERRQ(ierr);
+
+
+ierr = ShowValues(&jr,5); CHKERRQ(ierr);
+
+			//ierr = SaveVelocitiesForSeismicStation(&jr, &user); CHKERRQ(ierr);
 
 			// copy global vector to solution vectors
 			ierr = JacResCopySolution(&jr, jr.gsol); CHKERRQ(ierr);
-
-//ierr = VecView(jr.gsol,PETSC_VIEWER_STDOUT_WORLD);CHKERRQ(ierr);
-
-//ierr = VecView(jr.gp,PETSC_VIEWER_STDOUT_WORLD);CHKERRQ(ierr);
 
 			// switch off initial guess flag
 			if(!JacResGetStep(&jr))
@@ -452,8 +484,27 @@ PetscErrorCode LaMEMLib(ModParam *IOparam)
 			// view nonlinear residual
 			ierr = JacResViewRes(&jr); CHKERRQ(ierr);
 
+			// check elastic properties remain constant - just to check the code (to be removed)
+			ierr = CheckElasticProperties(&jr, &user); CHKERRQ(ierr);
+
 			//// select new time step
 			//ierr = JacResGetCourantStep(&jr); CHKERRQ(ierr);
+
+			// advect free surface
+			//ierr = FreeSurfAdvect(&surf); CHKERRQ(ierr);
+
+			// advect markers
+			//ierr = ADVAdvect(&actx); CHKERRQ(ierr);
+
+			// apply background strain-rate "DWINDLAR" BC (Bob Shaw "Ship of Strangers")
+			//ierr = BCStretchGrid(&bc); CHKERRQ(ierr);
+
+			// exchange markers between the processors (after mesh advection)
+			//ierr = ADVExchange(&actx); CHKERRQ(ierr);
+
+			// remap markers onto (stretched) grid
+			//ierr = ADVRemap(&actx, &surf); CHKERRQ(ierr);
+
 
 			//// prescribe velocity if rotation benchmark
 			//if (user.msetup == ROTATION) {ierr = JacResSetVelRotation(&jr); CHKERRQ(ierr);}
@@ -475,12 +526,13 @@ PetscErrorCode LaMEMLib(ModParam *IOparam)
 			}
 		}
 
+//ierr = ShowValues(&jr,6); CHKERRQ(ierr);
 
 		//==================
 		// Save data to disk
 		//==================
 
-		if(!(JacResGetStep(&jr) % user.save_timesteps) || stop == PETSC_TRUE)
+	if(!(JacResGetStep(&jr) % user.save_timesteps) || stop == PETSC_TRUE)
 		{
 			char *DirectoryName = NULL;
 
@@ -500,17 +552,26 @@ PetscErrorCode LaMEMLib(ModParam *IOparam)
 			// AVD phase output
 			ierr = PVAVDWriteTimeStep(&pvavd, DirectoryName, JacResGetTime(&jr), JacResGetStep(&jr)); CHKERRQ(ierr);
 
+
+//ierr = ShowValues(&jr,7); CHKERRQ(ierr);
+
 			// grid ParaView output
 			ierr = PVOutWriteTimeStep(&pvout, &jr, DirectoryName, JacResGetTime(&jr), JacResGetStep(&jr)); CHKERRQ(ierr);
 
+//ierr = ShowValues(&jr,8); CHKERRQ(ierr);
+
 			// free surface ParaView output
 			ierr = PVSurfWriteTimeStep(&pvsurf, DirectoryName, JacResGetTime(&jr), JacResGetStep(&jr)); CHKERRQ(ierr);
+
+//ierr = ShowValues(&jr,9); CHKERRQ(ierr);
 
 			// marker ParaView output
 			ierr = PVMarkWriteTimeStep(&pvmark, DirectoryName, JacResGetTime(&jr), JacResGetStep(&jr)); CHKERRQ(ierr);
 
 			// clean up
 			if(DirectoryName) free(DirectoryName);
+
+			//==================
 		}
 
 		if(stop == PETSC_TRUE)
@@ -533,11 +594,28 @@ PetscErrorCode LaMEMLib(ModParam *IOparam)
 		// check marker phases
 		ierr = ADVCheckMarkPhases(&actx, jr.numPhases); CHKERRQ(ierr);
 
+
+
+
+
+
 	} while(done != PETSC_TRUE);
 
 	//======================
 	// END OF TIME STEP LOOP
 	//======================
+
+
+
+
+	// For wave propagation
+	//Close seismogram file
+	fclose(fseism);
+
+
+
+
+
 
 	// print total solution time
 //	PetscTime(&cputime_end);
