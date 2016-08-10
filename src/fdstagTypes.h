@@ -180,6 +180,16 @@ typedef struct
 	// ... more options
 } SourceParam;
 
+// Structure that holds seismic stations
+typedef struct
+{
+	PetscScalar x;
+	PetscScalar y;
+	PetscScalar z;
+	FILE 	*output_file;
+	// ...
+} Station;
+
 
 
 
@@ -274,6 +284,10 @@ typedef struct
 	
 	// source
 	SourceParam SourceParams;
+
+	// Seismic station coordinates (in meters)
+	Station Station;
+
 
 
 } UserCtx;
