@@ -7,9 +7,9 @@
 #    * number of cells                                    (n points)
 #    * bias coefficients                                  (n points) 
 
-nel_x						=   8    
-nel_y						= 	8   
-nel_z						= 	66
+nel_x						=   4    
+nel_y						= 	4  
+nel_z						= 	20
 
 # Scaling
 units 						= si
@@ -35,7 +35,7 @@ msetup 					= homo
 # Define input/output and numerics-related stuff
 OutputFile					=	ExplicitWavePropagation		
 save_timesteps				=	1				# save every ? timesteps
-time_end					=	101			# last timestep
+time_end					=	2	# last timestep
 CFL							=	0.5				# CFL, dt-based criterium
 dt_max						=	1e-5	  	   	# Maximum timestep [years if dimensional]
 save_breakpoints			= 	-1 				#  -1: don't save breakpoints + initial particles
@@ -97,8 +97,8 @@ NumPartZ				=	2	# Particles/Cell in z-direction
 Gravity					=  0 #-10.0;									# [m/s2] - gravitational acceleration 
 
 # Define phase transitions for particles
-LowerViscosityCutoff			=	1e-3
-UpperViscosityCutoff			=	1e12
+LowerViscosityCutoff			=	1e-30
+UpperViscosityCutoff			=	1e+30
 DII_ref 						=	1
 
 # Define material properties for all phases -------------------------------------------------
@@ -109,7 +109,7 @@ DII_ref 						=	1
 		rho0        = 	2600 		#1000		# density - if dimensional [kg/m3]	
 		bulk		=	3.38e10 	#208e+7		# K
 		shear		=   2.34e10		#144e+7		# shear modulus (mu, G)
-		eta			= 	1e30		# viscosity - if dimensional [Pa.s]
+		#eta			= 	1e30		# viscosity - if dimensional [Pa.s]
 	<MaterialEnd>
 
 # End of defining material properties for all phases ----------------------------------------
@@ -119,7 +119,12 @@ DII_ref 						=	1
 seismic_source 		=	1
 
 # Define seismic source properties
-source_type 		= 	plane 		#point
+source_type 		= 	plane		#point or plane
 # ... put more options
 
 # ---------------------------------------------------------------------------------------------------
+
+# Seismic station coordinates (meters)
+x_rec = 2500
+y_rec = 4000
+z_rec = 4300

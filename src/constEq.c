@@ -537,6 +537,8 @@ PetscErrorCode GetStressCell(
 	svCell->syy = 2.0*svDev->eta*dyy;
 	svCell->szz = 2.0*svDev->eta*dzz;
 
+	//PetscPrintf(PETSC_COMM_WORLD, "    svDev->eta, dxx:  %12.12e, %12.12e \n", svDev->eta, dxx);
+
 	// get strain-rate invariant
 	DII = svDev->DII;
 
@@ -554,10 +556,15 @@ PetscErrorCode GetStressCell(
 	// store contribution to the second invariant of plastic strain-rate
 	svDev->PSR = 0.5*(txx*txx + tyy*tyy + tzz*tzz);
 
-	// compute dissipative part of total strain rate (viscous + plastic = total - elastic)
+	/*// compute dissipative part of total strain rate (viscous + plastic = total - elastic)
 	txx = svCell->dxx - svDev->I2Gdt*(svCell->sxx - svCell->hxx);
 	tyy = svCell->dyy - svDev->I2Gdt*(svCell->sxx - svCell->hxx);
-	tzz = svCell->dzz - svDev->I2Gdt*(svCell->sxx - svCell->hxx);
+	tzz = svCell->dzz - svDev->I2Gdt*(svCell->sxx - svCell->hxx);*/
+
+	txx = svCell->dxx - svDev->I2Gdt*(svCell->sxx - svCell->hxx);
+	tyy = svCell->dyy - svDev->I2Gdt*(svCell->syy - svCell->hyy);
+	tzz = svCell->dzz - svDev->I2Gdt*(svCell->szz - svCell->hzz);
+
 
 	// compute shear heating term contribution
 	svDev->Hr = (txx*svCell->sxx + tyy*svCell->syy + tzz*svCell->szz)*lim->shearHeatEff;

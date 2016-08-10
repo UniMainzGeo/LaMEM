@@ -479,6 +479,7 @@ PetscErrorCode ADVInterpFieldToMark(AdvCtx *actx, InterpCase icase)
 		if(icase == _STRESS_)
 		{
 			P->S.xx += svCell->sxx - svCell->hxx;
+			//PetscPrintf(PETSC_COMM_WORLD, " From ADVInterpFieldToMark   svCell->hxx, svCell->sxx, P->S.xx  are  %12.12e, %12.12e, %12.12e \n",svCell->hxx, svCell->sxx, P->S.xx);
 			P->S.yy += svCell->syy - svCell->hyy;
 			P->S.zz += svCell->szz - svCell->hzz;
 			P->S.xy += UPXY;
