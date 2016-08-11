@@ -432,6 +432,16 @@ PetscErrorCode InputReadFile(JacRes *jr, UserCtx *user, FILE *fp)
 			if      (!strcmp(source_type_name, "point"))   user->SourceParams.source_type = POINT;
 			else if (!strcmp(source_type_name, "plane"))   user->SourceParams.source_type = PLANE;
 			else SETERRQ1(PETSC_COMM_SELF, PETSC_ERR_USER,"ERROR! Incorrect source type: %s", source_type_name);
+
+			// Source coordinates
+			parse_GetDouble( fp, "x_source", &user->SourceParams.x, &found );
+			parse_GetDouble( fp, "y_source", &user->SourceParams.y, &found );
+			parse_GetDouble( fp, "z_source", &user->SourceParams.z, &found );
+
+			if (&user->SourceParams.x < 0 || &user->SourceParams.x > &user->W || &user->SourceParams.y < 0 || &user->SourceParams.y > &user->L || &user->SourceParams.z < 0 || &user->SourceParams.z > &user->H)
+			{
+				//SETERRQ(PETSC_COMM_SELF, PETSC_ERR_USER, "Incorrect source coordinates\n");
+			}
 		}
 	}else
 	{
@@ -442,6 +452,10 @@ PetscErrorCode InputReadFile(JacRes *jr, UserCtx *user, FILE *fp)
 	parse_GetDouble( fp, "x_rec", &user->Station.x, &found );
 	parse_GetDouble( fp, "y_rec", &user->Station.y, &found );
 	parse_GetDouble( fp, "z_rec", &user->Station.z, &found );
+	if (&user->Station.x < 0 || &user->Station.x > &user->W || &user->Station.y < 0 || &user->Station.y > &user->L || &user->Station.z < 0 || &user->Station.z > &user->H)
+	{
+		//SETERRQ(PETSC_COMM_SELF, PETSC_ERR_USER, "Incorrect station coordinates\n");
+	}
 
 
 

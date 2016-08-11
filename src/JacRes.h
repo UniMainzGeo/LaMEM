@@ -285,7 +285,7 @@ PetscErrorCode JacResGetTempMat(JacRes *jr);
 
 
 // compute nonlinear momentum residual vector
-PetscErrorCode JacResGetMomentumResidualAndPressure(JacRes *jr);
+PetscErrorCode JacResGetMomentumResidualAndPressure(JacRes *jr, UserCtx *user);
 
 
 
