@@ -51,6 +51,9 @@
 #include "JacRes.h"
 #include "constEq.h"
 #include "tools.h"
+#include "interpolate.h"
+#include "surf.h"
+#include "advect.h"
 //---------------------------------------------------------------------------
 #undef __FUNCT__
 #define __FUNCT__ "JacResClear"
@@ -1281,7 +1284,7 @@ PetscErrorCode JacResGetResidual(JacRes *jr)
 //-----------------------------------------------------------------------------
 #undef __FUNCT__
 #define __FUNCT__ "JacResGetMomentumResidualAndPressure"
-PetscErrorCode JacResGetMomentumResidualAndPressure(JacRes *jr)
+PetscErrorCode JacResGetMomentumResidualAndPressure(JacRes *jr, UserCtx *user)
 {
 	// Compute residual of nonlinear momentum conservation
 
@@ -1320,6 +1323,7 @@ PetscErrorCode JacResGetMomentumResidualAndPressure(JacRes *jr)
 
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
+
 
 	fs = jr->fs;
 
@@ -1366,6 +1370,13 @@ PetscErrorCode JacResGetMomentumResidualAndPressure(JacRes *jr)
 	ierr = DMDAVecGetArray(fs->DA_Y,   jr->lvy,  &vy);  CHKERRQ(ierr);
 	ierr = DMDAVecGetArray(fs->DA_Z,   jr->lvz,  &vz);  CHKERRQ(ierr);
 
+//FILE      *fseism;
+//fseism = user->Station.output_file;
+FILE *fp;
+fp = user->Station.output_file;
+
+
+
 	//-------------------------------
 	// central points
 	//-------------------------------
@@ -1373,11 +1384,6 @@ PetscErrorCode JacResGetMomentumResidualAndPressure(JacRes *jr)
 	GET_CELL_RANGE(nx, sx, fs->dsx)
 	GET_CELL_RANGE(ny, sy, fs->dsy)
 	GET_CELL_RANGE(nz, sz, fs->dsz)
-
-	// source point position (to improve getting from input file)
-	i_src = nx/2;
-	j_src = ny/2;
-	k_src = nz/2;
 
 	START_STD_LOOP
 	{
@@ -1478,26 +1484,138 @@ pc = p[k][j][i];
 
 
 		// Add seismic source /////////////////////////
-
 		if (jr->SeismicSource == PETSC_TRUE)
 		{
 			PetscScalar t0;
 			PetscScalar alfa;
 			PetscScalar amplitude;
 
-			t0=1.0;
+			t0=0.0; //1.0;
 			alfa=40.0;
-			amplitude=10.0;
+			amplitude=100.0;
 
 			time	  =  JacResGetTime(jr);
 
+			//PetscPrintf(PETSC_COMM_WORLD, "    i, j, k = %i, %i, %i \n", i,j,k);
+			//PetscPrintf(PETSC_COMM_WORLD, "    rangx, rangy, rangz = %i, %i, %i \n", fs->dsx.rank, fs->dsy.rank, fs->dsz.rank);
+			//PetscPrintf(PETSC_COMM_WORLD, "    i+nx*(fs->dsx.nproc-1), j+ny*(fs->dsy.nproc-1), k+nz*(fs->dsz.nproc-1) = %i, %i, %i \n", i+nx*(fs->dsx.nproc-1), j+ny*(fs->dsy.nproc-1), k+nz*(fs->dsz.nproc-1));
+			//PetscPrintf(PETSC_COMM_WORLD, "    i+nx*(fs->dsx.rank), j+ny*(fs->dsy.rank), k+nz*(fs->dsz.rank) = %i, %i, %i \n", i+nx*(fs->dsx.rank), j+ny*(fs->dsy.rank), k+nz*(fs->dsz.rank));
+			//PetscPrintf(PETSC_COMM_WORLD, "    nproc = %i, rank = %i, nnods = %i\n", ds.nproc, ds.rank, ds.nnods);
+			//PetscPrintf(PETSC_COMM_WORLD, "    nx, ny, nz = %i, %i, %i\n", nx, ny, nz);
+			//PetscPrintf(PETSC_COMM_WORLD, "    nx*fs->dsx.nproc, ny*fs->dsy.nproc, nz*fs->dsz.nproc = %i, %i, %i\n", nx*fs->dsx.nproc, ny*fs->dsy.nproc, nz*fs->dsz.nproc);
+			//PetscPrintf(PETSC_COMM_WORLD, "    sx, sy, sz = %i, %i, %i\n", sx, sy, sz);
+			//PetscPrintf(PETSC_COMM_WORLD, "    mx, my, mz = %i, %i, %i\n", mx, my, mz);
+			//PetscPrintf(PETSC_COMM_WORLD, "    source i,j,k = %i, %i, %i\n", jr->SourceParams.i, jr->SourceParams.j, jr->SourceParams.k);
+
+
+			//fprintf(fseism, "%i %i %i\n", i,j,k);
+			//fwrite(i , sizeof(PetscInt   ), 1, fp);
+			//fprintf(fp, "%i %i %i\n", jr->SourceParams.i, jr->SourceParams.j, jr->SourceParams.k);
+			//fprintf(fp, "%12.12e %12.12e %12.12e\n", jr->SourceParams.x, jr->SourceParams.y, jr->SourceParams.z);
+
+			//fprintf(fp, "%12.12e %12.12e %12.12e\n", jr->fs->dsx.ncels, jr->fs->dsy.ncoor->, jr->fs->dsz.ncoor);
+
 			if (jr->SourceParams.source_type == POINT)
 			{
-				if (k==k_src && j==j_src && i==i_src)
+				//if (k==k_src && j==j_src && i==i_src)
+
+
+
+				////////////////////////////////////////////////////////////////////////
+				//////////   put in a separate function     ////////////////////////////
+				////////////////////////////////////////////////////////////////////////
+				PetscInt M, N, P, m;
+				PetscScalar xSource, ySource, zSource, coor;
+				PetscInt iSource, jSource, kSource;
+				PetscBool xBelongs, yBelongs, zBelongs;
+
+				xSource = jr->SourceParams.x;
+				ySource = jr->SourceParams.y;
+				zSource = jr->SourceParams.z;
+
+				// get number of cells
+				M = jr->fs->dsx.ncels;
+				N = jr->fs->dsy.ncels;
+				P = jr->fs->dsz.ncels;
+
+				// belongs the point source to this process?  /////////////////////////
+				xBelongs = PETSC_FALSE; yBelongs = PETSC_FALSE; zBelongs = PETSC_FALSE;
+				while (PETSC_TRUE)
 				{
-					sxx = 0*sxx+amplitude*exp(-alfa*((time-t0)*(time-t0)));
-					szz = 0*szz-amplitude*exp(-alfa*((time-t0)*(time-t0)));
+					m = 0;
+					coor = jr->fs->dsx.ncoor[m];
+					if (xSource > coor)
+					{
+						while (m < M)
+						{
+							coor = jr->fs->dsx.ncoor[m+1];
+							if (xSource <= coor)
+							{
+								xBelongs = PETSC_TRUE;
+								break;
+							}
+							m += 1;
+						}
+					}
+					if (xBelongs == PETSC_FALSE) break;
+					m = 0;
+					coor = jr->fs->dsy.ncoor[m];
+					if (ySource > coor)
+					{
+						while (m < N)
+						{
+							coor = jr->fs->dsy.ncoor[m+1];
+							if (ySource <= coor)
+							{
+								yBelongs = PETSC_TRUE;
+								break;
+							}
+							m += 1;
+						}
+					}
+					if (yBelongs == PETSC_FALSE) break;
+					m = 0;
+					coor = jr->fs->dsz.ncoor[m];
+					if (zSource > coor)
+					{
+						while (m < P)
+						{
+							coor = jr->fs->dsz.ncoor[m+1];
+							if (zSource <= coor)
+							{
+								zBelongs = PETSC_TRUE;
+								break;
+							}
+							m += 1;
+						}
+					}
+					break;
 				}
+				////////////////////////////////////////////////////////////////////////
+
+				if (zBelongs == PETSC_TRUE)
+				{
+					iSource = FindPointInCell(jr->fs->dsx.ncoor, 0, M, xSource)+nx*(fs->dsx.rank);
+					jSource = FindPointInCell(jr->fs->dsy.ncoor, 0, N, ySource)+ny*(fs->dsy.rank);
+					kSource = FindPointInCell(jr->fs->dsz.ncoor, 0, P, zSource)+nz*(fs->dsz.rank);
+
+					//fprintf(fp, "%i %i %i\n", iSource+nx*(fs->dsx.rank), jSource+ny*(fs->dsy.rank), kSource+nz*(fs->dsz.rank));
+					//fprintf(fp, "%i %i %i\n", iSource, jSource, kSource);
+
+					if (k==kSource && j == jSource && i == iSource)
+					//if (k==jr->SourceParams.k && j == jr->SourceParams.j && i == jr->SourceParams.i)
+					//if (k+nz*(fs->dsz.rank)==jr->SourceParams.k && j+ny*(fs->dsy.rank) == jr->SourceParams.j && i+nx*(fs->dsx.rank) == jr->SourceParams.i)
+					{
+						//fprintf(fp, "%i %i %i\n", i, j, k);
+						//fprintf(fp, "%i %i %i\n", jr->SourceParams.i, jr->SourceParams.j, jr->SourceParams.k);
+						fprintf(fp, "%i %i %i\n", iSource, jSource, kSource);
+						sxx = 0*sxx+amplitude*exp(-alfa*((time-t0)*(time-t0)));
+						szz = 0*szz-amplitude*exp(-alfa*((time-t0)*(time-t0)));
+					}
+				}
+				////////////////////////////////////////////////////////////////////////
+				////////////////////////////////////////////////////////////////////////
+				////////////////////////////////////////////////////////////////////////
 			}
 			else if (jr->SourceParams.source_type == PLANE)
 			{
