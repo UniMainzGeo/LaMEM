@@ -164,7 +164,7 @@ PetscErrorCode GetVelocities(JacRes *jr)
 //---------------------------------------------------------------------------
 #undef __FUNCT__
 #define __FUNCT__ "FormMomentumResidualPressureAndVelocities"
-PetscErrorCode FormMomentumResidualPressureAndVelocities(JacRes *jr)
+PetscErrorCode FormMomentumResidualPressureAndVelocities(JacRes *jr, UserCtx *user)
 {
 
 	PetscErrorCode ierr;
@@ -179,7 +179,7 @@ PetscErrorCode FormMomentumResidualPressureAndVelocities(JacRes *jr)
 	ierr = JacResGetEffStrainRate(jr); CHKERRQ(ierr);
 
 	// compute momentum residual and pressure
-	ierr = JacResGetMomentumResidualAndPressure(jr); CHKERRQ(ierr);
+	ierr = JacResGetMomentumResidualAndPressure(jr,user); CHKERRQ(ierr);
 
 	ierr = GetVelocities(jr);	CHKERRQ(ierr);
 

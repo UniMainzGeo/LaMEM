@@ -174,10 +174,16 @@ typedef enum
 
 
 // Structure that holds source parameters
-typedef struct
+typedef struct // Improve and put more options
 {
 	SourceType  source_type;
-	// ... more options
+	PetscScalar x;
+	PetscScalar y;
+	PetscScalar z;
+	PetscInt i;
+	PetscInt j;
+	PetscInt k;
+
 } SourceParam;
 
 // Structure that holds seismic stations
@@ -186,6 +192,9 @@ typedef struct
 	PetscScalar x;
 	PetscScalar y;
 	PetscScalar z;
+	PetscInt i;
+	PetscInt j;
+	PetscInt k;
 	FILE 	*output_file;
 	// ...
 } Station;

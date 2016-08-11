@@ -13,7 +13,7 @@ PetscErrorCode GetVelocities(JacRes *jr);
 //PetscErrorCode GetStress(JacRes *jr);
 //PetscErrorCode JacResGetMomentumResidual2(JacRes *jr);
 //PetscErrorCode SolveEquationsWave(JacRes *jr);
-PetscErrorCode FormMomentumResidualPressureAndVelocities(JacRes *jr);
+PetscErrorCode FormMomentumResidualPressureAndVelocities(JacRes *jr, UserCtx *user);
 //PetscErrorCode GetPressure(JacRes *jr);
 PetscErrorCode CheckTimeStep(JacRes *jr, UserCtx *user);
 PetscErrorCode CheckElasticProperties(JacRes *jr, UserCtx *user);
