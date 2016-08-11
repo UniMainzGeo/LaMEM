@@ -201,7 +201,9 @@ typedef struct
 // Structure that holds source parameters
 typedef struct // Improve and put more options
 {
+
 	SourceType  source_type;	//point, plane, uniaxial_compression, moment_tensor
+
 	PetscScalar x;
 	PetscScalar y;
 	PetscScalar z;

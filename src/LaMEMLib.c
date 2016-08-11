@@ -111,8 +111,6 @@ PetscErrorCode LaMEMLib(ModParam *IOparam)
 	FILE *fseism;
 	PetscScalar axial_stress, axial_strain;
 
-	//=========================================================================
-
 	PetscBool InputParamFile;
 
 	PetscInt found_data;
@@ -181,7 +179,6 @@ PetscErrorCode LaMEMLib(ModParam *IOparam)
 		ierr = ChangeTimeStep(&jr, &user); CHKERRQ(ierr);
 		//ierr = CheckTimeStep(&jr, &user); CHKERRQ(ierr);
 	}
-
 
 	// save processor partitioning
 	if(user.SavePartitioning)
@@ -326,13 +323,71 @@ PetscErrorCode LaMEMLib(ModParam *IOparam)
 		GetCellCoordinatesSource(&jr);
 	}
 
+	/*///////////////////////////
+	//if (user.ExplicitSolver == PETSC_TRUE)
+	//{
 
-	//// For wave propagation
-	//ierr = CreateFileSeismogram(fseism);  CHKERRQ(ierr);
-			fseism = fopen("seismogram.txt","w");
-			if(fseism == NULL) SETERRQ1(PETSC_COMM_SELF, 1,"cannot open file %s", "seismogram.txt");
-			user.Station.output_file = fseism;
+		// Coordinates of the seismic station
+		PetscScalar xStation, yStation, zStation;
+		PetscInt iStation, jStation, kStation, M, N, P;
+		xStation = user.Station.x;
+		yStation = user.Station.y;
+		zStation = user.Station.z;
 
+		// get number of cells
+		M = jr.fs->dsx.ncels;
+		N = jr.fs->dsy.ncels;
+		P = jr.fs->dsz.ncels;
+
+		// find I, J, K indices
+		iStation = FindPointInCell(jr.fs->dsx.ncoor, 0, M, xStation);
+		jStation = FindPointInCell(jr.fs->dsy.ncoor, 0, N, yStation);
+		kStation = FindPointInCell(jr.fs->dsz.ncoor, 0, P, zStation);
+
+		PetscPrintf(PETSC_COMM_WORLD, "    Station i, j, k = %i, %i, %i\n", iStation, jStation, kStation);
+
+		jr.Station.i = iStation;
+		jr.Station.j = jStation;
+		jr.Station.k = kStation;
+
+		////////////////////////////////////////////////////////////////////
+		// Coordinates of the source
+		PetscScalar xSource, ySource, zSource;
+		PetscInt iSource, jSource, kSource;
+		xSource = user.SourceParams.x;
+		ySource = user.SourceParams.y;
+		zSource = user.SourceParams.z;
+
+		// find I, J, K indices
+
+		jr.fs->dsx.ncoor[0];
+		jr.fs->dsx.ncoor[M];
+
+		iSource = FindPointInCell(jr.fs->dsx.ncoor, 0, M, xSource);
+		jSource = FindPointInCell(jr.fs->dsy.ncoor, 0, N, ySource);
+		kSource = FindPointInCell(jr.fs->dsz.ncoor, 0, P, zSource);
+
+		PetscPrintf(PETSC_COMM_WORLD, "    Source i, j, k = %i, %i, %i\n", iSource, jSource, kSource);
+
+		jr.SourceParams.i = iSource;
+		jr.SourceParams.j = jSource;
+		jr.SourceParams.k = kSource;
+		////////////////////////////////////////////////////////////////////
+*/
+
+
+		// File to save seismic signals at a given point of the model
+		//FILE      *fseism;
+		////ierr = CreateFileSeismogram(fseism);  CHKERRQ(ierr);
+		//fseism = fopen("seismogram.txt","w");
+		//if(fseism == NULL) SETERRQ1(PETSC_COMM_SELF, 1,"cannot open file %s", "seismogram.txt");
+		//user.Station.output_file = fseism;
+
+		// compile file name
+		FILE *fp;
+		asprintf(&fname, "seismogram.txt.%lld.txt",jr.fs->dsz.rank);
+		fp = fopen(fname, "w" );
+		user.Station.output_file = fp;
 
 	//===============
 	// TIME STEP LOOP
@@ -468,13 +523,8 @@ PetscErrorCode LaMEMLib(ModParam *IOparam)
 		else
 		{
 
-//ierr = ShowValues(&jr,&user,1); CHKERRQ(ierr);
-
 			// copy solution from global to local vectors, enforce boundary constraints
 			ierr = JacResCopySol(&jr, jr.gsol, _APPLY_SPC_); CHKERRQ(ierr);
-
-
-//ierr = ShowValues(&jr,&user,2); CHKERRQ(ierr);
 
 			// Put seismic source
 			//ierr = PutSeismicSource(&jr, &actx, &user); 	CHKERRQ(ierr);
@@ -484,6 +534,7 @@ PetscErrorCode LaMEMLib(ModParam *IOparam)
 
 			// evaluate momentum residual and pressure
 			ierr = FormMomentumResidualPressureAndVelocities(&jr,&user); CHKERRQ(ierr);
+
 
 //if (JacResGetStep(&jr) == 1.0)//to remove
 //{
@@ -501,7 +552,6 @@ PetscErrorCode LaMEMLib(ModParam *IOparam)
 			PetscScalar step=JacResGetStep(&jr);
 			//fprintf(fseism, "%12.12e %12.12e\n", step, axial_stress);
 			fprintf(fseism, "%12.12e %12.12e\n", jr.ts.time, axial_stress);
-
 
 			//ierr = SaveVelocitiesForSeismicStation(&jr, &user); CHKERRQ(ierr);
 
@@ -629,9 +679,13 @@ PetscErrorCode LaMEMLib(ModParam *IOparam)
 	//======================
 
 
+
 	// For wave propagation
 	//Close seismogram file
 	fclose(fseism);
+
+	free(fname);
+	fclose(fp);
 
 
 
