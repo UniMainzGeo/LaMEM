@@ -2677,7 +2677,6 @@ PetscErrorCode RemoveDikeStrain(JacRes *jr)
 				dxx[k][j][i] -= (2.0 / 3.0) * (2.0 * Dike->Vx * Dike->M / bdx);
 				dyy[k][j][i] += (1.0 / 3.0) * (2.0 * Dike->Vx * Dike->M / bdx);
 				dzz[k][j][i] += (1.0 / 3.0) * (2.0 * Dike->Vx * Dike->M / bdx);
-				// dxz[k][j][i] = 0;
 
 				svCell->dxx  = dxx[k][j][i];
 				svCell->dyy  = dyy[k][j][i];
