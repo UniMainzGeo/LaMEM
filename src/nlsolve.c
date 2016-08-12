@@ -388,6 +388,7 @@ PetscErrorCode FormJacobian(SNES snes, Vec x, Mat Amat, Mat Pmat, void *ctx)
 	ierr = PMatAssemble(pm);                                                  CHKERRQ(ierr);
 	ierr = PCStokesSetup(pc);                                                 CHKERRQ(ierr);
 	ierr = MatShellSetOperation(nl->P, MATOP_MULT, (void(*)(void))pc->Apply); CHKERRQ(ierr);
+	ierr = MatShellSetOperation(nl->P, MATOP_MULT_TRANSPOSE, (void(*)(void))pc->Apply); CHKERRQ(ierr);
 	ierr = MatShellSetContext(nl->P, pc);                                     CHKERRQ(ierr);
 
 	// setup Jacobian
@@ -395,6 +396,7 @@ PetscErrorCode FormJacobian(SNES snes, Vec x, Mat Amat, Mat Pmat, void *ctx)
 	{
 		// ... Picard
 		ierr = MatShellSetOperation(nl->J, MATOP_MULT, (void(*)(void))pm->Picard); CHKERRQ(ierr);
+		ierr = MatShellSetOperation(nl->J, MATOP_MULT_TRANSPOSE, (void(*)(void))pm->Picard);                       CHKERRQ(ierr);
 		ierr = MatShellSetContext(nl->J, pm->data);                                CHKERRQ(ierr);
 	}
 	else if(nl->jtype == _MFFD_)
@@ -403,6 +405,7 @@ PetscErrorCode FormJacobian(SNES snes, Vec x, Mat Amat, Mat Pmat, void *ctx)
 		ierr = MatMFFDSetFunction(nl->MFFD, (PetscErrorCode (*)(void*,Vec,Vec))SNESComputeFunction, snes); CHKERRQ(ierr);
 		ierr = MatMFFDSetBase(nl->MFFD, x, jr->gres);                                                      CHKERRQ(ierr);
 		ierr = MatShellSetOperation(nl->J, MATOP_MULT, (void(*)(void))JacApplyMFFD);                       CHKERRQ(ierr);
+		ierr = MatShellSetOperation(nl->J, MATOP_MULT_TRANSPOSE, (void(*)(void))JacApplyMFFD);                       CHKERRQ(ierr);
 		ierr = MatShellSetContext(nl->J, (void*)&nl->MFFD);                                                CHKERRQ(ierr);
 	}
 	else if(nl->jtype == _MF_)
