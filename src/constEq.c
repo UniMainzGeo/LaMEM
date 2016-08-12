@@ -579,6 +579,85 @@ PetscErrorCode GetStressCell(
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
+#undef __FUNCT__
+#define __FUNCT__ "GetStressDikeCell"
+PetscErrorCode GetStressDikeCell(
+	SolVarCell  *svCell, // solution variables
+	MatParLim   *lim,    // phase parameters limits
+	PetscScalar  dxx,    // effective normal strain rate components
+	PetscScalar  dyy,    // ...
+	PetscScalar  dzz)    // ...
+{
+	// compute stress, plastic strain-rate and shear heating term on cell
+
+	SolVarDev   *svDev;
+	PetscScalar  DII, cfpl, txx, tyy, tzz;
+
+	PetscFunctionBegin;
+
+	// access deviatoric variables
+	svDev = &svCell->svDev;
+
+	// compute deviatoric stresses
+	svCell->sxx = 2.0*svDev->eta*dxx;
+	svCell->syy = 2.0*svDev->eta*dyy;
+	svCell->szz = 2.0*svDev->eta*dzz;
+
+	PetscFunctionReturn(0);
+}
+//---------------------------------------------------------------------------
+#undef __FUNCT__
+#define __FUNCT__ "GetPlStrainDikeCell"
+PetscErrorCode GetPlStrainDikeCell(
+	SolVarCell  *svCell, // solution variables
+	MatParLim   *lim,    // phase parameters limits
+	PetscScalar  dxx,    // effective normal strain rate components
+	PetscScalar  dyy,    // ...
+	PetscScalar  dzz)    // ...
+{
+	// compute stress, plastic strain-rate and shear heating term on cell
+
+	SolVarDev   *svDev;
+	PetscScalar  DII, cfpl, txx, tyy, tzz;
+
+	PetscFunctionBegin;
+
+	// access deviatoric variables
+	svDev = &svCell->svDev;
+
+	// compute deviatoric stresses
+	svCell->sxx = 2.0*svDev->eta*dxx;
+	svCell->syy = 2.0*svDev->eta*dyy;
+	svCell->szz = 2.0*svDev->eta*dzz;
+
+	// get strain-rate invariant
+	DII = svDev->DII;
+
+	// use reference strain-rate instead of zero
+	if(DII == 0.0) DII = lim->DII_ref;
+
+	// compute plastic scaling coefficient
+	cfpl = svDev->DIIpl/DII;
+
+	// compute plastic strain-rate components
+	txx = cfpl*dxx;
+	tyy = cfpl*dyy;
+	tzz = cfpl*dzz;
+
+	// store contribution to the second invariant of plastic strain-rate
+	svDev->PSR = 0.5*(txx*txx + tyy*tyy + tzz*tzz);
+
+	// compute dissipative part of total strain rate (viscous + plastic = total - elastic)
+	txx = svCell->dxx - svDev->I2Gdt*(svCell->sxx - svCell->hxx);
+	tyy = svCell->dyy - svDev->I2Gdt*(svCell->syy - svCell->hyy);
+	tzz = svCell->dzz - svDev->I2Gdt*(svCell->szz - svCell->hzz);
+
+	// compute shear heating term contribution
+	svDev->Hr = (txx*svCell->sxx + tyy*svCell->syy + tzz*svCell->szz);
+
+	PetscFunctionReturn(0);
+}
+//---------------------------------------------------------------------------
 // compute stress, plastic strain-rate and shear heating term on edge
 #undef __FUNCT__
 #define __FUNCT__ "GetStressEdge"

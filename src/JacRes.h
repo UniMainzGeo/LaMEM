@@ -222,6 +222,9 @@ PetscErrorCode JacResGetISA(JacRes *jr);
 // compute Grain Orientation Lag (GOL) parameter
 PetscErrorCode JacResGetGOL(JacRes *jr);
 
+// Remove dike strain for plastic calcs - howellsm
+PetscErrorCode RemoveDikeStrain(JacRes *jr);
+
 //---------------------------------------------------------------------------
 
 // compute maximum horizontal compressive stress (SHmax) orientation

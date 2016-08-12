@@ -814,6 +814,9 @@ PetscErrorCode JacResGetResidual(JacRes *jr)
 	ierr = DMDAVecGetArray(fs->DA_Y,   jr->lvy,  &vy);  CHKERRQ(ierr);
 	ierr = DMDAVecGetArray(fs->DA_Z,   jr->lvz,  &vz);  CHKERRQ(ierr);
 
+	// Prep dike - howellsm
+	ierr = RemoveDikeStrain(jr); CHKERRQ(ierr);
+
 	//-------------------------------
 	// central points
 	//-------------------------------
@@ -822,6 +825,7 @@ PetscErrorCode JacResGetResidual(JacRes *jr)
 	GET_CELL_RANGE(ny, sy, fs->dsy)
 	GET_CELL_RANGE(nz, sz, fs->dsz)
 
+	iter = 0;
 	START_STD_LOOP
 	{
 		// access solution variables
@@ -856,29 +860,13 @@ PetscErrorCode JacResGetResidual(JacRes *jr)
 		YZ3 = dyz[k][j+1][i];
 		YZ4 = dyz[k+1][j+1][i];
 
-		// // If inside the dike, remove the deviatoric strain rate contribution of
-		// // opening, assuming all divergence in the x-direction - howellsm
-		// if (Dike->On == 1 && ((i == Dike->indx) && (k > Dike->indzBot - 2 && k <= Dike->indzTop  + 1))) {
-		// 	// Calculate corrections
-		// 	bdx = SIZE_NODE(i, sx, fs->dsx);
-		// 	dXX = XX - (2.0 / 3.0) * (2.0 * Dike->Vx * Dike->M / bdx);
-		// 	dYY = YY + (1.0 / 3.0) * (2.0 * Dike->Vx * Dike->M / bdx);
-		// 	dZZ = ZZ + (1.0 / 3.0) * (2.0 * Dike->Vx * Dike->M / bdx);
+		// compute second invariant
+		J2Inv = 0.5*(XX*XX + YY*YY + ZZ*ZZ) +
+		0.25*(XY1*XY1 + XY2*XY2 + XY3*XY3 + XY4*XY4) +
+		0.25*(XZ1*XZ1 + XZ2*XZ2 + XZ3*XZ3 + XZ4*XZ4) +
+		0.25*(YZ1*YZ1 + YZ2*YZ2 + YZ3*YZ3 + YZ4*YZ4);
 
-		// 	// compute second invariant
-		// 	J2Inv = 0.5*(dXX*dXX + dYY*dYY + dZZ*dZZ) +
-		// 	0.25*(XY1*XY1 + XY2*XY2 + XY3*XY3 + XY4*XY4) +
-		// 	0.25*(XZ1*XZ1 + XZ2*XZ2 + XZ3*XZ3 + XZ4*XZ4) +
-		// 	0.25*(YZ1*YZ1 + YZ2*YZ2 + YZ3*YZ3 + YZ4*YZ4);
-		// }
-		// else {
-			// compute second invariant
-			J2Inv = 0.5*(XX*XX + YY*YY + ZZ*ZZ) +
-			0.25*(XY1*XY1 + XY2*XY2 + XY3*XY3 + XY4*XY4) +
-			0.25*(XZ1*XZ1 + XZ2*XZ2 + XZ3*XZ3 + XZ4*XZ4) +
-			0.25*(YZ1*YZ1 + YZ2*YZ2 + YZ3*YZ3 + YZ4*YZ4);
 		// store square root of second invariant
-			
 		svDev->DII = sqrt(J2Inv);
 
 		//=======================
@@ -901,25 +889,63 @@ PetscErrorCode JacResGetResidual(JacRes *jr)
 
 		// store creep viscosity
 		svCell->eta_creep = eta_creep;
+		
+		// If the dike is on, we want to remove its effect on plasticity w/out removing
+		// the effects on stresses - howellsm
+		if (Dike->On == 1 && (i == Dike->indx) && (k > Dike->indzBot - 2 && k <= Dike->indzTop  + 1)) {
+			// compute plastic strain-rate and shear heating term on cell in dike w/ contribution to SR removed
+			ierr = GetPlStrainDikeCell(svCell, matLim, XX, YY, ZZ); CHKERRQ(ierr);
 
-		// compute stress, plastic strain rate and shear heating term on cell
-		ierr = GetStressCell(svCell, matLim, XX, YY, ZZ); CHKERRQ(ierr);
+			// evaluate volumetric constitutive equations
+			ierr = VolConstEq(svBulk, numPhases, phases, svCell->phRat, matLim, depth, dt, pc-pShift , Tc); CHKERRQ(ierr);
 
-		// compute total Cauchy stresses
-		sxx = svCell->sxx - pc;
-		syy = svCell->syy - pc;
-		szz = svCell->szz - pc;
+			// access
+			theta = svBulk->theta; // volumetric strain rate
+			rho   = svBulk->rho;   // effective density
+			IKdt  = svBulk->IKdt;  // inverse bulk viscosity
+			alpha = svBulk->alpha; // effective thermal expansion
+			pn    = svBulk->pn;    // pressure history
+			Tn    = svBulk->Tn;    // temperature history
 
-		// evaluate volumetric constitutive equations
-		ierr = VolConstEq(svBulk, numPhases, phases, svCell->phRat, matLim, depth, dt, pc-pShift , Tc); CHKERRQ(ierr);
+			// Return Dike Strain for Stress Calc
+			bdx 		  = SIZE_NODE(i, sx, fs->dsx);
+			dxx[k][j][i] += (2.0 / 3.0) * (2.0 * Dike->Vx * Dike->M / bdx);
+			dyy[k][j][i] -= (1.0 / 3.0) * (2.0 * Dike->Vx * Dike->M / bdx);
+			dzz[k][j][i] -= (1.0 / 3.0) * (2.0 * Dike->Vx * Dike->M / bdx);
 
-		// access
-		theta = svBulk->theta; // volumetric strain rate
-		rho   = svBulk->rho;   // effective density
-		IKdt  = svBulk->IKdt;  // inverse bulk viscosity
-		alpha = svBulk->alpha; // effective thermal expansion
-		pn    = svBulk->pn;    // pressure history
-		Tn    = svBulk->Tn;    // temperature history
+			svCell->dxx  = dxx[k][j][i];
+			svCell->dyy  = dyy[k][j][i];
+			svCell->dzz  = dzz[k][j][i];
+
+			// compute stress on cell in dike w/out dike contribution to SR removed
+			ierr = GetStressDikeCell(svCell, matLim, XX, YY, ZZ); CHKERRQ(ierr);
+			
+			// compute total Cauchy stresses
+			sxx = svCell->sxx - pc;
+			syy = svCell->syy - pc;
+			szz = svCell->szz - pc;
+		
+		}
+		else {
+			// compute stress, plastic strain rate and shear heating term on cell
+			ierr = GetStressCell(svCell, matLim, XX, YY, ZZ); CHKERRQ(ierr);
+
+			// compute total Cauchy stresses
+			sxx = svCell->sxx - pc;
+			syy = svCell->syy - pc;
+			szz = svCell->szz - pc;
+
+			// evaluate volumetric constitutive equations
+			ierr = VolConstEq(svBulk, numPhases, phases, svCell->phRat, matLim, depth, dt, pc-pShift , Tc); CHKERRQ(ierr);
+
+			// access
+			theta = svBulk->theta; // volumetric strain rate
+			rho   = svBulk->rho;   // effective density
+			IKdt  = svBulk->IKdt;  // inverse bulk viscosity
+			alpha = svBulk->alpha; // effective thermal expansion
+			pn    = svBulk->pn;    // pressure history
+			Tn    = svBulk->Tn;    // temperature history
+		}
 
 		// compute gravity terms
 		gx = rho*grav[0];
@@ -2629,3 +2655,77 @@ PetscErrorCode JacResSetVelRotation(JacRes *jr)
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
+//---------------------------------------------------------------------------
+#undef __FUNCT__
+#define __FUNCT__ "RemoveDikeStrain"
+PetscErrorCode RemoveDikeStrain(JacRes *jr)
+{
+	// REMOVE DIKE STRAIN - howellsm
+	FDSTAG     *fs;
+	SolVarCell *svCell;
+	SolVarDev  *svDev;
+
+	PetscInt    i, j, k, nx, ny, nz, sx, sy, sz, iter;
+	PetscScalar ***vx,  ***vy,  ***vz;
+	PetscScalar ***dxx, ***dyy, ***dzz; // ***dxz;
+
+	// Add dike prep - howellsm
+	DikeParams *Dike;
+	BCCtx *bc;
+	PetscScalar bdx, MM;
+
+	PetscErrorCode ierr;
+	PetscFunctionBegin;
+
+	fs   = jr->fs;
+	bc   = jr->bc;
+	Dike = bc->Dike;
+
+	if (Dike->On == 1) {
+
+		// access local (ghosted) velocity components
+		ierr = DMDAVecGetArray(fs->DA_X,   jr->lvx,  &vx);  CHKERRQ(ierr);
+		ierr = DMDAVecGetArray(fs->DA_Y,   jr->lvy,  &vy);  CHKERRQ(ierr);
+		ierr = DMDAVecGetArray(fs->DA_Z,   jr->lvz,  &vz);  CHKERRQ(ierr);
+
+		// access global strain-rate components
+		ierr = DMDAVecGetArray(fs->DA_CEN, jr->ldxx, &dxx); CHKERRQ(ierr);
+		ierr = DMDAVecGetArray(fs->DA_CEN, jr->ldyy, &dyy); CHKERRQ(ierr);
+		ierr = DMDAVecGetArray(fs->DA_CEN, jr->ldzz, &dzz); CHKERRQ(ierr);
+
+		//-------------------------------
+		// Remove dike strain - howellsm
+		//-------------------------------
+	
+		iter = 0;
+		GET_CELL_RANGE(nx, sx, fs->dsx)
+		GET_CELL_RANGE(ny, sy, fs->dsy)
+		GET_CELL_RANGE(nz, sz, fs->dsz)
+
+		START_STD_LOOP
+		{
+			// access solution variables
+			svCell = &jr->svCell[iter++];
+			svDev  = &svCell->svDev;
+			// Revome dike contribution to deviatoric
+
+			bdx = SIZE_NODE(i, sx, fs->dsx);
+			if ((i == Dike->indx) && (k > Dike->indzBot - 2 && k <= Dike->indzTop  + 1)) {
+				MM = - (2.0 / 3.0) * (2.0 * Dike->Vx * Dike->M / bdx);
+				dxx[k][j][i] -= (2.0 / 3.0) * (2.0 * Dike->Vx * Dike->M / bdx);
+				dyy[k][j][i] += (1.0 / 3.0) * (2.0 * Dike->Vx * Dike->M / bdx);
+				dzz[k][j][i] += (1.0 / 3.0) * (2.0 * Dike->Vx * Dike->M / bdx);
+				// dxz[k][j][i] = 0;
+
+				svCell->dxx  = dxx[k][j][i];
+				svCell->dyy  = dyy[k][j][i];
+				svCell->dzz  = dzz[k][j][i];
+
+			}
+
+		}
+		END_STD_LOOP
+	}
+
+	PetscFunctionReturn(0);
+}

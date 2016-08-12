@@ -2521,7 +2521,8 @@ PetscErrorCode MarkPlasticHealing(AdvCtx *actx, UserCtx *user, JacRes *jr)
 
 		// Dike material gets healed every timestep
 		if (Dike->On == 1 && (I >= Dike->indx -1 && I <= Dike->indx + 1) && (K > Dike->indzBot - 2 && K <= Dike->indzTop  + 1)) {
-			P->APS  = 0;
+			// P->APS /= (dt / (tau) + 1);
+			P->APS = 0;
 		}
 		// Otherwise, time dependant
 		else {
