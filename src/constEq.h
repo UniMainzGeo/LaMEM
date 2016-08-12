@@ -134,22 +134,6 @@ PetscErrorCode GetStressCell(
 		PetscScalar  dyy,    // ...
 		PetscScalar  dzz);   // ...
 
-// compute plastic strain-rate and shear heating term on cell in dike w/ contribution to SR removed
-PetscErrorCode GetPlStrainDikeCell(
-		SolVarCell  *svCell, // solution variables
-		MatParLim   *lim,    // phase parameters limits
-		PetscScalar  dxx,    // effective normal strain rate components
-		PetscScalar  dyy,    // ...
-		PetscScalar  dzz);   // ...
-
-// compute stress, plastic strain-rate and shear heating term on cell
-PetscErrorCode GetStressDikeCell(
-		SolVarCell  *svCell, // solution variables
-		MatParLim   *lim,    // phase parameters limits
-		PetscScalar  dxx,    // effective normal strain rate components
-		PetscScalar  dyy,    // ...
-		PetscScalar  dzz);   // ...
-
 // compute stress, plastic strain-rate and shear heating term on edge
 PetscErrorCode GetStressEdge(
 	SolVarEdge  *svEdge, // solution variables

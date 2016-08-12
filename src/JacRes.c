@@ -889,63 +889,25 @@ PetscErrorCode JacResGetResidual(JacRes *jr)
 
 		// store creep viscosity
 		svCell->eta_creep = eta_creep;
-		
-		// If the dike is on, we want to remove its effect on plasticity w/out removing
-		// the effects on stresses - howellsm
-		if (Dike->On == 1 && (i == Dike->indx) && (k > Dike->indzBot - 2 && k <= Dike->indzTop  + 1)) {
-			// compute plastic strain-rate and shear heating term on cell in dike w/ contribution to SR removed
-			ierr = GetPlStrainDikeCell(svCell, matLim, XX, YY, ZZ); CHKERRQ(ierr);
 
-			// evaluate volumetric constitutive equations
-			ierr = VolConstEq(svBulk, numPhases, phases, svCell->phRat, matLim, depth, dt, pc-pShift , Tc); CHKERRQ(ierr);
+		// compute stress, plastic strain rate and shear heating term on cell
+		ierr = GetStressCell(svCell, matLim, XX, YY, ZZ); CHKERRQ(ierr);
 
-			// access
-			theta = svBulk->theta; // volumetric strain rate
-			rho   = svBulk->rho;   // effective density
-			IKdt  = svBulk->IKdt;  // inverse bulk viscosity
-			alpha = svBulk->alpha; // effective thermal expansion
-			pn    = svBulk->pn;    // pressure history
-			Tn    = svBulk->Tn;    // temperature history
+		// compute total Cauchy stresses
+		sxx = svCell->sxx - pc;
+		syy = svCell->syy - pc;
+		szz = svCell->szz - pc;
 
-			// Return Dike Strain for Stress Calc
-			bdx 		  = SIZE_NODE(i, sx, fs->dsx);
-			dxx[k][j][i] += (2.0 / 3.0) * (2.0 * Dike->Vx * Dike->M / bdx);
-			dyy[k][j][i] -= (1.0 / 3.0) * (2.0 * Dike->Vx * Dike->M / bdx);
-			dzz[k][j][i] -= (1.0 / 3.0) * (2.0 * Dike->Vx * Dike->M / bdx);
+		// evaluate volumetric constitutive equations
+		ierr = VolConstEq(svBulk, numPhases, phases, svCell->phRat, matLim, depth, dt, pc-pShift , Tc); CHKERRQ(ierr);
 
-			svCell->dxx  = dxx[k][j][i];
-			svCell->dyy  = dyy[k][j][i];
-			svCell->dzz  = dzz[k][j][i];
-
-			// compute stress on cell in dike w/out dike contribution to SR removed
-			ierr = GetStressDikeCell(svCell, matLim, XX, YY, ZZ); CHKERRQ(ierr);
-			
-			// compute total Cauchy stresses
-			sxx = svCell->sxx - pc;
-			syy = svCell->syy - pc;
-			szz = svCell->szz - pc;
-		
-		}
-		else {
-			// compute stress, plastic strain rate and shear heating term on cell
-			ierr = GetStressCell(svCell, matLim, XX, YY, ZZ); CHKERRQ(ierr);
-
-			// compute total Cauchy stresses
-			sxx = svCell->sxx - pc;
-			syy = svCell->syy - pc;
-			szz = svCell->szz - pc;
-
-			// evaluate volumetric constitutive equations
-			ierr = VolConstEq(svBulk, numPhases, phases, svCell->phRat, matLim, depth, dt, pc-pShift , Tc); CHKERRQ(ierr);
-
-			// access
-			theta = svBulk->theta; // volumetric strain rate
-			rho   = svBulk->rho;   // effective density
-			IKdt  = svBulk->IKdt;  // inverse bulk viscosity
-			alpha = svBulk->alpha; // effective thermal expansion
-			pn    = svBulk->pn;    // pressure history
-			Tn    = svBulk->Tn;    // temperature history
-		}
+		// access
+		theta = svBulk->theta; // volumetric strain rate
+		rho   = svBulk->rho;   // effective density
+		IKdt  = svBulk->IKdt;  // inverse bulk viscosity
+		alpha = svBulk->alpha; // effective thermal expansion
+		pn    = svBulk->pn;    // pressure history
+		Tn    = svBulk->Tn;    // temperature history
 
 		// compute gravity terms
 		gx = rho*grav[0];
