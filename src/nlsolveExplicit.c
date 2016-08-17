@@ -90,6 +90,7 @@ PetscErrorCode GetVelocities(JacRes *jr, UserCtx *user)
 	LOCAL_TO_LOCAL(fs->DA_CEN, jr->ldzz);
 
 	ierr = DMDAVecGetArray(fs->DA_CEN, jr->ldzz, &rho); CHKERRQ(ierr);
+
 	//-------------------------------
 	// side points
 	//-------------------------------
@@ -113,6 +114,18 @@ PetscErrorCode GetVelocities(JacRes *jr, UserCtx *user)
 		vx[k][j][i] = (vx[k][j][i]-fx[k][j][i]*dt/rho_side)*damping;
 
 		//PetscPrintf(PETSC_COMM_WORLD, "    vx[%i,%i,%i]  %12.12e \n", i,j,k,vx[k][j][i]);
+
+		if (i==0)
+		{
+			rho_side = rho[k][j][i];
+		}
+		else
+		{
+			rho_side = (rho[k][j][i]+rho[k][j][i-1])/2.0;
+		}
+		//PetscPrintf(PETSC_COMM_WORLD, "    velocityx  = %12.12e \n", vx[k][j][i]);
+		vx[k][j][i] -= fx[k][j][i]*dt/rho_side;
+
 		//PetscPrintf(PETSC_COMM_WORLD, "    [k,j,i]  = [%i,%i,%i]  vx  = %12.12e fx =  %12.12e \n", k,j,i,vx[k][j][i], fx[k][j][i]);
 	}
 	END_STD_LOOP
@@ -136,6 +149,16 @@ PetscErrorCode GetVelocities(JacRes *jr, UserCtx *user)
 		vy[k][j][i] = (vy[k][j][i]-fy[k][j][i]*dt/rho_side)*damping;
 
 		//PetscPrintf(PETSC_COMM_WORLD, "    vy[%i,%i,%i]  %12.12e \n", i,j,k,vy[k][j][i]);
+		if (j==0)
+		{
+			rho_side=rho[k][j][i];
+		}
+		else
+		{
+			rho_side=(rho[k][j][i]+rho[k][j-1][i])/2.0;
+		}
+		vy[k][j][i] -= fy[k][j][i]*dt/rho_side;
+		//PetscPrintf(PETSC_COMM_WORLD, "    [k,j,i]  = [%i,%i,%i]  vy  = %12.12e fy =  %12.12e \n", k,j,i,vy[k][j][i], fy[k][j][i]);
 	}
 	END_STD_LOOP
 
@@ -161,6 +184,15 @@ PetscErrorCode GetVelocities(JacRes *jr, UserCtx *user)
 		vz[k][j][i] = (vz[k][j][i]-fz[k][j][i]*dt/rho_side)*damping;
 
 		//PetscPrintf(PETSC_COMM_WORLD, "    vz[%i,%i,%i]  %12.12e \n", i,j,k,vz[k][j][i]);
+		if (k==0)
+		{
+			rho_side=rho[k][j][i];
+		}
+		else
+		{
+			rho_side=(rho[k][j][i]+rho[k-1][j][i])/2.0;
+		}
+		vz[k][j][i] -= fz[k][j][i]*dt/rho_side;
 		//PetscPrintf(PETSC_COMM_WORLD, "    [k,j,i]  = [%i,%i,%i]  vz  = %12.12e fz =  %12.12e \n", k,j,i,vz[k][j][i], fz[k][j][i]);
 
 
@@ -682,6 +714,8 @@ PetscErrorCode ShowValues(JacRes *jr, UserCtx *user, PetscInt n)
 //	FILE *fseism;
 //	fseism = user->Station.output_file;
 
+	FILE *fseism;
+	fseism = user->Station.output_file;
 
 	fs = jr->fs;
 
@@ -754,6 +788,7 @@ PetscErrorCode ShowValues(JacRes *jr, UserCtx *user, PetscInt n)
 		//PetscPrintf(PETSC_COMM_WORLD, "    svCell.sxx,syy,szz[%i,%i,%i]  = %12.12e, %12.12e, %12.12e \n", i,j,k, svCell->sxx, svCell->syy, svCell->szz);
 		//PetscPrintf(PETSC_COMM_WORLD, "    svCell.dxx[%i,%i,%i]  = %12.12e \n", i,j,k, svCell->dxx);
 		//PetscPrintf(PETSC_COMM_WORLD, "    svCell.sxx[%i,%i,%i]  = (%12.12e) \n", i,j,k,svCell->sxx);
+
 		//PetscPrintf(PETSC_COMM_WORLD, "    svCell.hxx,yy,zz[%i,%i,%i]  = (%12.12e,%12.12e,%12.12e) \n", i,j,k, svCell->hxx,svCell->hyy,svCell->hzz);
 		//fprintf(fseism, "%i %i %i\n", i,j,k);
 		//fprintf(fseism, "%12.12e\n", gfz[k][j][i]);
@@ -761,6 +796,11 @@ PetscErrorCode ShowValues(JacRes *jr, UserCtx *user, PetscInt n)
 		//if ( fx[k][j][i] != gfx[k][j][i])		 fprintf(fseism, "%12.12e\n", fx[k][j][i]);
 		//PetscPrintf(PETSC_COMM_WORLD, "    p[%i,%i,%i]  = %12.12e \n", i,j,k, p[k][j][i]);
 		//PetscPrintf(PETSC_COMM_WORLD, "    rho  = %12.12e \n", svBulk->rho);
+
+		//fprintf(fseism, "%i %i %i\n", i,j,k);
+		//fprintf(fseism, "%12.12e\n", gfz[k][j][i]);
+		//if ( p[k][j][i] != up[k][j][i])			fprintf(fseism, "%12.12e\n", p[k][j][i]);
+		//if ( fx[k][j][i] != gfx[k][j][i])			fprintf(fseism, "%12.12e\n", fx[k][j][i]);
 
 		//fprintf(fseism, "%12.12e\n", svCell->szz);
 	}
@@ -1004,6 +1044,7 @@ PetscErrorCode GetStressFromSource(JacRes *jr, UserCtx *user, PetscInt i, PetscI
 }
 
 //---------------------------------------------------------------------------
+
 // Get damping factor for absorbing boundary
 #undef __FUNCT__
 #define __FUNCT__ "GetBoundaryDamping"
@@ -1042,4 +1083,3 @@ PetscScalar GetBoundaryDamping( UserCtx *user, PetscInt i, PetscInt j, PetscInt 
 	}
 	PetscFunctionReturn(Damping);
 }
-

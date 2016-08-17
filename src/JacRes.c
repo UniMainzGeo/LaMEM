@@ -1338,7 +1338,7 @@ PetscErrorCode JacResGetMomentumResidualAndPressure(JacRes *jr, UserCtx *user)
 
 	PetscScalar J2Inv, theta, rho, Tc, pc, pShift, dt, fssa, *grav,time;
 	PetscScalar ***fx,  ***fy,  ***fz, ***vx,  ***vy,  ***vz, ***gc;
-	PetscScalar ***dxx, ***dyy, ***dzz, ***dxy, ***dxz, ***dyz, ***p, ***T; //, ***up;
+	PetscScalar ***dxx, ***dyy, ***dzz, ***dxy, ***dxz, ***dyz, ***p, ***T, ***up;
 
 	PetscScalar eta_creep;
 	PetscScalar depth;
@@ -1379,7 +1379,7 @@ PetscErrorCode JacResGetMomentumResidualAndPressure(JacRes *jr, UserCtx *user)
 	ierr = DMDAVecGetArray(fs->DA_CEN, jr->gc,   &gc);  CHKERRQ(ierr);
 
 	ierr = DMDAVecGetArray(fs->DA_CEN, jr->lp,   &p);   CHKERRQ(ierr);
-	//ierr = DMDAVecGetArray(fs->DA_CEN, jr->gp,   &up);  CHKERRQ(ierr);
+	ierr = DMDAVecGetArray(fs->DA_CEN, jr->gp,   &up);  CHKERRQ(ierr);
 
 	ierr = DMDAVecGetArray(fs->DA_CEN, jr->lT,   &T);   CHKERRQ(ierr);
 	ierr = DMDAVecGetArray(fs->DA_CEN, jr->ldxx, &dxx); CHKERRQ(ierr);
@@ -1401,6 +1401,9 @@ PetscErrorCode JacResGetMomentumResidualAndPressure(JacRes *jr, UserCtx *user)
 
 FILE *fp;
 fp = user->Station.output_file;
+
+FILE *fseism; //used now to save traces
+fseism = user->Station.output_file;
 
 
 	//-------------------------------
@@ -1493,7 +1496,6 @@ pc = p[k][j][i];
 		//-----------
 
 		// evaluate deviatoric constitutive equations
-		// !! look with the correct pressure here
 		ierr = DevConstEq(svDev, &eta_creep, numPhases, phases, svCell->phRat, matLim, dt, pc-pShift, Tc); CHKERRQ(ierr);
 
 
@@ -1522,8 +1524,11 @@ ierr = VolConstEq(svBulk, numPhases, phases, svCell->phRat, matLim, depth, dt, p
 //------------------------------------------
 // get pressure
 //------------------------------------------
+//fprintf(fseism, "%12.12e\n", svBulk->IKdt);
+//fprintf(fseism, "%12.12e\n", p[k][j][i]);
 p[k][j][i] -= svBulk->theta/svBulk->IKdt;
 pc = p[k][j][i];
+//fprintf(fseism, "%12.12e\n", p[k][j][i]);
 //PetscPrintf(PETSC_COMM_WORLD, "    p[%i,%i,%i]  = %12.12e \n", i,j,k, p[k][j][i]);
 //------------------------------------------
 
@@ -1533,7 +1538,6 @@ pc = p[k][j][i];
 		sxx = svCell->sxx - pc;
 		syy = svCell->syy - pc;
 		szz = svCell->szz - pc;
-		//PetscPrintf(PETSC_COMM_WORLD, "    sxx[%i,%i,%i]  = %12.12e \n", i,j,k, sxx);
 
 		//PetscPrintf(PETSC_COMM_WORLD, "    sxx[%i,%i,%i]  = %12.12e \n", i,j,k, sxx);
 
@@ -1541,6 +1545,11 @@ pc = p[k][j][i];
 
 		// Add seismic source in the stress field /////////////////////////
 		if (jr->SeismicSource == PETSC_TRUE && jr->SourceParams.source_type!=MOMENT )
+
+		//fprintf(fseism, "%12.12e\n", szz);
+
+		//PetscPrintf(PETSC_COMM_WORLD, "    sxx[%i,%i,%i]  = %12.12e \n", i,j,k, sxx);
+		//fprintf(fseism, "%12.12e\n", sxx);
 
 		// Add seismic source /////////////////////////
 		if (jr->SeismicSource == PETSC_TRUE)
@@ -1552,24 +1561,9 @@ pc = p[k][j][i];
 			PetscScalar alfa;
 			PetscScalar amplitude;
 
-			t0=0.0; //1.0;
-			alfa=40.0;
-			amplitude=100.0;
+			ierr = GetStressFromSource(jr,user, i, j, k, &sxx, &syy, &szz);
 
-			time	  =  JacResGetTime(jr);
-
-			//PetscPrintf(PETSC_COMM_WORLD, "    i, j, k = %i, %i, %i \n", i,j,k);
-			//PetscPrintf(PETSC_COMM_WORLD, "    rangx, rangy, rangz = %i, %i, %i \n", fs->dsx.rank, fs->dsy.rank, fs->dsz.rank);
-			//PetscPrintf(PETSC_COMM_WORLD, "    i+nx*(fs->dsx.nproc-1), j+ny*(fs->dsy.nproc-1), k+nz*(fs->dsz.nproc-1) = %i, %i, %i \n", i+nx*(fs->dsx.nproc-1), j+ny*(fs->dsy.nproc-1), k+nz*(fs->dsz.nproc-1));
-			//PetscPrintf(PETSC_COMM_WORLD, "    i+nx*(fs->dsx.rank), j+ny*(fs->dsy.rank), k+nz*(fs->dsz.rank) = %i, %i, %i \n", i+nx*(fs->dsx.rank), j+ny*(fs->dsy.rank), k+nz*(fs->dsz.rank));
-			//PetscPrintf(PETSC_COMM_WORLD, "    nproc = %i, rank = %i, nnods = %i\n", ds.nproc, ds.rank, ds.nnods);
-			//PetscPrintf(PETSC_COMM_WORLD, "    nx, ny, nz = %i, %i, %i\n", nx, ny, nz);
-			//PetscPrintf(PETSC_COMM_WORLD, "    nx*fs->dsx.nproc, ny*fs->dsy.nproc, nz*fs->dsz.nproc = %i, %i, %i\n", nx*fs->dsx.nproc, ny*fs->dsy.nproc, nz*fs->dsz.nproc);
-			//PetscPrintf(PETSC_COMM_WORLD, "    sx, sy, sz = %i, %i, %i\n", sx, sy, sz);
-			//PetscPrintf(PETSC_COMM_WORLD, "    mx, my, mz = %i, %i, %i\n", mx, my, mz);
-			//PetscPrintf(PETSC_COMM_WORLD, "    source i,j,k = %i, %i, %i\n", jr->SourceParams.i, jr->SourceParams.j, jr->SourceParams.k);
-
-
+			//time	  =  JacResGetTime(jr);
 			//fprintf(fseism, "%i %i %i\n", i,j,k);
 			//fwrite(i , sizeof(PetscInt   ), 1, fp);
 			//fprintf(fp, "%i %i %i\n", jr->SourceParams.i, jr->SourceParams.j, jr->SourceParams.k);
@@ -1577,127 +1571,41 @@ pc = p[k][j][i];
 
 			//fprintf(fp, "%12.12e %12.12e %12.12e\n", jr->fs->dsx.ncels, jr->fs->dsy.ncoor->, jr->fs->dsz.ncoor);
 
-			if (jr->SourceParams.source_type == POINT)
+			/*if (jr->SourceParams.source_type == POINT)
 			{
-				//if (k==k_src && j==j_src && i==i_src)
-
-
-
-				////////////////////////////////////////////////////////////////////////
-				//////////   put in a separate function     ////////////////////////////
-				////////////////////////////////////////////////////////////////////////
-				PetscInt M, N, P, m;
-				PetscScalar xSource, ySource, zSource, coor;
-				PetscInt iSource, jSource, kSource;
-				PetscBool xBelongs, yBelongs, zBelongs;
-
-				xSource = jr->SourceParams.x;
-				ySource = jr->SourceParams.y;
-				zSource = jr->SourceParams.z;
-
-				// get number of cells
-				M = jr->fs->dsx.ncels;
-				N = jr->fs->dsy.ncels;
-				P = jr->fs->dsz.ncels;
-
-				// belongs the point source to this process?  /////////////////////////
-				xBelongs = PETSC_FALSE; yBelongs = PETSC_FALSE; zBelongs = PETSC_FALSE;
-				while (PETSC_TRUE)
-				{
-					m = 0;
-					coor = jr->fs->dsx.ncoor[m];
-					if (xSource > coor)
-					{
-						while (m < M)
-						{
-							coor = jr->fs->dsx.ncoor[m+1];
-							if (xSource <= coor)
-							{
-								xBelongs = PETSC_TRUE;
-								break;
-							}
-							m += 1;
-						}
-					}
-					if (xBelongs == PETSC_FALSE) break;
-					m = 0;
-					coor = jr->fs->dsy.ncoor[m];
-					if (ySource > coor)
-					{
-						while (m < N)
-						{
-							coor = jr->fs->dsy.ncoor[m+1];
-							if (ySource <= coor)
-							{
-								yBelongs = PETSC_TRUE;
-								break;
-							}
-							m += 1;
-						}
-					}
-					if (yBelongs == PETSC_FALSE) break;
-					m = 0;
-					coor = jr->fs->dsz.ncoor[m];
-					if (zSource > coor)
-					{
-						while (m < P)
-						{
-							coor = jr->fs->dsz.ncoor[m+1];
-							if (zSource <= coor)
-							{
-								zBelongs = PETSC_TRUE;
-								break;
-							}
-							m += 1;
-						}
-					}
-					break;
-				}
-				////////////////////////////////////////////////////////////////////////
-
-				if (zBelongs == PETSC_TRUE)
-				{
-					iSource = FindPointInCell(jr->fs->dsx.ncoor, 0, M, xSource)+nx*(fs->dsx.rank);
-					jSource = FindPointInCell(jr->fs->dsy.ncoor, 0, N, ySource)+ny*(fs->dsy.rank);
-					kSource = FindPointInCell(jr->fs->dsz.ncoor, 0, P, zSource)+nz*(fs->dsz.rank);
-
-					//fprintf(fp, "%i %i %i\n", iSource+nx*(fs->dsx.rank), jSource+ny*(fs->dsy.rank), kSource+nz*(fs->dsz.rank));
-					//fprintf(fp, "%i %i %i\n", iSource, jSource, kSource);
-
-					if (k==kSource && j == jSource && i == iSource)
-					//if (k==jr->SourceParams.k && j == jr->SourceParams.j && i == jr->SourceParams.i)
-					//if (k+nz*(fs->dsz.rank)==jr->SourceParams.k && j+ny*(fs->dsy.rank) == jr->SourceParams.j && i+nx*(fs->dsx.rank) == jr->SourceParams.i)
-					{
-						//fprintf(fp, "%i %i %i\n", i, j, k);
-						//fprintf(fp, "%i %i %i\n", jr->SourceParams.i, jr->SourceParams.j, jr->SourceParams.k);
-						fprintf(fp, "%i %i %i\n", iSource, jSource, kSource);
-						sxx = 0*sxx+amplitude*exp(-alfa*((time-t0)*(time-t0)));
-						szz = 0*szz-amplitude*exp(-alfa*((time-t0)*(time-t0)));
-					}
-				}
-				////////////////////////////////////////////////////////////////////////
-				////////////////////////////////////////////////////////////////////////
-				////////////////////////////////////////////////////////////////////////
+				ierr = GetStressFromSource(jr,user, i, j,  k, &sxx, &syy, &szz);
+				//if (JacResGetStep(jr) == 3) fprintf(fseism, "%12.12e\n", szz);
 			}
 			else if (jr->SourceParams.source_type == PLANE)
 			{
 				if (k==1)
 				{
+					PetscScalar t0;
+					PetscScalar alfa;
+					PetscScalar amplitude;
+					//fprintf(fseism, "%i %i %i\n", i, j, k);
 					//szz = 0*szz + amplitude*exp(-alfa*((time-t0)*(time-t0)));
 					//sxx = 0*sxx -  amplitude/2.0*exp(-alfa*((time-t0)*(time-t0)));
 					//syy = 0*syy -  amplitude/2.0*exp(-alfa*((time-t0)*(time-t0)));
+					t0=1.0;
+					alfa=40.0;
+					amplitude=80.0;
 
 					szz = 		amplitude;
 					sxx =	- 	amplitude/2.0;
 					syy = 	-  	amplitude/2.0;
 				}
-			}
+			}*/
+
 		}
 		///////////////////////////////////////////////
 
 		// USE REAL DENSITY HERE !!!
 
 		///////////////////////////////////
+
+		//if (JacResGetStep(jr) == 3)
+			//fprintf(fseism, "%12.12e\n", sxx);
 
 		//PetscPrintf(PETSC_COMM_WORLD, "    szz after apply the source[%i,%i,%i] in time=%12.12e: %12.12e \n", i,j,k,time, szz);
 
@@ -2158,8 +2066,8 @@ pc = p[k][j][i];
 
 	ierr = DMDAVecRestoreArray(fs->DA_CEN, jr->gc,   &gc);  CHKERRQ(ierr);
 
-	ierr = DMDAVecRestoreArray(fs->DA_CEN, jr->lp,   &p);  CHKERRQ(ierr);
-	//ierr = DMDAVecRestoreArray(fs->DA_CEN, jr->gp,   &up);   CHKERRQ(ierr);
+	ierr = DMDAVecRestoreArray(fs->DA_CEN, jr->lp,   &p);   CHKERRQ(ierr);
+	ierr = DMDAVecRestoreArray(fs->DA_CEN, jr->gp,   &up);  CHKERRQ(ierr);
 
 
 	ierr = DMDAVecRestoreArray(fs->DA_CEN, jr->lT,   &T);   CHKERRQ(ierr);
@@ -2176,8 +2084,9 @@ pc = p[k][j][i];
 	ierr = DMDAVecRestoreArray(fs->DA_Y,   jr->lvy,  &vy);  CHKERRQ(ierr);
 	ierr = DMDAVecRestoreArray(fs->DA_Z,   jr->lvz,  &vz);  CHKERRQ(ierr);
 
-
 //GLOBAL_TO_LOCAL(fs->DA_CEN, jr->gp, jr->lp)
+
+	//GLOBAL_TO_LOCAL(fs->DA_CEN, jr->gp, jr->lp)
 
 	// assemble global residuals from local contributions
 	LOCAL_TO_GLOBAL(fs->DA_X, jr->lfx, jr->gfx)
@@ -2185,7 +2094,12 @@ pc = p[k][j][i];
 	LOCAL_TO_GLOBAL(fs->DA_Z, jr->lfz, jr->gfz)
 
 
-LOCAL_TO_GLOBAL(fs->DA_CEN, jr->lp, jr->gp)
+	// communicate boundary values
+	LOCAL_TO_LOCAL(fs->DA_CEN, jr->lp);
+
+	LOCAL_TO_GLOBAL(fs->DA_CEN, jr->lp, jr->gp);
+
+	ierr = ShowValues(jr,user,3); CHKERRQ(ierr);
 
 
 	PetscFunctionReturn(0);

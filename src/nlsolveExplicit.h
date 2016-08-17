@@ -33,11 +33,11 @@ PetscErrorCode CheckTimeStep(JacRes *jr, UserCtx *user);
 PetscErrorCode CheckElasticProperties(JacRes *jr, UserCtx *user);
 //PetscErrorCode ShowValues(JacRes *jr, PetscInt n); //, UserCtx *user);
 PetscErrorCode ShowValues(JacRes *jr, UserCtx *user, PetscInt n);
-
 PetscErrorCode SaveVelocitiesForSeismicStation(JacRes *jr, UserCtx *user);
 //PetscErrorCode PutSeismicSource(JacRes *jr, AdvCtx *actx, UserCtx *user);
 PetscErrorCode PrintStress(JacRes *jr);
 PetscErrorCode UpdateHistoryFields(JacRes *jr);
-PetscErrorCode ModifyStress(JacRes *jr);
+//PetscErrorCode ModifyStress(JacRes *jr);
+PetscErrorCode GetStressFromSource(JacRes *jr, UserCtx *User, PetscInt i, PetscInt j, PetscInt k, PetscScalar *sxx, PetscScalar *syy, PetscScalar *szz);
 
 #endif
