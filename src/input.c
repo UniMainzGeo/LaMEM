@@ -442,6 +442,19 @@ PetscErrorCode InputReadFile(JacRes *jr, UserCtx *user, FILE *fp)
 			{
 				//SETERRQ(PETSC_COMM_SELF, PETSC_ERR_USER, "Incorrect source coordinates\n");
 			}
+
+			// Source function
+			parse_GetDouble( fp, "amplitude", &user->SourceParams.amplitude, &found );
+			parse_GetDouble( fp, "alfa", &user->SourceParams.alfa, &found );
+			parse_GetDouble( fp, "t0", &user->SourceParams.t0, &found );
+
+			// Initialize other fields
+			user->SourceParams.i = -1;
+			user->SourceParams.j = -1;
+			user->SourceParams.k = -1;
+			user->SourceParams.xrank = -1;
+			user->SourceParams.yrank = -1;
+			user->SourceParams.zrank = -1;
 		}
 	}else
 	{

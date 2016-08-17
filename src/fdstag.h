@@ -439,3 +439,5 @@ PetscErrorCode FDSTAGProcPartitioning(FDSTAG *fs, PetscScalar chLen);
 	PetscScalar *weights,
 	PetscInt    *slots);
  */
+
+PetscBool FDSTAGPointIsInCurrentProccess(FDSTAG *fs, PetscScalar x, PetscScalar y, PetscScalar z);
