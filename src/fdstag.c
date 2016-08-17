@@ -1387,3 +1387,74 @@ void splitPointSlot(
 }
 */
 //---------------------------------------------------------------------------
+
+//---------------------------------------------------------------------------
+#undef __FUNCT__
+#define __FUNCT__ "FDSTAGPointIsInCurrentProccess"
+PetscBool FDSTAGPointIsInCurrentProccess(FDSTAG *fs, PetscScalar x, PetscScalar y, PetscScalar z)
+{
+	// belongs the point (x, y, z) to this process?
+
+	PetscBool xBelongs, yBelongs, zBelongs;
+	PetscInt M, N, P, m;
+	PetscScalar coor;
+
+	// get number of cells
+	M = fs->dsx.ncels;
+	N = fs->dsy.ncels;
+	P = fs->dsz.ncels;
+
+	xBelongs = PETSC_FALSE; yBelongs = PETSC_FALSE; zBelongs = PETSC_FALSE;
+	while (PETSC_TRUE)
+	{
+		m = 0;
+		coor = fs->dsx.ncoor[m];
+		if (x > coor)
+		{
+			while (m < M)
+			{
+				coor = fs->dsx.ncoor[m+1];
+				if (x <= coor)
+				{
+					xBelongs = PETSC_TRUE;
+					break;
+				}
+				m += 1;
+			}
+		}
+		if (xBelongs == PETSC_FALSE) break;
+		m = 0;
+		coor = fs->dsy.ncoor[m];
+		if (y > coor)
+		{
+			while (m < N)
+			{
+				coor = fs->dsy.ncoor[m+1];
+				if (y <= coor)
+				{
+					yBelongs = PETSC_TRUE;
+					break;
+				}
+				m += 1;
+			}
+		}
+		if (yBelongs == PETSC_FALSE) break;
+		m = 0;
+		coor = fs->dsz.ncoor[m];
+		if (z > coor)
+		{
+			while (m < P)
+			{
+				coor = fs->dsz.ncoor[m+1];
+				if (z <= coor)
+				{
+					zBelongs = PETSC_TRUE;
+					break;
+				}
+				m += 1;
+			}
+		}
+		break;
+	}
+	return(zBelongs);
+}

@@ -74,9 +74,12 @@ PetscErrorCode GetVelocities(JacRes *jr)
 	}
 	END_STD_LOOP
 
+	ierr = DMDAVecRestoreArray(fs->DA_CEN, jr->ldxx, &rho); CHKERRQ(ierr);
+
 	// communicate boundary values ??
 	LOCAL_TO_LOCAL(fs->DA_CEN, jr->ldxx);
 
+	ierr = DMDAVecGetArray(fs->DA_CEN, jr->ldxx, &rho); CHKERRQ(ierr);
 	//-------------------------------
 	// side points
 	//-------------------------------
@@ -87,13 +90,17 @@ PetscErrorCode GetVelocities(JacRes *jr)
 
 	START_STD_LOOP
 	{
-		rho_side=(rho[k][j][i]+rho[k][j][i-1])/2.0;
-		//rho_side=2600.0;
+		if (i==0)
+		{
+			rho_side = rho[k][j][i];
+		}
+		else
+		{
+			rho_side = (rho[k][j][i]+rho[k][j][i-1])/2.0;
+		}
 		//PetscPrintf(PETSC_COMM_WORLD, "    velocityx  = %12.12e \n", vx[k][j][i]);
 		vx[k][j][i] -= fx[k][j][i]*dt/rho_side;
 		//PetscPrintf(PETSC_COMM_WORLD, "    [k,j,i]  = [%i,%i,%i]  vx  = %12.12e fx =  %12.12e \n", k,j,i,vx[k][j][i], fx[k][j][i]);
-
-
 	}
 	END_STD_LOOP
 
@@ -104,8 +111,14 @@ PetscErrorCode GetVelocities(JacRes *jr)
 
 	START_STD_LOOP
 	{
-		rho_side=(rho[k][j][i]+rho[k][j-1][i])/2.0;
-		//rho_side=2600.0;
+		if (j==0)
+		{
+			rho_side=rho[k][j][i];
+		}
+		else
+		{
+			rho_side=(rho[k][j][i]+rho[k][j-1][i])/2.0;
+		}
 		vy[k][j][i] -= fy[k][j][i]*dt/rho_side;
 		//PetscPrintf(PETSC_COMM_WORLD, "    [k,j,i]  = [%i,%i,%i]  vy  = %12.12e fy =  %12.12e \n", k,j,i,vy[k][j][i], fy[k][j][i]);
 	}
@@ -121,8 +134,14 @@ PetscErrorCode GetVelocities(JacRes *jr)
 
 	START_STD_LOOP
 	{
-		rho_side=(rho[k][j][i]+rho[k-1][j][i])/2.0;
-		//rho_side=2600.0;
+		if (k==0)
+		{
+			rho_side=rho[k][j][i];
+		}
+		else
+		{
+			rho_side=(rho[k][j][i]+rho[k-1][j][i])/2.0;
+		}
 		vz[k][j][i] -= fz[k][j][i]*dt/rho_side;
 		//PetscPrintf(PETSC_COMM_WORLD, "    [k,j,i]  = [%i,%i,%i]  vz  = %12.12e fz =  %12.12e \n", k,j,i,vz[k][j][i], fz[k][j][i]);
 
@@ -150,9 +169,9 @@ PetscErrorCode GetVelocities(JacRes *jr)
 	//assemble global residuals from local contributions
 
 
-	GLOBAL_TO_LOCAL(fs->DA_X, jr->gvx, jr->lvx)
-	GLOBAL_TO_LOCAL(fs->DA_Y, jr->gvy, jr->lvy)
-	GLOBAL_TO_LOCAL(fs->DA_Z, jr->gvz, jr->lvz)
+	//GLOBAL_TO_LOCAL(fs->DA_X, jr->gvx, jr->lvx)
+	//GLOBAL_TO_LOCAL(fs->DA_Y, jr->gvy, jr->lvy)
+	//GLOBAL_TO_LOCAL(fs->DA_Z, jr->gvz, jr->lvz)
 
 	//LOCAL_TO_GLOBAL()
 
@@ -1515,7 +1534,7 @@ PetscErrorCode SaveVelocitiesForSeismicStation(JacRes *jr, UserCtx *user)
 
 #undef __FUNCT__
 #define __FUNCT__ "ShowValues"
-PetscErrorCode ShowValues(JacRes *jr, PetscInt n) //, UserCtx *user)
+PetscErrorCode ShowValues(JacRes *jr, UserCtx *user, PetscInt n)
 {
 	// Show the values of velocity, pressure, stress, strain,...
 
@@ -1535,6 +1554,10 @@ PetscErrorCode ShowValues(JacRes *jr, PetscInt n) //, UserCtx *user)
 
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
+
+	FILE *fseism;
+	fseism = user->Station.output_file;
+
 
 	fs = jr->fs;
 
@@ -1569,7 +1592,8 @@ PetscErrorCode ShowValues(JacRes *jr, PetscInt n) //, UserCtx *user)
 	GET_CELL_RANGE(nz, sz, fs->dsz)
 	//PetscPrintf(PETSC_COMM_WORLD, "    [%i,%i,%i] \n", nx,ny,nz);
 
-	PetscPrintf(PETSC_COMM_WORLD, "\n    %i ************************************** \n ",n);
+	//PetscPrintf(PETSC_COMM_WORLD, "\n    %i ************************************** \n ",n);
+	//fprintf(fseism, "%i ************************************** \n ",n);
 
 	START_STD_LOOP
 	{
@@ -1586,7 +1610,7 @@ PetscErrorCode ShowValues(JacRes *jr, PetscInt n) //, UserCtx *user)
 
 		if (k==1 ) //&& j==2 && i==2)
 		{
-
+			//fprintf(fseism, "%i %i %i\n", i,j,k);
 
 			//PetscPrintf(PETSC_COMM_WORLD, "\n    %i - Values in [%i,%i,%i] ************************************** \n ",n, i,j,k);
 			//PetscPrintf(PETSC_COMM_WORLD, "    rho, bulk, shear  = %12.12e, %12.12e, %12.12e \n", rho, bulk, shear);
@@ -1605,6 +1629,12 @@ PetscErrorCode ShowValues(JacRes *jr, PetscInt n) //, UserCtx *user)
 		//PetscPrintf(PETSC_COMM_WORLD, "    svBulk.theta[%i,%i,%i]  = %12.12e \n", i,j,k, svBulk->theta);
 		//PetscPrintf(PETSC_COMM_WORLD, "    svCell.dzz[%i,%i,%i]  = %12.12e \n", i,j,k, svCell->dzz);
 		//PetscPrintf(PETSC_COMM_WORLD, "    svCell.sxx[%i,%i,%i]  = (%12.12e) \n", i,j,k,svCell->sxx);
+		//fprintf(fseism, "%i %i %i\n", i,j,k);
+		//fprintf(fseism, "%12.12e\n", gfz[k][j][i]);
+		//if ( p[k][j][i] != up[k][j][i])			fprintf(fseism, "%12.12e\n", p[k][j][i]);
+		//if ( fx[k][j][i] != gfx[k][j][i])			fprintf(fseism, "%12.12e\n", fx[k][j][i]);
+
+		//fprintf(fseism, "%12.12e\n", svCell->szz);
 	}
 	END_STD_LOOP
 
@@ -1620,6 +1650,8 @@ PetscErrorCode ShowValues(JacRes *jr, PetscInt n) //, UserCtx *user)
 		//if (k==0 && j==2 && i==2)
 		//{
 			//PetscPrintf(PETSC_COMM_WORLD, "    gvx, lvx [%i,%i,%i] = %12.12e, %12.12e\n", i,j,k, vx[k][j][i], lvx[k][j][i]);
+			//fprintf(fseism, "    gvx, lvx [%i,%i,%i] = %12.12e, %12.12e\n", i,j,k, vx[k][j][i], lvx[k][j][i]);
+		//if ( vx[k][j][i] != lvx[k][j][i]) fprintf(fseism, "%12.12e\n", vx[k][j][i]);
 		//}
 	}
 	END_STD_LOOP
@@ -1633,6 +1665,7 @@ PetscErrorCode ShowValues(JacRes *jr, PetscInt n) //, UserCtx *user)
 		//if (k==0 && j==2 && i==2)
 		//{
 			//PetscPrintf(PETSC_COMM_WORLD, "    gvy, lvy [%i,%i,%i]= %12.12e, %12.12e\n", i,j,k, vy[k][j][i], lvy[k][j][i]);
+		//fprintf(fseism, "%12.12e\n", lvy[k][j][i]);
 		//}
 	}
 	END_STD_LOOP
@@ -1647,11 +1680,15 @@ PetscErrorCode ShowValues(JacRes *jr, PetscInt n) //, UserCtx *user)
 		//{
 			//PetscPrintf(PETSC_COMM_WORLD, "\n    gfz, lfz[%i,%i,%i]  = %12.12e, %12.12e) \n", i,j,k, gfz[k][j][i], fz[k][j][i]);
 			//PetscPrintf(PETSC_COMM_WORLD, "    gvz, lvz [%i,%i,%i] = %12.12e, %12.12e\n", i,j,k, vz[k][j][i], lvz[k][j][i]);
+		//fprintf(fseism, "    gvz, lvz [%i,%i,%i] = %12.12e, %12.12e\n", i,j,k, vz[k][j][i], lvz[k][j][i]);
+		//fprintf(fseism, "    %12.12e\n", lvz[k][j][i]);
+		//fprintf(fseism, "    [%i,%i,%i] %12.12e\n", i,j,k, vz[k][j][i]);
+		//fprintf(fseism, "%12.12e\n", vz[k][j][i]);
 		//}
 	}
 	END_STD_LOOP
 
-	PetscPrintf(PETSC_COMM_WORLD, "    **************************************************************************** \n \n");
+	//PetscPrintf(PETSC_COMM_WORLD, "    **************************************************************************** \n \n");
 
 	// restore vectors
 
@@ -1678,3 +1715,71 @@ PetscErrorCode ShowValues(JacRes *jr, PetscInt n) //, UserCtx *user)
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
+
+//---------------------------------------------------------------------------
+// Apply source
+#undef __FUNCT__
+#define __FUNCT__ "GetStressFromSource"
+PetscErrorCode GetStressFromSource(JacRes *jr, UserCtx *user, PetscInt i, PetscInt j, PetscInt k, PetscScalar *sxx, PetscScalar *syy, PetscScalar *szz)
+{
+	PetscInt M, N, P;
+	PetscScalar coor, time;
+
+	time	  =  JacResGetTime(jr);
+
+	//FILE *fseism;
+	//fseism = user->Station.output_file;
+
+	if (jr->SourceParams.source_type == PLANE)
+	{
+		if (k==1)
+		{
+			*szz = 		jr->SourceParams.amplitude;
+			*sxx =	- 	jr->SourceParams.amplitude/2.0;
+			*syy = 	-  	jr->SourceParams.amplitude/2.0;
+		}
+	}
+	else if (jr->SourceParams.source_type == POINT)
+	{
+		// improve that
+		if (jr->SourceParams.xrank == -1) // then first time we are here
+		{
+			// belongs the point source to this process?, then fillSourceParameters structure
+			if (FDSTAGPointIsInCurrentProccess(jr->fs, jr->SourceParams.x, jr->SourceParams.y, jr->SourceParams.z) == PETSC_TRUE)
+			{
+				jr->SourceParams.xrank = jr->fs->dsx.rank;
+				jr->SourceParams.yrank = jr->fs->dsy.rank;
+				jr->SourceParams.zrank = jr->fs->dsz.rank;
+
+				M = jr->fs->dsx.ncels;
+				N = jr->fs->dsy.ncels;
+				P = jr->fs->dsz.ncels;
+
+				jr->SourceParams.i = FindPointInCell(jr->fs->dsx.ncoor, 0, M, jr->SourceParams.x)+M*(jr->fs->dsx.rank);
+				jr->SourceParams.j = FindPointInCell(jr->fs->dsy.ncoor, 0, N, jr->SourceParams.y)+N*(jr->fs->dsy.rank);
+				jr->SourceParams.k = FindPointInCell(jr->fs->dsz.ncoor, 0, P, jr->SourceParams.z)+P*(jr->fs->dsz.rank);
+			}
+		}
+		if (jr->SourceParams.xrank == jr->fs->dsx.rank && jr->SourceParams.yrank == jr->fs->dsy.rank && jr->SourceParams.zrank == jr->fs->dsz.rank)
+		{
+			if (k==jr->SourceParams.k && j == jr->SourceParams.j && i == jr->SourceParams.i)
+			{
+				*sxx = *sxx*0 + jr->SourceParams.amplitude*exp(-jr->SourceParams.alfa*((time-jr->SourceParams.t0)*(time-jr->SourceParams.t0)));
+				*syy = 0.0;
+				*szz = *szz*0 + jr->SourceParams.amplitude*exp(-jr->SourceParams.alfa*((time-jr->SourceParams.t0)*(time-jr->SourceParams.t0)));
+			}
+		}
+
+		/*if (k==7 && j == 2 && i == 2)
+		{
+			*sxx = *sxx*0 + jr->SourceParams.amplitude*exp(-jr->SourceParams.alfa*((time-jr->SourceParams.t0)*(time-jr->SourceParams.t0)));
+			//*syy = 0.0;
+			*szz = *szz*0 + jr->SourceParams.amplitude*exp(-jr->SourceParams.alfa*((time-jr->SourceParams.t0)*(time-jr->SourceParams.t0)));
+
+			//if (JacResGetStep(jr) == 3) fprintf(fseism, "%12.12e\n", *szz);
+		}*/
+	}
+
+	PetscFunctionReturn(0);
+}
+

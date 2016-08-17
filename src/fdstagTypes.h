@@ -183,6 +183,12 @@ typedef struct // Improve and put more options
 	PetscInt i;
 	PetscInt j;
 	PetscInt k;
+	PetscInt xrank;
+	PetscInt yrank;
+	PetscInt zrank;
+	PetscScalar amplitude;
+	PetscScalar alfa;
+	PetscScalar t0;
 
 } SourceParam;
 
