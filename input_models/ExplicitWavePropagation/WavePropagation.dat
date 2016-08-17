@@ -34,7 +34,7 @@ msetup 					= homo
 # Define input/output and numerics-related stuff
 OutputFile					=	ExplicitWavePropagation		
 save_timesteps				=	10				# save every ? timesteps
-time_end					=	100	# last timestep
+time_end					=	200	# last timestep
 CFL							=	0.5				# CFL, dt-based criterium
 dt_max						=	1e-5	  	   	# Maximum timestep [years if dimensional]
 save_breakpoints			= 	-1 				#  -1: don't save breakpoints + initial particles
@@ -118,10 +118,13 @@ DII_ref 						=	1
 seismic_source 		=	1
 
 # Define seismic source properties  (to improve)
-source_type 		= 	point		#point or plane
-x_source = 3000
-y_source = 5000
-z_source = 3300
+source_type 		= 	plane		#point or plane
+x_source = 4000
+y_source = 2500
+z_source = 3000
+amplitude = 80
+alfa = 40
+t0 = 0
 # 
 
 # ---------------------------------------------------------------------------------------------------
