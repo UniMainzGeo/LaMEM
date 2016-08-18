@@ -77,7 +77,6 @@ Temp_bottom					=   0 				# Temperature @ bottom; side BC's are flux-free
 	-Ridge.Enforce  1 		# Enforce ridge on markers each timestep
 	-Ridge.Heal     1       # Heal APS according to timescale tauheal
 	-tauHeal		0.10    # Plastic healing timescale [Myr]
-	-rho_lithos     2900    # Viscosity for pressure in ys calc [Pa-s]
 	-Ridge.Vx   	2.0     # 1/2 spreading rate, [cm/yr]
 	-Ridge.H_lith 	6.0		# Lithosphere thickness at ridge axis
 	-Ridge.H_asth   14.0    # Asthenosphere thickness below axis
