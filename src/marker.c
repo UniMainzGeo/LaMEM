@@ -2396,6 +2396,8 @@ PetscErrorCode ADVMarkEnforceRidge(AdvCtx *actx, FreeSurf *surf, UserCtx *user)
 	Lt = rb->L_trough;
 	Lr = rb->L_damp;
 	
+	fprintf(stderr, "elbuggo Tt=%f, H=%f\n",rb->Tasth,rb->BoundH);
+
 	// loop over local markers and assign phases
 	for (imark = 0; imark < actx->nummark; imark++)
 	{

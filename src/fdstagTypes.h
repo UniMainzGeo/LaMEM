@@ -93,8 +93,8 @@ typedef struct
 // Structure that holds ridge parameters - howellsm
 typedef struct
 {
-	PetscScalar H_lith, H_asth, L_axis, L_double, L_notch, L_trough;
-	PetscScalar L_damp, Vx;
+	PetscScalar H_lith, H_asth, Tasth, L_axis, L_double, L_notch, L_trough;
+	PetscScalar L_damp, Vx, BoundH;
 	PetscInt    On, Enforce, Heal;
 
 	// For finding the lithosphere and enforcing the ridge

@@ -390,10 +390,11 @@ void ScalingInput(Scaling *scal, UserCtx *user)
 	user->Ridge.L_double 	/= scal->length;
 	user->Ridge.L_notch 	/= scal->length;
 	user->Ridge.L_trough 	/= scal->length;
+	user->Ridge.BoundH      /= scal->length;
 	user->Ridge.Vx 			/= scal->velocity;
 	user->tauHeal 			/= scal->time;
 	user->Dike.Vx           = user->Ridge.Vx;
-
+	user->Ridge.Tasth       = (user->Ridge.Tasth + scal->Tshift)/scal->temperature;
 }
 //---------------------------------------------------------------------------
 // scaling material parameters

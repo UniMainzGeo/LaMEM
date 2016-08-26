@@ -489,6 +489,8 @@ PetscErrorCode InputSetDefaultValues(JacRes *jr, UserCtx *user)
 	user->Ridge.L_damp    	= 10.0;
 	user->Ridge.Vx   		= 3.0;
 	user->tauHeal   		= 0.0;
+	user->Ridge.Tasth  		= 600.0;
+	user->Ridge.BoundH 		= 0.5;
 
 	// Default for Dike -  howellsm
 	user->Dike.On 	      	= 0;
@@ -646,6 +648,8 @@ PetscErrorCode InputReadFile(JacRes *jr, UserCtx *user, FILE *fp)
 	parse_GetDouble(fp, "Ridge.L_damp"		, &user->Ridge.L_damp 	,  &found );
 	parse_GetDouble(fp, "Ridge.Vx"			, &user->Ridge.Vx 		,  &found );
 	parse_GetDouble(fp, "tauHeal"			, &user->tauHeal 		,  &found );
+	parse_GetDouble(fp, "Ridge.Tasth"		, &user->Ridge.Tasth	,  &found );
+	parse_GetDouble(fp, "Ridge.BoundH"		, &user->Ridge.BoundH	,  &found );
 
 	// Dike varaiables - howellsm
 	parse_GetInt(	fp, "Dike.On"	, &user->DikeOn 	, &found );
@@ -786,6 +790,8 @@ PetscErrorCode InputReadCommLine(UserCtx *user )
 	PetscOptionsGetReal(PETSC_NULL, "-Ridge.L_damp"		, &user->Ridge.L_damp 	, PETSC_NULL);
 	PetscOptionsGetReal(PETSC_NULL, "-Ridge.Vx"			, &user->Ridge.Vx 		, PETSC_NULL);
 	PetscOptionsGetReal(PETSC_NULL, "-tauHeal"			, &user->tauHeal 		, PETSC_NULL);
+	PetscOptionsGetReal(PETSC_NULL, "-Ridge.Tasth"		, &user->Ridge.Tasth 	, PETSC_NULL);
+	PetscOptionsGetReal(PETSC_NULL, "-Ridge.BoundH"		, &user->Ridge.BoundH	, PETSC_NULL);
 
 	// Dike varaiables - howellsm
 	PetscOptionsGetInt(PETSC_NULL , "-Dike.On"		, &user->DikeOn 	, PETSC_NULL);
