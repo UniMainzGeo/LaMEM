@@ -255,7 +255,7 @@ PetscErrorCode FreeSurfGetVelComp(
 	jr    = surf->jr;
 	fs    = jr->fs;
 	dsz   = &fs->dsz;
-	level = dsz->rank;
+	level = (PetscInt)dsz->rank;
 
 	// create column communicator
 	ierr = Discret1DGetColumnComm(dsz); CHKERRQ(ierr);
@@ -376,7 +376,7 @@ PetscErrorCode FreeSurfAdvectTopo(FreeSurf *surf)
 	step = jr->ts.dt;
 	mx   = fs->dsx.tnods;
 	my   = fs->dsy.tnods;
-	L    = fs->dsz.rank;
+	L    = (PetscInt)fs->dsz.rank;
 	gtol = jr->gtol;
 
 	// get current background strain rates
@@ -543,7 +543,7 @@ PetscErrorCode FreeSurfGetAirPhaseRatio(FreeSurf *surf)
 	fs        = jr->fs;
 	gtol      = jr->gtol;
 	numPhases = jr->numPhases;
-	L         = fs->dsz.rank;
+	L         = (PetscInt)fs->dsz.rank;
 	iter      = 0;
 
 	// access surface topography
@@ -678,7 +678,7 @@ PetscErrorCode FreeSurfAppSedimentation(FreeSurf *surf)
 	fs   = jr->fs;
 	dt   = jr->ts.dt;
 	time = jr->ts.time;
-	L    = fs->dsz.rank;
+	L    = (PetscInt)fs->dsz.rank;
 
 	// get z-coordinates of the top and bottom boundaries
 	ierr = FDSTAGGetGlobalBox(fs, NULL, NULL, &zbot, NULL, NULL, &ztop); CHKERRQ(ierr);
@@ -776,7 +776,7 @@ PetscErrorCode FreeSurfSetTopoFromFile(
 	jr    = surf->jr;
 	fs    = jr->fs;
 	dsz   = &fs->dsz;
-	level = dsz->rank;
+	level = (PetscInt)dsz->rank;
 
 
 	// characteristic length
