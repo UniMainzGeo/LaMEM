@@ -241,6 +241,26 @@ PetscErrorCode PVOutWritePressure(JacRes *jr, OutBuf *outbuf)
 }
 //---------------------------------------------------------------------------
 #undef __FUNCT__
+#define __FUNCT__ "PVOutWriteOverPressure"
+PetscErrorCode PVOutWriteOverPressure(JacRes *jr, OutBuf *outbuf)
+{
+	PetscScalar pShift;
+
+	ACCESS_FUNCTION_HEADER
+
+	cf = scal->stress;
+
+	// scale pressure shift
+	pShift = cf*jr->pShift;
+
+	ierr = JacResGetOverPressure(jr, outbuf->lbcen); CHKERRQ(ierr);
+
+	INTERPOLATE_ACCESS(outbuf->lbcen, InterpCenterCorner, 1, 0, pShift)
+
+	PetscFunctionReturn(0);
+}
+//---------------------------------------------------------------------------
+#undef __FUNCT__
 #define __FUNCT__ "PVOutWriteTemperature"
 PetscErrorCode PVOutWriteTemperature(JacRes *jr, OutBuf *outbuf)
 {

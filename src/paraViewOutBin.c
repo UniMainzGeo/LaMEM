@@ -336,6 +336,7 @@ PetscInt OutMaskCountActive(OutMask *omask)
 	if(omask->visc_creep)     cnt++; // creep effective viscosity
 	if(omask->velocity)       cnt++; // velocity
 	if(omask->pressure)       cnt++; // pressure
+	if(omask->overpressure)   cnt++; // overpressure
 	if(omask->temperature)    cnt++; // temperature
 	if(omask->dev_stress)     cnt++; // deviatoric stress tensor
 	if(omask->j2_dev_stress)  cnt++; // deviatoric stress second invariant
@@ -433,6 +434,7 @@ PetscErrorCode PVOutCreate(PVOut *pvout, JacRes *jr, const char *filename)
 	if(omask->visc_creep)     OutVecCreate(&outvecs[cnt++], "visc_creep",     scal->lbl_viscosity,        &PVOutWriteViscCreep,    1);
 	if(omask->velocity)       OutVecCreate(&outvecs[cnt++], "velocity",       scal->lbl_velocity,         &PVOutWriteVelocity,     3);
 	if(omask->pressure)       OutVecCreate(&outvecs[cnt++], "pressure",       scal->lbl_stress,           &PVOutWritePressure,     1);
+	if(omask->overpressure)   OutVecCreate(&outvecs[cnt++], "overpressure",   scal->lbl_stress,           &PVOutWriteOverPressure, 1);
 	if(omask->temperature)    OutVecCreate(&outvecs[cnt++], "temperature",    scal->lbl_temperature,      &PVOutWriteTemperature,  1);
 	if(omask->dev_stress)     OutVecCreate(&outvecs[cnt++], "dev_stress",     scal->lbl_stress,           &PVOutWriteDevStress,    9);
 	if(omask->strain_rate)    OutVecCreate(&outvecs[cnt++], "strain_rate",    scal->lbl_strain_rate,      &PVOutWriteStrainRate,   9);
@@ -477,6 +479,7 @@ PetscErrorCode PVOutReadFromOptions(PVOut *pvout)
 	ierr = PetscOptionsGetInt(NULL, "-out_visc_creep",     &omask->visc_creep,     NULL); CHKERRQ(ierr);
 	ierr = PetscOptionsGetInt(NULL, "-out_velocity",       &omask->velocity,       NULL); CHKERRQ(ierr);
 	ierr = PetscOptionsGetInt(NULL, "-out_pressure",       &omask->pressure,       NULL); CHKERRQ(ierr);
+	ierr = PetscOptionsGetInt(NULL, "-out_overpressure",   &omask->overpressure,   NULL); CHKERRQ(ierr);
 	ierr = PetscOptionsGetInt(NULL, "-out_temperature",    &omask->temperature,    NULL); CHKERRQ(ierr);
 	ierr = PetscOptionsGetInt(NULL, "-out_dev_stress",     &omask->dev_stress,     NULL); CHKERRQ(ierr);
 	ierr = PetscOptionsGetInt(NULL, "-out_j2_dev_stress",  &omask->j2_dev_stress,  NULL); CHKERRQ(ierr);
