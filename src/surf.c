@@ -207,7 +207,9 @@ PetscErrorCode FreeSurfAdvect(FreeSurf *surf)
 {
 	// advect topography of the free surface mesh
 
-	JacRes *jr;
+	JacRes      *jr;
+	FDSTAG      *fs;
+	PetscScalar  avg_topo;
 
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
@@ -217,6 +219,7 @@ PetscErrorCode FreeSurfAdvect(FreeSurf *surf)
 
 	// access context
 	jr = surf->jr;
+	fs = jr->fs;
 
 	// get surface velocities
 	ierr = FreeSurfGetVelComp(surf, &InterpXFaceCorner, jr->lvx, surf->vx); CHKERRQ(ierr);
@@ -225,6 +228,18 @@ PetscErrorCode FreeSurfAdvect(FreeSurf *surf)
 
 	// advect topography
 	ierr = FreeSurfAdvectTopo(surf); CHKERRQ(ierr);
+
+	// smooth topography spikes
+	ierr = FreeSurfSmoothMaxAngle(surf); CHKERRQ(ierr);
+
+	// set flat flag
+	surf->flat = PETSC_FALSE;
+
+	// compute & store average topography
+	ierr = VecSum(surf->gtopo, &avg_topo); CHKERRQ(ierr);
+	avg_topo /= (PetscScalar)(fs->dsx.tnods*fs->dsy.tnods*fs->dsz.nproc);
+	surf->avg_topo = avg_topo;
+	jr  ->avg_topo = avg_topo;
 
 	PetscFunctionReturn(0);
 }
@@ -340,7 +355,7 @@ PetscErrorCode FreeSurfAdvectTopo(FreeSurf *surf)
 	PetscInt    I, I1, I2, J, J1, J2;
 	PetscInt    i, j, jj, found, nx, ny, sx, sy, L, mx, my;
 	PetscScalar cx[13], cy[13], cz[13];
-	PetscScalar X, X1, X2, Y, Y1, Y2, Z, Exx, Eyy, step, gtol, avg_topo;
+	PetscScalar X, X1, X2, Y, Y1, Y2, Z, Exx, Eyy, step, gtol;
 	PetscScalar ***advect, ***topo, ***vx, ***vy, ***vz;
 
 	// local search grid triangulation
@@ -490,14 +505,155 @@ PetscErrorCode FreeSurfAdvectTopo(FreeSurf *surf)
 	// compute ghosted version of the advected surface topography
 	GLOBAL_TO_LOCAL(surf->DA_SURF, surf->gtopo, surf->ltopo);
 
-	// set flat flag
-	surf->flat = PETSC_FALSE;
+	PetscFunctionReturn(0);
+}
+//---------------------------------------------------------------------------
+#undef __FUNCT__
+#define __FUNCT__ "FreeSurfSmoothMaxAngle"
+PetscErrorCode FreeSurfSmoothMaxAngle(FreeSurf *surf)
+{
+	// smooth topography if maximum angle with horizon is exceeded
 
-	// compute & store average topography
-	ierr = VecSum(surf->gtopo, &avg_topo); CHKERRQ(ierr);
-	avg_topo /= (PetscScalar)(fs->dsx.tnods*fs->dsy.tnods*fs->dsz.nproc);
-	surf->avg_topo = avg_topo;
-	jr  ->avg_topo = avg_topo;
+	JacRes      *jr;
+	FDSTAG      *fs;
+	Vec         cellTopo;
+	PetscInt    i, j, nx, ny, sx, sy, L, cnt, gcnt, I1, I2, J1, J2, mx, my;
+	PetscScalar ***ntopo, ***ctopo, tanMaxAng, zbot, dx, dy, h, t, tmax, cz[4];
+
+	PetscErrorCode ierr;
+	PetscFunctionBegin;
+
+	// check whether smoothing is activated
+	if(surf->MaxAngle == 0.0) PetscFunctionReturn(0);
+
+	// access context
+	jr        = surf->jr;
+	fs        = jr->fs;
+	L         = (PetscInt)fs->dsz.rank;
+	mx        = fs->dsx.tnods - 1;
+	my        = fs->dsy.tnods - 1;
+	tanMaxAng = PetscTanReal(surf->MaxAngle);
+	zbot      = jr->fs->dsz.crdbeg;
+
+	// get cell topography vector
+	ierr = DMGetLocalVector(jr->DA_CELL_2D, &cellTopo); CHKERRQ(ierr);
+
+	ierr = VecZeroEntries(cellTopo); CHKERRQ(ierr);
+
+	// access cell topography
+	ierr = DMDAVecGetArray(jr->DA_CELL_2D, cellTopo, &ctopo); CHKERRQ(ierr);
+
+	// access surface topography (corner nodes)
+	ierr = DMDAVecGetArray(surf->DA_SURF, surf->ltopo,  &ntopo); CHKERRQ(ierr);
+
+	// scan all local cells
+	ierr = DMDAGetCorners(fs->DA_CEN, &sx, &sy, NULL, &nx, &ny, NULL); CHKERRQ(ierr);
+
+	cnt = 0;
+
+	START_PLANE_LOOP
+	{
+		// get horizontal cell sizes
+		dx = SIZE_CELL(i, sx, fs->dsx);
+		dy = SIZE_CELL(j, sy, fs->dsy);
+
+		// get topography at cell corners
+		cz[0] = ntopo[L][j  ][i  ];
+		cz[1] = ntopo[L][j  ][i+1];
+		cz[2] = ntopo[L][j+1][i  ];
+		cz[3] = ntopo[L][j+1][i+1];
+
+		// estimate maximum free surface deviation from horizon
+		t = PetscAbsScalar(cz[1] - cz[0])/dx;              tmax = t;
+		t = PetscAbsScalar(cz[3] - cz[2])/dx; if(t > tmax) tmax = t;
+		t = PetscAbsScalar(cz[2] - cz[0])/dy; if(t > tmax) tmax = t;
+		t = PetscAbsScalar(cz[3] - cz[1])/dy; if(t > tmax) tmax = t;
+
+		// get average cell height
+		h = (cz[0] + cz[1] + cz[2] + cz[3])/4.0 - zbot;
+
+		// mark (with negative value) and count local affected cells
+		if(tmax > tanMaxAng) { h = -h; cnt++; }
+
+		// store cell topography
+		ctopo[L][j][i] = h;
+	}
+	END_PLANE_LOOP
+
+	// restore access
+	ierr = DMDAVecRestoreArray(jr->DA_CELL_2D, cellTopo, &ctopo); CHKERRQ(ierr);
+
+	ierr = DMDAVecRestoreArray(surf->DA_SURF, surf->ltopo, &ntopo); CHKERRQ(ierr);
+
+	// count global affected cells
+	if(ISParallel(PETSC_COMM_WORLD))
+	{
+		ierr = MPI_Allreduce(&cnt, &gcnt, 1, MPIU_INT, MPI_SUM, PETSC_COMM_WORLD); CHKERRQ(ierr);
+	}
+	else
+	{
+		gcnt = cnt;
+	}
+
+	// return if topography is within limits
+	if(!gcnt)
+	{
+		ierr = DMRestoreLocalVector(jr->DA_CELL_2D, &cellTopo); CHKERRQ(ierr);
+
+		PetscFunctionReturn(0);
+	}
+
+	// fill ghost points
+	LOCAL_TO_LOCAL(jr->DA_CELL_2D, cellTopo)
+
+	// access cell topography
+	ierr = DMDAVecGetArray(jr->DA_CELL_2D, cellTopo, &ctopo); CHKERRQ(ierr);
+
+	// access surface topography (corner nodes)
+	ierr = DMDAVecGetArray(surf->DA_SURF, surf->gtopo,  &ntopo); CHKERRQ(ierr);
+
+	// scan all local nodes
+	ierr = DMDAGetCorners(fs->DA_COR, &sx, &sy, NULL, &nx, &ny, NULL); CHKERRQ(ierr);
+
+	START_PLANE_LOOP
+	{
+		// check index bounds
+		I1 = i;   if(I1 == mx) I1--;
+		I2 = i-1; if(I2 == -1) I2++;
+		J1 = j;   if(J1 == my) J1--;
+		J2 = j-1; if(J2 == -1) J2++;
+
+		// get topography at neighboring cell centers
+		cz[0] = ctopo[L][J1][I1];
+		cz[1] = ctopo[L][J1][I2];
+		cz[2] = ctopo[L][J2][I1];
+		cz[3] = ctopo[L][J2][I2];
+
+		// check whether nodal coordinate needs correction
+		cnt = 0;
+
+		if(cz[0] < 0.0) { cz[0] = -cz[0]; cnt++; }
+		if(cz[1] < 0.0) { cz[1] = -cz[1]; cnt++; }
+		if(cz[2] < 0.0) { cz[2] = -cz[2]; cnt++; }
+		if(cz[3] < 0.0) { cz[3] = -cz[3]; cnt++; }
+
+		// smooth nodal coordinate
+		if(cnt)
+		{
+			ntopo[L][j][i] = (cz[0] + cz[1] + cz[2] + cz[3])/4.0 + zbot;
+		}
+	}
+	END_PLANE_LOOP
+
+	// restore access
+	ierr = DMDAVecRestoreArray(jr->DA_CELL_2D, cellTopo, &ctopo); CHKERRQ(ierr);
+
+	ierr = DMDAVecRestoreArray(surf->DA_SURF, surf->gtopo, &ntopo); CHKERRQ(ierr);
+
+	ierr = DMRestoreLocalVector(jr->DA_CELL_2D, &cellTopo); CHKERRQ(ierr);
+
+	// fill ghost points
+	GLOBAL_TO_LOCAL(surf->DA_SURF, surf->gtopo, surf->ltopo);
 
 	PetscFunctionReturn(0);
 }
@@ -1029,6 +1185,7 @@ PetscScalar IntersectTriangularPrism(
 	return (vbot - vtop)/2.0/vcell;
 }
 //---------------------------------------------------------------------------
+
 /*
 {
 	// TEST
