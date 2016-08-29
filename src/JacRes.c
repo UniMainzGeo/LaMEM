@@ -2632,7 +2632,7 @@ PetscErrorCode JacResGetOverPressure(JacRes *jr, Vec lop)
 	fs  =  jr->fs;
 	dsz = &fs->dsz;
 	L   =  (PetscInt)dsz->rank;
-	g   =  jr->grav[2];
+	g   =   PetscAbsScalar(jr->grav[2]);
 
 	// get local grid sizes
 	ierr = DMDAGetCorners(fs->DA_CEN, &sx, &sy, &sz, &nx, &ny, &nz); CHKERRQ(ierr);
