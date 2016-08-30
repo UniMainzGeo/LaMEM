@@ -517,8 +517,9 @@ PetscErrorCode FreeSurfSmoothMaxAngle(FreeSurf *surf)
 	JacRes      *jr;
 	FDSTAG      *fs;
 	Vec         cellTopo;
+	PetscScalar ***ntopo, ***ctopo;
+	PetscScalar tanMaxAng, zbot, dx, dy, h, t, tmax, cz[4], Ezz, step;
 	PetscInt    i, j, nx, ny, sx, sy, L, cnt, gcnt, I1, I2, J1, J2, mx, my;
-	PetscScalar ***ntopo, ***ctopo, tanMaxAng, zbot, dx, dy, h, t, tmax, cz[4];
 
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
@@ -529,11 +530,18 @@ PetscErrorCode FreeSurfSmoothMaxAngle(FreeSurf *surf)
 	// access context
 	jr        = surf->jr;
 	fs        = jr->fs;
-	L         = (PetscInt)fs->dsz.rank;
 	mx        = fs->dsx.tnods - 1;
 	my        = fs->dsy.tnods - 1;
+	L         = (PetscInt)fs->dsz.rank;
+	step      = jr->ts.dt;
 	tanMaxAng = PetscTanReal(surf->MaxAngle);
 	zbot      = jr->fs->dsz.crdbeg;
+
+	// get current background strain rates
+	ierr = BCGetBGStrainRates(jr->bc, NULL, NULL, &Ezz); CHKERRQ(ierr);
+
+	// update position of bottom boundary
+	zbot *= (1.0 + step*Ezz);
 
 	// get cell topography vector
 	ierr = DMGetLocalVector(jr->DA_CELL_2D, &cellTopo); CHKERRQ(ierr);
@@ -595,7 +603,7 @@ PetscErrorCode FreeSurfSmoothMaxAngle(FreeSurf *surf)
 		gcnt = cnt;
 	}
 
-	// return if topography is within limits
+	// return if topography is within the limits
 	if(!gcnt)
 	{
 		ierr = DMRestoreLocalVector(jr->DA_CELL_2D, &cellTopo); CHKERRQ(ierr);
@@ -629,7 +637,7 @@ PetscErrorCode FreeSurfSmoothMaxAngle(FreeSurf *surf)
 		cz[2] = ctopo[L][J2][I1];
 		cz[3] = ctopo[L][J2][I2];
 
-		// check whether nodal coordinate needs correction
+		// check whether nodal topography needs correction
 		cnt = 0;
 
 		if(cz[0] < 0.0) { cz[0] = -cz[0]; cnt++; }
@@ -637,7 +645,7 @@ PetscErrorCode FreeSurfSmoothMaxAngle(FreeSurf *surf)
 		if(cz[2] < 0.0) { cz[2] = -cz[2]; cnt++; }
 		if(cz[3] < 0.0) { cz[3] = -cz[3]; cnt++; }
 
-		// smooth nodal coordinate
+		// smooth nodal topography
 		if(cnt)
 		{
 			ntopo[L][j][i] = (cz[0] + cz[1] + cz[2] + cz[3])/4.0 + zbot;
