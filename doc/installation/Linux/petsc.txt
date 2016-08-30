@@ -13,12 +13,12 @@ sudo apt-get install git-all
 PETSC DEBUG
 ------------------------------------------------------------------------------------------
 
-Download and unpack PETSC version 3.5.3
+Download and unpack PETSC version 3.5.4
 
-cd petsc-3.5.3
+cd petsc-3.5.4
 
 ./configure \
---prefix=/opt/petsc/petsc-3.5.3-int32-debug \
+--prefix=/opt/petsc/petsc-3.5.4-int32-debug \
 --download-fblaslapack=1 \
 --with-debugging=1 \
 --COPTFLAGS="-g -O0" \
@@ -47,7 +47,7 @@ PETSC DEBUG 64-BIT INTEGERS
 ------------------------------------------------------------------------------------------
 
 ./configure \
---prefix=/opt/petsc/petsc-3.5.3-int64-debug \
+--prefix=/opt/petsc/petsc-3.5.4-int64-debug \
 --with-64-bit-indices \
 --download-fblaslapack=1 \
 --with-debugging=1 \
@@ -79,7 +79,7 @@ PETSC OPTIMIZED
 ------------------------------------------------------------------------------------------
 
 ./configure \
---prefix=/opt/petsc/petsc-3.5.3-int32-opt \
+--prefix=/opt/petsc/petsc-3.5.4-int32-opt \
 --with-blas-lapack-lib=/opt/openblas/lib/libopenblas.a \
 --with-debugging=0 \
 --COPTFLAGS="-O3" \
@@ -101,8 +101,8 @@ PETSC OPTIMIZED
 
 # set environmental variable (add to the end of .bashrc file):
 
-export PETSC_DEB=/opt/petsc/petsc-3.5.3-int32-debug
-export PETSC_OPT=/opt/petsc/petsc-3.5.3-int32-opt
+export PETSC_DEB=/opt/petsc/petsc-3.5.4-int32-debug
+export PETSC_OPT=/opt/petsc/petsc-3.5.4-int32-opt
 
 ------------------------------------------------------------------------------------------
 
