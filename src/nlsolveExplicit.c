@@ -262,19 +262,85 @@ PetscErrorCode FormMomentumResidualPressureAndVelocities(JacRes *jr, UserCtx *us
 
 //---------------------------------------------------------------------------
 #undef __FUNCT__
+#define __FUNCT__ "CheckElasticProperties"
+PetscErrorCode CheckElasticProperties(JacRes *jr, UserCtx *user)
+{
+	// Check that elastic properties remain constant
+
+	FDSTAG     *fs;
+	SolVarCell *svCell;
+//	SolVarEdge *svEdge;
+	SolVarDev  *svDev;
+	SolVarBulk *svBulk;
+
+	PetscInt i, j, k, iter/*, numPhases*/;
+	PetscInt nx, ny, nz, sx, sy, sz;
+	Material_t  *phases, *M;
+	PetscScalar /*dx, dy, dz,*/ dt, rho, shear, bulk;
+
+	PetscFunctionBegin;
+
+	fs = jr->fs;
+
+//	numPhases = jr->numPhases;
+	phases    = jr->phases;
+
+	dt        = user->dt;     // time step
+
+	if (user->ExplicitSolver == PETSC_TRUE)	{
+
+		//-------------------------------
+		// central points
+		//-------------------------------
+		iter = 0;
+		GET_CELL_RANGE(nx, sx, fs->dsx)
+		GET_CELL_RANGE(ny, sy, fs->dsy)
+		GET_CELL_RANGE(nz, sz, fs->dsz)
+
+		START_STD_LOOP
+		{
+
+			// access solution variables
+			svCell = &jr->svCell[iter++];
+			svDev  = &svCell->svDev;
+			svBulk = &svCell->svBulk;
+
+			rho   = svBulk->rho;
+			bulk  = 1.0/svBulk->IKdt/dt;
+			shear = 1.0/svDev->I2Gdt/2.0/dt;
+
+			//PetscPrintf(PETSC_COMM_WORLD, "    rho, bulk, shear  = %12.12e, %12.12e, %12.12e \n", rho, bulk, shear);
+
+			//  phases
+			//for(i = 0; i < jr->numPhases; i++)
+			//{
+				M = &phases[0];
+				if (M->rho != rho) 		PetscPrintf(PETSC_COMM_WORLD, "     ---------------------------- rho in file, rho in the cell  = %12.12e, %12.12e \n", M->rho, rho);
+				if (M->G   != shear) 	PetscPrintf(PETSC_COMM_WORLD, "     ---------------------------- shear in file, shear in the cell  = %12.12e, %12.12e \n", M->G, shear);
+				if (M->K   != bulk) 	PetscPrintf(PETSC_COMM_WORLD, "     ---------------------------- bulk in file, bulk in the cell  = %12.12e, %12.12e \n", M->K, bulk);
+			//}
+		}
+		END_STD_LOOP
+	}
+	PetscFunctionReturn(0);
+}
+//---------------------------------------------------------------------------
+
+//---------------------------------------------------------------------------
+#undef __FUNCT__
 #define __FUNCT__ "CheckTimeStep"
 PetscErrorCode CheckTimeStep(JacRes *jr, UserCtx *user)
 {
 	// check time step as in Virieux, 1985
 
-	PetscInt    i, numPhases;
+	PetscInt    i /*,numPhases*/;
 	Material_t  *phases, *M;
 	PetscScalar dx, dy, dz, dt, rho, shear, bulk, vp, stability;
 
 	PetscFunctionBegin;
 
 
-	numPhases = jr->numPhases;
+//	numPhases = jr->numPhases;
 	phases    = jr->phases;
 	dt        = user->dt;     // time step
 	dx = user->W/((PetscScalar)(user->nel_x));
@@ -456,73 +522,6 @@ PetscErrorCode UpdateHistoryFieldsAndGetAxialStressStrain(JacRes *jr, PetscScala
 }
 //---------------------------------------------------------------------------
 
-
-//---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "CheckElasticProperties"
-PetscErrorCode CheckElasticProperties(JacRes *jr, UserCtx *user)
-{
-	// Check that elastic properties remain constant
-
-	FDSTAG     *fs;
-	SolVarCell *svCell;
-//	SolVarEdge *svEdge;
-	SolVarDev  *svDev;
-	SolVarBulk *svBulk;
-
-	PetscInt i, j, k, iter/*, numPhases*/;
-	PetscInt nx, ny, nz, sx, sy, sz;
-	Material_t  *phases, *M;
-	PetscScalar /*dx, dy, dz,*/ dt, rho, shear, bulk;
-
-	PetscFunctionBegin;
-
-	fs = jr->fs;
-
-//	numPhases = jr->numPhases;
-	phases    = jr->phases;
-
-	dt        = user->dt;     // time step
-
-	if (user->ExplicitSolver == PETSC_TRUE)	{
-
-		//-------------------------------
-		// central points
-		//-------------------------------
-		iter = 0;
-		GET_CELL_RANGE(nx, sx, fs->dsx)
-		GET_CELL_RANGE(ny, sy, fs->dsy)
-		GET_CELL_RANGE(nz, sz, fs->dsz)
-
-		START_STD_LOOP
-		{
-
-			// access solution variables
-			svCell = &jr->svCell[iter++];
-			svDev  = &svCell->svDev;
-			svBulk = &svCell->svBulk;
-
-			rho   = svBulk->rho;
-			bulk  = 1.0/svBulk->IKdt/dt;
-			shear = 1.0/svDev->I2Gdt/2.0/dt;
-
-			//PetscPrintf(PETSC_COMM_WORLD, "    rho, bulk, shear  = %12.12e, %12.12e, %12.12e \n", rho, bulk, shear);
-
-			//  phases
-			//for(i = 0; i < jr->numPhases; i++)
-			//{
-				M = &phases[0];
-				if (M->rho != rho) 		PetscPrintf(PETSC_COMM_WORLD, "     ---------------------------- rho in file, rho in the cell  = %12.12e, %12.12e \n", M->rho, rho);
-				if (M->G   != shear) 	PetscPrintf(PETSC_COMM_WORLD, "     ---------------------------- shear in file, shear in the cell  = %12.12e, %12.12e \n", M->G, shear);
-				if (M->K   != bulk) 	PetscPrintf(PETSC_COMM_WORLD, "     ---------------------------- bulk in file, bulk in the cell  = %12.12e, %12.12e \n", M->K, bulk);
-			//}
-		}
-		END_STD_LOOP
-	}
-	PetscFunctionReturn(0);
-}
-//---------------------------------------------------------------------------
-
 //---------------------------------------------------------------------------
 #undef __FUNCT__
 #define __FUNCT__ "ChangeTimeStep"
@@ -590,10 +589,10 @@ PetscErrorCode SaveVelocitiesForSeismicStation(JacRes *jr, UserCtx *user)
 	//  ... comment
 
 	FDSTAG     *fs;
-	PetscInt    iter;
+//	PetscInt    iter;
 	PetscInt    i, j, k, nx, ny, nz, sx, sy, sz, i_rec, j_rec, k_rec;
 
-	PetscScalar dt, t, vx_rec, vy_rec, vz_rec;
+	PetscScalar /*dt,*/ t, vx_rec, vy_rec, vz_rec;
 	PetscScalar ***vx,  ***vy,  ***vz;
 	FILE      *fseism;
 
@@ -604,7 +603,7 @@ PetscErrorCode SaveVelocitiesForSeismicStation(JacRes *jr, UserCtx *user)
 
 	// access residual context variables
 
-	dt    =  jr->ts.dt;     // time step
+//	dt    =  jr->ts.dt;     // time step
 	t	  =  JacResGetTime(jr);
 
 	// file for seismic signals
@@ -621,7 +620,7 @@ PetscErrorCode SaveVelocitiesForSeismicStation(JacRes *jr, UserCtx *user)
 	//-------------------------------
 	// side points
 	//-------------------------------
-	iter = 0;
+//	iter = 0;
 	GET_NODE_RANGE(nx, sx, fs->dsx)
 	GET_CELL_RANGE(ny, sy, fs->dsy)
 	GET_CELL_RANGE(nz, sz, fs->dsz)
@@ -642,7 +641,7 @@ PetscErrorCode SaveVelocitiesForSeismicStation(JacRes *jr, UserCtx *user)
 	}
 	END_STD_LOOP
 
-	iter = 0;
+//	iter = 0;
 	GET_CELL_RANGE(nx, sx, fs->dsx)
 	GET_NODE_RANGE(ny, sy, fs->dsy)
 	GET_CELL_RANGE(nz, sz, fs->dsz)
@@ -655,7 +654,7 @@ PetscErrorCode SaveVelocitiesForSeismicStation(JacRes *jr, UserCtx *user)
 	}
 	END_STD_LOOP
 
-	iter = 0;
+//	iter = 0;
 	GET_CELL_RANGE(nx, sx, fs->dsx)
 	GET_CELL_RANGE(ny, sy, fs->dsy)
 	GET_NODE_RANGE(nz, sz, fs->dsz)
@@ -693,7 +692,7 @@ PetscErrorCode SaveVelocitiesForSeismicStation(JacRes *jr, UserCtx *user)
 PetscErrorCode ShowValues(JacRes *jr, UserCtx *user, PetscInt n)
 {
 	// Show the values of velocity, pressure, stress, strain,...
-
+/*
 	FDSTAG     *fs;
 	SolVarCell *svCell;
 	SolVarEdge *svEdge;
@@ -714,8 +713,10 @@ PetscErrorCode ShowValues(JacRes *jr, UserCtx *user, PetscInt n)
 //	FILE *fseism;
 //	fseism = user->Station.output_file;
 
+
 	FILE *fseism;
 	fseism = user->Station.output_file;
+
 
 	fs = jr->fs;
 
@@ -879,6 +880,7 @@ PetscErrorCode ShowValues(JacRes *jr, UserCtx *user, PetscInt n)
 	ierr = DMDAVecRestoreArray(fs->DA_Y,   jr->lvy,  &lvy);  CHKERRQ(ierr);
 	ierr = DMDAVecRestoreArray(fs->DA_Z,   jr->lvz,  &lvz);  CHKERRQ(ierr);
 
+*/
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
@@ -1030,8 +1032,14 @@ PetscErrorCode GetStressFromSource(JacRes *jr, UserCtx *user, PetscInt i, PetscI
 
 		/*if (k==70 && j == 70 && i == 20)
 		{
+<<<<<<< 5c262a0cadb3ec043a0807d3e91d5f400eeed756
 			*sxx = jr->SourceParams.amplitude*exp(-jr->SourceParams.alfa*((time-jr->SourceParams.t0)*(time-jr->SourceParams.t0)));
 			*szz = - jr->SourceParams.amplitude*exp(-jr->SourceParams.alfa*((time-jr->SourceParams.t0)*(time-jr->SourceParams.t0)));
+=======
+			*sxx = *sxx*0 + jr->SourceParams.amplitude*exp(-jr->SourceParams.alfa*((time-jr->SourceParams.t0)*(time-jr->SourceParams.t0)));
+			// *syy = 0.0;
+			*szz = *szz*0 + jr->SourceParams.amplitude*exp(-jr->SourceParams.alfa*((time-jr->SourceParams.t0)*(time-jr->SourceParams.t0)));
+>>>>>>> reduced number of warnings
 
 
 			*sxx = 	100.0;
