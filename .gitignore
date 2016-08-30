@@ -1,0 +1,14 @@
+# ignore directories with binary contents
+bin/
+lib/
+dep/
+
+# ignore hidden directories
+.*/
+
+# ignore compilation files of Latex based documentation 
+doc/InfoLaMEM/*.aux
+doc/InfoLaMEM/*.log
+doc/InfoLaMEM/*.out
+doc/InfoLaMEM/*.toc
+doc/InfoLaMEM/*.synctex.gz
