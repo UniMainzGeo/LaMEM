@@ -2335,7 +2335,7 @@ PetscErrorCode ADVMarkInitRidge(AdvCtx *actx, UserCtx *user)
 				}
 				// Thermal boundary layer
 				else if (x > xmax &&  z >= zmax - Hbound && z < zmax ) {
-					P->T     = (zmax - z) * (Tbot - Tasth) + Tasth; 
+					P->T     = ((zmax-z) / (Hbound)) + Tasth; 
 				}
 			} // end if east
 			else {
@@ -2350,7 +2350,7 @@ PetscErrorCode ADVMarkInitRidge(AdvCtx *actx, UserCtx *user)
 				}
 				// Thermal boundary layer
 				else if (x >= xmin && x <= xmax && z >= zmax - Hbound && z < zmax) {
-					P->T     = (zmax - z) * (Tbot - Tasth) + Tasth; 
+					P->T     = ((zmax-z) / (Hbound)) + Tasth; 
 				}
 				// thickened west
 				zmax  = (ztopo - Hl) - slope * Lt;
@@ -2362,7 +2362,7 @@ PetscErrorCode ADVMarkInitRidge(AdvCtx *actx, UserCtx *user)
 				}
 				// Thermal boundary layer
 				else if (x < xmin &&  z >= zmax - Hbound && z < zmax ) {
-					P->T     = (zmax - z) * (Tbot - Tasth) + Tasth; 
+					P->T     = ((zmax-z) / (Hbound)) + Tasth; 
 				}
 			} // end if west
 		} // end if in range
@@ -2487,7 +2487,7 @@ PetscErrorCode ADVMarkEnforceRidge(AdvCtx *actx, FreeSurf *surf, UserCtx *user)
 				}
 				// Thermal boundary layer
 				else if (x > xmax &&  z >= zmax - Hbound && z < zmax ) {
-					P->T     = (zmax - z) * (Tbot - Tasth) + Tasth; 
+					P->T     = ((zmax-z) / (Hbound)) * (Tbot - Tasth) + Tasth; 
 				}
 			} // end if east
 			else {
@@ -2502,7 +2502,7 @@ PetscErrorCode ADVMarkEnforceRidge(AdvCtx *actx, FreeSurf *surf, UserCtx *user)
 				}
 				// Thermal boundary layer
 				else if (x >= xmin && x <= xmax && z >= zmax - Hbound && z < zmax) {
-					P->T     = (zmax - z) * (Tbot - Tasth) + Tasth; 
+					P->T     = ((zmax-z) / (Hbound)) * (Tbot - Tasth) + Tasth; 
 				}
 				// thickened west
 				zmax  = (ztopo - Hl) - slope * Lt;
@@ -2514,7 +2514,7 @@ PetscErrorCode ADVMarkEnforceRidge(AdvCtx *actx, FreeSurf *surf, UserCtx *user)
 				}
 				// Thermal boundary layer
 				else if (x < xmin &&  z >= zmax - Hbound && z < zmax ) {
-					P->T     = (zmax - z) * (Tbot - Tasth) + Tasth; 
+					P->T     = ((zmax-z) / (Hbound)) * (Tbot - Tasth) + Tasth; 
 				}
 			} // end if west
 		} // end if in range
