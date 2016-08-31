@@ -2254,7 +2254,8 @@ PetscErrorCode ADVMarkInitRidge(AdvCtx *actx, UserCtx *user)
 	PetscInt    imark;
 	PetscScalar Hl, Ha, La, Ld, Ln, Lt, Lr;
 	PetscScalar x, y, z, Tshift;
-	PetscScalar xmin, xmax, zmax, slope;
+	PetscScalar xmin, xmax, zmax, slope, ztopo;
+	PetscScalar Ttop, Tbot, Tasth, Hbound;
 
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
@@ -2276,6 +2277,12 @@ PetscErrorCode ADVMarkInitRidge(AdvCtx *actx, UserCtx *user)
 	Lt = rb->L_trough;
 	Lr = rb->L_damp;
 
+	// Get parameters for thermal structure
+	Ttop   = user->Temp_top;
+	Tbot   = user->Temp_bottom;
+	Tasth  = rb->Tasth;
+	Hbound = rb->BoundH;
+
 	// loop over local markers and assign phases
 	for (imark = 0; imark < actx->nummark; imark++)
 	{
@@ -2287,42 +2294,48 @@ PetscErrorCode ADVMarkInitRidge(AdvCtx *actx, UserCtx *user)
 		y = P->X[1];
 		z = P->X[2];
 
-		// get coordinates
-		x = P->X[0];
-		y = P->X[1];
-		z = P->X[2];
-
 		// seed random APS to aid in initital faulting
 		P->APS  = 0.2 / ((rand() % 100) + 1);
 		
+		ztopo = Ha + Hl;
+
 		// assign phase in layers
-		if (z >  Ha + Hl) {
+		if (z > ztopo) {
 			P->phase = 2; // water
-		}
-		else if (z >= Ha && z <= Hl + Ha) {
-			P->phase = 1; // lith
+			P->T     = Ttop;
 		}
 		else {
 			P->phase = 0; // asth
+			P->T     = Tbot;
 		}
 
-		// Assign phases for sloped lithosphere
-		if (z <= Ha) {
+		// Assign phases for lith
+		if (z < ztopo && z >= 0) {
 			if (x >= La) {
 				// sloping east
 				slope = Hl / Ld;
 				xmin  = La + Ln / 2;
 				xmax  = La + (Ln / 2 + Lt);
-				zmax  = Ha - slope * (x - xmin);
+				zmax  = (ztopo - Hl) - slope * (x - xmin);
 				if (x >= xmin && x <= xmax && z >= zmax) {
 					P->phase = 1;
+					P->T     = ((ztopo - z) / (ztopo - zmax)) * (Tasth - Ttop) + Ttop ; 
+				}
+				// Thermal boundary layer
+				else if (x >= xmin && x <= xmax && z >= zmax - Hbound && z < zmax) {
+					P->T     = ((zmax-z) / (Hbound)) * (Tbot - Tasth) + Tasth; 
 				}
 				// thickened east
-				zmax  = Ha - slope * (xmax - xmin);
+				zmax  = (ztopo - Hl) - slope * Lt;
 				slope = (Hl / Ld) / Lr; // slow thickening rate outside trough
 				zmax  = zmax - slope * (x - xmax);
 				if (x > xmax && z >= zmax) {
 					P->phase = 1;
+					P->T     = ((ztopo - z) / (ztopo - zmax)) * (Tasth - Ttop) + Ttop ; 
+				}
+				// Thermal boundary layer
+				else if (x > xmax &&  z >= zmax - Hbound && z < zmax ) {
+					P->T     = (zmax - z) * (Tbot - Tasth) + Tasth; 
 				}
 			} // end if east
 			else {
@@ -2330,16 +2343,26 @@ PetscErrorCode ADVMarkInitRidge(AdvCtx *actx, UserCtx *user)
 				slope = Hl / Ld;
 				xmin  = La - (Ln / 2 + Lt);
 				xmax  = La - Ln / 2;
-				zmax  = Ha - slope * (xmax - x);
+				zmax  = (ztopo - Hl) - slope * (xmax - x);
 				if (x >= xmin && x <= xmax && z >= zmax) {
 					P->phase = 1;
+					P->T     = ((ztopo - z) / (ztopo - zmax)) * (Tasth - Ttop) + Ttop ; 
+				}
+				// Thermal boundary layer
+				else if (x >= xmin && x <= xmax && z >= zmax - Hbound && z < zmax) {
+					P->T     = (zmax - z) * (Tbot - Tasth) + Tasth; 
 				}
 				// thickened west
-				zmax  = Ha - slope * (xmax - xmin);
+				zmax  = (ztopo - Hl) - slope * Lt;
 				slope = (Hl / Ld) / Lr; // slow thickening rate outside trough
 				zmax  = zmax - slope * (xmin - x);
-				if (x <= xmin && z >= zmax) {
+				if (x < xmin && z >= zmax) {
 					P->phase = 1;
+					P->T     = ((ztopo - z) / (ztopo - zmax)) * (Tasth - Ttop) + Ttop ; 
+				}
+				// Thermal boundary layer
+				else if (x < xmin &&  z >= zmax - Hbound && z < zmax ) {
+					P->T     = (zmax - z) * (Tbot - Tasth) + Tasth; 
 				}
 			} // end if west
 		} // end if in range
@@ -2367,6 +2390,7 @@ PetscErrorCode ADVMarkEnforceRidge(AdvCtx *actx, FreeSurf *surf, UserCtx *user)
 	PetscScalar Hl, Ha, La, Ld, Ln, Lt, Lr;
 	PetscScalar x, y, z, ztopo, Tshift;
 	PetscScalar xmin, xmax, zmax, slope;
+	PetscScalar Ttop, Tbot, Tasth, Hbound;
 
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
@@ -2396,7 +2420,11 @@ PetscErrorCode ADVMarkEnforceRidge(AdvCtx *actx, FreeSurf *surf, UserCtx *user)
 	Lt = rb->L_trough;
 	Lr = rb->L_damp;
 	
-	fprintf(stderr, "elbuggo Tt=%f, H=%f\n",rb->Tasth,rb->BoundH);
+	// Get parameters for thermal structure
+	Ttop   = user->Temp_top;
+	Tbot   = user->Temp_bottom;
+	Tasth  = rb->Tasth;
+	Hbound = rb->BoundH;
 
 	// loop over local markers and assign phases
 	for (imark = 0; imark < actx->nummark; imark++)
@@ -2426,16 +2454,15 @@ PetscErrorCode ADVMarkEnforceRidge(AdvCtx *actx, FreeSurf *surf, UserCtx *user)
 		// assign phase in layers
 		if (z > ztopo) {
 			P->phase = 2; // water
-		}
-		else if (z > ztopo - Hl) {
-			P->phase = 1; // lith
+			P->T     = Ttop;
 		}
 		else {
 			P->phase = 0; // asth
+			P->T     = Tbot;
 		}
 
-		// Assign phases
-		if (z < ztopo - Hl && z >= 0) {
+		// Assign phases for lith
+		if (z < ztopo && z >= 0) {
 			if (x >= La) {
 				// sloping east
 				slope = Hl / Ld;
@@ -2444,6 +2471,11 @@ PetscErrorCode ADVMarkEnforceRidge(AdvCtx *actx, FreeSurf *surf, UserCtx *user)
 				zmax  = (ztopo - Hl) - slope * (x - xmin);
 				if (x >= xmin && x <= xmax && z >= zmax) {
 					P->phase = 1;
+					P->T     = ((ztopo - z) / (ztopo - zmax)) * (Tasth - Ttop) + Ttop ; 
+				}
+				// Thermal boundary layer
+				else if (x >= xmin && x <= xmax && z >= zmax - Hbound && z < zmax) {
+					P->T     = ((zmax-z) / (Hbound)) * (Tbot - Tasth) + Tasth; 
 				}
 				// thickened east
 				zmax  = (ztopo - Hl) - slope * Lt;
@@ -2451,6 +2483,11 @@ PetscErrorCode ADVMarkEnforceRidge(AdvCtx *actx, FreeSurf *surf, UserCtx *user)
 				zmax  = zmax - slope * (x - xmax);
 				if (x > xmax && z >= zmax) {
 					P->phase = 1;
+					P->T     = ((ztopo - z) / (ztopo - zmax)) * (Tasth - Ttop) + Ttop ; 
+				}
+				// Thermal boundary layer
+				else if (x > xmax &&  z >= zmax - Hbound && z < zmax ) {
+					P->T     = (zmax - z) * (Tbot - Tasth) + Tasth; 
 				}
 			} // end if east
 			else {
@@ -2461,6 +2498,11 @@ PetscErrorCode ADVMarkEnforceRidge(AdvCtx *actx, FreeSurf *surf, UserCtx *user)
 				zmax  = (ztopo - Hl) - slope * (xmax - x);
 				if (x >= xmin && x <= xmax && z >= zmax) {
 					P->phase = 1;
+					P->T     = ((ztopo - z) / (ztopo - zmax)) * (Tasth - Ttop) + Ttop ; 
+				}
+				// Thermal boundary layer
+				else if (x >= xmin && x <= xmax && z >= zmax - Hbound && z < zmax) {
+					P->T     = (zmax - z) * (Tbot - Tasth) + Tasth; 
 				}
 				// thickened west
 				zmax  = (ztopo - Hl) - slope * Lt;
@@ -2468,6 +2510,11 @@ PetscErrorCode ADVMarkEnforceRidge(AdvCtx *actx, FreeSurf *surf, UserCtx *user)
 				zmax  = zmax - slope * (xmin - x);
 				if (x < xmin && z >= zmax) {
 					P->phase = 1;
+					P->T     = ((ztopo - z) / (ztopo - zmax)) * (Tasth - Ttop) + Ttop ; 
+				}
+				// Thermal boundary layer
+				else if (x < xmin &&  z >= zmax - Hbound && z < zmax ) {
+					P->T     = (zmax - z) * (Tbot - Tasth) + Tasth; 
 				}
 			} // end if west
 		} // end if in range
