@@ -183,6 +183,9 @@ typedef struct
 	PetscScalar  Bd;      // pre-exponential constant
 	PetscScalar  Ed;      // activation energy
 	PetscScalar  Vd;      // activation volume
+	// Added more Hirth and Kohlstedt 2003 parameters for input file - howellsm
+	PetscScalar  d;  	  // Grain size 
+	PetscScalar  p;		  // Grain size exponent
 	// dislocation creep parameters
 	PetscScalar  Bn;      // pre-exponential constant
 	PetscScalar  n;       // power law exponent

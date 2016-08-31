@@ -414,6 +414,7 @@ void ScalingMatProp(Scaling *scal, Material_t *phases, PetscInt numPhases)
 		// diffusion creep
 		phases[i].Bd      *= scal->viscosity;
 		phases[i].Vd      *= scal->stress_si;
+		phases[i].d       /= scal->length_si;
 
 		// dislocation creep (power-law)
 		phases[i].Bn      *= pow(scal->stress_si, phases[i].n)*scal->time_si;
