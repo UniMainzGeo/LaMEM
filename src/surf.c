@@ -799,6 +799,9 @@ PetscErrorCode FreeSurfAppErosion(FreeSurf *surf)
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
 
+	// free surface cases only
+	if(surf->UseFreeSurf != PETSC_TRUE) PetscFunctionReturn(0);
+
 	scal = &surf->jr->scal;
 
 	if(surf->ErosionModel == 1)
@@ -836,6 +839,9 @@ PetscErrorCode FreeSurfAppSedimentation(FreeSurf *surf)
 
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
+
+	// free surface cases only
+	if(surf->UseFreeSurf != PETSC_TRUE) PetscFunctionReturn(0);
 
 	// access context
 	jr   = surf->jr;
