@@ -57,15 +57,15 @@
 #undef __FUNCT__
 #define __FUNCT__ "ConstEqCtxSetup"
 PetscErrorCode ConstEqCtxSetup(
-	ConstEqCtx  *ctx,  // evaluation context
-	Material_t  *mat,  // phase parameters
-	MatParLim   *lim,  // phase parameters limits
-	PetscScalar  DII,  // effective strain-rate
-	PetscScalar  APS,  // accumulated plastic strain
-	PetscScalar  dt,   // time step
-	PetscScalar  p,    // pressure
-	PetscScalar  p_lithos,    // lithostatic pressure
-	PetscScalar  T)    // temperature
+	ConstEqCtx  *ctx,           // evaluation context
+	Material_t  *mat,           // phase parameters
+	MatParLim   *lim,           // phase parameters limits
+	PetscScalar  DII,           // effective strain-rate
+	PetscScalar  APS,           // accumulated plastic strain
+	PetscScalar  dt,            // time step
+	PetscScalar  p,             // pressure
+	PetscScalar  p_lithos,      // lithostatic pressure
+	PetscScalar  T)             // temperature
 {
 	// setup nonlinear constitutive equation evaluation context
 	// evaluate dependence on constant parameters (pressure, temperature)
@@ -424,7 +424,7 @@ PetscErrorCode DevConstEq(
 			mat = &phases[i];
 
 			// setup nonlinear constitutive equation evaluation context
-			ierr = ConstEqCtxSetup(&ctx, mat, lim, DII, APS, dt, p_lithos, p, T); CHKERRQ(ierr);
+			ierr = ConstEqCtxSetup(&ctx, mat, lim, DII, APS, dt, p, p_lithos, T); CHKERRQ(ierr);
 
 			// solve effective viscosity & plastic strain rate
 			ierr = GetEffVisc(&ctx, lim, &eta_total, &eta_creep_phase, &DIIpl, &dEta, &fr); CHKERRQ(ierr);
