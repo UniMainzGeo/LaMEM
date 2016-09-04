@@ -212,8 +212,6 @@ PetscErrorCode MatPropGetStruct(FILE *fp,
 	getMatPropScalar(fp, ils, ile, "Bd",        &m->Bd,    NULL);
 	getMatPropScalar(fp, ils, ile, "Ed",        &m->Ed,    NULL);
 	getMatPropScalar(fp, ils, ile, "Vd",        &m->Vd,    NULL);
-	getMatPropScalar(fp, ils, ile, "d",         &m->d,    NULL);
-	getMatPropScalar(fp, ils, ile, "p",         &m->p,    NULL);
 
 	//============================================================
 	// power-law (dislocation) creep

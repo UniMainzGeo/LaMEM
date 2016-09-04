@@ -117,13 +117,7 @@ PetscErrorCode ConstEqCtxSetup(
 	}
 
 	// LINEAR DIFFUSION CREEP (NEWTONIAN)
-	if(mat->d) // using specified grain size and only T-Dep. - howellsm
-	{
-		// A = Bd * d^-p * exp(-E/RT)
-		ctx->A_dif = mat->Bd * exp( - ( mat->Ed / RT ) ) / pow(mat->d,mat->p);
-		ln++;
-	}
-	else if(mat->Bd)
+	if(mat->Bd)
 	{
 		Q          = (mat->Ed + p_viscosity*mat->Vd)/RT;
 		ctx->A_dif =  mat->Bd*exp(-Q);

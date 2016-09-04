@@ -2254,7 +2254,7 @@ PetscErrorCode ADVMarkInitRidge(AdvCtx *actx, UserCtx *user)
 	PetscInt    imark;
 	PetscScalar Hl, Ha, La, Ld, Ln, Lt, Lr;
 	PetscScalar x, y, z, Tshift;
-	PetscScalar xmin, xmax, zmax, slope, ztopo;
+	PetscScalar xmin, xmax, zmax, slope, ztopo, dlith;
 	PetscScalar Ttop, Tbot, Tasth, Hbound;
 
 	PetscErrorCode ierr;
@@ -2310,32 +2310,40 @@ PetscErrorCode ADVMarkInitRidge(AdvCtx *actx, UserCtx *user)
 		}
 
 		// Assign phases for lith
-		if (z < ztopo && z >= 0) {
+		if (z <= ztopo && z >= 0) {
 			if (x >= La) {
 				// sloping east
 				slope = Hl / Ld;
 				xmin  = La + Ln / 2;
 				xmax  = La + (Ln / 2 + Lt);
 				zmax  = (ztopo - Hl) - slope * (x - xmin);
+				dlith = ztopo-zmax;
 				if (x >= xmin && x <= xmax && z >= zmax) {
 					P->phase = 1;
-					P->T     = ((ztopo - z) / (ztopo - zmax)) * (Tasth - Ttop) + Ttop ; 
-				}
-				// Thermal boundary layer
-				else if (x >= xmin && x <= xmax && z >= zmax - Hbound && z < zmax) {
-					P->T     = ((zmax-z) / (Hbound)) * (Tbot - Tasth) + Tasth; 
+					if (z >= (1.0/3.0) * dlith + zmax) {
+						// Lithosphere
+						P->T = ((ztopo - z) / ((2.0/3.0) * dlith)) * (Tasth - Ttop) + Ttop ; 
+					}
+					else{ 
+						// Thermal boundary layer
+						P->T = (((1.0/3.0) * dlith + zmax - z) / ((1.0/3.0) * dlith)) * (Tbot - Tasth) + Tasth; 
+					}
 				}
 				// thickened east
 				zmax  = (ztopo - Hl) - slope * Lt;
 				slope = (Hl / Ld) / Lr; // slow thickening rate outside trough
 				zmax  = zmax - slope * (x - xmax);
+				dlith = ztopo-zmax;
 				if (x > xmax && z >= zmax) {
 					P->phase = 1;
-					P->T     = ((ztopo - z) / (ztopo - zmax)) * (Tasth - Ttop) + Ttop ; 
-				}
-				// Thermal boundary layer
-				else if (x > xmax &&  z >= zmax - Hbound && z < zmax ) {
-					P->T     = ((zmax-z) / (Hbound)) + Tasth; 
+					if (z >= (1.0/3.0) * dlith + zmax) {
+						// Lithosphere
+						P->T = ((ztopo - z) / ((2.0/3.0) * dlith)) * (Tasth - Ttop) + Ttop ; 
+					}
+					else{ 
+						// Thermal boundary layer
+						P->T = (((1.0/3.0) * dlith + zmax - z) / ((1.0/3.0) * dlith)) * (Tbot - Tasth) + Tasth; 
+					}
 				}
 			} // end if east
 			else {
@@ -2344,31 +2352,36 @@ PetscErrorCode ADVMarkInitRidge(AdvCtx *actx, UserCtx *user)
 				xmin  = La - (Ln / 2 + Lt);
 				xmax  = La - Ln / 2;
 				zmax  = (ztopo - Hl) - slope * (xmax - x);
+				dlith = ztopo-zmax;
 				if (x >= xmin && x <= xmax && z >= zmax) {
 					P->phase = 1;
-					P->T     = ((ztopo - z) / (ztopo - zmax)) * (Tasth - Ttop) + Ttop ; 
-				}
-				// Thermal boundary layer
-				else if (x >= xmin && x <= xmax && z >= zmax - Hbound && z < zmax) {
-					P->T     = ((zmax-z) / (Hbound)) + Tasth; 
+					if (z >= (1.0/3.0) * dlith + zmax) {
+						// Lithosphere
+						P->T = ((ztopo - z) / ((2.0/3.0) * dlith)) * (Tasth - Ttop) + Ttop ; 
+					}
+					else{ 
+						// Thermal boundary layer
+						P->T = (((1.0/3.0) * dlith + zmax - z) / ((1.0/3.0) * dlith)) * (Tbot - Tasth) + Tasth; 
+					}
 				}
 				// thickened west
 				zmax  = (ztopo - Hl) - slope * Lt;
 				slope = (Hl / Ld) / Lr; // slow thickening rate outside trough
 				zmax  = zmax - slope * (xmin - x);
+				dlith = ztopo-zmax;
 				if (x < xmin && z >= zmax) {
 					P->phase = 1;
-					P->T     = ((ztopo - z) / (ztopo - zmax)) * (Tasth - Ttop) + Ttop ; 
-				}
-				// Thermal boundary layer
-				else if (x < xmin &&  z >= zmax - Hbound && z < zmax ) {
-					P->T     = ((zmax-z) / (Hbound)) + Tasth; 
+					if (z >= (1.0/3.0) * dlith + zmax) {
+						// Lithosphere
+						P->T = ((ztopo - z) / ((2.0/3.0) * dlith)) * (Tasth - Ttop) + Ttop ; 
+					}
+					else{ 
+						// Thermal boundary layer
+						P->T = (((1.0/3.0) * dlith + zmax - z) / ((1.0/3.0) * dlith)) * (Tbot - Tasth) + Tasth; 
+					}
 				}
 			} // end if west
 		} // end if in range
-
-		// // assign temperature
-		// P->T = Tshift;
 	}
 
 	PetscFunctionReturn(0);
@@ -2388,7 +2401,7 @@ PetscErrorCode ADVMarkEnforceRidge(AdvCtx *actx, FreeSurf *surf, UserCtx *user)
 	PetscInt    nx, ny, sx, sy, sz;
 	PetscScalar ***topo;
 	PetscScalar Hl, Ha, La, Ld, Ln, Lt, Lr;
-	PetscScalar x, y, z, ztopo, Tshift;
+	PetscScalar x, y, z, ztopo, dlith;
 	PetscScalar xmin, xmax, zmax, slope;
 	PetscScalar Ttop, Tbot, Tasth, Hbound;
 
@@ -2401,9 +2414,6 @@ PetscErrorCode ADVMarkEnforceRidge(AdvCtx *actx, FreeSurf *surf, UserCtx *user)
 	jr   = surf->jr;
 	fs   = jr->fs;
 	L    = fs->dsz.rank;
-
-	// get scaling factors
-	Tshift  = actx->jr->scal.Tshift;
 
 	// access topography of the free surface mesh
 	ierr = DMDAVecGetArray(surf->DA_SURF, surf->ltopo,  &topo);  CHKERRQ(ierr);
@@ -2462,32 +2472,40 @@ PetscErrorCode ADVMarkEnforceRidge(AdvCtx *actx, FreeSurf *surf, UserCtx *user)
 		}
 
 		// Assign phases for lith
-		if (z < ztopo && z >= 0) {
+		if (z <= ztopo && z >= 0) {
 			if (x >= La) {
 				// sloping east
 				slope = Hl / Ld;
 				xmin  = La + Ln / 2;
 				xmax  = La + (Ln / 2 + Lt);
 				zmax  = (ztopo - Hl) - slope * (x - xmin);
+				dlith = ztopo-zmax;
 				if (x >= xmin && x <= xmax && z >= zmax) {
 					P->phase = 1;
-					P->T     = ((ztopo - z) / (ztopo - zmax)) * (Tasth - Ttop) + Ttop ; 
-				}
-				// Thermal boundary layer
-				else if (x >= xmin && x <= xmax && z >= zmax - Hbound && z < zmax) {
-					P->T     = ((zmax-z) / (Hbound)) * (Tbot - Tasth) + Tasth; 
+					if (z >= (1.0/3.0) * dlith + zmax) {
+						// Lithosphere
+						P->T = ((ztopo - z) / ((2.0/3.0) * dlith)) * (Tasth - Ttop) + Ttop ; 
+					}
+					else{ 
+						// Thermal boundary layer
+						P->T = (((1.0/3.0) * dlith + zmax - z) / ((1.0/3.0) * dlith)) * (Tbot - Tasth) + Tasth; 
+					}
 				}
 				// thickened east
 				zmax  = (ztopo - Hl) - slope * Lt;
 				slope = (Hl / Ld) / Lr; // slow thickening rate outside trough
 				zmax  = zmax - slope * (x - xmax);
+				dlith = ztopo-zmax;
 				if (x > xmax && z >= zmax) {
 					P->phase = 1;
-					P->T     = ((ztopo - z) / (ztopo - zmax)) * (Tasth - Ttop) + Ttop ; 
-				}
-				// Thermal boundary layer
-				else if (x > xmax &&  z >= zmax - Hbound && z < zmax ) {
-					P->T     = ((zmax-z) / (Hbound)) * (Tbot - Tasth) + Tasth; 
+					if (z >= (1.0/3.0) * dlith + zmax) {
+						// Lithosphere
+						P->T = ((ztopo - z) / ((2.0/3.0) * dlith)) * (Tasth - Ttop) + Ttop ; 
+					}
+					else{ 
+						// Thermal boundary layer
+						P->T = (((1.0/3.0) * dlith + zmax - z) / ((1.0/3.0) * dlith)) * (Tbot - Tasth) + Tasth; 
+					}
 				}
 			} // end if east
 			else {
@@ -2496,31 +2514,36 @@ PetscErrorCode ADVMarkEnforceRidge(AdvCtx *actx, FreeSurf *surf, UserCtx *user)
 				xmin  = La - (Ln / 2 + Lt);
 				xmax  = La - Ln / 2;
 				zmax  = (ztopo - Hl) - slope * (xmax - x);
+				dlith = ztopo-zmax;
 				if (x >= xmin && x <= xmax && z >= zmax) {
 					P->phase = 1;
-					P->T     = ((ztopo - z) / (ztopo - zmax)) * (Tasth - Ttop) + Ttop ; 
-				}
-				// Thermal boundary layer
-				else if (x >= xmin && x <= xmax && z >= zmax - Hbound && z < zmax) {
-					P->T     = ((zmax-z) / (Hbound)) * (Tbot - Tasth) + Tasth; 
+					if (z >= (1.0/3.0) * dlith + zmax) {
+						// Lithosphere
+						P->T = ((ztopo - z) / ((2.0/3.0) * dlith)) * (Tasth - Ttop) + Ttop ; 
+					}
+					else{ 
+						// Thermal boundary layer
+						P->T = (((1.0/3.0) * dlith + zmax - z) / ((1.0/3.0) * dlith)) * (Tbot - Tasth) + Tasth; 
+					}
 				}
 				// thickened west
 				zmax  = (ztopo - Hl) - slope * Lt;
 				slope = (Hl / Ld) / Lr; // slow thickening rate outside trough
 				zmax  = zmax - slope * (xmin - x);
+				dlith = ztopo-zmax;
 				if (x < xmin && z >= zmax) {
 					P->phase = 1;
-					P->T     = ((ztopo - z) / (ztopo - zmax)) * (Tasth - Ttop) + Ttop ; 
-				}
-				// Thermal boundary layer
-				else if (x < xmin &&  z >= zmax - Hbound && z < zmax ) {
-					P->T     = ((zmax-z) / (Hbound)) * (Tbot - Tasth) + Tasth; 
+					if (z >= (1.0/3.0) * dlith + zmax) {
+						// Lithosphere
+						P->T = ((ztopo - z) / ((2.0/3.0) * dlith)) * (Tasth - Ttop) + Ttop ; 
+					}
+					else{ 
+						// Thermal boundary layer
+						P->T = (((1.0/3.0) * dlith + zmax - z) / ((1.0/3.0) * dlith)) * (Tbot - Tasth) + Tasth; 
+					}
 				}
 			} // end if west
 		} // end if in range
-
-		// // assign temperature
-		// P->T = Tshift;
 	}
 
 	PetscFunctionReturn(0);
