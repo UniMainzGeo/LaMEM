@@ -153,6 +153,7 @@ typedef struct
 	PetscInt visc_creep;     // creep effective viscosity
 	PetscInt velocity;       // velocity
 	PetscInt pressure;       // pressure
+	PetscInt overpressure;   // overpressure
 	PetscInt temperature;    // temperature
 	PetscInt dev_stress;     // deviatoric stress tensor
 	PetscInt j2_dev_stress;  // deviatoric stress second invariant

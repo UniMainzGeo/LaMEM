@@ -104,6 +104,9 @@ PetscErrorCode FreeSurfGetVelComp(
 // advect/interpolate topography of the free surface
 PetscErrorCode FreeSurfAdvectTopo(FreeSurf *surf);
 
+// smooth topography if maximum angle with horizon is exceeded
+PetscErrorCode FreeSurfSmoothMaxAngle(FreeSurf *surf);
+
 // correct phase ratios based on actual position of the free surface
 PetscErrorCode FreeSurfGetAirPhaseRatio(FreeSurf *surf);
 

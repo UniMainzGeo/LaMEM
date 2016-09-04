@@ -139,6 +139,11 @@ typedef struct
 	Vec ge;   // energy residual (global)
 	KSP tksp; // temperature diffusion solver
 
+	//==========================
+	// 2D integration primitives
+	//==========================
+	DM DA_CELL_2D; // 2D cell center grid
+
 } JacRes;
 //---------------------------------------------------------------------------
 
@@ -272,6 +277,13 @@ PetscErrorCode JacResGetTempRes(JacRes *jr);
 
 // assemble temperature preconditioner matrix
 PetscErrorCode JacResGetTempMat(JacRes *jr);
+
+//---------------------------------------------------------------------------
+//......................   INTEGRATION FUNCTIONS   ..........................
+//---------------------------------------------------------------------------
+
+// compute overpressure field in the cell centers
+PetscErrorCode JacResGetOverPressure(JacRes *jr, Vec p);
 
 //---------------------------------------------------------------------------
 // MACROS

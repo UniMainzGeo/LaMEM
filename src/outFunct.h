@@ -53,6 +53,7 @@ PetscErrorCode PVOutWriteViscTotal   (JacRes*, OutBuf*);
 PetscErrorCode PVOutWriteViscCreep   (JacRes*, OutBuf*);
 PetscErrorCode PVOutWriteVelocity    (JacRes*, OutBuf*);
 PetscErrorCode PVOutWritePressure    (JacRes*, OutBuf*);
+PetscErrorCode PVOutWriteOverPressure(JacRes*, OutBuf*);
 PetscErrorCode PVOutWriteTemperature (JacRes*, OutBuf*);
 PetscErrorCode PVOutWriteDevStress   (JacRes*, OutBuf*);
 PetscErrorCode PVOutWriteJ2DevStress (JacRes*, OutBuf*);

@@ -99,9 +99,10 @@ PetscErrorCode JacResCreate(
 	FDSTAG   *fs,
 	BCCtx    *bc)
 {
-	DOFIndex    *dof;
-	PetscScalar *svBuff;
-	PetscInt    i, n, svBuffSz, numPhases;
+	DOFIndex       *dof;
+	PetscScalar    *svBuff;
+	PetscInt        i, n, svBuffSz, numPhases;
+	const PetscInt *lx, *ly;
 
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
@@ -215,6 +216,21 @@ PetscErrorCode JacResCreate(
 	// setup temperature parameters
 	ierr = JacResCreateTempParam(jr); CHKERRQ(ierr);
 
+	//==========================
+	// 2D integration primitives
+	//==========================
+
+	// get grid partitioning in X & Y directions
+	ierr = DMDAGetOwnershipRanges(fs->DA_CEN, &lx, &ly, NULL); CHKERRQ(ierr);
+
+	// create 2D cell center grid
+	ierr = DMDACreate3d(PETSC_COMM_WORLD,
+		DM_BOUNDARY_NONE, DM_BOUNDARY_NONE, DM_BOUNDARY_NONE,
+		DMDA_STENCIL_BOX,
+		fs->dsx.tcels, fs->dsy.tcels, fs->dsz.nproc,
+		fs->dsx.nproc, fs->dsy.nproc, fs->dsz.nproc,
+		1, 1, lx, ly, NULL, &jr->DA_CELL_2D); CHKERRQ(ierr);
+
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
@@ -272,6 +288,11 @@ PetscErrorCode JacResDestroy(JacRes *jr)
 
 	// destroy temperature parameters
 	ierr = JacResDestroyTempParam(jr); CHKERRQ(ierr);
+
+	//==========================
+	// 2D integration primitives
+	//==========================
+	ierr = DMDestroy(&jr->DA_CELL_2D); CHKERRQ(ierr);
 
 	PetscFunctionReturn(0);
 }
@@ -2617,7 +2638,6 @@ PetscErrorCode JacResSetVelRotation(JacRes *jr)
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-//---------------------------------------------------------------------------
 #undef __FUNCT__
 #define __FUNCT__ "RemoveDikeStrain"
 PetscErrorCode RemoveDikeStrain(JacRes *jr)
@@ -2690,3 +2710,111 @@ PetscErrorCode RemoveDikeStrain(JacRes *jr)
 
 	PetscFunctionReturn(0);
 }
+
+//---------------------------------------------------------------------------
+#undef __FUNCT__
+#define __FUNCT__ "JacResGetOverPressure"
+PetscErrorCode JacResGetOverPressure(JacRes *jr, Vec lop)
+{
+	// compute overpressure
+
+	Vec         vbuff;
+	FDSTAG      *fs;
+	Discret1D   *dsz;
+	MPI_Request srequest, rrequest;
+	PetscScalar ***op, ***p, ***ibuff, *lbuff, dz, dp, g, rho;
+	PetscInt    i, j, k, sx, sy, sz, nx, ny, nz, iter, L;
+
+	PetscErrorCode ierr;
+	PetscFunctionBegin;
+
+	// access context
+	fs  =  jr->fs;
+	dsz = &fs->dsz;
+	L   =  (PetscInt)dsz->rank;
+	g   =  jr->grav[2];
+
+	// get local grid sizes
+	ierr = DMDAGetCorners(fs->DA_CEN, &sx, &sy, &sz, &nx, &ny, &nz); CHKERRQ(ierr);
+
+	// get integration/communication buffer
+	ierr = DMGetGlobalVector(jr->DA_CELL_2D, &vbuff); CHKERRQ(ierr);
+
+	ierr = VecZeroEntries(vbuff); CHKERRQ(ierr);
+
+	// open index buffer for computation
+	ierr = DMDAVecGetArray(jr->DA_CELL_2D, vbuff, &ibuff); CHKERRQ(ierr);
+
+	// open linear buffer for send/receive
+	ierr = VecGetArray(vbuff, &lbuff); CHKERRQ(ierr);
+
+	// access pressure vectors
+	ierr = VecZeroEntries(lop); CHKERRQ(ierr);
+
+	ierr = DMDAVecGetArray(fs->DA_CEN, lop,    &op); CHKERRQ(ierr);
+	ierr = DMDAVecGetArray(fs->DA_CEN, jr->lp, &p);   CHKERRQ(ierr);
+
+	// start receiving integral from top domain (next)
+	if(dsz->nproc != 1 && dsz->grnext != -1)
+	{
+		ierr = MPI_Irecv(lbuff, (PetscMPIInt)(nx*ny), MPIU_SCALAR, dsz->grnext, 0, PETSC_COMM_WORLD, &rrequest); CHKERRQ(ierr);
+	}
+
+	// copy density
+	iter = 0;
+
+	START_STD_LOOP
+	{
+		op[k][j][i] = jr->svCell[iter++].svBulk.rho;
+	}
+	END_STD_LOOP
+
+	// finish receiving
+	if(dsz->nproc != 1 && dsz->grnext != -1)
+	{
+		ierr = MPI_Wait(&rrequest, MPI_STATUSES_IGNORE);  CHKERRQ(ierr);
+	}
+
+	// compute local integral from top to bottom
+	for(k = sz + nz - 1; k >= sz; k--)
+	{
+		START_PLANE_LOOP
+		{
+			// get density, cell size, pressure increment
+			rho = op[k][j][i];
+			dz  = SIZE_CELL(k, sz, (*dsz));
+			dp  = rho*g*dz;
+
+			// store overpressure (computed - lithostatic)
+			op[k][j][i] = p[k][j][i] - (ibuff[L][j][i] + dp/2.0);
+
+			// update lithostatic pressure integral
+			ibuff[L][j][i] += dp;
+		}
+		END_PLANE_LOOP
+	}
+
+	// send integral to bottom domain (previous)
+	if(dsz->nproc != 1 && dsz->grprev != -1)
+	{
+		ierr = MPI_Isend(lbuff, (PetscMPIInt)(nx*ny), MPIU_SCALAR, dsz->grprev, 0, PETSC_COMM_WORLD, &srequest); CHKERRQ(ierr);
+
+		ierr = MPI_Wait(&srequest, MPI_STATUSES_IGNORE);  CHKERRQ(ierr);
+	}
+
+	// restore buffer and pressure vectors
+	ierr = DMDAVecRestoreArray(fs->DA_CEN, lop,    &op); CHKERRQ(ierr);
+	ierr = DMDAVecRestoreArray(fs->DA_CEN, jr->lp, &p);  CHKERRQ(ierr);
+
+	ierr = DMDAVecRestoreArray(jr->DA_CELL_2D, vbuff, &ibuff); CHKERRQ(ierr);
+
+	ierr = VecRestoreArray(vbuff, &lbuff); CHKERRQ(ierr);
+
+	ierr = DMRestoreGlobalVector(jr->DA_CELL_2D, &vbuff); CHKERRQ(ierr);
+
+	// fill ghost points
+	LOCAL_TO_LOCAL(fs->DA_CEN, lop)
+
+	PetscFunctionReturn(0);
+}
+//---------------------------------------------------------------------------
