@@ -210,8 +210,8 @@ PetscErrorCode FormMomentumResidualPressureAndVelocities(JacRes *jr, UserCtx *us
 
 //---------------------------------------------------------------------------
 #undef __FUNCT__
-#define __FUNCT__ "UpdateHistoryFields"
-PetscErrorCode UpdateHistoryFields(JacRes *jr)
+#define __FUNCT__ "UpdateHistoryFieldsAndGetAxialStressStrain"
+PetscErrorCode UpdateHistoryFieldsAndGetAxialStressStrain(JacRes *jr, PetscScalar *axial_stress, PetscScalar *axial_strain)
 {
 	// Update svCell->hxx, yy, zz and svBulk->pn
 
@@ -229,6 +229,18 @@ PetscErrorCode UpdateHistoryFields(JacRes *jr)
 
 	// access work vectors
 	ierr = DMDAVecGetArray(fs->DA_CEN, jr->lp,   &p);   CHKERRQ(ierr);
+
+	PetscScalar stress_xx, stress_yy, stress_zz;
+	PetscScalar strain_xx, strain_yy, strain_zz;
+	PetscScalar count;
+
+	stress_xx = 0;
+	stress_yy = 0;
+	stress_zz = 0;
+	strain_xx = 0;
+	strain_yy = 0;
+	strain_zz = 0;
+	count = 0;
 
 	//-------------------------------
 	// central points
@@ -250,8 +262,35 @@ PetscErrorCode UpdateHistoryFields(JacRes *jr)
 
 		svBulk->pn = p[k][j][i];
 
+		// Calculate axial stress
+		stress_xx = stress_xx + svCell->sxx - p[k][j][i];
+		stress_yy = stress_yy + svCell->syy - p[k][j][i];
+		stress_zz = stress_zz + svCell->szz - p[k][j][i];
+
+		strain_xx = strain_xx + svCell->dxx;
+		strain_yy = strain_yy + svCell->dyy;
+		strain_zz = strain_zz + svCell->dzz;
+		count = count + 1;
+
 	}
 	END_STD_LOOP
+
+
+
+	stress_xx = stress_xx/count;
+	stress_yy = stress_yy/count;
+	stress_zz = stress_zz/count;
+
+	strain_xx = strain_xx/count;
+	strain_yy = strain_yy/count;
+	strain_zz = strain_zz/count;
+
+	//MPI_Reduce
+
+	*axial_stress = sqrt(stress_xx*stress_xx + stress_yy*stress_yy + stress_zz*stress_zz);
+	*axial_strain = sqrt(strain_xx*strain_xx + strain_yy*strain_yy + strain_zz*strain_zz);
+
+
 
 	// restore vectors
 	ierr = DMDAVecRestoreArray(fs->DA_CEN, jr->lp,   &p);   CHKERRQ(ierr);
@@ -359,11 +398,50 @@ PetscErrorCode CheckTimeStep(JacRes *jr, UserCtx *user)
 			// P-wave velocity
 			vp=sqrt((bulk+4.0/3.0*shear)/rho);
 			stability = vp*dt*sqrt(1.0/(dx*dx)+1.0/(dy*dy)+1.0/(dz*dz));
-			if ( stability >= 1) {
+			if ( stability > 1) {
 				SETERRQ1(PETSC_COMM_SELF, PETSC_ERR_USER, "Stability condition = %12.12e", stability);
 			}
 		}
 	//}
+	PetscFunctionReturn(0);
+}
+//---------------------------------------------------------------------------
+
+//---------------------------------------------------------------------------
+#undef __FUNCT__
+#define __FUNCT__ "ChangeTimeStep"
+PetscErrorCode ChangeTimeStep(JacRes *jr, UserCtx *user)
+{
+	// from Virieux, 1985
+
+	PetscInt    i, numPhases;
+	Material_t  *phases, *M;
+	PetscScalar dx, dy, dz, dt, rho, shear, bulk, vp, stability;
+
+	PetscFunctionBegin;
+
+
+	numPhases = jr->numPhases;
+	phases    = jr->phases;
+	dt        = 999999999;
+	dx = user->W/((PetscScalar)(user->nel_x));
+	dy = user->L/((PetscScalar)(user->nel_y));
+	dz = user->H/((PetscScalar)(user->nel_z));
+
+	//if (user->ExplicitSolver == PETSC_TRUE)	{
+		//  phases
+		for(i = 0; i < numPhases; i++)
+		{
+			M = &phases[i];
+			rho=M->rho;
+			shear=M->G;
+			bulk=M->K;
+			// P-wave velocity
+			vp=sqrt((bulk+4.0/3.0*shear)/rho);
+			if (1/vp/sqrt(1.0/(dx*dx)+1.0/(dy*dy)+1.0/(dz*dz)) < dt) dt = 1/vp/sqrt(1.0/(dx*dx)+1.0/(dy*dy)+1.0/(dz*dz));
+		}
+	//}
+	user->dt = dt;
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
@@ -1629,10 +1707,13 @@ PetscErrorCode ShowValues(JacRes *jr, UserCtx *user, PetscInt n)
 		//PetscPrintf(PETSC_COMM_WORLD, "    svBulk.theta[%i,%i,%i]  = %12.12e \n", i,j,k, svBulk->theta);
 		//PetscPrintf(PETSC_COMM_WORLD, "    svCell.dzz[%i,%i,%i]  = %12.12e \n", i,j,k, svCell->dzz);
 		//PetscPrintf(PETSC_COMM_WORLD, "    svCell.sxx[%i,%i,%i]  = (%12.12e) \n", i,j,k,svCell->sxx);
+		//PetscPrintf(PETSC_COMM_WORLD, "    svCell.hxx,yy,zz[%i,%i,%i]  = (%12.12e,%12.12e,%12.12e) \n", i,j,k, svCell->hxx,svCell->hyy,svCell->hzz);
 		//fprintf(fseism, "%i %i %i\n", i,j,k);
 		//fprintf(fseism, "%12.12e\n", gfz[k][j][i]);
 		//if ( p[k][j][i] != up[k][j][i])			fprintf(fseism, "%12.12e\n", p[k][j][i]);
 		//if ( fx[k][j][i] != gfx[k][j][i])			fprintf(fseism, "%12.12e\n", fx[k][j][i]);
+
+		//PetscPrintf(PETSC_COMM_WORLD, "    rho  = %12.12e \n", svBulk->rho);
 
 		//fprintf(fseism, "%12.12e\n", svCell->szz);
 	}
@@ -1732,16 +1813,33 @@ PetscErrorCode GetStressFromSource(JacRes *jr, UserCtx *user, PetscInt i, PetscI
 
 	if (jr->SourceParams.source_type == PLANE)
 	{
-		if (k==1)
+		if (k==user->nel_z-1) //(k==1)
 		{
-			*szz = 		jr->SourceParams.amplitude;
-			*sxx =	- 	jr->SourceParams.amplitude/2.0;
-			*syy = 	-  	jr->SourceParams.amplitude/2.0;
+			*szz = 		jr->SourceParams.amplitude*exp(-jr->SourceParams.alfa*((time-jr->SourceParams.t0)*(time-jr->SourceParams.t0))); 	//jr->SourceParams.amplitude;
+			*sxx =	- 	jr->SourceParams.amplitude*exp(-jr->SourceParams.alfa*((time-jr->SourceParams.t0)*(time-jr->SourceParams.t0)))/2; 	//jr->SourceParams.amplitude/2.0;
+			*syy = 	-  	jr->SourceParams.amplitude*exp(-jr->SourceParams.alfa*((time-jr->SourceParams.t0)*(time-jr->SourceParams.t0)))/2;	//jr->SourceParams.amplitude/2.0;
 		}
 	}
+	else if (jr->SourceParams.source_type == COMPRES)
+		{
+			if (k==1)
+			{
+				*szz = 		jr->SourceParams.amplitude;
+				*sxx =	- 	jr->SourceParams.amplitude/2.0;
+				*syy = 	-  	jr->SourceParams.amplitude/2.0;
+			}
+			else if (k==user->nel_z-1)
+			{
+				*szz = 	-	jr->SourceParams.amplitude;
+				*sxx =	- 	jr->SourceParams.amplitude/2.0;
+				*syy = 	-  	jr->SourceParams.amplitude/2.0;
+			}
+		}
 	else if (jr->SourceParams.source_type == POINT)
 	{
-		// improve that
+
+		// change the way and the place to do that /////////////////////////////////////////////////////////////////////////////////
+		//
 		if (jr->SourceParams.xrank == -1) // then first time we are here
 		{
 			// belongs the point source to this process?, then fillSourceParameters structure
@@ -1760,6 +1858,9 @@ PetscErrorCode GetStressFromSource(JacRes *jr, UserCtx *user, PetscInt i, PetscI
 				jr->SourceParams.k = FindPointInCell(jr->fs->dsz.ncoor, 0, P, jr->SourceParams.z)+P*(jr->fs->dsz.rank);
 			}
 		}
+		//
+		/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
 		if (jr->SourceParams.xrank == jr->fs->dsx.rank && jr->SourceParams.yrank == jr->fs->dsy.rank && jr->SourceParams.zrank == jr->fs->dsz.rank)
 		{
 			if (k==jr->SourceParams.k && j == jr->SourceParams.j && i == jr->SourceParams.i)

@@ -169,6 +169,7 @@ typedef enum
 {
 	POINT,
 	PLANE,
+	COMPRES
 	// ... add more
 } SourceType;
 

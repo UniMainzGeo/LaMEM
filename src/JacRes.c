@@ -315,8 +315,9 @@ PetscErrorCode JacResInitScale(JacRes *jr, UserCtx *usr)
 	// initialize stabilization parameter
 	jr->FSSA = usr->FSSA;
 
+	// I put this later (after modify the density because I change the time step depending of the density in the case of explicit solver)
 	// initialize time stepping parameters
-	ierr = TSSolSetUp(&jr->ts, usr); CHKERRQ(ierr);
+	//ierr = TSSolSetUp(&jr->ts, usr); CHKERRQ(ierr);
 
 	// initialize material parameter limits
 	ierr = SetMatParLim(&jr->matLim, usr); CHKERRQ(ierr);
@@ -326,6 +327,16 @@ PetscErrorCode JacResInitScale(JacRes *jr, UserCtx *usr)
 
 	// scale material parameters
 	ScalingMatProp(&jr->scal, jr->phases, jr->numPhases);
+
+
+	// check time step if ExplicitSolver
+	if (usr->ExplicitSolver == PETSC_TRUE)		{
+		ierr = ChangeTimeStep(jr, usr); CHKERRQ(ierr);
+		ierr = CheckTimeStep(jr, usr); CHKERRQ(ierr);
+	}
+
+	// initialize time stepping parameters
+	ierr = TSSolSetUp(&jr->ts, usr); CHKERRQ(ierr);
 
 	PetscFunctionReturn(0);
 }
@@ -1440,6 +1451,7 @@ pc = p[k][j][i];
 		// current temperature
 		Tc = T[k][j][i];
 
+
 		// evaluate deviatoric constitutive equations
 		ierr = DevConstEq(svDev, &eta_creep, numPhases, phases, svCell->phRat, matLim, dt, pc-pShift, Tc); CHKERRQ(ierr);
 
@@ -1972,7 +1984,7 @@ pc = p[k][j][i];
 
 	LOCAL_TO_GLOBAL(fs->DA_CEN, jr->lp, jr->gp);
 
-	ierr = ShowValues(jr,user,3); CHKERRQ(ierr);
+	//ierr = ShowValues(jr,user,3); CHKERRQ(ierr);
 
 
 	PetscFunctionReturn(0);
