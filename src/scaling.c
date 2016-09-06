@@ -114,15 +114,7 @@ PetscErrorCode ScalingReadFromFile(Scaling *scal, FILE *fp)
 		scal->inp_temperature = temperature;
 		scal->inp_force       = force;
 
-		/*// For wave propagation - to check/////////////////
-		parse_GetDouble(fp, "Characteristic.inp_mass",  &mass ,     &found);
-		//parse_GetDouble(fp, "Characteristic.inp_time",  &time,   &found);
-		if (found==PETSC_TRUE)
-		{
-			scal->inp_mass        = mass;
-			scal->inp_time        = time;
-		}
-		///////////////////////////////////////////////////*/
+
 	}
 
 	PetscFunctionReturn(0);

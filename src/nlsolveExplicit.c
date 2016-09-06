@@ -256,10 +256,6 @@ PetscErrorCode FormMomentumResidualPressureAndVelocities(JacRes *jr, UserCtx *us
 
 }
 //-----------------------------------------------------------------------------
-
-
-
-
 //---------------------------------------------------------------------------
 #undef __FUNCT__
 #define __FUNCT__ "CheckElasticProperties"
@@ -358,7 +354,7 @@ PetscErrorCode CheckTimeStep(JacRes *jr, UserCtx *user)
 			// P-wave velocity
 			vp=sqrt((bulk+4.0/3.0*shear)/rho);
 			stability = vp*dt*sqrt(1.0/(dx*dx)+1.0/(dy*dy)+1.0/(dz*dz));
-			if ( stability >= 1) {
+			if ( stability > 1) {
 				SETERRQ1(PETSC_COMM_SELF, PETSC_ERR_USER, "Stability condition = %12.12e", stability);
 			}
 		}
@@ -368,6 +364,7 @@ PetscErrorCode CheckTimeStep(JacRes *jr, UserCtx *user)
 //---------------------------------------------------------------------------
 
 //-----------------------------------------------------------------------------
+
 #undef __FUNCT__
 #define __FUNCT__ "UpdateHistoryFieldsAndGetAxialStressStrain"
 PetscErrorCode UpdateHistoryFieldsAndGetAxialStressStrain(JacRes *jr, PetscScalar *axial_stress, PetscScalar *axial_strain)
@@ -580,108 +577,6 @@ PetscErrorCode ChangeTimeStep(JacRes *jr, UserCtx *user)
 //---------------------------------------------------------------------------
 
 
-//-----------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "SaveVelocitiesForSeismicStation"
-PetscErrorCode SaveVelocitiesForSeismicStation(JacRes *jr, UserCtx *user)
-{
-
-	//  ... comment
-
-	FDSTAG     *fs;
-//	PetscInt    iter;
-	PetscInt    i, j, k, nx, ny, nz, sx, sy, sz, i_rec, j_rec, k_rec;
-
-	PetscScalar /*dt,*/ t, vx_rec, vy_rec, vz_rec;
-	PetscScalar ***vx,  ***vy,  ***vz;
-	FILE      *fseism;
-
-	PetscErrorCode ierr;
-	PetscFunctionBegin;
-
-	fs = jr->fs;
-
-	// access residual context variables
-
-//	dt    =  jr->ts.dt;     // time step
-	t	  =  JacResGetTime(jr);
-
-	// file for seismic signals
-	fseism = user->Station.output_file;
-
-
-	// access work vectors
-	ierr = DMDAVecGetArray(fs->DA_X,   jr->gvx,  &vx);  CHKERRQ(ierr);
-	ierr = DMDAVecGetArray(fs->DA_Y,   jr->gvy,  &vy);  CHKERRQ(ierr);
-	ierr = DMDAVecGetArray(fs->DA_Z,   jr->gvz,  &vz);  CHKERRQ(ierr);
-
-
-
-	//-------------------------------
-	// side points
-	//-------------------------------
-//	iter = 0;
-	GET_NODE_RANGE(nx, sx, fs->dsx)
-	GET_CELL_RANGE(ny, sy, fs->dsy)
-	GET_CELL_RANGE(nz, sz, fs->dsz)
-
-	// Save coordinates for station
-	// station position (to improve getting from input file)
-	i_rec=nx/2;
-	j_rec=ny/2;
-	k_rec=nz/2;
-
-
-	START_STD_LOOP
-	{
-		if (i==i_rec && j==j_rec && k==k_rec) {
-			vx_rec=vx[k][j][i]+vx[k][j][i-1]/2.0;
-			break;
-		}
-	}
-	END_STD_LOOP
-
-//	iter = 0;
-	GET_CELL_RANGE(nx, sx, fs->dsx)
-	GET_NODE_RANGE(ny, sy, fs->dsy)
-	GET_CELL_RANGE(nz, sz, fs->dsz)
-	START_STD_LOOP
-	{
-		if (i==i_rec && j==j_rec && k==k_rec) {
-			vy_rec=vy[k][j][i]+vy[k][j-1][i]/2.0;
-			break;
-		}
-	}
-	END_STD_LOOP
-
-//	iter = 0;
-	GET_CELL_RANGE(nx, sx, fs->dsx)
-	GET_CELL_RANGE(ny, sy, fs->dsy)
-	GET_NODE_RANGE(nz, sz, fs->dsz)
-	START_STD_LOOP
-	{
-		if (i==i_rec && j==j_rec && k==k_rec) {
-			vz_rec=vz[k][j][i]+vz[k-1][j][i]/2.0;
-			break;
-		}
-	}
-	END_STD_LOOP
-
-	// restore vectors
-	ierr = DMDAVecRestoreArray(fs->DA_X,   jr->gvx,  &vx);  CHKERRQ(ierr);
-	ierr = DMDAVecRestoreArray(fs->DA_Y,   jr->gvy,  &vy);  CHKERRQ(ierr);
-	ierr = DMDAVecRestoreArray(fs->DA_Z,   jr->gvz,  &vz);  CHKERRQ(ierr);
-
-
-	fprintf(fseism, "%12.12e %12.12e %12.12e %12.12e\n", t, vx_rec, vy_rec, vz_rec);
-
-	PetscFunctionReturn(0);
-}
-//---------------------------------------------------------------------------
-
-
-
-
 
 
 
@@ -789,6 +684,7 @@ PetscErrorCode ShowValues(JacRes *jr, UserCtx *user, PetscInt n)
 		//PetscPrintf(PETSC_COMM_WORLD, "    svCell.sxx,syy,szz[%i,%i,%i]  = %12.12e, %12.12e, %12.12e \n", i,j,k, svCell->sxx, svCell->syy, svCell->szz);
 		//PetscPrintf(PETSC_COMM_WORLD, "    svCell.dxx[%i,%i,%i]  = %12.12e \n", i,j,k, svCell->dxx);
 		//PetscPrintf(PETSC_COMM_WORLD, "    svCell.sxx[%i,%i,%i]  = (%12.12e) \n", i,j,k,svCell->sxx);
+<<<<<<< 45303369d0e2a4894286aa8ad0f8feefc46161a6
 
 		//PetscPrintf(PETSC_COMM_WORLD, "    svCell.hxx,yy,zz[%i,%i,%i]  = (%12.12e,%12.12e,%12.12e) \n", i,j,k, svCell->hxx,svCell->hyy,svCell->hzz);
 		//fprintf(fseism, "%i %i %i\n", i,j,k);
@@ -798,10 +694,15 @@ PetscErrorCode ShowValues(JacRes *jr, UserCtx *user, PetscInt n)
 		//PetscPrintf(PETSC_COMM_WORLD, "    p[%i,%i,%i]  = %12.12e \n", i,j,k, p[k][j][i]);
 		//PetscPrintf(PETSC_COMM_WORLD, "    rho  = %12.12e \n", svBulk->rho);
 
+=======
+		//PetscPrintf(PETSC_COMM_WORLD, "    svCell.hxx,yy,zz[%i,%i,%i]  = (%12.12e,%12.12e,%12.12e) \n", i,j,k, svCell->hxx,svCell->hyy,svCell->hzz);
+>>>>>>> First changes for density scaling
 		//fprintf(fseism, "%i %i %i\n", i,j,k);
 		//fprintf(fseism, "%12.12e\n", gfz[k][j][i]);
 		//if ( p[k][j][i] != up[k][j][i])			fprintf(fseism, "%12.12e\n", p[k][j][i]);
 		//if ( fx[k][j][i] != gfx[k][j][i])			fprintf(fseism, "%12.12e\n", fx[k][j][i]);
+
+		//PetscPrintf(PETSC_COMM_WORLD, "    rho  = %12.12e \n", svBulk->rho);
 
 		//fprintf(fseism, "%12.12e\n", svCell->szz);
 	}
@@ -941,6 +842,7 @@ PetscErrorCode GetStressFromSource(JacRes *jr, UserCtx *user, PetscInt i, PetscI
 
 	if (jr->SourceParams.source_type == PLANE)
 	{
+
 		//if (k==user->nel_z-1) //(k==1)
 		if (i==user->nel_x-1)
 		{
@@ -960,6 +862,12 @@ PetscErrorCode GetStressFromSource(JacRes *jr, UserCtx *user, PetscInt i, PetscI
 			*sxx = 	100.0;
 			*syy =	50.0;;
 			*szz = 	-50.0 ;
+
+		if (k==user->nel_z-1) //(k==1)
+		{
+			*szz = 		jr->SourceParams.amplitude*exp(-jr->SourceParams.alfa*((time-jr->SourceParams.t0)*(time-jr->SourceParams.t0))); 	//jr->SourceParams.amplitude;
+			*sxx =	- 	jr->SourceParams.amplitude*exp(-jr->SourceParams.alfa*((time-jr->SourceParams.t0)*(time-jr->SourceParams.t0)))/2; 	//jr->SourceParams.amplitude/2.0;
+			*syy = 	-  	jr->SourceParams.amplitude*exp(-jr->SourceParams.alfa*((time-jr->SourceParams.t0)*(time-jr->SourceParams.t0)))/2;	//jr->SourceParams.amplitude/2.0;
 		}
 	}
 	else if (jr->SourceParams.source_type == COMPRES)
@@ -979,7 +887,6 @@ PetscErrorCode GetStressFromSource(JacRes *jr, UserCtx *user, PetscInt i, PetscI
 		}
 	else if (jr->SourceParams.source_type == POINT)
 	{
-
 		// get cell coordinates
 		xs[0] = jr->fs->dsx.ncoor[i]; xe[0] = jr->fs->dsx.ncoor[i+1];
 		xs[1] = jr->fs->dsy.ncoor[j]; xe[1] = jr->fs->dsy.ncoor[j+1];
@@ -996,38 +903,6 @@ PetscErrorCode GetStressFromSource(JacRes *jr, UserCtx *user, PetscInt i, PetscI
 					//*szz = 	-50.0 ;
 				}
 
-		/*// change the way and the place to do that /////////////////////////////////////////////////////////////////////////////////
-		//
-		if (jr->SourceParams.xrank == -1) // then first time we are here
-		{
-			// belongs the point source to this process?, then fillSourceParameters structure
-			if (FDSTAGPointIsInCurrentProccess(jr->fs, jr->SourceParams.x, jr->SourceParams.y, jr->SourceParams.z) == PETSC_TRUE)
-			{
-				jr->SourceParams.xrank = jr->fs->dsx.rank;
-				jr->SourceParams.yrank = jr->fs->dsy.rank;
-				jr->SourceParams.zrank = jr->fs->dsz.rank;
-
-				M = jr->fs->dsx.ncels;
-				N = jr->fs->dsy.ncels;
-				P = jr->fs->dsz.ncels;
-
-				jr->SourceParams.i = FindPointInCell(jr->fs->dsx.ncoor, 0, M, jr->SourceParams.x)+M*(jr->fs->dsx.rank);
-				jr->SourceParams.j = FindPointInCell(jr->fs->dsy.ncoor, 0, N, jr->SourceParams.y)+N*(jr->fs->dsy.rank);
-				jr->SourceParams.k = FindPointInCell(jr->fs->dsz.ncoor, 0, P, jr->SourceParams.z)+P*(jr->fs->dsz.rank);
-			}
-		}
-		//
-		/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-		if (jr->SourceParams.xrank == jr->fs->dsx.rank && jr->SourceParams.yrank == jr->fs->dsy.rank && jr->SourceParams.zrank == jr->fs->dsz.rank)
-		{
-			if (k==jr->SourceParams.k && j == jr->SourceParams.j && i == jr->SourceParams.i)
-			{
-				*sxx = *sxx*0 + jr->SourceParams.amplitude*exp(-jr->SourceParams.alfa*((time-jr->SourceParams.t0)*(time-jr->SourceParams.t0)));
-				*syy = 0.0;
-				*szz = *szz*0 + jr->SourceParams.amplitude*exp(-jr->SourceParams.alfa*((time-jr->SourceParams.t0)*(time-jr->SourceParams.t0)));
-			}
-		}*/
 
 
 		/*if (k==70 && j == 70 && i == 20)
@@ -1046,6 +921,7 @@ PetscErrorCode GetStressFromSource(JacRes *jr, UserCtx *user, PetscInt i, PetscI
 			*syy =	50.0;;
 			*szz = 	-50.0 ;
 		}*/
+	}
 	}
 
 	PetscFunctionReturn(0);

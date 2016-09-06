@@ -173,12 +173,17 @@ PetscErrorCode LaMEMLib(ModParam *IOparam)
 	// generate coordinates of grid nodes/cells
 	ierr = FDSTAGGenCoord(&fs, &user); CHKERRQ(ierr);
 
-
 	// check time step if ExplicitSolver (in JacRes.c)
 	if (user.ExplicitSolver == PETSC_TRUE)		{
 		ierr = ChangeTimeStep(&jr, &user); CHKERRQ(ierr);
 		//ierr = CheckTimeStep(&jr, &user); CHKERRQ(ierr);
 	}
+
+	/*// check time step if ExplicitSolver (in JacRes.c)
+	if (user.ExplicitSolver == PETSC_TRUE)		{
+		//ierr = ChangeTimeStep(&jr, &user); CHKERRQ(ierr);
+		ierr = CheckTimeStep(&jr, &user); CHKERRQ(ierr);
+	}*/
 
 	// save processor partitioning
 	if(user.SavePartitioning)
@@ -310,7 +315,6 @@ PetscErrorCode LaMEMLib(ModParam *IOparam)
 
 		// File to save seismic signals at a given point of the model - Now used to save traces - Now used to save axial stress / step
 
-		//asprintf(&fname, "strain_stress%1.3lld.%12.12e.txt",jr.fs->dsz.rank,user.dt);
 		asprintf(&fname, "strain_stress.txt");
 
 		fseism = fopen(fname, "w" );
@@ -321,82 +325,6 @@ PetscErrorCode LaMEMLib(ModParam *IOparam)
 		// Get the coordinates of the force term source
 		GetCellCoordinatesSource(&jr);
 	}
-
-	/*///////////////////////////
-	//if (user.ExplicitSolver == PETSC_TRUE)
-	//{
-
-		// Coordinates of the seismic station
-		PetscScalar xStation, yStation, zStation;
-		PetscInt iStation, jStation, kStation, M, N, P;
-		xStation = user.Station.x;
-		yStation = user.Station.y;
-		zStation = user.Station.z;
-
-		// get number of cells
-		M = jr.fs->dsx.ncels;
-		N = jr.fs->dsy.ncels;
-		P = jr.fs->dsz.ncels;
-
-		// find I, J, K indices
-		iStation = FindPointInCell(jr.fs->dsx.ncoor, 0, M, xStation);
-		jStation = FindPointInCell(jr.fs->dsy.ncoor, 0, N, yStation);
-		kStation = FindPointInCell(jr.fs->dsz.ncoor, 0, P, zStation);
-
-		PetscPrintf(PETSC_COMM_WORLD, "    Station i, j, k = %i, %i, %i\n", iStation, jStation, kStation);
-
-		jr.Station.i = iStation;
-		jr.Station.j = jStation;
-		jr.Station.k = kStation;
-
-		////////////////////////////////////////////////////////////////////
-		// Coordinates of the source
-		PetscScalar xSource, ySource, zSource;
-		PetscInt iSource, jSource, kSource;
-		xSource = user.SourceParams.x;
-		ySource = user.SourceParams.y;
-		zSource = user.SourceParams.z;
-
-		// find I, J, K indices
-
-		jr.fs->dsx.ncoor[0];
-		jr.fs->dsx.ncoor[M];
-
-		iSource = FindPointInCell(jr.fs->dsx.ncoor, 0, M, xSource);
-		jSource = FindPointInCell(jr.fs->dsy.ncoor, 0, N, ySource);
-		kSource = FindPointInCell(jr.fs->dsz.ncoor, 0, P, zSource);
-
-		PetscPrintf(PETSC_COMM_WORLD, "    Source i, j, k = %i, %i, %i\n", iSource, jSource, kSource);
-
-		jr.SourceParams.i = iSource;
-		jr.SourceParams.j = jSource;
-		jr.SourceParams.k = kSource;
-		////////////////////////////////////////////////////////////////////
-*/
-
-
-		// File to save seismic signals at a given point of the model
-		//FILE      *fseism;
-		////ierr = CreateFileSeismogram(fseism);  CHKERRQ(ierr);
-		//fseism = fopen("seismogram.txt","w");
-		//if(fseism == NULL) SETERRQ1(PETSC_COMM_SELF, 1,"cannot open file %s", "seismogram.txt");
-		//user.Station.output_file = fseism;
-
-		// compile file name
-		FILE *fp;
-		asprintf(&fname, "seismogram.txt.%lld.txt",jr.fs->dsz.rank);
-		fp = fopen(fname, "w" );
-		user.Station.output_file = fp;
-
-		/*// File to save seismic signals at a given point of the model - Now used to save traces
-		char           *fname;
-		FILE *fseism;
-		asprintf(&fname, "seismogram%1.3lld.txt",jr.fs->dsz.rank);
-		fseism = fopen(fname, "w" );
-		if(fseism == NULL) SETERRQ1(PETSC_COMM_SELF, 1,"cannot open file %s", fname);
-		user.Station.output_file = fseism;
-		///////////////////////////*/
-
 
 
 	//===============
@@ -410,9 +338,6 @@ PetscErrorCode LaMEMLib(ModParam *IOparam)
 		PetscPrintf(PETSC_COMM_WORLD,"dt   %12.12e -------------------------------------------------------- \n", user.dt);
 		PetscPrintf(PETSC_COMM_WORLD,"time %12.12e -------------------------------------------------------- \n", JacResGetStep(&jr)*user.dt);
 
-//ierr = ShowValues(&jr,&user,0); CHKERRQ(ierr);
-
-//ierr = ShowValues(&jr,&user,0); CHKERRQ(ierr);
 
 		//====================================
 		//	NONLINEAR THERMO-MECHANICAL SOLVER
@@ -426,7 +351,6 @@ PetscErrorCode LaMEMLib(ModParam *IOparam)
 
 		// compute inverse elastic viscosities
 		ierr = JacResGetI2Gdt(&jr); CHKERRQ(ierr);
-
 
 
 
@@ -571,8 +495,6 @@ PetscErrorCode LaMEMLib(ModParam *IOparam)
 			//fprintf(fseism, "%12.12e %12.12e\n", step, axial_stress);
 			fprintf(fseism, "%12.12e %12.12e\n", jr.ts.time, axial_stress);
 
-
-//ierr = ShowValues(&jr,&user, 5); CHKERRQ(ierr);
 
 			//ierr = SaveVelocitiesForSeismicStation(&jr, &user); CHKERRQ(ierr);
 

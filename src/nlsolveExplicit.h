@@ -36,7 +36,7 @@ PetscErrorCode ShowValues(JacRes *jr, UserCtx *user, PetscInt n);
 PetscErrorCode SaveVelocitiesForSeismicStation(JacRes *jr, UserCtx *user);
 //PetscErrorCode PutSeismicSource(JacRes *jr, AdvCtx *actx, UserCtx *user);
 PetscErrorCode PrintStress(JacRes *jr);
-PetscErrorCode UpdateHistoryFields(JacRes *jr);
+PetscErrorCode UpdateHistoryFieldsAndGetAxialStressStrain(JacRes *jr, PetscScalar *axial_stress, PetscScalar *axial_strain);
 //PetscErrorCode ModifyStress(JacRes *jr);
 PetscErrorCode GetStressFromSource(JacRes *jr, UserCtx *User, PetscInt i, PetscInt j, PetscInt k, PetscScalar *sxx, PetscScalar *syy, PetscScalar *szz);
 

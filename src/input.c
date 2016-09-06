@@ -490,7 +490,6 @@ PetscErrorCode InputReadFile(JacRes *jr, UserCtx *user, FILE *fp)
 		{
 			if      (!strcmp(source_type_name, "point"))   user->SourceParams.source_type = POINT;
 			else if (!strcmp(source_type_name, "plane"))   user->SourceParams.source_type = PLANE;
-
 			else if (!strcmp(source_type_name, "uniaxial_compression"))   user->SourceParams.source_type = COMPRES;
 			else if (!strcmp(source_type_name, "moment_tensor"))   user->SourceParams.source_type = MOMENT;
 			else SETERRQ1(PETSC_COMM_SELF, PETSC_ERR_USER,"ERROR! Incorrect source type: %s", source_type_name);
@@ -530,6 +529,7 @@ PetscErrorCode InputReadFile(JacRes *jr, UserCtx *user, FILE *fp)
 			user->SourceParams.yrank = -1;
 			user->SourceParams.zrank = -1;*/
 
+			else if (!strcmp(source_type_name, "uniaxial_compression"))   user->SourceParams.source_type = COMPRES;
 			else SETERRQ1(PETSC_COMM_SELF, PETSC_ERR_USER,"ERROR! Incorrect source type: %s", source_type_name);
 
 			// Source coordinates

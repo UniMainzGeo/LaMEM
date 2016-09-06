@@ -330,11 +330,19 @@ PetscErrorCode JacResInitScale(JacRes *jr, UserCtx *usr)
 	ScalingMatProp(&jr->scal, jr->phases, jr->numPhases);
 
 
+
 	/*// check time step if ExplicitSolver
 	if (usr->ExplicitSolver == PETSC_TRUE)		{
 		//ierr = ChangeTimeStep(jr, usr); CHKERRQ(ierr);
 		ierr = CheckTimeStep(jr, usr); CHKERRQ(ierr);
 	}*/
+
+	// check time step if ExplicitSolver
+	if (usr->ExplicitSolver == PETSC_TRUE)		{
+		ierr = ChangeTimeStep(jr, usr); CHKERRQ(ierr);
+		ierr = CheckTimeStep(jr, usr); CHKERRQ(ierr);
+	}
+
 
 	// initialize time stepping parameters
 	ierr = TSSolSetUp(&jr->ts, usr); CHKERRQ(ierr);
@@ -1475,6 +1483,7 @@ pc = p[k][j][i];
 		Tc = T[k][j][i];
 
 
+
 		//-----------
 		// VOLUMETRIC
 		//-----------
@@ -1494,6 +1503,7 @@ pc = p[k][j][i];
 		//-----------
 		// DEVIATORIC
 		//-----------
+
 
 		// evaluate deviatoric constitutive equations
 		ierr = DevConstEq(svDev, &eta_creep, numPhases, phases, svCell->phRat, matLim, dt, pc-pShift, Tc); CHKERRQ(ierr);
@@ -2099,7 +2109,7 @@ pc = p[k][j][i];
 
 	LOCAL_TO_GLOBAL(fs->DA_CEN, jr->lp, jr->gp);
 
-	ierr = ShowValues(jr,user,3); CHKERRQ(ierr);
+	//ierr = ShowValues(jr,user,3); CHKERRQ(ierr);
 
 
 	PetscFunctionReturn(0);
