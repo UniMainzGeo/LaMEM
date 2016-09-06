@@ -18,6 +18,7 @@
 #include "interpolate.h"
 #include "surf.h"
 #include "advect.h"
+#include "nlsolveExplicit.h"
 
 //-----------------------------------------------------------------------------
 #undef __FUNCT__
@@ -34,10 +35,10 @@ PetscErrorCode GetVelocities(JacRes *jr)
 	PetscInt    iter;
 	PetscInt    i, j, k, nx, ny, nz, sx, sy, sz;
 
-	PetscScalar dt, rho_side, t2;
+	PetscScalar dt, rho_side;
 	PetscScalar ***fx,  ***fy,  ***fz, ***vx,  ***vy,  ***vz, ***rho;
 
-	PetscScalar max_vel;
+//	PetscScalar t2, max_vel;
 
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
@@ -55,6 +56,7 @@ PetscErrorCode GetVelocities(JacRes *jr)
 	ierr = DMDAVecGetArray(fs->DA_X,   jr->gvx,  &vx);  CHKERRQ(ierr);
 	ierr = DMDAVecGetArray(fs->DA_Y,   jr->gvy,  &vy);  CHKERRQ(ierr);
 	ierr = DMDAVecGetArray(fs->DA_Z,   jr->gvz,  &vz);  CHKERRQ(ierr);
+
 
 	//-------------------------------
 	// get density from central points
@@ -309,20 +311,20 @@ PetscErrorCode CheckElasticProperties(JacRes *jr, UserCtx *user)
 
 	FDSTAG     *fs;
 	SolVarCell *svCell;
-	SolVarEdge *svEdge;
+//	SolVarEdge *svEdge;
 	SolVarDev  *svDev;
 	SolVarBulk *svBulk;
 
-	PetscInt i, j, k, iter, numPhases;
+	PetscInt i, j, k, iter/*, numPhases*/;
 	PetscInt nx, ny, nz, sx, sy, sz;
 	Material_t  *phases, *M;
-	PetscScalar dx, dy, dz, dt, rho, shear, bulk;
+	PetscScalar /*dx, dy, dz,*/ dt, rho, shear, bulk;
 
 	PetscFunctionBegin;
 
 	fs = jr->fs;
 
-	numPhases = jr->numPhases;
+//	numPhases = jr->numPhases;
 	phases    = jr->phases;
 
 	dt        = user->dt;     // time step
@@ -373,14 +375,14 @@ PetscErrorCode CheckTimeStep(JacRes *jr, UserCtx *user)
 {
 	// check time step as in Virieux, 1985
 
-	PetscInt    i, numPhases;
+	PetscInt    i /*,numPhases*/;
 	Material_t  *phases, *M;
 	PetscScalar dx, dy, dz, dt, rho, shear, bulk, vp, stability;
 
 	PetscFunctionBegin;
 
 
-	numPhases = jr->numPhases;
+//	numPhases = jr->numPhases;
 	phases    = jr->phases;
 	dt        = user->dt;     // time step
 	dx = user->W/((PetscScalar)(user->nel_x));
@@ -1452,9 +1454,9 @@ PetscErrorCode PutSeismicSource(JacRes *jr, AdvCtx *actx, UserCtx *user)
 
 			if (K==0) {
 
-				P->S.xx =	-  amplitude/2.0; //*exp(-alfa*((time-t0)*(time-t0)));
-				P->S.yy = 	-  amplitude/2.0; //*exp(-alfa*((time-t0)*(time-t0)));
-				P->S.zz =  	   amplitude; //*exp(-alfa*((time-t0)*(time-t0)));
+				P->S.xx =	-  amplitude/2.0; // *exp(-alfa*((time-t0)*(time-t0)));
+				P->S.yy = 	-  amplitude/2.0; // *exp(-alfa*((time-t0)*(time-t0)));
+				P->S.zz =  	   amplitude; // *exp(-alfa*((time-t0)*(time-t0)));
 			}
 		}
 	}
@@ -1517,10 +1519,10 @@ PetscErrorCode SaveVelocitiesForSeismicStation(JacRes *jr, UserCtx *user)
 	//  ... comment
 
 	FDSTAG     *fs;
-	PetscInt    iter;
+//	PetscInt    iter;
 	PetscInt    i, j, k, nx, ny, nz, sx, sy, sz, i_rec, j_rec, k_rec;
 
-	PetscScalar dt, t, vx_rec, vy_rec, vz_rec;
+	PetscScalar /*dt,*/ t, vx_rec, vy_rec, vz_rec;
 	PetscScalar ***vx,  ***vy,  ***vz;
 	FILE      *fseism;
 
@@ -1531,7 +1533,7 @@ PetscErrorCode SaveVelocitiesForSeismicStation(JacRes *jr, UserCtx *user)
 
 	// access residual context variables
 
-	dt    =  jr->ts.dt;     // time step
+//	dt    =  jr->ts.dt;     // time step
 	t	  =  JacResGetTime(jr);
 
 	// file for seismic signals
@@ -1548,7 +1550,7 @@ PetscErrorCode SaveVelocitiesForSeismicStation(JacRes *jr, UserCtx *user)
 	//-------------------------------
 	// side points
 	//-------------------------------
-	iter = 0;
+//	iter = 0;
 	GET_NODE_RANGE(nx, sx, fs->dsx)
 	GET_CELL_RANGE(ny, sy, fs->dsy)
 	GET_CELL_RANGE(nz, sz, fs->dsz)
@@ -1569,7 +1571,7 @@ PetscErrorCode SaveVelocitiesForSeismicStation(JacRes *jr, UserCtx *user)
 	}
 	END_STD_LOOP
 
-	iter = 0;
+//	iter = 0;
 	GET_CELL_RANGE(nx, sx, fs->dsx)
 	GET_NODE_RANGE(ny, sy, fs->dsy)
 	GET_CELL_RANGE(nz, sz, fs->dsz)
@@ -1582,7 +1584,7 @@ PetscErrorCode SaveVelocitiesForSeismicStation(JacRes *jr, UserCtx *user)
 	}
 	END_STD_LOOP
 
-	iter = 0;
+//	iter = 0;
 	GET_CELL_RANGE(nx, sx, fs->dsx)
 	GET_CELL_RANGE(ny, sy, fs->dsy)
 	GET_NODE_RANGE(nz, sz, fs->dsz)
@@ -1615,7 +1617,7 @@ PetscErrorCode SaveVelocitiesForSeismicStation(JacRes *jr, UserCtx *user)
 PetscErrorCode ShowValues(JacRes *jr, UserCtx *user, PetscInt n)
 {
 	// Show the values of velocity, pressure, stress, strain,...
-
+/*
 	FDSTAG     *fs;
 	SolVarCell *svCell;
 	SolVarEdge *svEdge;
@@ -1633,8 +1635,8 @@ PetscErrorCode ShowValues(JacRes *jr, UserCtx *user, PetscInt n)
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
 
-	FILE *fseism;
-	fseism = user->Station.output_file;
+//	FILE *fseism;
+//	fseism = user->Station.output_file;
 
 
 	fs = jr->fs;
@@ -1791,12 +1793,10 @@ PetscErrorCode ShowValues(JacRes *jr, UserCtx *user, PetscInt n)
 	ierr = DMDAVecRestoreArray(fs->DA_X,   jr->lvx,  &lvx);  CHKERRQ(ierr);
 	ierr = DMDAVecRestoreArray(fs->DA_Y,   jr->lvy,  &lvy);  CHKERRQ(ierr);
 	ierr = DMDAVecRestoreArray(fs->DA_Z,   jr->lvz,  &lvz);  CHKERRQ(ierr);
-
-
+*/
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-
 //---------------------------------------------------------------------------
 // Apply source
 #undef __FUNCT__
@@ -1804,7 +1804,7 @@ PetscErrorCode ShowValues(JacRes *jr, UserCtx *user, PetscInt n)
 PetscErrorCode GetStressFromSource(JacRes *jr, UserCtx *user, PetscInt i, PetscInt j, PetscInt k, PetscScalar *sxx, PetscScalar *syy, PetscScalar *szz)
 {
 	PetscInt M, N, P;
-	PetscScalar coor, time;
+	PetscScalar /*coor,*/ time;
 
 	time	  =  JacResGetTime(jr);
 
@@ -1874,7 +1874,7 @@ PetscErrorCode GetStressFromSource(JacRes *jr, UserCtx *user, PetscInt i, PetscI
 		/*if (k==7 && j == 2 && i == 2)
 		{
 			*sxx = *sxx*0 + jr->SourceParams.amplitude*exp(-jr->SourceParams.alfa*((time-jr->SourceParams.t0)*(time-jr->SourceParams.t0)));
-			//*syy = 0.0;
+			// *syy = 0.0;
 			*szz = *szz*0 + jr->SourceParams.amplitude*exp(-jr->SourceParams.alfa*((time-jr->SourceParams.t0)*(time-jr->SourceParams.t0)));
 
 			//if (JacResGetStep(jr) == 3) fprintf(fseism, "%12.12e\n", *szz);
