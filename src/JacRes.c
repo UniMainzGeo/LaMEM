@@ -1327,20 +1327,16 @@ PetscErrorCode JacResGetMomentumResidualAndPressure(JacRes *jr, UserCtx *user)
 	PetscScalar YZ, YZ1, YZ2, YZ3, YZ4;
 	PetscScalar bdx, fdx, bdy, fdy, bdz, fdz;
 	PetscScalar gx, gy, gz, tx, ty, tz, sxx, syy, szz, sxy, sxz, syz;
-	PetscScalar J2Inv, theta, rho, Tc, pc, pShift, dt, fssa, *grav,time;
-	PetscScalar ***fx,  ***fy,  ***fz, ***vx,  ***vy,  ***vz, ***gc;
-	PetscScalar ***dxx, ***dyy, ***dzz, ***dxy, ***dxz, ***dyz, ***p, ***T, ***up;
+	PetscScalar J2Inv, theta, rho, Tc, pc, pShift, dt, fssa, *grav, time;
+	PetscScalar ***fx,  ***fy,  ***fz, ***vx,  ***vy,  ***vz;
+	PetscScalar ***dxx, ***dyy, ***dzz, ***dxy, ***dxz, ***dyz, ***T, ***lp, ***gp;
 	PetscScalar eta_creep;
 	PetscScalar depth;
 
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
 
-
 	fs = jr->fs;
-
-
-//	PetscInt mcz = fs->dsz.tcels - 1;
 
 	// initialize maximum node index in all directions
 	mx = fs->dsx.tnods - 1;
@@ -1360,14 +1356,10 @@ PetscErrorCode JacResGetMomentumResidualAndPressure(JacRes *jr, UserCtx *user)
 	ierr = VecZeroEntries(jr->lfx); CHKERRQ(ierr);
 	ierr = VecZeroEntries(jr->lfy); CHKERRQ(ierr);
 	ierr = VecZeroEntries(jr->lfz); CHKERRQ(ierr);
-	ierr = VecZeroEntries(jr->gc);  CHKERRQ(ierr);
 
 	// access work vectors
-	ierr = DMDAVecGetArray(fs->DA_CEN, jr->gc,   &gc);  CHKERRQ(ierr);
-
-	ierr = DMDAVecGetArray(fs->DA_CEN, jr->lp,   &p);   CHKERRQ(ierr);
-	ierr = DMDAVecGetArray(fs->DA_CEN, jr->gp,   &up);  CHKERRQ(ierr);
-
+	ierr = DMDAVecGetArray(fs->DA_CEN, jr->lp,   &lp);   CHKERRQ(ierr);
+	ierr = DMDAVecGetArray(fs->DA_CEN, jr->gp,   &gp);   CHKERRQ(ierr);
 	ierr = DMDAVecGetArray(fs->DA_CEN, jr->lT,   &T);   CHKERRQ(ierr);
 	ierr = DMDAVecGetArray(fs->DA_CEN, jr->ldxx, &dxx); CHKERRQ(ierr);
 	ierr = DMDAVecGetArray(fs->DA_CEN, jr->ldyy, &dyy); CHKERRQ(ierr);
@@ -1382,11 +1374,8 @@ PetscErrorCode JacResGetMomentumResidualAndPressure(JacRes *jr, UserCtx *user)
 	ierr = DMDAVecGetArray(fs->DA_Y,   jr->lvy,  &vy);  CHKERRQ(ierr);
 	ierr = DMDAVecGetArray(fs->DA_Z,   jr->lvz,  &vz);  CHKERRQ(ierr);
 
-
-FILE *fseism; //used now to save traces
-fseism = user->Station.output_file;
-
-
+//	FILE *fseism; //used now to save traces
+//	fseism = user->Station.output_file;
 
 	//-------------------------------
 	// central points
@@ -1445,60 +1434,47 @@ fseism = user->Station.output_file;
 		// CONSTITUTIVE EQUATIONS
 		//=======================
 
-// access current pressure
-pc = p[k][j][i];
+		// access current pressure
+		pc = lp[k][j][i];
 
-		// current temperature
+		// access current temperature
 		Tc = T[k][j][i];
 
+
+		//-----------
+		// VOLUMETRIC
+		//-----------
+
+		// compute depth below the free surface
+		depth = jr->avg_topo - COORD_CELL(k, sz, fs->dsz);
+
+		if(depth < 0.0) depth = 0.0;
+
+		// evaluate volumetric constitutive equations
+		ierr = VolConstEq(svBulk, numPhases, phases, svCell->phRat, matLim, depth, dt, pc-pShift , Tc); CHKERRQ(ierr);
+
+		// update pressure
+		gp[k][j][i]  = lp[k][j][i] - svBulk->theta/svBulk->IKdt;
+		pc           = gp[k][j][i];
+
+		//-----------
+		// DEVIATORIC
+		//-----------
 
 		// evaluate deviatoric constitutive equations
 		ierr = DevConstEq(svDev, &eta_creep, numPhases, phases, svCell->phRat, matLim, dt, pc-pShift, Tc); CHKERRQ(ierr);
 
-
-
 		// store creep viscosity
 		svCell->eta_creep = eta_creep;
-
 
 		// compute stress, plastic strain rate and shear heating term on cell
 		ierr = GetStressCell(svCell, matLim, XX, YY, ZZ); CHKERRQ(ierr);
 
 
-
-// I moved that here to compute the pressure
-// compute depth below the free surface
-depth = jr->avg_topo - COORD_CELL(k, sz, fs->dsz);
-
-if(depth < 0.0) depth = 0.0;
-
-// evaluate volumetric constitutive equations
-ierr = VolConstEq(svBulk, numPhases, phases, svCell->phRat, matLim, depth, dt, pc-pShift , Tc); CHKERRQ(ierr);
-///////////////////////////////////
-
-
-//------------------------------------------
-// get pressure
-//------------------------------------------
-//fprintf(fseism, "%12.12e\n", svBulk->IKdt);
-//fprintf(fseism, "%12.12e\n", p[k][j][i]);
-p[k][j][i] -= svBulk->theta/svBulk->IKdt;
-pc = p[k][j][i];
-//fprintf(fseism, "%12.12e\n", p[k][j][i]);
-//PetscPrintf(PETSC_COMM_WORLD, "    p[%i,%i,%i]  = %12.12e \n", i,j,k, p[k][j][i]);
-//------------------------------------------
-
-
-
-//		// compute total Cauchy stresses
+		// compute total Cauchy stresses
 		sxx = svCell->sxx - pc;
 		syy = svCell->syy - pc;
 		szz = svCell->szz - pc;
-
-		//fprintf(fseism, "%12.12e\n", szz);
-
-		//PetscPrintf(PETSC_COMM_WORLD, "    sxx[%i,%i,%i]  = %12.12e \n", i,j,k, sxx);
-		//fprintf(fseism, "%12.12e\n", sxx);
 
 		// Add seismic source /////////////////////////
 		if (jr->SeismicSource == PETSC_TRUE)
@@ -1544,31 +1520,16 @@ pc = p[k][j][i];
 		}
 		///////////////////////////////////
 
-		//if (JacResGetStep(jr) == 3)
-			//fprintf(fseism, "%12.12e\n", sxx);
 
-		//PetscPrintf(PETSC_COMM_WORLD, "    szz after apply the source[%i,%i,%i] in time=%12.12e: %12.12e \n", i,j,k,time, szz);
-
-
-
-// I moved that before to compute the pressure
-//		// compute depth below the free surface
-//		depth = jr->avg_topo - COORD_CELL(k, sz, fs->dsz);
-//
-//		if(depth < 0.0) depth = 0.0;
-//
-//		// evaluate volumetric constitutive equations
-//		ierr = VolConstEq(svBulk, numPhases, phases, svCell->phRat, matLim, depth, dt, pc-pShift , Tc); CHKERRQ(ierr);
-		////////////////////////////////////////////////
-
+		// USE REAL DENSITY HERE !!!
 
 		// access
 		theta = svBulk->theta; // volumetric strain rate
 		rho   = svBulk->rho;   // effective density
-		//IKdt  = svBulk->IKdt;  // inverse bulk viscosity
-		//alpha = svBulk->alpha; // effective thermal expansion
-		//pn    = svBulk->pn;    // pressure history
-		//Tn    = svBulk->Tn;    // temperature history
+//		IKdt  = svBulk->IKdt;  // inverse bulk viscosity
+//		alpha = svBulk->alpha; // effective thermal expansion
+//		pn    = svBulk->pn;    // pressure history
+//		Tn    = svBulk->Tn;    // temperature history
 
 		// compute gravity terms
 		gx = rho*grav[0];
@@ -1584,8 +1545,6 @@ pc = p[k][j][i];
 		// RESIDUAL
 		//=========
 
-		//PetscPrintf(PETSC_COMM_WORLD, "    szz used for the ressidual [%i,%i,%i]  = %12.12e \n", i,j,k, szz);
-
 		// get mesh steps for the backward and forward derivatives
 		bdx = SIZE_NODE(i, sx, fs->dsx);   fdx = SIZE_NODE(i+1, sx, fs->dsx);
 		bdy = SIZE_NODE(j, sy, fs->dsy);   fdy = SIZE_NODE(j+1, sy, fs->dsy);
@@ -1596,44 +1555,20 @@ pc = p[k][j][i];
 		fy[k][j][i] -= (syy + vy[k][j][i]*ty)/bdy + gy/2.0;   fy[k][j+1][i] += (syy + vy[k][j+1][i]*ty)/fdy - gy/2.0;
 		fz[k][j][i] -= (szz + vz[k][j][i]*tz)/bdz + gz/2.0;   fz[k+1][j][i] += (szz + vz[k+1][j][i]*tz)/fdz - gz/2.0;
 
-
-
-//****************************************
-// ADHOC (HARD-CODED PRESSURE CONSTRAINTS)
-//****************************************
-
-//		if(k == 0)   fz[k][j][i]   += -p[k-1][j][i]/bdz;
-//		if(k == mcz) fz[k+1][j][i] -= -p[k+1][j][i]/fdz;
-
-		// mass - currently T-dependency is deactivated
-//		gc[k][j][i] = -IKdt*(pc - pn) - theta + alpha*(Tc - Tn)/dt;
-
-//        gc[k][j][i] = -IKdt*(pc - pn) - theta
-
-
-
-		// -IKdt*(p_new - p_old) - theta = 0
-		// p[k][j][i] = pc-theta/IKdt;
-
-		// -IKdt*(pc - pn) - theta = 0
-
-
-
-		//jr.gp
-		//if(IKdt == 0)   up[k][j][i] = pc;
-		//else 			up[k][j][i] = pc-theta/IKdt;
-
-
-	//up[k][j][i] = theta;
-	//p[k][j][i] = pc;
-
-	//PetscPrintf(PETSC_COMM_WORLD, "    [k,j,i]  = [%i,%i,%i]  theta  = %12.12e  \n", k,j,i,theta);
-
-		//up[k][j][i] = theta/IKdt;
-
-
 	}
 	END_STD_LOOP
+
+	// restore access to pressure vectors
+	ierr = DMDAVecRestoreArray(fs->DA_CEN, jr->lp, &lp);   CHKERRQ(ierr);
+	ierr = DMDAVecRestoreArray(fs->DA_CEN, jr->gp, &gp);   CHKERRQ(ierr);
+
+
+	// PRESSURE BC (IF ANY) SHOULD BE APPLIED HERE!
+
+	GLOBAL_TO_LOCAL(fs->DA_CEN, jr->gp, jr->lp);
+
+	// access updated pressure with ghost points
+	ierr = DMDAVecGetArray(fs->DA_CEN, jr->lp, &lp);  CHKERRQ(ierr);
 
 	//-------------------------------
 	// xy edge points
@@ -1708,7 +1643,7 @@ pc = p[k][j][i];
 		//=======================
 
 		// access current pressure (x-y plane, i-j indices)
-		pc = 0.25*(p[k][j][i] + p[k][j][i-1] + p[k][j-1][i] + p[k][j-1][i-1]);
+		pc = 0.25*(lp[k][j][i] + lp[k][j][i-1] + lp[k][j-1][i] + lp[k][j-1][i-1]);
 
 		// current temperature (x-y plane, i-j indices)
 		Tc = 0.25*(T[k][j][i] + T[k][j][i-1] + T[k][j-1][i] + T[k][j-1][i-1]);
@@ -1733,7 +1668,6 @@ pc = p[k][j][i];
 		// momentum
 		fx[k][j-1][i] -= sxy/bdy;   fx[k][j][i] += sxy/fdy;
 		fy[k][j][i-1] -= sxy/bdx;   fy[k][j][i] += sxy/fdx;
-
 
 	}
 	END_STD_LOOP
@@ -1811,7 +1745,7 @@ pc = p[k][j][i];
 		//=======================
 
 		// access current pressure (x-z plane, i-k indices)
-		pc = 0.25*(p[k][j][i] + p[k][j][i-1] + p[k-1][j][i] + p[k-1][j][i-1]);
+		pc = 0.25*(lp[k][j][i] + lp[k][j][i-1] + lp[k-1][j][i] + lp[k-1][j][i-1]);
 
 		// current temperature (x-z plane, i-k indices)
 		Tc = 0.25*(T[k][j][i] + T[k][j][i-1] + T[k-1][j][i] + T[k-1][j][i-1]);
@@ -1834,9 +1768,6 @@ pc = p[k][j][i];
 		bdz = SIZE_CELL(k-1, sz, fs->dsz);   fdz = SIZE_CELL(k, sz, fs->dsz);
 
 		// momentum
-
-		//PetscPrintf(PETSC_COMM_WORLD, "    sxz used for the ressidual [%i,%i,%i]  = %12.12e \n", i,j,k, sxz);
-
 		fx[k-1][j][i] -= sxz/bdz;   fx[k][j][i] += sxz/fdz;
 		fz[k][j][i-1] -= sxz/bdx;   fz[k][j][i] += sxz/fdx;
 
@@ -1916,7 +1847,7 @@ pc = p[k][j][i];
 		//=======================
 
 		// access current pressure (y-z plane, j-k indices)
-		pc = 0.25*(p[k][j][i] + p[k][j-1][i] + p[k-1][j][i] + p[k-1][j-1][i]);
+		pc = 0.25*(lp[k][j][i] + lp[k][j-1][i] + lp[k-1][j][i] + lp[k-1][j-1][i]);
 
 		// current temperature (y-z plane, j-k indices)
 		Tc = 0.25*(T[k][j][i] + T[k][j-1][i] + T[k-1][j][i] + T[k-1][j-1][i]);
@@ -1938,25 +1869,15 @@ pc = p[k][j][i];
 		bdy = SIZE_CELL(j-1, sy, fs->dsy);   fdy = SIZE_CELL(j, sy, fs->dsy);
 		bdz = SIZE_CELL(k-1, sz, fs->dsz);   fdz = SIZE_CELL(k, sz, fs->dsz);
 
-		// update momentum residuals
-
-		//PetscPrintf(PETSC_COMM_WORLD, "    syz used for the ressidual [%i,%i,%i]  = %12.12e \n", i,j,k, syz);
-
+		// momentum
 		fy[k-1][j][i] -= syz/bdz;   fy[k][j][i] += syz/fdz;
 		fz[k][j-1][i] -= syz/bdy;   fz[k][j][i] += syz/fdy;
 
 	}
 	END_STD_LOOP
 
-
-	//PetscPrintf(PETSC_COMM_WORLD, "    p[%i,%i,%i]  = %12.12e \n", 2,2,1, p[1][2][2]);
-
 	// restore vectors
-	ierr = DMDAVecRestoreArray(fs->DA_CEN, jr->gc,   &gc);  CHKERRQ(ierr);
-
-	ierr = DMDAVecRestoreArray(fs->DA_CEN, jr->lp,   &p);   CHKERRQ(ierr);
-	ierr = DMDAVecRestoreArray(fs->DA_CEN, jr->gp,   &up);  CHKERRQ(ierr);
-
+	ierr = DMDAVecRestoreArray(fs->DA_CEN, jr->lp,   &lp);  CHKERRQ(ierr);
 	ierr = DMDAVecRestoreArray(fs->DA_CEN, jr->lT,   &T);   CHKERRQ(ierr);
 	ierr = DMDAVecRestoreArray(fs->DA_CEN, jr->ldxx, &dxx); CHKERRQ(ierr);
 	ierr = DMDAVecRestoreArray(fs->DA_CEN, jr->ldyy, &dyy); CHKERRQ(ierr);
@@ -1971,21 +1892,10 @@ pc = p[k][j][i];
 	ierr = DMDAVecRestoreArray(fs->DA_Y,   jr->lvy,  &vy);  CHKERRQ(ierr);
 	ierr = DMDAVecRestoreArray(fs->DA_Z,   jr->lvz,  &vz);  CHKERRQ(ierr);
 
-	//GLOBAL_TO_LOCAL(fs->DA_CEN, jr->gp, jr->lp)
-
 	// assemble global residuals from local contributions
 	LOCAL_TO_GLOBAL(fs->DA_X, jr->lfx, jr->gfx)
 	LOCAL_TO_GLOBAL(fs->DA_Y, jr->lfy, jr->gfy)
 	LOCAL_TO_GLOBAL(fs->DA_Z, jr->lfz, jr->gfz)
-
-
-	// communicate boundary values
-	LOCAL_TO_LOCAL(fs->DA_CEN, jr->lp);
-
-	LOCAL_TO_GLOBAL(fs->DA_CEN, jr->lp, jr->gp);
-
-	//ierr = ShowValues(jr,user,3); CHKERRQ(ierr);
-
 
 	PetscFunctionReturn(0);
 }

@@ -287,6 +287,8 @@ PetscErrorCode UpdateHistoryFieldsAndGetAxialStressStrain(JacRes *jr, PetscScala
 	strain_yy = strain_yy/count;
 	strain_zz = strain_zz/count;
 
+	// COMPLETE COMMUNICATION HERE!
+
 	//MPI_Reduce
 
 	*axial_stress = sqrt(stress_xx*stress_xx + stress_yy*stress_yy + stress_zz*stress_zz);
