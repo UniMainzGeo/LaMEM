@@ -151,11 +151,6 @@ PetscErrorCode LaMEMLib(ModParam *IOparam)
 	// initialize variables
 	ierr = FDSTAGInitCode(&jr, &user, IOparam); CHKERRQ(ierr);
 
-	// check time step if ExplicitSolver
-	if (user.ExplicitSolver == PETSC_TRUE)		{
-		ierr = CheckTimeStep(&jr, &user); CHKERRQ(ierr);
-	}
-
 
 	// check restart
 	ierr = BreakCheck(&user); CHKERRQ(ierr);
@@ -172,6 +167,13 @@ PetscErrorCode LaMEMLib(ModParam *IOparam)
 
 	// generate coordinates of grid nodes/cells
 	ierr = FDSTAGGenCoord(&fs, &user); CHKERRQ(ierr);
+
+
+	/*// check time step if ExplicitSolver (in JacRes.c)
+	if (user.ExplicitSolver == PETSC_TRUE)		{
+		//ierr = ChangeTimeStep(&jr, &user); CHKERRQ(ierr);
+		ierr = CheckTimeStep(&jr, &user); CHKERRQ(ierr);
+	}*/
 
 
 	// save processor partitioning
@@ -301,14 +303,16 @@ PetscErrorCode LaMEMLib(ModParam *IOparam)
 	PetscPrintf(PETSC_COMM_WORLD," \n");
 
 
-		/*// File to save seismic signals at a given point of the model - Now used to save traces
+		// File to save seismic signals at a given point of the model - Now used to save traces - Now used to save axial stress / step
 		char           *fname;
 		FILE *fseism;
-		asprintf(&fname, "seismogram%1.3lld.txt",jr.fs->dsz.rank);
+		asprintf(&fname, "strain_stress%1.3lld.%12.12e.txt",jr.fs->dsz.rank,user.dt);
 		fseism = fopen(fname, "w" );
 		if(fseism == NULL) SETERRQ1(PETSC_COMM_SELF, 1,"cannot open file %s", fname);
 		user.Station.output_file = fseism;
-		///////////////////////////*/
+		///////////////////////////
+
+	PetscScalar axial_stress, axial_strain;
 
 
 	//===============
@@ -318,7 +322,9 @@ PetscErrorCode LaMEMLib(ModParam *IOparam)
 //	PetscTime(&cputime_start_tstep);
 	do
 	{
-		PetscPrintf(PETSC_COMM_WORLD,"Time step %lld -------------------------------------------------------- \n", (LLD)JacResGetStep(&jr));
+		PetscPrintf(PETSC_COMM_WORLD,"step %lld -------------------------------------------------------- \n", (LLD)JacResGetStep(&jr));
+		PetscPrintf(PETSC_COMM_WORLD,"dt   %12.12e -------------------------------------------------------- \n", user.dt);
+		PetscPrintf(PETSC_COMM_WORLD,"time %12.12e -------------------------------------------------------- \n", JacResGetStep(&jr)*user.dt);
 
 //ierr = ShowValues(&jr,&user,0); CHKERRQ(ierr);
 
@@ -471,11 +477,15 @@ PetscErrorCode LaMEMLib(ModParam *IOparam)
 
 //ierr = ShowValues(&jr,4); CHKERRQ(ierr);
 
-			// update history fields
-			ierr = UpdateHistoryFields(&jr); 	CHKERRQ(ierr);
+			// update history fields (and get averaged axial stress)
+			ierr = UpdateHistoryFieldsAndGetAxialStressStrain(&jr, &axial_stress, &axial_strain); 	CHKERRQ(ierr);
+			PetscScalar step=JacResGetStep(&jr);
+			//fprintf(fseism, "%12.12e %12.12e\n", step, axial_stress);
+			fprintf(fseism, "%12.12e %12.12e\n", jr.ts.time, axial_stress);
 
 
-//ierr = ShowValues(&jr,&user, 5); CHKERRQ(ierr);
+
+ierr = ShowValues(&jr,&user, 5); CHKERRQ(ierr);
 
 			//ierr = SaveVelocitiesForSeismicStation(&jr, &user); CHKERRQ(ierr);
 
