@@ -6,8 +6,8 @@
 #    * number of cells                                    (n points)
 #    * bias coefficients                                  (n points) 
 
-nel_x						=   4    
-nel_y						= 	4  
+nel_x						=   4
+nel_y						= 	4
 nel_z						= 	20
 
 # Scaling
@@ -16,7 +16,9 @@ Characteristic.Length      	= 1 #100e3
 Characteristic.Viscosity   	= 1 #1e20
 Characteristic.Temperature 	= 1 #1300
 Characteristic.Stress      	= 1 #1e8
+Characteristic.inp_mass		= 2.8000e-20 #(2800/1e23=2.8000e-20) (2800/1e15=2.8000e-12)	(2800/1e5=0.0280)	
 
+#Characteristic.inp_time		= 2.8000e-2	#(2800/1e15=2.8000e-12)	0.0280	#(2800/1e5=0.0280)	
 
 # Geometry
 DimensionalUnits		=	si			# Dimensionless (=0) or SI-dimensional units (=1)?
@@ -32,9 +34,9 @@ msetup 					= homo
 
 
 # Define input/output and numerics-related stuff
-OutputFile					=	ExplicitWavePropagation		
-save_timesteps				=	10				# save every ? timesteps
-time_end					=	200	# last timestep
+OutputFile					=	ExplicitWavePropagation1		
+save_timesteps				=	1000				# save every ? timesteps
+time_end					=	10000		# last timestep
 CFL							=	0.5				# CFL, dt-based criterium
 dt_max						=	1e-5	  	   	# Maximum timestep [years if dimensional]
 save_breakpoints			= 	-1 				#  -1: don't save breakpoints + initial particles
@@ -47,12 +49,16 @@ BC.RightBound				=	1				# 0 - free surface, 1-free slip with BG strainrate Eyy, 
 BC.FrontBound				=	1				# 0 - free surface, 1-free slip with BG strainrate Exx, 2 - no slip, 5 - growthrate 2D, 7 - growthrate 3D
 BC.BackBound				=	1				# 0 - free surface, 1-free slip with BG strainrate Exx, 2 - no slip, 5 - growthrate 2D, 7 - growthrate 3D
 BC.LowerBound				=	1				# 0 - free surface, 1-free slip, 				  2 - no slip, 5 - growthrate 2D, 7 - growthrate 3D
-BC.UpperBound				=	1				# 0 - free surface, 1-free slip, 				  2 - no slip, 5 - growthrate 2D, 7 - growthrate 3D
+BC.UpperBound				=	0				# 0 - free surface, 1-free slip, 				  2 - no slip, 5 - growthrate 2D, 7 - growthrate 3D
 Temp_top	    			=   0				# Temperature @ top
-Temp_bottom					=   1 				# Temperature @ bottom; side BC's are flux-free
+Temp_bottom					=   0 #1 				# Temperature @ bottom; side BC's are flux-free
 
 
 <PetscOptionsStart>
+
+	-ExxNumPeriods 1
+	
+	-ExxStrainRates -1e-15
 
 	-ExplicitSolver 1
 
@@ -105,26 +111,29 @@ DII_ref 						=	1
 	# Define properties of matrix -----------------
 	<MaterialStart>
 		ID 			=	0			# phase id  [-]
-		rho0        = 	2600 		#1000		# density - if dimensional [kg/m3]	
-		bulk		=	3.38e10 	#208e+7		# K
-		shear		=   2.34e10		#144e+7		# shear modulus (mu, G)
-		#eta			= 	1e30		# viscosity - if dimensional [Pa.s]
+		rho0        = 	2800		#2600 		#1000		# density - if dimensional [kg/m3]	
+		bulk		=	40e9	#3.38e10 	#208e+7		# K
+		shear		=   24e9	#2.34e10		#144e+7		# shear modulus (mu, G)
+		friction	=	0
+		cohesion	=	100e6
+		
+		#eta		= 	1e30		# viscosity - if dimensional [Pa.s]
 	<MaterialEnd>
 
 # End of defining material properties for all phases ----------------------------------------
 
 
 # Seismic source ------------------------------------------------------------------------------------
-seismic_source 		=	1
+seismic_source 		=	0
 
 # Define seismic source properties  (to improve)
-source_type 		= 	plane		#point or plane
+source_type 		= 	point		#point, plane, uniaxial_compression
 x_source = 4000
 y_source = 2500
 z_source = 3000
-amplitude = 80
+amplitude = 10 #80e6
 alfa = 40
-t0 = 0
+t0 = 1
 # 
 
 # ---------------------------------------------------------------------------------------------------

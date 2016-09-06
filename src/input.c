@@ -54,6 +54,7 @@
 #include "input.h"
 #include "matProps.h"
 #include "fdstagTypes.h"
+#include "nlsolveExplicit.h"
 //---------------------------------------------------------------------------
 // set default code parameters and read input file, if required
 #undef __FUNCT__
@@ -113,6 +114,17 @@ PetscErrorCode FDSTAGInitCode(JacRes *jr, UserCtx *user, ModParam *iop)
 
 	// Interpret command line options
 	ierr = InputReadCommLine(user); CHKERRQ(ierr);
+
+
+
+	/*// Change time step if ExplicitSolver
+	if (user->ExplicitSolver == PETSC_TRUE)		{
+		ierr = ChangeTimeStep(jr, user); CHKERRQ(ierr);
+		//ierr = CheckTimeStep(&jr, &user); CHKERRQ(ierr);
+	}*/
+
+
+
 
 	// error check and info print:
 	// we need at least 2 cells in each direction (not 1) and dt > 0 ! - IS THIS NECESSARY?
@@ -431,6 +443,7 @@ PetscErrorCode InputReadFile(JacRes *jr, UserCtx *user, FILE *fp)
 		{
 			if      (!strcmp(source_type_name, "point"))   user->SourceParams.source_type = POINT;
 			else if (!strcmp(source_type_name, "plane"))   user->SourceParams.source_type = PLANE;
+			else if (!strcmp(source_type_name, "uniaxial_compression"))   user->SourceParams.source_type = COMPRES;
 			else SETERRQ1(PETSC_COMM_SELF, PETSC_ERR_USER,"ERROR! Incorrect source type: %s", source_type_name);
 
 			// Source coordinates

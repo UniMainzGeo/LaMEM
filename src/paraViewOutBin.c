@@ -53,6 +53,7 @@
 #include "paraViewOutBin.h"
 #include "outFunct.h"
 #include "tools.h"
+#include "nlsolveExplicit.h"
 //---------------------------------------------------------------------------
 // * phase-ratio output
 // * integrate AVD phase viewer
@@ -546,8 +547,12 @@ PetscErrorCode PVOutWriteTimeStep(PVOut *pvout, JacRes *jr, const char *dirName,
 	// write parallel data .pvtr file
 	ierr = PVOutWritePVTR(pvout, dirName); CHKERRQ(ierr);
 
+//ierr = ShowValues(jr,7); CHKERRQ(ierr);
+
 	// write sub-domain data .vtr files
 	ierr = PVOutWriteVTR(pvout, jr, dirName); CHKERRQ(ierr);
+
+//ierr = ShowValues(jr,8); CHKERRQ(ierr);
 
 	PetscFunctionReturn(0);
 }
@@ -726,13 +731,20 @@ PetscErrorCode PVOutWriteVTR(PVOut *pvout, JacRes *jr, const char *dirName)
 	OutBufPutCoordVec(outbuf, &fs->dsy, jr->scal.length); OutBufDump(outbuf);
 	OutBufPutCoordVec(outbuf, &fs->dsz, jr->scal.length); OutBufDump(outbuf);
 
+//PetscPrintf(PETSC_COMM_WORLD, "    7aa ------------------------------------------\n");
+//ierr = ShowValues(jr); CHKERRQ(ierr);
+
 	for(i = 0; i < pvout->nvec; i++)
 	{
 		// compute each output vector using its own setup function
 		ierr = outvecs[i].OutVecFunct(jr, outbuf); CHKERRQ(ierr);
+
 		// write vector to output file
 		OutBufDump(outbuf);
 	}
+
+//PetscPrintf(PETSC_COMM_WORLD, "    7ab ------------------------------------------\n");
+//ierr = ShowValues(jr); CHKERRQ(ierr);
 
 	// close appended data section and file
 	fprintf(fp, "\n\t</AppendedData>\n");
