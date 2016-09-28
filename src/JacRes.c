@@ -339,7 +339,7 @@ PetscErrorCode JacResInitScale(JacRes *jr, UserCtx *usr)
 
 	// check time step if ExplicitSolver
 	if (usr->ExplicitSolver == PETSC_TRUE)		{
-		ierr = ChangeTimeStep(jr, usr); CHKERRQ(ierr);
+		//ierr = ChangeTimeStep(jr, usr); CHKERRQ(ierr);
 		ierr = CheckTimeStep(jr, usr); CHKERRQ(ierr);
 	}
 
@@ -536,8 +536,6 @@ PetscErrorCode JacResGetEffStrainRate(JacRes *jr)
 		svCell->dzz = zz;
 
 		// compute & store effective deviatoric strain rates
-
-		//PetscPrintf(PETSC_COMM_WORLD, "    [k,j,i]  = [%i,%i,%i]  hxx  = %12.12e hyy =  %12.12e hzz =  %12.12e \n", k,j,i,svCell->hxx, svCell->hyy, svCell->hzz);
 
 		dxx[k][j][i] = xx + svCell->hxx*svDev->I2Gdt;
 		dyy[k][j][i] = yy + svCell->hyy*svDev->I2Gdt;
@@ -1502,8 +1500,6 @@ PetscErrorCode JacResGetMomentumResidualAndPressure(JacRes *jr, UserCtx *user)
 			ierr = GetStressFromSource(jr,user, i, j, k, &sxx, &syy, &szz);
 		}
 
-
-
 		// USE REAL DENSITY HERE !!!
 
 
@@ -1546,6 +1542,7 @@ PetscErrorCode JacResGetMomentumResidualAndPressure(JacRes *jr, UserCtx *user)
 
 		//PetscPrintf(PETSC_COMM_WORLD, "    fx[%i,%i,%i]  = %12.12e \n", i,j,k, fx[k][j][i]);
 
+
 		// Add seismic moment source term in the residual ////////////////////////////////////////////////////////////////////////
 		// To check: consider the case of the source in the boundaries!!!
 
@@ -1583,7 +1580,6 @@ PetscErrorCode JacResGetMomentumResidualAndPressure(JacRes *jr, UserCtx *user)
 			fz[k][j+1][i] 	+= I4h4 * Myz;		fz[k][j-1][i] 	-= I4h4 * Myz;
 		}
 		///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 
 	}
 	END_STD_LOOP
@@ -1686,6 +1682,15 @@ PetscErrorCode JacResGetMomentumResidualAndPressure(JacRes *jr, UserCtx *user)
 		// compute stress, plastic strain rate and shear heating term on edge
 		ierr = GetStressEdge(svEdge, matLim, XY); CHKERRQ(ierr);
 
+		if (k==5 && j == 2 && i == 2)
+		{
+			// compute stress, plastic strain rate and shear heating term on edge
+			ierr = GetStressEdge(svEdge, matLim, XY); CHKERRQ(ierr);
+		}else{
+			// compute stress, plastic strain rate and shear heating term on edge
+			ierr = GetStressEdge(svEdge, matLim, XY); CHKERRQ(ierr);
+		}
+
 		// access xy component of the Cauchy stress
 		sxy = svEdge->s;
 
@@ -1703,7 +1708,6 @@ PetscErrorCode JacResGetMomentumResidualAndPressure(JacRes *jr, UserCtx *user)
 		// momentum
 		fx[k][j-1][i] -= sxy/bdy;   fx[k][j][i] += sxy/fdy;
 		fy[k][j][i-1] -= sxy/bdx;   fy[k][j][i] += sxy/fdx;
-
 	}
 	END_STD_LOOP
 
