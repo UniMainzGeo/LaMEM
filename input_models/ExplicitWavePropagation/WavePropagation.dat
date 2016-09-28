@@ -6,9 +6,9 @@
 #    * number of cells                                    (n points)
 #    * bias coefficients                                  (n points) 
 
-nel_x						=   4
-nel_y						= 	4
-nel_z						= 	20
+nel_x						=   40
+nel_y						= 	40
+nel_z						= 	100
 
 # Scaling
 units 						= si
@@ -16,15 +16,15 @@ Characteristic.Length      	= 1 #100e3
 Characteristic.Viscosity   	= 1 #1e20
 Characteristic.Temperature 	= 1 #1300
 Characteristic.Stress      	= 1 #1e8
-Characteristic.inp_mass		= 2.8000e-20 #(2800/1e23=2.8000e-20) (2800/1e15=2.8000e-12)	(2800/1e5=0.0280)	
+Characteristic.inp_mass		= 1 #(2800/1e23=2.8000e-20) (2800/1e15=2.8000e-12)	(2800/1e5=0.0280)	
 
 #Characteristic.inp_time		= 2.8000e-2	#(2800/1e15=2.8000e-12)	0.0280	#(2800/1e5=0.0280)	
 
 # Geometry
 DimensionalUnits		=	si			# Dimensionless (=0) or SI-dimensional units (=1)?
 L						=	5000		# Length (y-direction)
-W						=	8000		# Width  (x-direction)
-H						=	6600		# Height (z-direction)
+W						=	4000		# Width  (x-direction)
+H						=	8000		# Height (z-direction)
 x_left					=	0			# Left side of domain
 y_front					=	0			# Front side of domain
 z_bot					=	0			# Bottom of box
@@ -34,9 +34,9 @@ msetup 					= homo
 
 
 # Define input/output and numerics-related stuff
-OutputFile					=	ExplicitWavePropagation1		
-save_timesteps				=	1000				# save every ? timesteps
-time_end					=	10000		# last timestep
+OutputFile					=	ExplicitWavePropagation		
+save_timesteps				=	10				# save every ? timesteps
+time_end					=	1000		# last timestep
 CFL							=	0.5				# CFL, dt-based criterium
 dt_max						=	1e-5	  	   	# Maximum timestep [years if dimensional]
 save_breakpoints			= 	-1 				#  -1: don't save breakpoints + initial particles
@@ -56,18 +56,24 @@ Temp_bottom					=   0 #1 				# Temperature @ bottom; side BC's are flux-free
 
 <PetscOptionsStart>
 
-	-ExxNumPeriods 1
+	#-ExxNumPeriods 1
 	
-	-ExxStrainRates -1e-15
+	#-ExxStrainRates -1e-15
 
 	-ExplicitSolver 1
 
 	# Initial timestep
-	-dt 1e-2	#1.5e-10		#1e-2
+	-dt 5e-3	#1.5e-10		#1e-2
 	
 	# Use free surface stabilization algorithm:
-	-FSSA 0.0			# FSSA parameter
-
+	#-surf_use        1
+    #-surf_level      0
+    #-surf_air_phase  0
+    #-surf_max_angle 30
+    -FSSA 0.0
+	
+	#-noslip 0,0,0,0,1,0  # no slip BC face order: left,right,front,back,bottom,top
+	
 	# Fine-tune solver options here (add command-line Petsc Options)
 	-AddRandomNoiseParticles	0				# Adding noise to the particles (1) or not (0)
 	-restart 0
@@ -114,8 +120,18 @@ DII_ref 						=	1
 		rho0        = 	2800		#2600 		#1000		# density - if dimensional [kg/m3]	
 		bulk		=	40e9	#3.38e10 	#208e+7		# K
 		shear		=   24e9	#2.34e10		#144e+7		# shear modulus (mu, G)
-		friction	=	0
-		cohesion	=	100e6
+		#friction	=	0
+		#cohesion	=	2e6
+		
+		#eta		= 	1e30		# viscosity - if dimensional [Pa.s]
+	<MaterialEnd>
+	<MaterialStart>
+		ID 			=	1			# phase id  [-]
+		rho0        = 	3100		#2600 		#1000		# density - if dimensional [kg/m3]	
+		bulk		=	6.3819e+10 #40e9	#3.38e10 	#208e+7		# K
+		shear		=   3.5836e+10 #24e9	#2.34e10		#144e+7		# shear modulus (mu, G)
+		#friction	=	0
+		#cohesion	=	100e6
 		
 		#eta		= 	1e30		# viscosity - if dimensional [Pa.s]
 	<MaterialEnd>
@@ -124,14 +140,14 @@ DII_ref 						=	1
 
 
 # Seismic source ------------------------------------------------------------------------------------
-seismic_source 		=	0
+seismic_source 		=	1
 
 # Define seismic source properties  (to improve)
 source_type 		= 	point		#point, plane, uniaxial_compression
-x_source = 4000
+x_source = 2500
 y_source = 2500
-z_source = 3000
-amplitude = 10 #80e6
+z_source = 5000
+amplitude = 100 #80e6
 alfa = 40
 t0 = 1
 ## 

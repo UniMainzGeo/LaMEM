@@ -49,7 +49,7 @@ PetscErrorCode GetVelocities(JacRes *jr)
 	dt        =  jr->ts.dt;     // time step
 
 	// access work vectors
-	ierr = DMDAVecGetArray(fs->DA_CEN, jr->ldxx, &rho); CHKERRQ(ierr);	// strain-rate component (used as buffer vectors)
+	ierr = DMDAVecGetArray(fs->DA_CEN, jr->ldzz, &rho); CHKERRQ(ierr);	// strain-rate component (used as buffer vectors)
 	ierr = DMDAVecGetArray(fs->DA_X,   jr->gfx,  &fx);  CHKERRQ(ierr);
 	ierr = DMDAVecGetArray(fs->DA_Y,   jr->gfy,  &fy);  CHKERRQ(ierr);
 	ierr = DMDAVecGetArray(fs->DA_Z,   jr->gfz,  &fz);  CHKERRQ(ierr);
@@ -76,12 +76,12 @@ PetscErrorCode GetVelocities(JacRes *jr)
 	}
 	END_STD_LOOP
 
-	ierr = DMDAVecRestoreArray(fs->DA_CEN, jr->ldxx, &rho); CHKERRQ(ierr);
+	ierr = DMDAVecRestoreArray(fs->DA_CEN, jr->ldzz, &rho); CHKERRQ(ierr);
 
 	// communicate boundary values ??
-	LOCAL_TO_LOCAL(fs->DA_CEN, jr->ldxx);
+	LOCAL_TO_LOCAL(fs->DA_CEN, jr->ldzz);
 
-	ierr = DMDAVecGetArray(fs->DA_CEN, jr->ldxx, &rho); CHKERRQ(ierr);
+	ierr = DMDAVecGetArray(fs->DA_CEN, jr->ldzz, &rho); CHKERRQ(ierr);
 	//-------------------------------
 	// side points
 	//-------------------------------
@@ -100,8 +100,9 @@ PetscErrorCode GetVelocities(JacRes *jr)
 		{
 			rho_side = (rho[k][j][i]+rho[k][j][i-1])/2.0;
 		}
-		//PetscPrintf(PETSC_COMM_WORLD, "    velocityx  = %12.12e \n", vx[k][j][i]);
+
 		vx[k][j][i] -= fx[k][j][i]*dt/rho_side;
+		//PetscPrintf(PETSC_COMM_WORLD, "    vx[%i,%i,%i]  %12.12e \n", i,j,k,vx[k][j][i]);
 		//PetscPrintf(PETSC_COMM_WORLD, "    [k,j,i]  = [%i,%i,%i]  vx  = %12.12e fx =  %12.12e \n", k,j,i,vx[k][j][i], fx[k][j][i]);
 	}
 	END_STD_LOOP
@@ -122,7 +123,7 @@ PetscErrorCode GetVelocities(JacRes *jr)
 			rho_side=(rho[k][j][i]+rho[k][j-1][i])/2.0;
 		}
 		vy[k][j][i] -= fy[k][j][i]*dt/rho_side;
-		//PetscPrintf(PETSC_COMM_WORLD, "    [k,j,i]  = [%i,%i,%i]  vy  = %12.12e fy =  %12.12e \n", k,j,i,vy[k][j][i], fy[k][j][i]);
+		//PetscPrintf(PETSC_COMM_WORLD, "    vy[%i,%i,%i]  %12.12e \n", i,j,k,vy[k][j][i]);
 	}
 	END_STD_LOOP
 
@@ -145,6 +146,7 @@ PetscErrorCode GetVelocities(JacRes *jr)
 			rho_side=(rho[k][j][i]+rho[k-1][j][i])/2.0;
 		}
 		vz[k][j][i] -= fz[k][j][i]*dt/rho_side;
+		//PetscPrintf(PETSC_COMM_WORLD, "    vz[%i,%i,%i]  %12.12e \n", i,j,k,vz[k][j][i]);
 		//PetscPrintf(PETSC_COMM_WORLD, "    [k,j,i]  = [%i,%i,%i]  vz  = %12.12e fz =  %12.12e \n", k,j,i,vz[k][j][i], fz[k][j][i]);
 
 
@@ -159,7 +161,7 @@ PetscErrorCode GetVelocities(JacRes *jr)
 //PetscPrintf(PETSC_COMM_WORLD, "    max_vel = %12.12e \n", max_vel);////////////////////////////////////////////////////////////////////////////////////////
 
 	// restore vectors
-	ierr = DMDAVecRestoreArray(fs->DA_CEN, jr->ldxx, &rho); CHKERRQ(ierr);
+	ierr = DMDAVecRestoreArray(fs->DA_CEN, jr->ldzz, &rho); CHKERRQ(ierr);
 	ierr = DMDAVecRestoreArray(fs->DA_X,   jr->gfx,  &fx);  CHKERRQ(ierr);
 	ierr = DMDAVecRestoreArray(fs->DA_Y,   jr->gfy,  &fy);  CHKERRQ(ierr);
 	ierr = DMDAVecRestoreArray(fs->DA_Z,   jr->gfz,  &fz);  CHKERRQ(ierr);
@@ -220,6 +222,7 @@ PetscErrorCode UpdateHistoryFieldsAndGetAxialStressStrain(JacRes *jr, PetscScala
 	FDSTAG     *fs;
 	SolVarCell *svCell;
 	SolVarBulk *svBulk;
+	SolVarEdge *svEdge;
 	PetscScalar ***p;
 	PetscInt    i, j, k, nx, ny, nz, sx, sy, sz;
 	PetscInt    iter;
@@ -277,7 +280,53 @@ PetscErrorCode UpdateHistoryFieldsAndGetAxialStressStrain(JacRes *jr, PetscScala
 	}
 	END_STD_LOOP
 
+	//-------------------------------
+	// xy edge points
+	//-------------------------------
+	iter = 0;
+	GET_NODE_RANGE(nx, sx, fs->dsx)
+	GET_NODE_RANGE(ny, sy, fs->dsy)
+	GET_CELL_RANGE(nz, sz, fs->dsz)
 
+	START_STD_LOOP
+	{
+		// access solution variables
+		svEdge = &jr->svXYEdge[iter++];
+		svEdge->h = svEdge->s;
+	}
+	END_STD_LOOP
+
+	//-------------------------------
+	// xz edge points
+	//-------------------------------
+	iter = 0;
+	GET_NODE_RANGE(nx, sx, fs->dsx)
+	GET_CELL_RANGE(ny, sy, fs->dsy)
+	GET_NODE_RANGE(nz, sz, fs->dsz)
+
+	START_STD_LOOP
+	{
+		// access solution variables
+		svEdge = &jr->svXZEdge[iter++];
+		svEdge->h = svEdge->s;
+	}
+	END_STD_LOOP
+
+	//-------------------------------
+	// yz edge points
+	//-------------------------------
+	iter = 0;
+	GET_CELL_RANGE(nx, sx, fs->dsx)
+	GET_NODE_RANGE(ny, sy, fs->dsy)
+	GET_NODE_RANGE(nz, sz, fs->dsz)
+
+	START_STD_LOOP
+	{
+		// access solution variables
+		svEdge = &jr->svYZEdge[iter++];
+		svEdge->h = svEdge->s;
+	}
+	END_STD_LOOP
 
 	stress_xx = stress_xx/count;
 	stress_yy = stress_yy/count;
@@ -1619,7 +1668,7 @@ PetscErrorCode SaveVelocitiesForSeismicStation(JacRes *jr, UserCtx *user)
 PetscErrorCode ShowValues(JacRes *jr, UserCtx *user, PetscInt n)
 {
 	// Show the values of velocity, pressure, stress, strain,...
-/*
+
 	FDSTAG     *fs;
 	SolVarCell *svCell;
 	SolVarEdge *svEdge;
@@ -1707,16 +1756,17 @@ PetscErrorCode ShowValues(JacRes *jr, UserCtx *user, PetscInt n)
 			//PetscPrintf(PETSC_COMM_WORLD, "    theta[%i,%i,%i]  = %12.12e \n", i,j,k, svBulk->theta);
 
 		}
-		//PetscPrintf(PETSC_COMM_WORLD, "    lfx,y,z[%i,%i,%i]  = (%12.12e,%12.12e,%12.12e) \n", i,j,k, fx[k][j][i],fy[k][j][i],fz[k][j][i]);
+		//PetscPrintf(PETSC_COMM_WORLD, "    gfx,y,z[%i,%i,%i]  = (%12.12e,%12.12e,%12.12e) \n", i,j,k, gfx[k][j][i],gfy[k][j][i],gfz[k][j][i]);
 		//PetscPrintf(PETSC_COMM_WORLD, "    svBulk.theta[%i,%i,%i]  = %12.12e \n", i,j,k, svBulk->theta);
-		//PetscPrintf(PETSC_COMM_WORLD, "    svCell.dzz[%i,%i,%i]  = %12.12e \n", i,j,k, svCell->dzz);
+		//PetscPrintf(PETSC_COMM_WORLD, "    svCell.sxx,syy,szz[%i,%i,%i]  = %12.12e, %12.12e, %12.12e \n", i,j,k, svCell->sxx, svCell->syy, svCell->szz);
+		//PetscPrintf(PETSC_COMM_WORLD, "    svCell.dxx[%i,%i,%i]  = %12.12e \n", i,j,k, svCell->dxx);
 		//PetscPrintf(PETSC_COMM_WORLD, "    svCell.sxx[%i,%i,%i]  = (%12.12e) \n", i,j,k,svCell->sxx);
 		//PetscPrintf(PETSC_COMM_WORLD, "    svCell.hxx,yy,zz[%i,%i,%i]  = (%12.12e,%12.12e,%12.12e) \n", i,j,k, svCell->hxx,svCell->hyy,svCell->hzz);
 		//fprintf(fseism, "%i %i %i\n", i,j,k);
 		//fprintf(fseism, "%12.12e\n", gfz[k][j][i]);
 		//if ( p[k][j][i] != up[k][j][i])			fprintf(fseism, "%12.12e\n", p[k][j][i]);
-		//if ( fx[k][j][i] != gfx[k][j][i])			fprintf(fseism, "%12.12e\n", fx[k][j][i]);
-
+		//if ( fx[k][j][i] != gfx[k][j][i])		 fprintf(fseism, "%12.12e\n", fx[k][j][i]);
+		//PetscPrintf(PETSC_COMM_WORLD, "    p[%i,%i,%i]  = %12.12e \n", i,j,k, p[k][j][i]);
 		//PetscPrintf(PETSC_COMM_WORLD, "    rho  = %12.12e \n", svBulk->rho);
 
 		//fprintf(fseism, "%12.12e\n", svCell->szz);
@@ -1795,7 +1845,7 @@ PetscErrorCode ShowValues(JacRes *jr, UserCtx *user, PetscInt n)
 	ierr = DMDAVecRestoreArray(fs->DA_X,   jr->lvx,  &lvx);  CHKERRQ(ierr);
 	ierr = DMDAVecRestoreArray(fs->DA_Y,   jr->lvy,  &lvy);  CHKERRQ(ierr);
 	ierr = DMDAVecRestoreArray(fs->DA_Z,   jr->lvz,  &lvz);  CHKERRQ(ierr);
-*/
+
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
@@ -1815,11 +1865,25 @@ PetscErrorCode GetStressFromSource(JacRes *jr, UserCtx *user, PetscInt i, PetscI
 
 	if (jr->SourceParams.source_type == PLANE)
 	{
-		if (k==user->nel_z-1) //(k==1)
+		//if (k==user->nel_z-1) //(k==1)
+		if (i==user->nel_x-1)
 		{
-			*szz = 		jr->SourceParams.amplitude*exp(-jr->SourceParams.alfa*((time-jr->SourceParams.t0)*(time-jr->SourceParams.t0))); 	//jr->SourceParams.amplitude;
-			*sxx =	- 	jr->SourceParams.amplitude*exp(-jr->SourceParams.alfa*((time-jr->SourceParams.t0)*(time-jr->SourceParams.t0)))/2; 	//jr->SourceParams.amplitude/2.0;
-			*syy = 	-  	jr->SourceParams.amplitude*exp(-jr->SourceParams.alfa*((time-jr->SourceParams.t0)*(time-jr->SourceParams.t0)))/2;	//jr->SourceParams.amplitude/2.0;
+			//*sxx = 		jr->SourceParams.amplitude*exp(-jr->SourceParams.alfa*((time-jr->SourceParams.t0)*(time-jr->SourceParams.t0))); 	//jr->SourceParams.amplitude;
+			//*syy =	- 	jr->SourceParams.amplitude*exp(-jr->SourceParams.alfa*((time-jr->SourceParams.t0)*(time-jr->SourceParams.t0)))/2; 	//jr->SourceParams.amplitude/2.0;
+			//*szz = 	-  	jr->SourceParams.amplitude*exp(-jr->SourceParams.alfa*((time-jr->SourceParams.t0)*(time-jr->SourceParams.t0)))/2;	//jr->SourceParams.amplitude/2.0;
+
+			//*szz = 		jr->SourceParams.amplitude;
+			//*sxx = 0.0;
+			//*syy =	 	-jr->SourceParams.amplitude*exp(-jr->SourceParams.alfa*((time-jr->SourceParams.t0)*(time-jr->SourceParams.t0)));
+			//*szz = 0.0;
+
+			//*szz=jr->SourceParams.amplitude;
+			//*syy=0.0;
+			//*sxx=0.0;
+
+			*sxx = 	100.0;
+			*syy =	50.0;;
+			*szz = 	-50.0 ;
 		}
 	}
 	else if (jr->SourceParams.source_type == COMPRES)
@@ -1840,7 +1904,7 @@ PetscErrorCode GetStressFromSource(JacRes *jr, UserCtx *user, PetscInt i, PetscI
 	else if (jr->SourceParams.source_type == POINT)
 	{
 
-		// change the way and the place to do that /////////////////////////////////////////////////////////////////////////////////
+		/*// change the way and the place to do that /////////////////////////////////////////////////////////////////////////////////
 		//
 		if (jr->SourceParams.xrank == -1) // then first time we are here
 		{
@@ -1871,16 +1935,22 @@ PetscErrorCode GetStressFromSource(JacRes *jr, UserCtx *user, PetscInt i, PetscI
 				*syy = 0.0;
 				*szz = *szz*0 + jr->SourceParams.amplitude*exp(-jr->SourceParams.alfa*((time-jr->SourceParams.t0)*(time-jr->SourceParams.t0)));
 			}
-		}
+		}*/
 
-		/*if (k==7 && j == 2 && i == 2)
+		/*if (k==25 && j == 25 && i == 25)
 		{
-			*sxx = *sxx*0 + jr->SourceParams.amplitude*exp(-jr->SourceParams.alfa*((time-jr->SourceParams.t0)*(time-jr->SourceParams.t0)));
-			// *syy = 0.0;
-			*szz = *szz*0 + jr->SourceParams.amplitude*exp(-jr->SourceParams.alfa*((time-jr->SourceParams.t0)*(time-jr->SourceParams.t0)));
+			*sxx = jr->SourceParams.amplitude*exp(-jr->SourceParams.alfa*((time-jr->SourceParams.t0)*(time-jr->SourceParams.t0)));
+			//*syy = 0.0;
+			*szz = - jr->SourceParams.amplitude*exp(-jr->SourceParams.alfa*((time-jr->SourceParams.t0)*(time-jr->SourceParams.t0)));
 
 			//if (JacResGetStep(jr) == 3) fprintf(fseism, "%12.12e\n", *szz);
 		}*/
+		if (k==50 && j == 20 && i == 20)
+		{
+			*sxx = jr->SourceParams.amplitude*exp(-jr->SourceParams.alfa*((time-jr->SourceParams.t0)*(time-jr->SourceParams.t0)));
+
+			*szz = - jr->SourceParams.amplitude*exp(-jr->SourceParams.alfa*((time-jr->SourceParams.t0)*(time-jr->SourceParams.t0)));
+		}
 	}
 
 	PetscFunctionReturn(0);
