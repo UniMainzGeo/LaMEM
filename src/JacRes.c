@@ -331,7 +331,7 @@ PetscErrorCode JacResInitScale(JacRes *jr, UserCtx *usr)
 
 	// check time step if ExplicitSolver
 	if (usr->ExplicitSolver == PETSC_TRUE)		{
-		ierr = ChangeTimeStep(jr, usr); CHKERRQ(ierr);
+		//ierr = ChangeTimeStep(jr, usr); CHKERRQ(ierr);
 		ierr = CheckTimeStep(jr, usr); CHKERRQ(ierr);
 	}
 
@@ -527,7 +527,7 @@ PetscErrorCode JacResGetEffStrainRate(JacRes *jr)
 		svCell->dzz = zz;
 
 		// compute & store effective deviatoric strain rates
-		//PetscPrintf(PETSC_COMM_WORLD, "    [k,j,i]  = [%i,%i,%i]  hxx  = %12.12e hyy =  %12.12e hzz =  %12.12e \n", k,j,i,svCell->hxx, svCell->hyy, svCell->hzz);
+
 		dxx[k][j][i] = xx + svCell->hxx*svDev->I2Gdt;
 		dyy[k][j][i] = yy + svCell->hyy*svDev->I2Gdt;
 		dzz[k][j][i] = zz + svCell->hzz*svDev->I2Gdt;
@@ -563,7 +563,7 @@ PetscErrorCode JacResGetEffStrainRate(JacRes *jr)
 
 		// compute & store effective deviatoric strain rate
 		dxy[k][j][i] = xy + svEdge->h*svDev->I2Gdt;
-
+		//dxy[k][j][i] = xy + svEdge->s*svDev->I2Gdt;
 	}
 	END_STD_LOOP
 
@@ -595,6 +595,7 @@ PetscErrorCode JacResGetEffStrainRate(JacRes *jr)
 
 		// compute & store effective deviatoric strain rate
 		dxz[k][j][i] = xz + svEdge->h*svDev->I2Gdt;
+		//dxz[k][j][i] = xz + svEdge->s*svDev->I2Gdt;
 
 	}
 	END_STD_LOOP
@@ -627,6 +628,7 @@ PetscErrorCode JacResGetEffStrainRate(JacRes *jr)
 
 		// compute & store effective deviatoric strain rate
 		dyz[k][j][i] = yz + svEdge->h*svDev->I2Gdt;
+		//dyz[k][j][i] = yz + svEdge->s*svDev->I2Gdt;
 
 	}
 	END_STD_LOOP
@@ -1456,7 +1458,7 @@ PetscErrorCode JacResGetMomentumResidualAndPressure(JacRes *jr, UserCtx *user)
 		// update pressure
 		gp[k][j][i]  = lp[k][j][i] - svBulk->theta/svBulk->IKdt;
 		pc           = gp[k][j][i];
-
+//PetscPrintf(PETSC_COMM_WORLD, "    pressure[%i,%i,%i]  = %12.12e \n", i,j,k, pc);
 		//-----------
 		// DEVIATORIC
 		//-----------
@@ -1467,6 +1469,8 @@ PetscErrorCode JacResGetMomentumResidualAndPressure(JacRes *jr, UserCtx *user)
 		// store creep viscosity
 		svCell->eta_creep = eta_creep;
 
+		//PetscPrintf(PETSC_COMM_WORLD, "    svCell->XX[%i,%i,%i]  = %12.12e \n", i,j,k, XX);
+
 		// compute stress, plastic strain rate and shear heating term on cell
 		ierr = GetStressCell(svCell, matLim, XX, YY, ZZ); CHKERRQ(ierr);
 
@@ -1476,55 +1480,22 @@ PetscErrorCode JacResGetMomentumResidualAndPressure(JacRes *jr, UserCtx *user)
 		syy = svCell->syy - pc;
 		szz = svCell->szz - pc;
 
+		//PetscPrintf(PETSC_COMM_WORLD, "    sxx[%i,%i,%i]  = %12.12e \n", i,j,k, sxx);
+
 		// Add seismic source /////////////////////////
 		if (jr->SeismicSource == PETSC_TRUE)
 		{
-
-
 			ierr = GetStressFromSource(jr,user, i, j, k, &sxx, &syy, &szz);
-
-			//time	  =  JacResGetTime(jr);
-			//fprintf(fseism, "%i %i %i\n", i,j,k);
-			//fwrite(i , sizeof(PetscInt   ), 1, fp);
-			//fprintf(fp, "%i %i %i\n", jr->SourceParams.i, jr->SourceParams.j, jr->SourceParams.k);
-			//fprintf(fp, "%12.12e %12.12e %12.12e\n", jr->SourceParams.x, jr->SourceParams.y, jr->SourceParams.z);
-
-			//fprintf(fp, "%12.12e %12.12e %12.12e\n", jr->fs->dsx.ncels, jr->fs->dsy.ncoor->, jr->fs->dsz.ncoor);
-
-			/*if (jr->SourceParams.source_type == POINT)
-			{
-				ierr = GetStressFromSource(jr,user, i, j,  k, &sxx, &syy, &szz);
-				//if (JacResGetStep(jr) == 3) fprintf(fseism, "%12.12e\n", szz);
-			}
-			else if (jr->SourceParams.source_type == PLANE)
-			{
-				if (k==1)
-				{
-					PetscScalar t0;
-					PetscScalar alfa;
-					PetscScalar amplitude;
-					//fprintf(fseism, "%i %i %i\n", i, j, k);
-					//szz = 0*szz + amplitude*exp(-alfa*((time-t0)*(time-t0)));
-					//sxx = 0*sxx -  amplitude/2.0*exp(-alfa*((time-t0)*(time-t0)));
-					//syy = 0*syy -  amplitude/2.0*exp(-alfa*((time-t0)*(time-t0)));
-					t0=1.0;
-					alfa=40.0;
-					amplitude=80.0;
-
-					szz = 		amplitude;
-					sxx =	- 	amplitude/2.0;
-					syy = 	-  	amplitude/2.0;
-				}
-			}*/
-
 		}
-		///////////////////////////////////
-
+		///////////////////////////////////////////////
 
 		// USE REAL DENSITY HERE !!!
 
 		// access
 		theta = svBulk->theta; // volumetric strain rate
+
+		//PetscPrintf(PETSC_COMM_WORLD, "    svBulk->theta[%i,%i,%i]  = %12.12e \n", i,j,k, svBulk->theta);
+
 		rho   = svBulk->rho;   // effective density
 //		IKdt  = svBulk->IKdt;  // inverse bulk viscosity
 //		alpha = svBulk->alpha; // effective thermal expansion
@@ -1550,10 +1521,14 @@ PetscErrorCode JacResGetMomentumResidualAndPressure(JacRes *jr, UserCtx *user)
 		bdy = SIZE_NODE(j, sy, fs->dsy);   fdy = SIZE_NODE(j+1, sy, fs->dsy);
 		bdz = SIZE_NODE(k, sz, fs->dsz);   fdz = SIZE_NODE(k+1, sz, fs->dsz);
 
+		//PetscPrintf(PETSC_COMM_WORLD, "    szz[%i,%i,%i]  = %12.12e \n", i,j,k, szz);
+
 		// momentum
 		fx[k][j][i] -= (sxx + vx[k][j][i]*tx)/bdx + gx/2.0;   fx[k][j][i+1] += (sxx + vx[k][j][i+1]*tx)/fdx - gx/2.0;
 		fy[k][j][i] -= (syy + vy[k][j][i]*ty)/bdy + gy/2.0;   fy[k][j+1][i] += (syy + vy[k][j+1][i]*ty)/fdy - gy/2.0;
 		fz[k][j][i] -= (szz + vz[k][j][i]*tz)/bdz + gz/2.0;   fz[k+1][j][i] += (szz + vz[k+1][j][i]*tz)/fdz - gz/2.0;
+
+		//PetscPrintf(PETSC_COMM_WORLD, "    fx[%i,%i,%i]  = %12.12e \n", i,j,k, fx[k][j][i]);
 
 	}
 	END_STD_LOOP
@@ -1651,11 +1626,25 @@ PetscErrorCode JacResGetMomentumResidualAndPressure(JacRes *jr, UserCtx *user)
 		// evaluate deviatoric constitutive equations
 		ierr = DevConstEq(svDev, &eta_creep, numPhases, phases, svEdge->phRat, matLim, dt, pc-pShift, Tc); CHKERRQ(ierr);
 
+//PetscPrintf(PETSC_COMM_WORLD, "    XY[%i,%i,%i]  = %12.12e \n", i,j,k, XY);
+
 		// compute stress, plastic strain rate and shear heating term on edge
 		ierr = GetStressEdge(svEdge, matLim, XY); CHKERRQ(ierr);
 
+		if (k==5 && j == 2 && i == 2)
+		{
+			// compute stress, plastic strain rate and shear heating term on edge
+			ierr = GetStressEdge(svEdge, matLim, XY); CHKERRQ(ierr);
+		}else{
+			// compute stress, plastic strain rate and shear heating term on edge
+			ierr = GetStressEdge(svEdge, matLim, XY); CHKERRQ(ierr);
+		}
+
 		// access xy component of the Cauchy stress
 		sxy = svEdge->s;
+
+		//PetscPrintf(PETSC_COMM_WORLD, "    sxy[%i,%i,%i]  = %12.12e \n", i,j,k, sxy);
+//PetscPrintf(PETSC_COMM_WORLD, "    svEdge->s[%i,%i,%i]  = %12.12e \n", i,j,k, svEdge->s);
 
 		//=========
 		// RESIDUAL
@@ -1668,7 +1657,6 @@ PetscErrorCode JacResGetMomentumResidualAndPressure(JacRes *jr, UserCtx *user)
 		// momentum
 		fx[k][j-1][i] -= sxy/bdy;   fx[k][j][i] += sxy/fdy;
 		fy[k][j][i-1] -= sxy/bdx;   fy[k][j][i] += sxy/fdx;
-
 	}
 	END_STD_LOOP
 
@@ -1759,6 +1747,8 @@ PetscErrorCode JacResGetMomentumResidualAndPressure(JacRes *jr, UserCtx *user)
 		// access xz component of the Cauchy stress
 		sxz = svEdge->s;
 
+		//PetscPrintf(PETSC_COMM_WORLD, "    sxz[%i,%i,%i]  = %12.12e \n", i,j,k, sxz);
+
 		//=========
 		// RESIDUAL
 		//=========
@@ -1771,6 +1761,8 @@ PetscErrorCode JacResGetMomentumResidualAndPressure(JacRes *jr, UserCtx *user)
 		fx[k-1][j][i] -= sxz/bdz;   fx[k][j][i] += sxz/fdz;
 		fz[k][j][i-1] -= sxz/bdx;   fz[k][j][i] += sxz/fdx;
 
+//PetscPrintf(PETSC_COMM_WORLD, "    fx[%i,%i,%i]  = %12.12e \n", i,j,k, fx[k][j][i]);
+//PetscPrintf(PETSC_COMM_WORLD, "    fy[%i,%i,%i]  = %12.12e \n", i,j,k, fy[k][j][i]);
 	}
 	END_STD_LOOP
 
@@ -1861,6 +1853,9 @@ PetscErrorCode JacResGetMomentumResidualAndPressure(JacRes *jr, UserCtx *user)
 		// access yz component of the Cauchy stress
 		syz = svEdge->s;
 
+//PetscPrintf(PETSC_COMM_WORLD, "    syz[%i,%i,%i]  = %12.12e \n", i,j,k, syz);
+//PetscPrintf(PETSC_COMM_WORLD, "    YZ[%i,%i,%i]  = %12.12e \n", i,j,k, YZ);
+
 		//=========
 		// RESIDUAL
 		//=========
@@ -1873,6 +1868,9 @@ PetscErrorCode JacResGetMomentumResidualAndPressure(JacRes *jr, UserCtx *user)
 		fy[k-1][j][i] -= syz/bdz;   fy[k][j][i] += syz/fdz;
 		fz[k][j-1][i] -= syz/bdy;   fz[k][j][i] += syz/fdy;
 
+//PetscPrintf(PETSC_COMM_WORLD, "    fx[%i,%i,%i]  = %12.12e \n", i,j,k, fx[k][j][i]);
+//PetscPrintf(PETSC_COMM_WORLD, "    fy[%i,%i,%i]  = %12.12e \n", i,j,k, fy[k][j][i]);
+//PetscPrintf(PETSC_COMM_WORLD, "    fz[%i,%i,%i]  = %12.12e \n", i,j,k, fz[k][j][i]);
 	}
 	END_STD_LOOP
 
