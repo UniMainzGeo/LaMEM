@@ -203,6 +203,7 @@ PetscErrorCode GetEffVisc(
 	MatParLim   *lim,
 	PetscScalar *eta_total,
 	PetscScalar *eta_creep,
+	PetscScalar *eta_viscoplastic,
 	PetscScalar *DIIpl,
 	PetscScalar *dEta,
 	PetscScalar *fr)
@@ -225,9 +226,10 @@ PetscErrorCode GetEffVisc(
 	// set reference viscosity as initial guess
 	if(lim->eta_ref && lim->initGuessFlg == PETSC_TRUE)
 	{
-		(*eta_total) = lim->eta_ref;
-		(*eta_creep) = lim->eta_ref;
-
+		(*eta_total) 		= lim->eta_ref;
+		(*eta_creep) 		= lim->eta_ref;
+		(*eta_viscoplastic) = lim->eta_ref;
+		
 		PetscFunctionReturn(0);
 	}
 
@@ -258,8 +260,9 @@ PetscErrorCode GetEffVisc(
 	// CREEP VISCOSITY
 	//================
 
-	// store creep viscosity for output
-	(*eta_creep) = lim->eta_min + 1.0/(inv_eta_dif + inv_eta_dis + inv_eta_prl + 1.0/lim->eta_max);
+	// store creep & viscoplastic viscosity for output
+	(*eta_creep) 		= lim->eta_min + 1.0/(inv_eta_dif + inv_eta_dis + inv_eta_prl + 1.0/lim->eta_max);
+	(*eta_viscoplastic) = (*eta_creep);
 
 	//========================
 	// VISCO-ELASTIC VISCOSITY
@@ -323,10 +326,11 @@ PetscErrorCode GetEffVisc(
 		if(eta_pl < eta_ve)
 		{
 			// store plastic strain rate, viscosity, derivative & effective friction
-			(*eta_total) =  eta_pl;
-			(*DIIpl)     =  ctx->DII*(1.0 - eta_pl/eta_ve);
-			(*dEta)      = -eta_pl;
-			(*fr)        =  ctx->fr;
+			(*eta_total) 		=  eta_pl;
+			(*eta_viscoplastic) =  eta_pl;	
+			(*DIIpl)     		=  ctx->DII*(1.0 - eta_pl/eta_ve);
+			(*dEta)      		= -eta_pl;
+			(*fr)        		=  ctx->fr;
 		}
 	}
 
@@ -373,24 +377,25 @@ PetscScalar GetI2Gdt(
 #undef __FUNCT__
 #define __FUNCT__ "DevConstEq"
 PetscErrorCode DevConstEq(
-	SolVarDev   *svDev,     	// solution variables
-	PetscScalar *eta_creep, 	// creep viscosity (for output)
-	PetscInt     numPhases, 	// number phases
-	Material_t  *phases,    	// phase parameters
-	PetscScalar *phRat,     	// phase ratios
-	MatParLim   *lim,       	// phase parameters limits
-	PetscScalar  depth,     	// depth below free surface
-	PetscScalar	 grav[SPDIM], 	// g for computation of lithostatic profile
-	PetscScalar  dt,        	// time step
-	PetscScalar  p,         	// pressure
-	PetscScalar  T)         	// temperature
+	SolVarDev   *svDev,     		// solution variables
+	PetscScalar *eta_creep, 		// creep viscosity (for output)
+	PetscScalar *eta_viscoplastic, 	// viscoplastic viscosity (for output)
+	PetscInt     numPhases, 		// number phases
+	Material_t  *phases,    		// phase parameters
+	PetscScalar *phRat,     		// phase ratios
+	MatParLim   *lim,       		// phase parameters limits
+	PetscScalar  depth,     		// depth below free surface
+	PetscScalar	 grav[SPDIM], 		// g for computation of lithostatic profile
+	PetscScalar  dt,        		// time step
+	PetscScalar  p,         		// pressure
+	PetscScalar  T)         		// temperature
 {
 	// Evaluate deviatoric constitutive equations in control volume
 
 	PetscInt     i;
 	ConstEqCtx   ctx;
 	Material_t  *mat;
-	PetscScalar  DII, APS, eta_total, eta_creep_phase, DIIpl, dEta, fr, p_lithos;
+	PetscScalar  DII, APS, eta_total, eta_creep_phase, eta_viscoplastic_phase, DIIpl, dEta, fr, p_lithos;
 
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
@@ -400,9 +405,10 @@ PetscErrorCode DevConstEq(
 	APS = svDev->APS;
 
 	// initialize effective viscosity & plastic strain-rate
-	svDev->eta   = 0.0;
-	svDev->DIIpl = 0.0;
-	(*eta_creep) = 0.0;
+	svDev->eta   		= 0.0;
+	svDev->DIIpl 		= 0.0;
+	(*eta_creep) 		= 0.0;
+	(*eta_viscoplastic) = 0.0;
 
 	svDev->dEta = 0.0;
 	svDev->fr   = 0.0;
@@ -427,12 +433,13 @@ PetscErrorCode DevConstEq(
 			ierr = ConstEqCtxSetup(&ctx, mat, lim, DII, APS, dt, p, p_lithos, T); CHKERRQ(ierr);
 
 			// solve effective viscosity & plastic strain rate
-			ierr = GetEffVisc(&ctx, lim, &eta_total, &eta_creep_phase, &DIIpl, &dEta, &fr); CHKERRQ(ierr);
+			ierr = GetEffVisc(&ctx, lim, &eta_total, &eta_creep_phase, &eta_viscoplastic_phase, &DIIpl, &dEta, &fr); CHKERRQ(ierr);
 
 			// average parameters
-			svDev->eta   += phRat[i]*eta_total;
-			svDev->DIIpl += phRat[i]*DIIpl;
-			(*eta_creep) += phRat[i]*eta_creep_phase;
+			svDev->eta   		+= phRat[i]*eta_total;
+			svDev->DIIpl 		+= phRat[i]*DIIpl;
+			(*eta_creep) 		+= phRat[i]*eta_creep_phase;
+			(*eta_viscoplastic) += phRat[i]*eta_viscoplastic_phase;
 
 			svDev->dEta += phRat[i]*dEta;
 			svDev->fr   += phRat[i]*fr;
