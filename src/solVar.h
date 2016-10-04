@@ -124,14 +124,15 @@ typedef struct
 
 typedef struct
 {
-	SolVarDev    svDev;         // deviatoric variables
-	SolVarBulk   svBulk;        // volumetric variables
-	PetscScalar  sxx, syy, szz; // deviatoric stress
-	PetscScalar  hxx, hyy, hzz; // history stress (elastic)
-	PetscScalar  dxx, dyy, dzz; // total deviatoric strain rate
-	PetscScalar *phRat;         // phase ratios in the control volume
-	PetscScalar  eta_creep;     // effective creep viscosity (output)
-	PetscScalar  U[3];          // displacement
+	SolVarDev    svDev;         		// deviatoric variables
+	SolVarBulk   svBulk;        		// volumetric variables
+	PetscScalar  sxx, syy, szz; 		// deviatoric stress
+	PetscScalar  hxx, hyy, hzz; 		// history stress (elastic)
+	PetscScalar  dxx, dyy, dzz; 		// total deviatoric strain rate
+	PetscScalar *phRat;         		// phase ratios in the control volume
+	PetscScalar  eta_creep;     		// effective creep viscosity (output)
+	PetscScalar  eta_viscoplastic;     	// viscoplastic viscosity (output)
+	PetscScalar  U[3];          		// displacement
 
 } SolVarCell;
 

@@ -778,7 +778,7 @@ PetscErrorCode JacResGetResidual(JacRes *jr)
 	PetscScalar J2Inv, theta, rho, IKdt, alpha, Tc, pc, pShift, Tn, pn, dt, fssa, *grav;
 	PetscScalar ***fx,  ***fy,  ***fz, ***vx,  ***vy,  ***vz, ***gc;
 	PetscScalar ***dxx, ***dyy, ***dzz, ***dxy, ***dxz, ***dyz, ***p, ***T;
-	PetscScalar eta_creep;
+	PetscScalar eta_creep, eta_viscoplastic;
 	PetscScalar depth, rho_lithos;
 
 	PetscErrorCode ierr;
@@ -894,10 +894,11 @@ PetscErrorCode JacResGetResidual(JacRes *jr)
 		if(depth < 0.0) depth = 0.0;
 
 		// evaluate deviatoric constitutive equations
-		ierr = DevConstEq(svDev, &eta_creep, numPhases, phases, svCell->phRat, matLim, depth, grav, dt, pc-pShift, Tc); CHKERRQ(ierr);
+		ierr = DevConstEq(svDev, &eta_creep, &eta_viscoplastic, numPhases, phases, svCell->phRat, matLim, depth, grav, dt, pc-pShift, Tc); CHKERRQ(ierr);
 
 		// store creep viscosity
-		svCell->eta_creep = eta_creep;
+		svCell->eta_creep 			= eta_creep;
+		svCell->eta_viscoplastic 	= eta_viscoplastic;
 
 		// compute stress, plastic strain rate and shear heating term on cell
 		ierr = GetStressCell(svCell, matLim, XX, YY, ZZ); CHKERRQ(ierr);
@@ -1043,7 +1044,7 @@ PetscErrorCode JacResGetResidual(JacRes *jr)
 		if(depth < 0.0) depth = 0.0;
 
 		// evaluate deviatoric constitutive equations
-		ierr = DevConstEq(svDev, &eta_creep, numPhases, phases, svEdge->phRat, matLim, depth, grav, dt, pc-pShift, Tc); CHKERRQ(ierr);
+		ierr = DevConstEq(svDev, &eta_creep, &eta_viscoplastic, numPhases, phases, svEdge->phRat, matLim, depth, grav, dt, pc-pShift, Tc); CHKERRQ(ierr);
 
 		// compute stress, plastic strain rate and shear heating term on edge
 		ierr = GetStressEdge(svEdge, matLim, XY); CHKERRQ(ierr);
@@ -1150,7 +1151,7 @@ PetscErrorCode JacResGetResidual(JacRes *jr)
 		if(depth < 0.0) depth = 0.0;
 
 		// evaluate deviatoric constitutive equations
-		ierr = DevConstEq(svDev, &eta_creep, numPhases, phases, svEdge->phRat, matLim, depth, grav, dt, pc-pShift, Tc); CHKERRQ(ierr);
+		ierr = DevConstEq(svDev, &eta_creep, &eta_viscoplastic, numPhases, phases, svEdge->phRat, matLim, depth, grav, dt, pc-pShift, Tc); CHKERRQ(ierr);
 
 		// compute stress, plastic strain rate and shear heating term on edge
 		ierr = GetStressEdge(svEdge, matLim, XZ); CHKERRQ(ierr);
@@ -1257,7 +1258,7 @@ PetscErrorCode JacResGetResidual(JacRes *jr)
 		if(depth < 0.0) depth = 0.0;
 
 		// evaluate deviatoric constitutive equations
-		ierr = DevConstEq(svDev, &eta_creep, numPhases, phases, svEdge->phRat, matLim, depth, grav, dt, pc-pShift, Tc); CHKERRQ(ierr);
+		ierr = DevConstEq(svDev, &eta_creep, &eta_viscoplastic, numPhases, phases, svEdge->phRat, matLim, depth, grav, dt, pc-pShift, Tc); CHKERRQ(ierr);
 
 		// compute stress, plastic strain rate and shear heating term on edge
 		ierr = GetStressEdge(svEdge, matLim, YZ); CHKERRQ(ierr);

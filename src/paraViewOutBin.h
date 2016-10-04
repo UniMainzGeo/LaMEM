@@ -147,34 +147,35 @@ void OutVecDestroy(OutVec *outvec);
 //---------------------------------------------------------------------------
 typedef struct
 {
-	PetscInt phase;          // phase
-	PetscInt density;        // density
-	PetscInt visc_total;     // total effective viscosity
-	PetscInt visc_creep;     // creep effective viscosity
-	PetscInt velocity;       // velocity
-	PetscInt pressure;       // pressure
-	PetscInt overpressure;   // overpressure
-	PetscInt temperature;    // temperature
-	PetscInt dev_stress;     // deviatoric stress tensor
-	PetscInt j2_dev_stress;  // deviatoric stress second invariant
-	PetscInt strain_rate;    // deviatoric strain rate tensor
-	PetscInt j2_strain_rate; // deviatoric strain rate second invariant
-	PetscInt vol_rate;       // volumetric strain rate
-	PetscInt vorticity;      // vorticity vector
-	PetscInt ang_vel_mag;    // average angular velocity magnitude
-	PetscInt tot_strain;     // total strain
-	PetscInt plast_strain;   // accumulated plastic strain
-	PetscInt plast_dissip;   // plastic dissipation
-	PetscInt tot_displ;      // total displacements
-	PetscInt SHmax;          // maximum horizontal stress
-	PetscInt EHmax;          // maximum horizontal extension
-	PetscInt ISA;            // Infinite Strain Axis
-	PetscInt GOL;            // Grain Orientation Lag
+	PetscInt phase;          		// phase
+	PetscInt density;        		// density
+	PetscInt visc_total;     		// total effective viscosity
+	PetscInt visc_creep;     		// creep effective viscosity
+	PetscInt visc_viscoplastic;     // viscoplastic viscosity
+	PetscInt velocity;       		// velocity
+	PetscInt pressure;       		// pressure
+	PetscInt overpressure;   		// overpressure
+	PetscInt temperature;    		// temperature
+	PetscInt dev_stress;     		// deviatoric stress tensor
+	PetscInt j2_dev_stress;  		// deviatoric stress second invariant
+	PetscInt strain_rate;    		// deviatoric strain rate tensor
+	PetscInt j2_strain_rate; 		// deviatoric strain rate second invariant
+	PetscInt vol_rate;       		// volumetric strain rate
+	PetscInt vorticity;      		// vorticity vector
+	PetscInt ang_vel_mag;    		// average angular velocity magnitude
+	PetscInt tot_strain;     		// total strain
+	PetscInt plast_strain;   		// accumulated plastic strain
+	PetscInt plast_dissip;   		// plastic dissipation
+	PetscInt tot_displ;      		// total displacements
+	PetscInt SHmax;          		// maximum horizontal stress
+	PetscInt EHmax;          		// maximum horizontal extension
+	PetscInt ISA;            		// Infinite Strain Axis
+	PetscInt GOL;            		// Grain Orientation Lag
 	// === debugging vectors ===============================================
-	PetscInt moment_res;     // momentum residual
-	PetscInt cont_res;       // continuity residual
-	PetscInt energ_res;      // energy residual
-	PetscInt jac_test;       // matrix-vector Jacobian test
+	PetscInt moment_res;     		// momentum residual
+	PetscInt cont_res;       		// continuity residual
+	PetscInt energ_res;      		// energy residual
+	PetscInt jac_test;       		// matrix-vector Jacobian test
 
 	// ... add more output vector identifiers here
 //	PetscInt phrat[max_num_phases]; // phase ratios

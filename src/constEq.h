@@ -86,6 +86,7 @@ PetscErrorCode GetEffVisc(
 	MatParLim   *lim,
 	PetscScalar *eta_total,
 	PetscScalar *eta_creep,
+	PetscScalar *eta_viscoplastic,
 	PetscScalar *DIIpl,
 	PetscScalar *dEta,
 	PetscScalar *fr);
@@ -102,17 +103,18 @@ PetscScalar GetI2Gdt(
 
 // Evaluate deviatoric constitutive equations in control volume
 PetscErrorCode DevConstEq(
-	SolVarDev   *svDev,     	// solution variables
-	PetscScalar *eta_creep, 	// creep viscosity (for output)
-	PetscInt     numPhases, 	// number phases
-	Material_t  *phases,    	// phase parameters
-	PetscScalar *phRat,     	// phase ratios
-	MatParLim   *lim,       	// phase parameters limits
-	PetscScalar  depth,     	// depth below the free surface (or top of model)
-	PetscScalar  grav[SPDIM], 	// global gravity components
-	PetscScalar  dt,        	// time step
-	PetscScalar  p,        		// pressure
-	PetscScalar  T);        	// temperature
+	SolVarDev   *svDev,     		// solution variables
+	PetscScalar *eta_creep, 		// creep viscosity (for output)
+	PetscScalar *eta_viscoplastic, 	// viscoplastic viscosity (for output)
+	PetscInt     numPhases, 		// number phases
+	Material_t  *phases,    		// phase parameters
+	PetscScalar *phRat,     		// phase ratios
+	MatParLim   *lim,       		// phase parameters limits
+	PetscScalar  depth,     		// depth below the free surface (or top of model)
+	PetscScalar  grav[SPDIM], 		// global gravity components
+	PetscScalar  dt,        		// time step
+	PetscScalar  p,        			// pressure
+	PetscScalar  T);        		// temperature
 
 // Evaluate volumetric constitutive equations in control volume
 PetscErrorCode VolConstEq(
