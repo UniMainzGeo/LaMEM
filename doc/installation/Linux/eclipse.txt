@@ -1,33 +1,63 @@
+------------------------------------------------------------------
+ECLIPSE
+------------------------------------------------------------------
 
-Installation of Eclipse on OSX for development and sequential debugging
+Download ECLIPSE (https://eclipse.org/downloads/)
 
-=====================
-Eclipse Installation:
-=====================
+Choose "Download packages" and select either of two:
+Eclipse for Parallel Application Developers
+Eclipse IDE for C/C++ Developers
 
-0. Download and unpack into Applications folder: 
-	Eclipse IDE for C/C++ Developers
+Unpack and install to /opt simply by copying the whole directory:
 
-1. Go to eclipse folder and create file eclipse.command, put the string inside:
-      /Applications/eclipse/eclipse &
+sudo cp -r eclipse /opt
 
-2. Change permissions, execute in console chmod 755 eclipse.command
+------------------------------------------------------------------
+ENVIRONMENT (This step is necessary for system-wide setting)
+------------------------------------------------------------------
 
-3. Drag eclipse.command to desktop
+Open terminal & change directory:
+cd /etc/profile.d
 
-4. Right click desktop icon -> Get Info -> Name & Extension, change to Eclipse (optional)
+Create file (requires root password):
+sudo nano eclipse.sh
 
-5. Change desktop icon to original Eclipse logo with Command+c, Command+v (optional)
+Add the following contents:
+export PATH=/opt/eclipse:$PATH
 
-Also helpful: 
-   Eclipse->Preferences->General->Editors->Text Editors, check box Show line numbers
-                       ->C/C++->Editor, uncheck box Highlight inactive code
+Close and save file (ctrl+x, then y)
 
-=========================================
-Configuring and building Eclipse project:
-=========================================
+Logout and login from Linux DESKTOP! or just restart.
 
-0. Start Eclipse
+Check your environment with echo command (e.g. echo $PATH).
+
+------------------------------------------------------------------
+DESKTOP LAUNCHER (highly recommended)
+------------------------------------------------------------------
+
+You can create desktop launcher on most Linux desktops
+
+As "name" type Eclipse
+As "command" type eclipse (should be in your PATH already, see above)
+
+On GNOME or Cinnamon desktops Eclipse may have an issue with blinking window during scrolling.
+This is cured by replacing the "command" field in the launcher like this:
+
+env SWT_GTK3=0 eclipse
+
+Click on an icon button and select the icon file provided with eclipse installation:
+
+/opt/eclipse/icon.xpm
+
+DON'T select "launch in terminal"
+
+Desktop launcher can be also added to the panel (very convenient)
+
+Start Eclipse by clicking the launcher
+
+------------------------------------------------------------------
+CONFIGURE PROJECT
+------------------------------------------------------------------
 
 1. Right click in Project Explorer -> New -> Project -> C/C++ -> Makefile Project with Existing Code
 
@@ -37,35 +67,41 @@ Configuring and building Eclipse project:
 
 4. Builder Settings tab -> Build directory -> File System, select full path path to project source directory
 
-5. Behaviour tab -> Build (incremental build) set command to build your application (e.g. all for LaMEM), 
+5. Behaviour tab -> Build (incremental build) set command to build your application (e.g. mode=deb all for LaMEM),
    set Clean to clean the application (e.g. mode=deb clean_all for LaMEM)
 
 7. Add full paths to header files used in your project.
 
-   Petsc applications would require setting:
-      /usr/include/mpich2
-      /opt/petsc/petsc-3.4.2-int32-debug/include, 
+   PETSc (version X.Y.Z) applications would require setting:
+      /opt/mpich3
+      /opt/petsc/petsc-X.Y.Z-debug/include
 
     Each path can be added as follows:
     In the project properties select Path and Symbols -> Includes -> Add
     Place directory path here, also check boxes:
-       Add to all configurations 
+       Add to all configurations
        Add to all languages
 
 8. Build your application by clicking Hammer icon
 
-======================================
-Running and debugging Eclipse project:
-======================================
+You may also find these settings helpful:
+   Window->Preferences->General->Editors->Text Editors, check box Show line numbers
+   Window->Preferences->C/C++->Editor, uncheck box Highlight inactive code
 
-0. Run -> Run configurations -> double click C/C++ application -> Main tab -> Browse,
-   select full path to application executable (e.g. in the /bin directory) 
+------------------------------------------------------------------
+RUN AND DEBUG PROJECT
+------------------------------------------------------------------
 
-1. Swich to Arguments tab -> Program aruments, 
+1. Run -> Run configurations -> double click C/C++ application -> Main tab -> Browse,
+   select full path to application executable (e.g. in the /bin directory)
+
+2. Swich to Arguments tab -> Program aruments,
       insert all command line options that you want to use with your application
-   Arguments tab -> Working directory -> File System, 
-      select full path to working directory (e.g. /tests, to avoid copying input files) 
+   Arguments tab -> Working directory -> File System,
+      select full path to working directory (e.g. /tests, to avoid copying input files)
 
-2. Switch to debugging perspective: Window -> Open Perspective -> Debug, then click the bug icon 
+3. Switch to debugging perspective: Window -> Open Perspective -> Debug, then click the bug icon
 
-======================================
+------------------------------------------------------------------
+
+
