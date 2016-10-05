@@ -23,11 +23,13 @@
 //-----------------------------------------------------------------------------
 #undef __FUNCT__
 #define __FUNCT__ "GetVelocities"
-PetscErrorCode GetVelocities(JacRes *jr)
+PetscErrorCode GetVelocities(JacRes *jr, UserCtx *user)
 {
 
 	// Calculates the velocity from the residual and the densities
 	//  v_new = v_old - residual*dt/density
+	// If there are absorbing boundaries, the velocity is dampened
+	// v_new = v_new*damping_factor
 
 	FDSTAG     *fs;
 	SolVarCell *svCell;
@@ -39,6 +41,12 @@ PetscErrorCode GetVelocities(JacRes *jr)
 	PetscScalar ***fx,  ***fy,  ***fz, ***vx,  ***vy,  ***vz, ***rho;
 
 //	PetscScalar t2, max_vel;
+
+	// Scaling computational density factor
+	PetscScalar DensityFactor = user->DensityFactor;
+
+	// To damp velocity in the absorbing boundaries
+	PetscScalar damping;
 
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
@@ -71,8 +79,8 @@ PetscErrorCode GetVelocities(JacRes *jr)
 		// access solution variables
 		svCell = &jr->svCell[iter++];
 		svBulk = &svCell->svBulk;
-		rho[k][j][i]=svBulk->rho;   // effective density
-		//PetscPrintf(PETSC_COMM_WORLD, "    rho  = %12.12e \n", rho);
+		rho[k][j][i]=svBulk->rho*DensityFactor;   // effective density
+		//PetscPrintf(PETSC_COMM_WORLD, "    rho  = %12.12e \n", rho[k][j][i]);
 	}
 	END_STD_LOOP
 
@@ -92,16 +100,13 @@ PetscErrorCode GetVelocities(JacRes *jr)
 
 	START_STD_LOOP
 	{
-		if (i==0)
-		{
-			rho_side = rho[k][j][i];
-		}
-		else
-		{
-			rho_side = (rho[k][j][i]+rho[k][j][i-1])/2.0;
-		}
+		if (i==0) rho_side = rho[k][j][i];
+		else rho_side = (rho[k][j][i]+rho[k][j][i-1])/2.0;
 
-		vx[k][j][i] -= fx[k][j][i]*dt/rho_side;
+		damping = GetBoundaryDamping('x',user,i,j,k); // To damp velocity if we are in an absorbing boundary
+		//PetscPrintf(PETSC_COMM_WORLD, "    damping[%i,%i,%i] = %12.12e \n", i,j,k, damping);
+		vx[k][j][i] = (vx[k][j][i]-fx[k][j][i]*dt/rho_side)*damping;
+
 		//PetscPrintf(PETSC_COMM_WORLD, "    vx[%i,%i,%i]  %12.12e \n", i,j,k,vx[k][j][i]);
 		//PetscPrintf(PETSC_COMM_WORLD, "    [k,j,i]  = [%i,%i,%i]  vx  = %12.12e fx =  %12.12e \n", k,j,i,vx[k][j][i], fx[k][j][i]);
 	}
@@ -114,15 +119,12 @@ PetscErrorCode GetVelocities(JacRes *jr)
 
 	START_STD_LOOP
 	{
-		if (j==0)
-		{
-			rho_side=rho[k][j][i];
-		}
-		else
-		{
-			rho_side=(rho[k][j][i]+rho[k][j-1][i])/2.0;
-		}
-		vy[k][j][i] -= fy[k][j][i]*dt/rho_side;
+		if (j==0) rho_side=rho[k][j][i];
+		else rho_side=(rho[k][j][i]+rho[k][j-1][i])/2.0;
+
+		damping = GetBoundaryDamping('y',user,i,j,k); // To damp velocity if we are in an absorbing boundary
+		vy[k][j][i] = (vy[k][j][i]-fy[k][j][i]*dt/rho_side)*damping;
+
 		//PetscPrintf(PETSC_COMM_WORLD, "    vy[%i,%i,%i]  %12.12e \n", i,j,k,vy[k][j][i]);
 	}
 	END_STD_LOOP
@@ -137,15 +139,12 @@ PetscErrorCode GetVelocities(JacRes *jr)
 
 	START_STD_LOOP
 	{
-		if (k==0)
-		{
-			rho_side=rho[k][j][i];
-		}
-		else
-		{
-			rho_side=(rho[k][j][i]+rho[k-1][j][i])/2.0;
-		}
-		vz[k][j][i] -= fz[k][j][i]*dt/rho_side;
+		if (k==0) rho_side=rho[k][j][i];
+		else rho_side=(rho[k][j][i]+rho[k-1][j][i])/2.0;
+
+		damping = GetBoundaryDamping('z',user,i,j,k); // To damp velocity if we are in an absorbing boundary
+		vz[k][j][i] = (vz[k][j][i]-fz[k][j][i]*dt/rho_side)*damping;
+
 		//PetscPrintf(PETSC_COMM_WORLD, "    vz[%i,%i,%i]  %12.12e \n", i,j,k,vz[k][j][i]);
 		//PetscPrintf(PETSC_COMM_WORLD, "    [k,j,i]  = [%i,%i,%i]  vz  = %12.12e fz =  %12.12e \n", k,j,i,vz[k][j][i], fz[k][j][i]);
 
@@ -204,7 +203,7 @@ PetscErrorCode FormMomentumResidualPressureAndVelocities(JacRes *jr, UserCtx *us
 	// compute momentum residual and pressure
 	ierr = JacResGetMomentumResidualAndPressure(jr,user); CHKERRQ(ierr);
 
-	ierr = GetVelocities(jr);	CHKERRQ(ierr);
+	ierr = GetVelocities(jr, user);	CHKERRQ(ierr);
 
 	PetscFunctionReturn(0);
 
@@ -426,36 +425,36 @@ PetscErrorCode CheckTimeStep(JacRes *jr, UserCtx *user)
 {
 	// check time step as in Virieux, 1985
 
-	PetscInt    i /*,numPhases*/;
+	PetscInt    i;
 	Material_t  *phases, *M;
-	PetscScalar dx, dy, dz, dt, rho, shear, bulk, vp, stability;
+	PetscScalar dx, dy, dz, dt, rho, shear, bulk, vp, stability, computational_density_factor;
 
 	PetscFunctionBegin;
 
+	computational_density_factor = user->DensityFactor;
 
-//	numPhases = jr->numPhases;
 	phases    = jr->phases;
 	dt        = user->dt;     // time step
 	dx = user->W/((PetscScalar)(user->nel_x));
 	dy = user->L/((PetscScalar)(user->nel_y));
 	dz = user->H/((PetscScalar)(user->nel_z));
 
-	//if (user->ExplicitSolver == PETSC_TRUE)	{
-		//  phases
-		for(i = 0; i < jr->numPhases; i++)
-		{
-			M = &phases[i];
-			rho=M->rho;
-			shear=M->G;
-			bulk=M->K;
-			// P-wave velocity
-			vp=sqrt((bulk+4.0/3.0*shear)/rho);
-			stability = vp*dt*sqrt(1.0/(dx*dx)+1.0/(dy*dy)+1.0/(dz*dz));
-			if ( stability > 1) {
-				SETERRQ1(PETSC_COMM_SELF, PETSC_ERR_USER, "Stability condition = %12.12e", stability);
-			}
+	//  phases
+	for(i = 0; i < jr->numPhases; i++)
+	{
+		M = &phases[i];
+		rho=M->rho;
+		shear=M->G;
+		bulk=M->K;
+
+		rho=rho*computational_density_factor;
+
+		vp=sqrt((bulk+4.0/3.0*shear)/rho); 					// P-wave velocity
+		stability = vp*dt*sqrt(1.0/(dx*dx)+1.0/(dy*dy)+1.0/(dz*dz));
+		if ( stability >= 1) {
+			SETERRQ1(PETSC_COMM_SELF, PETSC_ERR_USER, "Stability condition = %12.12e", stability);
 		}
-	//}
+	}
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
@@ -469,32 +468,49 @@ PetscErrorCode ChangeTimeStep(JacRes *jr, UserCtx *user)
 
 	PetscInt    i, numPhases;
 	Material_t  *phases, *M;
-	PetscScalar dx, dy, dz, dt, rho, shear, bulk, vp, stability;
+	PetscScalar dx, dy, dz, empty, dt, rho, shear, bulk, vp, stability, d_average, computational_density_factor;
 
 	PetscFunctionBegin;
 
-
+	computational_density_factor = user->DensityFactor;
 	numPhases = jr->numPhases;
 	phases    = jr->phases;
-	dt        = 999999999;
+	empty  = 999999999;
+	dt = empty;
 	dx = user->W/((PetscScalar)(user->nel_x));
 	dy = user->L/((PetscScalar)(user->nel_y));
 	dz = user->H/((PetscScalar)(user->nel_z));
 
-	//if (user->ExplicitSolver == PETSC_TRUE)	{
-		//  phases
-		for(i = 0; i < numPhases; i++)
-		{
-			M = &phases[i];
-			rho=M->rho;
-			shear=M->G;
-			bulk=M->K;
-			// P-wave velocity
-			vp=sqrt((bulk+4.0/3.0*shear)/rho);
-			if (1/vp/sqrt(1.0/(dx*dx)+1.0/(dy*dy)+1.0/(dz*dz)) < dt) dt = 1/vp/sqrt(1.0/(dx*dx)+1.0/(dy*dy)+1.0/(dz*dz));
+	//  phases
+	for(i = 0; i < numPhases; i++)
+	{
+		M = &phases[i];
+		rho=M->rho;
+		shear=M->G;
+		bulk=M->K;
+
+		rho=rho*computational_density_factor;
+
+		vp=sqrt((bulk+4.0/3.0*shear)/rho);				// P-wave velocity
+		//d_average 	= sqrt(dx*dx + dz*dz + dy*dy);   	// average spacing
+		d_average 	= sqrt(1/(dx*dx) + 1/(dz*dz) + 1/(dy*dy));
+
+		if (dt == empty) {
+			//if (d_average/vp < dt) {
+			//dt = 1/vp/sqrt(1.0/(dx*dx)+1.0/(dy*dy)+1.0/(dz*dz));
+				//dt = d_average/vp;
+			dt = 1/vp/d_average;
+			//}
 		}
-	//}
+		else {
+			//if (d_average/vp < dt) {
+			if (1/vp/d_average < dt) {
+				dt = d_average/vp;
+			}
+		}
+	}
 	user->dt = dt;
+	jr->ts.dt = dt;
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
@@ -1857,6 +1873,7 @@ PetscErrorCode GetStressFromSource(JacRes *jr, UserCtx *user, PetscInt i, PetscI
 {
 	PetscInt M, N, P;
 	PetscScalar /*coor,*/ time;
+	PetscScalar    xs[3], xe[3];
 
 	time	  =  JacResGetTime(jr);
 
@@ -1904,6 +1921,22 @@ PetscErrorCode GetStressFromSource(JacRes *jr, UserCtx *user, PetscInt i, PetscI
 	else if (jr->SourceParams.source_type == POINT)
 	{
 
+		// get cell coordinates
+		xs[0] = jr->fs->dsx.ncoor[i]; xe[0] = jr->fs->dsx.ncoor[i+1];
+		xs[1] = jr->fs->dsy.ncoor[j]; xe[1] = jr->fs->dsy.ncoor[j+1];
+		xs[2] = jr->fs->dsz.ncoor[k]; xe[2] = jr->fs->dsz.ncoor[k+1];
+
+		if (jr->SourceParams.x > xs[0] && jr->SourceParams.x <= xe[0] && jr->SourceParams.y > xs[1] && jr->SourceParams.y <= xe[1] && jr->SourceParams.z > xs[2] && jr->SourceParams.z <= xe[2])
+				{
+					//*sxx = jr->SourceParams.amplitude*exp(-jr->SourceParams.alfa*((time-jr->SourceParams.t0)*(time-jr->SourceParams.t0)));
+					//*syy = jr->SourceParams.amplitude*exp(-jr->SourceParams.alfa*((time-jr->SourceParams.t0)*(time-jr->SourceParams.t0)))/2;
+					//*szz = -jr->SourceParams.amplitude*exp(-jr->SourceParams.alfa*((time-jr->SourceParams.t0)*(time-jr->SourceParams.t0)))/2;
+
+					*sxx = 	100.0;
+					*syy =	50.0;;
+					*szz = 	-50.0 ;
+				}
+
 		/*// change the way and the place to do that /////////////////////////////////////////////////////////////////////////////////
 		//
 		if (jr->SourceParams.xrank == -1) // then first time we are here
@@ -1937,22 +1970,70 @@ PetscErrorCode GetStressFromSource(JacRes *jr, UserCtx *user, PetscInt i, PetscI
 			}
 		}*/
 
-		/*if (k==25 && j == 25 && i == 25)
+
+		/*if (k==70 && j == 70 && i == 20)
 		{
 			*sxx = jr->SourceParams.amplitude*exp(-jr->SourceParams.alfa*((time-jr->SourceParams.t0)*(time-jr->SourceParams.t0)));
-			//*syy = 0.0;
 			*szz = - jr->SourceParams.amplitude*exp(-jr->SourceParams.alfa*((time-jr->SourceParams.t0)*(time-jr->SourceParams.t0)));
 
-			//if (JacResGetStep(jr) == 3) fprintf(fseism, "%12.12e\n", *szz);
+
+			*sxx = 	100.0;
+			*syy =	50.0;;
+			*szz = 	-50.0 ;
 		}*/
-		if (k==50 && j == 20 && i == 20)
-		{
-			*sxx = jr->SourceParams.amplitude*exp(-jr->SourceParams.alfa*((time-jr->SourceParams.t0)*(time-jr->SourceParams.t0)));
-
-			*szz = - jr->SourceParams.amplitude*exp(-jr->SourceParams.alfa*((time-jr->SourceParams.t0)*(time-jr->SourceParams.t0)));
-		}
 	}
 
 	PetscFunctionReturn(0);
+}
+
+//---------------------------------------------------------------------------
+// Get damping factor for absorbing boundary
+#undef __FUNCT__
+#define __FUNCT__ "GetBoundaryDamping"
+PetscScalar GetBoundaryDamping(	char *coord[1], UserCtx *user, PetscInt i, PetscInt j, PetscInt k)
+{
+	PetscScalar Damping, A0;
+	PetscInt NL, NR;
+
+	Damping = 1.0;
+
+	if (user->AbsBoundaries == PETSC_TRUE)
+	{
+		//N=20; 		// change by user->...
+		A0 = 0.92;	// change by user->...?
+		if (coord=='x') {
+			NL=user->AB.NxL;
+			NR=user->AB.NxR;
+		}
+		else if (coord=='y') {
+			NL=user->AB.NyL;
+			NR=user->AB.NyR;
+		}
+		else if (coord=='z') {
+			NL=user->AB.NzL;
+			NR=user->AB.NzR;
+		}
+		if (k<NL) {
+			Damping=Damping*A0+(1/2)*(1-A0)*(1-cos(M_PI*(k)/(NL-1)));
+		}
+		else if (k >user->nel_z-1 -NR) {
+			Damping=Damping*A0+(1/2)*(1-A0)*(1-cos(M_PI*(user->nel_z-1 -k)/(NR-1)));
+		}
+
+		if (j<NL) {
+			Damping=Damping*A0+(1/2)*(1-A0)*(1-cos(M_PI*(j)/(NL-1)));
+		}
+		else if (j >user->nel_y-1 -NR) {
+			Damping=Damping*A0+(1/2)*(1-A0)*(1-cos(M_PI*(user->nel_y-1 -j)/(NR-1)));
+		}
+
+		if (i<NL) {
+			Damping=Damping*A0+(1/2)*(1-A0)*(1-cos(M_PI*(i)/(NL-1)));
+		}
+		else if (i >user->nel_x-1 -NR) {
+			Damping=Damping*A0+(1/2)*(1-A0)*(1-cos(M_PI*(user->nel_x-1 -i)/(NR-1)));
+		}
+	}
+	PetscFunctionReturn(Damping);
 }
 

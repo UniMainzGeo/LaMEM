@@ -329,11 +329,11 @@ PetscErrorCode JacResInitScale(JacRes *jr, UserCtx *usr)
 	ScalingMatProp(&jr->scal, jr->phases, jr->numPhases);
 
 
-	// check time step if ExplicitSolver
+	/*// check time step if ExplicitSolver
 	if (usr->ExplicitSolver == PETSC_TRUE)		{
 		//ierr = ChangeTimeStep(jr, usr); CHKERRQ(ierr);
 		ierr = CheckTimeStep(jr, usr); CHKERRQ(ierr);
-	}
+	}*/
 
 	// initialize time stepping parameters
 	ierr = TSSolSetUp(&jr->ts, usr); CHKERRQ(ierr);

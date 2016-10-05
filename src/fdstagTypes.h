@@ -101,6 +101,8 @@ typedef enum
 	POLYGONS,   // read polygons from file redundantly
 	DIAPIR,     // diapir setup
 	HOMO,       // homogebeous model
+	LAYER,		// layered model
+	HETEROGENEOUS,		// layered model
 	BLOCK,      // falling block
 	SUBDUCTION, // subduction setup with air
 	FOLDING,    // multilayer folding setup (Zagros)
@@ -163,6 +165,16 @@ typedef struct
 } ModParam;
 //-----------------------------------------------------------------------------
 
+// Absorbing boundaries
+typedef struct
+{
+	PetscInt NxL;
+	PetscInt NxR;
+	PetscInt NyL;
+	PetscInt NyR;
+	PetscInt NzL;
+	PetscInt NzR;
+} SAB;
 
 // Source types
 typedef enum
@@ -220,7 +232,6 @@ typedef struct
 
 	// marker initialization type
 	SetupType        msetup;
-	PetscBool		 SeismicSource;
 
 	// domain info
 	PetscScalar      W, L, H;
@@ -281,9 +292,6 @@ typedef struct
 	PetscBool        SavePartitioning;
 
 
-	PetscBool		 ExplicitSolver; //  True => for the moment, wave propagation
-
-
 	// gravity
 	gravityParams    GravityField;
 	PetscScalar      Gravity;
@@ -298,11 +306,27 @@ typedef struct
 	// topography
 	char             TopoFilename[MAX_PATH_LEN];
 	
+
+	// Explicit solver
+	PetscBool		 ExplicitSolver; //  True => for the moment, wave propagation
+
+	// Scaling density factor
+	PetscScalar      DensityFactor; //Computational density will be material density*density_factor
+
+	// Absorbing boundaries
+	PetscBool		 AbsBoundaries;
+	SAB AB;
+
+	// Seismic source
+	PetscBool		 SeismicSource;
+
 	// source
 	SourceParam SourceParams;
 
 	// Seismic station coordinates (in meters)
 	Station Station;
+
+
 
 
 
