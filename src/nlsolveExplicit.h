@@ -8,7 +8,7 @@
 #ifndef __nlsolveExplicit_h__
 #define __nlsolveExplicit_h__
 
-PetscErrorCode GetVelocities(JacRes *jr);
+PetscErrorCode GetVelocities(JacRes *jr, UserCtx *user);
 //PetscErrorCode GetPressure2(JacRes *jr);
 //PetscErrorCode GetStress(JacRes *jr);
 //PetscErrorCode JacResGetMomentumResidual2(JacRes *jr);
@@ -25,5 +25,5 @@ PetscErrorCode PrintStress(JacRes *jr);
 PetscErrorCode UpdateHistoryFieldsAndGetAxialStressStrain(JacRes *jr, PetscScalar *axial_stress, PetscScalar *axial_strain);
 //PetscErrorCode ModifyStress(JacRes *jr);
 PetscErrorCode GetStressFromSource(JacRes *jr, UserCtx *User, PetscInt i, PetscInt j, PetscInt k, PetscScalar *sxx, PetscScalar *syy, PetscScalar *szz);
-
+PetscScalar GetBoundaryDamping(	char *coord[1], UserCtx *user, PetscInt i, PetscInt j, PetscInt k);
 #endif

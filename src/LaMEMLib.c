@@ -169,11 +169,11 @@ PetscErrorCode LaMEMLib(ModParam *IOparam)
 	ierr = FDSTAGGenCoord(&fs, &user); CHKERRQ(ierr);
 
 
-	/*// check time step if ExplicitSolver (in JacRes.c)
+	// check time step if ExplicitSolver (in JacRes.c)
 	if (user.ExplicitSolver == PETSC_TRUE)		{
-		//ierr = ChangeTimeStep(&jr, &user); CHKERRQ(ierr);
-		ierr = CheckTimeStep(&jr, &user); CHKERRQ(ierr);
-	}*/
+		ierr = ChangeTimeStep(&jr, &user); CHKERRQ(ierr);
+		//ierr = CheckTimeStep(&jr, &user); CHKERRQ(ierr);
+	}
 
 
 	// save processor partitioning
@@ -306,7 +306,9 @@ PetscErrorCode LaMEMLib(ModParam *IOparam)
 		// File to save seismic signals at a given point of the model - Now used to save traces - Now used to save axial stress / step
 		char           *fname;
 		FILE *fseism;
-		asprintf(&fname, "strain_stress%1.3lld.%12.12e.txt",jr.fs->dsz.rank,user.dt);
+		//asprintf(&fname, "strain_stress%1.3lld.%12.12e.txt",jr.fs->dsz.rank,user.dt);
+		asprintf(&fname, "strain_stress.txt");
+
 		fseism = fopen(fname, "w" );
 		if(fseism == NULL) SETERRQ1(PETSC_COMM_SELF, 1,"cannot open file %s", fname);
 		user.Station.output_file = fseism;
@@ -485,7 +487,7 @@ PetscErrorCode LaMEMLib(ModParam *IOparam)
 
 
 
-ierr = ShowValues(&jr,&user, 5); CHKERRQ(ierr);
+//ierr = ShowValues(&jr,&user, 5); CHKERRQ(ierr);
 
 			//ierr = SaveVelocitiesForSeismicStation(&jr, &user); CHKERRQ(ierr);
 
