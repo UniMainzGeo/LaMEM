@@ -46,7 +46,7 @@ PetscErrorCode GetVelocities(JacRes *jr, UserCtx *user)
 	PetscScalar DensityFactor = user->DensityFactor;
 
 	// To damp velocity in the absorbing boundaries
-	PetscScalar damping; //, damping_x,damping_y,damping_z;
+	PetscScalar damping;
 
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
@@ -104,12 +104,8 @@ PetscErrorCode GetVelocities(JacRes *jr, UserCtx *user)
 		if (i==0) rho_side = rho[k][j][i];
 		else rho_side = (rho[k][j][i]+rho[k][j][i-1])/2.0;
 
-		/*damping_x = GetBoundaryDamping('x',user,i,j,k); // To damp velocity if we are in an absorbing boundary
-		damping_y = GetBoundaryDamping('y',user,i,j,k);
-		damping_z = GetBoundaryDamping('z',user,i,j,k);
-		damping = damping_x*damping_y*damping_z;*/
-
 		damping = GetBoundaryDamping(user,i,j,k); // To damp velocity if we are in an absorbing boundary
+
 		//PetscPrintf(PETSC_COMM_WORLD, "    damping[%i,%i,%i] = %12.12e \n", i,j,k, damping);
 		vx[k][j][i] = (vx[k][j][i]-fx[k][j][i]*dt/rho_side)*damping;
 
@@ -128,11 +124,6 @@ PetscErrorCode GetVelocities(JacRes *jr, UserCtx *user)
 		if (j==0) rho_side=rho[k][j][i];
 		else rho_side=(rho[k][j][i]+rho[k][j-1][i])/2.0;
 
-		/*damping_x = GetBoundaryDamping('x',user,i,j,k); // To damp velocity if we are in an absorbing boundary
-		damping_y = GetBoundaryDamping('y',user,i,j,k);
-		damping_z = GetBoundaryDamping('z',user,i,j,k);
-		damping = damping_x*damping_y*damping_z;*/
-
 		damping = GetBoundaryDamping(user,i,j,k); // To damp velocity if we are in an absorbing boundary
 		vy[k][j][i] = (vy[k][j][i]-fy[k][j][i]*dt/rho_side)*damping;
 
@@ -148,11 +139,6 @@ PetscErrorCode GetVelocities(JacRes *jr, UserCtx *user)
 	{
 		if (k==0) rho_side=rho[k][j][i];
 		else rho_side=(rho[k][j][i]+rho[k-1][j][i])/2.0;
-
-		/*damping_x = GetBoundaryDamping('x',user,i,j,k); // To damp velocity if we are in an absorbing boundary
-		damping_y = GetBoundaryDamping('y',user,i,j,k);
-		damping_z = GetBoundaryDamping('z',user,i,j,k);
-		damping = damping_x*damping_y*damping_z;*/
 
 		damping = GetBoundaryDamping(user,i,j,k); // To damp velocity if we are in an absorbing boundary
 		vz[k][j][i] = (vz[k][j][i]-fz[k][j][i]*dt/rho_side)*damping;
@@ -426,36 +412,36 @@ PetscErrorCode CheckTimeStep(JacRes *jr, UserCtx *user)
 {
 	// check time step as in Virieux, 1985
 
-	PetscInt    i /*,numPhases*/;
+	PetscInt    i;
 	Material_t  *phases, *M;
-	PetscScalar dx, dy, dz, dt, rho, shear, bulk, vp, stability;
+	PetscScalar dx, dy, dz, dt, rho, shear, bulk, vp, stability, computational_density_factor;
 
 	PetscFunctionBegin;
 
+	computational_density_factor = user->DensityFactor;
 
-//	numPhases = jr->numPhases;
 	phases    = jr->phases;
 	dt        = user->dt;     // time step
 	dx = user->W/((PetscScalar)(user->nel_x));
 	dy = user->L/((PetscScalar)(user->nel_y));
 	dz = user->H/((PetscScalar)(user->nel_z));
 
-	//if (user->ExplicitSolver == PETSC_TRUE)	{
-		//  phases
-		for(i = 0; i < jr->numPhases; i++)
-		{
-			M = &phases[i];
-			rho=M->rho;
-			shear=M->G;
-			bulk=M->K;
-			// P-wave velocity
-			vp=sqrt((bulk+4.0/3.0*shear)/rho);
-			stability = vp*dt*sqrt(1.0/(dx*dx)+1.0/(dy*dy)+1.0/(dz*dz));
-			if ( stability > 1) {
-				SETERRQ1(PETSC_COMM_SELF, PETSC_ERR_USER, "Stability condition = %12.12e", stability);
-			}
+	//  phases
+	for(i = 0; i < jr->numPhases; i++)
+	{
+		M = &phases[i];
+		rho=M->rho;
+		shear=M->G;
+		bulk=M->K;
+
+		rho=rho*computational_density_factor;
+
+		vp=sqrt((bulk+4.0/3.0*shear)/rho); 					// P-wave velocity
+		stability = vp*dt*sqrt(1.0/(dx*dx)+1.0/(dy*dy)+1.0/(dz*dz));
+		if ( stability >= 1) {
+			SETERRQ1(PETSC_COMM_SELF, PETSC_ERR_USER, "Stability condition = %12.12e", stability);
 		}
-	//}
+	}
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
@@ -512,14 +498,9 @@ PetscErrorCode ChangeTimeStep(JacRes *jr, UserCtx *user)
 	}
 	user->dt = dt;
 	jr->ts.dt = dt;
-
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-
-
-
-
 
 //---------------------------------------------------------------------------
 
@@ -875,6 +856,9 @@ PetscScalar GetBoundaryDamping( UserCtx *user, PetscInt i, PetscInt j, PetscInt 
 			//Damping=Damping*(A0+(1/2)*(1-A0)*(1-cos(M_PI*(user->nel_x-1 -i)/(user->AB.NxR-1))));
 			Damping=Damping*(A0+(1/2)*(1-A0)*(1-cos(M_PI*(user->nel_x -i)/(user->AB.NxR-1))));
 		}
+
 	}
 	PetscFunctionReturn(Damping);
 }
+
+

@@ -331,17 +331,12 @@ PetscErrorCode JacResInitScale(JacRes *jr, UserCtx *usr)
 
 
 
+
 	/*// check time step if ExplicitSolver
 	if (usr->ExplicitSolver == PETSC_TRUE)		{
 		//ierr = ChangeTimeStep(jr, usr); CHKERRQ(ierr);
 		ierr = CheckTimeStep(jr, usr); CHKERRQ(ierr);
 	}*/
-
-	// check time step if ExplicitSolver
-	if (usr->ExplicitSolver == PETSC_TRUE)		{
-		//ierr = ChangeTimeStep(jr, usr); CHKERRQ(ierr);
-		ierr = CheckTimeStep(jr, usr); CHKERRQ(ierr);
-	}
 
 
 	// initialize time stepping parameters

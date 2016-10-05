@@ -167,6 +167,9 @@ PetscErrorCode FDSTAGInitCode(JacRes *jr, UserCtx *user, ModParam *iop)
 
 	// Explicit solver (wave propagation)
 	jr->ExplicitSolver = user->ExplicitSolver;
+
+	jr->DensityFactor  = user->DensityFactor;
+
 	jr->SeismicSource  = user->SeismicSource;
 	if (jr->SeismicSource == PETSC_TRUE) jr->SourceParams = user->SourceParams;
 
@@ -231,9 +234,6 @@ PetscErrorCode InputSetDefaultValues(JacRes *jr, UserCtx *user)
 	// FDSTAG Canonical Default Model Setup
 	user->msetup            = BLOCK;
 
-	// Seismic source or not
-	user->SeismicSource = PETSC_FALSE;
-
 	// write partitioning
 	user->SavePartitioning  = PETSC_FALSE;
 
@@ -295,6 +295,7 @@ PetscErrorCode InputSetDefaultValues(JacRes *jr, UserCtx *user)
     user->ExplicitSolver = PETSC_FALSE;
     user->SeismicSource	 = PETSC_FALSE;
     user->DensityFactor = 1.0;
+
     user->AbsBoundaries = PETSC_TRUE;
     user->AB.NxL = 20;
     user->AB.NxR = 20;
@@ -302,6 +303,8 @@ PetscErrorCode InputSetDefaultValues(JacRes *jr, UserCtx *user)
     user->AB.NyR = 20;
     user->AB.NzL = 20;
     user->AB.NzR = 20;
+
+
 
 	PetscFunctionReturn(0);
 }
@@ -360,7 +363,6 @@ PetscErrorCode InputReadFile(JacRes *jr, UserCtx *user, FILE *fp)
 		else if(!strcmp(setup_name, "redundant"))  user->msetup = REDUNDANT;
 		else if(!strcmp(setup_name, "polygons"))   user->msetup = POLYGONS;
 		else if(!strcmp(setup_name, "diapir"))     user->msetup = DIAPIR;
-		else if(!strcmp(setup_name, "homo"))       user->msetup = HOMO;
 		else if(!strcmp(setup_name, "block"))      user->msetup = BLOCK;
 		else if(!strcmp(setup_name, "subduction")) user->msetup = SUBDUCTION;
 		else if(!strcmp(setup_name, "folding"))    user->msetup = FOLDING;
@@ -452,6 +454,24 @@ PetscErrorCode InputReadFile(JacRes *jr, UserCtx *user, FILE *fp)
 	parse_GetIntArray( fp, "Pushing.coord_advect",&nv, i_values, &found); for( i=0; i<user->Pushing.num_changes;   i++ ) { user->Pushing.coord_advect[i] = i_values[i];}
 	parse_GetIntArray( fp, "Pushing.dir",         &nv, i_values, &found); for( i=0; i<user->Pushing.num_changes;   i++ ) { user->Pushing.dir[i]          = i_values[i];}
 
+	// Scaling density factor
+	parse_GetDouble(fp, "density_factor",&user->DensityFactor, &found);
+
+	// Absorbing boundaries
+	parse_GetInt(fp, "abs_boundaries",&ab, &found);
+	if (found==PETSC_TRUE && ab==1)
+	{
+		user->AbsBoundaries=PETSC_TRUE;
+		// Number of absorbing boundaries
+		parse_GetInt( fp, "AB.NxL", &user->AB.NxL, &found );
+		parse_GetInt( fp, "AB.NxR", &user->AB.NxR, &found );
+		parse_GetInt( fp, "AB.NyL", &user->AB.NyL, &found );
+		parse_GetInt( fp, "AB.NyR", &user->AB.NyR, &found );
+		parse_GetInt( fp, "AB.NzL", &user->AB.NzL, &found );
+		parse_GetInt( fp, "AB.NzR", &user->AB.NzR, &found );
+		// Check that values are consistent
+		/// !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+	}
 
 	// Scaling density factor
 	parse_GetDouble(fp, "density_factor",&user->DensityFactor, &found);
@@ -547,13 +567,13 @@ PetscErrorCode InputReadFile(JacRes *jr, UserCtx *user, FILE *fp)
 			parse_GetDouble( fp, "alfa", &user->SourceParams.alfa, &found );
 			parse_GetDouble( fp, "t0", &user->SourceParams.t0, &found );
 
-			// Initialize other fields
+			/*// Initialize other fields
 			user->SourceParams.i = -1;
 			user->SourceParams.j = -1;
 			user->SourceParams.k = -1;
 			user->SourceParams.xrank = -1;
 			user->SourceParams.yrank = -1;
-			user->SourceParams.zrank = -1;
+			user->SourceParams.zrank = -1;*/
 		}
 	}else
 	{
@@ -643,7 +663,6 @@ PetscErrorCode InputReadCommLine(UserCtx *user )
 		else if(!strcmp(setup_name, "redundant"))  user->msetup = REDUNDANT;
 		else if(!strcmp(setup_name, "polygons"))   user->msetup = POLYGONS;
 		else if(!strcmp(setup_name, "diapir"))     user->msetup = DIAPIR;
-		else if(!strcmp(setup_name, "homo"))       user->msetup = HOMO;
 		else if(!strcmp(setup_name, "block"))      user->msetup = BLOCK;
 		else if(!strcmp(setup_name, "subduction")) user->msetup = SUBDUCTION;
 		else if(!strcmp(setup_name, "folding"))    user->msetup = FOLDING;

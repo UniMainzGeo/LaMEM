@@ -790,6 +790,15 @@ PetscErrorCode ADVMarkInitLayer(AdvCtx *actx, UserCtx *user)
 	//dy = user->L/((PetscScalar)nel_y);
 	//dz = user->H/((PetscScalar)nel_z);
 
+	nel_x = user->nel_x;
+	nel_y = user->nel_y;
+	nel_z = user->nel_z;
+
+	// spacing
+	dx = user->W/((PetscScalar)nel_x);
+	dy = user->L/((PetscScalar)nel_y);
+	dz = user->H/((PetscScalar)nel_z);
+
 	blz = 0.5*(PetscScalar)nel_z*dz;
 	user->z_bot = 2000; //<----------------------- change !!!
 
@@ -829,70 +838,68 @@ PetscErrorCode ADVMarkInitLayer(AdvCtx *actx, UserCtx *user)
 #define __FUNCT__ "ADVMarkInitHeterogeneous"
 PetscErrorCode ADVMarkInitHeterogeneous(AdvCtx *actx, UserCtx *user)
 {
-	// homogeneous model
+// homogeneous model
 
-	/*PetscInt    imark, nel_x, nel_y, nel_z;
-	PetscScalar dx,dy,dz;
-	PetscScalar bleft, bright, bfront, bback, bbottom, btop;
-	PetscScalar blx, bly, blz;
+PetscInt    imark, nel_x, nel_y, nel_z;
+PetscScalar dx,dy,dz;
+PetscScalar bleft, bright, bfront, bback, bbottom, btop;
+PetscScalar blx, bly, blz;
 
-	PetscInt    imark, nel_x, nel_y, nel_z;
-	PetscScalar dx,dy,dz;
+PetscErrorCode ierr;
+PetscFunctionBegin;
 
-	PetscErrorCode ierr;
-	PetscFunctionBegin;
+// print info
+PetscPrintf(PETSC_COMM_WORLD,"  HETEROGENEOUS SETUP \n");
 
-	// print info
+// number of elements on finest resolution
+nel_x = user->nel_x;
+nel_y = user->nel_y;
+nel_z = user->nel_z;
 
-	PetscPrintf(PETSC_COMM_WORLD,"  HETEROGENEOUS SETUP \n");
+// spacing
+dx = user->W/((PetscScalar)nel_x);
+dy = user->L/((PetscScalar)nel_y);
+dz = user->H/((PetscScalar)nel_z);
 
-	// number of elements on finest resolution
-	nel_x = user->nel_x;
-	nel_y = user->nel_y;
-	nel_z = user->nel_z;
-
-	// spacing
-	dx = user->W/((PetscScalar)nel_x);
-	dy = user->L/((PetscScalar)nel_y);
-	dz = user->H/((PetscScalar)nel_z);
-
-	// block dimensions
-	blx = 0.4*(PetscScalar)nel_x*dx;
-	bly = 0.4*(PetscScalar)nel_y*dy;
-	blz = 0.2*(PetscScalar)nel_z*dz;
-
-	bleft   = 0 ; 						   bright = bleft   + blx; // left and right side of block
-	bfront  = 0.25*(PetscScalar)nel_y*dy ; bback  = bfront  + bly; // front and back side of block
-	bbottom = 0.25*(PetscScalar)nel_z*dz;  btop   = bbottom + blz; // bottom and top side of block
+// block dimensions
+blx = 0.4*(PetscScalar)nel_x*dx;
+bly = 0.4*(PetscScalar)nel_y*dy;
+blz = 0.2*(PetscScalar)nel_z*dz;
 
 
-	// loop over local markers
-	for(imark = 0; imark < actx->nummark; imark++)
+
+
+bleft   = 0 ; 						   bright = bleft   + blx; // left and right side of block
+bfront  = 0.25*(PetscScalar)nel_y*dy ; bback  = bfront  + bly; // front and back side of block
+bbottom = 0.25*(PetscScalar)nel_z*dz;  btop   = bbottom + blz; // bottom and top side of block
+
+// loop over local markers
+for(imark = 0; imark < actx->nummark; imark++)
+{
+	actx->markers[imark].phase = 0;
+	actx->markers[imark].T     = 1.0; // - actx->markers[imark].X[2];
+
+	if(
+						(actx->markers[imark].X[2] > bbottom)
+					&& 	(actx->markers[imark].X[2] < btop)
+					&& 	(actx->markers[imark].X[0] > bleft)
+					&& 	(actx->markers[imark].X[0] < bright)
+					&& 	(actx->markers[imark].X[1] > bfront)
+					&&	(actx->markers[imark].X[1] < bback)
+	)
 	{
-		actx->markers[imark].phase = 0;
-		actx->markers[imark].T     = 1.0; // - actx->markers[imark].X[2];
-
-		if(
-							(actx->markers[imark].X[2] > bbottom)
-						&& 	(actx->markers[imark].X[2] < btop)
-						&& 	(actx->markers[imark].X[0] > bleft)
-						&& 	(actx->markers[imark].X[0] < bright)
-						&& 	(actx->markers[imark].X[1] > bfront)
-						&&	(actx->markers[imark].X[1] < bback)
-		)
-		{
-			// 3D block
-			actx->markers[imark].phase = 1;
-			actx->markers[imark].T     = 1.0;
-		}
-
-		actx->markers[imark].T     = 1.0 - actx->markers[imark].X[2];
-
+		// 3D block
+		actx->markers[imark].phase = 1;
+		actx->markers[imark].T     = 1.0;
 	}
+}
 
-	PetscFunctionReturn(0);*/
+PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
+
+//---------------------------------------------------------------------------
+
 #undef __FUNCT__
 #define __FUNCT__ "ADVMarkInitBlock"
 PetscErrorCode ADVMarkInitBlock(AdvCtx *actx, UserCtx *user)
