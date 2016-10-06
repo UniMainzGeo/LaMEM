@@ -6,7 +6,7 @@
 #    * number of cells                                    (n points)
 #    * bias coefficients                                  (n points) 
 
-nel_x						=   40
+nel_x						=   10
 nel_y						= 	140
 nel_z						= 	140
 
@@ -23,7 +23,7 @@ Characteristic.Stress      	= 1 #1e8
 
 # Geometry
 DimensionalUnits		=	si			# Dimensionless (=0) or SI-dimensional units (=1)?
-L						=	8000		# Length (y-direction)
+L						=	16000		# Length (y-direction)
 W						=	8000		# Width  (x-direction)
 H						=	8000		# Height (z-direction)
 x_left					=	0			# Left side of domain
@@ -35,7 +35,7 @@ msetup 					= homo 			#heterogeneous, layer, homo
 
 
 # Define input/output and numerics-related stuff
-OutputFile					=	ExplicitWavePropagation	
+OutputFile					=	ExplicitWavePropagation
 save_timesteps				=	10			# save every ? timesteps
 time_end					=	1000		# last timestep
 CFL							=	0.5				# CFL, dt-based criterium
@@ -64,7 +64,7 @@ Temp_bottom					=   0 #1 				# Temperature @ bottom; side BC's are flux-free
 	-ExplicitSolver 1
 
 	# Initial timestep
-	-dt 1e-2	#1.5e-10		#1e-2
+	-dt 0.5e-2	#1.5e-10		#1e-2
 	
 	# Use free surface stabilization algorithm:
 	#-surf_use        1
@@ -149,14 +149,14 @@ DII_ref 						=	1
 density_factor = 1
 
 # Absorbing boundaries ------------------------------------------------------------------------------
-abs_boundaries	=	1
+#abs_boundaries	=	0 # Default value is 1
 
-AB.NxL	= 0		# Number of absorbing boundary bands in the left  part of the x axis (must be 0 or bigger than 20 and enough smaller than nel_x ) 
-AB.NxR  = 0		# Number of absorbing boundary bands in the right part of the x axis (must be 0 or bigger than 20 and enough smaller than nel_x ) 
-AB.NyL	= 20	# Number of absorbing boundary bands in the left  part of the y axis (must be 0 or bigger than 20 and enough smaller than nel_y ) 
-AB.NyR  = 20	# Number of absorbing boundary bands in the right part of the y axis (must be 0 or bigger than 20 and enough smaller than nel_y ) 
-AB.NzL	= 20	# Number of absorbing boundary bands in the left  part of the z axis (must be 0 or bigger than 20 and enough smaller than nel_z ) 
-AB.NzR	= 0		# Number of absorbing boundary bands in the right part of the z axis (must be 0 or bigger than 20 and enough smaller than nel_z ) 
+#AB.NxL	= 0		# Number of absorbing boundary bands in the left  part of the x axis (must be 0 or bigger than 20 and enough smaller than nel_x ) 
+#AB.NxR  = 0		# Number of absorbing boundary bands in the right part of the x axis (must be 0 or bigger than 20 and enough smaller than nel_x ) 
+#AB.NyL	= 20	# Number of absorbing boundary bands in the left  part of the y axis (must be 0 or bigger than 20 and enough smaller than nel_y ) 
+#AB.NyR  = 20	# Number of absorbing boundary bands in the right part of the y axis (must be 0 or bigger than 20 and enough smaller than nel_y ) 
+#AB.NzL	= 20	# Number of absorbing boundary bands in the left  part of the z axis (must be 0 or bigger than 20 and enough smaller than nel_z ) 
+#AB.NzR	= 0		# Number of absorbing boundary bands in the right part of the z axis (must be 0 or bigger than 20 and enough smaller than nel_z ) 
 
 # Seismic source ------------------------------------------------------------------------------------
 seismic_source 		=	1
@@ -166,7 +166,7 @@ source_type 		= 	point		#point, plane, uniaxial_compression
 
 # Coordinates of the point source
 x_source = 4000
-y_source = 4000
+y_source = 8000
 z_source = 4000
 
 # Parameters for the source function
