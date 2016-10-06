@@ -136,10 +136,10 @@ PetscErrorCode FreeSurfReadFromOptions(FreeSurf *surf, Scaling *scal)
 	PetscFunctionBegin;
 
 	// read output flags
-	ierr = PetscOptionsGetBool  (NULL, "-surf_use",       &surf->UseFreeSurf, NULL); CHKERRQ(ierr);
-	ierr = PetscOptionsGetScalar(NULL, "-surf_level",     &surf->InitLevel,   NULL); CHKERRQ(ierr);
-	ierr = PetscOptionsGetInt   (NULL, "-surf_air_phase", &surf->AirPhase,    NULL); CHKERRQ(ierr);
-	ierr = PetscOptionsGetScalar(NULL, "-surf_max_angle", &surf->MaxAngle,    NULL); CHKERRQ(ierr);
+	ierr = PetscOptionsGetBool  (NULL, NULL, "-surf_use",       &surf->UseFreeSurf, NULL); CHKERRQ(ierr);
+	ierr = PetscOptionsGetScalar(NULL, NULL, "-surf_level",     &surf->InitLevel,   NULL); CHKERRQ(ierr);
+	ierr = PetscOptionsGetInt   (NULL, NULL, "-surf_air_phase", &surf->AirPhase,    NULL); CHKERRQ(ierr);
+	ierr = PetscOptionsGetScalar(NULL, NULL, "-surf_max_angle", &surf->MaxAngle,    NULL); CHKERRQ(ierr);
 
 	// nondimensionalize
 	surf->InitLevel /= scal->length;
@@ -697,7 +697,7 @@ PetscErrorCode FreeSurfGetAirPhaseRatio(FreeSurf *surf)
 	if(surf->UseFreeSurf != PETSC_TRUE) PetscFunctionReturn(0);
 
 	// add this to the command line to deactivate the free surface correction
-	PetscOptionsHasName(NULL,"-DeactivateFreeSurfaceCorrection",&DeactivateFreeSurfaceCorrection);
+	PetscOptionsHasName(NULL, NULL,"-DeactivateFreeSurfaceCorrection",&DeactivateFreeSurfaceCorrection);
 	if(DeactivateFreeSurfaceCorrection == PETSC_TRUE) PetscFunctionReturn(0);
 
 
@@ -1263,7 +1263,7 @@ PetscErrorCode SetSinusoidalPerturbation(PetscScalar SinusoidalFreeSurfaceAmplit
 	}
 	ierr = DMDAVecRestoreArray(user->DA_SurfaceTopography,user->SurfaceTopography, 	&LocalSurfaceTopography	);	CHKERRQ(ierr);
 	ierr = DMDAVecRestoreArray(cda_SurfaceTopo,gc_SurfaceTopo,						&coors_SurfaceTopo		); 	CHKERRQ(ierr);
-	VecMax(user->SurfaceTopography,PETSC_NULL, &maxVec);
+	VecMax(user->SurfaceTopography,NULL, &maxVec);
 	PetscPrintf(PETSC_COMM_WORLD,"max topo = %f ", maxVec*user->Characteristic.Length/1000.0);
 	PetscFunctionReturn(0);
 }

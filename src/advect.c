@@ -252,7 +252,7 @@ PetscErrorCode ADVAdvect(AdvCtx *actx)
 	ierr = ADVProjHistGridToMark(actx); CHKERRQ(ierr);
 
 	PetscBool flag = PETSC_FALSE;
-	PetscOptionsGetBool(PETSC_NULL, "-new_advection", &flag, PETSC_NULL);
+	PetscOptionsGetBool(NULL, NULL, "-new_advection", &flag, NULL);
 
 	if (!flag)
 	{
@@ -1012,7 +1012,7 @@ PetscErrorCode ADVMarkControl(AdvCtx *actx)
 	PetscFunctionBegin;
 
 	PetscBool flag = PETSC_FALSE;
-	PetscOptionsGetBool(PETSC_NULL, "-use_marker_control", &flag, PETSC_NULL);
+	PetscOptionsGetBool(NULL, NULL, "-use_marker_control", &flag, NULL);
 
 	if (!flag) PetscFunctionReturn(0);
 
@@ -1121,7 +1121,7 @@ PetscErrorCode ADVCheckCorners(AdvCtx *actx)
 	bc = actx->jr->bc;
 
 	PetscBool flag = PETSC_FALSE;
-	PetscOptionsGetBool(PETSC_NULL, "-use_marker_control", &flag, PETSC_NULL);
+	PetscOptionsGetBool(NULL, NULL, "-use_marker_control", &flag, NULL);
 
 	if (!flag) PetscFunctionReturn(0);
 

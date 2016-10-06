@@ -55,8 +55,8 @@ ifeq ($(mode), opt)
 	PETSC_DIR = ${PETSC_OPT}
 endif
 
-include ${PETSC_DIR}/conf/variables
-include ${PETSC_DIR}/conf/rules
+include ${PETSC_DIR}/lib/petsc/conf/variables
+include ${PETSC_DIR}/lib/petsc/conf/rules
 
 # Define PETSc-based C-compiler command
 CCOMPILER = ${PCC} ${PCC_FLAGS} ${CFLAGS} ${CCPPFLAGS}

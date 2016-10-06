@@ -106,7 +106,7 @@ PetscErrorCode LaMEMLib(ModParam *IOparam)
 	char ParamFile[MAX_PATH_LEN];
 
 	// check whether input file is specified
-	ierr = PetscOptionsGetString(PETSC_NULL, "-ParamFile", ParamFile, MAX_PATH_LEN, &InputParamFile); CHKERRQ(ierr);
+	ierr = PetscOptionsGetString(NULL, NULL, "-ParamFile", ParamFile, MAX_PATH_LEN, &InputParamFile); CHKERRQ(ierr);
 
 	// read additional PETSc options from input file
 	if(InputParamFile == PETSC_TRUE)
@@ -389,7 +389,7 @@ PetscErrorCode LaMEMLib(ModParam *IOparam)
 		KSPConvergedReason reason;
 		PetscBool          stop = PETSC_FALSE;
 
-		ierr = PetscOptionsHasName(NULL, "-stop_linsol_fail", &flg); CHKERRQ(ierr);
+		ierr = PetscOptionsHasName(NULL, NULL, "-stop_linsol_fail", &flg); CHKERRQ(ierr);
 
 		if(flg == PETSC_TRUE)
 		{

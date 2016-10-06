@@ -108,7 +108,6 @@
 	#pragma GCC diagnostic ignored "-Wcast-qual"
 
 	#include <petsc.h>
-	#include <petsc-private/matimpl.h>
 
 	#pragma GCC diagnostic warning "-Wconversion"
 	#pragma GCC diagnostic warning "-Wsign-conversion"
@@ -118,7 +117,6 @@
 #else
 
 	#include <petsc.h>
-	#include <petsc-private/matimpl.h>
 
 #endif
 

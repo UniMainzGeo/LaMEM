@@ -102,7 +102,7 @@ PetscErrorCode GetScalDataItemCheckScale(
 	nmax = n;
 
 	// read array
-	ierr = PetscOptionsGetRealArray(NULL, ident,  a, &nmax, &found); CHKERRQ(ierr);
+	ierr = PetscOptionsGetRealArray(NULL, NULL, ident,  a, &nmax, &found); CHKERRQ(ierr);
 
 	// check data item exists
 	if(found != PETSC_TRUE)
@@ -170,7 +170,7 @@ PetscErrorCode GetIntDataItemCheck(
 	nmax = n;
 
 	// read array
-	ierr = PetscOptionsGetIntArray(NULL, ident,  a, &nmax, &found); CHKERRQ(ierr);
+	ierr = PetscOptionsGetIntArray(NULL, NULL, ident,  a, &nmax, &found); CHKERRQ(ierr);
 
 	// check data item exists
 	if(found != PETSC_TRUE)
@@ -221,7 +221,7 @@ PetscErrorCode DMDAGetProcessorRank(DM da, PetscInt *rank_x, PetscInt *rank_y, P
 	PetscInt	m, n, p, i, j, k, colind;
 	PetscFunctionBegin;
 	// get MPI processor rank
-	MPI_Comm_rank(((PetscObject)da)->comm, &rank);
+	MPI_Comm_rank(PETSC_COMM_WORLD, &rank);
 	// get number processors in each coordinate direction
 	DMDAGetInfo(da, 0, 0, 0, 0, &m, &n, &p, 0, 0, 0, 0, 0, 0);
 	// determine i-j-k coordinates of processor

@@ -66,7 +66,7 @@ PetscErrorCode PCStokesSetFromOptions(PCStokes pc)
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
 
-	ierr = PetscOptionsGetString(PETSC_NULL,"-jp_type", pname, MAX_NAME_LEN, &found); CHKERRQ(ierr);
+	ierr = PetscOptionsGetString(NULL, NULL,"-jp_type", pname, MAX_NAME_LEN, &found); CHKERRQ(ierr);
 
 	if(found == PETSC_TRUE)
 	{
@@ -250,7 +250,7 @@ PetscErrorCode PCStokesBFSetFromOptions(PCStokes pc)
 	bf = (PCStokesBF*)pc->data;
 
 	// set factorization type
-	ierr = PetscOptionsGetString(PETSC_NULL,"-bf_type", pname, MAX_NAME_LEN, &flg); CHKERRQ(ierr);
+	ierr = PetscOptionsGetString(NULL, NULL,"-bf_type", pname, MAX_NAME_LEN, &flg); CHKERRQ(ierr);
 
 	if(flg == PETSC_TRUE)
 	{
@@ -276,7 +276,7 @@ PetscErrorCode PCStokesBFSetFromOptions(PCStokes pc)
 	}
 
 	// set velocity solver type
-	ierr = PetscOptionsGetString(PETSC_NULL,"-bf_vs_type", pname, MAX_NAME_LEN, &flg); CHKERRQ(ierr);
+	ierr = PetscOptionsGetString(NULL, NULL,"-bf_vs_type", pname, MAX_NAME_LEN, &flg); CHKERRQ(ierr);
 
 	if(flg == PETSC_TRUE)
 	{
@@ -624,106 +624,4 @@ PetscErrorCode PCStokesUserApply(Mat JP, Vec x, Vec y)
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-/*
-//---------------------------------------------------------------------------
-// read custom stop tolerances
-{
-	// clear matrix norms
-	bmat->nrmVV = 0.0; bmat->nrmVP = 0.0;
-	bmat->nrmPV = 0.0; bmat->nrmPP = 0.0;
 
- 	// set default tolerances
-	bmat->rtolV=1e-8;
-	bmat->atolV=1e-16;
-	bmat->rtolP=1e-8;
-	bmat->atolP=1e-16;
-
-	// read stop tolerances
-	ierr = PetscOptionsGetReal(PETSC_NULL, "-v_rtol", &bmat->rtolV, PETSC_NULL); CHKERRQ(ierr);
-	ierr = PetscOptionsGetReal(PETSC_NULL, "-v_atol", &bmat->atolV, PETSC_NULL); CHKERRQ(ierr);
-	ierr = PetscOptionsGetReal(PETSC_NULL, "-p_rtol", &bmat->rtolP, PETSC_NULL); CHKERRQ(ierr);
-	ierr = PetscOptionsGetReal(PETSC_NULL, "-p_atol", &bmat->atolP, PETSC_NULL); CHKERRQ(ierr);
-
-	// print norm type
-	PetscPrintf(PETSC_COMM_WORLD, "StokesResidual: Using L_inf \n");
-
-	// print stop tolerances
-	ierr = PetscPrintf(PETSC_COMM_WORLD, "Stopping conditions: \n");
-	ierr = PetscPrintf(PETSC_COMM_WORLD, "Velocity: RTOL: %e	ATOL: %e\n", bmat->rtolV, bmat->atolV); CHKERRQ(ierr);
-	ierr = PetscPrintf(PETSC_COMM_WORLD, "Pressure: RTOL: %e	ATOL: %e\n", bmat->rtolP, bmat->atolP); CHKERRQ(ierr);
-
-}
-//---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "KSPBlockStopTest"
-PetscErrorCode KSPBlockStopTest(KSP ksp, PetscInt n, PetscScalar rnorm, KSPConvergedReason *reason, void *mctx)
-{
-	// monitor residual & perform stop test
-
-	Vec         Bs, Br;
-	PetscInt    maxits;
-	PetscScalar nrmSolVels, nrmSolPres, nrmResVels, nrmResPres, tolVels, tolPres;
-
-	PetscErrorCode ierr;
-	PetscFunctionBegin;
-
-	// stop warning messages for unused parameters
-	if(rnorm) rnorm = 0.0;
-
-	// access context
-	BlockMat *bmat  = (BlockMat*)mctx;
-
-	// get maximum iterations
-	ierr = KSPGetTolerances(ksp, NULL, NULL, NULL, &maxits); CHKERRQ(ierr);
-
-	// get norms of velocity & pressure solutions
-	ierr = KSPBuildSolution(ksp, bmat->x, &Bs);           CHKERRQ(ierr);
-	ierr = BlockMatMonolithicToBlock(bmat, Bs);           CHKERRQ(ierr);
-	ierr = VecNorm(bmat->wv, NORM_INFINITY, &nrmSolVels); CHKERRQ(ierr);
-	ierr = VecNorm(bmat->wp, NORM_INFINITY, &nrmSolPres); CHKERRQ(ierr);
-
-	// get norms of velocity & pressure residulas
-	ierr = KSPBuildResidual(ksp, bmat->b, bmat->x, &Br);  CHKERRQ(ierr);
-	ierr = BlockMatMonolithicToBlock(bmat, Br);           CHKERRQ(ierr);
-	ierr = VecNorm(bmat->wv, NORM_INFINITY, &nrmResVels); CHKERRQ(ierr);
-	ierr = VecNorm(bmat->wp, NORM_INFINITY, &nrmResPres); CHKERRQ(ierr);
-
-	// compute velocity & pressure tolerances (solution-dependent)
-	tolVels = bmat->rtolV*(bmat->nrmVV*nrmSolVels + bmat->nrmVP*nrmSolPres + bmat->nrmRHSV) + bmat->atolV;
-	tolPres = bmat->rtolP*(bmat->nrmPV*nrmSolVels + bmat->nrmPP*nrmSolPres + bmat->nrmRHSP) + bmat->atolP;
-
-	// print header at first iteration
-	if(n == 0 && ((PetscObject)ksp)->prefix)
-	{
-		ierr = PetscPrintf(PETSC_COMM_WORLD,"  Residual norms for %s solve.\n",((PetscObject)ksp)->prefix); CHKERRQ(ierr);
-		ierr = PetscPrintf(PETSC_COMM_WORLD,"  # KSP Iterations      /  Residual:           Tolerance:          /  ... for each %3D blocks  [%s] \n",
-				2, ((PetscObject)ksp)->prefix); CHKERRQ(ierr);
-	}
-
-	// print residuals and tolerances
-	ierr = PetscPrintf(PETSC_COMM_WORLD,"%3D KSP Residual norms  ",n); CHKERRQ(ierr);
-	ierr = PetscPrintf(PETSC_COMM_WORLD, "/  %14.12e  %14.12e  ",   nrmResVels, tolVels); CHKERRQ(ierr);
-	ierr = PetscPrintf(PETSC_COMM_WORLD, "/  %14.12e  %14.12e  \n", nrmResPres, tolPres); CHKERRQ(ierr);
-//	ierr = PetscPrintf(PETSC_COMM_WORLD, "/  [%s] \n", ((PetscObject)ksp)->prefix); CHKERRQ(ierr);
-
-	// perform stop test, set convergence reason
-	if(nrmSolVels && nrmResVels <= tolVels && nrmSolPres && nrmResPres <= tolPres)
-	{
-//		PetscPrintf(PETSC_COMM_WORLD, "Linear solution converged\n");
-		*reason = KSP_CONVERGED_RTOL;
-	}
-	else if(n+1 == maxits)
-	{
-//		PetscPrintf(PETSC_COMM_WORLD, "Linear solution reached maximum number iterations\n");
-		*reason = KSP_DIVERGED_ITS;
-	}
-	else
-	{
-		// continue iterations
-		*reason = KSP_CONVERGED_ITERATING;
-	}
-
-	PetscFunctionReturn(0);
-}
-//---------------------------------------------------------------------------
-*/

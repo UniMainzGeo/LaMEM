@@ -113,7 +113,7 @@ PetscErrorCode ObjFunctCreate(ObjFunct *objf, FreeSurf *surf)
 
 
 	// compute misift?
-	ierr = PetscOptionsGetBool( PETSC_NULL, "-objf_compute", &objf->CompMfit, &flg ); CHKERRQ(ierr);
+	ierr = PetscOptionsGetBool(NULL, NULL, "-objf_compute", &objf->CompMfit, &flg ); CHKERRQ(ierr);
 	if(objf->CompMfit != PETSC_TRUE) PetscFunctionReturn(0);
 
 
@@ -303,7 +303,7 @@ PetscErrorCode ObjFunctReadFromOptions(ObjFunct *objf, const char *on[])
 
 	// read filename of observation file
 	asprintf(&objf->infile, "%s", "obs.bin");
-	ierr = PetscOptionsGetString(PETSC_NULL,"-objf_obsfile", objf->infile, MAX_NAME_LEN, &found); CHKERRQ(ierr);
+	ierr = PetscOptionsGetString(NULL, NULL,"-objf_obsfile", objf->infile, MAX_NAME_LEN, &found); CHKERRQ(ierr);
 	if (!found){ PetscPrintf(PETSC_COMM_WORLD,"# WARNING: No filename given for observation file -> Use default: obs.bin \n"); }
 
 
@@ -319,7 +319,7 @@ PetscErrorCode ObjFunctReadFromOptions(ObjFunct *objf, const char *on[])
 
 		// read output flags and allocate memory
 		sprintf(otname,"-objf_use_%s",on[k]);
-		ierr = PetscOptionsGetBool(NULL, otname, &exists, &found); CHKERRQ(ierr);
+		ierr = PetscOptionsGetBool(NULL, NULL, otname, &exists, &found); CHKERRQ(ierr);
 		if (found)
 		{
 			objf->otUse[k] = 1;

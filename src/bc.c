@@ -849,10 +849,10 @@ PetscErrorCode BCReadFromOptions(BCCtx *bc)
 	}
 
 	// set open boundary flag
-	ierr = PetscOptionsHasName(NULL, "-open_top_bound", &set); CHKERRQ(ierr); if(set == PETSC_TRUE) bc->top_open = 1;
+	ierr = PetscOptionsHasName(NULL, NULL, "-open_top_bound", &set); CHKERRQ(ierr); if(set == PETSC_TRUE) bc->top_open = 1;
 
 	// set simple shear boundary condition
-	ierr = PetscOptionsHasName(NULL, "-bc_simpleshear", &set); CHKERRQ(ierr); if(set == PETSC_TRUE) bc->simpleshear = 1;
+	ierr = PetscOptionsHasName(NULL, NULL, "-bc_simpleshear", &set); CHKERRQ(ierr); if(set == PETSC_TRUE) bc->simpleshear = 1;
 	if(bc->simpleshear)
 	{
 		ierr = GetScalDataItemCheckScale("-bc_simpleshear_gamma_xz", "Simple shear strain rate",

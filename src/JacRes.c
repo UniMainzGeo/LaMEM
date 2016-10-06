@@ -76,16 +76,16 @@ PetscErrorCode JacResSetFromOptions(JacRes *jr)
 	PetscFunctionBegin;
 
 	// set pressure shift flag
-	ierr = PetscOptionsHasName(NULL, "-skip_press_shift", &flg); CHKERRQ(ierr);
+	ierr = PetscOptionsHasName(NULL, NULL, "-skip_press_shift", &flg); CHKERRQ(ierr);
 
 	if(flg == PETSC_TRUE) jr->pShiftAct = PETSC_FALSE;
 
-	ierr = PetscOptionsHasName(NULL, "-act_temp_diff", &flg); CHKERRQ(ierr);
+	ierr = PetscOptionsHasName(NULL, NULL, "-act_temp_diff", &flg); CHKERRQ(ierr);
 
 	if(flg == PETSC_TRUE) jr->actTemp = PETSC_TRUE;
 
 	// set geometry tolerance
-	ierr = PetscOptionsGetScalar(NULL, "-geom_tol", &gtol, &flg); CHKERRQ(ierr);
+	ierr = PetscOptionsGetScalar(NULL, NULL, "-geom_tol", &gtol, &flg); CHKERRQ(ierr);
 
 	if(flg == PETSC_TRUE) jr->gtol = gtol;
 
@@ -1774,7 +1774,7 @@ PetscErrorCode JacResViewRes(JacRes *jr)
 
 	// stop if divergence more than tolerance
 	div_tol = 0.0;
-	ierr = PetscOptionsGetScalar(NULL, "-div_tol",  &div_tol,  NULL); CHKERRQ(ierr);
+	ierr = PetscOptionsGetScalar(NULL, NULL, "-div_tol",  &div_tol,  NULL); CHKERRQ(ierr);
 
 	if ((div_tol) && (( dmax > div_tol ) || (f2 > div_tol)))
 	{
@@ -1835,28 +1835,28 @@ PetscErrorCode SetMatParLim(MatParLim *matLim, UserCtx *usr)
 	matLim->jac_mat_free = PETSC_FALSE;
 
 	// read additional options
-	ierr = PetscOptionsHasName(PETSC_NULL, "-use_quasi_harmonic_viscosity", &flg); CHKERRQ(ierr);
+	ierr = PetscOptionsHasName(NULL, NULL, "-use_quasi_harmonic_viscosity", &flg); CHKERRQ(ierr);
 
 	if(flg == PETSC_TRUE)
 	{
 		matLim->quasiHarmAvg = PETSC_TRUE;
 	}
 
-	ierr = PetscOptionsGetScalar(NULL, "-rho_fluid",  &matLim->rho_fluid, NULL); CHKERRQ(ierr);
-	ierr = PetscOptionsGetScalar(NULL, "-rho_lithos", &matLim->rho_lithos, NULL); CHKERRQ(ierr);		// specify lithostatic density on commandline (if not set, we don't use this)
+	ierr = PetscOptionsGetScalar(NULL, NULL, "-rho_fluid",  &matLim->rho_fluid, NULL); CHKERRQ(ierr);
+	ierr = PetscOptionsGetScalar(NULL, NULL, "-rho_lithos", &matLim->rho_lithos, NULL); CHKERRQ(ierr);		// specify lithostatic density on commandline (if not set, we don't use this)
 
-	ierr = PetscOptionsGetScalar(NULL, "-theta_north", &matLim->theta_north, NULL); CHKERRQ(ierr);
+	ierr = PetscOptionsGetScalar(NULL, NULL, "-theta_north", &matLim->theta_north, NULL); CHKERRQ(ierr);
 
-	ierr = PetscOptionsHasName(PETSC_NULL, "-stop_warnings", &flg); CHKERRQ(ierr);
+	ierr = PetscOptionsHasName(NULL, NULL, "-stop_warnings", &flg); CHKERRQ(ierr);
 
 	if(flg == PETSC_TRUE) matLim->warn = PETSC_FALSE;
 
 	// set Jacobian flag
-	ierr = PetscOptionsHasName(NULL, "-jac_mat_free", &flg); CHKERRQ(ierr);
+	ierr = PetscOptionsHasName(NULL, NULL, "-jac_mat_free", &flg); CHKERRQ(ierr);
 
 	if(flg == PETSC_TRUE) matLim->jac_mat_free = PETSC_TRUE;
 
-	ierr = PetscOptionsGetScalar(NULL, "-shearHeatEff", &matLim->shearHeatEff, NULL); CHKERRQ(ierr);
+	ierr = PetscOptionsGetScalar(NULL, NULL, "-shearHeatEff", &matLim->shearHeatEff, NULL); CHKERRQ(ierr);
 
 	if(matLim->shearHeatEff > 1.0) matLim->shearHeatEff = 1.0;
 	if(matLim->shearHeatEff < 0.0) matLim->shearHeatEff = 0.0;
@@ -1870,13 +1870,13 @@ PetscErrorCode SetMatParLim(MatParLim *matLim, UserCtx *usr)
 	matLim->dtol    = 0.95;
 	matLim->jmax    = 3;
 
-	ierr = PetscOptionsHasName  (NULL, "-descent", &matLim->descent   ); CHKERRQ(ierr);
-	ierr = PetscOptionsGetScalar(NULL, "-ad_nmin", &matLim->nmin, NULL); CHKERRQ(ierr);
-	ierr = PetscOptionsGetScalar(NULL, "-ad_nmax", &matLim->nmax, NULL); CHKERRQ(ierr);
-	ierr = PetscOptionsGetScalar(NULL, "-ad_beta", &matLim->beta, NULL); CHKERRQ(ierr);
-	ierr = PetscOptionsGetScalar(NULL, "-ad_ctol", &matLim->ctol, NULL); CHKERRQ(ierr);
-	ierr = PetscOptionsGetScalar(NULL, "-ad_dtol", &matLim->dtol, NULL); CHKERRQ(ierr);
-	ierr = PetscOptionsGetInt   (NULL, "-ad_jmax", &matLim->jmax, NULL); CHKERRQ(ierr);
+	ierr = PetscOptionsHasName  (NULL, NULL, "-descent", &matLim->descent   ); CHKERRQ(ierr);
+	ierr = PetscOptionsGetScalar(NULL, NULL, "-ad_nmin", &matLim->nmin, NULL); CHKERRQ(ierr);
+	ierr = PetscOptionsGetScalar(NULL, NULL, "-ad_nmax", &matLim->nmax, NULL); CHKERRQ(ierr);
+	ierr = PetscOptionsGetScalar(NULL, NULL, "-ad_beta", &matLim->beta, NULL); CHKERRQ(ierr);
+	ierr = PetscOptionsGetScalar(NULL, NULL, "-ad_ctol", &matLim->ctol, NULL); CHKERRQ(ierr);
+	ierr = PetscOptionsGetScalar(NULL, NULL, "-ad_dtol", &matLim->dtol, NULL); CHKERRQ(ierr);
+	ierr = PetscOptionsGetInt   (NULL, NULL, "-ad_jmax", &matLim->jmax, NULL); CHKERRQ(ierr);
 
 	matLim->n   = matLim->nmin;
 	matLim->j   = 0;
