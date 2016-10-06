@@ -19,7 +19,7 @@ If you still need an older version proceed like with Eclipse:
 
 Download and unpack
 Install (copy) to /opt
-Set environment in /etc/profile.d/praview.sh
+Set environment in /etc/profile.d/paraview.sh
 Create desktop launcher
 As "command" simply type paraview
 Icon file is supplied
