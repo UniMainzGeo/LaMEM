@@ -64,41 +64,7 @@ CCOMPILER = ${PCC} ${PCC_FLAGS} ${CFLAGS} ${CCPPFLAGS}
 #====================================================
 
 # Define list of LaMEM library source files
-CSRC = \
-	LaMEMLib.c \
-	parsing.c \
-	fdstag.c \
-	lsolve.c \
-	nlsolve.c \
-	paraViewOutBin.c \
-	paraViewOutSurf.c \
-	paraViewOutMark.c \
-	advect.c \
-	marker.c \
-	cvi.c \
-	AVD.c \
-	constEq.c \
-	dfzero.c \
-	JacRes.c \
-	JacResTemp.c \
-	interpolate.c \
-	outFunct.c \
-	scaling.c \
-	matrix.c \
-	multigrid.c \
-	check_fdstag.c \
-	bc.c \
-	break.c \
-	surf.c \
-	input.c \
-	matProps.c \
-	tssolve.c \
-	tools.c \
-	sub_comm.c \
-	pc_semiredundant.c \
-	objFunct.c \
-	AVDView.c \
-	matFree.c
+CSRC = $(filter-out LaMEM.c, $(wildcard *.c))
 	
 #====================================================
 
