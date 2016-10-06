@@ -25,5 +25,5 @@ PetscErrorCode PrintStress(JacRes *jr);
 PetscErrorCode UpdateHistoryFieldsAndGetAxialStressStrain(JacRes *jr, PetscScalar *axial_stress, PetscScalar *axial_strain);
 //PetscErrorCode ModifyStress(JacRes *jr);
 PetscErrorCode GetStressFromSource(JacRes *jr, UserCtx *User, PetscInt i, PetscInt j, PetscInt k, PetscScalar *sxx, PetscScalar *syy, PetscScalar *szz);
-PetscScalar GetBoundaryDamping(	char *coord[1], UserCtx *user, PetscInt i, PetscInt j, PetscInt k);
+PetscScalar GetBoundaryDamping(UserCtx *user, PetscInt i, PetscInt j, PetscInt k);
 #endif

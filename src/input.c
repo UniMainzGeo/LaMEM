@@ -289,7 +289,13 @@ PetscErrorCode InputSetDefaultValues(JacRes *jr, UserCtx *user)
     user->ExplicitSolver = PETSC_FALSE;
     user->SeismicSource	 = PETSC_FALSE;
     user->DensityFactor = 1.0;
-    user->AbsBoundaries = PETSC_FALSE;
+    user->AbsBoundaries = PETSC_TRUE;
+    user->AB.NxL = 20;
+    user->AB.NxR = 20;
+    user->AB.NyL = 20;
+    user->AB.NyR = 20;
+    user->AB.NzL = 20;
+    user->AB.NzR = 20;
     
 
 	PetscFunctionReturn(0);
@@ -441,20 +447,28 @@ PetscErrorCode InputReadFile(JacRes *jr, UserCtx *user, FILE *fp)
 	parse_GetDouble(fp, "density_factor",&user->DensityFactor, &found);
 
 	// Absorbing boundaries
-	parse_GetInt(fp, "abs_boundaries",&ab, &found);
-	if (found==PETSC_TRUE && ab==1)
-	{
-		user->AbsBoundaries=PETSC_TRUE;
-		// Number of absorbing boundaries
-		parse_GetInt( fp, "AB.NxL", &user->AB.NxL, &found );
-		parse_GetInt( fp, "AB.NxR", &user->AB.NxR, &found );
-		parse_GetInt( fp, "AB.NyL", &user->AB.NyL, &found );
-		parse_GetInt( fp, "AB.NyR", &user->AB.NyR, &found );
-		parse_GetInt( fp, "AB.NzL", &user->AB.NzL, &found );
-		parse_GetInt( fp, "AB.NzR", &user->AB.NzR, &found );
-		// Check that values are consistent
-		/// !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-	}
+	//if (user->ExplicitSolver == PETSC_TRUE)
+	//{
+		parse_GetInt(fp, "abs_boundaries",&ab, &found);
+		if (found==PETSC_TRUE && ab==0)
+		{
+			user->AbsBoundaries=PETSC_FALSE;
+		}else{	// Default value is true
+			// Number of absorbing boundaries
+			parse_GetInt( fp, "AB.NxL", &user->AB.NxL, &found );
+			if ( user->AB.NxL >= user->nel_x/2) user->AB.NxL = 0;
+			parse_GetInt( fp, "AB.NxR", &user->AB.NxR, &found );
+			if ( user->AB.NxR >= user->nel_x/2) user->AB.NxR = 0;
+			parse_GetInt( fp, "AB.NyL", &user->AB.NyL, &found );
+			if ( user->AB.NyL >= user->nel_y/2) user->AB.NyL = 0;
+			parse_GetInt( fp, "AB.NyR", &user->AB.NyR, &found );
+			if ( user->AB.NyR >= user->nel_y/2) user->AB.NyR = 0;
+			parse_GetInt( fp, "AB.NzL", &user->AB.NzL, &found );
+			if ( user->AB.NzL >= user->nel_z/2) user->AB.NzL = 0;
+			parse_GetInt( fp, "AB.NzR", &user->AB.NzR, &found );
+			if ( user->AB.NzR >= user->nel_z/2) user->AB.NzR = 0;
+		}
+	//}
 
 	// Seismic source
 	parse_GetInt(fp, "seismic_source",&source, &found);

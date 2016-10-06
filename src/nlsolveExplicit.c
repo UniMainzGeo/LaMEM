@@ -46,7 +46,7 @@ PetscErrorCode GetVelocities(JacRes *jr, UserCtx *user)
 	PetscScalar DensityFactor = user->DensityFactor;
 
 	// To damp velocity in the absorbing boundaries
-	PetscScalar damping;
+	PetscScalar damping; //, damping_x,damping_y,damping_z;
 
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
@@ -103,7 +103,12 @@ PetscErrorCode GetVelocities(JacRes *jr, UserCtx *user)
 		if (i==0) rho_side = rho[k][j][i];
 		else rho_side = (rho[k][j][i]+rho[k][j][i-1])/2.0;
 
-		damping = GetBoundaryDamping('x',user,i,j,k); // To damp velocity if we are in an absorbing boundary
+		/*damping_x = GetBoundaryDamping('x',user,i,j,k); // To damp velocity if we are in an absorbing boundary
+		damping_y = GetBoundaryDamping('y',user,i,j,k);
+		damping_z = GetBoundaryDamping('z',user,i,j,k);
+		damping = damping_x*damping_y*damping_z;*/
+
+		damping = GetBoundaryDamping(user,i,j,k); // To damp velocity if we are in an absorbing boundary
 		//PetscPrintf(PETSC_COMM_WORLD, "    damping[%i,%i,%i] = %12.12e \n", i,j,k, damping);
 		vx[k][j][i] = (vx[k][j][i]-fx[k][j][i]*dt/rho_side)*damping;
 
@@ -122,7 +127,12 @@ PetscErrorCode GetVelocities(JacRes *jr, UserCtx *user)
 		if (j==0) rho_side=rho[k][j][i];
 		else rho_side=(rho[k][j][i]+rho[k][j-1][i])/2.0;
 
-		damping = GetBoundaryDamping('y',user,i,j,k); // To damp velocity if we are in an absorbing boundary
+		/*damping_x = GetBoundaryDamping('x',user,i,j,k); // To damp velocity if we are in an absorbing boundary
+		damping_y = GetBoundaryDamping('y',user,i,j,k);
+		damping_z = GetBoundaryDamping('z',user,i,j,k);
+		damping = damping_x*damping_y*damping_z;*/
+
+		damping = GetBoundaryDamping(user,i,j,k); // To damp velocity if we are in an absorbing boundary
 		vy[k][j][i] = (vy[k][j][i]-fy[k][j][i]*dt/rho_side)*damping;
 
 		//PetscPrintf(PETSC_COMM_WORLD, "    vy[%i,%i,%i]  %12.12e \n", i,j,k,vy[k][j][i]);
@@ -142,7 +152,12 @@ PetscErrorCode GetVelocities(JacRes *jr, UserCtx *user)
 		if (k==0) rho_side=rho[k][j][i];
 		else rho_side=(rho[k][j][i]+rho[k-1][j][i])/2.0;
 
-		damping = GetBoundaryDamping('z',user,i,j,k); // To damp velocity if we are in an absorbing boundary
+		/*damping_x = GetBoundaryDamping('x',user,i,j,k); // To damp velocity if we are in an absorbing boundary
+		damping_y = GetBoundaryDamping('y',user,i,j,k);
+		damping_z = GetBoundaryDamping('z',user,i,j,k);
+		damping = damping_x*damping_y*damping_z;*/
+
+		damping = GetBoundaryDamping(user,i,j,k); // To damp velocity if we are in an absorbing boundary
 		vz[k][j][i] = (vz[k][j][i]-fz[k][j][i]*dt/rho_side)*damping;
 
 		//PetscPrintf(PETSC_COMM_WORLD, "    vz[%i,%i,%i]  %12.12e \n", i,j,k,vz[k][j][i]);
@@ -1928,13 +1943,13 @@ PetscErrorCode GetStressFromSource(JacRes *jr, UserCtx *user, PetscInt i, PetscI
 
 		if (jr->SourceParams.x > xs[0] && jr->SourceParams.x <= xe[0] && jr->SourceParams.y > xs[1] && jr->SourceParams.y <= xe[1] && jr->SourceParams.z > xs[2] && jr->SourceParams.z <= xe[2])
 				{
-					//*sxx = jr->SourceParams.amplitude*exp(-jr->SourceParams.alfa*((time-jr->SourceParams.t0)*(time-jr->SourceParams.t0)));
-					//*syy = jr->SourceParams.amplitude*exp(-jr->SourceParams.alfa*((time-jr->SourceParams.t0)*(time-jr->SourceParams.t0)))/2;
-					//*szz = -jr->SourceParams.amplitude*exp(-jr->SourceParams.alfa*((time-jr->SourceParams.t0)*(time-jr->SourceParams.t0)))/2;
+					*sxx = jr->SourceParams.amplitude*exp(-jr->SourceParams.alfa*((time-jr->SourceParams.t0)*(time-jr->SourceParams.t0)));
+					*syy = jr->SourceParams.amplitude*exp(-jr->SourceParams.alfa*((time-jr->SourceParams.t0)*(time-jr->SourceParams.t0)))/2;
+					*szz = -jr->SourceParams.amplitude*exp(-jr->SourceParams.alfa*((time-jr->SourceParams.t0)*(time-jr->SourceParams.t0)))/2;
 
-					*sxx = 	100.0;
-					*syy =	50.0;;
-					*szz = 	-50.0 ;
+					//*sxx = 	100.0;
+					//*syy =	50.0;;
+					//*szz = 	-50.0 ;
 				}
 
 		/*// change the way and the place to do that /////////////////////////////////////////////////////////////////////////////////
@@ -1990,48 +2005,37 @@ PetscErrorCode GetStressFromSource(JacRes *jr, UserCtx *user, PetscInt i, PetscI
 // Get damping factor for absorbing boundary
 #undef __FUNCT__
 #define __FUNCT__ "GetBoundaryDamping"
-PetscScalar GetBoundaryDamping(	char *coord[1], UserCtx *user, PetscInt i, PetscInt j, PetscInt k)
+PetscScalar GetBoundaryDamping( UserCtx *user, PetscInt i, PetscInt j, PetscInt k)
 {
 	PetscScalar Damping, A0;
-	PetscInt NL, NR;
 
 	Damping = 1.0;
 
 	if (user->AbsBoundaries == PETSC_TRUE)
 	{
-		//N=20; 		// change by user->...
 		A0 = 0.92;	// change by user->...?
-		if (coord=='x') {
-			NL=user->AB.NxL;
-			NR=user->AB.NxR;
+
+		if (k<user->AB.NzL) {
+			Damping=Damping*(A0+(1/2)*(1-A0)*(1-cos(M_PI*(k)/(user->AB.NzL-1))));
 		}
-		else if (coord=='y') {
-			NL=user->AB.NyL;
-			NR=user->AB.NyR;
+		else if (k >(user->nel_z -user->AB.NzR)) {
+			//Damping=Damping*(A0+(1/2)*(1-A0)*(1-cos(M_PI*(user->nel_z-1 -k)/(user->AB.NzR-1))));
+			Damping=Damping*(A0+(1/2)*(1-A0)*(1-cos(M_PI*(user->nel_z -k)/(user->AB.NzR-1))));
 		}
-		else if (coord=='z') {
-			NL=user->AB.NzL;
-			NR=user->AB.NzR;
+		if (j<user->AB.NyL) {
+			Damping=Damping*(A0+(1/2)*(1-A0)*(1-cos(M_PI*(j)/(user->AB.NyL-1))));
 		}
-		if (k<NL) {
-			Damping=Damping*A0+(1/2)*(1-A0)*(1-cos(M_PI*(k)/(NL-1)));
-		}
-		else if (k >user->nel_z-1 -NR) {
-			Damping=Damping*A0+(1/2)*(1-A0)*(1-cos(M_PI*(user->nel_z-1 -k)/(NR-1)));
+		else if (j >(user->nel_y -user->AB.NyR)) {
+			//Damping=Damping*(A0+(1/2)*(1-A0)*(1-cos(M_PI*(user->nel_y-1 -j)/(user->AB.NyR-1))));
+			Damping=Damping*(A0+(1/2)*(1-A0)*(1-cos(M_PI*(user->nel_y -j)/(user->AB.NyR-1))));
 		}
 
-		if (j<NL) {
-			Damping=Damping*A0+(1/2)*(1-A0)*(1-cos(M_PI*(j)/(NL-1)));
+		if (i<user->AB.NxL) {
+			Damping=Damping*(A0+(1/2)*(1-A0)*(1-cos(M_PI*(i)/(user->AB.NxL-1))));
 		}
-		else if (j >user->nel_y-1 -NR) {
-			Damping=Damping*A0+(1/2)*(1-A0)*(1-cos(M_PI*(user->nel_y-1 -j)/(NR-1)));
-		}
-
-		if (i<NL) {
-			Damping=Damping*A0+(1/2)*(1-A0)*(1-cos(M_PI*(i)/(NL-1)));
-		}
-		else if (i >user->nel_x-1 -NR) {
-			Damping=Damping*A0+(1/2)*(1-A0)*(1-cos(M_PI*(user->nel_x-1 -i)/(NR-1)));
+		else if (i >(user->nel_x -user->AB.NxR)) {
+			//Damping=Damping*(A0+(1/2)*(1-A0)*(1-cos(M_PI*(user->nel_x-1 -i)/(user->AB.NxR-1))));
+			Damping=Damping*(A0+(1/2)*(1-A0)*(1-cos(M_PI*(user->nel_x -i)/(user->AB.NxR-1))));
 		}
 	}
 	PetscFunctionReturn(Damping);
