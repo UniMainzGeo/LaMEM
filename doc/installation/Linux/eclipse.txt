@@ -73,7 +73,7 @@ CONFIGURE PROJECT
 7. Add full paths to header files used in your project.
 
    PETSc (version X.Y.Z) applications would require setting:
-      /opt/mpich3
+      /opt/mpich3/include
       /opt/petsc/petsc-X.Y.Z-debug/include
 
     Each path can be added as follows:
@@ -81,6 +81,9 @@ CONFIGURE PROJECT
     Place directory path here, also check boxes:
        Add to all configurations
        Add to all languages
+
+	To make sure Eclipse recognizes paths correctly, rebuild the index:
+	Right click on your project, select Index -> Rebuild
 
 8. Build your application by clicking Hammer icon
 
