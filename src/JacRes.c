@@ -775,11 +775,13 @@ PetscErrorCode JacResGetResidual(JacRes *jr)
 	PetscScalar YZ, YZ1, YZ2, YZ3, YZ4;
 	PetscScalar bdx, fdx, bdy, fdy, bdz, fdz;
 	PetscScalar gx, gy, gz, tx, ty, tz, sxx, syy, szz, sxy, sxz, syz;
-	PetscScalar J2Inv, theta, rho, IKdt, alpha, Tc, pc, pShift, Tn, pn, dt, fssa, *grav;
+	PetscScalar J2Inv, theta, rho, IKdt, Tc, pc, pShift, pn, dt, fssa, *grav;
 	PetscScalar ***fx,  ***fy,  ***fz, ***vx,  ***vy,  ***vz, ***gc;
 	PetscScalar ***dxx, ***dyy, ***dzz, ***dxy, ***dxz, ***dyz, ***p, ***T;
 	PetscScalar eta_creep, eta_viscoplastic;
-	PetscScalar depth, rho_lithos;
+	PetscScalar depth;
+//	PetscScalar rho_lithos;
+//	PetscScalar alpha, Tn,
 
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
@@ -800,7 +802,7 @@ PetscErrorCode JacResGetResidual(JacRes *jr)
 	dt        =  jr->ts.dt;     	// time step
 	fssa      =  jr->FSSA;      	// density gradient penalty parameter
 	grav      =  jr->grav;      	// gravity acceleration
-	rho_lithos=  matLim->rho_lithos;// density to compute lithostatic pressure in viscosity formulation
+//	rho_lithos=  matLim->rho_lithos;// density to compute lithostatic pressure in viscosity formulation
 	pShift    =  jr->pShift;    	// pressure shift
 
 	// clear local residual vectors
@@ -917,9 +919,9 @@ PetscErrorCode JacResGetResidual(JacRes *jr)
 		theta = svBulk->theta; // volumetric strain rate
 		rho   = svBulk->rho;   // effective density
 		IKdt  = svBulk->IKdt;  // inverse bulk viscosity
-		alpha = svBulk->alpha; // effective thermal expansion
+//		alpha = svBulk->alpha; // effective thermal expansion
 		pn    = svBulk->pn;    // pressure history
-		Tn    = svBulk->Tn;    // temperature history
+//		Tn    = svBulk->Tn;    // temperature history
 
 		// compute gravity terms
 		gx = rho*grav[0];
@@ -2517,7 +2519,7 @@ PetscErrorCode JacResSetVelRotation(JacRes *jr)
 	FDSTAG      *fs;
 	PetscScalar ***lvx, ***lvy, ***lvz;
 	PetscInt    i, j, k, sx, sy, sz, nx, ny, nz;
-	PetscInt    I, J, K, mcx, mcy, mcz, nx1, nz1, sx1, sz1;
+	PetscInt    I, J, K, mcx, mcy, mcz, sx1, sz1;
 
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
@@ -2543,7 +2545,7 @@ PetscErrorCode JacResSetVelRotation(JacRes *jr)
 	GET_CELL_RANGE_GHOST_INT(ny, sy, fs->dsy);
 	GET_CELL_RANGE_GHOST_INT(nz, sz, fs->dsz);
 
-	GET_CELL_RANGE(nx1, sz1, fs->dsz);
+	sz1 = fs->dsz.pstart;
 
 	START_STD_LOOP
 	{
@@ -2587,7 +2589,7 @@ PetscErrorCode JacResSetVelRotation(JacRes *jr)
 	GET_CELL_RANGE_GHOST_INT(ny, sy, fs->dsy);
 	GET_NODE_RANGE_GHOST_INT(nz, sz, fs->dsz);
 
-	GET_CELL_RANGE(nz1, sx1, fs->dsx);
+	sx1 = fs->dsx.pstart;
 
 	START_STD_LOOP
 	{

@@ -624,8 +624,8 @@ PetscErrorCode InputReadFile(JacRes *jr, UserCtx *user, FILE *fp)
 #define __FUNCT__ "InputReadCommLine"
 PetscErrorCode InputReadCommLine(UserCtx *user )
 {
-	PetscInt       i, nel_array[3], nel_input_max;
-	PetscBool      found,flg;
+	PetscInt       nel_array[3], nel_input_max;
+	PetscBool      found;
 	char           setup_name[MAX_NAME_LEN];
 
 	PetscErrorCode ierr;

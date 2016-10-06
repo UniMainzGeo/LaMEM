@@ -45,25 +45,27 @@
 #include "LaMEM.h"
 #include "fdstag.h"
 #include "solVar.h"
-//#include "scaling.h"
-//#include "bc.h"
+#include "scaling.h"
+#include "tssolve.h"
+#include "bc.h"
 #include "JacRes.h"
-//#include "lsolve.h"
-#include "matrix.h"
-#include "Utils.h"
+#include "tools.h"
 #include "gravity.h"
-
-
 //---------------------------------------------------------------------------
 #undef __FUNCT__
 #define __FUNCT__ "GRVSurveyCreate"
-PetscErrorCode GRVSurveyCreate( UserCtx *user, GravitySurvey *survey)
+PetscErrorCode GRVSurveyCreate(UserCtx *user, GravitySurvey *survey)
 {
+	if(user)   user = NULL;
+	if(survey) survey = NULL;
+
+/*
 	PetscInt            n, i, j;
 	PetscInt            i,n;
 
-	PetscErrorCode      ierr;
+	PetscErrorCode ierr;
 	PetscFunctionBegin;
+
 
 	// create survey coordinates
 	*survey.nx = user->GravityField.survey_nx;
@@ -117,16 +119,15 @@ PetscErrorCode GRVSurveyCreate( UserCtx *user, GravitySurvey *survey)
 	ierr = VecCreateMPI(PETSC_COMM_WORLD,PETSC_DECIDE, (*survey.nx) * (*survey.ny), survey.gvec_dg); CHKERRQ(ierr);
 	ierr = VecSet(*survey.gvec_dg, 0.0); CHKERRQ(ierr);
 	ierr = MPI_Comm_rank(PETSC_COMM_WORLD, survey->rank); CHKERRQ(ierr);
-
-	PetFunctionReturn(0);
+*/
+	PetscFunctionReturn(0);
 }
-
 //---------------------------------------------------------------------------
 #undef __FUNCT__
 #define __FUNCT__ "GRVSurveyDestroy"
 PetscErrorCode GRVSurveyDestroy( GravitySurvey survey)
 {
-	PetscErrorCode      ierr;
+	PetscErrorCode ierr;
 	PetscFunctionBegin;
 
 	// destroy vector objects
@@ -138,20 +139,23 @@ PetscErrorCode GRVSurveyDestroy( GravitySurvey survey)
 
 	PetscFunctionReturn(0);
 }
-
 //---------------------------------------------------------------------------
 #undef __FUNCT__
 #define __FUNCT__ "GRVCompute"
-PetscErrorCode GRVCompute( FDSTAG *fs, UserCtx *user, JacResCtx *jrctx )
+PetscErrorCode GRVCompute(FDSTAG *fs, UserCtx *user, JacRes *jr)
 {
-	PetscInt            iter, i, j, k, nx, ny, nz, sx, sy, sz;
-	PetscScalar         x,y,z,dxh,dyh,dzh;
-	PetscScalar         corners[8][8];
-	PetscInt            iter;
 
-	 GravitySurvey      survey;
+	if(fs)   fs = NULL;
+	if(user) user = NULL;
+	if(jr)   jr = NULL;
 
-	PetscErrorCode      ierr;
+/*
+	PetscInt      iter, i, j, k, nx, ny, nz, sx, sy, sz;
+	PetscScalar   x,y,z,dxh,dyh,dzh;
+	PetscScalar   corners[8][8];
+	GravitySurvey survey;
+
+	PetscErrorCode ierr;
 	PetscFunctionBegin;
 
 	// create survey context
@@ -264,6 +268,7 @@ PetscErrorCode GRVCompute( FDSTAG *fs, UserCtx *user, JacResCtx *jrctx )
 
 	// destroy survey context
 	ierr = GRVSurveyDestroy( &user, survey);
-
+*/
 	PetscFunctionReturn(0);
 }
+//---------------------------------------------------------------------------
