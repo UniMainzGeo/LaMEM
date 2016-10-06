@@ -46,7 +46,7 @@ PetscErrorCode GetVelocities(JacRes *jr, UserCtx *user)
 	PetscScalar DensityFactor = user->DensityFactor;
 
 	// To damp velocity in the absorbing boundaries
-	PetscScalar damping;
+	PetscScalar damping; //, damping_x,damping_y,damping_z;
 
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
@@ -856,7 +856,6 @@ PetscScalar GetBoundaryDamping( UserCtx *user, PetscInt i, PetscInt j, PetscInt 
 			//Damping=Damping*(A0+(1/2)*(1-A0)*(1-cos(M_PI*(user->nel_x-1 -i)/(user->AB.NxR-1))));
 			Damping=Damping*(A0+(1/2)*(1-A0)*(1-cos(M_PI*(user->nel_x -i)/(user->AB.NxR-1))));
 		}
-
 	}
 	PetscFunctionReturn(Damping);
 }
