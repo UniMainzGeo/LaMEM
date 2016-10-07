@@ -216,13 +216,16 @@ PetscErrorCode BCGetBGStrainRates(
 PetscErrorCode BCDestroy(BCCtx *bc);
 
 // apply boundary conditions
-PetscErrorCode BCApply(BCCtx *bc);
+PetscErrorCode BCApply(BCCtx *bc, Vec x);
 
 // apply constraints on the boundaries
 PetscErrorCode BCApplyBound(BCCtx *bc);
 
 // shift indices of constrained nodes
 PetscErrorCode BCShiftIndices(BCCtx *bc, ShiftType stype);
+
+// apply SPC to global solution vector
+PetscErrorCode BCApplySPC(BCCtx *bc, Vec x);
 
 //---------------------------------------------------------------------------
 
@@ -253,9 +256,9 @@ PetscErrorCode BCOverridePhase(BCCtx *bc, PetscInt cellID, Marker *P);
 
 PetscErrorCode BCApplyDBox(BCCtx *bc);
 
-//---------------------------------------------------------------------------
-
 // simple shear BC
 PetscErrorCode 	BCApplySimpleShearVel(BCCtx *bc);
+
+//---------------------------------------------------------------------------
 
 #endif

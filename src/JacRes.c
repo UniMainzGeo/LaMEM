@@ -1310,36 +1310,35 @@ PetscErrorCode JacResGetResidual(JacRes *jr)
 //---------------------------------------------------------------------------
 #undef __FUNCT__
 #define __FUNCT__ "JacResCopySol"
-PetscErrorCode JacResCopySol(JacRes *jr, Vec x, SPCAppType appSPC)
+PetscErrorCode JacResCopySol(JacRes *jr, Vec x)
 {
 	// copy solution from global to local vectors, enforce boundary constraints
 
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
 
-	ierr = JacResCopyVel (jr, x, appSPC); CHKERRQ(ierr);
+	ierr = JacResCopyVel (jr, x); CHKERRQ(ierr);
 
-	ierr = JacResCopyPres(jr, x, appSPC); CHKERRQ(ierr);
+	ierr = JacResCopyPres(jr, x); CHKERRQ(ierr);
 
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
 #undef __FUNCT__
 #define __FUNCT__ "JacResCopyVel"
-PetscErrorCode JacResCopyVel(JacRes *jr, Vec x, SPCAppType appSPC)
+PetscErrorCode JacResCopyVel(JacRes *jr, Vec x)
 {
 	// copy velocity from global to local vectors, enforce boundary constraints
 
-	FDSTAG      *fs;
-	BCCtx       *bc;
-	PetscInt    mcx, mcy, mcz;
-	PetscInt    I, J, K, fi, fj, fk;
-	PetscInt    i, j, k, nx, ny, nz, sx, sy, sz;
-	PetscScalar ***bcvx,  ***bcvy,  ***bcvz;
-	PetscScalar ***lvx, ***lvy, ***lvz;
-	PetscScalar *vx, *vy, *vz, *sol, *iter, pmdof;
-	PetscScalar *vals;
-	PetscInt    num, *list;
+	FDSTAG           *fs;
+	BCCtx            *bc;
+	PetscInt          mcx, mcy, mcz;
+	PetscInt          I, J, K, fi, fj, fk;
+	PetscInt          i, j, k, nx, ny, nz, sx, sy, sz;
+	PetscScalar       ***bcvx,  ***bcvy,  ***bcvz;
+	PetscScalar       ***lvx, ***lvy, ***lvz;
+	PetscScalar       *vx, *vy, *vz, pmdof;
+	const PetscScalar *sol, *iter;
 
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
@@ -1353,22 +1352,10 @@ PetscErrorCode JacResCopyVel(JacRes *jr, Vec x, SPCAppType appSPC)
 	mcz = fs->dsz.tcels - 1;
 
 	// access vectors
-	ierr = VecGetArray(jr->gvx, &vx);  CHKERRQ(ierr);
-	ierr = VecGetArray(jr->gvy, &vy);  CHKERRQ(ierr);
-	ierr = VecGetArray(jr->gvz, &vz);  CHKERRQ(ierr);
-	ierr = VecGetArray(x,       &sol); CHKERRQ(ierr);
-
-	//=================================
-	// enforce single point constraints
-	//=================================
-
-	// velocity
-	num   = bc->vNumSPC;
-	list  = bc->vSPCList;
-	vals  = bc->vSPCVals;
-
-	if(appSPC == _APPLY_SPC_) { for(i = 0; i < num; i++) sol[list[i]] = vals[i]; }
-	else                      { for(i = 0; i < num; i++) sol[list[i]] = 0.0;     }
+	ierr = VecGetArray    (jr->gvx, &vx);  CHKERRQ(ierr);
+	ierr = VecGetArray    (jr->gvy, &vy);  CHKERRQ(ierr);
+	ierr = VecGetArray    (jr->gvz, &vz);  CHKERRQ(ierr);
+	ierr = VecGetArrayRead(x,       &sol); CHKERRQ(ierr);
 
 	// copy vectors component-wise
 	iter = sol;
@@ -1382,10 +1369,10 @@ PetscErrorCode JacResCopyVel(JacRes *jr, Vec x, SPCAppType appSPC)
 	ierr  = PetscMemcpy(vz, iter, (size_t)fs->nZFace*sizeof(PetscScalar)); CHKERRQ(ierr);
 
 	// restore access
-	ierr = VecRestoreArray(jr->gvx, &vx);  CHKERRQ(ierr);
-	ierr = VecRestoreArray(jr->gvy, &vy);  CHKERRQ(ierr);
-	ierr = VecRestoreArray(jr->gvz, &vz);  CHKERRQ(ierr);
-	ierr = VecRestoreArray(x,       &sol); CHKERRQ(ierr);
+	ierr = VecRestoreArray    (jr->gvx, &vx);  CHKERRQ(ierr);
+	ierr = VecRestoreArray    (jr->gvy, &vy);  CHKERRQ(ierr);
+	ierr = VecRestoreArray    (jr->gvz, &vz);  CHKERRQ(ierr);
+	ierr = VecRestoreArrayRead(x,       &sol); CHKERRQ(ierr);
 
 	// fill local (ghosted) version of solution vectors
 	GLOBAL_TO_LOCAL(fs->DA_X,   jr->gvx, jr->lvx)
@@ -1490,20 +1477,19 @@ PetscErrorCode JacResCopyVel(JacRes *jr, Vec x, SPCAppType appSPC)
 //---------------------------------------------------------------------------
 #undef __FUNCT__
 #define __FUNCT__ "JacResCopyPres"
-PetscErrorCode JacResCopyPres(JacRes *jr, Vec x, SPCAppType appSPC)
+PetscErrorCode JacResCopyPres(JacRes *jr, Vec x)
 {
 	// copy pressure from global to local vectors, enforce boundary constraints
 
-	FDSTAG      *fs;
-	BCCtx       *bc;
-	PetscInt    mcx, mcy, mcz;
-	PetscInt    I, J, K, fi, fj, fk;
-	PetscInt    i, j, k, nx, ny, nz, sx, sy, sz;
-	PetscScalar ***bcp;
-	PetscScalar ***lp;
-	PetscScalar *p, *sol, *iter, pmdof;
-	PetscScalar *vals;
-	PetscInt    num, *list;
+	FDSTAG            *fs;
+	BCCtx             *bc;
+	PetscInt          mcx, mcy, mcz;
+	PetscInt          I, J, K, fi, fj, fk;
+	PetscInt          i, j, k, nx, ny, nz, sx, sy, sz;
+	PetscScalar       ***bcp;
+	PetscScalar       ***lp;
+	PetscScalar       *p, pmdof;
+	const PetscScalar *sol, *iter;
 
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
@@ -1517,20 +1503,8 @@ PetscErrorCode JacResCopyPres(JacRes *jr, Vec x, SPCAppType appSPC)
 	mcz = fs->dsz.tcels - 1;
 
 	// access vectors
-	ierr = VecGetArray(jr->gp, &p);   CHKERRQ(ierr);
-	ierr = VecGetArray(x,      &sol); CHKERRQ(ierr);
-
-	//=================================
-	// enforce single point constraints
-	//=================================
-
-	// pressure
-	num   = bc->pNumSPC;
-	list  = bc->pSPCList;
-	vals  = bc->pSPCVals;
-
-	if(appSPC == _APPLY_SPC_) { for(i = 0; i < num; i++) sol[list[i]] = vals[i]; }
-	else                      { for(i = 0; i < num; i++) sol[list[i]] = 0.0;     }
+	ierr = VecGetArray    (jr->gp, &p);   CHKERRQ(ierr);
+	ierr = VecGetArrayRead(x,      &sol); CHKERRQ(ierr);
 
 	// copy vectors component-wise
 	iter = sol + fs->nXFace + fs->nYFace + fs->nZFace;
@@ -1538,8 +1512,8 @@ PetscErrorCode JacResCopyPres(JacRes *jr, Vec x, SPCAppType appSPC)
 	ierr = PetscMemcpy(p, iter, (size_t)fs->nCells*sizeof(PetscScalar)); CHKERRQ(ierr);
 
 	// restore access
-	ierr = VecRestoreArray(jr->gp,  &p);   CHKERRQ(ierr);
-	ierr = VecRestoreArray(x,       &sol); CHKERRQ(ierr);
+	ierr = VecRestoreArray    (jr->gp, &p);   CHKERRQ(ierr);
+	ierr = VecRestoreArrayRead(x,      &sol); CHKERRQ(ierr);
 
 	// fill local (ghosted) version of solution vectors
 	GLOBAL_TO_LOCAL(fs->DA_CEN, jr->gp, jr->lp)

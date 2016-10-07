@@ -208,11 +208,6 @@ PetscErrorCode GetIntDataItemCheck(
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-
-
-//---------------------------------------------------------------------------
-
-
 #undef __FUNCT__
 #define __FUNCT__ "DMDAGetProcessorRank"
 PetscErrorCode DMDAGetProcessorRank(DM da, PetscInt *rank_x, PetscInt *rank_y, PetscInt *rank_z, PetscInt *rank_col)
@@ -237,7 +232,6 @@ PetscErrorCode DMDAGetProcessorRank(DM da, PetscInt *rank_x, PetscInt *rank_y, P
 	if(rank_col) (*rank_col) = colind;
 	PetscFunctionReturn(0);
 }
-
 //---------------------------------------------------------------------------
 #undef __FUNCT__
 #define __FUNCT__ "makeMPIIntArray"
@@ -301,8 +295,6 @@ PetscErrorCode makeScalArray(PetscScalar **arr, const PetscScalar *init, const P
 	*arr = tmp;
 	PetscFunctionReturn(0);
 }
-//---------------------------------------------------------------------------
-
 //==========================================================================================================
 PetscInt ISRankZero(MPI_Comm comm)
 {

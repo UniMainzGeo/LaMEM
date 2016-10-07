@@ -32,7 +32,7 @@ $debug = 'false';
 
 if ($ARGV[0] eq 'clean' ) {
     if( -d 'log' ) {
-        if( $debug eq 'true' ) { print "Removing all log files \n"; }    
+        if( $debug eq 'true' ) { print "Removing all log files \n"; }
         `rm -f log/*`;
     }
     if( -d 'output' ) {
@@ -110,12 +110,12 @@ foreach $file (@files) {
 
     $found_EXEC = 'false';
     $found_TEST_TYPE = 'false';
-  
+
     # remove directories that might spoil output
     #    rmtree('Timestep*');
     `rm -rf Timestep*`;
-    
-  
+
+
     # look for last instance of the fullstop "."
     $file_L = length $file;
     $k = 0;
@@ -130,7 +130,7 @@ foreach $file (@files) {
 
     # strip off the .test extension or whatever happens to be AFTER the last fullstop
     $test_name = substr( $file, 0,  -($file_L - $dot_loc) ); # Remove 5 characters from file name
-    
+
     # Open file and get the execute command and diff type
     open( LAUNCH_FILE, "$file") || die "Can't open '$file': $!\n";
     @testContents = <LAUNCH_FILE>;
@@ -177,18 +177,18 @@ foreach $file (@files) {
     if( $found_EXEC eq 'false' ) {
         die "ERROR: Did not find essential parameter EXEC in $file";
     }
-    
+
 
 
     # Launch executable and send output to output/$test_name.output
 #    printf "  Execute: $MPI_LAUNCH $num_procs $exec > output/$test_name.output \n";
       if( $num_procs == 1 ) {
-        system( "$path/$exec > output/$test_name.output" );    
+        system( "$path/$exec > output/$test_name.output" );
       }
       else {
-        system( "$MPI_LAUNCH $num_procs $path/$exec > output/$test_name.output" );    
+        system( "$MPI_LAUNCH $num_procs $path/$exec > output/$test_name.output" );
       }
-    
+
     # Execute the appropriate diff operation and send result to log/$test_name.diff
     # diff will return 0 on success, 1 if failed
     # If no difference occurred, report PASSED else report FAILED
@@ -203,7 +203,7 @@ foreach $file (@files) {
         printf "$test_name  :\t FAILED\n";
         $tests_failed = $tests_failed + 1;
     }
-    
+
     $tests_performed = $tests_performed + 1;
 
 }
@@ -260,16 +260,16 @@ sub rtrim($)
 }
 
 ## =============================================================================
-##  Examines the file ${PETSC_DIR}/bmake/${PETSC_ARCH}/petscconf and looks 
+##  Examines the file ${PETSC_DIR}/bmake/${PETSC_ARCH}/petscconf and looks
 ##  for MPIEXEC. Returns the full path to binary and the binary name
 ##
 sub get_mpiexec {
-	my $file_name = $ENV{'PETSC_DIR'} . "/" . $ENV{'PETSC_ARCH'} . "/conf/petscvariables";	
+	my $file_name = $ENV{'PETSC_DIR'} . "/" . $ENV{'PETSC_ARCH'} . "lib/petsc/conf/petscvariables";
 	my $n = 0;
 	my $FULLPATH_MPIEXEC = '';
 	my $MPIEXEC = '';
 	my $first = '';
-	
+
 	open( DAT, $file_name ) || die( "Could not open file datafile ($file_name) ! \n" );
 	@raw_data=<DAT>;
 
@@ -278,12 +278,12 @@ sub get_mpiexec {
 		my $tline = trim( $line );
 		my @blist = split( /\=/, $tline );
 
-	        # Use the first part to determine if the line corresponds to MPIEXEC = 
+	        # Use the first part to determine if the line corresponds to MPIEXEC =
 	        $first = trim( $blist[0] );
 
 	        if( $first eq 'MPIEXEC' ) {
 #			print "1)   $first \n";
-	
+
 	            # Everything including the /'s, expect the first part, MPIEXEC = , corresponds to the full path to mpiexec
 	            my $t1 = strip_equals( $tline );  # take entire line and remove equals sign
 	            $t1 =~ s/MPIEXEC//;   # remove word MPIEXEC from line
@@ -310,7 +310,7 @@ sub get_mpiexec {
 
 #    printf "PATHTO_MPIEXEC = $FULLPATH_MPIEXEC \n";
 #    printf "MPIEXEC = $MPIEXEC \n";
-	
+
 	close( DAT );
 
     return ( $FULLPATH_MPIEXEC, $MPIEXEC );
@@ -338,25 +338,25 @@ sub strip_equals
 #   literal_diff        <unix diff>
 #   literal_diff_pl     <perl version of diff which will ignore pointers>
 #   tolerance_diff_pl [tolerance]   <perl diff which till use a compare numbers and only error if the abs(diff) < tol
-#   catch_exception_pl [assert_statement_to_search_for] <will look for a string in the output>   
+#   catch_exception_pl [assert_statement_to_search_for] <will look for a string in the output>
 #
 #   TEST_TYPE = test_name,arg1,arg2,arg3
-sub PerformComparison 
+sub PerformComparison
 {
     my $test_type = $_[0];
     my $job_output = $_[1];
     my $expected_output = $_[2];
     my $log_file = $_[3];
- 
+
     my @supported = ( 'literal_diff', 'tolerance_diff_pl','catch_exception_pl' );
- 
+
     chomp( $test_type );
     my @list = split( /,/, $test_type );
 
 
 #    print "PerformComparison \n" ;
 #    print "  Between    $job_output     :      $expected_output \n";
-#    print "  Using: @list \n" ;    
+#    print "  Using: @list \n" ;
 
     my $status = 1;
     if( $list[0] eq "literal_diff" ) {
@@ -378,7 +378,7 @@ sub PerformComparison
         print "\n";
         die "";
     }
-    
+
     return $status;
 }
 
@@ -460,13 +460,13 @@ sub Comparison_tolerance_diff_pl
 			$lc_output++;
 			next;
 		}
-        
+
         # OUTPUT FILE: check line is not blank
         if( $my_line =~ /^$/ ) {
             $lc_output++;
             next;
         }
-        
+
         # OUTPUT FILE: check line does not contain (sec)
         my $substr = '(sec)';
         if (index($my_line, $substr) != -1) {
@@ -514,12 +514,12 @@ sub Comparison_tolerance_diff_pl
                 $lc_output++;
                 next;
             }
-            
+
 			$lc_expected = $II;
 			last;
 		}
-        
-		
+
+
         chomp( $my_line );
         chomp( $exp_line );
             ($line_stat,$com_log) = compare_lines_using_tolerance_on_numbers( $my_line, $exp_line, $tol );
@@ -527,7 +527,7 @@ sub Comparison_tolerance_diff_pl
 			my $exp_line_num      = $lc_expected + 1;
             if( $line_stat eq 'fail' ) {
                 $stat = 1;
-            
+
                 print LDAT "comparing line\tOUTPUT   [$output_line_num] $my_line \n";
                 print LDAT "\t\tEXPECTED [$exp_line_num] $exp_line \n";
                 print LDAT "    status: $com_log \n";
@@ -537,17 +537,17 @@ sub Comparison_tolerance_diff_pl
                 #   print LDAT "\t\tEXPECTED [$exp_line_num] $exp_line \n";
                 #   print LDAT "    status: passed \n\n";
 			}
-			
+
 			$lc_expected++;
 			$lc_output++;
-			
+
     }
 
     close( DAT );
     close( EDAT );
     close( LDAT );
 
-    return $stat;    
+    return $stat;
 }
 
 
@@ -563,9 +563,9 @@ sub compare_lines_using_tolerance_on_numbers
     my $status;
     my $r = -1;
     my $line_status = 'pass';
-    
-    
-    
+
+
+
     # break into seperate strings
     chomp( $line_test );
     chomp( $line_expected );
@@ -574,12 +574,12 @@ sub compare_lines_using_tolerance_on_numbers
 #    $tline_test = $tt;
 #    $line_expected = $te;
 
-    
+
 #    my @s_line_test = split( / /, $line_test);
 #    my @s_line_expected = split( / /, $line_expected );
     my @s_line_test = split( / /, $tt);
     my @s_line_expected = split( / /, $te );
-    
+
     # check if same length
     my $N1 = @s_line_test;
     my $N2 = @s_line_expected;
@@ -589,13 +589,13 @@ sub compare_lines_using_tolerance_on_numbers
         $line_status = 'fail';
         return ($line_status,$status);
     }
-    
+
 
     # For each word
     for( $i=0; $i<$N1; $i++ ) {
         $test = $s_line_test[$i];
         $exp = $s_line_expected[$i];
-    
+
         # check if both are numbers
         $a = is_num( $test );
         $b = is_num( $exp );
@@ -629,7 +629,7 @@ sub compare_lines_using_tolerance_on_numbers
             }
         }
     }
-    
+
 #    print "    $line_status \n";
     return ($line_status,$status);
 }
@@ -667,11 +667,11 @@ sub check_for_scientific_notation_E
 #                                            ii) xxxxxxx(+/-)xxxxx
 # If $v is not scientific and contains any charcters, it just be a string
 
-sub is_num 
+sub is_num
 {
     $v = $_[0];
     $r = 0;
-    
+
     # strip out decimal point
     $v =~ s/\.//g;
 
@@ -688,7 +688,7 @@ sub is_num
         $r = 1;
     }
 #   if( $r ) { print "Found number = $_[0] \n"; }
-    
+
     return $r;
 }
 
@@ -713,7 +713,7 @@ sub Comparison_catch_exception_pl
 
     my $stat = 1;
     my $check = 'fail';
-    
+
     # Check key_phrase is given
     my $L = length( $key_phrase );
     if( $L == 0 ) {
@@ -721,14 +721,14 @@ sub Comparison_catch_exception_pl
         print "  e.g. TEST_TYPE = catch_exception_pl, key_phrase \n";
         die;
     }
-    
+
     open( DAT, $job_output ) || die( "Could not open job output file ($job_output) ! \n" );
     my @data=<DAT>;
 
 
     # Look for keyphrase
     foreach $line (@data) {
-        
+
         $check = check_for_error_message( $line, $key_phrase );
         if( $check eq 'pass' ) {
             $stat = 0;
@@ -737,7 +737,7 @@ sub Comparison_catch_exception_pl
     }
 
     close( DAT );
-    
+
     return $stat;
 }
 

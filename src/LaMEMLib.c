@@ -295,7 +295,7 @@ PetscErrorCode LaMEMLib(ModParam *IOparam)
 		//====================================
 
 		// initialize boundary constraint vectors
-		ierr = BCApply(&bc); CHKERRQ(ierr);
+		ierr = BCApply(&bc, jr.gsol); CHKERRQ(ierr);
 
 		// initialize temperature
 		ierr = JacResInitTemp(&jr); CHKERRQ(ierr);

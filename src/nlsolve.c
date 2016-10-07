@@ -231,7 +231,7 @@ PetscErrorCode FormResidual(SNES snes, Vec x, Vec f, void *ctx)
 	jr = nl->pc->pm->jr;
 
 	// copy solution from global to local vectors, enforce boundary constraints
-	ierr = JacResCopySol(jr, x, _APPLY_SPC_); CHKERRQ(ierr);
+	ierr = JacResCopySol(jr, x); CHKERRQ(ierr);
 
 	ierr = JacResGetPressShift(jr); CHKERRQ(ierr);
 
@@ -260,7 +260,7 @@ PetscErrorCode FormResidualMFFD(void *ctx, Vec x, Vec f)
 	jr = (JacRes*)ctx;
 
 	// copy solution from global to local vectors, enforce boundary constraints
-	ierr = JacResCopySol(jr, x, _APPLY_SPC_); CHKERRQ(ierr);
+	ierr = JacResCopySol(jr, x); CHKERRQ(ierr);
 
 	ierr = JacResGetPressShift(jr); CHKERRQ(ierr);
 

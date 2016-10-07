@@ -202,7 +202,7 @@ PetscErrorCode PVOutWriteViscCreep(JacRes *jr, OutBuf *outbuf)
 }
 //---------------------------------------------------------------------------
 #undef __FUNCT__
-#define __FUNCT__ "PVOutWriteViscoplastic"
+#define __FUNCT__ "PVOutWriteViscoPlastic"
 PetscErrorCode PVOutWriteViscoPlastic(JacRes *jr, OutBuf *outbuf)
 {
 	COPY_FUNCTION_HEADER
@@ -229,7 +229,7 @@ PetscErrorCode PVOutWriteVelocity(JacRes *jr, OutBuf *outbuf)
 	cf = scal->velocity;
 	iflag.use_bound = PETSC_TRUE;
 
-	ierr = JacResCopyVel(jr, jr->gsol, _APPLY_SPC_); CHKERRQ(ierr);
+	ierr = JacResCopyVel(jr, jr->gsol); CHKERRQ(ierr);
 
 	INTERPOLATE_ACCESS(jr->lvx, InterpXFaceCorner, 3, 0, 0.0)
 	INTERPOLATE_ACCESS(jr->lvy, InterpYFaceCorner, 3, 1, 0.0)
@@ -252,7 +252,7 @@ PetscErrorCode PVOutWritePressure(JacRes *jr, OutBuf *outbuf)
 	// scale pressure shift
 	pShift = cf*jr->pShift;
 
-	ierr = JacResCopyPres(jr, jr->gsol, _APPLY_SPC_); CHKERRQ(ierr);
+	ierr = JacResCopyPres(jr, jr->gsol); CHKERRQ(ierr);
 
 	INTERPOLATE_ACCESS(jr->lp, InterpCenterCorner, 1, 0, pShift)
 
