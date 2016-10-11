@@ -71,7 +71,10 @@ PetscErrorCode ConstEqCtxSetup(
 	// evaluate dependence on constant parameters (pressure, temperature)
 
 	PetscInt    ln, nl, pd;
-	PetscScalar Q, RT, ch, fr, p_viscosity;
+	PetscScalar Q, RT, ch, fr, p_viscosity, p_upper, p_lower;
+	PetscBool   flag = PETSC_FALSE,flag2 =PETSC_FALSE;
+
+	PetscErrorCode ierr;
 
 	PetscFunctionBegin;
 
@@ -83,9 +86,10 @@ PetscErrorCode ConstEqCtxSetup(
 	pd = 0; // pressure-dependence flag
 
 	p_viscosity = p;			// pressure used in viscosity evaluation
-	if (p_lithos>0.0){
-		p_viscosity=p_lithos;
-	}
+
+	ierr = PetscOptionsGetBool(PETSC_NULL, "-ViscoPLithos", &flag, PETSC_NULL); CHKERRQ(ierr);
+	ierr = PetscOptionsGetBool(PETSC_NULL, "-NoPressureLimit", &flag2, PETSC_NULL); CHKERRQ(ierr);
+	if(flag) p_viscosity=p_lithos;
 
 
 	// use reference strain-rate instead of zero
@@ -148,22 +152,43 @@ PetscErrorCode ConstEqCtxSetup(
 	fr = ApplyStrainSoft(mat->frSoft, APS, mat->fr);
 
 	// compute cohesion and friction coefficient
-	ch = cos(fr)*ch;
-	fr = sin(fr);
+	//ch = cos(fr)*ch;
+	//fr = sin(fr);
 
 	// fit to limits
-	if(ch < lim->minCh) ch = lim->minCh;
-	if(fr < lim->minFr) fr = lim->minFr;
+	if(ch*cos(fr) < lim->minCh) ch = lim->minCh;
+	if(sin(fr)    < lim->minFr) fr = lim->minFr;
 
 	// compute yield stress
 	if(p < 0.0) { ctx->taupl = ch;        pd = 0; } // Von-Mises model for extension
-	else        { ctx->taupl = ch + p*fr; pd = 1; } // Drucker-Prager model for compression
+	else  // Drucker-Prager model for compression
+	{
+		if(!flag2)
+		{
+			// yielding surface: (S1-S3)/2 = (S1+S3)/2*sin(phi) + C*cos(phi)
+			// pressure can be write as: P = (S1+S2+S3)/3 and P~=S2,then P=(S1+S3)/2
+			// so the yielding surface can be rewritten as:
+			// P-S3=P*sin(phi) + C*cos(phi)   --> compression
+			// S1-P=P*sin(phi) + C*cos(phi)   --> extension
+			// under pure shear compression, S3=P_Lithos and S1=P_Lithos when extension
+			// P = -( S3+C*cos(phi))/(sin(phi)-1)  --> compression
+			// P = -(-S1+C*cos(phi))/(sin(phi)+1)  --> extension
+
+			// Apply pressure limit
+			p_upper = -( p_lithos + ch * cos(fr))/(sin(fr) - 1.0); // compression
+			p_lower = -(-p_lithos + ch * cos(fr))/(sin(fr) + 1.0); // extension
+			if (p > p_upper) p = p_upper;
+			if (p < p_lower) p = p_lower;
+		}
+		ctx->taupl = p * sin(fr) + ch * cos(fr);
+		pd = 1;
+	}
 
 	// correct for ultimate yield stress
 	if(ctx->taupl > lim->tauUlt) { ctx->taupl = lim->tauUlt; pd = 0; }
 
 	// store friction coefficient for a pressure-dependent plasticity model
-	if(pd) ctx->fr = fr;
+	if(pd) ctx->fr = sin(fr);
 
 	// set iteration flag (linear + nonlinear, or more than one nonlinear)
 	if((nl && ln) || nl > 1) ctx->cfsol = PETSC_FALSE;
@@ -384,8 +409,7 @@ PetscErrorCode DevConstEq(
 	Material_t  *phases,    		// phase parameters
 	PetscScalar *phRat,     		// phase ratios
 	MatParLim   *lim,       		// phase parameters limits
-	PetscScalar  depth,     		// depth below free surface
-	PetscScalar	 grav[SPDIM], 		// g for computation of lithostatic profile
+	PetscScalar  p_lithos,          // lithostatic pressure
 	PetscScalar  dt,        		// time step
 	PetscScalar  p,         		// pressure
 	PetscScalar  T)         		// temperature
@@ -395,7 +419,7 @@ PetscErrorCode DevConstEq(
 	PetscInt     i;
 	ConstEqCtx   ctx;
 	Material_t  *mat;
-	PetscScalar  DII, APS, eta_total, eta_creep_phase, eta_viscoplastic_phase, DIIpl, dEta, fr, p_lithos;
+	PetscScalar  DII, APS, eta_total, eta_creep_phase, eta_viscoplastic_phase, DIIpl, dEta, fr;
 
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
@@ -414,10 +438,6 @@ PetscErrorCode DevConstEq(
 	svDev->fr   = 0.0;
 	dEta        = 0.0;
 	fr          = 0.0;
-
-	// compute lithostatic pressure, in case we employ that instead of the true P in order to evaluate
-	// pressure-dependent viscosities (better convergence in many cases).
-	p_lithos 	=	-lim->rho_lithos*grav[2]*depth;
 
 
 	// scan all phases

@@ -47,30 +47,31 @@
 #define __outFunct_h__
 //---------------------------------------------------------------------------
 
-PetscErrorCode PVOutWritePhase       (JacRes*, OutBuf*);
-PetscErrorCode PVOutWriteDensity     (JacRes*, OutBuf*);
-PetscErrorCode PVOutWriteViscTotal   (JacRes*, OutBuf*);
-PetscErrorCode PVOutWriteViscCreep   (JacRes*, OutBuf*);
-PetscErrorCode PVOutWriteViscoPlastic(JacRes*, OutBuf*);
-PetscErrorCode PVOutWriteVelocity    (JacRes*, OutBuf*);
-PetscErrorCode PVOutWritePressure    (JacRes*, OutBuf*);
-PetscErrorCode PVOutWriteOverPressure(JacRes*, OutBuf*);
-PetscErrorCode PVOutWriteTemperature (JacRes*, OutBuf*);
-PetscErrorCode PVOutWriteDevStress   (JacRes*, OutBuf*);
-PetscErrorCode PVOutWriteJ2DevStress (JacRes*, OutBuf*);
-PetscErrorCode PVOutWriteStrainRate  (JacRes*, OutBuf*);
-PetscErrorCode PVOutWriteJ2StrainRate(JacRes*, OutBuf*);
-PetscErrorCode PVOutWriteVolRate     (JacRes*, OutBuf*);
-PetscErrorCode PVOutWriteVorticity   (JacRes*, OutBuf*);
-PetscErrorCode PVOutWriteAngVelMag   (JacRes*, OutBuf*);
-PetscErrorCode PVOutWriteTotStrain   (JacRes*, OutBuf*);
-PetscErrorCode PVOutWritePlastStrain (JacRes*, OutBuf*);
-PetscErrorCode PVOutWritePlastDissip (JacRes*, OutBuf*);
-PetscErrorCode PVOutWriteTotDispl    (JacRes*, OutBuf*);
-PetscErrorCode PVOutWriteSHmax       (JacRes*, OutBuf*);
-PetscErrorCode PVOutWriteEHmax       (JacRes*, OutBuf*);
-PetscErrorCode PVOutWriteISA         (JacRes*, OutBuf*);
-PetscErrorCode PVOutWriteGOL         (JacRes*, OutBuf*);
+PetscErrorCode PVOutWritePhase         (JacRes*, OutBuf*);
+PetscErrorCode PVOutWriteDensity       (JacRes*, OutBuf*);
+PetscErrorCode PVOutWriteViscTotal     (JacRes*, OutBuf*);
+PetscErrorCode PVOutWriteViscCreep     (JacRes*, OutBuf*);
+PetscErrorCode PVOutWriteViscoPlastic  (JacRes*, OutBuf*);
+PetscErrorCode PVOutWriteVelocity      (JacRes*, OutBuf*);
+PetscErrorCode PVOutWritePressure      (JacRes*, OutBuf*);
+PetscErrorCode PVOutWriteOverPressure  (JacRes*, OutBuf*);
+PetscErrorCode PVOutWriteLithosPressure(JacRes*, OutBuf*);
+PetscErrorCode PVOutWriteTemperature   (JacRes*, OutBuf*);
+PetscErrorCode PVOutWriteDevStress     (JacRes*, OutBuf*);
+PetscErrorCode PVOutWriteJ2DevStress   (JacRes*, OutBuf*);
+PetscErrorCode PVOutWriteStrainRate    (JacRes*, OutBuf*);
+PetscErrorCode PVOutWriteJ2StrainRate  (JacRes*, OutBuf*);
+PetscErrorCode PVOutWriteVolRate       (JacRes*, OutBuf*);
+PetscErrorCode PVOutWriteVorticity     (JacRes*, OutBuf*);
+PetscErrorCode PVOutWriteAngVelMag     (JacRes*, OutBuf*);
+PetscErrorCode PVOutWriteTotStrain     (JacRes*, OutBuf*);
+PetscErrorCode PVOutWritePlastStrain   (JacRes*, OutBuf*);
+PetscErrorCode PVOutWritePlastDissip   (JacRes*, OutBuf*);
+PetscErrorCode PVOutWriteTotDispl      (JacRes*, OutBuf*);
+PetscErrorCode PVOutWriteSHmax         (JacRes*, OutBuf*);
+PetscErrorCode PVOutWriteEHmax         (JacRes*, OutBuf*);
+PetscErrorCode PVOutWriteISA           (JacRes*, OutBuf*);
+PetscErrorCode PVOutWriteGOL           (JacRes*, OutBuf*);
 // === debug vectors ===============================================
 PetscErrorCode PVOutWriteJacTest     (JacRes*, OutBuf*);
 PetscErrorCode PVOutWriteMomentRes   (JacRes*, OutBuf*);

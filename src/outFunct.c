@@ -280,6 +280,21 @@ PetscErrorCode PVOutWriteOverPressure(JacRes *jr, OutBuf *outbuf)
 }
 //---------------------------------------------------------------------------
 #undef __FUNCT__
+#define __FUNCT__ "PVOutWriteLithosPressure"
+PetscErrorCode PVOutWriteLithosPressure(JacRes *jr, OutBuf *outbuf)
+{
+	ACCESS_FUNCTION_HEADER
+
+	cf = scal->stress;
+
+	ierr = JacResGetLithoStaticPressure(jr); CHKERRQ(ierr);
+
+	INTERPOLATE_ACCESS(jr->lp_lithos, InterpCenterCorner, 1, 0, 0.0)
+
+	PetscFunctionReturn(0);
+}
+//---------------------------------------------------------------------------
+#undef __FUNCT__
 #define __FUNCT__ "PVOutWriteTemperature"
 PetscErrorCode PVOutWriteTemperature(JacRes *jr, OutBuf *outbuf)
 {

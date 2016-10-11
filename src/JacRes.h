@@ -144,6 +144,8 @@ typedef struct
 	//==========================
 	DM DA_CELL_2D; // 2D cell center grid
 
+	Vec lp_lithos; // lithostatic pressure
+
 } JacRes;
 //---------------------------------------------------------------------------
 
@@ -281,6 +283,9 @@ PetscErrorCode JacResGetTempMat(JacRes *jr);
 
 // compute overpressure field in the cell centers
 PetscErrorCode JacResGetOverPressure(JacRes *jr, Vec p);
+
+// compute lithostatic pressure in the cell centers
+PetscErrorCode JacResGetLithoStaticPressure(JacRes *jr);
 
 //---------------------------------------------------------------------------
 // MACROS

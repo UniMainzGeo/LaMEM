@@ -110,8 +110,7 @@ PetscErrorCode DevConstEq(
 	Material_t  *phases,    		// phase parameters
 	PetscScalar *phRat,     		// phase ratios
 	MatParLim   *lim,       		// phase parameters limits
-	PetscScalar  depth,     		// depth below the free surface (or top of model)
-	PetscScalar  grav[SPDIM], 		// global gravity components
+	PetscScalar  p_lithos,     		// lithostatic pressure
 	PetscScalar  dt,        		// time step
 	PetscScalar  p,        			// pressure
 	PetscScalar  T);        		// temperature
