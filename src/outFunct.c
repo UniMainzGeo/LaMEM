@@ -202,7 +202,7 @@ PetscErrorCode PVOutWriteViscCreep(JacRes *jr, OutBuf *outbuf)
 }
 //---------------------------------------------------------------------------
 #undef __FUNCT__
-#define __FUNCT__ "PVOutWriteViscoplastic"
+#define __FUNCT__ "PVOutWriteViscoPlastic"
 PetscErrorCode PVOutWriteViscoPlastic(JacRes *jr, OutBuf *outbuf)
 {
 	COPY_FUNCTION_HEADER
