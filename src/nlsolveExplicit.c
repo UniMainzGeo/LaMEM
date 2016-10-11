@@ -1883,6 +1883,48 @@ PetscErrorCode ShowValues(JacRes *jr, UserCtx *user, PetscInt n)
 //---------------------------------------------------------------------------
 // Apply source
 #undef __FUNCT__
+#define __FUNCT__ "GetCellCoordinatesSource"
+PetscErrorCode GetCellCoordinatesSource(JacRes *jr)
+{
+	PetscInt i, j, k, nx, ny, nz, sx, sy, sz;
+	PetscScalar iter;
+	PetscScalar    xs[3], xe[3];
+	FDSTAG     *fs;
+
+	fs = jr->fs;
+
+	if (jr->SeismicSource==PETSC_TRUE && (jr->SourceParams.source_type==POINT || jr->SourceParams.source_type==MOMENT) ) {
+		//-------------------------------
+		// central points
+		//-------------------------------
+		iter = 0;
+		GET_CELL_RANGE(nx, sx, fs->dsx)
+		GET_CELL_RANGE(ny, sy, fs->dsy)
+		GET_CELL_RANGE(nz, sz, fs->dsz)
+
+		START_STD_LOOP
+		{
+			// get cell coordinates
+			xs[0] = jr->fs->dsx.ncoor[i]; xe[0] = jr->fs->dsx.ncoor[i+1];
+			xs[1] = jr->fs->dsy.ncoor[j]; xe[1] = jr->fs->dsy.ncoor[j+1];
+			xs[2] = jr->fs->dsz.ncoor[k]; xe[2] = jr->fs->dsz.ncoor[k+1];
+
+			if (jr->SourceParams.x > xs[0] && jr->SourceParams.x <= xe[0] && jr->SourceParams.y > xs[1] && jr->SourceParams.y <= xe[1] && jr->SourceParams.z > xs[2] && jr->SourceParams.z <= xe[2])
+			{
+				jr->SourceParams.i=i;
+				jr->SourceParams.j=j;
+				jr->SourceParams.k=k;
+			}
+		}
+		END_STD_LOOP
+	}
+	PetscFunctionReturn(0);
+}
+
+//---------------------------------------------------------------------------
+//---------------------------------------------------------------------------
+// Apply source
+#undef __FUNCT__
 #define __FUNCT__ "GetStressFromSource"
 PetscErrorCode GetStressFromSource(JacRes *jr, UserCtx *user, PetscInt i, PetscInt j, PetscInt k, PetscScalar *sxx, PetscScalar *syy, PetscScalar *szz)
 {

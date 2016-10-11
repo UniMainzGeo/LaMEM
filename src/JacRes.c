@@ -1335,6 +1335,8 @@ PetscErrorCode JacResGetMomentumResidualAndPressure(JacRes *jr, UserCtx *user)
 	PetscScalar eta_creep;
 	PetscScalar depth;
 
+	PetscScalar h, Ih4, I4h4, source_time, M0, Mxx, Myy, Mzz, Mxy, Mxz, Myz;
+
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
 
@@ -1482,9 +1484,10 @@ PetscErrorCode JacResGetMomentumResidualAndPressure(JacRes *jr, UserCtx *user)
 
 		//PetscPrintf(PETSC_COMM_WORLD, "    sxx[%i,%i,%i]  = %12.12e \n", i,j,k, sxx);
 
-		// Add seismic source /////////////////////////
-		if (jr->SeismicSource == PETSC_TRUE)
+		// Add seismic source in the stress field /////////////////////////
+		if (jr->SeismicSource == PETSC_TRUE && jr->SourceParams.source_type!=MOMENT )
 		{
+			// trying to apply it like a force term ...
 			ierr = GetStressFromSource(jr,user, i, j, k, &sxx, &syy, &szz);
 		}
 		///////////////////////////////////////////////
@@ -1529,6 +1532,49 @@ PetscErrorCode JacResGetMomentumResidualAndPressure(JacRes *jr, UserCtx *user)
 		fz[k][j][i] -= (szz + vz[k][j][i]*tz)/bdz + gz/2.0;   fz[k+1][j][i] += (szz + vz[k+1][j][i]*tz)/fdz - gz/2.0;
 
 		//PetscPrintf(PETSC_COMM_WORLD, "    fx[%i,%i,%i]  = %12.12e \n", i,j,k, fx[k][j][i]);
+
+
+
+		// Add seismic moment source term in the residual ////////////////////////////////////////////////////////////////////////
+		// To check: consider the case of the source in the boundaries!!!
+
+		if ( jr->SeismicSource == PETSC_TRUE && jr->SourceParams.source_type==MOMENT && jr->SourceParams.i == i && jr->SourceParams.j == j && jr->SourceParams.k == k) {
+			h=1.0; //??????????
+			Ih4	=1.0/(h*h*h*h);
+			I4h4=Ih4/4.0;
+			time =  JacResGetTime(jr);
+			source_time = jr->SourceParams.amplitude*exp(-jr->SourceParams.alfa*((time-jr->SourceParams.t0)*(time-jr->SourceParams.t0)));
+
+			M0=jr->SourceParams.moment_tensor.M0;
+			Mxx=M0*jr->SourceParams.moment_tensor.Mxx*source_time;
+			Myy=M0*jr->SourceParams.moment_tensor.Myy*source_time;
+			Mzz=M0*jr->SourceParams.moment_tensor.Mzz*source_time;
+			Mxy=M0*jr->SourceParams.moment_tensor.Mxy*source_time;
+			Mxz=M0*jr->SourceParams.moment_tensor.Mxz*source_time;
+			Myz=M0*jr->SourceParams.moment_tensor.Myz*source_time;
+
+			fx[k][j][i+1] 	+= Ih4  * Mxx;		fx[k][j][i] 	-= Ih4  * Mxx;
+			fx[k][j+1][i+1] += I4h4 * Mxy;		fx[k][j-1][i+1] -= I4h4 * Mxy;
+			fx[k][j+1][i] 	+= I4h4 * Mxy;		fx[k][j-1][i] 	-= I4h4 * Mxy;
+			fx[k+1][j][i+1] += I4h4 * Mxz;		fx[k-1][j][i+1] -= I4h4 * Mxz;
+			fx[k+1][j][i] 	+= I4h4 * Mxz;		fx[k-1][j][i] 	-= I4h4 * Mxz;
+
+			fy[k][j+1][i] 	+= Ih4  * Myy;		fy[k][j][i] 	-= Ih4  * Myy;
+			fy[k][j+1][i+1] += I4h4 * Mxy;		fy[k][j+1][i-1] -= I4h4 * Mxy;
+			fy[k][j][i+1] 	+= I4h4 * Mxy;		fy[k][j][i-1] 	-= I4h4 * Mxy;
+			fy[k+1][j+1][i] += I4h4 * Myz;		fy[k-1][j+1][i] -= I4h4 * Myz;
+			fy[k+1][j][i] 	+= I4h4 * Myz;		fy[k-1][j][i] 	-= I4h4 * Myz;
+
+			fz[k+1][j][i] 	+= Ih4  * Mzz;		fz[k][j][i] 	-= Ih4  * Mzz;
+			fz[k+1][j][i+1] += I4h4 * Mxz;		fz[k+1][j][i-1] -= I4h4 * Mxz;
+			fz[k][j][i+1] 	+= I4h4 * Mxz;		fz[k][j][i-1] 	-= I4h4 * Mxz;
+			fz[k+1][j+1][i] += I4h4 * Myz;		fz[k+1][j-1][i] -= I4h4 * Myz;
+			fz[k][j+1][i] 	+= I4h4 * Myz;		fz[k][j-1][i] 	-= I4h4 * Myz;
+		}
+		///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+
+
 
 	}
 	END_STD_LOOP
@@ -1630,15 +1676,6 @@ PetscErrorCode JacResGetMomentumResidualAndPressure(JacRes *jr, UserCtx *user)
 
 		// compute stress, plastic strain rate and shear heating term on edge
 		ierr = GetStressEdge(svEdge, matLim, XY); CHKERRQ(ierr);
-
-		if (k==5 && j == 2 && i == 2)
-		{
-			// compute stress, plastic strain rate and shear heating term on edge
-			ierr = GetStressEdge(svEdge, matLim, XY); CHKERRQ(ierr);
-		}else{
-			// compute stress, plastic strain rate and shear heating term on edge
-			ierr = GetStressEdge(svEdge, matLim, XY); CHKERRQ(ierr);
-		}
 
 		// access xy component of the Cauchy stress
 		sxy = svEdge->s;

@@ -108,6 +108,13 @@ PetscErrorCode LaMEMLib(ModParam *IOparam)
 	PetscBool          stop = PETSC_FALSE;
 
 
+
+	char           *fname;
+	FILE *fseism;
+	PetscScalar axial_stress, axial_strain;
+
+
+
 	//=========================================================================
 
 	PetscBool InputParamFile;
@@ -303,9 +310,10 @@ PetscErrorCode LaMEMLib(ModParam *IOparam)
 	PetscPrintf(PETSC_COMM_WORLD," \n");
 
 
+	if (user.ExplicitSolver == PETSC_TRUE) {
+
 		// File to save seismic signals at a given point of the model - Now used to save traces - Now used to save axial stress / step
-		char           *fname;
-		FILE *fseism;
+
 		//asprintf(&fname, "strain_stress%1.3lld.%12.12e.txt",jr.fs->dsz.rank,user.dt);
 		asprintf(&fname, "strain_stress.txt");
 
@@ -314,8 +322,10 @@ PetscErrorCode LaMEMLib(ModParam *IOparam)
 		user.Station.output_file = fseism;
 		///////////////////////////
 
-	PetscScalar axial_stress, axial_strain;
 
+		// Get the coordinates of the force term source
+		GetCellCoordinatesSource(&jr);
+	}
 
 	//===============
 	// TIME STEP LOOP
