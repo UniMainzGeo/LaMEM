@@ -181,15 +181,27 @@ typedef enum
 {
 	POINT,
 	PLANE,
-	COMPRES
+	COMPRES,
+	MOMENT
 	// ... add more
 } SourceType;
 
+// Moment tensor source
+typedef struct
+{
+	PetscScalar M0;
+	PetscScalar Mxx;
+	PetscScalar Myy;
+	PetscScalar Mzz;
+	PetscScalar Mxy;
+	PetscScalar Mxz;
+	PetscScalar Myz;
+} MomentTensor;
 
 // Structure that holds source parameters
 typedef struct // Improve and put more options
 {
-	SourceType  source_type;
+	SourceType  source_type;	//point, plane, uniaxial_compression, moment_tensor
 	PetscScalar x;
 	PetscScalar y;
 	PetscScalar z;
@@ -202,6 +214,8 @@ typedef struct // Improve and put more options
 	PetscScalar amplitude;
 	PetscScalar alfa;
 	PetscScalar t0;
+	PetscScalar frequency;
+	MomentTensor moment_tensor;
 
 } SourceParam;
 
