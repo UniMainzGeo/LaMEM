@@ -519,6 +519,7 @@ PetscErrorCode InputReadFile(JacRes *jr, UserCtx *user, FILE *fp)
 			else if (!strcmp(source_type_name, "plane"))   user->SourceParams.source_type = PLANE;
 			else if (!strcmp(source_type_name, "uniaxial_compression"))   user->SourceParams.source_type = COMPRES;
 			else if (!strcmp(source_type_name, "moment_tensor"))   user->SourceParams.source_type = MOMENT;
+
 			else SETERRQ1(PETSC_COMM_SELF, PETSC_ERR_USER,"ERROR! Incorrect source type: %s", source_type_name);
 
 			// Source coordinates
@@ -557,6 +558,7 @@ PetscErrorCode InputReadFile(JacRes *jr, UserCtx *user, FILE *fp)
 			user->SourceParams.zrank = -1;*/
 
 			else if (!strcmp(source_type_name, "uniaxial_compression"))   user->SourceParams.source_type = COMPRES;
+
 			else SETERRQ1(PETSC_COMM_SELF, PETSC_ERR_USER,"ERROR! Incorrect source type: %s", source_type_name);
 
 			// Source coordinates
@@ -564,7 +566,7 @@ PetscErrorCode InputReadFile(JacRes *jr, UserCtx *user, FILE *fp)
 			parse_GetDouble( fp, "y_source", &user->SourceParams.y, &found );
 			parse_GetDouble( fp, "z_source", &user->SourceParams.z, &found );
 
-			if (&user->SourceParams.x < 0 || &user->SourceParams.x > &user->W || &user->SourceParams.y < 0 || &user->SourceParams.y > &user->L || &user->SourceParams.z < 0 || &user->SourceParams.z > &user->H)
+			if ( (&user->SourceParams.x < 0) || (&user->SourceParams.x > &user->W) || (&user->SourceParams.y < 0) || (&user->SourceParams.y > &user->L) || (&user->SourceParams.z < 0) || (&user->SourceParams.z > &user->H))
 			{
 				//SETERRQ(PETSC_COMM_SELF, PETSC_ERR_USER, "Incorrect source coordinates\n");
 			}
@@ -573,6 +575,18 @@ PetscErrorCode InputReadFile(JacRes *jr, UserCtx *user, FILE *fp)
 			parse_GetDouble( fp, "amplitude", &user->SourceParams.amplitude, &found );
 			parse_GetDouble( fp, "alfa", &user->SourceParams.alfa, &found );
 			parse_GetDouble( fp, "t0", &user->SourceParams.t0, &found );
+			parse_GetDouble( fp, "frequency", &user->SourceParams.frequency, &found );
+
+			// Moment tensor source
+			if (user->SourceParams.source_type == MOMENT) {
+				parse_GetDouble( fp, "M0", &user->SourceParams.moment_tensor.M0, &found );
+				parse_GetDouble( fp, "Mxx", &user->SourceParams.moment_tensor.Mxx, &found );
+				parse_GetDouble( fp, "Myy", &user->SourceParams.moment_tensor.Myy, &found );
+				parse_GetDouble( fp, "Mzz", &user->SourceParams.moment_tensor.Mzz, &found );
+				parse_GetDouble( fp, "Mxy", &user->SourceParams.moment_tensor.Mxy, &found );
+				parse_GetDouble( fp, "Mxz", &user->SourceParams.moment_tensor.Mxz, &found );
+				parse_GetDouble( fp, "Myz", &user->SourceParams.moment_tensor.Myz, &found );
+			}
 
 			/*// Initialize other fields
 			user->SourceParams.i = -1;

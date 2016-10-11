@@ -158,21 +158,36 @@ density_factor = 1
 #AB.NzL	= 20	# Number of absorbing boundary bands in the left  part of the z axis (must be 0 or bigger than 20 and enough smaller than nel_z ) 
 #AB.NzR	= 0		# Number of absorbing boundary bands in the right part of the z axis (must be 0 or bigger than 20 and enough smaller than nel_z ) 
 
-# Seismic source ------------------------------------------------------------------------------------
+
+# Define seismic source properties  ----------------------------------------------------------------------
+
+# Seismic source: 0 or 1
 seismic_source 		=	1
 
-# Define seismic source properties  (to improve)
-source_type 		= 	point		#point, plane, uniaxial_compression
+# Type:	point, plane, uniaxial_compression or moment_tensor
+source_type 		= 	moment_tensor		
 
-# Coordinates of the point source
+# Position
 x_source = 4000
 y_source = 8000
 z_source = 4000
 
-# Parameters for the source function
-amplitude = 100 #80e6
-alfa = 40
-t0 = 1
+# Focal mechanism for the moment tensor source
+M0					=	1.0			
+Mxx					=	1.0
+Myy					=	1.0
+Mzz					=	1.0
+Mxy					=	0.0
+Mxz					=	0.0
+Myz					=	0.0
+
+# Source time function
+amplitude 	= 100 #80e6
+alfa 		= 40
+t0 			= 1
+#frequency	= 2.0
+
+
 
 # Seismic receivers   (to improve) -------------------------------------------------------------------
 

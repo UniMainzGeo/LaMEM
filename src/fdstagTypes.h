@@ -202,8 +202,8 @@ typedef struct
 typedef struct // Improve and put more options
 {
 
-	SourceType  source_type;	//point, plane, uniaxial_compression, moment_tensor
 
+	SourceType  source_type;	//point, plane, uniaxial_compression, moment_tensor
 	PetscScalar x;
 	PetscScalar y;
 	PetscScalar z;

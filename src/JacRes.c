@@ -1538,6 +1538,7 @@ PetscErrorCode JacResGetMomentumResidualAndPressure(JacRes *jr, UserCtx *user)
 		//PetscPrintf(PETSC_COMM_WORLD, "    fx[%i,%i,%i]  = %12.12e \n", i,j,k, fx[k][j][i]);
 
 
+
 		// Add seismic moment source term in the residual ////////////////////////////////////////////////////////////////////////
 		// To check: consider the case of the source in the boundaries!!!
 
@@ -1575,6 +1576,7 @@ PetscErrorCode JacResGetMomentumResidualAndPressure(JacRes *jr, UserCtx *user)
 			fz[k][j+1][i] 	+= I4h4 * Myz;		fz[k][j-1][i] 	-= I4h4 * Myz;
 		}
 		///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
 
 	}
 	END_STD_LOOP
@@ -1676,15 +1678,6 @@ PetscErrorCode JacResGetMomentumResidualAndPressure(JacRes *jr, UserCtx *user)
 
 		// compute stress, plastic strain rate and shear heating term on edge
 		ierr = GetStressEdge(svEdge, matLim, XY); CHKERRQ(ierr);
-
-		if (k==5 && j == 2 && i == 2)
-		{
-			// compute stress, plastic strain rate and shear heating term on edge
-			ierr = GetStressEdge(svEdge, matLim, XY); CHKERRQ(ierr);
-		}else{
-			// compute stress, plastic strain rate and shear heating term on edge
-			ierr = GetStressEdge(svEdge, matLim, XY); CHKERRQ(ierr);
-		}
 
 		// access xy component of the Cauchy stress
 		sxy = svEdge->s;
