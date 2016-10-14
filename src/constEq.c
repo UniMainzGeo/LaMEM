@@ -87,9 +87,9 @@ PetscErrorCode ConstEqCtxSetup(
 
 	p_viscosity = p;			// pressure used in viscosity evaluation
 
-	ierr = PetscOptionsGetBool(PETSC_NULL, "-ViscoPLithos", &flag, PETSC_NULL); CHKERRQ(ierr);
+	ierr = PetscOptionsGetBool(PETSC_NULL, "-ViscoPLithosOff", &flag, PETSC_NULL); CHKERRQ(ierr);
 	ierr = PetscOptionsGetBool(PETSC_NULL, "-NoPressureLimit", &flag2, PETSC_NULL); CHKERRQ(ierr);
-	if(flag) p_viscosity=p_lithos;
+	if(!flag) p_viscosity=p_lithos;
 
 
 	// use reference strain-rate instead of zero
@@ -163,7 +163,7 @@ PetscErrorCode ConstEqCtxSetup(
 	if(p < 0.0) { ctx->taupl = ch;        pd = 0; } // Von-Mises model for extension
 	else  // Drucker-Prager model for compression
 	{
-		if(!flag2)
+		if(!flag2 && lim->presLimFlg == PETSC_TRUE)
 		{
 			// yielding surface: (S1-S3)/2 = (S1+S3)/2*sin(phi) + C*cos(phi)
 			// pressure can be write as: P = (S1+S2+S3)/3 and P~=S2,then P=(S1+S3)/2

@@ -391,6 +391,9 @@ PetscErrorCode InputSetDefaultValues(JacRes *jr, UserCtx *user)
 	// scaling
 	jr->scal.utype = _NONE_;
 
+	// set pressure limit for plasticity
+	jr->matLim.presLimAct  = PETSC_TRUE;
+
 	// time-stepping
 	user->time_end         = 1.0;
 	user->save_timesteps   = 1;

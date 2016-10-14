@@ -240,6 +240,8 @@ typedef struct
 	// rheology controls
 	PetscBool   quasiHarmAvg; // plasticity quasi-harmonic averaging flag
 	PetscBool   initGuessFlg; // initial guess computation flag
+	PetscBool   presLimFlg;   // pressure limit flag for plasticity
+	PetscBool   presLimAct;   // activate pressure limit flag
 	// fluid density for depth-dependent density model
 	PetscScalar  rho_fluid;
 	// rock density if we want to use lithostatic pressure in viscosit calculations
