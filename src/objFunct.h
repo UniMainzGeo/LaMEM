@@ -83,11 +83,11 @@ typedef struct
 } ObjFunct;
 //---------------------------------------------------------------------------
 
+// create objective function object
+PetscErrorCode ObjFunctCreate(ObjFunct *objf, ModParam *IOparam, FreeSurf *surf);
+
 // destroy object
 PetscErrorCode ObjFunctDestroy(ObjFunct *objf);
-
-// create objective function object
-PetscErrorCode ObjFunctCreate(ObjFunct *objf, FreeSurf *surf);
 
 // read command line options
 PetscErrorCode ObjFunctReadFromOptions(ObjFunct *objf, const char *on[]);

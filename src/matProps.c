@@ -375,9 +375,10 @@ PetscErrorCode MatPropSetFromLibCall(JacRes *jr, ModParam *mod)
 	PetscScalar eta, eta0, e0;
 	Material_t  *m;
 
-
 	PetscFunctionBegin;
 	
+	if(mod == NULL) PetscFunctionReturn(0);
+
 	// does a calling function provide model parameters?
 	if(mod->use == 0) PetscFunctionReturn(0);
 
