@@ -1535,7 +1535,9 @@ PetscErrorCode JacResGetMomentumResidualAndPressure(JacRes *jr, UserCtx *user)
 		fy[k][j][i] -= (syy + vy[k][j][i]*ty)/bdy + gy/2.0;   fy[k][j+1][i] += (syy + vy[k][j+1][i]*ty)/fdy - gy/2.0;
 		fz[k][j][i] -= (szz + vz[k][j][i]*tz)/bdz + gz/2.0;   fz[k+1][j][i] += (szz + vz[k+1][j][i]*tz)/fdz - gz/2.0;
 
+		//PetscPrintf(PETSC_COMM_WORLD, "  Source coordinates (%12.12e,%12.12e,%12.12e)  \n", jr->SourceParams.x,jr->SourceParams.y,jr->SourceParams.z);
 		//PetscPrintf(PETSC_COMM_WORLD, "    fx[%i,%i,%i]  = %12.12e \n", i,j,k, fx[k][j][i]);
+
 
 
 
@@ -1543,6 +1545,7 @@ PetscErrorCode JacResGetMomentumResidualAndPressure(JacRes *jr, UserCtx *user)
 		// To check: consider the case of the source in the boundaries!!!
 
 		if ( jr->SeismicSource == PETSC_TRUE && jr->SourceParams.source_type==MOMENT && jr->SourceParams.i == i && jr->SourceParams.j == j && jr->SourceParams.k == k) {
+			PetscPrintf(PETSC_COMM_WORLD, "  --Source applied at cell (%i,%i,%i)  \n", i,j,k);
 			h=1.0; //??????????
 			Ih4	=1.0/(h*h*h*h);
 			I4h4=Ih4/4.0;

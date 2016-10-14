@@ -147,16 +147,17 @@ DII_ref 						=	1
 
 # Scaling computational density (will be material_density*density_factor) ---------------------------
 density_factor = 1
+strain_stress_file_name	   = strain_stress
 
 # Absorbing boundaries ------------------------------------------------------------------------------
-#abs_boundaries	=	0 # Default value is 1
+abs_boundaries	=	1 # Default value is 1
 
 #AB.NxL	= 0		# Number of absorbing boundary bands in the left  part of the x axis (must be 0 or bigger than 20 and enough smaller than nel_x ) 
 #AB.NxR  = 0		# Number of absorbing boundary bands in the right part of the x axis (must be 0 or bigger than 20 and enough smaller than nel_x ) 
 #AB.NyL	= 20	# Number of absorbing boundary bands in the left  part of the y axis (must be 0 or bigger than 20 and enough smaller than nel_y ) 
 #AB.NyR  = 20	# Number of absorbing boundary bands in the right part of the y axis (must be 0 or bigger than 20 and enough smaller than nel_y ) 
 #AB.NzL	= 20	# Number of absorbing boundary bands in the left  part of the z axis (must be 0 or bigger than 20 and enough smaller than nel_z ) 
-#AB.NzR	= 0		# Number of absorbing boundary bands in the right part of the z axis (must be 0 or bigger than 20 and enough smaller than nel_z ) 
+AB.NzR	= 0		# Number of absorbing boundary bands in the right part of the z axis (must be 0 or bigger than 20 and enough smaller than nel_z ) 
 
 
 # Define seismic source properties  ----------------------------------------------------------------------
@@ -188,10 +189,13 @@ t0 			= 1
 #frequency	= 2.0
 
 
+# Define seismic station properties  ----------------------------------------------------------------------
 
-# Seismic receivers   (to improve) -------------------------------------------------------------------
+# Seismic station: 0 or 1
+seismic_station = 1
 
-# Seismic station coordinates (meters)
-#x_rec = 7000
-#y_rec = 2000
-#z_rec = 6300
+# Position
+x_rec = 4000
+y_rec = 8000
+z_rec = 8000
+output_file_name = seismogram

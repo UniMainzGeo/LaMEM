@@ -108,7 +108,10 @@ PetscErrorCode LaMEMLib(ModParam *IOparam)
 	PetscBool          stop = PETSC_FALSE;
 
 	char           *fname;
+
 	FILE *fseism;
+	PetscMPIInt inproc;
+	PetscInt nproc, p;
 	PetscScalar axial_stress, axial_strain;
 
 
@@ -307,7 +310,6 @@ PetscErrorCode LaMEMLib(ModParam *IOparam)
 	//===================
 	// OBJECTIVE FUNCTION
 	//===================
-
 	// create objective function object
 	ierr = ObjFunctCreate(&objf, &surf); CHKERRQ(ierr);
 
@@ -319,18 +321,47 @@ PetscErrorCode LaMEMLib(ModParam *IOparam)
 
 	if (user.ExplicitSolver == PETSC_TRUE) {
 
-		// File to save seismic signals at a given point of the model - Now used to save traces - Now used to save axial stress / step
+		MPI_Comm_size(PETSC_COMM_WORLD, &inproc); nproc = (PetscInt)inproc;
 
+		// Get the coordinates corresponding to the force term source and to the seismic station
+		GetCellCoordinatesSourceAndSeismicStation(&jr);
+		PetscPrintf(PETSC_COMM_WORLD, "  Source applied at cell (%i,%i,%i)  \n", jr.SourceParams.i,jr.SourceParams.j,jr.SourceParams.k);
+
+		// Files to save seismic signals at a given point of the model
+		if (user.SeismicStation == PETSC_TRUE) {
+			//for(p=0; p<nproc; p++)
+			//{
+				//asprintf(&fname, "seismogram.%1.3lld",(LLD)p);
+				//user.StationParams.output_file[p] = fopen(fname, "w" );
+				//user.StationParams.output_file = fopen(user.StationParams.output_file_name, "w" );
+				//if(user.StationParams.output_file[p] == NULL) SETERRQ1(PETSC_COMM_SELF, 1,"cannot open file %s", fname);
+			//}
+			jr.StationParams.output_file[0] = fopen("vel_seismogram_x", "w" );
+			jr.StationParams.output_file[1] = fopen("vel_seismogram_y", "w" );
+			jr.StationParams.output_file[2] = fopen("vel_seismogram_z", "w" );
+			if(jr.StationParams.output_file[0] == NULL ||
+					jr.StationParams.output_file[1] == NULL ||
+						jr.StationParams.output_file[2] == NULL) {
+				SETERRQ1(PETSC_COMM_SELF, 1,"cannot open file %s", "vel_seismogram_x");
+			}
+		}
+
+		// File to save axial stress / step
 		//asprintf(&fname, "strain_stress%1.3lld.%12.12e.txt",jr.fs->dsz.rank,user.dt);
+
 		asprintf(&fname, "strain_stress.txt");
 
 		fseism = fopen(fname, "w" );
 		if(fseism == NULL) SETERRQ1(PETSC_COMM_SELF, 1,"cannot open file %s", fname);
-		user.Station.output_file = fseism;
+		//user.Station.output_file = fseism;
 		///////////////////////////
 
 		// Get the coordinates of the force term source
-		GetCellCoordinatesSource(&jr);
+		//GetCellCoordinatesSource(&jr);
+
+		jr.stress_file = fopen("stress_file", "w" );
+		if (jr.stress_file == NULL) SETERRQ1(PETSC_COMM_SELF, 1,"cannot open file %s", "stress_file");
+
 	}
 
 	//===============
@@ -467,62 +498,27 @@ PetscErrorCode LaMEMLib(ModParam *IOparam)
 			// copy solution from global to local vectors, enforce boundary constraints
 			ierr = JacResCopySol(&jr, jr.gsol, _APPLY_SPC_); CHKERRQ(ierr);
 
-//ierr = ShowValues(&jr,&user,1); CHKERRQ(ierr);
-
 			// copy solution from global to local vectors, enforce boundary constraints
 			ierr = JacResCopySol(&jr, jr.gsol, _APPLY_SPC_); CHKERRQ(ierr);
-
-
-//ierr = ShowValues(&jr,&user,2); CHKERRQ(ierr);
-
-			// Put seismic source
-			//ierr = PutSeismicSource(&jr, &actx, &user); 	CHKERRQ(ierr);
-			//ierr =  SolveEquationsWave(&jr);
-			//ierr = VecView(jr.gsol,PETSC_VIEWER_STDOUT_WORLD); CHKERRQ(ierr);
-			//ierr = GetPressure2(&jr); 	CHKERRQ(ierr);
 
 			// evaluate momentum residual and pressure
 			ierr = FormMomentumResidualPressureAndVelocities(&jr,&user); CHKERRQ(ierr);
 
-//if (JacResGetStep(&jr) == 1.0)//to remove
-//{
-//ierr = ShowValues(&jr,&user,3); CHKERRQ(ierr);
-//}
-
-			//ierr = GetVelocities(&jr);	CHKERRQ(ierr);
-
-			//ierr = GetPressure(&jr); 	CHKERRQ(ierr);
-
-//ierr = ShowValues(&jr,4); CHKERRQ(ierr);
-
 			// update history fields (and get averaged axial stress)
-			ierr = UpdateHistoryFieldsAndGetAxialStressStrain(&jr, &axial_stress, &axial_strain); 	CHKERRQ(ierr);
-			PetscScalar step=JacResGetStep(&jr);
+			//ierr = UpdateHistoryFieldsAndGetAxialStressStrain(&jr, &axial_stress, &axial_strain); 	CHKERRQ(ierr);
+			ierr = UpdateHistoryFieldsAndGetAxialStressStrain(&jr, &axial_stress); 	CHKERRQ(ierr);
+
+			// Save axial stress file
+			//PetscScalar step=JacResGetStep(&jr);
 			//fprintf(fseism, "%12.12e %12.12e\n", step, axial_stress);
-			fprintf(fseism, "%12.12e %12.12e\n", jr.ts.time, axial_stress);
+			//fprintf(user.stress_file[jr.fs->dsz.rank], "%12.12e %12.12e\n", jr.ts.time, axial_stress);
+			fprintf(jr.stress_file, "%12.12e %12.12e\n", jr.ts.time, axial_stress);
+
 
 			//ierr = SaveVelocitiesForSeismicStation(&jr, &user); CHKERRQ(ierr);
 
 			// copy global vector to solution vectors
 			ierr = JacResCopySolution(&jr, jr.gsol); CHKERRQ(ierr);
-
-
-/*if (JacResGetStep(&jr) == 4.0)//to remove all
-{
-	PetscScalar *x;
-	PetscInt *list;
-	ierr = VecGetArray(jr.gsol,&x); CHKERRQ(ierr);
-	list  = jr.bc->pSPCList;
-	//for(PetscInt q = jr.bc->vNumSPC; q < jr.bc->vNumSPC + jr.bc->pNumSPC; q++) PetscPrintf(PETSC_COMM_WORLD, "    %12.12e \n", x[list[q]]);
-	for(PetscInt q = 3*jr.bc->vNumSPC+80; q < 3*jr.bc->vNumSPC+80 + 300; q++) PetscPrintf(PETSC_COMM_WORLD, "    %12.12e \n", x[q]);
-	//for(PetscInt q = 0; q < jr.bc->vNumSPC; q++) PetscPrintf(PETSC_COMM_WORLD, "    %12.12e \n", x[q]);
-	//for (int q =0; q< 200; q++) PetscPrintf(PETSC_COMM_WORLD, "    %12.12e \n", x[q]);
-	//ierr = ShowValues(&jr,&user, 6); CHKERRQ(ierr);
-}*/
-
-
-
-//ierr = ShowValues(&jr,&user, 6); CHKERRQ(ierr);
 
 			// switch off initial guess flag
 			if(!JacResGetStep(&jr))
@@ -645,7 +641,6 @@ PetscErrorCode LaMEMLib(ModParam *IOparam)
 		// check marker phases
 		ierr = ADVCheckMarkPhases(&actx, jr.numPhases); CHKERRQ(ierr);
 
-//ierr = ShowValues(&jr,&user,9); CHKERRQ(ierr);
 
 	} while(done != PETSC_TRUE);
 
@@ -659,12 +654,25 @@ PetscErrorCode LaMEMLib(ModParam *IOparam)
 	//Close seismogram file
 	fclose(fseism);
 
-	/*// For wave propagation, close seismogram file
-	//fclose(fseism);
->>>>>>> Wave propagation. To review the case in parallel.
-	free(fname);
-	fclose(fseism);*/
 
+	// For wave propagation, close files
+	if (user.ExplicitSolver == PETSC_TRUE) {
+		//for(p=0; p<nproc; p++)
+		//{
+			// Close file to save seismic signals at a given point of the model
+			if (user.SeismicStation == PETSC_TRUE) {
+				fclose(jr.StationParams.output_file[0]);
+				fclose(jr.StationParams.output_file[1]);
+				fclose(jr.StationParams.output_file[2]);
+			}
+
+
+			// Close file to save axial stress / step
+			//fclose(user.stress_file[p]);
+			fclose(jr.stress_file);
+		//}
+		//free(fname); ??
+	}
 
 
 

@@ -40,13 +40,14 @@ PetscErrorCode GetVelocities(JacRes *jr, UserCtx *user)
 	PetscScalar dt, rho_side;
 	PetscScalar ***fx,  ***fy,  ***fz, ***vx,  ***vy,  ***vz, ***rho;
 
-//	PetscScalar t2, max_vel;
-
 	// Scaling computational density factor
 	PetscScalar DensityFactor = user->DensityFactor;
 
 	// To damp velocity in the absorbing boundaries
-	PetscScalar damping; //, damping_x,damping_y,damping_z;
+	PetscScalar damping;
+
+	// To save velocity in a given point (seismic station)
+	PetscScalar t;
 
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
@@ -54,7 +55,8 @@ PetscErrorCode GetVelocities(JacRes *jr, UserCtx *user)
 	fs = jr->fs;
 
 	// access residual context variables
-	dt        =  jr->ts.dt;     // time step
+	dt    =  jr->ts.dt;     // time step
+	t	  =  JacResGetTime(jr);
 
 	// access work vectors
 	ierr = DMDAVecGetArray(fs->DA_CEN, jr->ldzz, &rho); CHKERRQ(ierr);	// strain-rate component (used as buffer vectors)
@@ -107,8 +109,16 @@ PetscErrorCode GetVelocities(JacRes *jr, UserCtx *user)
 		damping = GetBoundaryDamping(user,i,j,k); // To damp velocity if we are in an absorbing boundary
 
 		//PetscPrintf(PETSC_COMM_WORLD, "    damping[%i,%i,%i] = %12.12e \n", i,j,k, damping);
+
 		vx[k][j][i] = (vx[k][j][i]-fx[k][j][i]*dt/rho_side)*damping;
 
+		if (jr->SeismicStation == PETSC_TRUE) { // To save velocity in a given point
+			if (jr->StationParams.i==i && jr->StationParams.j==j && jr->StationParams.k==k) {
+				//fprintf(jr->StationParams.output_file[0], "%12.12e %12.12e\n", t, (vx[k][j][i]+vx[k][j][i-1])/2.0);
+				fprintf(jr->StationParams.output_file[0], "%12.12e %12.12e\n", t, vx[k][j][i]);
+			}
+		}
+		//PetscPrintf(PETSC_COMM_WORLD, "    damping[%i,%i,%i] = %12.12e \n", i,j,k, damping);
 		//PetscPrintf(PETSC_COMM_WORLD, "    vx[%i,%i,%i]  %12.12e \n", i,j,k,vx[k][j][i]);
 
 	}
@@ -127,6 +137,13 @@ PetscErrorCode GetVelocities(JacRes *jr, UserCtx *user)
 		damping = GetBoundaryDamping(user,i,j,k); // To damp velocity if we are in an absorbing boundary
 		vy[k][j][i] = (vy[k][j][i]-fy[k][j][i]*dt/rho_side)*damping;
 
+
+		if (jr->SeismicStation == PETSC_TRUE) { // To save velocity in a given point
+			if (jr->StationParams.i==i && jr->StationParams.j==j && jr->StationParams.k==k) {
+				//fprintf(jr->StationParams.output_file[1], "%12.12e %12.12e\n", t, (vy[k][j][i]+vy[k][j-1][i])/2.0);
+				fprintf(jr->StationParams.output_file[1], "%12.12e %12.12e\n", t, vy[k][j][i]);
+			}
+		}
 	}
 	END_STD_LOOP
 
@@ -143,11 +160,15 @@ PetscErrorCode GetVelocities(JacRes *jr, UserCtx *user)
 		damping = GetBoundaryDamping(user,i,j,k); // To damp velocity if we are in an absorbing boundary
 		vz[k][j][i] = (vz[k][j][i]-fz[k][j][i]*dt/rho_side)*damping;
 
+
+		if (jr->SeismicStation == PETSC_TRUE) { // To save velocity in a given point
+			if (jr->StationParams.i==i && jr->StationParams.j==j && jr->StationParams.k==k) {
+				//fprintf(jr->StationParams.output_file[2], "%12.12e %12.12e\n", t, (vz[k][j][i]+vy[k-1][j][i])/2.0);
+				fprintf(jr->StationParams.output_file[2], "%12.12e %12.12e\n", t, vz[k][j][i]);
+			}
+		}
 	}
 	END_STD_LOOP
-
-
-//PetscPrintf(PETSC_COMM_WORLD, "    max_vel = %12.12e \n", max_vel);////////////////////////////////////////////////////////////////////////////////////////
 
 	// restore vectors
 	ierr = DMDAVecRestoreArray(fs->DA_CEN, jr->ldzz, &rho); CHKERRQ(ierr);
@@ -202,7 +223,7 @@ PetscErrorCode FormMomentumResidualPressureAndVelocities(JacRes *jr, UserCtx *us
 //---------------------------------------------------------------------------
 #undef __FUNCT__
 #define __FUNCT__ "UpdateHistoryFieldsAndGetAxialStressStrain"
-PetscErrorCode UpdateHistoryFieldsAndGetAxialStressStrain(JacRes *jr, PetscScalar *axial_stress, PetscScalar *axial_strain)
+PetscErrorCode UpdateHistoryFieldsAndGetAxialStressStrain(JacRes *jr, PetscScalar *axial_stress) //, PetscScalar *axial_strain)
 {
 	// Update svCell->hxx, yy, zz and svBulk->pn
 
@@ -222,17 +243,12 @@ PetscErrorCode UpdateHistoryFieldsAndGetAxialStressStrain(JacRes *jr, PetscScala
 	// access work vectors
 	ierr = DMDAVecGetArray(fs->DA_CEN, jr->lp,   &p);   CHKERRQ(ierr);
 
-	PetscScalar stress_xx, stress_yy, stress_zz;
-	PetscScalar strain_xx, strain_yy, strain_zz;
-	PetscScalar count;
+	PetscScalar stress_xx, stress_yy, stress_zz, count;
+	PetscScalar sum_stress_xx, sum_stress_yy, sum_stress_zz, sum_count;
+	//PetscScalar strain_xx, strain_yy, strain_zz;
 
-	stress_xx = 0;
-	stress_yy = 0;
-	stress_zz = 0;
-	strain_xx = 0;
-	strain_yy = 0;
-	strain_zz = 0;
-	count = 0;
+	stress_xx = 0.0; stress_yy = 0.0; stress_zz = 0.0; count = 0.0;
+	//strain_xx = 0.0; strain_yy = 0.0; strain_zz = 0.0;
 
 	//-------------------------------
 	// central points
@@ -255,17 +271,20 @@ PetscErrorCode UpdateHistoryFieldsAndGetAxialStressStrain(JacRes *jr, PetscScala
 		svBulk->pn = p[k][j][i];
 
 		// Calculate axial stress
-		stress_xx = stress_xx + svCell->sxx - p[k][j][i];
-		stress_yy = stress_yy + svCell->syy - p[k][j][i];
-		stress_zz = stress_zz + svCell->szz - p[k][j][i];
+		stress_xx += svCell->sxx - p[k][j][i];
+		stress_yy += svCell->syy - p[k][j][i];
+		stress_zz += svCell->szz - p[k][j][i];
+		count += 1.0;
 
-		strain_xx = strain_xx + svCell->dxx;
-		strain_yy = strain_yy + svCell->dyy;
-		strain_zz = strain_zz + svCell->dzz;
-		count = count + 1;
+		//strain_xx += svCell->dxx;
+		//strain_yy += svCell->dyy;
+		//strain_zz += svCell->dzz;
+		//count = count + 1;
 
 	}
 	END_STD_LOOP
+
+	//count = nx*ny*nz;
 
 	//-------------------------------
 	// xy edge points
@@ -315,22 +334,33 @@ PetscErrorCode UpdateHistoryFieldsAndGetAxialStressStrain(JacRes *jr, PetscScala
 	}
 	END_STD_LOOP
 
-	stress_xx = stress_xx/count;
-	stress_yy = stress_yy/count;
-	stress_zz = stress_zz/count;
+	// COMPLETE COMMUNICATION HERE! MPI_Reduce
+	// synchronize
+	if(ISParallel(PETSC_COMM_WORLD))
+	{
+		ierr = MPI_Allreduce(&stress_xx, &sum_stress_xx, 1, MPIU_SCALAR, MPI_SUM, PETSC_COMM_WORLD); CHKERRQ(ierr);
+		ierr = MPI_Allreduce(&stress_yy, &sum_stress_yy, 1, MPIU_SCALAR, MPI_SUM, PETSC_COMM_WORLD); CHKERRQ(ierr);
+		ierr = MPI_Allreduce(&stress_zz, &sum_stress_zz, 1, MPIU_SCALAR, MPI_SUM, PETSC_COMM_WORLD); CHKERRQ(ierr);
+		ierr = MPI_Allreduce(&count, &sum_count, 1, MPIU_SCALAR, MPI_SUM, PETSC_COMM_WORLD); CHKERRQ(ierr);
+	}
+	else
+	{
+		sum_stress_xx = stress_xx;
+		sum_stress_yy = stress_yy;
+		sum_stress_zz = stress_zz;
+		sum_count = count;
+	}
 
-	strain_xx = strain_xx/count;
-	strain_yy = strain_yy/count;
-	strain_zz = strain_zz/count;
+	sum_stress_xx = sum_stress_xx/count;
+	sum_stress_yy = sum_stress_yy/count;
+	sum_stress_zz = sum_stress_zz/count;
 
-	// COMPLETE COMMUNICATION HERE!
+	//strain_xx = strain_xx/count;
+	//strain_yy = strain_yy/count;
+	//strain_zz = strain_zz/count;
 
-	//MPI_Reduce
-
-	*axial_stress = sqrt(stress_xx*stress_xx + stress_yy*stress_yy + stress_zz*stress_zz);
-	*axial_strain = sqrt(strain_xx*strain_xx + strain_yy*strain_yy + strain_zz*strain_zz);
-
-
+	*axial_stress = sqrt(sum_stress_xx*sum_stress_xx + sum_stress_yy*sum_stress_yy + sum_stress_zz*sum_stress_zz);
+	//*axial_strain = sqrt(strain_xx*strain_xx + strain_yy*strain_yy + strain_zz*strain_zz);
 
 	// restore vectors
 	ierr = DMDAVecRestoreArray(fs->DA_CEN, jr->lp,   &p);   CHKERRQ(ierr);
@@ -1303,15 +1333,13 @@ PetscErrorCode SaveVelocitiesForSeismicStation(JacRes *jr, UserCtx *user)
 	t	  =  JacResGetTime(jr);
 
 	// file for seismic signals
-	fseism = user->Station.output_file;
+	fseism = user->StationParams.output_file;
 
 
 	// access work vectors
 	ierr = DMDAVecGetArray(fs->DA_X,   jr->gvx,  &vx);  CHKERRQ(ierr);
 	ierr = DMDAVecGetArray(fs->DA_Y,   jr->gvy,  &vy);  CHKERRQ(ierr);
 	ierr = DMDAVecGetArray(fs->DA_Z,   jr->gvz,  &vz);  CHKERRQ(ierr);
-
-
 
 	//-------------------------------
 	// side points
@@ -1563,6 +1591,62 @@ PetscErrorCode ShowValues(JacRes *jr, UserCtx *user, PetscInt n)
 
 	PetscFunctionReturn(0);
 }
+//---------------------------------------------------------------------------
+//---------------------------------------------------------------------------
+// Apply source
+#undef __FUNCT__
+#define __FUNCT__ "GetCellCoordinatesSource"
+PetscErrorCode GetCellCoordinatesSourceAndSeismicStation(JacRes *jr)
+{
+	PetscInt i, j, k, nx, ny, nz, sx, sy, sz;
+	PetscScalar    xs[3], xe[3];
+	FDSTAG     *fs;
+
+	PetscErrorCode ierr;
+	PetscFunctionBegin;
+
+	fs = jr->fs;
+
+	if ((jr->SeismicSource==PETSC_TRUE && (jr->SourceParams.source_type==POINT || jr->SourceParams.source_type==MOMENT)) || jr->SeismicStation==PETSC_TRUE ) {
+		//-------------------------------
+		// central points
+		//-------------------------------
+		GET_CELL_RANGE(nx, sx, fs->dsx)
+		GET_CELL_RANGE(ny, sy, fs->dsy)
+		GET_CELL_RANGE(nz, sz, fs->dsz)
+		//PetscPrintf(PETSC_COMM_WORLD, "  %i %i %i %i %i %i  \n", nx,ny,nz,sx,sy,sz);
+		START_STD_LOOP
+		{
+			// get cell coordinates
+			xs[0] = jr->fs->dsx.ncoor[i]; xe[0] = jr->fs->dsx.ncoor[i+1];
+			xs[1] = jr->fs->dsy.ncoor[j]; xe[1] = jr->fs->dsy.ncoor[j+1];
+			xs[2] = jr->fs->dsz.ncoor[k]; xe[2] = jr->fs->dsz.ncoor[k+1];
+
+			if (jr->SeismicSource==PETSC_TRUE)
+			{
+				if (jr->SourceParams.x > xs[0] && jr->SourceParams.x <= xe[0] && jr->SourceParams.y > xs[1] && jr->SourceParams.y <= xe[1] && jr->SourceParams.z > xs[2] && jr->SourceParams.z <= xe[2])
+				{
+					jr->SourceParams.i=i;
+					jr->SourceParams.j=j;
+					jr->SourceParams.k=k;
+					//PetscPrintf(PETSC_COMM_WORLD, "  Source applied at cell (%i,%i,%i)  \n", i,j,k);
+				}
+			}
+			if (jr->SeismicStation==PETSC_TRUE)
+			{
+				if (jr->StationParams.x > xs[0] && jr->StationParams.x <= xe[0] && jr->StationParams.y > xs[1] && jr->StationParams.y <= xe[1] && jr->StationParams.z > xs[2] && jr->StationParams.z <= xe[2])
+				{
+					jr->StationParams.i=i;
+					jr->StationParams.j=j;
+					jr->StationParams.k=k;
+				}
+			}
+		}
+		END_STD_LOOP
+	}
+	PetscFunctionReturn(0);
+}
+
 //---------------------------------------------------------------------------
 //---------------------------------------------------------------------------
 // Apply source

@@ -95,10 +95,11 @@ typedef struct
 	// for wave propagation
 	PetscBool		ExplicitSolver; 		// True => at the moment, wave propagation
 	PetscScalar		DensityFactor; 			// Computational density will be material density*density_factor
+	FILE 			*stress_file;
 	PetscBool 		SeismicSource;			// true or false
 	SourceParam 	SourceParams;			// seismic source parameters
-	//PetscScalar 	x_rec, y_rec, z_rec;	// Seismic station coordinates (in meters)
-	Station			Station;
+	PetscBool		SeismicStation;			// true or false
+	StationParam 	StationParams;			// Seismic station coordinates
 
 	// continuity residual
 	Vec gc; // global
