@@ -228,9 +228,10 @@ typedef struct
 	PetscInt i;
 	PetscInt j;
 	PetscInt k;
-	FILE 	*output_file;
+	//char     output_file_name[MAX_PATH_LEN];
+	FILE 	*output_file[3];
 	// ...
-} Station;
+} StationParam;
 
 
 
@@ -305,7 +306,6 @@ typedef struct
 	PetscBool        SkipStokesSolver;
 	PetscBool        SavePartitioning;
 
-
 	// gravity
 	gravityParams    GravityField;
 	PetscScalar      Gravity;
@@ -320,29 +320,25 @@ typedef struct
 	// topography
 	char             TopoFilename[MAX_PATH_LEN];
 	
-
 	// Explicit solver
 	PetscBool		 ExplicitSolver; //  True => for the moment, wave propagation
 
 	// Scaling density factor
 	PetscScalar      DensityFactor; //Computational density will be material density*density_factor
+	//char     		 stress_file_name[MAX_PATH_LEN];	// File to store stress/strain
+	FILE 			 *stress_file;
 
 	// Absorbing boundaries
-	PetscBool		 AbsBoundaries;
-	SAB AB;
+	PetscBool		AbsBoundaries;
+	SAB 			AB;
 
 	// Seismic source
-	PetscBool		 SeismicSource;
+	PetscBool		SeismicSource;
+	SourceParam 	SourceParams;
 
-	// source
-	SourceParam SourceParams;
-
-	// Seismic station coordinates (in meters)
-	Station Station;
-
-
-
-
+	// Seismic station
+	PetscBool	 	SeismicStation;
+	StationParam 	StationParams;
 
 } UserCtx;
 //-----------------------------------------------------------------------------

@@ -169,9 +169,13 @@ PetscErrorCode FDSTAGInitCode(JacRes *jr, UserCtx *user, ModParam *iop)
 	jr->ExplicitSolver = user->ExplicitSolver;
 
 	jr->DensityFactor  = user->DensityFactor;
+	jr->stress_file  = user->stress_file;
 
 	jr->SeismicSource  = user->SeismicSource;
 	if (jr->SeismicSource == PETSC_TRUE) jr->SourceParams = user->SourceParams;
+
+	jr->SeismicStation= user->SeismicStation;
+	if (jr->SeismicStation == PETSC_TRUE) jr->StationParams = user->StationParams;
 
 
 	ierr = PetscFree(all_options); CHKERRQ(ierr);
@@ -310,7 +314,7 @@ PetscErrorCode InputReadFile(JacRes *jr, UserCtx *user, FILE *fp)
 	PetscInt found;
 	double d_values[1000];
 	PetscInt i_values[1000];
-	PetscInt nv, i, ab, source;
+	PetscInt nv, i, ab, source, station;
 	char setup_name[MAX_NAME_LEN], source_type_name[MAX_NAME_LEN];
 
 	PetscErrorCode ierr;
@@ -445,6 +449,10 @@ PetscErrorCode InputReadFile(JacRes *jr, UserCtx *user, FILE *fp)
 
 	// Scaling density factor
 	parse_GetDouble(fp, "density_factor",&user->DensityFactor, &found);
+	if (found!=PETSC_TRUE || user->DensityFactor!=PETSC_TRUE) user->DensityFactor=PETSC_FALSE;
+	//parse_GetString(fp,"strain_stress_file_name", user->stress_file_name, MAX_PATH_LEN, &found);
+	//if (found ==PETSC_FALSE) sprintf(user->stress_file_name, "strain_stress");
+
 
 	// Absorbing boundaries
 	//if (user->ExplicitSolver == PETSC_TRUE)
@@ -489,9 +497,9 @@ PetscErrorCode InputReadFile(JacRes *jr, UserCtx *user, FILE *fp)
 			parse_GetDouble( fp, "y_source", &user->SourceParams.y, &found );
 			parse_GetDouble( fp, "z_source", &user->SourceParams.z, &found );
 
-			if ( (&user->SourceParams.x < 0) || (&user->SourceParams.x > &user->W) || (&user->SourceParams.y < 0) || (&user->SourceParams.y > &user->L) || (&user->SourceParams.z < 0) || (&user->SourceParams.z > &user->H))
+			if ( (user->SourceParams.x < 0.0) || (user->SourceParams.x > user->W) || (user->SourceParams.y < 0.0) || (user->SourceParams.y > user->L) || (user->SourceParams.z < 0.0) || (user->SourceParams.z > user->H))
 			{
-				//SETERRQ(PETSC_COMM_SELF, PETSC_ERR_USER, "Incorrect source coordinates\n");
+				SETERRQ(PETSC_COMM_SELF, PETSC_ERR_USER, "Incorrect source coordinates\n");
 			}
 
 			// Source function
@@ -524,15 +532,23 @@ PetscErrorCode InputReadFile(JacRes *jr, UserCtx *user, FILE *fp)
 		user->SeismicSource=PETSC_FALSE;
 	}
 
-	// Seismic station coordinates
-	parse_GetDouble( fp, "x_rec", &user->Station.x, &found );
-	parse_GetDouble( fp, "y_rec", &user->Station.y, &found );
-	parse_GetDouble( fp, "z_rec", &user->Station.z, &found );
-	if (&user->Station.x < 0 || &user->Station.x > &user->W || &user->Station.y < 0 || &user->Station.y > &user->L || &user->Station.z < 0 || &user->Station.z > &user->H)
+	// Seismic station
+	parse_GetInt(fp, "seismic_station",&station, &found);
+	if (found==PETSC_TRUE && station==1)
 	{
-		//SETERRQ(PETSC_COMM_SELF, PETSC_ERR_USER, "Incorrect station coordinates\n");
+		user->SeismicStation=PETSC_TRUE;
+		parse_GetDouble( fp, "x_rec", &user->StationParams.x, &found );
+		parse_GetDouble( fp, "y_rec", &user->StationParams.y, &found );
+		parse_GetDouble( fp, "z_rec", &user->StationParams.z, &found );
+		if ( user->StationParams.x >= user->W) user->StationParams.x=user->W/2;
+		if ( user->StationParams.y >= user->L) user->StationParams.x=user->L/2;
+		if ( user->StationParams.z >= user->H) user->StationParams.x=user->H;
+		//parse_GetString(fp,"output_file_name", user->StationParams.output_file_name, MAX_PATH_LEN, &found);
+		//if (found ==PETSC_FALSE) sprintf(user->StationParams.output_file_name, "seismogram");
+	}else
+	{
+		user->SeismicStation=PETSC_FALSE;
 	}
-
 
 
 /*
