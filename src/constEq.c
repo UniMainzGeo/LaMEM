@@ -72,7 +72,7 @@ PetscErrorCode ConstEqCtxSetup(
 
 	PetscInt    ln, nl, pd;
 	PetscScalar Q, RT, ch, fr, p_viscosity, p_upper, p_lower;
-	PetscBool   flag = PETSC_FALSE,flag2 =PETSC_FALSE;
+	PetscBool   flag = PETSC_FALSE,flag2 =PETSC_FALSE, flag3=PETSC_FALSE;
 
 	PetscErrorCode ierr;
 
@@ -89,6 +89,8 @@ PetscErrorCode ConstEqCtxSetup(
 
 	ierr = PetscOptionsGetBool(PETSC_NULL, "-ViscoPLithosOff", &flag, PETSC_NULL); CHKERRQ(ierr);
 	ierr = PetscOptionsGetBool(PETSC_NULL, "-NoPressureLimit", &flag2, PETSC_NULL); CHKERRQ(ierr);
+	ierr = PetscOptionsGetBool(PETSC_NULL, "-EmployLithostaticPressureInYieldFunction", &flag3, PETSC_NULL); CHKERRQ(ierr);
+	
 	if(!flag) p_viscosity=p_lithos;
 
 
@@ -180,7 +182,20 @@ PetscErrorCode ConstEqCtxSetup(
 			if (p > p_upper) p = p_upper;
 			if (p < p_lower) p = p_lower;
 		}
-		ctx->taupl = p * sin(fr) + ch * cos(fr);
+		if (flag3){
+			// In case the flag	-EmployLithostaticPressureInYieldFunction is found,
+			// we use lithostatic, rather than dynamic pressure to evaluate yielding
+			//
+			// This converges better, but does not result in localization of deformation & shear banding,
+			// so only apply it for large-scale simulations where plasticity does not matter all that	
+			// much 
+			ctx->taupl = p_lithos * sin(fr) + ch * cos(fr);
+			
+		}
+		else{
+			// use dynamic pressure in evaluating the yield function [default]
+			ctx->taupl = p * sin(fr) + ch * cos(fr);
+		}
 		pd = 1;
 	}
 
