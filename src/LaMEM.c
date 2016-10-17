@@ -16,13 +16,14 @@
 // IOparam.mdN                     = 4                                 // Number of parameters (same as lengths of phs & P )
 // IOparam.mdI                     = 1                                 // Number of indices (same as lengths of Ax & Ay & Az )
 // IOparam.Ab                      = 0                                 // 0 = No usage of bounds 1 = use bounds
-// IOparam.Ap                      = 1                                 // 1 = several indices ; 2 = the whole domain (will exclude mdI & Ax & Ay & Az)
+// IOparam.Ap                      = 1                                 // 1 = several indices ; 2 = the whole domain (will exclude mdI & Ax & Ay & Az) ; 3 = the point with maximum velocity
 // IOparam.Ax					   = {1.2}                             // Array (same length as Ay, Az) containing the x coordinates of the point where you want to compute the gradients
 // IOparam.Ay					   = {0.6}                             // Array (same length as Ax, Az) containing the y coordinates of the point where you want to compute the gradients
 // IOparam.Az					   = {0.4}                             // Array (same length as Ax, Ay) containing the z coordinates of the point where you want to compute the gradients
 // IOparam.phs                     = {1 2 1 2}                         // Array (same length as mdN) containing the phase of the parameter
 // IOparam.P                       = {_RHO0_, _RHO0_, _ETA_,_ETA_}     // Array (same length as mdN) containing the parameter corresponding to the phase
 // IOparam.Av                      = {3}                               // Array (same length as Ax, Ay, Az, mdI) containing the related velocity direction in which to compute the gradient
+// IOparam.Adv                     = 1                                 // Should de point be advected?
 // (optional) Lb                   = {1 0 0 0}                         // Array (same length as mdN) containing the lower bounds for the parameters (only taken into account if 'IOparam.Ab  = 1;')
 // (optional) Ub                   = {5 8 8 8}                         // Array (same length as mdN) containing the upper bounds for the parameters (only taken into account if 'IOparam.Ab  = 1;')
 //
@@ -101,8 +102,7 @@ extern PetscErrorCode PCCreate_SemiRedundant(PC);
 int main(int argc, char **argv)
 {
 
-	// TODO: 1) Include whole phases as indices
-	//       2) Eventually put the perturbation as par=par+(perturb*par)
+	// TODO: 1) Currently nothing
 
 	PetscErrorCode 	ierr;
 
@@ -115,12 +115,13 @@ int main(int argc, char **argv)
 	Vec             val, Ub, Lb, grad, P;
 
 	// INITIALIZE
-	IOparam.use = 0;   // 0 = no inversion ; 1 = Tobis inversion ; 2 = only compute adjoint gradients ; 3 = 'full' adjoint inversion with TAO ; 4 = assume this as a forward simulation and save the solution
-	IOparam.mdN = 6;   // Number of parameters
+	IOparam.use = 2;   // 0 = no inversion ; 1 = Tobis inversion ; 2 = only compute adjoint gradients ; 3 = 'full' adjoint inversion with TAO ; 4 = assume this as a forward simulation and save the solution
+	IOparam.mdN = 9;   // Number of parameters
 	IOparam.mdI = 1;   // Number of indices
-	IOparam.Ab  = 1;   // Apply bounds?
-	IOparam.Ap  = 1;   // 1 = several indices ; 2 = the whole domain
+	IOparam.Ab  = 0;   // Apply bounds?
+	IOparam.Ap  = 1;   // 1 = several indices ; 2 = the whole domain ; 3 = surface
 	IOparam.reg = 0;   // 1 = tikhonov regularization of the cost function (TN) 2 = total variation regularization (TV)
+	IOparam.Adv = 0;   // 1 = advect the point
 
 	IOparam.count = 1;  // iteration counter for the initial cost function
 
@@ -143,6 +144,54 @@ int main(int argc, char **argv)
 	// CHARACTERISTIC VALUES (Bounds need to be normalized)
 	PetscScalar 	length,viscosity,temperature,stress,time,force,acceleration,mass;
 
+
+	/*// RAYLEIGH  Boris'Repro
+	scal.utype  = _NONE_;//_GEO_;   // _NONE_ or _SI_ or _GEO_
+
+	length      = 1;
+	viscosity   = 1;
+	temperature = 1;
+	stress      = 1;
+
+	time         = viscosity/stress;
+	force        = stress*length*length;
+	acceleration = length/time/time;
+	mass         = force/acceleration;
+
+	scal.inp_mass        = mass;
+	scal.inp_time        = time;
+	scal.inp_length      = length;
+	scal.inp_temperature = temperature;
+	scal.inp_force       = force;
+
+	ierr = ScalingCreate(&scal);
+*/
+
+
+
+	// DETACHEMTN FOLDING NAIARA
+	scal.utype  = _GEO_;   // _NONE_ or _SI_ or _GEO_
+
+	length      = 1e3;
+	viscosity   = 1e20;
+	temperature = 1;
+	stress      = 1e6;
+
+	time         = viscosity/stress;
+	force        = stress*length*length;
+	acceleration = length/time/time;
+	mass         = force/acceleration;
+
+	scal.inp_mass        = mass;
+	scal.inp_time        = time;
+	scal.inp_length      = length;
+	scal.inp_temperature = temperature;
+	scal.inp_force       = force;
+
+	ierr = ScalingCreate(&scal);
+
+
+	/*
 	// SUBDUCTION
 	scal.utype  = _GEO_;   // _NONE_ or _SI_ or _GEO_
 
@@ -154,7 +203,7 @@ int main(int argc, char **argv)
 	time         = viscosity/stress;
 	force        = stress*length*length;
 	acceleration = length/time/time;
-	mass         = force/acceleratiophsar[1] = 2;n;
+	mass         = force/acceleration;
 
 	scal.inp_mass        = mass;
 	scal.inp_time        = time;
@@ -163,36 +212,133 @@ int main(int argc, char **argv)
 	scal.inp_force       = force;
 
 	ierr = ScalingCreate(&scal);
+	*/
 
-	////////////////////////////////////////
-	//              SUBDUCTION            //
+
+	/*////////////////////////////////////////
+	//             RAYLEIGH  BORIS REPRO              //
 	////////////////////////////////////////
 	// PHASES
 	phsar[0] = 1;
-	phsar[1] = 2;
-	phsar[2] = 3;
-	phsar[3] = 4;
-	phsar[4] = 5;
-	phsar[5] = 6;
+	phsar[1] = 1;
+	phsar[2] = 2;
+	phsar[3] = 2;
+	phsar[4] = 1;
+	phsar[5] = 2;
 	IOparam.phs = phsar;
 
+	// X-COORDINATE
+	Ax[0] = 4.45	/scal.length;    // 4.45
+	IOparam.Ax = Ax;
+
+	// Y-COORDINATE
+	Ay[0] = 0		/scal.length;
+	IOparam.Ay = Ay;
+
+	// Z-COORDINATE
+	Az[0] = 0.5	/scal.length;   // 0.5
+	IOparam.Az = Az;
+
+	// VELOCITY COMPONENT
+	Av[0] = 3;
+	// Av[3] = 3;
+	IOparam.Av = Av;
+
 	// PARAMETER TYPES
-	typar[0] = _EN_;
-	typar[1] = _EN_;
-	typar[2] = _EN_;
-	typar[3] = _EN_;
-	typar[4] = _EN_;
-	typar[5] = _EN_;
+	typar[0] = _RHO0_;
+	typar[1] = _ETA0_;
+	typar[2] = _RHO0_;
+	typar[3] = _ETA0_;
+	typar[4] = _N_;
+	typar[5] = _N_;
 	IOparam.typ = typar;
 
 	// PARAMETER VALUES (only taken into account if IOparam.use = 3)
 	VecGetArray(P,&Par);
-	Par[0] = 250e3;    // /scal.density;    //  2900(initial solution)
-	Par[1] = 180e3;    // /scal.viscosity;;        //  2200(initial solution)
-	Par[2] = 420e3;    // /scal.density;        //  2500(initial solution)
-	Par[3] = 370e3;   // /scal.viscosity;;        //  1e23(initial solution)      1e19
-	Par[4] = 260e3;   // /scal.density;        //  1e18(initial solution)         1e24
-	Par[5] = 400e3;   // /scal.viscosity;;        //  1e19(initial solution)      1e21
+	Par[0] = 0;    // 1 (initial solution)
+	Par[1] = 1;        // 1 (initial solution)
+	Par[2] = 1;     // 0 (initial solution)
+	Par[3] = 0.1;    // 100 (initial solution)
+	Par[4] = 1.3;    // 1.1 (initial solution)
+	Par[4] = 1.3;    // 1 (initial solution)
+	VecRestoreArray(P,&Par);
+
+	// UPPER BOUND
+	VecGetArray(Ub,&Ubar);
+	Ubar[0] = 5;
+	Ubar[1] = 5;
+	Ubar[2] = 1000;
+	Ubar[3] = 2;
+	Ubar[4] = 2;
+	VecRestoreArray(Ub,&Ubar);
+
+	// LOWER BOUND
+	VecGetArray(Lb,&Lbar);
+	Lbar[0] = 0;
+	Lbar[1] = 0;
+	Lbar[2] = 0;
+	Lbar[3] = 0;
+	Lbar[4] = 0;
+	VecRestoreArray(Lb,&Lbar);
+
+	// INITIALIZE GRADIENTS
+	VecGetArray(grad,&gradar);
+	gradar[0] = 0;
+	gradar[1] = 0;
+	gradar[2] = 0;
+	gradar[3] = 0;
+	gradar[4] = 0;
+	gradar[5] = 0;
+	IOparam.grd = gradar;
+	VecRestoreArray(grad,&gradar);
+
+	// TIKHONOV WEIGHTS
+	W[0] = 1;
+	W[1] = 1;
+	// gradar[2] = 0;
+	// gradar[3] = 0;
+	IOparam.W = W;
+*/
+
+
+	////////////////////////////////////////
+	//              NAIARA                  //
+	////////////////////////////////////////
+	// PHASES
+	phsar[0] = 1;
+	phsar[1] = 1;
+	phsar[2] = 1;
+	phsar[3] = 2;
+	phsar[4] = 2;
+	phsar[5] = 2;
+	phsar[6] = 3;
+	phsar[7] = 3;
+	phsar[8] = 3;
+	IOparam.phs = phsar;
+
+	// PARAMETER TYPES
+	typar[0] = _RHO0_;
+	typar[1] = _ETA0_;
+	typar[2] = _N_;
+	typar[3] = _RHO0_;
+	typar[4] = _ETA0_;
+	typar[5] = _N_;
+	typar[6] = _RHO0_;
+	typar[7] = _ETA0_;
+	typar[8] = _N_;
+	IOparam.typ = typar;
+
+	// PARAMETER VALUES (only taken into account if IOparam.use = 3)
+	VecGetArray(P,&Par);
+	Par[0] = 2500;    // /scal.density;    //  2900(initial solution)
+	Par[1] = 2800;    // /scal.viscosity;;        //  2200(initial solution)
+	Par[2] = 2200;    // /scal.density;        //  2500(initial solution)
+	Par[3] = 2500;   // /scal.viscosity;;        //  1e23(initial solution)      1e19
+	Par[4] = 2800;   // /scal.density;        //  1e18(initial solution)         1e24
+	Par[5] = 2000;   // /scal.viscosity;;        //  1e19(initial solution)      1e21
+	Par[6] = 2500;   // /scal.density;        //  (initial solution)
+	Par[7] = 2500;   // /scal.viscosity;;        //  (initial solution)
+	Par[8] = 3200;   // /scal.viscosity;;        //  (initial solution)
 	VecRestoreArray(P,&Par);
 
 	// INITIALIZE GRADIENTS
@@ -203,6 +349,136 @@ int main(int argc, char **argv)
 	gradar[3] = 0;
 	gradar[4] = 0;
 	gradar[5] = 0;
+	gradar[6] = 0;
+	gradar[7] = 0;
+	gradar[8] = 0;
+	IOparam.grd = gradar;
+	VecRestoreArray(grad,&gradar);
+
+	// UPPER BOUND
+	VecGetArray(Ub,&Ubar);
+	Ubar[0] = 5000;
+	Ubar[1] = 5000;
+	Ubar[2] = 5000;
+	Ubar[3] = 5000;
+	Ubar[4] = 5000;
+	Ubar[5] = 5000;
+	Ubar[6] = 5000;
+	Ubar[7] = 5000;
+	Ubar[8] = 5000;
+	VecRestoreArray(Ub,&Ubar);
+
+	// LOWER BOUND
+	VecGetArray(Lb,&Lbar);
+	Lbar[0] = 1000;
+	Lbar[1] = 1000;
+	Lbar[2] = 1000;
+	Lbar[3] = 1000;
+	Lbar[4] = 1000;
+	Lbar[5] = 1000;
+	Lbar[6] = 1000;
+	Lbar[7] = 1000;
+	Lbar[8] = 1000;
+	VecRestoreArray(Lb,&Lbar);
+
+	// X-COORDINATE
+	Ax[0] = 20	/scal.length;
+	IOparam.Ax = Ax;
+
+	// Y-COORDINATE
+	Ay[0] = 0	/scal.length;
+	IOparam.Ay = Ay;
+
+	// Z-COORDINATE
+	Az[0] = 3	    /scal.length;
+	IOparam.Az = Az;
+
+	// VELOCITY COMPONENT
+	Av[0] = 3;
+	IOparam.Av = Av;
+
+	// TIKHONOV WEIGHTS
+	W[0] = 0.000001;
+	W[1] = 0.000001;
+	W[2] = 0.000001;
+	// gradar[2] = 0;
+	// gradar[3] = 0;
+	IOparam.W = W;
+
+
+	/*
+	////////////////////////////////////////
+	//              SUBDUCTION            //
+	////////////////////////////////////////
+	// PHASES
+	phsar[0] = 1;
+	phsar[1] = 2;
+	phsar[2] = 3;
+	phsar[3] = 4;
+	phsar[4] = 5;
+	phsar[5] = 6;
+	phsar[6] = 2;
+	phsar[7] = 3;
+	phsar[8] = 4;
+	phsar[9] = 5;
+	phsar[10] = 6;
+	phsar[11] = 1;
+	phsar[12] = 2;
+	phsar[13] = 3;
+	phsar[14] = 4;
+	phsar[15] = 5;
+	phsar[16] = 6;
+	IOparam.phs = phsar;
+
+	// PARAMETER TYPES
+	typar[0] = _EN_;
+	typar[1] = _EN_;
+	typar[2] = _EN_;
+	typar[3] = _EN_;
+	typar[4] = _EN_;
+	typar[5] = _EN_;
+	typar[6] = _N_;
+	typar[7] = _N_;
+	typar[8] = _N_;
+	typar[9] = _N_;
+	typar[10] = _N_;
+	typar[11] = _RHO0_;
+	typar[12] = _RHO0_;
+	typar[13] = _RHO0_;
+	typar[14] = _RHO0_;
+	typar[15] = _RHO0_;
+	typar[16] = _RHO0_;
+	IOparam.typ = typar;
+
+	// PARAMETER VALUES (only taken into account if IOparam.use = 3)
+	VecGetArray(P,&Par);
+	Par[0] = 350e3;    // /scal.density;    //  2900(initial solution)
+	Par[1] = 350e3;    // /scal.viscosity;;        //  2200(initial solution)
+	Par[2] = 350e3;    // /scal.density;        //  2500(initial solution)
+	Par[3] = 350e3;   // /scal.viscosity;;        //  1e23(initial solution)      1e19
+	Par[4] = 350e3;   // /scal.viscosity;;        //  1e23(initial solution)      1e19
+	Par[5] = 350e3;   // /scal.viscosity;;        //  1e23(initial solution)      1e19
+	VecRestoreArray(P,&Par);
+
+	// INITIALIZE GRADIENTS
+	VecGetArray(grad,&gradar);
+	gradar[0] = 0;
+	gradar[1] = 0;
+	gradar[2] = 0;
+	gradar[3] = 0;
+	gradar[4] = 0;
+	gradar[5] = 0;
+	gradar[6] = 0;
+	gradar[7] = 0;
+	gradar[8] = 0;
+	gradar[9] = 0;
+	gradar[10] = 0;
+	gradar[11] = 0;
+	gradar[12] = 0;
+	gradar[13] = 0;
+	gradar[14] = 0;
+	gradar[15] = 0;
+	gradar[16] = 0;
 	IOparam.grd = gradar;
 	VecRestoreArray(grad,&gradar);
 
@@ -218,12 +494,12 @@ int main(int argc, char **argv)
 
 	// LOWER BOUND
 	VecGetArray(Lb,&Lbar);
-	Lbar[0] = 50e3;
-	Lbar[1] = 50e3;
-	Lbar[2] = 50e3;
-	Lbar[3] = 50e3;
-	Lbar[4] = 50e3;
-	Lbar[5] = 50e3;
+	Lbar[0] = 100e3;
+	Lbar[1] = 100e3;
+	Lbar[2] = 100e3;
+	Lbar[3] = 100e3;
+	Lbar[4] = 100e3;
+	Lbar[5] = 100e3;
 	VecRestoreArray(Lb,&Lbar);
 
 	// X-COORDINATE
@@ -235,12 +511,44 @@ int main(int argc, char **argv)
 	IOparam.Ay = Ay;
 
 	// Z-COORDINATE
-	Az[0] = 200	    /scal.length;
+	Az[0] = 300	    /scal.length;
 	IOparam.Az = Az;
 
 	// VELOCITY COMPONENT
 	Av[0] = 3;
 	IOparam.Av = Av;
+	*/
+
+
+
+	/*// NORMALIZE
+	VecGetArray(P,&Par);
+	Par[0] = (Par[0]-2000)/(3200-2000);
+	Par[1] = (Par[1]-2000)/(3200-2000);
+	Par[2] = (Par[2]-2000)/(3200-2000);
+	Par[3] = (Par[3]-2000)/(3200-2000);
+	Par[4] = (Par[4]-2000)/(3200-2000);
+	Par[5] = (Par[5]-2000)/(3200-2000);
+	Par[6] = (Par[6]-2000)/(3200-2000);
+	Par[7] = (Par[7]-2000)/(3200-2000);
+	Par[8] = (Par[8]-2000)/(3200-2000);
+	Par[9] = (Par[9]-1e10)/(1e20-1e10);
+	Par[10] = (Par[10]-1e10)/(1e20-1e10);
+	VecRestoreArray(P,&Par);*/
+	/*// DENORMALIZE
+	VecGetArray(P,&Par);
+	Par[0] = (Par[0]*(3200-2000))+2000;
+	Par[1] = (Par[1]*(3200-2000))+2000;
+	Par[2] = (Par[2]*(3200-2000))+2000;
+	Par[3] = (Par[3]*(3200-2000))+2000;
+	Par[4] = (Par[4]*(3200-2000))+2000;
+	Par[5] = (Par[5]*(3200-2000))+2000;
+	Par[6] = (Par[6]*(3200-2000))+2000;
+	Par[7] = (Par[7]*(3200-2000))+2000;
+	Par[8] = (Par[8]*(3200-2000))+2000;
+	Par[9] = (Par[9]*(1e20-1e10))+1e10;
+	Par[10] = (Par[10]*(1e20-1e10))+1e10;
+	VecRestoreArray(P,&Par);*/
 
 	////
 	ierr = PCRegister("pc_semiredundant",PCCreate_SemiRedundant);
@@ -372,3 +680,5 @@ PetscErrorCode AdjointOptimisation(Tao tao, Vec P, PetscReal *F, Vec grad, void 
 
 	PetscFunctionReturn(0);
 }
+
+

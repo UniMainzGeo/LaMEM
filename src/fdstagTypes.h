@@ -167,6 +167,7 @@ typedef struct
 	Vec              xini;      // Comparison velocity field for adjoint inversion
 	Vec              P;			// vector containing parameters (is needed in that form for TAO)
 	PetscInt         Ab;    	// Use adjoint bounds?
+	PetscInt         Adv;       // Advect the point?
 	PetscInt         count;		// iteration counter
 	PetscInt         mdI;    	// number of indices
 	PetscInt         Ap;        // 1 = several indices ; 2 = whole domain

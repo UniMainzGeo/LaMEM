@@ -49,6 +49,7 @@
 typedef struct
 {
 	PetscScalar      Ini;                     // Initial value of perturbed parameter
+	PetscScalar      Ini2;                     // If n is the parameter we need two initials
 	PetscScalar      Perturb;                 // Perturbation parameter for the finite differences
 	PetscScalar      CurScal;
 	Vec              dF;
@@ -57,13 +58,13 @@ typedef struct
 } AdjGrad;
 
 // Compute the gradients for the adjoint inversion
-PetscErrorCode AdjointObjectiveAndGradientFunction(AdjGrad *aop, JacRes *jr, NLSol *nl, ModParam *IOparam, SNES snes);
+PetscErrorCode AdjointObjectiveAndGradientFunction(AdjGrad *aop, JacRes *jr, NLSol *nl, ModParam *IOparam, SNES snes, FreeSurf *surf);
 
 // Compute the gradients for the adjoint inversion
-PetscErrorCode AdjointComputeGradients(JacRes *jr, AdjGrad *aop, NLSol *nl, SNES snes, ModParam *IOparam);
+PetscErrorCode AdjointComputeGradients(JacRes *jr, AdjGrad *aop, NLSol *nl, SNES snes, ModParam *IOparam, FreeSurf *surf);
 
 // Interpolate the adjoint points and include them into the projection vector
-PetscErrorCode AdjointPointInPro(JacRes *jr, AdjGrad *aop, ModParam *IOparam);
+PetscErrorCode AdjointPointInPro(JacRes *jr, AdjGrad *aop, ModParam *IOparam, FreeSurf *surf);
 
 // Perturb the input parameters within the gradient computation
 PetscErrorCode AdjointGradientPerturbParameter(NLSol *nl, PetscInt CurPar, PetscInt CurPhase, AdjGrad *aop, Scaling *scal);

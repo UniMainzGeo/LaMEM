@@ -459,18 +459,27 @@ PetscErrorCode MatPropSetFromLibCall(JacRes *jr, ModParam *mod)
 				PetscPrintf(PETSC_COMM_WORLD,"#    rho_c[%lld] = %3.5f \n",(LLD)id,m->rho_c);
 			}
 
-			// depth dependent density
+			// powerlaw exponent
 			else if(mod->typ[im] == _N_)
 			{
 				m->n = mod->val[im];
+				m->Bn = pow (2.0*eta0, -m->n)*pow(e0, 1 - m->n);
 				PetscPrintf(PETSC_COMM_WORLD,"#    n[%lld] = %3.3f \n",(LLD)id,m->n);
 			}
 
-			// depth dependent density
+			// activation energy
 			else if(mod->typ[im] == _EN_)
 			{
 				m->En = mod->val[im];
 				PetscPrintf(PETSC_COMM_WORLD,"#    En[%lld] = %7.2f \n",(LLD)id,m->En);
+			}
+
+			// activation energy
+			else if(mod->typ[im] == _ETA0_)
+			{
+				eta0 = mod->val[im];
+				m->Bn = pow (2.0*eta0, -m->n)*pow(e0, 1 - m->n);
+				PetscPrintf(PETSC_COMM_WORLD,"#    eta0[%lld] = %g \n",(LLD)id,eta0);
 			}
 
 			else

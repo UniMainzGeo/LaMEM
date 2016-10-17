@@ -82,7 +82,7 @@ PetscErrorCode AdjointDestroy(AdjGrad *aop)
  //---------------------------------------------------------------------------
  #undef __FUNCT__
  #define __FUNCT__ "AdjointObjectiveAndGradientFunction"
- PetscErrorCode AdjointObjectiveAndGradientFunction(AdjGrad *aop, JacRes *jr, NLSol *nl, ModParam *IOparam, SNES snes)
+ PetscErrorCode AdjointObjectiveAndGradientFunction(AdjGrad *aop, JacRes *jr, NLSol *nl, ModParam *IOparam, SNES snes, FreeSurf *surf)
  {
  	PetscErrorCode ierr;
  	PetscFunctionBegin;
@@ -99,12 +99,12 @@ PetscErrorCode AdjointDestroy(AdjGrad *aop)
  	 	ierr = VecDuplicate(jr->gsol, &aop->pro);	 	CHKERRQ(ierr);
 
  		// Put the proportion into the Projection vector where the user defined the computation coordinates (P) & get the velocities
- 		ierr = AdjointPointInPro(jr, aop, IOparam); 	CHKERRQ(ierr);
+ 		ierr = AdjointPointInPro(jr, aop, IOparam, surf); 	CHKERRQ(ierr);
 
  		ierr = VecCopy(aop->pro,aop->dF); 				CHKERRQ(ierr);
 
  		// Get the gradients
- 		ierr = AdjointComputeGradients(jr, aop, nl, snes, IOparam); 		CHKERRQ(ierr);
+ 		ierr = AdjointComputeGradients(jr, aop, nl, snes, IOparam, surf); 		CHKERRQ(ierr);
  	}
  	// compute 'full' adjoint inversion
  	else if(IOparam->use == 3)
@@ -134,7 +134,7 @@ PetscErrorCode AdjointDestroy(AdjGrad *aop)
  	 	}
 
  		// Put the proportion into the Projection vector where the user defined the computation coordinates (P) & get the velocities
- 		ierr = AdjointPointInPro(jr, aop, IOparam); 		CHKERRQ(ierr);
+ 		ierr = AdjointPointInPro(jr, aop, IOparam, surf); 		CHKERRQ(ierr);
 
  		PetscPrintf(PETSC_COMM_WORLD,"******************************************\n      COMPUTATION OF THE COST FUNCTION\n******************************************\n");
 
@@ -185,7 +185,7 @@ PetscErrorCode AdjointDestroy(AdjGrad *aop)
  		ierr = VecCopy(xini,aop->dF); 		CHKERRQ(ierr);
 
  		// Get the gradients
- 		ierr = AdjointComputeGradients(jr, aop, nl, snes, IOparam); 		CHKERRQ(ierr);
+ 		ierr = AdjointComputeGradients(jr, aop, nl, snes, IOparam, surf); 		CHKERRQ(ierr);
 
  		// Destroy
  		ierr = VecDestroy(&xini);
@@ -213,7 +213,7 @@ PetscErrorCode AdjointDestroy(AdjGrad *aop)
 //---------------------------------------------------------------------------
 #undef __FUNCT__
 #define __FUNCT__ "AdjointComputeGradients"
-PetscErrorCode AdjointComputeGradients(JacRes *jr, AdjGrad *aop, NLSol *nl, SNES snes, ModParam *IOparam)
+PetscErrorCode AdjointComputeGradients(JacRes *jr, AdjGrad *aop, NLSol *nl, SNES snes, ModParam *IOparam, FreeSurf *surf)
 {
 	PetscPrintf(PETSC_COMM_WORLD,"******************************************\n      COMPUTATION OF THE GRADIENTS\n******************************************\n");
 
@@ -257,7 +257,7 @@ PetscErrorCode AdjointComputeGradients(JacRes *jr, AdjGrad *aop, NLSol *nl, SNES
 	ierr = KSPGetPC(ksp, &ipc);            		CHKERRQ(ierr);
 	ierr = PCSetType(ipc, PCMAT);          		CHKERRQ(ierr);
 	ierr = KSPSetOperators(ksp,nl->J,nl->P);	CHKERRQ(ierr);
-	ierr = KSPSolveTranspose(ksp,aop->dF,psi);	CHKERRQ(ierr);
+	ierr = KSPSolve(ksp,aop->dF,psi);	CHKERRQ(ierr);
 	ierr = KSPGetConvergedReason(ksp,&reason);	CHKERRQ(ierr);
 
 	//=================
@@ -291,14 +291,13 @@ PetscErrorCode AdjointComputeGradients(JacRes *jr, AdjGrad *aop, NLSol *nl, SNES
 
 		// Compute the gradient (dF/dp = -psi^T * dr/dp) & Save gradient
 		ierr = VecDot(drdp,psi,&grd);     					CHKERRQ(ierr);
-		IOparam->grd[j] 	= (-1 * grd)*aop->CurScal;
+		IOparam->grd[j] 	= (-1 * grd)*aop->CurScal;      CHKERRQ(ierr);
 
 		// Reset perturbed parameter
 		ierr = AdjointGradientResetParameter(nl, CurPar, CurPhase, aop);       CHKERRQ(ierr);
 
 		// Print result
 		PetscPrintf(PETSC_COMM_WORLD,"%D.Gradient (dimensional) = %.40f ; CurPar = %d ; CurPhase = %d\n",j+1, IOparam->grd[j], CurPar, CurPhase);
-		// PetscPrintf(PETSC_COMM_WORLD,"%D.Gradient (dimensional) = %.12f\n",j+1, IOparam->grd[j]);
 
 		// Destroy overwritten residual vector
 		ierr = VecDestroy(&res);
@@ -311,7 +310,7 @@ PetscErrorCode AdjointComputeGradients(JacRes *jr, AdjGrad *aop, NLSol *nl, SNES
 		VecGetArray(aop->vz,&vz);
 
 		// get the current velocities at comparison point
-		ierr = AdjointPointInPro(jr, aop, IOparam); 		CHKERRQ(ierr);
+		ierr = AdjointPointInPro(jr, aop, IOparam, surf); 		CHKERRQ(ierr);
 
 		// Print the solution variable at the user defined index (if they are suffently few)
 		for (i=0; i<IOparam->mdI; i++)
@@ -329,15 +328,15 @@ PetscErrorCode AdjointComputeGradients(JacRes *jr, AdjGrad *aop, NLSol *nl, SNES
 			{
 				if (IOparam->Av[i] == 1)
 				{
-					PetscPrintf(PETSC_COMM_SELF,"Computation variable [Vx] (dimensional) = %.12f at Location x = %g , y = %g , z = %g\n",vx[i]*scal->velocity,IOparam->Ax[i]*scal->length,IOparam->Ay[i]*scal->length,IOparam->Az[i]*scal->length);
+					PetscPrintf(PETSC_COMM_SELF,"Computation variable [Vx] (dimensional) = %.30f at Location x = %g , y = %g , z = %g\n",vx[i]*scal->velocity,IOparam->Ax[i]*scal->length,IOparam->Ay[i]*scal->length,IOparam->Az[i]*scal->length);
 				}
 				else if (IOparam->Av[i] == 2)
 				{
-					PetscPrintf(PETSC_COMM_SELF,"Computation variable [Vy] (dimensional) = %.12f at Location x = %g , y = %g , z = %g\n",vy[i]*scal->velocity,IOparam->Ax[i]*scal->length,IOparam->Ay[i]*scal->length,IOparam->Az[i]*scal->length);
+					PetscPrintf(PETSC_COMM_SELF,"Computation variable [Vy] (dimensional) = %.30f at Location x = %g , y = %g , z = %g\n",vy[i]*scal->velocity,IOparam->Ax[i]*scal->length,IOparam->Ay[i]*scal->length,IOparam->Az[i]*scal->length);
 				}
 				else if (IOparam->Av[i] == 3)
 				{
-					PetscPrintf(PETSC_COMM_SELF,"Computation variable [Vz] (dimensional) = %.12f at Location x = %g , y = %g , z = %g\n",vz[i]*scal->velocity,IOparam->Ax[i]*scal->length,IOparam->Ay[i]*scal->length,IOparam->Az[i]*scal->length);
+					PetscPrintf(PETSC_COMM_SELF,"Computation variable [Vz] (dimensional) = %.30f at Location x = %g , y = %g , z = %g\n",vz[i]*scal->velocity,IOparam->Ax[i]*scal->length,IOparam->Ay[i]*scal->length,IOparam->Az[i]*scal->length);
 				}
 
 				if (IOparam->Adv == 1)     // advect the point?
@@ -372,15 +371,18 @@ PetscErrorCode AdjointComputeGradients(JacRes *jr, AdjGrad *aop, NLSol *nl, SNES
 //---------------------------------------------------------------------------
 #undef __FUNCT__
 #define __FUNCT__ "AdjointPointInPro"
-PetscErrorCode AdjointPointInPro(JacRes *jr, AdjGrad *aop, ModParam *IOparam)
+PetscErrorCode AdjointPointInPro(JacRes *jr, AdjGrad *aop, ModParam *IOparam, FreeSurf *surf)
 {
 	PetscErrorCode      ierr;
 	FDSTAG              *fs;
 	Vec                 lproX, lproY, lproZ, gproX, gproY, gproZ, pro;
 	PetscScalar         coord_local[3], *temppro, ***llproX, ***llproY, ***llproZ, *dggproX, *dggproY, *dggproZ;
 	PetscScalar         *vx, *vy, *vz;
-	PetscInt            ii, sx, sy, sz, nx, ny, nz, I, J, K, II, JJ, KK, lrank, grank;
-	PetscScalar         xb, yb, zb, xe, ye, ze, xc, yc, zc, *iter, *ncx, *ncy, *ncz, *ccx, *ccy, *ccz, ***lvx, ***lvy, ***lvz;
+	PetscInt            j, i, z, w, ii, sx, sy, sz, nx, ny, nz, I, J, K, II, JJ, KK, lrank, grank, p, level;
+	PetscScalar         xb, yb, zb, xe, ye, ze, xc, yc, zc, *iter, *ncx, *ncy, *ncz, *ccx, *ccy, *ccz, ***lvx, ***lvy, ***lvz, ***vgrid, ***topo, ***vsurf;
+	PetscReal           val;
+	Discret1D           *dsz;
+	InterpFlags         iflag;
 
 	PetscFunctionBegin;
 
@@ -465,48 +467,55 @@ PetscErrorCode AdjointPointInPro(JacRes *jr, AdjGrad *aop, ModParam *IOparam)
 				ierr = DMDAVecGetArray(fs->DA_X, lproX, &llproX);      CHKERRQ(ierr);
 				ierr = DMDAVecGetArray(fs->DA_Y, lproY, &llproY);      CHKERRQ(ierr);
 				ierr = DMDAVecGetArray(fs->DA_Z, lproZ, &llproZ);      CHKERRQ(ierr);
+				
+				if(IOparam->Av[ii] == 1)
+				{
+					vx[ii] = InterpLin3D(lvx, I,  JJ, KK, sx, sy, sz, coord_local[0], coord_local[1], coord_local[2], ncx, ccy, ccz);
 
-				vx[ii] = InterpLin3D(lvx, I,  JJ, KK, sx, sy, sz, coord_local[0], coord_local[1], coord_local[2], ncx, ccy, ccz);
+					// get relative coordinates
+					xe = ((coord_local[0] - ncx[I ])/(ncx[I +1] - ncx[I ]))/2; xb = (1.0 - xe)/2;
+	
+					llproX[sz+KK  ][sy+JJ  ][sx+I  ] = xb;
+					llproX[sz+KK  ][sy+JJ  ][sx+I+1] = xe;
+					llproX[sz+KK  ][sy+JJ+1][sx+I  ] = xb;
+					llproX[sz+KK  ][sy+JJ+1][sx+I+1] = xe;
+					llproX[sz+KK+1][sy+JJ  ][sx+I  ] = xb;
+					llproX[sz+KK+1][sy+JJ  ][sx+I+1] = xe;
+					llproX[sz+KK+1][sy+JJ+1][sx+I  ] = xb;
+					llproX[sz+KK+1][sy+JJ+1][sx+I+1] = xe;
+				}
+				else if(IOparam->Av[ii] == 2)
+				{
+					vy[ii] = InterpLin3D(lvy, II, J,  KK, sx, sy, sz, coord_local[0], coord_local[1], coord_local[2], ccx, ncy, ccz);
 
-				// get relative coordinates
-				xe = (coord_local[0] - ncx[I ])/(ncx[I +1] - ncx[I ]); xb = 1.0 - xe;
+					// get relative coordinates
+					ye = ((coord_local[1] - ncy[J ])/(ncy[J +1] - ncy[J ]))/2; yb = (1.0 - 2*ye)/2;
+	
+					llproY[sz+KK  ][sy+J  ][sx+II  ] = yb;
+					llproY[sz+KK  ][sy+J  ][sx+II+1] = yb;
+					llproY[sz+KK  ][sy+J+1][sx+II  ] = ye;
+					llproY[sz+KK  ][sy+J+1][sx+II+1] = ye;
+					llproY[sz+KK+1][sy+J  ][sx+II  ] = yb;
+					llproY[sz+KK+1][sy+J  ][sx+II+1] = yb;
+					llproY[sz+KK+1][sy+J+1][sx+II  ] = ye;
+					llproY[sz+KK+1][sy+J+1][sx+II+1] = ye;
+				}
+				else if(IOparam->Av[ii] == 3)
+				{
+					vz[ii] = InterpLin3D(lvz, II, JJ, K,  sx, sy, sz, coord_local[0], coord_local[1], coord_local[2], ccx, ccy, ncz);
 
-				llproX[sz+KK  ][sy+JJ  ][sx+I  ] = xb;
-				llproX[sz+KK  ][sy+JJ  ][sx+I+1] = xe;
-				llproX[sz+KK  ][sy+JJ+1][sx+I  ] = xb;
-				llproX[sz+KK  ][sy+JJ+1][sx+I+1] = xe;
-				llproX[sz+KK+1][sy+JJ  ][sx+I  ] = xb;
-				llproX[sz+KK+1][sy+JJ  ][sx+I+1] = xe;
-				llproX[sz+KK+1][sy+JJ+1][sx+I  ] = xb;
-				llproX[sz+KK+1][sy+JJ+1][sx+I+1] = xe;
-
-				vy[ii] = InterpLin3D(lvy, II, J,  KK, sx, sy, sz, coord_local[0], coord_local[1], coord_local[2], ccx, ncy, ccz);
-
-				// get relative coordinates
-				ye = (coord_local[1] - ncy[J ])/(ncy[J +1] - ncy[J ]); yb = 1.0 - ye;
-
-				llproY[sz+KK  ][sy+J  ][sx+II  ] = yb;
-				llproY[sz+KK  ][sy+J  ][sx+II+1] = yb;
-				llproY[sz+KK  ][sy+J+1][sx+II  ] = ye;
-				llproY[sz+KK  ][sy+J+1][sx+II+1] = ye;
-				llproY[sz+KK+1][sy+J  ][sx+II  ] = yb;
-				llproY[sz+KK+1][sy+J  ][sx+II+1] = yb;
-				llproY[sz+KK+1][sy+J+1][sx+II  ] = ye;
-				llproY[sz+KK+1][sy+J+1][sx+II+1] = ye;
-
-				vz[ii] = InterpLin3D(lvz, II, JJ, K,  sx, sy, sz, coord_local[0], coord_local[1], coord_local[2], ccx, ccy, ncz);
-
-				// get relative coordinates
-				ze = (coord_local[2] - ncz[K ])/(ncz[K +1] - ncz[K ]); zb = 1.0 - ze;
-
-				llproZ[sz+K  ][sy+JJ  ][sx+II  ] = zb;
-				llproZ[sz+K  ][sy+JJ  ][sx+II+1] = zb;
-				llproZ[sz+K  ][sy+JJ+1][sx+II  ] = zb;
-				llproZ[sz+K  ][sy+JJ+1][sx+II+1] = zb;
-				llproZ[sz+K+1][sy+JJ  ][sx+II  ] = ze;
-				llproZ[sz+K+1][sy+JJ  ][sx+II+1] = ze;
-				llproZ[sz+K+1][sy+JJ+1][sx+II  ] = ze;
-				llproZ[sz+K+1][sy+JJ+1][sx+II+1] = ze;
+					// get relative coordinates
+					ze = ((coord_local[2] - ncz[K ])/(ncz[K +1] - ncz[K ]))/2; zb = (1.0 - 2*ze)/2;
+	
+					llproZ[sz+K  ][sy+JJ  ][sx+II  ] = zb;
+					llproZ[sz+K  ][sy+JJ  ][sx+II+1] = zb;
+					llproZ[sz+K  ][sy+JJ+1][sx+II  ] = zb;
+					llproZ[sz+K  ][sy+JJ+1][sx+II+1] = zb;
+					llproZ[sz+K+1][sy+JJ  ][sx+II  ] = ze;
+					llproZ[sz+K+1][sy+JJ  ][sx+II+1] = ze;
+					llproZ[sz+K+1][sy+JJ+1][sx+II  ] = ze;
+					llproZ[sz+K+1][sy+JJ+1][sx+II+1] = ze;
+				}
 
 				ierr = DMDAVecRestoreArray(fs->DA_X, lproX, &llproX);      CHKERRQ(ierr);
 				ierr = DMDAVecRestoreArray(fs->DA_Y, lproY, &llproY);      CHKERRQ(ierr);
@@ -532,6 +541,185 @@ PetscErrorCode AdjointPointInPro(JacRes *jr, AdjGrad *aop, ModParam *IOparam)
 		{
 			ierr = VecSet(lproZ,1);
 		}
+	}
+	else if (IOparam->Ap == 3)     // take the topography velocity as comparison
+	{
+		for(ii = 0; ii < 3; ii++)
+		{
+			if (IOparam->Av[ii] == 1)
+			{
+				dsz   = &fs->dsz;
+				level = dsz->rank;
+			
+				// create column communicator
+				ierr = Discret1DGetColumnComm(dsz); CHKERRQ(ierr);
+			
+				// set interpolation flags
+				iflag.update    = PETSC_FALSE;
+				iflag.use_bound = PETSC_TRUE;
+			
+				ierr = DMDAVecRestoreArray(fs->DA_X, jr->lvx, &lvx); CHKERRQ(ierr);
+				ierr = DMDAVecGetArray(fs->DA_X, lproX, &llproX);      CHKERRQ(ierr);
+				
+				// interpolate velocity component from grid faces to corners
+				ierr = InterpXFaceCorner(fs, jr->lvx, jr->lbcor, iflag); CHKERRQ(ierr);
+			
+				// load ghost values
+				LOCAL_TO_LOCAL(fs->DA_COR, jr->lbcor)
+			
+				// access topograpy, grid and surface velocity
+				ierr = DMDAVecGetArray(fs->DA_COR,    jr->lbcor,    &vgrid); CHKERRQ(ierr);
+				ierr = DMDAVecGetArray(surf->DA_SURF, surf->vpatch, &vsurf); CHKERRQ(ierr);
+				ierr = DMDAVecGetArray(surf->DA_SURF, surf->ltopo,  &topo);  CHKERRQ(ierr);
+			
+				// scan all free surface local points
+				ierr = DMDAGetCorners(fs->DA_COR, &sx, &sy, &sz, &nx, &ny, NULL); CHKERRQ(ierr);
+			
+				START_PLANE_LOOP
+				{
+					
+					// get topography
+					z = topo[level][j][i];
+			
+					// check whether point belongs to domain
+					if(z >= dsz->crdbeg && z < dsz->crdend)
+					{
+						// find containing cell
+						K = FindPointInCell(dsz->ncoor, 0, dsz->ncels, z);
+			
+						// get interpolation weight
+						w = (z - dsz->ncoor[K])/(dsz->ncoor[K+1] - dsz->ncoor[K]);
+						
+						llproX[sz+K][j][i]   = 1.0 - w;
+						llproX[sz+K+1][j][i] = w;
+					}
+				}
+				END_PLANE_LOOP
+	
+				// restore access
+				ierr = DMDAVecRestoreArray(fs->DA_COR,    jr->lbcor,    &vgrid); CHKERRQ(ierr);
+				ierr = DMDAVecRestoreArray(surf->DA_SURF, surf->vpatch, &vsurf); CHKERRQ(ierr);
+				ierr = DMDAVecRestoreArray(surf->DA_SURF, surf->ltopo,  &topo);  CHKERRQ(ierr);
+				ierr = DMDAVecGetArray(fs->DA_X, jr->lvx, &lvx); CHKERRQ(ierr);
+				ierr = DMDAVecRestoreArray(fs->DA_X, lproX, &llproX);      CHKERRQ(ierr);
+				
+			}
+			else if (IOparam->Av[ii] == 2)
+			{
+				dsz   = &fs->dsz;
+				level = dsz->rank;
+			
+				// create column communicator
+				ierr = Discret1DGetColumnComm(dsz); CHKERRQ(ierr);
+			
+				// set interpolation flags
+				iflag.update    = PETSC_FALSE;
+				iflag.use_bound = PETSC_TRUE;
+			
+				ierr = DMDAVecRestoreArray(fs->DA_Y, jr->lvy, &lvy); CHKERRQ(ierr);
+				ierr = DMDAVecGetArray(fs->DA_Y, lproY, &llproY);      CHKERRQ(ierr);
+				
+				// interpolate velocity component from grid faces to corners
+				ierr = InterpYFaceCorner(fs, jr->lvy, jr->lbcor, iflag); CHKERRQ(ierr);
+			
+				// load ghost values
+				LOCAL_TO_LOCAL(fs->DA_COR, jr->lbcor)
+			
+				// access topograpy, grid and surface velocity
+				ierr = DMDAVecGetArray(fs->DA_COR,    jr->lbcor,    &vgrid); CHKERRQ(ierr);
+				ierr = DMDAVecGetArray(surf->DA_SURF, surf->vpatch, &vsurf); CHKERRQ(ierr);
+				ierr = DMDAVecGetArray(surf->DA_SURF, surf->ltopo,  &topo);  CHKERRQ(ierr);
+			
+				// scan all free surface local points
+				ierr = DMDAGetCorners(fs->DA_COR, &sx, &sy, &sz, &nx, &ny, NULL); CHKERRQ(ierr);
+			
+				START_PLANE_LOOP
+				{
+					// get topography
+					z = topo[level][j][i];
+			
+					// check whether point belongs to domain
+					if(z >= dsz->crdbeg && z < dsz->crdend)
+					{
+						// find containing cell
+						K = FindPointInCell(dsz->ncoor, 0, dsz->ncels, z);
+			
+						// get interpolation weight
+						w = (z - dsz->ncoor[K])/(dsz->ncoor[K+1] - dsz->ncoor[K]);
+						
+						llproY[sz+K][j][i]   = 1.0 - w;
+						llproY[sz+K+1][j][i] = w;
+					}
+				}
+				END_PLANE_LOOP
+	
+				// restore access
+				ierr = DMDAVecRestoreArray(fs->DA_COR,    jr->lbcor,    &vgrid); CHKERRQ(ierr);
+				ierr = DMDAVecRestoreArray(surf->DA_SURF, surf->vpatch, &vsurf); CHKERRQ(ierr);
+				ierr = DMDAVecRestoreArray(surf->DA_SURF, surf->ltopo,  &topo);  CHKERRQ(ierr);
+				ierr = DMDAVecGetArray(fs->DA_Y, jr->lvy, &lvy); CHKERRQ(ierr);
+				ierr = DMDAVecRestoreArray(fs->DA_Y, lproY, &llproY);      CHKERRQ(ierr);
+			}
+			else if (IOparam->Av[ii] == 3)
+			{
+				dsz   = &fs->dsz;
+				level = dsz->rank;
+			
+				// create column communicator
+				ierr = Discret1DGetColumnComm(dsz); CHKERRQ(ierr);
+			
+				// set interpolation flags
+				iflag.update    = PETSC_FALSE;
+				iflag.use_bound = PETSC_TRUE;
+				
+				ierr = DMDAVecRestoreArray(fs->DA_Z, jr->lvz, &lvz); CHKERRQ(ierr);
+				ierr = DMDAVecGetArray(fs->DA_Z, lproZ, &llproZ);      CHKERRQ(ierr);
+				
+				// interpolate velocity component from grid faces to corners
+				ierr = InterpZFaceCorner(fs, jr->lvz, jr->lbcor, iflag); CHKERRQ(ierr);
+			
+				// load ghost values
+				LOCAL_TO_LOCAL(fs->DA_COR, jr->lbcor)
+			
+				// access topograpy, grid and surface velocity
+				ierr = DMDAVecGetArray(fs->DA_COR,    jr->lbcor,    &vgrid); CHKERRQ(ierr);
+				ierr = DMDAVecGetArray(surf->DA_SURF, surf->vpatch, &vsurf); CHKERRQ(ierr);
+				ierr = DMDAVecGetArray(surf->DA_SURF, surf->ltopo,  &topo);  CHKERRQ(ierr);
+			
+				// scan all free surface local points
+				ierr = DMDAGetCorners(fs->DA_COR, &sx, &sy, &sz, &nx, &ny, NULL); CHKERRQ(ierr);
+				
+				
+			
+				START_PLANE_LOOP
+				{
+					// get topography
+					z = topo[level][j][i];
+			
+					// check whether point belongs to domain
+					if(z >= dsz->crdbeg && z < dsz->crdend)
+					{
+						// find containing cell
+						K = FindPointInCell(dsz->ncoor, 0, dsz->ncels, z);
+			
+						// get interpolation weight
+						w = (z - dsz->ncoor[K])/(dsz->ncoor[K+1] - dsz->ncoor[K]);
+						
+						llproZ[sz+K][j][i]   = 1.0 - w;
+						llproZ[sz+K+1][j][i] = w;
+					}
+				}
+				END_PLANE_LOOP
+	
+				// restore access
+				ierr = DMDAVecRestoreArray(fs->DA_COR,    jr->lbcor,    &vgrid); CHKERRQ(ierr);
+				ierr = DMDAVecRestoreArray(surf->DA_SURF, surf->vpatch, &vsurf); CHKERRQ(ierr);
+				ierr = DMDAVecRestoreArray(surf->DA_SURF, surf->ltopo,  &topo);  CHKERRQ(ierr);
+				ierr = DMDAVecGetArray(fs->DA_Z, jr->lvz, &lvz); CHKERRQ(ierr);
+				ierr = DMDAVecRestoreArray(fs->DA_Z, lproZ, &llproZ);      CHKERRQ(ierr);
+			}
+		}
+		
 	}
 
 	LOCAL_TO_GLOBAL(fs->DA_X, lproX, gproX);
@@ -595,42 +783,42 @@ PetscErrorCode AdjointGradientPerturbParameter(NLSol *nl, PetscInt CurPar, Petsc
 	if(CurPar==_RHO0_)			// rho
 	{
 		ini = nl->pc->pm->jr->phases[CurPhase].rho;
-		// perturb = ini*perturb;
+		perturb = ini*perturb + 1e-12;
 		nl->pc->pm->jr->phases[CurPhase].rho +=  perturb;
 		curscal = (scal->velocity)/(scal->density);
 	}
 	else if (CurPar==_RHON_)	    // rho_n
 	{
 		ini = nl->pc->pm->jr->phases[CurPhase].rho_n;
-		// perturb = ini*perturb;
+		perturb = ini*perturb + 1e-12;
 		nl->pc->pm->jr->phases[CurPhase].rho_n +=  perturb;
 		curscal = (scal->velocity)/1;
 	}
 	else if (CurPar==_RHOC_)	    // rho_c
 	{
 		ini = nl->pc->pm->jr->phases[CurPhase].rho_c;
-		// perturb = ini*perturb;
+		perturb = ini*perturb + 1e-12;
 		nl->pc->pm->jr->phases[CurPhase].rho_c +=  perturb;
 		curscal = (scal->velocity)*(scal->length_si);
 	}
 	else if (CurPar==_K_)	    // K
 	{
 		ini = nl->pc->pm->jr->phases[CurPhase].K;
-		// perturb = ini*perturb;
+		perturb = ini*perturb + 1e-12;
 		nl->pc->pm->jr->phases[CurPhase].K +=  perturb;
 		curscal = (scal->velocity)/(scal->stress_si);
 	}
 	else if (CurPar==_KP_)	    // Kp
 	{
 		ini = nl->pc->pm->jr->phases[CurPhase].Kp;
-		// perturb = ini*perturb;
+		perturb = ini*perturb + 1e-12;
 		nl->pc->pm->jr->phases[CurPhase].Kp +=  perturb;
 		curscal = (scal->velocity)/1;
 	}
 	else if (CurPar==_SHEAR_)	    // G
 	{
 		ini = nl->pc->pm->jr->phases[CurPhase].G;
-		// perturb = ini*perturb;
+		perturb = ini*perturb + 1e-12;
 		nl->pc->pm->jr->phases[CurPhase].G +=  perturb;
 		curscal = (scal->velocity)/(scal->stress_si);
 	}
@@ -639,22 +827,22 @@ PetscErrorCode AdjointGradientPerturbParameter(NLSol *nl, PetscInt CurPar, Petsc
 		// This kind of perturbs the whole NEWTONIAN viscosity, consider perturbing the parameters directly
 		ini = nl->pc->pm->jr->phases[CurPhase].Bd;
 		PetscScalar BdTemp;
+		perturb = perturb*(1.0/(2*ini)) + 1e-12;
 		BdTemp = (1.0/(2*ini)) + perturb;//(perturb*(1.0/(2*ini)));
-		// perturb = perturb*(1.0/(2*ini));
 		nl->pc->pm->jr->phases[CurPhase].Bd =  (1.0/(2*BdTemp));
 		curscal = (scal->velocity)/(scal->viscosity);
 	}
 	else if (CurPar==_ED_)	    // Ed
 	{
 		ini = nl->pc->pm->jr->phases[CurPhase].Ed;
-		// perturb = ini*perturb;
+		perturb = ini*perturb + 1e-12;
 		nl->pc->pm->jr->phases[CurPhase].Ed +=  perturb;
 		curscal = (scal->velocity)/(1);   // Not sure
 	}
 	else if (CurPar==_VD_)	// Vd
 	{
 		ini = nl->pc->pm->jr->phases[CurPhase].Vd;
-		// perturb = ini*perturb;
+		perturb = ini*perturb + 1e-12;
 		nl->pc->pm->jr->phases[CurPhase].Vd +=  perturb;
 		curscal = (scal->velocity)*(scal->stress_si);
 	}
@@ -663,78 +851,82 @@ PetscErrorCode AdjointGradientPerturbParameter(NLSol *nl, PetscInt CurPar, Petsc
 		// This kind of perturbs the whole DISLOCATION viscosity, consider perturbing the parameters directly
 		ini = nl->pc->pm->jr->phases[CurPhase].Bn;
 		PetscScalar BnTemp;
-		BnTemp = (1.0/(2*ini)) + perturb; //(perturb*(1.0/(2*ini)));
-		// perturb = perturb*(1.0/(2*ini));
-		nl->pc->pm->jr->phases[CurPhase].Bn =  (1.0/(2*BnTemp));
+		perturb = perturb* (pow(nl->pc->pm->jr->phases[CurPhase].Bn * pow(2,nl->pc->pm->jr->phases[CurPhase].n) * pow(nl->pc->pm->jr->matLim.DII_ref, nl->pc->pm->jr->phases[CurPhase].n-1) , -1/nl->pc->pm->jr->phases[CurPhase].n)) + 1e-12;
+		BnTemp = (pow(nl->pc->pm->jr->phases[CurPhase].Bn * pow(2,nl->pc->pm->jr->phases[CurPhase].n) * pow(nl->pc->pm->jr->matLim.DII_ref, nl->pc->pm->jr->phases[CurPhase].n-1) , -1/nl->pc->pm->jr->phases[CurPhase].n))  + perturb;
+		nl->pc->pm->jr->phases[CurPhase].Bn = pow (2.0*BnTemp, -nl->pc->pm->jr->phases[CurPhase].n) * pow(nl->pc->pm->jr->matLim.DII_ref, 1 - nl->pc->pm->jr->phases[CurPhase].n);
 		curscal = (scal->velocity)/(scal->viscosity);
 	}
 	else if (CurPar== _N_)	// n
 	{
 		ini = nl->pc->pm->jr->phases[CurPhase].n;
-		// perturb = ini*perturb;
+		aop->Ini2 = nl->pc->pm->jr->phases[CurPhase].Bn;
+		PetscScalar ViscTemp = (pow((aop->Ini2 * pow(2,nl->pc->pm->jr->phases[CurPhase].n) * pow(nl->pc->pm->jr->matLim.DII_ref, nl->pc->pm->jr->phases[CurPhase].n-1)) , -1/nl->pc->pm->jr->phases[CurPhase].n));
+		perturb = ini*perturb + 1e-12;
 		nl->pc->pm->jr->phases[CurPhase].n +=  perturb;
+		// We also accordingly need to perturb the inverse viscosity in this case
+		nl->pc->pm->jr->phases[CurPhase].Bn = pow (2.0*ViscTemp, -nl->pc->pm->jr->phases[CurPhase].n) * pow(nl->pc->pm->jr->matLim.DII_ref, 1 - nl->pc->pm->jr->phases[CurPhase].n);
 		curscal = (scal->velocity)/(1);
 	}
 	else if (CurPar==_EN_)	// En
 	{
 		ini = nl->pc->pm->jr->phases[CurPhase].En;
-		// perturb = ini*perturb;
+		perturb = ini*perturb + 1e-12;
 		nl->pc->pm->jr->phases[CurPhase].En +=  perturb;
 		curscal = (scal->velocity)/(1);    // Not sure
 	}
 	else if (CurPar==_VN_)	// Vn
 	{
 		ini = nl->pc->pm->jr->phases[CurPhase].Vn;
-		// perturb = ini*perturb;
+		perturb = ini*perturb + 1e-12;
 		nl->pc->pm->jr->phases[CurPhase].Vn +=  perturb;
 		curscal = (scal->velocity)*(scal->stress_si);
 	}
 	else if (CurPar==_TAUP_)	// taup
 	{
 		ini = nl->pc->pm->jr->phases[CurPhase].taup;
-		// perturb = ini*perturb;
+		perturb = ini*perturb + 1e-12;
 		nl->pc->pm->jr->phases[CurPhase].taup +=  perturb;
 		curscal = (scal->velocity)/(scal->stress_si);
 	}
 	else if (CurPar==_GAMMA_)	// gamma
 	{
 		ini = nl->pc->pm->jr->phases[CurPhase].gamma;
-		// perturb = ini*perturb;
+		perturb = ini*perturb + 1e-12;
 		nl->pc->pm->jr->phases[CurPhase].gamma +=  perturb;
 		curscal = (scal->velocity)/(1);
 	}
 	else if (CurPar==_Q_)	// q
 	{
 		ini = nl->pc->pm->jr->phases[CurPhase].q;
-		// perturb = ini*perturb;
+		perturb = ini*perturb + 1e-12;
 		nl->pc->pm->jr->phases[CurPhase].q +=  perturb;
 		curscal = (scal->velocity)/(1);
 	}
 	else if (CurPar==_FRICTION_)	// fr
 	{
 		ini = nl->pc->pm->jr->phases[CurPhase].fr;
-		// perturb = ini*perturb;
+		perturb = ini*perturb + 1e-12;
 		nl->pc->pm->jr->phases[CurPhase].fr +=  perturb;
 		curscal = (scal->velocity)/scal->angle;
 	}
 	else if (CurPar==_COHESION_)	// ch
 	{
 		ini = nl->pc->pm->jr->phases[CurPhase].ch;
-		// perturb = ini*perturb;
+		perturb = ini*perturb + 1e-12;
 		nl->pc->pm->jr->phases[CurPhase].ch +=  perturb;
 		curscal = (scal->velocity)/scal->stress_si;
 	}
 	else if (CurPar==_CP_)	// Cp
 	{
 		ini = nl->pc->pm->jr->phases[CurPhase].Cp;
-		// perturb = ini*perturb;
+		perturb = ini*perturb + 1e-12;
 		nl->pc->pm->jr->phases[CurPhase].Cp +=  perturb;
 		curscal = (scal->velocity)/scal->cpecific_heat;
 	}
 	else if (CurPar==_A_)	// A
 	{
 		ini = nl->pc->pm->jr->phases[CurPhase].A;
-		// perturb = ini*perturb;
+		perturb = ini*perturb + 1e-12;
 		nl->pc->pm->jr->phases[CurPhase].A +=  perturb;
 		curscal = (scal->velocity)/scal->heat_production;
 	}
@@ -774,7 +966,7 @@ PetscErrorCode AdjointGradientResetParameter(NLSol *nl, PetscInt CurPar, PetscIn
 	}else if (CurPar==_ED_)  		{nl->pc->pm->jr->phases[CurPhase].Ed     = ini;
 	}else if (CurPar==_VD_) 		{nl->pc->pm->jr->phases[CurPhase].Vd     = ini;
 	}else if (CurPar==_ETA0_) 		{nl->pc->pm->jr->phases[CurPhase].Bn     = ini;
-	}else if (CurPar==_N_) 			{nl->pc->pm->jr->phases[CurPhase].n      = ini;
+	}else if (CurPar==_N_) 			{nl->pc->pm->jr->phases[CurPhase].n      = ini;   nl->pc->pm->jr->phases[CurPhase].Bn = aop->Ini2;
 	}else if (CurPar==_EN_) 		{nl->pc->pm->jr->phases[CurPhase].En     = ini;
 	}else if (CurPar==_VN_) 		{nl->pc->pm->jr->phases[CurPhase].Vn     = ini;
 	}else if (CurPar==_TAUP_) 		{nl->pc->pm->jr->phases[CurPhase].taup   = ini;
