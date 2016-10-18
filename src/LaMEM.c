@@ -116,12 +116,12 @@ int main(int argc, char **argv)
 
 	// INITIALIZE
 	IOparam.use = 2;   // 0 = no inversion ; 1 = Tobis inversion ; 2 = only compute adjoint gradients ; 3 = 'full' adjoint inversion with TAO ; 4 = assume this as a forward simulation and save the solution
-	IOparam.mdN = 9;   // Number of parameters
+	IOparam.mdN = 4;   // Number of parameters
 	IOparam.mdI = 1;   // Number of indices
 	IOparam.Ab  = 0;   // Apply bounds?
 	IOparam.Ap  = 1;   // 1 = several indices ; 2 = the whole domain ; 3 = surface
 	IOparam.reg = 0;   // 1 = tikhonov regularization of the cost function (TN) 2 = total variation regularization (TV)
-	IOparam.Adv = 0;   // 1 = advect the point
+	IOparam.Adv = 1;   // 1 = advect the point
 
 	IOparam.count = 1;  // iteration counter for the initial cost function
 
@@ -145,7 +145,7 @@ int main(int argc, char **argv)
 	PetscScalar 	length,viscosity,temperature,stress,time,force,acceleration,mass;
 
 
-	/*// RAYLEIGH  Boris'Repro
+	// RAYLEIGH  Boris'Repro
 	scal.utype  = _NONE_;//_GEO_;   // _NONE_ or _SI_ or _GEO_
 
 	length      = 1;
@@ -165,11 +165,11 @@ int main(int argc, char **argv)
 	scal.inp_force       = force;
 
 	ierr = ScalingCreate(&scal);
-*/
 
 
 
-	// DETACHEMTN FOLDING NAIARA
+
+	/*// DETACHEMTN FOLDING NAIARA
 	scal.utype  = _GEO_;   // _NONE_ or _SI_ or _GEO_
 
 	length      = 1e3;
@@ -189,7 +189,7 @@ int main(int argc, char **argv)
 	scal.inp_force       = force;
 
 	ierr = ScalingCreate(&scal);
-
+*/
 
 	/*
 	// SUBDUCTION
@@ -216,7 +216,7 @@ int main(int argc, char **argv)
 
 
 	/*////////////////////////////////////////
-	//             RAYLEIGH  BORIS REPRO              //
+	//             RAYLEIGH  BORIS REPRO Hihalf             //
 	////////////////////////////////////////
 	// PHASES
 	phsar[0] = 1;
@@ -300,8 +300,110 @@ int main(int argc, char **argv)
 	IOparam.W = W;
 */
 
-
 	////////////////////////////////////////
+		//             RAYLEIGH  BORIS REPRO Hismall  (linear)           //
+		////////////////////////////////////////
+		// PHASES
+		phsar[0] = 1;
+		phsar[1] = 1;
+		phsar[2] = 2;
+		phsar[3] = 2;
+		IOparam.phs = phsar;
+
+		// X-COORDINATE
+		Ax[0] = 2.15	/scal.length;    // 2.15
+		//Ax[1] = 1.6	/scal.length;    // 4.45
+		//Ax[2] = 2.16	/scal.length;    // 4.45
+		//Ax[3] = 2.3	/scal.length;    // 4.45
+		//Ax[4] = 4.44	/scal.length;    // 4.45
+		//Ax[5] = 5.31	/scal.length;    // 4.45
+		//Ax[6] = 6.41	/scal.length;    // 4.45
+		//Ax[7] = 8.34	/scal.length;    // 4.45
+		IOparam.Ax = Ax;
+
+		// Y-COORDINATE
+		Ay[0] = 0		/scal.length;
+		//Ay[1] = 0		/scal.length;
+		//Ay[2] = 0		/scal.length;
+		//Ay[3] = 0		/scal.length;
+		//Ay[4] = 0		/scal.length;
+		//Ay[5] = 0		/scal.length;
+		//Ay[6] = 0		/scal.length;
+		//Ay[7] = 0		/scal.length;
+		IOparam.Ay = Ay;
+
+		// Z-COORDINATE
+		Az[0] = 0.106	/scal.length;   // 0.5     // 0.105569
+		//Az[1] = 0.1	/scal.length;   // 0.5
+		//Az[2] = 0.1	/scal.length;   // 0.5
+		//Az[3] = 0.1	/scal.length;   // 0.5
+		//Az[4] = 0.1	/scal.length;   // 0.5
+		//Az[5] = 0.1	/scal.length;   // 0.5
+		//Az[6] = 0.1	/scal.length;   // 0.5
+		//Az[7] = 0.1	/scal.length;   // 0.5
+		IOparam.Az = Az;
+
+		// VELOCITY COMPONENT
+		Av[0] = 3;
+		//Av[1] = 3;
+		//Av[2] = 3;
+		//Av[3] = 3;
+		//Av[4] = 3;
+		//Av[5] = 3;
+		//Av[6] = 3;
+		//Av[7] = 3;
+		IOparam.Av = Av;
+
+		// PARAMETER TYPES
+		typar[0] = _RHO0_;
+		typar[1] = _ETA_;
+		typar[2] = _RHO0_;
+		typar[3] = _ETA_;
+		IOparam.typ = typar;
+
+		// PARAMETER VALUES (only taken into account if IOparam.use = 3)
+		VecGetArray(P,&Par);
+		Par[0] = 0;    // 1 (initial solution)
+		Par[1] = 1;        // 1 (initial solution)
+		Par[2] = 1;     // 0 (initial solution)
+		Par[3] = 0.1;    // 100 (initial solution)
+		VecRestoreArray(P,&Par);
+
+		// UPPER BOUND
+		VecGetArray(Ub,&Ubar);
+		Ubar[0] = 5;
+		Ubar[1] = 5;
+		Ubar[2] = 1000;
+		Ubar[3] = 2;
+		VecRestoreArray(Ub,&Ubar);
+
+		// LOWER BOUND
+		VecGetArray(Lb,&Lbar);
+		Lbar[0] = 0;
+		Lbar[1] = 0;
+		Lbar[2] = 0;
+		Lbar[3] = 0;
+		VecRestoreArray(Lb,&Lbar);
+
+		// INITIALIZE GRADIENTS
+		VecGetArray(grad,&gradar);
+		gradar[0] = 0;
+		gradar[1] = 0;
+		gradar[2] = 0;
+		gradar[3] = 0;
+		IOparam.grd = gradar;
+		VecRestoreArray(grad,&gradar);
+
+		// TIKHONOV WEIGHTS
+		W[0] = 1;
+		W[1] = 1;
+		// gradar[2] = 0;
+		// gradar[3] = 0;
+		IOparam.W = W;
+
+
+
+	/*////////////////////////////////////////
 	//              NAIARA                  //
 	////////////////////////////////////////
 	// PHASES
@@ -404,7 +506,7 @@ int main(int argc, char **argv)
 	// gradar[2] = 0;
 	// gradar[3] = 0;
 	IOparam.W = W;
-
+*/
 
 	/*
 	////////////////////////////////////////

@@ -56,7 +56,16 @@ typedef struct
 	Vec          lvec_dg,lvec_dg2save,gvec_dg;
 	PetscScalar *coord,*dg;
 	PetscMPIInt  rank;
+
 } GravitySurvey;
+
+PetscErrorCode GRVSurveyCreate(UserCtx *user, GravitySurvey *survey);
+
+PetscErrorCode GRVSurveyDestroy(GravitySurvey survey);
+
+PetscErrorCode GRVCompute(FDSTAG *fs, UserCtx *user, JacRes *jr);
+
+
 //---------------------------------------------------------------------------
 
 

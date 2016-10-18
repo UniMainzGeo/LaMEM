@@ -202,6 +202,25 @@ PetscErrorCode PVOutWriteViscCreep(JacRes *jr, OutBuf *outbuf)
 }
 //---------------------------------------------------------------------------
 #undef __FUNCT__
+#define __FUNCT__ "PVOutWriteViscoPlastic"
+PetscErrorCode PVOutWriteViscoPlastic(JacRes *jr, OutBuf *outbuf)
+{
+	COPY_FUNCTION_HEADER
+
+	// macro to copy viscosity to buffer
+	#define GET_VISC_VISCOPLASTIC buff[k][j][i] = jr->svCell[iter++].eta_viscoplastic;
+
+	// output viscosity logarithm in GEO-mode
+	// (negative scaling requests logarithmic output)
+	if(scal->utype == _GEO_) cf = -scal->viscosity;
+	else                     cf =  scal->viscosity;
+
+	INTERPOLATE_COPY(fs->DA_CEN, outbuf->lbcen, InterpCenterCorner, GET_VISC_VISCOPLASTIC, 1, 0)
+
+	PetscFunctionReturn(0);
+}
+//---------------------------------------------------------------------------
+#undef __FUNCT__
 #define __FUNCT__ "PVOutWriteVelocity"
 PetscErrorCode PVOutWriteVelocity(JacRes *jr, OutBuf *outbuf)
 {
@@ -236,6 +255,41 @@ PetscErrorCode PVOutWritePressure(JacRes *jr, OutBuf *outbuf)
 	ierr = JacResCopyPres(jr, jr->gsol, _APPLY_SPC_); CHKERRQ(ierr);
 
 	INTERPOLATE_ACCESS(jr->lp, InterpCenterCorner, 1, 0, pShift)
+
+	PetscFunctionReturn(0);
+}
+//---------------------------------------------------------------------------
+#undef __FUNCT__
+#define __FUNCT__ "PVOutWriteOverPressure"
+PetscErrorCode PVOutWriteOverPressure(JacRes *jr, OutBuf *outbuf)
+{
+	PetscScalar pShift;
+
+	ACCESS_FUNCTION_HEADER
+
+	cf = scal->stress;
+
+	// scale pressure shift
+	pShift = cf*jr->pShift;
+
+	ierr = JacResGetOverPressure(jr, outbuf->lbcen); CHKERRQ(ierr);
+
+	INTERPOLATE_ACCESS(outbuf->lbcen, InterpCenterCorner, 1, 0, pShift)
+
+	PetscFunctionReturn(0);
+}
+//---------------------------------------------------------------------------
+#undef __FUNCT__
+#define __FUNCT__ "PVOutWriteLithosPressure"
+PetscErrorCode PVOutWriteLithosPressure(JacRes *jr, OutBuf *outbuf)
+{
+	ACCESS_FUNCTION_HEADER
+
+	cf = scal->stress;
+
+	ierr = JacResGetLithoStaticPressure(jr); CHKERRQ(ierr);
+
+	INTERPOLATE_ACCESS(jr->lp_lithos, InterpCenterCorner, 1, 0, 0.0)
 
 	PetscFunctionReturn(0);
 }
@@ -509,12 +563,19 @@ PetscErrorCode PVOutWritePlastDissip(JacRes *jr, OutBuf *outbuf)
 #define __FUNCT__ "PVOutWriteTotDispl"
 PetscErrorCode PVOutWriteTotDispl(JacRes *jr, OutBuf *outbuf)
 {
-	PetscErrorCode ierr;
-	PetscFunctionBegin;
 
-	ierr = 0; CHKERRQ(ierr);
-	if(jr)  jr = NULL;
-	if(outbuf) outbuf = NULL;
+	COPY_FUNCTION_HEADER
+
+	cf = scal->length;
+
+	// macros to copy displacement in cell to buffer
+	#define GET_DISPLX buff[k][j][i] = jr->svCell[iter++].U[0];
+	#define GET_DISPLY buff[k][j][i] = jr->svCell[iter++].U[1];
+	#define GET_DISPLZ buff[k][j][i] = jr->svCell[iter++].U[2];
+
+	INTERPOLATE_COPY(jr->fs->DA_CEN, outbuf->lbcen, InterpCenterCorner, GET_DISPLX, 3, 0);
+	INTERPOLATE_COPY(jr->fs->DA_CEN, outbuf->lbcen, InterpCenterCorner, GET_DISPLY, 3, 1);
+	INTERPOLATE_COPY(jr->fs->DA_CEN, outbuf->lbcen, InterpCenterCorner, GET_DISPLZ, 3, 2);
 
 	PetscFunctionReturn(0);
 }

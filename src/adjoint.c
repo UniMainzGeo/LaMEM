@@ -303,7 +303,7 @@ PetscErrorCode AdjointComputeGradients(JacRes *jr, AdjGrad *aop, NLSol *nl, SNES
 		ierr = VecDestroy(&res);
 	}
 
-	if(IOparam->mdI<10 && IOparam->Ap == 1)
+	if(IOparam->mdI<11 && IOparam->Ap == 1)
 	{
 		VecGetArray(aop->vx,&vx);
 		VecGetArray(aop->vy,&vy);

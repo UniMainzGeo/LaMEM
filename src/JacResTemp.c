@@ -89,7 +89,7 @@ PetscErrorCode JacResGetTempParam(
 	PetscInt    i, numPhases;
     Material_t  *phases, *M;
 
-	PetscScalar cf, k, rho, rho_Cp, rho_A;
+	PetscScalar cf, k, rho, rho_Cp, rho_A, density;
 
 	PetscFunctionBegin;
 
@@ -99,6 +99,7 @@ PetscErrorCode JacResGetTempParam(
 	rho_A     = 0.0;
 	numPhases = jr->numPhases;
 	phases    = jr->phases;
+	density   = jr->scal.density;
 
 	// average all phases
 	for(i = 0; i < numPhases; i++)
@@ -108,7 +109,10 @@ PetscErrorCode JacResGetTempParam(
 		rho     =  M->rho;
 
 		// override air phase density
-		if(jr->AirPhase != -1 && i == jr->AirPhase) rho = 1.0;
+		if(jr->AirPhase != -1 && i == jr->AirPhase)
+		{
+			rho = 1.0/density;
+		}
 
 		k      +=  cf*M->k;
 		rho_Cp +=  cf*M->Cp*rho;

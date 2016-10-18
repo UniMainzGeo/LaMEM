@@ -99,9 +99,10 @@ PetscErrorCode JacResCreate(
 	FDSTAG   *fs,
 	BCCtx    *bc)
 {
-	DOFIndex    *dof;
-	PetscScalar *svBuff;
-	PetscInt    i, n, svBuffSz, numPhases;
+	DOFIndex       *dof;
+	PetscScalar    *svBuff;
+	PetscInt        i, n, svBuffSz, numPhases;
+	const PetscInt *lx, *ly;
 
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
@@ -157,6 +158,9 @@ PetscErrorCode JacResCreate(
 
 	// continuity residual
 	ierr = DMCreateGlobalVector(fs->DA_CEN, &jr->gc);  CHKERRQ(ierr);
+
+	// lithostatic pressure
+	ierr = DMCreateLocalVector(fs->DA_CEN, &jr->lp_lithos); CHKERRQ(ierr);
 
 	// corner buffer
 	ierr = DMCreateLocalVector(fs->DA_COR,  &jr->lbcor); CHKERRQ(ierr);
@@ -215,6 +219,21 @@ PetscErrorCode JacResCreate(
 	// setup temperature parameters
 	ierr = JacResCreateTempParam(jr); CHKERRQ(ierr);
 
+	//==========================
+	// 2D integration primitives
+	//==========================
+
+	// get grid partitioning in X & Y directions
+	ierr = DMDAGetOwnershipRanges(fs->DA_CEN, &lx, &ly, NULL); CHKERRQ(ierr);
+
+	// create 2D cell center grid
+	ierr = DMDACreate3d(PETSC_COMM_WORLD,
+		DM_BOUNDARY_NONE, DM_BOUNDARY_NONE, DM_BOUNDARY_NONE,
+		DMDA_STENCIL_BOX,
+		fs->dsx.tcels, fs->dsy.tcels, fs->dsz.nproc,
+		fs->dsx.nproc, fs->dsy.nproc, fs->dsz.nproc,
+		1, 1, lx, ly, NULL, &jr->DA_CELL_2D); CHKERRQ(ierr);
+
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
@@ -272,6 +291,11 @@ PetscErrorCode JacResDestroy(JacRes *jr)
 
 	// destroy temperature parameters
 	ierr = JacResDestroyTempParam(jr); CHKERRQ(ierr);
+
+	//==========================
+	// 2D integration primitives
+	//==========================
+	ierr = DMDestroy(&jr->DA_CELL_2D); CHKERRQ(ierr);
 
 	PetscFunctionReturn(0);
 }
@@ -754,11 +778,13 @@ PetscErrorCode JacResGetResidual(JacRes *jr)
 	PetscScalar YZ, YZ1, YZ2, YZ3, YZ4;
 	PetscScalar bdx, fdx, bdy, fdy, bdz, fdz;
 	PetscScalar gx, gy, gz, tx, ty, tz, sxx, syy, szz, sxy, sxz, syz;
-	PetscScalar J2Inv, theta, rho, IKdt, alpha, Tc, pc, pShift, Tn, pn, dt, fssa, *grav;
+	PetscScalar J2Inv, theta, rho, IKdt, Tc, pc, pShift, pn, dt, fssa, *grav;
 	PetscScalar ***fx,  ***fy,  ***fz, ***vx,  ***vy,  ***vz, ***gc;
-	PetscScalar ***dxx, ***dyy, ***dzz, ***dxy, ***dxz, ***dyz, ***p, ***T;
-	PetscScalar eta_creep;
-	PetscScalar depth;
+	PetscScalar ***dxx, ***dyy, ***dzz, ***dxy, ***dxz, ***dyz, ***p, ***T, ***p_lithos;
+	PetscScalar eta_creep, eta_viscoplastic;
+	PetscScalar depth, pc_lithos;
+//	PetscScalar rho_lithos;
+//	PetscScalar alpha, Tn,
 
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
@@ -773,13 +799,14 @@ PetscErrorCode JacResGetResidual(JacRes *jr)
 	mz = fs->dsz.tnods - 1;
 
 	// access residual context variables
-	numPhases =  jr->numPhases; // number phases
-	phases    =  jr->phases;    // phase parameters
-	matLim    = &jr->matLim;    // phase parameters limiters
-	dt        =  jr->ts.dt;     // time step
-	fssa      =  jr->FSSA;      // density gradient penalty parameter
-	grav      =  jr->grav;      // gravity acceleration
-	pShift    =  jr->pShift;    // pressure shift
+	numPhases =  jr->numPhases; 	// number phases
+	phases    =  jr->phases;    	// phase parameters
+	matLim    = &jr->matLim;    	// phase parameters limiters
+	dt        =  jr->ts.dt;     	// time step
+	fssa      =  jr->FSSA;      	// density gradient penalty parameter
+	grav      =  jr->grav;      	// gravity acceleration
+//	rho_lithos=  matLim->rho_lithos;// density to compute lithostatic pressure in viscosity formulation
+	pShift    =  jr->pShift;    	// pressure shift
 
 	// clear local residual vectors
 	ierr = VecZeroEntries(jr->lfx); CHKERRQ(ierr);
@@ -803,6 +830,10 @@ PetscErrorCode JacResGetResidual(JacRes *jr)
 	ierr = DMDAVecGetArray(fs->DA_X,   jr->lvx,  &vx);  CHKERRQ(ierr);
 	ierr = DMDAVecGetArray(fs->DA_Y,   jr->lvy,  &vy);  CHKERRQ(ierr);
 	ierr = DMDAVecGetArray(fs->DA_Z,   jr->lvz,  &vz);  CHKERRQ(ierr);
+	ierr = DMDAVecGetArray(fs->DA_CEN, jr->lp_lithos,&p_lithos); CHKERRQ(ierr);
+
+	// compute lithostatic pressure
+	ierr = JacResGetLithoStaticPressure(jr); CHKERRQ(ierr);
 
 	//-------------------------------
 	// central points
@@ -866,11 +897,20 @@ PetscErrorCode JacResGetResidual(JacRes *jr)
 		// current temperature
 		Tc = T[k][j][i];
 
+		// access current lithostatic pressure
+		pc_lithos = p_lithos[k][j][i];
+
+		// compute depth below the free surface
+		depth = jr->avg_topo - COORD_CELL(k, sz, fs->dsz);
+
+		if(depth < 0.0) depth = 0.0;
+
 		// evaluate deviatoric constitutive equations
-		ierr = DevConstEq(svDev, &eta_creep, numPhases, phases, svCell->phRat, matLim, dt, pc-pShift, Tc); CHKERRQ(ierr);
+		ierr = DevConstEq(svDev, &eta_creep, &eta_viscoplastic, numPhases, phases, svCell->phRat, matLim, pc_lithos, dt, pc-pShift, Tc); CHKERRQ(ierr);
 
 		// store creep viscosity
-		svCell->eta_creep = eta_creep;
+		svCell->eta_creep 			= eta_creep;
+		svCell->eta_viscoplastic 	= eta_viscoplastic;
 
 		// compute stress, plastic strain rate and shear heating term on cell
 		ierr = GetStressCell(svCell, matLim, XX, YY, ZZ); CHKERRQ(ierr);
@@ -880,10 +920,7 @@ PetscErrorCode JacResGetResidual(JacRes *jr)
 		syy = svCell->syy - pc;
 		szz = svCell->szz - pc;
 
-		// compute depth below the free surface
-		depth = jr->avg_topo - COORD_CELL(k, sz, fs->dsz);
 
-		if(depth < 0.0) depth = 0.0;
 
 		// evaluate volumetric constitutive equations
 		ierr = VolConstEq(svBulk, numPhases, phases, svCell->phRat, matLim, depth, dt, pc-pShift , Tc); CHKERRQ(ierr);
@@ -892,9 +929,9 @@ PetscErrorCode JacResGetResidual(JacRes *jr)
 		theta = svBulk->theta; // volumetric strain rate
 		rho   = svBulk->rho;   // effective density
 		IKdt  = svBulk->IKdt;  // inverse bulk viscosity
-		alpha = svBulk->alpha; // effective thermal expansion
+//		alpha = svBulk->alpha; // effective thermal expansion
 		pn    = svBulk->pn;    // pressure history
-		Tn    = svBulk->Tn;    // temperature history
+//		Tn    = svBulk->Tn;    // temperature history
 
 		// compute gravity terms
 		gx = rho*grav[0];
@@ -1013,8 +1050,11 @@ PetscErrorCode JacResGetResidual(JacRes *jr)
 		// current temperature (x-y plane, i-j indices)
 		Tc = 0.25*(T[k][j][i] + T[k][j][i-1] + T[k][j-1][i] + T[k][j-1][i-1]);
 
+		// access current lithostatic pressure (x-y plane, i-j indices)
+		pc_lithos = 0.25*(p_lithos[k][j][i] + p_lithos[k][j][i-1] + p_lithos[k][j-1][i] + p_lithos[k][j-1][i-1]);
+
 		// evaluate deviatoric constitutive equations
-		ierr = DevConstEq(svDev, &eta_creep, numPhases, phases, svEdge->phRat, matLim, dt, pc-pShift, Tc); CHKERRQ(ierr);
+		ierr = DevConstEq(svDev, &eta_creep, &eta_viscoplastic, numPhases, phases, svEdge->phRat, matLim, pc_lithos, dt, pc-pShift, Tc); CHKERRQ(ierr);
 
 		// compute stress, plastic strain rate and shear heating term on edge
 		ierr = GetStressEdge(svEdge, matLim, XY); CHKERRQ(ierr);
@@ -1115,8 +1155,11 @@ PetscErrorCode JacResGetResidual(JacRes *jr)
 		// current temperature (x-z plane, i-k indices)
 		Tc = 0.25*(T[k][j][i] + T[k][j][i-1] + T[k-1][j][i] + T[k-1][j][i-1]);
 
+		// access current lithostatic pressure (x-z plane, i-k indices)
+		pc_lithos = 0.25*(p_lithos[k][j][i] + p_lithos[k][j][i-1] + p_lithos[k-1][j][i] + p_lithos[k-1][j][i-1]);
+
 		// evaluate deviatoric constitutive equations
-		ierr = DevConstEq(svDev, &eta_creep, numPhases, phases, svEdge->phRat, matLim, dt, pc-pShift, Tc); CHKERRQ(ierr);
+		ierr = DevConstEq(svDev, &eta_creep, &eta_viscoplastic, numPhases, phases, svEdge->phRat, matLim, pc_lithos, dt, pc-pShift, Tc); CHKERRQ(ierr);
 
 		// compute stress, plastic strain rate and shear heating term on edge
 		ierr = GetStressEdge(svEdge, matLim, XZ); CHKERRQ(ierr);
@@ -1217,8 +1260,11 @@ PetscErrorCode JacResGetResidual(JacRes *jr)
 		// current temperature (y-z plane, j-k indices)
 		Tc = 0.25*(T[k][j][i] + T[k][j-1][i] + T[k-1][j][i] + T[k-1][j-1][i]);
 
+		// access current lithostatic pressure (y-z plane, j-k indices)
+		pc_lithos = 0.25*(p_lithos[k][j][i] + p_lithos[k][j-1][i] + p_lithos[k-1][j][i] + p_lithos[k-1][j-1][i]);
+
 		// evaluate deviatoric constitutive equations
-		ierr = DevConstEq(svDev, &eta_creep, numPhases, phases, svEdge->phRat, matLim, dt, pc-pShift, Tc); CHKERRQ(ierr);
+		ierr = DevConstEq(svDev, &eta_creep, &eta_viscoplastic, numPhases, phases, svEdge->phRat, matLim, pc_lithos, dt, pc-pShift, Tc); CHKERRQ(ierr);
 
 		// compute stress, plastic strain rate and shear heating term on edge
 		ierr = GetStressEdge(svEdge, matLim, YZ); CHKERRQ(ierr);
@@ -1257,6 +1303,7 @@ PetscErrorCode JacResGetResidual(JacRes *jr)
 	ierr = DMDAVecRestoreArray(fs->DA_X,   jr->lvx,  &vx);  CHKERRQ(ierr);
 	ierr = DMDAVecRestoreArray(fs->DA_Y,   jr->lvy,  &vy);  CHKERRQ(ierr);
 	ierr = DMDAVecRestoreArray(fs->DA_Z,   jr->lvz,  &vz);  CHKERRQ(ierr);
+	ierr = DMDAVecRestoreArray(fs->DA_CEN, jr->lp_lithos, &p_lithos); CHKERRQ(ierr);
 
 	// assemble global residuals from local contributions
 	LOCAL_TO_GLOBAL(fs->DA_X, jr->lfx, jr->gfx)
@@ -1787,6 +1834,7 @@ PetscErrorCode SetMatParLim(MatParLim *matLim, UserCtx *usr)
 	matLim->quasiHarmAvg = PETSC_FALSE;
 	matLim->initGuessFlg = PETSC_TRUE;
 	matLim->rho_fluid    = 0.0;
+	matLim->rho_lithos 	 = 0.0;	 // lithostatic density
 	matLim->theta_north  = 90.0; // by default y-axis
 	matLim->warn         = PETSC_TRUE;
 	matLim->jac_mat_free = PETSC_FALSE;
@@ -1799,7 +1847,8 @@ PetscErrorCode SetMatParLim(MatParLim *matLim, UserCtx *usr)
 		matLim->quasiHarmAvg = PETSC_TRUE;
 	}
 
-	ierr = PetscOptionsGetScalar(NULL, "-rho_fluid", &matLim->rho_fluid, NULL); CHKERRQ(ierr);
+	ierr = PetscOptionsGetScalar(NULL, "-rho_fluid",  &matLim->rho_fluid, NULL); CHKERRQ(ierr);
+	ierr = PetscOptionsGetScalar(NULL, "-rho_lithos", &matLim->rho_lithos, NULL); CHKERRQ(ierr);		// specify lithostatic density on commandline (if not set, we don't use this)
 
 	ierr = PetscOptionsGetScalar(NULL, "-theta_north", &matLim->theta_north, NULL); CHKERRQ(ierr);
 
@@ -2475,7 +2524,7 @@ PetscErrorCode JacResSetVelRotation(JacRes *jr)
 	FDSTAG      *fs;
 	PetscScalar ***lvx, ***lvy, ***lvz;
 	PetscInt    i, j, k, sx, sy, sz, nx, ny, nz;
-	PetscInt    I, J, K, mcx, mcy, mcz, nx1, nz1, sx1, sz1;
+	PetscInt    I, J, K, mcx, mcy, mcz, sx1, sz1;
 
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
@@ -2501,7 +2550,7 @@ PetscErrorCode JacResSetVelRotation(JacRes *jr)
 	GET_CELL_RANGE_GHOST_INT(ny, sy, fs->dsy);
 	GET_CELL_RANGE_GHOST_INT(nz, sz, fs->dsz);
 
-	GET_CELL_RANGE(nx1, sz1, fs->dsz);
+	sz1 = fs->dsz.pstart;
 
 	START_STD_LOOP
 	{
@@ -2545,7 +2594,7 @@ PetscErrorCode JacResSetVelRotation(JacRes *jr)
 	GET_CELL_RANGE_GHOST_INT(ny, sy, fs->dsy);
 	GET_NODE_RANGE_GHOST_INT(nz, sz, fs->dsz);
 
-	GET_CELL_RANGE(nz1, sx1, fs->dsx);
+	sx1 = fs->dsx.pstart;
 
 	START_STD_LOOP
 	{
@@ -2567,6 +2616,152 @@ PetscErrorCode JacResSetVelRotation(JacRes *jr)
 	ierr = DMDAVecRestoreArray(fs->DA_X,   jr->lvx,  &lvx);    CHKERRQ(ierr);
 	ierr = DMDAVecRestoreArray(fs->DA_Y,   jr->lvy,  &lvy);    CHKERRQ(ierr);
 	ierr = DMDAVecRestoreArray(fs->DA_Z,   jr->lvz,  &lvz);    CHKERRQ(ierr);
+
+	PetscFunctionReturn(0);
+}
+//---------------------------------------------------------------------------
+#undef __FUNCT__
+#define __FUNCT__ "JacResGetOverPressure"
+PetscErrorCode JacResGetOverPressure(JacRes *jr, Vec lop)
+{
+	// compute overpressure
+
+	FDSTAG      *fs;
+	PetscScalar ***op, ***p, ***p_lithos;
+	PetscInt    i, j, k, sx, sy, sz, nx, ny, nz;
+
+	PetscErrorCode ierr;
+	PetscFunctionBegin;
+
+	// access context
+	fs  =  jr->fs;
+
+	// get local grid sizes
+	ierr = DMDAGetCorners(fs->DA_CEN, &sx, &sy, &sz, &nx, &ny, &nz); CHKERRQ(ierr);
+
+	// access pressure vectors
+	ierr = VecZeroEntries(lop); CHKERRQ(ierr);
+
+	ierr = DMDAVecGetArray(fs->DA_CEN, lop,           &op);       CHKERRQ(ierr);
+	ierr = DMDAVecGetArray(fs->DA_CEN, jr->lp,        &p);        CHKERRQ(ierr);
+	ierr = DMDAVecGetArray(fs->DA_CEN, jr->lp_lithos, &p_lithos); CHKERRQ(ierr);
+
+	START_STD_LOOP
+	{
+		// overpressure = dynamic - lithostatic
+		op[k][j][i] = p[k][j][i] - p_lithos[k][j][i];
+	}
+	END_STD_LOOP
+
+	// restore buffer and pressure vectors
+	ierr = DMDAVecRestoreArray(fs->DA_CEN, lop,           &op);       CHKERRQ(ierr);
+	ierr = DMDAVecRestoreArray(fs->DA_CEN, jr->lp,        &p);        CHKERRQ(ierr);
+	ierr = DMDAVecRestoreArray(fs->DA_CEN, jr->lp_lithos, &p_lithos); CHKERRQ(ierr);
+
+	// fill ghost points
+	LOCAL_TO_LOCAL(fs->DA_CEN, lop)
+
+	PetscFunctionReturn(0);
+}
+//---------------------------------------------------------------------------
+#undef __FUNCT__
+#define __FUNCT__ "JacResGetLithoStaticPressure"
+PetscErrorCode JacResGetLithoStaticPressure(JacRes *jr)
+{
+	// compute lithostatic pressure
+
+	Vec         vbuff;
+	FDSTAG      *fs;
+	Discret1D   *dsz;
+	MPI_Request srequest, rrequest;
+	PetscScalar ***lp, ***ibuff, *lbuff, dz, dp, g, rho;
+	PetscInt    i, j, k, sx, sy, sz, nx, ny, nz, iter, L;
+
+	PetscErrorCode ierr;
+	PetscFunctionBegin;
+
+	// access context
+	fs  =  jr->fs;
+	dsz = &fs->dsz;
+	L   =  (PetscInt)dsz->rank;
+	g   =   PetscAbsScalar(jr->grav[2]);
+
+	// get local grid sizes
+	ierr = DMDAGetCorners(fs->DA_CEN, &sx, &sy, &sz, &nx, &ny, &nz); CHKERRQ(ierr);
+
+	// get integration/communication buffer
+	ierr = DMGetGlobalVector(jr->DA_CELL_2D, &vbuff); CHKERRQ(ierr);
+
+	ierr = VecZeroEntries(vbuff); CHKERRQ(ierr);
+
+	// open index buffer for computation
+	ierr = DMDAVecGetArray(jr->DA_CELL_2D, vbuff, &ibuff); CHKERRQ(ierr);
+
+	// open linear buffer for send/receive
+	ierr = VecGetArray(vbuff, &lbuff); CHKERRQ(ierr);
+
+	// access lithostatic pressure
+	ierr = DMDAVecGetArray(fs->DA_CEN, jr->lp_lithos, &lp); CHKERRQ(ierr);
+
+	// start receiving integral from top domain (next)
+	if(dsz->nproc != 1 && dsz->grnext != -1)
+	{
+		ierr = MPI_Irecv(lbuff, (PetscMPIInt)(nx*ny), MPIU_SCALAR, dsz->grnext, 0, PETSC_COMM_WORLD, &rrequest); CHKERRQ(ierr);
+	}
+
+	// copy density
+	iter = 0;
+
+	START_STD_LOOP
+	{
+		lp[k][j][i] = jr->svCell[iter++].svBulk.rho;
+	}
+	END_STD_LOOP
+
+	// finish receiving
+	if(dsz->nproc != 1 && dsz->grnext != -1)
+	{
+		ierr = MPI_Wait(&rrequest, MPI_STATUSES_IGNORE);  CHKERRQ(ierr);
+	}
+
+	// compute local integral from top to bottom
+	for(k = sz + nz - 1; k >= sz; k--)
+	{
+		START_PLANE_LOOP
+		{
+			// get density, cell size, pressure increment
+			rho = lp[k][j][i];
+			dz  = SIZE_CELL(k, sz, (*dsz));
+			dp  = rho*g*dz;
+
+			// store  lithostatic pressure
+			lp[k][j][i] = ibuff[L][j][i] + dp/2.0;
+
+			// update lithostatic pressure integral
+			ibuff[L][j][i] += dp;
+		}
+		END_PLANE_LOOP
+	}
+
+	// send integral to bottom domain (previous)
+	if(dsz->nproc != 1 && dsz->grprev != -1)
+	{
+		ierr = MPI_Isend(lbuff, (PetscMPIInt)(nx*ny), MPIU_SCALAR, dsz->grprev, 0, PETSC_COMM_WORLD, &srequest); CHKERRQ(ierr);
+
+		ierr = MPI_Wait(&srequest, MPI_STATUSES_IGNORE);  CHKERRQ(ierr);
+	}
+
+	// restore buffer and pressure vectors
+	ierr = DMDAVecRestoreArray(fs->DA_CEN, jr->lp_lithos, &lp); CHKERRQ(ierr);
+
+	ierr = DMDAVecRestoreArray(jr->DA_CELL_2D, vbuff, &ibuff); CHKERRQ(ierr);
+
+	ierr = VecRestoreArray(vbuff, &lbuff); CHKERRQ(ierr);
+
+	ierr = DMRestoreGlobalVector(jr->DA_CELL_2D, &vbuff); CHKERRQ(ierr);
+
+	// fill ghost points
+	LOCAL_TO_LOCAL(fs->DA_CEN, jr->lp_lithos)
 
 	PetscFunctionReturn(0);
 }

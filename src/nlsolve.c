@@ -230,6 +230,12 @@ PetscErrorCode FormResidual(SNES snes, Vec x, Vec f, void *ctx)
 	nl = (NLSol*)ctx;
 	jr = nl->pc->pm->jr;
 
+	// apply pressure limit at the first visco-plastic timestep and iteration
+    if(jr->ts.istep == 1 && jr->matLim.presLimAct == PETSC_TRUE)
+    {
+    	jr->matLim.presLimFlg = PETSC_TRUE;
+	}
+
 	// copy solution from global to local vectors, enforce boundary constraints
 	ierr = JacResCopySol(jr, x, _APPLY_SPC_); CHKERRQ(ierr);
 
@@ -243,6 +249,9 @@ PetscErrorCode FormResidual(SNES snes, Vec x, Vec f, void *ctx)
 
 	// copy residuals to global vector
 	ierr = JacResCopyRes(jr, f); CHKERRQ(ierr);
+
+	// deactivate pressure limit after it has been activated
+	jr->matLim.presLimFlg = PETSC_FALSE;
 
 	PetscFunctionReturn(0);
 }
@@ -379,6 +388,12 @@ PetscErrorCode FormJacobian(SNES snes, Vec x, Mat Amat, Mat Pmat, void *ctx)
 	{
 		PetscPrintf(PETSC_COMM_WORLD,"USING MF JACOBIAN for iteration %lld, ||F||/||F0||=%e \n", (LLD)nl->it, nrm/nl->refRes);
 		it_newton++;
+	}
+
+	// switch off pressure limit for plasticity after first timestep and iteration (after GetResidual)
+	if(jr->ts.istep >=1)
+	{
+		jr->matLim.presLimAct = PETSC_FALSE;
 	}
 
 	// count iterations

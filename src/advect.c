@@ -607,6 +607,11 @@ PetscErrorCode ADVAdvectMark(AdvCtx *actx)
 		P->X[0] = xp + vx*dt;
 		P->X[1] = yp + vy*dt;
 		P->X[2] = zp + vz*dt;
+
+		// update displacement
+		P->U[0] += vx*dt;
+		P->U[1] += vy*dt;
+		P->U[2] += vz*dt;
 	}
 
 	// restore access
@@ -1425,6 +1430,7 @@ PetscErrorCode ADVProjHistMarkToGrid(AdvCtx *actx)
 	// - temperature  (centers)
 	// - APS          (centers and edges)
 	// - stress       (centers or edges)
+	// - displacement (centers)
 
 	FDSTAG   *fs;
 	JacRes   *jr;
@@ -1516,6 +1522,9 @@ PetscErrorCode ADVInterpMarkToCell(AdvCtx *actx)
 		svCell->hxx       = 0.0;
 		svCell->hyy       = 0.0;
 		svCell->hzz       = 0.0;
+		svCell->U[0]      = 0.0;
+		svCell->U[1]      = 0.0;
+		svCell->U[2]      = 0.0;
 	}
 
 	// scan ALL markers
@@ -1556,6 +1565,9 @@ PetscErrorCode ADVInterpMarkToCell(AdvCtx *actx)
 		svCell->hxx       += w*P->S.xx;
 		svCell->hyy       += w*P->S.yy;
 		svCell->hzz       += w*P->S.zz;
+		svCell->U[0]      += w*P->U[0];
+		svCell->U[1]      += w*P->U[1];
+		svCell->U[2]      += w*P->U[2];
 
 	}
 
@@ -1575,6 +1587,9 @@ PetscErrorCode ADVInterpMarkToCell(AdvCtx *actx)
 		svCell->hxx       /= w;
 		svCell->hyy       /= w;
 		svCell->hzz       /= w;
+		svCell->U[0]      /=w;
+		svCell->U[1]      /=w;
+		svCell->U[2]      /=w;
 	}
 
 	PetscFunctionReturn(0);

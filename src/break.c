@@ -145,7 +145,7 @@ PetscErrorCode BreakWrite(UserCtx *user, AdvCtx *actx, FreeSurf *surf, PVOut *pv
 	JacRes         *jr;
 	FILE           *fp;
 	char           *fname;
-	PetscInt        n;
+	PetscInt        n, ip;
 	PetscInt       initGuessFlag, jtypeFlag, sflatFlag;
 	PetscLogDouble tstart, tend;
 
@@ -297,9 +297,12 @@ PetscErrorCode BreakWrite(UserCtx *user, AdvCtx *actx, FreeSurf *surf, PVOut *pv
 	// pushing block center coordinates
 	if (user->AddPushing)
 	{
-		fwrite(&user->Pushing.x_center_block , sizeof(PetscScalar), 1, fp);
-		fwrite(&user->Pushing.y_center_block , sizeof(PetscScalar), 1, fp);
-		fwrite(&user->Pushing.z_center_block , sizeof(PetscScalar), 1, fp);
+		for(ip = 0; ip < user->nPush; ip++)
+		{
+			fwrite(&user->Pushing[ip].x_center_block , sizeof(PetscScalar), 1, fp);
+			fwrite(&user->Pushing[ip].y_center_block , sizeof(PetscScalar), 1, fp);
+			fwrite(&user->Pushing[ip].z_center_block , sizeof(PetscScalar), 1, fp);
+		}
 	}
 
 	//----------------------------------
@@ -371,7 +374,7 @@ PetscErrorCode BreakRead(UserCtx *user, AdvCtx *actx, PVOut *pvout, PVSurf *pvsu
 	FDSTAG      *fs;
 	FILE        *fp;
 	char        *fname;
-	PetscInt     n;
+	PetscInt     n, ip;
 	JacType     j;
 	PetscInt    initGuessFlag, jtypeFlag;
 
@@ -435,9 +438,12 @@ PetscErrorCode BreakRead(UserCtx *user, AdvCtx *actx, PVOut *pvout, PVSurf *pvsu
 	// pushing block center coordinates
 	if (user->AddPushing)
 	{
-		fread(&user->Pushing.x_center_block , sizeof(PetscScalar), 1, fp);
-		fread(&user->Pushing.y_center_block , sizeof(PetscScalar), 1, fp);
-		fread(&user->Pushing.z_center_block , sizeof(PetscScalar), 1, fp);
+		for(ip = 0; ip < user->nPush; ip++)
+		{
+			fread(&user->Pushing[ip].x_center_block , sizeof(PetscScalar), 1, fp);
+			fread(&user->Pushing[ip].y_center_block , sizeof(PetscScalar), 1, fp);
+			fread(&user->Pushing[ip].z_center_block , sizeof(PetscScalar), 1, fp);
+		}
 	}
 
 	//----------------------------------

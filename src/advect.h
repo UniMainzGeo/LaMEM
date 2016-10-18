@@ -54,10 +54,11 @@
 // marker-to-edge / edge-to-marker interpolation cases
 typedef enum
 {
-	_PHASE_,    // phase ratio
-	_STRESS_,   // deviatoric stress
-	_APS_,      // accumulated plastic strain
-	_VORTICITY_ // vorticity pseudo-vector components
+	_PHASE_,     // phase ratio
+	_STRESS_,    // deviatoric stress
+	_APS_,       // accumulated plastic strain
+	_VORTICITY_, // vorticity pseudo-vector components
+	_DISP_       // displacement
 
 } InterpCase;
 
