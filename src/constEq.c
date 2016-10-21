@@ -87,9 +87,9 @@ PetscErrorCode ConstEqCtxSetup(
 
 	p_viscosity = p;			// pressure used in viscosity evaluation
 
-	ierr = PetscOptionsGetBool(PETSC_NULL, "-ViscoPLithosOff", &flag, PETSC_NULL); CHKERRQ(ierr);
-	ierr = PetscOptionsGetBool(PETSC_NULL, "-NoPressureLimit", &flag2, PETSC_NULL); CHKERRQ(ierr);
-	ierr = PetscOptionsGetBool(PETSC_NULL, "-EmployLithostaticPressureInYieldFunction", &flag3, PETSC_NULL); CHKERRQ(ierr);
+	ierr = PetscOptionsHasName(PETSC_NULL, "-ViscoPLithosOff", &flag); CHKERRQ(ierr);
+	ierr = PetscOptionsHasName(PETSC_NULL, "-NoPressureLimit", &flag2); CHKERRQ(ierr);
+	ierr = PetscOptionsHasName(PETSC_NULL, "-EmployLithostaticPressureInYieldFunction", &flag3); CHKERRQ(ierr);
 	
 	if(!flag) p_viscosity=p_lithos;
 
@@ -249,7 +249,7 @@ PetscErrorCode GetEffVisc(
 	PetscScalar *fr)
 {
 	// stabilization parameters
-	PetscScalar eta_ve, eta_pl, eta_dis, eta_prl, cf;
+	PetscScalar eta_ve, eta_pl, eta_pw, eta_vp, eta_st, eta_dis, eta_prl, cf;
 	PetscScalar inv_eta_els, inv_eta_dif, inv_eta_dis, inv_eta_prl;
 
 	PetscFunctionBegin;
@@ -332,45 +332,50 @@ PetscErrorCode GetEffVisc(
 	// PLASTICITY
 	//===========
 
-/*
-	if(lim->quasiHarmAvg == PETSC_TRUE)
-	{
-		//====================================
-		// regularized rate-dependent approach
-		//====================================
-
-		// check for nonzero plastic strain rate
-		if(DIIve < ctx->DII)
-		{
-			// store plastic strain rate & viscosity
-			H            = eta_ve/cf_eta_min;
-			(*eta_total) = 1.0/(1.0/eta_ve + 1.0/H) + (ctx->taupl/(2.0*ctx->DII))/(1.0 + H/eta_ve);
-			(*DIIpl)     = ctx->DII*(1.0 - (*eta_total)/eta_ve);
-		}
-*/
-
 	if(ctx->taupl && lim->initGuessFlg != PETSC_TRUE)
 	{
-		if(lim->descent == PETSC_TRUE)
+		// compute true plastic viscosity
+		eta_pl = ctx->taupl/(2.0*ctx->DII);
+
+		//==============================================
+		// compute total viscosity
+		// minimum viscosity (true) model is the default
+		//==============================================
+
+		if(lim->quasiHarmAvg == PETSC_TRUE)
 		{
-			// rate-dependent stabilization
-			eta_pl = (ctx->taupl/2.0)*pow(ctx->DII, 1/lim->n - 1.0);
+			// quasi-harmonic mean
+			(*eta_total) = 1.0/(1.0/eta_pl + 1.0/eta_ve);
 		}
-		else
+		else if(lim->n_pw)
 		{
-			// compute plastic viscosity
-			eta_pl = ctx->taupl/(2.0*ctx->DII);
+			// rate-dependent power-law stabilization
+			eta_pw = (ctx->taupl/2.0)*pow(ctx->DII, 1/lim->n_pw - 1.0);
+
+			if(eta_pw < eta_ve) (*eta_total) = eta_pw;
+		}
+		else if(lim->cf_eta_min)
+		{
+			// rate-dependent visco-plastic stabilization
+			eta_st = eta_ve/lim->cf_eta_min;
+
+			eta_vp = (eta_st + eta_pl)/(1.0 + eta_st/eta_ve);
+
+			if(eta_vp < eta_ve) (*eta_total) = eta_vp;
+		}
+		else if(eta_pl < eta_ve)
+		{
+			// minimum viscosity model (unstable) (default)
+			(*eta_total) = eta_pl;
 		}
 
-		// check for plastic yielding
 		if(eta_pl < eta_ve)
 		{
-			// store plastic strain rate, viscosity, derivative & effective friction
-			(*eta_total) 		=  eta_pl;
+			// store plastic strain rate, viscosity derivative & effective friction
 			(*eta_viscoplastic) =  eta_pl;	
-			(*DIIpl)     		=  ctx->DII*(1.0 - eta_pl/eta_ve);
-			(*dEta)      		= -eta_pl;
-			(*fr)        		=  ctx->fr;
+			(*DIIpl)     		=  ctx->DII*(1.0 - (*eta_total)/eta_ve);
+			(*dEta)             = -eta_pl;
+			(*fr)               =  ctx->fr;
 		}
 	}
 

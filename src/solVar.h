@@ -238,7 +238,9 @@ typedef struct
 	// thermo-mechanical coupling controls
 	PetscScalar shearHeatEff; // shear heating efficiency parameter [0 - 1]
 	// rheology controls
-	PetscBool   quasiHarmAvg; // plasticity quasi-harmonic averaging flag
+	PetscBool   quasiHarmAvg; // quasi-harmonic averaging regularization flag (plasticity)
+	PetscScalar cf_eta_min;   // visco-plastic regularization parameter (plasticity)
+	PetscScalar n_pw;         // power-law regularization parameter (plasticity)
 	PetscBool   initGuessFlg; // initial guess computation flag
 	PetscBool   presLimFlg;   // pressure limit flag for plasticity
 	PetscBool   presLimAct;   // activate pressure limit flag
@@ -253,12 +255,6 @@ typedef struct
 	PetscBool    warn;
 	// matrix-free closed-form jacobian
 	PetscBool   jac_mat_free;
-
-	// ADAPTIVE DESCENT
-	PetscBool   descent;
-	PetscScalar nmin, nmax, n, beta;
-	PetscScalar ctol, dtol, res;
-	PetscInt    j, jmax;
 
 } MatParLim;
 

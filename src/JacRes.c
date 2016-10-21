@@ -1804,7 +1804,8 @@ PetscInt JacResGetStep(JacRes *jr)
 PetscErrorCode SetMatParLim(MatParLim *matLim, UserCtx *usr)
 {
 	// initialize material parameter limits
-	PetscBool  flg;
+	PetscBool flg;
+	PetscInt  cnt;
 
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
@@ -1819,6 +1820,21 @@ PetscErrorCode SetMatParLim(MatParLim *matLim, UserCtx *usr)
 	matLim->eta_rtol     = 1e-8;
 	matLim->DII_atol     = 0.0;
 	matLim->DII_rtol     = 1e-8;
+	matLim->minCh        = 0.0;
+	matLim->minFr        = 0.0;
+	matLim->tauUlt       = DBL_MAX;
+	matLim->shearHeatEff = 1.0;
+
+	matLim->quasiHarmAvg = PETSC_FALSE;
+	matLim->cf_eta_min   = 0.0;
+	matLim->n_pw         = 0.0;
+
+	matLim->initGuessFlg = PETSC_TRUE;
+	matLim->rho_fluid    = 0.0;
+	matLim->rho_lithos 	 = 0.0;	 // lithostatic density
+	matLim->theta_north  = 90.0; // by default y-axis
+	matLim->warn         = PETSC_TRUE;
+	matLim->jac_mat_free = PETSC_FALSE;
 
 	if(usr->DII_ref) matLim->DII_ref = usr->DII_ref;
 	else
@@ -1827,26 +1843,37 @@ PetscErrorCode SetMatParLim(MatParLim *matLim, UserCtx *usr)
 		PetscPrintf(PETSC_COMM_WORLD," WARNING: Reference strain rate DII_ref is not defined. Use a non-dimensional reference value of DII_ref =%f \n",matLim->DII_ref);
 	}
 
-	matLim->minCh        = 0.0;
-	matLim->minFr        = 0.0;
-	matLim->tauUlt       = DBL_MAX;
-	matLim->shearHeatEff = 1.0;
-	matLim->quasiHarmAvg = PETSC_FALSE;
-	matLim->initGuessFlg = PETSC_TRUE;
-	matLim->rho_fluid    = 0.0;
-	matLim->rho_lithos 	 = 0.0;	 // lithostatic density
-	matLim->theta_north  = 90.0; // by default y-axis
-	matLim->warn         = PETSC_TRUE;
-	matLim->jac_mat_free = PETSC_FALSE;
+	cnt = 0;
 
-	// read additional options
-	ierr = PetscOptionsHasName(PETSC_NULL, "-use_quasi_harmonic_viscosity", &flg); CHKERRQ(ierr);
+	// plasticity stabilization parameters
+	ierr = PetscOptionsHasName(PETSC_NULL, "-quasi_harmonic", &flg); CHKERRQ(ierr);
 
-	if(flg == PETSC_TRUE)
+	if(flg == PETSC_TRUE) { matLim->quasiHarmAvg = PETSC_TRUE; cnt++; }
+
+	ierr = PetscOptionsGetScalar(NULL, "-cf_eta_min",  &matLim->cf_eta_min, &flg); CHKERRQ(ierr);
+
+	if(flg == PETSC_TRUE) { cnt++; }
+
+	ierr = PetscOptionsGetScalar(NULL, "-n_pw",  &matLim->n_pw, &flg); CHKERRQ(ierr);
+
+	if(flg == PETSC_TRUE) { cnt++; }
+
+	if(cnt > 1)
 	{
-		matLim->quasiHarmAvg = PETSC_TRUE;
+		SETERRQ(PETSC_COMM_SELF, PETSC_ERR_USER, "Cannot combine plasticity stabilization methods (-quasi_harmonic -cf_eta_min -n_pw) \n");
 	}
 
+	// set Jacobian flag
+	ierr = PetscOptionsHasName(NULL, "-jac_mat_free", &flg); CHKERRQ(ierr);
+
+	if(flg == PETSC_TRUE) matLim->jac_mat_free = PETSC_TRUE;
+
+	if(cnt &&  matLim->jac_mat_free == PETSC_TRUE)
+	{
+		SETERRQ(PETSC_COMM_SELF, PETSC_ERR_USER, "Analytical Jacobian is not available for plasticity stabilizations (-jac_mat_free -quasi_harmonic -cf_eta_min -n_pw) \n");
+	}
+
+	// read additional options
 	ierr = PetscOptionsGetScalar(NULL, "-rho_fluid",  &matLim->rho_fluid, NULL); CHKERRQ(ierr);
 	ierr = PetscOptionsGetScalar(NULL, "-rho_lithos", &matLim->rho_lithos, NULL); CHKERRQ(ierr);		// specify lithostatic density on commandline (if not set, we don't use this)
 
@@ -1856,36 +1883,10 @@ PetscErrorCode SetMatParLim(MatParLim *matLim, UserCtx *usr)
 
 	if(flg == PETSC_TRUE) matLim->warn = PETSC_FALSE;
 
-	// set Jacobian flag
-	ierr = PetscOptionsHasName(NULL, "-jac_mat_free", &flg); CHKERRQ(ierr);
-
-	if(flg == PETSC_TRUE) matLim->jac_mat_free = PETSC_TRUE;
-
 	ierr = PetscOptionsGetScalar(NULL, "-shearHeatEff", &matLim->shearHeatEff, NULL); CHKERRQ(ierr);
 
 	if(matLim->shearHeatEff > 1.0) matLim->shearHeatEff = 1.0;
 	if(matLim->shearHeatEff < 0.0) matLim->shearHeatEff = 0.0;
-
-	// ADAPTIVE DESCENT
-	matLim->descent = PETSC_FALSE;
-	matLim->nmin    = 5.0;
-	matLim->nmax    = 50.0;
-	matLim->beta    = 1.61803398875;
-	matLim->ctol    = 1e-2;
-	matLim->dtol    = 0.95;
-	matLim->jmax    = 3;
-
-	ierr = PetscOptionsHasName  (NULL, "-descent", &matLim->descent   ); CHKERRQ(ierr);
-	ierr = PetscOptionsGetScalar(NULL, "-ad_nmin", &matLim->nmin, NULL); CHKERRQ(ierr);
-	ierr = PetscOptionsGetScalar(NULL, "-ad_nmax", &matLim->nmax, NULL); CHKERRQ(ierr);
-	ierr = PetscOptionsGetScalar(NULL, "-ad_beta", &matLim->beta, NULL); CHKERRQ(ierr);
-	ierr = PetscOptionsGetScalar(NULL, "-ad_ctol", &matLim->ctol, NULL); CHKERRQ(ierr);
-	ierr = PetscOptionsGetScalar(NULL, "-ad_dtol", &matLim->dtol, NULL); CHKERRQ(ierr);
-	ierr = PetscOptionsGetInt   (NULL, "-ad_jmax", &matLim->jmax, NULL); CHKERRQ(ierr);
-
-	matLim->n   = matLim->nmin;
-	matLim->j   = 0;
-	matLim->res = 0.0;
 
 	PetscFunctionReturn(0);
 }
