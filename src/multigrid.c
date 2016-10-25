@@ -118,27 +118,27 @@ PetscErrorCode MGLevelCreate(MGLevel *lvl, MGLevel *fine, FDSTAG *fs, BCCtx *bc)
 		Nz /= 2;  for(i = 0; i < Pz; i++) lz[i] /= 2;
 
 		// central points (DA_CEN) with boundary ghost points (1-layer stencil box)
-		ierr = DMDACreate3d(PETSC_COMM_WORLD,
+		ierr = DMDACreate3dSetUp(PETSC_COMM_WORLD,
 			DM_BOUNDARY_GHOSTED, DM_BOUNDARY_GHOSTED, DM_BOUNDARY_GHOSTED, DMDA_STENCIL_BOX,
 			Nx, Ny, Nz, Px, Py, Pz, 1, 1, lx, ly, lz, &lvl->DA_CEN); CHKERRQ(ierr);
 
 		// X face (DA_X) with boundary ghost points (1-layer stencil box)
 		lx[Px-1]++;
-		ierr = DMDACreate3d(PETSC_COMM_WORLD,
+		ierr = DMDACreate3dSetUp(PETSC_COMM_WORLD,
 			DM_BOUNDARY_GHOSTED, DM_BOUNDARY_GHOSTED, DM_BOUNDARY_GHOSTED, DMDA_STENCIL_BOX,
 			Nx+1, Ny, Nz, Px, Py, Pz, 1, 1, lx, ly, lz, &lvl->DA_X); CHKERRQ(ierr);
 		lx[Px-1]--;
 
 		// Y face (DA_Y) with boundary ghost points (1-layer stencil box)
 		ly[Py-1]++;
-		ierr = DMDACreate3d(PETSC_COMM_WORLD,
+		ierr = DMDACreate3dSetUp(PETSC_COMM_WORLD,
 			DM_BOUNDARY_GHOSTED, DM_BOUNDARY_GHOSTED, DM_BOUNDARY_GHOSTED, DMDA_STENCIL_BOX,
 			Nx, Ny+1, Nz, Px, Py, Pz, 1, 1, lx, ly, lz, &lvl->DA_Y); CHKERRQ(ierr);
 		ly[Py-1]--;
 
 		// Z face (DA_Z) with boundary ghost points (1-layer stencil box)
 		lz[Pz-1]++;
-		ierr = DMDACreate3d(PETSC_COMM_WORLD,
+		ierr = DMDACreate3dSetUp(PETSC_COMM_WORLD,
 			DM_BOUNDARY_GHOSTED, DM_BOUNDARY_GHOSTED, DM_BOUNDARY_GHOSTED, DMDA_STENCIL_BOX,
 			Nx, Ny, Nz+1, Px, Py, Pz, 1, 1, lx, ly, lz, &lvl->DA_Z); CHKERRQ(ierr);
 

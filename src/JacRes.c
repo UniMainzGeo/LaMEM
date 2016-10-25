@@ -224,7 +224,7 @@ PetscErrorCode JacResCreate(
 	ierr = DMDAGetOwnershipRanges(fs->DA_CEN, &lx, &ly, NULL); CHKERRQ(ierr);
 
 	// create 2D cell center grid
-	ierr = DMDACreate3d(PETSC_COMM_WORLD,
+	ierr = DMDACreate3dSetUp(PETSC_COMM_WORLD,
 		DM_BOUNDARY_NONE, DM_BOUNDARY_NONE, DM_BOUNDARY_NONE,
 		DMDA_STENCIL_BOX,
 		fs->dsx.tcels, fs->dsy.tcels, fs->dsz.nproc,
