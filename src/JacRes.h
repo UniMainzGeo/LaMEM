@@ -101,6 +101,7 @@ typedef struct
 	PetscBool		SeismicStation;			// true or false
 	StationParam 	StationParams;			// Seismic station coordinates
 
+
 	// continuity residual
 	Vec gc; // global
 
@@ -282,14 +283,12 @@ PetscErrorCode JacResGetTempRes(JacRes *jr);
 // assemble temperature preconditioner matrix
 PetscErrorCode JacResGetTempMat(JacRes *jr);
 
+
 // compute nonlinear momentum residual vector
 PetscErrorCode JacResGetMomentumResidualAndPressure(JacRes *jr, UserCtx *user);
 
 //PetscErrorCode JacResGetMomentumResidualAndTheta(JacRes *jr);
 PetscErrorCode JacResGetMomentumResidual(JacRes *jr);
-
-// compute nonlinear momentum residual vector
-//PetscErrorCode JacResGetMomentumResidualAndPressure(JacRes *jr);
 
 // copy global velocities/pressures vectors to global solution vector
 PetscErrorCode JacResCopySolution(JacRes *jr, Vec x);

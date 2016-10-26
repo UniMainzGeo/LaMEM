@@ -331,7 +331,6 @@ PetscErrorCode JacResInitScale(JacRes *jr, UserCtx *usr)
 
 
 
-
 	/*// check time step if ExplicitSolver
 	if (usr->ExplicitSolver == PETSC_TRUE)		{
 		//ierr = ChangeTimeStep(jr, usr); CHKERRQ(ierr);
@@ -1383,6 +1382,7 @@ PetscErrorCode JacResGetMomentumResidualAndPressure(JacRes *jr, UserCtx *user)
 	ierr = DMDAVecGetArray(fs->DA_Z,   jr->lvz,  &vz);  CHKERRQ(ierr);
 
 
+
 //	FILE *fseism; //used now to save traces
 //	fseism = user->Station.output_file;
 
@@ -1957,6 +1957,67 @@ PetscErrorCode JacResCopySol(JacRes *jr, Vec x, SPCAppType appSPC)
 
 	PetscFunctionReturn(0);
 }
+
+/*//---------------------------------------------------------------------------
+#undef __FUNCT__
+#define __FUNCT__ "JacResCopyK"
+PetscErrorCode JacResCopyK(JacRes *jr, Vec K)
+{
+	// copy residuals from local to global vectors, enforce boundary constraints
+
+	FDSTAG      *fs;
+	BCCtx       *bc;
+	PetscInt    i, num, *list;
+	PetscScalar *fx, *fy, *fz, *theta, *k, *iter;
+
+	PetscErrorCode ierr;
+	PetscFunctionBegin;
+
+	fs  = jr->fs;
+	bc  = jr->bc;
+
+	// access vectors
+	ierr = VecGetArray(jr->gfx, &fx); 	CHKERRQ(ierr);
+	ierr = VecGetArray(jr->gfy, &fy); 	CHKERRQ(ierr);
+	ierr = VecGetArray(jr->gfz, &fz); 	CHKERRQ(ierr);
+	ierr = VecGetArray(jr->gp, &theta); CHKERRQ(ierr);
+	ierr = VecGetArray(K, &k);      	CHKERRQ(ierr);
+
+	// copy vectors component-wise
+	iter = k;
+
+	ierr  = PetscMemcpy(iter, fx, (size_t)fs->nXFace*sizeof(PetscScalar)); CHKERRQ(ierr);
+	iter += fs->nXFace;
+
+	ierr  = PetscMemcpy(iter, fy, (size_t)fs->nYFace*sizeof(PetscScalar)); CHKERRQ(ierr);
+	iter += fs->nYFace;
+
+	ierr  = PetscMemcpy(iter, fz, (size_t)fs->nZFace*sizeof(PetscScalar)); CHKERRQ(ierr);
+	iter += fs->nZFace;
+
+	ierr  = PetscMemcpy(iter, theta,  (size_t)fs->nCells*sizeof(PetscScalar)); CHKERRQ(ierr);
+
+	// zero out constrained residuals (velocity)
+	num   = bc->vNumSPC;
+	list  = bc->vSPCList;
+
+	for(i = 0; i < num; i++) k[list[i]] = 0.0;
+
+	// zero out constrained residuals (pressure)
+	num   = bc->pNumSPC;
+	list  = bc->pSPCList;
+
+	for(i = 0; i < num; i++) k[list[i]] = 0.0;
+
+	// restore access
+	ierr = VecRestoreArray(jr->gfx,  &fx); 		CHKERRQ(ierr);
+	ierr = VecRestoreArray(jr->gfy,  &fy); 		CHKERRQ(ierr);
+	ierr = VecRestoreArray(jr->gfz,  &fz); 		CHKERRQ(ierr);
+	ierr = VecRestoreArray(jr->gc,   &theta);  	CHKERRQ(ierr);
+	ierr = VecRestoreArray(K, &k);       		CHKERRQ(ierr);
+
+	PetscFunctionReturn(0);
+}*/
 
 /*//---------------------------------------------------------------------------
 #undef __FUNCT__

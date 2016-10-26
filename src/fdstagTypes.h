@@ -202,7 +202,6 @@ typedef struct
 typedef struct // Improve and put more options
 {
 
-
 	SourceType  source_type;	//point, plane, uniaxial_compression, moment_tensor
 	PetscScalar x;
 	PetscScalar y;
@@ -335,10 +334,9 @@ typedef struct
 	SAB 			AB;
 
 	// Seismic source
-	PetscBool		 SeismicSource;
 
-	// source
-	SourceParam SourceParams;
+	PetscBool		SeismicSource;
+	SourceParam 	SourceParams;
 
 	// Seismic station
 	PetscBool	 	SeismicStation;

@@ -781,14 +781,6 @@ PetscErrorCode ADVMarkInitLayer(AdvCtx *actx, UserCtx *user)
 	PetscPrintf(PETSC_COMM_WORLD,"  LAYERED SETUP \n");
 
 	// number of elements on finest resolution
-	//nel_x = user->nel_x;
-	//nel_y = user->nel_y;
-	//nel_z = user->nel_z;
-
-	// spacing
-	//dx = user->W/((PetscScalar)nel_x);
-	//dy = user->L/((PetscScalar)nel_y);
-	//dz = user->H/((PetscScalar)nel_z);
 
 	nel_x = user->nel_x;
 	nel_y = user->nel_y;
@@ -867,8 +859,6 @@ bly = 0.4*(PetscScalar)nel_y*dy;
 blz = 0.2*(PetscScalar)nel_z*dz;
 
 
-
-
 bleft   = 0 ; 						   bright = bleft   + blx; // left and right side of block
 bfront  = 0.25*(PetscScalar)nel_y*dy ; bback  = bfront  + bly; // front and back side of block
 bbottom = 0.25*(PetscScalar)nel_z*dz;  btop   = bbottom + blz; // bottom and top side of block
@@ -898,7 +888,9 @@ PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
 
+
 //---------------------------------------------------------------------------
+
 
 #undef __FUNCT__
 #define __FUNCT__ "ADVMarkInitBlock"

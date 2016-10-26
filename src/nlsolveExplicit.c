@@ -107,8 +107,8 @@ PetscErrorCode GetVelocities(JacRes *jr, UserCtx *user)
 		else rho_side = (rho[k][j][i]+rho[k][j][i-1])/2.0;
 
 		damping = GetBoundaryDamping(user,i,j,k); // To damp velocity if we are in an absorbing boundary
+	//PetscPrintf(PETSC_COMM_WORLD, "    damping[%i,%i,%i] = %12.12e \n", i,j,k, damping);
 
-		//PetscPrintf(PETSC_COMM_WORLD, "    damping[%i,%i,%i] = %12.12e \n", i,j,k, damping);
 
 		vx[k][j][i] = (vx[k][j][i]-fx[k][j][i]*dt/rho_side)*damping;
 
@@ -219,6 +219,10 @@ PetscErrorCode FormMomentumResidualPressureAndVelocities(JacRes *jr, UserCtx *us
 	PetscFunctionReturn(0);
 
 }
+
+//-----------------------------------------------------------------------------
+
+
 
 //---------------------------------------------------------------------------
 #undef __FUNCT__
@@ -368,6 +372,7 @@ PetscErrorCode UpdateHistoryFieldsAndGetAxialStressStrain(JacRes *jr, PetscScala
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
+
 
 //---------------------------------------------------------------------------
 #undef __FUNCT__
@@ -532,47 +537,337 @@ PetscErrorCode ChangeTimeStep(JacRes *jr, UserCtx *user)
 }
 //---------------------------------------------------------------------------
 
-//---------------------------------------------------------------------------
-// Apply source
+
+/*//-----------------------------------------------------------------------------
 #undef __FUNCT__
-#define __FUNCT__ "GetCellCoordinatesSource"
-PetscErrorCode GetCellCoordinatesSource(JacRes *jr)
+#define __FUNCT__ "GetPressure"
+PetscErrorCode GetPressure(JacRes *jr)
 {
-	PetscInt i, j, k, nx, ny, nz, sx, sy, sz;
-	PetscScalar iter;
-	PetscScalar    xs[3], xe[3];
+	// Calculates the pressure from velocities and bulk
+	//  p_new = p_old - (dv/dx + dv/dy + dv/dz)*K*dt
+
+
 	FDSTAG     *fs;
+	SolVarCell *svCell;
+	SolVarBulk *svBulk;
+	PetscInt    iter;
+	PetscInt    i, j, k, nx, ny, nz, sx, sy, sz;
+	PetscScalar IKdt, theta;
+	PetscScalar ***up,  ***p; //, pn;
+
+	PetscErrorCode ierr;
+	PetscFunctionBegin;
 
 	fs = jr->fs;
 
-	if (jr->SeismicSource==PETSC_TRUE && (jr->SourceParams.source_type==POINT || jr->SourceParams.source_type==MOMENT) ) {
-		//-------------------------------
-		// central points
-		//-------------------------------
-		iter = 0;
-		GET_CELL_RANGE(nx, sx, fs->dsx)
-		GET_CELL_RANGE(ny, sy, fs->dsy)
-		GET_CELL_RANGE(nz, sz, fs->dsz)
+	// access work vectors
 
-		START_STD_LOOP
-		{
-			// get cell coordinates
-			xs[0] = jr->fs->dsx.ncoor[i]; xe[0] = jr->fs->dsx.ncoor[i+1];
-			xs[1] = jr->fs->dsy.ncoor[j]; xe[1] = jr->fs->dsy.ncoor[j+1];
-			xs[2] = jr->fs->dsz.ncoor[k]; xe[2] = jr->fs->dsz.ncoor[k+1];
+	ierr = DMDAVecGetArray(fs->DA_CEN, jr->lp,   &p);   CHKERRQ(ierr); //here is current pressure
+	//ierr = DMDAVecGetArray(fs->DA_CEN, jr->gp,   &up);  CHKERRQ(ierr); //here is theta (dvx/dx + dvy/dy + dvz/dz)
 
-			if (jr->SourceParams.x > xs[0] && jr->SourceParams.x <= xe[0] && jr->SourceParams.y > xs[1] && jr->SourceParams.y <= xe[1] && jr->SourceParams.z > xs[2] && jr->SourceParams.z <= xe[2])
-			{
-				jr->SourceParams.i=i;
-				jr->SourceParams.j=j;
-				jr->SourceParams.k=k;
-			}
-		}
-		END_STD_LOOP
+
+	//-------------------------------
+	// get pressure from central points
+	//-------------------------------
+	iter = 0;
+	GET_CELL_RANGE(nx, sx, fs->dsx)
+	GET_CELL_RANGE(ny, sy, fs->dsy)
+	GET_CELL_RANGE(nz, sz, fs->dsz)
+
+	START_STD_LOOP
+	{
+		// access solution variables
+		svCell = &jr->svCell[iter++];
+		svBulk = &svCell->svBulk;
+		IKdt  = svBulk->IKdt;  // inverse bulk viscosity
+		//pn    = svBulk->pn;    // pressure history
+
+		////why no directly svBulk->theta?
+		//p[k][j][i] -= up[k][j][i]/IKdt;
+		p[k][j][i] -= svBulk->theta/IKdt; //theta=dv/dx + dv/dy + dv/dz
 	}
+	END_STD_LOOP
+
+	// restore vectors
+	ierr = DMDAVecRestoreArray(fs->DA_CEN,   jr->lp,  &p);   CHKERRQ(ierr);
+	//ierr = DMDAVecRestoreArray(fs->DA_CEN,   jr->gp,  &up);  CHKERRQ(ierr);
+
+	// assemble global residuals from local contributions
+	LOCAL_TO_GLOBAL(fs->DA_CEN, jr->lp, jr->gp)
+
+
 	PetscFunctionReturn(0);
 }
+//---------------------------------------------------------------------------
+*/
 
+//
+/* //-----------------------------------------------------------------------------
+#undef __FUNCT__
+#define __FUNCT__ "GetPressure2"
+PetscErrorCode GetPressure2(JacRes *jr)
+{
+	//  ... comment
+
+	FDSTAG     *fs;
+	SolVarCell *svCell;
+	SolVarBulk *svBulk;
+	PetscInt    iter;
+	PetscInt    i, j, k, nx, ny, nz, sx, sy, sz;
+	PetscScalar dt, K, IKdt, theta, dx, dy, dz;
+	PetscScalar ***p;
+	PetscScalar ***vx,  ***vy,  ***vz;
+
+	PetscErrorCode ierr;
+	PetscFunctionBegin;
+
+	fs = jr->fs;
+	dt =  jr->ts.dt;     // time step
+
+	// access work vectors
+
+	ierr = DMDAVecGetArray(fs->DA_CEN, jr->lp,   &p);   CHKERRQ(ierr); //here is current pressure
+
+	// access local (ghosted) velocity components
+	ierr = DMDAVecGetArray(fs->DA_X,   jr->lvx,  &vx);  CHKERRQ(ierr);
+	ierr = DMDAVecGetArray(fs->DA_Y,   jr->lvy,  &vy);  CHKERRQ(ierr);
+	ierr = DMDAVecGetArray(fs->DA_Z,   jr->lvz,  &vz);  CHKERRQ(ierr);
+
+
+	//-------------------------------
+	// get pressure from central points
+	//-------------------------------
+	iter = 0;
+	GET_CELL_RANGE(nx, sx, fs->dsx)
+	GET_CELL_RANGE(ny, sy, fs->dsy)
+	GET_CELL_RANGE(nz, sz, fs->dsz)
+
+	START_STD_LOOP
+	{
+		// access solution variables
+		svCell = &jr->svCell[iter++];
+		svBulk = &svCell->svBulk;
+		IKdt  = svBulk->IKdt;  // inverse bulk viscosity
+
+		// get mesh steps
+		dx = SIZE_CELL(i, sx, fs->dsx);
+		dy = SIZE_CELL(j, sy, fs->dsy);
+		dz = SIZE_CELL(k, sz, fs->dsz);
+
+		// just to try /////////////////////////////
+		// volumetric strain rate
+		theta = (vx[k][j][i+1] - vx[k][j][i])/dx + (vy[k][j+1][i] - vy[k][j][i])/dy + (vz[k+1][j][i] - vz[k][j][i])/dz;
+		//PetscPrintf(PETSC_COMM_WORLD, "    [k,j,i]  = [%i,%i,%i]  theta in pressure2  = %12.12e  \n", k,j,i,theta);
+		// K
+		K=3.38e10;
+		////////////////////////////////////////////
+
+		// calculate new pressure
+		//p[k][j][i] = p[k][j][i]-(svBulk->theta)/IKdt;
+		p[k][j][i] = p[k][j][i]-(theta)*K*dt ;
+	}
+	END_STD_LOOP
+
+
+	// restore vectors
+	ierr = DMDAVecRestoreArray(fs->DA_CEN, jr->lp,  &p);   CHKERRQ(ierr);
+	ierr = DMDAVecRestoreArray(fs->DA_X,   jr->lvx,  &vx);  CHKERRQ(ierr);
+	ierr = DMDAVecRestoreArray(fs->DA_Y,   jr->lvy,  &vy);  CHKERRQ(ierr);
+	ierr = DMDAVecRestoreArray(fs->DA_Z,   jr->lvz,  &vz);  CHKERRQ(ierr);
+
+	// assemble global residuals from local contributions
+	LOCAL_TO_GLOBAL(fs->DA_CEN, jr->lp, jr->gp)
+
+
+	PetscFunctionReturn(0);
+}
+//---------------------------------------------------------------------------
+ */
+
+ /*
+//-----------------------------------------------------------------------------
+#undef __FUNCT__
+#define __FUNCT__ "GetStress"
+PetscErrorCode GetStress(JacRes *jr)
+{
+	//  ... comment
+
+	FDSTAG     *fs;
+	SolVarCell *svCell;
+	SolVarEdge *svEdge;
+	SolVarDev  *svDev;
+	SolVarBulk *svBulk;
+	Material_t *phases;
+	MatParLim  *matLim;
+	PetscInt    iter, numPhases;
+	PetscInt    I1, I2, J1, J2, K1, K2;
+	PetscInt    i, j, k, nx, ny, nz, sx, sy, sz, mx, my, mz, i_src, j_src, k_src;
+	PetscScalar XX, XX1, XX2, XX3, XX4;
+	PetscScalar YY, YY1, YY2, YY3, YY4;
+	PetscScalar ZZ, ZZ1, ZZ2, ZZ3, ZZ4;
+	PetscScalar XY, XY1, XY2, XY3, XY4;
+	PetscScalar XZ, XZ1, XZ2, XZ3, XZ4;
+	PetscScalar YZ, YZ1, YZ2, YZ3, YZ4;
+	PetscScalar dx, dy, dz;
+	PetscScalar gx, gy, gz, tx, ty, tz, sxx, syy, szz, sxy, sxz, syz;
+	PetscScalar J2Inv, theta, rho, Tc, pc, pShift, dt, fssa, *grav,time;
+	PetscScalar ***fx,  ***fy,  ***fz, ***vx,  ***vy,  ***vz, ***gc;
+	PetscScalar ***dxx, ***dyy, ***dzz, ***dxy, ***dxz, ***dyz, ***p, ***up, ***T;
+	PetscScalar eta_creep;
+	PetscScalar mu, lamda;;
+
+	PetscErrorCode ierr;
+	PetscFunctionBegin;
+
+	fs = jr->fs;
+
+	mu 		= 	2.3400e+10; /////////////////////////////////////////////
+	lamda 	=	1.8200e+10;
+
+
+
+	// access residual context variables
+	dt        =  jr->ts.dt;     // time step
+
+
+	ierr = DMDAVecGetArray(fs->DA_CEN, jr->lp,   &p);   CHKERRQ(ierr);
+	ierr = DMDAVecGetArray(fs->DA_X,   jr->lvx,  &vx);  CHKERRQ(ierr);
+	ierr = DMDAVecGetArray(fs->DA_Y,   jr->lvy,  &vy);  CHKERRQ(ierr);
+	ierr = DMDAVecGetArray(fs->DA_Z,   jr->lvz,  &vz);  CHKERRQ(ierr);
+
+	This is calculated in the residual
+	//-------------------------------
+	// central points
+	//-------------------------------
+	iter = 0;
+	GET_CELL_RANGE(nx, sx, fs->dsx)
+	GET_CELL_RANGE(ny, sy, fs->dsy)
+	GET_CELL_RANGE(nz, sz, fs->dsz)
+
+	START_STD_LOOP
+	{
+
+		// access solution variables
+		svCell = &jr->svCell[iter++];
+		svDev  = &svCell->svDev;
+		svBulk = &svCell->svBulk;
+
+		// access current pressure
+		//pc = p[k][j][i];
+
+		// compute total Cauchy stresses
+		//sxx = svCell->sxx - pc;
+		//syy = svCell->syy - pc;
+		//szz = svCell->szz - pc;
+
+		// get mesh steps
+		dx = SIZE_CELL(i, sx, fs->dsx);
+		dy = SIZE_CELL(j, sy, fs->dsy);
+		dz = SIZE_CELL(k, sz, fs->dsz);
+
+		// stress
+		svCell->sxx = svCell->sxx +( (lamda+2*mu )*(vx[k][j][i+1] - vx[k][j][i])/dx + lamda*( (vy[k][j+1][i] - vy[k][j][i])/dy + (vz[k+1][j][i] - vz[k][j][i])/dz))*dt;
+		svCell->syy = svCell->sxx +( (lamda+2*mu )*(vy[k][j+1][i] - vy[k][j][i])/dy + lamda*( (vx[k][j][i+1] - vx[k][j][i])/dx + (vz[k+1][j][i] - vz[k][j][i])/dz))*dt;
+		svCell->szz = svCell->szz +( (lamda+2*mu )*(vz[k+1][j][i] - vz[k][j][i])/dz + lamda*( (vx[k][j][i+1] - vx[k][j][i])/dx + (vy[k][j+1][i] - vy[k][j][i])/dy))*dt;
+
+
+	}
+	END_STD_LOOP
+
+	//-------------------------------
+	// xy edge points
+	//-------------------------------
+	iter = 0;
+	GET_NODE_RANGE(nx, sx, fs->dsx)
+	GET_NODE_RANGE(ny, sy, fs->dsy)
+	GET_CELL_RANGE(nz, sz, fs->dsz)
+
+	START_STD_LOOP
+	{
+		// access solution variables
+		svEdge = &jr->svXYEdge[iter++];
+		svDev  = &svEdge->svDev;
+
+		// access xy component of the Cauchy stress
+		//sxy = svEdge->s;
+
+		// get mesh steps for the backward and forward derivatives
+		dx = SIZE_NODE(i, sx, fs->dsx);
+		dy = SIZE_NODE(j, sy, fs->dsy);
+
+		// stress
+		svEdge->s = svEdge->s  + mu * ((vy[k][j][i] - vy[k][j][i-1])/dx + (vx[k][j][i] - vx[k][j-1][i])/dy)*dt;
+
+	}
+	END_STD_LOOP
+
+	//-------------------------------
+	// xz edge points
+	//-------------------------------
+	iter = 0;
+	GET_NODE_RANGE(nx, sx, fs->dsx)
+	GET_CELL_RANGE(ny, sy, fs->dsy)
+	GET_NODE_RANGE(nz, sz, fs->dsz)
+
+	START_STD_LOOP
+	{
+		// access solution variables
+		svEdge = &jr->svXZEdge[iter++];
+		svDev  = &svEdge->svDev;
+
+		// access xz component of the Cauchy stress
+		//sxz = svEdge->s;
+
+		// get mesh steps for the backward and forward derivatives
+		dx = SIZE_NODE(i, sx, fs->dsx);
+		dz = SIZE_NODE(k, sz, fs->dsz);
+
+		// stress
+		svEdge->s = svEdge->s  + mu * ((vz[k][j][i] - vz[k][j][i-1])/dx + (vx[k][j][i] - vx[k-1][j][i])/dz)*dt;
+
+	}
+	END_STD_LOOP
+
+	//-------------------------------
+	// yz edge points
+	//-------------------------------
+	iter = 0;
+	GET_CELL_RANGE(nx, sx, fs->dsx)
+	GET_NODE_RANGE(ny, sy, fs->dsy)
+	GET_NODE_RANGE(nz, sz, fs->dsz)
+
+	START_STD_LOOP
+	{
+		// access solution variables
+		svEdge = &jr->svYZEdge[iter++];
+		svDev  = &svEdge->svDev;
+
+		// access yz component of the Cauchy stress
+		//syz = svEdge->s;
+
+		dy = SIZE_NODE(j, sy, fs->dsy);
+		dz = SIZE_NODE(k, sz, fs->dsz);
+
+		// stress
+		svEdge->s = svEdge->s  + mu * ((vz[k][j][i] - vz[k][j-1][i])/dy + (vy[k][j][i] - vy[k-1][j][i])/dz)*dt;
+
+	}
+	END_STD_LOOP
+
+	// restore vectors
+	ierr = DMDAVecRestoreArray(fs->DA_CEN, jr->lp,   &p);  CHKERRQ(ierr);
+	ierr = DMDAVecRestoreArray(fs->DA_X,   jr->lvx,  &vx);  CHKERRQ(ierr);
+	ierr = DMDAVecRestoreArray(fs->DA_Y,   jr->lvy,  &vy);  CHKERRQ(ierr);
+	ierr = DMDAVecRestoreArray(fs->DA_Z,   jr->lvz,  &vz);  CHKERRQ(ierr);
+
+	//GLOBAL_TO_LOCAL(fs->DA_CEN, jr->gp, jr->lp)
+
+
+
+	PetscFunctionReturn(0);
+}
+//---------------------------------------------------------------------------
+*/
 
 
 
@@ -1686,21 +1981,23 @@ PetscErrorCode GetStressFromSource(JacRes *jr, UserCtx *user, PetscInt i, PetscI
 	}
 	else if (jr->SourceParams.source_type == COMPRES)
 		{
-			if (k==1)
+			/*if (k==1)
 			{
 				*szz = 		jr->SourceParams.amplitude;
 				*sxx =	- 	jr->SourceParams.amplitude/2.0;
 				*syy = 	-  	jr->SourceParams.amplitude/2.0;
 			}
-			else if (k==user->nel_z-1)
+			else */
+			if (k==user->nel_z-1)
 			{
 				*szz = 	-	jr->SourceParams.amplitude;
-				*sxx =	- 	jr->SourceParams.amplitude/2.0;
-				*syy = 	-  	jr->SourceParams.amplitude/2.0;
+				//*sxx =	- 	jr->SourceParams.amplitude/2.0;
+				//*syy = 	-  	jr->SourceParams.amplitude/2.0;
 			}
 		}
 	else if (jr->SourceParams.source_type == POINT)
 	{
+
 		// get cell coordinates
 		xs[0] = jr->fs->dsx.ncoor[i]; xe[0] = jr->fs->dsx.ncoor[i+1];
 		xs[1] = jr->fs->dsy.ncoor[j]; xe[1] = jr->fs->dsy.ncoor[j+1];
@@ -1712,7 +2009,57 @@ PetscErrorCode GetStressFromSource(JacRes *jr, UserCtx *user, PetscInt i, PetscI
 					*syy = jr->SourceParams.amplitude*exp(-jr->SourceParams.alfa*((time-jr->SourceParams.t0)*(time-jr->SourceParams.t0)))/2;
 					*szz = -jr->SourceParams.amplitude*exp(-jr->SourceParams.alfa*((time-jr->SourceParams.t0)*(time-jr->SourceParams.t0)))/2;
 
+
+					//*sxx = 	100.0;
+					//*syy =	50.0;;
+					//*szz = 	-50.0 ;
 				}
+
+		/*// change the way and the place to do that /////////////////////////////////////////////////////////////////////////////////
+		//
+		if (jr->SourceParams.xrank == -1) // then first time we are here
+		{
+			// belongs the point source to this process?, then fillSourceParameters structure
+			if (FDSTAGPointIsInCurrentProccess(jr->fs, jr->SourceParams.x, jr->SourceParams.y, jr->SourceParams.z) == PETSC_TRUE)
+			{
+				jr->SourceParams.xrank = jr->fs->dsx.rank;
+				jr->SourceParams.yrank = jr->fs->dsy.rank;
+				jr->SourceParams.zrank = jr->fs->dsz.rank;
+
+				M = jr->fs->dsx.ncels;
+				N = jr->fs->dsy.ncels;
+				P = jr->fs->dsz.ncels;
+
+				jr->SourceParams.i = FindPointInCell(jr->fs->dsx.ncoor, 0, M, jr->SourceParams.x)+M*(jr->fs->dsx.rank);
+				jr->SourceParams.j = FindPointInCell(jr->fs->dsy.ncoor, 0, N, jr->SourceParams.y)+N*(jr->fs->dsy.rank);
+				jr->SourceParams.k = FindPointInCell(jr->fs->dsz.ncoor, 0, P, jr->SourceParams.z)+P*(jr->fs->dsz.rank);
+			}
+		}
+		//
+		/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+		if (jr->SourceParams.xrank == jr->fs->dsx.rank && jr->SourceParams.yrank == jr->fs->dsy.rank && jr->SourceParams.zrank == jr->fs->dsz.rank)
+		{
+			if (k==jr->SourceParams.k && j == jr->SourceParams.j && i == jr->SourceParams.i)
+			{
+				*sxx = *sxx*0 + jr->SourceParams.amplitude*exp(-jr->SourceParams.alfa*((time-jr->SourceParams.t0)*(time-jr->SourceParams.t0)));
+				*syy = 0.0;
+				*szz = *szz*0 + jr->SourceParams.amplitude*exp(-jr->SourceParams.alfa*((time-jr->SourceParams.t0)*(time-jr->SourceParams.t0)));
+			}
+		}*/
+
+
+		/*if (k==70 && j == 70 && i == 20)
+		{
+			*sxx = jr->SourceParams.amplitude*exp(-jr->SourceParams.alfa*((time-jr->SourceParams.t0)*(time-jr->SourceParams.t0)));
+			*szz = - jr->SourceParams.amplitude*exp(-jr->SourceParams.alfa*((time-jr->SourceParams.t0)*(time-jr->SourceParams.t0)));
+
+
+			*sxx = 	100.0;
+			*syy =	50.0;;
+			*szz = 	-50.0 ;
+		}*/
+
 	}
 
 	PetscFunctionReturn(0);
@@ -1758,5 +2105,6 @@ PetscScalar GetBoundaryDamping( UserCtx *user, PetscInt i, PetscInt j, PetscInt 
 	}
 	PetscFunctionReturn(Damping);
 }
+
 
 

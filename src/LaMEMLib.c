@@ -107,8 +107,8 @@ PetscErrorCode LaMEMLib(ModParam *IOparam)
 	KSPConvergedReason reason;
 	PetscBool          stop = PETSC_FALSE;
 
-	char           *fname;
 
+	char           *fname;
 	FILE *fseism;
 	PetscMPIInt inproc;
 	PetscInt nproc, p;
@@ -160,11 +160,6 @@ PetscErrorCode LaMEMLib(ModParam *IOparam)
 	// initialize variables
 	ierr = FDSTAGInitCode(&jr, &user, IOparam); CHKERRQ(ierr);
 
-	// check time step if ExplicitSolver
-	if (user.ExplicitSolver == PETSC_TRUE)		{
-		ierr = CheckTimeStep(&jr, &user); CHKERRQ(ierr);
-	}
-
 	// check restart
 	ierr = BreakCheck(&user); CHKERRQ(ierr);
 
@@ -180,12 +175,6 @@ PetscErrorCode LaMEMLib(ModParam *IOparam)
 
 	// generate coordinates of grid nodes/cells
 	ierr = FDSTAGGenCoord(&fs, &user); CHKERRQ(ierr);
-
-	// check time step if ExplicitSolver (in JacRes.c)
-	if (user.ExplicitSolver == PETSC_TRUE)		{
-		ierr = ChangeTimeStep(&jr, &user); CHKERRQ(ierr);
-		//ierr = CheckTimeStep(&jr, &user); CHKERRQ(ierr);
-	}
 
 	// check time step if ExplicitSolver (in JacRes.c)
 	if (user.ExplicitSolver == PETSC_TRUE)		{
@@ -349,6 +338,7 @@ PetscErrorCode LaMEMLib(ModParam *IOparam)
 		// File to save axial stress / step
 		//asprintf(&fname, "strain_stress%1.3lld.%12.12e.txt",jr.fs->dsz.rank,user.dt);
 
+
 		asprintf(&fname, "strain_stress.txt");
 
 		fseism = fopen(fname, "w" );
@@ -361,6 +351,7 @@ PetscErrorCode LaMEMLib(ModParam *IOparam)
 
 		jr.stress_file = fopen("stress_file", "w" );
 		if (jr.stress_file == NULL) SETERRQ1(PETSC_COMM_SELF, 1,"cannot open file %s", "stress_file");
+
 
 	}
 
@@ -388,7 +379,6 @@ PetscErrorCode LaMEMLib(ModParam *IOparam)
 
 		// compute inverse elastic viscosities
 		ierr = JacResGetI2Gdt(&jr); CHKERRQ(ierr);
-
 
 
 		/////////////////////////////////////////////////////////////////////////////////
@@ -434,6 +424,7 @@ PetscErrorCode LaMEMLib(ModParam *IOparam)
 
 			// prescribe velocity if rotation benchmark
 			if (user.msetup == ROTATION) {ierr = JacResSetVelRotation(&jr); CHKERRQ(ierr);}
+
 
 			//==========================================
 			// MARKER & FREE SURFACE ADVECTION + EROSION
@@ -495,8 +486,6 @@ PetscErrorCode LaMEMLib(ModParam *IOparam)
 		}
 		else
 		{
-			// copy solution from global to local vectors, enforce boundary constraints
-			ierr = JacResCopySol(&jr, jr.gsol, _APPLY_SPC_); CHKERRQ(ierr);
 
 			// copy solution from global to local vectors, enforce boundary constraints
 			ierr = JacResCopySol(&jr, jr.gsol, _APPLY_SPC_); CHKERRQ(ierr);
@@ -514,6 +503,7 @@ PetscErrorCode LaMEMLib(ModParam *IOparam)
 			//fprintf(user.stress_file[jr.fs->dsz.rank], "%12.12e %12.12e\n", jr.ts.time, axial_stress);
 			fprintf(jr.stress_file, "%12.12e %12.12e\n", jr.ts.time, axial_stress);
 
+//ierr = ShowValues(&jr,&user, 5); CHKERRQ(ierr);
 
 			//ierr = SaveVelocitiesForSeismicStation(&jr, &user); CHKERRQ(ierr);
 
@@ -531,7 +521,6 @@ PetscErrorCode LaMEMLib(ModParam *IOparam)
 
 			// check elastic properties remain constant - just to check the code (to be removed)
 			//ierr = CheckElasticProperties(&jr, &user); CHKERRQ(ierr);
-
 
 			//// select new time step
 			//ierr = JacResGetCourantStep(&jr); CHKERRQ(ierr);
@@ -555,6 +544,7 @@ PetscErrorCode LaMEMLib(ModParam *IOparam)
 			//// prescribe velocity if rotation benchmark
 			//if (user.msetup == ROTATION) {ierr = JacResSetVelRotation(&jr); CHKERRQ(ierr);}
 
+
 			// ACHTUNG !!! ??
 
 			ierr = PetscOptionsHasName(NULL, "-stop_linsol_fail", &flg); CHKERRQ(ierr);
@@ -571,6 +561,8 @@ PetscErrorCode LaMEMLib(ModParam *IOparam)
 				}
 			}
 		}
+
+//ierr = ShowValues(&jr, &user, 6); CHKERRQ(ierr);
 
 		//==================
 		// Save data to disk
@@ -595,9 +587,6 @@ PetscErrorCode LaMEMLib(ModParam *IOparam)
 
 			// AVD phase output
 			ierr = PVAVDWriteTimeStep(&pvavd, DirectoryName, JacResGetTime(&jr), JacResGetStep(&jr)); CHKERRQ(ierr);
-
-			// grid ParaView output
-			ierr = PVOutWriteTimeStep(&pvout, &jr, DirectoryName, JacResGetTime(&jr), JacResGetStep(&jr)); CHKERRQ(ierr);
 
 
 //ierr = ShowValues(&jr,&user,7); CHKERRQ(ierr);
@@ -650,9 +639,6 @@ PetscErrorCode LaMEMLib(ModParam *IOparam)
 
 
 
-	// For wave propagation
-	//Close seismogram file
-	fclose(fseism);
 
 
 	// For wave propagation, close files

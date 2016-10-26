@@ -177,13 +177,6 @@ PetscErrorCode FDSTAGInitCode(JacRes *jr, UserCtx *user, ModParam *iop)
 	jr->SeismicStation= user->SeismicStation;
 	if (jr->SeismicStation == PETSC_TRUE) jr->StationParams = user->StationParams;
 
-
-
-	jr->DensityFactor  = user->DensityFactor;
-
-	jr->SeismicSource  = user->SeismicSource;
-	if (jr->SeismicSource == PETSC_TRUE) jr->SourceParams = user->SourceParams;
-
 	ierr = PetscFree(all_options); CHKERRQ(ierr);
 
 	PetscFunctionReturn(0);
@@ -299,7 +292,6 @@ PetscErrorCode InputSetDefaultValues(JacRes *jr, UserCtx *user)
     user->ExplicitSolver = PETSC_FALSE;
     user->SeismicSource	 = PETSC_FALSE;
     user->DensityFactor = 1.0;
-
 
     user->AbsBoundaries = PETSC_TRUE;
     user->AB.NxL = 20;
@@ -485,32 +477,6 @@ PetscErrorCode InputReadFile(JacRes *jr, UserCtx *user, FILE *fp)
 		}
 	//}
 
-	// Scaling density factor
-	parse_GetDouble(fp, "density_factor",&user->DensityFactor, &found);
-
-	// Absorbing boundaries
-	//if (user->ExplicitSolver == PETSC_TRUE)
-	//{
-		parse_GetInt(fp, "abs_boundaries",&ab, &found);
-		if (found==PETSC_TRUE && ab==0)
-		{
-			user->AbsBoundaries=PETSC_FALSE;
-		}else{	// Default value is true
-			// Number of absorbing boundaries
-			parse_GetInt( fp, "AB.NxL", &user->AB.NxL, &found );
-			if ( user->AB.NxL >= user->nel_x/2) user->AB.NxL = 0;
-			parse_GetInt( fp, "AB.NxR", &user->AB.NxR, &found );
-			if ( user->AB.NxR >= user->nel_x/2) user->AB.NxR = 0;
-			parse_GetInt( fp, "AB.NyL", &user->AB.NyL, &found );
-			if ( user->AB.NyL >= user->nel_y/2) user->AB.NyL = 0;
-			parse_GetInt( fp, "AB.NyR", &user->AB.NyR, &found );
-			if ( user->AB.NyR >= user->nel_y/2) user->AB.NyR = 0;
-			parse_GetInt( fp, "AB.NzL", &user->AB.NzL, &found );
-			if ( user->AB.NzL >= user->nel_z/2) user->AB.NzL = 0;
-			parse_GetInt( fp, "AB.NzR", &user->AB.NzR, &found );
-			if ( user->AB.NzR >= user->nel_z/2) user->AB.NzR = 0;
-		}
-	//}
 
 	// Seismic source
 	parse_GetInt(fp, "seismic_source",&source, &found);
@@ -524,58 +490,19 @@ PetscErrorCode InputReadFile(JacRes *jr, UserCtx *user, FILE *fp)
 			else if (!strcmp(source_type_name, "plane"))   user->SourceParams.source_type = PLANE;
 			else if (!strcmp(source_type_name, "uniaxial_compression"))   user->SourceParams.source_type = COMPRES;
 			else if (!strcmp(source_type_name, "moment_tensor"))   user->SourceParams.source_type = MOMENT;
-
 			else SETERRQ1(PETSC_COMM_SELF, PETSC_ERR_USER,"ERROR! Incorrect source type: %s", source_type_name);
 
 			// Source coordinates
-			parse_GetDouble( fp, "x_source", &user->SourceParams.x, &found );
-			parse_GetDouble( fp, "y_source", &user->SourceParams.y, &found );
-			parse_GetDouble( fp, "z_source", &user->SourceParams.z, &found );
+			if (user->SourceParams.source_type == POINT) {
+				parse_GetDouble( fp, "x_source", &user->SourceParams.x, &found );
+				parse_GetDouble( fp, "y_source", &user->SourceParams.y, &found );
+				parse_GetDouble( fp, "z_source", &user->SourceParams.z, &found );
 
-			if ( (&user->SourceParams.x < 0) || (&user->SourceParams.x > &user->W) || (&user->SourceParams.y < 0) || (&user->SourceParams.y > &user->L) || (&user->SourceParams.z < 0) || (&user->SourceParams.z > &user->H))
-			{
-				//SETERRQ(PETSC_COMM_SELF, PETSC_ERR_USER, "Incorrect source coordinates\n");
+				if ( (user->SourceParams.x < 0.0) || (user->SourceParams.x > user->W) || (user->SourceParams.y < 0.0) || (user->SourceParams.y > user->L) || (user->SourceParams.z < 0.0) || (user->SourceParams.z > user->H))
+				{
+					SETERRQ(PETSC_COMM_SELF, PETSC_ERR_USER, "Incorrect source coordinates\n");
+				}
 			}
-
-			// Source function
-			parse_GetDouble( fp, "amplitude", &user->SourceParams.amplitude, &found );
-			parse_GetDouble( fp, "alfa", &user->SourceParams.alfa, &found );
-			parse_GetDouble( fp, "t0", &user->SourceParams.t0, &found );
-			parse_GetDouble( fp, "frequency", &user->SourceParams.frequency, &found );
-
-			// Moment tensor source
-			if (user->SourceParams.source_type == MOMENT) {
-				parse_GetDouble( fp, "M0", &user->SourceParams.moment_tensor.M0, &found );
-				parse_GetDouble( fp, "Mxx", &user->SourceParams.moment_tensor.Mxx, &found );
-				parse_GetDouble( fp, "Myy", &user->SourceParams.moment_tensor.Myy, &found );
-				parse_GetDouble( fp, "Mzz", &user->SourceParams.moment_tensor.Mzz, &found );
-				parse_GetDouble( fp, "Mxy", &user->SourceParams.moment_tensor.Mxy, &found );
-				parse_GetDouble( fp, "Mxz", &user->SourceParams.moment_tensor.Mxz, &found );
-				parse_GetDouble( fp, "Myz", &user->SourceParams.moment_tensor.Myz, &found );
-			}
-
-			/*// Initialize other fields
-			user->SourceParams.i = -1;
-			user->SourceParams.j = -1;
-			user->SourceParams.k = -1;
-			user->SourceParams.xrank = -1;
-			user->SourceParams.yrank = -1;
-			user->SourceParams.zrank = -1;*/
-
-			else if (!strcmp(source_type_name, "uniaxial_compression"))   user->SourceParams.source_type = COMPRES;
-
-			else SETERRQ1(PETSC_COMM_SELF, PETSC_ERR_USER,"ERROR! Incorrect source type: %s", source_type_name);
-
-			// Source coordinates
-			parse_GetDouble( fp, "x_source", &user->SourceParams.x, &found );
-			parse_GetDouble( fp, "y_source", &user->SourceParams.y, &found );
-			parse_GetDouble( fp, "z_source", &user->SourceParams.z, &found );
-
-			if ( (user->SourceParams.x < 0.0) || (user->SourceParams.x > user->W) || (user->SourceParams.y < 0.0) || (user->SourceParams.y > user->L) || (user->SourceParams.z < 0.0) || (user->SourceParams.z > user->H))
-			{
-				SETERRQ(PETSC_COMM_SELF, PETSC_ERR_USER, "Incorrect source coordinates\n");
-			}
-
 			// Source function
 			parse_GetDouble( fp, "amplitude", &user->SourceParams.amplitude, &found );
 			parse_GetDouble( fp, "alfa", &user->SourceParams.alfa, &found );

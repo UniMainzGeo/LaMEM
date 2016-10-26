@@ -145,7 +145,7 @@ DII_ref 						=	1
 # ---------------------------------------------------------------------------------------------------
 # ---------------------------------------------------------------------------------------------------
 
-# Scaling computational density (will be material_density*density_factor) ---------------------------
+# Scaling computational density (computational density will be material_density*density_factor) ---------------------------
 density_factor = 1
 strain_stress_file_name	   = strain_stress
 
