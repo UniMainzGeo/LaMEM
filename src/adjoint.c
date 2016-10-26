@@ -289,9 +289,9 @@ PetscErrorCode AdjointComputeGradients(JacRes *jr, AdjGrad *aop, NLSol *nl, SNES
 		ierr = VecAYPX(res,-1,rpl);        					CHKERRQ(ierr);
 		ierr = VecPointwiseDivide(drdp,res,Perturb_vec);   	CHKERRQ(ierr);
 
-		// Compute the gradient (dF/dp = -psi^T * dr/dp) & Save gradient
+		// Compute the gradient (dF/dp = -psi^T * dr/dp) including a premultiplier & Save gradient
 		ierr = VecDot(drdp,psi,&grd);     					CHKERRQ(ierr);
-		IOparam->grd[j] 	= (-1 * grd)*aop->CurScal;      CHKERRQ(ierr);
+		IOparam->grd[j] 	= IOparam->factor1 * ((-1 * grd)*aop->CurScal);      CHKERRQ(ierr);
 
 		// Reset perturbed parameter
 		ierr = AdjointGradientResetParameter(nl, CurPar, CurPhase, aop);       CHKERRQ(ierr);
@@ -529,17 +529,20 @@ PetscErrorCode AdjointPointInPro(JacRes *jr, AdjGrad *aop, ModParam *IOparam, Fr
 	// We want the whole domain as comparison
 	else if (IOparam->Ap == 2)
 	{
-		if(IOparam->Av[0] == 1)
+		for(ii = 0; ii < 3; ii++)
 		{
-			ierr = VecSet(lproX,1);
-		}
-		else if(IOparam->Av[0] == 2)
-		{
-			ierr = VecSet(lproY,1);
-		}
-		else if(IOparam->Av[0] == 3)
-		{
-			ierr = VecSet(lproZ,1);
+			if(IOparam->Av[ii] == 1)
+			{
+				ierr = VecSet(lproX,1);
+			}
+			else if(IOparam->Av[ii] == 2)
+			{
+				ierr = VecSet(lproY,1);
+			}
+			else if(IOparam->Av[ii] == 3)
+			{
+				ierr = VecSet(lproZ,1);
+			}
 		}
 	}
 	else if (IOparam->Ap == 3)     // take the topography velocity as comparison

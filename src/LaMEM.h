@@ -147,7 +147,8 @@ extern "C" {
 #endif
 
 PetscErrorCode LaMEMLib(ModParam *IOparam);
-PetscErrorCode AdjointOptimisation(Tao tao, Vec P, PetscReal *F, Vec grad, void *ctx);
+PetscErrorCode AdjointOptimisation(Vec P, PetscScalar F, Vec grad, void *ctx);
+PetscErrorCode AdjointOptimisationTAO(Tao tao, Vec P, PetscReal *F, Vec grad, void *ctx);
 
 #ifdef __cplusplus
 }
