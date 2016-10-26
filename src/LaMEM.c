@@ -137,6 +137,11 @@ int main(int argc, char **argv)
 	IOparam.factor2 = 1.5;  // factor that increases the convergence velocity (this value is added to itself after every succesful gradient descent ; only used without tao)
 	IOparam.maxfactor2 = 100; // limit on the factor (only used without tao)
 
+	if(IOparam.use == 2)
+    {
+        IOparam.factor1 = 1;
+    }
+
 	IOparam.count = 1;  // iteration counter for the initial cost function
 
 	// VECTORS
