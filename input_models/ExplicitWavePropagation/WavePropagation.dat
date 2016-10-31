@@ -37,7 +37,7 @@ msetup 					= homo 			#heterogeneous, layer, homo
 # Define input/output and numerics-related stuff
 OutputFile					=	ExplicitWavePropagation
 save_timesteps				=	10			# save every ? timesteps
-time_end					=	1000		# last timestep
+time_end					=	200		# last timestep
 CFL							=	0.5				# CFL, dt-based criterium
 dt_max						=	1e-5	  	   	# Maximum timestep [years if dimensional]
 save_breakpoints			= 	-1 				#  -1: don't save breakpoints + initial particles
@@ -62,6 +62,10 @@ Temp_bottom					=   0 #1 				# Temperature @ bottom; side BC's are flux-free
 	#-ExxStrainRates -1e-15
 
 	-ExplicitSolver 1
+	
+	-ViscoPLithosOff 
+	-NoPressureLimit
+	#-DeactivateFreeSurfaceCorrection
 
 	# Initial timestep
 	-dt 0.5e-2	#1.5e-10		#1e-2
@@ -121,8 +125,8 @@ DII_ref 						=	1
 		rho0        = 	2800		#2600 		#1000		# density - if dimensional [kg/m3]	
 		bulk		=	40e9	#3.38e10 	#208e+7		# K
 		shear		=   24e9	#2.34e10		#144e+7		# shear modulus (mu, G)
-		friction	=	0
-		cohesion	=	2e6
+		#friction	=	0
+		#cohesion	=	2e6
 		
 		#eta		= 	1e30		# viscosity - if dimensional [Pa.s]
 	<MaterialEnd>
@@ -147,7 +151,6 @@ DII_ref 						=	1
 
 # Scaling computational density (computational density will be material_density*density_factor) ---------------------------
 density_factor = 1
-strain_stress_file_name	   = strain_stress
 
 # Absorbing boundaries ------------------------------------------------------------------------------
 abs_boundaries	=	1 # Default value is 1
@@ -170,7 +173,7 @@ source_type 		= 	moment_tensor
 
 # Position
 x_source = 4000
-y_source = 8000
+y_source = 9000
 z_source = 4000
 
 # Focal mechanism for the moment tensor source
@@ -192,10 +195,9 @@ t0 			= 1
 # Define seismic station properties  ----------------------------------------------------------------------
 
 # Seismic station: 0 or 1
-seismic_station = 1
+seismic_station = 0
 
 # Position
 x_rec = 4000
 y_rec = 8000
 z_rec = 8000
-output_file_name = seismogram
