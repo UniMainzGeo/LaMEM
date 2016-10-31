@@ -206,6 +206,12 @@ PetscErrorCode FormMomentumResidualPressureAndVelocities(JacRes *jr, UserCtx *us
 	// copy solution from global to local vectors, enforce boundary constraints
 	//ierr = JacResCopySol(jr, x, _APPLY_SPC_); CHKERRQ(ierr);
 
+	// apply pressure limit at the first visco-plastic timestep and iteration
+	if(jr->ts.istep == 1 && jr->matLim.presLimAct == PETSC_TRUE)
+	{
+		jr->matLim.presLimFlg = PETSC_TRUE;
+	}
+
 	ierr = JacResGetPressShift(jr); CHKERRQ(ierr);
 
 	// compute effective strain rate

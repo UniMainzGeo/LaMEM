@@ -67,6 +67,9 @@
 //
 // This is diagonal (rather than row-wise) storage format !!!
 //
+// ParaView TensorGlyph-Plugin requires a complete 9 component tensor, ordering is row-wise:
+// xx, xy, xz, yx, yy, yz, zx, zy, zz
+//
 // As usual, this isn't documented anywhere !!! Take care of this in future versions.
 //---------------------------------------------------------------------------
 // interpolation function header
@@ -199,6 +202,25 @@ PetscErrorCode PVOutWriteViscCreep(JacRes *jr, OutBuf *outbuf)
 }
 //---------------------------------------------------------------------------
 #undef __FUNCT__
+#define __FUNCT__ "PVOutWriteViscoPlastic"
+PetscErrorCode PVOutWriteViscoPlastic(JacRes *jr, OutBuf *outbuf)
+{
+	COPY_FUNCTION_HEADER
+
+	// macro to copy viscosity to buffer
+	#define GET_VISC_VISCOPLASTIC buff[k][j][i] = jr->svCell[iter++].eta_viscoplastic;
+
+	// output viscosity logarithm in GEO-mode
+	// (negative scaling requests logarithmic output)
+	if(scal->utype == _GEO_) cf = -scal->viscosity;
+	else                     cf =  scal->viscosity;
+
+	INTERPOLATE_COPY(fs->DA_CEN, outbuf->lbcen, InterpCenterCorner, GET_VISC_VISCOPLASTIC, 1, 0)
+
+	PetscFunctionReturn(0);
+}
+//---------------------------------------------------------------------------
+#undef __FUNCT__
 #define __FUNCT__ "PVOutWriteVelocity"
 PetscErrorCode PVOutWriteVelocity(JacRes *jr, OutBuf *outbuf)
 {
@@ -240,6 +262,41 @@ PetscErrorCode PVOutWritePressure(JacRes *jr, OutBuf *outbuf)
 }
 //---------------------------------------------------------------------------
 #undef __FUNCT__
+#define __FUNCT__ "PVOutWriteOverPressure"
+PetscErrorCode PVOutWriteOverPressure(JacRes *jr, OutBuf *outbuf)
+{
+	PetscScalar pShift;
+
+	ACCESS_FUNCTION_HEADER
+
+	cf = scal->stress;
+
+	// scale pressure shift
+	pShift = cf*jr->pShift;
+
+	ierr = JacResGetOverPressure(jr, outbuf->lbcen); CHKERRQ(ierr);
+
+	INTERPOLATE_ACCESS(outbuf->lbcen, InterpCenterCorner, 1, 0, pShift)
+
+	PetscFunctionReturn(0);
+}
+//---------------------------------------------------------------------------
+#undef __FUNCT__
+#define __FUNCT__ "PVOutWriteLithosPressure"
+PetscErrorCode PVOutWriteLithosPressure(JacRes *jr, OutBuf *outbuf)
+{
+	ACCESS_FUNCTION_HEADER
+
+	cf = scal->stress;
+
+	ierr = JacResGetLithoStaticPressure(jr); CHKERRQ(ierr);
+
+	INTERPOLATE_ACCESS(jr->lp_lithos, InterpCenterCorner, 1, 0, 0.0)
+
+	PetscFunctionReturn(0);
+}
+//---------------------------------------------------------------------------
+#undef __FUNCT__
 #define __FUNCT__ "PVOutWriteTemperature"
 PetscErrorCode PVOutWriteTemperature(JacRes *jr, OutBuf *outbuf)
 {
@@ -271,12 +328,16 @@ PetscErrorCode PVOutWriteDevStress(JacRes *jr, OutBuf *outbuf)
 
 	cf = scal->stress;
 
-	INTERPOLATE_COPY(fs->DA_CEN, outbuf->lbcen, InterpCenterCorner, GET_SXX, 6, 0)
-	INTERPOLATE_COPY(fs->DA_CEN, outbuf->lbcen, InterpCenterCorner, GET_SYY, 6, 1)
-	INTERPOLATE_COPY(fs->DA_CEN, outbuf->lbcen, InterpCenterCorner, GET_SZZ, 6, 2)
-	INTERPOLATE_COPY(fs->DA_XY,  outbuf->lbxy,  InterpXYEdgeCorner, GET_SXY, 6, 3)
-	INTERPOLATE_COPY(fs->DA_YZ,  outbuf->lbyz,  InterpYZEdgeCorner, GET_SYZ, 6, 4)
-	INTERPOLATE_COPY(fs->DA_XZ,  outbuf->lbxz,  InterpXZEdgeCorner, GET_SXZ, 6, 5)
+	INTERPOLATE_COPY(fs->DA_CEN, outbuf->lbcen, InterpCenterCorner, GET_SXX, 9, 0)
+	INTERPOLATE_COPY(fs->DA_XY,  outbuf->lbxy,  InterpXYEdgeCorner, GET_SXY, 9, 1)
+	INTERPOLATE_COPY(fs->DA_XZ,  outbuf->lbxz,  InterpXZEdgeCorner, GET_SXZ, 9, 2)
+	INTERPOLATE_COPY(fs->DA_XY,  outbuf->lbxy,  InterpXYEdgeCorner, GET_SXY, 9, 3)
+	INTERPOLATE_COPY(fs->DA_CEN, outbuf->lbcen, InterpCenterCorner, GET_SYY, 9, 4)
+	INTERPOLATE_COPY(fs->DA_YZ,  outbuf->lbyz,  InterpYZEdgeCorner, GET_SYZ, 9, 5)
+	INTERPOLATE_COPY(fs->DA_XZ,  outbuf->lbxz,  InterpXZEdgeCorner, GET_SXZ, 9, 6)
+	INTERPOLATE_COPY(fs->DA_YZ,  outbuf->lbyz,  InterpYZEdgeCorner, GET_SYZ, 9, 7)
+	INTERPOLATE_COPY(fs->DA_CEN, outbuf->lbcen, InterpCenterCorner, GET_SZZ, 9, 8)
+	
 
 	PetscFunctionReturn(0);
 }
@@ -339,12 +400,15 @@ PetscErrorCode PVOutWriteStrainRate(JacRes *jr, OutBuf *outbuf)
 
 	cf = scal->strain_rate;
 
-	INTERPOLATE_COPY(fs->DA_CEN, outbuf->lbcen, InterpCenterCorner, GET_DXX, 6, 0)
-	INTERPOLATE_COPY(fs->DA_CEN, outbuf->lbcen, InterpCenterCorner, GET_DYY, 6, 1)
-	INTERPOLATE_COPY(fs->DA_CEN, outbuf->lbcen, InterpCenterCorner, GET_DZZ, 6, 2)
-	INTERPOLATE_COPY(fs->DA_XY,  outbuf->lbxy,  InterpXYEdgeCorner, GET_DXY, 6, 3)
-	INTERPOLATE_COPY(fs->DA_YZ,  outbuf->lbyz,  InterpYZEdgeCorner, GET_DYZ, 6, 4)
-	INTERPOLATE_COPY(fs->DA_XZ,  outbuf->lbxz,  InterpXZEdgeCorner, GET_DXZ, 6, 5)
+	INTERPOLATE_COPY(fs->DA_CEN, outbuf->lbcen, InterpCenterCorner, GET_DXX, 9, 0)
+	INTERPOLATE_COPY(fs->DA_XY,  outbuf->lbxy,  InterpXYEdgeCorner, GET_DXY, 9, 1)
+	INTERPOLATE_COPY(fs->DA_XZ,  outbuf->lbxz,  InterpXZEdgeCorner, GET_DXZ, 9, 2)
+	INTERPOLATE_COPY(fs->DA_XY,  outbuf->lbxy,  InterpXYEdgeCorner, GET_DXY, 9, 3)
+	INTERPOLATE_COPY(fs->DA_CEN, outbuf->lbcen, InterpCenterCorner, GET_DYY, 9, 4)
+	INTERPOLATE_COPY(fs->DA_YZ,  outbuf->lbyz,  InterpYZEdgeCorner, GET_DYZ, 9, 5)
+	INTERPOLATE_COPY(fs->DA_XZ,  outbuf->lbxz,  InterpXZEdgeCorner, GET_DXZ, 9, 6)
+	INTERPOLATE_COPY(fs->DA_YZ,  outbuf->lbyz,  InterpYZEdgeCorner, GET_DYZ, 9, 7)
+	INTERPOLATE_COPY(fs->DA_CEN, outbuf->lbcen, InterpCenterCorner, GET_DZZ, 9, 8)
 
 	PetscFunctionReturn(0);
 }
@@ -465,12 +529,34 @@ PetscErrorCode PVOutWritePlastStrain(JacRes *jr, OutBuf *outbuf)
 #define __FUNCT__ "PVOutWritePlastDissip"
 PetscErrorCode PVOutWritePlastDissip(JacRes *jr, OutBuf *outbuf)
 {
-	PetscErrorCode ierr;
-	PetscFunctionBegin;
+	SolVarCell *svCell;
+	SolVarEdge *svEdge;
+	PetscScalar Hr;
 
-	ierr = 0; CHKERRQ(ierr);
-	if(jr)  jr = NULL;
-	if(outbuf) outbuf = NULL;
+	COPY_FUNCTION_HEADER
+
+	// macros to copy shear heating  to buffer
+	#define GET_SHEAR_HEATING_CENTER \
+		svCell = &jr->svCell[iter++];  \
+		Hr = svCell->svDev.Hr; \
+		buff[k][j][i] = Hr;
+
+	#define GET_SHEAR_HEATING_XY_EDGE svEdge = &jr->svXYEdge[iter++]; Hr = svEdge->svDev.Hr; buff[k][j][i] = Hr;
+	#define GET_SHEAR_HEATING_YZ_EDGE svEdge = &jr->svYZEdge[iter++]; Hr = svEdge->svDev.Hr; buff[k][j][i] = Hr;
+	#define GET_SHEAR_HEATING_XZ_EDGE svEdge = &jr->svXZEdge[iter++]; Hr = svEdge->svDev.Hr; buff[k][j][i] = Hr;
+
+	cf = scal->dissipation_rate;
+
+	iflag.update = PETSC_TRUE;
+
+	ierr = VecSet(outbuf->lbcor, 0.0); CHKERRQ(ierr);
+
+	INTERPOLATE_COPY(fs->DA_CEN, outbuf->lbcen, InterpCenterCorner, GET_SHEAR_HEATING_CENTER,  1, 0)
+	INTERPOLATE_COPY(fs->DA_XY,  outbuf->lbxy,  InterpXYEdgeCorner, GET_SHEAR_HEATING_XY_EDGE, 1, 0)
+	INTERPOLATE_COPY(fs->DA_YZ,  outbuf->lbyz,  InterpYZEdgeCorner, GET_SHEAR_HEATING_YZ_EDGE, 1, 0)
+	INTERPOLATE_COPY(fs->DA_XZ,  outbuf->lbxz,  InterpXZEdgeCorner, GET_SHEAR_HEATING_XZ_EDGE, 1, 0)
+
+	ierr = OutBufPut3DVecComp(outbuf, 1, 0, cf, 0.0); CHKERRQ(ierr);
 
 	PetscFunctionReturn(0);
 }
@@ -479,12 +565,19 @@ PetscErrorCode PVOutWritePlastDissip(JacRes *jr, OutBuf *outbuf)
 #define __FUNCT__ "PVOutWriteTotDispl"
 PetscErrorCode PVOutWriteTotDispl(JacRes *jr, OutBuf *outbuf)
 {
-	PetscErrorCode ierr;
-	PetscFunctionBegin;
 
-	ierr = 0; CHKERRQ(ierr);
-	if(jr)  jr = NULL;
-	if(outbuf) outbuf = NULL;
+	COPY_FUNCTION_HEADER
+
+	cf = scal->length;
+
+	// macros to copy displacement in cell to buffer
+	#define GET_DISPLX buff[k][j][i] = jr->svCell[iter++].U[0];
+	#define GET_DISPLY buff[k][j][i] = jr->svCell[iter++].U[1];
+	#define GET_DISPLZ buff[k][j][i] = jr->svCell[iter++].U[2];
+
+	INTERPOLATE_COPY(jr->fs->DA_CEN, outbuf->lbcen, InterpCenterCorner, GET_DISPLX, 3, 0);
+	INTERPOLATE_COPY(jr->fs->DA_CEN, outbuf->lbcen, InterpCenterCorner, GET_DISPLY, 3, 1);
+	INTERPOLATE_COPY(jr->fs->DA_CEN, outbuf->lbcen, InterpCenterCorner, GET_DISPLZ, 3, 2);
 
 	PetscFunctionReturn(0);
 }

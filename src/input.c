@@ -56,6 +56,208 @@
 #include "fdstagTypes.h"
 #include "nlsolveExplicit.h"
 //---------------------------------------------------------------------------
+#undef __FUNCT__
+#define __FUNCT__ "PushInputReadFile"
+PetscErrorCode PushInputReadFile(UserCtx *user, FILE *fp)
+{
+	// initialize Push parameters fromfile
+	PetscInt *ls, *le;
+	PetscInt i, count_starts, count_ends;
+
+	PetscErrorCode ierr;
+	PetscFunctionBegin;
+
+	// print overview of push parameters from file
+	PetscPrintf(PETSC_COMM_WORLD, "Reading pushing parameters: \n\n");
+
+	// clear memory
+	ierr = PetscMemzero(user->Pushing, sizeof(PushParams)*(size_t)MAX_PUSH_BOX); CHKERRQ(ierr);
+
+	// initialize ID for consistency check
+	for(i = 0; i < MAX_PUSH_BOX; i++) user->Pushing[i].ID = -1;
+
+	// allocate memory for array to store line info
+	ierr = makeIntArray(&ls, NULL, MAX_PUSH_BOX); CHKERRQ(ierr);
+	ierr = makeIntArray(&le, NULL, MAX_PUSH_BOX); CHKERRQ(ierr);
+
+	// read number of entries
+	getLineStruct(fp, ls, le, MAX_PUSH_BOX, &count_starts, &count_ends, "<PushingBlockStart>", "<PushingBlockEnd>");
+
+	// error checking
+	if(count_starts > MAX_PUSH_BOX || count_ends > MAX_PUSH_BOX)
+	{
+		SETERRQ1(PETSC_COMM_SELF, PETSC_ERR_USER, "Too many material structures specified! Max allowed: %lld", (LLD)MAX_PUSH_BOX);
+	}
+	if(count_starts != count_ends)
+	{
+		SETERRQ(PETSC_COMM_SELF, PETSC_ERR_USER, "Incomplete material structures! <PushingBlockStart> & <PushingBlockEnd> don't match");
+	}
+
+	// store actual number of pushing block
+	user->nPush = count_starts;
+
+	// read each individual pushing block
+	for(i = 0; i < user->nPush; i++)
+	{
+		ierr = PushingBlockGetStruct(fp, user->nPush, user->Pushing, ls[i], le[i]); CHKERRQ(ierr);
+	}
+
+	// free arrays
+	ierr = PetscFree(ls); CHKERRQ(ierr);
+	ierr = PetscFree(le); CHKERRQ(ierr);
+
+	PetscFunctionReturn(0);
+}
+//---------------------------------------------------------------------------
+#undef __FUNCT__
+#define __FUNCT__ "PushingBlockGetStruct"
+PetscErrorCode PushingBlockGetStruct(FILE *fp, PetscInt nPush, PushParams *Pushing, PetscInt ils, PetscInt ile)
+{
+	// read pushing box from file
+	PushParams *p;
+	PetscInt   found, ID, nv;
+
+	PetscFunctionBegin;
+
+	// pushing box ID
+	getMatPropInt(fp, ils, ile, "PushID", &ID, &found);
+
+	// error checking
+	if(!found) SETERRQ(PETSC_COMM_SELF, PETSC_ERR_USER, "No pushing block ID specified! ");
+	if(ID > nPush-1) SETERRQ(PETSC_COMM_SELF, PETSC_ERR_USER, "Incorrect pushing block numbering!");
+
+	// get pointer to specified pushing block
+	p = Pushing + ID;
+
+	// check ID
+	if(p->ID != -1)  SETERRQ(PETSC_COMM_SELF, PETSC_ERR_USER, "Incorrect Pushing block numbering!");
+
+	// set ID
+	p->ID = ID;
+
+	// read and store pushing box parameters
+	getMatPropInt      (fp, ils, ile, "num_changes",         &p->num_changes, 		  &found);
+	getMatPropInt      (fp, ils, ile, "reset_pushing_coord", &p->reset_pushing_coord, &found);
+	getMatPropInt      (fp, ils, ile, "ind_change", 		 &p->ind_change, 		  &found);
+	getMatPropScalar   (fp, ils, ile, "theta", 				 &p->theta, 			  &found);
+	getMatPropScalar   (fp, ils, ile, "L_block", 			 &p->L_block, 			  &found);
+	getMatPropScalar   (fp, ils, ile, "W_block", 			 &p->W_block, 			  &found);
+	getMatPropScalar   (fp, ils, ile, "H_block", 			 &p->H_block, 			  &found);
+	getMatPropScalar   (fp, ils, ile, "x_center_block", 	 &p->x_center_block, 	  &found);
+	getMatPropScalar   (fp, ils, ile, "y_center_block", 	 &p->y_center_block, 	  &found);
+	getMatPropScalar   (fp, ils, ile, "z_center_block", 	 &p->z_center_block, 	  &found);
+	getMatPropScalArray(fp, ils, ile, "V_push",         &nv,  p->V_push,			  &found);
+	getMatPropScalArray(fp, ils, ile, "omega",          &nv,  p->omega,				  &found);
+	getMatPropScalArray(fp, ils, ile, "time",           &nv,  p->time,  			  &found);
+	getMatPropIntArray (fp, ils, ile, "coord_advect",   &nv,  p->coord_advect,		  &found);
+	getMatPropIntArray (fp, ils, ile, "dir",            &nv,  p->dir,				  &found);
+
+	PetscFunctionReturn(0);
+}
+//---------------------------------------------------------------------------
+#undef __FUNCT__
+#define __FUNCT__ "BezierInputReadFile"
+PetscErrorCode BezierInputReadFile(UserCtx *user, FILE *fp)
+{
+	// initialize bezier block parameters from file
+	PetscInt *ls, *le;
+	PetscInt i, count_starts, count_ends;
+
+	PetscErrorCode ierr;
+	PetscFunctionBegin;
+
+	// clear memory
+	ierr = PetscMemzero(user->blocks, sizeof(BCBlock)*(size_t)_max_bc_blocks_); CHKERRQ(ierr);
+
+	// initialize ID for consistency check
+	for(i = 0; i < _max_bc_blocks_; i++) user->blocks[i].ID = -1;
+
+	// allocate memory for array to store line info
+	ierr = makeIntArray(&ls, NULL, _max_bc_blocks_); CHKERRQ(ierr);
+	ierr = makeIntArray(&le, NULL, _max_bc_blocks_); CHKERRQ(ierr);
+
+	// read number of entries
+	getLineStruct(fp, ls, le, _max_bc_blocks_, &count_starts, &count_ends, "<BezierBlockStart>", "<BezierBlockEnd>");
+
+	// error checking
+	if(count_starts > MAX_PUSH_BOX || count_ends > _max_bc_blocks_)
+	{
+		SETERRQ1(PETSC_COMM_SELF, PETSC_ERR_USER, "Too many bezier structures specified! Max allowed: %lld", (LLD)_max_bc_blocks_);
+	}
+	if(count_starts != count_ends)
+	{
+		SETERRQ(PETSC_COMM_SELF, PETSC_ERR_USER, "Incomplete bezier structures! <BezierBlockStart> & <BezierBlockEnd> don't match");
+	}
+
+	// store actual number of bezier block
+	user->nblo = count_starts;
+
+	// read each individual bezier block
+	for(i = 0; i< user->nblo; i++)
+	{
+		ierr = BezierBlockGetStruct(fp, user->nblo, user->blocks, ls[i], le[i]); CHKERRQ(ierr);
+	}
+
+	// free arrays
+	ierr = PetscFree(ls); CHKERRQ(ierr);
+	ierr = PetscFree(le); CHKERRQ(ierr);
+
+	PetscFunctionReturn(0);
+}
+//---------------------------------------------------------------------------
+#undef __FUNCT__
+#define __FUNCT__ "BezierBlockGetStruct"
+PetscErrorCode BezierBlockGetStruct(FILE *fp, PetscInt nblo, BCBlock *blocks, PetscInt ils, PetscInt ile)
+{
+	// read bezier block from file
+	BCBlock  *b;
+	PetscInt found, ID, nv;
+
+	PetscFunctionBegin;
+
+	// bezier box ID
+	getMatPropInt(fp, ils, ile, "BezierID", &ID, &found);
+
+	// error checking
+	if(!found) SETERRQ(PETSC_COMM_SELF, PETSC_ERR_USER, "No bezier block ID specified! ");
+	if(ID > nblo-1) SETERRQ(PETSC_COMM_SELF, PETSC_ERR_USER, "Incorrect bezier block numbering!");
+
+	// get pointer to specified bezier block
+	b = blocks + ID;
+
+	// check ID
+	if(b->ID != -1) SETERRQ(PETSC_COMM_SELF, PETSC_ERR_USER, "Incorrect Bezier block numbering!");
+
+	// set ID
+	b->ID = ID;
+
+	// read and store bezier block parameters & error checking
+	getMatPropInt(fp, ils, ile, "npath", &b->npath, &found);
+	if(!found) SETERRQ(PETSC_COMM_SELF,PETSC_ERR_USER, "No npath specified! ");
+	if(b->npath < 1 || b->npath > _max_path_points_) SETERRQ2(PETSC_COMM_SELF,PETSC_ERR_USER, "npath should be range: [%d - %d]\n", 1, _max_path_points_);
+
+	getMatPropScalArray(fp,ils,ile,"theta",&nv, b->theta, &found);
+	if(nv != b->npath) SETERRQ(PETSC_COMM_SELF,PETSC_ERR_USER, "wrong number of theta specified! ");
+
+	getMatPropScalArray(fp,ils,ile,"time",&nv, b->time, &found);
+	if(nv != b->npath) SETERRQ(PETSC_COMM_SELF,PETSC_ERR_USER, "wrong number of time specified! ");
+
+	getMatPropScalArray(fp,ils,ile,"path",&nv, b->path, &found);
+	if(nv != 6*b->npath -4) SETERRQ(PETSC_COMM_SELF,PETSC_ERR_USER, "wrong number of path specified! ");
+
+	getMatPropInt(fp,ils,ile,"npoly",&b->npoly, &found);
+	if(!found) SETERRQ(PETSC_COMM_SELF,PETSC_ERR_USER, "number of polygon not specified! ");
+	if(b->npoly < 1 || b->npoly > _max_poly_points_) SETERRQ2(PETSC_COMM_SELF,PETSC_ERR_USER, "npoly should be range: [%d - %d]\n", 1, _max_poly_points_);
+
+	getMatPropScalArray(fp,ils,ile,"poly",&nv, b->poly, &found);
+	if(nv != 2*b->npoly) SETERRQ(PETSC_COMM_SELF,PETSC_ERR_USER, "wrong number of poly specified! ");
+
+	getMatPropScalar(fp, ils, ile, "bot", &b->bot, &found);
+	getMatPropScalar(fp, ils, ile, "top", &b->top, &found);
+
+	PetscFunctionReturn(0);
+}
+//---------------------------------------------------------------------------
 // set default code parameters and read input file, if required
 #undef __FUNCT__
 #define __FUNCT__ "FDSTAGInitCode"
@@ -94,6 +296,12 @@ PetscErrorCode FDSTAGInitCode(JacRes *jr, UserCtx *user, ModParam *iop)
 		{
 			// read an input file using the parser
 			ierr = InputReadFile(jr, user, fp); CHKERRQ(ierr);
+
+			// read pushing parameter from file
+			ierr = PushInputReadFile(user,fp); CHKERRQ(ierr);
+
+			// read bezier parameter from file
+			ierr = BezierInputReadFile(user,fp); CHKERRQ(ierr);
 
 			// read softening laws from file
 			ierr = MatSoftInit(jr, fp); CHKERRQ(ierr);
@@ -207,6 +415,9 @@ PetscErrorCode InputSetDefaultValues(JacRes *jr, UserCtx *user)
 	// scaling
 	jr->scal.utype = _NONE_;
 
+	// set pressure limit for plasticity
+	jr->matLim.presLimAct  = PETSC_TRUE;
+
 	// time-stepping
 	user->time_end         = 1.0;
 	user->save_timesteps   = 1;
@@ -277,8 +488,11 @@ PetscErrorCode InputSetDefaultValues(JacRes *jr, UserCtx *user)
 
 	// Default Pushing BC parameters
 	user->AddPushing                    = 0;
-	user->Pushing.reset_pushing_coord   = 0;
-	user->Pushing.theta                 = 0.0;
+//	user->Pushing.reset_pushing_coord   = 0;
+//	user->Pushing.theta                 = 0.0;
+
+	// default bezier parameters
+	user->AddBezier 					=	0;
 
 	user->FSSA                          =	0.0;
 
@@ -431,20 +645,9 @@ PetscErrorCode InputReadFile(JacRes *jr, UserCtx *user, FILE *fp)
 
 	// Pushing Parameters
 	parse_GetInt( fp,    "AddPushing", &user->AddPushing, &found );
-	parse_GetInt( fp,    "Pushing.num_changes", &user->Pushing.num_changes, &found );
-	parse_GetInt( fp,    "Pushing.reset_pushing_coord", &user->Pushing.reset_pushing_coord, &found );
-	parse_GetDouble( fp, "Pushing.L_block", &user->Pushing.L_block, &found );
-	parse_GetDouble( fp, "Pushing.W_block", &user->Pushing.W_block, &found );
-	parse_GetDouble( fp, "Pushing.H_block", &user->Pushing.H_block, &found );
-	parse_GetDouble( fp, "Pushing.theta", &user->Pushing.theta, &found );
-	parse_GetDouble( fp, "Pushing.x_center_block", &user->Pushing.x_center_block, &found );
-	parse_GetDouble( fp, "Pushing.y_center_block", &user->Pushing.y_center_block, &found );
-	parse_GetDouble( fp, "Pushing.z_center_block", &user->Pushing.z_center_block, &found );
-	parse_GetDoubleArray( fp, "Pushing.time",   &nv, d_values, &found );  for( i=0; i<user->Pushing.num_changes+1; i++ ) { user->Pushing.time[i]   = d_values[i];}
-	parse_GetDoubleArray( fp, "Pushing.V_push", &nv, d_values, &found );  for( i=0; i<user->Pushing.num_changes;   i++ ) { user->Pushing.V_push[i] = d_values[i];}
-	parse_GetDoubleArray( fp, "Pushing.omega",  &nv, d_values, &found  ); for( i=0; i<user->Pushing.num_changes;   i++ ) { user->Pushing.omega[i]  = d_values[i];}
-	parse_GetIntArray( fp, "Pushing.coord_advect",&nv, i_values, &found); for( i=0; i<user->Pushing.num_changes;   i++ ) { user->Pushing.coord_advect[i] = i_values[i];}
-	parse_GetIntArray( fp, "Pushing.dir",         &nv, i_values, &found); for( i=0; i<user->Pushing.num_changes;   i++ ) { user->Pushing.dir[i]          = i_values[i];}
+
+	// bezier flag
+	parse_GetInt( fp,    "AddBezier",  &user->AddBezier,  &found );
 
 	// Scaling density factor
 	parse_GetDouble(fp, "density_factor",&user->DensityFactor, &found);
@@ -493,7 +696,7 @@ PetscErrorCode InputReadFile(JacRes *jr, UserCtx *user, FILE *fp)
 			else SETERRQ1(PETSC_COMM_SELF, PETSC_ERR_USER,"ERROR! Incorrect source type: %s", source_type_name);
 
 			// Source coordinates
-			if (user->SourceParams.source_type == POINT) {
+			if (user->SourceParams.source_type == POINT || user->SourceParams.source_type == MOMENT) {
 				parse_GetDouble( fp, "x_source", &user->SourceParams.x, &found );
 				parse_GetDouble( fp, "y_source", &user->SourceParams.y, &found );
 				parse_GetDouble( fp, "z_source", &user->SourceParams.z, &found );
@@ -571,8 +774,8 @@ PetscErrorCode InputReadFile(JacRes *jr, UserCtx *user, FILE *fp)
 #define __FUNCT__ "InputReadCommLine"
 PetscErrorCode InputReadCommLine(UserCtx *user )
 {
-	PetscInt       i, nel_array[3], nel_input_max;
-	PetscBool      found,flg;
+	PetscInt       nel_array[3], nel_input_max;
+	PetscBool      found;
 	char           setup_name[MAX_NAME_LEN];
 
 	PetscErrorCode ierr;
@@ -672,51 +875,6 @@ PetscErrorCode InputReadCommLine(UserCtx *user )
 
 	// gravity
 	PetscOptionsGetReal(PETSC_NULL ,"-GravityAngle",   &user->GravityAngle,     PETSC_NULL); // Gravity angle in x-z plane
-
-	// pushing boundary conditions related parameters
-	PetscOptionsGetInt(PETSC_NULL,"-AddPushing"                 , &user->AddPushing                 , PETSC_NULL);
-	PetscOptionsGetInt(PETSC_NULL,"-Pushing.num_changes"        , &user->Pushing.num_changes        , PETSC_NULL);
-	PetscOptionsGetInt(PETSC_NULL,"-Pushing.reset_pushing_coord", &user->Pushing.reset_pushing_coord, PETSC_NULL);
-	PetscOptionsGetReal(PETSC_NULL,"-Pushing.L_block"           , &user->Pushing.L_block            , PETSC_NULL);
-	PetscOptionsGetReal(PETSC_NULL,"-Pushing.W_block"           , &user->Pushing.W_block            , PETSC_NULL);
-	PetscOptionsGetReal(PETSC_NULL,"-Pushing.H_block"           , &user->Pushing.H_block            , PETSC_NULL);
-	PetscOptionsGetReal(PETSC_NULL,"-Pushing.x_center_block"    , &user->Pushing.x_center_block     , PETSC_NULL);
-	PetscOptionsGetReal(PETSC_NULL,"-Pushing.y_center_block"    , &user->Pushing.y_center_block     , PETSC_NULL);
-	PetscOptionsGetReal(PETSC_NULL,"-Pushing.z_center_block"    , &user->Pushing.z_center_block     , PETSC_NULL);
-	PetscOptionsGetReal(PETSC_NULL,"-Pushing.theta"             , &user->Pushing.theta              , PETSC_NULL);
-
-	// pushing - array variables
-	char matprop_opt[MAX_PATH_LEN];
-	flg = PETSC_FALSE;
-
-	for(i=0;i<user->Pushing.num_changes;i++){
-		// v_push in cm/year
-		sprintf(matprop_opt,"-Pushing.V_push_%lld",(LLD)i);
-		ierr = PetscOptionsGetReal(PETSC_NULL ,matprop_opt,&user->Pushing.V_push[i], &flg); CHKERRQ(ierr);
-		if(flg == PETSC_TRUE) PetscPrintf(PETSC_COMM_WORLD,"#    V_push[%lld] = %g \n",(LLD)i,user->Pushing.V_push[i]);
-
-		// rate of rotation deg/yr
-		sprintf(matprop_opt,"-Pushing.omega_%lld",(LLD)i);
-		ierr = PetscOptionsGetReal(PETSC_NULL ,matprop_opt,&user->Pushing.omega[i], &flg); CHKERRQ(ierr);
-		if(flg == PETSC_TRUE) PetscPrintf(PETSC_COMM_WORLD,"#    Omega[%lld] = %g \n",(LLD)i,user->Pushing.omega[i]);
-
-		// advect block or not for each time segment
-		sprintf(matprop_opt,"-Pushing.coord_advect_%lld",(LLD)i);
-		ierr = PetscOptionsGetInt(PETSC_NULL ,matprop_opt,&user->Pushing.coord_advect[i], &flg); CHKERRQ(ierr);
-		if(flg == PETSC_TRUE) PetscPrintf(PETSC_COMM_WORLD,"#    Coord_advect[%lld] = %g \n",(LLD)i,user->Pushing.coord_advect[i]);
-
-		// direction of pushing
-				sprintf(matprop_opt,"-Pushing.dir_%lld",(LLD)i);
-				ierr = PetscOptionsGetInt(PETSC_NULL ,matprop_opt,&user->Pushing.dir[i], &flg); CHKERRQ(ierr);
-				if(flg == PETSC_TRUE) PetscPrintf(PETSC_COMM_WORLD,"#    Direction[%lld] = %g \n",(LLD)i,user->Pushing.dir[i]);
-	}
-
-	for(i=0;i<user->Pushing.num_changes+1;i++){
-		// time intervals is a num_changes+1 array
-		sprintf(matprop_opt,"-Pushing.time_%lld",(LLD)i);
-		ierr = PetscOptionsGetReal(PETSC_NULL ,matprop_opt,&user->Pushing.time[i], &flg); CHKERRQ(ierr);
-		if(flg == PETSC_TRUE) PetscPrintf(PETSC_COMM_WORLD,"#    Time[%lld] = %g \n",(LLD)i,user->Pushing.time[i]);
-	}
 
 	PetscFunctionReturn(0);
 }

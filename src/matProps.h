@@ -118,6 +118,11 @@ void getMatPropScalar(FILE *fp, PetscInt ils, PetscInt ile,
 void getMatPropString(FILE *fp, PetscInt ils, PetscInt ile,
 	const char key[], char value[], PetscInt max_L, PetscInt *found );
 
+void getMatPropIntArray(FILE *fp, PetscInt ils, PetscInt ile,
+	const char key[], PetscInt *nvalues, PetscInt value[], PetscInt *found);
+
+void getMatPropScalArray(FILE *fp, PetscInt ils, PetscInt ile,
+	const char key[], PetscInt *nvalues, PetscScalar value[], PetscInt *found);
 //---------------------------------------------------------------------------
 
 #endif

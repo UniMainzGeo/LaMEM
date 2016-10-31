@@ -230,6 +230,12 @@ PetscErrorCode FormResidual(SNES snes, Vec x, Vec f, void *ctx)
 	nl = (NLSol*)ctx;
 	jr = nl->pc->pm->jr;
 
+	// apply pressure limit at the first visco-plastic timestep and iteration
+    if(jr->ts.istep == 1 && jr->matLim.presLimAct == PETSC_TRUE)
+    {
+    	jr->matLim.presLimFlg = PETSC_TRUE;
+	}
+
 	// copy solution from global to local vectors, enforce boundary constraints
 	ierr = JacResCopySol(jr, x, _APPLY_SPC_); CHKERRQ(ierr);
 
@@ -243,6 +249,9 @@ PetscErrorCode FormResidual(SNES snes, Vec x, Vec f, void *ctx)
 
 	// copy residuals to global vector
 	ierr = JacResCopyRes(jr, f); CHKERRQ(ierr);
+
+	// deactivate pressure limit after it has been activated
+	jr->matLim.presLimFlg = PETSC_FALSE;
 
 	PetscFunctionReturn(0);
 }
@@ -381,6 +390,12 @@ PetscErrorCode FormJacobian(SNES snes, Vec x, Mat Amat, Mat Pmat, void *ctx)
 		it_newton++;
 	}
 
+	// switch off pressure limit for plasticity after first timestep and iteration (after GetResidual)
+	if(jr->ts.istep >=1)
+	{
+		jr->matLim.presLimAct = PETSC_FALSE;
+	}
+
 	// count iterations
 	nl->it++;
 
@@ -442,7 +457,7 @@ PetscErrorCode JacApplyMFFD(Mat A, Vec x, Vec y)
 //---------------------------------------------------------------------------
 #undef __FUNCT__
 #define __FUNCT__ "SNESPrintConvergedReason"
-PetscErrorCode SNESPrintConvergedReason(SNES snes)
+PetscErrorCode SNESPrintConvergedReason(SNES snes, PetscBool *Convergence)
 {
 	SNESConvergedReason reason;
 	PetscInt            its;
@@ -454,9 +469,11 @@ PetscErrorCode SNESPrintConvergedReason(SNES snes)
 	ierr = SNESGetConvergedReason(snes, &reason);  CHKERRQ(ierr);
 
     // CONVERGENCE
+	*Convergence = PETSC_TRUE;
 
     if(reason == SNES_CONVERGED_FNORM_ABS)
 	{
+
 		ierr = PetscPrintf(PETSC_COMM_WORLD, " SNES Convergence Reason: ||F|| < atol \n"); CHKERRQ(ierr);
 	}
 	else if(reason == SNES_CONVERGED_FNORM_RELATIVE)
@@ -480,82 +497,48 @@ PetscErrorCode SNESPrintConvergedReason(SNES snes)
 
 	else if(reason == SNES_DIVERGED_FUNCTION_DOMAIN)
 	{
+		*Convergence = PETSC_FALSE;
 		ierr = PetscPrintf(PETSC_COMM_WORLD, " SNES Divergence Reason: the new x location passed the function is not in the domain of F\n"); CHKERRQ(ierr);
 	}
 	else if(reason == SNES_DIVERGED_FUNCTION_COUNT)
 	{
+		*Convergence = PETSC_FALSE;
 		ierr = PetscPrintf(PETSC_COMM_WORLD, " SNES Divergence Reason: too many function evaluations\n"); CHKERRQ(ierr);
 	}
 	else if(reason == SNES_DIVERGED_LINEAR_SOLVE)
 	{
+		*Convergence = PETSC_FALSE;
 		ierr = PetscPrintf(PETSC_COMM_WORLD, " SNES Divergence Reason: the linear solve failed\n"); CHKERRQ(ierr);
 	}
 	else if(reason == SNES_DIVERGED_FNORM_NAN)
 	{
+		*Convergence = PETSC_FALSE;
 		ierr = PetscPrintf(PETSC_COMM_WORLD, " SNES Divergence Reason: residual norm is NAN\n"); CHKERRQ(ierr);
 	}
 	else if(reason == SNES_DIVERGED_MAX_IT)
 	{
+		*Convergence = PETSC_FALSE;
 		ierr = PetscPrintf(PETSC_COMM_WORLD, " SNES Divergence Reason: maximum iterations reached\n"); CHKERRQ(ierr);
 	}
 	else if(reason == SNES_DIVERGED_LINE_SEARCH)
 	{
+		*Convergence = PETSC_FALSE;
 		ierr = PetscPrintf(PETSC_COMM_WORLD, " SNES Divergence Reason: the line search failed\n"); CHKERRQ(ierr);
 	}
 	else if(reason == SNES_DIVERGED_INNER)
 	{
+		*Convergence = PETSC_FALSE;
 		ierr = PetscPrintf(PETSC_COMM_WORLD, " SNES Divergence Reason: the inner solve failed\n"); CHKERRQ(ierr);
 	}
 	else if(reason == SNES_DIVERGED_LOCAL_MIN)
 	{
+		*Convergence = PETSC_FALSE;
 		ierr = PetscPrintf(PETSC_COMM_WORLD, " SNES Divergence Reason: || J^T b || is small, implies converged to local minimum of F\n"); CHKERRQ(ierr);
 	}
 
 	PetscPrintf(PETSC_COMM_WORLD," Number of iterations : %lld\n", (LLD)its);
 
 	PetscFunctionReturn(0);
-}
-//---------------------------------------------------------------------------
-void getNst(MatParLim *lim, PetscInt it, PetscReal f, SNESConvergedReason *reason)
-{
-	// skip if not requested
-	if(lim->descent != PETSC_TRUE) return;
-
-	// skip initial test
-	if(!it) { lim->j = 0; return; }
-
-	// increment iteration counter
-	lim->j++;
-
-	// set initial residual for the first iteration
-	if(lim->j == 1)
-	{
-		lim->res = f;
-	}
-	else
-	{
-		// check divergence
-		if(f > lim->dtol*lim->res)
-		{
-			lim->n /= lim->beta;
-
-			if(lim->n < lim->nmin) lim->n = lim->nmin;
-
-			lim->j = 0;
-		}
-
-		// check convergence
-		else if(f < lim->ctol*lim->res || lim->j == lim->nmax)
-		{
-			lim->n *= lim->beta;
-
-			if(lim->n > lim->nmax) lim->n = lim->nmax;
-
-			lim->j = 0;
-		}
-	}
-
-	if(lim->n != lim->nmax) (*reason) = SNES_CONVERGED_ITERATING;
 }
 //---------------------------------------------------------------------------
 #undef __FUNCT__
@@ -589,9 +572,6 @@ PetscErrorCode SNESCoupledTest(
 
 	// call default convergence test
 	ierr = SNESConvergedDefault(snes, it, xnorm, gnorm, f, reason, NULL); CHKERRQ(ierr);
-
-	// set power-law exponent for adaptive descent algorithm, check convergence
-	getNst(&jr->matLim, it, f, reason);
 
 	//=============================
 	// Temperature diffusion solver

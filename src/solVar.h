@@ -81,6 +81,7 @@ typedef struct
 	PetscScalar T;     // temperature
 	PetscScalar APS;   // accumulated plastic strain
 	Tensor2RS   S;     // deviatoric stress
+	PetscScalar U[3];  // displacement
 
 } Marker;
 
@@ -123,13 +124,15 @@ typedef struct
 
 typedef struct
 {
-	SolVarDev    svDev;         // deviatoric variables
-	SolVarBulk   svBulk;        // volumetric variables
-	PetscScalar  sxx, syy, szz; // deviatoric stress
-	PetscScalar  hxx, hyy, hzz; // history stress (elastic)
-	PetscScalar  dxx, dyy, dzz; // total deviatoric strain rate
-	PetscScalar *phRat;         // phase ratios in the control volume
-	PetscScalar  eta_creep;     // effective creep viscosity (output)
+	SolVarDev    svDev;         		// deviatoric variables
+	SolVarBulk   svBulk;        		// volumetric variables
+	PetscScalar  sxx, syy, szz; 		// deviatoric stress
+	PetscScalar  hxx, hyy, hzz; 		// history stress (elastic)
+	PetscScalar  dxx, dyy, dzz; 		// total deviatoric strain rate
+	PetscScalar *phRat;         		// phase ratios in the control volume
+	PetscScalar  eta_creep;     		// effective creep viscosity (output)
+	PetscScalar  eta_viscoplastic;     	// viscoplastic viscosity (output)
+	PetscScalar  U[3];          		// displacement
 
 } SolVarCell;
 
@@ -235,10 +238,16 @@ typedef struct
 	// thermo-mechanical coupling controls
 	PetscScalar shearHeatEff; // shear heating efficiency parameter [0 - 1]
 	// rheology controls
-	PetscBool   quasiHarmAvg; // plasticity quasi-harmonic averaging flag
+	PetscBool   quasiHarmAvg; // quasi-harmonic averaging regularization flag (plasticity)
+	PetscScalar cf_eta_min;   // visco-plastic regularization parameter (plasticity)
+	PetscScalar n_pw;         // power-law regularization parameter (plasticity)
 	PetscBool   initGuessFlg; // initial guess computation flag
+	PetscBool   presLimFlg;   // pressure limit flag for plasticity
+	PetscBool   presLimAct;   // activate pressure limit flag
 	// fluid density for depth-dependent density model
 	PetscScalar  rho_fluid;
+	// rock density if we want to use lithostatic pressure in viscosit calculations
+	PetscScalar  rho_lithos;
 	// direction to the North for stress orientation
 	// counter-clockwise positive measured from x-axis
 	PetscScalar  theta_north;
@@ -246,12 +255,6 @@ typedef struct
 	PetscBool    warn;
 	// matrix-free closed-form jacobian
 	PetscBool   jac_mat_free;
-
-	// ADAPTIVE DESCENT
-	PetscBool   descent;
-	PetscScalar nmin, nmax, n, beta;
-	PetscScalar ctol, dtol, res;
-	PetscInt    j, jmax;
 
 } MatParLim;
 

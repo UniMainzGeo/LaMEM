@@ -1408,3 +1408,127 @@ void getMatPropString( FILE *fp, PetscInt ils, PetscInt ile, const char key[], c
 	}
 }
 //---------------------------------------------------------------------------
+void getMatPropIntArray(FILE *fp, PetscInt ils, PetscInt ile,const char key[],
+		PetscInt *nvalues, PetscInt values[], PetscInt *found)
+{
+	// get scalar within specified positions of the file
+
+	char          line[MAX_LINE_LEN];
+	PetscInt      comment, pos, count;
+	PetscInt      match;
+	PetscInt      int_val;
+	char 		  *_line;
+
+	// init flag
+	if(found) (*found) = _FALSE;
+
+	// reset to start of file
+	rewind( fp );
+
+	while( !feof(fp) )
+	{
+		fgets( line, MAX_LINE_LEN-1, fp );
+		pos = (PetscInt)ftell( fp );
+
+		// search only within specified positions of the file
+		if ((pos > ils) && (pos < ile))
+		{
+			// get rid of white space
+			trim(line);
+
+			// if line is blank
+			if( strlen(line) == 0 ) { continue; }
+
+			// is first character a comment ?
+			comment = is_comment_line( line );
+			if( comment == _TRUE ) {   continue;  }
+
+			match = key_matches( key, line );
+			if( match == _FALSE ) {   continue;   }
+
+			// strip word and equal sign
+			strip(line);
+
+			count = 0;
+			_line = line;
+			for(;;)
+			{
+				char *endp;
+				int_val = (PetscInt)strtod(_line, &endp);
+				values[count] = int_val;
+
+				if(endp == _line) break;
+
+				_line = endp;
+				count++;
+			}
+
+			*nvalues = count;
+			*found 	 = _TRUE;
+			return;
+		}
+	}
+}
+//---------------------------------------------------------------------------
+void getMatPropScalArray(FILE *fp, PetscInt ils, PetscInt ile,const char key[],
+		PetscInt *nvalues, PetscScalar values[], PetscInt *found)
+{
+	// get scalar within specified positions of the file
+
+	char          line[MAX_LINE_LEN];
+	PetscInt      comment, pos, count;
+	PetscInt      match;
+	PetscScalar   double_val;
+	char 		  *_line;
+
+	// init flag
+	if(found) (*found) = _FALSE;
+
+	// reset to start of file
+	rewind( fp );
+
+	while( !feof(fp) )
+	{
+		fgets( line, MAX_LINE_LEN-1, fp );
+		pos = (PetscInt)ftell( fp );
+
+		// search only within specified positions of the file
+		if ((pos > ils) && (pos < ile))
+		{
+			// get rid of white space
+			trim(line);
+
+			// if line is blank
+			if( strlen(line) == 0 ) { continue; }
+
+			// is first character a comment ?
+			comment = is_comment_line( line );
+			if( comment == _TRUE ) {   continue;  }
+
+			match = key_matches( key, line );
+			if( match == _FALSE ) {   continue;   }
+
+			// strip word and equal sign
+			strip(line);
+
+			count = 0;
+			_line = line;
+			for(;;)
+			{
+				char *endp;
+				double_val = strtod(_line, &endp);
+				values[count] = double_val;
+
+				if(endp == _line) break;
+
+				_line = endp;
+				count++;
+			}
+
+			*nvalues = count;
+			*found 	 = _TRUE;
+			return;
+		}
+	}
+}
+//---------------------------------------------------------------------------

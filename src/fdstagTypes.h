@@ -46,6 +46,11 @@
 #ifndef __fdstagTypes_h__
 #define __fdstagTypes_h__
 //-----------------------------------------------------------------------------
+#define MAX_PUSH_BOX 10
+#define _max_bc_blocks_ 10
+#define _max_path_points_ 50
+#define _max_poly_points_ 100
+//-----------------------------------------------------------------------------
 // Structure that holds boundary conditions info
 typedef struct
 {
@@ -76,6 +81,7 @@ typedef struct
 // Structure that holds pushing parameters
 typedef struct
 {
+	PetscInt 	 ID; // pushing box id
 	PetscScalar  L_block, W_block, H_block;
 	PetscScalar  x_center_block, y_center_block, z_center_block;
 	PetscScalar  V_push[10], omega[10], time[11];
@@ -83,6 +89,27 @@ typedef struct
 	PetscInt     num_changes, reset_pushing_coord, ind_change;
 	PetscInt     coord_advect[10], dir[10];
 } PushParams;
+//---------------------------------------------------------------------------
+typedef struct
+{
+	PetscInt 	ID; 						  // bezier block id
+
+	// path description
+	PetscInt    npath;                        // number of path points of Bezier curve
+	PetscScalar theta[  _max_path_points_  ]; // orientation angles at path points
+	PetscScalar time [  _max_path_points_  ]; // times at path points
+	PetscScalar path [6*_max_path_points_-4]; // Bezier curve path & control points
+
+	// block description
+	PetscInt    npoly;                      // number of polygon vertices
+	PetscScalar poly [2*_max_poly_points_]; // polygon coordinates
+	PetscScalar bot, top;                   // bottom & top coordinates of the block
+
+	// WARNING bottom coordinate should be advected (how? average?)
+	// Top of the box can be assumed to be the free surface
+	// sticky air nodes should never be constrained (this is easy to check)
+
+} BCBlock;
 //-----------------------------------------------------------------------------
 // Mesh segments input data structures
 typedef struct
@@ -316,8 +343,14 @@ typedef struct
 
 	// pushing
 	PetscInt         AddPushing;
-	PushParams       Pushing;
+	PetscInt 		 nPush; // number of pushing box
+	PushParams       Pushing[MAX_PUSH_BOX];
 	
+	// bezier
+	PetscInt 		 AddBezier;
+	PetscInt 		 nblo; // number of bezier box
+	BCBlock 		 blocks[_max_bc_blocks_];
+
 	// topography
 	char             TopoFilename[MAX_PATH_LEN];
 	

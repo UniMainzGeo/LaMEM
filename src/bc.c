@@ -202,7 +202,7 @@ PetscErrorCode BCApplyBezier(BCCtx *bc)
 	FDSTAG      *fs;
 	BCBlock     *bcb;
 	PetscInt    fbeg, fend, npoly, in;
-	PetscInt    i, j, k, nx, ny, nz, sx, sy, sz, iter;
+	PetscInt    i, j, k, nx, ny, nz, sx, sy, sz, iter, ib;
 	PetscScalar ***bcvx,  ***bcvy, *SPCVals;
 	PetscScalar t, dt, theta, costh, sinth, atol, bot, top, vel;
 	PetscScalar Xbeg[3], Xend[3], xbeg[3], xend[3], box[4], cpoly[2*_max_poly_points_];
@@ -210,35 +210,13 @@ PetscErrorCode BCApplyBezier(BCCtx *bc)
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
 
+	// check whether bezier is applied
+	if(bc->AddBezier != PETSC_TRUE) PetscFunctionReturn(0);
+
 	// access context
 	fs    =  bc->fs;
-	bcb   = &bc->blocks;
 	t     =  bc->ts->time;
 	dt    =  bc->ts->dt;
-	bot   =  bcb->bot;
-	top   =  bcb->top;
-	npoly =  bcb->npoly;
-
-	// check whether constraint is activated
-	if(!bcb->npath) PetscFunctionReturn(0);
-
-	// get polygon positions in the beginning & end of the time step
-	ierr = BCBlockGetPosition(bcb, t,    &fbeg, Xbeg); CHKERRQ(ierr);
-	ierr = BCBlockGetPosition(bcb, t+dt, &fend, Xend); CHKERRQ(ierr);
-
-	// check whether constraint applies to the current time step
-	if(!fbeg || !fend) PetscFunctionReturn(0);
-
-	// get current polygon geometry
-	ierr = BCBlockGetPolygon(bcb, Xbeg, cpoly);
-
-	// get bounding box
-	polygon_box(&npoly, cpoly, 1e-12, &atol, box);
-
-	// get time step rotation matrix
-	theta = Xend[2] - Xbeg[2];
-	costh = cos(theta);
-	sinth = sin(theta);
 
 	// access velocity constraint vectors
 	ierr = DMDAVecGetArray(fs->DA_X, bc->bcvx, &bcvx); CHKERRQ(ierr);
@@ -247,80 +225,109 @@ PetscErrorCode BCApplyBezier(BCCtx *bc)
 	// access constraint arrays
 	SPCVals = bc->SPCVals;
 
-	iter = 0;
-
-	//---------
-	// X points
-	//---------
-	GET_NODE_RANGE(nx, sx, fs->dsx)
-	GET_CELL_RANGE(ny, sy, fs->dsy)
-	GET_CELL_RANGE(nz, sz, fs->dsz)
-
-	START_STD_LOOP
+	// loop over all bezier blocks
+	for(ib = 0; ib < bc->nblo; ib++)
 	{
-		// get node coordinates in the beginning of time step
-		xbeg[0] = COORD_NODE(i, sx, fs->dsx);
-		xbeg[1] = COORD_CELL(j, sy, fs->dsy);
-		xbeg[2] = COORD_CELL(k, sz, fs->dsz);
+		bcb   = &bc->blocks[ib];
+		bot   =  bcb->bot;
+		top   =  bcb->top;
+		npoly =  bcb->npoly;
 
-		// perform point test
-		if(xbeg[2] >= bot && xbeg[2] <= top)
+		// get polygon positions in the beginning & end of the time step
+		ierr = BCBlockGetPosition(bcb, t,    &fbeg, Xbeg); CHKERRQ(ierr);
+		ierr = BCBlockGetPosition(bcb, t+dt, &fend, Xend); CHKERRQ(ierr);
+
+		// check whether constraint applies to the current time step
+		if(!fbeg || !fend) continue;
+
+		// print bezier block overview
+		PetscPrintf(PETSC_COMM_WORLD,"Bezier block[%d]: npath = %d, npoly = %d\n",ib, bcb->npath, bcb->npoly);
+
+		// get current polygon geometry
+		ierr = BCBlockGetPolygon(bcb, Xbeg, cpoly);
+
+		// get bounding box
+		polygon_box(&npoly, cpoly, 1e-12, &atol, box);
+
+		// get time step rotation matrix
+		theta = Xend[2] - Xbeg[2];
+		costh = cos(theta);
+		sinth = sin(theta);
+
+		iter = 0;
+
+		//---------
+		// X points
+		//---------
+		GET_NODE_RANGE(nx, sx, fs->dsx)
+		GET_CELL_RANGE(ny, sy, fs->dsy)
+		GET_CELL_RANGE(nz, sz, fs->dsz)
+
+		START_STD_LOOP
 		{
-			in_polygon(1, xbeg, npoly, cpoly, box, atol, &in);
+			// get node coordinates in the beginning of time step
+			xbeg[0] = COORD_NODE(i, sx, fs->dsx);
+			xbeg[1] = COORD_CELL(j, sy, fs->dsy);
+			xbeg[2] = COORD_CELL(k, sz, fs->dsz);
 
-			// check whether point is inside polygon
-			if(in)
+			// perform point test
+			if(xbeg[2] >= bot && xbeg[2] <= top)
 			{
-				// compute point position in the end of time step
-				RotDispPoint2D(Xbeg, Xend, costh, sinth, xbeg, xend);
+				in_polygon(1, xbeg, npoly, cpoly, box, atol, &in);
 
-				// compute & set x-velocity
-				vel = (xend[0] - xbeg[0])/dt;
+				// check whether point is inside polygon
+				if(in)
+				{
+					// compute point position in the end of time step
+					RotDispPoint2D(Xbeg, Xend, costh, sinth, xbeg, xend);
 
-				bcvx[k][j][i] = vel;
-				SPCVals[iter] = vel;
+					// compute & set x-velocity
+					vel = (xend[0] - xbeg[0])/dt;
+
+					bcvx[k][j][i] = vel;
+					SPCVals[iter] = vel;
+				}
 			}
+			iter++;
 		}
-		iter++;
-	}
-	END_STD_LOOP
+		END_STD_LOOP
 
-	//---------
-	// Y points
-	//---------
-	GET_CELL_RANGE(nx, sx, fs->dsx)
-	GET_NODE_RANGE(ny, sy, fs->dsy)
-	GET_CELL_RANGE(nz, sz, fs->dsz)
+		//---------
+		// Y points
+		//---------
+		GET_CELL_RANGE(nx, sx, fs->dsx)
+		GET_NODE_RANGE(ny, sy, fs->dsy)
+		GET_CELL_RANGE(nz, sz, fs->dsz)
 
-	START_STD_LOOP
-	{
-		// get node coordinates in the beginning of time step
-		xbeg[0] = COORD_CELL(i, sx, fs->dsx);
-		xbeg[1] = COORD_NODE(j, sy, fs->dsy);
-		xbeg[2] = COORD_CELL(k, sz, fs->dsz);
-
-		// perform point test
-		if(xbeg[2] >= bot && xbeg[2] <= top)
+		START_STD_LOOP
 		{
-			in_polygon(1, xbeg, npoly, cpoly, box, atol, &in);
+			// get node coordinates in the beginning of time step
+			xbeg[0] = COORD_CELL(i, sx, fs->dsx);
+			xbeg[1] = COORD_NODE(j, sy, fs->dsy);
+			xbeg[2] = COORD_CELL(k, sz, fs->dsz);
 
-			// check whether point is inside polygon
-			if(in)
+			// perform point test
+			if(xbeg[2] >= bot && xbeg[2] <= top)
 			{
-				// compute point position in the end of time step
-				RotDispPoint2D(Xbeg, Xend, costh, sinth, xbeg, xend);
+				in_polygon(1, xbeg, npoly, cpoly, box, atol, &in);
 
-				// compute & set y-velocity
-				vel = (xend[1] - xbeg[1])/dt;
+				// check whether point is inside polygon
+				if(in)
+				{
+					// compute point position in the end of time step
+					RotDispPoint2D(Xbeg, Xend, costh, sinth, xbeg, xend);
 
-				bcvy[k][j][i] = vel;
-				SPCVals[iter] = vel;
+					// compute & set y-velocity
+					vel = (xend[1] - xbeg[1])/dt;
+
+					bcvy[k][j][i] = vel;
+					SPCVals[iter] = vel;
+				}
 			}
+			iter++;
 		}
-		iter++;
+		END_STD_LOOP
 	}
-	END_STD_LOOP
-
 	// restore access
 	ierr = DMDAVecRestoreArray(fs->DA_X, bc->bcvx, &bcvx); CHKERRQ(ierr);
 	ierr = DMDAVecRestoreArray(fs->DA_Y, bc->bcvy, &bcvy); CHKERRQ(ierr);
@@ -471,6 +478,200 @@ PetscErrorCode BCOverridePhase(BCCtx *bc, PetscInt cellID, Marker *P)
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
+#undef __FUNCT__
+#define __FUNCT__ "DBoxReadFromOptions"
+PetscErrorCode DBoxReadFromOptions(DBox *dbox, Scaling *scal)
+{
+	PetscErrorCode ierr;
+	PetscFunctionBegin;
+
+	//========================
+	// Dropping box parameters
+	//========================
+
+	ierr = GetIntDataItemCheck("-dbox_num", "Number of dropping boxes",
+		_NOT_FOUND_EXIT_, 1, &dbox->num, 1, _max_boxes_); CHKERRQ(ierr);
+
+	if(dbox->num)
+	{
+		// boundaries
+		ierr = GetScalDataItemCheckScale("-dbox_bounds", "Dropping box boundaries",
+			_NOT_FOUND_ERROR_, 6*dbox->num, dbox->bounds, 0.0, 0.0, scal->length); CHKERRQ(ierr);
+
+		// vertical velocity
+		ierr = GetScalDataItemCheckScale("-dbox_zvel", "Dropping box vertical velocity",
+			_NOT_FOUND_ERROR_, 1, &dbox->zvel, 0.0, 0.0, scal->velocity); CHKERRQ(ierr);
+
+	}
+
+	PetscFunctionReturn(0);
+}
+//---------------------------------------------------------------------------
+#undef __FUNCT__
+#define __FUNCT__ "BCApplyDBox"
+PetscErrorCode BCApplyDBox(BCCtx *bc)
+{
+	DBox        *dbox;
+	FDSTAG      *fs;
+	PetscInt    jj, i, j, k, nx, ny, nz, sx, sy, sz, iter;
+	PetscScalar ***bcvz, *SPCVals, bounds[6*_max_boxes_], *pbounds;
+	PetscScalar x, y, z, t, vz;
+
+	PetscErrorCode ierr;
+	PetscFunctionBegin;
+
+	// access context
+	fs   = bc->fs;
+	dbox = &bc->dbox;
+
+	// check whether dropping box is activated
+	if(!dbox->num) PetscFunctionReturn(0);
+
+	// copy original coordinates
+	ierr = PetscMemcpy(bounds, dbox->bounds, (size_t)(6*dbox->num)*sizeof(PetscScalar)); CHKERRQ(ierr);
+
+	// integrate box positions
+	t  = bc->ts->time;
+	vz = dbox->zvel;
+
+	for(jj = 0; jj < dbox->num; jj++)
+	{
+		pbounds     = bounds + 6*jj;
+		pbounds[4] += t*vz;
+		pbounds[5] += t*vz;
+	}
+
+	// access velocity constraint vectors
+	ierr = DMDAVecGetArray(fs->DA_Z, bc->bcvz, &bcvz); CHKERRQ(ierr);
+
+	// access constraint arrays
+	SPCVals = bc->SPCVals;
+
+	//---------
+	// Z points
+	//---------
+	GET_CELL_RANGE(nx, sx, fs->dsx)
+	GET_CELL_RANGE(ny, sy, fs->dsy)
+	GET_NODE_RANGE(nz, sz, fs->dsz)
+
+	iter = fs->nXFace + fs->nYFace;
+
+	START_STD_LOOP
+	{
+		// get node coordinates
+		x = COORD_CELL(i, sx, fs->dsx);
+		y = COORD_CELL(j, sy, fs->dsy);
+		z = COORD_NODE(k, sz, fs->dsz);
+
+		// check whether node is inside any of boxes
+		for(jj = 0; jj < dbox->num; jj++)
+		{
+			pbounds = bounds + 6*jj;
+
+			if(x >= pbounds[0] && x <= pbounds[1]
+			&& y >= pbounds[2] && y <= pbounds[3]
+			&& z >= pbounds[4] && z <= pbounds[5])
+			{
+				bcvz[k][j][i] = vz;
+				SPCVals[iter] = vz;
+				break;
+			}
+		}
+		iter++;
+	}
+	END_STD_LOOP
+
+	// restore access
+	ierr = DMDAVecRestoreArray(fs->DA_Z, bc->bcvz, &bcvz); CHKERRQ(ierr);
+
+	PetscFunctionReturn(0);
+}
+//---------------------------------------------------------------------------
+//---------------------------------------------------------------------------
+#undef __FUNCT__
+#define __FUNCT__ "BCApplySimpleShearVel"
+PetscErrorCode BCApplySimpleShearVel(BCCtx *bc)
+{
+	FDSTAG      *fs;
+	PetscInt    mnx, mny;
+	PetscInt    i, j, k, nx, ny, nz, sx, sy, sz, iter;
+	PetscScalar ***bcvx,  ***bcvy, *SPCVals;
+	PetscScalar z, gamma_xz, vel;
+
+	/* This routine sets simple shear velocities, such that we have
+	 * constant shear rate gamma.
+	 * This will imply inflow/outflow
+	 *
+	 */
+
+	PetscErrorCode ierr;
+	PetscFunctionBegin;
+
+	// check whether constraint is activated
+	if(!bc->simpleshear) PetscFunctionReturn(0);
+
+	// access context
+	fs     		= bc->fs;
+	gamma_xz    = bc->gamma_xz;
+
+	// initialize maximal index in all directions
+	mnx = fs->dsx.tnods - 1;
+	mny = fs->dsy.tnods - 1;
+
+	// access velocity constraint vectors
+	ierr = DMDAVecGetArray(fs->DA_X, bc->bcvx, &bcvx); CHKERRQ(ierr);
+	ierr = DMDAVecGetArray(fs->DA_Y, bc->bcvy, &bcvy); CHKERRQ(ierr);
+
+	// access constraint arrays
+	SPCVals = bc->SPCVals;
+
+	iter = 0;
+
+	//---------
+	// X points
+	//---------
+	GET_NODE_RANGE(nx, sx, fs->dsx)
+	GET_CELL_RANGE(ny, sy, fs->dsy)
+	GET_CELL_RANGE(nz, sz, fs->dsz)
+
+	{
+		START_STD_LOOP
+		{
+			z   = COORD_CELL(k, sz, fs->dsz);
+			vel = gamma_xz*z;
+
+			if(i == 0)   { bcvx[k][j][i] = vel; SPCVals[iter] = vel; }
+			if(i == mnx) { bcvx[k][j][i] = vel; SPCVals[iter] = vel; }
+			iter++;
+		}
+		END_STD_LOOP
+	}
+
+	//---------
+	// Y points
+	//---------
+	GET_CELL_RANGE(nx, sx, fs->dsx)
+	GET_NODE_RANGE(ny, sy, fs->dsy)
+	GET_CELL_RANGE(nz, sz, fs->dsz)
+
+	{
+		START_STD_LOOP
+		{
+			z   = COORD_CELL(k, sz, fs->dsz);
+			vel = 0.0;
+			if(j == 0)   { bcvy[k][j][i] = vel; SPCVals[iter] = vel; }
+			if(j == mny) { bcvy[k][j][i] = vel; SPCVals[iter] = vel; }
+			iter++;
+		}
+		END_STD_LOOP
+	}
+
+	// restore access
+	ierr = DMDAVecRestoreArray(fs->DA_X, bc->bcvx, &bcvx); CHKERRQ(ierr);
+	ierr = DMDAVecRestoreArray(fs->DA_Y, bc->bcvy, &bcvy); CHKERRQ(ierr);
+
+	PetscFunctionReturn(0);
+}
 //---------------------------------------------------------------------------
 //---------------------------------------------------------------------------
 #undef __FUNCT__
@@ -511,7 +712,6 @@ PetscErrorCode BCCreate(BCCtx *bc, FDSTAG *fs, TSSol *ts, Scaling *scal)
 	bc->ExxAct = PETSC_FALSE;
 	bc->EyyAct = PETSC_FALSE;
 	bc->pbAct  = PETSC_FALSE;
-	bc->pbApp  = PETSC_FALSE;
 
 	bc->fs   = fs;
 	bc->ts   = ts;
@@ -559,6 +759,15 @@ PetscErrorCode BCSetParam(BCCtx *bc, UserCtx *user)
 
 	bc->Tbot  = user->Temp_bottom;
 	bc->Ttop  = user->Temp_top;
+
+	if(user->AddBezier)
+	{
+		bc->AddBezier = PETSC_TRUE;
+		bc->blocks = user->blocks;
+		bc->nblo   = user->nblo;
+	}
+	else
+		bc->AddBezier = PETSC_FALSE;
 
 	PetscFunctionReturn(0);
 }
@@ -610,10 +819,10 @@ PetscErrorCode BCReadFromOptions(BCCtx *bc)
 	}
 
 	// Bezier block
-	ierr = BCBlockReadFromOptions(&bc->blocks, scal); CHKERRQ(ierr);
+	//ierr = BCBlockReadFromOptions(&bc->blocks, scal); CHKERRQ(ierr);
 
 
-	if(bc->blocks.npath && (bc->ExxAct == PETSC_TRUE || bc->EyyAct == PETSC_TRUE))
+	if(bc->AddBezier && (bc->ExxAct == PETSC_TRUE || bc->EyyAct == PETSC_TRUE))
 	{
 		SETERRQ(PETSC_COMM_SELF, PETSC_ERR_USER, "Cannot combine background strain rate with moving block\n");
 	}
@@ -624,7 +833,7 @@ PetscErrorCode BCReadFromOptions(BCCtx *bc)
 
 	if(bc->face)
 	{
-		if(bc->face && (bc->blocks.npath || bc->ExxAct == PETSC_TRUE || bc->EyyAct == PETSC_TRUE))
+		if(bc->face && (bc->AddBezier || bc->ExxAct == PETSC_TRUE || bc->EyyAct == PETSC_TRUE))
 		{
 			SETERRQ(PETSC_COMM_SELF, PETSC_ERR_USER, "Cannot combine boundary velocity with either background strain rate or moving block\n");
 		}
@@ -641,6 +850,21 @@ PetscErrorCode BCReadFromOptions(BCCtx *bc)
 
 	// set open boundary flag
 	ierr = PetscOptionsHasName(NULL, "-open_top_bound", &set); CHKERRQ(ierr); if(set == PETSC_TRUE) bc->top_open = 1;
+
+	// set simple shear boundary condition
+	ierr = PetscOptionsHasName(NULL, "-bc_simpleshear", &set); CHKERRQ(ierr); if(set == PETSC_TRUE) bc->simpleshear = 1;
+	if(bc->simpleshear)
+	{
+		ierr = GetScalDataItemCheckScale("-bc_simpleshear_gamma_xz", "Simple shear strain rate",
+					_NOT_FOUND_ERROR_, 1, &bc->gamma_xz, 0.0, 0.0, scal->time); CHKERRQ(ierr);
+	}
+
+
+	ierr = DBoxReadFromOptions(&bc->dbox, scal); CHKERRQ(ierr);
+
+	// read no-slip boundary condition mask
+	ierr = GetIntDataItemCheck("-noslip", "no-slip mask",
+		_NOT_FOUND_EXIT_, 6, bc->noslip, 0, 1); CHKERRQ(ierr);
 
 	PetscFunctionReturn(0);
 }
@@ -726,7 +950,7 @@ PetscErrorCode BCApply(BCCtx *bc)
 	ierr = BCApplyBound(bc); CHKERRQ(ierr);
 
 	// compute pushing parameters
-	ierr = BCCompPush(bc); CHKERRQ(ierr);
+	//ierr = BCCompPush(bc); CHKERRQ(ierr);
 
 	// apply pushing block constraints
 	ierr = BCApplyPush(bc); CHKERRQ(ierr);
@@ -736,6 +960,13 @@ PetscErrorCode BCApply(BCCtx *bc)
 
 	// apply Boundary velocity
 	ierr = BCApplyBoundVel(bc); CHKERRQ(ierr);
+
+	// apply dropping boxes
+	ierr = BCApplyDBox(bc); CHKERRQ(ierr);
+
+	// apply simple shear BCs
+	ierr = BCApplySimpleShearVel(bc); CHKERRQ(ierr);
+
 
 	// exchange ghost point constraints
 	// AVOID THIS BY SETTING CONSTRAINTS REDUNDANTLY
@@ -844,14 +1075,14 @@ PetscErrorCode BCApplyBound(BCCtx *bc)
 	// initialize boundary conditions vectors
 
 	// *************************************************************
-	// WARNING !!!
-	//    AD-HOC FREE-SLIP BOX IS CURRENTLY ASSUMED
+	//    NO-SLIP OR FREE-SLIP TANGENTIAL BOUNDARY VELOCITIES CAN BE SELECTED
 	//    NORMAL VELOCITIES CAN BE SET VIA BACKGROUND STRAIN RATES
 	//    PRESSURE CONSTRAINS ARE CURRENTLY NOT ALLOWED
 	//    TEMPERATURE IS PRESCRIBED ON TOP AND BOTTOM BOUNDARIES
 	//    ONLY ZERO BOUNDARY HEAT FLUXES ARE IMPLEMENTED
 	//    TWO-POINT CONSTRAINTS MUST BE SET ON CROSS-PROCESSOR GHOST POINTS
 	// *************************************************************
+
 	FDSTAG      *fs;
 	PetscScalar Tbot, Ttop;
 	PetscScalar Exx, Eyy, Ezz;
@@ -859,10 +1090,12 @@ PetscErrorCode BCApplyBound(BCCtx *bc)
 	PetscScalar ex,  ey,  ez;
 	PetscScalar vbx, vby, vbz;
 	PetscScalar vex, vey, vez;
-//	PetscInt    mcx, mcy, mcz;
-	PetscInt              mcz;
+	PetscScalar gamma_XZ, z;
+	PetscInt    mcx, mcy, mcz;
 	PetscInt    mnx, mny, mnz;
 	PetscInt    i, j, k, nx, ny, nz, sx, sy, sz, iter, top_open;
+	PetscInt    nsLeft, nsRight, nsFront, nsBack, nsBottom, nsTop;
+	PetscInt 	simpleShear;
 	PetscScalar ***bcvx,  ***bcvy,  ***bcvz, ***bcT, *SPCVals;
 
 	PetscErrorCode ierr;
@@ -874,12 +1107,21 @@ PetscErrorCode BCApplyBound(BCCtx *bc)
 	// set open boundary flag
 	top_open = bc->top_open;
 
+	// set no-slip flags
+	nsLeft   		= bc->noslip[0];
+	nsRight  		= bc->noslip[1];
+	nsFront  		= bc->noslip[2];
+	nsBack   		= bc->noslip[3];
+	nsBottom 		= bc->noslip[4];
+	nsTop    		= bc->noslip[5];
+	simpleShear	 	= bc->simpleshear;
+
 	// initialize maximal index in all directions
 	mnx = fs->dsx.tnods - 1;
 	mny = fs->dsy.tnods - 1;
 	mnz = fs->dsz.tnods - 1;
-//	mcx = fs->dsx.tcels - 1;
-//	mcy = fs->dsy.tcels - 1;
+	mcx = fs->dsx.tcels - 1;
+	mcy = fs->dsy.tcels - 1;
 	mcz = fs->dsz.tcels - 1;
 
 	// get current coordinates of the mesh boundaries
@@ -913,6 +1155,10 @@ PetscErrorCode BCApplyBound(BCCtx *bc)
 
 	// access constraint arrays
 	SPCVals = bc->SPCVals;
+
+	//=========================================================================
+	// SPC (normal velocities)
+	//=========================================================================
 
 	iter = 0;
 
@@ -961,21 +1207,105 @@ PetscErrorCode BCApplyBound(BCCtx *bc)
 	}
 	END_STD_LOOP
 
+	//=========================================================================
+	// TPC (no-slip boundary conditions)
+	//=========================================================================
+
+	//-----------------------------------------------------
+	// X points (TPC only, hence looping over ghost points)
+	//-----------------------------------------------------
+	if(nsFront || nsBack || nsBottom || nsTop)
+	{
+		GET_NODE_RANGE_GHOST_INT(nx, sx, fs->dsx)
+		GET_CELL_RANGE_GHOST_INT(ny, sy, fs->dsy)
+		GET_CELL_RANGE_GHOST_INT(nz, sz, fs->dsz)
+
+		START_STD_LOOP
+		{
+			if(nsFront  && j == 0)   { bcvx[k][j-1][i] = 0.0; }
+			if(nsBack   && j == mcy) { bcvx[k][j+1][i] = 0.0; }
+			if(nsBottom && k == 0)   { bcvx[k-1][j][i] = 0.0; }
+			if(nsTop    && k == mcz) { bcvx[k+1][j][i] = 0.0; }
+		}
+		END_STD_LOOP
+	}
+	if (simpleShear)
+	{
+		GET_NODE_RANGE_GHOST_INT(nx, sx, fs->dsx)
+		GET_CELL_RANGE_GHOST_INT(ny, sy, fs->dsy)
+		GET_CELL_RANGE_GHOST_INT(nz, sz, fs->dsz)
+
+		gamma_XZ =  bc->gamma_xz;
+
+		START_STD_LOOP
+		{
+			z   = COORD_CELL(k, sz, fs->dsz);
+			if(k == 0)   { bcvx[k-1][j][i] = z*gamma_XZ; }
+			if(k == mcz) { bcvx[k+1][j][i] = z*gamma_XZ; }
+		}
+		END_STD_LOOP
+	}
+
+
+
+	//-----------------------------------------------------
+	// Y points (TPC only, hence looping over ghost points)
+	//-----------------------------------------------------
+	if(nsLeft || nsRight || nsBottom || nsTop)
+	{
+
+		GET_CELL_RANGE_GHOST_INT(nx, sx, fs->dsx)
+		GET_NODE_RANGE_GHOST_INT(ny, sy, fs->dsy)
+		GET_CELL_RANGE_GHOST_INT(nz, sz, fs->dsz)
+
+		START_STD_LOOP
+		{
+			if(nsLeft   && i == 0)   { bcvy[k][j][i-1] = 0.0; }
+			if(nsRight  && i == mcx) { bcvy[k][j][i+1] = 0.0; }
+			if(nsBottom && k == 0)   { bcvy[k-1][j][i] = 0.0; }
+			if(nsTop    && k == mcz) { bcvy[k+1][j][i] = 0.0; }
+		}
+		END_STD_LOOP
+	}
+
+	//-----------------------------------------------------
+	// Z points (TPC only, hence looping over ghost points)
+	//-----------------------------------------------------
+	if(nsLeft || nsRight || nsFront || nsBack)
+	{
+
+		GET_CELL_RANGE_GHOST_INT(nx, sx, fs->dsx)
+		GET_CELL_RANGE_GHOST_INT(ny, sy, fs->dsy)
+		GET_NODE_RANGE_GHOST_INT(nz, sz, fs->dsz)
+
+		START_STD_LOOP
+		{
+			if(nsLeft  && i == 0)   { bcvz[k][j][i-1] = 0.0; }
+			if(nsRight && i == mcx) { bcvz[k][j][i+1] = 0.0; }
+			if(nsFront && j == 0)   { bcvz[k][j-1][i] = 0.0; }
+			if(nsBack  && j == mcy) { bcvz[k][j+1][i] = 0.0; }
+		}
+		END_STD_LOOP
+	}
+
 	//-----------------------------------------------------
 	// T points (TPC only, hence looping over ghost points)
 	//-----------------------------------------------------
-
-	GET_CELL_RANGE_GHOST_INT(nx, sx, fs->dsx)
-	GET_CELL_RANGE_GHOST_INT(ny, sy, fs->dsy)
-	GET_CELL_RANGE_GHOST_INT(nz, sz, fs->dsz)
-
-	// only positive temperature! negative will set zero-flux BC automatically
-	START_STD_LOOP
+	if(Tbot >= 0.0 || Ttop >= 0.0)
 	{
-		if(Tbot >= 0.0 && k == 0)   { bcT[k-1][j][i] = Tbot; }
-		if(Ttop >= 0.0 && k == mcz) { bcT[k+1][j][i] = Ttop; }
+		GET_CELL_RANGE_GHOST_INT(nx, sx, fs->dsx)
+		GET_CELL_RANGE_GHOST_INT(ny, sy, fs->dsy)
+		GET_CELL_RANGE_GHOST_INT(nz, sz, fs->dsz)
+
+		START_STD_LOOP
+		{
+			// only positive temperature!
+			// negative will set zero-flux BC automatically
+			if(Tbot >= 0.0 && k == 0)   { bcT[k-1][j][i] = Tbot; }
+			if(Ttop >= 0.0 && k == mcz) { bcT[k+1][j][i] = Ttop; }
+		}
+		END_STD_LOOP
 	}
-	END_STD_LOOP
 
 	// restore access
 	ierr = DMDAVecRestoreArray(fs->DA_X,   bc->bcvx, &bcvx); CHKERRQ(ierr);
@@ -990,12 +1320,16 @@ PetscErrorCode BCApplyBound(BCCtx *bc)
 #define __FUNCT__ "BCSetPush"
 PetscErrorCode BCSetPush(BCCtx *bc, UserCtx *user)
 {
+	PetscInt ip;
+
 	PetscFunctionBegin;
 
 	if(user->AddPushing)
 	{
 		bc->pbAct = PETSC_TRUE;
-		bc->pb    = &user->Pushing;
+		bc->pb    = user->Pushing;
+		bc->nPblo = user->nPush;
+		for(ip = 0; ip < bc->nPblo; ip++) bc->pbApp[ip] = 1;
 	}
 
 	PetscFunctionReturn(0);
@@ -1003,11 +1337,10 @@ PetscErrorCode BCSetPush(BCCtx *bc, UserCtx *user)
 //---------------------------------------------------------------------------
 #undef __FUNCT__
 #define __FUNCT__ "BCCompPush"
-PetscErrorCode BCCompPush(BCCtx *bc)
+PetscErrorCode BCCompPush(BCCtx *bc,PetscInt ip)
 {
 	// MUST be called at the beginning of time step before setting boundary conditions
 	// compute pushing boundary conditions actual parameters
-
 	PushParams    *pb;
 	TSSol         *ts;
 	Scaling       *scal;
@@ -1017,19 +1350,21 @@ PetscErrorCode BCCompPush(BCCtx *bc)
 	PetscFunctionBegin;
 
 	// check if pushing option is activated
-	if(bc->pbAct != PETSC_TRUE) PetscFunctionReturn(0);
+	if(!bc->pbApp[ip]) PetscFunctionReturn(0);
+
+	// access
+	pb   = &bc->pb[ip];
 
 	// access contexts
-	pb   = bc->pb;
 	ts   = bc->ts;
 	scal = bc->scal;
 
 	// set boundary conditions flag
-	bc->pbApp = PETSC_FALSE;
+	bc->pbApp[ip] = 0;
 
 	// add pushing boundary conditions ONLY within the specified time interval - for that introduce a new flag
 	if(ts->time >= pb->time[0]
-	&& ts->time <= pb->time[pb->num_changes])
+							&& ts->time <= pb->time[pb->num_changes])
 	{
 		// check which pushing stage
 		ichange = 0;
@@ -1059,25 +1394,27 @@ PetscErrorCode BCCompPush(BCCtx *bc)
 		if(pb->dir[ichange] == 2) Vy = pb->V_push[ichange];
 
 		// set boundary conditions parameters
-		bc->pbApp  = PETSC_TRUE;
-		bc->Vx     = Vx;
-		bc->Vy     = Vy;
-		bc->theta  = theta;
+		bc->pbApp[ip] = 1;
+		bc->Vx     	  = Vx;
+		bc->Vy     	  = Vy;
+		bc->theta     = theta;
 
-		PetscPrintf(PETSC_COMM_WORLD,"Pushing BC: Time interval=[%g-%g] %s, V_push=%g %s, Omega=%g %s, mobile_block=%lld, direction=%lld, theta=%g deg\n",
-			pb->time             [ichange  ]*scal->time,
-			pb->time             [ichange+1]*scal->time,             scal->lbl_time,
-			pb->V_push           [ichange  ]*scal->velocity,         scal->lbl_velocity,
-			pb->omega            [ichange  ]*scal->angular_velocity, scal->lbl_angular_velocity,
-			(LLD)pb->coord_advect[ichange  ],
-			(LLD)pb->dir         [ichange  ],
-			theta*scal->angle);
+		PetscPrintf(PETSC_COMM_WORLD,"Pushing Block[%d]: Time interval=[%g-%g] %s, V_push=%g %s, Omega=%g %s, mobile_block=%lld, direction=%lld, theta=%g deg\n",ip,
+				pb->time             [ichange  ]*scal->time,
+				pb->time             [ichange+1]*scal->time,             scal->lbl_time,
+				pb->V_push           [ichange  ]*scal->velocity,         scal->lbl_velocity,
+				pb->omega            [ichange  ]*scal->angular_velocity, scal->lbl_angular_velocity,
+				(LLD)pb->coord_advect[ichange  ],
+				(LLD)pb->dir         [ichange  ],
+				theta*scal->angle);
 
-		PetscPrintf(PETSC_COMM_WORLD,"Pushing BC: Block center coordinates [x, y, z]=[%g, %g, %g] %s\n",
-			pb->x_center_block*scal->length,
-			pb->y_center_block*scal->length,
-			pb->z_center_block*scal->length, scal->lbl_length);
+		PetscPrintf(PETSC_COMM_WORLD,"\t\t Block center coordinates [x, y, z]=[%g, %g, %g] %s\n",
+				pb->x_center_block*scal->length,
+				pb->y_center_block*scal->length,
+				pb->z_center_block*scal->length, scal->lbl_length);
 	}
+
+
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
@@ -1097,25 +1434,16 @@ PetscErrorCode BCApplyPush(BCCtx *bc)
 	PetscScalar rx, ry, rz;
 	PetscScalar costh, sinth;
 	PetscScalar ***bcvx,  ***bcvy, *SPCVals;
-	PetscInt    i, j, k, nx, ny, nz, sx, sy, sz, iter;
+	PetscInt    i, j, k, nx, ny, nz, sx, sy, sz, iter, ip;
 
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
 
 	// check whether pushing is applied
-	if(bc->pbApp != PETSC_TRUE) PetscFunctionReturn(0);
+	if(bc->pbAct != PETSC_TRUE) PetscFunctionReturn(0);
 
-	// prepare block coordinates, sizes & rotation angle parameters
+	// access
 	fs    = bc->fs;
-	pb    = bc->pb;
-    xc    = pb->x_center_block;
-	yc    = pb->y_center_block;
-	zc    = pb->z_center_block;
-	dx    = pb->L_block/2.0;
-	dy    = pb->W_block/2.0;
-	dz    = pb->H_block/2.0;
-	costh = cos(bc->theta);
-	sinth = sin(bc->theta);
 
 	// access velocity constraint vectors
 	ierr = DMDAVecGetArray(fs->DA_X, bc->bcvx, &bcvx); CHKERRQ(ierr);
@@ -1124,72 +1452,89 @@ PetscErrorCode BCApplyPush(BCCtx *bc)
 	// access constraint arrays
 	SPCVals = bc->SPCVals;
 
-	iter = 0;
-
-	//---------
-	// X points
-	//---------
-	GET_NODE_RANGE(nx, sx, fs->dsx)
-	GET_CELL_RANGE(ny, sy, fs->dsy)
-	GET_CELL_RANGE(nz, sz, fs->dsz)
-
-	START_STD_LOOP
+	// loop over for pushing block
+	for(ip = 0; ip < bc->nPblo; ip++)
 	{
-		// get point coordinates in the block-centered system
-		px = COORD_NODE(i, sx, fs->dsx) - xc;
-		py = COORD_CELL(j, sy, fs->dsy) - yc;
-		pz = COORD_CELL(k, sz, fs->dsz) - zc;
+		// compute pushing parameters
+		pb   = &bc->pb[ip];
+		ierr = BCCompPush(bc, ip); CHKERRQ(ierr);
 
-		// get point coordinates in the block-aligned system
-		// rotation matrix R = [ cos() sin() ; -sin() cos() ]
-		rx =  costh*px + sinth*py;
-		ry = -sinth*px + costh*py;
-		rz =  pz;
+		// prepare block coordinates, sizes & rotation angle parameters
+		xc    = pb->x_center_block;
+		yc    = pb->y_center_block;
+		zc    = pb->z_center_block;
+		dx    = pb->L_block/2.0;
+		dy    = pb->W_block/2.0;
+		dz    = pb->H_block/2.0;
+		costh = cos(bc->theta);
+		sinth = sin(bc->theta);
 
-		// perform point test
-		if(rx >= -dx && rx <= dx
-		&& ry >= -dy && ry <= dy
-		&& rz >= -dz && rz <= dz)
+		iter = 0;
+
+		//---------
+		// X points
+		//---------
+		GET_NODE_RANGE(nx, sx, fs->dsx)
+		GET_CELL_RANGE(ny, sy, fs->dsy)
+		GET_CELL_RANGE(nz, sz, fs->dsz)
+
+		START_STD_LOOP
 		{
-			bcvx[k][j][i] = bc->Vx;
-			SPCVals[iter] = bc->Vx;
+			// get point coordinates in the block-centered system
+			px = COORD_NODE(i, sx, fs->dsx) - xc;
+			py = COORD_CELL(j, sy, fs->dsy) - yc;
+			pz = COORD_CELL(k, sz, fs->dsz) - zc;
+
+			// get point coordinates in the block-aligned system
+			// rotation matrix R = [ cos() sin() ; -sin() cos() ]
+			rx =  costh*px + sinth*py;
+			ry = -sinth*px + costh*py;
+			rz =  pz;
+
+			// perform point test
+			if(rx >= -dx && rx <= dx
+					&& ry >= -dy && ry <= dy
+					&& rz >= -dz && rz <= dz)
+			{
+				bcvx[k][j][i] = bc->Vx;
+				SPCVals[iter] = bc->Vx;
+			}
+			iter++;
 		}
-		iter++;
-	}
-	END_STD_LOOP
+		END_STD_LOOP
 
-	//---------
-	// Y points
-	//---------
-	GET_CELL_RANGE(nx, sx, fs->dsx)
-	GET_NODE_RANGE(ny, sy, fs->dsy)
-	GET_CELL_RANGE(nz, sz, fs->dsz)
+		//---------
+		// Y points
+		//---------
+		GET_CELL_RANGE(nx, sx, fs->dsx)
+		GET_NODE_RANGE(ny, sy, fs->dsy)
+		GET_CELL_RANGE(nz, sz, fs->dsz)
 
-	START_STD_LOOP
-	{
-		// get point coordinates in the block-centered system
-		px = COORD_CELL(i, sx, fs->dsx) - xc;
-		py = COORD_NODE(j, sy, fs->dsy) - yc;
-		pz = COORD_CELL(k, sz, fs->dsz) - zc;
-
-		// get point coordinates in the block-aligned system
-		// rotation matrix R = [ cos() sin() ; -sin() cos() ]
-		rx =  costh*px + sinth*py;
-		ry = -sinth*px + costh*py;
-		rz =  pz;
-
-		// perform point test
-		if(rx >= -dx && rx <= dx
-		&& ry >= -dy && ry <= dy
-		&& rz >= -dz && rz <= dz)
+		START_STD_LOOP
 		{
-			bcvy[k][j][i] = bc->Vy;
-			SPCVals[iter] = bc->Vy;
-		}
-		iter++;
-	}
-	END_STD_LOOP
+			// get point coordinates in the block-centered system
+			px = COORD_CELL(i, sx, fs->dsx) - xc;
+			py = COORD_NODE(j, sy, fs->dsy) - yc;
+			pz = COORD_CELL(k, sz, fs->dsz) - zc;
 
+			// get point coordinates in the block-aligned system
+			// rotation matrix R = [ cos() sin() ; -sin() cos() ]
+			rx =  costh*px + sinth*py;
+			ry = -sinth*px + costh*py;
+			rz =  pz;
+
+			// perform point test
+			if(rx >= -dx && rx <= dx
+					&& ry >= -dy && ry <= dy
+					&& rz >= -dz && rz <= dz)
+			{
+				bcvy[k][j][i] = bc->Vy;
+				SPCVals[iter] = bc->Vy;
+			}
+			iter++;
+		}
+		END_STD_LOOP
+	}
 	// restore access
 	ierr = DMDAVecRestoreArray(fs->DA_X, bc->bcvx, &bcvx); CHKERRQ(ierr);
 	ierr = DMDAVecRestoreArray(fs->DA_Y, bc->bcvy, &bcvy); CHKERRQ(ierr);
@@ -1203,68 +1548,72 @@ PetscErrorCode BCAdvectPush(BCCtx *bc)
 {
 	TSSol        *ts;
 	PushParams   *pb;
-	PetscInt     advc, ichange;
+	PetscInt     advc, ichange, ip;
 	PetscScalar  xc, yc, zc, Vx, Vy, dx, dy, dt, omega, theta, dtheta;
 
 	// check if pushing option is activated
 	if(bc->pbAct != PETSC_TRUE) PetscFunctionReturn(0);
 
 	// access context
-	pb = bc->pb;
 	ts = bc->ts;
 
-	// check time interval
-	if(ts->time >= pb->time[0]
-	&& ts->time <= pb->time[pb->num_changes])
+	for(ip = 0; ip < bc->nPblo; ip++)
 	{
-		// initialize variables
-		ichange = pb->ind_change;
-		advc    = pb->coord_advect[ichange];
+		pb = &bc->pb[ip];
 
-		Vx = 0.0;
-		Vy = 0.0;
-		dy = 0.0;
-		dx = 0.0;
-		dt = ts->dt;
-
-		xc = pb->x_center_block;
-		yc = pb->y_center_block;
-		zc = pb->z_center_block;
-
-		// block is rotated
-		if(pb->dir[ichange] == 0)
+		// check time interval
+		if(ts->time >= pb->time[0]
+								&& ts->time <= pb->time[pb->num_changes])
 		{
-			omega = pb->omega[ichange];
-			theta = pb->theta;
-			Vx    = cos(theta)*pb->V_push[ichange];
-			Vy    = sin(theta)*pb->V_push[ichange];
+			// initialize variables
+			ichange = pb->ind_change;
+			advc    = pb->coord_advect[ichange];
 
-			// rotation
-			dtheta = omega*dt;
-			pb->theta = theta + dtheta;
-		}
+			Vx = 0.0;
+			Vy = 0.0;
+			dy = 0.0;
+			dx = 0.0;
+			dt = ts->dt;
 
-		// block moves in X-direction
-		if(pb->dir[ichange] == 1) Vx = pb->V_push[ichange];
+			xc = pb->x_center_block;
+			yc = pb->y_center_block;
+			zc = pb->z_center_block;
 
-		// block moves in Y-direction
-		if(pb->dir[ichange] == 2) Vy = pb->V_push[ichange];
+			// block is rotated
+			if(pb->dir[ichange] == 0)
+			{
+				omega = pb->omega[ichange];
+				theta = pb->theta;
+				Vx    = cos(theta)*pb->V_push[ichange];
+				Vy    = sin(theta)*pb->V_push[ichange];
 
-		// get displacements
-		dx = Vx*dt;
-		dy = Vy*dt;
+				// rotation
+				dtheta = omega*dt;
+				pb->theta = theta + dtheta;
+			}
 
-		if(advc == 0)
-		{	// stationary block
-			pb->x_center_block = xc;
-			pb->y_center_block = yc;
-			pb->z_center_block = zc;
-		}
-		else
-		{	// moving block
-			pb->x_center_block = xc + dx;
-			pb->y_center_block = yc + dy;
-			pb->z_center_block = zc;
+			// block moves in X-direction
+			if(pb->dir[ichange] == 1) Vx = pb->V_push[ichange];
+
+			// block moves in Y-direction
+			if(pb->dir[ichange] == 2) Vy = pb->V_push[ichange];
+
+			// get displacements
+			dx = Vx*dt;
+			dy = Vy*dt;
+
+			if(advc == 0)
+			{	// stationary block
+				pb->x_center_block = xc;
+				pb->y_center_block = yc;
+				pb->z_center_block = zc;
+			}
+			else
+			{	// moving block
+				pb->x_center_block = xc + dx;
+				pb->y_center_block = yc + dy;
+				pb->z_center_block = zc;
+			}
 		}
 	}
 

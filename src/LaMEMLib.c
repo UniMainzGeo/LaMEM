@@ -377,9 +377,6 @@ PetscErrorCode LaMEMLib(ModParam *IOparam)
 		// initialize temperature
 		ierr = JacResInitTemp(&jr); CHKERRQ(ierr);
 
-		// compute inverse elastic viscosities
-		ierr = JacResGetI2Gdt(&jr); CHKERRQ(ierr);
-
 
 		/////////////////////////////////////////////////////////////////////////////////
 		//
@@ -394,11 +391,24 @@ PetscErrorCode LaMEMLib(ModParam *IOparam)
 			{
 				PetscTime(&cputime_start_nonlinear);
 
+				PetscBool 			snes_convergence;
+				snes_convergence 	=	PETSC_FALSE;
+
+
+				// compute inverse elastic viscosities (dependent on dt)
+				ierr = JacResGetI2Gdt(&jr); CHKERRQ(ierr);
+
 				// solve nonlinear system with SNES
 				ierr = SNESSolve(snes, NULL, jr.gsol); CHKERRQ(ierr);
 
 				// print analyze convergence/divergence reason & iteration count
-				ierr = SNESPrintConvergedReason(snes); CHKERRQ(ierr);
+				ierr = SNESPrintConvergedReason(snes, &snes_convergence); CHKERRQ(ierr);
+
+				if (!snes_convergence){
+
+					PetscPrintf(PETSC_COMM_WORLD, " **** Nonlinear solver failed to converge *** \n");
+
+				}
 
 				PetscTime(&cputime_end_nonlinear);
 
@@ -424,7 +434,6 @@ PetscErrorCode LaMEMLib(ModParam *IOparam)
 
 			// prescribe velocity if rotation benchmark
 			if (user.msetup == ROTATION) {ierr = JacResSetVelRotation(&jr); CHKERRQ(ierr);}
-
 
 			//==========================================
 			// MARKER & FREE SURFACE ADVECTION + EROSION
@@ -452,9 +461,7 @@ PetscErrorCode LaMEMLib(ModParam *IOparam)
 			ierr = ADVRemap(&actx, &surf); CHKERRQ(ierr);
 
 			// update phase ratios taking into account actual free surface position
-			// -- This routine requires a modification to also correct phase ratio's at edges and not just at corners --
-			// it has been deactivated temporarily (affects convergence for salt-tectonics setups with brittle overburden)
-			//ierr = FreeSurfGetAirPhaseRatio(&surf); CHKERRQ(ierr);
+			ierr = FreeSurfGetAirPhaseRatio(&surf); CHKERRQ(ierr);
 
 			// advect pushing block
 			ierr = BCAdvectPush(&bc); CHKERRQ(ierr);
@@ -463,10 +470,10 @@ PetscErrorCode LaMEMLib(ModParam *IOparam)
 	//		ierr = CalculateMisfitValues(&user, C, itime, LaMEM_OutputParameters); CHKERRQ(ierr);
 
 			// ACHTUNG !!!
-			//PetscBool          flg;
-			//KSP                ksp;
-			//KSPConvergedReason reason;
-			//PetscBool          stop = PETSC_FALSE;
+			PetscBool          flg;
+			KSP                ksp;
+			KSPConvergedReason reason;
+			PetscBool          stop = PETSC_FALSE;
 
 			ierr = PetscOptionsHasName(NULL, "-stop_linsol_fail", &flg); CHKERRQ(ierr);
 
@@ -481,7 +488,6 @@ PetscErrorCode LaMEMLib(ModParam *IOparam)
 					stop = PETSC_TRUE;
 				}
 			}
-
 ///////////////////////
 		}
 		else
@@ -489,6 +495,12 @@ PetscErrorCode LaMEMLib(ModParam *IOparam)
 
 			// copy solution from global to local vectors, enforce boundary constraints
 			ierr = JacResCopySol(&jr, jr.gsol, _APPLY_SPC_); CHKERRQ(ierr);
+
+			PetscBool 			snes_convergence;
+			snes_convergence 	=	PETSC_FALSE;
+
+			// compute inverse elastic viscosities (dependent on dt)
+			ierr = JacResGetI2Gdt(&jr); CHKERRQ(ierr);
 
 			// evaluate momentum residual and pressure
 			ierr = FormMomentumResidualPressureAndVelocities(&jr,&user); CHKERRQ(ierr);
@@ -531,8 +543,13 @@ PetscErrorCode LaMEMLib(ModParam *IOparam)
 			// advect markers
 			//ierr = ADVAdvect(&actx); CHKERRQ(ierr);
 
+
 			// apply background strain-rate "DWINDLAR" BC (Bob Shaw "Ship of Strangers")
 			//ierr = BCStretchGrid(&bc); CHKERRQ(ierr);
+
+		// update phase ratios taking into account actual free surface position
+		ierr = FreeSurfGetAirPhaseRatio(&surf); CHKERRQ(ierr);
+
 
 			// exchange markers between the processors (after mesh advection)
 			//ierr = ADVExchange(&actx); CHKERRQ(ierr);
@@ -568,7 +585,7 @@ PetscErrorCode LaMEMLib(ModParam *IOparam)
 		// Save data to disk
 		//==================
 
-	if(!(JacResGetStep(&jr) % user.save_timesteps) || stop == PETSC_TRUE)
+		if(!(JacResGetStep(&jr) % user.save_timesteps) || stop == PETSC_TRUE)
 		{
 			char *DirectoryName = NULL;
 
@@ -588,26 +605,17 @@ PetscErrorCode LaMEMLib(ModParam *IOparam)
 			// AVD phase output
 			ierr = PVAVDWriteTimeStep(&pvavd, DirectoryName, JacResGetTime(&jr), JacResGetStep(&jr)); CHKERRQ(ierr);
 
-
-//ierr = ShowValues(&jr,&user,7); CHKERRQ(ierr);
-
 			// grid ParaView output
 			ierr = PVOutWriteTimeStep(&pvout, &jr, DirectoryName, JacResGetTime(&jr), JacResGetStep(&jr)); CHKERRQ(ierr);
 
-// -->ierr = ShowValues(&jr,&user,8); CHKERRQ(ierr);
-
 			// free surface ParaView output
 			ierr = PVSurfWriteTimeStep(&pvsurf, DirectoryName, JacResGetTime(&jr), JacResGetStep(&jr)); CHKERRQ(ierr);
-
-//ierr = ShowValues(&jr,&user,9); CHKERRQ(ierr);
 
 			// marker ParaView output
 			ierr = PVMarkWriteTimeStep(&pvmark, DirectoryName, JacResGetTime(&jr), JacResGetStep(&jr)); CHKERRQ(ierr);
 
 			// clean up
 			if(DirectoryName) free(DirectoryName);
-
-			//==================
 		}
 
 		if(stop == PETSC_TRUE)
@@ -629,7 +637,6 @@ PetscErrorCode LaMEMLib(ModParam *IOparam)
 
 		// check marker phases
 		ierr = ADVCheckMarkPhases(&actx, jr.numPhases); CHKERRQ(ierr);
-
 
 	} while(done != PETSC_TRUE);
 

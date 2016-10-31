@@ -149,6 +149,13 @@ typedef struct
 	Vec ge;   // energy residual (global)
 	KSP tksp; // temperature diffusion solver
 
+	//==========================
+	// 2D integration primitives
+	//==========================
+	DM DA_CELL_2D; // 2D cell center grid
+
+	Vec lp_lithos; // lithostatic pressure
+
 } JacRes;
 //---------------------------------------------------------------------------
 
@@ -295,6 +302,16 @@ PetscErrorCode JacResCopySolution(JacRes *jr, Vec x);
 
 /*// copy continuity residual and theta in gK
 PetscErrorCode JacResCopyK(JacRes *jr, Vec K);*/
+
+//---------------------------------------------------------------------------
+//......................   INTEGRATION FUNCTIONS   ..........................
+//---------------------------------------------------------------------------
+
+// compute overpressure field in the cell centers
+PetscErrorCode JacResGetOverPressure(JacRes *jr, Vec p);
+
+// compute lithostatic pressure in the cell centers
+PetscErrorCode JacResGetLithoStaticPressure(JacRes *jr);
 
 //---------------------------------------------------------------------------
 // MACROS
