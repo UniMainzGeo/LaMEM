@@ -314,6 +314,16 @@ PetscErrorCode JacResGetOverPressure(JacRes *jr, Vec p);
 PetscErrorCode JacResGetLithoStaticPressure(JacRes *jr);
 
 //---------------------------------------------------------------------------
+//......................   INTEGRATION FUNCTIONS   ..........................
+//---------------------------------------------------------------------------
+
+// compute overpressure field in the cell centers
+PetscErrorCode JacResGetOverPressure(JacRes *jr, Vec p);
+
+// compute lithostatic pressure in the cell centers
+PetscErrorCode JacResGetLithoStaticPressure(JacRes *jr);
+
+//---------------------------------------------------------------------------
 // MACROS
 //---------------------------------------------------------------------------
 

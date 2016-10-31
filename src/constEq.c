@@ -622,7 +622,6 @@ PetscErrorCode GetStressCell(
 	tyy = svCell->dyy - svDev->I2Gdt*(svCell->syy - svCell->hyy);
 	tzz = svCell->dzz - svDev->I2Gdt*(svCell->szz - svCell->hzz);
 
-
 	// compute shear heating term contribution
 	svDev->Hr = (txx*svCell->sxx + tyy*svCell->syy + tzz*svCell->szz);
 

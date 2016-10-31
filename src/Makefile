@@ -65,10 +65,7 @@ CCOMPILER = ${PCC} ${PCC_FLAGS} ${CFLAGS} ${CCPPFLAGS}
 
 # Define list of LaMEM library source files
 
-
-
 CSRC = $(filter-out LaMEM.c, $(wildcard *.c))
-
 	
 #====================================================
 

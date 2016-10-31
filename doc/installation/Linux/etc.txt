@@ -1,0 +1,40 @@
+------------------------------------------------------------------
+GIT
+------------------------------------------------------------------
+
+git config --global user.name "Your User Name"
+git config --global user.email "your_email@example.com"
+
+------------------------------------------------------------------
+PARAVIEW
+------------------------------------------------------------------
+
+Install ParaView via Linux Software Manager
+
+DON'T download it from website
+
+Latest downloaded versions tend to have OpenGL issues
+
+If you still need an older version proceed like with Eclipse:
+
+Download and unpack
+Install (copy) to /opt
+Set environment in /etc/profile.d/paraview.sh
+Create desktop launcher
+As "command" simply type paraview
+Icon file is supplied
+
+------------------------------------------------------------------
+MATLAB
+------------------------------------------------------------------
+
+Mount MATLAB .iso file and start installation with sudo command from terminal
+Select install without Internet, copy-paste code, and point to license file
+Select all packages including License Manager
+Choose to create symbolic link for MATLAB starting command
+
+After installation just create desktop launcher after installation
+As "command" type matlab -desktop -singleCompThread
+Icon file is supplied
+
+------------------------------------------------------------------

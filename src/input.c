@@ -655,7 +655,6 @@ PetscErrorCode InputReadFile(JacRes *jr, UserCtx *user, FILE *fp)
 	//parse_GetString(fp,"strain_stress_file_name", user->stress_file_name, MAX_PATH_LEN, &found);
 	//if (found ==PETSC_FALSE) sprintf(user->stress_file_name, "strain_stress");
 
-
 	// Absorbing boundaries
 	//if (user->ExplicitSolver == PETSC_TRUE)
 	//{

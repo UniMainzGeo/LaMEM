@@ -308,7 +308,6 @@ PetscErrorCode JacResDestroy(JacRes *jr)
 	//==========================
 	ierr = DMDestroy(&jr->DA_CELL_2D); CHKERRQ(ierr);
 
-
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
@@ -2091,8 +2090,16 @@ PetscErrorCode JacResCopyK(JacRes *jr, Vec K)
 	PetscInt    i, num, *list;
 	PetscScalar *fx, *fy, *fz, *theta, *k, *iter;
 
+<<<<<<< HEAD
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
+=======
+		// access current lithostatic pressure (y-z plane, j-k indices)
+		pc_lithos = 0.25*(p_lithos[k][j][i] + p_lithos[k][j-1][i] + p_lithos[k-1][j][i] + p_lithos[k-1][j-1][i]);
+
+		// evaluate deviatoric constitutive equations
+		ierr = DevConstEq(svDev, &eta_creep, &eta_viscoplastic, numPhases, phases, svEdge->phRat, matLim, pc_lithos, dt, pc-pShift, Tc); CHKERRQ(ierr);
+>>>>>>> origin/master
 
 	fs  = jr->fs;
 	bc  = jr->bc;
@@ -2116,7 +2123,27 @@ PetscErrorCode JacResCopyK(JacRes *jr, Vec K)
 	ierr  = PetscMemcpy(iter, fz, (size_t)fs->nZFace*sizeof(PetscScalar)); CHKERRQ(ierr);
 	iter += fs->nZFace;
 
+<<<<<<< HEAD
 	ierr  = PetscMemcpy(iter, theta,  (size_t)fs->nCells*sizeof(PetscScalar)); CHKERRQ(ierr);
+=======
+	// restore vectors
+	ierr = DMDAVecRestoreArray(fs->DA_CEN, jr->gc,   &gc);  CHKERRQ(ierr);
+	ierr = DMDAVecRestoreArray(fs->DA_CEN, jr->lp,   &p);   CHKERRQ(ierr);
+	ierr = DMDAVecRestoreArray(fs->DA_CEN, jr->lT,   &T);   CHKERRQ(ierr);
+	ierr = DMDAVecRestoreArray(fs->DA_CEN, jr->ldxx, &dxx); CHKERRQ(ierr);
+	ierr = DMDAVecRestoreArray(fs->DA_CEN, jr->ldyy, &dyy); CHKERRQ(ierr);
+	ierr = DMDAVecRestoreArray(fs->DA_CEN, jr->ldzz, &dzz); CHKERRQ(ierr);
+	ierr = DMDAVecRestoreArray(fs->DA_XY,  jr->ldxy, &dxy); CHKERRQ(ierr);
+	ierr = DMDAVecRestoreArray(fs->DA_XZ,  jr->ldxz, &dxz); CHKERRQ(ierr);
+	ierr = DMDAVecRestoreArray(fs->DA_YZ,  jr->ldyz, &dyz); CHKERRQ(ierr);
+	ierr = DMDAVecRestoreArray(fs->DA_X,   jr->lfx,  &fx);  CHKERRQ(ierr);
+	ierr = DMDAVecRestoreArray(fs->DA_Y,   jr->lfy,  &fy);  CHKERRQ(ierr);
+	ierr = DMDAVecRestoreArray(fs->DA_Z,   jr->lfz,  &fz);  CHKERRQ(ierr);
+	ierr = DMDAVecRestoreArray(fs->DA_X,   jr->lvx,  &vx);  CHKERRQ(ierr);
+	ierr = DMDAVecRestoreArray(fs->DA_Y,   jr->lvy,  &vy);  CHKERRQ(ierr);
+	ierr = DMDAVecRestoreArray(fs->DA_Z,   jr->lvz,  &vz);  CHKERRQ(ierr);
+	ierr = DMDAVecRestoreArray(fs->DA_CEN, jr->lp_lithos, &p_lithos); CHKERRQ(ierr);
+>>>>>>> origin/master
 
 	// zero out constrained residuals (velocity)
 	num   = bc->vNumSPC;
