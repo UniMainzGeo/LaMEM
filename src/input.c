@@ -380,10 +380,14 @@ PetscErrorCode FDSTAGInitCode(JacRes *jr, UserCtx *user, ModParam *iop)
 	jr->stress_file  = user->stress_file;
 
 	jr->SeismicSource  = user->SeismicSource;
-	if (jr->SeismicSource == PETSC_TRUE) jr->SourceParams = user->SourceParams;
+	if (jr->SeismicSource == PETSC_TRUE) {
+		jr->SourceParams = user->SourceParams;
+	}
 
 	jr->SeismicStation= user->SeismicStation;
-	if (jr->SeismicStation == PETSC_TRUE) jr->StationParams = user->StationParams;
+	if (jr->SeismicStation == PETSC_TRUE) {
+		jr->StationParams = user->StationParams;
+	}
 
 	ierr = PetscFree(all_options); CHKERRQ(ierr);
 
@@ -506,6 +510,20 @@ PetscErrorCode InputSetDefaultValues(JacRes *jr, UserCtx *user)
     user->ExplicitSolver = PETSC_FALSE;
     user->SeismicSource	 = PETSC_FALSE;
     user->DensityFactor = 1.0;
+
+    user->SourceParams.x = -1;
+    user->SourceParams.y = -1;
+    user->SourceParams.z = -1;
+	user->SourceParams.i = -1;
+	user->SourceParams.j = -1;
+	user->SourceParams.k = -1;
+
+    user->StationParams.x = -1;
+    user->StationParams.y = -1;
+    user->StationParams.z = -1;
+    user->StationParams.i = -1;
+	user->StationParams.j = -1;
+	user->StationParams.k = -1;
 
     user->AbsBoundaries = PETSC_TRUE;
     user->AB.NxL = 20;

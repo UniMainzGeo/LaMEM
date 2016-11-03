@@ -315,7 +315,7 @@ PetscErrorCode LaMEMLib(ModParam *IOparam)
 
 		// Get the coordinates corresponding to the force term source and to the seismic station
 		GetCellCoordinatesSourceAndSeismicStation(&jr);
-		PetscPrintf(PETSC_COMM_WORLD, "  Source applied at cell (%i,%i,%i)  \n", jr.SourceParams.i,jr.SourceParams.j,jr.SourceParams.k);
+		//PetscPrintf(PETSC_COMM_WORLD, "  Source applied at cell (%i,%i,%i)  \n", jr.SourceParams.i,jr.SourceParams.j,jr.SourceParams.k);
 
 		// Files to save seismic signals at a given point of the model
 		if (user.SeismicStation == PETSC_TRUE) {
