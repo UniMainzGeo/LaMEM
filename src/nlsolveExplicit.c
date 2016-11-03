@@ -463,9 +463,9 @@ PetscErrorCode CheckTimeStep(JacRes *jr, UserCtx *user)
 
 	phases    = jr->phases;
 	dt        = user->dt;     // time step
-	dx = user->W/((PetscScalar)(user->nel_x));
-	dy = user->L/((PetscScalar)(user->nel_y));
-	dz = user->H/((PetscScalar)(user->nel_z));
+	dx 		  = user->W/((PetscScalar)(user->nel_x));
+	dy 		  = user->L/((PetscScalar)(user->nel_y));
+	dz 		 = user->H/((PetscScalar)(user->nel_z));
 
 	//  phases
 	for(i = 0; i < jr->numPhases; i++)
@@ -477,7 +477,7 @@ PetscErrorCode CheckTimeStep(JacRes *jr, UserCtx *user)
 
 		rho=rho*computational_density_factor;
 
-		vp=sqrt((bulk+4.0/3.0*shear)/rho); 					// P-wave velocity
+		vp = sqrt((bulk+4.0/3.0*shear)/rho); 					// P-wave velocity
 		stability = vp*dt*sqrt(1.0/(dx*dx)+1.0/(dy*dy)+1.0/(dz*dz));
 		if ( stability >= 1) {
 			SETERRQ1(PETSC_COMM_SELF, PETSC_ERR_USER, "Stability condition = %12.12e", stability);
@@ -496,49 +496,43 @@ PetscErrorCode ChangeTimeStep(JacRes *jr, UserCtx *user)
 
 	PetscInt    i, numPhases;
 	Material_t  *phases, *M;
-	PetscScalar dx, dy, dz, empty, dt, rho, shear, bulk, vp, stability, d_average, computational_density_factor;
+	PetscScalar dx, dy, dz, dt_min, dt, rho, shear, bulk, vp; 
+	PetscScalar CFL, stability, d_average, computational_density_factor;
 
 	PetscFunctionBegin;
 
 	computational_density_factor = user->DensityFactor;
-	numPhases = jr->numPhases;
-	phases    = jr->phases;
-	empty  = 999999999;
-	dt = empty;
-	dx = user->W/((PetscScalar)(user->nel_x));
-	dy = user->L/((PetscScalar)(user->nel_y));
-	dz = user->H/((PetscScalar)(user->nel_z));
+	numPhases 	= 	jr->numPhases;
+	phases    	= 	jr->phases;
+	dt_min 		= 	PETSC_MAX_REAL;
+	dx 			= 	user->W/((PetscScalar)(user->nel_x));
+	dy 			= 	user->L/((PetscScalar)(user->nel_y));
+	dz 			= 	user->H/((PetscScalar)(user->nel_z));
+	CFL 		=	user->CFL;
 
 	//  phases
 	for(i = 0; i < numPhases; i++)
 	{
-		M = &phases[i];
-		rho=M->rho;
-		shear=M->G;
-		bulk=M->K;
+		M 			= 	&phases[i];
+		rho			=	M->rho;
+		shear 		=	M->G;
+		bulk 		=	M->K;
 
-		rho=rho*computational_density_factor;
+		rho 		=	rho*computational_density_factor;
 
-		vp=sqrt((bulk+4.0/3.0*shear)/rho);				// P-wave velocity
-		//d_average 	= sqrt(dx*dx + dz*dz + dy*dy);   	// average spacing
-		d_average 	= sqrt(1/(dx*dx) + 1/(dz*dz) + 1/(dy*dy));
+		vp 			=	sqrt( (bulk+4.0/3.0*shear)/rho);				// P-wave velocity
 
-		if (dt == empty) {
-			//if (d_average/vp < dt) {
-			//dt = 1/vp/sqrt(1.0/(dx*dx)+1.0/(dy*dy)+1.0/(dz*dz));
-				//dt = d_average/vp;
-			dt = 1/vp/d_average;
-			//}
-		}
-		else {
-			//if (d_average/vp < dt) {
-			if (1/vp/d_average < dt) {
-				dt = d_average/vp;
-			}
-		}
+		// Compute velocity such that the wave does not move more than CFL times a gridcell per dt		
+		dt 			= 	CFL*dx/vp;
+		if (dt_min>dt){dt_min =dt;}
+		dt 			= 	CFL*dy/vp;
+		if (dt_min>dt){dt_min =dt;}
+		dt 			= 	CFL*dz/vp;
+		if (dt_min>dt){dt_min =dt;}
 	}
-	user->dt = dt;
-	jr->ts.dt = dt;
+	user->dt 	= dt_min;
+	jr->ts.dt 	= dt_min;
+
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
