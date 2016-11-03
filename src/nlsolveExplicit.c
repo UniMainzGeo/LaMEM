@@ -1899,12 +1899,19 @@ PetscErrorCode ShowValues(JacRes *jr, UserCtx *user, PetscInt n)
 #define __FUNCT__ "GetCellCoordinatesSource"
 PetscErrorCode GetCellCoordinatesSourceAndSeismicStation(JacRes *jr)
 {
-	PetscInt i, j, k, nx, ny, nz, sx, sy, sz;
+	PetscInt i, j, k, nx, ny, nz, sx, sy, sz, ii, jj, kk, iii, jjj, kkk;
 	PetscScalar    xs[3], xe[3];
 	FDSTAG     *fs;
 
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
+
+	ii = -1;
+	jj = -1;
+	kk = -1;
+	iii = -1;
+	jjj = -1;
+	kkk = -1;
 
 	fs = jr->fs;
 
@@ -1915,7 +1922,6 @@ PetscErrorCode GetCellCoordinatesSourceAndSeismicStation(JacRes *jr)
 		GET_CELL_RANGE(nx, sx, fs->dsx)
 		GET_CELL_RANGE(ny, sy, fs->dsy)
 		GET_CELL_RANGE(nz, sz, fs->dsz)
-		//PetscPrintf(PETSC_COMM_WORLD, "  %i %i %i %i %i %i  \n", nx,ny,nz,sx,sy,sz);
 		START_STD_LOOP
 		{
 			// get cell coordinates
@@ -1927,24 +1933,55 @@ PetscErrorCode GetCellCoordinatesSourceAndSeismicStation(JacRes *jr)
 			{
 				if (jr->SourceParams.x > xs[0] && jr->SourceParams.x <= xe[0] && jr->SourceParams.y > xs[1] && jr->SourceParams.y <= xe[1] && jr->SourceParams.z > xs[2] && jr->SourceParams.z <= xe[2])
 				{
-					jr->SourceParams.i=i;
-					jr->SourceParams.j=j;
-					jr->SourceParams.k=k;
-					//PetscPrintf(PETSC_COMM_WORLD, "  Source applied at cell (%i,%i,%i)  \n", i,j,k);
+					ii=i;
+					jj=j;
+					kk=k;
 				}
 			}
 			if (jr->SeismicStation==PETSC_TRUE)
 			{
 				if (jr->StationParams.x > xs[0] && jr->StationParams.x <= xe[0] && jr->StationParams.y > xs[1] && jr->StationParams.y <= xe[1] && jr->StationParams.z > xs[2] && jr->StationParams.z <= xe[2])
 				{
-					jr->StationParams.i=i;
-					jr->StationParams.j=j;
-					jr->StationParams.k=k;
+					iii=i;
+					jjj=j;
+					kkk=k;
 				}
 			}
 		}
 		END_STD_LOOP
+
+		if (jr->SeismicSource==PETSC_TRUE)
+		{
+			if(ISParallel(PETSC_COMM_WORLD))
+			{
+				ierr = MPI_Allreduce(&ii, &jr->SourceParams.i, 1, MPIU_SCALAR, MPI_MAX, PETSC_COMM_WORLD); CHKERRQ(ierr);
+				ierr = MPI_Allreduce(&jj, &jr->SourceParams.j, 1, MPIU_SCALAR, MPI_MAX, PETSC_COMM_WORLD); CHKERRQ(ierr);
+				ierr = MPI_Allreduce(&kk, &jr->SourceParams.k, 1, MPIU_SCALAR, MPI_MAX, PETSC_COMM_WORLD); CHKERRQ(ierr);
+			}
+			else
+			{
+				jr->SourceParams.i = ii;
+				jr->SourceParams.j = jj;
+				jr->SourceParams.k = kk;
+			}
+		}
+		if (jr->SeismicStation==PETSC_TRUE)
+		{
+			if(ISParallel(PETSC_COMM_WORLD))
+			{
+				ierr = MPI_Allreduce(&iii, &jr->StationParams.i, 1, MPIU_SCALAR, MPI_MAX, PETSC_COMM_WORLD); CHKERRQ(ierr);
+				ierr = MPI_Allreduce(&jjj, &jr->StationParams.j, 1, MPIU_SCALAR, MPI_MAX, PETSC_COMM_WORLD); CHKERRQ(ierr);
+				ierr = MPI_Allreduce(&kkk, &jr->StationParams.k, 1, MPIU_SCALAR, MPI_MAX, PETSC_COMM_WORLD); CHKERRQ(ierr);
+			}
+			else
+			{
+				jr->StationParams.i = iii;
+				jr->StationParams.j = jjj;
+				jr->StationParams.k = kkk;
+			}
+		}
 	}
+
 	PetscFunctionReturn(0);
 }
 
@@ -1961,28 +1998,14 @@ PetscErrorCode GetStressFromSource(JacRes *jr, UserCtx *user, PetscInt i, PetscI
 
 	time	  =  JacResGetTime(jr);
 
-	//FILE *fseism;
-	//fseism = user->Station.output_file;
-
 	if (jr->SourceParams.source_type == PLANE)
 	{
 		//if (k==user->nel_z-1) //(k==1)
 		if (i==user->nel_x-1)
 		{
-			//*sxx = 		jr->SourceParams.amplitude*exp(-jr->SourceParams.alfa*((time-jr->SourceParams.t0)*(time-jr->SourceParams.t0))); 	//jr->SourceParams.amplitude;
-			//*syy =	- 	jr->SourceParams.amplitude*exp(-jr->SourceParams.alfa*((time-jr->SourceParams.t0)*(time-jr->SourceParams.t0)))/2; 	//jr->SourceParams.amplitude/2.0;
-			//*szz = 	-  	jr->SourceParams.amplitude*exp(-jr->SourceParams.alfa*((time-jr->SourceParams.t0)*(time-jr->SourceParams.t0)))/2;	//jr->SourceParams.amplitude/2.0;
-
-			//*szz = 		jr->SourceParams.amplitude;
-			//*sxx = 0.0;
-			//*syy =	 	-jr->SourceParams.amplitude*exp(-jr->SourceParams.alfa*((time-jr->SourceParams.t0)*(time-jr->SourceParams.t0)));
-			//*szz = 0.0;
-
-
-
-			*sxx = 	100.0;
-			*syy =	50.0;;
-			*szz = 	-50.0 ;
+			*sxx = 		jr->SourceParams.amplitude*exp(-jr->SourceParams.alfa*((time-jr->SourceParams.t0)*(time-jr->SourceParams.t0)));
+			*syy =	- 	jr->SourceParams.amplitude*exp(-jr->SourceParams.alfa*((time-jr->SourceParams.t0)*(time-jr->SourceParams.t0)))/2;
+			*szz = 	-  	jr->SourceParams.amplitude*exp(-jr->SourceParams.alfa*((time-jr->SourceParams.t0)*(time-jr->SourceParams.t0)))/2;
 		}
 	}
 	else if (jr->SourceParams.source_type == COMPRES)
@@ -2010,61 +2033,11 @@ PetscErrorCode GetStressFromSource(JacRes *jr, UserCtx *user, PetscInt i, PetscI
 		xs[2] = jr->fs->dsz.ncoor[k]; xe[2] = jr->fs->dsz.ncoor[k+1];
 
 		if (jr->SourceParams.x > xs[0] && jr->SourceParams.x <= xe[0] && jr->SourceParams.y > xs[1] && jr->SourceParams.y <= xe[1] && jr->SourceParams.z > xs[2] && jr->SourceParams.z <= xe[2])
-				{
-					*sxx = jr->SourceParams.amplitude*exp(-jr->SourceParams.alfa*((time-jr->SourceParams.t0)*(time-jr->SourceParams.t0)));
-					*syy = jr->SourceParams.amplitude*exp(-jr->SourceParams.alfa*((time-jr->SourceParams.t0)*(time-jr->SourceParams.t0)))/2;
-					*szz = -jr->SourceParams.amplitude*exp(-jr->SourceParams.alfa*((time-jr->SourceParams.t0)*(time-jr->SourceParams.t0)))/2;
-
-
-					//*sxx = 	100.0;
-					//*syy =	50.0;;
-					//*szz = 	-50.0 ;
-				}
-
-		/*// change the way and the place to do that /////////////////////////////////////////////////////////////////////////////////
-		//
-		if (jr->SourceParams.xrank == -1) // then first time we are here
-		{
-			// belongs the point source to this process?, then fillSourceParameters structure
-			if (FDSTAGPointIsInCurrentProccess(jr->fs, jr->SourceParams.x, jr->SourceParams.y, jr->SourceParams.z) == PETSC_TRUE)
-			{
-				jr->SourceParams.xrank = jr->fs->dsx.rank;
-				jr->SourceParams.yrank = jr->fs->dsy.rank;
-				jr->SourceParams.zrank = jr->fs->dsz.rank;
-
-				M = jr->fs->dsx.ncels;
-				N = jr->fs->dsy.ncels;
-				P = jr->fs->dsz.ncels;
-
-				jr->SourceParams.i = FindPointInCell(jr->fs->dsx.ncoor, 0, M, jr->SourceParams.x)+M*(jr->fs->dsx.rank);
-				jr->SourceParams.j = FindPointInCell(jr->fs->dsy.ncoor, 0, N, jr->SourceParams.y)+N*(jr->fs->dsy.rank);
-				jr->SourceParams.k = FindPointInCell(jr->fs->dsz.ncoor, 0, P, jr->SourceParams.z)+P*(jr->fs->dsz.rank);
-			}
-		}
-		//
-		/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-		if (jr->SourceParams.xrank == jr->fs->dsx.rank && jr->SourceParams.yrank == jr->fs->dsy.rank && jr->SourceParams.zrank == jr->fs->dsz.rank)
-		{
-			if (k==jr->SourceParams.k && j == jr->SourceParams.j && i == jr->SourceParams.i)
-			{
-				*sxx = *sxx*0 + jr->SourceParams.amplitude*exp(-jr->SourceParams.alfa*((time-jr->SourceParams.t0)*(time-jr->SourceParams.t0)));
-				*syy = 0.0;
-				*szz = *szz*0 + jr->SourceParams.amplitude*exp(-jr->SourceParams.alfa*((time-jr->SourceParams.t0)*(time-jr->SourceParams.t0)));
-			}
-		}*/
-
-
-		/*if (k==70 && j == 70 && i == 20)
 		{
 			*sxx = jr->SourceParams.amplitude*exp(-jr->SourceParams.alfa*((time-jr->SourceParams.t0)*(time-jr->SourceParams.t0)));
-			*szz = - jr->SourceParams.amplitude*exp(-jr->SourceParams.alfa*((time-jr->SourceParams.t0)*(time-jr->SourceParams.t0)));
-
-
-			*sxx = 	100.0;
-			*syy =	50.0;;
-			*szz = 	-50.0 ;
-		}*/
+			*syy = jr->SourceParams.amplitude*exp(-jr->SourceParams.alfa*((time-jr->SourceParams.t0)*(time-jr->SourceParams.t0)))/2;
+			*szz = -jr->SourceParams.amplitude*exp(-jr->SourceParams.alfa*((time-jr->SourceParams.t0)*(time-jr->SourceParams.t0)))/2;
+		}
 
 	}
 
