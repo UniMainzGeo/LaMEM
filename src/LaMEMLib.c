@@ -485,6 +485,7 @@ PetscErrorCode LaMEMLib(ModParam *IOparam)
 		}
 		else
 		{	/* Explicit solver Solver */
+			PetscTime(&cputime_start_nonlinear);
 
 			// copy solution from global to local vectors, enforce boundary constraints
 			ierr 	= 	JacResCopySol(&jr, jr.gsol, _APPLY_SPC_); CHKERRQ(ierr);
@@ -551,6 +552,9 @@ PetscErrorCode LaMEMLib(ModParam *IOparam)
 			//// prescribe velocity if rotation benchmark
 			//if (user.msetup == ROTATION) {ierr = JacResSetVelRotation(&jr); CHKERRQ(ierr);}
 			
+				PetscTime(&cputime_end_nonlinear);
+
+				PetscPrintf(PETSC_COMM_WORLD, " Explicit solve took %g (sec)\n", cputime_end_nonlinear - cputime_start_nonlinear);
 		}
 
 //ierr = ShowValues(&jr, &user, 6); CHKERRQ(ierr);
