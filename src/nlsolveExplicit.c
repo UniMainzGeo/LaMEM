@@ -1924,11 +1924,23 @@ PetscErrorCode GetCellCoordinatesSourceAndSeismicStation(JacRes *jr)
 		GET_CELL_RANGE(nz, sz, fs->dsz)
 		START_STD_LOOP
 		{
-			// get cell coordinates
-			xs[0] = jr->fs->dsx.ncoor[i]; xe[0] = jr->fs->dsx.ncoor[i+1];
-			xs[1] = jr->fs->dsy.ncoor[j]; xe[1] = jr->fs->dsy.ncoor[j+1];
-			xs[2] = jr->fs->dsz.ncoor[k]; xe[2] = jr->fs->dsz.ncoor[k+1];
+			PetscScalar x,y,z,dx,dy,dz;
 
+			// get coordinate of center of cell 
+			x  = COORD_CELL(i, sx, fs->dsx);
+			y  = COORD_CELL(j, sy, fs->dsy);
+			z  = COORD_CELL(k, sz, fs->dsz);
+
+			// size of cell
+			dx = SIZE_CELL(i, sx, fs->dsx);		
+			dy = SIZE_CELL(j, sy, fs->dsy);
+			dz = SIZE_CELL(k, sz, fs->dsz);
+
+			// get cell coordinates
+			xs[0] = x-dx/2; xe[0] = x+dx/2;
+			xs[1] = y-dy/2; xe[1] = y+dy/2;
+			xs[2] = z-dz/2; xe[2] = z+dz/2;
+			
 			if (jr->SeismicSource==PETSC_TRUE)
 			{
 				if (jr->SourceParams.x > xs[0] && jr->SourceParams.x <= xe[0] && jr->SourceParams.y > xs[1] && jr->SourceParams.y <= xe[1] && jr->SourceParams.z > xs[2] && jr->SourceParams.z <= xe[2])
@@ -1949,14 +1961,14 @@ PetscErrorCode GetCellCoordinatesSourceAndSeismicStation(JacRes *jr)
 			}
 		}
 		END_STD_LOOP
-
+		
 		if (jr->SeismicSource==PETSC_TRUE)
 		{
 			if(ISParallel(PETSC_COMM_WORLD))
 			{
-				ierr = MPI_Allreduce(&ii, &jr->SourceParams.i, 1, MPIU_SCALAR, MPI_MAX, PETSC_COMM_WORLD); CHKERRQ(ierr);
-				ierr = MPI_Allreduce(&jj, &jr->SourceParams.j, 1, MPIU_SCALAR, MPI_MAX, PETSC_COMM_WORLD); CHKERRQ(ierr);
-				ierr = MPI_Allreduce(&kk, &jr->SourceParams.k, 1, MPIU_SCALAR, MPI_MAX, PETSC_COMM_WORLD); CHKERRQ(ierr);
+				ierr = MPI_Allreduce(&ii, &jr->SourceParams.i, 1, MPIU_INT, MPI_MAX, PETSC_COMM_WORLD); CHKERRQ(ierr);
+				ierr = MPI_Allreduce(&jj, &jr->SourceParams.j, 1, MPIU_INT, MPI_MAX, PETSC_COMM_WORLD); CHKERRQ(ierr);
+				ierr = MPI_Allreduce(&kk, &jr->SourceParams.k, 1, MPIU_INT, MPI_MAX, PETSC_COMM_WORLD); CHKERRQ(ierr);
 			}
 			else
 			{
@@ -1969,9 +1981,9 @@ PetscErrorCode GetCellCoordinatesSourceAndSeismicStation(JacRes *jr)
 		{
 			if(ISParallel(PETSC_COMM_WORLD))
 			{
-				ierr = MPI_Allreduce(&iii, &jr->StationParams.i, 1, MPIU_SCALAR, MPI_MAX, PETSC_COMM_WORLD); CHKERRQ(ierr);
-				ierr = MPI_Allreduce(&jjj, &jr->StationParams.j, 1, MPIU_SCALAR, MPI_MAX, PETSC_COMM_WORLD); CHKERRQ(ierr);
-				ierr = MPI_Allreduce(&kkk, &jr->StationParams.k, 1, MPIU_SCALAR, MPI_MAX, PETSC_COMM_WORLD); CHKERRQ(ierr);
+				ierr = MPI_Allreduce(&iii, &jr->StationParams.i, 1, MPIU_INT, MPI_MAX, PETSC_COMM_WORLD); CHKERRQ(ierr);
+				ierr = MPI_Allreduce(&jjj, &jr->StationParams.j, 1, MPIU_INT, MPI_MAX, PETSC_COMM_WORLD); CHKERRQ(ierr);
+				ierr = MPI_Allreduce(&kkk, &jr->StationParams.k, 1, MPIU_INT, MPI_MAX, PETSC_COMM_WORLD); CHKERRQ(ierr);
 			}
 			else
 			{
