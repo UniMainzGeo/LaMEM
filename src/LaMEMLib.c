@@ -309,6 +309,7 @@ PetscErrorCode LaMEMLib(ModParam *IOparam)
 
 
 	if (user.ExplicitSolver == PETSC_TRUE) {
+		/* In case we use the explicit solver */
 
 		MPI_Comm_size(PETSC_COMM_WORLD, &inproc); nproc = (PetscInt)inproc;
 
@@ -362,11 +363,6 @@ PetscErrorCode LaMEMLib(ModParam *IOparam)
 //	PetscTime(&cputime_start_tstep);
 	do
 	{
-		PetscPrintf(PETSC_COMM_WORLD,"step %lld -------------------------------------------------------- \n", (LLD)JacResGetStep(&jr));
-		PetscPrintf(PETSC_COMM_WORLD,"dt   %12.12e -------------------------------------------------------- \n", user.dt);
-		PetscPrintf(PETSC_COMM_WORLD,"time %12.12e -------------------------------------------------------- \n", JacResGetStep(&jr)*user.dt);
-
-
 		//====================================
 		//	NONLINEAR THERMO-MECHANICAL SOLVER
 		//====================================
@@ -377,14 +373,11 @@ PetscErrorCode LaMEMLib(ModParam *IOparam)
 		// initialize temperature
 		ierr = JacResInitTemp(&jr); CHKERRQ(ierr);
 
-
 		/////////////////////////////////////////////////////////////////////////////////
 		//
 		// ExplicitSolver != PETSC_TRUE => Current LAMEM
-		// ExplicitSolver == PETSC_TRUE => Go to the wave propagation code ( ... working on it)
 		if (user.ExplicitSolver != PETSC_TRUE)		{
-		//
-		/////////////////////////////////////////////////////////////////////////////////
+			/* In case we use the Implicit solver */
 
 
 			if(user.SkipStokesSolver != PETSC_TRUE)
@@ -416,7 +409,7 @@ PetscErrorCode LaMEMLib(ModParam *IOparam)
 			}
 			else
 			{
-				// just evaluate initial residual
+				//  evaluate the residual 
 				ierr = FormResidual(snes, jr.gsol, jr.gres, &nl); CHKERRQ(ierr);
 			}
 
@@ -488,26 +481,23 @@ PetscErrorCode LaMEMLib(ModParam *IOparam)
 					stop = PETSC_TRUE;
 				}
 			}
-///////////////////////
+
 		}
 		else
-		{
+		{	/* Explicit solver Solver */
 
 			// copy solution from global to local vectors, enforce boundary constraints
-			ierr = JacResCopySol(&jr, jr.gsol, _APPLY_SPC_); CHKERRQ(ierr);
-
-			PetscBool 			snes_convergence;
-			snes_convergence 	=	PETSC_FALSE;
-
+			ierr 	= 	JacResCopySol(&jr, jr.gsol, _APPLY_SPC_); CHKERRQ(ierr);
+			
 			// compute inverse elastic viscosities (dependent on dt)
-			ierr = JacResGetI2Gdt(&jr); CHKERRQ(ierr);
+			ierr 	= 	JacResGetI2Gdt(&jr); CHKERRQ(ierr);
 
 			// evaluate momentum residual and pressure
-			ierr = FormMomentumResidualPressureAndVelocities(&jr,&user); CHKERRQ(ierr);
+			ierr 	= 	FormMomentumResidualPressureAndVelocities(&jr,&user); CHKERRQ(ierr);
 
 			// update history fields (and get averaged axial stress)
 			//ierr = UpdateHistoryFieldsAndGetAxialStressStrain(&jr, &axial_stress, &axial_strain); 	CHKERRQ(ierr);
-			ierr = UpdateHistoryFieldsAndGetAxialStressStrain(&jr, &axial_stress); 	CHKERRQ(ierr);
+			ierr 	= 	UpdateHistoryFieldsAndGetAxialStressStrain(&jr, &axial_stress); 	CHKERRQ(ierr);
 
 			// Save axial stress file
 			//PetscScalar step=JacResGetStep(&jr);
@@ -515,12 +505,12 @@ PetscErrorCode LaMEMLib(ModParam *IOparam)
 			//fprintf(user.stress_file[jr.fs->dsz.rank], "%12.12e %12.12e\n", jr.ts.time, axial_stress);
 			fprintf(jr.stress_file, "%12.12e %12.12e\n", jr.ts.time, axial_stress);
 
-//ierr = ShowValues(&jr,&user, 5); CHKERRQ(ierr);
+			//ierr = ShowValues(&jr,&user, 5); CHKERRQ(ierr);
 
 			//ierr = SaveVelocitiesForSeismicStation(&jr, &user); CHKERRQ(ierr);
 
 			// copy global vector to solution vectors
-			ierr = JacResCopySolution(&jr, jr.gsol); CHKERRQ(ierr);
+			ierr 	= 	JacResCopySolution(&jr, jr.gsol); CHKERRQ(ierr);
 
 			// switch off initial guess flag
 			if(!JacResGetStep(&jr))
@@ -529,7 +519,7 @@ PetscErrorCode LaMEMLib(ModParam *IOparam)
 			}
 
 			// view nonlinear residual
-			ierr = JacResViewRes(&jr); CHKERRQ(ierr);
+			//ierr = JacResViewRes(&jr); CHKERRQ(ierr);
 
 			// check elastic properties remain constant - just to check the code (to be removed)
 			//ierr = CheckElasticProperties(&jr, &user); CHKERRQ(ierr);
@@ -547,8 +537,8 @@ PetscErrorCode LaMEMLib(ModParam *IOparam)
 			// apply background strain-rate "DWINDLAR" BC (Bob Shaw "Ship of Strangers")
 			//ierr = BCStretchGrid(&bc); CHKERRQ(ierr);
 
-		// update phase ratios taking into account actual free surface position
-		ierr = FreeSurfGetAirPhaseRatio(&surf); CHKERRQ(ierr);
+			// update phase ratios taking into account actual free surface position
+			ierr = FreeSurfGetAirPhaseRatio(&surf); CHKERRQ(ierr);
 
 
 			// exchange markers between the processors (after mesh advection)
@@ -560,23 +550,7 @@ PetscErrorCode LaMEMLib(ModParam *IOparam)
 
 			//// prescribe velocity if rotation benchmark
 			//if (user.msetup == ROTATION) {ierr = JacResSetVelRotation(&jr); CHKERRQ(ierr);}
-
-
-			// ACHTUNG !!! ??
-
-			ierr = PetscOptionsHasName(NULL, "-stop_linsol_fail", &flg); CHKERRQ(ierr);
-
-			if(flg == PETSC_TRUE)
-			{
-				ierr = SNESGetKSP(snes, &ksp); CHKERRQ(ierr);
-
-				ierr = KSPGetConvergedReason(ksp, &reason);
-
-				if(reason == KSP_DIVERGED_ITS)
-				{
-					stop = PETSC_TRUE;
-				}
-			}
+			
 		}
 
 //ierr = ShowValues(&jr, &user, 6); CHKERRQ(ierr);
