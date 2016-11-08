@@ -1,4 +1,4 @@
- Parsing input file : ./input/FallingBlock_mono_PenaltyDirect.dat 
+ Parsing input file : ./input/FallingBlock_mono_CoupledMG_RedundantCoarse.dat 
 # Adding PetscOption: -dt 1e-2 
 # Adding PetscOption: -pcmat_no_dev_proj 
 # Adding PetscOption: -FSSA 1.0 
@@ -6,15 +6,29 @@
 # Adding PetscOption: -restart 0 
 # Adding PetscOption: -snes_type ksponly 
 # Adding PetscOption: -js_ksp_type gmres 
-# Adding PetscOption: -js_ksp_max_it 25 
+# Adding PetscOption: -js_ksp_max_it 150 
+# Adding PetscOption: -js_ksp_min_it 1 
 # Adding PetscOption: -js_ksp_converged_reason 
 # Adding PetscOption: -js_ksp_monitor 
-# Adding PetscOption: -js_ksp_rtol 1e-4 
-# Adding PetscOption: -js_ksp_atol 1e-10 
+# Adding PetscOption: -js_ksp_rtol 1e-3 
+# Adding PetscOption: -js_ksp_atol 1e-5 
+# Adding PetscOption: -pstokes mg 
 # Adding PetscOption: -pcmat_type mono 
-# Adding PetscOption: -pcmat_pgamma 1e5 
-# Adding PetscOption: -jp_type user 
-# Adding PetscOption: -jp_pc_type lu 
+# Adding PetscOption: -jp_type mg 
+# Adding PetscOption: -gmg_pc_type mg 
+# Adding PetscOption: -gmg_pc_mg_levels 3 
+# Adding PetscOption: -gmg_pc_mg_galerkin 
+# Adding PetscOption: -gmg_pc_mg_type multiplicative 
+# Adding PetscOption: -gmg_pc_mg_cycle_type v 
+# Adding PetscOption: -gmg_pc_mg_log 
+# Adding PetscOption: -gmg_mg_levels_ksp_type richardson 
+# Adding PetscOption: -gmg_mg_levels_ksp_richardson_scale 0.5 
+# Adding PetscOption: -gmg_mg_levels_pc_type jacobi 
+# Adding PetscOption: -gmg_mg_levels_ksp_max_it 20 
+# Adding PetscOption: -crs_ksp_type preonly 
+# Adding PetscOption: -crs_pc_type redundant 
+# Adding PetscOption: -crs_pc_redundant_number 1 
+# Adding PetscOption: -crs_redundant_pc_factor_mat_solver_package superlu_dist 
 # Adding PetscOption: -out_pvd 1 
 # Adding PetscOption: -out_phase 1 
 # Adding PetscOption: -out_density 1 
@@ -34,10 +48,12 @@
 # Adding PetscOption: -objects_dump 
 -------------------------------------------------------------------------- 
                    Lithosphere and Mantle Evolution Model                   
-     Compiled: Date: Dec 21 2015 - Time: 14:55:05 	    
+     Compiled: Date: Nov  8 2016 - Time: 14:30:20 	    
 -------------------------------------------------------------------------- 
         STAGGERED-GRID FINITE DIFFERENCE CANONICAL IMPLEMENTATION           
 -------------------------------------------------------------------------- 
+Reading pushing parameters: 
+
 Reading softening laws: 
 
 Reading material parameters: 
@@ -61,15 +77,14 @@ Reading material parameters:
     Phase [1]: (temp ) alpha = 0 [ ], cp = 0 [ ], k = 0 [ ], A = 0 [ ] 
     
 --------------------------------------------------------------------------
- Total # of cpu's               : 2 
+ Total # of cpu's               : 1 
  Number of tracers/cell         : [2,2,2] 
  BC employed                    : BC.[LeftBound=1 RightBound=1; FrontBound=1 BackBound=1; LowerBound=1 UpperBound=1] 
  CFL timestep factor            : 0.500000 
- WARNING: Reference strain rate DII_ref is not defined. Use a non-dimensional reference value of DII_ref =1.000000 
- Processor grid  [nx, ny, nz]   : [1, 1, 2]
- Fine grid cells [nx, ny, nz]   : [16, 16, 16]
- Number of cells                :  4096
- Number of velocity DOF         :  13056
+ Processor grid  [nx, ny, nz]   : [1, 1, 1]
+ Fine grid cells [nx, ny, nz]   : [32, 32, 32]
+ Number of cells                :  32768
+ Number of velocity DOF         :  101376
  Maximum cell aspect cell ratio :  1.00000
  Starting marker initialization routine
  Marker setup employed [msetup] : block
@@ -79,21 +94,29 @@ Reading material parameters:
                          [bottom,top]=[0.25,0.75]; 
  Finished marker initialization routine
  Preconditioner matrix type     : monolithic
- Penalty parameter (pgamma)     : 1.000000e+05
  Excluding deviatoric projection from preconditioner
- Preconditioner type            : user-defined
+ Preconditioner type            : coupled Galerkin geometric multigrid
+ Total coarse grid size    [nx, ny, nz] : [8, 8, 8]
+ Coarse grid per processor [nx, ny, nz] : [8, 8, 8]
+ Number of multigrid levels             : 3
  Writing grid .pvd file to disk
  Writing AVD3D .pvd file to disk
  
 Time step 0 -------------------------------------------------------- 
 USING PICARD JACOBIAN for iteration 0, ||F||/||F0||=1.000000e+00 
     Residual norms for js_ solve.
-    0 KSP Residual norm 2.136002538217e+01 
-    1 KSP Residual norm 1.604711573013e-04 
-  Linear solve converged due to CONVERGED_RTOL iterations 1
+    0 KSP Residual norm 2.166222675068e+01 
+    1 KSP Residual norm 1.278200858595e+01 
+    2 KSP Residual norm 2.162085313229e+00 
+    3 KSP Residual norm 7.535454757929e-01 
+    4 KSP Residual norm 3.450505435308e-01 
+    5 KSP Residual norm 8.579089014106e-02 
+    6 KSP Residual norm 4.418650641674e-02 
+    7 KSP Residual norm 1.870520897041e-02 
+  Linear solve converged due to CONVERGED_RTOL iterations 7
  SNES Convergence Reason: maximum iterations reached
  Number of iterations : 1
- Nonlinear solve took 0.830725 (sec)
+ Nonlinear solve took 1.8587 (sec)
 ------------------------------------------
 Residual summary: 
   Continuity: 
@@ -101,60 +124,80 @@ Residual summary:
     Div_max  = -0.000000000000e+00 
     |Div|_2  = 0.000000000000e+00 
   Momentum: 
-    |mRes|_2 = 7.310266752999e+01 
+    |mRes|_2 = 2.095328136593e+02 
 ------------------------------------------
- Created new directory Timestep_000000_0.000000e+00 
-AVD generator complete in 3.1383e-02 (sec)
+ Writing to existing directory Timestep_000000_0.000000e+00 
+AVD generator complete in 3.3869e-01 (sec)
 AVD3D memory usage: 
-  points:  1.000000 [MB] 
-  cells:   2.975464 [MB] 
-  chains:  3.890640 [MB] 
-  total:   7.866104 [MB] 
+  points:  8.000000 [MB] 
+  cells:   21.542175 [MB] 
+  chains:  31.515633 [MB] 
+  total:   61.057808 [MB] 
  Time = 1e-05[ ], dt = 1e-05[ ] 
  Finished timestep 0 out of 1 
  
 Time step 1 -------------------------------------------------------- 
 USING PICARD JACOBIAN for iteration 0, ||F||/||F0||=1.000000e+00 
     Residual norms for js_ solve.
-    0 KSP Residual norm 3.031254616548e-04 
-    1 KSP Residual norm 4.587079108525e-09 
-  Linear solve converged due to CONVERGED_RTOL iterations 1
+    0 KSP Residual norm 3.615127975135e-02 
+    1 KSP Residual norm 1.225187920590e-02 
+    2 KSP Residual norm 6.871092249840e-03 
+    3 KSP Residual norm 2.115597247919e-03 
+    4 KSP Residual norm 1.077726314877e-03 
+    5 KSP Residual norm 4.795170555605e-04 
+    6 KSP Residual norm 1.125469581678e-04 
+    7 KSP Residual norm 6.089034712002e-05 
+    8 KSP Residual norm 2.223032400136e-05 
+  Linear solve converged due to CONVERGED_RTOL iterations 8
  SNES Convergence Reason: maximum iterations reached
  Number of iterations : 1
- Nonlinear solve took 0.785128 (sec)
+ Nonlinear solve took 1.75937 (sec)
 ------------------------------------------
 Residual summary: 
   Continuity: 
-    Div_min  = -5.556278795681e-06 
-    Div_max  = 5.556289191463e-06 
-    |Div|_2  = 2.112320274451e-04 
+    Div_min  = -1.258887310475e-03 
+    Div_max  = 1.258989889348e-03 
+    |Div|_2  = 1.706644286106e-02 
   Momentum: 
-    |mRes|_2 = 5.212906981504e-03 
+    |mRes|_2 = 2.778124401997e+00 
 ------------------------------------------
- Created new directory Timestep_000001_1.000000e-05 
-AVD generator complete in 3.5357e-02 (sec)
+ Writing to existing directory Timestep_000001_1.000000e-05 
+AVD generator complete in 4.6337e-01 (sec)
 AVD3D memory usage: 
-  points:  1.000000 [MB] 
-  cells:   2.975464 [MB] 
-  chains:  4.353157 [MB] 
-  total:   8.328621 [MB] 
+  points:  8.000000 [MB] 
+  cells:   21.542175 [MB] 
+  chains:  35.192192 [MB] 
+  total:   64.734367 [MB] 
  Time = 2e-05[ ], dt = 1e-05[ ] 
  Finished timestep 1 out of 1 
  
- Simulation took 1.78191 (sec) 
+ Simulation took 5.01603 (sec) 
 #PETSc Option Table entries:
 -AddRandomNoiseParticles 0
 -FSSA 1.0
--ParamFile ./input/FallingBlock_mono_PenaltyDirect.dat
+-ParamFile ./input/FallingBlock_mono_CoupledMG_RedundantCoarse.dat
+-crs_ksp_type preonly
+-crs_pc_redundant_number 1
+-crs_pc_type redundant
+-crs_redundant_pc_factor_mat_solver_package superlu_dist
 -dt 1e-2
--jp_pc_factor_mat_solver_package mumps
--jp_pc_type lu
--jp_type user
--js_ksp_atol 1e-10
+-gmg_mg_levels_ksp_max_it 20
+-gmg_mg_levels_ksp_richardson_scale 0.5
+-gmg_mg_levels_ksp_type richardson
+-gmg_mg_levels_pc_type jacobi
+-gmg_pc_mg_cycle_type v
+-gmg_pc_mg_galerkin
+-gmg_pc_mg_levels 3
+-gmg_pc_mg_log
+-gmg_pc_mg_type multiplicative
+-gmg_pc_type mg
+-jp_type mg
+-js_ksp_atol 1e-5
 -js_ksp_converged_reason
--js_ksp_max_it 25
+-js_ksp_max_it 150
+-js_ksp_min_it 1
 -js_ksp_monitor
--js_ksp_rtol 1e-4
+-js_ksp_rtol 1e-3
 -js_ksp_type gmres
 -objects_dump
 -options_left
@@ -175,9 +218,11 @@ AVD3D memory usage:
 -out_temperature 1
 -out_velocity 1
 -pcmat_no_dev_proj
--pcmat_pgamma 1e5
 -pcmat_type mono
+-pstokes mg
 -restart 0
 -snes_type ksponly
 #End of PETSc Option Table entries
-There are no unused options.
+There are 2 unused database options. They are:
+Option left: name:-js_ksp_min_it value: 1
+Option left: name:-pstokes value: mg

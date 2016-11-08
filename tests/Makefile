@@ -1,37 +1,9 @@
+# Two functions:
+#  1) clean test directory (make clean)
+#  2) call python script that runs the tests using the pyTestHarness framework by Dave May & Patrick Sanan
 
-# Define compilation mode
-# deb - debug 
-# opt - optimized (default)
-
-mode = opt
-
-.PHONY : builddir check
-check : builddir
-ifneq ($(mode), deb)
-ifneq ($(mode), opt)
-	@echo "............................................."
-	@echo "Error! mode="$(mode)" is invalid"
-	@echo "Should be either mode=deb or mode=opt"
-	@echo "............................................."
-	@exit 1
-endif
-endif
-ifeq ($(mode), deb)
-	@echo "............................................."
-	@echo "...... Running tests in debug mode .........."
-	@echo "............................................."
-	@ln -sf ../bin/deb/LaMEM ../bin/LaMEM
-	@rm -rf Timestep*
-	@export PETSC_DIR=${PETSC_DEB}; ./scripts/ExecuteTests.pl
-endif
-ifeq ($(mode), opt)
-	@echo "............................................."
-	@echo "..... Running tests in optimized mode ......."
-	@echo "............................................."
-	@ln -sf ../bin/opt/LaMEM ../bin/LaMEM
-	@rm -rf Timestep*
-	@export PETSC_DIR=${PETSC_OPT}; ./scripts/ExecuteTests.pl
-endif
+test: 
+	@python runLaMEM_Tests.py
 
 .PHONY : clean
 clean :
@@ -54,12 +26,3 @@ clean :
 	@rm -rf ./Breakpoint
 	@rm -f false
 	@rm -f ../bin/LaMEM
-
-output :
-	@if [ ! -d $@ ]; then mkdir $@; fi
-	
-log :
-	@if [ ! -d $@ ]; then mkdir $@; fi
-
-# build directories
-builddir : output log
