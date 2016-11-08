@@ -24,5 +24,9 @@ clean :
 	@rm -rf ./Timestep*
 	@rm -rf ./Initial*
 	@rm -rf ./Breakpoint
+	@rm -rf t*/Breapoint
+	@rm -rf t*/MatlabInputParticles*
+	@rm -rf t*/*.vtr
+	@rm -rf t*/*.pvd
 	@rm -f false
-	@rm -f ../bin/LaMEM
+	@rm -rf t*/ProcessorPartitioning*.*
