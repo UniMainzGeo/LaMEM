@@ -35,7 +35,7 @@ def run_unittests_example1():
 
   # Register all non-MATLAB tests
   registeredTests = [ FB1.test_a(), FB1.test_b(), FB1.test_c(), FB1.test_d(),
-                      FB2.test_a(), Loc1.test_a()];
+                      FB2.test_a(), Loc1.test_a(), Loc1.test_b()];
   
   # Add matlab tests (There should be a better way to do this for a range of files at the same time)
   if os.environ.get('MATLAB') != None:   
