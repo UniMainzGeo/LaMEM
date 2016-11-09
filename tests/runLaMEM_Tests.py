@@ -8,28 +8,22 @@ import argparse
 import pyTestHarness.unittest as pth
 import pyTestHarness.launch as launch
 
-def cmd_exists(cmd):
-    return subprocess.call("type " + cmd, shell=True, 
-        stdout=subprocess.PIPE, stderr=subprocess.PIPE) == 0
-
-#os.system('$MATLAB -nojvm -r "disp(1+1); exit"')
-
 # Import separate tests 
 sys.path.append(os.path.join(os.environ['PWD'], 't1_FB1_Direct'))
 sys.path.append(os.path.join(os.environ['PWD'], 't2_FB2_MG'))
 sys.path.append(os.path.join(os.environ['PWD'], 't4_Loc'))
 
 # add matlab-tests if matlab is available as ENVIRONMENTAL variable MATLAB
-if cmd_exists("$MATLAB") == True:
+if os.environ.get('MATLAB') != None:  
     sys.path.append(os.path.join(os.environ['PWD'], 't3_SubductionMATLABinput'))
 else:
-    print('MATLAB tests cannot be executed, as the environmental variable $MATLAB cannot be set')
+    print('MATLAB tests cannot be executed, as the environmental variable $MATLAB is not set')
      
 import test_1_FB1 as FB1
 import test_2_FB2 as FB2
 import test_4_localization as Loc1
 
-if cmd_exists("$MATLAB") == True:
+if os.environ.get('MATLAB') != None:
   import test_3_Subduction1 as Sub1 # import test that requires MATLAB
 
 
@@ -44,7 +38,7 @@ def run_unittests_example1():
                       FB2.test_a(), Loc1.test_a()];
   
   # Add matlab tests (There should be a better way to do this for a range of files at the same time)
-  if cmd_exists("$MATLAB") == True:   
+  if os.environ.get('MATLAB') != None:   
     registeredTests.append(Sub1.test_a());
     registeredTests.append(Sub1.test_b());
     registeredTests.append(Sub1.test_c());
