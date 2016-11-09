@@ -21,11 +21,13 @@ clean :
 	@rm -f *.dat
 	@rm -f *.bin
 	@rm -f *.xml
+	@rm -rf ./Timestep*.*
 	@rm -rf ./Timestep*
 	@rm -rf ./Initial*
 	@rm -rf ./Breakpoint
 	@rm -rf t*/Breapoint
 	@rm -rf t*/MatlabInputParticles*
+	@rm -rf t*/Timestep*
 	@rm -rf t*/*.vtr
 	@rm -rf t*/*.pvd
 	@rm -f false

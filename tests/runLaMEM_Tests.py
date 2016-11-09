@@ -17,6 +17,7 @@ def cmd_exists(cmd):
 # Import separate tests 
 sys.path.append(os.path.join(os.environ['PWD'], 't1_FB1_Direct'))
 sys.path.append(os.path.join(os.environ['PWD'], 't2_FB2_MG'))
+sys.path.append(os.path.join(os.environ['PWD'], 't4_Loc'))
 
 # add matlab-tests if matlab is available as ENVIRONMENTAL variable MATLAB
 if cmd_exists("$MATLAB") == True:
@@ -26,6 +27,7 @@ else:
      
 import test_1_FB1 as FB1
 import test_2_FB2 as FB2
+import test_4_localization as Loc1
 
 if cmd_exists("$MATLAB") == True:
   import test_3_Subduction1 as Sub1 # import test that requires MATLAB
@@ -39,7 +41,7 @@ def run_unittests_example1():
 
   # Register all non-MATLAB tests
   registeredTests = [ FB1.test_a(), FB1.test_b(), FB1.test_c(), FB1.test_d(),
-                      FB2.test_a()];
+                      FB2.test_a(), Loc1.test_a()];
   
   # Add matlab tests (There should be a better way to do this for a range of files at the same time)
   if cmd_exists("$MATLAB") == True:   
