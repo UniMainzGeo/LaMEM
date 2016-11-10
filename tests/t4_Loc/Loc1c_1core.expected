@@ -1,0 +1,942 @@
+ Parsing input file : ./t4_Loc/localization.dat 
+# Adding PetscOption: -skip_press_shift 
+# Adding PetscOption: -open_top_bound 
+# Adding PetscOption: -ExxNumPeriods 1 
+# Adding PetscOption: -ExxStrainRates -1e-15 
+# Adding PetscOption: -dt 1.5e-3 
+# Adding PetscOption: -H_layer 10 
+# Adding PetscOption: -H_bottom 0 
+# Adding PetscOption: -Inclusion_use 
+# Adding PetscOption: -Inclusion_size 1 
+# Adding PetscOption: -snes_ksp_ew 
+# Adding PetscOption: -snes_ksp_ew_rtolmax 1e-1 
+# Adding PetscOption: -snes_monitor 
+# Adding PetscOption: -snes_atol 1e-7 
+# Adding PetscOption: -snes_rtol 1e-4 
+# Adding PetscOption: -snes_stol 1e-16 
+# Adding PetscOption: -snes_max_it 50 
+# Adding PetscOption: -snes_max_funcs 500000 
+# Adding PetscOption: -snes_max_linear_solve_fail 10000 
+# Adding PetscOption: -snes_PicardSwitchToNewton_rtol 1e-1 
+# Adding PetscOption: -snes_NewtonSwitchToPicard_it 20 
+# Adding PetscOption: -snes_NewtonSwitchToPicard_rtol 1.1 
+# Adding PetscOption: -js_ksp_type fgmres 
+# Adding PetscOption: -js_ksp_max_it 50 
+# Adding PetscOption: -js_ksp_converged_reason 
+# Adding PetscOption: -js_ksp_rtol 1e-10 
+# Adding PetscOption: -js_ksp_atol 1e-14 
+# Adding PetscOption: -pcmat_type mono 
+# Adding PetscOption: -pcmat_pgamma 1e3 
+# Adding PetscOption: -jp_type user 
+# Adding PetscOption: -jp_pc_type lu 
+# Adding PetscOption: -jp_pc_factor_mat_solver_package mumps 
+# Adding PetscOption: -restart 0 
+# Adding PetscOption: -save_breakpoints 0 
+# Adding PetscOption: -objects_dump 
+# Adding PetscOption: -restart 0 
+# Adding PetscOption: -out_pvd 1 
+# Adding PetscOption: -out_phase 1 
+# Adding PetscOption: -out_density 1 
+# Adding PetscOption: -out_viscosity 1 
+# Adding PetscOption: -out_velocity 1 
+# Adding PetscOption: -out_pressure 1 
+# Adding PetscOption: -out_temperature 1 
+# Adding PetscOption: -out_dev_stress 1 
+# Adding PetscOption: -out_j2_dev_stress 1 
+# Adding PetscOption: -out_strain_rate 1 
+# Adding PetscOption: -out_j2_strain_rate 1 
+# Adding PetscOption: -out_plast_strain 1 
+# Adding PetscOption: -out_plast_strain 1 
+# Adding PetscOption: -out_moment_res 1 
+# Adding PetscOption: -out_cont_res 1 
+# Adding PetscOption: -AVDPhaseViewer 0 
+-------------------------------------------------------------------------- 
+                   Lithosphere and Mantle Evolution Model                   
+     Compiled: Date: Nov  8 2016 - Time: 14:30:20 	    
+-------------------------------------------------------------------------- 
+        STAGGERED-GRID FINITE DIFFERENCE CANONICAL IMPLEMENTATION           
+-------------------------------------------------------------------------- 
+ Characteristic Length      = 10000 [m] 
+ Characteristic Viscosity   = 1e+20 [Pa*s] 
+ Characteristic Temperature = 1 [C/K] 
+ Characteristic Stress      = 1e+08 [Pa] 
+--------------------------------------------------------------------------
+Reading pushing parameters: 
+
+Reading softening laws: 
+
+SoftLaw [0]: A = 0.25, APS1 = 1e-09, APS2 = 0.001 
+Reading material parameters: 
+
+    Phase [0]: rho = 2700 [kg/m3], eta = 1e+21 [Pa*s], beta = 0 [1/Pa]
+    Phase [0]: (diff ) Bd = 5e-22 [1/(Pa*s)], Ed = 0 [J/mol], Vd = 0 [m3/mol] 
+    Phase [0]: (disl ) Bn = 0 [1/(Pa^n*s)], En = 0 [J/mol], Vn = 0 [m3/mol], n = 0 [ ] 
+    Phase [0]: (peirl) Bp = 0 [1/s], Ep = 0 [J/mol], Vp = 0 [m3/mol], taup = 0 [Pa], gamma = 0 [ ], q = 0 [ ] 
+    Phase [0]: (elast) G = 5e+10 [Pa], K = 0 [Pa], Kp = 0 [ ] 
+    Phase [0]: (plast) cohesion = 5e+07 [Pa], friction angle = 30 [deg] 
+    Phase [0]: (sweak) cohesion SoftLaw = 0 [ ], friction SoftLaw = 0 [ ] 
+    Phase [0]: (temp ) alpha = 0 [1/K], cp = 0 [J/kg/K], k = 0 [W/m/K], A = 0 [W/m3] 
+    
+    Phase [1]: rho = 2700 [kg/m3], eta = 1e+24 [Pa*s], beta = 0 [1/Pa]
+    Phase [1]: (diff ) Bd = 5e-25 [1/(Pa*s)], Ed = 0 [J/mol], Vd = 0 [m3/mol] 
+    Phase [1]: (disl ) Bn = 0 [1/(Pa^n*s)], En = 0 [J/mol], Vn = 0 [m3/mol], n = 0 [ ] 
+    Phase [1]: (peirl) Bp = 0 [1/s], Ep = 0 [J/mol], Vp = 0 [m3/mol], taup = 0 [Pa], gamma = 0 [ ], q = 0 [ ] 
+    Phase [1]: (elast) G = 5e+10 [Pa], K = 0 [Pa], Kp = 0 [ ] 
+    Phase [1]: (plast) cohesion = 5e+07 [Pa], friction angle = 30 [deg] 
+    Phase [1]: (sweak) cohesion SoftLaw = 0 [ ], friction SoftLaw = 0 [ ] 
+    Phase [1]: (temp ) alpha = 0 [1/K], cp = 0 [J/kg/K], k = 0 [W/m/K], A = 0 [W/m3] 
+    
+    Phase [2]: rho = 100 [kg/m3], eta = 1e+21 [Pa*s], beta = 0 [1/Pa]
+    Phase [2]: (diff ) Bd = 5e-22 [1/(Pa*s)], Ed = 0 [J/mol], Vd = 0 [m3/mol] 
+    Phase [2]: (disl ) Bn = 0 [1/(Pa^n*s)], En = 0 [J/mol], Vn = 0 [m3/mol], n = 0 [ ] 
+    Phase [2]: (peirl) Bp = 0 [1/s], Ep = 0 [J/mol], Vp = 0 [m3/mol], taup = 0 [Pa], gamma = 0 [ ], q = 0 [ ] 
+    Phase [2]: (elast) G = 5e+10 [Pa], K = 0 [Pa], Kp = 0 [ ] 
+    Phase [2]: (plast) cohesion = 5e+07 [Pa], friction angle = 30 [deg] 
+    Phase [2]: (sweak) cohesion SoftLaw = 0 [ ], friction SoftLaw = 0 [ ] 
+    Phase [2]: (temp ) alpha = 0 [1/K], cp = 0 [J/kg/K], k = 0 [W/m/K], A = 0 [W/m3] 
+    
+--------------------------------------------------------------------------
+ Total # of cpu's               : 1 
+ Number of tracers/cell         : [5,5,5] 
+ Initial time step              : 0.0015 [MYr] 
+ BC employed                    : BC.[LeftBound=1 RightBound=1; FrontBound=1 BackBound=1; LowerBound=1 UpperBound=1] 
+ CFL timestep factor            : 0.100000 
+ Processor grid  [nx, ny, nz]   : [1, 1, 1]
+ Fine grid cells [nx, ny, nz]   : [64, 2, 16]
+ Number of cells                :  2048
+ Number of velocity DOF         :  7328
+ Maximum cell aspect cell ratio :  3.00000
+ Starting marker initialization routine
+ Marker setup employed [msetup] : bands
+ Finished marker initialization routine
+ Preconditioner matrix type     : monolithic
+ Penalty parameter (pgamma)     : 1.000000e+03
+ Preconditioner type            : user-defined
+ Writing grid .pvd file to disk
+ 
+Time step 0 -------------------------------------------------------- 
+  0 SNES Function norm 9.577959426281e+01 
+USING PICARD JACOBIAN for iteration 0, ||F||/||F0||=1.000000e+00 
+  Linear solve converged due to CONVERGED_RTOL iterations 1
+  1 SNES Function norm 5.886720611037e-02 
+=====================================================
+SWITCH TO MMFD JACOBIAN: ||F||/||F0||=6.146111e-04, PicIt=5 
+=====================================================
+USING MMFD JACOBIAN for iteration 1, ||F||/||F0||=6.146111e-04 
+  Linear solve converged due to CONVERGED_RTOL iterations 2
+  2 SNES Function norm 1.663002135370e-07 
+ SNES Convergence Reason: ||F|| < rtol*||F_initial|| 
+ Number of iterations : 2
+ Nonlinear solve took 0.318376 (sec)
+------------------------------------------
+Residual summary: 
+  Continuity: 
+    Div_min  = -3.261717501993e-12 
+    Div_max  = 1.086654204119e-12 
+    |Div|_2  = 3.340533598510e-11 
+  Momentum: 
+    |mRes|_2 = 1.663002101819e-07 
+------------------------------------------
+ Writing to existing directory Timestep_000000_0.000000e+00 
+ Time = 0.00165[Myr], dt = 0.00165[Myr] 
+ Finished timestep 0 out of 19 
+ 
+Time step 1 -------------------------------------------------------- 
+  0 SNES Function norm 3.982732699799e+00 
+USING PICARD JACOBIAN for iteration 0, ||F||/||F0||=1.000000e+00 
+  Linear solve converged due to CONVERGED_RTOL iterations 1
+  1 SNES Function norm 8.826143858404e-05 
+ SNES Convergence Reason: ||F|| < rtol*||F_initial|| 
+ Number of iterations : 1
+ Nonlinear solve took 0.10727 (sec)
+------------------------------------------
+Residual summary: 
+  Continuity: 
+    Div_min  = 1.264063286476e-06 
+    Div_max  = 6.073145772487e-06 
+    |Div|_2  = 8.826143856350e-05 
+  Momentum: 
+    |mRes|_2 = 1.903970148759e-09 
+------------------------------------------
+ Writing to existing directory Timestep_000001_1.650000e-03 
+ Time = 0.003465[Myr], dt = 0.001815[Myr] 
+ Finished timestep 1 out of 19 
+ 
+Time step 2 -------------------------------------------------------- 
+  0 SNES Function norm 4.952275182302e+00 
+USING PICARD JACOBIAN for iteration 0, ||F||/||F0||=1.000000e+00 
+  Linear solve converged due to CONVERGED_RTOL iterations 1
+  1 SNES Function norm 7.526683567938e-05 
+ SNES Convergence Reason: ||F|| < rtol*||F_initial|| 
+ Number of iterations : 1
+ Nonlinear solve took 0.107342 (sec)
+------------------------------------------
+Residual summary: 
+  Continuity: 
+    Div_min  = 4.960279013624e-07 
+    Div_max  = 6.849541923917e-06 
+    |Div|_2  = 7.526683567926e-05 
+  Momentum: 
+    |mRes|_2 = 1.380619999710e-10 
+------------------------------------------
+ Writing to existing directory Timestep_000002_3.465000e-03 
+ Time = 0.0054615[Myr], dt = 0.0019965[Myr] 
+ Finished timestep 2 out of 19 
+ 
+Time step 3 -------------------------------------------------------- 
+  0 SNES Function norm 5.978179793891e+00 
+USING PICARD JACOBIAN for iteration 0, ||F||/||F0||=1.000000e+00 
+  Linear solve converged due to CONVERGED_RTOL iterations 1
+  1 SNES Function norm 7.347018077289e-05 
+ SNES Convergence Reason: ||F|| < rtol*||F_initial|| 
+ Number of iterations : 1
+ Nonlinear solve took 0.104853 (sec)
+------------------------------------------
+Residual summary: 
+  Continuity: 
+    Div_min  = 1.266950411247e-07 
+    Div_max  = 7.401877602366e-06 
+    |Div|_2  = 7.347018077287e-05 
+  Momentum: 
+    |mRes|_2 = 4.313482239856e-11 
+------------------------------------------
+ Writing to existing directory Timestep_000003_5.461500e-03 
+ Time = 0.00765765[Myr], dt = 0.00219615[Myr] 
+ Finished timestep 3 out of 19 
+ 
+Time step 4 -------------------------------------------------------- 
+  0 SNES Function norm 6.987956573068e+00 
+USING PICARD JACOBIAN for iteration 0, ||F||/||F0||=1.000000e+00 
+  Linear solve converged due to CONVERGED_RTOL iterations 1
+  1 SNES Function norm 7.291848509606e-05 
+ SNES Convergence Reason: ||F|| < rtol*||F_initial|| 
+ Number of iterations : 1
+ Nonlinear solve took 0.109193 (sec)
+------------------------------------------
+Residual summary: 
+  Continuity: 
+    Div_min  = 2.833716289754e-08 
+    Div_max  = 7.803167702655e-06 
+    |Div|_2  = 7.291848509605e-05 
+  Momentum: 
+    |mRes|_2 = 3.168809491163e-11 
+------------------------------------------
+ Writing to existing directory Timestep_000004_7.657650e-03 
+ Time = 0.0100734[Myr], dt = 0.00241577[Myr] 
+ Finished timestep 4 out of 19 
+ 
+Time step 5 -------------------------------------------------------- 
+  0 SNES Function norm 8.026309003562e+00 
+USING PICARD JACOBIAN for iteration 0, ||F||/||F0||=1.000000e+00 
+  Linear solve converged due to CONVERGED_RTOL iterations 1
+  1 SNES Function norm 7.258878373546e-05 
+ SNES Convergence Reason: ||F|| < rtol*||F_initial|| 
+ Number of iterations : 1
+ Nonlinear solve took 0.105169 (sec)
+------------------------------------------
+Residual summary: 
+  Continuity: 
+    Div_min  = 3.505658705710e-09 
+    Div_max  = 8.142607759658e-06 
+    |Div|_2  = 7.258878373546e-05 
+  Momentum: 
+    |mRes|_2 = 2.791737667396e-11 
+------------------------------------------
+ Writing to existing directory Timestep_000005_1.007342e-02 
+ Time = 0.0127308[Myr], dt = 0.00265734[Myr] 
+ Finished timestep 5 out of 19 
+ 
+Time step 6 -------------------------------------------------------- 
+  0 SNES Function norm 9.082772695592e+00 
+USING PICARD JACOBIAN for iteration 0, ||F||/||F0||=1.000000e+00 
+  Linear solve converged due to CONVERGED_RTOL iterations 1
+  1 SNES Function norm 7.233244876936e-05 
+ SNES Convergence Reason: ||F|| < rtol*||F_initial|| 
+ Number of iterations : 1
+ Nonlinear solve took 0.105142 (sec)
+------------------------------------------
+Residual summary: 
+  Continuity: 
+    Div_min  = -1.973010371184e-09 
+    Div_max  = 8.436609714146e-06 
+    |Div|_2  = 7.233244876936e-05 
+  Momentum: 
+    |mRes|_2 = 2.639252349594e-11 
+------------------------------------------
+ Writing to existing directory Timestep_000006_1.273076e-02 
+ Time = 0.0156538[Myr], dt = 0.00292308[Myr] 
+ Finished timestep 6 out of 19 
+ 
+Time step 7 -------------------------------------------------------- 
+  0 SNES Function norm 1.016396675211e+01 
+USING PICARD JACOBIAN for iteration 0, ||F||/||F0||=1.000000e+00 
+  Linear solve converged due to CONVERGED_RTOL iterations 1
+  1 SNES Function norm 7.210602596311e-05 
+ SNES Convergence Reason: ||F|| < rtol*||F_initial|| 
+ Number of iterations : 1
+ Nonlinear solve took 0.105536 (sec)
+------------------------------------------
+Residual summary: 
+  Continuity: 
+    Div_min  = -2.783995628540e-09 
+    Div_max  = 8.712791342592e-06 
+    |Div|_2  = 7.210602596311e-05 
+  Momentum: 
+    |mRes|_2 = 2.532410282004e-11 
+------------------------------------------
+ Writing to existing directory Timestep_000007_1.565383e-02 
+ Time = 0.0188692[Myr], dt = 0.00321538[Myr] 
+ Finished timestep 7 out of 19 
+ 
+Time step 8 -------------------------------------------------------- 
+  0 SNES Function norm 1.128239298238e+01 
+USING PICARD JACOBIAN for iteration 0, ||F||/||F0||=1.000000e+00 
+  Linear solve converged due to CONVERGED_RTOL iterations 1
+  1 SNES Function norm 7.188046454737e-05 
+ SNES Convergence Reason: ||F|| < rtol*||F_initial|| 
+ Number of iterations : 1
+ Nonlinear solve took 0.11132 (sec)
+------------------------------------------
+Residual summary: 
+  Continuity: 
+    Div_min  = -2.590566759589e-09 
+    Div_max  = 8.970415604309e-06 
+    |Div|_2  = 7.188046454736e-05 
+  Momentum: 
+    |mRes|_2 = 2.517470241237e-11 
+------------------------------------------
+ Writing to existing directory Timestep_000008_1.886922e-02 
+ Time = 0.0224061[Myr], dt = 0.00353692[Myr] 
+ Finished timestep 8 out of 19 
+ 
+Time step 9 -------------------------------------------------------- 
+  0 SNES Function norm 1.245427653505e+01 
+USING PICARD JACOBIAN for iteration 0, ||F||/||F0||=1.000000e+00 
+  Linear solve converged due to CONVERGED_RTOL iterations 1
+  1 SNES Function norm 7.164953759718e-05 
+ SNES Convergence Reason: ||F|| < rtol*||F_initial|| 
+ Number of iterations : 1
+ Nonlinear solve took 0.107798 (sec)
+------------------------------------------
+Residual summary: 
+  Continuity: 
+    Div_min  = -2.185289840902e-09 
+    Div_max  = 9.256455044471e-06 
+    |Div|_2  = 7.164953759717e-05 
+  Momentum: 
+    |mRes|_2 = 2.525381975285e-11 
+------------------------------------------
+ Writing to existing directory Timestep_000009_2.240614e-02 
+ Time = 0.0262968[Myr], dt = 0.00389061[Myr] 
+ Finished timestep 9 out of 19 
+ 
+Time step 10 -------------------------------------------------------- 
+  0 SNES Function norm 1.369135744895e+01 
+USING PICARD JACOBIAN for iteration 0, ||F||/||F0||=1.000000e+00 
+  Linear solve converged due to CONVERGED_RTOL iterations 1
+  1 SNES Function norm 7.139540719546e-05 
+ SNES Convergence Reason: ||F|| < rtol*||F_initial|| 
+ Number of iterations : 1
+ Nonlinear solve took 0.10432 (sec)
+------------------------------------------
+Residual summary: 
+  Continuity: 
+    Div_min  = -1.828072903774e-09 
+    Div_max  = 9.489114639535e-06 
+    |Div|_2  = 7.139540719545e-05 
+  Momentum: 
+    |mRes|_2 = 2.460150610202e-11 
+------------------------------------------
+ Writing to existing directory Timestep_000010_2.629675e-02 
+ Time = 0.0305764[Myr], dt = 0.00427968[Myr] 
+ Finished timestep 10 out of 19 
+ 
+Time step 11 -------------------------------------------------------- 
+  0 SNES Function norm 1.500904321194e+01 
+USING PICARD JACOBIAN for iteration 0, ||F||/||F0||=1.000000e+00 
+  Linear solve converged due to CONVERGED_RTOL iterations 1
+  1 SNES Function norm 7.111536911837e-05 
+ SNES Convergence Reason: ||F|| < rtol*||F_initial|| 
+ Number of iterations : 1
+ Nonlinear solve took 0.10479 (sec)
+------------------------------------------
+Residual summary: 
+  Continuity: 
+    Div_min  = -1.493204503404e-09 
+    Div_max  = 9.723740360080e-06 
+    |Div|_2  = 7.111536911836e-05 
+  Momentum: 
+    |mRes|_2 = 2.516690976550e-11 
+------------------------------------------
+ Writing to existing directory Timestep_000011_3.057643e-02 
+ Time = 0.0352841[Myr], dt = 0.00470764[Myr] 
+ Finished timestep 11 out of 19 
+ 
+Time step 12 -------------------------------------------------------- 
+  0 SNES Function norm 1.546523570745e+01 
+USING PICARD JACOBIAN for iteration 0, ||F||/||F0||=1.000000e+00 
+  Linear solve converged due to CONVERGED_RTOL iterations 1
+  1 SNES Function norm 1.838839875449e+00 
+USING PICARD JACOBIAN for iteration 1, ||F||/||F0||=1.189015e-01 
+  Linear solve converged due to CONVERGED_RTOL iterations 1
+  2 SNES Function norm 1.630257000518e-06 
+ SNES Convergence Reason: ||F|| < rtol*||F_initial|| 
+ Number of iterations : 2
+ Nonlinear solve took 0.189708 (sec)
+------------------------------------------
+Residual summary: 
+  Continuity: 
+    Div_min  = -2.681186809855e-08 
+    Div_max  = 1.878878124536e-07 
+    |Div|_2  = 1.630257000406e-06 
+  Momentum: 
+    |mRes|_2 = 1.904857273095e-11 
+------------------------------------------
+ Writing to existing directory Timestep_000012_3.528407e-02 
+ Time = 0.0404625[Myr], dt = 0.00517841[Myr] 
+ Finished timestep 12 out of 19 
+ 
+Time step 13 -------------------------------------------------------- 
+  0 SNES Function norm 1.477504874061e+01 
+USING PICARD JACOBIAN for iteration 0, ||F||/||F0||=1.000000e+00 
+  Linear solve converged due to CONVERGED_RTOL iterations 1
+  1 SNES Function norm 5.253224298367e+00 
+USING PICARD JACOBIAN for iteration 1, ||F||/||F0||=3.555470e-01 
+  Linear solve converged due to CONVERGED_RTOL iterations 1
+  2 SNES Function norm 2.652235098578e+00 
+USING PICARD JACOBIAN for iteration 2, ||F||/||F0||=1.795077e-01 
+  Linear solve converged due to CONVERGED_RTOL iterations 1
+  3 SNES Function norm 1.319385281738e+00 
+=====================================================
+SWITCH TO MMFD JACOBIAN: ||F||/||F0||=8.929820e-02, PicIt=5 
+=====================================================
+USING MMFD JACOBIAN for iteration 3, ||F||/||F0||=8.929820e-02 
+  Linear solve converged due to CONVERGED_RTOL iterations 3
+  4 SNES Function norm 4.852894907186e-01 
+USING MMFD JACOBIAN for iteration 4, ||F||/||F0||=3.284520e-02 
+  Linear solve converged due to CONVERGED_RTOL iterations 2
+  5 SNES Function norm 2.855110885201e-02 
+USING MMFD JACOBIAN for iteration 5, ||F||/||F0||=1.932387e-03 
+  Linear solve converged due to CONVERGED_RTOL iterations 8
+  6 SNES Function norm 1.614682560905e-04 
+ SNES Convergence Reason: ||F|| < rtol*||F_initial|| 
+ Number of iterations : 6
+ Nonlinear solve took 0.859627 (sec)
+------------------------------------------
+Residual summary: 
+  Continuity: 
+    Div_min  = -6.055790823336e-09 
+    Div_max  = 3.469834622318e-09 
+    |Div|_2  = 2.309502686026e-08 
+  Momentum: 
+    |mRes|_2 = 1.614682544389e-04 
+------------------------------------------
+ Writing to existing directory Timestep_000013_4.046248e-02 
+ Time = 0.0461587[Myr], dt = 0.00569625[Myr] 
+ Finished timestep 13 out of 19 
+ 
+Time step 14 -------------------------------------------------------- 
+  0 SNES Function norm 1.891123683359e+01 
+USING PICARD JACOBIAN for iteration 0, ||F||/||F0||=1.000000e+00 
+  Linear solve converged due to CONVERGED_RTOL iterations 1
+  1 SNES Function norm 8.904372173268e+00 
+USING PICARD JACOBIAN for iteration 1, ||F||/||F0||=4.708509e-01 
+  Linear solve converged due to CONVERGED_RTOL iterations 1
+  2 SNES Function norm 2.262024717790e+00 
+USING PICARD JACOBIAN for iteration 2, ||F||/||F0||=1.196127e-01 
+  Linear solve converged due to CONVERGED_RTOL iterations 1
+  3 SNES Function norm 3.927583247854e-01 
+=====================================================
+SWITCH TO MMFD JACOBIAN: ||F||/||F0||=2.076852e-02, PicIt=5 
+=====================================================
+USING MMFD JACOBIAN for iteration 3, ||F||/||F0||=2.076852e-02 
+  Linear solve converged due to CONVERGED_RTOL iterations 4
+  4 SNES Function norm 2.090145487968e-02 
+USING MMFD JACOBIAN for iteration 4, ||F||/||F0||=1.105240e-03 
+  Linear solve converged due to CONVERGED_RTOL iterations 8
+  5 SNES Function norm 1.333285849560e-04 
+ SNES Convergence Reason: ||F|| < rtol*||F_initial|| 
+ Number of iterations : 5
+ Nonlinear solve took 0.751227 (sec)
+------------------------------------------
+Residual summary: 
+  Continuity: 
+    Div_min  = -2.529941894869e-09 
+    Div_max  = 3.397451364294e-09 
+    |Div|_2  = 1.635505626858e-08 
+  Momentum: 
+    |mRes|_2 = 5.333285839529e-04 
+------------------------------------------
+ Writing to existing directory Timestep_000014_4.615872e-02 
+ Time = 0.0524246[Myr], dt = 0.00626587[Myr] 
+ Finished timestep 14 out of 19 
+ 
+Time step 15 -------------------------------------------------------- 
+  0 SNES Function norm 2.304686044867e+01 
+USING PICARD JACOBIAN for iteration 0, ||F||/||F0||=1.000000e+00 
+  Linear solve converged due to CONVERGED_RTOL iterations 1
+  1 SNES Function norm 7.374906467128e+00 
+USING PICARD JACOBIAN for iteration 1, ||F||/||F0||=3.199961e-01 
+  Linear solve converged due to CONVERGED_RTOL iterations 1
+  2 SNES Function norm 2.971146790536e+00 
+USING PICARD JACOBIAN for iteration 2, ||F||/||F0||=1.289176e-01 
+  Linear solve converged due to CONVERGED_RTOL iterations 1
+  3 SNES Function norm 1.637414428338e+00 
+=====================================================
+SWITCH TO MMFD JACOBIAN: ||F||/||F0||=7.104718e-02, PicIt=5 
+=====================================================
+USING MMFD JACOBIAN for iteration 3, ||F||/||F0||=7.104718e-02 
+  Linear solve converged due to CONVERGED_RTOL iterations 18
+  4 SNES Function norm 4.570355337795e+00 
+USING MMFD JACOBIAN for iteration 4, ||F||/||F0||=1.983071e-01 
+  Linear solve converged due to CONVERGED_RTOL iterations 3
+  5 SNES Function norm 4.728766848494e-01 
+USING MMFD JACOBIAN for iteration 5, ||F||/||F0||=2.051805e-02 
+  Linear solve did not converge due to DIVERGED_ITS iterations 50
+  6 SNES Function norm 9.317272577794e-01 
+USING MMFD JACOBIAN for iteration 6, ||F||/||F0||=4.042751e-02 
+  Linear solve converged due to CONVERGED_RTOL iterations 13
+  7 SNES Function norm 9.046430986805e-02 
+USING MMFD JACOBIAN for iteration 7, ||F||/||F0||=3.925234e-03 
+  Linear solve did not converge due to DIVERGED_ITS iterations 50
+  8 SNES Function norm 2.220095633370e+00 
+USING MMFD JACOBIAN for iteration 8, ||F||/||F0||=9.632963e-02 
+  Linear solve converged due to CONVERGED_RTOL iterations 3
+  9 SNES Function norm 2.081675114191e-01 
+USING MMFD JACOBIAN for iteration 9, ||F||/||F0||=9.032359e-03 
+  Linear solve did not converge due to DIVERGED_ITS iterations 50
+ 10 SNES Function norm 6.795351331949e-01 
+USING MMFD JACOBIAN for iteration 10, ||F||/||F0||=2.948493e-02 
+  Linear solve converged due to CONVERGED_RTOL iterations 12
+ 11 SNES Function norm 1.026230352017e+00 
+USING MMFD JACOBIAN for iteration 11, ||F||/||F0||=4.452799e-02 
+  Linear solve converged due to CONVERGED_RTOL iterations 5
+ 12 SNES Function norm 8.044154471318e-02 
+USING MMFD JACOBIAN for iteration 12, ||F||/||F0||=3.490347e-03 
+  Linear solve converged due to CONVERGED_RTOL iterations 35
+ 13 SNES Function norm 1.066778577985e+00 
+USING MMFD JACOBIAN for iteration 13, ||F||/||F0||=4.628737e-02 
+  Linear solve converged due to CONVERGED_RTOL iterations 11
+ 14 SNES Function norm 8.847034800025e-01 
+USING MMFD JACOBIAN for iteration 14, ||F||/||F0||=3.838716e-02 
+  Linear solve converged due to CONVERGED_RTOL iterations 5
+ 15 SNES Function norm 1.279499310301e-01 
+USING MMFD JACOBIAN for iteration 15, ||F||/||F0||=5.551729e-03 
+  Linear solve did not converge due to DIVERGED_ITS iterations 50
+ 16 SNES Function norm 1.540333954154e+00 
+USING MMFD JACOBIAN for iteration 16, ||F||/||F0||=6.683487e-02 
+  Linear solve converged due to CONVERGED_RTOL iterations 4
+ 17 SNES Function norm 1.424009988941e-01 
+USING MMFD JACOBIAN for iteration 17, ||F||/||F0||=6.178759e-03 
+  Linear solve did not converge due to DIVERGED_ITS iterations 50
+ 18 SNES Function norm 7.589309120274e-01 
+USING MMFD JACOBIAN for iteration 18, ||F||/||F0||=3.292990e-02 
+  Linear solve converged due to CONVERGED_RTOL iterations 12
+ 19 SNES Function norm 1.020413892559e+00 
+USING MMFD JACOBIAN for iteration 19, ||F||/||F0||=4.427561e-02 
+  Linear solve converged due to CONVERGED_RTOL iterations 5
+ 20 SNES Function norm 8.211001436163e-02 
+USING MMFD JACOBIAN for iteration 20, ||F||/||F0||=3.562742e-03 
+  Linear solve did not converge due to DIVERGED_ITS iterations 50
+ 21 SNES Function norm 4.586669753851e-01 
+USING MMFD JACOBIAN for iteration 21, ||F||/||F0||=1.990149e-02 
+  Linear solve converged due to CONVERGED_RTOL iterations 13
+ 22 SNES Function norm 8.304602578233e-01 
+USING MMFD JACOBIAN for iteration 22, ||F||/||F0||=3.603355e-02 
+  Linear solve converged due to CONVERGED_RTOL iterations 4
+ 23 SNES Function norm 7.540014433548e-02 
+USING MMFD JACOBIAN for iteration 23, ||F||/||F0||=3.271602e-03 
+  Linear solve did not converge due to DIVERGED_ITS iterations 50
+ 24 SNES Function norm 8.990009300551e-01 
+USING MMFD JACOBIAN for iteration 24, ||F||/||F0||=3.900752e-02 
+  Linear solve converged due to CONVERGED_RTOL iterations 11
+ 25 SNES Function norm 9.409900204290e-01 
+USING MMFD JACOBIAN for iteration 25, ||F||/||F0||=4.082942e-02 
+  Linear solve converged due to CONVERGED_RTOL iterations 5
+ 26 SNES Function norm 1.013364757895e-01 
+USING MMFD JACOBIAN for iteration 26, ||F||/||F0||=4.396975e-03 
+  Linear solve did not converge due to DIVERGED_ITS iterations 50
+ 27 SNES Function norm 1.602531047519e+00 
+USING MMFD JACOBIAN for iteration 27, ||F||/||F0||=6.953359e-02 
+  Linear solve converged due to CONVERGED_RTOL iterations 10
+ 28 SNES Function norm 2.876706819579e-01 
+USING MMFD JACOBIAN for iteration 28, ||F||/||F0||=1.248199e-02 
+  Linear solve converged due to CONVERGED_RTOL iterations 25
+ 29 SNES Function norm 8.180083325388e-01 
+USING MMFD JACOBIAN for iteration 29, ||F||/||F0||=3.549327e-02 
+  Linear solve converged due to CONVERGED_RTOL iterations 7
+ 30 SNES Function norm 8.158881764853e-02 
+USING MMFD JACOBIAN for iteration 30, ||F||/||F0||=3.540127e-03 
+  Linear solve did not converge due to DIVERGED_ITS iterations 50
+ 31 SNES Function norm 2.634707347469e+00 
+USING MMFD JACOBIAN for iteration 31, ||F||/||F0||=1.143196e-01 
+  Linear solve converged due to CONVERGED_RTOL iterations 3
+ 32 SNES Function norm 2.153696935328e-01 
+USING MMFD JACOBIAN for iteration 32, ||F||/||F0||=9.344860e-03 
+  Linear solve converged due to CONVERGED_RTOL iterations 48
+ 33 SNES Function norm 2.194115724161e+00 
+USING MMFD JACOBIAN for iteration 33, ||F||/||F0||=9.520237e-02 
+  Linear solve converged due to CONVERGED_RTOL iterations 4
+ 34 SNES Function norm 2.163427779635e-01 
+USING MMFD JACOBIAN for iteration 34, ||F||/||F0||=9.387082e-03 
+  Linear solve converged due to CONVERGED_RTOL iterations 31
+ 35 SNES Function norm 9.664263511192e-01 
+USING MMFD JACOBIAN for iteration 35, ||F||/||F0||=4.193310e-02 
+  Linear solve converged due to CONVERGED_RTOL iterations 5
+ 36 SNES Function norm 9.139391172303e-02 
+USING MMFD JACOBIAN for iteration 36, ||F||/||F0||=3.965569e-03 
+  Linear solve did not converge due to DIVERGED_ITS iterations 50
+ 37 SNES Function norm 3.151664700653e+00 
+USING MMFD JACOBIAN for iteration 37, ||F||/||F0||=1.367503e-01 
+  Linear solve converged due to CONVERGED_RTOL iterations 3
+ 38 SNES Function norm 2.677221817056e-01 
+USING MMFD JACOBIAN for iteration 38, ||F||/||F0||=1.161643e-02 
+  Linear solve converged due to CONVERGED_RTOL iterations 47
+ 39 SNES Function norm 2.079987016398e+00 
+USING MMFD JACOBIAN for iteration 39, ||F||/||F0||=9.025034e-02 
+  Linear solve converged due to CONVERGED_RTOL iterations 4
+ 40 SNES Function norm 1.960714671016e-01 
+USING MMFD JACOBIAN for iteration 40, ||F||/||F0||=8.507513e-03 
+  Linear solve did not converge due to DIVERGED_ITS iterations 50
+ 41 SNES Function norm 1.375863159335e+00 
+USING MMFD JACOBIAN for iteration 41, ||F||/||F0||=5.969851e-02 
+  Linear solve converged due to CONVERGED_RTOL iterations 4
+ 42 SNES Function norm 1.260163294353e-01 
+USING MMFD JACOBIAN for iteration 42, ||F||/||F0||=5.467831e-03 
+  Linear solve did not converge due to DIVERGED_ITS iterations 50
+ 43 SNES Function norm 1.292088056815e+00 
+USING MMFD JACOBIAN for iteration 43, ||F||/||F0||=5.606352e-02 
+  Linear solve converged due to CONVERGED_RTOL iterations 3
+ 44 SNES Function norm 1.265037116913e-01 
+USING MMFD JACOBIAN for iteration 44, ||F||/||F0||=5.488978e-03 
+  Linear solve did not converge due to DIVERGED_ITS iterations 50
+ 45 SNES Function norm 1.018153209954e+00 
+USING MMFD JACOBIAN for iteration 45, ||F||/||F0||=4.417752e-02 
+  Linear solve converged due to CONVERGED_RTOL iterations 11
+ 46 SNES Function norm 6.983920247622e-01 
+USING MMFD JACOBIAN for iteration 46, ||F||/||F0||=3.030313e-02 
+  Linear solve converged due to CONVERGED_RTOL iterations 7
+ 47 SNES Function norm 1.215278080335e-01 
+USING MMFD JACOBIAN for iteration 47, ||F||/||F0||=5.273074e-03 
+  Linear solve did not converge due to DIVERGED_ITS iterations 50
+ 48 SNES Function norm 7.314061116811e-01 
+USING MMFD JACOBIAN for iteration 48, ||F||/||F0||=3.173561e-02 
+  Linear solve converged due to CONVERGED_RTOL iterations 11
+ 49 SNES Function norm 7.119219896806e-02 
+USING MMFD JACOBIAN for iteration 49, ||F||/||F0||=3.089019e-03 
+  Linear solve did not converge due to DIVERGED_ITS iterations 50
+ 50 SNES Function norm 1.625023467891e+00 
+ SNES Divergence Reason: maximum iterations reached
+ Number of iterations : 50
+ **** Nonlinear solver failed to converge *** 
+ Nonlinear solve took 35.3475 (sec)
+------------------------------------------
+Residual summary: 
+  Continuity: 
+    Div_min  = -2.023811110775e-09 
+    Div_max  = 1.906615673176e-09 
+    |Div|_2  = 9.610609133705e-09 
+  Momentum: 
+    |mRes|_2 = 1.625023467891e+00 
+------------------------------------------
+ Writing to existing directory Timestep_000015_5.242459e-02 
+ Time = 0.0593171[Myr], dt = 0.00689246[Myr] 
+ Finished timestep 15 out of 19 
+ 
+Time step 16 -------------------------------------------------------- 
+  0 SNES Function norm 3.061975806097e+01 
+USING PICARD JACOBIAN for iteration 0, ||F||/||F0||=1.000000e+00 
+  Linear solve converged due to CONVERGED_RTOL iterations 1
+  1 SNES Function norm 1.327019086471e+01 
+USING PICARD JACOBIAN for iteration 1, ||F||/||F0||=4.333865e-01 
+  Linear solve converged due to CONVERGED_RTOL iterations 1
+  2 SNES Function norm 1.001476829539e+01 
+USING PICARD JACOBIAN for iteration 2, ||F||/||F0||=3.270688e-01 
+  Linear solve converged due to CONVERGED_RTOL iterations 1
+  3 SNES Function norm 8.183497845357e+00 
+USING PICARD JACOBIAN for iteration 3, ||F||/||F0||=2.672620e-01 
+  Linear solve converged due to CONVERGED_RTOL iterations 1
+  4 SNES Function norm 6.989142207696e+00 
+USING PICARD JACOBIAN for iteration 4, ||F||/||F0||=2.282560e-01 
+  Linear solve converged due to CONVERGED_RTOL iterations 1
+  5 SNES Function norm 6.223814052430e+00 
+USING PICARD JACOBIAN for iteration 5, ||F||/||F0||=2.032614e-01 
+  Linear solve converged due to CONVERGED_RTOL iterations 1
+  6 SNES Function norm 5.460225806383e+00 
+USING PICARD JACOBIAN for iteration 6, ||F||/||F0||=1.783236e-01 
+  Linear solve converged due to CONVERGED_RTOL iterations 1
+  7 SNES Function norm 4.703327211389e+00 
+USING PICARD JACOBIAN for iteration 7, ||F||/||F0||=1.536043e-01 
+  Linear solve converged due to CONVERGED_RTOL iterations 1
+  8 SNES Function norm 4.009681892863e+00 
+USING PICARD JACOBIAN for iteration 8, ||F||/||F0||=1.309508e-01 
+  Linear solve converged due to CONVERGED_RTOL iterations 1
+  9 SNES Function norm 3.155250242186e+00 
+USING PICARD JACOBIAN for iteration 9, ||F||/||F0||=1.030462e-01 
+  Linear solve converged due to CONVERGED_RTOL iterations 1
+ 10 SNES Function norm 2.652055409556e+00 
+=====================================================
+SWITCH TO MMFD JACOBIAN: ||F||/||F0||=8.661255e-02, PicIt=5 
+=====================================================
+USING MMFD JACOBIAN for iteration 10, ||F||/||F0||=8.661255e-02 
+  Linear solve converged due to CONVERGED_RTOL iterations 7
+ 11 SNES Function norm 9.938852849797e+00 
+USING MMFD JACOBIAN for iteration 11, ||F||/||F0||=3.245895e-01 
+  Linear solve converged due to CONVERGED_RTOL iterations 3
+ 12 SNES Function norm 6.374594727206e-01 
+USING MMFD JACOBIAN for iteration 12, ||F||/||F0||=2.081857e-02 
+  Linear solve converged due to CONVERGED_RTOL iterations 9
+ 13 SNES Function norm 6.096009160419e-01 
+USING MMFD JACOBIAN for iteration 13, ||F||/||F0||=1.990874e-02 
+  Linear solve converged due to CONVERGED_RTOL iterations 2
+ 14 SNES Function norm 4.249822481483e-02 
+USING MMFD JACOBIAN for iteration 14, ||F||/||F0||=1.387935e-03 
+  Linear solve converged due to CONVERGED_RTOL iterations 10
+ 15 SNES Function norm 5.728634077473e-04 
+ SNES Convergence Reason: ||F|| < rtol*||F_initial|| 
+ Number of iterations : 15
+ Nonlinear solve took 2.10907 (sec)
+------------------------------------------
+Residual summary: 
+  Continuity: 
+    Div_min  = -1.684296703844e-10 
+    Div_max  = 1.689313050204e-10 
+    |Div|_2  = 7.511149856366e-10 
+  Momentum: 
+    |mRes|_2 = 5.728634077468e-04 
+------------------------------------------
+ Writing to existing directory Timestep_000016_5.931705e-02 
+ Time = 0.0668988[Myr], dt = 0.00758171[Myr] 
+ Finished timestep 16 out of 19 
+ 
+Time step 17 -------------------------------------------------------- 
+  0 SNES Function norm 4.685498859301e+01 
+USING PICARD JACOBIAN for iteration 0, ||F||/||F0||=1.000000e+00 
+  Linear solve converged due to CONVERGED_RTOL iterations 1
+  1 SNES Function norm 2.144361753167e+01 
+USING PICARD JACOBIAN for iteration 1, ||F||/||F0||=4.576592e-01 
+  Linear solve converged due to CONVERGED_RTOL iterations 1
+  2 SNES Function norm 1.462050438652e+01 
+USING PICARD JACOBIAN for iteration 2, ||F||/||F0||=3.120373e-01 
+  Linear solve converged due to CONVERGED_RTOL iterations 1
+  3 SNES Function norm 1.114099693807e+01 
+USING PICARD JACOBIAN for iteration 3, ||F||/||F0||=2.377761e-01 
+  Linear solve converged due to CONVERGED_RTOL iterations 1
+  4 SNES Function norm 8.363019495056e+00 
+USING PICARD JACOBIAN for iteration 4, ||F||/||F0||=1.784873e-01 
+  Linear solve converged due to CONVERGED_RTOL iterations 1
+  5 SNES Function norm 6.180803755853e+00 
+USING PICARD JACOBIAN for iteration 5, ||F||/||F0||=1.319135e-01 
+  Linear solve converged due to CONVERGED_RTOL iterations 1
+  6 SNES Function norm 4.529349416747e+00 
+=====================================================
+SWITCH TO MMFD JACOBIAN: ||F||/||F0||=9.666739e-02, PicIt=5 
+=====================================================
+USING MMFD JACOBIAN for iteration 6, ||F||/||F0||=9.666739e-02 
+  Linear solve converged due to CONVERGED_RTOL iterations 5
+  7 SNES Function norm 9.911704043006e+00 
+USING MMFD JACOBIAN for iteration 7, ||F||/||F0||=2.115400e-01 
+  Linear solve converged due to CONVERGED_RTOL iterations 2
+  8 SNES Function norm 1.102982476757e+00 
+USING MMFD JACOBIAN for iteration 8, ||F||/||F0||=2.354034e-02 
+  Linear solve converged due to CONVERGED_RTOL iterations 7
+  9 SNES Function norm 2.978396674135e-02 
+USING MMFD JACOBIAN for iteration 9, ||F||/||F0||=6.356627e-04 
+  Linear solve converged due to CONVERGED_RTOL iterations 13
+ 10 SNES Function norm 1.340152042362e-04 
+ SNES Convergence Reason: ||F|| < rtol*||F_initial|| 
+ Number of iterations : 10
+ Nonlinear solve took 1.58288 (sec)
+------------------------------------------
+Residual summary: 
+  Continuity: 
+    Div_min  = -2.417829825241e-11 
+    Div_max  = 2.581790337075e-11 
+    |Div|_2  = 1.226430361348e-10 
+  Momentum: 
+    |mRes|_2 = 1.340152042361e-04 
+------------------------------------------
+ Writing to existing directory Timestep_000017_6.689876e-02 
+ Time = 0.0752386[Myr], dt = 0.00833988[Myr] 
+ Finished timestep 17 out of 19 
+ 
+Time step 18 -------------------------------------------------------- 
+  0 SNES Function norm 6.428662443250e+01 
+USING PICARD JACOBIAN for iteration 0, ||F||/||F0||=1.000000e+00 
+  Linear solve converged due to CONVERGED_RTOL iterations 1
+  1 SNES Function norm 2.874109883683e+01 
+USING PICARD JACOBIAN for iteration 1, ||F||/||F0||=4.470774e-01 
+  Linear solve converged due to CONVERGED_RTOL iterations 1
+  2 SNES Function norm 1.700289422020e+01 
+USING PICARD JACOBIAN for iteration 2, ||F||/||F0||=2.644857e-01 
+  Linear solve converged due to CONVERGED_RTOL iterations 1
+  3 SNES Function norm 1.185693369279e+01 
+USING PICARD JACOBIAN for iteration 3, ||F||/||F0||=1.844386e-01 
+  Linear solve converged due to CONVERGED_RTOL iterations 1
+  4 SNES Function norm 9.079866977991e+00 
+USING PICARD JACOBIAN for iteration 4, ||F||/||F0||=1.412404e-01 
+  Linear solve converged due to CONVERGED_RTOL iterations 1
+  5 SNES Function norm 7.310587822896e+00 
+USING PICARD JACOBIAN for iteration 5, ||F||/||F0||=1.137186e-01 
+  Linear solve converged due to CONVERGED_RTOL iterations 1
+  6 SNES Function norm 5.801344201341e+00 
+=====================================================
+SWITCH TO MMFD JACOBIAN: ||F||/||F0||=9.024185e-02, PicIt=5 
+=====================================================
+USING MMFD JACOBIAN for iteration 6, ||F||/||F0||=9.024185e-02 
+  Linear solve converged due to CONVERGED_RTOL iterations 6
+  7 SNES Function norm 1.580881874210e+01 
+USING MMFD JACOBIAN for iteration 7, ||F||/||F0||=2.459115e-01 
+  Linear solve converged due to CONVERGED_RTOL iterations 3
+  8 SNES Function norm 8.585794066549e-01 
+USING MMFD JACOBIAN for iteration 8, ||F||/||F0||=1.335549e-02 
+  Linear solve converged due to CONVERGED_RTOL iterations 10
+  9 SNES Function norm 2.902936409230e-01 
+USING MMFD JACOBIAN for iteration 9, ||F||/||F0||=4.515615e-03 
+  Linear solve converged due to CONVERGED_RTOL iterations 3
+ 10 SNES Function norm 1.518495910797e-02 
+USING MMFD JACOBIAN for iteration 10, ||F||/||F0||=2.362071e-04 
+  Linear solve converged due to CONVERGED_RTOL iterations 10
+ 11 SNES Function norm 9.216534262975e-05 
+ SNES Convergence Reason: ||F|| < rtol*||F_initial|| 
+ Number of iterations : 11
+ Nonlinear solve took 1.78643 (sec)
+------------------------------------------
+Residual summary: 
+  Continuity: 
+    Div_min  = -3.406848696381e-11 
+    Div_max  = 4.809799693944e-11 
+    |Div|_2  = 1.868608224444e-10 
+  Momentum: 
+    |mRes|_2 = 9.216534262956e-05 
+------------------------------------------
+ Writing to existing directory Timestep_000018_7.523864e-02 
+ Time = 0.0844125[Myr], dt = 0.00917386[Myr] 
+ Finished timestep 18 out of 19 
+ 
+Time step 19 -------------------------------------------------------- 
+  0 SNES Function norm 8.007645823098e+01 
+USING PICARD JACOBIAN for iteration 0, ||F||/||F0||=1.000000e+00 
+  Linear solve converged due to CONVERGED_RTOL iterations 1
+  1 SNES Function norm 4.163810750456e+01 
+USING PICARD JACOBIAN for iteration 1, ||F||/||F0||=5.199794e-01 
+  Linear solve converged due to CONVERGED_RTOL iterations 1
+  2 SNES Function norm 3.089502132715e+01 
+USING PICARD JACOBIAN for iteration 2, ||F||/||F0||=3.858190e-01 
+  Linear solve converged due to CONVERGED_RTOL iterations 1
+  3 SNES Function norm 2.518557899130e+01 
+USING PICARD JACOBIAN for iteration 3, ||F||/||F0||=3.145191e-01 
+  Linear solve converged due to CONVERGED_RTOL iterations 1
+  4 SNES Function norm 2.161904896275e+01 
+USING PICARD JACOBIAN for iteration 4, ||F||/||F0||=2.699801e-01 
+  Linear solve converged due to CONVERGED_RTOL iterations 1
+  5 SNES Function norm 1.860897432965e+01 
+USING PICARD JACOBIAN for iteration 5, ||F||/||F0||=2.323901e-01 
+  Linear solve converged due to CONVERGED_RTOL iterations 1
+  6 SNES Function norm 1.617364485646e+01 
+USING PICARD JACOBIAN for iteration 6, ||F||/||F0||=2.019775e-01 
+  Linear solve converged due to CONVERGED_RTOL iterations 1
+  7 SNES Function norm 1.415072359446e+01 
+USING PICARD JACOBIAN for iteration 7, ||F||/||F0||=1.767152e-01 
+  Linear solve converged due to CONVERGED_RTOL iterations 1
+  8 SNES Function norm 1.209459749947e+01 
+USING PICARD JACOBIAN for iteration 8, ||F||/||F0||=1.510381e-01 
+  Linear solve converged due to CONVERGED_RTOL iterations 1
+  9 SNES Function norm 1.055274602275e+01 
+USING PICARD JACOBIAN for iteration 9, ||F||/||F0||=1.317834e-01 
+  Linear solve converged due to CONVERGED_RTOL iterations 1
+ 10 SNES Function norm 9.354900179457e+00 
+USING PICARD JACOBIAN for iteration 10, ||F||/||F0||=1.168246e-01 
+  Linear solve converged due to CONVERGED_RTOL iterations 1
+ 11 SNES Function norm 8.379441162804e+00 
+USING PICARD JACOBIAN for iteration 11, ||F||/||F0||=1.046430e-01 
+  Linear solve converged due to CONVERGED_RTOL iterations 1
+ 12 SNES Function norm 7.482747924181e+00 
+=====================================================
+SWITCH TO MMFD JACOBIAN: ||F||/||F0||=9.344504e-02, PicIt=5 
+=====================================================
+USING MMFD JACOBIAN for iteration 12, ||F||/||F0||=9.344504e-02 
+  Linear solve converged due to CONVERGED_RTOL iterations 6
+ 13 SNES Function norm 1.707909346782e+01 
+USING MMFD JACOBIAN for iteration 13, ||F||/||F0||=2.132848e-01 
+  Linear solve converged due to CONVERGED_RTOL iterations 2
+ 14 SNES Function norm 1.970299959943e+00 
+USING MMFD JACOBIAN for iteration 14, ||F||/||F0||=2.460523e-02 
+  Linear solve converged due to CONVERGED_RTOL iterations 8
+ 15 SNES Function norm 1.063733663725e-01 
+USING MMFD JACOBIAN for iteration 15, ||F||/||F0||=1.328397e-03 
+  Linear solve converged due to CONVERGED_RTOL iterations 13
+ 16 SNES Function norm 7.575186121412e-03 
+ SNES Convergence Reason: ||F|| < rtol*||F_initial|| 
+ Number of iterations : 16
+ Nonlinear solve took 2.11919 (sec)
+------------------------------------------
+Residual summary: 
+  Continuity: 
+    Div_min  = -2.079407653011e-10 
+    Div_max  = 2.088932880839e-10 
+    |Div|_2  = 1.081818243155e-09 
+  Momentum: 
+    |mRes|_2 = 7.575186121412e-03 
+------------------------------------------
+ Writing to existing directory Timestep_000019_8.441250e-02 
+ Time = 0.0944125[Myr], dt = 0.01[Myr] 
+ Finished timestep 19 out of 19 
+ 
+ Simulation took 48.3059 (sec) 
+#PETSc Option Table entries:
+-AVDPhaseViewer 0
+-ExxNumPeriods 1
+-ExxStrainRates -1e-15
+-H_bottom 0
+-H_layer 10
+-Inclusion_size 1
+-Inclusion_use
+-ParamFile ./t4_Loc/localization.dat
+-dt 1.5e-3
+-jp_pc_factor_mat_solver_package mumps
+-jp_pc_type lu
+-jp_type user
+-js_ksp_atol 1e-14
+-js_ksp_converged_reason
+-js_ksp_max_it 50
+-js_ksp_rtol 1e-10
+-js_ksp_type fgmres
+-objects_dump
+-open_top_bound
+-options_left
+-out_cont_res 1
+-out_density 1
+-out_dev_stress 1
+-out_j2_dev_stress 1
+-out_j2_strain_rate 1
+-out_moment_res 1
+-out_phase 1
+-out_plast_strain 1
+-out_pressure 1
+-out_pvd 1
+-out_strain_rate 1
+-out_temperature 1
+-out_velocity 1
+-out_viscosity 1
+-pcmat_pgamma 1e3
+-pcmat_type mono
+-restart 0
+-save_breakpoints 0
+-skip_press_shift
+-snes_NewtonSwitchToPicard_it 20
+-snes_NewtonSwitchToPicard_rtol 1.1
+-snes_PicardSwitchToNewton_rtol 1e-1
+-snes_atol 1e-7
+-snes_ksp_ew
+-snes_ksp_ew_rtolmax 1e-1
+-snes_max_funcs 500000
+-snes_max_it 50
+-snes_max_linear_solve_fail 10000
+-snes_monitor
+-snes_rtol 1e-4
+-snes_stol 1e-16
+#End of PETSc Option Table entries
+There are 2 unused database options. They are:
+Option left: name:-AVDPhaseViewer value: 0
+Option left: name:-out_viscosity value: 1

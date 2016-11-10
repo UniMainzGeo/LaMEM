@@ -1,9 +1,9 @@
 # 3D localization test
 
 # Grid
-nel_x =  128
+nel_x =  64
 nel_y =  2
-nel_z =  32
+nel_z =  16
 
 # Geometry
 
@@ -19,7 +19,7 @@ units                      = geo
 Characteristic.Length      = 1e4  # [m]
 Characteristic.Viscosity   = 1e20 # [Pa.s]
 Characteristic.Temperature = 1    # [K]
-Characteristic.Stress      = 1e6  # [Pa]
+Characteristic.Stress      = 1e8  # [Pa]
 
 
 # Model setup
@@ -60,7 +60,7 @@ NumPartZ				=	5	# Particles/Cell in z-direction
 <PetscOptionsStart>
 
 	# matrix-free closed-form Jacobian if this is uncommented
-	-jac_mat_free
+	#-jac_mat_free
 	#-out_jac_test 1
 	-skip_press_shift
 	-open_top_bound
@@ -123,7 +123,7 @@ NumPartZ				=	5	# Particles/Cell in z-direction
 
 
 	# Additional command-line Petsc Options
-	-AddRandomNoiseParticles 0
+	#-AddRandomNoiseParticles 0
 	-restart 0
 	-save_breakpoints 0
 	-objects_dump
