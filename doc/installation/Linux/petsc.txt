@@ -11,6 +11,7 @@ PREREQUISITES (on non-Ubuntu/Debian systems update accordingly)
 WARNING!
 Don't apt install paraview (or any package that messes with MPI)
 Download paraview binaries instead (see etc.txt)
+You need to apt purge all MPI installations (if you have any)
 
 sudo apt update
 sudo apt install build-essential gfortran mpich libmpich-dev 
