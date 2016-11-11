@@ -81,6 +81,9 @@ PetscErrorCode MatAIJCreate(
 	ierr = MatMPIAIJSetPreallocation((*P), d_nz, d_nnz, o_nz, o_nnz); CHKERRQ(ierr);
 
 	// throw an error if preallocation fails
+
+	ierr = MatSetFromOptions((*P)); CHKERRQ(ierr);
+
 	ierr = MatSetOption((*P), MAT_NEW_NONZERO_ALLOCATION_ERR, PETSC_TRUE); CHKERRQ(ierr);
 	ierr = MatSetUp((*P)); CHKERRQ(ierr);
 
