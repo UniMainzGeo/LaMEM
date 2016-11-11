@@ -102,8 +102,8 @@ PetscErrorCode ADVelReadOptions(AdvVelCtx *vi)
 	val1 = 0; // STAG interp
 
 	// read options
-	ierr = PetscOptionsGetInt(NULL, "-advection", &val0, NULL); CHKERRQ(ierr);
-	ierr = PetscOptionsGetInt(NULL, "-velinterp", &val1, NULL); CHKERRQ(ierr);
+	ierr = PetscOptionsGetInt(NULL, NULL, "-advection", &val0, NULL); CHKERRQ(ierr);
+	ierr = PetscOptionsGetInt(NULL, NULL, "-velinterp", &val1, NULL); CHKERRQ(ierr);
 
 	// advection scheme
 	if      (val0 == 0) { vi->advection = EULER;         PetscPrintf(PETSC_COMM_WORLD," Advection Scheme: %s\n","Euler 1st order"      ); }

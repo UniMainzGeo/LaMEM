@@ -135,7 +135,7 @@ PetscErrorCode NLSolCreate(NLSol *nl, PCStokes pc, SNES *p_snes)
 	ierr = PCSetType(ipc, PCMAT);          CHKERRQ(ierr);
 
 	// activate custom test for linear iterations?
-	ierr = PetscOptionsGetBool(NULL,"-js_use_custom_test",&useCustomTest,&flg); CHKERRQ(ierr);
+	ierr = PetscOptionsGetBool(NULL, NULL,"-js_use_custom_test",&useCustomTest,&flg); CHKERRQ(ierr);
 
 	if(useCustomTest)
 	{
@@ -145,9 +145,9 @@ PetscErrorCode NLSolCreate(NLSol *nl, PCStokes pc, SNES *p_snes)
 		nl->wsCtx.rnorm_init = 0.0;
 		nl->wsCtx.winwidth   = 20;
 
-		ierr = PetscOptionsGetInt( PETSC_NULL,"-js_ksp_difftol_winwidth",&nl->wsCtx.winwidth,PETSC_NULL ); CHKERRQ(ierr);
-		ierr = PetscOptionsGetReal( PETSC_NULL,"-js_ksp_difftol_eps"    ,&nl->wsCtx.epsfrac,PETSC_NULL ); CHKERRQ(ierr);
-		ierr = PetscOptionsGetBool( PETSC_NULL, "-js_custom_ksp_monitor", &custom_ksp_monitor, &flg ); CHKERRQ(ierr);
+		ierr = PetscOptionsGetInt (NULL, NULL,"-js_ksp_difftol_winwidth",&nl->wsCtx.winwidth,NULL ); CHKERRQ(ierr);
+		ierr = PetscOptionsGetReal(NULL, NULL,"-js_ksp_difftol_eps"    ,&nl->wsCtx.epsfrac,NULL ); CHKERRQ(ierr);
+		ierr = PetscOptionsGetBool(NULL, NULL, "-js_custom_ksp_monitor", &custom_ksp_monitor, &flg ); CHKERRQ(ierr);
 		
 		if ( (nl->wsCtx.winwidth < 1) | (nl->wsCtx.winwidth > _max_win_size_))
 		{
@@ -185,10 +185,10 @@ PetscErrorCode NLSolCreate(NLSol *nl, PCStokes pc, SNES *p_snes)
 	nl->rtolNwt = 1.1;
 
 	// override from command line
-	ierr = PetscOptionsGetInt   (PETSC_NULL, "-snes_Picard_max_it",             &nl->nPicIt, &flg); CHKERRQ(ierr);
-	ierr = PetscOptionsGetScalar(PETSC_NULL, "-snes_PicardSwitchToNewton_rtol", &nl->rtolPic,&flg); CHKERRQ(ierr);
-	ierr = PetscOptionsGetInt   (PETSC_NULL, "-snes_NewtonSwitchToPicard_it",   &nl->nNwtIt, &flg); CHKERRQ(ierr);
-	ierr = PetscOptionsGetScalar(PETSC_NULL, "-snes_NewtonSwitchToPicard_rtol", &nl->rtolNwt, &flg); CHKERRQ(ierr);
+	ierr = PetscOptionsGetInt   (NULL, NULL, "-snes_Picard_max_it",             &nl->nPicIt, &flg); CHKERRQ(ierr);
+	ierr = PetscOptionsGetScalar(NULL, NULL, "-snes_PicardSwitchToNewton_rtol", &nl->rtolPic,&flg); CHKERRQ(ierr);
+	ierr = PetscOptionsGetInt   (NULL, NULL, "-snes_NewtonSwitchToPicard_it",   &nl->nNwtIt, &flg); CHKERRQ(ierr);
+	ierr = PetscOptionsGetScalar(NULL, NULL, "-snes_NewtonSwitchToPicard_rtol", &nl->rtolNwt, &flg); CHKERRQ(ierr);
 
 	// set initial guess
 	ierr = VecSet(jr->gsol, 0.0); CHKERRQ(ierr);
@@ -237,7 +237,7 @@ PetscErrorCode FormResidual(SNES snes, Vec x, Vec f, void *ctx)
 	}
 
 	// copy solution from global to local vectors, enforce boundary constraints
-	ierr = JacResCopySol(jr, x, _APPLY_SPC_); CHKERRQ(ierr);
+	ierr = JacResCopySol(jr, x); CHKERRQ(ierr);
 
 	ierr = JacResGetPressShift(jr); CHKERRQ(ierr);
 
@@ -269,7 +269,7 @@ PetscErrorCode FormResidualMFFD(void *ctx, Vec x, Vec f)
 	jr = (JacRes*)ctx;
 
 	// copy solution from global to local vectors, enforce boundary constraints
-	ierr = JacResCopySol(jr, x, _APPLY_SPC_); CHKERRQ(ierr);
+	ierr = JacResCopySol(jr, x); CHKERRQ(ierr);
 
 	ierr = JacResGetPressShift(jr); CHKERRQ(ierr);
 
@@ -603,8 +603,8 @@ PetscErrorCode CheckVelocityError(UserCtx *user)
 	PetscFunctionBegin;
 
 	// Error detection
-	ierr = VecMax(user->sol_advect, PETSC_NULL, &MaxVel);	CHKERRQ(ierr);
-	ierr = VecMin(user->sol_advect, PETSC_NULL, &MinVel); CHKERRQ(ierr);
+	ierr = VecMax(user->sol_advect, NULL, &MaxVel);	CHKERRQ(ierr);
+	ierr = VecMin(user->sol_advect, NULL, &MinVel); CHKERRQ(ierr);
 	MaxVel = PetscMax(MaxVel, PetscAbsScalar(MinVel));
 
 	if(isnan(MaxVel))
@@ -754,11 +754,13 @@ PetscErrorCode PostCheck(SNESLineSearch,Vec,Vec,Vec,PetscBool*,PetscBool*,void*)
 #define __FUNCT__ "KSPWinStopTest"
 PetscErrorCode KSPWinStopTest(KSP ksp, PetscInt thisit, PetscScalar thisnorm, KSPConvergedReason *reason, void *mctx)
 {
-	PetscErrorCode    ierr;
 	PetscInt          i=0, inow=0, maxits;
 	PetscScalar       rtol, abstol, dtol, ttol;
 	WinStopCtx       *winstop = (WinStopCtx*) mctx;
 	PetscBool         winnorm =  PETSC_FALSE;
+
+	PetscErrorCode ierr;
+	PetscFunctionBegin;
 
 	// initialise converged reason
 	*reason = KSP_CONVERGED_ITERATING;
@@ -866,13 +868,18 @@ PetscErrorCode KSPWinStopTest(KSP ksp, PetscInt thisit, PetscScalar thisnorm, KS
 #define __FUNCT__ "KSPWinStopMonitor"
 PetscErrorCode KSPWinStopMonitor(KSP ksp, PetscInt thisit, PetscScalar thisnorm, void *mctx)
 {
+	const char *prefix;
+	WinStopCtx *winstop = (WinStopCtx*) mctx;
+
 	PetscErrorCode ierr;
-	WinStopCtx     *winstop = (WinStopCtx*) mctx;
-	
+	PetscFunctionBegin;
+
+	ierr = KSPGetOptionsPrefix(ksp, &prefix); CHKERRQ(ierr);
+
 	// Output to screen
-	if(thisit == 0 && ((PetscObject)ksp)->prefix)
+	if(thisit == 0)
 	{
-		ierr = PetscPrintf(PETSC_COMM_WORLD,"  Residual norms for %sksp solve.\n",((PetscObject)ksp)->prefix); CHKERRQ(ierr);
+		ierr = PetscPrintf(PETSC_COMM_WORLD,"  Residual norms for %sksp solve.\n", prefix); CHKERRQ(ierr);
 		ierr = PetscPrintf(PETSC_COMM_WORLD,"  KSP_it       KSP_res      Var(dKSP_res(1..%0.2d))        Eps\n",winstop->winwidth); CHKERRQ(ierr);
 	}
 	else if(thisit < winstop->winwidth)
@@ -883,6 +890,7 @@ PetscErrorCode KSPWinStopMonitor(KSP ksp, PetscInt thisit, PetscScalar thisnorm,
 	{
 		ierr = PetscPrintf(PETSC_COMM_WORLD, "   %0.3d   %14.12e  %14.12e  %14.12e  \n",thisit, thisnorm, winstop->diffnorm, winstop->eps); CHKERRQ(ierr);
 	}
+
 
 	return(0);
 }

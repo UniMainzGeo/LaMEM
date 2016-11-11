@@ -87,9 +87,9 @@ PetscErrorCode ConstEqCtxSetup(
 
 	p_viscosity = p;			// pressure used in viscosity evaluation
 
-	ierr = PetscOptionsHasName(PETSC_NULL, "-ViscoPLithosOff", &flag); CHKERRQ(ierr);
-	ierr = PetscOptionsHasName(PETSC_NULL, "-NoPressureLimit", &flag2); CHKERRQ(ierr);
-	ierr = PetscOptionsHasName(PETSC_NULL, "-EmployLithostaticPressureInYieldFunction", &flag3); CHKERRQ(ierr);
+	ierr = PetscOptionsHasName(NULL, NULL, "-ViscoPLithosOff", &flag); CHKERRQ(ierr);
+	ierr = PetscOptionsHasName(NULL, NULL, "-NoPressureLimit", &flag2); CHKERRQ(ierr);
+	ierr = PetscOptionsHasName(NULL, NULL, "-EmployLithostaticPressureInYieldFunction", &flag3); CHKERRQ(ierr);
 	
 	if(!flag) p_viscosity=p_lithos;
 

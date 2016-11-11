@@ -2,7 +2,7 @@
 #  1) clean test directory (make clean)
 #  2) call python script that runs the tests using the pyTestHarness framework by Dave May & Patrick Sanan
 
-test: 
+test:
 	@python runLaMEM_Tests.py
 
 .PHONY : clean
@@ -25,10 +25,13 @@ clean :
 	@rm -rf ./Timestep*
 	@rm -rf ./Initial*
 	@rm -rf ./Breakpoint
-	@rm -rf t*/Breapoint
-	@rm -rf t*/MatlabInputParticles*
-	@rm -rf t*/Timestep*
-	@rm -rf t*/*.vtr
-	@rm -rf t*/*.pvd
+	@rm -rf pyTestHarness/*.pyc
+	@rm -rf t*_*/Breapoint
+	@rm -rf t*_*/MatlabInputParticles*
+	@rm -rf t*_*/Timestep*
+	@rm -rf t*_*/ProcessorPartitioning*.*
+	@rm -rf t*_*/*.vtr
+	@rm -rf t*_*/*.pvd
+	@rm -rf t*_*/*.pyc
 	@rm -f false
-	@rm -rf t*/ProcessorPartitioning*.*
+

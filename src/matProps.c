@@ -375,9 +375,10 @@ PetscErrorCode MatPropSetFromLibCall(JacRes *jr, ModParam *mod)
 	PetscScalar eta, eta0, e0;
 	Material_t  *m;
 
-
 	PetscFunctionBegin;
 	
+	if(mod == NULL) PetscFunctionReturn(0);
+
 	// does a calling function provide model parameters?
 	if(mod->use == 0) PetscFunctionReturn(0);
 
@@ -475,7 +476,7 @@ PetscErrorCode MatPropSetFromCL(JacRes *jr)
 	flg = PETSC_FALSE;
 	get_options = PETSC_FALSE;
 
-	ierr = PetscOptionsGetBool( PETSC_NULL, "-SetMaterialProperties", &get_options, PETSC_NULL ); 					CHKERRQ(ierr);
+	ierr = PetscOptionsGetBool(NULL, NULL, "-SetMaterialProperties", &get_options, NULL ); 					CHKERRQ(ierr);
 
 	if(get_options) {
 		PetscPrintf(PETSC_COMM_WORLD,"# ------------------------------------------------------------------------\n");
@@ -495,7 +496,7 @@ PetscErrorCode MatPropSetFromCL(JacRes *jr)
 
 			// linear viscosity
 			sprintf(matprop_opt,"-eta_%lld",(LLD)id);
-			ierr = PetscOptionsGetReal(PETSC_NULL ,matprop_opt,&eta	, &flg); 				CHKERRQ(ierr);
+			ierr = PetscOptionsGetReal(NULL, NULL ,matprop_opt,&eta	, &flg); 				CHKERRQ(ierr);
 
 				// check strain-rate dependent creep
 				if((!eta0 && e0) || (eta0 && !e0))
@@ -529,7 +530,7 @@ PetscErrorCode MatPropSetFromCL(JacRes *jr)
 
 			// constant density
 			sprintf(matprop_opt,"-rho0_%lld",(LLD)id);
-			ierr = PetscOptionsGetReal(PETSC_NULL ,matprop_opt,&m->rho	, &flg);			CHKERRQ(ierr);
+			ierr = PetscOptionsGetReal(NULL, NULL ,matprop_opt,&m->rho	, &flg);			CHKERRQ(ierr);
 			if(flg == PETSC_TRUE) PetscPrintf(PETSC_COMM_WORLD,"#    rho0[%lld]	= %5.5f \n",(LLD)id,m->rho);
 
 		}

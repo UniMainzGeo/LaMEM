@@ -104,8 +104,8 @@ PetscErrorCode PVMarkReadFromOptions(PVMark *pvmark)
 	pvmark->outpvd     = 0;
 
 	// read output flags
-	ierr = PetscOptionsGetInt(NULL, "-out_markers",         &pvmark->outmark,    NULL); CHKERRQ(ierr);
-	ierr = PetscOptionsGetInt(NULL, "-out_mark_pvd",        &pvmark->outpvd,     NULL); CHKERRQ(ierr);
+	ierr = PetscOptionsGetInt(NULL, NULL, "-out_markers",         &pvmark->outmark,    NULL); CHKERRQ(ierr);
+	ierr = PetscOptionsGetInt(NULL, NULL, "-out_mark_pvd",        &pvmark->outpvd,     NULL); CHKERRQ(ierr);
 
 	PetscFunctionReturn(0);
 }

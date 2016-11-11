@@ -52,16 +52,12 @@ static char help[] = "Solves 3D Stokes equations using multigrid .\n\n";
 int main(int argc, char **argv)
 {
 	PetscErrorCode 	ierr;
-	ModParam        IOparam;
-
-	// IOparam is not used by default
-	IOparam.use = 0;
 
 	// Initialize PETSC
 	ierr = PetscInitialize(&argc,&argv,(char *)0, help); CHKERRQ(ierr);
 
 	// call LaMEM main library function
-	ierr = LaMEMLib(&IOparam); CHKERRQ(ierr);
+	ierr = LaMEMLib(NULL); CHKERRQ(ierr);
 
 	// cleanup PETSC
 	ierr = PetscFinalize(); CHKERRQ(ierr);
