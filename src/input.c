@@ -471,11 +471,12 @@ PetscErrorCode InputSetDefaultValues(JacRes *jr, UserCtx *user)
 
 	// set this option to monitor actual option usage
 	PetscOptionsInsertString(NULL, "-options_left");
-    
-    // Add a few default options
-    PetscOptionsInsertString(NULL, "-options_left");
-    
-    
+
+	// Add a few default options
+	PetscOptionsInsertString(NULL, "-options_left");
+
+	// Resolve SuperLU_DIST repetitive factorization issue (temporary ad hoc solution)
+	PetscOptionsInsertString(NULL, "-mat_superlu_dist_fact SamePattern_SameRowPerm");
 
 	PetscFunctionReturn(0);
 }
@@ -484,7 +485,7 @@ PetscErrorCode InputSetDefaultValues(JacRes *jr, UserCtx *user)
 #define __FUNCT__ "InputReadFile"
 PetscErrorCode InputReadFile(JacRes *jr, UserCtx *user, FILE *fp)
 {
-	 // parse the input file
+	// parse the input file
 
 	PetscInt found;
 	char setup_name[MAX_NAME_LEN];
