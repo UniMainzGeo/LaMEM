@@ -16,14 +16,11 @@ sudo cp -r eclipse /opt
 ENVIRONMENT (This step is necessary for system-wide setting)
 ------------------------------------------------------------------
 
-Open terminal & change directory:
-cd /etc/profile.d
+Access environment file (create if does not exist)
+sudo nano /etc/profile.d/environment.sh
 
-Create file (requires root password):
-sudo nano eclipse.sh
-
-Add the following contents:
-export PATH=/opt/eclipse:$PATH
+Add line:
+export PATH=$PATH:/opt/eclipse
 
 Close and save file (ctrl+x, then y)
 
@@ -73,7 +70,7 @@ CONFIGURE PROJECT
 7. Add full paths to header files used in your project.
 
    PETSc (version X.Y.Z) applications would require setting:
-      /opt/mpich3/include
+      /usr/include/mpich
       /opt/petsc/petsc-X.Y.Z-debug/include
 
     Each path can be added as follows:

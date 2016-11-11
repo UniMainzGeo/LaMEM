@@ -8,35 +8,13 @@ Replace X.Y.Z with the actual PETSC version number you want to install
 PREREQUISITES (on non-Ubuntu/Debian systems update accordingly)
 ------------------------------------------------------------------
 
-sudo apt-get update
-sudo apt-get install build-essential
-sudo apt-get install gfortran
-sudo apt-get install cmake
-sudo apt-get install git-all
-sudo apt-get install valgrind
+WARNING!
+Don't apt install paraview (or any package that messes with MPI)
+Download paraview binaries instead (see etc.txt)
 
-------------------------------------------------------------------
-MPICH 3
-------------------------------------------------------------------
-
-Download MPICH 3 (http://www.mpich.org/downloads/)
-
-./configure \
-CC=gcc \
-CXX=g++ \
-F77=gfortran \
-FC=gfortran \
---prefix=/opt/mpich3 \
---enable-f77 \
---enable-fc \
---enable-cxx \
---enable-g=none \
---enable-fast=O2 \
---with-pm=hydra
-
-make
-
-sudo make install
+sudo apt update
+sudo apt install build-essential gfortran mpich libmpich-dev 
+sudo apt install python-numpy bison flex cmake git valgrind
 
 ------------------------------------------------------------------
 OpenBLAS
@@ -48,19 +26,14 @@ make BINARY=64 USE_THREAD=0 CC=gcc FC=gfortran
 
 sudo make PREFIX=/opt/openblas install
 
-
 ------------------------------------------------------------------
 ENVIRONMENT (This step is necessary for system-wide setting)
 ------------------------------------------------------------------
 
-Open terminal & change directory:
-cd /etc/profile.d
+Access environment file (create if does not exist)
+sudo nano /etc/profile.d/environment.sh
 
-Create file (requires root password):
-sudo nano petsc.sh
-
-Add the following contents:
-export PATH=/opt/mpich3/bin:$PATH
+Add lines:
 export PETSC_DEB=/opt/petsc/petsc-X.Y.Z-debug
 export PETSC_OPT=/opt/petsc/petsc-X.Y.Z-opt
 
@@ -90,9 +63,11 @@ Download PETSC (http://www.mcs.anl.gov/petsc/download/)
 --with-fc=mpif90 \
 --download-metis=1 \
 --download-parmetis=1 \
+--download-ptscotch=1 \
 --download-scalapack=1 \
 --download-mumps=1 \
 --download-superlu_dist=1 \
+--download-pastix=1 \
 --with-clean
 
 make all
@@ -119,9 +94,11 @@ PETSC OPTIMIZED (for production runs, should give reasonable error messages)
 --with-fc=mpif90 \
 --download-metis=1 \
 --download-parmetis=1 \
+--download-ptscotch=1 \
 --download-scalapack=1 \
 --download-mumps=1 \
 --download-superlu_dist=1 \
+--download-pastix=1 \
 --with-clean
 
 make all
