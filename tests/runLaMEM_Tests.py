@@ -5,8 +5,9 @@ sys.path.append(os.path.join(os.environ['PWD'], 'pyTestHarness'))
 
 import argparse
 
-import pyTestHarness.unittest as pth
+#import pyTestHarness.unittest as pth
 import pyTestHarness.launch as launch
+import pyTestHarness.harness as harness
 
 # Import separate tests 
 sys.path.append(os.path.join(os.environ['PWD'], 't1_FB1_Direct'))
@@ -25,7 +26,6 @@ import test_4_localization as Loc1
 
 if os.environ.get('MATLAB') != None:
   import test_3_Subduction1 as Sub1 # import test that requires MATLAB
-
 
 def run_unittests_example1():
   os.environ['PYTHONUNBUFFERED'] = str('1')
@@ -52,7 +52,7 @@ def run_unittests_example1():
   os.system('cd ../src/;  make mode=deb all; cd ../tests')
  
   launcher = launch.pthLaunch();
-
+  
   # Filter tests <could be promoted into batch execute()/verify() methods
   args = launcher.args
   subset = []
@@ -71,11 +71,11 @@ def run_unittests_example1():
   else:
     subset = registeredTests
 
-  launcher.executeTestSuite(subset)
-  launcher.verifyTestSuite(subset)
-
-
-
+  launcher = harness.pthHarness(subset)
+  launcher.execute()
+  launcher.verify()
+  launcher.clean()
+  
 if __name__ == "__main__":
   run_unittests_example1()
 

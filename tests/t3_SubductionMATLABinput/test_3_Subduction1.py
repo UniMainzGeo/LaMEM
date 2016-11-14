@@ -41,7 +41,7 @@ def test_a():
     unittest.compareFloatingPoint(key,1e-4)
 
   # Create unit test object
-  ex1 = pth.pthUnitTest('unit_Sub1_a',ranks,launch,expected_file)
+  ex1 = pth.pthUnitTest('unit_Sub1_a_MATLAB_Core1',ranks,launch,expected_file)
   ex1.setVerifyMethod(comparefunc)
   ex1.appendKeywords('@')
   
@@ -78,7 +78,7 @@ def test_b():
     unittest.compareFloatingPoint(key,1e-4)
 
   # Create unit test object
-  ex1 = pth.pthUnitTest('unit_Sub1_b',ranks,launch,expected_file)
+  ex1 = pth.pthUnitTest('unit_Sub1_b_MATLAB_Core4_SUPERLUDIST',ranks,launch,expected_file)
   ex1.setVerifyMethod(comparefunc)
   ex1.appendKeywords('@')
   
@@ -115,7 +115,7 @@ def test_c():
     unittest.compareFloatingPoint(key,1e-4)
 
   # Create unit test object
-  ex1 = pth.pthUnitTest('unit_Sub1_c',ranks,launch,expected_file)
+  ex1 = pth.pthUnitTest('unit_Sub1_c_MATLAB_Core4_SUPERLUDIST',ranks,launch,expected_file)
   ex1.setVerifyMethod(comparefunc)
   ex1.appendKeywords('@')
   

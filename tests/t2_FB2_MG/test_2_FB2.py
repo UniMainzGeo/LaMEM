@@ -27,7 +27,7 @@ def test_a():
     unittest.compareFloatingPoint(key,1e-4)
 
   # Create unit test object
-  ex1 = pth.pthUnitTest('unit_FB2_a',ranks,launch,expected_file)
+  ex1 = pth.pthUnitTest('unit_FB2_a_CoupledMG_Core1',ranks,launch,expected_file)
   ex1.setVerifyMethod(comparefunc)
   ex1.appendKeywords('@')
   

@@ -27,7 +27,7 @@ def test_a():
     unittest.compareFloatingPoint(key,1e-4)
 
   # Create unit test object
-  ex1 = pth.pthUnitTest('unit_FB1_a',ranks,launch,expected_file)
+  ex1 = pth.pthUnitTest('unit_FB1_a_Direct_Core1_opt',ranks,launch,expected_file)
   ex1.setVerifyMethod(comparefunc)
   ex1.appendKeywords('@')
   
@@ -55,7 +55,7 @@ def test_b():
     unittest.compareFloatingPoint(key,1e-4)
 
   # Create unit test object
-  ex1 = pth.pthUnitTest('unit_FB1_b',ranks,launch,expected_file)
+  ex1 = pth.pthUnitTest('unit_FB1_b_Direct_Core1_deb',ranks,launch,expected_file)
   ex1.setVerifyMethod(comparefunc)
   ex1.appendKeywords('@')
   
@@ -83,7 +83,7 @@ def test_c():
     unittest.compareFloatingPoint(key,1e-4)
 
   # Create unit test object
-  ex1 = pth.pthUnitTest('unit_FB1_c',ranks,launch,expected_file)
+  ex1 = pth.pthUnitTest('unit_FB1_c_Direct_Core2_MUMPS',ranks,launch,expected_file)
   ex1.setVerifyMethod(comparefunc)
   ex1.appendKeywords('@')
   
@@ -111,7 +111,7 @@ def test_d():
     unittest.compareFloatingPoint(key,1e-4)
 
   # Create unit test object
-  ex1 = pth.pthUnitTest('unit_FB1_d',ranks,launch,expected_file)
+  ex1 = pth.pthUnitTest('unit_FB1_d_Direct_Core2_SUPERLUDIST',ranks,launch,expected_file)
   ex1.setVerifyMethod(comparefunc)
   ex1.appendKeywords('@')
   
