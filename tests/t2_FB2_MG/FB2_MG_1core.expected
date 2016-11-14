@@ -1,4 +1,4 @@
- Parsing input file : ./input/FallingBlock_mono_CoupledMG_RedundantCoarse.dat 
+ Parsing input file : ./t2_FB2_MG/FallingBlock_mono_CoupledMG_RedundantCoarse.dat 
 # Adding PetscOption: -dt 1e-2 
 # Adding PetscOption: -pcmat_no_dev_proj 
 # Adding PetscOption: -FSSA 1.0 
@@ -48,7 +48,7 @@
 # Adding PetscOption: -objects_dump 
 -------------------------------------------------------------------------- 
                    Lithosphere and Mantle Evolution Model                   
-     Compiled: Date: Nov  8 2016 - Time: 14:30:20 	    
+     Compiled: Date: Nov 11 2016 - Time: 23:49:20 	    
 -------------------------------------------------------------------------- 
         STAGGERED-GRID FINITE DIFFERENCE CANONICAL IMPLEMENTATION           
 -------------------------------------------------------------------------- 
@@ -58,23 +58,23 @@ Reading softening laws:
 
 Reading material parameters: 
 
-    Phase [0]: rho = 1 [ ], eta = 1 [ ], beta = 0 [ ]
-    Phase [0]: (diff ) Bd = 0.5 [ ], Ed = 0 [ ], Vd = 0 [ ] 
-    Phase [0]: (disl ) Bn = 0 [ ], En = 0 [ ], Vn = 0 [ ], n = 0 [ ] 
-    Phase [0]: (peirl) Bp = 0 [ ], Ep = 0 [ ], Vp = 0 [ ], taup = 0 [ ], gamma = 0 [ ], q = 0 [ ] 
-    Phase [0]: (elast) G = 0 [ ], K = 0 [ ], Kp = 0 [ ] 
-    Phase [0]: (plast) cohesion = 0 [ ], friction angle = 0 [ ] 
+    Phase [0]: rho = 1. [ ], eta = 1. [ ], beta = 0. [ ]
+    Phase [0]: (diff ) Bd = 0.5 [ ], Ed = 0. [ ], Vd = 0. [ ] 
+    Phase [0]: (disl ) Bn = 0. [ ], En = 0. [ ], Vn = 0. [ ], n = 0. [ ] 
+    Phase [0]: (peirl) Bp = 0. [ ], Ep = 0. [ ], Vp = 0. [ ], taup = 0. [ ], gamma = 0. [ ], q = 0. [ ] 
+    Phase [0]: (elast) G = 0. [ ], K = 0. [ ], Kp = 0. [ ] 
+    Phase [0]: (plast) cohesion = 0. [ ], friction angle = 0. [ ] 
     Phase [0]: (sweak) cohesion SoftLaw = -1 [ ], friction SoftLaw = -1 [ ] 
-    Phase [0]: (temp ) alpha = 0 [ ], cp = 0 [ ], k = 0 [ ], A = 0 [ ] 
+    Phase [0]: (temp ) alpha = 0. [ ], cp = 0. [ ], k = 0. [ ], A = 0. [ ] 
     
-    Phase [1]: rho = 2 [ ], eta = 100 [ ], beta = 0 [ ]
-    Phase [1]: (diff ) Bd = 0.005 [ ], Ed = 0 [ ], Vd = 0 [ ] 
-    Phase [1]: (disl ) Bn = 0 [ ], En = 0 [ ], Vn = 0 [ ], n = 0 [ ] 
-    Phase [1]: (peirl) Bp = 0 [ ], Ep = 0 [ ], Vp = 0 [ ], taup = 0 [ ], gamma = 0 [ ], q = 0 [ ] 
-    Phase [1]: (elast) G = 0 [ ], K = 0 [ ], Kp = 0 [ ] 
-    Phase [1]: (plast) cohesion = 0 [ ], friction angle = 0 [ ] 
+    Phase [1]: rho = 2. [ ], eta = 100. [ ], beta = 0. [ ]
+    Phase [1]: (diff ) Bd = 0.005 [ ], Ed = 0. [ ], Vd = 0. [ ] 
+    Phase [1]: (disl ) Bn = 0. [ ], En = 0. [ ], Vn = 0. [ ], n = 0. [ ] 
+    Phase [1]: (peirl) Bp = 0. [ ], Ep = 0. [ ], Vp = 0. [ ], taup = 0. [ ], gamma = 0. [ ], q = 0. [ ] 
+    Phase [1]: (elast) G = 0. [ ], K = 0. [ ], Kp = 0. [ ] 
+    Phase [1]: (plast) cohesion = 0. [ ], friction angle = 0. [ ] 
     Phase [1]: (sweak) cohesion SoftLaw = -1 [ ], friction SoftLaw = -1 [ ] 
-    Phase [1]: (temp ) alpha = 0 [ ], cp = 0 [ ], k = 0 [ ], A = 0 [ ] 
+    Phase [1]: (temp ) alpha = 0. [ ], cp = 0. [ ], k = 0. [ ], A = 0. [ ] 
     
 --------------------------------------------------------------------------
  Total # of cpu's               : 1 
@@ -113,74 +113,73 @@ USING PICARD JACOBIAN for iteration 0, ||F||/||F0||=1.000000e+00
     5 KSP Residual norm 8.579089014106e-02 
     6 KSP Residual norm 4.418650641674e-02 
     7 KSP Residual norm 1.870520897041e-02 
-  Linear solve converged due to CONVERGED_RTOL iterations 7
+  Linear js_ solve converged due to CONVERGED_RTOL iterations 7
  SNES Convergence Reason: maximum iterations reached
  Number of iterations : 1
- Nonlinear solve took 1.8587 (sec)
+ Nonlinear solve took 1.95 (sec)
 ------------------------------------------
 Residual summary: 
   Continuity: 
-    Div_min  = -0.000000000000e+00 
-    Div_max  = -0.000000000000e+00 
-    |Div|_2  = 0.000000000000e+00 
+    Div_min  = -1.258887310476e-03 
+    Div_max  = 1.258989889346e-03 
+    |Div|_2  = 1.706644286107e-02 
   Momentum: 
-    |mRes|_2 = 2.095328136593e+02 
+    |mRes|_2 = 2.778031460649e+00 
 ------------------------------------------
- Writing to existing directory Timestep_000000_0.000000e+00 
-AVD generator complete in 3.3869e-01 (sec)
+ Created new directory Timestep_000000_0.000000e+00 
+AVD generator complete in 4.3941e-01 (sec)
 AVD3D memory usage: 
   points:  8.000000 [MB] 
   cells:   21.542175 [MB] 
-  chains:  31.515633 [MB] 
-  total:   61.057808 [MB] 
+  chains:  35.192192 [MB] 
+  total:   64.734367 [MB] 
  Time = 1e-05[ ], dt = 1e-05[ ] 
  Finished timestep 0 out of 1 
  
 Time step 1 -------------------------------------------------------- 
 USING PICARD JACOBIAN for iteration 0, ||F||/||F0||=1.000000e+00 
     Residual norms for js_ solve.
-    0 KSP Residual norm 3.615127975135e-02 
-    1 KSP Residual norm 1.225187920590e-02 
-    2 KSP Residual norm 6.871092249840e-03 
-    3 KSP Residual norm 2.115597247919e-03 
-    4 KSP Residual norm 1.077726314877e-03 
-    5 KSP Residual norm 4.795170555605e-04 
-    6 KSP Residual norm 1.125469581678e-04 
-    7 KSP Residual norm 6.089034712002e-05 
-    8 KSP Residual norm 2.223032400136e-05 
-  Linear solve converged due to CONVERGED_RTOL iterations 8
+    0 KSP Residual norm 3.615127975837e-02 
+    1 KSP Residual norm 1.225187919327e-02 
+    2 KSP Residual norm 6.871092247486e-03 
+    3 KSP Residual norm 2.115597249852e-03 
+    4 KSP Residual norm 1.077726316959e-03 
+    5 KSP Residual norm 4.795170552386e-04 
+    6 KSP Residual norm 1.125469579714e-04 
+    7 KSP Residual norm 6.089034704450e-05 
+    8 KSP Residual norm 2.223032390302e-05 
+  Linear js_ solve converged due to CONVERGED_RTOL iterations 8
  SNES Convergence Reason: maximum iterations reached
  Number of iterations : 1
- Nonlinear solve took 1.75937 (sec)
+ Nonlinear solve took 1.73637 (sec)
 ------------------------------------------
 Residual summary: 
   Continuity: 
-    Div_min  = -1.258887310475e-03 
-    Div_max  = 1.258989889348e-03 
-    |Div|_2  = 1.706644286106e-02 
+    Div_min  = -1.503352651884e-06 
+    Div_max  = 1.503979326034e-06 
+    |Div|_2  = 2.544064652197e-05 
   Momentum: 
-    |mRes|_2 = 2.778124401997e+00 
+    |mRes|_2 = 1.980920187863e+00 
 ------------------------------------------
- Writing to existing directory Timestep_000001_1.000000e-05 
-AVD generator complete in 4.6337e-01 (sec)
+ Created new directory Timestep_000001_1.000000e-05 
+AVD generator complete in 3.9987e-01 (sec)
 AVD3D memory usage: 
   points:  8.000000 [MB] 
   cells:   21.542175 [MB] 
-  chains:  35.192192 [MB] 
-  total:   64.734367 [MB] 
+  chains:  35.192703 [MB] 
+  total:   64.734879 [MB] 
  Time = 2e-05[ ], dt = 1e-05[ ] 
  Finished timestep 1 out of 1 
  
- Simulation took 5.01603 (sec) 
+ Simulation took 5.0899 (sec) 
 #PETSc Option Table entries:
 -AddRandomNoiseParticles 0
--FSSA 1.0
--ParamFile ./input/FallingBlock_mono_CoupledMG_RedundantCoarse.dat
 -crs_ksp_type preonly
 -crs_pc_redundant_number 1
 -crs_pc_type redundant
 -crs_redundant_pc_factor_mat_solver_package superlu_dist
 -dt 1e-2
+-FSSA 1.0
 -gmg_mg_levels_ksp_max_it 20
 -gmg_mg_levels_ksp_richardson_scale 0.5
 -gmg_mg_levels_ksp_type richardson
@@ -199,6 +198,7 @@ AVD3D memory usage:
 -js_ksp_monitor
 -js_ksp_rtol 1e-3
 -js_ksp_type gmres
+-mat_superlu_dist_fact SamePattern_SameRowPerm
 -objects_dump
 -options_left
 -out_avd 1
@@ -217,6 +217,7 @@ AVD3D memory usage:
 -out_strain_rate 1
 -out_temperature 1
 -out_velocity 1
+-ParamFile ./t2_FB2_MG/FallingBlock_mono_CoupledMG_RedundantCoarse.dat
 -pcmat_no_dev_proj
 -pcmat_type mono
 -pstokes mg
