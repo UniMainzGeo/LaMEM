@@ -34,7 +34,7 @@
 # Adding PetscOption: -objects_dump 
 -------------------------------------------------------------------------- 
                    Lithosphere and Mantle Evolution Model                   
-     Compiled: Date: Nov  8 2016 - Time: 14:30:20 	    
+     Compiled: Date: Nov 11 2016 - Time: 23:49:20 	    
 -------------------------------------------------------------------------- 
         STAGGERED-GRID FINITE DIFFERENCE CANONICAL IMPLEMENTATION           
 -------------------------------------------------------------------------- 
@@ -44,23 +44,23 @@ Reading softening laws:
 
 Reading material parameters: 
 
-    Phase [0]: rho = 1 [ ], eta = 1 [ ], beta = 0 [ ]
-    Phase [0]: (diff ) Bd = 0.5 [ ], Ed = 0 [ ], Vd = 0 [ ] 
-    Phase [0]: (disl ) Bn = 0 [ ], En = 0 [ ], Vn = 0 [ ], n = 0 [ ] 
-    Phase [0]: (peirl) Bp = 0 [ ], Ep = 0 [ ], Vp = 0 [ ], taup = 0 [ ], gamma = 0 [ ], q = 0 [ ] 
-    Phase [0]: (elast) G = 0 [ ], K = 0 [ ], Kp = 0 [ ] 
-    Phase [0]: (plast) cohesion = 0 [ ], friction angle = 0 [ ] 
+    Phase [0]: rho = 1. [ ], eta = 1. [ ], beta = 0. [ ]
+    Phase [0]: (diff ) Bd = 0.5 [ ], Ed = 0. [ ], Vd = 0. [ ] 
+    Phase [0]: (disl ) Bn = 0. [ ], En = 0. [ ], Vn = 0. [ ], n = 0. [ ] 
+    Phase [0]: (peirl) Bp = 0. [ ], Ep = 0. [ ], Vp = 0. [ ], taup = 0. [ ], gamma = 0. [ ], q = 0. [ ] 
+    Phase [0]: (elast) G = 0. [ ], K = 0. [ ], Kp = 0. [ ] 
+    Phase [0]: (plast) cohesion = 0. [ ], friction angle = 0. [ ] 
     Phase [0]: (sweak) cohesion SoftLaw = -1 [ ], friction SoftLaw = -1 [ ] 
-    Phase [0]: (temp ) alpha = 0 [ ], cp = 0 [ ], k = 0 [ ], A = 0 [ ] 
+    Phase [0]: (temp ) alpha = 0. [ ], cp = 0. [ ], k = 0. [ ], A = 0. [ ] 
     
-    Phase [1]: rho = 2 [ ], eta = 100 [ ], beta = 0 [ ]
-    Phase [1]: (diff ) Bd = 0.005 [ ], Ed = 0 [ ], Vd = 0 [ ] 
-    Phase [1]: (disl ) Bn = 0 [ ], En = 0 [ ], Vn = 0 [ ], n = 0 [ ] 
-    Phase [1]: (peirl) Bp = 0 [ ], Ep = 0 [ ], Vp = 0 [ ], taup = 0 [ ], gamma = 0 [ ], q = 0 [ ] 
-    Phase [1]: (elast) G = 0 [ ], K = 0 [ ], Kp = 0 [ ] 
-    Phase [1]: (plast) cohesion = 0 [ ], friction angle = 0 [ ] 
+    Phase [1]: rho = 2. [ ], eta = 100. [ ], beta = 0. [ ]
+    Phase [1]: (diff ) Bd = 0.005 [ ], Ed = 0. [ ], Vd = 0. [ ] 
+    Phase [1]: (disl ) Bn = 0. [ ], En = 0. [ ], Vn = 0. [ ], n = 0. [ ] 
+    Phase [1]: (peirl) Bp = 0. [ ], Ep = 0. [ ], Vp = 0. [ ], taup = 0. [ ], gamma = 0. [ ], q = 0. [ ] 
+    Phase [1]: (elast) G = 0. [ ], K = 0. [ ], Kp = 0. [ ] 
+    Phase [1]: (plast) cohesion = 0. [ ], friction angle = 0. [ ] 
     Phase [1]: (sweak) cohesion SoftLaw = -1 [ ], friction SoftLaw = -1 [ ] 
-    Phase [1]: (temp ) alpha = 0 [ ], cp = 0 [ ], k = 0 [ ], A = 0 [ ] 
+    Phase [1]: (temp ) alpha = 0. [ ], cp = 0. [ ], k = 0. [ ], A = 0. [ ] 
     
 --------------------------------------------------------------------------
  Total # of cpu's               : 4 
@@ -90,65 +90,64 @@ Reading material parameters:
 Time step 0 -------------------------------------------------------- 
 USING PICARD JACOBIAN for iteration 0, ||F||/||F0||=1.000000e+00 
     Residual norms for js_ solve.
-    0 KSP Residual norm 2.136003076512e+01 
-    1 KSP Residual norm 1.604217444535e-04 
-  Linear solve converged due to CONVERGED_RTOL iterations 1
+    0 KSP Residual norm 2.136003076510e+01 
+    1 KSP Residual norm 1.604219489032e-04 
+  Linear js_ solve converged due to CONVERGED_RTOL iterations 1
  SNES Convergence Reason: maximum iterations reached
  Number of iterations : 1
- Nonlinear solve took 0.876647 (sec)
+ Nonlinear solve took 0.909685 (sec)
 ------------------------------------------
 Residual summary: 
   Continuity: 
-    Div_min  = -0.000000000000e+00 
-    Div_max  = -0.000000000000e+00 
-    |Div|_2  = 0.000000000000e+00 
+    Div_min  = -5.550719149101e-06 
+    Div_max  = 5.550729527421e-06 
+    |Div|_2  = 2.110210893106e-04 
   Momentum: 
-    |mRes|_2 = 7.310266752999e+01 
+    |mRes|_2 = 1.089621703860e-03 
 ------------------------------------------
  Created new directory Timestep_000000_0.000000e+00 
-AVD generator complete in 9.3798e-03 (sec)
+AVD generator complete in 1.2878e-02 (sec)
 AVD3D memory usage: 
   points:  1.000000 [MB] 
   cells:   3.094482 [MB] 
-  chains:  3.871124 [MB] 
-  total:   7.965607 [MB] 
+  chains:  4.329872 [MB] 
+  total:   8.424355 [MB] 
  Time = 1e-05[ ], dt = 1e-05[ ] 
  Finished timestep 0 out of 1 
  
 Time step 1 -------------------------------------------------------- 
 USING PICARD JACOBIAN for iteration 0, ||F||/||F0||=1.000000e+00 
     Residual norms for js_ solve.
-    0 KSP Residual norm 3.029574908231e-04 
-    1 KSP Residual norm 4.582843035936e-09 
-  Linear solve converged due to CONVERGED_RTOL iterations 1
+    0 KSP Residual norm 3.029579855026e-04 
+    1 KSP Residual norm 4.586026083294e-09 
+  Linear js_ solve converged due to CONVERGED_RTOL iterations 1
  SNES Convergence Reason: maximum iterations reached
  Number of iterations : 1
- Nonlinear solve took 0.671839 (sec)
+ Nonlinear solve took 0.747752 (sec)
 ------------------------------------------
 Residual summary: 
   Continuity: 
-    Div_min  = -5.550719132167e-06 
-    Div_max  = 5.550729544394e-06 
-    |Div|_2  = 2.110210788755e-04 
+    Div_min  = -7.878030172659e-11 
+    Div_max  = 6.841343810904e-11 
+    |Div|_2  = 2.568015432743e-09 
   Momentum: 
-    |mRes|_2 = 5.208160865995e-03 
+    |mRes|_2 = 5.670846516682e-04 
 ------------------------------------------
  Created new directory Timestep_000001_1.000000e-05 
-AVD generator complete in 1.6850e-02 (sec)
+AVD generator complete in 1.5412e-02 (sec)
 AVD3D memory usage: 
   points:  1.000000 [MB] 
   cells:   3.094482 [MB] 
-  chains:  4.329872 [MB] 
-  total:   8.424355 [MB] 
+  chains:  4.329849 [MB] 
+  total:   8.424332 [MB] 
  Time = 2e-05[ ], dt = 1e-05[ ] 
  Finished timestep 1 out of 1 
  
- Simulation took 1.60956 (sec) 
+ Simulation took 1.72622 (sec) 
 #PETSc Option Table entries:
 -AddRandomNoiseParticles 0
--FSSA 1.0
--ParamFile ./t1_FB1_Direct/FallingBlock_mono_PenaltyDirect.dat
 -dt 1e-2
+-FSSA 1.0
 -jp_pc_factor_mat_solver_package superlu_dist
 -jp_pc_type lu
 -jp_type user
@@ -158,6 +157,7 @@ AVD3D memory usage:
 -js_ksp_monitor
 -js_ksp_rtol 1e-4
 -js_ksp_type gmres
+-mat_superlu_dist_fact SamePattern_SameRowPerm
 -objects_dump
 -options_left
 -out_avd 1
@@ -176,6 +176,7 @@ AVD3D memory usage:
 -out_strain_rate 1
 -out_temperature 1
 -out_velocity 1
+-ParamFile ./t1_FB1_Direct/FallingBlock_mono_PenaltyDirect.dat
 -pcmat_no_dev_proj
 -pcmat_pgamma 1e5
 -pcmat_type mono
