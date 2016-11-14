@@ -82,7 +82,7 @@ def launcherReportAll(launcher,testList):
       if test.ranks == 1 and test.passed == True:
         seqPassedCounter = seqPassedCounter + 1
       elif test.ranks >= 1 and test.passed == True:
-        mpiPasedCounter = mpiPassedCounter + 1
+        mpiPassedCounter = mpiPassedCounter + 1
 
   print('[--------- UnitTest status ----------------------]')
   for test in testList:
