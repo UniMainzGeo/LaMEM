@@ -27,7 +27,7 @@ def test_a():
     unittest.compareFloatingPoint(key,1e-4)
 
   # Create unit test object
-  ex1 = pth.pthUnitTest('unit_Loc1_a',ranks,launch,expected_file)
+  ex1 = pth.pthUnitTest('unit_Loc1_a_Direct_4Cores_MUMPS_VEP_AnalyticalJac',ranks,launch,expected_file)
   ex1.setVerifyMethod(comparefunc)
   ex1.appendKeywords('@')
   
@@ -55,7 +55,7 @@ def test_b():
     unittest.compareFloatingPoint(key,1e-4)
 
   # Create unit test object
-  ex1 = pth.pthUnitTest('unit_Loc1_b',ranks,launch,expected_file)
+  ex1 = pth.pthUnitTest('unit_Loc1_b_Direct_4Cores_MUMPS_VP_FDJac',ranks,launch,expected_file)
   ex1.setVerifyMethod(comparefunc)
   ex1.appendKeywords('@')
   
@@ -64,7 +64,7 @@ def test_b():
 
 def test_c():
   
-  # Test a falling block case on 4 cores, using optimized LaMEM and finite difference jacobian
+  # Test a falling block case on 1 cores, using optimized LaMEM and finite difference jacobian
   ranks = 1
   launch = '../bin/opt/LaMEM -ParamFile ./t4_Loc/localization.dat' # This must be a relative path with respect to runLaMEM_Tests.py
   expected_file = 't4_Loc/Loc1c_1core.expected'
@@ -84,7 +84,7 @@ def test_c():
     unittest.compareFloatingPoint(key,1e-4)
 
   # Create unit test object
-  ex1 = pth.pthUnitTest('unit_Loc1_c',ranks,launch,expected_file)
+  ex1 = pth.pthUnitTest('unit_Loc1_c_Direct_Core1_VEP_FDJac',ranks,launch,expected_file)
   ex1.setVerifyMethod(comparefunc)
   ex1.appendKeywords('@')
   
