@@ -22,6 +22,11 @@ Set environment in /etc/profile.d/environment.sh
 WARNING! add paraview the last on your path (tends to override mpiexec)
 export PATH=$PATH:/opt/paraview/
 
+At best rename mpiexec in paraview bin directory to make it safe in any case:
+
+cd /opt/paraview-install-dir/bin
+mv mpiexec mpiexec-bak
+
 Create desktop launcher
 As "command" simply type paraview
 Icon file is supplied

@@ -70,7 +70,7 @@ CONFIGURE PROJECT
 7. Add full paths to header files used in your project.
 
    PETSc (version X.Y.Z) applications would require setting:
-      /usr/include/mpich
+      /opt/mpich3/include
       /opt/petsc/petsc-X.Y.Z-debug/include
 
     Each path can be added as follows:
