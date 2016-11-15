@@ -280,6 +280,8 @@ PetscErrorCode JacResDestroy(JacRes *jr)
 
 	ierr = VecDestroy(&jr->gc);      CHKERRQ(ierr);
 
+	ierr = VecDestroy(&jr->lp_lithos); CHKERRQ(ierr);
+
 	ierr = VecDestroy(&jr->lbcor);   CHKERRQ(ierr);
 
 	// solution variables
