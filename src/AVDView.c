@@ -155,8 +155,8 @@ void AVDChain3DCreate(const PetscInt npoints, const PetscInt buffer, AVDChain3D 
 		chains[p].new_claimed_cells_malloced = buffer;
 		chains[p].new_boundary_cells_malloced = buffer;
 
-		chains[p].new_claimed_cells = (PetscInt*) malloc (sizeof(PetscInt)*(size_t)buffer );
-		chains[p].new_boundary_cells = (PetscInt*) malloc (sizeof(PetscInt)*(size_t)buffer );
+		chains[p].new_claimed_cells = (PetscInt*) malloc (sizeof(PetscInt)*(size_t)(buffer+1) );
+		chains[p].new_boundary_cells = (PetscInt*) malloc (sizeof(PetscInt)*(size_t)(buffer+1) );
 	}
 
 	*CH = chains;
@@ -568,11 +568,11 @@ void AVD3DClaimCells(AVD3D A, const PetscInt p_i)
 
 			// Realloc, note that we need one space more than the number of points to terminate the list
 			if( count == bchain->new_claimed_cells_malloced-1  ){
-				temp = (PetscInt*) realloc( bchain->new_claimed_cells, (size_t)(bchain->new_claimed_cells_malloced + buffer)*sizeof(PetscInt) );
+				temp = (PetscInt*) realloc( bchain->new_claimed_cells, (size_t)(bchain->new_claimed_cells_malloced + buffer + 1)*sizeof(PetscInt) );
 				bchain->new_claimed_cells = temp;
 				bchain->new_claimed_cells_malloced += buffer;
 
-				temp = (PetscInt*) realloc( bchain->new_boundary_cells, (size_t)(bchain->new_boundary_cells_malloced + buffer)*sizeof(PetscInt) );
+				temp = (PetscInt*) realloc( bchain->new_boundary_cells, (size_t)(bchain->new_boundary_cells_malloced + buffer + 1)*sizeof(PetscInt) );
 				bchain->new_boundary_cells = temp;
 				bchain->new_boundary_cells_malloced += buffer;
 			}
@@ -658,11 +658,11 @@ void AVD3DUpdateChain(AVD3D A, const PetscInt p_i)
 
 					// Realloc, note that we need one space more than the number of points to terminate the list
 					if (count == bchain->new_boundary_cells_malloced-1 ) {
-						temp = (PetscInt*)realloc( bchain->new_claimed_cells, (size_t)(bchain->new_claimed_cells_malloced + buffer)*sizeof(PetscInt) );
+						temp = (PetscInt*)realloc( bchain->new_claimed_cells, (size_t)(bchain->new_claimed_cells_malloced + buffer + 1)*sizeof(PetscInt) );
 						bchain->new_claimed_cells = temp;
 						bchain->new_claimed_cells_malloced += buffer;
 
-						temp = (PetscInt*)realloc( bchain->new_boundary_cells, (size_t)(bchain->new_boundary_cells_malloced + buffer)*sizeof(PetscInt) );
+						temp = (PetscInt*)realloc( bchain->new_boundary_cells, (size_t)(bchain->new_boundary_cells_malloced + buffer + 1)*sizeof(PetscInt) );
 						bchain->new_boundary_cells = temp;
 						bchain->new_boundary_cells_malloced += buffer;
 					}
