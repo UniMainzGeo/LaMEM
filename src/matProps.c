@@ -103,7 +103,7 @@ PetscErrorCode MatPropInit(JacRes *jr, FILE *fp)
 		ierr = MatPropGetStruct(fp,
 				jr->numPhases, jr->phases,
 				jr->numSoft, jr->matSoft,
-				ls[i], le[i], jr->scal.utype); CHKERRQ(ierr); //, jr->ExplicitSolver); CHKERRQ(ierr);
+				ls[i], le[i], jr->scal.utype, jr->ExplicitSolver); CHKERRQ(ierr);
 	}
 
 	PetscPrintf(PETSC_COMM_WORLD,"--------------------------------------------------------------------------\n");
@@ -120,7 +120,7 @@ PetscErrorCode MatPropInit(JacRes *jr, FILE *fp)
 PetscErrorCode MatPropGetStruct(FILE *fp,
 		PetscInt numPhases, Material_t *phases,
 		PetscInt numSoft,   Soft_t     *matSoft,
-		PetscInt ils, PetscInt ile, UnitsType utype)
+		PetscInt ils, PetscInt ile, UnitsType utype, PetscBool ExpSolver)
 {
 	// read material properties from file with error checking
 	// WARNING! This function assumes correctly defined softening parameters
@@ -238,7 +238,7 @@ PetscErrorCode MatPropGetStruct(FILE *fp,
 	getMatPropScalar(fp, ils, ile, "shear",     &m->G,     NULL);
 	getMatPropScalar(fp, ils, ile, "bulk",      &m->K,     NULL);
 
-	if (!m->K) //(ExplicitSolver == PETSC_TRUE && !m->K)
+	if (ExpSolver == PETSC_TRUE && !m->K) //(ExplicitSolver == PETSC_TRUE && !m->K)
 	{
 		SETERRQ1(PETSC_COMM_SELF, PETSC_ERR_USER, "K must be specified for phase %lld", (LLD)ID);
 	}

@@ -522,6 +522,8 @@ PetscErrorCode ChangeTimeStep(JacRes *jr, UserCtx *user)
 
 		vp 			=	sqrt( (bulk+4.0/3.0*shear)/rho);				// P-wave velocity
 
+
+
 		// Compute velocity such that the wave does not move more than CFL times a gridcell per dt		
 		dt 			= 	CFL*dx/vp;
 		if (dt_min>dt){dt_min =dt;}

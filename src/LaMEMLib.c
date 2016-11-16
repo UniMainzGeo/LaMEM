@@ -108,11 +108,10 @@ PetscErrorCode LaMEMLib(ModParam *IOparam)
 	PetscBool          stop = PETSC_FALSE;
 
 
-	char           *fname;
+	char *fname;
 	FILE *fseism;
 	PetscMPIInt inproc;
-	PetscInt nproc, p;
-	PetscScalar axial_stress, axial_strain;
+	PetscScalar axial_stress;
 
 
 
@@ -178,6 +177,8 @@ PetscErrorCode LaMEMLib(ModParam *IOparam)
 
 	// check time step if ExplicitSolver (in JacRes.c)
 	if (user.ExplicitSolver == PETSC_TRUE)		{
+		/* In case we use the explicit solver */
+
 		ierr = ChangeTimeStep(&jr, &user); CHKERRQ(ierr);
 		//ierr = CheckTimeStep(&jr, &user); CHKERRQ(ierr);
 	}
@@ -308,52 +309,30 @@ PetscErrorCode LaMEMLib(ModParam *IOparam)
 	PetscPrintf(PETSC_COMM_WORLD," \n");
 
 
+
 	if (user.ExplicitSolver == PETSC_TRUE) {
 		/* In case we use the explicit solver */
 
-		MPI_Comm_size(PETSC_COMM_WORLD, &inproc); nproc = (PetscInt)inproc;
-
-		// Get the coordinates corresponding to the force term source and to the seismic station
+		// Get the coordinates corresponding to the possible force term source and/or seismic station
 		GetCellCoordinatesSourceAndSeismicStation(&jr);
 		//PetscPrintf(PETSC_COMM_WORLD, "  Source applied at cell (%i,%i,%i)  \n", jr.SourceParams.i,jr.SourceParams.j,jr.SourceParams.k);
 
 		// Files to save seismic signals at a given point of the model
 		if (user.SeismicStation == PETSC_TRUE) {
-			//for(p=0; p<nproc; p++)
-			//{
-				//asprintf(&fname, "seismogram.%1.3lld",(LLD)p);
-				//user.StationParams.output_file[p] = fopen(fname, "w" );
-				//user.StationParams.output_file = fopen(user.StationParams.output_file_name, "w" );
-				//if(user.StationParams.output_file[p] == NULL) SETERRQ1(PETSC_COMM_SELF, 1,"cannot open file %s", fname);
-			//}
 			jr.StationParams.output_file[0] = fopen("vel_seismogram_x", "w" );
 			jr.StationParams.output_file[1] = fopen("vel_seismogram_y", "w" );
 			jr.StationParams.output_file[2] = fopen("vel_seismogram_z", "w" );
-			if(jr.StationParams.output_file[0] == NULL ||
-					jr.StationParams.output_file[1] == NULL ||
-						jr.StationParams.output_file[2] == NULL) {
-				SETERRQ1(PETSC_COMM_SELF, 1,"cannot open file %s", "vel_seismogram_x");
-			}
+				if(jr.StationParams.output_file[0] == NULL) SETERRQ1(PETSC_COMM_SELF, 1,"cannot open file %s", "vel_seismogram_x");
+				if(jr.StationParams.output_file[1] == NULL) SETERRQ1(PETSC_COMM_SELF, 1,"cannot open file %s", "vel_seismogram_y");
+				if(jr.StationParams.output_file[2] == NULL) SETERRQ1(PETSC_COMM_SELF, 1,"cannot open file %s", "vel_seismogram_z");
 		}
 
 		// File to save axial stress / step
-		//asprintf(&fname, "strain_stress%1.3lld.%12.12e.txt",jr.fs->dsz.rank,user.dt);
-
-
-		asprintf(&fname, "strain_stress.txt");
-
-		fseism = fopen(fname, "w" );
-		if(fseism == NULL) SETERRQ1(PETSC_COMM_SELF, 1,"cannot open file %s", fname);
-		//user.Station.output_file = fseism;
-		///////////////////////////
-
-		// Get the coordinates of the force term source
-		//GetCellCoordinatesSource(&jr);
-
 		jr.stress_file = fopen("stress_file", "w" );
 		if (jr.stress_file == NULL) SETERRQ1(PETSC_COMM_SELF, 1,"cannot open file %s", "stress_file");
 
-
+		// compute inverse elastic viscosities (dependent on dt)
+		ierr 	= 	JacResGetI2Gdt(&jr); CHKERRQ(ierr);
 	}
 
 	//===============
@@ -490,23 +469,17 @@ PetscErrorCode LaMEMLib(ModParam *IOparam)
 			// copy solution from global to local vectors, enforce boundary constraints
 			ierr 	= 	JacResCopySol(&jr, jr.gsol, _APPLY_SPC_); CHKERRQ(ierr);
 			
-			// compute inverse elastic viscosities (dependent on dt)
-			ierr 	= 	JacResGetI2Gdt(&jr); CHKERRQ(ierr);
+			// compute inverse elastic viscosities (dependent on dt) //I put outside the loop
+			//ierr 	= 	JacResGetI2Gdt(&jr); CHKERRQ(ierr);
 
 			// evaluate momentum residual and pressure
 			ierr 	= 	FormMomentumResidualPressureAndVelocities(&jr,&user); CHKERRQ(ierr);
 
 			// update history fields (and get averaged axial stress)
-			//ierr = UpdateHistoryFieldsAndGetAxialStressStrain(&jr, &axial_stress, &axial_strain); 	CHKERRQ(ierr);
 			ierr 	= 	UpdateHistoryFieldsAndGetAxialStressStrain(&jr, &axial_stress); 	CHKERRQ(ierr);
 
 			// Save axial stress file
-			//PetscScalar step=JacResGetStep(&jr);
-			//fprintf(fseism, "%12.12e %12.12e\n", step, axial_stress);
-			//fprintf(user.stress_file[jr.fs->dsz.rank], "%12.12e %12.12e\n", jr.ts.time, axial_stress);
 			fprintf(jr.stress_file, "%12.12e %12.12e\n", jr.ts.time, axial_stress);
-
-			//ierr = ShowValues(&jr,&user, 5); CHKERRQ(ierr);
 
 			//ierr = SaveVelocitiesForSeismicStation(&jr, &user); CHKERRQ(ierr);
 
@@ -519,45 +492,108 @@ PetscErrorCode LaMEMLib(ModParam *IOparam)
 				jr.matLim.initGuessFlg = PETSC_FALSE;
 			}
 
-			// view nonlinear residual
-			//ierr = JacResViewRes(&jr); CHKERRQ(ierr);
-
 			// check elastic properties remain constant - just to check the code (to be removed)
 			//ierr = CheckElasticProperties(&jr, &user); CHKERRQ(ierr);
 
-			//// select new time step
+			// view nonlinear residual
+			//ierr = JacResViewRes(&jr); CHKERRQ(ierr);
+
+			// select new time step
 			//ierr = JacResGetCourantStep(&jr); CHKERRQ(ierr);
 
-			// advect free surface
-			//ierr = FreeSurfAdvect(&surf); CHKERRQ(ierr);
 
-			// advect markers
-			//ierr = ADVAdvect(&actx); CHKERRQ(ierr);
+			PetscInt way = 1; /* what to do after each time step */
+
+			if (way ==0) { /* the same as implicit case */
+
+						// prescribe velocity if rotation benchmark
+						if (user.msetup == ROTATION) {ierr = JacResSetVelRotation(&jr); CHKERRQ(ierr);}
+
+						//==========================================
+						// MARKER & FREE SURFACE ADVECTION + EROSION
+						//==========================================
+
+						// advect free surface
+						ierr = FreeSurfAdvect(&surf); CHKERRQ(ierr);
+
+						// advect markers
+						ierr = ADVAdvect(&actx); CHKERRQ(ierr);
+
+						// apply background strain-rate "DWINDLAR" BC (Bob Shaw "Ship of Strangers")
+						ierr = BCStretchGrid(&bc); CHKERRQ(ierr);
+
+						// exchange markers between the processors (after mesh advection)
+						ierr = ADVExchange(&actx); CHKERRQ(ierr);
+
+						// apply erosion to the free surface
+						ierr = FreeSurfAppErosion(&surf); CHKERRQ(ierr);
+
+						// apply sedimentation to the free surface
+						ierr = FreeSurfAppSedimentation(&surf); CHKERRQ(ierr);
+
+						// remap markers onto (stretched) grid
+						ierr = ADVRemap(&actx, &surf); CHKERRQ(ierr);
+
+						// update phase ratios taking into account actual free surface position
+						ierr = FreeSurfGetAirPhaseRatio(&surf); CHKERRQ(ierr);
+
+						/* // advect pushing block
+						ierr = BCAdvectPush(&bc); CHKERRQ(ierr);
+
+						// compute gravity misfits
+				//		ierr = CalculateMisfitValues(&user, C, itime, LaMEM_OutputParameters); CHKERRQ(ierr);
+
+						 // ACHTUNG !!!
+						PetscBool          flg;
+						KSP                ksp;
+						KSPConvergedReason reason;
+						PetscBool          stop = PETSC_FALSE;
+
+						ierr = PetscOptionsHasName(NULL, "-stop_linsol_fail", &flg); CHKERRQ(ierr);
+
+						if(flg == PETSC_TRUE)
+						{
+							ierr = SNESGetKSP(snes, &ksp); CHKERRQ(ierr);
+
+							ierr = KSPGetConvergedReason(ksp, &reason);
+
+							if(reason == KSP_DIVERGED_ITS)
+							{
+								stop = PETSC_TRUE;
+							}
+						}*/
+			}else {
+
+					// advect free surface
+					//ierr = FreeSurfAdvect(&surf); CHKERRQ(ierr);
+
+					// advect markers
+					//ierr = ADVAdvect(&actx); CHKERRQ(ierr);
 
 
-			// apply background strain-rate "DWINDLAR" BC (Bob Shaw "Ship of Strangers")
-			//ierr = BCStretchGrid(&bc); CHKERRQ(ierr);
+					// apply background strain-rate "DWINDLAR" BC (Bob Shaw "Ship of Strangers")
+					//ierr = BCStretchGrid(&bc); CHKERRQ(ierr);
 
-			// update phase ratios taking into account actual free surface position
-			ierr = FreeSurfGetAirPhaseRatio(&surf); CHKERRQ(ierr);
-
-
-			// exchange markers between the processors (after mesh advection)
-			//ierr = ADVExchange(&actx); CHKERRQ(ierr);
-
-			// remap markers onto (stretched) grid
-			//ierr = ADVRemap(&actx, &surf); CHKERRQ(ierr);
+					// update phase ratios taking into account actual free surface position
+					//ierr = FreeSurfGetAirPhaseRatio(&surf); CHKERRQ(ierr);
 
 
-			//// prescribe velocity if rotation benchmark
-			//if (user.msetup == ROTATION) {ierr = JacResSetVelRotation(&jr); CHKERRQ(ierr);}
+					// exchange markers between the processors (after mesh advection)
+					//ierr = ADVExchange(&actx); CHKERRQ(ierr);
+
+					// remap markers onto (stretched) grid
+					//ierr = ADVRemap(&actx, &surf); CHKERRQ(ierr);
+
+
+					//// prescribe velocity if rotation benchmark
+					//if (user.msetup == ROTATION) {ierr = JacResSetVelRotation(&jr); CHKERRQ(ierr);}
+
+					}
+
 			
-				PetscTime(&cputime_end_nonlinear);
-
-				PetscPrintf(PETSC_COMM_WORLD, " Explicit solve took %g (sec)\n", cputime_end_nonlinear - cputime_start_nonlinear);
+			PetscTime(&cputime_end_nonlinear);
+			PetscPrintf(PETSC_COMM_WORLD, " Explicit solve took %g (sec)\n", cputime_end_nonlinear - cputime_start_nonlinear);
 		}
-
-//ierr = ShowValues(&jr, &user, 6); CHKERRQ(ierr);
 
 		//==================
 		// Save data to disk
@@ -626,23 +662,19 @@ PetscErrorCode LaMEMLib(ModParam *IOparam)
 
 
 
-	// For wave propagation, close files
 	if (user.ExplicitSolver == PETSC_TRUE) {
-		//for(p=0; p<nproc; p++)
-		//{
-			// Close file to save seismic signals at a given point of the model
-			if (user.SeismicStation == PETSC_TRUE) {
-				fclose(jr.StationParams.output_file[0]);
-				fclose(jr.StationParams.output_file[1]);
-				fclose(jr.StationParams.output_file[2]);
-			}
+		/* In case we use the explicit solver */
 
+		// Close file to save seismic signals at a given point of the model
+		if (user.SeismicStation == PETSC_TRUE) {
+			fclose(jr.StationParams.output_file[0]);
+			fclose(jr.StationParams.output_file[1]);
+			fclose(jr.StationParams.output_file[2]);
+		}
 
-			// Close file to save axial stress / step
-			//fclose(user.stress_file[p]);
-			fclose(jr.stress_file);
-		//}
-		//free(fname); ??
+		// Close file to save axial stress / step
+		//fclose(user.stress_file[p]);
+		fclose(jr.stress_file);
 	}
 
 

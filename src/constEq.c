@@ -119,6 +119,7 @@ PetscErrorCode ConstEqCtxSetup(
 		// instead it rather acts as a smooth limiter for maximum viscosity.
 
 		ctx->A_els = 0.5/(mat->G*dt);
+//PetscPrintf(PETSC_COMM_WORLD, "    --mat->G  = %12.12e \n", mat->G);
 		ln++;
 	}
 
@@ -263,7 +264,7 @@ PetscErrorCode GetEffVisc(
 	// INITIAL GUESS
 	//==============
 
-	// set reference viscosity as initial guess
+	/*// set reference viscosity as initial guess
 	if(lim->eta_ref && lim->initGuessFlg == PETSC_TRUE)
 	{
 		(*eta_total) 		= lim->eta_ref;
@@ -271,7 +272,7 @@ PetscErrorCode GetEffVisc(
 		(*eta_viscoplastic) = lim->eta_ref;
 		
 		PetscFunctionReturn(0);
-	}
+	}*/
 
 	//=====================
 	// ISOLATED VISCOSITIES
@@ -284,6 +285,7 @@ PetscErrorCode GetEffVisc(
 
 	// elasticity
 	if(ctx->A_els) inv_eta_els = 2.0*ctx->A_els;
+//PetscPrintf(PETSC_COMM_WORLD, "    ctx->A_els  = %12.12e \n", ctx->A_els);
 	// diffusion
 	if(ctx->A_dif) inv_eta_dif = 2.0*ctx->A_dif;
 	// dislocation
@@ -328,7 +330,7 @@ PetscErrorCode GetEffVisc(
 		(*dEta) += cf*cf*(1.0/ctx->N_prl - 1.0)*eta_prl;
 	}
 
-	//===========
+	/*//===========
 	// PLASTICITY
 	//===========
 
@@ -377,7 +379,7 @@ PetscErrorCode GetEffVisc(
 			(*dEta)             = -eta_pl;
 			(*fr)               =  ctx->fr;
 		}
-	}
+	}*/
 
 	PetscFunctionReturn(0);
 }
@@ -466,6 +468,7 @@ PetscErrorCode DevConstEq(
 		// update present phases only
 		if(phRat[i])
 		{
+//PetscPrintf(PETSC_COMM_WORLD, "    phRat[i]  = %12.12e \n", phRat[i]);
 			// get reference to material parameters table
 			mat = &phases[i];
 

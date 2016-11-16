@@ -54,7 +54,7 @@ PetscErrorCode MatPropInit(JacRes *jr, FILE *fp);
 PetscErrorCode MatPropGetStruct(FILE *fp,
 	PetscInt numPhases, Material_t *phases,
 	PetscInt numSoft,   Soft_t     *matSoft,
-	PetscInt ils, PetscInt ile, UnitsType utype);
+	PetscInt ils, PetscInt ile, UnitsType utype, PetscBool ExpSolver);
 
 // read phases from command line
 PetscErrorCode MatPropSetFromCL(JacRes *jr);

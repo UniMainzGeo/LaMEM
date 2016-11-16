@@ -31,15 +31,15 @@ y_front					=	0			# Front side of domain
 z_bot					=	0			# Bottom of box
 
 # --- Model setup and noise ---
-msetup 					= homo 			#heterogeneous, layer, homo
+msetup 					= layer 			#heterogeneous, layer, homo
 
 
 # Define input/output and numerics-related stuff
-OutputFile					=	ExplicitWavePropagation
+OutputFile					=	ExplicitWavePropagation_
 save_timesteps				=	10			# save every ? timesteps
-time_end					=	200		# last timestep
+time_end					=	2000		# last timestep
 CFL							=	0.5				# CFL, dt-based criterium
-dt_max						=	1e-5	  	   	# Maximum timestep [years if dimensional]
+dt_max						=	1e-1	  	   	# Maximum timestep [years if dimensional]
 save_breakpoints			= 	-1 				#  -1: don't save breakpoints + initial particles
 												#   0: save initial particles only !
 												# 0+n: after how many timesteps we save a breakpointfile
@@ -68,7 +68,7 @@ Temp_bottom					=   0 #1 				# Temperature @ bottom; side BC's are flux-free
 	#-DeactivateFreeSurfaceCorrection
 
 	# Initial timestep
-	-dt 0.5e-2	#1.5e-10		#1e-2
+	-dt 0.0005 #0.5e-2	#1.5e-10		#1e-2
 	
 	# Use free surface stabilization algorithm:
 	#-surf_use        1
@@ -121,25 +121,23 @@ DII_ref 						=	1
 
 	# Define properties of matrix -----------------
 	<MaterialStart>
-		ID 			=	0			# phase id  [-]
+		ID 			=	1			# phase id  [-]
 		rho0        = 	2800		#2600 		#1000		# density - if dimensional [kg/m3]	
 		bulk		=	40e9	#3.38e10 	#208e+7		# K
 		shear		=   24e9	#2.34e10		#144e+7		# shear modulus (mu, G)
 		#friction	=	0
-		#cohesion	=	2e6
-		
+		#cohesion	=	2e6		
 		#eta		= 	1e30		# viscosity - if dimensional [Pa.s]
 	<MaterialEnd>
-	#<MaterialStart>
-	#	ID 			=	1			# phase id  [-]
-	#	rho0        = 	3100		#2600 		#1000		# density - if dimensional [kg/m3]	
-	#	bulk		=	6.3819e+10 #40e9	#3.38e10 	#208e+7		# K
-	#	shear		=   3.5836e+10 #24e9	#2.34e10		#144e+7		# shear modulus (mu, G)
-	#	friction	=	0
-	#	cohesion	=	100e6
-	#	
-	#	#eta		= 	1e30		# viscosity - if dimensional [Pa.s]
-	#<MaterialEnd>
+	<MaterialStart>
+		ID 			=	0			# phase id  [-]
+		rho0        = 	3100		#2600 		#1000		# density - if dimensional [kg/m3]	
+		bulk		=	6.3819e+10 #40e9	#3.38e10 	#208e+7		# K
+		shear		=   3.5836e+10 #24e9	#2.34e10		#144e+7		# shear modulus (mu, G)
+		#friction	=	0
+		#cohesion	=	100e6		
+		#eta		= 	1e30		# viscosity - if dimensional [Pa.s]
+	<MaterialEnd>
 
 # End of defining material properties for all phases ----------------------------------------
 
@@ -153,14 +151,14 @@ DII_ref 						=	1
 density_factor = 1
 
 # Absorbing boundaries ------------------------------------------------------------------------------
-abs_boundaries	=	1 # Default value is 1
+abs_boundaries	=	0 # Default value is 1
 
-#AB.NxL	= 0		# Number of absorbing boundary bands in the left  part of the x axis (must be 0 or bigger than 20 and enough smaller than nel_x ) 
+#AB.NxL	= 20		# Number of absorbing boundary bands in the left  part of the x axis (must be 0 or bigger than 20 and enough smaller than nel_x ) 
 #AB.NxR  = 0		# Number of absorbing boundary bands in the right part of the x axis (must be 0 or bigger than 20 and enough smaller than nel_x ) 
 #AB.NyL	= 20	# Number of absorbing boundary bands in the left  part of the y axis (must be 0 or bigger than 20 and enough smaller than nel_y ) 
-#AB.NyR  = 20	# Number of absorbing boundary bands in the right part of the y axis (must be 0 or bigger than 20 and enough smaller than nel_y ) 
+AB.NyR  = 0	# Number of absorbing boundary bands in the right part of the y axis (must be 0 or bigger than 20 and enough smaller than nel_y ) 
 #AB.NzL	= 20	# Number of absorbing boundary bands in the left  part of the z axis (must be 0 or bigger than 20 and enough smaller than nel_z ) 
-AB.NzR	= 0		# Number of absorbing boundary bands in the right part of the z axis (must be 0 or bigger than 20 and enough smaller than nel_z ) 
+#AB.NzR	= 0		# Number of absorbing boundary bands in the right part of the z axis (must be 0 or bigger than 20 and enough smaller than nel_z ) 
 
 
 # Define seismic source properties  ----------------------------------------------------------------------
@@ -169,12 +167,12 @@ AB.NzR	= 0		# Number of absorbing boundary bands in the right part of the z axis
 seismic_source 		=	1
 
 # Type:	point, plane, uniaxial_compression or moment_tensor
-source_type 		= 	moment_tensor		
+source_type 		= 	point		
 
 # Position
-x_source = 4000
+x_source = 2000
 y_source = 9000
-z_source = 4000
+z_source = 5000
 
 # Focal mechanism for the moment tensor source
 M0					=	1.0			
@@ -186,7 +184,7 @@ Mxz					=	0.0
 Myz					=	0.0
 
 # Source time function
-amplitude 	= 100 #80e6
+amplitude 	= 100000 #80e6
 alfa 		= 40
 t0 			= 1
 #frequency	= 2.0

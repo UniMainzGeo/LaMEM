@@ -805,14 +805,18 @@ PetscErrorCode ADVMarkInitLayer(AdvCtx *actx, UserCtx *user)
 		actx->markers[imark].T     = 1.0; // - actx->markers[imark].X[2];
 
 
-		if(
-				(actx->markers[imark].X[2] > bbottom)
-				&& (actx->markers[imark].X[2] < btop)
-				/*&& (actx->markers[imark].X[0] > 3000)
-								&& (actx->markers[imark].X[0] < 5000)
-				&& (actx->markers[imark].X[1] > 2000)
-								&& (actx->markers[imark].X[1] < 3000)*/
-		)
+		//if(
+		//		(actx->markers[imark].X[2] > bbottom)
+		//		&& (actx->markers[imark].X[2] < btop)
+		//		/*&& (actx->markers[imark].X[0] > 3000)
+		//						&& (actx->markers[imark].X[0] < 5000)
+		//		&& (actx->markers[imark].X[1] > 2000)
+		//						&& (actx->markers[imark].X[1] < 3000)*/
+		//)
+			if(
+							(actx->markers[imark].X[2] > btop)
+							//&& (actx->markers[imark].X[2] < btop+ 0.05*(PetscScalar)nel_z*dz)
+					)
 		{
 			// 3D block
 			actx->markers[imark].phase = 1;

@@ -390,6 +390,7 @@ PetscErrorCode JacResGetI2Gdt(JacRes *jr)
 		svCell = &jr->svCell[i];
 		// compute & store inverse viscosity
 		svCell->svDev.I2Gdt = GetI2Gdt(jr->numPhases, jr->phases, svCell->phRat, dt);
+		//PetscPrintf(PETSC_COMM_WORLD, "  I2Gdt cell  %12.12e\n", svCell->svDev.I2Gdt);
 	}
 	//===========
 	// xy - edges
@@ -400,6 +401,7 @@ PetscErrorCode JacResGetI2Gdt(JacRes *jr)
 		svEdge = &jr->svXYEdge[i];
 		// compute & store inverse viscosity
 		svEdge->svDev.I2Gdt = GetI2Gdt(jr->numPhases, jr->phases, svEdge->phRat, dt);
+		//PetscPrintf(PETSC_COMM_WORLD, "  I2Gdt edge  %12.12e\n", svEdge->svDev.I2Gdt);
 	}
 	//===========
 	// xz - edges
@@ -410,6 +412,7 @@ PetscErrorCode JacResGetI2Gdt(JacRes *jr)
 		svEdge = &jr->svXZEdge[i];
 		// compute & store inverse viscosity
 		svEdge->svDev.I2Gdt = GetI2Gdt(jr->numPhases, jr->phases, svEdge->phRat, dt);
+		//PetscPrintf(PETSC_COMM_WORLD, "  I2Gdt edge  %12.12e\n", svEdge->svDev.I2Gdt);
 	}
 	//===========
 	// yz - edges
@@ -420,6 +423,7 @@ PetscErrorCode JacResGetI2Gdt(JacRes *jr)
 		svEdge = &jr->svYZEdge[i];
 		// compute & store inverse viscosity
 		svEdge->svDev.I2Gdt = GetI2Gdt(jr->numPhases, jr->phases, svEdge->phRat, dt);
+		//PetscPrintf(PETSC_COMM_WORLD, "  I2Gdt edge  %12.12e\n", svEdge->svDev.I2Gdt);
 	}
 	PetscFunctionReturn(0);
 }
@@ -553,6 +557,7 @@ PetscErrorCode JacResGetEffStrainRate(JacRes *jr)
 		dxx[k][j][i] = xx + svCell->hxx*svDev->I2Gdt;
 		dyy[k][j][i] = yy + svCell->hyy*svDev->I2Gdt;
 		dzz[k][j][i] = zz + svCell->hzz*svDev->I2Gdt;
+		//PetscPrintf(PETSC_COMM_WORLD, "    svDev->I2Gdt[%i,%i,%i]  = %12.12e \n", i,j,k, svDev->I2Gdt);
 
 	}
 	END_STD_LOOP
@@ -584,6 +589,7 @@ PetscErrorCode JacResGetEffStrainRate(JacRes *jr)
 		svEdge->d = xy;
 
 		// compute & store effective deviatoric strain rate
+		//PetscPrintf(PETSC_COMM_WORLD, "    svDev->I2Gdt[%i,%i,%i]  = %12.12e \n", i,j,k, svDev->I2Gdt);
 		dxy[k][j][i] = xy + svEdge->h*svDev->I2Gdt;
 		//dxy[k][j][i] = xy + svEdge->s*svDev->I2Gdt;
 	}
@@ -616,6 +622,7 @@ PetscErrorCode JacResGetEffStrainRate(JacRes *jr)
         svEdge->d = xz;
 
 		// compute & store effective deviatoric strain rate
+        //PetscPrintf(PETSC_COMM_WORLD, "    svDev->I2Gdt[%i,%i,%i]  = %12.12e \n", i,j,k, svDev->I2Gdt);
 		dxz[k][j][i] = xz + svEdge->h*svDev->I2Gdt;
 		//dxz[k][j][i] = xz + svEdge->s*svDev->I2Gdt;
 
@@ -649,6 +656,7 @@ PetscErrorCode JacResGetEffStrainRate(JacRes *jr)
 		svEdge->d = yz;
 
 		// compute & store effective deviatoric strain rate
+		//PetscPrintf(PETSC_COMM_WORLD, "    svDev->I2Gdt[%i,%i,%i]  = %12.12e \n", i,j,k, svDev->I2Gdt);
 		dyz[k][j][i] = yz + svEdge->h*svDev->I2Gdt;
 		//dyz[k][j][i] = yz + svEdge->s*svDev->I2Gdt;
 
@@ -1380,7 +1388,7 @@ PetscErrorCode JacResGetMomentumResidualAndPressure(JacRes *jr, UserCtx *user)
 	PetscScalar eta_creep, eta_viscoplastic;;
 	PetscScalar depth, pc_lithos;
 
-	PetscScalar h, Ih4, I4h4, source_time, M0, Mxx, Myy, Mzz, Mxy, Mxz, Myz;
+	PetscScalar dx, dy, dz, h, Ih4, I4h4, source_time, M0, Mxx, Myy, Mzz, Mxy, Mxz, Myz;
 
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
@@ -1510,6 +1518,7 @@ PetscErrorCode JacResGetMomentumResidualAndPressure(JacRes *jr, UserCtx *user)
 		ierr = VolConstEq(svBulk, numPhases, phases, svCell->phRat, matLim, depth, dt, pc-pShift , Tc); CHKERRQ(ierr);
 
 		// update pressure
+		//PetscPrintf(PETSC_COMM_WORLD, "    svBulk->IKdt[%i,%i,%i]  = %12.12e \n", i,j,k, svBulk->IKdt);
 		gp[k][j][i]  = lp[k][j][i] - svBulk->theta/svBulk->IKdt;
 		pc           = gp[k][j][i];
 //PetscPrintf(PETSC_COMM_WORLD, "    pressure[%i,%i,%i]  = %12.12e \n", i,j,k, pc);
@@ -1518,6 +1527,7 @@ PetscErrorCode JacResGetMomentumResidualAndPressure(JacRes *jr, UserCtx *user)
 		//-----------
 
 		// evaluate deviatoric constitutive equations
+//PetscPrintf(PETSC_COMM_WORLD, "    [%i,%i,%i] \n", i,j,k);
 		ierr = DevConstEq(svDev, &eta_creep, &eta_viscoplastic, numPhases, phases, svCell->phRat, matLim, pc_lithos, dt, pc-pShift, Tc); CHKERRQ(ierr);
 
 
@@ -1577,25 +1587,19 @@ PetscErrorCode JacResGetMomentumResidualAndPressure(JacRes *jr, UserCtx *user)
 		bdy = SIZE_NODE(j, sy, fs->dsy);   fdy = SIZE_NODE(j+1, sy, fs->dsy);
 		bdz = SIZE_NODE(k, sz, fs->dsz);   fdz = SIZE_NODE(k+1, sz, fs->dsz);
 
-		//PetscPrintf(PETSC_COMM_WORLD, "    szz[%i,%i,%i]  = %12.12e \n", i,j,k, szz);
-
 		// momentum
 		fx[k][j][i] -= (sxx + vx[k][j][i]*tx)/bdx + gx/2.0;   fx[k][j][i+1] += (sxx + vx[k][j][i+1]*tx)/fdx - gx/2.0;
 		fy[k][j][i] -= (syy + vy[k][j][i]*ty)/bdy + gy/2.0;   fy[k][j+1][i] += (syy + vy[k][j+1][i]*ty)/fdy - gy/2.0;
 		fz[k][j][i] -= (szz + vz[k][j][i]*tz)/bdz + gz/2.0;   fz[k+1][j][i] += (szz + vz[k+1][j][i]*tz)/fdz - gz/2.0;
 
-		//PetscPrintf(PETSC_COMM_WORLD, "  Source coordinates (%12.12e,%12.12e,%12.12e)  \n", jr->SourceParams.x,jr->SourceParams.y,jr->SourceParams.z);
-		//PetscPrintf(PETSC_COMM_WORLD, "    fx[%i,%i,%i]  = %12.12e \n", i,j,k, fx[k][j][i]);
-
-
-
-
 		// Add seismic moment source term in the residual ////////////////////////////////////////////////////////////////////////
-		// To check: consider the case of the source in the boundaries!!!
 
 		if ( jr->SeismicSource == PETSC_TRUE && jr->SourceParams.source_type==MOMENT && jr->SourceParams.i == i && jr->SourceParams.j == j && jr->SourceParams.k == k) {
-			PetscPrintf(PETSC_COMM_WORLD, "  --Source applied at cell (%i,%i,%i)  \n", i,j,k);
-			h=1.0; //??????????
+			// size of cell
+			dx = SIZE_CELL(i, sx, fs->dsx);
+			dy = SIZE_CELL(j, sy, fs->dsy);
+			dz = SIZE_CELL(k, sz, fs->dsz);
+			h=1.0; //dx*dy*dz; // Volume of the grid cell
 			Ih4	=1.0/(h*h*h*h);
 			I4h4=Ih4/4.0;
 			time =  JacResGetTime(jr);
@@ -1727,6 +1731,7 @@ PetscErrorCode JacResGetMomentumResidualAndPressure(JacRes *jr, UserCtx *user)
 		pc_lithos = 0.25*(p_lithos[k][j][i] + p_lithos[k][j][i-1] + p_lithos[k][j-1][i] + p_lithos[k][j-1][i-1]);
 
 		// evaluate deviatoric constitutive equations
+//PetscPrintf(PETSC_COMM_WORLD, "    [%i,%i,%i] \n", i,j,k);
 		ierr = DevConstEq(svDev, &eta_creep, &eta_viscoplastic, numPhases, phases, svEdge->phRat, matLim, pc_lithos, dt, pc-pShift, Tc); CHKERRQ(ierr);
 
 //PetscPrintf(PETSC_COMM_WORLD, "    XY[%i,%i,%i]  = %12.12e \n", i,j,k, XY);
@@ -1837,6 +1842,20 @@ PetscErrorCode JacResGetMomentumResidualAndPressure(JacRes *jr, UserCtx *user)
 
 		// evaluate deviatoric constitutive equations
 		ierr = DevConstEq(svDev, &eta_creep, &eta_viscoplastic, numPhases, phases, svEdge->phRat, matLim, pc_lithos, dt, pc-pShift, Tc); CHKERRQ(ierr);
+
+
+
+/*PetscPrintf(PETSC_COMM_WORLD, "    [%i,%i,%i] \n", i,j,k);
+PetscPrintf(PETSC_COMM_WORLD, "    svDev->eta  = %12.12e \n", svDev->eta);
+PetscPrintf(PETSC_COMM_WORLD, "    svDev->DIIpl  = %12.12e \n", svDev->DIIpl);
+PetscPrintf(PETSC_COMM_WORLD, "    eta_creep  = %12.12e \n", eta_creep);
+PetscPrintf(PETSC_COMM_WORLD, "    eta_viscoplastic  = %12.12e \n", eta_viscoplastic);
+PetscPrintf(PETSC_COMM_WORLD, "    svDev->dEta  = %12.12e \n", svDev->dEta);
+PetscPrintf(PETSC_COMM_WORLD, "    svDev->fr  = %12.12e \n", svDev->fr);
+
+*/
+
+
 
 		// compute stress, plastic strain rate and shear heating term on edge
 		ierr = GetStressEdge(svEdge, matLim, XZ); CHKERRQ(ierr);

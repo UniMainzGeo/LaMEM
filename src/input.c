@@ -323,17 +323,6 @@ PetscErrorCode FDSTAGInitCode(JacRes *jr, UserCtx *user, ModParam *iop)
 	// Interpret command line options
 	ierr = InputReadCommLine(user); CHKERRQ(ierr);
 
-
-
-	/*// Change time step if ExplicitSolver
-	if (user->ExplicitSolver == PETSC_TRUE)		{
-		ierr = ChangeTimeStep(jr, user); CHKERRQ(ierr);
-		//ierr = CheckTimeStep(&jr, &user); CHKERRQ(ierr);
-	}*/
-
-
-
-
 	// error check and info print:
 	// we need at least 2 cells in each direction (not 1) and dt > 0 ! - IS THIS NECESSARY?
 	if (user->nel_x==1){ user->nel_x=2; PetscPrintf(PETSC_COMM_WORLD," With FDSTAG we need at least 2 elements in the x-direction! I have increased this. \n");}
