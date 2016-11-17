@@ -2056,8 +2056,8 @@ PetscErrorCode MGGetNumLevels(MG *mg)
 
 	// check discretization in all directions
 	ierr = Discret1DCheckMG(&fs->dsx, "x", &nx); CHKERRQ(ierr);                ncors = nx;
-	ierr = Discret1DCheckMG(&fs->dsy, "y", &ny); CHKERRQ(ierr);
 	if (refine_y>1){
+		ierr = Discret1DCheckMG(&fs->dsy, "y", &ny); CHKERRQ(ierr);
 		if(ny < ncors) ncors = ny;
 	}
 	ierr = Discret1DCheckMG(&fs->dsz, "z", &nz); CHKERRQ(ierr); if(nz < ncors) ncors = nz;
