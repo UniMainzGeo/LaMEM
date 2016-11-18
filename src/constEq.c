@@ -119,7 +119,6 @@ PetscErrorCode ConstEqCtxSetup(
 		// instead it rather acts as a smooth limiter for maximum viscosity.
 
 		ctx->A_els = 0.5/(mat->G*dt);
-//PetscPrintf(PETSC_COMM_WORLD, "    --mat->G  = %12.12e \n", mat->G);
 		ln++;
 	}
 
@@ -285,7 +284,6 @@ PetscErrorCode GetEffVisc(
 
 	// elasticity
 	if(ctx->A_els) inv_eta_els = 2.0*ctx->A_els;
-//PetscPrintf(PETSC_COMM_WORLD, "    ctx->A_els  = %12.12e \n", ctx->A_els);
 	// diffusion
 	if(ctx->A_dif) inv_eta_dif = 2.0*ctx->A_dif;
 	// dislocation
@@ -468,7 +466,6 @@ PetscErrorCode DevConstEq(
 		// update present phases only
 		if(phRat[i])
 		{
-//PetscPrintf(PETSC_COMM_WORLD, "    phRat[i]  = %12.12e \n", phRat[i]);
 			// get reference to material parameters table
 			mat = &phases[i];
 
@@ -601,7 +598,57 @@ PetscErrorCode GetStressCell(
 	svCell->syy = 2.0*svDev->eta*dyy;
 	svCell->szz = 2.0*svDev->eta*dzz;
 
-	//PetscPrintf(PETSC_COMM_WORLD, "    svDev->eta, dxx:  %12.12e, %12.12e \n", svDev->eta, dxx);
+	// get strain-rate invariant
+	DII = svDev->DII;
+
+	// use reference strain-rate instead of zero
+	if(DII == 0.0) DII = lim->DII_ref;
+
+	// compute plastic scaling coefficient
+	cfpl = svDev->DIIpl/DII;
+
+	// compute plastic strain-rate components
+	txx = cfpl*dxx;
+	tyy = cfpl*dyy;
+	tzz = cfpl*dzz;
+
+	// store contribution to the second invariant of plastic strain-rate
+	svDev->PSR = 0.5*(txx*txx + tyy*tyy + tzz*tzz);
+
+	// compute dissipative part of total strain rate (viscous + plastic = total - elastic)
+	txx = svCell->dxx - svDev->I2Gdt*(svCell->sxx - svCell->hxx);
+	tyy = svCell->dyy - svDev->I2Gdt*(svCell->syy - svCell->hyy);
+	tzz = svCell->dzz - svDev->I2Gdt*(svCell->szz - svCell->hzz);
+
+	// compute shear heating term contribution
+	svDev->Hr = (txx*svCell->sxx + tyy*svCell->syy + tzz*svCell->szz);
+
+	PetscFunctionReturn(0);
+}
+//---------------------------------------------------------------------------
+#undef __FUNCT__
+#define __FUNCT__ "GetStressCellForExplicit"
+PetscErrorCode GetStressCellForExplicit(
+	SolVarCell  *svCell, // solution variables
+	MatParLim   *lim,    // phase parameters limits
+	PetscScalar  dxx,    // effective normal strain rate components
+	PetscScalar  dyy,    // ...
+	PetscScalar  dzz)    // ...
+{
+	// compute stress, plastic strain-rate and shear heating term on cell
+
+	SolVarDev   *svDev;
+	PetscScalar  DII, cfpl, txx, tyy, tzz;
+
+	PetscFunctionBegin;
+
+	// access deviatoric variables
+	svDev = &svCell->svDev;
+
+	// compute deviatoric stresses
+	svCell->sxx = 2.0*svDev->eta*dxx;
+	svCell->syy = 2.0*svDev->eta*dyy;
+	svCell->szz = 2.0*svDev->eta*dzz;
 
 	// get strain-rate invariant
 	DII = svDev->DII;
@@ -619,6 +666,9 @@ PetscErrorCode GetStressCell(
 
 	// store contribution to the second invariant of plastic strain-rate
 	svDev->PSR = 0.5*(txx*txx + tyy*tyy + tzz*tzz);
+
+	// For explicit case do not used the computed svDev->I2Gdt but this one:
+	svDev->I2Gdt = 1.0/2.0/svDev->eta;
 
 	// compute dissipative part of total strain rate (viscous + plastic = total - elastic)
 	txx = svCell->dxx - svDev->I2Gdt*(svCell->sxx - svCell->hxx);
@@ -674,6 +724,54 @@ PetscErrorCode GetStressEdge(
 
 	PetscFunctionReturn(0);
 }
+//---------------------------------------------------------------------------
+// compute stress, plastic strain-rate and shear heating term on edge
+#undef __FUNCT__
+#define __FUNCT__ "GetStressEdgeForExplicit"
+PetscErrorCode GetStressEdgeForExplicit(
+	SolVarEdge  *svEdge, // solution variables
+	MatParLim   *lim,    // phase parameters limits
+	PetscScalar  d)      // effective shear strain rate component
+{
+
+	SolVarDev   *svDev;
+	PetscScalar  DII, cfpl, t;
+
+	PetscFunctionBegin;
+
+	// access deviatoric variables
+	svDev = &svEdge->svDev;
+
+	// compute shear stress
+	svEdge->s = 2.0*svDev->eta*d;
+
+	// get strain-rate invariant
+	DII = svDev->DII;
+
+	// use reference strain-rate instead of zero
+	if(DII == 0.0) DII = lim->DII_ref;
+
+	// compute plastic scaling coefficient
+	cfpl = svDev->DIIpl/DII;
+
+	// compute plastic strain-rate components
+	t = cfpl*d;
+
+	// store contribution to the second invariant of plastic strain-rate
+	svDev->PSR = t*t;
+
+	// For explicit case do not used the computed svDev->I2Gdt but this one:
+	svDev->I2Gdt = 1.0/2.0/svDev->eta;
+
+	// compute dissipative part of total strain rate (viscous + plastic = total - elastic)
+	t = svEdge->d - svDev->I2Gdt*(svEdge->s - svEdge->h);
+
+	// compute shear heating term contribution
+	svDev->Hr = 2.0*t*svEdge->s;
+
+	PetscFunctionReturn(0);
+}
+//---------------------------------------------------------------------------
 //---------------------------------------------------------------------------
 // Elastic stress rotation functions
 //---------------------------------------------------------------------------

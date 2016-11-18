@@ -135,8 +135,22 @@ PetscErrorCode GetStressCell(
 		PetscScalar  dyy,    // ...
 		PetscScalar  dzz);   // ...
 
+// compute stress, plastic strain-rate and shear heating term on cell, for explicit case
+PetscErrorCode GetStressCellForExplicit(
+		SolVarCell  *svCell, // solution variables
+		MatParLim   *lim,    // phase parameters limits
+		PetscScalar  dxx,    // effective normal strain rate components
+		PetscScalar  dyy,    // ...
+		PetscScalar  dzz);   // ...
+
 // compute stress, plastic strain-rate and shear heating term on edge
 PetscErrorCode GetStressEdge(
+	SolVarEdge  *svEdge, // solution variables
+	MatParLim   *lim,    // phase parameters limits
+	PetscScalar  d);     // effective shear strain rate component
+
+// compute stress, plastic strain-rate and shear heating term on edge, for explicit case
+PetscErrorCode GetStressEdgeForExplicit(
 	SolVarEdge  *svEdge, // solution variables
 	MatParLim   *lim,    // phase parameters limits
 	PetscScalar  d);     // effective shear strain rate component

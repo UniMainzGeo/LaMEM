@@ -222,6 +222,9 @@ PetscErrorCode FormMomentumResidualPressureAndVelocities(JacRes *jr, UserCtx *us
 
 	ierr = GetVelocities(jr, user);	CHKERRQ(ierr);
 
+	// deactivate pressure limit after it has been activated
+	jr->matLim.presLimFlg = PETSC_FALSE;
+
 	PetscFunctionReturn(0);
 
 }
@@ -405,7 +408,8 @@ PetscErrorCode CheckElasticProperties(JacRes *jr, UserCtx *user)
 //	numPhases = jr->numPhases;
 	phases    = jr->phases;
 
-	dt        = user->dt;     // time step
+	//dt        = user->dt;     // time step
+	dt = jr -> ts.dt;
 
 	if (user->ExplicitSolver == PETSC_TRUE)	{
 
@@ -462,7 +466,7 @@ PetscErrorCode CheckTimeStep(JacRes *jr, UserCtx *user)
 	computational_density_factor = user->DensityFactor;
 
 	phases    = jr->phases;
-	dt        = user->dt;     // time step
+	//dt        = user->dt;     // time step
 	dx 		  = user->W/((PetscScalar)(user->nel_x));
 	dy 		  = user->L/((PetscScalar)(user->nel_y));
 	dz 		 = user->H/((PetscScalar)(user->nel_z));
@@ -496,7 +500,7 @@ PetscErrorCode ChangeTimeStep(JacRes *jr, UserCtx *user)
 
 	PetscInt    i, numPhases;
 	Material_t  *phases, *M;
-	PetscScalar dx, dy, dz, dt_min, dt, rho, shear, bulk, vp; 
+	PetscScalar dx, dy, dz, dt_min, dt, rho, shear, bulk, vp;
 	PetscScalar CFL, stability, d_average, computational_density_factor;
 
 	PetscFunctionBegin;
@@ -524,7 +528,7 @@ PetscErrorCode ChangeTimeStep(JacRes *jr, UserCtx *user)
 
 
 
-		// Compute velocity such that the wave does not move more than CFL times a gridcell per dt		
+		// Compute velocity such that the wave does not move more than CFL times a gridcell per dt
 		dt 			= 	CFL*dx/vp;
 		if (dt_min>dt){dt_min =dt;}
 		dt 			= 	CFL*dy/vp;
@@ -532,7 +536,7 @@ PetscErrorCode ChangeTimeStep(JacRes *jr, UserCtx *user)
 		dt 			= 	CFL*dz/vp;
 		if (dt_min>dt){dt_min =dt;}
 	}
-	user->dt 	= dt_min;
+	//user->dt 	= dt_min;
 	jr->ts.dt 	= dt_min;
 
 	PetscFunctionReturn(0);
