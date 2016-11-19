@@ -72,13 +72,13 @@
 //---------------------------------------------------------------------------
 #undef __FUNCT__
 #define __FUNCT__ "LaMEMLib"
-PetscErrorCode LaMEMLib(ModParam *IOparam)
+PetscErrorCode LaMEMLib(void *IOparam)
 {
 	PetscBool          done;
-	UserCtx            user;
-//	PetscLogDouble     cputime_start, cputime_start0, cputime_end, cputime_start_tstep, cputime_start_nonlinear;
-	PetscLogDouble     cputime_start, cputime_end, cputime_start_nonlinear, cputime_end_nonlinear;
+//	PetscLogDouble     cputime_start, cputime_end;
 
+	Scaling  scal;   // scaling
+	TSSol    ts;     // time-stepping controls
 	FDSTAG   fs;     // staggered-grid layout
 	FreeSurf surf;   // free-surface grid
 	BCCtx    bc;     // boundary condition context
@@ -97,7 +97,28 @@ PetscErrorCode LaMEMLib(ModParam *IOparam)
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
 
+	// initialize
+	ierr = PetscMemzero(&scal,   sizeof(scal));   CHKERRQ(ierr);
+	ierr = PetscMemzero(&ts,     sizeof(ts));     CHKERRQ(ierr);
+	ierr = PetscMemzero(&fs,     sizeof(fs));     CHKERRQ(ierr);
+	ierr = PetscMemzero(&surf,   sizeof(surf));   CHKERRQ(ierr);
+	ierr = PetscMemzero(&bc,     sizeof(bc));     CHKERRQ(ierr);
+	ierr = PetscMemzero(&jr,     sizeof(jr));     CHKERRQ(ierr);
+	ierr = PetscMemzero(&actx,   sizeof(actx));   CHKERRQ(ierr);
+	ierr = PetscMemzero(&pm,     sizeof(pm));     CHKERRQ(ierr);
+	ierr = PetscMemzero(&pc,     sizeof(pc));     CHKERRQ(ierr);
+	ierr = PetscMemzero(&snes,   sizeof(snes));   CHKERRQ(ierr);
+	ierr = PetscMemzero(&nl,     sizeof(nl));     CHKERRQ(ierr);
+	ierr = PetscMemzero(&pvout,  sizeof(pvout));  CHKERRQ(ierr);
+	ierr = PetscMemzero(&pvsurf, sizeof(pvsurf)); CHKERRQ(ierr);
+	ierr = PetscMemzero(&pvmark, sizeof(pvmark)); CHKERRQ(ierr);
+	ierr = PetscMemzero(&pvavd,  sizeof(pvavd));  CHKERRQ(ierr);
+	ierr = PetscMemzero(&objf,   sizeof(objf));   CHKERRQ(ierr);
+
+
 	//=========================================================================
+
+/*
 
 	PetscBool InputParamFile;
 
@@ -135,7 +156,6 @@ PetscErrorCode LaMEMLib(ModParam *IOparam)
 	ierr = NLSolClear   (&nl);     CHKERRQ(ierr);
 	ierr = PVOutClear   (&pvout);  CHKERRQ(ierr);
 	ierr = PVSurfClear  (&pvsurf); CHKERRQ(ierr);
-	ierr = PetscMemzero (&user, sizeof(UserCtx));  CHKERRQ(ierr);
 	ierr = PetscMemzero (&objf, sizeof(ObjFunct)); CHKERRQ(ierr);
 
 	// initialize variables
@@ -484,6 +504,7 @@ PetscErrorCode LaMEMLib(ModParam *IOparam)
 
 	PetscTime(&cputime_end);
 	PetscPrintf(PETSC_COMM_WORLD, " Simulation took %g (sec) \n", cputime_end - cputime_start);
+*/
 
 	PetscFunctionReturn(0);
 }

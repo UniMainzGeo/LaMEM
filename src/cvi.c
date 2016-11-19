@@ -201,7 +201,7 @@ PetscErrorCode ADVelAdvectScheme(AdvCtx *actx, AdvVelCtx *vi)
 	ierr = ADVelInitCoord(actx, vi->interp, vi->nmark); CHKERRQ(ierr);
 
 	// get current time step
-	dt = actx->jr->ts.dt;
+	dt = actx->jr->ts->dt;
 
 	//=======================================================================
 	// START ADVECTION

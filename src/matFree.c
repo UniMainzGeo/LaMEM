@@ -92,7 +92,7 @@ PetscErrorCode JacResPicardMatFree(JacRes *jr)
 	PetscFunctionBegin;
 
 	fs   = jr->fs;
-	dt   = jr->ts.dt; // time step
+	dt   = jr->ts->dt; // time step
 	fssa = jr->FSSA;  // density gradient penalty parameter
     grav = jr->grav;  // gravity acceleration
 
@@ -495,7 +495,7 @@ PetscErrorCode JacResJacobianMatFree(JacRes *jr)
 	PetscFunctionBegin;
 
 	fs   = jr->fs;
-	dt   = jr->ts.dt; // time step
+	dt   = jr->ts->dt; // time step
 	fssa = jr->FSSA;  // density gradient penalty parameter
     grav = jr->grav;  // gravity acceleration
 

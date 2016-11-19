@@ -217,7 +217,6 @@ typedef struct
 {
 
 	PetscScalar      LowerViscosityCutoff, UpperViscosityCutoff, InitViscosity, PlastViscosity; // JacRes
-	PetscScalar      DII_ref;
 	PetscScalar      GasConstant;
 
 

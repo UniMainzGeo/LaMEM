@@ -47,11 +47,12 @@
 #define __break_h__
 
 // check if breakpoints exist and restart new simulation if not
-PetscErrorCode BreakCheck    (UserCtx *user);
+// PetscErrorCode BreakCheck    (UserCtx *user);
 
 //---------------------------------------------------------------------------
 // Write breakpoint files
 //---------------------------------------------------------------------------
+/*
 // grid, mark, gsol, gtopo, info are written together
 PetscErrorCode BreakWrite(UserCtx *user,
 						AdvCtx    *actx,
@@ -89,5 +90,6 @@ PetscErrorCode BreakReadVec  (FILE *fp, Vec x, PetscInt n);
 void BreakWriteDiscret1D(FILE *fp, Discret1D *ds, MeshSeg1D *ms);
 void BreakReadDiscret1D (FILE *fp, Discret1D *ds, MeshSeg1D *ms);
 //---------------------------------------------------------------------------
+*/
 
 #endif

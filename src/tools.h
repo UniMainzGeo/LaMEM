@@ -66,29 +66,6 @@ PetscScalar getVar(PetscScalar *data, PetscInt n);
 
 PetscScalar getStdv(PetscScalar *data, PetscInt n);
 
-//---------------------------------------------------------------------------
-// read arrays from PETSC options database with error checking
-//---------------------------------------------------------------------------
-
-PetscErrorCode GetScalDataItemCheckScale(
-	const char  ident[],
-	const char  name[],
-	exitType    extp,
-	PetscInt    n,
-	PetscScalar *a,
-	PetscScalar amin,
-	PetscScalar amax,
-	PetscScalar scal);
-
-PetscErrorCode GetIntDataItemCheck(
-	const char  ident[],
-	const char  name[],
-	exitType    extp,
-	PetscInt    n,
-	PetscInt    *a,
-	PetscInt    amin,
-	PetscInt    amax);
-
 PetscErrorCode DMDAGetProcessorRank(DM da, PetscInt *rank_x, PetscInt *rank_y, PetscInt *rank_z, PetscInt *rank_col);
 
 PetscErrorCode makeMPIIntArray(PetscMPIInt **arr, const PetscMPIInt *init, const PetscInt n);
@@ -105,6 +82,12 @@ PetscInt ISRankZero(MPI_Comm comm);
 PetscInt ISParallel(MPI_Comm comm);
 
 PetscErrorCode LaMEMCreateOutputDirectory(const char *DirectoryName);
+
+//---------------------------------------------------------------------------
+
+#define LAMEM_CHECKEQ(a, b, rtol, atol) (PetscAbsScalar((a)-(b)) <= rtol*(PetscAbsScalar(a) + PetscAbsScalar(b)) + atol)
+
+#define IS_POWER_OF_TWO(x) ((x) && !((x) & ((x) - 1)))
 
 //---------------------------------------------------------------------------
 
@@ -156,6 +139,70 @@ static inline PetscScalar ODDROOT(PetscScalar x, PetscScalar a)
 	if(x < 0.0) return -pow(-x, a);
 	else        return  pow( x, a);
 
+}
+
+//---------------------------------------------------------------------------
+
+// this function returns global rank of processor in DMDA
+static inline PetscMPIInt getGlobalRank(PetscInt i, PetscInt j, PetscInt k, PetscInt m, PetscInt n, PetscInt p)
+{
+	if (i < 0 || i >= m || j < 0 || j >= n || k < 0 || k >= p) return -1;
+	return (PetscMPIInt)(i + j*m + k*m*n);
+}
+
+// this function computes local ranks of processor in DMDA
+static inline void getLocalRank(PetscInt *i, PetscInt *j, PetscInt *k, PetscMPIInt rank, PetscInt m, PetscInt n)
+{
+	(*k) =  rank/(m*n);
+	(*j) = (rank - (*k)*m*n)/m;
+	(*i) =  rank - (*k)*m*n - (*j)*m;
+}
+
+// Modified bisection algorithm (ltbaumann 210113)
+// Returns index i of the closet gridpoint x_i of an arbitrary value x
+// px - 1D-grid coordinates
+// L  - first index
+// R  - last index
+static inline PetscInt Bisection(PetscScalar *px, PetscInt L, PetscInt R, PetscScalar x)
+{
+	PetscInt M;
+	while((R-L) > 1)
+	{	M = (L+R)/2;
+		if(px[M] <= x) L=M;
+		if(px[M] >= x) R=M;
+	}
+	if(PetscAbsScalar(px[L]-x) <= PetscAbsScalar(px[R]-x)) return(L);
+	else                                                   return(R);
+}
+//-----------------------------------------------------------------------------
+static inline PetscErrorCode sfexp(PetscScalar x, PetscScalar *y)
+{
+	// y = e^x with checking range errors
+	errno = 0;
+	(*y) = exp(x);
+	if(errno == EDOM)   { PetscPrintf(PETSC_COMM_WORLD,"Domain Error!\n"); return(-1); }
+	if(errno == ERANGE) { PetscPrintf(PETSC_COMM_WORLD,"Range Error!\n");  return(-1); }
+	return(0);
+/*
+	return (-1);
+	feclearexcept(FE_ALL_EXCEPT);
+	fe = fetestexcept (FE_ALL_EXCEPT);
+	if (fe & FE_DIVBYZERO) puts ("FE_DIVBYZERO");
+	if (fe & FE_INEXACT)   puts ("FE_INEXACT");
+	if (fe & FE_INVALID)   puts ("FE_INVALID");
+	if (fe & FE_OVERFLOW)  puts ("FE_OVERFLOW");
+	if (fe & FE_UNDERFLOW) puts ("FE_UNDERFLOW");
+*/
+}
+//---------------------------------------------------------------------------
+static inline PetscErrorCode sfpow(PetscScalar a, PetscScalar x, PetscScalar *y)
+{
+	// y = a^x with checking range errors
+	errno = 0;
+	(*y) = pow(a, x);
+	if(errno == EDOM)   { PetscPrintf(PETSC_COMM_WORLD,"Domain Error!\n"); return(-1); }
+	if(errno == ERANGE) { PetscPrintf(PETSC_COMM_WORLD,"Range Error!\n");  return(-1); }
+	return (0);
 }
 
 //---------------------------------------------------------------------------

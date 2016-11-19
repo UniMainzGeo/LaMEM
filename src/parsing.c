@@ -483,7 +483,7 @@ PetscErrorCode getIntParam(
 
 		nval = num;
 
-		ierr = PetscOptionsGetIntArray(NULL, dbkey, val, &nval, &found); CHKERRQ(ierr);
+		ierr = PetscOptionsGetIntArray(NULL, NULL, dbkey, val, &nval, &found); CHKERRQ(ierr);
 
 		free(dbkey);
 	}
@@ -546,7 +546,7 @@ PetscErrorCode getScalarParam(
 
 		nval = num;
 
-		ierr = PetscOptionsGetScalarArray(NULL, dbkey, val, &nval, &found); CHKERRQ(ierr);
+		ierr = PetscOptionsGetScalarArray(NULL, NULL, dbkey, val, &nval, &found); CHKERRQ(ierr);
 
 		free(dbkey);
 	}
@@ -603,7 +603,7 @@ PetscErrorCode getStringParam(
 	{
 		asprintf(&dbkey, "-%s", key);
 
-		ierr = PetscOptionsGetString(NULL, dbkey, str, fsz, &found); CHKERRQ(ierr);
+		ierr = PetscOptionsGetString(NULL, NULL, dbkey, str, fsz, &found); CHKERRQ(ierr);
 
 		free(dbkey);
 	}
@@ -642,10 +642,10 @@ PetscErrorCode PetscOptionsReadFromFile(FB *fb)
 	if(!fb) PetscFunctionReturn(0);
 
 	// copy all command line options to buffer
-	ierr = PetscOptionsGetAll(&all_options);  CHKERRQ(ierr);
+	ierr = PetscOptionsGetAll(NULL, &all_options);  CHKERRQ(ierr);
 
 	// remove command line options from database
-	ierr = PetscOptionsClear(); CHKERRQ(ierr);
+	ierr = PetscOptionsClear(NULL); CHKERRQ(ierr);
 
 	// setup block access mode
 	ierr = FBFindBlocks(fb, _OPTIONAL_, "<PetscOptionsStart>", "<PetscOptionsEnd>"); CHKERRQ(ierr);
@@ -676,7 +676,7 @@ PetscErrorCode PetscOptionsReadFromFile(FB *fb)
 			// add to PETSc options
 			PetscPrintf(PETSC_COMM_WORLD, "Adding PETSc option: %s\n", option);
 
-			ierr = PetscOptionsInsertString(option); CHKERRQ(ierr);
+			ierr = PetscOptionsInsertString(NULL, option); CHKERRQ(ierr);
 
 			if(val) free(option);
 			free(tmp);
@@ -688,7 +688,7 @@ PetscErrorCode PetscOptionsReadFromFile(FB *fb)
 	ierr = FBFreeBlocks(fb); CHKERRQ(ierr);
 
 	// push command line options to the end of database (priority)
-	ierr = PetscOptionsInsertString(all_options); CHKERRQ(ierr);
+	ierr = PetscOptionsInsertString(NULL, all_options); CHKERRQ(ierr);
 
 	ierr = PetscFree(all_options); CHKERRQ(ierr);
 
@@ -707,7 +707,7 @@ PetscErrorCode PetscOptionsReadRestart(FILE *fp)
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
 
-	ierr = PetscOptionsClear(); CHKERRQ(ierr);
+	ierr = PetscOptionsClear(NULL); CHKERRQ(ierr);
 
 	// length already includes terminating null character
 	fread(&len, sizeof(size_t), 1, fp);
@@ -716,7 +716,7 @@ PetscErrorCode PetscOptionsReadRestart(FILE *fp)
 
 	fread(all_options, sizeof(char)*len, 1, fp); CHKERRQ(ierr);
 
-	ierr = PetscOptionsInsertString(all_options); CHKERRQ(ierr);
+	ierr = PetscOptionsInsertString(NULL, all_options); CHKERRQ(ierr);
 
 	ierr = PetscFree(all_options); CHKERRQ(ierr);
 
@@ -735,7 +735,7 @@ PetscErrorCode PetscOptionsWriteRestart(FILE *fp)
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
 
-	ierr = PetscOptionsGetAll(&all_options);  CHKERRQ(ierr);
+	ierr = PetscOptionsGetAll(NULL, &all_options);  CHKERRQ(ierr);
 
 	// include terminating null character
 	len = strlen(all_options) + 1;

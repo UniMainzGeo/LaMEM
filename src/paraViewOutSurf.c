@@ -147,7 +147,7 @@ PetscErrorCode PVSurfDestroy(PVSurf *pvsurf)
 	// free surface cases only
 	if(pvsurf->surf->UseFreeSurf != PETSC_TRUE) PetscFunctionReturn(0);
 
-	LAMEM_FREE(pvsurf->outfile);
+	free(pvsurf->outfile);
 	PetscFree (pvsurf->buff);
 
 	PetscFunctionReturn(0);
@@ -195,8 +195,8 @@ PetscErrorCode PVSurfWritePVTS(PVSurf *pvsurf, const char *dirName)
 	if(!ISRankZero(PETSC_COMM_WORLD)) PetscFunctionReturn(0);
 
 	// access context
-	fs   =  pvsurf->surf->jr->fs;
-	scal = &pvsurf->surf->jr->scal;
+	fs   = pvsurf->surf->jr->fs;
+	scal = pvsurf->surf->jr->scal;
 
 	// open outfile.pvts file in the output directory (write mode)
 	asprintf(&fname, "%s/%s.pvts", dirName, pvsurf->outfile);
@@ -284,8 +284,8 @@ PetscErrorCode PVSurfWriteVTS(PVSurf *pvsurf, const char *dirName)
 	PetscFunctionBegin;
 
 	// access context
-	fs   =  pvsurf->surf->jr->fs;
-	scal = &pvsurf->surf->jr->scal;
+	fs   = pvsurf->surf->jr->fs;
+	scal = pvsurf->surf->jr->scal;
 
 	// only ranks zero in z direction generate this file
 	if(!fs->dsz.rank)
@@ -424,7 +424,7 @@ PetscErrorCode PVSurfWriteCoord(PVSurf *pvsurf, FILE *fp)
 	buff = pvsurf->buff;
 	surf = pvsurf->surf;
 	fs   = surf->jr->fs;
-	cf   = surf->jr->scal.length;
+	cf   = surf->jr->scal->length;
 
 	GET_OUTPUT_RANGE(rx, nx, sx, fs->dsx)
 	GET_OUTPUT_RANGE(ry, ny, sy, fs->dsy)
@@ -468,7 +468,7 @@ PetscErrorCode PVSurfWriteVel(PVSurf *pvsurf, FILE *fp)
 	buff = pvsurf->buff;
 	surf = pvsurf->surf;
 	fs   = surf->jr->fs;
-	cf   = surf->jr->scal.velocity;
+	cf   = surf->jr->scal->velocity;
 
 	GET_OUTPUT_RANGE(rx, nx, sx, fs->dsx)
 	GET_OUTPUT_RANGE(ry, ny, sy, fs->dsy)
@@ -516,7 +516,7 @@ PetscErrorCode PVSurfWriteTopo(PVSurf *pvsurf, FILE *fp)
 	buff = pvsurf->buff;
 	surf = pvsurf->surf;
 	fs   = surf->jr->fs;
-	cf   = surf->jr->scal.length;
+	cf   = surf->jr->scal->length;
 
 	GET_OUTPUT_RANGE(rx, nx, sx, fs->dsx)
 	GET_OUTPUT_RANGE(ry, ny, sy, fs->dsy)
@@ -558,7 +558,7 @@ PetscErrorCode PVSurfWriteAmplitude(PVSurf *pvsurf, FILE *fp)
 	buff = pvsurf->buff;
 	surf = pvsurf->surf;
 	fs   = surf->jr->fs;
-	cf   = surf->jr->scal.length;
+	cf   = surf->jr->scal->length;
 
 	// retrieve average topography
 	avg_topo = surf->avg_topo;

@@ -67,6 +67,7 @@
 #include "AVDView.h"
 #include "break.h"
 
+/*
 //---------------------------------------------------------------------------
 #undef __FUNCT__
 #define __FUNCT__ "BreakCheck"
@@ -747,3 +748,4 @@ void BreakReadDiscret1D(FILE *fp, Discret1D *ds, MeshSeg1D *ms)
 	fread(ms->biases, sizeof(PetscScalar)*(size_t)(ms->nsegs    ), 1, fp);
 }
 //---------------------------------------------------------------------------
+*/

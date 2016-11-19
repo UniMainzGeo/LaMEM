@@ -402,7 +402,7 @@ PetscErrorCode ObjFunctCompErr(ObjFunct *objf)
 	surf = objf->surf;
 
 	// scaling factors
-	velScal = surf->jr->scal.velocity;
+	velScal = surf->jr->scal->velocity;
 
 	// compute weighted error of surface fields
 	if (objf->otUse[_VELX_])	{ ierr = VecErrSurf(surf->vx,    objf, _VELX_,velScal);  CHKERRQ(ierr); }

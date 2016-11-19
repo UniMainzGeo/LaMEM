@@ -73,7 +73,7 @@ PetscErrorCode FreeSurfClear(FreeSurf *surf)
 //---------------------------------------------------------------------------
 #undef __FUNCT__
 #define __FUNCT__ "FreeSurfCreate"
-PetscErrorCode FreeSurfCreate(FreeSurf *surf, JacRes *jr, UserCtx *user)
+PetscErrorCode FreeSurfCreate(FreeSurf *surf, JacRes *jr)
 {
 	FDSTAG         *fs;
 	const PetscInt *lx, *ly;
@@ -84,7 +84,7 @@ PetscErrorCode FreeSurfCreate(FreeSurf *surf, JacRes *jr, UserCtx *user)
 	// store context
 	surf->jr = jr;
 
-	ierr = FreeSurfReadFromOptions(surf, &jr->scal); CHKERRQ(ierr);
+//	ierr = FreeSurfReadFromOptions(surf, &jr->scal); CHKERRQ(ierr);
 
 	// free surface cases only
 	if(surf->UseFreeSurf != PETSC_TRUE) PetscFunctionReturn(0);
@@ -115,7 +115,7 @@ PetscErrorCode FreeSurfCreate(FreeSurf *surf, JacRes *jr, UserCtx *user)
 	ierr = VecSet(surf->ltopo, surf->InitLevel); CHKERRQ(ierr);
 	ierr = VecSet(surf->gtopo, surf->InitLevel); CHKERRQ(ierr);
 
-
+/*
 	// Set topo rom file if a Topo file is specified in the input
 	PetscPrintf(PETSC_COMM_WORLD, "FileName: %s\n",user->TopoFilename);
 	if(strcmp(user->TopoFilename,"noTopoFileName")!=0)
@@ -123,14 +123,14 @@ PetscErrorCode FreeSurfCreate(FreeSurf *surf, JacRes *jr, UserCtx *user)
 		ierr = FreeSurfSetTopoFromFile(surf,user);
 		CHKERRQ(ierr);
 	}
-
+*/
 
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
 #undef __FUNCT__
 #define __FUNCT__ "FreeSurfReadFromOptions"
-PetscErrorCode FreeSurfReadFromOptions(FreeSurf *surf, Scaling *scal)
+PetscErrorCode FreeSurfReadFromOptions(FreeSurf *surf)
 {
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
@@ -140,7 +140,7 @@ PetscErrorCode FreeSurfReadFromOptions(FreeSurf *surf, Scaling *scal)
 	ierr = PetscOptionsGetScalar(NULL, NULL, "-surf_level",     &surf->InitLevel,   NULL); CHKERRQ(ierr);
 	ierr = PetscOptionsGetInt   (NULL, NULL, "-surf_air_phase", &surf->AirPhase,    NULL); CHKERRQ(ierr);
 	ierr = PetscOptionsGetScalar(NULL, NULL, "-surf_max_angle", &surf->MaxAngle,    NULL); CHKERRQ(ierr);
-
+/*
 	// nondimensionalize
 	surf->InitLevel /= scal->length;
 	surf->MaxAngle  /= scal->angle;
@@ -175,7 +175,7 @@ PetscErrorCode FreeSurfReadFromOptions(FreeSurf *surf, Scaling *scal)
 		ierr = GetIntDataItemCheck("-sedPhases", "Sediment layers phase numbers",
 			_NOT_FOUND_ERROR_, surf->numLayers, surf->sedPhases, 0, 0); CHKERRQ(ierr);
 	}
-
+*/
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
@@ -388,7 +388,7 @@ PetscErrorCode FreeSurfAdvectTopo(FreeSurf *surf)
 	// access context
 	jr   = surf->jr;
 	fs   = jr->fs;
-	step = jr->ts.dt;
+	step = jr->ts->dt;
 	mx   = fs->dsx.tnods;
 	my   = fs->dsy.tnods;
 	L    = (PetscInt)fs->dsz.rank;
@@ -533,7 +533,7 @@ PetscErrorCode FreeSurfSmoothMaxAngle(FreeSurf *surf)
 	mx        = fs->dsx.tnods - 1;
 	my        = fs->dsy.tnods - 1;
 	L         = (PetscInt)fs->dsz.rank;
-	step      = jr->ts.dt;
+	step      = jr->ts->dt;
 	tanMaxAng = PetscTanReal(surf->MaxAngle);
 	zbot      = jr->fs->dsz.crdbeg;
 
@@ -802,7 +802,7 @@ PetscErrorCode FreeSurfAppErosion(FreeSurf *surf)
 	// free surface cases only
 	if(surf->UseFreeSurf != PETSC_TRUE) PetscFunctionReturn(0);
 
-	scal = &surf->jr->scal;
+	scal = surf->jr->scal;
 
 	if(surf->ErosionModel == 1)
 	{
@@ -846,8 +846,8 @@ PetscErrorCode FreeSurfAppSedimentation(FreeSurf *surf)
 	// access context
 	jr   = surf->jr;
 	fs   = jr->fs;
-	dt   = jr->ts.dt;
-	time = jr->ts.time;
+	dt   = jr->ts->dt;
+	time = jr->ts->time;
 	L    = (PetscInt)fs->dsz.rank;
 
 	// get z-coordinates of the top and bottom boundaries
@@ -915,10 +915,9 @@ PetscErrorCode FreeSurfAppSedimentation(FreeSurf *surf)
 //---------------------------------------------------------------------------
 #undef __FUNCT__
 #define __FUNCT__ "FreeSurfSetTopoFromFile"
-PetscErrorCode FreeSurfSetTopoFromFile(
-	FreeSurf *surf, UserCtx *user)
+PetscErrorCode FreeSurfSetTopoFromFile(FreeSurf *surf)
 {
-	
+/*
 	JacRes      *jr;
 	FDSTAG      *fs;
 	Discret1D   *dsz;
@@ -950,7 +949,7 @@ PetscErrorCode FreeSurfSetTopoFromFile(
 
 
 	// characteristic length
-	chLen  = jr->scal.length;
+	chLen  = jr->scal->length;
 
 	// create column communicator
 	ierr = Discret1DGetColumnComm(dsz); CHKERRQ(ierr);
@@ -970,7 +969,6 @@ PetscErrorCode FreeSurfSetTopoFromFile(
 
 	// scan all free surface local points
 	ierr = DMDAGetCorners(fs->DA_COR, &sx, &sy, &sz, &nx, &ny, NULL); CHKERRQ(ierr);
-
 
 	// ****** Read file ******
 	// create filename
@@ -1058,6 +1056,7 @@ PetscErrorCode FreeSurfSetTopoFromFile(
 	surf->avg_topo = avg_topo;
 	jr  ->avg_topo = avg_topo;
 
+*/
 
 	PetscFunctionReturn(0);
 }

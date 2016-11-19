@@ -44,6 +44,7 @@
 //---------------------------------------------------------------------------
 #ifndef __input_h__
 #define __input_h__
+/*
 //---------------------------------------------------------------------------
 PetscErrorCode PushInputReadFile(UserCtx *user, FILE *fp);
 
@@ -69,6 +70,6 @@ PetscErrorCode ReadMeshSegDir(
 	PetscScalar  end,
 	PetscInt    *tncels,
 	MeshSegInp  *msi);
-
+*/
 //---------------------------------------------------------------------------
 #endif

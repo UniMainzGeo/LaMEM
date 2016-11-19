@@ -53,19 +53,6 @@
 #include "tools.h"
 //---------------------------------------------------------------------------
 #undef __FUNCT__
-#define __FUNCT__ "JacResClear"
-PetscErrorCode JacResClear(JacRes *jr)
-{
-	PetscErrorCode ierr;
-	PetscFunctionBegin;
-
-	// clear object
-	ierr = PetscMemzero(jr, sizeof(JacRes)); CHKERRQ(ierr);
-
-	PetscFunctionReturn(0);
-}
-//---------------------------------------------------------------------------
-#undef __FUNCT__
 #define __FUNCT__ "JacResSetFromOptions"
 PetscErrorCode JacResSetFromOptions(JacRes *jr)
 {
@@ -304,13 +291,13 @@ PetscErrorCode JacResDestroy(JacRes *jr)
 //---------------------------------------------------------------------------
 #undef __FUNCT__
 #define __FUNCT__ "JacResInitScale"
-PetscErrorCode JacResInitScale(JacRes *jr, UserCtx *usr)
+PetscErrorCode JacResInitScale(JacRes *jr)
 {
 	// initialize and setup scaling object, perform scaling
 
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
-
+/*
 	// initialize scaling object
 	ierr = ScalingCreate(&jr->scal);  CHKERRQ(ierr);
 
@@ -336,7 +323,7 @@ PetscErrorCode JacResInitScale(JacRes *jr, UserCtx *usr)
 
 	// scale material parameters
 	ScalingMatProp(&jr->scal, jr->phases, jr->numPhases);
-
+*/
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
@@ -356,7 +343,7 @@ PetscErrorCode JacResGetI2Gdt(JacRes *jr)
 	PetscFunctionBegin;
 
 	fs = jr->fs;
-	dt = jr->ts.dt;
+	dt = jr->ts->dt;
 
 	//=============
 	// cell centers
@@ -801,12 +788,12 @@ PetscErrorCode JacResGetResidual(JacRes *jr)
 	mz = fs->dsz.tnods - 1;
 
 	// access residual context variables
-	numPhases =  jr->numPhases; 	// number phases
-	phases    =  jr->phases;    	// phase parameters
-	matLim    = &jr->matLim;    	// phase parameters limiters
-	dt        =  jr->ts.dt;     	// time step
-	fssa      =  jr->FSSA;      	// density gradient penalty parameter
-	grav      =  jr->grav;      	// gravity acceleration
+	numPhases =  jr->numPhases;     // number phases
+	phases    =  jr->phases;        // phase parameters
+	matLim    = &jr->matLim;        // phase parameters limiters
+	dt        =  jr->ts->dt;        // time step
+	fssa      =  jr->FSSA;          // density gradient penalty parameter
+	grav      =  jr->grav;          // gravity acceleration
 //	rho_lithos=  matLim->rho_lithos;// density to compute lithostatic pressure in viscosity formulation
 	pShift    =  jr->pShift;    	// pressure shift
 
@@ -1767,17 +1754,17 @@ PetscErrorCode JacResViewRes(JacRes *jr)
 //---------------------------------------------------------------------------
 PetscScalar JacResGetTime(JacRes *jr)
 {
-	return	jr->ts.time*jr->scal.time;
+	return	jr->ts->time*jr->scal->time;
 }
 //---------------------------------------------------------------------------
 PetscInt JacResGetStep(JacRes *jr)
 {
-	return	jr->ts.istep;
+	return	jr->ts->istep;
 }
 //---------------------------------------------------------------------------
 #undef __FUNCT__
 #define __FUNCT__ "SetMatParLim"
-PetscErrorCode SetMatParLim(MatParLim *matLim, UserCtx *usr)
+PetscErrorCode SetMatParLim(MatParLim *matLim)
 {
 	// initialize material parameter limits
 	PetscBool flg;
@@ -1786,9 +1773,9 @@ PetscErrorCode SetMatParLim(MatParLim *matLim, UserCtx *usr)
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
 
-	matLim->eta_min      = usr->LowerViscosityCutoff;
-	matLim->eta_max      = usr->UpperViscosityCutoff;
-	matLim->eta_ref      = usr->InitViscosity;
+//	matLim->eta_min      = usr->LowerViscosityCutoff;
+//	matLim->eta_max      = usr->UpperViscosityCutoff;
+//	matLim->eta_ref      = usr->InitViscosity;
 
 	matLim->TRef         = 0.0;
 	matLim->Rugc         = 8.3144621;
@@ -1811,14 +1798,14 @@ PetscErrorCode SetMatParLim(MatParLim *matLim, UserCtx *usr)
 	matLim->theta_north  = 90.0; // by default y-axis
 	matLim->warn         = PETSC_TRUE;
 	matLim->jac_mat_free = PETSC_FALSE;
-
+/*
 	if(usr->DII_ref) matLim->DII_ref = usr->DII_ref;
 	else
 	{
 		matLim->DII_ref = 1.0;
 		PetscPrintf(PETSC_COMM_WORLD," WARNING: Reference strain rate DII_ref is not defined. Use a non-dimensional reference value of DII_ref =%f \n", matLim->DII_ref);
 	}
-
+*/
 	cnt = 0;
 
 	// plasticity stabilization parameters
@@ -1882,7 +1869,7 @@ PetscErrorCode JacResGetCourantStep(JacRes *jr)
 	PetscFunctionBegin;
 
 	fs =  jr->fs;
-	ts = &jr->ts;
+	ts =  jr->ts;
 
 	lidtmax = 0.0;
 

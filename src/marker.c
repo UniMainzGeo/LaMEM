@@ -68,6 +68,8 @@
 #START_DOC#
 #END_DOC#
 */
+
+/*
 //---------------------------------------------------------------------------
 #undef __FUNCT__
 #define __FUNCT__ "ADVMarkInit"
@@ -1901,6 +1903,7 @@ void ADVMarkSecIdx(AdvCtx *actx, UserCtx *user, PetscInt dir, PetscInt Islice, P
 	return;
 }
 //---------------------------------------------------------------------------
+*/
 /*
 #undef __FUNCT__
 #define __FUNCT__ "inpoly"

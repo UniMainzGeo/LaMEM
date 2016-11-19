@@ -769,7 +769,7 @@ PetscErrorCode PVAVDDestroy(PVAVD *pvavd)
 
 	if(!pvavd->outavd) PetscFunctionReturn(0);
 
-	LAMEM_FREE(pvavd->outfile);
+	free(pvavd->outfile);
 
 	PetscFunctionReturn(0);
 }
@@ -926,7 +926,7 @@ PetscErrorCode PVAVDWriteVTR(PVAVD *pvavd, AVD3D A, const char *dirName)
 	PetscFunctionBegin;
 
 	// access context
-	chLen = pvavd->actx->jr->scal.length;
+	chLen = pvavd->actx->jr->scal->length;
 
 	MPI_Comm_rank(PETSC_COMM_WORLD, &irank);  rank = (PetscInt)irank;
 

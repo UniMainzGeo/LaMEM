@@ -87,7 +87,7 @@ PetscErrorCode PVMarkDestroy(PVMark *pvmark)
 	PetscFunctionBegin;
 
 	// file name
-	LAMEM_FREE(pvmark->outfile);
+	free(pvmark->outfile);
 
 	PetscFunctionReturn(0);
 }
@@ -254,7 +254,7 @@ PetscErrorCode PVMarkWriteVTU(PVMark *pvmark, const char *dirName)
 	fwrite( &length,sizeof(int),1, fp);
 
 	// scaling length
-	scal_length = actx->jr->scal.length;
+	scal_length = actx->jr->scal->length;
 
 	for( i = 0; i < actx->nummark; i++)
 	{

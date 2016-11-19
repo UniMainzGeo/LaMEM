@@ -60,7 +60,7 @@ PetscErrorCode ScalingReadFromFile(Scaling *scal, FILE *fp)
 	PetscFunctionBegin;
 
 	// read model setup
-	parse_GetString(fp, "units", utype, MAX_NAME_LEN, &flg);
+//	parse_GetString(fp, "units", utype, MAX_NAME_LEN, &flg);
 
 	if(flg)
 	{
@@ -79,10 +79,10 @@ PetscErrorCode ScalingReadFromFile(Scaling *scal, FILE *fp)
 		stress      = 0.0;
 
 		// read
-		parse_GetDouble(fp, "Characteristic.Length",     &length ,     &found);
-		parse_GetDouble(fp, "Characteristic.Viscosity",  &viscosity,   &found);
-		parse_GetDouble(fp, "Characteristic.Temperature",&temperature, &found);
-		parse_GetDouble(fp, "Characteristic.Stress",     &stress,      &found);
+//		parse_GetDouble(fp, "Characteristic.Length",     &length ,     &found);
+//		parse_GetDouble(fp, "Characteristic.Viscosity",  &viscosity,   &found);
+//		parse_GetDouble(fp, "Characteristic.Temperature",&temperature, &found);
+//		parse_GetDouble(fp, "Characteristic.Stress",     &stress,      &found);
 
 		// check
 		if(length      == 0.0) SETERRQ(PETSC_COMM_SELF, PETSC_ERR_USER, "Define Characteristic.Length parameter\n");
@@ -295,6 +295,7 @@ PetscErrorCode ScalingCreate(Scaling *scal)
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
+/*
 // scaling of input parameters (UserCtx)
 void ScalingInput(Scaling *scal, UserCtx *user)
 {
@@ -449,4 +450,5 @@ void ScalingMeshSegDir(Scaling *scal, MeshSegInp *msi)
 		msi->delims[i] /= scal->length;
 	}
 }
+*/
 //---------------------------------------------------------------------------

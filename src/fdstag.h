@@ -49,6 +49,9 @@
 #define _num_neighb_ 27
 //---------------------------------------------------------------------------
 
+// maximum number of mesh segments in every direction
+#define MaxNumMeshSegs 10
+
 //-----------------------------------------------------------------------------
 // Mesh segments input data structures
 typedef struct
@@ -286,7 +289,7 @@ PetscErrorCode FDSTAGCreate(
 PetscErrorCode FDSTAGDestroy(FDSTAG *fs);
 
 // generate coordinates of local nodes and cells from segment data
-PetscErrorCode FDSTAGGenCoord(FDSTAG *fs, UserCtx *usr);
+//PetscErrorCode FDSTAGGenCoord(FDSTAG *fs, UserCtx *usr);
 
 // set global indices of the local and ghost nodes
 //PetscErrorCode FDSTAGSetGlobInd(FDSTAG * fs);

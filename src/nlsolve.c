@@ -231,7 +231,7 @@ PetscErrorCode FormResidual(SNES snes, Vec x, Vec f, void *ctx)
 	jr = nl->pc->pm->jr;
 
 	// apply pressure limit at the first visco-plastic timestep and iteration
-    if(jr->ts.istep == 1 && jr->matLim.presLimAct == PETSC_TRUE)
+    if(jr->ts->istep == 1 && jr->matLim.presLimAct == PETSC_TRUE)
     {
     	jr->matLim.presLimFlg = PETSC_TRUE;
 	}
@@ -391,7 +391,7 @@ PetscErrorCode FormJacobian(SNES snes, Vec x, Mat Amat, Mat Pmat, void *ctx)
 	}
 
 	// switch off pressure limit for plasticity after first timestep and iteration (after GetResidual)
-	if(jr->ts.istep >=1)
+	if(jr->ts->istep >=1)
 	{
 		jr->matLim.presLimAct = PETSC_FALSE;
 	}

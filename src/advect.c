@@ -390,7 +390,7 @@ PetscErrorCode ADVInterpFieldToMark(AdvCtx *actx, InterpCase icase)
 	jr = actx->jr;
 
 	// current time step
-	dt = jr->ts.dt;
+	dt = jr->ts->dt;
 
 	// starting indices & number of cells
 	sx = fs->dsx.pstart; nx = fs->dsx.ncels;
@@ -542,7 +542,7 @@ PetscErrorCode ADVAdvectMark(AdvCtx *actx)
 	jr = actx->jr;
 
 	// current time step
-	dt = jr->ts.dt;
+	dt = jr->ts->dt;
 
 	// starting indices & number of cells
 	sx = fs->dsx.pstart; nx = fs->dsx.ncels;

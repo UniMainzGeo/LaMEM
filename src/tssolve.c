@@ -55,10 +55,10 @@
 //---------------------------------------------------------------------------
 #undef __FUNCT__
 #define __FUNCT__ "TSSolSetUp"
-PetscErrorCode TSSolSetUp(TSSol *ts, UserCtx *usr)
+PetscErrorCode TSSolSetUp(TSSol *ts)
 {
 	PetscFunctionBegin;
-
+/*
 	ts->nstep = usr->time_end; // maximum number of steps
 	ts->dtmax = usr->dt_max;   // maximum time step
 	ts->Cmax  = usr->CFL;      // Courant number
@@ -66,7 +66,7 @@ PetscErrorCode TSSolSetUp(TSSol *ts, UserCtx *usr)
 	ts->pdt   = 0.0;           // previous time step
 	ts->dt    = usr->dt;       // current time step (to be defined)
 	ts->time  = 0.0;
-
+*/
 	PetscPrintf(PETSC_COMM_WORLD, " CFL timestep factor            : %f \n", ts->Cmax);
 
 	if(ts->Cmax > 1.0)

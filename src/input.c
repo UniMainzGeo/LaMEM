@@ -53,7 +53,8 @@
 #include "JacRes.h"
 #include "input.h"
 #include "matProps.h"
-#include "fdstagTypes.h"
+
+/*
 //---------------------------------------------------------------------------
 #undef __FUNCT__
 #define __FUNCT__ "PushInputReadFile"
@@ -609,17 +610,6 @@ PetscErrorCode InputReadFile(JacRes *jr, UserCtx *user, FILE *fp)
 	// bezier flag
 	parse_GetInt( fp,    "AddBezier",  &user->AddBezier,  &found );
 
-/*
-	// Marker setting: skip certain volumes that are defined in input file
-	parse_GetIntArray( fp, "PolyInVolSkip",         &nv, i_values, &found);
-	if (found==1)
-	{
-		for( i=0; i<=i_values[0];   i++ )
-		{
-			user->PolyInVolSkip[i] = i_values[i];
-		}
-	}
-*/
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
@@ -814,3 +804,4 @@ PetscErrorCode ReadMeshSegDir(
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
+*/

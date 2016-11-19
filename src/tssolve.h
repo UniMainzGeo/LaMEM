@@ -75,7 +75,7 @@ typedef struct
 
 //---------------------------------------------------------------------------
 
-PetscErrorCode TSSolSetUp(TSSol *ts, UserCtx *usr);
+PetscErrorCode TSSolSetUp(TSSol *ts);
 
 PetscErrorCode TSSolUpdate(TSSol *ts, Scaling *scal, PetscBool *done);
 

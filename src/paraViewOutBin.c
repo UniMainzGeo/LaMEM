@@ -309,7 +309,7 @@ void OutVecCreate(
 //---------------------------------------------------------------------------
 void OutVecDestroy(OutVec *outvec)
 {
-	LAMEM_FREE(outvec->name);
+	free(outvec->name);
 }
 //---------------------------------------------------------------------------
 //.......................... Vector output mask .............................
@@ -393,7 +393,7 @@ PetscErrorCode PVOutCreate(PVOut *pvout, JacRes *jr, const char *filename)
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
 
-	scal = &jr->scal;
+	scal = jr->scal;
 
 	// set file name
 	asprintf(&pvout->outfile, "%s", filename);
@@ -527,7 +527,7 @@ PetscErrorCode PVOutDestroy(PVOut *pvout)
 	PetscFunctionBegin;
 
 	// file name
-	LAMEM_FREE(pvout->outfile);
+	free(pvout->outfile);
 
 	// output vectors
 	for(i = 0; i < pvout->nvec; i++)
@@ -733,9 +733,9 @@ PetscErrorCode PVOutWriteVTR(PVOut *pvout, JacRes *jr, const char *dirName)
 	fprintf(fp,"_");
 
 	// coordinate vectors
-	OutBufPutCoordVec(outbuf, &fs->dsx, jr->scal.length); OutBufDump(outbuf);
-	OutBufPutCoordVec(outbuf, &fs->dsy, jr->scal.length); OutBufDump(outbuf);
-	OutBufPutCoordVec(outbuf, &fs->dsz, jr->scal.length); OutBufDump(outbuf);
+	OutBufPutCoordVec(outbuf, &fs->dsx, jr->scal->length); OutBufDump(outbuf);
+	OutBufPutCoordVec(outbuf, &fs->dsy, jr->scal->length); OutBufDump(outbuf);
+	OutBufPutCoordVec(outbuf, &fs->dsz, jr->scal->length); OutBufDump(outbuf);
 
 	for(i = 0; i < pvout->nvec; i++)
 	{

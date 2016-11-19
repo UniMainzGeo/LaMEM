@@ -67,13 +67,13 @@ typedef struct
 //---------------------------------------------------------------------------
 
 // markers initialization
-PetscErrorCode ADVMarkInit(AdvCtx *actx, UserCtx *user);
+PetscErrorCode ADVMarkInit(AdvCtx *actx);
 
 // generate coordinates of uniformly distributed markers
-PetscErrorCode ADVMarkInitCoord(AdvCtx *actx, UserCtx *user);
+PetscErrorCode ADVMarkInitCoord(AdvCtx *actx);
 
 // save all local markers to disk (parallel output)
-PetscErrorCode ADVMarkSave(AdvCtx *actx, UserCtx *user);
+PetscErrorCode ADVMarkSave(AdvCtx *actx);
 
 // check phase IDs of all the markers
 PetscErrorCode ADVMarkCheckMarkers(AdvCtx *actx);
@@ -82,27 +82,27 @@ PetscErrorCode ADVMarkCheckMarkers(AdvCtx *actx);
 
 // Specific initialization routines
 
-PetscErrorCode ADVMarkInitFileParallel (AdvCtx *actx, UserCtx *user);
-PetscErrorCode ADVMarkInitFileRedundant(AdvCtx *actx, UserCtx *user);
-PetscErrorCode ADVMarkInitFilePolygons (AdvCtx *actx, UserCtx *user);
-PetscErrorCode ADVMarkInitDiapir       (AdvCtx *actx, UserCtx *user);
-PetscErrorCode ADVMarkInitBlock        (AdvCtx *actx, UserCtx *user);
-PetscErrorCode ADVMarkInitSubduction   (AdvCtx *actx, UserCtx *user);
-PetscErrorCode ADVMarkInitFolding      (AdvCtx *actx, UserCtx *user);
-PetscErrorCode ADVMarkInitDetachment   (AdvCtx *actx, UserCtx *user);
-PetscErrorCode ADVMarkInitSlab         (AdvCtx *actx, UserCtx *user);
-PetscErrorCode ADVMarkInitSpheres      (AdvCtx *actx, UserCtx *user);
-PetscErrorCode ADVMarkInitBands        (AdvCtx *actx, UserCtx *user);
-PetscErrorCode ADVMarkInitDomes        (AdvCtx *actx, UserCtx *user);
-PetscErrorCode ADVMarkInitRotation     (AdvCtx *actx, UserCtx *user);
+PetscErrorCode ADVMarkInitFileParallel (AdvCtx *actx);
+PetscErrorCode ADVMarkInitFileRedundant(AdvCtx *actx);
+PetscErrorCode ADVMarkInitFilePolygons (AdvCtx *actx);
+PetscErrorCode ADVMarkInitDiapir       (AdvCtx *actx);
+PetscErrorCode ADVMarkInitBlock        (AdvCtx *actx);
+PetscErrorCode ADVMarkInitSubduction   (AdvCtx *actx);
+PetscErrorCode ADVMarkInitFolding      (AdvCtx *actx);
+PetscErrorCode ADVMarkInitDetachment   (AdvCtx *actx);
+PetscErrorCode ADVMarkInitSlab         (AdvCtx *actx);
+PetscErrorCode ADVMarkInitSpheres      (AdvCtx *actx);
+PetscErrorCode ADVMarkInitBands        (AdvCtx *actx);
+PetscErrorCode ADVMarkInitDomes        (AdvCtx *actx);
+PetscErrorCode ADVMarkInitRotation     (AdvCtx *actx);
 
 //---------------------------------------------------------------------------
 
 // service functions
 
-PetscErrorCode ADVMarkSetTempFromFile  (AdvCtx *actx, UserCtx *user);
+PetscErrorCode ADVMarkSetTempFromFile  (AdvCtx *actx);
 
-void ADVMarkSecIdx(AdvCtx *actx, UserCtx *user, PetscInt dir, PetscInt Nslice, PetscInt *idx);
+void ADVMarkSecIdx(AdvCtx *actx, PetscInt dir, PetscInt Nslice, PetscInt *idx);
 
 //---------------------------------------------------------------------------
 

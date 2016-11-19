@@ -76,7 +76,7 @@ PetscErrorCode BCBlockReadFromOptions(BCBlock *bcb, Scaling *scal)
 	//==================
 	// Bezier path curve
 	//==================
-
+/*
 	ierr = GetIntDataItemCheck("-bcb_npath", "Number of path points of Bezier curve",
 		_NOT_FOUND_EXIT_, 1, &bcb->npath, 1, _max_path_points_); CHKERRQ(ierr);
 
@@ -113,7 +113,7 @@ PetscErrorCode BCBlockReadFromOptions(BCBlock *bcb, Scaling *scal)
 		ierr = GetScalDataItemCheckScale("-bcb_top", "Polygon top coordinate",
 			_NOT_FOUND_ERROR_, 1, &bcb->top, 0.0, 0.0, scal->length); CHKERRQ(ierr);
 	}
-
+*/
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
@@ -488,7 +488,7 @@ PetscErrorCode DBoxReadFromOptions(DBox *dbox, Scaling *scal)
 	//========================
 	// Dropping box parameters
 	//========================
-
+/*
 	ierr = GetIntDataItemCheck("-dbox_num", "Number of dropping boxes",
 		_NOT_FOUND_EXIT_, 1, &dbox->num, 1, _max_boxes_); CHKERRQ(ierr);
 
@@ -503,7 +503,7 @@ PetscErrorCode DBoxReadFromOptions(DBox *dbox, Scaling *scal)
 			_NOT_FOUND_ERROR_, 1, &dbox->zvel, 0.0, 0.0, scal->velocity); CHKERRQ(ierr);
 
 	}
-
+*/
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
@@ -705,7 +705,7 @@ PetscErrorCode BCCreate(BCCtx *bc, FDSTAG *fs, TSSol *ts, Scaling *scal)
 
 	bc->ExxAct = PETSC_FALSE;
 	bc->EyyAct = PETSC_FALSE;
-	bc->pbAct  = PETSC_FALSE;
+//	bc->pbAct  = PETSC_FALSE;
 
 	bc->fs   = fs;
 	bc->ts   = ts;
@@ -747,10 +747,10 @@ PetscErrorCode BCDestroy(BCCtx *bc)
 //---------------------------------------------------------------------------
 #undef __FUNCT__
 #define __FUNCT__ "BCSetParam"
-PetscErrorCode BCSetParam(BCCtx *bc, UserCtx *user)
+PetscErrorCode BCSetParam(BCCtx *bc)
 {
 	PetscFunctionBegin;
-
+/*
 	bc->Tbot  = user->Temp_bottom;
 	bc->Ttop  = user->Temp_top;
 
@@ -762,7 +762,7 @@ PetscErrorCode BCSetParam(BCCtx *bc, UserCtx *user)
 	}
 	else
 		bc->AddBezier = PETSC_FALSE;
-
+*/
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
@@ -781,7 +781,7 @@ PetscErrorCode BCReadFromOptions(BCCtx *bc)
 	scal = bc->scal;
 
 	// x-direction background strain rate
-
+/*
 	ierr = GetIntDataItemCheck("-ExxNumPeriods", "Number of Exx background strain rate periods",
 		_NOT_FOUND_EXIT_, 1, &bc->ExxNumPeriods, 1, _max_periods_); CHKERRQ(ierr);
 
@@ -859,7 +859,7 @@ PetscErrorCode BCReadFromOptions(BCCtx *bc)
 	// read no-slip boundary condition mask
 	ierr = GetIntDataItemCheck("-noslip", "no-slip mask",
 		_NOT_FOUND_EXIT_, 6, bc->noslip, 0, 1); CHKERRQ(ierr);
-
+*/
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
@@ -942,12 +942,6 @@ PetscErrorCode BCApply(BCCtx *bc, Vec x)
 
 	// apply boundary constraints
 	ierr = BCApplyBound(bc); CHKERRQ(ierr);
-
-	// compute pushing parameters
-	//ierr = BCCompPush(bc); CHKERRQ(ierr);
-
-	// apply pushing block constraints
-	ierr = BCApplyPush(bc); CHKERRQ(ierr);
 
 	// apply Bezier block constraints
 	ierr = BCApplyBezier(bc); CHKERRQ(ierr);
@@ -1348,310 +1342,6 @@ PetscErrorCode BCApplyBound(BCCtx *bc)
 	ierr = DMDAVecRestoreArray(fs->DA_Y,   bc->bcvy, &bcvy); CHKERRQ(ierr);
 	ierr = DMDAVecRestoreArray(fs->DA_Z,   bc->bcvz, &bcvz); CHKERRQ(ierr);
 	ierr = DMDAVecRestoreArray(fs->DA_CEN, bc->bcT,  &bcT);  CHKERRQ(ierr);
-
-	PetscFunctionReturn(0);
-}
-//---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "BCSetPush"
-PetscErrorCode BCSetPush(BCCtx *bc, UserCtx *user)
-{
-	PetscInt ip;
-
-	PetscFunctionBegin;
-
-	if(user->AddPushing)
-	{
-		bc->pbAct = PETSC_TRUE;
-		bc->pb    = user->Pushing;
-		bc->nPblo = user->nPush;
-		for(ip = 0; ip < bc->nPblo; ip++) bc->pbApp[ip] = 1;
-	}
-
-	PetscFunctionReturn(0);
-}
-//---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "BCCompPush"
-PetscErrorCode BCCompPush(BCCtx *bc,PetscInt ip)
-{
-	// MUST be called at the beginning of time step before setting boundary conditions
-	// compute pushing boundary conditions actual parameters
-	PushParams    *pb;
-	TSSol         *ts;
-	Scaling       *scal;
-	PetscInt      i, ichange;
-	PetscScalar   Vx, Vy, theta;
-
-	PetscFunctionBegin;
-
-	// check if pushing option is activated
-	if(!bc->pbApp[ip]) PetscFunctionReturn(0);
-
-	// access
-	pb   = &bc->pb[ip];
-
-	// access contexts
-	ts   = bc->ts;
-	scal = bc->scal;
-
-	// set boundary conditions flag
-	bc->pbApp[ip] = 0;
-
-	// add pushing boundary conditions ONLY within the specified time interval - for that introduce a new flag
-	if(ts->time >= pb->time[0]
-							&& ts->time <= pb->time[pb->num_changes])
-	{
-		// check which pushing stage
-		ichange = 0;
-
-		for(i = 0; i < pb->num_changes; i++)
-		{
-			if(ts->time >= pb->time[i] && ts->time <= pb->time[i+1])
-			{
-				ichange = i;
-			}
-		}
-
-		pb->ind_change = ichange;
-
-		// initialize parameters for the time step
-		Vx    = 0.0;
-		Vy    = 0.0;
-		theta = pb->theta;
-
-		if(pb->dir[ichange] == 0)
-		{
-			Vx = cos(theta)*pb->V_push[ichange];
-			Vy = sin(theta)*pb->V_push[ichange];
-		}
-
-		if(pb->dir[ichange] == 1) Vx = pb->V_push[ichange];
-		if(pb->dir[ichange] == 2) Vy = pb->V_push[ichange];
-
-		// set boundary conditions parameters
-		bc->pbApp[ip] = 1;
-		bc->Vx     	  = Vx;
-		bc->Vy     	  = Vy;
-		bc->theta     = theta;
-
-		PetscPrintf(PETSC_COMM_WORLD,"Pushing Block[%d]: Time interval=[%g-%g] %s, V_push=%g %s, Omega=%g %s, mobile_block=%lld, direction=%lld, theta=%g deg\n",ip,
-				pb->time             [ichange  ]*scal->time,
-				pb->time             [ichange+1]*scal->time,             scal->lbl_time,
-				pb->V_push           [ichange  ]*scal->velocity,         scal->lbl_velocity,
-				pb->omega            [ichange  ]*scal->angular_velocity, scal->lbl_angular_velocity,
-				(LLD)pb->coord_advect[ichange  ],
-				(LLD)pb->dir         [ichange  ],
-				theta*scal->angle);
-
-		PetscPrintf(PETSC_COMM_WORLD,"\t\t Block center coordinates [x, y, z]=[%g, %g, %g] %s\n",
-				pb->x_center_block*scal->length,
-				pb->y_center_block*scal->length,
-				pb->z_center_block*scal->length, scal->lbl_length);
-	}
-
-
-	PetscFunctionReturn(0);
-}
-//---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "BCApplyPush"
-PetscErrorCode BCApplyPush(BCCtx *bc)
-{
-	// initialize internal (pushing) boundary conditions vectors
-	// only x, y velocities are constrained!!
-	// constraining vz makes a bad case - will not converge.
-
-	FDSTAG      *fs;
-	PushParams  *pb;
-	PetscScalar xc, yc, zc;
-	PetscScalar	dx, dy, dz;
-	PetscScalar px, py, pz;
-	PetscScalar rx, ry, rz;
-	PetscScalar costh, sinth;
-	PetscScalar ***bcvx,  ***bcvy, *SPCVals;
-	PetscInt    i, j, k, nx, ny, nz, sx, sy, sz, iter, ip;
-
-	PetscErrorCode ierr;
-	PetscFunctionBegin;
-
-	// check whether pushing is applied
-	if(bc->pbAct != PETSC_TRUE) PetscFunctionReturn(0);
-
-	// access
-	fs    = bc->fs;
-
-	// access velocity constraint vectors
-	ierr = DMDAVecGetArray(fs->DA_X, bc->bcvx, &bcvx); CHKERRQ(ierr);
-	ierr = DMDAVecGetArray(fs->DA_Y, bc->bcvy, &bcvy); CHKERRQ(ierr);
-
-	// access constraint arrays
-	SPCVals = bc->SPCVals;
-
-	// loop over for pushing block
-	for(ip = 0; ip < bc->nPblo; ip++)
-	{
-		// compute pushing parameters
-		pb   = &bc->pb[ip];
-		ierr = BCCompPush(bc, ip); CHKERRQ(ierr);
-
-		// prepare block coordinates, sizes & rotation angle parameters
-		xc    = pb->x_center_block;
-		yc    = pb->y_center_block;
-		zc    = pb->z_center_block;
-		dx    = pb->L_block/2.0;
-		dy    = pb->W_block/2.0;
-		dz    = pb->H_block/2.0;
-		costh = cos(bc->theta);
-		sinth = sin(bc->theta);
-
-		iter = 0;
-
-		//---------
-		// X points
-		//---------
-		GET_NODE_RANGE(nx, sx, fs->dsx)
-		GET_CELL_RANGE(ny, sy, fs->dsy)
-		GET_CELL_RANGE(nz, sz, fs->dsz)
-
-		START_STD_LOOP
-		{
-			// get point coordinates in the block-centered system
-			px = COORD_NODE(i, sx, fs->dsx) - xc;
-			py = COORD_CELL(j, sy, fs->dsy) - yc;
-			pz = COORD_CELL(k, sz, fs->dsz) - zc;
-
-			// get point coordinates in the block-aligned system
-			// rotation matrix R = [ cos() sin() ; -sin() cos() ]
-			rx =  costh*px + sinth*py;
-			ry = -sinth*px + costh*py;
-			rz =  pz;
-
-			// perform point test
-			if(rx >= -dx && rx <= dx
-					&& ry >= -dy && ry <= dy
-					&& rz >= -dz && rz <= dz)
-			{
-				bcvx[k][j][i] = bc->Vx;
-				SPCVals[iter] = bc->Vx;
-			}
-			iter++;
-		}
-		END_STD_LOOP
-
-		//---------
-		// Y points
-		//---------
-		GET_CELL_RANGE(nx, sx, fs->dsx)
-		GET_NODE_RANGE(ny, sy, fs->dsy)
-		GET_CELL_RANGE(nz, sz, fs->dsz)
-
-		START_STD_LOOP
-		{
-			// get point coordinates in the block-centered system
-			px = COORD_CELL(i, sx, fs->dsx) - xc;
-			py = COORD_NODE(j, sy, fs->dsy) - yc;
-			pz = COORD_CELL(k, sz, fs->dsz) - zc;
-
-			// get point coordinates in the block-aligned system
-			// rotation matrix R = [ cos() sin() ; -sin() cos() ]
-			rx =  costh*px + sinth*py;
-			ry = -sinth*px + costh*py;
-			rz =  pz;
-
-			// perform point test
-			if(rx >= -dx && rx <= dx
-					&& ry >= -dy && ry <= dy
-					&& rz >= -dz && rz <= dz)
-			{
-				bcvy[k][j][i] = bc->Vy;
-				SPCVals[iter] = bc->Vy;
-			}
-			iter++;
-		}
-		END_STD_LOOP
-	}
-	// restore access
-	ierr = DMDAVecRestoreArray(fs->DA_X, bc->bcvx, &bcvx); CHKERRQ(ierr);
-	ierr = DMDAVecRestoreArray(fs->DA_Y, bc->bcvy, &bcvy); CHKERRQ(ierr);
-
-	PetscFunctionReturn(0);
-}
-//---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "BCAdvectPush"
-PetscErrorCode BCAdvectPush(BCCtx *bc)
-{
-	TSSol        *ts;
-	PushParams   *pb;
-	PetscInt     advc, ichange, ip;
-	PetscScalar  xc, yc, zc, Vx, Vy, dx, dy, dt, omega, theta, dtheta;
-
-	// check if pushing option is activated
-	if(bc->pbAct != PETSC_TRUE) PetscFunctionReturn(0);
-
-	// access context
-	ts = bc->ts;
-
-	for(ip = 0; ip < bc->nPblo; ip++)
-	{
-		pb = &bc->pb[ip];
-
-		// check time interval
-		if(ts->time >= pb->time[0]
-								&& ts->time <= pb->time[pb->num_changes])
-		{
-			// initialize variables
-			ichange = pb->ind_change;
-			advc    = pb->coord_advect[ichange];
-
-			Vx = 0.0;
-			Vy = 0.0;
-			dy = 0.0;
-			dx = 0.0;
-			dt = ts->dt;
-
-			xc = pb->x_center_block;
-			yc = pb->y_center_block;
-			zc = pb->z_center_block;
-
-			// block is rotated
-			if(pb->dir[ichange] == 0)
-			{
-				omega = pb->omega[ichange];
-				theta = pb->theta;
-				Vx    = cos(theta)*pb->V_push[ichange];
-				Vy    = sin(theta)*pb->V_push[ichange];
-
-				// rotation
-				dtheta = omega*dt;
-				pb->theta = theta + dtheta;
-			}
-
-			// block moves in X-direction
-			if(pb->dir[ichange] == 1) Vx = pb->V_push[ichange];
-
-			// block moves in Y-direction
-			if(pb->dir[ichange] == 2) Vy = pb->V_push[ichange];
-
-			// get displacements
-			dx = Vx*dt;
-			dy = Vy*dt;
-
-			if(advc == 0)
-			{	// stationary block
-				pb->x_center_block = xc;
-				pb->y_center_block = yc;
-				pb->z_center_block = zc;
-			}
-			else
-			{	// moving block
-				pb->x_center_block = xc + dx;
-				pb->y_center_block = yc + dy;
-				pb->z_center_block = zc;
-			}
-		}
-	}
 
 	PetscFunctionReturn(0);
 }

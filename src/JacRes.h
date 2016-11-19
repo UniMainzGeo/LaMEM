@@ -58,14 +58,22 @@ typedef enum
 } SPCAppType;
 */
 
+#define max_num_phases 32 // max no of phases
+#define max_num_soft   10 // max no of soft laws
+
+// space dimension
+#define SPDIM 3
+
 //---------------------------------------------------------------------------
 
 // FDSTAG Jacobian and residual evaluation context
 typedef struct
 {
 	// external handles
-	FDSTAG  *fs;  // staggered-grid layout
-	BCCtx   *bc;  // boundary condition context
+	Scaling  *scal; // scaling
+	TSSol    *ts;   // time-stepping parameters
+	FDSTAG   *fs;   // staggered-grid layout
+	BCCtx    *bc;   // boundary condition context
 
 	// coupled solution & residual vectors
 	Vec gsol, gres; // global
@@ -114,8 +122,6 @@ typedef struct
 	MatParLim    matLim;                 // phase parameters limiters
 
 	// parameters & controls
-	Scaling     scal;        // scaling
-	TSSol       ts;          // time-stepping parameters
 	PetscScalar grav[SPDIM]; // global gravity components
 	PetscScalar FSSA;        // density gradient penalty parameter
 	//                          (a.k.a. free-surface-stabilization-algorithm)
@@ -158,8 +164,6 @@ typedef struct
 } JacRes;
 //---------------------------------------------------------------------------
 
-PetscErrorCode JacResClear(JacRes *jr);
-
 PetscErrorCode JacResSetFromOptions(JacRes *jr);
 
 // create residual & Jacobian evaluation context
@@ -172,7 +176,7 @@ PetscErrorCode JacResCreate(
 PetscErrorCode JacResDestroy(JacRes *jr);
 
 // initialize and setup scaling object, perform scaling
-PetscErrorCode JacResInitScale(JacRes *jr, UserCtx *usr);
+PetscErrorCode JacResInitScale(JacRes *jr);
 
 // compute effective inverse elastic viscosity
 PetscErrorCode JacResGetI2Gdt(JacRes *jr);
@@ -249,7 +253,7 @@ PetscErrorCode JacResGetEHmax(JacRes *jr);
 //---------------------------------------------------------------------------
 
 // initialize material parameter limits
-PetscErrorCode SetMatParLim(MatParLim *matLim, UserCtx *usr);
+PetscErrorCode SetMatParLim(MatParLim *matLim);
 
 //---------------------------------------------------------------------------
 //......................   TEMPERATURE FUNCTIONS   ..........................

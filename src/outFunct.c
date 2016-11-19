@@ -82,7 +82,7 @@
 	PetscErrorCode ierr; \
 	PetscFunctionBegin; \
 	fs   = outbuf->fs; \
-	scal = &jr->scal; \
+	scal = jr->scal; \
 	iflag.update    = PETSC_FALSE; \
 	iflag.use_bound = PETSC_FALSE;
 //---------------------------------------------------------------------------
@@ -93,7 +93,7 @@
 	InterpFlags  iflag; \
 	PetscErrorCode ierr; \
 	PetscFunctionBegin; \
-	scal = &jr->scal; \
+	scal = jr->scal; \
 	iflag.update    = PETSC_FALSE; \
 	iflag.use_bound = PETSC_FALSE;
 //---------------------------------------------------------------------------

@@ -99,7 +99,7 @@ PetscErrorCode JacResGetTempParam(
 	rho_A     = 0.0;
 	numPhases = jr->numPhases;
 	phases    = jr->phases;
-	density   = jr->scal.density;
+	density   = jr->scal->density;
 
 	// average all phases
 	for(i = 0; i < numPhases; i++)
@@ -417,7 +417,7 @@ PetscErrorCode JacResGetTempRes(JacRes *jr)
 
 	// access residual context variables
 	fs        = jr->fs;
-	dt        = jr->ts.dt;     // time step
+	dt        = jr->ts->dt;     // time step
 	bc        = jr->bc;
 	num       = bc->tNumSPC;
 	list      = bc->tSPCList;
@@ -550,7 +550,7 @@ PetscErrorCode JacResGetTempMat(JacRes *jr)
 	// access residual context variables
 	fs        = jr->fs;
 	bc        = jr->bc;
-	dt        = jr->ts.dt;     // time step
+	dt        = jr->ts->dt;     // time step
 	num       = bc->tNumSPC;
 	list      = bc->tSPCList;
 

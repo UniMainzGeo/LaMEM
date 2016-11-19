@@ -54,9 +54,8 @@
 //---------------------------------------------------------------------------
 #undef __FUNCT__
 #define __FUNCT__ "GRVSurveyCreate"
-PetscErrorCode GRVSurveyCreate(UserCtx *user, GravitySurvey *survey)
+PetscErrorCode GRVSurveyCreate(GravitySurvey *survey)
 {
-	if(user)   user = NULL;
 	if(survey) survey = NULL;
 
 /*
@@ -142,11 +141,10 @@ PetscErrorCode GRVSurveyDestroy( GravitySurvey survey)
 //---------------------------------------------------------------------------
 #undef __FUNCT__
 #define __FUNCT__ "GRVCompute"
-PetscErrorCode GRVCompute(FDSTAG *fs, UserCtx *user, JacRes *jr)
+PetscErrorCode GRVCompute(FDSTAG *fs, JacRes *jr)
 {
 
 	if(fs)   fs = NULL;
-	if(user) user = NULL;
 	if(jr)   jr = NULL;
 
 /*

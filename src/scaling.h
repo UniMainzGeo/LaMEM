@@ -162,15 +162,15 @@ PetscErrorCode ScalingReadFromFile(Scaling *scal, FILE *fp);
 //---------------------------------------------------------------------------
 
 // scaling of input parameters (UserCtx)
-void ScalingInput(Scaling *scal, UserCtx *user);
+//void ScalingInput(Scaling *scal, UserCtx *user);
 
 // scaling material parameters
-void ScalingMatProp(Scaling *scal, Material_t *phases, PetscInt numPhases);
+//void ScalingMatProp(Scaling *scal, Material_t *phases, PetscInt numPhases);
 
 // scaling material parameter limits
-void ScalingMatParLim(Scaling *scal, MatParLim *matLim);
+//void ScalingMatParLim(Scaling *scal, MatParLim *matLim);
 
-void ScalingMeshSegDir(Scaling *scal, MeshSegInp *msi);
+//void ScalingMeshSegDir(Scaling *scal, MeshSegInp *msi);
 
 //---------------------------------------------------------------------------
 

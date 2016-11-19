@@ -81,11 +81,11 @@ typedef struct
 
 } GravitySurvey;
 
-PetscErrorCode GRVSurveyCreate(UserCtx *user, GravitySurvey *survey);
+PetscErrorCode GRVSurveyCreate(GravitySurvey *survey);
 
 PetscErrorCode GRVSurveyDestroy(GravitySurvey survey);
 
-PetscErrorCode GRVCompute(FDSTAG *fs, UserCtx *user, JacRes *jr);
+PetscErrorCode GRVCompute(FDSTAG *fs, JacRes *jr);
 
 
 //---------------------------------------------------------------------------

@@ -52,6 +52,7 @@
 #include "parsing.h"
 #include "matProps.h"
 #include "tools.h"
+/*
 //---------------------------------------------------------------------------
 #undef __FUNCT__
 #define __FUNCT__ "MatPropInit"
@@ -649,6 +650,7 @@ PetscErrorCode MatSoftGetStruct(FILE *fp,
 
 	PetscFunctionReturn(0);
 }
+*/
 //---------------------------------------------------------------------------
 // set diffusion creep profiles from literature
 #undef __FUNCT__
@@ -1190,6 +1192,7 @@ PetscErrorCode SetProfileCorrection(PetscScalar *B, PetscScalar n, TensorCorrect
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
+/*
 void getLineStruct(
 		FILE *fp, PetscInt *ls, PetscInt *le, PetscInt max_num,
 		PetscInt *count_starts, PetscInt *count_ends,
@@ -1527,3 +1530,4 @@ void getMatPropScalArray(FILE *fp, PetscInt ils, PetscInt ile,const char key[],
 	}
 }
 //---------------------------------------------------------------------------
+*/

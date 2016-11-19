@@ -87,9 +87,9 @@ typedef struct
 
 PetscErrorCode FreeSurfClear(FreeSurf *surf);
 
-PetscErrorCode FreeSurfCreate(FreeSurf *surf, JacRes *jr, UserCtx *user);
+PetscErrorCode FreeSurfCreate(FreeSurf *surf, JacRes *jr);
 
-PetscErrorCode FreeSurfReadFromOptions(FreeSurf *surf, Scaling *scal);
+PetscErrorCode FreeSurfReadFromOptions(FreeSurf *surf);
 
 PetscErrorCode FreeSurfReadFromFile(FreeSurf *surf, Scaling *scal);
 
@@ -120,7 +120,7 @@ PetscErrorCode FreeSurfAppErosion(FreeSurf *surf);
 PetscErrorCode FreeSurfAppSedimentation(FreeSurf *surf);
 
 // Set topography from file
-PetscErrorCode FreeSurfSetTopoFromFile(FreeSurf *surf, UserCtx *user);
+PetscErrorCode FreeSurfSetTopoFromFile(FreeSurf *surf);
 
 //---------------------------------------------------------------------------
 // SERVICE FUNCTIONS

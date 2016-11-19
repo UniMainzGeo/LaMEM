@@ -1070,17 +1070,18 @@ PetscErrorCode FDSTAGDestroy(FDSTAG * fs)
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
+/*
 #undef __FUNCT__
 #define __FUNCT__ "FDSTAGGenCoord"
-PetscErrorCode FDSTAGGenCoord(FDSTAG *fs, UserCtx *usr)
+PetscErrorCode FDSTAGGenCoord(FDSTAG *fs)
 {
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
 
 	// generate mesh segment data
-	ierr = MeshSeg1DCreate(&fs->msx, usr->x_left,  usr->x_left  + usr->W, usr->nel_x, &usr->mseg_x); CHKERRQ(ierr);
-	ierr = MeshSeg1DCreate(&fs->msy, usr->y_front, usr->y_front + usr->L, usr->nel_y, &usr->mseg_y); CHKERRQ(ierr);
-	ierr = MeshSeg1DCreate(&fs->msz, usr->z_bot,   usr->z_bot   + usr->H, usr->nel_z, &usr->mseg_z); CHKERRQ(ierr);
+//	ierr = MeshSeg1DCreate(&fs->msx, usr->x_left,  usr->x_left  + usr->W, usr->nel_x, &usr->mseg_x); CHKERRQ(ierr);
+//	ierr = MeshSeg1DCreate(&fs->msy, usr->y_front, usr->y_front + usr->L, usr->nel_y, &usr->mseg_y); CHKERRQ(ierr);
+//	ierr = MeshSeg1DCreate(&fs->msz, usr->z_bot,   usr->z_bot   + usr->H, usr->nel_z, &usr->mseg_z); CHKERRQ(ierr);
 
 	// generate coordinates
 	ierr = Discret1DGenCoord(&fs->dsx, &fs->msx); CHKERRQ(ierr);
@@ -1089,6 +1090,7 @@ PetscErrorCode FDSTAGGenCoord(FDSTAG *fs, UserCtx *usr)
 
 	PetscFunctionReturn(0);
 }
+*/
 //---------------------------------------------------------------------------
 #undef __FUNCT__
 #define __FUNCT__ "FDSTAGGetNeighbProc"
