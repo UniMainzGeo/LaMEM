@@ -49,6 +49,17 @@
 #define _num_neighb_ 27
 //---------------------------------------------------------------------------
 
+//-----------------------------------------------------------------------------
+// Mesh segments input data structures
+typedef struct
+{
+	PetscInt    nsegs;                    // number of segments
+	PetscScalar delims[MaxNumMeshSegs-1]; // coordinates of the delimiters
+	PetscInt    ncells[MaxNumMeshSegs  ]; // number of cells for each segment
+	PetscScalar biases[MaxNumMeshSegs  ]; // biases for each segment
+} MeshSegInp;
+
+
 // mesh segments data
 typedef struct
 {
@@ -199,7 +210,21 @@ typedef struct
 	MeshSeg1D msx;
 	MeshSeg1D msy;
 	MeshSeg1D msz;
+/*
+	// mesh segments
+	MeshSegInp       mseg_x;
+	MeshSegInp       mseg_y;
+	MeshSegInp       mseg_z;
 
+		// domain info
+	PetscScalar      W, L, H;
+	PetscScalar      x_left, y_front, z_bot;
+	PetscInt         nel_x, nel_y, nel_z;
+	PetscInt         NumPartX, NumPartY, NumPartZ;
+	PetscScalar      Setup_Diapir_Hi; // for 'DIAPIR' setup
+	PetscInt         nnode_x, nnode_y, nnode_z; // NOT NECESSARY if -nel is specified
+
+*/
 	//========================================================================
 	// NOTE!
 	// At late optimization stages get rid of these DM objects

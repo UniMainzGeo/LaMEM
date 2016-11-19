@@ -147,6 +147,14 @@ typedef struct
 
 	Vec lp_lithos; // lithostatic pressure
 
+
+	// flags
+	PetscBool        SkipStokesSolver;
+	PetscBool        SavePartitioning;
+	PetscInt         save_breakpoints, break_point_number;
+	PetscInt         restart;
+
+
 } JacRes;
 //---------------------------------------------------------------------------
 

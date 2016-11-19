@@ -49,6 +49,28 @@
 
 #define _cap_overhead_ 1.3
 
+
+//-----------------------------------------------------------------------------
+// marker initialization type enumeration
+typedef enum
+{
+	PARALLEL,   // read coordinates, phase and temperature from files in parallel
+	REDUNDANT,  // read phase and temperature from file redundantly (uniform coordinates)
+	POLYGONS,   // read polygons from file redundantly
+	DIAPIR,     // diapir setup
+	BLOCK,      // falling block
+	SUBDUCTION, // subduction setup with air
+	FOLDING,    // multilayer folding setup (Zagros)
+	DETACHMENT, // 1-layer over detachment (Grasemann & Schmalholz 2012)
+	SLAB,       // slab detachment (Thieulot et al. 2014)
+	SPHERES,    // multiple falling spheres
+	BANDS,      // shear band formation 3D
+	DOMES,      // salt domes 2D
+	ROTATION,   // rotation benchmark 2D
+	RESTART     // restart of simulation
+	// ... add more
+} SetupType;
+
 //---------------------------------------------------------------------------
 
 // marker-to-edge / edge-to-marker interpolation cases
@@ -87,6 +109,9 @@ typedef struct
 
 	// nonlinear solver context
 	JacRes *jr;
+
+	// marker initialization type
+	SetupType        msetup;
 
 	//=============
 	// COMMUNICATOR
@@ -146,6 +171,14 @@ typedef struct
 
 	PetscInt    AirPhase; // air phase number
 	PetscScalar Ttop;     // top surface temperature
+
+
+	//markers
+	char             ParticleFilename[MAX_PATH_LEN];
+	char             LoadInitialParticlesDirectory[MAX_PATH_LEN];
+	char             SaveInitialParticlesDirectory[MAX_PATH_LEN];
+	PetscInt         SaveParticles;
+
 
 } AdvCtx;
 

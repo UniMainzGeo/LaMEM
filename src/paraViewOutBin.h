@@ -201,6 +201,8 @@ typedef struct
 	long int     offset;  // pvd file offset
 	PetscInt     outpvd;  // pvd file output flag
 
+	char             OutputFile[MAX_PATH_LEN];
+
 } PVOut;
 //---------------------------------------------------------------------------
 

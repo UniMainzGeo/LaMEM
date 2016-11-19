@@ -78,6 +78,9 @@ typedef struct
 	PetscScalar sedRates  [_max_layers_  ]; // sedimentation rates
 	PetscInt    sedPhases [_max_layers_  ]; // sediment layers phase numbers
 
+	// topography
+	char             TopoFilename[MAX_PATH_LEN];
+
 } FreeSurf;
 
 //---------------------------------------------------------------------------

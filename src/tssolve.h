@@ -60,6 +60,17 @@ typedef struct
 	PetscScalar dt;      // current time step (to be defined)
 	PetscScalar time;    // current time
 
+
+/*
+	// time-stepping
+	PetscInt         save_timesteps;
+	PetscScalar      CFL;
+	PetscInt         time_end;
+	PetscScalar      dt_max;
+	PetscScalar      dt;
+
+ */
+
 } TSSol;
 
 //---------------------------------------------------------------------------

@@ -45,6 +45,28 @@
 #ifndef __gravity_h__
 #define __gravity_h__
 
+/*
+
+ //-----------------------------------------------------------------------------
+// Structure that holds gravity parameters - not yet used
+typedef struct
+{
+	PetscInt     GetIt;
+	PetscInt     SaveDebug,SaveVTK,SaveRef;
+	PetscBool    UseNumerics, UseAnalytics;
+	PetscInt     survey_nx, survey_ny;
+	PetscScalar  survey_xs, survey_xm;
+	PetscScalar  survey_ys, survey_ym;
+	PetscScalar  survey_z ;
+	PetscScalar  ReferenceDensity;
+	PetscScalar  StdDev;
+	PetscScalar  LithColDens[9],LithColDepth[8];
+	PetscInt     num_intp,LithColNum;
+	char         RefDatFile2load[MAX_PATH_LEN];
+} gravityParams;
+
+ */
+
 //---------------------------------------------------------------------------
 // survey context
 typedef struct
