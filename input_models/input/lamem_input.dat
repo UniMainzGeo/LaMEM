@@ -1,0 +1,443 @@
+
+# PLEASE DON'T USE TABS ANYWERE EXCEPT THE FIRST CHARACTER IN A ROW (LOOKS UGLY)
+
+#===============================================================================
+# Scaling
+#===============================================================================
+
+	units = geo
+
+	unit_temperature = 1.0
+	unit_length      = 1e3
+	unit_viscosity   = 1e18
+	unit_stress      = 1e6
+	unit_density     = 1e3
+
+# units = none - input & output is non-dimensional
+# units = si   - input & output is in SI units
+# units = geo  - input & output is in SI units, except:
+# 
+#    time        - Myr
+#    length      - km
+#    velocity    - cm/yr
+#    stress      - MPa
+#    heat_flux   - mW/m^2
+#    Temperature - C
+# 
+# NOTE:
+#
+# * characteristic values must ALWAYS be provided in SI units
+# * material parameters must ALWAYS be provided in SI units
+# * in all dimensional cases (si & geo) angles are measured in degrees
+#   angular velocities are measured in degrees per unit time
+# * number of primary units is one more than usual
+#   Newton's 2nd law can be violated for quasi-static problems
+#   If density is not provided, Newton's 2nd law is enforced
+
+#===============================================================================
+# Time stepping parameters
+#===============================================================================
+
+	time_end  = 1.0   # simulation end time
+	dt        = 0.05  # time step
+	dt_min    = 0.01  # minimum time step (declare divergence if lower value is attempted)
+	dt_max    = 0.2   # maximum time step
+	dt_out    = 0.2   # output step (output at least at fixed time intervals)
+	inc_dt    = 0.1   # time step increment per time step (fraction of unit)
+	CFL       = 0.5   # CFL (Courant-Friedrichs-Lewy) criterion
+	CFLMAX    = 0.8   # CFL criterion for elasticity
+	nstep_max = 50    # maximum allowed number of steps (lower bound: time_end/dt_max)
+	nstep_out = 1     # save output every n steps
+	nstep_ini = 5     # save output for n initial steps
+	nstep_rdb = 5     # save restart database every n steps
+
+#===============================================================================
+# Grid & discretization parameters
+#===============================================================================
+
+# Number of processes
+# If not provided, calculated internally
+# If all values are provided they must be a factorization of number MPI processes
+# Use this if really know what you are doing (this is fine tuning)
+
+	cpu_x = 1
+	cpu_y = 1
+	cpu_z = 1
+
+# Number of segments (default is 1)
+# Use this if you have variable grid spacing with more than one segment
+
+	nseg_x = 1
+	nseg_y = 1
+	nseg_z = 1
+
+# Number of cells for all segments
+
+	nel_x = 32    
+	nel_y = 32    
+	nel_z = 32
+
+# Coordinates of all segments (including start and end points)
+
+	coord_x = 0.0 1.0
+	coord_y = 0.0 1.0
+	coord_z = 0.0 1.0
+
+# Bias ratios for all segments (default is 1.0 - uniform grid)
+# Bias ratio is the size in the END divided by the size in the BEGINNING
+# It is LESS than unit for DECREASING cell size
+# It is MORE than unit for INCREASING cell size
+
+	bias_x = 1.0
+	bias_y = 1.0
+	bias_z = 1.0
+
+# EXAMPLE:
+# segment 1: [0, 0.7),  10 cells, decreasing spacing  (sz.end/ sz.beg = 0.3)
+# segment 2: [0.7 0.8), 4 cells,  uniform spacing
+# segment 3: [0.8 1.0], 2 cells,  increasing spacing  (sz.end/ sz.beg = 3.0)
+
+#	nseg_x  = 3
+#	nel_x   = 10 4 2    
+#	coord_x = 0.0 0.7 0.8 1.0
+#	bias_x  = 0.3 1.0 3.0
+
+#===============================================================================
+# Boundary conditions
+#===============================================================================
+
+# Background strain rate parameters
+
+	exx_num  = 3                 # number intervals of constant strain rate (x-axis)
+	exx_time = 0.1 5.0           # time delimiters (one less than number of intervals)
+	exx_rate = 1e-15 2e-15 1e-15 # strain rates for each interval
+
+	eyy_num  = 3                 # ... same for y-axis
+	eyy_time = 0.1 5.0 
+	eyy_rate = 1e-15 2e-15 1e-15
+
+# Pushing block parameters
+
+#	push_num
+#	push_dx 
+#	push_dy 
+#	push_dz 
+#	push_xcen
+#	push_ycen
+#	push_zcen
+#	push_theta
+#	push_time
+#	push_vel
+#	push_omega
+#	push_coord
+#	push_dir
+
+# Boundary temperature
+
+	temp_top = 0.0
+	temp_bot = 1300.0;
+
+# Gravity vector
+
+	gravity  = 0.0 0.0 -10.0 
+
+#===============================================================================
+# Jacobian & residual evaluation parameters
+#===============================================================================
+
+	pshift = 1   # enforce zero pressure at top level
+	FSSA   = 1.0 # density gradient penalty parameter
+
+#===============================================================================
+# Model setup & advection
+#===============================================================================
+
+# Setup type
+
+	msetup = block
+
+#	msetup = files      # requires mark_file parameter
+#	msetup = polygons   # requires poly_file parameter
+#	msetup = diapir   
+#	msetup = block    
+#	msetup = subduction
+#	msetup = folding  
+#	msetup = detachment
+#	msetup = slab     
+#	msetup = spheres 
+#	msetup = bands
+#	msetup = domes
+
+# Uniform marker grid density
+
+	nmark_x = 2 # markers per cell in x-direction
+	nmark_y = 2 # markers per cell in y-direction
+	nmark_z = 2 # markers per cell in z-direction
+
+# Random noise flag
+
+	rand_noise = 1
+
+# Save marker to disk flag
+
+	save_mark = 1
+
+# Subsiduary parameters for hard-coded setups 
+
+#	diapir_h = 0.5
+
+#	block_bounds = 0.25 0.75 0.25 0.75 0.25 0.75 
+
+#	subduction_slab_thick = 0.2
+#	subduction_air_thick  = 0.1
+#	subduction_slab_width = 1.0
+
+#	folding_frac_inp  = 1        # fractional input flag (relative to domain size)
+#	folding_step_x    = 0.0 0.5  # step perturbation x-bounds
+#	folding_step_y    = 0.0 1.0  # step perturbation y-bounds
+#	folding_step_amp  = 0.05     # step perturbation amplitude
+#	folding_layer_1   = 0.1 0.2  # top & bottom bounds of layers [1-10] 
+
+#	detachment_seed_W = 0.5
+#	detachment_seed_L = 1.0
+#	detachment_seed_A = 0.05
+#	detachment_offset = 0.3
+#	detachment_layer  = 0.1 0.2
+
+#	slab_thick  = 80.0  
+#	slab_length = 250.0 
+#	slab_depth  = 250.0 
+
+#	spheres_num = 10
+#	spheres_rad = 0.1
+
+#	bands_layer_thick
+#	bands_layer_bot 
+#	bands_seed_use  
+#	bands_seed_size 
+#	bands_seed_offset
+#	bands_seed_length
+
+#	domain_bounds
+#	domes_anhydrite_bot
+#	domes_anhydrite_top
+#	domes_anhydrite_phase
+
+#===============================================================================
+# Free surface
+#===============================================================================
+
+	surf_use   = 1                # free surface activation flag
+	init_level = 0.5              # initial level
+	air_phase  = 0                # phase ID of sticky air layer
+	max_angle  = 45.0             # maximum angle with horizon (smoothed if larger)
+	erosion    = 1                # erosion model [0-none (default), 1-infinitely fast, ...]
+	sediment   = 1                # sedimentation model [0-none (dafault), 1-prescribed rate, ...]
+	sed_num    = 3                # number of sediment layers
+	sed_time   = 0.5 2.5          # sediment layers time delimiters (one less than number)
+	sed_rate   = 1e-3 1e-2 2-3    # sedimentation rates
+	sed_phase  = 1 1 1            # sediment layers phase numbers
+	gtol       = 1e-8             # free surface geometry tolerance
+
+#===============================================================================
+# Material parameters limiters
+#===============================================================================
+
+#	eta_min    
+#	eta_max    
+#	eta_atol   
+#	eta_rtol   
+#	DII_atol   
+#	DII_rtol   
+#	DII_ref    
+#	min_ch      
+#	min_fr      
+#	tau_ult     
+#	shear_heat
+#	rho_fluid  
+#	eta_init   
+#	plast_ratio
+
+#===============================================================================
+# Material phase parameters
+#===============================================================================
+
+# Define softening laws (maximum 10)
+
+	<SofteningStart>
+		ID   = 0   # softening law ID      
+		APS1 = 0.1 # begin of softening APS
+		APS2 = 1.0 # end of softening APS  
+		A    = 0.7 # reduction ratio 
+	<SofteningEnd>       
+
+# Define material properties for all phases (maximum 32)
+# By default all rheological mechanisms are deactivated 
+# List only active parameters in the material data block
+
+	<MaterialStart>
+		ID        = 0
+		rho       = 1e2
+		eta       = 1e18
+	<MaterialEnd>
+
+	<MaterialStart>
+		ID        = 1      # material phase ID
+		diff_prof = Dry_Olivine_diff_creep-Hirth_Kohlstedt_2003 # DIFFUSION creep profile
+		disl_prof = Granite-Tirel_et_al_2008                    # DISLOCATION creep profile
+		peir_prof = Olivine_Peierls-Kameyama_1999               # PEIERLS creep profile
+		rho       = 3e3    # reference density
+		rho_n     = 0.5    # depth-dependent density model parameter
+		rho_c     = 1e-4   # depth-dependent density model parameter
+		beta      = 1e-11  # pressure-dependent density model parameter
+		G         = 4e10   # shear modulus
+		K         = 6e10   # bulk modulus
+		Kp        = 5.0    # pressure dependence parameter
+		eta       = 1e23   # NEWTONIAN viscosity
+		Bd        = 1.5e9  # DIFFUSION creep pre-exponential constant
+		Ed        = 375e3  # activation energy
+		Vd        = 5e-6   # activation volume
+		eta0      = 1e23   # POWER LAW reference viscosity
+		e0        = 1e-15  # reference strain rate
+		Bn        = 2.5e4  # DISLOCATION creep pre-exponential constant
+		En        = 532e3  # activation energy
+		Vn        = 17e-6  # activation volume
+		n         = 3.5    # power law exponent
+		Bp        = 5.7e11 # PEIERLS creep pre-exponential constant
+		Ep        = 5.4e5  # activation energy
+		Vp        = 0.0    # activation volume
+		taup      = 8.5e9  # scaling stress
+		gamma     = 0.1    # approximation parameter
+		q         = 2.0    # stress-dependence parameter
+		ch        = 30.0   # cohesion
+		fr        = 2e7    # friction angle
+		chSoft    = 0      # friction softening law ID
+		frSoft    = 0      # cohesion softening law ID
+		alpha     = 3e-5   # thermal expansivity
+		Cp        = 1.2e3  # specific heat (capacity)
+		k         = 2.5    # thermal conductivity
+		A         = 1e-9   # radiogenic heat production
+	<MaterialEnd>
+   
+#===============================================================================
+# Objective function
+#===============================================================================
+
+
+#===============================================================================
+# Input files
+#===============================================================================
+
+	mark_file = ./input/markers.dat  # marker description (parallel)
+	poly_file = ./input/poly.dat     # polygon geometry
+	temp_file = ./input/temp.dat     # initial temperature
+	topo_file = ./input/topo.dat     # initial topography
+
+#===============================================================================
+# Output
+#===============================================================================
+ 
+#	out_surf_pvd        = 1
+#	out_surf_velocity   = 1
+#	out_surf_topography = 1
+#	out_surf_amplitude  = 1
+#	out_pvd             = 1
+#	out_phase           = 1  
+#	out_density         = 1
+#	out_viscosity       = 1
+#	out_velocity        = 1
+#	out_pressure        = 1
+#	out_temperature     = 1
+#	out_dev_stress      = 1
+#	out_j2_dev_stress   = 1
+#	out_strain_rate     = 1
+#	out_j2_strain_rate  = 1
+
+# Grid output options (output is always active)
+
+	out_moment_res = 1 
+	out_cont_res   = 1   
+	out_energ_res  = 1 
+ 
+# Free surface output options (optput is activated by tracking free surface)
+
+	out_surf_velocity   = 1
+	out_surf_amplitude  = 1
+
+# Marker output options (requires activation)
+
+#	out_markers = 1 # activate marker output
+
+# AVD phase viewer output options (requires activation)
+
+#	out_avd     = 1 # activate marker output
+#	out_avd_ref = 3 # AVD grid refinement factor
+
+#===============================================================================
+# PETSc options
+#===============================================================================
+
+<PetscOptionsStart>
+
+# SNES
+
+	-snes_npicard 3
+	-snes_monitor
+	-snes_atol 1e-12
+	-snes_rtol 1e-6
+	-snes_stol 1e-6
+	-snes_max_it 25
+	-snes_max_funcs 50000
+	-snes_type ksponly
+
+	-res_log
+
+# Jacobian solver
+
+	-js_ksp_type fgmres
+	-js_ksp_max_it 1000
+	-js_ksp_converged_reason
+ 	-js_ksp_monitor
+	-js_ksp_rtol 1e-6
+
+# Preconditioner
+
+#	-pcmat_type block
+#	-pcmat_pgamma 1e3
+#	-jp_type bf
+#	-bf_vs_type user
+#	-vs_ksp_type preonly
+#	-vs_pc_type lu
+#	-vs_pc_factor_mat_solver_package mumps
+
+#	-pcmat_type block
+#	-pcmat_no_dev_proj
+#	-jp_type bf
+#	-bf_vs_type mg
+#	-vs_ksp_type preonly
+
+	-pcmat_type mono
+	-jp_type mg
+
+#	-gmg_pc_view
+#	-gmg_dump
+	-gmg_pc_type mg
+	-gmg_pc_mg_levels 4
+	-gmg_pc_mg_galerkin
+	-gmg_pc_mg_type multiplicative
+	-gmg_pc_mg_cycle_type v
+
+	-gmg_mg_levels_ksp_type richardson
+	-gmg_mg_levels_ksp_richardson_scale 0.5
+	-gmg_mg_levels_ksp_max_it 20
+	-gmg_mg_levels_pc_type jacobi
+
+	-crs_ksp_type preonly
+	-crs_pc_type lu
+	-crs_pc_factor_mat_solver_package mumps
+
+	-objects_dump
+
+<PetscOptionsEnd>
+    
+#===============================================================================

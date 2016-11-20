@@ -93,7 +93,7 @@ typedef struct
 
 //-----------------------------------------------------------------------------
 
-PetscErrorCode FBLoad(FB **pfb, char *filename);
+PetscErrorCode FBLoad(FB **pfb);
 
 PetscErrorCode FBDestroy(FB **pfb);
 
@@ -135,9 +135,7 @@ PetscErrorCode getIntParam(
 		ParamType   ptype,
 		const char *key,
 		PetscInt   *val,
-		PetscInt    num,
-		PetscInt    minval,
-		PetscInt    maxval);
+		PetscInt    num);
 
 PetscErrorCode getScalarParam(
 		FB          *fb,
@@ -145,8 +143,6 @@ PetscErrorCode getScalarParam(
 		const char  *key,
 		PetscScalar *val,
 		PetscInt     num,
-		PetscScalar  minval,
-		PetscScalar  maxval,
 		PetscScalar  scal);
 
 PetscErrorCode getStringParam(

@@ -46,6 +46,7 @@
 // Routines to handle restart of simulation
 
 #include "LaMEM.h"
+#include "parsing.h"
 #include "tools.h"
 #include "fdstag.h"
 #include "solVar.h"

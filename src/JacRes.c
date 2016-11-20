@@ -43,6 +43,7 @@
 //...................   FDSTAG JACOBIAN AND RESIDUAL  .......................
 //---------------------------------------------------------------------------
 #include "LaMEM.h"
+#include "parsing.h"
 #include "fdstag.h"
 #include "solVar.h"
 #include "scaling.h"
@@ -1888,6 +1889,9 @@ PetscErrorCode JacResGetCourantStep(JacRes *jr)
 		gidtmax = lidtmax;
 	}
 
+/*
+	ACHTUNG!!!
+
 	// compute time step
 	gidtmax /= ts->Cmax;
     
@@ -1898,6 +1902,7 @@ PetscErrorCode JacResGetCourantStep(JacRes *jr)
 	// store new time step
 	ts->pdt = ts->dt;
 	ts->dt  = dt;
+*/
 
 	PetscFunctionReturn(0);
 }

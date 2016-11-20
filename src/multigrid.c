@@ -44,7 +44,7 @@
 //..................   GALERKIN GEOMETRIC MULTIGRID   .......................
 //---------------------------------------------------------------------------
 #include "LaMEM.h"
-#include "fdstag.h"
+#include "parsing.h"
 #include "fdstag.h"
 #include "solVar.h"
 #include "scaling.h"

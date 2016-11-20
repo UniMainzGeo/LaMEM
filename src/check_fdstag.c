@@ -44,6 +44,7 @@
 //.........   LaMEM - FDSTAG CANONICAL INTERFACE CHECKING ROUTINES   ........
 //---------------------------------------------------------------------------
 #include "LaMEM.h"
+#include "parsing.h"
 #include "fdstag.h"
 #include "solVar.h"
 #include "scaling.h"

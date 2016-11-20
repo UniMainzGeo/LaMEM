@@ -11,7 +11,7 @@
  **         55128 Mainz, Germany
  **
  **    project:    LaMEM
- **    filename:   tssolve.h
+ **    filename:   LaMEMLib.h
  **
  **    LaMEM is free software: you can redistribute it and/or modify
  **    it under the terms of the GNU General Public License as published
@@ -39,62 +39,67 @@
  **         Arthur Bauville
  **
  ** ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ @*/
+//---------------------------------------------------------------------------
+//........................ LaMEM Library major context .......................
+//---------------------------------------------------------------------------
+#ifndef __LaMEMLib_h__
+#define __LaMEMLib_h__
+//---------------------------------------------------------------------------
 
-//---------------------------------------------------------------------------
-//......................   TIME STEPPING PARAMETERS   .......................
-//---------------------------------------------------------------------------
-#ifndef __tssolve_h__
-#define __tssolve_h__
+typedef enum
+{
+	//==================
+	// simulation types
+	//==================
+
+	_NORMAL_,    // start new simulation
+	_RESTART_,   // start from restart database (if available)
+	_DRY_RUN_,   // initialize model, output & stop
+	_SAVE_GRID_  // write parallel grid to a file
+
+} RunMode;
+
 //---------------------------------------------------------------------------
 
 typedef struct
 {
-	Scaling *scal;
+	Scaling  scal;   // scaling
+	TSSol    ts;     // time-stepping controls
+	FDSTAG   fs;     // staggered-grid layout
+	FreeSurf surf;   // free-surface grid
+	BCCtx    bc;     // boundary condition context
+	JacRes   jr;     // Jacobian & residual context
+	AdvCtx   actx;   // advection context
+	PMat     pm;     // preconditioner matrix
+	PCStokes pc;     // Stokes preconditioner
+	SNES     snes;   // PETSc nonlinear solver
+	NLSol    nl;     // nonlinear solver context
+	PVOut    pvout;  // paraview output driver
+	PVSurf   pvsurf; // paraview output driver for surface
+	PVMark   pvmark; // paraview output driver for markers
+	PVAVD    pvavd;  // paraview output driver for AVD
+	ObjFunct objf;   // objective function
 
-	PetscScalar time_end;  // simulation end time
-	PetscScalar dt;        // time step
-	PetscScalar dt_min;    // minimum time step (declare divergence if lower value is attempted)
-	PetscScalar dt_max;    // maximum time step
-	PetscScalar dt_out;    // output step (output at least at fixed time intervals)
-	PetscScalar inc_dt;    // time step increment per time step (fraction of unit)
-	PetscScalar CFL;       // CFL (Courant-Friedrichs-Lewy) criterion
-	PetscScalar CFLMAX;    // CFL criterion for elasticity
-	PetscInt    nstep_max; // maximum allowed number of steps (lower bound: time_end/dt_max)
-	PetscInt    nstep_out; // save output every n steps
-	PetscInt    nstep_ini; // save output for n initial steps
-	PetscInt    nstep_rdb; // save restart database every n steps
-	PetscScalar dt_elast;  // elastic time step
-	PetscScalar time;      // current time
-	PetscInt    istep;     // current time step index
-	PetscScalar time_out;  // output time stamp
-	PetscInt    istep_out; // output time step index
-
-} TSSol;
+} LaMEMLib;
 
 //---------------------------------------------------------------------------
+// LAMEM LIBRARY FUNCTIONS
+//---------------------------------------------------------------------------
 
-PetscErrorCode TSSolCreate(TSSol *ts, FB *fb);
+PetscErrorCode LaMEMLibCreate(LaMEMLib *lm);
 
-PetscErrorCode TSSolSetupElasticity(TSSol *ts);
+PetscErrorCode LaMEMLibDestroy(LaMEMLib *lm);
 
-PetscScalar TSSolGetTime(TSSol *ts);
+PetscErrorCode LaMEMLibSaveGrid(LaMEMLib *lm);
 
-PetscInt TSSolIsOutput(TSSol *ts);
+PetscErrorCode LaMEMLibLoadRestart(LaMEMLib *lm);
 
-PetscInt TSSolIsRestart(TSSol *ts);
+PetscErrorCode LaMEMLibSaveRestart(LaMEMLib *lm);
 
-PetscInt TSSolIsDone(TSSol *ts);
+PetscErrorCode LaMEMLibSaveOutput(LaMEMLib *lm, PetscInt dirInd);
 
-PetscErrorCode TSSolStepForward(TSSol *ts);
+PetscErrorCode LaMEMLibSolve(LaMEMLib *lm, void *param, RunMode mode);
 
-PetscErrorCode TSSolCheckCFL(
-	TSSol       *ts,
-	PetscScalar  gidtmax,  // maximum global inverse time step
-	PetscBool   *restart); // time step restart flag
-
-PetscScalar TSSolGetTol(TSSol *ts);
-
-PetscScalar TSSolGetCFLStep(TSSol *ts, PetscScalar CFL, PetscScalar gidtmax);
 
 //---------------------------------------------------------------------------
 #endif

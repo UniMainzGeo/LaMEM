@@ -49,6 +49,7 @@
 //    M. Velic, D.A. May & L. Moresi (2008), "A Fast Robust Algorithm for Computing Discrete Voronoi Diagrams",
 
 #include "LaMEM.h"
+#include "parsing.h"
 #include "fdstag.h"
 #include "solVar.h"
 #include "scaling.h"

@@ -44,6 +44,7 @@
 // LAMEM LIBRARY MODE ROUTINE
 //---------------------------------------------------------------------------
 #include "LaMEM.h"
+#include "parsing.h"
 #include "tools.h"
 #include "fdstag.h"
 #include "solVar.h"
@@ -68,78 +69,28 @@
 #include "objFunct.h"
 #include "AVDView.h"
 #include "break.h"
-#include "parsing.h"
+#include "LaMEMLib.h"
+
 //---------------------------------------------------------------------------
 #undef __FUNCT__
-#define __FUNCT__ "LaMEMLib"
-PetscErrorCode LaMEMLib(void *IOparam)
+#define __FUNCT__ "LaMEMLibMain"
+PetscErrorCode LaMEMLibMain(void *param)
 {
-	PetscBool          done;
-//	PetscLogDouble     cputime_start, cputime_end;
-
-	Scaling  scal;   // scaling
-	TSSol    ts;     // time-stepping controls
-	FDSTAG   fs;     // staggered-grid layout
-	FreeSurf surf;   // free-surface grid
-	BCCtx    bc;     // boundary condition context
-	JacRes   jr;     // Jacobian & residual context
-	AdvCtx   actx;   // advection context
-	PMat     pm;     // preconditioner matrix
-	PCStokes pc;     // Stokes preconditioner
-	SNES     snes;   // PETSc nonlinear solver
-	NLSol    nl;     // nonlinear solver context
-	PVOut    pvout;  // paraview output driver
-	PVSurf   pvsurf; // paraview output driver for surface
-	PVMark   pvmark; // paraview output driver for markers
-	PVAVD    pvavd;  // paraview output driver for AVD
-	ObjFunct objf;   // objective function
+	LaMEMLib       lm;
+	RunMode        mode;
+	struct stat    s;
+	PetscBool      found;
+	PetscLogDouble cputime_start, cputime_end;
+	char           str[MAX_NAME_LEN];
 
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
 
-	// initialize
-	ierr = PetscMemzero(&scal,   sizeof(scal));   CHKERRQ(ierr);
-	ierr = PetscMemzero(&ts,     sizeof(ts));     CHKERRQ(ierr);
-	ierr = PetscMemzero(&fs,     sizeof(fs));     CHKERRQ(ierr);
-	ierr = PetscMemzero(&surf,   sizeof(surf));   CHKERRQ(ierr);
-	ierr = PetscMemzero(&bc,     sizeof(bc));     CHKERRQ(ierr);
-	ierr = PetscMemzero(&jr,     sizeof(jr));     CHKERRQ(ierr);
-	ierr = PetscMemzero(&actx,   sizeof(actx));   CHKERRQ(ierr);
-	ierr = PetscMemzero(&pm,     sizeof(pm));     CHKERRQ(ierr);
-	ierr = PetscMemzero(&pc,     sizeof(pc));     CHKERRQ(ierr);
-	ierr = PetscMemzero(&snes,   sizeof(snes));   CHKERRQ(ierr);
-	ierr = PetscMemzero(&nl,     sizeof(nl));     CHKERRQ(ierr);
-	ierr = PetscMemzero(&pvout,  sizeof(pvout));  CHKERRQ(ierr);
-	ierr = PetscMemzero(&pvsurf, sizeof(pvsurf)); CHKERRQ(ierr);
-	ierr = PetscMemzero(&pvmark, sizeof(pvmark)); CHKERRQ(ierr);
-	ierr = PetscMemzero(&pvavd,  sizeof(pvavd));  CHKERRQ(ierr);
-	ierr = PetscMemzero(&objf,   sizeof(objf));   CHKERRQ(ierr);
+	if(param) param = NULL;
 
-
-	//=========================================================================
-
-/*
-
-	PetscBool InputParamFile;
-
-	PetscInt found_data;
-
-	char ParamFile[MAX_PATH_LEN];
-
-	// check whether input file is specified
-	ierr = PetscOptionsGetString(NULL, NULL, "-ParamFile", ParamFile, MAX_PATH_LEN, &InputParamFile); CHKERRQ(ierr);
-
-	// read additional PETSc options from input file
-	if(InputParamFile == PETSC_TRUE)
-	{
-		ierr = PetscOptionsReadFromFile(ParamFile, &found_data, 1); CHKERRQ(ierr);
-	}
-
-	//=========================================================================
-
+	// start code
 	PetscTime(&cputime_start);
 
-	// Start code
 	PetscPrintf(PETSC_COMM_WORLD,"-------------------------------------------------------------------------- \n");
 	PetscPrintf(PETSC_COMM_WORLD,"                   Lithosphere and Mantle Evolution Model                   \n");
 	PetscPrintf(PETSC_COMM_WORLD,"     Compiled: Date: %s - Time: %s 	    \n",__DATE__,__TIME__ );
@@ -147,16 +98,60 @@ PetscErrorCode LaMEMLib(void *IOparam)
 	PetscPrintf(PETSC_COMM_WORLD,"        STAGGERED-GRID FINITE DIFFERENCE CANONICAL IMPLEMENTATION           \n");
 	PetscPrintf(PETSC_COMM_WORLD,"-------------------------------------------------------------------------- \n");
 
-	// clear objects
-	ierr = FDSTAGClear  (&fs);     CHKERRQ(ierr);
-	ierr = FreeSurfClear(&surf);   CHKERRQ(ierr);
-	ierr = BCClear      (&bc);     CHKERRQ(ierr);
-	ierr = JacResClear  (&jr);     CHKERRQ(ierr);
-	ierr = ADVClear     (&actx);   CHKERRQ(ierr);
-	ierr = NLSolClear   (&nl);     CHKERRQ(ierr);
-	ierr = PVOutClear   (&pvout);  CHKERRQ(ierr);
-	ierr = PVSurfClear  (&pvsurf); CHKERRQ(ierr);
-	ierr = PetscMemzero (&objf, sizeof(ObjFunct)); CHKERRQ(ierr);
+	// read run mode
+	mode = _NORMAL_;
+
+	ierr = PetscOptionsGetString(NULL, NULL, "-mode", str, MAX_NAME_LEN, &found); CHKERRQ(ierr);
+
+	if(found)
+	{
+		if     (!strcmp(str, "normal"))    mode = _NORMAL_;
+		else if(!strcmp(str, "restart"))   mode = _RESTART_;
+		else if(!strcmp(str, "dry_run"))   mode = _DRY_RUN_;
+		else if(!strcmp(str, "save_grid")) mode = _SAVE_GRID_;
+		else SETERRQ1(PETSC_COMM_WORLD, PETSC_ERR_USER, "Incorrect run mode type: %s", str);
+	}
+
+	// initialize
+	if(mode == _SAVE_GRID_)
+	{
+		// save grid & exit
+		ierr = LaMEMLibSaveGrid(&lm); CHKERRQ(ierr);
+
+		PetscFunctionReturn(0);
+	}
+	if(mode == _NORMAL_ || mode == _DRY_RUN_)
+	{
+		// create library objects
+		ierr = LaMEMLibCreate(&lm); CHKERRQ(ierr);
+	}
+	else if(mode == _RESTART_ && !stat("./restart", &s) )
+	{
+		// open restart database
+		ierr = LaMEMLibLoadRestart(&lm); CHKERRQ(ierr);
+
+	}
+
+	// solve coupled equations
+	ierr = LaMEMLibSolve(&lm, param, mode); CHKERRQ(ierr);
+
+	// free library objects
+	ierr = LaMEMLibDestroy(&lm);
+
+
+	PetscTime(&cputime_end);
+	PetscPrintf(PETSC_COMM_WORLD, " Simulation took %g (sec) \n", cputime_end - cputime_start);
+
+
+
+
+
+
+/*
+
+
+
+
 
 	// initialize variables
 	ierr = FDSTAGInitCode(&jr, &user, IOparam); CHKERRQ(ierr);
@@ -502,12 +497,106 @@ PetscErrorCode LaMEMLib(void *IOparam)
 	ierr = ObjFunctDestroy(&objf); CHKERRQ(ierr);
 
 
-	PetscTime(&cputime_end);
-	PetscPrintf(PETSC_COMM_WORLD, " Simulation took %g (sec) \n", cputime_end - cputime_start);
 */
 
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-// END OF LAMEM LIBRARY MODE ROUTINE
+#undef __FUNCT__
+#define __FUNCT__ "LaMEMLibCreate"
+PetscErrorCode LaMEMLibCreate(LaMEMLib *lm)
+{
+	FB *fb;
+
+	PetscErrorCode ierr;
+	PetscFunctionBegin;
+
+	// clear
+	ierr = PetscMemzero(lm, sizeof(LaMEMLib)); CHKERRQ(ierr);
+
+	// load input file
+	ierr = FBLoad(&fb); CHKERRQ(ierr);
+
+	// create scaling object
+	ierr = ScalingCreate(&lm->scal, fb); CHKERRQ(ierr);
+
+	// create time stepping object
+	ierr = TSSolCreate(&lm->ts, fb); CHKERRQ(ierr);
+
+	PetscFunctionReturn(0);
+}
 //---------------------------------------------------------------------------
+#undef __FUNCT__
+#define __FUNCT__ "LaMEMLibDestroy"
+PetscErrorCode LaMEMLibDestroy(LaMEMLib *lm)
+{
+	PetscErrorCode ierr;
+	PetscFunctionBegin;
+
+	ierr = FDSTAGDestroy  (&lm->fs);     CHKERRQ(ierr);
+	ierr = FreeSurfDestroy(&lm->surf);   CHKERRQ(ierr);
+	ierr = BCDestroy      (&lm->bc);     CHKERRQ(ierr);
+	ierr = JacResDestroy  (&lm->jr);     CHKERRQ(ierr);
+	ierr = ADVDestroy     (&lm->actx);   CHKERRQ(ierr);
+	ierr = PCStokesDestroy( lm->pc);     CHKERRQ(ierr);
+	ierr = PMatDestroy    ( lm->pm);     CHKERRQ(ierr);
+	ierr = SNESDestroy    (&lm->snes);   CHKERRQ(ierr);
+	ierr = NLSolDestroy   (&lm->nl);     CHKERRQ(ierr);
+	ierr = PVOutDestroy   (&lm->pvout);  CHKERRQ(ierr);
+	ierr = PVSurfDestroy  (&lm->pvsurf); CHKERRQ(ierr);
+	ierr = PVMarkDestroy  (&lm->pvmark); CHKERRQ(ierr);
+	ierr = PVAVDDestroy   (&lm->pvavd);  CHKERRQ(ierr);
+	ierr = ObjFunctDestroy(&lm->objf);   CHKERRQ(ierr);
+
+	PetscFunctionReturn(0);
+}
+//---------------------------------------------------------------------------
+#undef __FUNCT__
+#define __FUNCT__ "LaMEMLibSaveGrid"
+PetscErrorCode LaMEMLibSaveGrid(LaMEMLib *lm)
+{
+
+	PetscFunctionReturn(0);
+}
+//---------------------------------------------------------------------------
+#undef __FUNCT__
+#define __FUNCT__ "LaMEMLibLoadRestart"
+PetscErrorCode LaMEMLibLoadRestart(LaMEMLib *lm)
+{
+
+	// check whether solution is finished before proceeding
+
+	PetscFunctionReturn(0);
+}
+//---------------------------------------------------------------------------
+#undef __FUNCT__
+#define __FUNCT__ "LaMEMLibSaveRestart"
+PetscErrorCode LaMEMLibSaveRestart(LaMEMLib *lm)
+{
+	// save new restart database, then delete the original
+
+
+	PetscFunctionReturn(0);
+}
+//---------------------------------------------------------------------------
+#undef __FUNCT__
+#define __FUNCT__ "LaMEMLibSaveOutput"
+PetscErrorCode LaMEMLibSaveOutput(LaMEMLib *lm, PetscInt dirInd)
+{
+
+	PetscFunctionReturn(0);
+}
+//---------------------------------------------------------------------------
+#undef __FUNCT__
+#define __FUNCT__ "LaMEMLibSolve"
+PetscErrorCode LaMEMLibSolve(LaMEMLib *lm, void *param, RunMode mode)
+{
+
+//	PetscBool      done;
+
+	PetscFunctionReturn(0);
+}
+//---------------------------------------------------------------------------
+
+
+

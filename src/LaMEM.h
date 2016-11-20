@@ -135,7 +135,7 @@
 extern "C" {
 #endif
 
-PetscErrorCode LaMEMLib(void *IOparam);
+PetscErrorCode LaMEMLibMain(void *param);
 
 #ifdef __cplusplus
 }

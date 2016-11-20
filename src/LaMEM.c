@@ -57,7 +57,7 @@ int main(int argc, char **argv)
 	ierr = PetscInitialize(&argc,&argv,(char *)0, help); CHKERRQ(ierr);
 
 	// call LaMEM main library function
-	ierr = LaMEMLib(NULL); CHKERRQ(ierr);
+	ierr = LaMEMLibMain(NULL); CHKERRQ(ierr);
 
 	// cleanup PETSC
 	ierr = PetscFinalize(); CHKERRQ(ierr);

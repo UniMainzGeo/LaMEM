@@ -43,6 +43,7 @@
 //.................. MATERIAL PARAMETERS READING ROUTINES....................
 //---------------------------------------------------------------------------
 #include "LaMEM.h"
+#include "parsing.h"
 #include "solVar.h"
 #include "fdstag.h"
 #include "scaling.h"

@@ -39,13 +39,6 @@
  **         Arthur Bauville
  **
  ** ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ @*/
-
-/*
- *  Originally developed by Dave A. May
- *  Copyright 2011 Geophysical Fluid Dynamics. All rights reserved.
- *
- */
-
 //---------------------------------------------------------------------------
 //...................   Input file parsing routines   .......................
 //---------------------------------------------------------------------------
@@ -55,13 +48,15 @@
 //---------------------------------------------------------------------------
 #undef __FUNCT__
 #define __FUNCT__ "FBLoad"
-PetscErrorCode FBLoad(FB **pfb, char *filename)
+PetscErrorCode FBLoad(FB **pfb)
 {
-	FB       *fb;
-	FILE     *fp;
+	FB        *fb;
+	FILE      *fp;
 	PetscInt  i;
 	size_t    sz, len;
-	char     *ptr, *comment;
+	PetscBool found;
+	char      *ptr, *comment;
+	char      filename[MAX_PATH_LEN];
 
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
@@ -71,6 +66,15 @@ PetscErrorCode FBLoad(FB **pfb, char *filename)
 
 	if(ISRankZero(PETSC_COMM_WORLD))
 	{
+		// check whether input file is specified
+		ierr = PetscOptionsGetString(NULL, NULL, "-ParamFile", filename, MAX_PATH_LEN, &found); CHKERRQ(ierr);
+
+		// read additional PETSc options from input file
+		if(found != PETSC_TRUE)
+		{
+			SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "Input file name is not specified%s\n");
+		}
+
 		// open input file
 		fp = fopen(filename, "r");
 
@@ -146,6 +150,9 @@ PetscErrorCode FBLoad(FB **pfb, char *filename)
 		// update pointer
 		ptr += len + 1;
 	}
+
+	// load additional options from file
+	ierr = PetscOptionsReadFromFile(fb); CHKERRQ(ierr);
 
 	// return pointer
 	(*pfb) = fb;
@@ -462,11 +469,9 @@ PetscErrorCode getIntParam(
 		ParamType   ptype,
 		const char *key,
 		PetscInt   *val,
-		PetscInt    num,
-		PetscInt    minval,
-		PetscInt    maxval)
+		PetscInt    num)
 {
-	PetscInt  i, nval;
+	PetscInt  nval;
 	PetscBool found;
 	char     *dbkey;
 
@@ -504,16 +509,6 @@ PetscErrorCode getIntParam(
 	if(nval < num) SETERRQ2(PETSC_COMM_WORLD, PETSC_ERR_USER, "%lld entry(ies) are missing in parameter \"[-]%s\" \n",
 		(LLD)(num-nval), key);
 
-	// check for out-of-bound entries
-	for(i = 0; i < num; i++)
-	{
-		if(val[i] < minval || val[i] > maxval)
-		{
-			SETERRQ5(PETSC_COMM_WORLD, PETSC_ERR_USER, "Entry %lld in parameter \"[-]%s\" is out of bound : val=%lld, range=[%lld, %lld]\n",
-				(LLD)(i+1), key, (LLD)val[i], (LLD)minval, (LLD)maxval);
-		}
-	}
-
 	PetscFunctionReturn(0);
 }
 //-----------------------------------------------------------------------------
@@ -525,8 +520,6 @@ PetscErrorCode getScalarParam(
 		const char  *key,
 		PetscScalar *val,
 		PetscInt     num,
-		PetscScalar  minval,
-		PetscScalar  maxval,
 		PetscScalar  scal)
 {
 	PetscInt  i, nval;
@@ -565,16 +558,6 @@ PetscErrorCode getScalarParam(
 
 	// check number of entries
 	if(nval < num) SETERRQ2(PETSC_COMM_WORLD, PETSC_ERR_USER, "%lld entry(ies) are missing in parameter \"[-]%s\" \n", (LLD)(num-nval), key);
-
-	// check for out-of-bound entries
-	for(i = 0; i < num; i++)
-	{
-		if(val[i] < minval || val[i] > maxval)
-		{
-			SETERRQ5(PETSC_COMM_WORLD, PETSC_ERR_USER, "Entry %lld in parameter \"[-]%s\" is out of bound : val=%g, range=[%g, %g]\n",
-				(LLD)(i+1), key, val[i], minval, maxval);
-		}
-	}
 
 	// nondimensionalize
 	for(i = 0; i < num; i++) val[i] /= scal;

@@ -63,8 +63,8 @@ typedef enum
 typedef struct
 {
 	//=======================================================================
-	// multiply with scale to get scaled output (normally SI units)
 	// divide by scale to convert input into internal units
+	// multiply with scale to get scaled output (normally SI units)
 	//
 	// units = none - input & output is non-dimensional
 	// units = si   - input & output is in SI units
@@ -88,33 +88,24 @@ typedef struct
 	//
 	// * number of primary units is one more than usual
 	//   Newton's 2nd law can be violated for quasi-static problems
-	//   Gravity strength must be provided in the units [force/mass]
+	//
 	//=======================================================================
 
 	UnitsType   utype;  // scaling type
 	PetscScalar unit;   // always unit
 	PetscScalar Tshift; // temperature shift (added on input, subtracted on output)
 
-	// input parameters
-	PetscScalar inp_mass;
-	PetscScalar inp_time;
-	PetscScalar inp_length;
-	PetscScalar inp_temperature;
-	PetscScalar inp_force;
-
 	// primary characteristic units
-	PetscScalar mass;
 	PetscScalar time;
-	PetscScalar time_si;           // time in SI units for material parameter scaling
+	PetscScalar time_si;     // time in SI units for material parameter scaling
 	PetscScalar length;
-	PetscScalar length_si;         // length in SI units for material parameter scaling
-	PetscScalar temperature;       // Kelvin (if dimensional)
-	PetscScalar force;             // additional variable for quasi-static case
-	PetscScalar angle;             // radian expressed in degrees (if dimensional)
+	PetscScalar length_si;   // length in SI units for material parameter scaling
+	PetscScalar temperature; // Kelvin (if dimensional)
+	PetscScalar force;       // additional variable for quasi-static case
+	PetscScalar angle;       // radian expressed in degrees (if dimensional)
 
 	// secondary units
 	PetscScalar velocity;          // length / time
-	PetscScalar acceleration;      // length / time / time
 	PetscScalar stress;            // force / area
 	PetscScalar stress_si;         // stress in SI units for material parameter scaling
 	PetscScalar strain_rate;       // 1 / time
@@ -135,43 +126,42 @@ typedef struct
 	PetscScalar expansivity;        // 1 / temperature
 
 	// output labels
-	char lbl_unit            [_lbl_sz_];
-	char lbl_angle           [_lbl_sz_];
-	char lbl_time            [_lbl_sz_];
-	char lbl_length          [_lbl_sz_];
-	char lbl_temperature     [_lbl_sz_];
-	char lbl_force           [_lbl_sz_];
-	char lbl_velocity        [_lbl_sz_];
-	char lbl_stress          [_lbl_sz_];
-	char lbl_strain_rate     [_lbl_sz_];
-	char lbl_heat_flux       [_lbl_sz_];
-	char lbl_dissipation_rate[_lbl_sz_];
-	char lbl_angular_velocity[_lbl_sz_];
-	char lbl_volumetric_force[_lbl_sz_];
-	char lbl_density         [_lbl_sz_];
-	char lbl_viscosity       [_lbl_sz_];
+	char lbl_unit             [_lbl_sz_];
+	char lbl_angle            [_lbl_sz_];
+	char lbl_time             [_lbl_sz_];
+	char lbl_length           [_lbl_sz_];
+	char lbl_temperature      [_lbl_sz_];
+	char lbl_force            [_lbl_sz_];
+	char lbl_velocity         [_lbl_sz_];
+	char lbl_stress           [_lbl_sz_];
+	char lbl_stress_si        [_lbl_sz_];
+	char lbl_strain_rate      [_lbl_sz_];
+	char lbl_heat_flux        [_lbl_sz_];
+	char lbl_dissipation_rate [_lbl_sz_];
+	char lbl_angular_velocity [_lbl_sz_];
+	char lbl_volumetric_force [_lbl_sz_];
+
+	// material parameters labels
+	char lbl_density          [_lbl_sz_];
+	char lbl_viscosity        [_lbl_sz_];
+	char lbl_cpecific_heat    [_lbl_sz_];
+	char lbl_conductivity     [_lbl_sz_];
+	char lbl_heat_production  [_lbl_sz_];
+	char lbl_expansivity      [_lbl_sz_];
+
+	// additional material parameters labels
+	char lbl_diffusion_creep  [_lbl_sz_];
+	char lbl_dislocation_creep[_lbl_sz_];
+	char lbl_activation_energy[_lbl_sz_];
+	char lbl_activation_volume[_lbl_sz_];
+	char lbl_inverse_length   [_lbl_sz_];
+	char lbl_inverse_stress   [_lbl_sz_];
 
 } Scaling;
 //---------------------------------------------------------------------------
 // scaling routines
 
-PetscErrorCode ScalingCreate(Scaling *scal);
-
-PetscErrorCode ScalingReadFromFile(Scaling *scal, FILE *fp);
+PetscErrorCode ScalingCreate(Scaling *scal, FB *fb);
 
 //---------------------------------------------------------------------------
-
-// scaling of input parameters (UserCtx)
-//void ScalingInput(Scaling *scal, UserCtx *user);
-
-// scaling material parameters
-//void ScalingMatProp(Scaling *scal, Material_t *phases, PetscInt numPhases);
-
-// scaling material parameter limits
-//void ScalingMatParLim(Scaling *scal, MatParLim *matLim);
-
-//void ScalingMeshSegDir(Scaling *scal, MeshSegInp *msi);
-
-//---------------------------------------------------------------------------
-
 #endif

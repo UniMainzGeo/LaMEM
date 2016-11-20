@@ -44,6 +44,7 @@
 //...................   MATERIAL ADVECTION ROUTINES   .......................
 //---------------------------------------------------------------------------
 #include "LaMEM.h"
+#include "parsing.h"
 #include "tools.h"
 #include "fdstag.h"
 #include "solVar.h"
