@@ -337,8 +337,8 @@ PetscErrorCode BCSetupBoundVel(BCCtx *bc, PetscScalar top)
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
 
-	// set plate top
-	bc->top = top;
+	// set plate top if not set already
+	if (!bc->top) bc->top = top;
 
 	ierr = FDSTAGGetGlobalBox(bc->fs, NULL, NULL, &bz, NULL, NULL, NULL); CHKERRQ(ierr);
 
@@ -843,6 +843,9 @@ PetscErrorCode BCReadFromOptions(BCCtx *bc)
 
 		ierr = GetScalDataItemCheckScale("-bvel_bot", "Boundary velocity bottom level",
 			_NOT_FOUND_ERROR_, 1, &bc->bot, 0.0, 0.0, scal->length); CHKERRQ(ierr);
+
+		ierr = GetScalDataItemCheckScale("-bvel_top", "Boundary velocity top level",
+			_NOT_FOUND_ERROR_, 1, &bc->top, 0.0, 0.0, scal->length); CHKERRQ(ierr);
 
 		ierr = GetScalDataItemCheckScale("-bvel_velin", "Boundary velocity magnitude",
 			_NOT_FOUND_ERROR_, 1, &bc->velin, 0.0, 0.0, scal->velocity); CHKERRQ(ierr);
