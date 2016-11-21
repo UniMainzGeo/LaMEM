@@ -43,6 +43,8 @@
 //.............   FDSTAG OUTPUT VECTOR INTERPOLATION ROUTINES   .............
 //---------------------------------------------------------------------------
 #include "LaMEM.h"
+#include "parsing.h"
+#include "scaling.h"
 #include "fdstag.h"
 #include "interpolate.h"
 //---------------------------------------------------------------------------

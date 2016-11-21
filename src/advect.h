@@ -110,6 +110,9 @@ typedef struct
 	// nonlinear solver context
 	JacRes *jr;
 
+	// free surface
+	FreeSurf *surf;
+
 	// marker initialization type
 	SetupType        msetup;
 
@@ -199,7 +202,7 @@ PetscErrorCode ADVReAllocStorage(AdvCtx *actx, PetscInt capacity);
 PetscErrorCode ADVAdvect(AdvCtx *actx);
 
 // remap markers onto the grid
-PetscErrorCode ADVRemap(AdvCtx *actx, FreeSurf *surf);
+PetscErrorCode ADVRemap(AdvCtx *actx);
 
 // exchange markers between the processors resulting from the position change
 PetscErrorCode ADVExchange(AdvCtx *actx);
@@ -255,10 +258,10 @@ PetscErrorCode ADVCheckCorners(AdvCtx *actx);
 PetscErrorCode ADVMarkDeleteOutflow(AdvCtx *actx);
 
 // change marker phase when crossing free surface
-PetscErrorCode ADVMarkCrossFreeSurf(AdvCtx *actx, FreeSurf *surf, PetscScalar tol);
+PetscErrorCode ADVMarkCrossFreeSurf(AdvCtx *actx, PetscScalar tol);
 
 // check marker phases
-PetscErrorCode ADVCheckMarkPhases(AdvCtx *actx, PetscInt numPhases);
+PetscErrorCode ADVCheckMarkPhases(AdvCtx *actx);
 
 //-----------------------------------------------------------------------------
 // service functions

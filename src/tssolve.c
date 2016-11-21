@@ -53,7 +53,7 @@
 PetscErrorCode TSSolCreate(TSSol *ts, FB *fb)
 {
 	Scaling     *scal;
-	PetscScalar time;
+	PetscScalar  time;
 
 	PetscErrorCode ierr;
 	PetscFunctionBegin;

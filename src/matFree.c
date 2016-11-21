@@ -45,10 +45,10 @@
 
 #include "LaMEM.h"
 #include "parsing.h"
-#include "fdstag.h"
-#include "solVar.h"
 #include "scaling.h"
 #include "tssolve.h"
+#include "fdstag.h"
+#include "solVar.h"
 #include "bc.h"
 #include "JacRes.h"
 #include "matFree.h"

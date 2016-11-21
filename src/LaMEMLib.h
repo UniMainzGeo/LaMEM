@@ -49,13 +49,13 @@
 typedef enum
 {
 	//==================
-	// simulation types
+	// simulation modes
 	//==================
 
 	_NORMAL_,    // start new simulation
 	_RESTART_,   // start from restart database (if available)
 	_DRY_RUN_,   // initialize model, output & stop
-	_SAVE_GRID_  // write parallel grid to a file
+	_SAVE_GRID_  // write parallel grid to a file & stop
 
 } RunMode;
 
@@ -70,15 +70,10 @@ typedef struct
 	BCCtx    bc;     // boundary condition context
 	JacRes   jr;     // Jacobian & residual context
 	AdvCtx   actx;   // advection context
-	PMat     pm;     // preconditioner matrix
-	PCStokes pc;     // Stokes preconditioner
-	SNES     snes;   // PETSc nonlinear solver
-	NLSol    nl;     // nonlinear solver context
 	PVOut    pvout;  // paraview output driver
 	PVSurf   pvsurf; // paraview output driver for surface
 	PVMark   pvmark; // paraview output driver for markers
 	PVAVD    pvavd;  // paraview output driver for AVD
-	ObjFunct objf;   // objective function
 
 } LaMEMLib;
 
@@ -88,18 +83,21 @@ typedef struct
 
 PetscErrorCode LaMEMLibCreate(LaMEMLib *lm);
 
-PetscErrorCode LaMEMLibDestroy(LaMEMLib *lm);
-
 PetscErrorCode LaMEMLibSaveGrid(LaMEMLib *lm);
 
 PetscErrorCode LaMEMLibLoadRestart(LaMEMLib *lm);
 
 PetscErrorCode LaMEMLibSaveRestart(LaMEMLib *lm);
 
+PetscErrorCode LaMEMLibDestroy(LaMEMLib *lm);
+
+PetscErrorCode LaMEMLibSetLinks(LaMEMLib *lm);
+
 PetscErrorCode LaMEMLibSaveOutput(LaMEMLib *lm, PetscInt dirInd);
 
-PetscErrorCode LaMEMLibSolve(LaMEMLib *lm, void *param, RunMode mode);
+PetscErrorCode LaMEMLibSolve(LaMEMLib *lm, void *param);
 
+PetscErrorCode LaMEMLibDryRun(LaMEMLib *lm);
 
 //---------------------------------------------------------------------------
 #endif

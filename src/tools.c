@@ -75,31 +75,6 @@ PetscScalar getStdv(PetscScalar *data, PetscInt n)
 }
 //---------------------------------------------------------------------------
 #undef __FUNCT__
-#define __FUNCT__ "DMDAGetProcessorRank"
-PetscErrorCode DMDAGetProcessorRank(DM da, PetscInt *rank_x, PetscInt *rank_y, PetscInt *rank_z, PetscInt *rank_col)
-{
-	PetscMPIInt	rank;
-	PetscInt	m, n, p, i, j, k, colind;
-	PetscFunctionBegin;
-	// get MPI processor rank
-	MPI_Comm_rank(PETSC_COMM_WORLD, &rank);
-	// get number processors in each coordinate direction
-	DMDAGetInfo(da, 0, 0, 0, 0, &m, &n, &p, 0, 0, 0, 0, 0, 0);
-	// determine i-j-k coordinates of processor
-	// x-index runs first (i), then y (j), followed by z (k)
-	getLocalRank(&i, &j, &k, rank, m, n);
-	// compute index of x-y column of processors
-	// (same rule as above for x and y coordinates)
-	colind = i + j*m;
-	// assign output
-	if(rank_x)   (*rank_x)   = i;
-	if(rank_y)   (*rank_y)   = j;
-	if(rank_z)   (*rank_z)   = k;
-	if(rank_col) (*rank_col) = colind;
-	PetscFunctionReturn(0);
-}
-//---------------------------------------------------------------------------
-#undef __FUNCT__
 #define __FUNCT__ "makeMPIIntArray"
 PetscErrorCode makeMPIIntArray(PetscMPIInt **arr, const PetscMPIInt *init, const PetscInt n)
 {

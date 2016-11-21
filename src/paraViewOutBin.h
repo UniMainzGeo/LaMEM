@@ -193,6 +193,7 @@ PetscInt OutMaskCountActive(OutMask *omask);
 //---------------------------------------------------------------------------
 typedef struct
 {
+	JacRes      *jr;
 	char        *outfile; // output file name
 	OutMask      omask;   // output vector mask
 	PetscInt     nvec;    // number of output vectors
@@ -209,7 +210,7 @@ typedef struct
 PetscErrorCode PVOutClear(PVOut *pvout);
 
 // create ParaView output driver
-PetscErrorCode PVOutCreate(PVOut *pvout, JacRes *jr, const char *filename);
+PetscErrorCode PVOutCreate(PVOut *pvout, const char *filename);
 
 // read options
 PetscErrorCode PVOutReadFromOptions(PVOut *pvout);
@@ -218,14 +219,14 @@ PetscErrorCode PVOutReadFromOptions(PVOut *pvout);
 PetscErrorCode PVOutDestroy(PVOut *pvout);
 
 // write all time-step output files to disk (PVD, PVTR, VTR)
-PetscErrorCode PVOutWriteTimeStep(PVOut *pvout, JacRes *jr, const char *dirName, PetscScalar ttime, PetscInt tindx);
+PetscErrorCode PVOutWriteTimeStep(PVOut *pvout, const char *dirName, PetscScalar ttime, PetscInt tindx);
 
 // write parallel PVTR file (called every time step on first processor)
 // WARNING! this is potential bottleneck, get rid of writing every time-step
 PetscErrorCode PVOutWritePVTR(PVOut *pvout, const char *dirName);
 
 // write sequential VTR files on every processor (called every time step)
-PetscErrorCode PVOutWriteVTR(PVOut *pvout, JacRes *jr, const char *dirName);
+PetscErrorCode PVOutWriteVTR(PVOut *pvout, const char *dirName);
 
 //---------------------------------------------------------------------------
 //........................... Service Functions .............................

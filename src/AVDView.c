@@ -63,9 +63,9 @@
 //---------------------------------------------------------------------------
 #include "LaMEM.h"
 #include "parsing.h"
+#include "scaling.h"
 #include "fdstag.h"
 #include "solVar.h"
-#include "scaling.h"
 #include "tssolve.h"
 #include "bc.h"
 #include "JacRes.h"
@@ -209,9 +209,9 @@ PetscErrorCode AVDViewCreate(AVD3D *A, AdvCtx *actx, PetscInt refine)
 	// compute local grid resolution
 	ierr = FDSTAGGetLocalBox(fs, &bx, &by, &bz, &ex, &ey, &ez); CHKERRQ(ierr);
 
-	nx = refine*(PetscInt)((ex - bx)/fs->dsx.h_min);
-	ny = refine*(PetscInt)((ey - by)/fs->dsy.h_min);
-	nz = refine*(PetscInt)((ez - bz)/fs->dsz.h_min);
+	nx = refine*fs->dsx.ncels;
+	ny = refine*fs->dsy.ncels;
+	nz = refine*fs->dsz.ncels;
 
 	// allocate space, setup structures
 	AVD3DAllocate(nx, ny, nz, 1, actx->nummark, &avd3D);

@@ -44,10 +44,10 @@
 //---------------------------------------------------------------------------
 #include "LaMEM.h"
 #include "parsing.h"
-#include "solVar.h"
-#include "fdstag.h"
 #include "scaling.h"
 #include "tssolve.h"
+#include "solVar.h"
+#include "fdstag.h"
 #include "bc.h"
 #include "JacRes.h"
 #include "parsing.h"

@@ -44,9 +44,9 @@
 //---------------------------------------------------------------------------
 #include "LaMEM.h"
 #include "parsing.h"
+#include "scaling.h"
 #include "fdstag.h"
 #include "solVar.h"
-#include "scaling.h"
 #include "tssolve.h"
 #include "bc.h"
 #include "JacRes.h"
@@ -1920,7 +1920,7 @@ PetscErrorCode getMaxInvStep1DLocal(Discret1D *ds, DM da, Vec gv, PetscInt dir, 
 	// initialize
 	idtmax = (*_idtmax);
 
-	if(ds->h_uni < 0.0)
+	if(!ds->uniform)
 	{
 		// compute time step on variable spacing grid
 		PetscScalar ***va;
@@ -1969,8 +1969,11 @@ PetscErrorCode getMaxInvStep1DLocal(Discret1D *ds, DM da, Vec gv, PetscInt dir, 
 
 		ierr = VecRestoreArray(gv, &va); CHKERRQ(ierr);
 
+		// get uniform mesh step
+		h = (ds->crdend - ds->crdbeg)/(PetscScalar)ds->tcels;
+
 		// get inverse time step
-		idt = vmax/ds->h_uni;
+		idt = vmax/h;
 
 		// update maximum inverse time step
 		if(idt > idtmax) idtmax = idt;

@@ -43,173 +43,159 @@
 //........   PARALLEL STAGGERED GRID USING PETSC DISTRIBUTED ARRAYS  ........
 //---------------------------------------------------------------------------
 #include "LaMEM.h"
+#include "parsing.h"
+#include "scaling.h"
 #include "fdstag.h"
 #include "tools.h"
-//---------------------------------------------------------------------------
-// * unify coupled & decoupled indexing objects
+
 //---------------------------------------------------------------------------
 // MeshSeg1D functions
 //---------------------------------------------------------------------------
 #undef __FUNCT__
-#define __FUNCT__ "MeshSeg1DCreate"
-PetscErrorCode MeshSeg1DCreate(
+#define __FUNCT__ "MeshSeg1DReadParam"
+PetscErrorCode MeshSeg1DReadParam(
 	MeshSeg1D  *ms,
-	PetscScalar beg,
-	PetscScalar end,
-	PetscInt    tncels,
-	MeshSegInp *msi)
+	PetscScalar leng,
+	const char *dir,
+	FB         *fb)
 {
-	PetscInt i, istart;
+	PetscInt    i, tcels, uniform;
+	PetscInt    ncells[MaxNumMeshSegs];
+	PetscScalar gtol, avgsz, sz;
+	char        *nseg, *nel, *coord, *bias;
 
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
 
-	// set number of segments
-	if(msi->nsegs) ms->nsegs = msi->nsegs;
-	else           ms->nsegs = 1;
+	// set relative geometry tolerance
+	gtol = 1e-8;
 
-	// allocate space
-	ierr = makeIntArray (&ms->istart, NULL, ms->nsegs+1); CHKERRQ(ierr);
-	ierr = makeScalArray(&ms->xstart, NULL, ms->nsegs+1); CHKERRQ(ierr);
-	ierr = makeScalArray(&ms->biases, NULL, ms->nsegs);   CHKERRQ(ierr);
+	// initialize
+	ms->nsegs = 1;
+	for(i = 0; i < MaxNumMeshSegs; i++) ms->biases[i] = 1.0;
 
-	// expand the input segments
-	if(msi->nsegs)
+	// compose option keys
+	asprintf(&nseg,  "nseg_%s",  dir);
+	asprintf(&nel,   "nel_%s",   dir);
+	asprintf(&coord, "coord_%s", dir);
+	asprintf(&bias,  "bias_%s",  dir);
+
+	// read parameters
+	ierr = getIntParam   (fb, _OPTIONAL_, nseg,  &ms->nsegs,  1                ); CHKERRQ(ierr);
+	ierr = getIntParam   (fb, _REQUIRED_, nel,    ncells,     ms->nsegs        ); CHKERRQ(ierr);
+	ierr = getScalarParam(fb, _REQUIRED_, coord,  ms->xstart, ms->nsegs+1, leng); CHKERRQ(ierr);
+	ierr = getScalarParam(fb, _OPTIONAL_, bias,   ms->biases, ms->nsegs,   1.0 ); CHKERRQ(ierr);
+
+	// compute starting node indices
+	for(i = 0, tcels = 0; i < ms->nsegs; i++)
 	{
-		// coordinate & index delimiters
-		for(i = 0, istart=0; i < msi->nsegs-1; i++)
+		ms->istart[i] = tcels;
+		tcels        += ncells[i];
+	}
+	ms->istart[ms->nsegs] = tcels;
+
+	// check ordering
+	for(i = 0; i < ms->nsegs; i++)
+	{
+		if(ms->xstart[i] >= ms->xstart[i+1])
 		{
-			istart += msi->ncells[i];
-			ms->istart[i+1] = istart;
-			ms->xstart[i+1] = msi->delims[i];
+			SETERRQ1(PETSC_COMM_WORLD, PETSC_ERR_USER, "Unordered coordinates in parameter %s\n", coord);
 		}
-
-		// biases
-		for(i = 0; i < msi->nsegs; i++) ms->biases[i] = msi->biases[i];
-
 	}
-	// create uniform mesh by default
-	else
+
+	// check for uniform grid
+	uniform = 1;
+	avgsz   = (ms->xstart[ms->nsegs] - ms->xstart[0])/(PetscScalar)tcels;
+
+	for(i = 0; i < ms->nsegs; i++)
 	{
-		ms->biases[0] = 1.0;
+		sz = (ms->xstart[i+1] - ms->xstart[i])/(PetscScalar)ncells[i];
+
+		if(ms->biases[i] != 1.0 || PetscAbsScalar(avgsz-sz) > gtol*avgsz)
+		{
+			uniform = 0; break;
+		}
 	}
 
-	// set mesh boundaries
-	ms->istart[0]         = 0;
-	ms->istart[ms->nsegs] = tncels;
-	ms->xstart[0]         = beg;
-	ms->xstart[ms->nsegs] = end;
+	// set grid parameters
+	ms->tcels   = tcels;
+	ms->uniform = uniform;
+
+	// free keys
+	free(nseg);
+	free(nel);
+	free(coord);
+	free(bias);
 
 	PetscFunctionReturn(0);
 }
-//---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "MeshSeg1DDestroy"
-PetscErrorCode MeshSeg1DDestroy(MeshSeg1D *ms)
-{
-	PetscErrorCode ierr;
-	PetscFunctionBegin;
-
-	ierr = PetscFree(ms->istart); CHKERRQ(ierr);
-	ierr = PetscFree(ms->xstart); CHKERRQ(ierr);
-	ierr = PetscFree(ms->biases); CHKERRQ(ierr);
-
-	PetscFunctionReturn(0);
-}
-//---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "MeshSeg1DStretch"
-PetscErrorCode MeshSeg1DStretch(MeshSeg1D *ms, PetscScalar eps)
-{
-	// Stretch grid with constant stretch factor about coordinate origin.
-	// x_new = x_old + eps*x_old
-
-	PetscInt i;
-
-	PetscFunctionBegin;
-
-	// recompute (stretch) coordinates
-	for(i = 0; i < ms->nsegs+1; i++) ms->xstart[i] *= (1.0 + eps);
-
-	PetscFunctionReturn(0);
-}
-//---------------------------------------------------------------------------
-#define SAVENODE(pstart, inode, cnt, n, crd, x) \
-	{ if(inode >= pstart && inode < pstart + n) { crd[cnt++] = x; if(cnt == n) return 0; } inode++; }
 //---------------------------------------------------------------------------
 #undef __FUNCT__
 #define __FUNCT__ "MeshSeg1DGenCoord"
 PetscErrorCode MeshSeg1DGenCoord(
 	MeshSeg1D   *ms,     // segments description
-	PetscInt     pstart, // starting node index
-	PetscInt     n,      // number of nodes to be generated
+	PetscInt     iseg,   // segment index
+	PetscInt     nl,     // number of nodes to be generated
+	PetscInt     istart, // index of the first node
 	PetscScalar *crd)    // coordinates of the nodes
 {
-	PetscInt    i, ns, iseg, inode, cnt, sum;
-	PetscScalar x, dx, xbeg, xend, bias, avgSz, begSz, endSz;
+	// (partially) mesh a segment with (optionally) biased element size
 
-	inode = 0;
-	cnt   = 0;
+	PetscInt    i, N, M, sum;
+	PetscScalar xstart, xclose, bias, avgSz, begSz, endSz, dx;
 
-	for(iseg = 0; iseg < ms->nsegs; iseg++)
+	PetscFunctionBegin;
+
+	// total number of nodes in segment (including both ends)
+	N = ms->istart[iseg+1] - ms->istart[iseg] + 1;
+
+	// total number of cells
+	M = N-1;
+
+	// starting & closing coordinates
+	xstart = ms->xstart[iseg];
+	xclose = ms->xstart[iseg+1];
+
+	// bias (last to first cell size ratio > 1 -> growing)
+	bias = ms->biases[iseg];
+
+	// average cell size
+	avgSz = (xclose - xstart)/(PetscScalar)M;
+
+	// uniform case
+	if(bias == 1.0)
 	{
-		// coordinate bounds
-		xbeg = ms->xstart[iseg];
-		xend = ms->xstart[iseg+1];
-
-		// number of nodes & cells in the segment
-		ns = ms->istart[iseg+1] - ms->istart[iseg];
-
-		// bias coefficient (last to first cell size ratio > 1 -> growing)
-		bias = ms->biases[iseg];
-
-		// average cell size
-		avgSz = (xend - xbeg)/(PetscScalar)(ns);
-
-		// first node
-		SAVENODE(pstart, inode, cnt, n, crd, xbeg);
-
-		// uniform case
-		if(bias == 1.0)
+		// generate coordinates of local nodes
+		for(i = 0; i < nl; i++)
 		{
-			// generate coordinates of local nodes
-			for(i = 1; i < ns; i++)
-			{
-				x = xbeg + (PetscScalar)i*avgSz;
-
-				SAVENODE(pstart, inode, cnt, n, crd, x);
-			}
+			crd[i] = xstart + (PetscScalar)(istart + i)*avgSz;
 		}
-		// non-uniform case
-		else
+	}
+	// non-uniform case
+	else
+	{
+		// cell size limits
+		begSz = 2.0*avgSz/(1.0 + bias);
+		endSz = bias*begSz;
+
+		// cell size increment (negative for bias < 1)
+		dx = (endSz - begSz)/(PetscScalar)(M-1);
+
+		// get accumulated sum of increments
+		for(i = 0, sum = 0; i < istart; i++) sum += i;
+
+		// generate coordinates of local nodes
+		for(i = 0; i < nl; i++)
 		{
-			// cell size limits
-			begSz = 2.0*avgSz/(1.0 + bias);
-			endSz = bias*begSz;
-
-			// cell size increment (negative for bias < 1)
-			dx = (endSz - begSz)/(PetscScalar)(ns-1);
-
-			// generate coordinates of local nodes
-			for(i = 1, sum = 0; i < ns; i++)
-			{
-				x = xbeg + (PetscScalar)i*begSz + (PetscScalar)sum*dx;
-				sum += i;
-
-				SAVENODE(pstart, inode, cnt, n, crd, x);
-			}
+			crd[i] = xstart + (PetscScalar)(istart + i)*begSz + (PetscScalar)sum*dx;
+			sum += istart + i;
 		}
 	}
 
-	// last node
-	SAVENODE(pstart, inode, cnt, n, crd, xend);
+	// override last node coordinate
+	if(istart+nl == N) crd[nl-1] = xclose;
 
 	PetscFunctionReturn(0);
-}
-//---------------------------------------------------------------------------
-PetscScalar MeshSeg1DGetUniStep(MeshSeg1D *ms)
-{
-	return (ms->xstart[ms->nsegs] - ms->xstart[0])/(PetscScalar)ms->istart[ms->nsegs];
 }
 //---------------------------------------------------------------------------
 // Discret1D functions
@@ -277,17 +263,17 @@ PetscErrorCode Discret1DCreate(
 	ierr = makeScalArray(&ds->cbuff, 0, ds->ncels+2); CHKERRQ(ierr);
 	ds->ccoor = ds->cbuff + 1;
 
-	// column color
-	ds->color = (PetscMPIInt) color;
-
-	// column communicator
-	ds->comm = MPI_COMM_NULL;
-
 	// global rank of previous process (-1 if none)
 	ds->grprev = grprev;
 
 	// global rank of next process (-1 if none)
 	ds->grnext = grnext;
+
+	// column color
+	ds->color = (PetscMPIInt) color;
+
+	// column communicator
+	ds->comm = MPI_COMM_NULL;
 
 	PetscFunctionReturn(0);
 }
@@ -310,25 +296,104 @@ PetscErrorCode Discret1DDestroy(Discret1D *ds)
 }
 //---------------------------------------------------------------------------
 #undef __FUNCT__
+#define __FUNCT__ "Discret1DReadRestart"
+PetscErrorCode Discret1DReadRestart(Discret1D *ds, FILE *fp)
+{
+	PetscErrorCode ierr;
+	PetscFunctionBegin;
+
+	ierr = makeIntArray (&ds->starts, NULL, ds->nproc + 1); CHKERRQ(ierr);
+	ierr = makeScalArray(&ds->nbuff,  NULL, ds->bufsz    ); CHKERRQ(ierr);
+	ierr = makeScalArray(&ds->cbuff,  NULL, ds->ncels + 2); CHKERRQ(ierr);
+
+   	fread(ds->starts, sizeof(PetscInt   )*(size_t)(ds->nproc + 1), 1, fp);
+	fread(ds->nbuff,  sizeof(PetscScalar)*(size_t)(ds->bufsz    ), 1, fp);
+	fread(ds->cbuff,  sizeof(PetscScalar)*(size_t)(ds->ncels + 2), 1, fp);
+
+	ds->ncoor = ds->nbuff + 1;
+	ds->ccoor = ds->cbuff + 1;
+
+	PetscFunctionReturn(0);
+}
+//---------------------------------------------------------------------------
+#undef __FUNCT__
+#define __FUNCT__ "Discret1DWriteRestart"
+PetscErrorCode Discret1DWriteRestart(Discret1D *ds, FILE *fp)
+{
+	PetscFunctionBegin;
+
+	fwrite(ds->starts, sizeof(PetscInt   )*(size_t)(ds->nproc + 1), 1, fp);
+	fwrite(ds->nbuff,  sizeof(PetscScalar)*(size_t)(ds->bufsz    ), 1, fp);
+	fwrite(ds->cbuff,  sizeof(PetscScalar)*(size_t)(ds->ncels + 2), 1, fp);
+
+	PetscFunctionReturn(0);
+}
+//---------------------------------------------------------------------------
+#undef __FUNCT__
+#define __FUNCT__ "Discret1DGetNumCells"
+PetscErrorCode Discret1DGetNumCells(Discret1D *ds, PetscInt **ncelProc)
+{
+	// get number of cells per processor
+
+	PetscInt i, *l;
+
+	PetscErrorCode ierr;
+	PetscFunctionBegin;
+
+	ierr = makeIntArray(&l, NULL, ds->nproc); CHKERRQ(ierr);
+
+	for(i = 0; i < ds->nproc; i++)
+	{
+		l[i] = ds->starts[i+1] - ds->starts[i];
+	}
+
+	(*ncelProc) = l;
+
+	PetscFunctionReturn(0);
+}
+//---------------------------------------------------------------------------
+#undef __FUNCT__
 #define __FUNCT__ "Discret1DGenCoord"
 PetscErrorCode Discret1DGenCoord(Discret1D *ds, MeshSeg1D *ms)
 {
-	PetscInt     i, n, pstart;
+	PetscInt     i, n, nl, pstart, istart;
 	PetscScalar *crd, A, B, C;
 
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
 
 	// compute number of nodes to be generated locally
+	pstart = ds->pstart;
 	crd    = ds->ncoor;
 	n      = ds->nnods;
-	pstart = ds->pstart;
 
 	// correct numbers if we need to include internal ghost points
 	if(ds->grprev != -1) { pstart--; crd--; n++; }
 	if(ds->grnext != -1) { n += 2; }
 
-	ierr = MeshSeg1DGenCoord(ms, pstart, n, crd); CHKERRQ(ierr);
+	// apply local filter & expand segment data
+	for(i = 0; n; i++)
+	{
+		// compute number of nodes within this segment
+		nl = ms->istart[i+1] - pstart + 1;
+
+		// skip the non-overlapping segments
+		if(nl < 0) continue;
+
+		// correct if the rest of the mesh completely fits into the segment
+		if(nl > n) nl = n;
+
+		// compute starting index within the segment
+		istart = pstart - ms->istart[i];
+
+		// generate nodal coordinates for the local part of the segment
+		ierr = MeshSeg1DGenCoord(ms, i, nl, istart, crd); CHKERRQ(ierr);
+
+		// update the rest of the local mesh to be generated
+		pstart += nl;
+		crd    += nl;
+		n      -= nl;
+	}
 
 	// set boundary ghost coordinates
 	if(ds->grprev == -1)
@@ -350,135 +415,24 @@ PetscErrorCode Discret1DGenCoord(Discret1D *ds, MeshSeg1D *ms)
 	for(i = -1; i < ds->ncels+1; i++)
 		ds->ccoor[i] = (ds->ncoor[i] + ds->ncoor[i+1])/2.0;
 
-	// compute extreme cell sizes
-	ierr = Discret1DGetMinMaxCellSize(ds, ms); CHKERRQ(ierr);
+	// set uniform grid flag
+	ds->uniform = ms->uniform;
 
-	// exchange domain bounds
-	ierr = Discret1DExcahngeBounds(ds); CHKERRQ(ierr);
-
-	// free column communicator (optimization)
-	ierr = Discret1DFreeColumnComm(ds); CHKERRQ(ierr);
-
-	PetscFunctionReturn(0);
-}
-//---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "Discret1DGetMinMaxCellSize"
-PetscErrorCode Discret1DGetMinMaxCellSize(Discret1D *ds, MeshSeg1D *ms)
-{
-	// globally compute and set extreme cell sizes
-
-	PetscInt    i;
-	PetscScalar h, sz, lminsz, lmaxsz, gminsz, gmaxsz, rtol;
-
-	PetscErrorCode ierr;
-	PetscFunctionBegin;
-
-	// create communicator if necessary
-	ierr = Discret1DGetColumnComm(ds);  CHKERRQ(ierr);
-
-	// set tolerance
-	rtol = 1e-8;
-
-	// get local values
-	lminsz = lmaxsz = SIZE_CELL(0, 0, (*ds));
-
-	for(i = 1; i < ds->ncels; i++)
-	{
-		sz = SIZE_CELL(i, 0, (*ds));
-
-		if(sz < lminsz) lminsz = sz;
-		if(sz > lmaxsz) lmaxsz = sz;
-	}
-
-	// sort out sequential case
-	if(ds->nproc == 1)
-	{
-		gminsz = lminsz;
-		gmaxsz = lmaxsz;
-	}
-	else
-	{	// synchronize
-		ierr = MPI_Allreduce(&lminsz, &gminsz, 1, MPIU_SCALAR, MPI_MIN, ds->comm); CHKERRQ(ierr);
-		ierr = MPI_Allreduce(&lmaxsz, &gmaxsz, 1, MPIU_SCALAR, MPI_MAX, ds->comm); CHKERRQ(ierr);
-	}
-
-	// detect uniform mesh & store result
-	h = MeshSeg1DGetUniStep(ms);
-
-	if(PetscAbsScalar(gmaxsz-gminsz) < rtol*h)
-	{
-		ds->h_uni = h;
-		ds->h_min = h;
-		ds->h_max = h;
-	}
-	else
-	{
-		ds->h_uni = -1.0;
-		ds->h_min =  gminsz;
-		ds->h_max =  gmaxsz;
-	}
-
-	PetscFunctionReturn(0);
-}
-//---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "Discret1DExcahngeBounds"
-PetscErrorCode Discret1DExcahngeBounds(Discret1D *ds)
-{
-	// exchange coordinate bounds to be exactly the same on neighboring processors
-
-	MPI_Request srequest, rrequest;
-
-	PetscErrorCode ierr;
-	PetscFunctionBegin;
-
-	// create communicator if necessary
-	ierr = Discret1DGetColumnComm(ds); CHKERRQ(ierr);
-
-	// set coordinate bounds
-	ds->crdbeg = ds->ncoor[0];
-	ds->crdend = ds->ncoor[ds->ncels];
-
-	// exchange coordinate bounds
-	if(ds->grnext != -1)
-	{
-		ierr = MPI_Isend(&ds->crdend, 1, MPIU_SCALAR, ds->rank+1, 0, ds->comm, &srequest); CHKERRQ(ierr);
-	}
-
-	if(ds->grprev != -1)
-	{
-		ierr = MPI_Irecv(&ds->crdbeg, 1, MPIU_SCALAR, ds->rank-1, 0, ds->comm, &rrequest); CHKERRQ(ierr);
-	}
-
-	if(ds->grnext != -1)
-	{
-		ierr =  MPI_Wait(&srequest, MPI_STATUSES_IGNORE);  CHKERRQ(ierr);
-	}
-
-	if(ds->grprev != -1)
-	{
-		ierr =  MPI_Wait(&rrequest, MPI_STATUSES_IGNORE);  CHKERRQ(ierr);
-	}
-
-	PetscFunctionReturn(0);
+	// set global coordinate bounds
+	ds->crdbeg = ms->xstart[0];
+	ds->crdend = ms->xstart[ms->nsegs];
 }
 //---------------------------------------------------------------------------
 #undef __FUNCT__
 #define __FUNCT__ "Discret1DStretch"
-PetscErrorCode Discret1DStretch(Discret1D *ds, MeshSeg1D *ms, PetscScalar eps)
+PetscErrorCode Discret1DStretch(Discret1D *ds, PetscScalar eps)
 {
 	// stretch grid with constant stretch factor about coordinate origin.
 	// x_new = x_old + eps*x_old
 
-	PetscInt    i;
-	PetscScalar h;
+	PetscInt i;
 
-	PetscErrorCode ierr;
 	PetscFunctionBegin;
-
-	// recompute segment data
-	ierr = MeshSeg1DStretch(ms, eps); CHKERRQ(ierr);
 
 	// recompute (stretch) node coordinates in the buffer
 	for(i = 0; i < ds->bufsz; i++) ds->nbuff[i] *= (1.0 + eps);
@@ -487,52 +441,9 @@ PetscErrorCode Discret1DStretch(Discret1D *ds, MeshSeg1D *ms, PetscScalar eps)
 	for(i = -1; i < ds->ncels+1; i++)
 		ds->ccoor[i] = (ds->ncoor[i] + ds->ncoor[i+1])/2.0;
 
-	// update mesh steps
-	if(ds->h_uni < 0.0)
-	{
-		ds->h_min *= (1.0 + eps);
-		ds->h_max *= (1.0 + eps);
-	}
-	else
-	{
-		h         = MeshSeg1DGetUniStep(ms);
-		ds->h_uni = h;
-		ds->h_min = h;
-		ds->h_max = h;
-	}
-
 	// recompute coordinate bounds
 	ds->crdbeg *= (1.0 + eps);
 	ds->crdend *= (1.0 + eps);
-
-	PetscFunctionReturn(0);
-}
-//---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "Discret1DView"
-PetscErrorCode Discret1DView(Discret1D *ds, const char *name)
-{
-	PetscInt    i;
-	PetscMPIInt grank;
-
-	PetscErrorCode ierr;
-	PetscFunctionBegin;
-
-	ierr = MPI_Comm_rank(PETSC_COMM_WORLD, &grank); CHKERRQ(ierr);
-	ierr = PetscPrintf (PETSC_COMM_WORLD, "\n\n\n === %s ===\n", name); CHKERRQ(ierr);
-	ierr = PetscSynchronizedPrintf(PETSC_COMM_WORLD, "   ***grank=%lld  rank=%lld  start=%lld  tnods=%lld  nnods=%lld  ncels=%lld\n",
-		(LLD)grank, (LLD)ds->rank, (LLD)ds->starts[ds->rank], (LLD)ds->tnods, (LLD)ds->nnods, (LLD)ds->ncels); CHKERRQ(ierr);
-	ierr = PetscSynchronizedFlush(PETSC_COMM_WORLD, PETSC_STDOUT); CHKERRQ(ierr);
-	ierr = PetscPrintf (PETSC_COMM_WORLD, "====================================================\n\n\n"); CHKERRQ(ierr);
-
-	ierr = PetscSynchronizedPrintf(PETSC_COMM_WORLD, "   ***grank=%lld  ", (LLD)grank); CHKERRQ(ierr);
-
-	for(i = 0; i < ds->bufsz; i++)
-	{	ierr = PetscSynchronizedPrintf(PETSC_COMM_WORLD, "%f ", ds->nbuff[i]); CHKERRQ(ierr);
-	}
-	ierr = PetscSynchronizedPrintf(PETSC_COMM_WORLD, "\n"); CHKERRQ(ierr);
-	ierr = PetscSynchronizedFlush(PETSC_COMM_WORLD, PETSC_STDOUT); CHKERRQ(ierr);
-	ierr = PetscPrintf (PETSC_COMM_WORLD, "====================================================\n\n\n"); CHKERRQ(ierr);
 
 	PetscFunctionReturn(0);
 }
@@ -856,23 +767,8 @@ PetscErrorCode DOFIndexCompute(DOFIndex *dof, idxtype idxmod)
 // FDSTAG functions
 //---------------------------------------------------------------------------
 #undef __FUNCT__
-#define __FUNCT__ "FDSTAGClear"
-PetscErrorCode FDSTAGClear(FDSTAG  *fs)
-{
-	PetscErrorCode ierr;
-	PetscFunctionBegin;
-
-	// clear object
-	ierr = PetscMemzero(fs, sizeof(FDSTAG)); CHKERRQ(ierr);
-
-	PetscFunctionReturn(0);
-}
-//---------------------------------------------------------------------------
-#undef __FUNCT__
 #define __FUNCT__ "FDSTAGCreate"
-PetscErrorCode FDSTAGCreate(
-	FDSTAG  *fs,
-	PetscInt Nx, PetscInt Ny, PetscInt Nz)
+PetscErrorCode FDSTAGCreate(FDSTAG *fs, FB *fb)
 {
 	// Create object with all necessary arrays to handle FDSTAG discretization.
 
@@ -880,100 +776,69 @@ PetscErrorCode FDSTAGCreate(
 	// The idea is that velocity vectors should contain sufficient information
 	// to compute strain/rates/stresses/residuals including boundary conditions.
 
+	Scaling          *scal;
+	PetscMPIInt      rank;
 	PetscInt         nnx, nny, nnz;
 	PetscInt         ncx, ncy, ncz;
-	PetscInt         ndof, nlayer;
 	const PetscInt  *plx, *ply, *plz;
 	PetscInt        *lx,  *ly,  *lz;
 	PetscInt         rx,   ry,   rz;
 	PetscInt         cx,   cy,   cz;
+	PetscInt         Nx,   Ny,   Nz;
 	PetscInt         Px,   Py,   Pz;
+	MeshSeg1D        msx,  msy,  msz;
 
-	PetscErrorCode 	 ierr;
+	PetscErrorCode ierr;
 	PetscFunctionBegin;
 
-	ndof   = 1;
-	nlayer = 1;
+	scal = fs->scal;
 
-	// get number of processors
+	// set number of processors
 	Px = PETSC_DECIDE;
 	Py = PETSC_DECIDE;
 	Pz = PETSC_DECIDE;
 
-	PetscOptionsGetInt(NULL, NULL, "-cpu_x", &Px, NULL); // fix # of processors in x-direction
-	PetscOptionsGetInt(NULL, NULL, "-cpu_y", &Py, NULL); // fix # of processors in y-direction
-	PetscOptionsGetInt(NULL, NULL, "-cpu_z", &Pz, NULL); // fix # of processors in z-direction
+	// fix number of processors in all directions
+	ierr = getIntParam(fb, _OPTIONAL_, "cpu_x", &Px, 1); CHKERRQ(ierr);
+	ierr = getIntParam(fb, _OPTIONAL_, "cpu_y", &Py, 1); CHKERRQ(ierr);
+	ierr = getIntParam(fb, _OPTIONAL_, "cpu_z", &Pz, 1); CHKERRQ(ierr);
+
+	// read mesh parameters
+	ierr = MeshSeg1DReadParam(&msx, scal->length, "x", fb); CHKERRQ(ierr);
+	ierr = MeshSeg1DReadParam(&msy, scal->length, "y", fb); CHKERRQ(ierr);
+	ierr = MeshSeg1DReadParam(&msz, scal->length, "z", fb); CHKERRQ(ierr);
+
+	// get total number of nodes
+	Nx = msx.tcels + 1;
+	Ny = msy.tcels + 1;
+	Nz = msz.tcels + 1;
 
 	// partition central points (DA_CEN) with boundary ghost points (1-layer stencil box)
 	ierr = DMDACreate3dSetUp(PETSC_COMM_WORLD,
 		DM_BOUNDARY_GHOSTED, DM_BOUNDARY_GHOSTED, DM_BOUNDARY_GHOSTED, DMDA_STENCIL_BOX,
-		Nx-1, Ny-1, Nz-1, Px, Py, Pz, ndof, nlayer, 0, 0, 0, &fs->DA_CEN); CHKERRQ(ierr);
+		Nx-1, Ny-1, Nz-1, Px, Py, Pz, 1, 1, 0, 0, 0, &fs->DA_CEN); CHKERRQ(ierr);
 
-//	ierr = DMSetFromOptions(fs->DA_CEN); CHKERRQ(ierr);
-//	ierr = DMSetUp(fs->DA_CEN); CHKERRQ(ierr);
-
-	// get actual number of processors in every direction (can be different compared to given)
+	// get actual number of processors (can be different compared to given)
 	ierr = DMDAGetInfo(fs->DA_CEN, 0, 0, 0, 0, &Px, &Py, &Pz, 0, 0, 0, 0, 0, 0); CHKERRQ(ierr);
 
-	// get number of points per processor
+	// get number of cells per processor
 	ierr = DMDAGetOwnershipRanges(fs->DA_CEN, &plx, &ply, &plz); CHKERRQ(ierr);
+
 	ierr = makeIntArray(&lx, plx, Px); CHKERRQ(ierr);
 	ierr = makeIntArray(&ly, ply, Py); CHKERRQ(ierr);
 	ierr = makeIntArray(&lz, plz, Pz); CHKERRQ(ierr);
 
-	// increment number of points on last processor
+	// get number of nodes per processor (only different on the last processor)
 	lx[Px-1]++; ly[Py-1]++; lz[Pz-1]++;
 
-	// corners (DA_COR) no boundary ghost points (1-layer stencil box)
-	ierr = DMDACreate3dSetUp(PETSC_COMM_WORLD,
-		DM_BOUNDARY_NONE, DM_BOUNDARY_NONE, DM_BOUNDARY_NONE, DMDA_STENCIL_BOX,
-		Nx, Ny, Nz, Px, Py, Pz, ndof, nlayer, lx, ly, lz, &fs->DA_COR); CHKERRQ(ierr);
+	// create corner, face and edge DMDA objects
+	ierr = FDSTAGCreateDMDA(fs, Nx, Ny, Nz, Px, Py, Pz, lx, ly, lz); CHKERRQ(ierr);
 
-	// XY edges (DA_XY) no boundary ghost points (1-layer stencil box)
-	lz[Pz-1]--;
-	ierr = DMDACreate3dSetUp(PETSC_COMM_WORLD,
-		DM_BOUNDARY_NONE, DM_BOUNDARY_NONE, DM_BOUNDARY_NONE, DMDA_STENCIL_BOX,
-		Nx, Ny, Nz-1, Px, Py, Pz, ndof, nlayer, lx, ly, lz, &fs->DA_XY); CHKERRQ(ierr);
-	lz[Pz-1]++;
+	// get MPI processor rank
+	MPI_Comm_rank(PETSC_COMM_WORLD, &rank);
 
-	// XZ edges (DA_XZ) no boundary ghost points (1-layer stencil box)
-	ly[Py-1]--;
-	ierr = DMDACreate3dSetUp(PETSC_COMM_WORLD,
-		DM_BOUNDARY_NONE, DM_BOUNDARY_NONE, DM_BOUNDARY_NONE, DMDA_STENCIL_BOX,
-		Nx, Ny-1, Nz, Px, Py, Pz, ndof, nlayer, lx, ly, lz, &fs->DA_XZ); CHKERRQ(ierr);
-	ly[Py-1]++;
-
-	// YZ edges (DA_YZ) no boundary ghost points (1-layer stencil box)
-	lx[Px-1]--;
-	ierr = DMDACreate3dSetUp(PETSC_COMM_WORLD,
-		DM_BOUNDARY_NONE, DM_BOUNDARY_NONE, DM_BOUNDARY_NONE, DMDA_STENCIL_BOX,
-		Nx-1, Ny, Nz, Px, Py, Pz, ndof, nlayer, lx, ly, lz, &fs->DA_YZ); CHKERRQ(ierr);
-	lx[Px-1]++;
-
-
-	// X face (DA_X) with boundary ghost points (1-layer stencil box)
-	ly[Py-1]--; lz[Pz-1]--;
-	ierr = DMDACreate3dSetUp(PETSC_COMM_WORLD,
-		DM_BOUNDARY_GHOSTED, DM_BOUNDARY_GHOSTED, DM_BOUNDARY_GHOSTED, DMDA_STENCIL_BOX,
-		Nx, Ny-1, Nz-1, Px, Py, Pz, ndof, nlayer, lx, ly, lz, &fs->DA_X); CHKERRQ(ierr);
-	ly[Py-1]++; lz[Pz-1]++;
-
-	// Y face (DA_Y) with boundary ghost points (1-layer stencil box)
-	lx[Px-1]--; lz[Pz-1]--;
-	ierr = DMDACreate3dSetUp(PETSC_COMM_WORLD,
-		DM_BOUNDARY_GHOSTED, DM_BOUNDARY_GHOSTED, DM_BOUNDARY_GHOSTED, DMDA_STENCIL_BOX,
-		Nx-1, Ny, Nz-1, Px, Py, Pz, ndof, nlayer, lx, ly, lz, &fs->DA_Y); CHKERRQ(ierr);
-	lx[Px-1]++; lz[Pz-1]++;
-
-	// Z face (DA_Z) with boundary ghost points (1-layer stencil box)
-	lx[Px-1]--; ly[Py-1]--;
-	ierr = DMDACreate3dSetUp(PETSC_COMM_WORLD,
-		DM_BOUNDARY_GHOSTED, DM_BOUNDARY_GHOSTED, DM_BOUNDARY_GHOSTED, DMDA_STENCIL_BOX,
-		Nx-1, Ny-1, Nz, Px, Py, Pz, ndof, nlayer, lx, ly, lz, &fs->DA_Z); CHKERRQ(ierr);
-	lx[Px-1]++; ly[Py-1]++;
-
-	// get processor ranks
-	ierr = DMDAGetProcessorRank(fs->DA_CEN, &rx, &ry, &rz, 0); CHKERRQ(ierr);
+	// determine i-j-k ranks of processor
+	getLocalRank(&rx, &ry, &rz, rank, Px, Py);
 
 	// compute column colors
 	cx = ry + rz*Py; // global index in YZ-plane
@@ -993,10 +858,10 @@ PetscErrorCode FDSTAGCreate(
 			getGlobalRank(rx, ry, rz-1, Px, Py, Pz),
 			getGlobalRank(rx, ry, rz+1, Px, Py, Pz)); CHKERRQ(ierr);
 
-	// clear temporary storage
-	ierr = PetscFree(lx);  CHKERRQ(ierr);
-	ierr = PetscFree(ly);  CHKERRQ(ierr);
-	ierr = PetscFree(lz);  CHKERRQ(ierr);
+	// delete temporary arrays
+	ierr = PetscFree(lx); CHKERRQ(ierr);
+	ierr = PetscFree(ly); CHKERRQ(ierr);
+	ierr = PetscFree(lz); CHKERRQ(ierr);
 
 	// compute local number of grid points
 	nnx = fs->dsx.nnods; ncx = fs->dsx.ncels;
@@ -1012,25 +877,82 @@ PetscErrorCode FDSTAGCreate(
 	fs->nYFace = ncx*nny*ncz;
 	fs->nZFace = ncx*ncy*nnz;
 
+	// get ranks of neighbor processes
+	ierr = FDSTAGGetNeighbProc(fs); CHKERRQ(ierr);
+
+	// generate coordinates
+	ierr = Discret1DGenCoord(&fs->dsx, &msx); CHKERRQ(ierr);
+	ierr = Discret1DGenCoord(&fs->dsy, &msy); CHKERRQ(ierr);
+	ierr = Discret1DGenCoord(&fs->dsz, &msz); CHKERRQ(ierr);
+
+	// print essential grid details
+	ierr = FDSTAGView(fs); CHKERRQ(ierr);
+
+	PetscFunctionReturn(0);
+}
+//---------------------------------------------------------------------------
+#undef __FUNCT__
+#define __FUNCT__ "FDSTAGReadRestart"
+PetscErrorCode FDSTAGReadRestart(FDSTAG *fs, FILE *fp)
+{
+	PetscInt *lx,  *ly,  *lz;
+	PetscInt  Nx,   Ny,   Nz;
+	PetscInt  Px,   Py,   Pz;
+
+	PetscErrorCode ierr;
+	PetscFunctionBegin;
+
+	ierr = Discret1DReadRestart(&fs->dsx, fp); CHKERRQ(ierr);
+	ierr = Discret1DReadRestart(&fs->dsy, fp); CHKERRQ(ierr);
+	ierr = Discret1DReadRestart(&fs->dsz, fp); CHKERRQ(ierr);
+
+	// get total number of nodes
+	Nx = fs->dsx.tnods;
+	Ny = fs->dsy.tnods;
+	Nz = fs->dsz.tnods;
+
+	// get number of processes
+	Px = fs->dsx.nproc;
+	Py = fs->dsy.nproc;
+	Pz = fs->dsz.nproc;
+
+	// get number cells per processor
+	ierr = Discret1DGetNumCells(&fs->dsx, &lx); CHKERRQ(ierr);
+	ierr = Discret1DGetNumCells(&fs->dsy, &ly); CHKERRQ(ierr);
+	ierr = Discret1DGetNumCells(&fs->dsz, &lz); CHKERRQ(ierr);
+
+	// central points (DA_CEN) with boundary ghost points (1-layer stencil box)
+	ierr = DMDACreate3dSetUp(PETSC_COMM_WORLD,
+		DM_BOUNDARY_GHOSTED, DM_BOUNDARY_GHOSTED, DM_BOUNDARY_GHOSTED, DMDA_STENCIL_BOX,
+		Nx-1, Ny-1, Nz-1, Px, Py, Pz, 1, 1, lx, ly, lz, &fs->DA_CEN); CHKERRQ(ierr);
+
+	// get number of nodes per processor (only different on the last processor)
+	lx[Px-1]++; ly[Py-1]++; lz[Pz-1]++;
+
+	// create corner, face and edge DMDA objects
+	ierr = FDSTAGCreateDMDA(fs, Nx, Ny, Nz, Px, Py, Pz, lx, ly, lz); CHKERRQ(ierr);
+
 	// setup indexing data
 	ierr = DOFIndexCreate(&fs->dof, fs->DA_CEN, fs->DA_X, fs->DA_Y, fs->DA_Z); CHKERRQ(ierr);
 
-	// compute number of local and ghost points
-	nnx = fs->dsx.nnods+2; ncx = fs->dsx.ncels+2;
-	nny = fs->dsy.nnods+2; ncy = fs->dsy.ncels+2;
-	nnz = fs->dsz.nnods+2; ncz = fs->dsz.ncels+2;
-/*
-	fs->nCellsGh = ncx*ncy*ncz;
-	fs->nXFaceGh = nnx*ncy*ncz;
-	fs->nYFaceGh = ncx*nny*ncz;
-	fs->nZFaceGh = ncx*ncy*nnz;
+	// delete temporary arrays
+	ierr = PetscFree(lx); CHKERRQ(ierr);
+	ierr = PetscFree(ly); CHKERRQ(ierr);
+	ierr = PetscFree(lz); CHKERRQ(ierr);
 
-	// compute number of local & ghost DOF
-	fs->numdofGh = fs->nXFaceGh + fs->nYFaceGh + fs->nZFaceGh + fs->nCellsGh;
-*/
+	PetscFunctionReturn(0);
+}
+//---------------------------------------------------------------------------
+#undef __FUNCT__
+#define __FUNCT__ "FDSTAGWriteRestart"
+PetscErrorCode FDSTAGWriteRestart(FDSTAG *fs, FILE *fp)
+{
+	PetscErrorCode ierr;
+	PetscFunctionBegin;
 
-	// get ranks of neighbor processes
-	ierr =  FDSTAGGetNeighbProc(fs); CHKERRQ(ierr);
+	ierr = Discret1DWriteRestart(&fs->dsx, fp); CHKERRQ(ierr);
+	ierr = Discret1DWriteRestart(&fs->dsy, fp); CHKERRQ(ierr);
+	ierr = Discret1DWriteRestart(&fs->dsz, fp); CHKERRQ(ierr);
 
 	PetscFunctionReturn(0);
 }
@@ -1054,11 +976,6 @@ PetscErrorCode FDSTAGDestroy(FDSTAG * fs)
 	ierr = DMDestroy(&fs->DA_Y);       CHKERRQ(ierr);
 	ierr = DMDestroy(&fs->DA_Z);       CHKERRQ(ierr);
 
-	// destroy mesh segment data
-	ierr = MeshSeg1DDestroy(&fs->msx); CHKERRQ(ierr);
-	ierr = MeshSeg1DDestroy(&fs->msy); CHKERRQ(ierr);
-	ierr = MeshSeg1DDestroy(&fs->msz); CHKERRQ(ierr);
-
 	// destroy discretization data
 	ierr = Discret1DDestroy(&fs->dsx); CHKERRQ(ierr);
 	ierr = Discret1DDestroy(&fs->dsy); CHKERRQ(ierr);
@@ -1070,27 +987,65 @@ PetscErrorCode FDSTAGDestroy(FDSTAG * fs)
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-/*
 #undef __FUNCT__
-#define __FUNCT__ "FDSTAGGenCoord"
-PetscErrorCode FDSTAGGenCoord(FDSTAG *fs)
+#define __FUNCT__ "FDSTAGCreateDMDA"
+PetscErrorCode FDSTAGCreateDMDA(FDSTAG *fs,
+	PetscInt  Nx, PetscInt  Ny, PetscInt  Nz,
+	PetscInt  Px, PetscInt  Py, PetscInt  Pz,
+	PetscInt *lx, PetscInt *ly, PetscInt *lz)
 {
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
 
-	// generate mesh segment data
-//	ierr = MeshSeg1DCreate(&fs->msx, usr->x_left,  usr->x_left  + usr->W, usr->nel_x, &usr->mseg_x); CHKERRQ(ierr);
-//	ierr = MeshSeg1DCreate(&fs->msy, usr->y_front, usr->y_front + usr->L, usr->nel_y, &usr->mseg_y); CHKERRQ(ierr);
-//	ierr = MeshSeg1DCreate(&fs->msz, usr->z_bot,   usr->z_bot   + usr->H, usr->nel_z, &usr->mseg_z); CHKERRQ(ierr);
+	// corners (DA_COR) no boundary ghost points (1-layer stencil box)
+	ierr = DMDACreate3dSetUp(PETSC_COMM_WORLD,
+		DM_BOUNDARY_NONE, DM_BOUNDARY_NONE, DM_BOUNDARY_NONE, DMDA_STENCIL_BOX,
+		Nx, Ny, Nz, Px, Py, Pz, 1, 1, lx, ly, lz, &fs->DA_COR); CHKERRQ(ierr);
 
-	// generate coordinates
-	ierr = Discret1DGenCoord(&fs->dsx, &fs->msx); CHKERRQ(ierr);
-	ierr = Discret1DGenCoord(&fs->dsy, &fs->msy); CHKERRQ(ierr);
-	ierr = Discret1DGenCoord(&fs->dsz, &fs->msz); CHKERRQ(ierr);
+	// XY edges (DA_XY) no boundary ghost points (1-layer stencil box)
+	lz[Pz-1]--;
+	ierr = DMDACreate3dSetUp(PETSC_COMM_WORLD,
+		DM_BOUNDARY_NONE, DM_BOUNDARY_NONE, DM_BOUNDARY_NONE, DMDA_STENCIL_BOX,
+		Nx, Ny, Nz-1, Px, Py, Pz, 1, 1, lx, ly, lz, &fs->DA_XY); CHKERRQ(ierr);
+	lz[Pz-1]++;
+
+	// XZ edges (DA_XZ) no boundary ghost points (1-layer stencil box)
+	ly[Py-1]--;
+	ierr = DMDACreate3dSetUp(PETSC_COMM_WORLD,
+		DM_BOUNDARY_NONE, DM_BOUNDARY_NONE, DM_BOUNDARY_NONE, DMDA_STENCIL_BOX,
+		Nx, Ny-1, Nz, Px, Py, Pz, 1, 1, lx, ly, lz, &fs->DA_XZ); CHKERRQ(ierr);
+	ly[Py-1]++;
+
+	// YZ edges (DA_YZ) no boundary ghost points (1-layer stencil box)
+	lx[Px-1]--;
+	ierr = DMDACreate3dSetUp(PETSC_COMM_WORLD,
+		DM_BOUNDARY_NONE, DM_BOUNDARY_NONE, DM_BOUNDARY_NONE, DMDA_STENCIL_BOX,
+		Nx-1, Ny, Nz, Px, Py, Pz, 1, 1, lx, ly, lz, &fs->DA_YZ); CHKERRQ(ierr);
+	lx[Px-1]++;
+
+	// X face (DA_X) with boundary ghost points (1-layer stencil box)
+	ly[Py-1]--; lz[Pz-1]--;
+	ierr = DMDACreate3dSetUp(PETSC_COMM_WORLD,
+		DM_BOUNDARY_GHOSTED, DM_BOUNDARY_GHOSTED, DM_BOUNDARY_GHOSTED, DMDA_STENCIL_BOX,
+		Nx, Ny-1, Nz-1, Px, Py, Pz, 1, 1, lx, ly, lz, &fs->DA_X); CHKERRQ(ierr);
+	ly[Py-1]++; lz[Pz-1]++;
+
+	// Y face (DA_Y) with boundary ghost points (1-layer stencil box)
+	lx[Px-1]--; lz[Pz-1]--;
+	ierr = DMDACreate3dSetUp(PETSC_COMM_WORLD,
+		DM_BOUNDARY_GHOSTED, DM_BOUNDARY_GHOSTED, DM_BOUNDARY_GHOSTED, DMDA_STENCIL_BOX,
+		Nx-1, Ny, Nz-1, Px, Py, Pz, 1, 1, lx, ly, lz, &fs->DA_Y); CHKERRQ(ierr);
+	lx[Px-1]++; lz[Pz-1]++;
+
+	// Z face (DA_Z) with boundary ghost points (1-layer stencil box)
+	lx[Px-1]--; ly[Py-1]--;
+	ierr = DMDACreate3dSetUp(PETSC_COMM_WORLD,
+		DM_BOUNDARY_GHOSTED, DM_BOUNDARY_GHOSTED, DM_BOUNDARY_GHOSTED, DMDA_STENCIL_BOX,
+		Nx-1, Ny-1, Nz, Px, Py, Pz, 1, 1, lx, ly, lz, &fs->DA_Z); CHKERRQ(ierr);
+	lx[Px-1]++; ly[Py-1]++;
 
 	PetscFunctionReturn(0);
 }
-*/
 //---------------------------------------------------------------------------
 #undef __FUNCT__
 #define __FUNCT__ "FDSTAGGetNeighbProc"
@@ -1206,6 +1161,7 @@ PetscErrorCode FDSTAGView(FDSTAG *fs)
 {
 	// print & check essential grid details
 
+	PetscMPIInt nproc;
 	PetscScalar maxAspRat;
 	PetscInt    px, py, pz, cx, cy, cz, nx, ny, nz, nVelDOF, nCells;
 
@@ -1221,13 +1177,17 @@ PetscErrorCode FDSTAGView(FDSTAG *fs)
 
 	ierr = FDSTAGGetAspectRatio(fs, &maxAspRat); CHKERRQ(ierr);
 
+	ierr = MPI_Comm_size(PETSC_COMM_WORLD, &nproc); CHKERRQ(ierr);
+
+	PetscPrintf(PETSC_COMM_WORLD, " Total number of cpu            : %lld \n", (LLD)nproc);
 	PetscPrintf(PETSC_COMM_WORLD, " Processor grid  [nx, ny, nz]   : [%lld, %lld, %lld]\n", (LLD)px, (LLD)py, (LLD)pz);
 	PetscPrintf(PETSC_COMM_WORLD, " Fine grid cells [nx, ny, nz]   : [%lld, %lld, %lld]\n", (LLD)cx, (LLD)cy, (LLD)cz);
 	PetscPrintf(PETSC_COMM_WORLD, " Number of cells                :  %lld\n", (LLD)nCells);
 	PetscPrintf(PETSC_COMM_WORLD, " Number of velocity DOF         :  %lld\n", (LLD)nVelDOF);
 	PetscPrintf(PETSC_COMM_WORLD, " Maximum cell aspect cell ratio :  %7.5f\n", maxAspRat);
 
-	if(maxAspRat > 1e100) PetscPrintf(PETSC_COMM_WORLD, " hmm... sorry if it bothers anyone, but IMHO the aspect ratio is a bit too large ...\n");
+	if(maxAspRat > 10.0) PetscPrintf(PETSC_COMM_WORLD, " Don't expect any magic with this aspect ratio %g ...\n", maxAspRat);
+	if(maxAspRat > 30.0) SETERRQ1(PETSC_COMM_WORLD, PETSC_ERR_USER, " Everything has a limit, reduce this aspect ratio: %g ...\n", maxAspRat);
 
 	PetscFunctionReturn(0);
 }
@@ -1269,29 +1229,32 @@ PetscErrorCode FDSTAGGetGlobalBox(
 {
 	PetscFunctionBegin;
 
-	if(bx) (*bx) = fs->msx.xstart[0];
-	if(by) (*by) = fs->msy.xstart[0];
-	if(bz) (*bz) = fs->msz.xstart[0];
+	if(bx) (*bx) = fs->dsx.crdbeg;
+	if(by) (*by) = fs->dsy.crdbeg;
+	if(bz) (*bz) = fs->dsz.crdbeg;
 
-	if(ex) (*ex) = fs->msx.xstart[fs->msx.nsegs];
-	if(ey) (*ey) = fs->msy.xstart[fs->msy.nsegs];
-	if(ez) (*ez) = fs->msz.xstart[fs->msz.nsegs];
+	if(ex) (*ex) = fs->dsx.crdend;
+	if(ey) (*ey) = fs->dsy.crdend;
+	if(ez) (*ez) = fs->dsz.crdend;
 
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
 #undef __FUNCT__
-#define __FUNCT__ "FDSTAGProcPartitioning"
-PetscErrorCode FDSTAGProcPartitioning(FDSTAG *fs, PetscScalar chLen)
+#define __FUNCT__ "FDSTAGSaveGrid"
+PetscErrorCode FDSTAGSaveGrid(FDSTAG *fs)
 {
 	int         fid;
 	char        *fname;
-	PetscScalar *xc, *yc, *zc;
+	PetscScalar *xc, *yc, *zc, chLen;
 	PetscMPIInt rank;
 	PetscErrorCode ierr;
 	
 	PetscFunctionBegin;
     
+	// characteristic length
+	chLen = fs->scal->length;
+
 	MPI_Comm_rank(PETSC_COMM_WORLD, &rank);
     
 	PetscPrintf(PETSC_COMM_WORLD,"# Save processor partitioning \n");

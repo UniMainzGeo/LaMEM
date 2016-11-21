@@ -45,9 +45,9 @@
 //---------------------------------------------------------------------------
 #include "LaMEM.h"
 #include "parsing.h"
-#include "fdstag.h"
 #include "solVar.h"
 #include "scaling.h"
+#include "fdstag.h"
 #include "tssolve.h"
 #include "bc.h"
 #include "JacRes.h"
@@ -384,8 +384,9 @@ PetscErrorCode PVOutClear(PVOut *pvout)
 //---------------------------------------------------------------------------
 #undef __FUNCT__
 #define __FUNCT__ "PVOutCreate"
-PetscErrorCode PVOutCreate(PVOut *pvout, JacRes *jr, const char *filename)
+PetscErrorCode PVOutCreate(PVOut *pvout, const char *filename)
 {
+	JacRes   *jr;
 	Scaling  *scal;
 	OutMask  *omask;
 	OutVec   *outvecs;
@@ -394,6 +395,7 @@ PetscErrorCode PVOutCreate(PVOut *pvout, JacRes *jr, const char *filename)
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
 
+	jr   = pvout->jr;
 	scal = jr->scal;
 
 	// set file name
@@ -544,7 +546,7 @@ PetscErrorCode PVOutDestroy(PVOut *pvout)
 //---------------------------------------------------------------------------
 #undef __FUNCT__
 #define __FUNCT__ "PVOutWriteTimeStep"
-PetscErrorCode PVOutWriteTimeStep(PVOut *pvout, JacRes *jr, const char *dirName, PetscScalar ttime, PetscInt tindx)
+PetscErrorCode PVOutWriteTimeStep(PVOut *pvout, const char *dirName, PetscScalar ttime, PetscInt tindx)
 {
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
@@ -559,7 +561,7 @@ PetscErrorCode PVOutWriteTimeStep(PVOut *pvout, JacRes *jr, const char *dirName,
 	ierr = PVOutWritePVTR(pvout, dirName); CHKERRQ(ierr);
 
 	// write sub-domain data .vtr files
-	ierr = PVOutWriteVTR(pvout, jr, dirName); CHKERRQ(ierr);
+	ierr = PVOutWriteVTR(pvout, dirName); CHKERRQ(ierr);
 
 	PetscFunctionReturn(0);
 }
@@ -646,10 +648,11 @@ PetscErrorCode PVOutWritePVTR(PVOut *pvout, const char *dirName)
 //---------------------------------------------------------------------------
 #undef __FUNCT__
 #define __FUNCT__ "PVOutWriteVTR"
-PetscErrorCode PVOutWriteVTR(PVOut *pvout, JacRes *jr, const char *dirName)
+PetscErrorCode PVOutWriteVTR(PVOut *pvout, const char *dirName)
 {
 	FILE          *fp;
 	FDSTAG        *fs;
+	JacRes        *jr;
 	char          *fname;
 	OutBuf        *outbuf;
 	OutVec        *outvecs;
@@ -665,7 +668,8 @@ PetscErrorCode PVOutWriteVTR(PVOut *pvout, JacRes *jr, const char *dirName)
 
 	// access output buffer object & staggered grid layout
 	outbuf = &pvout->outbuf;
-	fs     = outbuf->fs;
+	fs     =  outbuf->fs;
+	jr     =  pvout->jr;
 
 	// get sizes of output grid
 	GET_OUTPUT_RANGE(rx, nx, sx, fs->dsx)

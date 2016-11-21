@@ -45,10 +45,10 @@
 //---------------------------------------------------------------------------
 #include "LaMEM.h"
 #include "parsing.h"
-#include "fdstag.h"
-#include "solVar.h"
 #include "scaling.h"
 #include "tssolve.h"
+#include "fdstag.h"
+#include "solVar.h"
 #include "bc.h"
 #include "tools.h"
 //---------------------------------------------------------------------------
@@ -1377,9 +1377,9 @@ PetscErrorCode BCStretchGrid(BCCtx *bc)
 	ierr = BCGetBGStrainRates(bc, &Exx, &Eyy, &Ezz); CHKERRQ(ierr);
 
 	// stretch grid
-	if(Exx) { ierr = Discret1DStretch(&fs->dsx, &fs->msx, Exx*ts->dt); CHKERRQ(ierr); }
-	if(Eyy) { ierr = Discret1DStretch(&fs->dsy, &fs->msy, Eyy*ts->dt); CHKERRQ(ierr); }
-	if(Ezz) { ierr = Discret1DStretch(&fs->dsz, &fs->msz, Ezz*ts->dt); CHKERRQ(ierr); }
+	if(Exx) { ierr = Discret1DStretch(&fs->dsx, Exx*ts->dt); CHKERRQ(ierr); }
+	if(Eyy) { ierr = Discret1DStretch(&fs->dsy, Eyy*ts->dt); CHKERRQ(ierr); }
+	if(Ezz) { ierr = Discret1DStretch(&fs->dsz, Ezz*ts->dt); CHKERRQ(ierr); }
 
 	PetscFunctionReturn(0);
 }
