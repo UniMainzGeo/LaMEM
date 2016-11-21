@@ -52,69 +52,41 @@
 #include "bc.h"
 #include "tools.h"
 //---------------------------------------------------------------------------
-// * replace BC input specification consistently in the entire code
 // * open box & Winkler (with tangential viscous friction)
 // * tangential velocities
-// * extend two-point constraint specification & (possibly) get rid bc-vectors
-// * create bc-object only at fine level, coarse levels should have simple access
+// * extend two-point constraint specification
+//---------------------------------------------------------------------------
+// Bezier block functions
 //---------------------------------------------------------------------------
 #undef __FUNCT__
-#define __FUNCT__ "BCBlockReadFromOptions"
-PetscErrorCode BCBlockReadFromOptions(BCBlock *bcb, Scaling *scal)
+#define __FUNCT__ "BCBlockCreate"
+PetscErrorCode BCBlockCreate(BCBlock *bcb, Scaling *scal, FB *fb)
 {
-	//	-bcb_npath - Number of path points of Bezier curve (end-points only!)
-	//	-bcb_theta - Orientation angles at path points (counter-clockwise positive)
-	//	-bcb_time  - Times at path points
-	//	-bcb_path  - Bezier curve path & control points (6*npath-4 points are expected)
-	//	-bcb_npoly - Number of polygon vertices
-	//	-bcb_poly  - Polygon x-y coordinates at initial time
-	//	-bcb_bot   - Polygon bottom coordinate
-	//	-bcb_top   - Polygon top coordinate
+	//	-npath - Number of path points of Bezier curve (end-points only!)
+	//	-theta - Orientation angles at path points (counter-clockwise positive)
+	//	-time  - Times at path points
+	//	-path  - Bezier curve path & control points (6*npath-4 points are expected)
+	//	-npoly - Number of polygon vertices
+	//	-poly  - Polygon x-y coordinates at initial time
+	//	-bot   - Polygon bottom coordinate
+	//	-top   - Polygon top coordinate
 
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
 
-	//==================
-	// Bezier path curve
-	//==================
-/*
-	ierr = GetIntDataItemCheck("-bcb_npath", "Number of path points of Bezier curve",
-		_NOT_FOUND_EXIT_, 1, &bcb->npath, 1, _max_path_points_); CHKERRQ(ierr);
+	bcb->npath = 2;
+	bcb->npoly = 4;
 
-	if(bcb->npath)
-	{
-		// angles
-		ierr = GetScalDataItemCheckScale("-bcb_theta", "Orientation angles at path points",
-			_NOT_FOUND_ERROR_, bcb->npath, bcb->theta, 0.0, 0.0, scal->angle); CHKERRQ(ierr);
+	ierr = getIntParam   (fb, _OPTIONAL_, "npath", &bcb->npath, 1,              _max_path_points_); CHKERRQ(ierr);
+	ierr = getScalarParam(fb, _OPTIONAL_, "theta",  bcb->theta, bcb->npath,      scal->angle     ); CHKERRQ(ierr);
+	ierr = getScalarParam(fb, _REQUIRED_, "time",   bcb->time,  bcb->npath,      scal->time      ); CHKERRQ(ierr);
+	ierr = getScalarParam(fb, _REQUIRED_, "path",   bcb->path,  6*bcb->npath-4,  scal->length    ); CHKERRQ(ierr);
 
-		// times
-		ierr = GetScalDataItemCheckScale("-bcb_time", "Times at path points",
-			_NOT_FOUND_ERROR_, bcb->npath, bcb->time, 0.0, 0.0, scal->time); CHKERRQ(ierr);
+	ierr = getIntParam   (fb, _OPTIONAL_, "npoly", &bcb->npoly, 1,              _max_poly_points_); CHKERRQ(ierr);
+	ierr = getScalarParam(fb, _REQUIRED_, "poly ",  bcb->poly,  2*bcb->npoly,    scal->length    ); CHKERRQ(ierr);
+	ierr = getScalarParam(fb, _REQUIRED_, "bot",   &bcb->bot,   1,               scal->length    ); CHKERRQ(ierr);
+	ierr = getScalarParam(fb, _REQUIRED_, "top",   &bcb->top,   1,               scal->length    ); CHKERRQ(ierr);
 
-		// path coordinates
-		ierr = GetScalDataItemCheckScale("-bcb_path", "Bezier curve path & control points",
-			_NOT_FOUND_ERROR_, 6*bcb->npath-4, bcb->path, 0.0, 0.0, scal->length); CHKERRQ(ierr);
-
-		//========
-		// polygon
-		//========
-
-		ierr = GetIntDataItemCheck("-bcb_npoly", "Number of polygon vertices",
-			_NOT_FOUND_EXIT_, 1, &bcb->npoly, 1, _max_poly_points_); CHKERRQ(ierr);
-
-		// polygon coordinates
-		ierr = GetScalDataItemCheckScale("-bcb_poly", "Polygon coordinates",
-			_NOT_FOUND_ERROR_, 2*bcb->npoly, bcb->poly, 0.0, 0.0, scal->length); CHKERRQ(ierr);
-
-		// polygon bottom
-		ierr = GetScalDataItemCheckScale("-bcb_bot", "Polygon bottom coordinate",
-			_NOT_FOUND_ERROR_, 1, &bcb->bot, 0.0, 0.0, scal->length); CHKERRQ(ierr);
-
-		// polygon top
-		ierr = GetScalDataItemCheckScale("-bcb_top", "Polygon top coordinate",
-			_NOT_FOUND_ERROR_, 1, &bcb->top, 0.0, 0.0, scal->length); CHKERRQ(ierr);
-	}
-*/
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
@@ -196,292 +168,11 @@ PetscErrorCode BCBlockGetPolygon(BCBlock *bcb, PetscScalar Xb[], PetscScalar *cp
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "BCApplyBezier"
-PetscErrorCode BCApplyBezier(BCCtx *bc)
-{
-	FDSTAG      *fs;
-	BCBlock     *bcb;
-	PetscInt    fbeg, fend, npoly, in;
-	PetscInt    i, j, k, nx, ny, nz, sx, sy, sz, iter, ib;
-	PetscScalar ***bcvx,  ***bcvy, *SPCVals;
-	PetscScalar t, dt, theta, costh, sinth, atol, bot, top, vel;
-	PetscScalar Xbeg[3], Xend[3], xbeg[3], xend[3], box[4], cpoly[2*_max_poly_points_];
-
-	PetscErrorCode ierr;
-	PetscFunctionBegin;
-
-	// check whether bezier is applied
-	if(bc->AddBezier != PETSC_TRUE) PetscFunctionReturn(0);
-
-	// access context
-	fs    =  bc->fs;
-	t     =  bc->ts->time;
-	dt    =  bc->ts->dt;
-
-	// access velocity constraint vectors
-	ierr = DMDAVecGetArray(fs->DA_X, bc->bcvx, &bcvx); CHKERRQ(ierr);
-	ierr = DMDAVecGetArray(fs->DA_Y, bc->bcvy, &bcvy); CHKERRQ(ierr);
-
-	// access constraint arrays
-	SPCVals = bc->SPCVals;
-
-	// loop over all bezier blocks
-	for(ib = 0; ib < bc->nblo; ib++)
-	{
-		bcb   = &bc->blocks[ib];
-		bot   =  bcb->bot;
-		top   =  bcb->top;
-		npoly =  bcb->npoly;
-
-		// get polygon positions in the beginning & end of the time step
-		ierr = BCBlockGetPosition(bcb, t,    &fbeg, Xbeg); CHKERRQ(ierr);
-		ierr = BCBlockGetPosition(bcb, t+dt, &fend, Xend); CHKERRQ(ierr);
-
-		// check whether constraint applies to the current time step
-		if(!fbeg || !fend) continue;
-
-		// print bezier block overview
-		PetscPrintf(PETSC_COMM_WORLD,"Bezier block[%d]: npath = %d, npoly = %d\n",ib, bcb->npath, bcb->npoly);
-
-		// get current polygon geometry
-		ierr = BCBlockGetPolygon(bcb, Xbeg, cpoly);
-
-		// get bounding box
-		polygon_box(&npoly, cpoly, 1e-12, &atol, box);
-
-		// get time step rotation matrix
-		theta = Xend[2] - Xbeg[2];
-		costh = cos(theta);
-		sinth = sin(theta);
-
-		iter = 0;
-
-		//---------
-		// X points
-		//---------
-		GET_NODE_RANGE(nx, sx, fs->dsx)
-		GET_CELL_RANGE(ny, sy, fs->dsy)
-		GET_CELL_RANGE(nz, sz, fs->dsz)
-
-		START_STD_LOOP
-		{
-			// get node coordinates in the beginning of time step
-			xbeg[0] = COORD_NODE(i, sx, fs->dsx);
-			xbeg[1] = COORD_CELL(j, sy, fs->dsy);
-			xbeg[2] = COORD_CELL(k, sz, fs->dsz);
-
-			// perform point test
-			if(xbeg[2] >= bot && xbeg[2] <= top)
-			{
-				in_polygon(1, xbeg, npoly, cpoly, box, atol, &in);
-
-				// check whether point is inside polygon
-				if(in)
-				{
-					// compute point position in the end of time step
-					RotDispPoint2D(Xbeg, Xend, costh, sinth, xbeg, xend);
-
-					// compute & set x-velocity
-					vel = (xend[0] - xbeg[0])/dt;
-
-					bcvx[k][j][i] = vel;
-					SPCVals[iter] = vel;
-				}
-			}
-			iter++;
-		}
-		END_STD_LOOP
-
-		//---------
-		// Y points
-		//---------
-		GET_CELL_RANGE(nx, sx, fs->dsx)
-		GET_NODE_RANGE(ny, sy, fs->dsy)
-		GET_CELL_RANGE(nz, sz, fs->dsz)
-
-		START_STD_LOOP
-		{
-			// get node coordinates in the beginning of time step
-			xbeg[0] = COORD_CELL(i, sx, fs->dsx);
-			xbeg[1] = COORD_NODE(j, sy, fs->dsy);
-			xbeg[2] = COORD_CELL(k, sz, fs->dsz);
-
-			// perform point test
-			if(xbeg[2] >= bot && xbeg[2] <= top)
-			{
-				in_polygon(1, xbeg, npoly, cpoly, box, atol, &in);
-
-				// check whether point is inside polygon
-				if(in)
-				{
-					// compute point position in the end of time step
-					RotDispPoint2D(Xbeg, Xend, costh, sinth, xbeg, xend);
-
-					// compute & set y-velocity
-					vel = (xend[1] - xbeg[1])/dt;
-
-					bcvy[k][j][i] = vel;
-					SPCVals[iter] = vel;
-				}
-			}
-			iter++;
-		}
-		END_STD_LOOP
-	}
-	// restore access
-	ierr = DMDAVecRestoreArray(fs->DA_X, bc->bcvx, &bcvx); CHKERRQ(ierr);
-	ierr = DMDAVecRestoreArray(fs->DA_Y, bc->bcvy, &bcvy); CHKERRQ(ierr);
-
-	PetscFunctionReturn(0);
-}
+// Dropping boxes functions
 //---------------------------------------------------------------------------
 #undef __FUNCT__
-#define __FUNCT__ "BCSetupBoundVel"
-PetscErrorCode BCSetupBoundVel(BCCtx *bc, PetscScalar top)
-{
-	PetscScalar bz;
-
-	PetscErrorCode ierr;
-	PetscFunctionBegin;
-
-	// set plate top
-	bc->top = top;
-
-	ierr = FDSTAGGetGlobalBox(bc->fs, NULL, NULL, &bz, NULL, NULL, NULL); CHKERRQ(ierr);
-
-	// compute outflow velocity
-	bc->velout = -bc->velin*(bc->top - bc->bot)/(bc->bot - bz);
-
-	PetscFunctionReturn(0);
-}
-//---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "BCApplyBoundVel"
-PetscErrorCode BCApplyBoundVel(BCCtx *bc)
-{
-	FDSTAG      *fs;
-	PetscInt    mnx, mny;
-	PetscInt    i, j, k, nx, ny, nz, sx, sy, sz, iter;
-	PetscScalar ***bcvx,  ***bcvy, *SPCVals;
-	PetscScalar z, bot, top, vel, velin, velout;
-
-	PetscErrorCode ierr;
-	PetscFunctionBegin;
-
-	// check whether constraint is activated
-	if(!bc->face) PetscFunctionReturn(0);
-
-	// access context
-	fs     = bc->fs;
-	bot    = bc->bot;
-	top    = bc->top;
-	velin  = bc->velin;
-	velout = bc->velout;
-
-	// initialize maximal index in all directions
-	mnx = fs->dsx.tnods - 1;
-	mny = fs->dsy.tnods - 1;
-
-	// access velocity constraint vectors
-	ierr = DMDAVecGetArray(fs->DA_X, bc->bcvx, &bcvx); CHKERRQ(ierr);
-	ierr = DMDAVecGetArray(fs->DA_Y, bc->bcvy, &bcvy); CHKERRQ(ierr);
-
-	// access constraint arrays
-	SPCVals = bc->SPCVals;
-
-	iter = 0;
-
-	//---------
-	// X points
-	//---------
-	GET_NODE_RANGE(nx, sx, fs->dsx)
-	GET_CELL_RANGE(ny, sy, fs->dsy)
-	GET_CELL_RANGE(nz, sz, fs->dsz)
-
-	if(bc->face == 1 || bc->face == 2)
-	{
-		START_STD_LOOP
-		{
-			z   = COORD_CELL(k, sz, fs->dsz);
-			vel = 0.0;
-			if(z <= top && z >= bot) vel = velin;
-			if(z < bot)              vel = velout;
-
-			if(bc->face == 1 && i == 0)   { bcvx[k][j][i] = vel; SPCVals[iter] = vel; }
-			if(bc->face == 2 && i == mnx) { bcvx[k][j][i] = vel; SPCVals[iter] = vel; }
-			iter++;
-		}
-		END_STD_LOOP
-	}
-
-	//---------
-	// Y points
-	//---------
-	GET_CELL_RANGE(nx, sx, fs->dsx)
-	GET_NODE_RANGE(ny, sy, fs->dsy)
-	GET_CELL_RANGE(nz, sz, fs->dsz)
-
-	if(bc->face == 3 || bc->face == 4)
-	{
-		START_STD_LOOP
-		{
-			z   = COORD_CELL(k, sz, fs->dsz);
-			vel = 0.0;
-			if(z <= top && z >= bot) vel = velin;
-			if(z < bot)              vel = velout;
-
-			if(bc->face == 3 && j == 0)   { bcvy[k][j][i] = vel; SPCVals[iter] = vel; }
-			if(bc->face == 4 && j == mny) { bcvy[k][j][i] = vel; SPCVals[iter] = vel; }
-			iter++;
-		}
-		END_STD_LOOP
-	}
-
-	// restore access
-	ierr = DMDAVecRestoreArray(fs->DA_X, bc->bcvx, &bcvx); CHKERRQ(ierr);
-	ierr = DMDAVecRestoreArray(fs->DA_Y, bc->bcvy, &bcvy); CHKERRQ(ierr);
-
-	PetscFunctionReturn(0);
-}
-//---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "BCOverridePhase"
-PetscErrorCode BCOverridePhase(BCCtx *bc, PetscInt cellID, Marker *P)
-{
-	FDSTAG     *fs;
-	PetscInt    i, j, k, M, N, mx, my, sx, sy;
-	PetscScalar z;
-
-	PetscFunctionBegin;
-
-	fs = bc->fs;
-	M  = fs->dsx.ncels;
-	N  = fs->dsy.ncels;
-	sx = fs->dsx.pstart;
-	sy = fs->dsy.pstart;
-	mx = fs->dsx.tcels-1;
-	my = fs->dsy.tcels-1;
-	z  = P->X[2];
-
-	// expand i, j, k cell indices
-	GET_CELL_IJK(cellID, i, j, k, M, N);
-
-	if(((bc->face == 1 && i + sx == 0)
-	||  (bc->face == 2 && i + sx == mx)
-	||  (bc->face == 3 && j + sy == 0)
-	||  (bc->face == 4 && j + sy == my))
-	&&  (z >= bc->bot && z <= bc->top))
-	{
-		P->phase = bc->phase;
-	}
-
-	PetscFunctionReturn(0);
-}
-//---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "DBoxReadFromOptions"
-PetscErrorCode DBoxReadFromOptions(DBox *dbox, Scaling *scal)
+#define __FUNCT__ "DBoxReadCreate"
+PetscErrorCode DBoxReadCreate(DBox *dbox, Scaling *scal, FB *fb)
 {
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
@@ -489,300 +180,62 @@ PetscErrorCode DBoxReadFromOptions(DBox *dbox, Scaling *scal)
 	//========================
 	// Dropping box parameters
 	//========================
-/*
-	ierr = GetIntDataItemCheck("-dbox_num", "Number of dropping boxes",
-		_NOT_FOUND_EXIT_, 1, &dbox->num, 1, _max_boxes_); CHKERRQ(ierr);
+
+	ierr = getIntParam (fb, _OPTIONAL_, "dbox_num", &dbox->num, 1, _max_boxes_); CHKERRQ(ierr);
 
 	if(dbox->num)
 	{
-		// boundaries
-		ierr = GetScalDataItemCheckScale("-dbox_bounds", "Dropping box boundaries",
-			_NOT_FOUND_ERROR_, 6*dbox->num, dbox->bounds, 0.0, 0.0, scal->length); CHKERRQ(ierr);
-
-		// vertical velocity
-		ierr = GetScalDataItemCheckScale("-dbox_zvel", "Dropping box vertical velocity",
-			_NOT_FOUND_ERROR_, 1, &dbox->zvel, 0.0, 0.0, scal->velocity); CHKERRQ(ierr);
+		ierr = getScalarParam(fb, _REQUIRED_, "dbox_bounds",  dbox->bounds, 6*dbox->num, scal->time);     CHKERRQ(ierr);
+		ierr = getScalarParam(fb, _REQUIRED_, "dbox_zvel",   &dbox->zvel,   1,           scal->velocity); CHKERRQ(ierr);
 
 	}
-*/
-	PetscFunctionReturn(0);
-}
-//---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "BCApplyDBox"
-PetscErrorCode BCApplyDBox(BCCtx *bc)
-{
-	DBox        *dbox;
-	FDSTAG      *fs;
-	PetscInt    jj, i, j, k, nx, ny, nz, sx, sy, sz, iter;
-	PetscScalar ***bcvz, *SPCVals, bounds[6*_max_boxes_], *pbounds;
-	PetscScalar x, y, z, t, vz;
-
-	PetscErrorCode ierr;
-	PetscFunctionBegin;
-
-	// access context
-	fs   = bc->fs;
-	dbox = &bc->dbox;
-
-	// check whether dropping box is activated
-	if(!dbox->num) PetscFunctionReturn(0);
-
-	// copy original coordinates
-	ierr = PetscMemcpy(bounds, dbox->bounds, (size_t)(6*dbox->num)*sizeof(PetscScalar)); CHKERRQ(ierr);
-
-	// integrate box positions
-	t  = bc->ts->time;
-	vz = dbox->zvel;
-
-	for(jj = 0; jj < dbox->num; jj++)
-	{
-		pbounds     = bounds + 6*jj;
-		pbounds[4] += t*vz;
-		pbounds[5] += t*vz;
-	}
-
-	// access velocity constraint vectors
-	ierr = DMDAVecGetArray(fs->DA_Z, bc->bcvz, &bcvz); CHKERRQ(ierr);
-
-	// access constraint arrays
-	SPCVals = bc->SPCVals;
-
-	//---------
-	// Z points
-	//---------
-	GET_CELL_RANGE(nx, sx, fs->dsx)
-	GET_CELL_RANGE(ny, sy, fs->dsy)
-	GET_NODE_RANGE(nz, sz, fs->dsz)
-
-	iter = fs->nXFace + fs->nYFace;
-
-	START_STD_LOOP
-	{
-		// get node coordinates
-		x = COORD_CELL(i, sx, fs->dsx);
-		y = COORD_CELL(j, sy, fs->dsy);
-		z = COORD_NODE(k, sz, fs->dsz);
-
-		// check whether node is inside any of boxes
-		for(jj = 0; jj < dbox->num; jj++)
-		{
-			pbounds = bounds + 6*jj;
-
-			if(x >= pbounds[0] && x <= pbounds[1]
-			&& y >= pbounds[2] && y <= pbounds[3]
-			&& z >= pbounds[4] && z <= pbounds[5])
-			{
-				bcvz[k][j][i] = vz;
-				SPCVals[iter] = vz;
-				break;
-			}
-		}
-		iter++;
-	}
-	END_STD_LOOP
-
-	// restore access
-	ierr = DMDAVecRestoreArray(fs->DA_Z, bc->bcvz, &bcvz); CHKERRQ(ierr);
 
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "BCApplySimpleShearVel"
-PetscErrorCode BCApplySimpleShearVel(BCCtx *bc)
-{
-	FDSTAG      *fs;
-	PetscInt    mnx, mny;
-	PetscInt    i, j, k, nx, ny, nz, sx, sy, sz, iter;
-	PetscScalar ***bcvx,  ***bcvy, *SPCVals;
-	PetscScalar z, gamma_xz, vel;
-
-	/* This routine sets simple shear velocities, such that we have
-	 * constant shear rate gamma.
-	 * This will imply inflow/outflow
-	 *
-	 */
-
-	PetscErrorCode ierr;
-	PetscFunctionBegin;
-
-	// check whether constraint is activated
-	if(!bc->simpleshear) PetscFunctionReturn(0);
-
-	// access context
-	fs     		= bc->fs;
-	gamma_xz    = bc->gamma_xz;
-
-	// initialize maximal index in all directions
-	mnx = fs->dsx.tnods - 1;
-	mny = fs->dsy.tnods - 1;
-
-	// access velocity constraint vectors
-	ierr = DMDAVecGetArray(fs->DA_X, bc->bcvx, &bcvx); CHKERRQ(ierr);
-	ierr = DMDAVecGetArray(fs->DA_Y, bc->bcvy, &bcvy); CHKERRQ(ierr);
-
-	// access constraint arrays
-	SPCVals = bc->SPCVals;
-
-	iter = 0;
-
-	//---------
-	// X points
-	//---------
-	GET_NODE_RANGE(nx, sx, fs->dsx)
-	GET_CELL_RANGE(ny, sy, fs->dsy)
-	GET_CELL_RANGE(nz, sz, fs->dsz)
-
-	START_STD_LOOP
-	{
-		z   = COORD_CELL(k, sz, fs->dsz);
-		vel = gamma_xz*z;
-
-		if(i == 0)   { bcvx[k][j][i] = vel; SPCVals[iter] = vel; }
-		if(i == mnx) { bcvx[k][j][i] = vel; SPCVals[iter] = vel; }
-		iter++;
-	}
-	END_STD_LOOP
-
-	//---------
-	// Y points
-	//---------
-	GET_CELL_RANGE(nx, sx, fs->dsx)
-	GET_NODE_RANGE(ny, sy, fs->dsy)
-	GET_CELL_RANGE(nz, sz, fs->dsz)
-
-	START_STD_LOOP
-	{
-		z   = COORD_CELL(k, sz, fs->dsz);
-		vel = 0.0;
-		if(j == 0)   { bcvy[k][j][i] = vel; SPCVals[iter] = vel; }
-		if(j == mny) { bcvy[k][j][i] = vel; SPCVals[iter] = vel; }
-		iter++;
-	}
-	END_STD_LOOP
-
-	// restore access
-	ierr = DMDAVecRestoreArray(fs->DA_X, bc->bcvx, &bcvx); CHKERRQ(ierr);
-	ierr = DMDAVecRestoreArray(fs->DA_Y, bc->bcvy, &bcvy); CHKERRQ(ierr);
-
-	PetscFunctionReturn(0);
-}
-//---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "BCClear"
-PetscErrorCode BCClear(BCCtx *bc)
-{
-	PetscErrorCode ierr;
-	PetscFunctionBegin;
-
-	// clear object
-	ierr = PetscMemzero(bc, sizeof(BCCtx)); CHKERRQ(ierr);
-
-	PetscFunctionReturn(0);
-}
+// BCCtx functions
 //---------------------------------------------------------------------------
 #undef __FUNCT__
 #define __FUNCT__ "BCCreate"
-PetscErrorCode BCCreate(BCCtx *bc, FDSTAG *fs, TSSol *ts, Scaling *scal)
+PetscErrorCode BCCreate(BCCtx *bc, FB *fb)
 {
-	PetscErrorCode ierr;
-	PetscFunctionBegin;
 
-	// create boundary conditions vectors (velocity, pressure, temperature)
-	ierr = DMCreateLocalVector(fs->DA_X,   &bc->bcvx);  CHKERRQ(ierr);
-	ierr = DMCreateLocalVector(fs->DA_Y,   &bc->bcvy);  CHKERRQ(ierr);
-	ierr = DMCreateLocalVector(fs->DA_Z,   &bc->bcvz);  CHKERRQ(ierr);
-	ierr = DMCreateLocalVector(fs->DA_CEN, &bc->bcp);   CHKERRQ(ierr);
-	ierr = DMCreateLocalVector(fs->DA_CEN, &bc->bcT);   CHKERRQ(ierr);
-
-	// SPC velocity-pressure
-	ierr = makeIntArray (&bc->SPCList, NULL, fs->dof.ln);   CHKERRQ(ierr);
-	ierr = makeScalArray(&bc->SPCVals, NULL, fs->dof.ln);   CHKERRQ(ierr);
-
-	// SPC (temperature)
-	ierr = makeIntArray (&bc->tSPCList, NULL, fs->dof.lnp); CHKERRQ(ierr);
-	ierr = makeScalArray(&bc->tSPCVals, NULL, fs->dof.lnp); CHKERRQ(ierr);
-
-	bc->ExxAct = PETSC_FALSE;
-	bc->EyyAct = PETSC_FALSE;
-//	bc->pbAct  = PETSC_FALSE;
-
-	bc->fs   = fs;
-	bc->ts   = ts;
-	bc->scal = scal;
-
-	PetscFunctionReturn(0);
-}
-//---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "BCDestroy"
-PetscErrorCode BCDestroy(BCCtx *bc)
-{
-	PetscErrorCode ierr;
-	PetscFunctionBegin;
-
-	// destroy boundary conditions vectors (velocity, pressure, temperature)
-	ierr = VecDestroy(&bc->bcvx); CHKERRQ(ierr);
-	ierr = VecDestroy(&bc->bcvy); CHKERRQ(ierr);
-	ierr = VecDestroy(&bc->bcvz); CHKERRQ(ierr);
-	ierr = VecDestroy(&bc->bcp);  CHKERRQ(ierr);
-	ierr = VecDestroy(&bc->bcT);  CHKERRQ(ierr);
-
-	// SPC velocity-pressure
-	ierr = PetscFree(bc->SPCList);  CHKERRQ(ierr);
-	ierr = PetscFree(bc->SPCVals);  CHKERRQ(ierr);
-
-	// SPC temperature
-	ierr = PetscFree(bc->tSPCList); CHKERRQ(ierr);
-	ierr = PetscFree(bc->tSPCVals); CHKERRQ(ierr);
-
-	// two-point constraints
-//	ierr = PetscFree(bc->TPCList);      CHKERRQ(ierr);
-//	ierr = PetscFree(bc->TPCPrimeDOF);  CHKERRQ(ierr);
-//	ierr = PetscFree(bc->TPCVals);      CHKERRQ(ierr);
-//	ierr = PetscFree(bc->TPCLinComPar); CHKERRQ(ierr);
-
-	PetscFunctionReturn(0);
-}
-//---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "BCSetParam"
-PetscErrorCode BCSetParam(BCCtx *bc)
-{
-	PetscFunctionBegin;
-/*
-	bc->Tbot  = user->Temp_bottom;
-	bc->Ttop  = user->Temp_top;
-
-	if(user->AddBezier)
-	{
-		bc->AddBezier = PETSC_TRUE;
-		bc->blocks = user->blocks;
-		bc->nblo   = user->nblo;
-	}
-	else
-		bc->AddBezier = PETSC_FALSE;
-*/
-	PetscFunctionReturn(0);
-}
-//---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "BCReadFromOptions"
-PetscErrorCode BCReadFromOptions(BCCtx *bc)
-{
-	// set parameters from PETSc options
-
-	PetscBool  set;
-	Scaling   *scal;
+	Scaling  *scal;
+	PetscInt  jj;
 
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
 
 	scal = bc->scal;
 
-	// x-direction background strain rate
 /*
+	// read from options
+	ierr = getIntParam   (fb, _OPTIONAL_, "ExxNum",     &bc->ExxNum,    1,             1,    nmax                         ); CHKERRQ(ierr);
+	ierr = getScalarParam(fb, _REQUIRED_, "ExxTime",     bc->ExxTime,   bc->ExxNum-1,  1e-8, 1e8,   scal->time            ); CHKERRQ(ierr);
+	ierr = getScalarParam(fb, _REQUIRED_, "ExxRate",     bc->ExxRate,   bc->ExxNum,   -1e8,  1e8,   scal->strain_rate     ); CHKERRQ(ierr);
+	ierr = getIntParam   (fb, _OPTIONAL_, "EyyNum",     &bc->EyyNum,    1,             1,    nmax                         ); CHKERRQ(ierr);
+	ierr = getScalarParam(fb, _REQUIRED_, "EyyTime",     bc->EyyTime,   bc->EyyNum-1,  1e-8, 1e8,   scal->time            ); CHKERRQ(ierr);
+	ierr = getScalarParam(fb, _REQUIRED_, "EyyRate",     bc->EyyRate,   bc->EyyNum,   -1e8,  1e8,   scal->strain_rate     ); CHKERRQ(ierr);
+	ierr = getScalarParam(fb, _OPTIONAL_, "temp_top",   &bc->Tbot,      1,             0.0,  2e3,   1.0                   ); CHKERRQ(ierr);
+	ierr = getScalarParam(fb, _OPTIONAL_, "temp_top",   &bc->Ttop,      1,             0.0,  2e3,   1.0                   ); CHKERRQ(ierr);
+
+	// set flags
+	if(pb->num)    bc->pbAct  = PETSC_TRUE;
+	if(bc->ExxNum) bc->ExxAct = PETSC_TRUE;
+	if(bc->EyyNum) bc->EyyAct = PETSC_TRUE;
+
+	// nondimensionalize temperature
+	bc->Ttop = (bc->Ttop + scal->Tshift)/scal->temperature;
+	bc->Tbot = (bc->Tbot + scal->Tshift)/scal->temperature;
+
+	ierr = BCCreateData(bc); CHKERRQ(ierr);
+
+ */
+
+
+/*
+	// x-direction background strain rate
+
 	ierr = GetIntDataItemCheck("-ExxNumPeriods", "Number of Exx background strain rate periods",
 		_NOT_FOUND_EXIT_, 1, &bc->ExxNumPeriods, 1, _max_periods_); CHKERRQ(ierr);
 
@@ -813,14 +266,39 @@ PetscErrorCode BCReadFromOptions(BCCtx *bc)
 			_NOT_FOUND_ERROR_, bc->EyyNumPeriods, bc->EyyStrainRates, 0.0, 0.0, scal->strain_rate); CHKERRQ(ierr);
 	}
 
-	// Bezier block
-	//ierr = BCBlockReadFromOptions(&bc->blocks, scal); CHKERRQ(ierr);
+*/
 
+	// setup block access mode
+	ierr = FBFindBlocks(fb, _OPTIONAL_, "<BCBlockStart>", "<BCBlockEnd>"); CHKERRQ(ierr);
 
-	if(bc->AddBezier && (bc->ExxAct == PETSC_TRUE || bc->EyyAct == PETSC_TRUE))
+	if(fb->nblocks)
 	{
-		SETERRQ(PETSC_COMM_SELF, PETSC_ERR_USER, "Cannot combine background strain rate with moving block\n");
+		// error checking
+		if(fb->nblocks > _max_boxes_)
+		{
+			SETERRQ2(PETSC_COMM_WORLD, PETSC_ERR_USER, "Too many Bezier blocks! found: %lld, max allowed: %lld", (LLD)fb->nblocks, (LLD)_max_boxes_);
+		}
+
+		// store actual number of Bezier blocks
+		bc->nblocks = fb->nblocks;
+
+		// read Bezier blocks
+		for(jj = 0; jj < fb->nblocks; jj++)
+		{
+			ierr = BCBlockCreate(bc->blocks + jj, scal, fb); CHKERRQ(ierr);
+
+			fb->blockID++;
+		}
 	}
+
+	ierr = FBFreeBlocks(fb); CHKERRQ(ierr);
+
+
+
+
+/*
+
+
 
 	// boundary velocities
 	ierr = GetIntDataItemCheck("-bvel_face", "Boundary velocity face identifier",
@@ -841,6 +319,15 @@ PetscErrorCode BCReadFromOptions(BCCtx *bc)
 
 		ierr = GetScalDataItemCheckScale("-bvel_velin", "Boundary velocity magnitude",
 			_NOT_FOUND_ERROR_, 1, &bc->velin, 0.0, 0.0, scal->velocity); CHKERRQ(ierr);
+
+				// set plate top
+	bc->top = top;
+
+	ierr = FDSTAGGetGlobalBox(bc->fs, NULL, NULL, &bz, NULL, NULL, NULL); CHKERRQ(ierr);
+
+	// compute outflow velocity
+	bc->velout = -bc->velin*(bc->top - bc->bot)/(bc->bot - bz);
+
 	}
 
 	// set open boundary flag
@@ -860,54 +347,78 @@ PetscErrorCode BCReadFromOptions(BCCtx *bc)
 	// read no-slip boundary condition mask
 	ierr = GetIntDataItemCheck("-noslip", "no-slip mask",
 		_NOT_FOUND_EXIT_, 6, bc->noslip, 0, 1); CHKERRQ(ierr);
+
+
+	bc->Tbot  = user->Temp_bottom;
+	bc->Ttop  = user->Temp_top;
+
+
+
+
 */
+
+
+	ierr = BCCreateData(bc); CHKERRQ(ierr);
+
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
 #undef __FUNCT__
-#define __FUNCT__ "BCGetBGStrainRates"
-PetscErrorCode BCGetBGStrainRates(BCCtx *bc, PetscScalar *Exx_, PetscScalar *Eyy_, PetscScalar *Ezz_)
+#define __FUNCT__ "BCCreateData"
+PetscErrorCode BCCreateData(BCCtx *bc)
 {
-	// get current background strain rates
+	PetscErrorCode ierr;
+	PetscFunctionBegin;
 
-	PetscInt    jj;
-	PetscScalar time, Exx, Eyy, Ezz;
+	FDSTAG   *fs  =  bc->fs;
+	DOFIndex *dof = &fs->dof;
 
-	// initialize
-	time = bc->ts->time;
-	Exx  = 0.0;
-	Eyy  = 0.0;
-	Ezz  = 0.0;
+	// create boundary conditions vectors (velocity, pressure, temperature)
+	ierr = DMCreateLocalVector(fs->DA_X,   &bc->bcvx);  CHKERRQ(ierr);
+	ierr = DMCreateLocalVector(fs->DA_Y,   &bc->bcvy);  CHKERRQ(ierr);
+	ierr = DMCreateLocalVector(fs->DA_Z,   &bc->bcvz);  CHKERRQ(ierr);
+	ierr = DMCreateLocalVector(fs->DA_CEN, &bc->bcp);   CHKERRQ(ierr);
+	ierr = DMCreateLocalVector(fs->DA_CEN, &bc->bcT);   CHKERRQ(ierr);
 
-	// x-direction background strain rate
-	if(bc->ExxAct == PETSC_TRUE)
-	{
-		for(jj = 0; jj < bc->ExxNumPeriods-1; jj++)
-		{
-			if(time < bc->ExxTimeDelims[jj]) break;
-		}
+	// SPC velocity-pressure
+	ierr = makeIntArray (&bc->SPCList, NULL, dof->ln);   CHKERRQ(ierr);
+	ierr = makeScalArray(&bc->SPCVals, NULL, dof->ln);   CHKERRQ(ierr);
 
-		Exx = bc->ExxStrainRates[jj];
-	}
+	// SPC (temperature)
+	ierr = makeIntArray (&bc->tSPCList, NULL, dof->lnp); CHKERRQ(ierr);
+	ierr = makeScalArray(&bc->tSPCVals, NULL, dof->lnp); CHKERRQ(ierr);
 
-	// y-direction background strain rate
-	if(bc->EyyAct == PETSC_TRUE)
-	{
-		for(jj = 0; jj < bc->EyyNumPeriods-1; jj++)
-		{
-			if(time < bc->EyyTimeDelims[jj]) break;
-		}
+	PetscFunctionReturn(0);
+}
 
-		Eyy = bc->EyyStrainRates[jj];
-	}
+//---------------------------------------------------------------------------
+#undef __FUNCT__
+#define __FUNCT__ "BCDestroy"
+PetscErrorCode BCDestroy(BCCtx *bc)
+{
+	PetscErrorCode ierr;
+	PetscFunctionBegin;
 
-	// z-direction background strain rate
-	Ezz = -(Exx+Eyy);
+	// destroy boundary conditions vectors (velocity, pressure, temperature)
+	ierr = VecDestroy(&bc->bcvx); CHKERRQ(ierr);
+	ierr = VecDestroy(&bc->bcvy); CHKERRQ(ierr);
+	ierr = VecDestroy(&bc->bcvz); CHKERRQ(ierr);
+	ierr = VecDestroy(&bc->bcp);  CHKERRQ(ierr);
+	ierr = VecDestroy(&bc->bcT);  CHKERRQ(ierr);
 
-	// store result
-	if(Exx_) (*Exx_) = Exx;
-	if(Eyy_) (*Eyy_) = Eyy;
-	if(Ezz_) (*Ezz_) = Ezz;
+	// SPC velocity-pressure
+	ierr = PetscFree(bc->SPCList);  CHKERRQ(ierr);
+	ierr = PetscFree(bc->SPCVals);  CHKERRQ(ierr);
+
+	// SPC temperature
+	ierr = PetscFree(bc->tSPCList); CHKERRQ(ierr);
+	ierr = PetscFree(bc->tSPCVals); CHKERRQ(ierr);
+
+	// two-point constraints
+//	ierr = PetscFree(bc->TPCList);      CHKERRQ(ierr);
+//	ierr = PetscFree(bc->TPCPrimeDOF);  CHKERRQ(ierr);
+//	ierr = PetscFree(bc->TPCVals);      CHKERRQ(ierr);
+//	ierr = PetscFree(bc->TPCLinComPar); CHKERRQ(ierr);
 
 	PetscFunctionReturn(0);
 }
@@ -955,7 +466,6 @@ PetscErrorCode BCApply(BCCtx *bc, Vec x)
 
 	// apply simple shear BCs
 	ierr = BCApplySimpleShearVel(bc); CHKERRQ(ierr);
-
 
 	// exchange ghost point constraints
 	// AVOID THIS BY SETTING CONSTRAINTS REDUNDANTLY
@@ -1098,6 +608,8 @@ PetscErrorCode BCShiftIndices(BCCtx *bc, ShiftType stype)
 
 	PetscFunctionReturn(0);
 }
+//---------------------------------------------------------------------------
+// Specific constraints
 //---------------------------------------------------------------------------
 #undef __FUNCT__
 #define __FUNCT__ "BCApplyBound"
@@ -1277,8 +789,6 @@ PetscErrorCode BCApplyBound(BCCtx *bc)
 		END_STD_LOOP
 	}
 
-
-
 	//-----------------------------------------------------
 	// Y points (TPC only, hence looping over ghost points)
 	//-----------------------------------------------------
@@ -1348,6 +858,444 @@ PetscErrorCode BCApplyBound(BCCtx *bc)
 }
 //---------------------------------------------------------------------------
 #undef __FUNCT__
+#define __FUNCT__ "BCApplyBezier"
+PetscErrorCode BCApplyBezier(BCCtx *bc)
+{
+/*
+	FDSTAG      *fs;
+	BCBlock     *bcb;
+	PetscInt    fbeg, fend, npoly, in;
+	PetscInt    i, j, k, nx, ny, nz, sx, sy, sz, iter, ib;
+	PetscScalar ***bcvx,  ***bcvy, *SPCVals;
+	PetscScalar t, dt, theta, costh, sinth, atol, bot, top, vel;
+	PetscScalar Xbeg[3], Xend[3], xbeg[3], xend[3], box[4], cpoly[2*_max_poly_points_];
+
+	PetscErrorCode ierr;
+	PetscFunctionBegin;
+
+	// check whether bezier is applied
+	if(bc->AddBezier != PETSC_TRUE) PetscFunctionReturn(0);
+
+	// access context
+	fs    =  bc->fs;
+	t     =  bc->ts->time;
+	dt    =  bc->ts->dt;
+
+	// access velocity constraint vectors
+	ierr = DMDAVecGetArray(fs->DA_X, bc->bcvx, &bcvx); CHKERRQ(ierr);
+	ierr = DMDAVecGetArray(fs->DA_Y, bc->bcvy, &bcvy); CHKERRQ(ierr);
+
+	// access constraint arrays
+	SPCVals = bc->SPCVals;
+
+	// loop over all bezier blocks
+	for(ib = 0; ib < bc->nblo; ib++)
+	{
+		bcb   = &bc->blocks[ib];
+		bot   =  bcb->bot;
+		top   =  bcb->top;
+		npoly =  bcb->npoly;
+
+		// get polygon positions in the beginning & end of the time step
+		ierr = BCBlockGetPosition(bcb, t,    &fbeg, Xbeg); CHKERRQ(ierr);
+		ierr = BCBlockGetPosition(bcb, t+dt, &fend, Xend); CHKERRQ(ierr);
+
+		// check whether constraint applies to the current time step
+		if(!fbeg || !fend) continue;
+
+		// print bezier block overview
+		PetscPrintf(PETSC_COMM_WORLD,"Bezier block[%d]: npath = %d, npoly = %d\n",ib, bcb->npath, bcb->npoly);
+
+		// get current polygon geometry
+		ierr = BCBlockGetPolygon(bcb, Xbeg, cpoly);
+
+		// get bounding box
+		polygon_box(&npoly, cpoly, 1e-12, &atol, box);
+
+		// get time step rotation matrix
+		theta = Xend[2] - Xbeg[2];
+		costh = cos(theta);
+		sinth = sin(theta);
+
+		iter = 0;
+
+		//---------
+		// X points
+		//---------
+		GET_NODE_RANGE(nx, sx, fs->dsx)
+		GET_CELL_RANGE(ny, sy, fs->dsy)
+		GET_CELL_RANGE(nz, sz, fs->dsz)
+
+		START_STD_LOOP
+		{
+			// get node coordinates in the beginning of time step
+			xbeg[0] = COORD_NODE(i, sx, fs->dsx);
+			xbeg[1] = COORD_CELL(j, sy, fs->dsy);
+			xbeg[2] = COORD_CELL(k, sz, fs->dsz);
+
+			// perform point test
+			if(xbeg[2] >= bot && xbeg[2] <= top)
+			{
+				in_polygon(1, xbeg, npoly, cpoly, box, atol, &in);
+
+				// check whether point is inside polygon
+				if(in)
+				{
+					// compute point position in the end of time step
+					RotDispPoint2D(Xbeg, Xend, costh, sinth, xbeg, xend);
+
+					// compute & set x-velocity
+					vel = (xend[0] - xbeg[0])/dt;
+
+					bcvx[k][j][i] = vel;
+					SPCVals[iter] = vel;
+				}
+			}
+			iter++;
+		}
+		END_STD_LOOP
+
+		//---------
+		// Y points
+		//---------
+		GET_CELL_RANGE(nx, sx, fs->dsx)
+		GET_NODE_RANGE(ny, sy, fs->dsy)
+		GET_CELL_RANGE(nz, sz, fs->dsz)
+
+		START_STD_LOOP
+		{
+			// get node coordinates in the beginning of time step
+			xbeg[0] = COORD_CELL(i, sx, fs->dsx);
+			xbeg[1] = COORD_NODE(j, sy, fs->dsy);
+			xbeg[2] = COORD_CELL(k, sz, fs->dsz);
+
+			// perform point test
+			if(xbeg[2] >= bot && xbeg[2] <= top)
+			{
+				in_polygon(1, xbeg, npoly, cpoly, box, atol, &in);
+
+				// check whether point is inside polygon
+				if(in)
+				{
+					// compute point position in the end of time step
+					RotDispPoint2D(Xbeg, Xend, costh, sinth, xbeg, xend);
+
+					// compute & set y-velocity
+					vel = (xend[1] - xbeg[1])/dt;
+
+					bcvy[k][j][i] = vel;
+					SPCVals[iter] = vel;
+				}
+			}
+			iter++;
+		}
+		END_STD_LOOP
+	}
+	// restore access
+	ierr = DMDAVecRestoreArray(fs->DA_X, bc->bcvx, &bcvx); CHKERRQ(ierr);
+	ierr = DMDAVecRestoreArray(fs->DA_Y, bc->bcvy, &bcvy); CHKERRQ(ierr);
+*/
+	PetscFunctionReturn(0);
+}
+//---------------------------------------------------------------------------
+#undef __FUNCT__
+#define __FUNCT__ "BCApplyBoundVel"
+PetscErrorCode BCApplyBoundVel(BCCtx *bc)
+{
+	FDSTAG      *fs;
+	PetscInt    mnx, mny;
+	PetscInt    i, j, k, nx, ny, nz, sx, sy, sz, iter;
+	PetscScalar ***bcvx,  ***bcvy, *SPCVals;
+	PetscScalar z, bot, top, vel, velin, velout;
+
+	PetscErrorCode ierr;
+	PetscFunctionBegin;
+
+	// check whether constraint is activated
+	if(!bc->face) PetscFunctionReturn(0);
+
+	// access context
+	fs     = bc->fs;
+	bot    = bc->bot;
+	top    = bc->top;
+	velin  = bc->velin;
+	velout = bc->velout;
+
+	// initialize maximal index in all directions
+	mnx = fs->dsx.tnods - 1;
+	mny = fs->dsy.tnods - 1;
+
+	// access velocity constraint vectors
+	ierr = DMDAVecGetArray(fs->DA_X, bc->bcvx, &bcvx); CHKERRQ(ierr);
+	ierr = DMDAVecGetArray(fs->DA_Y, bc->bcvy, &bcvy); CHKERRQ(ierr);
+
+	// access constraint arrays
+	SPCVals = bc->SPCVals;
+
+	iter = 0;
+
+	//---------
+	// X points
+	//---------
+	GET_NODE_RANGE(nx, sx, fs->dsx)
+	GET_CELL_RANGE(ny, sy, fs->dsy)
+	GET_CELL_RANGE(nz, sz, fs->dsz)
+
+	if(bc->face == 1 || bc->face == 2)
+	{
+		START_STD_LOOP
+		{
+			z   = COORD_CELL(k, sz, fs->dsz);
+			vel = 0.0;
+			if(z <= top && z >= bot) vel = velin;
+			if(z < bot)              vel = velout;
+
+			if(bc->face == 1 && i == 0)   { bcvx[k][j][i] = vel; SPCVals[iter] = vel; }
+			if(bc->face == 2 && i == mnx) { bcvx[k][j][i] = vel; SPCVals[iter] = vel; }
+			iter++;
+		}
+		END_STD_LOOP
+	}
+
+	//---------
+	// Y points
+	//---------
+	GET_CELL_RANGE(nx, sx, fs->dsx)
+	GET_NODE_RANGE(ny, sy, fs->dsy)
+	GET_CELL_RANGE(nz, sz, fs->dsz)
+
+	if(bc->face == 3 || bc->face == 4)
+	{
+		START_STD_LOOP
+		{
+			z   = COORD_CELL(k, sz, fs->dsz);
+			vel = 0.0;
+			if(z <= top && z >= bot) vel = velin;
+			if(z < bot)              vel = velout;
+
+			if(bc->face == 3 && j == 0)   { bcvy[k][j][i] = vel; SPCVals[iter] = vel; }
+			if(bc->face == 4 && j == mny) { bcvy[k][j][i] = vel; SPCVals[iter] = vel; }
+			iter++;
+		}
+		END_STD_LOOP
+	}
+
+	// restore access
+	ierr = DMDAVecRestoreArray(fs->DA_X, bc->bcvx, &bcvx); CHKERRQ(ierr);
+	ierr = DMDAVecRestoreArray(fs->DA_Y, bc->bcvy, &bcvy); CHKERRQ(ierr);
+
+	PetscFunctionReturn(0);
+}
+//---------------------------------------------------------------------------
+#undef __FUNCT__
+#define __FUNCT__ "BCApplyDBox"
+PetscErrorCode BCApplyDBox(BCCtx *bc)
+{
+	DBox        *dbox;
+	FDSTAG      *fs;
+	PetscInt    jj, i, j, k, nx, ny, nz, sx, sy, sz, iter;
+	PetscScalar ***bcvz, *SPCVals, bounds[6*_max_boxes_], *pbounds;
+	PetscScalar x, y, z, t, vz;
+
+	PetscErrorCode ierr;
+	PetscFunctionBegin;
+
+	// access context
+	fs   = bc->fs;
+	dbox = &bc->dbox;
+
+	// check whether dropping box is activated
+	if(!dbox->num) PetscFunctionReturn(0);
+
+	// copy original coordinates
+	ierr = PetscMemcpy(bounds, dbox->bounds, (size_t)(6*dbox->num)*sizeof(PetscScalar)); CHKERRQ(ierr);
+
+	// integrate box positions
+	t  = bc->ts->time;
+	vz = dbox->zvel;
+
+	for(jj = 0; jj < dbox->num; jj++)
+	{
+		pbounds     = bounds + 6*jj;
+		pbounds[4] += t*vz;
+		pbounds[5] += t*vz;
+	}
+
+	// access velocity constraint vectors
+	ierr = DMDAVecGetArray(fs->DA_Z, bc->bcvz, &bcvz); CHKERRQ(ierr);
+
+	// access constraint arrays
+	SPCVals = bc->SPCVals;
+
+	//---------
+	// Z points
+	//---------
+	GET_CELL_RANGE(nx, sx, fs->dsx)
+	GET_CELL_RANGE(ny, sy, fs->dsy)
+	GET_NODE_RANGE(nz, sz, fs->dsz)
+
+	iter = fs->nXFace + fs->nYFace;
+
+	START_STD_LOOP
+	{
+		// get node coordinates
+		x = COORD_CELL(i, sx, fs->dsx);
+		y = COORD_CELL(j, sy, fs->dsy);
+		z = COORD_NODE(k, sz, fs->dsz);
+
+		// check whether node is inside any of boxes
+		for(jj = 0; jj < dbox->num; jj++)
+		{
+			pbounds = bounds + 6*jj;
+
+			if(x >= pbounds[0] && x <= pbounds[1]
+			&& y >= pbounds[2] && y <= pbounds[3]
+			&& z >= pbounds[4] && z <= pbounds[5])
+			{
+				bcvz[k][j][i] = vz;
+				SPCVals[iter] = vz;
+				break;
+			}
+		}
+		iter++;
+	}
+	END_STD_LOOP
+
+	// restore access
+	ierr = DMDAVecRestoreArray(fs->DA_Z, bc->bcvz, &bcvz); CHKERRQ(ierr);
+
+	PetscFunctionReturn(0);
+}
+//---------------------------------------------------------------------------
+#undef __FUNCT__
+#define __FUNCT__ "BCApplySimpleShearVel"
+PetscErrorCode BCApplySimpleShearVel(BCCtx *bc)
+{
+	FDSTAG      *fs;
+	PetscInt    mnx, mny;
+	PetscInt    i, j, k, nx, ny, nz, sx, sy, sz, iter;
+	PetscScalar ***bcvx,  ***bcvy, *SPCVals;
+	PetscScalar z, gamma_xz, vel;
+
+	// This routine sets simple shear velocities with constant shear rate gamma.
+	// This will imply inflow/outflow
+
+	PetscErrorCode ierr;
+	PetscFunctionBegin;
+
+	// check whether constraint is activated
+	if(!bc->simpleshear) PetscFunctionReturn(0);
+
+	// access context
+	fs     		= bc->fs;
+	gamma_xz    = bc->gamma_xz;
+
+	// initialize maximal index in all directions
+	mnx = fs->dsx.tnods - 1;
+	mny = fs->dsy.tnods - 1;
+
+	// access velocity constraint vectors
+	ierr = DMDAVecGetArray(fs->DA_X, bc->bcvx, &bcvx); CHKERRQ(ierr);
+	ierr = DMDAVecGetArray(fs->DA_Y, bc->bcvy, &bcvy); CHKERRQ(ierr);
+
+	// access constraint arrays
+	SPCVals = bc->SPCVals;
+
+	iter = 0;
+
+	//---------
+	// X points
+	//---------
+	GET_NODE_RANGE(nx, sx, fs->dsx)
+	GET_CELL_RANGE(ny, sy, fs->dsy)
+	GET_CELL_RANGE(nz, sz, fs->dsz)
+
+	START_STD_LOOP
+	{
+		z   = COORD_CELL(k, sz, fs->dsz);
+		vel = gamma_xz*z;
+
+		if(i == 0)   { bcvx[k][j][i] = vel; SPCVals[iter] = vel; }
+		if(i == mnx) { bcvx[k][j][i] = vel; SPCVals[iter] = vel; }
+		iter++;
+	}
+	END_STD_LOOP
+
+	//---------
+	// Y points
+	//---------
+	GET_CELL_RANGE(nx, sx, fs->dsx)
+	GET_NODE_RANGE(ny, sy, fs->dsy)
+	GET_CELL_RANGE(nz, sz, fs->dsz)
+
+	START_STD_LOOP
+	{
+		z   = COORD_CELL(k, sz, fs->dsz);
+		vel = 0.0;
+		if(j == 0)   { bcvy[k][j][i] = vel; SPCVals[iter] = vel; }
+		if(j == mny) { bcvy[k][j][i] = vel; SPCVals[iter] = vel; }
+		iter++;
+	}
+	END_STD_LOOP
+
+	// restore access
+	ierr = DMDAVecRestoreArray(fs->DA_X, bc->bcvx, &bcvx); CHKERRQ(ierr);
+	ierr = DMDAVecRestoreArray(fs->DA_Y, bc->bcvy, &bcvy); CHKERRQ(ierr);
+
+	PetscFunctionReturn(0);
+}
+//---------------------------------------------------------------------------
+// Service functions
+//---------------------------------------------------------------------------
+#undef __FUNCT__
+#define __FUNCT__ "BCGetBGStrainRates"
+PetscErrorCode BCGetBGStrainRates(BCCtx *bc, PetscScalar *Exx_, PetscScalar *Eyy_, PetscScalar *Ezz_)
+{
+	// get current background strain rates
+
+	PetscInt    jj;
+	PetscScalar time, Exx, Eyy, Ezz;
+
+	// initialize
+	time = bc->ts->time;
+	Exx  = 0.0;
+	Eyy  = 0.0;
+	Ezz  = 0.0;
+
+	// x-direction background strain rate
+	if(bc->ExxNumPeriods)
+	{
+		for(jj = 0; jj < bc->ExxNumPeriods-1; jj++)
+		{
+			if(time < bc->ExxTimeDelims[jj]) break;
+		}
+
+		Exx = bc->ExxStrainRates[jj];
+	}
+
+	// y-direction background strain rate
+	if(bc->EyyNumPeriods)
+	{
+		for(jj = 0; jj < bc->EyyNumPeriods-1; jj++)
+		{
+			if(time < bc->EyyTimeDelims[jj]) break;
+		}
+
+		Eyy = bc->EyyStrainRates[jj];
+	}
+
+	// z-direction background strain rate
+	Ezz = -(Exx+Eyy);
+
+	// store result
+	if(Exx_) (*Exx_) = Exx;
+	if(Eyy_) (*Eyy_) = Eyy;
+	if(Ezz_) (*Ezz_) = Ezz;
+
+	PetscFunctionReturn(0);
+}
+//---------------------------------------------------------------------------
+#undef __FUNCT__
 #define __FUNCT__ "BCStretchGrid"
 PetscErrorCode BCStretchGrid(BCCtx *bc)
 {
@@ -1380,6 +1328,40 @@ PetscErrorCode BCStretchGrid(BCCtx *bc)
 	if(Exx) { ierr = Discret1DStretch(&fs->dsx, Exx*ts->dt); CHKERRQ(ierr); }
 	if(Eyy) { ierr = Discret1DStretch(&fs->dsy, Eyy*ts->dt); CHKERRQ(ierr); }
 	if(Ezz) { ierr = Discret1DStretch(&fs->dsz, Ezz*ts->dt); CHKERRQ(ierr); }
+
+	PetscFunctionReturn(0);
+}
+//---------------------------------------------------------------------------
+#undef __FUNCT__
+#define __FUNCT__ "BCOverridePhase"
+PetscErrorCode BCOverridePhase(BCCtx *bc, PetscInt cellID, Marker *P)
+{
+	FDSTAG     *fs;
+	PetscInt    i, j, k, M, N, mx, my, sx, sy;
+	PetscScalar z;
+
+	PetscFunctionBegin;
+
+	fs = bc->fs;
+	M  = fs->dsx.ncels;
+	N  = fs->dsy.ncels;
+	sx = fs->dsx.pstart;
+	sy = fs->dsy.pstart;
+	mx = fs->dsx.tcels-1;
+	my = fs->dsy.tcels-1;
+	z  = P->X[2];
+
+	// expand i, j, k cell indices
+	GET_CELL_IJK(cellID, i, j, k, M, N);
+
+	if(((bc->face == 1 && i + sx == 0)
+	||  (bc->face == 2 && i + sx == mx)
+	||  (bc->face == 3 && j + sy == 0)
+	||  (bc->face == 4 && j + sy == my))
+	&&  (z >= bc->bot && z <= bc->top))
+	{
+		P->phase = bc->phase;
+	}
 
 	PetscFunctionReturn(0);
 }

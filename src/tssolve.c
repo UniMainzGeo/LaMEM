@@ -77,10 +77,10 @@ PetscErrorCode TSSolCreate(TSSol *ts, FB *fb)
 	ierr = getScalarParam(fb, _OPTIONAL_, "inc_dt",    &ts->inc_dt,    1, 1.0 );  CHKERRQ(ierr);
 	ierr = getScalarParam(fb, _OPTIONAL_, "CFL",       &ts->CFL,       1, 1.0 );  CHKERRQ(ierr);
 	ierr = getScalarParam(fb, _OPTIONAL_, "CFLMAX",    &ts->CFLMAX,    1, 1.0 );  CHKERRQ(ierr);
-	ierr = getIntParam   (fb, _OPTIONAL_, "nstep_max", &ts->nstep_max, 1      );  CHKERRQ(ierr);
-	ierr = getIntParam   (fb, _OPTIONAL_, "nstep_out", &ts->nstep_out, 1      );  CHKERRQ(ierr);
-	ierr = getIntParam   (fb, _OPTIONAL_, "nstep_ini", &ts->nstep_ini, 1      );  CHKERRQ(ierr);
-	ierr = getIntParam   (fb, _OPTIONAL_, "nstep_rdb", &ts->nstep_rdb, 1      );  CHKERRQ(ierr);
+	ierr = getIntParam   (fb, _OPTIONAL_, "nstep_max", &ts->nstep_max, 1, -1  );  CHKERRQ(ierr);
+	ierr = getIntParam   (fb, _OPTIONAL_, "nstep_out", &ts->nstep_out, 1, -1  );  CHKERRQ(ierr);
+	ierr = getIntParam   (fb, _OPTIONAL_, "nstep_ini", &ts->nstep_ini, 1, -1  );  CHKERRQ(ierr);
+	ierr = getIntParam   (fb, _OPTIONAL_, "nstep_rdb", &ts->nstep_rdb, 1, -1  );  CHKERRQ(ierr);
 
 	// set defaults
 	if(ts->dt        == 0.0) ts->dt        = ts->dt_max/5.0;

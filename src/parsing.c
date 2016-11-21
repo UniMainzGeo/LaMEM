@@ -469,9 +469,11 @@ PetscErrorCode getIntParam(
 		ParamType   ptype,
 		const char *key,
 		PetscInt   *val,
-		PetscInt    num)
+		PetscInt    num,
+		PetscInt    maxval)
+
 {
-	PetscInt  nval;
+	PetscInt  i, nval;
 	PetscBool found;
 	char     *dbkey;
 
@@ -482,6 +484,7 @@ PetscErrorCode getIntParam(
 
 	found = PETSC_FALSE;
 
+	// PETSc options are not checked in block access mode
 	if(!fb->nblocks)
 	{
 		asprintf(&dbkey, "-%s", key);
@@ -508,6 +511,19 @@ PetscErrorCode getIntParam(
 	// check number of entries
 	if(nval < num) SETERRQ2(PETSC_COMM_WORLD, PETSC_ERR_USER, "%lld entry(ies) are missing in parameter \"[-]%s\" \n",
 		(LLD)(num-nval), key);
+
+	// check for out-of-bound entries
+	if(maxval > 0)
+	{
+		for(i = 0; i < num; i++)
+		{
+			if(val[i] > maxval)
+			{
+				SETERRQ4(PETSC_COMM_WORLD, PETSC_ERR_USER, "Entry %lld in parameter \"[-]%s\" is larger than allowed : val=%lld, max=%lld\n",
+					(LLD)(i+1), key, (LLD)val[i], (LLD)maxval);
+			}
+		}
+	}
 
 	PetscFunctionReturn(0);
 }

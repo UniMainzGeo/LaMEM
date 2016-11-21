@@ -135,7 +135,8 @@ PetscErrorCode getIntParam(
 		ParamType   ptype,
 		const char *key,
 		PetscInt   *val,
-		PetscInt    num);
+		PetscInt    num,
+		PetscInt    maxval);
 
 PetscErrorCode getScalarParam(
 		FB          *fb,

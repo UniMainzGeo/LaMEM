@@ -81,8 +81,8 @@ PetscErrorCode MeshSeg1DReadParam(
 	asprintf(&bias,  "bias_%s",  dir);
 
 	// read parameters
-	ierr = getIntParam   (fb, _OPTIONAL_, nseg,  &ms->nsegs,  1                ); CHKERRQ(ierr);
-	ierr = getIntParam   (fb, _REQUIRED_, nel,    ncells,     ms->nsegs        ); CHKERRQ(ierr);
+	ierr = getIntParam   (fb, _OPTIONAL_, nseg,  &ms->nsegs,  1,           50  ); CHKERRQ(ierr);
+	ierr = getIntParam   (fb, _REQUIRED_, nel,    ncells,     ms->nsegs,   1024); CHKERRQ(ierr);
 	ierr = getScalarParam(fb, _REQUIRED_, coord,  ms->xstart, ms->nsegs+1, leng); CHKERRQ(ierr);
 	ierr = getScalarParam(fb, _OPTIONAL_, bias,   ms->biases, ms->nsegs,   1.0 ); CHKERRQ(ierr);
 
@@ -421,6 +421,8 @@ PetscErrorCode Discret1DGenCoord(Discret1D *ds, MeshSeg1D *ms)
 	// set global coordinate bounds
 	ds->crdbeg = ms->xstart[0];
 	ds->crdend = ms->xstart[ms->nsegs];
+
+	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
 #undef __FUNCT__
@@ -799,9 +801,9 @@ PetscErrorCode FDSTAGCreate(FDSTAG *fs, FB *fb)
 	Pz = PETSC_DECIDE;
 
 	// fix number of processors in all directions
-	ierr = getIntParam(fb, _OPTIONAL_, "cpu_x", &Px, 1); CHKERRQ(ierr);
-	ierr = getIntParam(fb, _OPTIONAL_, "cpu_y", &Py, 1); CHKERRQ(ierr);
-	ierr = getIntParam(fb, _OPTIONAL_, "cpu_z", &Pz, 1); CHKERRQ(ierr);
+	ierr = getIntParam(fb, _OPTIONAL_, "cpu_x", &Px, 1, 1024); CHKERRQ(ierr);
+	ierr = getIntParam(fb, _OPTIONAL_, "cpu_y", &Py, 1, 1024); CHKERRQ(ierr);
+	ierr = getIntParam(fb, _OPTIONAL_, "cpu_z", &Pz, 1, 1024); CHKERRQ(ierr);
 
 	// read mesh parameters
 	ierr = MeshSeg1DReadParam(&msx, scal->length, "x", fb); CHKERRQ(ierr);

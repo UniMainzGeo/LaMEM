@@ -182,6 +182,9 @@ typedef struct
 	char             SaveInitialParticlesDirectory[MAX_PATH_LEN];
 	PetscInt         SaveParticles;
 
+	// initial temperature distribution from file
+	char         TemperatureFilename[MAX_PATH_LEN];
+
 
 } AdvCtx;
 

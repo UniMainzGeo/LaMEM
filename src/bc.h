@@ -49,17 +49,24 @@
 
 #define _max_periods_ 20
 #define _max_boxes_ 5
-
-#define MAX_PUSH_BOX 10
-#define _max_bc_blocks_ 10
-#define _max_path_points_ 50
-#define _max_poly_points_ 100
+#define _max_path_points_ 25
+#define _max_poly_points_ 50
 
 //---------------------------------------------------------------------------
+// index shift type
+typedef enum
+{
+	_LOCAL_TO_GLOBAL_,
+	_GLOBAL_TO_LOCAL_
+
+} ShiftType;
+
+//---------------------------------------------------------------------------
+// Bezier block (rotating polygon moving along Bezier curve)
+//---------------------------------------------------------------------------
+
 typedef struct
 {
-	PetscInt 	ID; 						  // bezier block id
-
 	// path description
 	PetscInt    npath;                        // number of path points of Bezier curve
 	PetscScalar theta[  _max_path_points_  ]; // orientation angles at path points
@@ -78,21 +85,15 @@ typedef struct
 } BCBlock;
 
 //---------------------------------------------------------------------------
-// index shift type
-typedef enum
-{
-	_LOCAL_TO_GLOBAL_,
-	_GLOBAL_TO_LOCAL_
 
-} ShiftType;
-//---------------------------------------------------------------------------
-
-PetscErrorCode BCBlockReadFromOptions(BCBlock *bcb, Scaling *scal);
+PetscErrorCode BCBlockCreate(BCBlock *bcb, Scaling *scal, FB *fb);
 
 PetscErrorCode BCBlockGetPosition(BCBlock *bcb, PetscScalar t, PetscInt *f, PetscScalar x[]);
 
 PetscErrorCode BCBlockGetPolygon(BCBlock *bcb, PetscScalar Xb[], PetscScalar *cpoly);
 
+//---------------------------------------------------------------------------
+// Dropping boxes (rectangular boxes moving with constant vertical velocity)
 //---------------------------------------------------------------------------
 
 typedef struct
@@ -105,7 +106,7 @@ typedef struct
 
 //---------------------------------------------------------------------------
 
-PetscErrorCode DBoxReadFromOptions(DBox *dbox, Scaling *scal);
+PetscErrorCode DBoxReadCreate(DBox *dbox, Scaling *scal, FB *fb);
 
 //---------------------------------------------------------------------------
 
@@ -141,13 +142,6 @@ typedef struct
 	// NOTE! It may be worth storing TPC also as lists (for speedup).
 	//=====================================================================
 
-/*
-	// bezier
-	PetscInt 		 AddBezier;
-	PetscInt 		 nblo; // number of bezier box
-	BCBlock 		 blocks[_max_bc_blocks_];
-*/
-
 
 	FDSTAG   *fs;   // staggered grid
 	TSSol    *ts;   // time stepping parameters
@@ -177,20 +171,6 @@ typedef struct
 	PetscInt    *tSPCList;
 	PetscScalar *tSPCVals;
 
-	// temperature on top and bottom boundaries
-	PetscScalar  Tbot, Ttop;
-
-	// horizontal background strain-rate parameters
-	PetscBool    ExxAct;
-	PetscInt     ExxNumPeriods;
-	PetscScalar  ExxTimeDelims [_max_periods_-1];
-	PetscScalar  ExxStrainRates[_max_periods_  ];
-
-	PetscBool    EyyAct;
-	PetscInt     EyyNumPeriods;
-	PetscScalar  EyyTimeDelims [_max_periods_-1];
-	PetscScalar  EyyStrainRates[_max_periods_  ];
-
 	// two-point constraints
 //	PetscInt     numTPC;       // number of two-point constraints (TPC)
 //	PetscInt    *TPCList;      // local indices of TPC (ghosted layout)
@@ -198,47 +178,91 @@ typedef struct
 //	PetscScalar *TPCVals;      // values of TPC
 //	PetscScalar *TPCLinComPar; // linear combination parameters
 
-	BCBlock      *blocks; // BC block
-	PetscInt 	 nblo;    // number of bezier blocks
-	PetscBool 	 AddBezier;
-	DBox         dbox;   // dropping box
+	//=====================
+	// VELOCITY CONSTRAINTS
+	//=====================
 
-	// velocity boundary condition
+	// horizontal background strain-rate parameters
+	PetscInt     ExxNumPeriods;
+	PetscScalar  ExxTimeDelims [_max_periods_-1];
+	PetscScalar  ExxStrainRates[_max_periods_  ];
+
+	PetscInt     EyyNumPeriods;
+	PetscScalar  EyyTimeDelims [_max_periods_-1];
+	PetscScalar  EyyStrainRates[_max_periods_  ];
+
+	// Bezier block
+	PetscInt 	 nblocks;             // number of Bezier blocks
+	BCBlock      blocks[_max_boxes_]; // BC block
+
+	// dropping boxes
+	DBox         dbox;
+
+	// velocity inflow & outflow boundary condition
 	PetscInt     face, phase;   // face & phase identifiers
 	PetscScalar  bot, top;      // bottom & top coordinates of the plate
 	PetscScalar  velin, velout; // inflow & outflow velocities
 
 	// simple shear boundary condition
-	PetscInt	simpleshear;
-	PetscScalar	gamma_xz;		// shear rate in xz direction
+	PetscInt	 simpleshear;
+	PetscScalar	 gamma_xz;		// shear rate in xz direction
 
 	// open boundary flag
-	PetscInt  top_open;
+	PetscInt     top_open;
 
 	// no-slip boundary condition mask
-	PetscInt  noslip[6];
+	PetscInt     noslip[6];
 
+	//========================
+	// TEMPERATURE CONSTRAINTS
+	//========================
 
-	PetscScalar      Gravity;
-	PetscScalar      GravityAngle;
-	// temperature - not active
-	PetscScalar      Temp_bottom, Temp_top;
-	char             TemperatureFilename[MAX_PATH_LEN];
-
+	// temperature on top and bottom boundaries
+	PetscScalar  Tbot, Ttop;
 
 } BCCtx;
 //---------------------------------------------------------------------------
 
-PetscErrorCode BCClear(BCCtx *bc);
-
 // create boundary condition context
-PetscErrorCode BCCreate(BCCtx *bc, FDSTAG *fs, TSSol *ts, Scaling *scal);
+PetscErrorCode BCCreate(BCCtx *bc, FB *fb);
 
-// set background strain-rates
-PetscErrorCode BCSetParam(BCCtx *bc);
+// allocate internal vectors and arrays
+PetscErrorCode BCCreateData(BCCtx *bc);
 
-// set parameters from PETSc options
-PetscErrorCode BCReadFromOptions(BCCtx *bc);
+// destroy boundary condition context
+PetscErrorCode BCDestroy(BCCtx *bc);
+
+// apply ALL boundary conditions
+PetscErrorCode BCApply(BCCtx *bc, Vec x);
+
+// apply SPC to global solution vector
+PetscErrorCode BCApplySPC(BCCtx *bc, Vec x);
+
+// shift indices of constrained nodes
+PetscErrorCode BCShiftIndices(BCCtx *bc, ShiftType stype);
+
+//---------------------------------------------------------------------------
+// Specific constraints
+//---------------------------------------------------------------------------
+
+// apply constraints on the boundaries
+PetscErrorCode BCApplyBound(BCCtx *bc);
+
+// apply Bezier blocks
+PetscErrorCode BCApplyBezier(BCCtx *bc);
+
+// apply inflow/outflow boundary velocities
+PetscErrorCode BCApplyBoundVel(BCCtx *bc);
+
+// apply dropping boxes
+PetscErrorCode BCApplyDBox(BCCtx *bc);
+
+// apply simple shear boundary velocities
+PetscErrorCode 	BCApplySimpleShearVel(BCCtx *bc);
+
+//---------------------------------------------------------------------------
+// Service functions (should be included in subclasses)
+//---------------------------------------------------------------------------
 
 // get current background strain rates
 PetscErrorCode BCGetBGStrainRates(
@@ -247,41 +271,11 @@ PetscErrorCode BCGetBGStrainRates(
 	PetscScalar *Eyy_,
 	PetscScalar *Ezz_);
 
-// destroy boundary condition context
-PetscErrorCode BCDestroy(BCCtx *bc);
-
-// apply boundary conditions
-PetscErrorCode BCApply(BCCtx *bc, Vec x);
-
-// apply constraints on the boundaries
-PetscErrorCode BCApplyBound(BCCtx *bc);
-
-// shift indices of constrained nodes
-PetscErrorCode BCShiftIndices(BCCtx *bc, ShiftType stype);
-
-// apply SPC to global solution vector
-PetscErrorCode BCApplySPC(BCCtx *bc, Vec x);
-
-//---------------------------------------------------------------------------
-
 // stretch staggered grid if background strain rates are defined
 PetscErrorCode BCStretchGrid(BCCtx *bc);
 
-//---------------------------------------------------------------------------
-
-PetscErrorCode BCApplyBezier(BCCtx *bc);
-
-PetscErrorCode BCSetupBoundVel(BCCtx *bc, PetscScalar top);
-
-PetscErrorCode BCApplyBoundVel(BCCtx *bc);
-
+// change phase of inflow markers if velocity boundary condition is defined
 PetscErrorCode BCOverridePhase(BCCtx *bc, PetscInt cellID, Marker *P);
 
-PetscErrorCode BCApplyDBox(BCCtx *bc);
-
-// simple shear BC
-PetscErrorCode 	BCApplySimpleShearVel(BCCtx *bc);
-
 //---------------------------------------------------------------------------
-
 #endif
