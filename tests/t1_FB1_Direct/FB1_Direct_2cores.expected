@@ -1,0 +1,187 @@
+ Parsing input file : ./t1_FB1_Direct/FallingBlock_mono_PenaltyDirect.dat 
+# Adding PetscOption: -dt 1e-2 
+# Adding PetscOption: -pcmat_no_dev_proj 
+# Adding PetscOption: -FSSA 1.0 
+# Adding PetscOption: -AddRandomNoiseParticles 0 
+# Adding PetscOption: -restart 0 
+# Adding PetscOption: -snes_type ksponly 
+# Adding PetscOption: -js_ksp_type gmres 
+# Adding PetscOption: -js_ksp_max_it 25 
+# Adding PetscOption: -js_ksp_converged_reason 
+# Adding PetscOption: -js_ksp_monitor 
+# Adding PetscOption: -js_ksp_rtol 1e-4 
+# Adding PetscOption: -js_ksp_atol 1e-10 
+# Adding PetscOption: -pcmat_type mono 
+# Adding PetscOption: -pcmat_pgamma 1e5 
+# Adding PetscOption: -jp_type user 
+# Adding PetscOption: -jp_pc_type lu 
+# Adding PetscOption: -out_pvd 1 
+# Adding PetscOption: -out_phase 1 
+# Adding PetscOption: -out_density 1 
+# Adding PetscOption: -out_velocity 1 
+# Adding PetscOption: -out_pressure 1 
+# Adding PetscOption: -out_temperature 1 
+# Adding PetscOption: -out_dev_stress 1 
+# Adding PetscOption: -out_j2_dev_stress 1 
+# Adding PetscOption: -out_strain_rate 1 
+# Adding PetscOption: -out_j2_strain_rate 1 
+# Adding PetscOption: -out_moment_res 1 
+# Adding PetscOption: -out_cont_res 1 
+# Adding PetscOption: -out_plast_strain 1 
+# Adding PetscOption: -out_avd 1 
+# Adding PetscOption: -out_avd_ref 3 
+# Adding PetscOption: -out_avd_pvd 1 
+# Adding PetscOption: -objects_dump 
+-------------------------------------------------------------------------- 
+                   Lithosphere and Mantle Evolution Model                   
+     Compiled: Date: Nov 11 2016 - Time: 23:49:20 	    
+-------------------------------------------------------------------------- 
+        STAGGERED-GRID FINITE DIFFERENCE CANONICAL IMPLEMENTATION           
+-------------------------------------------------------------------------- 
+Reading pushing parameters: 
+
+Reading softening laws: 
+
+Reading material parameters: 
+
+    Phase [0]: rho = 1. [ ], eta = 1. [ ], beta = 0. [ ]
+    Phase [0]: (diff ) Bd = 0.5 [ ], Ed = 0. [ ], Vd = 0. [ ] 
+    Phase [0]: (disl ) Bn = 0. [ ], En = 0. [ ], Vn = 0. [ ], n = 0. [ ] 
+    Phase [0]: (peirl) Bp = 0. [ ], Ep = 0. [ ], Vp = 0. [ ], taup = 0. [ ], gamma = 0. [ ], q = 0. [ ] 
+    Phase [0]: (elast) G = 0. [ ], K = 0. [ ], Kp = 0. [ ] 
+    Phase [0]: (plast) cohesion = 0. [ ], friction angle = 0. [ ] 
+    Phase [0]: (sweak) cohesion SoftLaw = -1 [ ], friction SoftLaw = -1 [ ] 
+    Phase [0]: (temp ) alpha = 0. [ ], cp = 0. [ ], k = 0. [ ], A = 0. [ ] 
+    
+    Phase [1]: rho = 2. [ ], eta = 100. [ ], beta = 0. [ ]
+    Phase [1]: (diff ) Bd = 0.005 [ ], Ed = 0. [ ], Vd = 0. [ ] 
+    Phase [1]: (disl ) Bn = 0. [ ], En = 0. [ ], Vn = 0. [ ], n = 0. [ ] 
+    Phase [1]: (peirl) Bp = 0. [ ], Ep = 0. [ ], Vp = 0. [ ], taup = 0. [ ], gamma = 0. [ ], q = 0. [ ] 
+    Phase [1]: (elast) G = 0. [ ], K = 0. [ ], Kp = 0. [ ] 
+    Phase [1]: (plast) cohesion = 0. [ ], friction angle = 0. [ ] 
+    Phase [1]: (sweak) cohesion SoftLaw = -1 [ ], friction SoftLaw = -1 [ ] 
+    Phase [1]: (temp ) alpha = 0. [ ], cp = 0. [ ], k = 0. [ ], A = 0. [ ] 
+    
+--------------------------------------------------------------------------
+ Total # of cpu's               : 2 
+ Number of tracers/cell         : [2,2,2] 
+ BC employed                    : BC.[LeftBound=1 RightBound=1; FrontBound=1 BackBound=1; LowerBound=1 UpperBound=1] 
+ CFL timestep factor            : 0.500000 
+ WARNING: Reference strain rate DII_ref is not defined. Use a non-dimensional reference value of DII_ref =1.000000 
+ Processor grid  [nx, ny, nz]   : [1, 1, 2]
+ Fine grid cells [nx, ny, nz]   : [16, 16, 16]
+ Number of cells                :  4096
+ Number of velocity DOF         :  13056
+ Maximum cell aspect cell ratio :  1.00000
+ Starting marker initialization routine
+ Marker setup employed [msetup] : block
+  FALLING BLOCK SETUP 
+      Block coordinates: [left,right]=[0.25,0.75]; 
+                         [front,back]=[0.25,0.75]; 
+                         [bottom,top]=[0.25,0.75]; 
+ Finished marker initialization routine
+ Preconditioner matrix type     : monolithic
+ Penalty parameter (pgamma)     : 1.000000e+05
+ Excluding deviatoric projection from preconditioner
+ Preconditioner type            : user-defined
+ Writing grid .pvd file to disk
+ Writing AVD3D .pvd file to disk
+ 
+Time step 0 -------------------------------------------------------- 
+USING PICARD JACOBIAN for iteration 0, ||F||/||F0||=1.000000e+00 
+    Residual norms for js_ solve.
+    0 KSP Residual norm 2.136003076501e+01 
+    1 KSP Residual norm 1.604217080351e-04 
+  Linear js_ solve converged due to CONVERGED_RTOL iterations 1
+ SNES Convergence Reason: maximum iterations reached
+ Number of iterations : 1
+ Nonlinear solve took 0.760704 (sec)
+------------------------------------------
+Residual summary: 
+  Continuity: 
+    Div_min  = -5.550719145965e-06 
+    Div_max  = 5.550729530554e-06 
+    |Div|_2  = 2.110210787048e-04 
+  Momentum: 
+    |mRes|_2 = 1.089622173018e-03 
+------------------------------------------
+ Created new directory Timestep_000000_0.000000e+00 
+AVD generator complete in 2.3716e-02 (sec)
+AVD3D memory usage: 
+  points:  1.000000 [MB] 
+  cells:   2.975464 [MB] 
+  chains:  4.353157 [MB] 
+  total:   8.328621 [MB] 
+ Time = 1e-05[ ], dt = 1e-05[ ] 
+ Finished timestep 0 out of 1 
+ 
+Time step 1 -------------------------------------------------------- 
+USING PICARD JACOBIAN for iteration 0, ||F||/||F0||=1.000000e+00 
+    Residual norms for js_ solve.
+    0 KSP Residual norm 3.029577543424e-04 
+    1 KSP Residual norm 4.584365665198e-09 
+  Linear js_ solve converged due to CONVERGED_RTOL iterations 1
+ SNES Convergence Reason: maximum iterations reached
+ Number of iterations : 1
+ Nonlinear solve took 0.606816 (sec)
+------------------------------------------
+Residual summary: 
+  Continuity: 
+    Div_min  = -7.881851768476e-11 
+    Div_max  = 6.845192815352e-11 
+    |Div|_2  = 2.569393252470e-09 
+  Momentum: 
+    |mRes|_2 = 5.670846690579e-04 
+------------------------------------------
+ Created new directory Timestep_000001_1.000000e-05 
+AVD generator complete in 2.3003e-02 (sec)
+AVD3D memory usage: 
+  points:  1.000000 [MB] 
+  cells:   2.975464 [MB] 
+  chains:  4.353134 [MB] 
+  total:   8.328598 [MB] 
+ Time = 2e-05[ ], dt = 1e-05[ ] 
+ Finished timestep 1 out of 1 
+ 
+ Simulation took 1.45815 (sec) 
+#PETSc Option Table entries:
+-AddRandomNoiseParticles 0
+-dt 1e-2
+-FSSA 1.0
+-jp_pc_factor_mat_solver_package mumps
+-jp_pc_type lu
+-jp_type user
+-js_ksp_atol 1e-10
+-js_ksp_converged_reason
+-js_ksp_max_it 25
+-js_ksp_monitor
+-js_ksp_rtol 1e-4
+-js_ksp_type gmres
+-mat_superlu_dist_fact SamePattern_SameRowPerm
+-objects_dump
+-options_left
+-out_avd 1
+-out_avd_pvd 1
+-out_avd_ref 3
+-out_cont_res 1
+-out_density 1
+-out_dev_stress 1
+-out_j2_dev_stress 1
+-out_j2_strain_rate 1
+-out_moment_res 1
+-out_phase 1
+-out_plast_strain 1
+-out_pressure 1
+-out_pvd 1
+-out_strain_rate 1
+-out_temperature 1
+-out_velocity 1
+-ParamFile ./t1_FB1_Direct/FallingBlock_mono_PenaltyDirect.dat
+-pcmat_no_dev_proj
+-pcmat_pgamma 1e5
+-pcmat_type mono
+-restart 0
+-snes_type ksponly
+#End of PETSc Option Table entries
+There is one unused database option. It is:
+Option left: name:-mat_superlu_dist_fact value: SamePattern_SameRowPerm

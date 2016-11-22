@@ -49,13 +49,14 @@
 // * replace setting time parameters consistently in the entire code
 
 //---------------------------------------------------------------------------
-
+/*
 typedef enum
 {
 	_APPLY_SPC_,
 	_SKIP_SPC_
 
 } SPCAppType;
+*/
 
 //---------------------------------------------------------------------------
 
@@ -139,6 +140,13 @@ typedef struct
 	Vec ge;   // energy residual (global)
 	KSP tksp; // temperature diffusion solver
 
+	//==========================
+	// 2D integration primitives
+	//==========================
+	DM DA_CELL_2D; // 2D cell center grid
+
+	Vec lp_lithos; // lithostatic pressure
+
 } JacRes;
 //---------------------------------------------------------------------------
 
@@ -174,13 +182,13 @@ PetscErrorCode JacResGetVorticity(JacRes *jr);
 PetscErrorCode JacResGetResidual(JacRes *jr);
 
 // copy solution from global to local vectors, enforce boundary constraints
-PetscErrorCode JacResCopySol(JacRes *jr, Vec x, SPCAppType appSPC);
+PetscErrorCode JacResCopySol(JacRes *jr, Vec x);
 
 // copy solution from global to local vectors, enforce boundary constraints
-PetscErrorCode JacResCopyVel(JacRes *jr, Vec x, SPCAppType appSPC);
+PetscErrorCode JacResCopyVel(JacRes *jr, Vec x);
 
 // copy solution from global to local vectors, enforce boundary constraints
-PetscErrorCode JacResCopyPres(JacRes *jr, Vec x, SPCAppType appSPC);
+PetscErrorCode JacResCopyPres(JacRes *jr, Vec x);
 
 // copy residuals from local to global vectors, enforce boundary constraints
 PetscErrorCode JacResCopyRes(JacRes *jr, Vec f);
@@ -269,6 +277,16 @@ PetscErrorCode JacResGetTempRes(JacRes *jr);
 
 // assemble temperature preconditioner matrix
 PetscErrorCode JacResGetTempMat(JacRes *jr);
+
+//---------------------------------------------------------------------------
+//......................   INTEGRATION FUNCTIONS   ..........................
+//---------------------------------------------------------------------------
+
+// compute overpressure field in the cell centers
+PetscErrorCode JacResGetOverPressure(JacRes *jr, Vec p);
+
+// compute lithostatic pressure in the cell centers
+PetscErrorCode JacResGetLithoStaticPressure(JacRes *jr);
 
 //---------------------------------------------------------------------------
 // MACROS

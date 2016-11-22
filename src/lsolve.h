@@ -152,13 +152,16 @@ PetscErrorCode PCStokesMGApply(Mat JP, Vec x, Vec y);
 // User-defined
 typedef struct
 {
-	PC pc; // general preconditioner object
+	PC pc;       // general preconditioner object
+	IS isv, isp; // velocity and pressure index sets
 
 } PCStokesUser;
 
 //---------------------------------------------------------------------------
 
 PetscErrorCode PCStokesUserCreate(PCStokes pc);
+
+PetscErrorCode PCStokesUserAttachIS(PCStokes pc);
 
 PetscErrorCode PCStokesUserDestroy(PCStokes pc);
 
@@ -167,4 +170,5 @@ PetscErrorCode PCStokesUserSetup(PCStokes pc);
 PetscErrorCode PCStokesUserApply(Mat JP, Vec x, Vec y);
 
 //---------------------------------------------------------------------------
+
 #endif

@@ -96,7 +96,7 @@ PetscErrorCode FreeSurfCreate(FreeSurf *surf, JacRes *jr, UserCtx *user)
 	ierr = DMDAGetOwnershipRanges(fs->DA_COR, &lx, &ly, NULL); CHKERRQ(ierr);
 
 	// create redundant free surface DMDA
-	ierr = DMDACreate3d(PETSC_COMM_WORLD,
+	ierr = DMDACreate3dSetUp(PETSC_COMM_WORLD,
 		DM_BOUNDARY_NONE, DM_BOUNDARY_NONE, DM_BOUNDARY_NONE,
 		DMDA_STENCIL_BOX,
 		fs->dsx.tnods, fs->dsy.tnods, fs->dsz.nproc,
@@ -136,10 +136,10 @@ PetscErrorCode FreeSurfReadFromOptions(FreeSurf *surf, Scaling *scal)
 	PetscFunctionBegin;
 
 	// read output flags
-	ierr = PetscOptionsGetBool  (NULL, "-surf_use",       &surf->UseFreeSurf, NULL); CHKERRQ(ierr);
-	ierr = PetscOptionsGetScalar(NULL, "-surf_level",     &surf->InitLevel,   NULL); CHKERRQ(ierr);
-	ierr = PetscOptionsGetInt   (NULL, "-surf_air_phase", &surf->AirPhase,    NULL); CHKERRQ(ierr);
-	ierr = PetscOptionsGetScalar(NULL, "-surf_max_angle", &surf->MaxAngle,    NULL); CHKERRQ(ierr);
+	ierr = PetscOptionsGetBool  (NULL, NULL, "-surf_use",       &surf->UseFreeSurf, NULL); CHKERRQ(ierr);
+	ierr = PetscOptionsGetScalar(NULL, NULL, "-surf_level",     &surf->InitLevel,   NULL); CHKERRQ(ierr);
+	ierr = PetscOptionsGetInt   (NULL, NULL, "-surf_air_phase", &surf->AirPhase,    NULL); CHKERRQ(ierr);
+	ierr = PetscOptionsGetScalar(NULL, NULL, "-surf_max_angle", &surf->MaxAngle,    NULL); CHKERRQ(ierr);
 
 	// nondimensionalize
 	surf->InitLevel /= scal->length;
@@ -207,7 +207,9 @@ PetscErrorCode FreeSurfAdvect(FreeSurf *surf)
 {
 	// advect topography of the free surface mesh
 
-	JacRes *jr;
+	JacRes      *jr;
+	FDSTAG      *fs;
+	PetscScalar  avg_topo;
 
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
@@ -217,6 +219,7 @@ PetscErrorCode FreeSurfAdvect(FreeSurf *surf)
 
 	// access context
 	jr = surf->jr;
+	fs = jr->fs;
 
 	// get surface velocities
 	ierr = FreeSurfGetVelComp(surf, &InterpXFaceCorner, jr->lvx, surf->vx); CHKERRQ(ierr);
@@ -225,6 +228,18 @@ PetscErrorCode FreeSurfAdvect(FreeSurf *surf)
 
 	// advect topography
 	ierr = FreeSurfAdvectTopo(surf); CHKERRQ(ierr);
+
+	// smooth topography spikes
+	ierr = FreeSurfSmoothMaxAngle(surf); CHKERRQ(ierr);
+
+	// set flat flag
+	surf->flat = PETSC_FALSE;
+
+	// compute & store average topography
+	ierr = VecSum(surf->gtopo, &avg_topo); CHKERRQ(ierr);
+	avg_topo /= (PetscScalar)(fs->dsx.tnods*fs->dsy.tnods*fs->dsz.nproc);
+	surf->avg_topo = avg_topo;
+	jr  ->avg_topo = avg_topo;
 
 	PetscFunctionReturn(0);
 }
@@ -255,7 +270,7 @@ PetscErrorCode FreeSurfGetVelComp(
 	jr    = surf->jr;
 	fs    = jr->fs;
 	dsz   = &fs->dsz;
-	level = dsz->rank;
+	level = (PetscInt)dsz->rank;
 
 	// create column communicator
 	ierr = Discret1DGetColumnComm(dsz); CHKERRQ(ierr);
@@ -340,7 +355,7 @@ PetscErrorCode FreeSurfAdvectTopo(FreeSurf *surf)
 	PetscInt    I, I1, I2, J, J1, J2;
 	PetscInt    i, j, jj, found, nx, ny, sx, sy, L, mx, my;
 	PetscScalar cx[13], cy[13], cz[13];
-	PetscScalar X, X1, X2, Y, Y1, Y2, Z, Exx, Eyy, step, gtol, avg_topo;
+	PetscScalar X, X1, X2, Y, Y1, Y2, Z, Exx, Eyy, step, gtol;
 	PetscScalar ***advect, ***topo, ***vx, ***vy, ***vz;
 
 	// local search grid triangulation
@@ -376,7 +391,7 @@ PetscErrorCode FreeSurfAdvectTopo(FreeSurf *surf)
 	step = jr->ts.dt;
 	mx   = fs->dsx.tnods;
 	my   = fs->dsy.tnods;
-	L    = fs->dsz.rank;
+	L    = (PetscInt)fs->dsz.rank;
 	gtol = jr->gtol;
 
 	// get current background strain rates
@@ -490,14 +505,163 @@ PetscErrorCode FreeSurfAdvectTopo(FreeSurf *surf)
 	// compute ghosted version of the advected surface topography
 	GLOBAL_TO_LOCAL(surf->DA_SURF, surf->gtopo, surf->ltopo);
 
-	// set flat flag
-	surf->flat = PETSC_FALSE;
+	PetscFunctionReturn(0);
+}
+//---------------------------------------------------------------------------
+#undef __FUNCT__
+#define __FUNCT__ "FreeSurfSmoothMaxAngle"
+PetscErrorCode FreeSurfSmoothMaxAngle(FreeSurf *surf)
+{
+	// smooth topography if maximum angle with horizon is exceeded
 
-	// compute & store average topography
-	ierr = VecSum(surf->gtopo, &avg_topo); CHKERRQ(ierr);
-	avg_topo /= (PetscScalar)(fs->dsx.tnods*fs->dsy.tnods*fs->dsz.nproc);
-	surf->avg_topo = avg_topo;
-	jr  ->avg_topo = avg_topo;
+	JacRes      *jr;
+	FDSTAG      *fs;
+	Vec         cellTopo;
+	PetscScalar ***ntopo, ***ctopo;
+	PetscScalar tanMaxAng, zbot, dx, dy, h, t, tmax, cz[4], Ezz, step;
+	PetscInt    i, j, nx, ny, sx, sy, L, cnt, gcnt, I1, I2, J1, J2, mx, my;
+
+	PetscErrorCode ierr;
+	PetscFunctionBegin;
+
+	// check whether smoothing is activated
+	if(surf->MaxAngle == 0.0) PetscFunctionReturn(0);
+
+	// access context
+	jr        = surf->jr;
+	fs        = jr->fs;
+	mx        = fs->dsx.tnods - 1;
+	my        = fs->dsy.tnods - 1;
+	L         = (PetscInt)fs->dsz.rank;
+	step      = jr->ts.dt;
+	tanMaxAng = PetscTanReal(surf->MaxAngle);
+	zbot      = jr->fs->dsz.crdbeg;
+
+	// get current background strain rates
+	ierr = BCGetBGStrainRates(jr->bc, NULL, NULL, &Ezz); CHKERRQ(ierr);
+
+	// update position of bottom boundary
+	zbot *= (1.0 + step*Ezz);
+
+	// get cell topography vector
+	ierr = DMGetLocalVector(jr->DA_CELL_2D, &cellTopo); CHKERRQ(ierr);
+
+	ierr = VecZeroEntries(cellTopo); CHKERRQ(ierr);
+
+	// access cell topography
+	ierr = DMDAVecGetArray(jr->DA_CELL_2D, cellTopo, &ctopo); CHKERRQ(ierr);
+
+	// access surface topography (corner nodes)
+	ierr = DMDAVecGetArray(surf->DA_SURF, surf->ltopo,  &ntopo); CHKERRQ(ierr);
+
+	// scan all local cells
+	ierr = DMDAGetCorners(fs->DA_CEN, &sx, &sy, NULL, &nx, &ny, NULL); CHKERRQ(ierr);
+
+	cnt = 0;
+
+	START_PLANE_LOOP
+	{
+		// get horizontal cell sizes
+		dx = SIZE_CELL(i, sx, fs->dsx);
+		dy = SIZE_CELL(j, sy, fs->dsy);
+
+		// get topography at cell corners
+		cz[0] = ntopo[L][j  ][i  ];
+		cz[1] = ntopo[L][j  ][i+1];
+		cz[2] = ntopo[L][j+1][i  ];
+		cz[3] = ntopo[L][j+1][i+1];
+
+		// estimate maximum free surface deviation from horizon
+		t = PetscAbsScalar(cz[1] - cz[0])/dx;              tmax = t;
+		t = PetscAbsScalar(cz[3] - cz[2])/dx; if(t > tmax) tmax = t;
+		t = PetscAbsScalar(cz[2] - cz[0])/dy; if(t > tmax) tmax = t;
+		t = PetscAbsScalar(cz[3] - cz[1])/dy; if(t > tmax) tmax = t;
+
+		// get average cell height
+		h = (cz[0] + cz[1] + cz[2] + cz[3])/4.0 - zbot;
+
+		// mark (with negative value) and count local affected cells
+		if(tmax > tanMaxAng) { h = -h; cnt++; }
+
+		// store cell topography
+		ctopo[L][j][i] = h;
+	}
+	END_PLANE_LOOP
+
+	// restore access
+	ierr = DMDAVecRestoreArray(jr->DA_CELL_2D, cellTopo, &ctopo); CHKERRQ(ierr);
+
+	ierr = DMDAVecRestoreArray(surf->DA_SURF, surf->ltopo, &ntopo); CHKERRQ(ierr);
+
+	// count global affected cells
+	if(ISParallel(PETSC_COMM_WORLD))
+	{
+		ierr = MPI_Allreduce(&cnt, &gcnt, 1, MPIU_INT, MPI_SUM, PETSC_COMM_WORLD); CHKERRQ(ierr);
+	}
+	else
+	{
+		gcnt = cnt;
+	}
+
+	// return if topography is within the limits
+	if(!gcnt)
+	{
+		ierr = DMRestoreLocalVector(jr->DA_CELL_2D, &cellTopo); CHKERRQ(ierr);
+
+		PetscFunctionReturn(0);
+	}
+
+	// fill ghost points
+	LOCAL_TO_LOCAL(jr->DA_CELL_2D, cellTopo)
+
+	// access cell topography
+	ierr = DMDAVecGetArray(jr->DA_CELL_2D, cellTopo, &ctopo); CHKERRQ(ierr);
+
+	// access surface topography (corner nodes)
+	ierr = DMDAVecGetArray(surf->DA_SURF, surf->gtopo,  &ntopo); CHKERRQ(ierr);
+
+	// scan all local nodes
+	ierr = DMDAGetCorners(fs->DA_COR, &sx, &sy, NULL, &nx, &ny, NULL); CHKERRQ(ierr);
+
+	START_PLANE_LOOP
+	{
+		// check index bounds
+		I1 = i;   if(I1 == mx) I1--;
+		I2 = i-1; if(I2 == -1) I2++;
+		J1 = j;   if(J1 == my) J1--;
+		J2 = j-1; if(J2 == -1) J2++;
+
+		// get topography at neighboring cell centers
+		cz[0] = ctopo[L][J1][I1];
+		cz[1] = ctopo[L][J1][I2];
+		cz[2] = ctopo[L][J2][I1];
+		cz[3] = ctopo[L][J2][I2];
+
+		// check whether nodal topography needs correction
+		cnt = 0;
+
+		if(cz[0] < 0.0) { cz[0] = -cz[0]; cnt++; }
+		if(cz[1] < 0.0) { cz[1] = -cz[1]; cnt++; }
+		if(cz[2] < 0.0) { cz[2] = -cz[2]; cnt++; }
+		if(cz[3] < 0.0) { cz[3] = -cz[3]; cnt++; }
+
+		// smooth nodal topography
+		if(cnt)
+		{
+			ntopo[L][j][i] = (cz[0] + cz[1] + cz[2] + cz[3])/4.0 + zbot;
+		}
+	}
+	END_PLANE_LOOP
+
+	// restore access
+	ierr = DMDAVecRestoreArray(jr->DA_CELL_2D, cellTopo, &ctopo); CHKERRQ(ierr);
+
+	ierr = DMDAVecRestoreArray(surf->DA_SURF, surf->gtopo, &ntopo); CHKERRQ(ierr);
+
+	ierr = DMRestoreLocalVector(jr->DA_CELL_2D, &cellTopo); CHKERRQ(ierr);
+
+	// fill ghost points
+	GLOBAL_TO_LOCAL(surf->DA_SURF, surf->gtopo, surf->ltopo);
 
 	PetscFunctionReturn(0);
 }
@@ -515,6 +679,7 @@ PetscErrorCode FreeSurfGetAirPhaseRatio(FreeSurf *surf)
 	PetscScalar xleft, xright, yfront, yback, zbot, ztop;
 	PetscInt    L, jj, iter, numPhases, AirPhase;
 	PetscInt    i, j, k, nx, ny, nz, sx, sy, sz;
+	PetscBool   DeactivateFreeSurfaceCorrection = PETSC_FALSE;
 
 	// cell triangulation
 	PetscInt tria [] =
@@ -531,13 +696,18 @@ PetscErrorCode FreeSurfGetAirPhaseRatio(FreeSurf *surf)
 	// free surface cases only
 	if(surf->UseFreeSurf != PETSC_TRUE) PetscFunctionReturn(0);
 
+	// add this to the command line to deactivate the free surface correction
+	PetscOptionsHasName(NULL, NULL,"-DeactivateFreeSurfaceCorrection",&DeactivateFreeSurfaceCorrection);
+	if(DeactivateFreeSurfaceCorrection == PETSC_TRUE) PetscFunctionReturn(0);
+
+
 	// access context
 	jr        = surf->jr;
 	AirPhase  = surf->AirPhase;
 	fs        = jr->fs;
 	gtol      = jr->gtol;
 	numPhases = jr->numPhases;
-	L         = fs->dsz.rank;
+	L         = (PetscInt)fs->dsz.rank;
 	iter      = 0;
 
 	// access surface topography
@@ -629,6 +799,9 @@ PetscErrorCode FreeSurfAppErosion(FreeSurf *surf)
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
 
+	// free surface cases only
+	if(surf->UseFreeSurf != PETSC_TRUE) PetscFunctionReturn(0);
+
 	scal = &surf->jr->scal;
 
 	if(surf->ErosionModel == 1)
@@ -667,12 +840,15 @@ PetscErrorCode FreeSurfAppSedimentation(FreeSurf *surf)
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
 
+	// free surface cases only
+	if(surf->UseFreeSurf != PETSC_TRUE) PetscFunctionReturn(0);
+
 	// access context
 	jr   = surf->jr;
 	fs   = jr->fs;
 	dt   = jr->ts.dt;
 	time = jr->ts.time;
-	L    = fs->dsz.rank;
+	L    = (PetscInt)fs->dsz.rank;
 
 	// get z-coordinates of the top and bottom boundaries
 	ierr = FDSTAGGetGlobalBox(fs, NULL, NULL, &zbot, NULL, NULL, &ztop); CHKERRQ(ierr);
@@ -770,7 +946,7 @@ PetscErrorCode FreeSurfSetTopoFromFile(
 	jr    = surf->jr;
 	fs    = jr->fs;
 	dsz   = &fs->dsz;
-	level = dsz->rank;
+	level = (PetscInt)dsz->rank;
 
 
 	// characteristic length
@@ -1023,6 +1199,7 @@ PetscScalar IntersectTriangularPrism(
 	return (vbot - vtop)/2.0/vcell;
 }
 //---------------------------------------------------------------------------
+
 /*
 {
 	// TEST
@@ -1086,7 +1263,7 @@ PetscErrorCode SetSinusoidalPerturbation(PetscScalar SinusoidalFreeSurfaceAmplit
 	}
 	ierr = DMDAVecRestoreArray(user->DA_SurfaceTopography,user->SurfaceTopography, 	&LocalSurfaceTopography	);	CHKERRQ(ierr);
 	ierr = DMDAVecRestoreArray(cda_SurfaceTopo,gc_SurfaceTopo,						&coors_SurfaceTopo		); 	CHKERRQ(ierr);
-	VecMax(user->SurfaceTopography,PETSC_NULL, &maxVec);
+	VecMax(user->SurfaceTopography,NULL, &maxVec);
 	PetscPrintf(PETSC_COMM_WORLD,"max topo = %f ", maxVec*user->Characteristic.Length/1000.0);
 	PetscFunctionReturn(0);
 }

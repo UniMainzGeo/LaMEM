@@ -1,0 +1,291 @@
+
+
+# ----------------------------------------------------------------------------------------------------------------------
+# A basic parameter file for FDSTAG Canonical setup for creating metamorphic core complexes
+# NOTE: use CreateMarkers_Subduction.m to generate the input geometry
+# ----------------------------------------------------------------------------------------------------------------------
+
+# Define number of elements in x, y, z-direction
+# Negative number implies corresponding number of mesh segments
+# Data is provided in the variables seg_x, seg_y, seg_z and includes:
+#    * coordinates of the delimiters between the segments (n-1 points)
+#    * number of cells                                    (n points)
+#    * bias coefficients                                  (n points) 
+ 
+nel_x						=   128  #  512-256
+nel_y						= 	2      # 2
+nel_z						= 	32     # 140-64
+
+
+# Geometry
+units                           =	geo
+Characteristic.Length			=	10e5 #	[m]				
+Characteristic.Viscosity 		=	1e22 #  [Pa s]	
+Characteristic.Temperature		=	1000 # [K]		
+Characteristic.Stress      		=   1e10 # [Pa]			
+
+L						=	10			# Width  (y-direction)
+W						=	4000		# Length (x-direction) 4000e3
+H						=	660		# Height (z-direction) 660e3
+
+x_left  =   -2000;      % coord of the left margin
+y_front =   -5;         % coord of the front margin
+z_bot   =   -660;      % coord of the bottom margin
+
+
+# Phase distribution
+NumPartX				=	3   # Particles/Cell in x-direction
+NumPartY				=	3   # Particles/Cell in y-direction
+NumPartZ				=	3	# Particles/Cell in z-direction
+
+# Properties that are defined over the whole domain:
+Gravity					=  -10;									# [m/s2] - gravitational acceleration 
+
+# --- Model setup and noise ---
+msetup					= parallel
+ParticleFilename              		= Particles 			# File that contains markers distribution (matlab)
+LoadInitialParticlesDirectory 		= t3_SubductionMATLABinput/MatlabInputParticles_p1                 # directory that contains markers distribution (matlab)
+
+# Define input/output and numerics-related stuff
+OutputFile				= SubductionModel	
+save_breakpoints 		= 500
+save_timesteps			= 1				# save every ? timesteps
+time_end				= 5			# last timestep
+CFL						= 0.5				# CFL, dt-based criterium
+dt_max					= 0.5	  	   	# Maximum timestep [Myrs]
+	
+# Boundary conditions
+
+Temp_top	    			= 20				# Temperature @ top
+Temp_bottom				= 1465 				# Temperature @ bottom; side BC's are flux-free
+
+    
+#===============================================================================
+# ............................ PETSc options ...................................
+#===============================================================================
+
+
+<PetscOptionsStart>
+
+# If you have a non-linear system just switch off the option 
+-InitViscosity 1e22
+-use_marker_control
+
+
+# SNES (nonlinear) options
+-snes_ksp_ew			# Eisenstat Walker algorithm
+-snes_monitor
+-snes_atol 1e-4			#-16
+-snes_rtol 1e-3
+-snes_stol 1e-16
+-snes_max_it 30
+-snes_max_funcs 500000
+-snes_max_linear_solve_fail 10000
+#-snes_type ksponly
+
+# Newton/picard options
+-snes_PicardSwitchToNewton_rtol 5e-2 		# relative tolerance to switch to Newton (1e-2)
+-snes_NewtonSwitchToPicard_it  	20		# number of Newton iterations after which we switch back to Picard
+-snes_NewtonSwitchToPicard_rtol 1.1		# relative tolerance compared to first iteration step
+
+# Linesearch options
+-snes_linesearch_monitor
+-snes_linesearch_type basic 				#Linesearch type (one of) shell basic l2 bt cp (SNESLineSearchSetType)  [l2 seems to work better with VEP]
+-snes_linesearch_maxstep 1.0			# very important to prevent the code from "blowing up"
+
+# Jacobian (linear) outer KSP
+-js_ksp_type fgmres
+-js_ksp_max_it 25
+-js_ksp_converged_reason
+-js_ksp_monitor
+-js_ksp_rtol 1e-5
+-js_ksp_atol 1e-5  				#-16
+
+# Stokes Preconditioner
+
+# Matrix type
+-pcmat_type mono			# monolithic matrix [coupled MG solver]
+-pcmat_no_dev_proj
+
+# Direct solver with penalty method
+-pcmat_type 	mono
+-pcmat_pgamma 	1e5				# penalty parameter
+-jp_type 		user
+-jp_pc_type 	lu
+#	-jp_pc_factor_mat_solver_package superlu_dist
+
+#Advection scheme
+-new_advection
+-advection 2
+-velinterp 2
+
+
+# internal free surface
+	#-FSSA 5.0
+	#-surf_use        1
+	#-surf_level      0
+	#-surf_air_phase  0
+	#-surf_max_angle  45.0
+
+
+	-out_pvd 1
+	-out_phase 1  
+	-out_density 1
+	-out_velocity 1
+	-out_pressure 1
+    -out_dev_stress 1
+    -out_j2_dev_stress 1
+    -out_strain_rate 1
+    -out_j2_strain_rate 1
+    -out_temperature 1
+	-out_plast_strain 1
+	-out_cont_res 1
+	-out_moment_res 1
+
+
+<PetscOptionsEnd>
+
+# viscosity cutoff and initial strain-rate guess
+LowerViscosityCutoff			=	2.5e18
+UpperViscosityCutoff			=	2.5e24
+DII_ref                        		= 	1e-16    
+
+#===============================================================================
+# ............................ Material Parameters .............................
+#===============================================================================
+
+    # ------------------- plastic oceanic crust -------------------
+	<MaterialStart>
+		ID   	= 	0
+		rho0 	= 	3300
+		eta    	= 	2.5e23	
+        
+        # Elasticity
+		shear   =   5e10
+
+		# Plasticity
+		cohesion    =   20e6 		# cohesion [Pa]
+       	friction    =   0          # friction angle [deg] 30
+
+		# Temperature paramenters
+		k			= 	3	# thermal conductivity - if dimensional [W/m/K]
+		cp			=	1050	# heat capacity - if dimensional [J/kg/K]
+		#A			=	0	# radiogenic heat production - if dimensional [W/m3]
+         	
+	<MaterialEnd>
+
+    # ------------------- OceanicPlate -------------------
+    # Crust rheology from Dry Upper Crust  - SchmalholzKausBurg(2009) #
+	<MaterialStart>
+		ID   	= 	1
+		rho0 	= 	3300
+		#eta    	= 	2.5e23
+
+      		 # Creep
+       # disl_profile = Dry_Olivine-Ranalli_1995 
+       # diff_profile = Dry_Olivine_diff_creep-Hirth_Kohlstedt_2003
+
+        # diffusion creep
+		Bd              =   1.5e-9                          #1.5e9                                
+		Ed       		= 	375e3                                           # activation energy - if dimensional [J/mol]
+		Vd       		= 	3e-6                            #2e-6
+        
+		# dislocation creep
+        Bn            =   1.4806e-16                   #   2.5e4
+        n             =   3.5
+        En            =   532e3
+        Vn            =   15e-6                         #11e-6
+       
+
+		# Temperature energy parameters
+		k			= 	3	# 2.5thermal conductivity - if dimensional [W/m/K]
+		cp			=	1050	# 1.2e3 heat capacity - if dimensional [J/kg/K]
+		#A			=	0	# radiogenic heat production - if dimensional [W/m3]
+
+      	# Density temperature dependent 
+        	 alpha   =   1e-5    # coeff. of thermal expansion
+	
+		# Elasticity
+		shear   =   5e10
+
+		# Plasticity
+		cohesion    =   20e6 		# cohesion [Pa]
+       	friction    =   30 		# friction angle [deg] 30
+	
+	<MaterialEnd>
+	# ------------------- WeakLayer -------------------
+    # Crust rheology from Dry Upper Crust  - SchmalholzKausBurg(2009) #
+	<MaterialStart>
+		ID   	= 	2
+		rho0 	= 	3300
+	#density temperature dependent 
+        	alpha   =   1e-5    # coeff. of thermal expansion
+        # creep
+	    #disl_profile =  Quarzite-Ranalli_1995
+        eta    	= 	2.5e19
+
+     
+	<MaterialEnd>
+    # ------------------- MANTLE -------------------
+	# Crust rheology from Dry Upper Crust  - SchmalholzKausBurg(2009) #
+	<MaterialStart>
+		ID   	= 	3
+		rho0 	= 	3300
+		#eta    	= 	2.5e21
+
+		 # Creep
+        #disl_profile = Dry_Olivine-Ranalli_1995 
+        #diff_profile = Dry_Olivine_diff_creep-Hirth_Kohlstedt_2003
+                     # diffusion creep
+		Bd              =   1.5e-9                          #1.5e9                                
+		Ed       		= 	375e3                                           # activation energy - if dimensional [J/mol]
+		Vd       		= 	3e-6  
+        
+		# dislocation creep
+        Bn            =   1.4806e-16                   #   2.5e4
+        n             =   3.5
+        En            =   532e3
+        Vn            =   15e-6
+       
+  
+		## Peierls creep
+		#Bp       		= 	1	# Peierls creep coeff - if dimensional [1/(Pa.s)]
+		#Ep       		= 	1	# activation energy - if dimensional [J/mol]
+		#Vp       		= 	1	# activation volume - if dimensional [cm3/mol]
+		#taup       		= 	1	# scaling stress - if dimensional [Pa]
+		#gamma       		= 	0.1	# approximation parameter [-]
+		#q       		= 	2	# stress dependent parameters [-]
+
+		# elasticity
+		#shear        		= 	5e10	# elastic shear modulus - if dimensional [Pa]
+		#bulk        		= 	1e11	# elastic bulk modulus - if dimensional [Pa]
+		#Kp       		= 	1	# pressure-dependent parameters [-]
+
+		# plasticity
+		#cohesion        	= 	4e6	# cohesion - if dimensional [Pa]
+		#friction		= 	30	# friction angle - if dimensional [deg]
+
+		# plasticity - strain weakening
+		#chSoftID               = 	1	# softening law id - for cohesion
+		#frSoftID               = 	0	# softening law id - for friction angle
+
+		# temp
+		k			= 	3	# thermal conductivity - if dimensional [W/m/K]
+		cp			=	1050	# heat capacity - if dimensional [J/kg/K]
+		#A			=	0	# radiogenic heat production - if dimensional [W/m3]
+         	
+		#density temperature dependent 
+        	alpha   =   1e-5    # coeff. of thermal expansion
+
+	
+
+		# Elasticity
+		shear   =   5e10
+	
+		# Plasticity
+		cohesion    =   20e6 		# cohesion [Pa]
+      	friction    =   30 		# friction angle [deg] 30
+
+	<MaterialEnd>
+
+# End of defining material properties for all phases ----------------------------------------

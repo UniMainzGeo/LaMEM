@@ -68,14 +68,15 @@ typedef struct
 // setup nonlinear constitutive equation evaluation context
 // evaluate dependence on constant parameters (pressure, temperature)
 PetscErrorCode ConstEqCtxSetup(
-	ConstEqCtx  *ctx,  // evaluation context
-	Material_t  *mat,  // phase parameters
-	MatParLim   *lim,  // phase parameters limits
-	PetscScalar  DII,  // effective strain-rate
-	PetscScalar  APS,  // accumulated plastic strain
-	PetscScalar  dt,   // time step
-	PetscScalar  p,    // pressure
-	PetscScalar  T);    // temperature
+	ConstEqCtx  *ctx,  			// evaluation context
+	Material_t  *mat,  			// phase parameters
+	MatParLim   *lim,  			// phase parameters limits
+	PetscScalar  DII,  			// effective strain-rate
+	PetscScalar  APS,  			// accumulated plastic strain
+	PetscScalar  dt,   			// time step
+	PetscScalar  p,    			// pressure
+	PetscScalar  p_lithos,    	// lithostatic pressure
+	PetscScalar  T);   	 		// temperature
 
 // compute residual of the visco-elastic constitutive equation
 PetscScalar GetConsEqRes(PetscScalar eta, void *pctx);
@@ -85,6 +86,7 @@ PetscErrorCode GetEffVisc(
 	MatParLim   *lim,
 	PetscScalar *eta_total,
 	PetscScalar *eta_creep,
+	PetscScalar *eta_viscoplastic,
 	PetscScalar *DIIpl,
 	PetscScalar *dEta,
 	PetscScalar *fr);
@@ -101,15 +103,17 @@ PetscScalar GetI2Gdt(
 
 // Evaluate deviatoric constitutive equations in control volume
 PetscErrorCode DevConstEq(
-	SolVarDev   *svDev,     // solution variables
-	PetscScalar *eta_creep, // creep viscosity (for output)
-	PetscInt     numPhases, // number phases
-	Material_t  *phases,    // phase parameters
-	PetscScalar *phRat,     // phase ratios
-	MatParLim   *lim,       // phase parameters limits
-	PetscScalar  dt,        // time step
-	PetscScalar  p,         // pressure
-	PetscScalar  T);        // temperature
+	SolVarDev   *svDev,     		// solution variables
+	PetscScalar *eta_creep, 		// creep viscosity (for output)
+	PetscScalar *eta_viscoplastic, 	// viscoplastic viscosity (for output)
+	PetscInt     numPhases, 		// number phases
+	Material_t  *phases,    		// phase parameters
+	PetscScalar *phRat,     		// phase ratios
+	MatParLim   *lim,       		// phase parameters limits
+	PetscScalar  p_lithos,     		// lithostatic pressure
+	PetscScalar  dt,        		// time step
+	PetscScalar  p,        			// pressure
+	PetscScalar  T);        		// temperature
 
 // Evaluate volumetric constitutive equations in control volume
 PetscErrorCode VolConstEq(

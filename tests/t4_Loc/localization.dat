@@ -1,0 +1,209 @@
+# 3D localization test
+
+# Grid
+nel_x =  64
+nel_y =  2
+nel_z =  16
+
+# Geometry
+
+W      =  40    # Width  (x-direction)
+H      =  15    # Height (z-direction)
+x_left = -20    # Left side of domain
+y_front = 0     # Front side of domain
+z_bot   = 0     # Bottom of box
+L       = 0.625 # Length (y-direction)
+
+# Characteristic values
+units                      = geo
+Characteristic.Length      = 1e4  # [m]
+Characteristic.Viscosity   = 1e20 # [Pa.s]
+Characteristic.Temperature = 1    # [K]
+Characteristic.Stress      = 1e8  # [Pa]
+
+
+# Model setup
+msetup = bands
+
+
+# Time stepping and output
+OutputFile					=	test_vep_analytical
+save_timesteps				=	1				# save every ? timesteps
+time_end					=	20				# last timestep
+CFL							=	0.1				# CFL, dt-based criterium
+dt_max						=	1e-2  			# Maximum timestep [Myr if dimensional]
+
+
+# Boundary conditions
+Temp_top	    			=   0				# Temperature @ top
+Temp_bottom					=   0 				# Temperature @ bottom; side BC's are flux-free
+Gravity						=  -10;				=# [m/s2] - gravitational acceleration
+
+
+# Control parameters
+LowerViscosityCutoff = 1e16
+UpperViscosityCutoff = 1e27
+DII_ref              = 1e-15
+FSSA                 = 1.0
+InitViscosity        = 1e20
+
+    
+# Phase distribution
+NumPartX				=	5   # Particles/Cell in x-direction
+NumPartY				=	5   # Particles/Cell in y-direction
+NumPartZ				=	5	# Particles/Cell in z-direction
+
+#===============================================================================
+# ............................... PETSc options.................................
+#===============================================================================
+
+<PetscOptionsStart>
+
+	# matrix-free closed-form Jacobian if this is uncommented
+	#-jac_mat_free
+	#-out_jac_test 1
+	-skip_press_shift
+	-open_top_bound
+
+	# Background strain rate
+	-ExxNumPeriods  1
+	-ExxStrainRates -1e-15
+
+	# Time step (Myr)
+	-dt 1.5e-3
+
+	# shear bands setup
+	-H_layer 		  10
+	-H_bottom 		  0
+	-Inclusion_use
+	-Inclusion_size	  1
+	
+#	-Inclusion_offset 10
+#	-Inclusion_length 10
+
+
+	# SNES (nonlinear) options
+	-snes_ksp_ew			# Eisenstat Walker algorithm
+	-snes_ksp_ew_rtolmax  1e-1
+	-snes_monitor
+#	-snes_atol 1e-9
+	-snes_atol 1e-7
+	-snes_rtol 1e-4
+	-snes_stol 1e-16
+	-snes_max_it 50
+	-snes_max_funcs 500000
+	-snes_max_linear_solve_fail 10000
+	
+	#-snes_type ksponly
+
+	# Newton/picard options
+	-snes_PicardSwitchToNewton_rtol 1e-1 		# relative tolerance to switch to Newton (1e-2)
+	-snes_NewtonSwitchToPicard_it  	20		# number of Newton iterations after which we switch back to Picard
+	-snes_NewtonSwitchToPicard_rtol 1.1		# relative tolerance compared to first iteration step
+
+	# Linesearch options
+#	-snes_linesearch_monitor
+#	-snes_linesearch_type l2 				# Linesearch type (one of) shell basic l2 bt cp (SNESLineSearchSetType)  [l2 seems to work better with VEP]
+#	-snes_linesearch_maxstep 1.0			# very important to prevent the code from "blowing up"
+
+	# Jacobian solver
+	-js_ksp_type fgmres
+	-js_ksp_max_it 50
+	-js_ksp_converged_reason
+	-js_ksp_rtol 1e-10
+	-js_ksp_atol 1e-14
+
+
+	# Direct solver
+	-pcmat_type mono
+	-pcmat_pgamma 1e3
+	-jp_type user
+	-jp_pc_type lu
+	-jp_pc_factor_mat_solver_package mumps
+
+
+	# Additional command-line Petsc Options
+	#-AddRandomNoiseParticles 0
+	-restart 0
+	-save_breakpoints 0
+	-objects_dump
+	-restart 0
+#	-SkipStokesSolver 1
+#	-SavePartitioning
+
+	# output
+	-out_pvd 1
+	-out_phase 1
+	-out_density 1
+	-out_viscosity 1
+	-out_velocity 1
+	-out_pressure 1
+	-out_temperature 1#
+	-out_dev_stress 1
+	-out_j2_dev_stress 1
+	-out_strain_rate 1
+	-out_j2_strain_rate 1
+	-out_plast_strain 1
+	-out_plast_strain 1
+	-out_moment_res 1
+	-out_cont_res 1
+
+	-AVDPhaseViewer 0
+
+
+<PetscOptionsEnd>
+
+#===============================================================================
+# ............................ Material Parameters .............................
+#===============================================================================
+
+	# Strain softening parameters
+	<SofteningStart>
+		softID = 0
+		A      = 0.25
+#		A      = 1.0
+		APS1   = 0.000000001
+		APS2   = 0.001
+	<SofteningEnd>
+
+
+	# Inclusion
+	<MaterialStart>
+		ID              = 0     # phase id  [-]
+		rho0            = 2700	# density - if dimensional [kg/m3]
+		eta             = 1e21	# Viscosity - dimensional [Pa.s]
+		shear           =  5e10
+		cohesion        =  50e6
+		friction        =  30
+		frSoftID        =  0 # softening ID
+		chSoftID        =  0
+	<MaterialEnd>
+
+
+	# Matrix
+	<MaterialStart>
+		ID              =  1      # phase id  [-]
+		rho0            =  2700   # density - if dimensional [kg/m3]
+		eta             =  1e24   # Viscosity - dimensional [Pa.s]
+
+		shear           =  5e10
+		cohesion        =  50e6
+		friction        =  30
+		frSoftID        =  0 # softening ID
+		chSoftID        =  0
+	<MaterialEnd>
+
+
+	# sticky-air layer
+	<MaterialStart>
+		ID              = 2     # phase id  [-]
+		rho0            = 100	# density - if dimensional [kg/m3]
+		eta             = 1e21	# Viscosity - dimensional [Pa.s]
+		shear           =  5e10
+		cohesion        =  50e6
+		friction        =  30
+		frSoftID        =  0 # softening ID
+		chSoftID        =  0
+	<MaterialEnd>
+
+# End of defining material properties for all phases ----------------------------------------

@@ -109,8 +109,8 @@ PetscErrorCode ADVelReadOptions(AdvVelCtx *vi)
 	val1 = 0; // STAG interp
 
 	// read options
-	ierr = PetscOptionsGetInt(NULL, "-advection", &val0, NULL); CHKERRQ(ierr);
-	ierr = PetscOptionsGetInt(NULL, "-velinterp", &val1, NULL); CHKERRQ(ierr);
+	ierr = PetscOptionsGetInt(NULL, NULL, "-advection", &val0, NULL); CHKERRQ(ierr);
+	ierr = PetscOptionsGetInt(NULL, NULL, "-velinterp", &val1, NULL); CHKERRQ(ierr);
 
 	// advection scheme
 	if      (val0 == 0) { vi->advection = EULER;         PetscPrintf(PETSC_COMM_WORLD," Advection Scheme: %s\n","Euler 1st order"      ); }
@@ -558,6 +558,11 @@ PetscErrorCode ADVelRetrieveCoord(AdvCtx *actx, VelInterp *interp, PetscInt n)
 		actx->markers[p].X[0] = interp[jj].x[0];
 		actx->markers[p].X[1] = interp[jj].x[1];
 		actx->markers[p].X[2] = interp[jj].x[2];
+
+		// displacement
+		actx->markers[p].U[0] += interp[jj].x[0] - interp[jj].x0[0];
+		actx->markers[p].U[1] += interp[jj].x[1] - interp[jj].x0[1];
+		actx->markers[p].U[2] += interp[jj].x[2] - interp[jj].x0[2];
 	}
 
 	PetscFunctionReturn(0);
@@ -2300,7 +2305,7 @@ PetscErrorCode ADVelInterpSTAGP(AdvVelCtx *vi)
 	B = 1.0/3.0;
 
 	PetscScalar val=0.0;
-	PetscOptionsGetScalar(PETSC_NULL, "-A", &val, PETSC_NULL);
+	PetscOptionsGetScalar(NULL, NULL, "-A", &val, NULL);
 	if (val) { A = val; B = 1.0 - A; }
 
 	// access context

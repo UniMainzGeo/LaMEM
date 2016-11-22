@@ -618,7 +618,7 @@ PetscErrorCode PetscOptionsReadFromFile(
 	char *all_options;
 
 	// NEW OPTIONS WILL BE ADDED *** BEFORE *** ALREADY SPECIFIED  
-	ierr = PetscOptionsGetAll( &all_options );  CHKERRQ(ierr); /* copy all command line args */
+	ierr = PetscOptionsGetAll(NULL,  &all_options );  CHKERRQ(ierr); /* copy all command line args */
 
 	PetscPrintf(PETSC_COMM_WORLD," Parsing input file : %s \n", filename);
 
@@ -672,7 +672,7 @@ PetscErrorCode PetscOptionsReadFromFile(
 				}
 
 				// Add to petsc options
-				ierr = PetscOptionsInsertString(next); CHKERRQ(ierr);
+				ierr = PetscOptionsInsertString(NULL, next); CHKERRQ(ierr);
 
 				continue;
 			}
@@ -684,7 +684,7 @@ PetscErrorCode PetscOptionsReadFromFile(
 	fclose(fp);
 
 	// force command line args in to override defaults
-	ierr = PetscOptionsInsertString( all_options ); CHKERRQ(ierr);
+	ierr = PetscOptionsInsertString(NULL, all_options); CHKERRQ(ierr);
 
 	ierr = PetscFree(all_options);CHKERRQ(ierr);
 

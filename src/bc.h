@@ -48,9 +48,6 @@
 //---------------------------------------------------------------------------
 
 #define _max_periods_ 20
-#define _max_path_points_ 50
-#define _max_poly_points_ 100
-#define _max_bc_blocks_ 3
 #define _max_boxes_ 5
 
 //---------------------------------------------------------------------------
@@ -61,25 +58,6 @@ typedef enum
 	_GLOBAL_TO_LOCAL_
 
 } ShiftType;
-//---------------------------------------------------------------------------
-typedef struct
-{
-	// path description
-	PetscInt    npath;                        // number of path points of Bezier curve
-	PetscScalar theta[  _max_path_points_  ]; // orientation angles at path points
-	PetscScalar time [  _max_path_points_  ]; // times at path points
-	PetscScalar path [6*_max_path_points_-4]; // Bezier curve path & control points
-
-	// block description
-	PetscInt    npoly;                      // number of polygon vertices
-	PetscScalar poly [2*_max_poly_points_]; // polygon coordinates
-	PetscScalar bot, top;                   // bottom & top coordinates of the block
-
-	// WARNING bottom coordinate should be advected (how? average?)
-	// Top of the box can be assumed to be the free surface
-	// sticky air nodes should never be constrained (this is easy to check)
-
-} BCBlock;
 //---------------------------------------------------------------------------
 typedef struct
 {
@@ -198,10 +176,11 @@ typedef struct
 
 	// Dirichlet pushing block constraints
 	PetscBool     pbAct;  // flag for activating pushing
-	PetscBool     pbApp;  // flag for applying pushing on a time step
+	PetscInt 	  pbApp[MAX_PUSH_BOX]; // flag for applying pushing on a time step
 	PetscScalar   theta;  // rotation angle
 	PetscScalar   Vx, Vy; // Dirichlet values for Vx and Vy
 	PushParams    *pb;    // major pushing block parameters
+	PetscInt 	  nPblo;  // number of pushing blocks
 
 	// two-point constraints
 //	PetscInt     numTPC;       // number of two-point constraints (TPC)
@@ -210,7 +189,9 @@ typedef struct
 //	PetscScalar *TPCVals;      // values of TPC
 //	PetscScalar *TPCLinComPar; // linear combination parameters
 
-	BCBlock      blocks; // BC block
+	BCBlock      *blocks; // BC block
+	PetscInt 	 nblo;    // number of bezier blocks
+	PetscBool 	 AddBezier;
 	DBox         dbox;   // dropping box
 
 	// velocity boundary condition
@@ -218,6 +199,10 @@ typedef struct
 	PetscScalar  bot, top;      // bottom & top coordinates of the plate
 	PetscScalar  velin, velout; // inflow & outflow velocities
 	BCInflux     velmark;
+
+	// simple shear boundary condition
+	PetscInt	simpleshear;
+	PetscScalar	gamma_xz;		// shear rate in xz direction
 
 	// open boundary flag
 	PetscInt  top_open;
@@ -250,7 +235,7 @@ PetscErrorCode BCGetBGStrainRates(
 PetscErrorCode BCDestroy(BCCtx *bc);
 
 // apply boundary conditions
-PetscErrorCode BCApply(BCCtx *bc);
+PetscErrorCode BCApply(BCCtx *bc, Vec x);
 
 // apply constraints on the boundaries
 PetscErrorCode BCApplyBound(BCCtx *bc);
@@ -258,13 +243,16 @@ PetscErrorCode BCApplyBound(BCCtx *bc);
 // shift indices of constrained nodes
 PetscErrorCode BCShiftIndices(BCCtx *bc, ShiftType stype);
 
+// apply SPC to global solution vector
+PetscErrorCode BCApplySPC(BCCtx *bc, Vec x);
+
 //---------------------------------------------------------------------------
 
 // initialize pushing boundary conditions context
 PetscErrorCode BCSetPush(BCCtx *bc, UserCtx *user);
 
 // compute pushing parameters
-PetscErrorCode BCCompPush(BCCtx *bc);
+PetscErrorCode BCCompPush(BCCtx *bc, PetscInt ip);
 
 // apply pushing constraints
 PetscErrorCode BCApplyPush(BCCtx *bc);
@@ -289,5 +277,9 @@ PetscErrorCode BCUpdateInflux(BCCtx *bc);
 
 PetscErrorCode BCApplyDBox(BCCtx *bc);
 
+// simple shear BC
+PetscErrorCode 	BCApplySimpleShearVel(BCCtx *bc);
+
 //---------------------------------------------------------------------------
+
 #endif
