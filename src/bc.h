@@ -86,10 +86,13 @@ typedef struct
 
 //---------------------------------------------------------------------------
 
+// setup data structures
 PetscErrorCode BCBlockCreate(BCBlock *bcb, Scaling *scal, FB *fb);
 
+// compute position along the path and rotation angle as a function of time
 PetscErrorCode BCBlockGetPosition(BCBlock *bcb, PetscScalar t, PetscInt *f, PetscScalar x[]);
 
+// compute current polygon coordinates
 PetscErrorCode BCBlockGetPolygon(BCBlock *bcb, PetscScalar Xb[], PetscScalar *cpoly);
 
 //---------------------------------------------------------------------------
@@ -199,12 +202,11 @@ typedef struct
 	DBox         dbox;
 
 	// velocity inflow & outflow boundary condition
-	PetscInt     face, phase;   // face & phase identifiers
+	PetscInt     face, phase;   // face (1-left 2-right 3-front 4-back) & phase identifiers
 	PetscScalar  bot, top;      // bottom & top coordinates of the plate
 	PetscScalar  velin, velout; // inflow & outflow velocities
 
 	// simple shear boundary condition
-	PetscInt	 simpleshear;
 	PetscScalar	 gamma_xz;		// shear rate in xz direction
 
 	// open boundary flag
@@ -258,7 +260,7 @@ PetscErrorCode BCApplyBoundVel(BCCtx *bc);
 PetscErrorCode BCApplyDBox(BCCtx *bc);
 
 // apply simple shear boundary velocities
-PetscErrorCode 	BCApplySimpleShearVel(BCCtx *bc);
+PetscErrorCode 	BCApplySimpleShear(BCCtx *bc);
 
 //---------------------------------------------------------------------------
 // Service functions (should be included in subclasses)
