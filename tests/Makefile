@@ -21,7 +21,6 @@ clean :
 	@rm -f *.dat
 	@rm -f *.bin
 	@rm -f *.xml
-	@rm -f *.log
 	@rm -rf ./Timestep*.*
 	@rm -rf ./Timestep*
 	@rm -rf ./Initial*

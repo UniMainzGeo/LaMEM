@@ -42,6 +42,7 @@ def run_unittests_example1():
     registeredTests.append(Sub1.test_a());
     registeredTests.append(Sub1.test_b());
     registeredTests.append(Sub1.test_c());
+    registeredTests.append(Sub1.test_d());
 
   # Force output to written somewhere else, can be invoked using -o <path>
   for test in registeredTests:
