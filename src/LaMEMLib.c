@@ -317,7 +317,7 @@ PetscErrorCode LaMEMLib(ModParam *IOparam)
 		PetscPrintf(PETSC_COMM_WORLD,"                             EXPLICIT SOLVER           					\n");
 		PetscPrintf(PETSC_COMM_WORLD,"-------------------------------------------------------------------------- \n");
 
-		PetscPrintf(PETSC_COMM_WORLD,"  SCALLING DENSITY FACTOR: %g \n", jr.DensityFactor);
+		PetscPrintf(PETSC_COMM_WORLD,"  SCALING DENSITY FACTOR: %g \n", jr.DensityFactor);
 
 		if (user.AbsBoundaries==PETSC_FALSE) {
 			PetscPrintf(PETSC_COMM_WORLD,"  WITHOUT ABSORBING BOUNDARIES\n");
@@ -341,7 +341,7 @@ PetscErrorCode LaMEMLib(ModParam *IOparam)
 			}else if (jr.SourceParams.source_type == COMPRES) 	{
 				PetscPrintf(PETSC_COMM_WORLD,"            TYPE UNIAXIAL COMPRESSION \n");
 			}
-			PetscPrintf(PETSC_COMM_WORLD,"            Amplitud = %g, Alpha = %g, t0 = %g\n", jr.SourceParams.amplitude, jr.SourceParams.alfa, jr.SourceParams.t0);
+			PetscPrintf(PETSC_COMM_WORLD,"            Amplitude = %g, Alpha = %g, t0 = %g\n", jr.SourceParams.amplitude, jr.SourceParams.alfa, jr.SourceParams.t0);
 			PetscPrintf(PETSC_COMM_WORLD,"            APPLIED AT CELL (%i, %i, %i), POSITION (%g, %g, %g) \n", jr.SourceParams.i,jr.SourceParams.j,jr.SourceParams.k, jr.SourceParams.x,jr.SourceParams.y,jr.SourceParams.z);
 		}
 
