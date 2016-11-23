@@ -36,7 +36,7 @@ LoadInitialParticlesDirectory  = MatlabInputParticles 	# directory that contains
 
 
 # Define input/output and numerics-related stuff
-OutputFile					=	ExplicitWavePropagation_ComplexSetup_
+OutputFile					=	ExplicitWavePropagation_ComplexSetup
 save_timesteps				=	10			# save every ? timesteps
 time_end					=	2000		# last timestep
 CFL							=	0.5				# CFL, dt-based criterium
@@ -131,33 +131,33 @@ DII_ref 						=	1
 	# Define properties of Sediment 1  -----------------
 	<MaterialStart>
 		ID 			=	1			# phase id  [-]
-		rho0        = 	2700		# density - if dimensional [kg/m3]	
-		bulk		=	2.58e10		# K
-		shear		=   1.55e10		# shear modulus (mu, G)
+		rho0        = 	2900		# density - if dimensional [kg/m3]	
+		bulk		=	4.03e10		# K
+		shear		=   2.42e10		# shear modulus (mu, G)
 	<MaterialEnd>
 	
 	# Define properties of Sediment 2  -----------------
 	<MaterialStart>
 		ID 			=	2			# phase id  [-]
-		rho0        = 	2800		# density - if dimensional [kg/m3]	
-		bulk		=	4.03e10		# K
-		shear		=   2.04e10		# shear modulus (mu, G)
+		rho0        = 	2900		# density - if dimensional [kg/m3]	
+		bulk		=	2.58e10		# K
+		shear		=   1.55e10		# shear modulus (mu, G)
 	<MaterialEnd>
 	
 	# Define properties of Salt  -----------------
 	<MaterialStart>
 		ID 			=	3			# phase id  [-]
 		rho0        = 	2200		# density - if dimensional [kg/m3]	
-		bulk		=	2.46e10		# K
-		shear		=   1.47e10		# shear modulus (mu, G)
+		bulk		=	2.48e10		# K
+		shear		=   1.48e10		# shear modulus (mu, G)
 	<MaterialEnd>
 	
 	# Define properties of Basement  -----------------
 	<MaterialStart>
 		ID 			=	4			# phase id  [-]
-		rho0        = 	2200		# density - if dimensional [kg/m3]	
-		bulk		=	2.46e10		# K
-		shear		=   1.47e10		# shear modulus (mu, G)
+		rho0        = 	2900		# density - if dimensional [kg/m3]	
+		bulk		=	5.80e10		# K
+		shear		=   3.48e10		# shear modulus (mu, G)
 	<MaterialEnd>
 	
 # End of defining material properties for all phases ----------------------------------------

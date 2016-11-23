@@ -3,16 +3,16 @@
 clear
 
 
-% Salt properties
-rho = 2200          % density
-vp  = 4500          % P wave velocity [m/s]
-vs  = vp/sqrt(3)    % S wave velocity
+% % Salt properties
+% rho = 2200          % density
+% vp  = 4500          % P wave velocity [m/s]
+% vs  = vp/sqrt(3)    % S wave velocity
 
 
-% Basement (granite) properties
-rho = 2900          % density
-vp  = 6000          % P wave velocity [m/s]
-vs  = vp/sqrt(3)    % S wave velocity
+% % Basement (granite) properties
+% rho = 2900          % density
+% vp  = 6000          % P wave velocity [m/s]
+% vs  = vp/sqrt(3)    % S wave velocity
 
 
 % Sediment1 (sandstone) properties
@@ -20,10 +20,10 @@ rho = 2900          % density
 vp  = 5000          % P wave velocity [m/s]
 vs  = vp/sqrt(3)    % S wave velocity
 
-% Sediment2 (sandstone) properties
-rho = 2900          % density
-vp  = 4000          % P wave velocity [m/s]
-vs  = vp/sqrt(3)    % S wave velocity
+% % Sediment2 (sandstone) properties
+% rho = 2900          % density
+% vp  = 4000          % P wave velocity [m/s]
+% vs  = vp/sqrt(3)    % S wave velocity
 
 
 G       = vs^2*rho                      % shear, G
