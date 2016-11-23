@@ -53,83 +53,293 @@
 #include "parsing.h"
 #include "matProps.h"
 #include "tools.h"
-/*
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "MatPropInit"
-PetscErrorCode MatPropInit(JacRes *jr, FILE *fp)
+// read material parameter limits
+PetscErrorCode MatParLimRead(
+		FB        *fb,
+		Scaling   *scal,
+		MatParLim *matLim)
 {
-	// initialize MATERIAL PARAMETERS from file
+/*
+// scale gas constant with characteristic temperature
+	matLim->Rugc        *= scal->temperature;
+	matLim->rho_fluid   /= scal->density;
+	matLim->rho_lithos  /= scal->density;
+	matLim->theta_north /= scal->angle;
 
-	PetscInt  *ls, *le;
-	PetscInt   i, count_starts, count_ends;
+ 	// viscosity limits
+	PetscScalar eta_min;
+	PetscScalar eta_max;
+	// reference viscosity (initial guess)
+	PetscScalar eta_ref;
+	// reference temperature
+	PetscScalar TRef;
+	// universal gas constant
+	PetscScalar Rugc;
+	// viscosity & strain-rate tolerances
+	PetscScalar eta_atol; // viscosity absolute tolerance
+	PetscScalar eta_rtol; // viscosity relative tolerance
+	PetscScalar DII_atol; // strain rate absolute tolerance
+	PetscScalar DII_rtol; // strain rate relative tolerance
+	// background (reference) strain-rate
+	PetscScalar DII_ref;
+	// plasticity parameters limits
+	PetscScalar minCh;  // minimum cohesion
+	PetscScalar minFr;  // maximum friction
+	PetscScalar tauUlt; // ultimate yield stress
+	// thermo-mechanical coupling controls
+	PetscScalar shearHeatEff; // shear heating efficiency parameter [0 - 1]
+	// rheology controls
+	PetscBool   quasiHarmAvg; // quasi-harmonic averaging regularization flag (plasticity)
+	PetscScalar cf_eta_min;   // visco-plastic regularization parameter (plasticity)
+	PetscScalar n_pw;         // power-law regularization parameter (plasticity)
+	PetscBool   initGuessFlg; // initial guess computation flag
+	PetscBool   presLimFlg;   // pressure limit flag for plasticity
+	PetscBool   presLimAct;   // activate pressure limit flag
+	// fluid density for depth-dependent density model
+	PetscScalar  rho_fluid;
+	// rock density if we want to use lithostatic pressure in viscosit calculations
+	PetscScalar  rho_lithos;
+	// direction to the North for stress orientation
+	// counter-clockwise positive measured from x-axis
+	PetscScalar  theta_north;
+	// print warning messages
+	PetscBool    warn;
+	// matrix-free closed-form jacobian
+	PetscBool   jac_mat_free;
+// ===
+	// initialize material parameter limits
+	PetscBool flg;
+	PetscInt  cnt;
 
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
 
-	// print overview of material parameters read from file
-	PetscPrintf(PETSC_COMM_WORLD,"Reading material parameters: \n\n");
+//	matLim->eta_min      = usr->LowerViscosityCutoff;
+//	matLim->eta_max      = usr->UpperViscosityCutoff;
+//	matLim->eta_ref      = usr->InitViscosity;
 
-	// clear memory
-	ierr = PetscMemzero(jr->phases, sizeof(Material_t)*(size_t)max_num_phases); CHKERRQ(ierr);
+	matLim->TRef         = 0.0;
+	matLim->Rugc         = 8.3144621;
+	matLim->eta_atol     = 0.0;
+	matLim->eta_rtol     = 1e-8;
+	matLim->DII_atol     = 0.0;
+	matLim->DII_rtol     = 1e-8;
+	matLim->minCh        = 0.0;
+	matLim->minFr        = 0.0;
+	matLim->tauUlt       = DBL_MAX;
+	matLim->shearHeatEff = 1.0;
+
+	matLim->quasiHarmAvg = PETSC_FALSE;
+	matLim->cf_eta_min   = 0.0;
+	matLim->n_pw         = 0.0;
+
+	matLim->initGuessFlg = PETSC_TRUE;
+	matLim->rho_fluid    = 0.0;
+	matLim->rho_lithos 	 = 0.0;	 // lithostatic density
+	matLim->theta_north  = 90.0; // by default y-axis
+	matLim->warn         = PETSC_TRUE;
+	matLim->jac_mat_free = PETSC_FALSE;
+
+//	if(usr->DII_ref) matLim->DII_ref = usr->DII_ref;
+//	else
+//	{
+//		matLim->DII_ref = 1.0;
+//		PetscPrintf(PETSC_COMM_WORLD," WARNING: Reference strain rate DII_ref is not defined. Use a non-dimensional reference value of DII_ref =%f \n", matLim->DII_ref);
+//	}
+
+	cnt = 0;
+
+	// plasticity stabilization parameters
+	ierr = PetscOptionsHasName(NULL, NULL, "-quasi_harmonic", &flg); CHKERRQ(ierr);
+
+	if(flg == PETSC_TRUE) { matLim->quasiHarmAvg = PETSC_TRUE; cnt++; }
+
+	ierr = PetscOptionsGetScalar(NULL, NULL, "-cf_eta_min",  &matLim->cf_eta_min, &flg); CHKERRQ(ierr);
+
+	if(flg == PETSC_TRUE) { cnt++; }
+
+	ierr = PetscOptionsGetScalar(NULL, NULL, "-n_pw",  &matLim->n_pw, &flg); CHKERRQ(ierr);
+
+	if(flg == PETSC_TRUE) { cnt++; }
+
+	if(cnt > 1)
+	{
+		SETERRQ(PETSC_COMM_SELF, PETSC_ERR_USER, "Cannot combine plasticity stabilization methods (-quasi_harmonic -cf_eta_min -n_pw) \n");
+	}
+
+	// set Jacobian flag
+	ierr = PetscOptionsHasName(NULL, NULL, "-jac_mat_free", &flg); CHKERRQ(ierr);
+
+	if(flg == PETSC_TRUE) matLim->jac_mat_free = PETSC_TRUE;
+
+	if(cnt &&  matLim->jac_mat_free == PETSC_TRUE)
+	{
+		SETERRQ(PETSC_COMM_SELF, PETSC_ERR_USER, "Analytical Jacobian is not available for plasticity stabilizations (-jac_mat_free -quasi_harmonic -cf_eta_min -n_pw) \n");
+	}
+
+	ierr = PetscOptionsGetScalar(NULL, NULL, "-rho_fluid",  &matLim->rho_fluid, NULL); CHKERRQ(ierr);
+	ierr = PetscOptionsGetScalar(NULL, NULL, "-rho_lithos", &matLim->rho_lithos, NULL); CHKERRQ(ierr);		// specify lithostatic density on commandline (if not set, we don't use this)
+
+	ierr = PetscOptionsGetScalar(NULL, NULL, "-theta_north", &matLim->theta_north, NULL); CHKERRQ(ierr);
+
+	ierr = PetscOptionsHasName(NULL, NULL, "-stop_warnings", &flg); CHKERRQ(ierr);
+
+	if(flg == PETSC_TRUE) matLim->warn = PETSC_FALSE;
+
+	ierr = PetscOptionsGetScalar(NULL, NULL, "-shearHeatEff", &matLim->shearHeatEff, NULL); CHKERRQ(ierr);
+
+	if(matLim->shearHeatEff > 1.0) matLim->shearHeatEff = 1.0;
+	if(matLim->shearHeatEff < 0.0) matLim->shearHeatEff = 0.0;
+
+*/
+
+	/*
+
+	// initialize
+	matLim->eta_min      = 1e-8;
+	matLim->eta_max      = 1e28;
+	matLim->Rugc         = 8.3144621;
+	matLim->eta_rtol     = 1e-8;
+	matLim->DII_rtol     = 1e-8;
+	matLim->minCh        = 1e-8;
+	matLim->tauUlt       = 1e12;
+	matLim->shearHeatEff = 1.0;
+	matLim->init_guess   = PETSC_TRUE;
+	matLim->plast_reg    = PETSC_FALSE;
+
+	// read from options
+	ierr = getScalarParam(fb, _OPTIONAL_, "eta_min",      &matLim->eta_min,      1, 1e-8,  1e28,  scal->viscosity  ); CHKERRQ(ierr);
+	ierr = getScalarParam(fb, _OPTIONAL_, "eta_max",      &matLim->eta_max,      1, 1e-8,  1e28,  scal->viscosity  ); CHKERRQ(ierr);
+	ierr = getScalarParam(fb, _OPTIONAL_, "TRef",         &matLim->TRef,         1, 0.0,   1e3,   scal->temperature); CHKERRQ(ierr);
+	ierr = getScalarParam(fb, _OPTIONAL_, "eta_atol",     &matLim->eta_atol,     1, 0.0,   1e5,   scal->viscosity  ); CHKERRQ(ierr);
+	ierr = getScalarParam(fb, _OPTIONAL_, "eta_rtol",     &matLim->eta_rtol,     1, 1e-16, 1e-5,  1.0              ); CHKERRQ(ierr);
+	ierr = getScalarParam(fb, _OPTIONAL_, "DII_atol",     &matLim->DII_atol,     1, 0.0,   1e-5,  scal->strain_rate); CHKERRQ(ierr);
+	ierr = getScalarParam(fb, _OPTIONAL_, "DII_rtol",     &matLim->DII_rtol,     1, 1e-16, 1e-5,  1.0              ); CHKERRQ(ierr);
+	ierr = getScalarParam(fb, _REQUIRED_, "DII_ref",      &matLim->DII_ref,      1, 1e-18, 1e-5,  scal->strain_rate); CHKERRQ(ierr);
+	ierr = getScalarParam(fb, _OPTIONAL_, "minCh",        &matLim->minCh,        1, 0.0,   1e12,  scal->stress     ); CHKERRQ(ierr);
+	ierr = getScalarParam(fb, _OPTIONAL_, "minFr",        &matLim->minFr,        1, 0.0,   60.0,  scal->angle      ); CHKERRQ(ierr);
+	ierr = getScalarParam(fb, _OPTIONAL_, "tauUlt",       &matLim->tauUlt,       1, 1e3,   1e12,  scal->stress     ); CHKERRQ(ierr);
+	ierr = getScalarParam(fb, _OPTIONAL_, "shearHeatEff", &matLim->shearHeatEff, 1, 0.0,   1.0,   1.0              ); CHKERRQ(ierr);
+	ierr = getScalarParam(fb, _OPTIONAL_, "rho_fluid",    &matLim->rho_fluid,    1, 1e2,   1e4,   scal->density    ); CHKERRQ(ierr);
+	ierr = getScalarParam(fb, _REQUIRED_, "eta_init",     &matLim->eta_init,     1, 1e-8,  1e28,  scal->viscosity  ); CHKERRQ(ierr);
+	ierr = getScalarParam(fb, _OPTIONAL_, "plast_ratio",  &matLim->plast_ratio,  1, 5.0,   1e2,   1.0              ); CHKERRQ(ierr);
+
+	// scale gas constant with characteristic temperature
+	matLim->Rugc *= scal->temperature;
+
+	// set viscosity regularization flag
+	if(matLim->plast_ratio) matLim->plast_reg = PETSC_TRUE;
+
+	 */
+	PetscFunctionReturn(0);
+}
+//---------------------------------------------------------------------------
+#undef __FUNCT__
+#define __FUNCT__ "MatPropsReadAll"
+PetscErrorCode MatPropsReadAll(
+		FB         *fb,
+		Scaling    *scal,
+		PetscInt   *numPhases,
+		Material_t *phases,
+		PetscInt   *numSoft,
+		Soft_t     *matSoft)
+{
+	// read all material phases and softening laws from file
+
+	PetscInt jj;
+
+	PetscErrorCode ierr;
+	PetscFunctionBegin;
+
+	//===============
+	// SOFTENING LAWS
+	//===============
+
+	// print overview of softening laws from file
+	PetscPrintf(PETSC_COMM_WORLD,"Reading softening laws: \n\n");
+
+	// setup block access mode
+	ierr = FBFindBlocks(fb, _OPTIONAL_, "<SofteningStart>", "<SofteningEnd>"); CHKERRQ(ierr);
 
 	// initialize ID for consistency checks
-	for(i = 0; i < max_num_phases; i++)
-	{
-		jr->phases[i].ID = -1;
-	}
-
-	// allocate memory for arrays to store line info
-	ierr = makeIntArray(&ls, NULL, max_num_phases); CHKERRQ(ierr);
-	ierr = makeIntArray(&le, NULL, max_num_phases); CHKERRQ(ierr);
-
-	// read number of entries
-	getLineStruct(fp, ls, le, max_num_phases, &count_starts, &count_ends, "<MaterialStart>","<MaterialEnd>");
+	for(jj = 0; jj < max_num_soft; jj++) matSoft[jj].ID = -1;
 
 	// error checking
-	if(count_starts > max_num_phases || count_ends > max_num_phases)
+	if(fb->nblocks > max_num_soft)
 	{
-		SETERRQ1(PETSC_COMM_SELF, PETSC_ERR_USER, "Too many material structures specified! Max allowed: %lld", (LLD)max_num_phases);
-	}
-	if(count_starts != count_ends)
-	{
-		SETERRQ(PETSC_COMM_SELF, PETSC_ERR_USER, "Incomplete material structures! <MaterialStart> & <MaterialEnd> don't match");
-	}
-
-	// store actual number of materials
-	jr->numPhases = count_starts;
-
-	// read each individual phase
-	for(i = 0; i < jr->numPhases; i++)
-	{
-		ierr = MatPropGetStruct(fp,
-				jr->numPhases, jr->phases,
-				jr->numSoft, jr->matSoft,
-				ls[i], le[i], jr->scal.utype); CHKERRQ(ierr);
+		SETERRQ1(PETSC_COMM_SELF, PETSC_ERR_USER, "Too many softening laws specified! Max allowed: %lld", (LLD)max_num_soft);
 	}
 
 	PetscPrintf(PETSC_COMM_WORLD,"--------------------------------------------------------------------------\n");
 
-	// free arrays
-	ierr = PetscFree(ls); CHKERRQ(ierr);
-	ierr = PetscFree(le); CHKERRQ(ierr);
+	// read each individual softening law
+	for(jj = 0; jj < fb->nblocks; jj++)
+	{
+		ierr = MatSoftRead(fb, fb->nblocks, matSoft); CHKERRQ(ierr);
+
+		fb->blockID++;
+	}
+
+	// store actual number of softening laws
+	(*numSoft) = fb->nblocks;
+
+	ierr = FBFreeBlocks(fb); CHKERRQ(ierr);
+
+	//================
+	// MATERIAL PHASES
+	//================
+
+	// print overview of material parameters read from file
+	PetscPrintf(PETSC_COMM_WORLD,"Reading material parameters: \n\n");
+
+	// setup block access mode
+	ierr = FBFindBlocks(fb, _REQUIRED_, "<MaterialStart>", "<MaterialEnd>"); CHKERRQ(ierr);
+
+	// initialize ID for consistency checks
+	for(jj = 0; jj < max_num_phases; jj++) phases[jj].ID = -1;
+
+	// error checking
+	if(fb->nblocks > max_num_phases)
+	{
+		SETERRQ1(PETSC_COMM_SELF, PETSC_ERR_USER, "Too many material structures specified! Max allowed: %lld", (LLD)max_num_phases);
+	}
+
+	PetscPrintf(PETSC_COMM_WORLD,"--------------------------------------------------------------------------\n");
+
+	// read each individual phase
+	for(jj = 0; jj < fb->nblocks; jj++)
+	{
+		ierr = MatPhaseRead(fb, scal, fb->nblocks, phases, (*numSoft), matSoft); CHKERRQ(ierr);
+
+		fb->blockID++;
+
+		PetscPrintf(PETSC_COMM_WORLD,"--------------------------------------------------------------------------\n");
+	}
+
+	// store actual number of phases
+	(*numPhases) = fb->nblocks;
+
+	ierr = FBFreeBlocks(fb); CHKERRQ(ierr);
 
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
 #undef __FUNCT__
-#define __FUNCT__ "MatPropGetStruct"
-PetscErrorCode MatPropGetStruct(FILE *fp,
-		PetscInt numPhases, Material_t *phases,
-		PetscInt numSoft,   Soft_t     *matSoft,
-		PetscInt ils, PetscInt ile, UnitsType utype)
+#define __FUNCT__ "MatPhaseRead"
+PetscErrorCode MatPhaseRead(
+		FB         *fb,
+		Scaling    *scal,
+		PetscInt    numPhases,
+		Material_t *phases,
+		PetscInt    numSoft,
+		Soft_t     *matSoft)
 {
 	// read material properties from file with error checking
-	// WARNING! This function assumes correctly defined softening parameters
 
 	Material_t *m;
 	PetscScalar eta, eta0, e0;
-	PetscInt    ID = -1, chSoftID, frSoftID, found;
+	PetscInt    ID = -1, chSoftID, frSoftID, MSN;
 	char        ndiff[MAX_NAME_LEN], ndisl[MAX_NAME_LEN], npeir[MAX_NAME_LEN];
 
 	// output labels
@@ -148,22 +358,8 @@ PetscErrorCode MatPropGetStruct(FILE *fp,
 	char        lbl_A    [_lbl_sz_];
     char        lbl_beta [_lbl_sz_];
 
-
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
-
-	// phase ID
-	getMatPropInt(fp, ils, ile, "ID", &ID, &found);
-
-	// error checking
-	if(!found)
-	{
-		 SETERRQ(PETSC_COMM_SELF,PETSC_ERR_USER, "No phase ID specified! ");
-	}
-	if(ID > numPhases - 1)
-	{
-		 SETERRQ(PETSC_COMM_SELF,PETSC_ERR_USER, "Incorrect phase numbering!");
-	}
 
 	// initialize additional parameters
 	eta      =  0.0;
@@ -171,6 +367,10 @@ PetscErrorCode MatPropGetStruct(FILE *fp,
 	e0       =  0.0;
 	chSoftID = -1;
 	frSoftID = -1;
+	MSN      =  numSoft - 1;
+
+	// phase ID
+	ierr = getIntParam(fb, _REQUIRED_, "ID", &ID, 1, numPhases-1); CHKERRQ(ierr);
 
 	// get pointer to specified phase
 	m = phases + ID;
@@ -178,98 +378,82 @@ PetscErrorCode MatPropGetStruct(FILE *fp,
 	// check ID
 	if(m->ID != -1)
 	{
-		 SETERRQ(PETSC_COMM_SELF,PETSC_ERR_USER, "Incorrect phase numbering!");
+		 SETERRQ(PETSC_COMM_SELF,PETSC_ERR_USER, "Duplicate phase definition!");
 	}
 
 	// set ID
 	m->ID = ID;
 
-	//============================================================
+	//=================================================================================
 	// density
-	//============================================================
-	getMatPropScalar(fp, ils, ile, "rho0",      &m->rho,   NULL);
-	getMatPropScalar(fp, ils, ile, "rho_n",     &m->rho_n, NULL);
-	getMatPropScalar(fp, ils, ile, "rho_c",     &m->rho_c, NULL);
-	getMatPropScalar(fp, ils, ile, "beta",      &m->beta,  NULL); // pressure-dependence of density
-
-	//============================================================
-	// Creep profiles
-	//============================================================
+	//=================================================================================
+	ierr = getScalarParam(fb, _OPTIONAL_, "rho0",     &m->rho,   1, 1.0); CHKERRQ(ierr);
+	ierr = getScalarParam(fb, _OPTIONAL_, "rho_n",    &m->rho_n, 1, 1.0); CHKERRQ(ierr);
+	ierr = getScalarParam(fb, _OPTIONAL_, "rho_c",    &m->rho_c, 1, 1.0); CHKERRQ(ierr);
+	ierr = getScalarParam(fb, _OPTIONAL_, "beta",     &m->beta,  1, 1.0); CHKERRQ(ierr);
+	//=================================================================================
+	// creep profiles
+	//=================================================================================
 	// set predefined diffusion creep profile
-	getMatPropString(fp, ils, ile, "diff_profile", ndiff, MAX_NAME_LEN, &found);
-	if(found) { ierr = SetDiffProfile(m, ndiff); CHKERRQ(ierr); }
-
+	ierr = GetProfileName(fb, scal, ndiff, "diff_profile");               CHKERRQ(ierr);
+	ierr = SetDiffProfile(m, ndiff);                                      CHKERRQ(ierr);
 	// set predefined dislocation creep profile
-	getMatPropString(fp, ils, ile, "disl_profile", ndisl, MAX_NAME_LEN, &found);
-	if(found) { ierr = SetDislProfile(m, ndisl); CHKERRQ(ierr); }
-
+	ierr = GetProfileName(fb, scal, ndisl, "disl_profile");               CHKERRQ(ierr);
+	ierr = SetDislProfile(m, ndisl);                                      CHKERRQ(ierr);
 	// set predefined Peierls creep profile
-	getMatPropString(fp, ils, ile, "peir_profile", npeir, MAX_NAME_LEN, &found);
-	if(found) { ierr = SetPeirProfile(m, npeir); CHKERRQ(ierr); }
-
-	//============================================================
+	ierr = GetProfileName(fb, scal, npeir, "peir_profile");               CHKERRQ(ierr);
+	ierr = SetPeirProfile(m, npeir);                                      CHKERRQ(ierr);
+	//=================================================================================
 	// Newtonian linear diffusion creep
-	//============================================================
-	getMatPropScalar(fp, ils, ile, "eta",       &eta,      NULL);
-	getMatPropScalar(fp, ils, ile, "Bd",        &m->Bd,    NULL);
-	getMatPropScalar(fp, ils, ile, "Ed",        &m->Ed,    NULL);
-	getMatPropScalar(fp, ils, ile, "Vd",        &m->Vd,    NULL);
-
-	//============================================================
+	//=================================================================================
+	ierr = getScalarParam(fb, _OPTIONAL_, "eta",      &eta,      1, 1.0); CHKERRQ(ierr);
+	ierr = getScalarParam(fb, _OPTIONAL_, "Bd",       &m->Bd,    1, 1.0); CHKERRQ(ierr);
+	ierr = getScalarParam(fb, _OPTIONAL_, "Ed",       &m->Ed,    1, 1.0); CHKERRQ(ierr);
+	ierr = getScalarParam(fb, _OPTIONAL_, "Vd",       &m->Vd,    1, 1.0); CHKERRQ(ierr);
+	//=================================================================================
 	// power-law (dislocation) creep
-	//============================================================
-	getMatPropScalar(fp, ils, ile, "eta0",      &eta0,     NULL);
-	getMatPropScalar(fp, ils, ile, "e0",        &e0,       NULL);
-	getMatPropScalar(fp, ils, ile, "Bn",        &m->Bn,    NULL);
-	getMatPropScalar(fp, ils, ile, "n",         &m->n,     NULL);
-	getMatPropScalar(fp, ils, ile, "En",        &m->En,    NULL);
-	getMatPropScalar(fp, ils, ile, "Vn",        &m->Vn,    NULL);
-
-	//============================================================
+	//=================================================================================
+	ierr = getScalarParam(fb, _OPTIONAL_, "eta0",     &eta0,     1, 1.0); CHKERRQ(ierr);
+	ierr = getScalarParam(fb, _OPTIONAL_, "e0",       &e0,       1, 1.0); CHKERRQ(ierr);
+	ierr = getScalarParam(fb, _OPTIONAL_, "Bn",       &m->Bn,    1, 1.0); CHKERRQ(ierr);
+	ierr = getScalarParam(fb, _OPTIONAL_, "n",        &m->n,     1, 1.0); CHKERRQ(ierr);
+	ierr = getScalarParam(fb, _OPTIONAL_, "En",       &m->En,    1, 1.0); CHKERRQ(ierr);
+	ierr = getScalarParam(fb, _OPTIONAL_, "Vn",       &m->Vn,    1, 1.0); CHKERRQ(ierr);
+	//=================================================================================
 	// Peierls creep
-	//============================================================
-	getMatPropScalar(fp, ils, ile, "Bp",        &m->Bp,    NULL);
-	getMatPropScalar(fp, ils, ile, "taup",      &m->taup,  NULL);
-	getMatPropScalar(fp, ils, ile, "gamma",     &m->gamma, NULL);
-	getMatPropScalar(fp, ils, ile, "q",         &m->q,     NULL);
-	getMatPropScalar(fp, ils, ile, "Ep",        &m->Ep,    NULL);
-	getMatPropScalar(fp, ils, ile, "Vp",        &m->Vp,    NULL);
-	//============================================================
+	//=================================================================================
+	ierr = getScalarParam(fb, _OPTIONAL_, "Bp",       &m->Bp,    1, 1.0); CHKERRQ(ierr);
+	ierr = getScalarParam(fb, _OPTIONAL_, "taup",     &m->taup,  1, 1.0); CHKERRQ(ierr);
+	ierr = getScalarParam(fb, _OPTIONAL_, "gamma",    &m->gamma, 1, 1.0); CHKERRQ(ierr);
+	ierr = getScalarParam(fb, _OPTIONAL_, "q",        &m->q,     1, 1.0); CHKERRQ(ierr);
+	ierr = getScalarParam(fb, _OPTIONAL_, "Ep",       &m->Ep,    1, 1.0); CHKERRQ(ierr);
+	ierr = getScalarParam(fb, _OPTIONAL_, "Vp",       &m->Vp,    1, 1.0); CHKERRQ(ierr);
+	//=================================================================================
 	// elasticity
-	//============================================================
-	getMatPropScalar(fp, ils, ile, "shear",     &m->G,     NULL);
-	getMatPropScalar(fp, ils, ile, "bulk",      &m->K,     NULL);
-	getMatPropScalar(fp, ils, ile, "Kp",        &m->Kp,    NULL);
-	//============================================================
+	//=================================================================================
+	ierr = getScalarParam(fb, _OPTIONAL_, "shear",    &m->G,     1, 1.0); CHKERRQ(ierr);
+	ierr = getScalarParam(fb, _OPTIONAL_, "bulk",     &m->K,     1, 1.0); CHKERRQ(ierr);
+	ierr = getScalarParam(fb, _OPTIONAL_, "Kp",       &m->Kp,    1, 1.0); CHKERRQ(ierr);
+	//=================================================================================
 	// plasticity (Drucker-Prager)
-	//============================================================
-	getMatPropScalar(fp, ils, ile, "cohesion",  &m->ch,    NULL);
-	getMatPropScalar(fp, ils, ile, "friction",  &m->fr,    NULL);
-	getMatPropInt   (fp, ils, ile, "chSoftID",  &chSoftID, NULL);
-	getMatPropInt   (fp, ils, ile, "frSoftID",  &frSoftID, NULL);
-	//============================================================
+	//=================================================================================
+	ierr = getScalarParam(fb, _OPTIONAL_, "cohesion", &m->ch,    1, 1.0); CHKERRQ(ierr);
+	ierr = getScalarParam(fb, _OPTIONAL_, "friction", &m->fr,    1, 1.0); CHKERRQ(ierr);
+	ierr = getIntParam   (fb, _OPTIONAL_, "chSoftID", &chSoftID, 1, MSN); CHKERRQ(ierr);
+	ierr = getIntParam   (fb, _OPTIONAL_, "frSoftID", &frSoftID, 1, MSN); CHKERRQ(ierr);
+	//=================================================================================
 	// energy
-	//============================================================
-	getMatPropScalar(fp, ils, ile, "alpha",     &m->alpha, NULL);
-	getMatPropScalar(fp, ils, ile, "cp",        &m->Cp,    NULL);
-	getMatPropScalar(fp, ils, ile, "k",         &m->k,     NULL);
-	getMatPropScalar(fp, ils, ile, "A",         &m->A,     NULL);
-	//============================================================
+	//=================================================================================
+	ierr = getScalarParam(fb, _OPTIONAL_, "alpha",    &m->alpha, 1, 1.0); CHKERRQ(ierr);
+	ierr = getScalarParam(fb, _OPTIONAL_, "cp",       &m->Cp,    1, 1.0); CHKERRQ(ierr);
+	ierr = getScalarParam(fb, _OPTIONAL_, "k",        &m->k,     1, 1.0); CHKERRQ(ierr);
+	ierr = getScalarParam(fb, _OPTIONAL_, "A",        &m->A,     1, 1.0); CHKERRQ(ierr);
+	//=================================================================================
 
 	// check depth-dependent density parameters
 	if((!m->rho_n && m->rho_c) || (m->rho_n && !m->rho_c))
 	{
 		SETERRQ1(PETSC_COMM_SELF, PETSC_ERR_USER, "rho_n & rho_c must be specified simultaneously for phase %lld", (LLD)ID);
-	}
-
-	// check softening laws
-	if(chSoftID > numSoft-1)
-	{
-		SETERRQ1(PETSC_COMM_SELF, PETSC_ERR_USER, "Incorrect cohesion softening law specified for phase %lld", (LLD)ID);
-	}
-	if(frSoftID > numSoft-1)
-	{
-		SETERRQ1(PETSC_COMM_SELF, PETSC_ERR_USER, "Incorrect friction softening law specified for phase %lld", (LLD)ID);
 	}
 
 	if(m->fr && !m->ch)
@@ -309,14 +493,8 @@ PetscErrorCode MatPropGetStruct(FILE *fp,
 		SETERRQ1(PETSC_COMM_SELF, PETSC_ERR_USER, "At least one of the parameter (set) Bd (eta), Bn (eta0, e0), G must be specified for phase %lld", (LLD)ID);
 	}
 
-	// check units for predefined profile
-	if((strlen(ndiff) || strlen(ndisl)) && utype == _NONE_)
-	{
-		SETERRQ1(PETSC_COMM_SELF, PETSC_ERR_USER, "Cannot have a predefined creep profile (phase %lld), in a non-dimensional setup!", (LLD)ID);
-	}
-
 	// print
-	if(utype == _NONE_)
+	if(scal->utype == _NONE_)
 	{
 		sprintf(lbl_rho,   "[ ]"         );
 		sprintf(lbl_eta,   "[ ]"         );
@@ -363,267 +541,61 @@ PetscErrorCode MatPropGetStruct(FILE *fp,
 	PetscPrintf(PETSC_COMM_WORLD,"    Phase [%lld]: (temp ) alpha = %g %s, cp = %g %s, k = %g %s, A = %g %s \n", (LLD)(m->ID),m->alpha, lbl_alpha, m->Cp, lbl_cp,m->k, lbl_k, m->A, lbl_A);
 	PetscPrintf(PETSC_COMM_WORLD,"    \n");
 
-	PetscFunctionReturn(0);
-}
+	// scale
+	// NOTE: [1] activation energy is not scaled
+	//       [2] activation volume is multiplied with characteristic stress in SI units
 
-//---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "MatPropSetFromLibCall"
-PetscErrorCode MatPropSetFromLibCall(JacRes *jr, ModParam *mod)
-{
-	// overwrite MATERIAL PARAMETERS with model parameters provided by a calling function
+	m->rho     /= scal->density;
+	m->rho_c   *= scal->length_si;
+	m->beta    *= scal->stress_si; // [1/Pa]
 
-	PetscInt 	id,im;
-	PetscScalar eta, eta0, e0;
-	Material_t  *m;
+	// diffusion creep
+	m->Bd      *= scal->viscosity;
+	m->Vd      *= scal->stress_si;
 
-	PetscFunctionBegin;
-	
-	if(mod == NULL) PetscFunctionReturn(0);
+	// dislocation creep (power-law)
+	m->Bn      *= pow(scal->stress_si, m->n)*scal->time_si;
+	m->Vn      *= scal->stress_si;
 
-	// does a calling function provide model parameters?
-	if(mod->use == 0) PetscFunctionReturn(0);
+	// Peierls creep
+	m->Bp      /=  scal->strain_rate;
+	m->Vp      *=  scal->stress_si;
+	m->taup    /=  scal->stress_si;
 
-	// set material properties
-	if(mod->use == 1) {
-		PetscPrintf(PETSC_COMM_WORLD,"# ------------------------------------------------------------------------\n");
-		PetscPrintf(PETSC_COMM_WORLD,"# Material properties set from calling function: \n");
+	// elasticity
+	m->G       /= scal->stress_si;
+	m->K       /= scal->stress_si;
 
+	// plasticity
+	m->ch      /= scal->stress_si;
+	m->fr      /= scal->angle;
 
-		for(im=0;im<mod->mdN;im++)
-		{
-
-			id = mod->phs[im];
-			// get pointer to specified phase
-			m = jr->phases + id;
-
-			// linear viscosity
-			if(mod->typ[im] == _ETA_) 
-			{
-
-				// initialize additional parameters
-				eta      =  0.0;
-				eta0     =  0.0;
-				e0       =  0.0;
-				eta = mod->val[im];
-
-				// check strain-rate dependent creep
-				if((!eta0 && e0) || (eta0 && !e0))
-				{
-					SETERRQ1(PETSC_COMM_SELF, PETSC_ERR_USER, "eta0 & e0 must be specified simultaneously for phase %lld", (LLD)id);
-				}
-
-				// check power-law exponent
-				if(!m->n && ((eta0 && e0) || m->Bn))
-				{
-					SETERRQ1(PETSC_COMM_SELF, PETSC_ERR_USER, "Power-law exponent must be specified for phase %lld", (LLD)id);
-				}
-
-				// check Peierls creep
-				if(m->Bp && (!m->taup || !m->gamma || !m->q || !m->Ep))
-				{
-					SETERRQ1(PETSC_COMM_SELF, PETSC_ERR_USER, "All Peierls creep parameters must be specified simultaneously for phase %lld", (LLD)id);
-				}
-
-				// recompute creep parameters
-				if(eta)        m->Bd = 1.0/(2.0*eta);
-				if(eta0 && e0) m->Bn = pow (2.0*eta0, -m->n)*pow(e0, 1 - m->n);
-
-				// check that at least one essential deformation mechanism is specified
-				if(!m->Bd && !m->Bn && !m->G)
-				{
-					SETERRQ1(PETSC_COMM_SELF, PETSC_ERR_USER, "At least one of the parameter (set) Bd (eta), Bn (eta0, e0), G must be specified for phase %lld", (LLD)id);
-				}
-
-				PetscPrintf(PETSC_COMM_WORLD,"#    eta[%lld] = %g \n",(LLD)id,eta);
-			}
-
-			// constant density
-			else if(mod->typ[im] == _RHO0_) 
-			{
-				m->rho = mod->val[im];
-				PetscPrintf(PETSC_COMM_WORLD,"#    rho0[%lld] = %5.5f \n",(LLD)id,m->rho);
-			}
-
-			else
-			{
-				PetscPrintf(PETSC_COMM_WORLD,"WARNING: inversion parameter type is not implemented \n");
-			}		
-
-		}
-		PetscPrintf(PETSC_COMM_WORLD,"# ------------------------------------------------------------------------\n");
-	}
-
-	PetscFunctionReturn(0);
-}
-
-//---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "MatPropSetFromCL"
-PetscErrorCode MatPropSetFromCL(JacRes *jr)
-{
-	// overwrite MATERIAL PARAMETERS with command line options
-
-	PetscErrorCode 	ierr;
-	PetscBool		flg,get_options;
-	PetscInt 		id;
-	char 			matprop_opt[MAX_PATH_LEN];
-	PetscScalar eta, eta0, e0;
-	Material_t *m;
-
-
-	PetscFunctionBegin;
-
-
-	flg = PETSC_FALSE;
-	get_options = PETSC_FALSE;
-
-	ierr = PetscOptionsGetBool(NULL, NULL, "-SetMaterialProperties", &get_options, NULL ); 					CHKERRQ(ierr);
-
-	if(get_options) {
-		PetscPrintf(PETSC_COMM_WORLD,"# ------------------------------------------------------------------------\n");
-		PetscPrintf(PETSC_COMM_WORLD,"# Material properties set from command line: \n");
-
-		for(id=0;id<jr->numPhases;id++){
-
-
-			// get pointer to specified phase
-			m = jr->phases + id;
-
-
-			// initialize additional parameters
-			eta      =  0.0;
-			eta0     =  0.0;
-			e0       =  0.0;
-
-			// linear viscosity
-			sprintf(matprop_opt,"-eta_%lld",(LLD)id);
-			ierr = PetscOptionsGetReal(NULL, NULL ,matprop_opt,&eta	, &flg); 				CHKERRQ(ierr);
-
-				// check strain-rate dependent creep
-				if((!eta0 && e0) || (eta0 && !e0))
-				{
-					SETERRQ1(PETSC_COMM_SELF, PETSC_ERR_USER, "eta0 & e0 must be specified simultaneously for phase %lld", (LLD)id);
-				}
-
-				// check power-law exponent
-				if(!m->n && ((eta0 && e0) || m->Bn))
-				{
-					SETERRQ1(PETSC_COMM_SELF, PETSC_ERR_USER, "Power-law exponent must be specified for phase %lld", (LLD)id);
-				}
-
-				// check Peierls creep
-				if(m->Bp && (!m->taup || !m->gamma || !m->q || !m->Ep))
-				{
-					SETERRQ1(PETSC_COMM_SELF, PETSC_ERR_USER, "All Peierls creep parameters must be specified simultaneously for phase %lld", (LLD)id);
-				}
-
-				// recompute creep parameters
-				if(eta)        m->Bd = 1.0/(2.0*eta);
-				if(eta0 && e0) m->Bn = pow (2.0*eta0, -m->n)*pow(e0, 1 - m->n);
-
-				// check that at least one essential deformation mechanism is specified
-				if(!m->Bd && !m->Bn && !m->G)
-				{
-					SETERRQ1(PETSC_COMM_SELF, PETSC_ERR_USER, "At least one of the parameter (set) Bd (eta), Bn (eta0, e0), G must be specified for phase %lld", (LLD)id);
-				}
-
-			if(flg == PETSC_TRUE) PetscPrintf(PETSC_COMM_WORLD,"#    eta[%lld]	= %g \n",(LLD)id,eta);
-
-			// constant density
-			sprintf(matprop_opt,"-rho0_%lld",(LLD)id);
-			ierr = PetscOptionsGetReal(NULL, NULL ,matprop_opt,&m->rho	, &flg);			CHKERRQ(ierr);
-			if(flg == PETSC_TRUE) PetscPrintf(PETSC_COMM_WORLD,"#    rho0[%lld]	= %5.5f \n",(LLD)id,m->rho);
-
-		}
-		PetscPrintf(PETSC_COMM_WORLD,"# ------------------------------------------------------------------------\n");
-	}
+	// temperature
+	m->alpha   /= scal->expansivity;
+	m->Cp      /= scal->cpecific_heat;
+	m->k       /= scal->conductivity;
+	m->A       /= scal->heat_production;
 
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
 #undef __FUNCT__
-#define __FUNCT__ "MatSoftInit"
-PetscErrorCode MatSoftInit(JacRes *jr, FILE *fp)
-{
-	// initialize SOFTENING LAWS from file
-
-	PetscInt    *ls,*le;
-	PetscInt     i, count_starts, count_ends;
-
-	PetscErrorCode ierr;
-	PetscFunctionBegin;
-
-	// print overview of softening laws from file
-	PetscPrintf(PETSC_COMM_WORLD,"Reading softening laws: \n\n");
-
-	// clear memory
-	ierr = PetscMemzero(jr->matSoft, sizeof(Soft_t)*(size_t)max_num_soft); CHKERRQ(ierr);
-
-	// initialize ID for consistency checks
-	for(i = 0; i < max_num_soft; i++)
-	{
-		jr->matSoft[i].ID = -1;
-	}
-
-	// allocate memory for arrays to store line info
-	ierr = makeIntArray(&ls, NULL, max_num_soft); CHKERRQ(ierr);
-	ierr = makeIntArray(&le, NULL, max_num_soft); CHKERRQ(ierr);
-
-	// read number of entries
-	getLineStruct(fp, ls, le, max_num_soft, &count_starts, &count_ends, "<SofteningStart>", "<SofteningEnd>");
-
-	// error checking
-	if(count_starts > max_num_soft || count_ends > max_num_soft)
-	{
-		SETERRQ1(PETSC_COMM_SELF, PETSC_ERR_USER, "Too many softening laws specified! Max allowed: %lld", (LLD)max_num_soft);
-	}
-	if(count_starts != count_ends)
-	{
-		 SETERRQ(PETSC_COMM_SELF, PETSC_ERR_USER, "Incomplete material structures! <SofteningStart> & <SofteningEnd> don't match");
-	}
-
-	// store actual number of softening laws
-	jr->numSoft = count_starts;
-
-	// read each individual softening law
-	for(i = 0; i < jr->numSoft; i++)
-	{
-		ierr = MatSoftGetStruct(fp, jr->numSoft, jr->matSoft, ls[i], le[i]); CHKERRQ(ierr);
-	}
-
-	// free arrays
-	ierr = PetscFree(ls); CHKERRQ(ierr);
-	ierr = PetscFree(le); CHKERRQ(ierr);
-
-	PetscFunctionReturn(0);
-}
-//---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "MatSoftGetStruct"
-PetscErrorCode MatSoftGetStruct(FILE *fp,
-		PetscInt numSoft, Soft_t *matSoft,
-		PetscInt ils, PetscInt ile)
+#define __FUNCT__ "MatSoftRead"
+PetscErrorCode MatSoftRead(
+		FB       *fb,
+		PetscInt  numSoft,
+		Soft_t   *matSoft)
 {
 	// read softening law from file
 
 	Soft_t   *s;
-	PetscInt  found, ID;
+	PetscInt  ID;
 
+	PetscErrorCode ierr;
 	PetscFunctionBegin;
 
 	// softening law ID
-	getMatPropInt(fp, ils, ile, "softID", &ID, &found);
-
-	// error checking
-	if(!found)
-	{
-		 SETERRQ(PETSC_COMM_SELF, PETSC_ERR_USER, "No softening law ID specified! ");
-	}
-	if(ID > numSoft - 1)
-	{
-		 SETERRQ(PETSC_COMM_SELF, PETSC_ERR_USER, "Incorrect softening law numbering!");
-	}
+	ierr = getIntParam(fb, _REQUIRED_, "ID", &ID, 1, numSoft-1); CHKERRQ(ierr);
 
 	// get pointer to specified softening law
 	s = matSoft + ID;
@@ -631,33 +603,56 @@ PetscErrorCode MatSoftGetStruct(FILE *fp,
 	// check ID
 	if(s->ID != -1)
 	{
-		 SETERRQ(PETSC_COMM_SELF, PETSC_ERR_USER, "Incorrect softening law numbering!");
+		 SETERRQ(PETSC_COMM_SELF, PETSC_ERR_USER, "Duplicate softening law!");
 	}
 
 	// set ID
 	s->ID = ID;
 
 	// read and store softening law parameters
-	getMatPropScalar(fp, ils, ile, "A",    &s->A,    &found);
-	getMatPropScalar(fp, ils, ile, "APS1", &s->APS1, &found);
-	getMatPropScalar(fp, ils, ile, "APS2", &s->APS2, &found);
+	ierr = getScalarParam(fb, _REQUIRED_, "A",    &s->A,    1, 1.0); CHKERRQ(ierr);
+	ierr = getScalarParam(fb, _REQUIRED_, "APS1", &s->APS1, 1, 1.0); CHKERRQ(ierr);
+	ierr = getScalarParam(fb, _REQUIRED_, "APS2", &s->APS2, 1, 1.0); CHKERRQ(ierr);
 
 	if(!s->A || !s->APS1 || !s->APS2)
 	{
-		SETERRQ1(PETSC_COMM_SELF, PETSC_ERR_USER, "All parameters must be specified simultaneously for softening law %lld", (LLD)ID);
+		SETERRQ1(PETSC_COMM_SELF, PETSC_ERR_USER, "All parameters must be nonzero for softening law %lld", (LLD)ID);
 	}
 
 	PetscPrintf(PETSC_COMM_WORLD,"SoftLaw [%lld]: A = %g, APS1 = %g, APS2 = %g \n", (LLD)(s->ID), s->A, s->APS1, s->APS2);
 
 	PetscFunctionReturn(0);
 }
-*/
 //---------------------------------------------------------------------------
-// set diffusion creep profiles from literature
+//............ PREDEFINED RHEOLOGICAL PROFILES (from literature) ............
+//---------------------------------------------------------------------------
+#undef __FUNCT__
+#define __FUNCT__ "GetProfileName"
+PetscErrorCode GetProfileName(FB *fb, Scaling *scal, char name[], const char key[])
+{
+	// read profile name from file
+
+	PetscErrorCode ierr;
+	PetscFunctionBegin;
+
+	ierr = PetscMemzero(name, sizeof(char)*MAX_NAME_LEN); CHKERRQ(ierr);
+
+	ierr = getStringParam(fb, _OPTIONAL_, key, name, MAX_NAME_LEN);  CHKERRQ(ierr);
+
+	if(strlen(name) && scal->utype == _NONE_)
+	{
+		SETERRQ(PETSC_COMM_SELF, PETSC_ERR_USER, "Predefined creep profile is not supported for non-dimensional setup");
+	}
+
+	PetscFunctionReturn(0);
+}
+//---------------------------------------------------------------------------
 #undef __FUNCT__
 #define __FUNCT__ "SetDiffProfile"
 PetscErrorCode SetDiffProfile(Material_t *m, char name[])
 {
+	// set diffusion creep profiles from literature
+
 	TensorCorrection tensorCorrection;
 	PetscInt         MPa;
 	PetscScalar      d0, p;
@@ -695,6 +690,9 @@ PetscErrorCode SetDiffProfile(Material_t *m, char name[])
 
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
+
+	// check for empty string
+	if(!strlen(name)) PetscFunctionReturn(0);
 
 	if (!strcmp(name,"Dry_Olivine_diff_creep-Hirth_Kohlstedt_2003"))
 	{
@@ -753,11 +751,12 @@ PetscErrorCode SetDiffProfile(Material_t *m, char name[])
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-// set dislocation creep profiles from literature
 #undef __FUNCT__
 #define __FUNCT__ "SetDislProfile"
 PetscErrorCode SetDislProfile(Material_t *m, char name[])
 {
+	// set dislocation creep profiles from literature
+
 	TensorCorrection tensorCorrection;
 	PetscInt         MPa;
 	PetscScalar      C_OH_0, r;
@@ -794,6 +793,9 @@ PetscErrorCode SetDislProfile(Material_t *m, char name[])
 
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
+
+	// check for empty string
+	if(!strlen(name)) PetscFunctionReturn(0);
 
 	if (!strcmp(name,"Dry_Olivine-Ranalli_1995"))
 	{
@@ -1120,11 +1122,12 @@ PetscErrorCode SetDislProfile(Material_t *m, char name[])
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-// set Peierls creep profiles from literature
 #undef __FUNCT__
 #define __FUNCT__ "SetPeirProfile"
 PetscErrorCode SetPeirProfile(Material_t *m, char name[])
 {
+	// set Peierls creep profiles from literature
+
 	// We assume that the creep law has the form:
 	// Peierls:   eII = Bp * exp( - (EP + P*VP)/(R*T)*(1-gamma)^q) * (Tau/gamma/taup)^s
 	//            s   = (Ep+p*Vp)/(R*T)*(1-gamma)^(q-1)*q*gamma
@@ -1139,6 +1142,9 @@ PetscErrorCode SetPeirProfile(Material_t *m, char name[])
 	// s          - Peierls creep exponent (typical values between 7-11) [-]
 
 	PetscFunctionBegin;
+
+	// check for empty string
+	if(!strlen(name)) PetscFunctionReturn(0);
 
 	if (!strcmp(name,"Olivine_Peierls-Kameyama_1999"))
 	{
@@ -1160,11 +1166,12 @@ PetscErrorCode SetPeirProfile(Material_t *m, char name[])
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-// set tensor and units correction for rheological profiles
 #undef __FUNCT__
 #define __FUNCT__ "SetProfileCorrection"
 PetscErrorCode SetProfileCorrection(PetscScalar *B, PetscScalar n, TensorCorrection tensorCorrection, PetscInt MPa)
 {
+	// set tensor and units correction for rheological profiles
+
 	PetscScalar F2, Bi;
 	// Lab. experiments are typically done under simple shear or uni-axial
 	// compression, which requires a correction in order to use them in tensorial format.
@@ -1192,343 +1199,178 @@ PetscErrorCode SetProfileCorrection(PetscScalar *B, PetscScalar n, TensorCorrect
 
 	PetscFunctionReturn(0);
 }
-//---------------------------------------------------------------------------
 /*
-void getLineStruct(
-		FILE *fp, PetscInt *ls, PetscInt *le, PetscInt max_num,
-		PetscInt *count_starts, PetscInt *count_ends,
-		const char key[], const char key_end[])
-{
-	// get the positions in the file for the material structures
-
-	char line[MAX_LINE_LEN];
-	PetscInt comment, start_match, end_match;
-	PetscInt i = 0, ii = 0;
-
-	// reset to start of file
-	rewind(fp);
-
-	while( !feof(fp) )
-	{
-		fgets( line, MAX_LINE_LEN-1, fp );
-
-		// get rid of white space
-		trim(line);
-
-		// if line is blank
-		if( strlen(line) == 0 ) { continue; }
-
-		// is first character a comment ?
-		comment = is_comment_line( line );
-		if( comment == _TRUE ) { continue; }
-
-		// find start of material structure
-		start_match = material_key_matches( key, line );
-		if( start_match == _TRUE )
-		{
-			// check bounds
-			if(i+1 > max_num) { i++; return; }
-
-			// mark file position and scan until end_match is found
-			ls[i++] = (PetscInt)ftell( fp );
-		}
-
-		// find end of material structure
-		end_match = material_key_matches( key_end, line );
-		if( end_match == _TRUE )
-		{
-			// check bounds
-			if(ii+1 > max_num) { ii++; return; }
-
-			// mark file position
-			le[ii++] = (PetscInt)ftell( fp );
-		}
-
-		// if no match continue
-		if( (start_match == _FALSE) && (end_match == _FALSE) ) { continue; }
-	}
-
-	(*count_starts)  = i;
-	(*count_ends)    = ii;
-}
 //---------------------------------------------------------------------------
-void getMatPropInt(FILE *fp, PetscInt ils, PetscInt ile,
-		const char key[], PetscInt *value, PetscInt *found)
-{
-	// get integer within specified positions of the file
-
-	char line[MAX_LINE_LEN];
-	PetscInt comment, pos;
-	PetscInt match, int_val;
-
-	// init flag
-	if(found) (*found) = _FALSE;
-
-	// reset to start of file
-	rewind( fp );
-
-	while( !feof(fp) )
-	{
-		fgets( line, MAX_LINE_LEN-1, fp );
-		pos = (PetscInt)ftell( fp );
-
-		// search only within specified positions of the file
-		if ((pos > ils) && (pos < ile))
-		{
-			// get rid of white space
-			trim(line);
-
-			// if line is blank
-			if( strlen(line) == 0 ) { continue; }
-
-			// is first character a comment ?
-			comment = is_comment_line( line );
-			if( comment == _TRUE ) {   continue;  }
-
-			match = key_matches( key, line );
-			if( match == _FALSE ) {   continue;   }
-
-			// strip word and equal sign
-			strip(line);
-
-			int_val = (PetscInt)strtol( line, NULL, 0 );
-
-			if(found)
-				(*found) = _TRUE;
-				(*value) = int_val;
-
-			return;
-		}
-	}
-}
+// This needs to be updated for the use in the inversion routines
 //---------------------------------------------------------------------------
-void getMatPropScalar(FILE *fp, PetscInt ils, PetscInt ile,
-		const char key[], PetscScalar *value, PetscInt *found)
+#undef __FUNCT__
+#define __FUNCT__ "MatPropSetFromLibCall"
+PetscErrorCode MatPropSetFromLibCall(JacRes *jr, ModParam *mod)
 {
-	// get scalar within specified positions of the file
+	// overwrite MATERIAL PARAMETERS with model parameters provided by a calling function
 
-	char          line[MAX_LINE_LEN];
-	PetscInt      comment, pos;
-	PetscInt      match;
-	PetscScalar   double_val;
+	PetscInt 	id,im;
+	PetscScalar eta, eta0, e0;
+	Material_t  *m;
 
-	// init flag
-	if(found) (*found) = _FALSE;
+	PetscFunctionBegin;
 
-	// reset to start of file
-	rewind( fp );
+	if(mod == NULL) PetscFunctionReturn(0);
 
-	while( !feof(fp) )
-	{
-		fgets( line, MAX_LINE_LEN-1, fp );
-		pos = (PetscInt)ftell( fp );
+	// does a calling function provide model parameters?
+	if(mod->use == 0) PetscFunctionReturn(0);
 
-		// search only within specified positions of the file
-		if ((pos > ils) && (pos < ile))
+	// set material properties
+	if(mod->use == 1) {
+		PetscPrintf(PETSC_COMM_WORLD,"# ------------------------------------------------------------------------\n");
+		PetscPrintf(PETSC_COMM_WORLD,"# Material properties set from calling function: \n");
+
+
+		for(im=0;im<mod->mdN;im++)
 		{
-			// get rid of white space
-			trim(line);
 
-			// if line is blank
-			if( strlen(line) == 0 ) { continue; }
+			id = mod->phs[im];
+			// get pointer to specified phase
+			m = jr->phases + id;
 
-			// is first character a comment ?
-			comment = is_comment_line( line );
-			if( comment == _TRUE ) {   continue;  }
-
-			match = key_matches( key, line );
-			if( match == _FALSE ) {   continue;   }
-
-			// strip word and equal sign
-			strip(line);
-
-			double_val = (PetscScalar)strtod( line, NULL );
-
-			if(found)
-				(*found) = _TRUE;
-				(*value) = double_val;
-
-			return;
-		}
-	}
-}
-//---------------------------------------------------------------------------
-void getMatPropString( FILE *fp, PetscInt ils, PetscInt ile, const char key[], char value[], PetscInt max_L, PetscInt *found )
-{
-	char line[MAX_LINE_LEN];
-	PetscInt comment, pos;
-	PetscInt match, line_L;
-	char LINE[MAX_LINE_LEN];
-
-	// init flag
-	if(found) (*found) = _FALSE;
-
-	memset( value, 0, sizeof(char)*(size_t)max_L );
-
-	// reset to start of file
-	rewind( fp );
-
-	while( !feof(fp) ) {
-		fgets( line, MAX_LINE_LEN-1, fp );
-		pos = (PetscInt)ftell( fp );
-
-		// search only within specified positions of the file
-		if ((pos > ils) && (pos < ile))
-		{
-			// get rid of white space
-			trim(line);
-
-			// if line is blank
-			if( strlen(line) == 0 ) { continue; }
-
-			// is first character a comment ?
-			comment = is_comment_line( line );
-			if( comment == _TRUE ) {   continue;  }
-
-			match = key_matches( key, line );
-			if( match == _FALSE ) {   continue;   }
-
-			// strip word and equal sign
-			strip(line);
-			strip_all_whitespace(line, LINE);
-
-			trim_past_comment(LINE);
-			line_L = (PetscInt)strlen( LINE );
-
-			strncpy( value, LINE, (size_t)line_L );
-			if( line_L > max_L ) {
-				printf("parse_GetString: Error, input string is not large enough to hold result \n");
-				return;
-			}
-
-			if(found) (*found) = _TRUE;
-			return;
-		}
-	}
-}
-//---------------------------------------------------------------------------
-void getMatPropIntArray(FILE *fp, PetscInt ils, PetscInt ile,const char key[],
-		PetscInt *nvalues, PetscInt values[], PetscInt *found)
-{
-	// get scalar within specified positions of the file
-
-	char          line[MAX_LINE_LEN];
-	PetscInt      comment, pos, count;
-	PetscInt      match;
-	PetscInt      int_val;
-	char 		  *_line;
-
-	// init flag
-	if(found) (*found) = _FALSE;
-
-	// reset to start of file
-	rewind( fp );
-
-	while( !feof(fp) )
-	{
-		fgets( line, MAX_LINE_LEN-1, fp );
-		pos = (PetscInt)ftell( fp );
-
-		// search only within specified positions of the file
-		if ((pos > ils) && (pos < ile))
-		{
-			// get rid of white space
-			trim(line);
-
-			// if line is blank
-			if( strlen(line) == 0 ) { continue; }
-
-			// is first character a comment ?
-			comment = is_comment_line( line );
-			if( comment == _TRUE ) {   continue;  }
-
-			match = key_matches( key, line );
-			if( match == _FALSE ) {   continue;   }
-
-			// strip word and equal sign
-			strip(line);
-
-			count = 0;
-			_line = line;
-			for(;;)
+			// linear viscosity
+			if(mod->typ[im] == _ETA_)
 			{
-				char *endp;
-				int_val = (PetscInt)strtod(_line, &endp);
-				values[count] = int_val;
 
-				if(endp == _line) break;
+				// initialize additional parameters
+				eta      =  0.0;
+				eta0     =  0.0;
+				e0       =  0.0;
+				eta = mod->val[im];
 
-				_line = endp;
-				count++;
+				// check strain-rate dependent creep
+				if((!eta0 && e0) || (eta0 && !e0))
+				{
+					SETERRQ1(PETSC_COMM_SELF, PETSC_ERR_USER, "eta0 & e0 must be specified simultaneously for phase %lld", (LLD)id);
+				}
+
+				// check power-law exponent
+				if(!m->n && ((eta0 && e0) || m->Bn))
+				{
+					SETERRQ1(PETSC_COMM_SELF, PETSC_ERR_USER, "Power-law exponent must be specified for phase %lld", (LLD)id);
+				}
+
+				// check Peierls creep
+				if(m->Bp && (!m->taup || !m->gamma || !m->q || !m->Ep))
+				{
+					SETERRQ1(PETSC_COMM_SELF, PETSC_ERR_USER, "All Peierls creep parameters must be specified simultaneously for phase %lld", (LLD)id);
+				}
+
+				// recompute creep parameters
+				if(eta)        m->Bd = 1.0/(2.0*eta);
+				if(eta0 && e0) m->Bn = pow (2.0*eta0, -m->n)*pow(e0, 1 - m->n);
+
+				// check that at least one essential deformation mechanism is specified
+				if(!m->Bd && !m->Bn && !m->G)
+				{
+					SETERRQ1(PETSC_COMM_SELF, PETSC_ERR_USER, "At least one of the parameter (set) Bd (eta), Bn (eta0, e0), G must be specified for phase %lld", (LLD)id);
+				}
+
+				PetscPrintf(PETSC_COMM_WORLD,"#    eta[%lld] = %g \n",(LLD)id,eta);
 			}
 
-			*nvalues = count;
-			*found 	 = _TRUE;
-			return;
+			// constant density
+			else if(mod->typ[im] == _RHO0_)
+			{
+				m->rho = mod->val[im];
+				PetscPrintf(PETSC_COMM_WORLD,"#    rho0[%lld] = %5.5f \n",(LLD)id,m->rho);
+			}
+
+			else
+			{
+				PetscPrintf(PETSC_COMM_WORLD,"WARNING: inversion parameter type is not implemented \n");
+			}
+
 		}
+		PetscPrintf(PETSC_COMM_WORLD,"# ------------------------------------------------------------------------\n");
 	}
+
+	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-void getMatPropScalArray(FILE *fp, PetscInt ils, PetscInt ile,const char key[],
-		PetscInt *nvalues, PetscScalar values[], PetscInt *found)
+#undef __FUNCT__
+#define __FUNCT__ "MatPropSetFromCL"
+PetscErrorCode MatPropSetFromCL(JacRes *jr)
 {
-	// get scalar within specified positions of the file
+	// overwrite MATERIAL PARAMETERS with command line options
 
-	char          line[MAX_LINE_LEN];
-	PetscInt      comment, pos, count;
-	PetscInt      match;
-	PetscScalar   double_val;
-	char 		  *_line;
+	PetscErrorCode 	ierr;
+	PetscBool		flg,get_options;
+	PetscInt 		id;
+	char 			matprop_opt[MAX_PATH_LEN];
+	PetscScalar eta, eta0, e0;
+	Material_t *m;
 
-	// init flag
-	if(found) (*found) = _FALSE;
+	PetscFunctionBegin;
 
-	// reset to start of file
-	rewind( fp );
+	flg = PETSC_FALSE;
+	get_options = PETSC_FALSE;
 
-	while( !feof(fp) )
-	{
-		fgets( line, MAX_LINE_LEN-1, fp );
-		pos = (PetscInt)ftell( fp );
+	ierr = PetscOptionsGetBool(NULL, NULL, "-SetMaterialProperties", &get_options, NULL ); 					CHKERRQ(ierr);
 
-		// search only within specified positions of the file
-		if ((pos > ils) && (pos < ile))
-		{
-			// get rid of white space
-			trim(line);
+	if(get_options) {
+		PetscPrintf(PETSC_COMM_WORLD,"# ------------------------------------------------------------------------\n");
+		PetscPrintf(PETSC_COMM_WORLD,"# Material properties set from command line: \n");
 
-			// if line is blank
-			if( strlen(line) == 0 ) { continue; }
+		for(id=0;id<jr->numPhases;id++){
 
-			// is first character a comment ?
-			comment = is_comment_line( line );
-			if( comment == _TRUE ) {   continue;  }
+			// get pointer to specified phase
+			m = jr->phases + id;
 
-			match = key_matches( key, line );
-			if( match == _FALSE ) {   continue;   }
+			// initialize additional parameters
+			eta      =  0.0;
+			eta0     =  0.0;
+			e0       =  0.0;
 
-			// strip word and equal sign
-			strip(line);
+			// linear viscosity
+			sprintf(matprop_opt,"-eta_%lld",(LLD)id);
+			ierr = PetscOptionsGetReal(NULL, NULL ,matprop_opt,&eta	, &flg); 				CHKERRQ(ierr);
 
-			count = 0;
-			_line = line;
-			for(;;)
-			{
-				char *endp;
-				double_val = strtod(_line, &endp);
-				values[count] = double_val;
+				// check strain-rate dependent creep
+				if((!eta0 && e0) || (eta0 && !e0))
+				{
+					SETERRQ1(PETSC_COMM_SELF, PETSC_ERR_USER, "eta0 & e0 must be specified simultaneously for phase %lld", (LLD)id);
+				}
 
-				if(endp == _line) break;
+				// check power-law exponent
+				if(!m->n && ((eta0 && e0) || m->Bn))
+				{
+					SETERRQ1(PETSC_COMM_SELF, PETSC_ERR_USER, "Power-law exponent must be specified for phase %lld", (LLD)id);
+				}
 
-				_line = endp;
-				count++;
-			}
+				// check Peierls creep
+				if(m->Bp && (!m->taup || !m->gamma || !m->q || !m->Ep))
+				{
+					SETERRQ1(PETSC_COMM_SELF, PETSC_ERR_USER, "All Peierls creep parameters must be specified simultaneously for phase %lld", (LLD)id);
+				}
 
-			*nvalues = count;
-			*found 	 = _TRUE;
-			return;
+				// recompute creep parameters
+				if(eta)        m->Bd = 1.0/(2.0*eta);
+				if(eta0 && e0) m->Bn = pow (2.0*eta0, -m->n)*pow(e0, 1 - m->n);
+
+				// check that at least one essential deformation mechanism is specified
+				if(!m->Bd && !m->Bn && !m->G)
+				{
+					SETERRQ1(PETSC_COMM_SELF, PETSC_ERR_USER, "At least one of the parameter (set) Bd (eta), Bn (eta0, e0), G must be specified for phase %lld", (LLD)id);
+				}
+
+			if(flg == PETSC_TRUE) PetscPrintf(PETSC_COMM_WORLD,"#    eta[%lld]	= %g \n",(LLD)id,eta);
+
+			// constant density
+			sprintf(matprop_opt,"-rho0_%lld",(LLD)id);
+			ierr = PetscOptionsGetReal(NULL, NULL ,matprop_opt,&m->rho	, &flg);			CHKERRQ(ierr);
+			if(flg == PETSC_TRUE) PetscPrintf(PETSC_COMM_WORLD,"#    rho0[%lld]	= %5.5f \n",(LLD)id,m->rho);
+
 		}
+		PetscPrintf(PETSC_COMM_WORLD,"# ------------------------------------------------------------------------\n");
 	}
+
+	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
 */

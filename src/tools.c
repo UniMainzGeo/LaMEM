@@ -46,6 +46,54 @@
 #include "LaMEM.h"
 #include "tools.h"
 //---------------------------------------------------------------------------
+#undef __FUNCT__
+#define __FUNCT__ "VecReadRestart"
+PetscErrorCode VecReadRestart(Vec x, FILE *fp)
+{
+	PetscInt     size;
+	PetscScalar *xarr;
+
+	PetscErrorCode ierr;
+	PetscFunctionBegin;
+
+	ierr = VecGetLocalSize(x, &size); CHKERRQ(ierr);
+
+	// get vector array
+	ierr = VecGetArray(x, &xarr); CHKERRQ(ierr);
+
+	// write to file
+	fread(xarr, sizeof(PetscScalar), (size_t)size, fp);
+
+	// restore vector array
+	ierr = VecRestoreArray(x, &xarr); CHKERRQ(ierr);
+
+	PetscFunctionReturn(0);
+}
+//---------------------------------------------------------------------------
+#undef __FUNCT__
+#define __FUNCT__ "VecWriteRestart"
+PetscErrorCode VecWriteRestart(Vec x, FILE *fp)
+{
+	PetscInt     size;
+	PetscScalar *xarr;
+
+	PetscErrorCode ierr;
+	PetscFunctionBegin;
+
+	ierr = VecGetLocalSize(x, &size); CHKERRQ(ierr);
+
+	// get vector array
+	ierr = VecGetArray(x, &xarr); CHKERRQ(ierr);
+
+	// write to file
+	fwrite(xarr, sizeof(PetscScalar), (size_t)size, fp);
+
+	// restore vector array
+	ierr = VecRestoreArray(x, &xarr); CHKERRQ(ierr);
+
+	PetscFunctionReturn(0);
+}
+//---------------------------------------------------------------------------
 //  basic statistic functions
 //---------------------------------------------------------------------------
 PetscScalar getArthMean(PetscScalar *data, PetscInt n)
@@ -136,7 +184,7 @@ PetscErrorCode makeScalArray(PetscScalar **arr, const PetscScalar *init, const P
 	*arr = tmp;
 	PetscFunctionReturn(0);
 }
-//==========================================================================================================
+//---------------------------------------------------------------------------
 PetscInt ISRankZero(MPI_Comm comm)
 {
 	PetscMPIInt rank;
@@ -145,7 +193,7 @@ PetscInt ISRankZero(MPI_Comm comm)
 
 	return (rank == 0);
 }
-//==========================================================================================================
+//---------------------------------------------------------------------------
 PetscInt ISParallel(MPI_Comm comm)
 {
 	PetscMPIInt size;
@@ -154,7 +202,7 @@ PetscInt ISParallel(MPI_Comm comm)
 
 	return (size > 1);
 }
-//==========================================================================================================
+//---------------------------------------------------------------------------
 // Creates an output directory
 #undef __FUNCT__
 #define __FUNCT__ "LaMEMCreateOutputDirectory"
@@ -368,5 +416,76 @@ void in_polygon(
 		point_in = (PetscInt)(nIntersect - 2.0*floor(nIntersect/2.0));
 		in[ip]   = MAX(point_on, point_in);
 	}
+}
+//---------------------------------------------------------------------------
+PetscInt calcDisp(PetscInt n, PetscInt *counts, PetscInt *displ)
+{
+	//=====================================================================
+	// calculate displacements from counts, return number elements
+	// ...
+	// NOTE: if counts & displacements are set to the same array,
+	// counts will be overwritten by displacements upon return
+	//=====================================================================
+
+	PetscInt i, cnt, inc;
+
+	for(i = 0, cnt = 0; i < n; i++)
+	{
+		inc       = counts[i];
+		displ[i]  = cnt;
+		cnt      += inc;
+	}
+
+	return cnt;
+}
+//-----------------------------------------------------------------------------
+void rewinDisp(PetscInt n, PetscInt *displ)
+{
+	//=====================================================================
+	// rewind displacements after using them as access iterators
+	//=====================================================================
+
+	PetscInt i, prev, next;
+
+	for(i = 0, prev = 0; i < n; i++)
+	{
+		next     = displ[i];
+		displ[i] = prev;
+		prev     = next;
+	}
+
+}
+//---------------------------------------------------------------------------
+int comp_key_val(const void * a, const void * b)
+{
+	// comparison function for sorting key-value pairs
+
+	return (int)( ((const Pair*)a)->key - ((const Pair*)b)->key );
+}
+//---------------------------------------------------------------------------
+#undef __FUNCT__
+#define __FUNCT__ "sort_key_val"
+PetscErrorCode sort_key_val(PetscScalar *a, PetscInt *idx, PetscInt n)
+{
+	Pair     *p;
+	PetscInt  i;
+
+	PetscErrorCode ierr;
+	PetscFunctionBegin;
+
+	ierr = PetscMalloc((size_t)n*sizeof(Pair), &p); CHKERRQ(ierr);
+
+	// initialize
+	for(i = 0; i < n; i++) { p[i].key = a[i]; p[i].val = idx[i]; }
+
+	// sort
+	qsort(p, (size_t)n, sizeof(Pair), comp_key_val);
+
+	// copy result
+	for(i = 0; i < n; i++) { a[i] = p[i].key; idx[i] = p[i].val;  }
+
+	ierr = PetscFree(p); CHKERRQ(ierr);
+
+	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------

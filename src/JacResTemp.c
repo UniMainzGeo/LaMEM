@@ -140,7 +140,7 @@ PetscErrorCode JacResCheckTempParam(JacRes *jr)
 	PetscFunctionBegin;
 
 	// temperature diffusion cases only
-	if(jr->actTemp != PETSC_TRUE) PetscFunctionReturn(0);
+	if(!jr->actTemp) PetscFunctionReturn(0);
 
 	// initialize
 	numPhases = jr->numPhases;
@@ -181,7 +181,7 @@ PetscErrorCode JacResCreateTempParam(JacRes *jr)
 	ierr = DMCreateLocalVector(fs->DA_CEN, &jr->lT); CHKERRQ(ierr);
 
 	// temperature diffusion cases only
-	if(jr->actTemp != PETSC_TRUE) PetscFunctionReturn(0);
+	if(!jr->actTemp) PetscFunctionReturn(0);
 
 	// get cell center grid partitioning
 	ierr = DMDAGetOwnershipRanges(fs->DA_CEN, &lx, &ly, &lz); CHKERRQ(ierr);
@@ -229,7 +229,7 @@ PetscErrorCode JacResDestroyTempParam(JacRes *jr)
 	ierr = VecDestroy(&jr->lT);   CHKERRQ(ierr);
 
 	// temperature diffusion cases only
-	if(jr->actTemp != PETSC_TRUE) PetscFunctionReturn(0);
+	if(!jr->actTemp) PetscFunctionReturn(0);
 
 	// temperature parameters
 	ierr = DMDestroy (&jr->DA_T); CHKERRQ(ierr);

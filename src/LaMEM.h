@@ -59,6 +59,8 @@
 //   MPIU_INT    - appropriate MPI Data Type for sending/receiving PetscInt
 //
 //-----------------------------------------------------------------------------
+// space dimension
+#define SPDIM 3
 
 // cast macros
 #define LLD long long int

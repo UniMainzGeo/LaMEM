@@ -126,6 +126,10 @@ PetscErrorCode FreeSurfCreate(FreeSurf *surf, JacRes *jr)
 	}
 */
 
+	// ACHTUNG !!!
+	// SET AirPhase in JacRes!!!
+
+
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------

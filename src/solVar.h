@@ -215,11 +215,6 @@ typedef struct
 
 typedef struct
 {
-
-	PetscScalar      LowerViscosityCutoff, UpperViscosityCutoff, InitViscosity, PlastViscosity; // JacRes
-	PetscScalar      GasConstant;
-
-
 	// viscosity limits
 	PetscScalar eta_min;
 	PetscScalar eta_max;

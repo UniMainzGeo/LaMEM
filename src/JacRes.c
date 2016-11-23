@@ -54,14 +54,63 @@
 #include "tools.h"
 //---------------------------------------------------------------------------
 #undef __FUNCT__
-#define __FUNCT__ "JacResSetFromOptions"
-PetscErrorCode JacResSetFromOptions(JacRes *jr)
+#define __FUNCT__ "JacResCreate"
+PetscErrorCode JacResCreate(JacRes *jr, FB *fb)
 {
-	PetscBool   flg;
-	PetscScalar gtol;
+	DOFIndex       *dof;
+	PetscScalar    *svBuff;
+	PetscInt        i, n, svBuffSz, numPhases;
+	const PetscInt *lx, *ly;
 
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
+
+/*
+
+	PetscInt    i;
+	Material_t *m;
+
+	PetscErrorCode ierr;
+	PetscFunctionBegin;
+
+	// initialize
+	jr->FSSA      = 1.0;
+	jr->pShiftAct = 1;
+
+	// read from options
+	ierr = getScalarParam(fb, _OPTIONAL_, "FSSA",   &jr->FSSA,      1,  0.0, 1.0, 1.0); CHKERRQ(ierr);
+	ierr = getIntParam   (fb, _OPTIONAL_, "pShift", &jr->pShiftAct, 1,  0,   1       ); CHKERRQ(ierr);
+
+	// read material parameter limits
+	ierr = MatParLimRead(fb, jr->scal, &jr->matLim); CHKERRQ(ierr);
+
+	// read all softening laws
+	ierr = MatSoftReadAll(fb, &jr->numSoft, jr->matSoft); CHKERRQ(ierr);
+
+	// read all material phases
+	ierr = MatPhaseReadAll(fb, jr->scal,
+			&jr->numPhases, jr->phases,
+			 jr->numSoft,   jr->matSoft); CHKERRQ(ierr);
+
+	// activate elasticity-compliant time-stepping
+	for(i = 0; i < jr->numPhases; i++)
+	{
+		m = jr->phases + i;
+
+		// check whether elastic constants are specified
+		if(m->G || m->K)
+		{
+			ierr = TSSolSetupElasticity(jr->ts); CHKERRQ(ierr);
+			break;
+		}
+	}
+
+	ierr = JacResCreateData(jr); CHKERRQ(ierr);
+
+	// set initial guess
+	ierr = VecZeroEntries(jr->gsol); CHKERRQ(ierr);
+	ierr = VecZeroEntries(jr->gT);   CHKERRQ(ierr);
+
 
 	// set pressure shift flag
 	ierr = PetscOptionsHasName(NULL, NULL, "-skip_press_shift", &flg); CHKERRQ(ierr);
@@ -77,33 +126,60 @@ PetscErrorCode JacResSetFromOptions(JacRes *jr)
 
 	if(flg == PETSC_TRUE) jr->gtol = gtol;
 
+	// phases must be initialized before calling this function
+	numPhases = jr->numPhases;
+
+
+	// default geometry tolerance
+	jr->gtol = 1e-15;
+
+	// activate pressure shift
+	jr->pShift    = 0.0;
+	jr->pShiftAct = PETSC_TRUE;
+
+	// switch-off temperature diffusion
+	jr->actTemp = PETSC_FALSE;
+
+	// switch off free surface tracking
+	jr->AirPhase = -1;
+
+*/
+
+/*
+		// parameters & controls
+	PetscScalar grav[SPDIM]; // global gravity components
+	PetscScalar FSSA;        // density gradient penalty parameter
+	PetscScalar gtol;        // geometry tolerance
+	PetscInt    pShiftAct;   // pressure shift activation flag
+	PetscInt    actTemp;     // temperature diffusion activation flag
+
+	// phase parameters
+	PetscInt     numPhases;              // number phases
+	Material_t   phases[max_num_phases]; // phase parameters
+	PetscInt     numSoft;                // number material softening laws
+	Soft_t       matSoft[max_num_soft];  // material softening law parameters
+	MatParLim    matLim;                 // phase parameters limiters
+
+ */
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
 #undef __FUNCT__
-#define __FUNCT__ "JacResCreate"
-PetscErrorCode JacResCreate(
-	JacRes   *jr,
-	FDSTAG   *fs,
-	BCCtx    *bc)
+#define __FUNCT__ "JacResCreateData"
+PetscErrorCode JacResCreateData(JacRes *jr)
 {
+	FDSTAG         *fs;
 	DOFIndex       *dof;
 	PetscScalar    *svBuff;
-	PetscInt        i, n, svBuffSz, numPhases;
 	const PetscInt *lx, *ly;
+	PetscInt        i, n, svBuffSz, numPhases;
 
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
 
-	// set external handles
-	jr->fs = fs;
-	jr->bc = bc;
-
-	// set indexing object
-	dof = &fs->dof;
-
-	// phases must be initialized before calling this function
-	numPhases = jr->numPhases;
+	fs        =  jr->fs;
+	dof       = &fs->dof;
+	numPhases =  jr->numPhases;
 
 	//========================
 	// create solution vectors
@@ -141,14 +217,12 @@ PetscErrorCode JacResCreate(
 	ierr = DMCreateGlobalVector(fs->DA_YZ,  &jr->gdyz); CHKERRQ(ierr);
 
 	// pressure
-	ierr = DMCreateGlobalVector(fs->DA_CEN, &jr->gp); CHKERRQ(ierr);
-	ierr = DMCreateLocalVector (fs->DA_CEN, &jr->lp); CHKERRQ(ierr);
+	ierr = DMCreateGlobalVector(fs->DA_CEN, &jr->gp);        CHKERRQ(ierr);
+	ierr = DMCreateLocalVector (fs->DA_CEN, &jr->lp);        CHKERRQ(ierr);
+	ierr = DMCreateLocalVector (fs->DA_CEN, &jr->lp_lithos); CHKERRQ(ierr);
 
 	// continuity residual
 	ierr = DMCreateGlobalVector(fs->DA_CEN, &jr->gc);  CHKERRQ(ierr);
-
-	// lithostatic pressure
-	ierr = DMCreateLocalVector(fs->DA_CEN, &jr->lp_lithos); CHKERRQ(ierr);
 
 	// corner buffer
 	ierr = DMCreateLocalVector(fs->DA_COR,  &jr->lbcor); CHKERRQ(ierr);
@@ -188,22 +262,6 @@ PetscErrorCode JacResCreate(
 	n = fs->nYZEdg;
 	for(i = 0; i < n; i++) { jr->svYZEdge[i].phRat = svBuff; svBuff += numPhases; }
 
-	// default geometry tolerance
-	jr->gtol = 1e-15;
-
-	// activate pressure shift
-	jr->pShift    = 0.0;
-	jr->pShiftAct = PETSC_TRUE;
-
-	// switch-off temperature diffusion
-	jr->actTemp = PETSC_FALSE;
-
-	// switch off free surface tracking
-	jr->AirPhase = -1;
-
-	// change default settings
-	ierr = JacResSetFromOptions(jr); CHKERRQ(ierr);
-
 	// setup temperature parameters
 	ierr = JacResCreateTempParam(jr); CHKERRQ(ierr);
 
@@ -226,6 +284,34 @@ PetscErrorCode JacResCreate(
 }
 //---------------------------------------------------------------------------
 #undef __FUNCT__
+#define __FUNCT__ "JacResReadRestart"
+PetscErrorCode JacResReadRestart(JacRes *jr, FILE *fp)
+{
+	PetscErrorCode ierr;
+	PetscFunctionBegin;
+
+	ierr = JacResCreateData(jr); CHKERRQ(ierr);
+
+	// read solution vectors
+	ierr = VecReadRestart(jr->gsol, fp); CHKERRQ(ierr);
+
+	PetscFunctionReturn(0);
+}
+//---------------------------------------------------------------------------
+#undef __FUNCT__
+#define __FUNCT__ "JacResWriteRestart"
+PetscErrorCode JacResWriteRestart(JacRes *jr, FILE *fp)
+{
+	PetscErrorCode ierr;
+	PetscFunctionBegin;
+
+	// write solution vectors
+	ierr = VecWriteRestart(jr->gsol, fp); CHKERRQ(ierr);
+
+	PetscFunctionReturn(0);
+}
+//---------------------------------------------------------------------------
+#undef __FUNCT__
 #define __FUNCT__ "JacResDestroy"
 PetscErrorCode JacResDestroy(JacRes *jr)
 {
@@ -233,58 +319,55 @@ PetscErrorCode JacResDestroy(JacRes *jr)
 	PetscFunctionBegin;
 
 	// solution vectors
-	ierr = VecDestroy(&jr->gsol);    CHKERRQ(ierr);
-	ierr = VecDestroy(&jr->gres);    CHKERRQ(ierr);
+	ierr = VecDestroy(&jr->gsol);      CHKERRQ(ierr);
+	ierr = VecDestroy(&jr->gres);      CHKERRQ(ierr);
 
-	ierr = VecDestroy(&jr->gvx);     CHKERRQ(ierr);
-	ierr = VecDestroy(&jr->gvy);     CHKERRQ(ierr);
-	ierr = VecDestroy(&jr->gvz);     CHKERRQ(ierr);
+	ierr = VecDestroy(&jr->gvx);       CHKERRQ(ierr);
+	ierr = VecDestroy(&jr->gvy);       CHKERRQ(ierr);
+	ierr = VecDestroy(&jr->gvz);       CHKERRQ(ierr);
 
-	ierr = VecDestroy(&jr->lvx);     CHKERRQ(ierr);
-	ierr = VecDestroy(&jr->lvy);     CHKERRQ(ierr);
-	ierr = VecDestroy(&jr->lvz);     CHKERRQ(ierr);
+	ierr = VecDestroy(&jr->lvx);       CHKERRQ(ierr);
+	ierr = VecDestroy(&jr->lvy);       CHKERRQ(ierr);
+	ierr = VecDestroy(&jr->lvz);       CHKERRQ(ierr);
 
-	ierr = VecDestroy(&jr->gfx);     CHKERRQ(ierr);
-	ierr = VecDestroy(&jr->gfy);     CHKERRQ(ierr);
-	ierr = VecDestroy(&jr->gfz);     CHKERRQ(ierr);
+	ierr = VecDestroy(&jr->gfx);       CHKERRQ(ierr);
+	ierr = VecDestroy(&jr->gfy);       CHKERRQ(ierr);
+	ierr = VecDestroy(&jr->gfz);       CHKERRQ(ierr);
 
-	ierr = VecDestroy(&jr->lfx);     CHKERRQ(ierr);
-	ierr = VecDestroy(&jr->lfy);     CHKERRQ(ierr);
-	ierr = VecDestroy(&jr->lfz);     CHKERRQ(ierr);
+	ierr = VecDestroy(&jr->lfx);       CHKERRQ(ierr);
+	ierr = VecDestroy(&jr->lfy);       CHKERRQ(ierr);
+	ierr = VecDestroy(&jr->lfz);       CHKERRQ(ierr);
 
-	ierr = VecDestroy(&jr->ldxx);    CHKERRQ(ierr);
-	ierr = VecDestroy(&jr->ldyy);    CHKERRQ(ierr);
-	ierr = VecDestroy(&jr->ldzz);    CHKERRQ(ierr);
-	ierr = VecDestroy(&jr->ldxy);    CHKERRQ(ierr);
-	ierr = VecDestroy(&jr->ldxz);    CHKERRQ(ierr);
-	ierr = VecDestroy(&jr->ldyz);    CHKERRQ(ierr);
+	ierr = VecDestroy(&jr->ldxx);      CHKERRQ(ierr);
+	ierr = VecDestroy(&jr->ldyy);      CHKERRQ(ierr);
+	ierr = VecDestroy(&jr->ldzz);      CHKERRQ(ierr);
+	ierr = VecDestroy(&jr->ldxy);      CHKERRQ(ierr);
+	ierr = VecDestroy(&jr->ldxz);      CHKERRQ(ierr);
+	ierr = VecDestroy(&jr->ldyz);      CHKERRQ(ierr);
 
-	ierr = VecDestroy(&jr->gdxy);    CHKERRQ(ierr);
-	ierr = VecDestroy(&jr->gdxz);    CHKERRQ(ierr);
-	ierr = VecDestroy(&jr->gdyz);    CHKERRQ(ierr);
+	ierr = VecDestroy(&jr->gdxy);      CHKERRQ(ierr);
+	ierr = VecDestroy(&jr->gdxz);      CHKERRQ(ierr);
+	ierr = VecDestroy(&jr->gdyz);      CHKERRQ(ierr);
 
-	ierr = VecDestroy(&jr->gp);      CHKERRQ(ierr);
-	ierr = VecDestroy(&jr->lp);      CHKERRQ(ierr);
-
-	ierr = VecDestroy(&jr->gc);      CHKERRQ(ierr);
-
+	ierr = VecDestroy(&jr->gp);        CHKERRQ(ierr);
+	ierr = VecDestroy(&jr->lp);        CHKERRQ(ierr);
 	ierr = VecDestroy(&jr->lp_lithos); CHKERRQ(ierr);
 
-	ierr = VecDestroy(&jr->lbcor);   CHKERRQ(ierr);
+	ierr = VecDestroy(&jr->gc);        CHKERRQ(ierr);
+
+	ierr = VecDestroy(&jr->lbcor);     CHKERRQ(ierr);
 
 	// solution variables
-	ierr = PetscFree(jr->svCell);   CHKERRQ(ierr);
-	ierr = PetscFree(jr->svXYEdge); CHKERRQ(ierr);
-	ierr = PetscFree(jr->svXZEdge); CHKERRQ(ierr);
-	ierr = PetscFree(jr->svYZEdge); CHKERRQ(ierr);
-	ierr = PetscFree(jr->svBuff);   CHKERRQ(ierr);
+	ierr = PetscFree(jr->svCell);      CHKERRQ(ierr);
+	ierr = PetscFree(jr->svXYEdge);    CHKERRQ(ierr);
+	ierr = PetscFree(jr->svXZEdge);    CHKERRQ(ierr);
+	ierr = PetscFree(jr->svYZEdge);    CHKERRQ(ierr);
+	ierr = PetscFree(jr->svBuff);      CHKERRQ(ierr);
 
-	// destroy temperature parameters
+	// temperature parameters
 	ierr = JacResDestroyTempParam(jr); CHKERRQ(ierr);
 
-	//==========================
 	// 2D integration primitives
-	//==========================
 	ierr = DMDestroy(&jr->DA_CELL_2D); CHKERRQ(ierr);
 
 	PetscFunctionReturn(0);
@@ -1761,97 +1844,6 @@ PetscScalar JacResGetTime(JacRes *jr)
 PetscInt JacResGetStep(JacRes *jr)
 {
 	return	jr->ts->istep;
-}
-//---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "SetMatParLim"
-PetscErrorCode SetMatParLim(MatParLim *matLim)
-{
-	// initialize material parameter limits
-	PetscBool flg;
-	PetscInt  cnt;
-
-	PetscErrorCode ierr;
-	PetscFunctionBegin;
-
-//	matLim->eta_min      = usr->LowerViscosityCutoff;
-//	matLim->eta_max      = usr->UpperViscosityCutoff;
-//	matLim->eta_ref      = usr->InitViscosity;
-
-	matLim->TRef         = 0.0;
-	matLim->Rugc         = 8.3144621;
-	matLim->eta_atol     = 0.0;
-	matLim->eta_rtol     = 1e-8;
-	matLim->DII_atol     = 0.0;
-	matLim->DII_rtol     = 1e-8;
-	matLim->minCh        = 0.0;
-	matLim->minFr        = 0.0;
-	matLim->tauUlt       = DBL_MAX;
-	matLim->shearHeatEff = 1.0;
-
-	matLim->quasiHarmAvg = PETSC_FALSE;
-	matLim->cf_eta_min   = 0.0;
-	matLim->n_pw         = 0.0;
-
-	matLim->initGuessFlg = PETSC_TRUE;
-	matLim->rho_fluid    = 0.0;
-	matLim->rho_lithos 	 = 0.0;	 // lithostatic density
-	matLim->theta_north  = 90.0; // by default y-axis
-	matLim->warn         = PETSC_TRUE;
-	matLim->jac_mat_free = PETSC_FALSE;
-/*
-	if(usr->DII_ref) matLim->DII_ref = usr->DII_ref;
-	else
-	{
-		matLim->DII_ref = 1.0;
-		PetscPrintf(PETSC_COMM_WORLD," WARNING: Reference strain rate DII_ref is not defined. Use a non-dimensional reference value of DII_ref =%f \n", matLim->DII_ref);
-	}
-*/
-	cnt = 0;
-
-	// plasticity stabilization parameters
-	ierr = PetscOptionsHasName(NULL, NULL, "-quasi_harmonic", &flg); CHKERRQ(ierr);
-
-	if(flg == PETSC_TRUE) { matLim->quasiHarmAvg = PETSC_TRUE; cnt++; }
-
-	ierr = PetscOptionsGetScalar(NULL, NULL, "-cf_eta_min",  &matLim->cf_eta_min, &flg); CHKERRQ(ierr);
-
-	if(flg == PETSC_TRUE) { cnt++; }
-
-	ierr = PetscOptionsGetScalar(NULL, NULL, "-n_pw",  &matLim->n_pw, &flg); CHKERRQ(ierr);
-
-	if(flg == PETSC_TRUE) { cnt++; }
-
-	if(cnt > 1)
-	{
-		SETERRQ(PETSC_COMM_SELF, PETSC_ERR_USER, "Cannot combine plasticity stabilization methods (-quasi_harmonic -cf_eta_min -n_pw) \n");
-	}
-
-	// set Jacobian flag
-	ierr = PetscOptionsHasName(NULL, NULL, "-jac_mat_free", &flg); CHKERRQ(ierr);
-
-	if(flg == PETSC_TRUE) matLim->jac_mat_free = PETSC_TRUE;
-
-	if(cnt &&  matLim->jac_mat_free == PETSC_TRUE)
-	{
-		SETERRQ(PETSC_COMM_SELF, PETSC_ERR_USER, "Analytical Jacobian is not available for plasticity stabilizations (-jac_mat_free -quasi_harmonic -cf_eta_min -n_pw) \n");
-	}
-
-	ierr = PetscOptionsGetScalar(NULL, NULL, "-rho_fluid",  &matLim->rho_fluid, NULL); CHKERRQ(ierr);
-	ierr = PetscOptionsGetScalar(NULL, NULL, "-rho_lithos", &matLim->rho_lithos, NULL); CHKERRQ(ierr);		// specify lithostatic density on commandline (if not set, we don't use this)
-
-	ierr = PetscOptionsGetScalar(NULL, NULL, "-theta_north", &matLim->theta_north, NULL); CHKERRQ(ierr);
-
-	ierr = PetscOptionsHasName(NULL, NULL, "-stop_warnings", &flg); CHKERRQ(ierr);
-
-	if(flg == PETSC_TRUE) matLim->warn = PETSC_FALSE;
-
-	ierr = PetscOptionsGetScalar(NULL, NULL, "-shearHeatEff", &matLim->shearHeatEff, NULL); CHKERRQ(ierr);
-
-	if(matLim->shearHeatEff > 1.0) matLim->shearHeatEff = 1.0;
-	if(matLim->shearHeatEff < 0.0) matLim->shearHeatEff = 0.0;
-
-	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
 #undef __FUNCT__

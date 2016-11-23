@@ -60,7 +60,7 @@ PetscErrorCode MeshSeg1DReadParam(
 	FB         *fb)
 {
 	PetscInt    i, tcels, uniform;
-	PetscInt    ncells[MaxNumMeshSegs];
+	PetscInt    ncells[MaxNumSegs];
 	PetscScalar gtol, avgsz, sz;
 	char        *nseg, *nel, *coord, *bias;
 
@@ -72,7 +72,7 @@ PetscErrorCode MeshSeg1DReadParam(
 
 	// initialize
 	ms->nsegs = 1;
-	for(i = 0; i < MaxNumMeshSegs; i++) ms->biases[i] = 1.0;
+	for(i = 0; i < MaxNumSegs; i++) ms->biases[i] = 1.0;
 
 	// compose option keys
 	asprintf(&nseg,  "nseg_%s",  dir);
@@ -81,10 +81,10 @@ PetscErrorCode MeshSeg1DReadParam(
 	asprintf(&bias,  "bias_%s",  dir);
 
 	// read parameters
-	ierr = getIntParam   (fb, _OPTIONAL_, nseg,  &ms->nsegs,  1,           50  ); CHKERRQ(ierr);
-	ierr = getIntParam   (fb, _REQUIRED_, nel,    ncells,     ms->nsegs,   1024); CHKERRQ(ierr);
-	ierr = getScalarParam(fb, _REQUIRED_, coord,  ms->xstart, ms->nsegs+1, leng); CHKERRQ(ierr);
-	ierr = getScalarParam(fb, _OPTIONAL_, bias,   ms->biases, ms->nsegs,   1.0 ); CHKERRQ(ierr);
+	ierr = getIntParam   (fb, _OPTIONAL_, nseg,  &ms->nsegs,  1,           MaxNumSegs);  CHKERRQ(ierr);
+	ierr = getIntParam   (fb, _REQUIRED_, nel,    ncells,     ms->nsegs,   MaxNumCells); CHKERRQ(ierr);
+	ierr = getScalarParam(fb, _REQUIRED_, coord,  ms->xstart, ms->nsegs+1, leng);        CHKERRQ(ierr);
+	ierr = getScalarParam(fb, _OPTIONAL_, bias,   ms->biases, ms->nsegs,   1.0 );        CHKERRQ(ierr);
 
 	// compute starting node indices
 	for(i = 0, tcels = 0; i < ms->nsegs; i++)
@@ -801,9 +801,9 @@ PetscErrorCode FDSTAGCreate(FDSTAG *fs, FB *fb)
 	Pz = PETSC_DECIDE;
 
 	// fix number of processors in all directions
-	ierr = getIntParam(fb, _OPTIONAL_, "cpu_x", &Px, 1, 1024); CHKERRQ(ierr);
-	ierr = getIntParam(fb, _OPTIONAL_, "cpu_y", &Py, 1, 1024); CHKERRQ(ierr);
-	ierr = getIntParam(fb, _OPTIONAL_, "cpu_z", &Pz, 1, 1024); CHKERRQ(ierr);
+	ierr = getIntParam(fb, _OPTIONAL_, "cpu_x", &Px, 1, MaxNumProcs); CHKERRQ(ierr);
+	ierr = getIntParam(fb, _OPTIONAL_, "cpu_y", &Py, 1, MaxNumProcs); CHKERRQ(ierr);
+	ierr = getIntParam(fb, _OPTIONAL_, "cpu_z", &Pz, 1, MaxNumProcs); CHKERRQ(ierr);
 
 	// read mesh parameters
 	ierr = MeshSeg1DReadParam(&msx, scal->length, "x", fb); CHKERRQ(ierr);

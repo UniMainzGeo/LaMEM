@@ -47,6 +47,14 @@
 #define __tools_h__
 
 //---------------------------------------------------------------------------
+// Read and write global vectors
+//---------------------------------------------------------------------------
+
+PetscErrorCode VecReadRestart (Vec x, FILE *fp);
+
+PetscErrorCode VecWriteRestart(Vec x, FILE *fp);
+
+//---------------------------------------------------------------------------
 //  basic statistic functions
 //---------------------------------------------------------------------------
 
@@ -73,7 +81,7 @@ PetscErrorCode LaMEMCreateOutputDirectory(const char *DirectoryName);
 
 //---------------------------------------------------------------------------
 
-#define LAMEM_CHECKEQ(a, b, rtol, atol) (PetscAbsScalar((a)-(b)) <= rtol*(PetscAbsScalar(a) + PetscAbsScalar(b)) + atol)
+#define CHECKEQ(a, b, rtol, atol) (PetscAbsScalar((a)-(b)) <= rtol*(PetscAbsScalar(a) + PetscAbsScalar(b)) + atol)
 
 #define IS_POWER_OF_TWO(x) ((x) && !((x) & ((x) - 1)))
 
@@ -96,7 +104,6 @@ void in_polygon(
 	PetscInt    *in);    // point location flags (1-inside, 0-outside)
 
 //---------------------------------------------------------------------------
-
 static inline void RotDispPoint2D(PetscScalar Xa[], PetscScalar Xb[], PetscScalar costh, PetscScalar sinth, PetscScalar xa[], PetscScalar xb[])
 {
 	PetscScalar r[2];
@@ -110,7 +117,6 @@ static inline void RotDispPoint2D(PetscScalar Xa[], PetscScalar Xb[], PetscScala
 	xb[1] = sinth*r[0] + costh*r[1] + Xb[1];
 }
 //---------------------------------------------------------------------------
-
 static inline PetscScalar ARCCOS(PetscScalar x)
 {
 	if(x >  1.0 - DBL_EPSILON) x =  1.0 - DBL_EPSILON;
@@ -118,26 +124,20 @@ static inline PetscScalar ARCCOS(PetscScalar x)
 
 	return acos(x);
 }
-
 //---------------------------------------------------------------------------
-
 static inline PetscScalar ODDROOT(PetscScalar x, PetscScalar a)
 {
-
 	if(x < 0.0) return -pow(-x, a);
 	else        return  pow( x, a);
-
 }
-
 //---------------------------------------------------------------------------
-
 // this function returns global rank of processor in DMDA
 static inline PetscMPIInt getGlobalRank(PetscInt i, PetscInt j, PetscInt k, PetscInt m, PetscInt n, PetscInt p)
 {
 	if (i < 0 || i >= m || j < 0 || j >= n || k < 0 || k >= p) return -1;
 	return (PetscMPIInt)(i + j*m + k*m*n);
 }
-
+//---------------------------------------------------------------------------
 // this function computes local ranks of processor in DMDA
 static inline void getLocalRank(PetscInt *i, PetscInt *j, PetscInt *k, PetscMPIInt rank, PetscInt m, PetscInt n)
 {
@@ -145,53 +145,28 @@ static inline void getLocalRank(PetscInt *i, PetscInt *j, PetscInt *k, PetscMPII
 	(*j) = (rank - (*k)*m*n)/m;
 	(*i) =  rank - (*k)*m*n - (*j)*m;
 }
-
-// Modified bisection algorithm (ltbaumann 210113)
-// Returns index i of the closet gridpoint x_i of an arbitrary value x
-// px - 1D-grid coordinates
-// L  - first index
-// R  - last index
-static inline PetscInt Bisection(PetscScalar *px, PetscInt L, PetscInt R, PetscScalar x)
-{
-	PetscInt M;
-	while((R-L) > 1)
-	{	M = (L+R)/2;
-		if(px[M] <= x) L=M;
-		if(px[M] >= x) R=M;
-	}
-	if(PetscAbsScalar(px[L]-x) <= PetscAbsScalar(px[R]-x)) return(L);
-	else                                                   return(R);
-}
 //-----------------------------------------------------------------------------
-static inline PetscErrorCode sfexp(PetscScalar x, PetscScalar *y)
-{
-	// y = e^x with checking range errors
-	errno = 0;
-	(*y) = exp(x);
-	if(errno == EDOM)   { PetscPrintf(PETSC_COMM_WORLD,"Domain Error!\n"); return(-1); }
-	if(errno == ERANGE) { PetscPrintf(PETSC_COMM_WORLD,"Range Error!\n");  return(-1); }
-	return(0);
-/*
-	return (-1);
-	feclearexcept(FE_ALL_EXCEPT);
-	fe = fetestexcept (FE_ALL_EXCEPT);
-	if (fe & FE_DIVBYZERO) puts ("FE_DIVBYZERO");
-	if (fe & FE_INEXACT)   puts ("FE_INEXACT");
-	if (fe & FE_INVALID)   puts ("FE_INVALID");
-	if (fe & FE_OVERFLOW)  puts ("FE_OVERFLOW");
-	if (fe & FE_UNDERFLOW) puts ("FE_UNDERFLOW");
-*/
-}
+// calculate displacements from counts, return number elements
+PetscInt calcDisp(PetscInt n, PetscInt *counts, PetscInt *displ);
+
+// rewind displacements after using them as access iterators
+void rewinDisp(PetscInt n, PetscInt *displ);
+
 //---------------------------------------------------------------------------
-static inline PetscErrorCode sfpow(PetscScalar a, PetscScalar x, PetscScalar *y)
+// key-value sort using standard functions (scalar-index)
+//---------------------------------------------------------------------------
+
+typedef struct
 {
-	// y = a^x with checking range errors
-	errno = 0;
-	(*y) = pow(a, x);
-	if(errno == EDOM)   { PetscPrintf(PETSC_COMM_WORLD,"Domain Error!\n"); return(-1); }
-	if(errno == ERANGE) { PetscPrintf(PETSC_COMM_WORLD,"Range Error!\n");  return(-1); }
-	return (0);
-}
+	PetscScalar key;
+	PetscInt    val;
+
+} Pair;
+
+// comparison function for sorting key-value pairs
+int comp_key_val(const void * a, const void * b);
+
+PetscErrorCode sort_key_val(PetscScalar *a, PetscInt *idx, PetscInt n);
 
 //---------------------------------------------------------------------------
 #endif

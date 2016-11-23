@@ -45,34 +45,36 @@
 #ifndef __matProps_h__
 #define __matProps_h__
 //---------------------------------------------------------------------------
-//........................... MATERIAL PARAMETERS ...........................
-//---------------------------------------------------------------------------
-// read all phases
-PetscErrorCode MatPropInit(JacRes *jr, FILE *fp);
 
-// read single phase
-PetscErrorCode MatPropGetStruct(FILE *fp,
-	PetscInt numPhases, Material_t *phases,
-	PetscInt numSoft,   Soft_t     *matSoft,
-	PetscInt ils, PetscInt ile, UnitsType utype);
+// read material parameter limits
+PetscErrorCode MatParLimRead(
+		FB        *fb,
+		Scaling   *scal,
+		MatParLim *matLim);
 
-// read phases from command line
-PetscErrorCode MatPropSetFromCL(JacRes *jr);
+// read all material phases and softening laws from file
+PetscErrorCode MatPropsReadAll(
+		FB         *fb,
+		Scaling    *scal,
+		PetscInt   *numPhases,
+		Material_t *phases,
+		PetscInt   *numSoft,
+		Soft_t     *matSoft);
 
-// assign phases from calling function
-//PetscErrorCode MatPropSetFromLibCall(JacRes *jr, ModParam *mod);
+// read single softening law
+PetscErrorCode MatSoftRead(
+		FB       *fb,
+		PetscInt  numSoft,
+		Soft_t   *matSoft);
 
-//---------------------------------------------------------------------------
-//............................ SOFTENING LAWS ...............................
-//---------------------------------------------------------------------------
-
-// read all softening laws
-PetscErrorCode MatSoftInit(JacRes *jr, FILE *fp);
-
-// read single softening laws
-PetscErrorCode MatSoftGetStruct(FILE *fp,
-	PetscInt numSoft, Soft_t *matSoft,
-	PetscInt ils, PetscInt ile);
+// read single material phase
+PetscErrorCode MatPhaseRead(
+		FB         *fb,
+		Scaling    *scal,
+		PetscInt    numPhases,
+		Material_t *phases,
+		PetscInt    numSoft,
+		Soft_t     *matSoft);
 
 //---------------------------------------------------------------------------
 //............ PREDEFINED RHEOLOGICAL PROFILES (from literature) ............
@@ -82,7 +84,11 @@ typedef enum
 	_UniAxial_,      // Uni-axial experiment
 	_SimpleShear_,   // Simple shear experiment
 	_None_           // geological-scale units
+
 } TensorCorrection;
+
+// read profile name from file
+PetscErrorCode GetProfileName(FB *fb, Scaling *scal, char name[], const char key[]);
 
 // diffusion creep profiles
 PetscErrorCode SetDiffProfile(Material_t *m, char name[]);
@@ -97,32 +103,12 @@ PetscErrorCode SetPeirProfile(Material_t *m, char name[]);
 PetscErrorCode SetProfileCorrection(PetscScalar *B, PetscScalar n, TensorCorrection tensorCorrection, PetscInt MPa);
 
 //---------------------------------------------------------------------------
-//................ Routines to get structure-info from file .................
+
+// read phases from command line
+// PetscErrorCode MatPropSetFromCL(JacRes *jr);
+
+// assign phases from calling function
+//PetscErrorCode MatPropSetFromLibCall(JacRes *jr, ModParam *mod);
+
 //---------------------------------------------------------------------------
-
-// gets the file positions of a structure
-void getLineStruct(
-	FILE *fp, PetscInt *ls, PetscInt *le, PetscInt mux_num,
-	PetscInt *count_starts, PetscInt *count_ends,
-	const char key[], const char key_end[]);
-
-// gets an integer within specified positions in file
-void getMatPropInt(FILE *fp, PetscInt ils, PetscInt ile,
-	const char key[], PetscInt *value, PetscInt *found);
-
-// gets a scalar within specified positions in file
-void getMatPropScalar(FILE *fp, PetscInt ils, PetscInt ile,
-	const char key[], PetscScalar *value, PetscInt *found);
-
-// gets a string within specified positions in file
-void getMatPropString(FILE *fp, PetscInt ils, PetscInt ile,
-	const char key[], char value[], PetscInt max_L, PetscInt *found );
-
-void getMatPropIntArray(FILE *fp, PetscInt ils, PetscInt ile,
-	const char key[], PetscInt *nvalues, PetscInt value[], PetscInt *found);
-
-void getMatPropScalArray(FILE *fp, PetscInt ils, PetscInt ile,
-	const char key[], PetscInt *nvalues, PetscScalar value[], PetscInt *found);
-//---------------------------------------------------------------------------
-
 #endif

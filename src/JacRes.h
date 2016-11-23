@@ -44,25 +44,12 @@
 //---------------------------------------------------------------------------
 #ifndef __JacRes_h__
 #define __JacRes_h__
-
 //---------------------------------------------------------------------------
-// * replace setting time parameters consistently in the entire code
+// max number of phases
+#define max_num_phases 32
 
-//---------------------------------------------------------------------------
-/*
-typedef enum
-{
-	_APPLY_SPC_,
-	_SKIP_SPC_
-
-} SPCAppType;
-*/
-
-#define max_num_phases 32 // max no of phases
-#define max_num_soft   10 // max no of soft laws
-
-// space dimension
-#define SPDIM 3
+// max number of soft laws
+#define max_num_soft   10
 
 //---------------------------------------------------------------------------
 
@@ -74,6 +61,25 @@ typedef struct
 	TSSol    *ts;   // time-stepping parameters
 	FDSTAG   *fs;   // staggered-grid layout
 	BCCtx    *bc;   // boundary condition context
+
+	// parameters & controls
+	PetscScalar grav[SPDIM]; // global gravity components
+	PetscScalar FSSA;        // density gradient penalty parameter
+	PetscScalar gtol;        // geometry tolerance
+	PetscInt    pShiftAct;   // pressure shift activation flag
+	PetscInt    actTemp;     // temperature diffusion activation flag
+
+	// phase parameters
+	PetscInt     numPhases;              // number phases
+	Material_t   phases[max_num_phases]; // phase parameters
+	PetscInt     numSoft;                // number material softening laws
+	Soft_t       matSoft[max_num_soft];  // material softening law parameters
+	MatParLim    matLim;                 // phase parameters limiters
+
+	// external and runtime parameters
+	PetscInt    AirPhase;    // air phase number
+	PetscScalar avg_topo;    // average topography (a copy from free surface)
+	PetscScalar pShift;      // pressure shift for plasticity model and output
 
 	// coupled solution & residual vectors
 	Vec gsol, gres; // global
@@ -98,8 +104,9 @@ typedef struct
 	//  Also to get communication pattern independent of number of phases.
 
 	// pressure
-	Vec gp; // global
-	Vec lp; // local (ghosted)
+	Vec gp;        // global
+	Vec lp;        // local (ghosted)
+	Vec lp_lithos; // lithostatic pressure
 
 	// continuity residual
 	Vec gc; // global
@@ -114,30 +121,9 @@ typedef struct
 	SolVarEdge  *svYZEdge; // YZ edges
 	PetscScalar *svBuff;   // storage for phRat
 
-	// phase parameters
-	PetscInt     numPhases;              // number phases
-	Material_t   phases[max_num_phases]; // phase parameters
-	PetscInt     numSoft;                // number material softening laws
-	Soft_t       matSoft[max_num_soft];  // material softening law parameters
-	MatParLim    matLim;                 // phase parameters limiters
-
-	// parameters & controls
-	PetscScalar grav[SPDIM]; // global gravity components
-	PetscScalar FSSA;        // density gradient penalty parameter
-	//                          (a.k.a. free-surface-stabilization-algorithm)
-	PetscScalar gtol;        // geometry tolerance
-
-	PetscScalar pShift;      // pressure shift for plasticity model and output
-	PetscBool   pShiftAct;   // pressure shift activation flag
-
-	PetscScalar avg_topo;    // average topography (a copy from free surface)
-
 	//=======================
 	// temperature parameters
 	//=======================
-
-	PetscBool actTemp;  // temperature diffusion activation flag
-	PetscInt  AirPhase; // air phase number
 
 	Vec lT;   // temperature (box stencil, active even without diffusion)
 	DM  DA_T; // temperature cell-centered grid with star stencil
@@ -151,26 +137,17 @@ typedef struct
 	//==========================
 	DM DA_CELL_2D; // 2D cell center grid
 
-	Vec lp_lithos; // lithostatic pressure
-
-
-	// flags
-	PetscBool        SkipStokesSolver;
-	PetscBool        SavePartitioning;
-	PetscInt         save_breakpoints, break_point_number;
-	PetscInt         restart;
-
-
 } JacRes;
 //---------------------------------------------------------------------------
 
-PetscErrorCode JacResSetFromOptions(JacRes *jr);
-
 // create residual & Jacobian evaluation context
-PetscErrorCode JacResCreate(
-	JacRes   *jr,
-	FDSTAG   *fs,
-	BCCtx    *bc);
+PetscErrorCode JacResCreate(JacRes *jr, FB *fb);
+
+PetscErrorCode JacResCreateData(JacRes *jr);
+
+PetscErrorCode JacResReadRestart(JacRes *jr, FILE *fp);
+
+PetscErrorCode JacResWriteRestart(JacRes *jr, FILE *fp);
 
 // destroy residual & Jacobian evaluation context
 PetscErrorCode JacResDestroy(JacRes *jr);
@@ -249,11 +226,6 @@ PetscErrorCode JacResGetSHmax(JacRes *jr);
 
 // compute maximum horizontal extension rate (EHmax) orientation
 PetscErrorCode JacResGetEHmax(JacRes *jr);
-
-//---------------------------------------------------------------------------
-
-// initialize material parameter limits
-PetscErrorCode SetMatParLim(MatParLim *matLim);
 
 //---------------------------------------------------------------------------
 //......................   TEMPERATURE FUNCTIONS   ..........................

@@ -976,15 +976,15 @@ void Tensor2RNClear(Tensor2RN *A)
 //---------------------------------------------------------------------------
 PetscInt Tensor2RNCheckEq(Tensor2RN *A, Tensor2RN *B, PetscScalar tol)
 {
-	if(!LAMEM_CHECKEQ(A->xx, B->xx, tol, DBL_EPSILON)) return 0;
-	if(!LAMEM_CHECKEQ(A->xy, B->xy, tol, DBL_EPSILON)) return 0;
-	if(!LAMEM_CHECKEQ(A->xz, B->xz, tol, DBL_EPSILON)) return 0;
-	if(!LAMEM_CHECKEQ(A->yx, B->yx, tol, DBL_EPSILON)) return 0;
-	if(!LAMEM_CHECKEQ(A->yy, B->yy, tol, DBL_EPSILON)) return 0;
-	if(!LAMEM_CHECKEQ(A->yz, B->yz, tol, DBL_EPSILON)) return 0;
-	if(!LAMEM_CHECKEQ(A->zx, B->zx, tol, DBL_EPSILON)) return 0;
-	if(!LAMEM_CHECKEQ(A->zy, B->zy, tol, DBL_EPSILON)) return 0;
-	if(!LAMEM_CHECKEQ(A->zz, B->zz, tol, DBL_EPSILON)) return 0;
+	if(!CHECKEQ(A->xx, B->xx, tol, DBL_EPSILON)) return 0;
+	if(!CHECKEQ(A->xy, B->xy, tol, DBL_EPSILON)) return 0;
+	if(!CHECKEQ(A->xz, B->xz, tol, DBL_EPSILON)) return 0;
+	if(!CHECKEQ(A->yx, B->yx, tol, DBL_EPSILON)) return 0;
+	if(!CHECKEQ(A->yy, B->yy, tol, DBL_EPSILON)) return 0;
+	if(!CHECKEQ(A->yz, B->yz, tol, DBL_EPSILON)) return 0;
+	if(!CHECKEQ(A->zx, B->zx, tol, DBL_EPSILON)) return 0;
+	if(!CHECKEQ(A->zy, B->zy, tol, DBL_EPSILON)) return 0;
+	if(!CHECKEQ(A->zz, B->zz, tol, DBL_EPSILON)) return 0;
 
 	return 1;
 }

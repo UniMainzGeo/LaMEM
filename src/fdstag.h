@@ -50,7 +50,13 @@
 #define _num_neighb_ 27
 
 // maximum number of mesh segments in every direction
-#define MaxNumMeshSegs 10
+#define MaxNumSegs 10
+
+// maximum number of cells per mesh segment
+#define MaxNumCells 4096
+
+// maximum number of processes in every direction
+#define MaxNumProcs 1024
 
 //---------------------------------------------------------------------------
 // mesh segments data (temporary structure)
@@ -58,12 +64,12 @@
 
 typedef struct
 {
-	PetscInt    nsegs;                    // number of segments
-	PetscInt    istart[MaxNumMeshSegs+1]; // indices of the first nodes plus last index
-	PetscScalar xstart[MaxNumMeshSegs+1]; // coordinates of the first nodes plus total size
-	PetscScalar biases[MaxNumMeshSegs  ]; // biases for each segment
-	PetscInt    tcels;                    // total number of cells
-	PetscInt    uniform;                  // uniform grid flag
+	PetscInt    nsegs;                // number of segments
+	PetscInt    istart[MaxNumSegs+1]; // indices of the first nodes plus last index
+	PetscScalar xstart[MaxNumSegs+1]; // coordinates of the first nodes plus total size
+	PetscScalar biases[MaxNumSegs  ]; // biases for each segment
+	PetscInt    tcels;                // total number of cells
+	PetscInt    uniform;              // uniform grid flag
 
 } MeshSeg1D;
 

@@ -275,10 +275,10 @@ PetscErrorCode BCCreate(BCCtx *bc, FB *fb)
 	ierr = getScalarParam(fb, _OPTIONAL_, "bc_gamma_xz", &bc->gamma_xz, 1, scal->strain_rate); CHKERRQ(ierr);
 
 	// open boundary flag
-	ierr = getIntParam(fb, _OPTIONAL_, "open_top_bound", &bc->top_open, 1, 1); CHKERRQ(ierr);
+	ierr = getIntParam(fb, _OPTIONAL_, "open_top_bound", &bc->top_open, 1, -1); CHKERRQ(ierr);
 
 	// no-slip boundary condition mask
-	ierr = getIntParam(fb, _OPTIONAL_, "noslip", bc->noslip, 6, 1); CHKERRQ(ierr);
+	ierr = getIntParam(fb, _OPTIONAL_, "noslip", bc->noslip, 6, -1); CHKERRQ(ierr);
 
 	//========================
 	// TEMPERATURE CONSTRAINTS
