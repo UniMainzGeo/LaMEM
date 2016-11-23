@@ -108,11 +108,11 @@ PetscErrorCode LaMEMLib(ModParam *IOparam)
 	PetscBool          stop = PETSC_FALSE;
 
 
-	char *fname;
-	FILE *fseism;
-	PetscMPIInt inproc;
+	//char *fname;
+	//FILE *fseism;
+	//PetscMPIInt inproc;
 	PetscScalar axial_stress;
-
+	//char sType;
 
 
 	//=========================================================================
@@ -313,9 +313,37 @@ PetscErrorCode LaMEMLib(ModParam *IOparam)
 	if (user.ExplicitSolver == PETSC_TRUE) {
 		/* In case we use the explicit solver */
 
-		// Get the coordinates corresponding to the possible force term source and/or seismic station
-		GetCellCoordinatesSourceAndSeismicStation(&jr);
-		//PetscPrintf(PETSC_COMM_WORLD, "  Source applied at cell (%i,%i,%i)  \n", jr.SourceParams.i,jr.SourceParams.j,jr.SourceParams.k);
+		PetscPrintf(PETSC_COMM_WORLD,"-------------------------------------------------------------------------- \n");
+		PetscPrintf(PETSC_COMM_WORLD,"                             EXPLICIT SOLVER           					\n");
+		PetscPrintf(PETSC_COMM_WORLD,"-------------------------------------------------------------------------- \n");
+
+		PetscPrintf(PETSC_COMM_WORLD,"  SCALLING DENSITY FACTOR: %g \n", jr.DensityFactor);
+
+		if (user.AbsBoundaries==PETSC_FALSE) {
+			PetscPrintf(PETSC_COMM_WORLD,"  WITHOUT ABSORBING BOUNDARIES\n");
+		}else{
+			PetscPrintf(PETSC_COMM_WORLD,"  NUMBER OF ABSORBING BOUNDARIES:\n");
+			PetscPrintf(PETSC_COMM_WORLD,"            FRONT = %i, BACK = %i, LEFT = %i, RIGHT = %i, BOTTOM = %i, TOP = %i \n", user.AB.NxL, user.AB.NxR,user.AB.NyL,user.AB.NyR,user.AB.NzL,user.AB.NzR);
+		}
+		if (jr.SeismicSource==PETSC_TRUE) {
+			PetscPrintf(PETSC_COMM_WORLD,"  SOURCE:\n");
+
+			// Get the coordinates corresponding to the possible force term source and/or seismic station
+			GetCellCoordinatesSourceAndSeismicStation(&jr);
+
+			if (jr.SourceParams.source_type == POINT) 	{
+				PetscPrintf(PETSC_COMM_WORLD,"            TYPE POINT \n");
+			} else if (jr.SourceParams.source_type == PLANE) 	{
+				PetscPrintf(PETSC_COMM_WORLD,"            TYPE PLANE \n");
+			}else if (jr.SourceParams.source_type == MOMENT) 	{
+				PetscPrintf(PETSC_COMM_WORLD,"            TYPE MOMENT TENSOR \n");
+				PetscPrintf(PETSC_COMM_WORLD,"            M0 = %g, Mxx = %g, Myy = %g, Mzz = %g, Mxy = %g, Mxz = %g, Myz = %g \n", jr.SourceParams.moment_tensor.M0,jr.SourceParams.moment_tensor.Mxx, jr.SourceParams.moment_tensor.Myy, jr.SourceParams.moment_tensor.Mzz, jr.SourceParams.moment_tensor.Mxy, jr.SourceParams.moment_tensor.Mxz,jr.SourceParams.moment_tensor.Myz);
+			}else if (jr.SourceParams.source_type == COMPRES) 	{
+				PetscPrintf(PETSC_COMM_WORLD,"            TYPE UNIAXIAL COMPRESSION \n");
+			}
+			PetscPrintf(PETSC_COMM_WORLD,"            Amplitud = %g, Alpha = %g, t0 = %g\n", jr.SourceParams.amplitude, jr.SourceParams.alfa, jr.SourceParams.t0);
+			PetscPrintf(PETSC_COMM_WORLD,"            APPLIED AT CELL (%i, %i, %i), POSITION (%g, %g, %g) \n", jr.SourceParams.i,jr.SourceParams.j,jr.SourceParams.k, jr.SourceParams.x,jr.SourceParams.y,jr.SourceParams.z);
+		}
 
 		// Files to save seismic signals at a given point of the model
 		if (user.SeismicStation == PETSC_TRUE) {
@@ -325,6 +353,8 @@ PetscErrorCode LaMEMLib(ModParam *IOparam)
 				if(jr.StationParams.output_file[0] == NULL) SETERRQ1(PETSC_COMM_SELF, 1,"cannot open file %s", "vel_seismogram_x");
 				if(jr.StationParams.output_file[1] == NULL) SETERRQ1(PETSC_COMM_SELF, 1,"cannot open file %s", "vel_seismogram_y");
 				if(jr.StationParams.output_file[2] == NULL) SETERRQ1(PETSC_COMM_SELF, 1,"cannot open file %s", "vel_seismogram_z");
+				PetscPrintf(PETSC_COMM_WORLD,"  SEISMIC STATION:\n");
+				PetscPrintf(PETSC_COMM_WORLD,"            LOCATED AT CELL (%i, %i, %i), POSITION (%g, %g, %g) \n", jr.StationParams.i,jr.StationParams.j,jr.StationParams.k, jr.StationParams.x,jr.StationParams.y,jr.StationParams.z);
 		}
 
 		// File to save axial stress / step
@@ -333,6 +363,8 @@ PetscErrorCode LaMEMLib(ModParam *IOparam)
 
 		// compute inverse elastic viscosities (dependent on dt)
 		ierr 	= 	JacResGetI2Gdt(&jr); CHKERRQ(ierr);
+
+		PetscPrintf(PETSC_COMM_WORLD,"-------------------------------------------------------------------------- \n");
 	}
 
 	//===============

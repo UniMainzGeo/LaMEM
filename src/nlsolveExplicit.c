@@ -466,7 +466,7 @@ PetscErrorCode CheckTimeStep(JacRes *jr, UserCtx *user)
 	computational_density_factor = user->DensityFactor;
 
 	phases    = jr->phases;
-	//dt        = user->dt;     // time step
+	dt        = user->dt;     // time step
 	dx 		  = user->W/((PetscScalar)(user->nel_x));
 	dy 		  = user->L/((PetscScalar)(user->nel_y));
 	dz 		 = user->H/((PetscScalar)(user->nel_z));
@@ -501,7 +501,7 @@ PetscErrorCode ChangeTimeStep(JacRes *jr, UserCtx *user)
 	PetscInt    i, numPhases;
 	Material_t  *phases, *M;
 	PetscScalar dx, dy, dz, dt_min, dt, rho, shear, bulk, vp;
-	PetscScalar CFL, stability, d_average, computational_density_factor;
+	PetscScalar CFL, computational_density_factor;
 
 	PetscFunctionBegin;
 
@@ -1735,7 +1735,7 @@ PetscErrorCode ShowValues(JacRes *jr, UserCtx *user, PetscInt n)
 
 
 	fs = jr->fs;
-
+	dt = user->dt;
 
 	// access work vectors
 	ierr = DMDAVecGetArray(fs->DA_CEN, jr->lp,   &p);   CHKERRQ(ierr);
@@ -1896,7 +1896,7 @@ PetscErrorCode ShowValues(JacRes *jr, UserCtx *user, PetscInt n)
 //---------------------------------------------------------------------------
 // Apply source
 #undef __FUNCT__
-#define __FUNCT__ "GetCellCoordinatesSource"
+#define __FUNCT__ "GetCellCoordinatesSourceAndSeismicStation"
 PetscErrorCode GetCellCoordinatesSourceAndSeismicStation(JacRes *jr)
 {
 	PetscInt i, j, k, nx, ny, nz, sx, sy, sz, ii, jj, kk, iii, jjj, kkk;
@@ -2040,11 +2040,12 @@ PetscErrorCode GetStressFromSource(JacRes *jr, UserCtx *user, PetscInt i, PetscI
 	{
 
 		// get cell coordinates
-		xs[0] = jr->fs->dsx.ncoor[i]; xe[0] = jr->fs->dsx.ncoor[i+1];
-		xs[1] = jr->fs->dsy.ncoor[j]; xe[1] = jr->fs->dsy.ncoor[j+1];
-		xs[2] = jr->fs->dsz.ncoor[k]; xe[2] = jr->fs->dsz.ncoor[k+1];
+		//xs[0] = jr->fs->dsx.ncoor[i]; xe[0] = jr->fs->dsx.ncoor[i+1];
+		//xs[1] = jr->fs->dsy.ncoor[j]; xe[1] = jr->fs->dsy.ncoor[j+1];
+		//xs[2] = jr->fs->dsz.ncoor[k]; xe[2] = jr->fs->dsz.ncoor[k+1];
+		//if (jr->SourceParams.x > xs[0] && jr->SourceParams.x <= xe[0] && jr->SourceParams.y > xs[1] && jr->SourceParams.y <= xe[1] && jr->SourceParams.z > xs[2] && jr->SourceParams.z <= xe[2])
 
-		if (jr->SourceParams.x > xs[0] && jr->SourceParams.x <= xe[0] && jr->SourceParams.y > xs[1] && jr->SourceParams.y <= xe[1] && jr->SourceParams.z > xs[2] && jr->SourceParams.z <= xe[2])
+		if (jr->SourceParams.i == i && jr->SourceParams.j == j && jr->SourceParams.k == k)
 		{
 			*sxx = jr->SourceParams.amplitude*exp(-jr->SourceParams.alfa*((time-jr->SourceParams.t0)*(time-jr->SourceParams.t0)));
 			*syy = jr->SourceParams.amplitude*exp(-jr->SourceParams.alfa*((time-jr->SourceParams.t0)*(time-jr->SourceParams.t0)))/2;

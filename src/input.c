@@ -658,7 +658,7 @@ PetscErrorCode InputReadFile(JacRes *jr, UserCtx *user, FILE *fp)
 
 	// Scaling density factor
 	parse_GetDouble(fp, "density_factor",&user->DensityFactor, &found);
-	if (found!=PETSC_TRUE || user->DensityFactor!=PETSC_TRUE) user->DensityFactor=PETSC_FALSE;
+	if (found!=PETSC_TRUE ) user->DensityFactor=1;
 	//parse_GetString(fp,"strain_stress_file_name", user->stress_file_name, MAX_PATH_LEN, &found);
 	//if (found ==PETSC_FALSE) sprintf(user->stress_file_name, "strain_stress");
 
@@ -751,8 +751,8 @@ PetscErrorCode InputReadFile(JacRes *jr, UserCtx *user, FILE *fp)
 		parse_GetDouble( fp, "y_rec", &user->StationParams.y, &found );
 		parse_GetDouble( fp, "z_rec", &user->StationParams.z, &found );
 		if ( user->StationParams.x >= user->W) user->StationParams.x=user->W/2;
-		if ( user->StationParams.y >= user->L) user->StationParams.x=user->L/2;
-		if ( user->StationParams.z >= user->H) user->StationParams.x=user->H;
+		if ( user->StationParams.y >= user->L) user->StationParams.y=user->L/2;
+		if ( user->StationParams.z >= user->H) user->StationParams.z=user->H;
 		//parse_GetString(fp,"output_file_name", user->StationParams.output_file_name, MAX_PATH_LEN, &found);
 		//if (found ==PETSC_FALSE) sprintf(user->StationParams.output_file_name, "seismogram");
 	}else
