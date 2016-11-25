@@ -49,13 +49,14 @@
 // * replace setting time parameters consistently in the entire code
 
 //---------------------------------------------------------------------------
-
+/*
 typedef enum
 {
 	_APPLY_SPC_,
 	_SKIP_SPC_
 
 } SPCAppType;
+*/
 
 //---------------------------------------------------------------------------
 
@@ -191,16 +192,16 @@ PetscErrorCode JacResGetVorticity(JacRes *jr);
 PetscErrorCode JacResGetResidual(JacRes *jr);
 
 // copy solution from global to local vectors, enforce boundary constraints
-PetscErrorCode JacResCopySol(JacRes *jr, Vec x, SPCAppType appSPC);
+PetscErrorCode JacResCopySol(JacRes *jr, Vec x);
 
 // copy solution from global to local vectors, enforce boundary constraints
-PetscErrorCode JacResCopyVel(JacRes *jr, Vec x, SPCAppType appSPC);
+PetscErrorCode JacResCopyVel(JacRes *jr, Vec x);
 
 // copy global vectors to solution
 PetscErrorCode JacResCopyVelocity(JacRes *jr, Vec x);
 
 // copy solution from global to local vectors, enforce boundary constraints
-PetscErrorCode JacResCopyPres(JacRes *jr, Vec x, SPCAppType appSPC);
+PetscErrorCode JacResCopyPres(JacRes *jr, Vec x);
 
 // copy residuals from local to global vectors, enforce boundary constraints
 PetscErrorCode JacResCopyRes(JacRes *jr, Vec f);

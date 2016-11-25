@@ -428,6 +428,16 @@ PetscErrorCode FDSTAGProcPartitioning(FDSTAG *fs, PetscScalar chLen);
 	ierr = DMDAVecRestoreArray(dm, lvec, &array); CHKERRQ(ierr); \
 	ierr = DMRestoreLocalVector(dm, &lvec);
 
+//-----------------------------------------------------------------------------
+// WRAPPERS
+//-----------------------------------------------------------------------------
+
+PetscErrorCode DMDACreate3dSetUp(MPI_Comm comm,
+	DMBoundaryType bx, DMBoundaryType by, DMBoundaryType bz, DMDAStencilType stencil_type,
+	PetscInt M, PetscInt N, PetscInt P, PetscInt m, PetscInt n, PetscInt p,
+	PetscInt dof, PetscInt s, const PetscInt lx[], const PetscInt ly[], const PetscInt lz[], DM *da);
+
+
 //---------------------------------------------------------------------------
 #endif
 

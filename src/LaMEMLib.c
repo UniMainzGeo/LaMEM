@@ -125,7 +125,7 @@ PetscErrorCode LaMEMLib(ModParam *IOparam)
 	char ParamFile[MAX_PATH_LEN];
 
 	// check whether input file is specified
-	ierr = PetscOptionsGetString(PETSC_NULL, "-ParamFile", ParamFile, MAX_PATH_LEN, &InputParamFile); CHKERRQ(ierr);
+	ierr = PetscOptionsGetString(NULL, NULL, "-ParamFile", ParamFile, MAX_PATH_LEN, &InputParamFile); CHKERRQ(ierr);
 
 	// read additional PETSc options from input file
 	if(InputParamFile == PETSC_TRUE)
@@ -154,7 +154,8 @@ PetscErrorCode LaMEMLib(ModParam *IOparam)
 	ierr = NLSolClear   (&nl);     CHKERRQ(ierr);
 	ierr = PVOutClear   (&pvout);  CHKERRQ(ierr);
 	ierr = PVSurfClear  (&pvsurf); CHKERRQ(ierr);
-	ierr = PetscMemzero (&user, sizeof(UserCtx)); CHKERRQ(ierr);
+	ierr = PetscMemzero (&user, sizeof(UserCtx));  CHKERRQ(ierr);
+	ierr = PetscMemzero (&objf, sizeof(ObjFunct)); CHKERRQ(ierr);
 
 	// initialize variables
 	ierr = FDSTAGInitCode(&jr, &user, IOparam); CHKERRQ(ierr);
@@ -273,6 +274,9 @@ PetscErrorCode LaMEMLib(ModParam *IOparam)
 	// AVD output driver
 	ierr = PVAVDCreate(&pvavd, &actx, user.OutputFile); CHKERRQ(ierr);
 
+	// create objective function object
+	ierr = ObjFunctCreate(&objf, IOparam, &surf); CHKERRQ(ierr);
+
 	// read breakpoint files if restart was requested and if is possible
 	if (user.restart==1) { ierr = BreakRead(&user, &actx, &pvout, &pvsurf, &pvmark, &pvavd, &nl.jtype); CHKERRQ(ierr); }
 
@@ -293,21 +297,12 @@ PetscErrorCode LaMEMLib(ModParam *IOparam)
 		ierr = PVSurfDestroy(&pvsurf); CHKERRQ(ierr);
 		ierr = PVMarkDestroy(&pvmark); CHKERRQ(ierr);
 		ierr = PVAVDDestroy(&pvavd);   CHKERRQ(ierr);
+		ierr = ObjFunctDestroy(&objf); CHKERRQ(ierr);
 
 		PetscFunctionReturn(0);
 	}
 
-	//===================
-	// OBJECTIVE FUNCTION
-	//===================
-	// create objective function object
-	ierr = ObjFunctCreate(&objf, &surf); CHKERRQ(ierr);
-
-	// transfer misfit value to IO structure
-	IOparam->mfit = objf.errtot;
-
 	PetscPrintf(PETSC_COMM_WORLD," \n");
-
 
 
 	if (user.ExplicitSolver == PETSC_TRUE) {
@@ -372,6 +367,7 @@ PetscErrorCode LaMEMLib(ModParam *IOparam)
 	//===============
 
 //	PetscTime(&cputime_start_tstep);
+
 	do
 	{
 		//====================================
@@ -379,7 +375,7 @@ PetscErrorCode LaMEMLib(ModParam *IOparam)
 		//====================================
 
 		// initialize boundary constraint vectors
-		ierr = BCApply(&bc); CHKERRQ(ierr);
+		ierr = BCApply(&bc, jr.gsol); CHKERRQ(ierr);
 
 		// initialize temperature
 		ierr = JacResInitTemp(&jr); CHKERRQ(ierr);
@@ -479,7 +475,7 @@ PetscErrorCode LaMEMLib(ModParam *IOparam)
 			KSPConvergedReason reason;
 			PetscBool          stop = PETSC_FALSE;
 
-			ierr = PetscOptionsHasName(NULL, "-stop_linsol_fail", &flg); CHKERRQ(ierr);
+			ierr = PetscOptionsHasName(NULL, NULL, "-stop_linsol_fail", &flg); CHKERRQ(ierr);
 
 			if(flg == PETSC_TRUE)
 			{
@@ -499,7 +495,7 @@ PetscErrorCode LaMEMLib(ModParam *IOparam)
 			PetscTime(&cputime_start_nonlinear);
 
 			// copy solution from global to local vectors, enforce boundary constraints
-			ierr 	= 	JacResCopySol(&jr, jr.gsol, _APPLY_SPC_); CHKERRQ(ierr);
+			ierr 	= 	JacResCopySol(&jr, jr.gsol); CHKERRQ(ierr);
 			
 			// compute inverse elastic viscosities (dependent on dt) //I put outside the loop
 			//ierr 	= 	JacResGetI2Gdt(&jr); CHKERRQ(ierr);
@@ -636,7 +632,7 @@ PetscErrorCode LaMEMLib(ModParam *IOparam)
 			char *DirectoryName = NULL;
 
 			// redefine filename in case of inversion setup
-			if (IOparam->use == 1)
+			if(IOparam != NULL)
 			{
 				asprintf(&DirectoryName, "Timestep_%1.6lld", (LLD)IOparam->mID);
 			}
@@ -718,7 +714,6 @@ PetscErrorCode LaMEMLib(ModParam *IOparam)
 //	PetscPrintf(PETSC_COMM_WORLD,"# Total time required: %g s \n",cputime_end - cputime_start0);
 
 	// cleanup
-	ierr = ObjFunctDestroy(&objf); CHKERRQ(ierr);
 	ierr = FDSTAGDestroy(&fs);     CHKERRQ(ierr);
 	ierr = FreeSurfDestroy(&surf); CHKERRQ(ierr);
 	ierr = BCDestroy(&bc);         CHKERRQ(ierr);
@@ -732,6 +727,7 @@ PetscErrorCode LaMEMLib(ModParam *IOparam)
 	ierr = PVSurfDestroy(&pvsurf); CHKERRQ(ierr);
 	ierr = PVMarkDestroy(&pvmark); CHKERRQ(ierr);
 	ierr = PVAVDDestroy(&pvavd);   CHKERRQ(ierr);
+	ierr = ObjFunctDestroy(&objf); CHKERRQ(ierr);
 
 
 	PetscTime(&cputime_end);

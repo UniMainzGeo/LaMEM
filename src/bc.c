@@ -587,7 +587,6 @@ PetscErrorCode BCApplyDBox(BCCtx *bc)
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-//---------------------------------------------------------------------------
 #undef __FUNCT__
 #define __FUNCT__ "BCApplySimpleShearVel"
 PetscErrorCode BCApplySimpleShearVel(BCCtx *bc)
@@ -634,18 +633,16 @@ PetscErrorCode BCApplySimpleShearVel(BCCtx *bc)
 	GET_CELL_RANGE(ny, sy, fs->dsy)
 	GET_CELL_RANGE(nz, sz, fs->dsz)
 
+	START_STD_LOOP
 	{
-		START_STD_LOOP
-		{
-			z   = COORD_CELL(k, sz, fs->dsz);
-			vel = gamma_xz*z;
+		z   = COORD_CELL(k, sz, fs->dsz);
+		vel = gamma_xz*z;
 
-			if(i == 0)   { bcvx[k][j][i] = vel; SPCVals[iter] = vel; }
-			if(i == mnx) { bcvx[k][j][i] = vel; SPCVals[iter] = vel; }
-			iter++;
-		}
-		END_STD_LOOP
+		if(i == 0)   { bcvx[k][j][i] = vel; SPCVals[iter] = vel; }
+		if(i == mnx) { bcvx[k][j][i] = vel; SPCVals[iter] = vel; }
+		iter++;
 	}
+	END_STD_LOOP
 
 	//---------
 	// Y points
@@ -654,17 +651,15 @@ PetscErrorCode BCApplySimpleShearVel(BCCtx *bc)
 	GET_NODE_RANGE(ny, sy, fs->dsy)
 	GET_CELL_RANGE(nz, sz, fs->dsz)
 
+	START_STD_LOOP
 	{
-		START_STD_LOOP
-		{
-			z   = COORD_CELL(k, sz, fs->dsz);
-			vel = 0.0;
-			if(j == 0)   { bcvy[k][j][i] = vel; SPCVals[iter] = vel; }
-			if(j == mny) { bcvy[k][j][i] = vel; SPCVals[iter] = vel; }
-			iter++;
-		}
-		END_STD_LOOP
+		z   = COORD_CELL(k, sz, fs->dsz);
+		vel = 0.0;
+		if(j == 0)   { bcvy[k][j][i] = vel; SPCVals[iter] = vel; }
+		if(j == mny) { bcvy[k][j][i] = vel; SPCVals[iter] = vel; }
+		iter++;
 	}
+	END_STD_LOOP
 
 	// restore access
 	ierr = DMDAVecRestoreArray(fs->DA_X, bc->bcvx, &bcvx); CHKERRQ(ierr);
@@ -672,7 +667,6 @@ PetscErrorCode BCApplySimpleShearVel(BCCtx *bc)
 
 	PetscFunctionReturn(0);
 }
-//---------------------------------------------------------------------------
 //---------------------------------------------------------------------------
 #undef __FUNCT__
 #define __FUNCT__ "BCClear"
@@ -849,10 +843,10 @@ PetscErrorCode BCReadFromOptions(BCCtx *bc)
 	}
 
 	// set open boundary flag
-	ierr = PetscOptionsHasName(NULL, "-open_top_bound", &set); CHKERRQ(ierr); if(set == PETSC_TRUE) bc->top_open = 1;
+	ierr = PetscOptionsHasName(NULL, NULL, "-open_top_bound", &set); CHKERRQ(ierr); if(set == PETSC_TRUE) bc->top_open = 1;
 
 	// set simple shear boundary condition
-	ierr = PetscOptionsHasName(NULL, "-bc_simpleshear", &set); CHKERRQ(ierr); if(set == PETSC_TRUE) bc->simpleshear = 1;
+	ierr = PetscOptionsHasName(NULL, NULL, "-bc_simpleshear", &set); CHKERRQ(ierr); if(set == PETSC_TRUE) bc->simpleshear = 1;
 	if(bc->simpleshear)
 	{
 		ierr = GetScalDataItemCheckScale("-bc_simpleshear_gamma_xz", "Simple shear strain rate",
@@ -919,7 +913,7 @@ PetscErrorCode BCGetBGStrainRates(BCCtx *bc, PetscScalar *Exx_, PetscScalar *Eyy
 //---------------------------------------------------------------------------
 #undef __FUNCT__
 #define __FUNCT__ "BCApply"
-PetscErrorCode BCApply(BCCtx *bc)
+PetscErrorCode BCApply(BCCtx *bc, Vec x)
 {
 	FDSTAG      *fs;
 	DOFIndex    *dof;
@@ -1019,7 +1013,49 @@ PetscErrorCode BCApply(BCCtx *bc)
 	// WARNING! currently primary temperature constraints are not implemented
 	bc->tNumSPC = 0;
 
+	// apply SPC to global solution vector
+	ierr = BCApplySPC(bc, x); CHKERRQ(ierr);
+
 	PetscFunctionReturn(0);
+}
+//---------------------------------------------------------------------------
+#undef __FUNCT__
+#define __FUNCT__ "BCApplySPC"
+PetscErrorCode BCApplySPC(BCCtx *bc, Vec x)
+{
+	// apply SPC to global solution vector
+
+	PetscScalar *sol, *vals;
+	PetscInt    i, num, *list;
+
+	PetscErrorCode ierr;
+	PetscFunctionBegin;
+
+	ierr = VecGetArray(x, &sol); CHKERRQ(ierr);
+
+	//============================================
+	// enforce single point constraints (velocity)
+	//============================================
+
+	num   = bc->vNumSPC;
+	list  = bc->vSPCList;
+	vals  = bc->vSPCVals;
+
+	for(i = 0; i < num; i++) sol[list[i]] = vals[i];
+
+	//============================================
+	// enforce single point constraints (pressure)
+	//============================================
+
+	num   = bc->pNumSPC;
+	list  = bc->pSPCList;
+	vals  = bc->pSPCVals;
+
+	for(i = 0; i < num; i++) sol[list[i]] = vals[i];
+
+	ierr = VecRestoreArray(x, &sol); CHKERRQ(ierr);
+
+ 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
 #undef __FUNCT__

@@ -9,17 +9,24 @@ git config --global user.email "your_email@example.com"
 PARAVIEW
 ------------------------------------------------------------------
 
-Install ParaView via Linux Software Manager
-
-DON'T download it from website
-
-Latest downloaded versions tend to have OpenGL issues
-
-If you still need an older version proceed like with Eclipse:
+WARNING!
+Don't apt install paraview
+It messes with MPI installation
+Download binaries form paraview website
 
 Download and unpack
+
 Install (copy) to /opt
-Set environment in /etc/profile.d/paraview.sh
+
+Set environment in /etc/profile.d/environment.sh
+WARNING! add paraview the last on your path (tends to override mpiexec)
+export PATH=$PATH:/opt/paraview/
+
+At best rename mpiexec in paraview bin directory to make it safe in any case:
+
+cd /opt/paraview-install-dir/bin
+mv mpiexec mpiexec-bak
+
 Create desktop launcher
 As "command" simply type paraview
 Icon file is supplied
@@ -28,7 +35,12 @@ Icon file is supplied
 MATLAB
 ------------------------------------------------------------------
 
-Mount MATLAB .iso file and start installation with sudo command from terminal
+Mount MATLAB .iso file
+
+sudo mkdir /media/disk
+sudo mount -o loop PATH_TO_MATLAB.iso /media/disk
+
+Start installation with sudo command from terminal
 Select install without Internet, copy-paste code, and point to license file
 Select all packages including License Manager
 Choose to create symbolic link for MATLAB starting command
@@ -37,4 +49,15 @@ After installation just create desktop launcher after installation
 As "command" type matlab -desktop -singleCompThread
 Icon file is supplied
 
+If you have OpenGl errors at startup, do this:
+
+Rename the file found at " $MATLAB_ROOT$/sys/os/glnxa64/libstdc++.so.6" to "libstdc++.so.6.old"
+
+This will force MATLAB to use system libstdc++ library
+
+MATLAB_ROOT is usually /usr/local/MATLAB/R2015a (depending on your version)
+
+Unmount MATLAB .iso file after installation
+
+sudo umount /media/disk -l
 ------------------------------------------------------------------

@@ -1,4 +1,4 @@
- Parsing input file : ./input/FallingBlock_mono_CoupledMG_RedundantCoarse.dat 
+ Parsing input file : ./t2_FB2_MG/FallingBlock_mono_CoupledMG_RedundantCoarse.dat 
 # Adding PetscOption: -dt 1e-2 
 # Adding PetscOption: -pcmat_no_dev_proj 
 # Adding PetscOption: -FSSA 1.0 
@@ -48,38 +48,40 @@
 # Adding PetscOption: -objects_dump 
 -------------------------------------------------------------------------- 
                    Lithosphere and Mantle Evolution Model                   
-     Compiled: Date: Dec 21 2015 - Time: 14:55:05 	    
+     Compiled: Date: Nov 11 2016 - Time: 23:49:20 	    
 -------------------------------------------------------------------------- 
         STAGGERED-GRID FINITE DIFFERENCE CANONICAL IMPLEMENTATION           
 -------------------------------------------------------------------------- 
+Reading pushing parameters: 
+
 Reading softening laws: 
 
 Reading material parameters: 
 
-    Phase [0]: rho = 1 [ ], eta = 1 [ ], beta = 0 [ ]
-    Phase [0]: (diff ) Bd = 0.5 [ ], Ed = 0 [ ], Vd = 0 [ ] 
-    Phase [0]: (disl ) Bn = 0 [ ], En = 0 [ ], Vn = 0 [ ], n = 0 [ ] 
-    Phase [0]: (peirl) Bp = 0 [ ], Ep = 0 [ ], Vp = 0 [ ], taup = 0 [ ], gamma = 0 [ ], q = 0 [ ] 
-    Phase [0]: (elast) G = 0 [ ], K = 0 [ ], Kp = 0 [ ] 
-    Phase [0]: (plast) cohesion = 0 [ ], friction angle = 0 [ ] 
+    Phase [0]: rho = 1. [ ], eta = 1. [ ], beta = 0. [ ]
+    Phase [0]: (diff ) Bd = 0.5 [ ], Ed = 0. [ ], Vd = 0. [ ] 
+    Phase [0]: (disl ) Bn = 0. [ ], En = 0. [ ], Vn = 0. [ ], n = 0. [ ] 
+    Phase [0]: (peirl) Bp = 0. [ ], Ep = 0. [ ], Vp = 0. [ ], taup = 0. [ ], gamma = 0. [ ], q = 0. [ ] 
+    Phase [0]: (elast) G = 0. [ ], K = 0. [ ], Kp = 0. [ ] 
+    Phase [0]: (plast) cohesion = 0. [ ], friction angle = 0. [ ] 
     Phase [0]: (sweak) cohesion SoftLaw = -1 [ ], friction SoftLaw = -1 [ ] 
-    Phase [0]: (temp ) alpha = 0 [ ], cp = 0 [ ], k = 0 [ ], A = 0 [ ] 
+    Phase [0]: (temp ) alpha = 0. [ ], cp = 0. [ ], k = 0. [ ], A = 0. [ ] 
     
-    Phase [1]: rho = 2 [ ], eta = 100 [ ], beta = 0 [ ]
-    Phase [1]: (diff ) Bd = 0.005 [ ], Ed = 0 [ ], Vd = 0 [ ] 
-    Phase [1]: (disl ) Bn = 0 [ ], En = 0 [ ], Vn = 0 [ ], n = 0 [ ] 
-    Phase [1]: (peirl) Bp = 0 [ ], Ep = 0 [ ], Vp = 0 [ ], taup = 0 [ ], gamma = 0 [ ], q = 0 [ ] 
-    Phase [1]: (elast) G = 0 [ ], K = 0 [ ], Kp = 0 [ ] 
-    Phase [1]: (plast) cohesion = 0 [ ], friction angle = 0 [ ] 
+    Phase [1]: rho = 2. [ ], eta = 100. [ ], beta = 0. [ ]
+    Phase [1]: (diff ) Bd = 0.005 [ ], Ed = 0. [ ], Vd = 0. [ ] 
+    Phase [1]: (disl ) Bn = 0. [ ], En = 0. [ ], Vn = 0. [ ], n = 0. [ ] 
+    Phase [1]: (peirl) Bp = 0. [ ], Ep = 0. [ ], Vp = 0. [ ], taup = 0. [ ], gamma = 0. [ ], q = 0. [ ] 
+    Phase [1]: (elast) G = 0. [ ], K = 0. [ ], Kp = 0. [ ] 
+    Phase [1]: (plast) cohesion = 0. [ ], friction angle = 0. [ ] 
     Phase [1]: (sweak) cohesion SoftLaw = -1 [ ], friction SoftLaw = -1 [ ] 
-    Phase [1]: (temp ) alpha = 0 [ ], cp = 0 [ ], k = 0 [ ], A = 0 [ ] 
+    Phase [1]: (temp ) alpha = 0. [ ], cp = 0. [ ], k = 0. [ ], A = 0. [ ] 
     
 --------------------------------------------------------------------------
- Total # of cpu's               : 2 
+ Total # of cpu's               : 1 
  Number of tracers/cell         : [2,2,2] 
  BC employed                    : BC.[LeftBound=1 RightBound=1; FrontBound=1 BackBound=1; LowerBound=1 UpperBound=1] 
  CFL timestep factor            : 0.500000 
- Processor grid  [nx, ny, nz]   : [1, 1, 2]
+ Processor grid  [nx, ny, nz]   : [1, 1, 1]
  Fine grid cells [nx, ny, nz]   : [32, 32, 32]
  Number of cells                :  32768
  Number of velocity DOF         :  101376
@@ -95,7 +97,7 @@ Reading material parameters:
  Excluding deviatoric projection from preconditioner
  Preconditioner type            : coupled Galerkin geometric multigrid
  Total coarse grid size    [nx, ny, nz] : [8, 8, 8]
- Coarse grid per processor [nx, ny, nz] : [8, 8, 4]
+ Coarse grid per processor [nx, ny, nz] : [8, 8, 8]
  Number of multigrid levels             : 3
  Writing grid .pvd file to disk
  Writing AVD3D .pvd file to disk
@@ -103,82 +105,81 @@ Reading material parameters:
 Time step 0 -------------------------------------------------------- 
 USING PICARD JACOBIAN for iteration 0, ||F||/||F0||=1.000000e+00 
     Residual norms for js_ solve.
-    0 KSP Residual norm 2.166463783063e+01 
-    1 KSP Residual norm 1.278539874898e+01 
-    2 KSP Residual norm 2.162414575140e+00 
-    3 KSP Residual norm 7.541706569632e-01 
-    4 KSP Residual norm 3.450637859999e-01 
-    5 KSP Residual norm 8.590196425086e-02 
-    6 KSP Residual norm 4.421695021804e-02 
-    7 KSP Residual norm 1.871486262636e-02 
-  Linear solve converged due to CONVERGED_RTOL iterations 7
+    0 KSP Residual norm 2.166222675068e+01 
+    1 KSP Residual norm 1.278200858595e+01 
+    2 KSP Residual norm 2.162085313229e+00 
+    3 KSP Residual norm 7.535454757929e-01 
+    4 KSP Residual norm 3.450505435308e-01 
+    5 KSP Residual norm 8.579089014106e-02 
+    6 KSP Residual norm 4.418650641674e-02 
+    7 KSP Residual norm 1.870520897041e-02 
+  Linear js_ solve converged due to CONVERGED_RTOL iterations 7
  SNES Convergence Reason: maximum iterations reached
  Number of iterations : 1
- Nonlinear solve took 2.11416 (sec)
+ Nonlinear solve took 1.95 (sec)
 ------------------------------------------
 Residual summary: 
   Continuity: 
-    Div_min  = -0.000000000000e+00 
-    Div_max  = -0.000000000000e+00 
-    |Div|_2  = 0.000000000000e+00 
+    Div_min  = -1.258887310476e-03 
+    Div_max  = 1.258989889346e-03 
+    |Div|_2  = 1.706644286107e-02 
   Momentum: 
-    |mRes|_2 = 2.095328136593e+02 
+    |mRes|_2 = 2.778031460649e+00 
 ------------------------------------------
  Created new directory Timestep_000000_0.000000e+00 
-AVD generator complete in 2.5479e-01 (sec)
+AVD generator complete in 4.3941e-01 (sec)
 AVD3D memory usage: 
   points:  8.000000 [MB] 
-  cells:   21.981812 [MB] 
-  chains:  31.437515 [MB] 
-  total:   61.419327 [MB] 
+  cells:   21.542175 [MB] 
+  chains:  35.192192 [MB] 
+  total:   64.734367 [MB] 
  Time = 1e-05[ ], dt = 1e-05[ ] 
  Finished timestep 0 out of 1 
  
 Time step 1 -------------------------------------------------------- 
 USING PICARD JACOBIAN for iteration 0, ||F||/||F0||=1.000000e+00 
     Residual norms for js_ solve.
-    0 KSP Residual norm 3.616054637654e-02 
-    1 KSP Residual norm 1.226435986619e-02 
-    2 KSP Residual norm 6.866636019819e-03 
-    3 KSP Residual norm 2.117846914680e-03 
-    4 KSP Residual norm 1.079197074657e-03 
-    5 KSP Residual norm 4.805033874543e-04 
-    6 KSP Residual norm 1.126721563092e-04 
-    7 KSP Residual norm 6.098525956482e-05 
-    8 KSP Residual norm 2.225813573713e-05 
-  Linear solve converged due to CONVERGED_RTOL iterations 8
+    0 KSP Residual norm 3.615127975837e-02 
+    1 KSP Residual norm 1.225187919327e-02 
+    2 KSP Residual norm 6.871092247486e-03 
+    3 KSP Residual norm 2.115597249852e-03 
+    4 KSP Residual norm 1.077726316959e-03 
+    5 KSP Residual norm 4.795170552386e-04 
+    6 KSP Residual norm 1.125469579714e-04 
+    7 KSP Residual norm 6.089034704450e-05 
+    8 KSP Residual norm 2.223032390302e-05 
+  Linear js_ solve converged due to CONVERGED_RTOL iterations 8
  SNES Convergence Reason: maximum iterations reached
  Number of iterations : 1
- Nonlinear solve took 2.22855 (sec)
+ Nonlinear solve took 1.73637 (sec)
 ------------------------------------------
 Residual summary: 
   Continuity: 
-    Div_min  = -1.261471829613e-03 
-    Div_max  = 1.261574598724e-03 
-    |Div|_2  = 1.709737229797e-02 
+    Div_min  = -1.503352651884e-06 
+    Div_max  = 1.503979326034e-06 
+    |Div|_2  = 2.544064652197e-05 
   Momentum: 
-    |mRes|_2 = 2.781757293799e+00 
+    |mRes|_2 = 1.980920187863e+00 
 ------------------------------------------
  Created new directory Timestep_000001_1.000000e-05 
-AVD generator complete in 2.8007e-01 (sec)
+AVD generator complete in 3.9987e-01 (sec)
 AVD3D memory usage: 
   points:  8.000000 [MB] 
-  cells:   21.981812 [MB] 
-  chains:  35.109337 [MB] 
-  total:   65.091148 [MB] 
+  cells:   21.542175 [MB] 
+  chains:  35.192703 [MB] 
+  total:   64.734879 [MB] 
  Time = 2e-05[ ], dt = 1e-05[ ] 
  Finished timestep 1 out of 1 
  
- Simulation took 5.3775 (sec) 
+ Simulation took 5.0899 (sec) 
 #PETSc Option Table entries:
 -AddRandomNoiseParticles 0
--FSSA 1.0
--ParamFile ./input/FallingBlock_mono_CoupledMG_RedundantCoarse.dat
 -crs_ksp_type preonly
 -crs_pc_redundant_number 1
 -crs_pc_type redundant
 -crs_redundant_pc_factor_mat_solver_package superlu_dist
 -dt 1e-2
+-FSSA 1.0
 -gmg_mg_levels_ksp_max_it 20
 -gmg_mg_levels_ksp_richardson_scale 0.5
 -gmg_mg_levels_ksp_type richardson
@@ -197,6 +198,7 @@ AVD3D memory usage:
 -js_ksp_monitor
 -js_ksp_rtol 1e-3
 -js_ksp_type gmres
+-mat_superlu_dist_fact SamePattern_SameRowPerm
 -objects_dump
 -options_left
 -out_avd 1
@@ -215,6 +217,7 @@ AVD3D memory usage:
 -out_strain_rate 1
 -out_temperature 1
 -out_velocity 1
+-ParamFile ./t2_FB2_MG/FallingBlock_mono_CoupledMG_RedundantCoarse.dat
 -pcmat_no_dev_proj
 -pcmat_type mono
 -pstokes mg

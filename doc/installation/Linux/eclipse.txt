@@ -16,14 +16,11 @@ sudo cp -r eclipse /opt
 ENVIRONMENT (This step is necessary for system-wide setting)
 ------------------------------------------------------------------
 
-Open terminal & change directory:
-cd /etc/profile.d
+Access environment file (create if does not exist)
+sudo nano /etc/profile.d/environment.sh
 
-Create file (requires root password):
-sudo nano eclipse.sh
-
-Add the following contents:
-export PATH=/opt/eclipse:$PATH
+Add line:
+export PATH=$PATH:/opt/eclipse
 
 Close and save file (ctrl+x, then y)
 

@@ -81,16 +81,16 @@ PetscErrorCode JacResSetFromOptions(JacRes *jr)
 	PetscFunctionBegin;
 
 	// set pressure shift flag
-	ierr = PetscOptionsHasName(NULL, "-skip_press_shift", &flg); CHKERRQ(ierr);
+	ierr = PetscOptionsHasName(NULL, NULL, "-skip_press_shift", &flg); CHKERRQ(ierr);
 
 	if(flg == PETSC_TRUE) jr->pShiftAct = PETSC_FALSE;
 
-	ierr = PetscOptionsHasName(NULL, "-act_temp_diff", &flg); CHKERRQ(ierr);
+	ierr = PetscOptionsHasName(NULL, NULL, "-act_temp_diff", &flg); CHKERRQ(ierr);
 
 	if(flg == PETSC_TRUE) jr->actTemp = PETSC_TRUE;
 
 	// set geometry tolerance
-	ierr = PetscOptionsGetScalar(NULL, "-geom_tol", &gtol, &flg); CHKERRQ(ierr);
+	ierr = PetscOptionsGetScalar(NULL, NULL, "-geom_tol", &gtol, &flg); CHKERRQ(ierr);
 
 	if(flg == PETSC_TRUE) jr->gtol = gtol;
 
@@ -237,7 +237,7 @@ PetscErrorCode JacResCreate(
 	ierr = DMDAGetOwnershipRanges(fs->DA_CEN, &lx, &ly, NULL); CHKERRQ(ierr);
 
 	// create 2D cell center grid
-	ierr = DMDACreate3d(PETSC_COMM_WORLD,
+	ierr = DMDACreate3dSetUp(PETSC_COMM_WORLD,
 		DM_BOUNDARY_NONE, DM_BOUNDARY_NONE, DM_BOUNDARY_NONE,
 		DMDA_STENCIL_BOX,
 		fs->dsx.tcels, fs->dsy.tcels, fs->dsz.nproc,
@@ -289,6 +289,8 @@ PetscErrorCode JacResDestroy(JacRes *jr)
 	ierr = VecDestroy(&jr->lp);      CHKERRQ(ierr);
 
 	ierr = VecDestroy(&jr->gc);      CHKERRQ(ierr);
+
+	ierr = VecDestroy(&jr->lp_lithos); CHKERRQ(ierr);
 
 	ierr = VecDestroy(&jr->lbcor);   CHKERRQ(ierr);
 
@@ -1348,699 +1350,39 @@ PetscErrorCode JacResGetResidual(JacRes *jr)
 
 	PetscFunctionReturn(0);
 }
-//-----------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "JacResGetMomentumResidualAndPressure"
-PetscErrorCode JacResGetMomentumResidualAndPressure(JacRes *jr, UserCtx *user)
-{
-	// Compute residual of nonlinear momentum conservation
 
-	// ...
-	// equations, based on pre-computed components of effective
-	// strain-rate tensor, current values of pressure and temperature.
-	// Missing components of the second invariant of the effective strain-rate
-	// tensor (squares of the corresponding strain rate components) are averaged
-	// form the hosting nodes using arithmetic mean.
-	// DII = (0.5*D_ij*D_ij)^0.5
-	// NOTE: we interpolate and average D_ij*D_ij terms instead of D_ij
-
-	FDSTAG     *fs;
-	SolVarCell *svCell;
-	SolVarEdge *svEdge;
-	SolVarDev  *svDev;
-	SolVarBulk *svBulk;
-	Material_t *phases;
-	MatParLim  *matLim;
-	PetscInt    iter, numPhases;
-	PetscInt    I1, I2, J1, J2, K1, K2;
-	PetscInt    i, j, k, nx, ny, nz, sx, sy, sz, mx, my, mz, i_src, j_src, k_src;
-	PetscScalar XX, XX1, XX2, XX3, XX4;
-	PetscScalar YY, YY1, YY2, YY3, YY4;
-	PetscScalar ZZ, ZZ1, ZZ2, ZZ3, ZZ4;
-	PetscScalar XY, XY1, XY2, XY3, XY4;
-	PetscScalar XZ, XZ1, XZ2, XZ3, XZ4;
-	PetscScalar YZ, YZ1, YZ2, YZ3, YZ4;
-	PetscScalar bdx, fdx, bdy, fdy, bdz, fdz;
-	PetscScalar gx, gy, gz, tx, ty, tz, sxx, syy, szz, sxy, sxz, syz;
-	PetscScalar J2Inv, theta, rho, Tc, pc, pShift, dt, fssa, *grav, time;
-	PetscScalar ***fx,  ***fy,  ***fz, ***vx,  ***vy,  ***vz;
-	PetscScalar ***dxx, ***dyy, ***dzz, ***dxy, ***dxz, ***dyz, ***T, ***lp, ***gp, ***p_lithos;
-	PetscScalar eta_creep, eta_viscoplastic;;
-	PetscScalar depth, pc_lithos;
-
-	PetscScalar dx, dy, dz, h, Ih4, I4h4, source_time, M0, Mxx, Myy, Mzz, Mxy, Mxz, Myz;
-
-	PetscErrorCode ierr;
-	PetscFunctionBegin;
-
-	fs = jr->fs;
-
-	// initialize maximum node index in all directions
-	mx = fs->dsx.tnods - 1;
-	my = fs->dsy.tnods - 1;
-	mz = fs->dsz.tnods - 1;
-
-	// access residual context variables
-	numPhases =  jr->numPhases; // number phases
-	phases    =  jr->phases;    // phase parameters
-	matLim    = &jr->matLim;    // phase parameters limiters
-	dt        =  jr->ts.dt;     // time step
-
-	fssa      =  jr->FSSA;      // density gradient penalty parameter
-	grav      =  jr->grav;      // gravity acceleration
-	pShift    =  jr->pShift;    // pressure shift
-
-	// clear local residual vectors
-	ierr = VecZeroEntries(jr->lfx); CHKERRQ(ierr);
-	ierr = VecZeroEntries(jr->lfy); CHKERRQ(ierr);
-	ierr = VecZeroEntries(jr->lfz); CHKERRQ(ierr);
-
-	// access work vectors
-	ierr = DMDAVecGetArray(fs->DA_CEN, jr->lp,   &lp);   CHKERRQ(ierr);
-	ierr = DMDAVecGetArray(fs->DA_CEN, jr->gp,   &gp);   CHKERRQ(ierr);
-	ierr = DMDAVecGetArray(fs->DA_CEN, jr->lT,   &T);   CHKERRQ(ierr);
-	ierr = DMDAVecGetArray(fs->DA_CEN, jr->ldxx, &dxx); CHKERRQ(ierr);
-	ierr = DMDAVecGetArray(fs->DA_CEN, jr->ldyy, &dyy); CHKERRQ(ierr);
-	ierr = DMDAVecGetArray(fs->DA_CEN, jr->ldzz, &dzz); CHKERRQ(ierr);
-	ierr = DMDAVecGetArray(fs->DA_XY,  jr->ldxy, &dxy); CHKERRQ(ierr);
-	ierr = DMDAVecGetArray(fs->DA_XZ,  jr->ldxz, &dxz); CHKERRQ(ierr);
-	ierr = DMDAVecGetArray(fs->DA_YZ,  jr->ldyz, &dyz); CHKERRQ(ierr);
-	ierr = DMDAVecGetArray(fs->DA_X,   jr->lfx,  &fx);  CHKERRQ(ierr);
-	ierr = DMDAVecGetArray(fs->DA_Y,   jr->lfy,  &fy);  CHKERRQ(ierr);
-	ierr = DMDAVecGetArray(fs->DA_Z,   jr->lfz,  &fz);  CHKERRQ(ierr);
-	ierr = DMDAVecGetArray(fs->DA_X,   jr->lvx,  &vx);  CHKERRQ(ierr);
-	ierr = DMDAVecGetArray(fs->DA_Y,   jr->lvy,  &vy);  CHKERRQ(ierr);
-	ierr = DMDAVecGetArray(fs->DA_Z,   jr->lvz,  &vz);  CHKERRQ(ierr);
-	ierr = DMDAVecGetArray(fs->DA_CEN, jr->lp_lithos,&p_lithos); CHKERRQ(ierr);
-
-	// compute lithostatic pressure
-	ierr = JacResGetLithoStaticPressure(jr); CHKERRQ(ierr);
-
-//	FILE *fseism; //used now to save traces
-//	fseism = user->Station.output_file;
-
-
-	//-------------------------------
-	// central points
-	//-------------------------------
-	iter = 0;
-	GET_CELL_RANGE(nx, sx, fs->dsx)
-	GET_CELL_RANGE(ny, sy, fs->dsy)
-	GET_CELL_RANGE(nz, sz, fs->dsz)
-
-	START_STD_LOOP
-	{
-
-		// access solution variables
-		svCell = &jr->svCell[iter++];
-		svDev  = &svCell->svDev;
-		svBulk = &svCell->svBulk;
-
-		//=================
-		// SECOND INVARIANT
-		//=================
-
-		// access strain rates
-		XX = dxx[k][j][i];
-		YY = dyy[k][j][i];
-		ZZ = dzz[k][j][i];
-
-		// x-y plane, i-j indices
-		XY1 = dxy[k][j][i];
-		XY2 = dxy[k][j+1][i];
-		XY3 = dxy[k][j][i+1];
-		XY4 = dxy[k][j+1][i+1];
-
-		// x-z plane, i-k indices
-		XZ1 = dxz[k][j][i];
-		XZ2 = dxz[k+1][j][i];
-		XZ3 = dxz[k][j][i+1];
-		XZ4 = dxz[k+1][j][i+1];
-
-		// y-z plane, j-k indices
-		YZ1 = dyz[k][j][i];
-		YZ2 = dyz[k+1][j][i];
-		YZ3 = dyz[k][j+1][i];
-		YZ4 = dyz[k+1][j+1][i];
-
-		// compute second invariant
-		J2Inv = 0.5*(XX*XX + YY*YY + ZZ*ZZ) +
-		0.25*(XY1*XY1 + XY2*XY2 + XY3*XY3 + XY4*XY4) +
-		0.25*(XZ1*XZ1 + XZ2*XZ2 + XZ3*XZ3 + XZ4*XZ4) +
-		0.25*(YZ1*YZ1 + YZ2*YZ2 + YZ3*YZ3 + YZ4*YZ4);
-
-
-		// store square root of second invariant
-		svDev->DII = sqrt(J2Inv);
-
-		//=======================
-		// CONSTITUTIVE EQUATIONS
-		//=======================
-
-		// access current pressure
-		pc = lp[k][j][i];
-
-		// access current temperature
-		Tc = T[k][j][i];
-
-		// access current lithostatic pressure
-		pc_lithos = p_lithos[k][j][i];
-
-		//-----------
-		// VOLUMETRIC
-		//-----------
-
-		// compute depth below the free surface
-		depth = jr->avg_topo - COORD_CELL(k, sz, fs->dsz);
-
-		if(depth < 0.0) depth = 0.0;
-
-		// evaluate volumetric constitutive equations
-		ierr = VolConstEq(svBulk, numPhases, phases, svCell->phRat, matLim, depth, dt, pc-pShift , Tc); CHKERRQ(ierr); // That could go outside the time loop!
-
-		// update pressure
-		gp[k][j][i]  = lp[k][j][i] - svBulk->theta/svBulk->IKdt;
-		pc           = gp[k][j][i];
-		//-----------
-		// DEVIATORIC
-		//-----------
-
-		// evaluate deviatoric constitutive equations
-		ierr = DevConstEq(svDev, &eta_creep, &eta_viscoplastic, numPhases, phases, svCell->phRat, matLim, pc_lithos, dt, pc-pShift, Tc); CHKERRQ(ierr);
-
-		// store creep viscosity
-		svCell->eta_creep = eta_creep;
-		svCell->eta_viscoplastic 	= eta_viscoplastic;
-
-		/*//Check if svDev->eta is the same that 1.0/(2*svDev->I2Gdt)
-		if (i==5 && j==10) {
-			PetscPrintf(PETSC_COMM_WORLD, "    In the center svDev->eta - 1.0/(2*svDev->I2Gdt) [%i,%i,%i]  = %12.12e - %12.12e = %12.12e \n", i,j,k, svDev->eta, 1.0/(2.0*svDev->I2Gdt), svDev->eta - 1.0/(2.0*svDev->I2Gdt));
-		}*/
-
-		// compute stress, plastic strain rate and shear heating term on cell
-		ierr = GetStressCellForExplicit(svCell, matLim, XX, YY, ZZ); CHKERRQ(ierr);
-
-		// compute total Cauchy stresses
-		sxx = svCell->sxx - pc;
-		syy = svCell->syy - pc;
-		szz = svCell->szz - pc;
-
-		// Add seismic source in the stress field /////////////////////////
-		if (jr->SeismicSource == PETSC_TRUE && jr->SourceParams.source_type!=MOMENT )
-		{
-			// trying to apply it like a force term ...
-			ierr = GetStressFromSource(jr,user, i, j, k, &sxx, &syy, &szz);
-		}
-
-		// USE REAL DENSITY HERE !!!
-
-
-		// access
-		theta = svBulk->theta; // volumetric strain rate
-
-		rho   = svBulk->rho;   // effective density
-//		IKdt  = svBulk->IKdt;  // inverse bulk viscosity
-//		alpha = svBulk->alpha; // effective thermal expansion
-//		pn    = svBulk->pn;    // pressure history
-//		Tn    = svBulk->Tn;    // temperature history
-
-		// compute gravity terms
-		gx = rho*grav[0];
-		gy = rho*grav[1];
-		gz = rho*grav[2];
-
-		// compute stabilization terms (lumped approximation)
-		tx = -fssa*dt*gx;
-		ty = -fssa*dt*gy;
-		tz = -fssa*dt*gz;
-
-		//=========
-		// RESIDUAL
-		//=========
-
-		// get mesh steps for the backward and forward derivatives
-		bdx = SIZE_NODE(i, sx, fs->dsx);   fdx = SIZE_NODE(i+1, sx, fs->dsx);
-		bdy = SIZE_NODE(j, sy, fs->dsy);   fdy = SIZE_NODE(j+1, sy, fs->dsy);
-		bdz = SIZE_NODE(k, sz, fs->dsz);   fdz = SIZE_NODE(k+1, sz, fs->dsz);
-
-		// momentum
-		fx[k][j][i] -= (sxx + vx[k][j][i]*tx)/bdx + gx/2.0;   fx[k][j][i+1] += (sxx + vx[k][j][i+1]*tx)/fdx - gx/2.0;
-		fy[k][j][i] -= (syy + vy[k][j][i]*ty)/bdy + gy/2.0;   fy[k][j+1][i] += (syy + vy[k][j+1][i]*ty)/fdy - gy/2.0;
-		fz[k][j][i] -= (szz + vz[k][j][i]*tz)/bdz + gz/2.0;   fz[k+1][j][i] += (szz + vz[k+1][j][i]*tz)/fdz - gz/2.0;
-
-		// Add seismic moment source term in the residual ////////////////////////////////////////////////////////////////////////
-
-		if ( jr->SeismicSource == PETSC_TRUE && jr->SourceParams.source_type==MOMENT && jr->SourceParams.i == i && jr->SourceParams.j == j && jr->SourceParams.k == k) {
-			// size of cell
-			dx = SIZE_CELL(i, sx, fs->dsx);
-			dy = SIZE_CELL(j, sy, fs->dsy);
-			dz = SIZE_CELL(k, sz, fs->dsz);
-			h=1.0; //dx*dy*dz; // Volume of the grid cell
-			Ih4	=1.0/(h*h*h*h);
-			I4h4=Ih4/4.0;
-			time =  JacResGetTime(jr);
-			source_time = jr->SourceParams.amplitude*exp(-jr->SourceParams.alfa*((time-jr->SourceParams.t0)*(time-jr->SourceParams.t0)));
-
-			M0=jr->SourceParams.moment_tensor.M0;
-			Mxx=M0*jr->SourceParams.moment_tensor.Mxx*source_time;
-			Myy=M0*jr->SourceParams.moment_tensor.Myy*source_time;
-			Mzz=M0*jr->SourceParams.moment_tensor.Mzz*source_time;
-			Mxy=M0*jr->SourceParams.moment_tensor.Mxy*source_time;
-			Mxz=M0*jr->SourceParams.moment_tensor.Mxz*source_time;
-			Myz=M0*jr->SourceParams.moment_tensor.Myz*source_time;
-
-			fx[k][j][i+1] 	+= Ih4  * Mxx;		fx[k][j][i] 	-= Ih4  * Mxx;
-			fx[k][j+1][i+1] += I4h4 * Mxy;		fx[k][j-1][i+1] -= I4h4 * Mxy;
-			fx[k][j+1][i] 	+= I4h4 * Mxy;		fx[k][j-1][i] 	-= I4h4 * Mxy;
-			fx[k+1][j][i+1] += I4h4 * Mxz;		fx[k-1][j][i+1] -= I4h4 * Mxz;
-			fx[k+1][j][i] 	+= I4h4 * Mxz;		fx[k-1][j][i] 	-= I4h4 * Mxz;
-
-			fy[k][j+1][i] 	+= Ih4  * Myy;		fy[k][j][i] 	-= Ih4  * Myy;
-			fy[k][j+1][i+1] += I4h4 * Mxy;		fy[k][j+1][i-1] -= I4h4 * Mxy;
-			fy[k][j][i+1] 	+= I4h4 * Mxy;		fy[k][j][i-1] 	-= I4h4 * Mxy;
-			fy[k+1][j+1][i] += I4h4 * Myz;		fy[k-1][j+1][i] -= I4h4 * Myz;
-			fy[k+1][j][i] 	+= I4h4 * Myz;		fy[k-1][j][i] 	-= I4h4 * Myz;
-
-			fz[k+1][j][i] 	+= Ih4  * Mzz;		fz[k][j][i] 	-= Ih4  * Mzz;
-			fz[k+1][j][i+1] += I4h4 * Mxz;		fz[k+1][j][i-1] -= I4h4 * Mxz;
-			fz[k][j][i+1] 	+= I4h4 * Mxz;		fz[k][j][i-1] 	-= I4h4 * Mxz;
-			fz[k+1][j+1][i] += I4h4 * Myz;		fz[k+1][j-1][i] -= I4h4 * Myz;
-			fz[k][j+1][i] 	+= I4h4 * Myz;		fz[k][j-1][i] 	-= I4h4 * Myz;
-		}
-		///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-
-	}
-	END_STD_LOOP
-
-	// restore access to pressure vectors
-	ierr = DMDAVecRestoreArray(fs->DA_CEN, jr->lp, &lp);   CHKERRQ(ierr);
-	ierr = DMDAVecRestoreArray(fs->DA_CEN, jr->gp, &gp);   CHKERRQ(ierr);
-
-
-	// PRESSURE BC (IF ANY) SHOULD BE APPLIED HERE!
-
-	GLOBAL_TO_LOCAL(fs->DA_CEN, jr->gp, jr->lp);
-
-	// access updated pressure with ghost points
-	ierr = DMDAVecGetArray(fs->DA_CEN, jr->lp, &lp);  CHKERRQ(ierr);
-
-	//-------------------------------
-	// xy edge points
-	//-------------------------------
-	iter = 0;
-	GET_NODE_RANGE(nx, sx, fs->dsx)
-	GET_NODE_RANGE(ny, sy, fs->dsy)
-	GET_CELL_RANGE(nz, sz, fs->dsz)
-
-	START_STD_LOOP
-	{
-		// access solution variables
-		svEdge = &jr->svXYEdge[iter++];
-		svDev  = &svEdge->svDev;
-
-		//=================
-		// SECOND INVARIANT
-		//=================
-
-		// check index bounds
-		I1 = i;   if(I1 == mx) I1--;
-		I2 = i-1; if(I2 == -1) I2++;
-		J1 = j;   if(J1 == my) J1--;
-		J2 = j-1; if(J2 == -1) J2++;
-
-		// access strain rates
-		XY = dxy[k][j][i];
-
-		// x-y plane, i-j indices (i & j - bounded)
-		XX1 = dxx[k][J1][I1];
-		XX2 = dxx[k][J1][I2];
-		XX3 = dxx[k][J2][I1];
-		XX4 = dxx[k][J2][I2];
-
-		// x-y plane, i-j indices (i & j - bounded)
-		YY1 = dyy[k][J1][I1];
-		YY2 = dyy[k][J1][I2];
-		YY3 = dyy[k][J2][I1];
-		YY4 = dyy[k][J2][I2];
-
-		// x-y plane, i-j indices (i & j - bounded)
-		ZZ1 = dzz[k][J1][I1];
-		ZZ2 = dzz[k][J1][I2];
-		ZZ3 = dzz[k][J2][I1];
-		ZZ4 = dzz[k][J2][I2];
-
-		// y-z plane j-k indices (j - bounded)
-		XZ1 = dxz[k][J1][i];
-		XZ2 = dxz[k+1][J1][i];
-		XZ3 = dxz[k][J2][i];
-		XZ4 = dxz[k+1][J2][i];
-
-		// x-z plane i-k indices (i - bounded)
-		YZ1 = dyz[k][j][I1];
-		YZ2 = dyz[k+1][j][I1];
-		YZ3 = dyz[k][j][I2];
-		YZ4 = dyz[k+1][j][I2];
-
-		// compute second invariant
-		J2Inv = XY*XY +
-		0.125*(XX1*XX1 + XX2*XX2 + XX3*XX3 + XX4*XX4) +
-		0.125*(YY1*YY1 + YY2*YY2 + YY3*YY3 + YY4*YY4) +
-		0.125*(ZZ1*ZZ1 + ZZ2*ZZ2 + ZZ3*ZZ3 + ZZ4*ZZ4) +
-		0.25 *(XZ1*XZ1 + XZ2*XZ2 + XZ3*XZ3 + XZ4*XZ4) +
-		0.25 *(YZ1*YZ1 + YZ2*YZ2 + YZ3*YZ3 + YZ4*YZ4);
-
-		// store square root of second invariant
-		svDev->DII = sqrt(J2Inv);
-
-		//=======================
-		// CONSTITUTIVE EQUATIONS
-		//=======================
-
-		// access current pressure (x-y plane, i-j indices)
-		pc = 0.25*(lp[k][j][i] + lp[k][j][i-1] + lp[k][j-1][i] + lp[k][j-1][i-1]);
-
-		// current temperature (x-y plane, i-j indices)
-		Tc = 0.25*(T[k][j][i] + T[k][j][i-1] + T[k][j-1][i] + T[k][j-1][i-1]);
-
-		// access current lithostatic pressure (x-y plane, i-j indices)
-		pc_lithos = 0.25*(p_lithos[k][j][i] + p_lithos[k][j][i-1] + p_lithos[k][j-1][i] + p_lithos[k][j-1][i-1]);
-
-		// evaluate deviatoric constitutive equations
-		ierr = DevConstEq(svDev, &eta_creep, &eta_viscoplastic, numPhases, phases, svEdge->phRat, matLim, pc_lithos, dt, pc-pShift, Tc); CHKERRQ(ierr);
-
-		/*//Check if svDev->eta is the same that 1.0/(2*svDev->I2Gdt)
-		if (i==5 && j==10) {
-			PetscPrintf(PETSC_COMM_WORLD, "    In the xy edge svDev->eta - 1.0/(2*svDev->I2Gdt) [%i,%i,%i]  = %12.12e - %12.12e = %12.12e \n", i,j,k, svDev->eta, 1.0/(2.0*svDev->I2Gdt), svDev->eta - 1.0/(2.0*svDev->I2Gdt));
-		}*/
-
-		// compute stress, plastic strain rate and shear heating term on edge
-		ierr = GetStressEdgeForExplicit(svEdge, matLim, XY); CHKERRQ(ierr);
-
-		// access xy component of the Cauchy stress
-		sxy = svEdge->s;
-
-		//=========
-		// RESIDUAL
-		//=========
-
-		// get mesh steps for the backward and forward derivatives
-		bdx = SIZE_CELL(i-1, sx, fs->dsx);   fdx = SIZE_CELL(i, sx, fs->dsx);
-		bdy = SIZE_CELL(j-1, sy, fs->dsy);   fdy = SIZE_CELL(j, sy, fs->dsy);
-
-		// momentum
-		fx[k][j-1][i] -= sxy/bdy;   fx[k][j][i] += sxy/fdy;
-		fy[k][j][i-1] -= sxy/bdx;   fy[k][j][i] += sxy/fdx;
-	}
-	END_STD_LOOP
-
-	//-------------------------------
-	// xz edge points
-	//-------------------------------
-	iter = 0;
-	GET_NODE_RANGE(nx, sx, fs->dsx)
-	GET_CELL_RANGE(ny, sy, fs->dsy)
-	GET_NODE_RANGE(nz, sz, fs->dsz)
-
-	START_STD_LOOP
-	{
-		// access solution variables
-		svEdge = &jr->svXZEdge[iter++];
-		svDev  = &svEdge->svDev;
-
-		//=================
-		// SECOND INVARIANT
-		//=================
-
-		// check index bounds
-		I1 = i;   if(I1 == mx) I1--;
-		I2 = i-1; if(I2 == -1) I2++;
-		K1 = k;   if(K1 == mz) K1--;
-		K2 = k-1; if(K2 == -1) K2++;
-
-		// access strain rates
-		XZ = dxz[k][j][i];
-
-		// x-z plane, i-k indices (i & k - bounded)
-		XX1 = dxx[K1][j][I1];
-		XX2 = dxx[K1][j][I2];
-		XX3 = dxx[K2][j][I1];
-		XX4 = dxx[K2][j][I2];
-
-		// x-z plane, i-k indices (i & k - bounded)
-		YY1 = dyy[K1][j][I1];
-		YY2 = dyy[K1][j][I2];
-		YY3 = dyy[K2][j][I1];
-		YY4 = dyy[K2][j][I2];
-
-		// x-z plane, i-k indices (i & k - bounded)
-		ZZ1 = dzz[K1][j][I1];
-		ZZ2 = dzz[K1][j][I2];
-		ZZ3 = dzz[K2][j][I1];
-		ZZ4 = dzz[K2][j][I2];
-
-		// y-z plane, j-k indices (k - bounded)
-		XY1 = dxy[K1][j][i];
-		XY2 = dxy[K1][j+1][i];
-		XY3 = dxy[K2][j][i];
-		XY4 = dxy[K2][j+1][i];
-
-		// xy plane, i-j indices (i - bounded)
-		YZ1 = dyz[k][j][I1];
-		YZ2 = dyz[k][j+1][I1];
-		YZ3 = dyz[k][j][I2];
-		YZ4 = dyz[k][j+1][I2];
-
-		// compute second invariant
-		J2Inv = XZ*XZ +
-		0.125*(XX1*XX1 + XX2*XX2 + XX3*XX3 + XX4*XX4) +
-		0.125*(YY1*YY1 + YY2*YY2 + YY3*YY3 + YY4*YY4) +
-		0.125*(ZZ1*ZZ1 + ZZ2*ZZ2 + ZZ3*ZZ3 + ZZ4*ZZ4) +
-		0.25 *(XY1*XY1 + XY2*XY2 + XY3*XY3 + XY4*XY4) +
-		0.25 *(YZ1*YZ1 + YZ2*YZ2 + YZ3*YZ3 + YZ4*YZ4);
-
-		// store square root of second invariant
-		svDev->DII = sqrt(J2Inv);
-
-		//=======================
-		// CONSTITUTIVE EQUATIONS
-		//=======================
-
-		// access current pressure (x-z plane, i-k indices)
-		pc = 0.25*(lp[k][j][i] + lp[k][j][i-1] + lp[k-1][j][i] + lp[k-1][j][i-1]);
-
-		// current temperature (x-z plane, i-k indices)
-		Tc = 0.25*(T[k][j][i] + T[k][j][i-1] + T[k-1][j][i] + T[k-1][j][i-1]);
-
-		// access current lithostatic pressure (x-z plane, i-k indices)
-		pc_lithos = 0.25*(p_lithos[k][j][i] + p_lithos[k][j][i-1] + p_lithos[k-1][j][i] + p_lithos[k-1][j][i-1]);
-
-		// evaluate deviatoric constitutive equations
-		ierr = DevConstEq(svDev, &eta_creep, &eta_viscoplastic, numPhases, phases, svEdge->phRat, matLim, pc_lithos, dt, pc-pShift, Tc); CHKERRQ(ierr);
-
-
-/*PetscPrintf(PETSC_COMM_WORLD, "    [%i,%i,%i] \n", i,j,k);
-PetscPrintf(PETSC_COMM_WORLD, "    svDev->eta  = %12.12e \n", svDev->eta);
-PetscPrintf(PETSC_COMM_WORLD, "    svDev->DIIpl  = %12.12e \n", svDev->DIIpl);
-PetscPrintf(PETSC_COMM_WORLD, "    eta_creep  = %12.12e \n", eta_creep);
-PetscPrintf(PETSC_COMM_WORLD, "    eta_viscoplastic  = %12.12e \n", eta_viscoplastic);
-PetscPrintf(PETSC_COMM_WORLD, "    svDev->dEta  = %12.12e \n", svDev->dEta);
-PetscPrintf(PETSC_COMM_WORLD, "    svDev->fr  = %12.12e \n", svDev->fr);
-*/
-
-		// compute stress, plastic strain rate and shear heating term on edge
-		ierr = GetStressEdgeForExplicit(svEdge, matLim, XZ); CHKERRQ(ierr);
-
-		// access xz component of the Cauchy stress
-		sxz = svEdge->s;
-
-		/*//Check if svDev->eta is the same that 1.0/(2*svDev->I2Gdt)
-		if (i==5 && j==10) {
-			PetscPrintf(PETSC_COMM_WORLD, "    In the xz edge svDev->eta - 1.0/(2*svDev->I2Gdt) [%i,%i,%i]  = %12.12e - %12.12e = %12.12e \n", i,j,k, svDev->eta, 1.0/(2.0*svDev->I2Gdt), svDev->eta - 1.0/(2.0*svDev->I2Gdt));
-		}*/
-
-		//=========
-		// RESIDUAL
-		//=========
-
-		// get mesh steps for the backward and forward derivatives
-		bdx = SIZE_CELL(i-1, sx, fs->dsx);   fdx = SIZE_CELL(i, sx, fs->dsx);
-		bdz = SIZE_CELL(k-1, sz, fs->dsz);   fdz = SIZE_CELL(k, sz, fs->dsz);
-
-		// momentum
-		fx[k-1][j][i] -= sxz/bdz;   fx[k][j][i] += sxz/fdz;
-		fz[k][j][i-1] -= sxz/bdx;   fz[k][j][i] += sxz/fdx;
-	}
-	END_STD_LOOP
-
-	//-------------------------------
-	// yz edge points
-	//-------------------------------
-	iter = 0;
-	GET_CELL_RANGE(nx, sx, fs->dsx)
-	GET_NODE_RANGE(ny, sy, fs->dsy)
-	GET_NODE_RANGE(nz, sz, fs->dsz)
-
-	START_STD_LOOP
-	{
-		// access solution variables
-		svEdge = &jr->svYZEdge[iter++];
-		svDev  = &svEdge->svDev;
-
-		//=================
-		// SECOND INVARIANT
-		//=================
-
-		// check index bounds
-		J1 = j;   if(J1 == my) J1--;
-		J2 = j-1; if(J2 == -1) J2++;
-		K1 = k;   if(K1 == mz) K1--;
-		K2 = k-1; if(K2 == -1) K2++;
-
-		// access strain rates
-		YZ = dyz[k][j][i];
-
-		// y-z plane, j-k indices (j & k - bounded)
-		XX1 = dxx[K1][J1][i];
-		XX2 = dxx[K1][J2][i];
-		XX3 = dxx[K2][J1][i];
-		XX4 = dxx[K2][J2][i];
-
-		// y-z plane, j-k indices (j & k - bounded)
-		YY1 = dyy[K1][J1][i];
-		YY2 = dyy[K1][J2][i];
-		YY3 = dyy[K2][J1][i];
-		YY4 = dyy[K2][J2][i];
-
-		// y-z plane, j-k indices (j & k - bounded)
-		ZZ1 = dzz[K1][J1][i];
-		ZZ2 = dzz[K1][J2][i];
-		ZZ3 = dzz[K2][J1][i];
-		ZZ4 = dzz[K2][J2][i];
-
-		// x-z plane, i-k indices (k -bounded)
-		XY1 = dxy[K1][j][i];
-		XY2 = dxy[K1][j][i+1];
-		XY3 = dxy[K2][j][i];
-		XY4 = dxy[K2][j][i+1];
-
-		// x-y plane, i-j indices (j - bounded)
-		XZ1 = dxz[k][J1][i];
-		XZ2 = dxz[k][J1][i+1];
-		XZ3 = dxz[k][J2][i];
-		XZ4 = dxz[k][J2][i+1];
-
-		// compute second invariant
-		J2Inv = YZ*YZ +
-		0.125*(XX1*XX1 + XX2*XX2 + XX3*XX3 + XX4*XX4) +
-		0.125*(YY1*YY1 + YY2*YY2 + YY3*YY3 + YY4*YY4) +
-		0.125*(ZZ1*ZZ1 + ZZ2*ZZ2 + ZZ3*ZZ3 + ZZ4*ZZ4) +
-		0.25 *(XY1*XY1 + XY2*XY2 + XY3*XY3 + XY4*XY4) +
-		0.25 *(XZ1*XZ1 + XZ2*XZ2 + XZ3*XZ3 + XZ4*XZ4);
-
-		// store square root of second invariant
-		svDev->DII = sqrt(J2Inv);
-
-		//=======================
-		// CONSTITUTIVE EQUATIONS
-		//=======================
-
-		// access current pressure (y-z plane, j-k indices)
-		pc = 0.25*(lp[k][j][i] + lp[k][j-1][i] + lp[k-1][j][i] + lp[k-1][j-1][i]);
-
-		// current temperature (y-z plane, j-k indices)
-		Tc = 0.25*(T[k][j][i] + T[k][j-1][i] + T[k-1][j][i] + T[k-1][j-1][i]);
-
-		// access current lithostatic pressure (y-z plane, j-k indices)
-		pc_lithos = 0.25*(p_lithos[k][j][i] + p_lithos[k][j-1][i] + p_lithos[k-1][j][i] + p_lithos[k-1][j-1][i]);
-
-		// evaluate deviatoric constitutive equations
-		ierr = DevConstEq(svDev, &eta_creep, &eta_viscoplastic, numPhases, phases, svEdge->phRat, matLim, pc_lithos, dt, pc-pShift, Tc); CHKERRQ(ierr);
-
-		// compute stress, plastic strain rate and shear heating term on edge
-		ierr = GetStressEdgeForExplicit(svEdge, matLim, YZ); CHKERRQ(ierr);
-
-		// access yz component of the Cauchy stress
-		syz = svEdge->s;
-
-		/*//Check if svDev->eta is the same that 1.0/(2*svDev->I2Gdt)
-		if (i==5 && j==10) {
-				PetscPrintf(PETSC_COMM_WORLD, "    In the yz edge svDev->eta - 1.0/(2*svDev->I2Gdt) [%i,%i,%i]  = %12.12e - %12.12e = %12.12e \n", i,j,k, svDev->eta, 1.0/(2.0*svDev->I2Gdt), svDev->eta - 1.0/(2.0*svDev->I2Gdt));
-		}*/
-
-		//=========
-		// RESIDUAL
-		//=========
-
-		// get mesh steps for the backward and forward derivatives
-		bdy = SIZE_CELL(j-1, sy, fs->dsy);   fdy = SIZE_CELL(j, sy, fs->dsy);
-		bdz = SIZE_CELL(k-1, sz, fs->dsz);   fdz = SIZE_CELL(k, sz, fs->dsz);
-
-		// momentum
-		fy[k-1][j][i] -= syz/bdz;   fy[k][j][i] += syz/fdz;
-		fz[k][j-1][i] -= syz/bdy;   fz[k][j][i] += syz/fdy;
-	}
-	END_STD_LOOP
-
-	// restore vectors
-
-	ierr = DMDAVecRestoreArray(fs->DA_CEN, jr->lp,   &lp);  CHKERRQ(ierr);
-	ierr = DMDAVecRestoreArray(fs->DA_CEN, jr->lT,   &T);   CHKERRQ(ierr);
-	ierr = DMDAVecRestoreArray(fs->DA_CEN, jr->ldxx, &dxx); CHKERRQ(ierr);
-	ierr = DMDAVecRestoreArray(fs->DA_CEN, jr->ldyy, &dyy); CHKERRQ(ierr);
-	ierr = DMDAVecRestoreArray(fs->DA_CEN, jr->ldzz, &dzz); CHKERRQ(ierr);
-	ierr = DMDAVecRestoreArray(fs->DA_XY,  jr->ldxy, &dxy); CHKERRQ(ierr);
-	ierr = DMDAVecRestoreArray(fs->DA_XZ,  jr->ldxz, &dxz); CHKERRQ(ierr);
-	ierr = DMDAVecRestoreArray(fs->DA_YZ,  jr->ldyz, &dyz); CHKERRQ(ierr);
-	ierr = DMDAVecRestoreArray(fs->DA_X,   jr->lfx,  &fx);  CHKERRQ(ierr);
-	ierr = DMDAVecRestoreArray(fs->DA_Y,   jr->lfy,  &fy);  CHKERRQ(ierr);
-	ierr = DMDAVecRestoreArray(fs->DA_Z,   jr->lfz,  &fz);  CHKERRQ(ierr);
-	ierr = DMDAVecRestoreArray(fs->DA_X,   jr->lvx,  &vx);  CHKERRQ(ierr);
-	ierr = DMDAVecRestoreArray(fs->DA_Y,   jr->lvy,  &vy);  CHKERRQ(ierr);
-	ierr = DMDAVecRestoreArray(fs->DA_Z,   jr->lvz,  &vz);  CHKERRQ(ierr);
-	ierr = DMDAVecRestoreArray(fs->DA_CEN, jr->lp_lithos, &p_lithos); CHKERRQ(ierr);
-
-	// assemble global residuals from local contributions
-	LOCAL_TO_GLOBAL(fs->DA_X, jr->lfx, jr->gfx)
-	LOCAL_TO_GLOBAL(fs->DA_Y, jr->lfy, jr->gfy)
-	LOCAL_TO_GLOBAL(fs->DA_Z, jr->lfz, jr->gfz)
-
-	PetscFunctionReturn(0);
-}
 //---------------------------------------------------------------------------
-
 #undef __FUNCT__
 #define __FUNCT__ "JacResCopySol"
-PetscErrorCode JacResCopySol(JacRes *jr, Vec x, SPCAppType appSPC)
+PetscErrorCode JacResCopySol(JacRes *jr, Vec x)
 {
 	// copy solution from global to local vectors, enforce boundary constraints
 
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
 
-	ierr = JacResCopyVel (jr, x, appSPC); CHKERRQ(ierr);
+	ierr = JacResCopyVel (jr, x); CHKERRQ(ierr);
 
-	ierr = JacResCopyPres(jr, x, appSPC); CHKERRQ(ierr);
+	ierr = JacResCopyPres(jr, x); CHKERRQ(ierr);
 
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
 #undef __FUNCT__
 #define __FUNCT__ "JacResCopyVel"
-PetscErrorCode JacResCopyVel(JacRes *jr, Vec x, SPCAppType appSPC)
+PetscErrorCode JacResCopyVel(JacRes *jr, Vec x)
 {
 	// copy velocity from global to local vectors, enforce boundary constraints
 
-	FDSTAG      *fs;
-	BCCtx       *bc;
-	PetscInt    mcx, mcy, mcz;
-	PetscInt    I, J, K, fi, fj, fk;
-	PetscInt    i, j, k, nx, ny, nz, sx, sy, sz;
-	PetscScalar ***bcvx,  ***bcvy,  ***bcvz;
-	PetscScalar ***lvx, ***lvy, ***lvz;
-	PetscScalar *vx, *vy, *vz, *sol, *iter, pmdof;
-	PetscScalar *vals;
-	PetscInt    num, *list;
+	FDSTAG           *fs;
+	BCCtx            *bc;
+	PetscInt          mcx, mcy, mcz;
+	PetscInt          I, J, K, fi, fj, fk;
+	PetscInt          i, j, k, nx, ny, nz, sx, sy, sz;
+	PetscScalar       ***bcvx,  ***bcvy,  ***bcvz;
+	PetscScalar       ***lvx, ***lvy, ***lvz;
+	PetscScalar       *vx, *vy, *vz, pmdof;
+	const PetscScalar *sol, *iter;
 
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
@@ -2054,25 +1396,10 @@ PetscErrorCode JacResCopyVel(JacRes *jr, Vec x, SPCAppType appSPC)
 	mcz = fs->dsz.tcels - 1;
 
 	// access vectors
-	ierr = VecGetArray(jr->gvx, &vx);  CHKERRQ(ierr);
-	ierr = VecGetArray(jr->gvy, &vy);  CHKERRQ(ierr);
-	ierr = VecGetArray(jr->gvz, &vz);  CHKERRQ(ierr);
-	ierr = VecGetArray(x,       &sol); CHKERRQ(ierr);
-
-	//=================================
-	// enforce single point constraints
-	//=================================
-
-	// velocity
-	num   = bc->vNumSPC;
-	list  = bc->vSPCList;
-	vals  = bc->vSPCVals;
-
-	if(appSPC == _APPLY_SPC_) {
-		for(i = 0; i < num; i++) {sol[list[i]] = vals[i];
-		//PetscPrintf(PETSC_COMM_WORLD, "    list[i]  = %i \n", list[i]);
-		}}
-	else                      { for(i = 0; i < num; i++) sol[list[i]] = 0.0;     }
+	ierr = VecGetArray    (jr->gvx, &vx);  CHKERRQ(ierr);
+	ierr = VecGetArray    (jr->gvy, &vy);  CHKERRQ(ierr);
+	ierr = VecGetArray    (jr->gvz, &vz);  CHKERRQ(ierr);
+	ierr = VecGetArrayRead(x,       &sol); CHKERRQ(ierr);
 
 	// copy vectors component-wise
 	iter = sol;
@@ -2086,11 +1413,10 @@ PetscErrorCode JacResCopyVel(JacRes *jr, Vec x, SPCAppType appSPC)
 	ierr  = PetscMemcpy(vz, iter, (size_t)fs->nZFace*sizeof(PetscScalar)); CHKERRQ(ierr);
 
 	// restore access
-	ierr = VecRestoreArray(jr->gvx, &vx);  CHKERRQ(ierr);
-	ierr = VecRestoreArray(jr->gvy, &vy);  CHKERRQ(ierr);
-	ierr = VecRestoreArray(jr->gvz, &vz);  CHKERRQ(ierr);
-	ierr = VecRestoreArray(x,       &sol); CHKERRQ(ierr);
-
+	ierr = VecRestoreArray    (jr->gvx, &vx);  CHKERRQ(ierr);
+	ierr = VecRestoreArray    (jr->gvy, &vy);  CHKERRQ(ierr);
+	ierr = VecRestoreArray    (jr->gvz, &vz);  CHKERRQ(ierr);
+	ierr = VecRestoreArrayRead(x,       &sol); CHKERRQ(ierr);
 
 	// fill local (ghosted) version of solution vectors
 	GLOBAL_TO_LOCAL(fs->DA_X,   jr->gvx, jr->lvx)
@@ -2195,20 +1521,19 @@ PetscErrorCode JacResCopyVel(JacRes *jr, Vec x, SPCAppType appSPC)
 //---------------------------------------------------------------------------
 #undef __FUNCT__
 #define __FUNCT__ "JacResCopyPres"
-PetscErrorCode JacResCopyPres(JacRes *jr, Vec x, SPCAppType appSPC)
+PetscErrorCode JacResCopyPres(JacRes *jr, Vec x)
 {
 	// copy pressure from global to local vectors, enforce boundary constraints
 
-	FDSTAG      *fs;
-	BCCtx       *bc;
-	PetscInt    mcx, mcy, mcz;
-	PetscInt    I, J, K, fi, fj, fk;
-	PetscInt    i, j, k, nx, ny, nz, sx, sy, sz;
-	PetscScalar ***bcp;
-	PetscScalar ***lp;
-	PetscScalar *p, *sol, *iter, pmdof;
-	PetscScalar *vals;
-	PetscInt    num, *list;
+	FDSTAG            *fs;
+	BCCtx             *bc;
+	PetscInt          mcx, mcy, mcz;
+	PetscInt          I, J, K, fi, fj, fk;
+	PetscInt          i, j, k, nx, ny, nz, sx, sy, sz;
+	PetscScalar       ***bcp;
+	PetscScalar       ***lp;
+	PetscScalar       *p, pmdof;
+	const PetscScalar *sol, *iter;
 
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
@@ -2222,20 +1547,8 @@ PetscErrorCode JacResCopyPres(JacRes *jr, Vec x, SPCAppType appSPC)
 	mcz = fs->dsz.tcels - 1;
 
 	// access vectors
-	ierr = VecGetArray(jr->gp, &p);   CHKERRQ(ierr);
-	ierr = VecGetArray(x,      &sol); CHKERRQ(ierr);
-
-	//=================================
-	// enforce single point constraints
-	//=================================
-
-	// pressure
-	num   = bc->pNumSPC;
-	list  = bc->pSPCList;
-	vals  = bc->pSPCVals;
-
-	if(appSPC == _APPLY_SPC_) { for(i = 0; i < num; i++) sol[list[i]] = vals[i]; }
-	else                      { for(i = 0; i < num; i++) sol[list[i]] = 0.0;     }
+	ierr = VecGetArray    (jr->gp, &p);   CHKERRQ(ierr);
+	ierr = VecGetArrayRead(x,      &sol); CHKERRQ(ierr);
 
 	// copy vectors component-wise
 	iter = sol + fs->nXFace + fs->nYFace + fs->nZFace;
@@ -2243,8 +1556,8 @@ PetscErrorCode JacResCopyPres(JacRes *jr, Vec x, SPCAppType appSPC)
 	ierr = PetscMemcpy(p, iter, (size_t)fs->nCells*sizeof(PetscScalar)); CHKERRQ(ierr);
 
 	// restore access
-	ierr = VecRestoreArray(jr->gp,  &p);   CHKERRQ(ierr);
-	ierr = VecRestoreArray(x,       &sol); CHKERRQ(ierr);
+	ierr = VecRestoreArray    (jr->gp, &p);   CHKERRQ(ierr);
+	ierr = VecRestoreArrayRead(x,      &sol); CHKERRQ(ierr);
 
 	// fill local (ghosted) version of solution vectors
 	GLOBAL_TO_LOCAL(fs->DA_CEN, jr->gp, jr->lp)
@@ -2560,7 +1873,7 @@ PetscErrorCode JacResViewRes(JacRes *jr)
 
 	// stop if divergence more than tolerance
 	div_tol = 0.0;
-	ierr = PetscOptionsGetScalar(NULL, "-div_tol",  &div_tol,  NULL); CHKERRQ(ierr);
+	ierr = PetscOptionsGetScalar(NULL, NULL, "-div_tol",  &div_tol,  NULL); CHKERRQ(ierr);
 
 	if ((div_tol) && (( dmax > div_tol ) || (f2 > div_tol)))
 	{
@@ -2621,21 +1934,21 @@ PetscErrorCode SetMatParLim(MatParLim *matLim, UserCtx *usr)
 	else
 	{
 		matLim->DII_ref = 1.0;
-		PetscPrintf(PETSC_COMM_WORLD," WARNING: Reference strain rate DII_ref is not defined. Use a non-dimensional reference value of DII_ref =%f \n",matLim->DII_ref);
+		PetscPrintf(PETSC_COMM_WORLD," WARNING: Reference strain rate DII_ref is not defined. Use a non-dimensional reference value of DII_ref =%f \n", matLim->DII_ref);
 	}
 
 	cnt = 0;
 
 	// plasticity stabilization parameters
-	ierr = PetscOptionsHasName(PETSC_NULL, "-quasi_harmonic", &flg); CHKERRQ(ierr);
+	ierr = PetscOptionsHasName(NULL, NULL, "-quasi_harmonic", &flg); CHKERRQ(ierr);
 
 	if(flg == PETSC_TRUE) { matLim->quasiHarmAvg = PETSC_TRUE; cnt++; }
 
-	ierr = PetscOptionsGetScalar(NULL, "-cf_eta_min",  &matLim->cf_eta_min, &flg); CHKERRQ(ierr);
+	ierr = PetscOptionsGetScalar(NULL, NULL, "-cf_eta_min",  &matLim->cf_eta_min, &flg); CHKERRQ(ierr);
 
 	if(flg == PETSC_TRUE) { cnt++; }
 
-	ierr = PetscOptionsGetScalar(NULL, "-n_pw",  &matLim->n_pw, &flg); CHKERRQ(ierr);
+	ierr = PetscOptionsGetScalar(NULL, NULL, "-n_pw",  &matLim->n_pw, &flg); CHKERRQ(ierr);
 
 	if(flg == PETSC_TRUE) { cnt++; }
 
@@ -2645,7 +1958,7 @@ PetscErrorCode SetMatParLim(MatParLim *matLim, UserCtx *usr)
 	}
 
 	// set Jacobian flag
-	ierr = PetscOptionsHasName(NULL, "-jac_mat_free", &flg); CHKERRQ(ierr);
+	ierr = PetscOptionsHasName(NULL, NULL, "-jac_mat_free", &flg); CHKERRQ(ierr);
 
 	if(flg == PETSC_TRUE) matLim->jac_mat_free = PETSC_TRUE;
 
@@ -2654,17 +1967,16 @@ PetscErrorCode SetMatParLim(MatParLim *matLim, UserCtx *usr)
 		SETERRQ(PETSC_COMM_SELF, PETSC_ERR_USER, "Analytical Jacobian is not available for plasticity stabilizations (-jac_mat_free -quasi_harmonic -cf_eta_min -n_pw) \n");
 	}
 
-	// read additional options
-	ierr = PetscOptionsGetScalar(NULL, "-rho_fluid",  &matLim->rho_fluid, NULL); CHKERRQ(ierr);
-	ierr = PetscOptionsGetScalar(NULL, "-rho_lithos", &matLim->rho_lithos, NULL); CHKERRQ(ierr);		// specify lithostatic density on commandline (if not set, we don't use this)
+	ierr = PetscOptionsGetScalar(NULL, NULL, "-rho_fluid",  &matLim->rho_fluid, NULL); CHKERRQ(ierr);
+	ierr = PetscOptionsGetScalar(NULL, NULL, "-rho_lithos", &matLim->rho_lithos, NULL); CHKERRQ(ierr);		// specify lithostatic density on commandline (if not set, we don't use this)
 
-	ierr = PetscOptionsGetScalar(NULL, "-theta_north", &matLim->theta_north, NULL); CHKERRQ(ierr);
+	ierr = PetscOptionsGetScalar(NULL, NULL, "-theta_north", &matLim->theta_north, NULL); CHKERRQ(ierr);
 
-	ierr = PetscOptionsHasName(PETSC_NULL, "-stop_warnings", &flg); CHKERRQ(ierr);
+	ierr = PetscOptionsHasName(NULL, NULL, "-stop_warnings", &flg); CHKERRQ(ierr);
 
 	if(flg == PETSC_TRUE) matLim->warn = PETSC_FALSE;
 
-	ierr = PetscOptionsGetScalar(NULL, "-shearHeatEff", &matLim->shearHeatEff, NULL); CHKERRQ(ierr);
+	ierr = PetscOptionsGetScalar(NULL, NULL, "-shearHeatEff", &matLim->shearHeatEff, NULL); CHKERRQ(ierr);
 
 	if(matLim->shearHeatEff > 1.0) matLim->shearHeatEff = 1.0;
 	if(matLim->shearHeatEff < 0.0) matLim->shearHeatEff = 0.0;
@@ -3544,6 +2856,665 @@ PetscErrorCode JacResGetLithoStaticPressure(JacRes *jr)
 
 	// fill ghost points
 	LOCAL_TO_LOCAL(fs->DA_CEN, jr->lp_lithos)
+
+	PetscFunctionReturn(0);
+}
+
+//-----------------------------------------------------------------------------
+#define __FUNCT__ "JacResGetMomentumResidualAndPressure"
+PetscErrorCode JacResGetMomentumResidualAndPressure(JacRes *jr, UserCtx *user)
+{
+	// Compute residual of nonlinear momentum conservation
+
+	// ...
+	// equations, based on pre-computed components of effective
+	// strain-rate tensor, current values of pressure and temperature.
+	// Missing components of the second invariant of the effective strain-rate
+	// tensor (squares of the corresponding strain rate components) are averaged
+	// form the hosting nodes using arithmetic mean.
+	// DII = (0.5*D_ij*D_ij)^0.5
+	// NOTE: we interpolate and average D_ij*D_ij terms instead of D_ij
+
+	FDSTAG     *fs;
+	SolVarCell *svCell;
+	SolVarEdge *svEdge;
+	SolVarDev  *svDev;
+	SolVarBulk *svBulk;
+	Material_t *phases;
+	MatParLim  *matLim;
+	PetscInt    iter, numPhases;
+	PetscInt    I1, I2, J1, J2, K1, K2;
+	PetscInt    i, j, k, nx, ny, nz, sx, sy, sz, mx, my, mz, i_src, j_src, k_src;
+	PetscScalar XX, XX1, XX2, XX3, XX4;
+	PetscScalar YY, YY1, YY2, YY3, YY4;
+	PetscScalar ZZ, ZZ1, ZZ2, ZZ3, ZZ4;
+	PetscScalar XY, XY1, XY2, XY3, XY4;
+	PetscScalar XZ, XZ1, XZ2, XZ3, XZ4;
+	PetscScalar YZ, YZ1, YZ2, YZ3, YZ4;
+	PetscScalar bdx, fdx, bdy, fdy, bdz, fdz;
+	PetscScalar gx, gy, gz, tx, ty, tz, sxx, syy, szz, sxy, sxz, syz;
+	PetscScalar J2Inv, theta, rho, Tc, pc, pShift, dt, fssa, *grav, time;
+	PetscScalar ***fx,  ***fy,  ***fz, ***vx,  ***vy,  ***vz;
+	PetscScalar ***dxx, ***dyy, ***dzz, ***dxy, ***dxz, ***dyz, ***T, ***lp, ***gp, ***p_lithos;
+	PetscScalar eta_creep, eta_viscoplastic;;
+	PetscScalar depth, pc_lithos;
+
+	PetscScalar dx, dy, dz, h, Ih4, I4h4, source_time, M0, Mxx, Myy, Mzz, Mxy, Mxz, Myz;
+
+	PetscErrorCode ierr;
+	PetscFunctionBegin;
+
+	fs = jr->fs;
+
+	// initialize maximum node index in all directions
+	mx = fs->dsx.tnods - 1;
+	my = fs->dsy.tnods - 1;
+	mz = fs->dsz.tnods - 1;
+
+	// access residual context variables
+	numPhases =  jr->numPhases; // number phases
+	phases    =  jr->phases;    // phase parameters
+	matLim    = &jr->matLim;    // phase parameters limiters
+	dt        =  jr->ts.dt;     // time step
+
+	fssa      =  jr->FSSA;      // density gradient penalty parameter
+	grav      =  jr->grav;      // gravity acceleration
+	pShift    =  jr->pShift;    // pressure shift
+
+	// clear local residual vectors
+	ierr = VecZeroEntries(jr->lfx); CHKERRQ(ierr);
+	ierr = VecZeroEntries(jr->lfy); CHKERRQ(ierr);
+	ierr = VecZeroEntries(jr->lfz); CHKERRQ(ierr);
+
+	// access work vectors
+	ierr = DMDAVecGetArray(fs->DA_CEN, jr->lp,   &lp);   CHKERRQ(ierr);
+	ierr = DMDAVecGetArray(fs->DA_CEN, jr->gp,   &gp);   CHKERRQ(ierr);
+	ierr = DMDAVecGetArray(fs->DA_CEN, jr->lT,   &T);   CHKERRQ(ierr);
+	ierr = DMDAVecGetArray(fs->DA_CEN, jr->ldxx, &dxx); CHKERRQ(ierr);
+	ierr = DMDAVecGetArray(fs->DA_CEN, jr->ldyy, &dyy); CHKERRQ(ierr);
+	ierr = DMDAVecGetArray(fs->DA_CEN, jr->ldzz, &dzz); CHKERRQ(ierr);
+	ierr = DMDAVecGetArray(fs->DA_XY,  jr->ldxy, &dxy); CHKERRQ(ierr);
+	ierr = DMDAVecGetArray(fs->DA_XZ,  jr->ldxz, &dxz); CHKERRQ(ierr);
+	ierr = DMDAVecGetArray(fs->DA_YZ,  jr->ldyz, &dyz); CHKERRQ(ierr);
+	ierr = DMDAVecGetArray(fs->DA_X,   jr->lfx,  &fx);  CHKERRQ(ierr);
+	ierr = DMDAVecGetArray(fs->DA_Y,   jr->lfy,  &fy);  CHKERRQ(ierr);
+	ierr = DMDAVecGetArray(fs->DA_Z,   jr->lfz,  &fz);  CHKERRQ(ierr);
+	ierr = DMDAVecGetArray(fs->DA_X,   jr->lvx,  &vx);  CHKERRQ(ierr);
+	ierr = DMDAVecGetArray(fs->DA_Y,   jr->lvy,  &vy);  CHKERRQ(ierr);
+	ierr = DMDAVecGetArray(fs->DA_Z,   jr->lvz,  &vz);  CHKERRQ(ierr);
+	ierr = DMDAVecGetArray(fs->DA_CEN, jr->lp_lithos,&p_lithos); CHKERRQ(ierr);
+
+	// compute lithostatic pressure
+	ierr = JacResGetLithoStaticPressure(jr); CHKERRQ(ierr);
+
+//	FILE *fseism; //used now to save traces
+//	fseism = user->Station.output_file;
+
+
+	//-------------------------------
+	// central points
+	//-------------------------------
+	iter = 0;
+	GET_CELL_RANGE(nx, sx, fs->dsx)
+	GET_CELL_RANGE(ny, sy, fs->dsy)
+	GET_CELL_RANGE(nz, sz, fs->dsz)
+
+	START_STD_LOOP
+	{
+
+		// access solution variables
+		svCell = &jr->svCell[iter++];
+		svDev  = &svCell->svDev;
+		svBulk = &svCell->svBulk;
+
+		//=================
+		// SECOND INVARIANT
+		//=================
+
+		// access strain rates
+		XX = dxx[k][j][i];
+		YY = dyy[k][j][i];
+		ZZ = dzz[k][j][i];
+
+		// x-y plane, i-j indices
+		XY1 = dxy[k][j][i];
+		XY2 = dxy[k][j+1][i];
+		XY3 = dxy[k][j][i+1];
+		XY4 = dxy[k][j+1][i+1];
+
+		// x-z plane, i-k indices
+		XZ1 = dxz[k][j][i];
+		XZ2 = dxz[k+1][j][i];
+		XZ3 = dxz[k][j][i+1];
+		XZ4 = dxz[k+1][j][i+1];
+
+		// y-z plane, j-k indices
+		YZ1 = dyz[k][j][i];
+		YZ2 = dyz[k+1][j][i];
+		YZ3 = dyz[k][j+1][i];
+		YZ4 = dyz[k+1][j+1][i];
+
+		// compute second invariant
+		J2Inv = 0.5*(XX*XX + YY*YY + ZZ*ZZ) +
+		0.25*(XY1*XY1 + XY2*XY2 + XY3*XY3 + XY4*XY4) +
+		0.25*(XZ1*XZ1 + XZ2*XZ2 + XZ3*XZ3 + XZ4*XZ4) +
+		0.25*(YZ1*YZ1 + YZ2*YZ2 + YZ3*YZ3 + YZ4*YZ4);
+
+
+		// store square root of second invariant
+		svDev->DII = sqrt(J2Inv);
+
+		//=======================
+		// CONSTITUTIVE EQUATIONS
+		//=======================
+
+		// access current pressure
+		pc = lp[k][j][i];
+
+		// access current temperature
+		Tc = T[k][j][i];
+
+		// access current lithostatic pressure
+		pc_lithos = p_lithos[k][j][i];
+
+		//-----------
+		// VOLUMETRIC
+		//-----------
+
+		// compute depth below the free surface
+		depth = jr->avg_topo - COORD_CELL(k, sz, fs->dsz);
+
+		if(depth < 0.0) depth = 0.0;
+
+		// evaluate volumetric constitutive equations
+		ierr = VolConstEq(svBulk, numPhases, phases, svCell->phRat, matLim, depth, dt, pc-pShift , Tc); CHKERRQ(ierr); // That could go outside the time loop!
+
+		// update pressure
+		gp[k][j][i]  = lp[k][j][i] - svBulk->theta/svBulk->IKdt;
+		pc           = gp[k][j][i];
+		//-----------
+		// DEVIATORIC
+		//-----------
+
+		// evaluate deviatoric constitutive equations
+		ierr = DevConstEq(svDev, &eta_creep, &eta_viscoplastic, numPhases, phases, svCell->phRat, matLim, pc_lithos, dt, pc-pShift, Tc); CHKERRQ(ierr);
+
+		// store creep viscosity
+		svCell->eta_creep = eta_creep;
+		svCell->eta_viscoplastic 	= eta_viscoplastic;
+
+		/*//Check if svDev->eta is the same that 1.0/(2*svDev->I2Gdt)
+		if (i==5 && j==10) {
+			PetscPrintf(PETSC_COMM_WORLD, "    In the center svDev->eta - 1.0/(2*svDev->I2Gdt) [%i,%i,%i]  = %12.12e - %12.12e = %12.12e \n", i,j,k, svDev->eta, 1.0/(2.0*svDev->I2Gdt), svDev->eta - 1.0/(2.0*svDev->I2Gdt));
+		}*/
+
+		// compute stress, plastic strain rate and shear heating term on cell
+		ierr = GetStressCellForExplicit(svCell, matLim, XX, YY, ZZ); CHKERRQ(ierr);
+
+		// compute total Cauchy stresses
+		sxx = svCell->sxx - pc;
+		syy = svCell->syy - pc;
+		szz = svCell->szz - pc;
+
+		// Add seismic source in the stress field /////////////////////////
+		if (jr->SeismicSource == PETSC_TRUE && jr->SourceParams.source_type!=MOMENT )
+		{
+			// trying to apply it like a force term ...
+			ierr = GetStressFromSource(jr,user, i, j, k, &sxx, &syy, &szz);
+		}
+
+		// USE REAL DENSITY HERE !!!
+
+
+		// access
+		theta = svBulk->theta; // volumetric strain rate
+
+		rho   = svBulk->rho;   // effective density
+//		IKdt  = svBulk->IKdt;  // inverse bulk viscosity
+//		alpha = svBulk->alpha; // effective thermal expansion
+//		pn    = svBulk->pn;    // pressure history
+//		Tn    = svBulk->Tn;    // temperature history
+
+		// compute gravity terms
+		gx = rho*grav[0];
+		gy = rho*grav[1];
+		gz = rho*grav[2];
+
+		// compute stabilization terms (lumped approximation)
+		tx = -fssa*dt*gx;
+		ty = -fssa*dt*gy;
+		tz = -fssa*dt*gz;
+
+		//=========
+		// RESIDUAL
+		//=========
+
+		// get mesh steps for the backward and forward derivatives
+		bdx = SIZE_NODE(i, sx, fs->dsx);   fdx = SIZE_NODE(i+1, sx, fs->dsx);
+		bdy = SIZE_NODE(j, sy, fs->dsy);   fdy = SIZE_NODE(j+1, sy, fs->dsy);
+		bdz = SIZE_NODE(k, sz, fs->dsz);   fdz = SIZE_NODE(k+1, sz, fs->dsz);
+
+		// momentum
+		fx[k][j][i] -= (sxx + vx[k][j][i]*tx)/bdx + gx/2.0;   fx[k][j][i+1] += (sxx + vx[k][j][i+1]*tx)/fdx - gx/2.0;
+		fy[k][j][i] -= (syy + vy[k][j][i]*ty)/bdy + gy/2.0;   fy[k][j+1][i] += (syy + vy[k][j+1][i]*ty)/fdy - gy/2.0;
+		fz[k][j][i] -= (szz + vz[k][j][i]*tz)/bdz + gz/2.0;   fz[k+1][j][i] += (szz + vz[k+1][j][i]*tz)/fdz - gz/2.0;
+
+		// Add seismic moment source term in the residual ////////////////////////////////////////////////////////////////////////
+
+		if ( jr->SeismicSource == PETSC_TRUE && jr->SourceParams.source_type==MOMENT && jr->SourceParams.i == i && jr->SourceParams.j == j && jr->SourceParams.k == k) {
+			// size of cell
+			dx = SIZE_CELL(i, sx, fs->dsx);
+			dy = SIZE_CELL(j, sy, fs->dsy);
+			dz = SIZE_CELL(k, sz, fs->dsz);
+			h=1.0; //dx*dy*dz; // Volume of the grid cell
+			Ih4	=1.0/(h*h*h*h);
+			I4h4=Ih4/4.0;
+			time =  JacResGetTime(jr);
+			source_time = jr->SourceParams.amplitude*exp(-jr->SourceParams.alfa*((time-jr->SourceParams.t0)*(time-jr->SourceParams.t0)));
+
+			M0=jr->SourceParams.moment_tensor.M0;
+			Mxx=M0*jr->SourceParams.moment_tensor.Mxx*source_time;
+			Myy=M0*jr->SourceParams.moment_tensor.Myy*source_time;
+			Mzz=M0*jr->SourceParams.moment_tensor.Mzz*source_time;
+			Mxy=M0*jr->SourceParams.moment_tensor.Mxy*source_time;
+			Mxz=M0*jr->SourceParams.moment_tensor.Mxz*source_time;
+			Myz=M0*jr->SourceParams.moment_tensor.Myz*source_time;
+
+			fx[k][j][i+1] 	+= Ih4  * Mxx;		fx[k][j][i] 	-= Ih4  * Mxx;
+			fx[k][j+1][i+1] += I4h4 * Mxy;		fx[k][j-1][i+1] -= I4h4 * Mxy;
+			fx[k][j+1][i] 	+= I4h4 * Mxy;		fx[k][j-1][i] 	-= I4h4 * Mxy;
+			fx[k+1][j][i+1] += I4h4 * Mxz;		fx[k-1][j][i+1] -= I4h4 * Mxz;
+			fx[k+1][j][i] 	+= I4h4 * Mxz;		fx[k-1][j][i] 	-= I4h4 * Mxz;
+
+			fy[k][j+1][i] 	+= Ih4  * Myy;		fy[k][j][i] 	-= Ih4  * Myy;
+			fy[k][j+1][i+1] += I4h4 * Mxy;		fy[k][j+1][i-1] -= I4h4 * Mxy;
+			fy[k][j][i+1] 	+= I4h4 * Mxy;		fy[k][j][i-1] 	-= I4h4 * Mxy;
+			fy[k+1][j+1][i] += I4h4 * Myz;		fy[k-1][j+1][i] -= I4h4 * Myz;
+			fy[k+1][j][i] 	+= I4h4 * Myz;		fy[k-1][j][i] 	-= I4h4 * Myz;
+
+			fz[k+1][j][i] 	+= Ih4  * Mzz;		fz[k][j][i] 	-= Ih4  * Mzz;
+			fz[k+1][j][i+1] += I4h4 * Mxz;		fz[k+1][j][i-1] -= I4h4 * Mxz;
+			fz[k][j][i+1] 	+= I4h4 * Mxz;		fz[k][j][i-1] 	-= I4h4 * Mxz;
+			fz[k+1][j+1][i] += I4h4 * Myz;		fz[k+1][j-1][i] -= I4h4 * Myz;
+			fz[k][j+1][i] 	+= I4h4 * Myz;		fz[k][j-1][i] 	-= I4h4 * Myz;
+		}
+		///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+
+	}
+	END_STD_LOOP
+
+	// restore access to pressure vectors
+	ierr = DMDAVecRestoreArray(fs->DA_CEN, jr->lp, &lp);   CHKERRQ(ierr);
+	ierr = DMDAVecRestoreArray(fs->DA_CEN, jr->gp, &gp);   CHKERRQ(ierr);
+
+
+	// PRESSURE BC (IF ANY) SHOULD BE APPLIED HERE!
+
+	GLOBAL_TO_LOCAL(fs->DA_CEN, jr->gp, jr->lp);
+
+	// access updated pressure with ghost points
+	ierr = DMDAVecGetArray(fs->DA_CEN, jr->lp, &lp);  CHKERRQ(ierr);
+
+	//-------------------------------
+	// xy edge points
+	//-------------------------------
+	iter = 0;
+	GET_NODE_RANGE(nx, sx, fs->dsx)
+	GET_NODE_RANGE(ny, sy, fs->dsy)
+	GET_CELL_RANGE(nz, sz, fs->dsz)
+
+	START_STD_LOOP
+	{
+		// access solution variables
+		svEdge = &jr->svXYEdge[iter++];
+		svDev  = &svEdge->svDev;
+
+		//=================
+		// SECOND INVARIANT
+		//=================
+
+		// check index bounds
+		I1 = i;   if(I1 == mx) I1--;
+		I2 = i-1; if(I2 == -1) I2++;
+		J1 = j;   if(J1 == my) J1--;
+		J2 = j-1; if(J2 == -1) J2++;
+
+		// access strain rates
+		XY = dxy[k][j][i];
+
+		// x-y plane, i-j indices (i & j - bounded)
+		XX1 = dxx[k][J1][I1];
+		XX2 = dxx[k][J1][I2];
+		XX3 = dxx[k][J2][I1];
+		XX4 = dxx[k][J2][I2];
+
+		// x-y plane, i-j indices (i & j - bounded)
+		YY1 = dyy[k][J1][I1];
+		YY2 = dyy[k][J1][I2];
+		YY3 = dyy[k][J2][I1];
+		YY4 = dyy[k][J2][I2];
+
+		// x-y plane, i-j indices (i & j - bounded)
+		ZZ1 = dzz[k][J1][I1];
+		ZZ2 = dzz[k][J1][I2];
+		ZZ3 = dzz[k][J2][I1];
+		ZZ4 = dzz[k][J2][I2];
+
+		// y-z plane j-k indices (j - bounded)
+		XZ1 = dxz[k][J1][i];
+		XZ2 = dxz[k+1][J1][i];
+		XZ3 = dxz[k][J2][i];
+		XZ4 = dxz[k+1][J2][i];
+
+		// x-z plane i-k indices (i - bounded)
+		YZ1 = dyz[k][j][I1];
+		YZ2 = dyz[k+1][j][I1];
+		YZ3 = dyz[k][j][I2];
+		YZ4 = dyz[k+1][j][I2];
+
+		// compute second invariant
+		J2Inv = XY*XY +
+		0.125*(XX1*XX1 + XX2*XX2 + XX3*XX3 + XX4*XX4) +
+		0.125*(YY1*YY1 + YY2*YY2 + YY3*YY3 + YY4*YY4) +
+		0.125*(ZZ1*ZZ1 + ZZ2*ZZ2 + ZZ3*ZZ3 + ZZ4*ZZ4) +
+		0.25 *(XZ1*XZ1 + XZ2*XZ2 + XZ3*XZ3 + XZ4*XZ4) +
+		0.25 *(YZ1*YZ1 + YZ2*YZ2 + YZ3*YZ3 + YZ4*YZ4);
+
+		// store square root of second invariant
+		svDev->DII = sqrt(J2Inv);
+
+		//=======================
+		// CONSTITUTIVE EQUATIONS
+		//=======================
+
+		// access current pressure (x-y plane, i-j indices)
+		pc = 0.25*(lp[k][j][i] + lp[k][j][i-1] + lp[k][j-1][i] + lp[k][j-1][i-1]);
+
+		// current temperature (x-y plane, i-j indices)
+		Tc = 0.25*(T[k][j][i] + T[k][j][i-1] + T[k][j-1][i] + T[k][j-1][i-1]);
+
+		// access current lithostatic pressure (x-y plane, i-j indices)
+		pc_lithos = 0.25*(p_lithos[k][j][i] + p_lithos[k][j][i-1] + p_lithos[k][j-1][i] + p_lithos[k][j-1][i-1]);
+
+		// evaluate deviatoric constitutive equations
+		ierr = DevConstEq(svDev, &eta_creep, &eta_viscoplastic, numPhases, phases, svEdge->phRat, matLim, pc_lithos, dt, pc-pShift, Tc); CHKERRQ(ierr);
+
+		/*//Check if svDev->eta is the same that 1.0/(2*svDev->I2Gdt)
+		if (i==5 && j==10) {
+			PetscPrintf(PETSC_COMM_WORLD, "    In the xy edge svDev->eta - 1.0/(2*svDev->I2Gdt) [%i,%i,%i]  = %12.12e - %12.12e = %12.12e \n", i,j,k, svDev->eta, 1.0/(2.0*svDev->I2Gdt), svDev->eta - 1.0/(2.0*svDev->I2Gdt));
+		}*/
+
+		// compute stress, plastic strain rate and shear heating term on edge
+		ierr = GetStressEdgeForExplicit(svEdge, matLim, XY); CHKERRQ(ierr);
+
+		// access xy component of the Cauchy stress
+		sxy = svEdge->s;
+
+		//=========
+		// RESIDUAL
+		//=========
+
+		// get mesh steps for the backward and forward derivatives
+		bdx = SIZE_CELL(i-1, sx, fs->dsx);   fdx = SIZE_CELL(i, sx, fs->dsx);
+		bdy = SIZE_CELL(j-1, sy, fs->dsy);   fdy = SIZE_CELL(j, sy, fs->dsy);
+
+		// momentum
+		fx[k][j-1][i] -= sxy/bdy;   fx[k][j][i] += sxy/fdy;
+		fy[k][j][i-1] -= sxy/bdx;   fy[k][j][i] += sxy/fdx;
+	}
+	END_STD_LOOP
+
+	//-------------------------------
+	// xz edge points
+	//-------------------------------
+	iter = 0;
+	GET_NODE_RANGE(nx, sx, fs->dsx)
+	GET_CELL_RANGE(ny, sy, fs->dsy)
+	GET_NODE_RANGE(nz, sz, fs->dsz)
+
+	START_STD_LOOP
+	{
+		// access solution variables
+		svEdge = &jr->svXZEdge[iter++];
+		svDev  = &svEdge->svDev;
+
+		//=================
+		// SECOND INVARIANT
+		//=================
+
+		// check index bounds
+		I1 = i;   if(I1 == mx) I1--;
+		I2 = i-1; if(I2 == -1) I2++;
+		K1 = k;   if(K1 == mz) K1--;
+		K2 = k-1; if(K2 == -1) K2++;
+
+		// access strain rates
+		XZ = dxz[k][j][i];
+
+		// x-z plane, i-k indices (i & k - bounded)
+		XX1 = dxx[K1][j][I1];
+		XX2 = dxx[K1][j][I2];
+		XX3 = dxx[K2][j][I1];
+		XX4 = dxx[K2][j][I2];
+
+		// x-z plane, i-k indices (i & k - bounded)
+		YY1 = dyy[K1][j][I1];
+		YY2 = dyy[K1][j][I2];
+		YY3 = dyy[K2][j][I1];
+		YY4 = dyy[K2][j][I2];
+
+		// x-z plane, i-k indices (i & k - bounded)
+		ZZ1 = dzz[K1][j][I1];
+		ZZ2 = dzz[K1][j][I2];
+		ZZ3 = dzz[K2][j][I1];
+		ZZ4 = dzz[K2][j][I2];
+
+		// y-z plane, j-k indices (k - bounded)
+		XY1 = dxy[K1][j][i];
+		XY2 = dxy[K1][j+1][i];
+		XY3 = dxy[K2][j][i];
+		XY4 = dxy[K2][j+1][i];
+
+		// xy plane, i-j indices (i - bounded)
+		YZ1 = dyz[k][j][I1];
+		YZ2 = dyz[k][j+1][I1];
+		YZ3 = dyz[k][j][I2];
+		YZ4 = dyz[k][j+1][I2];
+
+		// compute second invariant
+		J2Inv = XZ*XZ +
+		0.125*(XX1*XX1 + XX2*XX2 + XX3*XX3 + XX4*XX4) +
+		0.125*(YY1*YY1 + YY2*YY2 + YY3*YY3 + YY4*YY4) +
+		0.125*(ZZ1*ZZ1 + ZZ2*ZZ2 + ZZ3*ZZ3 + ZZ4*ZZ4) +
+		0.25 *(XY1*XY1 + XY2*XY2 + XY3*XY3 + XY4*XY4) +
+		0.25 *(YZ1*YZ1 + YZ2*YZ2 + YZ3*YZ3 + YZ4*YZ4);
+
+		// store square root of second invariant
+		svDev->DII = sqrt(J2Inv);
+
+		//=======================
+		// CONSTITUTIVE EQUATIONS
+		//=======================
+
+		// access current pressure (x-z plane, i-k indices)
+		pc = 0.25*(lp[k][j][i] + lp[k][j][i-1] + lp[k-1][j][i] + lp[k-1][j][i-1]);
+
+		// current temperature (x-z plane, i-k indices)
+		Tc = 0.25*(T[k][j][i] + T[k][j][i-1] + T[k-1][j][i] + T[k-1][j][i-1]);
+
+		// access current lithostatic pressure (x-z plane, i-k indices)
+		pc_lithos = 0.25*(p_lithos[k][j][i] + p_lithos[k][j][i-1] + p_lithos[k-1][j][i] + p_lithos[k-1][j][i-1]);
+
+		// evaluate deviatoric constitutive equations
+		ierr = DevConstEq(svDev, &eta_creep, &eta_viscoplastic, numPhases, phases, svEdge->phRat, matLim, pc_lithos, dt, pc-pShift, Tc); CHKERRQ(ierr);
+
+
+/*PetscPrintf(PETSC_COMM_WORLD, "    [%i,%i,%i] \n", i,j,k);
+PetscPrintf(PETSC_COMM_WORLD, "    svDev->eta  = %12.12e \n", svDev->eta);
+PetscPrintf(PETSC_COMM_WORLD, "    svDev->DIIpl  = %12.12e \n", svDev->DIIpl);
+PetscPrintf(PETSC_COMM_WORLD, "    eta_creep  = %12.12e \n", eta_creep);
+PetscPrintf(PETSC_COMM_WORLD, "    eta_viscoplastic  = %12.12e \n", eta_viscoplastic);
+PetscPrintf(PETSC_COMM_WORLD, "    svDev->dEta  = %12.12e \n", svDev->dEta);
+PetscPrintf(PETSC_COMM_WORLD, "    svDev->fr  = %12.12e \n", svDev->fr);
+*/
+
+		// compute stress, plastic strain rate and shear heating term on edge
+		ierr = GetStressEdgeForExplicit(svEdge, matLim, XZ); CHKERRQ(ierr);
+
+		// access xz component of the Cauchy stress
+		sxz = svEdge->s;
+
+		/*//Check if svDev->eta is the same that 1.0/(2*svDev->I2Gdt)
+		if (i==5 && j==10) {
+			PetscPrintf(PETSC_COMM_WORLD, "    In the xz edge svDev->eta - 1.0/(2*svDev->I2Gdt) [%i,%i,%i]  = %12.12e - %12.12e = %12.12e \n", i,j,k, svDev->eta, 1.0/(2.0*svDev->I2Gdt), svDev->eta - 1.0/(2.0*svDev->I2Gdt));
+		}*/
+
+		//=========
+		// RESIDUAL
+		//=========
+
+		// get mesh steps for the backward and forward derivatives
+		bdx = SIZE_CELL(i-1, sx, fs->dsx);   fdx = SIZE_CELL(i, sx, fs->dsx);
+		bdz = SIZE_CELL(k-1, sz, fs->dsz);   fdz = SIZE_CELL(k, sz, fs->dsz);
+
+		// momentum
+		fx[k-1][j][i] -= sxz/bdz;   fx[k][j][i] += sxz/fdz;
+		fz[k][j][i-1] -= sxz/bdx;   fz[k][j][i] += sxz/fdx;
+	}
+	END_STD_LOOP
+
+	//-------------------------------
+	// yz edge points
+	//-------------------------------
+	iter = 0;
+	GET_CELL_RANGE(nx, sx, fs->dsx)
+	GET_NODE_RANGE(ny, sy, fs->dsy)
+	GET_NODE_RANGE(nz, sz, fs->dsz)
+
+	START_STD_LOOP
+	{
+		// access solution variables
+		svEdge = &jr->svYZEdge[iter++];
+		svDev  = &svEdge->svDev;
+
+		//=================
+		// SECOND INVARIANT
+		//=================
+
+		// check index bounds
+		J1 = j;   if(J1 == my) J1--;
+		J2 = j-1; if(J2 == -1) J2++;
+		K1 = k;   if(K1 == mz) K1--;
+		K2 = k-1; if(K2 == -1) K2++;
+
+		// access strain rates
+		YZ = dyz[k][j][i];
+
+		// y-z plane, j-k indices (j & k - bounded)
+		XX1 = dxx[K1][J1][i];
+		XX2 = dxx[K1][J2][i];
+		XX3 = dxx[K2][J1][i];
+		XX4 = dxx[K2][J2][i];
+
+		// y-z plane, j-k indices (j & k - bounded)
+		YY1 = dyy[K1][J1][i];
+		YY2 = dyy[K1][J2][i];
+		YY3 = dyy[K2][J1][i];
+		YY4 = dyy[K2][J2][i];
+
+		// y-z plane, j-k indices (j & k - bounded)
+		ZZ1 = dzz[K1][J1][i];
+		ZZ2 = dzz[K1][J2][i];
+		ZZ3 = dzz[K2][J1][i];
+		ZZ4 = dzz[K2][J2][i];
+
+		// x-z plane, i-k indices (k -bounded)
+		XY1 = dxy[K1][j][i];
+		XY2 = dxy[K1][j][i+1];
+		XY3 = dxy[K2][j][i];
+		XY4 = dxy[K2][j][i+1];
+
+		// x-y plane, i-j indices (j - bounded)
+		XZ1 = dxz[k][J1][i];
+		XZ2 = dxz[k][J1][i+1];
+		XZ3 = dxz[k][J2][i];
+		XZ4 = dxz[k][J2][i+1];
+
+		// compute second invariant
+		J2Inv = YZ*YZ +
+		0.125*(XX1*XX1 + XX2*XX2 + XX3*XX3 + XX4*XX4) +
+		0.125*(YY1*YY1 + YY2*YY2 + YY3*YY3 + YY4*YY4) +
+		0.125*(ZZ1*ZZ1 + ZZ2*ZZ2 + ZZ3*ZZ3 + ZZ4*ZZ4) +
+		0.25 *(XY1*XY1 + XY2*XY2 + XY3*XY3 + XY4*XY4) +
+		0.25 *(XZ1*XZ1 + XZ2*XZ2 + XZ3*XZ3 + XZ4*XZ4);
+
+		// store square root of second invariant
+		svDev->DII = sqrt(J2Inv);
+
+		//=======================
+		// CONSTITUTIVE EQUATIONS
+		//=======================
+
+		// access current pressure (y-z plane, j-k indices)
+		pc = 0.25*(lp[k][j][i] + lp[k][j-1][i] + lp[k-1][j][i] + lp[k-1][j-1][i]);
+
+		// current temperature (y-z plane, j-k indices)
+		Tc = 0.25*(T[k][j][i] + T[k][j-1][i] + T[k-1][j][i] + T[k-1][j-1][i]);
+
+		// access current lithostatic pressure (y-z plane, j-k indices)
+		pc_lithos = 0.25*(p_lithos[k][j][i] + p_lithos[k][j-1][i] + p_lithos[k-1][j][i] + p_lithos[k-1][j-1][i]);
+
+		// evaluate deviatoric constitutive equations
+		ierr = DevConstEq(svDev, &eta_creep, &eta_viscoplastic, numPhases, phases, svEdge->phRat, matLim, pc_lithos, dt, pc-pShift, Tc); CHKERRQ(ierr);
+
+		// compute stress, plastic strain rate and shear heating term on edge
+		ierr = GetStressEdgeForExplicit(svEdge, matLim, YZ); CHKERRQ(ierr);
+
+		// access yz component of the Cauchy stress
+		syz = svEdge->s;
+
+		/*//Check if svDev->eta is the same that 1.0/(2*svDev->I2Gdt)
+		if (i==5 && j==10) {
+				PetscPrintf(PETSC_COMM_WORLD, "    In the yz edge svDev->eta - 1.0/(2*svDev->I2Gdt) [%i,%i,%i]  = %12.12e - %12.12e = %12.12e \n", i,j,k, svDev->eta, 1.0/(2.0*svDev->I2Gdt), svDev->eta - 1.0/(2.0*svDev->I2Gdt));
+		}*/
+
+		//=========
+		// RESIDUAL
+		//=========
+
+		// get mesh steps for the backward and forward derivatives
+		bdy = SIZE_CELL(j-1, sy, fs->dsy);   fdy = SIZE_CELL(j, sy, fs->dsy);
+		bdz = SIZE_CELL(k-1, sz, fs->dsz);   fdz = SIZE_CELL(k, sz, fs->dsz);
+
+		// momentum
+		fy[k-1][j][i] -= syz/bdz;   fy[k][j][i] += syz/fdz;
+		fz[k][j-1][i] -= syz/bdy;   fz[k][j][i] += syz/fdy;
+	}
+	END_STD_LOOP
+
+	// restore vectors
+
+	ierr = DMDAVecRestoreArray(fs->DA_CEN, jr->lp,   &lp);  CHKERRQ(ierr);
+	ierr = DMDAVecRestoreArray(fs->DA_CEN, jr->lT,   &T);   CHKERRQ(ierr);
+	ierr = DMDAVecRestoreArray(fs->DA_CEN, jr->ldxx, &dxx); CHKERRQ(ierr);
+	ierr = DMDAVecRestoreArray(fs->DA_CEN, jr->ldyy, &dyy); CHKERRQ(ierr);
+	ierr = DMDAVecRestoreArray(fs->DA_CEN, jr->ldzz, &dzz); CHKERRQ(ierr);
+	ierr = DMDAVecRestoreArray(fs->DA_XY,  jr->ldxy, &dxy); CHKERRQ(ierr);
+	ierr = DMDAVecRestoreArray(fs->DA_XZ,  jr->ldxz, &dxz); CHKERRQ(ierr);
+	ierr = DMDAVecRestoreArray(fs->DA_YZ,  jr->ldyz, &dyz); CHKERRQ(ierr);
+	ierr = DMDAVecRestoreArray(fs->DA_X,   jr->lfx,  &fx);  CHKERRQ(ierr);
+	ierr = DMDAVecRestoreArray(fs->DA_Y,   jr->lfy,  &fy);  CHKERRQ(ierr);
+	ierr = DMDAVecRestoreArray(fs->DA_Z,   jr->lfz,  &fz);  CHKERRQ(ierr);
+	ierr = DMDAVecRestoreArray(fs->DA_X,   jr->lvx,  &vx);  CHKERRQ(ierr);
+	ierr = DMDAVecRestoreArray(fs->DA_Y,   jr->lvy,  &vy);  CHKERRQ(ierr);
+	ierr = DMDAVecRestoreArray(fs->DA_Z,   jr->lvz,  &vz);  CHKERRQ(ierr);
+	ierr = DMDAVecRestoreArray(fs->DA_CEN, jr->lp_lithos, &p_lithos); CHKERRQ(ierr);
+
+	// assemble global residuals from local contributions
+	LOCAL_TO_GLOBAL(fs->DA_X, jr->lfx, jr->gfx)
+	LOCAL_TO_GLOBAL(fs->DA_Y, jr->lfy, jr->gfy)
+	LOCAL_TO_GLOBAL(fs->DA_Z, jr->lfz, jr->gfz)
 
 	PetscFunctionReturn(0);
 }

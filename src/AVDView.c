@@ -155,8 +155,8 @@ void AVDChain3DCreate(const PetscInt npoints, const PetscInt buffer, AVDChain3D 
 		chains[p].new_claimed_cells_malloced = buffer;
 		chains[p].new_boundary_cells_malloced = buffer;
 
-		chains[p].new_claimed_cells = (PetscInt*) malloc (sizeof(PetscInt)*(size_t)buffer );
-		chains[p].new_boundary_cells = (PetscInt*) malloc (sizeof(PetscInt)*(size_t)buffer );
+		chains[p].new_claimed_cells = (PetscInt*) malloc (sizeof(PetscInt)*(size_t)(buffer+1) );
+		chains[p].new_boundary_cells = (PetscInt*) malloc (sizeof(PetscInt)*(size_t)(buffer+1) );
 	}
 
 	*CH = chains;
@@ -568,11 +568,11 @@ void AVD3DClaimCells(AVD3D A, const PetscInt p_i)
 
 			// Realloc, note that we need one space more than the number of points to terminate the list
 			if( count == bchain->new_claimed_cells_malloced-1  ){
-				temp = (PetscInt*) realloc( bchain->new_claimed_cells, (size_t)(bchain->new_claimed_cells_malloced + buffer)*sizeof(PetscInt) );
+				temp = (PetscInt*) realloc( bchain->new_claimed_cells, (size_t)(bchain->new_claimed_cells_malloced + buffer + 1)*sizeof(PetscInt) );
 				bchain->new_claimed_cells = temp;
 				bchain->new_claimed_cells_malloced += buffer;
 
-				temp = (PetscInt*) realloc( bchain->new_boundary_cells, (size_t)(bchain->new_boundary_cells_malloced + buffer)*sizeof(PetscInt) );
+				temp = (PetscInt*) realloc( bchain->new_boundary_cells, (size_t)(bchain->new_boundary_cells_malloced + buffer + 1)*sizeof(PetscInt) );
 				bchain->new_boundary_cells = temp;
 				bchain->new_boundary_cells_malloced += buffer;
 			}
@@ -658,11 +658,11 @@ void AVD3DUpdateChain(AVD3D A, const PetscInt p_i)
 
 					// Realloc, note that we need one space more than the number of points to terminate the list
 					if (count == bchain->new_boundary_cells_malloced-1 ) {
-						temp = (PetscInt*)realloc( bchain->new_claimed_cells, (size_t)(bchain->new_claimed_cells_malloced + buffer)*sizeof(PetscInt) );
+						temp = (PetscInt*)realloc( bchain->new_claimed_cells, (size_t)(bchain->new_claimed_cells_malloced + buffer + 1)*sizeof(PetscInt) );
 						bchain->new_claimed_cells = temp;
 						bchain->new_claimed_cells_malloced += buffer;
 
-						temp = (PetscInt*)realloc( bchain->new_boundary_cells, (size_t)(bchain->new_boundary_cells_malloced + buffer)*sizeof(PetscInt) );
+						temp = (PetscInt*)realloc( bchain->new_boundary_cells, (size_t)(bchain->new_boundary_cells_malloced + buffer + 1)*sizeof(PetscInt) );
 						bchain->new_boundary_cells = temp;
 						bchain->new_boundary_cells_malloced += buffer;
 					}
@@ -783,15 +783,15 @@ PetscErrorCode PVAVDReadFromOptions(PVAVD *pvavd)
 
 	pvavd->outavd = 0; // AVD output flag
 
-	ierr = PetscOptionsGetInt(NULL, "-out_avd", &pvavd->outavd, NULL); CHKERRQ(ierr);
+	ierr = PetscOptionsGetInt(NULL, NULL, "-out_avd", &pvavd->outavd, NULL); CHKERRQ(ierr);
 
 	if(!pvavd->outavd) PetscFunctionReturn(0);
 
 	pvavd->refine = 2; // Voronoi Diagram refinement factor
 	pvavd->outpvd = 0; // pvd file output flag
 
-	ierr = PetscOptionsGetInt(NULL, "-out_avd_ref", &pvavd->refine, NULL); CHKERRQ(ierr);
-	ierr = PetscOptionsGetInt(NULL, "-out_avd_pvd", &pvavd->outpvd, NULL); CHKERRQ(ierr);
+	ierr = PetscOptionsGetInt(NULL, NULL, "-out_avd_ref", &pvavd->refine, NULL); CHKERRQ(ierr);
+	ierr = PetscOptionsGetInt(NULL, NULL, "-out_avd_pvd", &pvavd->outpvd, NULL); CHKERRQ(ierr);
 
 	if(pvavd->outpvd)
 	{

@@ -229,7 +229,7 @@ PetscErrorCode PVOutWriteVelocity(JacRes *jr, OutBuf *outbuf)
 	cf = scal->velocity;
 	iflag.use_bound = PETSC_TRUE;
 
-	ierr = JacResCopyVel(jr, jr->gsol, _APPLY_SPC_); CHKERRQ(ierr);
+	ierr = JacResCopyVel(jr, jr->gsol); CHKERRQ(ierr);
 
 //ierr = VecView(jr->gsol,PETSC_VIEWER_STDOUT_WORLD);CHKERRQ(ierr);
 
@@ -254,7 +254,7 @@ PetscErrorCode PVOutWritePressure(JacRes *jr, OutBuf *outbuf)
 	// scale pressure shift
 	pShift = cf*jr->pShift;
 
-	ierr = JacResCopyPres(jr, jr->gsol, _APPLY_SPC_); CHKERRQ(ierr);
+	ierr = JacResCopyPres(jr, jr->gsol); CHKERRQ(ierr);
 
 	INTERPOLATE_ACCESS(jr->lp, InterpCenterCorner, 1, 0, pShift)
 

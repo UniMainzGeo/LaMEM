@@ -1,43 +1,43 @@
 	#==============================================================================
-# 
+#
 #     Copyright (c) 2011-2015, JGU Mainz, Anton Popov, Boris Kaus
 #     All rights reserved.
-# 
+#
 #     This software was developed at:
-# 
+#
 #          Institute of Geosciences
 #          Johannes-Gutenberg University, Mainz
 #          Johann-Joachim-Becherweg 21
 #          55128 Mainz, Germany
-# 
+#
 #     project:    LaMEM
 #     filename:   Makefile
-# 
+#
 #     LaMEM is free software: you can redistribute it and/or modify
 #     it under the terms of the GNU General Public License as published
 #     by the Free Software Foundation, version 3 of the License.
-# 
+#
 #     LaMEM is distributed in the hope that it will be useful,
 #     but WITHOUT ANY WARRANTY; without even the implied warranty of
 #     MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 #     See the GNU General Public License for more details.
-# 
+#
 #     You should have received a copy of the GNU General Public License
 #     along with LaMEM. If not, see <http://www.gnu.org/licenses/>.
-# 
-# 
+#
+#
 #     Contact:
 #         Boris Kaus       [kaus@uni-mainz.de]
 #         Anton Popov      [popov@uni-mainz.de]
-# 
-# 
+#
+#
 #     Main development team:
 #          Anton Popov      [popov@uni-mainz.de]
 #          Boris Kaus       [kaus@uni-mainz.de]
 #          Tobias Baumann
 #          Adina Pusok
 #          Arthur Bauville
-# 
+#
 #==============================================================================
 
 # Include platform-specific constants
@@ -46,7 +46,7 @@ include Makefile.in
 
 #====================================================
 
-# Include PETSc library 
+# Include PETSc library
 ifeq ($(mode), deb)
 	PETSC_DIR = ${PETSC_DEB}
 endif
@@ -55,8 +55,8 @@ ifeq ($(mode), opt)
 	PETSC_DIR = ${PETSC_OPT}
 endif
 
-include ${PETSC_DIR}/conf/variables
-include ${PETSC_DIR}/conf/rules
+include ${PETSC_DIR}/lib/petsc/conf/variables
+include ${PETSC_DIR}/lib/petsc/conf/rules
 
 # Define PETSc-based C-compiler command
 CCOMPILER = ${PCC} ${PCC_FLAGS} ${CFLAGS} ${CCPPFLAGS}
@@ -65,8 +65,10 @@ CCOMPILER = ${PCC} ${PCC_FLAGS} ${CFLAGS} ${CCPPFLAGS}
 
 # Define list of LaMEM library source files
 
+# List files to be excluded after filter-out
+
 CSRC = $(filter-out LaMEM.c, $(wildcard *.c))
-	
+
 #====================================================
 
 # Generate lists of library object files:
@@ -129,7 +131,7 @@ builddir : ../bin ../lib ../dep ../bin/${mode} ../lib/${mode} ../dep/${mode}
 	@rm -f ../bin/$(mode)/*
 	@rm -f ../dep/$(mode)/*
 	@echo 'makefile timestamp status file' > ../dep/$(mode)/makefile.stat
-	
+
 #====================================================
 
 # Build LaMEM library
@@ -166,7 +168,7 @@ ${LaMEM} : ${LaMEM_LIB} ${LaMEM_OBJ}
 # NOTE: IBM XL compiler generates dependency as a by-product of compilation
 
 ../lib/${mode}/%.o : %.c
-	${CCOMPILER} ${LAMEM_FLAGS} -c $< -o $@ 
+	${CCOMPILER} ${LAMEM_FLAGS} -c $< -o $@
 ifeq ($(PLATFORM), ppc64)
 	@mv -f ../lib/${mode}/$*.d ../dep/${mode}/$*.d.tmp
 else
@@ -174,7 +176,7 @@ else
 endif
 	@sed '1s,^,../lib/${mode}/,' < ../dep/${mode}/$*.d.tmp > ../dep/${mode}/$*.d
 	@rm -f ../dep/${mode}/$*.d.tmp
-	
+
 #====================================================
 
 # Include available dependency files
@@ -182,7 +184,7 @@ endif
 
 #====================================================
 
-print :	
+print :
 	@echo "............................................."
 	@echo "........ Environmental variables ............"
 	@echo "............................................."
@@ -201,11 +203,11 @@ ifeq ($(PLATFORM), ppc64)
 	@echo "COMPILER    :  IBM "
 endif
 	@echo "............................................."
-	@echo "mode        : " ${mode} 
+	@echo "mode        : " ${mode}
 	@echo "............................................."
-	@echo "PETSC_DIR   : " ${PETSC_DIR} 
+	@echo "PETSC_DIR   : " ${PETSC_DIR}
 	@echo "............................................."
-	@echo "DEPEN_FLAGS : " ${DEPEN_FLAGS}	
+	@echo "DEPEN_FLAGS : " ${DEPEN_FLAGS}
 	@echo "............................................."
 	@echo "LAMEM_FLAGS : " ${LAMEM_FLAGS}
 	@echo "............................................."
@@ -235,13 +237,3 @@ doc:
 
 #====================================================
 
-# building rule for subdirectory
-#../lib/${mode}/%.o : fdstag/%.c
-#	${CCOMPILER} ${LAMEM_FLAGS} -c $< -o $@ 
-#ifeq ($(PLATFORM), ppc64)
-#	@mv -f ../lib/${mode}/$*.d ../dep/${mode}/$*.d.tmp
-#else
-#	@${CCOMPILER} ${DEPEN_FLAGS} ${LAMEM_FLAGS} $< -o ../dep/${mode}/$*.d.tmp
-#endif
-#	@sed '1s,^,../lib/${mode}/,' < ../dep/${mode}/$*.d.tmp > ../dep/${mode}/$*.d
-#	@rm -f ../dep/${mode}/$*.d.tmp

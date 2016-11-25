@@ -1,9 +1,9 @@
-# 3D Folding/localization test
+# 3D localization test
 
 # Grid
-nel_x =  128
+nel_x =  64
 nel_y =  2
-nel_z =  48
+nel_z =  16
 
 # Geometry
 
@@ -19,7 +19,7 @@ units                      = geo
 Characteristic.Length      = 1e4  # [m]
 Characteristic.Viscosity   = 1e20 # [Pa.s]
 Characteristic.Temperature = 1    # [K]
-Characteristic.Stress      = 1e6  # [Pa]
+Characteristic.Stress      = 1e8  # [Pa]
 
 
 # Model setup
@@ -27,11 +27,11 @@ msetup = bands
 
 
 # Time stepping and output
-OutputFile					=	test_vep
+OutputFile					=	test_vep_analytical
 save_timesteps				=	1				# save every ? timesteps
-time_end					=	50				# last timestep
-CFL							=	0.1			# CFL, dt-based criterium
-dt_max						=	3e-3  			# Maximum timestep [Myr if dimensional]
+time_end					=	20				# last timestep
+CFL							=	0.1				# CFL, dt-based criterium
+dt_max						=	1e-2  			# Maximum timestep [Myr if dimensional]
 
 
 # Boundary conditions
@@ -59,8 +59,11 @@ NumPartZ				=	5	# Particles/Cell in z-direction
 
 <PetscOptionsStart>
 
-	# matrix-free closed-form Jacobian
-	-jac_mat_free
+	# matrix-free closed-form Jacobian if this is uncommented
+	#-jac_mat_free
+	#-out_jac_test 1
+	-skip_press_shift
+	-open_top_bound
 
 	# Background strain rate
 	-ExxNumPeriods  1
@@ -80,10 +83,11 @@ NumPartZ				=	5	# Particles/Cell in z-direction
 
 
 	# SNES (nonlinear) options
-#	-snes_ksp_ew			# Eisenstat Walker algorithm
-	-snes_npicard 2			# 2 picard iterations @ beginning of ever timestep
+	-snes_ksp_ew			# Eisenstat Walker algorithm
+	-snes_ksp_ew_rtolmax  1e-1
 	-snes_monitor
-	-snes_atol 1e-10
+#	-snes_atol 1e-9
+	-snes_atol 1e-7
 	-snes_rtol 1e-4
 	-snes_stol 1e-16
 	-snes_max_it 50
@@ -98,75 +102,34 @@ NumPartZ				=	5	# Particles/Cell in z-direction
 	-snes_NewtonSwitchToPicard_rtol 1.1		# relative tolerance compared to first iteration step
 
 	# Linesearch options
-	-snes_linesearch_monitor
-	-snes_linesearch_type l2 				#Linesearch type (one of) shell basic l2 bt cp (SNESLineSearchSetType)  [l2 seems to work better with VEP]
-	-snes_linesearch_maxstep 1.0			# very important to prevent the code from "blowing up"
-
-#	-snes_linesearch_precheck_picard	#doesn't seem to bring much
-#	-snes_linesearch_keeplambda
-#	-snes_linesearch_damping  0.5
-
+#	-snes_linesearch_monitor
+#	-snes_linesearch_type l2 				# Linesearch type (one of) shell basic l2 bt cp (SNESLineSearchSetType)  [l2 seems to work better with VEP]
+#	-snes_linesearch_maxstep 1.0			# very important to prevent the code from "blowing up"
 
 	# Jacobian solver
 	-js_ksp_type fgmres
-	-js_ksp_max_it 100
+	-js_ksp_max_it 50
 	-js_ksp_converged_reason
-#	-js_ksp_monitor
-	-js_ksp_rtol 1e-6
-	-js_ksp_atol 1e-6
+	-js_ksp_rtol 1e-10
+	-js_ksp_atol 1e-14
 
 
-	# Preconditioner
+	# Direct solver
 	-pcmat_type mono
 	-pcmat_pgamma 1e3
 	-jp_type user
 	-jp_pc_type lu
 	-jp_pc_factor_mat_solver_package mumps
 
-#	-pcmat_type block
-#	-pcmat_pgamma 10.0
-#	-jp_type bf
-#	-bf_vs_type user
-#	-vs_ksp_type preonly
-#	-vs_pc_type lu
-#	-vs_pc_factor_mat_solver_package mumps
-
-#	-pcmat_type block
-#	-pcmat_no_dev_proj
-#	-jp_type bf
-#	-bf_vs_type mg
-#	-vs_ksp_type preonly
-
-#	-pcmat_type mono
-#	-jp_type mg
-
-#	-gmg_pc_view
-#	-gmg_pc_type mg
-#	-gmg_pc_mg_levels 2
-#	-gmg_pc_mg_galerkin
-#	-gmg_pc_mg_type multiplicative
-#	-gmg_pc_mg_cycle_type v
-#
-#	-gmg_mg_levels_ksp_type richardson
-#	-gmg_mg_levels_ksp_richardson_scale 0.5
-#	-gmg_mg_levels_ksp_max_it 20
-#	-gmg_mg_levels_pc_type jacobi
-#
-#	-crs_ksp_type preonly
-#	-crs_pc_type redundant
-#	-crs_pc_redundant_number 1
-#	-crs_redundant_pc_factor_mat_solver_package mumps
-
 
 	# Additional command-line Petsc Options
-	-AddRandomNoiseParticles 0
+	#-AddRandomNoiseParticles 0
 	-restart 0
 	-save_breakpoints 0
 	-objects_dump
 	-restart 0
 #	-SkipStokesSolver 1
 #	-SavePartitioning
-#	-skip_press_shift
 
 	# output
 	-out_pvd 1
@@ -197,19 +160,20 @@ NumPartZ				=	5	# Particles/Cell in z-direction
 	# Strain softening parameters
 	<SofteningStart>
 		softID = 0
-		A      = 0.5
-		APS1   = 0.001
-		APS2   = 0.1
+		A      = 0.25
+#		A      = 1.0
+		APS1   = 0.000000001
+		APS2   = 0.001
 	<SofteningEnd>
 
 
-	# Bottom layer
+	# Inclusion
 	<MaterialStart>
 		ID              = 0     # phase id  [-]
-		rho0            = 3000	# density - if dimensional [kg/m3]
-		eta             = 1e22	# Viscosity - dimensional [Pa.s]
+		rho0            = 2700	# density - if dimensional [kg/m3]
+		eta             = 1e21	# Viscosity - dimensional [Pa.s]
 		shear           =  5e10
-		cohesion        =  20e6
+		cohesion        =  50e6
 		friction        =  30
 		frSoftID        =  0 # softening ID
 		chSoftID        =  0
@@ -221,11 +185,9 @@ NumPartZ				=	5	# Particles/Cell in z-direction
 		ID              =  1      # phase id  [-]
 		rho0            =  2700   # density - if dimensional [kg/m3]
 		eta             =  1e24   # Viscosity - dimensional [Pa.s]
-#		eta0            = 1e25
-#		e0              = 1e-15
-#		n               = 3
+
 		shear           =  5e10
-		cohesion        =  20e6
+		cohesion        =  50e6
 		friction        =  30
 		frSoftID        =  0 # softening ID
 		chSoftID        =  0
@@ -238,7 +200,7 @@ NumPartZ				=	5	# Particles/Cell in z-direction
 		rho0            = 100	# density - if dimensional [kg/m3]
 		eta             = 1e21	# Viscosity - dimensional [Pa.s]
 		shear           =  5e10
-		cohesion        =  20e6
+		cohesion        =  50e6
 		friction        =  30
 		frSoftID        =  0 # softening ID
 		chSoftID        =  0

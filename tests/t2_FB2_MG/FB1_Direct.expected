@@ -1,4 +1,4 @@
- Parsing input file : ./input/FallingBlock_mono_PenaltyDirect.dat 
+ Parsing input file : ./FB1_Direct/FallingBlock_mono_PenaltyDirect.dat 
 # Adding PetscOption: -dt 1e-2 
 # Adding PetscOption: -pcmat_no_dev_proj 
 # Adding PetscOption: -FSSA 1.0 
@@ -34,10 +34,12 @@
 # Adding PetscOption: -objects_dump 
 -------------------------------------------------------------------------- 
                    Lithosphere and Mantle Evolution Model                   
-     Compiled: Date: Dec 21 2015 - Time: 14:55:05 	    
+     Compiled: Date: Nov  8 2016 - Time: 14:30:20 	    
 -------------------------------------------------------------------------- 
         STAGGERED-GRID FINITE DIFFERENCE CANONICAL IMPLEMENTATION           
 -------------------------------------------------------------------------- 
+Reading pushing parameters: 
+
 Reading softening laws: 
 
 Reading material parameters: 
@@ -88,12 +90,12 @@ Reading material parameters:
 Time step 0 -------------------------------------------------------- 
 USING PICARD JACOBIAN for iteration 0, ||F||/||F0||=1.000000e+00 
     Residual norms for js_ solve.
-    0 KSP Residual norm 2.136002538232e+01 
-    1 KSP Residual norm 1.604711600522e-04 
+    0 KSP Residual norm 2.136003076667e+01 
+    1 KSP Residual norm 1.604218667265e-04 
   Linear solve converged due to CONVERGED_RTOL iterations 1
  SNES Convergence Reason: maximum iterations reached
  Number of iterations : 1
- Nonlinear solve took 1.6119 (sec)
+ Nonlinear solve took 1.15075 (sec)
 ------------------------------------------
 Residual summary: 
   Continuity: 
@@ -103,8 +105,8 @@ Residual summary:
   Momentum: 
     |mRes|_2 = 7.310266752999e+01 
 ------------------------------------------
- Created new directory Timestep_000000_0.000000e+00 
-AVD generator complete in 6.6932e-02 (sec)
+ Writing to existing directory Timestep_000000_0.000000e+00 
+AVD generator complete in 3.7695e-02 (sec)
 AVD3D memory usage: 
   points:  1.000000 [MB] 
   cells:   2.861023 [MB] 
@@ -116,23 +118,23 @@ AVD3D memory usage:
 Time step 1 -------------------------------------------------------- 
 USING PICARD JACOBIAN for iteration 0, ||F||/||F0||=1.000000e+00 
     Residual norms for js_ solve.
-    0 KSP Residual norm 3.031253182259e-04 
-    1 KSP Residual norm 4.587228238896e-09 
+    0 KSP Residual norm 3.029575608342e-04 
+    1 KSP Residual norm 4.584575253341e-09 
   Linear solve converged due to CONVERGED_RTOL iterations 1
  SNES Convergence Reason: maximum iterations reached
  Number of iterations : 1
- Nonlinear solve took 1.63778 (sec)
+ Nonlinear solve took 1.01416 (sec)
 ------------------------------------------
 Residual summary: 
   Continuity: 
-    Div_min  = -5.556278795678e-06 
-    Div_max  = 5.556289191386e-06 
-    |Div|_2  = 2.112320274448e-04 
+    Div_min  = -5.550719146027e-06 
+    Div_max  = 5.550729530589e-06 
+    |Div|_2  = 2.110210787052e-04 
   Momentum: 
-    |mRes|_2 = 5.212902647461e-03 
+    |mRes|_2 = 5.208163223126e-03 
 ------------------------------------------
- Created new directory Timestep_000001_1.000000e-05 
-AVD generator complete in 7.5433e-02 (sec)
+ Writing to existing directory Timestep_000001_1.000000e-05 
+AVD generator complete in 4.6257e-02 (sec)
 AVD3D memory usage: 
   points:  1.000000 [MB] 
   cells:   2.861023 [MB] 
@@ -141,11 +143,11 @@ AVD3D memory usage:
  Time = 2e-05[ ], dt = 1e-05[ ] 
  Finished timestep 1 out of 1 
  
- Simulation took 3.53116 (sec) 
+ Simulation took 2.3319 (sec) 
 #PETSc Option Table entries:
 -AddRandomNoiseParticles 0
 -FSSA 1.0
--ParamFile ./input/FallingBlock_mono_PenaltyDirect.dat
+-ParamFile ./FB1_Direct/FallingBlock_mono_PenaltyDirect.dat
 -dt 1e-2
 -jp_pc_type lu
 -jp_type user

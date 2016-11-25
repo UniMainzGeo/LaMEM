@@ -111,11 +111,11 @@ PetscErrorCode ADVMarkInit(AdvCtx *actx, UserCtx *user)
 	actx->avdz = user->NumPartZ * 3;
 
 	// read options from command line
-	PetscOptionsGetInt(PETSC_NULL ,"-markers_min",   &actx->nmin,   PETSC_NULL);
-	PetscOptionsGetInt(PETSC_NULL ,"-markers_max",   &actx->nmax,   PETSC_NULL);
-	PetscOptionsGetInt(PETSC_NULL ,"-markers_avdx",  &actx->avdx,   PETSC_NULL);
-	PetscOptionsGetInt(PETSC_NULL ,"-markers_avdy",  &actx->avdy,   PETSC_NULL);
-	PetscOptionsGetInt(PETSC_NULL ,"-markers_avdz",  &actx->avdz,   PETSC_NULL);
+	PetscOptionsGetInt(NULL, NULL ,"-markers_min",   &actx->nmin,   NULL);
+	PetscOptionsGetInt(NULL, NULL ,"-markers_max",   &actx->nmax,   NULL);
+	PetscOptionsGetInt(NULL, NULL ,"-markers_avdx",  &actx->avdx,   NULL);
+	PetscOptionsGetInt(NULL, NULL ,"-markers_avdy",  &actx->avdy,   NULL);
+	PetscOptionsGetInt(NULL, NULL ,"-markers_avdz",  &actx->avdz,   NULL);
 
 	// initialize coordinates and add random noise if required for hard-coded setups
 	if(user->msetup != PARALLEL
@@ -192,7 +192,7 @@ PetscErrorCode ADVMarkInitCoord(AdvCtx *actx, UserCtx *user)
 
 	// random noise
 	AddRandomNoiseParticles = PETSC_FALSE;
-	ierr = PetscOptionsGetBool(PETSC_NULL,"-AddRandomNoiseParticles", &AddRandomNoiseParticles, PETSC_NULL); CHKERRQ(ierr);
+	ierr = PetscOptionsGetBool(NULL, NULL,"-AddRandomNoiseParticles", &AddRandomNoiseParticles, NULL); CHKERRQ(ierr);
 
 	if(AddRandomNoiseParticles==PETSC_TRUE) PetscPrintf(PETSC_COMM_WORLD, " Adding random noise to marker distribution \n");
 
@@ -940,8 +940,8 @@ PetscErrorCode ADVMarkInitBlock(AdvCtx *actx, UserCtx *user)
 
 	b2D  = PETSC_FALSE;
 	b2Dy = PETSC_FALSE;
-	ierr = PetscOptionsGetBool( PETSC_NULL, "-Block_2D" , &b2D , PETSC_NULL); CHKERRQ(ierr);
-	ierr = PetscOptionsGetBool( PETSC_NULL, "-Block_2Dy", &b2Dy, PETSC_NULL); CHKERRQ(ierr);
+	ierr = PetscOptionsGetBool(NULL, NULL, "-Block_2D" , &b2D , NULL); CHKERRQ(ierr);
+	ierr = PetscOptionsGetBool(NULL, NULL, "-Block_2Dy", &b2Dy, NULL); CHKERRQ(ierr);
 
 	// loop over local markers
 	for(imark = 0; imark < actx->nummark; imark++)
@@ -1013,13 +1013,13 @@ PetscErrorCode ADVMarkInitSubduction(AdvCtx *actx, UserCtx *user)
 
 	// read some input parameters
 	Slab_ThicknessFactor = 0.1; // in % of the total H
-	PetscOptionsGetReal(PETSC_NULL ,"-Slab_ThicknessFactor", &Slab_ThicknessFactor, PETSC_NULL);
+	PetscOptionsGetReal(NULL, NULL ,"-Slab_ThicknessFactor", &Slab_ThicknessFactor, NULL);
 
 	Air_ThicknessFactor  = 0.1; // in % of the total H
-	PetscOptionsGetReal(PETSC_NULL ,"-Air_ThicknessFactor" , &Air_ThicknessFactor , PETSC_NULL);
+	PetscOptionsGetReal(NULL, NULL ,"-Air_ThicknessFactor" , &Air_ThicknessFactor , NULL);
 
 	Slab_WidthFactor     = 1.0;
-	PetscOptionsGetReal(PETSC_NULL ,"-Slab_WidthFactor"    , &Slab_WidthFactor    , PETSC_NULL);
+	PetscOptionsGetReal(NULL, NULL ,"-Slab_WidthFactor"    , &Slab_WidthFactor    , NULL);
 
 	// setup parameters
 	SlabThickness = (PetscScalar) (round(user->H/dz)*dz*Slab_ThicknessFactor);
@@ -1091,47 +1091,47 @@ PetscErrorCode ADVMarkInitFolding(AdvCtx *actx, UserCtx *user)
 	// get input data
 	DisplayInfo = PETSC_TRUE;
 
-    PetscOptionsHasName(PETSC_NULL,"-FoldingSetupDimensionalUnits"      ,&FoldingSetupDimensionalUnits);
+    PetscOptionsHasName(NULL, NULL,"-FoldingSetupDimensionalUnits"      ,&FoldingSetupDimensionalUnits);
     if (DisplayInfo && FoldingSetupDimensionalUnits) PetscPrintf(PETSC_COMM_WORLD,"   Assuming that the folding setup is given in dimensional units \n");
     
-	PetscOptionsGetReal(PETSC_NULL,"-Layer1_bottom"      ,&zbot[0], PETSC_NULL);
-	PetscOptionsGetReal(PETSC_NULL,"-Layer1_top"         ,&ztop[0], &flg);
+	PetscOptionsGetReal(NULL, NULL,"-Layer1_bottom"      ,&zbot[0], NULL);
+	PetscOptionsGetReal(NULL, NULL,"-Layer1_top"         ,&ztop[0], &flg);
 	if (DisplayInfo && flg) PetscPrintf(PETSC_COMM_WORLD," - Adding Layer with Phase=1 from z=[%g,%g]\n",zbot[0],ztop[0]);
 
-	PetscOptionsGetReal(PETSC_NULL,"-Layer2_bottom"      ,&zbot[1], PETSC_NULL);
-	PetscOptionsGetReal(PETSC_NULL,"-Layer2_top"         ,&ztop[1], &flg);
+	PetscOptionsGetReal(NULL, NULL,"-Layer2_bottom"      ,&zbot[1], NULL);
+	PetscOptionsGetReal(NULL, NULL,"-Layer2_top"         ,&ztop[1], &flg);
 	if (DisplayInfo && flg) PetscPrintf(PETSC_COMM_WORLD," - Adding Layer with Phase=2 from z=[%g,%g]\n",zbot[1],ztop[1]);
 
-	PetscOptionsGetReal(PETSC_NULL,"-Layer3_bottom"      ,&zbot[2], PETSC_NULL);
-	PetscOptionsGetReal(PETSC_NULL,"-Layer3_top"         ,&ztop[2], &flg);
+	PetscOptionsGetReal(NULL, NULL,"-Layer3_bottom"      ,&zbot[2], NULL);
+	PetscOptionsGetReal(NULL, NULL,"-Layer3_top"         ,&ztop[2], &flg);
 	if (DisplayInfo && flg) PetscPrintf(PETSC_COMM_WORLD," - Adding Layer with Phase=3 from z=[%g,%g]\n",zbot[2],ztop[2]);
 
-	PetscOptionsGetReal(PETSC_NULL,"-Layer4_bottom"      ,&zbot[3], PETSC_NULL);
-	PetscOptionsGetReal(PETSC_NULL,"-Layer4_top"         ,&ztop[3], &flg);
+	PetscOptionsGetReal(NULL, NULL,"-Layer4_bottom"      ,&zbot[3], NULL);
+	PetscOptionsGetReal(NULL, NULL,"-Layer4_top"         ,&ztop[3], &flg);
 	if (DisplayInfo && flg) PetscPrintf(PETSC_COMM_WORLD," - Adding Layer with Phase=4 from z=[%g,%g]\n",zbot[3],ztop[3]);
 
-	PetscOptionsGetReal(PETSC_NULL,"-Layer5_bottom"      ,&zbot[4], PETSC_NULL);
-	PetscOptionsGetReal(PETSC_NULL,"-Layer5_top"         ,&ztop[4], &flg);
+	PetscOptionsGetReal(NULL, NULL,"-Layer5_bottom"      ,&zbot[4], NULL);
+	PetscOptionsGetReal(NULL, NULL,"-Layer5_top"         ,&ztop[4], &flg);
 	if (DisplayInfo && flg) PetscPrintf(PETSC_COMM_WORLD," - Adding Layer with Phase=5 from z=[%g,%g]\n",zbot[4],ztop[4]);
 
-	PetscOptionsGetReal(PETSC_NULL,"-Layer6_bottom"      ,&zbot[5], PETSC_NULL);
-	PetscOptionsGetReal(PETSC_NULL,"-Layer6_top"         ,&ztop[5], &flg);
+	PetscOptionsGetReal(NULL, NULL,"-Layer6_bottom"      ,&zbot[5], NULL);
+	PetscOptionsGetReal(NULL, NULL,"-Layer6_top"         ,&ztop[5], &flg);
 	if (DisplayInfo && flg) PetscPrintf(PETSC_COMM_WORLD," - Adding Layer with Phase=6 from z=[%g,%g]\n",zbot[5],ztop[5]);
 
-	PetscOptionsGetReal(PETSC_NULL,"-Layer7_bottom"      ,&zbot[6], PETSC_NULL);
-	PetscOptionsGetReal(PETSC_NULL,"-Layer7_top"         ,&ztop[6], &flg);
+	PetscOptionsGetReal(NULL, NULL,"-Layer7_bottom"      ,&zbot[6], NULL);
+	PetscOptionsGetReal(NULL, NULL,"-Layer7_top"         ,&ztop[6], &flg);
 	if (DisplayInfo && flg) PetscPrintf(PETSC_COMM_WORLD," - Adding Layer with Phase=7 from z=[%g,%g]\n",zbot[6],ztop[6]);
 
-	PetscOptionsGetReal(PETSC_NULL,"-Layer8_bottom"      ,&zbot[7], PETSC_NULL);
-	PetscOptionsGetReal(PETSC_NULL,"-Layer8_top"         ,&ztop[7], &flg);
+	PetscOptionsGetReal(NULL, NULL,"-Layer8_bottom"      ,&zbot[7], NULL);
+	PetscOptionsGetReal(NULL, NULL,"-Layer8_top"         ,&ztop[7], &flg);
 	if (DisplayInfo && flg) PetscPrintf(PETSC_COMM_WORLD," - Adding Layer with Phase=8 from z=[%g,%g]\n",zbot[7],ztop[7]);
 
-	PetscOptionsGetReal(PETSC_NULL,"-Layer9_bottom"      ,&zbot[8], PETSC_NULL);
-	PetscOptionsGetReal(PETSC_NULL,"-Layer9_top"         ,&ztop[8], &flg);
+	PetscOptionsGetReal(NULL, NULL,"-Layer9_bottom"      ,&zbot[8], NULL);
+	PetscOptionsGetReal(NULL, NULL,"-Layer9_top"         ,&ztop[8], &flg);
 	if (DisplayInfo && flg) PetscPrintf(PETSC_COMM_WORLD," - Adding Layer with Phase=9 from z=[%g,%g]\n",zbot[8],ztop[8]);
 
-	PetscOptionsGetReal(PETSC_NULL,"-Layer10_bottom"      ,&zbot[9], PETSC_NULL);
-	PetscOptionsGetReal(PETSC_NULL,"-Layer10_top"         ,&ztop[9], &flg);
+	PetscOptionsGetReal(NULL, NULL,"-Layer10_bottom"      ,&zbot[9], NULL);
+	PetscOptionsGetReal(NULL, NULL,"-Layer10_top"         ,&ztop[9], &flg);
 	if (DisplayInfo && flg) PetscPrintf(PETSC_COMM_WORLD," - Adding Layer with Phase=10 from z=[%g,%g]\n",zbot[9],ztop[9]);
 
 	// get characteristic length
@@ -1164,7 +1164,7 @@ PetscErrorCode ADVMarkInitFolding(AdvCtx *actx, UserCtx *user)
 	}
 
 	BottomStepPerturbation_Amplitude = 0.1;
-	PetscOptionsGetReal(PETSC_NULL,"-BottomStepPerturbation_Amplitude"         ,&BottomStepPerturbation_Amplitude, &flg);
+	PetscOptionsGetReal(NULL, NULL,"-BottomStepPerturbation_Amplitude"         ,&BottomStepPerturbation_Amplitude, &flg);
 	if (flg) PetscPrintf(PETSC_COMM_WORLD,"   Using bottom step like perturbation with amplitude %f  \n", BottomStepPerturbation_Amplitude);
 
 	if (FoldingSetupDimensionalUnits) BottomStepPerturbation_Amplitude = BottomStepPerturbation_Amplitude/chLen;
@@ -1174,13 +1174,13 @@ PetscErrorCode ADVMarkInitFolding(AdvCtx *actx, UserCtx *user)
 
 		// add a step-like pertubation at the bottom layer
 		BottomStepPerturbation_X = 0;
-		PetscOptionsGetReal(PETSC_NULL,"-BottomStepPerturbation_X"         ,&BottomStepPerturbation_X, &flg);
+		PetscOptionsGetReal(NULL, NULL,"-BottomStepPerturbation_X"         ,&BottomStepPerturbation_X, &flg);
         if (FoldingSetupDimensionalUnits){
             BottomStepPerturbation_X = BottomStepPerturbation_X/chLen;
         }
 
         BottomStepPerturbation_Y = user->y_front + user->L;
-        PetscOptionsGetReal(PETSC_NULL,"-BottomStepPerturbation_Y"         ,&BottomStepPerturbation_Y, &flg);
+        PetscOptionsGetReal(NULL, NULL,"-BottomStepPerturbation_Y"         ,&BottomStepPerturbation_Y, &flg);
         if (FoldingSetupDimensionalUnits & flg){
             BottomStepPerturbation_Y = BottomStepPerturbation_Y/chLen;
         }
@@ -1223,13 +1223,13 @@ PetscErrorCode ADVMarkInitDetachment(AdvCtx *actx, UserCtx *user)
 	PetscPrintf(PETSC_COMM_WORLD,"  ONE-LAYER OVER DETACHMENT WITH 2 LINEAR PERTURBATIONS SETUP \n");
 
 	DisplayInfo = PETSC_TRUE;
-	PetscOptionsGetReal(PETSC_NULL,"-Heterogeneity_L"      , &Het_L  , PETSC_NULL);
-	PetscOptionsGetReal(PETSC_NULL,"-Heterogeneity_W"      , &Het_W  , PETSC_NULL);
-	PetscOptionsGetReal(PETSC_NULL,"-Heterogeneity_A"      , &Het_A  , PETSC_NULL);
-	PetscOptionsGetReal(PETSC_NULL,"-Heterogeneity_Offset" , &Het_Off, PETSC_NULL);
+	PetscOptionsGetReal(NULL, NULL,"-Heterogeneity_L"      , &Het_L  , NULL);
+	PetscOptionsGetReal(NULL, NULL,"-Heterogeneity_W"      , &Het_W  , NULL);
+	PetscOptionsGetReal(NULL, NULL,"-Heterogeneity_A"      , &Het_A  , NULL);
+	PetscOptionsGetReal(NULL, NULL,"-Heterogeneity_Offset" , &Het_Off, NULL);
 
-	PetscOptionsGetReal(PETSC_NULL,"-Layer1_bottom", &zbot, PETSC_NULL);
-	PetscOptionsGetReal(PETSC_NULL,"-Layer1_top"   , &ztop, &flg);
+	PetscOptionsGetReal(NULL, NULL,"-Layer1_bottom", &zbot, NULL);
+	PetscOptionsGetReal(NULL, NULL,"-Layer1_top"   , &ztop, &flg);
 	if(DisplayInfo && flg) PetscPrintf(PETSC_COMM_WORLD," - Adding Layer with Phase = 1 from z=[%g,%g]\n", zbot, ztop);
 
 	// transform fractions into domain coordinates
@@ -1368,8 +1368,8 @@ PetscErrorCode ADVMarkInitSpheres(AdvCtx *actx, UserCtx *user)
 	PetscPrintf(PETSC_COMM_WORLD,"  MULTIPLE FALLING SPHERES SETUP \n");
 
 	// get data
-	PetscOptionsGetInt (PETSC_NULL, "-NumSpheres",   &nsphere, PETSC_NULL);
-	PetscOptionsGetReal(PETSC_NULL, "-SphereRadius", &rsphere, PETSC_NULL);
+	PetscOptionsGetInt (NULL, NULL, "-NumSpheres",   &nsphere, NULL);
+	PetscOptionsGetReal(NULL, NULL, "-SphereRadius", &rsphere, NULL);
 
 	// distribution - set for now such that the spheres do not touch
 	xc[0] = 0.25; yc[0] = 0.15; zc[0] = 0.30;
@@ -1430,16 +1430,16 @@ PetscErrorCode ADVMarkInitBands(AdvCtx *actx, UserCtx *user)
 	length = (user->L*scal)/2.0; // inclusion length along Y axis [km]
 
 	// get layer thickness
-	ierr = PetscOptionsGetReal(PETSC_NULL, "-H_layer",  &H,  PETSC_NULL);  CHKERRQ(ierr);
-	ierr = PetscOptionsGetReal(PETSC_NULL, "-H_bottom", &Hb, PETSC_NULL);  CHKERRQ(ierr);
+	ierr = PetscOptionsGetReal(NULL, NULL, "-H_layer",  &H,  NULL);  CHKERRQ(ierr);
+	ierr = PetscOptionsGetReal(NULL, NULL, "-H_bottom", &Hb, NULL);  CHKERRQ(ierr);
 
 	// get inclusion parameters
-	ierr = PetscOptionsHasName(PETSC_NULL, "-Inclusion_use", &use_inc); CHKERRQ(ierr);
+	ierr = PetscOptionsHasName(NULL, NULL, "-Inclusion_use", &use_inc); CHKERRQ(ierr);
 	if(use_inc == PETSC_TRUE)
 	{
-		ierr = PetscOptionsGetReal(PETSC_NULL, "-Inclusion_size",   &size,   PETSC_NULL); CHKERRQ(ierr);
-		ierr = PetscOptionsGetReal(PETSC_NULL, "-Inclusion_offset", &offset, PETSC_NULL); CHKERRQ(ierr);
-		ierr = PetscOptionsGetReal(PETSC_NULL, "-Inclusion_length", &length, PETSC_NULL); CHKERRQ(ierr);
+		ierr = PetscOptionsGetReal(NULL, NULL, "-Inclusion_size",   &size,   NULL); CHKERRQ(ierr);
+		ierr = PetscOptionsGetReal(NULL, NULL, "-Inclusion_offset", &offset, NULL); CHKERRQ(ierr);
+		ierr = PetscOptionsGetReal(NULL, NULL, "-Inclusion_length", &length, NULL); CHKERRQ(ierr);
 	}
 
 	// scale
@@ -1499,9 +1499,9 @@ PetscErrorCode ADVMarkInitDomes(AdvCtx *actx, UserCtx *user)
 	anhydrite_top   = user->z_bot;
 	anhydrite_phase = 2;
 
-	ierr = PetscOptionsGetReal(PETSC_NULL, "-domes_anhydrite_bot",   &anhydrite_bot,   NULL); CHKERRQ(ierr);
-	ierr = PetscOptionsGetReal(PETSC_NULL, "-domes_anhydrite_top",   &anhydrite_top,   NULL); CHKERRQ(ierr);
-	ierr = PetscOptionsGetInt (PETSC_NULL, "-domes_anhydrite_phase", &anhydrite_phase, NULL); CHKERRQ(ierr);
+	ierr = PetscOptionsGetReal(NULL, NULL, "-domes_anhydrite_bot",   &anhydrite_bot,   NULL); CHKERRQ(ierr);
+	ierr = PetscOptionsGetReal(NULL, NULL, "-domes_anhydrite_top",   &anhydrite_top,   NULL); CHKERRQ(ierr);
+	ierr = PetscOptionsGetInt (NULL, NULL, "-domes_anhydrite_phase", &anhydrite_phase, NULL); CHKERRQ(ierr);
 
 	// scale
 	anhydrite_bot /= scal;
@@ -1618,12 +1618,12 @@ PetscErrorCode ADVMarkInitFilePolygons(AdvCtx *actx, UserCtx *user)
 
 	// random noise
 	AddRandomNoise = PETSC_FALSE;
-	ierr = PetscOptionsGetBool(PETSC_NULL,"-AddRandomNoiseParticles" , &AddRandomNoise , PETSC_NULL); CHKERRQ(ierr);
+	ierr = PetscOptionsGetBool(NULL, NULL,"-AddRandomNoiseParticles" , &AddRandomNoise , NULL); CHKERRQ(ierr);
 	if(AddRandomNoise) PetscPrintf(PETSC_COMM_WORLD, " Adding random noise to marker distribution \n");
 
 
 	ReducedOutput_Polygons = PETSC_FALSE;
-	ierr = PetscOptionsGetBool(PETSC_NULL,"-ReducedOutput_Polygons" , &ReducedOutput_Polygons , PETSC_NULL); CHKERRQ(ierr);
+	ierr = PetscOptionsGetBool(NULL, NULL,"-ReducedOutput_Polygons" , &ReducedOutput_Polygons , NULL); CHKERRQ(ierr);
 	if(ReducedOutput_Polygons) PetscPrintf(PETSC_COMM_WORLD, " Reduced output for Polygons activated \n");
 
 

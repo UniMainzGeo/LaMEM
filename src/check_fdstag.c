@@ -81,8 +81,8 @@ PetscErrorCode JacTest(JacRes *jr, Vec diff)
 	pmf   = 0;
 	pmffd = 0;
 
-	ierr = PetscOptionsHasName(NULL, "-mf",   &set); CHKERRQ(ierr); if(set == PETSC_TRUE) pmf      = 1;
-	ierr = PetscOptionsHasName(NULL, "-mffd", &set); CHKERRQ(ierr); if(set == PETSC_TRUE) pmffd    = 1;
+	ierr = PetscOptionsHasName(NULL, NULL, "-mf",   &set); CHKERRQ(ierr); if(set == PETSC_TRUE) pmf      = 1;
+	ierr = PetscOptionsHasName(NULL, NULL, "-mffd", &set); CHKERRQ(ierr); if(set == PETSC_TRUE) pmffd    = 1;
 
 	// create matrix-free Jacobian operator
 	ierr = MatCreateShell(PETSC_COMM_WORLD, dof->ln, dof->ln,
@@ -369,7 +369,7 @@ PetscErrorCode DarcyPostProcess(NLCtx *nlctx, UserCtx *user)
 	A = user->W*user->L;
 
 	// get applied pressure difference
-	ierr = PetscOptionsGetScalar(PETSC_NULL, "-pgrad", &dp, &flg); CHKERRQ(ierr);
+	ierr = PetscOptionsGetScalar(NULL, "-pgrad", &dp, &flg); CHKERRQ(ierr);
 	if(flg != PETSC_TRUE) dp = 1.0;
 
 	// get fluid viscosity (fluid phase is #1)
@@ -1192,7 +1192,7 @@ PetscErrorCode VelGradTest(
 	PetscErrorCode 	ierr;
 	PetscFunctionBegin;
 
-	PetscOptionsGetInt(PETSC_NULL ,"-grad_comp", &comp, &found);
+	PetscOptionsGetInt(NULL ,"-grad_comp", &comp, &found);
 
 	if(found == PETSC_FALSE) PetscFunctionReturn(0);
 
