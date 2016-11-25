@@ -65,9 +65,9 @@ typedef struct
 	// parameters & controls
 	PetscScalar grav[SPDIM]; // global gravity components
 	PetscScalar FSSA;        // density gradient penalty parameter
-	PetscScalar gtol;        // geometry tolerance
-	PetscInt    pShiftAct;   // pressure shift activation flag
-	PetscInt    actTemp;     // temperature diffusion activation flag
+	PetscScalar gtol;	     // geometry tolerance
+	PetscInt    actTemp;	 // temperature diffusion activation flag
+	PetscInt    pShiftAct;   // pressure shift activation flag (zero pressure in the top cell layer)
 
 	// phase parameters
 	PetscInt     numPhases;              // number phases
@@ -151,9 +151,6 @@ PetscErrorCode JacResWriteRestart(JacRes *jr, FILE *fp);
 
 // destroy residual & Jacobian evaluation context
 PetscErrorCode JacResDestroy(JacRes *jr);
-
-// initialize and setup scaling object, perform scaling
-PetscErrorCode JacResInitScale(JacRes *jr);
 
 // compute effective inverse elastic viscosity
 PetscErrorCode JacResGetI2Gdt(JacRes *jr);

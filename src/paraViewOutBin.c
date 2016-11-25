@@ -424,7 +424,7 @@ PetscErrorCode PVOutCreate(PVOut *pvout, const char *filename)
 	// count active output vectors
 	pvout->nvec = OutMaskCountActive(omask);
 
-	if(jr->actTemp != PETSC_TRUE) omask->energ_res = 0;
+	if(!jr->actTemp) omask->energ_res = 0;
 
 	// allocate space
 	ierr = PetscMalloc(sizeof(OutVec)*(size_t)pvout->nvec, &pvout->outvecs); CHKERRQ(ierr);

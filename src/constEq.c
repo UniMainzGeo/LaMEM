@@ -72,9 +72,6 @@ PetscErrorCode ConstEqCtxSetup(
 
 	PetscInt    ln, nl, pd;
 	PetscScalar Q, RT, ch, fr, p_viscosity, p_upper, p_lower;
-	PetscBool   flag = PETSC_FALSE,flag2 =PETSC_FALSE, flag3=PETSC_FALSE;
-
-	PetscErrorCode ierr;
 
 	PetscFunctionBegin;
 
@@ -85,14 +82,9 @@ PetscErrorCode ConstEqCtxSetup(
 	nl = 0;
 	pd = 0; // pressure-dependence flag
 
-	p_viscosity = p;			// pressure used in viscosity evaluation
-
-	ierr = PetscOptionsHasName(NULL, NULL, "-ViscoPLithosOff", &flag); CHKERRQ(ierr);
-	ierr = PetscOptionsHasName(NULL, NULL, "-NoPressureLimit", &flag2); CHKERRQ(ierr);
-	ierr = PetscOptionsHasName(NULL, NULL, "-EmployLithostaticPressureInYieldFunction", &flag3); CHKERRQ(ierr);
-	
-	if(!flag) p_viscosity=p_lithos;
-
+	// pressure used in viscosity evaluation
+	if(lim->pLithoVisc) p_viscosity = p_lithos;
+	else                p_viscosity = p;
 
 	// use reference strain-rate instead of zero
 	if(DII == 0.0) DII = lim->DII_ref;
@@ -162,10 +154,10 @@ PetscErrorCode ConstEqCtxSetup(
 	if(sin(fr)    < lim->minFr) fr = lim->minFr;
 
 	// compute yield stress
-	if(p < 0.0) { ctx->taupl = ch;        pd = 0; } // Von-Mises model for extension
+	if(p < 0.0) { ctx->taupl = ch; pd = 0; } // Von-Mises model for extension
 	else  // Drucker-Prager model for compression
 	{
-		if(!flag2 && lim->presLimFlg == PETSC_TRUE)
+		if(!lim->initGuess && lim->pLimPlast)
 		{
 			// yielding surface: (S1-S3)/2 = (S1+S3)/2*sin(phi) + C*cos(phi)
 			// pressure can be write as: P = (S1+S2+S3)/3 and P~=S2,then P=(S1+S3)/2
@@ -182,17 +174,16 @@ PetscErrorCode ConstEqCtxSetup(
 			if (p > p_upper) p = p_upper;
 			if (p < p_lower) p = p_lower;
 		}
-		if (flag3){
-			// In case the flag	-EmployLithostaticPressureInYieldFunction is found,
-			// we use lithostatic, rather than dynamic pressure to evaluate yielding
-			//
+		if(lim->pLithoPlast)
+		{
+			// use lithostatic, rather than dynamic pressure to evaluate yielding
 			// This converges better, but does not result in localization of deformation & shear banding,
-			// so only apply it for large-scale simulations where plasticity does not matter all that	
-			// much 
+			// so only apply it for large-scale simulations where plasticity does not matter all that much
 			ctx->taupl = p_lithos * sin(fr) + ch * cos(fr);
 			
 		}
-		else{
+		else
+		{
 			// use dynamic pressure in evaluating the yield function [default]
 			ctx->taupl = p * sin(fr) + ch * cos(fr);
 		}
@@ -250,7 +241,7 @@ PetscErrorCode GetEffVisc(
 {
 	// stabilization parameters
 	PetscScalar eta_ve, eta_pl, eta_pw, eta_vp, eta_st, eta_dis, eta_prl, cf;
-	PetscScalar inv_eta_els, inv_eta_dif, inv_eta_dis, inv_eta_prl;
+	PetscScalar inv_eta_els, inv_eta_dif, inv_eta_dis, inv_eta_prl, inv_eta_max;
 
 	PetscFunctionBegin;
 
@@ -259,12 +250,14 @@ PetscErrorCode GetEffVisc(
 	(*dEta)  = 0.0;
 	(*fr)    = 0.0;
 
+	inv_eta_max = lim->inv_eta_max;
+
 	//==============
 	// INITIAL GUESS
 	//==============
 
 	// set reference viscosity as initial guess
-	if(lim->eta_ref && lim->initGuessFlg == PETSC_TRUE)
+	if(lim->initGuess)
 	{
 		(*eta_total) 		= lim->eta_ref;
 		(*eta_creep) 		= lim->eta_ref;
@@ -301,7 +294,7 @@ PetscErrorCode GetEffVisc(
 	//================
 
 	// store creep & viscoplastic viscosity for output
-	(*eta_creep) 		= lim->eta_min + 1.0/(inv_eta_dif + inv_eta_dis + inv_eta_prl + 1.0/lim->eta_max);
+	(*eta_creep) 		= lim->eta_min + 1.0/(inv_eta_dif + inv_eta_dis + inv_eta_prl + inv_eta_max);
 	(*eta_viscoplastic) = (*eta_creep);
 
 	//========================
@@ -309,7 +302,7 @@ PetscErrorCode GetEffVisc(
 	//========================
 
 	// compute visco-elastic viscosity
-	eta_ve = lim->eta_min + 1.0/(inv_eta_els + inv_eta_dif + inv_eta_dis + inv_eta_prl + 1.0/lim->eta_max);
+	eta_ve = lim->eta_min + 1.0/(inv_eta_els + inv_eta_dif + inv_eta_dis + inv_eta_prl + inv_eta_max);
 
 	// set visco-elastic prediction
 	(*eta_total) = eta_ve;
@@ -332,7 +325,7 @@ PetscErrorCode GetEffVisc(
 	// PLASTICITY
 	//===========
 
-	if(ctx->taupl && lim->initGuessFlg != PETSC_TRUE)
+	if(ctx->taupl && !lim->initGuess)
 	{
 		// compute true plastic viscosity
 		eta_pl = ctx->taupl/(2.0*ctx->DII);
@@ -342,7 +335,7 @@ PetscErrorCode GetEffVisc(
 		// minimum viscosity (true) model is the default
 		//==============================================
 
-		if(lim->quasiHarmAvg == PETSC_TRUE)
+		if(lim->quasiHarmAvg)
 		{
 			// quasi-harmonic mean
 			(*eta_total) = 1.0/(1.0/eta_pl + 1.0/eta_ve);

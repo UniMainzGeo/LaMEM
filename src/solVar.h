@@ -172,40 +172,40 @@ typedef struct
 {
 	PetscInt     ID;      // material ID
 	// density parameters
-	PetscScalar  rho;     // reference density
-	PetscScalar  rho_n;   // depth-dependent density model parameter
-	PetscScalar  rho_c;   // depth-dependent density model parameter
-	PetscScalar  beta;    // pressure-dependent density model parameter
+	PetscScalar  rho;     // reference density                          [kg/m^3]
+	PetscScalar  rho_n;   // depth-dependent density model parameter    [ ]
+	PetscScalar  rho_c;   // depth-dependent density model parameter    [1/m]
+	PetscScalar  beta;    // pressure-dependent density model parameter [1/Pa]
 	// elasticity parameters
-	PetscScalar  K;       // bulk modulus
-	PetscScalar  Kp;      // pressure dependence parameter
-	PetscScalar  G;       // shear modulus
+	PetscScalar  K;       // bulk modulus                               [Pa]
+	PetscScalar  Kp;      // pressure dependence parameter              [ ]
+	PetscScalar  G;       // shear modulus                              [Pa]
 	// diffusion creep parameters
-	PetscScalar  Bd;      // pre-exponential constant
-	PetscScalar  Ed;      // activation energy
-	PetscScalar  Vd;      // activation volume
+	PetscScalar  Bd;      // pre-exponential constant                   [1/Pa/s]
+	PetscScalar  Ed;      // activation energy                          [J/mol]
+	PetscScalar  Vd;      // activation volume                          [m^3/mol]
 	// dislocation creep parameters
-	PetscScalar  Bn;      // pre-exponential constant
-	PetscScalar  n;       // power law exponent
-	PetscScalar  En;      // activation energy
-	PetscScalar  Vn;      // activation volume
+	PetscScalar  Bn;      // pre-exponential constant                   [1/Pa^n/s]
+	PetscScalar  n;       // power law exponent                         [ ]
+	PetscScalar  En;      // activation energy                          [J/mol]
+	PetscScalar  Vn;      // activation volume                          [m^3/mol]
 	// Peierls creep parameters
-	PetscScalar  Bp;      // pre-exponential constant
-	PetscScalar  Ep;      // activation energy
-	PetscScalar  Vp;      // activation volume
-	PetscScalar  taup;    // scaling stress
-	PetscScalar  gamma;   // approximation parameter
-	PetscScalar  q;       // stress-dependence parameter
+	PetscScalar  Bp;      // pre-exponential constant                   [1/s]
+	PetscScalar  Ep;      // activation energy                          [J/mol]
+	PetscScalar  Vp;      // activation volume                          [m^3/mol]
+	PetscScalar  taup;    // scaling stress                             [Pa]
+	PetscScalar  gamma;   // approximation parameter                    [ ]
+	PetscScalar  q;       // stress-dependence parameter                [ ]
 	// plasticity parameters
-	PetscScalar  fr;      // friction coefficient
-	PetscScalar  ch;      // cohesion
+	PetscScalar  fr;      // friction angle                             [deg]
+	PetscScalar  ch;      // cohesion                                   [Pa]
 	Soft_t      *frSoft;  // friction softening law parameters
 	Soft_t      *chSoft;  // cohesion softening law parameters
 	// thermal parameters
-	PetscScalar  alpha;   // thermal expansivity
-	PetscScalar  Cp;      // cpecific heat (capacity)
-	PetscScalar  k;       // thermal conductivity
-	PetscScalar  A;       // radiogenic heat production
+	PetscScalar  alpha;   // thermal expansivity                        [1/K]
+	PetscScalar  Cp;      // cpecific heat (capacity)                   [J/kg/K]
+	PetscScalar  k;       // thermal conductivity                       [W/m/k]
+	PetscScalar  A;       // radiogenic heat production                 [W/kg]
 
 } Material_t;
 
@@ -217,46 +217,40 @@ typedef struct
 {
 	// viscosity limits
 	PetscScalar eta_min;
-	PetscScalar eta_max;
-	// reference viscosity (initial guess)
-	PetscScalar eta_ref;
+	PetscScalar inv_eta_max;
+	PetscScalar eta_ref;     // reference viscosity (initial guess)
 	// reference temperature
 	PetscScalar TRef;
 	// universal gas constant
 	PetscScalar Rugc;
-	// viscosity & strain-rate tolerances
-	PetscScalar eta_atol; // viscosity absolute tolerance
-	PetscScalar eta_rtol; // viscosity relative tolerance
-	PetscScalar DII_atol; // strain rate absolute tolerance
-	PetscScalar DII_rtol; // strain rate relative tolerance
 	// background (reference) strain-rate
 	PetscScalar DII_ref;
 	// plasticity parameters limits
 	PetscScalar minCh;  // minimum cohesion
 	PetscScalar minFr;  // maximum friction
 	PetscScalar tauUlt; // ultimate yield stress
+	// fluid density for depth-dependent density model
+	PetscScalar rho_fluid;
 	// thermo-mechanical coupling controls
 	PetscScalar shearHeatEff; // shear heating efficiency parameter [0 - 1]
 	// rheology controls
-	PetscBool   quasiHarmAvg; // quasi-harmonic averaging regularization flag (plasticity)
+	PetscInt    quasiHarmAvg; // quasi-harmonic averaging regularization flag (plasticity)
 	PetscScalar cf_eta_min;   // visco-plastic regularization parameter (plasticity)
 	PetscScalar n_pw;         // power-law regularization parameter (plasticity)
-	PetscBool   initGuessFlg; // initial guess computation flag
-	PetscBool   presLimFlg;   // pressure limit flag for plasticity
-	PetscBool   presLimAct;   // activate pressure limit flag
-	// fluid density for depth-dependent density model
-	PetscScalar  rho_fluid;
-	// rock density if we want to use lithostatic pressure in viscosit calculations
-	PetscScalar  rho_lithos;
+	// pressure parameters
+	PetscInt    pLithoVisc;   // use lithostatic pressure for creep laws
+	PetscInt    pLithoPlast;  // use lithostatic pressure for plasticity
+	PetscInt    pLimPlast;    // limit pressure at first iteration for plasticity
 	// direction to the North for stress orientation
 	// counter-clockwise positive measured from x-axis
-	PetscScalar  theta_north;
+	PetscScalar theta_north;
 	// print warning messages
-	PetscBool    warn;
+	PetscInt    warn;
 	// matrix-free closed-form jacobian
-	PetscBool   jac_mat_free;
+	PetscInt    jac_mat_free;
+	// initial guess computation flag
+	PetscInt    initGuess;
 
 } MatParLim;
-
 //---------------------------------------------------------------------------
 #endif

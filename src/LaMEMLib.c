@@ -448,7 +448,7 @@ PetscErrorCode LaMEMLibDryRun(LaMEMLib *lm)
 		ierr = ADVMarkCrossFreeSurf(&actx, &surf, 0.05); CHKERRQ(ierr);
 
 		// set air phase to properly treat marker advection & temperature diffusion
-		if(surf.UseFreeSurf == PETSC_TRUE && jr.actTemp == PETSC_TRUE)
+		if(surf.UseFreeSurf == PETSC_TRUE && jr.actTemp)
 		{
 			actx.AirPhase = surf.AirPhase;
 			jr.AirPhase   = surf.AirPhase;
@@ -567,7 +567,7 @@ PetscErrorCode LaMEMLibDryRun(LaMEMLib *lm)
 			// switch off initial guess flag
 			if(!JacResGetStep(&jr))
 			{
-				jr.matLim.initGuessFlg = PETSC_FALSE;
+				jr.matLim.initGuess = 0;
 			}
 
 			// view nonlinear residual

@@ -58,180 +58,83 @@
 PetscErrorCode MatParLimRead(
 		FB        *fb,
 		Scaling   *scal,
-		MatParLim *matLim)
+		MatParLim *lim)
 {
-/*
-// scale gas constant with characteristic temperature
-	matLim->Rugc        *= scal->temperature;
-	matLim->rho_fluid   /= scal->density;
-	matLim->rho_lithos  /= scal->density;
-	matLim->theta_north /= scal->angle;
 
- 	// viscosity limits
-	PetscScalar eta_min;
-	PetscScalar eta_max;
-	// reference viscosity (initial guess)
-	PetscScalar eta_ref;
-	// reference temperature
-	PetscScalar TRef;
-	// universal gas constant
-	PetscScalar Rugc;
-	// viscosity & strain-rate tolerances
-	PetscScalar eta_atol; // viscosity absolute tolerance
-	PetscScalar eta_rtol; // viscosity relative tolerance
-	PetscScalar DII_atol; // strain rate absolute tolerance
-	PetscScalar DII_rtol; // strain rate relative tolerance
-	// background (reference) strain-rate
-	PetscScalar DII_ref;
-	// plasticity parameters limits
-	PetscScalar minCh;  // minimum cohesion
-	PetscScalar minFr;  // maximum friction
-	PetscScalar tauUlt; // ultimate yield stress
-	// thermo-mechanical coupling controls
-	PetscScalar shearHeatEff; // shear heating efficiency parameter [0 - 1]
-	// rheology controls
-	PetscBool   quasiHarmAvg; // quasi-harmonic averaging regularization flag (plasticity)
-	PetscScalar cf_eta_min;   // visco-plastic regularization parameter (plasticity)
-	PetscScalar n_pw;         // power-law regularization parameter (plasticity)
-	PetscBool   initGuessFlg; // initial guess computation flag
-	PetscBool   presLimFlg;   // pressure limit flag for plasticity
-	PetscBool   presLimAct;   // activate pressure limit flag
-	// fluid density for depth-dependent density model
-	PetscScalar  rho_fluid;
-	// rock density if we want to use lithostatic pressure in viscosit calculations
-	PetscScalar  rho_lithos;
-	// direction to the North for stress orientation
-	// counter-clockwise positive measured from x-axis
-	PetscScalar  theta_north;
-	// print warning messages
-	PetscBool    warn;
-	// matrix-free closed-form jacobian
-	PetscBool   jac_mat_free;
-// ===
-	// initialize material parameter limits
-	PetscBool flg;
-	PetscInt  cnt;
+	PetscScalar input_eta_max;
 
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
 
-//	matLim->eta_min      = usr->LowerViscosityCutoff;
-//	matLim->eta_max      = usr->UpperViscosityCutoff;
-//	matLim->eta_ref      = usr->InitViscosity;
+	// set defaults
+	lim->eta_min      = 0;
+	lim->inv_eta_max  = 0;
+	lim->TRef         = 0.0;
+	lim->minCh        = 0.0;
+	lim->minFr        = 0.0;
+	lim->tauUlt       = DBL_MAX;
+	lim->rho_fluid    = 0.0;
+	lim->shearHeatEff = 1.0;
+	lim->quasiHarmAvg = 0;
+	lim->cf_eta_min   = 0.0;
+	lim->n_pw         = 0.0;
+	lim->pLithoVisc   = 1;
+	lim->pLithoPlast  = 0;
+	lim->pLimPlast    = 0;
+	lim->theta_north  = 0.0;
+	lim->warn         = 0;
+	lim->jac_mat_free = 0;
+	lim->initGuess    = 1;
 
-	matLim->TRef         = 0.0;
-	matLim->Rugc         = 8.3144621;
-	matLim->eta_atol     = 0.0;
-	matLim->eta_rtol     = 1e-8;
-	matLim->DII_atol     = 0.0;
-	matLim->DII_rtol     = 1e-8;
-	matLim->minCh        = 0.0;
-	matLim->minFr        = 0.0;
-	matLim->tauUlt       = DBL_MAX;
-	matLim->shearHeatEff = 1.0;
+	// read values
+	ierr = getScalarParam(fb, _OPTIONAL_, "eta_min",      &lim->eta_min,      1, 1.0); CHKERRQ(ierr);
+	ierr = getScalarParam(fb, _OPTIONAL_, "eta_max",      &input_eta_max,     1, 1.0); CHKERRQ(ierr);
+	ierr = getScalarParam(fb, _REQUIRED_, "eta_ref",      &lim->eta_ref,      1, 1.0); CHKERRQ(ierr);
+	ierr = getScalarParam(fb, _OPTIONAL_, "TRef",         &lim->TRef,         1, 1.0); CHKERRQ(ierr);
+	ierr = getScalarParam(fb, _REQUIRED_, "DII_ref",      &lim->DII_ref,      1, 1.0); CHKERRQ(ierr);
+	ierr = getScalarParam(fb, _OPTIONAL_, "minCh",        &lim->minCh,        1, 1.0); CHKERRQ(ierr);
+	ierr = getScalarParam(fb, _OPTIONAL_, "minFr",        &lim->minFr,        1, 1.0); CHKERRQ(ierr);
+	ierr = getScalarParam(fb, _OPTIONAL_, "tauUlt",       &lim->tauUlt,       1, 1.0); CHKERRQ(ierr);
+	ierr = getScalarParam(fb, _OPTIONAL_, "rho_fluid",    &lim->rho_fluid,    1, 1.0); CHKERRQ(ierr);
+	ierr = getScalarParam(fb, _OPTIONAL_, "shearHeatEff", &lim->shearHeatEff, 1, 1.0); CHKERRQ(ierr);
+	ierr = getIntParam   (fb, _OPTIONAL_, "quasiHarmAvg", &lim->quasiHarmAvg, 1, 1);   CHKERRQ(ierr);
+	ierr = getScalarParam(fb, _OPTIONAL_, "cf_eta_min",   &lim->cf_eta_min,   1, 1.0); CHKERRQ(ierr);
+	ierr = getScalarParam(fb, _OPTIONAL_, "n_pw",         &lim->n_pw,         1, 1.0); CHKERRQ(ierr);
+	ierr = getIntParam   (fb, _OPTIONAL_, "pLithoVisc",   &lim->pLithoVisc,   1, 1);   CHKERRQ(ierr);
+	ierr = getIntParam   (fb, _OPTIONAL_, "pLithoPlast",  &lim->pLithoPlast,  1, 1);   CHKERRQ(ierr);
+	ierr = getIntParam   (fb, _OPTIONAL_, "pLimPlast",    &lim->pLimPlast,    1, 1);   CHKERRQ(ierr);
+	ierr = getScalarParam(fb, _OPTIONAL_, "theta_north",  &lim->theta_north,  1, 1.0); CHKERRQ(ierr);
+	ierr = getIntParam   (fb, _OPTIONAL_, "warn",         &lim->warn,         1, 1);   CHKERRQ(ierr);
+	ierr = getIntParam   (fb, _OPTIONAL_, "jac_mat_free", &lim->jac_mat_free, 1, 1);   CHKERRQ(ierr);
+	ierr = getIntParam   (fb, _OPTIONAL_, "initGuess",    &lim->initGuess,    1, 1);   CHKERRQ(ierr);
 
-	matLim->quasiHarmAvg = PETSC_FALSE;
-	matLim->cf_eta_min   = 0.0;
-	matLim->n_pw         = 0.0;
-
-	matLim->initGuessFlg = PETSC_TRUE;
-	matLim->rho_fluid    = 0.0;
-	matLim->rho_lithos 	 = 0.0;	 // lithostatic density
-	matLim->theta_north  = 90.0; // by default y-axis
-	matLim->warn         = PETSC_TRUE;
-	matLim->jac_mat_free = PETSC_FALSE;
-
-//	if(usr->DII_ref) matLim->DII_ref = usr->DII_ref;
-//	else
-//	{
-//		matLim->DII_ref = 1.0;
-//		PetscPrintf(PETSC_COMM_WORLD," WARNING: Reference strain rate DII_ref is not defined. Use a non-dimensional reference value of DII_ref =%f \n", matLim->DII_ref);
-//	}
-
-	cnt = 0;
-
-	// plasticity stabilization parameters
-	ierr = PetscOptionsHasName(NULL, NULL, "-quasi_harmonic", &flg); CHKERRQ(ierr);
-
-	if(flg == PETSC_TRUE) { matLim->quasiHarmAvg = PETSC_TRUE; cnt++; }
-
-	ierr = PetscOptionsGetScalar(NULL, NULL, "-cf_eta_min",  &matLim->cf_eta_min, &flg); CHKERRQ(ierr);
-
-	if(flg == PETSC_TRUE) { cnt++; }
-
-	ierr = PetscOptionsGetScalar(NULL, NULL, "-n_pw",  &matLim->n_pw, &flg); CHKERRQ(ierr);
-
-	if(flg == PETSC_TRUE) { cnt++; }
-
-	if(cnt > 1)
+	// set/read gas constant
+	if(scal->utype == _NONE_)
 	{
-		SETERRQ(PETSC_COMM_SELF, PETSC_ERR_USER, "Cannot combine plasticity stabilization methods (-quasi_harmonic -cf_eta_min -n_pw) \n");
+		ierr = getScalarParam(fb, _REQUIRED_, "Rugc", &lim->Rugc, 1, 1.0); CHKERRQ(ierr);
+	}
+	else
+	{
+		lim->Rugc = 8.3144621;
 	}
 
-	// set Jacobian flag
-	ierr = PetscOptionsHasName(NULL, NULL, "-jac_mat_free", &flg); CHKERRQ(ierr);
+	// scale parameters
+	// NOTE: scale gas constant with characteristic temperature
+	lim->eta_min     /=  scal->viscosity;
+	input_eta_max    /=  scal->viscosity;
+	lim->eta_ref     /=  scal->viscosity;
+	lim->TRef         = (lim->TRef + scal->Tshift)/scal->temperature;
+	lim->Rugc        *= scal->temperature;
+	lim->DII_ref     /= scal->strain_rate;
+	lim->minCh       /= scal->stress_si;
+	lim->minFr       /= scal->angle;
+	lim->tauUlt      /= scal->stress_si;
+	lim->rho_fluid   /= scal->density;
+	lim->theta_north /= scal->angle;
 
-	if(flg == PETSC_TRUE) matLim->jac_mat_free = PETSC_TRUE;
+	// set inverse of maximum viscosity
+	lim->inv_eta_max = 1.0/input_eta_max;
 
-	if(cnt &&  matLim->jac_mat_free == PETSC_TRUE)
-	{
-		SETERRQ(PETSC_COMM_SELF, PETSC_ERR_USER, "Analytical Jacobian is not available for plasticity stabilizations (-jac_mat_free -quasi_harmonic -cf_eta_min -n_pw) \n");
-	}
-
-	ierr = PetscOptionsGetScalar(NULL, NULL, "-rho_fluid",  &matLim->rho_fluid, NULL); CHKERRQ(ierr);
-	ierr = PetscOptionsGetScalar(NULL, NULL, "-rho_lithos", &matLim->rho_lithos, NULL); CHKERRQ(ierr);		// specify lithostatic density on commandline (if not set, we don't use this)
-
-	ierr = PetscOptionsGetScalar(NULL, NULL, "-theta_north", &matLim->theta_north, NULL); CHKERRQ(ierr);
-
-	ierr = PetscOptionsHasName(NULL, NULL, "-stop_warnings", &flg); CHKERRQ(ierr);
-
-	if(flg == PETSC_TRUE) matLim->warn = PETSC_FALSE;
-
-	ierr = PetscOptionsGetScalar(NULL, NULL, "-shearHeatEff", &matLim->shearHeatEff, NULL); CHKERRQ(ierr);
-
-	if(matLim->shearHeatEff > 1.0) matLim->shearHeatEff = 1.0;
-	if(matLim->shearHeatEff < 0.0) matLim->shearHeatEff = 0.0;
-
-*/
-
-	/*
-
-	// initialize
-	matLim->eta_min      = 1e-8;
-	matLim->eta_max      = 1e28;
-	matLim->Rugc         = 8.3144621;
-	matLim->eta_rtol     = 1e-8;
-	matLim->DII_rtol     = 1e-8;
-	matLim->minCh        = 1e-8;
-	matLim->tauUlt       = 1e12;
-	matLim->shearHeatEff = 1.0;
-	matLim->init_guess   = PETSC_TRUE;
-	matLim->plast_reg    = PETSC_FALSE;
-
-	// read from options
-	ierr = getScalarParam(fb, _OPTIONAL_, "eta_min",      &matLim->eta_min,      1, 1e-8,  1e28,  scal->viscosity  ); CHKERRQ(ierr);
-	ierr = getScalarParam(fb, _OPTIONAL_, "eta_max",      &matLim->eta_max,      1, 1e-8,  1e28,  scal->viscosity  ); CHKERRQ(ierr);
-	ierr = getScalarParam(fb, _OPTIONAL_, "TRef",         &matLim->TRef,         1, 0.0,   1e3,   scal->temperature); CHKERRQ(ierr);
-	ierr = getScalarParam(fb, _OPTIONAL_, "eta_atol",     &matLim->eta_atol,     1, 0.0,   1e5,   scal->viscosity  ); CHKERRQ(ierr);
-	ierr = getScalarParam(fb, _OPTIONAL_, "eta_rtol",     &matLim->eta_rtol,     1, 1e-16, 1e-5,  1.0              ); CHKERRQ(ierr);
-	ierr = getScalarParam(fb, _OPTIONAL_, "DII_atol",     &matLim->DII_atol,     1, 0.0,   1e-5,  scal->strain_rate); CHKERRQ(ierr);
-	ierr = getScalarParam(fb, _OPTIONAL_, "DII_rtol",     &matLim->DII_rtol,     1, 1e-16, 1e-5,  1.0              ); CHKERRQ(ierr);
-	ierr = getScalarParam(fb, _REQUIRED_, "DII_ref",      &matLim->DII_ref,      1, 1e-18, 1e-5,  scal->strain_rate); CHKERRQ(ierr);
-	ierr = getScalarParam(fb, _OPTIONAL_, "minCh",        &matLim->minCh,        1, 0.0,   1e12,  scal->stress     ); CHKERRQ(ierr);
-	ierr = getScalarParam(fb, _OPTIONAL_, "minFr",        &matLim->minFr,        1, 0.0,   60.0,  scal->angle      ); CHKERRQ(ierr);
-	ierr = getScalarParam(fb, _OPTIONAL_, "tauUlt",       &matLim->tauUlt,       1, 1e3,   1e12,  scal->stress     ); CHKERRQ(ierr);
-	ierr = getScalarParam(fb, _OPTIONAL_, "shearHeatEff", &matLim->shearHeatEff, 1, 0.0,   1.0,   1.0              ); CHKERRQ(ierr);
-	ierr = getScalarParam(fb, _OPTIONAL_, "rho_fluid",    &matLim->rho_fluid,    1, 1e2,   1e4,   scal->density    ); CHKERRQ(ierr);
-	ierr = getScalarParam(fb, _REQUIRED_, "eta_init",     &matLim->eta_init,     1, 1e-8,  1e28,  scal->viscosity  ); CHKERRQ(ierr);
-	ierr = getScalarParam(fb, _OPTIONAL_, "plast_ratio",  &matLim->plast_ratio,  1, 5.0,   1e2,   1.0              ); CHKERRQ(ierr);
-
-	// scale gas constant with characteristic temperature
-	matLim->Rugc *= scal->temperature;
-
-	// set viscosity regularization flag
-	if(matLim->plast_ratio) matLim->plast_reg = PETSC_TRUE;
-
-	 */
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
@@ -341,22 +244,6 @@ PetscErrorCode MatPhaseRead(
 	PetscScalar eta, eta0, e0;
 	PetscInt    ID = -1, chSoftID, frSoftID, MSN;
 	char        ndiff[MAX_NAME_LEN], ndisl[MAX_NAME_LEN], npeir[MAX_NAME_LEN];
-
-	// output labels
-	char        lbl_rho  [_lbl_sz_];
-	char        lbl_eta  [_lbl_sz_];
-	char        lbl_Bd   [_lbl_sz_];
-	char        lbl_E    [_lbl_sz_];
-	char        lbl_V    [_lbl_sz_];
-	char        lbl_Bn   [_lbl_sz_];
-	char        lbl_Bp   [_lbl_sz_];
-	char        lbl_tau  [_lbl_sz_];
-	char        lbl_fr   [_lbl_sz_];
-	char        lbl_alpha[_lbl_sz_];
-	char        lbl_cp   [_lbl_sz_];
-	char        lbl_k    [_lbl_sz_];
-	char        lbl_A    [_lbl_sz_];
-    char        lbl_beta [_lbl_sz_];
 
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
@@ -494,87 +381,99 @@ PetscErrorCode MatPhaseRead(
 	}
 
 	// print
-	if(scal->utype == _NONE_)
-	{
-		sprintf(lbl_rho,   "[ ]"         );
-		sprintf(lbl_eta,   "[ ]"         );
-		sprintf(lbl_Bd,    "[ ]"         );
-		sprintf(lbl_E,     "[ ]"         );
-		sprintf(lbl_V,     "[ ]"         );
-		sprintf(lbl_Bn,    "[ ]"         );
-		sprintf(lbl_Bp,    "[ ]"         );
-		sprintf(lbl_tau,   "[ ]"         );
-		sprintf(lbl_fr,    "[ ]"         );
-		sprintf(lbl_alpha, "[ ]"         );
-		sprintf(lbl_beta,  "[ ]"         );
-		sprintf(lbl_cp,    "[ ]"         );
-		sprintf(lbl_k,     "[ ]"         );
-		sprintf(lbl_A,     "[ ]"         );
-	}
-	else
-	{
-		sprintf(lbl_rho,   "[kg/m3]"     );
-		sprintf(lbl_eta,   "[Pa*s]"      );
-		sprintf(lbl_Bd,    "[1/(Pa*s)]"  );
-		sprintf(lbl_E,     "[J/mol]"     );
-		sprintf(lbl_V,     "[m3/mol]"    );
-		sprintf(lbl_Bn,    "[1/(Pa^n*s)]");
-		sprintf(lbl_Bp,    "[1/s]"       );
-		sprintf(lbl_tau,   "[Pa]"        );
-		sprintf(lbl_fr,    "[deg]"       );
-		sprintf(lbl_alpha, "[1/K]"       );
-		sprintf(lbl_beta,  "[1/Pa]"      );
-		sprintf(lbl_cp,    "[J/kg/K]"    );
-		sprintf(lbl_k,     "[W/m/K]"     );
-		sprintf(lbl_A,     "[W/m3]"      );
-	}
+	PetscPrintf(PETSC_COMM_WORLD,"Phase [%lld]: \n",(LLD)(m->ID));
 
-	PetscPrintf(PETSC_COMM_WORLD,"    Phase [%lld]: rho = %g %s, eta = %g %s, beta = %g %s\n", (LLD)(m->ID), m->rho, lbl_rho,  eta, lbl_eta, m->beta, lbl_beta);
-	if (strlen(ndiff)) PetscPrintf(PETSC_COMM_WORLD,"    Phase [%lld]: (diff ) diffusion creep profile: %s \n",(LLD)(m->ID), ndiff);
-	PetscPrintf(PETSC_COMM_WORLD,"    Phase [%lld]: (diff ) Bd = %g %s, Ed = %g %s, Vd = %g %s \n", (LLD)(m->ID), m->Bd, lbl_Bd, m->Ed, lbl_E, m->Vd, lbl_V);
-	if (strlen(ndisl)) PetscPrintf(PETSC_COMM_WORLD,"    Phase [%lld]: (disl ) dislocation creep profile: %s \n",(LLD)(m->ID), ndisl);
-	PetscPrintf(PETSC_COMM_WORLD,"    Phase [%lld]: (disl ) Bn = %g %s, En = %g %s, Vn = %g %s, n = %g [ ] \n", (LLD)(m->ID), m->Bn, lbl_Bn, m->En , lbl_E, m->Vn, lbl_V, m->n);
-	PetscPrintf(PETSC_COMM_WORLD,"    Phase [%lld]: (peirl) Bp = %g %s, Ep = %g %s, Vp = %g %s, taup = %g %s, gamma = %g [ ], q = %g [ ] \n", (LLD)(m->ID), m->Bp, lbl_Bp, m->Ep, lbl_E, m->Vp, lbl_V, m->taup, lbl_tau, m->gamma, m->q);
-	PetscPrintf(PETSC_COMM_WORLD,"    Phase [%lld]: (elast) G = %g %s, K = %g %s, Kp = %g [ ] \n", (LLD)(m->ID), m->G, lbl_tau, m->K, lbl_tau, m->Kp);
-	PetscPrintf(PETSC_COMM_WORLD,"    Phase [%lld]: (plast) cohesion = %g %s, friction angle = %g %s \n", (LLD)(m->ID),m->ch, lbl_tau, m->fr, lbl_fr);
-	PetscPrintf(PETSC_COMM_WORLD,"    Phase [%lld]: (sweak) cohesion SoftLaw = %lld [ ], friction SoftLaw = %lld [ ] \n", (LLD)(m->ID),(LLD)chSoftID, (LLD)frSoftID);
-	PetscPrintf(PETSC_COMM_WORLD,"    Phase [%lld]: (temp ) alpha = %g %s, cp = %g %s, k = %g %s, A = %g %s \n", (LLD)(m->ID),m->alpha, lbl_alpha, m->Cp, lbl_cp,m->k, lbl_k, m->A, lbl_A);
-	PetscPrintf(PETSC_COMM_WORLD,"    \n");
+	if(strlen(ndiff)) PetscPrintf(PETSC_COMM_WORLD,"    diffusion creep profile  : %s \n", ndiff);
+	if(strlen(ndisl)) PetscPrintf(PETSC_COMM_WORLD,"    dislocation creep profile: %s \n", ndisl);
+	if(strlen(ndisl)) PetscPrintf(PETSC_COMM_WORLD,"    dislocation creep profile: %s \n", ndisl);
+
+	PetscPrintf(PETSC_COMM_WORLD,"    (dens ): ");
+	MatPrintScalParam(m->rho,   "rho",   "[kg/m^3]", scal);
+	MatPrintScalParam(m->rho_n, "rho_n", "[ ]",      scal);
+	MatPrintScalParam(m->rho_c, "rho_c", "[1/m]",    scal);
+	MatPrintScalParam(m->beta,  "beta",  "[1/Pa]",   scal);
+	PetscPrintf(PETSC_COMM_WORLD,"\n");
+
+	PetscPrintf(PETSC_COMM_WORLD,"    (elast): ");
+	MatPrintScalParam(m->G,  "shear", "[Pa]", scal);
+	MatPrintScalParam(m->K,  "bulk",  "[Pa]", scal);
+	MatPrintScalParam(m->Kp, "Kp",    "[ ] ", scal);
+	PetscPrintf(PETSC_COMM_WORLD,"\n");
+
+	PetscPrintf(PETSC_COMM_WORLD,"    (diff ): ");
+	MatPrintScalParam(m->Bd, "Bd",  "[1/Pa/s]",  scal);
+	MatPrintScalParam(m->Ed, "Ed",  "[J/mol]",   scal);
+	MatPrintScalParam(m->Vd, "Vd",  "[m^3/mol]", scal);
+	MatPrintScalParam(eta,   "eta", "[Pa*s]",    scal);
+	PetscPrintf(PETSC_COMM_WORLD,"\n");
+
+	PetscPrintf(PETSC_COMM_WORLD,"    (disl ): ");
+	MatPrintScalParam(m->Bn, "Bn",   "[1/Pa^n/s]", scal);
+	MatPrintScalParam(m->En, "En",   "[J/mol]",    scal);
+	MatPrintScalParam(m->Vn, "Vn",   "[m^3/mol]",  scal);
+	MatPrintScalParam(m->n,  "n",    "[ ]",        scal);
+	MatPrintScalParam(eta0,  "eta0", "[Pa*s]",     scal);
+	MatPrintScalParam(e0,    "e0",   "[1/s]",      scal);
+	PetscPrintf(PETSC_COMM_WORLD,"\n");
+
+	PetscPrintf(PETSC_COMM_WORLD,"    (peirl): ");
+	MatPrintScalParam(m->Bp,    "Bp",    "[1/s]",     scal);
+	MatPrintScalParam(m->Ep,    "Ep",    "[J/mol]",   scal);
+	MatPrintScalParam(m->Vp,    "Vp",    "[m^3/mol]", scal);
+	MatPrintScalParam(m->taup,  "taup",  "[Pa]",      scal);
+	MatPrintScalParam(m->gamma, "gamma", "[ ]",       scal);
+	MatPrintScalParam(m->q,     "q",     "[ ]",       scal);
+	PetscPrintf(PETSC_COMM_WORLD,"\n");
+
+	PetscPrintf(PETSC_COMM_WORLD,"    (plast): ");
+	MatPrintScalParam(m->ch, "cohesion", "[Pa]",  scal);
+	MatPrintScalParam(m->fr, "friction", "[deg]", scal);
+	if(frSoftID != -1) PetscPrintf(PETSC_COMM_WORLD, "frSoftID = %lld ", (LLD)frSoftID);
+	if(chSoftID != -1) PetscPrintf(PETSC_COMM_WORLD, "chSoftID = %lld ", (LLD)chSoftID);
+	PetscPrintf(PETSC_COMM_WORLD,"\n");
+
+	PetscPrintf(PETSC_COMM_WORLD,"    (temp ): ");
+	MatPrintScalParam(m->alpha, "alpha", "[1/K]",    scal);
+	MatPrintScalParam(m->Cp,    "cp",    "[J/kg/K]", scal);
+	MatPrintScalParam(m->k,     "k",     "[W/m/k]",  scal);
+	MatPrintScalParam(m->A,     "A",     "[W/kg]",   scal);
+
+	PetscPrintf(PETSC_COMM_WORLD,"\n");
 
 	// scale
 	// NOTE: [1] activation energy is not scaled
 	//       [2] activation volume is multiplied with characteristic stress in SI units
 
-	m->rho     /= scal->density;
-	m->rho_c   *= scal->length_si;
-	m->beta    *= scal->stress_si; // [1/Pa]
+	m->rho    /= scal->density;
+	m->rho_c  *= scal->length_si;
+	m->beta   *= scal->stress_si; // [1/Pa]
 
 	// diffusion creep
-	m->Bd      *= scal->viscosity;
-	m->Vd      *= scal->stress_si;
+	m->Bd    *= scal->viscosity;
+	m->Vd    *= scal->stress_si;
 
 	// dislocation creep (power-law)
-	m->Bn      *= pow(scal->stress_si, m->n)*scal->time_si;
-	m->Vn      *= scal->stress_si;
+	m->Bn    *= pow(scal->stress_si, m->n)*scal->time_si;
+	m->Vn    *= scal->stress_si;
 
 	// Peierls creep
-	m->Bp      /=  scal->strain_rate;
-	m->Vp      *=  scal->stress_si;
-	m->taup    /=  scal->stress_si;
+	m->Bp     /=  scal->strain_rate;
+	m->Vp     *=  scal->stress_si;
+	m->taup   /=  scal->stress_si;
 
 	// elasticity
-	m->G       /= scal->stress_si;
-	m->K       /= scal->stress_si;
+	m->G     /= scal->stress_si;
+	m->K     /= scal->stress_si;
 
 	// plasticity
-	m->ch      /= scal->stress_si;
-	m->fr      /= scal->angle;
+	m->ch    /= scal->stress_si;
+	m->fr    /= scal->angle;
 
 	// temperature
-	m->alpha   /= scal->expansivity;
-	m->Cp      /= scal->cpecific_heat;
-	m->k       /= scal->conductivity;
-	m->A       /= scal->heat_production;
+	m->alpha /= scal->expansivity;
+	m->Cp    /= scal->cpecific_heat;
+	m->k     /= scal->conductivity;
+	m->A     /= scal->heat_production;
 
 	PetscFunctionReturn(0);
 }

@@ -66,6 +66,36 @@ PetscErrorCode JacResCreate(JacRes *jr, FB *fb)
 	PetscFunctionBegin;
 
 /*
+	// read from options
+	ierr = getScalarParam(fb, _OPTIONAL_, "FSSA",   &jr->FSSA,      1,  0.0, 1.0, 1.0); CHKERRQ(ierr);
+	ierr = getScalarParam(fb, _OPTIONAL_, "FSSA",   &jr->FSSA,      1,  0.0, 1.0, 1.0); CHKERRQ(ierr);
+	ierr = getScalarParam(fb, _OPTIONAL_, "FSSA",   &jr->FSSA,      1,  0.0, 1.0, 1.0); CHKERRQ(ierr);
+	ierr = getIntParam   (fb, _OPTIONAL_, "pShift", &jr->pShiftAct, 1,  0,   1       ); CHKERRQ(ierr);
+
+	ierr = getIntParam   (fb, _OPTIONAL_, "pShift", &jr->pShiftAct, 1,  0,   1       ); CHKERRQ(ierr);
+	ierr = getIntParam   (fb, _OPTIONAL_, "pShift", &jr->pShiftAct, 1,  0,   1       ); CHKERRQ(ierr);
+
+
+	ierr = PetscOptionsHasName(NULL, NULL, "-ViscoPLithosOff", &flag); CHKERRQ(ierr);
+	ierr = PetscOptionsHasName(NULL, NULL, "-NoPressureLimit", &flag2); CHKERRQ(ierr);
+	ierr = PetscOptionsHasName(NULL, NULL, "-EmployLithostaticPressureInYieldFunction", &flag3); CHKERRQ(ierr);
+
+	pLithoVisc
+	pLithoPlast
+	pLimPlast
+*/
+
+/*
+
+
+	// parameters & controls
+	PetscScalar grav[SPDIM]; // global gravity components
+	PetscScalar FSSA;        // density gradient penalty parameter
+	PetscScalar gtol;        // geometry tolerance
+	PetscInt    pShiftAct;   // pressure shift activation flag
+	PetscInt    actTemp;     // temperature diffusion activation flag
+
+
 
 	PetscInt    i;
 	Material_t *m;
@@ -77,9 +107,6 @@ PetscErrorCode JacResCreate(JacRes *jr, FB *fb)
 	jr->FSSA      = 1.0;
 	jr->pShiftAct = 1;
 
-	// read from options
-	ierr = getScalarParam(fb, _OPTIONAL_, "FSSA",   &jr->FSSA,      1,  0.0, 1.0, 1.0); CHKERRQ(ierr);
-	ierr = getIntParam   (fb, _OPTIONAL_, "pShift", &jr->pShiftAct, 1,  0,   1       ); CHKERRQ(ierr);
 
 	// read material parameter limits
 	ierr = MatParLimRead(fb, jr->scal, &jr->matLim); CHKERRQ(ierr);
@@ -146,7 +173,7 @@ PetscErrorCode JacResCreate(JacRes *jr, FB *fb)
 */
 
 /*
-		// parameters & controls
+	// parameters & controls
 	PetscScalar grav[SPDIM]; // global gravity components
 	PetscScalar FSSA;        // density gradient penalty parameter
 	PetscScalar gtol;        // geometry tolerance
@@ -487,7 +514,7 @@ PetscErrorCode JacResGetPressShift(JacRes *jr)
 	PetscFunctionBegin;
 
 	// check if requested
-	if(jr->pShiftAct != PETSC_TRUE) PetscFunctionReturn(0);
+	if(!jr->pShiftAct) PetscFunctionReturn(0);
 
 	fs      = jr->fs;
 	mcz     = fs->dsz.tcels - 1;
@@ -856,7 +883,6 @@ PetscErrorCode JacResGetResidual(JacRes *jr)
 	PetscScalar ***dxx, ***dyy, ***dzz, ***dxy, ***dxz, ***dyz, ***p, ***T, ***p_lithos;
 	PetscScalar eta_creep, eta_viscoplastic;
 	PetscScalar depth, pc_lithos;
-//	PetscScalar rho_lithos;
 //	PetscScalar alpha, Tn,
 
 	PetscErrorCode ierr;
@@ -878,7 +904,6 @@ PetscErrorCode JacResGetResidual(JacRes *jr)
 	dt        =  jr->ts->dt;        // time step
 	fssa      =  jr->FSSA;          // density gradient penalty parameter
 	grav      =  jr->grav;          // gravity acceleration
-//	rho_lithos=  matLim->rho_lithos;// density to compute lithostatic pressure in viscosity formulation
 	pShift    =  jr->pShift;    	// pressure shift
 
 	// clear local residual vectors
@@ -1800,7 +1825,7 @@ PetscErrorCode JacResViewRes(JacRes *jr)
 
 	f2 = sqrt(fx*fx + fy*fy + fz*fz);
 
-	if(jr->actTemp == PETSC_TRUE)
+	if(jr->actTemp)
 	{
     	ierr = JacResGetTempRes(jr);         CHKERRQ(ierr);
 		ierr = VecNorm(jr->ge, NORM_2, &e2); CHKERRQ(ierr);
@@ -1816,7 +1841,7 @@ PetscErrorCode JacResViewRes(JacRes *jr)
 	PetscPrintf(PETSC_COMM_WORLD, "  Momentum: \n" );
 	PetscPrintf(PETSC_COMM_WORLD, "    |mRes|_2 = %12.12e \n", f2);
 
-	if(jr->actTemp == PETSC_TRUE)
+	if(jr->actTemp)
 	{
 		PetscPrintf(PETSC_COMM_WORLD, "  Energy: \n" );
 		PetscPrintf(PETSC_COMM_WORLD, "    |eRes|_2 = %12.12e \n", e2);
@@ -2126,7 +2151,7 @@ PetscErrorCode JacResGetISA(JacRes *jr)
 	END_STD_LOOP
 
 	// print warning
-	if(jr->matLim.warn == PETSC_TRUE)
+	if(jr->matLim.warn)
 	{
 		if(ISParallel(PETSC_COMM_WORLD))
 		{

@@ -231,12 +231,6 @@ PetscErrorCode FormResidual(SNES snes, Vec x, Vec f, void *ctx)
 	nl = (NLSol*)ctx;
 	jr = nl->pc->pm->jr;
 
-	// apply pressure limit at the first visco-plastic timestep and iteration
-    if(jr->ts->istep == 1 && jr->matLim.presLimAct == PETSC_TRUE)
-    {
-    	jr->matLim.presLimFlg = PETSC_TRUE;
-	}
-
 	// copy solution from global to local vectors, enforce boundary constraints
 	ierr = JacResCopySol(jr, x); CHKERRQ(ierr);
 
@@ -250,9 +244,6 @@ PetscErrorCode FormResidual(SNES snes, Vec x, Vec f, void *ctx)
 
 	// copy residuals to global vector
 	ierr = JacResCopyRes(jr, f); CHKERRQ(ierr);
-
-	// deactivate pressure limit after it has been activated
-	jr->matLim.presLimFlg = PETSC_FALSE;
 
 	PetscFunctionReturn(0);
 }
@@ -298,6 +289,7 @@ PetscErrorCode FormJacobian(SNES snes, Vec x, Mat Amat, Mat Pmat, void *ctx)
 	PMat        pm;
 	JacRes      *jr;
 	PetscInt    it, it_newton;
+	MatParLim   *lim;
 	PetscScalar nrm;
 
 	// clear unused parameters
@@ -308,10 +300,12 @@ PetscErrorCode FormJacobian(SNES snes, Vec x, Mat Amat, Mat Pmat, void *ctx)
 	PetscFunctionBegin;
 
 	// access context
-	nl = (NLSol*)ctx;
-	pc = nl->pc;
-	pm = pc->pm;
-	jr = pm->jr;
+	nl  = (NLSol*)ctx;
+	pc  = nl->pc;
+	pm  = pc->pm;
+	jr  = pm->jr;
+	lim = &jr->matLim;
+
     it_newton = 0;
 
     //========================
@@ -336,7 +330,7 @@ PetscErrorCode FormJacobian(SNES snes, Vec x, Mat Amat, Mat Pmat, void *ctx)
 		//if(nrm < nl->refRes*nl->tolPic || nl->it > nl->nPicIt)
 		if(nrm < nl->refRes*nl->rtolPic)
 		{
-			if(jr->matLim.jac_mat_free == PETSC_TRUE)
+			if(jr->matLim.jac_mat_free)
 			{
 				PetscPrintf(PETSC_COMM_WORLD,"===================================================\n");
 				PetscPrintf(PETSC_COMM_WORLD,"SWITCH TO MF JACOBIAN: ||F||/||F0||=%e, PicIt=%lld \n", nrm/nl->refRes, (LLD)nl->nPicIt);
@@ -391,10 +385,10 @@ PetscErrorCode FormJacobian(SNES snes, Vec x, Mat Amat, Mat Pmat, void *ctx)
 		it_newton++;
 	}
 
-	// switch off pressure limit for plasticity after first timestep and iteration (after GetResidual)
-	if(jr->ts->istep >=1)
+	// switch off pressure limit for plasticity after first iteration
+	if(!lim->initGuess && it > 1)
 	{
-		jr->matLim.presLimAct = PETSC_FALSE;
+		lim->pLimPlast = 0;
 	}
 
 	// count iterations
@@ -580,7 +574,7 @@ PetscErrorCode SNESCoupledTest(
 
 	if(!it) PetscFunctionReturn(0);
 
-    if(jr->actTemp == PETSC_TRUE)
+    if(jr->actTemp)
     {
     	ierr = JacResGetTempRes(jr);                        CHKERRQ(ierr);
     	ierr = JacResGetTempMat(jr);                        CHKERRQ(ierr);

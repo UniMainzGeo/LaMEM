@@ -76,6 +76,20 @@ PetscErrorCode MatPhaseRead(
 		PetscInt    numSoft,
 		Soft_t     *matSoft);
 
+static inline void MatPrintScalParam(PetscScalar par, const char key[], const char label[], Scaling *scal)
+{
+	if(par == 0.0) return;
+
+	if(scal->utype == _NONE_)
+	{
+		PetscPrintf(PETSC_COMM_WORLD,"%s = %g [ ]  ", key, par);
+	}
+	else
+	{
+		PetscPrintf(PETSC_COMM_WORLD, "%s = %g [] %s  ", key, par, label);
+	}
+}
+
 //---------------------------------------------------------------------------
 //............ PREDEFINED RHEOLOGICAL PROFILES (from literature) ............
 //---------------------------------------------------------------------------

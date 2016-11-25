@@ -16,14 +16,14 @@
 # units = none - input & output is non-dimensional
 # units = si   - input & output is in SI units
 # units = geo  - input & output is in SI units, except:
-# 
+#
 #    time        - Myr
 #    length      - km
 #    velocity    - cm/yr
 #    stress      - MPa
 #    heat_flux   - mW/m^2
 #    Temperature - C
-# 
+#
 # NOTE:
 #
 # * characteristic values must ALWAYS be provided in SI units
@@ -73,8 +73,8 @@
 
 # Number of cells for all segments
 
-	nel_x = 32    
-	nel_y = 32    
+	nel_x = 32
+	nel_y = 32
 	nel_z = 32
 
 # Coordinates of all segments (including start and end points)
@@ -98,7 +98,7 @@
 # segment 3: [0.8 1.0], 2 cells,  increasing spacing  (sz.end/ sz.beg = 3.0)
 
 #	nseg_x  = 3
-#	nel_x   = 10 4 2    
+#	nel_x   = 10 4 2
 #	coord_x = 0.0 0.7 0.8 1.0
 #	bias_x  = 0.3 1.0 3.0
 
@@ -113,33 +113,47 @@
 	exx_rate = 1e-15 2e-15 1e-15 # strain rates for each interval
 
 	eyy_num  = 3                 # ... same for y-axis
-	eyy_time = 0.1 5.0 
+	eyy_time = 0.1 5.0
 	eyy_rate = 1e-15 2e-15 1e-15
 
-# Pushing block parameters
+	ExxNumPeriods
+	ExxTimeDelims
+	ExxStrainRates
+	EyyNumPeriods
+	EyyTimeDelims
+	EyyStrainRates
 
-#	push_num
-#	push_dx 
-#	push_dy 
-#	push_dz 
-#	push_xcen
-#	push_ycen
-#	push_zcen
-#	push_theta
-#	push_time
-#	push_vel
-#	push_omega
-#	push_coord
-#	push_dir
+	<BCBlockStart>
+		npath
+		theta
+		time
+		path
+		npoly
+		poly
+		bot
+		top
+	<BCBlockEnd>
+
+	dbox_num
+	dbox_bounds
+	dbox_zvel
+
+	bvel_phase
+	bvel_bot
+	bvel_top
+	bvel_velin
+
+	bc_gamma_xz
+
+	open_top_bound
+
+	noslip
 
 # Boundary temperature
 
 	temp_top = 0.0
 	temp_bot = 1300.0;
 
-# Gravity vector
-
-	gravity  = 0.0 0.0 -10.0 
 
 #===============================================================================
 # Jacobian & residual evaluation parameters
@@ -147,6 +161,11 @@
 
 	pshift = 1   # enforce zero pressure at top level
 	FSSA   = 1.0 # density gradient penalty parameter
+
+# Gravity vector
+
+	gravity  = 0.0 0.0 -10.0
+
 
 #===============================================================================
 # Model setup & advection
@@ -158,13 +177,13 @@
 
 #	msetup = files      # requires mark_file parameter
 #	msetup = polygons   # requires poly_file parameter
-#	msetup = diapir   
-#	msetup = block    
+#	msetup = diapir
+#	msetup = block
 #	msetup = subduction
-#	msetup = folding  
+#	msetup = folding
 #	msetup = detachment
-#	msetup = slab     
-#	msetup = spheres 
+#	msetup = slab
+#	msetup = spheres
 #	msetup = bands
 #	msetup = domes
 
@@ -182,11 +201,11 @@
 
 	save_mark = 1
 
-# Subsiduary parameters for hard-coded setups 
+# Subsiduary parameters for hard-coded setups
 
 #	diapir_h = 0.5
 
-#	block_bounds = 0.25 0.75 0.25 0.75 0.25 0.75 
+#	block_bounds = 0.25 0.75 0.25 0.75 0.25 0.75
 
 #	subduction_slab_thick = 0.2
 #	subduction_air_thick  = 0.1
@@ -196,7 +215,7 @@
 #	folding_step_x    = 0.0 0.5  # step perturbation x-bounds
 #	folding_step_y    = 0.0 1.0  # step perturbation y-bounds
 #	folding_step_amp  = 0.05     # step perturbation amplitude
-#	folding_layer_1   = 0.1 0.2  # top & bottom bounds of layers [1-10] 
+#	folding_layer_1   = 0.1 0.2  # top & bottom bounds of layers [1-10]
 
 #	detachment_seed_W = 0.5
 #	detachment_seed_L = 1.0
@@ -204,17 +223,17 @@
 #	detachment_offset = 0.3
 #	detachment_layer  = 0.1 0.2
 
-#	slab_thick  = 80.0  
-#	slab_length = 250.0 
-#	slab_depth  = 250.0 
+#	slab_thick  = 80.0
+#	slab_length = 250.0
+#	slab_depth  = 250.0
 
 #	spheres_num = 10
 #	spheres_rad = 0.1
 
 #	bands_layer_thick
-#	bands_layer_bot 
-#	bands_seed_use  
-#	bands_seed_size 
+#	bands_layer_bot
+#	bands_seed_use
+#	bands_seed_size
 #	bands_seed_offset
 #	bands_seed_length
 
@@ -243,19 +262,19 @@
 # Material parameters limiters
 #===============================================================================
 
-#	eta_min    
-#	eta_max    
-#	eta_atol   
-#	eta_rtol   
-#	DII_atol   
-#	DII_rtol   
-#	DII_ref    
-#	min_ch      
-#	min_fr      
-#	tau_ult     
+#	eta_min
+#	eta_max
+#	eta_atol
+#	eta_rtol
+#	DII_atol
+#	DII_rtol
+#	DII_ref
+#	min_ch
+#	min_fr
+#	tau_ult
 #	shear_heat
-#	rho_fluid  
-#	eta_init   
+#	rho_fluid
+#	eta_init
 #	plast_ratio
 
 #===============================================================================
@@ -265,14 +284,14 @@
 # Define softening laws (maximum 10)
 
 	<SofteningStart>
-		ID   = 0   # softening law ID      
+		ID   = 0   # softening law ID
 		APS1 = 0.1 # begin of softening APS
-		APS2 = 1.0 # end of softening APS  
-		A    = 0.7 # reduction ratio 
-	<SofteningEnd>       
+		APS2 = 1.0 # end of softening APS
+		A    = 0.7 # reduction ratio
+	<SofteningEnd>
 
 # Define material properties for all phases (maximum 32)
-# By default all rheological mechanisms are deactivated 
+# By default all rheological mechanisms are deactivated
 # List only active parameters in the material data block
 
 	<MaterialStart>
@@ -318,7 +337,7 @@
 		k         = 2.5    # thermal conductivity
 		A         = 1e-9   # radiogenic heat production
 	<MaterialEnd>
-   
+
 #===============================================================================
 # Objective function
 #===============================================================================
@@ -336,13 +355,13 @@
 #===============================================================================
 # Output
 #===============================================================================
- 
+
 #	out_surf_pvd        = 1
 #	out_surf_velocity   = 1
 #	out_surf_topography = 1
 #	out_surf_amplitude  = 1
 #	out_pvd             = 1
-#	out_phase           = 1  
+#	out_phase           = 1
 #	out_density         = 1
 #	out_viscosity       = 1
 #	out_velocity        = 1
@@ -355,10 +374,10 @@
 
 # Grid output options (output is always active)
 
-	out_moment_res = 1 
-	out_cont_res   = 1   
-	out_energ_res  = 1 
- 
+	out_moment_res = 1
+	out_cont_res   = 1
+	out_energ_res  = 1
+
 # Free surface output options (optput is activated by tracking free surface)
 
 	out_surf_velocity   = 1
@@ -439,5 +458,5 @@
 	-objects_dump
 
 <PetscOptionsEnd>
-    
+
 #===============================================================================
