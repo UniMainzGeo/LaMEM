@@ -2899,7 +2899,8 @@ PetscErrorCode JacResGetMomentumResidualAndPressure(JacRes *jr, UserCtx *user)
 	PetscScalar eta_creep, eta_viscoplastic;;
 	PetscScalar depth, pc_lithos;
 
-	PetscScalar dx, dy, dz, h, Ih4, I4h4, source_time, M0, Mxx, Myy, Mzz, Mxy, Mxz, Myz;
+	//PetscScalar dx, dy, dz, h, Ih4, I4h4;
+	PetscScalar hx, hy, hz, V, source_time, M0, Mxx, Myy, Mzz, Mxy, Mxz, Myz;
 
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
@@ -3103,12 +3104,13 @@ PetscErrorCode JacResGetMomentumResidualAndPressure(JacRes *jr, UserCtx *user)
 
 		if ( jr->SeismicSource == PETSC_TRUE && jr->SourceParams.source_type==MOMENT && jr->SourceParams.i == i && jr->SourceParams.j == j && jr->SourceParams.k == k) {
 			// size of cell
-			dx = SIZE_CELL(i, sx, fs->dsx);
+			/*dx = SIZE_CELL(i, sx, fs->dsx);
 			dy = SIZE_CELL(j, sy, fs->dsy);
 			dz = SIZE_CELL(k, sz, fs->dsz);
 			h=1.0; //dx*dy*dz; // Volume of the grid cell
 			Ih4	=1.0/(h*h*h*h);
 			I4h4=Ih4/4.0;
+
 			time =  JacResGetTime(jr);
 			source_time = jr->SourceParams.amplitude*exp(-jr->SourceParams.alfa*((time-jr->SourceParams.t0)*(time-jr->SourceParams.t0)));
 
@@ -3136,7 +3138,43 @@ PetscErrorCode JacResGetMomentumResidualAndPressure(JacRes *jr, UserCtx *user)
 			fz[k+1][j][i+1] += I4h4 * Mxz;		fz[k+1][j][i-1] -= I4h4 * Mxz;
 			fz[k][j][i+1] 	+= I4h4 * Mxz;		fz[k][j][i-1] 	-= I4h4 * Mxz;
 			fz[k+1][j+1][i] += I4h4 * Myz;		fz[k+1][j-1][i] -= I4h4 * Myz;
-			fz[k][j+1][i] 	+= I4h4 * Myz;		fz[k][j-1][i] 	-= I4h4 * Myz;
+			fz[k][j+1][i] 	+= I4h4 * Myz;		fz[k][j-1][i] 	-= I4h4 * Myz;*/
+
+
+			// From Graves 1996, trying to generalize for non cubic cells
+			// sizes of cell:
+			hx = SIZE_CELL(i, sx, fs->dsx);
+			hy = SIZE_CELL(j, sy, fs->dsy);
+			hz = SIZE_CELL(k, sz, fs->dsz);
+			V = hx*hy*hz; // Volume of the grid cell
+			time =  JacResGetTime(jr);
+			source_time = jr->SourceParams.amplitude*exp(-jr->SourceParams.alfa*((time-jr->SourceParams.t0)*(time-jr->SourceParams.t0)));
+
+			M0=jr->SourceParams.moment_tensor.M0;
+			Mxx=M0*jr->SourceParams.moment_tensor.Mxx*source_time;
+			Myy=M0*jr->SourceParams.moment_tensor.Myy*source_time;
+			Mzz=M0*jr->SourceParams.moment_tensor.Mzz*source_time;
+			Mxy=M0*jr->SourceParams.moment_tensor.Mxy*source_time;
+			Mxz=M0*jr->SourceParams.moment_tensor.Mxz*source_time;
+			Myz=M0*jr->SourceParams.moment_tensor.Myz*source_time;
+
+			fx[k][j][i+1] 	+= Mxx/hx/V;	fx[k][j][i] 	-= Mxx/hx/V;
+			fx[k][j+1][i+1] += Mxy/4/hy/V;	fx[k][j-1][i+1] -= Mxy/4/hy/V;
+			fx[k][j+1][i] 	+= Mxy/4/hy/V;	fx[k][j-1][i] 	-= Mxy/4/hy/V;
+			fx[k+1][j][i+1] += Mxz/4/hz/V;	fx[k-1][j][i+1] -= Mxz/4/hz/V;
+			fx[k+1][j][i] 	+= Mxz/4/hz/V;	fx[k-1][j][i] 	-= Mxz/4/hz/V;
+
+			fy[k][j+1][i] 	+= Myy/hy/V;	fy[k][j][i] 	-= Myy/hy/V;
+			fy[k][j+1][i+1] += Mxy/4/hx/V;	fy[k][j+1][i-1] -= Mxy/4/hx/V;
+			fy[k][j][i+1] 	+= Mxy/4/hx/V;	fy[k][j][i-1] 	-= Mxy/4/hx/V;
+			fy[k+1][j+1][i] += Myz/4/hz/V;	fy[k-1][j+1][i] -= Myz/4/hz/V;
+			fy[k+1][j][i] 	+= Myz/4/hz/V;	fy[k-1][j][i] 	-= Myz/4/hz/V;
+
+			fz[k+1][j][i] 	+= Mzz/hz/V;	fz[k][j][i] 	-= Mzz/hz/V;
+			fz[k+1][j][i+1] += Mxz/4/hx/V;	fz[k+1][j][i-1] -= Mxz/4/hx/V;
+			fz[k][j][i+1] 	+= Mxz/4/hx/V;	fz[k][j][i-1] 	-= Mxz/4/hx/V;
+			fz[k+1][j+1][i] += Myz/4/hy/V;	fz[k+1][j-1][i] -= Myz/4/hy/V;
+			fz[k][j+1][i] 	+= Myz/4/hy/V;	fz[k][j-1][i] 	-= Myz/4/hy/V;
 		}
 		///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
