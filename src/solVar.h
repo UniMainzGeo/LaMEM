@@ -199,6 +199,7 @@ typedef struct
 	// plasticity parameters
 	PetscScalar  fr;      // friction coefficient
 	PetscScalar  ch;      // cohesion
+	PetscScalar  rp;      // ratio of pore pressure to overburden stress
 	Soft_t      *frSoft;  // friction softening law parameters
 	Soft_t      *chSoft;  // cohesion softening law parameters
 	// thermal parameters

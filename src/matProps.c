@@ -243,6 +243,7 @@ PetscErrorCode MatPropGetStruct(FILE *fp,
 	//============================================================
 	getMatPropScalar(fp, ils, ile, "cohesion",  &m->ch,    NULL);
 	getMatPropScalar(fp, ils, ile, "friction",  &m->fr,    NULL);
+	getMatPropScalar(fp, ils, ile, "lambda",    &m->rp,    NULL);
 	getMatPropInt   (fp, ils, ile, "chSoftID",  &chSoftID, NULL);
 	getMatPropInt   (fp, ils, ile, "frSoftID",  &frSoftID, NULL);
 	//============================================================
@@ -273,6 +274,11 @@ PetscErrorCode MatPropGetStruct(FILE *fp,
 	if(m->fr && !m->ch)
 	{
 		SETERRQ1(PETSC_COMM_SELF, PETSC_ERR_USER, "Nonzero cohesion must be specified for phase %lld", (LLD)ID);
+	}
+
+	if((m->rp>1) || (m->rp<0))
+	{
+		SETERRQ1(PETSC_COMM_SELF, PETSC_ERR_USER, "pore pressure ratio must be between 0 and 1 for phase %lld", (LLD)ID);
 	}
 
 	// set pointers to softening laws
@@ -356,7 +362,7 @@ PetscErrorCode MatPropGetStruct(FILE *fp,
 	PetscPrintf(PETSC_COMM_WORLD,"    Phase [%lld]: (disl ) Bn = %g %s, En = %g %s, Vn = %g %s, n = %g [ ] \n", (LLD)(m->ID), m->Bn, lbl_Bn, m->En , lbl_E, m->Vn, lbl_V, m->n);
 	PetscPrintf(PETSC_COMM_WORLD,"    Phase [%lld]: (peirl) Bp = %g %s, Ep = %g %s, Vp = %g %s, taup = %g %s, gamma = %g [ ], q = %g [ ] \n", (LLD)(m->ID), m->Bp, lbl_Bp, m->Ep, lbl_E, m->Vp, lbl_V, m->taup, lbl_tau, m->gamma, m->q);
 	PetscPrintf(PETSC_COMM_WORLD,"    Phase [%lld]: (elast) G = %g %s, K = %g %s, Kp = %g [ ] \n", (LLD)(m->ID), m->G, lbl_tau, m->K, lbl_tau, m->Kp);
-	PetscPrintf(PETSC_COMM_WORLD,"    Phase [%lld]: (plast) cohesion = %g %s, friction angle = %g %s \n", (LLD)(m->ID),m->ch, lbl_tau, m->fr, lbl_fr);
+	PetscPrintf(PETSC_COMM_WORLD,"    Phase [%lld]: (plast) cohesion = %g %s, friction angle = %g %s, pore pressure ratio = %g [ ] \n", (LLD)(m->ID),m->ch, lbl_tau, m->fr, lbl_fr, m->rp);
 	PetscPrintf(PETSC_COMM_WORLD,"    Phase [%lld]: (sweak) cohesion SoftLaw = %lld [ ], friction SoftLaw = %lld [ ] \n", (LLD)(m->ID),(LLD)chSoftID, (LLD)frSoftID);
 	PetscPrintf(PETSC_COMM_WORLD,"    Phase [%lld]: (temp ) alpha = %g %s, cp = %g %s, k = %g %s, A = %g %s \n", (LLD)(m->ID),m->alpha, lbl_alpha, m->Cp, lbl_cp,m->k, lbl_k, m->A, lbl_A);
 	PetscPrintf(PETSC_COMM_WORLD,"    \n");

@@ -146,6 +146,7 @@ typedef struct
 	DM DA_CELL_2D; // 2D cell center grid
 
 	Vec lp_lithos; // lithostatic pressure
+	Vec lp_pore;   // pore pressure
 
 } JacRes;
 //---------------------------------------------------------------------------
@@ -287,6 +288,9 @@ PetscErrorCode JacResGetOverPressure(JacRes *jr, Vec p);
 
 // compute lithostatic pressure in the cell centers
 PetscErrorCode JacResGetLithoStaticPressure(JacRes *jr);
+
+// compute fluid pressure in the cell centers
+PetscErrorCode JacResGetPorePressure(JacRes *jr);
 
 //---------------------------------------------------------------------------
 // MACROS

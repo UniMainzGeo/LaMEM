@@ -65,6 +65,7 @@ PetscErrorCode ConstEqCtxSetup(
 	PetscScalar  dt,            // time step
 	PetscScalar  p,             // pressure
 	PetscScalar  p_lithos,      // lithostatic pressure
+	PetscScalar  p_pore,        // pore pressure
 	PetscScalar  T)             // temperature
 {
 	// setup nonlinear constitutive equation evaluation context
@@ -194,7 +195,7 @@ PetscErrorCode ConstEqCtxSetup(
 		}
 		else{
 			// use dynamic pressure in evaluating the yield function [default]
-			ctx->taupl = p * sin(fr) + ch * cos(fr);
+			ctx->taupl = (p - p_pore) * sin(fr) + ch * cos(fr);
 		}
 		pd = 1;
 	}
@@ -430,6 +431,7 @@ PetscErrorCode DevConstEq(
 	PetscScalar *phRat,     		// phase ratios
 	MatParLim   *lim,       		// phase parameters limits
 	PetscScalar  p_lithos,          // lithostatic pressure
+	PetscScalar  p_pore,            // pore pressure
 	PetscScalar  dt,        		// time step
 	PetscScalar  p,         		// pressure
 	PetscScalar  T)         		// temperature
@@ -470,7 +472,7 @@ PetscErrorCode DevConstEq(
 			mat = &phases[i];
 
 			// setup nonlinear constitutive equation evaluation context
-			ierr = ConstEqCtxSetup(&ctx, mat, lim, DII, APS, dt, p, p_lithos, T); CHKERRQ(ierr);
+			ierr = ConstEqCtxSetup(&ctx, mat, lim, DII, APS, dt, p, p_lithos, p_pore, T); CHKERRQ(ierr);
 
 			// solve effective viscosity & plastic strain rate
 			ierr = GetEffVisc(&ctx, lim, &eta_total, &eta_creep_phase, &eta_viscoplastic_phase, &DIIpl, &dEta, &fr); CHKERRQ(ierr);

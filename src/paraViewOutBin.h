@@ -156,6 +156,7 @@ typedef struct
 	PetscInt pressure;       		// pressure
 	PetscInt overpressure;   		// overpressure
 	PetscInt lithospressure; 		// lithostatic pressure
+	PetscInt porepressure; 	    	// porepressure
 	PetscInt temperature;    		// temperature
 	PetscInt dev_stress;     		// deviatoric stress tensor
 	PetscInt j2_dev_stress;  		// deviatoric stress second invariant
