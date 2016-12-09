@@ -96,6 +96,7 @@ typedef struct
 	// for wave propagation
 	PetscBool		ExplicitSolver; 		// True => at the moment, wave propagation
 	PetscScalar		DensityFactor; 			// Computational density will be material density*density_factor
+	char     		 OutputStressFile[MAX_PATH_LEN];	// File to store stress/strain
 	FILE 			*stress_file;
 	PetscBool 		SeismicSource;			// true or false
 	SourceParam 	SourceParams;			// seismic source parameters

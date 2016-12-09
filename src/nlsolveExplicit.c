@@ -258,9 +258,11 @@ PetscErrorCode UpdateHistoryFieldsAndGetAxialStressStrain(JacRes *jr, PetscScala
 
 	PetscScalar stress_xx, stress_yy, stress_zz, count;
 	PetscScalar sum_stress_xx, sum_stress_yy, sum_stress_zz, sum_count;
+	PetscScalar stress_II, sum_stress_II;
 	//PetscScalar strain_xx, strain_yy, strain_zz;
 
 	stress_xx = 0.0; stress_yy = 0.0; stress_zz = 0.0; count = 0.0;
+	stress_II = 0;
 	//strain_xx = 0.0; strain_yy = 0.0; strain_zz = 0.0;
 
 	//-------------------------------
@@ -287,6 +289,10 @@ PetscErrorCode UpdateHistoryFieldsAndGetAxialStressStrain(JacRes *jr, PetscScala
 		stress_xx += svCell->sxx - p[k][j][i];
 		stress_yy += svCell->syy - p[k][j][i];
 		stress_zz += svCell->szz - p[k][j][i];
+
+		// Store second invariant of axial stress
+		stress_II += svCell->svDev.DII;
+
 		count += 1.0;
 
 		//strain_xx += svCell->dxx;
@@ -354,6 +360,9 @@ PetscErrorCode UpdateHistoryFieldsAndGetAxialStressStrain(JacRes *jr, PetscScala
 		ierr = MPI_Allreduce(&stress_xx, &sum_stress_xx, 1, MPIU_SCALAR, MPI_SUM, PETSC_COMM_WORLD); CHKERRQ(ierr);
 		ierr = MPI_Allreduce(&stress_yy, &sum_stress_yy, 1, MPIU_SCALAR, MPI_SUM, PETSC_COMM_WORLD); CHKERRQ(ierr);
 		ierr = MPI_Allreduce(&stress_zz, &sum_stress_zz, 1, MPIU_SCALAR, MPI_SUM, PETSC_COMM_WORLD); CHKERRQ(ierr);
+
+		ierr = MPI_Allreduce(&stress_II, &sum_stress_II, 1, MPIU_SCALAR, MPI_SUM, PETSC_COMM_WORLD); CHKERRQ(ierr);
+
 		ierr = MPI_Allreduce(&count, &sum_count, 1, MPIU_SCALAR, MPI_SUM, PETSC_COMM_WORLD); CHKERRQ(ierr);
 	}
 	else
@@ -361,18 +370,22 @@ PetscErrorCode UpdateHistoryFieldsAndGetAxialStressStrain(JacRes *jr, PetscScala
 		sum_stress_xx = stress_xx;
 		sum_stress_yy = stress_yy;
 		sum_stress_zz = stress_zz;
+		sum_stress_II = stress_II;
 		sum_count = count;
 	}
 
-	sum_stress_xx = sum_stress_xx/count;
-	sum_stress_yy = sum_stress_yy/count;
-	sum_stress_zz = sum_stress_zz/count;
+	sum_stress_xx = sum_stress_xx/sum_count;
+	sum_stress_yy = sum_stress_yy/sum_count;
+	sum_stress_zz = sum_stress_zz/sum_count;
+
+	sum_stress_II = sum_stress_II/sum_count;
 
 	//strain_xx = strain_xx/count;
 	//strain_yy = strain_yy/count;
 	//strain_zz = strain_zz/count;
 
 	*axial_stress = sqrt(sum_stress_xx*sum_stress_xx + sum_stress_yy*sum_stress_yy + sum_stress_zz*sum_stress_zz);
+	//*axial_stress = sum_stress_II;
 	//*axial_strain = sqrt(strain_xx*strain_xx + strain_yy*strain_yy + strain_zz*strain_zz);
 
 	// restore vectors

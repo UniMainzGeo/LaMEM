@@ -328,16 +328,18 @@ PetscErrorCode LaMEMLib(ModParam *IOparam)
 
 			if (jr.SourceParams.source_type == POINT) 	{
 				PetscPrintf(PETSC_COMM_WORLD,"            TYPE POINT \n");
+				PetscPrintf(PETSC_COMM_WORLD,"            APPLIED AT CELL (%i, %i, %i), POSITION (%g, %g, %g) \n", jr.SourceParams.i,jr.SourceParams.j,jr.SourceParams.k, jr.SourceParams.x,jr.SourceParams.y,jr.SourceParams.z);
 			} else if (jr.SourceParams.source_type == PLANE) 	{
 				PetscPrintf(PETSC_COMM_WORLD,"            TYPE PLANE \n");
 			}else if (jr.SourceParams.source_type == MOMENT) 	{
 				PetscPrintf(PETSC_COMM_WORLD,"            TYPE MOMENT TENSOR \n");
 				PetscPrintf(PETSC_COMM_WORLD,"            M0 = %g, Mxx = %g, Myy = %g, Mzz = %g, Mxy = %g, Mxz = %g, Myz = %g \n", jr.SourceParams.moment_tensor.M0,jr.SourceParams.moment_tensor.Mxx, jr.SourceParams.moment_tensor.Myy, jr.SourceParams.moment_tensor.Mzz, jr.SourceParams.moment_tensor.Mxy, jr.SourceParams.moment_tensor.Mxz,jr.SourceParams.moment_tensor.Myz);
+				PetscPrintf(PETSC_COMM_WORLD,"            APPLIED AT CELL (%i, %i, %i), POSITION (%g, %g, %g) \n", jr.SourceParams.i,jr.SourceParams.j,jr.SourceParams.k, jr.SourceParams.x,jr.SourceParams.y,jr.SourceParams.z);
 			}else if (jr.SourceParams.source_type == COMPRES) 	{
 				PetscPrintf(PETSC_COMM_WORLD,"            TYPE UNIAXIAL COMPRESSION \n");
 			}
 			PetscPrintf(PETSC_COMM_WORLD,"            Amplitude = %g, Alpha = %g, t0 = %g\n", jr.SourceParams.amplitude, jr.SourceParams.alfa, jr.SourceParams.t0);
-			PetscPrintf(PETSC_COMM_WORLD,"            APPLIED AT CELL (%i, %i, %i), POSITION (%g, %g, %g) \n", jr.SourceParams.i,jr.SourceParams.j,jr.SourceParams.k, jr.SourceParams.x,jr.SourceParams.y,jr.SourceParams.z);
+
 		}
 
 		// Files to save seismic signals at a given point of the model
@@ -353,8 +355,8 @@ PetscErrorCode LaMEMLib(ModParam *IOparam)
 		}
 
 		// File to save axial stress / step
-		jr.stress_file = fopen("stress_file", "w" );
-		if (jr.stress_file == NULL) SETERRQ1(PETSC_COMM_SELF, 1,"cannot open file %s", "stress_file");
+		jr.stress_file = fopen(user.OutputStressFile, "w" );
+		if (jr.stress_file == NULL) SETERRQ1(PETSC_COMM_SELF, 1,"cannot open file %s", user.OutputStressFile);
 
 		// compute inverse elastic viscosities (dependent on dt)
 		ierr 	= 	JacResGetI2Gdt(&jr); CHKERRQ(ierr);

@@ -3159,22 +3159,22 @@ PetscErrorCode JacResGetMomentumResidualAndPressure(JacRes *jr, UserCtx *user)
 			Myz=M0*jr->SourceParams.moment_tensor.Myz*source_time;
 
 			fx[k][j][i+1] 	+= Mxx/hx/V;	fx[k][j][i] 	-= Mxx/hx/V;
-			fx[k][j+1][i+1] += Mxy/4/hy/V;	fx[k][j-1][i+1] -= Mxy/4/hy/V;
-			fx[k][j+1][i] 	+= Mxy/4/hy/V;	fx[k][j-1][i] 	-= Mxy/4/hy/V;
-			fx[k+1][j][i+1] += Mxz/4/hz/V;	fx[k-1][j][i+1] -= Mxz/4/hz/V;
-			fx[k+1][j][i] 	+= Mxz/4/hz/V;	fx[k-1][j][i] 	-= Mxz/4/hz/V;
+			fx[k][j+1][i+1] += Mxy/4.0/hy/V;	fx[k][j-1][i+1] -= Mxy/4.0/hy/V;
+			fx[k][j+1][i] 	+= Mxy/4.0/hy/V;	fx[k][j-1][i] 	-= Mxy/4.0/hy/V;
+			fx[k+1][j][i+1] += Mxz/4.0/hz/V;	fx[k-1][j][i+1] -= Mxz/4.0/hz/V;
+			fx[k+1][j][i] 	+= Mxz/4.0/hz/V;	fx[k-1][j][i] 	-= Mxz/4.0/hz/V;
 
 			fy[k][j+1][i] 	+= Myy/hy/V;	fy[k][j][i] 	-= Myy/hy/V;
-			fy[k][j+1][i+1] += Mxy/4/hx/V;	fy[k][j+1][i-1] -= Mxy/4/hx/V;
-			fy[k][j][i+1] 	+= Mxy/4/hx/V;	fy[k][j][i-1] 	-= Mxy/4/hx/V;
-			fy[k+1][j+1][i] += Myz/4/hz/V;	fy[k-1][j+1][i] -= Myz/4/hz/V;
-			fy[k+1][j][i] 	+= Myz/4/hz/V;	fy[k-1][j][i] 	-= Myz/4/hz/V;
+			fy[k][j+1][i+1] += Mxy/4.0/hx/V;	fy[k][j+1][i-1] -= Mxy/4.0/hx/V;
+			fy[k][j][i+1] 	+= Mxy/4.0/hx/V;	fy[k][j][i-1] 	-= Mxy/4.0/hx/V;
+			fy[k+1][j+1][i] += Myz/4.0/hz/V;	fy[k-1][j+1][i] -= Myz/4.0/hz/V;
+			fy[k+1][j][i] 	+= Myz/4.0/hz/V;	fy[k-1][j][i] 	-= Myz/4.0/hz/V;
 
 			fz[k+1][j][i] 	+= Mzz/hz/V;	fz[k][j][i] 	-= Mzz/hz/V;
-			fz[k+1][j][i+1] += Mxz/4/hx/V;	fz[k+1][j][i-1] -= Mxz/4/hx/V;
-			fz[k][j][i+1] 	+= Mxz/4/hx/V;	fz[k][j][i-1] 	-= Mxz/4/hx/V;
-			fz[k+1][j+1][i] += Myz/4/hy/V;	fz[k+1][j-1][i] -= Myz/4/hy/V;
-			fz[k][j+1][i] 	+= Myz/4/hy/V;	fz[k][j-1][i] 	-= Myz/4/hy/V;
+			fz[k+1][j][i+1] += Mxz/4.0/hx/V;	fz[k+1][j][i-1] -= Mxz/4.0/hx/V;
+			fz[k][j][i+1] 	+= Mxz/4.0/hx/V;	fz[k][j][i-1] 	-= Mxz/4.0/hx/V;
+			fz[k+1][j+1][i] += Myz/4.0/hy/V;	fz[k+1][j-1][i] -= Myz/4.0/hy/V;
+			fz[k][j+1][i] 	+= Myz/4.0/hy/V;	fz[k][j-1][i] 	-= Myz/4.0/hy/V;
 		}
 		///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 

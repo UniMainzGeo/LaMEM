@@ -328,7 +328,7 @@ PetscErrorCode GetEffVisc(
 		(*dEta) += cf*cf*(1.0/ctx->N_prl - 1.0)*eta_prl;
 	}
 
-	/*//===========
+	//===========
 	// PLASTICITY
 	//===========
 
@@ -377,7 +377,7 @@ PetscErrorCode GetEffVisc(
 			(*dEta)             = -eta_pl;
 			(*fr)               =  ctx->fr;
 		}
-	}*/
+	}
 
 	PetscFunctionReturn(0);
 }

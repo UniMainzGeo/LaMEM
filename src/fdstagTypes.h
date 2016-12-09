@@ -359,7 +359,7 @@ typedef struct
 
 	// Scaling density factor
 	PetscScalar      DensityFactor; //Computational density will be material density*density_factor
-	//char     		 stress_file_name[MAX_PATH_LEN];	// File to store stress/strain
+	char     		 OutputStressFile[MAX_PATH_LEN];	// File to store stress/strain
 	FILE 			 *stress_file;
 
 	// Absorbing boundaries

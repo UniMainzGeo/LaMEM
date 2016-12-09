@@ -366,7 +366,7 @@ PetscErrorCode FDSTAGInitCode(JacRes *jr, UserCtx *user, ModParam *iop)
 	jr->ExplicitSolver = user->ExplicitSolver;
 
 	jr->DensityFactor  = user->DensityFactor;
-	jr->stress_file  = user->stress_file;
+	//jr->OutputStressFile  = user->OutputStressFile;
 
 	jr->SeismicSource  = user->SeismicSource;
 	if (jr->SeismicSource == PETSC_TRUE) {
@@ -661,8 +661,8 @@ PetscErrorCode InputReadFile(JacRes *jr, UserCtx *user, FILE *fp)
 	// Scaling density factor
 	parse_GetDouble(fp, "density_factor",&user->DensityFactor, &found);
 	if (found!=PETSC_TRUE ) user->DensityFactor=1;
-	//parse_GetString(fp,"strain_stress_file_name", user->stress_file_name, MAX_PATH_LEN, &found);
-	//if (found ==PETSC_FALSE) sprintf(user->stress_file_name, "strain_stress");
+	parse_GetString(fp,"OutputStressFile", &user->OutputStressFile, MAX_PATH_LEN, &found);
+	if (found !=PETSC_TRUE) sprintf(&user->OutputStressFile, "stress_file");
 
 	// Absorbing boundaries
 	//if (user->ExplicitSolver == PETSC_TRUE)
@@ -671,6 +671,12 @@ PetscErrorCode InputReadFile(JacRes *jr, UserCtx *user, FILE *fp)
 		if (found==PETSC_TRUE && ab==0)
 		{
 			user->AbsBoundaries=PETSC_FALSE;
+			user->AB.NxL = 0;
+			user->AB.NxR = 0;
+			user->AB.NyL = 0;
+			user->AB.NyR = 0;
+			user->AB.NzL = 0;
+			user->AB.NzR = 0;
 		}else{	// Default value is true
 			// Number of absorbing boundaries
 			parse_GetInt( fp, "AB.NxL", &user->AB.NxL, &found );
