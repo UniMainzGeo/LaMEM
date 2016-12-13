@@ -180,6 +180,8 @@ typedef struct
 	PetscScalar  K;       // bulk modulus
 	PetscScalar  Kp;      // pressure dependence parameter
 	PetscScalar  G;       // shear modulus
+	PetscScalar  poison;  // poison ratio
+	PetscScalar  youngs;  // youngs modulus
 	// diffusion creep parameters
 	PetscScalar  Bd;      // pre-exponential constant
 	PetscScalar  Ed;      // activation energy

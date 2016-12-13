@@ -239,6 +239,8 @@ PetscErrorCode MatPropGetStruct(FILE *fp,
 	getMatPropScalar(fp, ils, ile, "shear",     &m->G,     NULL);
 	getMatPropScalar(fp, ils, ile, "bulk",      &m->K,     NULL);
 	getMatPropScalar(fp, ils, ile, "Kp",        &m->Kp,    NULL);
+	getMatPropScalar(fp, ils, ile, "poison",    &m->poison,NULL);
+	getMatPropScalar(fp, ils, ile, "youngs",    &m->youngs,NULL);
 	//============================================================
 	// plasticity (Drucker-Prager)
 	//============================================================
@@ -318,6 +320,19 @@ PetscErrorCode MatPropGetStruct(FILE *fp,
 	if((strlen(ndiff) || strlen(ndisl)) && utype == _NONE_)
 	{
 		SETERRQ1(PETSC_COMM_SELF, PETSC_ERR_USER, "Cannot have a predefined creep profile (phase %lld), in a non-dimensional setup!", (LLD)ID);
+	}
+
+	// recompute elastic parameters; only two elastic constants need to be specified
+	// internally we compute with K & G
+	if ((m->G>0) & (m->poison>0)){ 	// G, poison are given
+		m->K = 2*m->G*(1+m->poison)/(3*(1-2*m->poison));
+	}
+	if ((m->youngs>0) & (m->poison>0)){ // youngs, poison are given
+		m->K = m->youngs/(3*(1-2*m->poison));
+		m->G = m->youngs/(2*(1+m->poison));
+	}
+	if ((m->K>0) & (m->poison>0)){	// bulk modulus &  poison are given
+		m->G = (3*m->K*(1-2*m->poison))/(2*(1+m->poison));
 	}
 
 	// print
