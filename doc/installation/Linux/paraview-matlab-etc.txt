@@ -20,7 +20,7 @@ Install (copy) to /opt
 
 Set environment in /etc/profile.d/environment.sh
 WARNING! add paraview the last on your path (tends to override mpiexec)
-export PATH=$PATH:/opt/paraview/
+export PATH=$PATH:/opt/paraview/bin
 
 At best rename mpiexec in paraview bin directory to make it safe in any case:
 
