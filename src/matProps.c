@@ -145,6 +145,7 @@ PetscErrorCode MatPropGetStruct(FILE *fp,
 	char        lbl_k    [_lbl_sz_];
 	char        lbl_A    [_lbl_sz_];
     char        lbl_beta [_lbl_sz_];
+	char        lbl_vel  [_lbl_sz_];
 
 
 	PetscErrorCode ierr;
@@ -336,6 +337,7 @@ PetscErrorCode MatPropGetStruct(FILE *fp,
 		sprintf(lbl_cp,    "[ ]"         );
 		sprintf(lbl_k,     "[ ]"         );
 		sprintf(lbl_A,     "[ ]"         );
+		sprintf(lbl_vel,   "[ ]"         );
 	}
 	else
 	{
@@ -353,6 +355,8 @@ PetscErrorCode MatPropGetStruct(FILE *fp,
 		sprintf(lbl_cp,    "[J/kg/K]"    );
 		sprintf(lbl_k,     "[W/m/K]"     );
 		sprintf(lbl_A,     "[W/m3]"      );
+		sprintf(lbl_vel,   "[m/s]"       );
+		
 	}
 
 	PetscPrintf(PETSC_COMM_WORLD,"    Phase [%lld]: rho = %g %s, eta = %g %s, beta = %g %s\n", (LLD)(m->ID), m->rho, lbl_rho,  eta, lbl_eta, m->beta, lbl_beta);
@@ -362,6 +366,26 @@ PetscErrorCode MatPropGetStruct(FILE *fp,
 	PetscPrintf(PETSC_COMM_WORLD,"    Phase [%lld]: (disl ) Bn = %g %s, En = %g %s, Vn = %g %s, n = %g [ ] \n", (LLD)(m->ID), m->Bn, lbl_Bn, m->En , lbl_E, m->Vn, lbl_V, m->n);
 	PetscPrintf(PETSC_COMM_WORLD,"    Phase [%lld]: (peirl) Bp = %g %s, Ep = %g %s, Vp = %g %s, taup = %g %s, gamma = %g [ ], q = %g [ ] \n", (LLD)(m->ID), m->Bp, lbl_Bp, m->Ep, lbl_E, m->Vp, lbl_V, m->taup, lbl_tau, m->gamma, m->q);
 	PetscPrintf(PETSC_COMM_WORLD,"    Phase [%lld]: (elast) G = %g %s, K = %g %s, Kp = %g [ ] \n", (LLD)(m->ID), m->G, lbl_tau, m->K, lbl_tau, m->Kp);
+
+	if (m->K>0){
+		// provide some additional useful information on various elastic constants, if we have a compressible elastic setup
+		PetscScalar 	poison, E, Vp, Vs, G, K, rho;
+
+		// get data
+		K 		= m->K;
+		G 		= m->G;
+		rho 	= m->rho;	
+		
+		// computations
+		poison 	= (3*K - 2*G)/(2*(3*K + G));
+		E 		=	9*K*G/(3*K + G);
+		Vp 		=	sqrt((K+4.3*G)/rho);
+		Vs 		=	sqrt((G/rho));
+		
+
+		PetscPrintf(PETSC_COMM_WORLD,"    Phase [%lld]: (elast) poison = %g, E (youngs modulus) = %g %s, Vp = %g %s Vs = %g %s \n", (LLD)(m->ID), poison, E, lbl_tau, Vp, lbl_vel, Vs, lbl_vel);
+	}
+
 	PetscPrintf(PETSC_COMM_WORLD,"    Phase [%lld]: (plast) cohesion = %g %s, friction angle = %g %s, pore pressure ratio = %g [ ] \n", (LLD)(m->ID),m->ch, lbl_tau, m->fr, lbl_fr, m->rp);
 	PetscPrintf(PETSC_COMM_WORLD,"    Phase [%lld]: (sweak) cohesion SoftLaw = %lld [ ], friction SoftLaw = %lld [ ] \n", (LLD)(m->ID),(LLD)chSoftID, (LLD)frSoftID);
 	PetscPrintf(PETSC_COMM_WORLD,"    Phase [%lld]: (temp ) alpha = %g %s, cp = %g %s, k = %g %s, A = %g %s \n", (LLD)(m->ID),m->alpha, lbl_alpha, m->Cp, lbl_cp,m->k, lbl_k, m->A, lbl_A);
