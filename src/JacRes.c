@@ -1839,6 +1839,10 @@ PetscErrorCode SetMatParLim(MatParLim *matLim, UserCtx *usr)
 
 	cnt = 0;
 
+	// switch off initial guess
+	ierr = PetscOptionsHasName(NULL, NULL, "-no_init_guess", &flg); CHKERRQ(ierr);
+	if(flg == PETSC_TRUE) { matLim->initGuessFlg = PETSC_FALSE; }
+
 	// plasticity stabilization parameters
 	ierr = PetscOptionsHasName(NULL, NULL, "-quasi_harmonic", &flg); CHKERRQ(ierr);
 
