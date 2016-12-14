@@ -803,7 +803,7 @@ PetscErrorCode PVAVDReadFromOptions(PVAVD *pvavd)
 //---------------------------------------------------------------------------
 #undef __FUNCT__
 #define __FUNCT__ "PVAVDWriteTimeStep"
-PetscErrorCode PVAVDWriteTimeStep(PVAVD *pvavd, const char *dirName, PetscScalar ttime, PetscInt tindx)
+PetscErrorCode PVAVDWriteTimeStep(PVAVD *pvavd, JacRes *jr, const char *dirName, PetscScalar ttime, PetscInt tindx)
 {
 	// Create a 3D Voronoi diagram from particles with phase information
 	// write the file to disk and perform scaling/unscaling of the variables
@@ -821,7 +821,16 @@ PetscErrorCode PVAVDWriteTimeStep(PVAVD *pvavd, const char *dirName, PetscScalar
 	// update .pvd file if necessary
 	if(pvavd->outpvd)
 	{
-		ierr = UpdatePVDFile(dirName, pvavd->outfile, "pvtr", &pvavd->offset, ttime, tindx, PETSC_FALSE); CHKERRQ(ierr);
+		long int offset;
+
+		offset = pvavd->offset;
+		ierr = UpdatePVDFile(dirName, pvavd->outfile, "pvtr", &offset, ttime, tindx, PETSC_FALSE); CHKERRQ(ierr);
+	
+		if (jr->ts.reverse){
+			offset = pvavd->offset;
+			ierr = UpdatePVDFile(dirName, pvavd->outfile, "pvtr", &offset, ttime, tindx, PETSC_TRUE); CHKERRQ(ierr);
+		}
+		pvavd->offset = offset;
 	}
 
 	ierr = PVAVDWritePVTR(pvavd, A, dirName); CHKERRQ(ierr);
