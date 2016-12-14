@@ -330,7 +330,7 @@ PetscErrorCode JacResInitScale(JacRes *jr, UserCtx *usr)
 	jr->FSSA = usr->FSSA;
 
 	// initialize time stepping parameters
-	ierr = TSSolSetUp(&jr->ts, usr); CHKERRQ(ierr);
+	ierr = TSSolSetUp(&jr->ts, &jr->scal, usr); CHKERRQ(ierr);
 
 	// initialize material parameter limits
 	ierr = SetMatParLim(&jr->matLim, usr); CHKERRQ(ierr);

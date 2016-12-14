@@ -554,7 +554,17 @@ PetscErrorCode PVOutWriteTimeStep(PVOut *pvout, JacRes *jr, const char *dirName,
 	// update .pvd file if necessary
 	if(pvout->outpvd)
 	{
-		ierr = UpdatePVDFile(dirName, pvout->outfile, "pvtr", &pvout->offset, ttime, tindx); CHKERRQ(ierr);
+		long int offset;
+
+		offset = pvout->offset;
+		ierr = UpdatePVDFile(dirName, pvout->outfile, "pvtr", &offset, ttime, tindx, PETSC_FALSE); CHKERRQ(ierr);
+		
+		if (jr->ts.reverse){
+			offset = pvout->offset;
+			ierr = UpdatePVDFile(dirName, pvout->outfile, "pvtr", &offset, ttime, tindx, PETSC_TRUE); CHKERRQ(ierr);		// write a reverse modelling pvd file
+		}
+		pvout->offset = offset;
+
 	}
 
 	// write parallel data .pvtr file
@@ -775,7 +785,7 @@ void WriteXMLHeader(FILE *fp, const char *file_type)
 #define __FUNCT__ "UpdatePVDFile"
 PetscErrorCode UpdatePVDFile(
 		const char *dirName, const char *outfile, const char *ext,
-		long int *offset, PetscScalar ttime, PetscInt tindx)
+		long int *offset, PetscScalar ttime, PetscInt tindx, PetscBool reverse)
 {
 	FILE        *fp;
 	char        *fname;
@@ -787,7 +797,13 @@ PetscErrorCode UpdatePVDFile(
 	if(!ISRankZero(PETSC_COMM_WORLD)) PetscFunctionReturn(0);
 
 	// open outfile.pvd file (write or update mode)
-	asprintf(&fname, "%s.pvd", outfile);
+	if (reverse){
+		asprintf(&fname, "%s_reverse.pvd", outfile);
+		ttime = -ttime;
+	}
+	else{
+		asprintf(&fname, "%s.pvd", outfile);
+	}
 	if(!tindx) fp = fopen(fname,"w");
 	else       fp = fopen(fname,"r+");
 	if(fp == NULL) SETERRQ1(PETSC_COMM_SELF, 1,"cannot open file %s", fname);
