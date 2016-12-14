@@ -228,23 +228,20 @@ PetscErrorCode FormMomentumResidualPressureAndVelocities(JacRes *jr, UserCtx *us
 	PetscFunctionReturn(0);
 
 }
-
 //-----------------------------------------------------------------------------
-
-
 
 //---------------------------------------------------------------------------
 #undef __FUNCT__
 #define __FUNCT__ "UpdateHistoryFieldsAndGetAxialStressStrain"
-PetscErrorCode UpdateHistoryFieldsAndGetAxialStressStrain(JacRes *jr, PetscScalar *axial_stress) //, PetscScalar *axial_strain)
+PetscErrorCode UpdateHistoryFieldsAndGetAxialStressStrain(JacRes *jr, PetscScalar *axial_stress)
 {
-	// Update svCell->hxx, yy, zz and svBulk->pn
+	// Update svCell->hxx, yy, zz and svBulk->pn, and calculate second invariant of stresses DII
 
 	FDSTAG     *fs;
 	SolVarCell *svCell;
 	SolVarBulk *svBulk;
 	SolVarEdge *svEdge;
-	PetscScalar ***p;
+	PetscScalar ***p, ***JII_center, ***JII_xy, ***JII_xz, ***JII_yz, ***JII_corner;
 	PetscInt    i, j, k, nx, ny, nz, sx, sy, sz;
 	PetscInt    iter;
 
@@ -254,16 +251,14 @@ PetscErrorCode UpdateHistoryFieldsAndGetAxialStressStrain(JacRes *jr, PetscScala
 	fs = jr->fs;
 
 	// access work vectors
-	ierr = DMDAVecGetArray(fs->DA_CEN, jr->lp,   &p);   CHKERRQ(ierr);
+	ierr = DMDAVecGetArray(fs->DA_CEN, jr->lp,    &p);   		CHKERRQ(ierr);
+	ierr = DMDAVecGetArray(fs->DA_CEN, jr->ldxx,  &JII_center); CHKERRQ(ierr);		// strain-rate component (used as buffer vectors)
+	ierr = DMDAVecGetArray(fs->DA_XY,  jr->ldxy,  &JII_xy); 	CHKERRQ(ierr);		// strain-rate component (used as buffer vectors)
+	ierr = DMDAVecGetArray(fs->DA_XZ,  jr->ldxz,  &JII_xz); 	CHKERRQ(ierr);		// strain-rate component (used as buffer vectors)
+	ierr = DMDAVecGetArray(fs->DA_YZ,  jr->ldyz,  &JII_yz); 	CHKERRQ(ierr);		// strain-rate component (used as buffer vectors)
+	ierr = DMDAVecGetArray(fs->DA_COR, jr->lbcor, &JII_corner); CHKERRQ(ierr);
 
-	PetscScalar stress_xx, stress_yy, stress_zz, count;
-	PetscScalar sum_stress_xx, sum_stress_yy, sum_stress_zz, sum_count;
-	PetscScalar stress_II, sum_stress_II;
-	//PetscScalar strain_xx, strain_yy, strain_zz;
-
-	stress_xx = 0.0; stress_yy = 0.0; stress_zz = 0.0; count = 0.0;
-	stress_II = 0;
-	//strain_xx = 0.0; strain_yy = 0.0; strain_zz = 0.0;
+	PetscScalar stress_II, sum_stress_II, count, sum_count;
 
 	//-------------------------------
 	// central points
@@ -279,31 +274,21 @@ PetscErrorCode UpdateHistoryFieldsAndGetAxialStressStrain(JacRes *jr, PetscScala
 		svCell = &jr->svCell[iter++];
 		svBulk = &svCell->svBulk;
 
+		// update historic fields
 		svCell->hxx = svCell->sxx;
 		svCell->hyy = svCell->syy;
 		svCell->hzz = svCell->szz;
-
 		svBulk->pn = p[k][j][i];
 
-		// Calculate axial stress
-		stress_xx += svCell->sxx - p[k][j][i];
-		stress_yy += svCell->syy - p[k][j][i];
-		stress_zz += svCell->szz - p[k][j][i];
-
-		// Store second invariant of axial stress
-		stress_II += svCell->svDev.DII;
-
-		count += 1.0;
-
-		//strain_xx += svCell->dxx;
-		//strain_yy += svCell->dyy;
-		//strain_zz += svCell->dzz;
-		//count = count + 1;
+		// Finding DII
+		JII_center[k][j][i] = 0.5 * (svCell->sxx*svCell->sxx + svCell->syy*svCell->syy + svCell->szz*svCell->szz);
 
 	}
 	END_STD_LOOP
 
-	//count = nx*ny*nz;
+	ierr = DMDAVecRestoreArray(fs->DA_CEN, jr->ldxx, &JII_center);  CHKERRQ(ierr);
+	LOCAL_TO_LOCAL(fs->DA_CEN, jr->ldxx);
+	//ierr = DMDAVecGetArray(fs->DA_CEN, jr->ldxx, &JII_center); CHKERRQ(ierr);	// strain-rate component (used as buffer vectors)
 
 	//-------------------------------
 	// xy edge points
@@ -317,9 +302,18 @@ PetscErrorCode UpdateHistoryFieldsAndGetAxialStressStrain(JacRes *jr, PetscScala
 	{
 		// access solution variables
 		svEdge = &jr->svXYEdge[iter++];
+
+		// update historic field
 		svEdge->h = svEdge->s;
+
+		// Finding DII
+		JII_xy[k][j][i] = svEdge->s*svEdge->s;
 	}
 	END_STD_LOOP
+
+	ierr = DMDAVecRestoreArray(fs->DA_XY, jr->ldxy, &JII_xy);  CHKERRQ(ierr);
+	LOCAL_TO_LOCAL(fs->DA_XY, jr->ldxy);
+	//ierr = DMDAVecGetArray(fs->DA_XY, jr->ldxy, &JII_xy); CHKERRQ(ierr);	// strain-rate component (used as buffer vectors)
 
 	//-------------------------------
 	// xz edge points
@@ -333,9 +327,18 @@ PetscErrorCode UpdateHistoryFieldsAndGetAxialStressStrain(JacRes *jr, PetscScala
 	{
 		// access solution variables
 		svEdge = &jr->svXZEdge[iter++];
+
+		// update historic field
 		svEdge->h = svEdge->s;
+
+		// Finding DII
+		JII_xz[k][j][i] = svEdge->s*svEdge->s;
 	}
 	END_STD_LOOP
+
+	ierr = DMDAVecRestoreArray(fs->DA_XZ, jr->ldxz, &JII_xz);  CHKERRQ(ierr);
+	LOCAL_TO_LOCAL(fs->DA_XZ, jr->ldxz);
+	//ierr = DMDAVecGetArray(fs->DA_XZ, jr->ldxz, &JII_xz); CHKERRQ(ierr);	// strain-rate component (used as buffer vectors)
 
 	//-------------------------------
 	// yz edge points
@@ -349,52 +352,77 @@ PetscErrorCode UpdateHistoryFieldsAndGetAxialStressStrain(JacRes *jr, PetscScala
 	{
 		// access solution variables
 		svEdge = &jr->svYZEdge[iter++];
+
+		// update historic field
 		svEdge->h = svEdge->s;
+
+		// Finding DII
+		JII_yz[k][j][i] = svEdge->s*svEdge->s;
 	}
 	END_STD_LOOP
 
-	// COMPLETE COMMUNICATION HERE! MPI_Reduce
+	ierr = DMDAVecRestoreArray(fs->DA_YZ, jr->ldyz, &JII_yz);  CHKERRQ(ierr);
+	LOCAL_TO_LOCAL(fs->DA_YZ, jr->ldyz);
+	//ierr = DMDAVecGetArray(fs->DA_YZ, jr->ldyz, &JII_yz); CHKERRQ(ierr);	// strain-rate component (used as buffer vectors)
+
+	// Interpolate stress_II to the corners
+	InterpFlags iflag;
+	iflag.update = PETSC_TRUE;
+	iflag.use_bound = PETSC_FALSE;
+	ierr = VecSet(jr->lbcor, 0.0); CHKERRQ(ierr);
+	InterpCenterCorner(fs,jr->ldxx,jr->lbcor,iflag);
+	InterpXYEdgeCorner(fs,jr->ldxy,jr->lbcor,iflag);
+	InterpXZEdgeCorner(fs,jr->ldxz,jr->lbcor,iflag);
+	InterpYZEdgeCorner(fs,jr->ldyz,jr->lbcor,iflag);
+	// store second invariant
+	ierr = VecSqrtAbs(jr->lbcor); CHKERRQ(ierr);
+
+	//-------------------------------
+	// corner points
+	//-------------------------------
+	iter = 0;
+	GET_NODE_RANGE(nx, sx, fs->dsx)
+	GET_NODE_RANGE(ny, sy, fs->dsy)
+	GET_NODE_RANGE(nz, sz, fs->dsz)
+
+	stress_II = 0;
+	sum_stress_II = 0;
+	count = 0.0;
+	sum_count = 0;
+
+	START_STD_LOOP
+	{
+		stress_II += JII_corner[k][j][i];
+		count += 1.0;
+	}
+	END_STD_LOOP
+
 	// synchronize
 	if(ISParallel(PETSC_COMM_WORLD))
 	{
-		ierr = MPI_Allreduce(&stress_xx, &sum_stress_xx, 1, MPIU_SCALAR, MPI_SUM, PETSC_COMM_WORLD); CHKERRQ(ierr);
-		ierr = MPI_Allreduce(&stress_yy, &sum_stress_yy, 1, MPIU_SCALAR, MPI_SUM, PETSC_COMM_WORLD); CHKERRQ(ierr);
-		ierr = MPI_Allreduce(&stress_zz, &sum_stress_zz, 1, MPIU_SCALAR, MPI_SUM, PETSC_COMM_WORLD); CHKERRQ(ierr);
-
 		ierr = MPI_Allreduce(&stress_II, &sum_stress_II, 1, MPIU_SCALAR, MPI_SUM, PETSC_COMM_WORLD); CHKERRQ(ierr);
-
 		ierr = MPI_Allreduce(&count, &sum_count, 1, MPIU_SCALAR, MPI_SUM, PETSC_COMM_WORLD); CHKERRQ(ierr);
 	}
 	else
 	{
-		sum_stress_xx = stress_xx;
-		sum_stress_yy = stress_yy;
-		sum_stress_zz = stress_zz;
 		sum_stress_II = stress_II;
 		sum_count = count;
 	}
 
-	sum_stress_xx = sum_stress_xx/sum_count;
-	sum_stress_yy = sum_stress_yy/sum_count;
-	sum_stress_zz = sum_stress_zz/sum_count;
+	*axial_stress = sum_stress_II/sum_count;
 
-	sum_stress_II = sum_stress_II/sum_count;
-
-	//strain_xx = strain_xx/count;
-	//strain_yy = strain_yy/count;
-	//strain_zz = strain_zz/count;
-
-	*axial_stress = sqrt(sum_stress_xx*sum_stress_xx + sum_stress_yy*sum_stress_yy + sum_stress_zz*sum_stress_zz);
-	//*axial_stress = sum_stress_II;
-	//*axial_strain = sqrt(strain_xx*strain_xx + strain_yy*strain_yy + strain_zz*strain_zz);
 
 	// restore vectors
-	ierr = DMDAVecRestoreArray(fs->DA_CEN, jr->lp,   &p);   CHKERRQ(ierr);
+	ierr = DMDAVecRestoreArray(fs->DA_CEN, jr->lp,    &p);   		CHKERRQ(ierr);
+	//ierr = DMDAVecRestoreArray(fs->DA_CEN, jr->ldxx,  &JII_center); CHKERRQ(ierr);
+	//ierr = DMDAVecRestoreArray(fs->DA_XY,  jr->ldxy,  &JII_xy); 	CHKERRQ(ierr);
+	//ierr = DMDAVecRestoreArray(fs->DA_XZ,  jr->ldxz,  &JII_xz); 	CHKERRQ(ierr);
+	//ierr = DMDAVecRestoreArray(fs->DA_YZ,  jr->ldyz,  &JII_yz); 	CHKERRQ(ierr);
+	ierr = DMDAVecRestoreArray(fs->DA_COR, jr->lbcor, &JII_corner); CHKERRQ(ierr);
 
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-
 
 //---------------------------------------------------------------------------
 #undef __FUNCT__
