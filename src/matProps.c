@@ -246,7 +246,10 @@ PetscErrorCode MatPropGetStruct(FILE *fp,
 	//============================================================
 	getMatPropScalar(fp, ils, ile, "cohesion",  &m->ch,    NULL);
 	getMatPropScalar(fp, ils, ile, "friction",  &m->fr,    NULL);
-	getMatPropScalar(fp, ils, ile, "lambda",    &m->rp,    NULL);
+	getMatPropScalar(fp, ils, ile, "lambda",    &m->rp,    flg);
+	if (flg){
+		// define rho_w
+	}
 	getMatPropInt   (fp, ils, ile, "chSoftID",  &chSoftID, NULL);
 	getMatPropInt   (fp, ils, ile, "frSoftID",  &frSoftID, NULL);
 	//============================================================
@@ -310,18 +313,6 @@ PetscErrorCode MatPropGetStruct(FILE *fp,
 	if(eta)        m->Bd = 1.0/(2.0*eta);
 	if(eta0 && e0) m->Bn = pow (2.0*eta0, -m->n)*pow(e0, 1 - m->n);
 
-	// check that at least one essential deformation mechanism is specified
-	if(!m->Bd && !m->Bn && !m->G)
-	{
-		SETERRQ1(PETSC_COMM_SELF, PETSC_ERR_USER, "At least one of the parameter (set) Bd (eta), Bn (eta0, e0), G must be specified for phase %lld", (LLD)ID);
-	}
-
-	// check units for predefined profile
-	if((strlen(ndiff) || strlen(ndisl)) && utype == _NONE_)
-	{
-		SETERRQ1(PETSC_COMM_SELF, PETSC_ERR_USER, "Cannot have a predefined creep profile (phase %lld), in a non-dimensional setup!", (LLD)ID);
-	}
-
 	// recompute elastic parameters; only two elastic constants need to be specified
 	// internally we compute with K & G
 	if ((m->G>0) & (m->poison>0)){ 	// G, poison are given
@@ -333,6 +324,18 @@ PetscErrorCode MatPropGetStruct(FILE *fp,
 	}
 	if ((m->K>0) & (m->poison>0)){	// bulk modulus &  poison are given
 		m->G = (3*m->K*(1-2*m->poison))/(2*(1+m->poison));
+	}
+
+	// check that at least one essential deformation mechanism is specified
+	if(!m->Bd && !m->Bn && !m->G)
+	{
+		SETERRQ1(PETSC_COMM_SELF, PETSC_ERR_USER, "At least one of the parameter (set) Bd (eta), Bn (eta0, e0), G must be specified for phase %lld", (LLD)ID);
+	}
+
+	// check units for predefined profile
+	if((strlen(ndiff) || strlen(ndisl)) && utype == _NONE_)
+	{
+		SETERRQ1(PETSC_COMM_SELF, PETSC_ERR_USER, "Cannot have a predefined creep profile (phase %lld), in a non-dimensional setup!", (LLD)ID);
 	}
 
 	// print
