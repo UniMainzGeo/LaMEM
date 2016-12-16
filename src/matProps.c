@@ -276,7 +276,7 @@ PetscErrorCode MatPropGetStruct(FILE *fp,
 		SETERRQ1(PETSC_COMM_SELF, PETSC_ERR_USER, "Nonzero cohesion must be specified for phase %lld", (LLD)ID);
 	}
 
-	if((m->rp>1) || (m->rp<0))
+	if((m->rp>1.0) || (m->rp<0.0))
 	{
 		SETERRQ1(PETSC_COMM_SELF, PETSC_ERR_USER, "pore pressure ratio must be between 0 and 1 for phase %lld", (LLD)ID);
 	}

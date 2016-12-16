@@ -145,8 +145,11 @@ typedef struct
 	//==========================
 	DM DA_CELL_2D; // 2D cell center grid
 
-	Vec lp_lithos; // lithostatic pressure
-	Vec lp_pore;   // pore pressure
+	//====================
+	// pressure parameters
+	//====================
+	Vec lp_lithos;          // lithostatic pressure
+	Vec lp_pore;            // pore pressure
 
 } JacRes;
 //---------------------------------------------------------------------------

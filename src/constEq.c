@@ -193,11 +193,18 @@ PetscErrorCode ConstEqCtxSetup(
 			ctx->taupl = p_lithos * sin(fr) + ch * cos(fr);
 			
 		}
-		else{
+		else
+		{
 			// use dynamic pressure in evaluating the yield function [default]
-			ctx->taupl = (p - p_pore) * sin(fr) + ch * cos(fr);
+			ctx->taupl = p * sin(fr) + ch * cos(fr);
 		}
 		pd = 1;
+
+		// if lambda (pore pressure ratio) is set
+		if(lim->actPorePres == PETSC_TRUE)
+		{
+			ctx->taupl = (p - p_pore) * sin(fr) + ch * cos(fr);
+		}
 	}
 
 	// correct for ultimate yield stress
