@@ -330,7 +330,7 @@ PetscErrorCode JacResInitScale(JacRes *jr, UserCtx *usr)
 	jr->FSSA = usr->FSSA;
 
 	// initialize time stepping parameters
-	ierr = TSSolSetUp(&jr->ts, usr); CHKERRQ(ierr);
+	ierr = TSSolSetUp(&jr->ts, &jr->scal, usr); CHKERRQ(ierr);
 
 	// initialize material parameter limits
 	ierr = SetMatParLim(&jr->matLim, usr); CHKERRQ(ierr);
@@ -1839,6 +1839,10 @@ PetscErrorCode SetMatParLim(MatParLim *matLim, UserCtx *usr)
 	}
 
 	cnt = 0;
+
+	// switch off initial guess
+	ierr = PetscOptionsHasName(NULL, NULL, "-no_init_guess", &flg); CHKERRQ(ierr);
+	if(flg == PETSC_TRUE) { matLim->initGuessFlg = PETSC_FALSE; }
 
 	// plasticity stabilization parameters
 	ierr = PetscOptionsHasName(NULL, NULL, "-quasi_harmonic", &flg); CHKERRQ(ierr);

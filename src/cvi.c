@@ -202,6 +202,10 @@ PetscErrorCode ADVelAdvectScheme(AdvCtx *actx, AdvVelCtx *vi)
 
 	// get current time step
 	dt = actx->jr->ts.dt;
+	
+	if (actx->jr->ts.reverse){
+		dt = -dt;					// reverse model
+	}
 
 	//=======================================================================
 	// START ADVECTION
