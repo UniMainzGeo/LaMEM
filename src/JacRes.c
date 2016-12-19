@@ -2784,7 +2784,7 @@ PetscErrorCode JacResGetPorePressure(JacRes *jr)
 	PetscScalar *phRat, rp_cv, rp;
 	PetscScalar ***lp_pore, ***lp_lith, p_hydro;
 	PetscInt    i,j,k,iter,iphase, sx, sy, sz, nx, ny, nz;
-	PetscScalar *z, z_top, g, gwLevel, rhow;
+	PetscScalar z_top, g, gwLevel, rhow, depth;
 	PetscBool   flg;
 
 	PetscErrorCode ierr;
@@ -2798,7 +2798,6 @@ PetscErrorCode JacResGetPorePressure(JacRes *jr)
 
 	// access context
 	fs        = jr->fs;
-	z         = fs->dsz.ccoor;
 	phases    = jr->phases;
 	numPhases = jr->numPhases;
 	rhow      = jr->matLim.rho_fluid;
@@ -2827,6 +2826,10 @@ PetscErrorCode JacResGetPorePressure(JacRes *jr)
 	{	
 		// access phase ratio array
 		phRat = jr->svCell[iter++].phRat;
+		
+		// compute depth of the current control volume
+		depth = z_top - COORD_CELL(k, sz, fs->dsz);
+		if(depth < 0.0) depth = 0.0;				// we don't want these calculations in the 'air'
 
 		// Evaluate pore pressure ratio in control volume
 		rp_cv = 0.0;
@@ -2850,7 +2853,7 @@ PetscErrorCode JacResGetPorePressure(JacRes *jr)
 		}
 
 		// hydrostatic pressure (based on the water column)
-		p_hydro = rhow * g * PetscAbsScalar(z_top-z[k]);
+		p_hydro = rhow * g * PetscAbsScalar(depth);
 
 		// compute the pore pressure as product of lithostatic pressure and porepressure ratio of the control volume					
 		lp_pore[k][j][i] =  p_hydro + rp_cv * (lp_lith[k][j][i]-p_hydro);		
