@@ -205,7 +205,7 @@ PetscErrorCode PVAVDDestroy(PVAVD *pvavd);
 
 PetscErrorCode PVAVDReadFromOptions(PVAVD *pvavd);
 
-PetscErrorCode PVAVDWriteTimeStep(PVAVD *pvavd, const char *dirName, PetscScalar ttime, PetscInt tindx);
+PetscErrorCode PVAVDWriteTimeStep(PVAVD *pvavd, JacRes *jr, const char *dirName, PetscScalar ttime, PetscInt tindx);
 
 PetscErrorCode PVAVDWritePVTR(PVAVD *pvavd, AVD3D A, const char *dirName);
 

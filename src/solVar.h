@@ -180,6 +180,8 @@ typedef struct
 	PetscScalar  K;       // bulk modulus
 	PetscScalar  Kp;      // pressure dependence parameter
 	PetscScalar  G;       // shear modulus
+	PetscScalar  nu;      // Poisson's ratio
+	PetscScalar  E;       // Young's modulus
 	// diffusion creep parameters
 	PetscScalar  Bd;      // pre-exponential constant
 	PetscScalar  Ed;      // activation energy
@@ -199,6 +201,7 @@ typedef struct
 	// plasticity parameters
 	PetscScalar  fr;      // friction coefficient
 	PetscScalar  ch;      // cohesion
+	PetscScalar  rp;      // ratio of pore pressure to overburden stress
 	Soft_t      *frSoft;  // friction softening law parameters
 	Soft_t      *chSoft;  // cohesion softening law parameters
 	// thermal parameters
@@ -246,6 +249,7 @@ typedef struct
 	PetscBool   presLimAct;   // activate pressure limit flag
 	// fluid density for depth-dependent density model
 	PetscScalar  rho_fluid;
+	PetscBool    actPorePres;  // pore pressure activation flag
 	// rock density if we want to use lithostatic pressure in viscosit calculations
 	PetscScalar  rho_lithos;
 	// direction to the North for stress orientation

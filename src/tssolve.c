@@ -55,9 +55,12 @@
 //---------------------------------------------------------------------------
 #undef __FUNCT__
 #define __FUNCT__ "TSSolSetUp"
-PetscErrorCode TSSolSetUp(TSSol *ts, UserCtx *usr)
+PetscErrorCode TSSolSetUp(TSSol *ts, Scaling *scal, UserCtx *usr)
 {
 	PetscFunctionBegin;
+	PetscErrorCode 	ierr;
+	PetscScalar 	time0;
+	PetscBool 		flg;
 
 	ts->nstep = usr->time_end; // maximum number of steps
 	ts->dtmax = usr->dt_max;   // maximum time step
@@ -66,6 +69,20 @@ PetscErrorCode TSSolSetUp(TSSol *ts, UserCtx *usr)
 	ts->pdt   = 0.0;           // previous time step
 	ts->dt    = usr->dt;       // current time step (to be defined)
 	ts->time  = 0.0;
+
+	ts->reverse = PETSC_FALSE;	// no reverse model
+
+	// Perform reverse model?	
+	ierr = PetscOptionsHasName(NULL, NULL, "-PerformReverseModel", &ts->reverse); CHKERRQ(ierr);		
+	if (ts->reverse){
+		PetscPrintf(PETSC_COMM_WORLD, " Timestepping method            : reverse-in-time \n");
+	}
+	
+	// Specify initial time != 0
+	ierr = PetscOptionsGetScalar(NULL, NULL, "-Time0", &time0, &flg); CHKERRQ(ierr);
+	if (flg) { 
+		ts->time             = time0/scal->time;		// scale initial time into ND units
+	}
 
 	PetscPrintf(PETSC_COMM_WORLD, " CFL timestep factor            : %f \n", ts->Cmax);
 
@@ -94,15 +111,27 @@ PetscErrorCode TSSolUpdate(TSSol *ts, Scaling *scal, PetscBool *done)
 	//----------------------------------------
 
 	// update time
-	ts->time += ts->dt;
+	if (ts->reverse){
+		ts->time -= ts->dt;	// backwards in case of reverse simulation
+	}
+	else{
+		ts->time += ts->dt;
+	}
 
 	// update time index
 	ts->istep++;
 
 	// print time info
-	PetscPrintf(PETSC_COMM_WORLD," Time = %g%s, dt = %g%s \n",
-		ts->time*scal->time, scal->lbl_time,
-		ts->dt  *scal->time, scal->lbl_time);
+	if (ts->reverse){
+		PetscPrintf(PETSC_COMM_WORLD," Time = %g%s, dt = %g%s \n",
+			ts->time*scal->time, scal->lbl_time,
+			-ts->dt  *scal->time, scal->lbl_time);
+	}
+	else{
+		PetscPrintf(PETSC_COMM_WORLD," Time = %g%s, dt = %g%s \n",
+			ts->time*scal->time, scal->lbl_time,
+			ts->dt  *scal->time, scal->lbl_time);
+	}
 
 	PetscPrintf(PETSC_COMM_WORLD," Finished timestep %lld out of %lld \n",(LLD)ts->istep-1, (LLD)ts->nstep-1);
 	PetscPrintf(PETSC_COMM_WORLD," \n");

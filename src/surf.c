@@ -804,7 +804,7 @@ PetscErrorCode FreeSurfAppErosion(FreeSurf *surf)
 
 	scal = &surf->jr->scal;
 
-	if(surf->ErosionModel == 1)
+	if ( (surf->ErosionModel == 1) || (surf->ErosionModel == 2))
 	{
 		// erase topography
 		ierr = VecSet(surf->ltopo, surf->avg_topo); CHKERRQ(ierr);
@@ -847,6 +847,10 @@ PetscErrorCode FreeSurfAppSedimentation(FreeSurf *surf)
 	jr   = surf->jr;
 	fs   = jr->fs;
 	dt   = jr->ts.dt;
+	if (jr->ts.reverse){
+		dt = -dt;		// reverse model, make timestep negative
+	}
+
 	time = jr->ts.time;
 	L    = (PetscInt)fs->dsz.rank;
 

@@ -56,6 +56,7 @@ PetscErrorCode PVOutWriteVelocity      (JacRes*, OutBuf*);
 PetscErrorCode PVOutWritePressure      (JacRes*, OutBuf*);
 PetscErrorCode PVOutWriteOverPressure  (JacRes*, OutBuf*);
 PetscErrorCode PVOutWriteLithosPressure(JacRes*, OutBuf*);
+PetscErrorCode PVOutWritePorePressure  (JacRes*, OutBuf*);
 PetscErrorCode PVOutWriteTemperature   (JacRes*, OutBuf*);
 PetscErrorCode PVOutWriteDevStress     (JacRes*, OutBuf*);
 PetscErrorCode PVOutWriteJ2DevStress   (JacRes*, OutBuf*);

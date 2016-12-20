@@ -155,7 +155,7 @@ PetscErrorCode PVSurfDestroy(PVSurf *pvsurf)
 //---------------------------------------------------------------------------
 #undef __FUNCT__
 #define __FUNCT__ "PVSurfWriteTimeStep"
-PetscErrorCode PVSurfWriteTimeStep(PVSurf *pvsurf, const char *dirName, PetscScalar ttime, PetscInt tindx)
+PetscErrorCode PVSurfWriteTimeStep(PVSurf *pvsurf,  JacRes *jr, const char *dirName, PetscScalar ttime, PetscInt tindx)
 {
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
@@ -166,7 +166,15 @@ PetscErrorCode PVSurfWriteTimeStep(PVSurf *pvsurf, const char *dirName, PetscSca
 	// update .pvd file if necessary
 	if(pvsurf->outpvd)
 	{
-		ierr = UpdatePVDFile(dirName, pvsurf->outfile, "pvts", &pvsurf->offset, ttime, tindx); CHKERRQ(ierr);
+		long int offset;
+
+		offset = pvsurf->offset;
+		ierr = UpdatePVDFile(dirName, pvsurf->outfile, "pvts", &offset, ttime, tindx, PETSC_FALSE); CHKERRQ(ierr);
+		if (jr->ts.reverse){
+			offset = pvsurf->offset;
+			ierr = UpdatePVDFile(dirName, pvsurf->outfile, "pvts", &offset, ttime, tindx, PETSC_TRUE); CHKERRQ(ierr);
+		}
+		pvsurf->offset = offset;
 	}
 
 	// write parallel data .pvts file

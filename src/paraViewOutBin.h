@@ -156,6 +156,7 @@ typedef struct
 	PetscInt pressure;       		// pressure
 	PetscInt overpressure;   		// overpressure
 	PetscInt lithospressure; 		// lithostatic pressure
+	PetscInt porepressure; 	    	// porepressure
 	PetscInt temperature;    		// temperature
 	PetscInt dev_stress;     		// deviatoric stress tensor
 	PetscInt j2_dev_stress;  		// deviatoric stress second invariant
@@ -236,7 +237,7 @@ void WriteXMLHeader(FILE *fp, const char *file_type);
 // WARNING! this is potential bottleneck, get rid of writing every time-step
 PetscErrorCode UpdatePVDFile(
 		const char *dirName, const char *outfile, const char *ext,
-		long int *offset, PetscScalar ttime, PetscInt tindx);
+		long int *offset, PetscScalar ttime, PetscInt tindx, PetscBool reverse);
 
 //---------------------------------------------------------------------------
 
