@@ -72,6 +72,15 @@ PetscErrorCode AdjointGradientPerturbParameter(NLSol *nl, PetscInt CurPar, Petsc
 // reset the perturbed input parameter within the gradient computation
 PetscErrorCode AdjointGradientResetParameter(NLSol *nl, PetscInt CurPar, PetscInt CurPhase, AdjGrad *aop);
 
+// Manage the analytical residual functions
+PetscErrorCode AdjointFormResidual(SNES snes, Vec x, Vec f, void *ctx, PetscInt CurPar, PetscInt CurPhase );
+
+// get analytical residual for the density
+PetscErrorCode AdjointJacResGetResidual_Density(JacRes *jr, PetscInt CurPar, PetscInt CurPhase);
+
+// get analytical residual for the reference viscosity for powerlaw rheology
+PetscErrorCode AdjointJacResGetResidual_ViscPowerlaw(JacRes *jr, PetscInt CurPar, PetscInt CurPhase);
+
 // To clear the memory
 PetscErrorCode AdjointDestroy(AdjGrad *aop);
 
