@@ -62,10 +62,14 @@ typedef struct
 	FDSTAG   *fs;   // staggered-grid layout
 	BCCtx    *bc;   // boundary condition context
 
+	// external and runtime parameters
+	PetscInt    AirPhase;    // air phase number   (a copy from free surface)
+	PetscScalar avg_topo;    // average topography (a copy from free surface)
+	PetscScalar pShift;      // pressure shift for plasticity model and output
+
 	// parameters & controls
 	PetscScalar grav[SPDIM]; // global gravity components
-	PetscScalar FSSA;        // density gradient penalty parameter
-	PetscScalar gtol;	     // geometry tolerance
+	PetscScalar FSSA;        // free surface stabilization parameter
 	PetscInt    actTemp;	 // temperature diffusion activation flag
 	PetscInt    pShiftAct;   // pressure shift activation flag (zero pressure in the top cell layer)
 
@@ -75,11 +79,6 @@ typedef struct
 	PetscInt     numSoft;                // number material softening laws
 	Soft_t       matSoft[max_num_soft];  // material softening law parameters
 	MatParLim    matLim;                 // phase parameters limiters
-
-	// external and runtime parameters
-	PetscInt    AirPhase;    // air phase number
-	PetscScalar avg_topo;    // average topography (a copy from free surface)
-	PetscScalar pShift;      // pressure shift for plasticity model and output
 
 	// coupled solution & residual vectors
 	Vec gsol, gres; // global

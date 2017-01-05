@@ -46,7 +46,6 @@
 #include "LaMEM.h"
 #include "solVar.h"
 #include "constEq.h"
-#include "dfzero.h"
 #include "tools.h"
 
 //---------------------------------------------------------------------------

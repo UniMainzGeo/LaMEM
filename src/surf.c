@@ -397,7 +397,7 @@ PetscErrorCode FreeSurfAdvectTopo(FreeSurf *surf)
 	mx   = fs->dsx.tnods;
 	my   = fs->dsy.tnods;
 	L    = (PetscInt)fs->dsz.rank;
-	gtol = jr->gtol;
+	gtol = fs->gtol;
 
 	// get current background strain rates
 	ierr = BCGetBGStrainRates(jr->bc, &Exx, &Eyy, NULL); CHKERRQ(ierr);
@@ -710,7 +710,7 @@ PetscErrorCode FreeSurfGetAirPhaseRatio(FreeSurf *surf)
 	jr        = surf->jr;
 	AirPhase  = surf->AirPhase;
 	fs        = jr->fs;
-	gtol      = jr->gtol;
+	gtol      = fs->gtol;
 	numPhases = jr->numPhases;
 	L         = (PetscInt)fs->dsz.rank;
 	iter      = 0;
@@ -1203,29 +1203,28 @@ PetscScalar IntersectTriangularPrism(
 	return (vbot - vtop)/2.0/vcell;
 }
 //---------------------------------------------------------------------------
-
 /*
 {
 	// TEST
 
-	PetscScalar bot, top, gtol, v1, v2;
+	PetscScalar bot, top, g_tol, v1, v2;
 
 	PetscScalar x[] = { 1.0, 7.0, 2.0 };
 	PetscScalar y[] = { 2.0, 1.0, 5.0 };
 	PetscScalar z[] = { 1.0, 2.0, 3.0 };
 	PetscInt    i[] = { 0,   1,   2   };
 
-	gtol  = 1e-12;
+	g_tol  = 1e-12;
 
 	bot   = 1.0;
 	top   = 1.5;
 
-	v1 = IntersectTriangularPrism(x, y, z, i, 1.0, bot, top, gtol);
+	v1 = IntersectTriangularPrism(x, y, z, i, 1.0, bot, top, g_tol);
 
 	bot   = 1.5;
 	top   = 3.0;
 
-	v2 = IntersectTriangularPrism(x, y, z, i, 1.0, bot, top, gtol);
+	v2 = IntersectTriangularPrism(x, y, z, i, 1.0, bot, top, g_tol);
 
 
 	printf("\n\n\n v1: %f \n\n\n", v1);
@@ -1235,115 +1234,6 @@ PetscScalar IntersectTriangularPrism(
 	printf("\n\n\n sum: %f \n\n\n", v1+v2);
 
 }
-//---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "SetSinusoidalPerturbation"
-// There are some cases in which we set an initial sinusoidal perturbation on the free surface
-PetscErrorCode SetSinusoidalPerturbation(PetscScalar SinusoidalFreeSurfaceAmplitude, UserCtx *user)
-{
-	PetscErrorCode ierr;
-	PetscScalar    ***LocalSurfaceTopography, x,z, maxVec;
-	PetscInt	   xs_Z, ys_Z, zs_Z, xm_Z, ym_Z, zm_Z, ix, iy;
-	DM			   cda_SurfaceTopo;
-	Vec			   gc_SurfaceTopo;
-	DMDACoor3d	   ***coors_SurfaceTopo;
-	// nondimensionalize
-	SinusoidalFreeSurfaceAmplitude = SinusoidalFreeSurfaceAmplitude/user->Characteristic.Length;
-	ierr = DMGetCoordinateDM(user->DA_SurfaceTopography,	&cda_SurfaceTopo); 	                         CHKERRQ(ierr);
-	ierr = DMGetCoordinatesLocal(user->DA_SurfaceTopography, &gc_SurfaceTopo); 	                     CHKERRQ(ierr);
-	ierr = DMDAVecGetArray(cda_SurfaceTopo,gc_SurfaceTopo, &coors_SurfaceTopo); 	                     CHKERRQ(ierr);
-	ierr = DMDAVecGetArray(user->DA_SurfaceTopography,user->SurfaceTopography, &LocalSurfaceTopography); CHKERRQ(ierr);
-	ierr = DMDAGetCorners(user->DA_SurfaceTopography,&xs_Z,&ys_Z,&zs_Z,&xm_Z,&ym_Z,&zm_Z);               CHKERRQ(ierr);
-	for (iy=ys_Z; iy<ys_Z+ym_Z; iy++)
-	{	for(ix=xs_Z; ix<xs_Z+xm_Z; ix++)
-		{	// Extract x,y,z coordinates of surface topography
-			x = coors_SurfaceTopo[zs_Z][iy][ix].x;
-//			y = coors_SurfaceTopo[zs_Z][iy][ix].y;
-			z = LocalSurfaceTopography[zs_Z][iy][ix];
-			z = z + cos(x/user->W*2*PETSC_PI)*SinusoidalFreeSurfaceAmplitude;
-			// set topography
-			LocalSurfaceTopography[zs_Z][iy][ix] = z;
-		}
-	}
-	ierr = DMDAVecRestoreArray(user->DA_SurfaceTopography,user->SurfaceTopography, 	&LocalSurfaceTopography	);	CHKERRQ(ierr);
-	ierr = DMDAVecRestoreArray(cda_SurfaceTopo,gc_SurfaceTopo,						&coors_SurfaceTopo		); 	CHKERRQ(ierr);
-	VecMax(user->SurfaceTopography,NULL, &maxVec);
-	PetscPrintf(PETSC_COMM_WORLD,"max topo = %f ", maxVec*user->Characteristic.Length/1000.0);
-	PetscFunctionReturn(0);
-}
-//---------------------------------------------------------------------------
-// get partitioning of the free surface in the XY plane
-// ierr = FreeSurfGetPartition(&fs->dsx, xs, dx, fs->dsx.h_min, &nx, &lx); CHKERRQ(ierr);
-// ierr = FreeSurfGetPartition(&fs->dsy, ys, dy, fs->dsy.h_min, &ny, &ly); CHKERRQ(ierr);
-//---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "FreeSurfGetPartition"
-PetscErrorCode FreeSurfGetPartition(
-	Discret1D    *ds,  // discretization
-	PetscScalar   beg, // starting coordinate
-	PetscScalar   len, // domain length
-	PetscScalar   h,   // target mesh step
-	PetscInt     *n,   // total number of nodes
-	PetscInt    **l)   // free surface partitioning vector
-{
-	MPI_Comm    comm;
-	PetscScalar step, tol, rtol;
-	PetscInt    i, first, last, lnum, nnod, ncel, sum, *part;
-
-	PetscErrorCode ierr;
-	PetscFunctionBegin;
-
-	rtol = 1e-8;
-
-	// compute total number of cells & nodes
-	ncel = (PetscInt)ceil(len/h);
-	nnod = ncel + 1;
-
-	if(ds->nproc == 1)
-	{
-		// single processor case
-		part = NULL;
-	}
-	else
-	{
-		// compute actual mesh step & geometric tolerance
-		step = len/(PetscScalar)ncel;
-		tol  = rtol*step;
-
-		// get index of first local node
-		if(ds->grprev != -1) first = (PetscInt)floor((ds->ncoor[0] - beg + tol)/step);
-		else                 first = 0;
-
-		// get index of last local node
-		if(ds->grnext != -1) last = (PetscInt)floor((ds->ncoor[ds->ncels] - beg - tol)/step);
-		else                 last = ncel;
-
-		// get local number of nodes
-		lnum = last - first + 1;
-
-		// create column communicator
-		ierr = Discret1DGetColumnComm(ds, &comm); CHKERRQ(ierr);
-
-		// create partitioning vector
-		ierr = makeIntArray(&part, NULL, ds->nproc); CHKERRQ(ierr);
-
-		// gather partitioning vector
-		ierr = MPI_Allgather(&lnum, 1, MPIU_INT, part, 1, MPIU_INT, comm); CHKERRQ(ierr);
-
-		// free
-		ierr = MPI_Comm_free(&comm); CHKERRQ(ierr);
-
-		// checksum
-		for(i = 0, sum = 0; i < ds->nproc; i++) sum += part[i];
-
-		if(sum != nnod) SETERRQ(PETSC_COMM_SELF, PETSC_ERR_USER, "Inconsistent free surface partitioning");
-	}
-
-	// return partitioning
-	(*n) = nnod;
-	(*l) = part;
-
-	PetscFunctionReturn(0);
-}
-//---------------------------------------------------------------------------
 */
+//---------------------------------------------------------------------------
+

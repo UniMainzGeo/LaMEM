@@ -55,10 +55,14 @@
 # Grid & discretization parameters
 #===============================================================================
 
+# relative geometry tolerance (default 1e-9)
+
+	gtol = 1e-9
+
 # Number of processes
 # If not provided, calculated internally
 # If all values are provided they must be a factorization of number MPI processes
-# Use this if really know what you are doing (this is fine tuning)
+# Use this if you really know what you are doing (this is fine tuning)
 
 	cpu_x = 1
 	cpu_y = 1
@@ -106,65 +110,155 @@
 # Boundary conditions
 #===============================================================================
 
+# Default conditions on all the boundaries:
+# * (mechanical): free-slip with zero normal velocity
+# * (thermal)   : zero heat flux
+
 # Background strain rate parameters
 
-	exx_num  = 3                 # number intervals of constant strain rate (x-axis)
-	exx_time = 0.1 5.0           # time delimiters (one less than number of intervals)
-	exx_rate = 1e-15 2e-15 1e-15 # strain rates for each interval
+	ExxNumPeriods  = 3                 # number intervals of constant strain rate (x-axis)
+	ExxTimeDelims  = 0.1 5.0           # time delimiters (one less than number of intervals, not required for one interval)
+	ExxStrainRates = 1e-15 2e-15 1e-15 # strain rates for each interval
 
-	eyy_num  = 3                 # ... same for y-axis
-	eyy_time = 0.1 5.0
-	eyy_rate = 1e-15 2e-15 1e-15
-
-	ExxNumPeriods
-	ExxTimeDelims
-	ExxStrainRates
-	EyyNumPeriods
-	EyyTimeDelims
-	EyyStrainRates
+	EyyNumPeriods  = 2                 # ... same for y-axis
+	EyyTimeDelims  = 1.0
+	EyyStrainRates = 1e-15 2e-15
+	
+# Bezier blocks (single entry per block)
 
 	<BCBlockStart>
-		npath
-		theta
-		time
-		path
-		npoly
-		poly
-		bot
-		top
+		npath =  2                                 # Number of path points of Bezier curve (path-points only!)
+		theta =  0.0 5.0                           # Orientation angles at path points (counter-clockwise positive)
+		time  =  1.0 2.0                           # Times at path points
+		path  =  0.0 0.0 0.0 1.0 1.0 1.0 1.0 0.0   # Bezier curve path & control points (3*npath-2 points are expected)
+		npoly =  4                                 # Number of polygon vertices
+		poly  =  0.0 0.0 0.1 0.0 0.1 0.1 0.0 0.1   # Polygon x-y coordinates at initial time
+		bot   =  0.0                               # Polygon bottom coordinate
+		top   =  0.1                               # Polygon top coordinate
 	<BCBlockEnd>
 
-	dbox_num
-	dbox_bounds
-	dbox_zvel
+# NOTE: 
 
-	bvel_phase
-	bvel_bot
-	bvel_top
-	bvel_velin
+# Bezier curve requires 4 points per interval (see e.g. wikipedia):
+# path point P0 - control point P1 - control point P2 - path point P3.
+# The last path point (P3) of every, but the last, interval is omitted due to continuity.
+# Altogether, "path" variable should provide 3*npath-2 points.
+# Every point has x and y coordinates, so total number of entries should be 6*npath-4.
+# Bezier curves can be most easily generated using inkscape software.
+# Continuity of tangent lines can be imposed by the tool "make selected nodes symmetric"
+# Coordinates of the curve points can be accessed using the XML editor in inkscape.
+# Alternatively one can process .svg files by geomIO software.
 
-	bc_gamma_xz
+# Dropping box
 
-	open_top_bound
+	dbox_num    =  1                        # number of boxes  
+	dbox_bounds =  0.0 1.0 0.0 1.0 0.0 1.0  # box bounds (6 entries per box)      
+	dbox_zvel   = -1.0                      # vertical velocity
 
-	noslip
+# Velocity boundary condition
 
-# Boundary temperature
+	bvel_face  =  1     # face identifier  (1-left 2-right 3-front 4-back)
+	bvel_phase =  1     # phase number of inflow material
+	bvel_bot   = -20.0  # bottom coordinate of inflow window
+	bvel_top   = -10.0  # top coordinate of inflow window
+	bvel_velin =  1.0   # inflow velocity
+
+# Simple shear boundary condition (xz - strain rate)
+
+	bc_gamma_xz = 1e-15
+
+# Free surface top boundary flag
+
+	open_top_bound 1
+
+# No-slip boundary flag mask (left right front back bottom top)
+	
+	noslip 0 0 1 1 0 0
+
+# Temperature on the top and bottom boundaries
 
 	temp_top = 0.0
 	temp_bot = 1300.0;
-
 
 #===============================================================================
 # Jacobian & residual evaluation parameters
 #===============================================================================
 
-	pshift = 1   # enforce zero pressure at top level
-	FSSA   = 1.0 # density gradient penalty parameter
+	grav      = 0.0 0.0 -10.0  # gravity vector
+	FSSA      = 1.0            # free surface stabilization parameter                         
+	actTemp   = 1              # temperature diffusion activation flag  
+	pShiftAct = 0              # pressure shift activation flag (zero pressure in the top cell layer)
 
-# Gravity vector
 
-	gravity  = 0.0 0.0 -10.0
+
+	ierr = getScalarParam(fb, _OPTIONAL_, "eta_min",      &lim->eta_min,      1, 1.0); CHKERRQ(ierr);
+	ierr = getScalarParam(fb, _OPTIONAL_, "eta_max",      &input_eta_max,     1, 1.0); CHKERRQ(ierr);
+	ierr = getScalarParam(fb, _REQUIRED_, "eta_ref",      &lim->eta_ref,      1, 1.0); CHKERRQ(ierr);
+	ierr = getScalarParam(fb, _OPTIONAL_, "TRef",         &lim->TRef,         1, 1.0); CHKERRQ(ierr);
+	ierr = getScalarParam(fb, _REQUIRED_, "DII_ref",      &lim->DII_ref,      1, 1.0); CHKERRQ(ierr);
+	ierr = getScalarParam(fb, _OPTIONAL_, "minCh",        &lim->minCh,        1, 1.0); CHKERRQ(ierr);
+	ierr = getScalarParam(fb, _OPTIONAL_, "minFr",        &lim->minFr,        1, 1.0); CHKERRQ(ierr);
+	ierr = getScalarParam(fb, _OPTIONAL_, "tauUlt",       &lim->tauUlt,       1, 1.0); CHKERRQ(ierr);
+	ierr = getScalarParam(fb, _OPTIONAL_, "rho_fluid",    &lim->rho_fluid,    1, 1.0); CHKERRQ(ierr);
+	ierr = getScalarParam(fb, _OPTIONAL_, "shearHeatEff", &lim->shearHeatEff, 1, 1.0); CHKERRQ(ierr);
+	ierr = getIntParam   (fb, _OPTIONAL_, "quasiHarmAvg", &lim->quasiHarmAvg, 1, 1);   CHKERRQ(ierr);
+	ierr = getScalarParam(fb, _OPTIONAL_, "cf_eta_min",   &lim->cf_eta_min,   1, 1.0); CHKERRQ(ierr);
+	ierr = getScalarParam(fb, _OPTIONAL_, "n_pw",         &lim->n_pw,         1, 1.0); CHKERRQ(ierr);
+	ierr = getIntParam   (fb, _OPTIONAL_, "pLithoVisc",   &lim->pLithoVisc,   1, 1);   CHKERRQ(ierr);
+	ierr = getIntParam   (fb, _OPTIONAL_, "pLithoPlast",  &lim->pLithoPlast,  1, 1);   CHKERRQ(ierr);
+	ierr = getIntParam   (fb, _OPTIONAL_, "pLimPlast",    &lim->pLimPlast,    1, 1);   CHKERRQ(ierr);
+	ierr = getScalarParam(fb, _OPTIONAL_, "theta_north",  &lim->theta_north,  1, 1.0); CHKERRQ(ierr);
+	ierr = getIntParam   (fb, _OPTIONAL_, "warn",         &lim->warn,         1, 1);   CHKERRQ(ierr);
+	ierr = getIntParam   (fb, _OPTIONAL_, "jac_mat_free", &lim->jac_mat_free, 1, 1);   CHKERRQ(ierr);
+	ierr = getIntParam   (fb, _OPTIONAL_, "initGuess",    &lim->initGuess,    1, 1);   CHKERRQ(ierr);
+
+	// set/read gas constant
+	if(scal->utype == _NONE_)
+	{
+		ierr = getScalarParam(fb, _REQUIRED_, "Rugc", &lim->Rugc, 1, 1.0); CHKERRQ(ierr);
+
+
+
+
+	// viscosity limits
+	PetscScalar eta_min;
+	PetscScalar inv_eta_max;
+	PetscScalar eta_ref;     // reference viscosity (initial guess)
+	// reference temperature
+	PetscScalar TRef;
+	// universal gas constant
+	PetscScalar Rugc;
+	// background (reference) strain-rate
+	PetscScalar DII_ref;
+	// plasticity parameters limits
+	PetscScalar minCh;  // minimum cohesion
+	PetscScalar minFr;  // maximum friction
+	PetscScalar tauUlt; // ultimate yield stress
+	// fluid density for depth-dependent density model
+	PetscScalar rho_fluid;
+	// thermo-mechanical coupling controls
+	PetscScalar shearHeatEff; // shear heating efficiency parameter [0 - 1]
+	// rheology controls
+	PetscInt    quasiHarmAvg; // quasi-harmonic averaging regularization flag (plasticity)
+	PetscScalar cf_eta_min;   // visco-plastic regularization parameter (plasticity)
+	PetscScalar n_pw;         // power-law regularization parameter (plasticity)
+	// pressure parameters
+	PetscInt    pLithoVisc;   // use lithostatic pressure for creep laws
+	PetscInt    pLithoPlast;  // use lithostatic pressure for plasticity
+	PetscInt    pLimPlast;    // limit pressure at first iteration for plasticity
+	// direction to the North for stress orientation
+	// counter-clockwise positive measured from x-axis
+	PetscScalar theta_north;
+	// print warning messages
+	PetscInt    warn;
+	// matrix-free closed-form jacobian
+	PetscInt    jac_mat_free;
+	// initial guess computation flag
+	PetscInt    initGuess;
+
+
+
+
 
 
 #===============================================================================
@@ -258,24 +352,6 @@
 	sed_phase  = 1 1 1            # sediment layers phase numbers
 	gtol       = 1e-8             # free surface geometry tolerance
 
-#===============================================================================
-# Material parameters limiters
-#===============================================================================
-
-#	eta_min
-#	eta_max
-#	eta_atol
-#	eta_rtol
-#	DII_atol
-#	DII_rtol
-#	DII_ref
-#	min_ch
-#	min_fr
-#	tau_ult
-#	shear_heat
-#	rho_fluid
-#	eta_init
-#	plast_ratio
 
 #===============================================================================
 # Material phase parameters
@@ -337,11 +413,6 @@
 		k         = 2.5    # thermal conductivity
 		A         = 1e-9   # radiogenic heat production
 	<MaterialEnd>
-
-#===============================================================================
-# Objective function
-#===============================================================================
-
 
 #===============================================================================
 # Input files

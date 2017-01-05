@@ -67,8 +67,8 @@ PetscErrorCode MatParLimRead(
 	PetscFunctionBegin;
 
 	// set defaults
-	lim->eta_min      = 0;
-	lim->inv_eta_max  = 0;
+	lim->eta_min      = 0.0;
+	lim->inv_eta_max  = 0.0;
 	lim->TRef         = 0.0;
 	lim->minCh        = 0.0;
 	lim->minFr        = 0.0;
@@ -521,6 +521,22 @@ PetscErrorCode MatSoftRead(
 	PetscPrintf(PETSC_COMM_WORLD,"SoftLaw [%lld]: A = %g, APS1 = %g, APS2 = %g \n", (LLD)(s->ID), s->A, s->APS1, s->APS2);
 
 	PetscFunctionReturn(0);
+}
+//---------------------------------------------------------------------------
+void MatPrintScalParam(PetscScalar par, const char key[], const char label[], Scaling *scal)
+{
+	// monitor parameter value
+
+	if(par == 0.0) return;
+
+	if(scal->utype == _NONE_)
+	{
+		PetscPrintf(PETSC_COMM_WORLD,"%s = %g [ ]  ", key, par);
+	}
+	else
+	{
+		PetscPrintf(PETSC_COMM_WORLD, "%s = %g [] %s  ", key, par, label);
+	}
 }
 //---------------------------------------------------------------------------
 //............ PREDEFINED RHEOLOGICAL PROFILES (from literature) ............

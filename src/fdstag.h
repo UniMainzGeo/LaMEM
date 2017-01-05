@@ -78,6 +78,7 @@ typedef struct
 PetscErrorCode MeshSeg1DReadParam(
 	MeshSeg1D  *ms,
 	PetscScalar leng,
+	PetscScalar gtol,
 	const char *dir,
 	FB         *fb);
 
@@ -231,6 +232,8 @@ typedef struct
 	PetscInt nZFace;  // Z-faces
 
 	PetscMPIInt neighb[_num_neighb_]; // global ranks of neighboring process
+
+	PetscScalar gtol; // relative geometry tolerance
 
 } FDSTAG;
 

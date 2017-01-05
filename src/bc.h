@@ -71,7 +71,7 @@ typedef struct
 	PetscInt    npath;                        // number of path points of Bezier curve
 	PetscScalar theta[  _max_path_points_  ]; // orientation angles at path points
 	PetscScalar time [  _max_path_points_  ]; // times at path points
-	PetscScalar path [6*_max_path_points_-4]; // Bezier curve path & control points
+	PetscScalar path [6*_max_path_points_-4]; // Bezier curve path & control points (3*n-2)
 
 	// block description
 	PetscInt    npoly;                      // number of polygon vertices

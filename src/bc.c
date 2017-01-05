@@ -65,7 +65,7 @@ PetscErrorCode BCBlockCreate(BCBlock *bcb, Scaling *scal, FB *fb)
 	//	-npath - Number of path points of Bezier curve (end-points only!)
 	//	-theta - Orientation angles at path points (counter-clockwise positive)
 	//	-time  - Times at path points
-	//	-path  - Bezier curve path & control points (6*npath-4 points are expected)
+	//	-path  - Bezier curve path & control points (6*npath-4 entries are expected)
 	//	-npoly - Number of polygon vertices
 	//	-poly  - Polygon x-y coordinates at initial time
 	//	-bot   - Polygon bottom coordinate
@@ -185,7 +185,7 @@ PetscErrorCode DBoxReadCreate(DBox *dbox, Scaling *scal, FB *fb)
 	// Dropping box parameters
 	//========================
 
-	ierr = getIntParam (fb, _OPTIONAL_, "dbox_num", &dbox->num, 1, _max_boxes_); CHKERRQ(ierr);
+	ierr = getIntParam(fb, _OPTIONAL_, "dbox_num", &dbox->num, 1, _max_boxes_); CHKERRQ(ierr);
 
 	if(dbox->num)
 	{

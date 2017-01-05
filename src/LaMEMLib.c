@@ -68,7 +68,6 @@
 #include "matProps.h"
 #include "objFunct.h"
 #include "AVDView.h"
-#include "break.h"
 #include "LaMEMLib.h"
 
 //---------------------------------------------------------------------------
@@ -288,9 +287,9 @@ PetscErrorCode LaMEMLibSetLinks(LaMEMLib *lm)
 	//                      |                               |
 	//                  FreeSurf                            |
 	//                      |                               |
-	//             -------------------------------          |
-	//             |               |             |          |
-	//          AdvCtx             |         ObjFunct       |
+	//             -----------------                        |
+	//             |               |                        |
+	//          AdvCtx             |                        |
 	//             |               |                        |
 	//        ------------         |                        |
 	//        |          |         |                        |
@@ -321,8 +320,6 @@ PetscErrorCode LaMEMLibSetLinks(LaMEMLib *lm)
 	lm->pvsurf.surf = &lm->surf;
 	lm->pvmark.actx = &lm->actx;
 	lm->pvavd.actx  = &lm->actx;
-
-	// ObjFunct !!!
 
 	PetscFunctionReturn(0);
 }

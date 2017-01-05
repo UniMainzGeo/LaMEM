@@ -51,51 +51,13 @@
 #include "bc.h"
 #include "JacRes.h"
 #include "constEq.h"
+#include "matProps.h"
 #include "tools.h"
 //---------------------------------------------------------------------------
 #undef __FUNCT__
 #define __FUNCT__ "JacResCreate"
 PetscErrorCode JacResCreate(JacRes *jr, FB *fb)
 {
-	DOFIndex       *dof;
-	PetscScalar    *svBuff;
-	PetscInt        i, n, svBuffSz, numPhases;
-	const PetscInt *lx, *ly;
-
-	PetscErrorCode ierr;
-	PetscFunctionBegin;
-
-/*
-	// read from options
-	ierr = getScalarParam(fb, _OPTIONAL_, "FSSA",   &jr->FSSA,      1,  0.0, 1.0, 1.0); CHKERRQ(ierr);
-	ierr = getScalarParam(fb, _OPTIONAL_, "FSSA",   &jr->FSSA,      1,  0.0, 1.0, 1.0); CHKERRQ(ierr);
-	ierr = getScalarParam(fb, _OPTIONAL_, "FSSA",   &jr->FSSA,      1,  0.0, 1.0, 1.0); CHKERRQ(ierr);
-	ierr = getIntParam   (fb, _OPTIONAL_, "pShift", &jr->pShiftAct, 1,  0,   1       ); CHKERRQ(ierr);
-
-	ierr = getIntParam   (fb, _OPTIONAL_, "pShift", &jr->pShiftAct, 1,  0,   1       ); CHKERRQ(ierr);
-	ierr = getIntParam   (fb, _OPTIONAL_, "pShift", &jr->pShiftAct, 1,  0,   1       ); CHKERRQ(ierr);
-
-
-	ierr = PetscOptionsHasName(NULL, NULL, "-ViscoPLithosOff", &flag); CHKERRQ(ierr);
-	ierr = PetscOptionsHasName(NULL, NULL, "-NoPressureLimit", &flag2); CHKERRQ(ierr);
-	ierr = PetscOptionsHasName(NULL, NULL, "-EmployLithostaticPressureInYieldFunction", &flag3); CHKERRQ(ierr);
-
-	pLithoVisc
-	pLithoPlast
-	pLimPlast
-*/
-
-/*
-
-
-	// parameters & controls
-	PetscScalar grav[SPDIM]; // global gravity components
-	PetscScalar FSSA;        // density gradient penalty parameter
-	PetscScalar gtol;        // geometry tolerance
-	PetscInt    pShiftAct;   // pressure shift activation flag
-	PetscInt    actTemp;     // temperature diffusion activation flag
-
-
 
 	PetscInt    i;
 	Material_t *m;
@@ -104,20 +66,23 @@ PetscErrorCode JacResCreate(JacRes *jr, FB *fb)
 	PetscFunctionBegin;
 
 	// initialize
+	jr->AirPhase = -1;
 	jr->FSSA      = 1.0;
 	jr->pShiftAct = 1;
 
+	// read from options
+	ierr = getScalarParam(fb, _OPTIONAL_, "grav",       jr->grav,      3,  1.0); CHKERRQ(ierr);
+	ierr = getScalarParam(fb, _OPTIONAL_, "FSSA",      &jr->FSSA,      1,  1.0); CHKERRQ(ierr);
+	ierr = getIntParam   (fb, _OPTIONAL_, "actTemp",   &jr->pShiftAct, 1,  1  ); CHKERRQ(ierr);
+	ierr = getIntParam   (fb, _OPTIONAL_, "pShiftAct", &jr->pShiftAct, 1,  1  ); CHKERRQ(ierr);
+
+	// read all material phases and softening laws
+	ierr = MatPropsReadAll(fb, jr->scal, &jr->numPhases, jr->phases, &jr->numSoft, jr->matSoft); CHKERRQ(ierr);
 
 	// read material parameter limits
 	ierr = MatParLimRead(fb, jr->scal, &jr->matLim); CHKERRQ(ierr);
 
-	// read all softening laws
-	ierr = MatSoftReadAll(fb, &jr->numSoft, jr->matSoft); CHKERRQ(ierr);
-
-	// read all material phases
-	ierr = MatPhaseReadAll(fb, jr->scal,
-			&jr->numPhases, jr->phases,
-			 jr->numSoft,   jr->matSoft); CHKERRQ(ierr);
+	// WARNING !!! CHECK THIS CONCEPT
 
 	// activate elasticity-compliant time-stepping
 	for(i = 0; i < jr->numPhases; i++)
@@ -132,62 +97,13 @@ PetscErrorCode JacResCreate(JacRes *jr, FB *fb)
 		}
 	}
 
+	// allocate vectors
 	ierr = JacResCreateData(jr); CHKERRQ(ierr);
 
 	// set initial guess
 	ierr = VecZeroEntries(jr->gsol); CHKERRQ(ierr);
-	ierr = VecZeroEntries(jr->gT);   CHKERRQ(ierr);
+	ierr = VecZeroEntries(jr->lT);   CHKERRQ(ierr);
 
-
-	// set pressure shift flag
-	ierr = PetscOptionsHasName(NULL, NULL, "-skip_press_shift", &flg); CHKERRQ(ierr);
-
-	if(flg == PETSC_TRUE) jr->pShiftAct = PETSC_FALSE;
-
-	ierr = PetscOptionsHasName(NULL, NULL, "-act_temp_diff", &flg); CHKERRQ(ierr);
-
-	if(flg == PETSC_TRUE) jr->actTemp = PETSC_TRUE;
-
-	// set geometry tolerance
-	ierr = PetscOptionsGetScalar(NULL, NULL, "-geom_tol", &gtol, &flg); CHKERRQ(ierr);
-
-	if(flg == PETSC_TRUE) jr->gtol = gtol;
-
-	// phases must be initialized before calling this function
-	numPhases = jr->numPhases;
-
-
-	// default geometry tolerance
-	jr->gtol = 1e-15;
-
-	// activate pressure shift
-	jr->pShift    = 0.0;
-	jr->pShiftAct = PETSC_TRUE;
-
-	// switch-off temperature diffusion
-	jr->actTemp = PETSC_FALSE;
-
-	// switch off free surface tracking
-	jr->AirPhase = -1;
-
-*/
-
-/*
-	// parameters & controls
-	PetscScalar grav[SPDIM]; // global gravity components
-	PetscScalar FSSA;        // density gradient penalty parameter
-	PetscScalar gtol;        // geometry tolerance
-	PetscInt    pShiftAct;   // pressure shift activation flag
-	PetscInt    actTemp;     // temperature diffusion activation flag
-
-	// phase parameters
-	PetscInt     numPhases;              // number phases
-	Material_t   phases[max_num_phases]; // phase parameters
-	PetscInt     numSoft;                // number material softening laws
-	Soft_t       matSoft[max_num_soft];  // material softening law parameters
-	MatParLim    matLim;                 // phase parameters limiters
-
- */
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
@@ -397,44 +313,6 @@ PetscErrorCode JacResDestroy(JacRes *jr)
 	// 2D integration primitives
 	ierr = DMDestroy(&jr->DA_CELL_2D); CHKERRQ(ierr);
 
-	PetscFunctionReturn(0);
-}
-//---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "JacResInitScale"
-PetscErrorCode JacResInitScale(JacRes *jr)
-{
-	// initialize and setup scaling object, perform scaling
-
-	PetscErrorCode ierr;
-	PetscFunctionBegin;
-/*
-	// initialize scaling object
-	ierr = ScalingCreate(&jr->scal);  CHKERRQ(ierr);
-
-	// scale input parameters
-	ScalingInput(&jr->scal, usr);
-
-	// initialize gravity acceleration
-	jr->grav[0] = 0.0;
-	jr->grav[1] = 0.0;
-	jr->grav[2] = usr->Gravity;
-
-	// initialize stabilization parameter
-	jr->FSSA = usr->FSSA;
-
-	// initialize time stepping parameters
-	ierr = TSSolSetUp(&jr->ts, usr); CHKERRQ(ierr);
-
-	// initialize material parameter limits
-	ierr = SetMatParLim(&jr->matLim, usr); CHKERRQ(ierr);
-
-	// scale material parameter limits
-	ScalingMatParLim(&jr->scal, &jr->matLim);
-
-	// scale material parameters
-	ScalingMatProp(&jr->scal, jr->phases, jr->numPhases);
-*/
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------

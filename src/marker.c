@@ -63,7 +63,6 @@
 #include "paraViewOutSurf.h"
 #include "paraViewOutMark.h"
 #include "AVDView.h"
-#include "break.h"
 
 /*
 #START_DOC#

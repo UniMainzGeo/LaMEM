@@ -56,19 +56,17 @@
 PetscErrorCode MeshSeg1DReadParam(
 	MeshSeg1D  *ms,
 	PetscScalar leng,
+	PetscScalar gtol,
 	const char *dir,
 	FB         *fb)
 {
 	PetscInt    i, tcels, uniform;
 	PetscInt    ncells[MaxNumSegs];
-	PetscScalar gtol, avgsz, sz;
+	PetscScalar avgsz, sz;
 	char        *nseg, *nel, *coord, *bias;
 
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
-
-	// set relative geometry tolerance
-	gtol = 1e-8;
 
 	// initialize
 	ms->nsegs = 1;
@@ -795,6 +793,11 @@ PetscErrorCode FDSTAGCreate(FDSTAG *fs, FB *fb)
 
 	scal = fs->scal;
 
+	// set & read geometry tolerance
+	fs->gtol = 1e-9;
+	ierr = getScalarParam(fb, _OPTIONAL_, "gtol", &fs->gtol, 1, 1.0); CHKERRQ(ierr);
+
+
 	// set number of processors
 	Px = PETSC_DECIDE;
 	Py = PETSC_DECIDE;
@@ -806,9 +809,9 @@ PetscErrorCode FDSTAGCreate(FDSTAG *fs, FB *fb)
 	ierr = getIntParam(fb, _OPTIONAL_, "cpu_z", &Pz, 1, MaxNumProcs); CHKERRQ(ierr);
 
 	// read mesh parameters
-	ierr = MeshSeg1DReadParam(&msx, scal->length, "x", fb); CHKERRQ(ierr);
-	ierr = MeshSeg1DReadParam(&msy, scal->length, "y", fb); CHKERRQ(ierr);
-	ierr = MeshSeg1DReadParam(&msz, scal->length, "z", fb); CHKERRQ(ierr);
+	ierr = MeshSeg1DReadParam(&msx, scal->length, fs->gtol, "x", fb); CHKERRQ(ierr);
+	ierr = MeshSeg1DReadParam(&msy, scal->length, fs->gtol, "y", fb); CHKERRQ(ierr);
+	ierr = MeshSeg1DReadParam(&msz, scal->length, fs->gtol, "z", fb); CHKERRQ(ierr);
 
 	// get total number of nodes
 	Nx = msx.tcels + 1;
