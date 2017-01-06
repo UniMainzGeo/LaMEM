@@ -47,7 +47,7 @@
 #define __surf_h__
 //---------------------------------------------------------------------------
 
-#define _max_layers_ 20
+#define _max_layers_ 50
 
 //---------------------------------------------------------------------------
 
@@ -62,10 +62,9 @@ typedef struct
 	Vec     vpatch, vmerge; // patch and merged velocity vectors (global)
 
 	// flags/parameters
-	PetscBool   UseFreeSurf; // free surface activation flag
+	PetscInt    UseFreeSurf; // free surface activation flag
+	PetscInt    phaseCorr;   // free surface phase correction flag
 	PetscScalar InitLevel;   // initial level
-	PetscScalar avg_topo;    // average topography
-	PetscBool   flat;        // flat free surface flag
 	PetscInt    AirPhase;    // air phase number
 	PetscScalar MaxAngle;    // maximum angle with horizon (smoothed if larger)
 
@@ -78,20 +77,22 @@ typedef struct
 	PetscScalar sedRates  [_max_layers_  ]; // sedimentation rates
 	PetscInt    sedPhases [_max_layers_  ]; // sediment layers phase numbers
 
-	// topography
-	char             TopoFilename[MAX_PATH_LEN];
+	// run-time parameters
+	PetscScalar avg_topo; // average topography (updated by all functions changing topography)
 
 } FreeSurf;
 
 //---------------------------------------------------------------------------
 
-PetscErrorCode FreeSurfClear(FreeSurf *surf);
+PetscErrorCode FreeSurfCreate(FreeSurf *surf, FB *fb);
 
-PetscErrorCode FreeSurfCreate(FreeSurf *surf, JacRes *jr);
+PetscErrorCode FreeSurfCreateData(FreeSurf *surf);
 
-PetscErrorCode FreeSurfReadFromOptions(FreeSurf *surf);
+PetscErrorCode FreeSurfGetAvgTopo(FreeSurf *surf);
 
-PetscErrorCode FreeSurfReadFromFile(FreeSurf *surf, Scaling *scal);
+PetscErrorCode FreeSurfReadRestart(FreeSurf *surf, FILE *fp);
+
+PetscErrorCode FreeSurfWriteRestart(FreeSurf *surf, FILE *fp);
 
 PetscErrorCode FreeSurfDestroy(FreeSurf *surf);
 
@@ -120,7 +121,7 @@ PetscErrorCode FreeSurfAppErosion(FreeSurf *surf);
 PetscErrorCode FreeSurfAppSedimentation(FreeSurf *surf);
 
 // Set topography from file
-PetscErrorCode FreeSurfSetTopoFromFile(FreeSurf *surf);
+PetscErrorCode FreeSurfSetTopoFromFile(FreeSurf *surf, FB *fb);
 
 //---------------------------------------------------------------------------
 // SERVICE FUNCTIONS
@@ -168,14 +169,3 @@ PetscScalar IntersectTriangularPrism(
 
 //---------------------------------------------------------------------------
 #endif
-
-/*
-// map uniform free surface onto non-uniform computational grid
-PetscErrorCode FreeSurfGetPartition(
-	Discret1D    *ds,  // discretization
-	PetscScalar   beg, // starting coordinate
-	PetscScalar   len, // domain length
-	PetscScalar   h,   // target mesh step
-	PetscInt     *n,   // total number of nodes
-	PetscInt    **l);  // free surface partitioning vector
-*/

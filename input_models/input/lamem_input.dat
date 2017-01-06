@@ -214,6 +214,11 @@
 # Model setup & advection
 #===============================================================================
 
+	mark_file = ./input/markers.dat  # marker description (parallel)
+	poly_file = ./input/poly.dat     # polygon geometry
+	temp_file = ./input/temp.dat     # initial temperature
+
+
 # Setup type
 
 	msetup = block
@@ -367,9 +372,6 @@
 # Input files
 #===============================================================================
 
-	mark_file = ./input/markers.dat  # marker description (parallel)
-	poly_file = ./input/poly.dat     # polygon geometry
-	temp_file = ./input/temp.dat     # initial temperature
 	topo_file = ./input/topo.dat     # initial topography
 
 #===============================================================================

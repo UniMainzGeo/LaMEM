@@ -94,6 +94,8 @@ PetscErrorCode MatParLimRead(
 	ierr = getIntParam   (fb, _OPTIONAL_, "jac_mat_free", &lim->jac_mat_free, 1, 1);   CHKERRQ(ierr);
 	ierr = getIntParam   (fb, _OPTIONAL_, "initGuess",    &lim->initGuess,    1, 1);   CHKERRQ(ierr);
 
+	// CROSS-CHECK OPTIONS
+
 	// set/read gas constant
 	if(scal->utype == _NONE_)
 	{
