@@ -100,6 +100,7 @@ typedef struct
 	PetscScalar  PSR;   // plastic strain-rate contribution
 	PetscScalar  dEta;  // dEta/dDII derivative (Jacobian)
 	PetscScalar  fr;    // effective friction coefficient (Jacobian)
+	PetscScalar  yield; // average yield stress in control volume
 
 } SolVarDev;
 
