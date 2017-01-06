@@ -27,7 +27,7 @@
 # NOTE:
 #
 # * characteristic values must ALWAYS be provided in SI units
-# * material parameters must ALWAYS be provided in SI units
+# * material parameters must ALWAYS be provided in SI units (also )
 # * in all dimensional cases (si & geo) angles are measured in degrees
 #   angular velocities are measured in degrees per unit time
 # * number of primary units is one more than usual
@@ -55,7 +55,7 @@
 # Grid & discretization parameters
 #===============================================================================
 
-# relative geometry tolerance (default 1e-9)
+# relative geometry tolerance for grid manipuations (default 1e-9)
 
 	gtol = 1e-9
 
@@ -167,7 +167,7 @@
 
 	bc_gamma_xz = 1e-15
 
-# Free surface top boundary flag
+# Free surface top boundary flag (this will induce deactivation of pShiftAct, see below)
 
 	open_top_bound 1
 
@@ -184,82 +184,31 @@
 # Jacobian & residual evaluation parameters
 #===============================================================================
 
-	grav      = 0.0 0.0 -10.0  # gravity vector
-	FSSA      = 1.0            # free surface stabilization parameter                         
-	actTemp   = 1              # temperature diffusion activation flag  
-	pShiftAct = 0              # pressure shift activation flag (zero pressure in the top cell layer)
-
-
-
-	ierr = getScalarParam(fb, _OPTIONAL_, "eta_min",      &lim->eta_min,      1, 1.0); CHKERRQ(ierr);
-	ierr = getScalarParam(fb, _OPTIONAL_, "eta_max",      &input_eta_max,     1, 1.0); CHKERRQ(ierr);
-	ierr = getScalarParam(fb, _REQUIRED_, "eta_ref",      &lim->eta_ref,      1, 1.0); CHKERRQ(ierr);
-	ierr = getScalarParam(fb, _OPTIONAL_, "TRef",         &lim->TRef,         1, 1.0); CHKERRQ(ierr);
-	ierr = getScalarParam(fb, _REQUIRED_, "DII_ref",      &lim->DII_ref,      1, 1.0); CHKERRQ(ierr);
-	ierr = getScalarParam(fb, _OPTIONAL_, "minCh",        &lim->minCh,        1, 1.0); CHKERRQ(ierr);
-	ierr = getScalarParam(fb, _OPTIONAL_, "minFr",        &lim->minFr,        1, 1.0); CHKERRQ(ierr);
-	ierr = getScalarParam(fb, _OPTIONAL_, "tauUlt",       &lim->tauUlt,       1, 1.0); CHKERRQ(ierr);
-	ierr = getScalarParam(fb, _OPTIONAL_, "rho_fluid",    &lim->rho_fluid,    1, 1.0); CHKERRQ(ierr);
-	ierr = getScalarParam(fb, _OPTIONAL_, "shearHeatEff", &lim->shearHeatEff, 1, 1.0); CHKERRQ(ierr);
-	ierr = getIntParam   (fb, _OPTIONAL_, "quasiHarmAvg", &lim->quasiHarmAvg, 1, 1);   CHKERRQ(ierr);
-	ierr = getScalarParam(fb, _OPTIONAL_, "cf_eta_min",   &lim->cf_eta_min,   1, 1.0); CHKERRQ(ierr);
-	ierr = getScalarParam(fb, _OPTIONAL_, "n_pw",         &lim->n_pw,         1, 1.0); CHKERRQ(ierr);
-	ierr = getIntParam   (fb, _OPTIONAL_, "pLithoVisc",   &lim->pLithoVisc,   1, 1);   CHKERRQ(ierr);
-	ierr = getIntParam   (fb, _OPTIONAL_, "pLithoPlast",  &lim->pLithoPlast,  1, 1);   CHKERRQ(ierr);
-	ierr = getIntParam   (fb, _OPTIONAL_, "pLimPlast",    &lim->pLimPlast,    1, 1);   CHKERRQ(ierr);
-	ierr = getScalarParam(fb, _OPTIONAL_, "theta_north",  &lim->theta_north,  1, 1.0); CHKERRQ(ierr);
-	ierr = getIntParam   (fb, _OPTIONAL_, "warn",         &lim->warn,         1, 1);   CHKERRQ(ierr);
-	ierr = getIntParam   (fb, _OPTIONAL_, "jac_mat_free", &lim->jac_mat_free, 1, 1);   CHKERRQ(ierr);
-	ierr = getIntParam   (fb, _OPTIONAL_, "initGuess",    &lim->initGuess,    1, 1);   CHKERRQ(ierr);
-
-	// set/read gas constant
-	if(scal->utype == _NONE_)
-	{
-		ierr = getScalarParam(fb, _REQUIRED_, "Rugc", &lim->Rugc, 1, 1.0); CHKERRQ(ierr);
-
-
-
-
-	// viscosity limits
-	PetscScalar eta_min;
-	PetscScalar inv_eta_max;
-	PetscScalar eta_ref;     // reference viscosity (initial guess)
-	// reference temperature
-	PetscScalar TRef;
-	// universal gas constant
-	PetscScalar Rugc;
-	// background (reference) strain-rate
-	PetscScalar DII_ref;
-	// plasticity parameters limits
-	PetscScalar minCh;  // minimum cohesion
-	PetscScalar minFr;  // maximum friction
-	PetscScalar tauUlt; // ultimate yield stress
-	// fluid density for depth-dependent density model
-	PetscScalar rho_fluid;
-	// thermo-mechanical coupling controls
-	PetscScalar shearHeatEff; // shear heating efficiency parameter [0 - 1]
-	// rheology controls
-	PetscInt    quasiHarmAvg; // quasi-harmonic averaging regularization flag (plasticity)
-	PetscScalar cf_eta_min;   // visco-plastic regularization parameter (plasticity)
-	PetscScalar n_pw;         // power-law regularization parameter (plasticity)
-	// pressure parameters
-	PetscInt    pLithoVisc;   // use lithostatic pressure for creep laws
-	PetscInt    pLithoPlast;  // use lithostatic pressure for plasticity
-	PetscInt    pLimPlast;    // limit pressure at first iteration for plasticity
-	// direction to the North for stress orientation
-	// counter-clockwise positive measured from x-axis
-	PetscScalar theta_north;
-	// print warning messages
-	PetscInt    warn;
-	// matrix-free closed-form jacobian
-	PetscInt    jac_mat_free;
-	// initial guess computation flag
-	PetscInt    initGuess;
-
-
-
-
-
+	grav         = 0.0 0.0 -10.0  # gravity vector
+	FSSA         = 1.0            # free surface stabilization parameter                         
+	actTemp      = 1              # temperature diffusion activation flag  
+	pShiftAct    = 0              # pressure shift activation flag (zero pressure in the top cell layer)
+	eta_min      = 1e18           # viscosity upper bound
+	eta_max      = 1e25           # viscosity lower limit
+	eta_ref      = 1e20           # reference viscosity (initial guess)
+	TRef         = 20.0           # reference temperature
+	DII_ref      = 1e-15          # background (reference) strain-rate
+	minCh        = 2e7            # cohesion lower bound
+	minFr        = 5.0            # friction lower bound
+	tauUlt       = 1e9            # ultimate yield stress
+	rho_fluid    = 1e3            # fluid density for depth-dependent density model 
+	shearHeatEff = 1.0            # shear heating efficiency parameter [0 - 1]
+	quasiHarmAvg = 1              # quasi-harmonic averaging regularization flag (plasticity)
+	cf_eta_min   = 10.0           # visco-plastic regularization parameter (plasticity)
+	n_pw         = 15.0           # power-law regularization parameter (plasticity)
+	pLithoVisc   = 1              # use lithostatic pressure for creep laws
+	pLithoPlast  = 1              # use lithostatic pressure for plasticity
+	pLimPlast    = 1              # limit pressure at first iteration for plasticity
+	theta_north  = 45             # direction to North counter-clockwise w.r.t. x-axis (SHmax)
+	warn         = 1              # print warning messages
+	jac_mat_free = 1              # matrix-free closed-form jacobian
+	initGuess    = 1              # compute initial guess
+	Rugc         = 8.31           # universal gas constant (allowed & required for non-dimensional setups)
 
 #===============================================================================
 # Model setup & advection

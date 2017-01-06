@@ -67,23 +67,9 @@ PetscErrorCode MatParLimRead(
 	PetscFunctionBegin;
 
 	// set defaults
-	lim->eta_min      = 0.0;
-	lim->inv_eta_max  = 0.0;
-	lim->TRef         = 0.0;
-	lim->minCh        = 0.0;
-	lim->minFr        = 0.0;
 	lim->tauUlt       = DBL_MAX;
-	lim->rho_fluid    = 0.0;
 	lim->shearHeatEff = 1.0;
-	lim->quasiHarmAvg = 0;
-	lim->cf_eta_min   = 0.0;
-	lim->n_pw         = 0.0;
 	lim->pLithoVisc   = 1;
-	lim->pLithoPlast  = 0;
-	lim->pLimPlast    = 0;
-	lim->theta_north  = 0.0;
-	lim->warn         = 0;
-	lim->jac_mat_free = 0;
 	lim->initGuess    = 1;
 
 	// read values
@@ -133,7 +119,7 @@ PetscErrorCode MatParLimRead(
 	lim->theta_north /= scal->angle;
 
 	// set inverse of maximum viscosity
-	lim->inv_eta_max = 1.0/input_eta_max;
+	if(input_eta_max) lim->inv_eta_max = 1.0/input_eta_max;
 
 	PetscFunctionReturn(0);
 }
