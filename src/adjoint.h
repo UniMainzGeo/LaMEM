@@ -75,9 +75,6 @@ PetscErrorCode AdjointGradientResetParameter(NLSol *nl, PetscInt CurPar, PetscIn
 // Manage the analytical residual functions
 PetscErrorCode AdjointFormResidual(SNES snes, Vec x, Vec f, void *ctx, PetscInt CurPar, PetscInt CurPhase );
 
-// get analytical residual for the density
-PetscErrorCode AdjointJacResGetResidual_Density(JacRes *jr, PetscInt CurPar, PetscInt CurPhase);
-
 // get analytical residual for the reference viscosity for powerlaw rheology
 PetscErrorCode AdjointJacResGetResidual_ViscPowerlaw(JacRes *jr, PetscInt CurPar, PetscInt CurPhase);
 
