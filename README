@@ -29,7 +29,7 @@ and were developed by:
   Dave A. May     (ETH Zurich, Switzerland). 2009-2011
 
 
-The current version is compatible with PETSc version 3.7.x
+The current version is compatible with PETSc version 3.7.x, x>=5
 
 Development work was supported by the European Research Council, 
 with ERC Starting Grant 258830.
@@ -65,7 +65,7 @@ bin             -       Contains binaries after compilation (/deb contains the d
 ---------------
 
 Essential dependencies-
-  i) PETSc 3.7.x
+  i) PETSc 3.7.x, x>=5
   
 1) Dependency Installation
 - i) PETSc: 
