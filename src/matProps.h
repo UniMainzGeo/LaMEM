@@ -50,7 +50,7 @@
 PetscErrorCode MatParLimRead(
 		FB        *fb,
 		Scaling   *scal,
-		MatParLim *matLim);
+		MatParLim *lim);
 
 // read all material phases and softening laws from file
 PetscErrorCode MatPropsReadAll(

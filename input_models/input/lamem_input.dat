@@ -1,5 +1,5 @@
 
-# PLEASE DON'T USE TABS ANYWERE EXCEPT THE FIRST CHARACTER IN A ROW (LOOKS UGLY)
+# PLEASE DON'T USE TABS ANYWERE EXCEPT THE FIRST CHARACTERS IN A ROW (LOOKS UGLY)
 
 #===============================================================================
 # Scaling
@@ -116,13 +116,13 @@
 
 # Background strain rate parameters
 
-	ExxNumPeriods  = 3                 # number intervals of constant strain rate (x-axis)
-	ExxTimeDelims  = 0.1 5.0           # time delimiters (one less than number of intervals, not required for one interval)
-	ExxStrainRates = 1e-15 2e-15 1e-15 # strain rates for each interval
+	exx_num_periods  = 3                 # number intervals of constant strain rate (x-axis)
+	exx_time_delims  = 0.1 5.0           # time delimiters (one less than number of intervals, not required for one interval)
+	exx_strain_rates = 1e-15 2e-15 1e-15 # strain rates for each interval
 
-	EyyNumPeriods  = 2                 # ... same for y-axis
-	EyyTimeDelims  = 1.0
-	EyyStrainRates = 1e-15 2e-15
+	eyy_num_periods  = 2                 # ... same for y-axis
+	eyy_time_delims  = 1.0
+	eyy_strain_rates = 1e-15 2e-15
 	
 # Bezier blocks (single entry per block)
 
@@ -167,7 +167,7 @@
 
 	bc_gamma_xz = 1e-15
 
-# Free surface top boundary flag (this will induce deactivation of pShiftAct, see below)
+# Free surface top boundary flag
 
 	open_top_bound 1
 
@@ -184,31 +184,31 @@
 # Jacobian & residual evaluation parameters
 #===============================================================================
 
-	grav         = 0.0 0.0 -10.0  # gravity vector
-	FSSA         = 1.0            # free surface stabilization parameter                         
-	actTemp      = 1              # temperature diffusion activation flag  
-	pShiftAct    = 0              # pressure shift activation flag (zero pressure in the top cell layer)
-	eta_min      = 1e18           # viscosity upper bound
-	eta_max      = 1e25           # viscosity lower limit
-	eta_ref      = 1e20           # reference viscosity (initial guess)
-	TRef         = 20.0           # reference temperature
-	DII_ref      = 1e-15          # background (reference) strain-rate
-	minCh        = 2e7            # cohesion lower bound
-	minFr        = 5.0            # friction lower bound
-	tauUlt       = 1e9            # ultimate yield stress
-	rho_fluid    = 1e3            # fluid density for depth-dependent density model 
-	shearHeatEff = 1.0            # shear heating efficiency parameter [0 - 1]
-	quasiHarmAvg = 1              # quasi-harmonic averaging regularization flag (plasticity)
-	cf_eta_min   = 10.0           # visco-plastic regularization parameter (plasticity)
-	n_pw         = 15.0           # power-law regularization parameter (plasticity)
-	pLithoVisc   = 1              # use lithostatic pressure for creep laws
-	pLithoPlast  = 1              # use lithostatic pressure for plasticity
-	pLimPlast    = 1              # limit pressure at first iteration for plasticity
-	theta_north  = 45             # direction to North counter-clockwise w.r.t. x-axis (SHmax)
-	warn         = 1              # print warning messages
-	jac_mat_free = 1              # matrix-free closed-form jacobian
-	initGuess    = 1              # compute initial guess
-	Rugc         = 8.31           # universal gas constant (allowed & required for non-dimensional setups)
+	gravity        = 0.0 0.0 -10.0  # gravity vector
+	FSSA           = 1.0            # free surface stabilization parameter                         
+	act_temp_diff  = 1              # temperature diffusion activation flag  
+	act_p_shift    = 0              # pressure shift activation flag (zero pressure in the top cell layer)
+	eta_min        = 1e18           # viscosity upper bound
+	eta_max        = 1e25           # viscosity lower limit
+	eta_ref        = 1e20           # reference viscosity (initial guess)
+	T_ref          = 20.0           # reference temperature
+	DII_ref        = 1e-15          # background (reference) strain-rate
+	min_cohes      = 2e7            # cohesion lower bound
+	min_fric       = 5.0            # friction lower bound
+	tau_ult        = 1e9            # ultimate yield stress
+	rho_fluid      = 1e3            # fluid density for depth-dependent density model 
+	shear_heat_eff = 1.0            # shear heating efficiency parameter [0 - 1]
+	quasi_harm_avg = 1              # quasi-harmonic averaging regularization flag (plasticity)
+	cf_eta_min     = 10.0           # visco-plastic regularization parameter (plasticity)
+	n_pw           = 15.0           # power-law regularization parameter (plasticity)
+	p_litho_visc   = 1              # use lithostatic pressure for creep laws
+	p_litho_plast  = 1              # use lithostatic pressure for plasticity
+	p_lim_plast    = 1              # limit pressure at first iteration for plasticity
+	theta_north    = 45             # direction to North counter-clockwise w.r.t. x-axis (SHmax)
+	warn           = 1              # print warning messages
+	jac_mat_free   = 1              # matrix-free closed-form jacobian
+	init_guess     = 1              # initial guess flag
+	RUGC           = 8.31           # universal gas constant (required only for non-dimensional setups)
 
 #===============================================================================
 # Model setup & advection
@@ -294,18 +294,18 @@
 # Free surface
 #===============================================================================
 
-	surf_use   = 1                # free surface activation flag
-	init_level = 0.5              # initial level
-	air_phase  = 0                # phase ID of sticky air layer
-	max_angle  = 45.0             # maximum angle with horizon (smoothed if larger)
-	erosion    = 1                # erosion model [0-none (default), 1-infinitely fast, ...]
-	sediment   = 1                # sedimentation model [0-none (dafault), 1-prescribed rate, ...]
-	sed_num    = 3                # number of sediment layers
-	sed_time   = 0.5 2.5          # sediment layers time delimiters (one less than number)
-	sed_rate   = 1e-3 1e-2 2-3    # sedimentation rates
-	sed_phase  = 1 1 1            # sediment layers phase numbers
-	gtol       = 1e-8             # free surface geometry tolerance
-
+	surf_use        = 1                # free surface activation flag
+	surf_corr_phase = 1                # air phase ratio correction flag (due to surface position)
+	surf_level      = 0.5              # initial level
+	surf_air_phase  = 0                # phase ID of sticky air layer
+	surf_max_angle  = 45.0             # maximum angle with horizon (smoothed if larger)
+	surf_topo_file  = ./input/topo.dat # initial topography file
+	erosion_model   = 1                # erosion model [0-none (default), 1-infinitely fast]
+	sediment_model  = 1                # sedimentation model [0-none (dafault), 1-prescribed rate]
+	sed_num_layers  = 3                # number of sediment layers
+	sed_time_delims = 0.5 2.5          # sediment layers time delimiters (one less than number)
+	sed_rates       = 1e-3 1e-2 2-3    # sedimentation rates
+	sed_phases      = 1 2 3            # sediment layers phase numbers
 
 #===============================================================================
 # Material phase parameters
@@ -367,12 +367,6 @@
 		k         = 2.5    # thermal conductivity
 		A         = 1e-9   # radiogenic heat production
 	<MaterialEnd>
-
-#===============================================================================
-# Input files
-#===============================================================================
-
-	topo_file = ./input/topo.dat     # initial topography
 
 #===============================================================================
 # Output

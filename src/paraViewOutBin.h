@@ -176,7 +176,6 @@ typedef struct
 	PetscInt moment_res;     		// momentum residual
 	PetscInt cont_res;       		// continuity residual
 	PetscInt energ_res;      		// energy residual
-	PetscInt jac_test;       		// matrix-vector Jacobian test
 
 	// ... add more output vector identifiers here
 //	PetscInt phrat[max_num_phases]; // phase ratios

@@ -60,7 +60,6 @@ PetscErrorCode MatParLimRead(
 		Scaling   *scal,
 		MatParLim *lim)
 {
-
 	PetscScalar input_eta_max;
 
 	PetscErrorCode ierr;
@@ -73,33 +72,31 @@ PetscErrorCode MatParLimRead(
 	lim->initGuess    = 1;
 
 	// read values
-	ierr = getScalarParam(fb, _OPTIONAL_, "eta_min",      &lim->eta_min,      1, 1.0); CHKERRQ(ierr);
-	ierr = getScalarParam(fb, _OPTIONAL_, "eta_max",      &input_eta_max,     1, 1.0); CHKERRQ(ierr);
-	ierr = getScalarParam(fb, _REQUIRED_, "eta_ref",      &lim->eta_ref,      1, 1.0); CHKERRQ(ierr);
-	ierr = getScalarParam(fb, _OPTIONAL_, "TRef",         &lim->TRef,         1, 1.0); CHKERRQ(ierr);
-	ierr = getScalarParam(fb, _REQUIRED_, "DII_ref",      &lim->DII_ref,      1, 1.0); CHKERRQ(ierr);
-	ierr = getScalarParam(fb, _OPTIONAL_, "minCh",        &lim->minCh,        1, 1.0); CHKERRQ(ierr);
-	ierr = getScalarParam(fb, _OPTIONAL_, "minFr",        &lim->minFr,        1, 1.0); CHKERRQ(ierr);
-	ierr = getScalarParam(fb, _OPTIONAL_, "tauUlt",       &lim->tauUlt,       1, 1.0); CHKERRQ(ierr);
-	ierr = getScalarParam(fb, _OPTIONAL_, "rho_fluid",    &lim->rho_fluid,    1, 1.0); CHKERRQ(ierr);
-	ierr = getScalarParam(fb, _OPTIONAL_, "shearHeatEff", &lim->shearHeatEff, 1, 1.0); CHKERRQ(ierr);
-	ierr = getIntParam   (fb, _OPTIONAL_, "quasiHarmAvg", &lim->quasiHarmAvg, 1, 1);   CHKERRQ(ierr);
-	ierr = getScalarParam(fb, _OPTIONAL_, "cf_eta_min",   &lim->cf_eta_min,   1, 1.0); CHKERRQ(ierr);
-	ierr = getScalarParam(fb, _OPTIONAL_, "n_pw",         &lim->n_pw,         1, 1.0); CHKERRQ(ierr);
-	ierr = getIntParam   (fb, _OPTIONAL_, "pLithoVisc",   &lim->pLithoVisc,   1, 1);   CHKERRQ(ierr);
-	ierr = getIntParam   (fb, _OPTIONAL_, "pLithoPlast",  &lim->pLithoPlast,  1, 1);   CHKERRQ(ierr);
-	ierr = getIntParam   (fb, _OPTIONAL_, "pLimPlast",    &lim->pLimPlast,    1, 1);   CHKERRQ(ierr);
-	ierr = getScalarParam(fb, _OPTIONAL_, "theta_north",  &lim->theta_north,  1, 1.0); CHKERRQ(ierr);
-	ierr = getIntParam   (fb, _OPTIONAL_, "warn",         &lim->warn,         1, 1);   CHKERRQ(ierr);
-	ierr = getIntParam   (fb, _OPTIONAL_, "jac_mat_free", &lim->jac_mat_free, 1, 1);   CHKERRQ(ierr);
-	ierr = getIntParam   (fb, _OPTIONAL_, "initGuess",    &lim->initGuess,    1, 1);   CHKERRQ(ierr);
-
-	// CROSS-CHECK OPTIONS
+	ierr = getScalarParam(fb, _OPTIONAL_, "eta_min",        &lim->eta_min,      1, 1.0); CHKERRQ(ierr);
+	ierr = getScalarParam(fb, _OPTIONAL_, "eta_max",        &input_eta_max,     1, 1.0); CHKERRQ(ierr);
+	ierr = getScalarParam(fb, _REQUIRED_, "eta_ref",        &lim->eta_ref,      1, 1.0); CHKERRQ(ierr);
+	ierr = getScalarParam(fb, _OPTIONAL_, "T_ref",          &lim->TRef,         1, 1.0); CHKERRQ(ierr);
+	ierr = getScalarParam(fb, _REQUIRED_, "DII_ref",        &lim->DII_ref,      1, 1.0); CHKERRQ(ierr);
+	ierr = getScalarParam(fb, _OPTIONAL_, "min_cohes",      &lim->minCh,        1, 1.0); CHKERRQ(ierr);
+	ierr = getScalarParam(fb, _OPTIONAL_, "min_fric",       &lim->minFr,        1, 1.0); CHKERRQ(ierr);
+	ierr = getScalarParam(fb, _OPTIONAL_, "tau_ult",        &lim->tauUlt,       1, 1.0); CHKERRQ(ierr);
+	ierr = getScalarParam(fb, _OPTIONAL_, "rho_fluid",      &lim->rho_fluid,    1, 1.0); CHKERRQ(ierr);
+	ierr = getScalarParam(fb, _OPTIONAL_, "shear_heat_eff", &lim->shearHeatEff, 1, 1.0); CHKERRQ(ierr);
+	ierr = getIntParam   (fb, _OPTIONAL_, "quasi_harm_avg", &lim->quasiHarmAvg, 1, 1);   CHKERRQ(ierr);
+	ierr = getScalarParam(fb, _OPTIONAL_, "cf_eta_min",     &lim->cf_eta_min,   1, 1.0); CHKERRQ(ierr);
+	ierr = getScalarParam(fb, _OPTIONAL_, "n_pw",           &lim->n_pw,         1, 1.0); CHKERRQ(ierr);
+	ierr = getIntParam   (fb, _OPTIONAL_, "p_litho_visc",   &lim->pLithoVisc,   1, 1);   CHKERRQ(ierr);
+	ierr = getIntParam   (fb, _OPTIONAL_, "p_litho_plast",  &lim->pLithoPlast,  1, 1);   CHKERRQ(ierr);
+	ierr = getIntParam   (fb, _OPTIONAL_, "p_lim_plast",    &lim->pLimPlast,    1, 1);   CHKERRQ(ierr);
+	ierr = getScalarParam(fb, _OPTIONAL_, "theta_north",    &lim->theta_north,  1, 1.0); CHKERRQ(ierr);
+	ierr = getIntParam   (fb, _OPTIONAL_, "warn",           &lim->warn,         1, 1);   CHKERRQ(ierr);
+	ierr = getIntParam   (fb, _OPTIONAL_, "jac_mat_free",   &lim->jac_mat_free, 1, 1);   CHKERRQ(ierr);
+	ierr = getIntParam   (fb, _OPTIONAL_, "init_guess",     &lim->initGuess,    1, 1);   CHKERRQ(ierr);
 
 	// set/read gas constant
 	if(scal->utype == _NONE_)
 	{
-		ierr = getScalarParam(fb, _REQUIRED_, "Rugc", &lim->Rugc, 1, 1.0); CHKERRQ(ierr);
+		ierr = getScalarParam(fb, _REQUIRED_, "RUGC", &lim->Rugc, 1, 1.0); CHKERRQ(ierr);
 	}
 	else
 	{

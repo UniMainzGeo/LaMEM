@@ -58,7 +58,6 @@
 #include "nlsolve.h"
 #include "tools.h"
 #include "interpolate.h"
-#include "check_fdstag.h"
 #include "paraViewOutBin.h"
 #include "outFunct.h"
 //---------------------------------------------------------------------------
@@ -655,39 +654,6 @@ PetscErrorCode PVOutWriteGOL(JacRes *jr, OutBuf *outbuf)
 }
 //---------------------------------------------------------------------------
 // DEBUG VECTORS
-//---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "PVOutWriteJacTest"
-PetscErrorCode PVOutWriteJacTest(JacRes *jr, OutBuf *outbuf)
-{
-	Vec diff;
-
-	ACCESS_FUNCTION_HEADER
-
-	cf = scal->unit;
-
-	// create test vector
-	ierr = VecDuplicate(jr->gsol, &diff);  CHKERRQ(ierr);
-	ierr = VecSet(diff, 0.0);              CHKERRQ(ierr);
-
-	// test closed-form Jacobian against finite difference approximation
-	ierr = JacTest(jr, diff);
-
-	// view difference
-	ierr = JacResCopyMomentumRes(jr, diff); CHKERRQ(ierr);
-
-	GLOBAL_TO_LOCAL(outbuf->fs->DA_X, jr->gfx, jr->lfx)
-	GLOBAL_TO_LOCAL(outbuf->fs->DA_Y, jr->gfy, jr->lfy)
-	GLOBAL_TO_LOCAL(outbuf->fs->DA_Z, jr->gfz, jr->lfz)
-
-	INTERPOLATE_ACCESS(jr->lfx, InterpXFaceCorner, 3, 0, 0.0)
-	INTERPOLATE_ACCESS(jr->lfy, InterpYFaceCorner, 3, 1, 0.0)
-	INTERPOLATE_ACCESS(jr->lfz, InterpZFaceCorner, 3, 2, 0.0)
-
-	ierr = VecDestroy(&diff); CHKERRQ(ierr);
-
-	PetscFunctionReturn(0);
-}
 //---------------------------------------------------------------------------
 #undef __FUNCT__
 #define __FUNCT__ "PVOutWriteMomentRes"

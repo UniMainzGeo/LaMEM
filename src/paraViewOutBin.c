@@ -362,7 +362,6 @@ PetscInt OutMaskCountActive(OutMask *omask)
 	if(omask->moment_res)     		cnt++; // momentum residual
 	if(omask->cont_res)      	 	cnt++; // continuity residual
 	if(omask->energ_res)      		cnt++; // energy residual
-	if(omask->jac_test)       		cnt++; // matrix-vector Jacobian test
 
 	return cnt;
 }
@@ -464,7 +463,6 @@ PetscErrorCode PVOutCreate(PVOut *pvout, const char *filename)
 	if(omask->moment_res)     		OutVecCreate(&outvecs[cnt++], "moment_res",     	scal->lbl_volumetric_force, &PVOutWriteMomentRes,    3);
 	if(omask->cont_res)       		OutVecCreate(&outvecs[cnt++], "cont_res",       	scal->lbl_strain_rate,      &PVOutWriteContRes,      1);
 	if(omask->energ_res)      		OutVecCreate(&outvecs[cnt++], "energ_res",      	scal->lbl_dissipation_rate, &PVOutWritEnergRes,      1);
-	if(omask->jac_test)       		OutVecCreate(&outvecs[cnt++], "jac_test",       	scal->lbl_unit,             &PVOutWriteJacTest,      3);
 
 	PetscFunctionReturn(0);
 }
@@ -510,7 +508,6 @@ PetscErrorCode PVOutReadFromOptions(PVOut *pvout)
 	ierr = PetscOptionsGetInt(NULL, NULL, "-out_moment_res",     		&omask->moment_res,     	NULL); CHKERRQ(ierr);
 	ierr = PetscOptionsGetInt(NULL, NULL, "-out_cont_res",       		&omask->cont_res,       	NULL); CHKERRQ(ierr);
     ierr = PetscOptionsGetInt(NULL, NULL, "-out_energ_res",      		&omask->energ_res,      	NULL); CHKERRQ(ierr);
-    ierr = PetscOptionsGetInt(NULL, NULL, "-out_jac_test",       		&omask->jac_test,       	NULL); CHKERRQ(ierr);
 
 	if(pvout->outpvd)
 	{

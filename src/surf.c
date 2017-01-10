@@ -64,132 +64,41 @@
 PetscErrorCode FreeSurfCreate(FreeSurf *surf, FB *fb)
 {
 
+	JacRes  *jr;
+	Scaling *scal;
+
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
 
 	// initialize
 	surf->UseFreeSurf = 1;
 	surf->phaseCorr   = 1;
-/*
-	// flags/parameters
-	PetscInt    UseFreeSurf; // free surface activation flag
-	PetscInt    phaseCorr;   // free surface phase correction flag
-	PetscScalar InitLevel;   // initial level
-	PetscScalar avg_topo;    // average topography
-	//                          all functions changing topography also compute avg_topo
-	PetscInt    AirPhase;    // air phase number
-	PetscScalar MaxAngle;    // maximum angle with horizon (smoothed if larger)
 
-	// erosion/sedimentation parameters
-	PetscInt    phase;         // current sediment phase
-	PetscInt    ErosionModel;  // [0-none, 1-infinitely fast, ...]
-	PetscInt    SedimentModel; // [0-none, 1-prescribed rate, ...]
-	PetscInt    numLayers;     // number of sediment layers
-	PetscScalar timeDelims[_max_layers_-1]; // sediment layers time delimiters
-	PetscScalar sedRates  [_max_layers_  ]; // sedimentation rates
-	PetscInt    sedPhases [_max_layers_  ]; // sediment layers phase numbers
+	ierr = getIntParam(fb, _OPTIONAL_, "surf_use", &surf->UseFreeSurf, 1,  1); CHKERRQ(ierr);
 
+	// free surface cases only
+	if(!surf->UseFreeSurf) PetscFunctionReturn(0);
 
-
-
-
-	Scaling *scal;
-	JacRes  *jr;
-
-	PetscErrorCode ierr;
-	PetscFunctionBegin;
-
-	scal = surf->scal;
+	// access context
 	jr   = surf->jr;
-
-	// check whether free surface tracking is enabled
-	surf->useSurf = 1;
-
-	ierr = getIntParam(fb, _OPTIONAL_, "surf_use", &surf->useSurf, 1,  0, 1); CHKERRQ(ierr);
-
-	if(!surf->useSurf) PetscFunctionReturn(0);
-
-	// initialize
-	surf->initLevel = 0.0;
-	surf->maxAngle  = 45.0;
-	surf->gtol      = 1e-12;
+	scal = jr->scal;
 
 	// read from options
-	ierr = getScalarParam(fb, _OPTIONAL_, "initLevel", &surf->initLevel, 1,              -1e8,   1e8,            scal->length     ); CHKERRQ(ierr);
-	ierr = getIntParam   (fb, _REQUIRED_, "airPhase",  &surf->airPhase,  1,               0,     jr->numPhases-1                  ); CHKERRQ(ierr);
-	ierr = getScalarParam(fb, _OPTIONAL_, "maxAngle",  &surf->maxAngle,  1,               0.0,   45.0,           scal->angle      ); CHKERRQ(ierr);
-	ierr = getIntParam   (fb, _OPTIONAL_, "erosion",   &surf->erosion,   1,               0,     1                                ); CHKERRQ(ierr);
-	ierr = getIntParam   (fb, _OPTIONAL_, "sediment",  &surf->sediment,  1,               0,     1                                ); CHKERRQ(ierr);
-	ierr = getIntParam   (fb, _REQUIRED_, "sedNum",    &surf->sedNum,   !!surf->sediment, 1,     _max_layers_                     ); CHKERRQ(ierr);
-	ierr = getScalarParam(fb, _REQUIRED_, "sedTime",    surf->sedTime,    surf->sedNum-1, 1e-8,  1e8,            scal->time       ); CHKERRQ(ierr);
-	ierr = getScalarParam(fb, _REQUIRED_, "sedRate",    surf->sedRate,    surf->sedNum,  -1e8,   1e8,            scal->strain_rate); CHKERRQ(ierr);
-	ierr = getIntParam   (fb, _REQUIRED_, "sedPhase",   surf->sedPhase,   surf->sedNum,   0,     jr->numPhases-1                  ); CHKERRQ(ierr);
-	ierr = getScalarParam(fb, _OPTIONAL_, "gtol",      &surf->gtol,       1,              1e-16, 1e-8,           1.0              ); CHKERRQ(ierr);
+	ierr = getIntParam   (fb, _OPTIONAL_, "surf_corr_phase", &surf->phaseCorr,     1,  1);               CHKERRQ(ierr);
+	ierr = getScalarParam(fb, _REQUIRED_, "surf_level",      &surf->InitLevel,     1,  scal->length);    CHKERRQ(ierr);
+	ierr = getIntParam   (fb, _REQUIRED_, "surf_air_phase",  &surf->AirPhase,      1,  jr->numPhases-1); CHKERRQ(ierr);
+	ierr = getScalarParam(fb, _OPTIONAL_, "surf_max_angle",  &surf->MaxAngle,      1,  scal->angle);     CHKERRQ(ierr);
+	ierr = getIntParam   (fb, _OPTIONAL_, "erosion_model",   &surf->ErosionModel,  1,  1);               CHKERRQ(ierr);
+	ierr = getIntParam   (fb, _OPTIONAL_, "sediment_model",  &surf->SedimentModel, 1,  1);               CHKERRQ(ierr);
 
-
-*/
-
-/*
-	// check whether free surface tracking is enabled
-
-	ierr = getIntParam(fb, _OPTIONAL_, "surf_use", &surf->useSurf, 1,  0, 1); CHKERRQ(ierr);
-
-
-	if(!surf->useSurf) PetscFunctionReturn(0);
-
-	// initialize
-	surf->initLevel = 0.0;
-	surf->maxAngle  = 45.0;
-
-
-
-	// read output flags
-	ierr = PetscOptionsGetBool  (NULL, NULL, "-surf_use",       &surf->UseFreeSurf, NULL); CHKERRQ(ierr);
-	ierr = PetscOptionsGetScalar(NULL, NULL, "-surf_level",     &surf->InitLevel,   NULL); CHKERRQ(ierr);
-	ierr = PetscOptionsGetInt   (NULL, NULL, "-surf_air_phase", &surf->AirPhase,    NULL); CHKERRQ(ierr);
-	ierr = PetscOptionsGetScalar(NULL, NULL, "-surf_max_angle", &surf->MaxAngle,    NULL); CHKERRQ(ierr);
-
-	// nondimensionalize
-	surf->InitLevel /= scal->length;
-	surf->MaxAngle  /= scal->angle;
-
-	// set average topography & flag level
-	surf->avg_topo     = surf->InitLevel;
-	surf->jr->avg_topo = surf->InitLevel;
-	surf->flat         = PETSC_TRUE;
-
-	//======================================
-	// read erosion sedimentation parameters
-	//======================================
-
-	ierr = GetIntDataItemCheck("-ErosionModel", "Erosion model",
-		_NOT_FOUND_EXIT_, 1, &surf->ErosionModel, 0, 1); CHKERRQ(ierr);
-
-	ierr = GetIntDataItemCheck("-SedimentModel", "Sedimentation model",
-		_NOT_FOUND_EXIT_, 1, &surf->SedimentModel, 0, 1); CHKERRQ(ierr);
-
-	// read prescribed sedimentation rate model parameter
-	if(surf->SedimentModel == 1)
+	if(surf->SedimentModel)
 	{
-		ierr = GetIntDataItemCheck("-numLayers", "Number of sediment layers",
-			_NOT_FOUND_ERROR_, 1, &surf->numLayers, 1, _max_layers_); CHKERRQ(ierr);
-
-		ierr = GetScalDataItemCheckScale("-timeDelims", "Sediment layers time delimiters",
-			_NOT_FOUND_ERROR_, surf->numLayers-1, surf->timeDelims, 0.0, 0.0, scal->time); CHKERRQ(ierr);
-
-		ierr = GetScalDataItemCheckScale("-sedRates", "Sedimentation Rates",
-			_NOT_FOUND_ERROR_, surf->numLayers, surf->sedRates, 0.0, 0.0, scal->velocity); CHKERRQ(ierr);
-
-		ierr = GetIntDataItemCheck("-sedPhases", "Sediment layers phase numbers",
-			_NOT_FOUND_ERROR_, surf->numLayers, surf->sedPhases, 0, 0); CHKERRQ(ierr);
+		// sedimentation model parameters
+		ierr = getIntParam   (fb, _REQUIRED_, "sed_num_layers",  &surf->numLayers,  1,                 _max_layers_);      CHKERRQ(ierr);
+		ierr = getScalarParam(fb, _REQUIRED_, "sed_time_delims",  surf->timeDelims, surf->numLayers-1, scal->time);        CHKERRQ(ierr);
+		ierr = getScalarParam(fb, _REQUIRED_, "sed_rates",        surf->sedRates,   surf->numLayers,   scal->strain_rate); CHKERRQ(ierr);
+		ierr = getIntParam   (fb, _REQUIRED_, "sed_phases",       surf->sedPhases,  surf->numLayers,   jr->numPhases-1);   CHKERRQ(ierr);
 	}
-*/
-
-
-
-
-
-
 
 	// create structures
 	ierr = FreeSurfCreateData(surf); CHKERRQ(ierr);
@@ -203,6 +112,9 @@ PetscErrorCode FreeSurfCreate(FreeSurf *surf, FB *fb)
 
 	// compute & store average topography
 	ierr = FreeSurfGetAvgTopo(surf); CHKERRQ(ierr);
+
+	// store air phase number in residual context
+	jr->AirPhase = -1;
 
 	PetscFunctionReturn(0);
 }
@@ -333,9 +245,7 @@ PetscErrorCode FreeSurfAdvect(FreeSurf *surf)
 {
 	// advect topography of the free surface mesh
 
-	JacRes      *jr;
-	FDSTAG      *fs;
-	PetscScalar  avg_topo;
+	JacRes *jr;
 
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
@@ -345,7 +255,6 @@ PetscErrorCode FreeSurfAdvect(FreeSurf *surf)
 
 	// access context
 	jr = surf->jr;
-	fs = jr->fs;
 
 	// get surface velocities
 	ierr = FreeSurfGetVelComp(surf, &InterpXFaceCorner, jr->lvx, surf->vx); CHKERRQ(ierr);
@@ -946,7 +855,7 @@ PetscErrorCode FreeSurfAppSedimentation(FreeSurf *surf)
 	JacRes      *jr;
 	FDSTAG      *fs;
 	PetscScalar ***topo;
-	PetscScalar dt, time, rate, zbot, ztop, z, dz, avg_topo;
+	PetscScalar dt, time, rate, zbot, ztop, z, dz;
 	PetscInt    L, jj, phase;
 	PetscInt    i, j, nx, ny, sx, sy, sz;
 

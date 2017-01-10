@@ -157,6 +157,47 @@ PetscErrorCode ADVCreate(AdvCtx *actx, FDSTAG *fs, JacRes *jr)
 	actx->AirPhase = -1;  // air phase number
 	actx->Ttop     = 0.0; // top surface temperature
 
+
+	/*
+	// read model setup
+	parse_GetString(fp, "msetup", setup_name, MAX_NAME_LEN, &found);
+	if(found)
+	{
+		if     (!strcmp(setup_name, "parallel"))   user->msetup = PARALLEL;
+		else if(!strcmp(setup_name, "redundant"))  user->msetup = REDUNDANT;
+		else if(!strcmp(setup_name, "polygons"))   user->msetup = POLYGONS;
+		else if(!strcmp(setup_name, "diapir"))     user->msetup = DIAPIR;
+		else if(!strcmp(setup_name, "block"))      user->msetup = BLOCK;
+		else if(!strcmp(setup_name, "subduction")) user->msetup = SUBDUCTION;
+		else if(!strcmp(setup_name, "folding"))    user->msetup = FOLDING;
+		else if(!strcmp(setup_name, "detachment")) user->msetup = DETACHMENT;
+		else if(!strcmp(setup_name, "slab"))       user->msetup = SLAB;
+		else if(!strcmp(setup_name, "spheres"))    user->msetup = SPHERES;
+		else if(!strcmp(setup_name, "bands"))      user->msetup = BANDS;
+		else if(!strcmp(setup_name, "domes"))      user->msetup = DOMES;
+		else if(!strcmp(setup_name, "rotation"))   user->msetup = ROTATION;
+		else SETERRQ1(PETSC_COMM_SELF, PETSC_ERR_USER,"#ERROR! Incorrect model setup: %s", setup_name);
+	}
+
+	parse_GetInt( fp,    "ParticleInput", &user->ParticleInput, &found );
+	parse_GetString( fp, "ParticleFilename", user->ParticleFilename, MAX_PATH_LEN, &found );
+	parse_GetString( fp, "TemperatureFilename", user->TemperatureFilename, MAX_PATH_LEN, &found );
+	if (!found){
+		sprintf(user->TemperatureFilename, "noTemperatureFileName");
+	}
+	parse_GetString( fp, "LoadInitialParticlesDirectory", user->LoadInitialParticlesDirectory, MAX_PATH_LEN, &found );
+	if (!found){
+		sprintf(user->LoadInitialParticlesDirectory, "InitialParticles");
+	}
+	parse_GetString( fp, "SaveInitialParticlesDirectory", user->SaveInitialParticlesDirectory, MAX_PATH_LEN, &found );
+	if (!found){
+		sprintf(user->SaveInitialParticlesDirectory, "InitialParticles");
+	}
+	parse_GetInt( fp,    "SaveParticles", &user->SaveParticles, &found );
+
+	 */
+
+
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------

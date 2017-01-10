@@ -59,11 +59,15 @@
 PetscErrorCode JacResCreate(JacRes *jr, FB *fb)
 {
 
-	PetscInt    i;
 	Material_t *m;
+	MatParLim  *lim;
+	PetscInt    i, cnt;
 
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
+
+	// access context
+	lim = &jr->matLim;
 
 	// initialize
 	jr->AirPhase = -1;
@@ -71,18 +75,42 @@ PetscErrorCode JacResCreate(JacRes *jr, FB *fb)
 	jr->pShiftAct = 1;
 
 	// read from options
-	ierr = getScalarParam(fb, _OPTIONAL_, "grav",       jr->grav,      3,  1.0); CHKERRQ(ierr);
-	ierr = getScalarParam(fb, _OPTIONAL_, "FSSA",      &jr->FSSA,      1,  1.0); CHKERRQ(ierr);
-	ierr = getIntParam   (fb, _OPTIONAL_, "actTemp",   &jr->pShiftAct, 1,  1  ); CHKERRQ(ierr);
-	ierr = getIntParam   (fb, _OPTIONAL_, "pShiftAct", &jr->pShiftAct, 1,  1  ); CHKERRQ(ierr);
+	ierr = getScalarParam(fb, _OPTIONAL_, "gravity",       jr->grav,       3,  1.0); CHKERRQ(ierr);
+	ierr = getScalarParam(fb, _OPTIONAL_, "FSSA",          &jr->FSSA,      1,  1.0); CHKERRQ(ierr);
+	ierr = getIntParam   (fb, _OPTIONAL_, "act_temp_diff", &jr->pShiftAct, 1,  1  ); CHKERRQ(ierr);
+	ierr = getIntParam   (fb, _OPTIONAL_, "act_p_shift",   &jr->pShiftAct, 1,  1  ); CHKERRQ(ierr);
 
 	// read all material phases and softening laws
 	ierr = MatPropsReadAll(fb, jr->scal, &jr->numPhases, jr->phases, &jr->numSoft, jr->matSoft); CHKERRQ(ierr);
 
 	// read material parameter limits
-	ierr = MatParLimRead(fb, jr->scal, &jr->matLim); CHKERRQ(ierr);
+	ierr = MatParLimRead(fb, jr->scal, lim); CHKERRQ(ierr);
 
-	// WARNING !!! CHECK THIS CONCEPT
+	// CROSS-CHECK OPTIONS
+	cnt = 0;
+	if(lim->quasiHarmAvg) cnt++;
+	if(lim->cf_eta_min)   cnt++;
+	if(lim->n_pw)         cnt++;
+
+	if(cnt > 1)
+	{
+		SETERRQ(PETSC_COMM_SELF, PETSC_ERR_USER, "Cannot combine plasticity stabilization methods (quasi_harm_avg, cf_eta_min, n_pw) \n");
+	}
+
+	if(cnt && lim->jac_mat_free)
+	{
+		SETERRQ(PETSC_COMM_SELF, PETSC_ERR_USER, "Analytical Jacobian is not available for plasticity stabilizations (jac_mat_free, quasi_harm_avg, cf_eta_min, n_pw) \n");
+	}
+
+	if(jr->pShiftAct && lim->jac_mat_free)
+	{
+		SETERRQ(PETSC_COMM_SELF, PETSC_ERR_USER, "Analytical Jacobian is incompatible with pressure shifting (jac_mat_free, act_p_shift) \n");
+	}
+
+	if(!jr->bc->top_open && lim->jac_mat_free)
+	{
+		SETERRQ(PETSC_COMM_SELF, PETSC_ERR_USER, "Analytical Jacobian requires open top boundary (jac_mat_free, open_top_bound) \n");
+	}
 
 	// activate elasticity-compliant time-stepping
 	for(i = 0; i < jr->numPhases; i++)

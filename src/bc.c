@@ -217,12 +217,12 @@ PetscErrorCode BCCreate(BCCtx *bc, FB *fb)
 	//=====================
 
 	// horizontal background strain-rate parameters
-	ierr = getIntParam   (fb, _OPTIONAL_, "ExxNumPeriods",  &bc->ExxNumPeriods,  1,                   _max_periods_    ); CHKERRQ(ierr);
-	ierr = getScalarParam(fb, _REQUIRED_, "ExxTimeDelims",   bc->ExxTimeDelims,  bc->ExxNumPeriods-1, scal->time       ); CHKERRQ(ierr);
-	ierr = getScalarParam(fb, _REQUIRED_, "ExxStrainRates",  bc->ExxStrainRates, bc->ExxNumPeriods,   scal->strain_rate); CHKERRQ(ierr);
-	ierr = getIntParam   (fb, _OPTIONAL_, "EyyNumPeriods",  &bc->EyyNumPeriods,  1,                   _max_periods_    ); CHKERRQ(ierr);
-	ierr = getScalarParam(fb, _REQUIRED_, "EyyTimeDelims",   bc->EyyTimeDelims,  bc->EyyNumPeriods-1, scal->time       ); CHKERRQ(ierr);
-	ierr = getScalarParam(fb, _REQUIRED_, "EyyStrainRates",  bc->EyyStrainRates, bc->EyyNumPeriods,   scal->strain_rate); CHKERRQ(ierr);
+	ierr = getIntParam   (fb, _OPTIONAL_, "exx_num_periods",  &bc->ExxNumPeriods,  1,                   _max_periods_    ); CHKERRQ(ierr);
+	ierr = getScalarParam(fb, _REQUIRED_, "exx_time_delims",   bc->ExxTimeDelims,  bc->ExxNumPeriods-1, scal->time       ); CHKERRQ(ierr);
+	ierr = getScalarParam(fb, _REQUIRED_, "exx_strain_rates",  bc->ExxStrainRates, bc->ExxNumPeriods,   scal->strain_rate); CHKERRQ(ierr);
+	ierr = getIntParam   (fb, _OPTIONAL_, "eyy_num_periods",  &bc->EyyNumPeriods,  1,                   _max_periods_    ); CHKERRQ(ierr);
+	ierr = getScalarParam(fb, _REQUIRED_, "eyy_time_delims",   bc->EyyTimeDelims,  bc->EyyNumPeriods-1, scal->time       ); CHKERRQ(ierr);
+	ierr = getScalarParam(fb, _REQUIRED_, "eyy_strain_rates",  bc->EyyStrainRates, bc->EyyNumPeriods,   scal->strain_rate); CHKERRQ(ierr);
 
 	// Bezier blocks
 	ierr = FBFindBlocks(fb, _OPTIONAL_, "<BCBlockStart>", "<BCBlockEnd>"); CHKERRQ(ierr);

@@ -400,7 +400,8 @@ PetscErrorCode FBGetScalarArray(
 		PetscFunctionReturn(0);
 	}
 
-	PetscFunctionReturn(0);}
+	PetscFunctionReturn(0);
+}
 //---------------------------------------------------------------------------
 #undef __FUNCT__
 #define __FUNCT__ "FBGetString"
