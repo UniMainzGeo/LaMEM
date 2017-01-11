@@ -49,10 +49,9 @@
 #include "tools.h"
 
 //---------------------------------------------------------------------------
-// * add different viscosity averaging methods (echo info to output)
-// * make sure that Peierls creep is deactivated for isothermal analysis
-// ...
+// PURGE THIS FILE !!!
 //---------------------------------------------------------------------------
+
 #undef __FUNCT__
 #define __FUNCT__ "ConstEqCtxSetup"
 PetscErrorCode ConstEqCtxSetup(
@@ -64,6 +63,7 @@ PetscErrorCode ConstEqCtxSetup(
 	PetscScalar  dt,            // time step
 	PetscScalar  p,             // pressure
 	PetscScalar  p_lithos,      // lithostatic pressure
+	PetscScalar  p_pore,        // pore pressure
 	PetscScalar  T)             // temperature
 {
 	// setup nonlinear constitutive equation evaluation context
@@ -159,7 +159,7 @@ PetscErrorCode ConstEqCtxSetup(
 		if(!lim->initGuess && lim->pLimPlast)
 		{
 			// yielding surface: (S1-S3)/2 = (S1+S3)/2*sin(phi) + C*cos(phi)
-			// pressure can be write as: P = (S1+S2+S3)/3 and P~=S2,then P=(S1+S3)/2
+			// pressure can be written as: P = (S1+S2+S3)/3 and P~=S2,then P=(S1+S3)/2
 			// so the yielding surface can be rewritten as:
 			// P-S3=P*sin(phi) + C*cos(phi)   --> compression
 			// S1-P=P*sin(phi) + C*cos(phi)   --> extension
@@ -178,14 +178,21 @@ PetscErrorCode ConstEqCtxSetup(
 			// use lithostatic, rather than dynamic pressure to evaluate yielding
 			// This converges better, but does not result in localization of deformation & shear banding,
 			// so only apply it for large-scale simulations where plasticity does not matter all that much
-			ctx->taupl = p_lithos * sin(fr) + ch * cos(fr);
+			p = p_lithos;
 			
+		}
+
+		// compute yield stress
+		if(lim->actPorePres)
+		{
+			ctx->taupl = (p - p_pore) * sin(fr) + ch * cos(fr);
 		}
 		else
 		{
-			// use dynamic pressure in evaluating the yield function [default]
 			ctx->taupl = p * sin(fr) + ch * cos(fr);
 		}
+
+		// set flag
 		pd = 1;
 	}
 
@@ -422,6 +429,7 @@ PetscErrorCode DevConstEq(
 	PetscScalar *phRat,     		// phase ratios
 	MatParLim   *lim,       		// phase parameters limits
 	PetscScalar  p_lithos,          // lithostatic pressure
+	PetscScalar  p_pore,            // pore pressure
 	PetscScalar  dt,        		// time step
 	PetscScalar  p,         		// pressure
 	PetscScalar  T)         		// temperature
@@ -462,7 +470,7 @@ PetscErrorCode DevConstEq(
 			mat = &phases[i];
 
 			// setup nonlinear constitutive equation evaluation context
-			ierr = ConstEqCtxSetup(&ctx, mat, lim, DII, APS, dt, p, p_lithos, T); CHKERRQ(ierr);
+			ierr = ConstEqCtxSetup(&ctx, mat, lim, DII, APS, dt, p, p_lithos, p_pore, T); CHKERRQ(ierr);
 
 			// solve effective viscosity & plastic strain rate
 			ierr = GetEffVisc(&ctx, lim, &eta_total, &eta_creep_phase, &eta_viscoplastic_phase, &DIIpl, &dEta, &fr); CHKERRQ(ierr);

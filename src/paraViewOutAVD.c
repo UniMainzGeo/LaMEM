@@ -53,7 +53,7 @@
 #include "surf.h"
 #include "advect.h"
 #include "paraViewOutBin.h"
-#include "AVDView.h"
+#include "paraViewOutAVD.h"
 #include "tools.h"
 //---------------------------------------------------------------------------
 // .......................... AVD ParaView Output ...........................

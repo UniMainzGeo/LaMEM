@@ -64,9 +64,9 @@
 #include "advect.h"
 #include "marker.h"
 #include "paraViewOutMark.h"
+#include "paraViewOutAVD.h"
 #include "matProps.h"
 #include "objFunct.h"
-#include "AVDView.h"
 #include "LaMEMLib.h"
 
 //---------------------------------------------------------------------------
@@ -439,6 +439,9 @@ PetscErrorCode LaMEMLibDryRun(LaMEMLib *lm)
 
 		// initialize markers
 		ierr = ADVMarkInit(&actx, &user); CHKERRQ(ierr);
+
+		// initialize influx markers
+		ierr = ADVMarkInitInfluxBC(&actx, &user); CHKERRQ(ierr);
 
 		// change marker phase when crossing free surface
 		ierr = ADVMarkCrossFreeSurf(&actx, &surf, 0.05); CHKERRQ(ierr);

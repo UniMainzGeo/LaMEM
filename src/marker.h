@@ -78,6 +78,9 @@ PetscErrorCode ADVMarkSave(AdvCtx *actx);
 // check phase IDs of all the markers
 PetscErrorCode ADVMarkCheckMarkers(AdvCtx *actx);
 
+// markers for influx bc
+PetscErrorCode ADVMarkInitInfluxBC(AdvCtx *actx);
+
 //---------------------------------------------------------------------------
 
 // Specific initialization routines

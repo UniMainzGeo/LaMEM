@@ -62,7 +62,7 @@
 #include "paraViewOutBin.h"
 #include "paraViewOutSurf.h"
 #include "paraViewOutMark.h"
-#include "AVDView.h"
+#include "paraViewOutAVD.h"
 
 /*
 #START_DOC#
@@ -1901,6 +1901,101 @@ void ADVMarkSecIdx(AdvCtx *actx, UserCtx *user, PetscInt dir, PetscInt Islice, P
 	}
 
 	return;
+}
+//---------------------------------------------------------------------------
+#undef __FUNCT__
+#define __FUNCT__ "ADVMarkInitInfluxBC"
+PetscErrorCode ADVMarkInitInfluxBC(AdvCtx *actx, UserCtx *user)
+{
+	//=============================================================
+	// Assumed they are created same way as parallel particles
+	//==============================================================
+
+	BCCtx       *bc;
+	int          fd;
+	Marker      *P;
+	PetscViewer  view_in;
+	char         *LoadFileName;
+	PetscScalar *markbuf, *markptr, header, chTemp, chLen, Tshift, s_nummark;
+	PetscInt     imark, nummark;
+	PetscBool    flg = PETSC_FALSE;
+
+	PetscErrorCode ierr;
+	PetscFunctionBegin;
+
+	bc = actx->jr->bc;
+
+	//only if influx and name type activated
+	if ((!bc->face) | (!bc->velmark.flg)) PetscFunctionReturn(0);
+
+	// get file name
+	ierr = PetscOptionsGetString(NULL, NULL,"-bvel_markdir", bc->velmark.markdir, MAX_NAME_LEN, &flg); CHKERRQ(ierr);
+
+	PetscPrintf(PETSC_COMM_WORLD," Loading influx BC markers in parallel from files: ./%s/%s.xxx.out \n", bc->velmark.markdir, user->ParticleFilename);
+
+	// compile input file name
+	asprintf(&LoadFileName, "./%s/%s.%lld.out", bc->velmark.markdir, user->ParticleFilename, (LLD)actx->iproc);
+
+	// open file
+	ierr = PetscViewerBinaryOpen(PETSC_COMM_SELF, LoadFileName, FILE_MODE_READ, &view_in); CHKERRQ(ierr);
+	ierr = PetscViewerBinaryGetDescriptor(view_in, &fd);                                   CHKERRQ(ierr);
+
+	// read (and ignore) the silent undocumented file header
+	ierr = PetscBinaryRead(fd, &header, 1, PETSC_SCALAR); CHKERRQ(ierr);
+
+	// read number of local of markers
+	ierr = PetscBinaryRead(fd, &s_nummark, 1, PETSC_SCALAR); CHKERRQ(ierr);
+	nummark = (PetscInt)s_nummark;
+
+	// set number of markers
+	bc->velmark.nummark = nummark;
+
+	// do not allocate memory for cpus that don't need to do influx - i.e. nummark==0
+
+	// allocate marker storage - fixed since the number of markers will not change
+	ierr = PetscMalloc((size_t)nummark*sizeof(Marker), &bc->velmark.markers); CHKERRQ(ierr);
+	ierr = PetscMemzero(bc->velmark.markers, (size_t)nummark*sizeof(Marker)); CHKERRQ(ierr);
+
+	// allocate marker buffer
+	ierr = PetscMalloc((size_t)(5*nummark)*sizeof(PetscScalar), &markbuf); CHKERRQ(ierr);
+
+	// read markers into buffer
+	ierr = PetscBinaryRead(fd, markbuf, 5*nummark, PETSC_SCALAR); CHKERRQ(ierr);
+
+	// destroy file handle & file name
+	ierr = PetscViewerDestroy(&view_in); CHKERRQ(ierr);
+	free(LoadFileName);
+
+	// get characteristic length & temperature
+	chLen  = actx->jr->scal.length;
+	chTemp = actx->jr->scal.temperature;
+
+	// temperature shift
+	Tshift = actx->jr->scal.Tshift;
+
+	// copy buffer to marker storage
+	for(imark = 0, markptr = markbuf; imark < nummark; imark++, markptr += 5)
+	{
+		P        =           &bc->velmark.markers[imark];
+		P->X[0]  =           markptr[0]/chLen;
+		P->X[1]  =           markptr[1]/chLen;
+		P->X[2]  =           markptr[2]/chLen;
+		P->phase = (PetscInt)markptr[3];
+		P->T     =          (markptr[4] + Tshift)/chTemp;
+	}
+
+	// free marker buffer
+	ierr = PetscFree(markbuf); CHKERRQ(ierr);
+
+	// wait until all processors finished reading markers
+	ierr = MPI_Barrier(PETSC_COMM_WORLD); CHKERRQ(ierr);
+
+	PetscPrintf(PETSC_COMM_WORLD," Finished loading influx BC markers in parallel \n");
+
+	// also initiate distance
+	bc->velmark.D = bc->velmark.xright;
+
+	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
 */

@@ -106,6 +106,7 @@ typedef struct
 	Vec gp;        // global
 	Vec lp;        // local (ghosted)
 	Vec lp_lithos; // lithostatic pressure
+	Vec lp_pore;   // pore pressure
 
 	// continuity residual
 	Vec gc; // global
@@ -267,6 +268,9 @@ PetscErrorCode JacResGetOverPressure(JacRes *jr, Vec p);
 
 // compute lithostatic pressure in the cell centers
 PetscErrorCode JacResGetLithoStaticPressure(JacRes *jr);
+
+// compute pore pressure from phase properties and lithostatic stress
+PetscErrorCode JacResGetPorePressure(JacRes *jr);
 
 //---------------------------------------------------------------------------
 // MACROS

@@ -198,7 +198,8 @@ typedef struct
 	PetscScalar  q;       // stress-dependence parameter                [ ]
 	// plasticity parameters
 	PetscScalar  fr;      // friction angle                             [deg]
-	PetscScalar  ch;      // cohesion                                   [Pa]
+	PetscScalar  ch;      // cohesion
+	PetscScalar  rp;      // ratio of pore pressure to overburden stress
 	Soft_t      *frSoft;  // friction softening law parameters
 	Soft_t      *chSoft;  // cohesion softening law parameters
 	// thermal parameters
@@ -229,8 +230,9 @@ typedef struct
 	PetscScalar minCh;  // minimum cohesion
 	PetscScalar minFr;  // maximum friction
 	PetscScalar tauUlt; // ultimate yield stress
-	// fluid density for depth-dependent density model
-	PetscScalar rho_fluid;
+	// depth-dependent model parameters
+	PetscScalar rho_fluid;    // fluid density
+	PetscInt    actPorePres;  // pore pressure activation flag
 	// thermo-mechanical coupling controls
 	PetscScalar shearHeatEff; // shear heating efficiency parameter [0 - 1]
 	// rheology controls
@@ -250,6 +252,8 @@ typedef struct
 	PetscInt    jac_mat_free;
 	// initial guess computation flag
 	PetscInt    initGuess;
+	// elastic rheology flag
+	PetscInt    elastic;
 
 } MatParLim;
 //---------------------------------------------------------------------------

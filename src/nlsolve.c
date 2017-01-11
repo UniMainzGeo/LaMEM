@@ -236,6 +236,9 @@ PetscErrorCode FormResidual(SNES snes, Vec x, Vec f, void *ctx)
 
 	ierr = JacResGetPressShift(jr); CHKERRQ(ierr);
 
+	// compute pore pressure
+	ierr = JacResGetPorePressure(jr); CHKERRQ(ierr);
+
 	// compute effective strain rate
 	ierr = JacResGetEffStrainRate(jr); CHKERRQ(ierr);
 
@@ -264,6 +267,9 @@ PetscErrorCode FormResidualMFFD(void *ctx, Vec x, Vec f)
 	ierr = JacResCopySol(jr, x); CHKERRQ(ierr);
 
 	ierr = JacResGetPressShift(jr); CHKERRQ(ierr);
+
+	// compute pore pressure
+	ierr = JacResGetPorePressure(jr); CHKERRQ(ierr);
 
 	// compute effective strain rate
 	ierr = JacResGetEffStrainRate(jr); CHKERRQ(ierr);

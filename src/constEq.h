@@ -76,6 +76,7 @@ PetscErrorCode ConstEqCtxSetup(
 	PetscScalar  dt,   			// time step
 	PetscScalar  p,    			// pressure
 	PetscScalar  p_lithos,    	// lithostatic pressure
+	PetscScalar  p_pore,        // pore pressure
 	PetscScalar  T);   	 		// temperature
 
 // compute residual of the visco-elastic constitutive equation
@@ -111,6 +112,7 @@ PetscErrorCode DevConstEq(
 	PetscScalar *phRat,     		// phase ratios
 	MatParLim   *lim,       		// phase parameters limits
 	PetscScalar  p_lithos,     		// lithostatic pressure
+	PetscScalar  p_pore,     		// pore pressure
 	PetscScalar  dt,        		// time step
 	PetscScalar  p,        			// pressure
 	PetscScalar  T);        		// temperature

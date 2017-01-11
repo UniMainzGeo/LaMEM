@@ -49,28 +49,6 @@
 
 #define _cap_overhead_ 1.3
 
-
-//-----------------------------------------------------------------------------
-// marker initialization type enumeration
-typedef enum
-{
-	PARALLEL,   // read coordinates, phase and temperature from files in parallel
-	REDUNDANT,  // read phase and temperature from file redundantly (uniform coordinates)
-	POLYGONS,   // read polygons from file redundantly
-	DIAPIR,     // diapir setup
-	BLOCK,      // falling block
-	SUBDUCTION, // subduction setup with air
-	FOLDING,    // multilayer folding setup (Zagros)
-	DETACHMENT, // 1-layer over detachment (Grasemann & Schmalholz 2012)
-	SLAB,       // slab detachment (Thieulot et al. 2014)
-	SPHERES,    // multiple falling spheres
-	BANDS,      // shear band formation 3D
-	DOMES,      // salt domes 2D
-	ROTATION,   // rotation benchmark 2D
-	RESTART     // restart of simulation
-	// ... add more
-} SetupType;
-
 //---------------------------------------------------------------------------
 
 // marker-to-edge / edge-to-marker interpolation cases
@@ -105,16 +83,11 @@ typedef struct
 typedef struct
 {
 	// staggered grid
-	FDSTAG *fs;
-
-	// nonlinear solver context
-	JacRes *jr;
-
-	// free surface
+	FDSTAG   *fs;
+	JacRes   *jr;
 	FreeSurf *surf;
 
-	// marker initialization type
-	SetupType        msetup;
+	// nonlinear solver context
 
 	//=============
 	// COMMUNICATOR
@@ -175,17 +148,6 @@ typedef struct
 	PetscInt    AirPhase; // air phase number
 	PetscScalar Ttop;     // top surface temperature
 
-
-	//markers
-	char             ParticleFilename[MAX_PATH_LEN];
-	char             LoadInitialParticlesDirectory[MAX_PATH_LEN];
-	char             SaveInitialParticlesDirectory[MAX_PATH_LEN];
-	PetscInt         SaveParticles;
-
-	// initial temperature distribution from file
-	char         TemperatureFilename[MAX_PATH_LEN];
-
-
 } AdvCtx;
 
 //---------------------------------------------------------------------------
@@ -205,7 +167,7 @@ PetscErrorCode ADVReAllocStorage(AdvCtx *actx, PetscInt capacity);
 PetscErrorCode ADVAdvect(AdvCtx *actx);
 
 // remap markers onto the grid
-PetscErrorCode ADVRemap(AdvCtx *actx);
+PetscErrorCode ADVRemap(AdvCtx *actx, FreeSurf *surf);
 
 // exchange markers between the processors resulting from the position change
 PetscErrorCode ADVExchange(AdvCtx *actx);
@@ -261,10 +223,13 @@ PetscErrorCode ADVCheckCorners(AdvCtx *actx);
 PetscErrorCode ADVMarkDeleteOutflow(AdvCtx *actx);
 
 // change marker phase when crossing free surface
-PetscErrorCode ADVMarkCrossFreeSurf(AdvCtx *actx, PetscScalar tol);
+PetscErrorCode ADVMarkCrossFreeSurf(AdvCtx *actx, FreeSurf *surf, PetscScalar tol);
 
 // check marker phases
-PetscErrorCode ADVCheckMarkPhases(AdvCtx *actx);
+PetscErrorCode ADVCheckMarkPhases(AdvCtx *actx, PetscInt numPhases);
+
+// print for analysis
+PetscErrorCode ADVAnalytics(AdvCtx *actx);
 
 //-----------------------------------------------------------------------------
 // service functions

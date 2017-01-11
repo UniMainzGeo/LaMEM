@@ -59,7 +59,8 @@ PetscErrorCode MatPropsReadAll(
 		PetscInt   *numPhases,
 		Material_t *phases,
 		PetscInt   *numSoft,
-		Soft_t     *matSoft);
+		Soft_t     *matSoft,
+		MatParLim  *lim);
 
 // read single softening law
 PetscErrorCode MatSoftRead(
@@ -74,7 +75,8 @@ PetscErrorCode MatPhaseRead(
 		PetscInt    numPhases,
 		Material_t *phases,
 		PetscInt    numSoft,
-		Soft_t     *matSoft);
+		Soft_t     *matSoft,
+		MatParLim  *lim);
 
 void MatPrintScalParam(PetscScalar par, const char key[], const char label[], Scaling *scal);
 

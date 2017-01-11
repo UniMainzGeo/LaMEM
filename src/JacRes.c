@@ -70,7 +70,7 @@ PetscErrorCode JacResCreate(JacRes *jr, FB *fb)
 	lim = &jr->matLim;
 
 	// initialize
-	jr->AirPhase = -1;
+	jr->AirPhase  = -1;
 	jr->FSSA      = 1.0;
 	jr->pShiftAct = 1;
 
@@ -80,13 +80,16 @@ PetscErrorCode JacResCreate(JacRes *jr, FB *fb)
 	ierr = getIntParam   (fb, _OPTIONAL_, "act_temp_diff", &jr->pShiftAct, 1,  1  ); CHKERRQ(ierr);
 	ierr = getIntParam   (fb, _OPTIONAL_, "act_p_shift",   &jr->pShiftAct, 1,  1  ); CHKERRQ(ierr);
 
-	// read all material phases and softening laws
-	ierr = MatPropsReadAll(fb, jr->scal, &jr->numPhases, jr->phases, &jr->numSoft, jr->matSoft); CHKERRQ(ierr);
-
 	// read material parameter limits
 	ierr = MatParLimRead(fb, jr->scal, lim); CHKERRQ(ierr);
 
+	// read all material phases and softening laws
+	ierr = MatPropsReadAll(fb, jr->scal, &jr->numPhases, jr->phases, &jr->numSoft, jr->matSoft, lim); CHKERRQ(ierr);
+
+	//====================
 	// CROSS-CHECK OPTIONS
+	//====================
+
 	cnt = 0;
 	if(lim->quasiHarmAvg) cnt++;
 	if(lim->cf_eta_min)   cnt++;
@@ -113,16 +116,9 @@ PetscErrorCode JacResCreate(JacRes *jr, FB *fb)
 	}
 
 	// activate elasticity-compliant time-stepping
-	for(i = 0; i < jr->numPhases; i++)
+	if(lim->elastic)
 	{
-		m = jr->phases + i;
-
-		// check whether elastic constants are specified
-		if(m->G || m->K)
-		{
-			ierr = TSSolSetupElasticity(jr->ts); CHKERRQ(ierr);
-			break;
-		}
+		ierr = TSSolSetupElasticity(jr->ts); CHKERRQ(ierr);
 	}
 
 	// allocate vectors
@@ -910,7 +906,7 @@ PetscErrorCode JacResGetResidual(JacRes *jr)
 		if(depth < 0.0) depth = 0.0;
 
 		// evaluate deviatoric constitutive equations
-		ierr = DevConstEq(svDev, &eta_creep, &eta_viscoplastic, numPhases, phases, svCell->phRat, matLim, pc_lithos, dt, pc-pShift, Tc); CHKERRQ(ierr);
+//		ierr = DevConstEq(svDev, &eta_creep, &eta_viscoplastic, numPhases, phases, svCell->phRat, matLim, pc_lithos, dt, pc-pShift, Tc); CHKERRQ(ierr);
 
 		// store creep viscosity
 		svCell->eta_creep 			= eta_creep;
@@ -1058,7 +1054,7 @@ PetscErrorCode JacResGetResidual(JacRes *jr)
 		pc_lithos = 0.25*(p_lithos[k][j][i] + p_lithos[k][j][i-1] + p_lithos[k][j-1][i] + p_lithos[k][j-1][i-1]);
 
 		// evaluate deviatoric constitutive equations
-		ierr = DevConstEq(svDev, &eta_creep, &eta_viscoplastic, numPhases, phases, svEdge->phRat, matLim, pc_lithos, dt, pc-pShift, Tc); CHKERRQ(ierr);
+//		ierr = DevConstEq(svDev, &eta_creep, &eta_viscoplastic, numPhases, phases, svEdge->phRat, matLim, pc_lithos, dt, pc-pShift, Tc); CHKERRQ(ierr);
 
 		// compute stress, plastic strain rate and shear heating term on edge
 		ierr = GetStressEdge(svEdge, matLim, XY); CHKERRQ(ierr);
@@ -1163,7 +1159,7 @@ PetscErrorCode JacResGetResidual(JacRes *jr)
 		pc_lithos = 0.25*(p_lithos[k][j][i] + p_lithos[k][j][i-1] + p_lithos[k-1][j][i] + p_lithos[k-1][j][i-1]);
 
 		// evaluate deviatoric constitutive equations
-		ierr = DevConstEq(svDev, &eta_creep, &eta_viscoplastic, numPhases, phases, svEdge->phRat, matLim, pc_lithos, dt, pc-pShift, Tc); CHKERRQ(ierr);
+//		ierr = DevConstEq(svDev, &eta_creep, &eta_viscoplastic, numPhases, phases, svEdge->phRat, matLim, pc_lithos, dt, pc-pShift, Tc); CHKERRQ(ierr);
 
 		// compute stress, plastic strain rate and shear heating term on edge
 		ierr = GetStressEdge(svEdge, matLim, XZ); CHKERRQ(ierr);
@@ -1268,7 +1264,7 @@ PetscErrorCode JacResGetResidual(JacRes *jr)
 		pc_lithos = 0.25*(p_lithos[k][j][i] + p_lithos[k][j-1][i] + p_lithos[k-1][j][i] + p_lithos[k-1][j-1][i]);
 
 		// evaluate deviatoric constitutive equations
-		ierr = DevConstEq(svDev, &eta_creep, &eta_viscoplastic, numPhases, phases, svEdge->phRat, matLim, pc_lithos, dt, pc-pShift, Tc); CHKERRQ(ierr);
+//		ierr = DevConstEq(svDev, &eta_creep, &eta_viscoplastic, numPhases, phases, svEdge->phRat, matLim, pc_lithos, dt, pc-pShift, Tc); CHKERRQ(ierr);
 
 		// compute stress, plastic strain rate and shear heating term on edge
 		ierr = GetStressEdge(svEdge, matLim, YZ); CHKERRQ(ierr);
@@ -2656,6 +2652,103 @@ PetscErrorCode JacResGetLithoStaticPressure(JacRes *jr)
 
 	// fill ghost points
 	LOCAL_TO_LOCAL(fs->DA_CEN, jr->lp_lithos)
+
+	PetscFunctionReturn(0);
+}
+//---------------------------------------------------------------------------
+#undef __FUNCT__
+#define __FUNCT__ "JacResGetPorePressure"
+PetscErrorCode JacResGetPorePressure(JacRes *jr)
+{
+	// compute pore pressure
+	FDSTAG      *fs;
+	Material_t  *phases, *mat;
+	PetscInt    numPhases;
+	PetscScalar *phRat, rp_cv, rp;
+	PetscScalar ***lp_pore, ***lp_lith, p_hydro;
+	PetscInt    i,j,k,iter,iphase, sx, sy, sz, nx, ny, nz;
+	PetscScalar z_top, g, gwLevel, rhow, depth;
+	PetscBool   flg;
+
+	PetscErrorCode ierr;
+	PetscFunctionBegin;
+
+	// Return if not activated
+	if(jr->matLim.actPorePres==PETSC_FALSE)
+	{
+		PetscFunctionReturn(0);
+	}
+
+	// access context
+	fs        = jr->fs;
+	phases    = jr->phases;
+	numPhases = jr->numPhases;
+	rhow      = jr->matLim.rho_fluid;
+	g         = PetscAbsScalar(jr->grav[2]);
+
+	// groundwater level
+	ierr = FDSTAGGetGlobalBox(fs,NULL,NULL,NULL,NULL,NULL,&z_top); CHKERRQ(ierr);
+
+	// set groundwater level (for example for onshore setups)
+	ierr = PetscOptionsGetScalar(NULL, NULL, "-gwLevel",  &gwLevel, &flg); CHKERRQ(ierr);
+//	if(flg == PETSC_TRUE) z_top = gwLevel/jr->scal.length;
+
+	// set groundwater level equal to free surface
+	ierr = PetscOptionsHasName(NULL, NULL,"-gwLevel_eq_fs", &flg); CHKERRQ(ierr);
+    if(flg == PETSC_TRUE) z_top = jr->avg_topo;
+
+	// get local grid sizes
+	ierr = DMDAGetCorners(fs->DA_CEN, &sx, &sy, &sz, &nx, &ny, &nz); CHKERRQ(ierr);
+
+	// access vectors
+	ierr = DMDAVecGetArray(fs->DA_CEN, jr->lp_pore, &lp_pore); CHKERRQ(ierr);
+	ierr = DMDAVecGetArray(fs->DA_CEN, jr->lp_lithos, &lp_lith); CHKERRQ(ierr);
+
+	iter = 0;
+	START_STD_LOOP
+	{
+		// access phase ratio array
+		phRat = jr->svCell[iter++].phRat;
+
+		// compute depth of the current control volume
+		depth = z_top - COORD_CELL(k, sz, fs->dsz);
+		if(depth < 0.0) depth = 0.0;				// we don't want these calculations in the 'air'
+
+		// Evaluate pore pressure ratio in control volume
+		rp_cv = 0.0;
+		// scan all phases
+		for(iphase = 0; iphase < numPhases; iphase++)
+		{
+			// update present phases only
+			if(phRat[iphase])
+			{
+				// get reference to material parameters table
+				mat = &phases[iphase];
+
+				// get and check pore pressure ratio of each phase
+				if(mat->rp<0.0)      mat->rp = 0.0;
+				else if(mat->rp>1.0) mat->rp = 1.0;
+				rp = mat->rp;
+
+				// compute average pore pressure ratio
+				rp_cv +=  phRat[iphase] * rp;
+			}
+		}
+
+		// hydrostatic pressure (based on the water column)
+		p_hydro = rhow * g * PetscAbsScalar(depth);
+
+		// compute the pore pressure as product of lithostatic pressure and porepressure ratio of the control volume
+		lp_pore[k][j][i] =  p_hydro + rp_cv * (lp_lith[k][j][i]-p_hydro);
+	}
+	END_STD_LOOP
+
+	// restore buffer and pressure vectors
+	ierr = DMDAVecRestoreArray(fs->DA_CEN, jr->lp_pore, &lp_pore); CHKERRQ(ierr);
+	ierr = DMDAVecRestoreArray(fs->DA_CEN, jr->lp_lithos, &lp_lith); CHKERRQ(ierr);
+
+	// fill ghost points
+	LOCAL_TO_LOCAL(fs->DA_CEN, jr->lp_pore)
 
 	PetscFunctionReturn(0);
 }
