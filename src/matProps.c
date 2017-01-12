@@ -349,7 +349,7 @@ PetscErrorCode MatPhaseRead(
 
 	if((m->rp || m->rho_n) && !lim->rho_fluid)
 	{
-		SETERRQ(PETSC_COMM_SELF, PETSC_ERR_USER, "fluid density must be specified (rho_n & rho_c, lambda, rho_fluid)\n");
+		SETERRQ(PETSC_COMM_SELF, PETSC_ERR_USER, "fluid density must be specified (rho_n, rho_c, lambda, rho_fluid)\n");
 	}
 
 	// activate pore pressure computation
@@ -369,35 +369,27 @@ PetscErrorCode MatPhaseRead(
 
 	// DIFFUSION
 
-	if(eta)        m->Bd = 1.0/(2.0*eta);
+	if(!(( eta && !m->Bd)   // eta
+	||   (!eta &&  m->Bd)   // Bd
+	||   (!eta && !m->Bd))) // nothing
+	{
+		SETERRQ1(PETSC_COMM_SELF, PETSC_ERR_USER, "Diffusion creep parameters are not unique for phase %lld (eta or Bd)\n", (LLD)ID);
+	}
 
-
-/*
-
+	// compute diffusion creep constant
+	if(eta) m->Bd = 1.0/(2.0*eta);
 
 	// DISLOCATION
 
-	eta0 && e0 && n && m
-
-	m->Bn && n
-
-
-	// check strain-rate dependent creep
-	if((!eta0 && e0) || (eta0 && !e0))
+	if(!(( eta0 &&  e0 &&  m->n && !m->Bn)   // eta0, e0, n
+	||   (!eta0 && !e0 &&  m->n &&  m->Bn)   // Bn, n
+	||   (!eta0 && !e0 && !m->n && !m->Bn))) // nothing
 	{
-		SETERRQ1(PETSC_COMM_SELF, PETSC_ERR_USER, "eta0 & e0 must be specified simultaneously for phase %lld", (LLD)ID);
+		SETERRQ1(PETSC_COMM_SELF, PETSC_ERR_USER, "Dislocation creep parameters are not unique for phase %lld (eta0 & e0 & n or Bn & n)\n", (LLD)ID);
 	}
 
-	// check power-law exponent
-	if(!m->n && ((eta0 && e0) || m->Bn))
-	{
-		SETERRQ1(PETSC_COMM_SELF, PETSC_ERR_USER, "Power-law exponent must be specified for phase %lld", (LLD)ID);
-	}
-
-	// recompute creep parameters
+	// compute dislocation creep constant
 	if(eta0 && e0) m->Bn = pow (2.0*eta0, -m->n)*pow(e0, 1 - m->n);
-
-
 
 	// PEIERLS
 
@@ -406,16 +398,21 @@ PetscErrorCode MatPhaseRead(
 		SETERRQ1(PETSC_COMM_SELF, PETSC_ERR_USER, "All Peierls creep parameters must be specified simultaneously for phase %lld", (LLD)ID);
 	}
 
-
 	// ELASTICITY
 
+	if(!(( G && !K && !E && !nu)    // G
+	||   (!G &&  K && !E && !nu)    // K
+	||   ( G &&  K && !E && !nu)    // G & K
+	||   ( G && !K && !E &&  nu)    // G & nu
+	||   (!G &&  K && !E &&  nu)    // K & nu
+	||   (!G && !K &&  E &&  nu)    // E & nu
+	||   (!G && !K && !E && !nu) )) // nothing
+	{
+		SETERRQ1(PETSC_COMM_SELF, PETSC_ERR_USER, "Elasticity parameters are not unique for phase %lld (G or K or G & K or G & nu or K & nu E & nu)\n", (LLD)ID);
+	}
+
 	// compute elastic parameters
-
-	if(!(!G && !K && !E && !nu) // nothing
-	|| !( G && !K && !E && !nu) // just G
-	|| !(!G && !K && !E && !nu) // just K
-	|| !(!G && !K && !E && !nu) // E & nu
-
+/*
 
 
 
