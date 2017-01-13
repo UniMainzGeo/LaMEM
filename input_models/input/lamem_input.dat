@@ -123,7 +123,7 @@
 	eyy_num_periods  = 2                 # ... same for y-axis
 	eyy_time_delims  = 1.0
 	eyy_strain_rates = 1e-15 2e-15
-	
+
 # Bezier blocks (single entry per block)
 
 	<BCBlockStart>
@@ -137,7 +137,7 @@
 		top   =  0.1                               # Polygon top coordinate
 	<BCBlockEnd>
 
-# NOTE: 
+# NOTE:
 
 # Bezier curve requires 4 points per interval (see e.g. wikipedia):
 # path point P0 - control point P1 - control point P2 - path point P3.
@@ -151,8 +151,8 @@
 
 # Dropping box
 
-	dbox_num    =  1                        # number of boxes  
-	dbox_bounds =  0.0 1.0 0.0 1.0 0.0 1.0  # box bounds (6 entries per box)      
+	dbox_num    =  1                        # number of boxes
+	dbox_bounds =  0.0 1.0 0.0 1.0 0.0 1.0  # box bounds (6 entries per box)
 	dbox_zvel   = -1.0                      # vertical velocity
 
 # Velocity boundary condition
@@ -172,7 +172,7 @@
 	open_top_bound 1
 
 # No-slip boundary flag mask (left right front back bottom top)
-	
+
 	noslip 0 0 1 1 0 0
 
 # Temperature on the top and bottom boundaries
@@ -185,8 +185,8 @@
 #===============================================================================
 
 	gravity        = 0.0 0.0 -10.0  # gravity vector
-	FSSA           = 1.0            # free surface stabilization parameter                         
-	act_temp_diff  = 1              # temperature diffusion activation flag  
+	FSSA           = 1.0            # free surface stabilization parameter
+	act_temp_diff  = 1              # temperature diffusion activation flag
 	act_p_shift    = 0              # pressure shift activation flag (zero pressure in the top cell layer)
 	eta_min        = 1e18           # viscosity upper bound
 	eta_max        = 1e25           # viscosity lower limit
@@ -196,7 +196,7 @@
 	min_cohes      = 2e7            # cohesion lower bound
 	min_fric       = 5.0            # friction lower bound
 	tau_ult        = 1e9            # ultimate yield stress
-	rho_fluid      = 1e3            # fluid density for depth-dependent density model 
+	rho_fluid      = 1e3            # fluid density for depth-dependent density model
 	shear_heat_eff = 1.0            # shear heating efficiency parameter [0 - 1]
 	quasi_harm_avg = 1              # quasi-harmonic averaging regularization flag (plasticity)
 	cf_eta_min     = 10.0           # visco-plastic regularization parameter (plasticity)
@@ -209,6 +209,7 @@
 	jac_mat_free   = 1              # matrix-free closed-form jacobian
 	init_guess     = 1              # initial guess flag
 	RUGC           = 8.31           # universal gas constant (required only for non-dimensional setups)
+	act_pore_press = 1              # activate pore pressure computation
 
 #===============================================================================
 # Model setup & advection
@@ -341,6 +342,8 @@
 		beta      = 1e-11  # pressure-dependent density model parameter
 		G         = 4e10   # shear modulus
 		K         = 6e10   # bulk modulus
+		E         = 6e10   # Young's modulus
+		nu        = 0.25   # Poisson's ratio
 		Kp        = 5.0    # pressure dependence parameter
 		eta       = 1e23   # NEWTONIAN viscosity
 		Bd        = 1.5e9  # DIFFUSION creep pre-exponential constant
@@ -358,10 +361,11 @@
 		taup      = 8.5e9  # scaling stress
 		gamma     = 0.1    # approximation parameter
 		q         = 2.0    # stress-dependence parameter
-		ch        = 30.0   # cohesion
-		fr        = 2e7    # friction angle
-		chSoft    = 0      # friction softening law ID
-		frSoft    = 0      # cohesion softening law ID
+		ch        = 2e7    # cohesion
+		fr        = 30.0   # friction angle
+		rp        = 0.7    # pore-pressure ratio
+		chSoftID  = 0      # friction softening law ID
+		frSoftID  = 0      # cohesion softening law ID
 		alpha     = 3e-5   # thermal expansivity
 		Cp        = 1.2e3  # specific heat (capacity)
 		k         = 2.5    # thermal conductivity

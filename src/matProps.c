@@ -102,7 +102,21 @@ PetscErrorCode MatParLimRead(
 	ierr = getIntParam   (fb, _OPTIONAL_, "warn",           &lim->warn,         1, 1);   CHKERRQ(ierr);
 	ierr = getIntParam   (fb, _OPTIONAL_, "jac_mat_free",   &lim->jac_mat_free, 1, 1);   CHKERRQ(ierr);
 	ierr = getIntParam   (fb, _OPTIONAL_, "init_guess",     &lim->initGuess,    1, 1);   CHKERRQ(ierr);
+	ierr = getIntParam   (fb, _OPTIONAL_, "act_pore_press", &lim->actPorePres,  1, 1);   CHKERRQ(ierr);
 
+
+
+/*
+
+	// set groundwater level (for example for onshore setups)
+	ierr = PetscOptionsGetScalar(NULL, NULL, "-gwLevel",  &gwLevel, &flg); CHKERRQ(ierr);
+//	if(flg == PETSC_TRUE) z_top = gwLevel/jr->scal.length;
+
+	// set groundwater level equal to free surface
+	ierr = PetscOptionsHasName(NULL, NULL,"-gwLevel_eq_fs", &flg); CHKERRQ(ierr);
+    if(flg == PETSC_TRUE) z_top = jr->avg_topo;
+
+*/
 	// scale parameters
 	// NOTE: scale gas constant with characteristic temperature
 	lim->eta_min     /=  scal->viscosity;
@@ -229,8 +243,8 @@ PetscErrorCode MatPhaseRead(
 	// read material properties from file with error checking
 
 	Material_t *m;
-	PetscScalar eta, eta0, e0, K, G, E, nu, Vp, Vs;
 	PetscInt    ID = -1, chSoftID, frSoftID, MSN;
+	PetscScalar eta, eta0, e0, K, G, E, nu, Vp, Vs;
 	char        ndiff[MAX_NAME_LEN], ndisl[MAX_NAME_LEN], npeir[MAX_NAME_LEN];
 
 	PetscErrorCode ierr;
@@ -242,10 +256,10 @@ PetscErrorCode MatPhaseRead(
 	e0       =  0.0;
 	K        =  0.0;
 	G        =  0.0;
-	Vp       =  0.0;
-	Vs       =  0.0;
 	E        =  0.0;
 	nu       =  0.0;
+	Vp       =  0.0;
+	Vs       =  0.0;
 	chSoftID = -1;
 	frSoftID = -1;
 	MSN      =  numSoft - 1;
@@ -266,24 +280,32 @@ PetscErrorCode MatPhaseRead(
 	m->ID = ID;
 
 	//=================================================================================
+	// creep profiles
+	//=================================================================================
+	// set predefined diffusion creep profile
+	ierr = GetProfileName(fb, scal, ndiff, "diff_prof");                  CHKERRQ(ierr);
+	ierr = SetDiffProfile(m, ndiff);                                      CHKERRQ(ierr);
+	// set predefined dislocation creep profile
+	ierr = GetProfileName(fb, scal, ndisl, "disl_prof");                  CHKERRQ(ierr);
+	ierr = SetDislProfile(m, ndisl);                                      CHKERRQ(ierr);
+	// set predefined Peierls creep profile
+	ierr = GetProfileName(fb, scal, npeir, "peir_prof");                  CHKERRQ(ierr);
+	ierr = SetPeirProfile(m, npeir);                                      CHKERRQ(ierr);
+	//=================================================================================
 	// density
 	//=================================================================================
-	ierr = getScalarParam(fb, _OPTIONAL_, "rho0",     &m->rho,   1, 1.0); CHKERRQ(ierr);
+	ierr = getScalarParam(fb, _OPTIONAL_, "rho",      &m->rho,   1, 1.0); CHKERRQ(ierr);
 	ierr = getScalarParam(fb, _OPTIONAL_, "rho_n",    &m->rho_n, 1, 1.0); CHKERRQ(ierr);
 	ierr = getScalarParam(fb, _OPTIONAL_, "rho_c",    &m->rho_c, 1, 1.0); CHKERRQ(ierr);
 	ierr = getScalarParam(fb, _OPTIONAL_, "beta",     &m->beta,  1, 1.0); CHKERRQ(ierr);
 	//=================================================================================
-	// creep profiles
+	// elasticity
 	//=================================================================================
-	// set predefined diffusion creep profile
-	ierr = GetProfileName(fb, scal, ndiff, "diff_profile");               CHKERRQ(ierr);
-	ierr = SetDiffProfile(m, ndiff);                                      CHKERRQ(ierr);
-	// set predefined dislocation creep profile
-	ierr = GetProfileName(fb, scal, ndisl, "disl_profile");               CHKERRQ(ierr);
-	ierr = SetDislProfile(m, ndisl);                                      CHKERRQ(ierr);
-	// set predefined Peierls creep profile
-	ierr = GetProfileName(fb, scal, npeir, "peir_profile");               CHKERRQ(ierr);
-	ierr = SetPeirProfile(m, npeir);                                      CHKERRQ(ierr);
+	ierr = getScalarParam(fb, _OPTIONAL_, "G",        &G,        1, 1.0); CHKERRQ(ierr);
+	ierr = getScalarParam(fb, _OPTIONAL_, "K",        &K,        1, 1.0); CHKERRQ(ierr);
+	ierr = getScalarParam(fb, _OPTIONAL_, "E",        &E,        1, 1.0); CHKERRQ(ierr);
+	ierr = getScalarParam(fb, _OPTIONAL_, "nu",       &nu,       1, 1.0); CHKERRQ(ierr);
+	ierr = getScalarParam(fb, _OPTIONAL_, "Kp",       &m->Kp,    1, 1.0); CHKERRQ(ierr);
 	//=================================================================================
 	// Newtonian linear diffusion creep
 	//=================================================================================
@@ -297,39 +319,31 @@ PetscErrorCode MatPhaseRead(
 	ierr = getScalarParam(fb, _OPTIONAL_, "eta0",     &eta0,     1, 1.0); CHKERRQ(ierr);
 	ierr = getScalarParam(fb, _OPTIONAL_, "e0",       &e0,       1, 1.0); CHKERRQ(ierr);
 	ierr = getScalarParam(fb, _OPTIONAL_, "Bn",       &m->Bn,    1, 1.0); CHKERRQ(ierr);
-	ierr = getScalarParam(fb, _OPTIONAL_, "n",        &m->n,     1, 1.0); CHKERRQ(ierr);
 	ierr = getScalarParam(fb, _OPTIONAL_, "En",       &m->En,    1, 1.0); CHKERRQ(ierr);
 	ierr = getScalarParam(fb, _OPTIONAL_, "Vn",       &m->Vn,    1, 1.0); CHKERRQ(ierr);
+	ierr = getScalarParam(fb, _OPTIONAL_, "n",        &m->n,     1, 1.0); CHKERRQ(ierr);
 	//=================================================================================
 	// Peierls creep
 	//=================================================================================
 	ierr = getScalarParam(fb, _OPTIONAL_, "Bp",       &m->Bp,    1, 1.0); CHKERRQ(ierr);
+	ierr = getScalarParam(fb, _OPTIONAL_, "Ep",       &m->Ep,    1, 1.0); CHKERRQ(ierr);
+	ierr = getScalarParam(fb, _OPTIONAL_, "Vp",       &m->Vp,    1, 1.0); CHKERRQ(ierr);
 	ierr = getScalarParam(fb, _OPTIONAL_, "taup",     &m->taup,  1, 1.0); CHKERRQ(ierr);
 	ierr = getScalarParam(fb, _OPTIONAL_, "gamma",    &m->gamma, 1, 1.0); CHKERRQ(ierr);
 	ierr = getScalarParam(fb, _OPTIONAL_, "q",        &m->q,     1, 1.0); CHKERRQ(ierr);
-	ierr = getScalarParam(fb, _OPTIONAL_, "Ep",       &m->Ep,    1, 1.0); CHKERRQ(ierr);
-	ierr = getScalarParam(fb, _OPTIONAL_, "Vp",       &m->Vp,    1, 1.0); CHKERRQ(ierr);
-	//=================================================================================
-	// elasticity
-	//=================================================================================
-	ierr = getScalarParam(fb, _OPTIONAL_, "shear",    &G,        1, 1.0); CHKERRQ(ierr);
-	ierr = getScalarParam(fb, _OPTIONAL_, "bulk",     &K,        1, 1.0); CHKERRQ(ierr);
-	ierr = getScalarParam(fb, _OPTIONAL_, "young",    &E,        1, 1.0); CHKERRQ(ierr);
-	ierr = getScalarParam(fb, _OPTIONAL_, "poisson",  &nu,       1, 1.0); CHKERRQ(ierr);
-	ierr = getScalarParam(fb, _OPTIONAL_, "Kp",       &m->Kp,    1, 1.0); CHKERRQ(ierr);
 	//=================================================================================
 	// plasticity (Drucker-Prager)
 	//=================================================================================
-	ierr = getScalarParam(fb, _OPTIONAL_, "cohesion", &m->ch,    1, 1.0); CHKERRQ(ierr);
-	ierr = getScalarParam(fb, _OPTIONAL_, "friction", &m->fr,    1, 1.0); CHKERRQ(ierr);
-	ierr = getScalarParam(fb, _OPTIONAL_, "lambda",   &m->rp,    1, 1.0); CHKERRQ(ierr);
+	ierr = getScalarParam(fb, _OPTIONAL_, "ch",       &m->ch,    1, 1.0); CHKERRQ(ierr);
+	ierr = getScalarParam(fb, _OPTIONAL_, "fr",       &m->fr,    1, 1.0); CHKERRQ(ierr);
+	ierr = getScalarParam(fb, _OPTIONAL_, "rp",       &m->rp,    1, 1.0); CHKERRQ(ierr);
 	ierr = getIntParam   (fb, _OPTIONAL_, "chSoftID", &chSoftID, 1, MSN); CHKERRQ(ierr);
 	ierr = getIntParam   (fb, _OPTIONAL_, "frSoftID", &frSoftID, 1, MSN); CHKERRQ(ierr);
 	//=================================================================================
 	// energy
 	//=================================================================================
 	ierr = getScalarParam(fb, _OPTIONAL_, "alpha",    &m->alpha, 1, 1.0); CHKERRQ(ierr);
-	ierr = getScalarParam(fb, _OPTIONAL_, "cp",       &m->Cp,    1, 1.0); CHKERRQ(ierr);
+	ierr = getScalarParam(fb, _OPTIONAL_, "Cp",       &m->Cp,    1, 1.0); CHKERRQ(ierr);
 	ierr = getScalarParam(fb, _OPTIONAL_, "k",        &m->k,     1, 1.0); CHKERRQ(ierr);
 	ierr = getScalarParam(fb, _OPTIONAL_, "A",        &m->A,     1, 1.0); CHKERRQ(ierr);
 	//=================================================================================
@@ -344,23 +358,20 @@ PetscErrorCode MatPhaseRead(
 
 	if(m->rp < 0.0 || m->rp > 1.0)
 	{
-		SETERRQ1(PETSC_COMM_SELF, PETSC_ERR_USER, "pore pressure ratio must be between 0 and 1 for phase %lld", (LLD)ID);
+		SETERRQ1(PETSC_COMM_SELF, PETSC_ERR_USER, "pore pressure ratio must be between 0 and 1 for phase %lld (rp)", (LLD)ID);
 	}
 
 	if((m->rp || m->rho_n) && !lim->rho_fluid)
 	{
-		SETERRQ(PETSC_COMM_SELF, PETSC_ERR_USER, "fluid density must be specified (rho_n, rho_c, lambda, rho_fluid)\n");
+		SETERRQ1(PETSC_COMM_SELF, PETSC_ERR_USER, "fluid density must be specified for phase %lld (rho_n, rho_c, rp, rho_fluid)\n", (LLD)ID);
 	}
-
-	// activate pore pressure computation
-	if(m->rp) lim->actPorePres = 1;
 
 	// PLASTICITY
 
 	// check plasticity parameters
 	if(m->fr && !m->ch)
 	{
-		SETERRQ1(PETSC_COMM_SELF, PETSC_ERR_USER, "Nonzero cohesion must be specified for phase %lld", (LLD)ID);
+		SETERRQ1(PETSC_COMM_SELF, PETSC_ERR_USER, "cohesion must be specified for phase %lld (ch)", (LLD)ID);
 	}
 
 	// set pointers to softening laws
@@ -389,87 +400,50 @@ PetscErrorCode MatPhaseRead(
 	}
 
 	// compute dislocation creep constant
-	if(eta0 && e0) m->Bn = pow (2.0*eta0, -m->n)*pow(e0, 1 - m->n);
+	if(eta0 && e0 && m->n) m->Bn = pow(2.0*eta0, -m->n)*pow(e0, 1 - m->n);
 
 	// PEIERLS
 
 	if(m->Bp && (!m->taup || !m->gamma || !m->q || !m->Ep))
 	{
-		SETERRQ1(PETSC_COMM_SELF, PETSC_ERR_USER, "All Peierls creep parameters must be specified simultaneously for phase %lld", (LLD)ID);
+		SETERRQ1(PETSC_COMM_SELF, PETSC_ERR_USER, "Peierls creep parameters are incomplete for phase %lld (Bp, taup, gamma, q, Ep)", (LLD)ID);
 	}
 
 	// ELASTICITY
 
-	if(!(( G && !K && !E && !nu)    // G
-	||   (!G &&  K && !E && !nu)    // K
-	||   ( G &&  K && !E && !nu)    // G & K
-	||   ( G && !K && !E &&  nu)    // G & nu
-	||   (!G &&  K && !E &&  nu)    // K & nu
-	||   (!G && !K &&  E &&  nu)    // E & nu
-	||   (!G && !K && !E && !nu) )) // nothing
+	if(!(( G && !K && !E && !nu)   // G
+	||   (!G &&  K && !E && !nu)   // K
+	||   ( G &&  K && !E && !nu)   // G & K
+	||   ( G && !K && !E &&  nu)   // G & nu
+	||   (!G &&  K && !E &&  nu)   // K & nu
+	||   (!G && !K &&  E &&  nu)   // E & nu
+	||   (!G && !K && !E && !nu))) // nothing
 	{
-		SETERRQ1(PETSC_COMM_SELF, PETSC_ERR_USER, "Elasticity parameters are not unique for phase %lld (G or K or G & K or G & nu or K & nu E & nu)\n", (LLD)ID);
+		SETERRQ1(PETSC_COMM_SELF, PETSC_ERR_USER, "Elasticity parameters are not unique for phase %lld (G or K or G & K or G & nu or K & nu or E & nu)\n", (LLD)ID);
+	}
+
+	if(m->Kp && !K)
+	{
+		SETERRQ1(PETSC_COMM_SELF, PETSC_ERR_USER, "Bulk modulus must be specified for phase %lld (K & Kp)", (LLD)ID);
+	}
+
+	if(m->beta && K)
+	{
+		SETERRQ1(PETSC_COMM_SELF, PETSC_ERR_USER, "Density pressure dependence parameters are not unique for phase %lld (beta or K)", (LLD)ID);
 	}
 
 	// compute elastic parameters
-/*
+	if( G  && nu)          K  = 2*G*(1 + nu)/(3*(1 - 2*nu));
+	if( K  && nu)          G  = (3*K*(1 - 2*nu))/(2*(1 + nu));
+	if( E  && nu)        { K  = E/(3*(1 - 2*nu)); G = E/(2*(1 + nu)); }
+	if(!E  && K && G)      E  = 9*K*G/(3*K + G);
+	if(!nu && K && G)      nu = (3*K - 2*G)/(2*(3*K + G));
+	if( K  && G && m->rho) Vp = sqrt((K + 4.0*G/3.0)/m->rho);
+	if( G  && m->rho)      Vs = sqrt((G/m->rho));
 
-
-
-	if((!m->G || !m->K) && nu)
-	{
-		if(m->G)
-		{
-			// G & nu
-			m->K = 2*m->G*(1 + nu)/(3*(1 - 2*nu));
-		}
-		else if(m->K)
-		{
-			// K & nu
-			m->G = (3*m->K*(1 - 2*nu))/(2*(1 + nu));
-		}
-		else if(E)
-		{
-			// E & nu
-			m->K = E/(3*(1 - 2*nu));
-			m->G = E/(2*(1 + nu));
-		}
-	}
-
-
-	if()
-
-
-	// activate elastic rheology flag
-	if(m->G || m->K) lim->elastic = 1;
-
-
-
-	if(m->K && m->G && m->rho)
-	{
-		// provide some additional useful information on various elastic constants, if we have a compressible elastic setup
-
-		// get data
-		K   = m->K;
-		G   = m->G;
-		rho = m->rho;
-
-		// computations
-		nu = (3*K - 2*G)/(2*(3*K + G));
-		E  = 9*K*G/(3*K + G);
-		Vp = sqrt((K + 4.3*G)/rho);
-		Vs = sqrt((G/rho));
-
-		PetscPrintf(PETSC_COMM_WORLD,"    Phase [%lld]: (elast) poison = %g, E (youngs modulus) = %g %s, Vp = %g %s Vs = %g %s \n", (LLD)(m->ID), nu, E, lbl_tau, Vp, lbl_vel, Vs, lbl_vel);
-	}
-
-
-*/
-
-
-
-
-
+	// store elastic moduli
+	m->G = G;
+	m->K = K;
 
 	// check that at least one essential deformation mechanism is specified
 	if(!m->Bd && !m->Bn && !m->G)
@@ -493,25 +467,30 @@ PetscErrorCode MatPhaseRead(
 	PetscPrintf(PETSC_COMM_WORLD,"\n");
 
 	PetscPrintf(PETSC_COMM_WORLD,"    (elast): ");
-	MatPrintScalParam(m->G,  "shear", "[Pa]", scal);
-	MatPrintScalParam(m->K,  "bulk",  "[Pa]", scal);
-	MatPrintScalParam(m->Kp, "Kp",    "[ ] ", scal);
+	MatPrintScalParam(G,     "G",  "[Pa]",  scal);
+	MatPrintScalParam(K,     "K",  "[Pa]",  scal);
+	MatPrintScalParam(E,     "E",  "[Pa]",  scal);
+	MatPrintScalParam(nu,    "nu", "[ ]",   scal);
+	MatPrintScalParam(m->Kp, "Kp", "[ ]",   scal);
+	MatPrintScalParam(Vp,    "Vp", "[m/s]", scal);
+	MatPrintScalParam(Vs,    "Vs", "[m/s]", scal);
+
 	PetscPrintf(PETSC_COMM_WORLD,"\n");
 
 	PetscPrintf(PETSC_COMM_WORLD,"    (diff ): ");
+	MatPrintScalParam(eta,   "eta", "[Pa*s]",    scal);
 	MatPrintScalParam(m->Bd, "Bd",  "[1/Pa/s]",  scal);
 	MatPrintScalParam(m->Ed, "Ed",  "[J/mol]",   scal);
 	MatPrintScalParam(m->Vd, "Vd",  "[m^3/mol]", scal);
-	MatPrintScalParam(eta,   "eta", "[Pa*s]",    scal);
 	PetscPrintf(PETSC_COMM_WORLD,"\n");
 
 	PetscPrintf(PETSC_COMM_WORLD,"    (disl ): ");
+	MatPrintScalParam(eta0,  "eta0", "[Pa*s]",     scal);
+	MatPrintScalParam(e0,    "e0",   "[1/s]",      scal);
 	MatPrintScalParam(m->Bn, "Bn",   "[1/Pa^n/s]", scal);
 	MatPrintScalParam(m->En, "En",   "[J/mol]",    scal);
 	MatPrintScalParam(m->Vn, "Vn",   "[m^3/mol]",  scal);
 	MatPrintScalParam(m->n,  "n",    "[ ]",        scal);
-	MatPrintScalParam(eta0,  "eta0", "[Pa*s]",     scal);
-	MatPrintScalParam(e0,    "e0",   "[1/s]",      scal);
 	PetscPrintf(PETSC_COMM_WORLD,"\n");
 
 	PetscPrintf(PETSC_COMM_WORLD,"    (peirl): ");
@@ -524,22 +503,23 @@ PetscErrorCode MatPhaseRead(
 	PetscPrintf(PETSC_COMM_WORLD,"\n");
 
 	PetscPrintf(PETSC_COMM_WORLD,"    (plast): ");
-	MatPrintScalParam(m->ch, "cohesion", "[Pa]",  scal);
-	MatPrintScalParam(m->fr, "friction", "[deg]", scal);
-	MatPrintScalParam(m->rp, "lambda",   "[ ]",   scal);
+	MatPrintScalParam(m->ch, "ch", "[Pa]",  scal);
+	MatPrintScalParam(m->fr, "fr", "[deg]", scal);
+	MatPrintScalParam(m->rp, "rp", "[ ]",   scal);
 	if(frSoftID != -1) PetscPrintf(PETSC_COMM_WORLD, "frSoftID = %lld ", (LLD)frSoftID);
 	if(chSoftID != -1) PetscPrintf(PETSC_COMM_WORLD, "chSoftID = %lld ", (LLD)chSoftID);
 	PetscPrintf(PETSC_COMM_WORLD,"\n");
 
 	PetscPrintf(PETSC_COMM_WORLD,"    (temp ): ");
 	MatPrintScalParam(m->alpha, "alpha", "[1/K]",    scal);
-	MatPrintScalParam(m->Cp,    "cp",    "[J/kg/K]", scal);
+	MatPrintScalParam(m->Cp,    "Cp",    "[J/kg/K]", scal);
 	MatPrintScalParam(m->k,     "k",     "[W/m/k]",  scal);
 	MatPrintScalParam(m->A,     "A",     "[W/kg]",   scal);
 
 	PetscPrintf(PETSC_COMM_WORLD,"\n");
 
-	// scale
+	// SCALE
+
 	// NOTE: [1] activation energy is not scaled
 	//       [2] activation volume is multiplied with characteristic stress in SI units
 
@@ -634,7 +614,7 @@ void MatPrintScalParam(PetscScalar par, const char key[], const char label[], Sc
 	}
 	else
 	{
-		PetscPrintf(PETSC_COMM_WORLD, "%s = %g [] %s  ", key, par, label);
+		PetscPrintf(PETSC_COMM_WORLD, "%s = %g %s  ", key, par, label);
 	}
 }
 //---------------------------------------------------------------------------
