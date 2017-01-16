@@ -173,6 +173,7 @@ typedef struct
 	PetscInt EHmax;          		// maximum horizontal extension
 	PetscInt ISA;            		// Infinite Strain Axis
 	PetscInt GOL;            		// Grain Orientation Lag
+	PetscInt yield;            		// yield stress
 	// === debugging vectors ===============================================
 	PetscInt moment_res;     		// momentum residual
 	PetscInt cont_res;       		// continuity residual

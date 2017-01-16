@@ -2677,41 +2677,34 @@ PetscErrorCode JacResGetPorePressure(JacRes *jr)
 {
 	// compute pore pressure
 	FDSTAG      *fs;
+	MatParLim   *lim;
 	Material_t  *phases, *mat;
-	PetscInt    numPhases;
-	PetscScalar *phRat, rp_cv, rp;
-	PetscScalar ***lp_pore, ***lp_lith, p_hydro;
-	PetscInt    i,j,k,iter,iphase, sx, sy, sz, nx, ny, nz;
-	PetscScalar z_top, g, gwLevel, rhow, depth;
-	PetscBool   flg;
+	PetscScalar ***lp_pore, ***lp_lith, *phRat;
+	PetscScalar ztop, g, gwLevel, rho_fluid, depth, p_hydro, rp_cv, rp;
+	PetscInt    numPhases, i, j, k, iter, iphase, sx, sy, sz, nx, ny, nz;
 
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
 
-	// Return if not activated
-	if(jr->matLim.actPorePres==PETSC_FALSE)
-	{
-		PetscFunctionReturn(0);
-	}
+	// return if not activated
+	if(!jr->matLim.actPorePres) PetscFunctionReturn(0);
 
 	// access context
-	fs        = jr->fs;
-	phases    = jr->phases;
-	numPhases = jr->numPhases;
-	rhow      = jr->matLim.rho_fluid;
-	g         = PetscAbsScalar(jr->grav[2]);
+	fs        =  jr->fs;
+	phases    =  jr->phases;
+	numPhases =  jr->numPhases;
+	lim       = &jr->matLim;
+	rho_fluid =  lim->rho_fluid;
+	g         =  PetscAbsScalar(jr->grav[2]);
 
-	// groundwater level
-	ierr = FDSTAGGetGlobalBox(fs, NULL, NULL, NULL, NULL, NULL, &z_top); CHKERRQ(ierr);
-/*
-	// set groundwater level (for example for onshore setups)
-	ierr = PetscOptionsGetScalar(NULL, NULL, "-gwLevel",  &gwLevel, &flg); CHKERRQ(ierr);
-//	if(flg == PETSC_TRUE) z_top = gwLevel/jr->scal.length;
+	// get top boundary coordinate
+	ierr = FDSTAGGetGlobalBox(fs, NULL, NULL, NULL, NULL, NULL, &ztop); CHKERRQ(ierr);
 
-	// set groundwater level equal to free surface
-	ierr = PetscOptionsHasName(NULL, NULL,"-gwLevel_eq_fs", &flg); CHKERRQ(ierr);
-    if(flg == PETSC_TRUE) z_top = jr->avg_topo;
-*/
+	// set ground water level
+	if     (lim->gwType == _TOP_)   gwLevel = ztop;
+	else if(lim->gwType == _SURF_)  gwLevel = jr->avg_topo;
+	else if(lim->gwType == _LEVEL_) gwLevel = lim->gwLevel;
+
 	// get local grid sizes
 	ierr = DMDAGetCorners(fs->DA_CEN, &sx, &sy, &sz, &nx, &ny, &nz); CHKERRQ(ierr);
 
@@ -2726,7 +2719,7 @@ PetscErrorCode JacResGetPorePressure(JacRes *jr)
 		phRat = jr->svCell[iter++].phRat;
 
 		// compute depth of the current control volume
-		depth = z_top - COORD_CELL(k, sz, fs->dsz);
+		depth = gwLevel - COORD_CELL(k, sz, fs->dsz);
 		if(depth < 0.0) depth = 0.0;				// we don't want these calculations in the 'air'
 
 		// Evaluate pore pressure ratio in control volume
@@ -2751,7 +2744,7 @@ PetscErrorCode JacResGetPorePressure(JacRes *jr)
 		}
 
 		// hydrostatic pressure (based on the water column)
-		p_hydro = rhow * g * PetscAbsScalar(depth);
+		p_hydro = rho_fluid * g * PetscAbsScalar(depth);
 
 		// compute the pore pressure as product of lithostatic pressure and porepressure ratio of the control volume
 		lp_pore[k][j][i] =  p_hydro + rp_cv * (lp_lith[k][j][i]-p_hydro);

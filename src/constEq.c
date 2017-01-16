@@ -70,7 +70,7 @@ PetscErrorCode ConstEqCtxSetup(
 	// evaluate dependence on constant parameters (pressure, temperature)
 
 	PetscInt    ln, nl, pd;
-	PetscScalar Q, RT, ch, fr, p_viscosity, p_upper, p_lower;
+	PetscScalar Q, RT, ch, fr, p_viscosity, p_upper, p_lower, dp;
 
 	PetscFunctionBegin;
 
@@ -185,7 +185,12 @@ PetscErrorCode ConstEqCtxSetup(
 		// compute yield stress
 		if(lim->actPorePres)
 		{
-			ctx->taupl = (p - p_pore) * sin(fr) + ch * cos(fr);
+			dp = (p - p_pore);
+
+			// deactivate tensile failure mode
+			if(dp < 0.0) dp = 0.0;
+
+			ctx->taupl = dp * sin(fr) + ch * cos(fr);
 		}
 		else
 		{
@@ -454,11 +459,11 @@ PetscErrorCode DevConstEq(
 	(*eta_creep) 		= 0.0;
 	(*eta_viscoplastic) = 0.0;
 
-	svDev->dEta = 0.0;
-	svDev->fr   = 0.0;
-	dEta        = 0.0;
-	fr          = 0.0;
-
+	svDev->dEta  = 0.0;
+	svDev->fr    = 0.0;
+	svDev->yield = 0.0;
+	dEta         = 0.0;
+	fr           = 0.0;
 
 	// scan all phases
 	for(i = 0; i < numPhases; i++)
@@ -481,8 +486,9 @@ PetscErrorCode DevConstEq(
 			(*eta_creep) 		+= phRat[i]*eta_creep_phase;
 			(*eta_viscoplastic) += phRat[i]*eta_viscoplastic_phase;
 
-			svDev->dEta += phRat[i]*dEta;
-			svDev->fr   += phRat[i]*fr;
+			svDev->dEta  += phRat[i]*dEta;
+			svDev->fr    += phRat[i]*fr;
+			svDev->yield += phRat[i]*ctx.taupl;
 		}
 	}
 

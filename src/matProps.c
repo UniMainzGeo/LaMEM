@@ -60,7 +60,9 @@ PetscErrorCode MatParLimRead(
 		Scaling   *scal,
 		MatParLim *lim)
 {
+	PetscInt    UseFreeSurf;
 	PetscScalar input_eta_max;
+	char        gwtype [MAX_NAME_LEN];
 
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
@@ -70,6 +72,8 @@ PetscErrorCode MatParLimRead(
 	lim->shearHeatEff = 1.0;
 	lim->pLithoVisc   = 1;
 	lim->initGuess    = 1;
+	UseFreeSurf       = 0;
+	sprintf(gwtype, "top");
 
 	if(scal->utype == _NONE_)
 	{
@@ -103,20 +107,26 @@ PetscErrorCode MatParLimRead(
 	ierr = getIntParam   (fb, _OPTIONAL_, "jac_mat_free",   &lim->jac_mat_free, 1, 1);   CHKERRQ(ierr);
 	ierr = getIntParam   (fb, _OPTIONAL_, "init_guess",     &lim->initGuess,    1, 1);   CHKERRQ(ierr);
 	ierr = getIntParam   (fb, _OPTIONAL_, "act_pore_press", &lim->actPorePres,  1, 1);   CHKERRQ(ierr);
+	ierr = getStringParam(fb, _OPTIONAL_, "gw_level_type",   gwtype, MAX_NAME_LEN);      CHKERRQ(ierr);
 
+	// set ground water level type
+	if     (!strcmp(gwtype, "top"))   lim->gwType = _TOP_;
+	else if(!strcmp(gwtype, "surf"))  lim->gwType = _SURF_;
+	else if(!strcmp(gwtype, "level")) lim->gwType = _LEVEL_;
+	else SETERRQ1(PETSC_COMM_WORLD, PETSC_ERR_USER, "Incorrect ground water level type: %s", gwtype);
 
+	if(lim->gwType == _SURF_)
+	{
+		// check whether free surface is activated
+		ierr = getIntParam(fb, _REQUIRED_, "surf_use", &UseFreeSurf, 1,  1); CHKERRQ(ierr);
+	}
 
-/*
+	if(lim->gwType == _LEVEL_)
+	{
+		// get fixed ground water level
+		ierr = getScalarParam(fb, _REQUIRED_, "gw_level", &lim->gwLevel, 1, 1.0); CHKERRQ(ierr);
+	}
 
-	// set groundwater level (for example for onshore setups)
-	ierr = PetscOptionsGetScalar(NULL, NULL, "-gwLevel",  &gwLevel, &flg); CHKERRQ(ierr);
-//	if(flg == PETSC_TRUE) z_top = gwLevel/jr->scal.length;
-
-	// set groundwater level equal to free surface
-	ierr = PetscOptionsHasName(NULL, NULL,"-gwLevel_eq_fs", &flg); CHKERRQ(ierr);
-    if(flg == PETSC_TRUE) z_top = jr->avg_topo;
-
-*/
 	// scale parameters
 	// NOTE: scale gas constant with characteristic temperature
 	lim->eta_min     /=  scal->viscosity;
@@ -130,6 +140,7 @@ PetscErrorCode MatParLimRead(
 	lim->tauUlt      /= scal->stress_si;
 	lim->rho_fluid   /= scal->density;
 	lim->theta_north /= scal->angle;
+	lim->gwLevel     /= scal->length;
 
 	// set inverse of maximum viscosity
 	if(input_eta_max) lim->inv_eta_max = 1.0/input_eta_max;

@@ -210,6 +210,14 @@
 	init_guess     = 1              # initial guess flag
 	RUGC           = 8.31           # universal gas constant (required only for non-dimensional setups)
 	act_pore_press = 1              # activate pore pressure computation
+	gw_level_type  = top            # ground water level type for pore pressure computation (see below)
+	gw_level       = 1              # ground water level at the free surface (if defined)
+
+# Groundwater level type specification:
+
+# gw_level_type = top   # GW level is top of the domain (default)
+# gw_level_type = surf  # GW level is free surface average level (surface must be enabled)
+# gw_level_type = level # GW level is fixed (gw_level parameter must be specified)
 
 #===============================================================================
 # Model setup & advection

@@ -100,6 +100,7 @@ typedef struct
 	PetscScalar  PSR;   // plastic strain-rate contribution
 	PetscScalar  dEta;  // dEta/dDII derivative (Jacobian)
 	PetscScalar  fr;    // effective friction coefficient (Jacobian)
+	PetscScalar  yield; // average yield stress in control volume
 
 } SolVarDev;
 
@@ -211,6 +212,18 @@ typedef struct
 } Material_t;
 
 //---------------------------------------------------------------------------
+//.......................   Ground water level type   .......................
+//---------------------------------------------------------------------------
+
+typedef enum
+{
+	_TOP_,    // top of the domain
+	_SURF_,   // free surface
+	_LEVEL_   // fixed level
+
+} GWLevelType;
+
+//---------------------------------------------------------------------------
 //.....................   Material parameter limiters .......................
 //---------------------------------------------------------------------------
 
@@ -233,6 +246,8 @@ typedef struct
 	// depth-dependent model parameters
 	PetscScalar rho_fluid;    // fluid density
 	PetscInt    actPorePres;  // pore pressure activation flag
+	GWLevelType gwType;       // type of ground water level
+	PetscScalar gwLevel;      // fixed ground water level
 	// thermo-mechanical coupling controls
 	PetscScalar shearHeatEff; // shear heating efficiency parameter [0 - 1]
 	// rheology controls
