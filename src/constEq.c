@@ -72,7 +72,7 @@ PetscErrorCode ConstEqCtxSetup(
 	// evaluate dependence on constant parameters (pressure, temperature)
 
 	PetscInt    ln, nl, pd;
-	PetscScalar Q, RT, ch, fr, p_viscosity, p_upper, p_lower;
+	PetscScalar Q, RT, ch, fr, p_viscosity, p_upper, p_lower, dP;
 	PetscBool   flag = PETSC_FALSE,flag2 =PETSC_FALSE, flag3=PETSC_FALSE;
 
 	PetscErrorCode ierr;
@@ -203,7 +203,9 @@ PetscErrorCode ConstEqCtxSetup(
 		// if lambda (pore pressure ratio) is set
 		if(lim->actPorePres == PETSC_TRUE)
 		{
-			ctx->taupl = (p - p_pore) * sin(fr) + ch * cos(fr);
+			dP = (p - p_pore);
+			if (dP < 0.0) dP = 0.0;				
+			ctx->taupl = dP * sin(fr) + ch * cos(fr);
 		}
 	}
 
