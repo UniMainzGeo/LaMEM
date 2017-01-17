@@ -187,7 +187,7 @@
 	gravity        = 0.0 0.0 -10.0  # gravity vector
 	FSSA           = 1.0            # free surface stabilization parameter
 	act_temp_diff  = 1              # temperature diffusion activation flag
-	act_p_shift    = 0              # pressure shift activation flag (zero pressure in the top cell layer)
+	act_p_shift    = 1              # pressure shift activation flag (zero pressure in the top cell layer)
 	eta_min        = 1e18           # viscosity upper bound
 	eta_max        = 1e25           # viscosity lower limit
 	eta_ref        = 1e20           # reference viscosity (initial guess)
@@ -211,13 +211,30 @@
 	RUGC           = 8.31           # universal gas constant (required only for non-dimensional setups)
 	act_pore_press = 1              # activate pore pressure computation
 	gw_level_type  = top            # ground water level type for pore pressure computation (see below)
-	gw_level       = 1              # ground water level at the free surface (if defined)
+	gw_level       = 10.            # ground water level at the free surface (if defined)
 
 # Groundwater level type specification:
 
 # gw_level_type = top   # GW level is top of the domain (default)
 # gw_level_type = surf  # GW level is free surface average level (surface must be enabled)
 # gw_level_type = level # GW level is fixed (gw_level parameter must be specified)
+
+#===============================================================================
+# Free surface
+#===============================================================================
+
+	surf_use        = 1                # free surface activation flag
+	surf_corr_phase = 1                # air phase ratio correction flag (due to surface position)
+	surf_level      = 0.5              # initial level
+	surf_air_phase  = 0                # phase ID of sticky air layer
+	surf_max_angle  = 45.0             # maximum angle with horizon (smoothed if larger)
+	surf_topo_file  = ./input/topo.dat # initial topography file
+	erosion_model   = 1                # erosion model [0-none (default), 1-infinitely fast]
+	sediment_model  = 1                # sedimentation model [0-none (dafault), 1-prescribed rate]
+	sed_num_layers  = 3                # number of sediment layers
+	sed_time_delims = 0.5 2.5          # sediment layers time delimiters (one less than number)
+	sed_rates       = 1e-3 1e-2 2-3    # sedimentation rates
+	sed_phases      = 1 2 3            # sediment layers phase numbers
 
 #===============================================================================
 # Model setup & advection
@@ -300,21 +317,44 @@
 #	domes_anhydrite_phase
 
 #===============================================================================
-# Free surface
+# Output
 #===============================================================================
 
-	surf_use        = 1                # free surface activation flag
-	surf_corr_phase = 1                # air phase ratio correction flag (due to surface position)
-	surf_level      = 0.5              # initial level
-	surf_air_phase  = 0                # phase ID of sticky air layer
-	surf_max_angle  = 45.0             # maximum angle with horizon (smoothed if larger)
-	surf_topo_file  = ./input/topo.dat # initial topography file
-	erosion_model   = 1                # erosion model [0-none (default), 1-infinitely fast]
-	sediment_model  = 1                # sedimentation model [0-none (dafault), 1-prescribed rate]
-	sed_num_layers  = 3                # number of sediment layers
-	sed_time_delims = 0.5 2.5          # sediment layers time delimiters (one less than number)
-	sed_rates       = 1e-3 1e-2 2-3    # sedimentation rates
-	sed_phases      = 1 2 3            # sediment layers phase numbers
+#	out_surf_pvd        = 1
+#	out_surf_velocity   = 1
+#	out_surf_topography = 1
+#	out_surf_amplitude  = 1
+#	out_pvd             = 1
+#	out_phase           = 1
+#	out_density         = 1
+#	out_viscosity       = 1
+#	out_velocity        = 1
+#	out_pressure        = 1
+#	out_temperature     = 1
+#	out_dev_stress      = 1
+#	out_j2_dev_stress   = 1
+#	out_strain_rate     = 1
+#	out_j2_strain_rate  = 1
+
+# Grid output options (output is always active)
+
+	out_moment_res = 1
+	out_cont_res   = 1
+	out_energ_res  = 1
+
+# Free surface output options (optput is activated by tracking free surface)
+
+	out_surf_velocity   = 1
+	out_surf_amplitude  = 1
+
+# Marker output options (requires activation)
+
+#	out_markers = 1 # activate marker output
+
+# AVD phase viewer output options (requires activation)
+
+#	out_avd     = 1 # activate marker output
+#	out_avd_ref = 3 # AVD grid refinement factor
 
 #===============================================================================
 # Material phase parameters
@@ -379,46 +419,6 @@
 		k         = 2.5    # thermal conductivity
 		A         = 1e-9   # radiogenic heat production
 	<MaterialEnd>
-
-#===============================================================================
-# Output
-#===============================================================================
-
-#	out_surf_pvd        = 1
-#	out_surf_velocity   = 1
-#	out_surf_topography = 1
-#	out_surf_amplitude  = 1
-#	out_pvd             = 1
-#	out_phase           = 1
-#	out_density         = 1
-#	out_viscosity       = 1
-#	out_velocity        = 1
-#	out_pressure        = 1
-#	out_temperature     = 1
-#	out_dev_stress      = 1
-#	out_j2_dev_stress   = 1
-#	out_strain_rate     = 1
-#	out_j2_strain_rate  = 1
-
-# Grid output options (output is always active)
-
-	out_moment_res = 1
-	out_cont_res   = 1
-	out_energ_res  = 1
-
-# Free surface output options (optput is activated by tracking free surface)
-
-	out_surf_velocity   = 1
-	out_surf_amplitude  = 1
-
-# Marker output options (requires activation)
-
-#	out_markers = 1 # activate marker output
-
-# AVD phase viewer output options (requires activation)
-
-#	out_avd     = 1 # activate marker output
-#	out_avd_ref = 3 # AVD grid refinement factor
 
 #===============================================================================
 # PETSc options
