@@ -75,21 +75,8 @@ Main advection routine
 */
 //---------------------------------------------------------------------------
 #undef __FUNCT__
-#define __FUNCT__ "ADVClear"
-PetscErrorCode ADVClear(AdvCtx *actx)
-{
-	PetscErrorCode ierr;
-	PetscFunctionBegin;
-
-	// clear object
-	ierr = PetscMemzero(actx, sizeof(AdvCtx)); CHKERRQ(ierr);
-
-	PetscFunctionReturn(0);
-}
-//---------------------------------------------------------------------------
-#undef __FUNCT__
 #define __FUNCT__ "ADVCreate"
-PetscErrorCode ADVCreate(AdvCtx *actx, FDSTAG *fs, JacRes *jr)
+PetscErrorCode ADVCreate(AdvCtx *actx, FB *fb)
 {
 	// create advection context
 
@@ -97,7 +84,7 @@ PetscErrorCode ADVCreate(AdvCtx *actx, FDSTAG *fs, JacRes *jr)
 
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
-
+/*
 	actx->fs = fs;
 	actx->jr = jr;
 
@@ -150,6 +137,48 @@ PetscErrorCode ADVCreate(AdvCtx *actx, FDSTAG *fs, JacRes *jr)
 
 	actx->AirPhase = -1;  // air phase number
 	actx->Ttop     = 0.0; // top surface temperature
+
+
+	// random noise
+	AddRandomNoise = PETSC_FALSE;
+	ierr = PetscOptionsGetBool(NULL, NULL,"-AddRandomNoiseParticles" , &AddRandomNoise , NULL); CHKERRQ(ierr);
+	if(AddRandomNoise) PetscPrintf(PETSC_COMM_WORLD, " Adding random noise to marker distribution \n");
+
+
+
+	ReducedOutput_Polygons = PETSC_FALSE;
+	ierr = PetscOptionsGetBool(NULL, NULL,"-ReducedOutput_Polygons" , &ReducedOutput_Polygons , NULL); CHKERRQ(ierr);
+	if(ReducedOutput_Polygons) PetscPrintf(PETSC_COMM_WORLD, " Reduced output for Polygons activated \n");
+
+
+	char      saveName[MAX_PATH_LEN]; // marker output file name
+	char      savePath[MAX_PATH_LEN]; // marker output directory
+
+	// get file name
+	ierr = PetscMemzero(name, sizeof(char)*MAX_NAME_LEN); CHKERRQ(ierr);
+	ierr = PetscMemzero(path, sizeof(char)*MAX_PATH_LEN); CHKERRQ(ierr);
+
+	ierr = getStringParam(fb, _OPTIONAL_, "topo_file", filename, MAX_PATH_LEN); CHKERRQ(ierr);
+
+	mark_save_path = ./output     # marker output directory
+	mark_save_name = markes       # marker output file name
+
+	// read options from command line
+	PetscOptionsGetInt(NULL, NULL ,"-markers_min",   &actx->nmin,   NULL);
+	PetscOptionsGetInt(NULL, NULL ,"-markers_max",   &actx->nmax,   NULL);
+	PetscOptionsGetInt(NULL, NULL ,"-markers_avdx",  &actx->avdx,   NULL);
+	PetscOptionsGetInt(NULL, NULL ,"-markers_avdy",  &actx->avdy,   NULL);
+	PetscOptionsGetInt(NULL, NULL ,"-markers_avdz",  &actx->avdz,   NULL);
+*/
+	// compute host cells for all the markers
+	ierr = ADVMapMarkToCells(actx); CHKERRQ(ierr);
+
+	// check marker distribution
+	ierr = ADVMarkCheckMarkers(actx); CHKERRQ(ierr);
+
+	// project initial history from markers to grid
+	ierr = ADVProjHistMarkToGrid(actx); CHKERRQ(ierr);
+
 
 	PetscFunctionReturn(0);
 }
@@ -265,7 +294,7 @@ PetscErrorCode ADVAdvect(AdvCtx *actx)
 //---------------------------------------------------------------------------
 #undef __FUNCT__
 #define __FUNCT__ "ADVRemap"
-PetscErrorCode ADVRemap(AdvCtx *actx, FreeSurf *surf)
+PetscErrorCode ADVRemap(AdvCtx *actx)
 {
 	//=======================================================================
 	// MAJOR ADVECTION REMAPPING
@@ -281,7 +310,7 @@ PetscErrorCode ADVRemap(AdvCtx *actx, FreeSurf *surf)
 	PetscBool flag = PETSC_FALSE;
 	PetscOptionsGetBool(NULL, NULL, "-new_mc", &flag, NULL);
 
-	if (!flag) // old
+	if(!flag) // old
 	{
 		// compute host cells for all the markers received
 		ierr = ADVMapMarkToCells(actx); CHKERRQ(ierr);
@@ -293,7 +322,7 @@ PetscErrorCode ADVRemap(AdvCtx *actx, FreeSurf *surf)
 		ierr = ADVMarkControl(actx); CHKERRQ(ierr);
 
 		// check corners and inject 1 particle if empty
-		ierr = ADVCheckCorners(actx);    CHKERRQ(ierr);
+		ierr = ADVCheckCorners(actx); CHKERRQ(ierr);
 	}
 	else // new
 	{
@@ -308,10 +337,7 @@ PetscErrorCode ADVRemap(AdvCtx *actx, FreeSurf *surf)
 	}
 
 	// change marker phase when crossing flat surface or free surface with fast sedimentation/erosion
-	ierr = ADVMarkCrossFreeSurf(actx, surf, 0.05); CHKERRQ(ierr);
-
-	// analysis
-	ierr = ADVAnalytics(actx); CHKERRQ(ierr);
+	ierr = ADVMarkCrossFreeSurf(actx, 0.05); CHKERRQ(ierr);
 
 	// project advected history from markers back to grid
 	ierr = ADVProjHistMarkToGrid(actx); CHKERRQ(ierr);
@@ -1746,12 +1772,13 @@ PetscErrorCode ADVInterpMarkToEdge(AdvCtx *actx, PetscInt iphase, InterpCase ica
 //---------------------------------------------------------------------------
 #undef __FUNCT__
 #define __FUNCT__ "ADVMarkCrossFreeSurf"
-PetscErrorCode ADVMarkCrossFreeSurf(AdvCtx *actx, FreeSurf *surf, PetscScalar tol)
+PetscErrorCode ADVMarkCrossFreeSurf(AdvCtx *actx, PetscScalar tol)
 {
 
 	// change marker phase when crossing free surface
-	FDSTAG      *fs;
 	Marker      *P;
+	FDSTAG      *fs;
+	FreeSurf    *surf;
 	PetscInt    sx, sy, nx, ny;
 	PetscInt    jj, ID, I, J, K, L, AirPhase;
 	PetscScalar ***ltopo, *ncx, *ncy, topo, xp, yp, zp;
@@ -1763,6 +1790,7 @@ PetscErrorCode ADVMarkCrossFreeSurf(AdvCtx *actx, FreeSurf *surf, PetscScalar to
 	if(surf->UseFreeSurf != PETSC_TRUE) PetscFunctionReturn(0);
 
 	// access context
+	surf      = actx->surf;
 	fs        = actx->fs;
 	L         = fs->dsz.rank;
 	AirPhase  = surf->AirPhase;
@@ -1856,87 +1884,6 @@ PetscErrorCode ADVCheckMarkPhases(AdvCtx *actx, PetscInt numPhases)
 		{
 			SETERRQ(PETSC_COMM_SELF, PETSC_ERR_USER, " Detected markers with wrong phase! \n");
 		}
-	}
-
-	PetscFunctionReturn(0);
-}
-//---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "ADVAnalytics"
-PetscErrorCode ADVAnalytics(AdvCtx *actx)
-{
-	// print some information for advection-interpolation schemes
-
-	Marker      *P;
-	PetscInt     ii, jj, p, num[30];
-	PetscInt     i, n, min, max, sum = 0;
-	PetscScalar  avrg;
-
-	FILE        *fp;
-	char        *fname;
-
-	PetscErrorCode ierr;
-	PetscFunctionBegin;
-
-	PetscBool flag = PETSC_FALSE;
-	PetscOptionsGetBool(NULL, NULL, "-marker_analytics", &flag, NULL);
-
-	if (flag)
-	{
-	// compile file name
-	asprintf(&fname,"./markers_analytics.%lld.out", (LLD)actx->iproc);
-	fp = fopen(fname, "a" );
-
-	// print no of phases
-	fprintf(fp, "# Phases: %lld\n",(LLD)actx->jr->numPhases);
-
-	// print particle density
-	min = actx->markstart[1] - actx->markstart[0];
-	max = actx->markstart[1] - actx->markstart[0];
-
-	for(i = 0; i < actx->fs->nCells; i++)
-	{
-		// count max/min markers
-		n = actx->markstart[i+1] - actx->markstart[i];
-		if (n < min) min = n;
-		if (n > max) max = n;
-		sum += n;
-
-		// calculate cell phase ratio
-		p = actx->markstart[i];
-
-		for (jj = 0; jj < actx->jr->numPhases; jj++)
-		{
-			num[jj] = 0;
-			for(ii = 0; ii < n; ii++)
-			{
-				P = &actx->markers[actx->markind[p+ii]];
-
-				if (P->phase == jj) num[jj]++;
-			}
-		}
-		if (actx->jr->numPhases == 2) fprintf(fp,"# MarkPhase [%lld]: cell = %lld ratio = [%lld %lld]\n",(LLD)actx->iproc, (LLD)i, (LLD)num[0], (LLD)num[1]);
-		if (actx->jr->numPhases == 3) fprintf(fp,"# MarkPhase [%lld]: cell = %lld ratio = [%lld %lld %lld]\n",(LLD)actx->iproc, (LLD)i, (LLD)num[0], (LLD)num[1], (LLD)num[2]);
-		if (actx->jr->numPhases == 4) fprintf(fp,"# MarkPhase [%lld]: cell = %lld ratio = [%lld %lld %lld %lld]\n",(LLD)actx->iproc, (LLD)i, (LLD)num[0], (LLD)num[1], (LLD)num[2], (LLD)num[3]);
-		if (actx->jr->numPhases == 5) fprintf(fp,"# MarkPhase [%lld]: cell = %lld ratio = [%lld %lld %lld %lld %lld]\n",(LLD)actx->iproc, (LLD)i, (LLD)num[0], (LLD)num[1], (LLD)num[2], (LLD)num[3], (LLD)num[4]);
-	}
-
-	avrg = (PetscScalar)sum/actx->fs->nCells;
-	PetscPrintf(PETSC_COMM_SELF,"# MARKER_DENSITY [%lld]: max = %lld min = %lld average = %g\n",(LLD)actx->iproc, (LLD)max, (LLD)min, avrg);
-
-	// wait until all processors finished printing markers
-	ierr = MPI_Barrier(PETSC_COMM_WORLD); CHKERRQ(ierr);
-
-	fprintf(fp,"# Timestep: %lld\n",(LLD)actx->jr->ts->istep);
-	fprintf(fp,"# \n");
-
-	fclose(fp);
-	free(fname);
-
-//	for(i = 0; i < actx->nummark; i++)
-//	{
-//		PetscPrintf(PETSC_COMM_SELF,"# marker [%lld]: [%g, %g, %g]\n", (LLD)i, actx->markers[i].X[0], actx->markers[i].X[1], actx->markers[i].X[2]);
-//	}
 	}
 
 	PetscFunctionReturn(0);

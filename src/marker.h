@@ -67,7 +67,7 @@ typedef struct
 //---------------------------------------------------------------------------
 
 // markers initialization
-PetscErrorCode ADVMarkInit(AdvCtx *actx);
+PetscErrorCode ADVMarkInit(AdvCtx *actx, FB *fb);
 
 // generate coordinates of uniformly distributed markers
 PetscErrorCode ADVMarkInitCoord(AdvCtx *actx);
@@ -78,33 +78,28 @@ PetscErrorCode ADVMarkSave(AdvCtx *actx);
 // check phase IDs of all the markers
 PetscErrorCode ADVMarkCheckMarkers(AdvCtx *actx);
 
-// markers for influx bc
-PetscErrorCode ADVMarkInitInfluxBC(AdvCtx *actx);
+// initialize temperature on markers redundantly form file
+PetscErrorCode ADVMarkSetTempFromFile(AdvCtx *actx, FB *fb);
 
 //---------------------------------------------------------------------------
 
 // Specific initialization routines
 
-PetscErrorCode ADVMarkInitFileParallel (AdvCtx *actx);
-PetscErrorCode ADVMarkInitFileRedundant(AdvCtx *actx);
-PetscErrorCode ADVMarkInitFilePolygons (AdvCtx *actx);
-PetscErrorCode ADVMarkInitDiapir       (AdvCtx *actx);
-PetscErrorCode ADVMarkInitBlock        (AdvCtx *actx);
-PetscErrorCode ADVMarkInitSubduction   (AdvCtx *actx);
-PetscErrorCode ADVMarkInitFolding      (AdvCtx *actx);
-PetscErrorCode ADVMarkInitDetachment   (AdvCtx *actx);
-PetscErrorCode ADVMarkInitSlab         (AdvCtx *actx);
-PetscErrorCode ADVMarkInitSpheres      (AdvCtx *actx);
-PetscErrorCode ADVMarkInitBands        (AdvCtx *actx);
-PetscErrorCode ADVMarkInitDomes        (AdvCtx *actx);
-PetscErrorCode ADVMarkInitRotation     (AdvCtx *actx);
+PetscErrorCode ADVMarkInitFiles     (AdvCtx *actx, FB *fb);
+PetscErrorCode ADVMarkInitDiapir    (AdvCtx *actx, FB *fb);
+PetscErrorCode ADVMarkInitBlock     (AdvCtx *actx, FB *fb);
+PetscErrorCode ADVMarkInitSubduction(AdvCtx *actx, FB *fb);
+PetscErrorCode ADVMarkInitFolding   (AdvCtx *actx, FB *fb);
+PetscErrorCode ADVMarkInitDetachment(AdvCtx *actx, FB *fb);
+PetscErrorCode ADVMarkInitSlab      (AdvCtx *actx, FB *fb);
+PetscErrorCode ADVMarkInitSpheres   (AdvCtx *actx, FB *fb);
+PetscErrorCode ADVMarkInitBands     (AdvCtx *actx, FB *fb);
+PetscErrorCode ADVMarkInitDomes     (AdvCtx *actx, FB *fb);
+PetscErrorCode ADVMarkInitPolygons  (AdvCtx *actx, FB *fb);
 
 //---------------------------------------------------------------------------
 
 // service functions
-
-PetscErrorCode ADVMarkSetTempFromFile  (AdvCtx *actx);
-
 void ADVMarkSecIdx(AdvCtx *actx, PetscInt dir, PetscInt Nslice, PetscInt *idx);
 
 //---------------------------------------------------------------------------

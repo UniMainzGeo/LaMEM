@@ -155,7 +155,7 @@ PetscErrorCode PVMarkWriteVTU(PVMark *pvmark, const char *dirName)
 	actx = pvmark->actx;
 
 	// create file name
-	asprintf(&fname, "%s/%s_p%1.6lld.vtu", dirName, pvmark->outfile, (LLD)actx->iproc);
+	asprintf(&fname, "%s/%s_p%1.8lld.vtu", dirName, pvmark->outfile, (LLD)actx->iproc);
 
 	// open file
 	fp = fopen( fname, "w" );
@@ -342,7 +342,7 @@ PetscErrorCode PVMarkWritePVTU(PVMark *pvmark, const char *dirName)
 	fprintf( fp, "\t\t</PPointData>\n");
 
 	for(i = 0; i < actx->nproc; i++){
-		fprintf( fp, "\t\t<Piece Source=\"%s_p%1.6lld.vtu\"/>\n",pvmark->outfile,(LLD)i);
+		fprintf( fp, "\t\t<Piece Source=\"%s_p%1.8lld.vtu\"/>\n",pvmark->outfile,(LLD)i);
 	}
 
 	// close the file

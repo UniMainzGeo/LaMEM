@@ -115,6 +115,7 @@ typedef enum
 } VolumeCase;
 
 //---------------------------------------------------------------------------
+
 // basic AVD routines
 PetscErrorCode AVDCreate     (AVD *A);
 PetscErrorCode AVDDestroy    (AVD *A);

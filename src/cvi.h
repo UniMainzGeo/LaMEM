@@ -62,19 +62,13 @@ typedef enum
 {
 	EULER,          // euler explicit in time
 	RUNGE_KUTTA_2,  // runge-kutta 2nd order in space
-	RUNGE_KUTTA_4   // runge-kutta 4th order in space
 
 } AdvectionType;
 //-----------------------------------------------------------------------------
 typedef enum
 {
 	STAG,      // trilinear interp from fdstag points
-	Q2,        // quadratic interpolation
-	SQ2,       // spline quadratic interpolation
-	NODES,     // bilinear interp to nodes, trilinear interp to markers + correction
 	MINMOD,    // minmod interp to nodes, trilinear interp to markers + correction
-	CorrQ2,    // quadratic interpolation + correction
-	CorrSQ2,   // spline quadratic interpolation + correction
 	STAG_P     // empirical approach (T. Gerya)
 
 } VelInterpType;
@@ -116,7 +110,6 @@ typedef struct
 	PetscInt         *idel;
 
 } AdvVelCtx;
-
 //-----------------------------------------------------------------------------
 // main routines
 //-----------------------------------------------------------------------------
@@ -159,12 +152,7 @@ PetscErrorCode ADVelMapMarkToCells (AdvVelCtx *vi);
 // velocity interpolation
 PetscErrorCode ADVelInterpMain       (AdvVelCtx *vi);
 PetscErrorCode ADVelInterpSTAG       (AdvVelCtx *vi);
-PetscErrorCode ADVelInterpNODES      (AdvVelCtx *vi);
 PetscErrorCode ADVelInterpMINMOD     (AdvVelCtx *vi);
-PetscErrorCode ADVelInterpQ2         (AdvVelCtx *vi);
-PetscErrorCode ADVelInterpSQ2        (AdvVelCtx *vi);
-PetscErrorCode ADVelInterpCorrQ2     (AdvVelCtx *vi);
-PetscErrorCode ADVelInterpCorrSQ2    (AdvVelCtx *vi);
 PetscErrorCode ADVelInterpSTAGP      (AdvVelCtx *vi);
 
 //-----------------------------------------------------------------------------
@@ -253,110 +241,4 @@ static inline PetscScalar InterpLinMinmod(
 	return X;
 }
 //-----------------------------------------------------------------------------
-static inline PetscScalar QuadraticCoeff(
-	PetscScalar v0, PetscScalar v1, PetscScalar v2,
-	PetscScalar x0, PetscScalar x1, PetscScalar x2,
-	PetscScalar x,
-	PetscInt type)
-{
-	PetscScalar v;
-
-	// type 0 - quadratic interpolation
-	if (type == 0)
-	{
-		PetscScalar a, b, c, dx0, dx1, dx2;
-
-		dx0 = x0-x1;
-		dx1 = x0-x2;
-		dx2 = x1-x2;
-
-		// coefficients
-		a =
-				v0/  dx0 /  dx1 +
-				v1/(-dx0)/  dx2 +
-				v2/(-dx1)/(-dx2);
-
-		b = (v0-v1)/dx0 - a*(x0+x1);
-		c = v0 - a*x0*x0 - b*x0;
-
-		// interpolate & return result
-		v = a*x*x+b*x+c;
-	}
-
-	// type 1 - spline quadratic interpolation
-	else if (type == 1)
-	{
-		PetscScalar a1, b0, b1, c0, c1;
-
-		// coefficients
-		b0 = (v1-v0)/(x1-x0);
-		c0 = v0-b0*x0;
-
-		a1 = ((v1-v2)/(x1-x2)-b0)/(x2-x1);
-		b1 = b0-2*a1*x1;
-		c1 = v1-b1*x1-a1*x1*x1;
-
-		// interpolate & return result
-		if (x < x1) v = b0*x+c0;
-		else        v = a1*x*x+b1*x+c1;
-	}
-
-	return v;
-}
-//-----------------------------------------------------------------------------
-static inline PetscScalar GenInterpQuadratic2D(
-	PetscScalar vi[9],
-	PetscScalar xi1[3],
-	PetscScalar xi2[3],
-	PetscScalar x1,
-	PetscScalar x2,
-	PetscInt type)
-{
-	PetscScalar v, v1, v2, v3;
-
-	// intermediate velocities
-	v1 = QuadraticCoeff(vi[0], vi[3], vi[6], xi2[0], xi2[1], xi2[2], x2, type);
-	v2 = QuadraticCoeff(vi[1], vi[4], vi[7], xi2[0], xi2[1], xi2[2], x2, type);
-	v3 = QuadraticCoeff(vi[2], vi[5], vi[8], xi2[0], xi2[1], xi2[2], x2, type);
-
-	// new velocity
-	v = QuadraticCoeff(v1, v2, v3, xi1[0], xi1[1], xi1[2], x1, type);
-
-	return v;
-}
-//-----------------------------------------------------------------------------
-static inline PetscScalar GenInterpQuadratic3D(
-	PetscScalar vi[27],
-	PetscScalar xi1[3],
-	PetscScalar xi2[3],
-	PetscScalar xi3[3],
-	PetscScalar x1,
-	PetscScalar x2,
-	PetscScalar x3,
-	PetscInt type)
-{
-	PetscScalar v, v1[9], v2[3];
-
-	// intermediate velocities 1
-	v1[0] = QuadraticCoeff(vi[0], vi[ 9], vi[18], xi3[0], xi3[1], xi3[2], x3, type);
-	v1[1] = QuadraticCoeff(vi[1], vi[10], vi[19], xi3[0], xi3[1], xi3[2], x3, type);
-	v1[2] = QuadraticCoeff(vi[2], vi[11], vi[20], xi3[0], xi3[1], xi3[2], x3, type);
-	v1[3] = QuadraticCoeff(vi[3], vi[12], vi[21], xi3[0], xi3[1], xi3[2], x3, type);
-	v1[4] = QuadraticCoeff(vi[4], vi[13], vi[22], xi3[0], xi3[1], xi3[2], x3, type);
-	v1[5] = QuadraticCoeff(vi[5], vi[14], vi[23], xi3[0], xi3[1], xi3[2], x3, type);
-	v1[6] = QuadraticCoeff(vi[6], vi[15], vi[24], xi3[0], xi3[1], xi3[2], x3, type);
-	v1[7] = QuadraticCoeff(vi[7], vi[16], vi[25], xi3[0], xi3[1], xi3[2], x3, type);
-	v1[8] = QuadraticCoeff(vi[8], vi[17], vi[26], xi3[0], xi3[1], xi3[2], x3, type);
-
-	// intermediate velocities 2
-	v2[0] = QuadraticCoeff(v1[0], v1[3], v1[6], xi2[0], xi2[1], xi2[2], x2, type);
-	v2[1] = QuadraticCoeff(v1[1], v1[4], v1[7], xi2[0], xi2[1], xi2[2], x2, type);
-	v2[2] = QuadraticCoeff(v1[2], v1[5], v1[8], xi2[0], xi2[1], xi2[2], x2, type);
-
-	// new velocity
-	v = QuadraticCoeff(v2[0], v2[1], v2[2], xi1[0], xi1[1], xi1[2], x1, type);
-
-	return v;
-}
-
 #endif

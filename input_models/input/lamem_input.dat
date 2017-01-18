@@ -228,7 +228,7 @@
 	surf_level      = 0.5              # initial level
 	surf_air_phase  = 0                # phase ID of sticky air layer
 	surf_max_angle  = 45.0             # maximum angle with horizon (smoothed if larger)
-	surf_topo_file  = ./input/topo.dat # initial topography file
+	surf_topo_file  = ./input/topo.dat # initial topography file (redundant)
 	erosion_model   = 1                # erosion model [0-none (default), 1-infinitely fast]
 	sediment_model  = 1                # sedimentation model [0-none (dafault), 1-prescribed rate]
 	sed_num_layers  = 3                # number of sediment layers
@@ -240,16 +240,22 @@
 # Model setup & advection
 #===============================================================================
 
-	mark_file = ./input/markers.dat  # marker description (parallel)
-	poly_file = ./input/poly.dat     # polygon geometry
-	temp_file = ./input/temp.dat     # initial temperature
+# File names & paths
 
+	mark_load_path = ./input      # marker input directory
+	mark_load_name = markers      # marker input file name (extension is .dat)
+
+	mark_save_path = ./output     # marker output directory
+	mark_save_name = markes       # marker output file name (extension is .dat)
+
+	poly_file = ./input/poly.dat  # polygon geometry file    (redundant)
+	temp_file = ./input/temp.dat  # initial temperature file (redundant)
 
 # Setup type
 
 	msetup = block
 
-#	msetup = files      # requires mark_file parameter
+#	msetup = files      # requires mark_load_path and mark_load_name parameters
 #	msetup = polygons   # requires poly_file parameter
 #	msetup = diapir
 #	msetup = block
@@ -275,7 +281,7 @@
 
 	save_mark = 1
 
-# Subsiduary parameters for hard-coded setups
+# Parameters for hard-coded setups
 
 #	diapir_h = 0.5
 

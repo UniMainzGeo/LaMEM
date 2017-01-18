@@ -951,7 +951,7 @@ PetscErrorCode FreeSurfSetTopoFromFile(FreeSurf *surf, FB *fb)
 	// get file name
 	ierr = PetscMemzero(filename, sizeof(char)*MAX_NAME_LEN); CHKERRQ(ierr);
 
-	ierr = getStringParam(fb, _OPTIONAL_, "topo_file", filename, MAX_PATH_LEN); CHKERRQ(ierr);
+	ierr = getStringParam(fb, _OPTIONAL_, "topo_file", filename, MAX_NAME_LEN); CHKERRQ(ierr);
 
 	// check whether file is provided
 	if(!strlen(filename)) PetscFunctionReturn(0);

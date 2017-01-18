@@ -254,7 +254,7 @@ PetscErrorCode PVSurfWritePVTS(PVSurf *pvsurf, const char *dirName)
 		getLocalRank(&rx, &ry, &rz, iproc, fs->dsx.nproc, fs->dsy.nproc);
 
 		// write data
-		fprintf(fp, "\t\t<Piece Extent=\"%lld %lld %lld %lld 1 1\" Source=\"%s_p%1.6lld.vts\"/>\n",
+		fprintf(fp, "\t\t<Piece Extent=\"%lld %lld %lld %lld 1 1\" Source=\"%s_p%1.8lld.vts\"/>\n",
 			(LLD)(fs->dsx.starts[rx] + 1), (LLD)(fs->dsx.starts[rx+1] + 1),
 			(LLD)(fs->dsy.starts[ry] + 1), (LLD)(fs->dsy.starts[ry+1] + 1),
 			pvsurf->outfile, (LLD)iproc);
@@ -292,7 +292,7 @@ PetscErrorCode PVSurfWriteVTS(PVSurf *pvsurf, const char *dirName)
 	if(!fs->dsz.rank)
 	{
 		// open outfile_p_XXXXXX.vts file in the output directory (write mode)
-		asprintf(&fname, "%s/%s_p%1.6lld.vts", dirName, pvsurf->outfile, (LLD)fs->dsz.color);
+		asprintf(&fname, "%s/%s_p%1.8lld.vts", dirName, pvsurf->outfile, (LLD)fs->dsz.color);
 		fp = fopen(fname,"w");
 		if(fp == NULL) SETERRQ1(PETSC_COMM_SELF, 1,"cannot open file %s", fname);
 		free(fname);

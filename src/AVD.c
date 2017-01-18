@@ -61,7 +61,6 @@
 #include "advect.h"
 #include "AVD.h"
 #include "tools.h"
-
 //---------------------------------------------------------------------------
 #undef __FUNCT__
 #define __FUNCT__ "AVDCreate"

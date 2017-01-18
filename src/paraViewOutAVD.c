@@ -202,7 +202,7 @@ PetscErrorCode PVAVDWritePVTR(PVAVD *pvavd, const char *dirName)
 		pj = r2d/(A->M);
 		pi = r2d - pj*A->M;
 
-		fprintf(fp, "    <Piece Extent=\"%lld %lld %lld %lld %lld %lld\" Source=\"%s_p%1.6lld.vtr\" />\n",
+		fprintf(fp, "    <Piece Extent=\"%lld %lld %lld %lld %lld %lld\" Source=\"%s_p%1.8lld.vtr\" />\n",
 				(LLD)(A->ownership_ranges_i[pi]),(LLD)(A->ownership_ranges_i[pi+1]),
 				(LLD)(A->ownership_ranges_j[pj]),(LLD)(A->ownership_ranges_j[pj+1]),
 				(LLD)(A->ownership_ranges_k[pk]),(LLD)(A->ownership_ranges_k[pk+1]),
@@ -244,7 +244,7 @@ PetscErrorCode PVAVDWriteVTR(PVAVD *pvavd, const char *dirName)
 	MPI_Comm_rank(PETSC_COMM_WORLD, &irank);  rank = (PetscInt)irank;
 
 	// open outfile_p_XXXXXX.vtr file in the output directory (write mode)
-	asprintf(&fname, "%s/%s_p%1.6lld.vtr", dirName, pvavd->outfile, (LLD)rank);
+	asprintf(&fname, "%s/%s_p%1.8lld.vtr", dirName, pvavd->outfile, (LLD)rank);
 	fp = fopen(fname,"w");
 	if(fp == NULL) SETERRQ1(PETSC_COMM_SELF, 1,"cannot open file %s", fname);
 	free(fname);

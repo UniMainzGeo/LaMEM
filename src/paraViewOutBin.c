@@ -634,7 +634,7 @@ PetscErrorCode PVOutWritePVTR(PVOut *pvout, const char *dirName)
 		getLocalRank(&rx, &ry, &rz, iproc, fs->dsx.nproc, fs->dsy.nproc);
 
 		// write data
-		fprintf(fp, "\t\t<Piece Extent=\"%lld %lld %lld %lld %lld %lld\" Source=\"%s_p%1.6lld.vtr\"/>\n",
+		fprintf(fp, "\t\t<Piece Extent=\"%lld %lld %lld %lld %lld %lld\" Source=\"%s_p%1.8lld.vtr\"/>\n",
 			(LLD)(fs->dsx.starts[rx] + 1), (LLD)(fs->dsx.starts[rx+1] + 1),
 			(LLD)(fs->dsy.starts[ry] + 1), (LLD)(fs->dsy.starts[ry+1] + 1),
 			(LLD)(fs->dsz.starts[rz] + 1), (LLD)(fs->dsz.starts[rz+1] + 1), pvout->outfile, (LLD)iproc);
@@ -680,7 +680,7 @@ PetscErrorCode PVOutWriteVTR(PVOut *pvout, const char *dirName)
 	GET_OUTPUT_RANGE(rz, nz, sz, fs->dsz)
 
 	// open outfile_p_XXXXXX.vtr file in the output directory (write mode)
-	asprintf(&fname, "%s/%s_p%1.6lld.vtr", dirName, pvout->outfile, (LLD)rank);
+	asprintf(&fname, "%s/%s_p%1.8lld.vtr", dirName, pvout->outfile, (LLD)rank);
 	fp = fopen(fname,"w");
 	if(fp == NULL) SETERRQ1(PETSC_COMM_SELF, 1,"cannot open file %s", fname);
 	free(fname);

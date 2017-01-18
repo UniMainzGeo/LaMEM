@@ -51,6 +51,25 @@
 
 //---------------------------------------------------------------------------
 
+// marker initialization type enumeration
+typedef enum
+{
+	_FILES_,      // read coordinates, phase and temperature from files in parallel
+	_POLYGONS_,   // read polygons from file redundantly
+	_DIAPIR_,     // diapir setup
+	_FBLOCK_,     // falling block
+	_SUBDUCTION_, // subduction setup with air
+	_FOLDING_,    // multilayer folding setup (Zagros)
+	_DETACHMENT_, // 1-layer over detachment (Grasemann & Schmalholz 2012)
+	_SLAB_,       // slab detachment (Thieulot et al. 2014)
+	_SPHERES_,    // multiple falling spheres
+	_BANDS_,      // shear band formation 3D
+	_DOMES_       // salt domes 2D
+
+} SetupType;
+
+//---------------------------------------------------------------------------
+
 // marker-to-edge / edge-to-marker interpolation cases
 typedef enum
 {
@@ -87,7 +106,19 @@ typedef struct
 	JacRes   *jr;
 	FreeSurf *surf;
 
-	// nonlinear solver context
+	// marker initialization type
+	SetupType msetup;
+
+	// regular marker grid density (number of markers per cell)
+	PetscInt NumPartX;
+	PetscInt NumPartY;
+	PetscInt NumPartZ;
+
+	PetscInt  randNoise; // random noise flag for marker distribution
+	PetscInt  saveMark;  // flag for saving markers
+
+	char      saveName[MAX_NAME_LEN]; // marker output file name
+	char      savePath[MAX_PATH_LEN]; // marker output directory
 
 	//=============
 	// COMMUNICATOR
@@ -130,7 +161,7 @@ typedef struct
 	//=========
 	// CONTROL
 	//=========
-	PetscInt  nmin, nmax;          // min and max no. of markers
+	PetscInt  nmin, nmax;          // min and max number of markers
 	PetscInt  avdx, avdy, avdz;    // grid cells for AVD
 	PetscInt  cinj, cdel;          // counters
 
@@ -145,17 +176,27 @@ typedef struct
 	// 1. Map markers on the control volumes and communicate with neighbors at every sub-step of an advection scheme
 	// 2. Duplicate makers in the overlapping control volumes (also requires more velocity data from neighbors)
 
+	//====================
+	// RUN TIME PARAMETERS
+	//====================
+
 	PetscInt    AirPhase; // air phase number
 	PetscScalar Ttop;     // top surface temperature
 
 } AdvCtx;
 
 //---------------------------------------------------------------------------
-// create advection context
-PetscErrorCode ADVClear(AdvCtx *actx);
+// create advection object
+PetscErrorCode ADVCreate(AdvCtx *actx, FB *fb);
 
-// create advection context
-PetscErrorCode ADVCreate(AdvCtx *actx, FDSTAG *fs, JacRes *jr);
+// read advection object from restart database
+PetscErrorCode ADVReadRestart(AdvCtx *actx, FILE *fp);
+
+// read advection object from restart database
+PetscErrorCode ADVWriteRestart(AdvCtx *actx, FILE *fp);
+
+// create communicator and
+PetscErrorCode ADVCreateData(AdvCtx *actx);
 
 // destroy advection context
 PetscErrorCode ADVDestroy(AdvCtx *actx);
@@ -167,7 +208,7 @@ PetscErrorCode ADVReAllocStorage(AdvCtx *actx, PetscInt capacity);
 PetscErrorCode ADVAdvect(AdvCtx *actx);
 
 // remap markers onto the grid
-PetscErrorCode ADVRemap(AdvCtx *actx, FreeSurf *surf);
+PetscErrorCode ADVRemap(AdvCtx *actx);
 
 // exchange markers between the processors resulting from the position change
 PetscErrorCode ADVExchange(AdvCtx *actx);
@@ -223,13 +264,10 @@ PetscErrorCode ADVCheckCorners(AdvCtx *actx);
 PetscErrorCode ADVMarkDeleteOutflow(AdvCtx *actx);
 
 // change marker phase when crossing free surface
-PetscErrorCode ADVMarkCrossFreeSurf(AdvCtx *actx, FreeSurf *surf, PetscScalar tol);
+PetscErrorCode ADVMarkCrossFreeSurf(AdvCtx *actx, PetscScalar tol);
 
 // check marker phases
 PetscErrorCode ADVCheckMarkPhases(AdvCtx *actx, PetscInt numPhases);
-
-// print for analysis
-PetscErrorCode ADVAnalytics(AdvCtx *actx);
 
 //-----------------------------------------------------------------------------
 // service functions
