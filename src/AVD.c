@@ -735,10 +735,8 @@ PetscErrorCode AVDMarkerControl(AdvCtx *actx)
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
 
-	PetscBool flag = PETSC_FALSE;
-	PetscOptionsGetBool(NULL, NULL, "-use_marker_control", &flag, NULL);
-
-	if (!flag) PetscFunctionReturn(0);
+	// check if activated
+	if(!actx->markContr) PetscFunctionReturn(0);
 
 	PetscPrintf(PETSC_COMM_WORLD,"# NEW Marker Control Routine \n");
 
@@ -1352,4 +1350,3 @@ PetscErrorCode AVDAlgorithmMV(AdvCtx *actx, MarkerVolume *mv, PetscInt npoints, 
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-

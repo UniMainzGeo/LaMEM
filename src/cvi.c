@@ -76,9 +76,6 @@ PetscErrorCode ADVelAdvectMain(AdvCtx *actx)
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
 
-	// read options from command line
-	ierr = ADVelReadOptions(&vi); CHKERRQ(ierr);
-
 	// interpolate P,T - needs update
 	ierr = ADVelInterpPT(actx); CHKERRQ(ierr);
 
@@ -90,40 +87,6 @@ PetscErrorCode ADVelAdvectMain(AdvCtx *actx)
 	// print info
 	ierr = PetscTime(&t1); CHKERRQ(ierr);
 	PetscPrintf(PETSC_COMM_WORLD,"# CVI: Advection and velocity interpolation took %1.4e s\n",(LLD)actx->iproc, t1-t0);
-
-	PetscFunctionReturn(0);
-}
-//---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "ADVelReadOptions"
-PetscErrorCode ADVelReadOptions(AdvVelCtx *vi)
-{
-	// read options from the command line
-
-	PetscInt val0, val1;
-
-	PetscErrorCode ierr;
-	PetscFunctionBegin;
-
-	// default values
-	val0 = 0; // Euler advection
-	val1 = 0; // STAG interp
-
-	// read options
-	ierr = PetscOptionsGetInt(NULL, NULL, "-advection", &val0, NULL); CHKERRQ(ierr);
-	ierr = PetscOptionsGetInt(NULL, NULL, "-velinterp", &val1, NULL); CHKERRQ(ierr);
-
-	// advection scheme
-	if      (val0 == 0) { vi->advection = EULER;         PetscPrintf(PETSC_COMM_WORLD," Advection Scheme: %s\n","Euler 1st order"      ); }
-	else if (val0 == 1) { vi->advection = RUNGE_KUTTA_2; PetscPrintf(PETSC_COMM_WORLD," Advection Scheme: %s\n","Runge-Kutta 2nd order"); }
-	else SETERRQ(PETSC_COMM_SELF, PETSC_ERR_USER," *** Incorrect option for advection scheme ***");
-
-	// velocity interpolation
-	if      (val1 == 0) { vi->velinterp = STAG;   PetscPrintf(PETSC_COMM_WORLD," VelInterp Scheme: %s\n","STAG (Linear)"                    );}
-	else if (val1 == 2) { vi->velinterp = MINMOD; PetscPrintf(PETSC_COMM_WORLD," VelInterp Scheme: %s\n","MINMOD (Corr + Minmod)"           );}
-	else if (val1 == 7) { vi->velinterp = STAG_P; PetscPrintf(PETSC_COMM_WORLD," VelInterp Scheme: %s\n","Empirical (STAG + P points)"      );}
-
-	else SETERRQ(PETSC_COMM_SELF, PETSC_ERR_USER," *** Incorrect option for velocity interpolation scheme");
 
 	PetscFunctionReturn(0);
 }
@@ -217,7 +180,7 @@ PetscErrorCode ADVelAdvectScheme(AdvCtx *actx, AdvVelCtx *vi)
 	// ---------------------------------
 	// EULER (1st order)
 	// ---------------------------------
-	if(vi->advection == EULER)
+	if(actx->advection == EULER)
 	{
 		// 1. Velocity interpolation
 		ierr = ADVelInterpMain(vi); CHKERRQ(ierr);
@@ -232,7 +195,7 @@ PetscErrorCode ADVelAdvectScheme(AdvCtx *actx, AdvVelCtx *vi)
 	// ---------------------------------
 	// Runge-Kutta 2nd order in space
 	// ---------------------------------
-	else if(vi->advection == RUNGE_KUTTA_2)
+	else if(actx->advection == RUNGE_KUTTA_2)
 	{
 		// velocity interpolation A
 		ierr = ADVelInterpMain(vi); CHKERRQ(ierr);
@@ -304,8 +267,9 @@ PetscErrorCode ADVelCreate(AdvCtx *actx, AdvVelCtx *vi)
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
 
-	vi->fs = actx->fs;
-	vi->jr = actx->jr;
+	vi->fs   = actx->fs;
+	vi->jr   = actx->jr;
+	vi->actx = actx;
 
 	//=============
 	// COMMUNICATOR
@@ -1023,9 +987,9 @@ PetscErrorCode ADVelInterpMain(AdvVelCtx *vi)
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
 
-	if     (vi->velinterp == STAG   )  { ierr = ADVelInterpSTAG   (vi); CHKERRQ(ierr); }
-	else if(vi->velinterp == MINMOD )  { ierr = ADVelInterpMINMOD (vi); CHKERRQ(ierr); }
-	else if(vi->velinterp == STAG_P )  { ierr = ADVelInterpSTAGP  (vi); CHKERRQ(ierr); }
+	if     (vi->actx->velinterp == STAG   )  { ierr = ADVelInterpSTAG   (vi); CHKERRQ(ierr); }
+	else if(vi->actx->velinterp == MINMOD )  { ierr = ADVelInterpMINMOD (vi); CHKERRQ(ierr); }
+	else if(vi->actx->velinterp == STAG_P )  { ierr = ADVelInterpSTAGP  (vi); CHKERRQ(ierr); }
 	else SETERRQ(PETSC_COMM_SELF, PETSC_ERR_USER," *** Unknown option for velocity interpolation scheme");
 
 	PetscFunctionReturn(0);
@@ -1354,13 +1318,11 @@ PetscErrorCode ADVelInterpSTAGP(AdvVelCtx *vi)
 	// compute host cells for all markers
 	ierr = ADVelMapMarkToCells(vi); CHKERRQ(ierr);
 
-	// coefficients - ALSO READ THEM
-	A = 2.0/3.0;
-	B = 1.0/3.0;
+	// set coefficients
+	if(vi->actx->A) A = vi->actx->A;
+	else            A = 2.0/3.0;
 
-	PetscScalar val=0.0;
-	PetscOptionsGetScalar(NULL, NULL, "-A", &val, NULL);
-	if (val) { A = val; B = 1.0 - A; }
+	B = 1.0 - A;
 
 	// access context
 	fs = vi->fs;

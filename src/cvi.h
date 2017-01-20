@@ -46,8 +46,7 @@
 #ifndef __cvi_h__
 #define __cvi_h__
 //-----------------------------------------------------------------------------
-// structures
-//-----------------------------------------------------------------------------
+
 typedef struct
 {
 	PetscScalar      x0[3];    // initial position
@@ -57,26 +56,11 @@ typedef struct
 	PetscInt         ind;      // global index of markers
 
 } VelInterp;
-//-----------------------------------------------------------------------------
-typedef enum
-{
-	EULER,          // euler explicit in time
-	RUNGE_KUTTA_2,  // runge-kutta 2nd order in space
 
-} AdvectionType;
-//-----------------------------------------------------------------------------
-typedef enum
-{
-	STAG,      // trilinear interp from fdstag points
-	MINMOD,    // minmod interp to nodes, trilinear interp to markers + correction
-	STAG_P     // empirical approach (T. Gerya)
-
-} VelInterpType;
 //-----------------------------------------------------------------------------
 typedef struct
 {
-	AdvectionType    advection;    // advection scheme
-	VelInterpType    velinterp;    // velocity interpolation
+
 	VelInterp        *interp;
 	PetscInt         nmark;        // number of markers to interpolate
 	PetscInt         nbuff;        // buffer size
@@ -84,6 +68,7 @@ typedef struct
 	// FDSTAG context
 	FDSTAG           *fs;
 	JacRes           *jr;
+	AdvCtx           *actx;
 
 	// point-cell interaction
 	PetscInt         *cellnum;
@@ -110,13 +95,13 @@ typedef struct
 	PetscInt         *idel;
 
 } AdvVelCtx;
+
 //-----------------------------------------------------------------------------
 // main routines
 //-----------------------------------------------------------------------------
 
 // major advection routines
 PetscErrorCode ADVelAdvectMain     (AdvCtx *actx);
-PetscErrorCode ADVelReadOptions    (AdvVelCtx *vi);
 PetscErrorCode ADVelInterpPT       (AdvCtx *actx);
 PetscErrorCode ADVelAdvectScheme   (AdvCtx *actx, AdvVelCtx *vi);
 PetscErrorCode ADVelCollectIndices (AdvCtx *actx, AdvVelCtx *vi);

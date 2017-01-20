@@ -80,11 +80,29 @@ PetscErrorCode ADVCreate(AdvCtx *actx, FB *fb)
 {
 	// create advection context
 
-	PetscMPIInt nproc, iproc;
+//	PetscMPIInt nproc, iproc;
 
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
+
+
 /*
+
+	mark_load_path = ./input           # marker input directory
+	mark_load_name = markers           # marker input file name (extension is .dat)
+	mark_save_path = ./output          # marker output directory
+	mark_save_name = markes            # marker output file name (extension is .dat)
+	poly_file      = ./input/poly.dat  # polygon geometry file    (redundant)
+	temp_file      = ./input/temp.dat  # initial temperature file (redundant)
+	rand_noise     = 1                 # random noise flag
+	nmark_x        = 2                 # markers per cell in x-direction
+	nmark_y        = 2                 # ...                 y-direction
+	nmark_z        = 2                 # ...                 z-direction
+	save_mark      = 1                 # save marker to disk flag
+	bg_phase       = 1                 # background phase ID
+	msetup         = geom              # setup type
+
+
 	actx->fs = fs;
 	actx->jr = jr;
 
@@ -169,6 +187,52 @@ PetscErrorCode ADVCreate(AdvCtx *actx, FB *fb)
 	PetscOptionsGetInt(NULL, NULL ,"-markers_avdx",  &actx->avdx,   NULL);
 	PetscOptionsGetInt(NULL, NULL ,"-markers_avdy",  &actx->avdy,   NULL);
 	PetscOptionsGetInt(NULL, NULL ,"-markers_avdz",  &actx->avdz,   NULL);
+
+
+	PetscBool flag = PETSC_FALSE;
+	PetscOptionsGetBool(NULL, NULL, "-use_marker_control", &flag, NULL);
+
+	if (!flag) PetscFunctionReturn(0);
+
+
+	// read options from the command line
+
+	PetscInt val0, val1;
+
+	PetscErrorCode ierr;
+	PetscFunctionBegin;
+
+	// default values
+	val0 = 0; // Euler advection
+	val1 = 0; // STAG interp
+
+	// read options
+	ierr = PetscOptionsGetInt(NULL, NULL, "-advection", &val0, NULL); CHKERRQ(ierr);
+	ierr = PetscOptionsGetInt(NULL, NULL, "-velinterp", &val1, NULL); CHKERRQ(ierr);
+
+	// advection scheme
+	if      (val0 == 0) { vi->advection = EULER;         PetscPrintf(PETSC_COMM_WORLD," Advection Scheme: %s\n","Euler 1st order"      ); }
+	else if (val0 == 1) { vi->advection = RUNGE_KUTTA_2; PetscPrintf(PETSC_COMM_WORLD," Advection Scheme: %s\n","Runge-Kutta 2nd order"); }
+	else SETERRQ(PETSC_COMM_SELF, PETSC_ERR_USER," *** Incorrect option for advection scheme ***");
+
+	// velocity interpolation
+	if      (val1 == 0) { vi->velinterp = STAG;   PetscPrintf(PETSC_COMM_WORLD," VelInterp Scheme: %s\n","STAG (Linear)"                    );}
+	else if (val1 == 2) { vi->velinterp = MINMOD; PetscPrintf(PETSC_COMM_WORLD," VelInterp Scheme: %s\n","MINMOD (Corr + Minmod)"           );}
+	else if (val1 == 7) { vi->velinterp = STAG_P; PetscPrintf(PETSC_COMM_WORLD," VelInterp Scheme: %s\n","Empirical (STAG + P points)"      );}
+	else SETERRQ(PETSC_COMM_SELF, PETSC_ERR_USER," *** Incorrect option for velocity interpolation scheme");
+
+
+	PetscScalar val=0.0;
+	PetscOptionsGetScalar(NULL, NULL, "-A", &val, NULL);
+	if (val) { A = val; B = 1.0 - A; }
+
+
+	PetscOptionsGetBool(NULL, NULL, "-new_advection", &flag, NULL);
+	PetscOptionsGetBool(NULL, NULL, "-new_mc", &flag, NULL);
+
+
+
+
 */
 	// compute host cells for all the markers
 	ierr = ADVMapMarkToCells(actx); CHKERRQ(ierr);
@@ -264,9 +328,6 @@ PetscErrorCode ADVAdvect(AdvCtx *actx)
 {
 	//=======================================================================
 	// MAJOR ADVECTION ROUTINE
-	//
-	// WARNING!
-	// Currently only implements Forward Euler Explicit algorithm.
 	//=======================================================================
 
 	PetscErrorCode ierr;
@@ -275,18 +336,15 @@ PetscErrorCode ADVAdvect(AdvCtx *actx)
 	// project history INCREMENTS from grid to markers
 	ierr = ADVProjHistGridToMark(actx); CHKERRQ(ierr);
 
-	PetscBool flag = PETSC_FALSE;
-	PetscOptionsGetBool(NULL, NULL, "-new_advection", &flag, NULL);
-
-	if (!flag)
-	{
-		// advect markers (Forward Euler)
-		ierr = ADVAdvectMark(actx); CHKERRQ(ierr);
-	}
-	else
+	if(actx->newAdv)
 	{
 		// advect markers (extended by Adina)
 		ierr = ADVelAdvectMain(actx); CHKERRQ(ierr);
+	}
+	else
+	{
+		// advect markers (Forward Euler)
+		ierr = ADVAdvectMark(actx); CHKERRQ(ierr);
 	}
 
 	PetscFunctionReturn(0);
@@ -298,19 +356,23 @@ PetscErrorCode ADVRemap(AdvCtx *actx)
 {
 	//=======================================================================
 	// MAJOR ADVECTION REMAPPING
-	//
-	// WARNING!
-	// MarkerControl should be for all control volumes and include neighbors.
-	// After that CheckCorners can be removed.
 	//=======================================================================
 
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
 
-	PetscBool flag = PETSC_FALSE;
-	PetscOptionsGetBool(NULL, NULL, "-new_mc", &flag, NULL);
+	if(actx->newMarkContr) // new
+	{
+		// check markers and inject/delete if necessary in all control volumes
+		ierr = AVDMarkerControl(actx); CHKERRQ(ierr);
 
-	if(!flag) // old
+		// compute host cells for all the markers received
+		ierr = ADVMapMarkToCells(actx); CHKERRQ(ierr);
+
+		// update arrays for marker-cell interaction
+		ierr = ADVUpdateMarkCell(actx); CHKERRQ(ierr);
+	}
+	else // old
 	{
 		// compute host cells for all the markers received
 		ierr = ADVMapMarkToCells(actx); CHKERRQ(ierr);
@@ -323,17 +385,6 @@ PetscErrorCode ADVRemap(AdvCtx *actx)
 
 		// check corners and inject 1 particle if empty
 		ierr = ADVCheckCorners(actx); CHKERRQ(ierr);
-	}
-	else // new
-	{
-		// check markers and inject/delete if necessary in all control volumes
-		ierr = AVDMarkerControl(actx); CHKERRQ(ierr);
-
-		// compute host cells for all the markers received
-		ierr = ADVMapMarkToCells(actx); CHKERRQ(ierr);
-
-		// update arrays for marker-cell interaction
-		ierr = ADVUpdateMarkCell(actx); CHKERRQ(ierr);
 	}
 
 	// change marker phase when crossing flat surface or free surface with fast sedimentation/erosion
@@ -1052,10 +1103,8 @@ PetscErrorCode ADVMarkControl(AdvCtx *actx)
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
 
-	PetscBool flag = PETSC_FALSE;
-	PetscOptionsGetBool(NULL, NULL, "-use_marker_control", &flag, NULL);
-
-	if (!flag) PetscFunctionReturn(0);
+	// check whether activated
+	if(!actx->markContr) PetscFunctionReturn(0);
 
 	fs = actx->fs;
 
@@ -1159,12 +1208,10 @@ PetscErrorCode ADVCheckCorners(AdvCtx *actx)
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
 
+	// check whether activated
+	if(!actx->markContr) PetscFunctionReturn(0);
+
 	bc = actx->jr->bc;
-
-	PetscBool flag = PETSC_FALSE;
-	PetscOptionsGetBool(NULL, NULL, "-use_marker_control", &flag, NULL);
-
-	if (!flag) PetscFunctionReturn(0);
 
 	ierr = PetscTime(&t0); CHKERRQ(ierr);
 

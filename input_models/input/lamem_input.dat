@@ -152,7 +152,7 @@
 # Dropping box
 
 	dbox_num    =  1                        # number of boxes
-	dbox_bounds =  0.0 1.0 0.0 1.0 0.0 1.0  # box bounds (6 entries per box)
+	dbox_bounds =  0.0 1.0 0.0 1.0 0.0 1.0  # box bounds (left, right, front, back, bottom, top)
 	dbox_zvel   = -1.0                      # vertical velocity
 
 # Velocity boundary condition
@@ -240,87 +240,44 @@
 # Model setup & advection
 #===============================================================================
 
-# File names & paths
+	msetup         = geom              # setup type
+	rand_noise     = 1                 # random noise flag
+	nmark_x        = 2                 # markers per cell in x-direction
+	nmark_y        = 2                 # ...                 y-direction
+	nmark_z        = 2                 # ...                 z-direction
+	save_mark      = 1                 # save marker to disk flag
+	bg_phase       = 1                 # background phase ID
+	mark_load_path = ./input           # marker input directory
+	mark_load_name = markers           # marker input file name (extension is .dat)
+	mark_save_path = ./output          # marker output directory
+	mark_save_name = markes            # marker output file name (extension is .dat)
+	poly_file      = ./input/poly.dat  # polygon geometry file    (redundant)
+	temp_file      = ./input/temp.dat  # initial temperature file (redundant)
 
-	mark_load_path = ./input      # marker input directory
-	mark_load_name = markers      # marker input file name (extension is .dat)
+# Setup type specification:
 
-	mark_save_path = ./output     # marker output directory
-	mark_save_name = markes       # marker output file name (extension is .dat)
+#	msetup = geom     # default input (phases are assigned from geometric primitives)
+#	msetup = files    # MATLAB input (requires mark_load_path and mark_load_name parameters)
+#	msetup = polygons # geomIO input (requires poly_file parameter)
 
-	poly_file = ./input/poly.dat  # polygon geometry file    (redundant)
-	temp_file = ./input/temp.dat  # initial temperature file (redundant)
+# Geometric primtives
 
-# Setup type
+	<SphereStart>
+		phase  = 1
+		center = 1.0 2.0 3.0
+		radius = 1.5
+	<SphereEnd>
 
-	msetup = block
+	<BoxStart>
+		phase  = 1
+		bounds = 1.0 2.0 1.0 2.0 1.0 2.0  # (left, right, front, back, bottom, top)
+	<BoxEnd>
 
-#	msetup = files      # requires mark_load_path and mark_load_name parameters
-#	msetup = polygons   # requires poly_file parameter
-#	msetup = diapir
-#	msetup = block
-#	msetup = subduction
-#	msetup = folding
-#	msetup = detachment
-#	msetup = slab
-#	msetup = spheres
-#	msetup = bands
-#	msetup = domes
-
-# Uniform marker grid density
-
-	nmark_x = 2 # markers per cell in x-direction
-	nmark_y = 2 # markers per cell in y-direction
-	nmark_z = 2 # markers per cell in z-direction
-
-# Random noise flag
-
-	rand_noise = 1
-
-# Save marker to disk flag
-
-	save_mark = 1
-
-# Parameters for hard-coded setups
-
-#	diapir_h = 0.5
-
-#	block_bounds = 0.25 0.75 0.25 0.75 0.25 0.75
-
-#	subduction_slab_thick = 0.2
-#	subduction_air_thick  = 0.1
-#	subduction_slab_width = 1.0
-
-#	folding_frac_inp  = 1        # fractional input flag (relative to domain size)
-#	folding_step_x    = 0.0 0.5  # step perturbation x-bounds
-#	folding_step_y    = 0.0 1.0  # step perturbation y-bounds
-#	folding_step_amp  = 0.05     # step perturbation amplitude
-#	folding_layer_1   = 0.1 0.2  # top & bottom bounds of layers [1-10]
-
-#	detachment_seed_W = 0.5
-#	detachment_seed_L = 1.0
-#	detachment_seed_A = 0.05
-#	detachment_offset = 0.3
-#	detachment_layer  = 0.1 0.2
-
-#	slab_thick  = 80.0
-#	slab_length = 250.0
-#	slab_depth  = 250.0
-
-#	spheres_num = 10
-#	spheres_rad = 0.1
-
-#	bands_layer_thick
-#	bands_layer_bot
-#	bands_seed_use
-#	bands_seed_size
-#	bands_seed_offset
-#	bands_seed_length
-
-#	domain_bounds
-#	domes_anhydrite_bot
-#	domes_anhydrite_top
-#	domes_anhydrite_phase
+	<LayerStart>
+		phase  = 1
+		top    = 5.0
+		bottom = 3.0
+	<LayerEnd>
 
 #===============================================================================
 # Output

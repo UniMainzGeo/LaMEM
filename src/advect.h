@@ -54,17 +54,9 @@
 // marker initialization type enumeration
 typedef enum
 {
-	_FILES_,      // read coordinates, phase and temperature from files in parallel
-	_POLYGONS_,   // read polygons from file redundantly
-	_DIAPIR_,     // diapir setup
-	_FBLOCK_,     // falling block
-	_SUBDUCTION_, // subduction setup with air
-	_FOLDING_,    // multilayer folding setup (Zagros)
-	_DETACHMENT_, // 1-layer over detachment (Grasemann & Schmalholz 2012)
-	_SLAB_,       // slab detachment (Thieulot et al. 2014)
-	_SPHERES_,    // multiple falling spheres
-	_BANDS_,      // shear band formation 3D
-	_DOMES_       // salt domes 2D
+	_GEOM_,    // read geometric primitives from input file
+	_FILES_,   // read coordinates, phase and temperature from files in parallel
+	_POLYGONS_ // read polygons from file redundantly
 
 } SetupType;
 
@@ -80,6 +72,27 @@ typedef enum
 	_DISP_       // displacement
 
 } InterpCase;
+
+//-----------------------------------------------------------------------------
+
+typedef enum
+{
+	EULER,          // euler explicit in time
+	RUNGE_KUTTA_2,  // runge-kutta 2nd order in space
+
+} AdvectionType;
+
+//-----------------------------------------------------------------------------
+
+typedef enum
+{
+	STAG,      // trilinear interp from fdstag points
+	MINMOD,    // minmod interp to nodes, trilinear interp to markers + correction
+	STAG_P     // empirical approach (T. Gerya)
+
+} VelInterpType;
+
+//---------------------------------------------------------------------------
 
 typedef struct
 {
@@ -98,6 +111,7 @@ typedef struct
 // mapped on all types of control volumes to update corresponding components.
 
 //---------------------------------------------------------------------------
+
 // Advection context
 typedef struct
 {
@@ -106,19 +120,30 @@ typedef struct
 	JacRes   *jr;
 	FreeSurf *surf;
 
-	// marker initialization type
-	SetupType msetup;
+	SetupType     msetup;                 // marker initialization type
+	PetscInt      NumPartX;               // markers per cell in x-direction
+	PetscInt      NumPartY;               //                 ... y-direction
+	PetscInt      NumPartZ;               //                 ... z-direction
+	PetscInt      randNoise;              // random noise flag for marker distribution
+	PetscInt      saveMark;               // flag for saving markers
+	char          saveName[MAX_NAME_LEN]; // marker output file name
+	char          savePath[MAX_PATH_LEN]; // marker output directory
+	PetscInt      markContr;              // flag to activate marker control
+	AdvectionType advection;              // advection scheme
+	VelInterpType velinterp;              // velocity interpolation scheme
+	PetscScalar   A;                      // FDSTAG velocity interpolation parameter
+	PetscInt      nmin, nmax;             // minimum and maximum number of markers per cell
+	PetscInt      avdx, avdy, avdz;       // AVD cells refinement factors
+	PetscInt      bgPhase;                // background phase ID
+	PetscInt      newAdv;                 // new advection flag (temporary)
+	PetscInt      newMarkContr;           // new marker control flag (temporary)
 
-	// regular marker grid density (number of markers per cell)
-	PetscInt NumPartX;
-	PetscInt NumPartY;
-	PetscInt NumPartZ;
-
-	PetscInt  randNoise; // random noise flag for marker distribution
-	PetscInt  saveMark;  // flag for saving markers
-
-	char      saveName[MAX_NAME_LEN]; // marker output file name
-	char      savePath[MAX_PATH_LEN]; // marker output directory
+	//====================
+	// RUN TIME PARAMETERS
+	//====================
+	PetscInt    AirPhase;   // air phase number
+	PetscScalar Ttop;       // top surface temperature
+	PetscInt    cinj, cdel; // injected & deleted marker counters
 
 	//=============
 	// COMMUNICATOR
@@ -157,31 +182,6 @@ typedef struct
 
 	PetscInt  ndel; // number of markers to be deleted from storage
 	PetscInt *idel; // indices of markers to be deleted
-
-	//=========
-	// CONTROL
-	//=========
-	PetscInt  nmin, nmax;          // min and max number of markers
-	PetscInt  avdx, avdy, avdz;    // grid cells for AVD
-	PetscInt  cinj, cdel;          // counters
-
-	// Mapping markers on the control volumes:
-	// 1. Viscosities are computed in the centers & then averaged to edges (BY FAR THE SIMPLEST SOLUTION!!!)
-	// 2. Synchronize SEPARATELY every phase for a given edge set xy, xz, or yz (overwhelming communication)
-	// 3. Synchronize SIMULTANEOUSLY all the phases for a given edge set xy, xz, or yz (large memory requirements)
-	// 4. Duplicate the markers in the overlapping control volumes near the inter-processor boundaries (a compromise, but still more memory)
-	// 5. Viscosity and stresses can also be computed on the markers (a-la Taras)
-
-	// Accurate advection schemes:
-	// 1. Map markers on the control volumes and communicate with neighbors at every sub-step of an advection scheme
-	// 2. Duplicate makers in the overlapping control volumes (also requires more velocity data from neighbors)
-
-	//====================
-	// RUN TIME PARAMETERS
-	//====================
-
-	PetscInt    AirPhase; // air phase number
-	PetscScalar Ttop;     // top surface temperature
 
 } AdvCtx;
 

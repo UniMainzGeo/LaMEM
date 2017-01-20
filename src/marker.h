@@ -46,6 +46,10 @@
 #define __marker_h__
 //---------------------------------------------------------------------------
 
+#define _max_geom_ 20
+
+//---------------------------------------------------------------------------
+
 // input polygon data
 typedef struct
 {
@@ -63,6 +67,33 @@ typedef struct
 	PetscScalar   *X; // coordinates of the polygon x1,y1,x2,y2,...xn,yn
 
 } Polygon2D;
+
+//---------------------------------------------------------------------------
+
+// geometric primitives
+
+typedef struct GeomPrim GeomPrim;
+
+struct GeomPrim
+{
+	PetscInt    phase;
+	// sphere
+	PetscScalar center[3];
+	PetscScalar radius;
+	// box
+	PetscScalar bounds[6];
+	// layer
+	PetscScalar top;
+	PetscScalar bot;
+
+	PetscInt (*setPhase)(GeomPrim*, Marker*);
+};
+
+PetscInt setPhaseSphere(GeomPrim *sphere, Marker *P);
+
+PetscInt setPhaseBox(GeomPrim *box, Marker *P);
+
+PetscInt setPhaseLayer(GeomPrim *layer, Marker *P);
 
 //---------------------------------------------------------------------------
 
@@ -85,17 +116,9 @@ PetscErrorCode ADVMarkSetTempFromFile(AdvCtx *actx, FB *fb);
 
 // Specific initialization routines
 
-PetscErrorCode ADVMarkInitFiles     (AdvCtx *actx, FB *fb);
-PetscErrorCode ADVMarkInitDiapir    (AdvCtx *actx, FB *fb);
-PetscErrorCode ADVMarkInitBlock     (AdvCtx *actx, FB *fb);
-PetscErrorCode ADVMarkInitSubduction(AdvCtx *actx, FB *fb);
-PetscErrorCode ADVMarkInitFolding   (AdvCtx *actx, FB *fb);
-PetscErrorCode ADVMarkInitDetachment(AdvCtx *actx, FB *fb);
-PetscErrorCode ADVMarkInitSlab      (AdvCtx *actx, FB *fb);
-PetscErrorCode ADVMarkInitSpheres   (AdvCtx *actx, FB *fb);
-PetscErrorCode ADVMarkInitBands     (AdvCtx *actx, FB *fb);
-PetscErrorCode ADVMarkInitDomes     (AdvCtx *actx, FB *fb);
-PetscErrorCode ADVMarkInitPolygons  (AdvCtx *actx, FB *fb);
+PetscErrorCode ADVMarkInitGeom    (AdvCtx *actx, FB *fb);
+PetscErrorCode ADVMarkInitFiles   (AdvCtx *actx, FB *fb);
+PetscErrorCode ADVMarkInitPolygons(AdvCtx *actx, FB *fb);
 
 //---------------------------------------------------------------------------
 
