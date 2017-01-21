@@ -80,27 +80,109 @@ PetscErrorCode ADVCreate(AdvCtx *actx, FB *fb)
 {
 	// create advection context
 
-//	PetscMPIInt nproc, iproc;
+	char str[MAX_STR_LEN], *msetup, *advect, *interp;
 
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
 
+	ierr = PetscMemzero(str, sizeof(char)*MAX_STR_LEN); CHKERRQ(ierr);
+
+	// read setup type
+	msetup = str;
+
+	sprintf(msetup, "geom");
+
+	ierr = getStringParam(fb, _OPTIONAL_, "msetup", msetup, MAX_STR_LEN); CHKERRQ(ierr);
+
+	// set units type
+	if     (!strcmp(msetup, "geom"))     actx->msetup = _GEOM_;
+	else if(!strcmp(msetup, "files"))    actx->msetup = _FILES_;
+	else if(!strcmp(msetup, "polygons")) actx->msetup = _POLYGONS_;
+	else SETERRQ1(PETSC_COMM_WORLD, PETSC_ERR_USER, "Incorrect setup type: %s", msetup);
+
+/*
+	actx->NumPartX
+	actx->NumPartY
+	actx->NumPartZ
+	actx->randNoise
+	actx->bgPhase
+
+
+	"nmark_x"
+	"nmark_y"
+	"nmark_z"
+	"rand_noise"
+	"bg_phase"
+
+
+
+
+
+	ierr = getScalarParam(fb, _REQUIRED_, "unit_stress",      &stress,      1, 1.0);  CHKERRQ(ierr);
+	ierr = getScalarParam(fb, _OPTIONAL_, "unit_density",     &density,     1, 1.0);  CHKERRQ(ierr);
+
+	ierr = getIntParam   (fb, _OPTIONAL_, "act_temp_diff", &jr->pShiftAct, 1,  1  ); CHKERRQ(ierr);
+
+
+	// get file name & path
+
+	ierr = getStringParam(fb, _REQUIRED_, "mark_load_name", name, MAX_NAME_LEN); CHKERRQ(ierr);
+	ierr = getStringParam(fb, _REQUIRED_, "mark_load_path", path, MAX_PATH_LEN); CHKERRQ(ierr);
+
+*/
 
 /*
 
-	mark_load_path = ./input           # marker input directory
-	mark_load_name = markers           # marker input file name (extension is .dat)
-	mark_save_path = ./output          # marker output directory
-	mark_save_name = markes            # marker output file name (extension is .dat)
-	poly_file      = ./input/poly.dat  # polygon geometry file    (redundant)
-	temp_file      = ./input/temp.dat  # initial temperature file (redundant)
-	rand_noise     = 1                 # random noise flag
-	nmark_x        = 2                 # markers per cell in x-direction
-	nmark_y        = 2                 # ...                 y-direction
-	nmark_z        = 2                 # ...                 z-direction
-	save_mark      = 1                 # save marker to disk flag
-	bg_phase       = 1                 # background phase ID
-	msetup         = geom              # setup type
+euler # euler explicit in time
+rk2   # Runge-Kutta 2nd order in space
+
+# Velocity interpolation types:
+
+stag
+minmod
+stagp
+
+# Setup type specification:
+
+geom
+files
+polygons
+
+
+
+	actx->saveMark
+	actx->saveName
+	actx->savePath
+	actx->advection
+	actx->newAdv
+	actx->velinterp
+	actx->A
+	actx->markContr
+	actx->newMarkContr
+	actx->nmin
+	actx->nmax
+	actx->avdx
+	actx->avdy
+	actx->avdz
+*/
+
+
+/*
+
+	"save_mark"
+	"mark_save_path"
+	"mark_save_name"
+	"advect"
+	"new_advect"
+	"interp"
+	"stagp_a"
+	"use_mark_contr"
+	"new_mark_contr"
+	"min_mark_cell"
+	"max_mark_cell"
+	"avd_refine_x"
+	"avd_refine_y"
+	"avd_refine_z"
 
 
 	actx->fs = fs;
@@ -118,55 +200,10 @@ PetscErrorCode ADVCreate(AdvCtx *actx, FB *fb)
 	actx->nproc = (PetscInt)nproc;
 	actx->iproc = (PetscInt)iproc;
 
-	//========
-	// STORAGE
-	//========
-
-	actx->nummark = 0;
-	actx->markcap = 0;
-	actx->markers = NULL;
-
-	//========================
-	// MARKER-CELL INTERACTION
-	//========================
-
-	actx->cellnum   = NULL;
-	actx->markind   = NULL;
 
 	ierr = makeIntArray(&actx->markstart, NULL, fs->nCells+1); CHKERRQ(ierr);
-
-	//=========
-	// EXCHANGE
-	//=========
-
-	actx->sendbuf = NULL;
-	actx->recvbuf = NULL;
-
-	actx->nsend = 0;
-	ierr = PetscMemzero(actx->nsendm, _num_neighb_*sizeof(PetscInt)); CHKERRQ(ierr);
-	ierr = PetscMemzero(actx->ptsend, _num_neighb_*sizeof(PetscInt)); CHKERRQ(ierr);
-
-	actx->nrecv = 0;
-	ierr = PetscMemzero(actx->nrecvm, _num_neighb_*sizeof(PetscInt)); CHKERRQ(ierr);
-	ierr = PetscMemzero(actx->ptrecv, _num_neighb_*sizeof(PetscInt)); CHKERRQ(ierr);
-
-	actx->ndel = 0;
-	actx->idel = NULL;
-
-	actx->AirPhase = -1;  // air phase number
-	actx->Ttop     = 0.0; // top surface temperature
-
-
-	// random noise
-	AddRandomNoise = PETSC_FALSE;
-	ierr = PetscOptionsGetBool(NULL, NULL,"-AddRandomNoiseParticles" , &AddRandomNoise , NULL); CHKERRQ(ierr);
-	if(AddRandomNoise) PetscPrintf(PETSC_COMM_WORLD, " Adding random noise to marker distribution \n");
-
-
-
-	ReducedOutput_Polygons = PETSC_FALSE;
-	ierr = PetscOptionsGetBool(NULL, NULL,"-ReducedOutput_Polygons" , &ReducedOutput_Polygons , NULL); CHKERRQ(ierr);
-	if(ReducedOutput_Polygons) PetscPrintf(PETSC_COMM_WORLD, " Reduced output for Polygons activated \n");
+	actx->AirPhase = -1;
+	actx->Ttop     = 0.0;
 
 
 	char      saveName[MAX_PATH_LEN]; // marker output file name
@@ -196,15 +233,6 @@ PetscErrorCode ADVCreate(AdvCtx *actx, FB *fb)
 
 
 	// read options from the command line
-
-	PetscInt val0, val1;
-
-	PetscErrorCode ierr;
-	PetscFunctionBegin;
-
-	// default values
-	val0 = 0; // Euler advection
-	val1 = 0; // STAG interp
 
 	// read options
 	ierr = PetscOptionsGetInt(NULL, NULL, "-advection", &val0, NULL); CHKERRQ(ierr);
@@ -1834,7 +1862,7 @@ PetscErrorCode ADVMarkCrossFreeSurf(AdvCtx *actx, PetscScalar tol)
 	PetscFunctionBegin;
 
 	// free-surface cases only
-	if(surf->UseFreeSurf != PETSC_TRUE) PetscFunctionReturn(0);
+	if(!actx->surf->UseFreeSurf) PetscFunctionReturn(0);
 
 	// access context
 	surf      = actx->surf;

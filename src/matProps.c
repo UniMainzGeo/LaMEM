@@ -62,10 +62,12 @@ PetscErrorCode MatParLimRead(
 {
 	PetscInt    UseFreeSurf;
 	PetscScalar input_eta_max;
-	char        gwtype [MAX_NAME_LEN];
+	char        gwtype [MAX_STR_LEN];
 
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
+
+	ierr = PetscMemzero(gwtype, sizeof(char)*MAX_STR_LEN); CHKERRQ(ierr);
 
 	// set defaults
 	lim->tauUlt       = DBL_MAX;
@@ -107,7 +109,7 @@ PetscErrorCode MatParLimRead(
 	ierr = getIntParam   (fb, _OPTIONAL_, "jac_mat_free",   &lim->jac_mat_free, 1, 1);   CHKERRQ(ierr);
 	ierr = getIntParam   (fb, _OPTIONAL_, "init_guess",     &lim->initGuess,    1, 1);   CHKERRQ(ierr);
 	ierr = getIntParam   (fb, _OPTIONAL_, "act_pore_press", &lim->actPorePres,  1, 1);   CHKERRQ(ierr);
-	ierr = getStringParam(fb, _OPTIONAL_, "gw_level_type",   gwtype, MAX_NAME_LEN);      CHKERRQ(ierr);
+	ierr = getStringParam(fb, _OPTIONAL_, "gw_level_type",   gwtype, MAX_STR_LEN);       CHKERRQ(ierr);
 
 	// set ground water level type
 	if     (!strcmp(gwtype, "top"))   lim->gwType = _TOP_;
@@ -256,7 +258,7 @@ PetscErrorCode MatPhaseRead(
 	Material_t *m;
 	PetscInt    ID = -1, chSoftID, frSoftID, MSN;
 	PetscScalar eta, eta0, e0, K, G, E, nu, Vp, Vs;
-	char        ndiff[MAX_NAME_LEN], ndisl[MAX_NAME_LEN], npeir[MAX_NAME_LEN];
+	char        ndiff[MAX_STR_LEN], ndisl[MAX_STR_LEN], npeir[MAX_STR_LEN];
 
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
@@ -640,9 +642,9 @@ PetscErrorCode GetProfileName(FB *fb, Scaling *scal, char name[], const char key
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
 
-	ierr = PetscMemzero(name, sizeof(char)*MAX_NAME_LEN); CHKERRQ(ierr);
+	ierr = PetscMemzero(name, sizeof(char)*MAX_STR_LEN); CHKERRQ(ierr);
 
-	ierr = getStringParam(fb, _OPTIONAL_, key, name, MAX_NAME_LEN);  CHKERRQ(ierr);
+	ierr = getStringParam(fb, _OPTIONAL_, key, name, MAX_STR_LEN);  CHKERRQ(ierr);
 
 	if(strlen(name) && scal->utype == _NONE_)
 	{

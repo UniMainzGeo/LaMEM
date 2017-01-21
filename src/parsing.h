@@ -119,6 +119,10 @@ PetscErrorCode FBGetScalarArray(
 		PetscInt     num,
 		PetscBool   *found);
 
+// NOTE! * if parameter is not found, output string is NOT modified
+//       * if parameter is found, output string is padded with with zeros until full size
+//       * parameter is checked to be at least one character shorter than output string
+
 PetscErrorCode FBGetString(
 		FB         *fb,
 		const char *key,

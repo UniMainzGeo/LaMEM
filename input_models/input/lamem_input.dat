@@ -241,26 +241,48 @@
 #===============================================================================
 
 	msetup         = geom              # setup type
-	rand_noise     = 1                 # random noise flag
 	nmark_x        = 2                 # markers per cell in x-direction
 	nmark_y        = 2                 # ...                 y-direction
 	nmark_z        = 2                 # ...                 z-direction
-	save_mark      = 1                 # save marker to disk flag
+	rand_noise     = 1                 # random noise flag
 	bg_phase       = 1                 # background phase ID
+	save_mark      = 1                 # save marker to disk flag
 	mark_load_path = ./input           # marker input directory
 	mark_load_name = markers           # marker input file name (extension is .dat)
 	mark_save_path = ./output          # marker output directory
 	mark_save_name = markes            # marker output file name (extension is .dat)
 	poly_file      = ./input/poly.dat  # polygon geometry file    (redundant)
 	temp_file      = ./input/temp.dat  # initial temperature file (redundant)
+	advect         = rk2;              # advection scheme
+	new_advect     = 1                 # activate new advection algorithms (temporary)
+	interp         = stagp;            # velocity interpolation scheme
+	stagp_a        = 0.7;              # STAG_P velocity interpolation parameter
+	use_mark_contr = 1                 # activate marker control
+	new_mark_contr = 1                 # activate new marker control algorithms (temporary)
+	min_mark_cell  = 27                # minimum number markers per cell
+	max_mark_cell  = 10                # maximum number markers per cell
+	avd_refine_x    = 2                # AVD refinement ratio in x-direction
+	avd_refine_y    = 2                # ...                     y-direction
+	avd_refine_z    = 2                # ...                     z-direction
 
+# Advection types:
+
+#	advect = euler # euler explicit in time
+#	advect = rk2   # Runge-Kutta 2nd order in space
+
+# Velocity interpolation types:
+
+#	interp = stag   # trilinear interpolation from FDSTAG points
+#	interp = minmod # minmod interpolation to nodes, trilinear interpolation to markers + correction
+#	interp = stagp  # STAG_P empirical approach (T. Gerya)
+ 
 # Setup type specification:
 
 #	msetup = geom     # default input (phases are assigned from geometric primitives)
 #	msetup = files    # MATLAB input (requires mark_load_path and mark_load_name parameters)
 #	msetup = polygons # geomIO input (requires poly_file parameter)
 
-# Geometric primtives
+# Geometric primtives:
 
 	<SphereStart>
 		phase  = 1

@@ -291,12 +291,12 @@ PetscErrorCode ObjFunctReadFromOptions(ObjFunct *objf, const char *on[])
 	PetscErrorCode ierr;
 	PetscBool      found, exists;
 	PetscInt       k;
-	char           otname [MAX_NAME_LEN];
+	char           otname [MAX_STR_LEN];
 	PetscFunctionBegin;
 
 	// read filename of observation file
 	asprintf(&objf->infile, "%s", "obs.bin");
-	ierr = PetscOptionsGetString(NULL, NULL,"-objf_obsfile", objf->infile, MAX_NAME_LEN, &found); CHKERRQ(ierr);
+	ierr = PetscOptionsGetString(NULL, NULL,"-objf_obsfile", objf->infile, MAX_STR_LEN, &found); CHKERRQ(ierr);
 	if (!found){ PetscPrintf(PETSC_COMM_WORLD,"# WARNING: No filename given for observation file -> Use default: obs.bin \n"); }
 
 	// number of fields to be read into the buffer

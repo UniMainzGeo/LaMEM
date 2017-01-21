@@ -56,7 +56,7 @@ PetscErrorCode FBLoad(FB **pfb)
 	size_t    sz, len;
 	PetscBool found;
 	char      *ptr, *comment;
-	char      filename[MAX_PATH_LEN];
+	char      filename[MAX_STR_LEN];
 
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
@@ -67,7 +67,7 @@ PetscErrorCode FBLoad(FB **pfb)
 	if(ISRankZero(PETSC_COMM_WORLD))
 	{
 		// check whether input file is specified
-		ierr = PetscOptionsGetString(NULL, NULL, "-ParamFile", filename, MAX_PATH_LEN, &found); CHKERRQ(ierr);
+		ierr = PetscOptionsGetString(NULL, NULL, "-ParamFile", filename, MAX_STR_LEN, &found); CHKERRQ(ierr);
 
 		// read additional PETSc options from input file
 		if(found != PETSC_TRUE)
@@ -449,6 +449,7 @@ PetscErrorCode FBGetString(
 			SETERRQ1(PETSC_COMM_WORLD, PETSC_ERR_USER, "Input string is not large enough to hold result for parameter \"%s\" \n", key);
 		}
 
+		// copy & pad the rest of the string with zeros
 		strncpy(str, ptr, fsz);
 
 		free(tmp);

@@ -939,7 +939,7 @@ PetscErrorCode FreeSurfSetTopoFromFile(FreeSurf *surf, FB *fb)
 	FDSTAG       *fs;
 	int          fd;
 	PetscViewer  view_in;
-	char         filename[MAX_PATH_LEN];
+	char         filename[MAX_STR_LEN];
 	PetscInt 	 nxTopo, nyTopo, Ix, Iy, Fsize;
 	PetscInt     i, j, nx, ny, sx, sy, sz, level;
 	PetscScalar  ***topo, *Z, header[2], dim[2];
@@ -949,9 +949,9 @@ PetscErrorCode FreeSurfSetTopoFromFile(FreeSurf *surf, FB *fb)
 	PetscFunctionBegin;
 
 	// get file name
-	ierr = PetscMemzero(filename, sizeof(char)*MAX_NAME_LEN); CHKERRQ(ierr);
+	ierr = PetscMemzero(filename, sizeof(char)*MAX_STR_LEN); CHKERRQ(ierr);
 
-	ierr = getStringParam(fb, _OPTIONAL_, "topo_file", filename, MAX_NAME_LEN); CHKERRQ(ierr);
+	ierr = getStringParam(fb, _OPTIONAL_, "topo_file", filename, MAX_STR_LEN); CHKERRQ(ierr);
 
 	// check whether file is provided
 	if(!strlen(filename)) PetscFunctionReturn(0);

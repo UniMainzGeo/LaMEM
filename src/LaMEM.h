@@ -81,8 +81,7 @@
 
 #endif
 
-#define MAX_NAME_LEN 128
-#define MAX_PATH_LEN 512
+#define MAX_STR_LEN 128
 
 //-----------------------------------------------------------------------------
 // EXTERNAL INCLUDES
