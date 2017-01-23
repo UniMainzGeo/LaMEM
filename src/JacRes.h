@@ -95,6 +95,7 @@ typedef struct
 
 	// for wave propagation
 	PetscBool		ExplicitSolver; 		// True => at the moment, wave propagation
+	PetscScalar		ForceDampingFactor;			// Force damping factor used to absorb oscillation energy
 	PetscScalar		DensityFactor; 			// Computational density will be material density*density_factor
 	char     		 OutputStressFile[MAX_PATH_LEN];	// File to store stress/strain
 	FILE 			*stress_file;
@@ -161,6 +162,10 @@ typedef struct
 	//====================
 	Vec lp_lithos;          // lithostatic pressure
 	Vec lp_pore;            // pore pressure
+
+
+
+	PetscBool damping;
 
 } JacRes;
 //---------------------------------------------------------------------------
@@ -331,6 +336,12 @@ PetscErrorCode JacResGetLithoStaticPressure(JacRes *jr);
 
 // compute fluid pressure in the cell centers
 PetscErrorCode JacResGetPorePressure(JacRes *jr);
+
+// compute lithostatic pressure in the cell centers
+PetscErrorCode JacResGetLithoStaticPressureAndDensity(JacRes *jr);
+
+// compute lithostatic pressure in the cell centers
+PetscErrorCode JacResGetLithoStaticPressureAndDensityII(JacRes *jr);
 
 //---------------------------------------------------------------------------
 // MACROS

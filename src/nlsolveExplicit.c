@@ -46,8 +46,12 @@ PetscErrorCode GetVelocities(JacRes *jr, UserCtx *user)
 	// To damp velocity in the absorbing boundaries
 	PetscScalar damping;
 
+	// To damp forces
+	PetscScalar force_damping, signV, dampingTerm;
+
 	// To save velocity in a given point (seismic station)
 	PetscScalar t;
+
 
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
@@ -57,6 +61,9 @@ PetscErrorCode GetVelocities(JacRes *jr, UserCtx *user)
 	// access residual context variables
 	dt    =  jr->ts.dt;     // time step
 	t	  =  JacResGetTime(jr);
+
+	force_damping = jr->ForceDampingFactor;
+
 
 	// access work vectors
 	ierr = DMDAVecGetArray(fs->DA_CEN, jr->ldzz, &rho); CHKERRQ(ierr);	// strain-rate component (used as buffer vectors)
@@ -106,11 +113,27 @@ PetscErrorCode GetVelocities(JacRes *jr, UserCtx *user)
 		if (i==0) rho_side = rho[k][j][i];
 		else rho_side = (rho[k][j][i]+rho[k][j][i-1])/2.0;
 
+
+		// For damping forces
+		if (force_damping != 0.0) {
+			if (vx[k][j][i] < 0.0 ) {
+				signV = -1.0;
+			}else {
+				signV = 1.0;
+			}
+			dampingTerm = force_damping*fabs(fx[k][j][i])*signV;
+		}else{
+			dampingTerm = 0.0;
+		}
+		////////////////////////
+
+		vx[k][j][i] = vx[k][j][i]+ (-fx[k][j][i]-dampingTerm)*dt/rho_side;
+
+
 		damping = GetBoundaryDamping(user,i,j,k); // To damp velocity if we are in an absorbing boundary
-	//PetscPrintf(PETSC_COMM_WORLD, "    damping[%i,%i,%i] = %12.12e \n", i,j,k, damping);
+		//PetscPrintf(PETSC_COMM_WORLD, "    damping[%i,%i,%i] = %12.12e \n", i,j,k, damping);
 
-
-		vx[k][j][i] = (vx[k][j][i]-fx[k][j][i]*dt/rho_side)*damping;
+		vx[k][j][i] = vx[k][j][i]*damping;
 
 		if (jr->SeismicStation == PETSC_TRUE) { // To save velocity in a given point
 			if (jr->StationParams.i==i && jr->StationParams.j==j && jr->StationParams.k==k) {
@@ -134,8 +157,24 @@ PetscErrorCode GetVelocities(JacRes *jr, UserCtx *user)
 		if (j==0) rho_side=rho[k][j][i];
 		else rho_side=(rho[k][j][i]+rho[k][j-1][i])/2.0;
 
+
+		// For damping forces
+		if (force_damping != 0.0) {
+			if (vy[k][j][i] < 0.0 ) {
+				signV = -1.0;
+			}else {
+				signV = 1.0;
+			}
+			dampingTerm = force_damping*fabs(fy[k][j][i])*signV;
+		}else{
+			dampingTerm = 0.0;
+		}
+		////////////////////////
+
+		vy[k][j][i] = vy[k][j][i]+ (-fy[k][j][i]-dampingTerm)*dt/rho_side;
+
 		damping = GetBoundaryDamping(user,i,j,k); // To damp velocity if we are in an absorbing boundary
-		vy[k][j][i] = (vy[k][j][i]-fy[k][j][i]*dt/rho_side)*damping;
+		vy[k][j][i] = vy[k][j][i]*damping;
 
 
 		if (jr->SeismicStation == PETSC_TRUE) { // To save velocity in a given point
@@ -157,8 +196,24 @@ PetscErrorCode GetVelocities(JacRes *jr, UserCtx *user)
 		if (k==0) rho_side=rho[k][j][i];
 		else rho_side=(rho[k][j][i]+rho[k-1][j][i])/2.0;
 
+		// For damping forces
+		if (force_damping != 0.0) {
+			if (vz[k][j][i] < 0.0 ) {
+				signV = -1.0;
+			}else {
+				signV = 1.0;
+			}
+			dampingTerm = force_damping*fabs(fz[k][j][i])*signV;
+		}else{
+			dampingTerm = 0.0;
+		}
+		////////////////////////
+
+		// We damp forces in the same way that "Poliakov et al. , 1993. An Explicit Inertial Method for the Simulation of Viscoelastic Flow: ..."
+		vz[k][j][i] = vz[k][j][i]+ (-fz[k][j][i]-dampingTerm)*dt/rho_side;
+
 		damping = GetBoundaryDamping(user,i,j,k); // To damp velocity if we are in an absorbing boundary
-		vz[k][j][i] = (vz[k][j][i]-fz[k][j][i]*dt/rho_side)*damping;
+		vz[k][j][i] = vz[k][j][i]*damping;
 
 
 		if (jr->SeismicStation == PETSC_TRUE) { // To save velocity in a given point

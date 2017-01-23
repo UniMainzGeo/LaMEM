@@ -2796,7 +2796,7 @@ PetscErrorCode JacResGetLithoStaticPressure(JacRes *jr)
 	fs  =  jr->fs;
 	dsz = &fs->dsz;
 	L   =  (PetscInt)dsz->rank;
-	g   =   PetscAbsScalar(jr->grav[2]);
+	g   =  PetscAbsScalar(jr->grav[2]);
 
 	// get local grid sizes
 	ierr = DMDAGetCorners(fs->DA_CEN, &sx, &sy, &sz, &nx, &ny, &nz); CHKERRQ(ierr);
@@ -2826,7 +2826,7 @@ PetscErrorCode JacResGetLithoStaticPressure(JacRes *jr)
 
 	START_STD_LOOP
 	{
-		lp[k][j][i] = jr->svCell[iter++].svBulk.rho;
+		lp[k][j][i] = 2800.0;//jr->svCell[iter++].svBulk.rho;
 	}
 	END_STD_LOOP
 
@@ -2920,6 +2920,9 @@ PetscErrorCode JacResGetMomentumResidualAndPressure(JacRes *jr, UserCtx *user)
 	//PetscScalar dx, dy, dz, h, Ih4, I4h4;
 	PetscScalar hx, hy, hz, V, source_time, M0, Mxx, Myy, Mzz, Mxy, Mxz, Myz;
 
+	PetscBool damping;
+	damping=PETSC_TRUE;
+
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
 
@@ -2963,8 +2966,16 @@ PetscErrorCode JacResGetMomentumResidualAndPressure(JacRes *jr, UserCtx *user)
 	ierr = DMDAVecGetArray(fs->DA_CEN, jr->lp_lithos,&p_lithos); CHKERRQ(ierr);
 	ierr = DMDAVecGetArray(fs->DA_CEN, jr->lp_pore,  &p_pore); CHKERRQ(ierr);
 
+
+
+	// !! At this point is still not calcutated jr->svCell[iter++].svBulk.rho (which is used in JacResGetLithoStaticPressure(jr);
+
 	// compute lithostatic pressure
-	ierr = JacResGetLithoStaticPressure(jr); CHKERRQ(ierr);
+	//ierr = JacResGetLithoStaticPressure(jr); CHKERRQ(ierr);
+	ierr = JacResGetLithoStaticPressureAndDensity(jr); CHKERRQ(ierr);
+
+
+
 
 //	FILE *fseism; //used now to save traces
 //	fseism = user->Station.output_file;
@@ -3027,6 +3038,7 @@ PetscErrorCode JacResGetMomentumResidualAndPressure(JacRes *jr, UserCtx *user)
 		// CONSTITUTIVE EQUATIONS
 		//=======================
 
+
 		// access current pressure
 		pc = lp[k][j][i];
 
@@ -3036,10 +3048,8 @@ PetscErrorCode JacResGetMomentumResidualAndPressure(JacRes *jr, UserCtx *user)
 		// access current lithostatic pressure
 		pc_lithos = p_lithos[k][j][i];
 
-		//new
 		// access current pore pressure
 		pc_pore = p_pore[k][j][i];
-		//
 
 		//-----------
 		// VOLUMETRIC
@@ -3056,6 +3066,7 @@ PetscErrorCode JacResGetMomentumResidualAndPressure(JacRes *jr, UserCtx *user)
 		// update pressure
 		gp[k][j][i]  = lp[k][j][i] - svBulk->theta/svBulk->IKdt;
 		pc           = gp[k][j][i];
+
 		//-----------
 		// DEVIATORIC
 		//-----------
@@ -3075,10 +3086,24 @@ PetscErrorCode JacResGetMomentumResidualAndPressure(JacRes *jr, UserCtx *user)
 		// compute stress, plastic strain rate and shear heating term on cell
 		ierr = GetStressCellForExplicit(svCell, matLim, XX, YY, ZZ); CHKERRQ(ierr);
 
+		////////////////////////////////////////
+		////////////////////////////////////////!!!!!!!!!
+		//if (jr->ts.istep == 0) { // in case we initialized pressure with lithostatic pressure
+
+		//	sxx = pc_lithos;
+		//	syy = pc_lithos;
+		//	szz = pc_lithos;
+		//}
+		//else{
+		////////////////////////////////////////
+		////////////////////////////////////////
+
 		// compute total Cauchy stresses
 		sxx = svCell->sxx - pc;
 		syy = svCell->syy - pc;
 		szz = svCell->szz - pc;
+		//}
+
 
 		// Add seismic source in the stress field /////////////////////////
 		if (jr->SeismicSource == PETSC_TRUE && jr->SourceParams.source_type!=MOMENT )
@@ -3087,7 +3112,7 @@ PetscErrorCode JacResGetMomentumResidualAndPressure(JacRes *jr, UserCtx *user)
 			ierr = GetStressFromSource(jr,user, i, j, k, &sxx, &syy, &szz);
 		}
 
-		// USE REAL DENSITY HERE !!!
+		// USE REAL DENSITY HERE !!! ?????
 
 
 		// access
@@ -3125,43 +3150,6 @@ PetscErrorCode JacResGetMomentumResidualAndPressure(JacRes *jr, UserCtx *user)
 		// Add seismic moment source term in the residual ////////////////////////////////////////////////////////////////////////
 
 		if ( jr->SeismicSource == PETSC_TRUE && jr->SourceParams.source_type==MOMENT && jr->SourceParams.i == i && jr->SourceParams.j == j && jr->SourceParams.k == k) {
-			// size of cell
-			/*dx = SIZE_CELL(i, sx, fs->dsx);
-			dy = SIZE_CELL(j, sy, fs->dsy);
-			dz = SIZE_CELL(k, sz, fs->dsz);
-			h=1.0; //dx*dy*dz; // Volume of the grid cell
-			Ih4	=1.0/(h*h*h*h);
-			I4h4=Ih4/4.0;
-
-			time =  JacResGetTime(jr);
-			source_time = jr->SourceParams.amplitude*exp(-jr->SourceParams.alfa*((time-jr->SourceParams.t0)*(time-jr->SourceParams.t0)));
-
-			M0=jr->SourceParams.moment_tensor.M0;
-			Mxx=M0*jr->SourceParams.moment_tensor.Mxx*source_time;
-			Myy=M0*jr->SourceParams.moment_tensor.Myy*source_time;
-			Mzz=M0*jr->SourceParams.moment_tensor.Mzz*source_time;
-			Mxy=M0*jr->SourceParams.moment_tensor.Mxy*source_time;
-			Mxz=M0*jr->SourceParams.moment_tensor.Mxz*source_time;
-			Myz=M0*jr->SourceParams.moment_tensor.Myz*source_time;
-
-			fx[k][j][i+1] 	+= Ih4  * Mxx;		fx[k][j][i] 	-= Ih4  * Mxx;
-			fx[k][j+1][i+1] += I4h4 * Mxy;		fx[k][j-1][i+1] -= I4h4 * Mxy;
-			fx[k][j+1][i] 	+= I4h4 * Mxy;		fx[k][j-1][i] 	-= I4h4 * Mxy;
-			fx[k+1][j][i+1] += I4h4 * Mxz;		fx[k-1][j][i+1] -= I4h4 * Mxz;
-			fx[k+1][j][i] 	+= I4h4 * Mxz;		fx[k-1][j][i] 	-= I4h4 * Mxz;
-
-			fy[k][j+1][i] 	+= Ih4  * Myy;		fy[k][j][i] 	-= Ih4  * Myy;
-			fy[k][j+1][i+1] += I4h4 * Mxy;		fy[k][j+1][i-1] -= I4h4 * Mxy;
-			fy[k][j][i+1] 	+= I4h4 * Mxy;		fy[k][j][i-1] 	-= I4h4 * Mxy;
-			fy[k+1][j+1][i] += I4h4 * Myz;		fy[k-1][j+1][i] -= I4h4 * Myz;
-			fy[k+1][j][i] 	+= I4h4 * Myz;		fy[k-1][j][i] 	-= I4h4 * Myz;
-
-			fz[k+1][j][i] 	+= Ih4  * Mzz;		fz[k][j][i] 	-= Ih4  * Mzz;
-			fz[k+1][j][i+1] += I4h4 * Mxz;		fz[k+1][j][i-1] -= I4h4 * Mxz;
-			fz[k][j][i+1] 	+= I4h4 * Mxz;		fz[k][j][i-1] 	-= I4h4 * Mxz;
-			fz[k+1][j+1][i] += I4h4 * Myz;		fz[k+1][j-1][i] -= I4h4 * Myz;
-			fz[k][j+1][i] 	+= I4h4 * Myz;		fz[k][j-1][i] 	-= I4h4 * Myz;*/
-
 
 			// From Graves 1996, trying to generalize for non cubic cells
 			// sizes of cell:
@@ -3199,7 +3187,6 @@ PetscErrorCode JacResGetMomentumResidualAndPressure(JacRes *jr, UserCtx *user)
 			fz[k][j+1][i] 	+= Myz/4.0/hy/V;	fz[k][j-1][i] 	-= Myz/4.0/hy/V;
 		}
 		///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
 
 	}
 	END_STD_LOOP
@@ -3677,3 +3664,253 @@ PetscErrorCode JacResGetPorePressure(JacRes *jr)
 
 	PetscFunctionReturn(0);
 }
+
+//---------------------------------------------------------------------------
+#undef __FUNCT__
+#define __FUNCT__ "JacResGetLithoStaticPressureAndDensity"
+PetscErrorCode JacResGetLithoStaticPressureAndDensity(JacRes *jr)
+{
+	// compute lithostatic pressure
+
+	Vec         vbuff;
+	FDSTAG      *fs;
+	Discret1D   *dsz;
+	MPI_Request srequest, rrequest;
+	PetscScalar ***lp, ***ibuff, *lbuff, dz, dp, g, rho;
+	PetscInt    i, j, k, sx, sy, sz, nx, ny, nz, iter, L, numPhases, l;
+	Material_t *phases;
+
+	SolVarCell *svCell;
+	numPhases =  jr->numPhases;
+	phases    =  jr->phases;    // phase parameters
+
+	PetscErrorCode ierr;
+	PetscFunctionBegin;
+
+	// access context
+	fs  =  jr->fs;
+	dsz = &fs->dsz;
+	L   =  (PetscInt)dsz->rank;
+	g   =  PetscAbsScalar(jr->grav[2]);
+
+	// get local grid sizes
+	ierr = DMDAGetCorners(fs->DA_CEN, &sx, &sy, &sz, &nx, &ny, &nz); CHKERRQ(ierr);
+
+	// get integration/communication buffer
+	ierr = DMGetGlobalVector(jr->DA_CELL_2D, &vbuff); CHKERRQ(ierr);
+
+	ierr = VecZeroEntries(vbuff); CHKERRQ(ierr);
+
+	// open index buffer for computation
+	ierr = DMDAVecGetArray(jr->DA_CELL_2D, vbuff, &ibuff); CHKERRQ(ierr);
+
+	// open linear buffer for send/receive
+	ierr = VecGetArray(vbuff, &lbuff); CHKERRQ(ierr);
+
+	// access lithostatic pressure
+	ierr = DMDAVecGetArray(fs->DA_CEN, jr->lp_lithos, &lp); CHKERRQ(ierr);
+
+	// start receiving integral from top domain (next)
+	if(dsz->nproc != 1 && dsz->grnext != -1)
+	{
+		ierr = MPI_Irecv(lbuff, (PetscMPIInt)(nx*ny), MPIU_SCALAR, dsz->grnext, 0, PETSC_COMM_WORLD, &rrequest); CHKERRQ(ierr);
+	}
+
+	// copy density
+	iter = 0;
+
+	START_STD_LOOP
+	{
+		// access solution variables
+		svCell = &jr->svCell[iter++];
+		// scan all phases
+		rho   = 0.0;
+		for(l = 0; l < numPhases; l++)
+		{
+			// update present phases only
+			if(svCell->phRat[l])
+			{
+				// update density, thermal expansion & inverse bulk elastic viscosity
+				rho   += svCell->phRat[l]*phases[l].rho;
+			}
+		}
+
+		lp[k][j][i] = rho;//jr->svCell[iter++].svBulk.rho;
+		//PetscPrintf(PETSC_COMM_WORLD, "    rho[%i,%i,%i]  = %12.12e \n", i,j,k, rho);
+	}
+	END_STD_LOOP
+
+	// finish receiving
+	if(dsz->nproc != 1 && dsz->grnext != -1)
+	{
+		ierr = MPI_Wait(&rrequest, MPI_STATUSES_IGNORE);  CHKERRQ(ierr);
+	}
+
+	// compute local integral from top to bottom
+	for(k = sz + nz - 1; k >= sz; k--)
+	{
+		START_PLANE_LOOP
+		{
+			// get density, cell size, pressure increment
+			rho = lp[k][j][i];
+			dz  = SIZE_CELL(k, sz, (*dsz));
+			dp  = rho*g*dz;
+
+			// store  lithostatic pressure
+			lp[k][j][i] = ibuff[L][j][i] + dp/2.0;
+
+			// update lithostatic pressure integral
+			ibuff[L][j][i] += dp;
+		}
+		END_PLANE_LOOP
+	}
+
+	// send integral to bottom domain (previous)
+	if(dsz->nproc != 1 && dsz->grprev != -1)
+	{
+		ierr = MPI_Isend(lbuff, (PetscMPIInt)(nx*ny), MPIU_SCALAR, dsz->grprev, 0, PETSC_COMM_WORLD, &srequest); CHKERRQ(ierr);
+
+		ierr = MPI_Wait(&srequest, MPI_STATUSES_IGNORE);  CHKERRQ(ierr);
+	}
+
+	// restore buffer and pressure vectors
+	ierr = DMDAVecRestoreArray(fs->DA_CEN, jr->lp_lithos, &lp); CHKERRQ(ierr);
+
+	ierr = DMDAVecRestoreArray(jr->DA_CELL_2D, vbuff, &ibuff); CHKERRQ(ierr);
+
+	ierr = VecRestoreArray(vbuff, &lbuff); CHKERRQ(ierr);
+
+	ierr = DMRestoreGlobalVector(jr->DA_CELL_2D, &vbuff); CHKERRQ(ierr);
+
+	// fill ghost points
+	LOCAL_TO_LOCAL(fs->DA_CEN, jr->lp_lithos)
+
+	PetscFunctionReturn(0);
+}
+
+//-----------------------------------------------------------------------------
+
+//---------------------------------------------------------------------------
+#undef __FUNCT__
+#define __FUNCT__ "JacResGetLithoStaticPressureAndDensityII"
+PetscErrorCode JacResGetLithoStaticPressureAndDensityII(JacRes *jr)
+{
+	// compute lithostatic pressure
+
+	Vec         vbuff;
+	FDSTAG      *fs;
+	Discret1D   *dsz;
+	MPI_Request srequest, rrequest;
+	PetscScalar ***gp, ***ibuff, *lbuff, dz, dp, g, rho;
+	PetscInt    i, j, k, sx, sy, sz, nx, ny, nz, iter, L, numPhases, l;
+	Material_t *phases;
+
+	SolVarCell *svCell;
+	numPhases =  jr->numPhases;
+	phases    =  jr->phases;    // phase parameters
+
+	PetscErrorCode ierr;
+	PetscFunctionBegin;
+
+	// access context
+	fs  =  jr->fs;
+	dsz = &fs->dsz;
+	L   =  (PetscInt)dsz->rank;
+	g   =  PetscAbsScalar(jr->grav[2]);
+
+	// get local grid sizes
+	ierr = DMDAGetCorners(fs->DA_CEN, &sx, &sy, &sz, &nx, &ny, &nz); CHKERRQ(ierr);
+
+	// get integration/communication buffer
+	ierr = DMGetGlobalVector(jr->DA_CELL_2D, &vbuff); CHKERRQ(ierr);
+
+	ierr = VecZeroEntries(vbuff); CHKERRQ(ierr);
+
+	// open index buffer for computation
+	ierr = DMDAVecGetArray(jr->DA_CELL_2D, vbuff, &ibuff); CHKERRQ(ierr);
+
+	// open linear buffer for send/receive
+	ierr = VecGetArray(vbuff, &lbuff); CHKERRQ(ierr);
+
+	// access lithostatic pressure
+	ierr = DMDAVecGetArray(fs->DA_CEN, jr->gp, &gp); CHKERRQ(ierr);
+
+	// start receiving integral from top domain (next)
+	if(dsz->nproc != 1 && dsz->grnext != -1)
+	{
+		ierr = MPI_Irecv(lbuff, (PetscMPIInt)(nx*ny), MPIU_SCALAR, dsz->grnext, 0, PETSC_COMM_WORLD, &rrequest); CHKERRQ(ierr);
+	}
+
+	// copy density
+	iter = 0;
+
+	START_STD_LOOP
+	{
+		// access solution variables
+		svCell = &jr->svCell[iter++];
+		// scan all phases
+		rho   = 0.0;
+		for(l = 0; l < numPhases; l++)
+		{
+			// update present phases only
+			if(svCell->phRat[l])
+			{
+				// update density, thermal expansion & inverse bulk elastic viscosity
+				rho   += svCell->phRat[l]*phases[l].rho;
+			}
+		}
+
+		gp[k][j][i] = rho;//jr->svCell[iter++].svBulk.rho;
+		//PetscPrintf(PETSC_COMM_WORLD, "    rho[%i,%i,%i]  = %12.12e \n", i,j,k, rho);
+	}
+	END_STD_LOOP
+
+	// finish receiving
+	if(dsz->nproc != 1 && dsz->grnext != -1)
+	{
+		ierr = MPI_Wait(&rrequest, MPI_STATUSES_IGNORE);  CHKERRQ(ierr);
+	}
+
+	// compute local integral from top to bottom
+	for(k = sz + nz - 1; k >= sz; k--)
+	{
+		START_PLANE_LOOP
+		{
+			// get density, cell size, pressure increment
+			rho = gp[k][j][i];
+			dz  = SIZE_CELL(k, sz, (*dsz));
+			dp  = rho*g*dz;
+
+			// store  lithostatic pressure
+			gp[k][j][i] = ibuff[L][j][i] + dp/2.0;
+
+			// update lithostatic pressure integral
+			ibuff[L][j][i] += dp;
+		}
+		END_PLANE_LOOP
+	}
+
+	// send integral to bottom domain (previous)
+	if(dsz->nproc != 1 && dsz->grprev != -1)
+	{
+		ierr = MPI_Isend(lbuff, (PetscMPIInt)(nx*ny), MPIU_SCALAR, dsz->grprev, 0, PETSC_COMM_WORLD, &srequest); CHKERRQ(ierr);
+
+		ierr = MPI_Wait(&srequest, MPI_STATUSES_IGNORE);  CHKERRQ(ierr);
+	}
+
+	// restore buffer and pressure vectors
+	ierr = DMDAVecRestoreArray(fs->DA_CEN, jr->gp, &gp); CHKERRQ(ierr);
+
+	ierr = DMDAVecRestoreArray(jr->DA_CELL_2D, vbuff, &ibuff); CHKERRQ(ierr);
+
+	ierr = VecRestoreArray(vbuff, &lbuff); CHKERRQ(ierr);
+
+	ierr = DMRestoreGlobalVector(jr->DA_CELL_2D, &vbuff); CHKERRQ(ierr);
+
+	// fill ghost points
+	//LOCAL_TO_LOCAL(fs->DA_CEN, jr->lp_lithos)
+
+	PetscFunctionReturn(0);
+}
+
+//-----------------------------------------------------------------------------

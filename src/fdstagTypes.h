@@ -357,6 +357,9 @@ typedef struct
 	// Explicit solver
 	PetscBool		 ExplicitSolver; //  True => for the moment, wave propagation
 
+	// Force damping factor used to absorb oscillation energy
+	PetscScalar      ForceDampingFactor;
+
 	// Scaling density factor
 	PetscScalar      DensityFactor; //Computational density will be material density*density_factor
 	char     		 OutputStressFile[MAX_PATH_LEN];	// File to store stress/strain

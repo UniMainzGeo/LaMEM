@@ -365,6 +365,9 @@ PetscErrorCode FDSTAGInitCode(JacRes *jr, UserCtx *user, ModParam *iop)
 	// Explicit solver (wave propagation)
 	jr->ExplicitSolver = user->ExplicitSolver;
 
+	// Force damping factor used to absorb oscillation energy
+	jr->ForceDampingFactor  = user->ForceDampingFactor;
+
 	jr->DensityFactor  = user->DensityFactor;
 	//jr->OutputStressFile  = user->OutputStressFile;
 
@@ -658,9 +661,13 @@ PetscErrorCode InputReadFile(JacRes *jr, UserCtx *user, FILE *fp)
 	// bezier flag
 	parse_GetInt( fp,    "AddBezier",  &user->AddBezier,  &found );
 
+	// Force damping factor used to absorb oscillation energy
+	parse_GetDouble(fp, "ForceDampingFactor",&user->ForceDampingFactor, &found);
+	if (found!=PETSC_TRUE ) user->ForceDampingFactor=0.8;
+
 	// Scaling density factor
 	parse_GetDouble(fp, "density_factor",&user->DensityFactor, &found);
-	if (found!=PETSC_TRUE ) user->DensityFactor=1;
+	if (found!=PETSC_TRUE ) user->DensityFactor=1.0;
 	parse_GetString(fp,"OutputStressFile", &user->OutputStressFile, MAX_PATH_LEN, &found);
 	if (found !=PETSC_TRUE) sprintf(&user->OutputStressFile, "stress_file");
 

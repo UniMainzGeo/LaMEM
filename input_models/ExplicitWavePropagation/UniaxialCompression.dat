@@ -6,9 +6,9 @@
 #    * number of cells                                    (n points)
 #    * bias coefficients                                  (n points) 
 
-nel_x						=  	10
+nel_x						=  	5
 nel_y						= 	5
-nel_z						= 	10
+nel_z						= 	5
 
 # Scaling
 units 						= si
@@ -23,21 +23,21 @@ Characteristic.Stress      	= 1 #1e8
 
 # Geometry
 DimensionalUnits		=	si			# Dimensionless (=0) or SI-dimensional units (=1)?
-L						=	5		# Length (y-direction)
-W						=	10		# Width  (x-direction)
-H						=	10		# Height (z-direction)
-x_left					=	-5			# Left side of domain
+L						=	0.050		# Length (y-direction)
+W						=	0.050		# Width  (x-direction)
+H						=	0.100		# Height (z-direction)
+x_left					=	0			# Left side of domain
 y_front					=	0			# Front side of domain
 z_bot					=	0			# Bottom of box
 
 # --- Model setup and noise ---
-msetup 					= bands 			#heterogeneous, layer, homo, bands
+msetup 					= homo 			#heterogeneous, layer, homo, bands
 
 
 # Define input/output and numerics-related stuff
-OutputFile					=	UniaxialCompression_1e25_bands
-save_timesteps				=	1000			# save every ? timesteps
-time_end					=	200000		# last timestep
+OutputFile					=	UniaxialCompression_1e25_5x5x5_G2.4e9_Co20e6_grav_damping
+save_timesteps				=	1000000		# save every ? timesteps
+time_end					=	700000000		# last timestep
 CFL							=	0.5				# CFL, dt-based criterium
 dt_max						=	1e-1	  	   	# Maximum timestep [years if dimensional]
 save_breakpoints			= 	-1 				#  -1: don't save breakpoints + initial particles
@@ -57,15 +57,20 @@ Temp_bottom					=   0 #1 				# Temperature @ bottom; side BC's are flux-free
 
 <PetscOptionsStart>
 
+	-skip_press_shift
+	-open_top_bound
+	-no_init_guess
+
 	-ExxNumPeriods 1
-	
 	-ExxStrainRates -1e-15
 
 	-ExplicitSolver 1
 	
-	-ViscoPLithosOff 
-	-NoPressureLimit
+	#-ViscoPLithosOff 
+	#-NoPressureLimit
 	#-DeactivateFreeSurfaceCorrection
+	
+
 
 	# Initial timestep
 	-dt 0.0005 #0.5e-2	#1.5e-10		#1e-2
@@ -109,6 +114,13 @@ Temp_bottom					=   0 #1 				# Temperature @ bottom; side BC's are flux-free
 	-out_moment_res 1
 	-out_cont_res 1
 	-out_plast_strain 1
+	-out_viscosity 1
+	-out_lithospressure 1
+	-out_porepressure 1
+	-out_shmax 1
+	-out_ehmax 1  
+	
+	-AVDPhaseViewer 0
 	
 
 	
@@ -146,7 +158,7 @@ DII_ref 						=	1
 		bulk		=	4e9	#3.38e10 	#208e+7		# K
 		shear		=   2.4e9	#2.34e10		#144e+7		# shear modulus (mu, G)
 		friction	=	0
-		cohesion	=	200e6		
+		cohesion	=	20e6		
 		#eta		= 	1e30		# viscosity - if dimensional [Pa.s]
 	<MaterialEnd>
 	<MaterialStart>
@@ -180,9 +192,12 @@ DII_ref 						=	1
 # ---------------------------------------------------------------------------------------------------
 # ---------------------------------------------------------------------------------------------------
 
+# Force damping factor used to absorb oscillation energy
+ForceDampingFactor = 0.8
+
 # Scaling computational density (computational density will be material_density*density_factor) ---------------------------
 density_factor    = 1e25
-OutputStressFile  = stress_file_1e25_bands
+OutputStressFile  = stress_file_1e25_5x5x5_G2.4e9_Co20e6_grav_damping
 
 # Absorbing boundaries ------------------------------------------------------------------------------
 abs_boundaries	=	0 # Default value is 1
