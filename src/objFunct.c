@@ -84,7 +84,7 @@ PetscErrorCode ObjFunctDestroy(ObjFunct *objf)
 //---------------------------------------------------------------------------
 #undef __FUNCT__
 #define __FUNCT__ "ObjFunctCreate"
-PetscErrorCode ObjFunctCreate(ObjFunct *objf, ModParam *IOparam, FreeSurf *surf)
+PetscErrorCode ObjFunctCreate(ObjFunct *objf, ModParam *IOparam, FreeSurf *surf, FB *fb)
 {
 	FDSTAG        *fs;
 	PetscInt       sx, sy, nx, ny;
@@ -132,7 +132,7 @@ PetscErrorCode ObjFunctCreate(ObjFunct *objf, ModParam *IOparam, FreeSurf *surf)
 	on[_SHMAX_] = shmax_name;
 
 	// read options
-	ierr = ObjFunctReadFromOptions(objf, on); CHKERRQ(ierr);
+	ierr = ObjFunctReadFromOptions(objf, on, fb); CHKERRQ(ierr);
 	if(objf->otN != 0)
 	{
 
@@ -286,18 +286,22 @@ PetscErrorCode ObjFunctCreate(ObjFunct *objf, ModParam *IOparam, FreeSurf *surf)
 //---------------------------------------------------------------------------
 #undef __FUNCT__
 #define __FUNCT__ "ObjFunctReadFromOptions"
-PetscErrorCode ObjFunctReadFromOptions(ObjFunct *objf, const char *on[])
+PetscErrorCode ObjFunctReadFromOptions(ObjFunct *objf, const char *on[], FB *fb)
 {
 	PetscErrorCode ierr;
 	PetscBool      found, exists;
 	PetscInt       k;
-	char           otname [MAX_STR_LEN];
+	char           otname [MAX_PATH_LEN];
 	PetscFunctionBegin;
 
 	// read filename of observation file
+/*
 	asprintf(&objf->infile, "%s", "obs.bin");
 	ierr = PetscOptionsGetString(NULL, NULL,"-objf_obsfile", objf->infile, MAX_STR_LEN, &found); CHKERRQ(ierr);
 	if (!found){ PetscPrintf(PETSC_COMM_WORLD,"# WARNING: No filename given for observation file -> Use default: obs.bin \n"); }
+*/
+
+	ierr = getStringParam(fb, _OPTIONAL_, "objf_obsfile", otname, sizeof(otname), "obs.bin"); CHKERRQ(ierr);
 
 	// number of fields to be read into the buffer
 	objf->otN    = 0;

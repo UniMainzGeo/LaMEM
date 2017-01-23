@@ -62,12 +62,11 @@ PetscErrorCode MatParLimRead(
 {
 	PetscInt    UseFreeSurf;
 	PetscScalar input_eta_max;
-	char        gwtype [MAX_STR_LEN];
+	char        gwtype [MAX_NAME_LEN];
 
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
 
-	ierr = PetscMemzero(gwtype, sizeof(char)*MAX_STR_LEN); CHKERRQ(ierr);
 
 	// set defaults
 	lim->tauUlt       = DBL_MAX;
@@ -75,7 +74,6 @@ PetscErrorCode MatParLimRead(
 	lim->pLithoVisc   = 1;
 	lim->initGuess    = 1;
 	UseFreeSurf       = 0;
-	sprintf(gwtype, "top");
 
 	if(scal->utype == _NONE_)
 	{
@@ -109,9 +107,10 @@ PetscErrorCode MatParLimRead(
 	ierr = getIntParam   (fb, _OPTIONAL_, "jac_mat_free",   &lim->jac_mat_free, 1, 1);   CHKERRQ(ierr);
 	ierr = getIntParam   (fb, _OPTIONAL_, "init_guess",     &lim->initGuess,    1, 1);   CHKERRQ(ierr);
 	ierr = getIntParam   (fb, _OPTIONAL_, "act_pore_press", &lim->actPorePres,  1, 1);   CHKERRQ(ierr);
-	ierr = getStringParam(fb, _OPTIONAL_, "gw_level_type",   gwtype, MAX_STR_LEN);       CHKERRQ(ierr);
 
 	// set ground water level type
+	ierr = getStringParam(fb, _OPTIONAL_, "gw_level_type", gwtype, sizeof(gwtype), "top"); CHKERRQ(ierr);
+
 	if     (!strcmp(gwtype, "top"))   lim->gwType = _TOP_;
 	else if(!strcmp(gwtype, "surf"))  lim->gwType = _SURF_;
 	else if(!strcmp(gwtype, "level")) lim->gwType = _LEVEL_;
@@ -258,7 +257,7 @@ PetscErrorCode MatPhaseRead(
 	Material_t *m;
 	PetscInt    ID = -1, chSoftID, frSoftID, MSN;
 	PetscScalar eta, eta0, e0, K, G, E, nu, Vp, Vs;
-	char        ndiff[MAX_STR_LEN], ndisl[MAX_STR_LEN], npeir[MAX_STR_LEN];
+	char        ndiff[MAX_NAME_LEN], ndisl[MAX_NAME_LEN], npeir[MAX_NAME_LEN];
 
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
@@ -296,13 +295,13 @@ PetscErrorCode MatPhaseRead(
 	// creep profiles
 	//=================================================================================
 	// set predefined diffusion creep profile
-	ierr = GetProfileName(fb, scal, ndiff, "diff_prof");                  CHKERRQ(ierr);
+	ierr = GetProfileName(fb, scal, ndiff, sizeof(ndiff), "diff_prof");   CHKERRQ(ierr);
 	ierr = SetDiffProfile(m, ndiff);                                      CHKERRQ(ierr);
 	// set predefined dislocation creep profile
-	ierr = GetProfileName(fb, scal, ndisl, "disl_prof");                  CHKERRQ(ierr);
+	ierr = GetProfileName(fb, scal, ndisl, sizeof(ndisl), "disl_prof");   CHKERRQ(ierr);
 	ierr = SetDislProfile(m, ndisl);                                      CHKERRQ(ierr);
 	// set predefined Peierls creep profile
-	ierr = GetProfileName(fb, scal, npeir, "peir_prof");                  CHKERRQ(ierr);
+	ierr = GetProfileName(fb, scal, npeir, sizeof(npeir), "peir_prof");   CHKERRQ(ierr);
 	ierr = SetPeirProfile(m, npeir);                                      CHKERRQ(ierr);
 	//=================================================================================
 	// density
@@ -635,16 +634,14 @@ void MatPrintScalParam(PetscScalar par, const char key[], const char label[], Sc
 //---------------------------------------------------------------------------
 #undef __FUNCT__
 #define __FUNCT__ "GetProfileName"
-PetscErrorCode GetProfileName(FB *fb, Scaling *scal, char name[], const char key[])
+PetscErrorCode GetProfileName(FB *fb, Scaling *scal, char name[], size_t len, const char key[])
 {
 	// read profile name from file
 
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
 
-	ierr = PetscMemzero(name, sizeof(char)*MAX_STR_LEN); CHKERRQ(ierr);
-
-	ierr = getStringParam(fb, _OPTIONAL_, key, name, MAX_STR_LEN);  CHKERRQ(ierr);
+	ierr = getStringParam(fb, _OPTIONAL_, key, name, len, NULL);  CHKERRQ(ierr);
 
 	if(strlen(name) && scal->utype == _NONE_)
 	{

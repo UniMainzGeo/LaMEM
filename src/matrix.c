@@ -197,13 +197,13 @@ PetscErrorCode PMatSetFromOptions(PMat pm)
 {
 	PetscBool   flg;
 	PetscScalar pgamma;
-	char        pname[MAX_STR_LEN];
+	char        pname[MAX_NAME_LEN];
 
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
 
 	// set matrix type
-	ierr = PetscOptionsGetString(NULL, NULL,"-pcmat_type", pname, MAX_STR_LEN, &flg); CHKERRQ(ierr);
+	ierr = PetscOptionsGetString(NULL, NULL,"-pcmat_type", pname, sizeof(pname), &flg); CHKERRQ(ierr);
 
 	if(flg == PETSC_TRUE)
 	{

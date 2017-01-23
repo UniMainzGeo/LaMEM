@@ -80,19 +80,16 @@ PetscErrorCode ADVCreate(AdvCtx *actx, FB *fb)
 {
 	// create advection context
 
-	char str[MAX_STR_LEN], *msetup, *advect, *interp;
+	PetscInt maxPhaseID;
+	char     msetup[MAX_NAME_LEN], advect[MAX_NAME_LEN], interp[MAX_NAME_LEN];
 
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
 
-	ierr = PetscMemzero(str, sizeof(char)*MAX_STR_LEN); CHKERRQ(ierr);
+	maxPhaseID = actx->jr->numPhases - 1;
 
 	// read setup type
-	msetup = str;
-
-	sprintf(msetup, "geom");
-
-	ierr = getStringParam(fb, _OPTIONAL_, "msetup", msetup, MAX_STR_LEN); CHKERRQ(ierr);
+	ierr = getStringParam(fb, _OPTIONAL_, "msetup", msetup, sizeof(msetup), "geom"); CHKERRQ(ierr);
 
 	// set units type
 	if     (!strcmp(msetup, "geom"))     actx->msetup = _GEOM_;
@@ -100,28 +97,21 @@ PetscErrorCode ADVCreate(AdvCtx *actx, FB *fb)
 	else if(!strcmp(msetup, "polygons")) actx->msetup = _POLYGONS_;
 	else SETERRQ1(PETSC_COMM_WORLD, PETSC_ERR_USER, "Incorrect setup type: %s", msetup);
 
+	ierr = getIntParam   (fb, _OPTIONAL_, "nmark_x"   , &actx->NumPartX , 1,  _max_nmark_); CHKERRQ(ierr);
+	ierr = getIntParam   (fb, _OPTIONAL_, "nmark_y"   , &actx->NumPartY , 1,  _max_nmark_); CHKERRQ(ierr);
+	ierr = getIntParam   (fb, _OPTIONAL_, "nmark_z"   , &actx->NumPartZ , 1,  _max_nmark_); CHKERRQ(ierr);
+	ierr = getIntParam   (fb, _OPTIONAL_, "rand_noise", &actx->randNoise, 1,  1);           CHKERRQ(ierr);
+  	ierr = getIntParam   (fb, _OPTIONAL_, "bg_phase"  , &actx->bgPhase  , 1,  maxPhaseID);  CHKERRQ(ierr);
+
+
 /*
-	actx->NumPartX
-	actx->NumPartY
-	actx->NumPartZ
-	actx->randNoise
-	actx->bgPhase
-
-
-	"nmark_x"
-	"nmark_y"
-	"nmark_z"
-	"rand_noise"
-	"bg_phase"
+  	ierr = getScalarParam(fb, _REQUIRED_, "unit_stress",      &stress,      1, 1.0);  CHKERRQ(ierr);
 
 
 
 
 
-	ierr = getScalarParam(fb, _REQUIRED_, "unit_stress",      &stress,      1, 1.0);  CHKERRQ(ierr);
-	ierr = getScalarParam(fb, _OPTIONAL_, "unit_density",     &density,     1, 1.0);  CHKERRQ(ierr);
 
-	ierr = getIntParam   (fb, _OPTIONAL_, "act_temp_diff", &jr->pShiftAct, 1,  1  ); CHKERRQ(ierr);
 
 
 	// get file name & path
@@ -238,16 +228,6 @@ polygons
 	ierr = PetscOptionsGetInt(NULL, NULL, "-advection", &val0, NULL); CHKERRQ(ierr);
 	ierr = PetscOptionsGetInt(NULL, NULL, "-velinterp", &val1, NULL); CHKERRQ(ierr);
 
-	// advection scheme
-	if      (val0 == 0) { vi->advection = EULER;         PetscPrintf(PETSC_COMM_WORLD," Advection Scheme: %s\n","Euler 1st order"      ); }
-	else if (val0 == 1) { vi->advection = RUNGE_KUTTA_2; PetscPrintf(PETSC_COMM_WORLD," Advection Scheme: %s\n","Runge-Kutta 2nd order"); }
-	else SETERRQ(PETSC_COMM_SELF, PETSC_ERR_USER," *** Incorrect option for advection scheme ***");
-
-	// velocity interpolation
-	if      (val1 == 0) { vi->velinterp = STAG;   PetscPrintf(PETSC_COMM_WORLD," VelInterp Scheme: %s\n","STAG (Linear)"                    );}
-	else if (val1 == 2) { vi->velinterp = MINMOD; PetscPrintf(PETSC_COMM_WORLD," VelInterp Scheme: %s\n","MINMOD (Corr + Minmod)"           );}
-	else if (val1 == 7) { vi->velinterp = STAG_P; PetscPrintf(PETSC_COMM_WORLD," VelInterp Scheme: %s\n","Empirical (STAG + P points)"      );}
-	else SETERRQ(PETSC_COMM_SELF, PETSC_ERR_USER," *** Incorrect option for velocity interpolation scheme");
 
 
 	PetscScalar val=0.0;
@@ -262,6 +242,23 @@ polygons
 
 
 */
+
+
+	// advection scheme
+  	PetscPrintf(PETSC_COMM_WORLD," Advection scheme: ");
+	if      (actx->advection == EULER)         PetscPrintf(PETSC_COMM_WORLD, "Euler 1-st order\n");
+	else if (actx->advection == RUNGE_KUTTA_2) PetscPrintf(PETSC_COMM_WORLD, "Runge-Kutta 2-nd order\n");
+
+
+	// velocity interpolation
+  	PetscPrintf(PETSC_COMM_WORLD," Velocity interpolation scheme: ");
+	if      (actx->velinterp == STAG)   PetscPrintf(PETSC_COMM_WORLD, "STAG (Linear)");
+	else if (actx->velinterp == MINMOD) PetscPrintf(PETSC_COMM_WORLD, "MINMOD (Correction + Minmod)");
+	else if (actx->velinterp == STAG_P) PetscPrintf(PETSC_COMM_WORLD, "Empirical STAGP (STAG + pressure points)");
+
+
+
+
 	// compute host cells for all the markers
 	ierr = ADVMapMarkToCells(actx); CHKERRQ(ierr);
 

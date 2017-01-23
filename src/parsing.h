@@ -78,6 +78,8 @@ typedef struct
 	//    * flat  (parse entire file)
 	//    * block (parse current data block, defined by line ranges)
 	//
+	// All strings reserve two null characters in the end to detect overrun
+	//
 	//=====================================================================
 
 	PetscInt   nchar;   // number of characters
@@ -119,15 +121,11 @@ PetscErrorCode FBGetScalarArray(
 		PetscInt     num,
 		PetscBool   *found);
 
-// NOTE! * if parameter is not found, output string is NOT modified
-//       * if parameter is found, output string is padded with with zeros until full size
-//       * parameter is checked to be at least one character shorter than output string
-
 PetscErrorCode FBGetString(
 		FB         *fb,
 		const char *key,
 		char       *str,    // output string
-		size_t      fsz,    // full size of output string
+		size_t      len,    // full size of output string
 		PetscBool  *found);
 
 //-----------------------------------------------------------------------------
@@ -150,12 +148,14 @@ PetscErrorCode getScalarParam(
 		PetscInt     num,
 		PetscScalar  scal);
 
+// string is initialized with default value, if available, otherwise set to zero
 PetscErrorCode getStringParam(
 		FB          *fb,
 		ParamType    ptype,
 		const char  *key,
-		char        *str,  // output string
-		size_t       fsz); // full size of output string
+		char        *str,         // output string
+		size_t       len,         // full size of output string
+		const char  *_default_);  // default value (optional)
 
 //-----------------------------------------------------------------------------
 // PETSc options parsing functions
@@ -166,6 +166,12 @@ PetscErrorCode PetscOptionsReadFromFile(FB *fb);
 PetscErrorCode PetscOptionsReadRestart(FILE *fp);
 
 PetscErrorCode PetscOptionsWriteRestart(FILE *fp);
+
+PetscErrorCode  PetscOptionsGetCheckString(
+	const char   name[],
+	char         string[],
+	size_t       len,
+	PetscBool   *set);
 
 //-----------------------------------------------------------------------------
 #endif

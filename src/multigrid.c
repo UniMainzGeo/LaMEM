@@ -1747,14 +1747,14 @@ PetscErrorCode MGCreate(MG *mg, JacRes *jr)
 {
 	PetscInt  i, l;
 	MGLevel   *fine;
-	char      pc_type[MAX_STR_LEN];
+	char      pc_type[MAX_NAME_LEN];
 	PetscBool opt_set;
 
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
 
 	// get preconditioner type
-	ierr = PetscOptionsGetString(NULL, NULL, "-gmg_pc_type", pc_type, MAX_STR_LEN, &opt_set); CHKERRQ(ierr);
+	ierr = PetscOptionsGetString(NULL, NULL, "-gmg_pc_type", pc_type, sizeof(pc_type), &opt_set); CHKERRQ(ierr);
 
 	// check whether multigrid is requested
 	if(opt_set != PETSC_TRUE || strcmp(pc_type, "mg"))

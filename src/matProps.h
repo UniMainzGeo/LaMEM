@@ -92,7 +92,7 @@ typedef enum
 } TensorCorrection;
 
 // read profile name from file
-PetscErrorCode GetProfileName(FB *fb, Scaling *scal, char name[], const char key[]);
+PetscErrorCode GetProfileName(FB *fb, Scaling *scal, char name[], size_t len, const char key[]);
 
 // diffusion creep profiles
 PetscErrorCode SetDiffProfile(Material_t *m, char name[]);

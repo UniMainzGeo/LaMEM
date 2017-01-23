@@ -431,7 +431,7 @@ PetscErrorCode ADVMarkSetTempFromFile(AdvCtx *actx, FB *fb)
 	int           fd;
 	Marker       *P;
 	PetscViewer   view_in;
-	char          filename[MAX_STR_LEN];
+	char          filename[MAX_PATH_LEN];
 	PetscScalar   header[2], dim[3];
 	PetscInt      Fsize, imark, nummark, nmarkx, nmarky, nmarkz;
 	PetscScalar   DX, DY, DZ, bx, by, bz, ex, ey, ez;
@@ -443,10 +443,8 @@ PetscErrorCode ADVMarkSetTempFromFile(AdvCtx *actx, FB *fb)
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
 
-	ierr = PetscMemzero(filename, sizeof(char)*MAX_STR_LEN); CHKERRQ(ierr);
-
 	// get file name
-	ierr = getStringParam(fb, _OPTIONAL_, "temp_file", filename, MAX_STR_LEN); CHKERRQ(ierr);
+	ierr = getStringParam(fb, _OPTIONAL_, "temp_file", filename, sizeof(filename), NULL); CHKERRQ(ierr);
 
 	// check whether file is provided
 	if(!strlen(filename)) PetscFunctionReturn(0);
@@ -542,7 +540,7 @@ PetscErrorCode ADVMarkInitFiles(AdvCtx *actx, FB *fb)
 	int          fd;
 	Marker      *P;
 	PetscViewer  view_in;
-	char        *filename, name[MAX_STR_LEN], path[MAX_STR_LEN];
+	char        *filename, name[MAX_NAME_LEN], path[MAX_PATH_LEN];
 	PetscScalar *markbuf, *markptr, header, chTemp, chLen, Tshift, s_nummark;
 	PetscInt     imark, nummark;
 
@@ -550,11 +548,8 @@ PetscErrorCode ADVMarkInitFiles(AdvCtx *actx, FB *fb)
 	PetscFunctionBegin;
 
 	// get file name & path
-	ierr = PetscMemzero(name, sizeof(char)*MAX_STR_LEN); CHKERRQ(ierr);
-	ierr = PetscMemzero(path, sizeof(char)*MAX_STR_LEN); CHKERRQ(ierr);
-
-	ierr = getStringParam(fb, _REQUIRED_, "mark_load_name", name, MAX_STR_LEN); CHKERRQ(ierr);
-	ierr = getStringParam(fb, _REQUIRED_, "mark_load_path", path, MAX_STR_LEN); CHKERRQ(ierr);
+	ierr = getStringParam(fb, _REQUIRED_, "mark_load_name", name, sizeof(name), NULL); CHKERRQ(ierr);
+	ierr = getStringParam(fb, _REQUIRED_, "mark_load_path", path, sizeof(path), NULL); CHKERRQ(ierr);
 
 	PetscPrintf(PETSC_COMM_WORLD," Loading markers in parallel from files: ./%s/%s.xxx.dat \n", path, name);
 
@@ -748,7 +743,7 @@ PetscErrorCode ADVMarkInitPolygons(AdvCtx *actx, FB *fb)
 	FDSTAG        *fs;
 	int            fd;
 	PetscViewer    view_in;
-	char           filename[MAX_STR_LEN];
+	char           filename[MAX_PATH_LEN];
 	PetscScalar    header[2];
 	PetscInt       tstart[3], tend[3], nmark[3], nidx[3], nidxmax;
 	PetscInt       k, n, kvol, Fcount, Fsize, VolN, Nmax, Lmax, kpoly;
@@ -770,10 +765,8 @@ PetscErrorCode ADVMarkInitPolygons(AdvCtx *actx, FB *fb)
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
 
-	ierr = PetscMemzero(filename, sizeof(char)*MAX_STR_LEN); CHKERRQ(ierr);
-
 	// get file name
-	ierr = getStringParam(fb, _REQUIRED_, "poly_file", filename, MAX_STR_LEN); CHKERRQ(ierr);
+	ierr = getStringParam(fb, _REQUIRED_, "poly_file", filename, sizeof(filename), NULL); CHKERRQ(ierr);
 
 	// initialize
 	fs = actx->fs;

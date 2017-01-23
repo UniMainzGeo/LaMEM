@@ -48,6 +48,7 @@
 //---------------------------------------------------------------------------
 
 #define _cap_overhead_ 1.3
+#define _max_nmark_ 5
 
 //---------------------------------------------------------------------------
 
@@ -128,8 +129,8 @@ typedef struct
 	PetscInt      bgPhase;               // background phase ID
 
 	PetscInt      saveMark;              // flag for saving markers
-	char          saveName[MAX_STR_LEN]; // marker output file name
-	char          savePath[MAX_STR_LEN]; // marker output directory
+	char          saveName[MAX_NAME_LEN]; // marker output file name
+	char          savePath[MAX_PATH_LEN]; // marker output directory
 
 	AdvectionType advection;             // advection scheme
 	PetscInt      newAdv;                // new advection flag (temporary)

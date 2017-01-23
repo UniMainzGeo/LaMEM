@@ -56,7 +56,7 @@ PetscErrorCode FBLoad(FB **pfb)
 	size_t    sz, len;
 	PetscBool found;
 	char      *ptr, *comment;
-	char      filename[MAX_STR_LEN];
+	char      filename[MAX_PATH_LEN];
 
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
@@ -67,7 +67,7 @@ PetscErrorCode FBLoad(FB **pfb)
 	if(ISRankZero(PETSC_COMM_WORLD))
 	{
 		// check whether input file is specified
-		ierr = PetscOptionsGetString(NULL, NULL, "-ParamFile", filename, MAX_STR_LEN, &found); CHKERRQ(ierr);
+		ierr = PetscOptionsGetCheckString("-ParamFile", filename, sizeof(filename), &found); CHKERRQ(ierr);
 
 		// read additional PETSc options from input file
 		if(found != PETSC_TRUE)
@@ -409,7 +409,7 @@ PetscErrorCode FBGetString(
 		FB         *fb,
 		const char *key,
 		char       *str,    // output string
-		size_t      fsz,    // full size of output string
+		size_t      len,    // full size of output string
 		PetscBool  *found)
 {
 	PetscErrorCode ierr;
@@ -443,14 +443,14 @@ PetscErrorCode FBGetString(
 
 		if(!ptr) SETERRQ1(PETSC_COMM_WORLD, PETSC_ERR_USER, "No value specified for parameter \"%s\"\n", key);
 
-		// make sure string fits & is null terminated
-		if(strlen(ptr) + 1 > fsz)
+		// make sure string fits & is null terminated (two null characters are reserved in the end)
+		if(strlen(ptr) >= len-1)
 		{
-			SETERRQ1(PETSC_COMM_WORLD, PETSC_ERR_USER, "Input string is not large enough to hold result for parameter \"%s\" \n", key);
+			SETERRQ1(PETSC_COMM_WORLD, PETSC_ERR_USER, "String parameter %s is too long \"%s\" \n", key);
 		}
 
 		// copy & pad the rest of the string with zeros
-		strncpy(str, ptr, fsz);
+		strncpy(str, ptr, len);
 
 		free(tmp);
 
@@ -589,8 +589,9 @@ PetscErrorCode getStringParam(
 		FB          *fb,
 		ParamType    ptype,
 		const char  *key,
-		char        *str,  // output string
-		size_t       fsz)  // full size of output string
+		char        *str,        // output string
+		size_t       len,        // full size of output string
+		const char  *_default_)  // default value (optional)
 {
 	PetscBool found;
 	char     *dbkey;
@@ -600,22 +601,37 @@ PetscErrorCode getStringParam(
 
 	found = PETSC_FALSE;
 
+	// set defaults
+	if(_default_)
+	{
+		if(strlen(_default_) >= len-1)
+		{
+			SETERRQ1(PETSC_COMM_WORLD, PETSC_ERR_USER, "Default string parameter %s is too long \"%s\" \n", key);
+		}
+
+		ierr = PetscStrncpy(str, _default_, len); CHKERRQ(ierr);
+	}
+	else
+	{
+		ierr = PetscMemzero(str, len); CHKERRQ(ierr);
+	}
+
 	if(!fb->nblocks)
 	{
 		asprintf(&dbkey, "-%s", key);
 
-		ierr = PetscOptionsGetString(NULL, NULL, dbkey, str, fsz, &found); CHKERRQ(ierr);
+		ierr = PetscOptionsGetCheckString(dbkey, str, len, &found); CHKERRQ(ierr);
 
 		free(dbkey);
 	}
 
 	if(found != PETSC_TRUE && fb)
 	{
-		ierr = FBGetString(fb, key, str, fsz, &found);  CHKERRQ(ierr);
+		ierr = FBGetString(fb, key, str, len, &found);  CHKERRQ(ierr);
 	}
 
 	// check data item exists
-	if(found != PETSC_TRUE)
+	if(!strlen(str))
 	{
 		if     (ptype == _REQUIRED_) SETERRQ1(PETSC_COMM_SELF, PETSC_ERR_USER, "Define parameter \"[-]%s\"\n", key);
 		else if(ptype == _OPTIONAL_) PetscFunctionReturn(0);
@@ -746,6 +762,34 @@ PetscErrorCode PetscOptionsWriteRestart(FILE *fp)
 	fwrite(all_options, sizeof(char)*len, 1, fp);
 
 	ierr = PetscFree(all_options); CHKERRQ(ierr);
+
+	PetscFunctionReturn(0);
+}
+//-----------------------------------------------------------------------------
+#undef __FUNCT__
+#define __FUNCT__ "PetscOptionsGetCheckString"
+PetscErrorCode  PetscOptionsGetCheckString(
+	const char   name[],
+	char         string[],
+	size_t       len,
+	PetscBool   *set)
+{
+	// prohibit empty parameters & check for overruns (two null characters are reserved in the end)
+
+	PetscErrorCode ierr;
+	PetscFunctionBegin;
+
+	ierr = PetscOptionsGetString(NULL, NULL, name, string, len, set); CHKERRQ(ierr);
+
+	if((*set) == PETSC_TRUE && !strlen(string))
+	{
+		SETERRQ1(PETSC_COMM_WORLD, PETSC_ERR_USER, "No value specified for parameter \"%s\"\n", name);
+	}
+
+	if(strlen(string) == len-1)
+	{
+		SETERRQ1(PETSC_COMM_WORLD, PETSC_ERR_USER, "String parameter %s is too long \"%s\" \n", name);
+	}
 
 	PetscFunctionReturn(0);
 }

@@ -135,13 +135,13 @@ typedef struct
 //---------------------------------------------------------------------------
 
 // create objective function object
-PetscErrorCode ObjFunctCreate(ObjFunct *objf, ModParam *IOparam, FreeSurf *surf);
+PetscErrorCode ObjFunctCreate(ObjFunct *objf, ModParam *IOparam, FreeSurf *surf, FB *fb);
 
 // destroy object
 PetscErrorCode ObjFunctDestroy(ObjFunct *objf);
 
 // read command line options
-PetscErrorCode ObjFunctReadFromOptions(ObjFunct *objf, const char *on[]);
+PetscErrorCode ObjFunctReadFromOptions(ObjFunct *objf, const char *on[], FB *fb);
 
 // compute error
 PetscErrorCode ObjFunctCompErr(ObjFunct *objf);
