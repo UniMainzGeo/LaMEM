@@ -248,6 +248,7 @@ typedef struct
 	PetscBool   initGuessFlg; // initial guess computation flag
 	PetscBool   presLimFlg;   // pressure limit flag for plasticity
 	PetscBool   presLimAct;   // activate pressure limit flag
+	PetscInt	MaxSNESIterBeforeApplyPlimit;	// maximum # of SNES iterations before we start applying upper/lower P bounds i yield function
 	// fluid density for depth-dependent density model
 	PetscScalar  rho_fluid;
 	PetscBool    actPorePres;  // pore pressure activation flag

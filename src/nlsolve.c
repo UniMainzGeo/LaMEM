@@ -217,21 +217,31 @@ PetscErrorCode NLSolDestroy(NLSol *nl)
 #define __FUNCT__ "FormResidual"
 PetscErrorCode FormResidual(SNES snes, Vec x, Vec f, void *ctx)
 {
-	NLSol  *nl;
-	JacRes *jr;
+	NLSol  		*nl;
+	JacRes 		*jr;
+	PetscInt 	iter;
 
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
 
+	// get nonlinear iteration number
+	ierr = SNESGetIterationNumber(snes,&iter); CHKERRQ(ierr);
+	
 	// clear unused parameters
 	if(snes) snes = NULL;
 
 	// access context
 	nl = (NLSol*)ctx;
 	jr = nl->pc->pm->jr;
-
+	
 	// apply pressure limit at the first visco-plastic timestep and iteration
     if(jr->ts.istep == 1 && jr->matLim.presLimAct == PETSC_TRUE)
+    {
+    	jr->matLim.presLimFlg = PETSC_TRUE;
+	}
+
+	// also apply P limit it once we perform more than a certain number of iterations
+	if(iter>jr->matLim.MaxSNESIterBeforeApplyPlimit)
     {
     	jr->matLim.presLimFlg = PETSC_TRUE;
 	}
@@ -254,7 +264,9 @@ PetscErrorCode FormResidual(SNES snes, Vec x, Vec f, void *ctx)
 	ierr = JacResCopyRes(jr, f); CHKERRQ(ierr);
 
 	// deactivate pressure limit after it has been activated
-	jr->matLim.presLimFlg = PETSC_FALSE;
+	if(iter<jr->matLim.MaxSNESIterBeforeApplyPlimit){
+		jr->matLim.presLimFlg = PETSC_FALSE;
+	}
 
 	PetscFunctionReturn(0);
 }
