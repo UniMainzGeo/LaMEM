@@ -2826,7 +2826,7 @@ PetscErrorCode JacResGetLithoStaticPressure(JacRes *jr)
 
 	START_STD_LOOP
 	{
-		lp[k][j][i] = 2800.0;//jr->svCell[iter++].svBulk.rho;
+		lp[k][j][i] = jr->svCell[iter++].svBulk.rho;
 	}
 	END_STD_LOOP
 
@@ -2919,9 +2919,6 @@ PetscErrorCode JacResGetMomentumResidualAndPressure(JacRes *jr, UserCtx *user)
 
 	//PetscScalar dx, dy, dz, h, Ih4, I4h4;
 	PetscScalar hx, hy, hz, V, source_time, M0, Mxx, Myy, Mzz, Mxy, Mxz, Myz;
-
-	PetscBool damping;
-	damping=PETSC_TRUE;
 
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
@@ -3112,7 +3109,7 @@ PetscErrorCode JacResGetMomentumResidualAndPressure(JacRes *jr, UserCtx *user)
 			ierr = GetStressFromSource(jr,user, i, j, k, &sxx, &syy, &szz);
 		}
 
-		// USE REAL DENSITY HERE !!! ?????
+		// USE REAL DENSITY HERE !!!
 
 
 		// access
