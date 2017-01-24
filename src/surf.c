@@ -64,8 +64,8 @@
 PetscErrorCode FreeSurfCreate(FreeSurf *surf, FB *fb)
 {
 
-	JacRes  *jr;
-	Scaling *scal;
+	JacRes     *jr;
+	Scaling    *scal;
 
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
@@ -74,6 +74,7 @@ PetscErrorCode FreeSurfCreate(FreeSurf *surf, FB *fb)
 	surf->UseFreeSurf = 1;
 	surf->phaseCorr   = 1;
 
+	// check whether free surface is activated
 	ierr = getIntParam(fb, _OPTIONAL_, "surf_use", &surf->UseFreeSurf, 1,  1); CHKERRQ(ierr);
 
 	// free surface cases only
@@ -114,7 +115,7 @@ PetscErrorCode FreeSurfCreate(FreeSurf *surf, FB *fb)
 	ierr = FreeSurfGetAvgTopo(surf); CHKERRQ(ierr);
 
 	// store air phase number in residual context
-	jr->AirPhase = -1;
+	jr->AirPhase = surf->AirPhase;
 
 	PetscFunctionReturn(0);
 }
@@ -939,7 +940,7 @@ PetscErrorCode FreeSurfSetTopoFromFile(FreeSurf *surf, FB *fb)
 	FDSTAG       *fs;
 	int          fd;
 	PetscViewer  view_in;
-	char         filename[MAX_PATH_LEN];
+	char         filename[_STR_LEN_];
 	PetscInt 	 nxTopo, nyTopo, Ix, Iy, Fsize;
 	PetscInt     i, j, nx, ny, sx, sy, sz, level;
 	PetscScalar  ***topo, *Z, header[2], dim[2];
@@ -949,7 +950,7 @@ PetscErrorCode FreeSurfSetTopoFromFile(FreeSurf *surf, FB *fb)
 	PetscFunctionBegin;
 
 	// get file name
-	ierr = getStringParam(fb, _OPTIONAL_, "topo_file", filename, sizeof(filename), NULL); CHKERRQ(ierr);
+	ierr = getStringParam(fb, _OPTIONAL_, "topo_file", filename, NULL); CHKERRQ(ierr);
 
 	// check whether file is provided
 	if(!strlen(filename)) PetscFunctionReturn(0);

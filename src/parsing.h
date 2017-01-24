@@ -53,6 +53,10 @@
 #define __parsing_h__
 //-----------------------------------------------------------------------------
 
+#define _STR_LEN_ 130 // (two null characters are reserved in the end, i.e. 128)
+
+//-----------------------------------------------------------------------------
+
 typedef enum
 {
 	_REQUIRED_,
@@ -125,7 +129,6 @@ PetscErrorCode FBGetString(
 		FB         *fb,
 		const char *key,
 		char       *str,    // output string
-		size_t      len,    // full size of output string
 		PetscBool  *found);
 
 //-----------------------------------------------------------------------------
@@ -154,7 +157,6 @@ PetscErrorCode getStringParam(
 		ParamType    ptype,
 		const char  *key,
 		char        *str,         // output string
-		size_t       len,         // full size of output string
 		const char  *_default_);  // default value (optional)
 
 //-----------------------------------------------------------------------------
@@ -168,9 +170,8 @@ PetscErrorCode PetscOptionsReadRestart(FILE *fp);
 PetscErrorCode PetscOptionsWriteRestart(FILE *fp);
 
 PetscErrorCode  PetscOptionsGetCheckString(
-	const char   name[],
-	char         string[],
-	size_t       len,
+	const char   key[],
+	char         str[],
 	PetscBool   *set);
 
 //-----------------------------------------------------------------------------

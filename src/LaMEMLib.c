@@ -79,7 +79,7 @@ PetscErrorCode LaMEMLibMain(void *param)
 	struct stat    s;
 	PetscBool      found;
 	PetscLogDouble cputime_start, cputime_end;
-	char           str[MAX_NAME_LEN];
+	char           str[_STR_LEN_];
 
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
@@ -97,7 +97,7 @@ PetscErrorCode LaMEMLibMain(void *param)
 	// read run mode
 	mode = _NORMAL_;
 
-	ierr = PetscOptionsGetCheckString("-mode", str, sizeof(str), &found); CHKERRQ(ierr);
+	ierr = PetscOptionsGetCheckString("-mode", str, &found); CHKERRQ(ierr);
 
 	if(found)
 	{

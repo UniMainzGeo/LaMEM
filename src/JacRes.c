@@ -72,8 +72,8 @@ PetscErrorCode JacResCreate(JacRes *jr, FB *fb)
 
 	// initialize
 	jr->AirPhase  = -1;
-	jr->FSSA      = 1.0;
-	jr->pShiftAct = 1;
+	jr->FSSA      =  1.0;
+	jr->pShiftAct =  1;
 
 	// read from options
 	ierr = getScalarParam(fb, _OPTIONAL_, "gravity",       jr->grav,       3,  1.0); CHKERRQ(ierr);
@@ -117,7 +117,7 @@ PetscErrorCode JacResCreate(JacRes *jr, FB *fb)
 	}
 
 	// activate elasticity-compliant time-stepping
-	if(lim->elastic)
+	if(lim->isElastic)
 	{
 		ierr = TSSolSetupElasticity(jr->ts); CHKERRQ(ierr);
 	}
@@ -908,9 +908,9 @@ PetscErrorCode JacResGetResidual(JacRes *jr)
 		pc_pore = p_pore[k][j][i];
 
 		// compute depth below the free surface
-		depth = jr->avg_topo - COORD_CELL(k, sz, fs->dsz);
-
-		if(depth < 0.0) depth = 0.0;
+		if(jr->AirPhase != -1) depth = jr->avg_topo - COORD_CELL(k, sz, fs->dsz);
+		else                   depth = 0.0;
+		if(depth < 0.0)        depth = 0.0;
 
 		// evaluate deviatoric constitutive equations
 		ierr = DevConstEq(svDev, &eta_creep, &eta_viscoplastic, numPhases, phases, svCell->phRat, matLim, pc_lithos, pc_pore, dt, pc-pShift, Tc); CHKERRQ(ierr);
@@ -2687,7 +2687,7 @@ PetscErrorCode JacResGetPorePressure(JacRes *jr)
 	PetscFunctionBegin;
 
 	// return if not activated
-	if(!jr->matLim.actPorePres) PetscFunctionReturn(0);
+	if(jr->matLim.gwType == _GW_NONE_) PetscFunctionReturn(0);
 
 	// access context
 	fs        =  jr->fs;
@@ -2701,9 +2701,9 @@ PetscErrorCode JacResGetPorePressure(JacRes *jr)
 	ierr = FDSTAGGetGlobalBox(fs, NULL, NULL, NULL, NULL, NULL, &ztop); CHKERRQ(ierr);
 
 	// set ground water level
-	if     (lim->gwType == _TOP_)   gwLevel = ztop;
-	else if(lim->gwType == _SURF_)  gwLevel = jr->avg_topo;
-	else if(lim->gwType == _LEVEL_) gwLevel = lim->gwLevel;
+	if     (lim->gwType == _GW_TOP_)   gwLevel = ztop;
+	else if(lim->gwType == _GW_SURF_)  gwLevel = jr->avg_topo;
+	else if(lim->gwType == _GW_LEVEL_) gwLevel = lim->gwLevel;
 
 	// get local grid sizes
 	ierr = DMDAGetCorners(fs->DA_CEN, &sx, &sy, &sz, &nx, &ny, &nz); CHKERRQ(ierr);

@@ -61,7 +61,7 @@ PetscErrorCode ScalingCreate(Scaling *scal, FB *fb)
 {
 	// characteristic values must ALWAYS be given in SI units
 
-	char        utype [MAX_NAME_LEN];
+	char        utype [_STR_LEN_];
 	PetscScalar viscosity, stress, density;
 	PetscScalar mass, time, length, temperature, force;
 	PetscScalar angle, area, volume, energy, power;
@@ -74,7 +74,7 @@ PetscErrorCode ScalingCreate(Scaling *scal, FB *fb)
 	scal->unit = 1.0; sprintf(scal->lbl_unit, "[ ]");
 
 	// read units type
-	ierr = getStringParam(fb, _OPTIONAL_, "units", utype, sizeof(utype), "none"); CHKERRQ(ierr);
+	ierr = getStringParam(fb, _OPTIONAL_, "units", utype, "none"); CHKERRQ(ierr);
 
 	// set units type
 	if     (!strcmp(utype, "none")) scal->utype = _NONE_;

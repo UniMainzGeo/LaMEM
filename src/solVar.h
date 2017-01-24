@@ -217,9 +217,10 @@ typedef struct
 
 typedef enum
 {
-	_TOP_,    // top of the domain
-	_SURF_,   // free surface
-	_LEVEL_   // fixed level
+	_GW_NONE_,   // don't compute pore pressure
+	_GW_TOP_,    // top of the domain
+	_GW_SURF_,   // free surface
+	_GW_LEVEL_   // fixed level
 
 } GWLevelType;
 
@@ -245,7 +246,6 @@ typedef struct
 	PetscScalar tauUlt; // ultimate yield stress
 	// depth-dependent model parameters
 	PetscScalar rho_fluid;    // fluid density
-	PetscInt    actPorePres;  // pore pressure activation flag
 	GWLevelType gwType;       // type of ground water level
 	PetscScalar gwLevel;      // fixed ground water level
 	// thermo-mechanical coupling controls
@@ -261,14 +261,12 @@ typedef struct
 	// direction to the North for stress orientation
 	// counter-clockwise positive measured from x-axis
 	PetscScalar theta_north;
-	// print warning messages
-	PetscInt    warn;
-	// matrix-free closed-form jacobian
-	PetscInt    jac_mat_free;
-	// initial guess computation flag
-	PetscInt    initGuess;
-	// elastic rheology flag
-	PetscInt    elastic;
+	// various flags
+	PetscInt    warn;         // print warning messages
+	PetscInt    jac_mat_free; // use matrix-free closed-form Jacobian
+	PetscInt    initGuess;    // compute initial guess
+	PetscInt    isSurface;    // use free surface
+	PetscInt    isElastic;    // elastic rheology flag
 
 } MatParLim;
 //---------------------------------------------------------------------------

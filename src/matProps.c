@@ -60,20 +60,17 @@ PetscErrorCode MatParLimRead(
 		Scaling   *scal,
 		MatParLim *lim)
 {
-	PetscInt    UseFreeSurf;
 	PetscScalar input_eta_max;
-	char        gwtype [MAX_NAME_LEN];
+	char        gwtype [_STR_LEN_];
 
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
-
 
 	// set defaults
 	lim->tauUlt       = DBL_MAX;
 	lim->shearHeatEff = 1.0;
 	lim->pLithoVisc   = 1;
 	lim->initGuess    = 1;
-	UseFreeSurf       = 0;
 
 	if(scal->utype == _NONE_)
 	{
@@ -106,26 +103,26 @@ PetscErrorCode MatParLimRead(
 	ierr = getIntParam   (fb, _OPTIONAL_, "warn",           &lim->warn,         1, 1);   CHKERRQ(ierr);
 	ierr = getIntParam   (fb, _OPTIONAL_, "jac_mat_free",   &lim->jac_mat_free, 1, 1);   CHKERRQ(ierr);
 	ierr = getIntParam   (fb, _OPTIONAL_, "init_guess",     &lim->initGuess,    1, 1);   CHKERRQ(ierr);
-	ierr = getIntParam   (fb, _OPTIONAL_, "act_pore_press", &lim->actPorePres,  1, 1);   CHKERRQ(ierr);
+	ierr = getIntParam   (fb, _OPTIONAL_, "surf_use",       &lim->isSurface,    1, 1);   CHKERRQ(ierr);
 
 	// set ground water level type
-	ierr = getStringParam(fb, _OPTIONAL_, "gw_level_type", gwtype, sizeof(gwtype), "top"); CHKERRQ(ierr);
+	ierr = getStringParam(fb, _OPTIONAL_, "gw_level_type", gwtype, "none"); CHKERRQ(ierr);
 
-	if     (!strcmp(gwtype, "top"))   lim->gwType = _TOP_;
-	else if(!strcmp(gwtype, "surf"))  lim->gwType = _SURF_;
-	else if(!strcmp(gwtype, "level")) lim->gwType = _LEVEL_;
+	if     (!strcmp(gwtype, "none"))  lim->gwType = _GW_NONE_;
+	else if(!strcmp(gwtype, "top"))   lim->gwType = _GW_TOP_;
+	else if(!strcmp(gwtype, "surf"))  lim->gwType = _GW_SURF_;
+	else if(!strcmp(gwtype, "level")) lim->gwType = _GW_LEVEL_;
 	else SETERRQ1(PETSC_COMM_WORLD, PETSC_ERR_USER, "Incorrect ground water level type: %s", gwtype);
 
-	if(lim->gwType == _SURF_)
-	{
-		// check whether free surface is activated
-		ierr = getIntParam(fb, _REQUIRED_, "surf_use", &UseFreeSurf, 1,  1); CHKERRQ(ierr);
-	}
-
-	if(lim->gwType == _LEVEL_)
+	if(lim->gwType == _GW_LEVEL_)
 	{
 		// get fixed ground water level
 		ierr = getScalarParam(fb, _REQUIRED_, "gw_level", &lim->gwLevel, 1, 1.0); CHKERRQ(ierr);
+	}
+
+	if(lim->gwType == _GW_SURF_ && !lim->isSurface)
+	{
+		SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "Ground water level requires activating free surface (gw_level_type, surf_use)");
 	}
 
 	// scale parameters
@@ -257,7 +254,7 @@ PetscErrorCode MatPhaseRead(
 	Material_t *m;
 	PetscInt    ID = -1, chSoftID, frSoftID, MSN;
 	PetscScalar eta, eta0, e0, K, G, E, nu, Vp, Vs;
-	char        ndiff[MAX_NAME_LEN], ndisl[MAX_NAME_LEN], npeir[MAX_NAME_LEN];
+	char        ndiff[_STR_LEN_], ndisl[_STR_LEN_], npeir[_STR_LEN_];
 
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
@@ -295,14 +292,14 @@ PetscErrorCode MatPhaseRead(
 	// creep profiles
 	//=================================================================================
 	// set predefined diffusion creep profile
-	ierr = GetProfileName(fb, scal, ndiff, sizeof(ndiff), "diff_prof");   CHKERRQ(ierr);
-	ierr = SetDiffProfile(m, ndiff);                                      CHKERRQ(ierr);
+	ierr = GetProfileName(fb, scal, ndiff, "diff_prof");   CHKERRQ(ierr);
+	ierr = SetDiffProfile(m, ndiff);                       CHKERRQ(ierr);
 	// set predefined dislocation creep profile
-	ierr = GetProfileName(fb, scal, ndisl, sizeof(ndisl), "disl_prof");   CHKERRQ(ierr);
-	ierr = SetDislProfile(m, ndisl);                                      CHKERRQ(ierr);
+	ierr = GetProfileName(fb, scal, ndisl, "disl_prof");   CHKERRQ(ierr);
+	ierr = SetDislProfile(m, ndisl);                       CHKERRQ(ierr);
 	// set predefined Peierls creep profile
-	ierr = GetProfileName(fb, scal, npeir, sizeof(npeir), "peir_prof");   CHKERRQ(ierr);
-	ierr = SetPeirProfile(m, npeir);                                      CHKERRQ(ierr);
+	ierr = GetProfileName(fb, scal, npeir, "peir_prof");   CHKERRQ(ierr);
+	ierr = SetPeirProfile(m, npeir);                       CHKERRQ(ierr);
 	//=================================================================================
 	// density
 	//=================================================================================
@@ -370,12 +367,22 @@ PetscErrorCode MatPhaseRead(
 
 	if(m->rp < 0.0 || m->rp > 1.0)
 	{
-		SETERRQ1(PETSC_COMM_SELF, PETSC_ERR_USER, "pore pressure ratio must be between 0 and 1 for phase %lld (rp)", (LLD)ID);
+		SETERRQ1(PETSC_COMM_SELF, PETSC_ERR_USER, "Pore pressure ratio must be between 0 and 1 for phase %lld (rp)", (LLD)ID);
 	}
 
 	if((m->rp || m->rho_n) && !lim->rho_fluid)
 	{
-		SETERRQ1(PETSC_COMM_SELF, PETSC_ERR_USER, "fluid density must be specified for phase %lld (rho_n, rho_c, rp, rho_fluid)\n", (LLD)ID);
+		SETERRQ1(PETSC_COMM_SELF, PETSC_ERR_USER, "Fluid density must be specified for phase %lld (rho_n, rho_c, rp, rho_fluid)\n", (LLD)ID);
+	}
+
+	if(m->rp && lim->gwType == _GW_NONE_)
+	{
+		SETERRQ1(PETSC_COMM_SELF, PETSC_ERR_USER, "Pore pressure ratio requires defining ground water level type for phase %lld (rp, gw_level_type)\n", (LLD)ID);
+	}
+
+	if(m->rho_n && !lim->isSurface)
+	{
+		SETERRQ1(PETSC_COMM_SELF, PETSC_ERR_USER, "Depth-dependent density requires activating free surface for phase %lld (rho_n, surf_use)\n", (LLD)ID);
 	}
 
 	// PLASTICITY
@@ -383,7 +390,7 @@ PetscErrorCode MatPhaseRead(
 	// check plasticity parameters
 	if(m->fr && !m->ch)
 	{
-		SETERRQ1(PETSC_COMM_SELF, PETSC_ERR_USER, "cohesion must be specified for phase %lld (ch)", (LLD)ID);
+		SETERRQ1(PETSC_COMM_SELF, PETSC_ERR_USER, "Cohesion must be specified for phase %lld (ch)", (LLD)ID);
 	}
 
 	// set pointers to softening laws
@@ -456,6 +463,9 @@ PetscErrorCode MatPhaseRead(
 	// store elastic moduli
 	m->G = G;
 	m->K = K;
+
+	// set elastic rheology flag
+	if(G || K) lim->isElastic = 1;
 
 	// check that at least one essential deformation mechanism is specified
 	if(!m->Bd && !m->Bn && !m->G)
@@ -634,14 +644,14 @@ void MatPrintScalParam(PetscScalar par, const char key[], const char label[], Sc
 //---------------------------------------------------------------------------
 #undef __FUNCT__
 #define __FUNCT__ "GetProfileName"
-PetscErrorCode GetProfileName(FB *fb, Scaling *scal, char name[], size_t len, const char key[])
+PetscErrorCode GetProfileName(FB *fb, Scaling *scal, char name[], const char key[])
 {
 	// read profile name from file
 
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
 
-	ierr = getStringParam(fb, _OPTIONAL_, key, name, len, NULL);  CHKERRQ(ierr);
+	ierr = getStringParam(fb, _OPTIONAL_, key, name, NULL);  CHKERRQ(ierr);
 
 	if(strlen(name) && scal->utype == _NONE_)
 	{

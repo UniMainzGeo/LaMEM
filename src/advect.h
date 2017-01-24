@@ -49,6 +49,7 @@
 
 #define _cap_overhead_ 1.3
 #define _max_nmark_ 5
+#define _min_nmark_ 5
 
 //---------------------------------------------------------------------------
 
@@ -121,33 +122,31 @@ typedef struct
 	JacRes   *jr;
 	FreeSurf *surf;
 
-	SetupType     msetup;                // marker initialization type
-	PetscInt      NumPartX;              // markers per cell in x-direction
-	PetscInt      NumPartY;              //                 ... y-direction
-	PetscInt      NumPartZ;              //                 ... z-direction
-	PetscInt      randNoise;             // random noise flag for marker distribution
-	PetscInt      bgPhase;               // background phase ID
+	SetupType     msetup;              // marker initialization type
+	PetscInt      NumPartX;            // markers per cell in x-direction
+	PetscInt      NumPartY;            //                 ... y-direction
+	PetscInt      NumPartZ;            //                 ... z-direction
+	PetscInt      randNoise;           // random noise flag for marker distribution
+	PetscInt      bgPhase;             // background phase ID
 
-	PetscInt      saveMark;              // flag for saving markers
-	char          saveName[MAX_NAME_LEN]; // marker output file name
-	char          savePath[MAX_PATH_LEN]; // marker output directory
+	PetscInt      saveMark;            // flag for saving markers
+	char          saveName[_STR_LEN_]; // marker output file name
+	char          savePath[_STR_LEN_]; // marker output directory
 
-	AdvectionType advection;             // advection scheme
-	PetscInt      newAdv;                // new advection flag (temporary)
-	VelInterpType velinterp;             // velocity interpolation scheme
-	PetscScalar   A;                     // FDSTAG velocity interpolation parameter
+	AdvectionType advect;              // advection scheme
+	PetscInt      newAdv;              // new advection flag (temporary)
+	VelInterpType interp;              // velocity interpolation scheme
+	PetscScalar   A;                   // FDSTAG velocity interpolation parameter
 
-	PetscInt      markContr;             // flag to activate marker control
-	PetscInt      newMarkContr;          // new marker control flag (temporary)
-	PetscInt      nmin, nmax;            // minimum and maximum number of markers per cell
-	PetscInt      avdx, avdy, avdz;      // AVD cells refinement factors
+	PetscInt      markContr;           // flag to activate marker control
+	PetscInt      newMarkContr;        // new marker control flag (temporary)
 
 	//====================
 	// RUN TIME PARAMETERS
 	//====================
-	PetscInt    AirPhase;   // air phase number
-	PetscScalar Ttop;       // top surface temperature
-	PetscInt    cinj, cdel; // injected & deleted marker counters
+	PetscInt    cinj, cdel;       // injected & deleted marker counters
+	PetscInt    nmin, nmax;       // minimum and maximum number of markers per cell
+	PetscInt    avdx, avdy, avdz; // AVD cells refinement factors
 
 	//=============
 	// COMMUNICATOR
@@ -199,7 +198,7 @@ PetscErrorCode ADVReadRestart(AdvCtx *actx, FILE *fp);
 // read advection object from restart database
 PetscErrorCode ADVWriteRestart(AdvCtx *actx, FILE *fp);
 
-// create communicator and
+// create communicator and separator
 PetscErrorCode ADVCreateData(AdvCtx *actx);
 
 // destroy advection context

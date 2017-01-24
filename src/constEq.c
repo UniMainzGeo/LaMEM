@@ -183,7 +183,7 @@ PetscErrorCode ConstEqCtxSetup(
 		}
 
 		// compute yield stress
-		if(lim->actPorePres)
+		if(lim->gwType != _GW_NONE_)
 		{
 			dp = (p - p_pore);
 

@@ -114,13 +114,6 @@ PetscErrorCode ADVMarkInit(AdvCtx *actx, FB *fb)
 		actx->nummark = nummark;
 	}
 
-	// initialize variables for marker control
-	actx->nmin = (PetscInt) (actx->NumPartX*actx->NumPartY*actx->NumPartZ/2); // min # of markers/cell -50%
-	actx->nmax = (PetscInt) (actx->NumPartX*actx->NumPartY*actx->NumPartZ*3); // max # of markers/cell 300%
-	actx->avdx = actx->NumPartX * 3;
-	actx->avdy = actx->NumPartY * 3;
-	actx->avdz = actx->NumPartZ * 3;
-
 	// initialize coordinates, add random noise
 	if(actx->msetup != _FILES_
 	&& actx->msetup != _POLYGONS_)
@@ -431,7 +424,7 @@ PetscErrorCode ADVMarkSetTempFromFile(AdvCtx *actx, FB *fb)
 	int           fd;
 	Marker       *P;
 	PetscViewer   view_in;
-	char          filename[MAX_PATH_LEN];
+	char          filename[_STR_LEN_];
 	PetscScalar   header[2], dim[3];
 	PetscInt      Fsize, imark, nummark, nmarkx, nmarky, nmarkz;
 	PetscScalar   DX, DY, DZ, bx, by, bz, ex, ey, ez;
@@ -444,7 +437,7 @@ PetscErrorCode ADVMarkSetTempFromFile(AdvCtx *actx, FB *fb)
 	PetscFunctionBegin;
 
 	// get file name
-	ierr = getStringParam(fb, _OPTIONAL_, "temp_file", filename, sizeof(filename), NULL); CHKERRQ(ierr);
+	ierr = getStringParam(fb, _OPTIONAL_, "temp_file", filename, NULL); CHKERRQ(ierr);
 
 	// check whether file is provided
 	if(!strlen(filename)) PetscFunctionReturn(0);
@@ -540,7 +533,7 @@ PetscErrorCode ADVMarkInitFiles(AdvCtx *actx, FB *fb)
 	int          fd;
 	Marker      *P;
 	PetscViewer  view_in;
-	char        *filename, name[MAX_NAME_LEN], path[MAX_PATH_LEN];
+	char        *filename, name[_STR_LEN_], path[_STR_LEN_];
 	PetscScalar *markbuf, *markptr, header, chTemp, chLen, Tshift, s_nummark;
 	PetscInt     imark, nummark;
 
@@ -548,8 +541,8 @@ PetscErrorCode ADVMarkInitFiles(AdvCtx *actx, FB *fb)
 	PetscFunctionBegin;
 
 	// get file name & path
-	ierr = getStringParam(fb, _REQUIRED_, "mark_load_name", name, sizeof(name), NULL); CHKERRQ(ierr);
-	ierr = getStringParam(fb, _REQUIRED_, "mark_load_path", path, sizeof(path), NULL); CHKERRQ(ierr);
+	ierr = getStringParam(fb, _OPTIONAL_, "mark_load_name", name, "markers"); CHKERRQ(ierr);
+	ierr = getStringParam(fb, _OPTIONAL_, "mark_load_path", path, "./markers"); CHKERRQ(ierr);
 
 	PetscPrintf(PETSC_COMM_WORLD," Loading markers in parallel from files: ./%s/%s.xxx.dat \n", path, name);
 
@@ -743,7 +736,7 @@ PetscErrorCode ADVMarkInitPolygons(AdvCtx *actx, FB *fb)
 	FDSTAG        *fs;
 	int            fd;
 	PetscViewer    view_in;
-	char           filename[MAX_PATH_LEN];
+	char           filename[_STR_LEN_];
 	PetscScalar    header[2];
 	PetscInt       tstart[3], tend[3], nmark[3], nidx[3], nidxmax;
 	PetscInt       k, n, kvol, Fcount, Fsize, VolN, Nmax, Lmax, kpoly;
@@ -766,7 +759,7 @@ PetscErrorCode ADVMarkInitPolygons(AdvCtx *actx, FB *fb)
 	PetscFunctionBegin;
 
 	// get file name
-	ierr = getStringParam(fb, _REQUIRED_, "poly_file", filename, sizeof(filename), NULL); CHKERRQ(ierr);
+	ierr = getStringParam(fb, _OPTIONAL_, "poly_file", filename, "./input/poly.dat"); CHKERRQ(ierr);
 
 	// initialize
 	fs = actx->fs;

@@ -102,8 +102,8 @@ PetscErrorCode ADVelInterpPT(AdvCtx *actx)
 	Marker      *P;
 	SolVarCell  *svCell;
 	PetscInt    nx, ny, sx, sy, sz;
-	PetscInt    jj, ID, I, J, K;
-	PetscScalar ***lp, ***lT;
+	PetscInt    jj, ID, I, J, K, AirPhase;
+	PetscScalar ***lp, ***lT, Ttop;
 
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
@@ -111,6 +111,15 @@ PetscErrorCode ADVelInterpPT(AdvCtx *actx)
 	// access context
 	fs = actx->fs;
 	jr = actx->jr;
+
+	AirPhase = -1;
+	Ttop     =  0.0;
+
+	if(actx->surf->UseFreeSurf)
+	{
+		AirPhase = actx->surf->AirPhase;
+		Ttop     = actx->jr->bc->Ttop;
+	}
 
 	// starting indices & number of cells
 	nx = fs->dsx.ncels;
@@ -143,7 +152,7 @@ PetscErrorCode ADVelInterpPT(AdvCtx *actx)
 		P->T += lT[sz+K][sy+J][sx+I] - svCell->svBulk.Tn;
 
 		// override temperature of air phase
-		if(actx->AirPhase != -1 &&  P->phase == actx->AirPhase) P->T = actx->Ttop;
+		if(AirPhase != -1 &&  P->phase == AirPhase) P->T = Ttop;
 	}
 
 	// restore access
@@ -180,7 +189,7 @@ PetscErrorCode ADVelAdvectScheme(AdvCtx *actx, AdvVelCtx *vi)
 	// ---------------------------------
 	// EULER (1st order)
 	// ---------------------------------
-	if(actx->advection == EULER)
+	if(actx->advect == EULER)
 	{
 		// 1. Velocity interpolation
 		ierr = ADVelInterpMain(vi); CHKERRQ(ierr);
@@ -195,7 +204,7 @@ PetscErrorCode ADVelAdvectScheme(AdvCtx *actx, AdvVelCtx *vi)
 	// ---------------------------------
 	// Runge-Kutta 2nd order in space
 	// ---------------------------------
-	else if(actx->advection == RUNGE_KUTTA_2)
+	else if(actx->advect == RUNGE_KUTTA_2)
 	{
 		// velocity interpolation A
 		ierr = ADVelInterpMain(vi); CHKERRQ(ierr);
@@ -987,9 +996,9 @@ PetscErrorCode ADVelInterpMain(AdvVelCtx *vi)
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
 
-	if     (vi->actx->velinterp == STAG   )  { ierr = ADVelInterpSTAG   (vi); CHKERRQ(ierr); }
-	else if(vi->actx->velinterp == MINMOD )  { ierr = ADVelInterpMINMOD (vi); CHKERRQ(ierr); }
-	else if(vi->actx->velinterp == STAG_P )  { ierr = ADVelInterpSTAGP  (vi); CHKERRQ(ierr); }
+	if     (vi->actx->interp == STAG   )  { ierr = ADVelInterpSTAG   (vi); CHKERRQ(ierr); }
+	else if(vi->actx->interp == MINMOD )  { ierr = ADVelInterpMINMOD (vi); CHKERRQ(ierr); }
+	else if(vi->actx->interp == STAG_P )  { ierr = ADVelInterpSTAGP  (vi); CHKERRQ(ierr); }
 	else SETERRQ(PETSC_COMM_SELF, PETSC_ERR_USER," *** Unknown option for velocity interpolation scheme");
 
 	PetscFunctionReturn(0);

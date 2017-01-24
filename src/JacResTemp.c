@@ -83,7 +83,7 @@ PetscErrorCode JacResGetTempParam(
 		PetscScalar *phRat,
 		PetscScalar *k_,      // conductivity
 		PetscScalar *rho_Cp_, // volumetric heat capacity
-		PetscScalar *rho_A_) // volumetric radiogenic heat
+		PetscScalar *rho_A_)  // volumetric radiogenic heat
 {
 	// compute effective energy parameters in the cell
 
