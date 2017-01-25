@@ -300,10 +300,8 @@
 # Output
 #===============================================================================
 
-#	out_surf_pvd        = 1
-#	out_surf_velocity   = 1
-#	out_surf_topography = 1
-#	out_surf_amplitude  = 1
+# Grid output options (output is always active)
+
 #	out_pvd             = 1
 #	out_phase           = 1
 #	out_density         = 1
@@ -316,26 +314,30 @@
 #	out_strain_rate     = 1
 #	out_j2_strain_rate  = 1
 
-# Grid output options (output is always active)
 
 	out_moment_res = 1
 	out_cont_res   = 1
 	out_energ_res  = 1
 
-# Free surface output options (optput is activated by tracking free surface)
+# Free surface output options (can be activated only if surface tracking is enabled)
 
+	out_surf            = 1
+	out_surf_pvd        = 1
 	out_surf_velocity   = 1
+	out_surf_topography = 1
 	out_surf_amplitude  = 1
 
 # Marker output options (requires activation)
 
-#	out_markers = 1 # activate marker output
-
+	out_mark     = 1 # activate marker output
+	out_mark_pvd = 1 # activate writing .pvd file
+	
 # AVD phase viewer output options (requires activation)
 
-#	out_avd     = 1 # activate marker output
-#	out_avd_ref = 3 # AVD grid refinement factor
-
+	out_avd     = 1 # activate AVD phase output
+	out_avd_pvd = 1 # activate writing .pvd file
+	out_avd_ref = 3 # AVD grid refinement factor
+	
 #===============================================================================
 # Material phase parameters
 #===============================================================================

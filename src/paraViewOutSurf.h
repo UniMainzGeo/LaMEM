@@ -50,28 +50,28 @@
 //---------------------------------------------------------------------------
 //................ ParaView free surface output driver object ...............
 //---------------------------------------------------------------------------
+
 typedef struct
 {
-	FreeSurf   *surf;       // free surface object
-	char       *outfile;    // output file name
-	float      *buff;       // direct output buffer
-	long int    offset;     // pvd file offset
-	PetscInt    outpvd;     // pvd file output flag
-	PetscInt    velocity;   // velocity output flag
-	PetscInt    topography; // surface topography output flag
-	PetscInt    amplitude;  // topography amplitude output flag
+	FreeSurf  *surf;              // free surface object
+	char      outfile[_STR_LEN_]; // output file name
+	float     *buff;              // direct output buffer
+	long int  offset;             // pvd file offset
+	PetscInt  outsurf;            // free surface output flag
+	PetscInt  outpvd;             // pvd file output flag
+	PetscInt  velocity;           // velocity output flag
+	PetscInt  topography;         // surface topography output flag
+	PetscInt  amplitude;          // topography amplitude output flag
 
 } PVSurf;
+
 //---------------------------------------------------------------------------
 
-// clear object
-PetscErrorCode PVSurfClear(PVSurf *pvsurf);
-
 // create ParaView output driver
-PetscErrorCode PVSurfCreate(PVSurf *pvsurf, FreeSurf *surf, const char *filename);
+PetscErrorCode PVSurfCreate(PVSurf *pvsurf, FB *fb, const char *filename);
 
-// read options
-PetscErrorCode PVSurfReadFromOptions(PVSurf *pvsurf);
+// create buffer array
+PetscErrorCode PVSurfCreateData(PVSurf *pvsurf);
 
 // destroy ParaView output driver
 PetscErrorCode PVSurfDestroy(PVSurf *pvsurf);

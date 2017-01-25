@@ -61,52 +61,30 @@
 //---------------------------------------------------------------------------
 #undef __FUNCT__
 #define __FUNCT__ "PVMarkCreate"
-PetscErrorCode PVMarkCreate(PVMark *pvmark, AdvCtx *actx, const char *filename)
+PetscErrorCode PVMarkCreate(PVMark *pvmark, FB *fb, const char *filename)
 {
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
 
-	// set context
-	pvmark->actx = actx;
+	// check activation
+	ierr = getIntParam(fb, _OPTIONAL_, "out_mark", &pvmark->outmark, 1, 1); CHKERRQ(ierr);
 
-	// read options
-	ierr = PVMarkReadFromOptions(pvmark); CHKERRQ(ierr);
+	if(!pvmark->outmark) PetscFunctionReturn(0);
+
+	// initialize
+	pvmark->outpvd = 1;
+
+	// read
+	ierr = getIntParam(fb, _OPTIONAL_, "out_mark_pvd", &pvmark->outpvd, 1, 1); CHKERRQ(ierr);
+
+	// print
+	if(pvmark->outpvd)
+	{
+		PetscPrintf(PETSC_COMM_WORLD, " Writing marker .pvd file to disk\n");
+	}
 
 	// set file name
-	asprintf(&pvmark->outfile, "%s_mark", filename);
-
-	// set .pvd file offset
-	pvmark->offset = 0;
-
-	PetscFunctionReturn(0);
-}
-//---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "PVMarkDestroy"
-PetscErrorCode PVMarkDestroy(PVMark *pvmark)
-{
-	PetscFunctionBegin;
-
-	// file name
-	free(pvmark->outfile);
-
-	PetscFunctionReturn(0);
-}
-//---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "PVMarkReadFromOptions"
-PetscErrorCode PVMarkReadFromOptions(PVMark *pvmark)
-{
-	PetscErrorCode ierr;
-	PetscFunctionBegin;
-
-	// set output mask
-	pvmark->outmark    = 0;
-	pvmark->outpvd     = 0;
-
-	// read output flags
-	ierr = PetscOptionsGetInt(NULL, NULL, "-out_markers",         &pvmark->outmark,    NULL); CHKERRQ(ierr);
-	ierr = PetscOptionsGetInt(NULL, NULL, "-out_mark_pvd",        &pvmark->outpvd,     NULL); CHKERRQ(ierr);
+	sprintf(pvmark->outfile, "%s_mark", filename);
 
 	PetscFunctionReturn(0);
 }
@@ -118,8 +96,8 @@ PetscErrorCode PVMarkWriteTimeStep(PVMark *pvmark, const char *dirName, PetscSca
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
 
-	// return if not output
-	if(pvmark->outmark==0) PetscFunctionReturn(0);
+	// check activation
+	if(!pvmark->outmark) PetscFunctionReturn(0);
 
 	// update .pvd file if necessary
 	if(pvmark->outpvd)
