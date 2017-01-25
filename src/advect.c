@@ -166,11 +166,11 @@ PetscErrorCode ADVCreate(AdvCtx *actx, FB *fb)
 	else if (actx->interp == MINMOD) PetscPrintf(PETSC_COMM_WORLD, "MINMOD (Correction + MINMOD)");
 	else if (actx->interp == STAG_P) PetscPrintf(PETSC_COMM_WORLD, "Empirical STAGP (STAG + pressure points)");
 
-	// create communicator and separator
-	ierr = ADVCreateData(actx); CHKERRQ(ierr);
-
 	// initialize markers
 	ierr = ADVMarkInit(actx, fb); CHKERRQ(ierr);
+
+	// create communicator and separator
+	ierr = ADVCreateData(actx); CHKERRQ(ierr);
 
 	// compute host cells for all the markers
 	ierr = ADVMapMarkToCells(actx); CHKERRQ(ierr);
@@ -203,18 +203,14 @@ PetscErrorCode ADVReadRestart(AdvCtx *actx, FILE *fp)
 	// allocate memory for indices of all markers in each cell
 	ierr = makeIntArray(&actx->markind, NULL, actx->markcap); CHKERRQ(ierr);
 
-	// create communicator and separator
-	ierr = ADVCreateData(actx); CHKERRQ(ierr);
-
-
-
 	// read markers from disk
 	fread(actx->markers, (size_t)actx->nummark*sizeof(Marker), 1, fp);
 
+	// create communicator and separator
+	ierr = ADVCreateData(actx); CHKERRQ(ierr);
 
-	// what about the other arrays ???
-
-
+	// compute host cells for all the markers
+	ierr = ADVMapMarkToCells(actx); CHKERRQ(ierr);
 
 	// project history from markers to grid (initialize solution variables)
 	ierr = ADVProjHistMarkToGrid(actx); CHKERRQ(ierr);
@@ -226,14 +222,8 @@ PetscErrorCode ADVReadRestart(AdvCtx *actx, FILE *fp)
 #define __FUNCT__ "ADVWriteRestart"
 PetscErrorCode ADVWriteRestart(AdvCtx *actx, FILE *fp)
 {
-	// read advection object from restart database
-
 	// store local markers to disk
 	fwrite(actx->markers, (size_t)actx->nummark*sizeof(Marker), 1, fp);
-
-	// what about the other arrays ???
-
-
 
 	PetscFunctionReturn(0);
 }
