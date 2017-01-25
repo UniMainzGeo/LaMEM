@@ -625,11 +625,18 @@ PetscErrorCode LaMEMLib(ModParam *IOparam)
 			PetscPrintf(PETSC_COMM_WORLD, " Explicit solve took %g (sec)\n", cputime_end_nonlinear - cputime_start_nonlinear);
 		}
 
+		// ACHTUNG !!!
+		SNESConvergedReason snes_reason;
+
+		ierr = SNESGetConvergedReason(snes, &snes_reason);  CHKERRQ(ierr);
+
+		PetscInt out_fail = (PetscInt)snes_reason;
+
 		//==================
 		// Save data to disk
 		//==================
 
-		if(!(JacResGetStep(&jr) % user.save_timesteps) || stop == PETSC_TRUE)
+		if(!(JacResGetStep(&jr) % user.save_timesteps) || stop == PETSC_TRUE || out_fail < 0)
 		{
 			char *DirectoryName = NULL;
 

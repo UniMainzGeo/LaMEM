@@ -670,6 +670,22 @@ PetscErrorCode PVOutWriteGOL(JacRes *jr, OutBuf *outbuf)
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
+#undef __FUNCT__
+#define __FUNCT__ "PVOutWriteYield"
+PetscErrorCode PVOutWriteYield(JacRes *jr, OutBuf *outbuf)
+{
+	COPY_FUNCTION_HEADER
+
+	// macro to copy density to buffer
+	#define GET_YIELD buff[k][j][i] = jr->svCell[iter++].svDev.yield;
+
+	cf = scal->stress;
+
+	INTERPOLATE_COPY(fs->DA_CEN, outbuf->lbcen, InterpCenterCorner, GET_YIELD, 1, 0)
+
+	PetscFunctionReturn(0);
+}
+//---------------------------------------------------------------------------
 // DEBUG VECTORS
 //---------------------------------------------------------------------------
 #undef __FUNCT__

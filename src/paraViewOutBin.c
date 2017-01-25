@@ -359,6 +359,7 @@ PetscInt OutMaskCountActive(OutMask *omask)
 	if(omask->EHmax)          		cnt++; // maximum horizontal stress
 	if(omask->ISA)            		cnt++; // Infinite Strain Axis
 	if(omask->GOL)            		cnt++; // Grain Orientation Lag
+	if(omask->yield)          		cnt++; // yield stress
 	// === debugging vectors ===============================================
 	if(omask->moment_res)     		cnt++; // momentum residual
 	if(omask->cont_res)      	 	cnt++; // continuity residual
@@ -460,6 +461,7 @@ PetscErrorCode PVOutCreate(PVOut *pvout, JacRes *jr, const char *filename)
 	if(omask->EHmax)          		OutVecCreate(&outvecs[cnt++], "EHmax",          	scal->lbl_unit,             &PVOutWriteEHmax,        3);
 	if(omask->ISA)            		OutVecCreate(&outvecs[cnt++], "ISA",            	scal->lbl_unit,             &PVOutWriteISA,          3);
 	if(omask->GOL)            		OutVecCreate(&outvecs[cnt++], "GOL",            	scal->lbl_unit,             &PVOutWriteGOL,          1);
+	if(omask->yield)            	OutVecCreate(&outvecs[cnt++], "yield",            	scal->lbl_stress,           &PVOutWriteYield,        1);
 	// === debugging vectors ===============================================
 	if(omask->moment_res)     		OutVecCreate(&outvecs[cnt++], "moment_res",     	scal->lbl_volumetric_force, &PVOutWriteMomentRes,    3);
 	if(omask->cont_res)       		OutVecCreate(&outvecs[cnt++], "cont_res",       	scal->lbl_strain_rate,      &PVOutWriteContRes,      1);
@@ -491,7 +493,7 @@ PetscErrorCode PVOutReadFromOptions(PVOut *pvout)
 	ierr = PetscOptionsGetInt(NULL, NULL, "-out_pressure",       		&omask->pressure,       	NULL); CHKERRQ(ierr);
 	ierr = PetscOptionsGetInt(NULL, NULL, "-out_overpressure",   		&omask->overpressure,   	NULL); CHKERRQ(ierr);
 	ierr = PetscOptionsGetInt(NULL, NULL, "-out_lithospressure",        &omask->lithospressure,     NULL); CHKERRQ(ierr);
-	ierr = PetscOptionsGetInt(NULL, NULL, "-out_porepressure",          &omask->porepressure,      NULL); CHKERRQ(ierr);
+	ierr = PetscOptionsGetInt(NULL, NULL, "-out_porepressure",          &omask->porepressure,       NULL); CHKERRQ(ierr);
 	ierr = PetscOptionsGetInt(NULL, NULL, "-out_temperature",    		&omask->temperature,    	NULL); CHKERRQ(ierr);
 	ierr = PetscOptionsGetInt(NULL, NULL, "-out_dev_stress",     		&omask->dev_stress,     	NULL); CHKERRQ(ierr);
 	ierr = PetscOptionsGetInt(NULL, NULL, "-out_j2_dev_stress",  		&omask->j2_dev_stress,  	NULL); CHKERRQ(ierr);
@@ -505,6 +507,7 @@ PetscErrorCode PVOutReadFromOptions(PVOut *pvout)
 	ierr = PetscOptionsGetInt(NULL, NULL, "-out_ehmax",          		&omask->EHmax,          	NULL); CHKERRQ(ierr);
 	ierr = PetscOptionsGetInt(NULL, NULL, "-out_isa",            		&omask->ISA,            	NULL); CHKERRQ(ierr);
 	ierr = PetscOptionsGetInt(NULL, NULL, "-out_gol",            		&omask->GOL,            	NULL); CHKERRQ(ierr);
+	ierr = PetscOptionsGetInt(NULL, NULL, "-out_yield",            		&omask->yield,            	NULL); CHKERRQ(ierr);
 	ierr = PetscOptionsGetInt(NULL, NULL, "-out_plast_strain",   		&omask->plast_strain,   	NULL); CHKERRQ(ierr);
 	ierr = PetscOptionsGetInt(NULL, NULL, "-out_plast_dissip",   		&omask->plast_dissip,   	NULL); CHKERRQ(ierr);
 	ierr = PetscOptionsGetInt(NULL, NULL, "-out_tot_displ",      		&omask->tot_displ,      	NULL); CHKERRQ(ierr);

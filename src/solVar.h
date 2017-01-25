@@ -100,6 +100,7 @@ typedef struct
 	PetscScalar  PSR;   // plastic strain-rate contribution
 	PetscScalar  dEta;  // dEta/dDII derivative (Jacobian)
 	PetscScalar  fr;    // effective friction coefficient (Jacobian)
+	PetscScalar  yield; // average yield stress in control volume
 
 } SolVarDev;
 
@@ -247,6 +248,7 @@ typedef struct
 	PetscBool   initGuessFlg; // initial guess computation flag
 	PetscBool   presLimFlg;   // pressure limit flag for plasticity
 	PetscBool   presLimAct;   // activate pressure limit flag
+	PetscInt	MaxSNESIterBeforeApplyPlimit;	// maximum # of SNES iterations before we start applying upper/lower P bounds i yield function
 	// fluid density for depth-dependent density model
 	PetscScalar  rho_fluid;
 	PetscBool    actPorePres;  // pore pressure activation flag

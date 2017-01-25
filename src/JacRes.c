@@ -1928,6 +1928,7 @@ PetscErrorCode SetMatParLim(MatParLim *matLim, UserCtx *usr)
 	matLim->quasiHarmAvg = PETSC_FALSE;
 	matLim->cf_eta_min   = 0.0;
 	matLim->n_pw         = 0.0;
+	matLim->MaxSNESIterBeforeApplyPlimit = 25;		
 
 	matLim->initGuessFlg = PETSC_TRUE;
 	matLim->rho_fluid    = 1040.0;
@@ -1952,9 +1953,7 @@ PetscErrorCode SetMatParLim(MatParLim *matLim, UserCtx *usr)
 
 	// plasticity stabilization parameters
 	ierr = PetscOptionsHasName(NULL, NULL, "-quasi_harmonic", &flg); CHKERRQ(ierr);
-
 	if(flg == PETSC_TRUE) { matLim->quasiHarmAvg = PETSC_TRUE; cnt++; }
-
 	ierr = PetscOptionsGetScalar(NULL, NULL, "-cf_eta_min",  &matLim->cf_eta_min, &flg); CHKERRQ(ierr);
 
 	if(flg == PETSC_TRUE) { cnt++; }
@@ -1967,6 +1966,9 @@ PetscErrorCode SetMatParLim(MatParLim *matLim, UserCtx *usr)
 	{
 		SETERRQ(PETSC_COMM_SELF, PETSC_ERR_USER, "Cannot combine plasticity stabilization methods (-quasi_harmonic -cf_eta_min -n_pw) \n");
 	}
+
+	ierr = PetscOptionsGetInt(NULL, NULL, "-MaxSNESIterBeforeApplyPlimit",  &matLim->MaxSNESIterBeforeApplyPlimit, &flg); CHKERRQ(ierr);
+
 
 	// set Jacobian flag
 	ierr = PetscOptionsHasName(NULL, NULL, "-jac_mat_free", &flg); CHKERRQ(ierr);
