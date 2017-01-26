@@ -302,27 +302,39 @@
 
 # Grid output options (output is always active)
 
-#	out_pvd             = 1
-#	out_phase           = 1
-#	out_density         = 1
-#	out_viscosity       = 1
-#	out_velocity        = 1
-#	out_pressure        = 1
-#	out_temperature     = 1
-#	out_dev_stress      = 1
-#	out_j2_dev_stress   = 1
-#	out_strain_rate     = 1
-#	out_j2_strain_rate  = 1
-
-
-	out_moment_res = 1
-	out_cont_res   = 1
-	out_energ_res  = 1
+	out_file_name       = 1 # output file name
+	out_pvd             = 1 # activate writing .pvd file
+	out_phase           = 1
+	out_density         = 1
+	out_visc_total      = 1
+	out_visc_creep      = 1
+	out_visc_plast      = 1
+	out_velocity        = 1
+	out_pressure        = 1
+	out_over_press      = 1
+	out_litho_press     = 1
+	out_pore_press      = 1
+	out_temperature     = 1
+	out_dev_stress      = 1
+	out_j2_dev_stress   = 1
+	out_strain_rate     = 1
+	out_j2_strain_rate  = 1
+	out_shmax           = 1
+	out_ehmax           = 1
+	out_isa             = 1
+	out_gol             = 1
+	out_yield           = 1
+	out_plast_strain    = 1
+	out_plast_dissip    = 1
+	out_tot_displ       = 1
+	out_moment_res      = 1
+	out_cont_res        = 1
+	out_energ_res       = 1
 
 # Free surface output options (can be activated only if surface tracking is enabled)
 
-	out_surf            = 1
-	out_surf_pvd        = 1
+	out_surf            = 1 # activate surface output
+	out_surf_pvd        = 1 # activate writing .pvd file
 	out_surf_velocity   = 1
 	out_surf_topography = 1
 	out_surf_amplitude  = 1

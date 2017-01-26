@@ -260,8 +260,8 @@ PetscErrorCode PVOutWritePressure(JacRes *jr, OutBuf *outbuf)
 }
 //---------------------------------------------------------------------------
 #undef __FUNCT__
-#define __FUNCT__ "PVOutWriteOverPressure"
-PetscErrorCode PVOutWriteOverPressure(JacRes *jr, OutBuf *outbuf)
+#define __FUNCT__ "PVOutWriteOverPress"
+PetscErrorCode PVOutWriteOverPress(JacRes *jr, OutBuf *outbuf)
 {
 	PetscScalar pShift;
 
@@ -280,8 +280,8 @@ PetscErrorCode PVOutWriteOverPressure(JacRes *jr, OutBuf *outbuf)
 }
 //---------------------------------------------------------------------------
 #undef __FUNCT__
-#define __FUNCT__ "PVOutWriteLithosPressure"
-PetscErrorCode PVOutWriteLithosPressure(JacRes *jr, OutBuf *outbuf)
+#define __FUNCT__ "PVOutWriteLithoPress"
+PetscErrorCode PVOutWriteLithoPress(JacRes *jr, OutBuf *outbuf)
 {
 	ACCESS_FUNCTION_HEADER
 
@@ -295,8 +295,8 @@ PetscErrorCode PVOutWriteLithosPressure(JacRes *jr, OutBuf *outbuf)
 }
 //---------------------------------------------------------------------------
 #undef __FUNCT__
-#define __FUNCT__ "PVOutWritePorePressure"
-PetscErrorCode PVOutWritePorePressure(JacRes *jr, OutBuf *outbuf)
+#define __FUNCT__ "PVOutWritePorePress"
+PetscErrorCode PVOutWritePorePress(JacRes *jr, OutBuf *outbuf)
 {
 
 	ACCESS_FUNCTION_HEADER
