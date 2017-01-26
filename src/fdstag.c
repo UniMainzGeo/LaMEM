@@ -900,14 +900,17 @@ PetscErrorCode FDSTAGCreate(
 	Py = PETSC_DECIDE;
 	Pz = PETSC_DECIDE;
 
-	PetscOptionsGetInt(PETSC_NULL, "-cpu_x", &Px, PETSC_NULL); // fix # of processors in x-direction
-	PetscOptionsGetInt(PETSC_NULL, "-cpu_y", &Py, PETSC_NULL); // fix # of processors in y-direction
-	PetscOptionsGetInt(PETSC_NULL, "-cpu_z", &Pz, PETSC_NULL); // fix # of processors in z-direction
+	PetscOptionsGetInt(NULL, NULL, "-cpu_x", &Px, NULL); // fix # of processors in x-direction
+	PetscOptionsGetInt(NULL, NULL, "-cpu_y", &Py, NULL); // fix # of processors in y-direction
+	PetscOptionsGetInt(NULL, NULL, "-cpu_z", &Pz, NULL); // fix # of processors in z-direction
 
 	// partition central points (DA_CEN) with boundary ghost points (1-layer stencil box)
-	ierr = DMDACreate3d(PETSC_COMM_WORLD,
+	ierr = DMDACreate3dSetUp(PETSC_COMM_WORLD,
 		DM_BOUNDARY_GHOSTED, DM_BOUNDARY_GHOSTED, DM_BOUNDARY_GHOSTED, DMDA_STENCIL_BOX,
 		Nx-1, Ny-1, Nz-1, Px, Py, Pz, ndof, nlayer, 0, 0, 0, &fs->DA_CEN); CHKERRQ(ierr);
+
+//	ierr = DMSetFromOptions(fs->DA_CEN); CHKERRQ(ierr);
+//	ierr = DMSetUp(fs->DA_CEN); CHKERRQ(ierr);
 
 	// get actual number of processors in every direction (can be different compared to given)
 	ierr = DMDAGetInfo(fs->DA_CEN, 0, 0, 0, 0, &Px, &Py, &Pz, 0, 0, 0, 0, 0, 0); CHKERRQ(ierr);
@@ -922,27 +925,27 @@ PetscErrorCode FDSTAGCreate(
 	lx[Px-1]++; ly[Py-1]++; lz[Pz-1]++;
 
 	// corners (DA_COR) no boundary ghost points (1-layer stencil box)
-	ierr = DMDACreate3d(PETSC_COMM_WORLD,
+	ierr = DMDACreate3dSetUp(PETSC_COMM_WORLD,
 		DM_BOUNDARY_NONE, DM_BOUNDARY_NONE, DM_BOUNDARY_NONE, DMDA_STENCIL_BOX,
 		Nx, Ny, Nz, Px, Py, Pz, ndof, nlayer, lx, ly, lz, &fs->DA_COR); CHKERRQ(ierr);
 
 	// XY edges (DA_XY) no boundary ghost points (1-layer stencil box)
 	lz[Pz-1]--;
-	ierr = DMDACreate3d(PETSC_COMM_WORLD,
+	ierr = DMDACreate3dSetUp(PETSC_COMM_WORLD,
 		DM_BOUNDARY_NONE, DM_BOUNDARY_NONE, DM_BOUNDARY_NONE, DMDA_STENCIL_BOX,
 		Nx, Ny, Nz-1, Px, Py, Pz, ndof, nlayer, lx, ly, lz, &fs->DA_XY); CHKERRQ(ierr);
 	lz[Pz-1]++;
 
 	// XZ edges (DA_XZ) no boundary ghost points (1-layer stencil box)
 	ly[Py-1]--;
-	ierr = DMDACreate3d(PETSC_COMM_WORLD,
+	ierr = DMDACreate3dSetUp(PETSC_COMM_WORLD,
 		DM_BOUNDARY_NONE, DM_BOUNDARY_NONE, DM_BOUNDARY_NONE, DMDA_STENCIL_BOX,
 		Nx, Ny-1, Nz, Px, Py, Pz, ndof, nlayer, lx, ly, lz, &fs->DA_XZ); CHKERRQ(ierr);
 	ly[Py-1]++;
 
 	// YZ edges (DA_YZ) no boundary ghost points (1-layer stencil box)
 	lx[Px-1]--;
-	ierr = DMDACreate3d(PETSC_COMM_WORLD,
+	ierr = DMDACreate3dSetUp(PETSC_COMM_WORLD,
 		DM_BOUNDARY_NONE, DM_BOUNDARY_NONE, DM_BOUNDARY_NONE, DMDA_STENCIL_BOX,
 		Nx-1, Ny, Nz, Px, Py, Pz, ndof, nlayer, lx, ly, lz, &fs->DA_YZ); CHKERRQ(ierr);
 	lx[Px-1]++;
@@ -950,21 +953,21 @@ PetscErrorCode FDSTAGCreate(
 
 	// X face (DA_X) with boundary ghost points (1-layer stencil box)
 	ly[Py-1]--; lz[Pz-1]--;
-	ierr = DMDACreate3d(PETSC_COMM_WORLD,
+	ierr = DMDACreate3dSetUp(PETSC_COMM_WORLD,
 		DM_BOUNDARY_GHOSTED, DM_BOUNDARY_GHOSTED, DM_BOUNDARY_GHOSTED, DMDA_STENCIL_BOX,
 		Nx, Ny-1, Nz-1, Px, Py, Pz, ndof, nlayer, lx, ly, lz, &fs->DA_X); CHKERRQ(ierr);
 	ly[Py-1]++; lz[Pz-1]++;
 
 	// Y face (DA_Y) with boundary ghost points (1-layer stencil box)
 	lx[Px-1]--; lz[Pz-1]--;
-	ierr = DMDACreate3d(PETSC_COMM_WORLD,
+	ierr = DMDACreate3dSetUp(PETSC_COMM_WORLD,
 		DM_BOUNDARY_GHOSTED, DM_BOUNDARY_GHOSTED, DM_BOUNDARY_GHOSTED, DMDA_STENCIL_BOX,
 		Nx-1, Ny, Nz-1, Px, Py, Pz, ndof, nlayer, lx, ly, lz, &fs->DA_Y); CHKERRQ(ierr);
 	lx[Px-1]++; lz[Pz-1]++;
 
 	// Z face (DA_Z) with boundary ghost points (1-layer stencil box)
 	lx[Px-1]--; ly[Py-1]--;
-	ierr = DMDACreate3d(PETSC_COMM_WORLD,
+	ierr = DMDACreate3dSetUp(PETSC_COMM_WORLD,
 		DM_BOUNDARY_GHOSTED, DM_BOUNDARY_GHOSTED, DM_BOUNDARY_GHOSTED, DMDA_STENCIL_BOX,
 		Nx-1, Ny-1, Nz, Px, Py, Pz, ndof, nlayer, lx, ly, lz, &fs->DA_Z); CHKERRQ(ierr);
 	lx[Px-1]++; ly[Py-1]++;
@@ -1282,12 +1285,12 @@ PetscErrorCode FDSTAGProcPartitioning(FDSTAG *fs, PetscScalar chLen)
 	int         fid;
 	char        *fname;
 	PetscScalar *xc, *yc, *zc;
-    PetscMPIInt rank;
-    PetscErrorCode ierr;
+	PetscMPIInt rank;
+	PetscErrorCode ierr;
 	
-    PetscFunctionBegin;
+	PetscFunctionBegin;
     
-    MPI_Comm_rank(PETSC_COMM_WORLD, &rank);
+	MPI_Comm_rank(PETSC_COMM_WORLD, &rank);
     
 	PetscPrintf(PETSC_COMM_WORLD,"# Save processor partitioning \n");
 
@@ -1332,6 +1335,25 @@ PetscErrorCode FDSTAGProcPartitioning(FDSTAG *fs, PetscScalar chLen)
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
+#undef __FUNCT__
+#define __FUNCT__ "DMDACreate3dSetUp"
+PetscErrorCode DMDACreate3dSetUp(MPI_Comm comm,
+	DMBoundaryType bx, DMBoundaryType by, DMBoundaryType bz, DMDAStencilType stencil_type,
+	PetscInt M, PetscInt N, PetscInt P, PetscInt m, PetscInt n, PetscInt p,
+	PetscInt dof, PetscInt s, const PetscInt lx[], const PetscInt ly[], const PetscInt lz[], DM *da)
+{
+	PetscErrorCode ierr;
+	PetscFunctionBegin;
+
+	ierr = DMDACreate3d(comm, bx, by, bz, stencil_type, M, N, P, m, n, p, dof, s, lx, ly, lz, da); CHKERRQ(ierr);
+
+	ierr = DMSetFromOptions((*da)); CHKERRQ(ierr);
+	ierr = DMSetUp((*da));          CHKERRQ(ierr);
+
+	PetscFunctionReturn(0);
+}
+//---------------------------------------------------------------------------
+
 
 /*
 // Split points into slots according to weights

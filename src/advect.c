@@ -252,7 +252,7 @@ PetscErrorCode ADVAdvect(AdvCtx *actx)
 	ierr = ADVProjHistGridToMark(actx); CHKERRQ(ierr);
 
 	PetscBool flag = PETSC_FALSE;
-	PetscOptionsGetBool(PETSC_NULL, "-new_advection", &flag, PETSC_NULL);
+	PetscOptionsGetBool(NULL, NULL, "-new_advection", &flag, NULL);
 
 	if (!flag)
 	{
@@ -1012,7 +1012,7 @@ PetscErrorCode ADVMarkControl(AdvCtx *actx)
 	PetscFunctionBegin;
 
 	PetscBool flag = PETSC_FALSE;
-	PetscOptionsGetBool(PETSC_NULL, "-use_marker_control", &flag, PETSC_NULL);
+	PetscOptionsGetBool(NULL, NULL, "-use_marker_control", &flag, NULL);
 
 	if (!flag) PetscFunctionReturn(0);
 
@@ -1121,7 +1121,7 @@ PetscErrorCode ADVCheckCorners(AdvCtx *actx)
 	bc = actx->jr->bc;
 
 	PetscBool flag = PETSC_FALSE;
-	PetscOptionsGetBool(PETSC_NULL, "-use_marker_control", &flag, PETSC_NULL);
+	PetscOptionsGetBool(NULL, NULL, "-use_marker_control", &flag, NULL);
 
 	if (!flag) PetscFunctionReturn(0);
 
@@ -1465,6 +1465,12 @@ PetscErrorCode ADVProjHistMarkToGrid(AdvCtx *actx)
 	for(ii = 0; ii < jr->numPhases; ii++)
 	{
 		ierr = ADVInterpMarkToEdge(actx, ii, _PHASE_); CHKERRQ(ierr);
+
+		// interpolate melt fraction if needed
+		if(jr->phases[ii].Pd_rho == 1 && jr->phases[ii].Pd_Me == 1)
+		{
+			ierr = ADVInterpMarkToEdge(actx, ii, _ME_); CHKERRQ(ierr);
+		}
 	}
 
 	// normalize phase ratios
@@ -1494,6 +1500,7 @@ PetscErrorCode ADVInterpMarkToCell(AdvCtx *actx)
 	PetscInt     ii, jj, ID, I, J, K;
 	PetscInt     nx, ny, nCells;
 	PetscScalar  xp, yp, zp, wxc, wyc, wzc, w = 0.0;
+	PData       *pd;
 
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
@@ -1516,15 +1523,17 @@ PetscErrorCode ADVInterpMarkToCell(AdvCtx *actx)
 		for(ii = 0; ii < jr->numPhases; ii++) svCell->phRat[ii] = 0.0;
 
 		// clear history variables
-		svCell->svBulk.pn = 0.0;
-		svCell->svBulk.Tn = 0.0;
-		svCell->svDev.APS = 0.0;
-		svCell->hxx       = 0.0;
-		svCell->hyy       = 0.0;
-		svCell->hzz       = 0.0;
-		svCell->U[0]      = 0.0;
-		svCell->U[1]      = 0.0;
-		svCell->U[2]      = 0.0;
+		svCell->svBulk.pn 		= 0.0;
+		svCell->svBulk.Tn 		= 0.0;
+		svCell->svBulk.rho_pd 	= 0.0;
+		svCell->svDev.mf  		= 0.0;
+		svCell->svDev.APS 		= 0.0;
+		svCell->hxx       		= 0.0;
+		svCell->hyy       		= 0.0;
+		svCell->hzz       		= 0.0;
+		svCell->U[0]      		= 0.0;
+		svCell->U[1]      		= 0.0;
+		svCell->U[2]      		= 0.0;
 	}
 
 	// scan ALL markers
@@ -1569,6 +1578,24 @@ PetscErrorCode ADVInterpMarkToCell(AdvCtx *actx)
 		svCell->U[1]      += w*P->U[1];
 		svCell->U[2]      += w*P->U[2];
 
+		// If melt is present get melt information
+		if(jr->phases[P->phase].Pd_rho == 1)
+		{
+			// Get the data from phase diagram
+			pd = jr->Pd;
+			ierr = SetDataPhaseDiagram(pd, P->p, P->T, jr->pShift, P->pdn); CHKERRQ(ierr);
+			svCell->svBulk.rho_pd  += w*pd->rho;
+			if (jr->phases[P->phase].Pd_Me == 1 && pd->mf >= 0 && pd->mf <= 1 )
+			{
+				svCell->svDev.mf += w*pd->mf;
+			}
+			else
+			{
+				svCell->svDev.mf = 0;
+				// PetscPrintf(PETSC_COMM_WORLD,"Melt fraction was set to zero because it exceeded the material limits (<3% || >100%)\n");
+			}
+		}
+
 	}
 
 	// normalize interpolated values
@@ -1580,16 +1607,18 @@ PetscErrorCode ADVInterpMarkToCell(AdvCtx *actx)
 		// normalize phase ratios
 		ierr = getPhaseRatio(jr->numPhases, svCell->phRat, &w); CHKERRQ(ierr);
 
-		// normalize history variables
-		svCell->svBulk.pn /= w;
-		svCell->svBulk.Tn /= w;
-		svCell->svDev.APS /= w;
-		svCell->hxx       /= w;
-		svCell->hyy       /= w;
-		svCell->hzz       /= w;
-		svCell->U[0]      /=w;
-		svCell->U[1]      /=w;
-		svCell->U[2]      /=w;
+		// normalize history variables    // Das hier auskommentieren dann sind die density values richtig
+		svCell->svBulk.pn 		/= w;
+		svCell->svBulk.Tn 		/= w;
+		svCell->svBulk.rho_pd 	/= w;
+		svCell->svDev.APS 		/= w;
+		svCell->svDev.mf  		/= w;
+		svCell->hxx       		/= w;
+		svCell->hyy       		/= w;
+		svCell->hzz       		/= w;
+		svCell->U[0]      		/= w;
+		svCell->U[1]      		/= w;
+		svCell->U[2]      		/= w;
 	}
 
 	PetscFunctionReturn(0);
@@ -1604,6 +1633,7 @@ PetscErrorCode ADVInterpMarkToEdge(AdvCtx *actx, PetscInt iphase, InterpCase ica
 	FDSTAG      *fs;
 	JacRes      *jr;
 	Marker      *P;
+	PData       *pd;
 	PetscScalar  UPXY, UPXZ, UPYZ;
 	PetscInt     nx, ny, sx, sy, sz;
 	PetscInt     jj, ID, I, J, K, II, JJ, KK;
@@ -1641,7 +1671,8 @@ PetscErrorCode ADVInterpMarkToEdge(AdvCtx *actx, PetscInt iphase, InterpCase ica
 		P = &actx->markers[jj];
 
 		// perform phase ID test
-		if(icase == _PHASE_ && P->phase != iphase) continue;
+		if      (icase == _PHASE_ && P->phase != iphase) continue;
+		else if (icase == _ME_    && P->phase == iphase) { pd = jr->Pd; SetDataPhaseDiagram(pd, P->p, P->T, jr->pShift,P->pdn); UPXY = pd->mf; UPXZ = pd->mf; UPYZ = pd->mf; }
 
 		// get consecutive index of the host cell
 		ID = actx->cellnum[jj];
@@ -1716,6 +1747,12 @@ PetscErrorCode ADVInterpMarkToEdge(AdvCtx *actx, PetscInt iphase, InterpCase ica
 		for(jj = 0; jj < fs->nXYEdg; jj++) jr->svXYEdge[jj].svDev.APS = gxy[jj]/jr->svXYEdge[jj].ws;
 		for(jj = 0; jj < fs->nXZEdg; jj++) jr->svXZEdge[jj].svDev.APS = gxz[jj]/jr->svXZEdge[jj].ws;
 		for(jj = 0; jj < fs->nYZEdg; jj++) jr->svYZEdge[jj].svDev.APS = gyz[jj]/jr->svYZEdge[jj].ws;
+	}
+	else if(icase == _ME_)
+	{
+		for(jj = 0; jj < fs->nXYEdg; jj++) jr->svXYEdge[jj].svDev.mf = gxy[jj]/jr->svXYEdge[jj].ws;
+		for(jj = 0; jj < fs->nXZEdg; jj++) jr->svXZEdge[jj].svDev.mf = gxz[jj]/jr->svXZEdge[jj].ws;
+		for(jj = 0; jj < fs->nYZEdg; jj++) jr->svYZEdge[jj].svDev.mf = gyz[jj]/jr->svYZEdge[jj].ws;
 	}
 
 	// restore access
@@ -1813,6 +1850,374 @@ PetscErrorCode ADVMarkCrossFreeSurf(AdvCtx *actx, FreeSurf *surf, PetscScalar to
 
 	// restore access
 	ierr = DMDAVecRestoreArray(surf->DA_SURF, surf->ltopo, &ltopo);  CHKERRQ(ierr);
+
+	PetscFunctionReturn(0);
+}
+//---------------------------------------------------------------------------
+// get the density from a phase diagram
+#undef __FUNCT__
+#define __FUNCT__ "LoadPhaseDiagram"
+PetscErrorCode LoadPhaseDiagram(AdvCtx *actx, PetscInt i)
+{
+	FILE          *fp;
+    PetscInt       i_pd,j,jj,ij,lineStart,n,found;
+    PetscScalar    fl[2];
+    char           buf[1000],name[100];
+    PData         *pd;
+    Marker        *P;
+    Scaling        scal;
+    JacRes        *jr;
+
+	PetscFunctionBegin;
+
+	// rho_pdval[0] = lowermost temperature value
+	// rho_pdval[1] = dT
+	// rho_pdval[2] = nT
+	// rho_pdval[3] = uppermost temperature value
+	// rho_pdval[4] = lowermost pressure value
+	// rho_pdval[5] = dp
+	// rho_pdval[6] = np
+	// rho_pdval[7] = uppermost pressure value
+	// rho_pdval[8] = # of columns (to determine what needs to be interpolated)
+
+	jr   = actx->jr;
+	scal = actx->jr->scal;
+	pd   = actx->jr->Pd;
+
+	// Extrapolate the name on the markers
+	for(jj = 0; jj < actx->nummark; jj++)
+	{
+		P      = &actx->markers[jj];
+		if(P->phase == i)
+		{
+			for(j=0; j<max_name; j++)
+			{
+				P->pdn[j] = jr->phases[i].pdn[j];
+			}
+		}
+	}
+
+	found = 0;
+	// Get the next empty row in the buffer
+	for(j=0; j<max_num_pd; j++)
+	{
+		if(!pd->rho_pdns[5][j])
+		{
+			found = 1;
+			i_pd = j;
+			break;
+		}
+		else
+		{
+			found = 1;
+			// Check if we have this diagram already in the buffer
+			for(ij=0; ij<max_name; ij++)
+			{
+				if((pd->rho_pdns[ij][j] != jr->phases[i].pdn[ij]))
+				{
+					found = 0;
+					break;
+				}
+			}
+			if(found == 1)
+			{
+				// We already loaded that diagram so no need to do anything here except setting the flags for the melt
+				sprintf(name,"%s.in",jr->phases[i].pdn);
+				fp=fopen(name,"r");
+				for(j=0;j<1;j++)
+				{
+					if(j==0)
+					{
+						fscanf(fp, "%lf,",&fl[0]);
+					}
+				}
+				if(fl[0] == 4 || fl[0] == 5)
+				{
+					jr->phases[i].Pd_Me = 1;
+				}
+				fclose(fp);
+				PetscFunctionReturn(0);
+			}
+		}
+	}
+
+	if(found == 0)
+	{
+		PetscPrintf(PETSC_COMM_WORLD,"Phase diagram buffer too small!\n\n");
+		PetscFunctionReturn(0);
+	}
+
+	// Create the name
+	sprintf(name,"%s.in",jr->phases[i].pdn);
+
+	lineStart = 50.0;    // 50 lines are reserved for header
+
+	fp=fopen(name,"r");
+	if (fp==NULL)
+	{
+		SETERRQ1(PETSC_COMM_SELF, PETSC_ERR_USER, "No such phase diagram: %s in phase %i!\n",name);
+	}
+
+	// Read header
+	for(j=0;j<lineStart;j++)
+	{
+		if(j==0)
+		{
+			fscanf(fp, "%lf,",&pd->rho_pdval[8][i_pd]);
+		}
+		else
+		{
+			fgets(buf, 1000, fp);
+		}
+	}
+
+	// Read important phase diagram info
+	fscanf(fp, "%lf,",&pd->rho_pdval[0][i_pd]);
+	pd->rho_pdval[0][i_pd] = (pd->rho_pdval[0][i_pd])/scal.temperature;
+	fscanf(fp, "%lf,",&pd->rho_pdval[1][i_pd]);
+	pd->rho_pdval[1][i_pd] = (pd->rho_pdval[1][i_pd])/scal.temperature;
+	fscanf(fp, "%lf,",&pd->rho_pdval[2][i_pd]);
+	pd->rho_pdval[3][i_pd] = pd->rho_pdval[2][i_pd]*pd->rho_pdval[1][i_pd] + pd->rho_pdval[0][i_pd];
+	fscanf(fp, "%lf,",&pd->rho_pdval[4][i_pd]);
+	pd->rho_pdval[4][i_pd] = (pd->rho_pdval[4][i_pd]*1e5)/scal.stress_si;
+	fscanf(fp, "%lf,",&pd->rho_pdval[5][i_pd]);
+	pd->rho_pdval[5][i_pd] = (pd->rho_pdval[5][i_pd]*1e5)/scal.stress_si;
+	fscanf(fp, "%lf,",&pd->rho_pdval[6][i_pd]);
+	pd->rho_pdval[7][i_pd] = pd->rho_pdval[6][i_pd]*pd->rho_pdval[5][i_pd] + pd->rho_pdval[4][i_pd];
+
+	n = (PetscInt)pd->rho_pdval[2][i_pd] * (PetscInt)pd->rho_pdval[6][i_pd];
+
+	/*
+	Check what data is available:
+	1 column = rho fluid [kg/m3]
+	2 column = melt fraction []
+	3 column = density [kg/m3]
+	4 column = T [K]
+	5 column = P [b]
+	*/
+
+	if(pd->rho_pdval[8][i_pd] == 3)  // density
+	{
+		fscanf(fp,"%lf %lf %lf,",&pd->rho_v[0][i_pd],&fl[0],&fl[1]);
+		pd->rho_v[0][i_pd] /= scal.density;
+		for (j=1; j<n; j++)
+		{
+			fscanf(fp, "%lf %lf %lf,",&pd->rho_v[j][i_pd],&fl[0],&fl[1]);
+			pd->rho_v[j][i_pd] /= scal.density;
+		}
+	}
+	else if(pd->rho_pdval[8][i_pd] == 4)   // density + mf
+	{
+		jr->phases[i].Pd_Me = 1;
+		fscanf(fp, "%lf %lf %lf %lf,",&pd->Me_v[0][i_pd],&pd->rho_v[0][i_pd],&fl[0],&fl[1]);
+		pd->rho_v[0][i_pd] /= scal.density;
+
+		for (j=1; j<n; j++)
+		{
+			fscanf(fp, "%lf %lf %lf %lf,",&pd->Me_v[j][i_pd],&pd->rho_v[j][i_pd],&fl[0],&fl[1]);
+			pd->rho_v[j][i_pd] /= scal.density;
+		}
+	}
+	else if(pd->rho_pdval[8][i_pd] == 5)   // density + mf + density_fluid
+	{
+		jr->phases[i].Pd_Me = 1;
+		fscanf(fp, "%lf %lf %lf %lf %lf,",&pd->rho_f_v[0][i_pd],&pd->Me_v[0][i_pd],&pd->rho_v[0][i_pd],&fl[0],&fl[1]);
+		pd->rho_v[0][i_pd] /= scal.density;
+		pd->rho_f_v[0][i_pd] /= scal.density;
+
+		for (j=1; j<n; j++)
+		{
+			fscanf(fp, "%lf %lf %lf %lf %lf,",&pd->rho_f_v[j][i_pd],&pd->Me_v[j][i_pd],&pd->rho_v[j][i_pd],&fl[0],&fl[1]);
+			pd->rho_v[j][i_pd] /= scal.density;
+			pd->rho_f_v[j][i_pd] /= scal.density;
+		}
+	}
+	else
+	{
+		PetscPrintf(PETSC_COMM_WORLD,"Unknown phase diagram data!\n");
+		PetscFunctionReturn(0);
+	}
+
+	// Interpolate the name
+	for(j=0; j<max_name; j++)
+	{
+		pd->rho_pdns[j][i_pd] = jr->phases[i].pdn[j];
+	}
+	fclose(fp);
+
+	PetscPrintf(PETSC_COMM_WORLD," Succesfully loaded Phase diagram %s\n",name);
+
+	// Uncomment to debug values
+	// PetscPrintf(PETSC_COMM_WORLD,"RHO = %.20f ; scal = %lf\n 2 = %lf\n  3 = %lf\n 3m = %lf\n  4 = %.20f ; scal = %lf\n 5 = %lf\n 6 = %lf\n 6m = %lf\n n = %i ; scal = %lf\n",pd->rho_v[20000][0], scal.temperature,pd->rho_pdval[1][i_pd],pd->rho_pdval[2][i_pd],pd->rho_pdval[3][i_pd],pd->rho_pdval[4][i_pd], scal.stress_si,pd->rho_pdval[5][i_pd],pd->rho_pdval[6][i_pd],pd->rho_pdval[7][i_pd],n, scal.density);
+
+	PetscFunctionReturn(0);
+}
+//---------------------------------------------------------------------------
+// get the density from a phase diagram
+#undef __FUNCT__
+#define __FUNCT__ "SetDataPhaseDiagram"
+PetscErrorCode SetDataPhaseDiagram(PData *pd, PetscScalar p, PetscScalar T, PetscScalar pshift, char pdn[])
+{
+    PetscInt       i,j,i_pd,indT[2],indP[2],ind[4],found;
+    PetscScalar    fx0,fx1,weight[4];
+
+	PetscFunctionBegin;
+
+	// rho_pdval[0] = lowermost temperature value
+	// rho_pdval[1] = dT
+	// rho_pdval[2] = nT
+	// rho_pdval[3] = uppermost temperature value
+	// rho_pdval[4] = lowermost pressure value
+	// rho_pdval[5] = dp
+	// rho_pdval[6] = np
+	// rho_pdval[7] = uppermost pressure value
+	// rho_pdval[8] = # of columns (to determine what needs to be interpolated)
+
+	// Function to interpolate values from P-T data from PARTICLES (called in advect.c)
+
+	/* ------------------------------------------------------------------------------
+	 * WARNING: THERE IS SOME WEIRD RANDOM BEHAVIOUR.
+	 * 			RHOF BECOMES NAN IN SOME COMPLETELY RANDOM LOCATIONS
+	 * ------------------------------------------------------------------------------ */
+
+	// Get the correct phase diagram
+	for(i=0; i<max_num_pd; i++)
+	{
+		i_pd  = -1;
+		found = 1;
+		if(!pd->rho_pdns[5][i])
+		{
+			// We found an empty phase diagram spot
+		}
+		else
+		{
+			for(j=0; j<max_name; j++)
+			{
+				if((pd->rho_pdns[j][i] != pdn[j]))
+				{
+					found = 0;
+					break;
+				}
+			}
+			if(found==1)
+			{
+				i_pd = i;  // Store the column of the buffer
+				break;
+			}
+		}
+	}
+
+	if(i_pd<0)
+	{
+		pd->rho = 0;
+		PetscFunctionReturn(0);
+	}
+
+	// Temporarily add the pressure shift in this function to properly interpolate in the phase digram
+	p = p-pshift;
+
+	// Take absolute value of pressure
+	if(p<0)
+	{
+		// p = -1*p;
+		p = 0;
+	}
+
+	indT[0] = (PetscInt)floor((T-pd->rho_pdval[0][i_pd])/pd->rho_pdval[1][i_pd]);
+	indT[1] = indT[0] + 1;
+
+	indP[0] = (PetscInt)floor((p-(pd->rho_pdval[4][i_pd]))/pd->rho_pdval[5][i_pd]);
+	indP[1] = indP[0] + 1;
+
+	weight[0] = ((indP[1]*pd->rho_pdval[5][i_pd]    + pd->rho_pdval[4][i_pd]) - p) / ((pd->rho_pdval[5][i_pd]*indP[1]+pd->rho_pdval[4][i_pd]) - (pd->rho_pdval[5][i_pd]*indP[0]+pd->rho_pdval[4][i_pd]));
+	weight[1] = (p - (pd->rho_pdval[5][i_pd]*indP[0]+ pd->rho_pdval[4][i_pd]))     / ((pd->rho_pdval[5][i_pd]*indP[1]+pd->rho_pdval[4][i_pd]) - (pd->rho_pdval[5][i_pd]*indP[0]+pd->rho_pdval[4][i_pd]));
+	weight[2] = ((pd->rho_pdval[1][i_pd]*indT[1]    + pd->rho_pdval[0][i_pd]) - T) / ((pd->rho_pdval[1][i_pd]*indT[1]+pd->rho_pdval[0][i_pd]) - (pd->rho_pdval[1][i_pd]*indT[0]+pd->rho_pdval[0][i_pd]));
+	weight[3] = (T - (pd->rho_pdval[1][i_pd]*indT[0]+ pd->rho_pdval[0][i_pd]))     / ((pd->rho_pdval[1][i_pd]*indT[1]+pd->rho_pdval[0][i_pd]) - (pd->rho_pdval[1][i_pd]*indT[0]+pd->rho_pdval[0][i_pd]));
+
+	if(indT[1]>(*pd->rho_pdval[2]))
+	{
+		indT[0] = (PetscInt)pd->rho_pdval[2][i_pd]-1;
+		indT[1] = (PetscInt)pd->rho_pdval[2][i_pd];
+		weight[2] = 1;
+		weight[3] = 0;
+	}
+	if(indP[1]>(*pd->rho_pdval[6]))
+	{
+		indP[0] = (PetscInt)pd->rho_pdval[6][i_pd]-1;
+		indP[1] = (PetscInt)pd->rho_pdval[6][i_pd];
+		weight[0] = 1;
+		weight[1] = 0;
+	}
+	if(indT[0]<1)
+	{
+		indT[0] = 0;
+		indT[1] = 1;
+		weight[2] = 0;
+		weight[3] = 1;
+	}
+	if(indP[0]<1)
+	{
+		indP[0] = 0;
+		indP[1] = 1;
+		weight[0] = 0;
+		weight[1] = 1;
+	}
+	ind[0] = (PetscInt)pd->rho_pdval[2][i_pd] * (indP[0]-1) + indT[0];
+	ind[1] = (PetscInt)pd->rho_pdval[2][i_pd] * (indP[0]-1) + indT[1];
+	ind[2] = (PetscInt)pd->rho_pdval[2][i_pd] * (indP[1]-1) + indT[0];
+	ind[3] = (PetscInt)pd->rho_pdval[2][i_pd] * (indP[1]-1) + indT[1];
+	if(ind[0]<0)
+	{
+		ind[0] = 0;
+		ind[1] = 1;
+	}
+	if(ind[3]>pd->rho_pdval[2][i_pd]*pd->rho_pdval[6][i_pd])
+	{
+		ind[2] = (PetscInt)pd->rho_pdval[2][i_pd]*(PetscInt)pd->rho_pdval[6][i_pd]-1;
+		ind[3] = (PetscInt)pd->rho_pdval[2][i_pd]*(PetscInt)pd->rho_pdval[6][i_pd];
+	}
+
+	// Interpolate density
+	fx0 = weight[0] * pd->rho_v[ind[0]][i_pd] + weight[1] * pd->rho_v[ind[2]][i_pd];
+	fx1 = weight[0] * pd->rho_v[ind[1]][i_pd] + weight[1] * pd->rho_v[ind[3]][i_pd];
+	pd->rho = weight[2] * fx0           + weight[3] * fx1;
+
+	// Interpolate mf if present
+	if(pd->rho_pdval[8][i_pd] == 4 )
+	{
+		fx0 = weight[0] * pd->Me_v[ind[0]][i_pd] + weight[1] * pd->Me_v[ind[2]][i_pd];
+		fx1 = weight[0] * pd->Me_v[ind[1]][i_pd] + weight[1] * pd->Me_v[ind[3]][i_pd];
+		pd->mf  = weight[2] * fx0      + weight[3] * fx1;
+	}
+	// Interpolate mf + rho fluid if present
+	else if(pd->rho_pdval[8][i_pd] == 5)
+	{
+		fx0 = weight[0] * pd->Me_v[ind[0]][i_pd] + weight[1] * pd->Me_v[ind[2]][i_pd];
+		fx1 = weight[0] * pd->Me_v[ind[1]][i_pd] + weight[1] * pd->Me_v[ind[3]][i_pd];
+		pd->mf  = weight[2] * fx0      + weight[3] * fx1;
+
+		fx0 = weight[0] * pd->rho_f_v[ind[0]][i_pd] + weight[1] * pd->rho_f_v[ind[2]][i_pd];
+		fx1 = weight[0] * pd->rho_f_v[ind[1]][i_pd] + weight[1] * pd->rho_f_v[ind[3]][i_pd];
+		pd->rho_f  = weight[2] * fx0   + weight[3] * fx1;
+
+		// Error checking
+		// if(PetscIsInfOrNanScalar(pd->rho_f)) pd->rho_f = 0;
+
+		// Apply feedback to the density (rho_eff = rho_f*mf+(1-mf)*rho)
+		pd->rho = (pd->mf * pd->rho_f) + ((1-pd->mf) * pd->rho);
+	}
+	// No melt fraction
+	else
+	{
+		pd->mf = 0;
+	}
+
+	// Error checking
+	// if(PetscIsInfOrNanScalar(pd->rho)) pd->rho = 2500;
+
+	// Uncomment to debug values
+	// PetscPrintf(PETSC_COMM_WORLD,"i_pd = %i\np = %.60f \n T = %.20lf \n\nFINAL INDICES:\n ind[0] = %i \n ind[1] = %i\n ind[2] = %i\n ind[3] = %i\n weight[0] = %.10f\n  weight[1] = %.10f\n weight[0] = %.10f\n  weight[1] = %.10f\n\n --> rho = %.20f\n \n 1 = %.20lf \n2 = %.20lf \n3 = %.20lf \n4 = %.20lf \n5 = %.20lf \n6 = %.20lf \n7 = %.20lf \n8 = %.20lf \n \n rho[0] = %.20f \nrho[1] = %.20f \nrho[2] = %.20f \nrho[3] = %.20f \n   ",i_pd,p,T,ind[0],ind[1],ind[2],ind[3],weight[0],weight[1],weight[2],weight[3],pd->rho,pd->rho_pdval[0][i_pd] ,pd->rho_pdval[1][i_pd],pd->rho_pdval[2][i_pd],pd->rho_pdval[3][i_pd],pd->rho_pdval[4][i_pd],pd->rho_pdval[5][i_pd],pd->rho_pdval[6][i_pd],pd->rho_pdval[7][i_pd],pd->rho_v[ind[0]][i_pd],pd->rho_v[ind[1]][i_pd],pd->rho_v[ind[2]][i_pd],pd->rho_v[ind[3]][i_pd]);
+	// PetscPrintf(PETSC_COMM_WORLD,"MF = %.20f; RHOF = %.20f; RHO = %.20f; i_pd = %i ; fx = %.20f; fx1 = %.20f; rhof1 = %.20f; rhof2 = %.20f; ind3 = %i; weight0 = %.20f ; %.3f\n",pd->mf,pd->rho_f,pd->rho,i_pd,fx0,fx1,pd->rho_f_v[ind[1]][i_pd],pd->rho_f_v[ind[3]][i_pd],ind[3],weight[0],pd->rho_pdval[8][i_pd]);
 
 	PetscFunctionReturn(0);
 }

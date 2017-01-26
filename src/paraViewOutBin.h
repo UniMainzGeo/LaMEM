@@ -161,6 +161,7 @@ typedef struct
 	PetscInt j2_dev_stress;  		// deviatoric stress second invariant
 	PetscInt strain_rate;    		// deviatoric strain rate tensor
 	PetscInt j2_strain_rate; 		// deviatoric strain rate second invariant
+	PetscInt melt_fraction;   		// melt fraction
 	PetscInt vol_rate;       		// volumetric strain rate
 	PetscInt vorticity;      		// vorticity vector
 	PetscInt ang_vel_mag;    		// average angular velocity magnitude

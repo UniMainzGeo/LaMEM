@@ -163,8 +163,6 @@ PetscErrorCode SNESPrintConvergedReason(SNES snes, PetscBool *Convergence);
 //PetscErrorCode SNESBlockStopTest(SNES snes, PetscInt it, PetscReal xnorm,
 //	PetscReal gnorm, PetscReal f, SNESConvergedReason *reason, void *cctx);
 
-void getNst(MatParLim *lim, PetscInt it, PetscReal f, SNESConvergedReason *reason);
-
 PetscErrorCode SNESCoupledTest(
 	SNES                snes,
 	PetscInt            it,

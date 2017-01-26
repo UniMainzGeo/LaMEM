@@ -229,7 +229,7 @@ PetscErrorCode PVOutWriteVelocity(JacRes *jr, OutBuf *outbuf)
 	cf = scal->velocity;
 	iflag.use_bound = PETSC_TRUE;
 
-	ierr = JacResCopyVel(jr, jr->gsol, _APPLY_SPC_); CHKERRQ(ierr);
+	ierr = JacResCopyVel(jr, jr->gsol); CHKERRQ(ierr);
 
 	INTERPOLATE_ACCESS(jr->lvx, InterpXFaceCorner, 3, 0, 0.0)
 	INTERPOLATE_ACCESS(jr->lvy, InterpYFaceCorner, 3, 1, 0.0)
@@ -252,7 +252,7 @@ PetscErrorCode PVOutWritePressure(JacRes *jr, OutBuf *outbuf)
 	// scale pressure shift
 	pShift = cf*jr->pShift;
 
-	ierr = JacResCopyPres(jr, jr->gsol, _APPLY_SPC_); CHKERRQ(ierr);
+	ierr = JacResCopyPres(jr, jr->gsol); CHKERRQ(ierr);
 
 	INTERPOLATE_ACCESS(jr->lp, InterpCenterCorner, 1, 0, pShift)
 
@@ -447,6 +447,22 @@ PetscErrorCode PVOutWriteJ2StrainRate(JacRes *jr, OutBuf *outbuf)
 	ierr = VecSqrtAbs(outbuf->lbcor); CHKERRQ(ierr);
 
 	ierr = OutBufPut3DVecComp(outbuf, 1, 0, cf, 0.0); CHKERRQ(ierr);
+
+	PetscFunctionReturn(0);
+}
+//---------------------------------------------------------------------------
+#undef __FUNCT__
+#define __FUNCT__ "PVOutWriteMeltFraction"
+PetscErrorCode PVOutWriteMeltFraction(JacRes *jr, OutBuf *outbuf)
+{
+	COPY_FUNCTION_HEADER
+
+	// macros to copy melt fraction to buffer
+	#define GET_MF_CENTER  buff[k][j][i] = jr->svCell[iter++].svDev.mf;
+
+	cf = 1.0;
+
+	INTERPOLATE_COPY(fs->DA_CEN, outbuf->lbcen, InterpCenterCorner, GET_MF_CENTER,  1, 0)
 
 	PetscFunctionReturn(0);
 }

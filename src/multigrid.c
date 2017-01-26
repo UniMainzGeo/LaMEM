@@ -96,7 +96,7 @@ PetscErrorCode MGLevelCreate(MGLevel *lvl, MGLevel *fine, FDSTAG *fs, BCCtx *bc)
 		ierr = DMDAGetInfo(fine->DA_CEN, 0, &Nx, &Ny, &Nz, &Px, &Py, &Pz, 0, 0, 0, 0, 0, 0); CHKERRQ(ierr);
 
 		// get refinement factor in y-direction of central array (in 2D, don't refine in y-direction)
-		ierr = DMDAGetRefinementFactor(fine->DA_CEN, PETSC_NULL, &refine_y,PETSC_NULL); CHKERRQ(ierr);
+		ierr = DMDAGetRefinementFactor(fine->DA_CEN, NULL, &refine_y,NULL); CHKERRQ(ierr);
 
 		// get number of cells per processor in fine grid
 		ierr = DMDAGetOwnershipRanges(fine->DA_CEN, &plx, &ply, &plz); CHKERRQ(ierr);
@@ -118,27 +118,27 @@ PetscErrorCode MGLevelCreate(MGLevel *lvl, MGLevel *fine, FDSTAG *fs, BCCtx *bc)
 		Nz /= 2;  for(i = 0; i < Pz; i++) lz[i] /= 2;
 
 		// central points (DA_CEN) with boundary ghost points (1-layer stencil box)
-		ierr = DMDACreate3d(PETSC_COMM_WORLD,
+		ierr = DMDACreate3dSetUp(PETSC_COMM_WORLD,
 			DM_BOUNDARY_GHOSTED, DM_BOUNDARY_GHOSTED, DM_BOUNDARY_GHOSTED, DMDA_STENCIL_BOX,
 			Nx, Ny, Nz, Px, Py, Pz, 1, 1, lx, ly, lz, &lvl->DA_CEN); CHKERRQ(ierr);
 
 		// X face (DA_X) with boundary ghost points (1-layer stencil box)
 		lx[Px-1]++;
-		ierr = DMDACreate3d(PETSC_COMM_WORLD,
+		ierr = DMDACreate3dSetUp(PETSC_COMM_WORLD,
 			DM_BOUNDARY_GHOSTED, DM_BOUNDARY_GHOSTED, DM_BOUNDARY_GHOSTED, DMDA_STENCIL_BOX,
 			Nx+1, Ny, Nz, Px, Py, Pz, 1, 1, lx, ly, lz, &lvl->DA_X); CHKERRQ(ierr);
 		lx[Px-1]--;
 
 		// Y face (DA_Y) with boundary ghost points (1-layer stencil box)
 		ly[Py-1]++;
-		ierr = DMDACreate3d(PETSC_COMM_WORLD,
+		ierr = DMDACreate3dSetUp(PETSC_COMM_WORLD,
 			DM_BOUNDARY_GHOSTED, DM_BOUNDARY_GHOSTED, DM_BOUNDARY_GHOSTED, DMDA_STENCIL_BOX,
 			Nx, Ny+1, Nz, Px, Py, Pz, 1, 1, lx, ly, lz, &lvl->DA_Y); CHKERRQ(ierr);
 		ly[Py-1]--;
 
 		// Z face (DA_Z) with boundary ghost points (1-layer stencil box)
 		lz[Pz-1]++;
-		ierr = DMDACreate3d(PETSC_COMM_WORLD,
+		ierr = DMDACreate3dSetUp(PETSC_COMM_WORLD,
 			DM_BOUNDARY_GHOSTED, DM_BOUNDARY_GHOSTED, DM_BOUNDARY_GHOSTED, DMDA_STENCIL_BOX,
 			Nx, Ny, Nz+1, Px, Py, Pz, 1, 1, lx, ly, lz, &lvl->DA_Z); CHKERRQ(ierr);
 
@@ -359,7 +359,7 @@ PetscErrorCode MGLevelRestrictEta(MGLevel *lvl, MGLevel *fine)
 	//-----------------------
 	ierr = DMDAGetCorners(lvl->DA_CEN, &sx, &sy, &sz, &nx, &ny, &nz); CHKERRQ(ierr);
 
-	ierr = DMDAGetRefinementFactor(fine->DA_CEN, PETSC_NULL, &refine_y,PETSC_NULL); CHKERRQ(ierr);	// refinement in y
+	ierr = DMDAGetRefinementFactor(fine->DA_CEN, NULL, &refine_y,NULL); CHKERRQ(ierr);	// refinement in y
 
 	START_STD_LOOP
 	{
@@ -433,7 +433,7 @@ PetscErrorCode MGLevelRestrictBC(MGLevel *lvl, MGLevel *fine)
 	ierr = DMDAVecGetArray(lvl->DA_CEN,  lvl->bcp,      &cbcp);  CHKERRQ(ierr);
 
 	// Refinement factor in Y
-	ierr = DMDAGetRefinementFactor(fine->DA_CEN, PETSC_NULL, &refine_y,PETSC_NULL); CHKERRQ(ierr);	// refinement in y
+	ierr = DMDAGetRefinementFactor(fine->DA_CEN, NULL, &refine_y,NULL); CHKERRQ(ierr);	// refinement in y
 
 	//-----------------------
 	// X-points (coarse grid)
@@ -580,7 +580,7 @@ PetscErrorCode MGLevelSetupRestrict(MGLevel *lvl, MGLevel *fine)
 	PetscScalar ***cetax, ***cetay, ***cetaz;
 
 	PetscBool scale = PETSC_FALSE;
-	PetscOptionsGetBool(PETSC_NULL, "-rest", &scale, PETSC_NULL);
+	PetscOptionsGetBool(NULL, NULL, "-rest", &scale, NULL);
 
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
@@ -588,7 +588,7 @@ PetscErrorCode MGLevelSetupRestrict(MGLevel *lvl, MGLevel *fine)
 	R = lvl->R;
 
 	// get refinement factor in y-direction of central array (in 2D, don't refine in y-direction)
-	ierr = DMDAGetRefinementFactor(fine->DA_CEN, PETSC_NULL, &refine_y,PETSC_NULL); CHKERRQ(ierr);
+	ierr = DMDAGetRefinementFactor(fine->DA_CEN, NULL, &refine_y,NULL); CHKERRQ(ierr);
 
 	// clear restriction matrix coefficients
 	ierr = MatZeroEntries(R); CHKERRQ(ierr);
@@ -937,7 +937,7 @@ PetscErrorCode MGLevelSetupProlong(MGLevel *lvl, MGLevel *fine)
 	PetscScalar ***cetax, ***cetay, ***cetaz;
 
 	PetscBool scale = PETSC_FALSE;
-	PetscOptionsGetBool(PETSC_NULL, "-prol", &scale, PETSC_NULL);
+	PetscOptionsGetBool(NULL, NULL, "-prol", &scale, NULL);
 
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
@@ -948,7 +948,7 @@ PetscErrorCode MGLevelSetupProlong(MGLevel *lvl, MGLevel *fine)
 	ierr = MatZeroEntries(P); CHKERRQ(ierr);
 
 	// get refinement factor in y-direction of central array (in 2D, don't refine in y-direction)
-	ierr = DMDAGetRefinementFactor(fine->DA_CEN, PETSC_NULL, &refine_y,PETSC_NULL); CHKERRQ(ierr);
+	ierr = DMDAGetRefinementFactor(fine->DA_CEN, NULL, &refine_y,NULL); CHKERRQ(ierr);
 
 	// access index vectors in coarse grid
 	ierr = DMDAVecGetArray(lvl->DA_X,    lvl->dof.ivx, &ivx);   CHKERRQ(ierr);
@@ -1754,7 +1754,7 @@ PetscErrorCode MGCreate(MG *mg, JacRes *jr)
 	PetscFunctionBegin;
 
 	// get preconditioner type
-	ierr = PetscOptionsGetString(NULL, "-gmg_pc_type", pc_type, MAX_NAME_LEN, &opt_set); CHKERRQ(ierr);
+	ierr = PetscOptionsGetString(NULL, NULL, "-gmg_pc_type", pc_type, MAX_NAME_LEN, &opt_set); CHKERRQ(ierr);
 
 	// check whether multigrid is requested
 	if(opt_set != PETSC_TRUE || strcmp(pc_type, "mg"))
@@ -1817,7 +1817,7 @@ PetscErrorCode MGDestroy(MG *mg)
 	PetscFunctionBegin;
 
 	// view preconditioner if required
-	ierr = PetscOptionsHasName(NULL, "-gmg_pc_view", &flg); CHKERRQ(ierr);
+	ierr = PetscOptionsHasName(NULL, NULL, "-gmg_pc_view", &flg); CHKERRQ(ierr);
 
 	if(flg == PETSC_TRUE)
 	{
@@ -2000,13 +2000,13 @@ PetscErrorCode MGDumpMat(MG *mg)
 	PetscFunctionBeginUser;
 
 	// view multigrid matrices if required
-	ierr = PetscOptionsHasName(NULL, "-gmg_dump", &flg); CHKERRQ(ierr);
+	ierr = PetscOptionsHasName(NULL, NULL, "-gmg_dump", &flg); CHKERRQ(ierr);
 
 	if(flg == PETSC_TRUE)
 	{
 		ierr = PetscPrintf(PETSC_COMM_WORLD, "Dumping multigrid matrices to MATLAB\n"); CHKERRQ(ierr);
 
-		viewer = PETSC_VIEWER_BINARY_(PetscObjectComm((PetscObject)mg->pc));
+		viewer = PETSC_VIEWER_BINARY_(PETSC_COMM_WORLD);
 
 		//===================================
 		// OUTPUT IN THE ORDER FINE -> COARSE
@@ -2052,7 +2052,7 @@ PetscErrorCode MGGetNumLevels(MG *mg)
 
 	// get refinement factor in y-direction of central array (in 2D, don't refine in y-direction)
 	refine_y = 2;
-	ierr = PetscOptionsGetInt(NULL, "-da_refine_y", &refine_y, PETSC_NULL); CHKERRQ(ierr);		// for cases where refinement is set to 1 (2D MG)
+	ierr = PetscOptionsGetInt(NULL, NULL, "-da_refine_y", &refine_y, NULL); CHKERRQ(ierr);		// for cases where refinement is set to 1 (2D MG)
 
 	// check discretization in all directions
 	ierr = Discret1DCheckMG(&fs->dsx, "x", &nx); CHKERRQ(ierr);                ncors = nx;
@@ -2063,7 +2063,7 @@ PetscErrorCode MGGetNumLevels(MG *mg)
 	ierr = Discret1DCheckMG(&fs->dsz, "z", &nz); CHKERRQ(ierr); if(nz < ncors) ncors = nz;
 
 	// check number of levels requested on the command line
-	ierr = PetscOptionsGetInt(NULL, "-gmg_pc_mg_levels", &nlevels, &opt_set); CHKERRQ(ierr);
+	ierr = PetscOptionsGetInt(NULL, NULL, "-gmg_pc_mg_levels", &nlevels, &opt_set); CHKERRQ(ierr);
 
 	if(opt_set != PETSC_TRUE)
 	{

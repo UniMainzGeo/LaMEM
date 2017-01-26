@@ -783,15 +783,15 @@ PetscErrorCode PVAVDReadFromOptions(PVAVD *pvavd)
 
 	pvavd->outavd = 0; // AVD output flag
 
-	ierr = PetscOptionsGetInt(NULL, "-out_avd", &pvavd->outavd, NULL); CHKERRQ(ierr);
+	ierr = PetscOptionsGetInt(NULL, NULL, "-out_avd", &pvavd->outavd, NULL); CHKERRQ(ierr);
 
 	if(!pvavd->outavd) PetscFunctionReturn(0);
 
 	pvavd->refine = 2; // Voronoi Diagram refinement factor
 	pvavd->outpvd = 0; // pvd file output flag
 
-	ierr = PetscOptionsGetInt(NULL, "-out_avd_ref", &pvavd->refine, NULL); CHKERRQ(ierr);
-	ierr = PetscOptionsGetInt(NULL, "-out_avd_pvd", &pvavd->outpvd, NULL); CHKERRQ(ierr);
+	ierr = PetscOptionsGetInt(NULL, NULL, "-out_avd_ref", &pvavd->refine, NULL); CHKERRQ(ierr);
+	ierr = PetscOptionsGetInt(NULL, NULL, "-out_avd_pvd", &pvavd->outpvd, NULL); CHKERRQ(ierr);
 
 	if(pvavd->outpvd)
 	{

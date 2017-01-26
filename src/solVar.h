@@ -45,6 +45,10 @@
 #ifndef __solVar_h__
 #define __solVar_h__
 
+#define max_num_pd    8     // max no of phase diagrams
+#define max_num_ro    40100  // max grid size of Pd
+#define max_name      54     // Length of the unique face diagram name
+
 //---------------------------------------------------------------------------
 //....    Non-Symmetric second rank tensor (gradient & rotation tensors) ....
 //---------------------------------------------------------------------------
@@ -75,13 +79,16 @@ typedef struct
 
 typedef struct
 {
-	PetscInt    phase; // phase identifier
-	PetscScalar X[3];  // global coordinates
-	PetscScalar p;     // pressure
-	PetscScalar T;     // temperature
-	PetscScalar APS;   // accumulated plastic strain
-	Tensor2RS   S;     // deviatoric stress
-	PetscScalar U[3];  // displacement
+	PetscInt     phase; // phase identifier
+	PetscScalar  X[3];  // global coordinates
+	PetscScalar  p;     // pressure
+	PetscScalar  T;     // temperature
+	PetscScalar  APS;   // accumulated plastic strain
+	Tensor2RS    S;     // deviatoric stress
+	PetscScalar  U[3];  // displacement
+	//PetscScalar *mf;    // melt fraction
+	//PetscScalar *mfn;   // melt fraction history
+	char         pdn[max_name];   // Phase diagram number
 
 } Marker;
 
@@ -100,6 +107,7 @@ typedef struct
 	PetscScalar  PSR;   // plastic strain-rate contribution
 	PetscScalar  dEta;  // dEta/dDII derivative (Jacobian)
 	PetscScalar  fr;    // effective friction coefficient (Jacobian)
+	PetscScalar  mf;    // melt fraction
 
 } SolVarDev;
 
@@ -111,6 +119,7 @@ typedef struct
 {
 	PetscScalar  theta; // volumetric strain rate
 	PetscScalar  rho;   // strain- & temperature-dependent density
+	PetscScalar  rho_pd;// Density from phase diagram
 	PetscScalar  IKdt;  // inverse bulk elastic viscosity (1/K/dt)
 	PetscScalar  alpha; // effective thermal expansion
 	PetscScalar  Tn;    // history temperature
@@ -165,6 +174,26 @@ typedef struct
 } Soft_t;
 
 //---------------------------------------------------------------------------
+//............   Phase diagram data   .......................................
+//---------------------------------------------------------------------------
+
+typedef struct
+{
+	// Density from phase diagram
+	PetscScalar  rho_pdval[10][max_num_pd]; // Array storing dp and dT as well as information on the max and min values
+	char         rho_pdns[max_name][max_num_pd];// loaded phase diagram numbers
+	PetscScalar  rho_v[max_num_ro][max_num_pd];					// Array containing the actual density data
+	PetscScalar  rho;
+	// Melt content data
+	PetscScalar  Me_v[max_num_ro][max_num_pd];          // Array containing the actual melt content data
+	PetscScalar  mf;
+	// Rho fluid data
+	PetscScalar rho_f_v[max_num_ro][max_num_pd];
+	PetscScalar rho_f;
+
+} PData;
+
+//---------------------------------------------------------------------------
 //......................   Material parameter table   .......................
 //---------------------------------------------------------------------------
 
@@ -206,6 +235,11 @@ typedef struct
 	PetscScalar  Cp;      // cpecific heat (capacity)
 	PetscScalar  k;       // thermal conductivity
 	PetscScalar  A;       // radiogenic heat production
+	// Phae diagram
+	char         pdn[max_name];     // Unique phase diagram number
+	PetscInt     Pd_rho;      // density from phase diagram?
+	PetscScalar  Pd_Me;       // Melt from phase diagram?
+	PetscScalar  Me_Mu0;      // Viscosity of rock is 100 % molten
 
 } Material_t;
 
@@ -238,7 +272,9 @@ typedef struct
 	// thermo-mechanical coupling controls
 	PetscScalar shearHeatEff; // shear heating efficiency parameter [0 - 1]
 	// rheology controls
-	PetscBool   quasiHarmAvg; // plasticity quasi-harmonic averaging flag
+	PetscBool   quasiHarmAvg; // quasi-harmonic averaging regularization flag (plasticity)
+	PetscScalar cf_eta_min;   // visco-plastic regularization parameter (plasticity)
+	PetscScalar n_pw;         // power-law regularization parameter (plasticity)
 	PetscBool   initGuessFlg; // initial guess computation flag
 	PetscBool   presLimFlg;   // pressure limit flag for plasticity
 	PetscBool   presLimAct;   // activate pressure limit flag
@@ -253,12 +289,6 @@ typedef struct
 	PetscBool    warn;
 	// matrix-free closed-form jacobian
 	PetscBool   jac_mat_free;
-
-	// ADAPTIVE DESCENT
-	PetscBool   descent;
-	PetscScalar nmin, nmax, n, beta;
-	PetscScalar ctol, dtol, res;
-	PetscInt    j, jmax;
 
 } MatParLim;
 

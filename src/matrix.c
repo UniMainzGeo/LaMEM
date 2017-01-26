@@ -80,6 +80,9 @@ PetscErrorCode MatAIJCreate(
 	ierr = MatSeqAIJSetPreallocation((*P), d_nz, d_nnz); CHKERRQ(ierr);
 	ierr = MatMPIAIJSetPreallocation((*P), d_nz, d_nnz, o_nz, o_nnz); CHKERRQ(ierr);
 
+	// read custom options (required to resolve SuperLU_DIST issue)
+	ierr = MatSetFromOptions((*P)); CHKERRQ(ierr);
+
 	// throw an error if preallocation fails
 	ierr = MatSetOption((*P), MAT_NEW_NONZERO_ALLOCATION_ERR, PETSC_TRUE); CHKERRQ(ierr);
 	ierr = MatSetUp((*P)); CHKERRQ(ierr);
@@ -199,7 +202,7 @@ PetscErrorCode PMatSetFromOptions(PMat pm)
 	PetscFunctionBegin;
 
 	// set matrix type
-	ierr = PetscOptionsGetString(PETSC_NULL,"-pcmat_type", pname, MAX_NAME_LEN, &flg); CHKERRQ(ierr);
+	ierr = PetscOptionsGetString(NULL, NULL,"-pcmat_type", pname, MAX_NAME_LEN, &flg); CHKERRQ(ierr);
 
 	if(flg == PETSC_TRUE)
 	{
@@ -224,7 +227,7 @@ PetscErrorCode PMatSetFromOptions(PMat pm)
 	// set penalty parameter
 	pm->pgamma = 1.0;
 
-	ierr = PetscOptionsGetScalar(NULL, "-pcmat_pgamma", &pgamma, &flg); CHKERRQ(ierr);
+	ierr = PetscOptionsGetScalar(NULL, NULL, "-pcmat_pgamma", &pgamma, &flg); CHKERRQ(ierr);
 
 	if(flg == PETSC_TRUE)
 	{
@@ -242,7 +245,7 @@ PetscErrorCode PMatSetFromOptions(PMat pm)
 	}
 
 	// set cell stiffness function
-	ierr = PetscOptionsHasName(NULL, "-pcmat_no_dev_proj", &flg); CHKERRQ(ierr);
+	ierr = PetscOptionsHasName(NULL, NULL, "-pcmat_no_dev_proj", &flg); CHKERRQ(ierr);
 
 	if(flg == PETSC_TRUE)
 	{

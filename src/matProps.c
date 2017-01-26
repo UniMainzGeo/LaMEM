@@ -183,12 +183,15 @@ PetscErrorCode MatPropGetStruct(FILE *fp,
 	m->ID = ID;
 
 	//============================================================
-	// density
+	// density & phase diagram info
 	//============================================================
-	getMatPropScalar(fp, ils, ile, "rho0",      &m->rho,   NULL);
-	getMatPropScalar(fp, ils, ile, "rho_n",     &m->rho_n, NULL);
-	getMatPropScalar(fp, ils, ile, "rho_c",     &m->rho_c, NULL);
-	getMatPropScalar(fp, ils, ile, "beta",      &m->beta,  NULL); // pressure-dependence of density
+	getMatPropScalar(fp, ils, ile, "rho0",      &m->rho,    NULL);
+	getMatPropScalar(fp, ils, ile, "rho_n",     &m->rho_n,  NULL);
+	getMatPropScalar(fp, ils, ile, "rho_c",     &m->rho_c,  NULL);
+	getMatPropScalar(fp, ils, ile, "beta",      &m->beta,   NULL); // pressure-dependence of density
+	getMatPropScalar(fp, ils, ile, "Me_Mu0",    &m->Me_Mu0, NULL);
+	getMatPropString(fp, ils, ile, "rho_ph",    &m->pdn, MAX_NAME_LEN, &found);
+	if(found){m->Pd_rho = 1;}else{m->Pd_rho = 0;}
 
 	//============================================================
 	// Creep profiles
@@ -359,6 +362,7 @@ PetscErrorCode MatPropGetStruct(FILE *fp,
 	PetscPrintf(PETSC_COMM_WORLD,"    Phase [%lld]: (plast) cohesion = %g %s, friction angle = %g %s \n", (LLD)(m->ID),m->ch, lbl_tau, m->fr, lbl_fr);
 	PetscPrintf(PETSC_COMM_WORLD,"    Phase [%lld]: (sweak) cohesion SoftLaw = %lld [ ], friction SoftLaw = %lld [ ] \n", (LLD)(m->ID),(LLD)chSoftID, (LLD)frSoftID);
 	PetscPrintf(PETSC_COMM_WORLD,"    Phase [%lld]: (temp ) alpha = %g %s, cp = %g %s, k = %g %s, A = %g %s \n", (LLD)(m->ID),m->alpha, lbl_alpha, m->Cp, lbl_cp,m->k, lbl_k, m->A, lbl_A);
+	if (m->Pd_rho) PetscPrintf(PETSC_COMM_WORLD,"    Phase [%lld]: Phase diagram is used for this phase \n",(LLD)(m->ID));
 	PetscPrintf(PETSC_COMM_WORLD,"    \n");
 
 	PetscFunctionReturn(0);
@@ -371,11 +375,19 @@ PetscErrorCode MatPropSetFromLibCall(JacRes *jr, ModParam *mod)
 {
 	// overwrite MATERIAL PARAMETERS with model parameters provided by a calling function
 
-	PetscInt 	id,im;
+	PetscInt 	id, im, count_starts, count_ends;
 	PetscScalar eta, eta0, e0;
-	Material_t  *m;
+	Material_t *m;
+	FILE       *fp;
+	char        ParamFile[MAX_PATH_LEN];
+	char       *all_options;
+	PetscBool   InputParamFile;
+	PetscInt   *ls, *le;
 
+	PetscErrorCode ierr;
 	PetscFunctionBegin;
+	
+	if(mod == NULL) PetscFunctionReturn(0);
 
 	// does a calling function provide model parameters?
 	if(mod->use == 0 || mod->use == 2 || mod->use == 4) PetscFunctionReturn(0);
@@ -400,88 +412,58 @@ PetscErrorCode MatPropSetFromLibCall(JacRes *jr, ModParam *mod)
 			// linear viscosity
 			if(mod->typ[im] == _ETA_)
 			{
-
-				// initialize additional parameters
-				eta      =  0.0;
-				eta0     =  0.0;
-				e0       =  0.0;
-				eta 	 =  mod->val[im];
-
-				// check strain-rate dependent creep
-				if((!eta0 && e0) || (eta0 && !e0))
-				{
-					SETERRQ1(PETSC_COMM_SELF, PETSC_ERR_USER, "eta0 & e0 must be specified simultaneously for phase %lld", (LLD)id);
-				}
-
-				// check power-law exponent
-				if(!m->n && ((eta0 && e0) || m->Bn))
-				{
-					SETERRQ1(PETSC_COMM_SELF, PETSC_ERR_USER, "Power-law exponent must be specified for phase %lld", (LLD)id);
-				}
-
-				// check Peierls creep
-				if(m->Bp && (!m->taup || !m->gamma || !m->q || !m->Ep))
-				{
-					SETERRQ1(PETSC_COMM_SELF, PETSC_ERR_USER, "All Peierls creep parameters must be specified simultaneously for phase %lld", (LLD)id);
-				}
-
-				// recompute creep parameters
-				if(eta)        m->Bd = 1.0/(2.0*eta);
-				if(eta0 && e0) m->Bn = pow (2.0*eta0, -m->n)*pow(e0, 1 - m->n);
-
-				// check that at least one essential deformation mechanism is specified
-				if(!m->Bd && !m->Bn && !m->G)
-				{
-					SETERRQ1(PETSC_COMM_SELF, PETSC_ERR_USER, "At least one of the parameter (set) Bd (eta), Bn (eta0, e0), G must be specified for phase %lld", (LLD)id);
-				}
-
-				PetscPrintf(PETSC_COMM_WORLD,"#    eta[%lld] = %g \n",(LLD)id,eta);
+				eta    =  mod->val[im];
+				m->Bd  =  1.0/(2.0*eta);
+				PetscPrintf(PETSC_COMM_WORLD,"#    eta[%lld] = %g \n",(LLD)id,eta);	
 			}
-
+			// powerlaw viscosity
+			else if(mod->typ[im] == _ETA0_)
+			{
+				eta0   =  mod->val[im];
+				
+				// get reference strainrate from file  ( this is super unnecessary but unfortunately there is no other way to recompute Bn here)
+				ierr = makeIntArray(&ls, NULL, max_num_phases); CHKERRQ(ierr);
+				ierr = makeIntArray(&le, NULL, max_num_phases); CHKERRQ(ierr);
+				PetscOptionsGetAll(NULL, &all_options ); // copy all command line args
+				ierr = PetscOptionsGetString(NULL, NULL, "-ParamFile", ParamFile, MAX_PATH_LEN, &InputParamFile); CHKERRQ(ierr);
+				fp = fopen(ParamFile, "r");
+				getLineStruct(fp, ls, le, max_num_phases, &count_starts, &count_ends, "<MaterialStart>","<MaterialEnd>");
+				getMatPropScalar(fp, ls[mod->phs[im]], le[mod->phs[im]], "e0",        &e0,       NULL);
+				
+				m->Bn  =  pow (2.0*eta0, -m->n)*pow(e0, 1 - m->n);
+				PetscPrintf(PETSC_COMM_WORLD,"#    eta[%lld] = %g \n",(LLD)id,eta0);
+			}
 			// constant density
 			else if(mod->typ[im] == _RHO0_) 
 			{
 				m->rho = mod->val[im];
 				PetscPrintf(PETSC_COMM_WORLD,"#    rho0[%lld] = %5.5f \n",(LLD)id,m->rho);
 			}
-
 			// depth dependent density
 			else if(mod->typ[im] == _RHON_)
 			{
 				m->rho_n = mod->val[im];
 				PetscPrintf(PETSC_COMM_WORLD,"#    rho_n[%lld] = %3.5f \n",(LLD)id,m->rho_n);
 			}
-
 			// depth dependent density
 			else if(mod->typ[im] == _RHOC_)
 			{
 				m->rho_c = mod->val[im];
 				PetscPrintf(PETSC_COMM_WORLD,"#    rho_c[%lld] = %3.5f \n",(LLD)id,m->rho_c);
 			}
-
 			// powerlaw exponent
 			else if(mod->typ[im] == _N_)
 			{
 				m->n = mod->val[im];
-				m->Bn = pow (2.0*eta0, -m->n)*pow(e0, 1 - m->n);
+				// m->Bn = pow (2.0*eta0, -m->n)*pow(e0, 1 - m->n);
 				PetscPrintf(PETSC_COMM_WORLD,"#    n[%lld] = %3.3f \n",(LLD)id,m->n);
 			}
-
 			// activation energy
 			else if(mod->typ[im] == _EN_)
 			{
 				m->En = mod->val[im];
 				PetscPrintf(PETSC_COMM_WORLD,"#    En[%lld] = %7.2f \n",(LLD)id,m->En);
 			}
-
-			// activation energy
-			else if(mod->typ[im] == _ETA0_)
-			{
-				eta0 = mod->val[im];
-				m->Bn = pow (2.0*eta0, -m->n)*pow(e0, 1 - m->n);
-				PetscPrintf(PETSC_COMM_WORLD,"#    eta0[%lld] = %g \n",(LLD)id,eta0);
-			}
-
 			else
 			{
 				PetscPrintf(PETSC_COMM_WORLD,"WARNING: inversion parameter type is not implemented \n");
@@ -521,7 +503,7 @@ PetscErrorCode MatPropSetFromCL(JacRes *jr)
 	flg = PETSC_FALSE;
 	get_options = PETSC_FALSE;
 
-	ierr = PetscOptionsGetBool( PETSC_NULL, "-SetMaterialProperties", &get_options, PETSC_NULL ); 					CHKERRQ(ierr);
+	ierr = PetscOptionsGetBool(NULL, NULL, "-SetMaterialProperties", &get_options, NULL ); 					CHKERRQ(ierr);
 
 	if(get_options) {
 		PetscPrintf(PETSC_COMM_WORLD,"# ------------------------------------------------------------------------\n");
@@ -541,7 +523,7 @@ PetscErrorCode MatPropSetFromCL(JacRes *jr)
 
 			// linear viscosity
 			sprintf(matprop_opt,"-eta_%lld",(LLD)id);
-			ierr = PetscOptionsGetReal(PETSC_NULL ,matprop_opt,&eta	, &flg); 				CHKERRQ(ierr);
+			ierr = PetscOptionsGetReal(NULL, NULL ,matprop_opt,&eta	, &flg); 				CHKERRQ(ierr);
 
 				// check strain-rate dependent creep
 				if((!eta0 && e0) || (eta0 && !e0))
@@ -575,7 +557,7 @@ PetscErrorCode MatPropSetFromCL(JacRes *jr)
 
 			// constant density
 			sprintf(matprop_opt,"-rho0_%lld",(LLD)id);
-			ierr = PetscOptionsGetReal(PETSC_NULL ,matprop_opt,&m->rho	, &flg);			CHKERRQ(ierr);
+			ierr = PetscOptionsGetReal(NULL, NULL ,matprop_opt,&m->rho	, &flg);			CHKERRQ(ierr);
 			if(flg == PETSC_TRUE) PetscPrintf(PETSC_COMM_WORLD,"#    rho0[%lld]	= %5.5f \n",(LLD)id,m->rho);
 
 		}

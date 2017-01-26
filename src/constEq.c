@@ -87,9 +87,9 @@ PetscErrorCode ConstEqCtxSetup(
 
 	p_viscosity = p;			// pressure used in viscosity evaluation
 
-	ierr = PetscOptionsGetBool(PETSC_NULL, "-ViscoPLithosOff", &flag, PETSC_NULL); CHKERRQ(ierr);
-	ierr = PetscOptionsGetBool(PETSC_NULL, "-NoPressureLimit", &flag2, PETSC_NULL); CHKERRQ(ierr);
-	ierr = PetscOptionsGetBool(PETSC_NULL, "-EmployLithostaticPressureInYieldFunction", &flag3, PETSC_NULL); CHKERRQ(ierr);
+	ierr = PetscOptionsHasName(NULL, NULL, "-ViscoPLithosOff", &flag); CHKERRQ(ierr);
+	ierr = PetscOptionsHasName(NULL, NULL, "-NoPressureLimit", &flag2); CHKERRQ(ierr);
+	ierr = PetscOptionsHasName(NULL, NULL, "-EmployLithostaticPressureInYieldFunction", &flag3); CHKERRQ(ierr);
 	
 	if(!flag) p_viscosity=p_lithos;
 
@@ -137,6 +137,12 @@ PetscErrorCode ConstEqCtxSetup(
 		ctx->N_dis =  mat->n;
 		ctx->A_dis =  mat->Bn*exp(-Q);
 		nl++;
+	}
+
+	// MELT VISCOSITY
+	if(mat->Pd_Me == 1)
+	{
+		ctx->Me_Mu0 = mat->Me_Mu0;
 	}
 
 	// PEIERLS CREEP (LOW TEMPERATURE RATE-DEPENDENT PLASTICITY, POWER-LAW APPROXIMATION)
@@ -246,10 +252,11 @@ PetscErrorCode GetEffVisc(
 	PetscScalar *eta_viscoplastic,
 	PetscScalar *DIIpl,
 	PetscScalar *dEta,
-	PetscScalar *fr)
+	PetscScalar *fr,
+	SolVarDev   *svDev)
 {
 	// stabilization parameters
-	PetscScalar eta_ve, eta_pl, eta_dis, eta_prl, cf;
+	PetscScalar eta_ve, eta_pl, eta_pw, eta_vp, eta_st, eta_dis, eta_prl, cf;
 	PetscScalar inv_eta_els, inv_eta_dif, inv_eta_dis, inv_eta_prl;
 
 	PetscFunctionBegin;
@@ -286,8 +293,10 @@ PetscErrorCode GetEffVisc(
 	if(ctx->A_els) inv_eta_els = 2.0*ctx->A_els;
 	// diffusion
 	if(ctx->A_dif) inv_eta_dif = 2.0*ctx->A_dif;
+	// dislocation with melt (after Kohlstedt 2003)
+	if(ctx->A_dis && ctx->Me_Mu0) inv_eta_dis = 2.0*pow(ctx->A_dis, 1.0/ctx->N_dis)*pow(ctx->DII, 1.0 - 1.0/ctx->N_dis) * pow(exp(40*svDev->mf),-1);
 	// dislocation
-	if(ctx->A_dis) inv_eta_dis = 2.0*pow(ctx->A_dis, 1.0/ctx->N_dis)*pow(ctx->DII, 1.0 - 1.0/ctx->N_dis);
+	else if(ctx->A_dis) inv_eta_dis = 2.0*pow(ctx->A_dis, 1.0/ctx->N_dis)*pow(ctx->DII, 1.0 - 1.0/ctx->N_dis);
 	// Peierls
 	if(ctx->A_prl) inv_eta_prl = 2.0*pow(ctx->A_prl, 1.0/ctx->N_prl)*pow(ctx->DII, 1.0 - 1.0/ctx->N_prl);
 
@@ -311,6 +320,23 @@ PetscErrorCode GetEffVisc(
 	// compute visco-elastic viscosity
 	eta_ve = lim->eta_min + 1.0/(inv_eta_els + inv_eta_dif + inv_eta_dis + inv_eta_prl + 1.0/lim->eta_max);
 
+	//===========
+	// MELT
+	//===========
+	if (ctx->Me_Mu0)
+	{
+		if(svDev->mf >= 0.1 && svDev->mf <= 1)
+		{
+			/*Effective melt viscosity parameterization proposed by Bittner
+		  	  and Schmeling, GJI 1995, V123, p.59-70, equation 7, which is
+		  	  again after Pinkerton and Stevenson
+		  	  Note that this equation has a typo, which is correct in the
+		  	  textbook of Gerya, page 294.
+			 */
+			eta_ve = lim->eta_min + (ctx->Me_Mu0*exp( 2.5 + (1-svDev->mf)*pow(((1-svDev->mf)/svDev->mf),0.48) ));
+		}
+	}
+
 	// set visco-elastic prediction
 	(*eta_total) = eta_ve;
 
@@ -332,45 +358,50 @@ PetscErrorCode GetEffVisc(
 	// PLASTICITY
 	//===========
 
-/*
-	if(lim->quasiHarmAvg == PETSC_TRUE)
-	{
-		//====================================
-		// regularized rate-dependent approach
-		//====================================
-
-		// check for nonzero plastic strain rate
-		if(DIIve < ctx->DII)
-		{
-			// store plastic strain rate & viscosity
-			H            = eta_ve/cf_eta_min;
-			(*eta_total) = 1.0/(1.0/eta_ve + 1.0/H) + (ctx->taupl/(2.0*ctx->DII))/(1.0 + H/eta_ve);
-			(*DIIpl)     = ctx->DII*(1.0 - (*eta_total)/eta_ve);
-		}
-*/
-
 	if(ctx->taupl && lim->initGuessFlg != PETSC_TRUE)
 	{
-		if(lim->descent == PETSC_TRUE)
+		// compute true plastic viscosity
+		eta_pl = ctx->taupl/(2.0*ctx->DII);
+
+		//==============================================
+		// compute total viscosity
+		// minimum viscosity (true) model is the default
+		//==============================================
+
+		if(lim->quasiHarmAvg == PETSC_TRUE)
 		{
-			// rate-dependent stabilization
-			eta_pl = (ctx->taupl/2.0)*pow(ctx->DII, 1/lim->n - 1.0);
+			// quasi-harmonic mean
+			(*eta_total) = 1.0/(1.0/eta_pl + 1.0/eta_ve);
 		}
-		else
+		else if(lim->n_pw)
 		{
-			// compute plastic viscosity
-			eta_pl = ctx->taupl/(2.0*ctx->DII);
+			// rate-dependent power-law stabilization
+			eta_pw = (ctx->taupl/2.0)*pow(ctx->DII, 1/lim->n_pw - 1.0);
+
+			if(eta_pw < eta_ve) (*eta_total) = eta_pw;
+		}
+		else if(lim->cf_eta_min)
+		{
+			// rate-dependent visco-plastic stabilization
+			eta_st = eta_ve/lim->cf_eta_min;
+
+			eta_vp = (eta_st + eta_pl)/(1.0 + eta_st/eta_ve);
+
+			if(eta_vp < eta_ve) (*eta_total) = eta_vp;
+		}
+		else if(eta_pl < eta_ve)
+		{
+			// minimum viscosity model (unstable) (default)
+			(*eta_total) = eta_pl;
 		}
 
-		// check for plastic yielding
 		if(eta_pl < eta_ve)
 		{
-			// store plastic strain rate, viscosity, derivative & effective friction
-			(*eta_total) 		=  eta_pl;
+			// store plastic strain rate, viscosity derivative & effective friction
 			(*eta_viscoplastic) =  eta_pl;	
-			(*DIIpl)     		=  ctx->DII*(1.0 - eta_pl/eta_ve);
-			(*dEta)      		= -eta_pl;
-			(*fr)        		=  ctx->fr;
+			(*DIIpl)     		=  ctx->DII*(1.0 - (*eta_total)/eta_ve);
+			(*dEta)             = -eta_pl;
+			(*fr)               =  ctx->fr;
 		}
 	}
 
@@ -454,7 +485,6 @@ PetscErrorCode DevConstEq(
 	dEta        = 0.0;
 	fr          = 0.0;
 
-
 	// scan all phases
 	for(i = 0; i < numPhases; i++)
 	{
@@ -468,10 +498,11 @@ PetscErrorCode DevConstEq(
 			ierr = ConstEqCtxSetup(&ctx, mat, lim, DII, APS, dt, p, p_lithos, T); CHKERRQ(ierr);
 
 			// solve effective viscosity & plastic strain rate
-			ierr = GetEffVisc(&ctx, lim, &eta_total, &eta_creep_phase, &eta_viscoplastic_phase, &DIIpl, &dEta, &fr); CHKERRQ(ierr);
+			ierr = GetEffVisc(&ctx, lim, &eta_total, &eta_creep_phase, &eta_viscoplastic_phase, &DIIpl, &dEta, &fr, svDev); CHKERRQ(ierr);
+
+			svDev->eta     += phRat[i]*eta_total;
 
 			// average parameters
-			svDev->eta   		+= phRat[i]*eta_total;
 			svDev->DIIpl 		+= phRat[i]*DIIpl;
 			(*eta_creep) 		+= phRat[i]*eta_creep_phase;
 			(*eta_viscoplastic) += phRat[i]*eta_viscoplastic_phase;
@@ -516,6 +547,7 @@ PetscErrorCode VolConstEq(
 		// update present phases only
 		if(phRat[i])
 		{
+
 			// get reference to material parameters table
 			mat = &phases[i];
 
@@ -552,6 +584,11 @@ PetscErrorCode VolConstEq(
 			{
 				// depth-dependent density (ad-hoc)
 				rho = mat->rho - (mat->rho - lim->rho_fluid)*mat->rho_n*exp(-mat->rho_c*depth);
+			}
+			if(mat->Pd_rho == 1)
+			{
+				// Density from a phase diagram (have svBulk->rho = svBulk->rho)
+				rho = svBulk->rho_pd;
 			}
 			else
 			{

@@ -83,7 +83,7 @@ PetscErrorCode ObjFunctDestroy(ObjFunct *objf)
 //---------------------------------------------------------------------------
 #undef __FUNCT__
 #define __FUNCT__ "ObjFunctCreate"
-PetscErrorCode ObjFunctCreate(ObjFunct *objf, FreeSurf *surf)
+PetscErrorCode ObjFunctCreate(ObjFunct *objf, ModParam *IOparam, FreeSurf *surf)
 {
 	FDSTAG        *fs;
 	PetscInt       sx, sy, nx, ny;
@@ -95,7 +95,6 @@ PetscErrorCode ObjFunctCreate(ObjFunct *objf, FreeSurf *surf)
 	int            fd;
 	PetscViewer    view_in;
 	PetscScalar ***field,***qual;
-	PetscBool      flg;
 	PetscInt       useField;
 
 	const char  *on[_max_num_obs_];			//static array of pointers
@@ -110,18 +109,14 @@ PetscErrorCode ObjFunctCreate(ObjFunct *objf, FreeSurf *surf)
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
 
-
-
 	// compute misift?
-	ierr = PetscOptionsGetBool( PETSC_NULL, "-objf_compute", &objf->CompMfit, &flg ); CHKERRQ(ierr);
-	if(objf->CompMfit != PETSC_TRUE) PetscFunctionReturn(0);
+	if(IOparam->use != 1) PetscFunctionReturn(0);
 
-
-
+	// set flag
+	objf->CompMfit = PETSC_TRUE;
 
 	PetscPrintf(PETSC_COMM_WORLD,"# ------------------------------------------------------------------------\n");
 	PetscPrintf(PETSC_COMM_WORLD,"# Objective function: \n");
-
 
 	// set context
 	objf->surf = surf;
@@ -282,11 +277,11 @@ PetscErrorCode ObjFunctCreate(ObjFunct *objf, FreeSurf *surf)
 
 	PetscPrintf(PETSC_COMM_WORLD,"# ------------------------------------------------------------------------\n");
 
+	// transfer misfit value to IO structure
+	IOparam->mfit = objf->errtot;
+
 	PetscFunctionReturn(0);
 }
-
-
-
 //---------------------------------------------------------------------------
 #undef __FUNCT__
 #define __FUNCT__ "ObjFunctReadFromOptions"
@@ -298,19 +293,13 @@ PetscErrorCode ObjFunctReadFromOptions(ObjFunct *objf, const char *on[])
 	char           otname [MAX_NAME_LEN];
 	PetscFunctionBegin;
 
-
-	// destroy asprintf
-
 	// read filename of observation file
 	asprintf(&objf->infile, "%s", "obs.bin");
-	ierr = PetscOptionsGetString(PETSC_NULL,"-objf_obsfile", objf->infile, MAX_NAME_LEN, &found); CHKERRQ(ierr);
+	ierr = PetscOptionsGetString(NULL, NULL,"-objf_obsfile", objf->infile, MAX_NAME_LEN, &found); CHKERRQ(ierr);
 	if (!found){ PetscPrintf(PETSC_COMM_WORLD,"# WARNING: No filename given for observation file -> Use default: obs.bin \n"); }
-
 
 	// number of fields to be read into the buffer
 	objf->otN    = 0;
-
-
 
 	for (k=0; k<_max_num_obs_; k++)
 	{
@@ -319,7 +308,7 @@ PetscErrorCode ObjFunctReadFromOptions(ObjFunct *objf, const char *on[])
 
 		// read output flags and allocate memory
 		sprintf(otname,"-objf_use_%s",on[k]);
-		ierr = PetscOptionsGetBool(NULL, otname, &exists, &found); CHKERRQ(ierr);
+		ierr = PetscOptionsGetBool(NULL, NULL, otname, &exists, &found); CHKERRQ(ierr);
 		if (found)
 		{
 			objf->otUse[k] = 1;
@@ -350,7 +339,6 @@ PetscErrorCode VecErrSurf(Vec mod, ObjFunct *objf, PetscInt field ,PetscScalar s
 	fs   = objf->surf->jr->fs;
 	surf = objf->surf;
 
-
 	// create vector to store errors
 	ierr = VecDuplicate(objf->obs[field],&err);  CHKERRQ(ierr);
 
@@ -363,7 +351,6 @@ PetscErrorCode VecErrSurf(Vec mod, ObjFunct *objf, PetscInt field ,PetscScalar s
 	L=fs->dsz.rank;
 
 	ierr = VecSet(surf->vpatch, 0.0);  CHKERRQ(ierr);
-
 
 	// access buffer within local domain
 	ierr = DMDAVecGetArray(surf->DA_SURF, mod,          &lfield);  CHKERRQ(ierr);

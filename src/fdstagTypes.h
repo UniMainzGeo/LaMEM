@@ -177,7 +177,6 @@ const char *PTypesName[] ={
 };
 */
 //-----------------------------------------------------------------------------
-// Structure that holds inversion parameters
 typedef struct
 {
 	PetscInt         use;  // 0 = NO 1 = Tobi's inversion 2 = Compute gradients 3 = full inversion 4 = save this forward simulation as comparison simulation
@@ -190,20 +189,27 @@ typedef struct
 	PetscScalar      mfit; // misfit value for current model parameters
 
 	// Variables additionally needed for the adjoint TAO solver
-	Vec              xini;      // Comparison velocity field for adjoint inversion
-	Vec              P;			// vector containing parameters (is needed in that form for TAO)
-	PetscInt         Ab;    	// Use adjoint bounds?
-	PetscInt         Adv;       // Advect the point?
-	PetscInt         count;		// iteration counter
-	PetscInt         mdI;    	// number of indices
-	PetscInt         Ap;        // 1 = several indices ; 2 = whole domain
-	PetscInt         reg;       // 1 = Tikhonov regularization of the adjoint cost function ; 2 = total variation regularization (TV)
-	PetscScalar      mfitini; 	// misfit value for current model parameters
-	PetscScalar     *Ax;		// X-coordinates of comparison points
-	PetscScalar     *Ay;		// Y-coordinates of comparison points
-	PetscScalar     *Az;  		// Z-coordinates of comparison points
-	PetscScalar     *Av;		// Velocity components of comparison points
-	PetscScalar      *W;         // Array of weights for the regularization
+	Vec              xini;      	// Comparison velocity field for adjoint inversion
+	Vec              P;				// vector containing parameters
+	Vec              fcconv;        // Vector containing all f/fini values to track convergence
+	PetscInt         Ab;    		// Use adjoint bounds (only works with Tao)?
+	PetscInt         Tao;    		// Use Tao?
+	PetscInt         Adv;      		// Advect the point?
+	PetscInt         count;			// iteration counter
+	PetscInt         mdI;    		// number of indices
+	PetscInt         Ap;        	// 1 = several indices ; 2 = whole domain ; 3 = surface
+	PetscInt         reg;       	// 1 = Tikhonov regularization of the adjoint cost function ; 2 = total variation regularization (TV)
+	PetscScalar      mfitini; 		// initial misfit value for current model parameters
+	PetscScalar      tol; 		    // tolerance for F/Fini after which code has converged
+	PetscScalar      factor1;   	// factor to multiply the gradients (should be set such that the highest gradient scales around 1/100 of its parameter ; only used without tao)
+	PetscScalar      factor2;   	// factor that increases the convergence velocity (this value is added to itself after every succesful gradient descent ; only used without tao)
+	PetscScalar      maxfactor2;	// limit on the factor (only used without tao)
+	PetscScalar     *Ax;			// X-coordinates of comparison points
+	PetscScalar     *Ay;			// Y-coordinates of comparison points
+	PetscScalar     *Az;  			// Z-coordinates of comparison points
+	PetscScalar     *Av;			// Velocity components of comparison points
+	PetscScalar     *W;        		// Array of weights for the regularization
+
 } ModParam;
 //-----------------------------------------------------------------------------
 // Structure that holds user input data

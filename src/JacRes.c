@@ -76,16 +76,16 @@ PetscErrorCode JacResSetFromOptions(JacRes *jr)
 	PetscFunctionBegin;
 
 	// set pressure shift flag
-	ierr = PetscOptionsHasName(NULL, "-skip_press_shift", &flg); CHKERRQ(ierr);
+	ierr = PetscOptionsHasName(NULL, NULL, "-skip_press_shift", &flg); CHKERRQ(ierr);
 
 	if(flg == PETSC_TRUE) jr->pShiftAct = PETSC_FALSE;
 
-	ierr = PetscOptionsHasName(NULL, "-act_temp_diff", &flg); CHKERRQ(ierr);
+	ierr = PetscOptionsHasName(NULL, NULL, "-act_temp_diff", &flg); CHKERRQ(ierr);
 
 	if(flg == PETSC_TRUE) jr->actTemp = PETSC_TRUE;
 
 	// set geometry tolerance
-	ierr = PetscOptionsGetScalar(NULL, "-geom_tol", &gtol, &flg); CHKERRQ(ierr);
+	ierr = PetscOptionsGetScalar(NULL, NULL, "-geom_tol", &gtol, &flg); CHKERRQ(ierr);
 
 	if(flg == PETSC_TRUE) jr->gtol = gtol;
 
@@ -106,6 +106,17 @@ PetscErrorCode JacResCreate(
 
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
+
+	// If any phase involves phase diagram initialize the data
+	for(i=0; i<jr->numPhases; i++)
+	{
+		if (jr->phases[i].Pd_rho == 1)
+		{
+			PData    pd;     // Phase diagram data
+			jr->Pd = &pd;
+			break;
+		}
+	}
 
 	// set external handles
 	jr->fs = fs;
@@ -227,7 +238,7 @@ PetscErrorCode JacResCreate(
 	ierr = DMDAGetOwnershipRanges(fs->DA_CEN, &lx, &ly, NULL); CHKERRQ(ierr);
 
 	// create 2D cell center grid
-	ierr = DMDACreate3d(PETSC_COMM_WORLD,
+	ierr = DMDACreate3dSetUp(PETSC_COMM_WORLD,
 		DM_BOUNDARY_NONE, DM_BOUNDARY_NONE, DM_BOUNDARY_NONE,
 		DMDA_STENCIL_BOX,
 		fs->dsx.tcels, fs->dsy.tcels, fs->dsz.nproc,
@@ -908,6 +919,8 @@ PetscErrorCode JacResGetResidual(JacRes *jr)
 		// evaluate deviatoric constitutive equations
 		ierr = DevConstEq(svDev, &eta_creep, &eta_viscoplastic, numPhases, phases, svCell->phRat, matLim, pc_lithos, dt, pc-pShift, Tc); CHKERRQ(ierr);
 
+		// PetscPrintf(PETSC_COMM_WORLD,"CENTER mf = %.20f\n",svCell->svDev.mf);
+
 		// store creep viscosity
 		svCell->eta_creep 			= eta_creep;
 		svCell->eta_viscoplastic 	= eta_viscoplastic;
@@ -1315,36 +1328,35 @@ PetscErrorCode JacResGetResidual(JacRes *jr)
 //---------------------------------------------------------------------------
 #undef __FUNCT__
 #define __FUNCT__ "JacResCopySol"
-PetscErrorCode JacResCopySol(JacRes *jr, Vec x, SPCAppType appSPC)
+PetscErrorCode JacResCopySol(JacRes *jr, Vec x)
 {
 	// copy solution from global to local vectors, enforce boundary constraints
 
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
 
-	ierr = JacResCopyVel (jr, x, appSPC); CHKERRQ(ierr);
+	ierr = JacResCopyVel (jr, x); CHKERRQ(ierr);
 
-	ierr = JacResCopyPres(jr, x, appSPC); CHKERRQ(ierr);
+	ierr = JacResCopyPres(jr, x); CHKERRQ(ierr);
 
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
 #undef __FUNCT__
 #define __FUNCT__ "JacResCopyVel"
-PetscErrorCode JacResCopyVel(JacRes *jr, Vec x, SPCAppType appSPC)
+PetscErrorCode JacResCopyVel(JacRes *jr, Vec x)
 {
 	// copy velocity from global to local vectors, enforce boundary constraints
 
-	FDSTAG      *fs;
-	BCCtx       *bc;
-	PetscInt    mcx, mcy, mcz;
-	PetscInt    I, J, K, fi, fj, fk;
-	PetscInt    i, j, k, nx, ny, nz, sx, sy, sz;
-	PetscScalar ***bcvx,  ***bcvy,  ***bcvz;
-	PetscScalar ***lvx, ***lvy, ***lvz;
-	PetscScalar *vx, *vy, *vz, *sol, *iter, pmdof;
-	PetscScalar *vals;
-	PetscInt    num, *list;
+	FDSTAG           *fs;
+	BCCtx            *bc;
+	PetscInt          mcx, mcy, mcz;
+	PetscInt          I, J, K, fi, fj, fk;
+	PetscInt          i, j, k, nx, ny, nz, sx, sy, sz;
+	PetscScalar       ***bcvx,  ***bcvy,  ***bcvz;
+	PetscScalar       ***lvx, ***lvy, ***lvz;
+	PetscScalar       *vx, *vy, *vz, pmdof;
+	const PetscScalar *sol, *iter;
 
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
@@ -1358,22 +1370,10 @@ PetscErrorCode JacResCopyVel(JacRes *jr, Vec x, SPCAppType appSPC)
 	mcz = fs->dsz.tcels - 1;
 
 	// access vectors
-	ierr = VecGetArray(jr->gvx, &vx);  CHKERRQ(ierr);
-	ierr = VecGetArray(jr->gvy, &vy);  CHKERRQ(ierr);
-	ierr = VecGetArray(jr->gvz, &vz);  CHKERRQ(ierr);
-	ierr = VecGetArray(x,       &sol); CHKERRQ(ierr);
-
-	//=================================
-	// enforce single point constraints
-	//=================================
-
-	// velocity
-	num   = bc->vNumSPC;
-	list  = bc->vSPCList;
-	vals  = bc->vSPCVals;
-
-	if(appSPC == _APPLY_SPC_) { for(i = 0; i < num; i++) sol[list[i]] = vals[i]; }
-	else                      { for(i = 0; i < num; i++) sol[list[i]] = 0.0;     }
+	ierr = VecGetArray    (jr->gvx, &vx);  CHKERRQ(ierr);
+	ierr = VecGetArray    (jr->gvy, &vy);  CHKERRQ(ierr);
+	ierr = VecGetArray    (jr->gvz, &vz);  CHKERRQ(ierr);
+	ierr = VecGetArrayRead(x,       &sol); CHKERRQ(ierr);
 
 	// copy vectors component-wise
 	iter = sol;
@@ -1387,10 +1387,10 @@ PetscErrorCode JacResCopyVel(JacRes *jr, Vec x, SPCAppType appSPC)
 	ierr  = PetscMemcpy(vz, iter, (size_t)fs->nZFace*sizeof(PetscScalar)); CHKERRQ(ierr);
 
 	// restore access
-	ierr = VecRestoreArray(jr->gvx, &vx);  CHKERRQ(ierr);
-	ierr = VecRestoreArray(jr->gvy, &vy);  CHKERRQ(ierr);
-	ierr = VecRestoreArray(jr->gvz, &vz);  CHKERRQ(ierr);
-	ierr = VecRestoreArray(x,       &sol); CHKERRQ(ierr);
+	ierr = VecRestoreArray    (jr->gvx, &vx);  CHKERRQ(ierr);
+	ierr = VecRestoreArray    (jr->gvy, &vy);  CHKERRQ(ierr);
+	ierr = VecRestoreArray    (jr->gvz, &vz);  CHKERRQ(ierr);
+	ierr = VecRestoreArrayRead(x,       &sol); CHKERRQ(ierr);
 
 	// fill local (ghosted) version of solution vectors
 	GLOBAL_TO_LOCAL(fs->DA_X,   jr->gvx, jr->lvx)
@@ -1495,20 +1495,19 @@ PetscErrorCode JacResCopyVel(JacRes *jr, Vec x, SPCAppType appSPC)
 //---------------------------------------------------------------------------
 #undef __FUNCT__
 #define __FUNCT__ "JacResCopyPres"
-PetscErrorCode JacResCopyPres(JacRes *jr, Vec x, SPCAppType appSPC)
+PetscErrorCode JacResCopyPres(JacRes *jr, Vec x)
 {
 	// copy pressure from global to local vectors, enforce boundary constraints
 
-	FDSTAG      *fs;
-	BCCtx       *bc;
-	PetscInt    mcx, mcy, mcz;
-	PetscInt    I, J, K, fi, fj, fk;
-	PetscInt    i, j, k, nx, ny, nz, sx, sy, sz;
-	PetscScalar ***bcp;
-	PetscScalar ***lp;
-	PetscScalar *p, *sol, *iter, pmdof;
-	PetscScalar *vals;
-	PetscInt    num, *list;
+	FDSTAG            *fs;
+	BCCtx             *bc;
+	PetscInt          mcx, mcy, mcz;
+	PetscInt          I, J, K, fi, fj, fk;
+	PetscInt          i, j, k, nx, ny, nz, sx, sy, sz;
+	PetscScalar       ***bcp;
+	PetscScalar       ***lp;
+	PetscScalar       *p, pmdof;
+	const PetscScalar *sol, *iter;
 
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
@@ -1522,20 +1521,8 @@ PetscErrorCode JacResCopyPres(JacRes *jr, Vec x, SPCAppType appSPC)
 	mcz = fs->dsz.tcels - 1;
 
 	// access vectors
-	ierr = VecGetArray(jr->gp, &p);   CHKERRQ(ierr);
-	ierr = VecGetArray(x,      &sol); CHKERRQ(ierr);
-
-	//=================================
-	// enforce single point constraints
-	//=================================
-
-	// pressure
-	num   = bc->pNumSPC;
-	list  = bc->pSPCList;
-	vals  = bc->pSPCVals;
-
-	if(appSPC == _APPLY_SPC_) { for(i = 0; i < num; i++) sol[list[i]] = vals[i]; }
-	else                      { for(i = 0; i < num; i++) sol[list[i]] = 0.0;     }
+	ierr = VecGetArray    (jr->gp, &p);   CHKERRQ(ierr);
+	ierr = VecGetArrayRead(x,      &sol); CHKERRQ(ierr);
 
 	// copy vectors component-wise
 	iter = sol + fs->nXFace + fs->nYFace + fs->nZFace;
@@ -1543,8 +1530,8 @@ PetscErrorCode JacResCopyPres(JacRes *jr, Vec x, SPCAppType appSPC)
 	ierr = PetscMemcpy(p, iter, (size_t)fs->nCells*sizeof(PetscScalar)); CHKERRQ(ierr);
 
 	// restore access
-	ierr = VecRestoreArray(jr->gp,  &p);   CHKERRQ(ierr);
-	ierr = VecRestoreArray(x,       &sol); CHKERRQ(ierr);
+	ierr = VecRestoreArray    (jr->gp, &p);   CHKERRQ(ierr);
+	ierr = VecRestoreArrayRead(x,      &sol); CHKERRQ(ierr);
 
 	// fill local (ghosted) version of solution vectors
 	GLOBAL_TO_LOCAL(fs->DA_CEN, jr->gp, jr->lp)
@@ -1779,7 +1766,7 @@ PetscErrorCode JacResViewRes(JacRes *jr)
 
 	// stop if divergence more than tolerance
 	div_tol = 0.0;
-	ierr = PetscOptionsGetScalar(NULL, "-div_tol",  &div_tol,  NULL); CHKERRQ(ierr);
+	ierr = PetscOptionsGetScalar(NULL, NULL, "-div_tol",  &div_tol,  NULL); CHKERRQ(ierr);
 
 	if ((div_tol) && (( dmax > div_tol ) || (f2 > div_tol)))
 	{
@@ -1804,7 +1791,8 @@ PetscInt JacResGetStep(JacRes *jr)
 PetscErrorCode SetMatParLim(MatParLim *matLim, UserCtx *usr)
 {
 	// initialize material parameter limits
-	PetscBool  flg;
+	PetscBool flg;
+	PetscInt  cnt;
 
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
@@ -1819,19 +1807,15 @@ PetscErrorCode SetMatParLim(MatParLim *matLim, UserCtx *usr)
 	matLim->eta_rtol     = 1e-8;
 	matLim->DII_atol     = 0.0;
 	matLim->DII_rtol     = 1e-8;
-
-	if(usr->DII_ref) matLim->DII_ref = usr->DII_ref;
-	else
-	{
-		matLim->DII_ref = 1.0;
-		PetscPrintf(PETSC_COMM_WORLD," WARNING: Reference strain rate DII_ref is not defined. Use a non-dimensional reference value of DII_ref =%f \n",matLim->DII_ref);
-	}
-
 	matLim->minCh        = 0.0;
 	matLim->minFr        = 0.0;
 	matLim->tauUlt       = DBL_MAX;
 	matLim->shearHeatEff = 1.0;
+
 	matLim->quasiHarmAvg = PETSC_FALSE;
+	matLim->cf_eta_min   = 0.0;
+	matLim->n_pw         = 0.0;
+
 	matLim->initGuessFlg = PETSC_TRUE;
 	matLim->rho_fluid    = 0.0;
 	matLim->rho_lithos 	 = 0.0;	 // lithostatic density
@@ -1839,53 +1823,56 @@ PetscErrorCode SetMatParLim(MatParLim *matLim, UserCtx *usr)
 	matLim->warn         = PETSC_TRUE;
 	matLim->jac_mat_free = PETSC_FALSE;
 
-	// read additional options
-	ierr = PetscOptionsHasName(PETSC_NULL, "-use_quasi_harmonic_viscosity", &flg); CHKERRQ(ierr);
-
-	if(flg == PETSC_TRUE)
+	if(usr->DII_ref) matLim->DII_ref = usr->DII_ref;
+	else
 	{
-		matLim->quasiHarmAvg = PETSC_TRUE;
+		matLim->DII_ref = 1.0;
+		PetscPrintf(PETSC_COMM_WORLD," WARNING: Reference strain rate DII_ref is not defined. Use a non-dimensional reference value of DII_ref =%f \n", matLim->DII_ref);
 	}
 
-	ierr = PetscOptionsGetScalar(NULL, "-rho_fluid",  &matLim->rho_fluid, NULL); CHKERRQ(ierr);
-	ierr = PetscOptionsGetScalar(NULL, "-rho_lithos", &matLim->rho_lithos, NULL); CHKERRQ(ierr);		// specify lithostatic density on commandline (if not set, we don't use this)
+	cnt = 0;
 
-	ierr = PetscOptionsGetScalar(NULL, "-theta_north", &matLim->theta_north, NULL); CHKERRQ(ierr);
+	// plasticity stabilization parameters
+	ierr = PetscOptionsHasName(NULL, NULL, "-quasi_harmonic", &flg); CHKERRQ(ierr);
 
-	ierr = PetscOptionsHasName(PETSC_NULL, "-stop_warnings", &flg); CHKERRQ(ierr);
+	if(flg == PETSC_TRUE) { matLim->quasiHarmAvg = PETSC_TRUE; cnt++; }
 
-	if(flg == PETSC_TRUE) matLim->warn = PETSC_FALSE;
+	ierr = PetscOptionsGetScalar(NULL, NULL, "-cf_eta_min",  &matLim->cf_eta_min, &flg); CHKERRQ(ierr);
+
+	if(flg == PETSC_TRUE) { cnt++; }
+
+	ierr = PetscOptionsGetScalar(NULL, NULL, "-n_pw",  &matLim->n_pw, &flg); CHKERRQ(ierr);
+
+	if(flg == PETSC_TRUE) { cnt++; }
+
+	if(cnt > 1)
+	{
+		SETERRQ(PETSC_COMM_SELF, PETSC_ERR_USER, "Cannot combine plasticity stabilization methods (-quasi_harmonic -cf_eta_min -n_pw) \n");
+	}
 
 	// set Jacobian flag
-	ierr = PetscOptionsHasName(NULL, "-jac_mat_free", &flg); CHKERRQ(ierr);
+	ierr = PetscOptionsHasName(NULL, NULL, "-jac_mat_free", &flg); CHKERRQ(ierr);
 
 	if(flg == PETSC_TRUE) matLim->jac_mat_free = PETSC_TRUE;
 
-	ierr = PetscOptionsGetScalar(NULL, "-shearHeatEff", &matLim->shearHeatEff, NULL); CHKERRQ(ierr);
+	if(cnt &&  matLim->jac_mat_free == PETSC_TRUE)
+	{
+		SETERRQ(PETSC_COMM_SELF, PETSC_ERR_USER, "Analytical Jacobian is not available for plasticity stabilizations (-jac_mat_free -quasi_harmonic -cf_eta_min -n_pw) \n");
+	}
+
+	ierr = PetscOptionsGetScalar(NULL, NULL, "-rho_fluid",  &matLim->rho_fluid, NULL); CHKERRQ(ierr);
+	ierr = PetscOptionsGetScalar(NULL, NULL, "-rho_lithos", &matLim->rho_lithos, NULL); CHKERRQ(ierr);		// specify lithostatic density on commandline (if not set, we don't use this)
+
+	ierr = PetscOptionsGetScalar(NULL, NULL, "-theta_north", &matLim->theta_north, NULL); CHKERRQ(ierr);
+
+	ierr = PetscOptionsHasName(NULL, NULL, "-stop_warnings", &flg); CHKERRQ(ierr);
+
+	if(flg == PETSC_TRUE) matLim->warn = PETSC_FALSE;
+
+	ierr = PetscOptionsGetScalar(NULL, NULL, "-shearHeatEff", &matLim->shearHeatEff, NULL); CHKERRQ(ierr);
 
 	if(matLim->shearHeatEff > 1.0) matLim->shearHeatEff = 1.0;
 	if(matLim->shearHeatEff < 0.0) matLim->shearHeatEff = 0.0;
-
-	// ADAPTIVE DESCENT
-	matLim->descent = PETSC_FALSE;
-	matLim->nmin    = 5.0;
-	matLim->nmax    = 50.0;
-	matLim->beta    = 1.61803398875;
-	matLim->ctol    = 1e-2;
-	matLim->dtol    = 0.95;
-	matLim->jmax    = 3;
-
-	ierr = PetscOptionsHasName  (NULL, "-descent", &matLim->descent   ); CHKERRQ(ierr);
-	ierr = PetscOptionsGetScalar(NULL, "-ad_nmin", &matLim->nmin, NULL); CHKERRQ(ierr);
-	ierr = PetscOptionsGetScalar(NULL, "-ad_nmax", &matLim->nmax, NULL); CHKERRQ(ierr);
-	ierr = PetscOptionsGetScalar(NULL, "-ad_beta", &matLim->beta, NULL); CHKERRQ(ierr);
-	ierr = PetscOptionsGetScalar(NULL, "-ad_ctol", &matLim->ctol, NULL); CHKERRQ(ierr);
-	ierr = PetscOptionsGetScalar(NULL, "-ad_dtol", &matLim->dtol, NULL); CHKERRQ(ierr);
-	ierr = PetscOptionsGetInt   (NULL, "-ad_jmax", &matLim->jmax, NULL); CHKERRQ(ierr);
-
-	matLim->n   = matLim->nmin;
-	matLim->j   = 0;
-	matLim->res = 0.0;
 
 	PetscFunctionReturn(0);
 }

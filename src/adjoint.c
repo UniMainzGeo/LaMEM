@@ -323,7 +323,7 @@ PetscErrorCode AdjointComputeGradients(JacRes *jr, AdjGrad *aop, NLSol *nl, SNES
 		
 		// Compute the gradient (dF/dp = -psi^T * dr/dp) & Save gradient
 		ierr = VecDot(drdp,psi,&grd);                       CHKERRQ(ierr);
-		IOparam->grd[j] 	= (-1 * grd)*aop->CurScal;      CHKERRQ(ierr);
+		IOparam->grd[j] 	= -grd*aop->CurScal;            CHKERRQ(ierr);
 
 		// Print result
 		PetscPrintf(PETSC_COMM_WORLD,"%D.Gradient (dimensional) = %.40f ; CurPar = %d ; CurPhase = %d\n",j+1, IOparam->grd[j], CurPar, CurPhase);
@@ -503,6 +503,8 @@ PetscErrorCode AdjointPointInPro(JacRes *jr, AdjGrad *aop, ModParam *IOparam, Fr
 				if(IOparam->Av[ii] == 1)
 				{
 					vx[ii] = InterpLin3D(lvx, I,  JJ, KK, sx, sy, sz, coord_local[0], coord_local[1], coord_local[2], ncx, ccy, ccz);
+					vy[ii] = InterpLin3D(lvy, II, J,  KK, sx, sy, sz, coord_local[0], coord_local[1], coord_local[2], ccx, ncy, ccz);
+					vz[ii] = InterpLin3D(lvz, II, JJ, K,  sx, sy, sz, coord_local[0], coord_local[1], coord_local[2], ccx, ccy, ncz);
 
 					// get relative coordinates
 					xe = ((coord_local[0] - ncx[I ])/(ncx[I +1] - ncx[I ]))/2; xb = (1.0 - xe)/2;
@@ -518,7 +520,9 @@ PetscErrorCode AdjointPointInPro(JacRes *jr, AdjGrad *aop, ModParam *IOparam, Fr
 				}
 				else if(IOparam->Av[ii] == 2)
 				{
+					vx[ii] = InterpLin3D(lvx, I,  JJ, KK, sx, sy, sz, coord_local[0], coord_local[1], coord_local[2], ncx, ccy, ccz);
 					vy[ii] = InterpLin3D(lvy, II, J,  KK, sx, sy, sz, coord_local[0], coord_local[1], coord_local[2], ccx, ncy, ccz);
+					vz[ii] = InterpLin3D(lvz, II, JJ, K,  sx, sy, sz, coord_local[0], coord_local[1], coord_local[2], ccx, ccy, ncz);
 
 					// get relative coordinates
 					ye = ((coord_local[1] - ncy[J ])/(ncy[J +1] - ncy[J ]))/2; yb = (1.0 - 2*ye)/2;
@@ -534,6 +538,8 @@ PetscErrorCode AdjointPointInPro(JacRes *jr, AdjGrad *aop, ModParam *IOparam, Fr
 				}
 				else if(IOparam->Av[ii] == 3)
 				{
+					vx[ii] = InterpLin3D(lvx, I,  JJ, KK, sx, sy, sz, coord_local[0], coord_local[1], coord_local[2], ncx, ccy, ccz);
+					vy[ii] = InterpLin3D(lvy, II, J,  KK, sx, sy, sz, coord_local[0], coord_local[1], coord_local[2], ccx, ncy, ccz);
 					vz[ii] = InterpLin3D(lvz, II, JJ, K,  sx, sy, sz, coord_local[0], coord_local[1], coord_local[2], ccx, ccy, ncz);
 
 					// get relative coordinates
@@ -826,7 +832,7 @@ PetscErrorCode AdjointFormResidual(SNES snes, Vec x, Vec f, void *ctx, PetscInt 
 	}
 
 	// copy solution from global to local vectors, enforce boundary constraints
-	ierr = JacResCopySol(jr, x, _APPLY_SPC_); CHKERRQ(ierr);
+	ierr = JacResCopySol(jr, x); CHKERRQ(ierr);
 
 	ierr = JacResGetPressShift(jr); CHKERRQ(ierr);
 
@@ -880,42 +886,42 @@ PetscErrorCode AdjointGradientPerturbParameter(NLSol *nl, PetscInt CurPar, Petsc
 	if(CurPar==_RHO0_)			// rho
 	{
 		ini = nl->pc->pm->jr->phases[CurPhase].rho;
-		perturb = ini*perturb + 1e-12;
+		perturb = ini*perturb;
 		nl->pc->pm->jr->phases[CurPhase].rho +=  perturb;
 		curscal = (scal->velocity)/(scal->density);
 	}
 	else if (CurPar==_RHON_)	    // rho_n
 	{
 		ini = nl->pc->pm->jr->phases[CurPhase].rho_n;
-		perturb = ini*perturb + 1e-12;
+		perturb = ini*perturb;
 		nl->pc->pm->jr->phases[CurPhase].rho_n +=  perturb;
 		curscal = (scal->velocity)/1;
 	}
 	else if (CurPar==_RHOC_)	    // rho_c
 	{
 		ini = nl->pc->pm->jr->phases[CurPhase].rho_c;
-		perturb = ini*perturb + 1e-12;
+		perturb = ini*perturb;
 		nl->pc->pm->jr->phases[CurPhase].rho_c +=  perturb;
 		curscal = (scal->velocity)*(scal->length_si);
 	}
 	else if (CurPar==_K_)	    // K
 	{
 		ini = nl->pc->pm->jr->phases[CurPhase].K;
-		perturb = ini*perturb + 1e-12;
+		perturb = ini*perturb;
 		nl->pc->pm->jr->phases[CurPhase].K +=  perturb;
 		curscal = (scal->velocity)/(scal->stress_si);
 	}
 	else if (CurPar==_KP_)	    // Kp
 	{
 		ini = nl->pc->pm->jr->phases[CurPhase].Kp;
-		perturb = ini*perturb + 1e-12;
+		perturb = ini*perturb;
 		nl->pc->pm->jr->phases[CurPhase].Kp +=  perturb;
 		curscal = (scal->velocity)/1;
 	}
 	else if (CurPar==_SHEAR_)	    // G
 	{
 		ini = nl->pc->pm->jr->phases[CurPhase].G;
-		perturb = ini*perturb + 1e-12;
+		perturb = ini*perturb;
 		nl->pc->pm->jr->phases[CurPhase].G +=  perturb;
 		curscal = (scal->velocity)/(scal->stress_si);
 	}
@@ -924,7 +930,7 @@ PetscErrorCode AdjointGradientPerturbParameter(NLSol *nl, PetscInt CurPar, Petsc
 		// This kind of perturbs the whole NEWTONIAN viscosity, consider perturbing the parameters directly
 		ini = nl->pc->pm->jr->phases[CurPhase].Bd;
 		PetscScalar BdTemp;
-		perturb = perturb*(1.0/(2*ini)) + 1e-12;
+		perturb = perturb*(1.0/(2*ini));
 		BdTemp = (1.0/(2*ini)) + perturb;//(perturb*(1.0/(2*ini)));
 		nl->pc->pm->jr->phases[CurPhase].Bd =  (1.0/(2*BdTemp));
 		curscal = (scal->velocity)/(scal->viscosity);
@@ -932,14 +938,14 @@ PetscErrorCode AdjointGradientPerturbParameter(NLSol *nl, PetscInt CurPar, Petsc
 	else if (CurPar==_ED_)	    // Ed
 	{
 		ini = nl->pc->pm->jr->phases[CurPhase].Ed;
-		perturb = ini*perturb + 1e-12;
+		perturb = ini*perturb;
 		nl->pc->pm->jr->phases[CurPhase].Ed +=  perturb;
 		curscal = (scal->velocity)/(1);   // Not sure
 	}
 	else if (CurPar==_VD_)	// Vd
 	{
 		ini = nl->pc->pm->jr->phases[CurPhase].Vd;
-		perturb = ini*perturb + 1e-12;
+		perturb = ini*perturb;
 		nl->pc->pm->jr->phases[CurPhase].Vd +=  perturb;
 		curscal = (scal->velocity)*(scal->stress_si);
 	}
@@ -949,7 +955,7 @@ PetscErrorCode AdjointGradientPerturbParameter(NLSol *nl, PetscInt CurPar, Petsc
 		ini = nl->pc->pm->jr->phases[CurPhase].Bn;
 		PetscScalar BnTemp;
 		// -- Uncomment to compute gradient for ETA0 --
-		perturb = perturb* (pow(nl->pc->pm->jr->phases[CurPhase].Bn * pow(2,nl->pc->pm->jr->phases[CurPhase].n) * pow(nl->pc->pm->jr->matLim.DII_ref, nl->pc->pm->jr->phases[CurPhase].n-1) , -1/nl->pc->pm->jr->phases[CurPhase].n)) + 1e-12;
+		perturb = perturb* (pow(nl->pc->pm->jr->phases[CurPhase].Bn * pow(2,nl->pc->pm->jr->phases[CurPhase].n) * pow(nl->pc->pm->jr->matLim.DII_ref, nl->pc->pm->jr->phases[CurPhase].n-1) , -1/nl->pc->pm->jr->phases[CurPhase].n));
 		BnTemp = (pow(nl->pc->pm->jr->phases[CurPhase].Bn * pow(2,nl->pc->pm->jr->phases[CurPhase].n) * pow(nl->pc->pm->jr->matLim.DII_ref, nl->pc->pm->jr->phases[CurPhase].n-1) , -1/nl->pc->pm->jr->phases[CurPhase].n))  + perturb;
 		nl->pc->pm->jr->phases[CurPhase].Bn = pow (2.0*BnTemp, -nl->pc->pm->jr->phases[CurPhase].n) * pow(nl->pc->pm->jr->matLim.DII_ref, 1 - nl->pc->pm->jr->phases[CurPhase].n);
 		// -- Uncomment to compute gradient for BN --
@@ -962,7 +968,7 @@ PetscErrorCode AdjointGradientPerturbParameter(NLSol *nl, PetscInt CurPar, Petsc
 		ini = nl->pc->pm->jr->phases[CurPhase].n;
 		aop->Ini2 = nl->pc->pm->jr->phases[CurPhase].Bn;
 		PetscScalar ViscTemp = (pow((aop->Ini2 * pow(2,nl->pc->pm->jr->phases[CurPhase].n) * pow(nl->pc->pm->jr->matLim.DII_ref, nl->pc->pm->jr->phases[CurPhase].n-1)) , -1/nl->pc->pm->jr->phases[CurPhase].n));
-		perturb = ini*perturb + 1e-12;
+		perturb = ini*perturb;
 		nl->pc->pm->jr->phases[CurPhase].n +=  perturb;
 		// We also accordingly need to perturb the inverse viscosity in this case
 		nl->pc->pm->jr->phases[CurPhase].Bn = pow (2.0*ViscTemp, -nl->pc->pm->jr->phases[CurPhase].n) * pow(nl->pc->pm->jr->matLim.DII_ref, 1 - nl->pc->pm->jr->phases[CurPhase].n);
@@ -971,63 +977,63 @@ PetscErrorCode AdjointGradientPerturbParameter(NLSol *nl, PetscInt CurPar, Petsc
 	else if (CurPar==_EN_)	// En
 	{
 		ini = nl->pc->pm->jr->phases[CurPhase].En;
-		perturb = ini*perturb + 1e-12;
+		perturb = ini*perturb;
 		nl->pc->pm->jr->phases[CurPhase].En +=  perturb;
 		curscal = (scal->velocity)/(1);    // Not sure
 	}
 	else if (CurPar==_VN_)	// Vn
 	{
 		ini = nl->pc->pm->jr->phases[CurPhase].Vn;
-		perturb = ini*perturb + 1e-12;
+		perturb = ini*perturb;
 		nl->pc->pm->jr->phases[CurPhase].Vn +=  perturb;
 		curscal = (scal->velocity)*(scal->stress_si);
 	}
 	else if (CurPar==_TAUP_)	// taup
 	{
 		ini = nl->pc->pm->jr->phases[CurPhase].taup;
-		perturb = ini*perturb + 1e-12;
+		perturb = ini*perturb;
 		nl->pc->pm->jr->phases[CurPhase].taup +=  perturb;
 		curscal = (scal->velocity)/(scal->stress_si);
 	}
 	else if (CurPar==_GAMMA_)	// gamma
 	{
 		ini = nl->pc->pm->jr->phases[CurPhase].gamma;
-		perturb = ini*perturb + 1e-12;
+		perturb = ini*perturb;
 		nl->pc->pm->jr->phases[CurPhase].gamma +=  perturb;
 		curscal = (scal->velocity)/(1);
 	}
 	else if (CurPar==_Q_)	// q
 	{
 		ini = nl->pc->pm->jr->phases[CurPhase].q;
-		perturb = ini*perturb + 1e-12;
+		perturb = ini*perturb;
 		nl->pc->pm->jr->phases[CurPhase].q +=  perturb;
 		curscal = (scal->velocity)/(1);
 	}
 	else if (CurPar==_FRICTION_)	// fr
 	{
 		ini = nl->pc->pm->jr->phases[CurPhase].fr;
-		perturb = ini*perturb + 1e-12;
+		perturb = ini*perturb;
 		nl->pc->pm->jr->phases[CurPhase].fr +=  perturb;
 		curscal = (scal->velocity)/scal->angle;
 	}
 	else if (CurPar==_COHESION_)	// ch
 	{
 		ini = nl->pc->pm->jr->phases[CurPhase].ch;
-		perturb = ini*perturb + 1e-12;
+		perturb = ini*perturb;
 		nl->pc->pm->jr->phases[CurPhase].ch +=  perturb;
 		curscal = (scal->velocity)/scal->stress_si;
 	}
 	else if (CurPar==_CP_)	// Cp
 	{
 		ini = nl->pc->pm->jr->phases[CurPhase].Cp;
-		perturb = ini*perturb + 1e-12;
+		perturb = ini*perturb;
 		nl->pc->pm->jr->phases[CurPhase].Cp +=  perturb;
 		curscal = (scal->velocity)/scal->cpecific_heat;
 	}
 	else if (CurPar==_A_)	// A
 	{
 		ini = nl->pc->pm->jr->phases[CurPhase].A;
-		perturb = ini*perturb + 1e-12;
+		perturb = ini*perturb;
 		nl->pc->pm->jr->phases[CurPhase].A +=  perturb;
 		curscal = (scal->velocity)/scal->heat_production;
 	}
@@ -1106,7 +1112,7 @@ PetscErrorCode AdjointJacResGetResidual_ViscPowerlaw(JacRes *jr, PetscInt CurPar
 	MatParLim  *matLim;
 	PetscInt    iter, numPhases;
 	PetscInt    I1, I2, J1, J2, K1, K2;
-	PetscInt    i, j, k, nx, ny, nz, sx, sy, sz, mx, my, mz;
+	PetscInt    i, j, k, nx, ny, nz, sx, sy, sz, mx, my, mz, ijk;
 	PetscScalar XX, XX1, XX2, XX3, XX4;
 	PetscScalar YY, YY1, YY2, YY3, YY4;
 	PetscScalar ZZ, ZZ1, ZZ2, ZZ3, ZZ4;
@@ -1302,6 +1308,57 @@ PetscErrorCode AdjointJacResGetResidual_ViscPowerlaw(JacRes *jr, PetscInt CurPar
 		eta0 	 =  pow(Bn*pow(2,n)*pow(e0,n-1),-1/n);
 		etamax   =  matLim->eta_max;
 		
+		// For Naiara density difference
+		/*if (CurPar==_RHO0_)  // Only influences the center node
+		{
+			if(CurPhase == 1 || CurPhase == 3)
+			{
+				for(ijk=0;ijk<2;ijk++)
+				{
+					if(ijk == 0)
+					{
+						CurPhase = 1;
+					}
+					else if(ijk == 1)
+					{
+						CurPhase = 3;
+					}
+					
+					// Get all necessary parameters for residual computation
+					ph 		 = svCell->phRat[CurPhase];
+					n 		 = phases[CurPhase].n;
+					Bn 		 = phases[CurPhase].Bn;
+					eII 	 =  svDev->DII;				
+					if  (eII == 0.0) eII = matLim->DII_ref;
+					Vn 		 =  phases[CurPhase].Vn;
+					En 		 =  phases[CurPhase].En;
+					if(T) RT =  matLim->Rugc*Tc;   	    
+					else  RT =  -1.0;
+					pp 		 =  pc-pShift;
+					e0 		 =  matLim->DII_ref;
+					eta0 	 =  pow(Bn*pow(2,n)*pow(e0,n-1),-1/n);
+					etamax   =  matLim->eta_max;
+					
+					if(svCell->phRat[CurPhase] > 0)
+					{
+						fx[k][j][i] -= ph*(grav[0]*(0.5-(vx[k][j][i] * fssa*dt)/bdx));   fx[k][j][i+1] += ph*(grav[0]*(-(vx[k][j][i+1] * fssa*dt)/fdx - 0.5));
+						fy[k][j][i] -= ph*(grav[1]*(0.5-(vy[k][j][i] * fssa*dt)/bdy));   fy[k][j+1][i] += ph*(grav[1]*(-(vy[k][j+1][i] * fssa*dt)/fdy - 0.5));
+						fz[k][j][i] -= ph*(grav[2]*(0.5-(vz[k][j][i] * fssa*dt)/bdz));   fz[k+1][j][i] += ph*(grav[2]*(-(vz[k+1][j][i] * fssa*dt)/fdz - 0.5));
+					}
+				}
+
+			}
+			else
+			{
+				if(svCell->phRat[CurPhase] > 0)
+				{
+					fx[k][j][i] -= ph*(grav[0]*(0.5-(vx[k][j][i] * fssa*dt)/bdx));   fx[k][j][i+1] += ph*(grav[0]*(-(vx[k][j][i+1] * fssa*dt)/fdx - 0.5));
+					fy[k][j][i] -= ph*(grav[1]*(0.5-(vy[k][j][i] * fssa*dt)/bdy));   fy[k][j+1][i] += ph*(grav[1]*(-(vy[k][j+1][i] * fssa*dt)/fdy - 0.5));
+					fz[k][j][i] -= ph*(grav[2]*(0.5-(vz[k][j][i] * fssa*dt)/bdz));   fz[k+1][j][i] += ph*(grav[2]*(-(vz[k+1][j][i] * fssa*dt)/fdz - 0.5));
+				}
+			}
+
+		}*/
 		if (CurPar==_RHO0_)  // Only influences the center node
 		{
 			if(svCell->phRat[CurPhase] > 0)
@@ -1356,9 +1413,9 @@ PetscErrorCode AdjointJacResGetResidual_ViscPowerlaw(JacRes *jr, PetscInt CurPar
 		else
 		{
 			// momentum
-			fx[k][j][i] -= (sxx + vx[k][j][i]*tx)/bdx + gx/2.0;   fx[k][j][i+1] += (sxx + vx[k][j][i+1]*tx)/fdx - gx/2.0;
-			fy[k][j][i] -= (syy + vy[k][j][i]*ty)/bdy + gy/2.0;   fy[k][j+1][i] += (syy + vy[k][j+1][i]*ty)/fdy - gy/2.0;
-			fz[k][j][i] -= (szz + vz[k][j][i]*tz)/bdz + gz/2.0;   fz[k+1][j][i] += (szz + vz[k+1][j][i]*tz)/fdz - gz/2.0;
+			fx[k][j][i] -= 0;   fx[k][j][i+1] += 0;
+			fy[k][j][i] -= 0;   fy[k][j+1][i] += 0;
+			fz[k][j][i] -= 0;   fz[k+1][j][i] += 0;
 		}
 
 
@@ -1534,8 +1591,8 @@ PetscErrorCode AdjointJacResGetResidual_ViscPowerlaw(JacRes *jr, PetscInt CurPar
 		}
 		else
 		{
-			fx[k][j-1][i] -= sxy/bdy;   fx[k][j][i] += sxy/fdy;
-			fy[k][j][i-1] -= sxy/bdx;   fy[k][j][i] += sxy/fdx;
+			fx[k][j-1][i] -= 0;   fx[k][j][i] += 0;
+			fy[k][j][i-1] -= 0;   fy[k][j][i] += 0;
 		}
 
 	}
@@ -1699,8 +1756,8 @@ PetscErrorCode AdjointJacResGetResidual_ViscPowerlaw(JacRes *jr, PetscInt CurPar
 		}
 		else
 		{
-			fx[k-1][j][i] -= sxz/bdz;   fx[k][j][i] += sxz/fdz;
-			fz[k][j][i-1] -= sxz/bdx;   fz[k][j][i] += sxz/fdx;
+			fx[k-1][j][i] -= 0;   fx[k][j][i] += 0;
+			fz[k][j][i-1] -= 0;   fz[k][j][i] += 0;
 		}
 
 	}
@@ -1864,8 +1921,8 @@ PetscErrorCode AdjointJacResGetResidual_ViscPowerlaw(JacRes *jr, PetscInt CurPar
 		}
 		else
 		{
-			fy[k-1][j][i] -= syz/bdz;   fy[k][j][i] += syz/fdz;
-			fz[k][j-1][i] -= syz/bdy;   fz[k][j][i] += syz/fdy;
+			fy[k-1][j][i] -= 0;   fy[k][j][i] += 0;
+			fz[k][j-1][i] -= 0;   fz[k][j][i] += 0;
 		}
 	}
 	END_STD_LOOP

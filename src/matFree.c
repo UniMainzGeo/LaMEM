@@ -65,7 +65,7 @@ PetscErrorCode JacApplyPicard(Mat A, Vec x, Vec y)
 	ierr = MatShellGetContext(A, (void**)&jr); CHKERRQ(ierr);
 
 	// copy solution from global to local vectors, enforce boundary constraints
-	ierr = JacResCopySol(jr, x, _SKIP_SPC_); CHKERRQ(ierr);
+	ierr = JacResCopySol(jr, x); CHKERRQ(ierr);
 
 	ierr = JacResPicardMatFree(jr); CHKERRQ(ierr);
 
@@ -301,7 +301,7 @@ PetscErrorCode JacApplyJacobian(Mat A, Vec x, Vec y)
 	ierr = MatShellGetContext(A, (void**)&jr); CHKERRQ(ierr);
 
 	// copy solution from global to local vectors, enforce boundary constraints
-	ierr = JacResCopySol(jr, x, _SKIP_SPC_); CHKERRQ(ierr);
+	ierr = JacResCopySol(jr, x); CHKERRQ(ierr);
 
 	ierr = JacResGetJ2Derivatives(jr); CHKERRQ(ierr);
 

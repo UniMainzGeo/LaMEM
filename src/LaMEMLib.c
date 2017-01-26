@@ -53,6 +53,7 @@
 #include "JacRes.h"
 #include "interpolate.h"
 #include "surf.h"
+#include "advect.h"
 #include "paraViewOutBin.h"
 #include "paraViewOutSurf.h"
 #include "multigrid.h"
@@ -60,7 +61,6 @@
 #include "lsolve.h"
 #include "nlsolve.h"
 #include "multigrid.h"
-#include "advect.h"
 #include "marker.h"
 #include "paraViewOutMark.h"
 #include "input.h"
@@ -108,7 +108,7 @@ PetscErrorCode LaMEMLib(ModParam *IOparam)
 	char ParamFile[MAX_PATH_LEN];
 
 	// check whether input file is specified
-	ierr = PetscOptionsGetString(PETSC_NULL, "-ParamFile", ParamFile, MAX_PATH_LEN, &InputParamFile); CHKERRQ(ierr);
+	ierr = PetscOptionsGetString(NULL, NULL, "-ParamFile", ParamFile, MAX_PATH_LEN, &InputParamFile); CHKERRQ(ierr);
 
 	// read additional PETSc options from input file
 	if(InputParamFile == PETSC_TRUE)
@@ -137,7 +137,8 @@ PetscErrorCode LaMEMLib(ModParam *IOparam)
 	ierr = NLSolClear   (&nl);     CHKERRQ(ierr);
 	ierr = PVOutClear   (&pvout);  CHKERRQ(ierr);
 	ierr = PVSurfClear  (&pvsurf); CHKERRQ(ierr);
-	ierr = PetscMemzero (&user, sizeof(UserCtx)); CHKERRQ(ierr);
+	ierr = PetscMemzero (&user, sizeof(UserCtx));  CHKERRQ(ierr);
+	ierr = PetscMemzero (&objf, sizeof(ObjFunct)); CHKERRQ(ierr);
 
 	// initialize variables
 	ierr = FDSTAGInitCode(&jr, &user, IOparam); CHKERRQ(ierr);
@@ -246,6 +247,9 @@ PetscErrorCode LaMEMLib(ModParam *IOparam)
 	// AVD output driver
 	ierr = PVAVDCreate(&pvavd, &actx, user.OutputFile); CHKERRQ(ierr);
 
+	// create objective function object
+	ierr = ObjFunctCreate(&objf, IOparam, &surf); CHKERRQ(ierr);
+
 	// read breakpoint files if restart was requested and if is possible
 	if (user.restart==1) { ierr = BreakRead(&user, &actx, &pvout, &pvsurf, &pvmark, &pvavd, &nl.jtype); CHKERRQ(ierr); }
 
@@ -271,16 +275,6 @@ PetscErrorCode LaMEMLib(ModParam *IOparam)
 		PetscFunctionReturn(0);
 	}
 
-	//===================
-	// OBJECTIVE FUNCTION
-	//===================
-
-	// create objective function object
-	ierr = ObjFunctCreate(&objf, &surf); CHKERRQ(ierr);
-
-	// transfer misfit value to IO structure
-	IOparam->mfit = objf.errtot;
-
 	PetscPrintf(PETSC_COMM_WORLD," \n");
 
 	//===============
@@ -298,7 +292,7 @@ PetscErrorCode LaMEMLib(ModParam *IOparam)
 		//====================================
 
 		// initialize boundary constraint vectors
-		ierr = BCApply(&bc); CHKERRQ(ierr);
+		ierr = BCApply(&bc, jr.gsol); CHKERRQ(ierr);
 
 		// initialize temperature
 		ierr = JacResInitTemp(&jr); CHKERRQ(ierr);
@@ -383,8 +377,6 @@ PetscErrorCode LaMEMLib(ModParam *IOparam)
 		ierr = ADVRemap(&actx, &surf); CHKERRQ(ierr);
 
 		// update phase ratios taking into account actual free surface position
-		// -- This routine requires a modification to also correct phase ratio's at edges and not just at corners --
-		// it has been deactivated temporarily (affects convergence for salt-tectonics setups with brittle overburden)
 		ierr = FreeSurfGetAirPhaseRatio(&surf); CHKERRQ(ierr);
 
 		// advect pushing block
@@ -393,14 +385,13 @@ PetscErrorCode LaMEMLib(ModParam *IOparam)
 		// compute gravity misfits
 //		ierr = CalculateMisfitValues(&user, C, itime, LaMEM_OutputParameters); CHKERRQ(ierr);
 
-
 		// ACHTUNG !!!
 		PetscBool          flg;
 		KSP                ksp;
 		KSPConvergedReason reason;
 		PetscBool          stop = PETSC_FALSE;
 
-		ierr = PetscOptionsHasName(NULL, "-stop_linsol_fail", &flg); CHKERRQ(ierr);
+		ierr = PetscOptionsHasName(NULL, NULL, "-stop_linsol_fail", &flg); CHKERRQ(ierr);
 
 		if(flg == PETSC_TRUE)
 		{
@@ -420,7 +411,6 @@ PetscErrorCode LaMEMLib(ModParam *IOparam)
 
 		if(!(JacResGetStep(&jr) % user.save_timesteps) || stop == PETSC_TRUE)
 		{
-
 			char *DirectoryName = NULL;
 
 			// redefine filename in case of inversion setup

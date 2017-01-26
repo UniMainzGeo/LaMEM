@@ -425,6 +425,9 @@ void ScalingMatProp(Scaling *scal, Material_t *phases, PetscInt numPhases)
 		phases[i].Cp      /= scal->cpecific_heat;
 		phases[i].k       /= scal->conductivity;
 		phases[i].A       /= scal->heat_production;
+
+		// Phase diagram
+		phases[i].Me_Mu0  /= scal->viscosity;
 	}
 }
 //---------------------------------------------------------------------------

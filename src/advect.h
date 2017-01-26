@@ -58,7 +58,8 @@ typedef enum
 	_STRESS_,    // deviatoric stress
 	_APS_,       // accumulated plastic strain
 	_VORTICITY_, // vorticity pseudo-vector components
-	_DISP_       // displacement
+	_DISP_,      // displacement
+	_ME_         // Melt fraction
 
 } InterpCase;
 
@@ -226,6 +227,10 @@ PetscErrorCode ADVMarkCrossFreeSurf(AdvCtx *actx, FreeSurf *surf, PetscScalar to
 
 // check marker phases
 PetscErrorCode ADVCheckMarkPhases(AdvCtx *actx, PetscInt numPhases);
+
+// Load and set data from phase diagram
+PetscErrorCode LoadPhaseDiagram(AdvCtx *actx, PetscInt i);
+PetscErrorCode SetDataPhaseDiagram(PData *pd, PetscScalar p, PetscScalar T, PetscScalar pshift, char pdn[]);
 
 //-----------------------------------------------------------------------------
 // service functions

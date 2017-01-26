@@ -125,10 +125,10 @@ PetscErrorCode PVSurfReadFromOptions(PVSurf *pvsurf)
 	pvsurf->amplitude  = 0;
 
 	// read output flags
-	ierr = PetscOptionsGetInt(NULL, "-out_surf_pvd",        &pvsurf->outpvd,     NULL); CHKERRQ(ierr);
-	ierr = PetscOptionsGetInt(NULL, "-out_surf_velocity",   &pvsurf->velocity,   NULL); CHKERRQ(ierr);
-	ierr = PetscOptionsGetInt(NULL, "-out_surf_topography", &pvsurf->topography, NULL); CHKERRQ(ierr);
-	ierr = PetscOptionsGetInt(NULL, "-out_surf_amplitude",  &pvsurf->amplitude,  NULL); CHKERRQ(ierr);
+	ierr = PetscOptionsGetInt(NULL, NULL, "-out_surf_pvd",        &pvsurf->outpvd,     NULL); CHKERRQ(ierr);
+	ierr = PetscOptionsGetInt(NULL, NULL, "-out_surf_velocity",   &pvsurf->velocity,   NULL); CHKERRQ(ierr);
+	ierr = PetscOptionsGetInt(NULL, NULL, "-out_surf_topography", &pvsurf->topography, NULL); CHKERRQ(ierr);
+	ierr = PetscOptionsGetInt(NULL, NULL, "-out_surf_amplitude",  &pvsurf->amplitude,  NULL); CHKERRQ(ierr);
 
 	if(pvsurf->outpvd)
 	{
