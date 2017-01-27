@@ -2801,7 +2801,7 @@ PetscErrorCode JacResGetPorePressure(JacRes *jr)
 	PetscFunctionBegin;
 
 	// initialize
-	ierr = VecZeroEntries(jr->lp_lithos); CHKERRQ(ierr);
+	ierr = VecZeroEntries(jr->lp_pore); CHKERRQ(ierr);
 
 	// Return if not activated
 	if(jr->matLim.actPorePres==PETSC_FALSE)
