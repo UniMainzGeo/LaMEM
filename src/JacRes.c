@@ -788,7 +788,7 @@ PetscErrorCode JacResGetResidual(JacRes *jr)
 	PetscScalar ***fx,  ***fy,  ***fz, ***vx,  ***vy,  ***vz, ***gc;
 	PetscScalar ***dxx, ***dyy, ***dzz, ***dxy, ***dxz, ***dyz, ***p, ***T, ***p_lithos, ***p_pore;
 	PetscScalar eta_creep, eta_viscoplastic;
-	PetscScalar depth, pc_lithos, pc_pore;
+	PetscScalar depth, pc_lithos, pc_pore, biot, peff;
 //	PetscScalar rho_lithos;
 //	PetscScalar alpha, Tn,
 
@@ -813,6 +813,7 @@ PetscErrorCode JacResGetResidual(JacRes *jr)
 	grav      =  jr->grav;      	// gravity acceleration
 //	rho_lithos=  matLim->rho_lithos;// density to compute lithostatic pressure in viscosity formulation
 	pShift    =  jr->pShift;    	// pressure shift
+	biot      =  matLim->biot;      // Biot pressure parameter
 
 	// clear local residual vectors
 	ierr = VecZeroEntries(jr->lfx); CHKERRQ(ierr);
@@ -837,7 +838,7 @@ PetscErrorCode JacResGetResidual(JacRes *jr)
 	ierr = DMDAVecGetArray(fs->DA_Y,   jr->lvy,  &vy);  CHKERRQ(ierr);
 	ierr = DMDAVecGetArray(fs->DA_Z,   jr->lvz,  &vz);  CHKERRQ(ierr);
 	ierr = DMDAVecGetArray(fs->DA_CEN, jr->lp_lithos,&p_lithos); CHKERRQ(ierr);
-	ierr = DMDAVecGetArray(fs->DA_CEN, jr->lp_pore,  &p_pore); CHKERRQ(ierr);
+	ierr = DMDAVecGetArray(fs->DA_CEN, jr->lp_pore,  &p_pore);   CHKERRQ(ierr);
 
 	// compute lithostatic pressure
 	ierr = JacResGetLithoStaticPressure(jr); CHKERRQ(ierr);
@@ -925,12 +926,13 @@ PetscErrorCode JacResGetResidual(JacRes *jr)
 		// compute stress, plastic strain rate and shear heating term on cell
 		ierr = GetStressCell(svCell, matLim, XX, YY, ZZ); CHKERRQ(ierr);
 
+		// get effective pressure
+		peff = pc - biot*pc_pore;
+
 		// compute total Cauchy stresses
-		sxx = svCell->sxx - pc;
-		syy = svCell->syy - pc;
-		szz = svCell->szz - pc;
-
-
+		sxx = svCell->sxx - peff;
+		syy = svCell->syy - peff;
+		szz = svCell->szz - peff;
 
 		// evaluate volumetric constitutive equations
 		ierr = VolConstEq(svBulk, numPhases, phases, svCell->phRat, matLim, depth, dt, pc-pShift , Tc); CHKERRQ(ierr);
@@ -977,7 +979,7 @@ PetscErrorCode JacResGetResidual(JacRes *jr)
 		// mass - currently T-dependency is deactivated
 //		gc[k][j][i] = -IKdt*(pc - pn) - theta + alpha*(Tc - Tn)/dt;
         
-        gc[k][j][i] = -IKdt*(pc - pn) - theta ;
+        gc[k][j][i] = -IKdt*(pc - pn) - theta;
         
 	}
 	END_STD_LOOP
@@ -1831,6 +1833,7 @@ PetscErrorCode SetMatParLim(MatParLim *matLim, UserCtx *usr)
 	matLim->theta_north  = 90.0; // by default y-axis
 	matLim->warn         = PETSC_TRUE;
 	matLim->jac_mat_free = PETSC_FALSE;
+	matLim->biot         = 0.0;
 
 	if(usr->DII_ref) matLim->DII_ref = usr->DII_ref;
 	else
@@ -1891,6 +1894,11 @@ PetscErrorCode SetMatParLim(MatParLim *matLim, UserCtx *usr)
 	if(flg == PETSC_TRUE) matLim->warn = PETSC_FALSE;
 
 	ierr = PetscOptionsGetScalar(NULL, NULL, "-shearHeatEff", &matLim->shearHeatEff, NULL); CHKERRQ(ierr);
+
+	ierr = PetscOptionsGetScalar(NULL, NULL, "-biot", &matLim->biot, NULL); CHKERRQ(ierr);
+
+	if(matLim->biot > 1.0) matLim->biot = 1.0;
+	if(matLim->biot < 0.0) matLim->biot = 0.0;
 
 	if(matLim->shearHeatEff > 1.0) matLim->shearHeatEff = 1.0;
 	if(matLim->shearHeatEff < 0.0) matLim->shearHeatEff = 0.0;
@@ -2791,6 +2799,9 @@ PetscErrorCode JacResGetPorePressure(JacRes *jr)
 
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
+
+	// initialize
+	ierr = VecZeroEntries(jr->lp_lithos); CHKERRQ(ierr);
 
 	// Return if not activated
 	if(jr->matLim.actPorePres==PETSC_FALSE)

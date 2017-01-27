@@ -261,6 +261,8 @@ typedef struct
 	PetscBool    warn;
 	// matrix-free closed-form jacobian
 	PetscBool   jac_mat_free;
+	// Biot pressure parameter
+	PetscScalar  biot;
 
 } MatParLim;
 
