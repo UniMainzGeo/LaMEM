@@ -788,7 +788,7 @@ PetscErrorCode JacResGetResidual(JacRes *jr)
 	PetscScalar ***fx,  ***fy,  ***fz, ***vx,  ***vy,  ***vz, ***gc;
 	PetscScalar ***dxx, ***dyy, ***dzz, ***dxy, ***dxz, ***dyz, ***p, ***T, ***p_lithos, ***p_pore;
 	PetscScalar eta_creep, eta_viscoplastic;
-	PetscScalar depth, pc_lithos, pc_pore, biot, peff;
+	PetscScalar depth, pc_lithos, pc_pore, biot, ptotal;
 //	PetscScalar rho_lithos;
 //	PetscScalar alpha, Tn,
 
@@ -891,7 +891,6 @@ PetscErrorCode JacResGetResidual(JacRes *jr)
 		0.25*(XZ1*XZ1 + XZ2*XZ2 + XZ3*XZ3 + XZ4*XZ4) +
 		0.25*(YZ1*YZ1 + YZ2*YZ2 + YZ3*YZ3 + YZ4*YZ4);
 
-
 		// store square root of second invariant
 		svDev->DII = sqrt(J2Inv);
 
@@ -926,13 +925,13 @@ PetscErrorCode JacResGetResidual(JacRes *jr)
 		// compute stress, plastic strain rate and shear heating term on cell
 		ierr = GetStressCell(svCell, matLim, XX, YY, ZZ); CHKERRQ(ierr);
 
-		// get effective pressure
-		peff = pc - biot*pc_pore;
+		// get total pressure (effective pressure, computed by LaMEM, plus pore pressure)
+		ptotal = pc + biot*pc_pore;
 
 		// compute total Cauchy stresses
-		sxx = svCell->sxx - peff;
-		syy = svCell->syy - peff;
-		szz = svCell->szz - peff;
+		sxx = svCell->sxx - ptotal;
+		syy = svCell->syy - ptotal;
+		szz = svCell->szz - ptotal;
 
 		// evaluate volumetric constitutive equations
 		ierr = VolConstEq(svBulk, numPhases, phases, svCell->phRat, matLim, depth, dt, pc-pShift , Tc); CHKERRQ(ierr);
