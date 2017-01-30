@@ -252,8 +252,6 @@ typedef struct
 	// fluid density for depth-dependent density model
 	PetscScalar  rho_fluid;
 	PetscBool    actPorePres;  // pore pressure activation flag
-	// rock density if we want to use lithostatic pressure in viscosit calculations
-	PetscScalar  rho_lithos;
 	// direction to the North for stress orientation
 	// counter-clockwise positive measured from x-axis
 	PetscScalar  theta_north;

@@ -54,6 +54,8 @@ PetscErrorCode PVOutWriteViscCreep     (JacRes*, OutBuf*);
 PetscErrorCode PVOutWriteViscoPlastic  (JacRes*, OutBuf*);
 PetscErrorCode PVOutWriteVelocity      (JacRes*, OutBuf*);
 PetscErrorCode PVOutWritePressure      (JacRes*, OutBuf*);
+PetscErrorCode PVOutWriteTotalPressure (JacRes*, OutBuf*);
+PetscErrorCode PVOutWriteEffPressure   (JacRes*, OutBuf*);
 PetscErrorCode PVOutWriteOverPressure  (JacRes*, OutBuf*);
 PetscErrorCode PVOutWriteLithosPressure(JacRes*, OutBuf*);
 PetscErrorCode PVOutWritePorePressure  (JacRes*, OutBuf*);

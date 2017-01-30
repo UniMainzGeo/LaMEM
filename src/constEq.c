@@ -72,7 +72,7 @@ PetscErrorCode ConstEqCtxSetup(
 	// evaluate dependence on constant parameters (pressure, temperature)
 
 	PetscInt    ln, nl, pd;
-	PetscScalar Q, RT, ch, fr, p_viscosity, p_upper, p_lower, dP;
+	PetscScalar Q, RT, ch, fr, p_viscosity, p_upper, p_lower, dP, biot, ptotal;
 	PetscBool   flag = PETSC_FALSE,flag2 =PETSC_FALSE, flag3=PETSC_FALSE;
 
 	PetscErrorCode ierr;
@@ -109,6 +109,7 @@ PetscErrorCode ConstEqCtxSetup(
 	ctx->taupl = 0.0;         // plastic yield stress
 	ctx->cfsol = PETSC_TRUE;  // closed-form solution flag
 	ctx->fr    = 0.0;         // effective friction coefficient
+	biot       = lim->biot;   // Biot pressure parameter
 
 	// ELASTICITY
 	if(mat->G)
@@ -203,8 +204,16 @@ PetscErrorCode ConstEqCtxSetup(
 		// if lambda (pore pressure ratio) is set
 		if(lim->actPorePres == PETSC_TRUE)
 		{
-			dP = (p - p_pore);
-			if (dP < 0.0) dP = 0.0;				
+			// compute total pressure
+			ptotal = p + biot*p_pore;
+
+			// compute effective mean stress
+			dP = (ptotal - p_pore);
+
+			// deactivate extension mode
+			if(dP < 0.0) dP = 0.0;
+
+			// compute yield stress
 			ctx->taupl = dP * sin(fr) + ch * cos(fr);
 		}
 	}

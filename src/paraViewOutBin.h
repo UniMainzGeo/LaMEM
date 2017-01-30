@@ -154,6 +154,7 @@ typedef struct
 	PetscInt visc_viscoplastic;     // viscoplastic viscosity
 	PetscInt velocity;       		// velocity
 	PetscInt pressure;       		// pressure
+	PetscInt eff_press;             // effective pressure
 	PetscInt overpressure;   		// overpressure
 	PetscInt lithospressure; 		// lithostatic pressure
 	PetscInt porepressure; 	    	// porepressure

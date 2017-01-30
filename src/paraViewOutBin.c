@@ -339,6 +339,7 @@ PetscInt OutMaskCountActive(OutMask *omask)
 	if(omask->visc_viscoplastic) 	cnt++; // viscoplastic viscosity
 	if(omask->velocity)       		cnt++; // velocity
 	if(omask->pressure)       		cnt++; // pressure
+	if(omask->eff_press)       		cnt++; // effective pressure
 	if(omask->overpressure)   		cnt++; // overpressure
 	if(omask->lithospressure) 	    cnt++; // lithostatic pressure
 	if(omask->porepressure) 	    cnt++; // pore pressure
@@ -441,6 +442,7 @@ PetscErrorCode PVOutCreate(PVOut *pvout, JacRes *jr, const char *filename)
 	if(omask->visc_viscoplastic) 	OutVecCreate(&outvecs[cnt++], "visc_viscoplastic",	scal->lbl_viscosity,        &PVOutWriteViscoPlastic, 1);
 	if(omask->velocity)       		OutVecCreate(&outvecs[cnt++], "velocity",       	scal->lbl_velocity,         &PVOutWriteVelocity,     3);
 	if(omask->pressure)       		OutVecCreate(&outvecs[cnt++], "pressure",       	scal->lbl_stress,           &PVOutWritePressure,     1);
+	if(omask->eff_press)       		OutVecCreate(&outvecs[cnt++], "eff_press",       	scal->lbl_stress,           &PVOutWriteEffPressure,  1);
 	if(omask->overpressure)   		OutVecCreate(&outvecs[cnt++], "overpressure",   	scal->lbl_stress,           &PVOutWriteOverPressure, 1);
 	if(omask->lithospressure)       OutVecCreate(&outvecs[cnt++], "lithospressure",     scal->lbl_stress,           &PVOutWriteLithosPressure,1);
 	if(omask->porepressure)         OutVecCreate(&outvecs[cnt++], "porepressure",       scal->lbl_stress,           &PVOutWritePorePressure, 1);
@@ -474,6 +476,7 @@ PetscErrorCode PVOutCreate(PVOut *pvout, JacRes *jr, const char *filename)
 #define __FUNCT__ "PVOutReadFromOptions"
 PetscErrorCode PVOutReadFromOptions(PVOut *pvout)
 {
+	PetscBool flg;
 	OutMask  *omask;
 
 	PetscErrorCode ierr;
@@ -490,6 +493,7 @@ PetscErrorCode PVOutReadFromOptions(PVOut *pvout)
 	ierr = PetscOptionsGetInt(NULL, NULL, "-out_visc_viscoplastic",     &omask->visc_viscoplastic,  NULL); CHKERRQ(ierr);
 	ierr = PetscOptionsGetInt(NULL, NULL, "-out_velocity",       		&omask->velocity,      	 	NULL); CHKERRQ(ierr);
 	ierr = PetscOptionsGetInt(NULL, NULL, "-out_pressure",       		&omask->pressure,       	NULL); CHKERRQ(ierr);
+	ierr = PetscOptionsGetInt(NULL, NULL, "-out_eff_press",       		&omask->eff_press,       	NULL); CHKERRQ(ierr);
 	ierr = PetscOptionsGetInt(NULL, NULL, "-out_overpressure",   		&omask->overpressure,   	NULL); CHKERRQ(ierr);
 	ierr = PetscOptionsGetInt(NULL, NULL, "-out_lithospressure",        &omask->lithospressure,     NULL); CHKERRQ(ierr);
 	ierr = PetscOptionsGetInt(NULL, NULL, "-out_porepressure",          &omask->porepressure,       NULL); CHKERRQ(ierr);
@@ -514,6 +518,11 @@ PetscErrorCode PVOutReadFromOptions(PVOut *pvout)
 	ierr = PetscOptionsGetInt(NULL, NULL, "-out_cont_res",       		&omask->cont_res,       	NULL); CHKERRQ(ierr);
     ierr = PetscOptionsGetInt(NULL, NULL, "-out_energ_res",      		&omask->energ_res,      	NULL); CHKERRQ(ierr);
     ierr = PetscOptionsGetInt(NULL, NULL, "-out_jac_test",       		&omask->jac_test,       	NULL); CHKERRQ(ierr);
+
+    // deactivate effective pressure if pore pressure is deactivated
+	ierr = PetscOptionsHasName(NULL, NULL, "-actPorePres", &flg); CHKERRQ(ierr);
+
+	if(flg != PETSC_TRUE && omask->eff_press) omask->eff_press = 0;
 
 	if(pvout->outpvd)
 	{
