@@ -164,7 +164,7 @@ PetscErrorCode ConstEqCtxSetup(
 	if(sin(fr)    < lim->minFr) fr = lim->minFr;
 
 	// compute yield stress
-	if(p < 0.0) { ctx->taupl = ch;        pd = 0; } // Von-Mises model for extension
+	if(p < 0.0) { ctx->taupl = ch* cos(fr);        pd = 0; } // Von-Mises model for extension
 	else  // Drucker-Prager model for compression
 	{
 		if(!flag2 && lim->presLimFlg == PETSC_TRUE)
