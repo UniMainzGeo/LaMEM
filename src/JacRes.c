@@ -1904,6 +1904,15 @@ PetscErrorCode SetMatParLim(MatParLim *matLim, UserCtx *usr)
 	if(matLim->shearHeatEff > 1.0) matLim->shearHeatEff = 1.0;
 	if(matLim->shearHeatEff < 0.0) matLim->shearHeatEff = 0.0;
 
+	// flags
+	matLim->p_visc_total  = PETSC_FALSE; // use total pressure in viscous laws
+	matLim->p_plast_litho = PETSC_FALSE; // use lithostatic pressure for plasticity
+	matLim->p_no_lim      = PETSC_FALSE; // skip pressure limits for plasticity
+
+	ierr = PetscOptionsHasName(NULL, NULL, "-ViscoPLithosOff",                          &matLim->p_visc_total);  CHKERRQ(ierr);
+	ierr = PetscOptionsHasName(NULL, NULL, "-EmployLithostaticPressureInYieldFunction", &matLim->p_plast_litho); CHKERRQ(ierr);
+	ierr = PetscOptionsHasName(NULL, NULL, "-NoPressureLimit",                          &matLim->p_no_lim);      CHKERRQ(ierr);
+
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
