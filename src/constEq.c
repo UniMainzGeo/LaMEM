@@ -404,6 +404,7 @@ PetscScalar GetI2Gdt(
 	PetscScalar *phRat,
 	PetscScalar  dt)
 {
+/*
 	PetscInt    i;
 	PetscScalar I2Gdt;
 
@@ -415,6 +416,23 @@ PetscScalar GetI2Gdt(
 	{	// average elastic materials only
 		if(phases[i].G) I2Gdt += 0.5*phRat[i]/phases[i].G/dt;
 	}
+	return I2Gdt;
+*/
+	PetscInt    i;
+	PetscScalar I2Gdt, Gavg;
+
+	Gavg  = 0.0;
+	I2Gdt = 0.0;
+
+	// scan all phases
+	for(i = 0; i < numPhases; i++)
+	{
+		// average elastic materials only
+		Gavg += phRat[i]/phases[i].G;
+	}
+
+	if(Gavg) I2Gdt = 1.0/Gavg/dt/2.0;
+
 	return I2Gdt;
 }
 //---------------------------------------------------------------------------
@@ -505,7 +523,7 @@ PetscErrorCode VolConstEq(
 	PetscScalar  T)         // temperature
 {
 	// Evaluate volumetric constitutive equations in control volume
-
+/*
 	PetscInt     i;
 	Material_t  *mat;
 	PetscScalar  cf_comp, cf_therm, IKdt, rho;
@@ -572,6 +590,75 @@ PetscErrorCode VolConstEq(
 			svBulk->IKdt  += phRat[i]*IKdt;
 		}
 	}
+*/
+	PetscInt     i;
+	Material_t  *mat;
+	PetscScalar  cf_comp, cf_therm, Kavg, rho;
+
+	PetscFunctionBegin;
+
+	// initialize effective density, thermal expansion & inverse bulk elastic viscosity
+	svBulk->rho   = 0.0;
+	svBulk->alpha = 0.0;
+	svBulk->IKdt  = 0.0;
+	Kavg          = 0.0;
+
+	// scan all phases
+	for(i = 0; i < numPhases; i++)
+	{
+		// update present phases only
+		if(phRat[i])
+		{
+			// get reference to material parameters table
+			mat = &phases[i];
+
+			// initialize
+			cf_comp  = 1.0;
+			cf_therm = 1.0;
+
+			// elastic compressiblility correction (Murnaghan's equation)
+			// ro/ro_0 = (1 + K'*P/K)^(1/K')
+			if(mat->K)
+			{
+				Kavg += phRat[i]*mat->K;
+
+				if(mat->Kp) cf_comp = pow(1.0 + mat->Kp*(p/mat->K), 1.0/mat->Kp);
+				else        cf_comp = 1.0 + p/mat->K;
+			}
+
+			// ro/ro_0 = (1 + beta*P)
+			if(mat->beta)
+			{
+				// negative sign as compressive pressures (increasing depth) is negative in LaMEM
+				cf_comp = 1.0 + p*mat->beta;
+			}
+
+			// thermal expansion correction
+			// ro/ro_0 = 1 - alpha*(T - TRef)
+			if(mat->alpha)
+			{
+				cf_therm  = 1.0 - mat->alpha*(T - lim->TRef);
+			}
+
+			// get density
+			if(mat->rho_n)
+			{
+				// depth-dependent density (ad-hoc)
+				rho = mat->rho - (mat->rho - lim->rho_fluid)*mat->rho_n*exp(-mat->rho_c*depth);
+			}
+			else
+			{
+				// temperature & pressure-dependent density
+				rho = mat->rho*cf_comp*cf_therm;
+			}
+
+			// update density, thermal expansion & inverse bulk elastic viscosity
+			svBulk->rho   += phRat[i]*rho;
+			svBulk->alpha += phRat[i]*mat->alpha;
+		}
+	}
+
+	if(Kavg) svBulk->IKdt = 1.0/Kavg/dt;
 
 	PetscFunctionReturn(0);
 }
