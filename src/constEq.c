@@ -428,7 +428,10 @@ PetscScalar GetI2Gdt(
 	for(i = 0; i < numPhases; i++)
 	{
 		// average elastic materials only
-		Gavg += phRat[i]/phases[i].G;
+		if(phases[i].G)
+		{
+			Gavg += phRat[i]*phases[i].G;
+		}
 	}
 
 	if(Gavg) I2Gdt = 1.0/Gavg/dt/2.0;
