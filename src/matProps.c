@@ -1345,8 +1345,10 @@ void getMatPropInt(FILE *fp, PetscInt ils, PetscInt ile,
 			int_val = (PetscInt)strtol( line, NULL, 0 );
 
 			if(found)
+			{
 				(*found) = _TRUE;
 				(*value) = int_val;
+			}
 
 			return;
 		}
@@ -1396,8 +1398,10 @@ void getMatPropScalar(FILE *fp, PetscInt ils, PetscInt ile,
 			double_val = (PetscScalar)strtod( line, NULL );
 
 			if(found)
+			{
 				(*found) = _TRUE;
 				(*value) = double_val;
+			}
 
 			return;
 		}
