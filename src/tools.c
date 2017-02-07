@@ -325,7 +325,7 @@ PetscErrorCode LaMEMCreateOutputDirectory(const char *DirectoryName)
 	// generate a new directory on rank zero
 	if(ISRankZero(PETSC_COMM_WORLD))
 	{
-		if(mkdir(DirectoryName, S_IRWXU))
+		if(mkdir(DirectoryName, S_IRWXU | S_IRGRP | S_IXGRP | S_IROTH | S_IXOTH))
 		{
 			PetscPrintf(PETSC_COMM_WORLD," Writing to existing directory %s \n", DirectoryName);
 		}
