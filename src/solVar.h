@@ -246,8 +246,9 @@ typedef struct
 	PetscScalar tauUlt; // ultimate yield stress
 	// depth-dependent model parameters
 	PetscScalar rho_fluid;    // fluid density
-	GWLevelType gwType;       // type of ground water level
+	GWLevelType gwType;       // type of ground water level (none, top, surf, level)
 	PetscScalar gwLevel;      // fixed ground water level
+	PetscScalar biot;         // Biot pressure parameter
 	// thermo-mechanical coupling controls
 	PetscScalar shearHeatEff; // shear heating efficiency parameter [0 - 1]
 	// rheology controls

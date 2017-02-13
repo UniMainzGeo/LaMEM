@@ -788,7 +788,7 @@ PetscErrorCode JacResGetResidual(JacRes *jr)
 	PetscScalar ***fx,  ***fy,  ***fz, ***vx,  ***vy,  ***vz, ***gc;
 	PetscScalar ***dxx, ***dyy, ***dzz, ***dxy, ***dxz, ***dyz, ***p, ***T, ***p_lithos, ***p_pore;
 	PetscScalar eta_creep, eta_viscoplastic;
-	PetscScalar depth, pc_lithos, pc_pore;
+	PetscScalar depth, pc_lithos, pc_pore, biot, ptotal;
 //	PetscScalar alpha, Tn,
 
 	PetscErrorCode ierr;
@@ -810,7 +810,8 @@ PetscErrorCode JacResGetResidual(JacRes *jr)
 	dt        =  jr->ts->dt;        // time step
 	fssa      =  jr->FSSA;          // density gradient penalty parameter
 	grav      =  jr->grav;          // gravity acceleration
-	pShift    =  jr->pShift;    	// pressure shift
+	pShift    =  jr->pShift;        // pressure shift
+	biot      =  matLim->biot;      // Biot pressure parameter
 
 	// clear local residual vectors
 	ierr = VecZeroEntries(jr->lfx); CHKERRQ(ierr);
@@ -904,7 +905,7 @@ PetscErrorCode JacResGetResidual(JacRes *jr)
 		// access current lithostatic pressure
 		pc_lithos = p_lithos[k][j][i];
 
-		// access current pore pressure
+		// access current pore pressure (zero if deactivated)
 		pc_pore = p_pore[k][j][i];
 
 		// compute depth below the free surface
@@ -922,10 +923,13 @@ PetscErrorCode JacResGetResidual(JacRes *jr)
 		// compute stress, plastic strain rate and shear heating term on cell
 		ierr = GetStressCell(svCell, matLim, XX, YY, ZZ); CHKERRQ(ierr);
 
+		// get total pressure (effective pressure, computed by LaMEM, plus pore pressure)
+		ptotal = pc + biot*pc_pore;
+
 		// compute total Cauchy stresses
-		sxx = svCell->sxx - pc;
-		syy = svCell->syy - pc;
-		szz = svCell->szz - pc;
+		sxx = svCell->sxx - ptotal;
+		syy = svCell->syy - ptotal;
+		szz = svCell->szz - ptotal;
 
 		// evaluate volumetric constitutive equations
 		ierr = VolConstEq(svBulk, numPhases, phases, svCell->phRat, matLim, depth, dt, pc-pShift , Tc); CHKERRQ(ierr);
@@ -2591,6 +2595,9 @@ PetscErrorCode JacResGetLithoStaticPressure(JacRes *jr)
 	L   =  (PetscInt)dsz->rank;
 	g   =   PetscAbsScalar(jr->grav[2]);
 
+	// initialize
+	ierr = VecZeroEntries(jr->lp_lithos); CHKERRQ(ierr);
+
 	// get local grid sizes
 	ierr = DMDAGetCorners(fs->DA_CEN, &sx, &sy, &sz, &nx, &ny, &nz); CHKERRQ(ierr);
 
@@ -2685,6 +2692,9 @@ PetscErrorCode JacResGetPorePressure(JacRes *jr)
 
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
+
+	// initialize
+	ierr = VecZeroEntries(jr->lp_pore); CHKERRQ(ierr);
 
 	// return if not activated
 	if(jr->matLim.gwType == _GW_NONE_) PetscFunctionReturn(0);

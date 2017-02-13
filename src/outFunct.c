@@ -242,6 +242,52 @@ PetscErrorCode PVOutWriteVelocity(JacRes *jr, OutBuf *outbuf)
 #define __FUNCT__ "PVOutWritePressure"
 PetscErrorCode PVOutWritePressure(JacRes *jr, OutBuf *outbuf)
 {
+	PetscErrorCode ierr;
+	PetscFunctionBegin;
+
+	if(jr->matLim.gwType != _GW_NONE_)
+	{
+		ierr = PVOutWriteTotalPress(jr, outbuf); CHKERRQ(ierr);
+	}
+	else
+	{
+		ierr = PVOutWriteEffPress(jr, outbuf); CHKERRQ(ierr);
+	}
+
+	PetscFunctionReturn(0);
+}
+//---------------------------------------------------------------------------
+#undef __FUNCT__
+#define __FUNCT__ "PVOutWriteTotalPress"
+PetscErrorCode PVOutWriteTotalPress(JacRes *jr, OutBuf *outbuf)
+{
+	PetscScalar pShift, biot;
+
+	ACCESS_FUNCTION_HEADER
+
+	biot = jr->matLim.biot;
+
+	cf  = scal->stress;
+
+	// scale pressure shift
+	pShift = cf*jr->pShift;
+
+	ierr = JacResCopyPres(jr, jr->gsol); CHKERRQ(ierr);
+
+	ierr = JacResGetPorePressure(jr); CHKERRQ(ierr);
+
+	// compute total pressure
+	ierr = VecWAXPY(outbuf->lbcen, biot, jr->lp_pore, jr->lp); CHKERRQ(ierr);
+
+	INTERPOLATE_ACCESS(outbuf->lbcen, InterpCenterCorner, 1, 0, pShift)
+
+	PetscFunctionReturn(0);
+}
+//---------------------------------------------------------------------------
+#undef __FUNCT__
+#define __FUNCT__ "PVOutWriteEffPress"
+PetscErrorCode PVOutWriteEffPress(JacRes *jr, OutBuf *outbuf)
+{
 	PetscScalar pShift;
 
 	ACCESS_FUNCTION_HEADER

@@ -58,7 +58,6 @@ typedef struct
 	PetscScalar  A_prl; // Peierls constant
 	PetscScalar  N_prl; // Peierls exponent
 	PetscScalar  taupl; // plastic yield stress
-	PetscBool    cfsol; // closed-form solution flag
 	PetscScalar  fr;    // effective friction coefficient
 
 } ConstEqCtx;

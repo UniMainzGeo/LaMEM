@@ -211,7 +211,8 @@
 	RUGC           = 8.31           # universal gas constant (required only for non-dimensional setups)
 	gw_level_type  = top            # ground water level type for pore pressure computation (see below)
 	gw_level       = 10.0           # ground water level at the free surface (if defined)
-
+	biot           = 0.7            # Biot pressure parameer
+	
 # Groundwater level type specification:
 
 # gw_level_type = none  # don't compute pore pressure (default)
@@ -311,6 +312,7 @@
 	out_visc_plast      = 1
 	out_velocity        = 1
 	out_pressure        = 1
+	out_eff_press       = 1
 	out_over_press      = 1
 	out_litho_press     = 1
 	out_pore_press      = 1

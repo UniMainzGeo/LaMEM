@@ -633,6 +633,32 @@ PetscErrorCode LaMEMLibDryRun(LaMEMLib *lm)
 			//==================
 			// Save data to disk
 			//==================
++		// ACHTUNG !!!
+
++		SNESConvergedReason snes_reason;
+
++
+
++		ierr = SNESGetConvergedReason(snes, &snes_reason);  CHKERRQ(ierr);
+
++
+
++		PetscInt out_fail = (PetscInt)snes_reason;
+
++
+
+ 		//==================
+
+ 		// Save data to disk
+
+ 		//==================
+
+
+
+-		if(!(JacResGetStep(&jr) % user.save_timesteps) || stop == PETSC_TRUE)
+
++		if(!(JacResGetStep(&jr) % user.save_timesteps) || stop == PETSC_TRUE || out_fail < 0)
+
 
 			if(!(JacResGetStep(&jr) % user.save_timesteps) || stop == PETSC_TRUE)
 			{

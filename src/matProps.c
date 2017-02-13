@@ -117,12 +117,27 @@ PetscErrorCode MatParLimRead(
 	if(lim->gwType == _GW_LEVEL_)
 	{
 		// get fixed ground water level
-		ierr = getScalarParam(fb, _REQUIRED_, "gw_level", &lim->gwLevel, 1, 1.0); CHKERRQ(ierr);
+		ierr = getScalarParam(fb, _REQUIRED_, "gw_level", &lim->gwLevel,   1, 1.0); CHKERRQ(ierr);
 	}
 
 	if(lim->gwType == _GW_SURF_ && !lim->isSurface)
 	{
 		SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "Ground water level requires activating free surface (gw_level_type, surf_use)");
+	}
+
+	if(lim->gwType == _GW_LEVEL_)
+	{
+		// get fixed ground water level
+		ierr = getScalarParam(fb, _REQUIRED_, "gw_level", &lim->gwLevel,   1, 1.0); CHKERRQ(ierr);
+	}
+
+	if(lim->gwType != _GW_NONE_)
+	{
+		// set default Biot pressure parameter
+		lim->biot = 1.0;
+
+		// override from input
+		ierr = getScalarParam(fb, _OPTIONAL_, "biot", &lim->biot, 1, 1.0); CHKERRQ(ierr);
 	}
 
 	// scale parameters
