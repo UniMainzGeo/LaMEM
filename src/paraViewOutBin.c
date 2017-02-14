@@ -381,7 +381,7 @@ PetscErrorCode PVOutCreate(PVOut *pvout, FB *fb)
 	OutMaskSetDefault(omask);
 
 	// read
-	ierr = getStringParam(fb, _OPTIONAL_, "out_file_name",       pvout->outfile, "output");       CHKERRQ(ierr);
+	ierr = getStringParam(fb, _REQUIRED_, "out_file_name",       pvout->outfile, "output");       CHKERRQ(ierr);
 	ierr = getIntParam   (fb, _OPTIONAL_, "out_pvd",            &pvout->outpvd,            1, 1); CHKERRQ(ierr);
 	ierr = getIntParam   (fb, _OPTIONAL_, "out_phase",          &omask->phase,             1, 1); CHKERRQ(ierr);
 	ierr = getIntParam   (fb, _OPTIONAL_, "out_density",        &omask->density,           1, 1); CHKERRQ(ierr);

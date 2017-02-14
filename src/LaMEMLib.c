@@ -111,6 +111,8 @@ PetscErrorCode LaMEMLibMain(void *param)
 	// cancel restart if no database is available
 	if(mode == _RESTART_ && !(!stat("./restart", &s) && S_ISDIR(s.st_mode)))
 	{
+		PetscPrintf(PETSC_COMM_WORLD,"No restart database available. Starting normal mode ...\n");
+
 		mode = _NORMAL_;
 	}
 
@@ -187,6 +189,72 @@ PetscErrorCode LaMEMLibCreate(LaMEMLib *lm)
 	// create parallel grid
 	ierr = FDSTAGCreate(&lm->fs, fb); CHKERRQ(ierr);
 
+	// create boundary condition context
+	ierr = BCCreate(&lm->bc, fb); CHKERRQ(ierr);
+
+	// create Jacobian & residual evaluation context
+	ierr = JacResCreate(&lm->jr, fb); CHKERRQ(ierr);
+
+	// create free surface grid
+	ierr = FreeSurfCreate(&lm->surf, fb); CHKERRQ(ierr);
+
+	// create advection context
+	ierr = ADVCreate(&lm->actx, fb); CHKERRQ(ierr);
+
+
+
+
+
+
+
+/*
+
+	// change marker phase when crossing free surface
+	ierr = ADVMarkCrossFreeSurf(&actx, &surf, 0.05); CHKERRQ(ierr);
+
+	// set air phase to properly treat marker advection & temperature diffusion
+	if(surf.UseFreeSurf == PETSC_TRUE && jr.actTemp)
+	{
+		actx.AirPhase = surf.AirPhase;
+		actx.Ttop     = bc.Ttop;
+	}
+
+
+
+	// check thermal material parameters
+	ierr = JacResCheckTempParam(&jr); CHKERRQ(ierr);
+
+	// update phase ratios taking into account actual free surface position
+	ierr = FreeSurfGetAirPhaseRatio(&surf); CHKERRQ(ierr);
+
+
+*/
+
+
+
+
+
+	// create output object for all requested output variables
+	ierr = PVOutCreate(&lm->pvout, fb); CHKERRQ(ierr);
+
+	// create output object for the free surface
+	ierr = PVSurfCreate(&lm->pvsurf, fb, lm->pvout.outfile); CHKERRQ(ierr);
+
+	// create output object for the markers - for debugging
+	ierr = PVMarkCreate(&lm->pvmark, fb, lm->pvout.outfile); CHKERRQ(ierr);
+
+	// AVD output driver
+	ierr = PVAVDCreate(&lm->pvavd, fb, lm->pvout.outfile); CHKERRQ(ierr);
+
+
+
+
+
+
+
+
+
+
 	// destroy file buffer
 	ierr = FBDestroy(&fb); CHKERRQ(ierr);
 
@@ -227,8 +295,20 @@ PetscErrorCode LaMEMLibSaveGrid(LaMEMLib *lm)
 #define __FUNCT__ "LaMEMLibLoadRestart"
 PetscErrorCode LaMEMLibLoadRestart(LaMEMLib *lm)
 {
+	PetscErrorCode ierr;
+	PetscFunctionBegin;
+
 
 	// check whether solution is finished before proceeding
+
+	// finish simulation if time_end was reached
+//	if (jr.ts.istep >= jr.ts.nstep)
+//	{
+//	}
+
+	// setup cross-references between library objects
+	ierr = LaMEMLibSetLinks(lm); CHKERRQ(ierr);
+
 
 	PetscFunctionReturn(0);
 }
@@ -335,14 +415,25 @@ PetscErrorCode LaMEMLibSolve(LaMEMLib *lm, void *param)
 {
 	PMat     pm;     // preconditioner matrix (to be removed!)
 	PCStokes pc;     // Stokes preconditioner (to be removed!)
-	SNES     snes;   // PETSc nonlinear solver
 	NLSol    nl;     // nonlinear solver context (to be removed!)
+	SNES     snes;   // PETSc nonlinear solver
 //	ObjFunct objf;   // objective function
 
 //	PetscBool      done;
 
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
+
+	// create objective function object
+//	ierr = ObjFunctCreate(&objf, IOparam, &surf); CHKERRQ(ierr);
+
+
+	// create Stokes preconditioner & matrix
+//	ierr = PMatCreate(&pm, &jr);    CHKERRQ(ierr);
+	ierr = PCStokesCreate(&pc, pm); CHKERRQ(ierr);
+
+	// create nonlinear solver
+	ierr = NLSolCreate(&nl, pc, &snes); CHKERRQ(ierr);
 
 	// ...
 
