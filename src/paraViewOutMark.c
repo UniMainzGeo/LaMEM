@@ -123,7 +123,7 @@ PetscErrorCode PVMarkWriteTimeStep(PVMark *pvmark, const char *dirName, PetscSca
 	// update .pvd file if necessary
 	if(pvmark->outpvd)
 	{
-		ierr = UpdatePVDFile(dirName, pvmark->outfile, "pvtu", &pvmark->offset, ttime, tindx); CHKERRQ(ierr);
+		ierr = UpdatePVDFile(dirName, pvmark->outfile, "pvtu", &pvmark->offset, ttime, tindx, PETSC_FALSE); CHKERRQ(ierr);
 	}
 
 	// write parallel data .pvtu file

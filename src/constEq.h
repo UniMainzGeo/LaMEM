@@ -58,7 +58,6 @@ typedef struct
 	PetscScalar  A_prl; // Peierls constant
 	PetscScalar  N_prl; // Peierls exponent
 	PetscScalar  taupl; // plastic yield stress
-	PetscBool    cfsol; // closed-form solution flag
 	PetscScalar  fr;    // effective friction coefficient
 
 } ConstEqCtx;
@@ -76,6 +75,7 @@ PetscErrorCode ConstEqCtxSetup(
 	PetscScalar  dt,   			// time step
 	PetscScalar  p,    			// pressure
 	PetscScalar  p_lithos,    	// lithostatic pressure
+	PetscScalar  p_pore,    	// pore pressure
 	PetscScalar  T);   	 		// temperature
 
 // compute residual of the visco-elastic constitutive equation
@@ -111,6 +111,7 @@ PetscErrorCode DevConstEq(
 	PetscScalar *phRat,     		// phase ratios
 	MatParLim   *lim,       		// phase parameters limits
 	PetscScalar  p_lithos,     		// lithostatic pressure
+	PetscScalar  p_pore,     		// pore pressure
 	PetscScalar  dt,        		// time step
 	PetscScalar  p,        			// pressure
 	PetscScalar  T);        		// temperature

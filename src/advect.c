@@ -261,6 +261,7 @@ PetscErrorCode ADVAdvect(AdvCtx *actx)
 	}
 	else
 	{
+	
 		// advect markers (extended by Adina)
 		ierr = ADVelAdvectMain(actx); CHKERRQ(ierr);
 	}
@@ -569,6 +570,11 @@ PetscErrorCode ADVAdvectMark(AdvCtx *actx)
 
 	// current time step
 	dt = jr->ts.dt;
+
+	// in case we do a reverse simulation
+	if (jr->ts.reverse){
+		dt = -dt;			
+	}
 
 	// starting indices & number of cells
 	sx = fs->dsx.pstart; nx = fs->dsx.ncels;
@@ -1809,18 +1815,31 @@ PetscErrorCode ADVMarkCrossFreeSurf(AdvCtx *actx, FreeSurf *surf, PetscScalar to
 		// compute surface topography at marker position
 		topo = InterpLin2D(ltopo, I, J, L, sx, sy, xp, yp, ncx, ncy);
 
-		// check whether rock marker is above the free surface
+		// check whether rock marker is above the internal erosion surface
 		if(P->phase != AirPhase && zp > topo)
 		{
 			if(surf->ErosionModel == 1)
 			{
-				// erosion -> rock turns into air
+				// infinitely fast erosion -> rock turns immediately into air above the surface  
 				P->phase = AirPhase;
+			}
+			else if (surf->ErosionModel == 2){
+				PetscBool 	Erode=PETSC_TRUE;
+				// infinitely fast erosion, but only applied to some phases 
+				
+				// determine whether this phase can be eroded or not 
+				if (P->phase==1){
+					Erode=PETSC_FALSE;
+				}
+				
+				if (Erode){
+					P->phase = AirPhase;
+				}
 			}
 			else
 			{
 				// put marker below the free surface
-				P->X[2] = topo - tol*(zp - topo);
+				//	P->X[2] = topo - tol*(zp - topo);
 			}
 		}
 

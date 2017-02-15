@@ -100,6 +100,7 @@ typedef struct
 	PetscScalar  PSR;   // plastic strain-rate contribution
 	PetscScalar  dEta;  // dEta/dDII derivative (Jacobian)
 	PetscScalar  fr;    // effective friction coefficient (Jacobian)
+	PetscScalar  yield; // average yield stress in control volume
 
 } SolVarDev;
 
@@ -180,6 +181,8 @@ typedef struct
 	PetscScalar  K;       // bulk modulus
 	PetscScalar  Kp;      // pressure dependence parameter
 	PetscScalar  G;       // shear modulus
+	PetscScalar  nu;      // Poisson's ratio
+	PetscScalar  E;       // Young's modulus
 	// diffusion creep parameters
 	PetscScalar  Bd;      // pre-exponential constant
 	PetscScalar  Ed;      // activation energy
@@ -199,6 +202,7 @@ typedef struct
 	// plasticity parameters
 	PetscScalar  fr;      // friction coefficient
 	PetscScalar  ch;      // cohesion
+	PetscScalar  rp;      // ratio of pore pressure to overburden stress
 	Soft_t      *frSoft;  // friction softening law parameters
 	Soft_t      *chSoft;  // cohesion softening law parameters
 	// thermal parameters
@@ -244,17 +248,23 @@ typedef struct
 	PetscBool   initGuessFlg; // initial guess computation flag
 	PetscBool   presLimFlg;   // pressure limit flag for plasticity
 	PetscBool   presLimAct;   // activate pressure limit flag
+	PetscInt	MaxSNESIterBeforeApplyPlimit;	// maximum # of SNES iterations before we start applying upper/lower P bounds i yield function
 	// fluid density for depth-dependent density model
-	PetscScalar  rho_fluid;
-	// rock density if we want to use lithostatic pressure in viscosit calculations
-	PetscScalar  rho_lithos;
+	PetscScalar rho_fluid;
+	PetscBool   actPorePres;  // pore pressure activation flag
 	// direction to the North for stress orientation
 	// counter-clockwise positive measured from x-axis
-	PetscScalar  theta_north;
+	PetscScalar theta_north;
 	// print warning messages
-	PetscBool    warn;
+	PetscBool   warn;
 	// matrix-free closed-form jacobian
 	PetscBool   jac_mat_free;
+	// Biot pressure parameter
+	PetscScalar biot;
+	// flags
+	PetscBool   p_visc_total;  // use total pressure in viscous laws
+	PetscBool   p_plast_litho; // use lithostatic pressure for plasticity
+	PetscBool   p_no_lim;      // skip pressure limits for plasticity
 
 } MatParLim;
 

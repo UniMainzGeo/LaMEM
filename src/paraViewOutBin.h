@@ -154,8 +154,10 @@ typedef struct
 	PetscInt visc_viscoplastic;     // viscoplastic viscosity
 	PetscInt velocity;       		// velocity
 	PetscInt pressure;       		// pressure
+	PetscInt eff_press;             // effective pressure
 	PetscInt overpressure;   		// overpressure
 	PetscInt lithospressure; 		// lithostatic pressure
+	PetscInt porepressure; 	    	// porepressure
 	PetscInt temperature;    		// temperature
 	PetscInt dev_stress;     		// deviatoric stress tensor
 	PetscInt j2_dev_stress;  		// deviatoric stress second invariant
@@ -172,6 +174,7 @@ typedef struct
 	PetscInt EHmax;          		// maximum horizontal extension
 	PetscInt ISA;            		// Infinite Strain Axis
 	PetscInt GOL;            		// Grain Orientation Lag
+	PetscInt yield;            		// yield stress
 	// === debugging vectors ===============================================
 	PetscInt moment_res;     		// momentum residual
 	PetscInt cont_res;       		// continuity residual
@@ -236,7 +239,7 @@ void WriteXMLHeader(FILE *fp, const char *file_type);
 // WARNING! this is potential bottleneck, get rid of writing every time-step
 PetscErrorCode UpdatePVDFile(
 		const char *dirName, const char *outfile, const char *ext,
-		long int *offset, PetscScalar ttime, PetscInt tindx);
+		long int *offset, PetscScalar ttime, PetscInt tindx, PetscBool reverse);
 
 //---------------------------------------------------------------------------
 

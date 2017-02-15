@@ -402,6 +402,13 @@ PetscErrorCode LaMEMLib(ModParam *IOparam)
 			}
 		}
 
+		// ACHTUNG !!!
+		SNESConvergedReason snes_reason;
+
+		ierr = SNESGetConvergedReason(snes, &snes_reason);  CHKERRQ(ierr);
+
+		PetscInt out_fail = (PetscInt)snes_reason;
+
 		//==================
 		// Save data to disk
 		//==================
@@ -413,7 +420,7 @@ PetscErrorCode LaMEMLib(ModParam *IOparam)
 			if (user.save_breakpoints > 0) user.save_breakpoints = JacResGetStep(&jr);
 		}
 
-		if(!(JacResGetStep(&jr) % user.save_timesteps) || stop == PETSC_TRUE)
+		if(!(JacResGetStep(&jr) % user.save_timesteps) || stop == PETSC_TRUE || out_fail < 0)
 		{
 			char *DirectoryName = NULL;
 
@@ -431,13 +438,13 @@ PetscErrorCode LaMEMLib(ModParam *IOparam)
 			ierr = LaMEMCreateOutputDirectory(DirectoryName); CHKERRQ(ierr);
 
 			// AVD phase output
-			ierr = PVAVDWriteTimeStep(&pvavd, DirectoryName, JacResGetTime(&jr), JacResGetStep(&jr)); CHKERRQ(ierr);
+			ierr = PVAVDWriteTimeStep(&pvavd, &jr, DirectoryName, JacResGetTime(&jr), JacResGetStep(&jr)); CHKERRQ(ierr);
 
 			// grid ParaView output
 			ierr = PVOutWriteTimeStep(&pvout, &jr, DirectoryName, JacResGetTime(&jr), JacResGetStep(&jr)); CHKERRQ(ierr);
 
 			// free surface ParaView output
-			ierr = PVSurfWriteTimeStep(&pvsurf, DirectoryName, JacResGetTime(&jr), JacResGetStep(&jr)); CHKERRQ(ierr);
+			ierr = PVSurfWriteTimeStep(&pvsurf, &jr, DirectoryName, JacResGetTime(&jr), JacResGetStep(&jr)); CHKERRQ(ierr);
 
 			// marker ParaView output
 			ierr = PVMarkWriteTimeStep(&pvmark, DirectoryName, JacResGetTime(&jr), JacResGetStep(&jr)); CHKERRQ(ierr);

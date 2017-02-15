@@ -120,3 +120,42 @@ def test_c():
   ex1.appendKeywords('@')
   
   return(ex1)
+
+def test_d():
+    # this tests a subduction setup with VEP rheology and pushing block
+    
+    
+    # 1) Create a partitioning file and do not show any output of this
+    os.system('mpiexec -n 8 ../bin/opt/LaMEM -ParamFile ./t3_SubductionMATLABinput/Subduction_VEP.dat -SavePartitioning 1 > /dev/null');
+        
+    # 2) Move partitioning file to directory we need it
+    os.system('mv ProcessorPartitioning_8cpu_2.1.4.bin ./t3_SubductionMATLABinput/')
+            
+    # 3) Run MATLAB to create the Particles input  (requires the environmental variable $MATLAB to be defined!)
+    os.system('$MATLAB -nojvm -r "cd t3_SubductionMATLABinput; CreateMarkers_SubductionVEP_parallel; exit" > /dev/null')
+                
+    # Run the input script wth matlab-generated particles
+    ranks = 8
+    launch = '../bin/opt/LaMEM -ParamFile ./t3_SubductionMATLABinput/Subduction_VEP.dat'
+    expected_file = 't3_SubductionMATLABinput/Sub_VEP_MG_8core.expected'
+                            
+    def comparefunc(unittest):
+                                
+        key = 'Div_min'
+        unittest.compareFloatingPoint(key,1e-7)
+                                        
+        key = 'Div_max'
+        unittest.compareFloatingPoint(key,1e-7)
+                                                
+        key = re.escape("|Div|_2")
+        unittest.compareFloatingPoint(key,1e-5)
+                                                        
+        key = re.escape("|mRes|_2")
+        unittest.compareFloatingPoint(key,1e-4)
+                                                                
+    # Create unit test object
+    ex1 = pth.pthUnitTest('unit_Sub1_d',ranks,launch,expected_file)
+    ex1.setVerifyMethod(comparefunc)
+    ex1.appendKeywords('@')
+                                                                            
+    return(ex1)

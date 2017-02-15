@@ -339,8 +339,10 @@ PetscInt OutMaskCountActive(OutMask *omask)
 	if(omask->visc_viscoplastic) 	cnt++; // viscoplastic viscosity
 	if(omask->velocity)       		cnt++; // velocity
 	if(omask->pressure)       		cnt++; // pressure
+	if(omask->eff_press)       		cnt++; // effective pressure
 	if(omask->overpressure)   		cnt++; // overpressure
 	if(omask->lithospressure) 	    cnt++; // lithostatic pressure
+	if(omask->porepressure) 	    cnt++; // pore pressure
 	if(omask->temperature)    		cnt++; // temperature
 	if(omask->dev_stress)     		cnt++; // deviatoric stress tensor
 	if(omask->j2_dev_stress)  		cnt++; // deviatoric stress second invariant
@@ -357,6 +359,7 @@ PetscInt OutMaskCountActive(OutMask *omask)
 	if(omask->EHmax)          		cnt++; // maximum horizontal stress
 	if(omask->ISA)            		cnt++; // Infinite Strain Axis
 	if(omask->GOL)            		cnt++; // Grain Orientation Lag
+	if(omask->yield)          		cnt++; // yield stress
 	// === debugging vectors ===============================================
 	if(omask->moment_res)     		cnt++; // momentum residual
 	if(omask->cont_res)      	 	cnt++; // continuity residual
@@ -439,8 +442,10 @@ PetscErrorCode PVOutCreate(PVOut *pvout, JacRes *jr, const char *filename)
 	if(omask->visc_viscoplastic) 	OutVecCreate(&outvecs[cnt++], "visc_viscoplastic",	scal->lbl_viscosity,        &PVOutWriteViscoPlastic, 1);
 	if(omask->velocity)       		OutVecCreate(&outvecs[cnt++], "velocity",       	scal->lbl_velocity,         &PVOutWriteVelocity,     3);
 	if(omask->pressure)       		OutVecCreate(&outvecs[cnt++], "pressure",       	scal->lbl_stress,           &PVOutWritePressure,     1);
+	if(omask->eff_press)       		OutVecCreate(&outvecs[cnt++], "eff_press",       	scal->lbl_stress,           &PVOutWriteEffPressure,  1);
 	if(omask->overpressure)   		OutVecCreate(&outvecs[cnt++], "overpressure",   	scal->lbl_stress,           &PVOutWriteOverPressure, 1);
 	if(omask->lithospressure)       OutVecCreate(&outvecs[cnt++], "lithospressure",     scal->lbl_stress,           &PVOutWriteLithosPressure,1);
+	if(omask->porepressure)         OutVecCreate(&outvecs[cnt++], "porepressure",       scal->lbl_stress,           &PVOutWritePorePressure, 1);
 	if(omask->temperature)    		OutVecCreate(&outvecs[cnt++], "temperature",    	scal->lbl_temperature,      &PVOutWriteTemperature,  1);
 	if(omask->dev_stress)     		OutVecCreate(&outvecs[cnt++], "dev_stress",     	scal->lbl_stress,           &PVOutWriteDevStress,    9);
 	if(omask->strain_rate)    		OutVecCreate(&outvecs[cnt++], "strain_rate",    	scal->lbl_strain_rate,      &PVOutWriteStrainRate,   9);
@@ -457,6 +462,7 @@ PetscErrorCode PVOutCreate(PVOut *pvout, JacRes *jr, const char *filename)
 	if(omask->EHmax)          		OutVecCreate(&outvecs[cnt++], "EHmax",          	scal->lbl_unit,             &PVOutWriteEHmax,        3);
 	if(omask->ISA)            		OutVecCreate(&outvecs[cnt++], "ISA",            	scal->lbl_unit,             &PVOutWriteISA,          3);
 	if(omask->GOL)            		OutVecCreate(&outvecs[cnt++], "GOL",            	scal->lbl_unit,             &PVOutWriteGOL,          1);
+	if(omask->yield)            	OutVecCreate(&outvecs[cnt++], "yield",            	scal->lbl_stress,           &PVOutWriteYield,        1);
 	// === debugging vectors ===============================================
 	if(omask->moment_res)     		OutVecCreate(&outvecs[cnt++], "moment_res",     	scal->lbl_volumetric_force, &PVOutWriteMomentRes,    3);
 	if(omask->cont_res)       		OutVecCreate(&outvecs[cnt++], "cont_res",       	scal->lbl_strain_rate,      &PVOutWriteContRes,      1);
@@ -470,6 +476,7 @@ PetscErrorCode PVOutCreate(PVOut *pvout, JacRes *jr, const char *filename)
 #define __FUNCT__ "PVOutReadFromOptions"
 PetscErrorCode PVOutReadFromOptions(PVOut *pvout)
 {
+	PetscBool flg;
 	OutMask  *omask;
 
 	PetscErrorCode ierr;
@@ -486,8 +493,10 @@ PetscErrorCode PVOutReadFromOptions(PVOut *pvout)
 	ierr = PetscOptionsGetInt(NULL, NULL, "-out_visc_viscoplastic",     &omask->visc_viscoplastic,  NULL); CHKERRQ(ierr);
 	ierr = PetscOptionsGetInt(NULL, NULL, "-out_velocity",       		&omask->velocity,      	 	NULL); CHKERRQ(ierr);
 	ierr = PetscOptionsGetInt(NULL, NULL, "-out_pressure",       		&omask->pressure,       	NULL); CHKERRQ(ierr);
+	ierr = PetscOptionsGetInt(NULL, NULL, "-out_eff_press",       		&omask->eff_press,       	NULL); CHKERRQ(ierr);
 	ierr = PetscOptionsGetInt(NULL, NULL, "-out_overpressure",   		&omask->overpressure,   	NULL); CHKERRQ(ierr);
 	ierr = PetscOptionsGetInt(NULL, NULL, "-out_lithospressure",        &omask->lithospressure,     NULL); CHKERRQ(ierr);
+	ierr = PetscOptionsGetInt(NULL, NULL, "-out_porepressure",          &omask->porepressure,       NULL); CHKERRQ(ierr);
 	ierr = PetscOptionsGetInt(NULL, NULL, "-out_temperature",    		&omask->temperature,    	NULL); CHKERRQ(ierr);
 	ierr = PetscOptionsGetInt(NULL, NULL, "-out_dev_stress",     		&omask->dev_stress,     	NULL); CHKERRQ(ierr);
 	ierr = PetscOptionsGetInt(NULL, NULL, "-out_j2_dev_stress",  		&omask->j2_dev_stress,  	NULL); CHKERRQ(ierr);
@@ -501,6 +510,7 @@ PetscErrorCode PVOutReadFromOptions(PVOut *pvout)
 	ierr = PetscOptionsGetInt(NULL, NULL, "-out_ehmax",          		&omask->EHmax,          	NULL); CHKERRQ(ierr);
 	ierr = PetscOptionsGetInt(NULL, NULL, "-out_isa",            		&omask->ISA,            	NULL); CHKERRQ(ierr);
 	ierr = PetscOptionsGetInt(NULL, NULL, "-out_gol",            		&omask->GOL,            	NULL); CHKERRQ(ierr);
+	ierr = PetscOptionsGetInt(NULL, NULL, "-out_yield",            		&omask->yield,            	NULL); CHKERRQ(ierr);
 	ierr = PetscOptionsGetInt(NULL, NULL, "-out_plast_strain",   		&omask->plast_strain,   	NULL); CHKERRQ(ierr);
 	ierr = PetscOptionsGetInt(NULL, NULL, "-out_plast_dissip",   		&omask->plast_dissip,   	NULL); CHKERRQ(ierr);
 	ierr = PetscOptionsGetInt(NULL, NULL, "-out_tot_displ",      		&omask->tot_displ,      	NULL); CHKERRQ(ierr);
@@ -508,6 +518,11 @@ PetscErrorCode PVOutReadFromOptions(PVOut *pvout)
 	ierr = PetscOptionsGetInt(NULL, NULL, "-out_cont_res",       		&omask->cont_res,       	NULL); CHKERRQ(ierr);
     ierr = PetscOptionsGetInt(NULL, NULL, "-out_energ_res",      		&omask->energ_res,      	NULL); CHKERRQ(ierr);
     ierr = PetscOptionsGetInt(NULL, NULL, "-out_jac_test",       		&omask->jac_test,       	NULL); CHKERRQ(ierr);
+
+    // deactivate effective pressure if pore pressure is deactivated
+	ierr = PetscOptionsHasName(NULL, NULL, "-actPorePres", &flg); CHKERRQ(ierr);
+
+	if(flg != PETSC_TRUE && omask->eff_press) omask->eff_press = 0;
 
 	if(pvout->outpvd)
 	{
@@ -551,7 +566,17 @@ PetscErrorCode PVOutWriteTimeStep(PVOut *pvout, JacRes *jr, const char *dirName,
 	// update .pvd file if necessary
 	if(pvout->outpvd)
 	{
-		ierr = UpdatePVDFile(dirName, pvout->outfile, "pvtr", &pvout->offset, ttime, tindx); CHKERRQ(ierr);
+		long int offset;
+
+		offset = pvout->offset;
+		ierr = UpdatePVDFile(dirName, pvout->outfile, "pvtr", &offset, ttime, tindx, PETSC_FALSE); CHKERRQ(ierr);
+		
+		if (jr->ts.reverse){
+			offset = pvout->offset;
+			ierr = UpdatePVDFile(dirName, pvout->outfile, "pvtr", &offset, ttime, tindx, PETSC_TRUE); CHKERRQ(ierr);		// write a reverse modelling pvd file
+		}
+		pvout->offset = offset;
+
 	}
 
 	// write parallel data .pvtr file
@@ -772,7 +797,7 @@ void WriteXMLHeader(FILE *fp, const char *file_type)
 #define __FUNCT__ "UpdatePVDFile"
 PetscErrorCode UpdatePVDFile(
 		const char *dirName, const char *outfile, const char *ext,
-		long int *offset, PetscScalar ttime, PetscInt tindx)
+		long int *offset, PetscScalar ttime, PetscInt tindx, PetscBool reverse)
 {
 	FILE        *fp;
 	char        *fname;
@@ -784,7 +809,13 @@ PetscErrorCode UpdatePVDFile(
 	if(!ISRankZero(PETSC_COMM_WORLD)) PetscFunctionReturn(0);
 
 	// open outfile.pvd file (write or update mode)
-	asprintf(&fname, "%s.pvd", outfile);
+	if (reverse){
+		asprintf(&fname, "%s_reverse.pvd", outfile);
+		ttime = -ttime;
+	}
+	else{
+		asprintf(&fname, "%s.pvd", outfile);
+	}
 	if(!tindx) fp = fopen(fname,"w");
 	else       fp = fopen(fname,"r+");
 	if(fp == NULL) SETERRQ1(PETSC_COMM_SELF, 1,"cannot open file %s", fname);
