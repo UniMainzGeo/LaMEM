@@ -68,7 +68,7 @@ typedef enum
 // Input file buffer
 //-----------------------------------------------------------------------------
 
-typedef struct
+struct FB
 {
 	//=====================================================================
 	//
@@ -95,7 +95,7 @@ typedef struct
 	PetscInt  *blBeg;   // starting lines of blocks
 	PetscInt  *blEnd;   // ending lines of blocks
 
-} FB;
+};
 
 //-----------------------------------------------------------------------------
 

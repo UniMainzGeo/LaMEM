@@ -191,7 +191,7 @@ PetscInt OutMaskCountActive(OutMask *omask);
 //---------------------------------------------------------------------------
 //...................... ParaView output driver object ......................
 //---------------------------------------------------------------------------
-typedef struct
+struct PVOut
 {
 	JacRes   *jr;
 	char      outfile[_STR_LEN_]; // output file name
@@ -202,7 +202,7 @@ typedef struct
 	long int  offset;             // pvd file offset
 	PetscInt  outpvd;             // pvd file output flag
 
-} PVOut;
+};
 //---------------------------------------------------------------------------
 
 // create ParaView output driver

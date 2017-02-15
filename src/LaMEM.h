@@ -140,5 +140,8 @@ PetscErrorCode LaMEMLibMain(void *param);
 }
 #endif
 
+#include "types.h"
+
+
 //-----------------------------------------------------------------------------
 #endif

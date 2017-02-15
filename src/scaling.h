@@ -60,7 +60,7 @@ typedef enum
 
 //---------------------------------------------------------------------------
 
-typedef struct
+struct Scaling
 {
 	//=======================================================================
 	// divide by scale to convert input into internal units
@@ -157,7 +157,7 @@ typedef struct
 	char lbl_inverse_length   [_lbl_sz_];
 	char lbl_inverse_stress   [_lbl_sz_];
 
-} Scaling;
+};
 //---------------------------------------------------------------------------
 // scaling routines
 

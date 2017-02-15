@@ -53,7 +53,7 @@
 
 // free surface grid
 
-typedef struct
+struct FreeSurf
 {
 	JacRes *jr;             // global residual context
 	DM      DA_SURF;        // free surface grid
@@ -80,7 +80,7 @@ typedef struct
 	PetscScalar avg_topo; // average topography (updated by all functions changing topography)
 	PetscInt    phase;    // current sediment phase
 
-} FreeSurf;
+} ;
 
 //---------------------------------------------------------------------------
 

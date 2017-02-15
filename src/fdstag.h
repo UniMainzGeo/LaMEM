@@ -173,7 +173,7 @@ PetscErrorCode Discret1DCheckMG(Discret1D *ds, const char *dir, PetscInt *_ncors
 typedef enum { IDXNONE, IDXCOUPLED, IDXUNCOUPLED } idxtype;
 
 // global indexing of the DOF
-typedef struct
+struct DOFIndex
 {
 	//=====================================================================
 	//
@@ -190,7 +190,7 @@ typedef struct
 	PetscInt stv, stp, st;      // starting indices (stv & stp - decoupled layout)
 	Vec      ivx, ivy, ivz, ip; // index vectors (ghosted)
 
-} DOFIndex;
+};
 
 //---------------------------------------------------------------------------
 // DOFIndex functions
@@ -204,7 +204,7 @@ PetscErrorCode DOFIndexCompute(DOFIndex *dof, idxtype idxmod);
 
 //---------------------------------------------------------------------------
 // staggered grid data structure
-typedef struct
+struct FDSTAG
 {
 	Scaling  *scal;
 
@@ -235,7 +235,7 @@ typedef struct
 
 	PetscScalar gtol; // relative geometry tolerance
 
-} FDSTAG;
+};
 
 //---------------------------------------------------------------------------
 // FDSTAG functions

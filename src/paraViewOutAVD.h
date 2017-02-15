@@ -190,7 +190,7 @@ PetscErrorCode AVD3DReportMemory(AVD3D A);
 
 //---------------------------------------------------------------------------
 
-typedef struct
+struct PVAVD
 {
 	AdvCtx    *actx;              // advection context
 	char      outfile[_STR_LEN_]; // output file name
@@ -199,11 +199,11 @@ typedef struct
 	PetscInt  refine;             // Voronoi Diagram refinement factor
 	PetscInt  outpvd;             // pvd file output flag
 
-} PVAVD;
+};
 
 //---------------------------------------------------------------------------
 
-PetscErrorCode PVAVDCreate(PVAVD *pvavd, FB *fb, const char *filename);
+PetscErrorCode PVAVDCreate(PVAVD *pvavd, FB *fb);
 
 PetscErrorCode PVAVDWriteTimeStep(PVAVD *pvavd, const char *dirName, PetscScalar ttime, PetscInt tindx);
 

@@ -49,7 +49,7 @@
 //................ ParaView marker output driver object .....................
 //---------------------------------------------------------------------------
 
-typedef struct
+struct PVMark
 {
 	AdvCtx    *actx;              // advection context
 	char      outfile[_STR_LEN_]; // output file name
@@ -57,12 +57,12 @@ typedef struct
 	PetscInt  outmark;            // marker output flag
 	PetscInt  outpvd;             // pvd file output flag
 
-} PVMark;
+};
 
 //---------------------------------------------------------------------------
 
 // create ParaView output driver
-PetscErrorCode PVMarkCreate(PVMark *pvmark, FB *fb, const char *filename);
+PetscErrorCode PVMarkCreate(PVMark *pvmark, FB *fb);
 
 // write all time-step output files to disk (PVD, PVTU, VTU)
 PetscErrorCode PVMarkWriteTimeStep(PVMark *pvmark, const char *dirName, PetscScalar ttime, PetscInt tindx);

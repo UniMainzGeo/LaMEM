@@ -52,6 +52,21 @@
 #define _min_nmark_ 5
 
 //---------------------------------------------------------------------------
+//............   Material marker (history variables advection)   ............
+//---------------------------------------------------------------------------
+
+struct Marker
+{
+	PetscInt    phase; // phase identifier
+	PetscScalar X[3];  // global coordinates
+	PetscScalar p;     // pressure
+	PetscScalar T;     // temperature
+	PetscScalar APS;   // accumulated plastic strain
+	Tensor2RS   S;     // deviatoric stress
+	PetscScalar U[3];  // displacement
+};
+
+//---------------------------------------------------------------------------
 
 // marker initialization type enumeration
 typedef enum
@@ -115,7 +130,7 @@ typedef struct
 //---------------------------------------------------------------------------
 
 // Advection context
-typedef struct
+struct AdvCtx
 {
 	// staggered grid
 	FDSTAG   *fs;
@@ -186,7 +201,7 @@ typedef struct
 	PetscInt  ndel; // number of markers to be deleted from storage
 	PetscInt *idel; // indices of markers to be deleted
 
-} AdvCtx;
+};
 
 //---------------------------------------------------------------------------
 // create advection object

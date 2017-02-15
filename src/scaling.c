@@ -46,15 +46,6 @@
 #include "parsing.h"
 #include "scaling.h"
 //---------------------------------------------------------------------------
-// * add parameters bounds for all scaling types (to use at input)
-//   parsing functions should take scaling object as a parameter
-//   use parameter identifier for get bounds, scaling and shift
-//      create enumeration:
-//          typedef enum { _time_=0, _length_, _etc_ } MatParType;
-//      access scaling coefficients in scaling object
-//          scal->cf[_length_]
-//	    do the same for shifts and bounds
-//---------------------------------------------------------------------------
 #undef __FUNCT__
 #define __FUNCT__ "ScalingCreate"
 PetscErrorCode ScalingCreate(Scaling *scal, FB *fb)

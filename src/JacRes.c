@@ -43,6 +43,7 @@
 //...................   FDSTAG JACOBIAN AND RESIDUAL  .......................
 //---------------------------------------------------------------------------
 #include "LaMEM.h"
+#include "phase.h"
 #include "parsing.h"
 #include "scaling.h"
 #include "fdstag.h"
@@ -51,7 +52,6 @@
 #include "bc.h"
 #include "JacRes.h"
 #include "constEq.h"
-#include "matProps.h"
 #include "tools.h"
 //---------------------------------------------------------------------------
 // WARNING !!!

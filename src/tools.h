@@ -156,12 +156,12 @@ void rewinDisp(PetscInt n, PetscInt *displ);
 // key-value sort using standard functions (scalar-index)
 //---------------------------------------------------------------------------
 
-typedef struct
+struct Pair
 {
 	PetscScalar key;
 	PetscInt    val;
 
-} Pair;
+};
 
 // comparison function for sorting key-value pairs
 int comp_key_val(const void * a, const void * b);

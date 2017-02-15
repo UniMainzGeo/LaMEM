@@ -44,6 +44,7 @@
 // LAMEM LIBRARY MODE ROUTINE
 //---------------------------------------------------------------------------
 #include "LaMEM.h"
+#include "phase.h"
 #include "parsing.h"
 #include "scaling.h"
 #include "tssolve.h"
@@ -65,7 +66,6 @@
 #include "marker.h"
 #include "paraViewOutMark.h"
 #include "paraViewOutAVD.h"
-#include "matProps.h"
 #include "objFunct.h"
 #include "LaMEMLib.h"
 
@@ -201,31 +201,25 @@ PetscErrorCode LaMEMLibCreate(LaMEMLib *lm)
 	// create advection context
 	ierr = ADVCreate(&lm->actx, fb); CHKERRQ(ierr);
 
-
-
-
-
-
-
 /*
-
-	// change marker phase when crossing free surface
-	ierr = ADVMarkCrossFreeSurf(&actx, &surf, 0.05); CHKERRQ(ierr);
-
-	// set air phase to properly treat marker advection & temperature diffusion
-	if(surf.UseFreeSurf == PETSC_TRUE && jr.actTemp)
-	{
-		actx.AirPhase = surf.AirPhase;
-		actx.Ttop     = bc.Ttop;
-	}
-
 
 
 	// check thermal material parameters
-	ierr = JacResCheckTempParam(&jr); CHKERRQ(ierr);
+	ierr = JacResCheckTempParam(&lm->jr); CHKERRQ(ierr);
+
+
+
+
+
+	// change marker phase when crossing free surface
+	ierr = ADVMarkCrossFreeSurf(&lm->actx, 0.05); CHKERRQ(ierr);
+
+
+
+
 
 	// update phase ratios taking into account actual free surface position
-	ierr = FreeSurfGetAirPhaseRatio(&surf); CHKERRQ(ierr);
+	ierr = FreeSurfGetAirPhaseRatio(&lm->surf); CHKERRQ(ierr);
 
 
 */
@@ -238,22 +232,13 @@ PetscErrorCode LaMEMLibCreate(LaMEMLib *lm)
 	ierr = PVOutCreate(&lm->pvout, fb); CHKERRQ(ierr);
 
 	// create output object for the free surface
-	ierr = PVSurfCreate(&lm->pvsurf, fb, lm->pvout.outfile); CHKERRQ(ierr);
+	ierr = PVSurfCreate(&lm->pvsurf, fb); CHKERRQ(ierr);
 
 	// create output object for the markers - for debugging
-	ierr = PVMarkCreate(&lm->pvmark, fb, lm->pvout.outfile); CHKERRQ(ierr);
+	ierr = PVMarkCreate(&lm->pvmark, fb); CHKERRQ(ierr);
 
 	// AVD output driver
-	ierr = PVAVDCreate(&lm->pvavd, fb, lm->pvout.outfile); CHKERRQ(ierr);
-
-
-
-
-
-
-
-
-
+	ierr = PVAVDCreate(&lm->pvavd, fb); CHKERRQ(ierr);
 
 	// destroy file buffer
 	ierr = FBDestroy(&fb); CHKERRQ(ierr);
@@ -348,31 +333,27 @@ PetscErrorCode LaMEMLibSetLinks(LaMEMLib *lm)
 	//======================================================================
 	// LaMEM library object hierarchy
 	//
-	//                                   Scaling
-	//                                      |
-	//                                  ---------
-	//                                  |       |
-	//                                TSSol   FDSTAG
-	//                                  |       |
-	//                                  ---------
-	//                                      |
-	//                                    BCCtx
-	//                                      |
-	//                                    JacRes
-	//                                      |
-	//                      ---------------------------------
-	//                      |                               |
-	//                  FreeSurf                            |
-	//                      |                               |
-	//             -----------------                        |
-	//             |               |                        |
-	//          AdvCtx             |                        |
-	//             |               |                        |
-	//        ------------         |                        |
-	//        |          |         |                        |
-	//      PVAVD      PVMark    PVSurf                   PVOut
-	//
+	//                         Scaling
+	//                            |
+	//                    -----------------
+	//                    |       |       |
+	//                  TSSol   DBMat   FDSTAG
+	//                    |       |       |
+	//                    -----------------
+	//                            |
+	//                         FDSTAG
+	//                            |
+	//                         FreeSurf --- PVSurf
+	//                            |
+	//                          BCCtx
+	//                            |
+	//                         AdvCtx--------------------
+	//                            |            |         |
+	//                          JacRes       PVAVD     PVMark
+	//                            |
+	//                          PVOut
 	//======================================================================
+
 
 	// setup cross-references between library objects
 

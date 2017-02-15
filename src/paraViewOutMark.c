@@ -61,8 +61,10 @@
 //---------------------------------------------------------------------------
 #undef __FUNCT__
 #define __FUNCT__ "PVMarkCreate"
-PetscErrorCode PVMarkCreate(PVMark *pvmark, FB *fb, const char *filename)
+PetscErrorCode PVMarkCreate(PVMark *pvmark, FB *fb)
 {
+	char filename[_STR_LEN_];
+
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
 
@@ -75,7 +77,8 @@ PetscErrorCode PVMarkCreate(PVMark *pvmark, FB *fb, const char *filename)
 	pvmark->outpvd = 1;
 
 	// read
-	ierr = getIntParam(fb, _OPTIONAL_, "out_mark_pvd", &pvmark->outpvd, 1, 1); CHKERRQ(ierr);
+	ierr = getStringParam(fb, _OPTIONAL_, "out_file_name", filename,    "output"); CHKERRQ(ierr);
+	ierr = getIntParam   (fb, _OPTIONAL_, "out_mark_pvd",  &pvmark->outpvd, 1, 1); CHKERRQ(ierr);
 
 	// print
 	if(pvmark->outpvd)

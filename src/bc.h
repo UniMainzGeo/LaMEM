@@ -114,7 +114,7 @@ PetscErrorCode DBoxReadCreate(DBox *dbox, Scaling *scal, FB *fb);
 //---------------------------------------------------------------------------
 
 // boundary condition context
-typedef struct
+struct BCCtx
 {
 	//=====================================================================
 	//
@@ -222,7 +222,7 @@ typedef struct
 	// temperature on top and bottom boundaries
 	PetscScalar  Tbot, Ttop;
 
-} BCCtx;
+};
 //---------------------------------------------------------------------------
 
 // create boundary condition context

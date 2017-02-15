@@ -47,7 +47,7 @@
 #define __tssolve_h__
 //---------------------------------------------------------------------------
 
-typedef struct
+struct TSSol
 {
 	Scaling *scal;
 
@@ -69,7 +69,7 @@ typedef struct
 	PetscScalar time_out;  // output time stamp
 	PetscInt    istep_out; // output time step index
 
-} TSSol;
+};
 
 //---------------------------------------------------------------------------
 

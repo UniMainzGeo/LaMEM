@@ -44,41 +44,85 @@
 //---------------------------------------------------------------------------
 #ifndef __JacRes_h__
 #define __JacRes_h__
-//---------------------------------------------------------------------------
-// max number of phases
-#define max_num_phases 32
-
-// max number of soft laws
-#define max_num_soft   10
 
 //---------------------------------------------------------------------------
+//.....................   Deviatoric solution variables   ...................
+//---------------------------------------------------------------------------
 
-// FDSTAG Jacobian and residual evaluation context
-typedef struct
+struct SolVarDev
+{
+	PetscScalar  DII;   // effective strain rate
+	PetscScalar  eta;   // effective tangent viscosity
+	PetscScalar  I2Gdt; // inverse elastic viscosity (1/2G/dt)
+	PetscScalar  Hr;    // shear heating term (partial)
+	PetscScalar  DIIpl; // plastic strain rate
+	PetscScalar  APS;   // accumulated plastic strain
+	PetscScalar  PSR;   // plastic strain-rate contribution
+	PetscScalar  dEta;  // dEta/dDII derivative (Jacobian)
+	PetscScalar  fr;    // effective friction coefficient (Jacobian)
+	PetscScalar  yield; // average yield stress in control volume
+};
+
+//---------------------------------------------------------------------------
+//.....................   Volumetric solution variables   ...................
+//---------------------------------------------------------------------------
+
+struct SolVarBulk
+{
+	PetscScalar  theta; // volumetric strain rate
+	PetscScalar  rho;   // strain- & temperature-dependent density
+	PetscScalar  IKdt;  // inverse bulk elastic viscosity (1/K/dt)
+	PetscScalar  alpha; // effective thermal expansion
+	PetscScalar  Tn;    // history temperature
+	PetscScalar  pn;    // history pressure
+
+};
+
+//---------------------------------------------------------------------------
+//........................   Cell solution variables   ......................
+//---------------------------------------------------------------------------
+
+struct SolVarCell
+{
+	SolVarDev    svDev;         		// deviatoric variables
+	SolVarBulk   svBulk;        		// volumetric variables
+	PetscScalar  sxx, syy, szz; 		// deviatoric stress
+	PetscScalar  hxx, hyy, hzz; 		// history stress (elastic)
+	PetscScalar  dxx, dyy, dzz; 		// total deviatoric strain rate
+	PetscScalar *phRat;         		// phase ratios in the control volume
+	PetscScalar  eta_creep;     		// effective creep viscosity (output)
+	PetscScalar  eta_viscoplastic;     	// viscoplastic viscosity (output)
+	PetscScalar  U[3];          		// displacement
+
+};
+
+//---------------------------------------------------------------------------
+//........................   Edge solution variables   ......................
+//---------------------------------------------------------------------------
+
+struct SolVarEdge
+{
+	SolVarDev    svDev; // deviatoric variables
+	PetscScalar  s;     // xy, xz, yz deviatoric stress components
+	PetscScalar  h;     // xy, xz, yz history stress components (elastic)
+	PetscScalar  d;     // xy, xz, yz total deviatoric strain rate components
+	PetscScalar  ws;    // normalization for distance-dependent interpolation
+	PetscScalar *phRat; // phase ratios in the control volume
+
+};
+
+
+//---------------------------------------------------------------------------
+//.............. FDSTAG Jacobian and residual evaluation context ............
+//---------------------------------------------------------------------------
+
+struct JacRes
 {
 	// external handles
 	Scaling  *scal; // scaling
 	TSSol    *ts;   // time-stepping parameters
 	FDSTAG   *fs;   // staggered-grid layout
 	BCCtx    *bc;   // boundary condition context
-
-	// external and runtime parameters
-	PetscInt    AirPhase;    // air phase number   (a copy from free surface)
-	PetscScalar avg_topo;    // average topography (a copy from free surface)
-	PetscScalar pShift;      // pressure shift for plasticity model and output
-
-	// parameters & controls
-	PetscScalar grav[SPDIM]; // global gravity components
-	PetscScalar FSSA;        // free surface stabilization parameter
-	PetscInt    actTemp;	 // temperature diffusion activation flag
-	PetscInt    pShiftAct;   // pressure shift activation flag (zero pressure in the top cell layer)
-
-	// phase parameters
-	PetscInt     numPhases;              // number phases
-	Material_t   phases[max_num_phases]; // phase parameters
-	PetscInt     numSoft;                // number material softening laws
-	Soft_t       matSoft[max_num_soft];  // material softening law parameters
-	MatParLim    matLim;                 // phase parameters limiters
 
 	// coupled solution & residual vectors
 	Vec gsol, gres; // global
@@ -137,7 +181,7 @@ typedef struct
 	//==========================
 	DM DA_CELL_2D; // 2D cell center grid
 
-} JacRes;
+};
 //---------------------------------------------------------------------------
 
 // create residual & Jacobian evaluation context
@@ -198,7 +242,7 @@ PetscErrorCode JacResSetVelRotation(JacRes *jr);
 //---------------------------------------------------------------------------
 
 // get maximum inverse time step on local domain
-PetscErrorCode getMaxInvStep1DLocal(Discret1D *ds, DM da, Vec gv, PetscInt dir, PetscScalar *_idtmax);
+//PetscErrorCode getMaxInvStep1DLocal(Discret1D *ds, DM da, Vec gv, PetscInt dir, PetscScalar *_idtmax);
 
 //---------------------------------------------------------------------------
 // Infinite Strain Axis (ISA) computation functions
@@ -236,7 +280,7 @@ PetscErrorCode JacResGetTempParam(
 	PetscScalar *rho_A_); // volumetric radiogenic heat
 
 // check whether thermal material parameters are properly defined
-PetscErrorCode JacResCheckTempParam(JacRes *jr);
+PetscErrorCode JacResCheckTempParam(JacRes *jr, FB *fb);
 
 // setup temperature parameters
 PetscErrorCode JacResCreateTempParam(JacRes *jr);

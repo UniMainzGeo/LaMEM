@@ -49,12 +49,12 @@
 
 // Interpolation flags
 
-typedef struct
+struct InterpFlags
 {
 	PetscBool update;    // update vs. overwrite target vector
 	PetscBool use_bound; // use boundary ghost points for interpolation
 
-} InterpFlags;
+};
 
 //---------------------------------------------------------------------------
 // Interpolation functions:

@@ -66,7 +66,7 @@
 #include "scaling.h"
 #include "tssolve.h"
 #include "fdstag.h"
-#include "solVar.h"
+#include "phase.h"
 #include "bc.h"
 #include "JacRes.h"
 #include "interpolate.h"
@@ -744,8 +744,10 @@ PetscErrorCode AVD3DReportMemory(AVD3D A)
 //---------------------------------------------------------------------------
 #undef __FUNCT__
 #define __FUNCT__ "PVAVDCreate"
-PetscErrorCode PVAVDCreate(PVAVD *pvavd, FB *fb, const char *filename)
+PetscErrorCode PVAVDCreate(PVAVD *pvavd, FB *fb)
 {
+	char filename[_STR_LEN_];
+
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
 
@@ -759,8 +761,9 @@ PetscErrorCode PVAVDCreate(PVAVD *pvavd, FB *fb, const char *filename)
 	pvavd->refine = 2; // Voronoi Diagram refinement factor
 
 	// read
-	ierr = getIntParam(fb, _OPTIONAL_, "out_avd_pvd", &pvavd->outpvd, 1, 1);                CHKERRQ(ierr);
-	ierr = getIntParam(fb, _OPTIONAL_, "out_avd_ref", &pvavd->refine, 1, _max_avd_refine_); CHKERRQ(ierr);
+	ierr = getStringParam(fb, _OPTIONAL_, "out_file_name", filename,                  "output"); CHKERRQ(ierr);
+	ierr = getIntParam   (fb, _OPTIONAL_, "out_avd_pvd",   &pvavd->outpvd,                1, 1); CHKERRQ(ierr);
+	ierr = getIntParam   (fb, _OPTIONAL_, "out_avd_ref",   &pvavd->refine, 1, _max_avd_refine_); CHKERRQ(ierr);
 
 	// print
 	if(pvavd->outpvd)

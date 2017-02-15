@@ -51,7 +51,7 @@
 //................ ParaView free surface output driver object ...............
 //---------------------------------------------------------------------------
 
-typedef struct
+struct PVSurf
 {
 	FreeSurf  *surf;               // free surface object
 	char       outfile[_STR_LEN_]; // output file name
@@ -63,12 +63,12 @@ typedef struct
 	PetscInt   topography;         // surface topography output flag
 	PetscInt   amplitude;          // topography amplitude output flag
 
-} PVSurf;
+};
 
 //---------------------------------------------------------------------------
 
 // create ParaView output driver
-PetscErrorCode PVSurfCreate(PVSurf *pvsurf, FB *fb, const char *filename);
+PetscErrorCode PVSurfCreate(PVSurf *pvsurf, FB *fb);
 
 // create buffer array
 PetscErrorCode PVSurfCreateData(PVSurf *pvsurf);

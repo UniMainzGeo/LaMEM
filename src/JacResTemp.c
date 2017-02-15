@@ -130,13 +130,14 @@ PetscErrorCode JacResGetTempParam(
 //---------------------------------------------------------------------------
 #undef __FUNCT__
 #define __FUNCT__ "JacResCheckTempParam"
-PetscErrorCode JacResCheckTempParam(JacRes *jr)
+PetscErrorCode JacResCheckTempParam(JacRes *jr, FB *fb)
 {
 	// check whether thermal material parameters are properly defined
 
-	PetscInt    i, numPhases;
     Material_t  *phases, *M;
+	PetscInt    i, numPhases, UseFreeSurf, AirPhase;
 
+	PetscErrorCode ierr;
 	PetscFunctionBegin;
 
 	// temperature diffusion cases only
@@ -145,6 +146,17 @@ PetscErrorCode JacResCheckTempParam(JacRes *jr)
 	// initialize
 	numPhases = jr->numPhases;
 	phases    = jr->phases;
+
+	// get air phase
+	UseFreeSurf =  0;
+	AirPhase    = -1;
+
+	ierr = getIntParam(fb, _OPTIONAL_, "surf_use", &UseFreeSurf, 1,  1); CHKERRQ(ierr);
+
+	if(UseFreeSurf)
+	{
+		ierr = getIntParam(fb, _REQUIRED_, "surf_air_phase", &AirPhase, 1, jr->numPhases-1); CHKERRQ(ierr);
+	}
 
 	// check all phases
 	for(i = 0; i < numPhases; i++)

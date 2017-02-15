@@ -59,8 +59,10 @@
 //---------------------------------------------------------------------------
 #undef __FUNCT__
 #define __FUNCT__ "PVSurfCreate"
-PetscErrorCode PVSurfCreate(PVSurf *pvsurf, FB *fb, const char *filename)
+PetscErrorCode PVSurfCreate(PVSurf *pvsurf, FB *fb)
 {
+	char filename[_STR_LEN_];
+
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
 
@@ -77,10 +79,11 @@ PetscErrorCode PVSurfCreate(PVSurf *pvsurf, FB *fb, const char *filename)
 	pvsurf->topography = 1;
 
 	// read
-	ierr = getIntParam(fb, _OPTIONAL_, "out_surf_pvd",        &pvsurf->outpvd,     1, 1); CHKERRQ(ierr);
-	ierr = getIntParam(fb, _OPTIONAL_, "out_surf_velocity",   &pvsurf->velocity,   1, 1); CHKERRQ(ierr);
-	ierr = getIntParam(fb, _OPTIONAL_, "out_surf_topography", &pvsurf->topography, 1, 1); CHKERRQ(ierr);
-	ierr = getIntParam(fb, _OPTIONAL_, "out_surf_amplitude",  &pvsurf->amplitude,  1, 1); CHKERRQ(ierr);
+	ierr = getStringParam(fb, _OPTIONAL_, "out_file_name",       filename,        "output"); CHKERRQ(ierr);
+	ierr = getIntParam   (fb, _OPTIONAL_, "out_surf_pvd",        &pvsurf->outpvd,     1, 1); CHKERRQ(ierr);
+	ierr = getIntParam   (fb, _OPTIONAL_, "out_surf_velocity",   &pvsurf->velocity,   1, 1); CHKERRQ(ierr);
+	ierr = getIntParam   (fb, _OPTIONAL_, "out_surf_topography", &pvsurf->topography, 1, 1); CHKERRQ(ierr);
+	ierr = getIntParam   (fb, _OPTIONAL_, "out_surf_amplitude",  &pvsurf->amplitude,  1, 1); CHKERRQ(ierr);
 
 	// print
 	if(pvsurf->outpvd)
