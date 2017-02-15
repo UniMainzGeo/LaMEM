@@ -223,6 +223,7 @@ typedef struct
 	PetscInt         time_end;
 	PetscScalar      dt_max;
 	PetscScalar      dt;
+	PetscScalar      tstop;
 
 	// temperature - not active
 	PetscScalar      Temp_bottom, Temp_top;

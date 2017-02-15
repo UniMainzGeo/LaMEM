@@ -59,6 +59,7 @@ typedef struct
 	PetscScalar pdt;     // previous time step
 	PetscScalar dt;      // current time step (to be defined)
 	PetscScalar time;    // current time
+	PetscScalar tstop;   // stop simulation after [Ma]
 
 } TSSol;
 

@@ -966,6 +966,9 @@ PetscErrorCode BCReadFromOptions(BCCtx *bc)
 							_NOT_FOUND_ERROR_, 1, &bc->velmark.L, 0.0, 0.0, scal->length); CHKERRQ(ierr);
 	}
 
+	ierr = GetIntDataItemCheck("-bvel_changeBC", "Change boundary conditions identifier",
+		_NOT_FOUND_EXIT_, 1, &bc->changeBC, 0, 0); CHKERRQ(ierr);
+
 	// set open boundary flag
 	ierr = PetscOptionsHasName(NULL, NULL, "-open_top_bound", &set); CHKERRQ(ierr); if(set == PETSC_TRUE) bc->top_open = 1;
 

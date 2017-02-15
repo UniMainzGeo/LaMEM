@@ -566,6 +566,12 @@ PetscErrorCode BreakRead(UserCtx *user, AdvCtx *actx, PVOut *pvout, PVSurf *pvsu
 		}
 	}
 
+	if (jr->bc->changeBC)
+	{
+		fread(&jr->bc->velmark.tind , sizeof(PetscInt), 1, fp);
+		fread(&jr->bc->velmark.D , sizeof(PetscScalar), 1, fp);
+	}
+
 	//----------------------------------
 	// Solver options
 	//----------------------------------

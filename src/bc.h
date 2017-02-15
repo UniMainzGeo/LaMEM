@@ -72,8 +72,7 @@ typedef struct
 	char        markdir[MAX_PATH_LEN];        // influx directory - similar as for parallel reading
 	PetscInt    tseg;                         // no. of time intervals
 	PetscScalar time [  _max_path_points_  ]; // time intervals
-	PetscScalar velin[  _max_path_points_  ]; // influx velocities
-	//PetscInt    iseg;
+	PetscScalar velin[  _max_path_points_  ]; // influx velocitiess
 
 } BCInflux;
 //---------------------------------------------------------------------------
@@ -198,6 +197,7 @@ typedef struct
 	PetscInt     face, phase;   // face & phase identifiers
 	PetscScalar  bot, top;      // bottom & top coordinates of the plate
 	PetscScalar  velin, velout; // inflow & outflow velocities
+	PetscInt     changeBC;      // change BC
 	BCInflux     velmark;
 
 	// simple shear boundary condition

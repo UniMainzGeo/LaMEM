@@ -406,6 +406,13 @@ PetscErrorCode LaMEMLib(ModParam *IOparam)
 		// Save data to disk
 		//==================
 
+		// check if time to stop - save output and breakpoints
+		if (jr.ts.tstop > 0.0 && jr.ts.time+jr.ts.dt>=jr.ts.tstop)
+		{
+			user.save_timesteps   = JacResGetStep(&jr);
+			if (user.save_breakpoints > 0) user.save_breakpoints = JacResGetStep(&jr);
+		}
+
 		if(!(JacResGetStep(&jr) % user.save_timesteps) || stop == PETSC_TRUE)
 		{
 			char *DirectoryName = NULL;

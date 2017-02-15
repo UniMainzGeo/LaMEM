@@ -322,6 +322,7 @@ void ScalingInput(Scaling *scal, UserCtx *user)
 	// time-stepping
 	user->dt              /= scal->time;
 	user->dt_max          /= scal->time;
+	user->tstop           /= scal->time;
 
 	// temperature
 	user->Temp_top        = (user->Temp_top    + scal->Tshift)/scal->temperature;

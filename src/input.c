@@ -400,6 +400,7 @@ PetscErrorCode InputSetDefaultValues(JacRes *jr, UserCtx *user)
 	user->CFL              = 0.5;
 	user->dt_max           = 1e6; // maximum timestep
 	user->dt               = 1e-3;// initial timestep
+	user->tstop            = -1.0;// max time
 
 	// temperature
 	user->Temp_top         = 0.0;
@@ -552,6 +553,7 @@ PetscErrorCode InputReadFile(JacRes *jr, UserCtx *user, FILE *fp)
 	parse_GetDouble( fp, "CFL", &user->CFL, &found );
 	parse_GetDouble( fp, "dt_max", &user->dt_max, &found );
 	parse_GetDouble( fp, "FSSA", &user->FSSA, &found );	// FSSA parameter
+	parse_GetDouble( fp, "tstop", &user->tstop, &found );
 
 	// Particle related variables
 	parse_GetInt( fp,    "ParticleInput", &user->ParticleInput, &found );
