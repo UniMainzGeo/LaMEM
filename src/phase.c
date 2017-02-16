@@ -11,7 +11,7 @@
  **         55128 Mainz, Germany
  **
  **    project:    LaMEM
- **    filename:   matProps.c
+ **    filename:   phase.c
  **
  **    LaMEM is free software: you can redistribute it and/or modify
  **    it under the terms of the GNU General Public License as published
@@ -46,132 +46,11 @@
 #include "phase.h"
 #include "parsing.h"
 #include "scaling.h"
-#include "tssolve.h"
-#include "solVar.h"
 #include "fdstag.h"
-#include "bc.h"
-#include "JacRes.h"
-#include "parsing.h"
-#include "tools.h"
-//---------------------------------------------------------------------------
-// read material parameter limits
-PetscErrorCode MatParLimRead(
-		FB        *fb,
-		Scaling   *scal,
-		MatParLim *lim)
-{
-	PetscScalar input_eta_max;
-	char        gwtype [_STR_LEN_];
-
-	PetscErrorCode ierr;
-	PetscFunctionBegin;
-
-	// set defaults
-	lim->tauUlt       = DBL_MAX;
-	lim->shearHeatEff = 1.0;
-	lim->pLithoVisc   = 1;
-	lim->initGuess    = 1;
-
-	if(scal->utype == _NONE_)
-	{
-		ierr = getScalarParam(fb, _REQUIRED_, "RUGC", &lim->Rugc, 1, 1.0); CHKERRQ(ierr);
-	}
-	else
-	{
-		lim->Rugc      = 8.3144621;
-		lim->rho_fluid = scal->density;
-	}
-
-	// read values
-	ierr = getScalarParam(fb, _OPTIONAL_, "eta_min",        &lim->eta_min,      1, 1.0); CHKERRQ(ierr);
-	ierr = getScalarParam(fb, _OPTIONAL_, "eta_max",        &input_eta_max,     1, 1.0); CHKERRQ(ierr);
-	ierr = getScalarParam(fb, _REQUIRED_, "eta_ref",        &lim->eta_ref,      1, 1.0); CHKERRQ(ierr);
-	ierr = getScalarParam(fb, _OPTIONAL_, "T_ref",          &lim->TRef,         1, 1.0); CHKERRQ(ierr);
-	ierr = getScalarParam(fb, _REQUIRED_, "DII_ref",        &lim->DII_ref,      1, 1.0); CHKERRQ(ierr);
-	ierr = getScalarParam(fb, _OPTIONAL_, "min_cohes",      &lim->minCh,        1, 1.0); CHKERRQ(ierr);
-	ierr = getScalarParam(fb, _OPTIONAL_, "min_fric",       &lim->minFr,        1, 1.0); CHKERRQ(ierr);
-	ierr = getScalarParam(fb, _OPTIONAL_, "tau_ult",        &lim->tauUlt,       1, 1.0); CHKERRQ(ierr);
-	ierr = getScalarParam(fb, _OPTIONAL_, "rho_fluid",      &lim->rho_fluid,    1, 1.0); CHKERRQ(ierr);
-	ierr = getScalarParam(fb, _OPTIONAL_, "shear_heat_eff", &lim->shearHeatEff, 1, 1.0); CHKERRQ(ierr);
-	ierr = getIntParam   (fb, _OPTIONAL_, "quasi_harm_avg", &lim->quasiHarmAvg, 1, 1);   CHKERRQ(ierr);
-	ierr = getScalarParam(fb, _OPTIONAL_, "cf_eta_min",     &lim->cf_eta_min,   1, 1.0); CHKERRQ(ierr);
-	ierr = getScalarParam(fb, _OPTIONAL_, "n_pw",           &lim->n_pw,         1, 1.0); CHKERRQ(ierr);
-	ierr = getIntParam   (fb, _OPTIONAL_, "p_litho_visc",   &lim->pLithoVisc,   1, 1);   CHKERRQ(ierr);
-	ierr = getIntParam   (fb, _OPTIONAL_, "p_litho_plast",  &lim->pLithoPlast,  1, 1);   CHKERRQ(ierr);
-	ierr = getIntParam   (fb, _OPTIONAL_, "p_lim_plast",    &lim->pLimPlast,    1, 1);   CHKERRQ(ierr);
-	ierr = getScalarParam(fb, _OPTIONAL_, "theta_north",    &lim->theta_north,  1, 1.0); CHKERRQ(ierr);
-	ierr = getIntParam   (fb, _OPTIONAL_, "warn",           &lim->warn,         1, 1);   CHKERRQ(ierr);
-	ierr = getIntParam   (fb, _OPTIONAL_, "jac_mat_free",   &lim->jac_mat_free, 1, 1);   CHKERRQ(ierr);
-	ierr = getIntParam   (fb, _OPTIONAL_, "init_guess",     &lim->initGuess,    1, 1);   CHKERRQ(ierr);
-	ierr = getIntParam   (fb, _OPTIONAL_, "surf_use",       &lim->isSurface,    1, 1);   CHKERRQ(ierr);
-
-	// set ground water level type
-	ierr = getStringParam(fb, _OPTIONAL_, "gw_level_type", gwtype, "none"); CHKERRQ(ierr);
-
-	if     (!strcmp(gwtype, "none"))  lim->gwType = _GW_NONE_;
-	else if(!strcmp(gwtype, "top"))   lim->gwType = _GW_TOP_;
-	else if(!strcmp(gwtype, "surf"))  lim->gwType = _GW_SURF_;
-	else if(!strcmp(gwtype, "level")) lim->gwType = _GW_LEVEL_;
-	else SETERRQ1(PETSC_COMM_WORLD, PETSC_ERR_USER, "Incorrect ground water level type: %s", gwtype);
-
-	if(lim->gwType == _GW_LEVEL_)
-	{
-		// get fixed ground water level
-		ierr = getScalarParam(fb, _REQUIRED_, "gw_level", &lim->gwLevel,   1, 1.0); CHKERRQ(ierr);
-	}
-
-	if(lim->gwType == _GW_SURF_ && !lim->isSurface)
-	{
-		SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "Ground water level requires activating free surface (gw_level_type, surf_use)");
-	}
-
-	if(lim->gwType == _GW_LEVEL_)
-	{
-		// get fixed ground water level
-		ierr = getScalarParam(fb, _REQUIRED_, "gw_level", &lim->gwLevel,   1, 1.0); CHKERRQ(ierr);
-	}
-
-	if(lim->gwType != _GW_NONE_)
-	{
-		// set default Biot pressure parameter
-		lim->biot = 1.0;
-
-		// override from input
-		ierr = getScalarParam(fb, _OPTIONAL_, "biot", &lim->biot, 1, 1.0); CHKERRQ(ierr);
-	}
-
-	// scale parameters
-	// NOTE: scale gas constant with characteristic temperature
-	lim->eta_min     /=  scal->viscosity;
-	input_eta_max    /=  scal->viscosity;
-	lim->eta_ref     /=  scal->viscosity;
-	lim->TRef         = (lim->TRef + scal->Tshift)/scal->temperature;
-	lim->Rugc        *= scal->temperature;
-	lim->DII_ref     /= scal->strain_rate;
-	lim->minCh       /= scal->stress_si;
-	lim->minFr       /= scal->angle;
-	lim->tauUlt      /= scal->stress_si;
-	lim->rho_fluid   /= scal->density;
-	lim->theta_north /= scal->angle;
-	lim->gwLevel     /= scal->length;
-
-	// set inverse of maximum viscosity
-	if(input_eta_max) lim->inv_eta_max = 1.0/input_eta_max;
-
-	PetscFunctionReturn(0);
-}
 //---------------------------------------------------------------------------
 #undef __FUNCT__
-#define __FUNCT__ "MatPropsReadAll"
-PetscErrorCode MatPropsReadAll(
-		FB         *fb,
-		Scaling    *scal,
-		PetscInt   *numPhases,
-		Material_t *phases,
-		PetscInt   *numSoft,
-		Soft_t     *matSoft,
-		MatParLim  *lim)
-
+#define __FUNCT__ "DBMatRead"
+PetscErrorCode DBMatRead(DBMat *dbm, FB *fb)
 {
 	// read all material phases and softening laws from file
 
@@ -191,7 +70,7 @@ PetscErrorCode MatPropsReadAll(
 	ierr = FBFindBlocks(fb, _OPTIONAL_, "<SofteningStart>", "<SofteningEnd>"); CHKERRQ(ierr);
 
 	// initialize ID for consistency checks
-	for(jj = 0; jj < max_num_soft; jj++) matSoft[jj].ID = -1;
+	for(jj = 0; jj < max_num_soft; jj++) dbm->matSoft[jj].ID = -1;
 
 	// error checking
 	if(fb->nblocks > max_num_soft)
@@ -199,18 +78,18 @@ PetscErrorCode MatPropsReadAll(
 		SETERRQ1(PETSC_COMM_SELF, PETSC_ERR_USER, "Too many softening laws specified! Max allowed: %lld", (LLD)max_num_soft);
 	}
 
+	// store actual number of softening laws
+	dbm->numSoft = fb->nblocks;
+
 	PetscPrintf(PETSC_COMM_WORLD,"--------------------------------------------------------------------------\n");
 
 	// read each individual softening law
 	for(jj = 0; jj < fb->nblocks; jj++)
 	{
-		ierr = MatSoftRead(fb, fb->nblocks, matSoft); CHKERRQ(ierr);
+		ierr = DBMatReadSoft(dbm, fb); CHKERRQ(ierr);
 
 		fb->blockID++;
 	}
-
-	// store actual number of softening laws
-	(*numSoft) = fb->nblocks;
 
 	ierr = FBFreeBlocks(fb); CHKERRQ(ierr);
 
@@ -225,7 +104,7 @@ PetscErrorCode MatPropsReadAll(
 	ierr = FBFindBlocks(fb, _REQUIRED_, "<MaterialStart>", "<MaterialEnd>"); CHKERRQ(ierr);
 
 	// initialize ID for consistency checks
-	for(jj = 0; jj < max_num_phases; jj++) phases[jj].ID = -1;
+	for(jj = 0; jj < max_num_phases; jj++) dbm->phases[jj].ID = -1;
 
 	// error checking
 	if(fb->nblocks > max_num_phases)
@@ -235,18 +114,18 @@ PetscErrorCode MatPropsReadAll(
 
 	PetscPrintf(PETSC_COMM_WORLD,"--------------------------------------------------------------------------\n");
 
+	// store actual number of phases
+	dbm->numPhases = fb->nblocks;
+
 	// read each individual phase
 	for(jj = 0; jj < fb->nblocks; jj++)
 	{
-		ierr = MatPhaseRead(fb, scal, fb->nblocks, phases, (*numSoft), matSoft, lim); CHKERRQ(ierr);
+		ierr = DBMatReadPhase(dbm, fb); CHKERRQ(ierr);
 
 		fb->blockID++;
 
 		PetscPrintf(PETSC_COMM_WORLD,"--------------------------------------------------------------------------\n");
 	}
-
-	// store actual number of phases
-	(*numPhases) = fb->nblocks;
 
 	ierr = FBFreeBlocks(fb); CHKERRQ(ierr);
 
@@ -254,18 +133,53 @@ PetscErrorCode MatPropsReadAll(
 }
 //---------------------------------------------------------------------------
 #undef __FUNCT__
-#define __FUNCT__ "MatPhaseRead"
-PetscErrorCode MatPhaseRead(
-		FB         *fb,
-		Scaling    *scal,
-		PetscInt    numPhases,
-		Material_t *phases,
-		PetscInt    numSoft,
-		Soft_t     *matSoft,
-		MatParLim  *lim)
+#define __FUNCT__ "DBMatReadSoft"
+PetscErrorCode DBMatReadSoft(DBMat *dbm, FB *fb)
+{
+	// read softening law from file
+
+	Soft_t   *s;
+	PetscInt  ID;
+
+	PetscErrorCode ierr;
+	PetscFunctionBegin;
+
+	// softening law ID
+	ierr = getIntParam(fb, _REQUIRED_, "ID", &ID, 1, dbm->numSoft-1); CHKERRQ(ierr);
+
+	// get pointer to specified softening law
+	s = dbm->matSoft + ID;
+
+	// check ID
+	if(s->ID != -1)
+	{
+		 SETERRQ(PETSC_COMM_SELF, PETSC_ERR_USER, "Duplicate softening law!");
+	}
+
+	// set ID
+	s->ID = ID;
+
+	// read and store softening law parameters
+	ierr = getScalarParam(fb, _REQUIRED_, "A",    &s->A,    1, 1.0); CHKERRQ(ierr);
+	ierr = getScalarParam(fb, _REQUIRED_, "APS1", &s->APS1, 1, 1.0); CHKERRQ(ierr);
+	ierr = getScalarParam(fb, _REQUIRED_, "APS2", &s->APS2, 1, 1.0); CHKERRQ(ierr);
+
+	if(!s->A || !s->APS1 || !s->APS2)
+	{
+		SETERRQ1(PETSC_COMM_SELF, PETSC_ERR_USER, "All parameters must be nonzero for softening law %lld", (LLD)ID);
+	}
+
+	PetscPrintf(PETSC_COMM_WORLD,"SoftLaw [%lld]: A = %g, APS1 = %g, APS2 = %g \n", (LLD)(s->ID), s->A, s->APS1, s->APS2);
+
+	PetscFunctionReturn(0);
+}
+//---------------------------------------------------------------------------
+#undef __FUNCT__
+#define __FUNCT__ "DBMatReadPhase"
+PetscErrorCode DBMatReadPhase(DBMat *dbm, FB *fb)
 {
 	// read material properties from file with error checking
-
+	Scaling    *scal;
 	Material_t *m;
 	PetscInt    ID = -1, chSoftID, frSoftID, MSN;
 	PetscScalar eta, eta0, e0, K, G, E, nu, Vp, Vs;
@@ -273,6 +187,9 @@ PetscErrorCode MatPhaseRead(
 
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
+
+	// access context
+	scal = dbm->scal;
 
 	// initialize additional parameters
 	eta      =  0.0;
@@ -286,13 +203,13 @@ PetscErrorCode MatPhaseRead(
 	Vs       =  0.0;
 	chSoftID = -1;
 	frSoftID = -1;
-	MSN      =  numSoft - 1;
+	MSN      =  dbm->numSoft - 1;
 
 	// phase ID
-	ierr = getIntParam(fb, _REQUIRED_, "ID", &ID, 1, numPhases-1); CHKERRQ(ierr);
+	ierr = getIntParam(fb, _REQUIRED_, "ID", &ID, 1, dbm->numPhases-1); CHKERRQ(ierr);
 
 	// get pointer to specified phase
-	m = phases + ID;
+	m = dbm->phases + ID;
 
 	// check ID
 	if(m->ID != -1)
@@ -307,14 +224,14 @@ PetscErrorCode MatPhaseRead(
 	// creep profiles
 	//=================================================================================
 	// set predefined diffusion creep profile
-	ierr = GetProfileName(fb, scal, ndiff, "diff_prof");   CHKERRQ(ierr);
-	ierr = SetDiffProfile(m, ndiff);                       CHKERRQ(ierr);
+	ierr = GetProfileName(fb, scal, ndiff, "diff_prof"); CHKERRQ(ierr);
+	ierr = SetDiffProfile(m, ndiff);                     CHKERRQ(ierr);
 	// set predefined dislocation creep profile
-	ierr = GetProfileName(fb, scal, ndisl, "disl_prof");   CHKERRQ(ierr);
-	ierr = SetDislProfile(m, ndisl);                       CHKERRQ(ierr);
+	ierr = GetProfileName(fb, scal, ndisl, "disl_prof"); CHKERRQ(ierr);
+	ierr = SetDislProfile(m, ndisl);                     CHKERRQ(ierr);
 	// set predefined Peierls creep profile
-	ierr = GetProfileName(fb, scal, npeir, "peir_prof");   CHKERRQ(ierr);
-	ierr = SetPeirProfile(m, npeir);                       CHKERRQ(ierr);
+	ierr = GetProfileName(fb, scal, npeir, "peir_prof"); CHKERRQ(ierr);
+	ierr = SetPeirProfile(m, npeir);                     CHKERRQ(ierr);
 	//=================================================================================
 	// density
 	//=================================================================================
@@ -385,21 +302,6 @@ PetscErrorCode MatPhaseRead(
 		SETERRQ1(PETSC_COMM_SELF, PETSC_ERR_USER, "Pore pressure ratio must be between 0 and 1 for phase %lld (rp)", (LLD)ID);
 	}
 
-	if((m->rp || m->rho_n) && !lim->rho_fluid)
-	{
-		SETERRQ1(PETSC_COMM_SELF, PETSC_ERR_USER, "Fluid density must be specified for phase %lld (rho_n, rho_c, rp, rho_fluid)\n", (LLD)ID);
-	}
-
-	if(m->rp && lim->gwType == _GW_NONE_)
-	{
-		SETERRQ1(PETSC_COMM_SELF, PETSC_ERR_USER, "Pore pressure ratio requires defining ground water level type for phase %lld (rp, gw_level_type)\n", (LLD)ID);
-	}
-
-	if(m->rho_n && !lim->isSurface)
-	{
-		SETERRQ1(PETSC_COMM_SELF, PETSC_ERR_USER, "Depth-dependent density requires activating free surface for phase %lld (rho_n, surf_use)\n", (LLD)ID);
-	}
-
 	// PLASTICITY
 
 	// check plasticity parameters
@@ -409,8 +311,8 @@ PetscErrorCode MatPhaseRead(
 	}
 
 	// set pointers to softening laws
-	if(chSoftID != -1) m->chSoft = matSoft + chSoftID;
-	if(frSoftID != -1) m->frSoft = matSoft + frSoftID;
+	if(chSoftID != -1) m->chSoft = dbm->matSoft + chSoftID;
+	if(frSoftID != -1) m->frSoft = dbm->matSoft + frSoftID;
 
 	// DIFFUSION
 
@@ -478,9 +380,6 @@ PetscErrorCode MatPhaseRead(
 	// store elastic moduli
 	m->G = G;
 	m->K = K;
-
-	// set elastic rheology flag
-	if(G || K) lim->isElastic = 1;
 
 	// check that at least one essential deformation mechanism is specified
 	if(!m->Bd && !m->Bn && !m->G)
@@ -590,51 +489,6 @@ PetscErrorCode MatPhaseRead(
 	m->Cp    /= scal->cpecific_heat;
 	m->k     /= scal->conductivity;
 	m->A     /= scal->heat_production;
-
-	PetscFunctionReturn(0);
-}
-//---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "MatSoftRead"
-PetscErrorCode MatSoftRead(
-		FB       *fb,
-		PetscInt  numSoft,
-		Soft_t   *matSoft)
-{
-	// read softening law from file
-
-	Soft_t   *s;
-	PetscInt  ID;
-
-	PetscErrorCode ierr;
-	PetscFunctionBegin;
-
-	// softening law ID
-	ierr = getIntParam(fb, _REQUIRED_, "ID", &ID, 1, numSoft-1); CHKERRQ(ierr);
-
-	// get pointer to specified softening law
-	s = matSoft + ID;
-
-	// check ID
-	if(s->ID != -1)
-	{
-		 SETERRQ(PETSC_COMM_SELF, PETSC_ERR_USER, "Duplicate softening law!");
-	}
-
-	// set ID
-	s->ID = ID;
-
-	// read and store softening law parameters
-	ierr = getScalarParam(fb, _REQUIRED_, "A",    &s->A,    1, 1.0); CHKERRQ(ierr);
-	ierr = getScalarParam(fb, _REQUIRED_, "APS1", &s->APS1, 1, 1.0); CHKERRQ(ierr);
-	ierr = getScalarParam(fb, _REQUIRED_, "APS2", &s->APS2, 1, 1.0); CHKERRQ(ierr);
-
-	if(!s->A || !s->APS1 || !s->APS2)
-	{
-		SETERRQ1(PETSC_COMM_SELF, PETSC_ERR_USER, "All parameters must be nonzero for softening law %lld", (LLD)ID);
-	}
-
-	PetscPrintf(PETSC_COMM_WORLD,"SoftLaw [%lld]: A = %g, APS1 = %g, APS2 = %g \n", (LLD)(s->ID), s->A, s->APS1, s->APS2);
 
 	PetscFunctionReturn(0);
 }

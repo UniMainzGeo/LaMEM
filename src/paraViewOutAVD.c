@@ -71,6 +71,7 @@
 #include "JacRes.h"
 #include "interpolate.h"
 #include "surf.h"
+#include "Tensor.h"
 #include "advect.h"
 #include "paraViewOutBin.h"
 #include "paraViewOutAVD.h"

@@ -80,11 +80,11 @@ struct FreeSurf
 	PetscScalar avg_topo; // average topography (updated by all functions changing topography)
 	PetscInt    phase;    // current sediment phase
 
-} ;
+};
 
 //---------------------------------------------------------------------------
 
-PetscErrorCode FreeSurfCreate(FreeSurf *surf, FB *fb);
+PetscErrorCode FreeSurfRead(FreeSurf *surf, FB *fb);
 
 PetscErrorCode FreeSurfCreateData(FreeSurf *surf);
 
@@ -102,7 +102,7 @@ PetscErrorCode FreeSurfAdvect(FreeSurf *surf);
 // get single velocity component on the free surface
 PetscErrorCode FreeSurfGetVelComp(
 	FreeSurf *surf,
-	PetscErrorCode (*interp)(FDSTAG *, Vec, Vec, InterpFlags),
+	PetscErrorCode (*interp)(FDSTAG *, Vec, Vec, PetscInt[2]),
 	Vec vcomp_grid, Vec vcomp_surf);
 
 // advect/interpolate topography of the free surface

@@ -47,7 +47,6 @@
 #include "scaling.h"
 #include "tssolve.h"
 #include "fdstag.h"
-#include "solVar.h"
 #include "bc.h"
 #include "JacRes.h"
 #include "matrix.h"
@@ -571,8 +570,8 @@ PetscErrorCode PMatMonoAssemble(PMat pm)
 
 	// get density gradient stabilization parameters
 	dt   = jr->ts->dt; // time step
-	fssa = jr->FSSA;   // density gradient penalty parameter
-    grav = jr->grav;   // gravity acceleration
+	fssa = jr->ctrl->FSSA;   // density gradient penalty parameter
+    grav = jr->ctrl->grav;   // gravity acceleration
 
 	// get penalty parameter
 	pgamma = pm->pgamma;
@@ -1169,8 +1168,8 @@ PetscErrorCode PMatBlockAssemble(PMat pm)
 
 	// get density gradient stabilization parameters
 	dt   = jr->ts->dt; // time step
-	fssa = jr->FSSA;   // density gradient penalty parameter
-    grav = jr->grav;   // gravity acceleration
+	fssa = jr->ctrl->FSSA;   // density gradient penalty parameter
+    grav = jr->ctrl->grav;   // gravity acceleration
 
 	// get penalty parameter
 	pgamma = pm->pgamma;

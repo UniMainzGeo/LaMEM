@@ -46,17 +46,6 @@
 #define __interpolate_h__
 
 //---------------------------------------------------------------------------
-
-// Interpolation flags
-
-struct InterpFlags
-{
-	PetscBool update;    // update vs. overwrite target vector
-	PetscBool use_bound; // use boundary ghost points for interpolation
-
-};
-
-//---------------------------------------------------------------------------
 // Interpolation functions:
 //
 // x-face  -> corner   InterpXFaceCorner
@@ -75,21 +64,26 @@ struct InterpFlags
 //    - central arrays: in all directions
 // No boundary ghost points are assumed to exist for edge arrays.
 
+// Mode flags:
+
+// mode[0] - update vector
+// mode[1] - use boundary values
+
 //---------------------------------------------------------------------------
 
-PetscErrorCode InterpXFaceCorner (FDSTAG *fs, Vec XFace,  Vec Corner, InterpFlags iflag);
+PetscErrorCode InterpXFaceCorner (FDSTAG *fs, Vec XFace,  Vec Corner, PetscInt mode[2]);
 
-PetscErrorCode InterpYFaceCorner (FDSTAG *fs, Vec YFace,  Vec Corner, InterpFlags iflag);
+PetscErrorCode InterpYFaceCorner (FDSTAG *fs, Vec YFace,  Vec Corner, PetscInt mode[2]);
 
-PetscErrorCode InterpZFaceCorner (FDSTAG *fs, Vec ZFace,  Vec Corner, InterpFlags iflag);
+PetscErrorCode InterpZFaceCorner (FDSTAG *fs, Vec ZFace,  Vec Corner, PetscInt mode[2]);
 
-PetscErrorCode InterpCenterCorner(FDSTAG *fs, Vec Center, Vec Corner, InterpFlags iflag);
+PetscErrorCode InterpCenterCorner(FDSTAG *fs, Vec Center, Vec Corner, PetscInt mode[2]);
 
-PetscErrorCode InterpXYEdgeCorner(FDSTAG *fs, Vec XYEdge, Vec Corner, InterpFlags iflag);
+PetscErrorCode InterpXYEdgeCorner(FDSTAG *fs, Vec XYEdge, Vec Corner, PetscInt mode[2]);
 
-PetscErrorCode InterpXZEdgeCorner(FDSTAG *fs, Vec XZEdge, Vec Corner, InterpFlags iflag);
+PetscErrorCode InterpXZEdgeCorner(FDSTAG *fs, Vec XZEdge, Vec Corner, PetscInt mode[2]);
 
-PetscErrorCode InterpYZEdgeCorner(FDSTAG *fs, Vec YZEdge, Vec Corner, InterpFlags iflag);
+PetscErrorCode InterpYZEdgeCorner(FDSTAG *fs, Vec YZEdge, Vec Corner, PetscInt mode[2]);
 
 //---------------------------------------------------------------------------
 #endif

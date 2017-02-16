@@ -48,7 +48,6 @@
 #include "scaling.h"
 #include "tssolve.h"
 #include "fdstag.h"
-#include "solVar.h"
 #include "bc.h"
 #include "JacRes.h"
 #include "matFree.h"
@@ -295,7 +294,7 @@ PetscErrorCode FormJacobian(SNES snes, Vec x, Mat Amat, Mat Pmat, void *ctx)
 	PMat        pm;
 	JacRes      *jr;
 	PetscInt    it, it_newton;
-	MatParLim   *lim;
+	Controls   *ctrl;
 	PetscScalar nrm;
 
 	// clear unused parameters
@@ -306,11 +305,11 @@ PetscErrorCode FormJacobian(SNES snes, Vec x, Mat Amat, Mat Pmat, void *ctx)
 	PetscFunctionBegin;
 
 	// access context
-	nl  = (NLSol*)ctx;
-	pc  = nl->pc;
-	pm  = pc->pm;
-	jr  = pm->jr;
-	lim = &jr->matLim;
+	nl   = (NLSol*)ctx;
+	pc   = nl->pc;
+	pm   = pc->pm;
+	jr   = pm->jr;
+	ctrl = jr->ctrl;
 
     it_newton = 0;
 
@@ -336,7 +335,7 @@ PetscErrorCode FormJacobian(SNES snes, Vec x, Mat Amat, Mat Pmat, void *ctx)
 		//if(nrm < nl->refRes*nl->tolPic || nl->it > nl->nPicIt)
 		if(nrm < nl->refRes*nl->rtolPic)
 		{
-			if(jr->matLim.jac_mat_free)
+			if(ctrl->jac_mat_free)
 			{
 				PetscPrintf(PETSC_COMM_WORLD,"===================================================\n");
 				PetscPrintf(PETSC_COMM_WORLD,"SWITCH TO MF JACOBIAN: ||F||/||F0||=%e, PicIt=%lld \n", nrm/nl->refRes, (LLD)nl->nPicIt);
@@ -392,9 +391,9 @@ PetscErrorCode FormJacobian(SNES snes, Vec x, Mat Amat, Mat Pmat, void *ctx)
 	}
 
 	// switch off pressure limit for plasticity after first iteration
-	if(!lim->initGuess && it > 1)
+	if(!ctrl->initGuess && it > 1)
 	{
-		lim->pLimPlast = 0;
+		ctrl->pLimPlast = 0;
 	}
 
 	// count iterations
@@ -580,7 +579,7 @@ PetscErrorCode SNESCoupledTest(
 
 	if(!it) PetscFunctionReturn(0);
 
-    if(jr->actTemp)
+    if(jr->ctrl->actTemp)
     {
     	ierr = JacResGetTempRes(jr);                        CHKERRQ(ierr);
     	ierr = JacResGetTempMat(jr);                        CHKERRQ(ierr);

@@ -48,9 +48,12 @@
 #include "scaling.h"
 #include "tssolve.h"
 #include "fdstag.h"
-#include "solVar.h"
 #include "bc.h"
 #include "tools.h"
+
+#include "Tensor.h"
+#include "advect.h"
+
 //---------------------------------------------------------------------------
 // * open box & Winkler (with tangential viscous friction)
 // * tangential velocities
@@ -200,8 +203,8 @@ PetscErrorCode DBoxReadCreate(DBox *dbox, Scaling *scal, FB *fb)
 // BCCtx functions
 //---------------------------------------------------------------------------
 #undef __FUNCT__
-#define __FUNCT__ "BCCreate"
-PetscErrorCode BCCreate(BCCtx *bc, FB *fb)
+#define __FUNCT__ "BCRead"
+PetscErrorCode BCRead(BCCtx *bc, FB *fb)
 {
 	Scaling     *scal;
 	PetscInt     jj;
@@ -291,9 +294,6 @@ PetscErrorCode BCCreate(BCCtx *bc, FB *fb)
 	// nondimensionalize temperature
 	bc->Ttop = (bc->Ttop + scal->Tshift)/scal->temperature;
 	bc->Tbot = (bc->Tbot + scal->Tshift)/scal->temperature;
-
-	// allocate vectors
-	ierr = BCCreateData(bc); CHKERRQ(ierr);
 
 	PetscFunctionReturn(0);
 }

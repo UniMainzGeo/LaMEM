@@ -156,12 +156,12 @@ void rewinDisp(PetscInt n, PetscInt *displ);
 // key-value sort using standard functions (scalar-index)
 //---------------------------------------------------------------------------
 
-struct Pair
+typedef struct
 {
 	PetscScalar key;
 	PetscInt    val;
 
-};
+} Pair;
 
 // comparison function for sorting key-value pairs
 int comp_key_val(const void * a, const void * b);
@@ -169,4 +169,109 @@ int comp_key_val(const void * a, const void * b);
 PetscErrorCode sort_key_val(PetscScalar *a, PetscInt *idx, PetscInt n);
 
 //---------------------------------------------------------------------------
+
+//-----------------------------------------------------------------------------
+// service functions
+//-----------------------------------------------------------------------------
+
+// compute pointers from counts, return total count
+PetscInt getPtrCnt(PetscInt n, PetscInt counts[], PetscInt ptr[]);
+
+// rewind pointers after using them as access iterators
+void rewindPtr(PetscInt n, PetscInt ptr[]);
+
+// compute phase ratio array
+PetscErrorCode getPhaseRatio(PetscInt n, PetscScalar *v, PetscScalar *rsum);
+
+// find ID of the cell containing point (call this function for local point only!)
+static inline PetscInt FindPointInCell(
+	PetscScalar *px, // node coordinates
+	PetscInt     L,  // index of the leftmost node
+	PetscInt     R,  // index of the rightmost node
+	PetscScalar  x)  // point coordinate
+{
+	// get initial guess assuming uniform grid
+	PetscInt M = L + (PetscInt)((x-px[L])/((px[R]-px[L])/(PetscScalar)(R-L)));
+
+	if(M == R) return R-1;
+
+	if(px[M]   <= x) L=M;
+	if(px[M+1] >= x) R=M+1;
+
+	while((R-L) > 1)
+	{
+		M = (L+R)/2;
+		if(px[M] <= x) L=M;
+		if(px[M] >= x) R=M;
+
+	}
+	return(L);
+}
+//-----------------------------------------------------------------------------
+static inline PetscScalar InterpLin3D(
+	PetscScalar ***lv,
+	PetscInt    i,
+	PetscInt    j,
+	PetscInt    k,
+	PetscInt    sx,
+	PetscInt    sy,
+	PetscInt    sz,
+	PetscScalar xp,
+	PetscScalar yp,
+	PetscScalar zp,
+	PetscScalar *cx,
+	PetscScalar *cy,
+	PetscScalar *cz)
+{
+	PetscScalar xb, yb, zb, xe, ye, ze, v;
+
+	// get relative coordinates
+	xe = (xp - cx[i])/(cx[i+1] - cx[i]); xb = 1.0 - xe;
+	ye = (yp - cy[j])/(cy[j+1] - cy[j]); yb = 1.0 - ye;
+	ze = (zp - cz[k])/(cz[k+1] - cz[k]); zb = 1.0 - ze;
+
+	// interpolate & return result
+	v =
+	lv[sz+k  ][sy+j  ][sx+i  ]*xb*yb*zb +
+	lv[sz+k  ][sy+j  ][sx+i+1]*xe*yb*zb +
+	lv[sz+k  ][sy+j+1][sx+i  ]*xb*ye*zb +
+	lv[sz+k  ][sy+j+1][sx+i+1]*xe*ye*zb +
+	lv[sz+k+1][sy+j  ][sx+i  ]*xb*yb*ze +
+	lv[sz+k+1][sy+j  ][sx+i+1]*xe*yb*ze +
+	lv[sz+k+1][sy+j+1][sx+i  ]*xb*ye*ze +
+	lv[sz+k+1][sy+j+1][sx+i+1]*xe*ye*ze;
+
+	return v;
+}
+//-----------------------------------------------------------------------------
+static inline PetscScalar InterpLin2D(
+	PetscScalar ***lv,
+	PetscInt    i,
+	PetscInt    j,
+	PetscInt    L,
+	PetscInt    sx,
+	PetscInt    sy,
+	PetscScalar xp,
+	PetscScalar yp,
+	PetscScalar *cx,
+	PetscScalar *cy)
+{
+	PetscScalar xb, yb, xe, ye, v;
+
+	// get relative coordinates
+	xe = (xp - cx[i])/(cx[i+1] - cx[i]); xb = 1.0 - xe;
+	ye = (yp - cy[j])/(cy[j+1] - cy[j]); yb = 1.0 - ye;
+
+	// interpolate & return result
+	v =
+	lv[L][sy+j  ][sx+i  ]*xb*yb +
+	lv[L][sy+j  ][sx+i+1]*xe*yb +
+	lv[L][sy+j+1][sx+i  ]*xb*ye +
+	lv[L][sy+j+1][sx+i+1]*xe*ye;
+
+	return v;
+}
+//-----------------------------------------------------------------------------
+
+
 #endif

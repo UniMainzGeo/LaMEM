@@ -173,7 +173,7 @@ PetscErrorCode Discret1DCheckMG(Discret1D *ds, const char *dir, PetscInt *_ncors
 typedef enum { IDXNONE, IDXCOUPLED, IDXUNCOUPLED } idxtype;
 
 // global indexing of the DOF
-struct DOFIndex
+typedef struct
 {
 	//=====================================================================
 	//
@@ -190,7 +190,7 @@ struct DOFIndex
 	PetscInt stv, stp, st;      // starting indices (stv & stp - decoupled layout)
 	Vec      ivx, ivy, ivz, ip; // index vectors (ghosted)
 
-};
+} DOFIndex;
 
 //---------------------------------------------------------------------------
 // DOFIndex functions

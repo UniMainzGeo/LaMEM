@@ -48,7 +48,6 @@
 #include "scaling.h"
 #include "tssolve.h"
 #include "fdstag.h"
-#include "solVar.h"
 #include "bc.h"
 #include "JacRes.h"
 #include "matFree.h"
@@ -60,6 +59,8 @@
 #include "interpolate.h"
 #include "paraViewOutBin.h"
 #include "outFunct.h"
+#include "phase.h"
+
 //---------------------------------------------------------------------------
 // WARNING!
 //
@@ -78,24 +79,24 @@
 	Scaling     *scal; \
 	PetscScalar ***buff, cf; \
 	PetscInt     i, j, k, nx, ny, nz, sx, sy, sz, iter; \
-	InterpFlags  iflag; \
+	PetscInt     mode[2]; \
 	PetscErrorCode ierr; \
 	PetscFunctionBegin; \
 	fs   = outbuf->fs; \
 	scal = jr->scal; \
-	iflag.update    = PETSC_FALSE; \
-	iflag.use_bound = PETSC_FALSE;
+	mode[0] = 0; \
+	mode[1] = 0;
 //---------------------------------------------------------------------------
 // access function header
 #define ACCESS_FUNCTION_HEADER \
 	PetscScalar cf; \
 	Scaling     *scal; \
-	InterpFlags  iflag; \
+	PetscInt     mode[2]; \
 	PetscErrorCode ierr; \
 	PetscFunctionBegin; \
 	scal = jr->scal; \
-	iflag.update    = PETSC_FALSE; \
-	iflag.use_bound = PETSC_FALSE;
+	mode[0] = 0; \
+	mode[1] = 0;
 //---------------------------------------------------------------------------
 #define COPY_TO_LOCAL_BUFFER(da, vec, FIELD) \
 	ierr = DMDAGetCorners (da, &sx, &sy, &sz, &nx, &ny, &nz); CHKERRQ(ierr); \
@@ -109,12 +110,11 @@
 //---------------------------------------------------------------------------
 #define INTERPOLATE_COPY(da, vec, IFUNCT, FIELD, ncomp, dir) \
 	COPY_TO_LOCAL_BUFFER(da, vec, FIELD) \
-	ierr = IFUNCT(fs, vec, outbuf->lbcor, iflag); CHKERRQ(ierr); \
-	if(iflag.update != PETSC_TRUE) \
-	{	ierr = OutBufPut3DVecComp(outbuf, ncomp, dir, cf, 0.0); CHKERRQ(ierr); }
+	ierr = IFUNCT(fs, vec, outbuf->lbcor, mode); CHKERRQ(ierr); \
+	if(!mode[0]) { ierr = OutBufPut3DVecComp(outbuf, ncomp, dir, cf, 0.0); CHKERRQ(ierr); }
 //---------------------------------------------------------------------------
 #define INTERPOLATE_ACCESS(vec, IFUNCT, ncomp, dir, shift) \
-	ierr = IFUNCT(outbuf->fs, vec, outbuf->lbcor, iflag); CHKERRQ(ierr); \
+	ierr = IFUNCT(outbuf->fs, vec, outbuf->lbcor, mode); CHKERRQ(ierr); \
 	ierr = OutBufPut3DVecComp(outbuf, ncomp, dir, cf, shift); CHKERRQ(ierr);
 //---------------------------------------------------------------------------
 #undef __FUNCT__
@@ -139,8 +139,8 @@ PetscErrorCode PVOutWritePhase(JacRes *jr, OutBuf *outbuf)
 	cf = scal->unit;
 
 	// access material parameters
-	phases    = jr->phases;
-	numPhases = jr->numPhases;
+	phases    = jr->dbm->phases;
+	numPhases = jr->dbm->numPhases;
 
 	INTERPOLATE_COPY(fs->DA_CEN, outbuf->lbcen, InterpCenterCorner, GET_PHASE, 1, 0)
 
@@ -208,7 +208,7 @@ PetscErrorCode PVOutWriteViscoPlastic(JacRes *jr, OutBuf *outbuf)
 	COPY_FUNCTION_HEADER
 
 	// macro to copy viscosity to buffer
-	#define GET_VISC_VISCOPLASTIC buff[k][j][i] = jr->svCell[iter++].eta_viscoplastic;
+	#define GET_VISC_VISCOPLASTIC buff[k][j][i] = jr->svCell[iter++].eta_vp;
 
 	// output viscosity logarithm in GEO-mode
 	// (negative scaling requests logarithmic output)
@@ -227,7 +227,9 @@ PetscErrorCode PVOutWriteVelocity(JacRes *jr, OutBuf *outbuf)
 	ACCESS_FUNCTION_HEADER
 
 	cf = scal->velocity;
-	iflag.use_bound = PETSC_TRUE;
+	//iflag.use_bound = PETSC_TRUE;
+	mode[1] = 1; // use boundary values
+
 
 	ierr = JacResCopyVel(jr, jr->gsol); CHKERRQ(ierr);
 
@@ -245,7 +247,7 @@ PetscErrorCode PVOutWritePressure(JacRes *jr, OutBuf *outbuf)
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
 
-	if(jr->matLim.gwType != _GW_NONE_)
+	if(jr->ctrl->gwType != _GW_NONE_)
 	{
 		ierr = PVOutWriteTotalPress(jr, outbuf); CHKERRQ(ierr);
 	}
@@ -265,12 +267,11 @@ PetscErrorCode PVOutWriteTotalPress(JacRes *jr, OutBuf *outbuf)
 
 	ACCESS_FUNCTION_HEADER
 
-	biot = jr->matLim.biot;
-
-	cf  = scal->stress;
+	biot = jr->ctrl->biot;
+	cf   = scal->stress;
 
 	// scale pressure shift
-	pShift = cf*jr->pShift;
+	pShift = cf*jr->ctrl->pShift;
 
 	ierr = JacResCopyPres(jr, jr->gsol); CHKERRQ(ierr);
 
@@ -293,10 +294,11 @@ PetscErrorCode PVOutWriteEffPress(JacRes *jr, OutBuf *outbuf)
 	ACCESS_FUNCTION_HEADER
 
 	cf = scal->stress;
-	iflag.use_bound = PETSC_TRUE;
+	//iflag.use_bound = PETSC_TRUE;
+	mode[1] = 1; // use boundary values
 
 	// scale pressure shift
-	pShift = cf*jr->pShift;
+	pShift = cf*jr->ctrl->pShift;
 
 	ierr = JacResCopyPres(jr, jr->gsol); CHKERRQ(ierr);
 
@@ -316,7 +318,7 @@ PetscErrorCode PVOutWriteOverPress(JacRes *jr, OutBuf *outbuf)
 	cf = scal->stress;
 
 	// scale pressure shift
-	pShift = cf*jr->pShift;
+	pShift = cf*jr->ctrl->pShift;
 
 	ierr = JacResGetOverPressure(jr, outbuf->lbcen); CHKERRQ(ierr);
 
@@ -362,7 +364,9 @@ PetscErrorCode PVOutWriteTemperature(JacRes *jr, OutBuf *outbuf)
 	ACCESS_FUNCTION_HEADER
 
 	cf = scal->temperature;
-	iflag.use_bound = PETSC_TRUE;
+	//iflag.use_bound = PETSC_TRUE;
+	mode[1] = 1; // use boundary values
+
 
 	INTERPOLATE_ACCESS(jr->lT, InterpCenterCorner, 1, 0, scal->Tshift)
 
@@ -424,7 +428,8 @@ PetscErrorCode PVOutWriteJ2DevStress(JacRes *jr, OutBuf *outbuf)
 
 	cf = scal->stress;
 
-	iflag.update = PETSC_TRUE;
+	//iflag.update = PETSC_TRUE;
+	mode[0] = 1; // update vectors
 
 	ierr = VecSet(outbuf->lbcor, 0.0); CHKERRQ(ierr);
 
@@ -495,7 +500,8 @@ PetscErrorCode PVOutWriteJ2StrainRate(JacRes *jr, OutBuf *outbuf)
 
 	cf = scal->strain_rate;
 
-	iflag.update = PETSC_TRUE;
+	//iflag.update = PETSC_TRUE;
+	mode[0] = 1; // update vectors
 
 	ierr = VecSet(outbuf->lbcor, 0.0); CHKERRQ(ierr);
 
@@ -606,7 +612,8 @@ PetscErrorCode PVOutWritePlastDissip(JacRes *jr, OutBuf *outbuf)
 
 	cf = scal->dissipation_rate;
 
-	iflag.update = PETSC_TRUE;
+	//iflag.update = PETSC_TRUE;
+	mode[0] = 1; // update vectors
 
 	ierr = VecSet(outbuf->lbcor, 0.0); CHKERRQ(ierr);
 

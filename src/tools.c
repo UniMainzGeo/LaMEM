@@ -490,3 +490,59 @@ PetscErrorCode sort_key_val(PetscScalar *a, PetscInt *idx, PetscInt n)
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
+// service functions
+//-----------------------------------------------------------------------------
+PetscInt getPtrCnt(PetscInt n, PetscInt counts[], PetscInt ptr[])
+{
+	// compute pointers from counts, return total count
+
+	PetscInt i, tcnt = 0;
+
+	for(i = 0; i < n; i++)
+	{
+		ptr[i] = tcnt;
+		tcnt  += counts[i];
+	}
+	return tcnt;
+}
+//---------------------------------------------------------------------------
+void rewindPtr(PetscInt n, PetscInt ptr[])
+{
+	// rewind pointers after using them as access iterators
+
+	PetscInt i, prev = 0, next;
+
+	for(i = 0; i < n; i++)
+	{
+		next   = ptr[i];
+		ptr[i] = prev;
+		prev   = next;
+	}
+}
+//-----------------------------------------------------------------------------
+#undef __FUNCT__
+#define __FUNCT__ "getPhaseRatio"
+PetscErrorCode getPhaseRatio(PetscInt n, PetscScalar *v, PetscScalar *rsum)
+{
+	// compute phase ratio array
+
+	PetscInt    i;
+	PetscScalar sum = 0.0;
+
+	PetscFunctionBegin;
+
+	for(i = 0; i < n; i++) sum  += v[i];
+
+	if(sum == 0.0)
+	{
+		SETERRQ(PETSC_COMM_SELF, PETSC_ERR_USER, " Empty control volume");
+	}
+
+	for(i = 0; i < n; i++) v[i] /= sum;
+
+	(*rsum) = sum;
+
+	PetscFunctionReturn(0);
+}
+//-----------------------------------------------------------------------------
+

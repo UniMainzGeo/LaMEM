@@ -11,7 +11,7 @@
  **         55128 Mainz, Germany
  **
  **    project:    LaMEM
- **    filename:   solVar.h
+ **    filename:   types.h
  **
  **    LaMEM is free software: you can redistribute it and/or modify
  **    it under the terms of the GNU General Public License as published
@@ -46,19 +46,20 @@
 #define __types_h__
 //---------------------------------------------------------------------------
 
+typedef struct FB             FB            ;
 typedef struct Scaling        Scaling       ;
 typedef struct TSSol          TSSol         ;
 typedef struct DBMat          DBMat         ;
 typedef struct FDSTAG         FDSTAG        ;
-typedef struct AdvCtx         AdvCtx        ;
+typedef struct FreeSurf       FreeSurf      ;
 typedef struct BCCtx          BCCtx         ;
+typedef struct AdvCtx         AdvCtx        ;
+typedef struct Controls       Controls      ;
 typedef struct JacRes         JacRes        ;
 typedef struct PVAVD          PVAVD         ;
 typedef struct PVOut          PVOut         ;
 typedef struct PVMark         PVMark        ;
 typedef struct PVSurf         PVSurf        ;
-typedef struct FB             FB            ;
-typedef struct FreeSurf       FreeSurf      ;
 
 typedef struct Marker         Marker        ;
 typedef struct SolVarDev      SolVarDev     ;
@@ -67,17 +68,14 @@ typedef struct SolVarCell     SolVarCell    ;
 typedef struct SolVarEdge     SolVarEdge    ;
 typedef struct Soft_t         Soft_t        ;
 typedef struct Material_t     Material_t    ;
-typedef struct MatParLim      MatParLim     ;
 typedef struct Tensor2RS      Tensor2RS     ;
 typedef struct Tensor2RN      Tensor2RN     ;
-typedef struct Pair           Pair          ;
-
-
-typedef struct NLSol          NLSol         ;
-typedef struct VelInterp      VelInterp     ;
-typedef struct AdvVelCtx      AdvVelCtx     ;
 typedef struct InterpFlags    InterpFlags   ;
-typedef struct DOFIndex       DOFIndex      ;
+
+//typedef struct NLSol          NLSol         ;
+//typedef struct VelInterp      VelInterp     ;
+//typedef struct AdvVelCtx      AdvVelCtx     ;
+//typedef struct DOFIndex       DOFIndex      ;
 
 //typedef struct ConstEqCtx     ConstEqCtx    ;
 //typedef struct Polygon2D      Polygon2D     ;

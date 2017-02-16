@@ -115,7 +115,7 @@ typedef enum
 } JacType;
 
 //---------------------------------------------------------------------------
-struct NLSol
+typedef struct
 {
 	Mat       J;      // Jacobian matrix
 	Mat       P;      // preconditioner
@@ -132,7 +132,7 @@ struct NLSol
 
 	WinStopCtx  wsCtx; // window stop criterion context
 
-};
+} NLSol;
 
 //---------------------------------------------------------------------------
 

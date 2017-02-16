@@ -11,7 +11,7 @@
  **         55128 Mainz, Germany
  **
  **    project:    LaMEM
- **    filename:   matProps.h
+ **    filename:   phase.h
  **
  **    LaMEM is free software: you can redistribute it and/or modify
  **    it under the terms of the GNU General Public License as published
@@ -112,98 +112,29 @@ struct Material_t
 };
 
 //---------------------------------------------------------------------------
-//...................   Runtime parameters and controls .....................
-//---------------------------------------------------------------------------
-
-// Ground water level type
-typedef enum
-{
-	_GW_NONE_,   // don't compute pore pressure
-	_GW_TOP_,    // top of the domain
-	_GW_SURF_,   // free surface
-	_GW_LEVEL_   // fixed level
-
-} GWLevelType;
-
-struct Controls
-{
-	PetscScalar grav[SPDIM];  // global gravity components
-	PetscScalar FSSA;         // free surface stabilization parameter
-	PetscScalar shearHeatEff; // shear heating efficiency parameter [0 - 1]
-
-	PetscInt    actTemp;	  // temperature diffusion activation flag
-	PetscInt    pShiftAct;    // pressure shift activation flag (zero pressure in the top cell layer)
-	PetscScalar pShift;       // pressure shift for plasticity model and output
-	PetscInt    initGuess;    // initial guess activation flag
-	PetscInt    pLithoVisc;   // use lithostatic pressure for creep laws
-	PetscInt    pLithoPlast;  // use lithostatic pressure for plasticity
-	PetscInt    pLimPlast;    // limit pressure at first iteration for plasticity
-
-	PetscScalar eta_min;      // minimum viscosity
-	PetscScalar inv_eta_max;  // inverse of maximum viscosity
-	PetscScalar eta_ref;      // reference viscosity (initial guess)
-	PetscScalar TRef;         // reference temperature
-	PetscScalar Rugc;         // universal gas constant
-	PetscScalar DII_ref;      // background (reference) strain-rate
-	PetscScalar minCh;        // minimum cohesion
-	PetscScalar minFr;        // maximum friction
-	PetscScalar tauUlt;       // ultimate yield stress
-	PetscInt    quasiHarmAvg; // quasi-harmonic averaging regularization flag (plasticity)
-	PetscScalar cf_eta_min;   // visco-plastic regularization parameter (plasticity)
-	PetscScalar n_pw;         // power-law regularization parameter (plasticity)
-
-	PetscScalar rho_fluid;    // fluid density
-	GWLevelType gwType;       // type of ground water level (none, top, surf, level)
-	PetscScalar gwLevel;      // fixed ground water level
-	PetscScalar biot;         // Biot pressure parameter
-
-};
 
 struct DBMat
 {
+	Scaling *scal;
+
 	// phase parameters
 	PetscInt     numPhases;              // number phases
 	Material_t   phases[max_num_phases]; // phase parameters
 	PetscInt     numSoft;                // number material softening laws
 	Soft_t       matSoft[max_num_soft];  // material softening law parameters
-	PetscInt     isElastic;              // elastic rheology flag
 
 };
 
-//---------------------------------------------------------------------------
-
-// read material parameter limits
-PetscErrorCode MatParLimRead(
-		FB        *fb,
-		Scaling   *scal,
-		MatParLim *lim);
-
-// read all material phases and softening laws from file
-PetscErrorCode MatPropsReadAll(
-		FB         *fb,
-		Scaling    *scal,
-		PetscInt   *numPhases,
-		Material_t *phases,
-		PetscInt   *numSoft,
-		Soft_t     *matSoft,
-		MatParLim  *lim);
+// read material database
+PetscErrorCode DBMatRead(DBMat *dbm, FB *fb);
 
 // read single softening law
-PetscErrorCode MatSoftRead(
-		FB       *fb,
-		PetscInt  numSoft,
-		Soft_t   *matSoft);
+PetscErrorCode DBMatReadSoft(DBMat *dbm, FB *fb);
 
 // read single material phase
-PetscErrorCode MatPhaseRead(
-		FB         *fb,
-		Scaling    *scal,
-		PetscInt    numPhases,
-		Material_t *phases,
-		PetscInt    numSoft,
-		Soft_t     *matSoft,
-		MatParLim  *lim);
+PetscErrorCode DBMatReadPhase(DBMat *dbm, FB *fb);
 
+// print single material parameter
 void MatPrintScalParam(PetscScalar par, const char key[], const char label[], Scaling *scal);
 
 //---------------------------------------------------------------------------

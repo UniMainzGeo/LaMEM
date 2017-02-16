@@ -44,15 +44,16 @@
 //...................   MATERIAL ADVECTION ROUTINES   .......................
 //---------------------------------------------------------------------------
 #include "LaMEM.h"
+#include "phase.h"
 #include "parsing.h"
 #include "scaling.h"
 #include "tssolve.h"
 #include "fdstag.h"
-#include "solVar.h"
 #include "bc.h"
 #include "JacRes.h"
 #include "interpolate.h"
 #include "surf.h"
+#include "Tensor.h"
 #include "advect.h"
 #include "constEq.h"
 #include "marker.h"
@@ -92,7 +93,7 @@ PetscErrorCode ADVCreate(AdvCtx *actx, FB *fb)
 	actx->NumPartZ =  2;
 	actx->bgPhase  = -1;
 	actx->A        =  2.0/3.0;
-	maxPhaseID     = actx->jr->numPhases - 1;
+	maxPhaseID     = actx->dbm->numPhases - 1;
 
 	// READ
 
@@ -1545,13 +1546,14 @@ PetscErrorCode ADVProjHistMarkToGrid(AdvCtx *actx)
 
 	FDSTAG   *fs;
 	JacRes   *jr;
-	PetscInt  ii, jj;
+	PetscInt  ii, jj, numPhases;
 
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
 
-	fs = actx->fs;
-	jr = actx->jr;
+	fs        = actx->fs;
+	jr        = actx->jr;
+	numPhases = actx->dbm->numPhases;
 
 	//======
 	// CELLS
@@ -1573,15 +1575,15 @@ PetscErrorCode ADVProjHistMarkToGrid(AdvCtx *actx)
 	// *****************************************
 
 	// compute edge phase ratios (consecutively)
-	for(ii = 0; ii < jr->numPhases; ii++)
+	for(ii = 0; ii < numPhases; ii++)
 	{
 		ierr = ADVInterpMarkToEdge(actx, ii, _PHASE_); CHKERRQ(ierr);
 	}
 
 	// normalize phase ratios
-	for(jj = 0; jj < fs->nXYEdg; jj++)  { ierr = getPhaseRatio(jr->numPhases, jr->svXYEdge[jj].phRat, &jr->svXYEdge[jj].ws); CHKERRQ(ierr); }
-	for(jj = 0; jj < fs->nXZEdg; jj++)  { ierr = getPhaseRatio(jr->numPhases, jr->svXZEdge[jj].phRat, &jr->svXZEdge[jj].ws); CHKERRQ(ierr); }
-	for(jj = 0; jj < fs->nYZEdg; jj++)  { ierr = getPhaseRatio(jr->numPhases, jr->svYZEdge[jj].phRat, &jr->svYZEdge[jj].ws); CHKERRQ(ierr); }
+	for(jj = 0; jj < fs->nXYEdg; jj++)  { ierr = getPhaseRatio(numPhases, jr->svXYEdge[jj].phRat, &jr->svXYEdge[jj].ws); CHKERRQ(ierr); }
+	for(jj = 0; jj < fs->nXZEdg; jj++)  { ierr = getPhaseRatio(numPhases, jr->svXZEdge[jj].phRat, &jr->svXZEdge[jj].ws); CHKERRQ(ierr); }
+	for(jj = 0; jj < fs->nYZEdg; jj++)  { ierr = getPhaseRatio(numPhases, jr->svYZEdge[jj].phRat, &jr->svYZEdge[jj].ws); CHKERRQ(ierr); }
 
 	// interpolate history stress to edges
 	ierr = ADVInterpMarkToEdge(actx, 0, _STRESS_); CHKERRQ(ierr);
@@ -1603,14 +1605,15 @@ PetscErrorCode ADVInterpMarkToCell(AdvCtx *actx)
 	Marker      *P;
 	SolVarCell  *svCell;
 	PetscInt     ii, jj, ID, I, J, K;
-	PetscInt     nx, ny, nCells;
+	PetscInt     nx, ny, nCells, numPhases;
 	PetscScalar  xp, yp, zp, wxc, wyc, wzc, w = 0.0;
 
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
 
-	fs = actx->fs;
-	jr = actx->jr;
+	fs        = actx->fs;
+	jr        = actx->jr;
+	numPhases = actx->dbm->numPhases;
 
 	// number of cells
 	nx     = fs->dsx.ncels;
@@ -1624,7 +1627,7 @@ PetscErrorCode ADVInterpMarkToCell(AdvCtx *actx)
 		svCell = &jr->svCell[jj];
 
 		// clear phase ratios
-		for(ii = 0; ii < jr->numPhases; ii++) svCell->phRat[ii] = 0.0;
+		for(ii = 0; ii < numPhases; ii++) svCell->phRat[ii] = 0.0;
 
 		// clear history variables
 		svCell->svBulk.pn = 0.0;
@@ -1689,7 +1692,7 @@ PetscErrorCode ADVInterpMarkToCell(AdvCtx *actx)
 		svCell = &jr->svCell[jj];
 
 		// normalize phase ratios
-		ierr = getPhaseRatio(jr->numPhases, svCell->phRat, &w); CHKERRQ(ierr);
+		ierr = getPhaseRatio(numPhases, svCell->phRat, &w); CHKERRQ(ierr);
 
 		// normalize history variables
 		svCell->svBulk.pn /= w;
@@ -1955,59 +1958,3 @@ PetscErrorCode ADVCheckMarkPhases(AdvCtx *actx, PetscInt numPhases)
 
 	PetscFunctionReturn(0);
 }
-//---------------------------------------------------------------------------
-// service functions
-//-----------------------------------------------------------------------------
-PetscInt getPtrCnt(PetscInt n, PetscInt counts[], PetscInt ptr[])
-{
-	// compute pointers from counts, return total count
-
-	PetscInt i, tcnt = 0;
-
-	for(i = 0; i < n; i++)
-	{
-		ptr[i] = tcnt;
-		tcnt  += counts[i];
-	}
-	return tcnt;
-}
-//---------------------------------------------------------------------------
-void rewindPtr(PetscInt n, PetscInt ptr[])
-{
-	// rewind pointers after using them as access iterators
-
-	PetscInt i, prev = 0, next;
-
-	for(i = 0; i < n; i++)
-	{
-		next   = ptr[i];
-		ptr[i] = prev;
-		prev   = next;
-	}
-}
-//-----------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "getPhaseRatio"
-PetscErrorCode getPhaseRatio(PetscInt n, PetscScalar *v, PetscScalar *rsum)
-{
-	// compute phase ratio array
-
-	PetscInt    i;
-	PetscScalar sum = 0.0;
-
-	PetscFunctionBegin;
-
-	for(i = 0; i < n; i++) sum  += v[i];
-
-	if(sum == 0.0)
-	{
-		SETERRQ(PETSC_COMM_SELF, PETSC_ERR_USER, " Empty control volume");
-	}
-
-	for(i = 0; i < n; i++) v[i] /= sum;
-
-	(*rsum) = sum;
-
-	PetscFunctionReturn(0);
-}
-//-----------------------------------------------------------------------------

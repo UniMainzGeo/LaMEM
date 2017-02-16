@@ -226,7 +226,7 @@ struct BCCtx
 //---------------------------------------------------------------------------
 
 // create boundary condition context
-PetscErrorCode BCCreate(BCCtx *bc, FB *fb);
+PetscErrorCode BCRead(BCCtx *bc, FB *fb);
 
 // allocate internal vectors and arrays
 PetscErrorCode BCCreateData(BCCtx *bc);

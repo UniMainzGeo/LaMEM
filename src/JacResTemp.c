@@ -43,16 +43,19 @@
 //......................   TEMPERATURE FUNCTIONS   ..........................
 //---------------------------------------------------------------------------
 #include "LaMEM.h"
+#include "phase.h"
 #include "parsing.h"
+
 #include "scaling.h"
 #include "fdstag.h"
-#include "solVar.h"
 #include "tssolve.h"
 #include "bc.h"
 #include "JacRes.h"
 #include "matrix.h"
 #include "constEq.h"
 #include "tools.h"
+#include "surf.h"
+
 //---------------------------------------------------------------------------
 
 #define SCATTER_FIELD(da, vec, FIELD) \
@@ -87,7 +90,7 @@ PetscErrorCode JacResGetTempParam(
 {
 	// compute effective energy parameters in the cell
 
-	PetscInt    i, numPhases;
+	PetscInt    i, numPhases, AirPhase;
     Material_t  *phases, *M;
 
 	PetscScalar cf, k, rho, rho_Cp, rho_A, density;
@@ -98,9 +101,10 @@ PetscErrorCode JacResGetTempParam(
 	k         = 0.0;
 	rho_Cp    = 0.0;
 	rho_A     = 0.0;
-	numPhases = jr->numPhases;
-	phases    = jr->phases;
+	numPhases = jr->dbm->numPhases;
+	phases    = jr->dbm->phases;
 	density   = jr->scal->density;
+	AirPhase  = jr->surf->AirPhase;
 
 	// average all phases
 	for(i = 0; i < numPhases; i++)
@@ -110,7 +114,7 @@ PetscErrorCode JacResGetTempParam(
 		rho     =  M->rho;
 
 		// override air phase density
-		if(jr->AirPhase != -1 && i == jr->AirPhase)
+		if(AirPhase != -1 && i == AirPhase)
 		{
 			rho = 1.0/density;
 		}
@@ -130,33 +134,22 @@ PetscErrorCode JacResGetTempParam(
 //---------------------------------------------------------------------------
 #undef __FUNCT__
 #define __FUNCT__ "JacResCheckTempParam"
-PetscErrorCode JacResCheckTempParam(JacRes *jr, FB *fb)
+PetscErrorCode JacResCheckTempParam(JacRes *jr)
 {
 	// check whether thermal material parameters are properly defined
 
     Material_t  *phases, *M;
-	PetscInt    i, numPhases, UseFreeSurf, AirPhase;
+	PetscInt    i, numPhases, AirPhase;
 
-	PetscErrorCode ierr;
 	PetscFunctionBegin;
 
 	// temperature diffusion cases only
-	if(!jr->actTemp) PetscFunctionReturn(0);
+	if(!jr->ctrl->actTemp) PetscFunctionReturn(0);
 
 	// initialize
-	numPhases = jr->numPhases;
-	phases    = jr->phases;
-
-	// get air phase
-	UseFreeSurf =  0;
-	AirPhase    = -1;
-
-	ierr = getIntParam(fb, _OPTIONAL_, "surf_use", &UseFreeSurf, 1,  1); CHKERRQ(ierr);
-
-	if(UseFreeSurf)
-	{
-		ierr = getIntParam(fb, _REQUIRED_, "surf_air_phase", &AirPhase, 1, jr->numPhases-1); CHKERRQ(ierr);
-	}
+	numPhases = jr->dbm->numPhases;
+	phases    = jr->dbm->phases;
+	AirPhase  = jr->surf->AirPhase;
 
 	// check all phases
 	for(i = 0; i < numPhases; i++)
@@ -164,7 +157,7 @@ PetscErrorCode JacResCheckTempParam(JacRes *jr, FB *fb)
 		M = &phases[i];
 
 		// check density of the rock phases
-		if((jr->AirPhase != -1 && i != jr->AirPhase) || jr->AirPhase == -1)
+		if((AirPhase != -1 && i != AirPhase) || AirPhase == -1)
 		{
 			if(M->rho == 0.0) SETERRQ1(PETSC_COMM_SELF, PETSC_ERR_USER, "Define density of phase %lld\n", (LLD)i);
 		}
@@ -193,7 +186,7 @@ PetscErrorCode JacResCreateTempParam(JacRes *jr)
 	ierr = DMCreateLocalVector(fs->DA_CEN, &jr->lT); CHKERRQ(ierr);
 
 	// temperature diffusion cases only
-	if(!jr->actTemp) PetscFunctionReturn(0);
+	if(!jr->ctrl->actTemp) PetscFunctionReturn(0);
 
 	// get cell center grid partitioning
 	ierr = DMDAGetOwnershipRanges(fs->DA_CEN, &lx, &ly, &lz); CHKERRQ(ierr);
@@ -241,7 +234,7 @@ PetscErrorCode JacResDestroyTempParam(JacRes *jr)
 	ierr = VecDestroy(&jr->lT);   CHKERRQ(ierr);
 
 	// temperature diffusion cases only
-	if(!jr->actTemp) PetscFunctionReturn(0);
+	if(!jr->ctrl->actTemp) PetscFunctionReturn(0);
 
 	// temperature parameters
 	ierr = DMDestroy (&jr->DA_T); CHKERRQ(ierr);
@@ -478,7 +471,7 @@ PetscErrorCode JacResGetTempRes(JacRes *jr)
 		(hxy[k][j][i] + hxy[k][j+1][i] + hxy[k][j][i+1] + hxy[k][j+1][i+1] +
 		 hxz[k][j][i] + hxz[k+1][j][i] + hxz[k][j][i+1] + hxz[k+1][j][i+1] +
 		 hyz[k][j][i] + hyz[k+1][j][i] + hyz[k][j+1][i] + hyz[k+1][j+1][i])/4.0;
-		Hr = Hr * jr->matLim.shearHeatEff;
+		Hr = Hr * jr->ctrl->shearHeatEff;
 
 		// check index bounds
 		Im1 = i-1; if(Im1 < 0)  Im1++;

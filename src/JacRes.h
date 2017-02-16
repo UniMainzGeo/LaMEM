@@ -84,15 +84,15 @@ struct SolVarBulk
 
 struct SolVarCell
 {
-	SolVarDev    svDev;         		// deviatoric variables
-	SolVarBulk   svBulk;        		// volumetric variables
-	PetscScalar  sxx, syy, szz; 		// deviatoric stress
-	PetscScalar  hxx, hyy, hzz; 		// history stress (elastic)
-	PetscScalar  dxx, dyy, dzz; 		// total deviatoric strain rate
-	PetscScalar *phRat;         		// phase ratios in the control volume
-	PetscScalar  eta_creep;     		// effective creep viscosity (output)
-	PetscScalar  eta_viscoplastic;     	// viscoplastic viscosity (output)
-	PetscScalar  U[3];          		// displacement
+	SolVarDev    svDev;         // deviatoric variables
+	SolVarBulk   svBulk;        // volumetric variables
+	PetscScalar  sxx, syy, szz; // deviatoric stress
+	PetscScalar  hxx, hyy, hzz; // history stress (elastic)
+	PetscScalar  dxx, dyy, dzz; // total deviatoric strain rate
+	PetscScalar *phRat;         // phase ratios in the control volume
+	PetscScalar  eta_creep;     // effective creep viscosity (output)
+	PetscScalar  eta_vp;        // viscoplastic viscosity (output)
+	PetscScalar  U[3];          // displacement
 
 };
 
@@ -111,6 +111,58 @@ struct SolVarEdge
 
 };
 
+//---------------------------------------------------------------------------
+//...................   Runtime parameters and controls .....................
+//---------------------------------------------------------------------------
+
+// Ground water level type
+typedef enum
+{
+	_GW_NONE_,   // don't compute pore pressure
+	_GW_TOP_,    // top of the domain
+	_GW_SURF_,   // free surface
+	_GW_LEVEL_   // fixed level
+
+} GWLevelType;
+
+struct Controls
+{
+	Scaling *scal;
+
+	PetscScalar grav[SPDIM];  // global gravity components
+	PetscScalar FSSA;         // free surface stabilization parameter
+	PetscScalar shearHeatEff; // shear heating efficiency parameter [0 - 1]
+
+	PetscInt    actTemp;	  // temperature diffusion activation flag
+	PetscInt    pShiftAct;    // pressure shift activation flag (zero pressure in the top cell layer)
+	PetscScalar pShift;       // pressure shift for plasticity model and output
+	PetscInt    initGuess;    // initial guess activation flag
+	PetscInt    pLithoVisc;   // use lithostatic pressure for creep laws
+	PetscInt    pLithoPlast;  // use lithostatic pressure for plasticity
+	PetscInt    pLimPlast;    // limit pressure at first iteration for plasticity
+	PetscInt    jac_mat_free; // matrix-free analytical Jacobian activation flag
+
+	PetscScalar eta_min;      // minimum viscosity
+	PetscScalar inv_eta_max;  // inverse of maximum viscosity
+	PetscScalar eta_ref;      // reference viscosity (initial guess)
+	PetscScalar TRef;         // reference temperature
+	PetscScalar Rugc;         // universal gas constant
+	PetscScalar DII_ref;      // background (reference) strain-rate
+	PetscScalar minCh;        // minimum cohesion
+	PetscScalar minFr;        // maximum friction
+	PetscScalar tauUlt;       // ultimate yield stress
+	PetscInt    quasiHarmAvg; // quasi-harmonic averaging regularization flag (plasticity)
+	PetscScalar cf_eta_min;   // visco-plastic regularization parameter (plasticity)
+	PetscScalar n_pw;         // power-law regularization parameter (plasticity)
+
+	PetscScalar rho_fluid;    // fluid density
+	GWLevelType gwType;       // type of ground water level (none, top, surf, level)
+	PetscScalar gwLevel;      // fixed ground water level
+	PetscScalar biot;         // Biot pressure parameter
+
+};
+
+PetscErrorCode ControlsRead(Controls *ctrl, FB *fb);
 
 //---------------------------------------------------------------------------
 //.............. FDSTAG Jacobian and residual evaluation context ............
@@ -119,10 +171,13 @@ struct SolVarEdge
 struct JacRes
 {
 	// external handles
-	Scaling  *scal; // scaling
-	TSSol    *ts;   // time-stepping parameters
-	FDSTAG   *fs;   // staggered-grid layout
-	BCCtx    *bc;   // boundary condition context
+	Scaling  *scal;  // scaling
+	TSSol    *ts;    // time-stepping parameters
+	FDSTAG   *fs;    // staggered-grid layout
+	FreeSurf *surf;  // free surface
+	BCCtx    *bc;    // boundary condition context
+	DBMat    *dbm;   // material database
+	Controls *ctrl;  // parameters and controls
 
 	// coupled solution & residual vectors
 	Vec gsol, gres; // global
@@ -185,8 +240,6 @@ struct JacRes
 //---------------------------------------------------------------------------
 
 // create residual & Jacobian evaluation context
-PetscErrorCode JacResCreate(JacRes *jr, FB *fb);
-
 PetscErrorCode JacResCreateData(JacRes *jr);
 
 PetscErrorCode JacResReadRestart(JacRes *jr, FILE *fp);
@@ -237,9 +290,6 @@ PetscInt JacResGetStep(JacRes *jr);
 
 PetscErrorCode JacResGetCourantStep(JacRes *jr);
 
-PetscErrorCode JacResSetVelRotation(JacRes *jr);
-
-//---------------------------------------------------------------------------
 
 // get maximum inverse time step on local domain
 //PetscErrorCode getMaxInvStep1DLocal(Discret1D *ds, DM da, Vec gv, PetscInt dir, PetscScalar *_idtmax);
@@ -280,7 +330,7 @@ PetscErrorCode JacResGetTempParam(
 	PetscScalar *rho_A_); // volumetric radiogenic heat
 
 // check whether thermal material parameters are properly defined
-PetscErrorCode JacResCheckTempParam(JacRes *jr, FB *fb);
+PetscErrorCode JacResCheckTempParam(JacRes *jr);
 
 // setup temperature parameters
 PetscErrorCode JacResCreateTempParam(JacRes *jr);

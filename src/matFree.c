@@ -48,7 +48,6 @@
 #include "scaling.h"
 #include "tssolve.h"
 #include "fdstag.h"
-#include "solVar.h"
 #include "bc.h"
 #include "JacRes.h"
 #include "matFree.h"
@@ -93,9 +92,9 @@ PetscErrorCode JacResPicardMatFree(JacRes *jr)
 	PetscFunctionBegin;
 
 	fs   = jr->fs;
-	dt   = jr->ts->dt; // time step
-	fssa = jr->FSSA;  // density gradient penalty parameter
-    grav = jr->grav;  // gravity acceleration
+	dt   = jr->ts->dt;      // time step
+	fssa = jr->ctrl->FSSA;  // density gradient penalty parameter
+    grav = jr->ctrl->grav;  // gravity acceleration
 
     // clear local residual vectors
 	ierr = VecZeroEntries(jr->lfx); CHKERRQ(ierr);
@@ -496,9 +495,9 @@ PetscErrorCode JacResJacobianMatFree(JacRes *jr)
 	PetscFunctionBegin;
 
 	fs   = jr->fs;
-	dt   = jr->ts->dt; // time step
-	fssa = jr->FSSA;  // density gradient penalty parameter
-    grav = jr->grav;  // gravity acceleration
+	dt   = jr->ts->dt;     // time step
+	fssa = jr->ctrl->FSSA; // density gradient penalty parameter
+    grav = jr->ctrl->grav; // gravity acceleration
 
     // initialize maximum node index in all directions
 	mx = fs->dsx.tnods - 1;

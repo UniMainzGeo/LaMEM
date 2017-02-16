@@ -48,7 +48,6 @@
 #include "tssolve.h"
 #include "tools.h"
 #include "fdstag.h"
-#include "solVar.h"
 #include "bc.h"
 #include "JacRes.h"
 #include "interpolate.h"
@@ -57,12 +56,16 @@
 #include "matrix.h"
 #include "lsolve.h"
 #include "nlsolve.h"
+#include "Tensor.h"
 #include "advect.h"
 #include "marker.h"
 #include "paraViewOutBin.h"
 #include "paraViewOutSurf.h"
 #include "paraViewOutMark.h"
 #include "paraViewOutAVD.h"
+#include "phase.h"
+
+
 /*
 #START_DOC#
 #END_DOC#
@@ -321,7 +324,7 @@ PetscErrorCode ADVMarkCheckMarkers(AdvCtx *actx)
 	fs = actx->fs;
 
 	// get maximum Phase
-	maxid = actx->jr->numPhases - 1;
+	maxid = actx->dbm->numPhases - 1;
 
 	// get local mesh sizes
 	GET_DOMAIN_BOUNDS(xs, xe, fs->dsx)
@@ -617,7 +620,7 @@ PetscErrorCode ADVMarkInitGeom(AdvCtx *actx, FB *fb)
 
 	iter       = 0;
 	ngeom      = 0;
-	maxPhaseID = actx->jr->numPhases - 1;
+	maxPhaseID = actx->dbm->numPhases - 1;
 	chLen      = actx->jr->scal->length;
 
 	// clear storage

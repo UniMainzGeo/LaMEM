@@ -50,7 +50,6 @@
 #include "tssolve.h"
 #include "tools.h"
 #include "fdstag.h"
-#include "solVar.h"
 #include "bc.h"
 #include "JacRes.h"
 #include "interpolate.h"
@@ -62,6 +61,7 @@
 #include "lsolve.h"
 #include "nlsolve.h"
 #include "multigrid.h"
+#include "Tensor.h"
 #include "advect.h"
 #include "marker.h"
 #include "paraViewOutMark.h"
@@ -176,7 +176,7 @@ PetscErrorCode LaMEMLibCreate(LaMEMLib *lm)
 
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
-
+/*
 	// load input file
 	ierr = FBLoad(&fb); CHKERRQ(ierr);
 
@@ -201,7 +201,7 @@ PetscErrorCode LaMEMLibCreate(LaMEMLib *lm)
 	// create advection context
 	ierr = ADVCreate(&lm->actx, fb); CHKERRQ(ierr);
 
-/*
+
 
 
 	// check thermal material parameters
@@ -409,12 +409,18 @@ PetscErrorCode LaMEMLibSolve(LaMEMLib *lm, void *param)
 //	ierr = ObjFunctCreate(&objf, IOparam, &surf); CHKERRQ(ierr);
 
 
+
 	// create Stokes preconditioner & matrix
 //	ierr = PMatCreate(&pm, &jr);    CHKERRQ(ierr);
 	ierr = PCStokesCreate(&pc, pm); CHKERRQ(ierr);
 
 	// create nonlinear solver
 	ierr = NLSolCreate(&nl, pc, &snes); CHKERRQ(ierr);
+
+
+	// set initial guess
+//	ierr = VecZeroEntries(jr->gsol); CHKERRQ(ierr);
+//	ierr = VecZeroEntries(jr->lT);   CHKERRQ(ierr);
 
 	// ...
 
@@ -434,8 +440,88 @@ PetscErrorCode LaMEMLibDryRun(LaMEMLib *lm)
 
 //	PetscBool      done;
 
+	// set initial guess
+
+
+//	ierr = VecZeroEntries(jr->gsol); CHKERRQ(ierr);
+//	ierr = VecZeroEntries(jr->lT);   CHKERRQ(ierr);
+
+
 	PetscFunctionReturn(0);
 }
+
+
+
+
+/*
+PetscErrorCode ControlsCheck(Controls *ctrl, FB *fb)
+
+ *** free surface and depth dependent density model (depth computation)
+
+{
+
+	if(lim->gwType == _GW_SURF_ && !lim->isSurface)
+	{
+		SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "Ground water level requires activating free surface (gw_level_type, surf_use)");
+	}
+
+
+	if((m->rp || m->rho_n) && !lim->rho_fluid)
+	{
+		SETERRQ1(PETSC_COMM_SELF, PETSC_ERR_USER, "Fluid density must be specified for phase %lld (rho_n, rho_c, rp, rho_fluid)\n", (LLD)ID);
+	}
+
+	if(m->rp && lim->gwType == _GW_NONE_)
+	{
+		SETERRQ1(PETSC_COMM_SELF, PETSC_ERR_USER, "Pore pressure ratio requires defining ground water level type for phase %lld (rp, gw_level_type)\n", (LLD)ID);
+	}
+
+	if(m->rho_n && !lim->isSurface)
+	{
+		SETERRQ1(PETSC_COMM_SELF, PETSC_ERR_USER, "Depth-dependent density requires activating free surface for phase %lld (rho_n, surf_use)\n", (LLD)ID);
+	}
+
+	// set elastic rheology flag
+	if(G || K) lim->isElastic = 1;
+
+
+		cnt = 0;
+	if(lim->quasiHarmAvg) cnt++;
+	if(lim->cf_eta_min)   cnt++;
+	if(lim->n_pw)         cnt++;
+
+	if(cnt > 1)
+	{
+		SETERRQ(PETSC_COMM_SELF, PETSC_ERR_USER, "Cannot combine plasticity stabilization methods (quasi_harm_avg, cf_eta_min, n_pw) \n");
+	}
+
+	if(cnt && lim->jac_mat_free)
+	{
+		SETERRQ(PETSC_COMM_SELF, PETSC_ERR_USER, "Analytical Jacobian is not available for plasticity stabilizations (jac_mat_free, quasi_harm_avg, cf_eta_min, n_pw) \n");
+	}
+
+	if(jr->pShiftAct && lim->jac_mat_free)
+	{
+		SETERRQ(PETSC_COMM_SELF, PETSC_ERR_USER, "Analytical Jacobian is incompatible with pressure shifting (jac_mat_free, act_p_shift) \n");
+	}
+
+	if(!jr->bc->top_open && lim->jac_mat_free)
+	{
+		SETERRQ(PETSC_COMM_SELF, PETSC_ERR_USER, "Analytical Jacobian requires open top boundary (jac_mat_free, open_top_bound) \n");
+	}
+
+	// activate elasticity-compliant time-stepping
+	if(lim->isElastic)
+	{
+		ierr = TSSolSetupElasticity(jr->ts); CHKERRQ(ierr);
+	}
+
+
+}
+*/
+
+
+
 //---------------------------------------------------------------------------
 /*
 {

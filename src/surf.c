@@ -48,31 +48,34 @@
 #include "scaling.h"
 #include "tssolve.h"
 #include "fdstag.h"
-#include "solVar.h"
 #include "bc.h"
 #include "JacRes.h"
 #include "interpolate.h"
 #include "surf.h"
-#include "advect.h"
+//#include "advect.h"
 #include "tools.h"
+#include "phase.h"
+
 //---------------------------------------------------------------------------
 // * stair-case type of free surface
 // ...
 //---------------------------------------------------------------------------
 #undef __FUNCT__
-#define __FUNCT__ "FreeSurfCreate"
-PetscErrorCode FreeSurfCreate(FreeSurf *surf, FB *fb)
+#define __FUNCT__ "FreeSurfRead"
+PetscErrorCode FreeSurfRead(FreeSurf *surf, FB *fb)
 {
 
-	JacRes     *jr;
-	Scaling    *scal;
+	JacRes   *jr;
+	Scaling  *scal;
+	PetscInt maxPhaseID;
 
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
 
 	// initialize
-	surf->UseFreeSurf = 1;
-	surf->phaseCorr   = 1;
+	surf->UseFreeSurf =  1;
+	surf->phaseCorr   =  1;
+	surf->AirPhase    = -1;
 
 	// check whether free surface is activated
 	ierr = getIntParam(fb, _OPTIONAL_, "surf_use", &surf->UseFreeSurf, 1,  1); CHKERRQ(ierr);
@@ -81,16 +84,18 @@ PetscErrorCode FreeSurfCreate(FreeSurf *surf, FB *fb)
 	if(!surf->UseFreeSurf) PetscFunctionReturn(0);
 
 	// access context
-	jr   = surf->jr;
-	scal = jr->scal;
+	jr         = surf->jr;
+	scal       = jr->scal;
+	maxPhaseID = jr->dbm->numPhases-1;
+
 
 	// read from options
-	ierr = getIntParam   (fb, _OPTIONAL_, "surf_corr_phase", &surf->phaseCorr,     1,  1);               CHKERRQ(ierr);
-	ierr = getScalarParam(fb, _REQUIRED_, "surf_level",      &surf->InitLevel,     1,  scal->length);    CHKERRQ(ierr);
-	ierr = getIntParam   (fb, _REQUIRED_, "surf_air_phase",  &surf->AirPhase,      1,  jr->numPhases-1); CHKERRQ(ierr);
-	ierr = getScalarParam(fb, _OPTIONAL_, "surf_max_angle",  &surf->MaxAngle,      1,  scal->angle);     CHKERRQ(ierr);
-	ierr = getIntParam   (fb, _OPTIONAL_, "erosion_model",   &surf->ErosionModel,  1,  1);               CHKERRQ(ierr);
-	ierr = getIntParam   (fb, _OPTIONAL_, "sediment_model",  &surf->SedimentModel, 1,  1);               CHKERRQ(ierr);
+	ierr = getIntParam   (fb, _OPTIONAL_, "surf_corr_phase", &surf->phaseCorr,     1,  1);            CHKERRQ(ierr);
+	ierr = getScalarParam(fb, _REQUIRED_, "surf_level",      &surf->InitLevel,     1,  scal->length); CHKERRQ(ierr);
+	ierr = getIntParam   (fb, _REQUIRED_, "surf_air_phase",  &surf->AirPhase,      1,  maxPhaseID);   CHKERRQ(ierr);
+	ierr = getScalarParam(fb, _OPTIONAL_, "surf_max_angle",  &surf->MaxAngle,      1,  scal->angle);  CHKERRQ(ierr);
+	ierr = getIntParam   (fb, _OPTIONAL_, "erosion_model",   &surf->ErosionModel,  1,  1);            CHKERRQ(ierr);
+	ierr = getIntParam   (fb, _OPTIONAL_, "sediment_model",  &surf->SedimentModel, 1,  1);            CHKERRQ(ierr);
 
 	if(surf->SedimentModel)
 	{
@@ -98,7 +103,7 @@ PetscErrorCode FreeSurfCreate(FreeSurf *surf, FB *fb)
 		ierr = getIntParam   (fb, _REQUIRED_, "sed_num_layers",  &surf->numLayers,  1,                 _max_layers_);      CHKERRQ(ierr);
 		ierr = getScalarParam(fb, _REQUIRED_, "sed_time_delims",  surf->timeDelims, surf->numLayers-1, scal->time);        CHKERRQ(ierr);
 		ierr = getScalarParam(fb, _REQUIRED_, "sed_rates",        surf->sedRates,   surf->numLayers,   scal->strain_rate); CHKERRQ(ierr);
-		ierr = getIntParam   (fb, _REQUIRED_, "sed_phases",       surf->sedPhases,  surf->numLayers,   jr->numPhases-1);   CHKERRQ(ierr);
+		ierr = getIntParam   (fb, _REQUIRED_, "sed_phases",       surf->sedPhases,  surf->numLayers,   maxPhaseID);        CHKERRQ(ierr);
 	}
 
 	// create structures
@@ -113,9 +118,6 @@ PetscErrorCode FreeSurfCreate(FreeSurf *surf, FB *fb)
 
 	// compute & store average topography
 	ierr = FreeSurfGetAvgTopo(surf); CHKERRQ(ierr);
-
-	// store air phase number in residual context
-	jr->AirPhase = surf->AirPhase;
 
 	PetscFunctionReturn(0);
 }
@@ -175,7 +177,6 @@ PetscErrorCode FreeSurfGetAvgTopo(FreeSurf *surf)
 	avg_topo /= (PetscScalar)(fs->dsx.tnods*fs->dsy.tnods*fs->dsz.nproc);
 
 	surf->avg_topo = avg_topo;
-	jr  ->avg_topo = avg_topo;
 
 	PetscFunctionReturn(0);
 }
@@ -278,7 +279,7 @@ PetscErrorCode FreeSurfAdvect(FreeSurf *surf)
 #define __FUNCT__ "FreeSurfGetVelComp"
 PetscErrorCode FreeSurfGetVelComp(
 	FreeSurf *surf,
-	PetscErrorCode (*interp)(FDSTAG *, Vec, Vec, InterpFlags),
+	PetscErrorCode (*interp)(FDSTAG *, Vec, Vec, PetscInt[2]),
 	Vec vcomp_grid, Vec vcomp_surf)
 {
 	// project velocity component from grid faces on the free surface
@@ -289,7 +290,7 @@ PetscErrorCode FreeSurfGetVelComp(
 	JacRes      *jr;
 	FDSTAG      *fs;
 	Discret1D   *dsz;
-	InterpFlags iflag;
+	PetscInt     mode[2];
 	PetscInt    i, j, nx, ny, sx, sy, sz, level, K;
 	PetscScalar ***topo, ***vsurf, ***vgrid, *vpatch, *vmerge, z, w;
 
@@ -306,11 +307,14 @@ PetscErrorCode FreeSurfGetVelComp(
 	ierr = Discret1DGetColumnComm(dsz); CHKERRQ(ierr);
 
 	// set interpolation flags
-	iflag.update    = PETSC_FALSE;
-	iflag.use_bound = PETSC_TRUE;
+//	update    = 0;
+//	use_bound = 1;
+
+	mode[0] = 0; // overwrite vectors
+	mode[1] = 1; // use boundary values
 
 	// interpolate velocity component from grid faces to corners
-	ierr = interp(fs, vcomp_grid, jr->lbcor, iflag); CHKERRQ(ierr);
+	ierr = interp(fs, vcomp_grid, jr->lbcor, mode); CHKERRQ(ierr);
 
 	// load ghost values
 	LOCAL_TO_LOCAL(fs->DA_COR, jr->lbcor)
@@ -733,7 +737,7 @@ PetscErrorCode FreeSurfGetAirPhaseRatio(FreeSurf *surf)
 	AirPhase  = surf->AirPhase;
 	fs        = jr->fs;
 	gtol      = fs->gtol;
-	numPhases = jr->numPhases;
+	numPhases = jr->dbm->numPhases;
 	L         = (PetscInt)fs->dsz.rank;
 	iter      = 0;
 
