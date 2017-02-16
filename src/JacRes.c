@@ -1821,7 +1821,7 @@ PetscErrorCode SetMatParLim(MatParLim *matLim, UserCtx *usr)
 	matLim->quasiHarmAvg = PETSC_FALSE;
 	matLim->cf_eta_min   = 0.0;
 	matLim->n_pw         = 0.0;
-	matLim->MaxSNESIterBeforeApplyPlimit = 25;		
+	matLim->MaxSNESIterBeforeApplyPlimit = 250;		
 
 	matLim->initGuessFlg = PETSC_TRUE;
 	matLim->rho_fluid    = 1040.0;
