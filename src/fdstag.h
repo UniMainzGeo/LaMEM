@@ -62,8 +62,10 @@
 // mesh segments data (temporary structure)
 //---------------------------------------------------------------------------
 
-typedef struct
+class MeshSeg1D
 {
+ public:
+
 	PetscInt    nsegs;                // number of segments
 	PetscInt    istart[MaxNumSegs+1]; // indices of the first nodes plus last index
 	PetscScalar xstart[MaxNumSegs+1]; // coordinates of the first nodes plus total size
@@ -71,7 +73,7 @@ typedef struct
 	PetscInt    tcels;                // total number of cells
 	PetscInt    uniform;              // uniform grid flag
 
-} MeshSeg1D;
+};
 
 //---------------------------------------------------------------------------
 

@@ -50,18 +50,13 @@
 //---------------------------------------------------------------------------
 #undef __FUNCT__
 #define __FUNCT__ "InterpXFaceCorner"
-PetscErrorCode InterpXFaceCorner(FDSTAG *fs, Vec XFace, Vec Corner, PetscInt mode[2])
+PetscErrorCode InterpXFaceCorner(FDSTAG *fs, Vec XFace, Vec Corner, InterpFlags iflag)
 {
-	PetscInt    update, use_bound;
 	PetscInt    i, j, k, nx, ny, nz, sx, sy, sz, my, mz;
 	PetscScalar cf, ***lXFace, ***lCorner, A1, A2, A3, A4, B1, B2, E1, E2;
 
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
-
-	// get mode flags
-	update    = mode[0];
-	use_bound = mode[1];
 
 	// access vectors
 	ierr = DMDAVecGetArray(fs->DA_X,   XFace,  &lXFace);  CHKERRQ(ierr);
@@ -84,7 +79,7 @@ PetscErrorCode InterpXFaceCorner(FDSTAG *fs, Vec XFace, Vec Corner, PetscInt mod
 		A3 = lXFace[k  ][j-1][i];
 		A4 = lXFace[k  ][j  ][i];
 
-		if(!use_bound)
+		if(!iflag.use_bound)
 		{
 			// set ghost values on boundaries if not defined
 			if(j == 0)	{ A1 = A2; A3 = A4; }
@@ -101,8 +96,8 @@ PetscErrorCode InterpXFaceCorner(FDSTAG *fs, Vec XFace, Vec Corner, PetscInt mod
 		cf = A1*B1*B2 + A2*E1*B2 + A3*B1*E2 + A4*E1*E2;
 
 		// store
-		if(!update) lCorner[k][j][i]  = cf;
-		else        lCorner[k][j][i] += cf;
+		if(!iflag.update) lCorner[k][j][i]  = cf;
+		else              lCorner[k][j][i] += cf;
 
 	}
 	END_STD_LOOP
@@ -116,18 +111,13 @@ PetscErrorCode InterpXFaceCorner(FDSTAG *fs, Vec XFace, Vec Corner, PetscInt mod
 //---------------------------------------------------------------------------
 #undef __FUNCT__
 #define __FUNCT__ "InterpYFaceCorner"
-PetscErrorCode InterpYFaceCorner(FDSTAG *fs, Vec YFace, Vec Corner, PetscInt mode[2])
+PetscErrorCode InterpYFaceCorner(FDSTAG *fs, Vec YFace, Vec Corner, InterpFlags iflag)
 {
-	PetscInt    update, use_bound;
 	PetscInt    i, j, k, nx, ny, nz, sx, sy, sz, mx, mz;
 	PetscScalar cf, ***lYFace, ***lCorner, A1, A2, A3, A4, B1, B2, E1, E2;
 
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
-
-	// get mode flags
-	update    = mode[0];
-	use_bound = mode[1];
 
 	// access vectors
 	ierr = DMDAVecGetArray(fs->DA_Y,   YFace,  &lYFace);  CHKERRQ(ierr);
@@ -150,7 +140,7 @@ PetscErrorCode InterpYFaceCorner(FDSTAG *fs, Vec YFace, Vec Corner, PetscInt mod
 		A3 = lYFace[k  ][j][i-1];
 		A4 = lYFace[k  ][j][i  ];
 
-		if(!use_bound)
+		if(!iflag.use_bound)
 		{
 			// set ghost values on boundaries if not defined
 			if(i == 0)	{ A1 = A2; A3 = A4; }
@@ -167,8 +157,8 @@ PetscErrorCode InterpYFaceCorner(FDSTAG *fs, Vec YFace, Vec Corner, PetscInt mod
 		cf = A1*B1*B2 + A2*E1*B2 + A3*B1*E2 + A4*E1*E2;
 
 		// store
-		if(!update) lCorner[k][j][i]  = cf;
-		else        lCorner[k][j][i] += cf;
+		if(!iflag.update) lCorner[k][j][i]  = cf;
+		else              lCorner[k][j][i] += cf;
 
 	}
 	END_STD_LOOP
@@ -182,18 +172,13 @@ PetscErrorCode InterpYFaceCorner(FDSTAG *fs, Vec YFace, Vec Corner, PetscInt mod
 //---------------------------------------------------------------------------
 #undef __FUNCT__
 #define __FUNCT__ "InterpZFaceCorner"
-PetscErrorCode InterpZFaceCorner(FDSTAG *fs, Vec ZFace, Vec Corner, PetscInt mode[2])
+PetscErrorCode InterpZFaceCorner(FDSTAG *fs, Vec ZFace, Vec Corner, InterpFlags iflag)
 {
-	PetscInt    update, use_bound;
 	PetscInt    i, j, k, nx, ny, nz, sx, sy, sz, mx, my;
 	PetscScalar cf, ***lZFace, ***lCorner, A1, A2, A3, A4, B1, B2, E1, E2;
 
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
-
-	// get mode flags
-	update    = mode[0];
-	use_bound = mode[1];
 
 	// access vectors
 	ierr = DMDAVecGetArray(fs->DA_Z,   ZFace,  &lZFace);  CHKERRQ(ierr);
@@ -216,7 +201,7 @@ PetscErrorCode InterpZFaceCorner(FDSTAG *fs, Vec ZFace, Vec Corner, PetscInt mod
 		A3 = lZFace[k][j  ][i-1];
 		A4 = lZFace[k][j  ][i  ];
 
-		if(!use_bound)
+		if(!iflag.use_bound)
 		{
 			// set ghost values on boundaries if not defined
 			if(i == 0)	{ A1 = A2; A3 = A4; }
@@ -233,8 +218,8 @@ PetscErrorCode InterpZFaceCorner(FDSTAG *fs, Vec ZFace, Vec Corner, PetscInt mod
 		cf = A1*B1*B2 + A2*E1*B2 + A3*B1*E2 + A4*E1*E2;
 
 		// store
-		if(!update) lCorner[k][j][i]  = cf;
-		else        lCorner[k][j][i] += cf;
+		if(!iflag.update) lCorner[k][j][i]  = cf;
+		else              lCorner[k][j][i] += cf;
 
 	}
 	END_STD_LOOP
@@ -248,18 +233,13 @@ PetscErrorCode InterpZFaceCorner(FDSTAG *fs, Vec ZFace, Vec Corner, PetscInt mod
 //---------------------------------------------------------------------------
 #undef __FUNCT__
 #define __FUNCT__ "InterpCenterCorner"
-PetscErrorCode InterpCenterCorner(FDSTAG *fs, Vec Center, Vec Corner, PetscInt mode[2])
+PetscErrorCode InterpCenterCorner(FDSTAG *fs, Vec Center, Vec Corner, InterpFlags iflag)
 {
-	PetscInt    update, use_bound;
 	PetscInt    i, j, k, nx, ny, nz, sx, sy, sz, mx, my, mz, I1, I2, J1, J2, K1, K2;
 	PetscScalar cf, ***lCenter, ***lCorner, A1, A2, A3, A4, A5, A6, A7, A8, B1, B2, B3, E1, E2, E3;
 
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
-
-	// get mode flags
-	update    = mode[0];
-	use_bound = mode[1];
 
 	// access vectors
 	ierr = DMDAVecGetArray(fs->DA_CEN, Center, &lCenter); CHKERRQ(ierr);
@@ -285,7 +265,7 @@ PetscErrorCode InterpCenterCorner(FDSTAG *fs, Vec Center, Vec Corner, PetscInt m
 		K1 = k;
 		K2 = k-1;
 
-		if(!use_bound)
+		if(!iflag.use_bound)
 		{
 			// check index bounds if ghost points are undefined
 			if(I1 == mx) I1--;
@@ -316,8 +296,8 @@ PetscErrorCode InterpCenterCorner(FDSTAG *fs, Vec Center, Vec Corner, PetscInt m
 		+    A5*B1*B2*E3 + A6*E1*B2*E3 + A7*B1*E2*E3 + A8*E1*E2*E3;
 
 		// store
-		if(!update) lCorner[k][j][i]  = cf;
-		else        lCorner[k][j][i] += cf;
+		if(!iflag.update) lCorner[k][j][i]  = cf;
+		else              lCorner[k][j][i] += cf;
 
 	}
 	END_STD_LOOP
@@ -331,17 +311,13 @@ PetscErrorCode InterpCenterCorner(FDSTAG *fs, Vec Center, Vec Corner, PetscInt m
 //---------------------------------------------------------------------------
 #undef __FUNCT__
 #define __FUNCT__ "InterpXYEdgeCorner"
-PetscErrorCode InterpXYEdgeCorner(FDSTAG *fs, Vec XYEdge, Vec Corner, PetscInt mode[2])
+PetscErrorCode InterpXYEdgeCorner(FDSTAG *fs, Vec XYEdge, Vec Corner, InterpFlags iflag)
 {
-	PetscInt    update;
 	PetscInt    i, j, k, nx, ny, nz, sx, sy, sz, mz, K1, K2;
 	PetscScalar cf, ***lXYEdge, ***lCorner, A1, A2, B1, E1;
 
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
-
-	// get mode flags
-	update = mode[0];
 
 	// access vectors
 	ierr = DMDAVecGetArray(fs->DA_XY,  XYEdge, &lXYEdge); CHKERRQ(ierr);
@@ -372,8 +348,8 @@ PetscErrorCode InterpXYEdgeCorner(FDSTAG *fs, Vec XYEdge, Vec Corner, PetscInt m
 		cf = A1*B1 + A2*E1;
 
 		// store
-		if(!update) lCorner[k][j][i]  = cf;
-		else        lCorner[k][j][i] += cf;
+		if(!iflag.update) lCorner[k][j][i]  = cf;
+		else              lCorner[k][j][i] += cf;
 
 	}
 	END_STD_LOOP
@@ -388,17 +364,13 @@ PetscErrorCode InterpXYEdgeCorner(FDSTAG *fs, Vec XYEdge, Vec Corner, PetscInt m
 //---------------------------------------------------------------------------
 #undef __FUNCT__
 #define __FUNCT__ "InterpXZEdgeCorner"
-PetscErrorCode InterpXZEdgeCorner(FDSTAG *fs, Vec XZEdge, Vec Corner, PetscInt mode[2])
+PetscErrorCode InterpXZEdgeCorner(FDSTAG *fs, Vec XZEdge, Vec Corner, InterpFlags iflag)
 {
-	PetscInt    update;
 	PetscInt    i, j, k, nx, ny, nz, sx, sy, sz, my, J1, J2;
 	PetscScalar cf, ***lXZEdge, ***lCorner, A1, A2, B1, E1;
 
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
-
-	// get mode flags
-	update = mode[0];
 
 	// access vectors
 	ierr = DMDAVecGetArray(fs->DA_XZ,  XZEdge, &lXZEdge); CHKERRQ(ierr);
@@ -429,8 +401,8 @@ PetscErrorCode InterpXZEdgeCorner(FDSTAG *fs, Vec XZEdge, Vec Corner, PetscInt m
 		cf = A1*B1 + A2*E1;
 
 		// store
-		if(!update) lCorner[k][j][i]  = cf;
-		else        lCorner[k][j][i] += cf;
+		if(!iflag.update) lCorner[k][j][i]  = cf;
+		else              lCorner[k][j][i] += cf;
 
 	}
 	END_STD_LOOP
@@ -445,17 +417,13 @@ PetscErrorCode InterpXZEdgeCorner(FDSTAG *fs, Vec XZEdge, Vec Corner, PetscInt m
 //---------------------------------------------------------------------------
 #undef __FUNCT__
 #define __FUNCT__ "InterpYZEdgeCorner"
-PetscErrorCode InterpYZEdgeCorner(FDSTAG *fs, Vec YZEdge, Vec Corner, PetscInt mode[2])
+PetscErrorCode InterpYZEdgeCorner(FDSTAG *fs, Vec YZEdge, Vec Corner, InterpFlags iflag)
 {
-	PetscInt    update;
 	PetscInt    i, j, k, nx, ny, nz, sx, sy, sz, mx, I1, I2;
 	PetscScalar cf, ***lYZEdge, ***lCorner, A1, A2, B1, E1;
 
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
-
-	// get mode flags
-	update = mode[0];
 
 	// access vectors
 	ierr = DMDAVecGetArray(fs->DA_YZ,  YZEdge, &lYZEdge); CHKERRQ(ierr);
@@ -486,8 +454,8 @@ PetscErrorCode InterpYZEdgeCorner(FDSTAG *fs, Vec YZEdge, Vec Corner, PetscInt m
 		cf = A1*B1 + A2*E1;
 
 		// store
-		if(!update) lCorner[k][j][i]  = cf;
-		else        lCorner[k][j][i] += cf;
+		if(!iflag.update) lCorner[k][j][i]  = cf;
+		else              lCorner[k][j][i] += cf;
 
 	}
 	END_STD_LOOP

@@ -279,7 +279,7 @@ PetscErrorCode FreeSurfAdvect(FreeSurf *surf)
 #define __FUNCT__ "FreeSurfGetVelComp"
 PetscErrorCode FreeSurfGetVelComp(
 	FreeSurf *surf,
-	PetscErrorCode (*interp)(FDSTAG *, Vec, Vec, PetscInt[2]),
+	PetscErrorCode (*interp)(FDSTAG *, Vec, Vec, InterpFlags),
 	Vec vcomp_grid, Vec vcomp_surf)
 {
 	// project velocity component from grid faces on the free surface
@@ -290,7 +290,7 @@ PetscErrorCode FreeSurfGetVelComp(
 	JacRes      *jr;
 	FDSTAG      *fs;
 	Discret1D   *dsz;
-	PetscInt     mode[2];
+	InterpFlags iflags;
 	PetscInt    i, j, nx, ny, sx, sy, sz, level, K;
 	PetscScalar ***topo, ***vsurf, ***vgrid, *vpatch, *vmerge, z, w;
 
@@ -307,14 +307,11 @@ PetscErrorCode FreeSurfGetVelComp(
 	ierr = Discret1DGetColumnComm(dsz); CHKERRQ(ierr);
 
 	// set interpolation flags
-//	update    = 0;
-//	use_bound = 1;
-
-	mode[0] = 0; // overwrite vectors
-	mode[1] = 1; // use boundary values
+	iflags.update    = 0; // overwrite vectors
+	iflags.use_bound = 1; // use boundary values
 
 	// interpolate velocity component from grid faces to corners
-	ierr = interp(fs, vcomp_grid, jr->lbcor, mode); CHKERRQ(ierr);
+	ierr = interp(fs, vcomp_grid, jr->lbcor, iflags); CHKERRQ(ierr);
 
 	// load ghost values
 	LOCAL_TO_LOCAL(fs->DA_COR, jr->lbcor)

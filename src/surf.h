@@ -102,7 +102,7 @@ PetscErrorCode FreeSurfAdvect(FreeSurf *surf);
 // get single velocity component on the free surface
 PetscErrorCode FreeSurfGetVelComp(
 	FreeSurf *surf,
-	PetscErrorCode (*interp)(FDSTAG *, Vec, Vec, PetscInt[2]),
+	PetscErrorCode (*interp)(FDSTAG *, Vec, Vec, InterpFlags),
 	Vec vcomp_grid, Vec vcomp_surf);
 
 // advect/interpolate topography of the free surface

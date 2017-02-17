@@ -100,14 +100,12 @@
 #ifdef GCC_COMPILER
 
 	#pragma GCC diagnostic ignored "-Wconversion"
-	#pragma GCC diagnostic ignored "-Wsign-conversion"
 	#pragma GCC diagnostic ignored "-Wunused-parameter"
 	#pragma GCC diagnostic ignored "-Wcast-qual"
 
 	#include <petsc.h>
 
 	#pragma GCC diagnostic warning "-Wconversion"
-	#pragma GCC diagnostic warning "-Wsign-conversion"
 	#pragma GCC diagnostic warning "-Wunused-parameter"
 	#pragma GCC diagnostic warning "-Wcast-qual"
 
