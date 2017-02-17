@@ -47,7 +47,13 @@
 #define __cvi_h__
 //-----------------------------------------------------------------------------
 
-typedef struct
+struct FDSTAG;
+struct JacRes;
+struct AdvCtx;
+
+//-----------------------------------------------------------------------------
+
+struct VelInterp
 {
 	PetscScalar      x0[3];    // initial position
 	PetscScalar      x[3];     // position to interpolate
@@ -55,10 +61,10 @@ typedef struct
 	PetscScalar      v_eff[3]; // effective velocity
 	PetscInt         ind;      // global index of markers
 
-} VelInterp;
+} ;
 
 //-----------------------------------------------------------------------------
-typedef struct
+struct AdvVelCtx
 {
 
 	VelInterp        *interp;
@@ -94,7 +100,7 @@ typedef struct
 	PetscInt         ndel;
 	PetscInt         *idel;
 
-} AdvVelCtx;
+};
 
 //-----------------------------------------------------------------------------
 // main routines

@@ -44,13 +44,11 @@
 //---------------------------------------------------------------------------
 
 #include "LaMEM.h"
-#include "parsing.h"
-#include "scaling.h"
-#include "tssolve.h"
-#include "fdstag.h"
-#include "bc.h"
-#include "JacRes.h"
 #include "matFree.h"
+#include "fdstag.h"
+#include "JacRes.h"
+#include "tssolve.h"
+
 //---------------------------------------------------------------------------
 #undef __FUNCT__
 #define __FUNCT__ "JacApplyPicard"

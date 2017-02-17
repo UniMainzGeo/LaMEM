@@ -44,14 +44,11 @@
 //..................   GALERKIN GEOMETRIC MULTIGRID   .......................
 //---------------------------------------------------------------------------
 #include "LaMEM.h"
-#include "parsing.h"
-#include "scaling.h"
-#include "tssolve.h"
 #include "fdstag.h"
-#include "bc.h"
-#include "JacRes.h"
-#include "matrix.h"
 #include "multigrid.h"
+#include "matrix.h"
+#include "JacRes.h"
+#include "bc.h"
 #include "tools.h"
 //---------------------------------------------------------------------------
 // * remove hierarchy of grids & bc-objects (use info from fine level)

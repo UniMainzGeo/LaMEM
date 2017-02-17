@@ -62,19 +62,13 @@
  */
 //---------------------------------------------------------------------------
 #include "LaMEM.h"
+#include "paraViewOutAVD.h"
+#include "paraViewOutBin.h"
 #include "parsing.h"
 #include "scaling.h"
-#include "tssolve.h"
 #include "fdstag.h"
-#include "phase.h"
-#include "bc.h"
-#include "JacRes.h"
-#include "interpolate.h"
-#include "surf.h"
-#include "Tensor.h"
 #include "advect.h"
-#include "paraViewOutBin.h"
-#include "paraViewOutAVD.h"
+#include "JacRes.h"
 #include "tools.h"
 //---------------------------------------------------------------------------
 #define __AVD_DEBUG_MODE

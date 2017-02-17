@@ -49,19 +49,14 @@
 
 
 #include "LaMEM.h"
-#include "parsing.h"
-#include "scaling.h"
-#include "tssolve.h"
-#include "fdstag.h"
-#include "bc.h"
-#include "JacRes.h"
-#include "interpolate.h"
-#include "surf.h"
-#include "Tensor.h"
-#include "advect.h"
 #include "cvi.h"
+#include "JacRes.h"
+#include "fdstag.h"
+#include "advect.h"
+#include "surf.h"
+#include "bc.h"
+#include "tssolve.h"
 #include "tools.h"
-#include "phase.h"
 
 //---------------------------------------------------------------------------
 #undef __FUNCT__

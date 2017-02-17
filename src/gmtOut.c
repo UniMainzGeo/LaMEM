@@ -44,10 +44,9 @@
 //......................   FDSTAG GMT OUTPUT ROUTINES   .....................
 //---------------------------------------------------------------------------
 #include "LaMEM.h"
-#include "parsing.h"
-#include "scaling.h"
-#include "fdstag.h"
 #include "gmtOut.h"
+
+
 //---------------------------------------------------------------------------
 // * comments go into here
 // * ...

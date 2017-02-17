@@ -45,6 +45,15 @@
 #ifndef __JacRes_h__
 #define __JacRes_h__
 
+struct FB;
+struct Scaling;
+struct TSSol;
+struct FDSTAG;
+struct FreeSurf;
+struct BCCtx;
+struct DBMat;
+struct Tensor2RN;
+
 //---------------------------------------------------------------------------
 //.....................   Deviatoric solution variables   ...................
 //---------------------------------------------------------------------------
@@ -116,14 +125,14 @@ struct SolVarEdge
 //---------------------------------------------------------------------------
 
 // Ground water level type
-typedef enum
+enum GWLevelType
 {
 	_GW_NONE_,   // don't compute pore pressure
 	_GW_TOP_,    // top of the domain
 	_GW_SURF_,   // free surface
 	_GW_LEVEL_   // fixed level
 
-} GWLevelType;
+};
 
 struct Controls
 {

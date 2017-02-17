@@ -48,11 +48,18 @@
 //---------------------------------------------------------------------------
 // FDSTAG near null space size
 #define _max_nullsp_sz_ 4
+
+//---------------------------------------------------------------------------
+
+struct BCCtx;
+struct FDSTAG;
+struct JacRes;
+
 //---------------------------------------------------------------------------
 
 // Galerkin multigrid level data structure
 
-typedef struct
+struct MGLevel
 {
 	// Constrained DOF stores parent DOF index in the boundary condition vector.
 	// Parent DOF index is the only nonzero that is set in the row of R-matrix
@@ -74,7 +81,7 @@ typedef struct
 	//     v                   |
 	// ******** this level ************
 
-} MGLevel;
+} ;
 
 //---------------------------------------------------------------------------
 
@@ -112,7 +119,7 @@ void getRowProlong(PetscBool scale,
 
 //---------------------------------------------------------------------------
 
-typedef struct
+struct MG
 {
 	// PETSc level numbering (inverse w.r.t. coarsening sequence):
 	// 0   - coarse grid
@@ -137,7 +144,7 @@ typedef struct
 	Vec          crs_vecs[_max_nullsp_sz_]; // near nullspace vectors
 	MatNullSpace crs_nullsp;                // coarse grid near null space
 
-} MG;
+};
 
 //---------------------------------------------------------------------------
 

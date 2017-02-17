@@ -44,12 +44,15 @@
 //---------------------------------------------------------------------------
 #ifndef __gravity_h__
 #define __gravity_h__
-
-/*
-
  //-----------------------------------------------------------------------------
+
+struct FDSTAG;
+struct JacRes;
+
+//-----------------------------------------------------------------------------
+/*
 // Structure that holds gravity parameters - not yet used
-typedef struct
+struct gravityParams
 {
 	PetscInt     GetIt;
 	PetscInt     SaveDebug,SaveVTK,SaveRef;
@@ -63,13 +66,13 @@ typedef struct
 	PetscScalar  LithColDens[9],LithColDepth[8];
 	PetscInt     num_intp,LithColNum;
 	char         RefDatFile2load[MAX_PATH_LEN];
-} gravityParams;
+};
 
  */
 
 //---------------------------------------------------------------------------
 // survey context
-typedef struct
+struct GravitySurvey
 {
 	PetscInt     i,j,nx,ny;
 	PetscInt     xs,xm,ys,ym;
@@ -79,7 +82,7 @@ typedef struct
 	PetscScalar *coord,*dg;
 	PetscMPIInt  rank;
 
-} GravitySurvey;
+};
 
 PetscErrorCode GRVSurveyCreate(GravitySurvey *survey);
 

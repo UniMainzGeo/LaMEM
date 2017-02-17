@@ -44,13 +44,11 @@
 //.................   FDSTAG PARAVIEW XML OUTPUT ROUTINES   .................
 //---------------------------------------------------------------------------
 #include "LaMEM.h"
-#include "parsing.h"
-#include "scaling.h"
-#include "fdstag.h"
-#include "tssolve.h"
-#include "bc.h"
-#include "JacRes.h"
 #include "paraViewOutBin.h"
+#include "scaling.h"
+#include "parsing.h"
+#include "fdstag.h"
+#include "JacRes.h"
 #include "outFunct.h"
 #include "tools.h"
 //---------------------------------------------------------------------------

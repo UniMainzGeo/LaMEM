@@ -43,28 +43,14 @@
 //........................   MARKER ROUTINES   ..............................
 //---------------------------------------------------------------------------
 #include "LaMEM.h"
-#include "parsing.h"
-#include "scaling.h"
-#include "tssolve.h"
-#include "tools.h"
-#include "fdstag.h"
-#include "bc.h"
-#include "JacRes.h"
-#include "interpolate.h"
-#include "surf.h"
-#include "multigrid.h"
-#include "matrix.h"
-#include "lsolve.h"
-#include "nlsolve.h"
-#include "Tensor.h"
-#include "advect.h"
 #include "marker.h"
-#include "paraViewOutBin.h"
-#include "paraViewOutSurf.h"
-#include "paraViewOutMark.h"
-#include "paraViewOutAVD.h"
+#include "parsing.h"
+#include "advect.h"
+#include "fdstag.h"
+#include "scaling.h"
+#include "JacRes.h"
 #include "phase.h"
-
+#include "tools.h"
 
 /*
 #START_DOC#

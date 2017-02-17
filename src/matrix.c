@@ -43,14 +43,13 @@
 //.....................   PRECONDITIONING MATRICES   ........................
 //---------------------------------------------------------------------------
 #include "LaMEM.h"
-#include "parsing.h"
-#include "scaling.h"
+#include "matrix.h"
 #include "tssolve.h"
 #include "fdstag.h"
 #include "bc.h"
 #include "JacRes.h"
-#include "matrix.h"
 #include "tools.h"
+
 //---------------------------------------------------------------------------
 // * pressure Schur complement preconditioners
 // * matrix-free preconditioner action

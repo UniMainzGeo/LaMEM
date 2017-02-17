@@ -43,17 +43,13 @@
 //......................   TEMPERATURE FUNCTIONS   ..........................
 //---------------------------------------------------------------------------
 #include "LaMEM.h"
+#include "JacRes.h"
 #include "phase.h"
-#include "parsing.h"
-
 #include "scaling.h"
 #include "fdstag.h"
 #include "tssolve.h"
 #include "bc.h"
-#include "JacRes.h"
 #include "matrix.h"
-#include "constEq.h"
-#include "tools.h"
 #include "surf.h"
 
 //---------------------------------------------------------------------------

@@ -51,6 +51,13 @@
 
 //---------------------------------------------------------------------------
 
+struct FB;
+struct InterpFlags;
+struct FDSTAG;
+struct JacRes;
+
+//---------------------------------------------------------------------------
+
 // free surface grid
 
 struct FreeSurf
@@ -102,7 +109,7 @@ PetscErrorCode FreeSurfAdvect(FreeSurf *surf);
 // get single velocity component on the free surface
 PetscErrorCode FreeSurfGetVelComp(
 	FreeSurf *surf,
-	PetscErrorCode (*interp)(FDSTAG *, Vec, Vec, InterpFlags),
+	PetscErrorCode (*interp) (FDSTAG *, Vec, Vec, InterpFlags),
 	Vec vcomp_grid, Vec vcomp_surf);
 
 // advect/interpolate topography of the free surface

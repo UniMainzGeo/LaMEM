@@ -44,6 +44,7 @@
 //...................   MATERIAL ADVECTION ROUTINES   .......................
 //---------------------------------------------------------------------------
 #include "LaMEM.h"
+#include "advect.h"
 #include "phase.h"
 #include "parsing.h"
 #include "scaling.h"
@@ -51,11 +52,7 @@
 #include "fdstag.h"
 #include "bc.h"
 #include "JacRes.h"
-#include "interpolate.h"
 #include "surf.h"
-#include "Tensor.h"
-#include "advect.h"
-#include "constEq.h"
 #include "marker.h"
 #include "AVD.h"
 #include "cvi.h"

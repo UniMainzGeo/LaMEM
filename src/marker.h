@@ -50,6 +50,12 @@
 
 //---------------------------------------------------------------------------
 
+struct FB;
+struct AdvCtx;
+struct Marker;
+
+//---------------------------------------------------------------------------
+
 // input polygon data
 typedef struct
 {
@@ -70,7 +76,7 @@ typedef struct
 
 //---------------------------------------------------------------------------
 
-// geometric primitives
+// geometric primitives (REDO THIS WITH CLASS)
 
 typedef struct GeomPrim GeomPrim;
 

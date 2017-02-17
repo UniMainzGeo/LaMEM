@@ -62,8 +62,13 @@
 // space dimension
 #define SPDIM 3
 
+// number of neighbor domains in 3D lattice (including self)
+#define _num_neighb_ 27
+
 // cast macros
 #define LLD long long int
+
+#define _STR_LEN_ 130 // (two null characters are reserved in the end, i.e. 128)
 
 // use this to enable asprintf
 #ifndef _GNU_SOURCE
@@ -137,9 +142,6 @@ PetscErrorCode LaMEMLibMain(void *param);
 #ifdef __cplusplus
 }
 #endif
-
-#include "types.h"
-
 
 //-----------------------------------------------------------------------------
 #endif

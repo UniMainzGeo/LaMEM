@@ -46,8 +46,6 @@
 #ifndef __fdstag_h__
 #define __fdstag_h__
 //---------------------------------------------------------------------------
-// number of neighbour processors
-#define _num_neighb_ 27
 
 // maximum number of mesh segments in every direction
 #define MaxNumSegs 10
@@ -59,10 +57,15 @@
 #define MaxNumProcs 1024
 
 //---------------------------------------------------------------------------
+
+struct FB;
+struct Scaling;
+
+//---------------------------------------------------------------------------
 // mesh segments data (temporary structure)
 //---------------------------------------------------------------------------
 
-class MeshSeg1D
+struct MeshSeg1D
 {
  public:
 
@@ -95,7 +98,7 @@ PetscErrorCode MeshSeg1DGenCoord(
 
 //---------------------------------------------------------------------------
 // finite difference discretization / domain decomposition data for single direction
-typedef struct
+struct Discret1D
 {
 	PetscInt      nproc;   // number of processors
 	PetscMPIInt   rank;    // rank of current processor
@@ -126,7 +129,7 @@ typedef struct
 	PetscScalar   crdbeg;  // coordinate bound (begin)
 	PetscScalar   crdend;  // coordinate bound (end)
 
-} Discret1D;
+};
 
 //---------------------------------------------------------------------------
 // Discret1D functions
@@ -172,10 +175,10 @@ PetscErrorCode Discret1DCheckMG(Discret1D *ds, const char *dir, PetscInt *_ncors
 
 //---------------------------------------------------------------------------
 
-typedef enum { IDXNONE, IDXCOUPLED, IDXUNCOUPLED } idxtype;
+enum idxtype { IDXNONE, IDXCOUPLED, IDXUNCOUPLED };
 
 // global indexing of the DOF
-typedef struct
+struct DOFIndex
 {
 	//=====================================================================
 	//
@@ -192,7 +195,7 @@ typedef struct
 	PetscInt stv, stp, st;      // starting indices (stv & stp - decoupled layout)
 	Vec      ivx, ivy, ivz, ip; // index vectors (ghosted)
 
-} DOFIndex;
+};
 
 //---------------------------------------------------------------------------
 // DOFIndex functions

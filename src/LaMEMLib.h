@@ -46,7 +46,7 @@
 #define __LaMEMLib_h__
 //---------------------------------------------------------------------------
 
-typedef enum
+enum RunMode
 {
 	//==================
 	// simulation modes
@@ -57,11 +57,11 @@ typedef enum
 	_DRY_RUN_,   // initialize model, output & stop
 	_SAVE_GRID_  // write parallel grid to a file & stop
 
-} RunMode;
+};
 
 //---------------------------------------------------------------------------
 
-typedef struct
+struct LaMEMLib
 {
 	Scaling  scal;   // scaling
 	TSSol    ts;     // time-stepping controls
@@ -75,7 +75,7 @@ typedef struct
 	PVMark   pvmark; // paraview output driver for markers
 	PVAVD    pvavd;  // paraview output driver for AVD
 
-} LaMEMLib;
+};
 
 //---------------------------------------------------------------------------
 // LAMEM LIBRARY FUNCTIONS

@@ -44,11 +44,9 @@
 //..... LOCAL LEVEL INTEGRATION ALGORITHMS FOR CONSTITUTIVE EQUATIONS  ......
 //---------------------------------------------------------------------------
 #include "LaMEM.h"
+#include "constEq.h"
 #include "phase.h"
 #include "JacRes.h"
-#include "constEq.h"
-#include "tools.h"
-
 //---------------------------------------------------------------------------
 #undef __FUNCT__
 #define __FUNCT__ "ConstEqCtxSetup"

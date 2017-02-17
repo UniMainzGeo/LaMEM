@@ -44,18 +44,16 @@
 //.............................. FREE SURFACE ...............................
 //---------------------------------------------------------------------------
 #include "LaMEM.h"
+#include "surf.h"
 #include "parsing.h"
 #include "scaling.h"
 #include "tssolve.h"
 #include "fdstag.h"
 #include "bc.h"
+#include "phase.h"
 #include "JacRes.h"
 #include "interpolate.h"
-#include "surf.h"
-//#include "advect.h"
 #include "tools.h"
-#include "phase.h"
-
 //---------------------------------------------------------------------------
 // * stair-case type of free surface
 // ...

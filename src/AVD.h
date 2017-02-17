@@ -47,10 +47,15 @@
 #define __AVD_h__
 //---------------------------------------------------------------------------
 
+struct Marker;
+struct AdvCtx;
+
+//---------------------------------------------------------------------------
+
 #define AVD_CELL_MASK      -2
 #define AVD_CELL_UNCLAIMED -1
 
-typedef struct
+struct AVDCell
 {
 	PetscInt    ind;                       // single cell index
 	PetscInt    i,j,k;                     // i,j,k  cell index
@@ -59,9 +64,9 @@ typedef struct
 	PetscBool   done;                      // flag
 	PetscInt    col;                       // colour for half-centroid
 
-} AVDCell;
+} ;
 
-typedef struct
+struct AVDChain
 {
 	PetscInt    p;                         // marker index
 	PetscInt    ind;                       // index
@@ -78,9 +83,9 @@ typedef struct
 	PetscScalar xh[3];                     // half-axis of the centroid
 	PetscInt    axis;                      // dominant axis of centroid cell
 
-} AVDChain;
+};
 
-typedef struct
+struct AVD
 {
 	PetscInt    mmin, mmax;                // limit number of markers
 	PetscScalar xs[3],xe[3];               // coordinate limits of the Voronoi diagram
@@ -92,9 +97,9 @@ typedef struct
 	Marker      *points;                   // points that we want to compute voronoi diagram (size of npoints)
 	PetscInt    npoints;                   // no. markers
 
-} AVD;
+} ;
 
-typedef struct
+struct MarkerVolume
 {
 	PetscInt    *cellnum;                  // host cells local number for each marker
 	PetscInt    *markind;                  // id (position) of markers clustered for every cell
@@ -103,16 +108,16 @@ typedef struct
 	PetscScalar *xcoord, *ycoord, *zcoord; // coordinate arrays
 	PetscInt     M, N, P;                  // number of cells in each direction
 
-} MarkerVolume;
+} ;
 
-typedef enum
+enum VolumeCase
 {
 	_CELL_, // center cell
 	_XYED_, // xy-edge
 	_XZED_, // xz-edge
 	_YZED_  // yz-edge
 
-} VolumeCase;
+};
 
 //---------------------------------------------------------------------------
 

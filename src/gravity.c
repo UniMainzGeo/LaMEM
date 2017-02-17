@@ -43,14 +43,8 @@
 //.........................   GRAVITY FIELD    ..............................
 //---------------------------------------------------------------------------
 #include "LaMEM.h"
-#include "parsing.h"
-#include "scaling.h"
-#include "tssolve.h"
-#include "fdstag.h"
-#include "bc.h"
-#include "JacRes.h"
-#include "tools.h"
 #include "gravity.h"
+
 //---------------------------------------------------------------------------
 #undef __FUNCT__
 #define __FUNCT__ "GRVSurveyCreate"

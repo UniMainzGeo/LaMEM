@@ -43,9 +43,9 @@
 //........   PARALLEL STAGGERED GRID USING PETSC DISTRIBUTED ARRAYS  ........
 //---------------------------------------------------------------------------
 #include "LaMEM.h"
+#include "fdstag.h"
 #include "parsing.h"
 #include "scaling.h"
-#include "fdstag.h"
 #include "tools.h"
 
 //---------------------------------------------------------------------------

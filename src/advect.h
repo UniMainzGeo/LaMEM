@@ -47,9 +47,19 @@
 #define __advect_h__
 //---------------------------------------------------------------------------
 
+#include "Tensor.h" // required for Marker declaration
+
+//---------------------------------------------------------------------------
+
 #define _cap_overhead_ 1.3
 #define _max_nmark_ 5
 #define _min_nmark_ 5
+
+struct FB;
+struct FDSTAG;
+struct JacRes;
+struct FreeSurf;
+struct DBMat;
 
 //---------------------------------------------------------------------------
 //............   Material marker (history variables advection)   ............
@@ -69,18 +79,18 @@ struct Marker
 //---------------------------------------------------------------------------
 
 // marker initialization type enumeration
-typedef enum
+enum SetupType
 {
 	_GEOM_,    // read geometric primitives from input file
 	_FILES_,   // read coordinates, phase and temperature from files in parallel
 	_POLYGONS_ // read polygons from file redundantly
 
-} SetupType;
+};
 
 //---------------------------------------------------------------------------
 
 // marker-to-edge / edge-to-marker interpolation cases
-typedef enum
+enum InterpCase
 {
 	_PHASE_,     // phase ratio
 	_STRESS_,    // deviatoric stress
@@ -88,34 +98,34 @@ typedef enum
 	_VORTICITY_, // vorticity pseudo-vector components
 	_DISP_       // displacement
 
-} InterpCase;
+};
 
 //-----------------------------------------------------------------------------
 
-typedef enum
+enum AdvectionType
 {
 	EULER,          // euler explicit in time
 	RUNGE_KUTTA_2,  // runge-kutta 2nd order in space
 
-} AdvectionType;
+};
 
 //-----------------------------------------------------------------------------
 
-typedef enum
+enum VelInterpType
 {
 	STAG,      // trilinear interp from fdstag points
 	MINMOD,    // minmod interp to nodes, trilinear interp to markers + correction
 	STAG_P     // empirical approach (T. Gerya)
 
-} VelInterpType;
+};
 
 //---------------------------------------------------------------------------
 
-typedef struct
+struct NumCorner
 {
 	PetscInt s[8]; // 8 corners
 
-} NumCorner;
+};
 
 //---------------------------------------------------------------------------
 

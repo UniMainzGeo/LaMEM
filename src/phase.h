@@ -53,11 +53,18 @@
 #define max_num_soft   10
 
 //---------------------------------------------------------------------------
+
+struct Scaling;
+struct FB;
+
+//---------------------------------------------------------------------------
 //.......................   Softening Law Parameters  .......................
 //---------------------------------------------------------------------------
 
 struct Soft_t
 {
+public:
+
 	PetscInt    ID;   // softening law ID
 	PetscScalar APS1; // begin of softening APS
 	PetscScalar APS2; // end of softening APS
@@ -71,6 +78,8 @@ struct Soft_t
 
 struct Material_t
 {
+public:
+
 	PetscInt     ID;      // material ID
 	// density parameters
 	PetscScalar  rho;     // reference density                          [kg/m^3]
@@ -108,13 +117,14 @@ struct Material_t
 	PetscScalar  Cp;      // cpecific heat (capacity)                   [J/kg/K]
 	PetscScalar  k;       // thermal conductivity                       [W/m/k]
 	PetscScalar  A;       // radiogenic heat production                 [W/kg]
-
 };
 
 //---------------------------------------------------------------------------
 
 struct DBMat
 {
+public:
+
 	Scaling *scal;
 
 	// phase parameters
@@ -140,13 +150,13 @@ void MatPrintScalParam(PetscScalar par, const char key[], const char label[], Sc
 //---------------------------------------------------------------------------
 //............ PREDEFINED RHEOLOGICAL PROFILES (from literature) ............
 //---------------------------------------------------------------------------
-typedef enum
+enum TensorCorrection
 {
 	_UniAxial_,      // Uni-axial experiment
 	_SimpleShear_,   // Simple shear experiment
 	_None_           // geological-scale units
 
-} TensorCorrection;
+};
 
 // read profile name from file
 PetscErrorCode GetProfileName(FB *fb, Scaling *scal, char name[], const char key[]);

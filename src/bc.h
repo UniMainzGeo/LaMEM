@@ -53,19 +53,27 @@
 #define _max_poly_points_ 50
 
 //---------------------------------------------------------------------------
+
+struct FB;
+struct Scaling;
+struct TSSol;
+struct FDSTAG;
+struct Marker;
+
+//---------------------------------------------------------------------------
 // index shift type
-typedef enum
+enum ShiftType
 {
 	_LOCAL_TO_GLOBAL_,
 	_GLOBAL_TO_LOCAL_
 
-} ShiftType;
+};
 
 //---------------------------------------------------------------------------
 // Bezier block (rotating polygon moving along Bezier curve)
 //---------------------------------------------------------------------------
 
-typedef struct
+struct BCBlock
 {
 	// path description
 	PetscInt    npath;                        // number of path points of Bezier curve
@@ -82,7 +90,7 @@ typedef struct
 	// Top of the box can be assumed to be the free surface
 	// sticky air nodes should never be constrained (this is easy to check)
 
-} BCBlock;
+};
 
 //---------------------------------------------------------------------------
 
@@ -99,13 +107,13 @@ PetscErrorCode BCBlockGetPolygon(BCBlock *bcb, PetscScalar Xb[], PetscScalar *cp
 // Dropping boxes (rectangular boxes moving with constant vertical velocity)
 //---------------------------------------------------------------------------
 
-typedef struct
+struct DBox
 {
 	PetscInt    num;                   // number of boxes
 	PetscScalar bounds[6*_max_boxes_]; // box bounds
 	PetscScalar zvel;                  // vertical velocity
 
-} DBox;
+} ;
 
 //---------------------------------------------------------------------------
 

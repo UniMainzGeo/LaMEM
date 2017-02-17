@@ -44,19 +44,13 @@
 //.....................   NONLINEAR SOLVER ROUTINES   .......................
 //---------------------------------------------------------------------------
 #include "LaMEM.h"
-#include "parsing.h"
-#include "scaling.h"
-#include "tssolve.h"
-#include "fdstag.h"
-#include "bc.h"
-#include "JacRes.h"
-#include "matFree.h"
-#include "multigrid.h"
 #include "matrix.h"
+#include "fdstag.h"
+#include "multigrid.h"
 #include "lsolve.h"
 #include "nlsolve.h"
-#include "tools.h"
-
+#include "JacRes.h"
+#include "matFree.h"
 //---------------------------------------------------------------------------
 // * add bound checking for iterative solution vector in SNES
 // * automatically set -snes_type ksponly (for linear problems)
@@ -89,7 +83,7 @@ PetscErrorCode NLSolCreate(NLSol *nl, PCStokes pc, SNES *p_snes)
 	SNESLineSearch  ls;
 	JacRes         *jr;
 	DOFIndex       *dof;
-	PetscBool       flg, useCustomTest=PETSC_FALSE,custom_ksp_monitor=PETSC_FALSE;
+	PetscBool       flg;
 
     PetscErrorCode ierr;
     PetscFunctionBegin;
@@ -133,47 +127,6 @@ PetscErrorCode NLSolCreate(NLSol *nl, PCStokes pc, SNES *p_snes)
 	ierr = KSPSetFromOptions(ksp);         CHKERRQ(ierr);
 	ierr = KSPGetPC(ksp, &ipc);            CHKERRQ(ierr);
 	ierr = PCSetType(ipc, PCMAT);          CHKERRQ(ierr);
-
-	// activate custom test for linear iterations?
-	ierr = PetscOptionsGetBool(NULL, NULL,"-js_use_custom_test",&useCustomTest,&flg); CHKERRQ(ierr);
-
-	if(useCustomTest)
-	{
-		PetscPrintf(PETSC_COMM_WORLD,"Using custom test function for residuals\n");
-		nl->wsCtx.epsfrac    = 0.005; // set default to 1 percent
-		nl->wsCtx.eps        = 0.0;
-		nl->wsCtx.rnorm_init = 0.0;
-		nl->wsCtx.winwidth   = 20;
-
-		ierr = PetscOptionsGetInt (NULL, NULL,"-js_ksp_difftol_winwidth",&nl->wsCtx.winwidth,NULL ); CHKERRQ(ierr);
-		ierr = PetscOptionsGetReal(NULL, NULL,"-js_ksp_difftol_eps"    ,&nl->wsCtx.epsfrac,NULL ); CHKERRQ(ierr);
-		ierr = PetscOptionsGetBool(NULL, NULL, "-js_custom_ksp_monitor", &custom_ksp_monitor, &flg ); CHKERRQ(ierr);
-		
-		if ( (nl->wsCtx.winwidth < 1) | (nl->wsCtx.winwidth > _max_win_size_))
-		{
-			SETERRQ1(PETSC_COMM_SELF, PETSC_ERR_USER, "js_ksp_difftol_winwidth should be between to be between 1 and %lld\n",(LLD) _max_win_size_);
-		}
-		if ( (nl->wsCtx.epsfrac < 0.0) | (nl->wsCtx.epsfrac > 1.0) ) 
-		{
-			SETERRQ(PETSC_COMM_SELF, PETSC_ERR_USER, "js_ksp_difftol_eps should be chosen to be between 0 and 1\n");
-		}
-		
-		// set residual monitors
-		if(custom_ksp_monitor)
-		{
-			ierr = KSPMonitorSet(ksp, &KSPWinStopMonitor,&nl->wsCtx, NULL); CHKERRQ(ierr);
-		}
-/*
-		ierr = PetscPrintf( PETSC_COMM_WORLD, "Stopping conditions: \n");
-		PetscPrintf( PETSC_COMM_WORLD, "rtol : %14.12e\n",(double)ctx->rtol);
-		PetscPrintf( PETSC_COMM_WORLD, "atol : %14.12e\n",(double)ctx->atol);
-		PetscPrintf( PETSC_COMM_WORLD, "maxit: %D\n",ctx->maxits);
-		PetscPrintf( PETSC_COMM_WORLD, "difftol_eps: %14.12e\n",nl->wsCtx.epsfrac);
-		PetscPrintf( PETSC_COMM_WORLD, "difftol_winwidth: %D\n",nl->wsCtx.winwidth);
-*/
-//		ierr = KSPStopCondConfig(ksp, &nl->wsCtx); CHKERRQ(ierr);
-//		ierr = KSPSetConvergenceTest(ksp, &KSPWinStopTest, &nl->wsCtx, NULL);CHKERRQ(ierr);
-	}
 
 	ierr = SNESSetConvergenceTest(snes, &SNESCoupledTest, nl, NULL); CHKERRQ(ierr);
 
@@ -749,149 +702,4 @@ PetscErrorCode PostCheck(SNESLineSearch,Vec,Vec,Vec,PetscBool*,PetscBool*,void*)
 
 	//====================================================================
 */
-//---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "KSPWinStopTest"
-PetscErrorCode KSPWinStopTest(KSP ksp, PetscInt thisit, PetscScalar thisnorm, KSPConvergedReason *reason, void *mctx)
-{
-	PetscInt          i=0, inow=0, maxits;
-	PetscScalar       rtol, abstol, dtol, ttol;
-	WinStopCtx       *winstop = (WinStopCtx*) mctx;
-	PetscBool         winnorm =  PETSC_FALSE;
-
-	PetscErrorCode ierr;
-	PetscFunctionBegin;
-
-	// initialise converged reason
-	*reason = KSP_CONVERGED_ITERATING;
-
-	// only evaluate the norm in the second iteration
-	if(!thisit)
-	{
-		return(0);
-	}
-
-	// get tolerances
-	ierr = KSPGetTolerances(ksp, &rtol, &abstol, &dtol, &maxits); CHKERRQ(ierr);
-
-	// store current and last norm
-	i = thisit % 2;
-	winstop->rnorms[i] = thisnorm;
-
-	// set initial norm (mean of frist and second residual) and epsilon
-	if(thisit == 1)
-	{
-		winstop->rnorm_init = 0.5 * (winstop->rnorms[0] + winstop->rnorms[1]);
-		winstop->eps        = winstop->epsfrac * winstop->rnorm_init;
-		// Maybe, epsilon should be independent of the initial residual and a rather small number of the order 1e-4
-		// winstop->eps        = winstop->epsfrac;
-	}
-
-	// compute the total tolerance
-	ttol = PetscMax(rtol * winstop->rnorm_init, abstol);
-
-	// compute residual difference and store it in the running window
-	inow = thisit % (winstop->winwidth-1);
-	if(inow == 0) inow = winstop->winwidth-1;
-	else          inow = inow-1;
-	winstop->rnormdiffs[inow] = PetscAbsScalar(winstop->rnorms[1]- winstop->rnorms[0]);
-
-	// compute the criterion as soon as we have enough iterations
-	if(thisit >= winstop->winwidth)
-	{
-		// winstop->diffnorm = getStdv(winstop->rnormdiffs, winstop->winwidth-1);
-		winstop->diffnorm = getVar(winstop->rnormdiffs, winstop->winwidth-1);
-		winnorm  = PETSC_TRUE;
-	}
-	else
-	{
-		winstop->diffnorm = 0.0;
-		winnorm  = PETSC_FALSE;
-	}
-
-	//====================
-	// --- Check norms ---
-	//====================
-
-	// problems?
-	if(PetscIsInfOrNanScalar(thisnorm))
-	{
-		PetscInfo(ksp,"Linear solver has created a not a number (NaN) as the residual norm, declaring divergence \n");
-		*reason = KSP_DIVERGED_NANORINF;
-	}
-	else if(thisnorm <= ttol) // ttol
-	{
-		if(thisnorm < abstol) // atol
-		{
-			PetscInfo3(ksp,"Linear solver has converged. Residual norm %14.12e is less than absolute tolerance %14.12e at iteration %D\n",
-				thisnorm, abstol, thisit);
-			*reason = KSP_CONVERGED_ATOL;
-		}
-		else // rtol
-		{
-			if(winstop->rnorm_init)
-			{
-				PetscInfo4(ksp,"Linear solver has converged. Residual norm %14.12e is less than relative tolerance %14.12e times initial residual norm %14.12e at iteration %D\n",
-					thisnorm, rtol, winstop->rnorm_init, thisit);
-			}
-			else
-			{
-				PetscInfo4(ksp,"Linear solver has converged. Residual norm %14.12e is less than relative tolerance %14.12e times initial right hand side norm %14.12e at iteration %D\n",
-					thisnorm, rtol, winstop->rnorm_init, thisit);
-			}
-			*reason = KSP_CONVERGED_RTOL;
-		}
-	}
-	else if(winnorm == PETSC_TRUE && (winstop->diffnorm < winstop->eps)) // difftol
-	{
-		PetscInfo4(ksp,"Linear solver has converged. The standard deviation of the residual differences within the running window %14.12e is less than %g % of the initial right hand side norm %14.12e at iteration %D\n",
-				(double)winstop->diffnorm, (double)winstop->eps, (double)winstop->rnorm_init, thisit);
-		*reason = KSP_CONVERGED_ITS;
-	}
-	else if(thisit == maxits+1) // maxits
-	{
-		PetscInfo2(ksp,"Linear solver has converged. The maximum number of iterations %D has been reached at iteration %D\n",
-			maxits, thisit);
-		*reason = KSP_CONVERGED_ITS;
-	}
-	else if(thisnorm >= (dtol * winstop->rnorm_init)) // divergence
-	{
-		PetscInfo3(ksp,"Linear solver is diverging. Initial right hand size norm %14.12e, current residual norm %14.12e at iteration %D\n",
-			(double)winstop->rnorm_init,(double)thisnorm,thisit);
-		*reason = KSP_DIVERGED_DTOL;
-	}
-
-	return(0);
-}
-//---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "KSPWinStopMonitor"
-PetscErrorCode KSPWinStopMonitor(KSP ksp, PetscInt thisit, PetscScalar thisnorm, void *mctx)
-{
-	const char *prefix;
-	WinStopCtx *winstop = (WinStopCtx*) mctx;
-
-	PetscErrorCode ierr;
-	PetscFunctionBegin;
-
-	ierr = KSPGetOptionsPrefix(ksp, &prefix); CHKERRQ(ierr);
-
-	// Output to screen
-	if(thisit == 0)
-	{
-		ierr = PetscPrintf(PETSC_COMM_WORLD,"  Residual norms for %sksp solve.\n", prefix); CHKERRQ(ierr);
-		ierr = PetscPrintf(PETSC_COMM_WORLD,"  KSP_it       KSP_res      Var(dKSP_res(1..%0.2d))        Eps\n",winstop->winwidth); CHKERRQ(ierr);
-	}
-	else if(thisit < winstop->winwidth)
-	{
-		ierr = PetscPrintf(PETSC_COMM_WORLD, "   %0.3d   %14.12e         ---                 ---\n",thisit, thisnorm); CHKERRQ(ierr);
-	}
-	else
-	{
-		ierr = PetscPrintf(PETSC_COMM_WORLD, "   %0.3d   %14.12e  %14.12e  %14.12e  \n",thisit, thisnorm, winstop->diffnorm, winstop->eps); CHKERRQ(ierr);
-	}
-
-
-	return(0);
-}
 //---------------------------------------------------------------------------

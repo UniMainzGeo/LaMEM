@@ -46,7 +46,6 @@
 #include "phase.h"
 #include "parsing.h"
 #include "scaling.h"
-#include "fdstag.h"
 //---------------------------------------------------------------------------
 #undef __FUNCT__
 #define __FUNCT__ "DBMatRead"

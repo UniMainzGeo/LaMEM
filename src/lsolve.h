@@ -46,33 +46,33 @@
 #define __lsolve_h__
 //---------------------------------------------------------------------------
 // Stokes preconditioner type
-typedef enum
+enum PCStokesType
 {
 	_STOKES_BF_,  // block factorization
 	_STOKES_MG_,  // Galerkin multigrid
 	_STOKES_USER_ // user-defined
 
-} PCStokesType;
+};
 
 //---------------------------------------------------------------------------
 
 // Stokes preconditioner type
-typedef enum
+enum PCBFType
 {
 	_UPPER_,  // upper triangular factorization
 	_LOWER_   // lower triangular factorization
 
-} PCBFType;
+};
 
 //---------------------------------------------------------------------------
 
 // velocity block preconditioner type (bf only)
-typedef enum
+enum PCVelType
 {
 	_VEL_MG_,  // Galerkin multigrid
 	_VEL_USER_ // user-defined
 
-} PCVelType;
+};
 //---------------------------------------------------------------------------
 
 typedef struct _p_PCStokes *PCStokes;
@@ -107,14 +107,14 @@ PetscErrorCode PCStokesDestroy(PCStokes pc);
 //---------------------------------------------------------------------------
 
 // Block Factorization preconditioner context
-typedef struct
+struct PCStokesBF
 {
 	PCVelType vtype; // velocity solver type
 	KSP       vksp;  // velocity solver
 	MG        vmg;   // velocity multigrid context
 	PCBFType  type;  // factorization type
 
-} PCStokesBF;
+};
 
 //---------------------------------------------------------------------------
 
@@ -131,11 +131,11 @@ PetscErrorCode PCStokesBFApply(Mat JP, Vec x, Vec y);
 //---------------------------------------------------------------------------
 
 // Galerkin multigrid preconditioner context
-typedef struct
+struct PCStokesMG
 {
 	MG mg; // coupled multigrid context
 
-} PCStokesMG;
+};
 
 //---------------------------------------------------------------------------
 
@@ -150,12 +150,12 @@ PetscErrorCode PCStokesMGApply(Mat JP, Vec x, Vec y);
 //---------------------------------------------------------------------------
 
 // User-defined
-typedef struct
+struct PCStokesUser
 {
 	PC pc;       // general preconditioner object
 	IS isv, isp; // velocity and pressure index sets
 
-} PCStokesUser;
+} ;
 
 //---------------------------------------------------------------------------
 

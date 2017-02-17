@@ -43,17 +43,13 @@
 //..............   FREE SRUFACE PARAVIEW XML OUTPUT ROUTINES   ..............
 //---------------------------------------------------------------------------
 #include "LaMEM.h"
+#include "paraViewOutSurf.h"
+#include "paraViewOutBin.h"
 #include "parsing.h"
 #include "scaling.h"
-#include "tssolve.h"
 #include "fdstag.h"
-#include "bc.h"
-#include "JacRes.h"
-#include "interpolate.h"
 #include "surf.h"
-#include "paraViewOutBin.h"
-#include "paraViewOutSurf.h"
-#include "outFunct.h"
+#include "JacRes.h"
 #include "tools.h"
 //---------------------------------------------------------------------------
 #undef __FUNCT__

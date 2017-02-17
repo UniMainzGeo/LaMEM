@@ -45,10 +45,21 @@
 //---------------------------------------------------------------------------
 #ifndef __constEq_h__
 #define __constEq_h__
+
+//---------------------------------------------------------------------------
+
+struct Material_t;
+struct Soft_t;
+struct Controls;
+struct SolVarDev;
+struct SolVarBulk;
+struct SolVarCell;
+struct SolVarEdge;
+
 //---------------------------------------------------------------------------
 
 // nonlinear constitutive equations evaluation context
-typedef struct
+struct ConstEqCtx
 {
 	PetscScalar  DII;   // effective strain-rate
 	PetscScalar  A_els; // elasticity constant
@@ -60,7 +71,7 @@ typedef struct
 	PetscScalar  taupl; // plastic yield stress
 	PetscScalar  fr;    // effective friction coefficient
 
-} ConstEqCtx;
+} ;
 
 //---------------------------------------------------------------------------
 

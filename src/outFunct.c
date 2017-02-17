@@ -44,22 +44,13 @@
 //....................   FDSTAG VECTOR OUTPUT ROUTINES   ....................
 //---------------------------------------------------------------------------
 #include "LaMEM.h"
-#include "parsing.h"
+#include "outFunct.h"
 #include "scaling.h"
-#include "tssolve.h"
 #include "fdstag.h"
-#include "bc.h"
+#include "phase.h"
 #include "JacRes.h"
-#include "matFree.h"
-#include "multigrid.h"
-#include "matrix.h"
-#include "lsolve.h"
-#include "nlsolve.h"
-#include "tools.h"
 #include "interpolate.h"
 #include "paraViewOutBin.h"
-#include "outFunct.h"
-#include "phase.h"
 
 //---------------------------------------------------------------------------
 // WARNING!

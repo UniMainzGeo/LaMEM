@@ -44,15 +44,12 @@
 //.................   COMPUTATION OF OBJECTIVE FUNCTION    ..................
 //---------------------------------------------------------------------------
 #include "LaMEM.h"
+#include "objFunct.h"
 #include "parsing.h"
 #include "scaling.h"
-#include "tssolve.h"
 #include "fdstag.h"
-#include "bc.h"
-#include "JacRes.h"
-#include "interpolate.h"
 #include "surf.h"
-#include "objFunct.h"
+#include "JacRes.h"
 #include "tools.h"
 //---------------------------------------------------------------------------
 #undef __FUNCT__

@@ -47,6 +47,11 @@
 #define __outFunct_h__
 //---------------------------------------------------------------------------
 
+struct OutBuf;
+struct JacRes;
+
+//---------------------------------------------------------------------------
+
 PetscErrorCode PVOutWritePhase       (JacRes*, OutBuf*);
 PetscErrorCode PVOutWriteDensity     (JacRes*, OutBuf*);
 PetscErrorCode PVOutWriteViscTotal   (JacRes*, OutBuf*);

@@ -45,16 +45,23 @@
 #ifndef __objFunct_h__
 #define __objFunct_h__
 //---------------------------------------------------------------------------
+
 // maximum number of obervational types
 #define _max_num_obs_ 7
 #define _max_len_name_ 8
 
+//-----------------------------------------------------------------------------
+
+struct FB;
+struct FreeSurf;
 
 //-----------------------------------------------------------------------------
 // model parameter type enumeration
+
 #define _max_num_ModParam_type_ 30
 #define _max_num_MatParam_type_ 30
-typedef enum // List of model parameter types (30)
+
+enum PTypes// List of model parameter types (30)
 {
 	// -- material model parameter types --
 	_RHO0_, _RHON_, _RHOC_,                             // density
@@ -67,7 +74,7 @@ typedef enum // List of model parameter types (30)
 	// -- others --
 	// ... (geometry, pushing box , etc. ...)
 
-} PTypes;
+};
 
 /*
 const char *PTypesName[] ={
@@ -87,7 +94,7 @@ const char *PTypesName[] ={
 
 //-----------------------------------------------------------------------------
 // Structure that holds inversion parameters
-typedef struct
+struct ModParam
 {
 	PetscInt         use;  // use inersion parameters to redefine model parameters
 	PetscInt         mdN;  // number of model parameters
@@ -97,11 +104,10 @@ typedef struct
 	PetscScalar     *val;  // model value
 	PetscScalar     *grd;  // gradient value
 	PetscScalar      mfit; // misfit value for current model parameters
-} ModParam;
+};
 
-
-
-typedef enum 	// observation type
+// observation type
+enum ObsType
 {
 	_VELX_,            // 1: horizontal velocity (x) at the surface
 	_VELY_,            // 2: horizontal velocity (y) at the surface
@@ -110,12 +116,13 @@ typedef enum 	// observation type
 	_BOUG_,            // 5: bouguer anomaly
 	_ISA_,             // 6: orientation of isa (<-> sks-seismic anisotropy)
 	_SHMAX_            // 7: orientation of SHmax
-} ObsType;
+
+};
 
 //---------------------------------------------------------------------------
 //........................ Objective function object ........................
 //---------------------------------------------------------------------------
-typedef struct
+struct ObjFunct
 {
 	FreeSurf     *surf;                 // free surface object
 	char         *infile;               // input file name
@@ -131,7 +138,7 @@ typedef struct
 	// missing ...
 	// (data) covariance matrix
 
-} ObjFunct;
+};
 //---------------------------------------------------------------------------
 
 // create objective function object

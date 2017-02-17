@@ -75,9 +75,16 @@
 #define _max_num_comp_ 9
 
 //---------------------------------------------------------------------------
+
+struct FB;
+struct FDSTAG;
+struct JacRes;
+struct Discret1D;
+
+//---------------------------------------------------------------------------
 //............................. Output buffer ...............................
 //---------------------------------------------------------------------------
-typedef struct
+struct OutBuf
 {
 	FDSTAG   *fs;    // staggered grid layout
 	FILE     *fp;    // output file handler
@@ -87,7 +94,7 @@ typedef struct
 	// grid buffer vectors
 	Vec lbcen, lbcor, lbxy, lbxz, lbyz; // local (ghosted)
 
-} OutBuf;
+};
 //---------------------------------------------------------------------------
 PetscErrorCode OutBufCreate(OutBuf *outbuf, JacRes *jr);
 
@@ -126,13 +133,13 @@ typedef PetscErrorCode (*OutVecFunctPtr)(JacRes*, OutBuf*);
 //---------------------------------------------------------------------------
 //...........  Multi-component output vector data structure .................
 //---------------------------------------------------------------------------
-typedef struct
+struct OutVec
 {
 	char          *name;        // output vector name
 	OutVecFunctPtr OutVecFunct; // pointer to vector output function
 	PetscInt       ncomp;       // number of components
 
-} OutVec;
+};
 //---------------------------------------------------------------------------
 void OutVecCreate(
 	OutVec         *outvec,
@@ -146,7 +153,7 @@ void OutVecDestroy(OutVec *outvec);
 //---------------------------------------------------------------------------
 //.......................... Vector output mask .............................
 //---------------------------------------------------------------------------
-typedef struct
+struct OutMask
 {
 	PetscInt phase;          // phase
 	PetscInt density;        // density
@@ -181,7 +188,7 @@ typedef struct
 	PetscInt cont_res;       // continuity residual
 	PetscInt energ_res;      // energy residual
 
-} OutMask;
+};
 //---------------------------------------------------------------------------
 
 void OutMaskSetDefault(OutMask *omask);

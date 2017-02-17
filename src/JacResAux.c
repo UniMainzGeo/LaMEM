@@ -39,17 +39,14 @@
  **         Arthur Bauville
  **
  ** ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ @*/
+//---------------------------------------------------------------------------
+
 #include "LaMEM.h"
-#include "phase.h"
-#include "parsing.h"
-#include "scaling.h"
-#include "fdstag.h"
-#include "tssolve.h"
-#include "bc.h"
 #include "JacRes.h"
-#include "constEq.h"
-#include "tools.h"
+#include "fdstag.h"
 #include "surf.h"
+#include "phase.h"
+#include "tools.h"
 #include "Tensor.h"
 
 //---------------------------------------------------------------------------

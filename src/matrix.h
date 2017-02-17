@@ -47,6 +47,8 @@
 #define __matrix_h__
 //---------------------------------------------------------------------------
 
+struct JacRes;
+
 // WARNING! Add MatSetNearNullSpace for all matrix types
 
 //---------------------------------------------------------------------------
@@ -60,12 +62,12 @@ PetscErrorCode MatAIJAssemble(Mat P, PetscInt numRows, const PetscInt rows[], Pe
 
 //---------------------------------------------------------------------------
 // preconditioning matrix storage format
-typedef enum
+enum PMatType
 {
 	_MONOLITHIC_,
 	_BLOCK_
 
-} PMatType;
+} ;
 //---------------------------------------------------------------------------
 
 typedef struct _p_PMat *PMat;
@@ -109,14 +111,14 @@ PetscErrorCode PMatDestroy(PMat pm);
 //.........................   MONOLITHIC MATRIX   ...........................
 //---------------------------------------------------------------------------
 
-typedef struct
+struct PMatMono
 {
 	Mat A; // monolithic matrix
 	Mat M; // penalty terms compensation matrix
 
 	Vec w; // work vector for computing Jacobian action
 
-} PMatMono;
+};
 
 PetscErrorCode PMatMonoCreate(PMat pm);
 
@@ -130,7 +132,7 @@ PetscErrorCode PMatMonoDestroy(PMat pm);
 //...........................   BLOCK MATRIX   ..............................
 //---------------------------------------------------------------------------
 
-typedef struct
+struct PMatBlock
 {
 	Mat Avv, Avp; // velocity sub-matrices
 	Mat Apv, App; // pressure sub-matrices
@@ -140,7 +142,7 @@ typedef struct
 	Vec xv, xp;   // solution blocks
 	Vec wv, wp;   // work vectors
 
-} PMatBlock;
+};
 
 //---------------------------------------------------------------------------
 

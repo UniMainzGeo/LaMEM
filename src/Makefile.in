@@ -76,7 +76,7 @@ ifeq ($(PLATFORM), x86_64)
    ifneq ($(shell mpicc -v 2>&1 | grep -c gcc), 0)
       # GNU
       DEPEN_FLAGS = -MM
-      LAMEM_FLAGS += -pedantic -Wall -W \
+      LAMEM_FLAGS += -std=c++11 -pedantic -Wall -W \
       -Wconversion -Wunused-but-set-variable -Wpointer-arith \
       -Wcast-qual -Wcast-align -Wwrite-strings -Winline -Wno-sign-conversion \
       -Werror=implicit-function-declaration -Wno-unused-result -Wno-inline
@@ -84,7 +84,7 @@ ifeq ($(PLATFORM), x86_64)
    ifneq ($(shell mpicc -v 2>&1 | grep -c Apple), 0)
       # GNU
       DEPEN_FLAGS = -MM
-      LAMEM_FLAGS += -pedantic -Wall -W -Wmissing-prototypes \
+      LAMEM_FLAGS += -std=c++11  -pedantic -Wall -W -Wmissing-prototypes \
       -Wconversion  -Wpointer-arith -Wno-sign-conversion \
       -Wcast-qual -Wcast-align -Wwrite-strings -Winline \
       -Werror=implicit-function-declaration -Wno-unused-result -Wno-inline

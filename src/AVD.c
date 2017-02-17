@@ -49,18 +49,14 @@
 //    M. Velic, D.A. May & L. Moresi (2008), "A Fast Robust Algorithm for Computing Discrete Voronoi Diagrams",
 
 #include "LaMEM.h"
-#include "parsing.h"
+#include "AVD.h"
+#include "advect.h"
 #include "scaling.h"
-#include "tssolve.h"
+#include "JacRes.h"
 #include "fdstag.h"
 #include "bc.h"
-#include "JacRes.h"
-#include "interpolate.h"
-#include "surf.h"
-#include "Tensor.h"
-#include "advect.h"
-#include "AVD.h"
 #include "tools.h"
+
 //---------------------------------------------------------------------------
 #undef __FUNCT__
 #define __FUNCT__ "AVDCreate"
