@@ -55,19 +55,24 @@
 #include "tools.h"
 
 //---------------------------------------------------------------------------
-//...................   Runtime parameters and controls .....................
-//---------------------------------------------------------------------------
-PetscErrorCode ControlsRead(Controls *ctrl, FB *fb)
+PetscErrorCode JacResCreate(JacRes *jr, FB *fb)
 {
-	Scaling     *scal;
+	Material_t *m;
+	FreeSurf   *surf;
+	Scaling    *scal;
+	Controls   *ctrl;
 	PetscScalar input_eta_max;
 	char        gwtype [_STR_LEN_];
+	PetscInt    i, ID, cnt, numPhases, isElastic;
 
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
 
 	// access context
-	scal = ctrl->scal;
+	scal      =  jr->scal;
+	ctrl      = &jr->ctrl;
+	surf      =  jr->surf;
+	numPhases =  jr->dbm->numPhases;
 
 	// set defaults
 	ctrl->tauUlt       = DBL_MAX;
@@ -118,6 +123,10 @@ PetscErrorCode ControlsRead(Controls *ctrl, FB *fb)
 	else if(!strcmp(gwtype, "level")) ctrl->gwType = _GW_LEVEL_;
 	else SETERRQ1(PETSC_COMM_WORLD, PETSC_ERR_USER, "Incorrect ground water level type: %s", gwtype);
 
+	//====================
+	// CROSS-CHECK OPTIONS
+	//====================
+
 	if(ctrl->gwType == _GW_LEVEL_ && ctrl->gwLevel == DBL_MAX)
 	{
 		SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "Ground water level must be specified (gw_level_type, gw_level)");
@@ -127,6 +136,71 @@ PetscErrorCode ControlsRead(Controls *ctrl, FB *fb)
 	if(ctrl->gwType != _GW_NONE_ && !ctrl->biot)
 	{
 		ctrl->biot = 1.0;
+	}
+
+	if(ctrl->gwType == _GW_SURF_ && !surf->UseFreeSurf)
+	{
+		SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "Ground water level requires activating free surface (gw_level_type, surf_use)");
+	}
+
+	// check phase parameters
+	for(i = 0, isElastic = 0; i < numPhases; i++)
+	{
+		m  = jr->dbm->phases + i;
+		ID = m ->ID;
+
+		// MORE CHECKS HERE (DII_ref, RUGC)
+
+		if((m->rp || m->rho_n) && !ctrl->rho_fluid)
+		{
+			SETERRQ1(PETSC_COMM_SELF, PETSC_ERR_USER, "Fluid density must be specified for phase %lld (rho_n, rho_c, rp, rho_fluid)\n", (LLD)ID);
+		}
+
+		if(m->rp && ctrl->gwType == _GW_NONE_)
+		{
+			SETERRQ1(PETSC_COMM_SELF, PETSC_ERR_USER, "Pore pressure ratio requires defining ground water level type for phase %lld (rp, gw_level_type)\n", (LLD)ID);
+		}
+
+		if(m->rho_n && !surf->UseFreeSurf)
+		{
+			SETERRQ1(PETSC_COMM_SELF, PETSC_ERR_USER, "Depth-dependent density requires activating free surface for phase %lld (rho_n, surf_use)\n", (LLD)ID);
+		}
+
+		if(m->G || m->K) isElastic = 1;
+	}
+
+	// activate elasticity-compliant time-stepping
+	if(isElastic)
+	{
+		ierr = TSSolSetupElasticity(jr->ts); CHKERRQ(ierr);
+	}
+
+	// check thermal material parameters
+	ierr = JacResCheckTempParam(jr); CHKERRQ(ierr);
+
+	cnt = 0;
+	if(ctrl->quasiHarmAvg) cnt++;
+	if(ctrl->cf_eta_min)   cnt++;
+	if(ctrl->n_pw)         cnt++;
+
+	if(cnt > 1)
+	{
+		SETERRQ(PETSC_COMM_SELF, PETSC_ERR_USER, "Cannot combine plasticity stabilization methods (quasi_harm_avg, cf_eta_min, n_pw) \n");
+	}
+
+	if(cnt && ctrl->jac_mat_free)
+	{
+		SETERRQ(PETSC_COMM_SELF, PETSC_ERR_USER, "Analytical Jacobian is not available for plasticity stabilizations (jac_mat_free, quasi_harm_avg, cf_eta_min, n_pw) \n");
+	}
+
+	if(ctrl->pShiftAct && ctrl->jac_mat_free)
+	{
+		SETERRQ(PETSC_COMM_SELF, PETSC_ERR_USER, "Analytical Jacobian is incompatible with pressure shifting (jac_mat_free, act_p_shift) \n");
+	}
+
+	if(!jr->bc->top_open && ctrl->jac_mat_free)
+	{
+		SETERRQ(PETSC_COMM_SELF, PETSC_ERR_USER, "Analytical Jacobian requires open top boundary (jac_mat_free, open_top_bound) \n");
 	}
 
 	// scale parameters
@@ -145,6 +219,13 @@ PetscErrorCode ControlsRead(Controls *ctrl, FB *fb)
 
 	// set inverse of maximum viscosity
 	if(input_eta_max) ctrl->inv_eta_max = 1.0/input_eta_max;
+
+	// create Jacobian & residual evaluation context
+	ierr = JacResCreateData(jr); CHKERRQ(ierr);
+
+	// set initial guess
+	ierr = VecZeroEntries(jr->gsol); CHKERRQ(ierr);
+	ierr = VecZeroEntries(jr->lT);   CHKERRQ(ierr);
 
 	PetscFunctionReturn(0);
 }
@@ -206,7 +287,6 @@ PetscErrorCode JacResCreateData(JacRes *jr)
 	ierr = DMCreateLocalVector (fs->DA_CEN, &jr->lp);        CHKERRQ(ierr);
 	ierr = DMCreateLocalVector (fs->DA_CEN, &jr->lp_lithos); CHKERRQ(ierr);
 	ierr = DMCreateLocalVector (fs->DA_CEN, &jr->lp_pore);   CHKERRQ(ierr);
-
 
 	// continuity residual
 	ierr = DMCreateGlobalVector(fs->DA_CEN, &jr->gc);  CHKERRQ(ierr);
@@ -440,7 +520,7 @@ PetscErrorCode JacResGetPressShift(JacRes *jr)
 	PetscFunctionBegin;
 
 	// check if requested
-	if(!jr->ctrl->pShiftAct) PetscFunctionReturn(0);
+	if(!jr->ctrl.pShiftAct) PetscFunctionReturn(0);
 
 	fs      = jr->fs;
 	mcz     = fs->dsz.tcels - 1;
@@ -469,7 +549,7 @@ PetscErrorCode JacResGetPressShift(JacRes *jr)
 	}
 
 	// store pressure shift
-	jr->ctrl->pShift = gpShift/(PetscScalar)(fs->dsx.tcels*fs->dsy.tcels);
+	jr->ctrl.pShift = gpShift/(PetscScalar)(fs->dsx.tcels*fs->dsy.tcels);
 
 	PetscFunctionReturn(0);
 }
@@ -824,16 +904,16 @@ PetscErrorCode JacResGetResidual(JacRes *jr)
 	mz = fs->dsz.tnods - 1;
 
 	// access residual context variables
-	numPhases = jr->dbm->numPhases; // number phases
-	phases    = jr->dbm->phases;    // phase parameters
-	ctrl      = jr->ctrl;           // control parameters
-	dt        = jr->ts->dt;         // time step
-	fssa      = ctrl->FSSA;         // density gradient penalty parameter
-	grav      = ctrl->grav;         // gravity acceleration
-	pShift    = ctrl->pShift;       // pressure shift
-	biot      = ctrl->biot;         // Biot pressure parameter
-	AirPhase  = jr->surf->AirPhase; // sticky air phase number
-	avg_topo  = jr->surf->avg_topo; // average surface topography
+	numPhases =  jr->dbm->numPhases; // number phases
+	phases    =  jr->dbm->phases;    // phase parameters
+	ctrl      = &jr->ctrl;           // control parameters
+	dt        =  jr->ts->dt;         // time step
+	fssa      =  ctrl->FSSA;         // density gradient penalty parameter
+	grav      =  ctrl->grav;         // gravity acceleration
+	pShift    =  ctrl->pShift;       // pressure shift
+	biot      =  ctrl->biot;         // Biot pressure parameter
+	AirPhase  =  jr->surf->AirPhase; // sticky air phase number
+	avg_topo  =  jr->surf->avg_topo; // average surface topography
 
 	// clear local residual vectors
 	ierr = VecZeroEntries(jr->lfx); CHKERRQ(ierr);
@@ -1768,7 +1848,7 @@ PetscErrorCode JacResViewRes(JacRes *jr)
 
 	f2 = sqrt(fx*fx + fy*fy + fz*fz);
 
-	if(jr->ctrl->actTemp)
+	if(jr->ctrl.actTemp)
 	{
 		ierr = JacResGetTempRes(jr);         CHKERRQ(ierr);
 		ierr = VecNorm(jr->ge, NORM_2, &e2); CHKERRQ(ierr);
@@ -1784,7 +1864,7 @@ PetscErrorCode JacResViewRes(JacRes *jr)
 	PetscPrintf(PETSC_COMM_WORLD, "  Momentum: \n" );
 	PetscPrintf(PETSC_COMM_WORLD, "    |mRes|_2 = %12.12e \n", f2);
 
-	if(jr->ctrl->actTemp)
+	if(jr->ctrl.actTemp)
 	{
 		PetscPrintf(PETSC_COMM_WORLD, "  Energy: \n" );
 		PetscPrintf(PETSC_COMM_WORLD, "    |eRes|_2 = %12.12e \n", e2);

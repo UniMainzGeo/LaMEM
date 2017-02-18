@@ -146,7 +146,7 @@ struct AdvCtx
 	FDSTAG   *fs;
 	JacRes   *jr;
 	FreeSurf *surf;
-	DBMat    *dbm;  // material database
+	DBMat    *dbm;
 
 	SetupType     msetup;              // marker initialization type
 	PetscInt      NumPartX;            // markers per cell in x-direction
@@ -166,6 +166,8 @@ struct AdvCtx
 
 	PetscInt      markContr;           // flag to activate marker control
 	PetscInt      newMarkContr;        // new marker control flag (temporary)
+
+	PetscScalar   surfTol;             // tolerance for shifting markers below free surface
 
 	//====================
 	// RUN TIME PARAMETERS
@@ -293,7 +295,7 @@ PetscErrorCode ADVCheckCorners(AdvCtx *actx);
 PetscErrorCode ADVMarkDeleteOutflow(AdvCtx *actx);
 
 // change marker phase when crossing free surface
-PetscErrorCode ADVMarkCrossFreeSurf(AdvCtx *actx, PetscScalar tol);
+PetscErrorCode ADVMarkCrossFreeSurf(AdvCtx *actx);
 
 // check marker phases
 PetscErrorCode ADVCheckMarkPhases(AdvCtx *actx, PetscInt numPhases);

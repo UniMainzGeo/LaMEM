@@ -65,11 +65,12 @@ struct LaMEMLib
 {
 	Scaling  scal;   // scaling
 	TSSol    ts;     // time-stepping controls
+	DBMat    dbm;    // material database
 	FDSTAG   fs;     // staggered-grid layout
 	FreeSurf surf;   // free-surface grid
 	BCCtx    bc;     // boundary condition context
-	JacRes   jr;     // Jacobian & residual context
 	AdvCtx   actx;   // advection context
+	JacRes   jr;     // Jacobian & residual context
 	PVOut    pvout;  // paraview output driver
 	PVSurf   pvsurf; // paraview output driver for surface
 	PVMark   pvmark; // paraview output driver for markers

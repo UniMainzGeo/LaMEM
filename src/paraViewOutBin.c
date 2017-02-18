@@ -413,8 +413,8 @@ PetscErrorCode PVOutCreate(PVOut *pvout, FB *fb)
 	ierr = getIntParam   (fb, _OPTIONAL_, "out_energ_res",      &omask->energ_res,         1, 1); CHKERRQ(ierr);
 
 	// check
-	if(!pvout->jr->ctrl->actTemp)             omask->energ_res = 0; // heat diffusion is deactivated
-	if( pvout->jr->ctrl->gwType == _GW_NONE_) omask->eff_press = 0; // pore pressure is deactivated
+	if(!pvout->jr->ctrl.actTemp)             omask->energ_res = 0; // heat diffusion is deactivated
+	if( pvout->jr->ctrl.gwType == _GW_NONE_) omask->eff_press = 0; // pore pressure is deactivated
 
 	// print
 	if(pvout->outpvd)

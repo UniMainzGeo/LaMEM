@@ -136,8 +136,6 @@ enum GWLevelType
 
 struct Controls
 {
-	Scaling *scal;
-
 	PetscScalar grav[SPDIM];  // global gravity components
 	PetscScalar FSSA;         // free surface stabilization parameter
 	PetscScalar shearHeatEff; // shear heating efficiency parameter [0 - 1]
@@ -171,8 +169,6 @@ struct Controls
 
 };
 
-PetscErrorCode ControlsRead(Controls *ctrl, FB *fb);
-
 //---------------------------------------------------------------------------
 //.............. FDSTAG Jacobian and residual evaluation context ............
 //---------------------------------------------------------------------------
@@ -186,7 +182,9 @@ struct JacRes
 	FreeSurf *surf;  // free surface
 	BCCtx    *bc;    // boundary condition context
 	DBMat    *dbm;   // material database
-	Controls *ctrl;  // parameters and controls
+
+	// parameters and controls
+	Controls ctrl;
 
 	// coupled solution & residual vectors
 	Vec gsol, gres; // global
@@ -249,6 +247,8 @@ struct JacRes
 //---------------------------------------------------------------------------
 
 // create residual & Jacobian evaluation context
+PetscErrorCode JacResCreate(JacRes *jr, FB *fb);
+
 PetscErrorCode JacResCreateData(JacRes *jr);
 
 PetscErrorCode JacResReadRestart(JacRes *jr, FILE *fp);

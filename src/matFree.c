@@ -91,8 +91,8 @@ PetscErrorCode JacResPicardMatFree(JacRes *jr)
 
 	fs   = jr->fs;
 	dt   = jr->ts->dt;      // time step
-	fssa = jr->ctrl->FSSA;  // density gradient penalty parameter
-    grav = jr->ctrl->grav;  // gravity acceleration
+	fssa = jr->ctrl.FSSA;  // density gradient penalty parameter
+    grav = jr->ctrl.grav;  // gravity acceleration
 
     // clear local residual vectors
 	ierr = VecZeroEntries(jr->lfx); CHKERRQ(ierr);
@@ -494,8 +494,8 @@ PetscErrorCode JacResJacobianMatFree(JacRes *jr)
 
 	fs   = jr->fs;
 	dt   = jr->ts->dt;     // time step
-	fssa = jr->ctrl->FSSA; // density gradient penalty parameter
-    grav = jr->ctrl->grav; // gravity acceleration
+	fssa = jr->ctrl.FSSA; // density gradient penalty parameter
+    grav = jr->ctrl.grav; // gravity acceleration
 
     // initialize maximum node index in all directions
 	mx = fs->dsx.tnods - 1;

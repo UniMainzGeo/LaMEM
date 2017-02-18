@@ -611,7 +611,7 @@ PetscErrorCode JacResGetLithoStaticPressure(JacRes *jr)
 	fs  =  jr->fs;
 	dsz = &fs->dsz;
 	L   =  (PetscInt)dsz->rank;
-	g   =   PetscAbsScalar(jr->ctrl->grav[2]);
+	g   =   PetscAbsScalar(jr->ctrl.grav[2]);
 
 	// initialize
 	ierr = VecZeroEntries(jr->lp_lithos); CHKERRQ(ierr);
@@ -715,15 +715,15 @@ PetscErrorCode JacResGetPorePressure(JacRes *jr)
 	ierr = VecZeroEntries(jr->lp_pore); CHKERRQ(ierr);
 
 	// return if not activated
-	if(jr->ctrl->gwType == _GW_NONE_) PetscFunctionReturn(0);
+	if(jr->ctrl.gwType == _GW_NONE_) PetscFunctionReturn(0);
 
 	// access context
-	fs        = jr->fs;
-	phases    = jr->dbm->phases;
-	numPhases = jr->dbm->numPhases;
-	ctrl      = jr->ctrl;
-	rho_fluid = ctrl->rho_fluid;
-	g         = PetscAbsScalar(ctrl->grav[2]);
+	fs        =  jr->fs;
+	phases    =  jr->dbm->phases;
+	numPhases =  jr->dbm->numPhases;
+	ctrl      = &jr->ctrl;
+	rho_fluid =  ctrl->rho_fluid;
+	g         =  PetscAbsScalar(ctrl->grav[2]);
 
 	// get top boundary coordinate
 	ierr = FDSTAGGetGlobalBox(fs, NULL, NULL, NULL, NULL, NULL, &ztop); CHKERRQ(ierr);

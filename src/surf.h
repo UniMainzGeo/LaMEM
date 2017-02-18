@@ -91,7 +91,7 @@ struct FreeSurf
 
 //---------------------------------------------------------------------------
 
-PetscErrorCode FreeSurfRead(FreeSurf *surf, FB *fb);
+PetscErrorCode FreeSurfCreate(FreeSurf *surf, FB *fb);
 
 PetscErrorCode FreeSurfCreateData(FreeSurf *surf);
 

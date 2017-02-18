@@ -107,6 +107,23 @@
 #	bias_x  = 0.3 1.0 3.0
 
 #===============================================================================
+# Free surface
+#===============================================================================
+
+	surf_use        = 1                # free surface activation flag
+	surf_corr_phase = 1                # air phase ratio correction flag (due to surface position)
+	surf_level      = 0.5              # initial level
+	surf_air_phase  = 0                # phase ID of sticky air layer
+	surf_max_angle  = 45.0             # maximum angle with horizon (smoothed if larger)
+	surf_topo_file  = ./input/topo.dat # initial topography file (redundant)
+	erosion_model   = 1                # erosion model [0-none (default), 1-infinitely fast]
+	sediment_model  = 1                # sedimentation model [0-none (dafault), 1-prescribed rate]
+	sed_num_layers  = 3                # number of sediment layers
+	sed_time_delims = 0.5 2.5          # sediment layers time delimiters (one less than number)
+	sed_rates       = 1e-3 1e-2 2-3    # sedimentation rates
+	sed_phases      = 1 2 3            # sediment layers phase numbers
+
+#===============================================================================
 # Boundary conditions
 #===============================================================================
 
@@ -185,30 +202,28 @@
 #===============================================================================
 
 	gravity        = 0.0 0.0 -10.0  # gravity vector
-	FSSA           = 1.0            # free surface stabilization parameter
+	FSSA           = 1.0            # free surface stabilization parameter [0 - 1]
+	shear_heat_eff = 1.0            # shear heating efficiency parameter   [0 - 1]
 	act_temp_diff  = 1              # temperature diffusion activation flag
 	act_p_shift    = 1              # pressure shift activation flag (zero pressure in the top cell layer)
+	init_guess     = 1              # initial guess flag
+	p_litho_visc   = 1              # use lithostatic pressure for creep laws
+	p_litho_plast  = 1              # use lithostatic pressure for plasticity
+	p_lim_plast    = 1              # limit pressure at first iteration for plasticity
+	jac_mat_free   = 1              # matrix-free closed-form jacobian
 	eta_min        = 1e18           # viscosity upper bound
 	eta_max        = 1e25           # viscosity lower limit
 	eta_ref        = 1e20           # reference viscosity (initial guess)
 	T_ref          = 20.0           # reference temperature
+	RUGC           = 8.31           # universal gas constant (required only for non-dimensional setups)
 	DII_ref        = 1e-15          # background (reference) strain-rate
 	min_cohes      = 2e7            # cohesion lower bound
 	min_fric       = 5.0            # friction lower bound
 	tau_ult        = 1e9            # ultimate yield stress
-	rho_fluid      = 1e3            # fluid density for depth-dependent density model
-	shear_heat_eff = 1.0            # shear heating efficiency parameter [0 - 1]
 	quasi_harm_avg = 1              # quasi-harmonic averaging regularization flag (plasticity)
 	cf_eta_min     = 10.0           # visco-plastic regularization parameter (plasticity)
 	n_pw           = 15.0           # power-law regularization parameter (plasticity)
-	p_litho_visc   = 1              # use lithostatic pressure for creep laws
-	p_litho_plast  = 1              # use lithostatic pressure for plasticity
-	p_lim_plast    = 1              # limit pressure at first iteration for plasticity
-	theta_north    = 45             # direction to North counter-clockwise w.r.t. x-axis (SHmax)
-	warn           = 1              # print warning messages
-	jac_mat_free   = 1              # matrix-free closed-form jacobian
-	init_guess     = 1              # initial guess flag
-	RUGC           = 8.31           # universal gas constant (required only for non-dimensional setups)
+	rho_fluid      = 1e3            # fluid density for depth-dependent density model
 	gw_level_type  = top            # ground water level type for pore pressure computation (see below)
 	gw_level       = 10.0           # ground water level at the free surface (if defined)
 	biot           = 0.7            # Biot pressure parameer
@@ -219,23 +234,6 @@
 # gw_level_type = top   # GW level is top of the domain
 # gw_level_type = surf  # GW level is free surface average level (surface must be enabled)
 # gw_level_type = level # GW level is fixed (gw_level parameter must be specified)
-
-#===============================================================================
-# Free surface
-#===============================================================================
-
-	surf_use        = 1                # free surface activation flag
-	surf_corr_phase = 1                # air phase ratio correction flag (due to surface position)
-	surf_level      = 0.5              # initial level
-	surf_air_phase  = 0                # phase ID of sticky air layer
-	surf_max_angle  = 45.0             # maximum angle with horizon (smoothed if larger)
-	surf_topo_file  = ./input/topo.dat # initial topography file (redundant)
-	erosion_model   = 1                # erosion model [0-none (default), 1-infinitely fast]
-	sediment_model  = 1                # sedimentation model [0-none (dafault), 1-prescribed rate]
-	sed_num_layers  = 3                # number of sediment layers
-	sed_time_delims = 0.5 2.5          # sediment layers time delimiters (one less than number)
-	sed_rates       = 1e-3 1e-2 2-3    # sedimentation rates
-	sed_phases      = 1 2 3            # sediment layers phase numbers
 
 #===============================================================================
 # Model setup & advection
@@ -260,6 +258,7 @@
 	stagp_a        = 0.7;              # STAG_P velocity interpolation parameter
 	use_mark_contr = 1                 # activate marker control
 	new_mark_contr = 1                 # activate new marker control algorithms (temporary)
+	surf_tol       = 0.05              # tolerance for shifting markers below free surface
 
 # Advection types:
 

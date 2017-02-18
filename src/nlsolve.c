@@ -259,10 +259,10 @@ PetscErrorCode FormJacobian(SNES snes, Vec x, Mat Amat, Mat Pmat, void *ctx)
 
 	// access context
 	nl   = (NLSol*)ctx;
-	pc   = nl->pc;
-	pm   = pc->pm;
-	jr   = pm->jr;
-	ctrl = jr->ctrl;
+	pc   =  nl->pc;
+	pm   =  pc->pm;
+	jr   =  pm->jr;
+	ctrl = &jr->ctrl;
 
     it_newton = 0;
 
@@ -532,7 +532,7 @@ PetscErrorCode SNESCoupledTest(
 
 	if(!it) PetscFunctionReturn(0);
 
-    if(jr->ctrl->actTemp)
+    if(jr->ctrl.actTemp)
     {
     	ierr = JacResGetTempRes(jr);                        CHKERRQ(ierr);
     	ierr = JacResGetTempMat(jr);                        CHKERRQ(ierr);

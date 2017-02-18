@@ -236,7 +236,7 @@ PetscErrorCode PVOutWritePressure(JacRes *jr, OutBuf *outbuf)
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
 
-	if(jr->ctrl->gwType != _GW_NONE_)
+	if(jr->ctrl.gwType != _GW_NONE_)
 	{
 		ierr = PVOutWriteTotalPress(jr, outbuf); CHKERRQ(ierr);
 	}
@@ -256,12 +256,12 @@ PetscErrorCode PVOutWriteTotalPress(JacRes *jr, OutBuf *outbuf)
 
 	ACCESS_FUNCTION_HEADER
 
-	biot = jr->ctrl->biot;
+	biot = jr->ctrl.biot;
 
 	cf  = scal->stress;
 
 	// scale pressure shift
-	pShift = cf*jr->ctrl->pShift;
+	pShift = cf*jr->ctrl.pShift;
 
 	ierr = JacResCopyPres(jr, jr->gsol); CHKERRQ(ierr);
 
@@ -287,7 +287,7 @@ PetscErrorCode PVOutWriteEffPress(JacRes *jr, OutBuf *outbuf)
 	iflag.use_bound = 1;
 
 	// scale pressure shift
-	pShift = cf*jr->ctrl->pShift;
+	pShift = cf*jr->ctrl.pShift;
 
 	ierr = JacResCopyPres(jr, jr->gsol); CHKERRQ(ierr);
 
@@ -307,7 +307,7 @@ PetscErrorCode PVOutWriteOverPress(JacRes *jr, OutBuf *outbuf)
 	cf = scal->stress;
 
 	// scale pressure shift
-	pShift = cf*jr->ctrl->pShift;
+	pShift = cf*jr->ctrl.pShift;
 
 	ierr = JacResGetOverPressure(jr, outbuf->lbcen); CHKERRQ(ierr);
 

@@ -569,8 +569,8 @@ PetscErrorCode PMatMonoAssemble(PMat pm)
 
 	// get density gradient stabilization parameters
 	dt   = jr->ts->dt; // time step
-	fssa = jr->ctrl->FSSA;   // density gradient penalty parameter
-    grav = jr->ctrl->grav;   // gravity acceleration
+	fssa = jr->ctrl.FSSA;   // density gradient penalty parameter
+    grav = jr->ctrl.grav;   // gravity acceleration
 
 	// get penalty parameter
 	pgamma = pm->pgamma;
@@ -1167,8 +1167,8 @@ PetscErrorCode PMatBlockAssemble(PMat pm)
 
 	// get density gradient stabilization parameters
 	dt   = jr->ts->dt; // time step
-	fssa = jr->ctrl->FSSA;   // density gradient penalty parameter
-    grav = jr->ctrl->grav;   // gravity acceleration
+	fssa = jr->ctrl.FSSA;   // density gradient penalty parameter
+    grav = jr->ctrl.grav;   // gravity acceleration
 
 	// get penalty parameter
 	pgamma = pm->pgamma;

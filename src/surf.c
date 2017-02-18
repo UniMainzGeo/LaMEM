@@ -59,13 +59,11 @@
 // ...
 //---------------------------------------------------------------------------
 #undef __FUNCT__
-#define __FUNCT__ "FreeSurfRead"
-PetscErrorCode FreeSurfRead(FreeSurf *surf, FB *fb)
+#define __FUNCT__ "FreeSurfCreate"
+PetscErrorCode FreeSurfCreate(FreeSurf *surf, FB *fb)
 {
-
-	JacRes   *jr;
 	Scaling  *scal;
-	PetscInt maxPhaseID;
+	PetscInt  maxPhaseID;
 
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
@@ -82,10 +80,8 @@ PetscErrorCode FreeSurfRead(FreeSurf *surf, FB *fb)
 	if(!surf->UseFreeSurf) PetscFunctionReturn(0);
 
 	// access context
-	jr         = surf->jr;
-	scal       = jr->scal;
-	maxPhaseID = jr->dbm->numPhases-1;
-
+	scal       = surf->jr->scal;
+	maxPhaseID = surf->jr->dbm->numPhases-1;
 
 	// read from options
 	ierr = getIntParam   (fb, _OPTIONAL_, "surf_corr_phase", &surf->phaseCorr,     1,  1);            CHKERRQ(ierr);

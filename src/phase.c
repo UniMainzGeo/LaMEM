@@ -48,8 +48,8 @@
 #include "scaling.h"
 //---------------------------------------------------------------------------
 #undef __FUNCT__
-#define __FUNCT__ "DBMatRead"
-PetscErrorCode DBMatRead(DBMat *dbm, FB *fb)
+#define __FUNCT__ "DBMatCreate"
+PetscErrorCode DBMatCreate(DBMat *dbm, FB *fb)
 {
 	// read all material phases and softening laws from file
 

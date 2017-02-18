@@ -136,7 +136,7 @@ public:
 };
 
 // read material database
-PetscErrorCode DBMatRead(DBMat *dbm, FB *fb);
+PetscErrorCode DBMatCreate(DBMat *dbm, FB *fb);
 
 // read single softening law
 PetscErrorCode DBMatReadSoft(DBMat *dbm, FB *fb);

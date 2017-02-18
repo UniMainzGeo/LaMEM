@@ -111,9 +111,7 @@ PetscErrorCode LaMEMLibMain(void *param)
 	// cancel restart if no database is available
 	if(mode == _RESTART_ && !(!stat("./restart", &s) && S_ISDIR(s.st_mode)))
 	{
-		PetscPrintf(PETSC_COMM_WORLD,"No restart database available. Starting normal mode ...\n");
-
-		mode = _NORMAL_;
+		SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "No restart database available (check -mode option)");
 	}
 
 	//===========
@@ -176,7 +174,7 @@ PetscErrorCode LaMEMLibCreate(LaMEMLib *lm)
 
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
-/*
+
 	// load input file
 	ierr = FBLoad(&fb); CHKERRQ(ierr);
 
@@ -186,47 +184,23 @@ PetscErrorCode LaMEMLibCreate(LaMEMLib *lm)
 	// create time stepping object
 	ierr = TSSolCreate(&lm->ts, fb); CHKERRQ(ierr);
 
+	// create material database
+	ierr = DBMatCreate(&lm->dbm, fb); CHKERRQ(ierr);
+
 	// create parallel grid
 	ierr = FDSTAGCreate(&lm->fs, fb); CHKERRQ(ierr);
-
-	// create boundary condition context
-	ierr = BCCreate(&lm->bc, fb); CHKERRQ(ierr);
-
-	// create Jacobian & residual evaluation context
-	ierr = JacResCreate(&lm->jr, fb); CHKERRQ(ierr);
 
 	// create free surface grid
 	ierr = FreeSurfCreate(&lm->surf, fb); CHKERRQ(ierr);
 
+	// create boundary condition context
+	ierr = BCCreate(&lm->bc, fb); CHKERRQ(ierr);
+
+	// create residual & Jacobian evaluation context
+	ierr = JacResCreate(&lm->jr, fb); CHKERRQ(ierr);
+
 	// create advection context
 	ierr = ADVCreate(&lm->actx, fb); CHKERRQ(ierr);
-
-
-
-
-	// check thermal material parameters
-	ierr = JacResCheckTempParam(&lm->jr); CHKERRQ(ierr);
-
-
-
-
-
-	// change marker phase when crossing free surface
-	ierr = ADVMarkCrossFreeSurf(&lm->actx, 0.05); CHKERRQ(ierr);
-
-
-
-
-
-	// update phase ratios taking into account actual free surface position
-	ierr = FreeSurfGetAirPhaseRatio(&lm->surf); CHKERRQ(ierr);
-
-
-*/
-
-
-
-
 
 	// create output object for all requested output variables
 	ierr = PVOutCreate(&lm->pvout, fb); CHKERRQ(ierr);
@@ -331,29 +305,28 @@ PetscErrorCode LaMEMLibDestroy(LaMEMLib *lm)
 PetscErrorCode LaMEMLibSetLinks(LaMEMLib *lm)
 {
 	//======================================================================
-	// LaMEM library object hierarchy
+	// LaMEM library object initialization sequence
 	//
 	//                         Scaling
 	//                            |
-	//                    -----------------
-	//                    |       |       |
-	//                  TSSol   DBMat   FDSTAG
-	//                    |       |       |
-	//                    -----------------
+	//                          TSSol
+	//                            |
+	//                          DBMat
 	//                            |
 	//                         FDSTAG
 	//                            |
-	//                         FreeSurf --- PVSurf
+	//                         FreeSurf
 	//                            |
 	//                          BCCtx
 	//                            |
-	//                         AdvCtx--------------------
-	//                            |            |         |
-	//                          JacRes       PVAVD     PVMark
+	//                          JacRes
 	//                            |
-	//                          PVOut
+	//                          AdvCtx
+	//                            |
+	//              -----------------------------
+	//              |       |          |        |
+	//            PVOut   PVSurf     PVMark   PVAVD
 	//======================================================================
-
 
 	// setup cross-references between library objects
 
@@ -363,17 +336,25 @@ PetscErrorCode LaMEMLibSetLinks(LaMEMLib *lm)
 
 	lm->ts.scal     = &lm->scal;
 	lm->fs.scal     = &lm->scal;
+
 	lm->bc.scal     = &lm->scal;
 	lm->bc.ts       = &lm->ts;
 	lm->bc.fs       = &lm->fs;
+
 	lm->jr.scal     = &lm->scal;
 	lm->jr.ts       = &lm->ts;
 	lm->jr.fs       = &lm->fs;
+	lm->jr.surf     = &lm->surf;
 	lm->jr.bc       = &lm->bc;
+	lm->jr.dbm      = &lm->dbm;
+
 	lm->surf.jr     = &lm->jr;
+
 	lm->actx.fs     = &lm->fs;
 	lm->actx.jr     = &lm->jr;
 	lm->actx.surf   = &lm->surf;
+	lm->actx.dbm    = &lm->dbm;
+
 	lm->pvout.jr    = &lm->jr;
 	lm->pvsurf.surf = &lm->surf;
 	lm->pvmark.actx = &lm->actx;
@@ -452,73 +433,6 @@ PetscErrorCode LaMEMLibDryRun(LaMEMLib *lm)
 
 
 
-
-/*
-PetscErrorCode ControlsCheck(Controls *ctrl, FB *fb)
-
- *** free surface and depth dependent density model (depth computation)
-
-{
-
-	if(lim->gwType == _GW_SURF_ && !lim->isSurface)
-	{
-		SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "Ground water level requires activating free surface (gw_level_type, surf_use)");
-	}
-
-
-	if((m->rp || m->rho_n) && !lim->rho_fluid)
-	{
-		SETERRQ1(PETSC_COMM_SELF, PETSC_ERR_USER, "Fluid density must be specified for phase %lld (rho_n, rho_c, rp, rho_fluid)\n", (LLD)ID);
-	}
-
-	if(m->rp && lim->gwType == _GW_NONE_)
-	{
-		SETERRQ1(PETSC_COMM_SELF, PETSC_ERR_USER, "Pore pressure ratio requires defining ground water level type for phase %lld (rp, gw_level_type)\n", (LLD)ID);
-	}
-
-	if(m->rho_n && !lim->isSurface)
-	{
-		SETERRQ1(PETSC_COMM_SELF, PETSC_ERR_USER, "Depth-dependent density requires activating free surface for phase %lld (rho_n, surf_use)\n", (LLD)ID);
-	}
-
-	// set elastic rheology flag
-	if(G || K) lim->isElastic = 1;
-
-
-		cnt = 0;
-	if(lim->quasiHarmAvg) cnt++;
-	if(lim->cf_eta_min)   cnt++;
-	if(lim->n_pw)         cnt++;
-
-	if(cnt > 1)
-	{
-		SETERRQ(PETSC_COMM_SELF, PETSC_ERR_USER, "Cannot combine plasticity stabilization methods (quasi_harm_avg, cf_eta_min, n_pw) \n");
-	}
-
-	if(cnt && lim->jac_mat_free)
-	{
-		SETERRQ(PETSC_COMM_SELF, PETSC_ERR_USER, "Analytical Jacobian is not available for plasticity stabilizations (jac_mat_free, quasi_harm_avg, cf_eta_min, n_pw) \n");
-	}
-
-	if(jr->pShiftAct && lim->jac_mat_free)
-	{
-		SETERRQ(PETSC_COMM_SELF, PETSC_ERR_USER, "Analytical Jacobian is incompatible with pressure shifting (jac_mat_free, act_p_shift) \n");
-	}
-
-	if(!jr->bc->top_open && lim->jac_mat_free)
-	{
-		SETERRQ(PETSC_COMM_SELF, PETSC_ERR_USER, "Analytical Jacobian requires open top boundary (jac_mat_free, open_top_bound) \n");
-	}
-
-	// activate elasticity-compliant time-stepping
-	if(lim->isElastic)
-	{
-		ierr = TSSolSetupElasticity(jr->ts); CHKERRQ(ierr);
-	}
-
-
-}
-*/
 
 
 

@@ -100,7 +100,6 @@
 #include <errno.h>
 
 // Get rid of unnecessary PETSc-induced warnings when using gcc compiler
-// This is supposed to work with -Wall -Wconversion -Wcast-qual -Wshadow options
 
 #ifdef GCC_COMPILER
 

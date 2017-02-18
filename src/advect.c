@@ -90,6 +90,7 @@ PetscErrorCode ADVCreate(AdvCtx *actx, FB *fb)
 	actx->NumPartZ =  2;
 	actx->bgPhase  = -1;
 	actx->A        =  2.0/3.0;
+	actx->surfTol  =  0.05;
 	maxPhaseID     = actx->dbm->numPhases - 1;
 
 	// READ
@@ -110,6 +111,7 @@ PetscErrorCode ADVCreate(AdvCtx *actx, FB *fb)
 	ierr = getScalarParam(fb, _OPTIONAL_, "stagp_a",        &actx->A,            1, 1.0);         CHKERRQ(ierr);
 	ierr = getIntParam   (fb, _OPTIONAL_, "use_mark_contr", &actx->markContr,    1, 1);           CHKERRQ(ierr);
 	ierr = getIntParam   (fb, _OPTIONAL_, "new_mark_contr", &actx->newMarkContr, 1, 1);           CHKERRQ(ierr);
+	ierr = getScalarParam(fb, _OPTIONAL_, "surf_tol",       &actx->surfTol,      1, 1.0);         CHKERRQ(ierr);
 
 	// CHECK
 
@@ -172,6 +174,9 @@ PetscErrorCode ADVCreate(AdvCtx *actx, FB *fb)
 
 	// compute host cells for all the markers
 	ierr = ADVMapMarkToCells(actx); CHKERRQ(ierr);
+
+	// change marker phase when crossing free surface
+	ierr = ADVMarkCrossFreeSurf(actx); CHKERRQ(ierr);
 
 	// check marker distribution
 	ierr = ADVMarkCheckMarkers(actx); CHKERRQ(ierr);
@@ -397,7 +402,7 @@ PetscErrorCode ADVRemap(AdvCtx *actx)
 	}
 
 	// change marker phase when crossing flat surface or free surface with fast sedimentation/erosion
-	ierr = ADVMarkCrossFreeSurf(actx, 0.05); CHKERRQ(ierr);
+	ierr = ADVMarkCrossFreeSurf(actx); CHKERRQ(ierr);
 
 	// project advected history from markers back to grid
 	ierr = ADVProjHistMarkToGrid(actx); CHKERRQ(ierr);
@@ -1588,6 +1593,9 @@ PetscErrorCode ADVProjHistMarkToGrid(AdvCtx *actx)
 	// interpolate plastic strain to edges
 	ierr = ADVInterpMarkToEdge(actx, 0, _APS_); CHKERRQ(ierr);
 
+	// update phase ratios taking into account actual free surface position
+	ierr = FreeSurfGetAirPhaseRatio(actx->surf); CHKERRQ(ierr);
+
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
@@ -1839,7 +1847,7 @@ PetscErrorCode ADVInterpMarkToEdge(AdvCtx *actx, PetscInt iphase, InterpCase ica
 //---------------------------------------------------------------------------
 #undef __FUNCT__
 #define __FUNCT__ "ADVMarkCrossFreeSurf"
-PetscErrorCode ADVMarkCrossFreeSurf(AdvCtx *actx, PetscScalar tol)
+PetscErrorCode ADVMarkCrossFreeSurf(AdvCtx *actx)
 {
 
 	// change marker phase when crossing free surface
@@ -1848,7 +1856,7 @@ PetscErrorCode ADVMarkCrossFreeSurf(AdvCtx *actx, PetscScalar tol)
 	FreeSurf    *surf;
 	PetscInt    sx, sy, nx, ny;
 	PetscInt    jj, ID, I, J, K, L, AirPhase;
-	PetscScalar ***ltopo, *ncx, *ncy, topo, xp, yp, zp;
+	PetscScalar ***ltopo, *ncx, *ncy, topo, xp, yp, zp, tol;
 
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
@@ -1861,6 +1869,7 @@ PetscErrorCode ADVMarkCrossFreeSurf(AdvCtx *actx, PetscScalar tol)
 	fs        = actx->fs;
 	L         = fs->dsz.rank;
 	AirPhase  = surf->AirPhase;
+	tol       = actx->surfTol;
 
 	// starting indices & number of cells
 	sx = fs->dsx.pstart; nx = fs->dsx.ncels;
