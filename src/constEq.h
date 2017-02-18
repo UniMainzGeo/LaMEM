@@ -142,7 +142,6 @@ PetscErrorCode VolConstEq(
 // compute stress, plastic strain-rate and shear heating term on cell
 PetscErrorCode GetStressCell(
 		SolVarCell  *svCell, // solution variables
-		Controls    *ctrl,   // parameters and controls
 		PetscScalar  dxx,    // effective normal strain rate components
 		PetscScalar  dyy,    // ...
 		PetscScalar  dzz);   // ...
@@ -150,7 +149,6 @@ PetscErrorCode GetStressCell(
 // compute stress, plastic strain-rate and shear heating term on edge
 PetscErrorCode GetStressEdge(
 	SolVarEdge  *svEdge, // solution variables
-	Controls    *ctrl,    // parameters and controls
 	PetscScalar  d);     // effective shear strain rate component
 
 //---------------------------------------------------------------------------

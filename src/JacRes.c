@@ -63,7 +63,8 @@ PetscErrorCode JacResCreate(JacRes *jr, FB *fb)
 	Controls   *ctrl;
 	PetscScalar input_eta_max;
 	char        gwtype [_STR_LEN_];
-	PetscInt    i, ID, cnt, numPhases, isElastic;
+	PetscInt    i, ID, cnt, numPhases;
+	PetscInt    is_elastic, need_DII_ref, need_RUGC;
 
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
@@ -127,15 +128,30 @@ PetscErrorCode JacResCreate(JacRes *jr, FB *fb)
 	// CROSS-CHECK OPTIONS
 	//====================
 
+	if(ctrl->FSSA < 0.0 || ctrl->FSSA > 1.0)
+	{
+		SETERRQ(PETSC_COMM_SELF, PETSC_ERR_USER, "Free surface stabilization parameter must be between 0 and 1 (FSSA)");
+	}
+
+	if(ctrl->shearHeatEff < 0.0 || ctrl->shearHeatEff > 1.0)
+	{
+		SETERRQ(PETSC_COMM_SELF, PETSC_ERR_USER, "Shear heating efficiency parameter must be between 0 and 1 (shear_heat_eff)");
+	}
+
 	if(ctrl->gwType == _GW_LEVEL_ && ctrl->gwLevel == DBL_MAX)
 	{
 		SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "Ground water level must be specified (gw_level_type, gw_level)");
 	}
 
-	// set default Biot pressure parameter
+	// set default Biot pressure parameter (if not set)
 	if(ctrl->gwType != _GW_NONE_ && !ctrl->biot)
 	{
 		ctrl->biot = 1.0;
+	}
+
+	if(ctrl->biot < 0.0 || ctrl->biot > 1.0)
+	{
+		SETERRQ(PETSC_COMM_SELF, PETSC_ERR_USER, "Biot pressure parameter must be between 0 and 1 (biot)");
 	}
 
 	if(ctrl->gwType == _GW_SURF_ && !surf->UseFreeSurf)
@@ -144,35 +160,50 @@ PetscErrorCode JacResCreate(JacRes *jr, FB *fb)
 	}
 
 	// check phase parameters
-	for(i = 0, isElastic = 0; i < numPhases; i++)
+	is_elastic   = 0;
+	need_DII_ref = 0;
+	need_RUGC    = 0;
+
+	for(i = 0; i < numPhases; i++)
 	{
 		m  = jr->dbm->phases + i;
 		ID = m ->ID;
 
-		// MORE CHECKS HERE (DII_ref, RUGC)
-
 		if((m->rp || m->rho_n) && !ctrl->rho_fluid)
 		{
-			SETERRQ1(PETSC_COMM_SELF, PETSC_ERR_USER, "Fluid density must be specified for phase %lld (rho_n, rho_c, rp, rho_fluid)\n", (LLD)ID);
+			SETERRQ1(PETSC_COMM_SELF, PETSC_ERR_USER, "Phase %lld requires setting fluid density (rho_n, rho_c, rp, rho_fluid)\n", (LLD)ID);
 		}
 
 		if(m->rp && ctrl->gwType == _GW_NONE_)
 		{
-			SETERRQ1(PETSC_COMM_SELF, PETSC_ERR_USER, "Pore pressure ratio requires defining ground water level type for phase %lld (rp, gw_level_type)\n", (LLD)ID);
+			SETERRQ1(PETSC_COMM_SELF, PETSC_ERR_USER, "Phase %lld requires defining ground water level type (rp, gw_level_type)\n", (LLD)ID);
 		}
 
 		if(m->rho_n && !surf->UseFreeSurf)
 		{
-			SETERRQ1(PETSC_COMM_SELF, PETSC_ERR_USER, "Depth-dependent density requires activating free surface for phase %lld (rho_n, surf_use)\n", (LLD)ID);
+			SETERRQ1(PETSC_COMM_SELF, PETSC_ERR_USER, "Phase %lld requires activating free surface (rho_n, rho_c, surf_use)\n", (LLD)ID);
 		}
 
-		if(m->G || m->K) isElastic = 1;
+		if(m->G  || m->K)  is_elastic   = 1;
+		if(m->Bn || m->Bp) need_DII_ref = 1;
+		if(m->En || m->Ep) need_RUGC    = 1;
+
 	}
 
 	// activate elasticity-compliant time-stepping
-	if(isElastic)
+	if(is_elastic)
 	{
 		ierr = TSSolSetupElasticity(jr->ts); CHKERRQ(ierr);
+	}
+
+	if(need_DII_ref && !ctrl->DII_ref)
+	{
+		SETERRQ(PETSC_COMM_SELF, PETSC_ERR_USER, "Reference strain rate must be specified (DII_ref)\n");
+	}
+
+	if(need_RUGC && !ctrl->Rugc)
+	{
+		SETERRQ(PETSC_COMM_SELF, PETSC_ERR_USER, "Universal gas constant must be specified (RUGC)\n");
 	}
 
 	// check thermal material parameters
@@ -1023,7 +1054,7 @@ PetscErrorCode JacResGetResidual(JacRes *jr)
 		svCell->eta_vp    = eta_vp;
 
 		// compute stress, plastic strain rate and shear heating term on cell
-		ierr = GetStressCell(svCell, ctrl, XX, YY, ZZ); CHKERRQ(ierr);
+		ierr = GetStressCell(svCell, XX, YY, ZZ); CHKERRQ(ierr);
 
 		// get total pressure (effective pressure, computed by LaMEM, plus pore pressure)
 		ptotal = pc + biot*pc_pore;
@@ -1171,7 +1202,7 @@ PetscErrorCode JacResGetResidual(JacRes *jr)
 		ierr = DevConstEq(svDev, &eta_creep, &eta_vp, numPhases, phases, svEdge->phRat, ctrl, pc_lithos, pc_pore, dt, pc-pShift, Tc); CHKERRQ(ierr);
 
 		// compute stress, plastic strain rate and shear heating term on edge
-		ierr = GetStressEdge(svEdge, ctrl, XY); CHKERRQ(ierr);
+		ierr = GetStressEdge(svEdge, XY); CHKERRQ(ierr);
 
 		// access xy component of the Cauchy stress
 		sxy = svEdge->s;
@@ -1279,7 +1310,7 @@ PetscErrorCode JacResGetResidual(JacRes *jr)
 		ierr = DevConstEq(svDev, &eta_creep, &eta_vp, numPhases, phases, svEdge->phRat, ctrl, pc_lithos, pc_pore, dt, pc-pShift, Tc); CHKERRQ(ierr);
 
 		// compute stress, plastic strain rate and shear heating term on edge
-		ierr = GetStressEdge(svEdge, ctrl, XZ); CHKERRQ(ierr);
+		ierr = GetStressEdge(svEdge, XZ); CHKERRQ(ierr);
 
 		// access xz component of the Cauchy stress
 		sxz = svEdge->s;
@@ -1387,7 +1418,7 @@ PetscErrorCode JacResGetResidual(JacRes *jr)
 		ierr = DevConstEq(svDev, &eta_creep, &eta_vp, numPhases, phases, svEdge->phRat, ctrl, pc_lithos, pc_pore, dt, pc-pShift, Tc); CHKERRQ(ierr);
 
 		// compute stress, plastic strain rate and shear heating term on edge
-		ierr = GetStressEdge(svEdge, ctrl, YZ); CHKERRQ(ierr);
+		ierr = GetStressEdge(svEdge, YZ); CHKERRQ(ierr);
 
 		// access yz component of the Cauchy stress
 		syz = svEdge->s;

@@ -582,7 +582,6 @@ PetscErrorCode VolConstEq(
 #define __FUNCT__ "GetStressCell"
 PetscErrorCode GetStressCell(
 		SolVarCell  *svCell, // solution variables
-		Controls    *ctrl,   // parameters and controls
 		PetscScalar  dxx,    // effective normal strain rate components
 		PetscScalar  dyy,    //
 		PetscScalar  dzz)   //
@@ -605,11 +604,9 @@ PetscErrorCode GetStressCell(
 	// get strain-rate invariant
 	DII = svDev->DII;
 
-	// use reference strain-rate instead of zero
-	if(DII == 0.0) DII = ctrl->DII_ref;
-
 	// compute plastic scaling coefficient
-	cfpl = svDev->DIIpl/DII;
+	if(DII) cfpl = svDev->DIIpl/DII;
+	else    cfpl = 0.0;
 
 	// compute plastic strain-rate components
 	txx = cfpl*dxx;
@@ -635,7 +632,6 @@ PetscErrorCode GetStressCell(
 #define __FUNCT__ "GetStressEdge"
 PetscErrorCode GetStressEdge(
 		SolVarEdge  *svEdge, // solution variables
-		Controls    *ctrl,    // parameters and controls
 		PetscScalar  d)      // effective shear strain rate component
 {
 
@@ -653,11 +649,9 @@ PetscErrorCode GetStressEdge(
 	// get strain-rate invariant
 	DII = svDev->DII;
 
-	// use reference strain-rate instead of zero
-	if(DII == 0.0) DII = ctrl->DII_ref;
-
 	// compute plastic scaling coefficient
-	cfpl = svDev->DIIpl/DII;
+	if(DII) cfpl = svDev->DIIpl/DII;
+	else    cfpl = 0.0;
 
 	// compute plastic strain-rate components
 	t = cfpl*d;
