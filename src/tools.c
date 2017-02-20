@@ -45,6 +45,7 @@
 //---------------------------------------------------------------------------
 #include "LaMEM.h"
 #include "tools.h"
+#include <unistd.h>
 //---------------------------------------------------------------------------
 #undef __FUNCT__
 #define __FUNCT__ "VecReadRestart"
@@ -203,35 +204,116 @@ PetscInt ISParallel(MPI_Comm comm)
 	return (size > 1);
 }
 //---------------------------------------------------------------------------
-// Creates an output directory
 #undef __FUNCT__
-#define __FUNCT__ "LaMEMCreateOutputDirectory"
-PetscErrorCode LaMEMCreateOutputDirectory(const char *DirectoryName)
+#define __FUNCT__ "DirMake"
+PetscErrorCode DirMake(const char *name)
 {
+	int status;
+
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
 
-	// generate a new directory on rank zero
+	// create a new directory on rank zero
 	if(ISRankZero(PETSC_COMM_WORLD))
 	{
 		// standard access pattern drwxr-xr-x
-		if(mkdir(DirectoryName, S_IRWXU | S_IRGRP | S_IXGRP | S_IROTH | S_IXOTH))
+		status = mkdir(name, S_IRWXU | S_IRGRP | S_IXGRP | S_IROTH | S_IXOTH);
+
+		if(status && errno != EEXIST)
 		{
-			PetscPrintf(PETSC_COMM_WORLD," Writing to existing directory %s \n", DirectoryName);
-		}
-		else
-		{
-			PetscPrintf(PETSC_COMM_WORLD," Created new directory %s \n", DirectoryName);
+			SETERRQ1(PETSC_COMM_WORLD, PETSC_ERR_USER, "Failed to create directory %s", name);
 		}
 	}
 
-	// all other ranks should wait
+	// synchronize
 	ierr = MPI_Barrier(PETSC_COMM_WORLD); CHKERRQ(ierr);
 
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-//
+#undef __FUNCT__
+#define __FUNCT__ "DirRemove"
+PetscErrorCode DirRemove(const char *name)
+{
+	int status;
+
+	PetscErrorCode ierr;
+	PetscFunctionBegin;
+
+	// synchronize
+	ierr = MPI_Barrier(PETSC_COMM_WORLD); CHKERRQ(ierr);
+
+	// remove directory on rank zero
+	if(ISRankZero(PETSC_COMM_WORLD))
+	{
+		status = rmdir(name);
+
+		if(status)
+		{
+			SETERRQ1(PETSC_COMM_WORLD, PETSC_ERR_USER, "Failed to remove directory %s", name);
+		}
+	}
+
+	PetscFunctionReturn(0);
+}
+//---------------------------------------------------------------------------
+#undef __FUNCT__
+#define __FUNCT__ "DirRename"
+PetscErrorCode DirRename(const char *old_name, const char *new_name)
+{
+	int status;
+
+	PetscErrorCode ierr;
+	PetscFunctionBegin;
+
+	// synchronize
+	ierr = MPI_Barrier(PETSC_COMM_WORLD); CHKERRQ(ierr);
+
+	// rename directory on rank zero
+	if(ISRankZero(PETSC_COMM_WORLD))
+	{
+		status = rename(old_name, new_name);
+
+		if(status)
+		{
+			SETERRQ2(PETSC_COMM_WORLD, PETSC_ERR_USER, "Failed to rename directory %s into %s", old_name, new_name);
+		}
+	}
+
+	PetscFunctionReturn(0);
+}
+//---------------------------------------------------------------------------
+#undef __FUNCT__
+#define __FUNCT__ "DirCheck"
+PetscErrorCode DirCheck(const char *name, PetscInt *exists)
+{
+	struct stat s;
+	int         status;
+	PetscInt    check;
+
+	PetscErrorCode ierr;
+	PetscFunctionBegin;
+
+	// check directory on rank zero
+	if(ISRankZero(PETSC_COMM_WORLD))
+	{
+		status = stat(name, &s);
+
+		// check whether file exists and is a directory
+		check = (!status && S_ISDIR(s.st_mode));
+	}
+
+	// synchronize
+	if(ISParallel(PETSC_COMM_WORLD))
+	{
+		ierr = MPI_Bcast(&check, 1, MPIU_INT, 0, PETSC_COMM_WORLD); CHKERRQ(ierr);
+	}
+
+	(*exists) = check;
+
+	PetscFunctionReturn(0);
+}
+//---------------------------------------------------------------------------
 // Fast detection points inside a polygonal region.
 //
 // Originally written as a MATLAB mexFunction by:

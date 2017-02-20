@@ -76,10 +76,10 @@ PetscErrorCode LaMEMLibMain(void *param)
 {
 	LaMEMLib       lm;
 	RunMode        mode;
-	struct stat    s;
 	PetscBool      found;
-	PetscLogDouble cputime_start, cputime_end;
+	PetscInt       exists;
 	char           str[_STR_LEN_];
+	PetscLogDouble cputime_start, cputime_end;
 
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
@@ -109,9 +109,14 @@ PetscErrorCode LaMEMLibMain(void *param)
 	}
 
 	// cancel restart if no database is available
-	if(mode == _RESTART_ && !(!stat("./restart", &s) && S_ISDIR(s.st_mode)))
+	if(mode == _RESTART_)
 	{
-		SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "No restart database available (check -mode option)");
+		ierr = DirCheck("./restart", &exists); CHKERRQ(ierr);
+
+		if(!exists)
+		{
+			SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "No restart database available (check -mode option)");
+		}
 	}
 
 	//===========
@@ -254,20 +259,59 @@ PetscErrorCode LaMEMLibSaveGrid(LaMEMLib *lm)
 #define __FUNCT__ "LaMEMLibLoadRestart"
 PetscErrorCode LaMEMLibLoadRestart(LaMEMLib *lm)
 {
+	FILE        *fp;
+	PetscMPIInt  rank;
+	char        *fileName;
+
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
 
+	// get MPI processor rank
+	MPI_Comm_rank(PETSC_COMM_WORLD, &rank);
 
-	// check whether solution is finished before proceeding
+	// compile restart file name
+	asprintf(&fileName, "./restart/rdb.%1.8lld.dat", (LLD)rank);
 
-	// finish simulation if time_end was reached
-//	if (jr.ts.istep >= jr.ts.nstep)
-//	{
-//	}
+	// open restart file for reading in binary mode
+	fp = fopen(fileName, "rb");
+
+	if(fp == NULL)
+	{
+		SETERRQ1(PETSC_COMM_WORLD, PETSC_ERR_USER, "Cannot open restart file %s\n", fileName);
+	}
+
+	// read LaMEM library database
+	fread(lm, sizeof(LaMEMLib), 1, fp);
 
 	// setup cross-references between library objects
 	ierr = LaMEMLibSetLinks(lm); CHKERRQ(ierr);
 
+	// staggered grid
+	ierr = FDSTAGReadRestart(&lm->fs, fp); CHKERRQ(ierr);
+
+	// free surface
+	ierr = FreeSurfReadRestart(&lm->surf, fp); CHKERRQ(ierr);
+
+	// boundary conditions context
+	ierr = BCCreateData(&lm->bc); CHKERRQ(ierr);
+
+	// solution variables
+	ierr = JacResReadRestart(&lm->jr, fp); CHKERRQ(ierr);
+
+	// markers
+	ierr = ADVReadRestart(&lm->actx, fp); CHKERRQ(ierr);
+
+	// main output driver
+	ierr = PVOutCreateData(&lm->pvout); CHKERRQ(ierr);
+
+	// surface output driver
+	ierr = PVSurfCreateData(&lm->pvsurf); CHKERRQ(ierr);
+
+	// close temporary restart file
+	fclose(fp);
+
+	// free space
+	free(fileName);
 
 	PetscFunctionReturn(0);
 }
@@ -278,6 +322,67 @@ PetscErrorCode LaMEMLibSaveRestart(LaMEMLib *lm)
 {
 	// save new restart database, then delete the original
 
+	FILE        *fp;
+	PetscMPIInt  rank;
+	PetscInt     exists;
+	char        *fileName, *fileNameTmp;
+
+	PetscErrorCode ierr;
+	PetscFunctionBegin;
+
+	// get MPI processor rank
+	MPI_Comm_rank(PETSC_COMM_WORLD, &rank);
+
+	// compile actual & temporary restart file name
+	asprintf(&fileName,    "./restart/rdb.%1.8lld.dat",     (LLD)rank);
+	asprintf(&fileNameTmp, "./restart-tmp/rdb.%1.8lld.dat", (LLD)rank);
+
+	// create temporary restart directory
+	ierr = DirMake("./restart-tmp"); CHKERRQ(ierr);
+
+	// open temporary restart file for writing in binary mode
+	fp = fopen(fileNameTmp, "wb");
+
+	if(fp == NULL)
+	{
+		SETERRQ1(PETSC_COMM_WORLD, PETSC_ERR_USER, "Cannot open restart file %s\n", fileNameTmp);
+	}
+
+	// write LaMEM library database
+	fwrite(lm, sizeof(LaMEMLib), 1, fp);
+
+	// staggered grid
+	ierr = FDSTAGWriteRestart(&lm->fs, fp); CHKERRQ(ierr);
+
+	// free surface
+	ierr = FreeSurfWriteRestart(&lm->surf, fp); CHKERRQ(ierr);
+
+	// solution variables
+	ierr = JacResWriteRestart(&lm->jr, fp); CHKERRQ(ierr);
+
+	// markers
+	ierr = ADVWriteRestart(&lm->actx, fp); CHKERRQ(ierr);
+
+	// close temporary restart file
+	fclose(fp);
+
+	// check for existing restart database
+	ierr = DirCheck("./restart", &exists); CHKERRQ(ierr);
+
+	if(exists)
+	{
+		// delete existing database
+		remove(fileName);
+
+		ierr = DirRemove("./restart"); CHKERRQ(ierr);
+	}
+
+	// push temporary database to actual
+	ierr = DirRename("./restart-tmp", "./restart");
+
+	// free space
+	free(fileName);
+	free(fileNameTmp);
 
 	PetscFunctionReturn(0);
 }
@@ -335,7 +440,12 @@ PetscErrorCode LaMEMLibSetLinks(LaMEMLib *lm)
 	PetscFunctionBegin;
 
 	lm->ts.scal     = &lm->scal;
+
 	lm->fs.scal     = &lm->scal;
+
+	lm->dbm.scal    = &lm->scal;
+
+	lm->surf.jr     = &lm->jr;
 
 	lm->bc.scal     = &lm->scal;
 	lm->bc.ts       = &lm->ts;
@@ -347,8 +457,6 @@ PetscErrorCode LaMEMLibSetLinks(LaMEMLib *lm)
 	lm->jr.surf     = &lm->surf;
 	lm->jr.bc       = &lm->bc;
 	lm->jr.dbm      = &lm->dbm;
-
-	lm->surf.jr     = &lm->jr;
 
 	lm->actx.fs     = &lm->fs;
 	lm->actx.jr     = &lm->jr;
@@ -425,15 +533,15 @@ PetscErrorCode LaMEMLibSolve(LaMEMLib *lm, void *param)
 	PCStokes pc;     // Stokes preconditioner (to be removed!)
 	NLSol    nl;     // nonlinear solver context (to be removed!)
 	SNES     snes;   // PETSc nonlinear solver
-//	ObjFunct objf;   // objective function
+
+
 
 	PetscInt  done;
 
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
 
-	// create objective function object
-//	ierr = ObjFunctCreate(&objf, IOparam, &surf); CHKERRQ(ierr);
+
 
 
 	// create Stokes preconditioner & matrix
@@ -626,7 +734,6 @@ PetscErrorCode LaMEMLibSolve(LaMEMLib *lm, void *param)
 	ierr = PMatDestroy    (pm);    CHKERRQ(ierr);
 	ierr = SNESDestroy    (&snes); CHKERRQ(ierr);
 	ierr = NLSolDestroy   (&nl);   CHKERRQ(ierr);
-//	ierr = ObjFunctDestroy(&objf); CHKERRQ(ierr);
 
 	PetscFunctionReturn(0);
 }
@@ -641,3 +748,10 @@ PetscErrorCode LaMEMLibDryRun(LaMEMLib *lm)
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
+
+//	ObjFunct objf;   // objective function
+//	ierr = ObjFunctCreate(&objf, &IOparam, &lm->surf, fb); CHKERRQ(ierr);
+//	ierr = ObjFunctDestroy(&objf); CHKERRQ(ierr);
+
+//---------------------------------------------------------------------------
+

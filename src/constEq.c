@@ -53,6 +53,7 @@
 PetscErrorCode ConstEqCtxSetup(
 		ConstEqCtx  *ctx,      // evaluation context
 		Material_t  *mat,      // phase parameters
+		Soft_t      *soft,     // material softening laws
 		Controls    *ctrl,     // parameters and controls
 		PetscScalar  DII,      // effective strain-rate
 		PetscScalar  APS,      // accumulated plastic strain
@@ -146,8 +147,8 @@ PetscErrorCode ConstEqCtxSetup(
 	//===========
 
 	// apply strain softening to friction and cohesion
-	ch = ApplyStrainSoft(mat->chSoft, APS, mat->ch);
-	fr = ApplyStrainSoft(mat->frSoft, APS, mat->fr);
+	ch = ApplyStrainSoft(soft, mat->chSoftID, APS, mat->ch);
+	fr = ApplyStrainSoft(soft, mat->frSoftID, APS, mat->fr);
 
 	// fit to limits
 	if(ch < ctrl->minCh) ch = ctrl->minCh;
@@ -376,18 +377,22 @@ PetscErrorCode GetEffVisc(
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-PetscScalar ApplyStrainSoft(Soft_t *sl, PetscScalar APS, PetscScalar par)
+PetscScalar ApplyStrainSoft(Soft_t *soft, PetscInt ID, PetscScalar APS, PetscScalar par)
 {
 	// Apply strain softening to a parameter (friction, cohesion)
-	PetscScalar k;
-	if(!sl) return par;
+	PetscScalar  k;
+	Soft_t      *s;
+	// check whether softening is defined
+	if(ID == -1) return par;
+	// access parameters
+	s = soft + ID;
 	// compute scaling ratio
-	if(APS <= sl->APS1)
+	if(APS <= s->APS1)
 		k = 1.0;
-	if(APS > sl->APS1 && APS < sl->APS2)
-		k = 1.0 - sl->A*((APS - sl->APS1)/(sl->APS2 - sl->APS1));
-	if(APS >= sl->APS2)
-		k = 1.0 - sl->A;		// so A=0.99, means 99% softening
+	if(APS > s->APS1 && APS < s->APS2)
+		k = 1.0 - s->A*((APS - s->APS1)/(s->APS2 - s->APS1));
+	if(APS >= s->APS2)
+		k = 1.0 - s->A;
 	// apply strain softening
 	return par*k;
 }
@@ -428,6 +433,7 @@ PetscErrorCode DevConstEq(
 		PetscScalar *eta_vp,    // viscoplastic viscosity (for output)
 		PetscInt     numPhases, // number phases
 		Material_t  *phases,    // phase parameters
+		Soft_t      *soft,      // material softening laws
 		PetscScalar *phRat,     // phase ratios
 		Controls    *ctrl,       // parameters and controls
 		PetscScalar  p_lithos,  // lithostatic pressure
@@ -472,7 +478,7 @@ PetscErrorCode DevConstEq(
 			mat = &phases[i];
 
 			// setup nonlinear constitutive equation evaluation context
-			ierr = ConstEqCtxSetup(&ctx, mat, ctrl, DII, APS, dt, p, p_lithos, p_pore, T); CHKERRQ(ierr);
+			ierr = ConstEqCtxSetup(&ctx, mat, soft, ctrl, DII, APS, dt, p, p_lithos, p_pore, T); CHKERRQ(ierr);
 
 			// solve effective viscosity & plastic strain rate
 			ierr = GetEffVisc(&ctx, ctrl, &eta_total, &eta_creep_phase, &eta_viscoplastic_phase, &DIIpl, &dEta, &fr); CHKERRQ(ierr);

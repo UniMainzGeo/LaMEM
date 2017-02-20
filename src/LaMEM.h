@@ -131,16 +131,16 @@
 //-----------------------------------------------------------------------------
 
 // LaMEM library main function
-
+/*
 #ifdef __cplusplus
 extern "C" {
 #endif
-
+*/
 PetscErrorCode LaMEMLibMain(void *param);
-
+/*
 #ifdef __cplusplus
 }
 #endif
-
+*/
 //-----------------------------------------------------------------------------
 #endif

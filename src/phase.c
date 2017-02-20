@@ -309,9 +309,9 @@ PetscErrorCode DBMatReadPhase(DBMat *dbm, FB *fb)
 		SETERRQ1(PETSC_COMM_SELF, PETSC_ERR_USER, "Cohesion must be specified for phase %lld (ch)", (LLD)ID);
 	}
 
-	// set pointers to softening laws
-	if(chSoftID != -1) m->chSoft = dbm->matSoft + chSoftID;
-	if(frSoftID != -1) m->frSoft = dbm->matSoft + frSoftID;
+	// set softening law IDs
+	m->chSoftID = chSoftID;
+	m->frSoftID = frSoftID;
 
 	// DIFFUSION
 

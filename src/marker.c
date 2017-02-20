@@ -247,7 +247,7 @@ PetscErrorCode ADVMarkSave(AdvCtx *actx)
 	PetscPrintf(PETSC_COMM_WORLD," Saving markers in parallel to files: ./%s/%s.xxx.dat \n", actx->savePath, actx->saveName);
 
 	// create directory
-	ierr = LaMEMCreateOutputDirectory(actx->savePath); CHKERRQ(ierr);
+	ierr = DirMake(actx->savePath); CHKERRQ(ierr);
 
 	// compile file name
 	asprintf(&filename, "./%s/%s.%1.8lld.dat", actx->savePath, actx->saveName, (LLD)actx->iproc);

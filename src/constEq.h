@@ -80,6 +80,7 @@ struct ConstEqCtx
 PetscErrorCode ConstEqCtxSetup(
 	ConstEqCtx  *ctx,      // evaluation context
 	Material_t  *mat,      // phase parameters
+	Soft_t      *soft,     // material softening laws
 	Controls    *ctrl,     // parameters and controls
 	PetscScalar  DII,      // effective strain-rate
 	PetscScalar  APS,      // accumulated plastic strain
@@ -103,7 +104,7 @@ PetscErrorCode GetEffVisc(
 	PetscScalar *fr);
 
 // apply strain softening to a parameter (friction, cohesion)
-PetscScalar ApplyStrainSoft(Soft_t *sl, PetscScalar APS, PetscScalar par);
+PetscScalar ApplyStrainSoft(Soft_t *soft, PetscInt ID, PetscScalar APS, PetscScalar par);
 
 // compute inverse elastic viscosity in control volume
 PetscScalar GetI2Gdt(
@@ -119,8 +120,9 @@ PetscErrorCode DevConstEq(
 	PetscScalar *eta_vp,    // viscoplastic viscosity (for output)
 	PetscInt     numPhases, // number phases
 	Material_t  *phases,    // phase parameters
+	Soft_t      *soft,      // material softening laws
 	PetscScalar *phRat,     // phase ratios
-	Controls    *ctrl,       // parameters and controls
+	Controls    *ctrl,      // parameters and controls
 	PetscScalar  p_lithos,  // lithostatic pressure
 	PetscScalar  p_pore,    // pore pressure
 	PetscScalar  dt,        // time step
