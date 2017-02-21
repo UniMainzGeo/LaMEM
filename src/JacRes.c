@@ -473,6 +473,27 @@ PetscErrorCode JacResDestroy(JacRes *jr)
 }
 //---------------------------------------------------------------------------
 #undef __FUNCT__
+#define __FUNCT__ "JacResUpdateFlags"
+PetscErrorCode JacResUpdateFlags(JacRes *jr)
+{
+	Controls *ctrl;
+	TSSol    *ts;
+	PetscInt  step;
+
+	ctrl = &jr->ctrl;
+	ts   =  jr->ts;
+	step =  TSSolGetStep(ts);
+
+	if(step == 1)
+	{
+		// switch off initial guess flag
+		ctrl->initGuess = 0;
+	}
+
+	PetscFunctionReturn(0);
+}
+//---------------------------------------------------------------------------
+#undef __FUNCT__
 #define __FUNCT__ "JacResGetI2Gdt"
 PetscErrorCode JacResGetI2Gdt(JacRes *jr)
 {
@@ -1917,40 +1938,28 @@ PetscErrorCode JacResViewRes(JacRes *jr)
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-PetscScalar JacResGetTime(JacRes *jr)
-{
-	return	jr->ts->time*jr->scal->time;
-}
-//---------------------------------------------------------------------------
-PetscInt JacResGetStep(JacRes *jr)
-{
-	return	jr->ts->istep;
-}
-//---------------------------------------------------------------------------
 #undef __FUNCT__
-#define __FUNCT__ "JacResGetCourantStep"
-PetscErrorCode JacResGetCourantStep(JacRes *jr)
+#define __FUNCT__ "JacResgetMaxInvStep"
+PetscErrorCode JacResgetMaxInvStep(JacRes *jr, PetscScalar *_gidtmax)
 {
 	//-------------------------------------
 	// compute length of the next time step
 	//-------------------------------------
-/*
+
 	FDSTAG      *fs;
-	TSSol       *ts;
-	PetscScalar dt, lidtmax, gidtmax;
+	PetscScalar  lidtmax, gidtmax;
 
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
 
 	fs =  jr->fs;
-	ts =  jr->ts;
 
 	lidtmax = 0.0;
 
 	// determine maximum local inverse time step
-	ierr = getMaxInvStep1DLocal(&fs->dsx, fs->DA_X, jr->gvx, 0, &lidtmax); CHKERRQ(ierr);
-	ierr = getMaxInvStep1DLocal(&fs->dsy, fs->DA_Y, jr->gvy, 1, &lidtmax); CHKERRQ(ierr);
-	ierr = getMaxInvStep1DLocal(&fs->dsz, fs->DA_Z, jr->gvz, 2, &lidtmax); CHKERRQ(ierr);
+	ierr = Discret1DgetMaxInvStep(&fs->dsx, fs->DA_X, jr->gvx, 0, &lidtmax); CHKERRQ(ierr);
+	ierr = Discret1DgetMaxInvStep(&fs->dsy, fs->DA_Y, jr->gvy, 1, &lidtmax); CHKERRQ(ierr);
+	ierr = Discret1DgetMaxInvStep(&fs->dsz, fs->DA_Z, jr->gvz, 2, &lidtmax); CHKERRQ(ierr);
 
 	// synchronize
 	if(ISParallel(PETSC_COMM_WORLD))
@@ -1962,101 +1971,9 @@ PetscErrorCode JacResGetCourantStep(JacRes *jr)
 		gidtmax = lidtmax;
 	}
 
-
-	ACHTUNG!!!
-
-	// compute time step
-	gidtmax /= ts->Cmax;
-    
-    dt = (ts->dt)*1.1;                          // slightly increase timestep
-    if (dt > 1.0/gidtmax)   dt = 1.0/gidtmax;   // if dt larger than dt_courant, use courant
-    if (dt > ts->dtmax)     dt = ts->dtmax;     // if dt larger than maximum dt use maximum dt
-    
-	// store new time step
-	ts->pdt = ts->dt;
-	ts->dt  = dt;
-*/
-
-	PetscFunctionReturn(0);
-}
-//---------------------------------------------------------------------------
-/*
-#undef __FUNCT__
-#define __FUNCT__ "getMaxInvStep1DLocal"
-PetscErrorCode getMaxInvStep1DLocal(Discret1D *ds, DM da, Vec gv, PetscInt dir, PetscScalar *_idtmax)
-{
-	PetscScalar v, h, vmax, idt, idtmax;
-	PetscInt    i, j, k, nx, ny, nz, sx, sy, sz, idx, ijk[3], jj, ln;
-
-	PetscErrorCode ierr;
-	PetscFunctionBegin;
-
-	// initialize
-	idtmax = (*_idtmax);
-
-	if(!ds->uniform)
-	{
-		// compute time step on variable spacing grid
-		PetscScalar ***va;
-
-		ierr = DMDAGetCorners(da, &sx, &sy, &sz, &nx, &ny, &nz); CHKERRQ(ierr);
-		ierr = DMDAVecGetArray(da, gv, &va);                     CHKERRQ(ierr);
-
-		START_STD_LOOP
-		{
-			// get velocity
-			v = va[k][j][i];
-
-			// prepare node index buffer
-			ijk[0] = i-sx;
-			ijk[1] = j-sy;
-			ijk[2] = k-sz;
-
-			// anisotropic direction-dependent criterion
-			if(v >= 0.0)  idx = ijk[dir];
-			else          idx = ijk[dir]-1;
-
-			// get mesh step
-			h = ds->ncoor[idx+1] - ds->ncoor[idx];
-
-			// get inverse time step (safe to compute)
-			idt = v/h;
-
-			// update maximum inverse time step
-			if(idt > idtmax) idtmax = idt;
-		}
-		END_STD_LOOP
-
-		ierr = DMDAVecRestoreArray(da, gv, &va); CHKERRQ(ierr);
-	}
-	else
-	{
-		// compute time step on uniform spacing grid
-		PetscScalar *va;
-
-		// get maximum local velocity
-		ierr = VecGetLocalSize(gv, &ln); CHKERRQ(ierr);
-		ierr = VecGetArray(gv, &va);     CHKERRQ(ierr);
-
-		vmax = 0.0;
-		for(jj = 0; jj < ln; jj++) { v = PetscAbsScalar(va[jj]); if(v > vmax) vmax = v;	}
-
-		ierr = VecRestoreArray(gv, &va); CHKERRQ(ierr);
-
-		// get uniform mesh step
-		h = (ds->crdend - ds->crdbeg)/(PetscScalar)ds->tcels;
-
-		// get inverse time step
-		idt = vmax/h;
-
-		// update maximum inverse time step
-		if(idt > idtmax) idtmax = idt;
-	}
-
 	// return result
-	(*_idtmax) = idtmax;
+	(*_gidtmax) = gidtmax;
 
 	PetscFunctionReturn(0);
 }
-*/
 //---------------------------------------------------------------------------

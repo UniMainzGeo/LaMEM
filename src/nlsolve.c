@@ -46,6 +46,7 @@
 #include "LaMEM.h"
 #include "matrix.h"
 #include "fdstag.h"
+#include "tssolve.h"
 #include "multigrid.h"
 #include "lsolve.h"
 #include "nlsolve.h"
@@ -319,7 +320,7 @@ PetscErrorCode FormJacobian(SNES snes, Vec x, Mat Amat, Mat Pmat, void *ctx)
 		}
 	}
 
-	if(JacResGetStep(jr) < 2 && nl->it == 0)
+	if(TSSolGetStep(jr->ts) < 2 && nl->it == 0)
 	{
 		// During the first and second timestep of a simulation, always start with picard iterations
 		// that is important as plasticity is only activated during the second timestep, whereas the code might have

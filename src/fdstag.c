@@ -597,6 +597,87 @@ PetscErrorCode Discret1DCheckMG(Discret1D *ds, const char *dir, PetscInt *_ncors
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
+#undef __FUNCT__
+#define __FUNCT__ "Discret1DgetMaxInvStep"
+PetscErrorCode Discret1DgetMaxInvStep(Discret1D *ds, DM da, Vec gv, PetscInt dir, PetscScalar *_idtmax)
+{
+	// get maximum inverse time step on local domain
+
+	PetscScalar v, h, vmax, idt, idtmax;
+	PetscInt    i, j, k, nx, ny, nz, sx, sy, sz, idx, ijk[3], jj, ln;
+
+	PetscErrorCode ierr;
+	PetscFunctionBegin;
+
+	// initialize
+	idtmax = (*_idtmax);
+
+	if(!ds->uniform)
+	{
+		// compute time step on variable spacing grid
+		PetscScalar ***va;
+
+		ierr = DMDAGetCorners(da, &sx, &sy, &sz, &nx, &ny, &nz); CHKERRQ(ierr);
+		ierr = DMDAVecGetArray(da, gv, &va);                     CHKERRQ(ierr);
+
+		START_STD_LOOP
+		{
+			// get velocity
+			v = va[k][j][i];
+
+			// prepare node index buffer
+			ijk[0] = i-sx;
+			ijk[1] = j-sy;
+			ijk[2] = k-sz;
+
+			// anisotropic direction-dependent criterion
+			if(v >= 0.0)  idx = ijk[dir];
+			else          idx = ijk[dir]-1;
+
+			// get mesh step
+			h = ds->ncoor[idx+1] - ds->ncoor[idx];
+
+			// get inverse time step (safe to compute)
+			idt = v/h;
+
+			// update maximum inverse time step
+			if(idt > idtmax) idtmax = idt;
+		}
+		END_STD_LOOP
+
+		ierr = DMDAVecRestoreArray(da, gv, &va); CHKERRQ(ierr);
+	}
+	else
+	{
+		// compute time step on uniform spacing grid
+		PetscScalar *va;
+
+		// get maximum local velocity
+		ierr = VecGetLocalSize(gv, &ln); CHKERRQ(ierr);
+		ierr = VecGetArray(gv, &va);     CHKERRQ(ierr);
+
+		vmax = 0.0;
+		for(jj = 0; jj < ln; jj++) { v = PetscAbsScalar(va[jj]); if(v > vmax) vmax = v;	}
+
+		ierr = VecRestoreArray(gv, &va); CHKERRQ(ierr);
+
+		// get uniform mesh step
+		h = (ds->crdend - ds->crdbeg)/(PetscScalar)ds->tcels;
+
+		// get inverse time step
+		idt = vmax/h;
+
+		// update maximum inverse time step
+		if(idt > idtmax) idtmax = idt;
+	}
+
+	// return result
+	(*_idtmax) = idtmax;
+
+	PetscFunctionReturn(0);
+
+}
+//---------------------------------------------------------------------------
 // DOFIndex functions
 //---------------------------------------------------------------------------
 #undef __FUNCT__

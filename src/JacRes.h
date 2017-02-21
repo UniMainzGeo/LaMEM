@@ -259,6 +259,9 @@ PetscErrorCode JacResWriteRestart(JacRes *jr, FILE *fp);
 PetscErrorCode JacResDestroy(JacRes *jr);
 
 // compute effective inverse elastic viscosity
+PetscErrorCode JacResUpdateFlags(JacRes *jr);
+
+// compute effective inverse elastic viscosity
 PetscErrorCode JacResGetI2Gdt(JacRes *jr);
 
 // get average pressure near the top surface
@@ -293,15 +296,8 @@ PetscErrorCode JacResCopyContinuityRes(JacRes *jr, Vec f);
 
 PetscErrorCode JacResViewRes(JacRes *jr);
 
-PetscScalar JacResGetTime(JacRes *jr);
-
-PetscInt JacResGetStep(JacRes *jr);
-
-PetscErrorCode JacResGetCourantStep(JacRes *jr);
-
-
-// get maximum inverse time step on local domain
-//PetscErrorCode getMaxInvStep1DLocal(Discret1D *ds, DM da, Vec gv, PetscInt dir, PetscScalar *_idtmax);
+// get maximum inverse time step (CFL)
+PetscErrorCode JacResgetMaxInvStep(JacRes *jr, PetscScalar *_gidtmax);
 
 //---------------------------------------------------------------------------
 // Infinite Strain Axis (ISA) computation functions

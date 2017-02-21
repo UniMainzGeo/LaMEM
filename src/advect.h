@@ -298,7 +298,7 @@ PetscErrorCode ADVMarkDeleteOutflow(AdvCtx *actx);
 PetscErrorCode ADVMarkCrossFreeSurf(AdvCtx *actx);
 
 // check marker phases
-PetscErrorCode ADVCheckMarkPhases(AdvCtx *actx, PetscInt numPhases);
+PetscErrorCode ADVCheckMarkPhases(AdvCtx *actx);
 
 //---------------------------------------------------------------------------
 #endif

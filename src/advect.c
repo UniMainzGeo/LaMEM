@@ -270,6 +270,9 @@ PetscErrorCode ADVDestroy(AdvCtx *actx)
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
 
+	// output markers
+	ierr = ADVMarkSave(actx); CHKERRQ(ierr);
+
 	ierr = MPI_Comm_free(&actx->icomm); CHKERRQ(ierr);
 	ierr = PetscFree(actx->markers);    CHKERRQ(ierr);
 	ierr = PetscFree(actx->cellnum);    CHKERRQ(ierr);
@@ -1596,6 +1599,9 @@ PetscErrorCode ADVProjHistMarkToGrid(AdvCtx *actx)
 	// update phase ratios taking into account actual free surface position
 	ierr = FreeSurfGetAirPhaseRatio(actx->surf); CHKERRQ(ierr);
 
+	// check marker phases
+	ierr = ADVCheckMarkPhases(actx); CHKERRQ(ierr);
+
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
@@ -1941,13 +1947,16 @@ PetscErrorCode ADVMarkCrossFreeSurf(AdvCtx *actx)
 //---------------------------------------------------------------------------
 #undef __FUNCT__
 #define __FUNCT__ "ADVCheckMarkPhases"
-PetscErrorCode ADVCheckMarkPhases(AdvCtx *actx, PetscInt numPhases)
+PetscErrorCode ADVCheckMarkPhases(AdvCtx *actx)
 {
 	// check phases of markers
-	Marker      *P;
-	PetscInt     jj;
+	Marker    *P;
+	PetscInt  jj;
+	PetscInt  numPhases;
 
 	PetscFunctionBegin;
+
+	numPhases = actx->dbm->numPhases;
 
 	// scan all markers
 	for(jj = 0; jj < actx->nummark; jj++)

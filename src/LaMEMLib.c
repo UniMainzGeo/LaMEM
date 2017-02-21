@@ -81,6 +81,8 @@ PetscErrorCode LaMEMLibMain(void *param)
 	char           str[_STR_LEN_];
 	PetscLogDouble cputime_start, cputime_end;
 
+	if(param) param = NULL;
+
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
 
@@ -331,7 +333,7 @@ PetscErrorCode LaMEMLibSaveRestart(LaMEMLib *lm)
 
 	if(!TSSolIsRestart(&lm->ts)) PetscFunctionReturn(0);
 
-		// get MPI processor rank
+	// get MPI processor rank
 	MPI_Comm_rank(PETSC_COMM_WORLD, &rank);
 
 	// compile actual & temporary restart file name
@@ -523,32 +525,28 @@ PetscErrorCode LaMEMLibSaveOutput(LaMEMLib *lm)
 	time = TSSolGetTime(&lm->ts);
 	step = TSSolGetStep(&lm->ts);
 
-	if(TSSolIsOutput(&lm->ts))
-	{
-		// create directory (encode current time & step number)
-		asprintf(&dirName, "Timestep_%1.6lld_%1.6e", (LLD)step, time);
+	if(!TSSolIsOutput(&lm->ts)) PetscFunctionReturn(0);
 
-		// create output directory
-		ierr = DirMake(dirName); CHKERRQ(ierr);
+	// create directory (encode current time & step number)
+	asprintf(&dirName, "Timestep_%1.6lld_%1.6e", (LLD)step, time);
 
-		// AVD phase output
-		ierr = PVAVDWriteTimeStep(&lm->pvavd, dirName, time, step); CHKERRQ(ierr);
+	// create output directory
+	ierr = DirMake(dirName); CHKERRQ(ierr);
 
-		// grid ParaView output
-		ierr = PVOutWriteTimeStep(&lm->pvout, dirName, time, step); CHKERRQ(ierr);
+	// AVD phase output
+	ierr = PVAVDWriteTimeStep(&lm->pvavd, dirName, time, step); CHKERRQ(ierr);
 
-		// free surface ParaView output
-		ierr = PVSurfWriteTimeStep(&lm->pvsurf, dirName, time, step); CHKERRQ(ierr);
+	// grid ParaView output
+	ierr = PVOutWriteTimeStep(&lm->pvout, dirName, time, step); CHKERRQ(ierr);
 
-		// marker ParaView output
-		ierr = PVMarkWriteTimeStep(&lm->pvmark, dirName, time, step); CHKERRQ(ierr);
+	// free surface ParaView output
+	ierr = PVSurfWriteTimeStep(&lm->pvsurf, dirName, time, step); CHKERRQ(ierr);
 
-		// clean up
-		free(dirName);
-	}
+	// marker ParaView output
+	ierr = PVMarkWriteTimeStep(&lm->pvmark, dirName, time, step); CHKERRQ(ierr);
 
-	// output markers
-	ierr = ADVMarkSave(&lm->actx); CHKERRQ(ierr);
+	// clean up
+	free(dirName);
 
 	PetscFunctionReturn(0);
 }
@@ -557,10 +555,13 @@ PetscErrorCode LaMEMLibSaveOutput(LaMEMLib *lm)
 #define __FUNCT__ "LaMEMLibSolve"
 PetscErrorCode LaMEMLibSolve(LaMEMLib *lm, void *param)
 {
-	PMat     pm;    // preconditioner matrix    (to be removed!)
-	PCStokes pc;    // Stokes preconditioner    (to be removed!)
-	NLSol    nl;    // nonlinear solver context (to be removed!)
-	SNES     snes;  // PETSc nonlinear solver
+	PMat           pm;     // preconditioner matrix    (to be removed!)
+	PCStokes       pc;     // Stokes preconditioner    (to be removed!)
+	NLSol          nl;     // nonlinear solver context (to be removed!)
+	SNES           snes;   // PETSc nonlinear solver
+	PetscInt       restart;
+	PetscScalar    gidtmax;
+	PetscLogDouble t_snes_start, t_snes_end, t_solve_start, t_solve_end;
 
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
@@ -574,86 +575,86 @@ PetscErrorCode LaMEMLibSolve(LaMEMLib *lm, void *param)
 	// TIME STEP LOOP
 	//===============
 
+	PetscTime(&t_solve_start);
+
 	while(!TSSolIsDone(&lm->ts))
 	{
 		//====================================
 		//	NONLINEAR THERMO-MECHANICAL SOLVER
 		//====================================
 
-/*
 		// initialize boundary constraint vectors
-		ierr = BCApply(&bc, jr.gsol); CHKERRQ(ierr);
+		ierr = BCApply(&lm->bc, lm->jr.gsol); CHKERRQ(ierr);
 
 		// initialize temperature
-		ierr = JacResInitTemp(&jr); CHKERRQ(ierr);
-
-
-		PetscTime(&cputime_start_nonlinear);
-
+		ierr = JacResInitTemp(&lm->jr); CHKERRQ(ierr);
 
 		// compute inverse elastic viscosities (dependent on dt)
-		ierr = JacResGetI2Gdt(&jr); CHKERRQ(ierr);
+		ierr = JacResGetI2Gdt(&lm->jr); CHKERRQ(ierr);
 
-		// solve nonlinear system with SNES
-		ierr = SNESSolve(snes, NULL, jr.gsol); CHKERRQ(ierr);
+		// solve nonlinear equation system with SNES
+		PetscTime(&t_snes_start);
 
+		ierr = SNESSolve(snes, NULL, lm->jr.gsol); CHKERRQ(ierr);
 
 		// print analyze convergence/divergence reason & iteration count
 		ierr = SNESPrintConvergedReason(snes); CHKERRQ(ierr);
 
-		PetscTime(&cputime_end_nonlinear);
+		PetscTime(&t_snes_end);
 
-		PetscPrintf(PETSC_COMM_WORLD, " Nonlinear solve took %g (sec)\n", cputime_end_nonlinear - cputime_start_nonlinear);
-
-
-		// switch off initial guess flag
-		if(!JacResGetStep(&jr))
-		{
-			jr.matLim.initGuess = 0;
-		}
-
+		PetscPrintf(PETSC_COMM_WORLD, " Nonlinear solve took %g (sec)\n", t_snes_end - t_snes_start);
 
 		// view nonlinear residual
-		ierr = JacResViewRes(&jr); CHKERRQ(ierr);
-
-		// select new time step
-		ierr = JacResGetCourantStep(&jr); CHKERRQ(ierr);
+		ierr = JacResViewRes(&lm->jr); CHKERRQ(ierr);
 
 		//==========================================
 		// MARKER & FREE SURFACE ADVECTION + EROSION
 		//==========================================
 
+		// get inverse CFL time step
+		ierr = JacResgetMaxInvStep(&lm->jr, &gidtmax); CHKERRQ(ierr);
+
+		// select new time step
+		ierr = TSSolSelectStep(&lm->ts, gidtmax, &restart); CHKERRQ(ierr);
+
+		if(restart)
+		{
+			// restart time step
+			continue;
+		}
+		else
+		{
+			// continue time step
+			ierr = TSSolStepForward(&lm->ts); CHKERRQ(ierr);
+		}
+
+
 		// advect free surface
 		ierr = FreeSurfAdvect(&lm->surf); CHKERRQ(ierr);
 
 		// advect markers
-		ierr = ADVAdvect(&actx); CHKERRQ(ierr);
+		ierr = ADVAdvect(&lm->actx); CHKERRQ(ierr);
 
 		// apply background strain-rate "DWINDLAR" BC (Bob Shaw "Ship of Strangers")
-		ierr = BCStretchGrid(&bc); CHKERRQ(ierr);
+		ierr = BCStretchGrid(&lm->bc); CHKERRQ(ierr);
 
 		// exchange markers between the processors (after mesh advection)
-		ierr = ADVExchange(&actx); CHKERRQ(ierr);
+		ierr = ADVExchange(&lm->actx); CHKERRQ(ierr);
 
 		// apply erosion to the free surface
-		ierr = FreeSurfAppErosion(&surf); CHKERRQ(ierr);
+		ierr = FreeSurfAppErosion(&lm->surf); CHKERRQ(ierr);
 
 		// apply sedimentation to the free surface
-		ierr = FreeSurfAppSedimentation(&surf); CHKERRQ(ierr);
+		ierr = FreeSurfAppSedimentation(&lm->surf); CHKERRQ(ierr);
 
 		// remap markers onto (stretched) grid
-		ierr = ADVRemap(&actx, &surf); CHKERRQ(ierr);
+		ierr = ADVRemap(&lm->actx); CHKERRQ(ierr);
 
 		// update phase ratios taking into account actual free surface position
-		ierr = FreeSurfGetAirPhaseRatio(&surf); CHKERRQ(ierr);
+		ierr = FreeSurfGetAirPhaseRatio(&lm->surf); CHKERRQ(ierr);
 
-		// advect pushing block
-		ierr = BCAdvectPush(&bc); CHKERRQ(ierr);
+//		ADVCheckMarkPhases, BCAdvectPush ???
 
-		// check marker phases
-		ierr = ADVCheckMarkPhases(&actx, jr.numPhases); CHKERRQ(ierr);
-
-*/
 		//==================
 		// Save data to disk
 		//==================
@@ -663,18 +664,22 @@ PetscErrorCode LaMEMLibSolve(LaMEMLib *lm, void *param)
 		ierr = LaMEMLibSaveRestart(lm); CHKERRQ(ierr);
 	}
 
+	PetscTime(&t_solve_end);
+
+	PetscPrintf(PETSC_COMM_WORLD, " Total solution time: %g (sec)\n", t_solve_end - t_solve_start);
+
 	//======================
 	// END OF TIME STEP LOOP
 	//======================
+
+	// delete restart database (if any)
+	ierr = LaMEMLibDeleteRestart(); CHKERRQ(ierr);
 
 	// destroy objects
 	ierr = PCStokesDestroy(pc);    CHKERRQ(ierr);
 	ierr = PMatDestroy    (pm);    CHKERRQ(ierr);
 	ierr = SNESDestroy    (&snes); CHKERRQ(ierr);
 	ierr = NLSolDestroy   (&nl);   CHKERRQ(ierr);
-
-	// delete restart database (if any)
-	ierr = LaMEMLibDeleteRestart(); CHKERRQ(ierr);
 
 	PetscFunctionReturn(0);
 }

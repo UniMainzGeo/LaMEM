@@ -173,6 +173,9 @@ PetscErrorCode Discret1DGatherCoord(Discret1D *ds, PetscScalar **coord);
 // check multigrid restrictions, get maximum number of coarsening steps
 PetscErrorCode Discret1DCheckMG(Discret1D *ds, const char *dir, PetscInt *_ncors);
 
+// get maximum inverse time step on local domain (CFL)
+PetscErrorCode Discret1DgetMaxInvStep(Discret1D *ds, DM da, Vec gv, PetscInt dir, PetscScalar *_idtmax);
+
 //---------------------------------------------------------------------------
 
 enum idxtype { IDXNONE, IDXCOUPLED, IDXUNCOUPLED };
