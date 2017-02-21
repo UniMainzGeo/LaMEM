@@ -324,17 +324,17 @@ PetscErrorCode LaMEMLibSaveRestart(LaMEMLib *lm)
 
 	FILE        *fp;
 	PetscMPIInt  rank;
-	PetscInt     exists;
-	char        *fileName, *fileNameTmp;
+	char        *fileNameTmp;
 
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
 
-	// get MPI processor rank
+	if(!TSSolIsRestart(&lm->ts)) PetscFunctionReturn(0);
+
+		// get MPI processor rank
 	MPI_Comm_rank(PETSC_COMM_WORLD, &rank);
 
 	// compile actual & temporary restart file name
-	asprintf(&fileName,    "./restart/rdb.%1.8lld.dat",     (LLD)rank);
 	asprintf(&fileNameTmp, "./restart-tmp/rdb.%1.8lld.dat", (LLD)rank);
 
 	// create temporary restart directory
@@ -366,23 +366,54 @@ PetscErrorCode LaMEMLibSaveRestart(LaMEMLib *lm)
 	// close temporary restart file
 	fclose(fp);
 
+	// delete existing restart database
+	ierr = LaMEMLibDeleteRestart(); CHKERRQ(ierr);
+
+	// push temporary database to actual
+	ierr = DirRename("./restart-tmp", "./restart");
+
+	// free space
+	free(fileNameTmp);
+
+	PetscFunctionReturn(0);
+}
+//---------------------------------------------------------------------------
+#undef __FUNCT__
+#define __FUNCT__ "LaMEMLibDeleteRestart"
+PetscErrorCode LaMEMLibDeleteRestart()
+{
+	// delete existing restart database
+	PetscMPIInt  rank;
+	int          status;
+	PetscInt     exists;
+	char        *fileName;
+
+	PetscErrorCode ierr;
+	PetscFunctionBegin;
+
+	// get MPI processor rank
+	MPI_Comm_rank(PETSC_COMM_WORLD, &rank);
+
+	asprintf(&fileName, "./restart/rdb.%1.8lld.dat", (LLD)rank);
+
 	// check for existing restart database
 	ierr = DirCheck("./restart", &exists); CHKERRQ(ierr);
 
 	if(exists)
 	{
 		// delete existing database
-		remove(fileName);
+		status = remove(fileName);
+
+		if(status && errno != ENOENT)
+		{
+			SETERRQ1(PETSC_COMM_WORLD, PETSC_ERR_USER, "Failed to delete file %s", fileName);
+		}
 
 		ierr = DirRemove("./restart"); CHKERRQ(ierr);
 	}
 
-	// push temporary database to actual
-	ierr = DirRename("./restart-tmp", "./restart");
-
 	// free space
 	free(fileName);
-	free(fileNameTmp);
 
 	PetscFunctionReturn(0);
 }
@@ -438,34 +469,37 @@ PetscErrorCode LaMEMLibSetLinks(LaMEMLib *lm)
 	// ... This is the house that Jack built ...
 
 	PetscFunctionBegin;
-
+	// TSSol
 	lm->ts.scal     = &lm->scal;
-
-	lm->fs.scal     = &lm->scal;
-
+	// DBMat
 	lm->dbm.scal    = &lm->scal;
-
+	// FDSTAG
+	lm->fs.scal     = &lm->scal;
+	// FreeSurf
 	lm->surf.jr     = &lm->jr;
-
+	// BCCtx
 	lm->bc.scal     = &lm->scal;
 	lm->bc.ts       = &lm->ts;
 	lm->bc.fs       = &lm->fs;
-
+	// JacRes
 	lm->jr.scal     = &lm->scal;
 	lm->jr.ts       = &lm->ts;
 	lm->jr.fs       = &lm->fs;
 	lm->jr.surf     = &lm->surf;
 	lm->jr.bc       = &lm->bc;
 	lm->jr.dbm      = &lm->dbm;
-
+	// AdvCtx
 	lm->actx.fs     = &lm->fs;
 	lm->actx.jr     = &lm->jr;
 	lm->actx.surf   = &lm->surf;
 	lm->actx.dbm    = &lm->dbm;
-
+	// PVOut
 	lm->pvout.jr    = &lm->jr;
+	// PVSurf
 	lm->pvsurf.surf = &lm->surf;
+	// PVMark
 	lm->pvmark.actx = &lm->actx;
+	// PVAVD
 	lm->pvavd.actx  = &lm->actx;
 
 	PetscFunctionReturn(0);
@@ -473,54 +507,48 @@ PetscErrorCode LaMEMLibSetLinks(LaMEMLib *lm)
 //---------------------------------------------------------------------------
 #undef __FUNCT__
 #define __FUNCT__ "LaMEMLibSaveOutput"
-PetscErrorCode LaMEMLibSaveOutput(LaMEMLib *lm, PetscInt dirInd)
+PetscErrorCode LaMEMLibSaveOutput(LaMEMLib *lm)
 {
-/*
 	//==================
 	// Save data to disk
 	//==================
 
+	PetscScalar time;
+	PetscInt    step;
+	char       *dirName;
 
+	PetscErrorCode ierr;
+	PetscFunctionBegin;
 
--		if(!(JacResGetStep(&jr) % user.save_timesteps) || stop == PETSC_TRUE)
+	time = TSSolGetTime(&lm->ts);
+	step = TSSolGetStep(&lm->ts);
 
-+		if(!(JacResGetStep(&jr) % user.save_timesteps) || stop == PETSC_TRUE || out_fail < 0)
+	if(TSSolIsOutput(&lm->ts))
+	{
+		// create directory (encode current time & step number)
+		asprintf(&dirName, "Timestep_%1.6lld_%1.6e", (LLD)step, time);
 
+		// create output directory
+		ierr = DirMake(dirName); CHKERRQ(ierr);
 
-		if(!(JacResGetStep(&jr) % user.save_timesteps) || stop == PETSC_TRUE)
-		{
-			char *DirectoryName = NULL;
+		// AVD phase output
+		ierr = PVAVDWriteTimeStep(&lm->pvavd, dirName, time, step); CHKERRQ(ierr);
 
-			// redefine filename in case of inversion setup
-			if(IOparam != NULL)
-			{
-				asprintf(&DirectoryName, "Timestep_%1.6lld", (LLD)IOparam->mID);
-			}
-			else
-			{
-				// create directory (encode current time & step number)
-				asprintf(&DirectoryName, "Timestep_%1.6lld_%1.6e", (LLD)JacResGetStep(&jr), JacResGetTime(&jr));
-			}
+		// grid ParaView output
+		ierr = PVOutWriteTimeStep(&lm->pvout, dirName, time, step); CHKERRQ(ierr);
 
-			ierr = LaMEMCreateOutputDirectory(DirectoryName); CHKERRQ(ierr);
+		// free surface ParaView output
+		ierr = PVSurfWriteTimeStep(&lm->pvsurf, dirName, time, step); CHKERRQ(ierr);
 
-			// AVD phase output
-			ierr = PVAVDWriteTimeStep(&pvavd, DirectoryName, JacResGetTime(&jr), JacResGetStep(&jr)); CHKERRQ(ierr);
+		// marker ParaView output
+		ierr = PVMarkWriteTimeStep(&lm->pvmark, dirName, time, step); CHKERRQ(ierr);
 
-			// grid ParaView output
-			ierr = PVOutWriteTimeStep(&pvout, &jr, DirectoryName, JacResGetTime(&jr), JacResGetStep(&jr)); CHKERRQ(ierr);
+		// clean up
+		free(dirName);
+	}
 
-			// free surface ParaView output
-			ierr = PVSurfWriteTimeStep(&pvsurf, DirectoryName, JacResGetTime(&jr), JacResGetStep(&jr)); CHKERRQ(ierr);
-
-			// marker ParaView output
-			ierr = PVMarkWriteTimeStep(&pvmark, DirectoryName, JacResGetTime(&jr), JacResGetStep(&jr)); CHKERRQ(ierr);
-
-			// clean up
-			if(DirectoryName) free(DirectoryName);
-		}
-
-*/
+	// output markers
+	ierr = ADVMarkSave(&lm->actx); CHKERRQ(ierr);
 
 	PetscFunctionReturn(0);
 }
@@ -529,52 +557,30 @@ PetscErrorCode LaMEMLibSaveOutput(LaMEMLib *lm, PetscInt dirInd)
 #define __FUNCT__ "LaMEMLibSolve"
 PetscErrorCode LaMEMLibSolve(LaMEMLib *lm, void *param)
 {
-	PMat     pm;     // preconditioner matrix (to be removed!)
-	PCStokes pc;     // Stokes preconditioner (to be removed!)
-	NLSol    nl;     // nonlinear solver context (to be removed!)
-	SNES     snes;   // PETSc nonlinear solver
-
-
-
-	PetscInt  done;
+	PMat     pm;    // preconditioner matrix    (to be removed!)
+	PCStokes pc;    // Stokes preconditioner    (to be removed!)
+	NLSol    nl;    // nonlinear solver context (to be removed!)
+	SNES     snes;  // PETSc nonlinear solver
 
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
 
-
-
-
-	// create Stokes preconditioner & matrix
+	// create Stokes preconditioner, matrix and nonlinear solver
 	ierr = PMatCreate(&pm, &lm->jr);    CHKERRQ(ierr);
-	ierr = PCStokesCreate(&pc, pm); CHKERRQ(ierr);
-
-	// create nonlinear solver
+	ierr = PCStokesCreate(&pc, pm);     CHKERRQ(ierr);
 	ierr = NLSolCreate(&nl, pc, &snes); CHKERRQ(ierr);
-
-
-/*
 
 	//===============
 	// TIME STEP LOOP
 	//===============
 
-//	PetscTime(&cputime_start_tstep);
-	// finish simulation if time_end was reached
-	if (jr.ts.istep >= jr.ts.nstep)
+	while(!TSSolIsDone(&lm->ts))
 	{
-	}
-
-// stop criterion must be evaluated here
-// time step increment - in the end of the step
-
-	do
-	{
-		PetscPrintf(PETSC_COMM_WORLD,"Time step %lld -------------------------------------------------------- \n", (LLD)JacResGetStep(&jr));
-
 		//====================================
 		//	NONLINEAR THERMO-MECHANICAL SOLVER
 		//====================================
 
+/*
 		// initialize boundary constraint vectors
 		ierr = BCApply(&bc, jr.gsol); CHKERRQ(ierr);
 
@@ -582,38 +588,23 @@ PetscErrorCode LaMEMLibSolve(LaMEMLib *lm, void *param)
 		ierr = JacResInitTemp(&jr); CHKERRQ(ierr);
 
 
-		if(user.SkipStokesSolver != PETSC_TRUE)
-		{
-			PetscTime(&cputime_start_nonlinear);
-
-			PetscBool 			snes_convergence;
-			snes_convergence 	=	PETSC_FALSE;
+		PetscTime(&cputime_start_nonlinear);
 
 
-			// compute inverse elastic viscosities (dependent on dt)
-			ierr = JacResGetI2Gdt(&jr); CHKERRQ(ierr);
+		// compute inverse elastic viscosities (dependent on dt)
+		ierr = JacResGetI2Gdt(&jr); CHKERRQ(ierr);
 
-			// solve nonlinear system with SNES
-			ierr = SNESSolve(snes, NULL, jr.gsol); CHKERRQ(ierr);
+		// solve nonlinear system with SNES
+		ierr = SNESSolve(snes, NULL, jr.gsol); CHKERRQ(ierr);
 
-			// print analyze convergence/divergence reason & iteration count
-			ierr = SNESPrintConvergedReason(snes, &snes_convergence); CHKERRQ(ierr);
 
-			if (!snes_convergence){
+		// print analyze convergence/divergence reason & iteration count
+		ierr = SNESPrintConvergedReason(snes); CHKERRQ(ierr);
 
-				PetscPrintf(PETSC_COMM_WORLD, " **** Nonlinear solver failed to converge *** \n");
+		PetscTime(&cputime_end_nonlinear);
 
-			}
+		PetscPrintf(PETSC_COMM_WORLD, " Nonlinear solve took %g (sec)\n", cputime_end_nonlinear - cputime_start_nonlinear);
 
-			PetscTime(&cputime_end_nonlinear);
-
-			PetscPrintf(PETSC_COMM_WORLD, " Nonlinear solve took %g (sec)\n", cputime_end_nonlinear - cputime_start_nonlinear);
-		}
-		else
-		{
-			// just evaluate initial residual
-			ierr = FormResidual(snes, jr.gsol, jr.gres, &nl); CHKERRQ(ierr);
-		}
 
 		// switch off initial guess flag
 		if(!JacResGetStep(&jr))
@@ -621,21 +612,19 @@ PetscErrorCode LaMEMLibSolve(LaMEMLib *lm, void *param)
 			jr.matLim.initGuess = 0;
 		}
 
+
 		// view nonlinear residual
 		ierr = JacResViewRes(&jr); CHKERRQ(ierr);
 
 		// select new time step
 		ierr = JacResGetCourantStep(&jr); CHKERRQ(ierr);
 
-		// prescribe velocity if rotation benchmark
-		if (user.msetup == ROTATION) {ierr = JacResSetVelRotation(&jr); CHKERRQ(ierr);}
-
 		//==========================================
 		// MARKER & FREE SURFACE ADVECTION + EROSION
 		//==========================================
 
 		// advect free surface
-		ierr = FreeSurfAdvect(&surf); CHKERRQ(ierr);
+		ierr = FreeSurfAdvect(&lm->surf); CHKERRQ(ierr);
 
 		// advect markers
 		ierr = ADVAdvect(&actx); CHKERRQ(ierr);
@@ -661,79 +650,31 @@ PetscErrorCode LaMEMLibSolve(LaMEMLib *lm, void *param)
 		// advect pushing block
 		ierr = BCAdvectPush(&bc); CHKERRQ(ierr);
 
-		// compute gravity misfits
-//		ierr = CalculateMisfitValues(&user, C, itime, LaMEM_OutputParameters); CHKERRQ(ierr);
-
-		// ACHTUNG !!!
-		PetscBool          flg;
-		KSP                ksp;
-		KSPConvergedReason reason;
-		PetscBool          stop = PETSC_FALSE;
-
-		ierr = PetscOptionsHasName(NULL, NULL, "-stop_linsol_fail", &flg); CHKERRQ(ierr);
-
-		if(flg == PETSC_TRUE)
-		{
-			ierr = SNESGetKSP(snes, &ksp); CHKERRQ(ierr);
-
-			ierr = KSPGetConvergedReason(ksp, &reason);
-
-			if(reason == KSP_DIVERGED_ITS)
-			{
-				stop = PETSC_TRUE;
-			}
-		}
-
-		//==================
-		// Save data to disk
-		//==================
-+		// ACHTUNG !!!
-
-+		SNESConvergedReason snes_reason;
-
-+
-
-+		ierr = SNESGetConvergedReason(snes, &snes_reason);  CHKERRQ(ierr);
-
-+
-
-+		PetscInt out_fail = (PetscInt)snes_reason;
-
-+
-
-			if(stop == PETSC_TRUE)
-		{
-			SETERRQ(PETSC_COMM_SELF, PETSC_ERR_USER, "Linear solver failed. Terminating simulation.\n");
-		}
-
-		// store markers to disk
-		ierr = ADVMarkSave(&actx, &user);  CHKERRQ(ierr);
-
-		// update time state
-		ierr = TSSolUpdate(&jr.ts, &jr.scal, &done); CHKERRQ(ierr);
-
-		// create BREAKPOINT files, for restarting the code
-		if(user.save_breakpoints>0 && !((JacResGetStep(&jr)-1) % user.save_breakpoints))
-		{
-			ierr = BreakWrite(&user, &actx, &surf, &pvout, &pvsurf, &pvmark, &pvavd, nl.jtype); CHKERRQ(ierr);
-		}
-
 		// check marker phases
 		ierr = ADVCheckMarkPhases(&actx, jr.numPhases); CHKERRQ(ierr);
 
-	} while(done != PETSC_TRUE);
+*/
+		//==================
+		// Save data to disk
+		//==================
+
+		ierr = LaMEMLibSaveOutput(lm); CHKERRQ(ierr);
+
+		ierr = LaMEMLibSaveRestart(lm); CHKERRQ(ierr);
+	}
 
 	//======================
 	// END OF TIME STEP LOOP
 	//======================
 
-
-*/
-
+	// destroy objects
 	ierr = PCStokesDestroy(pc);    CHKERRQ(ierr);
 	ierr = PMatDestroy    (pm);    CHKERRQ(ierr);
 	ierr = SNESDestroy    (&snes); CHKERRQ(ierr);
 	ierr = NLSolDestroy   (&nl);   CHKERRQ(ierr);
+
+	// delete restart database (if any)
+	ierr = LaMEMLibDeleteRestart(); CHKERRQ(ierr);
 
 	PetscFunctionReturn(0);
 }
@@ -743,6 +684,9 @@ PetscErrorCode LaMEMLibSolve(LaMEMLib *lm, void *param)
 PetscErrorCode LaMEMLibDryRun(LaMEMLib *lm)
 {
 
+
+	// just evaluate initial residual
+//	ierr = FormResidual(snes, jr.gsol, jr.gres, &nl); CHKERRQ(ierr);
 
 
 	PetscFunctionReturn(0);

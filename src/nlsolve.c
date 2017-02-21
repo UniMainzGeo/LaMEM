@@ -410,7 +410,7 @@ PetscErrorCode JacApplyMFFD(Mat A, Vec x, Vec y)
 //---------------------------------------------------------------------------
 #undef __FUNCT__
 #define __FUNCT__ "SNESPrintConvergedReason"
-PetscErrorCode SNESPrintConvergedReason(SNES snes, PetscBool *Convergence)
+PetscErrorCode SNESPrintConvergedReason(SNES snes)
 {
 	SNESConvergedReason reason;
 	PetscInt            its;
@@ -421,8 +421,10 @@ PetscErrorCode SNESPrintConvergedReason(SNES snes, PetscBool *Convergence)
 	ierr = SNESGetIterationNumber(snes, &its);    CHKERRQ(ierr);
 	ierr = SNESGetConvergedReason(snes, &reason);  CHKERRQ(ierr);
 
-    // CONVERGENCE
-	*Convergence = PETSC_TRUE;
+	if(reason < 0)
+	{
+		PetscPrintf(PETSC_COMM_WORLD, " **** Nonlinear solver failed to converge *** \n");
+	}
 
     if(reason == SNES_CONVERGED_FNORM_ABS)
 	{
@@ -445,47 +447,43 @@ PetscErrorCode SNESPrintConvergedReason(SNES snes, PetscBool *Convergence)
 	{
 		ierr = PetscPrintf(PETSC_COMM_WORLD, " SNES Convergence Reason: SNES_CONVERGED_TR_DELTA\n"); CHKERRQ(ierr);
 	}
+	else if(reason == SNES_CONVERGED_ITERATING)
+	{
+		ierr = PetscPrintf(PETSC_COMM_WORLD, " SNES Convergence Reason: SNES_CONVERGED_ITERATING\n"); CHKERRQ(ierr);
+	}
 
     // DIVERGENCE
 
 	else if(reason == SNES_DIVERGED_FUNCTION_DOMAIN)
 	{
-		*Convergence = PETSC_FALSE;
 		ierr = PetscPrintf(PETSC_COMM_WORLD, " SNES Divergence Reason: the new x location passed the function is not in the domain of F\n"); CHKERRQ(ierr);
 	}
 	else if(reason == SNES_DIVERGED_FUNCTION_COUNT)
 	{
-		*Convergence = PETSC_FALSE;
 		ierr = PetscPrintf(PETSC_COMM_WORLD, " SNES Divergence Reason: too many function evaluations\n"); CHKERRQ(ierr);
 	}
 	else if(reason == SNES_DIVERGED_LINEAR_SOLVE)
 	{
-		*Convergence = PETSC_FALSE;
 		ierr = PetscPrintf(PETSC_COMM_WORLD, " SNES Divergence Reason: the linear solve failed\n"); CHKERRQ(ierr);
 	}
 	else if(reason == SNES_DIVERGED_FNORM_NAN)
 	{
-		*Convergence = PETSC_FALSE;
 		ierr = PetscPrintf(PETSC_COMM_WORLD, " SNES Divergence Reason: residual norm is NAN\n"); CHKERRQ(ierr);
 	}
 	else if(reason == SNES_DIVERGED_MAX_IT)
 	{
-		*Convergence = PETSC_FALSE;
 		ierr = PetscPrintf(PETSC_COMM_WORLD, " SNES Divergence Reason: maximum iterations reached\n"); CHKERRQ(ierr);
 	}
 	else if(reason == SNES_DIVERGED_LINE_SEARCH)
 	{
-		*Convergence = PETSC_FALSE;
 		ierr = PetscPrintf(PETSC_COMM_WORLD, " SNES Divergence Reason: the line search failed\n"); CHKERRQ(ierr);
 	}
 	else if(reason == SNES_DIVERGED_INNER)
 	{
-		*Convergence = PETSC_FALSE;
 		ierr = PetscPrintf(PETSC_COMM_WORLD, " SNES Divergence Reason: the inner solve failed\n"); CHKERRQ(ierr);
 	}
 	else if(reason == SNES_DIVERGED_LOCAL_MIN)
 	{
-		*Convergence = PETSC_FALSE;
 		ierr = PetscPrintf(PETSC_COMM_WORLD, " SNES Divergence Reason: || J^T b || is small, implies converged to local minimum of F\n"); CHKERRQ(ierr);
 	}
 

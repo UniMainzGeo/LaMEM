@@ -141,7 +141,7 @@ PetscErrorCode JacApplyMFFD(Mat A, Vec x, Vec y);
 
 //---------------------------------------------------------------------------
 
-PetscErrorCode SNESPrintConvergedReason(SNES snes, PetscBool *Convergence);
+PetscErrorCode SNESPrintConvergedReason(SNES snes);
 
 
 PetscErrorCode SNESCoupledTest(

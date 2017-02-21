@@ -72,7 +72,7 @@ struct TSSol
 	PetscScalar time;      // current time
 	PetscInt    istep;     // current time step index
 	PetscScalar time_out;  // output time stamp
-	PetscInt    istep_out; // output time step index
+	PetscScalar tol;       // tolerance for time comparisons
 
 };
 
@@ -84,22 +84,24 @@ PetscErrorCode TSSolSetupElasticity(TSSol *ts);
 
 PetscScalar TSSolGetTime(TSSol *ts);
 
-PetscInt TSSolIsOutput(TSSol *ts);
-
-PetscInt TSSolIsRestart(TSSol *ts);
-
-PetscInt TSSolIsDone(TSSol *ts);
+PetscInt TSSolGetStep(TSSol *ts);
 
 PetscErrorCode TSSolStepForward(TSSol *ts);
 
-PetscErrorCode TSSolCheckCFL(
+PetscInt TSSolIsRestart(TSSol *ts);
+
+PetscInt TSSolIsOutput(TSSol *ts);
+
+PetscInt TSSolIsDone(TSSol *ts);
+
+PetscErrorCode TSSolSelectStep(
 	TSSol       *ts,
 	PetscScalar  gidtmax,  // maximum global inverse time step
-	PetscBool   *restart); // time step restart flag
-
-PetscScalar TSSolGetTol(TSSol *ts);
+	PetscInt    *restart); // time step restart flag
 
 PetscScalar TSSolGetCFLStep(TSSol *ts, PetscScalar CFL, PetscScalar gidtmax);
 
 //---------------------------------------------------------------------------
 #endif
+
+

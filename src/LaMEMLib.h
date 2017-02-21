@@ -90,6 +90,8 @@ PetscErrorCode LaMEMLibLoadRestart(LaMEMLib *lm);
 
 PetscErrorCode LaMEMLibSaveRestart(LaMEMLib *lm);
 
+PetscErrorCode LaMEMLibDeleteRestart();
+
 PetscErrorCode LaMEMLibDestroy(LaMEMLib *lm);
 
 PetscErrorCode LaMEMLibSetLinks(LaMEMLib *lm);

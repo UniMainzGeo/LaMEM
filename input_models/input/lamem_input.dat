@@ -50,7 +50,8 @@
 	nstep_out = 1     # save output every n steps
 	nstep_ini = 5     # save output for n initial steps
 	nstep_rdb = 5     # save restart database every n steps
-
+	time_tol  = 1e-8  # relative tolerance for time comparisons
+	
 #===============================================================================
 # Grid & discretization parameters
 #===============================================================================

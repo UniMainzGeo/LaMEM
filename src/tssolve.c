@@ -67,6 +67,7 @@ PetscErrorCode TSSolCreate(TSSol *ts, FB *fb)
 	ts->CFLMAX    = 0.8;
 	ts->nstep_out = 1;
 	ts->nstep_ini = 1;
+	ts->tol       = 1e-8;
 
 	// read parameters
 	ierr = getScalarParam(fb, _REQUIRED_, "time_end",  &ts->time_end,  1, time);  CHKERRQ(ierr);
@@ -81,6 +82,7 @@ PetscErrorCode TSSolCreate(TSSol *ts, FB *fb)
 	ierr = getIntParam   (fb, _OPTIONAL_, "nstep_out", &ts->nstep_out, 1, -1  );  CHKERRQ(ierr);
 	ierr = getIntParam   (fb, _OPTIONAL_, "nstep_ini", &ts->nstep_ini, 1, -1  );  CHKERRQ(ierr);
 	ierr = getIntParam   (fb, _OPTIONAL_, "nstep_rdb", &ts->nstep_rdb, 1, -1  );  CHKERRQ(ierr);
+	ierr = getScalarParam(fb, _OPTIONAL_, "time_tol",  &ts->tol,       1, 1.0 );  CHKERRQ(ierr);
 
 	// set defaults
 	if(ts->dt        == 0.0) ts->dt        = ts->dt_max/5.0;
@@ -126,6 +128,36 @@ PetscScalar TSSolGetTime(TSSol *ts)
 	return ts->time*ts->scal->time;
 }
 //---------------------------------------------------------------------------
+PetscInt TSSolGetStep(TSSol *ts)
+{
+	return ts->istep;
+}
+//---------------------------------------------------------------------------
+#undef __FUNCT__
+#define __FUNCT__ "TSSolStepForward"
+PetscErrorCode TSSolStepForward(TSSol *ts)
+{
+	// This function is called before output
+
+	PetscFunctionBegin;
+
+	// update time
+	ts->time += ts->dt;
+
+	// update time step index
+	ts->istep++;
+
+	PetscFunctionReturn(0);
+}
+//---------------------------------------------------------------------------
+PetscInt TSSolIsRestart(TSSol *ts)
+{
+	// save restart database after fixed number of steps
+	if(ts->nstep_rdb && !(ts->istep % ts->nstep_rdb)) return 1;
+
+	return 0;
+}
+//---------------------------------------------------------------------------
 PetscInt TSSolIsOutput(TSSol *ts)
 {
 	//==========================================
@@ -139,34 +171,18 @@ PetscInt TSSolIsOutput(TSSol *ts)
 	PetscScalar tol;
 
 	// get tolerance
-	tol = TSSolGetTol(ts);
+	tol = ts->tol*ts->dt_max;
 
-	if((ts->nstep_ini && ts->istep         <  ts->nstep_ini)
-	|| (ts->nstep_out && ts->istep_out + 1 == ts->nstep_out)
-	|| (ts->dt_out    && ts->time + ts->dt >= ts->time_out + ts->dt_out - tol))
+	// check output conditions
+	if((ts->nstep_ini &&   ts->istep < ts->nstep_ini)
+	|| (ts->nstep_out && !(ts->istep % ts->nstep_out))
+	|| (ts->dt_out    &&   ts->time  >= ts->time_out + ts->dt_out - tol))
 	{
-		ts->istep_out = 0;
-		ts->time_out  = ts->time + ts->dt;
+		// update output stamp
+		ts->time_out = ts->time;
+
 		return 1;
 	}
-	else
-	{
-		ts->istep_out++;
-		return 0;
-	}
-}
-//---------------------------------------------------------------------------
-PetscInt TSSolIsRestart(TSSol *ts)
-{
-	// WARNING!
-	// time step index is not incremented here
-	// this function MUST be called in the END of the time step sequence
-
-	// skip saving restart if deactivated
-	if(!ts->nstep_rdb) return 0;
-
-	// save restart database after fixed number of steps
-	if(!(ts->istep) % ts->nstep_rdb) return 1;
 
 	return 0;
 }
@@ -178,18 +194,20 @@ PetscInt TSSolIsDone(TSSol *ts)
 	//
 	//  * end time is reached
 	//  * maximum number of time steps is done
+	//
+	// plot time stamp otherwise
 	//==========================================
 
-	PetscScalar tol;
+	Scaling     *scal;
+	PetscScalar  tol;
+	PetscInt     done;
 
-	// update time
-	ts->time += ts->dt;
+	PetscFunctionBegin;
 
-	// update time step index
-	ts->istep++;
+	scal = ts->scal;
 
 	// get tolerance
-	tol = TSSolGetTol(ts);
+	tol = ts->tol*ts->dt_max;
 
 	if(ts->time  >= ts->time_end - tol
 	|| ts->istep == ts->nstep_max)
@@ -197,37 +215,29 @@ PetscInt TSSolIsDone(TSSol *ts)
 		PetscPrintf(PETSC_COMM_WORLD, "===========================================================\n");
 		PetscPrintf(PETSC_COMM_WORLD, "................... SOLUTION IS DONE!......................\n");
 		PetscPrintf(PETSC_COMM_WORLD, "===========================================================\n");
-		return 1;
+
+		done = 1;
+	}
+	else
+	{
+		// output time step information
+		PetscPrintf(PETSC_COMM_WORLD, "===========================================================\n");
+		PetscPrintf(PETSC_COMM_WORLD, "........................ STEP: %lld .......................\n", (LLD)ts->istep);
+		PetscPrintf(PETSC_COMM_WORLD, "===========================================================\n");
+		PetscPrintf(PETSC_COMM_WORLD, " Current time: %7.5f %s \n", ts->time*scal->time, scal->lbl_time);
+
+		done = 0;
 	}
 
-	return 0;
+	return done;
 }
 //---------------------------------------------------------------------------
 #undef __FUNCT__
-#define __FUNCT__ "TSSolStepForward"
-PetscErrorCode TSSolStepForward(TSSol *ts)
-{
-	Scaling *scal;
-
-	PetscFunctionBegin;
-
-	scal = ts->scal;
-
-	// output time step information
-	PetscPrintf(PETSC_COMM_WORLD, "===========================================================\n");
-	PetscPrintf(PETSC_COMM_WORLD, "........................ STEP: %lld .......................\n", (LLD)ts->istep);
-	PetscPrintf(PETSC_COMM_WORLD, "===========================================================\n");
-	PetscPrintf(PETSC_COMM_WORLD, " Current time: %7.5f %s \n", ts->time*scal->time, scal->lbl_time);
-
-	PetscFunctionReturn(0);
-}
-//---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "TSSolCheckCFL"
-PetscErrorCode TSSolCheckCFL(
+#define __FUNCT__ "TSSolSelectStep"
+PetscErrorCode TSSolSelectStep(
 	TSSol       *ts,
 	PetscScalar gidtmax,  // maximum global inverse time step
-	PetscBool   *restart) // time step restart flag
+	PetscInt    *restart) // time step restart flag
 {
 	Scaling     *scal;
 	PetscScalar  dt_cfl, dt_cfl_max;
@@ -237,7 +247,7 @@ PetscErrorCode TSSolCheckCFL(
 	scal = ts->scal;
 
 	// set restart flag
-	(*restart) = PETSC_FALSE;
+	(*restart) = 0;
 
 	// compute CFL time step
 	dt_cfl = TSSolGetCFLStep(ts, ts->CFL, gidtmax);
@@ -255,7 +265,7 @@ PetscErrorCode TSSolCheckCFL(
 		// visco-elasto-plastic case
 		//============================
 
-		// check whether current elastic time step is acceptable for advection
+		// check whether current elastic time step is larger than CFL
 		if(ts->dt_elast > dt_cfl)
 		{
 			dt_cfl_max = TSSolGetCFLStep(ts, ts->CFLMAX, gidtmax);
@@ -264,7 +274,7 @@ PetscErrorCode TSSolCheckCFL(
 			{
 				ts->dt_elast = dt_cfl;
 
-				(*restart) = PETSC_TRUE;
+				(*restart) = 1;
 
 				PetscPrintf(PETSC_COMM_WORLD, " Elastic time step exceeds CFLMAX level : %7.5f %s \n", dt_cfl_max, scal->lbl_time);
 				PetscPrintf(PETSC_COMM_WORLD, " RESTARTING TIME STEP! \n");
@@ -299,11 +309,6 @@ PetscErrorCode TSSolCheckCFL(
 	PetscPrintf(PETSC_COMM_WORLD, " Time increment : %7.5f %s \n", ts->dt*scal->time, scal->lbl_time);
 
 	PetscFunctionReturn(0);
-}
-//---------------------------------------------------------------------------
-PetscScalar TSSolGetTol(TSSol *ts)
-{
-	return 1e-8*ts->dt_max;
 }
 //---------------------------------------------------------------------------
 PetscScalar TSSolGetCFLStep(TSSol *ts, PetscScalar CFL, PetscScalar gidtmax)
