@@ -1560,6 +1560,9 @@ PetscErrorCode ADVProjHistMarkToGrid(AdvCtx *actx)
 	jr        = actx->jr;
 	numPhases = actx->dbm->numPhases;
 
+	// check marker phases
+	ierr = ADVCheckMarkPhases(actx); CHKERRQ(ierr);
+
 	//======
 	// CELLS
 	//======
@@ -1598,9 +1601,6 @@ PetscErrorCode ADVProjHistMarkToGrid(AdvCtx *actx)
 
 	// update phase ratios taking into account actual free surface position
 	ierr = FreeSurfGetAirPhaseRatio(actx->surf); CHKERRQ(ierr);
-
-	// check marker phases
-	ierr = ADVCheckMarkPhases(actx); CHKERRQ(ierr);
 
 	PetscFunctionReturn(0);
 }

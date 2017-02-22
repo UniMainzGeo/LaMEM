@@ -482,9 +482,8 @@ PetscErrorCode JacResUpdateFlags(JacRes *jr)
 
 	ctrl = &jr->ctrl;
 	ts   =  jr->ts;
-	step =  TSSolGetStep(ts);
 
-	if(step == 1)
+	if(ts->istep == 1)
 	{
 		// switch off initial guess flag
 		ctrl->initGuess = 0;
@@ -1939,20 +1938,22 @@ PetscErrorCode JacResViewRes(JacRes *jr)
 }
 //---------------------------------------------------------------------------
 #undef __FUNCT__
-#define __FUNCT__ "JacResgetMaxInvStep"
-PetscErrorCode JacResgetMaxInvStep(JacRes *jr, PetscScalar *_gidtmax)
+#define __FUNCT__ "JacResSelectTimeStep"
+PetscErrorCode JacResSelectTimeStep(JacRes *jr, PetscInt *restart)
 {
 	//-------------------------------------
 	// compute length of the next time step
 	//-------------------------------------
 
 	FDSTAG      *fs;
+	TSSol       *ts;
 	PetscScalar  lidtmax, gidtmax;
 
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
 
-	fs =  jr->fs;
+	fs = jr->fs;
+	ts = jr->ts;
 
 	lidtmax = 0.0;
 
@@ -1971,8 +1972,14 @@ PetscErrorCode JacResgetMaxInvStep(JacRes *jr, PetscScalar *_gidtmax)
 		gidtmax = lidtmax;
 	}
 
-	// return result
-	(*_gidtmax) = gidtmax;
+	// select new time step
+	ierr = TSSolSelectStep(ts, gidtmax, restart); CHKERRQ(ierr);
+
+	if(!(*restart))
+	{
+		// update time stamp and counter
+		ierr = TSSolStepForward(ts); CHKERRQ(ierr);
+	}
 
 	PetscFunctionReturn(0);
 }

@@ -331,12 +331,12 @@ PetscErrorCode ADVelDestroy(AdvVelCtx *vi)
 	PetscFunctionBegin;
 
 	ierr = PetscFree(vi->interp);    CHKERRQ(ierr);
-	ierr = PetscFree(vi->cellnum);    CHKERRQ(ierr);
-	ierr = PetscFree(vi->markind);    CHKERRQ(ierr);
-	ierr = PetscFree(vi->markstart);  CHKERRQ(ierr);
-	ierr = PetscFree(vi->sendbuf);    CHKERRQ(ierr);
-	ierr = PetscFree(vi->recvbuf);    CHKERRQ(ierr);
-	ierr = PetscFree(vi->idel);       CHKERRQ(ierr);
+	ierr = PetscFree(vi->cellnum);   CHKERRQ(ierr);
+	ierr = PetscFree(vi->markind);   CHKERRQ(ierr);
+	ierr = PetscFree(vi->markstart); CHKERRQ(ierr);
+	ierr = PetscFree(vi->sendbuf);   CHKERRQ(ierr);
+	ierr = PetscFree(vi->recvbuf);   CHKERRQ(ierr);
+	ierr = PetscFree(vi->idel);      CHKERRQ(ierr);
 
 	PetscFunctionReturn(0);
 }

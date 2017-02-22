@@ -123,14 +123,9 @@ PetscErrorCode TSSolSetupElasticity(TSSol *ts)
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-PetscScalar TSSolGetTime(TSSol *ts)
+PetscScalar TSSolGetCurrentTime(TSSol *ts)
 {
 	return ts->time*ts->scal->time;
-}
-//---------------------------------------------------------------------------
-PetscInt TSSolGetStep(TSSol *ts)
-{
-	return ts->istep;
 }
 //---------------------------------------------------------------------------
 #undef __FUNCT__

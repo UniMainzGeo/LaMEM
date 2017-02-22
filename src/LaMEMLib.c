@@ -522,13 +522,13 @@ PetscErrorCode LaMEMLibSaveOutput(LaMEMLib *lm)
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
 
-	time = TSSolGetTime(&lm->ts);
-	step = TSSolGetStep(&lm->ts);
+	time = TSSolGetCurrentTime(&lm->ts);
+	step = lm->ts.istep;
 
 	if(!TSSolIsOutput(&lm->ts)) PetscFunctionReturn(0);
 
 	// create directory (encode current time & step number)
-	asprintf(&dirName, "Timestep_%1.6lld_%1.6e", (LLD)step, time);
+	asprintf(&dirName, "Timestep_%1.8lld_%1.8e", (LLD)step, time);
 
 	// create output directory
 	ierr = DirMake(dirName); CHKERRQ(ierr);
@@ -560,7 +560,6 @@ PetscErrorCode LaMEMLibSolve(LaMEMLib *lm, void *param)
 	NLSol          nl;     // nonlinear solver context (to be removed!)
 	SNES           snes;   // PETSc nonlinear solver
 	PetscInt       restart;
-	PetscScalar    gidtmax;
 	PetscLogDouble t_snes_start, t_snes_end, t_solve_start, t_solve_end;
 
 	PetscErrorCode ierr;
@@ -582,6 +581,9 @@ PetscErrorCode LaMEMLibSolve(LaMEMLib *lm, void *param)
 		//====================================
 		//	NONLINEAR THERMO-MECHANICAL SOLVER
 		//====================================
+
+		// switch time step flags
+		ierr = JacResUpdateFlags(&lm->jr); CHKERRQ(ierr);
 
 		// initialize boundary constraint vectors
 		ierr = BCApply(&lm->bc, lm->jr.gsol); CHKERRQ(ierr);
@@ -611,23 +613,11 @@ PetscErrorCode LaMEMLibSolve(LaMEMLib *lm, void *param)
 		// MARKER & FREE SURFACE ADVECTION + EROSION
 		//==========================================
 
-		// get inverse CFL time step
-		ierr = JacResgetMaxInvStep(&lm->jr, &gidtmax); CHKERRQ(ierr);
+		// calculate current time step
+		ierr = JacResSelectTimeStep(&lm->jr, &restart); CHKERRQ(ierr);
 
-		// select new time step
-		ierr = TSSolSelectStep(&lm->ts, gidtmax, &restart); CHKERRQ(ierr);
-
-		if(restart)
-		{
-			// restart time step
-			continue;
-		}
-		else
-		{
-			// continue time step
-			ierr = TSSolStepForward(&lm->ts); CHKERRQ(ierr);
-		}
-
+		// restart if elastic time step is larger than CFL
+		if(restart) continue;
 
 		// advect free surface
 		ierr = FreeSurfAdvect(&lm->surf); CHKERRQ(ierr);
@@ -652,8 +642,6 @@ PetscErrorCode LaMEMLibSolve(LaMEMLib *lm, void *param)
 
 		// update phase ratios taking into account actual free surface position
 		ierr = FreeSurfGetAirPhaseRatio(&lm->surf); CHKERRQ(ierr);
-
-//		ADVCheckMarkPhases, BCAdvectPush ???
 
 		//==================
 		// Save data to disk
