@@ -560,7 +560,7 @@ PetscErrorCode LaMEMLibSolve(LaMEMLib *lm, void *param)
 	NLSol          nl;     // nonlinear solver context (to be removed!)
 	SNES           snes;   // PETSc nonlinear solver
 	PetscInt       restart;
-	PetscLogDouble t_snes_start, t_snes_end, t_solve_start, t_solve_end;
+	PetscLogDouble t_snes_start, t_snes_stop;
 
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
@@ -573,8 +573,6 @@ PetscErrorCode LaMEMLibSolve(LaMEMLib *lm, void *param)
 	//===============
 	// TIME STEP LOOP
 	//===============
-
-	PetscTime(&t_solve_start);
 
 	while(!TSSolIsDone(&lm->ts))
 	{
@@ -602,9 +600,9 @@ PetscErrorCode LaMEMLibSolve(LaMEMLib *lm, void *param)
 		// print analyze convergence/divergence reason & iteration count
 		ierr = SNESPrintConvergedReason(snes); CHKERRQ(ierr);
 
-		PetscTime(&t_snes_end);
+		PetscTime(&t_snes_stop);
 
-		PetscPrintf(PETSC_COMM_WORLD, " Nonlinear solve took %g (sec)\n", t_snes_end - t_snes_start);
+		PetscPrintf(PETSC_COMM_WORLD, " Nonlinear solve took %g (sec)\n", t_snes_stop - t_snes_start);
 
 		// view nonlinear residual
 		ierr = JacResViewRes(&lm->jr); CHKERRQ(ierr);
@@ -651,10 +649,6 @@ PetscErrorCode LaMEMLibSolve(LaMEMLib *lm, void *param)
 
 		ierr = LaMEMLibSaveRestart(lm); CHKERRQ(ierr);
 	}
-
-	PetscTime(&t_solve_end);
-
-	PetscPrintf(PETSC_COMM_WORLD, " Total solution time: %g (sec)\n", t_solve_end - t_solve_start);
 
 	//======================
 	// END OF TIME STEP LOOP

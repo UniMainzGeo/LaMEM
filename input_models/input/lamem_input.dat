@@ -187,11 +187,11 @@
 
 # Free surface top boundary flag
 
-	open_top_bound 1
+	open_top_bound = 1
 
 # No-slip boundary flag mask (left right front back bottom top)
 
-	noslip 0 0 1 1 0 0
+	noslip = 0 0 1 1 0 0
 
 # Temperature on the top and bottom boundaries
 
@@ -303,8 +303,8 @@
 
 # Grid output options (output is always active)
 
-	out_file_name       = 1 # output file name
-	out_pvd             = 1 # activate writing .pvd file
+	out_file_name       = output # output file name
+	out_pvd             = 1      # activate writing .pvd file
 	out_phase           = 1
 	out_density         = 1
 	out_visc_total      = 1

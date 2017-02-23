@@ -1,0 +1,243 @@
+
+#===============================================================================
+# Scaling
+#===============================================================================
+
+	units = none
+
+#===============================================================================
+# Time stepping parameters
+#===============================================================================
+
+	time_end  = 1.0   # simulation end time
+	dt        = 1e-2  # time step
+	dt_min    = 1e-5  # minimum time step (declare divergence if lower value is attempted)
+	dt_max    = 0.1   # maximum time step
+	dt_out    = 0.2   # output step (output at least at fixed time intervals)
+	inc_dt    = 0.1   # time step increment per time step (fraction of unit)
+	CFL       = 0.5   # CFL (Courant-Friedrichs-Lewy) criterion
+	CFLMAX    = 0.5   # CFL criterion for elasticity
+	nstep_max = 2     # maximum allowed number of steps (lower bound: time_end/dt_max)
+	nstep_out = 1     # save output every n steps
+	nstep_rdb = 0     # save restart database every n steps
+
+
+#===============================================================================
+# Grid & discretization parameters
+#===============================================================================
+
+# Number of cells for all segments
+
+	nel_x = 16
+	nel_y = 16
+	nel_z = 16
+
+# Coordinates of all segments (including start and end points)
+
+	coord_x = 0.0 1.0
+	coord_y = 0.0 1.0
+	coord_z = 0.0 1.0
+
+#===============================================================================
+# Free surface
+#===============================================================================
+
+	surf_use = 0 # free surface activation flag
+
+#===============================================================================
+# Boundary conditions
+#===============================================================================
+
+# Free surface top boundary flag
+
+#	open_top_bound = 1
+
+# No-slip boundary flag mask (left right front back bottom top)
+
+#	noslip = 0 0 1 1 0 0
+
+# Temperature on the top and bottom boundaries
+
+	temp_top = 0.0
+	temp_bot = 1.0;
+
+#===============================================================================
+# Jacobian & residual evaluation parameters
+#===============================================================================
+
+	gravity        = 0.0 0.0 -1.0   # gravity vector
+	FSSA           = 1.0            # free surface stabilization parameter [0 - 1]
+	shear_heat_eff = 1.0            # shear heating efficiency parameter   [0 - 1]
+	act_temp_diff  = 0              # temperature diffusion activation flag
+	act_p_shift    = 0              # pressure shift activation flag (zero pressure in the top cell layer)
+	init_guess     = 0              # initial guess flag
+	p_litho_visc   = 1              # use lithostatic pressure for creep laws
+	p_litho_plast  = 1              # use lithostatic pressure for plasticity
+	p_lim_plast    = 0              # limit pressure at first iteration for plasticity
+	jac_mat_free   = 0              # matrix-free closed-form jacobian
+	eta_min        = 1e-3           # viscosity upper bound
+	eta_max        = 1e12           # viscosity lower limit
+#	eta_ref        = 1e20           # reference viscosity (initial guess)
+#	T_ref          = 20.0           # reference temperature
+#	RUGC           = 8.31           # universal gas constant (required only for non-dimensional setups)
+#	DII_ref        = 1e-15          # background (reference) strain-rate
+#	min_cohes      = 2e7            # cohesion lower bound
+#	min_fric       = 5.0            # friction lower bound
+#	tau_ult        = 1e9            # ultimate yield stress
+#	quasi_harm_avg = 1              # quasi-harmonic averaging regularization flag (plasticity)
+#	cf_eta_min     = 10.0           # visco-plastic regularization parameter (plasticity)
+#	n_pw           = 15.0           # power-law regularization parameter (plasticity)
+#	rho_fluid      = 1e3            # fluid density for depth-dependent density model
+	gw_level_type  = none           # ground water level type for pore pressure computation (see below)
+#	gw_level       = 10.0           # ground water level at the free surface (if defined)
+#	biot           = 0.7            # Biot pressure parameer
+
+# Groundwater level type specification:
+
+# gw_level_type = none  # don't compute pore pressure (default)
+# gw_level_type = top   # GW level is top of the domain
+# gw_level_type = surf  # GW level is free surface average level (surface must be enabled)
+# gw_level_type = level # GW level is fixed (gw_level parameter must be specified)
+
+#===============================================================================
+# Model setup & advection
+#===============================================================================
+
+	msetup         = geom              # setup type
+	nmark_x        = 2                 # markers per cell in x-direction
+	nmark_y        = 2                 # ...                 y-direction
+	nmark_z        = 2                 # ...                 z-direction
+	rand_noise     = 0                 # random noise flag
+	bg_phase       = 1                 # background phase ID
+	save_mark      = 1                 # save marker to disk flag
+#	mark_load_name = markers           # marker input file name (extension is .dat)
+#	mark_load_path = ./markers         # marker input directory
+#	mark_save_name = markers           # marker output file name (extension is .dat)
+#	mark_save_path = ./markers         # marker output directory
+#	poly_file      = ./input/poly.dat  # polygon geometry file    (redundant)
+#	temp_file      = ./input/temp.dat  # initial temperature file (redundant)
+	advect         = euler;            # advection scheme
+	new_advect     = 0                 # activate new advection algorithms (temporary)
+	interp         = stag;             # velocity interpolation scheme
+#	stagp_a        = 0.7;              # STAG_P velocity interpolation parameter
+#	use_mark_contr = 1                 # activate marker control
+#	new_mark_contr = 1                 # activate new marker control algorithms (temporary)
+#	surf_tol       = 0.05              # tolerance for shifting markers below free surface
+
+# Advection types:
+
+#	advect = euler # euler explicit in time
+#	advect = rk2   # Runge-Kutta 2nd order in space
+
+# Velocity interpolation types:
+
+#	interp = stag   # trilinear interpolation from FDSTAG points
+#	interp = minmod # minmod interpolation to nodes, trilinear interpolation to markers + correction
+#	interp = stagp  # STAG_P empirical approach (T. Gerya)
+
+# Setup type specification:
+
+#	msetup = geom     # default input (phases are assigned from geometric primitives)
+#	msetup = files    # MATLAB input (requires mark_load_path and mark_load_name parameters)
+#	msetup = polygons # geomIO input (requires poly_file parameter)
+
+# Geometric primtives:
+
+	<BoxStart>
+		phase  = 1
+		bounds = 0.25 0.75 0.25 0.75 0.05 0.75  # (left, right, front, back, bottom, top)
+	<BoxEnd>
+
+#===============================================================================
+# Output
+#===============================================================================
+
+# Grid output options (output is always active)
+
+	out_file_name       = FB_test # output file name
+	out_pvd             = 1       # activate writing .pvd file
+	out_phase           = 1
+	out_density         = 1
+	out_visc_total      = 1
+	out_visc_creep      = 1
+	out_velocity        = 1
+	out_pressure        = 1
+#	out_eff_press       = 1
+#	out_over_press      = 1
+	out_litho_press     = 1
+#	out_pore_press      = 1
+	out_temperature     = 1
+	out_dev_stress      = 1
+	out_j2_dev_stress   = 1
+	out_strain_rate     = 1
+	out_j2_strain_rate  = 1
+	out_moment_res      = 1
+	out_cont_res        = 1
+#	out_energ_res       = 1
+
+# Free surface output options (can be activated only if surface tracking is enabled)
+
+#	out_surf            = 1 # activate surface output
+#	out_surf_pvd        = 1 # activate writing .pvd file
+#	out_surf_velocity   = 1
+#	out_surf_topography = 1
+#	out_surf_amplitude  = 1
+
+# Marker output options (requires activation)
+
+#	out_mark     = 1 # activate marker output
+#	out_mark_pvd = 1 # activate writing .pvd file
+
+# AVD phase viewer output options (requires activation)
+
+	out_avd     = 1 # activate AVD phase output
+	out_avd_pvd = 1 # activate writing .pvd file
+	out_avd_ref = 3 # AVD grid refinement factor
+
+#===============================================================================
+# Material phase parameters
+#===============================================================================
+
+	# Define properties of matrix
+	<MaterialStart>
+		ID  = 0 # phase id
+		rho = 1 # density
+		eta = 1 # viscosity
+	<MaterialEnd>
+
+	# Define properties of block
+	<MaterialStart>
+		ID  = 1   # phase id
+		rho = 2   # density
+		eta = 100 # viscosity
+	<MaterialEnd>
+
+#===============================================================================
+# PETSc options
+#===============================================================================
+
+<PetscOptionsStart>
+
+	# LINEAR & NONLINEAR SOLVER OPTIONS
+	-snes_type 		ksponly				# no nonlinear solver
+
+	# Jacobian (linear) outer KSP
+	-js_ksp_type gmres
+	-js_ksp_max_it 25
+	-js_ksp_converged_reason
+ 	-js_ksp_monitor
+	-js_ksp_rtol 1e-4
+	-js_ksp_atol 1e-10
+
+	# Direct solver with penalty method
+	-pcmat_type 	mono
+	-pcmat_pgamma 	1e5				# penalty parameter
+	-jp_type 		user
+	-jp_pc_type 	lu
+	-jp_pc_factor_mat_solver_package superlu_dist
+
+	-objects_dump
+
+<PetscOptionsEnd>
+
+#===============================================================================

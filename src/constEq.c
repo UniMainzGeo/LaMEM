@@ -157,8 +157,7 @@ PetscErrorCode ConstEqCtxSetup(
 	// override total pressure with lithostatic if requested
 	if(ctrl->pLithoPlast)
 	{
-		// In case the flag	-EmployLithostaticPressureInYieldFunction is found,
-		// we use lithostatic, rather than dynamic pressure to evaluate yielding
+		// Use lithostatic, rather than dynamic pressure to evaluate yield stress
 		// This converges better, but does not result in localization of deformation & shear banding,
 		// so only apply it for large-scale simulations where plasticity does not matter much
 

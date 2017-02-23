@@ -69,8 +69,15 @@ PetscErrorCode MeshSeg1DReadParam(
 	PetscFunctionBegin;
 
 	// initialize
+	ierr = PetscMemzero(ms, sizeof(MeshSeg1D)); CHKERRQ(ierr);
+
 	ms->nsegs = 1;
-	for(i = 0; i < MaxNumSegs; i++) ms->biases[i] = 1.0;
+
+	for(i = 0; i < MaxNumSegs; i++)
+	{
+		ms->biases[i] = 1.0;
+		ncells    [i] = 0.0;
+	}
 
 	// compose option keys
 	asprintf(&nseg,  "nseg_%s",  dir);

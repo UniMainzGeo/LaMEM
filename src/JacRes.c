@@ -478,7 +478,6 @@ PetscErrorCode JacResUpdateFlags(JacRes *jr)
 {
 	Controls *ctrl;
 	TSSol    *ts;
-	PetscInt  step;
 
 	ctrl = &jr->ctrl;
 	ts   =  jr->ts;

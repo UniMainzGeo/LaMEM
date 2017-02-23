@@ -70,7 +70,7 @@ PetscErrorCode TSSolCreate(TSSol *ts, FB *fb)
 	ts->tol       = 1e-8;
 
 	// read parameters
-	ierr = getScalarParam(fb, _REQUIRED_, "time_end",  &ts->time_end,  1, time);  CHKERRQ(ierr);
+	ierr = getScalarParam(fb, _OPTIONAL_, "time_end",  &ts->time_end,  1, time);  CHKERRQ(ierr);
 	ierr = getScalarParam(fb, _REQUIRED_, "dt_max",    &ts->dt_max,    1, time);  CHKERRQ(ierr);
 	ierr = getScalarParam(fb, _OPTIONAL_, "dt",        &ts->dt,        1, time);  CHKERRQ(ierr);
 	ierr = getScalarParam(fb, _OPTIONAL_, "dt_min",    &ts->dt_min,    1, time);  CHKERRQ(ierr);
@@ -84,10 +84,16 @@ PetscErrorCode TSSolCreate(TSSol *ts, FB *fb)
 	ierr = getIntParam   (fb, _OPTIONAL_, "nstep_rdb", &ts->nstep_rdb, 1, -1  );  CHKERRQ(ierr);
 	ierr = getScalarParam(fb, _OPTIONAL_, "time_tol",  &ts->tol,       1, 1.0 );  CHKERRQ(ierr);
 
+	if(!ts->time_end && !ts->nstep_max)
+	{
+		SETERRQ(PETSC_COMM_SELF, PETSC_ERR_USER, "Define at least one of the parameters: time_end, nstep_max");
+	}
+
 	// set defaults
-	if(ts->dt        == 0.0) ts->dt        = ts->dt_max/5.0;
-	if(ts->dt_min    == 0.0) ts->dt_min    = ts->dt_max/100.0;
-	if(ts->nstep_max == 0)   ts->nstep_max = 50*(PetscInt)PetscCeilReal(ts->time_end/ts->dt_max);
+	if(!ts->dt)        ts->dt        = ts->dt_max/5.0;
+	if(!ts->dt_min)    ts->dt_min    = ts->dt_max/50.0;
+	if(!ts->nstep_max) ts->nstep_max = 50*(PetscInt)PetscCeilReal(ts->time_end/ts->dt_max);
+	if(!ts->time_end)  ts->time_end  = ((PetscScalar)ts->nstep_max)*ts->dt_max;
 
 	// print summary
 	PetscPrintf(PETSC_COMM_WORLD, "===========================================================\n");
@@ -286,7 +292,7 @@ PetscErrorCode TSSolSelectStep(
 		ts->dt = ts->dt_elast;
 
 		// compute elastic time step
-		ts->dt_elast *= ts->inc_dt;
+		ts->dt_elast *= (1.0 + ts->inc_dt);
 		if(ts->dt_elast > dt_cfl) ts->dt_elast = dt_cfl;
 	}
 	else
@@ -296,7 +302,7 @@ PetscErrorCode TSSolSelectStep(
 		//===================
 
 		// compute advection step
-		ts->dt *= ts->inc_dt;
+		ts->dt *= (1.0 + ts->inc_dt);
 		if(ts->dt > dt_cfl) ts->dt = dt_cfl;
 	}
 
