@@ -431,7 +431,6 @@ PetscErrorCode LaMEMLibDestroy(LaMEMLib *lm)
 	ierr = FreeSurfDestroy(&lm->surf);   CHKERRQ(ierr);
 	ierr = BCDestroy      (&lm->bc);     CHKERRQ(ierr);
 	ierr = JacResDestroy  (&lm->jr);     CHKERRQ(ierr);
-	ierr = ADVMarkSave    (&lm->actx);   CHKERRQ(ierr);
 	ierr = ADVDestroy     (&lm->actx);   CHKERRQ(ierr);
 	ierr = PVOutDestroy   (&lm->pvout);  CHKERRQ(ierr);
 	ierr = PVSurfDestroy  (&lm->pvsurf); CHKERRQ(ierr);
@@ -663,6 +662,9 @@ PetscErrorCode LaMEMLibSolve(LaMEMLib *lm, void *param)
 	ierr = PMatDestroy    (pm);    CHKERRQ(ierr);
 	ierr = SNESDestroy    (&snes); CHKERRQ(ierr);
 	ierr = NLSolDestroy   (&nl);   CHKERRQ(ierr);
+
+	// save markers
+	ierr = ADVMarkSave(&lm->actx); CHKERRQ(ierr);
 
 	PetscFunctionReturn(0);
 }
