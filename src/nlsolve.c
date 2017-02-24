@@ -184,54 +184,7 @@ PetscErrorCode FormResidual(SNES snes, Vec x, Vec f, void *ctx)
 	nl = (NLSol*)ctx;
 	jr = nl->pc->pm->jr;
 
-	// copy solution from global to local vectors, enforce boundary constraints
-	ierr = JacResCopySol(jr, x); CHKERRQ(ierr);
-
-	ierr = JacResGetPressShift(jr); CHKERRQ(ierr);
-
-	// compute pore pressure
-	ierr = JacResGetPorePressure(jr); CHKERRQ(ierr);
-
-	// compute effective strain rate
-	ierr = JacResGetEffStrainRate(jr); CHKERRQ(ierr);
-
-	// compute residual
-	ierr = JacResGetResidual(jr); CHKERRQ(ierr);
-
-	// copy residuals to global vector
-	ierr = JacResCopyRes(jr, f); CHKERRQ(ierr);
-
-	PetscFunctionReturn(0);
-}
-//---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "FormResidualMFFD"
-PetscErrorCode FormResidualMFFD(void *ctx, Vec x, Vec f)
-{
-	JacRes *jr;
-
-	PetscErrorCode ierr;
-	PetscFunctionBegin;
-
-	// access context
-	jr = (JacRes*)ctx;
-
-	// copy solution from global to local vectors, enforce boundary constraints
-	ierr = JacResCopySol(jr, x); CHKERRQ(ierr);
-
-	ierr = JacResGetPressShift(jr); CHKERRQ(ierr);
-
-	// compute pore pressure
-	ierr = JacResGetPorePressure(jr); CHKERRQ(ierr);
-
-	// compute effective strain rate
-	ierr = JacResGetEffStrainRate(jr); CHKERRQ(ierr);
-
-	// compute residual
-	ierr = JacResGetResidual(jr); CHKERRQ(ierr);
-
-	// copy residuals to global vector
-	ierr = JacResCopyRes(jr, f); CHKERRQ(ierr);
+	ierr = JacResFormResidual(jr, x, f); CHKERRQ(ierr);
 
 	PetscFunctionReturn(0);
 }

@@ -431,6 +431,7 @@ PetscErrorCode LaMEMLibDestroy(LaMEMLib *lm)
 	ierr = FreeSurfDestroy(&lm->surf);   CHKERRQ(ierr);
 	ierr = BCDestroy      (&lm->bc);     CHKERRQ(ierr);
 	ierr = JacResDestroy  (&lm->jr);     CHKERRQ(ierr);
+	ierr = ADVMarkSave    (&lm->actx);   CHKERRQ(ierr);
 	ierr = ADVDestroy     (&lm->actx);   CHKERRQ(ierr);
 	ierr = PVOutDestroy   (&lm->pvout);  CHKERRQ(ierr);
 	ierr = PVSurfDestroy  (&lm->pvsurf); CHKERRQ(ierr);
@@ -670,11 +671,23 @@ PetscErrorCode LaMEMLibSolve(LaMEMLib *lm, void *param)
 #define __FUNCT__ "LaMEMLibDryRun"
 PetscErrorCode LaMEMLibDryRun(LaMEMLib *lm)
 {
+	PetscErrorCode ierr;
+	PetscFunctionBegin;
 
+	// initialize boundary constraint vectors
+	ierr = BCApply(&lm->bc, lm->jr.gsol); CHKERRQ(ierr);
 
-	// just evaluate initial residual
-//	ierr = FormResidual(snes, jr.gsol, jr.gres, &nl); CHKERRQ(ierr);
+	// initialize temperature
+	ierr = JacResInitTemp(&lm->jr); CHKERRQ(ierr);
 
+	// compute inverse elastic viscosities (dependent on dt)
+	ierr = JacResGetI2Gdt(&lm->jr); CHKERRQ(ierr);
+
+	// evaluate initial residual
+	ierr = JacResFormResidual(&lm->jr, lm->jr.gsol, lm->jr.gres); CHKERRQ(ierr);
+
+	// save output for inspection
+	ierr = LaMEMLibSaveOutput(lm); CHKERRQ(ierr);
 
 	PetscFunctionReturn(0);
 }

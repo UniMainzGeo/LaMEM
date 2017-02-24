@@ -270,9 +270,6 @@ PetscErrorCode ADVDestroy(AdvCtx *actx)
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
 
-	// output markers
-	ierr = ADVMarkSave(actx); CHKERRQ(ierr);
-
 	ierr = MPI_Comm_free(&actx->icomm); CHKERRQ(ierr);
 	ierr = PetscFree(actx->markers);    CHKERRQ(ierr);
 	ierr = PetscFree(actx->cellnum);    CHKERRQ(ierr);

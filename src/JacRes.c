@@ -473,6 +473,33 @@ PetscErrorCode JacResDestroy(JacRes *jr)
 }
 //---------------------------------------------------------------------------
 #undef __FUNCT__
+#define __FUNCT__ "JacResFormResidual"
+PetscErrorCode JacResFormResidual(JacRes *jr, Vec x, Vec f)
+{
+	PetscErrorCode ierr;
+	PetscFunctionBegin;
+
+	// copy solution from global to local vectors, enforce boundary constraints
+	ierr = JacResCopySol(jr, x); CHKERRQ(ierr);
+
+	ierr = JacResGetPressShift(jr); CHKERRQ(ierr);
+
+	// compute pore pressure
+	ierr = JacResGetPorePressure(jr); CHKERRQ(ierr);
+
+	// compute effective strain rate
+	ierr = JacResGetEffStrainRate(jr); CHKERRQ(ierr);
+
+	// compute residual
+	ierr = JacResGetResidual(jr); CHKERRQ(ierr);
+
+	// copy residuals to global vector
+	ierr = JacResCopyRes(jr, f); CHKERRQ(ierr);
+
+	PetscFunctionReturn(0);
+}
+//---------------------------------------------------------------------------
+#undef __FUNCT__
 #define __FUNCT__ "JacResUpdateFlags"
 PetscErrorCode JacResUpdateFlags(JacRes *jr)
 {

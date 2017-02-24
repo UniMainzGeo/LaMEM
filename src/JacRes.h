@@ -261,6 +261,9 @@ PetscErrorCode JacResDestroy(JacRes *jr);
 // compute effective inverse elastic viscosity
 PetscErrorCode JacResUpdateFlags(JacRes *jr);
 
+// form residual vector
+PetscErrorCode JacResFormResidual(JacRes *jr, Vec x, Vec f);
+
 // compute effective inverse elastic viscosity
 PetscErrorCode JacResGetI2Gdt(JacRes *jr);
 

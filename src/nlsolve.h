@@ -130,8 +130,6 @@ PetscErrorCode NLSolDestroy(NLSol *nl);
 // compute residual vector
 PetscErrorCode FormResidual(SNES snes, Vec x, Vec f, void *ctx);
 
-PetscErrorCode FormResidualMFFD(void *ctx, Vec x, Vec f);
-
 // compute Jacobian matrix and preconditioner
 PetscErrorCode FormJacobian(SNES snes, Vec x, Mat Amat, Mat Pmat, void *ctx);
 
