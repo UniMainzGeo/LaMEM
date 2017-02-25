@@ -62,32 +62,35 @@ PetscErrorCode DBMatCreate(DBMat *dbm, FB *fb)
 	// SOFTENING LAWS
 	//===============
 
-	// print overview of softening laws from file
-	PetscPrintf(PETSC_COMM_WORLD,"Reading softening laws: \n\n");
-
 	// setup block access mode
 	ierr = FBFindBlocks(fb, _OPTIONAL_, "<SofteningStart>", "<SofteningEnd>"); CHKERRQ(ierr);
 
-	// initialize ID for consistency checks
-	for(jj = 0; jj < max_num_soft; jj++) dbm->matSoft[jj].ID = -1;
-
-	// error checking
-	if(fb->nblocks > max_num_soft)
+	if(fb->nblocks)
 	{
-		SETERRQ1(PETSC_COMM_SELF, PETSC_ERR_USER, "Too many softening laws specified! Max allowed: %lld", (LLD)max_num_soft);
-	}
+		// print overview of softening laws from file
+		PetscPrintf(PETSC_COMM_WORLD,"Softening laws: \n\n");
 
-	// store actual number of softening laws
-	dbm->numSoft = fb->nblocks;
+		// initialize ID for consistency checks
+		for(jj = 0; jj < max_num_soft; jj++) dbm->matSoft[jj].ID = -1;
 
-	PetscPrintf(PETSC_COMM_WORLD,"--------------------------------------------------------------------------\n");
+		// error checking
+		if(fb->nblocks > max_num_soft)
+		{
+			SETERRQ1(PETSC_COMM_SELF, PETSC_ERR_USER, "Too many softening laws specified! Max allowed: %lld", (LLD)max_num_soft);
+		}
 
-	// read each individual softening law
-	for(jj = 0; jj < fb->nblocks; jj++)
-	{
-		ierr = DBMatReadSoft(dbm, fb); CHKERRQ(ierr);
+		// store actual number of softening laws
+		dbm->numSoft = fb->nblocks;
 
-		fb->blockID++;
+		PetscPrintf(PETSC_COMM_WORLD,"--------------------------------------------------------------------------\n");
+
+		// read each individual softening law
+		for(jj = 0; jj < fb->nblocks; jj++)
+		{
+			ierr = DBMatReadSoft(dbm, fb); CHKERRQ(ierr);
+
+			fb->blockID++;
+		}
 	}
 
 	ierr = FBFreeBlocks(fb); CHKERRQ(ierr);
@@ -97,7 +100,7 @@ PetscErrorCode DBMatCreate(DBMat *dbm, FB *fb)
 	//================
 
 	// print overview of material parameters read from file
-	PetscPrintf(PETSC_COMM_WORLD,"Reading material parameters: \n\n");
+	PetscPrintf(PETSC_COMM_WORLD,"Material parameters: \n\n");
 
 	// setup block access mode
 	ierr = FBFindBlocks(fb, _REQUIRED_, "<MaterialStart>", "<MaterialEnd>"); CHKERRQ(ierr);
@@ -111,8 +114,6 @@ PetscErrorCode DBMatCreate(DBMat *dbm, FB *fb)
 		SETERRQ1(PETSC_COMM_SELF, PETSC_ERR_USER, "Too many material structures specified! Max allowed: %lld", (LLD)max_num_phases);
 	}
 
-	PetscPrintf(PETSC_COMM_WORLD,"--------------------------------------------------------------------------\n");
-
 	// store actual number of phases
 	dbm->numPhases = fb->nblocks;
 
@@ -123,10 +124,11 @@ PetscErrorCode DBMatCreate(DBMat *dbm, FB *fb)
 
 		fb->blockID++;
 
-		PetscPrintf(PETSC_COMM_WORLD,"--------------------------------------------------------------------------\n");
 	}
 
 	ierr = FBFreeBlocks(fb); CHKERRQ(ierr);
+
+	PetscPrintf(PETSC_COMM_WORLD,"--------------------------------------------------------------------------\n");
 
 	PetscFunctionReturn(0);
 }
@@ -180,9 +182,9 @@ PetscErrorCode DBMatReadPhase(DBMat *dbm, FB *fb)
 	// read material properties from file with error checking
 	Scaling    *scal;
 	Material_t *m;
-	PetscInt    ID = -1, chSoftID, frSoftID, MSN;
+	PetscInt    ID = -1, chSoftID, frSoftID, MSN, print_title;
 	PetscScalar eta, eta0, e0, K, G, E, nu, Vp, Vs;
-	char        ndiff[_STR_LEN_], ndisl[_STR_LEN_], npeir[_STR_LEN_];
+	char        ndiff[_STR_LEN_], ndisl[_STR_LEN_], npeir[_STR_LEN_], title[_STR_LEN_];
 
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
@@ -303,10 +305,19 @@ PetscErrorCode DBMatReadPhase(DBMat *dbm, FB *fb)
 
 	// PLASTICITY
 
-	// check plasticity parameters
 	if(m->fr && !m->ch)
 	{
 		SETERRQ1(PETSC_COMM_SELF, PETSC_ERR_USER, "Cohesion must be specified for phase %lld (ch)", (LLD)ID);
+	}
+
+	if(!m->fr && frSoftID != -1)
+	{
+		SETERRQ1(PETSC_COMM_SELF, PETSC_ERR_USER, "Friction angle must be specified for phase %lld (fr, frSoftID)", (LLD)ID);
+	}
+
+	if(!m->ch && chSoftID != -1)
+	{
+		SETERRQ1(PETSC_COMM_SELF, PETSC_ERR_USER, "Cohesion must be specified for phase %lld (ch, chSoftID)", (LLD)ID);
 	}
 
 	// set softening law IDs
@@ -388,69 +399,62 @@ PetscErrorCode DBMatReadPhase(DBMat *dbm, FB *fb)
 
 	// PRINT
 
-	PetscPrintf(PETSC_COMM_WORLD,"Phase [%lld]: \n",(LLD)(m->ID));
+	PetscPrintf(PETSC_COMM_WORLD,"Phase [%lld] : ",(LLD)(m->ID));
 
 	if(strlen(ndiff)) PetscPrintf(PETSC_COMM_WORLD,"    diffusion creep profile  : %s \n", ndiff);
 	if(strlen(ndisl)) PetscPrintf(PETSC_COMM_WORLD,"    dislocation creep profile: %s \n", ndisl);
 	if(strlen(ndisl)) PetscPrintf(PETSC_COMM_WORLD,"    dislocation creep profile: %s \n", ndisl);
 
-	PetscPrintf(PETSC_COMM_WORLD,"    (dens ): ");
-	MatPrintScalParam(m->rho,   "rho",   "[kg/m^3]", scal);
-	MatPrintScalParam(m->rho_n, "rho_n", "[ ]",      scal);
-	MatPrintScalParam(m->rho_c, "rho_c", "[1/m]",    scal);
-	MatPrintScalParam(m->beta,  "beta",  "[1/Pa]",   scal);
+	sprintf(title, "   (dens ): "); print_title = 1;
+	MatPrintScalParam(m->rho,   "rho",   "[kg/m^3]", scal, title, &print_title);
+	MatPrintScalParam(m->rho_n, "rho_n", "[ ]",      scal, title, &print_title);
+	MatPrintScalParam(m->rho_c, "rho_c", "[1/m]",    scal, title, &print_title);
+	MatPrintScalParam(m->beta,  "beta",  "[1/Pa]",   scal, title, &print_title);
+
+	sprintf(title, "   (elast): "); print_title = 1;
+	MatPrintScalParam(G,     "G",  "[Pa]",  scal, title, &print_title);
+	MatPrintScalParam(K,     "K",  "[Pa]",  scal, title, &print_title);
+	MatPrintScalParam(E,     "E",  "[Pa]",  scal, title, &print_title);
+	MatPrintScalParam(nu,    "nu", "[ ]",   scal, title, &print_title);
+	MatPrintScalParam(m->Kp, "Kp", "[ ]",   scal, title, &print_title);
+	MatPrintScalParam(Vp,    "Vp", "[m/s]", scal, title, &print_title);
+	MatPrintScalParam(Vs,    "Vs", "[m/s]", scal, title, &print_title);
+
+	sprintf(title, "   (diff ): "); print_title = 1;
+	MatPrintScalParam(eta,   "eta", "[Pa*s]",    scal, title, &print_title);
+	MatPrintScalParam(m->Bd, "Bd",  "[1/Pa/s]",  scal, title, &print_title);
+	MatPrintScalParam(m->Ed, "Ed",  "[J/mol]",   scal, title, &print_title);
+	MatPrintScalParam(m->Vd, "Vd",  "[m^3/mol]", scal, title, &print_title);
 	PetscPrintf(PETSC_COMM_WORLD,"\n");
 
-	PetscPrintf(PETSC_COMM_WORLD,"    (elast): ");
-	MatPrintScalParam(G,     "G",  "[Pa]",  scal);
-	MatPrintScalParam(K,     "K",  "[Pa]",  scal);
-	MatPrintScalParam(E,     "E",  "[Pa]",  scal);
-	MatPrintScalParam(nu,    "nu", "[ ]",   scal);
-	MatPrintScalParam(m->Kp, "Kp", "[ ]",   scal);
-	MatPrintScalParam(Vp,    "Vp", "[m/s]", scal);
-	MatPrintScalParam(Vs,    "Vs", "[m/s]", scal);
+	sprintf(title, "   (disl ): "); print_title = 1;
+	MatPrintScalParam(eta0,  "eta0", "[Pa*s]",     scal, title, &print_title);
+	MatPrintScalParam(e0,    "e0",   "[1/s]",      scal, title, &print_title);
+	MatPrintScalParam(m->Bn, "Bn",   "[1/Pa^n/s]", scal, title, &print_title);
+	MatPrintScalParam(m->En, "En",   "[J/mol]",    scal, title, &print_title);
+	MatPrintScalParam(m->Vn, "Vn",   "[m^3/mol]",  scal, title, &print_title);
+	MatPrintScalParam(m->n,  "n",    "[ ]",        scal, title, &print_title);
 
-	PetscPrintf(PETSC_COMM_WORLD,"\n");
+	sprintf(title, "   (peirl): "); print_title = 1;
+	MatPrintScalParam(m->Bp,    "Bp",    "[1/s]",     scal, title, &print_title);
+	MatPrintScalParam(m->Ep,    "Ep",    "[J/mol]",   scal, title, &print_title);
+	MatPrintScalParam(m->Vp,    "Vp",    "[m^3/mol]", scal, title, &print_title);
+	MatPrintScalParam(m->taup,  "taup",  "[Pa]",      scal, title, &print_title);
+	MatPrintScalParam(m->gamma, "gamma", "[ ]",       scal, title, &print_title);
+	MatPrintScalParam(m->q,     "q",     "[ ]",       scal, title, &print_title);
 
-	PetscPrintf(PETSC_COMM_WORLD,"    (diff ): ");
-	MatPrintScalParam(eta,   "eta", "[Pa*s]",    scal);
-	MatPrintScalParam(m->Bd, "Bd",  "[1/Pa/s]",  scal);
-	MatPrintScalParam(m->Ed, "Ed",  "[J/mol]",   scal);
-	MatPrintScalParam(m->Vd, "Vd",  "[m^3/mol]", scal);
-	PetscPrintf(PETSC_COMM_WORLD,"\n");
-
-	PetscPrintf(PETSC_COMM_WORLD,"    (disl ): ");
-	MatPrintScalParam(eta0,  "eta0", "[Pa*s]",     scal);
-	MatPrintScalParam(e0,    "e0",   "[1/s]",      scal);
-	MatPrintScalParam(m->Bn, "Bn",   "[1/Pa^n/s]", scal);
-	MatPrintScalParam(m->En, "En",   "[J/mol]",    scal);
-	MatPrintScalParam(m->Vn, "Vn",   "[m^3/mol]",  scal);
-	MatPrintScalParam(m->n,  "n",    "[ ]",        scal);
-	PetscPrintf(PETSC_COMM_WORLD,"\n");
-
-	PetscPrintf(PETSC_COMM_WORLD,"    (peirl): ");
-	MatPrintScalParam(m->Bp,    "Bp",    "[1/s]",     scal);
-	MatPrintScalParam(m->Ep,    "Ep",    "[J/mol]",   scal);
-	MatPrintScalParam(m->Vp,    "Vp",    "[m^3/mol]", scal);
-	MatPrintScalParam(m->taup,  "taup",  "[Pa]",      scal);
-	MatPrintScalParam(m->gamma, "gamma", "[ ]",       scal);
-	MatPrintScalParam(m->q,     "q",     "[ ]",       scal);
-	PetscPrintf(PETSC_COMM_WORLD,"\n");
-
-	PetscPrintf(PETSC_COMM_WORLD,"    (plast): ");
-	MatPrintScalParam(m->ch, "ch", "[Pa]",  scal);
-	MatPrintScalParam(m->fr, "fr", "[deg]", scal);
-	MatPrintScalParam(m->rp, "rp", "[ ]",   scal);
+	sprintf(title, "   (plast): "); print_title = 1;
+	MatPrintScalParam(m->ch, "ch", "[Pa]",  scal, title, &print_title);
+	MatPrintScalParam(m->fr, "fr", "[deg]", scal, title, &print_title);
+	MatPrintScalParam(m->rp, "rp", "[ ]",   scal, title, &print_title);
 	if(frSoftID != -1) PetscPrintf(PETSC_COMM_WORLD, "frSoftID = %lld ", (LLD)frSoftID);
 	if(chSoftID != -1) PetscPrintf(PETSC_COMM_WORLD, "chSoftID = %lld ", (LLD)chSoftID);
-	PetscPrintf(PETSC_COMM_WORLD,"\n");
 
-	PetscPrintf(PETSC_COMM_WORLD,"    (temp ): ");
-	MatPrintScalParam(m->alpha, "alpha", "[1/K]",    scal);
-	MatPrintScalParam(m->Cp,    "Cp",    "[J/kg/K]", scal);
-	MatPrintScalParam(m->k,     "k",     "[W/m/k]",  scal);
-	MatPrintScalParam(m->A,     "A",     "[W/kg]",   scal);
-
+	sprintf(title, "   (temp ): "); print_title = 1;
+	MatPrintScalParam(m->alpha, "alpha", "[1/K]",    scal, title, &print_title);
+	MatPrintScalParam(m->Cp,    "Cp",    "[J/kg/K]", scal, title, &print_title);
+	MatPrintScalParam(m->k,     "k",     "[W/m/k]",  scal, title, &print_title);
+	MatPrintScalParam(m->A,     "A",     "[W/kg]",   scal, title, &print_title);
 	PetscPrintf(PETSC_COMM_WORLD,"\n");
 
 	// SCALE
@@ -492,15 +496,24 @@ PetscErrorCode DBMatReadPhase(DBMat *dbm, FB *fb)
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-void MatPrintScalParam(PetscScalar par, const char key[], const char label[], Scaling *scal)
+void MatPrintScalParam(
+		PetscScalar par,  const char key[],   const char label[],
+		Scaling    *scal, const char title[], PetscInt   *print_title)
 {
 	// monitor parameter value
 
 	if(par == 0.0) return;
 
+	if((*print_title))
+	{
+		PetscPrintf(PETSC_COMM_WORLD, "\n%s", title);
+
+		(*print_title) = 0;
+	}
+
 	if(scal->utype == _NONE_)
 	{
-		PetscPrintf(PETSC_COMM_WORLD,"%s = %g [ ]  ", key, par);
+		PetscPrintf(PETSC_COMM_WORLD, "%s = %g [ ]  ", key, par);
 	}
 	else
 	{

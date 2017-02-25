@@ -94,7 +94,7 @@ PetscErrorCode JacResCreate(JacRes *jr, FB *fb)
 	ierr = getScalarParam(fb, _OPTIONAL_, "gravity",         ctrl->grav,         3, 1.0); CHKERRQ(ierr);
 	ierr = getScalarParam(fb, _OPTIONAL_, "FSSA",           &ctrl->FSSA,         1, 1.0); CHKERRQ(ierr);
 	ierr = getScalarParam(fb, _OPTIONAL_, "shear_heat_eff", &ctrl->shearHeatEff, 1, 1.0); CHKERRQ(ierr);
-	ierr = getIntParam   (fb, _OPTIONAL_, "act_temp_diff",  &ctrl->pShiftAct,    1, 1);   CHKERRQ(ierr);
+	ierr = getIntParam   (fb, _OPTIONAL_, "act_temp_diff",  &ctrl->actTemp,      1, 1);   CHKERRQ(ierr);
 	ierr = getIntParam   (fb, _OPTIONAL_, "act_p_shift",    &ctrl->pShiftAct,    1, 1);   CHKERRQ(ierr);
 	ierr = getIntParam   (fb, _OPTIONAL_, "init_guess",     &ctrl->initGuess,    1, 1);   CHKERRQ(ierr);
 	ierr = getIntParam   (fb, _OPTIONAL_, "p_litho_visc",   &ctrl->pLithoVisc,   1, 1);   CHKERRQ(ierr);

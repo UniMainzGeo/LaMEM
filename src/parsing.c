@@ -52,7 +52,7 @@ PetscErrorCode FBLoad(FB **pfb)
 {
 	FB        *fb;
 	FILE      *fp;
-	PetscInt  i;
+	PetscInt  i, j;
 	size_t    sz, len;
 	PetscBool found;
 	char      *ptr, *comment;
@@ -83,7 +83,7 @@ PetscErrorCode FBLoad(FB **pfb)
 			SETERRQ1(PETSC_COMM_WORLD, PETSC_ERR_USER, "Cannot open input file %s\n", filename);
 		}
 
-		PetscPrintf(PETSC_COMM_WORLD," Parsing input file : %s \n", filename);
+		PetscPrintf(PETSC_COMM_WORLD, "Parsing input file : %s \n", filename);
 
 		// get file size
 		fseek(fp, 0L, SEEK_END);
@@ -122,13 +122,19 @@ PetscErrorCode FBLoad(FB **pfb)
 		ierr = MPI_Bcast(fb->buff, (PetscMPIInt)fb->nchar, MPI_CHAR, 0, PETSC_COMM_WORLD); CHKERRQ(ierr);
 	}
 
-	// count lines, replace end-of-line characters with null terminators
+	// replace line breaks with string terminators
+	for(i = 0, j = 0; i < fb->nchar; i++)
+	{
+		if(fb->buff[i] == '\r') continue;
+		if(fb->buff[i] == '\n') fb->buff[j++] = '\0';
+		else                    fb->buff[j++] = fb->buff[i];
+	}
+
+	// count lines and remove empty
 	fb->nlines = 0;
 
-	for(i = 0; i < fb->nchar; i++)
+	for(i = 0, j = 0; i < fb->nchar; i++)
 	{
-		if(fb->buff[i] == '\n'
-		|| fb->buff[i] == '\r') fb->buff[i] = '\0';
 		if(fb->buff[i] == '\0') fb->nlines++;
 	}
 
@@ -151,11 +157,16 @@ PetscErrorCode FBLoad(FB **pfb)
 		ptr += len + 1;
 	}
 
+	PetscPrintf(PETSC_COMM_WORLD, "%s", fb->buff);
+
+
 	// load additional options from file
 	ierr = PetscOptionsReadFromFile(fb); CHKERRQ(ierr);
 
 	// return pointer
 	(*pfb) = fb;
+
+	PetscPrintf(PETSC_COMM_WORLD,"--------------------------------------------------------------------------\n");
 
 	PetscFunctionReturn(0);
 }
@@ -677,7 +688,7 @@ PetscErrorCode PetscOptionsReadFromFile(FB *fb)
 			else     asprintf(&option, "%s %s", key, val);
 
 			// add to PETSc options
-			PetscPrintf(PETSC_COMM_WORLD, "Adding PETSc option: %s\n", option);
+			PetscPrintf(PETSC_COMM_WORLD, "   Adding PETSc option: %s\n", option);
 
 			ierr = PetscOptionsInsertString(NULL, option); CHKERRQ(ierr);
 

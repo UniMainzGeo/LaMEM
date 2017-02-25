@@ -96,8 +96,7 @@ PetscErrorCode TSSolCreate(TSSol *ts, FB *fb)
 	if(!ts->time_end)  ts->time_end  = ((PetscScalar)ts->nstep_max)*ts->dt_max;
 
 	// print summary
-	PetscPrintf(PETSC_COMM_WORLD, "===========================================================\n");
-	PetscPrintf(PETSC_COMM_WORLD, " Time stepping parameters  :\n");
+	PetscPrintf(PETSC_COMM_WORLD, "Time stepping parameters:\n");
 	PetscPrintf(PETSC_COMM_WORLD, "   Simulation end time     : %7.5f %s \n",  ts->time_end*time, scal->lbl_time);
 	PetscPrintf(PETSC_COMM_WORLD, "   Time step               : %7.5f %s \n",  ts->dt      *time, scal->lbl_time);
 	PetscPrintf(PETSC_COMM_WORLD, "   Minimum time step       : %7.5f %s \n",  ts->dt_min  *time, scal->lbl_time);
@@ -110,7 +109,7 @@ PetscErrorCode TSSolCreate(TSSol *ts, FB *fb)
 	PetscPrintf(PETSC_COMM_WORLD, "   Output interval         : %lld \n", (LLD)ts->nstep_out);
 	PetscPrintf(PETSC_COMM_WORLD, "   Output initial steps    : %lld \n", (LLD)ts->nstep_ini);
 	PetscPrintf(PETSC_COMM_WORLD, "   Restart interval        : %lld \n", (LLD)ts->nstep_rdb);
-	PetscPrintf(PETSC_COMM_WORLD, "===========================================================\n");
+	PetscPrintf(PETSC_COMM_WORLD,"--------------------------------------------------------------------------\n");
 
 	PetscFunctionReturn(0);
 }

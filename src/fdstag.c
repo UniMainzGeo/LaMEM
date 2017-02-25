@@ -1272,12 +1272,14 @@ PetscErrorCode FDSTAGView(FDSTAG *fs)
 
 	ierr = MPI_Comm_size(PETSC_COMM_WORLD, &nproc); CHKERRQ(ierr);
 
-	PetscPrintf(PETSC_COMM_WORLD, " Total number of cpu            : %lld \n", (LLD)nproc);
-	PetscPrintf(PETSC_COMM_WORLD, " Processor grid  [nx, ny, nz]   : [%lld, %lld, %lld]\n", (LLD)px, (LLD)py, (LLD)pz);
-	PetscPrintf(PETSC_COMM_WORLD, " Fine grid cells [nx, ny, nz]   : [%lld, %lld, %lld]\n", (LLD)cx, (LLD)cy, (LLD)cz);
-	PetscPrintf(PETSC_COMM_WORLD, " Number of cells                :  %lld\n", (LLD)nCells);
-	PetscPrintf(PETSC_COMM_WORLD, " Number of velocity DOF         :  %lld\n", (LLD)nVelDOF);
-	PetscPrintf(PETSC_COMM_WORLD, " Maximum cell aspect cell ratio :  %7.5f\n", maxAspRat);
+	PetscPrintf(PETSC_COMM_WORLD, "Grid parameters:\n");
+	PetscPrintf(PETSC_COMM_WORLD, "   Total number of cpu            : %lld \n", (LLD)nproc);
+	PetscPrintf(PETSC_COMM_WORLD, "   Processor grid  [nx, ny, nz]   : [%lld, %lld, %lld]\n", (LLD)px, (LLD)py, (LLD)pz);
+	PetscPrintf(PETSC_COMM_WORLD, "   Fine grid cells [nx, ny, nz]   : [%lld, %lld, %lld]\n", (LLD)cx, (LLD)cy, (LLD)cz);
+	PetscPrintf(PETSC_COMM_WORLD, "   Number of cells                :  %lld\n", (LLD)nCells);
+	PetscPrintf(PETSC_COMM_WORLD, "   Number of velocity DOF         :  %lld\n", (LLD)nVelDOF);
+	PetscPrintf(PETSC_COMM_WORLD, "   Maximum cell aspect cell ratio :  %7.5f\n", maxAspRat);
+	PetscPrintf(PETSC_COMM_WORLD,"--------------------------------------------------------------------------\n");
 
 	if(maxAspRat > 10.0) PetscPrintf(PETSC_COMM_WORLD, " Don't expect any magic with this aspect ratio %g ...\n", maxAspRat);
 	if(maxAspRat > 30.0) SETERRQ1(PETSC_COMM_WORLD, PETSC_ERR_USER, " Everything has a limit, reduce this aspect ratio: %g ...\n", maxAspRat);

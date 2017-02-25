@@ -145,7 +145,9 @@ PetscErrorCode DBMatReadSoft(DBMat *dbm, FB *fb);
 PetscErrorCode DBMatReadPhase(DBMat *dbm, FB *fb);
 
 // print single material parameter
-void MatPrintScalParam(PetscScalar par, const char key[], const char label[], Scaling *scal);
+void MatPrintScalParam(
+		PetscScalar par,  const char key[],   const char label[],
+		Scaling    *scal, const char title[], PetscInt   *print_title);
 
 //---------------------------------------------------------------------------
 //............ PREDEFINED RHEOLOGICAL PROFILES (from literature) ............
