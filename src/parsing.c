@@ -52,10 +52,10 @@ PetscErrorCode FBLoad(FB **pfb)
 {
 	FB        *fb;
 	FILE      *fp;
-	PetscInt  i, j;
-	size_t    sz, len;
+	size_t    sz;
 	PetscBool found;
-	char      *ptr, *comment;
+	char      *line, *b, p;
+	PetscInt  i, nchar, comment, cnt;
 	char      filename[_STR_LEN_];
 
 	PetscErrorCode ierr;
@@ -72,7 +72,7 @@ PetscErrorCode FBLoad(FB **pfb)
 		// read additional PETSc options from input file
 		if(found != PETSC_TRUE)
 		{
-			SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "Input file name is not specified%s\n");
+			SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "Input file name is not specified\n");
 		}
 
 		// open input file
@@ -99,66 +99,76 @@ PetscErrorCode FBLoad(FB **pfb)
 
 		fclose(fp);
 
-		// pad with line terminator
+		// pad with string terminator
 		fb->buff[sz] = '\0';
 
 		// set number of characters
-		fb->nchar = (PetscInt)sz + 1;
+		nchar = (PetscInt)sz + 1;
 	}
 
 	// broadcast
 	if(ISParallel(PETSC_COMM_WORLD))
 	{
-		ierr = MPI_Bcast(&fb->nchar, 1, MPIU_INT, 0, PETSC_COMM_WORLD); CHKERRQ(ierr);
+		ierr = MPI_Bcast(&nchar, 1, MPIU_INT, 0, PETSC_COMM_WORLD); CHKERRQ(ierr);
 	}
 
 	if(!ISRankZero(PETSC_COMM_WORLD))
 	{
-		ierr = PetscMalloc((size_t)fb->nchar*sizeof(char), &fb->buff); CHKERRQ(ierr);
+		ierr = PetscMalloc((size_t)nchar*sizeof(char), &fb->buff); CHKERRQ(ierr);
 	}
 
 	if(ISParallel(PETSC_COMM_WORLD))
 	{
-		ierr = MPI_Bcast(fb->buff, (PetscMPIInt)fb->nchar, MPI_CHAR, 0, PETSC_COMM_WORLD); CHKERRQ(ierr);
+		ierr = MPI_Bcast(fb->buff, (PetscMPIInt)nchar, MPI_CHAR, 0, PETSC_COMM_WORLD); CHKERRQ(ierr);
 	}
 
-	// replace line breaks with string terminators
-	for(i = 0, j = 0; i < fb->nchar; i++)
+	// process buffer
+	b = fb->buff;
+
+	// purge line delimiters
+	for(i = 0; i < nchar; i++)
 	{
-		if(fb->buff[i] == '\r') continue;
-		if(fb->buff[i] == '\n') fb->buff[j++] = '\0';
-		else                    fb->buff[j++] = fb->buff[i];
+		if(b[i] == '\r') b[i] = '\0';
+		if(b[i] == '\n') b[i] = '\0';
 	}
 
-	// count lines and remove empty
-	fb->nlines = 0;
-
-	for(i = 0, j = 0; i < fb->nchar; i++)
+	// purge comments
+	for(i = 0, comment = 0; i < nchar; i++)
 	{
-		if(fb->buff[i] == '\0') fb->nlines++;
+		if(comment) { if(b[i] == '\0') { comment = 0; } b[i] = '\0';   }
+		else        { if(b[i] == '#')  { comment = 1;   b[i] = '\0'; } }
 	}
 
-	// setup line pointers, trim comments
+	// purge empty strings
+	for(i = 0, cnt = 0, p = '\0'; i < nchar; i++)
+	{
+		if(b[i] == '\0' && p == '\0') continue;
+		b[cnt++] = b[i];
+		p        = b[i];
+	}
+
+	// collect garbage
+	ierr = PetscMemzero(b + cnt, (size_t)(nchar - cnt)*sizeof(char)); CHKERRQ(ierr);
+
+	nchar = cnt;
+
+	// count lines
+	for(i = 0, cnt = 0; i < nchar; i++)
+	{
+		if(b[i] == '\0') cnt++;
+	}
+
+	fb->nlines = cnt;
+
+	// setup line pointers
 	ierr = PetscMalloc((size_t)fb->nlines*sizeof(char*), &fb->line); CHKERRQ(ierr);
 
-	ptr = fb->buff;
-
-	for(i = 0; i < fb->nlines; i++)
+	for(i = 0, line = b; i < fb->nlines; i++)
 	{
-		fb->line[i] = ptr;
+		fb->line[i] = line;
 
-		len = strlen(ptr);
-
-		comment = strchr(ptr, '#');
-
-		if(comment) strncpy(comment, "\0", strlen(comment));
-
-		// update pointer
-		ptr += len + 1;
+		line += strlen(line) + 1;
 	}
-
-	PetscPrintf(PETSC_COMM_WORLD, "%s", fb->buff);
-
 
 	// load additional options from file
 	ierr = PetscOptionsReadFromFile(fb); CHKERRQ(ierr);

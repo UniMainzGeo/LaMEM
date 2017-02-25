@@ -82,7 +82,6 @@ struct FB
 	//
 	//=====================================================================
 
-	PetscInt   nchar;   // number of characters
 	PetscInt   nlines;  // number of lines
 	char      *buff;    // file buffer
 	char     **line;    // pointers to lines
