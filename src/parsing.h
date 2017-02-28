@@ -82,9 +82,18 @@ struct FB
 	//
 	//=====================================================================
 
-	PetscInt   nlines;  // number of lines
-	char      *buff;    // file buffer
-	char     **line;    // pointers to lines
+
+	PetscInt   nchar;   // number of characters
+	char      *fbuf;    // file buffer
+
+	char      *lbuf;    // line buffer
+
+	PetscInt   nfLines; // number of flat lines
+	char     **pfLines; // pointers to flat lines
+
+	PetscInt   nbLines; // number of block lines
+	char     **pbLines; // pointers to block lines
+
 	PetscInt   nblocks; // number of data blocks
 	PetscInt   blockID; // ID of block to be retrieved
 	PetscInt  *blBeg;   // starting lines of blocks
@@ -98,11 +107,13 @@ PetscErrorCode FBLoad(FB **pfb);
 
 PetscErrorCode FBDestroy(FB **pfb);
 
+PetscErrorCode FBParseBuffer(FB *fb);
+
 PetscErrorCode FBFindBlocks(FB *fb, ParamType ptype, const char *keybeg, const char *keyend);
 
 PetscErrorCode FBFreeBlocks(FB *fb);
 
-PetscErrorCode FBGetRanges(FB *fb, PetscInt *lnbeg, PetscInt *lnend);
+char ** FBGetLineRanges(FB *fb, PetscInt *lnbeg, PetscInt *lnend);
 
 PetscErrorCode FBGetIntArray(
 		FB         *fb,
