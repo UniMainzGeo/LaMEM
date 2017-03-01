@@ -96,22 +96,21 @@ PetscErrorCode ADVCreate(AdvCtx *actx, FB *fb)
 	// READ
 
 	// read parameters
-	ierr = getStringParam(fb, _OPTIONAL_, "msetup",          msetup,             "geom");         CHKERRQ(ierr);
-	ierr = getIntParam   (fb, _OPTIONAL_, "nmark_x",        &actx->NumPartX,     1, _max_nmark_); CHKERRQ(ierr);
-	ierr = getIntParam   (fb, _OPTIONAL_, "nmark_y",        &actx->NumPartY,     1, _max_nmark_); CHKERRQ(ierr);
-	ierr = getIntParam   (fb, _OPTIONAL_, "nmark_z",        &actx->NumPartZ,     1, _max_nmark_); CHKERRQ(ierr);
-	ierr = getIntParam   (fb, _OPTIONAL_, "rand_noise",     &actx->randNoise,    1, 1);           CHKERRQ(ierr);
-	ierr = getIntParam   (fb, _OPTIONAL_, "bg_phase",       &actx->bgPhase,      1, maxPhaseID);  CHKERRQ(ierr);
-	ierr = getIntParam   (fb, _OPTIONAL_, "save_mark",      &actx->saveMark,     1, 1);           CHKERRQ(ierr);
-	ierr = getStringParam(fb, _OPTIONAL_, "mark_save_name",  actx->saveName,     "markers");      CHKERRQ(ierr);
-	ierr = getStringParam(fb, _OPTIONAL_, "mark_save_path",  actx->savePath,     "./markers");    CHKERRQ(ierr);
-	ierr = getStringParam(fb, _OPTIONAL_, "advect",          advect,             "euler");        CHKERRQ(ierr);
-	ierr = getIntParam   (fb, _OPTIONAL_, "new_advect",     &actx->newAdv,       1, 1);           CHKERRQ(ierr);
-	ierr = getStringParam(fb, _OPTIONAL_, "interp",          interp,             "stag");         CHKERRQ(ierr);
-	ierr = getScalarParam(fb, _OPTIONAL_, "stagp_a",        &actx->A,            1, 1.0);         CHKERRQ(ierr);
-	ierr = getIntParam   (fb, _OPTIONAL_, "use_mark_contr", &actx->markContr,    1, 1);           CHKERRQ(ierr);
-	ierr = getIntParam   (fb, _OPTIONAL_, "new_mark_contr", &actx->newMarkContr, 1, 1);           CHKERRQ(ierr);
-	ierr = getScalarParam(fb, _OPTIONAL_, "surf_tol",       &actx->surfTol,      1, 1.0);         CHKERRQ(ierr);
+	ierr = getStringParam(fb, _OPTIONAL_, "msetup",          msetup,             "geom");          CHKERRQ(ierr);
+	ierr = getIntParam   (fb, _OPTIONAL_, "nmark_x",        &actx->NumPartX,     1, _max_nmark_);  CHKERRQ(ierr);
+	ierr = getIntParam   (fb, _OPTIONAL_, "nmark_y",        &actx->NumPartY,     1, _max_nmark_);  CHKERRQ(ierr);
+	ierr = getIntParam   (fb, _OPTIONAL_, "nmark_z",        &actx->NumPartZ,     1, _max_nmark_);  CHKERRQ(ierr);
+	ierr = getIntParam   (fb, _OPTIONAL_, "rand_noise",     &actx->randNoise,    1, 1);            CHKERRQ(ierr);
+	ierr = getIntParam   (fb, _OPTIONAL_, "bg_phase",       &actx->bgPhase,      1, maxPhaseID);   CHKERRQ(ierr);
+	ierr = getIntParam   (fb, _OPTIONAL_, "save_mark",      &actx->saveMark,     1, 1);            CHKERRQ(ierr);
+	ierr = getStringParam(fb, _OPTIONAL_, "mark_save_file",  actx->saveFile,     "./markers/mdb"); CHKERRQ(ierr);
+	ierr = getStringParam(fb, _OPTIONAL_, "advect",          advect,             "euler");         CHKERRQ(ierr);
+	ierr = getIntParam   (fb, _OPTIONAL_, "new_advect",     &actx->newAdv,       1, 1);            CHKERRQ(ierr);
+	ierr = getStringParam(fb, _OPTIONAL_, "interp",          interp,             "stag");          CHKERRQ(ierr);
+	ierr = getScalarParam(fb, _OPTIONAL_, "stagp_a",        &actx->A,            1, 1.0);          CHKERRQ(ierr);
+	ierr = getIntParam   (fb, _OPTIONAL_, "use_mark_contr", &actx->markContr,    1, 1);            CHKERRQ(ierr);
+	ierr = getIntParam   (fb, _OPTIONAL_, "new_mark_contr", &actx->newMarkContr, 1, 1);            CHKERRQ(ierr);
+	ierr = getScalarParam(fb, _OPTIONAL_, "surf_tol",       &actx->surfTol,      1, 1.0);          CHKERRQ(ierr);
 
 	// CHECK
 
@@ -131,12 +130,24 @@ PetscErrorCode ADVCreate(AdvCtx *actx, FB *fb)
 	else SETERRQ1(PETSC_COMM_WORLD, PETSC_ERR_USER, "Incorrect velocity interpolation type (interp): %s", interp);
 
 	// check marker resolution
-	if(actx->NumPartX < _min_nmark_) SETERRQ2(PETSC_COMM_WORLD, PETSC_ERR_USER, "nmark_x (%lld) is smaller than allowed (%lld)", (LLD)actx->NumPartX, _min_nmark_);
-	if(actx->NumPartY < _min_nmark_) SETERRQ2(PETSC_COMM_WORLD, PETSC_ERR_USER, "nmark_y (%lld) is smaller than allowed (%lld)", (LLD)actx->NumPartY, _min_nmark_);
-	if(actx->NumPartZ < _min_nmark_) SETERRQ2(PETSC_COMM_WORLD, PETSC_ERR_USER, "nmark_z (%lld) is smaller than allowed (%lld)", (LLD)actx->NumPartZ, _min_nmark_);
+	if(actx->msetup != _FILES_)
+	{
+		if(actx->NumPartX < _min_nmark_)
+		{
+			SETERRQ2(PETSC_COMM_WORLD, PETSC_ERR_USER, "nmark_x (%lld) is smaller than allowed (%lld)", (LLD)actx->NumPartX, _min_nmark_);
+		}
+		if(actx->NumPartY < _min_nmark_)
+		{
+			SETERRQ2(PETSC_COMM_WORLD, PETSC_ERR_USER, "nmark_y (%lld) is smaller than allowed (%lld)", (LLD)actx->NumPartY, _min_nmark_);
+		}
+		if(actx->NumPartZ < _min_nmark_)
+		{
+			SETERRQ2(PETSC_COMM_WORLD, PETSC_ERR_USER, "nmark_z (%lld) is smaller than allowed (%lld)", (LLD)actx->NumPartZ, _min_nmark_);
+		}
+	}
 
 	// check background phase
-	if( actx->msetup == _GEOM_ && actx->bgPhase == -1)
+	if(actx->msetup == _GEOM_ && actx->bgPhase == -1)
 	{
 		SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "Using geometric primitives requires setting background phase (msetup, bg_phase)");
 	}

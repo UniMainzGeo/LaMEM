@@ -259,8 +259,8 @@ PetscErrorCode BCCreate(BCCtx *bc, FB *fb)
 	if(bc->face)
 	{
 		ierr = getIntParam   (fb, _REQUIRED_, "bvel_phase", &bc->phase, 1, -1            ); CHKERRQ(ierr);
-		ierr = getScalarParam(fb, _REQUIRED_, "bvel_bot",   &bc->top,   1, scal->length  ); CHKERRQ(ierr);
-		ierr = getScalarParam(fb, _REQUIRED_, "bvel_top",   &bc->bot,   1, scal->length  ); CHKERRQ(ierr);
+		ierr = getScalarParam(fb, _REQUIRED_, "bvel_bot",   &bc->bot,   1, scal->length  ); CHKERRQ(ierr);
+		ierr = getScalarParam(fb, _REQUIRED_, "bvel_top",   &bc->top,   1, scal->length  ); CHKERRQ(ierr);
 		ierr = getScalarParam(fb, _REQUIRED_, "bvel_velin", &bc->velin, 1, scal->velocity); CHKERRQ(ierr);
 
 		ierr = FDSTAGGetGlobalBox(bc->fs, NULL, NULL, &bz, NULL, NULL, NULL); CHKERRQ(ierr);
@@ -286,7 +286,7 @@ PetscErrorCode BCCreate(BCCtx *bc, FB *fb)
 	//========================
 
 	// read from options
-	ierr = getScalarParam(fb, _OPTIONAL_, "temp_top", &bc->Tbot, 1, 1.0); CHKERRQ(ierr);
+	ierr = getScalarParam(fb, _OPTIONAL_, "temp_bot", &bc->Tbot, 1, 1.0); CHKERRQ(ierr);
 	ierr = getScalarParam(fb, _OPTIONAL_, "temp_top", &bc->Ttop, 1, 1.0); CHKERRQ(ierr);
 
 	// nondimensionalize temperature

@@ -885,7 +885,6 @@ PetscErrorCode FDSTAGCreate(FDSTAG *fs, FB *fb)
 	fs->gtol = 1e-9;
 	ierr = getScalarParam(fb, _OPTIONAL_, "gtol", &fs->gtol, 1, 1.0); CHKERRQ(ierr);
 
-
 	// set number of processors
 	Px = PETSC_DECIDE;
 	Py = PETSC_DECIDE;
@@ -926,6 +925,9 @@ PetscErrorCode FDSTAGCreate(FDSTAG *fs, FB *fb)
 
 	// create corner, face and edge DMDA objects
 	ierr = FDSTAGCreateDMDA(fs, Nx, Ny, Nz, Px, Py, Pz, lx, ly, lz); CHKERRQ(ierr);
+
+	// setup indexing data
+	ierr = DOFIndexCreate(&fs->dof, fs->DA_CEN, fs->DA_X, fs->DA_Y, fs->DA_Z); CHKERRQ(ierr);
 
 	// get MPI processor rank
 	MPI_Comm_rank(PETSC_COMM_WORLD, &rank);

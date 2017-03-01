@@ -230,8 +230,8 @@ PetscErrorCode ADVMarkSave(AdvCtx *actx)
 	int          fd;
 	PetscInt     imark;
 	Marker      *P;
-	char        *filename;
 	PetscViewer  view_out;
+	char        *filename, path[_STR_LEN_];
 	PetscScalar *markbuf, *markptr, header, chLen, chTemp, Tshift, s_nummark;
 
 	PetscErrorCode ierr;
@@ -244,13 +244,16 @@ PetscErrorCode ADVMarkSave(AdvCtx *actx)
 	chTemp = actx->jr->scal->temperature;
 	Tshift = actx->jr->scal->Tshift;
 
-	PetscPrintf(PETSC_COMM_WORLD," Saving markers in parallel to files: ./%s/%s.xxx.dat \n", actx->savePath, actx->saveName);
+	PetscPrintf(PETSC_COMM_WORLD,"Saving markers in parallel to files: %s.xxxxxxxx.dat \n", actx->saveFile);
+
+	// extract directory path
+	strcpy(path, actx->saveFile); (*strrchr(path, '/')) = '\0';
 
 	// create directory
-	ierr = DirMake(actx->savePath); CHKERRQ(ierr);
+	ierr = DirMake(path); CHKERRQ(ierr);
 
 	// compile file name
-	asprintf(&filename, "./%s/%s.%1.8lld.dat", actx->savePath, actx->saveName, (LLD)actx->iproc);
+	asprintf(&filename, "%s.%1.8lld.dat", actx->saveFile, (LLD)actx->iproc);
 
 	// open file for binary output
 	ierr = PetscViewerBinaryOpen(PETSC_COMM_SELF, filename, FILE_MODE_WRITE, &view_out); CHKERRQ(ierr);
@@ -522,21 +525,20 @@ PetscErrorCode ADVMarkInitFiles(AdvCtx *actx, FB *fb)
 	int          fd;
 	Marker      *P;
 	PetscViewer  view_in;
-	char        *filename, name[_STR_LEN_], path[_STR_LEN_];
+	char        *filename, file[_STR_LEN_];
 	PetscScalar *markbuf, *markptr, header, chTemp, chLen, Tshift, s_nummark;
 	PetscInt     imark, nummark;
 
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
 
-	// get file name & path
-	ierr = getStringParam(fb, _OPTIONAL_, "mark_load_name", name, "markers"); CHKERRQ(ierr);
-	ierr = getStringParam(fb, _OPTIONAL_, "mark_load_path", path, "./markers"); CHKERRQ(ierr);
+	// get file name
+	ierr = getStringParam(fb, _OPTIONAL_, "mark_load_file", file, "./markers/mdb"); CHKERRQ(ierr);
 
-	PetscPrintf(PETSC_COMM_WORLD," Loading markers in parallel from files: ./%s/%s.xxx.dat \n", path, name);
+	PetscPrintf(PETSC_COMM_WORLD,"Loading markers in parallel from files: %s.xxxxxxxx.dat \n", file);
 
-	// compile input file name
-	asprintf(&filename, "./%s/%s.%1.8lld.dat", path, name, (LLD)actx->iproc);
+	// compile input file name with extension
+	asprintf(&filename, "%s.%1.8lld.dat", file, (LLD)actx->iproc);
 
 	// open file
 	ierr = PetscViewerBinaryOpen(PETSC_COMM_SELF, filename, FILE_MODE_READ, &view_in); CHKERRQ(ierr);

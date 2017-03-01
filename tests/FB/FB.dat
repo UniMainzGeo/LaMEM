@@ -108,18 +108,16 @@
 	nmark_y        = 2                 # ...                 y-direction
 	nmark_z        = 2                 # ...                 z-direction
 	rand_noise     = 0                 # random noise flag
-	bg_phase       = 1                 # background phase ID
+	bg_phase       = 0                 # background phase ID
 	save_mark      = 1                 # save marker to disk flag
-#	mark_load_name = markers           # marker input file name (extension is .dat)
-#	mark_load_path = ./markers         # marker input directory
-#	mark_save_name = markers           # marker output file name (extension is .dat)
-#	mark_save_path = ./markers         # marker output directory
+#	mark_load_file = ./markers/mdb     # marker input file (extension is .xxxxxxxx.dat)
+#	mark_save_file = ./markers/mdb     # marker output file (extension is .xxxxxxxx.dat)
 #	poly_file      = ./input/poly.dat  # polygon geometry file    (redundant)
 #	temp_file      = ./input/temp.dat  # initial temperature file (redundant)
-	advect         = euler;            # advection scheme
+	advect         = euler             # advection scheme
 	new_advect     = 0                 # activate new advection algorithms (temporary)
-	interp         = stag;             # velocity interpolation scheme
-#	stagp_a        = 0.7;              # STAG_P velocity interpolation parameter
+	interp         = stag              # velocity interpolation scheme
+#	stagp_a        = 0.7               # STAG_P velocity interpolation parameter
 #	use_mark_contr = 1                 # activate marker control
 #	new_mark_contr = 1                 # activate new marker control algorithms (temporary)
 #	surf_tol       = 0.05              # tolerance for shifting markers below free surface
@@ -145,7 +143,7 @@
 
 	<BoxStart>
 		phase  = 1
-		bounds = 0.25 0.75 0.25 0.75 0.05 0.75  # (left, right, front, back, bottom, top)
+		bounds = 0.25 0.75 0.25 0.75 0.25 0.75  # (left, right, front, back, bottom, top)
 	<BoxEnd>
 
 #===============================================================================
@@ -234,7 +232,7 @@
 	-pcmat_pgamma 	1e5				# penalty parameter
 	-jp_type 		user
 	-jp_pc_type 	lu
-	-jp_pc_factor_mat_solver_package superlu_dist
+	-jp_pc_factor_mat_solver_package mumps
 
 	-objects_dump
 

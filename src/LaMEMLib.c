@@ -522,7 +522,7 @@ PetscErrorCode LaMEMLibSaveOutput(LaMEMLib *lm)
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
 
-	time = TSSolGetCurrentTime(&lm->ts);
+	time = TSSolGetScaledTime(&lm->ts);
 	step = lm->ts.istep;
 
 	if(!TSSolIsOutput(&lm->ts)) PetscFunctionReturn(0);
@@ -645,8 +645,10 @@ PetscErrorCode LaMEMLibSolve(LaMEMLib *lm, void *param)
 		// Save data to disk
 		//==================
 
+		// grid & marker output
 		ierr = LaMEMLibSaveOutput(lm); CHKERRQ(ierr);
 
+		// restart database
 		ierr = LaMEMLibSaveRestart(lm); CHKERRQ(ierr);
 	}
 
@@ -654,7 +656,7 @@ PetscErrorCode LaMEMLibSolve(LaMEMLib *lm, void *param)
 	// END OF TIME STEP LOOP
 	//======================
 
-	// delete restart database (if any)
+	// delete restart database
 	ierr = LaMEMLibDeleteRestart(); CHKERRQ(ierr);
 
 	// destroy objects
@@ -663,7 +665,7 @@ PetscErrorCode LaMEMLibSolve(LaMEMLib *lm, void *param)
 	ierr = SNESDestroy    (&snes); CHKERRQ(ierr);
 	ierr = NLSolDestroy   (&nl);   CHKERRQ(ierr);
 
-	// save markers
+	// save marker database
 	ierr = ADVMarkSave(&lm->actx); CHKERRQ(ierr);
 
 	PetscFunctionReturn(0);

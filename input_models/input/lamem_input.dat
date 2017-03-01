@@ -27,7 +27,7 @@
 # NOTE:
 #
 # * characteristic values must ALWAYS be provided in SI units
-# * material parameters must ALWAYS be provided in SI units (also )
+# * material parameters must ALWAYS be provided in SI units
 # * in all dimensional cases (si & geo) angles are measured in degrees
 #   angular velocities are measured in degrees per unit time
 # * number of primary units is one more than usual
@@ -51,7 +51,7 @@
 	nstep_ini = 5     # save output for n initial steps
 	nstep_rdb = 5     # save restart database every n steps
 	time_tol  = 1e-8  # relative tolerance for time comparisons
-	
+
 #===============================================================================
 # Grid & discretization parameters
 #===============================================================================
@@ -228,7 +228,7 @@
 	gw_level_type  = top            # ground water level type for pore pressure computation (see below)
 	gw_level       = 10.0           # ground water level at the free surface (if defined)
 	biot           = 0.7            # Biot pressure parameer
-	
+
 # Groundwater level type specification:
 
 # gw_level_type = none  # don't compute pore pressure (default)
@@ -247,16 +247,14 @@
 	rand_noise     = 1                 # random noise flag
 	bg_phase       = 1                 # background phase ID
 	save_mark      = 1                 # save marker to disk flag
-	mark_load_name = markers           # marker input file name (extension is .dat)
-	mark_load_path = ./markers         # marker input directory
-	mark_save_name = markers           # marker output file name (extension is .dat)
-	mark_save_path = ./markers         # marker output directory
+	mark_load_file = ./markers/mdb     # marker input file (extension is .xxxxxxxx.dat)
+	mark_save_file = ./markers/mdb     # marker output file (extension is .xxxxxxxx.dat)
 	poly_file      = ./input/poly.dat  # polygon geometry file    (redundant)
 	temp_file      = ./input/temp.dat  # initial temperature file (redundant)
-	advect         = rk2;              # advection scheme
+	advect         = rk2               # advection scheme
 	new_advect     = 1                 # activate new advection algorithms (temporary)
-	interp         = stagp;            # velocity interpolation scheme
-	stagp_a        = 0.7;              # STAG_P velocity interpolation parameter
+	interp         = stagp             # velocity interpolation scheme
+	stagp_a        = 0.7               # STAG_P velocity interpolation parameter
 	use_mark_contr = 1                 # activate marker control
 	new_mark_contr = 1                 # activate new marker control algorithms (temporary)
 	surf_tol       = 0.05              # tolerance for shifting markers below free surface
@@ -271,7 +269,7 @@
 #	interp = stag   # trilinear interpolation from FDSTAG points
 #	interp = minmod # minmod interpolation to nodes, trilinear interpolation to markers + correction
 #	interp = stagp  # STAG_P empirical approach (T. Gerya)
- 
+
 # Setup type specification:
 
 #	msetup = geom     # default input (phases are assigned from geometric primitives)
@@ -345,13 +343,13 @@
 
 	out_mark     = 1 # activate marker output
 	out_mark_pvd = 1 # activate writing .pvd file
-	
+
 # AVD phase viewer output options (requires activation)
 
 	out_avd     = 1 # activate AVD phase output
 	out_avd_pvd = 1 # activate writing .pvd file
 	out_avd_ref = 3 # AVD grid refinement factor
-	
+
 #===============================================================================
 # Material phase parameters
 #===============================================================================

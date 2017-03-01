@@ -757,14 +757,16 @@ PetscErrorCode UpdatePVDFile(
 	// only first process generates this file (WARNING! Bottleneck!)
 	if(!ISRankZero(PETSC_COMM_WORLD)) PetscFunctionReturn(0);
 
+// ACHTUNG! This should be replaced with something consistent
+
 	// open outfile.pvd file (write or update mode)
 	asprintf(&fname, "%s.pvd", outfile);
-	if(!tindx) fp = fopen(fname,"w");
-	else       fp = fopen(fname,"r+");
+	if(tindx == 1) fp = fopen(fname,"w");
+	else           fp = fopen(fname,"r+");
 	if(fp == NULL) SETERRQ1(PETSC_COMM_SELF, 1,"cannot open file %s", fname);
 	free(fname);
 
-	if(!tindx)
+	if(tindx == 1)
 	{
 		// write header
 		WriteXMLHeader(fp, "Collection");

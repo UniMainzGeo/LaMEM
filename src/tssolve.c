@@ -128,7 +128,7 @@ PetscErrorCode TSSolSetupElasticity(TSSol *ts)
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-PetscScalar TSSolGetCurrentTime(TSSol *ts)
+PetscScalar TSSolGetScaledTime(TSSol *ts)
 {
 	return ts->time*ts->scal->time;
 }
@@ -178,7 +178,7 @@ PetscInt TSSolIsOutput(TSSol *ts)
 	|| (ts->nstep_out && !(ts->istep % ts->nstep_out))
 	|| (ts->dt_out    &&   ts->time  >= ts->time_out + ts->dt_out - tol))
 	{
-		// update output stamp
+		// update output time stamp
 		ts->time_out = ts->time;
 
 		return 1;
@@ -201,8 +201,6 @@ PetscInt TSSolIsDone(TSSol *ts)
 	Scaling     *scal;
 	PetscScalar  tol;
 	PetscInt     done;
-
-	PetscFunctionBegin;
 
 	scal = ts->scal;
 

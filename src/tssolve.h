@@ -82,7 +82,7 @@ PetscErrorCode TSSolCreate(TSSol *ts, FB *fb);
 
 PetscErrorCode TSSolSetupElasticity(TSSol *ts);
 
-PetscScalar TSSolGetCurrentTime(TSSol *ts);
+PetscScalar TSSolGetScaledTime(TSSol *ts);
 
 PetscErrorCode TSSolStepForward(TSSol *ts);
 
