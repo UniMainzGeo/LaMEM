@@ -206,6 +206,8 @@ PetscErrorCode LaMEMLibCreate(LaMEMLib *lm)
 	// create residual & Jacobian evaluation context
 	ierr = JacResCreate(&lm->jr, fb); CHKERRQ(ierr);
 
+//	ierr = JacResReadCellPhases(&lm->jr, fb);  CHKERRQ(ierr);
+
 	// create advection context
 	ierr = ADVCreate(&lm->actx, fb); CHKERRQ(ierr);
 
@@ -523,7 +525,6 @@ PetscErrorCode LaMEMLibSaveOutput(LaMEMLib *lm)
 	PetscFunctionBegin;
 
 	time = TSSolGetScaledTime(&lm->ts);
-	step = lm->ts.istep;
 
 	if(!TSSolIsOutput(&lm->ts)) PetscFunctionReturn(0);
 
@@ -534,16 +535,16 @@ PetscErrorCode LaMEMLibSaveOutput(LaMEMLib *lm)
 	ierr = DirMake(dirName); CHKERRQ(ierr);
 
 	// AVD phase output
-	ierr = PVAVDWriteTimeStep(&lm->pvavd, dirName, time, step); CHKERRQ(ierr);
+	ierr = PVAVDWriteTimeStep(&lm->pvavd, dirName, time); CHKERRQ(ierr);
 
 	// grid ParaView output
-	ierr = PVOutWriteTimeStep(&lm->pvout, dirName, time, step); CHKERRQ(ierr);
+	ierr = PVOutWriteTimeStep(&lm->pvout, dirName, time); CHKERRQ(ierr);
 
 	// free surface ParaView output
-	ierr = PVSurfWriteTimeStep(&lm->pvsurf, dirName, time, step); CHKERRQ(ierr);
+	ierr = PVSurfWriteTimeStep(&lm->pvsurf, dirName, time); CHKERRQ(ierr);
 
 	// marker ParaView output
-	ierr = PVMarkWriteTimeStep(&lm->pvmark, dirName, time, step); CHKERRQ(ierr);
+	ierr = PVMarkWriteTimeStep(&lm->pvmark, dirName, time); CHKERRQ(ierr);
 
 	// clean up
 	free(dirName);

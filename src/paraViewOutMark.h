@@ -70,7 +70,7 @@ struct PVMark
 PetscErrorCode PVMarkCreate(PVMark *pvmark, FB *fb);
 
 // write all time-step output files to disk (PVD, PVTU, VTU)
-PetscErrorCode PVMarkWriteTimeStep(PVMark *pvmark, const char *dirName, PetscScalar ttime, PetscInt tindx);
+PetscErrorCode PVMarkWriteTimeStep(PVMark *pvmark, const char *dirName, PetscScalar ttime);
 
 // .vtu marker output
 PetscErrorCode PVMarkWriteVTU(PVMark *pvmark, const char *dirName);

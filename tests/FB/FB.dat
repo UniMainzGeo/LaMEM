@@ -67,37 +67,11 @@
 
 	gravity        = 0.0 0.0 -1.0   # gravity vector
 	FSSA           = 1.0            # free surface stabilization parameter [0 - 1]
-	shear_heat_eff = 1.0            # shear heating efficiency parameter   [0 - 1]
 	act_temp_diff  = 0              # temperature diffusion activation flag
 	act_p_shift    = 0              # pressure shift activation flag (zero pressure in the top cell layer)
 	init_guess     = 0              # initial guess flag
-	p_litho_visc   = 1              # use lithostatic pressure for creep laws
-	p_litho_plast  = 1              # use lithostatic pressure for plasticity
-	p_lim_plast    = 0              # limit pressure at first iteration for plasticity
-	jac_mat_free   = 0              # matrix-free closed-form jacobian
 	eta_min        = 1e-3           # viscosity upper bound
 	eta_max        = 1e12           # viscosity lower limit
-#	eta_ref        = 1e20           # reference viscosity (initial guess)
-#	T_ref          = 20.0           # reference temperature
-#	RUGC           = 8.31           # universal gas constant (required only for non-dimensional setups)
-#	DII_ref        = 1e-15          # background (reference) strain-rate
-#	min_cohes      = 2e7            # cohesion lower bound
-#	min_fric       = 5.0            # friction lower bound
-#	tau_ult        = 1e9            # ultimate yield stress
-#	quasi_harm_avg = 1              # quasi-harmonic averaging regularization flag (plasticity)
-#	cf_eta_min     = 10.0           # visco-plastic regularization parameter (plasticity)
-#	n_pw           = 15.0           # power-law regularization parameter (plasticity)
-#	rho_fluid      = 1e3            # fluid density for depth-dependent density model
-	gw_level_type  = none           # ground water level type for pore pressure computation (see below)
-#	gw_level       = 10.0           # ground water level at the free surface (if defined)
-#	biot           = 0.7            # Biot pressure parameer
-
-# Groundwater level type specification:
-
-# gw_level_type = none  # don't compute pore pressure (default)
-# gw_level_type = top   # GW level is top of the domain
-# gw_level_type = surf  # GW level is free surface average level (surface must be enabled)
-# gw_level_type = level # GW level is fixed (gw_level parameter must be specified)
 
 #===============================================================================
 # Model setup & advection
@@ -110,34 +84,9 @@
 	rand_noise     = 0                 # random noise flag
 	bg_phase       = 0                 # background phase ID
 	save_mark      = 1                 # save marker to disk flag
-#	mark_load_file = ./markers/mdb     # marker input file (extension is .xxxxxxxx.dat)
-#	mark_save_file = ./markers/mdb     # marker output file (extension is .xxxxxxxx.dat)
-#	poly_file      = ./input/poly.dat  # polygon geometry file    (redundant)
-#	temp_file      = ./input/temp.dat  # initial temperature file (redundant)
 	advect         = euler             # advection scheme
 	new_advect     = 0                 # activate new advection algorithms (temporary)
 	interp         = stag              # velocity interpolation scheme
-#	stagp_a        = 0.7               # STAG_P velocity interpolation parameter
-#	use_mark_contr = 1                 # activate marker control
-#	new_mark_contr = 1                 # activate new marker control algorithms (temporary)
-#	surf_tol       = 0.05              # tolerance for shifting markers below free surface
-
-# Advection types:
-
-#	advect = euler # euler explicit in time
-#	advect = rk2   # Runge-Kutta 2nd order in space
-
-# Velocity interpolation types:
-
-#	interp = stag   # trilinear interpolation from FDSTAG points
-#	interp = minmod # minmod interpolation to nodes, trilinear interpolation to markers + correction
-#	interp = stagp  # STAG_P empirical approach (T. Gerya)
-
-# Setup type specification:
-
-#	msetup = geom     # default input (phases are assigned from geometric primitives)
-#	msetup = files    # MATLAB input (requires mark_load_path and mark_load_name parameters)
-#	msetup = polygons # geomIO input (requires poly_file parameter)
 
 # Geometric primtives:
 
@@ -154,43 +103,12 @@
 
 	out_file_name       = FB_test # output file name
 	out_pvd             = 1       # activate writing .pvd file
-	out_phase           = 1
-	out_density         = 1
-	out_visc_total      = 1
-	out_visc_creep      = 1
-	out_velocity        = 1
-	out_pressure        = 1
-#	out_eff_press       = 1
-#	out_over_press      = 1
-	out_litho_press     = 1
-#	out_pore_press      = 1
-	out_temperature     = 1
-	out_dev_stress      = 1
-	out_j2_dev_stress   = 1
-	out_strain_rate     = 1
-	out_j2_strain_rate  = 1
-	out_moment_res      = 1
-	out_cont_res        = 1
-#	out_energ_res       = 1
-
-# Free surface output options (can be activated only if surface tracking is enabled)
-
-#	out_surf            = 1 # activate surface output
-#	out_surf_pvd        = 1 # activate writing .pvd file
-#	out_surf_velocity   = 1
-#	out_surf_topography = 1
-#	out_surf_amplitude  = 1
-
-# Marker output options (requires activation)
-
-#	out_mark     = 1 # activate marker output
-#	out_mark_pvd = 1 # activate writing .pvd file
 
 # AVD phase viewer output options (requires activation)
 
-	out_avd     = 1 # activate AVD phase output
-	out_avd_pvd = 1 # activate writing .pvd file
-	out_avd_ref = 3 # AVD grid refinement factor
+#	out_avd     = 1 # activate AVD phase output
+#	out_avd_pvd = 1 # activate writing .pvd file
+#	out_avd_ref = 3 # AVD grid refinement factor
 
 #===============================================================================
 # Material phase parameters

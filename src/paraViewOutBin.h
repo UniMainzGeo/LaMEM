@@ -222,7 +222,7 @@ PetscErrorCode PVOutCreateData(PVOut *pvout);
 PetscErrorCode PVOutDestroy(PVOut *pvout);
 
 // write all time-step output files to disk (PVD, PVTR, VTR)
-PetscErrorCode PVOutWriteTimeStep(PVOut *pvout, const char *dirName, PetscScalar ttime, PetscInt tindx);
+PetscErrorCode PVOutWriteTimeStep(PVOut *pvout, const char *dirName, PetscScalar ttime);
 
 // write parallel PVTR file (called every time step on first processor)
 // WARNING! this is potential bottleneck, get rid of writing every time-step
@@ -242,7 +242,7 @@ void WriteXMLHeader(FILE *fp, const char *file_type);
 // WARNING! this is potential bottleneck, get rid of writing every time-step
 PetscErrorCode UpdatePVDFile(
 		const char *dirName, const char *outfile, const char *ext,
-		long int *offset, PetscScalar ttime, PetscInt tindx);
+		long int *offset, PetscScalar ttime, PetscInt *outpvd);
 
 //---------------------------------------------------------------------------
 #endif

@@ -515,16 +515,13 @@ PetscErrorCode PVOutDestroy(PVOut *pvout)
 //---------------------------------------------------------------------------
 #undef __FUNCT__
 #define __FUNCT__ "PVOutWriteTimeStep"
-PetscErrorCode PVOutWriteTimeStep(PVOut *pvout, const char *dirName, PetscScalar ttime, PetscInt tindx)
+PetscErrorCode PVOutWriteTimeStep(PVOut *pvout, const char *dirName, PetscScalar ttime)
 {
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
 
 	// update .pvd file if necessary
-	if(pvout->outpvd)
-	{
-		ierr = UpdatePVDFile(dirName, pvout->outfile, "pvtr", &pvout->offset, ttime, tindx); CHKERRQ(ierr);
-	}
+	ierr = UpdatePVDFile(dirName, pvout->outfile, "pvtr", &pvout->offset, ttime, &pvout->outpvd); CHKERRQ(ierr);
 
 	// write parallel data .pvtr file
 	ierr = PVOutWritePVTR(pvout, dirName); CHKERRQ(ierr);
@@ -746,7 +743,7 @@ void WriteXMLHeader(FILE *fp, const char *file_type)
 #define __FUNCT__ "UpdatePVDFile"
 PetscErrorCode UpdatePVDFile(
 		const char *dirName, const char *outfile, const char *ext,
-		long int *offset, PetscScalar ttime, PetscInt tindx)
+		long int *offset, PetscScalar ttime, PetscInt *outpvd)
 {
 	FILE        *fp;
 	char        *fname;
@@ -757,16 +754,18 @@ PetscErrorCode UpdatePVDFile(
 	// only first process generates this file (WARNING! Bottleneck!)
 	if(!ISRankZero(PETSC_COMM_WORLD)) PetscFunctionReturn(0);
 
-// ACHTUNG! This should be replaced with something consistent
+	// check whether pvd is requested
+	if(!(*outpvd)) PetscFunctionReturn(0);
 
 	// open outfile.pvd file (write or update mode)
 	asprintf(&fname, "%s.pvd", outfile);
-	if(tindx == 1) fp = fopen(fname,"w");
-	else           fp = fopen(fname,"r+");
+	if((*outpvd) == 1) fp = fopen(fname,"w");
+	else               fp = fopen(fname,"r+");
+
 	if(fp == NULL) SETERRQ1(PETSC_COMM_SELF, 1,"cannot open file %s", fname);
 	free(fname);
 
-	if(tindx == 1)
+	if((*outpvd) == 1)
 	{
 		// write header
 		WriteXMLHeader(fp, "Collection");
@@ -793,6 +792,9 @@ PetscErrorCode UpdatePVDFile(
 
 	// close file
 	fclose(fp);
+
+	// update write flag
+	if((*outpvd) == 1) (*outpvd) = -1;
 
 	PetscFunctionReturn(0);
 }

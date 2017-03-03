@@ -210,7 +210,7 @@ struct PVAVD
 
 PetscErrorCode PVAVDCreate(PVAVD *pvavd, FB *fb);
 
-PetscErrorCode PVAVDWriteTimeStep(PVAVD *pvavd, const char *dirName, PetscScalar ttime, PetscInt tindx);
+PetscErrorCode PVAVDWriteTimeStep(PVAVD *pvavd, const char *dirName, PetscScalar ttime);
 
 PetscErrorCode PVAVDWritePVTR(PVAVD *pvavd, AVD3D A, const char *dirName);
 

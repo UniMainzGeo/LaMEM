@@ -87,7 +87,7 @@ PetscErrorCode PVMarkCreate(PVMark *pvmark, FB *fb)
 //---------------------------------------------------------------------------
 #undef __FUNCT__
 #define __FUNCT__ "PVMarkWriteTimeStep"
-PetscErrorCode PVMarkWriteTimeStep(PVMark *pvmark, const char *dirName, PetscScalar ttime, PetscInt tindx)
+PetscErrorCode PVMarkWriteTimeStep(PVMark *pvmark, const char *dirName, PetscScalar ttime)
 {
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
@@ -96,10 +96,7 @@ PetscErrorCode PVMarkWriteTimeStep(PVMark *pvmark, const char *dirName, PetscSca
 	if(!pvmark->outmark) PetscFunctionReturn(0);
 
 	// update .pvd file if necessary
-	if(pvmark->outpvd)
-	{
-		ierr = UpdatePVDFile(dirName, pvmark->outfile, "pvtu", &pvmark->offset, ttime, tindx); CHKERRQ(ierr);
-	}
+	ierr = UpdatePVDFile(dirName, pvmark->outfile, "pvtu", &pvmark->offset, ttime, &pvmark->outpvd); CHKERRQ(ierr);
 
 	// write parallel data .pvtu file
 	ierr = PVMarkWritePVTU(pvmark, dirName); CHKERRQ(ierr);

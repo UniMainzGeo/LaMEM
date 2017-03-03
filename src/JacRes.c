@@ -482,7 +482,11 @@ PetscErrorCode JacResFormResidual(JacRes *jr, Vec x, Vec f)
 	// copy solution from global to local vectors, enforce boundary constraints
 	ierr = JacResCopySol(jr, x); CHKERRQ(ierr);
 
+	// get pressure shift to enforce zero pressure in top layer of cells
 	ierr = JacResGetPressShift(jr); CHKERRQ(ierr);
+
+	// compute lithostatic pressure
+	ierr = JacResGetLithoStaticPressure(jr); CHKERRQ(ierr);
 
 	// compute pore pressure
 	ierr = JacResGetPorePressure(jr); CHKERRQ(ierr);
@@ -1018,9 +1022,6 @@ PetscErrorCode JacResGetResidual(JacRes *jr)
 	ierr = DMDAVecGetArray(fs->DA_Z,   jr->lvz,  &vz);  CHKERRQ(ierr);
 	ierr = DMDAVecGetArray(fs->DA_CEN, jr->lp_lithos, &p_lithos); CHKERRQ(ierr);
 	ierr = DMDAVecGetArray(fs->DA_CEN, jr->lp_pore,   &p_pore);   CHKERRQ(ierr);
-
-	// compute lithostatic pressure
-	ierr = JacResGetLithoStaticPressure(jr); CHKERRQ(ierr);
 
 	//-------------------------------
 	// central points

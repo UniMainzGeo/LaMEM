@@ -302,6 +302,13 @@ PetscErrorCode JacResViewRes(JacRes *jr);
 // get maximum inverse time step (CFL)
 PetscErrorCode JacResSelectTimeStep(JacRes *jr, PetscInt *restart);
 
+
+
+
+PetscErrorCode JacResReadCellPhases(JacRes *jr, FB *fb);
+
+
+
 //---------------------------------------------------------------------------
 // Infinite Strain Axis (ISA) computation functions
 //---------------------------------------------------------------------------

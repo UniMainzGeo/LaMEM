@@ -265,8 +265,6 @@ PetscErrorCode PVOutWriteTotalPress(JacRes *jr, OutBuf *outbuf)
 
 	ierr = JacResCopyPres(jr, jr->gsol); CHKERRQ(ierr);
 
-	ierr = JacResGetPorePressure(jr); CHKERRQ(ierr);
-
 	// compute total pressure
 	ierr = VecWAXPY(outbuf->lbcen, biot, jr->lp_pore, jr->lp); CHKERRQ(ierr);
 
@@ -324,8 +322,6 @@ PetscErrorCode PVOutWriteLithoPress(JacRes *jr, OutBuf *outbuf)
 
 	cf = scal->stress;
 
-	ierr = JacResGetLithoStaticPressure(jr); CHKERRQ(ierr);
-
 	INTERPOLATE_ACCESS(jr->lp_lithos, InterpCenterCorner, 1, 0, 0.0)
 
 	PetscFunctionReturn(0);
@@ -339,7 +335,6 @@ PetscErrorCode PVOutWritePorePress(JacRes *jr, OutBuf *outbuf)
 	ACCESS_FUNCTION_HEADER
 
 	cf = scal->stress;
-	ierr = JacResGetPorePressure(jr); CHKERRQ(ierr);
 
 	INTERPOLATE_ACCESS(jr->lp_pore, InterpCenterCorner, 1, 0, 0.0)
 

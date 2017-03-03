@@ -83,7 +83,7 @@ PetscErrorCode PVSurfCreateData(PVSurf *pvsurf);
 PetscErrorCode PVSurfDestroy(PVSurf *pvsurf);
 
 // write all time-step output files to disk (PVD, PVTS, VTS)
-PetscErrorCode PVSurfWriteTimeStep(PVSurf *pvsurf, const char *dirName, PetscScalar ttime, PetscInt tindx);
+PetscErrorCode PVSurfWriteTimeStep(PVSurf *pvsurf, const char *dirName, PetscScalar ttime);
 
 // parallel output file .pvts
 PetscErrorCode PVSurfWritePVTS(PVSurf *pvsurf, const char *dirName);
