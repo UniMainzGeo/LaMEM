@@ -86,8 +86,8 @@ struct GeomPrim
 	// sphere
 	PetscScalar center[3];
 	PetscScalar radius;
-	// box
-	PetscScalar bounds[6];
+	// box & hex
+	PetscScalar bounds[6], coord[24];
 	// layer
 	PetscScalar top;
 	PetscScalar bot;
@@ -100,6 +100,18 @@ PetscInt setPhaseSphere(GeomPrim *sphere, Marker *P);
 PetscInt setPhaseBox(GeomPrim *box, Marker *P);
 
 PetscInt setPhaseLayer(GeomPrim *layer, Marker *P);
+
+PetscInt setPhaseHex(GeomPrim *hex, Marker *P);
+
+void HexGetBoundingBox(
+		PetscScalar *coord,   // hex coordinates
+		PetscScalar *bounds); // bounding box
+
+PetscInt TetPointTest(
+		PetscScalar *coord, // tetrahedron coordinates
+		PetscInt    *ii,    // corner indices
+		PetscScalar *xp,    // point coordinate
+		PetscScalar  tol);  // relative tolerance
 
 //---------------------------------------------------------------------------
 
@@ -132,8 +144,8 @@ PetscErrorCode ADVMarkInitPolygons(AdvCtx *actx, FB *fb);
 void ADVMarkSecIdx(AdvCtx *actx, PetscInt dir, PetscInt Nslice, PetscInt *idx);
 
 //---------------------------------------------------------------------------
-
-// definitions
+// MACROS
+//---------------------------------------------------------------------------
 
 #ifndef max
     #define max(a,b) (a >= b ? a : b)

@@ -84,6 +84,16 @@ PetscErrorCode TSSolCreate(TSSol *ts, FB *fb)
 	ierr = getIntParam   (fb, _OPTIONAL_, "nstep_rdb", &ts->nstep_rdb, 1, -1  );  CHKERRQ(ierr);
 	ierr = getScalarParam(fb, _OPTIONAL_, "time_tol",  &ts->tol,       1, 1.0 );  CHKERRQ(ierr);
 
+	if(ts->CFL < 0.0 && ts->CFL > 1.0)
+	{
+		SETERRQ(PETSC_COMM_SELF, PETSC_ERR_USER, "CFL parameter must be between 0 and 1");
+	}
+
+	if(ts->CFLMAX < 0.0 && ts->CFLMAX > 1.0)
+	{
+		SETERRQ(PETSC_COMM_SELF, PETSC_ERR_USER, "CFLMAX parameter must be between 0 and 1");
+	}
+
 	if(!ts->time_end && !ts->nstep_max)
 	{
 		SETERRQ(PETSC_COMM_SELF, PETSC_ERR_USER, "Define at least one of the parameters: time_end, nstep_max");

@@ -295,7 +295,7 @@ PetscErrorCode DBMatReadPhase(DBMat *dbm, FB *fb)
 	// check depth-dependent density parameters
 	if((!m->rho_n && m->rho_c) || (m->rho_n && !m->rho_c))
 	{
-		SETERRQ1(PETSC_COMM_SELF, PETSC_ERR_USER, "rho_n & rho_c must be specified simultaneously for phase %lld", (LLD)ID);
+		SETERRQ1(PETSC_COMM_SELF, PETSC_ERR_USER, "Depth-dependent density parameters must be specified simultaneously for phase %lld (rho_n + rho_c)", (LLD)ID);
 	}
 
 	if(m->rp < 0.0 || m->rp > 1.0)
@@ -307,17 +307,17 @@ PetscErrorCode DBMatReadPhase(DBMat *dbm, FB *fb)
 
 	if(m->fr && !m->ch)
 	{
-		SETERRQ1(PETSC_COMM_SELF, PETSC_ERR_USER, "Cohesion must be specified for phase %lld (ch)", (LLD)ID);
+		SETERRQ1(PETSC_COMM_SELF, PETSC_ERR_USER, "Cohesion must be specified for phase %lld (fr + ch)", (LLD)ID);
 	}
 
 	if(!m->fr && frSoftID != -1)
 	{
-		SETERRQ1(PETSC_COMM_SELF, PETSC_ERR_USER, "Friction angle must be specified for phase %lld (fr, frSoftID)", (LLD)ID);
+		SETERRQ1(PETSC_COMM_SELF, PETSC_ERR_USER, "Friction angle must be specified for phase %lld (frSoftID + fr)", (LLD)ID);
 	}
 
 	if(!m->ch && chSoftID != -1)
 	{
-		SETERRQ1(PETSC_COMM_SELF, PETSC_ERR_USER, "Cohesion must be specified for phase %lld (ch, chSoftID)", (LLD)ID);
+		SETERRQ1(PETSC_COMM_SELF, PETSC_ERR_USER, "Cohesion must be specified for phase %lld (chSoftID + ch)", (LLD)ID);
 	}
 
 	// set softening law IDs
@@ -330,7 +330,7 @@ PetscErrorCode DBMatReadPhase(DBMat *dbm, FB *fb)
 	||   (!eta &&  m->Bd)   // Bd
 	||   (!eta && !m->Bd))) // nothing
 	{
-		SETERRQ1(PETSC_COMM_SELF, PETSC_ERR_USER, "Diffusion creep parameters are not unique for phase %lld (eta or Bd)\n", (LLD)ID);
+		SETERRQ1(PETSC_COMM_SELF, PETSC_ERR_USER, "Diffusion creep parameters are not unique for phase %lld (eta, Bd)\n", (LLD)ID);
 	}
 
 	// compute diffusion creep constant
@@ -342,7 +342,7 @@ PetscErrorCode DBMatReadPhase(DBMat *dbm, FB *fb)
 	||   (!eta0 && !e0 &&  m->n &&  m->Bn)   // Bn, n
 	||   (!eta0 && !e0 && !m->n && !m->Bn))) // nothing
 	{
-		SETERRQ1(PETSC_COMM_SELF, PETSC_ERR_USER, "Dislocation creep parameters are not unique for phase %lld (eta0 & e0 & n or Bn & n)\n", (LLD)ID);
+		SETERRQ1(PETSC_COMM_SELF, PETSC_ERR_USER, "Dislocation creep parameters are not unique for phase %lld (eta0 + e0 + n, Bn + n)\n", (LLD)ID);
 	}
 
 	// compute dislocation creep constant
@@ -352,7 +352,7 @@ PetscErrorCode DBMatReadPhase(DBMat *dbm, FB *fb)
 
 	if(m->Bp && (!m->taup || !m->gamma || !m->q || !m->Ep))
 	{
-		SETERRQ1(PETSC_COMM_SELF, PETSC_ERR_USER, "Peierls creep parameters are incomplete for phase %lld (Bp, taup, gamma, q, Ep)", (LLD)ID);
+		SETERRQ1(PETSC_COMM_SELF, PETSC_ERR_USER, "Peierls creep parameters are incomplete for phase %lld (Bp + taup + gamma + q + Ep)", (LLD)ID);
 	}
 
 	// ELASTICITY
@@ -365,17 +365,17 @@ PetscErrorCode DBMatReadPhase(DBMat *dbm, FB *fb)
 	||   (!G && !K &&  E &&  nu)   // E & nu
 	||   (!G && !K && !E && !nu))) // nothing
 	{
-		SETERRQ1(PETSC_COMM_SELF, PETSC_ERR_USER, "Elasticity parameters are not unique for phase %lld (G or K or G & K or G & nu or K & nu or E & nu)\n", (LLD)ID);
+		SETERRQ1(PETSC_COMM_SELF, PETSC_ERR_USER, "Unsupported or nonunique combination of elasticity parameters for phase %lld (G, K, G + K, G + nu, K + nu, E + nu)\n", (LLD)ID);
 	}
 
 	if(m->Kp && !K)
 	{
-		SETERRQ1(PETSC_COMM_SELF, PETSC_ERR_USER, "Bulk modulus must be specified for phase %lld (K & Kp)", (LLD)ID);
+		SETERRQ1(PETSC_COMM_SELF, PETSC_ERR_USER, "Bulk modulus must be specified for phase %lld (K + Kp)", (LLD)ID);
 	}
 
 	if(m->beta && K)
 	{
-		SETERRQ1(PETSC_COMM_SELF, PETSC_ERR_USER, "Density pressure dependence parameters are not unique for phase %lld (beta or K)", (LLD)ID);
+		SETERRQ1(PETSC_COMM_SELF, PETSC_ERR_USER, "Density pressure dependence parameters are not unique for phase %lld (beta, K)", (LLD)ID);
 	}
 
 	// compute elastic parameters

@@ -289,6 +289,11 @@
 		bounds = 1.0 2.0 1.0 2.0 1.0 2.0  # (left, right, front, back, bottom, top)
 	<BoxEnd>
 
+	<HexStart>
+		phase = 1
+		coord = 1.0 1.0 1.0 ...  # (x-y-z coordinates for each of 8 nodes, 24 parameters)
+	<HexEnd>
+
 	<LayerStart>
 		phase  = 1
 		top    = 5.0

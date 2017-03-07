@@ -601,7 +601,7 @@ PetscErrorCode ADVMarkInitGeom(AdvCtx *actx, FB *fb)
 	Marker      *P;
 	PetscScalar chLen;
 	PetscInt    jj, iter, ngeom, imark, maxPhaseID;
-	GeomPrim    geom[_max_geom_], *sphere, *box, *layer;
+	GeomPrim    geom[_max_geom_], *sphere, *box, *hex, *layer;
 
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
@@ -671,6 +671,37 @@ PetscErrorCode ADVMarkInitGeom(AdvCtx *actx, FB *fb)
 
 	ierr = FBFreeBlocks(fb); CHKERRQ(ierr);
 
+	//======
+	// HEXES
+	//======
+
+	ierr = FBFindBlocks(fb, _OPTIONAL_, "<HexStart>", "<HexEnd>"); CHKERRQ(ierr);
+
+	ngeom += fb->nblocks;
+
+	if(ngeom > _max_geom_)
+	{
+		SETERRQ1(PETSC_COMM_SELF, PETSC_ERR_USER, "Too many geometric primitives! Max allowed: %lld", (LLD)_max_geom_);
+	}
+
+	for(jj = 0; jj < fb->nblocks; jj++)
+	{
+		hex = &geom[iter++];
+
+		ierr = getIntParam   (fb, _REQUIRED_, "phase",  &hex->phase, 1,  maxPhaseID); CHKERRQ(ierr);
+		ierr = getScalarParam(fb, _REQUIRED_, "coord",   hex->coord, 24, chLen);      CHKERRQ(ierr);
+
+		hex->setPhase = setPhaseHex;
+
+		// compute bounding box
+		HexGetBoundingBox(hex->coord, hex->bounds);
+
+		fb->blockID++;
+	}
+
+	ierr = FBFreeBlocks(fb); CHKERRQ(ierr);
+
+
 	//=======
 	// LAYERS
 	//=======
@@ -698,6 +729,10 @@ PetscErrorCode ADVMarkInitGeom(AdvCtx *actx, FB *fb)
 	}
 
 	ierr = FBFreeBlocks(fb); CHKERRQ(ierr);
+
+	//==============
+	// ASSIGN PHASES
+	//==============
 
 	// loop over local markers
 	for(imark = 0; imark < actx->nummark; imark++)
@@ -1127,4 +1162,123 @@ PetscInt setPhaseLayer(GeomPrim *layer, Marker *P)
 	return 0;
 }
 //---------------------------------------------------------------------------
+PetscInt setPhaseHex(GeomPrim *hex, Marker *P)
+{
+	PetscInt    i;
+	PetscScalar tol = 1e-6;
 
+	// cell tetrahedrization
+	PetscInt tet [] =
+	{
+		0, 1, 2, 5, // 0
+		2, 6, 5, 7, // 1
+		0, 3, 2, 7, // 2
+		0, 5, 4, 7, // 3
+		0, 2, 5, 7, // 4
+	};
+
+	// check bounding box
+	if(P->X[0] >= hex->bounds[0] && P->X[0] <= hex->bounds[1]
+	&& P->X[1] >= hex->bounds[2] && P->X[1] <= hex->bounds[3]
+	&& P->X[2] >= hex->bounds[4] && P->X[2] <= hex->bounds[5])
+	{
+		// check tetrahedrons
+		for(i = 0; i < 5; i++)
+		{
+			if(TetPointTest(hex->coord, tet + 4*i, P->X, tol))
+			{
+				P->phase = hex->phase;
+				return 1;
+			}
+		}
+	}
+
+	return 0;
+}
+//---------------------------------------------------------------------------
+void HexGetBoundingBox(
+		PetscScalar *coord,  // hex coordinates
+		PetscScalar *bounds) // bounding box
+{
+	PetscInt     i;
+	PetscScalar *x;
+
+	bounds[0] = bounds[1] = coord[0];
+	bounds[2] = bounds[3] = coord[1];
+	bounds[4] = bounds[5] = coord[2];
+
+	// compute bounding box
+	for(i = 1; i < 8; i++)
+	{
+		x = coord + 3*i;
+
+		if(bounds[0] > x[0]) bounds[0] = x[0];
+		if(bounds[1] < x[0]) bounds[1] = x[0];
+		if(bounds[2] > x[1]) bounds[2] = x[1];
+		if(bounds[3] < x[1]) bounds[3] = x[1];
+		if(bounds[4] > x[2]) bounds[4] = x[2];
+		if(bounds[5] < x[2]) bounds[5] = x[2];
+	}
+}
+//---------------------------------------------------------------------------
+PetscInt TetPointTest(
+		PetscScalar *coord, // tetrahedron coordinates
+		PetscInt    *ii,    // corner indices
+		PetscScalar *xp,    // point coordinate
+		PetscScalar  tol)   // relative tolerance
+{
+	// macro for computing 3x3 matrix determinant
+	#define DET PetscAbsScalar(a11*(a22*a33-a23*a32)-a12*(a21*a33-a23*a31)+a13*(a21*a32-a22*a31))
+
+	PetscInt     j1, j2, j3, j4;
+	PetscScalar  x, y, z, r, s, t, q, d;
+	PetscScalar  a11, a12, a13, a21, a22, a23, a31, a32, a33;
+	PetscScalar  x1, y1, z1, x2, y2, z2, x3, y3, z3, x4, y4, z4;
+
+	// assign point coordinates
+	x = xp[0];
+	y = xp[1];
+	z = xp[2];
+
+	// assign nodal coordinates
+	j1 = 3*ii[0]; x1 = coord[j1]; y1 = coord[j1+1]; z1 = coord[j1+2]; // node 1
+	j2 = 3*ii[1]; x2 = coord[j2]; y2 = coord[j2+1]; z2 = coord[j2+2]; // node 2
+	j3 = 3*ii[2]; x3 = coord[j3]; y3 = coord[j3+1]; z3 = coord[j3+2]; // node 3
+	j4 = 3*ii[3]; x4 = coord[j4]; y4 = coord[j4+1]; z4 = coord[j4+2]; // node 4
+
+	// compute total volume
+	a11 = x2 - x1;   a12 = x3 - x1;   a13 = x4 - x1;
+	a21 = y2 - y1;   a22 = y3 - y1;   a23 = y4 - y1;
+	a31 = z2 - z1;   a32 = z3 - z1;   a33 = z4 - z1;
+	d   = DET;
+
+	// compute sub-volume (p2-p3-p4-p) (N1)
+	a11 = x2 - x;    a12 = x3 - x;    a13 = x4 - x;
+	a21 = y2 - y;    a22 = y3 - y;    a23 = y4 - y;
+	a31 = z2 - z;    a32 = z3 - z;    a33 = z4 - z;
+	r   = DET;
+
+	// compute sub-volume (p1-p3-p4-p) (N2)
+	a11 = x1 - x;
+	a21 = y1 - y;
+	a31 = z1 - z;
+	s   = DET;
+
+	// compute sub-volume (p1-p2-p4-p) (N3)
+	a12 = x2 - x;
+	a22 = y2 - y;
+	a32 = z2 - z;
+	t   = DET;
+
+	// compute sub-volume (p1-p2-p3-p) (N4)
+	a13 = x3 - x;
+	a23 = y3 - y;
+	a33 = z3 - z;
+	q   = DET;
+
+	// point test
+	if(r + s + t + q > d*(1.0 + tol)) return 0;
+
+	return 1;
+}
+//---------------------------------------------------------------------------
