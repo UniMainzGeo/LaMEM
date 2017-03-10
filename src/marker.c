@@ -464,7 +464,7 @@ PetscErrorCode ADVMarkInitFileParallel(AdvCtx *actx, UserCtx *user)
 	PetscViewer  view_in;
 	char        *LoadFileName;
 	PetscScalar *markbuf, *markptr, header, chTemp, chLen, Tshift, s_nummark;
-	PetscInt     imark, nummark;
+	PetscInt     imark, nummark, NumPropsPerMarker;
 
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
@@ -494,6 +494,13 @@ PetscErrorCode ADVMarkInitFileParallel(AdvCtx *actx, UserCtx *user)
 	// set number of markers
 	actx->nummark = nummark;
 
+									//// From Darcy code
+									//// Number of Properties saved per marker
+									//NumPropsPerMarker = 5;
+									//if (actx->jr->actDarcy){
+									//	NumPropsPerMarker = 6;		// if Darcy=active, porosity must be specified @ markers as well
+									//}
+
 	// allocate marker buffer
 	ierr = PetscMalloc((size_t)(5*actx->nummark)*sizeof(PetscScalar), &markbuf); CHKERRQ(ierr);
 
@@ -520,6 +527,12 @@ PetscErrorCode ADVMarkInitFileParallel(AdvCtx *actx, UserCtx *user)
 		P->X[2]  =           markptr[2]/chLen;
 		P->phase = (PetscInt)markptr[3];
 		P->T     =          (markptr[4] + Tshift)/chTemp;
+
+										//// From Darcy code
+										//if (actx->jr->actDarcy){
+										//	// porosity is expected to be present on markers only when Darcy is activate
+										//	P->Phi     =    (markptr[5]);
+										//}
 	}
 
 	// free marker buffer

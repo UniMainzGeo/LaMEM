@@ -229,6 +229,9 @@ typedef struct
 	PetscScalar      GasConstant;
 	char             TemperatureFilename[MAX_PATH_LEN];
 
+	// FluidPressure/Darcy
+	PetscScalar      LiquidPressure_bottom, LiquidPressure_top;
+
 	// optimization
 	PetscInt         mpi_group_id; //migrated from OptimiseParams
 	PetscScalar      LowerViscosityCutoff, UpperViscosityCutoff, InitViscosity, PlastViscosity; // JacRes

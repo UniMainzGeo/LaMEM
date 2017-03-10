@@ -175,6 +175,12 @@ typedef struct
 	PetscInt ISA;            		// Infinite Strain Axis
 	PetscInt GOL;            		// Grain Orientation Lag
 	PetscInt yield;            		// yield stress
+
+	// From Darcy code
+	PetscInt Pl;             // Fluid pressure (for Darcy )
+	PetscInt permeability;   // Permeability   (for Darcy )
+	PetscInt porosity;       // Porosity       (for Darcy )
+
 	// === debugging vectors ===============================================
 	PetscInt moment_res;     		// momentum residual
 	PetscInt cont_res;       		// continuity residual
@@ -189,7 +195,8 @@ typedef struct
 
 void OutMaskSetDefault(OutMask *omask);
 
-PetscInt OutMaskCountActive(OutMask *omask);
+// From Darcy code (add jr)
+PetscInt OutMaskCountActive(OutMask *omask, JacRes *jr);
 
 //---------------------------------------------------------------------------
 //...................... ParaView output driver object ......................

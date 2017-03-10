@@ -328,7 +328,7 @@ void OutMaskSetDefault(OutMask *omask)
 	omask->pressure       		= 1;
 }
 //---------------------------------------------------------------------------
-PetscInt OutMaskCountActive(OutMask *omask)
+PetscInt OutMaskCountActive(OutMask *omask, JacRes *jr)
 {
 	PetscInt cnt = 0;
 
@@ -359,6 +359,13 @@ PetscInt OutMaskCountActive(OutMask *omask)
 	if(omask->EHmax)          		cnt++; // maximum horizontal stress
 	if(omask->ISA)            		cnt++; // Infinite Strain Axis
 	if(omask->GOL)            		cnt++; // Grain Orientation Lag
+
+	// From Darcy code
+	if(jr->actDarcy == PETSC_TRUE){
+		if(omask->Pl)             cnt++; // Fluid pressure (in case Darcy is solved for)
+		if(omask->permeability)   cnt++; // Fluid pressure (in case Darcy is solved for)
+		if(omask->porosity)       cnt++; // Fluid pressure (in case Darcy is solved for)
+	}
 	if(omask->yield)          		cnt++; // yield stress
 	// === debugging vectors ===============================================
 	if(omask->moment_res)     		cnt++; // momentum residual
@@ -422,7 +429,9 @@ PetscErrorCode PVOutCreate(PVOut *pvout, JacRes *jr, const char *filename)
 	//===============
 
 	// count active output vectors
-	pvout->nvec = OutMaskCountActive(omask);
+	//From Darcy code (add jr)
+	//pvout->nvec = OutMaskCountActive(omask);
+	pvout->nvec = OutMaskCountActive(omask, jr);
 
 	if(jr->actTemp != PETSC_TRUE) omask->energ_res = 0;
 
@@ -463,6 +472,15 @@ PetscErrorCode PVOutCreate(PVOut *pvout, JacRes *jr, const char *filename)
 	if(omask->ISA)            		OutVecCreate(&outvecs[cnt++], "ISA",            	scal->lbl_unit,             &PVOutWriteISA,          3);
 	if(omask->GOL)            		OutVecCreate(&outvecs[cnt++], "GOL",            	scal->lbl_unit,             &PVOutWriteGOL,          1);
 	if(omask->yield)            	OutVecCreate(&outvecs[cnt++], "yield",            	scal->lbl_stress,           &PVOutWriteYield,        1);
+
+	// From Darcy code
+	// === Darcy output if active ==========================================
+	if(jr->actDarcy == PETSC_TRUE){
+		if(omask->Pl)          OutVecCreate(&outvecs[cnt++], "LiquidPressure", scal->lbl_stress,         &PVOutWriteLiquidPressure,1);
+		if(omask->permeability)OutVecCreate(&outvecs[cnt++], "Permeability",   scal->lbl_permeability,   &PVOutWritePermeability,  1);
+		if(omask->porosity)    OutVecCreate(&outvecs[cnt++], "Porosity",       scal->lbl_unit,           &PVOutWritePorosity,      1);
+	}
+
 	// === debugging vectors ===============================================
 	if(omask->moment_res)     		OutVecCreate(&outvecs[cnt++], "moment_res",     	scal->lbl_volumetric_force, &PVOutWriteMomentRes,    3);
 	if(omask->cont_res)       		OutVecCreate(&outvecs[cnt++], "cont_res",       	scal->lbl_strain_rate,      &PVOutWriteContRes,      1);
@@ -518,6 +536,12 @@ PetscErrorCode PVOutReadFromOptions(PVOut *pvout)
 	ierr = PetscOptionsGetInt(NULL, NULL, "-out_cont_res",       		&omask->cont_res,       	NULL); CHKERRQ(ierr);
     ierr = PetscOptionsGetInt(NULL, NULL, "-out_energ_res",      		&omask->energ_res,      	NULL); CHKERRQ(ierr);
     ierr = PetscOptionsGetInt(NULL, NULL, "-out_jac_test",       		&omask->jac_test,       	NULL); CHKERRQ(ierr);
+
+    // From Darcy code
+
+    ierr = PetscOptionsGetInt(NULL, NULL, "-out_Pl",   			&omask->Pl,   		   NULL); CHKERRQ(ierr);	// fluid pressure
+    ierr = PetscOptionsGetInt(NULL, NULL, "-out_permeability",   	&omask->permeability,  NULL); CHKERRQ(ierr);	// permeability
+    ierr = PetscOptionsGetInt(NULL, NULL, "-out_porosity",   		&omask->porosity,      NULL); CHKERRQ(ierr);	// porosity
 
     // deactivate effective pressure if pore pressure is deactivated
 	ierr = PetscOptionsHasName(NULL, NULL, "-actPorePres", &flg); CHKERRQ(ierr);

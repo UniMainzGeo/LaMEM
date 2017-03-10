@@ -728,6 +728,81 @@ PetscErrorCode PVOutWriteYield(JacRes *jr, OutBuf *outbuf)
 
 	PetscFunctionReturn(0);
 }
+
+// From Darcy code
+//---------------------------------------------------------------------------
+#undef __FUNCT__
+#define __FUNCT__ "PVOutWriteLiquidPressure"
+PetscErrorCode PVOutWriteLiquidPressure(JacRes *jr, OutBuf *outbuf)
+{
+	ACCESS_FUNCTION_HEADER
+	Vec            	s;
+
+	ierr = DMCreateLocalVector(jr->fs->DA_CEN, &s); CHKERRQ(ierr);		// create local vector based on center DA, which has one DOF
+
+	// Pull out the liquid vector from the solution vector
+	VecStrideGather(jr->lPl,0,s,INSERT_VALUES);
+
+	cf = scal->stress;
+	iflag.use_bound = PETSC_TRUE;
+
+	INTERPOLATE_ACCESS(s, InterpCenterCorner, 1, 0, 0.0)
+
+
+	ierr = VecDestroy(&s);	CHKERRQ(ierr);
+	PetscFunctionReturn(0);
+}
+//---------------------------------------------------------------------------
+#undef __FUNCT__
+#define __FUNCT__ "PVOutWritePorosity"
+PetscErrorCode PVOutWritePorosity(JacRes *jr, OutBuf *outbuf)
+{
+	//COPY_FUNCTION_HEADER
+	ACCESS_FUNCTION_HEADER
+	Vec            	s;
+	ierr = DMCreateLocalVector(jr->fs->DA_CEN, &s); CHKERRQ(ierr);		// create local vector based on center DA, which has one DOF
+
+	cf = scal->unit;
+
+	/*
+	// macro to copy porosity to buffer
+	#define GET_POROSITY buff[k][j][i] = jr->svCell[iter++].svBulk.Phi;
+
+	INTERPOLATE_COPY(fs->DA_CEN, outbuf->lbcen, InterpCenterCorner, GET_POROSITY, 1, 0)
+*/
+
+	// Pull out the porosity vector from the solution vector
+	VecStrideGather(jr->lPl,1,s,INSERT_VALUES);
+
+	INTERPOLATE_ACCESS(s, InterpCenterCorner, 1, 0, 0.0)
+
+	ierr = VecDestroy(&s);	CHKERRQ(ierr);
+
+	PetscFunctionReturn(0);
+}
+//---------------------------------------------------------------------------
+#undef __FUNCT__
+#define __FUNCT__ "PVOutWritePermeability"
+PetscErrorCode PVOutWritePermeability(JacRes *jr, OutBuf *outbuf)
+{
+	COPY_FUNCTION_HEADER
+
+	// output permeability logarithm in GEO-mode
+	// (negative scaling requests logarithmic output)
+	if(scal->utype == _GEO_) cf =  -scal->permeability;
+	else                     cf =  scal->permeability;
+
+
+	// macro to copy permeability to buffer
+	#define GET_PERMEABILITY buff[k][j][i] = jr->svCell[iter++].svBulk.Kphi;
+
+
+	INTERPOLATE_COPY(fs->DA_CEN, outbuf->lbcen, InterpCenterCorner, GET_PERMEABILITY, 1, 0)
+
+	PetscFunctionReturn(0);
+}
+
+
 //---------------------------------------------------------------------------
 // DEBUG VECTORS
 //---------------------------------------------------------------------------

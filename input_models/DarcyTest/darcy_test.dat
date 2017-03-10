@@ -1,0 +1,355 @@
+# 3D test for Darcy equations (w/out deformation)
+
+# Grid
+nel_x =  16
+nel_y =  16
+nel_z =  16
+
+# Geometry
+
+W       =  3    # Width  (x-direction)
+L 		=  3
+H       =  20    # Height (z-direction)
+x_left  =  0    # Left side of domain
+y_front =  0     # Front side of domain
+z_bot   =  0     # Bottom of box
+
+# Characteristic values
+units                      = geo
+Characteristic.Length      = 1e3  # [m]
+Characteristic.Viscosity   = 1e17 # [Pa.s]
+Characteristic.Temperature = 1    # [K]
+Characteristic.Stress      = 1e9  # [Pa]
+
+
+# Model setup
+msetup 						   = bands
+#msetup                        = parallel
+#ParticleFilename              = Particles 			# File that contains markers distribution (matlab)
+LoadInitialParticlesDirectory = MatlabInputParticles                 # directory that contains markers distribution (matlab)
+
+
+# Time stepping and output
+OutputFile					=	test_darcy
+save_timesteps				=	1				# save every ? timesteps
+time_end					=	1			# last timestep
+CFL							=	0.1				# CFL, dt-based criterium
+dt_max						=	2e-4  			# Maximum timestep [Myr if dimensional]
+
+
+# Boundary conditions
+Temp_top	    			=   100				# Temperature @ top
+Temp_bottom					=   100 			# Temperature @ bottom; side BC's are flux-free
+Gravity						=  -10;				# [m/s2] - gravitational acceleration
+
+# Boundary conditions
+BC.LeftBound				=	1				# 1-free slip with BG strainrate Eyy, 2 - no slip, 
+BC.RightBound				=	1				# 0 - free surface, 1-free slip with BG strainrate Eyy, 2 - no slip, 
+BC.FrontBound				=	1				# 0 - free surface, 1-free slip with BG strainrate Exx, 2 - no slip, 
+BC.BackBound				=	1				# 0 - free surface, 1-free slip with BG strainrate Exx, 2 - no slip, 
+BC.LowerBound				=	1				# 0 - free surface, 1-free slip, 				  2 - no slip, 
+BC.UpperBound				=	0				# 0 - free surface, 1-free slip, 				  2 - no slip, 
+
+LiquidPressure_top	    	=   0				# Fluid Pressure @ top [MPa, if geo units are selected]
+LiquidPressure_bottom		=   0 			# Fluid Pressure @ bottom; side BC's are flux-free
+
+
+# Control parameters
+LowerViscosityCutoff = 1e16
+UpperViscosityCutoff = 1e27
+DII_ref              = 1e-15
+FSSA                 = 1.0
+InitViscosity        = 1e20
+
+
+# Phase distribution
+NumPartX				=	3   # Particles/Cell in x-direction
+NumPartY				=	3   # Particles/Cell in y-direction
+NumPartZ				=	3	# Particles/Cell in z-direction
+
+#===============================================================================
+# ............................... PETSc options.................................
+#===============================================================================
+
+<PetscOptionsStart>
+	
+	# activate Darcy:
+	-act_darcy 1			# Activates Darcy solver
+	#-act_temp_diff 		# Activates T-diffusion solver	
+	#-SkipStokesSolver	# No Stokes (for testing)
+	
+	# SNES (nonlinear) options
+	#-snes_ksp_ew			# Eisenstat Walker algorithm
+	-snes_npicard 2			# 2 picard iterations @ beginning of ever timestep
+	-snes_monitor			
+	-snes_atol 1e-10
+	-snes_rtol 1e-8
+	-snes_stol 1e-16
+	-snes_max_it 10
+	-snes_max_funcs 500000
+	-snes_max_linear_solve_fail 10000
+	-snes_type ksponly
+
+	
+	#=======================
+	# Darcy solver options
+	-PorosityWaves_R 1e-2		# R-parameter
+	
+	-darcy_pc_mg_log	
+	#-darcy_ksp_view 
+	-darcy_ksp_converged_reason 
+	#-darcy_ksp_monitor
+	
+	#-darcy_pc_factor_mat_solver_package superlu_dist
+	
+	#-darcy_snes_view 
+	-darcy_snes_rtol 1e-4
+	-darcy_snes_monitor  
+	-darcy_snes_linesearch_type l2 
+	#-darcy_snes_linesearch_monitor 
+	-darcy_ksp_rtol 1e-8  
+	-darcy_ksp_final_residual 
+	#-darcy_ksp_monitor_true_residual 
+	
+	# MG:
+	-darcy_pc_type mg
+	-darcy_pc_mg_levels 4
+	-darcy_pc_mg_galerkin 
+	
+	# FAS with NL preconditioner
+	#-darcy_snes_type anderson
+	#-darcy_snes_monitor_short
+	#-darcy_snes_converged_reason
+	#-darcy_npc_snes_max_it 1
+	#-darcy_npc_snes_type fas
+	#-darcy_npc_snes_fas_galerkin
+	#-darcy_npc_snes_fas_levels 4
+	#-darcy_npc_fas_levels_snes_type newtonls
+	#-darcy_npc_fas_levels_snes_max_it 6
+	#-darcy_npc_fas_levels_snes_linesearch_type l2
+	#-darcy_npc_fas_levels_snes_max_linear_solve_fail 30 
+	#-darcy_npc_fas_levels_ksp_max_it 20
+	#=======================
+	
+	# matrix-free closed-form Jacobian
+	#-jac_mat_free
+
+	#-skip_press_shift
+
+	# Background strain rate
+	-ExxNumPeriods  1
+	-ExxStrainRates 0e-15
+
+	# Time step (Myr)
+	-dt 1e-5
+
+	-open_top_bound
+	-skip_press_shift
+
+
+	# shear bands setup
+	-H_layer 		  10
+	-H_bottom 		  3
+	-Inclusion_use
+	-Inclusion_size	  2
+#	-Inclusion_length 10
+	
+#	-Inclusion_offset 10
+#	-Inclusion_length 10
+
+
+	# SNES (nonlinear) options
+
+	# Jacobian solver
+	-js_ksp_type fgmres
+	-js_ksp_max_it 50
+	-js_ksp_converged_reason
+	#-js_ksp_monitor
+	-js_ksp_rtol 1e-10
+	-js_ksp_atol 1e-15
+
+
+#	-pcmat_type block
+#	-pcmat_pgamma 10.0
+#	-jp_type bf
+#	-bf_vs_type user
+#	-vs_ksp_type preonly
+#	-vs_pc_type lu
+#	-vs_pc_factor_mat_solver_package mumps
+
+#	-pcmat_type block
+#	-pcmat_no_dev_proj
+#	-jp_type bf
+#	-bf_vs_type mg
+#	-vs_ksp_type preonly
+
+	-pcmat_type mono
+	-jp_type mg
+
+	-gmg_pc_view
+	-gmg_pc_type mg
+	-gmg_pc_mg_levels 2
+	-gmg_pc_mg_galerkin
+	-gmg_pc_mg_type multiplicative
+	-gmg_pc_mg_cycle_type v
+
+#	-gmg_mg_levels_ksp_type richardson
+#	-gmg_mg_levels_ksp_richardson_scale 0.5
+#	-gmg_mg_levels_ksp_max_it 20
+#	-gmg_mg_levels_pc_type jacobi
+
+#	-crs_ksp_type preonly
+#	-crs_pc_type redundant
+#	-crs_pc_redundant_number 1
+#	-crs_redundant_pc_factor_mat_solver_package mumps
+
+# DIRECT SOLVER ==============
+	# Preconditioner
+	-pcmat_type mono
+	-pcmat_pgamma 1e0
+#	-jp_type user
+#	-jp_pc_type lu
+#	-jp_pc_factor_mat_solver_package mumps
+# DIRECT SOLVER ==============
+
+
+# NEW CODE WITH FIELDSPLIT/SCHUR DECOMPOSITION
+-js_pc_type fieldsplit
+-js_pc_fieldsplit_type schur
+-js_pc_fieldsplit_schur_factorization_type upper
+
+-js_fieldsplit_velocity_ksp_type fgmres
+#-js_fieldsplit_velocity_pc_type fieldsplit
+#-js_fieldsplit_velocity_pc_mg_galerkin
+#-js_fieldsplit_velocity_pc_mg_levels 2 
+#-js_fieldsplit_velocity_fields 0,1,2
+
+
+
+# ============================================
+
+
+
+
+	# Additional command-line Petsc Options
+	-AddRandomNoiseParticles 0
+	-restart 0
+	-save_breakpoints 0
+	-objects_dump
+	-restart 0
+#	-SkipStokesSolver 1
+#	-SavePartitioning
+#	-skip_press_shift
+
+	# output
+	-out_pvd 1
+	-out_phase 1
+	-out_density 1
+	-out_viscosity 1
+	-out_velocity 1
+	-out_pressure 1
+	-out_temperature 1#
+	-out_dev_stress 1
+	-out_j2_dev_stress 1
+	-out_strain_rate 1
+	-out_j2_strain_rate 1
+	-out_plast_strain 1
+	-out_plast_strain 1
+	-out_moment_res 1
+	-out_cont_res 1
+	
+	# Output Darcy parameters
+	-out_Pl 1			# fluid pressure
+	-out_porosity 1 	# porosity
+	-out_permeability 1	# permeability
+	
+	#output composition
+#	-out_avd 1
+#	-out_avd_ref 2
+#	-out_avd_pvd 1
+
+<PetscOptionsEnd>
+
+#===============================================================================
+# ............................ Material Parameters .............................
+#===============================================================================
+
+	# Strain softening parameters
+	<SofteningStart>
+		softID = 0
+		A      = 0.1
+		APS1   = 0.000001
+		APS2   = 0.001
+	<SofteningEnd>
+
+
+	# Inclusion
+	<MaterialStart>
+		ID              = 0     # phase id  [-]
+		rho0            = 2700	# density - if dimensional [kg/m3]
+		eta             = 1e18	# Viscosity - dimensional [Pa.s]
+		#shear           =  5e10
+		cohesion        =  50e6
+		friction        =  30
+		#frSoftID        =  0 # softening ID
+		#chSoftID        =  0
+		
+		# Energy equation parameters
+		k 				=	3;
+		cp 				=	1000;
+		
+		# DARCY Parameters:
+		rhol 			= 	500		# liquid density
+		mu 				=	10		# liquid viscosity	
+		Kphi 			=	1e-14		# permeability	
+		Ss				=	1e-2			# specific storage	
+	<MaterialEnd>
+
+
+	# Matrix
+	<MaterialStart>
+		ID              =  1      # phase id  [-]
+		rho0            =  3000   # density - if dimensional [kg/m3]
+		eta             =  1e19   # Viscosity - dimensional [Pa.s]
+
+		shear           =  5e10
+		cohesion        =  50e6
+		friction        =  30
+		frSoftID        =  0 # softening ID
+		chSoftID        =  0
+
+		# Energy equation parameters
+		k 				=	3;
+		cp 				=	1000;
+		
+		# DARCY Parameters:
+		rhol 			= 	500		# liquid density
+		mu 				=	10		# liquid viscosity
+		Kphi 			=	1e-14		# permeability
+		Ss				=	1e-2			# specific storage	
+	<MaterialEnd>
+
+
+	# sticky-air layer
+	<MaterialStart>
+		ID              = 2     # phase id  [-]
+		rho0            = 2700	# density - if dimensional [kg/m3]
+		eta             = 1e18	# Viscosity - dimensional [Pa.s]
+		shear           =  5e10
+		cohesion        =  50e6
+		friction        =  30
+#		frSoftID        =  0 # softening ID
+#		chSoftID        =  0
+
+		# Energy equation parameters
+		k 				=	3;
+		cp 				=	1000;
+		
+		# DARCY Parameters:
+		rhol 			= 	500		# liquid density
+		mu 				=	10 			# liquid viscosity
+		Kphi 			=	1e-14		# permeability
+		Ss				=	1e-2			# specific storage	
+	<MaterialEnd>
+
+# End of defining material properties for all phases ----------------------------------------

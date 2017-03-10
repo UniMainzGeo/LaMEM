@@ -133,6 +133,8 @@ typedef struct
 	PetscScalar conductivity;       // power / length / temperature
 	PetscScalar heat_production;    // power / mass
 	PetscScalar expansivity;        // 1 / temperature
+	// From Darcy code
+	PetscScalar permeability;       // length*leng
 
 	// output labels
 	char lbl_unit            [_lbl_sz_];
@@ -150,6 +152,9 @@ typedef struct
 	char lbl_volumetric_force[_lbl_sz_];
 	char lbl_density         [_lbl_sz_];
 	char lbl_viscosity       [_lbl_sz_];
+
+	// From Darcy code
+	char lbl_permeability    [_lbl_sz_];
 
 } Scaling;
 //---------------------------------------------------------------------------

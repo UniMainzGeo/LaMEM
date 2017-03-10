@@ -122,7 +122,7 @@
 // New
 #define GET_Kphi \
 	kphil = jr->svCell[iter++].svBulk.Kphi; \
-	buff[k][j][i] 	= 	kphil;		// get kkphi from svBulk or from Material_t??
+	buff[k][j][i] 	= 	kphil;		// get kphi from svBulk or from Material_t??
 
 // liquid viscosity
 #define GET_mul \
@@ -1480,10 +1480,6 @@ PetscErrorCode GetDarcy_b(JacRes *jr)
 	PetscScalar    	***Ssl;
 
 
-
-	//VecDuplicate(jr->Pl, jr->Darcyb);
-	//VecDuplicate(jr->lPl,jr->Darcylb);
-
 	// Create temporary local vectors
 	ierr = 	DMCreateLocalVector(jr->DA_Pl,&local_b); 				CHKERRQ(ierr);
 	// Copy global solution vector into local vector
@@ -1500,7 +1496,7 @@ PetscErrorCode GetDarcy_b(JacRes *jr)
 
 	// access work vectors
 	ierr = 	DMDAVecGetArray(jr->DA_Pl, local_sol,  &sol);  				CHKERRQ(ierr);
-	ierr = 	DMDAVecGetArray(jr->DA_Pl, local_b,  	&lb);  					CHKERRQ(ierr);
+	ierr = 	DMDAVecGetArray(jr->DA_Pl, local_b,  	&lb);  				CHKERRQ(ierr);
 
 	ierr = DMDAGetCorners(jr->DA_Pl, &sx, &sy, &sz, &nx, &ny, &nz); CHKERRQ(ierr);
 	iter = 0;

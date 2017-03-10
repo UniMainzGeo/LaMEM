@@ -180,6 +180,8 @@ PetscErrorCode ScalingCreate(Scaling *scal)
 		scal->conductivity        = 1.0;
 		scal->heat_production     = 1.0;
 		scal->expansivity         = 1.0;
+		// From Darcy code
+		scal->permeability        = 1.0;   sprintf(scal->lbl_permeability,     "[ ]");
 
 	}
 	else if(scal->utype == _SI_)
@@ -230,6 +232,8 @@ PetscErrorCode ScalingCreate(Scaling *scal)
 		scal->conductivity        = power/length/temperature;
 		scal->heat_production     = power/mass;
 		scal->expansivity         = 1.0/temperature;
+		// From Darcy code
+		scal->permeability        = length*length;            sprintf(scal->lbl_permeability,     "[m2]");
 
 	}
 	else if(scal->utype == _GEO_)
@@ -289,6 +293,8 @@ PetscErrorCode ScalingCreate(Scaling *scal)
 		scal->conductivity        = power/length/temperature;
 		scal->heat_production     = power/mass;
 		scal->expansivity         = 1.0/temperature;
+		// From Darcy code
+		scal->permeability        = length*length;            sprintf(scal->lbl_permeability,     "[m2]");
 
 	}
 
@@ -326,6 +332,11 @@ void ScalingInput(Scaling *scal, UserCtx *user)
 	// temperature
 	user->Temp_top        = (user->Temp_top    + scal->Tshift)/scal->temperature;
 	user->Temp_bottom     = (user->Temp_bottom + scal->Tshift)/scal->temperature;
+
+	// From Darcy code
+	// LiquidPressure
+	user->LiquidPressure_top 	/= scal->stress;
+	user->LiquidPressure_bottom  /= scal->stress;
 
 	// gravity
 	user->Gravity         /= scal->acceleration;
@@ -425,6 +436,11 @@ void ScalingMatProp(Scaling *scal, Material_t *phases, PetscInt numPhases)
 		phases[i].Cp      /= scal->cpecific_heat;
 		phases[i].k       /= scal->conductivity;
 		phases[i].A       /= scal->heat_production;
+
+		// From Darcy code
+								//phases[i].rhol    /= scal->density;
+		phases[i].mu      /= scal->viscosity;
+		phases[i].Kphi    /= scal->permeability;
 	}
 }
 //---------------------------------------------------------------------------
