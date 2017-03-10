@@ -91,5 +91,7 @@ PetscErrorCode InterpXZEdgeCorner(FDSTAG *fs, Vec XZEdge, Vec Corner, InterpFlag
 
 PetscErrorCode InterpYZEdgeCorner(FDSTAG *fs, Vec YZEdge, Vec Corner, InterpFlags iflag);
 
+PetscErrorCode UpdateCoordinatesOnCellCenterDA(DM da, FDSTAG *fs);
+
 //---------------------------------------------------------------------------
 #endif

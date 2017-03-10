@@ -51,6 +51,7 @@
 #include "JacRes.h"
 #include "constEq.h"
 #include "tools.h"
+#include "JacResDarcy.h"
 //---------------------------------------------------------------------------
 #undef __FUNCT__
 #define __FUNCT__ "JacResClear"
@@ -83,6 +84,12 @@ PetscErrorCode JacResSetFromOptions(JacRes *jr)
 	ierr = PetscOptionsHasName(NULL, NULL, "-act_temp_diff", &flg); CHKERRQ(ierr);
 
 	if(flg == PETSC_TRUE) jr->actTemp = PETSC_TRUE;
+
+	// from darcy-code
+	// activate energy equation (diffusion)
+	ierr = PetscOptionsHasName(NULL, NULL, "-act_darcy", &flg); CHKERRQ(ierr);
+	if(flg == PETSC_TRUE) jr->actDarcy = PETSC_TRUE;
+	///////////////////
 
 	// set geometry tolerance
 	ierr = PetscOptionsGetScalar(NULL, NULL, "-geom_tol", &gtol, &flg); CHKERRQ(ierr);
@@ -213,6 +220,11 @@ PetscErrorCode JacResCreate(
 	// switch-off temperature diffusion
 	jr->actTemp = PETSC_FALSE;
 
+	// from darcy-code
+	// switch-off darcy
+	jr->actDarcy= PETSC_FALSE;
+	/////////////////
+
 	// switch off free surface tracking
 	jr->AirPhase = -1;
 
@@ -221,6 +233,11 @@ PetscErrorCode JacResCreate(
 
 	// setup temperature parameters
 	ierr = JacResCreateTempParam(jr); CHKERRQ(ierr);
+
+	// from darcy-code
+	// setup Darcy parameters
+	ierr = JacResCreateDarcyParam(jr); CHKERRQ(ierr);
+	///////////////////
 
 	//==========================
 	// 2D integration primitives
@@ -297,6 +314,11 @@ PetscErrorCode JacResDestroy(JacRes *jr)
 
 	// destroy temperature parameters
 	ierr = JacResDestroyTempParam(jr); CHKERRQ(ierr);
+
+	/// from  darcy-code
+	// Destroy Darcy parameters
+	ierr = JacResDestroyDarcyParam(jr); CHKERRQ(ierr);
+	////////////////////
 
 	//==========================
 	// 2D integration primitives
@@ -1726,7 +1748,7 @@ PetscErrorCode JacResViewRes(JacRes *jr)
 	// show assembled residual with boundary constraints
 	// WARNING! rewrite this function using coupled residual vector directly
 
-	PetscScalar dmin, dmax, d2, e2, fx, fy, fz, f2, div_tol;
+	PetscScalar dmin, dmax, d2, e2, fx, fy, fz, f2, div_tol, r_darcy_Pl_2; 				//, r_darcy_Phi_2;
 
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
@@ -1752,6 +1774,24 @@ PetscErrorCode JacResViewRes(JacRes *jr)
 		ierr = VecNorm(jr->ge, NORM_2, &e2); CHKERRQ(ierr);
 	}
 
+	// from darcy-code
+	if(jr->actDarcy == PETSC_TRUE)
+	{
+		Vec s;
+
+		ierr = DMCreateGlobalVector(jr->fs->DA_CEN, &s); CHKERRQ(ierr);		// create local vector based on center DA, which has one DOF
+
+		// Pull out the liquid vector from the solution vector
+		VecStrideGather(jr->r_Pl,0,s,INSERT_VALUES);					// Fluid pressure residual
+		ierr = VecNorm(s, NORM_2, &r_darcy_Pl_2); CHKERRQ(ierr);
+
+											//VecStrideGather(jr->r_Pl,1,s,INSERT_VALUES);					// Porosity residual
+											//ierr = VecNorm(s, NORM_2, &r_darcy_Phi_2); CHKERRQ(ierr);
+
+		ierr = VecDestroy(&s); CHKERRQ(ierr);
+	}
+	////////////////////////////////////////
+
 	// print
 	PetscPrintf(PETSC_COMM_WORLD, "------------------------------------------\n");
 	PetscPrintf(PETSC_COMM_WORLD, "Residual summary: \n");
@@ -1767,6 +1807,16 @@ PetscErrorCode JacResViewRes(JacRes *jr)
 		PetscPrintf(PETSC_COMM_WORLD, "  Energy: \n" );
 		PetscPrintf(PETSC_COMM_WORLD, "    |eRes|_2 = %12.12e \n", e2);
 	}
+	//from darcy-code
+	if(jr->actDarcy == PETSC_TRUE)
+	{
+									//PetscPrintf(PETSC_COMM_WORLD, "  Darcy/TwoPhase: \n" );
+		PetscPrintf(PETSC_COMM_WORLD, "  Darcy: \n" );
+		PetscPrintf(PETSC_COMM_WORLD, "    |Pl_Res|_2  = %12.12e \n", r_darcy_Pl_2);
+									//PetscPrintf(PETSC_COMM_WORLD, "    |Phi_Res|_2 = %12.12e \n", r_darcy_Phi_2);
+
+	}
+	//////////////////////////////////////////
 
 	PetscPrintf(PETSC_COMM_WORLD, "------------------------------------------\n");
 

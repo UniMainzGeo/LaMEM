@@ -495,3 +495,49 @@ PetscErrorCode InterpYZEdgeCorner(FDSTAG *fs, Vec YZEdge, Vec Corner, InterpFlag
 
 */
 //---------------------------------------------------------------------------
+
+//---------------------------------------------------------------------------
+// from darcy-code
+//---------------------------------------------------------------------------
+#undef __FUNCT__
+#define __FUNCT__ "UpdateCoordinatesOnCellCenterDA"
+PetscErrorCode UpdateCoordinatesOnCellCenterDA(DM da, FDSTAG *fs)
+{
+	// This routine updates the coordinates that are attached to the cell-center
+	// DA (useful as MG automatically interpolates this to coarser levels)
+
+	PetscFunctionBegin;
+
+	PetscErrorCode ierr;
+	PetscInt       i,j,mstart,m,nstart,n,pstart,p,k;
+	PetscInt 	   sx, sy, sz;
+	Vec            local,global;
+	DMDACoor3d     ***coors;
+	DM             cda;
+
+	ierr = DMDAGetCorners(da, &sx, &sy, &sz, NULL,NULL,NULL); 			CHKERRQ(ierr);
+	ierr = DMGetCoordinateDM(da,&cda);									CHKERRQ(ierr);
+	ierr = DMCreateGlobalVector(cda,&global);							CHKERRQ(ierr);
+
+	// Update coordinates for center points
+	ierr = DMDAVecGetArray(cda,global,&coors);							CHKERRQ(ierr);
+	ierr = DMDAGetCorners(cda,&mstart,&nstart,&pstart,&m,&n,&p);		CHKERRQ(ierr);
+	for (i=mstart; i<mstart+m; i++) {
+		for (j=nstart; j<nstart+n; j++) {
+			for (k=pstart; k<pstart+p; k++) {
+	        	 // use our internal routines to get this information.
+	        	 // WARNING: GHOST points are not set with this method!
+	        	 coors[k][j][i].x = COORD_CELL(i, sx, fs->dsx);
+	        	 coors[k][j][i].y = COORD_CELL(j, sy, fs->dsy);
+	        	 coors[k][j][i].z = COORD_CELL(k, sz, fs->dsz);
+	       }
+		}
+	}
+	ierr = DMDAVecRestoreArray(cda,	global,	&coors);					CHKERRQ(ierr);
+	ierr = DMSetCoordinates(da, global);								CHKERRQ(ierr);
+
+	// cleanup
+	ierr = VecDestroy(&global);	CHKERRQ(ierr);
+
+	PetscFunctionReturn(0);
+}

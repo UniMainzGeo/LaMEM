@@ -118,8 +118,8 @@ typedef struct
 	TSSol    *ts;   // time stepping parameters
 	Scaling  *scal; // scaling parameters
 
-	// boundary conditions vectors (velocity, pressure, temperature)
-	Vec bcvx, bcvy, bcvz, bcp, bcT; // local (ghosted)
+	// boundary conditions vectors (velocity, pressure, temperature, liquid pressure)
+	Vec bcvx, bcvy, bcvz, bcp, bcT, bcPl; // local (ghosted)
 
 	// single-point constraints
 	ShiftType    stype;   // current index shift type
@@ -144,6 +144,16 @@ typedef struct
 
 	// temperature on top and bottom boundaries
 	PetscScalar  Tbot, Ttop;
+
+	// from darcy-code
+	// LiquidPressure/Darcy
+	PetscInt     Pl_NumSPC;
+	PetscInt    *Pl_SPCList;
+	PetscScalar *Pl_SPCVals;
+
+	// LiquidPressure on top and bottom boundaries
+	PetscScalar  Pl_bot, Pl_top;
+	/////////////////////
 
 	// horizontal background strain-rate parameters
 	PetscBool    ExxAct;

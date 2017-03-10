@@ -69,6 +69,7 @@
 #include "AVDView.h"
 #include "break.h"
 #include "parsing.h"
+#include "JacResDarcy.h"
 //---------------------------------------------------------------------------
 #undef __FUNCT__
 #define __FUNCT__ "LaMEMLib"
@@ -223,6 +224,16 @@ PetscErrorCode LaMEMLib(ModParam *IOparam)
 	// check thermal material parameters
 	ierr = JacResCheckTempParam(&jr); CHKERRQ(ierr);
 
+
+	// from darcy-code
+	// check Darcy material parameters (if activated)
+	ierr = JacResCheckDarcyParam(&jr); CHKERRQ(ierr);
+
+	// Create BC's for Darcy solver (if applicable)
+	ierr = BCCreateDarcy(&jr, &bc); 	CHKERRQ(ierr);
+	///////////////////////////////////////
+
+
 	// update phase ratios taking into account actual free surface position
 	ierr = FreeSurfGetAirPhaseRatio(&surf); CHKERRQ(ierr);
 
@@ -328,6 +339,25 @@ PetscErrorCode LaMEMLib(ModParam *IOparam)
 			// just evaluate initial residual
 			ierr = FormResidual(snes, jr.gsol, jr.gres, &nl); CHKERRQ(ierr);
 		}
+
+		// from darcy-code
+		if (jr.actDarcy){
+
+			// Update coordinates of darcy DA
+			ierr = UpdateDarcy_DA(&jr);				CHKERRQ(ierr);
+
+			ierr = GetDarcy_b(&jr);				CHKERRQ(ierr);
+
+			// Solve DARCY
+			//ierr = SNESSolve(jr.Pl_snes,NULL,jr.Pl);				CHKERRQ(ierr);							// solve nonlinear problem
+
+			// New
+			ierr = SNESSolve(jr.Pl_snes,jr.Darcyb,jr.Pl);				CHKERRQ(ierr);							// solve nonlinear problem
+
+			// update solution (mainly for plotting)
+			ierr = JacResUpdateDarcy(&jr);                        CHKERRQ(ierr);
+		}
+		////////////////////////////////////////////////////////
 
 		// switch off initial guess flag
 		if(!JacResGetStep(&jr))

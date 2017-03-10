@@ -736,6 +736,12 @@ PetscErrorCode BCDestroy(BCCtx *bc)
 	ierr = PetscFree(bc->tSPCList); CHKERRQ(ierr);
 	ierr = PetscFree(bc->tSPCVals); CHKERRQ(ierr);
 
+	//from darcy-code
+	// SPC (LiquidPressure/Darcy)
+	ierr = PetscFree(bc->Pl_SPCList); CHKERRQ(ierr);
+	ierr = PetscFree(bc->Pl_SPCList); CHKERRQ(ierr);
+	/////////////////
+
 	// two-point constraints
 //	ierr = PetscFree(bc->TPCList);      CHKERRQ(ierr);
 //	ierr = PetscFree(bc->TPCPrimeDOF);  CHKERRQ(ierr);

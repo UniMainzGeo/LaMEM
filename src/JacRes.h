@@ -151,6 +151,31 @@ typedef struct
 	Vec lp_lithos;          // lithostatic pressure
 	Vec lp_pore;            // pore pressure
 
+
+
+	//from darcy-code
+	//=======================
+	// Darcy parameters
+	//=======================
+
+	PetscBool actDarcy;  // Darcy activation flag
+
+	DM  DA_Pl; 		// LiquidPressure cell-centered grid with star stencil
+	Mat App;  		// LiquidPressure preconditioner matrix
+	Vec Pl;   		// LiquidPressure (global)
+	Vec lPl;   		// LiquidPressure (local)
+	Vec r_Pl;   	// LiquidPressure residual (global)
+	Vec lr_Pl;   	// LiquidPressure residual (local)
+
+	// New
+	Vec Darcyb;  //
+	Vec Darcylb; //
+
+	SNES Pl_snes; 	// LiquidPressure steady state diffusion solver
+
+	//	Vec lPhi;   	// Porosity (box stencil, active even without diffusion)
+	//	Vec Phi;   		// Porosity (global)
+
 } JacRes;
 //---------------------------------------------------------------------------
 
