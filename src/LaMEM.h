@@ -51,10 +51,11 @@
 // DEFINITIONS
 //-----------------------------------------------------------------------------
 
-#define max_num_phases 32 // max no of phases
-#define max_num_soft   10 // max no of soft laws
-#define MaxNumCPU      524288
-#define MaxNumSteps    1000000
+#define max_num_phases  32 // max no of phases
+#define max_num_soft    10 // max no of soft laws
+#define max_num_ptdepth 10 // max no of depth phase transformations
+#define MaxNumCPU       524288
+#define MaxNumSteps     1000000
 
 // maximum number of mesh segments in every direction
 #define MaxNumMeshSegs 10

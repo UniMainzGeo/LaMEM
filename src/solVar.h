@@ -166,6 +166,20 @@ typedef struct
 } Soft_t;
 
 //---------------------------------------------------------------------------
+//......................  Depth Phase Transformations  ......................
+//---------------------------------------------------------------------------
+
+typedef struct
+{
+	PetscInt     ID;      // phase transformation ID
+	PetscInt     n;       // number of phase transformations at depth
+	PetscScalar  ptdepth; // depth of transformation
+	PetscInt     phaseup[ _max_path_points_ ]; // phase id above the depth
+	PetscInt     phasedn[ _max_path_points_ ]; // phase id below the depth
+
+} PTdepth_t;
+
+//---------------------------------------------------------------------------
 //......................   Material parameter table   .......................
 //---------------------------------------------------------------------------
 

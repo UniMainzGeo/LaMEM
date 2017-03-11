@@ -341,6 +341,9 @@ PetscErrorCode JacResInitScale(JacRes *jr, UserCtx *usr)
 	// scale material parameters
 	ScalingMatProp(&jr->scal, jr->phases, jr->numPhases);
 
+	// scale depth for phase transitions
+	ScalingDepthPhase(&jr->scal, jr->matPTdepth, jr->numPTdepth);
+
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------

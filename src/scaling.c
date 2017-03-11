@@ -450,3 +450,15 @@ void ScalingMeshSegDir(Scaling *scal, MeshSegInp *msi)
 	}
 }
 //---------------------------------------------------------------------------
+// scaling depth for phase transitions
+void ScalingDepthPhase(Scaling *scal, PTdepth_t *matPTdepth, PetscInt numPTdepth)
+{
+	PetscInt     i;
+
+	// scale dimensional parameters
+	for(i = 0; i < numPTdepth; i++)
+	{
+		matPTdepth[i].ptdepth     /= scal->length;
+	}
+}
+//---------------------------------------------------------------------------

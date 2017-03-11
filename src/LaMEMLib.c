@@ -213,6 +213,9 @@ PetscErrorCode LaMEMLib(ModParam *IOparam)
 	// initialize influx markers
 	ierr = ADVMarkInitInfluxBC(&actx, &user); CHKERRQ(ierr);
 
+	// check depth phase transitions - initial full check
+	ierr = ADVCheckPhaseDepth(&actx, surf.InitLevel); CHKERRQ(ierr);
+
 	// change marker phase when crossing free surface
 	ierr = ADVMarkCrossFreeSurf(&actx, &surf, 0.05); CHKERRQ(ierr);
 
@@ -372,6 +375,9 @@ PetscErrorCode LaMEMLib(ModParam *IOparam)
 
 		// remap markers onto (stretched) grid
 		ierr = ADVRemap(&actx, &surf); CHKERRQ(ierr);
+
+		// check phase transitions with depth
+		ierr = ADVCheckPhaseDepth(&actx, surf.InitLevel); CHKERRQ(ierr);
 
 		// update phase ratios taking into account actual free surface position
 		ierr = FreeSurfGetAirPhaseRatio(&surf); CHKERRQ(ierr);

@@ -75,6 +75,18 @@ PetscErrorCode MatSoftGetStruct(FILE *fp,
 	PetscInt ils, PetscInt ile);
 
 //---------------------------------------------------------------------------
+//..................... DEPTH PHASE TRANSFORMATIONS .........................
+//---------------------------------------------------------------------------
+
+// read all softening laws
+PetscErrorCode PhaseDepthInit(JacRes *jr, FILE *fp);
+
+// read single softening laws
+PetscErrorCode PhaseDepthGetStruct(FILE *fp,
+	PetscInt numPTdepth, PTdepth_t *matPTdepth,
+	PetscInt ils, PetscInt ile);
+
+//---------------------------------------------------------------------------
 //............ PREDEFINED RHEOLOGICAL PROFILES (from literature) ............
 //---------------------------------------------------------------------------
 typedef enum

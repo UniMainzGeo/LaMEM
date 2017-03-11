@@ -167,6 +167,9 @@ void ScalingInput(Scaling *scal, UserCtx *user);
 // scaling material parameters
 void ScalingMatProp(Scaling *scal, Material_t *phases, PetscInt numPhases);
 
+// scaling depth for phase transitions
+void ScalingDepthPhase(Scaling *scal, PTdepth_t *matPTdepth, PetscInt numPTdepth);
+
 // scaling material parameter limits
 void ScalingMatParLim(Scaling *scal, MatParLim *matLim);
 

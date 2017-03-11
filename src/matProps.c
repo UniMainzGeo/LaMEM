@@ -705,6 +705,118 @@ PetscErrorCode MatSoftGetStruct(FILE *fp,
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
+#undef __FUNCT__
+#define __FUNCT__ "PhaseDepthInit"
+PetscErrorCode PhaseDepthInit(JacRes *jr, FILE *fp)
+{
+	// initialize depth phase transformations from file
+
+	PetscInt    *ls,*le;
+	PetscInt     i, count_starts, count_ends;
+
+	PetscErrorCode ierr;
+	PetscFunctionBegin;
+
+	// print overview of depth phase transformations from file
+	PetscPrintf(PETSC_COMM_WORLD,"Reading depth phase tranformations: \n\n");
+
+	// clear memory
+	ierr = PetscMemzero(jr->matPTdepth, sizeof(PTdepth_t)*(size_t)max_num_ptdepth); CHKERRQ(ierr);
+
+	// initialize ID for consistency checks
+	for(i = 0; i < max_num_ptdepth; i++)
+	{
+		jr->matPTdepth[i].ID = -1;
+	}
+
+	// allocate memory for arrays to store line info
+	ierr = makeIntArray(&ls, NULL, max_num_ptdepth); CHKERRQ(ierr);
+	ierr = makeIntArray(&le, NULL, max_num_ptdepth); CHKERRQ(ierr);
+
+	// read number of entries
+	getLineStruct(fp, ls, le, max_num_ptdepth, &count_starts, &count_ends, "<PhaseDepthStart>", "<PhaseDepthEnd>");
+
+	// error checking
+	if(count_starts > max_num_ptdepth || count_ends > max_num_ptdepth)
+	{
+		SETERRQ1(PETSC_COMM_SELF, PETSC_ERR_USER, "Too many depths for phase tranformations specified! Max allowed: %lld", (LLD)max_num_ptdepth);
+	}
+	if(count_starts != count_ends)
+	{
+		SETERRQ(PETSC_COMM_SELF, PETSC_ERR_USER, "Incomplete material structures! <PhaseDepthStart> & <PhaseDepthEnd> don't match");
+	}
+
+	// store actual number of depth phase transformations
+	jr->numPTdepth = count_starts;
+
+	// read each individual depth phase transformations
+	for(i = 0; i < jr->numPTdepth; i++)
+	{
+		ierr = PhaseDepthGetStruct(fp, jr->numPTdepth, jr->matPTdepth, ls[i], le[i]); CHKERRQ(ierr);
+	}
+
+	// free arrays
+	ierr = PetscFree(ls); CHKERRQ(ierr);
+	ierr = PetscFree(le); CHKERRQ(ierr);
+
+	PetscFunctionReturn(0);
+}
+//---------------------------------------------------------------------------
+#undef __FUNCT__
+#define __FUNCT__ "PhaseDepthGetStruct"
+PetscErrorCode PhaseDepthGetStruct(FILE *fp,
+		PetscInt numPTdepth, PTdepth_t *matPTdepth,
+		PetscInt ils, PetscInt ile)
+{
+	// read depth phase transformations from file
+
+	PTdepth_t   *pt;
+	PetscInt  found, ID, i;
+
+	PetscFunctionBegin;
+
+	// softening law ID
+	getMatPropInt(fp, ils, ile, "ptID", &ID, &found);
+
+	// error checking
+	if(!found)
+	{
+		SETERRQ(PETSC_COMM_SELF, PETSC_ERR_USER, "No depth phase tranformation ID specified! ");
+	}
+	if(ID > numPTdepth - 1)
+	{
+		SETERRQ(PETSC_COMM_SELF, PETSC_ERR_USER, "Incorrect depth phase tranformations numbering!");
+	}
+
+	// get pointer to specified depth phase tranformation
+	pt = matPTdepth + ID;
+
+	// check ID
+	if(pt->ID != -1)
+	{
+		SETERRQ(PETSC_COMM_SELF, PETSC_ERR_USER, "Incorrect depth phase tranformations numbering!");
+	}
+
+	// set ID
+	pt->ID = ID;
+
+	// read and store depth phase tranformations parameters
+	getMatPropInt     (fp, ils, ile, "npt",      &pt->n,              &found);
+	getMatPropScalar  (fp, ils, ile, "ptdepth",  &pt->ptdepth,        &found);
+	getMatPropIntArray(fp, ils, ile, "phase_up", &pt->n, pt->phaseup, &found);
+	getMatPropIntArray(fp, ils, ile, "phase_dn", &pt->n, pt->phasedn, &found);
+
+	// print info
+	PetscPrintf(PETSC_COMM_WORLD,"Depth Phase Transformation [%lld]: depth = %g [km], transformations = %lld, phases ", (LLD)(pt->ID), pt->ptdepth, (LLD)pt->n);
+	for (i = 0; i < pt->n; i++) 
+	{
+		PetscPrintf(PETSC_COMM_WORLD, "(%lld - %lld) ", (LLD)(pt->phaseup[i]),(LLD)(pt->phasedn[i]) );
+	}
+	PetscPrintf(PETSC_COMM_WORLD, "\n \n");
+
+	PetscFunctionReturn(0);
+}
+//---------------------------------------------------------------------------
 // set diffusion creep profiles from literature
 #undef __FUNCT__
 #define __FUNCT__ "SetDiffProfile"
@@ -1344,11 +1456,8 @@ void getMatPropInt(FILE *fp, PetscInt ils, PetscInt ile,
 
 			int_val = (PetscInt)strtol( line, NULL, 0 );
 
-			if(found)
-			{
-				(*found) = _TRUE;
-				(*value) = int_val;
-			}
+			if(found) (*found) = _TRUE;
+			(*value) = int_val;
 
 			return;
 		}
@@ -1397,11 +1506,8 @@ void getMatPropScalar(FILE *fp, PetscInt ils, PetscInt ile,
 
 			double_val = (PetscScalar)strtod( line, NULL );
 
-			if(found)
-			{
-				(*found) = _TRUE;
-				(*value) = double_val;
-			}
+			if(found) (*found) = _TRUE;
+			(*value) = double_val;
 
 			return;
 		}

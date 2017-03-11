@@ -2016,6 +2016,80 @@ PetscErrorCode ADVCheckMarkPhases(AdvCtx *actx, PetscInt numPhases)
 }
 //---------------------------------------------------------------------------
 #undef __FUNCT__
+#define __FUNCT__ "ADVCheckPhaseDepth"
+PetscErrorCode ADVCheckPhaseDepth(AdvCtx *actx, PetscScalar InitLevel)
+{
+	// check phase transitions depth
+	FDSTAG      *fs;
+	JacRes      *jr;
+	Marker      *P;
+	PetscInt     i, ii, jj;
+	PetscInt     phup, phdn, n;
+	PetscScalar  hmax, ptdepth, zp, surf; 
+
+	PetscFunctionBegin;
+
+	fs = actx->fs;
+	jr = actx->jr;
+
+	// return if no phase transitions with depth
+	if (!jr->numPTdepth) PetscFunctionReturn(0);
+
+	// set buffer depth
+	if (jr->ts.istep==0) 
+	{
+		// do a full check during initialization (allows user to not specify phase transitions in the model setup)
+		hmax = fs->dsz.crdend - fs->dsz.crdbeg;
+		PetscPrintf(PETSC_COMM_WORLD,"# Performing a full check for Depth Phase Transitions \n");
+	}
+	else
+	{
+		// buffer depth - assumes that markers do not cross more than 1 cell vertically in one timestep
+		hmax = fs->dsz.h_max;
+		PetscPrintf(PETSC_COMM_WORLD,"# Performing local check for Depth Phase Transitions \n");
+	}
+
+	// WARNING: Phase transition depth is defined physically (i.e. 410, 660 km) and must match the domain coord
+	// take into account free surface or free slip (assumes surface = 0 km)
+	if (!InitLevel) surf = fs->dsz.crdend;
+	else            surf = InitLevel;
+
+	// change marker phase when crossing a phase transition
+	for (i = 0; i < jr->numPTdepth; i++)
+	{
+		ptdepth = surf - jr->matPTdepth[i].ptdepth;
+		n       = jr->matPTdepth[i].n;
+
+		// scan all markers
+		for (jj = 0; jj < actx->nummark; jj++)
+		{
+			// access next marker
+			P = &actx->markers[jj];
+
+			// get marker coordinates
+			zp = P->X[2];
+
+			// check markers around the PT depth
+			if (zp > ptdepth-hmax && zp < ptdepth+hmax)
+			{
+				// check all phase transformations
+				for (ii = 0; ii < n; ii++)
+				{
+					phup = jr->matPTdepth[i].phaseup[ii];
+					phdn = jr->matPTdepth[i].phasedn[ii];
+
+					// change id if necessary
+					if (P->phase==phup && zp < ptdepth) P->phase = phdn;
+					if (P->phase==phdn && zp > ptdepth) P->phase = phup;
+				}
+			}
+		}
+	}
+
+	PetscFunctionReturn(0);
+}
+//---------------------------------------------------------------------------
+#undef __FUNCT__
 #define __FUNCT__ "ADVAnalytics"
 PetscErrorCode ADVAnalytics(AdvCtx *actx)
 {

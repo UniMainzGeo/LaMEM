@@ -115,7 +115,6 @@ PetscErrorCode FreeSurfCreate(FreeSurf *surf, JacRes *jr, UserCtx *user)
 	ierr = VecSet(surf->ltopo, surf->InitLevel); CHKERRQ(ierr);
 	ierr = VecSet(surf->gtopo, surf->InitLevel); CHKERRQ(ierr);
 
-
 	// Set topo rom file if a Topo file is specified in the input
 	PetscPrintf(PETSC_COMM_WORLD, "FileName: %s\n",user->TopoFilename);
 	if(strcmp(user->TopoFilename,"noTopoFileName")!=0)
@@ -123,7 +122,6 @@ PetscErrorCode FreeSurfCreate(FreeSurf *surf, JacRes *jr, UserCtx *user)
 		ierr = FreeSurfSetTopoFromFile(surf,user);
 		CHKERRQ(ierr);
 	}
-
 
 	PetscFunctionReturn(0);
 }

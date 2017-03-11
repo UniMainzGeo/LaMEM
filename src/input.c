@@ -302,6 +302,9 @@ PetscErrorCode FDSTAGInitCode(JacRes *jr, UserCtx *user, ModParam *iop)
 			// read bezier parameter from file
 			ierr = BezierInputReadFile(user,fp); CHKERRQ(ierr);
 
+			// read depth phase transitions from file
+			ierr = PhaseDepthInit(jr, fp); CHKERRQ(ierr);
+
 			// read softening laws from file
 			ierr = MatSoftInit(jr, fp); CHKERRQ(ierr);
 
