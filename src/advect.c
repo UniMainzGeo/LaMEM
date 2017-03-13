@@ -1839,7 +1839,10 @@ PetscErrorCode ADVMarkCrossFreeSurf(AdvCtx *actx, FreeSurf *surf, PetscScalar to
 			else
 			{
 				// put marker below the free surface
-				//	P->X[2] = topo - tol*(zp - topo);
+				P->X[2] = topo - tol*(zp - topo);
+
+				// correct phase
+				//P->phase = AirPhase;
 			}
 		}
 
