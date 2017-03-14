@@ -62,7 +62,7 @@ struct SolVarDev
 {
 	PetscScalar  DII;   // effective strain rate
 	PetscScalar  eta;   // effective tangent viscosity
-	PetscScalar  I2Gdt; // inverse elastic viscosity (1/2G/dt)
+	PetscScalar  I2Gdt; // inverse elastic parameter (1/2G/dt)
 	PetscScalar  Hr;    // shear heating term (partial)
 	PetscScalar  DIIpl; // plastic strain rate
 	PetscScalar  APS;   // accumulated plastic strain
@@ -80,7 +80,7 @@ struct SolVarBulk
 {
 	PetscScalar  theta; // volumetric strain rate
 	PetscScalar  rho;   // strain- & temperature-dependent density
-	PetscScalar  IKdt;  // inverse bulk elastic viscosity (1/K/dt)
+	PetscScalar  IKdt;  // inverse bulk elastic parameter (1/K/dt)
 	PetscScalar  alpha; // effective thermal expansion
 	PetscScalar  Tn;    // history temperature
 	PetscScalar  pn;    // history pressure
@@ -258,13 +258,13 @@ PetscErrorCode JacResWriteRestart(JacRes *jr, FILE *fp);
 // destroy residual & Jacobian evaluation context
 PetscErrorCode JacResDestroy(JacRes *jr);
 
-// compute effective inverse elastic viscosity
+// update time step flags
 PetscErrorCode JacResUpdateFlags(JacRes *jr);
 
 // form residual vector
 PetscErrorCode JacResFormResidual(JacRes *jr, Vec x, Vec f);
 
-// compute effective inverse elastic viscosity
+// compute effective inverse elastic parameter
 PetscErrorCode JacResGetI2Gdt(JacRes *jr);
 
 // get average pressure near the top surface

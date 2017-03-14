@@ -69,7 +69,6 @@ PetscErrorCode FreeSurfCreate(FreeSurf *surf, FB *fb)
 	PetscFunctionBegin;
 
 	// initialize
-	surf->UseFreeSurf =  1;
 	surf->phaseCorr   =  1;
 	surf->AirPhase    = -1;
 

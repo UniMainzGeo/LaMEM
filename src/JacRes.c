@@ -190,10 +190,10 @@ PetscErrorCode JacResCreate(JacRes *jr, FB *fb)
 
 	}
 
-	// activate elasticity-compliant time-stepping
-	if(is_elastic)
+	// fix advection time steps for elasticity or kinematic block BC
+	if(is_elastic || jr->bc->nblocks)
 	{
-		ierr = TSSolSetupElasticity(jr->ts); CHKERRQ(ierr);
+		jr->ts->fix_dt = 1;
 	}
 
 	if(need_DII_ref && !ctrl->DII_ref)
@@ -526,8 +526,7 @@ PetscErrorCode JacResUpdateFlags(JacRes *jr)
 #define __FUNCT__ "JacResGetI2Gdt"
 PetscErrorCode JacResGetI2Gdt(JacRes *jr)
 {
-	// compute average inverse elastic viscosity in the integration points
-	// WARNING! this should be replaced by the effective elastic strain rates
+	// compute average inverse elastic parameter in the integration points
 
 	FDSTAG     *fs;
 	SolVarCell *svCell;
@@ -2000,13 +1999,7 @@ PetscErrorCode JacResSelectTimeStep(JacRes *jr, PetscInt *restart)
 	}
 
 	// select new time step
-	ierr = TSSolSelectStep(ts, gidtmax, restart); CHKERRQ(ierr);
-
-	if(!(*restart))
-	{
-		// update time stamp and counter
-		ierr = TSSolStepForward(ts); CHKERRQ(ierr);
-	}
+	ierr = TSSolGetCFLStep(ts, gidtmax, restart); CHKERRQ(ierr);
 
 	PetscFunctionReturn(0);
 }

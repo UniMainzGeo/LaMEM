@@ -106,7 +106,7 @@ PetscErrorCode GetEffVisc(
 // apply strain softening to a parameter (friction, cohesion)
 PetscScalar ApplyStrainSoft(Soft_t *soft, PetscInt ID, PetscScalar APS, PetscScalar par);
 
-// compute inverse elastic viscosity in control volume
+// compute inverse elastic parameter in control volume
 PetscScalar GetI2Gdt(
 	PetscInt     numPhases,
 	Material_t  *phases,

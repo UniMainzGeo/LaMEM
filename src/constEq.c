@@ -396,7 +396,7 @@ PetscScalar ApplyStrainSoft(Soft_t *soft, PetscInt ID, PetscScalar APS, PetscSca
 	return par*k;
 }
 //---------------------------------------------------------------------------
-// compute inverse deviatoric elastic viscosity
+// compute inverse deviatoric elastic parameter
 PetscScalar GetI2Gdt(
 	PetscInt     numPhases,
 	Material_t  *phases,
@@ -517,7 +517,7 @@ PetscErrorCode VolConstEq(
 
 	PetscFunctionBegin;
 
-	// initialize effective density, thermal expansion & inverse bulk elastic viscosity
+	// initialize effective density, thermal expansion & inverse bulk elastic parameter
 	svBulk->rho   = 0.0;
 	svBulk->alpha = 0.0;
 	svBulk->IKdt  = 0.0;
@@ -572,7 +572,7 @@ PetscErrorCode VolConstEq(
 				rho = mat->rho*cf_comp*cf_therm;
 			}
 
-			// update density, thermal expansion & inverse bulk elastic viscosity
+			// update density, thermal expansion & inverse bulk elastic parameter
 			svBulk->rho   += phRat[i]*rho;
 			svBulk->alpha += phRat[i]*mat->alpha;
 		}

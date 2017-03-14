@@ -48,14 +48,6 @@
 # Boundary conditions
 #===============================================================================
 
-# Free surface top boundary flag
-
-#	open_top_bound = 1
-
-# No-slip boundary flag mask (left right front back bottom top)
-
-#	noslip = 0 0 1 1 0 0
-
 # Temperature on the top and bottom boundaries
 
 	temp_top = 0.0
@@ -90,10 +82,15 @@
 
 # Geometric primtives:
 
-	<BoxStart>
+#	<BoxStart>
+#		phase  = 1
+#		bounds = 0.25 0.75 0.25 0.75 0.25 0.75  # (left, right, front, back, bottom, top)
+#	<BoxEnd>
+
+	<HexStart>
 		phase  = 1
-		bounds = 0.25 0.75 0.25 0.75 0.25 0.75  # (left, right, front, back, bottom, top)
-	<BoxEnd>
+		coord = 0.25 0.25 0.25   0.75 0.25 0.25   0.75 0.75 0.25   0.25 0.75 0.25   0.25 0.25 0.75   0.75 0.25 0.75   0.75 0.75 0.75   0.25 0.75 0.75
+	<HexEnd>
 
 #===============================================================================
 # Output
@@ -106,9 +103,9 @@
 
 # AVD phase viewer output options (requires activation)
 
-#	out_avd     = 1 # activate AVD phase output
-#	out_avd_pvd = 1 # activate writing .pvd file
-#	out_avd_ref = 3 # AVD grid refinement factor
+	out_avd     = 1 # activate AVD phase output
+	out_avd_pvd = 1 # activate writing .pvd file
+	out_avd_ref = 3 # AVD grid refinement factor
 
 #===============================================================================
 # Material phase parameters
@@ -150,7 +147,6 @@
 	-pcmat_pgamma 	1e5				# penalty parameter
 	-jp_type 		user
 	-jp_pc_type 	lu
-	-jp_pc_factor_mat_solver_package mumps
 
 	-objects_dump
 

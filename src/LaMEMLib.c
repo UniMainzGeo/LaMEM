@@ -517,6 +517,9 @@ PetscErrorCode LaMEMLibSaveOutput(LaMEMLib *lm)
 	// Save data to disk
 	//==================
 
+	Scaling    *scal;
+	TSSol      *ts;
+
 	PetscScalar time;
 	PetscInt    step;
 	char       *dirName;
@@ -524,9 +527,13 @@ PetscErrorCode LaMEMLibSaveOutput(LaMEMLib *lm)
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
 
-	time = TSSolGetScaledTime(&lm->ts);
+	scal = &lm->scal;
+	ts   = &lm->ts;
 
-	if(!TSSolIsOutput(&lm->ts)) PetscFunctionReturn(0);
+	if(!TSSolIsOutput(ts)) PetscFunctionReturn(0);
+
+	time = ts->time*scal->time;
+	step = ts->istep;
 
 	// create directory (encode current time & step number)
 	asprintf(&dirName, "Timestep_%1.8lld_%1.8e", (LLD)step, time);
@@ -556,6 +563,8 @@ PetscErrorCode LaMEMLibSaveOutput(LaMEMLib *lm)
 #define __FUNCT__ "LaMEMLibSolve"
 PetscErrorCode LaMEMLibSolve(LaMEMLib *lm, void *param)
 {
+	// !!! SEPARATE INITIAL GUESS !!!
+
 	PMat           pm;     // preconditioner matrix    (to be removed!)
 	PCStokes       pc;     // Stokes preconditioner    (to be removed!)
 	NLSol          nl;     // nonlinear solver context (to be removed!)
@@ -590,7 +599,7 @@ PetscErrorCode LaMEMLibSolve(LaMEMLib *lm, void *param)
 		// initialize temperature
 		ierr = JacResInitTemp(&lm->jr); CHKERRQ(ierr);
 
-		// compute inverse elastic viscosities (dependent on dt)
+		// compute elastic parameters
 		ierr = JacResGetI2Gdt(&lm->jr); CHKERRQ(ierr);
 
 		// solve nonlinear equation system with SNES
@@ -615,7 +624,7 @@ PetscErrorCode LaMEMLibSolve(LaMEMLib *lm, void *param)
 		// calculate current time step
 		ierr = JacResSelectTimeStep(&lm->jr, &restart); CHKERRQ(ierr);
 
-		// restart if elastic time step is larger than CFL
+		// restart if fixed time step is larger than CFLMAX
 		if(restart) continue;
 
 		// advect free surface
@@ -645,6 +654,9 @@ PetscErrorCode LaMEMLibSolve(LaMEMLib *lm, void *param)
 		//==================
 		// Save data to disk
 		//==================
+
+		// update time stamp and counter
+		ierr = TSSolStepForward(&lm->ts); CHKERRQ(ierr);
 
 		// grid & marker output
 		ierr = LaMEMLibSaveOutput(lm); CHKERRQ(ierr);

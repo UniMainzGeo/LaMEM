@@ -98,7 +98,7 @@ PetscErrorCode BCBlockGetPosition(BCBlock *bcb, PetscScalar t, PetscInt *f, Pets
 	// compute position along the path and rotation angle as a function of time
 
 	PetscInt      i, n;
-    PetscScalar   r, r2, r3, s, s2, s3;
+	PetscScalar   r, r2, r3, s, s2, s3;
 	PetscScalar  *p1, *p2, *p3, *p4;
 	PetscScalar  *path, *theta, *time;
 
@@ -124,10 +124,10 @@ PetscErrorCode BCBlockGetPosition(BCBlock *bcb, PetscScalar t, PetscInt *f, Pets
 	// compute interpolation parameters
 	r  = (t - time[i])/(time[i+1] - time[i]);
 	r2 = r*r;
-    r3 = r2*r;
-    s  = 1.0 - r;
-    s2 = s*s;
-    s3 = s2*s;
+	r3 = r2*r;
+	s  = 1.0 - r;
+	s2 = s*s;
+	s3 = s2*s;
 
 	// interpolate Bezier path and rotation angle
 	X[0] = s3*p1[0] + 3.0*s2*r*p2[0] + 3.0*s*r2*p3[0] + r3*p4[0];
