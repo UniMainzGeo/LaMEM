@@ -150,7 +150,7 @@ PetscErrorCode PVSurfWriteTimeStep(PVSurf *pvsurf, const char *dirName, PetscSca
 	if(!pvsurf->outsurf) PetscFunctionReturn(0);
 
 	// update .pvd file if necessary
-	ierr = UpdatePVDFile(dirName, pvsurf->outfile, "pvts", &pvsurf->offset, ttime, &pvsurf->outpvd); CHKERRQ(ierr);
+	ierr = UpdatePVDFile(dirName, pvsurf->outfile, "pvts", &pvsurf->offset, ttime, pvsurf->outpvd); CHKERRQ(ierr);
 
 	// write parallel data .pvts file
 	ierr = PVSurfWritePVTS(pvsurf, dirName); CHKERRQ(ierr);

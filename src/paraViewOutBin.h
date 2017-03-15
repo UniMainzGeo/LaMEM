@@ -242,7 +242,7 @@ void WriteXMLHeader(FILE *fp, const char *file_type);
 // WARNING! this is potential bottleneck, get rid of writing every time-step
 PetscErrorCode UpdatePVDFile(
 		const char *dirName, const char *outfile, const char *ext,
-		long int *offset, PetscScalar ttime, PetscInt *outpvd);
+		long int *offset, PetscScalar ttime, PetscInt outpvd);
 
 //---------------------------------------------------------------------------
 #endif

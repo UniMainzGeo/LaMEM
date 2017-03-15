@@ -790,7 +790,7 @@ PetscErrorCode PVAVDWriteTimeStep(PVAVD *pvavd, const char *dirName, PetscScalar
 	ierr = AVDViewCreate(&A, pvavd->actx, pvavd->refine); CHKERRQ(ierr);
 
 	// update .pvd file if necessary
-	ierr = UpdatePVDFile(dirName, pvavd->outfile, "pvtr", &pvavd->offset, ttime, &pvavd->outpvd); CHKERRQ(ierr);
+	ierr = UpdatePVDFile(dirName, pvavd->outfile, "pvtr", &pvavd->offset, ttime, pvavd->outpvd); CHKERRQ(ierr);
 
 	ierr = PVAVDWritePVTR(pvavd, A, dirName); CHKERRQ(ierr);
 

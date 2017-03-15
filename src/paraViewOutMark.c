@@ -96,7 +96,7 @@ PetscErrorCode PVMarkWriteTimeStep(PVMark *pvmark, const char *dirName, PetscSca
 	if(!pvmark->outmark) PetscFunctionReturn(0);
 
 	// update .pvd file if necessary
-	ierr = UpdatePVDFile(dirName, pvmark->outfile, "pvtu", &pvmark->offset, ttime, &pvmark->outpvd); CHKERRQ(ierr);
+	ierr = UpdatePVDFile(dirName, pvmark->outfile, "pvtu", &pvmark->offset, ttime, pvmark->outpvd); CHKERRQ(ierr);
 
 	// write parallel data .pvtu file
 	ierr = PVMarkWritePVTU(pvmark, dirName); CHKERRQ(ierr);
