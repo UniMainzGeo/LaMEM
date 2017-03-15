@@ -234,6 +234,11 @@ PetscErrorCode JacResCreate(JacRes *jr, FB *fb)
 		SETERRQ(PETSC_COMM_SELF, PETSC_ERR_USER, "Analytical Jacobian requires open top boundary (jac_mat_free, open_top_bound) \n");
 	}
 
+	if(ctrl->initGuess && !ctrl->eta_ref)
+	{
+		SETERRQ(PETSC_COMM_SELF, PETSC_ERR_USER, "Specify reference viscosity for initial guess (init_guess, eta_ref) \n");
+	}
+
 	// scale parameters
 	// NOTE: scale gas constant with characteristic temperature
 	ctrl->eta_min     /=  scal->viscosity;
@@ -499,25 +504,6 @@ PetscErrorCode JacResFormResidual(JacRes *jr, Vec x, Vec f)
 
 	// copy residuals to global vector
 	ierr = JacResCopyRes(jr, f); CHKERRQ(ierr);
-
-	PetscFunctionReturn(0);
-}
-//---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "JacResUpdateFlags"
-PetscErrorCode JacResUpdateFlags(JacRes *jr)
-{
-	Controls *ctrl;
-	TSSol    *ts;
-
-	ctrl = &jr->ctrl;
-	ts   =  jr->ts;
-
-	if(ts->istep == 1)
-	{
-		// switch off initial guess flag
-		ctrl->initGuess = 0;
-	}
 
 	PetscFunctionReturn(0);
 }

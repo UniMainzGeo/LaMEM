@@ -1217,7 +1217,6 @@ PetscErrorCode BCStretchGrid(BCCtx *bc)
 	// Stretch grid with constant stretch factor about coordinate origin.
 	// The origin point remains fixed, and the displacements of all points are
 	// proportional to the distance from the origin (i.e. coordinate).
-	// The origin (zero) point must remain within domain (checked at input).
 	// Stretch factor is positive at extension, i.e.:
 	// eps = (L_new-L_old)/L_old
 	// L_new = L_old + eps*L_old

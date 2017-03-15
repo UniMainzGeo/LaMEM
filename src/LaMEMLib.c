@@ -563,8 +563,6 @@ PetscErrorCode LaMEMLibSaveOutput(LaMEMLib *lm)
 #define __FUNCT__ "LaMEMLibSolve"
 PetscErrorCode LaMEMLibSolve(LaMEMLib *lm, void *param)
 {
-	// !!! SEPARATE INITIAL GUESS !!!
-
 	PMat           pm;     // preconditioner matrix    (to be removed!)
 	PCStokes       pc;     // Stokes preconditioner    (to be removed!)
 	NLSol          nl;     // nonlinear solver context (to be removed!)
@@ -575,10 +573,19 @@ PetscErrorCode LaMEMLibSolve(LaMEMLib *lm, void *param)
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
 
+	// ad-hoc
+	if(param) param = NULL;
+
 	// create Stokes preconditioner, matrix and nonlinear solver
 	ierr = PMatCreate(&pm, &lm->jr);    CHKERRQ(ierr);
 	ierr = PCStokesCreate(&pc, pm);     CHKERRQ(ierr);
 	ierr = NLSolCreate(&nl, pc, &snes); CHKERRQ(ierr);
+
+	//==============
+	// INITIAL GUESS
+	//==============
+
+	ierr = LaMEMLibInitGuess(lm, snes); CHKERRQ(ierr);
 
 	//===============
 	// TIME STEP LOOP
@@ -589,9 +596,6 @@ PetscErrorCode LaMEMLibSolve(LaMEMLib *lm, void *param)
 		//====================================
 		//	NONLINEAR THERMO-MECHANICAL SOLVER
 		//====================================
-
-		// switch time step flags
-		ierr = JacResUpdateFlags(&lm->jr); CHKERRQ(ierr);
 
 		// initialize boundary constraint vectors
 		ierr = BCApply(&lm->bc, lm->jr.gsol); CHKERRQ(ierr);
@@ -612,7 +616,7 @@ PetscErrorCode LaMEMLibSolve(LaMEMLib *lm, void *param)
 
 		PetscTime(&t_snes_stop);
 
-		PetscPrintf(PETSC_COMM_WORLD, " Nonlinear solve took %g (sec)\n", t_snes_stop - t_snes_start);
+		PetscPrintf(PETSC_COMM_WORLD, "Nonlinear solve took %g (sec)\n", t_snes_stop - t_snes_start);
 
 		// view nonlinear residual
 		ierr = JacResViewRes(&lm->jr); CHKERRQ(ierr);
@@ -697,7 +701,7 @@ PetscErrorCode LaMEMLibDryRun(LaMEMLib *lm)
 	// initialize temperature
 	ierr = JacResInitTemp(&lm->jr); CHKERRQ(ierr);
 
-	// compute inverse elastic viscosities (dependent on dt)
+	// compute inverse elastic parameters (dependent on dt)
 	ierr = JacResGetI2Gdt(&lm->jr); CHKERRQ(ierr);
 
 	// evaluate initial residual
@@ -709,6 +713,59 @@ PetscErrorCode LaMEMLibDryRun(LaMEMLib *lm)
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
+#undef __FUNCT__
+#define __FUNCT__ "LaMEMLibInitGuess"
+PetscErrorCode LaMEMLibInitGuess(LaMEMLib *lm, SNES snes)
+{
+	PetscErrorCode ierr;
+	PetscFunctionBegin;
+
+	PetscLogDouble t_snes_start, t_snes_stop;
+
+	// initialize boundary constraint vectors
+	ierr = BCApply(&lm->bc, lm->jr.gsol); CHKERRQ(ierr);
+
+	// initialize temperature
+	ierr = JacResInitTemp(&lm->jr); CHKERRQ(ierr);
+
+	// compute inverse elastic parameters (dependent on dt)
+	ierr = JacResGetI2Gdt(&lm->jr); CHKERRQ(ierr);
+
+	if(lm->jr.ctrl.initGuess)
+	{
+		PetscPrintf(PETSC_COMM_WORLD, "===========================================================\n");
+		PetscPrintf(PETSC_COMM_WORLD, "...................... INITIAL GUESS ......................\n");
+		PetscPrintf(PETSC_COMM_WORLD, "===========================================================\n");
+
+		// solve nonlinear equation system with SNES
+		PetscTime(&t_snes_start);
+
+		ierr = SNESSolve(snes, NULL, lm->jr.gsol); CHKERRQ(ierr);
+
+		// print analyze convergence/divergence reason & iteration count
+		ierr = SNESPrintConvergedReason(snes); CHKERRQ(ierr);
+
+		PetscTime(&t_snes_stop);
+
+		PetscPrintf(PETSC_COMM_WORLD, "Nonlinear solve took %g (sec)\n", t_snes_stop - t_snes_start);
+
+		// switch flag
+		lm->jr.ctrl.initGuess = 0;
+	}
+	else
+	{
+		// evaluate initial residual
+		ierr = JacResFormResidual(&lm->jr, lm->jr.gsol, lm->jr.gres); CHKERRQ(ierr);
+	}
+
+	// save output for inspection
+	ierr = LaMEMLibSaveOutput(lm); CHKERRQ(ierr);
+
+	PetscFunctionReturn(0);
+}
+//---------------------------------------------------------------------------
+
+
 
 //	ObjFunct objf;   // objective function
 //	ierr = ObjFunctCreate(&objf, &IOparam, &lm->surf, fb); CHKERRQ(ierr);

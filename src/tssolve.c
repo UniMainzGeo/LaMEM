@@ -149,7 +149,7 @@ PetscInt TSSolIsDone(TSSol *ts)
 
 	scal = ts->scal;
 
-	// get time stamp (with tolerance)
+	// get end time (with tolerance)
 	time_end = ts->time_end - ts->tol*ts->dt_max;
 
 	if(ts->time  >= time_end
@@ -217,7 +217,7 @@ PetscInt TSSolIsOutput(TSSol *ts)
 
 	PetscScalar time_out;
 
-	// get time stamp (with tolerance)
+	// get next output time (with tolerance)
 	time_out = ts->time_out + ts->dt_out - ts->tol*ts->dt_max;
 
 	// check output conditions

@@ -102,5 +102,7 @@ PetscErrorCode LaMEMLibSolve(LaMEMLib *lm, void *param);
 
 PetscErrorCode LaMEMLibDryRun(LaMEMLib *lm);
 
+PetscErrorCode LaMEMLibInitGuess(LaMEMLib *lm, SNES snes);
+
 //---------------------------------------------------------------------------
 #endif

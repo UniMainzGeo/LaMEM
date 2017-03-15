@@ -258,9 +258,6 @@ PetscErrorCode JacResWriteRestart(JacRes *jr, FILE *fp);
 // destroy residual & Jacobian evaluation context
 PetscErrorCode JacResDestroy(JacRes *jr);
 
-// update time step flags
-PetscErrorCode JacResUpdateFlags(JacRes *jr);
-
 // form residual vector
 PetscErrorCode JacResFormResidual(JacRes *jr, Vec x, Vec f);
 
@@ -302,12 +299,8 @@ PetscErrorCode JacResViewRes(JacRes *jr);
 // get maximum inverse time step (CFL)
 PetscErrorCode JacResSelectTimeStep(JacRes *jr, PetscInt *restart);
 
-
-
-
+// read cell phases directly form files in parallel
 PetscErrorCode JacResReadCellPhases(JacRes *jr, FB *fb);
-
-
 
 //---------------------------------------------------------------------------
 // Infinite Strain Axis (ISA) computation functions
