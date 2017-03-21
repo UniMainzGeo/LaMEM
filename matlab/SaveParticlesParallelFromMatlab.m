@@ -129,13 +129,13 @@ for num=1:Nproc
     end
     
     % Output files
-    fname = sprintf('./MatlabInputParticles/Input_Particles.%d.out', num-1);
+    fname = sprintf('./MatlabInputParticles/Input_Particles.%1.8d.dat', num-1);
     disp(['Writing file -> ',fname])
     lvec_output    = [lvec_info(:); lvec_prtcls(:)];
     PetscBinaryWrite(fname,lvec_output);
     
     %         % For debugging - Ascii output
-    %         fname = sprintf('./MatlabInputParticles/Input_Particles.ascii.%d.out', num-1);
+    %         fname = sprintf('./MatlabInputParticles/Input_Particles.ascii.%1.8d.dat', num-1);
     %         disp(['Writing file -> ',fname])
     %         fid = fopen(fname, 'w');
     %         fprintf(fid, '%d\n',lvec_info);
