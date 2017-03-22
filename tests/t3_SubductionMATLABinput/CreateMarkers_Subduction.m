@@ -1,12 +1,7 @@
 function CreateMarkers_Subduction(NumberCores)
 
+addpath ../../matlab
 
-if ismac
-    addpath ../../../LaMEM/matlab
-else
-    addpath ~/LaMEM/matlab/
-    
-end
 %==========================================================================
 % OUTPUT OPTIONS
 %==========================================================================

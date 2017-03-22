@@ -83,6 +83,7 @@ PetscErrorCode JacResCreate(JacRes *jr, FB *fb)
 	ctrl->pShiftAct    = 1;
 	ctrl->pLithoVisc   = 1;
 	ctrl->initGuess    = 1;
+	input_eta_max      = 0;
 
 	if(scal->utype != _NONE_)
 	{
@@ -127,6 +128,11 @@ PetscErrorCode JacResCreate(JacRes *jr, FB *fb)
 	//====================
 	// CROSS-CHECK OPTIONS
 	//====================
+
+	if(ctrl->grav[0] || ctrl->grav[1])
+	{
+		SETERRQ(PETSC_COMM_SELF, PETSC_ERR_USER, "Horizontal gravity components are currently not supported (grav)");
+	}
 
 	if(ctrl->FSSA < 0.0 || ctrl->FSSA > 1.0)
 	{
@@ -241,17 +247,21 @@ PetscErrorCode JacResCreate(JacRes *jr, FB *fb)
 
 	// scale parameters
 	// NOTE: scale gas constant with characteristic temperature
+	for(i = 0; i < 3; i++)
+	{
+		ctrl->grav[i] /=  scal->gravity_strength;
+	}
 	ctrl->eta_min     /=  scal->viscosity;
 	input_eta_max     /=  scal->viscosity;
 	ctrl->eta_ref     /=  scal->viscosity;
 	ctrl->TRef         = (ctrl->TRef + scal->Tshift)/scal->temperature;
-	ctrl->Rugc        *= scal->temperature;
-	ctrl->DII_ref     /= scal->strain_rate;
-	ctrl->minCh       /= scal->stress_si;
-	ctrl->minFr       /= scal->angle;
-	ctrl->tauUlt      /= scal->stress_si;
-	ctrl->rho_fluid   /= scal->density;
-	ctrl->gwLevel     /= scal->length;
+	ctrl->Rugc        *=  scal->temperature;
+	ctrl->DII_ref     /=  scal->strain_rate;
+	ctrl->minCh       /=  scal->stress_si;
+	ctrl->minFr       /=  scal->angle;
+	ctrl->tauUlt      /=  scal->stress_si;
+	ctrl->rho_fluid   /=  scal->density;
+	ctrl->gwLevel     /=  scal->length;
 
 	// set inverse of maximum viscosity
 	if(input_eta_max) ctrl->inv_eta_max = 1.0/input_eta_max;
