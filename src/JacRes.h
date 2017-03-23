@@ -320,6 +320,9 @@ PetscErrorCode JacResGetLithoStaticPressure(JacRes *jr);
 // compute fluid pressure in the cell centers
 PetscErrorCode JacResGetPorePressure(JacRes *jr);
 
+// copy Darcy liquid pressure to pore pressure
+PetscErrorCode JacResGetDarcyPorePressure(JacRes *jr);
+
 //---------------------------------------------------------------------------
 // MACROS
 //---------------------------------------------------------------------------

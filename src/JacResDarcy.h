@@ -86,7 +86,7 @@ PetscErrorCode JacResGetDarcyRes(SNES snes, Vec x, Vec f, JacRes *jr);
 
 // assemble Darcy preconditioner matrix
 //PetscErrorCode JacResGetDarcyMat(JacRes *jr);
-PetscErrorCode JacResGetDarcyMat(SNES snes, Vec x, JacRes *jr);
+PetscErrorCode JacResGetDarcyMat(SNES snes, JacRes *jr);
 
 // BC for Darcy:
 PetscErrorCode BCCreateDarcy(JacRes *jr, BCCtx *bc);
@@ -100,7 +100,15 @@ PetscErrorCode FormJacobian_DARCY(SNES snes,Vec x, Mat P, Mat J, JacRes *jr);
 PetscErrorCode UpdateDarcy_DA(JacRes *jr);
 PetscErrorCode DMCoarsenHook_DARCY(DM dmf,DM dmc,void *ctx);
 
-PetscErrorCode GetDarcy_b(JacRes *jr);
+PetscErrorCode FormRHS_DARCY(SNES snes,JacRes *jr);
+
+// New
+PetscErrorCode JacResCopyDarcySol(SNES snes, JacRes *jr, Vec x);
+PetscErrorCode JacResUpdateGhostPoints(SNES snes, Vec x, JacRes *jr);
+PetscErrorCode BCDestroyDarcy(JacRes *jr, BCCtx *bc);
+PetscErrorCode BCSetParamDarcy(JacRes *jr, BCCtx *bc, UserCtx *user);
+PetscErrorCode IncreaseLiquidPressureBottom(JacRes *jr, BCCtx *bc, UserCtx *user);
+PetscErrorCode DarcyPrintPl(JacRes *jr);
 
 //PetscErrorCode ExtractCoefficientsFromDA(DM da,const char *name,PetscScalar ***data);	// extract names vectors from DA
 
@@ -109,12 +117,19 @@ PetscErrorCode GetDarcy_b(JacRes *jr);
 // MACROS
 //---------------------------------------------------------------------------
 
-#define SET_TPC_DARCY(bc, a, k, j, i, pmdof) { \
+/*#define SET_TPC_DARCY(bc, a, k, j, i, pmdof) { \
 	if(bc[k][j][i] == DBL_MAX) a[k][j][i].Pl = pmdof; \
 	else                       a[k][j][i].Pl = 2.0*bc[k][j][i] - pmdof; }
 
 #define SET_EDGE_CORNER_DARCY(n, a, K, J, I, k, j, i, pmdof) \
-	a[K][J][I].Pl = a[k][j][I].Pl + a[k][J][i].Pl + a[K][j][i].Pl - 2.0*pmdof;
+	a[K][J][I].Pl = a[k][j][I].Pl + a[k][J][i].Pl + a[K][j][i].Pl - 2.0*pmdof;*/
+
+#define SET_TPC_DARCY(bc, a, k, j, i, pmdof) { \
+	if(bc[k][j][i] == DBL_MAX) a[k][j][i] = pmdof; \
+	else                       a[k][j][i] = 2.0*bc[k][j][i] - pmdof; }
+
+#define SET_EDGE_CORNER_DARCY(n, a, K, J, I, k, j, i, pmdof) \
+	a[K][J][I] = a[k][j][I] + a[k][J][i] + a[K][j][i] - 2.0*pmdof;
 
 
 //---------------------------------------------------------------------------

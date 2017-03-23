@@ -1,16 +1,16 @@
 # 3D test for Darcy equations (w/out deformation)
 
 # Grid
-nel_x =  16
-nel_y =  16
-nel_z =  16
+nel_x						=  	50
+nel_y						= 	4
+nel_z						= 	10
 
 # Geometry
 
-W       =  3    # Width  (x-direction)
-L 		=  3
-H       =  20    # Height (z-direction)
-x_left  =  0    # Left side of domain
+L						=	5000		# Length (y-direction)
+W						=	40000		# Width  (x-direction)
+H						=	10000		# Height (z-direction)
+x_left					=	-20000			# Left side of domain
 y_front =  0     # Front side of domain
 z_bot   =  0     # Bottom of box
 
@@ -26,13 +26,13 @@ Characteristic.Stress      = 1e9  # [Pa]
 msetup 						   = bands
 #msetup                        = parallel
 #ParticleFilename              = Particles 			# File that contains markers distribution (matlab)
-LoadInitialParticlesDirectory = MatlabInputParticles                 # directory that contains markers distribution (matlab)
+#LoadInitialParticlesDirectory = MatlabInputParticles                 # directory that contains markers distribution (matlab)
 
 
 # Time stepping and output
 OutputFile					=	test_darcy
 save_timesteps				=	1				# save every ? timesteps
-time_end					=	1			# last timestep
+time_end					=	10			# last timestep
 CFL							=	0.1				# CFL, dt-based criterium
 dt_max						=	2e-4  			# Maximum timestep [Myr if dimensional]
 
@@ -76,7 +76,7 @@ NumPartZ				=	3	# Particles/Cell in z-direction
 	# activate Darcy:
 	-act_darcy 1			# Activates Darcy solver
 	#-act_temp_diff 		# Activates T-diffusion solver	
-	#-SkipStokesSolver	# No Stokes (for testing)
+	-SkipStokesSolver	# No Stokes (for testing)
 	
 	# SNES (nonlinear) options
 	#-snes_ksp_ew			# Eisenstat Walker algorithm
@@ -95,26 +95,26 @@ NumPartZ				=	3	# Particles/Cell in z-direction
 	# Darcy solver options
 	-PorosityWaves_R 1e-2		# R-parameter
 	
-	-darcy_pc_mg_log	
-	#-darcy_ksp_view 
-	-darcy_ksp_converged_reason 
+	#-darcy_pc_mg_log	
+	-darcy_ksp_view 
+	#-darcy_ksp_converged_reason 
 	#-darcy_ksp_monitor
 	
 	#-darcy_pc_factor_mat_solver_package superlu_dist
 	
-	#-darcy_snes_view 
-	-darcy_snes_rtol 1e-4
-	-darcy_snes_monitor  
-	-darcy_snes_linesearch_type l2 
+	-darcy_snes_view 
+	#-darcy_snes_rtol 1e-4
+	#-darcy_snes_monitor  
+	#-darcy_snes_linesearch_type l2 
 	#-darcy_snes_linesearch_monitor 
-	-darcy_ksp_rtol 1e-8  
-	-darcy_ksp_final_residual 
+	#-darcy_ksp_rtol 1e-8  
+	#-darcy_ksp_final_residual 
 	#-darcy_ksp_monitor_true_residual 
 	
 	# MG:
-	-darcy_pc_type mg
-	-darcy_pc_mg_levels 4
-	-darcy_pc_mg_galerkin 
+	#-darcy_pc_type mg
+	#-darcy_pc_mg_levels 4
+	#-darcy_pc_mg_galerkin 
 	
 	# FAS with NL preconditioner
 	#-darcy_snes_type anderson
@@ -147,33 +147,45 @@ NumPartZ				=	3	# Particles/Cell in z-direction
 	-skip_press_shift
 
 
-	# shear bands setup
-	-H_layer 		  10
-	-H_bottom 		  3
+	# shear bands setup #####################################
+	-H_layer 		  5000
+	-H_bottom 		  0
 	-Inclusion_use
-	-Inclusion_size	  2
-#	-Inclusion_length 10
+	-Inclusion_size	  1000
+	#-Inclusion_length 0.01
 	
 #	-Inclusion_offset 10
 #	-Inclusion_length 10
 
 
 	# SNES (nonlinear) options
-
-	# Jacobian solver
+	
+	
+		# Jacobian solver for Stokes equations
 	-js_ksp_type fgmres
 	-js_ksp_max_it 50
 	-js_ksp_converged_reason
 	#-js_ksp_monitor
-	-js_ksp_rtol 1e-10
+	-js_ksp_rtol 1e-14
 	-js_ksp_atol 1e-15
+
+
+
+	## Preconditioner
+	#-pcmat_type mono
+	#-pcmat_pgamma 1e2
+	#-jp_type user
+	#-jp_pc_type lu
+	#-jp_pc_factor_mat_solver_package mumps
+
+	
 
 
 #	-pcmat_type block
 #	-pcmat_pgamma 10.0
 #	-jp_type bf
 #	-bf_vs_type user
-#	-vs_ksp_type preonly
+#	-x_ksp_type preonly
 #	-vs_pc_type lu
 #	-vs_pc_factor_mat_solver_package mumps
 
@@ -186,7 +198,7 @@ NumPartZ				=	3	# Particles/Cell in z-direction
 	-pcmat_type mono
 	-jp_type mg
 
-	-gmg_pc_view
+#	-gmg_pc_view
 	-gmg_pc_type mg
 	-gmg_pc_mg_levels 2
 	-gmg_pc_mg_galerkin
@@ -214,9 +226,9 @@ NumPartZ				=	3	# Particles/Cell in z-direction
 
 
 # NEW CODE WITH FIELDSPLIT/SCHUR DECOMPOSITION
--js_pc_type fieldsplit
--js_pc_fieldsplit_type schur
--js_pc_fieldsplit_schur_factorization_type upper
+#-js_pc_type fieldsplit
+#-js_pc_fieldsplit_type schur
+#-js_pc_fieldsplit_schur_factorization_type upper
 
 -js_fieldsplit_velocity_ksp_type fgmres
 #-js_fieldsplit_velocity_pc_type fieldsplit
@@ -257,6 +269,7 @@ NumPartZ				=	3	# Particles/Cell in z-direction
 	-out_plast_strain 1
 	-out_moment_res 1
 	-out_cont_res 1
+	-out_porepressure 1
 	
 	# Output Darcy parameters
 	-out_Pl 1			# fluid pressure
@@ -299,10 +312,10 @@ NumPartZ				=	3	# Particles/Cell in z-direction
 		cp 				=	1000;
 		
 		# DARCY Parameters:
-		rhol 			= 	500		# liquid density
-		mu 				=	10		# liquid viscosity	
+		rhol 			= 	500			# liquid density
+		mu 				=	1e-4		# liquid viscosity	
 		Kphi 			=	1e-14		# permeability	
-		Ss				=	1e-2			# specific storage	
+		Ss				=	2.381e-16			# specific storage	(kf=Kphi/mu/Ss-1=0.4*1.05e6 as in Rozhko Matlab code)
 	<MaterialEnd>
 
 
@@ -324,9 +337,9 @@ NumPartZ				=	3	# Particles/Cell in z-direction
 		
 		# DARCY Parameters:
 		rhol 			= 	500		# liquid density
-		mu 				=	10		# liquid viscosity
+		mu 				=	1e-4		# liquid viscosity
 		Kphi 			=	1e-14		# permeability
-		Ss				=	1e-2			# specific storage	
+		Ss				=	2.381e-16			# specific storage	
 	<MaterialEnd>
 
 
@@ -347,9 +360,9 @@ NumPartZ				=	3	# Particles/Cell in z-direction
 		
 		# DARCY Parameters:
 		rhol 			= 	500		# liquid density
-		mu 				=	10 			# liquid viscosity
+		mu 				=	1e-4 			# liquid viscosity
 		Kphi 			=	1e-14		# permeability
-		Ss				=	1e-2			# specific storage	
+		Ss				=	2.381e-16			# specific storage	
 	<MaterialEnd>
 
 # End of defining material properties for all phases ----------------------------------------

@@ -830,6 +830,7 @@ PetscErrorCode JacResGetResidual(JacRes *jr)
 	phases    =  jr->phases;    	// phase parameters
 	matLim    = &jr->matLim;    	// phase parameters limiters
 	dt        =  jr->ts.dt;     	// time step
+	PetscPrintf(PETSC_COMM_WORLD,"dt %12.12e ---------------------------------\n",dt );
 	fssa      =  jr->FSSA;      	// density gradient penalty parameter
 	grav      =  jr->grav;      	// gravity acceleration
 	pShift    =  jr->pShift;    	// pressure shift
@@ -929,6 +930,7 @@ PetscErrorCode JacResGetResidual(JacRes *jr)
 
 		// access current pore pressure (zero if deactivated)
 		pc_pore = p_pore[k][j][i];
+		//PetscPrintf(PETSC_COMM_WORLD,"p_pore(%i,%i,%i)=%12.12e \n",i,j,k,p_pore[k][j][i] );
 
 		// compute depth below the free surface
 		depth = jr->avg_topo - COORD_CELL(k, sz, fs->dsz);
@@ -2936,6 +2938,56 @@ PetscErrorCode JacResGetPorePressure(JacRes *jr)
 	// restore buffer and pressure vectors
 	ierr = DMDAVecRestoreArray(fs->DA_CEN, jr->lp_pore, &lp_pore); CHKERRQ(ierr);
 	ierr = DMDAVecRestoreArray(fs->DA_CEN, jr->lp_lithos, &lp_lith); CHKERRQ(ierr);
+
+	// fill ghost points
+	LOCAL_TO_LOCAL(fs->DA_CEN, jr->lp_pore)
+
+	PetscFunctionReturn(0);
+}
+//---------------------------------------------------------------------------
+#undef __FUNCT__
+#define __FUNCT__ "JacResGetDarcyPorePressure"
+PetscErrorCode JacResGetDarcyPorePressure(JacRes *jr)
+{
+	// compute pore pressure
+	FDSTAG      *fs;
+	PetscScalar ***lp_pore, ***lp_liquid;
+	PetscInt    i,j,k,iter, sx, sy, sz, nx, ny, nz;
+
+	PetscErrorCode ierr;
+	PetscFunctionBegin;
+
+	// access context
+	fs        = jr->fs;
+
+	// initialize
+	ierr = VecZeroEntries(jr->lp_pore); CHKERRQ(ierr);
+
+	// Return if not activated
+	if(jr->actDarcy != PETSC_TRUE)
+	{
+		PetscFunctionReturn(0);
+	}
+
+	// get local grid sizes
+	ierr = DMDAGetCorners(fs->DA_CEN, &sx, &sy, &sz, &nx, &ny, &nz); CHKERRQ(ierr);
+
+	// access vectors
+	ierr = DMDAVecGetArray(jr->DA_Pl,  jr->lPl,     &lp_liquid);  	CHKERRQ(ierr);
+	ierr = DMDAVecGetArray(fs->DA_CEN, jr->lp_pore, &lp_pore); 		CHKERRQ(ierr);
+
+	iter = 0;
+	START_STD_LOOP
+	{
+		// copy the pore pressure from Darcy liquid pressure
+		lp_pore[k][j][i] =  lp_liquid[k][j][i];
+		//PetscPrintf(PETSC_COMM_WORLD,"lp_pore(%i,%i,%i)=%12.12e \n",i,j,k,lp_pore[k][j][i] );
+	}
+	END_STD_LOOP
+
+	// restore buffer and pressure vectors
+	ierr = DMDAVecRestoreArray(fs->DA_CEN, jr->lp_pore, &lp_pore);   CHKERRQ(ierr);
+	ierr = DMDAVecRestoreArray(jr->DA_Pl,  jr->lPl,     &lp_liquid); CHKERRQ(ierr);
 
 	// fill ghost points
 	LOCAL_TO_LOCAL(fs->DA_CEN, jr->lp_pore)

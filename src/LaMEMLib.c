@@ -231,6 +231,8 @@ PetscErrorCode LaMEMLib(ModParam *IOparam)
 
 	// Create BC's for Darcy solver (if applicable)
 	ierr = BCCreateDarcy(&jr, &bc); 	CHKERRQ(ierr);
+	// New, set boundary conditions parameters
+	ierr = BCSetParamDarcy(&jr, &bc, &user); CHKERRQ(ierr);
 	///////////////////////////////////////
 
 
@@ -281,6 +283,9 @@ PetscErrorCode LaMEMLib(ModParam *IOparam)
 		ierr = PVAVDDestroy(&pvavd);   CHKERRQ(ierr);
 		ierr = ObjFunctDestroy(&objf); CHKERRQ(ierr);
 
+		// For Darcy
+		ierr = BCDestroyDarcy(&jr, &bc);
+
 		PetscFunctionReturn(0);
 	}
 
@@ -306,6 +311,42 @@ PetscErrorCode LaMEMLib(ModParam *IOparam)
 		// initialize temperature
 		ierr = JacResInitTemp(&jr); CHKERRQ(ierr);
 
+		// from darcy-code
+		if (jr.actDarcy){
+
+			//DarcyPrintPl(&jr);
+
+			// New
+			//ierr = BCApplyBound_DARCY(&bc, &jr);
+
+			//DarcyPrintPl(&jr);
+
+			//ierr = JacResInitDarcy(&jr);		CHKERRQ(ierr);
+
+			//DarcyPrintPl(&jr);
+
+			// Update coordinates of darcy DA
+			ierr = UpdateDarcy_DA(&jr);				CHKERRQ(ierr);
+
+			//ierr = JacResUpdateGhostPoints(jr.Pl_snes, jr.Pl, &jr);
+			FormRHS_DARCY(jr.Pl_snes,&jr);
+
+			// Solve DARCY
+												//ierr = SNESSolve(jr.Pl_snes,NULL,jr.Pl);				CHKERRQ(ierr);							// solve nonlinear problem
+
+
+			// Increase liquid pressure
+			ierr = IncreaseLiquidPressureBottom(&jr, &bc, &user);
+
+			ierr = SNESSolve(jr.Pl_snes,jr.Darcyb,jr.Pl);				CHKERRQ(ierr);							// solve nonlinear problem
+
+
+			// update solution (mainly for plotting)
+			ierr = JacResUpdateDarcy(&jr);                        CHKERRQ(ierr);
+
+			//DarcyPrintPl(&jr);
+		}
+		////////////////////////////////////////////////////////
 
 		if(user.SkipStokesSolver != PETSC_TRUE)
 		{
@@ -340,24 +381,7 @@ PetscErrorCode LaMEMLib(ModParam *IOparam)
 			ierr = FormResidual(snes, jr.gsol, jr.gres, &nl); CHKERRQ(ierr);
 		}
 
-		// from darcy-code
-		if (jr.actDarcy){
 
-			// Update coordinates of darcy DA
-			ierr = UpdateDarcy_DA(&jr);				CHKERRQ(ierr);
-
-			ierr = GetDarcy_b(&jr);				CHKERRQ(ierr);
-
-			// Solve DARCY
-			//ierr = SNESSolve(jr.Pl_snes,NULL,jr.Pl);				CHKERRQ(ierr);							// solve nonlinear problem
-
-			// New
-			ierr = SNESSolve(jr.Pl_snes,jr.Darcyb,jr.Pl);				CHKERRQ(ierr);							// solve nonlinear problem
-
-			// update solution (mainly for plotting)
-			ierr = JacResUpdateDarcy(&jr);                        CHKERRQ(ierr);
-		}
-		////////////////////////////////////////////////////////
 
 		// switch off initial guess flag
 		if(!JacResGetStep(&jr))
@@ -460,8 +484,9 @@ PetscErrorCode LaMEMLib(ModParam *IOparam)
 			ierr = PVAVDWriteTimeStep(&pvavd, &jr, DirectoryName, JacResGetTime(&jr), JacResGetStep(&jr)); CHKERRQ(ierr);
 
 			// grid ParaView output
+//PetscPrintf(PETSC_COMM_WORLD,"11111\n");
 			ierr = PVOutWriteTimeStep(&pvout, &jr, DirectoryName, JacResGetTime(&jr), JacResGetStep(&jr)); CHKERRQ(ierr);
-
+//PetscPrintf(PETSC_COMM_WORLD,"22222\n");
 			// free surface ParaView output
 			ierr = PVSurfWriteTimeStep(&pvsurf, &jr, DirectoryName, JacResGetTime(&jr), JacResGetStep(&jr)); CHKERRQ(ierr);
 
@@ -471,7 +496,6 @@ PetscErrorCode LaMEMLib(ModParam *IOparam)
 			// clean up
 			if(DirectoryName) free(DirectoryName);
 		}
-
 		if(stop == PETSC_TRUE)
 		{
 			SETERRQ(PETSC_COMM_SELF, PETSC_ERR_USER, "Linear solver failed. Terminating simulation.\n");
@@ -517,6 +541,9 @@ PetscErrorCode LaMEMLib(ModParam *IOparam)
 	ierr = PVMarkDestroy(&pvmark); CHKERRQ(ierr);
 	ierr = PVAVDDestroy(&pvavd);   CHKERRQ(ierr);
 	ierr = ObjFunctDestroy(&objf); CHKERRQ(ierr);
+
+	// For Darcy
+	ierr = BCDestroyDarcy(&jr, &bc);
 
 
 	PetscTime(&cputime_end);

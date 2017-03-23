@@ -121,7 +121,7 @@ typedef struct
 	PetscScalar  Phi;   // porosity
 	PetscScalar  Kphi;  // permeability
 	// New
-	PetscScalar  PlOld;  // history liquid pressure
+	PetscScalar  Pln;  // history liquid pressure
 
 } SolVarBulk;
 
@@ -218,7 +218,7 @@ typedef struct
 	PetscScalar  A;       // radiogenic heat production
 
 	// from darcy-code
-	// TwoPhase/liquid pressure parameters
+	// Darcy/liquid pressure parameters
 	PetscScalar  Kphi;    // permeability
 					//PetscScalar  rhol;    // liquid density
 	PetscScalar  mu;      // liquid viscosity

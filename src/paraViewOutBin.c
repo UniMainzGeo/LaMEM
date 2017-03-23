@@ -605,10 +605,10 @@ PetscErrorCode PVOutWriteTimeStep(PVOut *pvout, JacRes *jr, const char *dirName,
 
 	// write parallel data .pvtr file
 	ierr = PVOutWritePVTR(pvout, dirName); CHKERRQ(ierr);
-
+//PetscPrintf(PETSC_COMM_WORLD,"2a\n");
 	// write sub-domain data .vtr files
 	ierr = PVOutWriteVTR(pvout, jr, dirName); CHKERRQ(ierr);
-
+//PetscPrintf(PETSC_COMM_WORLD,"2b\n");
 	PetscFunctionReturn(0);
 }
 

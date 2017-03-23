@@ -273,7 +273,14 @@ PetscErrorCode PVOutWriteTotalPressure(JacRes *jr, OutBuf *outbuf)
 
 	ierr = JacResCopyPres(jr, jr->gsol); CHKERRQ(ierr);
 
-	ierr = JacResGetPorePressure(jr); CHKERRQ(ierr);
+	if(jr->actDarcy != PETSC_TRUE)
+	{
+		ierr = JacResGetPorePressure(jr); CHKERRQ(ierr);
+	}
+	else
+	{
+		ierr = JacResGetDarcyPorePressure(jr); CHKERRQ(ierr);
+	}
 
 	// compute total pressure
 	ierr = VecWAXPY(outbuf->lbcen, biot, jr->lp_pore, jr->lp); CHKERRQ(ierr);
@@ -347,7 +354,14 @@ PetscErrorCode PVOutWritePorePressure(JacRes *jr, OutBuf *outbuf)
 
 	cf = scal->stress;
 
-	ierr = JacResGetPorePressure(jr); CHKERRQ(ierr);
+	if(jr->actDarcy != PETSC_TRUE)
+	{
+		ierr = JacResGetPorePressure(jr); CHKERRQ(ierr);
+	}
+	else
+	{
+		ierr = JacResGetDarcyPorePressure(jr); CHKERRQ(ierr);
+	}
 
 	INTERPOLATE_ACCESS(jr->lp_pore, InterpCenterCorner, 1, 0, 0.0)
 
@@ -757,26 +771,27 @@ PetscErrorCode PVOutWriteLiquidPressure(JacRes *jr, OutBuf *outbuf)
 #define __FUNCT__ "PVOutWritePorosity"
 PetscErrorCode PVOutWritePorosity(JacRes *jr, OutBuf *outbuf)
 {
-	//COPY_FUNCTION_HEADER
-	ACCESS_FUNCTION_HEADER
-	Vec            	s;
-	ierr = DMCreateLocalVector(jr->fs->DA_CEN, &s); CHKERRQ(ierr);		// create local vector based on center DA, which has one DOF
+	// New come back to the previous way
+	COPY_FUNCTION_HEADER
+										//ACCESS_FUNCTION_HEADER
+										//Vec            	s;
+										//ierr = DMCreateLocalVector(jr->fs->DA_CEN, &s); CHKERRQ(ierr);		// create local vector based on center DA, which has one DOF
 
 	cf = scal->unit;
 
-	/*
+
 	// macro to copy porosity to buffer
 	#define GET_POROSITY buff[k][j][i] = jr->svCell[iter++].svBulk.Phi;
 
 	INTERPOLATE_COPY(fs->DA_CEN, outbuf->lbcen, InterpCenterCorner, GET_POROSITY, 1, 0)
-*/
 
-	// Pull out the porosity vector from the solution vector
-	VecStrideGather(jr->lPl,1,s,INSERT_VALUES);
 
-	INTERPOLATE_ACCESS(s, InterpCenterCorner, 1, 0, 0.0)
-
-	ierr = VecDestroy(&s);	CHKERRQ(ierr);
+										//// Pull out the porosity vector from the solution vector
+										//VecStrideGather(jr->lPl,1,s,INSERT_VALUES);
+										//
+										//INTERPOLATE_ACCESS(s, InterpCenterCorner, 1, 0, 0.0)
+										//
+										//ierr = VecDestroy(&s);	CHKERRQ(ierr);
 
 	PetscFunctionReturn(0);
 }
