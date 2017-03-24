@@ -284,6 +284,7 @@ PetscErrorCode FreeSurfGetVelComp(
 	FDSTAG      *fs;
 	Discret1D   *dsz;
 	InterpFlags iflags;
+	PetscScalar bz, ez;
 	PetscInt    i, j, nx, ny, sx, sy, sz, level, K;
 	PetscScalar ***topo, ***vsurf, ***vgrid, *vpatch, *vmerge, z, w;
 
@@ -295,6 +296,9 @@ PetscErrorCode FreeSurfGetVelComp(
 	fs    = jr->fs;
 	dsz   = &fs->dsz;
 	level = (PetscInt)dsz->rank;
+
+	// get local coordinate bounds
+	ierr = FDSTAGGetLocalBox(fs, NULL, NULL, &bz, NULL, NULL, &ez); CHKERRQ(ierr);
 
 	// create column communicator
 	ierr = Discret1DGetColumnComm(dsz); CHKERRQ(ierr);
@@ -326,7 +330,7 @@ PetscErrorCode FreeSurfGetVelComp(
 		z = topo[level][j][i];
 
 		// check whether point belongs to domain
-		if(z >= dsz->crdbeg && z < dsz->crdend)
+		if(z >= bz && z < ez)
 		{
 			// find containing cell
 			K = FindPointInCell(dsz->ncoor, 0, dsz->ncels, z);
@@ -559,7 +563,9 @@ PetscErrorCode FreeSurfSmoothMaxAngle(FreeSurf *surf)
 	L         = (PetscInt)fs->dsz.rank;
 	step      = jr->ts->dt;
 	tanMaxAng = PetscTanReal(surf->MaxAngle);
-	zbot      = jr->fs->dsz.crdbeg;
+
+	// get local coordinate bounds
+	ierr = FDSTAGGetLocalBox(fs, NULL, NULL, &zbot, NULL, NULL, NULL); CHKERRQ(ierr);
 
 	// get current background strain rates
 	ierr = BCGetBGStrainRates(jr->bc, NULL, NULL, &Ezz); CHKERRQ(ierr);

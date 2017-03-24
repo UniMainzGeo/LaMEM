@@ -12,14 +12,15 @@ clean :
 	@echo "............................................."
 	@echo ".......... Performing full clean ............"
 	@echo "............................................."
-	@rm -f output/*
-	@rm -f log/*
 	@rm -f *.pvd
+	@rm -f *.bin
 	@rm -f *.xml
 	@rm -rf ./Timestep*
+	@rm -rf ./restart
+	@rm -rf ./markers*
 	@find . -name *.pyc -delete
 
 purge : clean
-	@rm -rf ./restart
-	@rm -rf ./markers
 	@rm -rf *.log
+	@rm -f output/*
+	@rm -f log/*

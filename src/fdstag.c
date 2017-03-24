@@ -423,9 +423,9 @@ PetscErrorCode Discret1DGenCoord(Discret1D *ds, MeshSeg1D *ms)
 	// set uniform grid flag
 	ds->uniform = ms->uniform;
 
-	// set global coordinate bounds
-	ds->crdbeg = ms->xstart[0];
-	ds->crdend = ms->xstart[ms->nsegs];
+	// set global grid coordinate bounds
+	ds->gcrdbeg = ms->xstart[0];
+	ds->gcrdend = ms->xstart[ms->nsegs];
 
 	PetscFunctionReturn(0);
 }
@@ -448,9 +448,9 @@ PetscErrorCode Discret1DStretch(Discret1D *ds, PetscScalar eps)
 	for(i = -1; i < ds->ncels+1; i++)
 		ds->ccoor[i] = (ds->ncoor[i] + ds->ncoor[i+1])/2.0;
 
-	// recompute coordinate bounds
-	ds->crdbeg *= (1.0 + eps);
-	ds->crdend *= (1.0 + eps);
+	// recompute global coordinate bounds
+	ds->gcrdbeg *= (1.0 + eps);
+	ds->gcrdend *= (1.0 + eps);
 
 	PetscFunctionReturn(0);
 }
@@ -669,7 +669,7 @@ PetscErrorCode Discret1DgetMaxInvStep(Discret1D *ds, DM da, Vec gv, PetscInt dir
 		ierr = VecRestoreArray(gv, &va); CHKERRQ(ierr);
 
 		// get uniform mesh step
-		h = (ds->crdend - ds->crdbeg)/(PetscScalar)ds->tcels;
+		h = (ds->gcrdend - ds->gcrdbeg)/(PetscScalar)ds->tcels;
 
 		// get inverse time step
 		idt = vmax/h;
@@ -983,6 +983,11 @@ PetscErrorCode FDSTAGCreate(FDSTAG *fs, FB *fb)
 	// print essential grid details
 	ierr = FDSTAGView(fs); CHKERRQ(ierr);
 
+//	ierr = Discret1DView(&fs->dsx, scal->length, "dx"); CHKERRQ(ierr);
+//	ierr = Discret1DView(&fs->dsy, scal->length, "dy"); CHKERRQ(ierr);
+//	ierr = Discret1DView(&fs->dsz, scal->length, "dz"); CHKERRQ(ierr);
+
+
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
@@ -1182,13 +1187,21 @@ PetscErrorCode FDSTAGGetPointRanks(FDSTAG *fs, PetscScalar *X, PetscInt *lrank, 
 {
 	// get local & global ranks of a domain containing a point (only neighbors are checked)
 
-	PetscInt  rx, ry, rz;
+	PetscInt    rx, ry, rz;
+	PetscScalar bx, by, bz;
+	PetscScalar ex, ey, ez;
 
+	PetscErrorCode ierr;
 	PetscFunctionBegin;
 
-	GET_POINT_RANK(X[0], rx, fs->dsx);
-	GET_POINT_RANK(X[1], ry, fs->dsy);
-	GET_POINT_RANK(X[2], rz, fs->dsz);
+	// get local coordinate bounds
+	ierr = FDSTAGGetLocalBox(fs, &bx, &by, &bz, &ex, &ey, &ez); CHKERRQ(ierr);
+
+	// gel local relative ranks
+	GET_POINT_REL_RANK(rx, X[0], bx, ex);
+	GET_POINT_REL_RANK(ry, X[1], by, ey);
+	GET_POINT_REL_RANK(rz, X[2], bz, ez);
+
 
 	(*lrank) = rx + 3*ry + 9*rz;
 	(*grank) = fs->neighb[(*lrank)];
@@ -1326,13 +1339,13 @@ PetscErrorCode FDSTAGGetGlobalBox(
 {
 	PetscFunctionBegin;
 
-	if(bx) (*bx) = fs->dsx.crdbeg;
-	if(by) (*by) = fs->dsy.crdbeg;
-	if(bz) (*bz) = fs->dsz.crdbeg;
+	if(bx) (*bx) = fs->dsx.gcrdbeg;
+	if(by) (*by) = fs->dsy.gcrdbeg;
+	if(bz) (*bz) = fs->dsz.gcrdbeg;
 
-	if(ex) (*ex) = fs->dsx.crdend;
-	if(ey) (*ey) = fs->dsy.crdend;
-	if(ez) (*ez) = fs->dsz.crdend;
+	if(ex) (*ex) = fs->dsx.gcrdend;
+	if(ey) (*ey) = fs->dsy.gcrdend;
+	if(ez) (*ez) = fs->dsz.gcrdend;
 
 	PetscFunctionReturn(0);
 }
@@ -1348,12 +1361,12 @@ PetscErrorCode FDSTAGSaveGrid(FDSTAG *fs)
 	PetscErrorCode ierr;
 	
 	PetscFunctionBegin;
-    
+
 	// characteristic length
 	chLen = fs->scal->length;
 
 	MPI_Comm_rank(PETSC_COMM_WORLD, &rank);
-    
+
 	PetscPrintf(PETSC_COMM_WORLD,"# Save processor partitioning \n");
 
 	// gather global coord
@@ -1363,7 +1376,7 @@ PetscErrorCode FDSTAGSaveGrid(FDSTAG *fs)
 
 	if(rank == 0)
 	{
-        PetscPrintf(PETSC_COMM_SELF,"# Save processor partitioning file on rank 0 \n");
+		PetscPrintf(PETSC_COMM_SELF,"# Save processor partitioning file on rank 0 \n");
 		// save file
 		asprintf(&fname, "ProcessorPartitioning_%lldcpu_%lld.%lld.%lld.bin",
 			(LLD)(fs->dsx.nproc*fs->dsy.nproc*fs->dsz.nproc),
@@ -1392,8 +1405,8 @@ PetscErrorCode FDSTAGSaveGrid(FDSTAG *fs)
 		ierr = PetscFree(yc); CHKERRQ(ierr);
 		ierr = PetscFree(zc); CHKERRQ(ierr);
 	}
-    MPI_Barrier(PETSC_COMM_WORLD);
-    
+	MPI_Barrier(PETSC_COMM_WORLD);
+
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------

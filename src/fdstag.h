@@ -124,8 +124,8 @@ struct Discret1D
 
 	PetscInt      uniform; // uniform grid flag
 
-	PetscScalar   crdbeg;  // coordinate bound (begin)
-	PetscScalar   crdend;  // coordinate bound (end)
+	PetscScalar   gcrdbeg; // global grid coordinate bound (begin)
+	PetscScalar   gcrdend; // global grid coordinate bound (end)
 
 };
 
@@ -341,7 +341,7 @@ PetscErrorCode FDSTAGSaveGrid(FDSTAG *fs);
 #define WEIGHT_POINT_NODE(i, x, ds) (1.0 - PetscAbsScalar(x - ds.ncoor[i])/(ds.ccoor[i] - ds.ccoor[i-1]))
 
 // return relative rank of a point
-#define GET_POINT_RANK(x, r, ds) { r = 1; if(x < ds.crdbeg) r--; else if(x >= ds.crdend) r++; }
+#define GET_POINT_REL_RANK(r, x, bx, ex) { r = 1; if(x < bx) { r--; } else if(x >= ex) { r++; } }
 
 // get consecutive index from I, J, K indices
 #define GET_CELL_ID(ID, i, j, k, m, n) { ID = i + (j)*(m) + (k)*(m)*(n); }
@@ -351,9 +351,6 @@ PetscErrorCode FDSTAGSaveGrid(FDSTAG *fs);
 	(k) = (ID)/((m)*(n));               \
 	(j) = (ID - (k)*(m)*(n))/m;         \
 	(i) =  ID - (k)*(m)*(n) - (j)*(m);
-
-// get bounds of the local domain (coordinates of the first and the last nodes)
-#define GET_DOMAIN_BOUNDS(xs, xe, ds) { xs = ds.crdbeg; xe = ds.crdend; }
 
 //---------------------------------------------------------------------------
 

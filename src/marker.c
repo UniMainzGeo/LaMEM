@@ -302,23 +302,24 @@ PetscErrorCode ADVMarkCheckMarkers(AdvCtx *actx)
 	FDSTAG      *fs;
 	PetscScalar *X;
 	PetscInt     error;
-	PetscScalar  xs, ys, zs;
-	PetscScalar  xe, ye, ze;
+	PetscScalar  bx, by, bz;
+	PetscScalar  ex, ey, ez;
 	PetscInt     *numMarkCell, rbuf[4], sbuf[4];
-	PetscInt     i, maxid, NumInvalidPhase, numNonLocal, numEmpty, numSparse;
+	PetscInt     i, maxid, NumInvalidPhase, numNonLocal, numEmpty, numWrong, refMarkCell;
 
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
 
 	fs = actx->fs;
 
-	// get maximum Phase
+	// get maximum phase ID
 	maxid = actx->dbm->numPhases - 1;
 
-	// get local mesh sizes
-	GET_DOMAIN_BOUNDS(xs, xe, fs->dsx)
-	GET_DOMAIN_BOUNDS(ys, ye, fs->dsy)
-	GET_DOMAIN_BOUNDS(zs, ze, fs->dsz)
+	// get reference number of markers per cell
+	refMarkCell = actx->NumPartX*actx->NumPartY*actx->NumPartZ;
+
+	// get local coordinate bounds
+	ierr = FDSTAGGetLocalBox(fs, &bx, &by, &bz, &ex, &ey, &ez); CHKERRQ(ierr);
 
 	// allocate marker counter array
 	ierr = makeIntArray(&numMarkCell, NULL, fs->nCells); CHKERRQ(ierr);
@@ -339,23 +340,26 @@ PetscErrorCode ADVMarkCheckMarkers(AdvCtx *actx)
 		X = actx->markers[i].X;
 
 		// marker must be local (check bounding box)
-		if(X[0] < xs || X[0] > xe
-		|| X[1] < ys || X[1] > ye
-		|| X[2] < zs || X[2] > ze) numNonLocal++;
+		if(X[0] < bx || X[0] > ex
+		|| X[1] < by || X[1] > ey
+		|| X[2] < bz || X[2] > ez) numNonLocal++;
 
 		// count number of markers in the cells
 		numMarkCell[actx->cellnum[i]]++;
 	}
 
 	// count empty & sparse cells
-	numEmpty  = 0;
-	numSparse = 0;
+	numEmpty = 0;
+	numWrong = 0;
 
 	for(i = 0; i < fs->nCells; i++)
 	{
-		if(numMarkCell[i] == 0) numEmpty++;
-		if(numMarkCell[i] <  8) numSparse++;
+		if(numMarkCell[i] == 0)           numEmpty++;
+		if(numMarkCell[i] != refMarkCell) numWrong++;
 	}
+
+	// clear
+	ierr = PetscFree(numMarkCell); CHKERRQ(ierr);
 
 	// get global figures
 	if(actx->nproc != 1)
@@ -363,20 +367,20 @@ PetscErrorCode ADVMarkCheckMarkers(AdvCtx *actx)
 		sbuf[0] = NumInvalidPhase;
 		sbuf[1] = numNonLocal;
 		sbuf[2] = numEmpty;
-		sbuf[3] = numSparse;
+		sbuf[3] = numWrong;
 
 		ierr = MPI_Allreduce(sbuf, rbuf, 4, MPIU_INT, MPI_SUM, actx->icomm); CHKERRQ(ierr);
 
 		NumInvalidPhase = rbuf[0];
 		numNonLocal     = rbuf[1];
 		numEmpty        = rbuf[2];
-		numSparse       = rbuf[3];
+		numWrong        = rbuf[3];
 	}
 
 	// print diagnostics
 	if(NumInvalidPhase)
 	{
-		ierr = PetscPrintf(PETSC_COMM_WORLD, "Number of markers that have invalid phase ID: %lld\n", (LLD)NumInvalidPhase); CHKERRQ(ierr);
+		ierr = PetscPrintf(PETSC_COMM_WORLD, "Number of markers with invalid phase ID: %lld\n", (LLD)NumInvalidPhase); CHKERRQ(ierr);
 		error = 1;
 	}
 
@@ -392,9 +396,10 @@ PetscErrorCode ADVMarkCheckMarkers(AdvCtx *actx)
 		error = 1;
 	}
 
-	if(numSparse)
+	if(numWrong)
 	{
-		ierr = PetscPrintf(PETSC_COMM_WORLD, "WARNING! Number of cells with less than 8 markers: %lld.\n", (LLD)numSparse); CHKERRQ(ierr);
+		ierr = PetscPrintf(PETSC_COMM_WORLD, "Number of cells with incorrect number of markers (nmark_x*nmark_y*nmark_z): %lld\n", (LLD)numWrong); CHKERRQ(ierr);
+		error = 1;
 	}
 
 	if(error)
@@ -402,8 +407,6 @@ PetscErrorCode ADVMarkCheckMarkers(AdvCtx *actx)
 		SETERRQ(PETSC_COMM_SELF, PETSC_ERR_USER, "Problems with initial marker distribution (see the above message)");
 	}
 
-	// clear
-	ierr = PetscFree(numMarkCell); CHKERRQ(ierr);
 
 	PetscFunctionReturn(0);
 }

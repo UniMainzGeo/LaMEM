@@ -6,10 +6,10 @@ addpath ../../matlab
 % OUTPUT OPTIONS
 %==========================================================================
 % See model setup in Paraview 1-YES; 0-NO
-Paraview_output        = 1;
+Paraview_output        = 0;
 
 % Output a single file containing particles information for LaMEM (msetup = redundant)
-LaMEM_Redundant_output = 0;%0;
+LaMEM_Redundant_output = 0;
 
 % Output parallel files for LaMEM, using a processor distribution file (msetup = parallel)
 % WARNING: Need a valid 'Parallel_partition' file!
@@ -23,11 +23,11 @@ LoadMesh                =   1;
 RandomNoise             =   logical(0);
 
 if      NumberCores==1
-    Parallel_partition  =   'ProcessorPartitioning_1cpu_1.1.1.bin'
-    
+    Parallel_partition  =   '../ProcessorPartitioning_1cpu_1.1.1.bin'
+
 elseif  NumberCores==4
-    Parallel_partition  =   'ProcessorPartitioning_4cpu_4.1.1.bin'
-    
+    Parallel_partition  =   '../ProcessorPartitioning_4cpu_4.1.1.bin'
+
 end
 
 Is64BIT                 =   logical(0);
@@ -64,13 +64,13 @@ if LoadMesh == 1
     nump_x  = size(X,2);
     nump_y  = size(X,1);
     nump_z  = size(X,3);
-    
+
     z_bot   =   min(Z(:));
     H       =   max(Z(:))-min(Z(:));
     W       =   max(X(:))-min(X(:));
     L       =   max(Y(:))-min(Y(:));
-    
-    
+
+
 end
 
 %==========================================================================
@@ -221,12 +221,12 @@ if (LaMEM_Redundant_output == 1)
     PhaseVec(2) = nump_y;
     PhaseVec(3) = nump_x;
     PhaseVec    = [PhaseVec(:); X(:); Y(:); Z(:); Phase(:); Temp(:)];
-    
+
     % Save data to file
     ParticleOutput  =   'MarkersInput3D.dat';
-    
+
     PetscBinaryWrite(ParticleOutput, PhaseVec);
-    
+
 end
 
 % Clearing up some memory for parallel partitioning
@@ -239,16 +239,21 @@ end
 
 % SAVE PARALLEL DATA (parallel)
 if (LaMEM_Parallel_output == 1)
-    FDSTAGSaveMarkersParallelMatlab(A,Parallel_partition,Is64BIT);
-    
-    
-    if      NumberCores==1
-        !mv -f MatlabInputParticles/ MatlabInputParticles_p1
-        
-    elseif  NumberCores==4
-        !mv -f MatlabInputParticles/ MatlabInputParticles_p4
-        
-    end
+
+	FDSTAGSaveMarkersParallelMatlab(A,Parallel_partition,Is64BIT);
+
+	if NumberCores==1
+
+		!rm -rf ../markers_p1
+		!mv -f markers ../markers_p1
+
+	elseif NumberCores==4
+
+		!rm -rf ../markers_p4
+		!mv -f markers ../markers_p4
+
+	end
+
 end
 
 

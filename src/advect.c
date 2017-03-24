@@ -130,20 +130,17 @@ PetscErrorCode ADVCreate(AdvCtx *actx, FB *fb)
 	else SETERRQ1(PETSC_COMM_WORLD, PETSC_ERR_USER, "Incorrect velocity interpolation type (interp): %s", interp);
 
 	// check marker resolution
-	if(actx->msetup != _FILES_)
+	if(actx->NumPartX < _min_nmark_)
 	{
-		if(actx->NumPartX < _min_nmark_)
-		{
-			SETERRQ2(PETSC_COMM_WORLD, PETSC_ERR_USER, "nmark_x (%lld) is smaller than allowed (%lld)", (LLD)actx->NumPartX, _min_nmark_);
-		}
-		if(actx->NumPartY < _min_nmark_)
-		{
-			SETERRQ2(PETSC_COMM_WORLD, PETSC_ERR_USER, "nmark_y (%lld) is smaller than allowed (%lld)", (LLD)actx->NumPartY, _min_nmark_);
-		}
-		if(actx->NumPartZ < _min_nmark_)
-		{
-			SETERRQ2(PETSC_COMM_WORLD, PETSC_ERR_USER, "nmark_z (%lld) is smaller than allowed (%lld)", (LLD)actx->NumPartZ, _min_nmark_);
-		}
+		SETERRQ2(PETSC_COMM_WORLD, PETSC_ERR_USER, "nmark_x (%lld) is smaller than allowed (%lld)", (LLD)actx->NumPartX, _min_nmark_);
+	}
+	if(actx->NumPartY < _min_nmark_)
+	{
+		SETERRQ2(PETSC_COMM_WORLD, PETSC_ERR_USER, "nmark_y (%lld) is smaller than allowed (%lld)", (LLD)actx->NumPartY, _min_nmark_);
+	}
+	if(actx->NumPartZ < _min_nmark_)
+	{
+		SETERRQ2(PETSC_COMM_WORLD, PETSC_ERR_USER, "nmark_z (%lld) is smaller than allowed (%lld)", (LLD)actx->NumPartZ, _min_nmark_);
 	}
 
 	// check background phase
@@ -161,10 +158,13 @@ PetscErrorCode ADVCreate(AdvCtx *actx, FB *fb)
 
 	// PRINT
 
-	PetscPrintf(PETSC_COMM_WORLD," Number of tracers/cell         : [%lld, %lld, %lld] \n",
-		(LLD)(actx->NumPartX),
-		(LLD)(actx->NumPartY),
-		(LLD)(actx->NumPartZ));
+	if(actx->msetup != _FILES_)
+	{
+		PetscPrintf(PETSC_COMM_WORLD," Number of tracers/cell         : [%lld, %lld, %lld] \n",
+			(LLD)(actx->NumPartX),
+			(LLD)(actx->NumPartY),
+			(LLD)(actx->NumPartZ));
+	}
 
 	// print advection scheme
   	PetscPrintf(PETSC_COMM_WORLD," Advection scheme: ");
@@ -177,11 +177,11 @@ PetscErrorCode ADVCreate(AdvCtx *actx, FB *fb)
 	else if (actx->interp == MINMOD) PetscPrintf(PETSC_COMM_WORLD, "MINMOD (Correction + MINMOD)");
 	else if (actx->interp == STAG_P) PetscPrintf(PETSC_COMM_WORLD, "Empirical STAGP (STAG + pressure points)");
 
-	// initialize markers
-	ierr = ADVMarkInit(actx, fb); CHKERRQ(ierr);
-
 	// create communicator and separator
 	ierr = ADVCreateData(actx); CHKERRQ(ierr);
+
+	// initialize markers
+	ierr = ADVMarkInit(actx, fb); CHKERRQ(ierr);
 
 	// compute host cells for all the markers
 	ierr = ADVMapMarkToCells(actx); CHKERRQ(ierr);

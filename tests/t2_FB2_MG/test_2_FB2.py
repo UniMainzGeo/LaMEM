@@ -6,17 +6,17 @@ import re
 
 
 def test_a():
-  
+
   # Test a falling block case on 1 core, using optimized LaMEM
   ranks = 1
   launch = '../bin/opt/LaMEM -ParamFile ./t2_FB2_MG/FallingBlock_mono_CoupledMG_RedundantCoarse.dat' # This must be a relative path with respect to runLaMEM_Tests.py
   expected_file = 't2_FB2_MG/FB2_MG_1core.expected'
-  
+
   def comparefunc(unittest):
- 
+
     key = 'Div_min'
     unittest.compareFloatingPoint(key,1e-7)
-  
+
     key = 'Div_max'
     unittest.compareFloatingPoint(key,1e-7)
 
@@ -30,5 +30,5 @@ def test_a():
   ex1 = pth.pthUnitTest('unit_FB2_a_CoupledMG_Core1',ranks,launch,expected_file)
   ex1.setVerifyMethod(comparefunc)
   ex1.appendKeywords('@')
-  
+
   return(ex1)

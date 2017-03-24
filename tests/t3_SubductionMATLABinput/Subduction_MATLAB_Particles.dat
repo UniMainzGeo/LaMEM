@@ -60,7 +60,7 @@
 #===============================================================================
 
 	gravity     = 0.0 0.0 -10.0  # gravity vector
-	p_lim_plast = 1              # limit pressure at first iteration for plasticity
+#	p_lim_plast = 1              # limit pressure at first iteration for plasticity
 	eta_min     = 2.5e18         # viscosity upper bound
 	eta_max     = 2.5e24         # viscosity lower limit
 	eta_ref     = 1e22           # reference viscosity (initial guess)
@@ -71,7 +71,9 @@
 #===============================================================================
 
 	msetup         = files             # setup type
-	mark_load_file = ./t3_SubductionMATLABinput/MatlabInputParticles_p4/Particles
+	nmark_x        = 3                 # markers per cell in x-direction
+	nmark_y        = 3                 # ...                 y-direction
+	nmark_z        = 3                 # ...                 z-direction
 	advect         = rk2               # advection scheme
 	new_advect     = 1                 # activate new advection algorithms (temporary)
 	interp         = minmod            # velocity interpolation scheme
