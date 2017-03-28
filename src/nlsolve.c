@@ -348,31 +348,28 @@ PetscErrorCode FormJacobian(SNES snes, Vec x, Mat Amat, Mat Pmat, void *ctx)
 		nl->it     = 0;
 		nl->refRes = nrm;
         nl->jtype = _PICARD_;
-  	}
+	}
 	else if(nl->jtype == _PICARD_)
 	{
 		// Picard case, check to switch to Newton
-		if(nrm < nl->atolPic)
+		//if(nrm < nl->refRes*nl->tolPic || nl->it > nl->nPicIt)
+		if(nrm < nl->refRes*nl->rtolPic || nrm < nl->atolPic)
 		{
-			//if(nrm < nl->refRes*nl->tolPic || nl->it > nl->nPicIt)
-			if(nrm < nl->refRes*nl->rtolPic)
+			if(jr->matLim.jac_mat_free == PETSC_TRUE)
 			{
-				if(jr->matLim.jac_mat_free == PETSC_TRUE)
-				{
-					PetscPrintf(PETSC_COMM_WORLD,"===================================================\n");
-					PetscPrintf(PETSC_COMM_WORLD,"SWITCH TO MF JACOBIAN: ||F||/||F0||=%e, PicIt=%lld \n", nrm/nl->refRes, (LLD)nl->nPicIt);
-					PetscPrintf(PETSC_COMM_WORLD,"===================================================\n");
+				PetscPrintf(PETSC_COMM_WORLD,"===================================================\n");
+				PetscPrintf(PETSC_COMM_WORLD,"SWITCH TO MF JACOBIAN: ||F||/||F0||=%e, PicIt=%lld \n", nrm/nl->refRes, (LLD)nl->nPicIt);
+				PetscPrintf(PETSC_COMM_WORLD,"===================================================\n");
 
-					nl->jtype = _MF_;
-				}
-				else
-				{
-					PetscPrintf(PETSC_COMM_WORLD,"=====================================================\n");
-					PetscPrintf(PETSC_COMM_WORLD,"SWITCH TO MMFD JACOBIAN: ||F||/||F0||=%e, PicIt=%lld \n", nrm/nl->refRes, (LLD)nl->nPicIt);
-					PetscPrintf(PETSC_COMM_WORLD,"=====================================================\n");
+				nl->jtype = _MF_;
+			}
+			else
+			{
+				PetscPrintf(PETSC_COMM_WORLD,"=====================================================\n");
+				PetscPrintf(PETSC_COMM_WORLD,"SWITCH TO MMFD JACOBIAN: ||F||/||F0||=%e, PicIt=%lld \n", nrm/nl->refRes, (LLD)nl->nPicIt);
+				PetscPrintf(PETSC_COMM_WORLD,"=====================================================\n");
 
-					nl->jtype = _MFFD_;
-				}
+				nl->jtype = _MFFD_;
 			}
 		}
 	}
