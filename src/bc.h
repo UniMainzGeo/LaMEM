@@ -145,15 +145,13 @@ typedef struct
 	// temperature on top and bottom boundaries
 	PetscScalar  Tbot, Ttop;
 
-	// from darcy-code
 	// LiquidPressure/Darcy
 	PetscInt     Pl_NumSPC;
 	PetscInt    *Pl_SPCList;
 	PetscScalar *Pl_SPCVals;
 
-	// LiquidPressure on top and bottom boundaries
-	PetscScalar  Pl_bot, Pl_top;
-	/////////////////////
+	// Liquid-pressure/Darcy on top and bottom boundaries
+	PetscScalar  Plbot, Pltop, Plloc;
 
 	// horizontal background strain-rate parameters
 	PetscBool    ExxAct;

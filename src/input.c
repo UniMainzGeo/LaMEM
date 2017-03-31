@@ -406,6 +406,10 @@ PetscErrorCode InputSetDefaultValues(JacRes *jr, UserCtx *user)
 	user->Temp_bottom      = 1.0;
 	//user->GasConstant      = 1.0;            // REMOVE
 
+	// Liquid-pressure/Darcy
+	user->Pl_top         = 0.0;
+	user->Pl_bottom      = 0.0;
+
 	user->Gravity          = 1.0;
 	user->GravityAngle     = 0.0; // angle of gravity with z-axis (can be changed in the x-z plane)
 
@@ -591,6 +595,8 @@ PetscErrorCode InputReadFile(JacRes *jr, UserCtx *user, FILE *fp)
 	parse_GetInt( fp, "BC.UpperBound", &user->BC.UpperBound, &found );
 	parse_GetDouble( fp, "Temp_top", &user->Temp_top, &found );
 	parse_GetDouble( fp, "Temp_bottom", &user->Temp_bottom, &found );
+	parse_GetDouble( fp, "Pl_top", &user->Pl_top, &found );
+	parse_GetDouble( fp, "Pl_bottom", &user->Pl_bottom, &found ); //Liquid-pressure/Darcy
 
 	// optimization
 	parse_GetDouble( fp, "LowerViscosityCutoff", &user->LowerViscosityCutoff, &found );

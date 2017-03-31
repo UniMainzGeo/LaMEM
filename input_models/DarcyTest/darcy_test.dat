@@ -1,16 +1,16 @@
 # 3D test for Darcy equations (w/out deformation)
 
 # Grid
-nel_x						=  	50
+nel_x						=  	20
 nel_y						= 	4
 nel_z						= 	10
 
 # Geometry
 
-L						=	5000		# Length (y-direction)
-W						=	40000		# Width  (x-direction)
-H						=	10000		# Height (z-direction)
-x_left					=	-20000			# Left side of domain
+L						=	5		# Length (y-direction)
+W						=	40		# Width  (x-direction)
+H						=	10		# Height (z-direction)
+x_left					=	-20			# Left side of domain
 y_front =  0     # Front side of domain
 z_bot   =  0     # Bottom of box
 
@@ -30,9 +30,9 @@ msetup 						   = bands
 
 
 # Time stepping and output
-OutputFile					=	test_darcy
+OutputFile					=	test_darcyKSP
 save_timesteps				=	1				# save every ? timesteps
-time_end					=	10			# last timestep
+time_end					=	2			# last timestep
 CFL							=	0.1				# CFL, dt-based criterium
 dt_max						=	2e-4  			# Maximum timestep [Myr if dimensional]
 
@@ -41,6 +41,8 @@ dt_max						=	2e-4  			# Maximum timestep [Myr if dimensional]
 Temp_top	    			=   100				# Temperature @ top
 Temp_bottom					=   100 			# Temperature @ bottom; side BC's are flux-free
 Gravity						=  -10;				# [m/s2] - gravitational acceleration
+Pl_top						=    0				# Liquid-pressure @ top
+Pl_bottom					=	 0				# Liquid-pressure @ bottom				
 
 # Boundary conditions
 BC.LeftBound				=	1				# 1-free slip with BG strainrate Eyy, 2 - no slip, 
@@ -74,7 +76,7 @@ NumPartZ				=	3	# Particles/Cell in z-direction
 <PetscOptionsStart>
 	
 	# activate Darcy:
-	-act_darcy 1			# Activates Darcy solver
+	-act_darcy 1			# Activates Darcy solver	1 SNES, 2 KSP
 	#-act_temp_diff 		# Activates T-diffusion solver	
 	-SkipStokesSolver	# No Stokes (for testing)
 	
@@ -313,9 +315,9 @@ NumPartZ				=	3	# Particles/Cell in z-direction
 		
 		# DARCY Parameters:
 		rhol 			= 	500			# liquid density
-		mu 				=	1e-4		# liquid viscosity	
+		mul 				=	1e-4		# liquid viscosity	
 		Kphi 			=	1e-14		# permeability	
-		Ss				=	2.381e-16			# specific storage	(kf=Kphi/mu/Ss-1=0.4*1.05e6 as in Rozhko Matlab code)
+		Ss				=	2.38810e-16			# specific storage	(kf=Kphi/mu/Ss-1=0.4*1.05e6 as in Rozhko Matlab code)
 	<MaterialEnd>
 
 
@@ -337,9 +339,9 @@ NumPartZ				=	3	# Particles/Cell in z-direction
 		
 		# DARCY Parameters:
 		rhol 			= 	500		# liquid density
-		mu 				=	1e-4		# liquid viscosity
+		mul 				=	1e-4		# liquid viscosity
 		Kphi 			=	1e-14		# permeability
-		Ss				=	2.381e-16			# specific storage	
+		Ss				=	2.38810e-16			# specific storage	
 	<MaterialEnd>
 
 
@@ -360,9 +362,9 @@ NumPartZ				=	3	# Particles/Cell in z-direction
 		
 		# DARCY Parameters:
 		rhol 			= 	500		# liquid density
-		mu 				=	1e-4 			# liquid viscosity
+		mul 				=	1e-4 			# liquid viscosity
 		Kphi 			=	1e-14		# permeability
-		Ss				=	2.381e-16			# specific storage	
+		Ss				=	2.38810e-16			# specific storage	
 	<MaterialEnd>
 
 # End of defining material properties for all phases ----------------------------------------

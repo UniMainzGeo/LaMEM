@@ -50,19 +50,11 @@
  * 		div(Kphi/mu grad(P_l)) =  grad(Kphi rhol*g/mu)
  *
  *	where:
- *		mu 	=       liquid viscosity
- *		rhol 	=	liquid density
+ *		mu 		=   liquid viscosity
  *		Kphi 	=	permeability
- *		Pl 	=	liquid pressure
- *		g 	=	gravitational acceleration (acting in the z-direction )
- *
- *		Once Pl is known, the liquid velocity (vl) can be computed from the Darcy velocity:
- *
- *			\phi*(vl - vs) = K_d/mu*(\grad(Pl) - rhol g
- *
- *		vs 	=	solid velocity
- *		vl 	=	liquid velocity
- *		\phi 	=	porosity
+ *		Ss		=	specific storage
+ *		Pl 		=	liquid pressure
+ *		g 		=	gravitational acceleration (acting in the z-direction )
  *
  */
 
@@ -79,11 +71,6 @@
 #include "tools.h"
 #include "interpolate.h"
 
- typedef struct {
-	 PetscScalar Pl;
-	 // new//PetscScalar Phi;
-} DarcyDOF;
-
 //---------------------------------------------------------------------------
 
 #define SCATTER_FIELD(da, vec, FIELD) \
@@ -95,54 +82,22 @@
 	END_STD_LOOP \
 	ierr = DMDAVecRestoreArray(da, vec, &buff); CHKERRQ(ierr); \
 	LOCAL_TO_LOCAL(da, vec)
-						/*#define GET_Kphi0 \
-							ierr = JacResGetDarcyParam(jr, jr->svCell[iter++].phRat, &kc, NULL, NULL); CHKERRQ(ierr); \
-							buff[k][j][i] 	= 	kc;
 
-						// liquid density
-						#define GET_rhol \
-							ierr = JacResGetDarcyParam(jr, jr->svCell[iter++].phRat, NULL, &rhol, NULL); CHKERRQ(ierr); \
-							buff[k][j][i] 	= 	rhol;
-
-						// liquid viscosity
-						#define GET_mul \
-							ierr = JacResGetDarcyParam(jr, jr->svCell[iter++].phRat, NULL, NULL, &mul); CHKERRQ(ierr); \
-							buff[k][j][i] 	= 	mul;
-
-						// porosity
-						#define GET_Phi \
-							Phi 			=	jr->svCell[iter++].svBulk.Phi; \
-							buff[k][j][i] 	= 	Phi;
-
-						// solid viscosity:
-						#define GET_Viscosity \
-							eta_creep 		=	jr->svCell[iter++].eta_creep; \
-							buff[k][j][i] 	= 	eta_creep;
-						*/
-// New
-//#define GET_Kphi \
-//	kphil = jr->svCell[iter++].svBulk.Kphi; \
-//	buff[k][j][i] 	= 	kphil;		// get kphi from svBulk or from Material_t??
-
+// permeability
 #define GET_Kphi \
 	ierr = JacResGetDarcyParam(jr, jr->svCell[iter++].phRat, &kphi, NULL, NULL); CHKERRQ(ierr); \
 	buff[k][j][i] 	= 	kphi;
-
 
 // liquid viscosity
 #define GET_mul \
 	ierr = JacResGetDarcyParam(jr, jr->svCell[iter++].phRat, NULL, &mul, NULL); CHKERRQ(ierr); \
 	buff[k][j][i] 	= 	mul;
 
-// liquid viscosity
+// specific storage
 #define GET_Ssl \
 	ierr = JacResGetDarcyParam(jr, jr->svCell[iter++].phRat, NULL, NULL, &Ssl); CHKERRQ(ierr); \
 	buff[k][j][i] 	= 	Ssl;
 
-// Pressure at last time step
-#define GET_PlOld \
-	PlOld 			=	jr->svCell[iter++].svBulk.Pln; \
-	buff[k][j][i] 	= 	PlOld;
 //---------------------------------------------------------------------------
 // This extracts coefficients from named vectors attached to a da
 #define ExtractCoefficientsFromDA(da, name,local, global, data)	\
@@ -159,6 +114,7 @@
 	ierr = 	DMRestoreNamedGlobalVector(da,name,&global); 			CHKERRQ(ierr);	\
 	ierr = 	DMRestoreLocalVector(da,&local); 						CHKERRQ(ierr);	\
 
+
 //---------------------------------------------------------------------------
 // Darcy parameters functions
 //---------------------------------------------------------------------------
@@ -167,27 +123,23 @@
 PetscErrorCode JacResGetDarcyParam(
 		JacRes      *jr,
 		PetscScalar *phRat,
-		PetscScalar *Kphi_,     	// Permeability prefactor
-						//PetscScalar *rhol_, 		// Liquid density
-		PetscScalar *mu_,			// Liquid viscosity
-		PetscScalar *Ss_) 			// New: Specific storage
+		PetscScalar *Kphi_,     	// Permeability
+		PetscScalar *mul_,			// Liquid viscosity
+		PetscScalar *Ss_) 			// Specific storage
 {
 	// compute effective darcy parameters in the cell
 
 	PetscInt    i, numPhases;
     Material_t  *phases, *M;
 
-	PetscScalar Kphi, mu, cf, Kphi_local, Ss; 		//, Kphi_0, rhol
+	PetscScalar Kphi, mul, cf, Ss;
 
 	PetscFunctionBegin;
 
 	// initialize
-	Kphi    	= 0.0;
-						//rhol    	= 0.0;
-	mu      	= 0.0;
-
-	// New
-	Ss = 0.0;
+	Kphi	= 0.0;
+	mul		= 0.0;
+	Ss 		= 0.0;
 
 	numPhases 	= 	jr->numPhases;
 	phases    	= 	jr->phases;
@@ -198,29 +150,16 @@ PetscErrorCode JacResGetDarcyParam(
 		M       = &phases[i];
 		cf      =  phRat[i];
 
-		// Compute permeability law
-							//Kphi_0     = M->Kphi;			// basic permeability
-							//Kphi_local = Kphi_0;	        // local permeability
-		// New
-		Kphi_local = M->Kphi;	        // local permeability
-
 		// compute average permeability, liquid density and liquid viscosity
-							//Kphi += cf*Kphi_local;
-							//rhol += cf*M->rhol;
-		Kphi += cf*Kphi_local;
-		mu   += cf*M->mu;
-
-		// New
+		Kphi += cf*M->Kphi;
+		mul  += cf*M->mul;
 		Ss   += cf*M->Ss;
 	}
 
 	// store
-	if(Kphi_) (*Kphi_) = Kphi;
-							//if(rhol_) (*rhol_) = rhol;
-	if(mu_)   (*mu_)   = mu;
-
-	// New
-	if(Ss_)   (*Ss_)   = Ss;
+	if(Kphi_) 	(*Kphi_) = Kphi;
+	if(mul_) 	(*mul_)  = mul;
+	if(Ss_)   	(*Ss_)   = Ss;
 
 	PetscFunctionReturn(0);
 }
@@ -231,8 +170,8 @@ PetscErrorCode JacResCheckDarcyParam(JacRes *jr)
 {
 	// check whether all Darcy material parameters are properly defined
 
-        PetscInt    i, numPhases;
-        Material_t  *phases, *M;
+	PetscInt    i, numPhases;
+	Material_t  *phases, *M;
 
 	PetscFunctionBegin;
 
@@ -247,12 +186,8 @@ PetscErrorCode JacResCheckDarcyParam(JacRes *jr)
 	for(i = 0; i < numPhases; i++)
 	{
 		M = &phases[i];
-
-		// check density of the rock phases
-										//if(M->rhol  == 0.0)  SETERRQ1(PETSC_COMM_SELF, PETSC_ERR_USER, "Define liquid density of phase %lld\n", 	(LLD)i);
 		if(M->Kphi  == 0.0)  SETERRQ1(PETSC_COMM_SELF, PETSC_ERR_USER, "Define permeability of phase %lld\n", 		(LLD)i);
-		if(M->mu    == 0.0)  SETERRQ1(PETSC_COMM_SELF, PETSC_ERR_USER, "Define liquid viscosity of phase %lld\n", 	(LLD)i);
-		// New
+		if(M->mul    == 0.0)  SETERRQ1(PETSC_COMM_SELF, PETSC_ERR_USER, "Define liquid viscosity of phase %lld\n", 	(LLD)i);
 		//if(M->Ss    == 0.0)  SETERRQ1(PETSC_COMM_SELF, PETSC_ERR_USER, "Define specific storage of phase %lld\n", 	(LLD)i);
 	}
 
@@ -266,10 +201,7 @@ PetscErrorCode JacResCreateDarcyParam(JacRes *jr)
 	// setup temperature parameters
 
 	FDSTAG *fs;
-	const PetscInt *lx, *ly, *lz; //, dof=2;
-
-	// New
-	const dof = 1;
+	const PetscInt *lx, *ly, *lz, dof = 1; //, dof=2;
 
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
@@ -290,10 +222,6 @@ PetscErrorCode JacResCreateDarcyParam(JacRes *jr)
 		fs->dsx.nproc, fs->dsy.nproc, fs->dsz.nproc,
 		dof, 1, lx, ly, lz, &jr->DA_Pl); CHKERRQ(ierr);
 
-							// Set field names
-							//ierr = DMDASetFieldName(jr->DA_Pl,0,"Pl");	CHKERRQ(ierr);		// liquid pressure
-							//ierr = DMDASetFieldName(jr->DA_Pl,1,"Phi");	CHKERRQ(ierr);		// porosity
-
 	// create darcy preconditioner matrix
 	ierr = DMCreateMatrix(jr->DA_Pl, &jr->App); CHKERRQ(ierr);
 
@@ -307,7 +235,7 @@ PetscErrorCode JacResCreateDarcyParam(JacRes *jr)
 	ierr = DMCreateGlobalVector(jr->DA_Pl, &jr->Pl); 		CHKERRQ(ierr);
 
 	// create local LiquidPressure vector using box-stencil central DMDA
-	ierr = DMCreateLocalVector(jr->DA_Pl, &jr->lPl); CHKERRQ(ierr);
+	ierr = DMCreateLocalVector(jr->DA_Pl, &jr->lPl); 		CHKERRQ(ierr);
 
 	// LiquidPressure residual (global)
 	ierr = DMCreateGlobalVector(jr->DA_Pl, &jr->r_Pl); 		CHKERRQ(ierr);
@@ -315,23 +243,26 @@ PetscErrorCode JacResCreateDarcyParam(JacRes *jr)
 	// LiquidPressure residual (global)
 	ierr = DMCreateLocalVector(jr->DA_Pl, &jr->lr_Pl); 		CHKERRQ(ierr);
 
+	//create local rhs vector
+	ierr = DMCreateLocalVector(jr->DA_Pl, &jr->rhs_lPl); 	CHKERRQ(ierr);
 
-	// New
-	// create local b vector using box-stencil central DMDA
-	ierr = DMCreateLocalVector(jr->DA_Pl, &jr->Darcylb); CHKERRQ(ierr);
-
-	// b (global)
-	ierr = DMCreateGlobalVector(jr->DA_Pl, &jr->Darcyb); 		CHKERRQ(ierr);
+	// rhs (global)
+	ierr = DMCreateGlobalVector(jr->DA_Pl, &jr->rhs_Pl); 	CHKERRQ(ierr);
 
 
-	// Setup SNES context
-	ierr = SNESCreate(PETSC_COMM_WORLD, &jr->Pl_snes);		CHKERRQ(ierr);								// Create SNES
-	ierr = SNESSetDM(jr->Pl_snes, jr->DA_Pl);				CHKERRQ(ierr);								// attach DMDA to SNES
-	//ierr = SNESSetRhs(jr->Pl_snes,jr->Darcyb);				CHKERRQ(ierr);								// attach RHS
+	//// Setup SNES context
+	ierr = SNESCreate(PETSC_COMM_WORLD, &jr->Pl_snes);								CHKERRQ(ierr);		// Create SNES
+	ierr = SNESSetDM(jr->Pl_snes, jr->DA_Pl);										CHKERRQ(ierr);		// attach DMDA to SNES
 	ierr = SNESSetFunction(jr->Pl_snes,jr->r_Pl,		&FormFunction_DARCY, jr); 	CHKERRQ(ierr);		// attach residual funciom
 	ierr = SNESSetJacobian(jr->Pl_snes,jr->App,jr->App, &FormJacobian_DARCY, jr);	CHKERRQ(ierr);		// attach picard jacobian (optional)
-	ierr = SNESSetOptionsPrefix(jr->Pl_snes,"darcy_");    	CHKERRQ(ierr);
-	ierr = SNESSetFromOptions(jr->Pl_snes);					CHKERRQ(ierr);
+	ierr = SNESSetOptionsPrefix(jr->Pl_snes,"darcy_");    							CHKERRQ(ierr);
+	ierr = SNESSetFromOptions(jr->Pl_snes);											CHKERRQ(ierr);
+
+	// create linear solver
+	ierr = KSPCreate(PETSC_COMM_WORLD, &jr->Pl_ksp); 				CHKERRQ(ierr);
+	//ierr = KSPSetInitialGuessNonzero(jr->Pl_ksp,PETSC_TRUE); 		CHKERRQ(ierr);
+	ierr = KSPSetOptionsPrefix(jr->Pl_ksp,"darcy_");    			CHKERRQ(ierr);
+	ierr = KSPSetFromOptions(jr->Pl_ksp);            				CHKERRQ(ierr);
 
 	PetscFunctionReturn(0);
 }
@@ -358,69 +289,10 @@ PetscErrorCode JacResDestroyDarcyParam(JacRes *jr)
 	ierr = VecDestroy(&jr->Pl);   		CHKERRQ(ierr);		// solution vector
 	ierr = VecDestroy(&jr->r_Pl);   	CHKERRQ(ierr);		// residual vector
 	ierr = VecDestroy(&jr->lPl);		CHKERRQ(ierr);		// local solution vector
-	ierr = SNESDestroy(&jr->Pl_snes);	CHKERRQ(ierr);
-
-	// New
-	ierr = VecDestroy(&jr->Darcylb);	CHKERRQ(ierr);
-	ierr = VecDestroy(&jr->Darcyb);		CHKERRQ(ierr);
-
-	PetscFunctionReturn(0);
-}
-//---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "JacResInitDarcy"
-PetscErrorCode JacResInitDarcy(JacRes *jr)
-{
-	// initialize liquid pressure from markers, or from zero
-
-	BCCtx       *bc;
-	PetscScalar ***lPl, ***bcPl, Pl;
-	PetscInt    i, j, k, nx, ny, nz, sx, sy, sz, iter;
-
-	PetscErrorCode ierr;
-	PetscFunctionBegin;
-
-	// access context
-	bc = jr->bc;
-
-	ierr = VecZeroEntries(jr->lPl); CHKERRQ(ierr);
-
-	ierr = DMDAVecGetArray(jr->DA_Pl, jr->lPl,  &lPl);  CHKERRQ(ierr);
-	ierr = DMDAVecGetArray(jr->DA_Pl, bc->bcPl, &bcPl); CHKERRQ(ierr);
-
-	iter = 0;
-
-	ierr = DMDAGetCorners(jr->DA_Pl, &sx, &sy, &sz, &nx, &ny, &nz); CHKERRQ(ierr);
-
-	START_STD_LOOP
-	{
-		Pl = bcPl[k][j][i];
-
-		//PetscPrintf(PETSC_COMM_WORLD,"bcPl(%i,%i,%i)=%12.12e \n",i,j,k-1,bcPl[k-1][j][i] );
-											// in the case of Darcy, we do not actually advect Pl on particles, which
-											// is why iyt is initialized to zero here
-											//if(Pl == DBL_MAX) Pl = 0.0	;
-		// New
-		if(Pl == DBL_MAX) Pl = jr->svCell[iter].svBulk.Pln;
-
-
-		if(bcPl[k][j][i] == DBL_MAX) bcPl[k][j][i] = 0.0	;
-		//PetscPrintf(PETSC_COMM_WORLD,"bcPl(%i,%i,%i)=%12.12e \n",i,j,k-1,bcPl[k-1][j][i] );
-
-		lPl[k][j][i] = Pl;
-
-		//PetscPrintf(PETSC_COMM_WORLD,"lPl(%i,%i,%i)=%12.12e \n",i,j,k-1,lPl[k-1][j][i] );
-
-
-		iter++;
-	}
-	END_STD_LOOP
-
-	ierr = DMDAVecRestoreArray(jr->DA_Pl, jr->lPl,  &lPl);  CHKERRQ(ierr);
-	ierr = DMDAVecRestoreArray(jr->DA_Pl, bc->bcPl, &bcPl); CHKERRQ(ierr);
-
-	// apply two-point constraints
-	ierr = JacResApplyDarcyBC(jr); CHKERRQ(ierr);
+	ierr = SNESDestroy(&jr->Pl_snes);	CHKERRQ(ierr);		// Darcy SNES context
+	ierr = KSPDestroy(&jr->Pl_ksp);		CHKERRQ(ierr);		// Darcy KSP context
+	ierr = VecDestroy(&jr->rhs_lPl);	CHKERRQ(ierr);		// RHS global vector
+	ierr = VecDestroy(&jr->rhs_Pl);		CHKERRQ(ierr);		// RHS local vector
 
 	PetscFunctionReturn(0);
 }
@@ -430,82 +302,111 @@ PetscErrorCode JacResInitDarcy(JacRes *jr)
 PetscErrorCode JacResUpdateDarcy(JacRes *jr)
 {
 	// correct LiquidPressure for diffusion (Newton update)
-	SolVarCell 	*svCell;
-	SolVarBulk 	*svBulk;
-	FDSTAG      *fs;
-	//DarcyDOF	***sol_local, ***sol_global;
-	Vec	***sol_local;
-	PetscScalar ***sol_global;
-	PetscScalar ***lPl, ***Pl, ***lKphi;
-	PetscInt    i, j, k, nx, ny, nz, sx, sy, sz, iter;
-						//Vec 		local_Kphi0,  	Kphi0_vec;
-	// New
-	Vec 		local_Kphi,  	Kphi_vec;
-	PetscScalar 		***sol;
+
+	PetscScalar ***sol_local, ***sol_global;
+	PetscInt    i, j, k, nx, ny, nz, sx, sy, sz;
 
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
 
-	fs = jr->fs;
 
-	// Get local vectors attached with the solution at the local DA
-	ierr 		= 	DMGetLocalVector(jr->DA_Pl,&sol_local); 	CHKERRQ(ierr);
-
-	// Copy global solution vector into local  vector
-	ierr = DMGlobalToLocalBegin(jr->DA_Pl, jr->Pl,INSERT_VALUES, sol_local); CHKERRQ(ierr);
-	ierr = DMGlobalToLocalEnd  (jr->DA_Pl, jr->Pl,INSERT_VALUES, sol_local); CHKERRQ(ierr);
-
-	//ierr = DMDAVecGetArray(jr->DA_Pl, jr->lPl, &sol_local ); 	CHKERRQ(ierr);
+	ierr = DMDAVecGetArray(jr->DA_Pl, jr->lPl, &sol_local ); 	CHKERRQ(ierr);
 	ierr = DMDAVecGetArray(jr->DA_Pl,  jr->Pl, &sol_global); 	CHKERRQ(ierr);
-
-	// access work vectors
-	ierr = DMDAVecGetArray(jr->DA_Pl, sol_local,  	&sol);  				CHKERRQ(ierr);
 
 	ierr = DMDAGetCorners(jr->DA_Pl, &sx, &sy, &sz, &nx, &ny, &nz); CHKERRQ(ierr);
 
-								//ExtractCoefficientsFromDA(jr->DA_Pl, "Kphi0",		local_Kphi0,  	Kphi0_vec,  	lKphi);				// Permeability coefficients
-	ExtractCoefficientsFromDA(jr->DA_Pl, "Kphi",		local_Kphi,  	Kphi_vec,  	lKphi);				// Permeability coefficients
-
-	iter = 0;
 	START_STD_LOOP
 	{
-		svCell 			= 	&jr->svCell[iter++];
-		svBulk 			= 	&svCell->svBulk;
-
 		// update local solution vector
-		//sol_local[k][j][i].Pl 	=	sol_global[k][j][i].Pl;
-
-		//sol_local[k][j][i] 	=	sol_global[k][j][i];
-		sol[k][j][i] 	=	sol_global[k][j][i];
-		//PetscPrintf(PETSC_COMM_WORLD,"sol_local(%i,%i,%i)=%12.12e \n",i,j,k,sol_local[k][j][i] );
-		//sol_local[k][j][i] 	=	sol_global[k][j][i];
-								//sol_local[k][j][i].Phi 	=	sol_global[k][j][i].Phi;
-
-								//svBulk->Kphi			=	lKphi[k][j][i];					// watch out -> this is only the precoefficient!
-		svBulk->Kphi			=	sol_global[k][j][i];
-								//svBulk->Phi				=	sol_global[k][j][i].Phi;		// Update for next dt
-
+		sol_local[k][j][i] 	=	sol_global[k][j][i];
 	}
 	END_STD_LOOP
 
 	ierr = DMDAVecRestoreArray(jr->DA_Pl,  jr->Pl, &sol_global); 	CHKERRQ(ierr);
-	//ierr = DMDAVecRestoreArray(jr->DA_Pl, jr->lPl, &sol_local); 	CHKERRQ(ierr);
-	ierr = DMDAVecRestoreArray(jr->DA_Pl, sol_local,   &sol);  		CHKERRQ(ierr);
-	ierr= DMRestoreLocalVector (jr->DA_Pl,	&sol_local); 			CHKERRQ(ierr);
+	ierr = DMDAVecRestoreArray(jr->DA_Pl, jr->lPl, &sol_local); 	CHKERRQ(ierr);
 
-								//RestoreCoefficientsFromDA(jr->DA_Pl, "Kphi0",		local_Kphi0, 	Kphi0_vec, 		lKphi);		// Permeability coefficients
 
-	RestoreCoefficientsFromDA(jr->DA_Pl, "Kphi",		local_Kphi, 	Kphi_vec, 		lKphi);		// Permeability coefficients
-
-	GLOBAL_TO_LOCAL(jr->DA_Pl,   jr->Pl, jr->lPl)
-
-	//DarcyPrintPl(jr);
+	//GLOBAL_TO_LOCAL(jr->DA_Pl,   jr->Pl, jr->lPl)
 
 	// apply two-point constraints
 	ierr = JacResApplyDarcyBC(jr); CHKERRQ(ierr);
 
 	PetscFunctionReturn(0);
 }
+//---------------------------------------------------------------------------
+#undef __FUNCT__
+#define __FUNCT__ "BCCreateDarcy"
+PetscErrorCode BCCreateDarcy(JacRes *jr, BCCtx *bc)
+{
+
+	PetscFunctionBegin;
+
+	PetscErrorCode 	ierr;
+	FDSTAG 			*fs;
+
+	// Only for cases where Darcy is active
+	if(jr->actDarcy != PETSC_TRUE) PetscFunctionReturn(0);
+
+	// create BC context for DARCY
+	fs = bc->fs;
+
+	// create boundary conditions vectors (liquid pressure)
+	ierr = DMCreateLocalVector(jr->DA_Pl,  &bc->bcPl);  CHKERRQ(ierr);
+
+	// SPC (LiquidPressure/Darcy)
+	ierr = makeIntArray (&bc->Pl_SPCList, NULL, fs->dof.lnp); CHKERRQ(ierr);
+	ierr = makeScalArray(&bc->Pl_SPCVals, NULL, fs->dof.lnp); CHKERRQ(ierr);
+
+
+	// Mark as unconstrained:
+	ierr = VecSet(bc->bcPl, DBL_MAX); CHKERRQ(ierr);
+
+	bc->Pl_NumSPC 	= 0;
+
+	bc->fs   = fs;
+
+	// exchange ghost point constraints
+	// AVOID THIS BY SETTING CONSTRAINTS REDUNDANTLY
+	// IN MULTIGRID ONLY REPEAT BC COARSENING WHEN THINGS CHANGE
+	LOCAL_TO_LOCAL(jr->DA_Pl, bc->bcPl)
+
+	PetscFunctionReturn(0);
+}
+//---------------------------------------------------------------------------
+ #undef __FUNCT__
+ #define __FUNCT__ "BCDestroyDarcy"
+ PetscErrorCode BCDestroyDarcy(JacRes *jr, BCCtx *bc)
+ {
+ 	PetscFunctionBegin;
+
+ 	PetscErrorCode 	ierr;
+
+ 	// Only for cases where Darcy is active
+ 	if(jr->actDarcy != PETSC_TRUE) PetscFunctionReturn(0);
+
+ 	// SPC (LiquidPressure/Darcy)
+ 	ierr = PetscFree(bc->Pl_SPCList); CHKERRQ(ierr);
+ 	ierr = PetscFree(bc->Pl_SPCList); CHKERRQ(ierr);
+
+ 	PetscFunctionReturn(0);
+ }
+ //---------------------------------------------------------------------------
+ #undef __FUNCT__
+ #define __FUNCT__ "BCSetParamDarcy"
+ PetscErrorCode BCSetParamDarcy(JacRes *jr, BCCtx *bc, UserCtx *user)
+ {
+ 	PetscFunctionBegin;
+
+ 	// Only for cases where Darcy is active
+ 	if(jr->actDarcy != PETSC_TRUE) PetscFunctionReturn(0);
+
+ 	bc->Plbot  = user->Pl_bottom;
+ 	bc->Pltop  = user->Pl_top;
+
+ 	bc->Plloc= 1e-10 ; //!!!!!!!!!!!!!!!!!!!!!!!!!!!!!#####################################################################
+
+ 	PetscFunctionReturn(0);
+ }
 //---------------------------------------------------------------------------
 #undef __FUNCT__
 #define __FUNCT__ "JacResApplyDarcyBC"
@@ -516,7 +417,6 @@ PetscErrorCode JacResApplyDarcyBC(JacRes *jr)
 	FDSTAG      *fs;
 	BCCtx       *bc;
 	PetscScalar pmdof;
-	//DarcyDOF	***sol;
 	PetscScalar	***sol;
 	PetscScalar ***bcPl;
 	PetscInt    mcx, mcy, mcz;
@@ -547,7 +447,6 @@ PetscErrorCode JacResApplyDarcyBC(JacRes *jr)
 
 	START_STD_LOOP
 	{
-		//pmdof = sol[k][j][i].Pl;
 		pmdof = sol[k][j][i];
 
 		I = i; fi = 0;
@@ -565,20 +464,33 @@ PetscErrorCode JacResApplyDarcyBC(JacRes *jr)
 		if(fi*fk)    SET_EDGE_CORNER_DARCY(n, sol, K, j, I, k, j, i, pmdof)
 		if(fj*fk)    SET_EDGE_CORNER_DARCY(n, sol, K, J, i, k, j, i, pmdof)
 		if(fi*fj*fk) SET_EDGE_CORNER_DARCY(n, sol, K, J, I, k, j, i, pmdof)
-
-		//PetscPrintf(PETSC_COMM_WORLD,"sol(%i,%i,%i).Pl=%12.12e \n",i,j,k-1,sol[k-1][j][i] );
 	}
 	END_STD_LOOP
 
 	// restore access
 	ierr = DMDAVecRestoreArray(jr->DA_Pl, jr->lPl,  &sol);  CHKERRQ(ierr);
 	ierr = DMDAVecRestoreArray(jr->DA_Pl, bc->bcPl, &bcPl); CHKERRQ(ierr);
-	//DarcyPrintPl(jr);
 
 	PetscFunctionReturn(0);
 }
+//---------------------------------------------------------------------------
+#undef __FUNCT__
+#define __FUNCT__ "IncreaseLiquidPressureBottom"
+PetscErrorCode IncreaseLiquidPressureBottom(JacRes *jr, BCCtx *bc, UserCtx *user)
+{
+	PetscScalar Pl_incr;
 
+	PetscFunctionBegin;
 
+	// Only for cases where Darcy is active
+	if(jr->actDarcy != PETSC_TRUE) PetscFunctionReturn(0);
+
+	Pl_incr = 2.0;									/////////////////////////////////////// To change ////////////
+
+	bc->Plloc = Pl_incr*bc->Plloc;
+
+	PetscFunctionReturn(0);
+}
 //---------------------------------------------------------------------------
 #undef __FUNCT__
 #define __FUNCT__ "FormFunction_DARCY"
@@ -588,38 +500,8 @@ PetscErrorCode FormFunction_DARCY(SNES snes,Vec x,Vec f, JacRes *jr)
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
 
-
-
-	//ierr = JacResCopyDarcySol(snes,jr, x);
-
 	// compute Residual
 	ierr = JacResGetDarcyRes(snes, x, f, jr); 	CHKERRQ(ierr);
-
-	//DarcyPrintPl(jr);
-
-
-	/*// Copy jr->r_Pl in f ////////////////////////////////////////////////////////////////////
-	PetscScalar *res, *iter, *rpl;
-	FDSTAG      *fs;
-	BCCtx       *bc;
-	PetscInt    i, num, *list;
-
-	fs  = jr->fs;
-	bc  = jr->bc;
-	ierr = VecGetArray(jr->r_Pl, rpl); CHKERRQ(ierr);
-	ierr = VecGetArray(f, &res);      CHKERRQ(ierr);
-	// copy vectors component-wise
-	iter = res;
-	ierr  = PetscMemcpy(iter, f,  (size_t)fs->nCells*sizeof(PetscScalar)); CHKERRQ(ierr);
-	// zero out constrained residuals
-	num   = bc->Pl_NumSPC;
-	list  = bc->Pl_SPCList;
-
-	for(i = 0; i < num; i++) res[list[i]] = 0.0;
-	// restore access
-	ierr = VecRestoreArray(jr->Pl,   &rpl);  CHKERRQ(ierr);
-	ierr = VecRestoreArray(f, &res);       CHKERRQ(ierr);*/
-	////////////////////////////////////////////////////////////////////////////////////////////
 
 	PetscFunctionReturn(0);
 }
@@ -630,67 +512,37 @@ PetscErrorCode JacResGetDarcyRes(SNES snes, Vec x, Vec f, JacRes *jr)
 {
 	// compute Darcy residual vector
 
-	FDSTAG     		*fs;
+	SolVarCell *svCell;
+	SolVarBulk *svBulk;
 	BCCtx      		*bc;
 	DM 				da, coordDA;
 	Vec				local_sol, local_res, coordinates;
-	PetscInt    	iter, num, *list;
+	PetscInt    	iter;
 	PetscInt    	Ip1, Im1, Jp1, Jm1, Kp1, Km1;
 	PetscInt    	i, j, k, nx, ny, nz, sx, sy, sz, mx, my, mz;
-	PetscInt 		sx_fine,sy_fine,sz_fine;
+	//PetscInt 		sx_fine,sy_fine,sz_fine;
  	PetscScalar 	bkx, fkx, bky, fky, bkz, fkz;
 	PetscScalar 	bdx, fdx, bdy, fdy, bdz, fdz;
 	PetscScalar	 	bqx, fqx, bqy, fqy, bqz, fqz;
-	PetscScalar 	brz, frz;
- 	PetscScalar 	dx, dy, dz;
- 	PetscScalar 	Kphi, mu, Pl_c, gz, *grav; 		// kc,  rhol_param
-
-	PetscScalar 	***mul, ***lKphi; 				//, ***lKphi0, ***rhol, ***buff, *Pl, ***Phi_old,  ***EtaCreep;
-	PetscScalar		dt; 							//	K, K0, eta_bulk, phi0,n,m,R, Phi, Phi_bulk;
-													//PetscScalar		K, K0, eta_bulk, phi0,n,m,R, Phi,Phi_bulk;
-	//DarcyDOF 		***sol, ***res;
-	PetscScalar 		***sol, ***res;
-													//Vec 			Kphi0_vec,local_Kphi0;
-	Vec 			local_Kphi;
-													//Vec 			PhiOld_local, 	PhiOld_vec;
-													//Vec 			rhol_local, 	rhol_vec;
-	Vec 			mul_local, 		mul_vec;
-													//Vec 			EtaCreep_local, EtaCreep_vec;
+ 	PetscScalar 	dt, dx, dy, dz;
+ 	PetscScalar 	Kphi, mu, Pl_c, Pl_n, gz, *grav;
+	PetscScalar 	***mul, ***lKphi, ***Ssl, ***sol, ***res;
+	Vec 			local_Kphi, Ss_local, mul_local;
+	Vec 			mul_vec, Ss_vec, Kphi_vec;
 	DMDACoor3d     ***coords;
 
-	//New
-	Vec 			Kphi_vec;
-	Vec 			Ss_local,  Ss_vec;
-	PetscScalar		***Ssl;											// specific storage
 
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
 
-	// Get DA for the CURRENT level (not necessarily the fine grid!)
-	ierr 		=	SNESGetDM(snes,&da); 				CHKERRQ(ierr);
-
-	// Get local vectors attached with the solution at the local DA
-	ierr 		= 	DMGetLocalVector(da,&local_sol); 	CHKERRQ(ierr);
-	ierr 		= 	DMGetLocalVector(da,&local_res); 	CHKERRQ(ierr);
-							//ierr 		= 	DMGetLocalVector(da,&local_Kphi); 	CHKERRQ(ierr);
-
-	// clear local residual vector
-	//ierr = VecZeroEntries(jr->lr_Pl); CHKERRQ(ierr);
-
-	// access work vectors
-	//ierr = DMDAVecGetArray(da, jr->lr_Pl, &res);  CHKERRQ(ierr);
-	//ierr = DMDAVecGetArray(da, jr->lPl,   &sol);  CHKERRQ(ierr);
-
 	// access residual context variables
-	fs        = jr->fs;
 	grav      = jr->grav;       // gravity acceleration
 	gz 		  =	grav[2];		// gravitational acceleration in z-direction
 	bc        = jr->bc;
 	dt        = jr->ts.dt;      // time step
-	num       = bc->Pl_NumSPC;
-	list      = bc->Pl_SPCList;
 
-	PetscPrintf(PETSC_COMM_WORLD,"dt Darcy %12.12e ---------------------------------\n",dt );
+	// Get DA for the CURRENT level (not necessarily the fine grid!)
+	ierr 		=	SNESGetDM(snes,&da); 				CHKERRQ(ierr);
 
 	// Dimensions of the global grid at the current level
 	DMDAGetInfo(da, 0, &nx, &ny,&nz,PETSC_IGNORE,PETSC_IGNORE,PETSC_IGNORE, PETSC_IGNORE,PETSC_IGNORE,PETSC_IGNORE,PETSC_IGNORE,PETSC_IGNORE,PETSC_IGNORE);
@@ -699,123 +551,82 @@ PetscErrorCode JacResGetDarcyRes(SNES snes, Vec x, Vec f, JacRes *jr)
 	mz 			= 	nz-1;
 
 	// Extract required material parameters
-							//ExtractCoefficientsFromDA(da, "Kphi0",		local_Kphi0,  	Kphi0_vec,  	lKphi0);		// Permeability K0
-							//ExtractCoefficientsFromDA(da, "rhol",		rhol_local, 	rhol_vec, 		rhol);				// Liquid density
-							//ExtractCoefficientsFromDA(da, "Phi_old",	PhiOld_local, 	PhiOld_vec, 	Phi_old);			// Porosity at last timestep
-	ExtractCoefficientsFromDA(da, "mul",	mul_local, 		mul_vec, 	mul);				// Liquid viscosity
-							//ExtractCoefficientsFromDA(da, "eta_creep",	EtaCreep_local, EtaCreep_vec, 	EtaCreep);			// Solid viscosity
-	// New
+	ExtractCoefficientsFromDA(da, "mul",	mul_local, 		mul_vec, 	mul);		// Liquid viscosity
 	ExtractCoefficientsFromDA(da,"Kphi",	local_Kphi,  	Kphi_vec,  	lKphi);		// Permeability K
-	//ExtractCoefficientsFromDA(da, "Pl_old",	PlOld_local, 	PlOld_vec, 	Pl_old);
-	ExtractCoefficientsFromDA(da, "Ssl",	Ss_local, 		Ss_vec, 	Ssl);
+	ExtractCoefficientsFromDA(da, "Ssl",	Ss_local, 		Ss_vec, 	Ssl);		// specific storage
 
-							//ierr = DMGlobalToLocalBegin(da, Kphi0_vec,INSERT_VALUES, local_Kphi); CHKERRQ(ierr);
-							//ierr = DMGlobalToLocalEnd  (da, Kphi0_vec,INSERT_VALUES, local_Kphi); CHKERRQ(ierr);
+	// Get local vectors attached with the solution at the local DA
+	ierr 		= 	DMGetLocalVector(da,&local_sol); 	CHKERRQ(ierr);
+	ierr 		= 	DMGetLocalVector(da,&local_res); 	CHKERRQ(ierr);
+	//ierr 		= 	DMGetLocalVector(da,&local_rhs); 	CHKERRQ(ierr);
 
 	// Copy global solution vector into local  vector
 	ierr = DMGlobalToLocalBegin(da, x,INSERT_VALUES, local_sol); CHKERRQ(ierr);
 	ierr = DMGlobalToLocalEnd  (da, x,INSERT_VALUES, local_sol); CHKERRQ(ierr);
 
-
-
-							//ierr = DMGlobalToLocalBegin(jr->DA_Pl, jr->Pl,INSERT_VALUES, local_sol); CHKERRQ(ierr);
-							//ierr = DMGlobalToLocalEnd  (jr->DA_Pl, jr->Pl,INSERT_VALUES, local_sol); CHKERRQ(ierr);
-
 	// Copy global residual into local  vector
 	ierr = DMGlobalToLocalBegin(da, f,INSERT_VALUES, local_res); 	CHKERRQ(ierr);
 	ierr = DMGlobalToLocalEnd  (da, f,INSERT_VALUES, local_res); 	CHKERRQ(ierr);
+
+	// Copy global rhs into local  vector
+	//ierr = DMGlobalToLocalBegin(da, jr->rhs_Pl,INSERT_VALUES, local_rhs); 	CHKERRQ(ierr);
+	//ierr = DMGlobalToLocalEnd  (da, jr->rhs_Pl,INSERT_VALUES, local_rhs); 	CHKERRQ(ierr);
 
 	// Make coordinates available
 	ierr = DMGetCoordinateDM(da, &coordDA);							CHKERRQ(ierr);		// coordinates DA
 	ierr = DMGetCoordinatesLocal(da, &coordinates);					CHKERRQ(ierr);		// vector with coordinates
 	ierr = DMDAVecGetArray(coordDA, coordinates, &coords);			CHKERRQ(ierr);		// array with coordinates
 
-	// New
-	//ierr = DMDAVecGetArray(da, jr->lPl,  &sol);  CHKERRQ(ierr);
-
 	// access work vectors
 	ierr = DMDAVecGetArray(da, local_sol,  	&sol);  				CHKERRQ(ierr);
 	ierr = DMDAVecGetArray(da, local_res,  	&res); 					CHKERRQ(ierr);
+	//ierr = DMDAVecGetArray(da, local_rhs,  	&rhs); 					CHKERRQ(ierr);
 
-							//ierr = DMDAVecGetArray(da, local_Kphi,  &lKphi);  				CHKERRQ(ierr);
-
-	// Update ghost points for the correct boundary values
+	// Update ghost points for the correct boundary values  -  Note vec x is locked read only !!
 	ierr = DMDAGetCorners(da, &sx, &sy, &sz, &nx, &ny, &nz); CHKERRQ(ierr);
-	ierr = DMDAGetCorners(jr->DA_Pl, &sx_fine, &sy_fine, &sz_fine, NULL,NULL,NULL); CHKERRQ(ierr);
-
-
-
-	// Put this in an other place (Vec x is locked read only)///////////////////////////////////
+	//ierr = DMDAGetCorners(jr->DA_Pl, &sx_fine, &sy_fine, &sz_fine, NULL,NULL,NULL); CHKERRQ(ierr);
 	START_STD_LOOP
 	{
-		//PetscPrintf(PETSC_COMM_WORLD,"solres(%i,%i,%i)=%12.12e \n",i,j,k-1,sol[k-1][j][i] );
 		if (k==0){
-			//sol[k-1][j][i].Pl =  2*bc->Pl_bot - sol[k][j][i].Pl;    // bottom boundary, dirichlet value constant
-			if( (i==(sx+nx)/2 ) ) //&& (j==(sy+ny)/2 ))
-			{
-				sol[k-1][j][i] =  bc->Pl_bot - sol[k][j][i];    // bottom boundary, dirichlet value constant   !!!!!!!!!!!!!!!!!!!!!!!!!!!!
-			}
-			//PetscPrintf(PETSC_COMM_WORLD,"*bc->Pl_bot=%12.12e \n",bc->Pl_bot);
+			//if( (i==(sx+nx)/2 ) ) //&& (j==(sy+ny)/2 ))
+			//{
+			//	sol[k-1][j][i] =  2*bc->Pl_loc - sol[k][j][i];    // bottom boundary, dirichlet value constant   !!!!!!!!!!!!!!!!!!!!!!!!!!!!
+			//}
+			sol[k-1][j][i] =  2*bc->Plbot - sol[k][j][i];    // bottom boundary, dirichlet value constant   !!!!!!!!!!!!!!!!!!!!!!!!!!!!
 		}
 		if (k==mz){
-			//sol[k+1][j][i].Pl =  2*bc->Pl_top - sol[k][j][i].Pl  ;	// top boundary, dirichlet value constant
-			sol[k+1][j][i] =  2*bc->Pl_top - sol[k][j][i]  ;	// top boundary, dirichlet value constant
+			sol[k+1][j][i] =  2*bc->Pltop - sol[k][j][i]  ;	// top boundary, dirichlet value constant
 		}
 
 		if (j==0){
-			//sol[k][j-1][i].Pl =	sol[k][j][i].Pl;		// zero flux
-			sol[k][j-1][i] =	sol[k][j][i];		// zero flux
+			sol[k][j-1][i] =	sol[k][j][i];	// zero flux
 		}
 		if (j==my){
-			//sol[k][j+1][i].Pl = sol[k][j][i].Pl;		// zero flux
 			sol[k][j+1][i] = sol[k][j][i];		// zero flux
 		}
 		if (i==0){
-			//sol[k][j][i-1].Pl = sol[k][j][i].Pl;		// zero flux
 			sol[k][j][i-1] = sol[k][j][i];		// zero flux
 		}
 		if (i==mx){
-			//sol[k][j][i+1].Pl = sol[k][j][i].Pl;		// zero flux
 			sol[k][j][i+1] = sol[k][j][i];		// zero flux
 		}
-		//PetscPrintf(PETSC_COMM_WORLD,"sol(%i,%i,%i)=%12.12e \n",i,j,k-1,sol[k-1][j][i] );
 	}
 	END_STD_LOOP
-	/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-							/*//---------------
-							// Update (nonlinear) material properties @ all points (including ghost points)
-							//---------------
-							ierr = DMDAGetGhostCorners(da, &sx, &sy, &sz, &nx, &ny, &nz); CHKERRQ(ierr);
-
-							phi0 			= 		0.01;
-							m 				=		1.0;
-							n 				=		3.0;
-							R 				=		1.0;	// decompaction_weakening
-							PetscOptionsGetScalar(PETSC_NULL, PETSC_NULL,"-PorosityWaves_R",&R,PETSC_NULL);
-							START_STD_LOOP
-							{
-								K0 				=		lKphi0[k][j][i];
-								Phi 			=		sol[k][j][i].Phi;
-								lKphi[k][j][i] 	= 		K0*PetscPowScalar((Phi/phi0),n);
-
-							//	PetscPrintf(PETSC_COMM_WORLD,"eta_bulk=%12.12e  phi=%e K0=%e KPhi=%e Phi_old=%e\n",eta_bulk, Phi, K0, lKphi[k][j][i],Phi_old[k][j][i] );
-							//	SETERRQ(PETSC_COMM_SELF, PETSC_ERR_USER, "Stop here");
-							}
-							END_STD_LOOP
-							*/
 
 	//---------------
 	// central points
 	//---------------
 	ierr = DMDAGetCorners(da, &sx, &sy, &sz, &nx, &ny, &nz); CHKERRQ(ierr);
+    iter=0;
 	START_STD_LOOP
 	{
 		// access solution vector
-		//Pl_c  = sol[k][j][i].Pl; // current liquid pressure
 		Pl_c  = sol[k][j][i]; // current liquid pressure
 
-		//PetscPrintf(PETSC_COMM_WORLD,"sol(%i,%i,%i).Pl=%12.12e \n",i,j,k-1,sol[k-1][j][i].Pl );
+		// access solution variables
+		svCell = &jr->svCell[iter++];
+		svBulk = &svCell->svBulk;
+		Pl_n  = svBulk->Pln;  // liquid pressure history
 
 		// check index bounds
 		Im1 = i-1; if(Im1 < 0)  Im1++;
@@ -830,14 +641,6 @@ PetscErrorCode JacResGetDarcyRes(SNES snes, Vec x, Vec f, JacRes *jr)
 		bkx 	= 	(Kphi + lKphi[k][j][Im1])/2.0;       fkx = (Kphi + lKphi[k][j][Ip1])/2.0;
 		bky 	= 	(Kphi + lKphi[k][Jm1][i])/2.0;       fky = (Kphi + lKphi[k][Jp1][i])/2.0;
 		bkz 	= 	(Kphi + lKphi[Km1][j][i])/2.0;       fkz = (Kphi + lKphi[Kp1][j][i])/2.0;
-
-							/*
-							// compute liquid densities at the necessary points, from their definition at center points
-							brz 	= (rhol[k][j][i] + rhol[Km1][j][i])/2.0; frz = (rhol[k][j][i] + rhol[Kp1][j][i])/2.0;
-
-							// compute liquid densities at the necessary points, from their definition at center points
-							brz 	= (rhol[k][j][i] + rhol[Km1][j][i])/2.0; frz = (rhol[k][j][i] + rhol[Kp1][j][i])/2.0;
-							*/
 
 	    // get mesh steps
 		bdx 	= 	coords[k  ][j  ][i  ].x - coords[k  ][j  ][i-1].x;
@@ -856,112 +659,50 @@ PetscErrorCode JacResGetDarcyRes(SNES snes, Vec x, Vec f, JacRes *jr)
 		mu		=	mul[k][j][i];		// liquid viscosity
 
 		// compute LiquidPressure fluxes
-		//PetscPrintf(PETSC_COMM_WORLD,"sol(%i,%i,%i).Pl=%12.12e \n",i,j,k-1,sol[k-1][j][i] );
-		//PetscPrintf(PETSC_COMM_WORLD,"Kphi(%i,%i,%i).Pl=%12.12e \n",i,j,k,Kphi );
-		//bqx 	= bkx/mu*(Pl_c - sol[k][j][i-1].Pl)/bdx;   fqx = fkx/mu*(sol[k][j][i+1].Pl - Pl_c)/fdx;
-		//bqy 	= bky/mu*(Pl_c - sol[k][j-1][i].Pl)/bdy;   fqy = fky/mu*(sol[k][j+1][i].Pl - Pl_c)/fdy;
-		//bqz 	= bkz/mu*(Pl_c - sol[k-1][j][i].Pl)/bdz;   fqz = fkz/mu*(sol[k+1][j][i].Pl - Pl_c)/fdz;
 		bqx 	= bkx/mu*(Pl_c - sol[k][j][i-1])/bdx;   fqx = fkx/mu*(sol[k][j][i+1] - Pl_c)/fdx;
 		bqy 	= bky/mu*(Pl_c - sol[k][j-1][i])/bdy;   fqy = fky/mu*(sol[k][j+1][i] - Pl_c)/fdy;
 		bqz 	= bkz/mu*(Pl_c - sol[k-1][j][i])/bdz;   fqz = fkz/mu*(sol[k+1][j][i] - Pl_c)/fdz;
 
 		//PetscPrintf(PETSC_COMM_WORLD,"bqz(%i,%i,%i)=%12.12e \n",i,j,k,bqz );
 
-		//if (k==0) PetscPrintf(PETSC_COMM_WORLD,"sol(%i,%i,%i).Pl=%12.12e \n",i,j,k-1,sol[k-1][j][i].Pl );
-
 		// get mesh steps
 		dx 	= (bdx+fdx)/2.0;
 		dy 	= (bdy+fdy)/2.0;
 		dz 	= (bdz+fdz)/2.0;
 
-							/*// original balance equation:
-							Phi_bulk 		=	sol[k][j][i].Phi;
-							if (Phi_bulk<1e-6) Phi_bulk = 1e-6;
-							eta_bulk 		= 	EtaCreep[k][j][i]/(Phi_bulk);
-
-
-							// correct bulk viscosity for decompaction weakening
-							if 		(Pl_c< 0){
-								eta_bulk = eta_bulk*R;
-							}
-
-							if ((i==0) && (j==0)){
-									//			PetscPrintf(PETSC_COMM_SELF,"i,j,k=[%i,%i,%i] bkz=%e, fkz=%e\n",i,j,k,bkz,fkz);
-							}
-							// (fqx - bqx)/dx + (fqy - bqy)/dy + (fqz - bqz)/dz = (frz*g - brz*g)/dz
-
-
-							// to get positive diagonal in the preconditioner matrix
-							// put right hand side to the left, which gives the following:
-
-							//g_Pl[k][j][i] = (fqx - bqx)/dx + (fqy - bqy)/dy + (fqz - bqz)/dz ;
-							res[k][j][i].Pl 	=  Pl_c/eta_bulk - (fqx - bqx)/dx - (fqy - bqy)/dy - (fqz - bqz)/dz + 1*(fkz/mu*frz*gz - bkz/mu*brz*gz)/dz;
-
-							// Form residual for porosity
-							Phi 				=	sol[k][j][i].Phi;
-							res[k][j][i].Phi 	=	(Phi-Phi_old[k][j][i])/dt + (1-Phi)*Pl_c/eta_bulk;
-							*/
-
-
-		// new
-		// Residual for Pl
-		//res[k][j][i].Pl = Ss[k][j][i]*(Pl_c-Pl_old[k][j][i])/dt- (fqx - bqx)/dx - (fqy - bqy)/dy - (fqz - bqz)/dz; // + 1*(fkz/mu*frz*gz - bkz/mu*brz*gz)/dz;
-
-		//res[k][j][i].Pl = Ssl[k][j][i]*Pl_c/dt- (fqx - bqx)/dx - (fqy - bqy)/dy - (fqz - bqz)/dz;
-		//PetscPrintf(PETSC_COMM_WORLD,"res0(%i,%i,%i).Pl=%12.12e \n",i,j,k,res[k][j][i] );
-		res[k][j][i] = Ssl[k][j][i]*Pl_c/dt- (fqx - bqx)/dx - (fqy - bqy)/dy - (fqz - bqz)/dz;
-
-		//PetscPrintf(PETSC_COMM_WORLD,"res(%i,%i,%i)=%12.12e \n",i,j,k,res[k][j][i] );
-		//PetscPrintf(PETSC_COMM_WORLD,"sol(%i,%i,%i).Pl=%12.12e \n",i,j,k,sol[k][j][i] );
+		// Residual
+		//res[k][j][i] = Ssl[k][j][i]*(Pl_c-Pl_n)/dt- (fqx - bqx)/dx - (fqy - bqy)/dy - (fqz - bqz)/dz - rhs[k][j][i];
+		res[k][j][i] = Ssl[k][j][i]*Pl_c/dt- (fqx - bqx)/dx - (fqy - bqy)/dy - (fqz - bqz)/dz; // - gz;
 
 	}
 	END_STD_LOOP
 
-
 	// restore access
-	//ierr = DMDAVecRestoreArray(da, jr->lr_Pl, &res);  CHKERRQ(ierr);
-	//ierr = DMDAVecRestoreArray(da, jr->lPl,   &sol);  CHKERRQ(ierr);
-
 	ierr = DMDAVecRestoreArray(da, local_res, 	&res); 			CHKERRQ(ierr);
 	ierr = DMDAVecRestoreArray(da, local_sol,   &sol);  		CHKERRQ(ierr);
+	//ierr = DMDAVecRestoreArray(da, local_rhs,   &rhs);  		CHKERRQ(ierr);
 	ierr = DMDAVecRestoreArray(coordDA, coordinates, &coords);	CHKERRQ(ierr);	// array with coordinates
-						//ierr = DMDAVecRestoreArray(da, local_Kphi,  &lKphi);  		CHKERRQ(ierr);
-
 
 	// restore material coefficients on DA
-						//RestoreCoefficientsFromDA(da, "Kphi0",	local_Kphi0, 	Kphi0_vec, 		lKphi0);	// Permeability coefficients
-						//RestoreCoefficientsFromDA(da, "rhol",		rhol_local, 	rhol_vec, 		rhol);		// Liquid density
-						//RestoreCoefficientsFromDA(da, "Phi_old",	PhiOld_local, 	PhiOld_vec, 	Phi_old);	// Porosity at last timestep
 	RestoreCoefficientsFromDA(da, "mul",	mul_local, 		mul_vec, 	mul);		// Liquid viscosity
-						//RestoreCoefficientsFromDA(da, "eta_creep",	EtaCreep_local, EtaCreep_vec, 	EtaCreep);	// Solid viscosity
-
-	//New
-	//RestoreCoefficientsFromDA(da, "Pl_old",	PlOld_local, 	PlOld_vec, 	Pl_old);	// Liquid pressure at last timestep
 	RestoreCoefficientsFromDA(da, "Ssl",	Ss_local, 		Ss_vec, 	Ssl);		// Specific storage
 	RestoreCoefficientsFromDA(da, "Kphi",	local_Kphi, 	Kphi_vec, 	lKphi);		// Permeability coefficients
-
 
 	// copy back local vectors to global ones
 	ierr = DMLocalToGlobalBegin(da, local_res,INSERT_VALUES, f); 	CHKERRQ(ierr);
 	ierr = DMLocalToGlobalEnd  (da, local_res,INSERT_VALUES, f); 	CHKERRQ(ierr);
 
-	// Vec x is read only
+	// copy back local vectors to global ones
+	//ierr = DMLocalToGlobalBegin(da, local_rhs,INSERT_VALUES, jr->rhs_Pl); 	CHKERRQ(ierr);
+	//ierr = DMLocalToGlobalEnd  (da, local_rhs,INSERT_VALUES, jr->rhs_Pl); 	CHKERRQ(ierr);
+
+	// Vec x is locked read only !!
 	//ierr = DMLocalToGlobalBegin(da, local_sol,INSERT_VALUES, x); 	CHKERRQ(ierr);
 	//ierr = DMLocalToGlobalEnd  (da, local_sol,INSERT_VALUES, x); 	CHKERRQ(ierr);
-	//////////////////////////////////////////
 
-	ierr= DMRestoreLocalVector (da, &local_Kphi); 					CHKERRQ(ierr);
 	ierr= DMRestoreLocalVector (da,	&local_sol); 					CHKERRQ(ierr);
 	ierr= DMRestoreLocalVector (da,	&local_res); 					CHKERRQ(ierr);
-
-	//ierr = DMDAVecRestoreArray(da, jr->lPl,   &sol);   CHKERRQ(ierr);
-
-	//ierr = DMLocalToLocalBegin(da, jr->lPl,INSERT_VALUES, jr->lPl); 	CHKERRQ(ierr);
-	//ierr = DMLocalToLocalEnd  (da, jr->lPl,INSERT_VALUES, jr->lPl); 	CHKERRQ(ierr);
-
-	//LOCAL_TO_GLOBAL(da, jr->lr_Pl, jr->r_Pl);
-	//LOCAL_TO_GLOBAL(da, jr->lPl, jr->Pl);
-
+	//ierr= DMRestoreLocalVector (da,	&local_rhs); 					CHKERRQ(ierr);
 
 	PetscFunctionReturn(0);
 }
@@ -974,7 +715,6 @@ PetscErrorCode FormJacobian_DARCY(SNES snes,Vec x, Mat P, Mat J, JacRes *jr)
 
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
-
 
 	// compute jacobian
 	ierr = JacResGetDarcyMat(snes, jr); 		CHKERRQ(ierr);
@@ -990,7 +730,6 @@ PetscErrorCode FormJacobian_DARCY(SNES snes,Vec x, Mat P, Mat J, JacRes *jr)
 		 PetscViewerDestroy(&view);
 	}
 
-
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
@@ -1003,35 +742,20 @@ PetscErrorCode JacResGetDarcyMat(SNES snes, JacRes *jr)
 
 	BCCtx      *bc;
 	DM 			da, coordDA;
-	Vec			coordinates; //local_sol, coordinates;//, local_res
+	Vec			coordinates;
 	//SolVarCell *svCell;
-	PetscInt    num, *list; //iter
+	PetscInt    num, *list, iter;
 	PetscInt    Ip1, Im1, Jp1, Jm1, Kp1, Km1;
 	PetscInt    i, j, k, nx, ny, nz, sx, sy, sz, mx, my, mz;
 	PetscScalar bkx, fkx, bky, fky, bkz, fkz;
 	PetscScalar bdx, fdx, bdy, fdy, bdz, fdz;
- 	PetscScalar dx, dy, dz;
-	PetscScalar v[7], cf[6], mu,  Kphi, Ss;	//, kc, rhol
+ 	PetscScalar dx, dy, dz, gz, *grav;
+	PetscScalar v[7], cf[6], mu,  Kphi, Ss;
 	MatStencil  row[1], col[7];
-	PetscScalar ***lKphi, ***mul;	//,***lrhol, ***buff, ***bcPl
-
-	//PetscScalar		n,m,R; 	//K, K0, eta_bulk, phi0,Phi_bulk, Phi;
-	//DarcyDOF 		***sol;
-									//Vec 			Kphi0_vec,		local_Kphi0;
-	Vec 			local_Kphi;
-	//Vec 			PhiOld_local, 	PhiOld_vec;
-									//Vec 			rhol_local, 	rhol_vec;
-	Vec 			mul_local, 		mul_vec;
-									//Vec 			EtaCreep_local, EtaCreep_vec;
+	PetscScalar ***lKphi, ***mul, ***Ssl, ***bcPl;
+	Vec 			mul_local, 	mul_vec, local_Kphi, Kphi_vec, Ss_local, Ss_vec;
 	DMDACoor3d 		***coords;
-
 	PetscScalar dt;
-
-	//New
-	Vec 			Kphi_vec;
-	Vec 			Ss_local,  Ss_vec;
-	PetscScalar		***Ssl;											// specific storage
-
 
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
@@ -1039,16 +763,13 @@ PetscErrorCode JacResGetDarcyMat(SNES snes, JacRes *jr)
 	// access residual context variables
 	bc        = jr->bc;
 	num       = bc->Pl_NumSPC;
-	//list      = bc->Pl_SPCList;
-	dt        = jr->ts.dt;     // time step
+	list      = bc->Pl_SPCList;
+	dt        = jr->ts.dt;     	// time step
+	grav      = jr->grav;       // gravity acceleration
+	gz 		  =	grav[2];		// gravitational acceleration in z-direction
 
 	// Get DA for the CURRENT level (not necessarily the fine grid!)
 	ierr 		=	SNESGetDM(snes,&da); 				CHKERRQ(ierr);
-
-	// Get local vectors attached with the solution at the local DA
-	//ierr 		= 	DMGetLocalVector(da,&local_sol); 	CHKERRQ(ierr);
-	//ierr 		= 	DMGetLocalVector(da,&local_res); 	CHKERRQ(ierr);
-	//ierr 		= 	DMGetLocalVector(da,&local_Kphi); 	CHKERRQ(ierr);
 
 	// Dimensions of the global grid at the current level
 	DMDAGetInfo(da, 0, &nx, &ny,&nz,PETSC_IGNORE,PETSC_IGNORE,PETSC_IGNORE, PETSC_IGNORE,PETSC_IGNORE,PETSC_IGNORE,PETSC_IGNORE,PETSC_IGNORE,PETSC_IGNORE);
@@ -1063,68 +784,19 @@ PetscErrorCode JacResGetDarcyMat(SNES snes, JacRes *jr)
 	ierr = MatZeroEntries(jr->App); CHKERRQ(ierr);
 
 	// Extract required material parameters
-							//ExtractCoefficientsFromDA(da, "Kphi0",		local_Kphi0,  	Kphi0_vec,  	lKphi0);			// Permeability K0
-							//ExtractCoefficientsFromDA(da, "rhol",		rhol_local, 	rhol_vec, 		rhol);				// Liquid density
-							//ExtractCoefficientsFromDA(da, "Phi_old",	PhiOld_local, 	PhiOld_vec, 	Phi_old);			// Porosity at last timestep
-	ExtractCoefficientsFromDA(da, "mul"		,	mul_local, 		mul_vec, 		mul);				// Liquid viscosity
-							//ExtractCoefficientsFromDA(da, "eta_creep",	EtaCreep_local, EtaCreep_vec, 	EtaCreep);			// Solid viscosity
-
-	// New
+	ExtractCoefficientsFromDA(da, "mul",	mul_local, 		mul_vec, 	mul);		// Liquid viscosity
 	ExtractCoefficientsFromDA(da,"Kphi",	local_Kphi,  	Kphi_vec,  	lKphi);		// Permeability K
-	ExtractCoefficientsFromDA(da, "Ssl",	Ss_local, 		Ss_vec, 	Ssl);
-
-							//ierr = DMGlobalToLocalBegin(da, Kphi0_vec,INSERT_VALUES, local_Kphi); CHKERRQ(ierr);
-							//ierr = DMGlobalToLocalEnd  (da, Kphi0_vec,INSERT_VALUES, local_Kphi); CHKERRQ(ierr);
-
-	// Copy global solution vector into local  vector
-	//ierr = DMGlobalToLocalBegin(da, x,INSERT_VALUES, local_sol); CHKERRQ(ierr);
-	//ierr = DMGlobalToLocalEnd  (da, x,INSERT_VALUES, local_sol); CHKERRQ(ierr);
-
-	// Copy global residual into local  vector
-//	ierr = DMGlobalToLocalBegin(da, f,INSERT_VALUES, local_res); 	CHKERRQ(ierr);
-//	ierr = DMGlobalToLocalEnd  (da, f,INSERT_VALUES, local_res); 	CHKERRQ(ierr);
+	ExtractCoefficientsFromDA(da, "Ssl",	Ss_local, 		Ss_vec, 	Ssl);		// Specific storage
 
 	// Make coordinates available
 	ierr = DMGetCoordinateDM(da, &coordDA);							CHKERRQ(ierr);		// coordinates DA
 	ierr = DMGetCoordinatesLocal(da, &coordinates);					CHKERRQ(ierr);		// vector with coordinates
 	ierr = DMDAVecGetArray(coordDA, coordinates, &coords);			CHKERRQ(ierr);		// array with coordinates
 
-	// access work vectors
-//	ierr = DMDAVecGetArray(da, local_res,  	&res); 					CHKERRQ(ierr);
-	//ierr = DMDAVecGetArray(da, local_sol,  	&sol);  				CHKERRQ(ierr);
-	//ierr = DMDAVecGetArray(da, jr->lPl,   &sol);  CHKERRQ(ierr);
-							//ierr = DMDAVecGetArray(da, local_Kphi,  &lKphi);  				CHKERRQ(ierr);
-	//ierr = DMDAVecGetArray(jr->DA_Pl, bc->bcPl, &bcPl); 	CHKERRQ(ierr);
-
-								/*
-								// Update ghost points for the correct boundary values
-								ierr = DMDAGetCorners(da, &sx, &sy, &sz, &nx, &ny, &nz); CHKERRQ(ierr);
-								//ierr = DMDAGetCorners(jr->DA_Pl, &sx_fine, &sy_fine, &sz_fine, NULL,NULL,NULL); CHKERRQ(ierr);
-
-								//---------------
-								// Update (nonlinear) material properties @ all points (including ghost points)
-								//---------------
-								ierr 			= 	DMDAGetGhostCorners(da, &sx, &sy, &sz, &nx, &ny, &nz); CHKERRQ(ierr);
-								phi0 			= 	0.01;
-								m 				=	1.0;
-								n 				=	3.0;
-								R 				=	1.0;	// decompaction_weakening
-								PetscOptionsGetScalar(PETSC_NULL,PETSC_NULL,"-PorosityWaves_R",&R,PETSC_NULL);
-								START_STD_LOOP
-								{
-									K0 				=		lKphi0[k][j][i];
-									Phi 			=		sol[k][j][i].Phi;
-									lKphi[k][j][i] 	= 		K0*PetscPowScalar((Phi/phi0),n);
-
-									//	PetscPrintf(PETSC_COMM_WORLD,"eta_bulk=%12.12e  phi=%e K0=%e KPhi=%e Phi_old=%e\n",eta_bulk, Phi, K0, lKphi[k][j][i],Phi_old[k][j][i] );
-									//	SETERRQ(PETSC_COMM_SELF, PETSC_ERR_USER, "Stop here");
-								}
-								END_STD_LOOP
-								*/
 	//---------------
 	// central points
 	//---------------
-	//iter = 0;
+	iter = 0;
 	ierr = DMDAGetCorners(da, &sx, &sy, &sz, &nx, &ny, &nz); CHKERRQ(ierr);
 
 	START_STD_LOOP
@@ -1132,19 +804,18 @@ PetscErrorCode JacResGetDarcyMat(SNES snes, JacRes *jr)
 		// access solution variables @ fine grid
 		//svCell = &jr->svCell[iter++];
 
-		// permeability, liquid density and viscosity
-		// and specific storage
+		// permeability, liquid density and viscosity and specific storage
 		//ierr = JacResGetDarcyParam(jr, svCell->phRat, &Kphi, &mu, &Ss); CHKERRQ(ierr);
 
 		// check index bounds and TPC multipliers
-		/*
-		Im1 = i-1; cf[0] = 1.0; if(Im1 < 0)  { Im1++; if(bcPl[k][j][i-1] != DBL_MAX) cf[0] = -1.0; }	// need to have bc set!!
+
+		/*Im1 = i-1; cf[0] = 1.0; if(Im1 < 0)  { Im1++; if(bcPl[k][j][i-1] != DBL_MAX) cf[0] = -1.0; }	// need to have bc set!!
 		Ip1 = i+1; cf[1] = 1.0; if(Ip1 > mx) { Ip1--; if(bcPl[k][j][i+1] != DBL_MAX) cf[1] = -1.0; }
 		Jm1 = j-1; cf[2] = 1.0; if(Jm1 < 0)  { Jm1++; if(bcPl[k][j-1][i] != DBL_MAX) cf[2] = -1.0; }
 		Jp1 = j+1; cf[3] = 1.0; if(Jp1 > my) { Jp1--; if(bcPl[k][j+1][i] != DBL_MAX) cf[3] = -1.0; }
 		Km1 = k-1; cf[4] = 1.0; if(Km1 < 0)  { Km1++; if(bcPl[k-1][j][i] != DBL_MAX) cf[4] = -1.0; }
-		Kp1 = k+1; cf[5] = 1.0; if(Kp1 > mz) { Kp1--; if(bcPl[k+1][j][i] != DBL_MAX) cf[5] = -1.0; }
-		 */
+		Kp1 = k+1; cf[5] = 1.0; if(Kp1 > mz) { Kp1--; if(bcPl[k+1][j][i] != DBL_MAX) cf[5] = -1.0; }*/
+
 
 		// hardcoded dirichlet Top/Bottom
 		//Im1 = i-1; cf[0] = 1.0; if(Im1 < 0)  { Im1++; if(bcPl[k][j][i-1] != DBL_MAX) cf[0] = -1.0; }	// need to have bc set!!
@@ -1192,16 +863,6 @@ PetscErrorCode JacResGetDarcyMat(SNES snes, JacRes *jr)
 				dy 		= 	(bdy+fdy)/2.0;
 				dz 		= 	(bdz+fdz)/2.0;
 
-												/*// original balance equation:
-																	//Phi_bulk =	sol[k][j][i].Phi;
-												if (Phi_bulk<1e-6) Phi_bulk = 1e-6;
-																	//eta_bulk = 	EtaCreep[k][j][i]/(Phi_bulk);
-
-												if 		(sol[k][j][i].Pl< 0){
-													eta_bulk = eta_bulk*R;
-												}
-												*/
-
 				//==================================================================
 				// Fluid pressure
 				//==================================================================
@@ -1224,82 +885,28 @@ PetscErrorCode JacResGetDarcyMat(SNES snes, JacRes *jr)
 				v[3] =  -fky/fdy/dy*cf[3];
 				v[4] =  -bkz/bdz/dz*cf[4];
 				v[5] =  -fkz/fdz/dz*cf[5];
-											//v[6] =  1.0/eta_bulk
 				v[6] =  Ss/dt
 				+       (bkx/bdx + fkx/fdx)/dx
 				+       (bky/bdy + fky/fdy)/dy
-				+       (bkz/bdz + fkz/fdz)/dz;
-
-														//// Coupling term with porosity
-														//col[7].k = k;   col[7].j = j;   col[7].i = i;   col[7].c = 1;
-
-														//// THIS MIGHT BE A MORE COMPLICATED COUPLING ACTUALLY..
-														//v[7] = sol[k][j][i].Pl/eta_bulk;
-
+				+       (bkz/bdz + fkz/fdz)/dz; //-gz
 
 				// set matrix coefficients
-														//ierr = MatSetValuesStencil(jr->App, 1, row, 8, col, v, ADD_VALUES); CHKERRQ(ierr);
 				ierr = MatSetValuesStencil(jr->App, 1, row, 7, col, v, ADD_VALUES); CHKERRQ(ierr);
-				//ierr = MatSetValuesStencil(        P, 1, row, 7, col, v, ADD_VALUES); CHKERRQ(ierr);
-
-														/*
-														//==================================================================
-														// Porosity
-														//==================================================================
-														row[0].k 	= 	k;   row[0].j = j;   row[0].i = i;   row[0].c = 1;
-
-														col[0].k 	= 	k;   col[0].j = j;   col[0].i = i;   col[0].c = 1;
-														v[0] 		=  	1/dt;												// diagonal porosity term
-
-														// we presumably need to incorporate the coupling terms as well...
-														col[1].k 	= 	k;   col[1].j = j;   col[1].i = i;   col[1].c = 0;		// Pf[k,j,i]
-																				//v[1] 		=  	 (1-sol[k][j][i].Phi)/eta_bulk;											// diagonal porosity term
-
-														// set matrix coefficients
-														ierr = MatSetValuesStencil(jr->App, 1, row, 2, col, v, ADD_VALUES); CHKERRQ(ierr);
-														*/
-
-				//res[k][j][i].Phi 	=	(Phi-Phi_old[k][j][i])/dt + (1-Phi)*Pl_c/eta_bulk;
 
 				// NOTE! since only TPC are active, no SPC modification is necessary
 	}
 	END_STD_LOOP
 
 	// restore access
-	//ierr = DMDAVecRestoreArray(da, local_sol,   &sol);  		CHKERRQ(ierr);
-	//ierr = DMDAVecRestoreArray(da, jr->lPl,   &sol);  CHKERRQ(ierr);
 	ierr = DMDAVecRestoreArray(coordDA, coordinates, &coords);	CHKERRQ(ierr);	// array with coordinates
-	//ierr = DMDAVecRestoreArray(da, local_Kphi,  &lKphi);  		CHKERRQ(ierr);
 
 	// restore material coefficients on DA
-								//RestoreCoefficientsFromDA(da, "Kphi0",		local_Kphi0, 	Kphi0_vec, 		lKphi0);	// Permeability coefficients
-								//RestoreCoefficientsFromDA(da, "rhol",		rhol_local, 	rhol_vec, 		rhol);		// Liquid density
-								//RestoreCoefficientsFromDA(da, "Phi_old",	PhiOld_local, 	PhiOld_vec, 	Phi_old);	// Porosity at last timestep
-	RestoreCoefficientsFromDA(da, "mul"		,	mul_local, 		mul_vec, 		mul);		// Liquid viscosity
-								//RestoreCoefficientsFromDA(da, "eta_creep",	EtaCreep_local, EtaCreep_vec, 	EtaCreep);	// Solid viscosity
-
-
-	// New
+	RestoreCoefficientsFromDA(da, "mul"	,	mul_local, 		mul_vec, 		mul);		// Liquid viscosity
 	RestoreCoefficientsFromDA(da, "Kphi",	local_Kphi, 	Kphi_vec, 		lKphi);		// Permeability coefficients
 	RestoreCoefficientsFromDA(da, "Ssl" ,	Ss_local, 		Ss_vec, 		Ssl);		// specific storage
 
-	// copy back local vectors to global ones
-	//ierr = DMLocalToGlobalBegin(da, local_sol,INSERT_VALUES, x); 	CHKERRQ(ierr);
-	//ierr = DMLocalToGlobalEnd  (da, local_sol,INSERT_VALUES, x); 	CHKERRQ(ierr);
-
-								//ierr= DMRestoreLocalVector (da, &local_Kphi); 					CHKERRQ(ierr);
-	//ierr= DMRestoreLocalVector (da,	&local_sol); 					CHKERRQ(ierr);
-								//ierr= DMRestoreLocalVector (da,	&local_res); 					CHKERRQ(ierr);
-
-
-	// restore access
-	//ierr = DMDAVecRestoreArray(jr->DA_Pl, bc->bcPl, &bcPl);   CHKERRQ(ierr);
-	//ierr = DMDAVecRestoreArray(jr->DA_Pl, jr->ldyy, &lrhol);  CHKERRQ(ierr);
-	//ierr = DMDAVecRestoreArray(jr->DA_Pl, jr->ldxx, &lKphi);    CHKERRQ(ierr);
-
 	// assemble LiquidPressure/Darcy matrix
 	ierr = MatAIJAssemble(jr->App, num, list, 1.0); CHKERRQ(ierr);
-	//ierr = MatAIJAssemble(P, num, list, 1.0); CHKERRQ(ierr);
 
 	PetscFunctionReturn(0);
 }
@@ -1345,105 +952,6 @@ Diffusion term expansion
 
 //---------------------------------------------------------------------------
 #undef __FUNCT__
-#define __FUNCT__ "BCCreateDarcy"
-PetscErrorCode BCCreateDarcy(JacRes *jr, BCCtx *bc)
-{
-
-	PetscFunctionBegin;
-
-	PetscErrorCode 	ierr;
-	FDSTAG 			*fs;
-
-	// Only for cases where Darcy is active
-	if(jr->actDarcy != PETSC_TRUE) PetscFunctionReturn(0);
-
-	// create BC context for DARCY
-	fs = bc->fs;
-
-	// create boundary conditions vectors (velocity, pressure, temperature, liquid pressure)
-	ierr = DMCreateLocalVector(jr->DA_Pl,  &bc->bcPl);  CHKERRQ(ierr);
-
-	// SPC (LiquidPressure/Darcy)
-	ierr = makeIntArray (&bc->Pl_SPCList, NULL, fs->dof.lnp); CHKERRQ(ierr);
-	ierr = makeScalArray(&bc->Pl_SPCVals, NULL, fs->dof.lnp); CHKERRQ(ierr);
-
-
-	// Mark as unconstrained:
-	ierr = VecSet(bc->bcPl, DBL_MAX); CHKERRQ(ierr);
-
-	bc->Pl_NumSPC 	= 0;
-
-	bc->fs   = fs;
-
-	// exchange ghost point constraints
-	// AVOID THIS BY SETTING CONSTRAINTS REDUNDANTLY
-	// IN MULTIGRID ONLY REPEAT BC COARSENING WHEN THINGS CHANGE
-	LOCAL_TO_LOCAL(jr->DA_Pl, bc->bcPl)
-
-
-	PetscFunctionReturn(0);
-}
-
-//---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "BCApplyBound_DARCY"
-PetscErrorCode BCApplyBound_DARCY(BCCtx *bc, JacRes *jr)
-{
-	// apply boundary conditions for DARCY
-	FDSTAG      *fs;
-	PetscScalar Pl_bot, Pl_top;
-	PetscInt    mcz;
-	PetscInt    i, j, k, nx, ny, nz, sx, sy, sz;
-	PetscScalar ***bcPl;
-
-	PetscErrorCode ierr;
-	PetscFunctionBegin;
-
-	// Only for cases where Darcy is active
-	if(jr->actDarcy != PETSC_TRUE) PetscFunctionReturn(0);
-
-	// access context
-	fs = bc->fs;
-
-	// initialize maximal index in z-direction
-	mcz = fs->dsz.tcels - 1;
-
-	//-----------------------------------------------------
-	// LiquidPressure points (TPC only, hence looping over ghost points)
-	//-----------------------------------------------------
-
-	// get boundary liquid pressures
-
-	Pl_bot 	=	bc->Pl_bot;
-	Pl_top 	=	bc->Pl_top;
-
-
-
-	ierr = DMDAVecGetArray(jr->DA_Pl, bc->bcPl,  &bcPl);  CHKERRQ(ierr);
-	if(Pl_bot >= 0.0 || Pl_top >= 0.0)
-	{
-		GET_CELL_RANGE_GHOST_INT(nx, sx, fs->dsx)
-		GET_CELL_RANGE_GHOST_INT(ny, sy, fs->dsy)
-		GET_CELL_RANGE_GHOST_INT(nz, sz, fs->dsz)
-
-		START_STD_LOOP
-		{
-			// only positive or zero fluid pressure BC's!
-			// negative will set zero-flux BC automatically
-			if(Pl_bot >= 0.0 && k == 0)   {
-				bcPl[k-1][j][i] = Pl_bot;
-				//PetscPrintf(PETSC_COMM_WORLD,"bcPl(%i,%i,%i)=%12.12e \n",i,j,k-1,bcPl[k-1][j][i] );
-			}
-			if(Pl_top >= 0.0 && k == mcz) { bcPl[k+1][j][i] = Pl_top; }
-		}
-		END_STD_LOOP
-	}
-	ierr = DMDAVecRestoreArray(jr->DA_Pl, bc->bcPl,  &bcPl);  CHKERRQ(ierr);
-
-	PetscFunctionReturn(0);
-}
-//---------------------------------------------------------------------------
-#undef __FUNCT__
 #define __FUNCT__ "UpdateDarcy_DA"
 PetscErrorCode UpdateDarcy_DA(JacRes *jr)
 {
@@ -1458,23 +966,15 @@ PetscErrorCode UpdateDarcy_DA(JacRes *jr)
 	PetscFunctionBegin;
 
 	PetscErrorCode ierr;
-	//DM             da    = jr->DA_Pl;		// get's Darcy CA
 	PetscInt 	   	iter, sx, sy, sz;
 	PetscInt       	i, j, k, nx, ny, nz;
-						//Vec            	local_rhol, 	rhol_vec;
-						//Vec 			Kphi0_vec, 		local_KPhi0;
 	Vec 			Kphi_vec, 		local_KPhi;
-						//Vec 			Phi_vec, 		local_Phi;								// porosity of last timestep
-	Vec 			Mul_vec, 		local_Mul;								// liquid viscosity
-						//Vec 			EtaCreep_vec, 	local_EtaCreep;							// solid (creep) viscosity
-						//Vec 			local_sol;
-	PetscScalar    	***buff, kphi, mul; // kc, Phi, rhol, eta_creep;
-					//DarcyDOF		***sol;
-	//New
-	PetscScalar Ssl, PlOld;
-	Vec 			PlOld_vec, local_PlOld;
+	Vec 			Mul_vec, 		local_Mul;
 	Vec 			Ss_vec,	local_Ss;
-
+	//Vec 			PlOld_vec, local_PlOld;
+	Vec 			BC_vec, 		local_BC;
+	Vec 			local_sol;
+	PetscScalar    	*** sol, ***buff, kphi, mul, Ssl, PlOld;
 
 
 	//---------------------------------------------
@@ -1486,170 +986,115 @@ PetscErrorCode UpdateDarcy_DA(JacRes *jr)
 	// (2) Update material properties on local vector & attach to DM
 
 	// Create temporary local vectors
-									//ierr = 	DMCreateLocalVector(jr->DA_Pl, &local_KPhi0); 				CHKERRQ(ierr);
 	ierr = 	DMCreateLocalVector(jr->DA_Pl, &local_KPhi); 				CHKERRQ(ierr);
-									//ierr = 	DMCreateLocalVector(jr->DA_Pl, &local_rhol); 				CHKERRQ(ierr);
-									//ierr = 	DMCreateLocalVector(jr->DA_Pl, &local_Phi); 				CHKERRQ(ierr);
 	ierr = 	DMCreateLocalVector(jr->DA_Pl, &local_Mul); 				CHKERRQ(ierr);
-									//ierr = 	DMCreateLocalVector(jr->DA_Pl, &local_EtaCreep); 			CHKERRQ(ierr);
-	// New
 	ierr = 	DMCreateLocalVector(jr->DA_Pl, &local_Ss);
-	ierr = 	DMCreateLocalVector(jr->DA_Pl, &local_PlOld);
+	//ierr = 	DMCreateLocalVector(jr->DA_Pl, &local_PlOld);
+	ierr = 	DMCreateLocalVector(jr->DA_Pl, &local_BC); 					CHKERRQ(ierr);
 
 	// Set data on local vectors
-									//SCATTER_FIELD(jr->DA_Pl, local_KPhi0, GET_Kphi0);			// 3D array of permeability pre-coefficient
-									//SCATTER_FIELD(jr->DA_Pl, local_rhol,  GET_rhol);			// compute 3D array of liquid density
-									//SCATTER_FIELD(jr->DA_Pl, local_Phi,   GET_Phi);				// compute 3D array of porosity (of last timestep)
 	SCATTER_FIELD(jr->DA_Pl, local_Mul,   GET_mul);				// compute 3D array of liquid viscosity
-									//SCATTER_FIELD(jr->DA_Pl, local_EtaCreep,  GET_Viscosity);	// compute 3D array of solid viscosity
-	//New
 	SCATTER_FIELD(jr->DA_Pl, local_KPhi, GET_Kphi);				// 3D array of permeability pre-coefficient
-	SCATTER_FIELD(jr->DA_Pl, local_Ss,   GET_Ssl);
-	SCATTER_FIELD(jr->DA_Pl, local_PlOld,GET_PlOld);
+	SCATTER_FIELD(jr->DA_Pl, local_Ss,   GET_Ssl);				// specific storage
+	//SCATTER_FIELD(jr->DA_Pl, local_PlOld,GET_PlOld);
 
 	// Get/Create global vector, attached to DM
-									//ierr = 	DMGetNamedGlobalVector(jr->DA_Pl,"Kphi0",		&Kphi0_vec); 			CHKERRQ(ierr);
-									//ierr = 	DMGetNamedGlobalVector(jr->DA_Pl,"rhol",		&rhol_vec); 			CHKERRQ(ierr);
-									//ierr = 	DMGetNamedGlobalVector(jr->DA_Pl,"Phi_old",		&Phi_vec); 				CHKERRQ(ierr);
 	ierr = 	DMGetNamedGlobalVector(jr->DA_Pl,"mul",			&Mul_vec); 				CHKERRQ(ierr);
-									//ierr = 	DMGetNamedGlobalVector(jr->DA_Pl,"eta_creep",	&EtaCreep_vec); 		CHKERRQ(ierr);
-	//New
 	ierr = 	DMGetNamedGlobalVector(jr->DA_Pl,"Kphi",		&Kphi_vec); 			CHKERRQ(ierr);
 	ierr = 	DMGetNamedGlobalVector(jr->DA_Pl,"Ssl",			&Ss_vec); 				CHKERRQ(ierr);
-	ierr = 	DMGetNamedGlobalVector(jr->DA_Pl,"Pl_old",		&PlOld_vec); 			CHKERRQ(ierr);
+	//ierr = 	DMGetNamedGlobalVector(jr->DA_Pl,"Pl_old",		&PlOld_vec); 			CHKERRQ(ierr);
+	ierr = 	DMGetNamedGlobalVector(jr->DA_Pl,"BC",			&BC_vec); 				CHKERRQ(ierr);
 
 	// Move local values to global vector
-									/*
-									ierr = 	DMLocalToGlobalBegin(jr->DA_Pl,local_KPhi0,INSERT_VALUES ,Kphi0_vec);	CHKERRQ(ierr);
-									ierr = 	DMLocalToGlobalEnd  (jr->DA_Pl,local_KPhi0,INSERT_VALUES ,Kphi0_vec);	CHKERRQ(ierr);
-
-									ierr = 	DMLocalToGlobalBegin(jr->DA_Pl,local_rhol,INSERT_VALUES ,rhol_vec);		CHKERRQ(ierr);
-									ierr = 	DMLocalToGlobalEnd  (jr->DA_Pl,local_rhol,INSERT_VALUES ,rhol_vec);		CHKERRQ(ierr);
-
-									ierr = 	DMLocalToGlobalBegin(jr->DA_Pl,local_Phi,INSERT_VALUES ,Phi_vec);		CHKERRQ(ierr);
-									ierr = 	DMLocalToGlobalEnd  (jr->DA_Pl,local_Phi,INSERT_VALUES ,Phi_vec);		CHKERRQ(ierr);
-									*/
 
 	ierr = 	DMLocalToGlobalBegin(jr->DA_Pl,local_Mul,INSERT_VALUES ,Mul_vec);		CHKERRQ(ierr);
 	ierr = 	DMLocalToGlobalEnd  (jr->DA_Pl,local_Mul,INSERT_VALUES ,Mul_vec);		CHKERRQ(ierr);
 
-	// New
 	ierr = 	DMLocalToGlobalBegin(jr->DA_Pl,local_KPhi,INSERT_VALUES ,Kphi_vec);	CHKERRQ(ierr);
 	ierr = 	DMLocalToGlobalEnd  (jr->DA_Pl,local_KPhi,INSERT_VALUES ,Kphi_vec);	CHKERRQ(ierr);
 
 	ierr = 	DMLocalToGlobalBegin(jr->DA_Pl,local_Ss,INSERT_VALUES ,Ss_vec);	CHKERRQ(ierr);
 	ierr = 	DMLocalToGlobalEnd  (jr->DA_Pl,local_Ss,INSERT_VALUES ,Ss_vec);	CHKERRQ(ierr);
 
-	ierr = 	DMLocalToGlobalBegin(jr->DA_Pl,local_PlOld,INSERT_VALUES ,PlOld_vec);	CHKERRQ(ierr);
-	ierr = 	DMLocalToGlobalEnd  (jr->DA_Pl,local_PlOld,INSERT_VALUES ,PlOld_vec);	CHKERRQ(ierr);
+	//ierr = 	DMLocalToGlobalBegin(jr->DA_Pl,local_PlOld,INSERT_VALUES ,PlOld_vec);	CHKERRQ(ierr);
+	//ierr = 	DMLocalToGlobalEnd  (jr->DA_Pl,local_PlOld,INSERT_VALUES ,PlOld_vec);	CHKERRQ(ierr);
 
-									/*
-									ierr = 	DMLocalToGlobalBegin(jr->DA_Pl,local_EtaCreep,INSERT_VALUES ,EtaCreep_vec);		CHKERRQ(ierr);
-									ierr = 	DMLocalToGlobalEnd  (jr->DA_Pl,local_EtaCreep,INSERT_VALUES ,EtaCreep_vec);		CHKERRQ(ierr);
-									*/
+	ierr = 	DMLocalToGlobalBegin(jr->DA_Pl,jr->bc->bcPl,INSERT_VALUES ,BC_vec);			CHKERRQ(ierr);
+	ierr = 	DMLocalToGlobalEnd  (jr->DA_Pl,jr->bc->bcPl,INSERT_VALUES ,BC_vec);			CHKERRQ(ierr);
 
 	// attach the named vector to the DM
 
-									//ierr = 	DMRestoreNamedGlobalVector(jr->DA_Pl,"Kphi0",		&Kphi0_vec); 			CHKERRQ(ierr);
-									//ierr = 	DMRestoreNamedGlobalVector(jr->DA_Pl,"rhol",		&rhol_vec); 			CHKERRQ(ierr);
-									//ierr = 	DMRestoreNamedGlobalVector(jr->DA_Pl,"Phi_old",		&Phi_vec); 				CHKERRQ(ierr);
-
-	// New
 	// Copy global solution vector into local  vector
 	//ierr = DMGlobalToLocalBegin(jr->DA_Pl, jr->Pl,INSERT_VALUES, jr->lPl); CHKERRQ(ierr);
 	//ierr = DMGlobalToLocalEnd  (jr->DA_Pl, jr->Pl,INSERT_VALUES, jr->lPl); CHKERRQ(ierr);
 
 	ierr = 	DMRestoreNamedGlobalVector(jr->DA_Pl,"mul",			&Mul_vec); 				CHKERRQ(ierr);
-									//ierr = 	DMRestoreNamedGlobalVector(jr->DA_Pl,"eta_creep",	&EtaCreep_vec); 		CHKERRQ(ierr);
-	// New
 	ierr = 	DMRestoreNamedGlobalVector(jr->DA_Pl,"Kphi",		&Kphi_vec); 			CHKERRQ(ierr);
 	ierr = 	DMRestoreNamedGlobalVector(jr->DA_Pl,"Ssl",			&Ss_vec); 				CHKERRQ(ierr);
-	ierr = 	DMRestoreNamedGlobalVector(jr->DA_Pl,"Pl_old",		&PlOld_vec); 			CHKERRQ(ierr);
+	//ierr = 	DMRestoreNamedGlobalVector(jr->DA_Pl,"Pl_old",		&PlOld_vec); 			CHKERRQ(ierr);
+	ierr = 	DMRestoreNamedGlobalVector(jr->DA_Pl,"BC",			&BC_vec); 				CHKERRQ(ierr);
 
 	// cleaning up
-									//ierr = 	VecDestroy(&local_KPhi0);		CHKERRQ(ierr);
-									//ierr = 	VecDestroy(&local_rhol);		CHKERRQ(ierr);
-									//ierr = 	VecDestroy(&local_Phi);			CHKERRQ(ierr);
 	ierr = 	VecDestroy(&local_Mul);			CHKERRQ(ierr);
-									//ierr = 	VecDestroy(&local_EtaCreep);	CHKERRQ(ierr);
-	// New
 	ierr = 	VecDestroy(&local_KPhi);		CHKERRQ(ierr);
 	ierr = 	VecDestroy(&local_Ss);			CHKERRQ(ierr);
-	ierr = 	VecDestroy(&local_PlOld);		CHKERRQ(ierr);
-
-//	ierr = 	VecDestroy(&Kphi0_vec);			CHKERRQ(ierr);
-//	ierr = 	VecDestroy(&rhol_vec);			CHKERRQ(ierr);
-//	ierr = 	VecDestroy(&Phi_vec);			CHKERRQ(ierr);
-//	ierr = 	VecDestroy(&Mul_vec);			CHKERRQ(ierr);
-//	ierr = 	VecDestroy(&EtaCreep_vec);		CHKERRQ(ierr);
-		//---------------------------------------------
-
-	ierr = DMCoarsenHookAdd(jr->DA_Pl,DMCoarsenHook_DARCY,PETSC_NULL,PETSC_NULL);
+	//ierr = 	VecDestroy(&local_PlOld);		CHKERRQ(ierr);
 
 	//---------------------------------------------
-									/*
-									// (3) Initialize solution vector for Porosity of last timestep
+	ierr = DMCoarsenHookAdd(jr->DA_Pl,DMCoarsenHook_DARCY,PETSC_NULL,PETSC_NULL);
+	//---------------------------------------------
 
-									// Copy global solution vector into local  vector
-									ierr = 	DMCreateLocalVector(jr->DA_Pl, &local_sol); 		 		 	  CHKERRQ(ierr);
-									ierr = 	DMGlobalToLocalBegin(jr->DA_Pl, jr->Pl,INSERT_VALUES, local_sol); CHKERRQ(ierr);
-									ierr = 	DMGlobalToLocalEnd  (jr->DA_Pl, jr->Pl,INSERT_VALUES, local_sol); CHKERRQ(ierr);
+	PetscFunctionReturn(0);
+}
 
-									// access work vectors
-									ierr = 	DMDAVecGetArray(jr->DA_Pl, local_sol,  	&sol);  				  CHKERRQ(ierr);
+//---------------------------------------------------------------------------
+#undef __FUNCT__
+#define __FUNCT__ "SolveDarcyKSP"
+PetscErrorCode SolveDarcyKSP(JacRes *jr)
+{
+	PetscFunctionBegin;
+	PetscErrorCode ierr;
 
-									iter = 0;
-									START_STD_LOOP
-									{
-										Phi 				= jr->svCell[iter++].svBulk.Phi;
-										sol[k][j][i].Phi  	= Phi;
-									}
-									END_STD_LOOP
-
-
-									ierr = DMDAVecRestoreArray(jr->DA_Pl, local_sol,  	&sol);  				CHKERRQ(ierr);
-									ierr = DMLocalToGlobalBegin(jr->DA_Pl, local_sol,INSERT_VALUES, jr->Pl); 	CHKERRQ(ierr);
-									ierr = DMLocalToGlobalEnd  (jr->DA_Pl, local_sol,INSERT_VALUES, jr->Pl); 	CHKERRQ(ierr);
-
-									ierr = 	VecDestroy(&local_sol);												CHKERRQ(ierr);
-									*/
+	ierr = JacResGetDarcyMat(jr->Pl_snes, jr);             		CHKERRQ(ierr);		// change Pl_snes by Pl_ksp
+	ierr = KSPSetOperators(jr->Pl_ksp, jr->App, jr->App); 			CHKERRQ(ierr);
+	ierr = KSPSetUp(jr->Pl_ksp);                          			CHKERRQ(ierr);
+	ierr = KSPSolve(jr->Pl_ksp, jr->rhs_Pl, jr->Pl);      			CHKERRQ(ierr);
+	ierr = JacResGetDarcyRes(jr->Pl_snes,jr->Pl,jr->r_Pl,jr);      CHKERRQ(ierr);		// change Pl_snes by Pl_ksp
 
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
 #undef __FUNCT__
-#define __FUNCT__ "FormRHS_DARCY"
-PetscErrorCode FormRHS_DARCY(SNES snes, JacRes *jr)
+#define __FUNCT__ "JacResGetDarcyRHS"
+PetscErrorCode JacResGetDarcyRHS(JacRes *jr)
 {
-	// This routine create the right part of the equation
 
-	PetscFunctionBegin;
-	PetscErrorCode ierr;
+	// This routine create the right part of the liquid-pressure/Darcy equation
 
+	FDSTAG     		*fs;
 	PetscScalar    	dt;
 	BCCtx      		*bc;
 	PetscInt    	i, j, k, nx, ny, nz, sx, sy, sz, iter, mx, my, mz;
-	Vec 			local_sol, local_b, local_Ss;
+	Vec 			local_sol, local_rhs, local_Ss;
 	Vec 			Ss_vec	;
-	Vec 			BC_local, 		BC_vec;
+	Vec 			BC_local, BC_vec;
 	PetscInt 		sx_fine,sy_fine,sz_fine;
-	DM da;
-	PetscScalar		***sol, ***lb;
-	PetscScalar    	***Ssl;
+	DM 				da;
+	PetscScalar		***sol, ***lb, ***Ssl;
 
+	PetscErrorCode ierr;
+	PetscFunctionBegin;
 
-	// Get DA for the CURRENT level (not necessarily the fine grid!)
-	ierr 		=	SNESGetDM(snes,&da); 				CHKERRQ(ierr);
-
-	// Get local vectors attached with the solution at the local DA
-	ierr = DMGetLocalVector(da,&local_b); 	CHKERRQ(ierr);
-	ierr = DMDAVecGetArray(da, jr->lPl,   &sol);  CHKERRQ(ierr);
-
-	//ierr = DMDAVecGetArray(da, jr->Darcylb, &lb);  CHKERRQ(ierr);
+	// Only for cases where Darcy is active
+	if(jr->actDarcy != PETSC_TRUE) PetscFunctionReturn(0);
 
 	// access residual context variables
+	fs        = jr->fs;
 	bc        = jr->bc;
 	dt        = jr->ts.dt;     // time step
+
+	// Get DA for the CURRENT level (not necessarily the fine grid!)
+	ierr 		=	SNESGetDM(jr->Pl_snes,&da); 				CHKERRQ(ierr);
 
 	// Dimensions of the global grid at the current level
 	DMDAGetInfo(da, 0, &nx, &ny,&nz,PETSC_IGNORE,PETSC_IGNORE,PETSC_IGNORE, PETSC_IGNORE,PETSC_IGNORE,PETSC_IGNORE,PETSC_IGNORE,PETSC_IGNORE,PETSC_IGNORE);
@@ -1657,88 +1102,58 @@ PetscErrorCode FormRHS_DARCY(SNES snes, JacRes *jr)
 	my 			= 	ny-1;
 	mz 			= 	nz-1;
 
-
-	// Create temporary local vectors
-	//ierr = 	DMCreateLocalVector(jr->DA_Pl,&local_b); 				CHKERRQ(ierr);
-	// Copy global solution vector into local vector
-	//ierr = 	DMGlobalToLocalBegin(jr->DA_Pl, jr->Darcylb,INSERT_VALUES, local_b); CHKERRQ(ierr);
-	//ierr = 	DMGlobalToLocalEnd  (jr->DA_Pl, jr->Darcylb,INSERT_VALUES, local_b); CHKERRQ(ierr);
-
-	//ierr = 	DMCreateLocalVector (jr->DA_Pl, &local_sol); 		 		 	  CHKERRQ(ierr);
-	// Copy global solution vector into local vector
-	//ierr = 	DMGlobalToLocalBegin(jr->DA_Pl, jr->lPl,INSERT_VALUES, local_sol); CHKERRQ(ierr);
-	//ierr = 	DMGlobalToLocalEnd  (jr->DA_Pl, jr->lPl,INSERT_VALUES, local_sol); CHKERRQ(ierr);
+	// Get local vectors attached with the solution at the local DA
+	ierr 		= 	DMGetLocalVector(da,&local_sol); 	CHKERRQ(ierr);
+	ierr 		= 	DMGetLocalVector(da,&local_rhs); 	CHKERRQ(ierr);
 
 	// Extract required material parameters
 	ExtractCoefficientsFromDA(da, "Ssl"		,	local_Ss, 		Ss_vec, 		Ssl);
 
-	// Copy global b into local  vector
-	ierr = DMGlobalToLocalBegin(da, jr->Darcyb,INSERT_VALUES, local_b); 	CHKERRQ(ierr);
-	ierr = DMGlobalToLocalEnd  (da, jr->Darcyb,INSERT_VALUES, local_b); 	CHKERRQ(ierr);
+	// Copy global solution vector into local  vector
+	ierr = DMGlobalToLocalBegin(da, jr->Pl,INSERT_VALUES, local_sol); CHKERRQ(ierr);
+	ierr = DMGlobalToLocalEnd  (da, jr->Pl,INSERT_VALUES, local_sol); CHKERRQ(ierr);
+
+	// Copy global residual into local  vector
+	ierr = DMGlobalToLocalBegin(da, jr->rhs_Pl,INSERT_VALUES, local_rhs); 	CHKERRQ(ierr);
+	ierr = DMGlobalToLocalEnd  (da, jr->rhs_Pl,INSERT_VALUES, local_rhs); 	CHKERRQ(ierr);
 
 	// access work vectors
-	//ierr = 	DMDAVecGetArray(jr->DA_Pl, local_sol,  &sol);  				CHKERRQ(ierr);
-	ierr = 	DMDAVecGetArray(da, local_b,  	&lb);  				CHKERRQ(ierr);
+	ierr = DMDAVecGetArray(da, local_rhs,  	&lb); 					CHKERRQ(ierr);
+	ierr = DMDAVecGetArray(da, local_sol,  	&sol);  				CHKERRQ(ierr);
 
-	// Update ghost points for the correct boundary values
+
 	ierr = DMDAGetCorners(da, &sx, &sy, &sz, &nx, &ny, &nz); CHKERRQ(ierr);
-	ierr = DMDAGetCorners(jr->DA_Pl, &sx_fine, &sy_fine, &sz_fine, NULL,NULL,NULL); CHKERRQ(ierr);
-
-	/*START_STD_LOOP
-	{
-		if (k==0){
-			sol[k-1][j][i] =  2*bc->Pl_bot - sol[k][j][i]; 	// bottom, boundary, dirichlet value constant
-		}
-		if (k==mz){
-			sol[k+1][j][i] =  2*bc->Pl_top - sol[k][j][i];	// top boundary, dirichlet value constant
-		}
-
-		if (j==0){
-			sol[k][j-1][i] =	sol[k][j][i];		// zero flux
-		}
-		if (j==my){
-			sol[k][j+1][i] = sol[k][j][i];		// zero flux
-		}
-		if (i==0){
-			sol[k][j][i-1] = sol[k][j][i];		// zero flux
-		}
-		if (i==mx){
-			sol[k][j][i+1] = sol[k][j][i];		// zero flux
-		}
-		PetscPrintf(PETSC_COMM_WORLD,"sol(%i,%i,%i)=%12.12e \n",i,j,k,sol[k][j][i]  );
-	}
-	END_STD_LOOP*/
-
-
-	//---------------
-	//
-	//---------------
-	//ierr = DMDAGetCorners(da, &sx, &sy, &sz, &nx, &ny, &nz); CHKERRQ(ierr);
+	iter=0;
 	START_STD_LOOP
 	{
-		lb[k][j][i] = Ssl[k][j][i] * sol[k][j][i] /dt;
-		//PetscPrintf(PETSC_COMM_WORLD,"lb(%i,%i,%i)=%12.12e \n",i,j,k,lb[k][j][i]  );
+		if (k==0 && i==(sx+nx)/2){
+			lb[k][j][i] =  Ssl[k][j][i] *(sol[k][j][i])/dt + bc->Plloc;    // bottom boundary, dirichlet value constant
+		}
+		else{
+			lb[k][j][i] =  Ssl[k][j][i] *sol[k][j][i]/dt;    // bottom boundary, dirichlet value constant
+		}
 	}
 	END_STD_LOOP
 
-	RestoreCoefficientsFromDA(da, "Ssl"		,	local_Ss, 		Ss_vec, 		Ssl);
+	// restore access
+	ierr = DMDAVecRestoreArray(da, local_rhs, 	&lb); 			CHKERRQ(ierr);
+	ierr = DMDAVecRestoreArray(da, local_sol,   &sol);  		CHKERRQ(ierr);
 
-	ierr = DMDAVecRestoreArray(da, jr->lPl,   &sol);  CHKERRQ(ierr);
-	ierr = DMDAVecRestoreArray(da, jr->Darcylb,   &lb);  CHKERRQ(ierr);
+	// restore material coefficients on DA
+	RestoreCoefficientsFromDA(jr->DA_Pl, "Ssl"		,	local_Ss, 		Ss_vec, 		Ssl);
 
-	//ierr = DMDAVecRestoreArray (jr->DA_Pl, local_sol,  	&sol);  			CHKERRQ(ierr);
-	//ierr = DMLocalToGlobalBegin(jr->DA_Pl, local_sol,INSERT_VALUES, jr->Pl); 	CHKERRQ(ierr);
-	//ierr = DMLocalToGlobalEnd  (jr->DA_Pl, local_sol,INSERT_VALUES, jr->Pl); 	CHKERRQ(ierr);
+	// copy back local vectors to global ones
+	ierr = DMLocalToGlobalBegin(da, local_rhs,INSERT_VALUES, jr->rhs_Pl); 	CHKERRQ(ierr);
+	ierr = DMLocalToGlobalEnd  (da, local_rhs,INSERT_VALUES, jr->rhs_Pl); 	CHKERRQ(ierr);
 
+	ierr = DMLocalToGlobalBegin(da, local_sol,INSERT_VALUES, jr->Pl); 	CHKERRQ(ierr);
+	ierr = DMLocalToGlobalEnd  (da, local_sol,INSERT_VALUES, jr->Pl); 	CHKERRQ(ierr);
 
-	ierr = DMLocalToGlobalBegin(da, local_b,INSERT_VALUES, jr->Darcyb); 	CHKERRQ(ierr);
-	ierr = DMLocalToGlobalEnd  (da, local_b,INSERT_VALUES, jr->Darcyb); 	CHKERRQ(ierr);
+	ierr= DMRestoreLocalVector (da, &local_rhs); 					CHKERRQ(ierr);
+	ierr= DMRestoreLocalVector (da,	&local_sol); 					CHKERRQ(ierr);
 
-	//ierr = 	VecDestroy(&local_sol);									CHKERRQ(ierr);
-	//ierr = 	VecDestroy(&local_b);									CHKERRQ(ierr);
-	ierr = 	VecDestroy(&local_Ss);									CHKERRQ(ierr);
-
-	ierr= DMRestoreLocalVector (da,	&local_b); 					CHKERRQ(ierr);
+	//LOCAL_TO_GLOBAL(jr->DA_Pl, jr->rhs_lPl, jr->rhs_Pl);
+	//LOCAL_TO_LOCAL(jr->DA_Pl, jr->Darcylb);
 
 
 	PetscFunctionReturn(0);
@@ -1890,11 +1305,125 @@ PetscErrorCode DMCoarsenHook_DARCY(DM dmf,DM dmc,void *ctx)
 
 	PetscFunctionReturn(0);
 }
-
-// New
 //---------------------------------------------------------------------------
 #undef __FUNCT__
-#define __FUNCT__ "JacResGetDarcyRes"
+#define __FUNCT__ "BCApplyBound_DARCY"
+PetscErrorCode BCApplyBound_DARCY(BCCtx *bc, JacRes *jr)
+{
+	// apply boundary conditions for DARCY
+	FDSTAG      *fs;
+	PetscScalar Pl_bot, Pl_top, Pl_loc;
+	PetscInt    mcz;
+	PetscInt    i, j, k, nx, ny, nz, sx, sy, sz;
+	PetscScalar ***bcPl;
+
+	PetscErrorCode ierr;
+	PetscFunctionBegin;
+
+	// Only for cases where Darcy is active
+	if(jr->actDarcy != PETSC_TRUE) PetscFunctionReturn(0);
+
+	// access context
+	fs = bc->fs;
+
+	// initialize maximal index in z-direction
+	mcz = fs->dsz.tcels - 1;
+
+	//-----------------------------------------------------
+	// LiquidPressure points (TPC only, hence looping over ghost points)
+	//-----------------------------------------------------
+
+	// get boundary liquid pressures
+
+	Pl_bot 	=	bc->Plbot;
+	Pl_top 	=	bc->Pltop;
+	Pl_loc  =	bc->Plloc;
+
+
+
+	ierr = DMDAVecGetArray(jr->DA_Pl, bc->bcPl,  &bcPl);  CHKERRQ(ierr);
+	if(Pl_bot >= 0.0 || Pl_top >= 0.0)
+	{
+		GET_CELL_RANGE_GHOST_INT(nx, sx, fs->dsx)
+		GET_CELL_RANGE_GHOST_INT(ny, sy, fs->dsy)
+		GET_CELL_RANGE_GHOST_INT(nz, sz, fs->dsz)
+
+		START_STD_LOOP
+		{
+			// only positive or zero fluid pressure BC's!
+			// negative will set zero-flux BC automatically
+			if(Pl_bot >= 0.0 && k == 0)   {
+				if( (i==(sx+nx)/2 ) ) //&& (j==(sy+ny)/2 ))
+				{
+					bcPl[k][j][i] =  Pl_loc;    // bottom boundary, dirichlet value constant
+				}
+				else
+				{
+					bcPl[k][j][i] = Pl_bot;
+				}
+				//PetscPrintf(PETSC_COMM_WORLD,"bcPl(%i,%i,%i)=%12.12e \n",i,j,k-1,bcPl[k-1][j][i] );
+			}
+			if(Pl_top >= 0.0 && k == mcz) { bcPl[k+1][j][i] = Pl_top; }
+		}
+		END_STD_LOOP
+	}
+	ierr = DMDAVecRestoreArray(jr->DA_Pl, bc->bcPl,  &bcPl);  CHKERRQ(ierr);
+
+	PetscFunctionReturn(0);
+}
+//---------------------------------------------------------------------------
+#undef __FUNCT__
+#define __FUNCT__ "JacResInitDarcy"
+PetscErrorCode JacResInitDarcy(JacRes *jr)
+{
+	// initialize liquid pressure from markers, or from zero
+
+	BCCtx       *bc;
+	PetscScalar ***lPl, ***bcPl, Pl;
+	PetscInt    i, j, k, nx, ny, nz, sx, sy, sz, iter;
+
+	PetscErrorCode ierr;
+	PetscFunctionBegin;
+
+	// access context
+	bc = jr->bc;
+
+	ierr = VecZeroEntries(jr->lPl); CHKERRQ(ierr);
+
+	ierr = DMDAVecGetArray(jr->DA_Pl, jr->lPl,  &lPl);  CHKERRQ(ierr);
+	ierr = DMDAVecGetArray(jr->DA_Pl, bc->bcPl, &bcPl); CHKERRQ(ierr);
+
+	iter = 0;
+
+	ierr = DMDAGetCorners(jr->DA_Pl, &sx, &sy, &sz, &nx, &ny, &nz); CHKERRQ(ierr);
+
+	START_STD_LOOP
+	{
+		Pl = bcPl[k][j][i];
+
+		if(Pl == DBL_MAX) Pl = jr->svCell[iter].svBulk.Pln;
+
+
+		if(bcPl[k][j][i] == DBL_MAX) bcPl[k][j][i] = 0.0;
+
+		lPl[k][j][i] = Pl;
+
+		iter++;
+	}
+	END_STD_LOOP
+
+	ierr = DMDAVecRestoreArray(jr->DA_Pl, jr->lPl,  &lPl);  CHKERRQ(ierr);
+	ierr = DMDAVecRestoreArray(jr->DA_Pl, bc->bcPl, &bcPl); CHKERRQ(ierr);
+
+	// apply two-point constraints
+	ierr = JacResApplyDarcyBC(jr); CHKERRQ(ierr);
+
+	PetscFunctionReturn(0);
+}
+
+//---------------------------------------------------------------------------
+#undef __FUNCT__
+#define __FUNCT__ "JacResUpdateGhostPoints"
 PetscErrorCode JacResUpdateGhostPoints(SNES snes, Vec x, JacRes *jr)
 {
 	// compute Darcy residual vector
@@ -1943,18 +1472,19 @@ PetscErrorCode JacResUpdateGhostPoints(SNES snes, Vec x, JacRes *jr)
 
 	// Update ghost points for the correct boundary values
 	ierr = DMDAGetCorners(da, &sx, &sy, &sz, &nx, &ny, &nz); CHKERRQ(ierr);
-	ierr = DMDAGetCorners(jr->DA_Pl, &sx_fine, &sy_fine, &sz_fine, NULL,NULL,NULL); CHKERRQ(ierr);
+	//ierr = DMDAGetCorners(jr->DA_Pl, &sx_fine, &sy_fine, &sz_fine, NULL,NULL,NULL); CHKERRQ(ierr);
 
 	// From JacResGetDarcyRes
+	iter=0;
 	START_STD_LOOP
 	{
 		if (k==0){
 			//sol[k-1][j][i] =  2*bc->Pl_bot - sol[k][j][i].Pl;    // bottom boundary, dirichlet value constant
-			sol[k-1][j][i] =  2*bc->Pl_bot - sol[k][j][i];    // bottom boundary, dirichlet value constant
+			sol[k-1][j][i] =  2*bc->Plbot - sol[k][j][i];    // bottom boundary, dirichlet value constant
 		}
 		if (k==mz){
 			//sol[k+1][j][i] =  2*bc->Pl_top - sol[k][j][i].Pl  ;	// top boundary, dirichlet value constant
-			sol[k+1][j][i] =  2*bc->Pl_top - sol[k][j][i]  ;	// top boundary, dirichlet value constant
+			sol[k+1][j][i] =  2*bc->Pltop - sol[k][j][i]  ;	// top boundary, dirichlet value constant
 		}
 
 		if (j==0){
@@ -1984,173 +1514,12 @@ PetscErrorCode JacResUpdateGhostPoints(SNES snes, Vec x, JacRes *jr)
 //---------------------------------------------------------------------------
 //---------------------------------------------------------------------------
 
-// New
-//---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "BCDestroyDarcy"
-PetscErrorCode BCDestroyDarcy(JacRes *jr, BCCtx *bc)
-{
-	PetscFunctionBegin;
 
-	PetscErrorCode 	ierr;
-	FDSTAG 			*fs;
 
-	// Only for cases where Darcy is active
-	if(jr->actDarcy != PETSC_TRUE) PetscFunctionReturn(0);
-
-	// SPC (LiquidPressure/Darcy)
-	ierr = PetscFree(bc->Pl_SPCList); CHKERRQ(ierr);
-	ierr = PetscFree(bc->Pl_SPCList); CHKERRQ(ierr);
-
-	PetscFunctionReturn(0);
-}
 //---------------------------------------------------------------------------
 
-//---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "JacResCopyDarcySol"
-PetscErrorCode JacResCopyDarcySol(SNES snes, JacRes *jr, Vec x)
-{
-	// copy solution from global to local vectors, enforce boundary constraints
-	// copy liquid pressure from global to local vectors, enforce boundary constraints
-
-	FDSTAG            *fs;
-	BCCtx             *bc;
-	DM 				  da;
-	Vec				  local_sol;
-	PetscInt          mcx, mcy, mcz;
-	PetscInt          I, J, K, fi, fj, fk;
-	PetscInt          i, j, k, nx, ny, nz, sx, sy, sz, mx, my, mz;
-	PetscScalar       ***bcpl;
-	PetscScalar       ***lpl;
-	PetscScalar       *pl, pmdof;
-	const PetscScalar *iter; //*sol
-	PetscScalar 		***sol, ***lsol;
-	PetscInt 		sx_fine,sy_fine,sz_fine;
-
-	PetscErrorCode ierr;
-	PetscFunctionBegin;
-
-	fs  =  jr->fs;
-	bc  =  jr->bc;
-
-	// Get DA for the CURRENT level (not necessarily the fine grid!)
-	ierr 		=	SNESGetDM(snes,&da); 				CHKERRQ(ierr);
-
-	// access work vectors
-	ierr = DMDAVecGetArray(da, jr->lPl, &lsol);  CHKERRQ(ierr);
-	ierr = DMDAVecGetArray(da, jr->Pl,   &sol);  CHKERRQ(ierr);
-
-	// Dimensions of the global grid at the current level
-	DMDAGetInfo(da, 0, &nx, &ny,&nz,PETSC_IGNORE,PETSC_IGNORE,PETSC_IGNORE, PETSC_IGNORE,PETSC_IGNORE,PETSC_IGNORE,PETSC_IGNORE,PETSC_IGNORE,PETSC_IGNORE);
-	mx 			= 	nx-1;
-	my 			= 	ny-1;
-	mz 			= 	nz-1;
-
-	//// access vectors
-	//ierr = VecGetArray    (jr->Pl, &pl);   CHKERRQ(ierr);
-	//ierr = VecGetArrayRead(x,      &sol); CHKERRQ(ierr);
-
-	// copy vectors component-wise
-	//iter = sol;
-
-	//ierr = PetscMemcpy(pl, iter, (size_t)fs->nCells*sizeof(PetscScalar)); CHKERRQ(ierr); // check !!!!!!!
-
-	//// restore access
-	////ierr = VecRestoreArray    (jr->Pl, &lpl);   CHKERRQ(ierr);
-	//ierr = VecRestoreArrayRead(x,      &sol); CHKERRQ(ierr);
-
-	// Copy global solution vector into local  vector
-	ierr = DMGlobalToLocalBegin(da, jr->Pl,INSERT_VALUES, jr->lPl); CHKERRQ(ierr);
-	ierr = DMGlobalToLocalEnd  (da, jr->Pl,INSERT_VALUES, jr->lPl); CHKERRQ(ierr);
-
-	// access local solution vectors
-	//ierr = DMDAVecGetArray(da, jr->lPl, &lpl);  		CHKERRQ(ierr);
-
-	// access boundary constraints vectors
-	//ierr = DMDAVecGetArray(da, bc->bcPl, &bcpl); CHKERRQ(ierr);
-
-	// Update ghost points for the correct boundary values
-	//ierr = DMDAGetCorners(da, &sx, &sy, &sz, &nx, &ny, &nz); CHKERRQ(ierr);
-	//ierr = DMDAGetCorners(jr->DA_Pl, &sx_fine, &sy_fine, &sz_fine, NULL,NULL,NULL); CHKERRQ(ierr);
-
-	GET_CELL_RANGE_GHOST_INT(nx, sx, fs->dsx)
-	GET_CELL_RANGE_GHOST_INT(ny, sy, fs->dsy)
-	GET_CELL_RANGE_GHOST_INT(nz, sz, fs->dsz)
 
 
-	START_STD_LOOP
-	{
-		//pmdof = sol[k][j][i].Pl;
-		pmdof = lsol[k][j][i];
-		//pmdof = lpl[k][j][i];
-		//PetscPrintf(PETSC_COMM_WORLD,"lpl(%i,%i,%i)=%12.12e \n",i,j,k,lsol[k][j][i]);
-
-		/*I = i; fi = 0;
-		J = j; fj = 0;
-		K = k; fk = 0;
-
-		if(i == 0)   { fi = 1; I = i-1; SET_TPC_DARCY(bcpl, lpl, k, j, I, pmdof) }
-		if(i == mcx) { fi = 1; I = i+1; SET_TPC_DARCY(bcpl, lpl, k, j, I, pmdof) }
-		if(j == 0)   { fj = 1; J = j-1; SET_TPC_DARCY(bcpl, lpl, k, J, i, pmdof) }
-		if(j == mcy) { fj = 1; J = j+1; SET_TPC_DARCY(bcpl, lpl, k, J, i, pmdof) }
-		if(k == 0)   { fk = 1; K = k-1; SET_TPC_DARCY(bcpl, lpl, K, j, i, pmdof) }
-		if(k == mcz) { fk = 1; K = k+1; SET_TPC_DARCY(bcpl, lpl, K, j, i, pmdof) }
-
-		if(fi*fj)    SET_EDGE_CORNER_DARCY(n, lpl, k, J, I, k, j, i, pmdof)
-		if(fi*fk)    SET_EDGE_CORNER_DARCY(n, lpl, K, j, I, k, j, i, pmdof)
-		if(fj*fk)    SET_EDGE_CORNER_DARCY(n, lpl, K, J, i, k, j, i, pmdof)
-		if(fi*fj*fk) SET_EDGE_CORNER_DARCY(n, lpl, K, J, I, k, j, i, pmdof)*/
-
-		//PetscPrintf(PETSC_COMM_WORLD,"sol(%i,%i,%i).Pl=%12.12e \n",i,j,k-1,sol[k-1][j][i].Pl );
-	}
-	END_STD_LOOP
-
-		// restore access
-		ierr = DMDAVecRestoreArray(jr->DA_Pl, jr->lPl,  &lsol);  CHKERRQ(ierr);
-		ierr = DMDAVecRestoreArray(jr->DA_Pl, jr->Pl,  &sol);  CHKERRQ(ierr);
-		//ierr = DMDAVecRestoreArray(jr->DA_Pl, bc->bcPl, &bcpl); CHKERRQ(ierr);
-		//
-	//DarcyPrintPl(jr);
-
-	PetscFunctionReturn(0);
-}
-//---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "BCSetParamDarcy"
-PetscErrorCode BCSetParamDarcy(JacRes *jr, BCCtx *bc, UserCtx *user)
-{
-	PetscFunctionBegin;
-
-	// Only for cases where Darcy is active
-	if(jr->actDarcy != PETSC_TRUE) PetscFunctionReturn(0);
-
-	bc->Pl_bot  = user->Pl_bottom;
-	bc->Pl_top  = user->Pl_top;
-
-
-	bc->Pl_bot= 1e-2 ; //!!!!!!!!!!!!!!!!!!!!!!!!!!!!!#####################################################################
-
-	PetscFunctionReturn(0);
-}
-//---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "IncreaseLiquidPressureBottom"
-PetscErrorCode IncreaseLiquidPressureBottom(JacRes *jr, BCCtx *bc, UserCtx *user)
-{
-	PetscScalar Pl_incr;
-
-	PetscFunctionBegin;
-
-	// Only for cases where Darcy is active
-	if(jr->actDarcy != PETSC_TRUE) PetscFunctionReturn(0);
-
-	Pl_incr = 2.0;
-
-	bc->Pl_bot = Pl_incr*bc->Pl_bot;
-
-	PetscFunctionReturn(0);
-}
 //---------------------------------------------------------------------------
 #undef __FUNCT__
 #define __FUNCT__ "DarcyPrintPl"
@@ -2170,8 +1539,8 @@ PetscErrorCode DarcyPrintPl(JacRes *jr)
 	bc = jr->bc;
 
 
-	ierr = DMDAVecGetArray(jr->DA_Pl, jr->lPl,  &lPl);  CHKERRQ(ierr);
-	//ierr = DMDAVecGetArray(jr->DA_Pl, jr->Pl,  &Pl);  CHKERRQ(ierr);
+	//ierr = DMDAVecGetArray(jr->DA_Pl, jr->lPl,  &lPl);  CHKERRQ(ierr);
+	ierr = DMDAVecGetArray(jr->DA_Pl, jr->Pl,  &Pl);  CHKERRQ(ierr);
 	//ierr = DMDAVecGetArray(jr->DA_Pl, bc->bcPl, &bcPl); CHKERRQ(ierr);
 	//ierr = DMDAVecGetArray(jr->DA_Pl, jr->lr_Pl,  &rPl);  CHKERRQ(ierr);
 	//ierr = DMDAVecGetArray(jr->DA_Pl, jr->Darcyb,  &b);  CHKERRQ(ierr);
@@ -2184,18 +1553,18 @@ PetscErrorCode DarcyPrintPl(JacRes *jr)
 	{
 		//bcPl[k][j][i];
 		//lPl[k][j][i];
-		PetscPrintf(PETSC_COMM_WORLD,"lPl(%i,%i,%i)=%12.12e \n",i,j,k,lPl[k][j][i] );
+		//PetscPrintf(PETSC_COMM_WORLD,"lPl(%i,%i,%i)=%12.12e \n",i,j,k-1,lPl[k-1][j][i] );
 		//PetscPrintf(PETSC_COMM_WORLD,"bcPl(%i,%i,%i)=%12.12e \n",i,j,k-1,bcPl[k-1][j][i] );
-		//PetscPrintf(PETSC_COMM_WORLD,"Pl(%i,%i,%i)=%12.12e \n",i,j,k,Pl[k][j][i] );
-		//PetscPrintf(PETSC_COMM_WORLD,"resPl(%i,%i,%i)=%12.12e \n",i,j,k,rPl[k][j][i] );
+		PetscPrintf(PETSC_COMM_WORLD,"Pl(%i,%i,%i)=%12.12e \n",i,j,k,Pl[k][j][i] );
+		//PetscPrintf(PETSC_COMM_WORLD,"resPl(%i,%i,%i)=%12.12e \n",i,j,k-1,rPl[k-1][j][i] );
 		//PetscPrintf(PETSC_COMM_WORLD,"b(%i,%i,%i)=%12.12e \n",i,j,k,b[k][j][i] );
 
 		iter++;
 	}
 	END_STD_LOOP
 
-	ierr = DMDAVecRestoreArray(jr->DA_Pl, jr->lPl,  &lPl);  CHKERRQ(ierr);
-	//ierr = DMDAVecRestoreArray(jr->DA_Pl, jr->Pl,  &Pl);  CHKERRQ(ierr);
+	//ierr = DMDAVecRestoreArray(jr->DA_Pl, jr->lPl,  &lPl);  CHKERRQ(ierr);
+	ierr = DMDAVecRestoreArray(jr->DA_Pl, jr->Pl,  &Pl);  CHKERRQ(ierr);
 	//ierr = DMDAVecRestoreArray(jr->DA_Pl, bc->bcPl, &bcPl); CHKERRQ(ierr);
 	//ierr = DMDAVecRestoreArray(jr->DA_Pl, jr->lr_Pl, &rPl); CHKERRQ(ierr);
 	//ierr = DMDAVecRestoreArray(jr->DA_Pl, jr->Darcyb, &b); CHKERRQ(ierr);

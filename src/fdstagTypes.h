@@ -281,7 +281,7 @@ typedef struct
 	// topography
 	char             TopoFilename[MAX_PATH_LEN];
 	
-	// Darcy
+	// Liquid-pressure/Darcy
 	PetscScalar      Pl_bottom, Pl_top;
 
 

@@ -532,7 +532,7 @@ PetscErrorCode ADVAdvectMark(AdvCtx *actx)
 	PetscInt    jj, ID, I, J, K, II, JJ, KK;
 	PetscScalar *ncx, *ncy, *ncz;
 	PetscScalar *ccx, *ccy, *ccz;
-	PetscScalar ***lvx, ***lvy, ***lvz, ***lp, ***lT;
+	PetscScalar ***lvx, ***lvy, ***lvz, ***lp, ***lT, ***lPl;
 	PetscScalar vx, vy, vz, xc, yc, zc, xp, yp, zp, dt;
 
 	PetscErrorCode ierr;
@@ -566,6 +566,8 @@ PetscErrorCode ADVAdvectMark(AdvCtx *actx)
 	ierr = DMDAVecGetArray(fs->DA_Z,   jr->lvz, &lvz); CHKERRQ(ierr);
 	ierr = DMDAVecGetArray(fs->DA_CEN, jr->lp,  &lp);  CHKERRQ(ierr);
 	ierr = DMDAVecGetArray(fs->DA_CEN, jr->lT,  &lT);  CHKERRQ(ierr);
+	// Darcy
+	ierr = DMDAVecGetArray(fs->DA_CEN, jr->lPl,  &lPl);  CHKERRQ(ierr);
 
 	// scan all markers
 	for(jj = 0; jj < actx->nummark; jj++)
@@ -618,6 +620,10 @@ PetscErrorCode ADVAdvectMark(AdvCtx *actx)
 		P->U[0] += vx*dt;
 		P->U[1] += vy*dt;
 		P->U[2] += vz*dt;
+
+		// update liquid pressure
+		P->Pl += lPl[sz+K][sy+J][sx+I] - svCell->svBulk.Pln;
+
 	}
 
 	// restore access
@@ -626,6 +632,7 @@ PetscErrorCode ADVAdvectMark(AdvCtx *actx)
 	ierr = DMDAVecRestoreArray(fs->DA_Z,   jr->lvz, &lvz); CHKERRQ(ierr);
 	ierr = DMDAVecRestoreArray(fs->DA_CEN, jr->lp,  &lp);  CHKERRQ(ierr);
 	ierr = DMDAVecRestoreArray(fs->DA_CEN, jr->lT,  &lT);  CHKERRQ(ierr);
+	ierr = DMDAVecRestoreArray(fs->DA_CEN, jr->lPl, &lPl); CHKERRQ(ierr);
 
 	PetscFunctionReturn(0);
 }
@@ -1531,6 +1538,9 @@ PetscErrorCode ADVInterpMarkToCell(AdvCtx *actx)
 		svCell->U[0]      = 0.0;
 		svCell->U[1]      = 0.0;
 		svCell->U[2]      = 0.0;
+
+		// Darcy
+		svCell->svBulk.Pln = 0.0;
 	}
 
 	// scan ALL markers
@@ -1575,6 +1585,9 @@ PetscErrorCode ADVInterpMarkToCell(AdvCtx *actx)
 		svCell->U[1]      += w*P->U[1];
 		svCell->U[2]      += w*P->U[2];
 
+		// Darcy
+		svCell->svBulk.Pln += w*P->Pl;
+
 	}
 
 	// normalize interpolated values
@@ -1596,6 +1609,10 @@ PetscErrorCode ADVInterpMarkToCell(AdvCtx *actx)
 		svCell->U[0]      /=w;
 		svCell->U[1]      /=w;
 		svCell->U[2]      /=w;
+
+		// Darcy
+		svCell->svBulk.Pln /= w;
+
 	}
 
 	PetscFunctionReturn(0);

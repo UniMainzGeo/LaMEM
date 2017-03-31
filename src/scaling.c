@@ -182,6 +182,7 @@ PetscErrorCode ScalingCreate(Scaling *scal)
 		scal->expansivity         = 1.0;
 		// From Darcy code
 		scal->permeability        = 1.0;   sprintf(scal->lbl_permeability,     "[ ]");
+		scal->storage        	  = 1.0;   sprintf(scal->lbl_storage,     		   "[ ]");
 
 	}
 	else if(scal->utype == _SI_)
@@ -234,6 +235,7 @@ PetscErrorCode ScalingCreate(Scaling *scal)
 		scal->expansivity         = 1.0/temperature;
 		// From Darcy code
 		scal->permeability        = length*length;            sprintf(scal->lbl_permeability,     "[m2]");
+		scal->storage        	  = 1/stress;            	  sprintf(scal->lbl_storage,     	  "[1/Pa]");
 
 	}
 	else if(scal->utype == _GEO_)
@@ -293,8 +295,10 @@ PetscErrorCode ScalingCreate(Scaling *scal)
 		scal->conductivity        = power/length/temperature;
 		scal->heat_production     = power/mass;
 		scal->expansivity         = 1.0/temperature;
+
 		// From Darcy code
 		scal->permeability        = length*length;            sprintf(scal->lbl_permeability,     "[m2]");
+		scal->storage        	  = 1/stress;            	  sprintf(scal->lbl_storage,          "[1/Pa]");
 
 	}
 
@@ -333,10 +337,9 @@ void ScalingInput(Scaling *scal, UserCtx *user)
 	user->Temp_top        = (user->Temp_top    + scal->Tshift)/scal->temperature;
 	user->Temp_bottom     = (user->Temp_bottom + scal->Tshift)/scal->temperature;
 
-	// From Darcy code
-	// LiquidPressure
-	user->LiquidPressure_top 	/= scal->stress;
-	user->LiquidPressure_bottom  /= scal->stress;
+	// Liquid-pressure/Darcy
+	user->Pl_top 	 /= scal->stress;
+	user->Pl_bottom  /= scal->stress;
 
 	// gravity
 	user->Gravity         /= scal->acceleration;
@@ -439,8 +442,9 @@ void ScalingMatProp(Scaling *scal, Material_t *phases, PetscInt numPhases)
 
 		// From Darcy code
 								//phases[i].rhol    /= scal->density;
-		phases[i].mu      /= scal->viscosity;
-		phases[i].Kphi    /= scal->permeability;
+		phases[i].mul      /= scal->viscosity;
+		phases[i].Kphi     /= scal->permeability;
+		phases[i].Ss       /= scal->storage;
 	}
 }
 //---------------------------------------------------------------------------

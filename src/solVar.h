@@ -82,6 +82,8 @@ typedef struct
 	PetscScalar APS;   // accumulated plastic strain
 	Tensor2RS   S;     // deviatoric stress
 	PetscScalar U[3];  // displacement
+	// Darcy
+	PetscScalar Pl;  // liquid pressure
 
 } Marker;
 
@@ -120,7 +122,7 @@ typedef struct
 	// from darcy-code
 	PetscScalar  Phi;   // porosity
 	PetscScalar  Kphi;  // permeability
-	// New
+	// Darcy
 	PetscScalar  Pln;  // history liquid pressure
 
 } SolVarBulk;
@@ -221,7 +223,7 @@ typedef struct
 	// Darcy/liquid pressure parameters
 	PetscScalar  Kphi;    // permeability
 					//PetscScalar  rhol;    // liquid density
-	PetscScalar  mu;      // liquid viscosity
+	PetscScalar  mul;      // liquid viscosity
 	PetscScalar  Ss;      // New: Specific storage
 	////////////
 
