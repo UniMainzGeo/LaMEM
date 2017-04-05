@@ -448,7 +448,6 @@ void ScalingMatParLim(Scaling *scal, MatParLim *matLim)
 	// scale gas constant with characteristic temperature
 	matLim->Rugc        *= scal->temperature;
 	matLim->rho_fluid   /= scal->density;
-	matLim->rho_lithos  /= scal->density;
 	matLim->theta_north /= scal->angle;
 }
 //---------------------------------------------------------------------------

@@ -812,8 +812,7 @@ PetscErrorCode JacResGetResidual(JacRes *jr)
 	PetscScalar ***fx,  ***fy,  ***fz, ***vx,  ***vy,  ***vz, ***gc;
 	PetscScalar ***dxx, ***dyy, ***dzz, ***dxy, ***dxz, ***dyz, ***p, ***T, ***p_lithos, ***p_pore;
 	PetscScalar eta_creep, eta_viscoplastic;
-	PetscScalar depth, pc_lithos, pc_pore;
-//	PetscScalar rho_lithos;
+	PetscScalar depth, pc_lithos, pc_pore, biot, ptotal;
 //	PetscScalar alpha, Tn,
 
 	PetscErrorCode ierr;
@@ -835,8 +834,8 @@ PetscErrorCode JacResGetResidual(JacRes *jr)
 	dt        =  jr->ts.dt;     	// time step
 	fssa      =  jr->FSSA;      	// density gradient penalty parameter
 	grav      =  jr->grav;      	// gravity acceleration
-//	rho_lithos=  matLim->rho_lithos;// density to compute lithostatic pressure in viscosity formulation
 	pShift    =  jr->pShift;    	// pressure shift
+	biot      =  matLim->biot;      // Biot pressure parameter
 
 	// clear local residual vectors
 	ierr = VecZeroEntries(jr->lfx); CHKERRQ(ierr);
@@ -861,7 +860,7 @@ PetscErrorCode JacResGetResidual(JacRes *jr)
 	ierr = DMDAVecGetArray(fs->DA_Y,   jr->lvy,  &vy);  CHKERRQ(ierr);
 	ierr = DMDAVecGetArray(fs->DA_Z,   jr->lvz,  &vz);  CHKERRQ(ierr);
 	ierr = DMDAVecGetArray(fs->DA_CEN, jr->lp_lithos,&p_lithos); CHKERRQ(ierr);
-	ierr = DMDAVecGetArray(fs->DA_CEN, jr->lp_pore,  &p_pore); CHKERRQ(ierr);
+	ierr = DMDAVecGetArray(fs->DA_CEN, jr->lp_pore,  &p_pore);   CHKERRQ(ierr);
 
 	// compute lithostatic pressure
 	ierr = JacResGetLithoStaticPressure(jr); CHKERRQ(ierr);
@@ -914,7 +913,6 @@ PetscErrorCode JacResGetResidual(JacRes *jr)
 		0.25*(XZ1*XZ1 + XZ2*XZ2 + XZ3*XZ3 + XZ4*XZ4) +
 		0.25*(YZ1*YZ1 + YZ2*YZ2 + YZ3*YZ3 + YZ4*YZ4);
 
-
 		// store square root of second invariant
 		svDev->DII = sqrt(J2Inv);
 
@@ -931,7 +929,7 @@ PetscErrorCode JacResGetResidual(JacRes *jr)
 		// access current lithostatic pressure
 		pc_lithos = p_lithos[k][j][i];
 
-		// access current pore pressure
+		// access current pore pressure (zero if deactivated)
 		pc_pore = p_pore[k][j][i];
 
 		// compute depth below the free surface
@@ -949,12 +947,13 @@ PetscErrorCode JacResGetResidual(JacRes *jr)
 		// compute stress, plastic strain rate and shear heating term on cell
 		ierr = GetStressCell(svCell, matLim, XX, YY, ZZ); CHKERRQ(ierr);
 
+		// get total pressure (effective pressure, computed by LaMEM, plus pore pressure)
+		ptotal = pc + biot*pc_pore;
+
 		// compute total Cauchy stresses
-		sxx = svCell->sxx - pc;
-		syy = svCell->syy - pc;
-		szz = svCell->szz - pc;
-
-
+		sxx = svCell->sxx - ptotal;
+		syy = svCell->syy - ptotal;
+		szz = svCell->szz - ptotal;
 
 		// evaluate volumetric constitutive equations
 		ierr = VolConstEq(svBulk, numPhases, phases, svCell->phRat, matLim, depth, dt, pc-pShift , Tc); CHKERRQ(ierr);
@@ -1928,21 +1927,20 @@ PetscErrorCode SetMatParLim(MatParLim *matLim, UserCtx *usr)
 	matLim->quasiHarmAvg = PETSC_FALSE;
 	matLim->cf_eta_min   = 0.0;
 	matLim->n_pw         = 0.0;
-	matLim->MaxSNESIterBeforeApplyPlimit = 25;		
+	matLim->MaxSNESIterBeforeApplyPlimit = 250;		
 
 	matLim->initGuessFlg = PETSC_TRUE;
 	matLim->rho_fluid    = 1040.0;
 	matLim->actPorePres  = PETSC_FALSE;
-	matLim->rho_lithos 	 = 0.0;	 // lithostatic density
 	matLim->theta_north  = 90.0; // by default y-axis
 	matLim->warn         = PETSC_TRUE;
 	matLim->jac_mat_free = PETSC_FALSE;
+	matLim->biot         = 0.0;
 
 	if(usr->DII_ref) matLim->DII_ref = usr->DII_ref;
 	else
 	{
-		matLim->DII_ref = 1.0;
-		PetscPrintf(PETSC_COMM_WORLD," WARNING: Reference strain rate DII_ref is not defined. Use a non-dimensional reference value of DII_ref =%f \n", matLim->DII_ref);
+		SETERRQ(PETSC_COMM_SELF, PETSC_ERR_USER, "Reference strain rate DII_ref is not defined. \n");
 	}
 
 	cnt = 0;
@@ -1981,13 +1979,24 @@ PetscErrorCode SetMatParLim(MatParLim *matLim, UserCtx *usr)
 	}
 
 	ierr = PetscOptionsGetScalar(NULL, NULL, "-rho_fluid",  &matLim->rho_fluid, NULL); CHKERRQ(ierr);
-	ierr = PetscOptionsGetScalar(NULL, NULL, "-rho_lithos", &matLim->rho_lithos, NULL); CHKERRQ(ierr);		// specify lithostatic density on commandline (if not set, we don't use this)
 
-	// 
+	// check whether pore pressure is activated
 	ierr = PetscOptionsHasName(NULL, NULL, "-actPorePres", &flg); CHKERRQ(ierr);
+
 	if(flg == PETSC_TRUE)
-	{ 
+	{
+		// set flag
 		matLim->actPorePres=PETSC_TRUE;
+
+		// set default biot parameter
+		matLim->biot = 1.0;
+
+		// read (optional)
+		ierr = PetscOptionsGetScalar(NULL, NULL, "-biot", &matLim->biot, NULL); CHKERRQ(ierr);
+
+		// correct limits
+		if(matLim->biot > 1.0) matLim->biot = 1.0;
+		if(matLim->biot < 0.0) matLim->biot = 0.0;
 	}
 
 	ierr = PetscOptionsGetScalar(NULL, NULL, "-theta_north", &matLim->theta_north, NULL); CHKERRQ(ierr);
@@ -2000,6 +2009,15 @@ PetscErrorCode SetMatParLim(MatParLim *matLim, UserCtx *usr)
 
 	if(matLim->shearHeatEff > 1.0) matLim->shearHeatEff = 1.0;
 	if(matLim->shearHeatEff < 0.0) matLim->shearHeatEff = 0.0;
+
+	// flags
+	matLim->p_visc_total  = PETSC_FALSE; // use total pressure in viscous laws
+	matLim->p_plast_litho = PETSC_FALSE; // use lithostatic pressure for plasticity
+	matLim->p_no_lim      = PETSC_FALSE; // skip pressure limits for plasticity
+
+	ierr = PetscOptionsHasName(NULL, NULL, "-ViscoPLithosOff",                          &matLim->p_visc_total);  CHKERRQ(ierr);
+	ierr = PetscOptionsHasName(NULL, NULL, "-EmployLithostaticPressureInYieldFunction", &matLim->p_plast_litho); CHKERRQ(ierr);
+	ierr = PetscOptionsHasName(NULL, NULL, "-NoPressureLimit",                          &matLim->p_no_lim);      CHKERRQ(ierr);
 
 	PetscFunctionReturn(0);
 }
@@ -3583,6 +3601,9 @@ PetscErrorCode JacResGetPorePressure(JacRes *jr)
 
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
+
+	// initialize
+	ierr = VecZeroEntries(jr->lp_pore); CHKERRQ(ierr);
 
 	// Return if not activated
 	if(jr->matLim.actPorePres==PETSC_FALSE)

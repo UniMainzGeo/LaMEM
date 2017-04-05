@@ -120,6 +120,7 @@ Gravity					=  -1;									# [m/s2] - gravitational acceleration
 # Define phase transitions for particles
 LowerViscosityCutoff			=	1e-3
 UpperViscosityCutoff			=	1e12
+DII_ref 						=	1
 
 # Define material properties for all phases -------------------------------------------------
 

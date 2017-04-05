@@ -250,17 +250,21 @@ typedef struct
 	PetscBool   presLimAct;   // activate pressure limit flag
 	PetscInt	MaxSNESIterBeforeApplyPlimit;	// maximum # of SNES iterations before we start applying upper/lower P bounds i yield function
 	// fluid density for depth-dependent density model
-	PetscScalar  rho_fluid;
-	PetscBool    actPorePres;  // pore pressure activation flag
-	// rock density if we want to use lithostatic pressure in viscosit calculations
-	PetscScalar  rho_lithos;
+	PetscScalar rho_fluid;
+	PetscBool   actPorePres;  // pore pressure activation flag
 	// direction to the North for stress orientation
 	// counter-clockwise positive measured from x-axis
-	PetscScalar  theta_north;
+	PetscScalar theta_north;
 	// print warning messages
-	PetscBool    warn;
+	PetscBool   warn;
 	// matrix-free closed-form jacobian
 	PetscBool   jac_mat_free;
+	// Biot pressure parameter
+	PetscScalar biot;
+	// flags
+	PetscBool   p_visc_total;  // use total pressure in viscous laws
+	PetscBool   p_plast_litho; // use lithostatic pressure for plasticity
+	PetscBool   p_no_lim;      // skip pressure limits for plasticity
 
 } MatParLim;
 

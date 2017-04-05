@@ -68,7 +68,7 @@ Temp_bottom				= 1465 				# Temperature @ bottom; side BC's are flux-free
 <PetscOptionsStart>
 
 # If you have a non-linear system just switch off the option 
--InitViscosity 1e22
+-InitViscosity 1e23
 -use_marker_control
 
 
@@ -148,7 +148,7 @@ Temp_bottom				= 1465 				# Temperature @ bottom; side BC's are flux-free
 # viscosity cutoff and initial strain-rate guess
 LowerViscosityCutoff			=	2.5e18
 UpperViscosityCutoff			=	2.5e24
-DII_ref                        		= 	1e-16    
+DII_ref                        	= 	1e-16    
 
 #===============================================================================
 # ............................ Material Parameters .............................

@@ -1,5 +1,5 @@
- Parsing input file : ./t3_SubductionMATLABinput/Subduction_MATLAB_Particles.dat 
-# Adding PetscOption: -InitViscosity 1e22 
+ Parsing input file : ./t3_SubductionMATLABinput/Subduction_MATLAB_Particles_p4.dat 
+# Adding PetscOption: -InitViscosity 1e23 
 # Adding PetscOption: -use_marker_control 
 # Adding PetscOption: -snes_ksp_ew 
 # Adding PetscOption: -snes_monitor 
@@ -45,13 +45,13 @@
 # Adding PetscOption: -out_moment_res 1 
 -------------------------------------------------------------------------- 
                    Lithosphere and Mantle Evolution Model                   
-     Compiled: Date: Nov  8 2016 - Time: 14:30:20 	    
+     Compiled: Date: Feb 16 2017 - Time: 17:12:28 	    
 -------------------------------------------------------------------------- 
         STAGGERED-GRID FINITE DIFFERENCE CANONICAL IMPLEMENTATION           
 -------------------------------------------------------------------------- 
  Characteristic Length      = 1e+06 [m] 
  Characteristic Viscosity   = 1e+22 [Pa*s] 
- Characteristic Temperature = 1000 [C/K] 
+ Characteristic Temperature = 1000. [C/K] 
  Characteristic Stress      = 1e+10 [Pa] 
 --------------------------------------------------------------------------
 Reading pushing parameters: 
@@ -60,41 +60,41 @@ Reading softening laws:
 
 Reading material parameters: 
 
-    Phase [0]: rho = 3300 [kg/m3], eta = 2.5e+23 [Pa*s], beta = 0 [1/Pa]
-    Phase [0]: (diff ) Bd = 2e-24 [1/(Pa*s)], Ed = 0 [J/mol], Vd = 0 [m3/mol] 
-    Phase [0]: (disl ) Bn = 0 [1/(Pa^n*s)], En = 0 [J/mol], Vn = 0 [m3/mol], n = 0 [ ] 
-    Phase [0]: (peirl) Bp = 0 [1/s], Ep = 0 [J/mol], Vp = 0 [m3/mol], taup = 0 [Pa], gamma = 0 [ ], q = 0 [ ] 
-    Phase [0]: (elast) G = 5e+10 [Pa], K = 0 [Pa], Kp = 0 [ ] 
-    Phase [0]: (plast) cohesion = 2e+07 [Pa], friction angle = 0 [deg] 
+    Phase [0]: rho = 3300. [kg/m3], eta = 2.5e+23 [Pa*s], beta = 0. [1/Pa]
+    Phase [0]: (diff ) Bd = 2e-24 [1/(Pa*s)], Ed = 0. [J/mol], Vd = 0. [m3/mol] 
+    Phase [0]: (disl ) Bn = 0. [1/(Pa^n*s)], En = 0. [J/mol], Vn = 0. [m3/mol], n = 0. [ ] 
+    Phase [0]: (peirl) Bp = 0. [1/s], Ep = 0. [J/mol], Vp = 0. [m3/mol], taup = 0. [Pa], gamma = 0. [ ], q = 0. [ ] 
+    Phase [0]: (elast) G = 5e+10 [Pa], K = 0. [Pa], Kp = 0. [ ] 
+    Phase [0]: (plast) cohesion = 2e+07 [Pa], friction angle = 0. [deg], pore pressure ratio = 0. [ ] 
     Phase [0]: (sweak) cohesion SoftLaw = -1 [ ], friction SoftLaw = -1 [ ] 
-    Phase [0]: (temp ) alpha = 0 [1/K], cp = 1050 [J/kg/K], k = 3 [W/m/K], A = 0 [W/m3] 
+    Phase [0]: (temp ) alpha = 0. [1/K], cp = 1050. [J/kg/K], k = 3. [W/m/K], A = 0. [W/m3] 
     
-    Phase [1]: rho = 3300 [kg/m3], eta = 0 [Pa*s], beta = 0 [1/Pa]
-    Phase [1]: (diff ) Bd = 1.5e-09 [1/(Pa*s)], Ed = 375000 [J/mol], Vd = 3e-06 [m3/mol] 
-    Phase [1]: (disl ) Bn = 1.4806e-16 [1/(Pa^n*s)], En = 532000 [J/mol], Vn = 1.5e-05 [m3/mol], n = 3.5 [ ] 
-    Phase [1]: (peirl) Bp = 0 [1/s], Ep = 0 [J/mol], Vp = 0 [m3/mol], taup = 0 [Pa], gamma = 0 [ ], q = 0 [ ] 
-    Phase [1]: (elast) G = 5e+10 [Pa], K = 0 [Pa], Kp = 0 [ ] 
-    Phase [1]: (plast) cohesion = 2e+07 [Pa], friction angle = 30 [deg] 
+    Phase [1]: rho = 3300. [kg/m3], eta = 0. [Pa*s], beta = 0. [1/Pa]
+    Phase [1]: (diff ) Bd = 1.5e-09 [1/(Pa*s)], Ed = 375000. [J/mol], Vd = 3e-06 [m3/mol] 
+    Phase [1]: (disl ) Bn = 1.4806e-16 [1/(Pa^n*s)], En = 532000. [J/mol], Vn = 1.5e-05 [m3/mol], n = 3.5 [ ] 
+    Phase [1]: (peirl) Bp = 0. [1/s], Ep = 0. [J/mol], Vp = 0. [m3/mol], taup = 0. [Pa], gamma = 0. [ ], q = 0. [ ] 
+    Phase [1]: (elast) G = 5e+10 [Pa], K = 0. [Pa], Kp = 0. [ ] 
+    Phase [1]: (plast) cohesion = 2e+07 [Pa], friction angle = 30. [deg], pore pressure ratio = 0. [ ] 
     Phase [1]: (sweak) cohesion SoftLaw = -1 [ ], friction SoftLaw = -1 [ ] 
-    Phase [1]: (temp ) alpha = 1e-05 [1/K], cp = 1050 [J/kg/K], k = 3 [W/m/K], A = 0 [W/m3] 
+    Phase [1]: (temp ) alpha = 1e-05 [1/K], cp = 1050. [J/kg/K], k = 3. [W/m/K], A = 0. [W/m3] 
     
-    Phase [2]: rho = 3300 [kg/m3], eta = 2.5e+19 [Pa*s], beta = 0 [1/Pa]
-    Phase [2]: (diff ) Bd = 2e-20 [1/(Pa*s)], Ed = 0 [J/mol], Vd = 0 [m3/mol] 
-    Phase [2]: (disl ) Bn = 0 [1/(Pa^n*s)], En = 0 [J/mol], Vn = 0 [m3/mol], n = 0 [ ] 
-    Phase [2]: (peirl) Bp = 0 [1/s], Ep = 0 [J/mol], Vp = 0 [m3/mol], taup = 0 [Pa], gamma = 0 [ ], q = 0 [ ] 
-    Phase [2]: (elast) G = 0 [Pa], K = 0 [Pa], Kp = 0 [ ] 
-    Phase [2]: (plast) cohesion = 0 [Pa], friction angle = 0 [deg] 
+    Phase [2]: rho = 3300. [kg/m3], eta = 2.5e+19 [Pa*s], beta = 0. [1/Pa]
+    Phase [2]: (diff ) Bd = 2e-20 [1/(Pa*s)], Ed = 0. [J/mol], Vd = 0. [m3/mol] 
+    Phase [2]: (disl ) Bn = 0. [1/(Pa^n*s)], En = 0. [J/mol], Vn = 0. [m3/mol], n = 0. [ ] 
+    Phase [2]: (peirl) Bp = 0. [1/s], Ep = 0. [J/mol], Vp = 0. [m3/mol], taup = 0. [Pa], gamma = 0. [ ], q = 0. [ ] 
+    Phase [2]: (elast) G = 0. [Pa], K = 0. [Pa], Kp = 0. [ ] 
+    Phase [2]: (plast) cohesion = 0. [Pa], friction angle = 0. [deg], pore pressure ratio = 0. [ ] 
     Phase [2]: (sweak) cohesion SoftLaw = -1 [ ], friction SoftLaw = -1 [ ] 
-    Phase [2]: (temp ) alpha = 1e-05 [1/K], cp = 0 [J/kg/K], k = 0 [W/m/K], A = 0 [W/m3] 
+    Phase [2]: (temp ) alpha = 1e-05 [1/K], cp = 0. [J/kg/K], k = 0. [W/m/K], A = 0. [W/m3] 
     
-    Phase [3]: rho = 3300 [kg/m3], eta = 0 [Pa*s], beta = 0 [1/Pa]
-    Phase [3]: (diff ) Bd = 1.5e-09 [1/(Pa*s)], Ed = 375000 [J/mol], Vd = 3e-06 [m3/mol] 
-    Phase [3]: (disl ) Bn = 1.4806e-16 [1/(Pa^n*s)], En = 532000 [J/mol], Vn = 1.5e-05 [m3/mol], n = 3.5 [ ] 
-    Phase [3]: (peirl) Bp = 0 [1/s], Ep = 0 [J/mol], Vp = 0 [m3/mol], taup = 0 [Pa], gamma = 0 [ ], q = 0 [ ] 
-    Phase [3]: (elast) G = 5e+10 [Pa], K = 0 [Pa], Kp = 0 [ ] 
-    Phase [3]: (plast) cohesion = 2e+07 [Pa], friction angle = 30 [deg] 
+    Phase [3]: rho = 3300. [kg/m3], eta = 0. [Pa*s], beta = 0. [1/Pa]
+    Phase [3]: (diff ) Bd = 1.5e-09 [1/(Pa*s)], Ed = 375000. [J/mol], Vd = 3e-06 [m3/mol] 
+    Phase [3]: (disl ) Bn = 1.4806e-16 [1/(Pa^n*s)], En = 532000. [J/mol], Vn = 1.5e-05 [m3/mol], n = 3.5 [ ] 
+    Phase [3]: (peirl) Bp = 0. [1/s], Ep = 0. [J/mol], Vp = 0. [m3/mol], taup = 0. [Pa], gamma = 0. [ ], q = 0. [ ] 
+    Phase [3]: (elast) G = 5e+10 [Pa], K = 0. [Pa], Kp = 0. [ ] 
+    Phase [3]: (plast) cohesion = 2e+07 [Pa], friction angle = 30. [deg], pore pressure ratio = 0. [ ] 
     Phase [3]: (sweak) cohesion SoftLaw = -1 [ ], friction SoftLaw = -1 [ ] 
-    Phase [3]: (temp ) alpha = 1e-05 [1/K], cp = 1050 [J/kg/K], k = 3 [W/m/K], A = 0 [W/m3] 
+    Phase [3]: (temp ) alpha = 1e-05 [1/K], cp = 1050. [J/kg/K], k = 3. [W/m/K], A = 0. [W/m3] 
     
 --------------------------------------------------------------------------
  Total # of cpu's               : 4 
@@ -109,7 +109,7 @@ Reading material parameters:
  Maximum cell aspect cell ratio :  6.25000
  Starting marker initialization routine
  Marker setup employed [msetup] : parallel
- Loading markers in parallel from files: ./t3_SubductionMATLABinput/MatlabInputParticles/Particles.xxx.out 
+ Loading markers in parallel from files: ./t3_SubductionMATLABinput/MatlabInputParticles_p4/Particles.xxx.out 
  Finished Loading markers in parallel 
  Finished marker initialization routine
  Preconditioner matrix type     : monolithic
@@ -123,20 +123,20 @@ Time step 0 --------------------------------------------------------
 USING PICARD JACOBIAN for iteration 0, ||F||/||F0||=1.000000e+00 
     Residual norms for js_ solve.
     0 KSP Residual norm 2.893522682133e+02 
-    1 KSP Residual norm 5.596414107359e-04 
-  Linear solve converged due to CONVERGED_RTOL iterations 1
-  1 SNES Function norm 2.008520034181e-03 
+    1 KSP Residual norm 5.596413430757e-05 
+  Linear js_ solve converged due to CONVERGED_RTOL iterations 1
+  1 SNES Function norm 1.929788089154e-03 
  SNES Convergence Reason: ||F|| < rtol*||F_initial|| 
  Number of iterations : 1
- Nonlinear solve took 0.692556 (sec)
+ Nonlinear solve took 0.632526 (sec)
 ------------------------------------------
 Residual summary: 
   Continuity: 
-    Div_min  = -1.039521016797e-05 
-    Div_max  = 1.037955433070e-05 
-    |Div|_2  = 5.596411348420e-04 
+    Div_min  = -1.039521018401e-06 
+    Div_max  = 1.037955433069e-06 
+    |Div|_2  = 5.596411348133e-05 
   Momentum: 
-    |mRes|_2 = 1.928977586158e-03 
+    |mRes|_2 = 1.928976435067e-03 
 ------------------------------------------
  Advection Scheme: Runge-Kutta 4th order
  VelInterp Scheme: MINMOD
@@ -147,75 +147,75 @@ Residual summary:
 ******************************************** 
  Writing Breakpoint files... 
  Writing to existing directory ./Breakpoint 
- Finished writing breakpoint files in 0.0621312 s
+ Finished writing breakpoint files in 0.0434935 s
 ******************************************** 
  
 Time step 1 -------------------------------------------------------- 
-  0 SNES Function norm 1.208545405854e-01 
+  0 SNES Function norm 1.092499582319e-01 
 USING PICARD JACOBIAN for iteration 0, ||F||/||F0||=1.000000e+00 
     Residual norms for js_ solve.
-    0 KSP Residual norm 1.208545405854e-01 
-    1 KSP Residual norm 1.868237459801e-06 
-  Linear solve converged due to CONVERGED_ATOL iterations 1
-  1 SNES Function norm 6.748694982396e-02 
-USING PICARD JACOBIAN for iteration 1, ||F||/||F0||=5.584147e-01 
+    0 KSP Residual norm 1.092499582319e-01 
+    1 KSP Residual norm 2.216190604426e-06 
+  Linear js_ solve converged due to CONVERGED_ATOL iterations 1
+  1 SNES Function norm 6.604617285611e-02 
+USING PICARD JACOBIAN for iteration 1, ||F||/||F0||=6.045419e-01 
     Residual norms for js_ solve.
-    0 KSP Residual norm 6.748694982396e-02 
-    1 KSP Residual norm 2.453939023690e-06 
-  Linear solve converged due to CONVERGED_ATOL iterations 1
-  2 SNES Function norm 5.480365812112e-02 
-USING PICARD JACOBIAN for iteration 2, ||F||/||F0||=4.534679e-01 
+    0 KSP Residual norm 6.604617285611e-02 
+    1 KSP Residual norm 2.730827258907e-06 
+  Linear js_ solve converged due to CONVERGED_ATOL iterations 1
+  2 SNES Function norm 5.471817331627e-02 
+USING PICARD JACOBIAN for iteration 2, ||F||/||F0||=5.008530e-01 
     Residual norms for js_ solve.
-    0 KSP Residual norm 5.480365812112e-02 
-    1 KSP Residual norm 1.159855808344e-06 
-  Linear solve converged due to CONVERGED_ATOL iterations 1
-  3 SNES Function norm 3.195703179312e-02 
-USING PICARD JACOBIAN for iteration 3, ||F||/||F0||=2.644256e-01 
+    0 KSP Residual norm 5.471817331627e-02 
+    1 KSP Residual norm 1.217226859801e-06 
+  Linear js_ solve converged due to CONVERGED_ATOL iterations 1
+  3 SNES Function norm 3.198433748088e-02 
+USING PICARD JACOBIAN for iteration 3, ||F||/||F0||=2.927629e-01 
     Residual norms for js_ solve.
-    0 KSP Residual norm 3.195703179312e-02 
-    1 KSP Residual norm 7.312565302481e-07 
-  Linear solve converged due to CONVERGED_ATOL iterations 1
-  4 SNES Function norm 1.528537109412e-02 
-USING PICARD JACOBIAN for iteration 4, ||F||/||F0||=1.264774e-01 
+    0 KSP Residual norm 3.198433748088e-02 
+    1 KSP Residual norm 7.358261251024e-07 
+  Linear js_ solve converged due to CONVERGED_ATOL iterations 1
+  4 SNES Function norm 1.524158064749e-02 
+USING PICARD JACOBIAN for iteration 4, ||F||/||F0||=1.395111e-01 
     Residual norms for js_ solve.
-    0 KSP Residual norm 1.528537109412e-02 
-    1 KSP Residual norm 3.299033458971e-07 
-  Linear solve converged due to CONVERGED_ATOL iterations 1
-  5 SNES Function norm 7.169988063550e-03 
-USING PICARD JACOBIAN for iteration 5, ||F||/||F0||=5.932742e-02 
+    0 KSP Residual norm 1.524158064749e-02 
+    1 KSP Residual norm 3.284050176200e-07 
+  Linear js_ solve converged due to CONVERGED_ATOL iterations 1
+  5 SNES Function norm 7.115534233322e-03 
+USING PICARD JACOBIAN for iteration 5, ||F||/||F0||=6.513077e-02 
     Residual norms for js_ solve.
-    0 KSP Residual norm 7.169988063550e-03 
-    1 KSP Residual norm 1.483169448076e-07 
-  Linear solve converged due to CONVERGED_ATOL iterations 1
-  6 SNES Function norm 3.433078165411e-03 
+    0 KSP Residual norm 7.115534233322e-03 
+    1 KSP Residual norm 1.473114217521e-07 
+  Linear js_ solve converged due to CONVERGED_ATOL iterations 1
+  6 SNES Function norm 3.372755990225e-03 
 =====================================================
-SWITCH TO MMFD JACOBIAN: ||F||/||F0||=2.840670e-02, PicIt=5 
+SWITCH TO MMFD JACOBIAN: ||F||/||F0||=3.087192e-02, PicIt=5 
 =====================================================
-USING MMFD JACOBIAN for iteration 6, ||F||/||F0||=2.840670e-02 
+USING MMFD JACOBIAN for iteration 6, ||F||/||F0||=3.087192e-02 
     Residual norms for js_ solve.
-    0 KSP Residual norm 3.433078165411e-03 
-    1 KSP Residual norm 1.449748077989e-03 
-    2 KSP Residual norm 2.330431899393e-04 
-  Linear solve converged due to CONVERGED_RTOL iterations 2
-  7 SNES Function norm 2.385800594878e-04 
-USING MMFD JACOBIAN for iteration 7, ||F||/||F0||=1.974109e-03 
+    0 KSP Residual norm 3.372755990225e-03 
+    1 KSP Residual norm 1.444295316874e-03 
+    2 KSP Residual norm 2.344803591944e-04 
+  Linear js_ solve converged due to CONVERGED_RTOL iterations 2
+  7 SNES Function norm 2.385406901796e-04 
+USING MMFD JACOBIAN for iteration 7, ||F||/||F0||=2.183440e-03 
     Residual norms for js_ solve.
-    0 KSP Residual norm 2.385800594878e-04 
-    1 KSP Residual norm 9.973959230042e-05 
-    2 KSP Residual norm 1.194789130279e-05 
-  Linear solve converged due to CONVERGED_RTOL iterations 2
-  8 SNES Function norm 1.197328880457e-05 
+    0 KSP Residual norm 2.385406901796e-04 
+    1 KSP Residual norm 1.008579820084e-04 
+    2 KSP Residual norm 1.218060347569e-05 
+  Linear js_ solve converged due to CONVERGED_RTOL iterations 2
+  8 SNES Function norm 1.218723725589e-05 
  SNES Convergence Reason: ||F|| < atol 
  Number of iterations : 8
- Nonlinear solve took 2.55221 (sec)
+ Nonlinear solve took 2.28305 (sec)
 ------------------------------------------
 Residual summary: 
   Continuity: 
-    Div_min  = -3.364642245374e-10 
-    Div_max  = 3.252311176448e-10 
-    |Div|_2  = 1.330683497393e-09 
+    Div_min  = -3.688336996932e-10 
+    Div_max  = 3.613072692595e-10 
+    |Div|_2  = 1.381418198520e-09 
   Momentum: 
-    |mRes|_2 = 1.197328873063e-05 
+    |mRes|_2 = 1.218723717760e-05 
 ------------------------------------------
  Advection Scheme: Runge-Kutta 4th order
  VelInterp Scheme: MINMOD
@@ -224,52 +224,52 @@ Residual summary:
  Finished timestep 1 out of 4 
  
 Time step 2 -------------------------------------------------------- 
-  0 SNES Function norm 2.572754868823e-01 
+  0 SNES Function norm 2.548335057773e-01 
 USING PICARD JACOBIAN for iteration 0, ||F||/||F0||=1.000000e+00 
     Residual norms for js_ solve.
-    0 KSP Residual norm 2.572754868823e-01 
-    1 KSP Residual norm 4.221023234674e-06 
-  Linear solve converged due to CONVERGED_ATOL iterations 1
-  1 SNES Function norm 3.264459076288e-02 
-USING PICARD JACOBIAN for iteration 1, ||F||/||F0||=1.268857e-01 
+    0 KSP Residual norm 2.548335057773e-01 
+    1 KSP Residual norm 4.180469621657e-06 
+  Linear js_ solve converged due to CONVERGED_ATOL iterations 1
+  1 SNES Function norm 3.254346299956e-02 
+USING PICARD JACOBIAN for iteration 1, ||F||/||F0||=1.277048e-01 
     Residual norms for js_ solve.
-    0 KSP Residual norm 3.264459076288e-02 
-    1 KSP Residual norm 6.627174225653e-07 
-  Linear solve converged due to CONVERGED_ATOL iterations 1
-  2 SNES Function norm 1.381149193826e-02 
-USING PICARD JACOBIAN for iteration 2, ||F||/||F0||=5.368367e-02 
+    0 KSP Residual norm 3.254346299956e-02 
+    1 KSP Residual norm 6.565785510608e-07 
+  Linear js_ solve converged due to CONVERGED_ATOL iterations 1
+  2 SNES Function norm 1.397940098408e-02 
+USING PICARD JACOBIAN for iteration 2, ||F||/||F0||=5.485700e-02 
     Residual norms for js_ solve.
-    0 KSP Residual norm 1.381149193826e-02 
-    1 KSP Residual norm 1.777529227688e-07 
-  Linear solve converged due to CONVERGED_ATOL iterations 1
-  3 SNES Function norm 7.732490683263e-03 
+    0 KSP Residual norm 1.397940098408e-02 
+    1 KSP Residual norm 1.777378084390e-07 
+  Linear js_ solve converged due to CONVERGED_ATOL iterations 1
+  3 SNES Function norm 7.937109820815e-03 
 =====================================================
-SWITCH TO MMFD JACOBIAN: ||F||/||F0||=3.005530e-02, PicIt=5 
+SWITCH TO MMFD JACOBIAN: ||F||/||F0||=3.114626e-02, PicIt=5 
 =====================================================
-USING MMFD JACOBIAN for iteration 3, ||F||/||F0||=3.005530e-02 
+USING MMFD JACOBIAN for iteration 3, ||F||/||F0||=3.114626e-02 
     Residual norms for js_ solve.
-    0 KSP Residual norm 7.732490683263e-03 
-    1 KSP Residual norm 2.052578577839e-03 
-  Linear solve converged due to CONVERGED_RTOL iterations 1
-  4 SNES Function norm 2.373186978130e-03 
-USING MMFD JACOBIAN for iteration 4, ||F||/||F0||=9.224303e-03 
+    0 KSP Residual norm 7.937109820815e-03 
+    1 KSP Residual norm 2.106126953433e-03 
+  Linear js_ solve converged due to CONVERGED_RTOL iterations 1
+  4 SNES Function norm 2.625838777578e-03 
+USING MMFD JACOBIAN for iteration 4, ||F||/||F0||=1.030413e-02 
     Residual norms for js_ solve.
-    0 KSP Residual norm 2.373186978130e-03 
-    1 KSP Residual norm 6.407534620754e-04 
-    2 KSP Residual norm 8.158355641294e-05 
-  Linear solve converged due to CONVERGED_RTOL iterations 2
-  5 SNES Function norm 7.999624537211e-05 
+    0 KSP Residual norm 2.625838777578e-03 
+    1 KSP Residual norm 6.840429846168e-04 
+    2 KSP Residual norm 7.718805632406e-05 
+  Linear js_ solve converged due to CONVERGED_RTOL iterations 2
+  5 SNES Function norm 7.425903754472e-05 
  SNES Convergence Reason: ||F|| < atol 
  Number of iterations : 5
- Nonlinear solve took 1.59469 (sec)
+ Nonlinear solve took 1.46317 (sec)
 ------------------------------------------
 Residual summary: 
   Continuity: 
-    Div_min  = -5.994860111797e-10 
-    Div_max  = 4.407537772255e-10 
-    |Div|_2  = 1.728844675347e-09 
+    Div_min  = -8.628589769771e-10 
+    Div_max  = 1.929092840330e-10 
+    |Div|_2  = 2.144827936469e-09 
   Momentum: 
-    |mRes|_2 = 7.999624535343e-05 
+    |mRes|_2 = 7.425903751375e-05 
 ------------------------------------------
  Advection Scheme: Runge-Kutta 4th order
  VelInterp Scheme: MINMOD
@@ -278,109 +278,108 @@ Residual summary:
  Finished timestep 2 out of 4 
  
 Time step 3 -------------------------------------------------------- 
-  0 SNES Function norm 1.372497043963e-01 
+  0 SNES Function norm 1.356408955422e-01 
 USING PICARD JACOBIAN for iteration 0, ||F||/||F0||=1.000000e+00 
     Residual norms for js_ solve.
-    0 KSP Residual norm 1.372497043963e-01 
-    1 KSP Residual norm 1.520686137600e-06 
-  Linear solve converged due to CONVERGED_ATOL iterations 1
-  1 SNES Function norm 1.277414219848e-02 
-USING PICARD JACOBIAN for iteration 1, ||F||/||F0||=9.307227e-02 
+    0 KSP Residual norm 1.356408955422e-01 
+    1 KSP Residual norm 1.503013430718e-06 
+  Linear js_ solve converged due to CONVERGED_ATOL iterations 1
+  1 SNES Function norm 1.239504172497e-02 
+USING PICARD JACOBIAN for iteration 1, ||F||/||F0||=9.138130e-02 
     Residual norms for js_ solve.
-    0 KSP Residual norm 1.277414219848e-02 
-    1 KSP Residual norm 1.650113386681e-07 
-  Linear solve converged due to CONVERGED_ATOL iterations 1
-  2 SNES Function norm 5.022547392079e-03 
+    0 KSP Residual norm 1.239504172497e-02 
+    1 KSP Residual norm 1.651495801662e-07 
+  Linear js_ solve converged due to CONVERGED_ATOL iterations 1
+  2 SNES Function norm 4.881611616613e-03 
 =====================================================
-SWITCH TO MMFD JACOBIAN: ||F||/||F0||=3.659423e-02, PicIt=5 
+SWITCH TO MMFD JACOBIAN: ||F||/||F0||=3.598923e-02, PicIt=5 
 =====================================================
-USING MMFD JACOBIAN for iteration 2, ||F||/||F0||=3.659423e-02 
+USING MMFD JACOBIAN for iteration 2, ||F||/||F0||=3.598923e-02 
     Residual norms for js_ solve.
-    0 KSP Residual norm 5.022547392079e-03 
-    1 KSP Residual norm 1.143522975819e-03 
-    2 KSP Residual norm 3.621636003192e-04 
-  Linear solve converged due to CONVERGED_RTOL iterations 2
-  3 SNES Function norm 1.281366314779e-03 
-USING MMFD JACOBIAN for iteration 3, ||F||/||F0||=9.336022e-03 
+    0 KSP Residual norm 4.881611616613e-03 
+    1 KSP Residual norm 1.333262676844e-03 
+    2 KSP Residual norm 5.925849390145e-04 
+  Linear js_ solve converged due to CONVERGED_RTOL iterations 2
+  3 SNES Function norm 5.991743353240e-04 
+USING MMFD JACOBIAN for iteration 3, ||F||/||F0||=4.417358e-03 
     Residual norms for js_ solve.
-    0 KSP Residual norm 1.281366314779e-03 
-    1 KSP Residual norm 2.667464293464e-04 
-    2 KSP Residual norm 4.508721680400e-05 
-  Linear solve converged due to CONVERGED_RTOL iterations 2
-  4 SNES Function norm 4.570738140022e-05 
+    0 KSP Residual norm 5.991743353240e-04 
+    1 KSP Residual norm 1.967199118480e-04 
+    2 KSP Residual norm 4.369507108314e-05 
+    3 KSP Residual norm 7.406448091465e-06 
+  Linear js_ solve converged due to CONVERGED_ATOL iterations 3
+  4 SNES Function norm 7.212339894103e-06 
  SNES Convergence Reason: ||F|| < atol 
  Number of iterations : 4
- Nonlinear solve took 1.34231 (sec)
+ Nonlinear solve took 1.37281 (sec)
 ------------------------------------------
 Residual summary: 
   Continuity: 
-    Div_min  = -7.282033802347e-09 
-    Div_max  = 7.110359107054e-10 
-    |Div|_2  = 1.215810178802e-08 
+    Div_min  = -2.890722116539e-09 
+    Div_max  = 1.931850443504e-10 
+    |Div|_2  = 4.715601086954e-09 
   Momentum: 
-    |mRes|_2 = 4.570737978320e-05 
+    |mRes|_2 = 7.212338352517e-06 
 ------------------------------------------
  Advection Scheme: Runge-Kutta 4th order
  VelInterp Scheme: MINMOD
- Writing to existing directory Timestep_000003_3.641000e-03 
+ Created new directory Timestep_000003_3.641000e-03 
  Time = 0.0051051[Myr], dt = 0.0014641[Myr] 
  Finished timestep 3 out of 4 
  
 Time step 4 -------------------------------------------------------- 
-  0 SNES Function norm 1.086418367853e-01 
+  0 SNES Function norm 1.079107014867e-01 
 USING PICARD JACOBIAN for iteration 0, ||F||/||F0||=1.000000e+00 
     Residual norms for js_ solve.
-    0 KSP Residual norm 1.086418367853e-01 
-    1 KSP Residual norm 9.502911061925e-07 
-  Linear solve converged due to CONVERGED_ATOL iterations 1
-  1 SNES Function norm 7.318684040851e-03 
-USING PICARD JACOBIAN for iteration 1, ||F||/||F0||=6.736525e-02 
+    0 KSP Residual norm 1.079107014867e-01 
+    1 KSP Residual norm 9.281902955579e-07 
+  Linear js_ solve converged due to CONVERGED_ATOL iterations 1
+  1 SNES Function norm 7.039110057246e-03 
+USING PICARD JACOBIAN for iteration 1, ||F||/||F0||=6.523088e-02 
     Residual norms for js_ solve.
-    0 KSP Residual norm 7.318684040851e-03 
-    1 KSP Residual norm 8.150354507597e-08 
-  Linear solve converged due to CONVERGED_ATOL iterations 1
-  2 SNES Function norm 3.113797655189e-03 
+    0 KSP Residual norm 7.039110057246e-03 
+    1 KSP Residual norm 7.435378744868e-08 
+  Linear js_ solve converged due to CONVERGED_ATOL iterations 1
+  2 SNES Function norm 3.040198378360e-03 
 =====================================================
-SWITCH TO MMFD JACOBIAN: ||F||/||F0||=2.866113e-02, PicIt=5 
+SWITCH TO MMFD JACOBIAN: ||F||/||F0||=2.817328e-02, PicIt=5 
 =====================================================
-USING MMFD JACOBIAN for iteration 2, ||F||/||F0||=2.866113e-02 
+USING MMFD JACOBIAN for iteration 2, ||F||/||F0||=2.817328e-02 
     Residual norms for js_ solve.
-    0 KSP Residual norm 3.113797655189e-03 
-    1 KSP Residual norm 9.747606503931e-04 
-    2 KSP Residual norm 3.744883453706e-04 
-  Linear solve converged due to CONVERGED_RTOL iterations 2
-  3 SNES Function norm 3.772949660270e-04 
-USING MMFD JACOBIAN for iteration 3, ||F||/||F0||=3.472833e-03 
+    0 KSP Residual norm 3.040198378360e-03 
+    1 KSP Residual norm 9.350046955180e-04 
+    2 KSP Residual norm 3.296701405888e-04 
+  Linear js_ solve converged due to CONVERGED_RTOL iterations 2
+  3 SNES Function norm 3.334039800140e-04 
+USING MMFD JACOBIAN for iteration 3, ||F||/||F0||=3.089629e-03 
     Residual norms for js_ solve.
-    0 KSP Residual norm 3.772949660270e-04 
-    1 KSP Residual norm 1.229942891330e-04 
-    2 KSP Residual norm 2.576255720557e-05 
-  Linear solve converged due to CONVERGED_RTOL iterations 2
-  4 SNES Function norm 2.564329432884e-05 
+    0 KSP Residual norm 3.334039800140e-04 
+    1 KSP Residual norm 1.092889525371e-04 
+    2 KSP Residual norm 2.579274530112e-05 
+  Linear js_ solve converged due to CONVERGED_RTOL iterations 2
+  4 SNES Function norm 2.563005604198e-05 
  SNES Convergence Reason: ||F|| < atol 
  Number of iterations : 4
- Nonlinear solve took 1.44073 (sec)
+ Nonlinear solve took 1.22984 (sec)
 ------------------------------------------
 Residual summary: 
   Continuity: 
-    Div_min  = -4.644675876547e-10 
-    Div_max  = 9.687808420061e-10 
-    |Div|_2  = 3.117469012943e-09 
+    Div_min  = -6.044911429054e-10 
+    Div_max  = 8.123591070663e-10 
+    |Div|_2  = 2.662503173681e-09 
   Momentum: 
-    |mRes|_2 = 2.564329413934e-05 
+    |mRes|_2 = 2.563005590369e-05 
 ------------------------------------------
  Advection Scheme: Runge-Kutta 4th order
  VelInterp Scheme: MINMOD
- Writing to existing directory Timestep_000004_5.105100e-03 
+ Created new directory Timestep_000004_5.105100e-03 
  Time = 0.00671561[Myr], dt = 0.00161051[Myr] 
  Finished timestep 4 out of 4 
  
- Simulation took 8.01887 (sec) 
+ Simulation took 7.35929 (sec) 
 #PETSc Option Table entries:
--InitViscosity 1e22
--ParamFile ./t3_SubductionMATLABinput/Subduction_MATLAB_Particles.dat
--SavePartitioning 0
 -advection 2
+-InitViscosity 1e23
 -jp_pc_factor_mat_solver_package superlu_dist
 -jp_pc_type lu
 -jp_type user
@@ -390,6 +389,7 @@ Residual summary:
 -js_ksp_monitor
 -js_ksp_rtol 1e-5
 -js_ksp_type fgmres
+-mat_superlu_dist_fact SamePattern_SameRowPerm
 -new_advection
 -options_left
 -out_cont_res 1
@@ -405,12 +405,10 @@ Residual summary:
 -out_strain_rate 1
 -out_temperature 1
 -out_velocity 1
+-ParamFile ./t3_SubductionMATLABinput/Subduction_MATLAB_Particles_p4.dat
 -pcmat_no_dev_proj
 -pcmat_pgamma 1e5
 -pcmat_type mono
--snes_NewtonSwitchToPicard_it 20
--snes_NewtonSwitchToPicard_rtol 1.1
--snes_PicardSwitchToNewton_rtol 5e-2
 -snes_atol 1e-4
 -snes_ksp_ew
 -snes_linesearch_maxstep 1.0
@@ -420,6 +418,9 @@ Residual summary:
 -snes_max_it 30
 -snes_max_linear_solve_fail 10000
 -snes_monitor
+-snes_NewtonSwitchToPicard_it 20
+-snes_NewtonSwitchToPicard_rtol 1.1
+-snes_PicardSwitchToNewton_rtol 5e-2
 -snes_rtol 1e-3
 -snes_stol 1e-16
 -use_marker_control
