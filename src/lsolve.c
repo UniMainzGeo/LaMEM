@@ -68,27 +68,28 @@ PetscErrorCode PCStokesSetFromOptions(PCStokes pc)
 	{
 		if(!strcmp(pname, "bf"))
 		{
-			PetscPrintf(PETSC_COMM_WORLD, " Preconditioner type            : block factorization\n");
-            
+			PetscPrintf(PETSC_COMM_WORLD, "   Preconditioner type           : block factorization\n");
 			pc->type = _STOKES_BF_;
 		}
 		else if(!strcmp(pname, "mg"))
 		{
-			PetscPrintf(PETSC_COMM_WORLD, " Preconditioner type            : coupled Galerkin geometric multigrid\n");
+			PetscPrintf(PETSC_COMM_WORLD, "   Preconditioner type           : coupled Galerkin geometric multigrid\n");
 			pc->type = _STOKES_MG_;
 		}
 		else if(!strcmp(pname, "user"))
 		{
-			PetscPrintf(PETSC_COMM_WORLD, " Preconditioner type            : user-defined\n");
+			PetscPrintf(PETSC_COMM_WORLD, "   Preconditioner type           : user-defined\n");
 			pc->type = _STOKES_USER_;
 		}
-		else SETERRQ1(PETSC_COMM_SELF, PETSC_ERR_USER,"#Incorrect Jacobian preconditioner type: %s", pname);
+		else SETERRQ1(PETSC_COMM_SELF, PETSC_ERR_USER,"Incorrect Jacobian preconditioner type: %s", pname);
 	}
 	else
 	{
-		PetscPrintf(PETSC_COMM_WORLD, " Preconditioner type            : user-defined\n");
+		PetscPrintf(PETSC_COMM_WORLD, "   Preconditioner type           : user-defined\n");
 		pc->type = _STOKES_USER_;
 	}
+
+	PetscPrintf(PETSC_COMM_WORLD, "--------------------------------------------------------------------------\n");
 
 	PetscFunctionReturn(0);
 }
@@ -262,7 +263,7 @@ PetscErrorCode PCStokesBFSetFromOptions(PCStokes pc)
 
 			bf->type = _LOWER_;
 		}
-		else SETERRQ1(PETSC_COMM_SELF, PETSC_ERR_USER,"#Incorrect block factorization type: %s", pname);
+		else SETERRQ1(PETSC_COMM_SELF, PETSC_ERR_USER,"Incorrect block factorization type: %s", pname);
 	}
 	else
 	{
@@ -288,7 +289,7 @@ PetscErrorCode PCStokesBFSetFromOptions(PCStokes pc)
 
 			bf->vtype = _VEL_USER_;
 		}
-		else SETERRQ1(PETSC_COMM_SELF, PETSC_ERR_USER,"#Incorrect velocity solver type: %s", pname);
+		else SETERRQ1(PETSC_COMM_SELF, PETSC_ERR_USER,"Incorrect velocity solver type: %s", pname);
 	}
 	else
 	{

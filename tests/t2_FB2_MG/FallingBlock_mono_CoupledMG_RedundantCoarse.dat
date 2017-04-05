@@ -69,7 +69,6 @@
 	nmark_x        = 2                 # markers per cell in x-direction
 	nmark_y        = 2                 # ...                 y-direction
 	nmark_z        = 2                 # ...                 z-direction
-	rand_noise     = 0                 # random noise flag
 	bg_phase       = 0                 # background phase ID
 
 

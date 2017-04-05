@@ -104,8 +104,9 @@ enum InterpCase
 
 enum AdvectionType
 {
-	EULER,          // euler explicit in time
-	RUNGE_KUTTA_2,  // runge-kutta 2nd order in space
+	BASIC_EULER,    // basic Euler implementation (STAG interpolation only)
+	EULER,          // Euler explicit in time
+	RUNGE_KUTTA_2,  // Runge-Kutta 2nd order in space
 
 };
 
@@ -113,10 +114,19 @@ enum AdvectionType
 
 enum VelInterpType
 {
-	STAG,      // trilinear interp from fdstag points
-	MINMOD,    // minmod interp to nodes, trilinear interp to markers + correction
+	STAG,      // trilinear interpolation from FDSTAG points
+	MINMOD,    // MINMOD interpolation to nodes, trilinear interpolation to markers + correction
 	STAG_P     // empirical approach (T. Gerya)
 
+};
+
+//-----------------------------------------------------------------------------
+
+enum MarkCtrlType
+{
+	CTRL_NONE,  // no marker control
+	CTRL_BASIC, // AVD for cells + corner insertion
+	CTRL_AVD    // pure AVD for all control volumes
 };
 
 //---------------------------------------------------------------------------
@@ -159,12 +169,10 @@ struct AdvCtx
 	char          saveFile[_STR_LEN_]; // marker output file name
 
 	AdvectionType advect;              // advection scheme
-	PetscInt      newAdv;              // new advection flag (temporary)
 	VelInterpType interp;              // velocity interpolation scheme
 	PetscScalar   A;                   // FDSTAG velocity interpolation parameter
 
-	PetscInt      markContr;           // flag to activate marker control
-	PetscInt      newMarkContr;        // new marker control flag (temporary)
+	MarkCtrlType  mctrl;               // marker control type
 
 	PetscScalar   surfTol;             // tolerance for shifting markers below free surface
 

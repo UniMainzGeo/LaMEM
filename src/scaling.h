@@ -140,6 +140,7 @@ struct Scaling
 	char lbl_stress           [_lbl_sz_];
 	char lbl_stress_si        [_lbl_sz_];
 	char lbl_strain_rate      [_lbl_sz_];
+	char lbl_gravity_strength [_lbl_sz_];
 	char lbl_heat_flux        [_lbl_sz_];
 	char lbl_dissipation_rate [_lbl_sz_];
 	char lbl_angular_velocity [_lbl_sz_];
@@ -160,6 +161,7 @@ struct Scaling
 	char lbl_activation_volume[_lbl_sz_];
 	char lbl_inverse_length   [_lbl_sz_];
 	char lbl_inverse_stress   [_lbl_sz_];
+	char lbl_gas_constant     [_lbl_sz_];
 
 };
 //---------------------------------------------------------------------------

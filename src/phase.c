@@ -1116,8 +1116,8 @@ PetscErrorCode MatPropSetFromLibCall(JacRes *jr, ModParam *mod)
 
 	// set material properties
 	if(mod->use == 1) {
-		PetscPrintf(PETSC_COMM_WORLD,"# ------------------------------------------------------------------------\n");
-		PetscPrintf(PETSC_COMM_WORLD,"# Material properties set from calling function: \n");
+		PetscPrintf(PETSC_COMM_WORLD," ------------------------------------------------------------------------\n");
+		PetscPrintf(PETSC_COMM_WORLD," Material properties set from calling function: \n");
 
 
 		for(im=0;im<mod->mdN;im++)
@@ -1165,14 +1165,14 @@ PetscErrorCode MatPropSetFromLibCall(JacRes *jr, ModParam *mod)
 					SETERRQ1(PETSC_COMM_SELF, PETSC_ERR_USER, "At least one of the parameter (set) Bd (eta), Bn (eta0, e0), G must be specified for phase %lld", (LLD)id);
 				}
 
-				PetscPrintf(PETSC_COMM_WORLD,"#    eta[%lld] = %g \n",(LLD)id,eta);
+				PetscPrintf(PETSC_COMM_WORLD,"    eta[%lld] = %g \n",(LLD)id,eta);
 			}
 
 			// constant density
 			else if(mod->typ[im] == _RHO0_)
 			{
 				m->rho = mod->val[im];
-				PetscPrintf(PETSC_COMM_WORLD,"#    rho0[%lld] = %5.5f \n",(LLD)id,m->rho);
+				PetscPrintf(PETSC_COMM_WORLD,"    rho0[%lld] = %5.5f \n",(LLD)id,m->rho);
 			}
 
 			else
@@ -1181,7 +1181,7 @@ PetscErrorCode MatPropSetFromLibCall(JacRes *jr, ModParam *mod)
 			}
 
 		}
-		PetscPrintf(PETSC_COMM_WORLD,"# ------------------------------------------------------------------------\n");
+		PetscPrintf(PETSC_COMM_WORLD," ------------------------------------------------------------------------\n");
 	}
 
 	PetscFunctionReturn(0);
@@ -1208,8 +1208,8 @@ PetscErrorCode MatPropSetFromCL(JacRes *jr)
 	ierr = PetscOptionsGetBool(NULL, NULL, "-SetMaterialProperties", &get_options, NULL ); 					CHKERRQ(ierr);
 
 	if(get_options) {
-		PetscPrintf(PETSC_COMM_WORLD,"# ------------------------------------------------------------------------\n");
-		PetscPrintf(PETSC_COMM_WORLD,"# Material properties set from command line: \n");
+		PetscPrintf(PETSC_COMM_WORLD," ------------------------------------------------------------------------\n");
+		PetscPrintf(PETSC_COMM_WORLD," Material properties set from command line: \n");
 
 		for(id=0;id<jr->numPhases;id++){
 
@@ -1253,15 +1253,15 @@ PetscErrorCode MatPropSetFromCL(JacRes *jr)
 					SETERRQ1(PETSC_COMM_SELF, PETSC_ERR_USER, "At least one of the parameter (set) Bd (eta), Bn (eta0, e0), G must be specified for phase %lld", (LLD)id);
 				}
 
-			if(flg == PETSC_TRUE) PetscPrintf(PETSC_COMM_WORLD,"#    eta[%lld]	= %g \n",(LLD)id,eta);
+			if(flg == PETSC_TRUE) PetscPrintf(PETSC_COMM_WORLD,"    eta[%lld]	= %g \n",(LLD)id,eta);
 
 			// constant density
 			sprintf(matprop_opt,"-rho0_%lld",(LLD)id);
 			ierr = PetscOptionsGetReal(NULL, NULL ,matprop_opt,&m->rho	, &flg);			CHKERRQ(ierr);
-			if(flg == PETSC_TRUE) PetscPrintf(PETSC_COMM_WORLD,"#    rho0[%lld]	= %5.5f \n",(LLD)id,m->rho);
+			if(flg == PETSC_TRUE) PetscPrintf(PETSC_COMM_WORLD,"    rho0[%lld]	= %5.5f \n",(LLD)id,m->rho);
 
 		}
-		PetscPrintf(PETSC_COMM_WORLD,"# ------------------------------------------------------------------------\n");
+		PetscPrintf(PETSC_COMM_WORLD," ------------------------------------------------------------------------\n");
 	}
 
 	PetscFunctionReturn(0);

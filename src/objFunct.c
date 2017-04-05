@@ -112,8 +112,8 @@ PetscErrorCode ObjFunctCreate(ObjFunct *objf, ModParam *IOparam, FreeSurf *surf,
 	// set flag
 	objf->CompMfit = PETSC_TRUE;
 
-	PetscPrintf(PETSC_COMM_WORLD,"# ------------------------------------------------------------------------\n");
-	PetscPrintf(PETSC_COMM_WORLD,"# Objective function: \n");
+	PetscPrintf(PETSC_COMM_WORLD," ------------------------------------------------------------------------\n");
+	PetscPrintf(PETSC_COMM_WORLD," Objective function: \n");
 
 	// set context
 	objf->surf = surf;
@@ -136,7 +136,7 @@ PetscErrorCode ObjFunctCreate(ObjFunct *objf, ModParam *IOparam, FreeSurf *surf,
 		if(ISRankZero(PETSC_COMM_WORLD))
 		{
 			// load observations file
-			PetscPrintf(PETSC_COMM_WORLD,"# Load observations: %s \n", objf->infile);
+			PetscPrintf(PETSC_COMM_WORLD," Load observations: %s \n", objf->infile);
 			ierr = PetscViewerBinaryOpen(PETSC_COMM_SELF, objf->infile, FILE_MODE_READ, &view_in); CHKERRQ(ierr);
 			ierr = PetscViewerBinaryGetDescriptor(view_in, &fd); CHKERRQ(ierr);
 
@@ -149,19 +149,19 @@ PetscErrorCode ObjFunctCreate(ObjFunct *objf, ModParam *IOparam, FreeSurf *surf,
 				useField = (PetscInt) header[k+2];
 				if ( (useField == 0) && (objf->otUse[k] == 1) )
 				{
-					PetscPrintf(PETSC_COMM_WORLD,"# WARNING: Requested field [%s] is not found in input file -> Remove from objective function \n",on[k]);
+					PetscPrintf(PETSC_COMM_WORLD," WARNING: Requested field [%s] is not found in input file -> Remove from objective function \n",on[k]);
 					objf->otUse[k] = 0;
 					objf->otN--;
 					useField = 0;
 				}
 				else if ( (useField == 1) && (objf->otUse[k] == 0) )
 				{
-					PetscPrintf(PETSC_COMM_WORLD,"# WARNING: Found non-requested field [%s] in input file -> won't be part of objective function \n",on[k]);
+					PetscPrintf(PETSC_COMM_WORLD," WARNING: Found non-requested field [%s] in input file -> won't be part of objective function \n",on[k]);
 					objf->otUse[k] = 0;
 				}
 				else if ( (useField == 1) && (objf->otUse[k] == 1) )
 				{
-					PetscPrintf(PETSC_COMM_WORLD,"# Observational constraint [%lld]: %s\n",(LLD)k,on[k] );
+					PetscPrintf(PETSC_COMM_WORLD," Observational constraint [%lld]: %s\n",(LLD)k,on[k] );
 					objf->otUse[k] = 1;
 				}
 			}
@@ -193,7 +193,7 @@ PetscErrorCode ObjFunctCreate(ObjFunct *objf, ModParam *IOparam, FreeSurf *surf,
 		// checks
 		if (ISRankZero(PETSC_COMM_WORLD))
 		{
-			if (Fsize != buffsize) PetscPrintf(PETSC_COMM_WORLD,"# WARNING: Filesize does not correspond to the expected file size \n");
+			if (Fsize != buffsize) PetscPrintf(PETSC_COMM_WORLD," WARNING: Filesize does not correspond to the expected file size \n");
 		}
 
 		// allocate input buffer
@@ -263,16 +263,16 @@ PetscErrorCode ObjFunctCreate(ObjFunct *objf, ModParam *IOparam, FreeSurf *surf,
 	}
 	else
 	{
-		PetscPrintf(PETSC_COMM_WORLD,"# WARNING: No fields requested -> Cannot create objective function \n");
+		PetscPrintf(PETSC_COMM_WORLD," WARNING: No fields requested -> Cannot create objective function \n");
 		objf->errtot = 0.0;
-		PetscPrintf(PETSC_COMM_WORLD,"# Total error = %g \n",objf->errtot);
+		PetscPrintf(PETSC_COMM_WORLD," Total error = %g \n",objf->errtot);
 		PetscFunctionReturn(0);
 	}
 
 	// compute error
 	ierr = ObjFunctCompErr(objf);  CHKERRQ(ierr);
 
-	PetscPrintf(PETSC_COMM_WORLD,"# ------------------------------------------------------------------------\n");
+	PetscPrintf(PETSC_COMM_WORLD," ------------------------------------------------------------------------\n");
 
 	// transfer misfit value to IO structure
 	IOparam->mfit = objf->errtot;
@@ -291,12 +291,6 @@ PetscErrorCode ObjFunctReadFromOptions(ObjFunct *objf, const char *on[], FB *fb)
 	PetscFunctionBegin;
 
 	// read filename of observation file
-/*
-	asprintf(&objf->infile, "%s", "obs.bin");
-	ierr = PetscOptionsGetString(NULL, NULL,"-objf_obsfile", objf->infile, MAX_STR_LEN, &found); CHKERRQ(ierr);
-	if (!found){ PetscPrintf(PETSC_COMM_WORLD,"# WARNING: No filename given for observation file -> Use default: obs.bin \n"); }
-*/
-
 	ierr = getStringParam(fb, _OPTIONAL_, "objf_obsfile", otname, "obs.bin"); CHKERRQ(ierr);
 
 	// number of fields to be read into the buffer
@@ -381,8 +375,6 @@ PetscErrorCode VecErrSurf(Vec mod, ObjFunct *objf, PetscInt field ,PetscScalar s
 	// sum
 	ierr = VecSum(err, &objf->err[field]);  CHKERRQ(ierr);
 
-	//PetscSynchronizedPrintf(PETSC_COMM_SELF,"# rank[%lld,%lld,%lld] Error[%lld] = %g \n",(LLD)fs->dsx.rank,(LLD)fs->dsy.rank,(LLD)fs->dsz.rank, (LLD)field, objf->err[field]/(PetscScalar)fs->dsz.nproc);
-
 	ierr = VecDestroy(&err);  CHKERRQ(ierr);
 
 	PetscFunctionReturn(0);
@@ -455,7 +447,7 @@ PetscErrorCode ObjFunctCompErr(ObjFunct *objf)
 	}
 
 	objf->errtot = sqrt( objf->errtot / (PetscScalar) (objf->ocN * surf->jr->fs->dsz.nproc) ) ;
-	PetscPrintf(PETSC_COMM_WORLD,"# Total error = %g \n",objf->errtot);
+	PetscPrintf(PETSC_COMM_WORLD," Total error = %g \n",objf->errtot);
 
 	PetscFunctionReturn(0);
 }

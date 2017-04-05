@@ -96,7 +96,7 @@ PetscErrorCode ScalingCreate(Scaling *scal, FB *fb)
 		scal->stress              = 1.0;   sprintf(scal->lbl_stress,           "[ ]");
 		scal->stress_si           = 1.0;   sprintf(scal->lbl_stress_si,        "[ ]");
 		scal->strain_rate         = 1.0;   sprintf(scal->lbl_strain_rate,      "[ ]");
-		scal->gravity_strength    = 1.0;
+		scal->gravity_strength    = 1.0;   sprintf(scal->lbl_gravity_strength, "[ ]");
 		scal->energy              = 1.0;
 		scal->power               = 1.0;
 		scal->heat_flux           = 1.0;   sprintf(scal->lbl_heat_flux,        "[ ]");
@@ -118,6 +118,7 @@ PetscErrorCode ScalingCreate(Scaling *scal, FB *fb)
 		sprintf(scal->lbl_activation_volume, "[ ]");
 		sprintf(scal->lbl_inverse_length,    "[ ]");
 		sprintf(scal->lbl_inverse_stress,    "[ ]");
+		sprintf(scal->lbl_gas_constant,      "[ ]");
 
 		PetscFunctionReturn(0);
 	}
@@ -135,12 +136,18 @@ PetscErrorCode ScalingCreate(Scaling *scal, FB *fb)
 	ierr = getScalarParam(fb, _REQUIRED_, "unit_stress",      &stress,      1, 1.0);  CHKERRQ(ierr);
 	ierr = getScalarParam(fb, _OPTIONAL_, "unit_density",     &density,     1, 1.0);  CHKERRQ(ierr);
 
-	// print
-	PetscPrintf(PETSC_COMM_WORLD," Characteristic Temperature = %g [C/K] \n",    temperature);
-	PetscPrintf(PETSC_COMM_WORLD," Characteristic Length      = %g [m] \n",      length);
-	PetscPrintf(PETSC_COMM_WORLD," Characteristic Viscosity   = %g [Pa*s] \n",   viscosity);
-	PetscPrintf(PETSC_COMM_WORLD," Characteristic Stress      = %g [Pa] \n",     stress);
-	PetscPrintf(PETSC_COMM_WORLD," Characteristic Density     = %g [kg/m^3] \n", density);
+	// print summary
+	PetscPrintf(PETSC_COMM_WORLD, "Scaling parameters:\n");
+	PetscPrintf(PETSC_COMM_WORLD,"   Temperature : %g [C/K] \n",    temperature);
+	PetscPrintf(PETSC_COMM_WORLD,"   Length      : %g [m] \n",      length);
+	PetscPrintf(PETSC_COMM_WORLD,"   Viscosity   : %g [Pa*s] \n",   viscosity);
+	PetscPrintf(PETSC_COMM_WORLD,"   Stress      : %g [Pa] \n",     stress);
+
+	if(density)
+	{	PetscPrintf(PETSC_COMM_WORLD,"   Density     : %g [kg/m^3] \n", density);
+		PetscPrintf(PETSC_COMM_WORLD,"   WRNING! Unconventional scaling is employed");
+	}
+
 	PetscPrintf(PETSC_COMM_WORLD,"--------------------------------------------------------------------------\n");
 
 	// compute additional units
@@ -187,7 +194,7 @@ PetscErrorCode ScalingCreate(Scaling *scal, FB *fb)
 		scal->stress              = stress;                   sprintf(scal->lbl_stress ,          "[Pa]");
 		scal->stress_si           = stress;                   sprintf(scal->lbl_stress ,          "[Pa]");
 		scal->strain_rate         = 1.0/time;                 sprintf(scal->lbl_strain_rate,      "[1/s]");
-		scal->gravity_strength    = force/mass;
+		scal->gravity_strength    = force/mass;               sprintf(scal->lbl_gravity_strength, "[m/s^2]");
 		scal->energy              = energy;
 		scal->power               = power;
 		scal->heat_flux           = power/area;               sprintf(scal->lbl_heat_flux,        "[W/m^2]");
@@ -209,6 +216,7 @@ PetscErrorCode ScalingCreate(Scaling *scal, FB *fb)
 		sprintf(scal->lbl_activation_volume, "[m^3/mol]");
 		sprintf(scal->lbl_inverse_length,    "[1/m]");
 		sprintf(scal->lbl_inverse_stress,    "[1/Pa]");
+		sprintf(scal->lbl_gas_constant,      "[J/mol/K]");
 
 	}
 	else if(scal->utype == _GEO_)
@@ -243,7 +251,7 @@ PetscErrorCode ScalingCreate(Scaling *scal, FB *fb)
 		scal->stress              = stress/MPa;               sprintf(scal->lbl_stress ,          "[MPa]");   // @
 		scal->stress_si           = stress;                   sprintf(scal->lbl_stress ,          "[Pa]");
 		scal->strain_rate         = 1.0/time;                 sprintf(scal->lbl_strain_rate,      "[1/s]");
-		scal->gravity_strength    = force/mass;
+		scal->gravity_strength    = force/mass;               sprintf(scal->lbl_gravity_strength, "[m/s^2]");
 		scal->energy              = energy;
 		scal->power               = power;
 		scal->heat_flux           = power/area/mW;            sprintf(scal->lbl_heat_flux,        "[mW/m^2]");  // @
@@ -265,6 +273,7 @@ PetscErrorCode ScalingCreate(Scaling *scal, FB *fb)
 		sprintf(scal->lbl_activation_volume, "[m^3/mol]");
 		sprintf(scal->lbl_inverse_length,    "[1/m]");
 		sprintf(scal->lbl_inverse_stress,    "[1/Pa]");
+		sprintf(scal->lbl_gas_constant,      "[J/mol/K]");
 	}
 
 	PetscFunctionReturn(0);

@@ -70,20 +70,20 @@ PetscErrorCode GRVSurveyCreate(GravitySurvey *survey)
 	*survey.ym = user->GravityField.survey_ym;
 	*survey.z  = user->GravityField.survey_z ;
 
-	ierr = PetscPrintf(PETSC_COMM_WORLD,"#     gravity profile [m]: \n"); CHKERRQ(ierr);
-	ierr = PetscPrintf(PETSC_COMM_WORLD,"#     xs: %g, xm: %g, nx: %lld\n",*survey.xs, *survey.xm,(LLD)(*survey.nx)); CHKERRQ(ierr);
-	ierr = PetscPrintf(PETSC_COMM_WORLD,"#     ys: %g, ym: %g, ny: %lld\n",*survey.ys, *survey.ym,(LLD)(*survey.ny)); CHKERRQ(ierr);
-	ierr = PetscPrintf(PETSC_COMM_WORLD,"#     z : %g\n", *survey.z); CHKERRQ(ierr);
-	ierr = PetscPrintf(PETSC_COMM_WORLD,"#     calculation with SI-dimensional units \n"); CHKERRQ(ierr);
+	ierr = PetscPrintf(PETSC_COMM_WORLD,"     gravity profile [m]: \n"); CHKERRQ(ierr);
+	ierr = PetscPrintf(PETSC_COMM_WORLD,"     xs: %g, xm: %g, nx: %lld\n",*survey.xs, *survey.xm,(LLD)(*survey.nx)); CHKERRQ(ierr);
+	ierr = PetscPrintf(PETSC_COMM_WORLD,"     ys: %g, ym: %g, ny: %lld\n",*survey.ys, *survey.ym,(LLD)(*survey.ny)); CHKERRQ(ierr);
+	ierr = PetscPrintf(PETSC_COMM_WORLD,"     z : %g\n", *survey.z); CHKERRQ(ierr);
+	ierr = PetscPrintf(PETSC_COMM_WORLD,"     calculation with SI-dimensional units \n"); CHKERRQ(ierr);
 
 
 //	for(i=0;i<=user->GravityField.LithColNum;i++)
 //	{
 //		if (i<user->GravityField.LithColNum)
 //		{
-//			ierr = PetscPrintf(PETSC_COMM_WORLD,"#     LithColDepth[%lld]: %g \n",(LLD)i,user->GravityField.LithColDepth[i]);CHKERRQ(ierr);
+//			ierr = PetscPrintf(PETSC_COMM_WORLD,"     LithColDepth[%lld]: %g \n",(LLD)i,user->GravityField.LithColDepth[i]);CHKERRQ(ierr);
 //		}
-//		ierr = PetscPrintf(PETSC_COMM_WORLD,"#     LithColDens[%lld] : %g \n",(LLD)i,user->GravityField.LithColDens[i]);CHKERRQ(ierr);
+//		ierr = PetscPrintf(PETSC_COMM_WORLD,"     LithColDens[%lld] : %g \n",(LLD)i,user->GravityField.LithColDens[i]);CHKERRQ(ierr);
 //	}
 
 
@@ -221,13 +221,13 @@ PetscErrorCode GRVCompute(FDSTAG *fs, JacRes *jr)
 
 	// save gravity field as binary data
 	if(user->GravityField.SaveRef==1){
-		ierr = PetscPrintf(PETSC_COMM_WORLD,"#  -- save reference data -- \n");							CHKERRQ(ierr);
+		ierr = PetscPrintf(PETSC_COMM_WORLD,"  -- save reference data -- \n");							CHKERRQ(ierr);
 		// --- create directory ---
 		asprintf(&DirectoryName, "ReferenceData_%1.6lld",(LLD)itime);
 		ierr = FDSTAGCreateOutputDirectory(DirectoryName); 												CHKERRQ(ierr);
 		// --- create filename ---
 		asprintf(&FileName,"%s/REF_Gravity.bin",DirectoryName);
-		ierr = PetscPrintf(PETSC_COMM_WORLD,"#     save file: %s \n",FileName);							CHKERRQ(ierr);
+		ierr = PetscPrintf(PETSC_COMM_WORLD,"     save file: %s \n",FileName);							CHKERRQ(ierr);
 		// --- save binary file ---
 		ierr = PetscViewerBinaryOpen(PETSC_COMM_WORLD,FileName , FILE_MODE_WRITE, &view_out);			CHKERRQ(ierr);
 		ierr = VecView(survey.gvec_dg,view_out); 														CHKERRQ(ierr);
@@ -251,8 +251,8 @@ PetscErrorCode GRVCompute(FDSTAG *fs, JacRes *jr)
 
 	// get misfit
 	if(user->Optimisation.GetIt==1){
-		PetscPrintf(PETSC_COMM_WORLD,"#------------------------------------------\n");
-		PetscPrintf(PETSC_COMM_WORLD,"#-- get gravity field misfit --------------\n");
+		PetscPrintf(PETSC_COMM_WORLD,"------------------------------------------\n");
+		PetscPrintf(PETSC_COMM_WORLD,"-- get gravity field misfit --------------\n");
 
 		ierr = GetMisfit_GravityField(user,survey.gvec_dg);												CHKERRQ(ierr);
 	}

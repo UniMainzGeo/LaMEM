@@ -79,7 +79,7 @@ PetscErrorCode ADVCreate(AdvCtx *actx, FB *fb)
 	// create advection context
 
 	PetscInt maxPhaseID;
-	char     msetup[_STR_LEN_], advect[_STR_LEN_], interp[_STR_LEN_];
+	char     msetup[_STR_LEN_], advect[_STR_LEN_], interp[_STR_LEN_], mctrl[_STR_LEN_];
 
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
@@ -104,12 +104,10 @@ PetscErrorCode ADVCreate(AdvCtx *actx, FB *fb)
 	ierr = getIntParam   (fb, _OPTIONAL_, "bg_phase",       &actx->bgPhase,      1, maxPhaseID);   CHKERRQ(ierr);
 	ierr = getIntParam   (fb, _OPTIONAL_, "save_mark",      &actx->saveMark,     1, 1);            CHKERRQ(ierr);
 	ierr = getStringParam(fb, _OPTIONAL_, "mark_save_file",  actx->saveFile,     "./markers/mdb"); CHKERRQ(ierr);
-	ierr = getStringParam(fb, _OPTIONAL_, "advect",          advect,             "euler");         CHKERRQ(ierr);
-	ierr = getIntParam   (fb, _OPTIONAL_, "new_advect",     &actx->newAdv,       1, 1);            CHKERRQ(ierr);
+	ierr = getStringParam(fb, _OPTIONAL_, "advect",          advect,             "basic");         CHKERRQ(ierr);
 	ierr = getStringParam(fb, _OPTIONAL_, "interp",          interp,             "stag");          CHKERRQ(ierr);
 	ierr = getScalarParam(fb, _OPTIONAL_, "stagp_a",        &actx->A,            1, 1.0);          CHKERRQ(ierr);
-	ierr = getIntParam   (fb, _OPTIONAL_, "use_mark_contr", &actx->markContr,    1, 1);            CHKERRQ(ierr);
-	ierr = getIntParam   (fb, _OPTIONAL_, "new_mark_contr", &actx->newMarkContr, 1, 1);            CHKERRQ(ierr);
+	ierr = getStringParam(fb, _OPTIONAL_, "mark_ctrl",       mctrl,              "none");          CHKERRQ(ierr);
 	ierr = getScalarParam(fb, _OPTIONAL_, "surf_tol",       &actx->surfTol,      1, 1.0);          CHKERRQ(ierr);
 
 	// CHECK
@@ -120,7 +118,8 @@ PetscErrorCode ADVCreate(AdvCtx *actx, FB *fb)
 	else if(!strcmp(msetup, "polygons")) actx->msetup = _POLYGONS_;
 	else SETERRQ1(PETSC_COMM_WORLD, PETSC_ERR_USER, "Incorrect setup type (msetup): %s", msetup);
 
-	if     (!strcmp(advect, "euler"))    actx->advect = EULER;
+	if     (!strcmp(advect, "basic"))    actx->advect = BASIC_EULER;
+	else if(!strcmp(advect, "euler"))    actx->advect = EULER;
 	else if(!strcmp(advect, "rk2"))      actx->advect = RUNGE_KUTTA_2;
 	else SETERRQ1(PETSC_COMM_WORLD, PETSC_ERR_USER, "Incorrect advection type (advect): %s", advect);
 
@@ -128,6 +127,11 @@ PetscErrorCode ADVCreate(AdvCtx *actx, FB *fb)
 	else if(!strcmp(interp, "minmod"))   actx->interp = MINMOD;
 	else if(!strcmp(interp, "stagp"))    actx->interp = STAG_P;
 	else SETERRQ1(PETSC_COMM_WORLD, PETSC_ERR_USER, "Incorrect velocity interpolation type (interp): %s", interp);
+
+	if     (!strcmp(mctrl,  "none"))     actx->mctrl = CTRL_NONE;
+	else if(!strcmp(mctrl,  "basic"))    actx->mctrl = CTRL_BASIC;
+	else if(!strcmp(mctrl,  "avd"))      actx->mctrl = CTRL_AVD;
+	else SETERRQ1(PETSC_COMM_WORLD, PETSC_ERR_USER, "Incorrect marker control type (mark_ctrl): %s", interp);
 
 	// check marker resolution
 	if(actx->NumPartX < _min_nmark_)
@@ -143,11 +147,26 @@ PetscErrorCode ADVCreate(AdvCtx *actx, FB *fb)
 		SETERRQ2(PETSC_COMM_WORLD, PETSC_ERR_USER, "nmark_z (%lld) is smaller than allowed (%lld)", (LLD)actx->NumPartZ, _min_nmark_);
 	}
 
+	// check advection & interpolation types compatibility
+	if(actx->advect == BASIC_EULER && actx->interp != STAG)
+	{
+		SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "Basic advection scheme only supports stag interpolation (advect, interp)");
+	}
+
 	// check background phase
 	if(actx->msetup == _GEOM_ && actx->bgPhase == -1)
 	{
 		SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "Using geometric primitives requires setting background phase (msetup, bg_phase)");
 	}
+
+	if(actx->A < 0.0 || actx->A > 1.0)
+	{
+		SETERRQ(PETSC_COMM_SELF, PETSC_ERR_USER, "Interpolation constant must be between 0 and 1 (stagp_a)");
+	}
+
+	if( actx->interp != STAG_P)  actx->A = 0.0;
+	if( actx->msetup != _GEOM_)  actx->bgPhase = -1;
+	if(!actx->surf->UseFreeSurf) actx->surfTol = 0.0;
 
 	// initialize variables for marker control (hard-coded)
 	actx->nmin = (PetscInt) (actx->NumPartX*actx->NumPartY*actx->NumPartZ/2); // min # of markers/cell 50%
@@ -157,25 +176,45 @@ PetscErrorCode ADVCreate(AdvCtx *actx, FB *fb)
 	actx->avdz = actx->NumPartZ * 3;
 
 	// PRINT
+	PetscPrintf(PETSC_COMM_WORLD, "Advection parameters:\n");
 
-	if(actx->msetup != _FILES_)
-	{
-		PetscPrintf(PETSC_COMM_WORLD," Number of tracers/cell         : [%lld, %lld, %lld] \n",
-			(LLD)(actx->NumPartX),
-			(LLD)(actx->NumPartY),
-			(LLD)(actx->NumPartZ));
-	}
+	PetscPrintf(PETSC_COMM_WORLD,"   Marker setup scheme           : ");
+	if     (actx->msetup == _GEOM_)     PetscPrintf(PETSC_COMM_WORLD,"geometric primitives\n");
+	else if(actx->msetup == _FILES_)    PetscPrintf(PETSC_COMM_WORLD,"binary files (MATLAB)\n");
+	else if(actx->msetup == _POLYGONS_) PetscPrintf(PETSC_COMM_WORLD,"volumes form polygons (geomIO)\n");
 
 	// print advection scheme
-  	PetscPrintf(PETSC_COMM_WORLD," Advection scheme: ");
+  	PetscPrintf(PETSC_COMM_WORLD,"   Advection scheme              : ");
 	if      (actx->advect == EULER)         PetscPrintf(PETSC_COMM_WORLD, "Euler 1-st order\n");
 	else if (actx->advect == RUNGE_KUTTA_2) PetscPrintf(PETSC_COMM_WORLD, "Runge-Kutta 2-nd order\n");
 
 	// print velocity interpolation scheme
-  	PetscPrintf(PETSC_COMM_WORLD," Velocity interpolation scheme: ");
-	if      (actx->interp == STAG)   PetscPrintf(PETSC_COMM_WORLD, "STAG (Linear)");
-	else if (actx->interp == MINMOD) PetscPrintf(PETSC_COMM_WORLD, "MINMOD (Correction + MINMOD)");
-	else if (actx->interp == STAG_P) PetscPrintf(PETSC_COMM_WORLD, "Empirical STAGP (STAG + pressure points)");
+	PetscPrintf(PETSC_COMM_WORLD,"   Velocity interpolation scheme : ");
+	if      (actx->interp == STAG)   PetscPrintf(PETSC_COMM_WORLD, "STAG (Linear)\n");
+	else if (actx->interp == MINMOD) PetscPrintf(PETSC_COMM_WORLD, "MINMOD (Correction + MINMOD)\n");
+	else if (actx->interp == STAG_P) PetscPrintf(PETSC_COMM_WORLD, "empirical STAGP (STAG + pressure points)\n");
+
+	// print marker control type
+	PetscPrintf(PETSC_COMM_WORLD,"   Marker control type           : ");
+	if      (actx->mctrl == CTRL_NONE)  PetscPrintf(PETSC_COMM_WORLD, "no marker control\n");
+	else if (actx->mctrl == CTRL_BASIC) PetscPrintf(PETSC_COMM_WORLD, "AVD for cells + corner insertion\n");
+	else if (actx->mctrl == CTRL_AVD)   PetscPrintf(PETSC_COMM_WORLD, "pure AVD for all control volumes\n");
+
+	PetscPrintf(PETSC_COMM_WORLD,"   Markers per cell [nx, ny, nz] : [%lld, %lld, %lld] \n",
+		(LLD)(actx->NumPartX),
+		(LLD)(actx->NumPartY),
+		(LLD)(actx->NumPartZ));
+
+	PetscPrintf(PETSC_COMM_WORLD,"   Marker distribution type type : ");
+	if   (actx->randNoise)  PetscPrintf(PETSC_COMM_WORLD, "uniform\n");
+	else                    PetscPrintf(PETSC_COMM_WORLD, "random noise\n");
+
+	if(actx->saveMark)          PetscPrintf(PETSC_COMM_WORLD,"   Marker storage file           : %s \n", actx->saveFile);
+	if(actx->bgPhase != -1)     PetscPrintf(PETSC_COMM_WORLD,"   Background phase ID           : %lld \n", (LLD)actx->bgPhase);
+	if(actx->A)                 PetscPrintf(PETSC_COMM_WORLD,"   Interpolation constant        : %g \n", actx->A);
+	if(actx->surfTol)           PetscPrintf(PETSC_COMM_WORLD,"   Surface correction tolerance  : %g \n", actx->surfTol);
+
+	PetscPrintf(PETSC_COMM_WORLD,"--------------------------------------------------------------------------\n");
 
 	// create communicator and separator
 	ierr = ADVCreateData(actx); CHKERRQ(ierr);
@@ -361,7 +400,7 @@ PetscErrorCode ADVAdvect(AdvCtx *actx)
 	// project history INCREMENTS from grid to markers
 	ierr = ADVProjHistGridToMark(actx); CHKERRQ(ierr);
 
-	if(actx->newAdv)
+	if(actx->advect != BASIC_EULER)
 	{
 		// advect markers (extended by Adina)
 		ierr = ADVelAdvectMain(actx); CHKERRQ(ierr);
@@ -386,18 +425,15 @@ PetscErrorCode ADVRemap(AdvCtx *actx)
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
 
-	if(actx->newMarkContr) // new
+	if(actx->mctrl == CTRL_NONE)
 	{
-		// check markers and inject/delete if necessary in all control volumes
-		ierr = AVDMarkerControl(actx); CHKERRQ(ierr);
-
 		// compute host cells for all the markers received
 		ierr = ADVMapMarkToCells(actx); CHKERRQ(ierr);
 
 		// update arrays for marker-cell interaction
 		ierr = ADVUpdateMarkCell(actx); CHKERRQ(ierr);
 	}
-	else // old
+	else if(actx->mctrl == CTRL_BASIC)
 	{
 		// compute host cells for all the markers received
 		ierr = ADVMapMarkToCells(actx); CHKERRQ(ierr);
@@ -410,6 +446,17 @@ PetscErrorCode ADVRemap(AdvCtx *actx)
 
 		// check corners and inject 1 particle if empty
 		ierr = ADVCheckCorners(actx); CHKERRQ(ierr);
+	}
+	else if(actx->mctrl == CTRL_AVD)
+	{
+		// check markers and inject/delete if necessary in all control volumes
+		ierr = AVDMarkerControl(actx); CHKERRQ(ierr);
+
+		// compute host cells for all the markers received
+		ierr = ADVMapMarkToCells(actx); CHKERRQ(ierr);
+
+		// update arrays for marker-cell interaction
+		ierr = ADVUpdateMarkCell(actx); CHKERRQ(ierr);
 	}
 
 	// change marker phase when crossing flat surface or free surface with fast sedimentation/erosion
@@ -1137,9 +1184,6 @@ PetscErrorCode ADVMarkControl(AdvCtx *actx)
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
 
-	// check whether activated
-	if(!actx->markContr) PetscFunctionReturn(0);
-
 	fs = actx->fs;
 
 	ierr = PetscTime(&t0); CHKERRQ(ierr);
@@ -1241,9 +1285,6 @@ PetscErrorCode ADVCheckCorners(AdvCtx *actx)
 
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
-
-	// check whether activated
-	if(!actx->markContr) PetscFunctionReturn(0);
 
 	bc = actx->jr->bc;
 

@@ -47,6 +47,14 @@
 #define __tools_h__
 
 //---------------------------------------------------------------------------
+// Printing functions
+//---------------------------------------------------------------------------
+
+void PrintStart(PetscLogDouble *t_beg, const char *msg, const char *filename);
+
+void PrintDone(PetscLogDouble t_beg);
+
+//---------------------------------------------------------------------------
 // Read and write global vectors
 //---------------------------------------------------------------------------
 
@@ -55,7 +63,7 @@ PetscErrorCode VecReadRestart (Vec x, FILE *fp);
 PetscErrorCode VecWriteRestart(Vec x, FILE *fp);
 
 //---------------------------------------------------------------------------
-//  basic statistic functions
+// Basic statistic functions
 //---------------------------------------------------------------------------
 
 PetscScalar getArthMean(PetscScalar *data, PetscInt n);
@@ -71,12 +79,32 @@ PetscErrorCode makeIntArray(PetscInt **arr, const PetscInt *init, const PetscInt
 PetscErrorCode makeScalArray(PetscScalar **arr, const PetscScalar *init, const PetscInt n);
 
 //---------------------------------------------------------------------------
+// Rank checking functions
+//---------------------------------------------------------------------------
+
 // checks whether processor has a zero rank in the communicator
 PetscInt ISRankZero(MPI_Comm comm);
 
 // check whether communicator is parallel (has more than one rank)
 PetscInt ISParallel(MPI_Comm comm);
 
+// get global rank of processor in DMDA
+static inline PetscMPIInt getGlobalRank(PetscInt i, PetscInt j, PetscInt k, PetscInt m, PetscInt n, PetscInt p)
+{
+	if (i < 0 || i >= m || j < 0 || j >= n || k < 0 || k >= p) return -1;
+	return (PetscMPIInt)(i + j*m + k*m*n);
+}
+
+// get local ranks of processor in DMDA
+static inline void getLocalRank(PetscInt *i, PetscInt *j, PetscInt *k, PetscMPIInt rank, PetscInt m, PetscInt n)
+{
+	(*k) =  rank/(m*n);
+	(*j) = (rank - (*k)*m*n)/m;
+	(*i) =  rank - (*k)*m*n - (*j)*m;
+}
+
+//---------------------------------------------------------------------------
+// Directory management functions
 //---------------------------------------------------------------------------
 
 PetscErrorCode DirMake(const char *name);
@@ -88,11 +116,29 @@ PetscErrorCode DirRename(const char *old_name, const char *new_name);
 PetscErrorCode DirCheck(const char *name, PetscInt *exists);
 
 //---------------------------------------------------------------------------
+// Numerical functions
+//---------------------------------------------------------------------------
 
 #define CHECKEQ(a, b, rtol, atol) (PetscAbsScalar((a)-(b)) <= (rtol)*(PetscAbsScalar(a) + PetscAbsScalar(b)) + (atol))
 
 #define IS_POWER_OF_TWO(x) ((x) && !((x) & ((x) - 1)))
 
+static inline PetscScalar ARCCOS(PetscScalar x)
+{
+	if(x >  1.0 - DBL_EPSILON) x =  1.0 - DBL_EPSILON;
+	if(x < -1.0 + DBL_EPSILON) x = -1.0 + DBL_EPSILON;
+
+	return acos(x);
+}
+
+static inline PetscScalar ODDROOT(PetscScalar x, PetscScalar a)
+{
+	if(x < 0.0) return -pow(-x, a);
+	else        return  pow( x, a);
+}
+
+//---------------------------------------------------------------------------
+// Polygon location functions
 //---------------------------------------------------------------------------
 
 void polygon_box(
@@ -112,56 +158,7 @@ void in_polygon(
 	PetscInt    *in);    // point location flags (1-inside, 0-outside)
 
 //---------------------------------------------------------------------------
-static inline void RotDispPoint2D(PetscScalar Xa[], PetscScalar Xb[], PetscScalar costh, PetscScalar sinth, PetscScalar xa[], PetscScalar xb[])
-{
-	PetscScalar r[2];
-
-	// get radius vector
-	r[0] = xa[0] - Xa[0];
-	r[1] = xa[1] - Xa[1];
-
-	// rotate & translate
-	xb[0] = costh*r[0] - sinth*r[1] + Xb[0];
-	xb[1] = sinth*r[0] + costh*r[1] + Xb[1];
-}
-//---------------------------------------------------------------------------
-static inline PetscScalar ARCCOS(PetscScalar x)
-{
-	if(x >  1.0 - DBL_EPSILON) x =  1.0 - DBL_EPSILON;
-	if(x < -1.0 + DBL_EPSILON) x = -1.0 + DBL_EPSILON;
-
-	return acos(x);
-}
-//---------------------------------------------------------------------------
-static inline PetscScalar ODDROOT(PetscScalar x, PetscScalar a)
-{
-	if(x < 0.0) return -pow(-x, a);
-	else        return  pow( x, a);
-}
-//---------------------------------------------------------------------------
-// this function returns global rank of processor in DMDA
-static inline PetscMPIInt getGlobalRank(PetscInt i, PetscInt j, PetscInt k, PetscInt m, PetscInt n, PetscInt p)
-{
-	if (i < 0 || i >= m || j < 0 || j >= n || k < 0 || k >= p) return -1;
-	return (PetscMPIInt)(i + j*m + k*m*n);
-}
-//---------------------------------------------------------------------------
-// this function computes local ranks of processor in DMDA
-static inline void getLocalRank(PetscInt *i, PetscInt *j, PetscInt *k, PetscMPIInt rank, PetscInt m, PetscInt n)
-{
-	(*k) =  rank/(m*n);
-	(*j) = (rank - (*k)*m*n)/m;
-	(*i) =  rank - (*k)*m*n - (*j)*m;
-}
-//-----------------------------------------------------------------------------
-// calculate displacements from counts, return number elements
-PetscInt calcDisp(PetscInt n, PetscInt *counts, PetscInt *displ);
-
-// rewind displacements after using them as access iterators
-void rewinDisp(PetscInt n, PetscInt *displ);
-
-//---------------------------------------------------------------------------
-// key-value sort using standard functions (scalar-index)
+// indexing & sorting functions
 //---------------------------------------------------------------------------
 
 struct Pair
@@ -176,17 +173,15 @@ int comp_key_val(const void * a, const void * b);
 
 PetscErrorCode sort_key_val(PetscScalar *a, PetscInt *idx, PetscInt n);
 
-//---------------------------------------------------------------------------
-
-//-----------------------------------------------------------------------------
-// service functions
-//-----------------------------------------------------------------------------
-
 // compute pointers from counts, return total count
 PetscInt getPtrCnt(PetscInt n, PetscInt counts[], PetscInt ptr[]);
 
 // rewind pointers after using them as access iterators
 void rewindPtr(PetscInt n, PetscInt ptr[]);
+
+//-----------------------------------------------------------------------------
+// service functions
+//-----------------------------------------------------------------------------
 
 // compute phase ratio array
 PetscErrorCode getPhaseRatio(PetscInt n, PetscScalar *v, PetscScalar *rsum);
@@ -215,7 +210,24 @@ static inline PetscInt FindPointInCell(
 	}
 	return(L);
 }
-//-----------------------------------------------------------------------------
+
+static inline void RotDispPoint2D(PetscScalar Xa[], PetscScalar Xb[], PetscScalar costh, PetscScalar sinth, PetscScalar xa[], PetscScalar xb[])
+{
+	PetscScalar r[2];
+
+	// get radius vector
+	r[0] = xa[0] - Xa[0];
+	r[1] = xa[1] - Xa[1];
+
+	// rotate & translate
+	xb[0] = costh*r[0] - sinth*r[1] + Xb[0];
+	xb[1] = sinth*r[0] + costh*r[1] + Xb[1];
+}
+
+//---------------------------------------------------------------------------
+// Interpolation functions
+//---------------------------------------------------------------------------
+
 static inline PetscScalar InterpLin3D(
 	PetscScalar ***lv,
 	PetscInt    i,
@@ -251,7 +263,7 @@ static inline PetscScalar InterpLin3D(
 
 	return v;
 }
-//-----------------------------------------------------------------------------
+
 static inline PetscScalar InterpLin2D(
 	PetscScalar ***lv,
 	PetscInt    i,
@@ -280,6 +292,4 @@ static inline PetscScalar InterpLin2D(
 	return v;
 }
 //-----------------------------------------------------------------------------
-
-
 #endif

@@ -622,8 +622,6 @@ PetscErrorCode AVDInjectDeletePoints(AdvCtx *actx, AVD *A, PetscInt cellID)
 			actx->recvbuf[actx->cinj+i].X[1] = A->chain [num_chain].xc[1];
 			actx->recvbuf[actx->cinj+i].X[2] = A->chain [num_chain].xc[2];
 
-			//PetscPrintf(PETSC_COMM_SELF,"# Marker Control [%lld]: injected [%g,%g,%g]\n",(LLD)actx->iproc, A->chain [num_chain].xc[0], A->chain [num_chain].xc[1], A->chain [num_chain].xc[2]);
-
 			// override marker phase (if necessary)
 			ierr = BCOverridePhase(bc, cellID, actx->recvbuf + actx->cinj + i); CHKERRQ(ierr);
 
@@ -718,9 +716,7 @@ PetscErrorCode AVDExecuteMarkerInjection(AdvCtx *actx, PetscInt npoints, PetscSc
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-//---------------------------------------------------------------------------
 // NEW MARKER CONTROL
-//---------------------------------------------------------------------------
 //---------------------------------------------------------------------------
 #undef __FUNCT__
 #define __FUNCT__ "AVDMarkerControl"
@@ -730,9 +726,6 @@ PetscErrorCode AVDMarkerControl(AdvCtx *actx)
 
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
-
-	// check if activated
-	if(!actx->markContr) PetscFunctionReturn(0);
 
 	PetscPrintf(PETSC_COMM_WORLD,"# NEW Marker Control Routine \n");
 
@@ -1202,9 +1195,6 @@ PetscErrorCode AVDInjectPointsMV(AdvCtx *actx, AVD *A)
 		actx->recvbuf[actx->cinj+i].X[1] = A->chain [num_chain].xc[1];
 		actx->recvbuf[actx->cinj+i].X[2] = A->chain [num_chain].xc[2];
 
-		// print info
-		//PetscPrintf(PETSC_COMM_SELF,"# Marker Control [%lld]: injected [%g,%g,%g]\n",(LLD)actx->iproc, A->chain [num_chain].xc[0], A->chain [num_chain].xc[1], A->chain [num_chain].xc[2]);
-
 		// --- this is not ideal with multiple control volumes (i.e. use mv for BCOverridePhase) ---
 		// find I, J, K indices by bisection algorithm
 		I = FindPointInCell(fs->dsx.ncoor, 0, fs->dsx.ncels, actx->recvbuf[actx->cinj+i].X[0]);
@@ -1266,8 +1256,6 @@ PetscErrorCode AVDDeletePointsMV(AdvCtx *actx, AVD *A)
 			actx->idel[actx->cdel+i] = A->chain[num_chain].gind;
 			ind++;
 
-			// print info
-			//PetscPrintf(PETSC_COMM_SELF,"# Marker Control [%lld]: deleted [%g,%g,%g]\n",(LLD)actx->iproc, A->chain [num_chain].xc[0], A->chain [num_chain].xc[1], A->chain [num_chain].xc[2]);
 		}
 		// update total counter
 		actx->cdel +=new_nmark;

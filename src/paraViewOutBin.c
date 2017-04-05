@@ -416,11 +416,40 @@ PetscErrorCode PVOutCreate(PVOut *pvout, FB *fb)
 	if(!pvout->jr->ctrl.actTemp)             omask->energ_res = 0; // heat diffusion is deactivated
 	if( pvout->jr->ctrl.gwType == _GW_NONE_) omask->eff_press = 0; // pore pressure is deactivated
 
-	// print
-	if(pvout->outpvd)
-	{
-		PetscPrintf(PETSC_COMM_WORLD, " Writing grid .pvd file to disk\n");
-	}
+	// print summary
+	PetscPrintf(PETSC_COMM_WORLD, "Output parameters:\n");
+	PetscPrintf(PETSC_COMM_WORLD, "   Output file name                        : %s \n", pvout->outfile);
+	PetscPrintf(PETSC_COMM_WORLD, "   Write .pvd file                         : %s \n", pvout->outpvd ? "yes" : "no");
+
+	if(omask->phase)          PetscPrintf(PETSC_COMM_WORLD, "   Phase                                   @ \n");
+	if(omask->density)        PetscPrintf(PETSC_COMM_WORLD, "   Density                                 @ \n");
+	if(omask->visc_total)     PetscPrintf(PETSC_COMM_WORLD, "   Total effective viscosity               @ \n");
+	if(omask->visc_creep)     PetscPrintf(PETSC_COMM_WORLD, "   Creep effective viscosity               @ \n");
+	if(omask->visc_plast)     PetscPrintf(PETSC_COMM_WORLD, "   Viscoplastic viscosity                  @ \n");
+	if(omask->velocity)       PetscPrintf(PETSC_COMM_WORLD, "   Velocity                                @ \n");
+	if(omask->pressure)       PetscPrintf(PETSC_COMM_WORLD, "   Pressure                                @ \n");
+	if(omask->eff_press)      PetscPrintf(PETSC_COMM_WORLD, "   Effective pressure                      @ \n");
+	if(omask->over_press)     PetscPrintf(PETSC_COMM_WORLD, "   Overpressure                            @ \n");
+	if(omask->litho_press)    PetscPrintf(PETSC_COMM_WORLD, "   Lithostatic pressure                    @ \n");
+	if(omask->pore_press)     PetscPrintf(PETSC_COMM_WORLD, "   Pore pressure                           @ \n");
+	if(omask->temperature)    PetscPrintf(PETSC_COMM_WORLD, "   Temperature                             @ \n");
+	if(omask->dev_stress)     PetscPrintf(PETSC_COMM_WORLD, "   Deviatoric stress tensor                @ \n");
+	if(omask->j2_dev_stress)  PetscPrintf(PETSC_COMM_WORLD, "   Deviatoric stress second invariant      @ \n");
+	if(omask->strain_rate)    PetscPrintf(PETSC_COMM_WORLD, "   Deviatoric strain rate tensor           @ \n");
+	if(omask->j2_strain_rate) PetscPrintf(PETSC_COMM_WORLD, "   Deviatoric strain rate second invariant @ \n");
+	if(omask->SHmax)          PetscPrintf(PETSC_COMM_WORLD, "   Maximum horizontal stress               @ \n");
+	if(omask->EHmax)          PetscPrintf(PETSC_COMM_WORLD, "   Maximum horizontal extension            @ \n");
+	if(omask->ISA)            PetscPrintf(PETSC_COMM_WORLD, "   Infinite Strain Axis (ISA)              @ \n");
+	if(omask->GOL)            PetscPrintf(PETSC_COMM_WORLD, "   Grain Orientation Lag (GOL)             @ \n");
+	if(omask->yield)          PetscPrintf(PETSC_COMM_WORLD, "   Yield stress                            @ \n");
+	if(omask->plast_strain)   PetscPrintf(PETSC_COMM_WORLD, "   Accumulated Plastic Strain (APS)        @ \n");
+	if(omask->plast_dissip)   PetscPrintf(PETSC_COMM_WORLD, "   Plastic dissipation                     @ \n");
+	if(omask->tot_displ)      PetscPrintf(PETSC_COMM_WORLD, "   Total displacements                     @ \n");
+	if(omask->moment_res)     PetscPrintf(PETSC_COMM_WORLD, "   Momentum residual                       @ \n");
+	if(omask->cont_res)       PetscPrintf(PETSC_COMM_WORLD, "   Continuity residual                     @ \n");
+	if(omask->energ_res)      PetscPrintf(PETSC_COMM_WORLD, "   energy residual                         @ \n");
+
+	PetscPrintf(PETSC_COMM_WORLD, "--------------------------------------------------------------------------\n");
 
 	// count active output vectors
 	pvout->nvec = OutMaskCountActive(omask);

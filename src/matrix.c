@@ -200,6 +200,8 @@ PetscErrorCode PMatSetFromOptions(PMat pm)
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
 
+	PetscPrintf(PETSC_COMM_WORLD, "Preconditioner parameters: \n");
+
 	// set matrix type
 	ierr = PetscOptionsGetString(NULL, NULL,"-pcmat_type", pname, _STR_LEN_, &flg); CHKERRQ(ierr);
 
@@ -207,19 +209,19 @@ PetscErrorCode PMatSetFromOptions(PMat pm)
 	{
 		if(!strcmp(pname, "mono"))
 		{
-			PetscPrintf(PETSC_COMM_WORLD, " Preconditioner matrix type     : monolithic\n");
+			PetscPrintf(PETSC_COMM_WORLD, "   Matrix type                   : monolithic\n");
 			pm->type = _MONOLITHIC_;
 		}
 		else if(!strcmp(pname, "block"))
 		{
-			PetscPrintf(PETSC_COMM_WORLD, " Preconditioner matrix type     : block\n");
+			PetscPrintf(PETSC_COMM_WORLD, "   Matrix type                   : block\n");
 			pm->type = _BLOCK_;
 		}
 		else SETERRQ1(PETSC_COMM_SELF, PETSC_ERR_USER,"Incorrect matrix storage format: %s", pname);
 	}
 	else
 	{
-		PetscPrintf(PETSC_COMM_WORLD, " Preconditioner matrix type     : monolithic\n");
+		PetscPrintf(PETSC_COMM_WORLD, "   Matrix type                   : monolithic\n");
 		pm->type = _MONOLITHIC_;
 	}
 
@@ -240,7 +242,7 @@ PetscErrorCode PMatSetFromOptions(PMat pm)
 
 	if(pm->pgamma > 1.0)
 	{
-		PetscPrintf(PETSC_COMM_WORLD, " Penalty parameter (pgamma)     : %e\n", pm->pgamma);
+		PetscPrintf(PETSC_COMM_WORLD, "   Penalty parameter (pgamma)    : %e\n", pm->pgamma);
 	}
 
 	// set cell stiffness function
@@ -248,7 +250,7 @@ PetscErrorCode PMatSetFromOptions(PMat pm)
 
 	if(flg == PETSC_TRUE)
 	{
-		PetscPrintf(PETSC_COMM_WORLD, " Excluding deviatoric projection from preconditioner\n");
+		PetscPrintf(PETSC_COMM_WORLD, "   Exclude deviatoric projection @ \n");
 		pm->getStiffMat = getStiffMatClean;
 	}
 	else

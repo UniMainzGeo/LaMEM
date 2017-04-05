@@ -137,8 +137,9 @@ enum GWLevelType
 struct Controls
 {
 	PetscScalar grav[SPDIM];  // global gravity components
-	PetscScalar FSSA;         // free surface stabilization parameter
+	PetscScalar FSSA;         // free surface stabilization parameter [0 - 1]
 	PetscScalar shearHeatEff; // shear heating efficiency parameter [0 - 1]
+	PetscScalar biot;         // Biot pressure parameter [0 - 1]
 
 	PetscInt    actTemp;	  // temperature diffusion activation flag
 	PetscInt    pShiftAct;    // pressure shift activation flag (zero pressure in the top cell layer)
@@ -148,6 +149,7 @@ struct Controls
 	PetscInt    pLithoPlast;  // use lithostatic pressure for plasticity
 	PetscInt    pLimPlast;    // limit pressure at first iteration for plasticity
 	PetscInt    jac_mat_free; // matrix-free analytical Jacobian activation flag
+	PetscInt    quasiHarmAvg; // use quasi-harmonic averaging regularization for plasticity
 
 	PetscScalar eta_min;      // minimum viscosity
 	PetscScalar inv_eta_max;  // inverse of maximum viscosity
@@ -156,16 +158,15 @@ struct Controls
 	PetscScalar Rugc;         // universal gas constant
 	PetscScalar DII_ref;      // background (reference) strain-rate
 	PetscScalar minCh;        // minimum cohesion
-	PetscScalar minFr;        // maximum friction
+	PetscScalar minFr;        // minimum friction
 	PetscScalar tauUlt;       // ultimate yield stress
-	PetscInt    quasiHarmAvg; // quasi-harmonic averaging regularization flag (plasticity)
+
 	PetscScalar cf_eta_min;   // visco-plastic regularization parameter (plasticity)
 	PetscScalar n_pw;         // power-law regularization parameter (plasticity)
 
 	PetscScalar rho_fluid;    // fluid density
 	GWLevelType gwType;       // type of ground water level (none, top, surf, level)
 	PetscScalar gwLevel;      // fixed ground water level
-	PetscScalar biot;         // Biot pressure parameter
 
 };
 

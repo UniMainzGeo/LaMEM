@@ -57,22 +57,6 @@
 #END_DOC#
 */
 //---------------------------------------------------------------------------
-// initialization function header
-#define INIT_FUNCTION_HEADER \
-	FDSTAG      *fs; \
-	Scaling     *scal; \
-	PetscInt     imark; \
-	PetscScalar  lx, ly, lz, bx, by, bz, ex, ey, ez, cf, *X; \
-	PetscErrorCode ierr; \
-	PetscFunctionBegin; \
-	fs   = advect->fs; \
-	scal = advect->scal; \
-	cf   = scal->length; \
-	ierr = FDSTAGGetGlobalBox(fs, &bx, &by, &bz, &ex, &ey, &ez); CHKERRQ(ierr); \
-	lx = ex - bx; \
-	ly = ey - by; \
-	lz = ez - bz;
-//---------------------------------------------------------------------------
 #undef __FUNCT__
 #define __FUNCT__ "ADVMarkInit"
 PetscErrorCode ADVMarkInit(AdvCtx *actx, FB *fb)
@@ -84,8 +68,6 @@ PetscErrorCode ADVMarkInit(AdvCtx *actx, FB *fb)
 	PetscFunctionBegin;
 
 	fs = actx->fs;
-
-	PetscPrintf(PETSC_COMM_WORLD," Starting marker initialization routine\n");
 
 	// allocate storage for uniform distribution
 	if(actx->msetup != _FILES_)
@@ -110,21 +92,16 @@ PetscErrorCode ADVMarkInit(AdvCtx *actx, FB *fb)
 		ierr = ADVMarkInitCoord(actx); CHKERRQ(ierr);
 	}
 
-	// display info
-	PetscPrintf(PETSC_COMM_WORLD," Marker setup employed [msetup] : ");
-
-	// initialize marker phase, temperature, etc.
-	if     (actx->msetup == _GEOM_)       { PetscPrintf(PETSC_COMM_WORLD,"%s\n","geom");     ierr = ADVMarkInitGeom    (actx, fb); CHKERRQ(ierr); }
-	else if(actx->msetup == _FILES_)      { PetscPrintf(PETSC_COMM_WORLD,"%s\n","files");    ierr = ADVMarkInitFiles   (actx, fb); CHKERRQ(ierr); }
-	else if(actx->msetup == _POLYGONS_)   { PetscPrintf(PETSC_COMM_WORLD,"%s\n","polygons"); ierr = ADVMarkInitPolygons(actx, fb); CHKERRQ(ierr); }
+	// initialize markers
+	if     (actx->msetup == _GEOM_)       { ierr = ADVMarkInitGeom    (actx, fb); CHKERRQ(ierr); }
+	else if(actx->msetup == _FILES_)      { ierr = ADVMarkInitFiles   (actx, fb); CHKERRQ(ierr); }
+	else if(actx->msetup == _POLYGONS_)   { ierr = ADVMarkInitPolygons(actx, fb); CHKERRQ(ierr); }
 
 	// optionally read temperature from file
 	if(actx->msetup != _FILES_)
 	{
 		ierr = ADVMarkSetTempFromFile(actx, fb); CHKERRQ(ierr);
 	}
-
-	PetscPrintf(PETSC_COMM_WORLD," Finished marker initialization routine\n");
 
 	PetscFunctionReturn(0);
 }
@@ -149,8 +126,6 @@ PetscErrorCode ADVMarkInitCoord(AdvCtx *actx)
 
 	if(actx->randNoise)
 	{
-		PetscPrintf(PETSC_COMM_WORLD, " Adding random noise to marker distribution \n");
-
 		ierr = PetscRandomCreate(PETSC_COMM_SELF, &rctx); CHKERRQ(ierr);
 		ierr = PetscRandomSetFromOptions(rctx);           CHKERRQ(ierr);
 	}
@@ -227,24 +202,26 @@ PetscErrorCode ADVMarkInitCoord(AdvCtx *actx)
 #define __FUNCT__ "ADVMarkSave"
 PetscErrorCode ADVMarkSave(AdvCtx *actx)
 {
-	int          fd;
-	PetscInt     imark;
-	Marker      *P;
-	PetscViewer  view_out;
-	char        *filename, path[_STR_LEN_];
-	PetscScalar *markbuf, *markptr, header, chLen, chTemp, Tshift, s_nummark;
+	int            fd;
+	PetscInt       imark;
+	Marker         *P;
+	PetscViewer    view_out;
+	PetscLogDouble t;
+	char           *filename, path[_STR_LEN_];
+	PetscScalar    *markbuf, *markptr, header, chLen, chTemp, Tshift, s_nummark;
 
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
 
 	if(!actx->saveMark) PetscFunctionReturn(0);
 
+	PrintStart(&t, "Saving markers in parallel to", actx->saveFile);
+
 	// access context
 	chLen  = actx->jr->scal->length;
 	chTemp = actx->jr->scal->temperature;
 	Tshift = actx->jr->scal->Tshift;
 
-	PetscPrintf(PETSC_COMM_WORLD,"Saving markers in parallel to files: %s.xxxxxxxx.dat \n", actx->saveFile);
 
 	// extract directory path
 	strcpy(path, actx->saveFile); (*strrchr(path, '/')) = '\0';
@@ -289,7 +266,7 @@ PetscErrorCode ADVMarkSave(AdvCtx *actx)
 	// destroy buffer
 	ierr = PetscFree(markbuf); CHKERRQ(ierr);
 
-	PetscPrintf(PETSC_COMM_WORLD," Finished saving markers in parallel \n");
+	PrintDone(t);
 
 	PetscFunctionReturn(0);
 }
@@ -415,18 +392,19 @@ PetscErrorCode ADVMarkCheckMarkers(AdvCtx *actx)
 #define __FUNCT__ "ADVMarkSetTempFromFile"
 PetscErrorCode ADVMarkSetTempFromFile(AdvCtx *actx, FB *fb)
 {
-	FDSTAG       *fs;
-	int           fd;
-	Marker       *P;
-	PetscViewer   view_in;
-	char          filename[_STR_LEN_];
-	PetscScalar   header[2], dim[3];
-	PetscInt      Fsize, imark, nummark, nmarkx, nmarky, nmarkz;
-	PetscScalar   DX, DY, DZ, bx, by, bz, ex, ey, ez;
-	PetscScalar   xp, yp, zp, Xc, Yc, Zc, xpL, ypL, zpL;
-	PetscScalar  *Temp;
-	PetscInt      Ix, Iy, Iz;
-	PetscScalar   chTemp, Tshift;
+	FDSTAG         *fs;
+	int            fd;
+	Marker         *P;
+	PetscViewer    view_in;
+	PetscLogDouble t;
+	char           filename[_STR_LEN_];
+	PetscScalar    header[2], dim[3];
+	PetscInt       Fsize, imark, nummark, nmarkx, nmarky, nmarkz;
+	PetscScalar    DX, DY, DZ, bx, by, bz, ex, ey, ez;
+	PetscScalar    xp, yp, zp, Xc, Yc, Zc, xpL, ypL, zpL;
+	PetscScalar    *Temp;
+	PetscInt       Ix, Iy, Iz;
+	PetscScalar    chTemp, Tshift;
 
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
@@ -437,12 +415,14 @@ PetscErrorCode ADVMarkSetTempFromFile(AdvCtx *actx, FB *fb)
 	// check whether file is provided
 	if(!strlen(filename)) PetscFunctionReturn(0);
 
+	PrintStart(&t, "Loading temperature redundantly from", filename);
+
 	// access context
 	fs     = actx->fs;
 	chTemp = actx->jr->scal->temperature;
 	Tshift = actx->jr->scal->Tshift;
 
-	PetscPrintf(PETSC_COMM_WORLD," Loading temperature redundantly from file: %s \n", filename);
+	// open and read the file
 	ierr = PetscViewerBinaryOpen(PETSC_COMM_SELF, filename, FILE_MODE_READ, &view_in); CHKERRQ(ierr);
 	ierr = PetscViewerBinaryGetDescriptor(view_in, &fd); CHKERRQ(ierr);
 
@@ -516,6 +496,8 @@ PetscErrorCode ADVMarkSetTempFromFile(AdvCtx *actx, FB *fb)
 	PetscFree(Temp);
 	ierr = PetscViewerDestroy(&view_in); CHKERRQ(ierr);
 
+	PrintDone(t);
+
 	PetscFunctionReturn(ierr);
 }
 //---------------------------------------------------------------------------
@@ -525,12 +507,13 @@ PetscErrorCode ADVMarkSetTempFromFile(AdvCtx *actx, FB *fb)
 #define __FUNCT__ "ADVMarkInitFiles"
 PetscErrorCode ADVMarkInitFiles(AdvCtx *actx, FB *fb)
 {
-	int          fd;
-	Marker      *P;
-	PetscViewer  view_in;
-	char        *filename, file[_STR_LEN_];
-	PetscScalar *markbuf, *markptr, header, chTemp, chLen, Tshift, s_nummark;
-	PetscInt     imark, nummark;
+	int            fd;
+	Marker         *P;
+	PetscViewer    view_in;
+	PetscLogDouble t;
+	char           *filename, file[_STR_LEN_];
+	PetscScalar    *markbuf, *markptr, header, chTemp, chLen, Tshift, s_nummark;
+	PetscInt       imark, nummark;
 
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
@@ -538,7 +521,7 @@ PetscErrorCode ADVMarkInitFiles(AdvCtx *actx, FB *fb)
 	// get file name
 	ierr = getStringParam(fb, _OPTIONAL_, "mark_load_file", file, "./markers/mdb"); CHKERRQ(ierr);
 
-	PetscPrintf(PETSC_COMM_WORLD,"Loading markers in parallel from files: %s.xxxxxxxx.dat \n", file);
+	PrintStart(&t, "Loading markers in parallel from", file);
 
 	// compile input file name with extension
 	asprintf(&filename, "%s.%1.8lld.dat", file, (LLD)actx->iproc);
@@ -589,10 +572,7 @@ PetscErrorCode ADVMarkInitFiles(AdvCtx *actx, FB *fb)
 	// free marker buffer
 	ierr = PetscFree(markbuf); CHKERRQ(ierr);
 
-	// wait until all processors finished reading markers
-	ierr = MPI_Barrier(PETSC_COMM_WORLD); CHKERRQ(ierr);
-
-	PetscPrintf(PETSC_COMM_WORLD," Finished Loading markers in parallel \n");
+	PrintDone(t);
 
 	PetscFunctionReturn(0);
 }
@@ -601,10 +581,11 @@ PetscErrorCode ADVMarkInitFiles(AdvCtx *actx, FB *fb)
 #define __FUNCT__ "ADVMarkInitGeom"
 PetscErrorCode ADVMarkInitGeom(AdvCtx *actx, FB *fb)
 {
-	Marker      *P;
-	PetscScalar chLen;
-	PetscInt    jj, iter, ngeom, imark, maxPhaseID;
-	GeomPrim    geom[_max_geom_], *sphere, *box, *hex, *layer;
+	Marker         *P;
+	PetscScalar    chLen;
+	PetscLogDouble t;
+	PetscInt       jj, iter, ngeom, imark, maxPhaseID;
+	GeomPrim       geom[_max_geom_], *sphere, *box, *hex, *layer;
 
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
@@ -617,7 +598,7 @@ PetscErrorCode ADVMarkInitGeom(AdvCtx *actx, FB *fb)
 	// clear storage
 	ierr = PetscMemzero(geom, sizeof(GeomPrim)*(size_t)_max_geom_); CHKERRQ(ierr);
 
-	PetscPrintf(PETSC_COMM_WORLD,"Reading geometric primitives: \n\n");
+	PrintStart(&t, "Reading geometric primitives", NULL);
 
 	//========
 	// SPHERES
@@ -752,6 +733,8 @@ PetscErrorCode ADVMarkInitGeom(AdvCtx *actx, FB *fb)
 		}
 	}
 
+	PrintDone(t);
+
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
@@ -776,8 +759,7 @@ PetscErrorCode ADVMarkInitPolygons(AdvCtx *actx, FB *fb)
 	PetscInt       imark, imarkx, imarky, imarkz, icellx, icelly, icellz;
 	PetscScalar    dx, dy, dz, x, y, z;
 	PetscScalar    chLen;
-	PetscLogDouble t0, t1;
-	char           normalDir[4] = {"xyz"};
+	PetscLogDouble t;
 	PetscRandom    rctx;
 	PetscScalar    cf_rand;
 	PetscInt       nPoly;
@@ -790,6 +772,8 @@ PetscErrorCode ADVMarkInitPolygons(AdvCtx *actx, FB *fb)
 	// get file name
 	ierr = getStringParam(fb, _OPTIONAL_, "poly_file", filename, "./input/poly.dat"); CHKERRQ(ierr);
 
+	PrintStart(&t, "Loading polygons redundantly from", filename);
+
 	// initialize
 	fs = actx->fs;
 	x = y = z = dx = dy = dz = 0.0;
@@ -798,13 +782,13 @@ PetscErrorCode ADVMarkInitPolygons(AdvCtx *actx, FB *fb)
 	// initialize the random number generator
 	if(actx->randNoise)
 	{
-		PetscPrintf(PETSC_COMM_WORLD, " Adding random noise to marker distribution \n");
-
 		ierr = PetscRandomCreate(PETSC_COMM_SELF, &rctx); CHKERRQ(ierr);
 		ierr = PetscRandomSetFromOptions(rctx);           CHKERRQ(ierr);
 	}
 
+	//===========================
 	// --- initialize markers ---
+	//===========================
 	
 	// marker counter
 	imark  = 0;
@@ -877,7 +861,9 @@ PetscErrorCode ADVMarkInitPolygons(AdvCtx *actx, FB *fb)
 		}
 	}
 
+	//===============================
 	// --- local grid/marker info ---
+	//===============================
 
 	// get first global index of marker plane
 	tstart[0] = fs->dsx.pstart * actx->NumPartX;
@@ -901,8 +887,6 @@ PetscErrorCode ADVMarkInitPolygons(AdvCtx *actx, FB *fb)
 	nidx[2] = nmark[0] * nmark[1]; if (nidx[2] > nidxmax) nidxmax = nidx[2];
 
 	// read file
-	PetscPrintf(PETSC_COMM_WORLD," Loading polygons redundantly from file: %s \n", filename);
-
 	ierr = PetscViewerBinaryOpen(PETSC_COMM_SELF, filename, FILE_MODE_READ, &view_in); CHKERRQ(ierr);
 	ierr = PetscViewerBinaryGetDescriptor(view_in, &fd);                               CHKERRQ(ierr);
 
@@ -935,8 +919,6 @@ PetscErrorCode ADVMarkInitPolygons(AdvCtx *actx, FB *fb)
 	// --- loop over all volumes ---
 	for(kvol = 0; kvol < VolN; kvol++)
 	{
-		PetscTime(&t0);		
-
 		// read volume header
 		Poly.dir   = (PetscInt)(PolyFile[Fcount]); Fcount++; // normal vector of polygon plane
 		Poly.phase = (PetscInt)(PolyFile[Fcount]); Fcount++; // phase that polygon defines
@@ -1037,10 +1019,6 @@ PetscErrorCode ADVMarkInitPolygons(AdvCtx *actx, FB *fb)
 				Fcount += Poly.len*2;
 			}
 		}
-
-		PetscTime(&t1);
-
-		PetscPrintf(PETSC_COMM_WORLD,"[Rank 0] Created vol %lld/%lld [%g sec]: phase %lld, type %lld, %lld slices, %c-normal-dir; found %lld markers \n",(LLD)kvol+1,(LLD)VolN, t1-t0, (LLD)Poly.phase, (LLD)Poly.type,(LLD)Poly.num, normalDir[Poly.dir], (LLD)Poly.nmark);
 	}
 
 	// free
@@ -1059,10 +1037,7 @@ PetscErrorCode ADVMarkInitPolygons(AdvCtx *actx, FB *fb)
 
 	ierr = PetscViewerDestroy(&view_in); CHKERRQ(ierr);
 
-	// wait until all processors finished reading markers
-	ierr = MPI_Barrier(PETSC_COMM_WORLD); CHKERRQ(ierr);
-
-	PetscPrintf(PETSC_COMM_WORLD," Finished setting markers with polygons\n");
+	PrintDone(t);
 
 	PetscFunctionReturn(ierr);
 }

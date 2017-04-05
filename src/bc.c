@@ -211,7 +211,12 @@ PetscErrorCode BCCreate(BCCtx *bc, FB *fb)
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
 
+	// access context
 	scal = bc->scal;
+
+	// initialize
+	bc->Tbot = -1.0;
+	bc->Ttop = -1.0;
 
 	//=====================
 	// VELOCITY CONSTRAINTS
@@ -288,6 +293,36 @@ PetscErrorCode BCCreate(BCCtx *bc, FB *fb)
 	// read from options
 	ierr = getScalarParam(fb, _OPTIONAL_, "temp_bot", &bc->Tbot, 1, 1.0); CHKERRQ(ierr);
 	ierr = getScalarParam(fb, _OPTIONAL_, "temp_top", &bc->Ttop, 1, 1.0); CHKERRQ(ierr);
+
+	// CHECK
+	if(bc->top_open && bc->noslip[5])
+	{
+		SETERRQ(PETSC_COMM_SELF, PETSC_ERR_USER, "No-slip condition is incompatible with open boundary (open_top_bound, noslip) \n");
+	}
+
+	// print summary
+	PetscPrintf(PETSC_COMM_WORLD, "Boundary condition parameters: \n");
+
+	PetscPrintf(PETSC_COMM_WORLD, "   No-slip boundary mask [lt rt ft bk bm tp]  : ");
+
+	for(jj = 0; jj < 6; jj++)
+	{
+		PetscPrintf(PETSC_COMM_WORLD, "%lld ", (LLD)bc->noslip[jj]);
+	}
+
+	PetscPrintf(PETSC_COMM_WORLD, "\n");
+
+	if(bc->ExxNumPeriods) PetscPrintf(PETSC_COMM_WORLD, "   Number of x-background strain rate periods : %lld \n", (LLD)bc->ExxNumPeriods);
+	if(bc->EyyNumPeriods) PetscPrintf(PETSC_COMM_WORLD, "   Number of y-background strain rate periods : %lld \n", (LLD)bc->EyyNumPeriods);
+	if(bc->nblocks)       PetscPrintf(PETSC_COMM_WORLD, "   Number of Bezier blocks                    : %lld \n", (LLD)bc->nblocks);
+	if(bc->top_open)      PetscPrintf(PETSC_COMM_WORLD, "   Open top boundary                          @ \n");
+	if(bc->Ttop != -1.0)  PetscPrintf(PETSC_COMM_WORLD, "   Top boundary temperature                   : %g %s \n", bc->Ttop, scal->lbl_temperature);
+	if(bc->Tbot != -1.0)  PetscPrintf(PETSC_COMM_WORLD, "   Bottom boundary temperature                : %g %s \n", bc->Tbot, scal->lbl_temperature);
+
+	PetscPrintf(PETSC_COMM_WORLD,"--------------------------------------------------------------------------\n");
+
+	if(bc->Ttop == -1.0)  bc->Ttop = 0.0;
+	if(bc->Tbot == -1.0)  bc->Tbot = 0.0;
 
 	// nondimensionalize temperature
 	bc->Ttop = (bc->Ttop + scal->Tshift)/scal->temperature;

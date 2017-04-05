@@ -194,8 +194,8 @@ PetscErrorCode ConstEqCtxSetup(
 	if(dP < 0.0) { ctx->taupl =         ch; pd = 0; } // Von-Mises model for extension
 	else         { ctx->taupl = dP*fr + ch; pd = 1; } // Drucker-Prager model for compression
 
-	// correct for ultimate yield stress
-	if(ctx->taupl > ctrl->tauUlt) { ctx->taupl = ctrl->tauUlt; pd = 0; }
+	// correct for ultimate yield stress (if defined)
+	if(ctrl->tauUlt) { if(ctx->taupl > ctrl->tauUlt) { ctx->taupl = ctrl->tauUlt; pd = 0; } }
 
 	// store friction coefficient for a pressure-dependent plasticity model
 	if(pd) ctx->fr = fr;

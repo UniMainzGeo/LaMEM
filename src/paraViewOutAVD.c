@@ -188,7 +188,6 @@ PetscErrorCode AVDViewCreate(AVD3D *A, AdvCtx *actx, PetscInt refine)
 {
 	AVD3D          avd3D;
 	FDSTAG         *fs;
-	PetscLogDouble tb, te;
 	PetscScalar    bx, by, bz, ex, ey, ez;
 	PetscInt       nx, ny, nz;
 	PetscInt       i, count, claimed;
@@ -198,8 +197,6 @@ PetscErrorCode AVDViewCreate(AVD3D *A, AdvCtx *actx, PetscInt refine)
 
 	// access context
 	fs = actx->fs;
-
-	ierr = PetscTime(&tb); CHKERRQ(ierr);
 
 	// compute local grid resolution
 	ierr = FDSTAGGetLocalBox(fs, &bx, &by, &bz, &ex, &ey, &ez); CHKERRQ(ierr);
@@ -238,12 +235,6 @@ PetscErrorCode AVDViewCreate(AVD3D *A, AdvCtx *actx, PetscInt refine)
 			AVD3DUpdateChain(avd3D, i);
 		}
 	}
-
-	ierr = PetscTime(&te); CHKERRQ(ierr);
-
-	PetscPrintf(PETSC_COMM_WORLD,"AVD generator complete in %1.4e (sec)\n", te-tb);
-
-	ierr = AVD3DReportMemory(avd3D); CHKERRQ(ierr);
 
 	(*A) = avd3D;
 
@@ -685,56 +676,6 @@ void AVD3DUpdateChain(AVD3D A, const PetscInt p_i)
 	}
 }
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "AVD3DReportMemory"
-PetscErrorCode AVD3DReportMemory(AVD3D A)
-{
-	AVDChain3D  chains;
-	PetscInt    i, npoints, ncells, nchains;
-	PetscScalar lmem[3], gmem[3], sum;
-
-	PetscErrorCode ierr;
-	PetscFunctionBegin;
-
-	chains  = A->chains;
-
-	// points memory [MB]
-	npoints = A->npoints;
-	lmem[0] = (PetscScalar)(sizeof(struct _p_AVDPoint3D)*(size_t)npoints)/1048576.0;
-
-	// cells memory
-	ncells = A->mx_mesh * A->my_mesh * A->mz_mesh;
-	lmem[1] = (PetscScalar)(sizeof(struct _p_AVDCell3D)*(size_t)ncells)/1048576.0;
-
-	// chains memory [MB]
-	nchains = 0;
-	for(i = 0; i < npoints; i++)
-	{
-		nchains += chains[i].new_boundary_cells_malloced
-		+          chains[i].new_claimed_cells_malloced;
-	}
-	lmem[2] = (PetscScalar)(sizeof(struct _p_AVDChain3D)*(size_t)npoints
-	+                       sizeof(PetscInt)            *(size_t)nchains)/1048576.0;
-
-	// get global sum on rank zero
-	gmem[0] = 0;
-	gmem[1] = 0;
-	gmem[2] = 0;
-
-	ierr = MPI_Reduce(lmem, gmem, 3, MPIU_SCALAR, MPI_SUM, 0, PETSC_COMM_WORLD); CHKERRQ(ierr);
-
-	sum  = gmem[0] + gmem[1] + gmem[2];
-
-	// output
-	PetscPrintf(PETSC_COMM_WORLD,"AVD3D memory usage: \n");
-	PetscPrintf(PETSC_COMM_WORLD,"  points:  %f [MB] \n", gmem[0]);
-	PetscPrintf(PETSC_COMM_WORLD,"  cells:   %f [MB] \n", gmem[1]);
-	PetscPrintf(PETSC_COMM_WORLD,"  chains:  %f [MB] \n", gmem[2]);
-	PetscPrintf(PETSC_COMM_WORLD,"  total:   %f [MB] \n", sum);
-
-	PetscFunctionReturn(0);
-}
-//---------------------------------------------------------------------------
 // .......................... AVD ParaView Output ...........................
 //---------------------------------------------------------------------------
 #undef __FUNCT__
@@ -760,11 +701,11 @@ PetscErrorCode PVAVDCreate(PVAVD *pvavd, FB *fb)
 	ierr = getIntParam   (fb, _OPTIONAL_, "out_avd_pvd",   &pvavd->outpvd,                1, 1); CHKERRQ(ierr);
 	ierr = getIntParam   (fb, _OPTIONAL_, "out_avd_ref",   &pvavd->refine, 1, _max_avd_refine_); CHKERRQ(ierr);
 
-	// print
-	if(pvavd->outpvd)
-	{
-		PetscPrintf(PETSC_COMM_WORLD, " Writing AVD phase .pvd file to disk\n");
-	}
+	// print summary
+	PetscPrintf(PETSC_COMM_WORLD, "AVD output parameters:\n");
+	PetscPrintf(PETSC_COMM_WORLD, "   Write .pvd file       : %s \n", pvavd->outpvd ? "yes" : "no");
+	PetscPrintf(PETSC_COMM_WORLD, "   AVD refinement factor : %lld \n", (LLD)pvavd->refine);
+	PetscPrintf(PETSC_COMM_WORLD, "--------------------------------------------------------------------------\n");
 
 	// set file name
 	sprintf(pvavd->outfile, "%s_phase", filename);

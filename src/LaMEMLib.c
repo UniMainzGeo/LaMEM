@@ -68,7 +68,6 @@
 #include "paraViewOutAVD.h"
 #include "objFunct.h"
 #include "LaMEMLib.h"
-
 //---------------------------------------------------------------------------
 #undef __FUNCT__
 #define __FUNCT__ "LaMEMLibMain"
@@ -168,7 +167,7 @@ PetscErrorCode LaMEMLibMain(void *param)
 	ierr = LaMEMLibDestroy(&lm); CHKERRQ(ierr);
 
 	PetscTime(&cputime_end);
-	PetscPrintf(PETSC_COMM_WORLD, " Simulation took %g (sec) \n", cputime_end - cputime_start);
+	PetscPrintf(PETSC_COMM_WORLD, "Simulation time : %g (sec) \n", cputime_end - cputime_start);
 
 	PetscFunctionReturn(0);
 }
@@ -263,12 +262,15 @@ PetscErrorCode LaMEMLibSaveGrid(LaMEMLib *lm)
 #define __FUNCT__ "LaMEMLibLoadRestart"
 PetscErrorCode LaMEMLibLoadRestart(LaMEMLib *lm)
 {
-	FILE        *fp;
-	PetscMPIInt  rank;
-	char        *fileName;
+	FILE           *fp;
+	PetscMPIInt    rank;
+	char           *fileName;
+	PetscLogDouble t;
 
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
+
+	PrintStart(&t, "Loading restart database", NULL);
 
 	// get MPI processor rank
 	MPI_Comm_rank(PETSC_COMM_WORLD, &rank);
@@ -317,6 +319,8 @@ PetscErrorCode LaMEMLibLoadRestart(LaMEMLib *lm)
 	// free space
 	free(fileName);
 
+	PrintDone(t);
+
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
@@ -326,14 +330,17 @@ PetscErrorCode LaMEMLibSaveRestart(LaMEMLib *lm)
 {
 	// save new restart database, then delete the original
 
-	FILE        *fp;
-	PetscMPIInt  rank;
-	char        *fileNameTmp;
+	FILE           *fp;
+	PetscMPIInt    rank;
+	char           *fileNameTmp;
+	PetscLogDouble t;
 
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
 
 	if(!TSSolIsRestart(&lm->ts)) PetscFunctionReturn(0);
+
+	PrintStart(&t, "Saving restart database", NULL);
 
 	// get MPI processor rank
 	MPI_Comm_rank(PETSC_COMM_WORLD, &rank);
@@ -378,6 +385,8 @@ PetscErrorCode LaMEMLibSaveRestart(LaMEMLib *lm)
 
 	// free space
 	free(fileNameTmp);
+
+	PrintDone(t);
 
 	PetscFunctionReturn(0);
 }
@@ -517,12 +526,12 @@ PetscErrorCode LaMEMLibSaveOutput(LaMEMLib *lm)
 	// Save data to disk
 	//==================
 
-	Scaling    *scal;
-	TSSol      *ts;
-
-	PetscScalar time;
-	PetscInt    step;
-	char       *dirName;
+	Scaling        *scal;
+	TSSol          *ts;
+	PetscScalar    time;
+	PetscInt       step;
+	char           *dirName;
+	PetscLogDouble t;
 
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
@@ -531,6 +540,8 @@ PetscErrorCode LaMEMLibSaveOutput(LaMEMLib *lm)
 	ts   = &lm->ts;
 
 	if(!TSSolIsOutput(ts)) PetscFunctionReturn(0);
+
+	PrintStart(&t, "Saving output", NULL);
 
 	time = ts->time*scal->time;
 	step = ts->istep;
@@ -556,6 +567,8 @@ PetscErrorCode LaMEMLibSaveOutput(LaMEMLib *lm)
 	// clean up
 	free(dirName);
 
+	PrintDone(t);
+
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
@@ -568,7 +581,7 @@ PetscErrorCode LaMEMLibSolve(LaMEMLib *lm, void *param)
 	NLSol          nl;     // nonlinear solver context (to be removed!)
 	SNES           snes;   // PETSc nonlinear solver
 	PetscInt       restart;
-	PetscLogDouble t_snes_start, t_snes_stop;
+	PetscLogDouble t;
 
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
@@ -607,16 +620,12 @@ PetscErrorCode LaMEMLibSolve(LaMEMLib *lm, void *param)
 		ierr = JacResGetI2Gdt(&lm->jr); CHKERRQ(ierr);
 
 		// solve nonlinear equation system with SNES
-		PetscTime(&t_snes_start);
+		PetscTime(&t);
 
 		ierr = SNESSolve(snes, NULL, lm->jr.gsol); CHKERRQ(ierr);
 
 		// print analyze convergence/divergence reason & iteration count
-		ierr = SNESPrintConvergedReason(snes); CHKERRQ(ierr);
-
-		PetscTime(&t_snes_stop);
-
-		PetscPrintf(PETSC_COMM_WORLD, "Nonlinear solve took %g (sec)\n", t_snes_stop - t_snes_start);
+		ierr = SNESPrintConvergedReason(snes, t); CHKERRQ(ierr);
 
 		// view nonlinear residual
 		ierr = JacResViewRes(&lm->jr); CHKERRQ(ierr);
@@ -720,7 +729,7 @@ PetscErrorCode LaMEMLibInitGuess(LaMEMLib *lm, SNES snes)
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
 
-	PetscLogDouble t_snes_start, t_snes_stop;
+	PetscLogDouble t;
 
 	// initialize boundary constraint vectors
 	ierr = BCApply(&lm->bc, lm->jr.gsol); CHKERRQ(ierr);
@@ -733,21 +742,16 @@ PetscErrorCode LaMEMLibInitGuess(LaMEMLib *lm, SNES snes)
 
 	if(lm->jr.ctrl.initGuess)
 	{
-		PetscPrintf(PETSC_COMM_WORLD, "===========================================================\n");
-		PetscPrintf(PETSC_COMM_WORLD, "...................... INITIAL GUESS ......................\n");
-		PetscPrintf(PETSC_COMM_WORLD, "===========================================================\n");
+		PetscPrintf(PETSC_COMM_WORLD, ".............................. INITIAL GUESS .............................\n");
+		PetscPrintf(PETSC_COMM_WORLD, "--------------------------------------------------------------------------\n");
 
 		// solve nonlinear equation system with SNES
-		PetscTime(&t_snes_start);
+		PetscTime(&t);
 
 		ierr = SNESSolve(snes, NULL, lm->jr.gsol); CHKERRQ(ierr);
 
 		// print analyze convergence/divergence reason & iteration count
-		ierr = SNESPrintConvergedReason(snes); CHKERRQ(ierr);
-
-		PetscTime(&t_snes_stop);
-
-		PetscPrintf(PETSC_COMM_WORLD, "Nonlinear solve took %g (sec)\n", t_snes_stop - t_snes_start);
+		ierr = SNESPrintConvergedReason(snes, t); CHKERRQ(ierr);
 
 		// switch flag
 		lm->jr.ctrl.initGuess = 0;
@@ -758,14 +762,14 @@ PetscErrorCode LaMEMLibInitGuess(LaMEMLib *lm, SNES snes)
 		ierr = JacResFormResidual(&lm->jr, lm->jr.gsol, lm->jr.gres); CHKERRQ(ierr);
 	}
 
+	PetscPrintf(PETSC_COMM_WORLD, "--------------------------------------------------------------------------\n");
+
 	// save output for inspection
 	ierr = LaMEMLibSaveOutput(lm); CHKERRQ(ierr);
 
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-
-
 
 //	ObjFunct objf;   // objective function
 //	ierr = ObjFunctCreate(&objf, &IOparam, &lm->surf, fb); CHKERRQ(ierr);

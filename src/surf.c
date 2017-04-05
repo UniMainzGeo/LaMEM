@@ -99,6 +99,26 @@ PetscErrorCode FreeSurfCreate(FreeSurf *surf, FB *fb)
 		ierr = getIntParam   (fb, _REQUIRED_, "sed_phases",       surf->sedPhases,  surf->numLayers,   maxPhaseID);        CHKERRQ(ierr);
 	}
 
+	// print summary
+	PetscPrintf(PETSC_COMM_WORLD, "Free surface parameters: \n");
+
+	PetscPrintf(PETSC_COMM_WORLD, "   Sticky air phase ID       : %lld \n",  (LLD)surf->AirPhase);
+    PetscPrintf(PETSC_COMM_WORLD, "   Initial surface level     : %g %s \n",  surf->InitLevel*scal->length, scal->lbl_length);
+
+	PetscPrintf(PETSC_COMM_WORLD, "   Erosion model             : ");
+	if      (surf->ErosionModel == 0)  PetscPrintf(PETSC_COMM_WORLD, "none\n");
+	else if (surf->ErosionModel == 1)  PetscPrintf(PETSC_COMM_WORLD, "infinitely fast\n");
+
+	PetscPrintf(PETSC_COMM_WORLD, "   Sedimentation model       : ");
+	if      (surf->SedimentModel == 0) PetscPrintf(PETSC_COMM_WORLD, "none\n");
+	else if (surf->SedimentModel == 1) PetscPrintf(PETSC_COMM_WORLD, "prescribed rate\n");
+
+	if(surf->numLayers) PetscPrintf(PETSC_COMM_WORLD, "   Number of sediment layers : %lld \n",  (LLD)surf->numLayers);
+	if(surf->phaseCorr) PetscPrintf(PETSC_COMM_WORLD, "   Correct marker phases     @ \n");
+	if(surf->MaxAngle)  PetscPrintf(PETSC_COMM_WORLD, "   Maximum surface slope     : %g %s\n",  surf->MaxAngle*scal->angle, scal->lbl_angle);
+
+	PetscPrintf(PETSC_COMM_WORLD,"--------------------------------------------------------------------------\n");
+
 	// create structures
 	ierr = FreeSurfCreateData(surf); CHKERRQ(ierr);
 
@@ -937,14 +957,15 @@ PetscErrorCode FreeSurfAppSedimentation(FreeSurf *surf)
 #define __FUNCT__ "FreeSurfSetTopoFromFile"
 PetscErrorCode FreeSurfSetTopoFromFile(FreeSurf *surf, FB *fb)
 {
-	FDSTAG       *fs;
-	int          fd;
-	PetscViewer  view_in;
-	char         filename[_STR_LEN_];
-	PetscInt 	 nxTopo, nyTopo, Ix, Iy, Fsize;
-	PetscInt     i, j, nx, ny, sx, sy, sz, level;
-	PetscScalar  ***topo, *Z, header[2], dim[2];
-	PetscScalar  xp, yp, Xc, Yc, xpL, ypL, DX, DY, bx, by, ex, ey, leng;
+	FDSTAG         *fs;
+	int            fd;
+	PetscLogDouble t;
+	PetscViewer    view_in;
+	char           filename[_STR_LEN_];
+	PetscInt 	   nxTopo, nyTopo, Ix, Iy, Fsize;
+	PetscInt       i, j, nx, ny, sx, sy, sz, level;
+	PetscScalar    ***topo, *Z, header[2], dim[2];
+	PetscScalar    xp, yp, Xc, Yc, xpL, ypL, DX, DY, bx, by, ex, ey, leng;
 
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
@@ -955,14 +976,14 @@ PetscErrorCode FreeSurfSetTopoFromFile(FreeSurf *surf, FB *fb)
 	// check whether file is provided
 	if(!strlen(filename)) PetscFunctionReturn(0);
 
+	PrintStart(&t, "Loading topography redundantly from", filename);
+
 	// access context
 	fs    = surf->jr->fs;
 	level = fs->dsz.rank;
 	leng  = surf->jr->scal->length;
 
-	// read file
-	PetscPrintf(PETSC_COMM_WORLD," Loading topography redundantly from file: %s \n", filename);
-
+	// open & read file
 	ierr = PetscViewerBinaryOpen(PETSC_COMM_SELF, filename, FILE_MODE_READ, &view_in); CHKERRQ(ierr);
 	ierr = PetscViewerBinaryGetDescriptor(view_in, &fd);                               CHKERRQ(ierr);
 
@@ -1035,6 +1056,8 @@ PetscErrorCode FreeSurfSetTopoFromFile(FreeSurf *surf, FB *fb)
 
 	// compute ghosted version of the advected surface topography
 	GLOBAL_TO_LOCAL(surf->DA_SURF, surf->gtopo, surf->ltopo);
+
+	PrintDone(t);
 
 	PetscFunctionReturn(0);
 }

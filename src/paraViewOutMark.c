@@ -73,11 +73,10 @@ PetscErrorCode PVMarkCreate(PVMark *pvmark, FB *fb)
 	ierr = getStringParam(fb, _OPTIONAL_, "out_file_name", filename,    "output"); CHKERRQ(ierr);
 	ierr = getIntParam   (fb, _OPTIONAL_, "out_mark_pvd",  &pvmark->outpvd, 1, 1); CHKERRQ(ierr);
 
-	// print
-	if(pvmark->outpvd)
-	{
-		PetscPrintf(PETSC_COMM_WORLD, " Writing marker .pvd file to disk\n");
-	}
+	// print summary
+	PetscPrintf(PETSC_COMM_WORLD, "Marker output parameters:\n");
+	PetscPrintf(PETSC_COMM_WORLD, "   Write .pvd file : %s \n", pvmark->outpvd ? "yes" : "no");
+	PetscPrintf(PETSC_COMM_WORLD, "--------------------------------------------------------------------------\n");
 
 	// set file name
 	sprintf(pvmark->outfile, "%s_mark", filename);

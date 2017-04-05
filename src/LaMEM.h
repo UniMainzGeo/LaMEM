@@ -75,8 +75,8 @@
 	#define _GNU_SOURCE
 #endif
 
-// Identify gcc compiler.
-// Take care that other compilers may also define __GNUC__ macro.
+// identify gcc compiler.
+// take care that other compilers may also define __GNUC__ macro.
 
 #undef GCC_COMPILER
 
@@ -131,16 +131,8 @@
 //-----------------------------------------------------------------------------
 
 // LaMEM library main function
-/*
-#ifdef __cplusplus
-extern "C" {
-#endif
-*/
+
 PetscErrorCode LaMEMLibMain(void *param);
-/*
-#ifdef __cplusplus
-}
-#endif
-*/
+
 //-----------------------------------------------------------------------------
 #endif

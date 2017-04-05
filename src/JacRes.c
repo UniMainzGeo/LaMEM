@@ -61,10 +61,10 @@ PetscErrorCode JacResCreate(JacRes *jr, FB *fb)
 	FreeSurf   *surf;
 	Scaling    *scal;
 	Controls   *ctrl;
-	PetscScalar input_eta_max;
+	PetscScalar input_eta_max, gx, gy, gz;
 	char        gwtype [_STR_LEN_];
-	PetscInt    i, ID, cnt, numPhases;
-	PetscInt    is_elastic, need_DII_ref, need_RUGC;
+	PetscInt    i, cnt, numPhases;
+	PetscInt    is_elastic, need_DII_ref, need_RUGC, need_rho_fluid, need_surf, need_gw_type;
 
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
@@ -76,10 +76,10 @@ PetscErrorCode JacResCreate(JacRes *jr, FB *fb)
 	numPhases =  jr->dbm->numPhases;
 
 	// set defaults
-	ctrl->tauUlt       = DBL_MAX;
 	ctrl->gwLevel      = DBL_MAX;
 	ctrl->FSSA         = 1.0;
 	ctrl->shearHeatEff = 1.0;
+	ctrl->biot         = 1.0;
 	ctrl->pShiftAct    = 1;
 	ctrl->pLithoVisc   = 1;
 	ctrl->initGuess    = 1;
@@ -95,6 +95,7 @@ PetscErrorCode JacResCreate(JacRes *jr, FB *fb)
 	ierr = getScalarParam(fb, _OPTIONAL_, "gravity",         ctrl->grav,         3, 1.0); CHKERRQ(ierr);
 	ierr = getScalarParam(fb, _OPTIONAL_, "FSSA",           &ctrl->FSSA,         1, 1.0); CHKERRQ(ierr);
 	ierr = getScalarParam(fb, _OPTIONAL_, "shear_heat_eff", &ctrl->shearHeatEff, 1, 1.0); CHKERRQ(ierr);
+	ierr = getScalarParam(fb, _OPTIONAL_, "biot",           &ctrl->biot,         1, 1.0); CHKERRQ(ierr);
 	ierr = getIntParam   (fb, _OPTIONAL_, "act_temp_diff",  &ctrl->actTemp,      1, 1);   CHKERRQ(ierr);
 	ierr = getIntParam   (fb, _OPTIONAL_, "act_p_shift",    &ctrl->pShiftAct,    1, 1);   CHKERRQ(ierr);
 	ierr = getIntParam   (fb, _OPTIONAL_, "init_guess",     &ctrl->initGuess,    1, 1);   CHKERRQ(ierr);
@@ -102,6 +103,7 @@ PetscErrorCode JacResCreate(JacRes *jr, FB *fb)
 	ierr = getIntParam   (fb, _OPTIONAL_, "p_litho_plast",  &ctrl->pLithoPlast,  1, 1);   CHKERRQ(ierr);
 	ierr = getIntParam   (fb, _OPTIONAL_, "p_lim_plast",    &ctrl->pLimPlast,    1, 1);   CHKERRQ(ierr);
 	ierr = getIntParam   (fb, _OPTIONAL_, "jac_mat_free",   &ctrl->jac_mat_free, 1, 1);   CHKERRQ(ierr);
+	ierr = getIntParam   (fb, _OPTIONAL_, "quasi_harm_avg", &ctrl->quasiHarmAvg, 1, 1);   CHKERRQ(ierr);
 	ierr = getScalarParam(fb, _OPTIONAL_, "eta_min",        &ctrl->eta_min,      1, 1.0); CHKERRQ(ierr);
 	ierr = getScalarParam(fb, _OPTIONAL_, "eta_max",        &input_eta_max,      1, 1.0); CHKERRQ(ierr);
 	ierr = getScalarParam(fb, _OPTIONAL_, "eta_ref",        &ctrl->eta_ref,      1, 1.0); CHKERRQ(ierr);
@@ -111,13 +113,11 @@ PetscErrorCode JacResCreate(JacRes *jr, FB *fb)
 	ierr = getScalarParam(fb, _OPTIONAL_, "min_cohes",      &ctrl->minCh,        1, 1.0); CHKERRQ(ierr);
 	ierr = getScalarParam(fb, _OPTIONAL_, "min_fric",       &ctrl->minFr,        1, 1.0); CHKERRQ(ierr);
 	ierr = getScalarParam(fb, _OPTIONAL_, "tau_ult",        &ctrl->tauUlt,       1, 1.0); CHKERRQ(ierr);
-	ierr = getIntParam   (fb, _OPTIONAL_, "quasi_harm_avg", &ctrl->quasiHarmAvg, 1, 1);   CHKERRQ(ierr);
 	ierr = getScalarParam(fb, _OPTIONAL_, "cf_eta_min",     &ctrl->cf_eta_min,   1, 1.0); CHKERRQ(ierr);
 	ierr = getScalarParam(fb, _OPTIONAL_, "n_pw",           &ctrl->n_pw,         1, 1.0); CHKERRQ(ierr);
 	ierr = getScalarParam(fb, _OPTIONAL_, "rho_fluid",      &ctrl->rho_fluid,    1, 1.0); CHKERRQ(ierr);
 	ierr = getStringParam(fb, _OPTIONAL_, "gw_level_type",  gwtype,              "none"); CHKERRQ(ierr);
 	ierr = getScalarParam(fb, _OPTIONAL_, "gw_level",      &ctrl->gwLevel,       1, 1.0); CHKERRQ(ierr);
-	ierr = getScalarParam(fb, _OPTIONAL_, "biot",          &ctrl->biot,          1, 1.0); CHKERRQ(ierr);
 
 	if     (!strcmp(gwtype, "none"))  ctrl->gwType = _GW_NONE_;
 	else if(!strcmp(gwtype, "top"))   ctrl->gwType = _GW_TOP_;
@@ -129,7 +129,72 @@ PetscErrorCode JacResCreate(JacRes *jr, FB *fb)
 	// CROSS-CHECK OPTIONS
 	//====================
 
-	if(ctrl->grav[0] || ctrl->grav[1])
+	// check phase parameters
+	is_elastic     = 0;
+	need_DII_ref   = 0;
+	need_RUGC      = 0;
+	need_rho_fluid = 0;
+	need_gw_type   = 0;
+	need_surf      = 0;
+
+	for(i = 0; i < numPhases; i++)
+	{
+		m = jr->dbm->phases + i;
+
+		if(m->G  || m->K)           is_elastic     = 1;
+		if(m->Bn || m->Bp)          need_DII_ref   = 1;
+		if(m->Ed || m->En || m->Ep
+		|| m->Vd || m->Vn || m->Vp) need_RUGC      = 1;
+		if(m->rp || m->rho_n)       need_rho_fluid = 1;
+		if(m->rp)                   need_gw_type   = 1;
+		if(m->rho_n)                need_surf      = 1;
+	}
+
+	// fix advection time steps for elasticity or kinematic block BC
+	if(is_elastic || jr->bc->nblocks)
+	{
+		jr->ts->fix_dt = 1;
+	}
+
+	if(need_DII_ref && !ctrl->DII_ref)
+	{
+		SETERRQ(PETSC_COMM_SELF, PETSC_ERR_USER, "Specify reference strain rate (DII_ref)\n");
+	}
+
+	if(!need_DII_ref) ctrl->DII_ref = 0.0;
+
+	if(need_RUGC && !ctrl->Rugc)
+	{
+		SETERRQ(PETSC_COMM_SELF, PETSC_ERR_USER, "Specify universal gas constant (RUGC)\n");
+	}
+
+	if(!need_RUGC) ctrl->Rugc = 0.0;
+
+	if(need_rho_fluid && !ctrl->rho_fluid)
+	{
+		SETERRQ(PETSC_COMM_SELF, PETSC_ERR_USER, "Specify fluid density (rho_n, rho_c, rp, rho_fluid)\n");
+	}
+
+	if(!need_rho_fluid) ctrl->rho_fluid = 0.0;
+
+	if(need_gw_type && ctrl->gwType == _GW_NONE_)
+	{
+		SETERRQ(PETSC_COMM_SELF, PETSC_ERR_USER, "Define ground water level type (rp, gw_level_type)\n");
+	}
+
+	if(!need_gw_type) ctrl->gwType = _GW_NONE_;
+
+	if((need_surf || ctrl->gwType == _GW_SURF_) && !surf->UseFreeSurf)
+	{
+		SETERRQ(PETSC_COMM_SELF, PETSC_ERR_USER, "Activate free surface (rho_n, rho_c, gw_level_type, surf_use)\n");
+	}
+
+	// get gravity components
+	gx = ctrl->grav[0];
+	gy = ctrl->grav[1];
+	gz = ctrl->grav[2];
+
+	if(gx || gy)
 	{
 		SETERRQ(PETSC_COMM_SELF, PETSC_ERR_USER, "Horizontal gravity components are currently not supported (grav)");
 	}
@@ -144,73 +209,21 @@ PetscErrorCode JacResCreate(JacRes *jr, FB *fb)
 		SETERRQ(PETSC_COMM_SELF, PETSC_ERR_USER, "Shear heating efficiency parameter must be between 0 and 1 (shear_heat_eff)");
 	}
 
-	if(ctrl->gwType == _GW_LEVEL_ && ctrl->gwLevel == DBL_MAX)
-	{
-		SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "Ground water level must be specified (gw_level_type, gw_level)");
-	}
-
-	// set default Biot pressure parameter (if not set)
-	if(ctrl->gwType != _GW_NONE_ && !ctrl->biot)
-	{
-		ctrl->biot = 1.0;
-	}
+	if(!ctrl->actTemp) ctrl->shearHeatEff = 0.0;
 
 	if(ctrl->biot < 0.0 || ctrl->biot > 1.0)
 	{
 		SETERRQ(PETSC_COMM_SELF, PETSC_ERR_USER, "Biot pressure parameter must be between 0 and 1 (biot)");
 	}
 
-	if(ctrl->gwType == _GW_SURF_ && !surf->UseFreeSurf)
+	if(ctrl->gwType == _GW_NONE_) ctrl->biot = 0.0;
+
+	if(ctrl->gwType == _GW_LEVEL_ && ctrl->gwLevel == DBL_MAX)
 	{
-		SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "Ground water level requires activating free surface (gw_level_type, surf_use)");
+		SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "Specify ground water level (gw_level_type, gw_level)");
 	}
 
-	// check phase parameters
-	is_elastic   = 0;
-	need_DII_ref = 0;
-	need_RUGC    = 0;
-
-	for(i = 0; i < numPhases; i++)
-	{
-		m  = jr->dbm->phases + i;
-		ID = m ->ID;
-
-		if((m->rp || m->rho_n) && !ctrl->rho_fluid)
-		{
-			SETERRQ1(PETSC_COMM_SELF, PETSC_ERR_USER, "Phase %lld requires setting fluid density (rho_n, rho_c, rp, rho_fluid)\n", (LLD)ID);
-		}
-
-		if(m->rp && ctrl->gwType == _GW_NONE_)
-		{
-			SETERRQ1(PETSC_COMM_SELF, PETSC_ERR_USER, "Phase %lld requires defining ground water level type (rp, gw_level_type)\n", (LLD)ID);
-		}
-
-		if(m->rho_n && !surf->UseFreeSurf)
-		{
-			SETERRQ1(PETSC_COMM_SELF, PETSC_ERR_USER, "Phase %lld requires activating free surface (rho_n, rho_c, surf_use)\n", (LLD)ID);
-		}
-
-		if(m->G  || m->K)  is_elastic   = 1;
-		if(m->Bn || m->Bp) need_DII_ref = 1;
-		if(m->En || m->Ep) need_RUGC    = 1;
-
-	}
-
-	// fix advection time steps for elasticity or kinematic block BC
-	if(is_elastic || jr->bc->nblocks)
-	{
-		jr->ts->fix_dt = 1;
-	}
-
-	if(need_DII_ref && !ctrl->DII_ref)
-	{
-		SETERRQ(PETSC_COMM_SELF, PETSC_ERR_USER, "Reference strain rate must be specified (DII_ref)\n");
-	}
-
-	if(need_RUGC && !ctrl->Rugc)
-	{
-		SETERRQ(PETSC_COMM_SELF, PETSC_ERR_USER, "Universal gas constant must be specified (RUGC)\n");
-	}
+	if(ctrl->gwType != _GW_LEVEL_) ctrl->gwLevel = 0.0;
 
 	// check thermal material parameters
 	ierr = JacResCheckTempParam(jr); CHKERRQ(ierr);
@@ -244,6 +257,44 @@ PetscErrorCode JacResCreate(JacRes *jr, FB *fb)
 	{
 		SETERRQ(PETSC_COMM_SELF, PETSC_ERR_USER, "Specify reference viscosity for initial guess (init_guess, eta_ref) \n");
 	}
+
+	// print summary
+	PetscPrintf(PETSC_COMM_WORLD, "Solution parameters & controls:\n");
+
+	if(gx || gy || gz)      PetscPrintf(PETSC_COMM_WORLD, "   Gravity [gx, gy, gz]                    : [%g, %g, %g] %s \n", gx, gy, gz, scal->lbl_gravity_strength);
+	if(ctrl->FSSA)          PetscPrintf(PETSC_COMM_WORLD, "   Surface stabilization (FSSA)            :  %g \n", ctrl->FSSA);
+	if(ctrl->shearHeatEff)  PetscPrintf(PETSC_COMM_WORLD, "   Shear heating efficiency                :  %g \n", ctrl->shearHeatEff);
+	if(ctrl->biot)          PetscPrintf(PETSC_COMM_WORLD, "   Biot pressure parameter                 :  %g \n", ctrl->biot);
+	if(ctrl->actTemp)       PetscPrintf(PETSC_COMM_WORLD, "   Activate temperature diffusion          @ \n");
+	if(ctrl->pShiftAct)     PetscPrintf(PETSC_COMM_WORLD, "   Enforce zero pressure on top boundary   @ \n");
+	if(ctrl->initGuess)     PetscPrintf(PETSC_COMM_WORLD, "   Compute initial guess                   @ \n");
+	if(ctrl->pLithoVisc)    PetscPrintf(PETSC_COMM_WORLD, "   Use lithostatic pressure for creep      @ \n");
+	if(ctrl->pLithoPlast)   PetscPrintf(PETSC_COMM_WORLD, "   Use lithostatic pressure for plasticity @ \n");
+	if(ctrl->pLimPlast)     PetscPrintf(PETSC_COMM_WORLD, "   Limit pressure at first iteration       @ \n");
+	if(ctrl->jac_mat_free)  PetscPrintf(PETSC_COMM_WORLD, "   Use matrix-free analytical Jacobian     @ \n");
+	if(ctrl->quasiHarmAvg)  PetscPrintf(PETSC_COMM_WORLD, "   Use quasi-harmonic averaging            @ \n");
+	if(ctrl->eta_min)       PetscPrintf(PETSC_COMM_WORLD, "   Minimum viscosity                       : %g %s \n", ctrl->eta_min, scal->lbl_viscosity);
+	if(input_eta_max)       PetscPrintf(PETSC_COMM_WORLD, "   Maximum viscosity                       : %g %s \n", input_eta_max, scal->lbl_viscosity);
+	if(ctrl->eta_ref)       PetscPrintf(PETSC_COMM_WORLD, "   Reference viscosity (initial guess)     : %g %s \n", ctrl->eta_ref, scal->lbl_viscosity);
+	if(ctrl->TRef)          PetscPrintf(PETSC_COMM_WORLD, "   Reference temperature                   : %g %s \n", ctrl->TRef,    scal->lbl_temperature);
+	if(ctrl->Rugc)          PetscPrintf(PETSC_COMM_WORLD, "   Universal gas constant                  : %g %s \n", ctrl->Rugc,    scal->lbl_gas_constant);
+	if(ctrl->DII_ref)       PetscPrintf(PETSC_COMM_WORLD, "   Background (reference) strain-rate      : %g %s \n", ctrl->DII_ref, scal->lbl_strain_rate);
+	if(ctrl->minCh)         PetscPrintf(PETSC_COMM_WORLD, "   Minimum cohesion                        : %g %s \n", ctrl->minCh,   scal->lbl_stress_si);
+	if(ctrl->minFr)         PetscPrintf(PETSC_COMM_WORLD, "   Minimum friction                        : %g %s \n", ctrl->minFr,   scal->lbl_angle);
+	if(ctrl->tauUlt)        PetscPrintf(PETSC_COMM_WORLD, "   Ultimate yield stress                   : %g %s \n", ctrl->tauUlt,  scal->lbl_stress_si);
+	if(ctrl->cf_eta_min)    PetscPrintf(PETSC_COMM_WORLD, "   Visco-plastic regularization parameter  : %g \n",    ctrl->cf_eta_min);
+	if(ctrl->n_pw)          PetscPrintf(PETSC_COMM_WORLD, "   Power-law regularization parameter      : %g \n",    ctrl->n_pw);
+	if(ctrl->rho_fluid)     PetscPrintf(PETSC_COMM_WORLD, "   Fluid density                           : %g %s \n", ctrl->rho_fluid,  scal->lbl_density);
+
+	PetscPrintf(PETSC_COMM_WORLD, "   Ground water level type                 : ");
+	if     (ctrl->gwType == _GW_NONE_)  PetscPrintf(PETSC_COMM_WORLD, "none \n");
+	else if(ctrl->gwType == _GW_TOP_)   PetscPrintf(PETSC_COMM_WORLD, "top of the domain \n");
+	else if(ctrl->gwType == _GW_SURF_)  PetscPrintf(PETSC_COMM_WORLD, "free surface \n");
+	else if(ctrl->gwType == _GW_LEVEL_) PetscPrintf(PETSC_COMM_WORLD, "fixed level \n");
+
+	if(ctrl->gwLevel)       PetscPrintf(PETSC_COMM_WORLD, "   Fixed ground water level                : %g %s \n", ctrl->gwLevel,  scal->lbl_length);
+
+	PetscPrintf(PETSC_COMM_WORLD,"--------------------------------------------------------------------------\n");
 
 	// scale parameters
 	// NOTE: scale gas constant with characteristic temperature
@@ -1930,7 +1981,6 @@ PetscErrorCode JacResViewRes(JacRes *jr)
 	}
 
 	// print
-	PetscPrintf(PETSC_COMM_WORLD, "------------------------------------------\n");
 	PetscPrintf(PETSC_COMM_WORLD, "Residual summary: \n");
 	PetscPrintf(PETSC_COMM_WORLD, "  Continuity: \n");
 	PetscPrintf(PETSC_COMM_WORLD, "    Div_min  = %12.12e \n", dmin);
@@ -1945,7 +1995,7 @@ PetscErrorCode JacResViewRes(JacRes *jr)
 		PetscPrintf(PETSC_COMM_WORLD, "    |eRes|_2 = %12.12e \n", e2);
 	}
 
-	PetscPrintf(PETSC_COMM_WORLD, "------------------------------------------\n");
+	PetscPrintf(PETSC_COMM_WORLD, "--------------------------------------------------------------------------\n");
 
 	// stop if divergence more than tolerance
 	div_tol = 0.0;

@@ -46,6 +46,37 @@
 #include "LaMEM.h"
 #include "tools.h"
 #include <unistd.h>
+
+//---------------------------------------------------------------------------
+// Printing functions
+//---------------------------------------------------------------------------
+
+void PrintStart(PetscLogDouble *t_beg, const char *msg, const char *filename)
+{
+	PetscTime(t_beg);
+
+	if(filename)
+	{
+		PetscPrintf(PETSC_COMM_WORLD,"%s file(s) <%s> ... ", msg, filename);
+	}
+	else
+	{
+		PetscPrintf(PETSC_COMM_WORLD,"%s ... ", msg);
+	}
+}
+//---------------------------------------------------------------------------
+void PrintDone(PetscLogDouble t_beg)
+{
+	PetscLogDouble t_end;
+
+	MPI_Barrier(PETSC_COMM_WORLD);
+
+	PetscTime(&t_end);
+
+	PetscPrintf(PETSC_COMM_WORLD,"done (%g sec)\n", t_end - t_beg);
+
+	PetscPrintf(PETSC_COMM_WORLD,"--------------------------------------------------------------------------\n");
+}
 //---------------------------------------------------------------------------
 #undef __FUNCT__
 #define __FUNCT__ "VecReadRestart"
@@ -499,44 +530,6 @@ void in_polygon(
 		point_in = (PetscInt)(nIntersect - 2.0*floor(nIntersect/2.0));
 		in[ip]   = MAX(point_on, point_in);
 	}
-}
-//---------------------------------------------------------------------------
-PetscInt calcDisp(PetscInt n, PetscInt *counts, PetscInt *displ)
-{
-	//=====================================================================
-	// calculate displacements from counts, return number elements
-	// ...
-	// NOTE: if counts & displacements are set to the same array,
-	// counts will be overwritten by displacements upon return
-	//=====================================================================
-
-	PetscInt i, cnt, inc;
-
-	for(i = 0, cnt = 0; i < n; i++)
-	{
-		inc       = counts[i];
-		displ[i]  = cnt;
-		cnt      += inc;
-	}
-
-	return cnt;
-}
-//-----------------------------------------------------------------------------
-void rewinDisp(PetscInt n, PetscInt *displ)
-{
-	//=====================================================================
-	// rewind displacements after using them as access iterators
-	//=====================================================================
-
-	PetscInt i, prev, next;
-
-	for(i = 0, prev = 0; i < n; i++)
-	{
-		next     = displ[i];
-		displ[i] = prev;
-		prev     = next;
-	}
-
 }
 //---------------------------------------------------------------------------
 int comp_key_val(const void * a, const void * b)

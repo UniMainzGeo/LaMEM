@@ -191,8 +191,6 @@ void AVD3DClaimCells(AVD3D A,const PetscInt p_i);
 
 void AVD3DUpdateChain(AVD3D A,const PetscInt p_i);
 
-PetscErrorCode AVD3DReportMemory(AVD3D A);
-
 //---------------------------------------------------------------------------
 
 struct PVAVD

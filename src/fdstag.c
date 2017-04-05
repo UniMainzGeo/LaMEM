@@ -983,11 +983,6 @@ PetscErrorCode FDSTAGCreate(FDSTAG *fs, FB *fb)
 	// print essential grid details
 	ierr = FDSTAGView(fs); CHKERRQ(ierr);
 
-//	ierr = Discret1DView(&fs->dsx, scal->length, "dx"); CHKERRQ(ierr);
-//	ierr = Discret1DView(&fs->dsy, scal->length, "dy"); CHKERRQ(ierr);
-//	ierr = Discret1DView(&fs->dsz, scal->length, "dz"); CHKERRQ(ierr);
-
-
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
@@ -1270,11 +1265,15 @@ PetscErrorCode FDSTAGView(FDSTAG *fs)
 	// print & check essential grid details
 
 	PetscMPIInt nproc;
-	PetscScalar maxAspRat;
+	PetscScalar bx, by, bz;
+	PetscScalar ex, ey, ez;
+	PetscScalar maxAspRat, chLen;
 	PetscInt    px, py, pz, cx, cy, cz, nx, ny, nz, nVelDOF, nCells;
 
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
+
+	chLen = fs->scal->length;
 
 	px = fs->dsx.nproc;  cx = fs->dsx.tcels;  nx = fs->dsx.tnods;
 	py = fs->dsy.nproc;  cy = fs->dsy.tcels;  ny = fs->dsy.tnods;
@@ -1285,15 +1284,21 @@ PetscErrorCode FDSTAGView(FDSTAG *fs)
 
 	ierr = FDSTAGGetAspectRatio(fs, &maxAspRat); CHKERRQ(ierr);
 
+	ierr = FDSTAGGetGlobalBox(fs, &bx, &by, &bz, &ex, &ey, &ez); CHKERRQ(ierr);
+
 	ierr = MPI_Comm_size(PETSC_COMM_WORLD, &nproc); CHKERRQ(ierr);
 
 	PetscPrintf(PETSC_COMM_WORLD, "Grid parameters:\n");
-	PetscPrintf(PETSC_COMM_WORLD, "   Total number of cpu            : %lld \n", (LLD)nproc);
-	PetscPrintf(PETSC_COMM_WORLD, "   Processor grid  [nx, ny, nz]   : [%lld, %lld, %lld]\n", (LLD)px, (LLD)py, (LLD)pz);
-	PetscPrintf(PETSC_COMM_WORLD, "   Fine grid cells [nx, ny, nz]   : [%lld, %lld, %lld]\n", (LLD)cx, (LLD)cy, (LLD)cz);
-	PetscPrintf(PETSC_COMM_WORLD, "   Number of cells                :  %lld\n", (LLD)nCells);
-	PetscPrintf(PETSC_COMM_WORLD, "   Number of velocity DOF         :  %lld\n", (LLD)nVelDOF);
-	PetscPrintf(PETSC_COMM_WORLD, "   Maximum cell aspect cell ratio :  %7.5f\n", maxAspRat);
+	PetscPrintf(PETSC_COMM_WORLD, "   Total number of cpu                  : %lld \n", (LLD)nproc);
+	PetscPrintf(PETSC_COMM_WORLD, "   Processor grid  [nx, ny, nz]         : [%lld, %lld, %lld]\n", (LLD)px, (LLD)py, (LLD)pz);
+	PetscPrintf(PETSC_COMM_WORLD, "   Fine grid cells [nx, ny, nz]         : [%lld, %lld, %lld]\n", (LLD)cx, (LLD)cy, (LLD)cz);
+	PetscPrintf(PETSC_COMM_WORLD, "   Number of cells                      :  %lld\n", (LLD)nCells);
+	PetscPrintf(PETSC_COMM_WORLD, "   Number of faces                      :  %lld\n", (LLD)nVelDOF);
+	PetscPrintf(PETSC_COMM_WORLD, "   Maximum cell aspect ratio            :  %7.5f\n", maxAspRat);
+	PetscPrintf(PETSC_COMM_WORLD, "   Lower coordinate bounds [bx, by, bz] : [%g, %g, %g]\n", bx*chLen, by*chLen, bz*chLen);
+	PetscPrintf(PETSC_COMM_WORLD, "   Upper coordinate bounds [ex, ey, ez] : [%g, %g, %g]\n", ex*chLen, ey*chLen, ez*chLen);
+
+
 	PetscPrintf(PETSC_COMM_WORLD,"--------------------------------------------------------------------------\n");
 
 	if(maxAspRat > 10.0) PetscPrintf(PETSC_COMM_WORLD, " Don't expect any magic with this aspect ratio %g ...\n", maxAspRat);
@@ -1354,20 +1359,21 @@ PetscErrorCode FDSTAGGetGlobalBox(
 #define __FUNCT__ "FDSTAGSaveGrid"
 PetscErrorCode FDSTAGSaveGrid(FDSTAG *fs)
 {
-	int         fid;
-	char        *fname;
-	PetscScalar *xc, *yc, *zc, chLen;
-	PetscMPIInt rank;
+	int            fid;
+	char           *fname;
+	PetscScalar    *xc, *yc, *zc, chLen;
+	PetscMPIInt    rank;
+	PetscLogDouble t;
+
 	PetscErrorCode ierr;
-	
 	PetscFunctionBegin;
+
+	PrintStart(&t, "Saving processor partitioning", NULL);
 
 	// characteristic length
 	chLen = fs->scal->length;
 
 	MPI_Comm_rank(PETSC_COMM_WORLD, &rank);
-
-	PetscPrintf(PETSC_COMM_WORLD,"# Save processor partitioning \n");
 
 	// gather global coord
 	ierr = Discret1DGatherCoord(&fs->dsx, &xc); CHKERRQ(ierr);
@@ -1376,7 +1382,6 @@ PetscErrorCode FDSTAGSaveGrid(FDSTAG *fs)
 
 	if(rank == 0)
 	{
-		PetscPrintf(PETSC_COMM_SELF,"# Save processor partitioning file on rank 0 \n");
 		// save file
 		asprintf(&fname, "ProcessorPartitioning_%lldcpu_%lld.%lld.%lld.bin",
 			(LLD)(fs->dsx.nproc*fs->dsy.nproc*fs->dsz.nproc),
@@ -1405,7 +1410,8 @@ PetscErrorCode FDSTAGSaveGrid(FDSTAG *fs)
 		ierr = PetscFree(yc); CHKERRQ(ierr);
 		ierr = PetscFree(zc); CHKERRQ(ierr);
 	}
-	MPI_Barrier(PETSC_COMM_WORLD);
+
+	PrintDone(t);
 
 	PetscFunctionReturn(0);
 }

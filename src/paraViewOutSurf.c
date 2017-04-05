@@ -80,11 +80,15 @@ PetscErrorCode PVSurfCreate(PVSurf *pvsurf, FB *fb)
 	ierr = getIntParam   (fb, _OPTIONAL_, "out_surf_topography", &pvsurf->topography, 1, 1); CHKERRQ(ierr);
 	ierr = getIntParam   (fb, _OPTIONAL_, "out_surf_amplitude",  &pvsurf->amplitude,  1, 1); CHKERRQ(ierr);
 
-	// print
-	if(pvsurf->outpvd)
-	{
-		PetscPrintf(PETSC_COMM_WORLD, " Writing surface phase .pvd file to disk\n");
-	}
+	// print summary
+	PetscPrintf(PETSC_COMM_WORLD, "Surface output parameters:\n");
+	PetscPrintf(PETSC_COMM_WORLD, "   Write .pvd file : %s \n", pvsurf->outpvd ? "yes" : "no");
+
+	if(pvsurf->velocity)   PetscPrintf(PETSC_COMM_WORLD, "   Velocity        @ \n");
+	if(pvsurf->topography) PetscPrintf(PETSC_COMM_WORLD, "   Topography      @ \n");
+	if(pvsurf->amplitude)  PetscPrintf(PETSC_COMM_WORLD, "   Amplitude       @ \n");
+
+	PetscPrintf(PETSC_COMM_WORLD, "--------------------------------------------------------------------------\n");
 
 	// set file name
 	sprintf(pvsurf->outfile, "%s_surf", filename);
