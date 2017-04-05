@@ -94,6 +94,7 @@ PetscErrorCode LaMEMLib(ModParam *IOparam)
 	PVMark   pvmark; // paraview output driver for markers
 	PVAVD    pvavd;  // paraview output driver for AVD
 	ObjFunct objf;   // objective function
+
 	KSP ksp;
 	PetscInt DarcySolver;
 
@@ -323,12 +324,12 @@ PetscErrorCode LaMEMLib(ModParam *IOparam)
 			ierr = UpdateDarcy_DA(&jr);			CHKERRQ(ierr);
 
 			// Increase liquid pressure (update bc->Plloc)
-			ierr = IncreaseLiquidPressureBottom(&jr, &bc, &user);
+			ierr = IncreaseLiquidPressureBottom(&jr, &bc);
 
 
 
 			// Just to check that the result is the same, choose Linear or nonlinear solver
-			DarcySolver=2; // 1 SNES, otherwise KSP
+			DarcySolver=1; // 1 SNES, otherwise KSP
 			if (DarcySolver== 1) {	// Non linear solver
 				ierr = JacResGetDarcyRHS(&jr);						CHKERRQ(ierr);		// Get the right hand part of the equation
 				ierr = SNESSolve(jr.Pl_snes,jr.rhs_Pl,jr.Pl);		CHKERRQ(ierr);		// solve nonlinear problem
@@ -338,7 +339,7 @@ PetscErrorCode LaMEMLib(ModParam *IOparam)
 				ierr = SolveDarcyKSP(&jr);							CHKERRQ(ierr);		// solve linear problem
 			}
 
-			ierr = JacResUpdateDarcy(&jr);		CHKERRQ(ierr);
+			ierr = JacResUpdateDarcy(&jr);			CHKERRQ(ierr);
 
 		}
 

@@ -567,7 +567,10 @@ PetscErrorCode ADVAdvectMark(AdvCtx *actx)
 	ierr = DMDAVecGetArray(fs->DA_CEN, jr->lp,  &lp);  CHKERRQ(ierr);
 	ierr = DMDAVecGetArray(fs->DA_CEN, jr->lT,  &lT);  CHKERRQ(ierr);
 	// Darcy
-	ierr = DMDAVecGetArray(fs->DA_CEN, jr->lPl,  &lPl);  CHKERRQ(ierr);
+	// only when Darcy is active
+	if(jr->actDarcy == PETSC_TRUE) {
+		ierr = DMDAVecGetArray(fs->DA_CEN, jr->lPl,  &lPl);  CHKERRQ(ierr);
+	}
 
 	// scan all markers
 	for(jj = 0; jj < actx->nummark; jj++)
@@ -622,7 +625,9 @@ PetscErrorCode ADVAdvectMark(AdvCtx *actx)
 		P->U[2] += vz*dt;
 
 		// update liquid pressure
-		P->Pl += lPl[sz+K][sy+J][sx+I] - svCell->svBulk.Pln;
+		if(jr->actDarcy == PETSC_TRUE) {
+			P->Pl += lPl[sz+K][sy+J][sx+I] - svCell->svBulk.Pln;
+		}
 
 	}
 
@@ -632,7 +637,9 @@ PetscErrorCode ADVAdvectMark(AdvCtx *actx)
 	ierr = DMDAVecRestoreArray(fs->DA_Z,   jr->lvz, &lvz); CHKERRQ(ierr);
 	ierr = DMDAVecRestoreArray(fs->DA_CEN, jr->lp,  &lp);  CHKERRQ(ierr);
 	ierr = DMDAVecRestoreArray(fs->DA_CEN, jr->lT,  &lT);  CHKERRQ(ierr);
-	ierr = DMDAVecRestoreArray(fs->DA_CEN, jr->lPl, &lPl); CHKERRQ(ierr);
+	if(jr->actDarcy == PETSC_TRUE) {
+		ierr = DMDAVecRestoreArray(fs->DA_CEN, jr->lPl, &lPl); CHKERRQ(ierr);
+	}
 
 	PetscFunctionReturn(0);
 }
@@ -1540,7 +1547,9 @@ PetscErrorCode ADVInterpMarkToCell(AdvCtx *actx)
 		svCell->U[2]      = 0.0;
 
 		// Darcy
-		svCell->svBulk.Pln = 0.0;
+		if(jr->actDarcy == PETSC_TRUE) {
+			svCell->svBulk.Pln = 0.0;
+		}
 	}
 
 	// scan ALL markers
@@ -1586,7 +1595,9 @@ PetscErrorCode ADVInterpMarkToCell(AdvCtx *actx)
 		svCell->U[2]      += w*P->U[2];
 
 		// Darcy
-		svCell->svBulk.Pln += w*P->Pl;
+		if(jr->actDarcy == PETSC_TRUE) {
+			svCell->svBulk.Pln += w*P->Pl;
+		}
 
 	}
 
@@ -1611,7 +1622,9 @@ PetscErrorCode ADVInterpMarkToCell(AdvCtx *actx)
 		svCell->U[2]      /=w;
 
 		// Darcy
-		svCell->svBulk.Pln /= w;
+		if(jr->actDarcy == PETSC_TRUE) {
+			svCell->svBulk.Pln /= w;
+		}
 
 	}
 

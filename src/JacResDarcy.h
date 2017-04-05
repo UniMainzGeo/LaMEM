@@ -105,7 +105,7 @@ PetscErrorCode JacResGetDarcyRHS(JacRes *jr);
 PetscErrorCode JacResUpdateGhostPoints(SNES snes, Vec x, JacRes *jr);
 
 PetscErrorCode BCSetParamDarcy(JacRes *jr, BCCtx *bc, UserCtx *user);
-PetscErrorCode IncreaseLiquidPressureBottom(JacRes *jr, BCCtx *bc, UserCtx *user);
+PetscErrorCode IncreaseLiquidPressureBottom(JacRes *jr, BCCtx *bc);
 PetscErrorCode DarcyPrintPl(JacRes *jr);
 PetscErrorCode SolveDarcyKSP(JacRes *jr);
 

@@ -47,7 +47,8 @@
  * In this routine, we setup the functions required to solve the Darcy equation,
  * namely:
  *
- * 		div(Kphi/mu grad(P_l)) =  grad(Kphi rhol*g/mu)
+ *
+ * 		div(Kphi/mu grad(P_l)) =  Ss dP_l/dt
  *
  *	where:
  *		mu 		=   liquid viscosity
@@ -310,8 +311,8 @@ PetscErrorCode JacResUpdateDarcy(JacRes *jr)
 	PetscFunctionBegin;
 
 
-	ierr = DMDAVecGetArray(jr->DA_Pl, jr->lPl, &sol_local ); 	CHKERRQ(ierr);
-	ierr = DMDAVecGetArray(jr->DA_Pl,  jr->Pl, &sol_global); 	CHKERRQ(ierr);
+	ierr = DMDAVecGetArray(jr->DA_Pl,  jr->lPl, &sol_local ); 		CHKERRQ(ierr);
+	ierr = DMDAVecGetArray(jr->DA_Pl,  jr->Pl, &sol_global); 		CHKERRQ(ierr);
 
 	ierr = DMDAGetCorners(jr->DA_Pl, &sx, &sy, &sz, &nx, &ny, &nz); CHKERRQ(ierr);
 
@@ -322,11 +323,8 @@ PetscErrorCode JacResUpdateDarcy(JacRes *jr)
 	}
 	END_STD_LOOP
 
-	ierr = DMDAVecRestoreArray(jr->DA_Pl,  jr->Pl, &sol_global); 	CHKERRQ(ierr);
-	ierr = DMDAVecRestoreArray(jr->DA_Pl, jr->lPl, &sol_local); 	CHKERRQ(ierr);
-
-
-	//GLOBAL_TO_LOCAL(jr->DA_Pl,   jr->Pl, jr->lPl)
+	ierr = DMDAVecRestoreArray(jr->DA_Pl,  jr->Pl, &sol_global); 		CHKERRQ(ierr);
+	ierr = DMDAVecRestoreArray(jr->DA_Pl,  jr->lPl, &sol_local); 		CHKERRQ(ierr);
 
 	// apply two-point constraints
 	ierr = JacResApplyDarcyBC(jr); CHKERRQ(ierr);
@@ -476,7 +474,7 @@ PetscErrorCode JacResApplyDarcyBC(JacRes *jr)
 //---------------------------------------------------------------------------
 #undef __FUNCT__
 #define __FUNCT__ "IncreaseLiquidPressureBottom"
-PetscErrorCode IncreaseLiquidPressureBottom(JacRes *jr, BCCtx *bc, UserCtx *user)
+PetscErrorCode IncreaseLiquidPressureBottom(JacRes *jr, BCCtx *bc)
 {
 	PetscScalar Pl_incr;
 
@@ -525,7 +523,7 @@ PetscErrorCode JacResGetDarcyRes(SNES snes, Vec x, Vec f, JacRes *jr)
 	PetscScalar 	bdx, fdx, bdy, fdy, bdz, fdz;
 	PetscScalar	 	bqx, fqx, bqy, fqy, bqz, fqz;
  	PetscScalar 	dt, dx, dy, dz;
- 	PetscScalar 	Kphi, mu, Pl_c, Pl_n, gz, *grav;
+ 	PetscScalar 	Kphi, mu, Pl_c, Pl_n, gz, gz_, *grav;
 	PetscScalar 	***mul, ***lKphi, ***Ssl, ***sol, ***res;
 	Vec 			local_Kphi, Ss_local, mul_local;
 	Vec 			mul_vec, Ss_vec, Kphi_vec;
@@ -538,6 +536,7 @@ PetscErrorCode JacResGetDarcyRes(SNES snes, Vec x, Vec f, JacRes *jr)
 	// access residual context variables
 	grav      = jr->grav;       // gravity acceleration
 	gz 		  =	grav[2];		// gravitational acceleration in z-direction
+	gz_       = 0.0;
 	bc        = jr->bc;
 	dt        = jr->ts.dt;      // time step
 
@@ -672,7 +671,8 @@ PetscErrorCode JacResGetDarcyRes(SNES snes, Vec x, Vec f, JacRes *jr)
 
 		// Residual
 		//res[k][j][i] = Ssl[k][j][i]*(Pl_c-Pl_n)/dt- (fqx - bqx)/dx - (fqy - bqy)/dy - (fqz - bqz)/dz - rhs[k][j][i];
-		res[k][j][i] = Ssl[k][j][i]*Pl_c/dt- (fqx - bqx)/dx - (fqy - bqy)/dy - (fqz - bqz)/dz; // - gz;
+		//gz_ = Kphi/mu*gz*(Pl_c - sol[k-1][j][i]);	// check
+		res[k][j][i] = Ssl[k][j][i]*Pl_c/dt- (fqx - bqx)/dx - (fqy - bqy)/dy - (fqz - bqz + gz_)/dz;
 
 	}
 	END_STD_LOOP
@@ -744,12 +744,12 @@ PetscErrorCode JacResGetDarcyMat(SNES snes, JacRes *jr)
 	DM 			da, coordDA;
 	Vec			coordinates;
 	//SolVarCell *svCell;
-	PetscInt    num, *list, iter;
+	PetscInt    num, *list;
 	PetscInt    Ip1, Im1, Jp1, Jm1, Kp1, Km1;
 	PetscInt    i, j, k, nx, ny, nz, sx, sy, sz, mx, my, mz;
 	PetscScalar bkx, fkx, bky, fky, bkz, fkz;
 	PetscScalar bdx, fdx, bdy, fdy, bdz, fdz;
- 	PetscScalar dx, dy, dz, gz, *grav;
+ 	PetscScalar dx, dy, dz, gz, gz_0, gz_1, *grav;
 	PetscScalar v[7], cf[6], mu,  Kphi, Ss;
 	MatStencil  row[1], col[7];
 	PetscScalar ***lKphi, ***mul, ***Ssl, ***bcPl;
@@ -767,6 +767,8 @@ PetscErrorCode JacResGetDarcyMat(SNES snes, JacRes *jr)
 	dt        = jr->ts.dt;     	// time step
 	grav      = jr->grav;       // gravity acceleration
 	gz 		  =	grav[2];		// gravitational acceleration in z-direction
+	gz_0	  = 0.0;			// gravitational contribution
+	gz_1	  = 0.0;			// gravitational contribution
 
 	// Get DA for the CURRENT level (not necessarily the fine grid!)
 	ierr 		=	SNESGetDM(snes,&da); 				CHKERRQ(ierr);
@@ -796,7 +798,6 @@ PetscErrorCode JacResGetDarcyMat(SNES snes, JacRes *jr)
 	//---------------
 	// central points
 	//---------------
-	iter = 0;
 	ierr = DMDAGetCorners(da, &sx, &sy, &sz, &nx, &ny, &nz); CHKERRQ(ierr);
 
 	START_STD_LOOP
@@ -877,18 +878,20 @@ PetscErrorCode JacResGetDarcyMat(SNES snes, JacRes *jr)
 				col[6].k = k;   col[6].j = j;   col[6].i = i;   col[6].c = 0;
 
 				Ss		=	Ssl[k][j][i];		// specific storage
-
+				//gz_0= bkz*gz;
+				//gz_1= fkz*gz;
 				// set values including TPC multipliers
 				v[0] =  -bkx/bdx/dx*cf[0];
 				v[1] =  -fkx/fdx/dx*cf[1];
 				v[2] =  -bky/bdy/dy*cf[2];
 				v[3] =  -fky/fdy/dy*cf[3];
-				v[4] =  -bkz/bdz/dz*cf[4];
+				//v[4] =  -bkz/bdz/dz*cf[4];
+				v[4] =  (gz_0-bkz/bdz)/dz*cf[4];
 				v[5] =  -fkz/fdz/dz*cf[5];
 				v[6] =  Ss/dt
 				+       (bkx/bdx + fkx/fdx)/dx
 				+       (bky/bdy + fky/fdy)/dy
-				+       (bkz/bdz + fkz/fdz)/dz; //-gz
+				+       (bkz/bdz + fkz/fdz - gz_1)/dz;
 
 				// set matrix coefficients
 				ierr = MatSetValuesStencil(jr->App, 1, row, 7, col, v, ADD_VALUES); CHKERRQ(ierr);
@@ -971,11 +974,8 @@ PetscErrorCode UpdateDarcy_DA(JacRes *jr)
 	Vec 			Kphi_vec, 		local_KPhi;
 	Vec 			Mul_vec, 		local_Mul;
 	Vec 			Ss_vec,	local_Ss;
-	//Vec 			PlOld_vec, local_PlOld;
 	Vec 			BC_vec, 		local_BC;
-	Vec 			local_sol;
-	PetscScalar    	*** sol, ***buff, kphi, mul, Ssl, PlOld;
-
+	PetscScalar    	***buff, kphi, mul, Ssl;
 
 	//---------------------------------------------
 	// (1) Update coordinates on 3D DMDA object
@@ -989,20 +989,17 @@ PetscErrorCode UpdateDarcy_DA(JacRes *jr)
 	ierr = 	DMCreateLocalVector(jr->DA_Pl, &local_KPhi); 				CHKERRQ(ierr);
 	ierr = 	DMCreateLocalVector(jr->DA_Pl, &local_Mul); 				CHKERRQ(ierr);
 	ierr = 	DMCreateLocalVector(jr->DA_Pl, &local_Ss);
-	//ierr = 	DMCreateLocalVector(jr->DA_Pl, &local_PlOld);
 	ierr = 	DMCreateLocalVector(jr->DA_Pl, &local_BC); 					CHKERRQ(ierr);
 
 	// Set data on local vectors
-	SCATTER_FIELD(jr->DA_Pl, local_Mul,   GET_mul);				// compute 3D array of liquid viscosity
+	SCATTER_FIELD(jr->DA_Pl, local_Mul,  GET_mul);				// compute 3D array of liquid viscosity
 	SCATTER_FIELD(jr->DA_Pl, local_KPhi, GET_Kphi);				// 3D array of permeability pre-coefficient
 	SCATTER_FIELD(jr->DA_Pl, local_Ss,   GET_Ssl);				// specific storage
-	//SCATTER_FIELD(jr->DA_Pl, local_PlOld,GET_PlOld);
 
 	// Get/Create global vector, attached to DM
 	ierr = 	DMGetNamedGlobalVector(jr->DA_Pl,"mul",			&Mul_vec); 				CHKERRQ(ierr);
 	ierr = 	DMGetNamedGlobalVector(jr->DA_Pl,"Kphi",		&Kphi_vec); 			CHKERRQ(ierr);
 	ierr = 	DMGetNamedGlobalVector(jr->DA_Pl,"Ssl",			&Ss_vec); 				CHKERRQ(ierr);
-	//ierr = 	DMGetNamedGlobalVector(jr->DA_Pl,"Pl_old",		&PlOld_vec); 			CHKERRQ(ierr);
 	ierr = 	DMGetNamedGlobalVector(jr->DA_Pl,"BC",			&BC_vec); 				CHKERRQ(ierr);
 
 	// Move local values to global vector
@@ -1016,29 +1013,20 @@ PetscErrorCode UpdateDarcy_DA(JacRes *jr)
 	ierr = 	DMLocalToGlobalBegin(jr->DA_Pl,local_Ss,INSERT_VALUES ,Ss_vec);	CHKERRQ(ierr);
 	ierr = 	DMLocalToGlobalEnd  (jr->DA_Pl,local_Ss,INSERT_VALUES ,Ss_vec);	CHKERRQ(ierr);
 
-	//ierr = 	DMLocalToGlobalBegin(jr->DA_Pl,local_PlOld,INSERT_VALUES ,PlOld_vec);	CHKERRQ(ierr);
-	//ierr = 	DMLocalToGlobalEnd  (jr->DA_Pl,local_PlOld,INSERT_VALUES ,PlOld_vec);	CHKERRQ(ierr);
-
 	ierr = 	DMLocalToGlobalBegin(jr->DA_Pl,jr->bc->bcPl,INSERT_VALUES ,BC_vec);			CHKERRQ(ierr);
 	ierr = 	DMLocalToGlobalEnd  (jr->DA_Pl,jr->bc->bcPl,INSERT_VALUES ,BC_vec);			CHKERRQ(ierr);
 
 	// attach the named vector to the DM
 
-	// Copy global solution vector into local  vector
-	//ierr = DMGlobalToLocalBegin(jr->DA_Pl, jr->Pl,INSERT_VALUES, jr->lPl); CHKERRQ(ierr);
-	//ierr = DMGlobalToLocalEnd  (jr->DA_Pl, jr->Pl,INSERT_VALUES, jr->lPl); CHKERRQ(ierr);
-
 	ierr = 	DMRestoreNamedGlobalVector(jr->DA_Pl,"mul",			&Mul_vec); 				CHKERRQ(ierr);
 	ierr = 	DMRestoreNamedGlobalVector(jr->DA_Pl,"Kphi",		&Kphi_vec); 			CHKERRQ(ierr);
 	ierr = 	DMRestoreNamedGlobalVector(jr->DA_Pl,"Ssl",			&Ss_vec); 				CHKERRQ(ierr);
-	//ierr = 	DMRestoreNamedGlobalVector(jr->DA_Pl,"Pl_old",		&PlOld_vec); 			CHKERRQ(ierr);
 	ierr = 	DMRestoreNamedGlobalVector(jr->DA_Pl,"BC",			&BC_vec); 				CHKERRQ(ierr);
 
 	// cleaning up
 	ierr = 	VecDestroy(&local_Mul);			CHKERRQ(ierr);
 	ierr = 	VecDestroy(&local_KPhi);		CHKERRQ(ierr);
 	ierr = 	VecDestroy(&local_Ss);			CHKERRQ(ierr);
-	//ierr = 	VecDestroy(&local_PlOld);		CHKERRQ(ierr);
 
 	//---------------------------------------------
 	ierr = DMCoarsenHookAdd(jr->DA_Pl,DMCoarsenHook_DARCY,PETSC_NULL,PETSC_NULL);
@@ -1169,19 +1157,11 @@ PetscErrorCode DMCoarsenHook_DARCY(DM dmf,DM dmc,void *ctx)
 							//PetscInt       	rlevel,clevel;
 	PetscErrorCode 	ierr;
 	Vec 			Rscale;
-							//Vec 			Kphi0_fine, 	Kphi0_coarse;
-							//Vec 			Phi_old_fine, 	Phi_old_coarse;
-							//Vec 			rhol_fine, 		rhol_coarse;
 	Vec 			mul_fine, 		mul_coarse;
-							//Vec 			EtaCreep_fine, 	EtaCreep_coarse;
 	Vec 			BC_fine, 		BC_coarse;
 	Mat 			A;
-	//VecScatter 		B;
-
-	// New
 	Vec 			Ssl_fine, 		Ssl_coarse;
 	Vec 			Kphi_fine, 		Kphi_coarse;
-	Vec 			Pl_old_fine, 	Pl_old_coarse;
 
 	PetscFunctionBegin;
 
@@ -1190,16 +1170,6 @@ PetscErrorCode DMCoarsenHook_DARCY(DM dmf,DM dmc,void *ctx)
 	//ierr = 	DMCreateInjection(dmc,dmf,&B);								CHKERRQ(ierr);
 
 	// Get application data vectors
-							//ierr = 	DMGetNamedGlobalVector(dmf,"Kphi0",&Kphi0_fine); 				CHKERRQ(ierr);	// fine level
-							//ierr = 	DMGetNamedGlobalVector(dmc,"Kphi0",&Kphi0_coarse); 				CHKERRQ(ierr);	// coarse level
-
-							//ierr = 	DMGetNamedGlobalVector(dmf,"Phi_old",&Phi_old_fine); 			CHKERRQ(ierr);	// fine level
-							//ierr = 	DMGetNamedGlobalVector(dmc,"Phi_old",&Phi_old_coarse); 			CHKERRQ(ierr);	// coarse level
-
-							//ierr = 	DMGetNamedGlobalVector(dmf,"rhol",&rhol_fine); 					CHKERRQ(ierr);	// fine level
-							//ierr = 	DMGetNamedGlobalVector(dmc,"rhol",&rhol_coarse); 				CHKERRQ(ierr);	// coarse level
-
-	// New
 	ierr = 	DMGetNamedGlobalVector(dmf,"Kphi",&Kphi_fine); 				CHKERRQ(ierr);	// fine level
 	ierr = 	DMGetNamedGlobalVector(dmc,"Kphi",&Kphi_coarse); 			CHKERRQ(ierr);	// coarse level
 
@@ -1211,28 +1181,14 @@ PetscErrorCode DMCoarsenHook_DARCY(DM dmf,DM dmc,void *ctx)
 	ierr = 	DMGetNamedGlobalVector(dmf,"Ssl",&Ssl_fine); 				CHKERRQ(ierr);	// fine level
 	ierr = 	DMGetNamedGlobalVector(dmc,"Ssl",&Ssl_coarse); 				CHKERRQ(ierr);	// coarse level
 
-	//ierr = 	DMGetNamedGlobalVector(dmf,"Pl_old",&Pl_old_fine); 			CHKERRQ(ierr);	// fine level
-	//ierr = 	DMGetNamedGlobalVector(dmc,"Pl_old",&Pl_old_coarse); 		CHKERRQ(ierr);	// coarse level
-
-							//ierr = 	DMGetNamedGlobalVector(dmf,"eta_creep",&EtaCreep_fine); 		CHKERRQ(ierr);	// fine level
-							//ierr = 	DMGetNamedGlobalVector(dmc,"eta_creep",&EtaCreep_coarse); 		CHKERRQ(ierr);	// coarse level
-
-	ierr = 	DMGetNamedGlobalVector(dmf,"BC",&BC_fine); 						CHKERRQ(ierr);	// fine level
-	ierr = 	DMGetNamedGlobalVector(dmc,"BC",&BC_coarse); 					CHKERRQ(ierr);	// coarse level
+	ierr = 	DMGetNamedGlobalVector(dmf,"BC",&BC_fine); 					CHKERRQ(ierr);	// fine level
+	ierr = 	DMGetNamedGlobalVector(dmc,"BC",&BC_coarse); 				CHKERRQ(ierr);	// coarse level
 
 	// add BC vector as well here
 
 	// add phase ratio vector here
 
 	// Perform the interpolation:
-							//ierr = MatRestrict(A,Kphi0_fine,Kphi0_coarse);							CHKERRQ(ierr);
-							//ierr = VecPointwiseMult(Kphi0_coarse,Kphi0_coarse, Rscale);				CHKERRQ(ierr);
-
-							//ierr = MatRestrict(A,Phi_old_fine,Phi_old_coarse);						CHKERRQ(ierr);
-							//ierr = VecPointwiseMult(Phi_old_coarse,Phi_old_coarse, Rscale);			CHKERRQ(ierr);
-
-							//ierr = MatRestrict(A,rhol_fine,rhol_coarse);							CHKERRQ(ierr);
-							//ierr = VecPointwiseMult(rhol_coarse,rhol_coarse, Rscale);				CHKERRQ(ierr);
 
 	ierr = MatRestrict(A,mul_fine,mul_coarse);								CHKERRQ(ierr);
 	ierr = VecPointwiseMult(mul_coarse,mul_coarse, Rscale);					CHKERRQ(ierr);
@@ -1241,11 +1197,8 @@ PetscErrorCode DMCoarsenHook_DARCY(DM dmf,DM dmc,void *ctx)
 	ierr = MatRestrict(A,Ssl_fine,Ssl_coarse);								CHKERRQ(ierr);
 	ierr = VecPointwiseMult(Ssl_coarse,Ssl_coarse, Rscale);					CHKERRQ(ierr);
 
-	ierr = MatRestrict(A,Kphi_fine,Kphi_coarse);								CHKERRQ(ierr);
-	ierr = VecPointwiseMult(Kphi_coarse,Kphi_coarse, Rscale);					CHKERRQ(ierr);
-
-							//ierr = MatRestrict(A,EtaCreep_fine,EtaCreep_coarse);					CHKERRQ(ierr);
-							//ierr = VecPointwiseMult(EtaCreep_coarse,EtaCreep_coarse, Rscale);		CHKERRQ(ierr);
+	ierr = MatRestrict(A,Kphi_fine,Kphi_coarse);							CHKERRQ(ierr);
+	ierr = VecPointwiseMult(Kphi_coarse,Kphi_coarse, Rscale);				CHKERRQ(ierr);
 
 	// Injection is done w. VecScatter in 3.5.x but with a matrix in 3.6+
 	//ierr = VecScatterBegin(B,BC_fine,BC_coarse,INSERT_VALUES,SCATTER_FORWARD);
@@ -1255,14 +1208,6 @@ PetscErrorCode DMCoarsenHook_DARCY(DM dmf,DM dmc,void *ctx)
 	//ierr = VecPointwiseMult(BC_coarse,BC_coarse, Rscale);					CHKERRQ(ierr);
 
 	// Restore vectors
-							//ierr = 	DMRestoreNamedGlobalVector(dmc,"Kphi0",&Kphi0_coarse); 			CHKERRQ(ierr);	// coarse level
-							//ierr = 	DMRestoreNamedGlobalVector(dmf,"Kphi0",&Kphi0_fine); 			CHKERRQ(ierr);	// fine level
-
-							//ierr = 	DMRestoreNamedGlobalVector(dmf,"Phi_old",&Phi_old_fine); 		CHKERRQ(ierr);	// fine level
-							//ierr = 	DMRestoreNamedGlobalVector(dmc,"Phi_old",&Phi_old_coarse); 		CHKERRQ(ierr);	// coarse level
-
-							//ierr = 	DMRestoreNamedGlobalVector(dmf,"rhol",&rhol_fine); 				CHKERRQ(ierr);	// fine level
-							//ierr = 	DMRestoreNamedGlobalVector(dmc,"rhol",&rhol_coarse); 			CHKERRQ(ierr);	// coarse level
 
 	ierr = 	DMRestoreNamedGlobalVector(dmf,"mul",&mul_fine); 				CHKERRQ(ierr);	// fine level
 	ierr = 	DMRestoreNamedGlobalVector(dmc,"mul",&mul_coarse); 				CHKERRQ(ierr);	// coarse level
@@ -1271,14 +1216,8 @@ PetscErrorCode DMCoarsenHook_DARCY(DM dmf,DM dmc,void *ctx)
 	ierr = 	DMRestoreNamedGlobalVector(dmf,"Ssl",&Ssl_fine); 				CHKERRQ(ierr);	// fine level
 	ierr = 	DMRestoreNamedGlobalVector(dmc,"Ssl",&Ssl_coarse); 				CHKERRQ(ierr);	// coarse level
 
-	//ierr = 	DMRestoreNamedGlobalVector(dmf,"Pl_old",&Pl_old_fine); 			CHKERRQ(ierr);	// fine level
-	//ierr = 	DMRestoreNamedGlobalVector(dmc,"Pl_old",&Pl_old_coarse); 		CHKERRQ(ierr);	// coarse level
-
 	ierr = 	DMRestoreNamedGlobalVector(dmc,"Kphi",&Kphi_coarse); 			CHKERRQ(ierr);	// coarse level
 	ierr = 	DMRestoreNamedGlobalVector(dmf,"Kphi",&Kphi_fine); 				CHKERRQ(ierr);	// fine level
-
-						//ierr = 	DMRestoreNamedGlobalVector(dmf,"eta_creep",&EtaCreep_fine); 	CHKERRQ(ierr);	// fine level
-						//ierr = 	DMRestoreNamedGlobalVector(dmc,"eta_creep",&EtaCreep_coarse); 	CHKERRQ(ierr);	// coarse level
 
 	ierr = 	DMRestoreNamedGlobalVector(dmf,"BC",&BC_fine); 					CHKERRQ(ierr);	// fine level
 	ierr = 	DMRestoreNamedGlobalVector(dmc,"BC",&BC_coarse); 				CHKERRQ(ierr);	// coarse level
@@ -1288,16 +1227,8 @@ PetscErrorCode DMCoarsenHook_DARCY(DM dmf,DM dmc,void *ctx)
 	//ierr = VecScatterDestroy(&B);	CHKERRQ(ierr);
 	ierr = VecDestroy(&Rscale);		CHKERRQ(ierr);
 /*
-	ierr =	VecDestroy(&Kphi0_coarse);		CHKERRQ(ierr);
-	ierr =	VecDestroy(&Kphi0_fine);		CHKERRQ(ierr);
-	ierr =	VecDestroy(&Phi_old_fine);		CHKERRQ(ierr);
-	ierr =	VecDestroy(&Phi_old_coarse);	CHKERRQ(ierr);
-	ierr =	VecDestroy(&rhol_fine);			CHKERRQ(ierr);
-	ierr =	VecDestroy(&rhol_coarse);		CHKERRQ(ierr);
 	ierr =	VecDestroy(&mul_fine);			CHKERRQ(ierr);
 	ierr =	VecDestroy(&mul_coarse);		CHKERRQ(ierr);
-	ierr =	VecDestroy(&EtaCreep_fine);		CHKERRQ(ierr);
-	ierr =	VecDestroy(&EtaCreep_coarse);	CHKERRQ(ierr);
 */
 	DMCoarsenHookAdd(dmc,DMCoarsenHook_DARCY,NULL,NULL);
 

@@ -30,7 +30,7 @@ msetup 						   = bands
 
 
 # Time stepping and output
-OutputFile					=	test_darcyKSP
+OutputFile					=	test_darcySNES
 save_timesteps				=	1				# save every ? timesteps
 time_end					=	2			# last timestep
 CFL							=	0.1				# CFL, dt-based criterium
@@ -78,7 +78,9 @@ NumPartZ				=	3	# Particles/Cell in z-direction
 	# activate Darcy:
 	-act_darcy 1			# Activates Darcy solver	1 SNES, 2 KSP
 	#-act_temp_diff 		# Activates T-diffusion solver	
-	-SkipStokesSolver	# No Stokes (for testing)
+	#-SkipStokesSolver	# No Stokes (for testing)
+	
+	-actPorePres 1
 	
 	# SNES (nonlinear) options
 	#-snes_ksp_ew			# Eisenstat Walker algorithm
