@@ -727,8 +727,6 @@ PetscErrorCode AVDMarkerControl(AdvCtx *actx)
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
 
-	PetscPrintf(PETSC_COMM_WORLD,"# NEW Marker Control Routine \n");
-
 	// AVD routine for every control volume
 	ierr = AVDMarkerControlMV(actx, _CELL_); CHKERRQ(ierr); // CELLS
 
@@ -878,7 +876,7 @@ PetscErrorCode AVDCheckCellsMV(AdvCtx *actx, MarkerVolume *mv, PetscInt dir)
 	else if (dir== 1) sprintf(lbl,"XZED");
 	else if (dir== 2) sprintf(lbl,"YZED");
 
-	PetscPrintf(PETSC_COMM_WORLD,"# Marker Control [%lld]: (AVD %s) injected %lld markers and deleted %lld markers in %1.4e s\n",(LLD)actx->iproc,lbl, (LLD)ninj, (LLD)ndel, t1-t0);
+	PetscPrintf(PETSC_COMM_WORLD,"Marker control [%lld]: (AVD %s) injected %lld markers and deleted %lld markers in %1.4e s\n",(LLD)actx->iproc,lbl, (LLD)ninj, (LLD)ndel, t1-t0);
 
 	PetscFunctionReturn(0);
 }

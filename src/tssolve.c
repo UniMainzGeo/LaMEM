@@ -47,6 +47,7 @@
 #include "tssolve.h"
 #include "parsing.h"
 #include "scaling.h"
+#include "tools.h"
 //---------------------------------------------------------------------------
 #undef __FUNCT__
 #define __FUNCT__ "TSSolCreate"
@@ -156,7 +157,7 @@ PetscInt TSSolIsDone(TSSol *ts)
 	if(ts->time  >= time_end
 	|| ts->istep == ts->nstep_max)
 	{
-		PetscPrintf(PETSC_COMM_WORLD, "........................... SOLUTION IS DONE! ............................\n");
+		PetscPrintf(PETSC_COMM_WORLD, "@@@@@@@@@@@@@@@@@@@@@@@@@   SOLUTION IS DONE!   @@@@@@@@@@@@@@@@@@@@@@@@@@\n");
 		PetscPrintf(PETSC_COMM_WORLD, "--------------------------------------------------------------------------\n");
 
 		done = 1;
@@ -164,7 +165,8 @@ PetscInt TSSolIsDone(TSSol *ts)
 	else
 	{
 		// output time step information
-		PetscPrintf(PETSC_COMM_WORLD, "............................. STEP: %lld .................................\n", (LLD)ts->istep+1);
+		PrintStep(ts->istep + 1);
+		PetscPrintf(PETSC_COMM_WORLD, "--------------------------------------------------------------------------\n");
 		PetscPrintf(PETSC_COMM_WORLD, "Current time        : %7.5f %s \n", ts->time*scal->time, scal->lbl_time);
 		PetscPrintf(PETSC_COMM_WORLD, "Tentative time step : %7.5f %s \n", ts->dt  *scal->time, scal->lbl_time);
 		PetscPrintf(PETSC_COMM_WORLD, "--------------------------------------------------------------------------\n");
@@ -191,8 +193,6 @@ PetscErrorCode TSSolStepForward(TSSol *ts)
 
 	// apply tentative time step (at latest here)
 	ts->dt = ts->dt_next;
-
-	PetscPrintf(PETSC_COMM_WORLD, "--------------------------------------------------------------------------\n");
 
 	PetscFunctionReturn(0);
 }
@@ -273,7 +273,9 @@ PetscErrorCode TSSolGetCFLStep(
 		if(ts->dt > dt_cfl_max)
 		{
 			PetscPrintf(PETSC_COMM_WORLD, "Time step exceeds CFLMAX level: %7.5f %s\n", dt_cfl_max*scal->time, scal->lbl_time);
-			PetscPrintf(PETSC_COMM_WORLD, "RESTARTING TIME STEP!\n");
+			PetscPrintf(PETSC_COMM_WORLD, "--------------------------------------------------------------------------\n");
+			PetscPrintf(PETSC_COMM_WORLD, "***********************   RESTARTING TIME STEP!   ************************\n");
+			PetscPrintf(PETSC_COMM_WORLD, "--------------------------------------------------------------------------\n");
 
 			ts->dt = dt_cfl;
 
@@ -285,6 +287,7 @@ PetscErrorCode TSSolGetCFLStep(
 		{
 			// print warning
 			PetscPrintf(PETSC_COMM_WORLD, "Time step exceeds CFL level: %7.5f %s\n", dt_cfl*scal->time, scal->lbl_time);
+			PetscPrintf(PETSC_COMM_WORLD, "--------------------------------------------------------------------------\n");
 		}
 	}
 
@@ -299,6 +302,8 @@ PetscErrorCode TSSolGetCFLStep(
 
 	// print time step information
 	PetscPrintf(PETSC_COMM_WORLD, "Actual time step : %7.5f %s \n", ts->dt*scal->time, scal->lbl_time);
+
+	PetscPrintf(PETSC_COMM_WORLD, "--------------------------------------------------------------------------\n");
 
 	PetscFunctionReturn(0);
 }

@@ -50,7 +50,6 @@
 //---------------------------------------------------------------------------
 // Printing functions
 //---------------------------------------------------------------------------
-
 void PrintStart(PetscLogDouble *t_beg, const char *msg, const char *filename)
 {
 	PetscTime(t_beg);
@@ -76,6 +75,26 @@ void PrintDone(PetscLogDouble t_beg)
 	PetscPrintf(PETSC_COMM_WORLD,"done (%g sec)\n", t_end - t_beg);
 
 	PetscPrintf(PETSC_COMM_WORLD,"--------------------------------------------------------------------------\n");
+}
+//---------------------------------------------------------------------------
+void PrintStep(PetscInt step)
+{
+	char *number, *p;
+
+	char line[] = "@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@";
+	char left[]  = "   STEP: ";
+	char right[] = "   ";
+	asprintf(&number, "%d", step);
+
+	p = line + (strlen(line) - strlen(left) - strlen(number) - strlen(right))/2;
+
+	memcpy(p, left,   strlen(left));   p += strlen(left);
+	memcpy(p, number, strlen(number)); p += strlen(number);
+	memcpy(p, right,  strlen(right));
+
+	free(number);
+
+	PetscPrintf(PETSC_COMM_WORLD,"%s\n", line);
 }
 //---------------------------------------------------------------------------
 #undef __FUNCT__

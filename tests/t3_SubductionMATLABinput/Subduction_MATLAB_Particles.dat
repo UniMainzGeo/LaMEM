@@ -56,7 +56,7 @@
 	temp_bot = 1465.0;
 
 #===============================================================================
-# Jacobian & residual evaluation parameters
+# Solution parameters & controls
 #===============================================================================
 
 	gravity     = 0.0 0.0 -10.0  # gravity vector
@@ -65,6 +65,7 @@
 	eta_max     = 2.5e24         # viscosity lower limit
 	eta_ref     = 1e22           # reference viscosity (initial guess)
 	DII_ref     = 1e-16          # background (reference) strain-rate
+#	init_guess  = 0
 
 #===============================================================================
 # Model setup & advection
@@ -77,8 +78,7 @@
 	advect         = rk2               # advection scheme
 	new_advect     = 1                 # activate new advection algorithms (temporary)
 	interp         = minmod            # velocity interpolation scheme
-	use_mark_contr = 1                 # activate marker control
-#	new_mark_contr = 1                 # activate new marker control algorithms (temporary)
+	mark_ctrl      = avd
 
 #===============================================================================
 # Output
@@ -180,6 +180,7 @@
 	# SNES (nonlinear) options
 	-snes_ksp_ew # Eisenstat Walker algorithm
 	-snes_monitor
+#	-snes_converged_reason
 	-snes_atol 1e-4
 	-snes_rtol 1e-3
 	-snes_stol 1e-16
@@ -200,7 +201,7 @@
 	# Jacobian (linear) outer KSP
 	-js_ksp_type fgmres
 	-js_ksp_max_it 25
-	-js_ksp_converged_reason
+#	-js_ksp_converged_reason
 	-js_ksp_monitor
 	-js_ksp_rtol 1e-5
 	-js_ksp_atol 1e-5

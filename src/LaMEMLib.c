@@ -167,7 +167,9 @@ PetscErrorCode LaMEMLibMain(void *param)
 	ierr = LaMEMLibDestroy(&lm); CHKERRQ(ierr);
 
 	PetscTime(&cputime_end);
-	PetscPrintf(PETSC_COMM_WORLD, "Simulation time : %g (sec) \n", cputime_end - cputime_start);
+
+	PetscPrintf(PETSC_COMM_WORLD, "Total solution time : %g (sec) \n", cputime_end - cputime_start);
+	PetscPrintf(PETSC_COMM_WORLD, "--------------------------------------------------------------------------\n");
 
 	PetscFunctionReturn(0);
 }
@@ -742,7 +744,7 @@ PetscErrorCode LaMEMLibInitGuess(LaMEMLib *lm, SNES snes)
 
 	if(lm->jr.ctrl.initGuess)
 	{
-		PetscPrintf(PETSC_COMM_WORLD, ".............................. INITIAL GUESS .............................\n");
+		PetscPrintf(PETSC_COMM_WORLD, "@@@@@@@@@@@@@@@@@@@@@@@@@@@@   INITIAL GUESS   @@@@@@@@@@@@@@@@@@@@@@@@@@@\n");
 		PetscPrintf(PETSC_COMM_WORLD, "--------------------------------------------------------------------------\n");
 
 		// solve nonlinear equation system with SNES
@@ -753,6 +755,9 @@ PetscErrorCode LaMEMLibInitGuess(LaMEMLib *lm, SNES snes)
 		// print analyze convergence/divergence reason & iteration count
 		ierr = SNESPrintConvergedReason(snes, t); CHKERRQ(ierr);
 
+		// view nonlinear residual
+		ierr = JacResViewRes(&lm->jr); CHKERRQ(ierr);
+
 		// switch flag
 		lm->jr.ctrl.initGuess = 0;
 	}
@@ -761,8 +766,6 @@ PetscErrorCode LaMEMLibInitGuess(LaMEMLib *lm, SNES snes)
 		// evaluate initial residual
 		ierr = JacResFormResidual(&lm->jr, lm->jr.gsol, lm->jr.gres); CHKERRQ(ierr);
 	}
-
-	PetscPrintf(PETSC_COMM_WORLD, "--------------------------------------------------------------------------\n");
 
 	// save output for inspection
 	ierr = LaMEMLibSaveOutput(lm); CHKERRQ(ierr);

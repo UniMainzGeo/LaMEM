@@ -50,7 +50,7 @@
 # Default
 
 #===============================================================================
-# Jacobian & residual evaluation parameters
+# Solution parameters & controls
 #===============================================================================
 
 	gravity        = 0.0 0.0 -1.0   # gravity vector
@@ -128,7 +128,7 @@
 	# Jacobian (linear) outer KSP
 	-js_ksp_type gmres
 	-js_ksp_max_it 25
-	-js_ksp_converged_reason
+#	-js_ksp_converged_reason
  	-js_ksp_monitor
 	-js_ksp_rtol 1e-4
 	-js_ksp_atol 1e-10

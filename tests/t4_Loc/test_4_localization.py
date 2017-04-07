@@ -7,17 +7,14 @@ import re
 
 def test_a():
 
-  # Test localization case on 4 cores, using optimized LaMEM and matrix-free jacobian
+  # Test localization case on 4 cores, using optimized LaMEM and finite difference jacobian
   ranks = 4
-  launch = '../bin/opt/LaMEM -ParamFile ./t4_Loc/localization.dat -jac_mat_free 1' # This must be a relative path with respect to runLaMEM_Tests.py
+  launch = '../bin/opt/LaMEM -ParamFile ./t4_Loc/localization.dat' # This must be a relative path with respect to runLaMEM_Tests.py
   expected_file = 't4_Loc/Loc1a_4cores.expected'
 
   def comparefunc(unittest):
 
-    key = 'Div_min'
-    unittest.compareFloatingPoint(key,1e-7)
-
-    key = 'Div_max'
+    key = '|Div|_inf'
     unittest.compareFloatingPoint(key,1e-7)
 
     key = re.escape("|Div|_2")
@@ -42,10 +39,7 @@ def test_b():
 
   def comparefunc(unittest):
 
-    key = 'Div_min'
-    unittest.compareFloatingPoint(key,1e-7)
-
-    key = 'Div_max'
+    key = '|Div|_inf'
     unittest.compareFloatingPoint(key,1e-7)
 
     key = re.escape("|Div|_2")
@@ -71,10 +65,7 @@ def test_c():
 
   def comparefunc(unittest):
 
-    key = 'Div_min'
-    unittest.compareFloatingPoint(key,1e-7)
-
-    key = 'Div_max'
+    key = '|Div|_inf'
     unittest.compareFloatingPoint(key,1e-7)
 
     key = re.escape("|Div|_2")

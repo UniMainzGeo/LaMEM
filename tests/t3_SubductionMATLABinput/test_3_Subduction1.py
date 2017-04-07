@@ -25,10 +25,7 @@ def test_a():
 
   def comparefunc(unittest):
 
-    key = 'Div_min'
-    unittest.compareFloatingPoint(key,1e-7)
-
-    key = 'Div_max'
+    key = '|Div|_inf'
     unittest.compareFloatingPoint(key,1e-7)
 
     key = re.escape("|Div|_2")
@@ -59,10 +56,7 @@ def test_b():
 
   def comparefunc(unittest):
 
-    key = 'Div_min'
-    unittest.compareFloatingPoint(key,1e-7)
-
-    key = 'Div_max'
+    key = '|Div|_inf'
     unittest.compareFloatingPoint(key,1e-7)
 
     key = re.escape("|Div|_2")
@@ -93,10 +87,7 @@ def test_c():
 
   def comparefunc(unittest):
 
-    key = 'Div_min'
-    unittest.compareFloatingPoint(key,1e-7)
-
-    key = 'Div_max'
+    key = '|Div|_inf'
     unittest.compareFloatingPoint(key,1e-7)
 
     key = re.escape("|Div|_2")

@@ -53,10 +53,6 @@
 	exx_num_periods  = 1      # number intervals of constant strain rate (x-axis)
 	exx_strain_rates = -1e-15 # strain rates for each interval
 
-# Free surface top boundary flag
-
-	open_top_bound = 1
-
 #===============================================================================
 # Jacobian & residual evaluation parameters
 #===============================================================================

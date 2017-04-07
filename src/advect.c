@@ -131,7 +131,7 @@ PetscErrorCode ADVCreate(AdvCtx *actx, FB *fb)
 	if     (!strcmp(mctrl,  "none"))     actx->mctrl = CTRL_NONE;
 	else if(!strcmp(mctrl,  "basic"))    actx->mctrl = CTRL_BASIC;
 	else if(!strcmp(mctrl,  "avd"))      actx->mctrl = CTRL_AVD;
-	else SETERRQ1(PETSC_COMM_WORLD, PETSC_ERR_USER, "Incorrect marker control type (mark_ctrl): %s", interp);
+	else SETERRQ1(PETSC_COMM_WORLD, PETSC_ERR_USER, "Incorrect marker control type (mark_ctrl): %s", mctrl);
 
 	// check marker resolution
 	if(actx->NumPartX < _min_nmark_)
@@ -185,8 +185,9 @@ PetscErrorCode ADVCreate(AdvCtx *actx, FB *fb)
 
 	// print advection scheme
   	PetscPrintf(PETSC_COMM_WORLD,"   Advection scheme              : ");
-	if      (actx->advect == EULER)         PetscPrintf(PETSC_COMM_WORLD, "Euler 1-st order\n");
-	else if (actx->advect == RUNGE_KUTTA_2) PetscPrintf(PETSC_COMM_WORLD, "Runge-Kutta 2-nd order\n");
+	if     (actx->advect == BASIC_EULER)   PetscPrintf(PETSC_COMM_WORLD, "Euler 1-st order (basic implementation)\n");
+	else if(actx->advect == EULER)         PetscPrintf(PETSC_COMM_WORLD, "Euler 1-st order\n");
+	else if(actx->advect == RUNGE_KUTTA_2) PetscPrintf(PETSC_COMM_WORLD, "Runge-Kutta 2-nd order\n");
 
 	// print velocity interpolation scheme
 	PetscPrintf(PETSC_COMM_WORLD,"   Velocity interpolation scheme : ");
@@ -435,6 +436,8 @@ PetscErrorCode ADVRemap(AdvCtx *actx)
 	}
 	else if(actx->mctrl == CTRL_BASIC)
 	{
+		PetscPrintf(PETSC_COMM_WORLD,"Performing marker control (standard algorithm)\n");
+
 		// compute host cells for all the markers received
 		ierr = ADVMapMarkToCells(actx); CHKERRQ(ierr);
 
@@ -446,9 +449,13 @@ PetscErrorCode ADVRemap(AdvCtx *actx)
 
 		// check corners and inject 1 particle if empty
 		ierr = ADVCheckCorners(actx); CHKERRQ(ierr);
+
+		PetscPrintf(PETSC_COMM_WORLD, "--------------------------------------------------------------------------\n");
 	}
 	else if(actx->mctrl == CTRL_AVD)
 	{
+		PetscPrintf(PETSC_COMM_WORLD,"Performing marker control (updated algorithm)\n");
+
 		// check markers and inject/delete if necessary in all control volumes
 		ierr = AVDMarkerControl(actx); CHKERRQ(ierr);
 
@@ -457,6 +464,8 @@ PetscErrorCode ADVRemap(AdvCtx *actx)
 
 		// update arrays for marker-cell interaction
 		ierr = ADVUpdateMarkCell(actx); CHKERRQ(ierr);
+
+		PetscPrintf(PETSC_COMM_WORLD, "--------------------------------------------------------------------------\n");
 	}
 
 	// change marker phase when crossing flat surface or free surface with fast sedimentation/erosion
@@ -1254,7 +1263,7 @@ PetscErrorCode ADVMarkControl(AdvCtx *actx)
 
 	// print info
 	ierr = PetscTime(&t1); CHKERRQ(ierr);
-	PetscPrintf(PETSC_COMM_WORLD,"# Marker Control [%lld]: (AVD Cell) injected %lld markers and deleted %lld markers in %1.4e s\n",(LLD)actx->iproc, (LLD)ninj, (LLD)ndel, t1-t0);
+	PetscPrintf(PETSC_COMM_WORLD,"Marker control [%lld]: (AVD Cell) injected %lld markers and deleted %lld markers in %1.4e s\n",(LLD)actx->iproc, (LLD)ninj, (LLD)ndel, t1-t0);
 
 	// clear
 	ierr = PetscFree(actx->recvbuf); CHKERRQ(ierr);
@@ -1524,7 +1533,7 @@ PetscErrorCode ADVCheckCorners(AdvCtx *actx)
 
 	// print info
 	ierr = PetscTime(&t1); CHKERRQ(ierr);
-	PetscPrintf(PETSC_COMM_WORLD,"# Marker Control [%lld]: (Corners ) injected %lld markers in %1.4e s \n",(LLD)actx->iproc, (LLD)ninj, t1-t0);
+	PetscPrintf(PETSC_COMM_WORLD,"Marker control [%lld]: (Corners ) injected %lld markers in %1.4e s \n",(LLD)actx->iproc, (LLD)ninj, t1-t0);
 
 	// clear
 	ierr = PetscFree(numcorner);     CHKERRQ(ierr);

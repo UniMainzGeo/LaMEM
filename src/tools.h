@@ -54,6 +54,8 @@ void PrintStart(PetscLogDouble *t_beg, const char *msg, const char *filename);
 
 void PrintDone(PetscLogDouble t_beg);
 
+void PrintStep(PetscInt step);
+
 //---------------------------------------------------------------------------
 // Read and write global vectors
 //---------------------------------------------------------------------------

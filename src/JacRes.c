@@ -1954,7 +1954,7 @@ PetscErrorCode JacResViewRes(JacRes *jr)
 	// show assembled residual with boundary constraints
 	// WARNING! rewrite this function using coupled residual vector directly
 
-	PetscScalar dmin, dmax, d2, e2, fx, fy, fz, f2, div_tol;
+	PetscScalar dinf, d2, e2, fx, fy, fz, f2, div_tol;
 
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
@@ -1964,9 +1964,8 @@ PetscErrorCode JacResViewRes(JacRes *jr)
 	ierr = JacResCopyContinuityRes(jr, jr->gres); CHKERRQ(ierr);
 
 	// compute norms
-	ierr = VecMin (jr->gc,  NULL,   &dmin); CHKERRQ(ierr);
-	ierr = VecMax (jr->gc,  NULL,   &dmax); CHKERRQ(ierr);
-	ierr = VecNorm(jr->gc,  NORM_2, &d2);   CHKERRQ(ierr);
+	ierr = VecNorm(jr->gc,  NORM_INFINITY, &dinf); CHKERRQ(ierr);
+	ierr = VecNorm(jr->gc,  NORM_2,        &d2);   CHKERRQ(ierr);
 
 	ierr = VecNorm(jr->gfx, NORM_2, &fx);   CHKERRQ(ierr);
 	ierr = VecNorm(jr->gfy, NORM_2, &fy);   CHKERRQ(ierr);
@@ -1982,12 +1981,11 @@ PetscErrorCode JacResViewRes(JacRes *jr)
 
 	// print
 	PetscPrintf(PETSC_COMM_WORLD, "Residual summary: \n");
-	PetscPrintf(PETSC_COMM_WORLD, "  Continuity: \n");
-	PetscPrintf(PETSC_COMM_WORLD, "    Div_min  = %12.12e \n", dmin);
-	PetscPrintf(PETSC_COMM_WORLD, "    Div_max  = %12.12e \n", dmax);
-	PetscPrintf(PETSC_COMM_WORLD, "    |Div|_2  = %12.12e \n", d2);
-	PetscPrintf(PETSC_COMM_WORLD, "  Momentum: \n" );
-	PetscPrintf(PETSC_COMM_WORLD, "    |mRes|_2 = %12.12e \n", f2);
+	PetscPrintf(PETSC_COMM_WORLD, "   Continuity: \n");
+	PetscPrintf(PETSC_COMM_WORLD, "      |Div|_inf = %12.12e \n", dinf);
+	PetscPrintf(PETSC_COMM_WORLD, "      |Div|_2   = %12.12e \n", d2);
+	PetscPrintf(PETSC_COMM_WORLD, "   Momentum: \n" );
+	PetscPrintf(PETSC_COMM_WORLD, "      |mRes|_2  = %12.12e \n", f2);
 
 	if(jr->ctrl.actTemp)
 	{
@@ -2001,7 +1999,7 @@ PetscErrorCode JacResViewRes(JacRes *jr)
 	div_tol = 0.0;
 	ierr = PetscOptionsGetScalar(NULL, NULL, "-div_tol",  &div_tol,  NULL); CHKERRQ(ierr);
 
-	if ((div_tol) && (( dmax > div_tol ) || (f2 > div_tol)))
+	if ((div_tol) && (( dinf > div_tol ) || (f2 > div_tol)))
 	{
 		SETERRQ(PETSC_COMM_SELF, PETSC_ERR_USER, " *** Emergency stop! Maximum divergence or momentum residual is too large; solver did not converge! *** \n");
 	}
