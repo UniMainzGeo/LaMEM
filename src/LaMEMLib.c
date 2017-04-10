@@ -744,7 +744,7 @@ PetscErrorCode LaMEMLibInitGuess(LaMEMLib *lm, SNES snes)
 
 	if(lm->jr.ctrl.initGuess)
 	{
-		PetscPrintf(PETSC_COMM_WORLD, "@@@@@@@@@@@@@@@@@@@@@@@@@@@@   INITIAL GUESS   @@@@@@@@@@@@@@@@@@@@@@@@@@@\n");
+		PetscPrintf(PETSC_COMM_WORLD, "============================== INITIAL GUESS =============================\n");
 		PetscPrintf(PETSC_COMM_WORLD, "--------------------------------------------------------------------------\n");
 
 		// solve nonlinear equation system with SNES

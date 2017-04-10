@@ -7,14 +7,14 @@ import re
 
 def test_a():
 
-  # Test localization case on 4 cores, using optimized LaMEM and finite difference jacobian
+  # Test visco-elasto-plastic localization case on 4 cores, using optimized LaMEM
   ranks = 4
   launch = '../bin/opt/LaMEM -ParamFile ./t4_Loc/localization.dat' # This must be a relative path with respect to runLaMEM_Tests.py
-  expected_file = 't4_Loc/Loc1a_4cores.expected'
+  expected_file = 't4_Loc/Loc1_a_MUMPS_VEP_opt-p4.expected'
 
   def comparefunc(unittest):
 
-    key = '|Div|_inf'
+    key = re.escape("|Div|_inf")
     unittest.compareFloatingPoint(key,1e-7)
 
     key = re.escape("|Div|_2")
@@ -24,7 +24,7 @@ def test_a():
     unittest.compareFloatingPoint(key,1e-4)
 
   # Create unit test object
-  ex1 = pth.pthUnitTest('unit_Loc1_a_Direct_4Cores_MUMPS_VEP_AnalyticalJac',ranks,launch,expected_file)
+  ex1 = pth.pthUnitTest('Loc1_a_MUMPS_VEP_opt',ranks,launch,expected_file)
   ex1.setVerifyMethod(comparefunc)
   ex1.appendKeywords('@')
 
@@ -32,14 +32,14 @@ def test_a():
 
 def test_b():
 
-  # Test localization case on 1 core, using optimized LaMEM
+  # Test visco-plastic localization case on 4 cores, using optimized LaMEM
   ranks = 4
   launch = '../bin/opt/LaMEM -ParamFile ./t4_Loc/localization_viscoplastic.dat' # This must be a relative path with respect to runLaMEM_Tests.py
-  expected_file = 't4_Loc/Loc1b_4cores.expected'
+  expected_file = 't4_Loc/Loc1_b_MUMPS_VP_opt-p4.expected'
 
   def comparefunc(unittest):
 
-    key = '|Div|_inf'
+    key = re.escape("|Div|_inf")
     unittest.compareFloatingPoint(key,1e-7)
 
     key = re.escape("|Div|_2")
@@ -49,7 +49,7 @@ def test_b():
     unittest.compareFloatingPoint(key,1e-4)
 
   # Create unit test object
-  ex1 = pth.pthUnitTest('unit_Loc1_b_Direct_4Cores_MUMPS_VP_FDJac',ranks,launch,expected_file)
+  ex1 = pth.pthUnitTest('Loc1_b_MUMPS_VP_opt',ranks,launch,expected_file)
   ex1.setVerifyMethod(comparefunc)
   ex1.appendKeywords('@')
 
@@ -58,14 +58,14 @@ def test_b():
 
 def test_c():
 
-  # Test localization case on 1 core, using optimized LaMEM and finite difference jacobian
+  # Test visco-elasto-plastic localization case on 1 core, using optimized LaMEM
   ranks = 1
   launch = '../bin/opt/LaMEM -ParamFile ./t4_Loc/localization.dat' # This must be a relative path with respect to runLaMEM_Tests.py
-  expected_file = 't4_Loc/Loc1c_1core.expected'
+  expected_file = 't4_Loc/Loc1_c_Direct_VEP_opt-p1.expected'
 
   def comparefunc(unittest):
 
-    key = '|Div|_inf'
+    key = re.escape("|Div|_inf")
     unittest.compareFloatingPoint(key,1e-7)
 
     key = re.escape("|Div|_2")
@@ -75,7 +75,7 @@ def test_c():
     unittest.compareFloatingPoint(key,1e-4)
 
   # Create unit test object
-  ex1 = pth.pthUnitTest('unit_Loc1_c_Direct_Core1_VEP_FDJac',ranks,launch,expected_file)
+  ex1 = pth.pthUnitTest('Loc1_c_Direct_VEP_opt',ranks,launch,expected_file)
   ex1.setVerifyMethod(comparefunc)
   ex1.appendKeywords('@')
 

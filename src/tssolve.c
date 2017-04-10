@@ -157,7 +157,7 @@ PetscInt TSSolIsDone(TSSol *ts)
 	if(ts->time  >= time_end
 	|| ts->istep == ts->nstep_max)
 	{
-		PetscPrintf(PETSC_COMM_WORLD, "@@@@@@@@@@@@@@@@@@@@@@@@@   SOLUTION IS DONE!   @@@@@@@@@@@@@@@@@@@@@@@@@@\n");
+		PetscPrintf(PETSC_COMM_WORLD, "=========================== SOLUTION IS DONE! ============================\n");
 		PetscPrintf(PETSC_COMM_WORLD, "--------------------------------------------------------------------------\n");
 
 		done = 1;

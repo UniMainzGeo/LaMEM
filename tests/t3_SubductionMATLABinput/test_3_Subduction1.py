@@ -21,11 +21,11 @@ def test_a():
   # Run the input script wth matlab-generated particles
   ranks = 1
   launch = '../bin/opt/LaMEM -ParamFile ./t3_SubductionMATLABinput/Subduction_MATLAB_Particles.dat -mark_load_file ./markers_p1/mdb'
-  expected_file = 't3_SubductionMATLABinput/Sub1_MG_1core.expected'
+  expected_file = 't3_SubductionMATLABinput/Sub1_MATLAB_a_Direct_opt-p1.expected'
 
   def comparefunc(unittest):
 
-    key = '|Div|_inf'
+    key = re.escape("|Div|_inf")
     unittest.compareFloatingPoint(key,1e-7)
 
     key = re.escape("|Div|_2")
@@ -35,7 +35,7 @@ def test_a():
     unittest.compareFloatingPoint(key,1e-4)
 
   # Create unit test object
-  ex1 = pth.pthUnitTest('unit_Sub1_a_MATLAB_Core1',ranks,launch,expected_file)
+  ex1 = pth.pthUnitTest('Sub1_MATLAB_a_Direct_opt',ranks,launch,expected_file)
   ex1.setVerifyMethod(comparefunc)
   ex1.appendKeywords('@')
 
@@ -52,11 +52,11 @@ def test_b():
   # Run the input script wth matlab-generated particles
   ranks = 4
   launch = '../bin/opt/LaMEM -ParamFile ./t3_SubductionMATLABinput/Subduction_MATLAB_Particles.dat -mark_load_file ./markers_p4/mdb -jp_pc_factor_mat_solver_package superlu_dist'
-  expected_file = 't3_SubductionMATLABinput/Sub1_MG_4core.expected'
+  expected_file = 't3_SubductionMATLABinput/Sub1_MATLAB_b_SUPERLUDIST_opt-p4.expected'
 
   def comparefunc(unittest):
 
-    key = '|Div|_inf'
+    key = re.escape("|Div|_inf")
     unittest.compareFloatingPoint(key,1e-7)
 
     key = re.escape("|Div|_2")
@@ -66,7 +66,7 @@ def test_b():
     unittest.compareFloatingPoint(key,1e-4)
 
   # Create unit test object
-  ex1 = pth.pthUnitTest('unit_Sub1_b_MATLAB_Core4_SUPERLUDIST',ranks,launch,expected_file)
+  ex1 = pth.pthUnitTest('Sub1_MATLAB_b_SUPERLUDIST_opt',ranks,launch,expected_file)
   ex1.setVerifyMethod(comparefunc)
   ex1.appendKeywords('@')
 
@@ -83,11 +83,11 @@ def test_c():
   # Run the input script wth matlab-generated particles
   ranks = 4
   launch = '../bin/deb/LaMEM -ParamFile ./t3_SubductionMATLABinput/Subduction_MATLAB_Particles.dat -mark_load_file ./markers_p4/mdb -jp_pc_factor_mat_solver_package superlu_dist'
-  expected_file = 't3_SubductionMATLABinput/Sub1_MG_4core.expected'
+  expected_file = 't3_SubductionMATLABinput/Sub1_MATLAB_c_SUPERLUDIST_deb-p4.expected'
 
   def comparefunc(unittest):
 
-    key = '|Div|_inf'
+    key = re.escape("|Div|_inf")
     unittest.compareFloatingPoint(key,1e-7)
 
     key = re.escape("|Div|_2")
@@ -97,7 +97,7 @@ def test_c():
     unittest.compareFloatingPoint(key,1e-4)
 
   # Create unit test object
-  ex1 = pth.pthUnitTest('unit_Sub1_c_MATLAB_Core4_SUPERLUDIST',ranks,launch,expected_file)
+  ex1 = pth.pthUnitTest('Sub1_MATLAB_c_SUPERLUDIST_deb',ranks,launch,expected_file)
   ex1.setVerifyMethod(comparefunc)
   ex1.appendKeywords('@')
 

@@ -9,6 +9,10 @@ import argparse
 import pyTestHarness.launch as launch
 import pyTestHarness.harness as harness
 
+# Build optimized and debug versions of LaMEM
+os.system('cd ../src/;  make mode=opt all; cd ../tests')
+os.system('cd ../src/;  make mode=deb all; cd ../tests')
+
 # Import separate tests
 sys.path.append(os.path.join(os.environ['PWD'], 't1_FB1_Direct'))
 sys.path.append(os.path.join(os.environ['PWD'], 't2_FB2_MG'))
@@ -46,10 +50,6 @@ def run_unittests_example1():
   # Force output to be written somewhere else, can be invoked using -o <path>
   for test in registeredTests:
     test.setOutputPath('output')
-
-  # Build optimized and debug versions of LaMEM
-  os.system('cd ../src/;  make mode=opt all; cd ../tests')
-  os.system('cd ../src/;  make mode=deb all; cd ../tests')
 
   launcher = launch.pthLaunch();
 

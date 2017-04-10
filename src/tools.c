@@ -81,9 +81,9 @@ void PrintStep(PetscInt step)
 {
 	char *number, *p;
 
-	char line[] = "@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@";
-	char left[]  = "   STEP: ";
-	char right[] = "   ";
+	char line[] = "==========================================================================";
+	char left[]  = " STEP ";
+	char right[] = " ";
 	asprintf(&number, "%d", step);
 
 	p = line + (strlen(line) - strlen(left) - strlen(number) - strlen(right))/2;

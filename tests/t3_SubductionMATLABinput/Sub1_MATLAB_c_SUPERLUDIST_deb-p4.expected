@@ -1,0 +1,441 @@
+-------------------------------------------------------------------------- 
+                   Lithosphere and Mantle Evolution Model                   
+     Compiled: Date: Apr 10 2017 - Time: 18:43:45 	    
+-------------------------------------------------------------------------- 
+        STAGGERED-GRID FINITE DIFFERENCE CANONICAL IMPLEMENTATION           
+-------------------------------------------------------------------------- 
+Parsing input file : ./t3_SubductionMATLABinput/Subduction_MATLAB_Particles.dat 
+   Adding PETSc option: -snes_ksp_ew
+   Adding PETSc option: -snes_monitor
+   Adding PETSc option: -snes_atol 1e-4
+   Adding PETSc option: -snes_rtol 1e-3
+   Adding PETSc option: -snes_stol 1e-16
+   Adding PETSc option: -snes_max_it 30
+   Adding PETSc option: -snes_max_funcs 500000
+   Adding PETSc option: -snes_max_linear_solve_fail 10000
+   Adding PETSc option: -snes_PicardSwitchToNewton_rtol 5e-2
+   Adding PETSc option: -snes_NewtonSwitchToPicard_it 20
+   Adding PETSc option: -snes_NewtonSwitchToPicard_rtol 1.1
+   Adding PETSc option: -snes_linesearch_monitor
+   Adding PETSc option: -snes_linesearch_type basic
+   Adding PETSc option: -snes_linesearch_maxstep 1.0
+   Adding PETSc option: -js_ksp_type fgmres
+   Adding PETSc option: -js_ksp_max_it 25
+   Adding PETSc option: -js_ksp_monitor
+   Adding PETSc option: -js_ksp_rtol 1e-5
+   Adding PETSc option: -js_ksp_atol 1e-5
+   Adding PETSc option: -pcmat_type mono
+   Adding PETSc option: -pcmat_no_dev_proj
+   Adding PETSc option: -pcmat_type mono
+   Adding PETSc option: -pcmat_pgamma 1e5
+   Adding PETSc option: -jp_type user
+   Adding PETSc option: -jp_pc_type lu
+   Adding PETSc option: -objects_dump
+--------------------------------------------------------------------------
+Scaling parameters:
+   Temperature : 1000. [C/K] 
+   Length      : 1e+06 [m] 
+   Viscosity   : 1e+22 [Pa*s] 
+   Stress      : 1e+10 [Pa] 
+--------------------------------------------------------------------------
+Time stepping parameters:
+   Simulation end time          : 0.25 [Myr] 
+   Maximum number of steps      : 5 
+   Time step                    : 0.001 [Myr] 
+   Minimum time step            : 0.001 [Myr] 
+   Maximum time step            : 0.05 [Myr] 
+   Time step increase factor    : 0.1 
+   CFL criterion                : 0.5 
+   CFLMAX (fixed time steps)    : 0.8 
+   Output every [n] steps       : 1 
+   Output [n] initial steps     : 1 
+--------------------------------------------------------------------------
+Material parameters: 
+   Phase ID : 0
+   (dens)   : rho = 3300. [kg/m^3]  
+   (elast)  : G = 5e+10 [Pa]  Vs = 3892.49 [m/s]  
+   (diff)   : eta = 2.5e+23 [Pa*s]  Bd = 2e-24 [1/Pa/s]  
+   (plast)  : ch = 2e+07 [Pa]  
+   (temp)   : k = 3. [W/m/k]  
+   Phase ID : 1
+   (dens)   : rho = 3300. [kg/m^3]  
+   (elast)  : G = 5e+10 [Pa]  Vs = 3892.49 [m/s]  
+   (diff)   : Bd = 1.5e-09 [1/Pa/s]  Ed = 375000. [J/mol]  Vd = 3e-06 [m^3/mol]  
+   (disl)   : Bn = 1.4806e-16 [1/Pa^n/s]  En = 532000. [J/mol]  Vn = 1.5e-05 [m^3/mol]  n = 3.5 [ ]  
+   (plast)  : ch = 2e+07 [Pa]  fr = 30. [deg]  
+   (temp)   : alpha = 1e-05 [1/K]  k = 3. [W/m/k]  
+   Phase ID : 2
+   (dens)   : rho = 3300. [kg/m^3]  
+   (diff)   : eta = 2.5e+19 [Pa*s]  Bd = 2e-20 [1/Pa/s]  
+   (temp)   : alpha = 1e-05 [1/K]  
+   Phase ID : 3
+   (dens)   : rho = 3300. [kg/m^3]  
+   (elast)  : G = 5e+10 [Pa]  Vs = 3892.49 [m/s]  
+   (diff)   : Bd = 1.5e-09 [1/Pa/s]  Ed = 375000. [J/mol]  Vd = 3e-06 [m^3/mol]  
+   (disl)   : Bn = 1.4806e-16 [1/Pa^n/s]  En = 532000. [J/mol]  Vn = 1.5e-05 [m^3/mol]  n = 3.5 [ ]  
+   (plast)  : ch = 2e+07 [Pa]  fr = 30. [deg]  
+   (temp)   : alpha = 1e-05 [1/K]  k = 3. [W/m/k]  
+--------------------------------------------------------------------------
+Grid parameters:
+   Total number of cpu                  : 4 
+   Processor grid  [nx, ny, nz]         : [4, 1, 1]
+   Fine grid cells [nx, ny, nz]         : [128, 2, 32]
+   Number of cells                      :  8192
+   Number of faces                      :  28992
+   Maximum cell aspect ratio            :  6.25000
+   Lower coordinate bounds [bx, by, bz] : [-2000., -5., -660.]
+   Upper coordinate bounds [ex, ey, ez] : [2000., 5., 0.]
+--------------------------------------------------------------------------
+Boundary condition parameters: 
+   No-slip boundary mask [lt rt ft bk bm tp]  : 0 0 0 0 0 0 
+   Top boundary temperature                   : 20. [C] 
+   Bottom boundary temperature                : 1465. [C] 
+--------------------------------------------------------------------------
+Solution parameters & controls:
+   Gravity [gx, gy, gz]                    : [0., 0., -10.] [m/s^2] 
+   Surface stabilization (FSSA)            :  1. 
+   Enforce zero pressure on top boundary   @ 
+   Compute initial guess                   @ 
+   Use lithostatic pressure for creep      @ 
+   Minimum viscosity                       : 2.5e+18 [Pa*s] 
+   Maximum viscosity                       : 2.5e+24 [Pa*s] 
+   Reference viscosity (initial guess)     : 1e+22 [Pa*s] 
+   Universal gas constant                  : 8.31446 [J/mol/K] 
+   Background (reference) strain-rate      : 1e-16 [1/s] 
+   Ground water level type                 : none 
+--------------------------------------------------------------------------
+Advection parameters:
+   Marker setup scheme           : binary files (MATLAB)
+   Advection scheme              : Runge-Kutta 2-nd order
+   Velocity interpolation scheme : MINMOD (Correction + MINMOD)
+   Marker control type           : pure AVD for all control volumes
+   Markers per cell [nx, ny, nz] : [3, 3, 3] 
+   Marker distribution type type : random noise
+--------------------------------------------------------------------------
+Loading markers in parallel from file(s) <./markers_p4/mdb> ... done (0.0321264 sec)
+--------------------------------------------------------------------------
+Output parameters:
+   Output file name                        : SubductionModel 
+   Write .pvd file                         : yes 
+   Phase                                   @ 
+   Density                                 @ 
+   Total effective viscosity               @ 
+   Creep effective viscosity               @ 
+   Viscoplastic viscosity                  @ 
+   Velocity                                @ 
+   Pressure                                @ 
+   Temperature                             @ 
+   Deviatoric stress tensor                @ 
+   Deviatoric stress second invariant      @ 
+   Deviatoric strain rate tensor           @ 
+   Deviatoric strain rate second invariant @ 
+   Accumulated Plastic Strain (APS)        @ 
+   Momentum residual                       @ 
+   Continuity residual                     @ 
+--------------------------------------------------------------------------
+AVD output parameters:
+   Write .pvd file       : yes 
+   AVD refinement factor : 2 
+--------------------------------------------------------------------------
+Preconditioner parameters: 
+   Matrix type                   : monolithic
+   Penalty parameter (pgamma)    : 1.000000e+05
+   Exclude deviatoric projection @ 
+   Preconditioner type           : user-defined
+--------------------------------------------------------------------------
+============================== INITIAL GUESS =============================
+--------------------------------------------------------------------------
+  0 SNES Function norm 2.901508754326e+02 
+  0 PICARD ||F||/||F0||=1.000000e+00 
+    Residual norms for js_ solve.
+    0 KSP Residual norm 2.901508754326e+02 
+    1 KSP Residual norm 5.611925681375e-04 
+  1 SNES Function norm 2.014065351113e-03 
+--------------------------------------------------------------------------
+SNES Convergence Reason : ||F|| < rtol*||F_initial|| 
+Number of iterations    : 1
+SNES solution time      : 3.61237 (sec)
+--------------------------------------------------------------------------
+Residual summary: 
+   Continuity: 
+      |Div|_inf = 1.042333217513e-05 
+      |Div|_2   = 5.611925679604e-04 
+   Momentum: 
+      |mRes|_2  = 1.934301460533e-03 
+--------------------------------------------------------------------------
+Saving output ... done (0.0901453 sec)
+--------------------------------------------------------------------------
+================================= STEP 1 =================================
+--------------------------------------------------------------------------
+Current time        : 0.00000 [Myr] 
+Tentative time step : 0.00100 [Myr] 
+--------------------------------------------------------------------------
+  0 SNES Function norm 8.966723177028e-02 
+  0 PICARD ||F||/||F0||=1.000000e+00 
+    Residual norms for js_ solve.
+    0 KSP Residual norm 8.966723177028e-02 
+    1 KSP Residual norm 9.868764287856e-07 
+  1 SNES Function norm 7.782666127831e-02 
+  1 PICARD ||F||/||F0||=8.679499e-01 
+    Residual norms for js_ solve.
+    0 KSP Residual norm 7.782666127831e-02 
+    1 KSP Residual norm 3.029136214238e-06 
+  2 SNES Function norm 5.550165976827e-02 
+  2 PICARD ||F||/||F0||=6.189737e-01 
+    Residual norms for js_ solve.
+    0 KSP Residual norm 5.550165976827e-02 
+    1 KSP Residual norm 1.370141685131e-06 
+  3 SNES Function norm 4.136096128548e-02 
+  3 PICARD ||F||/||F0||=4.612718e-01 
+    Residual norms for js_ solve.
+    0 KSP Residual norm 4.136096128548e-02 
+    1 KSP Residual norm 7.398766819624e-07 
+  4 SNES Function norm 2.216750754015e-02 
+  4 PICARD ||F||/||F0||=2.472197e-01 
+    Residual norms for js_ solve.
+    0 KSP Residual norm 2.216750754015e-02 
+    1 KSP Residual norm 4.099879441558e-07 
+  5 SNES Function norm 1.041462082596e-02 
+  5 PICARD ||F||/||F0||=1.161475e-01 
+    Residual norms for js_ solve.
+    0 KSP Residual norm 1.041462082596e-02 
+    1 KSP Residual norm 1.937981261332e-07 
+  6 SNES Function norm 4.883808967188e-03 
+  6 PICARD ||F||/||F0||=5.446593e-02 
+    Residual norms for js_ solve.
+    0 KSP Residual norm 4.883808967188e-03 
+    1 KSP Residual norm 9.135174506034e-08 
+  7 SNES Function norm 2.332067681378e-03 
+  7 MMFD   ||F||/||F0||=2.600803e-02 
+    Residual norms for js_ solve.
+    0 KSP Residual norm 2.332067681378e-03 
+    1 KSP Residual norm 2.842151784643e-04 
+  8 SNES Function norm 2.874774088698e-04 
+  8 MMFD   ||F||/||F0||=3.206048e-03 
+    Residual norms for js_ solve.
+    0 KSP Residual norm 2.874774088698e-04 
+    1 KSP Residual norm 8.175180165987e-05 
+    2 KSP Residual norm 1.193381676569e-05 
+  9 SNES Function norm 1.028171677615e-04 
+  9 MMFD   ||F||/||F0||=1.146653e-03 
+    Residual norms for js_ solve.
+    0 KSP Residual norm 1.028171677615e-04 
+    1 KSP Residual norm 1.478362613758e-05 
+ 10 SNES Function norm 1.478651827350e-05 
+--------------------------------------------------------------------------
+SNES Convergence Reason : ||F|| < atol 
+Number of iterations    : 10
+SNES solution time      : 23.4423 (sec)
+--------------------------------------------------------------------------
+Residual summary: 
+   Continuity: 
+      |Div|_inf = 6.184571396672e-10 
+      |Div|_2   = 1.408658991572e-09 
+   Momentum: 
+      |mRes|_2  = 1.478651820640e-05 
+--------------------------------------------------------------------------
+Actual time step : 0.00100 [Myr] 
+--------------------------------------------------------------------------
+Performing marker control (updated algorithm)
+--------------------------------------------------------------------------
+Saving output ... done (0.0984457 sec)
+--------------------------------------------------------------------------
+================================= STEP 2 =================================
+--------------------------------------------------------------------------
+Current time        : 0.00100 [Myr] 
+Tentative time step : 0.00110 [Myr] 
+--------------------------------------------------------------------------
+  0 SNES Function norm 2.555836515312e-01 
+  0 PICARD ||F||/||F0||=1.000000e+00 
+    Residual norms for js_ solve.
+    0 KSP Residual norm 2.555836515312e-01 
+    1 KSP Residual norm 4.270252461949e-06 
+  1 SNES Function norm 3.348338084149e-02 
+  1 PICARD ||F||/||F0||=1.310075e-01 
+    Residual norms for js_ solve.
+    0 KSP Residual norm 3.348338084149e-02 
+    1 KSP Residual norm 6.495937040997e-07 
+  2 SNES Function norm 1.626792928269e-02 
+  2 PICARD ||F||/||F0||=6.365012e-02 
+    Residual norms for js_ solve.
+    0 KSP Residual norm 1.626792928269e-02 
+    1 KSP Residual norm 2.065078608138e-07 
+  3 SNES Function norm 9.666566782637e-03 
+  3 MMFD   ||F||/||F0||=3.782154e-02 
+    Residual norms for js_ solve.
+    0 KSP Residual norm 9.666566782637e-03 
+    1 KSP Residual norm 2.490579529719e-03 
+  4 SNES Function norm 3.920325987633e-03 
+  4 MMFD   ||F||/||F0||=1.533872e-02 
+    Residual norms for js_ solve.
+    0 KSP Residual norm 3.920325987633e-03 
+    1 KSP Residual norm 8.631223840143e-04 
+  5 SNES Function norm 8.606476607820e-04 
+  5 MMFD   ||F||/||F0||=3.367382e-03 
+    Residual norms for js_ solve.
+    0 KSP Residual norm 8.606476607820e-04 
+    1 KSP Residual norm 2.309063706018e-04 
+    2 KSP Residual norm 3.401718495221e-05 
+  6 SNES Function norm 3.445661032240e-05 
+--------------------------------------------------------------------------
+SNES Convergence Reason : ||F|| < atol 
+Number of iterations    : 6
+SNES solution time      : 14.0501 (sec)
+--------------------------------------------------------------------------
+Residual summary: 
+   Continuity: 
+      |Div|_inf = 1.013204505712e-08 
+      |Div|_2   = 1.724470297941e-08 
+   Momentum: 
+      |mRes|_2  = 3.445660600712e-05 
+--------------------------------------------------------------------------
+Actual time step : 0.00110 [Myr] 
+--------------------------------------------------------------------------
+Performing marker control (updated algorithm)
+--------------------------------------------------------------------------
+Saving output ... done (0.0983005 sec)
+--------------------------------------------------------------------------
+================================= STEP 3 =================================
+--------------------------------------------------------------------------
+Current time        : 0.00210 [Myr] 
+Tentative time step : 0.00121 [Myr] 
+--------------------------------------------------------------------------
+  0 SNES Function norm 1.317102341582e-01 
+  0 PICARD ||F||/||F0||=1.000000e+00 
+    Residual norms for js_ solve.
+    0 KSP Residual norm 1.317102341582e-01 
+    1 KSP Residual norm 1.442423335245e-06 
+  1 SNES Function norm 1.118855120970e-02 
+  1 PICARD ||F||/||F0||=8.494823e-02 
+    Residual norms for js_ solve.
+    0 KSP Residual norm 1.118855120970e-02 
+    1 KSP Residual norm 1.242959312372e-07 
+  2 SNES Function norm 4.692141286672e-03 
+  2 MMFD   ||F||/||F0||=3.562473e-02 
+    Residual norms for js_ solve.
+    0 KSP Residual norm 4.692141286672e-03 
+    1 KSP Residual norm 1.362578354444e-03 
+    2 KSP Residual norm 5.819189077180e-04 
+  3 SNES Function norm 1.034603085749e-03 
+  3 MMFD   ||F||/||F0||=7.855146e-03 
+    Residual norms for js_ solve.
+    0 KSP Residual norm 1.034603085749e-03 
+    1 KSP Residual norm 2.601942561489e-04 
+    2 KSP Residual norm 4.178944001094e-05 
+  4 SNES Function norm 4.135738287716e-05 
+--------------------------------------------------------------------------
+SNES Convergence Reason : ||F|| < atol 
+Number of iterations    : 4
+SNES solution time      : 9.4436 (sec)
+--------------------------------------------------------------------------
+Residual summary: 
+   Continuity: 
+      |Div|_inf = 2.165032972345e-09 
+      |Div|_2   = 5.842559277675e-09 
+   Momentum: 
+      |mRes|_2  = 4.135738246447e-05 
+--------------------------------------------------------------------------
+Actual time step : 0.00121 [Myr] 
+--------------------------------------------------------------------------
+Performing marker control (updated algorithm)
+--------------------------------------------------------------------------
+Saving output ... done (0.101387 sec)
+--------------------------------------------------------------------------
+================================= STEP 4 =================================
+--------------------------------------------------------------------------
+Current time        : 0.00331 [Myr] 
+Tentative time step : 0.00133 [Myr] 
+--------------------------------------------------------------------------
+  0 SNES Function norm 9.884653641083e-02 
+  0 PICARD ||F||/||F0||=1.000000e+00 
+    Residual norms for js_ solve.
+    0 KSP Residual norm 9.884653641083e-02 
+    1 KSP Residual norm 8.780083115531e-07 
+  1 SNES Function norm 6.524934109231e-03 
+  1 PICARD ||F||/||F0||=6.601075e-02 
+    Residual norms for js_ solve.
+    0 KSP Residual norm 6.524934109231e-03 
+    1 KSP Residual norm 4.768369912766e-08 
+  2 SNES Function norm 2.930998952369e-03 
+  2 MMFD   ||F||/||F0||=2.965201e-02 
+    Residual norms for js_ solve.
+    0 KSP Residual norm 2.930998952369e-03 
+    1 KSP Residual norm 9.727499515991e-04 
+    2 KSP Residual norm 3.925004318990e-04 
+  3 SNES Function norm 3.926070679621e-04 
+  3 MMFD   ||F||/||F0||=3.971885e-03 
+    Residual norms for js_ solve.
+    0 KSP Residual norm 3.926070679621e-04 
+    1 KSP Residual norm 1.160931743555e-04 
+    2 KSP Residual norm 2.179794916028e-05 
+  4 SNES Function norm 2.186412746992e-05 
+--------------------------------------------------------------------------
+SNES Convergence Reason : ||F|| < atol 
+Number of iterations    : 4
+SNES solution time      : 9.35488 (sec)
+--------------------------------------------------------------------------
+Residual summary: 
+   Continuity: 
+      |Div|_inf = 9.341605466603e-10 
+      |Div|_2   = 3.101845801809e-09 
+   Momentum: 
+      |mRes|_2  = 2.186412724990e-05 
+--------------------------------------------------------------------------
+Actual time step : 0.00133 [Myr] 
+--------------------------------------------------------------------------
+Performing marker control (updated algorithm)
+--------------------------------------------------------------------------
+Saving output ... done (0.099185 sec)
+--------------------------------------------------------------------------
+================================= STEP 5 =================================
+--------------------------------------------------------------------------
+Current time        : 0.00464 [Myr] 
+Tentative time step : 0.00146 [Myr] 
+--------------------------------------------------------------------------
+  0 SNES Function norm 8.751133701510e-02 
+  0 PICARD ||F||/||F0||=1.000000e+00 
+    Residual norms for js_ solve.
+    0 KSP Residual norm 8.751133701510e-02 
+    1 KSP Residual norm 6.517267430756e-07 
+  1 SNES Function norm 4.700331015328e-03 
+  1 PICARD ||F||/||F0||=5.371111e-02 
+    Residual norms for js_ solve.
+    0 KSP Residual norm 4.700331015328e-03 
+    1 KSP Residual norm 2.831024504924e-08 
+  2 SNES Function norm 2.289208700281e-03 
+  2 MMFD   ||F||/||F0||=2.615900e-02 
+    Residual norms for js_ solve.
+    0 KSP Residual norm 2.289208700281e-03 
+    1 KSP Residual norm 6.563150912876e-04 
+  3 SNES Function norm 7.110952178515e-04 
+  3 MMFD   ||F||/||F0||=8.125750e-03 
+    Residual norms for js_ solve.
+    0 KSP Residual norm 7.110952178515e-04 
+    1 KSP Residual norm 2.500254304265e-04 
+    2 KSP Residual norm 3.957814408912e-05 
+  4 SNES Function norm 3.987108420595e-05 
+--------------------------------------------------------------------------
+SNES Convergence Reason : ||F|| < atol 
+Number of iterations    : 4
+SNES solution time      : 9.41998 (sec)
+--------------------------------------------------------------------------
+Residual summary: 
+   Continuity: 
+      |Div|_inf = 2.918192931224e-10 
+      |Div|_2   = 1.267530339048e-09 
+   Momentum: 
+      |mRes|_2  = 3.987108418580e-05 
+--------------------------------------------------------------------------
+Actual time step : 0.00146 [Myr] 
+--------------------------------------------------------------------------
+Performing marker control (updated algorithm)
+--------------------------------------------------------------------------
+Saving output ... done (0.0994656 sec)
+--------------------------------------------------------------------------
+=========================== SOLUTION IS DONE! ============================
+--------------------------------------------------------------------------
+Total solution time : 71.0599 (sec) 
+--------------------------------------------------------------------------
+WARNING! There are options you set that were not used!
+WARNING! could be spelling mistake, etc!
+Option left: name:-ParamFile value: ./t3_SubductionMATLABinput/Subduction_MATLAB_Particles.dat
