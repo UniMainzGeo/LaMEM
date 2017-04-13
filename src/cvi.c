@@ -988,7 +988,7 @@ PetscErrorCode ADVelInterpMain(AdvVelCtx *vi)
 	if     (vi->actx->interp == STAG   )  { ierr = ADVelInterpSTAG   (vi); CHKERRQ(ierr); }
 	else if(vi->actx->interp == MINMOD )  { ierr = ADVelInterpMINMOD (vi); CHKERRQ(ierr); }
 	else if(vi->actx->interp == STAG_P )  { ierr = ADVelInterpSTAGP  (vi); CHKERRQ(ierr); }
-	else SETERRQ(PETSC_COMM_SELF, PETSC_ERR_USER," *** Unknown option for velocity interpolation scheme");
+	else SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER," *** Unknown option for velocity interpolation scheme");
 
 	PetscFunctionReturn(0);
 }

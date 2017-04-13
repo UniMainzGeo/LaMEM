@@ -150,6 +150,8 @@ PetscErrorCode NLSolCreate(NLSol *nl, PCStokes pc, SNES *p_snes)
 	// return solver
 	(*p_snes) = snes;
 
+	PetscPrintf(PETSC_COMM_WORLD, "--------------------------------------------------------------------------\n");
+
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------

@@ -217,7 +217,7 @@ PetscErrorCode PMatSetFromOptions(PMat pm)
 			PetscPrintf(PETSC_COMM_WORLD, "   Matrix type                   : block\n");
 			pm->type = _BLOCK_;
 		}
-		else SETERRQ1(PETSC_COMM_SELF, PETSC_ERR_USER,"Incorrect matrix storage format: %s", pname);
+		else SETERRQ1(PETSC_COMM_WORLD, PETSC_ERR_USER,"Incorrect matrix storage format: %s", pname);
 	}
 	else
 	{
@@ -234,7 +234,7 @@ PetscErrorCode PMatSetFromOptions(PMat pm)
 	{
 		if(pgamma < 1.0)
 		{
-			SETERRQ(PETSC_COMM_SELF, PETSC_ERR_USER,"Penalty parameter [-pcmat_pgamma] is less than unit");
+			SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER,"Penalty parameter [-pcmat_pgamma] is less than unit");
 		}
 
 		pm->pgamma = pgamma;

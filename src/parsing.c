@@ -642,7 +642,7 @@ PetscErrorCode getScalarParam(
 	// check data item exists
 	if(found != PETSC_TRUE)
 	{
-		if     (ptype == _REQUIRED_) SETERRQ1(PETSC_COMM_SELF, PETSC_ERR_USER, "Define parameter \"[-]%s\"\n", key);
+		if     (ptype == _REQUIRED_) SETERRQ1(PETSC_COMM_WORLD, PETSC_ERR_USER, "Define parameter \"[-]%s\"\n", key);
 		else if(ptype == _OPTIONAL_) PetscFunctionReturn(0);
 	}
 
@@ -693,7 +693,7 @@ PetscErrorCode getStringParam(
 	// check data item exists
 	if(!strlen(str))
 	{
-		if     (ptype == _REQUIRED_) SETERRQ1(PETSC_COMM_SELF, PETSC_ERR_USER, "Define parameter \"[-]%s\"\n", key);
+		if     (ptype == _REQUIRED_) SETERRQ1(PETSC_COMM_WORLD, PETSC_ERR_USER, "Define parameter \"[-]%s\"\n", key);
 		else if(ptype == _OPTIONAL_) PetscFunctionReturn(0);
 	}
 

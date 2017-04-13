@@ -158,35 +158,35 @@ PetscErrorCode JacResCreate(JacRes *jr, FB *fb)
 
 	if(need_DII_ref && !ctrl->DII_ref)
 	{
-		SETERRQ(PETSC_COMM_SELF, PETSC_ERR_USER, "Specify reference strain rate (DII_ref)\n");
+		SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "Specify reference strain rate (DII_ref)\n");
 	}
 
 	if(!need_DII_ref) ctrl->DII_ref = 0.0;
 
 	if(need_RUGC && !ctrl->Rugc)
 	{
-		SETERRQ(PETSC_COMM_SELF, PETSC_ERR_USER, "Specify universal gas constant (RUGC)\n");
+		SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "Specify universal gas constant (RUGC)\n");
 	}
 
 	if(!need_RUGC) ctrl->Rugc = 0.0;
 
 	if(need_rho_fluid && !ctrl->rho_fluid)
 	{
-		SETERRQ(PETSC_COMM_SELF, PETSC_ERR_USER, "Specify fluid density (rho_n, rho_c, rp, rho_fluid)\n");
+		SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "Specify fluid density (rho_n, rho_c, rp, rho_fluid)\n");
 	}
 
 	if(!need_rho_fluid) ctrl->rho_fluid = 0.0;
 
 	if(need_gw_type && ctrl->gwType == _GW_NONE_)
 	{
-		SETERRQ(PETSC_COMM_SELF, PETSC_ERR_USER, "Define ground water level type (rp, gw_level_type)\n");
+		SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "Define ground water level type (rp, gw_level_type)\n");
 	}
 
 	if(!need_gw_type) ctrl->gwType = _GW_NONE_;
 
 	if((need_surf || ctrl->gwType == _GW_SURF_) && !surf->UseFreeSurf)
 	{
-		SETERRQ(PETSC_COMM_SELF, PETSC_ERR_USER, "Activate free surface (rho_n, rho_c, gw_level_type, surf_use)\n");
+		SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "Activate free surface (rho_n, rho_c, gw_level_type, surf_use)\n");
 	}
 
 	// get gravity components
@@ -196,24 +196,24 @@ PetscErrorCode JacResCreate(JacRes *jr, FB *fb)
 
 	if(gx || gy)
 	{
-		SETERRQ(PETSC_COMM_SELF, PETSC_ERR_USER, "Horizontal gravity components are currently not supported (grav)");
+		SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "Horizontal gravity components are currently not supported (grav)");
 	}
 
 	if(ctrl->FSSA < 0.0 || ctrl->FSSA > 1.0)
 	{
-		SETERRQ(PETSC_COMM_SELF, PETSC_ERR_USER, "Free surface stabilization parameter must be between 0 and 1 (FSSA)");
+		SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "Free surface stabilization parameter must be between 0 and 1 (FSSA)");
 	}
 
 	if(ctrl->shearHeatEff < 0.0 || ctrl->shearHeatEff > 1.0)
 	{
-		SETERRQ(PETSC_COMM_SELF, PETSC_ERR_USER, "Shear heating efficiency parameter must be between 0 and 1 (shear_heat_eff)");
+		SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "Shear heating efficiency parameter must be between 0 and 1 (shear_heat_eff)");
 	}
 
 	if(!ctrl->actTemp) ctrl->shearHeatEff = 0.0;
 
 	if(ctrl->biot < 0.0 || ctrl->biot > 1.0)
 	{
-		SETERRQ(PETSC_COMM_SELF, PETSC_ERR_USER, "Biot pressure parameter must be between 0 and 1 (biot)");
+		SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "Biot pressure parameter must be between 0 and 1 (biot)");
 	}
 
 	if(ctrl->gwType == _GW_NONE_) ctrl->biot = 0.0;
@@ -235,27 +235,27 @@ PetscErrorCode JacResCreate(JacRes *jr, FB *fb)
 
 	if(cnt > 1)
 	{
-		SETERRQ(PETSC_COMM_SELF, PETSC_ERR_USER, "Cannot combine plasticity stabilization methods (quasi_harm_avg, cf_eta_min, n_pw) \n");
+		SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "Cannot combine plasticity stabilization methods (quasi_harm_avg, cf_eta_min, n_pw) \n");
 	}
 
 	if(cnt && ctrl->jac_mat_free)
 	{
-		SETERRQ(PETSC_COMM_SELF, PETSC_ERR_USER, "Analytical Jacobian is not available for plasticity stabilizations (jac_mat_free, quasi_harm_avg, cf_eta_min, n_pw) \n");
+		SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "Analytical Jacobian is not available for plasticity stabilizations (jac_mat_free, quasi_harm_avg, cf_eta_min, n_pw) \n");
 	}
 
 	if(ctrl->pShiftAct && ctrl->jac_mat_free)
 	{
-		SETERRQ(PETSC_COMM_SELF, PETSC_ERR_USER, "Analytical Jacobian is incompatible with pressure shifting (jac_mat_free, act_p_shift) \n");
+		SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "Analytical Jacobian is incompatible with pressure shifting (jac_mat_free, act_p_shift) \n");
 	}
 
 	if(!jr->bc->top_open && ctrl->jac_mat_free)
 	{
-		SETERRQ(PETSC_COMM_SELF, PETSC_ERR_USER, "Analytical Jacobian requires open top boundary (jac_mat_free, open_top_bound) \n");
+		SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "Analytical Jacobian requires open top boundary (jac_mat_free, open_top_bound) \n");
 	}
 
 	if(ctrl->initGuess && !ctrl->eta_ref)
 	{
-		SETERRQ(PETSC_COMM_SELF, PETSC_ERR_USER, "Specify reference viscosity for initial guess (init_guess, eta_ref) \n");
+		SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "Specify reference viscosity for initial guess (init_guess, eta_ref) \n");
 	}
 
 	// print summary
@@ -1989,8 +1989,8 @@ PetscErrorCode JacResViewRes(JacRes *jr)
 
 	if(jr->ctrl.actTemp)
 	{
-		PetscPrintf(PETSC_COMM_WORLD, "  Energy: \n" );
-		PetscPrintf(PETSC_COMM_WORLD, "    |eRes|_2 = %12.12e \n", e2);
+		PetscPrintf(PETSC_COMM_WORLD, "   Energy: \n" );
+		PetscPrintf(PETSC_COMM_WORLD, "      |eRes|_2  = %12.12e \n", e2);
 	}
 
 	PetscPrintf(PETSC_COMM_WORLD, "--------------------------------------------------------------------------\n");
@@ -2001,7 +2001,7 @@ PetscErrorCode JacResViewRes(JacRes *jr)
 
 	if ((div_tol) && (( dinf > div_tol ) || (f2 > div_tol)))
 	{
-		SETERRQ(PETSC_COMM_SELF, PETSC_ERR_USER, " *** Emergency stop! Maximum divergence or momentum residual is too large; solver did not converge! *** \n");
+		SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, " *** Emergency stop! Maximum divergence or momentum residual is too large; solver did not converge! *** \n");
 	}
 
 	PetscFunctionReturn(0);

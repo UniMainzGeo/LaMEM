@@ -103,3 +103,35 @@ def test_c():
 
   return(ex1)
 
+
+def test_d():
+
+  # 1) Create a partitioning file and do not show any output of this
+  os.system('mpiexec -n 8 ../bin/opt/LaMEM -ParamFile ./t3_SubductionMATLABinput/Subduction_VEP.dat -mode save_grid > /dev/null');
+
+  # 2) Run MATLAB to create the Particles input  (requires the environmental variable $MATLAB to be defined!)
+  os.system('$MATLAB -nojvm -r "cd t3_SubductionMATLABinput; CreateMarkers_SubductionVEP_parallel; exit" > /dev/null')
+
+  # Run the input script wth matlab-generated particles
+  ranks = 8
+  launch = '../bin/opt/LaMEM -ParamFile ./t3_SubductionMATLABinput/Subduction_VEP.dat'
+  expected_file = 't3_SubductionMATLABinput/Sub1_MATLAB_d_MUMPS_MG_VEP_opt-p8.expected'
+
+  def comparefunc(unittest):
+
+    key = re.escape("|Div|_inf")
+    unittest.compareFloatingPoint(key,1e-7)
+
+    key = re.escape("|Div|_2")
+    unittest.compareFloatingPoint(key,1e-5)
+
+    key = re.escape("|mRes|_2")
+    unittest.compareFloatingPoint(key,1e-4)
+
+  # Create unit test object
+  ex1 = pth.pthUnitTest('Sub1_MATLAB_d_MUMPS_MG_VEP_opt',ranks,launch,expected_file)
+  ex1.setVerifyMethod(comparefunc)
+  ex1.appendKeywords('@')
+
+  return(ex1)
+

@@ -72,8 +72,8 @@ PetscErrorCode ConstEqCtxSetup(
 	PetscFunctionBegin;
 
 	// set RT
-	if(T) RT =  ctrl->Rugc*T;
-	else  RT = -1.0;
+	RT         = ctrl->Rugc*T;
+	if(!RT) RT = -1.0;
 
 	// use reference strain-rate instead of zero
 	if(DII == 0.0) DII = ctrl->DII_ref;
@@ -330,6 +330,9 @@ PetscErrorCode GetEffVisc(
 	{
 		// compute true plastic viscosity
 		eta_pl = ctx->taupl/(2.0*ctx->DII);
+
+		// ultimate viscosity cutoff for plasticity
+		if(eta_pl < ctrl->eta_min) eta_pl = ctrl->eta_min;
 
 		//==============================================
 		// compute total viscosity

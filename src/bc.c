@@ -66,7 +66,7 @@ PetscErrorCode BCBlockCreate(BCBlock *bcb, Scaling *scal, FB *fb)
 	//	-npath - Number of path points of Bezier curve (end-points only!)
 	//	-theta - Orientation angles at path points (counter-clockwise positive)
 	//	-time  - Times at path points
-	//	-path  - Bezier curve path & control points (6*npath-4 entries are expected)
+	//	-path  - path points x-y coordinates
 	//	-npoly - Number of polygon vertices
 	//	-poly  - Polygon x-y coordinates at initial time
 	//	-bot   - Polygon bottom coordinate
@@ -81,10 +81,10 @@ PetscErrorCode BCBlockCreate(BCBlock *bcb, Scaling *scal, FB *fb)
 	ierr = getIntParam   (fb, _OPTIONAL_, "npath", &bcb->npath, 1,              _max_path_points_); CHKERRQ(ierr);
 	ierr = getScalarParam(fb, _OPTIONAL_, "theta",  bcb->theta, bcb->npath,      scal->angle     ); CHKERRQ(ierr);
 	ierr = getScalarParam(fb, _REQUIRED_, "time",   bcb->time,  bcb->npath,      scal->time      ); CHKERRQ(ierr);
-	ierr = getScalarParam(fb, _REQUIRED_, "path",   bcb->path,  6*bcb->npath-4,  scal->length    ); CHKERRQ(ierr);
+	ierr = getScalarParam(fb, _REQUIRED_, "path",   bcb->path,  2*bcb->npath,    scal->length    ); CHKERRQ(ierr);
 
 	ierr = getIntParam   (fb, _OPTIONAL_, "npoly", &bcb->npoly, 1,              _max_poly_points_); CHKERRQ(ierr);
-	ierr = getScalarParam(fb, _REQUIRED_, "poly ",  bcb->poly,  2*bcb->npoly,    scal->length    ); CHKERRQ(ierr);
+	ierr = getScalarParam(fb, _REQUIRED_, "poly",   bcb->poly,  2*bcb->npoly,    scal->length    ); CHKERRQ(ierr);
 	ierr = getScalarParam(fb, _REQUIRED_, "bot",   &bcb->bot,   1,               scal->length    ); CHKERRQ(ierr);
 	ierr = getScalarParam(fb, _REQUIRED_, "top",   &bcb->top,   1,               scal->length    ); CHKERRQ(ierr);
 
@@ -98,8 +98,8 @@ PetscErrorCode BCBlockGetPosition(BCBlock *bcb, PetscScalar t, PetscInt *f, Pets
 	// compute position along the path and rotation angle as a function of time
 
 	PetscInt      i, n;
-	PetscScalar   r, r2, r3, s, s2, s3;
-	PetscScalar  *p1, *p2, *p3, *p4;
+	PetscScalar   r, s;
+	PetscScalar  *p1, *p2;
 	PetscScalar  *path, *theta, *time;
 
 	PetscFunctionBegin;
@@ -116,23 +116,68 @@ PetscErrorCode BCBlockGetPosition(BCBlock *bcb, PetscScalar t, PetscInt *f, Pets
 	for(i = 1; i < n-1; i++) { if(t < time[i]) break; } i--;
 
 	// get path and control points
-	p1 = path + 6*i;
-	p2 = p1 + 2;
-	p3 = p2 + 2;
-	p4 = p3 + 2;
+	p1 = path + 2*i;
+	p2 = p1   + 2;
 
 	// compute interpolation parameters
 	r  = (t - time[i])/(time[i+1] - time[i]);
-	r2 = r*r;
-	r3 = r2*r;
 	s  = 1.0 - r;
-	s2 = s*s;
-	s3 = s2*s;
 
-	// interpolate Bezier path and rotation angle
-	X[0] = s3*p1[0] + 3.0*s2*r*p2[0] + 3.0*s*r2*p3[0] + r3*p4[0];
-    X[1] = s3*p1[1] + 3.0*s2*r*p2[1] + 3.0*s*r2*p3[1] + r3*p4[1];
-    X[2] = s*theta[i] + r*theta[i+1];
+	// interpolate path and rotation angle
+	X[0] = s*p1[0]    + r*p2[0];
+	X[1] = s*p1[1]    + r*p2[1];
+	X[2] = s*theta[i] + r*theta[i+1];
+
+//   [A] Bezier curves can be input directly.
+//   Bezier curve requires 4 points per segment (see e.g. wikipedia):
+//   path point P0 - control point P1 - control point P2 - path point P3.
+//   The last path point (P3) of every, but the last, interval is omitted due to continuity.
+//   Altogether, "path" variable should provide 3*npath-2 points.
+//   Every point has x and y coordinates, so total number of entries should be 6*npath-4.
+//   Bezier curves can be most easily generated using Inkscape software.
+//   Continuity of tangent lines can be imposed by the tool "make selected nodes symmetric"
+//   Coordinates of the curve points can be accessed using the XML editor in Inkscape.
+//   Alternatively one can process .svg files by geomIO software.
+
+//   [B] Alternative is to create smooth B-spline curves passing through the basic path points.
+//   Example (5 path points (S0 - S4), 4 Bezier segments):
+//   1) Solve for 3 B-control points (tri-diagonal system with 2 rhs & solution vectors one for x and one for y):
+//   | 4 1 0 |   | B1 |    | 6S1-S0 |
+//   | 1 4 1 | * | B2 | =  | 6S2    |
+//   | 0 1 4 |   | B3 |    | 6S3-S4 |
+//   End-points:
+//   B0 = S0
+//   B4 = S4
+//   2) Compute two Bezier control points for each segment form B-points:
+//   Example: Segment S1-S2
+//   Control points:
+//   P1=2/3*B1 + 1/3*B2
+//   P2=2/3*B2 + 1/3*B1
+
+//   [C] In any case Bezier curves and B-splines can not be used directly,
+//   since their curve parameter (t) maps nonlinearly on curve length, i.e:
+//   l(t=1/3) != L/3, where L in the total length of curve segment.
+//   This will lead to artificial "accelerations" along the curve path.
+//   Instead Bezier curves must be approximated by linear segments.
+//   This can be done adaptively by increasing number of subdivisions until approximate
+//   curve length converges to a loose relative tolerance (say 5-10%).
+
+//   [D] Code snippet:
+//   // get path and control points
+//   p1 = path + 6*i;
+//   p2 = p1 + 2;
+//   p3 = p2 + 2;
+//   p4 = p3 + 2;
+//   // compute interpolation parameters
+//   r  = (t - time[i])/(time[i+1] - time[i]);
+//   r2 = r*r;
+//   r3 = r2*r;
+//   s  = 1.0 - r;
+//   s2 = s*s;
+//   s3 = s2*s;
+//   // interpolate Bezier path
+//   X[0] = s3*p1[0] + 3.0*s2*r*p2[0] + 3.0*s*r2*p3[0] + r3*p4[0];
+//   X[1] = s3*p1[1] + 3.0*s2*r*p2[1] + 3.0*s*r2*p3[1] + r3*p4[1];
 
 	PetscFunctionReturn(0);
 }
@@ -297,7 +342,7 @@ PetscErrorCode BCCreate(BCCtx *bc, FB *fb)
 	// CHECK
 	if(bc->top_open && bc->noslip[5])
 	{
-		SETERRQ(PETSC_COMM_SELF, PETSC_ERR_USER, "No-slip condition is incompatible with open boundary (open_top_bound, noslip) \n");
+		SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "No-slip condition is incompatible with open boundary (open_top_bound, noslip) \n");
 	}
 
 	// print summary
@@ -547,7 +592,7 @@ PetscErrorCode BCShiftIndices(BCCtx *bc, ShiftType stype)
 	// error checking
 	if(stype == bc->stype)
 	{
-		SETERRQ(PETSC_COMM_SELF, PETSC_ERR_USER,"Cannot call same type of index shifting twice in a row");
+		SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER,"Cannot call same type of index shifting twice in a row");
 	}
 
 	// access context

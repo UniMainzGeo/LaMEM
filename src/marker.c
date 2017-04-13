@@ -610,7 +610,7 @@ PetscErrorCode ADVMarkInitGeom(AdvCtx *actx, FB *fb)
 
 	if(ngeom > _max_geom_)
 	{
-		SETERRQ1(PETSC_COMM_SELF, PETSC_ERR_USER, "Too many geometric primitives! Max allowed: %lld", (LLD)_max_geom_);
+		SETERRQ1(PETSC_COMM_WORLD, PETSC_ERR_USER, "Too many geometric primitives! Max allowed: %lld", (LLD)_max_geom_);
 	}
 
 	for(jj = 0; jj < fb->nblocks; jj++)
@@ -638,7 +638,7 @@ PetscErrorCode ADVMarkInitGeom(AdvCtx *actx, FB *fb)
 
 	if(ngeom > _max_geom_)
 	{
-		SETERRQ1(PETSC_COMM_SELF, PETSC_ERR_USER, "Too many geometric primitives! Max allowed: %lld", (LLD)_max_geom_);
+		SETERRQ1(PETSC_COMM_WORLD, PETSC_ERR_USER, "Too many geometric primitives! Max allowed: %lld", (LLD)_max_geom_);
 	}
 
 	for(jj = 0; jj < fb->nblocks; jj++)
@@ -665,7 +665,7 @@ PetscErrorCode ADVMarkInitGeom(AdvCtx *actx, FB *fb)
 
 	if(ngeom > _max_geom_)
 	{
-		SETERRQ1(PETSC_COMM_SELF, PETSC_ERR_USER, "Too many geometric primitives! Max allowed: %lld", (LLD)_max_geom_);
+		SETERRQ1(PETSC_COMM_WORLD, PETSC_ERR_USER, "Too many geometric primitives! Max allowed: %lld", (LLD)_max_geom_);
 	}
 
 	for(jj = 0; jj < fb->nblocks; jj++)
@@ -696,7 +696,7 @@ PetscErrorCode ADVMarkInitGeom(AdvCtx *actx, FB *fb)
 
 	if(ngeom > _max_geom_)
 	{
-		SETERRQ1(PETSC_COMM_SELF, PETSC_ERR_USER, "Too many geometric primitives! Max allowed: %lld", (LLD)_max_geom_);
+		SETERRQ1(PETSC_COMM_WORLD, PETSC_ERR_USER, "Too many geometric primitives! Max allowed: %lld", (LLD)_max_geom_);
 	}
 
 	for(jj = 0; jj < fb->nblocks; jj++)

@@ -78,6 +78,9 @@ PetscErrorCode ADVCreate(AdvCtx *actx, FB *fb)
 {
 	// create advection context
 
+	PetscInt nmark_lim[ ] = { 0, 0    };
+	PetscInt nmark_avd[ ] = { 0, 0, 0 };
+
 	PetscInt maxPhaseID;
 	char     msetup[_STR_LEN_], advect[_STR_LEN_], interp[_STR_LEN_], mctrl[_STR_LEN_];
 
@@ -96,19 +99,21 @@ PetscErrorCode ADVCreate(AdvCtx *actx, FB *fb)
 	// READ
 
 	// read parameters
-	ierr = getStringParam(fb, _OPTIONAL_, "msetup",          msetup,             "geom");          CHKERRQ(ierr);
-	ierr = getIntParam   (fb, _OPTIONAL_, "nmark_x",        &actx->NumPartX,     1, _max_nmark_);  CHKERRQ(ierr);
-	ierr = getIntParam   (fb, _OPTIONAL_, "nmark_y",        &actx->NumPartY,     1, _max_nmark_);  CHKERRQ(ierr);
-	ierr = getIntParam   (fb, _OPTIONAL_, "nmark_z",        &actx->NumPartZ,     1, _max_nmark_);  CHKERRQ(ierr);
-	ierr = getIntParam   (fb, _OPTIONAL_, "rand_noise",     &actx->randNoise,    1, 1);            CHKERRQ(ierr);
-	ierr = getIntParam   (fb, _OPTIONAL_, "bg_phase",       &actx->bgPhase,      1, maxPhaseID);   CHKERRQ(ierr);
-	ierr = getIntParam   (fb, _OPTIONAL_, "save_mark",      &actx->saveMark,     1, 1);            CHKERRQ(ierr);
-	ierr = getStringParam(fb, _OPTIONAL_, "mark_save_file",  actx->saveFile,     "./markers/mdb"); CHKERRQ(ierr);
-	ierr = getStringParam(fb, _OPTIONAL_, "advect",          advect,             "basic");         CHKERRQ(ierr);
-	ierr = getStringParam(fb, _OPTIONAL_, "interp",          interp,             "stag");          CHKERRQ(ierr);
-	ierr = getScalarParam(fb, _OPTIONAL_, "stagp_a",        &actx->A,            1, 1.0);          CHKERRQ(ierr);
-	ierr = getStringParam(fb, _OPTIONAL_, "mark_ctrl",       mctrl,              "none");          CHKERRQ(ierr);
-	ierr = getScalarParam(fb, _OPTIONAL_, "surf_tol",       &actx->surfTol,      1, 1.0);          CHKERRQ(ierr);
+	ierr = getStringParam(fb, _OPTIONAL_, "msetup",          msetup,         "geom");          CHKERRQ(ierr);
+	ierr = getIntParam   (fb, _OPTIONAL_, "nmark_x",        &actx->NumPartX, 1, _max_nmark_);  CHKERRQ(ierr);
+	ierr = getIntParam   (fb, _OPTIONAL_, "nmark_y",        &actx->NumPartY, 1, _max_nmark_);  CHKERRQ(ierr);
+	ierr = getIntParam   (fb, _OPTIONAL_, "nmark_z",        &actx->NumPartZ, 1, _max_nmark_);  CHKERRQ(ierr);
+	ierr = getIntParam   (fb, _OPTIONAL_, "rand_noise",     &actx->randNoise,1, 1);            CHKERRQ(ierr);
+	ierr = getIntParam   (fb, _OPTIONAL_, "bg_phase",       &actx->bgPhase,  1, maxPhaseID);   CHKERRQ(ierr);
+	ierr = getIntParam   (fb, _OPTIONAL_, "save_mark",      &actx->saveMark, 1, 1);            CHKERRQ(ierr);
+	ierr = getStringParam(fb, _OPTIONAL_, "mark_save_file",  actx->saveFile, "./markers/mdb"); CHKERRQ(ierr);
+	ierr = getStringParam(fb, _OPTIONAL_, "advect",          advect,         "basic");         CHKERRQ(ierr);
+	ierr = getStringParam(fb, _OPTIONAL_, "interp",          interp,         "stag");          CHKERRQ(ierr);
+	ierr = getScalarParam(fb, _OPTIONAL_, "stagp_a",        &actx->A,        1, 1.0);          CHKERRQ(ierr);
+	ierr = getStringParam(fb, _OPTIONAL_, "mark_ctrl",       mctrl,          "none");          CHKERRQ(ierr);
+	ierr = getScalarParam(fb, _OPTIONAL_, "surf_tol",       &actx->surfTol,  1, 1.0);          CHKERRQ(ierr);
+	ierr = getIntParam   (fb, _OPTIONAL_, "nmark_lim",       nmark_lim,      2, 0);            CHKERRQ(ierr);
+	ierr = getIntParam   (fb, _OPTIONAL_, "nmark_avd",       nmark_avd,      3, 0);            CHKERRQ(ierr);
 
 	// CHECK
 
@@ -161,19 +166,33 @@ PetscErrorCode ADVCreate(AdvCtx *actx, FB *fb)
 
 	if(actx->A < 0.0 || actx->A > 1.0)
 	{
-		SETERRQ(PETSC_COMM_SELF, PETSC_ERR_USER, "Interpolation constant must be between 0 and 1 (stagp_a)");
+		SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "Interpolation constant must be between 0 and 1 (stagp_a)");
 	}
 
 	if( actx->interp != STAG_P)  actx->A = 0.0;
 	if( actx->msetup != _GEOM_)  actx->bgPhase = -1;
 	if(!actx->surf->UseFreeSurf) actx->surfTol = 0.0;
 
-	// initialize variables for marker control (hard-coded)
-	actx->nmin = (PetscInt) (actx->NumPartX*actx->NumPartY*actx->NumPartZ/2); // min # of markers/cell 50%
-	actx->nmax = (PetscInt) (actx->NumPartX*actx->NumPartY*actx->NumPartZ*3); // max # of markers/cell 300%
-	actx->avdx = actx->NumPartX * 3;
-	actx->avdy = actx->NumPartY * 3;
-	actx->avdz = actx->NumPartZ * 3;
+	// initialize variables for marker control
+	if(actx->mctrl != CTRL_NONE)
+	{
+		actx->nmin = actx->NumPartX*actx->NumPartY*actx->NumPartZ / 2; // min # of markers/cell 50%
+		actx->nmax = actx->NumPartX*actx->NumPartY*actx->NumPartZ * 3; // max # of markers/cell 300%
+
+		if(nmark_lim[0]) actx->nmin = nmark_lim[0];
+		if(nmark_lim[1]) actx->nmax = nmark_lim[1];
+	}
+
+	if(actx->mctrl == CTRL_AVD)
+	{
+		actx->avdx = actx->NumPartX * 3;
+		actx->avdy = actx->NumPartY * 3;
+		actx->avdz = actx->NumPartZ * 3;
+
+		if(nmark_avd[0]) actx->avdx = nmark_avd[0];
+		if(nmark_avd[1]) actx->avdy = nmark_avd[1];
+		if(nmark_avd[2]) actx->avdz = nmark_avd[2];
+	}
 
 	// PRINT
 	PetscPrintf(PETSC_COMM_WORLD, "Advection parameters:\n");
@@ -184,7 +203,7 @@ PetscErrorCode ADVCreate(AdvCtx *actx, FB *fb)
 	else if(actx->msetup == _POLYGONS_) PetscPrintf(PETSC_COMM_WORLD,"volumes form polygons (geomIO)\n");
 
 	// print advection scheme
-  	PetscPrintf(PETSC_COMM_WORLD,"   Advection scheme              : ");
+ 	PetscPrintf(PETSC_COMM_WORLD,"   Advection scheme              : ");
 	if     (actx->advect == BASIC_EULER)   PetscPrintf(PETSC_COMM_WORLD, "Euler 1-st order (basic implementation)\n");
 	else if(actx->advect == EULER)         PetscPrintf(PETSC_COMM_WORLD, "Euler 1-st order\n");
 	else if(actx->advect == RUNGE_KUTTA_2) PetscPrintf(PETSC_COMM_WORLD, "Runge-Kutta 2-nd order\n");

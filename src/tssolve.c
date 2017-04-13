@@ -87,22 +87,22 @@ PetscErrorCode TSSolCreate(TSSol *ts, FB *fb)
 
 	if(ts->CFL < 0.0 && ts->CFL > 1.0)
 	{
-		SETERRQ(PETSC_COMM_SELF, PETSC_ERR_USER, "CFL parameter must be between 0 and 1");
+		SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "CFL parameter must be between 0 and 1");
 	}
 
 	if(ts->CFLMAX < 0.0 && ts->CFLMAX > 1.0)
 	{
-		SETERRQ(PETSC_COMM_SELF, PETSC_ERR_USER, "CFLMAX parameter must be between 0 and 1");
+		SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "CFLMAX parameter must be between 0 and 1");
 	}
 
 	if(ts->CFL > ts->CFLMAX)
 	{
-		SETERRQ(PETSC_COMM_SELF, PETSC_ERR_USER, "CFL parameter should be smaller than CFLMAX");
+		SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "CFL parameter should be smaller than CFLMAX");
 	}
 
 	if(!ts->time_end && !ts->nstep_max)
 	{
-		SETERRQ(PETSC_COMM_SELF, PETSC_ERR_USER, "Define at least one of the parameters: time_end, nstep_max");
+		SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "Define at least one of the parameters: time_end, nstep_max");
 	}
 
 	// set defaults
@@ -243,6 +243,9 @@ PetscErrorCode TSSolGetCFLStep(
 	PetscScalar  gidtmax, // maximum global inverse time step
 	PetscInt    *restart) // time step restart flag
 {
+
+// ACHTUNG !!!
+
 	Scaling     *scal;
 	PetscScalar  dt_cfl, dt_cfl_max;
 
@@ -260,7 +263,7 @@ PetscErrorCode TSSolGetCFLStep(
 	// declare divergence if too small time step is required
 	if(dt_cfl < ts->dt_min)
 	{
-		SETERRQ2(PETSC_COMM_WORLD, PETSC_ERR_USER, "Time step is smaller than dt_min: %7.5f %s\n", ts->dt_min*scal->time, scal->lbl_time);
+//		SETERRQ2(PETSC_COMM_WORLD, PETSC_ERR_USER, "Time step is smaller than dt_min: %7.5f %s\n", ts->dt_min*scal->time, scal->lbl_time);
 	}
 
 	// check fixed time step restrictions
@@ -279,7 +282,7 @@ PetscErrorCode TSSolGetCFLStep(
 
 			ts->dt = dt_cfl;
 
-			(*restart) = 1;
+//			(*restart) = 1;
 
 			PetscFunctionReturn(0);
 		}
