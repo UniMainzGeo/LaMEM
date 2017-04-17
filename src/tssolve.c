@@ -243,9 +243,6 @@ PetscErrorCode TSSolGetCFLStep(
 	PetscScalar  gidtmax, // maximum global inverse time step
 	PetscInt    *restart) // time step restart flag
 {
-
-// ACHTUNG !!!
-
 	Scaling     *scal;
 	PetscScalar  dt_cfl, dt_cfl_max;
 
@@ -263,7 +260,7 @@ PetscErrorCode TSSolGetCFLStep(
 	// declare divergence if too small time step is required
 	if(dt_cfl < ts->dt_min)
 	{
-//		SETERRQ2(PETSC_COMM_WORLD, PETSC_ERR_USER, "Time step is smaller than dt_min: %7.5f %s\n", ts->dt_min*scal->time, scal->lbl_time);
+		SETERRQ2(PETSC_COMM_WORLD, PETSC_ERR_USER, "Time step is smaller than dt_min: %7.5f %s\n", ts->dt_min*scal->time, scal->lbl_time);
 	}
 
 	// check fixed time step restrictions
@@ -282,7 +279,7 @@ PetscErrorCode TSSolGetCFLStep(
 
 			ts->dt = dt_cfl;
 
-//			(*restart) = 1;
+			(*restart) = 1;
 
 			PetscFunctionReturn(0);
 		}
