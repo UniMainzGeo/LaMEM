@@ -430,6 +430,7 @@ PetscScalar GetI2Gdt(
 		// average elastic materials only
 		if(phases[i].G)
 		{
+			//PetscPrintf(PETSC_COMM_WORLD, "  phases[%i].G = %12.12e\n", i,phases[i].G);
 			Gavg += phRat[i]*phases[i].G;
 		}
 	}

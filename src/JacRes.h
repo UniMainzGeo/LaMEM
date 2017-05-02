@@ -95,6 +95,7 @@ typedef struct
 
 	// for wave propagation
 	PetscBool		ExplicitSolver; 		// True => at the moment, wave propagation
+	PetscInt		NumImpSteps;			// Number of steps with implicit LaMEM, after that, the simulation will switch to explicit LaMEM
 	PetscScalar		ForceDampingFactor;			// Force damping factor used to absorb oscillation energy
 	PetscScalar		DensityFactor; 			// Computational density will be material density*density_factor
 	char     		 OutputStressFile[MAX_PATH_LEN];	// File to store stress/strain

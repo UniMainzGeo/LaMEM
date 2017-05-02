@@ -631,6 +631,16 @@ PetscErrorCode ChangeTimeStep(JacRes *jr, UserCtx *user)
 		if (dt_min>dt){dt_min =dt;}
 		dt 			= 	CFL*dz/vp;
 		if (dt_min>dt){dt_min =dt;}
+
+		/*dt 			= 	CFL*dx/sqrt(bulk/rho);
+		if (dt_min>dt){dt_min =dt;}
+		dt 			= 	CFL*dy/sqrt(bulk/rho);
+		if (dt_min>dt){dt_min =dt;}
+		dt 			= 	CFL*dz/sqrt(bulk/rho);
+		if (dt_min>dt){dt_min =dt;}*/
+
+		//dt 	= 	CFL*(sqrt(1.0/(dx*dx)+1.0/(dy*dy)+1.0/(dz*dz)))/vp;
+		//if (dt_min>dt){dt_min =dt;}
 	}
 	//user->dt 	= dt_min;
 	jr->ts.dt 	= dt_min;

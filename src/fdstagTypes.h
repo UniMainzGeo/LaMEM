@@ -357,6 +357,9 @@ typedef struct
 	// Explicit solver
 	PetscBool		 ExplicitSolver; //  True => for the moment, wave propagation
 
+	// Number of steps with implicit LaMEM, after that, the simulation will switch to explicit LaMEM
+	PetscInt NumImpSteps;
+
 	// Force damping factor used to absorb oscillation energy
 	PetscScalar      ForceDampingFactor;
 

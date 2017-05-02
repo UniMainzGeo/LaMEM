@@ -180,8 +180,13 @@ PetscErrorCode LaMEMLib(ModParam *IOparam)
 	if (user.ExplicitSolver == PETSC_TRUE)		{
 		/* In case we use the explicit solver */
 
-		ierr = ChangeTimeStep(&jr, &user); CHKERRQ(ierr);
+		//ierr = ChangeTimeStep(&jr, &user); CHKERRQ(ierr);
 		//ierr = CheckTimeStep(&jr, &user); CHKERRQ(ierr);
+
+		//////////////////////////////////////////////////////////////////////
+		//jr.ts.dt = 0.0015;
+		//jr.ts.dt = 0.047336400000000001;
+		//////////////////////////////////////////////////////////////////////
 	}
 
 	// save processor partitioning
@@ -359,7 +364,7 @@ PetscErrorCode LaMEMLib(ModParam *IOparam)
 		if (jr.stress_file == NULL) SETERRQ1(PETSC_COMM_SELF, 1,"cannot open file %s", user.OutputStressFile);
 
 		// compute inverse elastic viscosities (dependent on dt)
-		ierr 	= 	JacResGetI2Gdt(&jr); CHKERRQ(ierr);
+		//ierr 	= 	JacResGetI2Gdt(&jr); CHKERRQ(ierr);
 
 		PetscPrintf(PETSC_COMM_WORLD,"-------------------------------------------------------------------------- \n");
 	}
@@ -385,7 +390,13 @@ PetscErrorCode LaMEMLib(ModParam *IOparam)
 		/////////////////////////////////////////////////////////////////////////////////
 		//
 		// ExplicitSolver != PETSC_TRUE => Current LAMEM
-		if (user.ExplicitSolver != PETSC_TRUE)		{
+		//if (user.ExplicitSolver != PETSC_TRUE)		{
+		//PetscScalar time=JacResGetTime(&jr);
+		//PetscPrintf(PETSC_COMM_WORLD, " TIME %g \n", time);
+		//if  (JacResGetTime(&jr) < 0.005) {
+		if (JacResGetStep(&jr) < user.NumImpSteps) {
+
+
 			/* In case we use the Implicit solver */
 
 
@@ -494,13 +505,16 @@ PetscErrorCode LaMEMLib(ModParam *IOparam)
 		}
 		else
 		{	/* Explicit solver Solver */
+
+			ierr = ChangeTimeStep(&jr, &user); CHKERRQ(ierr);
+
 			PetscTime(&cputime_start_nonlinear);
 
 			// copy solution from global to local vectors, enforce boundary constraints
 			ierr 	= 	JacResCopySol(&jr, jr.gsol); CHKERRQ(ierr);
 			
 			// compute inverse elastic viscosities (dependent on dt) //I put outside the loop
-			//ierr 	= 	JacResGetI2Gdt(&jr); CHKERRQ(ierr);
+			ierr 	= 	JacResGetI2Gdt(&jr); CHKERRQ(ierr);
 
 			// evaluate momentum residual and pressure
 			ierr 	= 	FormMomentumResidualPressureAndVelocities(&jr,&user); CHKERRQ(ierr);

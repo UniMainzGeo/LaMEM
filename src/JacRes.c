@@ -375,6 +375,8 @@ PetscErrorCode JacResGetI2Gdt(JacRes *jr)
 	fs = jr->fs;
 	dt = jr->ts.dt;
 
+	//PetscPrintf(PETSC_COMM_WORLD, "  dt  %12.12e\n", dt);
+
 	//=============
 	// cell centers
 	//=============
@@ -551,7 +553,8 @@ PetscErrorCode JacResGetEffStrainRate(JacRes *jr)
 		dxx[k][j][i] = xx + svCell->hxx*svDev->I2Gdt;
 		dyy[k][j][i] = yy + svCell->hyy*svDev->I2Gdt;
 		dzz[k][j][i] = zz + svCell->hzz*svDev->I2Gdt;
-		//if (i==5 && j==10) PetscPrintf(PETSC_COMM_WORLD, "    svDev->I2Gdt[%i,%i,%i]  = %12.12e \n", i,j,k, svDev->I2Gdt);
+		//PetscPrintf(PETSC_COMM_WORLD, "    svDev->I2Gdt[%i,%i,%i]  = %12.12e \n", i,j,k, svDev->I2Gdt);
+		//PetscPrintf(PETSC_COMM_WORLD, "    dzz[%i,%i,%i]  = %12.12e \n", i,j,k, dzz[k][j][i]);
 
 	}
 	END_STD_LOOP
@@ -618,6 +621,7 @@ PetscErrorCode JacResGetEffStrainRate(JacRes *jr)
 		// compute & store effective deviatoric strain rate
         //if (i==5 && j==10) PetscPrintf(PETSC_COMM_WORLD, "    svDev->I2Gdt[%i,%i,%i]  = %12.12e \n", i,j,k, svDev->I2Gdt);
 		dxz[k][j][i] = xz + svEdge->h*svDev->I2Gdt;
+		//PetscPrintf(PETSC_COMM_WORLD, "    dxz[%i,%i,%i]  = %12.12e \n", i,j,k, dxz[k][j][i]);
 		//dxz[k][j][i] = xz + svEdge->s*svDev->I2Gdt;
 
 	}
@@ -950,6 +954,8 @@ PetscErrorCode JacResGetResidual(JacRes *jr)
 		// get total pressure (effective pressure, computed by LaMEM, plus pore pressure)
 		ptotal = pc + biot*pc_pore;
 
+		//PetscPrintf(PETSC_COMM_WORLD, "   pc[%i,%i,%i]  = %12.12e \n", i,j,k, pc);
+
 		// compute total Cauchy stresses
 		sxx = svCell->sxx - ptotal;
 		syy = svCell->syy - ptotal;
@@ -985,10 +991,13 @@ PetscErrorCode JacResGetResidual(JacRes *jr)
 		bdy = SIZE_NODE(j, sy, fs->dsy);   fdy = SIZE_NODE(j+1, sy, fs->dsy);
 		bdz = SIZE_NODE(k, sz, fs->dsz);   fdz = SIZE_NODE(k+1, sz, fs->dsz);
 
+
 		// momentum
 		fx[k][j][i] -= (sxx + vx[k][j][i]*tx)/bdx + gx/2.0;   fx[k][j][i+1] += (sxx + vx[k][j][i+1]*tx)/fdx - gx/2.0;
 		fy[k][j][i] -= (syy + vy[k][j][i]*ty)/bdy + gy/2.0;   fy[k][j+1][i] += (syy + vy[k][j+1][i]*ty)/fdy - gy/2.0;
 		fz[k][j][i] -= (szz + vz[k][j][i]*tz)/bdz + gz/2.0;   fz[k+1][j][i] += (szz + vz[k+1][j][i]*tz)/fdz - gz/2.0;
+
+		//PetscPrintf(PETSC_COMM_WORLD, "    sxx[%i,%i,%i]  = %12.12e \n", i,j,k, sxx);
 
 //****************************************
 // ADHOC (HARD-CODED PRESSURE CONSTRAINTS)
@@ -2935,7 +2944,7 @@ PetscErrorCode JacResGetMomentumResidualAndPressure(JacRes *jr, UserCtx *user)
 	PetscScalar ***fx,  ***fy,  ***fz, ***vx,  ***vy,  ***vz;
 	PetscScalar ***dxx, ***dyy, ***dzz, ***dxy, ***dxz, ***dyz, ***T, ***lp, ***gp, ***p_lithos, ***p_pore;
 	PetscScalar eta_creep, eta_viscoplastic;;
-	PetscScalar depth, pc_lithos, pc_pore;
+	PetscScalar depth, pc_lithos, pc_pore, biot, ptotal;
 
 	//PetscScalar dx, dy, dz, h, Ih4, I4h4;
 	PetscScalar hx, hy, hz, V, source_time, M0, Mxx, Myy, Mzz, Mxy, Mxz, Myz;
@@ -2958,6 +2967,7 @@ PetscErrorCode JacResGetMomentumResidualAndPressure(JacRes *jr, UserCtx *user)
 	fssa      =  jr->FSSA;      // density gradient penalty parameter
 	grav      =  jr->grav;      // gravity acceleration
 	pShift    =  jr->pShift;    // pressure shift
+	biot      =  matLim->biot;      // Biot pressure parameter
 
 	// clear local residual vectors
 	ierr = VecZeroEntries(jr->lfx); CHKERRQ(ierr);
@@ -3081,8 +3091,13 @@ PetscErrorCode JacResGetMomentumResidualAndPressure(JacRes *jr, UserCtx *user)
 		ierr = VolConstEq(svBulk, numPhases, phases, svCell->phRat, matLim, depth, dt, pc-pShift , Tc); CHKERRQ(ierr); // That could go outside the time loop!
 
 		// update pressure
-		gp[k][j][i]  = lp[k][j][i] - svBulk->theta/svBulk->IKdt;
+		if (svBulk->IKdt == 0.0) PetscPrintf(PETSC_COMM_WORLD, "    svBulk->IKdt is zero !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! \n");
+		if (svBulk->IKdt) {
+			gp[k][j][i]  = lp[k][j][i] - svBulk->theta/svBulk->IKdt;
+		}
 		pc           = gp[k][j][i];
+
+		//PetscPrintf(PETSC_COMM_WORLD, "   svBulk->theta[%i,%i,%i]  = %12.12e \n", i,j,k, svBulk->theta);
 
 		//-----------
 		// DEVIATORIC
@@ -3114,6 +3129,11 @@ PetscErrorCode JacResGetMomentumResidualAndPressure(JacRes *jr, UserCtx *user)
 		//else{
 		////////////////////////////////////////
 		////////////////////////////////////////
+
+		// get total pressure (effective pressure, computed by LaMEM, plus pore pressure)
+		ptotal = pc + biot*pc_pore;
+
+		//PetscPrintf(PETSC_COMM_WORLD, "   pc[%i,%i,%i]  = %12.12e \n", i,j,k, pc);
 
 		// compute total Cauchy stresses
 		sxx = svCell->sxx - pc;
@@ -3163,6 +3183,7 @@ PetscErrorCode JacResGetMomentumResidualAndPressure(JacRes *jr, UserCtx *user)
 		fx[k][j][i] -= (sxx + vx[k][j][i]*tx)/bdx + gx/2.0;   fx[k][j][i+1] += (sxx + vx[k][j][i+1]*tx)/fdx - gx/2.0;
 		fy[k][j][i] -= (syy + vy[k][j][i]*ty)/bdy + gy/2.0;   fy[k][j+1][i] += (syy + vy[k][j+1][i]*ty)/fdy - gy/2.0;
 		fz[k][j][i] -= (szz + vz[k][j][i]*tz)/bdz + gz/2.0;   fz[k+1][j][i] += (szz + vz[k+1][j][i]*tz)/fdz - gz/2.0;
+		//PetscPrintf(PETSC_COMM_WORLD, "    sxx[%i,%i,%i]  = %12.12e \n", i,j,k, sxx);
 
 		// Add seismic moment source term in the residual ////////////////////////////////////////////////////////////////////////
 
@@ -3204,7 +3225,12 @@ PetscErrorCode JacResGetMomentumResidualAndPressure(JacRes *jr, UserCtx *user)
 			fz[k][j+1][i] 	+= Myz/4.0/hy/V;	fz[k][j-1][i] 	-= Myz/4.0/hy/V;
 		}
 		///////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
+		/*// update pressure
+		if (svBulk->IKdt == 0.0) PetscPrintf(PETSC_COMM_WORLD, "    svBulk->IKdt is zero !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! \n");
+		if (svBulk->IKdt) {
+			gp[k][j][i]  = lp[k][j][i] - svBulk->theta/svBulk->IKdt;
+		}
+		pc           = gp[k][j][i];*/
 	}
 	END_STD_LOOP
 

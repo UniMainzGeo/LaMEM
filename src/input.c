@@ -502,6 +502,7 @@ PetscErrorCode InputSetDefaultValues(JacRes *jr, UserCtx *user)
 
     // Explicit solver (wave propagation)
     user->ExplicitSolver = PETSC_FALSE;
+    user->NumImpSteps = 0;
     user->SeismicSource	 = PETSC_FALSE;
     user->DensityFactor = 1.0;
 
@@ -884,6 +885,7 @@ PetscErrorCode InputReadCommLine(UserCtx *user )
 	PetscOptionsGetBool(NULL, NULL,"-SkipStokesSolver",&user->SkipStokesSolver, NULL);
 
 	PetscOptionsGetBool(NULL, NULL,"-ExplicitSolver",&user->ExplicitSolver, NULL);
+	PetscOptionsGetInt(NULL, NULL,"-NumImpSteps",&user->NumImpSteps, NULL);
 
 	// optimization
 	PetscOptionsGetReal(NULL, NULL,"-LowerViscosityCutoff", &user->LowerViscosityCutoff, NULL); // lower viscosity cutoff
