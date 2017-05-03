@@ -401,7 +401,7 @@ PetscErrorCode BCCreateDarcy(JacRes *jr, BCCtx *bc)
  	bc->Plbot  = user->Pl_bottom;
  	bc->Pltop  = user->Pl_top;
 
- 	bc->Plloc= 1e-10 ; //!!!!!!!!!!!!!!!!!!!!!!!!!!!!!#####################################################################
+ 	bc->Plloc= 1e-20 ; //!!!!!!!!!!!!!!!!!!!!!!!!!!!!!#####################################################################
 
  	PetscFunctionReturn(0);
  }
@@ -483,7 +483,7 @@ PetscErrorCode IncreaseLiquidPressureBottom(JacRes *jr, BCCtx *bc)
 	// Only for cases where Darcy is active
 	if(jr->actDarcy != PETSC_TRUE) PetscFunctionReturn(0);
 
-	Pl_incr = 2.0;									/////////////////////////////////////// To change ////////////
+	Pl_incr = 1.01;									/////////////////////////////////////// To change ////////////
 
 	bc->Plloc = Pl_incr*bc->Plloc;
 
@@ -1114,7 +1114,7 @@ PetscErrorCode JacResGetDarcyRHS(JacRes *jr)
 	iter=0;
 	START_STD_LOOP
 	{
-		if (k==0 && i==(sx+nx)/2){
+		if (k==13 && i==(sx+nx)/2){
 			lb[k][j][i] =  Ssl[k][j][i] *(sol[k][j][i])/dt + bc->Plloc;    // bottom boundary, dirichlet value constant
 		}
 		else{

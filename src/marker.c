@@ -142,6 +142,7 @@ PetscErrorCode ADVMarkInit(AdvCtx *actx, UserCtx *user)
 	else if(user->msetup == SLAB)       { PetscPrintf(PETSC_COMM_WORLD,"%s\n","slab");            ierr = ADVMarkInitSlab         (actx, user); CHKERRQ(ierr); }
 	else if(user->msetup == SPHERES)    { PetscPrintf(PETSC_COMM_WORLD,"%s\n","spheres");         ierr = ADVMarkInitSpheres      (actx, user); CHKERRQ(ierr); }
 	else if(user->msetup == BANDS)      { PetscPrintf(PETSC_COMM_WORLD,"%s\n","bands");           ierr = ADVMarkInitBands        (actx, user); CHKERRQ(ierr); }
+	else if(user->msetup == PIPES)      { PetscPrintf(PETSC_COMM_WORLD,"%s\n","bands");           ierr = ADVMarkInitPipes        (actx, user); CHKERRQ(ierr); }
 	else if(user->msetup == DOMES)      { PetscPrintf(PETSC_COMM_WORLD,"%s\n","domes");           ierr = ADVMarkInitDomes        (actx, user); CHKERRQ(ierr); }
 	else if(user->msetup == ROTATION)   { PetscPrintf(PETSC_COMM_WORLD,"%s\n","rotation");        ierr = ADVMarkInitRotation     (actx, user); CHKERRQ(ierr); }
 	else if(user->msetup == RESTART)    { PetscPrintf(PETSC_COMM_WORLD,"%s\n","restart");         ierr = BreakReadMark           (actx      ); CHKERRQ(ierr); }
@@ -1302,14 +1303,22 @@ PetscErrorCode ADVMarkInitBands(AdvCtx *actx, UserCtx *user)
 		z = P->X[2];
 
 		// assign phase in layers
-		if     (z >  Hb + H)            P->phase = 2; // air
-		else if(z >= Hb && z <= Hb + H) P->phase = 1; // matrix
-		else                            P->phase = 0; // basal layer
+		if     (z >  Hb + H)            {
+			P->phase = 2; // air
+		}
+		else if(z >= Hb && z <= Hb + H) {
+			P->phase = 1; // matrix
+		}
+		else                            {
+			P->phase = 0; // basal layer
+		}
 
 		// check inclusion
 		if(use_inc == PETSC_TRUE && z >= Hb && z <= Hb + size
 		&& ((y <= length         && x >= -(offset + size)/2.0 && x <= -(offset - size)/2.0)
-		||  (y >= user->L-length && x >=  (offset - size)/2.0 && x <=  (offset + size)/2.0))) P->phase = 0;
+		||  (y >= user->L-length && x >=  (offset - size)/2.0 && x <=  (offset + size)/2.0))){
+			P->phase = 0;
+		}
 
 		// assign temperature
 		P->T = Tshift;
@@ -1317,7 +1326,83 @@ PetscErrorCode ADVMarkInitBands(AdvCtx *actx, UserCtx *user)
 
 	PetscFunctionReturn(0);
 }
+//---------------------------------------------------------------------------
+#undef __FUNCT__
+#define __FUNCT__ "ADVMarkInitPipes"
+PetscErrorCode ADVMarkInitPipes(AdvCtx *actx, UserCtx *user)
+{
+	Marker     *P;
+	PetscInt    imark;
+	PetscBool   use_inc;
+	PetscScalar H, Hb, size, offset, length, x, y, z, scal, Tshift;
 
+	PetscErrorCode ierr;
+	PetscFunctionBegin;
+
+	scal   = actx->jr->scal.length;
+	Tshift = actx->jr->scal.Tshift;
+
+	// set default values
+	H      = 10.0;               // layer thickness               [km]
+	Hb     = 2.0;                // basal layer thickness         [km]
+	size   = 1.0;                // inclusion size in XZ-plane    [km]
+	offset = 0.0;                // inclusion offset along X axis [km]
+	length = (user->L*scal)/2.0; // inclusion length along Y axis [km]
+
+	// get layer thickness
+	ierr = PetscOptionsGetReal(NULL, NULL, "-H_layer",  &H,  NULL);  CHKERRQ(ierr);
+	ierr = PetscOptionsGetReal(NULL, NULL, "-H_bottom", &Hb, NULL);  CHKERRQ(ierr);
+
+	// get inclusion parameters
+	ierr = PetscOptionsHasName(NULL, NULL, "-Inclusion_use", &use_inc); CHKERRQ(ierr);
+	if(use_inc == PETSC_TRUE)
+	{
+		ierr = PetscOptionsGetReal(NULL, NULL, "-Inclusion_size",   &size,   NULL); CHKERRQ(ierr);
+		ierr = PetscOptionsGetReal(NULL, NULL, "-Inclusion_offset", &offset, NULL); CHKERRQ(ierr);
+		ierr = PetscOptionsGetReal(NULL, NULL, "-Inclusion_length", &length, NULL); CHKERRQ(ierr);
+	}
+
+	// scale
+	H      /= scal;
+	Hb     /= scal;
+	size   /= scal;
+	offset /= scal;
+	length /= scal;
+
+	// loop over local markers
+	for(imark = 0; imark < actx->nummark; imark++)
+	{
+		P = &actx->markers[imark];
+
+		// get coordinates
+		x = P->X[0];
+		y = P->X[1];
+		z = P->X[2];
+
+		// assign phase in layers
+		//if     (z >  Hb + H && z != x+1)            {
+		//	P->phase = 2; // air
+		//}
+		//else
+			//if (    (z >= Hb && z <= Hb + H )  ){
+		//if (     (z >= Hb && z <= x+1 && z>=x )  ){
+			//P->phase = 2; // matrix
+		//}else
+			if ( (z >= Hb && z+3 <= x+1 && z+3>=x) || (z >= Hb && -z <= x+1+3 && -z>=x+3) || (z >= Hb && z <= Hb + H && x >=-3-3 && x<=3+2) ){
+			P->phase = 1; // matrix
+			}
+		else                            {
+			P->phase = 0; // basal layer
+		}
+
+
+
+		// assign temperature
+		P->T = Tshift;
+	}
+
+	PetscFunctionReturn(0);
+}
 //---------------------------------------------------------------------------
 #undef __FUNCT__
 #define __FUNCT__ "ADVMarkInitDomes"

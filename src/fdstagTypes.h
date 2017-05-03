@@ -134,6 +134,7 @@ typedef enum
 	SLAB,       // slab detachment (Thieulot et al. 2014)
 	SPHERES,    // multiple falling spheres
 	BANDS,      // shear band formation 3D
+	PIPES,      // for Darcy code
 	DOMES,      // salt domes 2D
 	ROTATION,   // rotation benchmark 2D
 	RESTART     // restart of simulation
