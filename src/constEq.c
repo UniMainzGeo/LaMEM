@@ -268,7 +268,7 @@ PetscErrorCode GetEffVisc(
 		(*eta_total) 		= lim->eta_ref;
 		(*eta_creep) 		= lim->eta_ref;
 		(*eta_viscoplastic) = lim->eta_ref;
-		
+
 		PetscFunctionReturn(0);
 	}
 
@@ -336,6 +336,9 @@ PetscErrorCode GetEffVisc(
 		// compute true plastic viscosity
 		eta_pl = ctx->taupl/(2.0*ctx->DII);
 
+		// ultimate viscosity cutoff fot plasticity
+		if(eta_pl < lim->eta_min) eta_pl = lim->eta_min;
+
 		//==============================================
 		// compute total viscosity
 		// minimum viscosity (true) model is the default
@@ -371,7 +374,7 @@ PetscErrorCode GetEffVisc(
 		if(eta_pl < eta_ve)
 		{
 			// store plastic strain rate, viscosity derivative & effective friction
-			(*eta_viscoplastic) =  eta_pl;	
+			(*eta_viscoplastic) =  eta_pl;
 			(*DIIpl)     		=  ctx->DII*(1.0 - (*eta_total)/eta_ve);
 			(*dEta)             = -eta_pl;
 			(*fr)               =  ctx->fr;

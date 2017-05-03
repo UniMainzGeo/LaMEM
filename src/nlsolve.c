@@ -181,12 +181,14 @@ PetscErrorCode NLSolCreate(NLSol *nl, PCStokes pc, SNES *p_snes)
 	nl->jtype   = _PICARD_;
 	nl->nPicIt  = 5;
 	nl->rtolPic = 1e-2;
+	nl->atolPic = 1e-2;
 	nl->nNwtIt  = 35;
 	nl->rtolNwt = 1.1;
 
 	// override from command line
 	ierr = PetscOptionsGetInt   (NULL, NULL, "-snes_Picard_max_it",             &nl->nPicIt, &flg); CHKERRQ(ierr);
 	ierr = PetscOptionsGetScalar(NULL, NULL, "-snes_PicardSwitchToNewton_rtol", &nl->rtolPic,&flg); CHKERRQ(ierr);
+	ierr = PetscOptionsGetScalar(NULL, NULL, "-snes_PicardSwitchToNewton_atol", &nl->atolPic,&flg); CHKERRQ(ierr);
 	ierr = PetscOptionsGetInt   (NULL, NULL, "-snes_NewtonSwitchToPicard_it",   &nl->nNwtIt, &flg); CHKERRQ(ierr);
 	ierr = PetscOptionsGetScalar(NULL, NULL, "-snes_NewtonSwitchToPicard_rtol", &nl->rtolNwt, &flg); CHKERRQ(ierr);
 
@@ -362,12 +364,12 @@ PetscErrorCode FormJacobian(SNES snes, Vec x, Mat Amat, Mat Pmat, void *ctx)
 		nl->it     = 0;
 		nl->refRes = nrm;
         nl->jtype = _PICARD_;
-  	}
+	}
 	else if(nl->jtype == _PICARD_)
 	{
 		// Picard case, check to switch to Newton
 		//if(nrm < nl->refRes*nl->tolPic || nl->it > nl->nPicIt)
-		if(nrm < nl->refRes*nl->rtolPic)
+		if(nrm < nl->refRes*nl->rtolPic || nrm < nl->atolPic)
 		{
 			if(jr->matLim.jac_mat_free == PETSC_TRUE)
 			{

@@ -127,6 +127,7 @@ typedef struct
 	PetscScalar refRes;   // reference residual norm
 	PetscInt    nPicIt;   // number of Picard iteraions before switch to Newton
 	PetscScalar rtolPic;  // relative Picard residual reduction tolerance
+	PetscScalar atolPic;  // absolute Picard residual reduction tolerance
 	PetscInt    nNwtIt;   // number of Newton iterations before switch to Picard
 	PetscScalar rtolNwt;  // Newton divergence tolerance
 
