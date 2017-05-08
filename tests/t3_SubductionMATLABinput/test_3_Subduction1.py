@@ -120,7 +120,7 @@ def test_d():
   def comparefunc(unittest):
 
     key = re.escape("|Div|_inf")
-    unittest.compareFloatingPoint(key,1e-7)
+    unittest.compareFloatingPoint(key,1e-6)
 
     key = re.escape("|Div|_2")
     unittest.compareFloatingPoint(key,1e-5)
