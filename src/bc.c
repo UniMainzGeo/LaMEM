@@ -665,12 +665,12 @@ PetscErrorCode BCApplyBound(BCCtx *bc)
 	top_open = bc->top_open;
 
 	// set no-slip flags
-	nsLeft   		= bc->noslip[0];
-	nsRight  		= bc->noslip[1];
-	nsFront  		= bc->noslip[2];
-	nsBack   		= bc->noslip[3];
-	nsBottom 		= bc->noslip[4];
-	nsTop    		= bc->noslip[5];
+	nsLeft   = bc->noslip[0];
+	nsRight  = bc->noslip[1];
+	nsFront  = bc->noslip[2];
+	nsBack   = bc->noslip[3];
+	nsBottom = bc->noslip[4];
+	nsTop    = bc->noslip[5];
 
 	// initialize maximal index in all directions
 	mnx = fs->dsx.tnods - 1;

@@ -87,10 +87,11 @@ typedef struct _p_PMat
 
 	// get cell stiffness matrix
 	void (*getStiffMat)(
-		PetscScalar, PetscScalar, PetscScalar*,
-		PetscScalar, PetscScalar, PetscScalar,
-		PetscScalar, PetscScalar, PetscScalar,
-		PetscScalar, PetscScalar, PetscScalar);
+		PetscScalar,  PetscScalar,
+		PetscScalar*, PetscScalar*,
+		PetscScalar,  PetscScalar, PetscScalar,
+		PetscScalar,  PetscScalar, PetscScalar,
+		PetscScalar,  PetscScalar, PetscScalar);
 
 } p_PMat;
 
@@ -162,14 +163,16 @@ PetscErrorCode PMatBlockDestroy(PMat pm);
 
 // compute cell stiffness matrix with deviatoric projection
 void getStiffMatDevProj(
-	PetscScalar eta, PetscScalar diag, PetscScalar *v,
+	PetscScalar eta, PetscScalar diag,
+	PetscScalar *v,  PetscScalar *cf,
 	PetscScalar dx,  PetscScalar dy,   PetscScalar dz,
 	PetscScalar fdx, PetscScalar fdy,  PetscScalar fdz,
 	PetscScalar bdx, PetscScalar bdy,  PetscScalar bdz);
 
 // compute cell stiffness matrix without deviatoric projection
 void getStiffMatClean(
-	PetscScalar eta, PetscScalar diag, PetscScalar *v,
+	PetscScalar eta, PetscScalar diag,
+	PetscScalar *v,  PetscScalar *cf,
 	PetscScalar dx,  PetscScalar dy,   PetscScalar dz,
 	PetscScalar fdx, PetscScalar fdy,  PetscScalar fdz,
 	PetscScalar bdx, PetscScalar bdy,  PetscScalar bdz);

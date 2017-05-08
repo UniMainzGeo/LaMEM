@@ -223,6 +223,9 @@ struct BCCtx
 	// no-slip boundary condition mask
 	PetscInt     noslip[6];
 
+	// surface pressure
+	PetscInt     spress[6];
+
 	//========================
 	// TEMPERATURE CONSTRAINTS
 	//========================
