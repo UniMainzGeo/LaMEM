@@ -169,10 +169,6 @@
 	bvel_top   = -10.0  # top coordinate of inflow window
 	bvel_velin =  1.0   # inflow velocity
 
-# Simple shear boundary condition (xz - strain rate)
-
-	bc_gamma_xz = 1e-15
-
 # Free surface top boundary flag
 
 	open_top_bound = 1
@@ -181,10 +177,15 @@
 
 	noslip = 0 0 1 1 0 0
 
-# Temperature on the top and bottom boundaries
+# Temperature on the top & bottom boundaries
 
 	temp_top = 0.0
 	temp_bot = 1300.0;
+
+# Pressure on the top & bottom boundaries
+
+	pres_top = 0.0
+	pres_bot = 10.0;
 
 #===============================================================================
 # Solution parameters & controls

@@ -214,17 +214,11 @@ struct BCCtx
 	PetscScalar  bot, top;      // bottom & top coordinates of the plate
 	PetscScalar  velin, velout; // inflow & outflow velocities
 
-	// simple shear boundary condition
-	PetscScalar	 gamma_xz;		// shear rate in xz direction
-
 	// open boundary flag
 	PetscInt     top_open;
 
 	// no-slip boundary condition mask
 	PetscInt     noslip[6];
-
-	// surface pressure
-	PetscInt     spress[6];
 
 	//========================
 	// TEMPERATURE CONSTRAINTS
@@ -232,6 +226,14 @@ struct BCCtx
 
 	// temperature on top and bottom boundaries
 	PetscScalar  Tbot, Ttop;
+
+	//=====================
+	// PRESSURE CONSTRAINTS
+	//=====================
+
+	// pressure on top and bottom boundaries
+	PetscScalar  pbot, ptop;
+
 
 };
 //---------------------------------------------------------------------------
@@ -258,8 +260,14 @@ PetscErrorCode BCShiftIndices(BCCtx *bc, ShiftType stype);
 // Specific constraints
 //---------------------------------------------------------------------------
 
-// apply constraints on the boundaries
-PetscErrorCode BCApplyBound(BCCtx *bc);
+// apply pressure constraints
+PetscErrorCode BCApplyPres(BCCtx *bc);
+
+// apply temperature constraints
+PetscErrorCode BCApplyTemp(BCCtx *bc);
+
+// apply default velocity constraints on the boundaries
+PetscErrorCode BCApplyVelDefault(BCCtx *bc);
 
 // apply Bezier blocks
 PetscErrorCode BCApplyBezier(BCCtx *bc);
@@ -270,8 +278,8 @@ PetscErrorCode BCApplyBoundVel(BCCtx *bc);
 // apply dropping boxes
 PetscErrorCode BCApplyDBox(BCCtx *bc);
 
-// apply simple shear boundary velocities
-PetscErrorCode 	BCApplySimpleShear(BCCtx *bc);
+// apply two-point constraints on the boundaries
+PetscErrorCode BCApplyVelTPC(BCCtx *bc);
 
 //---------------------------------------------------------------------------
 // Service functions (should be included in subclasses)
