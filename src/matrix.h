@@ -207,6 +207,9 @@ PetscErrorCode VecScatterBlockToMonolithic(Vec f, Vec g, Vec b, ScatterMode mode
 // check locality / existence of the global DOF
 #define CHECK_DOF(ind, start, num, nd, no) { if(ind != -1) { if(ind >= start && ind < start + num) nd++; else no++; } }
 
+// set pressure two-point constraint
+#define SET_PRES_TPC(bc, i, j, k, ind, lim, cf) { cf = 1.0; if(ind == lim && bc[k][j][i] != DBL_MAX) cf = 2.0; }
+
 //---------------------------------------------------------------------------
 
 #endif

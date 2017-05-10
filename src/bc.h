@@ -233,8 +233,6 @@ struct BCCtx
 
 	// pressure on top and bottom boundaries
 	PetscScalar  pbot, ptop;
-
-
 };
 //---------------------------------------------------------------------------
 
@@ -282,7 +280,7 @@ PetscErrorCode BCApplyDBox(BCCtx *bc);
 PetscErrorCode BCApplyVelTPC(BCCtx *bc);
 
 //---------------------------------------------------------------------------
-// Service functions (should be included in subclasses)
+// Service functions
 //---------------------------------------------------------------------------
 
 // get current background strain rates

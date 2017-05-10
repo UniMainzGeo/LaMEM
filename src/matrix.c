@@ -550,7 +550,8 @@ PetscErrorCode PMatMonoAssemble(PMat pm)
 	DOFIndex    *dof;
 	PMatMono    *P;
 	PetscInt    idx[7];
-	PetscScalar v[49], c[] = { 1.0, 1.0, 1.0, 1.0, 1.0, 1.0 };
+	PetscScalar v[49];
+	PetscInt    mcx, mcy, mcz;
 	PetscInt    iter, i, j, k, nx, ny, nz, sx, sy, sz;
 	PetscScalar eta, rho, IKdt, diag, pgamma, pt, dt, fssa, *grav;
 	PetscScalar dx, dy, dz, bdx, fdx, bdy, fdy, bdz, fdz;
@@ -576,6 +577,11 @@ PetscErrorCode PMatMonoAssemble(PMat pm)
 
 	// get penalty parameter
 	pgamma = pm->pgamma;
+
+	// initialize index bounds
+	mcx = fs->dsx.tcels - 1;
+	mcy = fs->dsy.tcels - 1;
+	mcz = fs->dsz.tcels - 1;
 
 	// clear matrix coefficients
 	ierr = MatZeroEntries(P->A); CHKERRQ(ierr);
@@ -627,8 +633,16 @@ PetscErrorCode PMatMonoAssemble(PMat pm)
 		// get pressure diagonal element (with penalty)
 		diag = -IKdt + pt;
 
+		// set pressure two-point constraints
+		SET_PRES_TPC(bcp, i-1, j,   k,   i, 0,   cf[0])
+		SET_PRES_TPC(bcp, i+1, j,   k,   i, mcx, cf[1])
+		SET_PRES_TPC(bcp, i,   j-1, k,   j, 0,   cf[2])
+		SET_PRES_TPC(bcp, i,   j+1, k,   j, mcy, cf[3])
+		SET_PRES_TPC(bcp, i,   j,   k-1, k, 0,   cf[4])
+		SET_PRES_TPC(bcp, i,   j,   k+1, k, mcz, cf[5])
+
 		// compute local matrix
-		pm->getStiffMat(eta, diag, v, c, dx, dy, dz, fdx, fdy, fdz, bdx, bdy, bdz);
+		pm->getStiffMat(eta, diag, v, cf, dx, dy, dz, fdx, fdy, fdz, bdx, bdy, bdz);
 
 		// compute density gradient stabilization terms
 		addDensGradStabil(fssa, v, rho, dt, grav, fdx, fdy, fdz, bdx, bdy, bdz);
@@ -1149,7 +1163,8 @@ PetscErrorCode PMatBlockAssemble(PMat pm)
 	DOFIndex    *dof;
 	PMatBlock   *P;
 	PetscInt    idx[7];
-	PetscScalar v[49], c[] = { 1.0, 1.0, 1.0, 1.0, 1.0, 1.0 }, a[36], d[6], g[6];
+	PetscScalar v[49], a[36], d[6], g[6];
+	PetscInt    mcx, mcy, mcz;
 	PetscInt    iter, i, j, k, nx, ny, nz, sx, sy, sz;
 	PetscScalar eta, rho, IKdt, diag, pgamma, dt, fssa, *grav;
 	PetscScalar dx, dy, dz, bdx, fdx, bdy, fdy, bdz, fdz;
@@ -1174,6 +1189,11 @@ PetscErrorCode PMatBlockAssemble(PMat pm)
 
 	// get penalty parameter
 	pgamma = pm->pgamma;
+
+	// initialize index bounds
+	mcx = fs->dsx.tcels - 1;
+	mcy = fs->dsy.tcels - 1;
+	mcz = fs->dsz.tcels - 1;
 
 	// clear matrix coefficients
 	ierr = MatZeroEntries(P->Avv); CHKERRQ(ierr);
@@ -1221,8 +1241,16 @@ PetscErrorCode PMatBlockAssemble(PMat pm)
 		// get pressure diagonal element (with penalty)
 		diag = -IKdt -1.0/(pgamma*eta);
 
+		// set pressure two-point constraints
+		SET_PRES_TPC(bcp, i-1, j,   k,   i, 0,   cf[0])
+		SET_PRES_TPC(bcp, i+1, j,   k,   i, mcx, cf[1])
+		SET_PRES_TPC(bcp, i,   j-1, k,   j, 0,   cf[2])
+		SET_PRES_TPC(bcp, i,   j+1, k,   j, mcy, cf[3])
+		SET_PRES_TPC(bcp, i,   j,   k-1, k, 0,   cf[4])
+		SET_PRES_TPC(bcp, i,   j,   k+1, k, mcz, cf[5])
+
 		// compute local matrix
-		pm->getStiffMat(eta, diag, v, c, dx, dy, dz, fdx, fdy, fdz, bdx, bdy, bdz);
+		pm->getStiffMat(eta, diag, v, cf, dx, dy, dz, fdx, fdy, fdz, bdx, bdy, bdz);
 
 		// compute density gradient stabilization terms
 		addDensGradStabil(fssa, v, rho, dt, grav, fdx, fdy, fdz, bdx, bdy, bdz);
@@ -1743,15 +1771,6 @@ void constrLocalMat(PetscInt n, PetscInt pdofidx[], PetscScalar cf[], PetscScala
 		}
 	}
 }
-
-
-/*
- 	PetscScalar  cbot, ctop;
-	PetscInt     mcz;
-	cbot = 1.0; if(k == 0) 	 cbot = 2.0;
-	ctop = 1.0; if(k == mcz) ctop = 2.0;
-
- */
 //---------------------------------------------------------------------------
 #undef __FUNCT__
 #define __FUNCT__ "VecScatterBlockToMonolithic"

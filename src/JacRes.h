@@ -210,10 +210,10 @@ struct JacRes
 	//  Also to get communication pattern independent of number of phases.
 
 	// pressure
-	Vec gp;        // global
-	Vec lp;        // local (ghosted)
-	Vec lp_lithos; // lithostatic pressure
-	Vec lp_pore;   // pore pressure
+	Vec gp;      // global
+	Vec lp;      // local (ghosted)
+	Vec lp_lith; // lithostatic pressure
+	Vec lp_pore; // pore pressure
 
 	// continuity residual
 	Vec gc; // global

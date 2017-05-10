@@ -231,6 +231,8 @@ PetscErrorCode FormJacobian(SNES snes, Vec x, Mat Amat, Mat Pmat, void *ctx)
 	ierr = SNESGetFunction(snes, &r, NULL, NULL); CHKERRQ(ierr);
 	ierr = VecNorm(r, NORM_2, &nrm);              CHKERRQ(ierr);
     
+	if(!nrm) nrm = 1.0;
+
     // initialize
 	if(!it)
 	{

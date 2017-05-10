@@ -380,13 +380,13 @@ PetscErrorCode JacResCreateData(JacRes *jr)
 	ierr = DMCreateGlobalVector(fs->DA_YZ,  &jr->gdyz); CHKERRQ(ierr);
 
 	// pressure
-	ierr = DMCreateGlobalVector(fs->DA_CEN, &jr->gp);        CHKERRQ(ierr);
-	ierr = DMCreateLocalVector (fs->DA_CEN, &jr->lp);        CHKERRQ(ierr);
-	ierr = DMCreateLocalVector (fs->DA_CEN, &jr->lp_lithos); CHKERRQ(ierr);
-	ierr = DMCreateLocalVector (fs->DA_CEN, &jr->lp_pore);   CHKERRQ(ierr);
+	ierr = DMCreateGlobalVector(fs->DA_CEN, &jr->gp);      CHKERRQ(ierr);
+	ierr = DMCreateLocalVector (fs->DA_CEN, &jr->lp);      CHKERRQ(ierr);
+	ierr = DMCreateLocalVector (fs->DA_CEN, &jr->lp_lith); CHKERRQ(ierr);
+	ierr = DMCreateLocalVector (fs->DA_CEN, &jr->lp_pore); CHKERRQ(ierr);
 
 	// continuity residual
-	ierr = DMCreateGlobalVector(fs->DA_CEN, &jr->gc);  CHKERRQ(ierr);
+	ierr = DMCreateGlobalVector(fs->DA_CEN, &jr->gc); CHKERRQ(ierr);
 
 	// corner buffer
 	ierr = DMCreateLocalVector(fs->DA_COR,  &jr->lbcor); CHKERRQ(ierr);
@@ -483,51 +483,51 @@ PetscErrorCode JacResDestroy(JacRes *jr)
 	PetscFunctionBegin;
 
 	// solution vectors
-	ierr = VecDestroy(&jr->gsol);      CHKERRQ(ierr);
-	ierr = VecDestroy(&jr->gres);      CHKERRQ(ierr);
+	ierr = VecDestroy(&jr->gsol);    CHKERRQ(ierr);
+	ierr = VecDestroy(&jr->gres);    CHKERRQ(ierr);
 
-	ierr = VecDestroy(&jr->gvx);       CHKERRQ(ierr);
-	ierr = VecDestroy(&jr->gvy);       CHKERRQ(ierr);
-	ierr = VecDestroy(&jr->gvz);       CHKERRQ(ierr);
+	ierr = VecDestroy(&jr->gvx);     CHKERRQ(ierr);
+	ierr = VecDestroy(&jr->gvy);     CHKERRQ(ierr);
+	ierr = VecDestroy(&jr->gvz);     CHKERRQ(ierr);
 
-	ierr = VecDestroy(&jr->lvx);       CHKERRQ(ierr);
-	ierr = VecDestroy(&jr->lvy);       CHKERRQ(ierr);
-	ierr = VecDestroy(&jr->lvz);       CHKERRQ(ierr);
+	ierr = VecDestroy(&jr->lvx);     CHKERRQ(ierr);
+	ierr = VecDestroy(&jr->lvy);     CHKERRQ(ierr);
+	ierr = VecDestroy(&jr->lvz);     CHKERRQ(ierr);
 
-	ierr = VecDestroy(&jr->gfx);       CHKERRQ(ierr);
-	ierr = VecDestroy(&jr->gfy);       CHKERRQ(ierr);
-	ierr = VecDestroy(&jr->gfz);       CHKERRQ(ierr);
+	ierr = VecDestroy(&jr->gfx);     CHKERRQ(ierr);
+	ierr = VecDestroy(&jr->gfy);     CHKERRQ(ierr);
+	ierr = VecDestroy(&jr->gfz);     CHKERRQ(ierr);
 
-	ierr = VecDestroy(&jr->lfx);       CHKERRQ(ierr);
-	ierr = VecDestroy(&jr->lfy);       CHKERRQ(ierr);
-	ierr = VecDestroy(&jr->lfz);       CHKERRQ(ierr);
+	ierr = VecDestroy(&jr->lfx);     CHKERRQ(ierr);
+	ierr = VecDestroy(&jr->lfy);     CHKERRQ(ierr);
+	ierr = VecDestroy(&jr->lfz);     CHKERRQ(ierr);
 
-	ierr = VecDestroy(&jr->ldxx);      CHKERRQ(ierr);
-	ierr = VecDestroy(&jr->ldyy);      CHKERRQ(ierr);
-	ierr = VecDestroy(&jr->ldzz);      CHKERRQ(ierr);
-	ierr = VecDestroy(&jr->ldxy);      CHKERRQ(ierr);
-	ierr = VecDestroy(&jr->ldxz);      CHKERRQ(ierr);
-	ierr = VecDestroy(&jr->ldyz);      CHKERRQ(ierr);
+	ierr = VecDestroy(&jr->ldxx);    CHKERRQ(ierr);
+	ierr = VecDestroy(&jr->ldyy);    CHKERRQ(ierr);
+	ierr = VecDestroy(&jr->ldzz);    CHKERRQ(ierr);
+	ierr = VecDestroy(&jr->ldxy);    CHKERRQ(ierr);
+	ierr = VecDestroy(&jr->ldxz);    CHKERRQ(ierr);
+	ierr = VecDestroy(&jr->ldyz);    CHKERRQ(ierr);
 
-	ierr = VecDestroy(&jr->gdxy);      CHKERRQ(ierr);
-	ierr = VecDestroy(&jr->gdxz);      CHKERRQ(ierr);
-	ierr = VecDestroy(&jr->gdyz);      CHKERRQ(ierr);
+	ierr = VecDestroy(&jr->gdxy);    CHKERRQ(ierr);
+	ierr = VecDestroy(&jr->gdxz);    CHKERRQ(ierr);
+	ierr = VecDestroy(&jr->gdyz);    CHKERRQ(ierr);
 
-	ierr = VecDestroy(&jr->gp);        CHKERRQ(ierr);
-	ierr = VecDestroy(&jr->lp);        CHKERRQ(ierr);
-	ierr = VecDestroy(&jr->lp_lithos); CHKERRQ(ierr);
-	ierr = VecDestroy(&jr->lp_pore);   CHKERRQ(ierr);
+	ierr = VecDestroy(&jr->gp);      CHKERRQ(ierr);
+	ierr = VecDestroy(&jr->lp);      CHKERRQ(ierr);
+	ierr = VecDestroy(&jr->lp_lith); CHKERRQ(ierr);
+	ierr = VecDestroy(&jr->lp_pore); CHKERRQ(ierr);
 
-	ierr = VecDestroy(&jr->gc);        CHKERRQ(ierr);
+	ierr = VecDestroy(&jr->gc);      CHKERRQ(ierr);
 
-	ierr = VecDestroy(&jr->lbcor);     CHKERRQ(ierr);
+	ierr = VecDestroy(&jr->lbcor);   CHKERRQ(ierr);
 
 	// solution variables
-	ierr = PetscFree(jr->svCell);      CHKERRQ(ierr);
-	ierr = PetscFree(jr->svXYEdge);    CHKERRQ(ierr);
-	ierr = PetscFree(jr->svXZEdge);    CHKERRQ(ierr);
-	ierr = PetscFree(jr->svYZEdge);    CHKERRQ(ierr);
-	ierr = PetscFree(jr->svBuff);      CHKERRQ(ierr);
+	ierr = PetscFree(jr->svCell);    CHKERRQ(ierr);
+	ierr = PetscFree(jr->svXYEdge);  CHKERRQ(ierr);
+	ierr = PetscFree(jr->svXZEdge);  CHKERRQ(ierr);
+	ierr = PetscFree(jr->svYZEdge);  CHKERRQ(ierr);
+	ierr = PetscFree(jr->svBuff);    CHKERRQ(ierr);
 
 	// temperature parameters
 	ierr = JacResDestroyTempParam(jr); CHKERRQ(ierr);
@@ -994,6 +994,7 @@ PetscErrorCode JacResGetResidual(JacRes *jr)
 	// NOTE: we interpolate and average D_ij*D_ij terms instead of D_ij
 
 	FDSTAG     *fs;
+	BCCtx      *bc;
 	SolVarCell *svCell;
 	SolVarEdge *svEdge;
 	SolVarDev  *svDev;
@@ -1003,7 +1004,7 @@ PetscErrorCode JacResGetResidual(JacRes *jr)
 	Controls   *ctrl;
 	PetscInt    iter, numPhases, AirPhase;
 	PetscInt    I1, I2, J1, J2, K1, K2;
-	PetscInt    i, j, k, nx, ny, nz, sx, sy, sz, mx, my, mz;
+	PetscInt    i, j, k, nx, ny, nz, sx, sy, sz, mx, my, mz, mcx, mcy, mcz;
 	PetscScalar XX, XX1, XX2, XX3, XX4;
 	PetscScalar YY, YY1, YY2, YY3, YY4;
 	PetscScalar ZZ, ZZ1, ZZ2, ZZ3, ZZ4;
@@ -1013,23 +1014,27 @@ PetscErrorCode JacResGetResidual(JacRes *jr)
 	PetscScalar bdx, fdx, bdy, fdy, bdz, fdz;
 	PetscScalar gx, gy, gz, tx, ty, tz, sxx, syy, szz, sxy, sxz, syz;
 	PetscScalar J2Inv, theta, rho, IKdt, Tc, pc, pShift, pn, dt, fssa, *grav;
-	PetscScalar ***fx,  ***fy,  ***fz, ***vx,  ***vy,  ***vz, ***gc;
-	PetscScalar ***dxx, ***dyy, ***dzz, ***dxy, ***dxz, ***dyz, ***p, ***T, ***p_lithos, ***p_pore;
+	PetscScalar ***fx,  ***fy,  ***fz, ***vx,  ***vy,  ***vz, ***gc, ***bcp;
+	PetscScalar ***dxx, ***dyy, ***dzz, ***dxy, ***dxz, ***dyz, ***p, ***T, ***p_lith, ***p_pore;
 	PetscScalar eta_creep, eta_vp;
-	PetscScalar depth, pc_lithos, pc_pore, biot, ptotal, avg_topo;
+	PetscScalar depth, pc_lith, pc_pore, biot, ptotal, avg_topo;
 //	PetscScalar alpha, Tn,
 
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
 
+	// access context
 	fs = jr->fs;
+	bc = jr->bc;
 
-//	PetscInt mcz = fs->dsz.tcels - 1;
+	// initialize index bounds
+	mcx = fs->dsx.tcels - 1;
+	mcy = fs->dsy.tcels - 1;
+	mcz = fs->dsz.tcels - 1;
 
-	// initialize maximum node index in all directions
-	mx = fs->dsx.tnods - 1;
-	my = fs->dsy.tnods - 1;
-	mz = fs->dsz.tnods - 1;
+	mx  = fs->dsx.tnods - 1;
+	my  = fs->dsy.tnods - 1;
+	mz  = fs->dsz.tnods - 1;
 
 	// access residual context variables
 	numPhases =  jr->dbm->numPhases; // number phases
@@ -1051,23 +1056,25 @@ PetscErrorCode JacResGetResidual(JacRes *jr)
 	ierr = VecZeroEntries(jr->gc);  CHKERRQ(ierr);
 
 	// access work vectors
-	ierr = DMDAVecGetArray(fs->DA_CEN, jr->gc,   &gc);  CHKERRQ(ierr);
-	ierr = DMDAVecGetArray(fs->DA_CEN, jr->lp,   &p);   CHKERRQ(ierr);
-	ierr = DMDAVecGetArray(fs->DA_CEN, jr->lT,   &T);   CHKERRQ(ierr);
-	ierr = DMDAVecGetArray(fs->DA_CEN, jr->ldxx, &dxx); CHKERRQ(ierr);
-	ierr = DMDAVecGetArray(fs->DA_CEN, jr->ldyy, &dyy); CHKERRQ(ierr);
-	ierr = DMDAVecGetArray(fs->DA_CEN, jr->ldzz, &dzz); CHKERRQ(ierr);
-	ierr = DMDAVecGetArray(fs->DA_XY,  jr->ldxy, &dxy); CHKERRQ(ierr);
-	ierr = DMDAVecGetArray(fs->DA_XZ,  jr->ldxz, &dxz); CHKERRQ(ierr);
-	ierr = DMDAVecGetArray(fs->DA_YZ,  jr->ldyz, &dyz); CHKERRQ(ierr);
-	ierr = DMDAVecGetArray(fs->DA_X,   jr->lfx,  &fx);  CHKERRQ(ierr);
-	ierr = DMDAVecGetArray(fs->DA_Y,   jr->lfy,  &fy);  CHKERRQ(ierr);
-	ierr = DMDAVecGetArray(fs->DA_Z,   jr->lfz,  &fz);  CHKERRQ(ierr);
-	ierr = DMDAVecGetArray(fs->DA_X,   jr->lvx,  &vx);  CHKERRQ(ierr);
-	ierr = DMDAVecGetArray(fs->DA_Y,   jr->lvy,  &vy);  CHKERRQ(ierr);
-	ierr = DMDAVecGetArray(fs->DA_Z,   jr->lvz,  &vz);  CHKERRQ(ierr);
-	ierr = DMDAVecGetArray(fs->DA_CEN, jr->lp_lithos, &p_lithos); CHKERRQ(ierr);
-	ierr = DMDAVecGetArray(fs->DA_CEN, jr->lp_pore,   &p_pore);   CHKERRQ(ierr);
+	ierr = DMDAVecGetArray(fs->DA_CEN, jr->gc,      &gc);     CHKERRQ(ierr);
+	ierr = DMDAVecGetArray(fs->DA_CEN, jr->lp,      &p);      CHKERRQ(ierr);
+	ierr = DMDAVecGetArray(fs->DA_CEN, jr->lT,      &T);      CHKERRQ(ierr);
+	ierr = DMDAVecGetArray(fs->DA_CEN, jr->ldxx,    &dxx);    CHKERRQ(ierr);
+	ierr = DMDAVecGetArray(fs->DA_CEN, jr->ldyy,    &dyy);    CHKERRQ(ierr);
+	ierr = DMDAVecGetArray(fs->DA_CEN, jr->ldzz,    &dzz);    CHKERRQ(ierr);
+	ierr = DMDAVecGetArray(fs->DA_XY,  jr->ldxy,    &dxy);    CHKERRQ(ierr);
+	ierr = DMDAVecGetArray(fs->DA_XZ,  jr->ldxz,    &dxz);    CHKERRQ(ierr);
+	ierr = DMDAVecGetArray(fs->DA_YZ,  jr->ldyz,    &dyz);    CHKERRQ(ierr);
+	ierr = DMDAVecGetArray(fs->DA_X,   jr->lfx,     &fx);     CHKERRQ(ierr);
+	ierr = DMDAVecGetArray(fs->DA_Y,   jr->lfy,     &fy);     CHKERRQ(ierr);
+	ierr = DMDAVecGetArray(fs->DA_Z,   jr->lfz,     &fz);     CHKERRQ(ierr);
+	ierr = DMDAVecGetArray(fs->DA_X,   jr->lvx,     &vx);     CHKERRQ(ierr);
+	ierr = DMDAVecGetArray(fs->DA_Y,   jr->lvy,     &vy);     CHKERRQ(ierr);
+	ierr = DMDAVecGetArray(fs->DA_Z,   jr->lvz,     &vz);     CHKERRQ(ierr);
+	ierr = DMDAVecGetArray(fs->DA_CEN, jr->lp_lith, &p_lith); CHKERRQ(ierr);
+	ierr = DMDAVecGetArray(fs->DA_CEN, jr->lp_pore, &p_pore); CHKERRQ(ierr);
+	ierr = DMDAVecGetArray(fs->DA_CEN, jr->lp_pore, &p_pore); CHKERRQ(ierr);
+	ierr = DMDAVecGetArray(fs->DA_CEN, bc->bcp,     &bcp);    CHKERRQ(ierr);
 
 	//-------------------------------
 	// central points
@@ -1131,7 +1138,7 @@ PetscErrorCode JacResGetResidual(JacRes *jr)
 		Tc = T[k][j][i];
 
 		// access current lithostatic pressure
-		pc_lithos = p_lithos[k][j][i];
+		pc_lith = p_lith[k][j][i];
 
 		// access current pore pressure (zero if deactivated)
 		pc_pore = p_pore[k][j][i];
@@ -1142,7 +1149,7 @@ PetscErrorCode JacResGetResidual(JacRes *jr)
 		if(depth < 0.0)    depth = 0.0;
 
 		// evaluate deviatoric constitutive equations
-		ierr = DevConstEq(svDev, &eta_creep, &eta_vp, numPhases, phases, soft, svCell->phRat, ctrl, pc_lithos, pc_pore, dt, pc-pShift, Tc); CHKERRQ(ierr);
+		ierr = DevConstEq(svDev, &eta_creep, &eta_vp, numPhases, phases, soft, svCell->phRat, ctrl, pc_lith, pc_pore, dt, pc-pShift, Tc); CHKERRQ(ierr);
 
 		// store creep viscosity
 		svCell->eta_creep = eta_creep;
@@ -1194,12 +1201,21 @@ PetscErrorCode JacResGetResidual(JacRes *jr)
 		fy[k][j][i] -= (syy + vy[k][j][i]*ty)/bdy + gy/2.0;   fy[k][j+1][i] += (syy + vy[k][j+1][i]*ty)/fdy - gy/2.0;
 		fz[k][j][i] -= (szz + vz[k][j][i]*tz)/bdz + gz/2.0;   fz[k+1][j][i] += (szz + vz[k+1][j][i]*tz)/fdz - gz/2.0;
 
-//****************************************
-// ADHOC (HARD-CODED PRESSURE CONSTRAINTS)
-//****************************************
+		//==============================
+		// PRESSURE BOUNDARY CONSTRAINTS
+		//==============================
 
-//		if(k == 0)   fz[k][j][i]   += -p[k-1][j][i]/bdz;
-//		if(k == mcz) fz[k+1][j][i] -= -p[k+1][j][i]/fdz;
+		if(i == 0   && bcp[k][j][i-1] != DBL_MAX) fx[k][j][i]   += -p[k][j][i-1]/bdx;
+		if(i == mcx && bcp[k][j][i+1] != DBL_MAX) fx[k][j][i+1] -= -p[k][j][i+1]/fdx;
+
+		if(j == 0   && bcp[k][j-1][i] != DBL_MAX) fy[k][j][i]   += -p[k][j-1][i]/bdy;
+		if(j == mcy && bcp[k][j+1][i] != DBL_MAX) fy[k][j+1][i] -= -p[k][j+1][i]/fdy;
+
+		if(k == 0   && bcp[k-1][j][i] != DBL_MAX) fz[k][j][i]   += -p[k-1][j][i]/bdz;
+		if(k == mcz && bcp[k+1][j][i] != DBL_MAX) fz[k+1][j][i] -= -p[k+1][j][i]/fdz;
+
+//		if(k == 0   ) fz[k][j][i]   += -p[k-1][j][i]/bdz;
+//		if(k == mcz ) fz[k+1][j][i] -= -p[k+1][j][i]/fdz;
 
 		// mass - currently T-dependency is deactivated
 //		gc[k][j][i] = -IKdt*(pc - pn) - theta + alpha*(Tc - Tn)/dt;
@@ -1288,13 +1304,13 @@ PetscErrorCode JacResGetResidual(JacRes *jr)
 		Tc = 0.25*(T[k][j][i] + T[k][j][i-1] + T[k][j-1][i] + T[k][j-1][i-1]);
 
 		// access current lithostatic pressure (x-y plane, i-j indices)
-		pc_lithos = 0.25*(p_lithos[k][j][i] + p_lithos[k][j][i-1] + p_lithos[k][j-1][i] + p_lithos[k][j-1][i-1]);
+		pc_lith = 0.25*(p_lith[k][j][i] + p_lith[k][j][i-1] + p_lith[k][j-1][i] + p_lith[k][j-1][i-1]);
 
 		// access current pore pressure (x-y plane, i-j indices)
 		pc_pore = 0.25*(p_pore[k][j][i] + p_pore[k][j][i-1] + p_pore[k][j-1][i] + p_pore[k][j-1][i-1]);
 
 		// evaluate deviatoric constitutive equations
-		ierr = DevConstEq(svDev, &eta_creep, &eta_vp, numPhases, phases, soft, svEdge->phRat, ctrl, pc_lithos, pc_pore, dt, pc-pShift, Tc); CHKERRQ(ierr);
+		ierr = DevConstEq(svDev, &eta_creep, &eta_vp, numPhases, phases, soft, svEdge->phRat, ctrl, pc_lith, pc_pore, dt, pc-pShift, Tc); CHKERRQ(ierr);
 
 		// compute stress, plastic strain rate and shear heating term on edge
 		ierr = GetStressEdge(svEdge, XY); CHKERRQ(ierr);
@@ -1396,13 +1412,13 @@ PetscErrorCode JacResGetResidual(JacRes *jr)
 		Tc = 0.25*(T[k][j][i] + T[k][j][i-1] + T[k-1][j][i] + T[k-1][j][i-1]);
 
 		// access current lithostatic pressure (x-z plane, i-k indices)
-		pc_lithos = 0.25*(p_lithos[k][j][i] + p_lithos[k][j][i-1] + p_lithos[k-1][j][i] + p_lithos[k-1][j][i-1]);
+		pc_lith = 0.25*(p_lith[k][j][i] + p_lith[k][j][i-1] + p_lith[k-1][j][i] + p_lith[k-1][j][i-1]);
 
 		// access current pore pressure (x-z plane, i-k indices)
 		pc_pore = 0.25*(p_pore[k][j][i] + p_pore[k][j][i-1] + p_pore[k-1][j][i] + p_pore[k-1][j][i-1]);
 
 		// evaluate deviatoric constitutive equations
-		ierr = DevConstEq(svDev, &eta_creep, &eta_vp, numPhases, phases, soft, svEdge->phRat, ctrl, pc_lithos, pc_pore, dt, pc-pShift, Tc); CHKERRQ(ierr);
+		ierr = DevConstEq(svDev, &eta_creep, &eta_vp, numPhases, phases, soft, svEdge->phRat, ctrl, pc_lith, pc_pore, dt, pc-pShift, Tc); CHKERRQ(ierr);
 
 		// compute stress, plastic strain rate and shear heating term on edge
 		ierr = GetStressEdge(svEdge, XZ); CHKERRQ(ierr);
@@ -1504,13 +1520,13 @@ PetscErrorCode JacResGetResidual(JacRes *jr)
 		Tc = 0.25*(T[k][j][i] + T[k][j-1][i] + T[k-1][j][i] + T[k-1][j-1][i]);
 
 		// access current lithostatic pressure (y-z plane, j-k indices)
-		pc_lithos = 0.25*(p_lithos[k][j][i] + p_lithos[k][j-1][i] + p_lithos[k-1][j][i] + p_lithos[k-1][j-1][i]);
+		pc_lith = 0.25*(p_lith[k][j][i] + p_lith[k][j-1][i] + p_lith[k-1][j][i] + p_lith[k-1][j-1][i]);
 
 		// access current pore pressure (y-z plane, j-k indices)
 		pc_pore = 0.25*(p_pore[k][j][i] + p_pore[k][j-1][i] + p_pore[k-1][j][i] + p_pore[k-1][j-1][i]);
 
 		// evaluate deviatoric constitutive equations
-		ierr = DevConstEq(svDev, &eta_creep, &eta_vp, numPhases, phases, soft, svEdge->phRat, ctrl, pc_lithos, pc_pore, dt, pc-pShift, Tc); CHKERRQ(ierr);
+		ierr = DevConstEq(svDev, &eta_creep, &eta_vp, numPhases, phases, soft, svEdge->phRat, ctrl, pc_lith, pc_pore, dt, pc-pShift, Tc); CHKERRQ(ierr);
 
 		// compute stress, plastic strain rate and shear heating term on edge
 		ierr = GetStressEdge(svEdge, YZ); CHKERRQ(ierr);
@@ -1534,23 +1550,24 @@ PetscErrorCode JacResGetResidual(JacRes *jr)
 	END_STD_LOOP
 
 	// restore vectors
-	ierr = DMDAVecRestoreArray(fs->DA_CEN, jr->gc,   &gc);  CHKERRQ(ierr);
-	ierr = DMDAVecRestoreArray(fs->DA_CEN, jr->lp,   &p);   CHKERRQ(ierr);
-	ierr = DMDAVecRestoreArray(fs->DA_CEN, jr->lT,   &T);   CHKERRQ(ierr);
-	ierr = DMDAVecRestoreArray(fs->DA_CEN, jr->ldxx, &dxx); CHKERRQ(ierr);
-	ierr = DMDAVecRestoreArray(fs->DA_CEN, jr->ldyy, &dyy); CHKERRQ(ierr);
-	ierr = DMDAVecRestoreArray(fs->DA_CEN, jr->ldzz, &dzz); CHKERRQ(ierr);
-	ierr = DMDAVecRestoreArray(fs->DA_XY,  jr->ldxy, &dxy); CHKERRQ(ierr);
-	ierr = DMDAVecRestoreArray(fs->DA_XZ,  jr->ldxz, &dxz); CHKERRQ(ierr);
-	ierr = DMDAVecRestoreArray(fs->DA_YZ,  jr->ldyz, &dyz); CHKERRQ(ierr);
-	ierr = DMDAVecRestoreArray(fs->DA_X,   jr->lfx,  &fx);  CHKERRQ(ierr);
-	ierr = DMDAVecRestoreArray(fs->DA_Y,   jr->lfy,  &fy);  CHKERRQ(ierr);
-	ierr = DMDAVecRestoreArray(fs->DA_Z,   jr->lfz,  &fz);  CHKERRQ(ierr);
-	ierr = DMDAVecRestoreArray(fs->DA_X,   jr->lvx,  &vx);  CHKERRQ(ierr);
-	ierr = DMDAVecRestoreArray(fs->DA_Y,   jr->lvy,  &vy);  CHKERRQ(ierr);
-	ierr = DMDAVecRestoreArray(fs->DA_Z,   jr->lvz,  &vz);  CHKERRQ(ierr);
-	ierr = DMDAVecRestoreArray(fs->DA_CEN, jr->lp_lithos, &p_lithos); CHKERRQ(ierr);
-	ierr = DMDAVecRestoreArray(fs->DA_CEN, jr->lp_pore,   &p_pore);   CHKERRQ(ierr);
+	ierr = DMDAVecRestoreArray(fs->DA_CEN, jr->gc,      &gc);     CHKERRQ(ierr);
+	ierr = DMDAVecRestoreArray(fs->DA_CEN, jr->lp,      &p);      CHKERRQ(ierr);
+	ierr = DMDAVecRestoreArray(fs->DA_CEN, jr->lT,      &T);      CHKERRQ(ierr);
+	ierr = DMDAVecRestoreArray(fs->DA_CEN, jr->ldxx,    &dxx);    CHKERRQ(ierr);
+	ierr = DMDAVecRestoreArray(fs->DA_CEN, jr->ldyy,    &dyy);    CHKERRQ(ierr);
+	ierr = DMDAVecRestoreArray(fs->DA_CEN, jr->ldzz,    &dzz);    CHKERRQ(ierr);
+	ierr = DMDAVecRestoreArray(fs->DA_XY,  jr->ldxy,    &dxy);    CHKERRQ(ierr);
+	ierr = DMDAVecRestoreArray(fs->DA_XZ,  jr->ldxz,    &dxz);    CHKERRQ(ierr);
+	ierr = DMDAVecRestoreArray(fs->DA_YZ,  jr->ldyz,    &dyz);    CHKERRQ(ierr);
+	ierr = DMDAVecRestoreArray(fs->DA_X,   jr->lfx,     &fx);     CHKERRQ(ierr);
+	ierr = DMDAVecRestoreArray(fs->DA_Y,   jr->lfy,     &fy);     CHKERRQ(ierr);
+	ierr = DMDAVecRestoreArray(fs->DA_Z,   jr->lfz,     &fz);     CHKERRQ(ierr);
+	ierr = DMDAVecRestoreArray(fs->DA_X,   jr->lvx,     &vx);     CHKERRQ(ierr);
+	ierr = DMDAVecRestoreArray(fs->DA_Y,   jr->lvy,     &vy);     CHKERRQ(ierr);
+	ierr = DMDAVecRestoreArray(fs->DA_Z,   jr->lvz,     &vz);     CHKERRQ(ierr);
+	ierr = DMDAVecRestoreArray(fs->DA_CEN, jr->lp_lith, &p_lith); CHKERRQ(ierr);
+	ierr = DMDAVecRestoreArray(fs->DA_CEN, jr->lp_pore, &p_pore); CHKERRQ(ierr);
+	ierr = DMDAVecRestoreArray(fs->DA_CEN, bc->bcp,     &bcp);    CHKERRQ(ierr);
 
 	// assemble global residuals from local contributions
 	LOCAL_TO_GLOBAL(fs->DA_X, jr->lfx, jr->gfx)

@@ -322,7 +322,7 @@ PetscErrorCode PVOutWriteLithoPress(JacRes *jr, OutBuf *outbuf)
 
 	cf = scal->stress;
 
-	INTERPOLATE_ACCESS(jr->lp_lithos, InterpCenterCorner, 1, 0, 0.0)
+	INTERPOLATE_ACCESS(jr->lp_lith, InterpCenterCorner, 1, 0, 0.0)
 
 	PetscFunctionReturn(0);
 }

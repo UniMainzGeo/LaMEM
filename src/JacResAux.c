@@ -555,7 +555,7 @@ PetscErrorCode JacResGetOverPressure(JacRes *jr, Vec lop)
 	// compute overpressure
 
 	FDSTAG      *fs;
-	PetscScalar ***op, ***p, ***p_lithos;
+	PetscScalar ***op, ***p, ***p_lith;
 	PetscInt    i, j, k, sx, sy, sz, nx, ny, nz;
 
 	PetscErrorCode ierr;
@@ -570,21 +570,21 @@ PetscErrorCode JacResGetOverPressure(JacRes *jr, Vec lop)
 	// access pressure vectors
 	ierr = VecZeroEntries(lop); CHKERRQ(ierr);
 
-	ierr = DMDAVecGetArray(fs->DA_CEN, lop,           &op);       CHKERRQ(ierr);
-	ierr = DMDAVecGetArray(fs->DA_CEN, jr->lp,        &p);        CHKERRQ(ierr);
-	ierr = DMDAVecGetArray(fs->DA_CEN, jr->lp_lithos, &p_lithos); CHKERRQ(ierr);
+	ierr = DMDAVecGetArray(fs->DA_CEN, lop,         &op);     CHKERRQ(ierr);
+	ierr = DMDAVecGetArray(fs->DA_CEN, jr->lp,      &p);      CHKERRQ(ierr);
+	ierr = DMDAVecGetArray(fs->DA_CEN, jr->lp_lith, &p_lith); CHKERRQ(ierr);
 
 	START_STD_LOOP
 	{
 		// overpressure = dynamic - lithostatic
-		op[k][j][i] = p[k][j][i] - p_lithos[k][j][i];
+		op[k][j][i] = p[k][j][i] - p_lith[k][j][i];
 	}
 	END_STD_LOOP
 
 	// restore buffer and pressure vectors
-	ierr = DMDAVecRestoreArray(fs->DA_CEN, lop,           &op);       CHKERRQ(ierr);
-	ierr = DMDAVecRestoreArray(fs->DA_CEN, jr->lp,        &p);        CHKERRQ(ierr);
-	ierr = DMDAVecRestoreArray(fs->DA_CEN, jr->lp_lithos, &p_lithos); CHKERRQ(ierr);
+	ierr = DMDAVecRestoreArray(fs->DA_CEN, lop,         &op);     CHKERRQ(ierr);
+	ierr = DMDAVecRestoreArray(fs->DA_CEN, jr->lp,      &p);      CHKERRQ(ierr);
+	ierr = DMDAVecRestoreArray(fs->DA_CEN, jr->lp_lith, &p_lith); CHKERRQ(ierr);
 
 	// fill ghost points
 	LOCAL_TO_LOCAL(fs->DA_CEN, lop)
@@ -615,7 +615,7 @@ PetscErrorCode JacResGetLithoStaticPressure(JacRes *jr)
 	g   =   PetscAbsScalar(jr->ctrl.grav[2]);
 
 	// initialize
-	ierr = VecZeroEntries(jr->lp_lithos); CHKERRQ(ierr);
+	ierr = VecZeroEntries(jr->lp_lith); CHKERRQ(ierr);
 
 	// get local grid sizes
 	ierr = DMDAGetCorners(fs->DA_CEN, &sx, &sy, &sz, &nx, &ny, &nz); CHKERRQ(ierr);
@@ -632,7 +632,7 @@ PetscErrorCode JacResGetLithoStaticPressure(JacRes *jr)
 	ierr = VecGetArray(vbuff, &lbuff); CHKERRQ(ierr);
 
 	// access lithostatic pressure
-	ierr = DMDAVecGetArray(fs->DA_CEN, jr->lp_lithos, &lp); CHKERRQ(ierr);
+	ierr = DMDAVecGetArray(fs->DA_CEN, jr->lp_lith, &lp); CHKERRQ(ierr);
 
 	// start receiving integral from top domain (next)
 	if(dsz->nproc != 1 && dsz->grnext != -1)
@@ -683,7 +683,7 @@ PetscErrorCode JacResGetLithoStaticPressure(JacRes *jr)
 	}
 
 	// restore buffer and pressure vectors
-	ierr = DMDAVecRestoreArray(fs->DA_CEN, jr->lp_lithos, &lp); CHKERRQ(ierr);
+	ierr = DMDAVecRestoreArray(fs->DA_CEN, jr->lp_lith, &lp); CHKERRQ(ierr);
 
 	ierr = DMDAVecRestoreArray(jr->DA_CELL_2D, vbuff, &ibuff); CHKERRQ(ierr);
 
@@ -692,7 +692,7 @@ PetscErrorCode JacResGetLithoStaticPressure(JacRes *jr)
 	ierr = DMRestoreGlobalVector(jr->DA_CELL_2D, &vbuff); CHKERRQ(ierr);
 
 	// fill ghost points
-	LOCAL_TO_LOCAL(fs->DA_CEN, jr->lp_lithos)
+	LOCAL_TO_LOCAL(fs->DA_CEN, jr->lp_lith)
 
 	PetscFunctionReturn(0);
 }
@@ -739,7 +739,7 @@ PetscErrorCode JacResGetPorePressure(JacRes *jr)
 
 	// access vectors
 	ierr = DMDAVecGetArray(fs->DA_CEN, jr->lp_pore, &lp_pore); CHKERRQ(ierr);
-	ierr = DMDAVecGetArray(fs->DA_CEN, jr->lp_lithos, &lp_lith); CHKERRQ(ierr);
+	ierr = DMDAVecGetArray(fs->DA_CEN, jr->lp_lith, &lp_lith); CHKERRQ(ierr);
 
 	iter = 0;
 	START_STD_LOOP
@@ -782,7 +782,7 @@ PetscErrorCode JacResGetPorePressure(JacRes *jr)
 
 	// restore buffer and pressure vectors
 	ierr = DMDAVecRestoreArray(fs->DA_CEN, jr->lp_pore, &lp_pore); CHKERRQ(ierr);
-	ierr = DMDAVecRestoreArray(fs->DA_CEN, jr->lp_lithos, &lp_lith); CHKERRQ(ierr);
+	ierr = DMDAVecRestoreArray(fs->DA_CEN, jr->lp_lith, &lp_lith); CHKERRQ(ierr);
 
 	// fill ghost points
 	LOCAL_TO_LOCAL(fs->DA_CEN, jr->lp_pore)

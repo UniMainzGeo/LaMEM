@@ -478,7 +478,8 @@ PetscErrorCode BCApply(BCCtx *bc, Vec x)
 	// TEMPERATURE
 	//============
 
-//	LOCAL_TO_LOCAL(fs->DA_CEN, bc->bcp)
+	// WARNING! Synchronization is necessary if SPC constraints are active
+	// LOCAL_TO_LOCAL(fs->DA_CEN, bc->bcT)
 
 	ierr = BCApplyTemp(bc); CHKERRQ(ierr);
 
@@ -486,7 +487,8 @@ PetscErrorCode BCApply(BCCtx *bc, Vec x)
 	// PRESSURE (must be called before velocity)
 	//==========================================
 
-//	LOCAL_TO_LOCAL(fs->DA_CEN, bc->bcT)
+	// WARNING! Synchronization is necessary if SPC constraints are active
+	// LOCAL_TO_LOCAL(fs->DA_CEN, bc->bcp)
 
 	ierr = BCApplyPres(bc); CHKERRQ(ierr);
 
@@ -507,15 +509,13 @@ PetscErrorCode BCApply(BCCtx *bc, Vec x)
 	ierr = BCApplyDBox(bc); CHKERRQ(ierr);
 
 	// synchronize SPC constraints in the internal ghost points
-	// WARNING! AVOID THIS BY SETTING CONSTRAINTS REDUNDANTLY
-	// IN MULTIGRID ONLY REPEAT BC COARSENING WHEN THINGS CHANGE
+	// WARNING! IN MULTIGRID ONLY REPEAT BC COARSENING WHEN BC CHANGE
 	LOCAL_TO_LOCAL(fs->DA_X,   bc->bcvx)
 	LOCAL_TO_LOCAL(fs->DA_Y,   bc->bcvy)
 	LOCAL_TO_LOCAL(fs->DA_Z,   bc->bcvz)
 
 	// apply two-point constraints
-	// WARNING! APPLY TPC STRICTLY AFTER SYNCHRONIZATION OF SPC CONSTRAINTS
-	// IMPLEMENT TPC IN MULTIGRID COARSENING
+	// WARNING! IMPLEMENT TPC IN MULTIGRID COARSENING
 	ierr = BCApplyVelTPC(bc); CHKERRQ(ierr);
 
 	// form constraint lists
