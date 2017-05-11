@@ -871,3 +871,34 @@ PetscErrorCode JacResReadCellPhases(JacRes *jr, FB *fb)
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
+#undef __FUNCT__
+#define __FUNCT__ "JacResSetPhase"
+PetscErrorCode JacResSetPhase(JacRes *jr)
+{
+	FDSTAG   *fs;
+	PetscInt  i, n, svBuffSz, setPhase;
+
+	PetscErrorCode ierr;
+	PetscFunctionBegin;
+
+	// access context
+	fs       = jr->fs;
+	setPhase = jr->ctrl.setPhase;
+
+	if(setPhase == -1) PetscFunctionReturn(0);
+
+	// compute buffer size
+	svBuffSz = jr->dbm->numPhases*(fs->nCells + fs->nXYEdg + fs->nXZEdg + fs->nYZEdg);
+
+	// zero out phase ratios
+	ierr = PetscMemzero(jr->svBuff, sizeof(PetscScalar)*(size_t)svBuffSz); CHKERRQ(ierr);
+
+	// set active phase
+	for(i = 0, n = fs->nCells; i < n; i++) jr->svCell  [i].phRat[setPhase] = 1.0;
+	for(i = 0, n = fs->nXYEdg; i < n; i++) jr->svXYEdge[i].phRat[setPhase] = 1.0;
+	for(i = 0, n = fs->nXZEdg; i < n; i++) jr->svXZEdge[i].phRat[setPhase] = 1.0;
+	for(i = 0, n = fs->nYZEdg; i < n; i++) jr->svYZEdge[i].phRat[setPhase] = 1.0;
+
+	PetscFunctionReturn(0);
+}
+//---------------------------------------------------------------------------

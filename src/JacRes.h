@@ -168,6 +168,8 @@ struct Controls
 	GWLevelType gwType;       // type of ground water level (none, top, surf, level)
 	PetscScalar gwLevel;      // fixed ground water level
 
+	PetscInt    setPhase;     // active phase (override all phases)
+
 };
 
 //---------------------------------------------------------------------------

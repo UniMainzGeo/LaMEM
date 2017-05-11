@@ -51,6 +51,7 @@
 #include "fdstag.h"
 #include "tools.h"
 #include "advect.h"
+#include "phase.h"
 
 //---------------------------------------------------------------------------
 // * open box & Winkler (with tangential viscous friction)
@@ -250,7 +251,7 @@ PetscErrorCode DBoxReadCreate(DBox *dbox, Scaling *scal, FB *fb)
 PetscErrorCode BCCreate(BCCtx *bc, FB *fb)
 {
 	Scaling     *scal;
-	PetscInt     jj;
+	PetscInt     jj, mID;
 	PetscScalar  bz;
 
 	PetscErrorCode ierr;
@@ -258,12 +259,14 @@ PetscErrorCode BCCreate(BCCtx *bc, FB *fb)
 
 	// access context
 	scal = bc->scal;
+	mID  = bc->dbm->numPhases-1;
 
 	// initialize
-	bc->Tbot = -1.0;
-	bc->Ttop = -1.0;
-	bc->pbot = -1.0;
-	bc->ptop = -1.0;
+	bc->Tbot     = -1.0;
+	bc->Ttop     = -1.0;
+	bc->pbot     = -1.0;
+	bc->ptop     = -1.0;
+	bc->fixPhase = -1;
 
 	//=====================
 	// VELOCITY CONSTRAINTS
@@ -310,7 +313,7 @@ PetscErrorCode BCCreate(BCCtx *bc, FB *fb)
 
 	if(bc->face)
 	{
-		ierr = getIntParam   (fb, _REQUIRED_, "bvel_phase", &bc->phase, 1, -1            ); CHKERRQ(ierr);
+		ierr = getIntParam   (fb, _REQUIRED_, "bvel_phase", &bc->phase, 1, mID           ); CHKERRQ(ierr);
 		ierr = getScalarParam(fb, _REQUIRED_, "bvel_bot",   &bc->bot,   1, scal->length  ); CHKERRQ(ierr);
 		ierr = getScalarParam(fb, _REQUIRED_, "bvel_top",   &bc->top,   1, scal->length  ); CHKERRQ(ierr);
 		ierr = getScalarParam(fb, _REQUIRED_, "bvel_velin", &bc->velin, 1, scal->velocity); CHKERRQ(ierr);
@@ -329,6 +332,9 @@ PetscErrorCode BCCreate(BCCtx *bc, FB *fb)
 
 	// no-slip boundary condition mask
 	ierr = getIntParam(fb, _OPTIONAL_, "noslip", bc->noslip, 6, -1); CHKERRQ(ierr);
+
+	// fixed phase (no-flow condition)
+	ierr = getIntParam(fb, _OPTIONAL_, "fix_phase", &bc->fixPhase, 1, mID); CHKERRQ(ierr);
 
 	//========================
 	// TEMPERATURE CONSTRAINTS
@@ -1283,6 +1289,18 @@ PetscErrorCode BCApplyDBox(BCCtx *bc)
 
 	// restore access
 	ierr = DMDAVecRestoreArray(fs->DA_Z, bc->bcvz, &bcvz); CHKERRQ(ierr);
+
+	PetscFunctionReturn(0);
+}
+//---------------------------------------------------------------------------
+#undef __FUNCT__
+#define __FUNCT__ "BCFixPhase"
+PetscErrorCode BCFixPhase(BCCtx *bc)
+{
+	PetscErrorCode ierr;
+	PetscFunctionBegin;
+
+
 
 	PetscFunctionReturn(0);
 }

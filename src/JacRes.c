@@ -63,7 +63,7 @@ PetscErrorCode JacResCreate(JacRes *jr, FB *fb)
 	Controls   *ctrl;
 	PetscScalar input_eta_max, gx, gy, gz;
 	char        gwtype [_STR_LEN_];
-	PetscInt    i, cnt, numPhases;
+	PetscInt    i, cnt, numPhases, mID;
 	PetscInt    is_elastic, need_DII_ref, need_RUGC, need_rho_fluid, need_surf, need_gw_type;
 
 	PetscErrorCode ierr;
@@ -74,16 +74,19 @@ PetscErrorCode JacResCreate(JacRes *jr, FB *fb)
 	ctrl      = &jr->ctrl;
 	surf      =  jr->surf;
 	numPhases =  jr->dbm->numPhases;
+	mID       =  numPhases - 1;
 
 	// set defaults
-	ctrl->gwLevel      = DBL_MAX;
-	ctrl->FSSA         = 1.0;
-	ctrl->shearHeatEff = 1.0;
-	ctrl->biot         = 1.0;
-	ctrl->pShiftAct    = 1;
-	ctrl->pLithoVisc   = 1;
-	ctrl->initGuess    = 1;
-	input_eta_max      = 0;
+	ctrl->gwLevel      =  DBL_MAX;
+	ctrl->FSSA         =  1.0;
+	ctrl->shearHeatEff =  1.0;
+	ctrl->biot         =  1.0;
+	ctrl->pShiftAct    =  1;
+	ctrl->pLithoVisc   =  1;
+	ctrl->initGuess    =  1;
+	input_eta_max      =  0;
+	ctrl->setPhase     = -1;
+
 
 	if(scal->utype != _NONE_)
 	{
@@ -118,6 +121,7 @@ PetscErrorCode JacResCreate(JacRes *jr, FB *fb)
 	ierr = getScalarParam(fb, _OPTIONAL_, "rho_fluid",      &ctrl->rho_fluid,    1, 1.0); CHKERRQ(ierr);
 	ierr = getStringParam(fb, _OPTIONAL_, "gw_level_type",  gwtype,              "none"); CHKERRQ(ierr);
 	ierr = getScalarParam(fb, _OPTIONAL_, "gw_level",      &ctrl->gwLevel,       1, 1.0); CHKERRQ(ierr);
+	ierr = getIntParam   (fb, _OPTIONAL_, "set_phase",     &ctrl->setPhase,      1, mID); CHKERRQ(ierr);
 
 	if     (!strcmp(gwtype, "none"))  ctrl->gwType = _GW_NONE_;
 	else if(!strcmp(gwtype, "top"))   ctrl->gwType = _GW_TOP_;
@@ -629,6 +633,7 @@ PetscErrorCode JacResGetI2Gdt(JacRes *jr)
 		// compute & store inverse viscosity
 		svEdge->svDev.I2Gdt = GetI2Gdt(numPhases, phases, svEdge->phRat, dt);
 	}
+
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
@@ -1220,7 +1225,7 @@ PetscErrorCode JacResGetResidual(JacRes *jr)
 		// mass - currently T-dependency is deactivated
 //		gc[k][j][i] = -IKdt*(pc - pn) - theta + alpha*(Tc - Tn)/dt;
         
-        gc[k][j][i] = -IKdt*(pc - pn) - theta ;
+        gc[k][j][i] = -IKdt*(pc - pn) - theta;
         
 	}
 	END_STD_LOOP

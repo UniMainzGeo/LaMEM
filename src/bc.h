@@ -59,6 +59,7 @@ struct Scaling;
 struct TSSol;
 struct FDSTAG;
 struct Marker;
+struct DBMat;
 
 //---------------------------------------------------------------------------
 // index shift type
@@ -157,6 +158,7 @@ struct BCCtx
 	FDSTAG   *fs;   // staggered grid
 	TSSol    *ts;   // time stepping parameters
 	Scaling  *scal; // scaling parameters
+	DBMat    *dbm;  // material database
 
 	// boundary conditions vectors (velocity, pressure, temperature)
 	Vec bcvx, bcvy, bcvz, bcp, bcT; // local (ghosted)
@@ -220,6 +222,9 @@ struct BCCtx
 	// no-slip boundary condition mask
 	PetscInt     noslip[6];
 
+	// fixed phase (no-flow condition)
+	PetscInt     fixPhase;
+
 	//========================
 	// TEMPERATURE CONSTRAINTS
 	//========================
@@ -278,6 +283,9 @@ PetscErrorCode BCApplyDBox(BCCtx *bc);
 
 // apply two-point constraints on the boundaries
 PetscErrorCode BCApplyVelTPC(BCCtx *bc);
+
+// constraint all cells containing phase
+PetscErrorCode BCFixPhase(BCCtx *bc);
 
 //---------------------------------------------------------------------------
 // Service functions
