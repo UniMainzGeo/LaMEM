@@ -1297,10 +1297,184 @@ PetscErrorCode BCApplyDBox(BCCtx *bc)
 #define __FUNCT__ "BCFixPhase"
 PetscErrorCode BCFixPhase(BCCtx *bc)
 {
+	// apply default velocity constraints on the boundaries
+/*
+	FDSTAG      *fs;
+	PetscScalar Exx, Eyy, Ezz;
+	PetscScalar bx,  by,  bz;
+	PetscScalar ex,  ey,  ez;
+	PetscScalar vbx, vby, vbz;
+	PetscScalar vex, vey, vez;
+	PetscInt    mnx, mny, mnz;
+	PetscInt    i, j, k, nx, ny, nz, sx, sy, sz, iter, fixPhase;
+	PetscScalar ***bcvx,  ***bcvy,  ***bcvz, ***bcp, *SPCVals;
+*/
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
 
 
+/*
+
+	// access context
+	fs       = bc->fs;
+	fixPhase = bc->fixPhase;
+
+	// check constraint activation
+	if(fixPhase == -1) PetscFunctionReturn(0);
+
+
+
+
+	// get local grid sizes
+	ierr = DMDAGetCorners(fs->DA_CEN, &sx, &sy, &sz, &nx, &ny, &nz); CHKERRQ(ierr);
+
+	// access vectors
+	ierr = DMDAVecGetArray(fs->DA_CEN, jr->lp_pore, &lp_pore); CHKERRQ(ierr);
+	ierr = DMDAVecGetArray(fs->DA_CEN, jr->lp_lith, &lp_lith); CHKERRQ(ierr);
+
+	iter = 0;
+	START_STD_LOOP
+	{
+
+
+
+		// access phase ratio array
+		phRat = jr->svCell[iter++].phRat;
+
+		// compute depth of the current control volume
+		depth = gwLevel - COORD_CELL(k, sz, fs->dsz);
+		if(depth < 0.0) depth = 0.0;				// we don't want these calculations in the 'air'
+
+		// Evaluate pore pressure ratio in control volume
+		rp_cv = 0.0;
+		// scan all phases
+		for(iphase = 0; iphase < numPhases; iphase++)
+		{
+			// update present phases only
+			if(phRat[iphase])
+			{
+				// get reference to material parameters table
+				mat = &phases[iphase];
+
+				// get and check pore pressure ratio of each phase
+				if(mat->rp<0.0)      mat->rp = 0.0;
+				else if(mat->rp>1.0) mat->rp = 1.0;
+				rp = mat->rp;
+
+				// compute average pore pressure ratio
+				rp_cv +=  phRat[iphase] * rp;
+			}
+		}
+
+		// hydrostatic pressure (based on the water column)
+		p_hydro = rho_fluid * g * PetscAbsScalar(depth);
+
+		// compute the pore pressure as product of lithostatic pressure and porepressure ratio of the control volume
+		lp_pore[k][j][i] =  p_hydro + rp_cv * (lp_lith[k][j][i]-p_hydro);
+
+
+
+	}
+	END_STD_LOOP
+
+	// restore buffer and pressure vectors
+	ierr = DMDAVecRestoreArray(fs->DA_CEN, jr->lp_pore, &lp_pore); CHKERRQ(ierr);
+	ierr = DMDAVecRestoreArray(fs->DA_CEN, jr->lp_lith, &lp_lith); CHKERRQ(ierr);
+
+
+
+
+
+	// initialize index bounds
+	mnx = fs->dsx.tnods - 1;
+	mny = fs->dsy.tnods - 1;
+	mnz = fs->dsz.tnods - 1;
+
+	// get current coordinates of the mesh boundaries
+	ierr = FDSTAGGetGlobalBox(fs, &bx, &by, &bz, &ex, &ey, &ez); CHKERRQ(ierr);
+
+	// get background strain rates
+	ierr = BCGetBGStrainRates(bc, &Exx, &Eyy, &Ezz); CHKERRQ(ierr);
+
+	// get boundary velocities
+	// coordinate origin is assumed to be fixed
+	// velocity is a product of strain rate and coordinate
+	vbx = bx*Exx;   vex = ex*Exx;
+	vby = by*Eyy;   vey = ey*Eyy;
+	vbz = bz*Ezz;   vez = ez*Ezz;
+
+	if(top_open)
+	{
+		vbz = 0.0;
+		vez = 0.0;
+	}
+
+	// access constraint vectors
+	ierr = DMDAVecGetArray(fs->DA_X,   bc->bcvx, &bcvx); CHKERRQ(ierr);
+	ierr = DMDAVecGetArray(fs->DA_Y,   bc->bcvy, &bcvy); CHKERRQ(ierr);
+	ierr = DMDAVecGetArray(fs->DA_Z,   bc->bcvz, &bcvz); CHKERRQ(ierr);
+	ierr = DMDAVecGetArray(fs->DA_CEN, bc->bcp,  &bcp);  CHKERRQ(ierr);
+
+	// access constraint arrays
+	SPCVals = bc->SPCVals;
+
+	//=========================================================================
+	// SPC (normal velocities)
+	//=========================================================================
+
+	iter = 0;
+
+	//------------------
+	// X points SPC only
+	//------------------
+	GET_NODE_RANGE(nx, sx, fs->dsx)
+	GET_CELL_RANGE(ny, sy, fs->dsy)
+	GET_CELL_RANGE(nz, sz, fs->dsz)
+
+	START_STD_LOOP
+	{
+		if(i == 0   && bcp[k][j][-1 ] == DBL_MAX) { bcvx[k][j][i] = vbx; SPCVals[iter] = vbx; }
+		if(i == mnx && bcp[k][j][mnx] == DBL_MAX) { bcvx[k][j][i] = vex; SPCVals[iter] = vex; }
+		iter++;
+	}
+	END_STD_LOOP
+
+	//------------------
+	// Y points SPC only
+	//------------------
+	GET_CELL_RANGE(nx, sx, fs->dsx)
+	GET_NODE_RANGE(ny, sy, fs->dsy)
+	GET_CELL_RANGE(nz, sz, fs->dsz)
+
+	START_STD_LOOP
+	{
+		if(j == 0   && bcp[k][-1 ][i] == DBL_MAX) { bcvy[k][j][i] = vby; SPCVals[iter] = vby; }
+		if(j == mny && bcp[k][mny][i] == DBL_MAX) { bcvy[k][j][i] = vey; SPCVals[iter] = vey; }
+		iter++;
+	}
+	END_STD_LOOP
+
+	//------------------
+	// Z points SPC only
+	//------------------
+	GET_CELL_RANGE(nx, sx, fs->dsx)
+	GET_CELL_RANGE(ny, sy, fs->dsy)
+	GET_NODE_RANGE(nz, sz, fs->dsz)
+
+	START_STD_LOOP
+	{
+		if(k == 0                && bcp[-1 ][j][i] == DBL_MAX) { bcvz[k][j][i] = vbz; SPCVals[iter] = vbz; }
+		if(k == mnz && !top_open && bcp[mnz][j][i] == DBL_MAX) { bcvz[k][j][i] = vez; SPCVals[iter] = vez; }
+		iter++;
+	}
+	END_STD_LOOP
+
+	// restore access
+	ierr = DMDAVecRestoreArray(fs->DA_X,   bc->bcvx, &bcvx); CHKERRQ(ierr);
+	ierr = DMDAVecRestoreArray(fs->DA_Y,   bc->bcvy, &bcvy); CHKERRQ(ierr);
+	ierr = DMDAVecRestoreArray(fs->DA_Z,   bc->bcvz, &bcvz); CHKERRQ(ierr);
+	ierr = DMDAVecRestoreArray(fs->DA_CEN, bc->bcp,  &bcp);  CHKERRQ(ierr);
+*/
 
 	PetscFunctionReturn(0);
 }
