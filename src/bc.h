@@ -281,11 +281,17 @@ PetscErrorCode BCApplyBoundVel(BCCtx *bc);
 // apply dropping boxes
 PetscErrorCode BCApplyDBox(BCCtx *bc);
 
-// apply two-point constraints on the boundaries
-PetscErrorCode BCApplyVelTPC(BCCtx *bc);
+// constraint all cells containing phase
+PetscErrorCode BCFixPhase(BCCtx *bc);
 
 // constraint all cells containing phase
 PetscErrorCode BCFixPhase(BCCtx *bc);
+
+// create SPC constraint lists
+PetscErrorCode BCListSPC(BCCtx *bc);
+
+// apply two-point constraints on the boundaries
+PetscErrorCode BCApplyVelTPC(BCCtx *bc);
 
 //---------------------------------------------------------------------------
 // Service functions
@@ -303,6 +309,13 @@ PetscErrorCode BCStretchGrid(BCCtx *bc);
 
 // change phase of inflow markers if velocity boundary condition is defined
 PetscErrorCode BCOverridePhase(BCCtx *bc, PetscInt cellID, Marker *P);
+
+//---------------------------------------------------------------------------
+// MACROS
+//---------------------------------------------------------------------------
+
+#define LIST_TPC(bc, list, vals, cnt, iter)\
+	if(bc[k][j][i] != DBL_MAX) { list[cnt] = iter; vals[cnt] = bc[k][j][i]; cnt++; }
 
 //---------------------------------------------------------------------------
 #endif

@@ -455,21 +455,13 @@ PetscErrorCode BCDestroy(BCCtx *bc)
 #define __FUNCT__ "BCApply"
 PetscErrorCode BCApply(BCCtx *bc, Vec x)
 {
-	FDSTAG      *fs;
-	DOFIndex    *dof;
-	PetscScalar *SPCVals;
-	PetscInt    i, ln, lnv, numSPC, vNumSPC, pNumSPC, *SPCList;
+	FDSTAG *fs;
 
  	PetscErrorCode ierr;
 	PetscFunctionBegin;
 
 	// access context
-	fs      = bc->fs;
-	dof     = &fs->dof;
-	ln      = dof->ln;
-	lnv     = dof->lnv;
-	SPCList = bc->SPCList;
-	SPCVals = bc->SPCVals;
+	fs = bc->fs;
 
 	// mark all variables unconstrained
 	ierr = VecSet(bc->bcvx, DBL_MAX); CHKERRQ(ierr);
@@ -477,8 +469,6 @@ PetscErrorCode BCApply(BCCtx *bc, Vec x)
 	ierr = VecSet(bc->bcvz, DBL_MAX); CHKERRQ(ierr);
 	ierr = VecSet(bc->bcp,  DBL_MAX); CHKERRQ(ierr);
 	ierr = VecSet(bc->bcT,  DBL_MAX); CHKERRQ(ierr);
-
-	for(i = 0; i < ln; i++) SPCVals[i] = DBL_MAX;
 
 	//============
 	// TEMPERATURE
@@ -524,47 +514,8 @@ PetscErrorCode BCApply(BCCtx *bc, Vec x)
 	// WARNING! IMPLEMENT TPC IN MULTIGRID COARSENING
 	ierr = BCApplyVelTPC(bc); CHKERRQ(ierr);
 
-	// form constraint lists
-	numSPC = 0;
-
-	// velocity
-	for(i = 0; i < lnv; i++)
-	{
-		if(SPCVals[i] != DBL_MAX)
-		{
-			SPCList[numSPC] = i;
-			SPCVals[numSPC] = SPCVals[i];
-			numSPC++;
-		}
-	}
-	vNumSPC = numSPC;
-
-	// pressure
-	for(i = lnv; i < ln; i++)
-	{
-		if(SPCVals[i] != DBL_MAX)
-		{
-			SPCList[numSPC] = i;
-			SPCVals[numSPC] = SPCVals[i];
-			numSPC++;
-		}
-	}
-	pNumSPC = numSPC - vNumSPC;
-
-	// set index (shift) type
-	bc->stype = _GLOBAL_TO_LOCAL_;
-
-	// store constraint lists
-	bc->numSPC   = numSPC;
-	bc->vNumSPC  = vNumSPC;
-	bc->vSPCList = SPCList;
-	bc->vSPCVals = SPCVals;
-	bc->pNumSPC  = pNumSPC;
-	bc->pSPCList = SPCList + vNumSPC;
-	bc->pSPCVals = SPCVals + vNumSPC;
-
-	// WARNING! currently primary temperature constraints are not implemented
-	bc->tNumSPC = 0;
+	// form SPC constraint lists
+	ierr = BCListSPC(bc); CHKERRQ(ierr);
 
 	// apply SPC to global solution vector
 	ierr = BCApplySPC(bc, x); CHKERRQ(ierr);
@@ -1298,6 +1249,8 @@ PetscErrorCode BCApplyDBox(BCCtx *bc)
 PetscErrorCode BCFixPhase(BCCtx *bc)
 {
 	// apply default velocity constraints on the boundaries
+
+
 /*
 	FDSTAG      *fs;
 	PetscScalar Exx, Eyy, Ezz;
@@ -1308,12 +1261,14 @@ PetscErrorCode BCFixPhase(BCCtx *bc)
 	PetscInt    mnx, mny, mnz;
 	PetscInt    i, j, k, nx, ny, nz, sx, sy, sz, iter, fixPhase;
 	PetscScalar ***bcvx,  ***bcvy,  ***bcvz, ***bcp, *SPCVals;
-*/
+
+
+
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
 
 
-/*
+
 
 	// access context
 	fs       = bc->fs;
@@ -1328,11 +1283,15 @@ PetscErrorCode BCFixPhase(BCCtx *bc)
 	// get local grid sizes
 	ierr = DMDAGetCorners(fs->DA_CEN, &sx, &sy, &sz, &nx, &ny, &nz); CHKERRQ(ierr);
 
-	// access vectors
-	ierr = DMDAVecGetArray(fs->DA_CEN, jr->lp_pore, &lp_pore); CHKERRQ(ierr);
-	ierr = DMDAVecGetArray(fs->DA_CEN, jr->lp_lith, &lp_lith); CHKERRQ(ierr);
+
+
+
+
 
 	iter = 0;
+
+
+
 	START_STD_LOOP
 	{
 
@@ -1415,8 +1374,6 @@ PetscErrorCode BCFixPhase(BCCtx *bc)
 	ierr = DMDAVecGetArray(fs->DA_Z,   bc->bcvz, &bcvz); CHKERRQ(ierr);
 	ierr = DMDAVecGetArray(fs->DA_CEN, bc->bcp,  &bcp);  CHKERRQ(ierr);
 
-	// access constraint arrays
-	SPCVals = bc->SPCVals;
 
 	//=========================================================================
 	// SPC (normal velocities)
@@ -1469,12 +1426,113 @@ PetscErrorCode BCFixPhase(BCCtx *bc)
 	}
 	END_STD_LOOP
 
+
+
 	// restore access
 	ierr = DMDAVecRestoreArray(fs->DA_X,   bc->bcvx, &bcvx); CHKERRQ(ierr);
 	ierr = DMDAVecRestoreArray(fs->DA_Y,   bc->bcvy, &bcvy); CHKERRQ(ierr);
 	ierr = DMDAVecRestoreArray(fs->DA_Z,   bc->bcvz, &bcvz); CHKERRQ(ierr);
-	ierr = DMDAVecRestoreArray(fs->DA_CEN, bc->bcp,  &bcp);  CHKERRQ(ierr);
 */
+
+	PetscFunctionReturn(0);
+}
+//---------------------------------------------------------------------------
+#undef __FUNCT__
+#define __FUNCT__ "BCListSPC"
+PetscErrorCode BCListSPC(BCCtx *bc)
+{
+	// create SPC constraint lists
+
+	FDSTAG      *fs;
+	DOFIndex    *dof;
+	PetscInt    iter, numSPC, *SPCList;
+	PetscInt    i, j, k, nx, ny, nz, sx, sy, sz;
+	PetscScalar ***bcvx,  ***bcvy,  ***bcvz, *SPCVals;
+
+	PetscErrorCode ierr;
+	PetscFunctionBegin;
+
+	// access context
+	fs      = bc->fs;
+	dof     = &fs->dof;
+	SPCVals = bc->SPCVals;
+	SPCList = bc->SPCList;
+
+	// clear constraints
+	ierr = PetscMemzero(SPCVals, sizeof(PetscScalar)*(size_t)dof->ln); CHKERRQ(ierr);
+	ierr = PetscMemzero(SPCList, sizeof(PetscInt)   *(size_t)dof->ln); CHKERRQ(ierr);
+
+	// access vectors
+	ierr = DMDAVecGetArray(fs->DA_X, bc->bcvx, &bcvx); CHKERRQ(ierr);
+	ierr = DMDAVecGetArray(fs->DA_Y, bc->bcvy, &bcvy); CHKERRQ(ierr);
+	ierr = DMDAVecGetArray(fs->DA_Z, bc->bcvz, &bcvz); CHKERRQ(ierr);
+
+	iter   = 0;
+	numSPC = 0;
+
+	//---------
+	// X points
+	//---------
+
+	ierr = DMDAGetCorners(fs->DA_X, &sx, &sy, &sz, &nx, &ny, &nz); CHKERRQ(ierr);
+
+	START_STD_LOOP
+	{
+		LIST_TPC(bcvx, SPCList, SPCVals, numSPC, iter)
+
+		iter++;
+	}
+	END_STD_LOOP
+
+	//---------
+	// Y points
+	//---------
+
+	ierr = DMDAGetCorners(fs->DA_Y, &sx, &sy, &sz, &nx, &ny, &nz); CHKERRQ(ierr);
+
+	START_STD_LOOP
+	{
+		LIST_TPC(bcvy, SPCList, SPCVals, numSPC, iter)
+
+		iter++;
+	}
+	END_STD_LOOP
+
+	//---------
+	// Z points
+	//---------
+
+	ierr = DMDAGetCorners(fs->DA_Z, &sx, &sy, &sz, &nx, &ny, &nz); CHKERRQ(ierr);
+
+	START_STD_LOOP
+	{
+		LIST_TPC(bcvz, SPCList, SPCVals, numSPC, iter)
+
+		iter++;
+	}
+	END_STD_LOOP
+
+	// store velocity list
+	bc->vNumSPC  = numSPC;
+	bc->vSPCList = SPCList;
+	bc->vSPCVals = SPCVals;
+
+	// WARNING! primary pressure constraints are not implemented, otherwise compute here
+	bc->pNumSPC = 0;
+
+	// WARNING! primary temperature constraints are not implemented, otherwise compute here
+	bc->tNumSPC = 0;
+
+	// set index (shift) type
+	bc->stype = _GLOBAL_TO_LOCAL_;
+
+	// store total number of constraints
+	bc->numSPC = numSPC;
+
+	// restore access
+	ierr = DMDAVecRestoreArray(fs->DA_X, bc->bcvx, &bcvx); CHKERRQ(ierr);
+	ierr = DMDAVecRestoreArray(fs->DA_Y, bc->bcvy, &bcvy); CHKERRQ(ierr);
+	ierr = DMDAVecRestoreArray(fs->DA_Z, bc->bcvz, &bcvz); CHKERRQ(ierr);
 
 	PetscFunctionReturn(0);
 }
