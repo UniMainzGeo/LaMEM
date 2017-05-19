@@ -60,6 +60,7 @@ struct TSSol;
 struct FDSTAG;
 struct Marker;
 struct DBMat;
+struct SolVarCell;
 
 //---------------------------------------------------------------------------
 // index shift type
@@ -251,7 +252,7 @@ PetscErrorCode BCCreateData(BCCtx *bc);
 PetscErrorCode BCDestroy(BCCtx *bc);
 
 // apply ALL boundary conditions
-PetscErrorCode BCApply(BCCtx *bc, Vec x);
+PetscErrorCode BCApply(BCCtx *bc, Vec x, SolVarCell *svCell);
 
 // apply SPC to global solution vector
 PetscErrorCode BCApplySPC(BCCtx *bc, Vec x);
@@ -282,10 +283,10 @@ PetscErrorCode BCApplyBoundVel(BCCtx *bc);
 PetscErrorCode BCApplyDBox(BCCtx *bc);
 
 // constraint all cells containing phase
-PetscErrorCode BCFixPhase(BCCtx *bc);
+PetscErrorCode BCApplyPhase(BCCtx *bc, SolVarCell *svCell);
 
 // constraint all cells containing phase
-PetscErrorCode BCFixPhase(BCCtx *bc);
+PetscErrorCode BCFixPhase(BCCtx *bc, SolVarCell *svCell);
 
 // create SPC constraint lists
 PetscErrorCode BCListSPC(BCCtx *bc);
@@ -314,7 +315,7 @@ PetscErrorCode BCOverridePhase(BCCtx *bc, PetscInt cellID, Marker *P);
 // MACROS
 //---------------------------------------------------------------------------
 
-#define LIST_TPC(bc, list, vals, cnt, iter)\
+#define LIST_SPC(bc, list, vals, cnt, iter)\
 	if(bc[k][j][i] != DBL_MAX) { list[cnt] = iter; vals[cnt] = bc[k][j][i]; cnt++; }
 
 //---------------------------------------------------------------------------

@@ -45,6 +45,7 @@
 //---------------------------------------------------------------------------
 #include "LaMEM.h"
 #include "bc.h"
+#include "JacRes.h"
 #include "parsing.h"
 #include "scaling.h"
 #include "tssolve.h"
@@ -453,7 +454,7 @@ PetscErrorCode BCDestroy(BCCtx *bc)
 //---------------------------------------------------------------------------
 #undef __FUNCT__
 #define __FUNCT__ "BCApply"
-PetscErrorCode BCApply(BCCtx *bc, Vec x)
+PetscErrorCode BCApply(BCCtx *bc, Vec x, SolVarCell *svCell)
 {
 	FDSTAG *fs;
 
@@ -503,6 +504,9 @@ PetscErrorCode BCApply(BCCtx *bc, Vec x)
 
 	// apply dropping boxes
 	ierr = BCApplyDBox(bc); CHKERRQ(ierr);
+
+	// fix all cells occupied by phase
+	ierr = BCApplyPhase(bc, svCell); CHKERRQ(ierr);
 
 	// synchronize SPC constraints in the internal ghost points
 	// WARNING! IN MULTIGRID ONLY REPEAT BC COARSENING WHEN BC CHANGE
@@ -727,7 +731,7 @@ PetscErrorCode BCApplyVelDefault(BCCtx *bc)
 	PetscScalar vex, vey, vez;
 	PetscInt    mnx, mny, mnz;
 	PetscInt    i, j, k, nx, ny, nz, sx, sy, sz, iter, top_open;
-	PetscScalar ***bcvx,  ***bcvy,  ***bcvz, ***bcp, *SPCVals;
+	PetscScalar ***bcvx,  ***bcvy,  ***bcvz, ***bcp;
 
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
@@ -768,9 +772,6 @@ PetscErrorCode BCApplyVelDefault(BCCtx *bc)
 	ierr = DMDAVecGetArray(fs->DA_Z,   bc->bcvz, &bcvz); CHKERRQ(ierr);
 	ierr = DMDAVecGetArray(fs->DA_CEN, bc->bcp,  &bcp);  CHKERRQ(ierr);
 
-	// access constraint arrays
-	SPCVals = bc->SPCVals;
-
 	//=========================================================================
 	// SPC (normal velocities)
 	//=========================================================================
@@ -786,8 +787,8 @@ PetscErrorCode BCApplyVelDefault(BCCtx *bc)
 
 	START_STD_LOOP
 	{
-		if(i == 0   && bcp[k][j][-1 ] == DBL_MAX) { bcvx[k][j][i] = vbx; SPCVals[iter] = vbx; }
-		if(i == mnx && bcp[k][j][mnx] == DBL_MAX) { bcvx[k][j][i] = vex; SPCVals[iter] = vex; }
+		if(i == 0   && bcp[k][j][-1 ] == DBL_MAX) { bcvx[k][j][i] = vbx; }
+		if(i == mnx && bcp[k][j][mnx] == DBL_MAX) { bcvx[k][j][i] = vex; }
 		iter++;
 	}
 	END_STD_LOOP
@@ -801,8 +802,8 @@ PetscErrorCode BCApplyVelDefault(BCCtx *bc)
 
 	START_STD_LOOP
 	{
-		if(j == 0   && bcp[k][-1 ][i] == DBL_MAX) { bcvy[k][j][i] = vby; SPCVals[iter] = vby; }
-		if(j == mny && bcp[k][mny][i] == DBL_MAX) { bcvy[k][j][i] = vey; SPCVals[iter] = vey; }
+		if(j == 0   && bcp[k][-1 ][i] == DBL_MAX) { bcvy[k][j][i] = vby; }
+		if(j == mny && bcp[k][mny][i] == DBL_MAX) { bcvy[k][j][i] = vey; }
 		iter++;
 	}
 	END_STD_LOOP
@@ -816,8 +817,8 @@ PetscErrorCode BCApplyVelDefault(BCCtx *bc)
 
 	START_STD_LOOP
 	{
-		if(k == 0                && bcp[-1 ][j][i] == DBL_MAX) { bcvz[k][j][i] = vbz; SPCVals[iter] = vbz; }
-		if(k == mnz && !top_open && bcp[mnz][j][i] == DBL_MAX) { bcvz[k][j][i] = vez; SPCVals[iter] = vez; }
+		if(k == 0                && bcp[-1 ][j][i] == DBL_MAX) { bcvz[k][j][i] = vbz; }
+		if(k == mnz && !top_open && bcp[mnz][j][i] == DBL_MAX) { bcvz[k][j][i] = vez; }
 		iter++;
 	}
 	END_STD_LOOP
@@ -946,7 +947,7 @@ PetscErrorCode BCApplyBezier(BCCtx *bc)
 	BCBlock     *bcb;
 	PetscInt    fbeg, fend, npoly, in;
 	PetscInt    i, j, k, nx, ny, nz, sx, sy, sz, iter, ib;
-	PetscScalar ***bcvx,  ***bcvy, *SPCVals;
+	PetscScalar ***bcvx,  ***bcvy;
 	PetscScalar t, dt, theta, costh, sinth, atol, bot, top, vel;
 	PetscScalar Xbeg[3], Xend[3], xbeg[3], xend[3], box[4], cpoly[2*_max_poly_points_];
 
@@ -964,9 +965,6 @@ PetscErrorCode BCApplyBezier(BCCtx *bc)
 	// access velocity constraint vectors
 	ierr = DMDAVecGetArray(fs->DA_X, bc->bcvx, &bcvx); CHKERRQ(ierr);
 	ierr = DMDAVecGetArray(fs->DA_Y, bc->bcvy, &bcvy); CHKERRQ(ierr);
-
-	// access constraint arrays
-	SPCVals = bc->SPCVals;
 
 	// loop over all bezier blocks
 	for(ib = 0; ib < bc->nblocks; ib++)
@@ -1025,7 +1023,6 @@ PetscErrorCode BCApplyBezier(BCCtx *bc)
 					vel = (xend[0] - xbeg[0])/dt;
 
 					bcvx[k][j][i] = vel;
-					SPCVals[iter] = vel;
 				}
 			}
 			iter++;
@@ -1061,7 +1058,6 @@ PetscErrorCode BCApplyBezier(BCCtx *bc)
 					vel = (xend[1] - xbeg[1])/dt;
 
 					bcvy[k][j][i] = vel;
-					SPCVals[iter] = vel;
 				}
 			}
 			iter++;
@@ -1082,7 +1078,7 @@ PetscErrorCode BCApplyBoundVel(BCCtx *bc)
 	FDSTAG      *fs;
 	PetscInt    mnx, mny;
 	PetscInt    i, j, k, nx, ny, nz, sx, sy, sz, iter;
-	PetscScalar ***bcvx,  ***bcvy, *SPCVals;
+	PetscScalar ***bcvx,  ***bcvy;
 	PetscScalar z, bot, top, vel, velin, velout;
 
 	PetscErrorCode ierr;
@@ -1106,9 +1102,6 @@ PetscErrorCode BCApplyBoundVel(BCCtx *bc)
 	ierr = DMDAVecGetArray(fs->DA_X, bc->bcvx, &bcvx); CHKERRQ(ierr);
 	ierr = DMDAVecGetArray(fs->DA_Y, bc->bcvy, &bcvy); CHKERRQ(ierr);
 
-	// access constraint arrays
-	SPCVals = bc->SPCVals;
-
 	iter = 0;
 
 	//---------
@@ -1127,8 +1120,8 @@ PetscErrorCode BCApplyBoundVel(BCCtx *bc)
 			if(z <= top && z >= bot) vel = velin;
 			if(z < bot)              vel = velout;
 
-			if(bc->face == 1 && i == 0)   { bcvx[k][j][i] = vel; SPCVals[iter] = vel; }
-			if(bc->face == 2 && i == mnx) { bcvx[k][j][i] = vel; SPCVals[iter] = vel; }
+			if(bc->face == 1 && i == 0)   { bcvx[k][j][i] = vel; }
+			if(bc->face == 2 && i == mnx) { bcvx[k][j][i] = vel; }
 			iter++;
 		}
 		END_STD_LOOP
@@ -1150,8 +1143,8 @@ PetscErrorCode BCApplyBoundVel(BCCtx *bc)
 			if(z <= top && z >= bot) vel = velin;
 			if(z < bot)              vel = velout;
 
-			if(bc->face == 3 && j == 0)   { bcvy[k][j][i] = vel; SPCVals[iter] = vel; }
-			if(bc->face == 4 && j == mny) { bcvy[k][j][i] = vel; SPCVals[iter] = vel; }
+			if(bc->face == 3 && j == 0)   { bcvy[k][j][i] = vel; }
+			if(bc->face == 4 && j == mny) { bcvy[k][j][i] = vel; }
 			iter++;
 		}
 		END_STD_LOOP
@@ -1171,7 +1164,7 @@ PetscErrorCode BCApplyDBox(BCCtx *bc)
 	DBox        *dbox;
 	FDSTAG      *fs;
 	PetscInt    jj, i, j, k, nx, ny, nz, sx, sy, sz, iter;
-	PetscScalar ***bcvz, *SPCVals, bounds[6*_max_boxes_], *pbounds;
+	PetscScalar ***bcvz, bounds[6*_max_boxes_], *pbounds;
 	PetscScalar x, y, z, t, vz;
 
 	PetscErrorCode ierr;
@@ -1201,9 +1194,6 @@ PetscErrorCode BCApplyDBox(BCCtx *bc)
 	// access velocity constraint vectors
 	ierr = DMDAVecGetArray(fs->DA_Z, bc->bcvz, &bcvz); CHKERRQ(ierr);
 
-	// access constraint arrays
-	SPCVals = bc->SPCVals;
-
 	//---------
 	// Z points
 	//---------
@@ -1230,7 +1220,6 @@ PetscErrorCode BCApplyDBox(BCCtx *bc)
 			&& z >= pbounds[4] && z <= pbounds[5])
 			{
 				bcvz[k][j][i] = vz;
-				SPCVals[iter] = vz;
 				break;
 			}
 		}
@@ -1245,30 +1234,17 @@ PetscErrorCode BCApplyDBox(BCCtx *bc)
 }
 //---------------------------------------------------------------------------
 #undef __FUNCT__
-#define __FUNCT__ "BCFixPhase"
-PetscErrorCode BCFixPhase(BCCtx *bc)
+#define __FUNCT__ "BCApplyPhase"
+PetscErrorCode BCApplyPhase(BCCtx *bc, SolVarCell *svCell)
 {
 	// apply default velocity constraints on the boundaries
 
-
-/*
 	FDSTAG      *fs;
-	PetscScalar Exx, Eyy, Ezz;
-	PetscScalar bx,  by,  bz;
-	PetscScalar ex,  ey,  ez;
-	PetscScalar vbx, vby, vbz;
-	PetscScalar vex, vey, vez;
-	PetscInt    mnx, mny, mnz;
 	PetscInt    i, j, k, nx, ny, nz, sx, sy, sz, iter, fixPhase;
-	PetscScalar ***bcvx,  ***bcvy,  ***bcvz, ***bcp, *SPCVals;
-
-
+	PetscScalar ***bcvx,  ***bcvy,  ***bcvz;
 
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
-
-
-
 
 	// access context
 	fs       = bc->fs;
@@ -1277,162 +1253,37 @@ PetscErrorCode BCFixPhase(BCCtx *bc)
 	// check constraint activation
 	if(fixPhase == -1) PetscFunctionReturn(0);
 
-
-
-
-	// get local grid sizes
-	ierr = DMDAGetCorners(fs->DA_CEN, &sx, &sy, &sz, &nx, &ny, &nz); CHKERRQ(ierr);
-
-
-
-
-
-
-	iter = 0;
-
-
-
-	START_STD_LOOP
-	{
-
-
-
-		// access phase ratio array
-		phRat = jr->svCell[iter++].phRat;
-
-		// compute depth of the current control volume
-		depth = gwLevel - COORD_CELL(k, sz, fs->dsz);
-		if(depth < 0.0) depth = 0.0;				// we don't want these calculations in the 'air'
-
-		// Evaluate pore pressure ratio in control volume
-		rp_cv = 0.0;
-		// scan all phases
-		for(iphase = 0; iphase < numPhases; iphase++)
-		{
-			// update present phases only
-			if(phRat[iphase])
-			{
-				// get reference to material parameters table
-				mat = &phases[iphase];
-
-				// get and check pore pressure ratio of each phase
-				if(mat->rp<0.0)      mat->rp = 0.0;
-				else if(mat->rp>1.0) mat->rp = 1.0;
-				rp = mat->rp;
-
-				// compute average pore pressure ratio
-				rp_cv +=  phRat[iphase] * rp;
-			}
-		}
-
-		// hydrostatic pressure (based on the water column)
-		p_hydro = rho_fluid * g * PetscAbsScalar(depth);
-
-		// compute the pore pressure as product of lithostatic pressure and porepressure ratio of the control volume
-		lp_pore[k][j][i] =  p_hydro + rp_cv * (lp_lith[k][j][i]-p_hydro);
-
-
-
-	}
-	END_STD_LOOP
-
-	// restore buffer and pressure vectors
-	ierr = DMDAVecRestoreArray(fs->DA_CEN, jr->lp_pore, &lp_pore); CHKERRQ(ierr);
-	ierr = DMDAVecRestoreArray(fs->DA_CEN, jr->lp_lith, &lp_lith); CHKERRQ(ierr);
-
-
-
-
-
-	// initialize index bounds
-	mnx = fs->dsx.tnods - 1;
-	mny = fs->dsy.tnods - 1;
-	mnz = fs->dsz.tnods - 1;
-
-	// get current coordinates of the mesh boundaries
-	ierr = FDSTAGGetGlobalBox(fs, &bx, &by, &bz, &ex, &ey, &ez); CHKERRQ(ierr);
-
-	// get background strain rates
-	ierr = BCGetBGStrainRates(bc, &Exx, &Eyy, &Ezz); CHKERRQ(ierr);
-
-	// get boundary velocities
-	// coordinate origin is assumed to be fixed
-	// velocity is a product of strain rate and coordinate
-	vbx = bx*Exx;   vex = ex*Exx;
-	vby = by*Eyy;   vey = ey*Eyy;
-	vbz = bz*Ezz;   vez = ez*Ezz;
-
-	if(top_open)
-	{
-		vbz = 0.0;
-		vez = 0.0;
-	}
-
 	// access constraint vectors
 	ierr = DMDAVecGetArray(fs->DA_X,   bc->bcvx, &bcvx); CHKERRQ(ierr);
 	ierr = DMDAVecGetArray(fs->DA_Y,   bc->bcvy, &bcvy); CHKERRQ(ierr);
 	ierr = DMDAVecGetArray(fs->DA_Z,   bc->bcvz, &bcvz); CHKERRQ(ierr);
-	ierr = DMDAVecGetArray(fs->DA_CEN, bc->bcp,  &bcp);  CHKERRQ(ierr);
 
-
-	//=========================================================================
-	// SPC (normal velocities)
-	//=========================================================================
+	// get local grid sizes
+	ierr = DMDAGetCorners(fs->DA_CEN, &sx, &sy, &sz, &nx, &ny, &nz); CHKERRQ(ierr);
 
 	iter = 0;
 
-	//------------------
-	// X points SPC only
-	//------------------
-	GET_NODE_RANGE(nx, sx, fs->dsx)
-	GET_CELL_RANGE(ny, sy, fs->dsy)
-	GET_CELL_RANGE(nz, sz, fs->dsz)
-
 	START_STD_LOOP
 	{
-		if(i == 0   && bcp[k][j][-1 ] == DBL_MAX) { bcvx[k][j][i] = vbx; SPCVals[iter] = vbx; }
-		if(i == mnx && bcp[k][j][mnx] == DBL_MAX) { bcvx[k][j][i] = vex; SPCVals[iter] = vex; }
-		iter++;
+		// check for constrained cell
+		if(svCell[iter++].phRat[fixPhase] == 1.0)
+		{
+			bcvx[k][j][i]   = 0.0;
+			bcvx[k][j][i+1] = 0.0;
+
+			bcvy[k][j][i]   = 0.0;
+			bcvy[k][j+1][i] = 0.0;
+
+			bcvz[k][j][i]   = 0.0;
+			bcvz[k+1][j][i] = 0.0;
+		}
 	}
 	END_STD_LOOP
-
-	//------------------
-	// Y points SPC only
-	//------------------
-	GET_CELL_RANGE(nx, sx, fs->dsx)
-	GET_NODE_RANGE(ny, sy, fs->dsy)
-	GET_CELL_RANGE(nz, sz, fs->dsz)
-
-	START_STD_LOOP
-	{
-		if(j == 0   && bcp[k][-1 ][i] == DBL_MAX) { bcvy[k][j][i] = vby; SPCVals[iter] = vby; }
-		if(j == mny && bcp[k][mny][i] == DBL_MAX) { bcvy[k][j][i] = vey; SPCVals[iter] = vey; }
-		iter++;
-	}
-	END_STD_LOOP
-
-	//------------------
-	// Z points SPC only
-	//------------------
-	GET_CELL_RANGE(nx, sx, fs->dsx)
-	GET_CELL_RANGE(ny, sy, fs->dsy)
-	GET_NODE_RANGE(nz, sz, fs->dsz)
-
-	START_STD_LOOP
-	{
-		if(k == 0                && bcp[-1 ][j][i] == DBL_MAX) { bcvz[k][j][i] = vbz; SPCVals[iter] = vbz; }
-		if(k == mnz && !top_open && bcp[mnz][j][i] == DBL_MAX) { bcvz[k][j][i] = vez; SPCVals[iter] = vez; }
-		iter++;
-	}
-	END_STD_LOOP
-
-
 
 	// restore access
 	ierr = DMDAVecRestoreArray(fs->DA_X,   bc->bcvx, &bcvx); CHKERRQ(ierr);
 	ierr = DMDAVecRestoreArray(fs->DA_Y,   bc->bcvy, &bcvy); CHKERRQ(ierr);
 	ierr = DMDAVecRestoreArray(fs->DA_Z,   bc->bcvz, &bcvz); CHKERRQ(ierr);
-*/
 
 	PetscFunctionReturn(0);
 }
@@ -1478,7 +1329,7 @@ PetscErrorCode BCListSPC(BCCtx *bc)
 
 	START_STD_LOOP
 	{
-		LIST_TPC(bcvx, SPCList, SPCVals, numSPC, iter)
+		LIST_SPC(bcvx, SPCList, SPCVals, numSPC, iter)
 
 		iter++;
 	}
@@ -1492,7 +1343,7 @@ PetscErrorCode BCListSPC(BCCtx *bc)
 
 	START_STD_LOOP
 	{
-		LIST_TPC(bcvy, SPCList, SPCVals, numSPC, iter)
+		LIST_SPC(bcvy, SPCList, SPCVals, numSPC, iter)
 
 		iter++;
 	}
@@ -1506,7 +1357,7 @@ PetscErrorCode BCListSPC(BCCtx *bc)
 
 	START_STD_LOOP
 	{
-		LIST_TPC(bcvz, SPCList, SPCVals, numSPC, iter)
+		LIST_SPC(bcvz, SPCList, SPCVals, numSPC, iter)
 
 		iter++;
 	}
@@ -1526,7 +1377,7 @@ PetscErrorCode BCListSPC(BCCtx *bc)
 	// set index (shift) type
 	bc->stype = _GLOBAL_TO_LOCAL_;
 
-	// store total number of constraints
+	// store total number of SPC constraints
 	bc->numSPC = numSPC;
 
 	// restore access
