@@ -454,7 +454,7 @@ PetscErrorCode BCDestroy(BCCtx *bc)
 //---------------------------------------------------------------------------
 #undef __FUNCT__
 #define __FUNCT__ "BCApply"
-PetscErrorCode BCApply(BCCtx *bc, Vec x, SolVarCell *svCell)
+PetscErrorCode BCApply(BCCtx *bc)
 {
 	FDSTAG *fs;
 
@@ -506,7 +506,7 @@ PetscErrorCode BCApply(BCCtx *bc, Vec x, SolVarCell *svCell)
 	ierr = BCApplyDBox(bc); CHKERRQ(ierr);
 
 	// fix all cells occupied by phase
-	ierr = BCApplyPhase(bc, svCell); CHKERRQ(ierr);
+	ierr = BCApplyPhase(bc); CHKERRQ(ierr);
 
 	// synchronize SPC constraints in the internal ghost points
 	// WARNING! IN MULTIGRID ONLY REPEAT BC COARSENING WHEN BC CHANGE
@@ -522,14 +522,14 @@ PetscErrorCode BCApply(BCCtx *bc, Vec x, SolVarCell *svCell)
 	ierr = BCListSPC(bc); CHKERRQ(ierr);
 
 	// apply SPC to global solution vector
-	ierr = BCApplySPC(bc, x); CHKERRQ(ierr);
+	ierr = BCApplySPC(bc); CHKERRQ(ierr);
 
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
 #undef __FUNCT__
 #define __FUNCT__ "BCApplySPC"
-PetscErrorCode BCApplySPC(BCCtx *bc, Vec x)
+PetscErrorCode BCApplySPC(BCCtx *bc)
 {
 	// apply SPC to global solution vector
 
@@ -539,7 +539,7 @@ PetscErrorCode BCApplySPC(BCCtx *bc, Vec x)
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
 
-	ierr = VecGetArray(x, &sol); CHKERRQ(ierr);
+	ierr = VecGetArray(bc->jr->gsol, &sol); CHKERRQ(ierr);
 
 	//============================================
 	// enforce single point constraints (velocity)
@@ -561,7 +561,7 @@ PetscErrorCode BCApplySPC(BCCtx *bc, Vec x)
 
 	for(i = 0; i < num; i++) sol[list[i]] = vals[i];
 
-	ierr = VecRestoreArray(x, &sol); CHKERRQ(ierr);
+	ierr = VecRestoreArray(bc->jr->gsol, &sol); CHKERRQ(ierr);
 
  	PetscFunctionReturn(0);
 }
@@ -1235,11 +1235,12 @@ PetscErrorCode BCApplyDBox(BCCtx *bc)
 //---------------------------------------------------------------------------
 #undef __FUNCT__
 #define __FUNCT__ "BCApplyPhase"
-PetscErrorCode BCApplyPhase(BCCtx *bc, SolVarCell *svCell)
+PetscErrorCode BCApplyPhase(BCCtx *bc)
 {
 	// apply default velocity constraints on the boundaries
 
 	FDSTAG      *fs;
+	SolVarCell  *svCell;
 	PetscInt    i, j, k, nx, ny, nz, sx, sy, sz, iter, fixPhase;
 	PetscScalar ***bcvx,  ***bcvy,  ***bcvz;
 
@@ -1249,6 +1250,7 @@ PetscErrorCode BCApplyPhase(BCCtx *bc, SolVarCell *svCell)
 	// access context
 	fs       = bc->fs;
 	fixPhase = bc->fixPhase;
+	svCell   = bc->jr->svCell;
 
 	// check constraint activation
 	if(fixPhase == -1) PetscFunctionReturn(0);

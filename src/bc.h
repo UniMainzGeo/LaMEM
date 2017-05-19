@@ -60,7 +60,7 @@ struct TSSol;
 struct FDSTAG;
 struct Marker;
 struct DBMat;
-struct SolVarCell;
+struct JacRes;
 
 //---------------------------------------------------------------------------
 // index shift type
@@ -160,6 +160,7 @@ struct BCCtx
 	TSSol    *ts;   // time stepping parameters
 	Scaling  *scal; // scaling parameters
 	DBMat    *dbm;  // material database
+	JacRes   *jr;   // Jacobian-residual context (CROSS-REFERENCE!)
 
 	// boundary conditions vectors (velocity, pressure, temperature)
 	Vec bcvx, bcvy, bcvz, bcp, bcT; // local (ghosted)
@@ -252,10 +253,10 @@ PetscErrorCode BCCreateData(BCCtx *bc);
 PetscErrorCode BCDestroy(BCCtx *bc);
 
 // apply ALL boundary conditions
-PetscErrorCode BCApply(BCCtx *bc, Vec x, SolVarCell *svCell);
+PetscErrorCode BCApply(BCCtx *bc);
 
 // apply SPC to global solution vector
-PetscErrorCode BCApplySPC(BCCtx *bc, Vec x);
+PetscErrorCode BCApplySPC(BCCtx *bc);
 
 // shift indices of constrained nodes
 PetscErrorCode BCShiftIndices(BCCtx *bc, ShiftType stype);
@@ -283,10 +284,10 @@ PetscErrorCode BCApplyBoundVel(BCCtx *bc);
 PetscErrorCode BCApplyDBox(BCCtx *bc);
 
 // constraint all cells containing phase
-PetscErrorCode BCApplyPhase(BCCtx *bc, SolVarCell *svCell);
+PetscErrorCode BCApplyPhase(BCCtx *bc);
 
 // constraint all cells containing phase
-PetscErrorCode BCFixPhase(BCCtx *bc, SolVarCell *svCell);
+PetscErrorCode BCFixPhase(BCCtx *bc);
 
 // create SPC constraint lists
 PetscErrorCode BCListSPC(BCCtx *bc);

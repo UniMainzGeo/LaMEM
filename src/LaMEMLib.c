@@ -614,7 +614,7 @@ PetscErrorCode LaMEMLibSolve(LaMEMLib *lm, void *param)
 		//====================================
 
 		// initialize boundary constraint vectors
-		ierr = BCApply(&lm->bc, lm->jr.gsol, lm->jr.svCell); CHKERRQ(ierr);
+		ierr = BCApply(&lm->bc); CHKERRQ(ierr);
 
 		// initialize temperature
 		ierr = JacResInitTemp(&lm->jr); CHKERRQ(ierr);
@@ -708,7 +708,7 @@ PetscErrorCode LaMEMLibDryRun(LaMEMLib *lm)
 	PetscFunctionBegin;
 
 	// initialize boundary constraint vectors
-	ierr = BCApply(&lm->bc, lm->jr.gsol, lm->jr.svCell); CHKERRQ(ierr);
+	ierr = BCApply(&lm->bc); CHKERRQ(ierr);
 
 	// initialize temperature
 	ierr = JacResInitTemp(&lm->jr); CHKERRQ(ierr);
@@ -735,7 +735,7 @@ PetscErrorCode LaMEMLibInitGuess(LaMEMLib *lm, SNES snes)
 	PetscLogDouble t;
 
 	// initialize boundary constraint vectors
-	ierr = BCApply(&lm->bc, lm->jr.gsol, lm->jr.svCell); CHKERRQ(ierr);
+	ierr = BCApply(&lm->bc); CHKERRQ(ierr);
 
 	// initialize temperature
 	ierr = JacResInitTemp(&lm->jr); CHKERRQ(ierr);
