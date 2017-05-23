@@ -19,9 +19,9 @@
 
 # Number of cells for all segments
 
-	nel_x = 16
-	nel_y = 16
-	nel_z = 16
+	nel_x = 4
+	nel_y = 4
+	nel_z = 4
 
 # Coordinates of all segments (including start and end points)
 
@@ -44,6 +44,8 @@
 	pres_top = 0.0;
 	pres_bot = 1.0;
 
+	fix_phase = 0
+
 #===============================================================================
 # Solution parameters & controls
 #===============================================================================
@@ -51,6 +53,8 @@
 	act_p_shift = 0
 	init_guess  = 0
 	FSSA        = 0.0;
+
+	set_phase = 1
 
 #===============================================================================
 # Model setup & advection
@@ -88,7 +92,7 @@
 	# Define properties of matrix
 	<MaterialStart>
 		ID  = 0   # phase id
-		eta = 100 # viscosity
+		eta = 1   # viscosity
 	<MaterialEnd>
 
 	# Define properties of fracture

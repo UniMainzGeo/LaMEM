@@ -497,6 +497,7 @@ PetscErrorCode LaMEMLibSetLinks(LaMEMLib *lm)
 	lm->bc.ts       = &lm->ts;
 	lm->bc.fs       = &lm->fs;
 	lm->bc.dbm      = &lm->dbm;
+	lm->bc.jr       = &lm->jr;
 	// JacRes
 	lm->jr.scal     = &lm->scal;
 	lm->jr.ts       = &lm->ts;

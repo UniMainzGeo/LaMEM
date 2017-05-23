@@ -710,8 +710,9 @@ PetscErrorCode PetscOptionsReadFromFile(FB *fb)
 	// * push command line options to the end of database
 	// (PETSc prioritizes options appearing LAST)
 
+	PetscBool found;
 	PetscInt  jj, i, lnbeg, lnend;
-	char     *all_options, *line, **lines, *key, *val, *option;
+	char     *all_options, *line, **lines, *key, *val, *option, filename[_STR_LEN_];
 
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
@@ -767,6 +768,11 @@ PetscErrorCode PetscOptionsReadFromFile(FB *fb)
 	ierr = PetscOptionsInsertString(NULL, all_options); CHKERRQ(ierr);
 
 	ierr = PetscFree(all_options); CHKERRQ(ierr);
+
+	// print message
+	ierr = PetscOptionsGetCheckString("-ParamFile", filename, &found); CHKERRQ(ierr);
+
+	PetscPrintf(PETSC_COMM_WORLD, "Finished parsing input file : %s \n", filename);
 
 	PetscFunctionReturn(0);
 }
