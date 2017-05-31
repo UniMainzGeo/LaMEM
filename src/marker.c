@@ -142,7 +142,9 @@ PetscErrorCode ADVMarkInit(AdvCtx *actx, UserCtx *user)
 	else if(user->msetup == SLAB)       { PetscPrintf(PETSC_COMM_WORLD,"%s\n","slab");            ierr = ADVMarkInitSlab         (actx, user); CHKERRQ(ierr); }
 	else if(user->msetup == SPHERES)    { PetscPrintf(PETSC_COMM_WORLD,"%s\n","spheres");         ierr = ADVMarkInitSpheres      (actx, user); CHKERRQ(ierr); }
 	else if(user->msetup == BANDS)      { PetscPrintf(PETSC_COMM_WORLD,"%s\n","bands");           ierr = ADVMarkInitBands        (actx, user); CHKERRQ(ierr); }
-	else if(user->msetup == PIPES)      { PetscPrintf(PETSC_COMM_WORLD,"%s\n","bands");           ierr = ADVMarkInitPipes        (actx, user); CHKERRQ(ierr); }
+	else if(user->msetup == PIPES)      { PetscPrintf(PETSC_COMM_WORLD,"%s\n","pipes");           ierr = ADVMarkInitPipes        (actx, user); CHKERRQ(ierr); }
+	else if(user->msetup == GEOTH)      { PetscPrintf(PETSC_COMM_WORLD,"%s\n","geoth");           ierr = ADVMarkInitGeoth        (actx, user); CHKERRQ(ierr); }
+	else if(user->msetup == FAULT)      { PetscPrintf(PETSC_COMM_WORLD,"%s\n","fault");           ierr = ADVMarkInitFault        (actx, user); CHKERRQ(ierr); }
 	else if(user->msetup == DOMES)      { PetscPrintf(PETSC_COMM_WORLD,"%s\n","domes");           ierr = ADVMarkInitDomes        (actx, user); CHKERRQ(ierr); }
 	else if(user->msetup == ROTATION)   { PetscPrintf(PETSC_COMM_WORLD,"%s\n","rotation");        ierr = ADVMarkInitRotation     (actx, user); CHKERRQ(ierr); }
 	else if(user->msetup == RESTART)    { PetscPrintf(PETSC_COMM_WORLD,"%s\n","restart");         ierr = BreakReadMark           (actx      ); CHKERRQ(ierr); }
@@ -495,13 +497,6 @@ PetscErrorCode ADVMarkInitFileParallel(AdvCtx *actx, UserCtx *user)
 	// set number of markers
 	actx->nummark = nummark;
 
-									//// From Darcy code
-									//// Number of Properties saved per marker
-									//NumPropsPerMarker = 5;
-									//if (actx->jr->actDarcy){
-									//	NumPropsPerMarker = 6;		// if Darcy=active, porosity must be specified @ markers as well
-									//}
-
 	// allocate marker buffer
 	ierr = PetscMalloc((size_t)(5*actx->nummark)*sizeof(PetscScalar), &markbuf); CHKERRQ(ierr);
 
@@ -528,12 +523,6 @@ PetscErrorCode ADVMarkInitFileParallel(AdvCtx *actx, UserCtx *user)
 		P->X[2]  =           markptr[2]/chLen;
 		P->phase = (PetscInt)markptr[3];
 		P->T     =          (markptr[4] + Tshift)/chTemp;
-
-										//// From Darcy code
-										//if (actx->jr->actDarcy){
-										//	// porosity is expected to be present on markers only when Darcy is activate
-										//	P->Phi     =    (markptr[5]);
-										//}
 	}
 
 	// free marker buffer
@@ -1326,48 +1315,18 @@ PetscErrorCode ADVMarkInitBands(AdvCtx *actx, UserCtx *user)
 
 	PetscFunctionReturn(0);
 }
+
 //---------------------------------------------------------------------------
 #undef __FUNCT__
-#define __FUNCT__ "ADVMarkInitPipes"
-PetscErrorCode ADVMarkInitPipes(AdvCtx *actx, UserCtx *user)
+#define __FUNCT__ "ADVMarkInitGeoth"
+PetscErrorCode ADVMarkInitGeoth(AdvCtx *actx, UserCtx *user)
 {
 	Marker     *P;
 	PetscInt    imark;
-	PetscBool   use_inc;
-	PetscScalar H, Hb, size, offset, length, x, y, z, scal, Tshift;
+	PetscScalar x, y, z;
 
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
-
-	scal   = actx->jr->scal.length;
-	Tshift = actx->jr->scal.Tshift;
-
-	// set default values
-	H      = 10.0;               // layer thickness               [km]
-	Hb     = 2.0;                // basal layer thickness         [km]
-	size   = 1.0;                // inclusion size in XZ-plane    [km]
-	offset = 0.0;                // inclusion offset along X axis [km]
-	length = (user->L*scal)/2.0; // inclusion length along Y axis [km]
-
-	// get layer thickness
-	ierr = PetscOptionsGetReal(NULL, NULL, "-H_layer",  &H,  NULL);  CHKERRQ(ierr);
-	ierr = PetscOptionsGetReal(NULL, NULL, "-H_bottom", &Hb, NULL);  CHKERRQ(ierr);
-
-	// get inclusion parameters
-	ierr = PetscOptionsHasName(NULL, NULL, "-Inclusion_use", &use_inc); CHKERRQ(ierr);
-	if(use_inc == PETSC_TRUE)
-	{
-		ierr = PetscOptionsGetReal(NULL, NULL, "-Inclusion_size",   &size,   NULL); CHKERRQ(ierr);
-		ierr = PetscOptionsGetReal(NULL, NULL, "-Inclusion_offset", &offset, NULL); CHKERRQ(ierr);
-		ierr = PetscOptionsGetReal(NULL, NULL, "-Inclusion_length", &length, NULL); CHKERRQ(ierr);
-	}
-
-	// scale
-	H      /= scal;
-	Hb     /= scal;
-	size   /= scal;
-	offset /= scal;
-	length /= scal;
 
 	// loop over local markers
 	for(imark = 0; imark < actx->nummark; imark++)
@@ -1379,23 +1338,132 @@ PetscErrorCode ADVMarkInitPipes(AdvCtx *actx, UserCtx *user)
 		y = P->X[1];
 		z = P->X[2];
 
-		// assign phase in layers
-		//if     (z >  Hb + H && z != x+1)            {
-		//	P->phase = 2; // air
-		//}
-		//else
-			//if (    (z >= Hb && z <= Hb + H )  ){
-		//if (     (z >= Hb && z <= x+1 && z>=x )  ){
-			//P->phase = 2; // matrix
-		//}else
-			if ( (z >= Hb && z+3 <= x+1 && z+3>=x) || (z >= Hb && -z <= x+1+3 && -z>=x+3) || (z >= Hb && z <= Hb + H && x >=-3-3 && x<=3+2) ){
-			P->phase = 1; // matrix
-			}
-		else                            {
-			P->phase = 0; // basal layer
+		//if     (    (x >= user->x_left+(user->W/40.0) && x<= user->x_left+2.0*(user->W/40.0) && z>user->H/4.0) || (x <= user->W+user->x_left-(user->W/40.0) && x>= user->W+user->x_left-2.0*(user->W/40.0) && z>3.0*user->H/4.0)   )
+		if     (     (x <= user->W+user->x_left-2.0*(user->W/40.0) && x>= user->W+user->x_left-4.0*(user->W/40.0) && z>3.0*user->H/4.0)   )
+		{
+			P->phase = 2;
 		}
+		else if ( (z>user->H/5.0) && (z<4.0*user->H/5.0))
+		{
+			P->phase = 1;
+		}
+		else
+		{
+			P->phase = 0;
+		}
+	}
 
+	PetscFunctionReturn(0);
+}
+//---------------------------------------------------------------------------
+#undef __FUNCT__
+#define __FUNCT__ "ADVMarkInitFault"
+PetscErrorCode ADVMarkInitFault(AdvCtx *actx, UserCtx *user)
+{
+	Marker     *P;
+	PetscInt    imark;
+	PetscScalar P1x, P1z, P2x, P2z, faultWidth, x, z, Tshift;
 
+	PetscErrorCode ierr;
+	PetscFunctionBegin;
+
+	Tshift = actx->jr->scal.Tshift;
+
+	// set default values
+
+	// fault from point P1 to point P2
+	P1x = (user->W+2.0*user->x_left)/2.0  - (user->W / 5.0) ;
+	P1z = user->H/4.0;
+
+	P2x = P1x + 2.0 * (user->W / 5.0);
+	P2z = P1z + user->H/2.0;
+
+	faultWidth = user->H / 100.0;
+
+	// loop over local markers
+	for(imark = 0; imark < actx->nummark; imark++)
+	{
+		P = &actx->markers[imark];
+
+		// get coordinates
+		x = P->X[0];
+		z = P->X[2];
+
+		// assign phase in layers
+		//if     (   x >  -10000.0 && x < 10000.0 &&  z >= 5000.0 + 1.0/2.0*(x+10000.0) && z <= 5200.0 + 1.0/2.0*(x+10000.0)     )
+		if     (  x >  P1x && x <  P2x  && z >= P1z + (x-P1x)/(P2x-P1x)*(P2z-P1z) && z < faultWidth + P1z + (x-P1x)/(P2x-P1x)*(P2z-P1z ) )
+		{
+			P->phase = 1; //fault
+		}
+		else
+		{
+			P->phase = 0;
+		}
+		// assign temperature
+		P->T = Tshift;
+	}
+
+	PetscFunctionReturn(0);
+}
+//---------------------------------------------------------------------------
+#undef __FUNCT__
+#define __FUNCT__ "ADVMarkInitPipes"
+PetscErrorCode ADVMarkInitPipes(AdvCtx *actx, UserCtx *user)
+{
+
+	Marker     *P;
+	PetscInt    imark;
+	PetscScalar P1x, P1z, P2x, P2z, P3x, P3z, P4x, P4z, P5x, P5z, pipeWidth, x, z, Tshift;
+
+	PetscErrorCode ierr;
+	PetscFunctionBegin;
+
+	Tshift = actx->jr->scal.Tshift;
+
+	// set default values
+
+	// pipe by points P1->P2->P3->P4
+
+	P1x = user->x_left+(user->W/5.0);
+	P1z = 5.0*user->H/8.0;
+
+	P2x = P1x;
+	P2z = user->H/3.0;
+
+	P3x = P1x + (user->W/5.0);
+	P3z = P2z;
+
+	P4x =  user->x_left + 4.0*user->W/5.0;
+	P4z = 3.0*user->H/4.0;
+
+	P5x = P4x;
+	P5z = 5.0*user->H/6.0;
+
+	pipeWidth = user->H / 80.0;
+
+	// loop over local markers
+	for(imark = 0; imark < actx->nummark; imark++)
+	{
+		P = &actx->markers[imark];
+
+		// get coordinates
+		x = P->X[0];
+		z = P->X[2];
+
+		if (z<=2.0*user->H/4.0 || z>=3.0*user->H/4.0)
+		{
+			P->phase = 0;
+		}
+		else
+		{
+			P->phase = 1;
+		}
+		if     (  (x >=  P1x && x <=  P1x+pipeWidth  && z <= P1z && z >= P2z )    || ( x>= P2x && x<= P3x && z >= P2z && z <= P2z +pipeWidth)    ||
+			(  x >  P3x && x <  P4x  && z >= P3z + (x-P3x)/(P4x-P3x)*(P4z-P3z) && z < pipeWidth + P3z + (x-P3x)/(P4x-P3x)*(P4z-P3z ) ) ||
+			(x >=  P4x && x <=  P4x+pipeWidth  && z >= P4z && z <= P5z ) )
+		{
+			P->phase = 2;
+		}
 
 		// assign temperature
 		P->T = Tshift;

@@ -95,9 +95,6 @@ PetscErrorCode LaMEMLib(ModParam *IOparam)
 	PVAVD    pvavd;  // paraview output driver for AVD
 	ObjFunct objf;   // objective function
 
-	KSP ksp;
-	PetscInt DarcySolver;
-
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
 
@@ -230,10 +227,6 @@ PetscErrorCode LaMEMLib(ModParam *IOparam)
 	// check Darcy material parameters (if activated)
 	ierr = JacResCheckDarcyParam(&jr); CHKERRQ(ierr);
 
-	// Create BC's for Liquid-pressure/Darcy solver (if applicable)
-	ierr = BCCreateDarcy(&jr, &bc); 	CHKERRQ(ierr);
-	ierr = BCSetParamDarcy(&jr, &bc, &user); CHKERRQ(ierr);
-
 	// update phase ratios taking into account actual free surface position
 	ierr = FreeSurfGetAirPhaseRatio(&surf); CHKERRQ(ierr);
 
@@ -281,13 +274,29 @@ PetscErrorCode LaMEMLib(ModParam *IOparam)
 		ierr = PVAVDDestroy(&pvavd);   CHKERRQ(ierr);
 		ierr = ObjFunctDestroy(&objf); CHKERRQ(ierr);
 
-		// For Darcy
-		ierr = BCDestroyDarcy(&jr, &bc);
-
 		PetscFunctionReturn(0);
 	}
 
 	PetscPrintf(PETSC_COMM_WORLD," \n");
+
+	// Liquid-pressure/Darcy
+	if (jr.actDarcy)
+	{
+		PetscPrintf(PETSC_COMM_WORLD,"-------------------------------------------------------------------------- \n");
+		PetscPrintf(PETSC_COMM_WORLD,"                             Darcy solver                					 \n");
+		PetscPrintf(PETSC_COMM_WORLD,"-------------------------------------------------------------------------- \n");
+
+		GetCellCoordinatesDarcySources(&jr);
+
+		if (jr.actInitialGuessHydro)		// Consider hydrostatic pressure as initial condition for liquid pressure
+		{
+			// Get hydrostatic pressure and update bc->Plbot (only if it is not set in the imput file), historic liquid pressure (svBulk->Pln) and liquid pressure in the markers
+			JacResGetHydroStaticLiquidPressure(&jr, &bc, &user);
+			ADVUpdateLiquidPressureMark(&actx);
+		}
+
+	}
+
 
 	//===============
 	// TIME STEP LOOP
@@ -304,43 +313,27 @@ PetscErrorCode LaMEMLib(ModParam *IOparam)
 		//	NONLINEAR THERMO-MECHANICAL SOLVER
 		//====================================
 
+
+
 		// initialize boundary constraint vectors
 		ierr = BCApply(&bc, jr.gsol); CHKERRQ(ierr);
 
 		// initialize temperature
 		ierr = JacResInitTemp(&jr); CHKERRQ(ierr);
 
-
-
 		// Liquid-pressure/Darcy
 		if (jr.actDarcy){
 
-			// update bcPl from Pl_top, bottom, loc...
-			//ierr = BCApplyBound_DARCY(&bc, &jr);
-			//ierr = JacResInitDarcy(&jr);		CHKERRQ(ierr);
-			//ierr = JacResUpdateGhostPoints(jr.Pl_snes, jr.Pl, &jr);
+			//JacResGetHydroStaticLiquidPressure(&jr, &bc, &user);
+
+			ierr = JacResInitDarcy(&jr);		CHKERRQ(ierr);
 
 			// Update coordinates of darcy DA
-			ierr = UpdateDarcy_DA(&jr);			CHKERRQ(ierr);
+			ierr = UpdateDarcy_DA(&jr);				CHKERRQ(ierr);
 
-			// Increase liquid pressure (update bc->Plloc)
-			ierr = IncreaseLiquidPressureBottom(&jr, &bc);
-
-
-
-			// Just to check that the result is the same, choose Linear or nonlinear solver
-			DarcySolver=1; // 1 SNES, otherwise KSP
-			if (DarcySolver== 1) {	// Non linear solver
-				ierr = JacResGetDarcyRHS(&jr);						CHKERRQ(ierr);		// Get the right hand part of the equation
-				ierr = SNESSolve(jr.Pl_snes,jr.rhs_Pl,jr.Pl);		CHKERRQ(ierr);		// solve nonlinear problem
-			}
-			else{// Linear solver
-				ierr = JacResGetDarcyRHS(&jr);						CHKERRQ(ierr);		// Get the right hand part of the equation
-				ierr = SolveDarcyKSP(&jr);							CHKERRQ(ierr);		// solve linear problem
-			}
+			ierr = SolveDarcyKSP(&jr);				CHKERRQ(ierr);		// solve linear problem
 
 			ierr = JacResUpdateDarcy(&jr);			CHKERRQ(ierr);
-
 		}
 
 		if(user.SkipStokesSolver != PETSC_TRUE)
@@ -375,8 +368,6 @@ PetscErrorCode LaMEMLib(ModParam *IOparam)
 			// just evaluate initial residual
 			ierr = FormResidual(snes, jr.gsol, jr.gres, &nl); CHKERRQ(ierr);
 		}
-
-
 
 		// switch off initial guess flag
 		if(!JacResGetStep(&jr))
@@ -479,9 +470,7 @@ PetscErrorCode LaMEMLib(ModParam *IOparam)
 			ierr = PVAVDWriteTimeStep(&pvavd, &jr, DirectoryName, JacResGetTime(&jr), JacResGetStep(&jr)); CHKERRQ(ierr);
 
 			// grid ParaView output
-//PetscPrintf(PETSC_COMM_WORLD,"11111\n");
 			ierr = PVOutWriteTimeStep(&pvout, &jr, DirectoryName, JacResGetTime(&jr), JacResGetStep(&jr)); CHKERRQ(ierr);
-//PetscPrintf(PETSC_COMM_WORLD,"22222\n");
 			// free surface ParaView output
 			ierr = PVSurfWriteTimeStep(&pvsurf, &jr, DirectoryName, JacResGetTime(&jr), JacResGetStep(&jr)); CHKERRQ(ierr);
 
@@ -536,7 +525,6 @@ PetscErrorCode LaMEMLib(ModParam *IOparam)
 	ierr = PVMarkDestroy(&pvmark); CHKERRQ(ierr);
 	ierr = PVAVDDestroy(&pvavd);   CHKERRQ(ierr);
 	ierr = ObjFunctDestroy(&objf); CHKERRQ(ierr);
-	ierr = BCDestroyDarcy(&jr, &bc);	//Darcy
 
 
 	PetscTime(&cputime_end);

@@ -805,7 +805,7 @@ PetscErrorCode PVOutWritePermeability(JacRes *jr, OutBuf *outbuf)
 	// output permeability logarithm in GEO-mode
 	// (negative scaling requests logarithmic output)
 	if(scal->utype == _GEO_) cf =  -scal->permeability;
-	else                     cf =  scal->permeability;
+	else                     cf =  -scal->permeability; //!!
 
 
 	// macro to copy permeability to buffer
@@ -813,6 +813,42 @@ PetscErrorCode PVOutWritePermeability(JacRes *jr, OutBuf *outbuf)
 
 
 	INTERPOLATE_COPY(fs->DA_CEN, outbuf->lbcen, InterpCenterCorner, GET_PERMEABILITY, 1, 0)
+
+	PetscFunctionReturn(0);
+}
+//---------------------------------------------------------------------------
+#undef __FUNCT__
+#define __FUNCT__ "PVOutWriteLiquidDensity"
+PetscErrorCode PVOutWriteLiquidDensity(JacRes *jr, OutBuf *outbuf)
+{
+	COPY_FUNCTION_HEADER
+
+	// macro to copy density to buffer
+	#define GET_LIQUIDDENSITY buff[k][j][i] = jr->svCell[iter++].svBulk.Rhol;
+
+	cf = scal->density;
+
+	INTERPOLATE_COPY(fs->DA_CEN, outbuf->lbcen, InterpCenterCorner, GET_LIQUIDDENSITY, 1, 0)
+
+	PetscFunctionReturn(0);
+}
+//---------------------------------------------------------------------------
+#undef __FUNCT__
+#define __FUNCT__ "PVOutWriteLiquidVelocity"
+PetscErrorCode PVOutWriteLiquidVelocity(JacRes *jr, OutBuf *outbuf)
+{
+	COPY_FUNCTION_HEADER
+
+	cf = scal->velocity;
+
+	// macros to copy liquid flow in cell to buffer
+	#define GET_LIQVELX buff[k][j][i] = jr->svCell[iter++].svBulk.liquidvelocity[0];
+	#define GET_LIQVELY buff[k][j][i] = jr->svCell[iter++].svBulk.liquidvelocity[1];
+	#define GET_LIQVELZ buff[k][j][i] = jr->svCell[iter++].svBulk.liquidvelocity[2];
+
+	INTERPOLATE_COPY(jr->fs->DA_CEN, outbuf->lbcen, InterpCenterCorner, GET_LIQVELX, 3, 0);
+	INTERPOLATE_COPY(jr->fs->DA_CEN, outbuf->lbcen, InterpCenterCorner, GET_LIQVELY, 3, 1);
+	INTERPOLATE_COPY(jr->fs->DA_CEN, outbuf->lbcen, InterpCenterCorner, GET_LIQVELZ, 3, 2);
 
 	PetscFunctionReturn(0);
 }

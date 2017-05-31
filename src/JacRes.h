@@ -156,18 +156,18 @@ typedef struct
 	//=======================
 
 	PetscBool actDarcy;  // Darcy activation flag
+	PetscBool actInitialGuessHydro; //If true, consider hydrostatic pressure as initial condition
 
 	DM  DA_Pl; 		// LiquidPressure cell-centered grid with star stencil
 	Mat App;  		// LiquidPressure preconditioner matrix
-	Vec Pl;   		// LiquidPressure (global)
+	Vec dPl;   		// LiquidPressure increment (global)
 	Vec lPl;   		// LiquidPressure (local)
-	Vec r_Pl;   	// LiquidPressure residual (global)
-	Vec lr_Pl;   	// LiquidPressure residual (local)
-	Vec rhs_Pl; 	// LiquidPressure rhs (global)
-	Vec rhs_lPl; 	// LiquidPressure rhs (local)
-
-	SNES Pl_snes; 	// LiquidPressure no linear diffusion solver
+	Vec r_Pl;   	// LiquidPressure function (global)
+	Vec hydro_lPl;  // hydrostatic liquid pressure (local)
 	KSP  Pl_ksp; 	// LiquidPressure    linear diffusion solver
+
+	PetscInt NumDarcySources;
+	DarcySourceParam   DarcySources[Max_Num_Darcy_Sources]; // darcy source parameters
 
 } JacRes;
 //---------------------------------------------------------------------------
@@ -309,6 +309,9 @@ PetscErrorCode JacResGetOverPressure(JacRes *jr, Vec p);
 
 // compute lithostatic pressure in the cell centers
 PetscErrorCode JacResGetLithoStaticPressure(JacRes *jr);
+
+// compute hydrostatic liquid pressure in the cell centers
+PetscErrorCode JacResGetHydroStaticLiquidPressure(JacRes *jr, BCCtx *bc, UserCtx *user);
 
 // compute fluid pressure in the cell centers
 PetscErrorCode JacResGetPorePressure(JacRes *jr);

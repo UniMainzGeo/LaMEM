@@ -77,10 +77,12 @@ PetscErrorCode PVOutWriteISA           (JacRes*, OutBuf*);
 PetscErrorCode PVOutWriteGOL           (JacRes*, OutBuf*);
 PetscErrorCode PVOutWriteYield         (JacRes*, OutBuf*);
 
-// From Darcy code
+// Darcy code
 PetscErrorCode PVOutWriteLiquidPressure(JacRes*, OutBuf*);
-PetscErrorCode PVOutWritePorosity     (JacRes*, OutBuf*);
-PetscErrorCode PVOutWritePermeability (JacRes*, OutBuf*);
+PetscErrorCode PVOutWritePorosity      (JacRes*, OutBuf*);
+PetscErrorCode PVOutWritePermeability  (JacRes*, OutBuf*);
+PetscErrorCode PVOutWriteLiquidDensity (JacRes*, OutBuf*);
+PetscErrorCode PVOutWriteLiquidVelocity(JacRes*, OutBuf*);
 
 // === debug vectors ===============================================
 PetscErrorCode PVOutWriteJacTest     (JacRes*, OutBuf*);

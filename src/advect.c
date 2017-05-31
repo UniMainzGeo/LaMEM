@@ -1625,7 +1625,6 @@ PetscErrorCode ADVInterpMarkToCell(AdvCtx *actx)
 		if(jr->actDarcy == PETSC_TRUE) {
 			svCell->svBulk.Pln /= w;
 		}
-
 	}
 
 	PetscFunctionReturn(0);
@@ -1947,3 +1946,55 @@ PetscErrorCode getPhaseRatio(PetscInt n, PetscScalar *v, PetscScalar *rsum)
 	PetscFunctionReturn(0);
 }
 //-----------------------------------------------------------------------------
+//---------------------------------------------------------------------------
+#undef __FUNCT__
+#define __FUNCT__ "ADVUpdateLiquidPressureMark"
+PetscErrorCode ADVUpdateLiquidPressureMark(AdvCtx *actx)
+{
+	FDSTAG      *fs;
+	JacRes      *jr;
+	Marker      *P;
+	SolVarCell  *svCell;
+	PetscInt    nx, ny;
+	PetscInt    jj, ID, I, J, K, II;
+	PetscScalar ***lPl;
+
+	PetscErrorCode ierr;
+	PetscFunctionBegin;
+
+	// access context
+	fs = actx->fs;
+	jr = actx->jr;
+
+	// starting indices & number of cells
+	nx = fs->dsx.ncels;
+	ny = fs->dsy.ncels;
+
+	ierr = DMDAVecGetArray(fs->DA_CEN, jr->lPl,  &lPl);  CHKERRQ(ierr);
+
+	// scan all markers
+	for(jj = 0; jj < actx->nummark; jj++)
+	{
+		// access next marker
+		P = &actx->markers[jj];
+
+		// get consecutive index of the host cell
+		ID = actx->cellnum[jj];
+
+		// expand I, J, K cell indices
+		GET_CELL_IJK(ID, I, J, K, nx, ny)
+
+		// access host cell solution variables
+		svCell = &jr->svCell[ID];
+
+		// update liquid pressure
+		//P->Pl += lPl[sz+K][sy+J][sx+I] - svCell->svBulk.Pln;
+		P->Pl += svCell->svBulk.Pln;
+	}
+
+	// restore access
+		ierr = DMDAVecRestoreArray(fs->DA_CEN, jr->lPl, &lPl); CHKERRQ(ierr);
+
+	PetscFunctionReturn(0);
+}
+//---------------------------------------------------------------------------

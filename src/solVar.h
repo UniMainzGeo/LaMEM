@@ -119,11 +119,12 @@ typedef struct
 	PetscScalar  Tn;    // history temperature
 	PetscScalar  pn;    // history pressure
 
-	// from darcy-code
+	// Darcy
 	PetscScalar  Phi;   // porosity
 	PetscScalar  Kphi;  // permeability
-	// Darcy
-	PetscScalar  Pln;  // history liquid pressure
+	PetscScalar  Rhol;  // liquid density
+	PetscScalar  Pln;    // history liquid pressure
+	PetscScalar  liquidvelocity[3];// liquid flow
 
 } SolVarBulk;
 
@@ -219,12 +220,11 @@ typedef struct
 	PetscScalar  k;       // thermal conductivity
 	PetscScalar  A;       // radiogenic heat production
 
-	// from darcy-code
 	// Darcy/liquid pressure parameters
 	PetscScalar  Kphi;    // permeability
-					//PetscScalar  rhol;    // liquid density
-	PetscScalar  mul;      // liquid viscosity
-	PetscScalar  Ss;      // New: Specific storage
+	PetscScalar  rhol;    // liquid density
+	PetscScalar  mul;     // liquid viscosity
+	PetscScalar  Ss;      // Specific storage
 	////////////
 
 } Material_t;

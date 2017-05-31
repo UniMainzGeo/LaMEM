@@ -176,10 +176,13 @@ typedef struct
 	PetscInt GOL;            		// Grain Orientation Lag
 	PetscInt yield;            		// yield stress
 
-	// From Darcy code
-	PetscInt Pl;             // Fluid pressure (for Darcy )
-	PetscInt permeability;   // Permeability   (for Darcy )
-	PetscInt porosity;       // Porosity       (for Darcy )
+	// Darcy code
+	PetscInt Pl;             // Liquid pressure
+	PetscInt permeability;   // Permeability
+	PetscInt porosity;       // Porosity
+	PetscInt liquiddensity;	 // Liquid density
+	PetscInt liquidvelocity; // Liquid velocity
+
 
 	// === debugging vectors ===============================================
 	PetscInt moment_res;     		// momentum residual

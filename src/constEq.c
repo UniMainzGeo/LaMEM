@@ -609,6 +609,10 @@ PetscErrorCode VolConstEq(
 	svBulk->IKdt  = 0.0;
 	Kavg          = 0.0;
 
+	// Liquid-pressure/Darcy
+	svBulk->Kphi   = 0.0;
+	svBulk->Rhol   = 0.0;
+
 	// scan all phases
 	for(i = 0; i < numPhases; i++)
 	{
@@ -661,6 +665,10 @@ PetscErrorCode VolConstEq(
 			// update density, thermal expansion & inverse bulk elastic viscosity
 			svBulk->rho   += phRat[i]*rho;
 			svBulk->alpha += phRat[i]*mat->alpha;
+
+			// Liquid-pressure/Darcy
+			svBulk->Kphi   +=phRat[i]*mat->Kphi;
+			svBulk->Rhol   +=phRat[i]*mat->rhol;
 		}
 	}
 

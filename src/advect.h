@@ -227,6 +227,8 @@ PetscErrorCode ADVMarkCrossFreeSurf(AdvCtx *actx, FreeSurf *surf, PetscScalar to
 // check marker phases
 PetscErrorCode ADVCheckMarkPhases(AdvCtx *actx, PetscInt numPhases);
 
+PetscErrorCode ADVUpdateLiquidPressureMark(AdvCtx *actx);
+
 //-----------------------------------------------------------------------------
 // service functions
 //-----------------------------------------------------------------------------

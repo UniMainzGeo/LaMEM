@@ -1,0 +1,15 @@
+<?xml version="1.0"?>
+<VTKFile type="Collection" version="0.1" byte_order="LittleEndian">
+<Collection>
+	<DataSet timestep="0.000000e+00" file="Timestep_000000_0.000000e+00/darcy_pipes.pvtr"/>
+	<DataSet timestep="1.000000e+01" file="Timestep_000010_1.000000e+01/darcy_pipes.pvtr"/>
+	<DataSet timestep="2.000000e+01" file="Timestep_000020_2.000000e+01/darcy_pipes.pvtr"/>
+	<DataSet timestep="3.000000e+01" file="Timestep_000030_3.000000e+01/darcy_pipes.pvtr"/>
+	<DataSet timestep="4.000000e+01" file="Timestep_000040_4.000000e+01/darcy_pipes.pvtr"/>
+	<DataSet timestep="5.000000e+01" file="Timestep_000050_5.000000e+01/darcy_pipes.pvtr"/>
+	<DataSet timestep="6.000000e+01" file="Timestep_000060_6.000000e+01/darcy_pipes.pvtr"/>
+	<DataSet timestep="7.000000e+01" file="Timestep_000070_7.000000e+01/darcy_pipes.pvtr"/>
+	<DataSet timestep="8.000000e+01" file="Timestep_000080_8.000000e+01/darcy_pipes.pvtr"/>
+	<DataSet timestep="9.000000e+01" file="Timestep_000090_9.000000e+01/darcy_pipes.pvtr"/>
+</Collection>
+</VTKFile>

@@ -61,8 +61,6 @@ int main(int argc, char **argv)
 
 	// cleanup PETSC
 	ierr = PetscFinalize(); CHKERRQ(ierr);
-
-	return 0;
 }
 //---------------------------------------------------------------------------
 // End of code

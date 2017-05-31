@@ -172,6 +172,8 @@ PetscErrorCode ScalingCreate(Scaling *scal)
 		scal->dissipation_rate    = 1.0;   sprintf(scal->lbl_dissipation_rate, "[ ]");
 		scal->angular_velocity    = 1.0;   sprintf(scal->lbl_angular_velocity, "[ ]");
 		scal->volumetric_force    = 1.0;   sprintf(scal->lbl_volumetric_force, "[ ]");
+		// Darcy
+		//scal->flow				  = 1.0;   sprintf(scal->lbl_flow,            "[ ]");
 
 		// material parameters
 		scal->density             = 1.0;   sprintf(scal->lbl_density,          "[ ]");
@@ -180,9 +182,9 @@ PetscErrorCode ScalingCreate(Scaling *scal)
 		scal->conductivity        = 1.0;
 		scal->heat_production     = 1.0;
 		scal->expansivity         = 1.0;
-		// From Darcy code
+		// Darcy
 		scal->permeability        = 1.0;   sprintf(scal->lbl_permeability,     "[ ]");
-		scal->storage        	  = 1.0;   sprintf(scal->lbl_storage,     		   "[ ]");
+		scal->storage        	  = 1.0;   sprintf(scal->lbl_storage,     	   "[ ]");
 
 	}
 	else if(scal->utype == _SI_)
@@ -225,6 +227,8 @@ PetscErrorCode ScalingCreate(Scaling *scal)
 		scal->dissipation_rate    = power/volume;             sprintf(scal->lbl_dissipation_rate, "[W/m^3]");
 		scal->angular_velocity    = angle/time;               sprintf(scal->lbl_angular_velocity, "[deg/s]"); // @
 		scal->volumetric_force    = force/volume;             sprintf(scal->lbl_volumetric_force, "[N/m^3]");
+		// Darcy
+		//scal->flow                = volume/time;              sprintf(scal->lbl_flow,             "[m^3/s]");
 
 		// material parameters
 		scal->density             = mass/volume;              sprintf(scal->lbl_density,          "[kg/m^3]");
@@ -233,7 +237,7 @@ PetscErrorCode ScalingCreate(Scaling *scal)
 		scal->conductivity        = power/length/temperature;
 		scal->heat_production     = power/mass;
 		scal->expansivity         = 1.0/temperature;
-		// From Darcy code
+		// Darcy code
 		scal->permeability        = length*length;            sprintf(scal->lbl_permeability,     "[m2]");
 		scal->storage        	  = 1/stress;            	  sprintf(scal->lbl_storage,     	  "[1/Pa]");
 
@@ -287,6 +291,8 @@ PetscErrorCode ScalingCreate(Scaling *scal)
 		scal->dissipation_rate    = power/volume;             sprintf(scal->lbl_dissipation_rate, "[W/m^3]");
 		scal->angular_velocity    = angle/(time/Myr);         sprintf(scal->lbl_angular_velocity, "[deg/Myr]"); // @
 		scal->volumetric_force    = force/volume;             sprintf(scal->lbl_volumetric_force, "[N/m^3]");
+		// Darcy
+		//scal->flow                = volume/time/(cm_yr*cm_yr*cm_yr);        sprintf(scal->lbl_flow,             "[cm^3/yr]"); // @
 
 		// material parameters
 		scal->density             = mass/volume;              sprintf(scal->lbl_density,          "[kg/m^3]");
@@ -296,7 +302,7 @@ PetscErrorCode ScalingCreate(Scaling *scal)
 		scal->heat_production     = power/mass;
 		scal->expansivity         = 1.0/temperature;
 
-		// From Darcy code
+		// Darcy code
 		scal->permeability        = length*length;            sprintf(scal->lbl_permeability,     "[m2]");
 		scal->storage        	  = 1/stress;            	  sprintf(scal->lbl_storage,          "[1/Pa]");
 
@@ -440,8 +446,8 @@ void ScalingMatProp(Scaling *scal, Material_t *phases, PetscInt numPhases)
 		phases[i].k       /= scal->conductivity;
 		phases[i].A       /= scal->heat_production;
 
-		// From Darcy code
-								//phases[i].rhol    /= scal->density;
+		// Darcy
+		phases[i].rhol     /= scal->density;
 		phases[i].mul      /= scal->viscosity;
 		phases[i].Kphi     /= scal->permeability;
 		phases[i].Ss       /= scal->storage;

@@ -151,7 +151,7 @@ typedef struct
 	PetscScalar *Pl_SPCVals;
 
 	// Liquid-pressure/Darcy on top and bottom boundaries
-	PetscScalar  Plbot, Pltop, Plloc;
+	PetscScalar  Plbot, Pltop;
 
 	// horizontal background strain-rate parameters
 	PetscBool    ExxAct;

@@ -85,11 +85,14 @@ PetscErrorCode JacResSetFromOptions(JacRes *jr)
 
 	if(flg == PETSC_TRUE) jr->actTemp = PETSC_TRUE;
 
-	// from darcy-code
+	// Darcy code
 	// activate energy equation (diffusion)
 	ierr = PetscOptionsHasName(NULL, NULL, "-act_darcy", &flg); CHKERRQ(ierr);
 	if(flg == PETSC_TRUE) jr->actDarcy = PETSC_TRUE;
-	///////////////////
+
+	// consider hydrostatic pressure as initial condition
+	ierr = PetscOptionsHasName(NULL, NULL, "-act_initialguess_hydro", &flg); CHKERRQ(ierr);
+	if(flg == PETSC_TRUE) jr->actInitialGuessHydro = PETSC_TRUE;
 
 	// set geometry tolerance
 	ierr = PetscOptionsGetScalar(NULL, NULL, "-geom_tol", &gtol, &flg); CHKERRQ(ierr);
@@ -220,10 +223,12 @@ PetscErrorCode JacResCreate(
 	// switch-off temperature diffusion
 	jr->actTemp = PETSC_FALSE;
 
-	// from darcy-code
+	// Darcy code
 	// switch-off darcy
-	jr->actDarcy= PETSC_FALSE;
-	/////////////////
+	jr->actDarcy = PETSC_FALSE;
+
+	// swich-off hydrostatic pressure as initial condition
+	jr->actInitialGuessHydro = PETSC_FALSE;
 
 	// switch off free surface tracking
 	jr->AirPhase = -1;
@@ -234,10 +239,11 @@ PetscErrorCode JacResCreate(
 	// setup temperature parameters
 	ierr = JacResCreateTempParam(jr); CHKERRQ(ierr);
 
-	// from darcy-code
 	// setup Darcy parameters
 	ierr = JacResCreateDarcyParam(jr); CHKERRQ(ierr);
-	///////////////////
+
+	// hydrostatic pressure
+	ierr = DMCreateLocalVector(fs->DA_CEN, &jr->hydro_lPl); CHKERRQ(ierr);
 
 	//==========================
 	// 2D integration primitives
@@ -315,10 +321,9 @@ PetscErrorCode JacResDestroy(JacRes *jr)
 	// destroy temperature parameters
 	ierr = JacResDestroyTempParam(jr); CHKERRQ(ierr);
 
-	/// from  darcy-code
 	// Destroy Darcy parameters
 	ierr = JacResDestroyDarcyParam(jr); CHKERRQ(ierr);
-	////////////////////
+	ierr = VecDestroy(&jr->hydro_lPl);  CHKERRQ(ierr);
 
 	//==========================
 	// 2D integration primitives
@@ -830,7 +835,7 @@ PetscErrorCode JacResGetResidual(JacRes *jr)
 	phases    =  jr->phases;    	// phase parameters
 	matLim    = &jr->matLim;    	// phase parameters limiters
 	dt        =  jr->ts.dt;     	// time step
-	PetscPrintf(PETSC_COMM_WORLD,"dt %12.12e ---------------------------------\n",dt );
+	//PetscPrintf(PETSC_COMM_WORLD,"dt %12.12e ---------------------------------\n",dt );
 	fssa      =  jr->FSSA;      	// density gradient penalty parameter
 	grav      =  jr->grav;      	// gravity acceleration
 	pShift    =  jr->pShift;    	// pressure shift
@@ -957,6 +962,8 @@ PetscErrorCode JacResGetResidual(JacRes *jr)
 
 		// evaluate volumetric constitutive equations
 		ierr = VolConstEq(svBulk, numPhases, phases, svCell->phRat, matLim, depth, dt, pc-pShift , Tc); CHKERRQ(ierr);
+
+
 
 		// access
 		theta = svBulk->theta; // volumetric strain rate
@@ -1750,7 +1757,7 @@ PetscErrorCode JacResViewRes(JacRes *jr)
 	// show assembled residual with boundary constraints
 	// WARNING! rewrite this function using coupled residual vector directly
 
-	PetscScalar dmin, dmax, d2, e2, fx, fy, fz, f2, div_tol, r_darcy_Pl_2; 				//, r_darcy_Phi_2;
+	PetscScalar dmin, dmax, d2, e2, fx, fy, fz, f2, div_tol, r_darcy_Pl;
 
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
@@ -1776,7 +1783,7 @@ PetscErrorCode JacResViewRes(JacRes *jr)
 		ierr = VecNorm(jr->ge, NORM_2, &e2); CHKERRQ(ierr);
 	}
 
-	// from darcy-code
+	// Darcy code
 	if(jr->actDarcy == PETSC_TRUE)
 	{
 		Vec s;
@@ -1785,14 +1792,10 @@ PetscErrorCode JacResViewRes(JacRes *jr)
 
 		// Pull out the liquid vector from the solution vector
 		VecStrideGather(jr->r_Pl,0,s,INSERT_VALUES);					// Fluid pressure residual
-		ierr = VecNorm(s, NORM_2, &r_darcy_Pl_2); CHKERRQ(ierr);
-
-											//VecStrideGather(jr->r_Pl,1,s,INSERT_VALUES);					// Porosity residual
-											//ierr = VecNorm(s, NORM_2, &r_darcy_Phi_2); CHKERRQ(ierr);
+		ierr = VecNorm(s, NORM_2, &r_darcy_Pl); CHKERRQ(ierr);
 
 		ierr = VecDestroy(&s); CHKERRQ(ierr);
 	}
-	////////////////////////////////////////
 
 	// print
 	PetscPrintf(PETSC_COMM_WORLD, "------------------------------------------\n");
@@ -1809,16 +1812,12 @@ PetscErrorCode JacResViewRes(JacRes *jr)
 		PetscPrintf(PETSC_COMM_WORLD, "  Energy: \n" );
 		PetscPrintf(PETSC_COMM_WORLD, "    |eRes|_2 = %12.12e \n", e2);
 	}
-	//from darcy-code
+	// Ddarcy code
 	if(jr->actDarcy == PETSC_TRUE)
 	{
-									//PetscPrintf(PETSC_COMM_WORLD, "  Darcy/TwoPhase: \n" );
 		PetscPrintf(PETSC_COMM_WORLD, "  Darcy: \n" );
-		PetscPrintf(PETSC_COMM_WORLD, "    |Pl_Res|_2  = %12.12e \n", r_darcy_Pl_2);
-									//PetscPrintf(PETSC_COMM_WORLD, "    |Phi_Res|_2 = %12.12e \n", r_darcy_Phi_2);
-
+		PetscPrintf(PETSC_COMM_WORLD, "    |Pl_Res|_2  = %12.12e \n", r_darcy_Pl);
 	}
-	//////////////////////////////////////////
 
 	PetscPrintf(PETSC_COMM_WORLD, "------------------------------------------\n");
 
@@ -2842,6 +2841,155 @@ PetscErrorCode JacResGetLithoStaticPressure(JacRes *jr)
 	LOCAL_TO_LOCAL(fs->DA_CEN, jr->lp_lithos)
 
 	PetscFunctionReturn(0);
+}
+//---------------------------------------------------------------------------
+#undef __FUNCT__
+#define __FUNCT__ "JacResGetHydroStaticLiquidPressure"
+PetscErrorCode JacResGetHydroStaticLiquidPressure(JacRes *jr, BCCtx *bc, UserCtx *user)
+{
+	// compute lithostatic pressure
+
+	Vec         vbuff;
+	FDSTAG      *fs;
+	Discret1D   *dsz;
+	MPI_Request srequest, rrequest;
+	PetscScalar ***hp, ***lp, ***ibuff, *lbuff, dz, dp, g, rhol;
+	PetscInt    i, j, k, sx, sy, sz, nx, ny, nz, iter, L;
+	Material_t  *phases, *M;
+	PetscInt    numPhases;
+	PetscScalar *phRat, cf;
+	PetscInt    iphase;
+
+	SolVarCell *svCell;
+	SolVarBulk *svBulk;
+
+	PetscErrorCode ierr;
+	PetscFunctionBegin;
+
+	// access context
+	fs  =  jr->fs;
+	dsz = &fs->dsz;
+	L   =  (PetscInt)dsz->rank;
+	g   =   PetscAbsScalar(jr->grav[2]);
+
+	// get local grid sizes
+	ierr = DMDAGetCorners(fs->DA_CEN, &sx, &sy, &sz, &nx, &ny, &nz); CHKERRQ(ierr);
+
+	// get integration/communication buffer
+	ierr = DMGetGlobalVector(jr->DA_CELL_2D, &vbuff); CHKERRQ(ierr);
+
+	ierr = VecZeroEntries(vbuff); CHKERRQ(ierr);
+
+	// open index buffer for computation
+	ierr = DMDAVecGetArray(jr->DA_CELL_2D, vbuff, &ibuff); CHKERRQ(ierr);
+
+	// open linear buffer for send/receive
+	ierr = VecGetArray(vbuff, &lbuff); CHKERRQ(ierr);
+
+	// access hydrostatic pressure
+	ierr = DMDAVecGetArray(fs->DA_CEN, jr->hydro_lPl, &hp); CHKERRQ(ierr);
+
+	// access hydrostatic pressure
+	ierr = DMDAVecGetArray(fs->DA_CEN, jr->lPl, &lp); CHKERRQ(ierr);
+
+	// start receiving integral from top domain (next)
+	if(dsz->nproc != 1 && dsz->grnext != -1)
+	{
+		ierr = MPI_Irecv(lbuff, (PetscMPIInt)(nx*ny), MPIU_SCALAR, dsz->grnext, 0, PETSC_COMM_WORLD, &rrequest); CHKERRQ(ierr);
+	}
+
+	// copy liquid density
+	iter = 0;
+	numPhases 	= 	jr->numPhases;
+	phases    	= 	jr->phases;
+	START_STD_LOOP
+	{
+		// access phase ratio array
+		phRat = jr->svCell[iter++].phRat;
+
+		// compute liquid density
+		rhol	= 0.0;
+		// average all phases
+		for(iphase = 0; iphase < numPhases; iphase++)
+		{
+			M       = &phases[iphase];
+			cf      =  phRat[iphase];
+			// compute average liquid density
+			rhol += cf*M->rhol;
+		}
+
+		hp[k][j][i] = rhol;
+	}
+	END_STD_LOOP
+
+	// finish receiving
+	if(dsz->nproc != 1 && dsz->grnext != -1)
+	{
+		ierr = MPI_Wait(&rrequest, MPI_STATUSES_IGNORE);  CHKERRQ(ierr);
+	}
+
+	// compute local integral from top to bottom
+	iter = 0;
+	for(k = sz + nz - 1; k >= sz; k--)
+	{
+		START_PLANE_LOOP
+		{
+
+			// get density, cell size, pressure increment
+			rhol = hp[k][j][i];
+			dz  = SIZE_CELL(k, sz, (*dsz));
+			dp  = rhol*g*dz;
+
+			// store  lithostatic pressure
+
+			hp[k][j][i] = ibuff[L][j][i] + dp/2.0;
+
+			// update lithostatic pressure integral
+			ibuff[L][j][i] += dp;
+
+			//set boundary liquid pressures
+			if (user->Pl_bottom == 0.0) bc->Plbot = ibuff[L][j][i];
+		}
+		END_PLANE_LOOP
+	}
+
+	// send integral to bottom domain (previous)
+	if(dsz->nproc != 1 && dsz->grprev != -1)
+	{
+		ierr = MPI_Isend(lbuff, (PetscMPIInt)(nx*ny), MPIU_SCALAR, dsz->grprev, 0, PETSC_COMM_WORLD, &srequest); CHKERRQ(ierr);
+
+		ierr = MPI_Wait(&srequest, MPI_STATUSES_IGNORE);  CHKERRQ(ierr);
+	}
+
+	// copy hydrostatic pressure in svBulk->Pln
+	iter = 0;
+	START_STD_LOOP
+	{
+		// access solution variables
+		svCell = &jr->svCell[iter++];
+		svBulk = &svCell->svBulk;
+		svBulk->Pln = hp[k][j][i];
+		//lp[k][j][i] = hp[k][j][i];
+	}
+	END_STD_LOOP
+
+
+	// restore buffer and pressure vectors
+	ierr = DMDAVecRestoreArray(fs->DA_CEN, jr->lp_lithos, &hp); CHKERRQ(ierr);
+	ierr = DMDAVecRestoreArray(fs->DA_CEN, jr->lPl, &lp); CHKERRQ(ierr);
+
+	ierr = DMDAVecRestoreArray(jr->DA_CELL_2D, vbuff, &ibuff); CHKERRQ(ierr);
+
+	ierr = VecRestoreArray(vbuff, &lbuff); CHKERRQ(ierr);
+
+	ierr = DMRestoreGlobalVector(jr->DA_CELL_2D, &vbuff); CHKERRQ(ierr);
+
+	// fill ghost points
+	LOCAL_TO_LOCAL(fs->DA_CEN, jr->hydro_lPl)
+	LOCAL_TO_LOCAL(fs->DA_CEN, jr->lPl)
+
+	PetscFunctionReturn(0);
+
 }
 //---------------------------------------------------------------------------
 

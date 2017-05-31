@@ -54,6 +54,7 @@
 #include "input.h"
 #include "matProps.h"
 #include "fdstagTypes.h"
+#include "JacResDarcy.h"
 //---------------------------------------------------------------------------
 #undef __FUNCT__
 #define __FUNCT__ "PushInputReadFile"
@@ -308,6 +309,9 @@ PetscErrorCode FDSTAGInitCode(JacRes *jr, UserCtx *user, ModParam *iop)
 			// initialize and read material properties from file
 			ierr = MatPropInit(jr, fp); CHKERRQ(ierr);
 
+			// Darcy Initialize source properties from file
+			ierr = DarcySourcePropInit(jr, fp); CHKERRQ(ierr);
+
 			// close file
 			fclose(fp);
 		}
@@ -485,6 +489,9 @@ PetscErrorCode InputSetDefaultValues(JacRes *jr, UserCtx *user)
 	// Resolve SuperLU_DIST repetitive factorization issue (temporary ad hoc solution)
 	PetscOptionsInsertString(NULL, "-mat_superlu_dist_fact SamePattern_SameRowPerm");
 
+	// Darcy
+	user->NumDarcySources=0;
+
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
@@ -494,7 +501,7 @@ PetscErrorCode InputReadFile(JacRes *jr, UserCtx *user, FILE *fp)
 {
 	// parse the input file
 
-	PetscInt found;
+	PetscInt found, sources;
 	char setup_name[MAX_NAME_LEN];
 
 	PetscErrorCode ierr;
@@ -544,6 +551,8 @@ PetscErrorCode InputReadFile(JacRes *jr, UserCtx *user, FILE *fp)
 		else if(!strcmp(setup_name, "spheres"))    user->msetup = SPHERES;
 		else if(!strcmp(setup_name, "bands"))      user->msetup = BANDS;
 		else if(!strcmp(setup_name, "pipes"))      user->msetup = PIPES;
+		else if(!strcmp(setup_name, "geoth"))      user->msetup = GEOTH;
+		else if(!strcmp(setup_name, "fault"))      user->msetup = FAULT;
 		else if(!strcmp(setup_name, "domes"))      user->msetup = DOMES;
 		else if(!strcmp(setup_name, "rotation"))   user->msetup = ROTATION;
 		else SETERRQ1(PETSC_COMM_SELF, PETSC_ERR_USER,"#ERROR! Incorrect model setup: %s", setup_name);
@@ -616,6 +625,17 @@ PetscErrorCode InputReadFile(JacRes *jr, UserCtx *user, FILE *fp)
 	// bezier flag
 	parse_GetInt( fp,    "AddBezier",  &user->AddBezier,  &found );
 
+	// Darcy source
+	parse_GetInt(fp, "NumDarcySources",&sources, &found);
+	if (found==PETSC_TRUE)
+	{
+		user->NumDarcySources=sources;
+	}else
+	{
+		user->NumDarcySources=0;
+	}
+
+
 /*
 	// Marker setting: skip certain volumes that are defined in input file
 	parse_GetIntArray( fp, "PolyInVolSkip",         &nv, i_values, &found);
@@ -686,6 +706,8 @@ PetscErrorCode InputReadCommLine(UserCtx *user )
 		else if(!strcmp(setup_name, "spheres"))    user->msetup = SPHERES;
 		else if(!strcmp(setup_name, "bands"))      user->msetup = BANDS;
 		else if(!strcmp(setup_name, "pipes"))      user->msetup = PIPES;
+		else if(!strcmp(setup_name, "geoth"))      user->msetup = GEOTH;
+		else if(!strcmp(setup_name, "fault"))      user->msetup = FAULT;
 		else if(!strcmp(setup_name, "domes"))      user->msetup = DOMES;
 		else SETERRQ1(PETSC_COMM_SELF, PETSC_ERR_USER,"ERROR! Incorrect model setup: %s", setup_name);
 	}

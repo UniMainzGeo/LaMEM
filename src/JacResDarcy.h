@@ -58,9 +58,10 @@
 PetscErrorCode JacResGetDarcyParam(
 		JacRes      *jr,
 		PetscScalar *phRat,
-		PetscScalar *Kphi_, // Permeability
-		PetscScalar *mu_, 	// Liquid viscosity
-		PetscScalar *Ss_);	// New: Specific storage
+		PetscScalar *Kphi_, 	// Permeability
+		PetscScalar *mu_, 		// Liquid viscosity
+		PetscScalar *Ss_,		// Specific storage
+		PetscScalar *rhol_);	// Liquid density
 
 // check whether Darcy material parameters are properly defined
 PetscErrorCode JacResCheckDarcyParam(JacRes *jr);
@@ -80,36 +81,17 @@ PetscErrorCode JacResUpdateDarcy(JacRes *jr);
 // apply Darcy two-point constraints
 PetscErrorCode JacResApplyDarcyBC(JacRes *jr);
 
-
-PetscErrorCode JacResGetDarcyRes(SNES snes, Vec x, Vec f, JacRes *jr);
+PetscErrorCode JacResGetDarcyRes(JacRes *jr);
 
 // assemble Darcy preconditioner matrix
-PetscErrorCode JacResGetDarcyMat(SNES snes, JacRes *jr);
-
-// BC for Darcy:
-PetscErrorCode BCCreateDarcy(JacRes *jr, BCCtx *bc);
-PetscErrorCode BCDestroyDarcy(JacRes *jr, BCCtx *bc);
-
-PetscErrorCode BCApplyBound_DARCY(BCCtx *bc, JacRes *jr);
-
-PetscErrorCode FormFunction_DARCY(SNES snes,Vec x,Vec f, JacRes *jr);
-PetscErrorCode FormJacobian_DARCY(SNES snes,Vec x, Mat P, Mat J, JacRes *jr);
+PetscErrorCode JacResGetDarcyMat(JacRes *jr);
 
 PetscErrorCode UpdateDarcy_DA(JacRes *jr);
-PetscErrorCode DMCoarsenHook_DARCY(DM dmf,DM dmc,void *ctx);
-
-// compute Darcy residual vector
-PetscErrorCode JacResGetDarcyRHS(JacRes *jr);
-
-
-PetscErrorCode JacResUpdateGhostPoints(SNES snes, Vec x, JacRes *jr);
-
-PetscErrorCode BCSetParamDarcy(JacRes *jr, BCCtx *bc, UserCtx *user);
-PetscErrorCode IncreaseLiquidPressureBottom(JacRes *jr, BCCtx *bc);
-PetscErrorCode DarcyPrintPl(JacRes *jr);
 PetscErrorCode SolveDarcyKSP(JacRes *jr);
 
-//PetscErrorCode ExtractCoefficientsFromDA(DM da,const char *name,PetscScalar ***data);	// extract names vectors from DA
+PetscErrorCode GetCellCoordinatesDarcySources(JacRes *jr);
+PetscErrorCode DarcySourcePropInit(JacRes *jr, FILE *fp);
+PetscErrorCode SourcePropGetStruct(FILE *fp,PetscInt numSources, DarcySourceParam *sources,PetscInt ils, PetscInt ile, UnitsType utype);
 
 
 //---------------------------------------------------------------------------

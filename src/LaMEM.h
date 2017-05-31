@@ -59,6 +59,9 @@
 // maximum number of mesh segments in every direction
 #define MaxNumMeshSegs 10
 
+// maximum number of pressure sources in the Darcy simulation
+#define Max_Num_Darcy_Sources    10
+
 // cast macros
 #define LLD long long int
 

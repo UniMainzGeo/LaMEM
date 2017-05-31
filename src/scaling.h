@@ -136,6 +136,7 @@ typedef struct
 	// From Darcy code
 	PetscScalar permeability;       // length*leng
 	PetscScalar storage;            // 1 / stress
+	//PetscScalar flow;				// length*length*length / time
 
 	// output labels
 	char lbl_unit            [_lbl_sz_];

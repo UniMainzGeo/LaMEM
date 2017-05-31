@@ -134,7 +134,9 @@ typedef enum
 	SLAB,       // slab detachment (Thieulot et al. 2014)
 	SPHERES,    // multiple falling spheres
 	BANDS,      // shear band formation 3D
-	PIPES,      // for Darcy code
+	PIPES,      // Darcy
+	GEOTH,		// Darcy, injection/production
+	FAULT,      // Darcy
 	DOMES,      // salt domes 2D
 	ROTATION,   // rotation benchmark 2D
 	RESTART     // restart of simulation
@@ -179,7 +181,7 @@ const char *PTypesName[] ={
 // Structure that holds inversion parameters
 typedef struct
 {
-	PetscInt         use;  // use inersion parameters to redefine model parameters
+	PetscInt         use;  // use inversion parameters to redefine model parameters
 	PetscInt         mdN;  // number of model parameters
 	PetscInt         mID;  // current model number
 	PetscInt        *phs;  // model phase number
@@ -189,6 +191,20 @@ typedef struct
 	PetscScalar      mfit; // misfit value for current model parameters
 } ModParam;
 //-----------------------------------------------------------------------------
+
+// Structure that holds source parameters
+typedef struct // Improve and put more options
+{
+	PetscInt ID;
+	PetscScalar x;
+	PetscScalar y;
+	PetscScalar z;
+	PetscInt i;
+	PetscInt j;
+	PetscInt k;
+	PetscScalar magnitude;
+} DarcySourceParam;
+
 // Structure that holds user input data
 typedef struct
 {
@@ -284,8 +300,9 @@ typedef struct
 	
 	// Liquid-pressure/Darcy
 	PetscScalar      Pl_bottom, Pl_top;
-
+	PetscInt		 NumDarcySources;
 
 } UserCtx;
+
 //-----------------------------------------------------------------------------
 #endif

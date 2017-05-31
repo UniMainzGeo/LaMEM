@@ -94,6 +94,8 @@ PetscErrorCode ADVMarkInitSlab         (AdvCtx *actx, UserCtx *user);
 PetscErrorCode ADVMarkInitSpheres      (AdvCtx *actx, UserCtx *user);
 PetscErrorCode ADVMarkInitBands        (AdvCtx *actx, UserCtx *user);
 PetscErrorCode ADVMarkInitPipes        (AdvCtx *actx, UserCtx *user);
+PetscErrorCode ADVMarkInitGeoth		   (AdvCtx *actx, UserCtx *user);
+PetscErrorCode ADVMarkInitFault        (AdvCtx *actx, UserCtx *user);
 PetscErrorCode ADVMarkInitDomes        (AdvCtx *actx, UserCtx *user);
 PetscErrorCode ADVMarkInitRotation     (AdvCtx *actx, UserCtx *user);
 

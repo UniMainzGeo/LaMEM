@@ -694,6 +694,7 @@ PetscErrorCode BCCreate(BCCtx *bc, FDSTAG *fs, TSSol *ts, Scaling *scal)
 	ierr = DMCreateLocalVector(fs->DA_Z,   &bc->bcvz);  CHKERRQ(ierr);
 	ierr = DMCreateLocalVector(fs->DA_CEN, &bc->bcp);   CHKERRQ(ierr);
 	ierr = DMCreateLocalVector(fs->DA_CEN, &bc->bcT);   CHKERRQ(ierr);
+	ierr = DMCreateLocalVector(fs->DA_CEN, &bc->bcPl);  CHKERRQ(ierr); // liquidPressure/Darcy
 
 	// SPC velocity-pressure
 	ierr = makeIntArray (&bc->SPCList, NULL, fs->dof.ln);   CHKERRQ(ierr);
@@ -702,6 +703,10 @@ PetscErrorCode BCCreate(BCCtx *bc, FDSTAG *fs, TSSol *ts, Scaling *scal)
 	// SPC (temperature)
 	ierr = makeIntArray (&bc->tSPCList, NULL, fs->dof.lnp); CHKERRQ(ierr);
 	ierr = makeScalArray(&bc->tSPCVals, NULL, fs->dof.lnp); CHKERRQ(ierr);
+
+	// SPC (LiquidPressure/Darcy)
+	ierr = makeIntArray (&bc->Pl_SPCList, NULL, fs->dof.lnp); CHKERRQ(ierr);
+	ierr = makeScalArray(&bc->Pl_SPCVals, NULL, fs->dof.lnp); CHKERRQ(ierr);
 
 	bc->ExxAct = PETSC_FALSE;
 	bc->EyyAct = PETSC_FALSE;
@@ -736,11 +741,9 @@ PetscErrorCode BCDestroy(BCCtx *bc)
 	ierr = PetscFree(bc->tSPCList); CHKERRQ(ierr);
 	ierr = PetscFree(bc->tSPCVals); CHKERRQ(ierr);
 
-		//from darcy-code
-		// SPC (LiquidPressure/Darcy)
-		ierr = PetscFree(bc->Pl_SPCList); CHKERRQ(ierr);
-		ierr = PetscFree(bc->Pl_SPCList); CHKERRQ(ierr);
-		/////////////////
+	// SPC (LiquidPressure/Darcy)
+	ierr = PetscFree(bc->Pl_SPCList); CHKERRQ(ierr);
+	ierr = PetscFree(bc->Pl_SPCList); CHKERRQ(ierr);
 
 	// two-point constraints
 //	ierr = PetscFree(bc->TPCList);      CHKERRQ(ierr);
@@ -759,6 +762,12 @@ PetscErrorCode BCSetParam(BCCtx *bc, UserCtx *user)
 
 	bc->Tbot  = user->Temp_bottom;
 	bc->Ttop  = user->Temp_top;
+
+	if (user->Pl_bottom != 0.0 )
+	{
+		bc->Plbot  = user->Pl_bottom; //LiquidPressure/Darcy
+	}
+	bc->Pltop  = user->Pl_top;
 
 	if(user->AddBezier)
 	{
@@ -943,6 +952,7 @@ PetscErrorCode BCApply(BCCtx *bc, Vec x)
 	ierr = VecSet(bc->bcvz, DBL_MAX); CHKERRQ(ierr);
 	ierr = VecSet(bc->bcp,  DBL_MAX); CHKERRQ(ierr);
 	ierr = VecSet(bc->bcT,  DBL_MAX); CHKERRQ(ierr);
+	ierr = VecSet(bc->bcPl, DBL_MAX); CHKERRQ(ierr); //LiquidPressure/Darcy
 
 	for(i = 0; i < ln; i++) SPCVals[i] = DBL_MAX;
 
@@ -976,6 +986,7 @@ PetscErrorCode BCApply(BCCtx *bc, Vec x)
 	LOCAL_TO_LOCAL(fs->DA_Z,   bc->bcvz)
 	LOCAL_TO_LOCAL(fs->DA_CEN, bc->bcp)
 	LOCAL_TO_LOCAL(fs->DA_CEN, bc->bcT)
+	LOCAL_TO_LOCAL(fs->DA_CEN, bc->bcPl)
 
 	// form constraint lists
 	numSPC = 0;
@@ -1018,6 +1029,9 @@ PetscErrorCode BCApply(BCCtx *bc, Vec x)
 
 	// WARNING! currently primary temperature constraints are not implemented
 	bc->tNumSPC = 0;
+
+	// LiquidPressure/Darcy
+	bc->Pl_NumSPC = 0;
 
 	// apply SPC to global solution vector
 	ierr = BCApplySPC(bc, x); CHKERRQ(ierr);
@@ -1127,6 +1141,7 @@ PetscErrorCode BCApplyBound(BCCtx *bc)
 
 	FDSTAG      *fs;
 	PetscScalar Tbot, Ttop;
+	PetscScalar Plbot, Pltop;
 	PetscScalar Exx, Eyy, Ezz;
 	PetscScalar bx,  by,  bz;
 	PetscScalar ex,  ey,  ez;
@@ -1138,7 +1153,7 @@ PetscErrorCode BCApplyBound(BCCtx *bc)
 	PetscInt    i, j, k, nx, ny, nz, sx, sy, sz, iter, top_open;
 	PetscInt    nsLeft, nsRight, nsFront, nsBack, nsBottom, nsTop;
 	PetscInt 	simpleShear;
-	PetscScalar ***bcvx,  ***bcvy,  ***bcvz, ***bcT, *SPCVals;
+	PetscScalar ***bcvx,  ***bcvy,  ***bcvz, ***bcT, ***bcPl, *SPCVals;
 
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
@@ -1189,11 +1204,18 @@ PetscErrorCode BCApplyBound(BCCtx *bc)
 	Tbot = bc->Tbot;
 	Ttop = bc->Ttop;
 
+	// get boundary liquid pressures/Darcy
+	Plbot 	=	bc->Plbot;
+	Pltop 	=	bc->Pltop;
+
+	//Pltop = (0.6+1.0)*1000.0*(-10)*20000.0;
+
 	// access constraint vectors
-	ierr = DMDAVecGetArray(fs->DA_X,   bc->bcvx, &bcvx); CHKERRQ(ierr);
-	ierr = DMDAVecGetArray(fs->DA_Y,   bc->bcvy, &bcvy); CHKERRQ(ierr);
-	ierr = DMDAVecGetArray(fs->DA_Z,   bc->bcvz, &bcvz); CHKERRQ(ierr);
-	ierr = DMDAVecGetArray(fs->DA_CEN, bc->bcT,  &bcT);  CHKERRQ(ierr);
+	ierr = DMDAVecGetArray(fs->DA_X,   bc->bcvx,  &bcvx); CHKERRQ(ierr);
+	ierr = DMDAVecGetArray(fs->DA_Y,   bc->bcvy,  &bcvy); CHKERRQ(ierr);
+	ierr = DMDAVecGetArray(fs->DA_Z,   bc->bcvz,  &bcvz); CHKERRQ(ierr);
+	ierr = DMDAVecGetArray(fs->DA_CEN, bc->bcT,   &bcT);  CHKERRQ(ierr);
+	ierr = DMDAVecGetArray(fs->DA_CEN, bc->bcPl,  &bcPl); CHKERRQ(ierr); // LiquidPressure/Darcy
 
 	// access constraint arrays
 	SPCVals = bc->SPCVals;
@@ -1349,11 +1371,34 @@ PetscErrorCode BCApplyBound(BCCtx *bc)
 		END_STD_LOOP
 	}
 
+	//-----------------------------------------------------
+	// LiquidPressure/Darcy points
+	//-----------------------------------------------------
+	if(Plbot != 0.0 || Pltop != 0.0)
+	{
+		GET_CELL_RANGE_GHOST_INT(nx, sx, fs->dsx)
+		GET_CELL_RANGE_GHOST_INT(ny, sy, fs->dsy)
+		GET_CELL_RANGE_GHOST_INT(nz, sz, fs->dsz)
+
+		START_STD_LOOP
+		{
+			if(k == 0)   {
+				bcPl[k-1][j][i] = Plbot;    // bottom boundary, dirichlet value constant
+			}
+			if(k == mcz) {
+				bcPl[k+1][j][i] = Pltop;
+			}
+		}
+		END_STD_LOOP
+	}
+
+
 	// restore access
 	ierr = DMDAVecRestoreArray(fs->DA_X,   bc->bcvx, &bcvx); CHKERRQ(ierr);
 	ierr = DMDAVecRestoreArray(fs->DA_Y,   bc->bcvy, &bcvy); CHKERRQ(ierr);
 	ierr = DMDAVecRestoreArray(fs->DA_Z,   bc->bcvz, &bcvz); CHKERRQ(ierr);
 	ierr = DMDAVecRestoreArray(fs->DA_CEN, bc->bcT,  &bcT);  CHKERRQ(ierr);
+	ierr = DMDAVecRestoreArray(fs->DA_CEN, bc->bcPl, &bcPl); CHKERRQ(ierr); //LiquidPressure/Darcy
 
 	PetscFunctionReturn(0);
 }

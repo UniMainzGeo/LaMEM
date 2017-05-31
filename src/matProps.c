@@ -265,8 +265,8 @@ PetscErrorCode MatPropGetStruct(FILE *fp,
 	//============================================================
 	// Darcy
 	//============================================================
-						//getMatPropScalar(fp, ils, ile, "rhol",      &m->rhol,  NULL);
-	getMatPropScalar(fp, ils, ile, "mul",       &m->mul,    NULL);
+	getMatPropScalar(fp, ils, ile, "rhol",      &m->rhol,  NULL);
+	getMatPropScalar(fp, ils, ile, "mul",       &m->mul,   NULL);
 	getMatPropScalar(fp, ils, ile, "Ss",        &m->Ss,    NULL);
 	//============================================================
 	// Permeability law parameters
@@ -382,9 +382,8 @@ PetscErrorCode MatPropGetStruct(FILE *fp,
 		sprintf(lbl_vel,   "[ ]"         );
 		// Darcy
 		sprintf(lbl_Kphi,  "[ ]"         );
-		//New
-		sprintf(lbl_Ss,  "[ ]"         );
-		sprintf(lbl_mul, "[ ]"         );
+		sprintf(lbl_Ss,    "[ ]"           );
+		sprintf(lbl_mul,   "[ ]"           );
 	}
 	else
 	{
@@ -439,8 +438,7 @@ PetscErrorCode MatPropGetStruct(FILE *fp,
 	PetscPrintf(PETSC_COMM_WORLD,"    Phase [%lld]: (sweak) cohesion SoftLaw = %lld [ ], friction SoftLaw = %lld [ ] \n", (LLD)(m->ID),(LLD)chSoftID, (LLD)frSoftID);
 	PetscPrintf(PETSC_COMM_WORLD,"    Phase [%lld]: (temp ) alpha = %g %s, cp = %g %s, k = %g %s, A = %g %s \n", (LLD)(m->ID),m->alpha, lbl_alpha, m->Cp, lbl_cp,m->k, lbl_k, m->A, lbl_A);
 	// Darcy
-	//PetscPrintf(PETSC_COMM_WORLD,"    Phase [%lld]: (darcy) rhol = %g %s, mu = %g %s, Kphi = %g %s \n", (LLD)(m->ID),m->rhol, lbl_rho, m->mu, lbl_eta, m->Kphi, lbl_Kphi);
-	PetscPrintf(PETSC_COMM_WORLD,"    Phase [%lld]: (darcy) mu = %g %s, Kphi = %g %s , Ssl = %g %s \n", (LLD)(m->ID), m->mul, lbl_mul, m->Kphi, lbl_Kphi, m->Ss, lbl_Ss);
+	PetscPrintf(PETSC_COMM_WORLD,"    Phase [%lld]: (darcy) (darcy) rhol = %g %s, mu = %g %s, Kphi = %g %s , Ssl = %g %s \n", (LLD)(m->ID), m->rhol, lbl_rho, m->mul, lbl_mul, m->Kphi, lbl_Kphi, m->Ss, lbl_Ss);
 	PetscPrintf(PETSC_COMM_WORLD,"    \n");
 
 	PetscFunctionReturn(0);
