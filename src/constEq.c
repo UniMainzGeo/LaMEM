@@ -72,7 +72,7 @@ PetscErrorCode ConstEqCtxSetup(
 	// evaluate dependence on constant parameters (pressure, temperature)
 
 	PetscInt    pd;
-	PetscScalar Q, RT, ch, fr, p_visc, p_upper, p_lower, dP, p_total;
+	PetscScalar Q, RT, ch, fr, p_visc, p_upper, p_lower, dP, p_total, tensileS;
 
 	PetscFunctionBegin;
 
@@ -198,8 +198,13 @@ PetscErrorCode ConstEqCtxSetup(
 	dP = (p_total - p_pore);
 
 	// compute yield stress
-	if(dP < 0.0) { ctx->taupl =         ch; pd = 0; } // Von-Mises model for extension
-	else         { ctx->taupl = dP*fr + ch; pd = 1; } // Drucker-Prager model for compression
+	//if(dP < 0.0) { ctx->taupl =         ch; pd = 0; } // Von-Mises model for extension
+	//else         { ctx->taupl = dP*fr + ch; pd = 1; } // Drucker-Prager model for compression
+
+	// compute yield stress
+	tensileS = mat->TS; // Tensile strength
+	if(dP >= tensileS) 							{ ctx->taupl = 		 dP*fr + ch; 	pd = 1; } 		// Drucker-Prager model for compression
+	else if (ctx->taupl >= tensileS*fr + ch) 	{ ctx->taupl = tensileS*fr + ch; 	pd = 0; } 		// Von-Mises model for extension
 
 	// correct for ultimate yield stress
 	if(ctx->taupl > lim->tauUlt) { ctx->taupl = lim->tauUlt; pd = 0; }
@@ -526,6 +531,7 @@ PetscErrorCode VolConstEq(
 	PetscScalar  depth,     // depth for depth-dependent density model
 	PetscScalar  dt,        // time step
 	PetscScalar  p,         // pressure
+	PetscScalar  p_pore,    // pore pressure
 	PetscScalar  T)         // temperature
 {
 	// Evaluate volumetric constitutive equations in control volume
@@ -599,7 +605,7 @@ PetscErrorCode VolConstEq(
 */
 	PetscInt     i;
 	Material_t  *mat;
-	PetscScalar  cf_comp, cf_therm, Kavg, rho;
+	PetscScalar  cf_comp, cf_therm, Kavg, rho, p_total, dP, tensileS, pn, theta;
 
 	PetscFunctionBegin;
 
@@ -673,6 +679,28 @@ PetscErrorCode VolConstEq(
 	}
 
 	if(Kavg) svBulk->IKdt = 1.0/Kavg/dt;
+
+
+
+
+	if(lim->actPorePres != PETSC_TRUE) p_pore = 0.0;
+
+	p_total = p + lim->biot*p_pore;
+
+	dP = (p_total - p_pore);
+
+	tensileS = mat->TS; // Tensile strength
+	if(dP < tensileS )
+	{
+		pn = svBulk->pn;    		// pressure history
+		theta = svBulk->theta;		// volumetric strain rate
+
+		// dP = tensileS
+		p  = tensileS - lim->biot*p_pore + p_pore;
+		svBulk->IKdt = theta/(pn-p);
+	}
+
+
 
 	PetscFunctionReturn(0);
 }

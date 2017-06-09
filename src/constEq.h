@@ -126,6 +126,7 @@ PetscErrorCode VolConstEq(
 	PetscScalar  depth,     // depth for depth-dependent density model
 	PetscScalar  dt,        // time step
 	PetscScalar  p,         // pressure
+	PetscScalar  p_pore,    // pore pressure
 	PetscScalar  T);        // temperature
 
 // compute stress, plastic strain-rate and shear heating term on cell

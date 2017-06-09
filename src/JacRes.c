@@ -961,7 +961,7 @@ PetscErrorCode JacResGetResidual(JacRes *jr)
 		szz = svCell->szz - ptotal;
 
 		// evaluate volumetric constitutive equations
-		ierr = VolConstEq(svBulk, numPhases, phases, svCell->phRat, matLim, depth, dt, pc-pShift , Tc); CHKERRQ(ierr);
+		ierr = VolConstEq(svBulk, numPhases, phases, svCell->phRat, matLim, depth, dt, pc-pShift, pc_pore, Tc); CHKERRQ(ierr);
 
 
 
@@ -1812,7 +1812,7 @@ PetscErrorCode JacResViewRes(JacRes *jr)
 		PetscPrintf(PETSC_COMM_WORLD, "  Energy: \n" );
 		PetscPrintf(PETSC_COMM_WORLD, "    |eRes|_2 = %12.12e \n", e2);
 	}
-	// Ddarcy code
+	// Darcy code
 	if(jr->actDarcy == PETSC_TRUE)
 	{
 		PetscPrintf(PETSC_COMM_WORLD, "  Darcy: \n" );

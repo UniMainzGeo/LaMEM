@@ -227,6 +227,9 @@ typedef struct
 	PetscScalar  Ss;      // Specific storage
 	////////////
 
+
+	PetscScalar TS; // Tensile strength
+
 } Material_t;
 
 //---------------------------------------------------------------------------
