@@ -183,7 +183,7 @@ PetscErrorCode ScalingCreate(Scaling *scal, FB *fb)
 		// primary units
 		scal->time                = time;                     sprintf(scal->lbl_time,             "[s]");
 		scal->time_si             = time;
-		scal->length              = length;                   sprintf(scal->lbl_length  ,         "[m]");
+		scal->length              = length;                   sprintf(scal->lbl_length,           "[m]");
 		scal->length_si           = length;
 		scal->temperature         = temperature;              sprintf(scal->lbl_temperature,      "[K]");
 		scal->force               = force;                    sprintf(scal->lbl_force,            "[N]");
@@ -191,8 +191,8 @@ PetscErrorCode ScalingCreate(Scaling *scal, FB *fb)
 
 		// secondary units
 		scal->velocity            = length/time;              sprintf(scal->lbl_velocity,         "[m/s]");
-		scal->stress              = stress;                   sprintf(scal->lbl_stress ,          "[Pa]");
-		scal->stress_si           = stress;                   sprintf(scal->lbl_stress ,          "[Pa]");
+		scal->stress              = stress;                   sprintf(scal->lbl_stress,           "[Pa]");
+		scal->stress_si           = stress;                   sprintf(scal->lbl_stress_si,        "[Pa]");
 		scal->strain_rate         = 1.0/time;                 sprintf(scal->lbl_strain_rate,      "[1/s]");
 		scal->gravity_strength    = force/mass;               sprintf(scal->lbl_gravity_strength, "[m/s^2]");
 		scal->energy              = energy;
@@ -240,7 +240,7 @@ PetscErrorCode ScalingCreate(Scaling *scal, FB *fb)
 		// primary units
 		scal->time                = time/Myr;                 sprintf(scal->lbl_time,             "[Myr]");   // @
 		scal->time_si             = time;
-		scal->length              = length/km;                sprintf(scal->lbl_length  ,         "[km]");    // @
+		scal->length              = length/km;                sprintf(scal->lbl_length,           "[km]");    // @
 		scal->length_si           = length;
 		scal->temperature         = temperature;              sprintf(scal->lbl_temperature,      "[C]");     // @
 		scal->force               = force;                    sprintf(scal->lbl_force,            "[N]");
@@ -248,8 +248,8 @@ PetscErrorCode ScalingCreate(Scaling *scal, FB *fb)
 
 		// secondary units
 		scal->velocity            = length/time/cm_yr;        sprintf(scal->lbl_velocity,         "[cm/yr]"); // @
-		scal->stress              = stress/MPa;               sprintf(scal->lbl_stress ,          "[MPa]");   // @
-		scal->stress_si           = stress;                   sprintf(scal->lbl_stress ,          "[Pa]");
+		scal->stress              = stress/MPa;               sprintf(scal->lbl_stress,           "[MPa]");   // @
+		scal->stress_si           = stress;                   sprintf(scal->lbl_stress_si,        "[Pa]");
 		scal->strain_rate         = 1.0/time;                 sprintf(scal->lbl_strain_rate,      "[1/s]");
 		scal->gravity_strength    = force/mass;               sprintf(scal->lbl_gravity_strength, "[m/s^2]");
 		scal->energy              = energy;
