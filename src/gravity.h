@@ -44,26 +44,60 @@
 //---------------------------------------------------------------------------
 #ifndef __gravity_h__
 #define __gravity_h__
+ //-----------------------------------------------------------------------------
+
+#define _MAX_Gravity_ 300000
+
+struct FDSTAG;
+struct JacRes;
+struct FB;
+
+//-----------------------------------------------------------------------------
+/*
+// Structure that holds gravity parameters - not yet used
+struct gravityParams
+{
+	PetscInt     GetIt;
+	PetscInt     SaveDebug,SaveVTK,SaveRef;
+	PetscBool    UseNumerics, UseAnalytics;
+	PetscInt     survey_nx, survey_ny;
+	PetscScalar  survey_xs, survey_xm;
+	PetscScalar  survey_ys, survey_ym;
+	PetscScalar  survey_z ;
+	PetscScalar  ReferenceDensity;
+	PetscScalar  StdDev;
+	PetscScalar  LithColDens[9],LithColDepth[8];
+	PetscInt     num_intp,LithColNum;
+	char         RefDatFile2load[MAX_PATH_LEN];
+};
+
+ */
 
 //---------------------------------------------------------------------------
 // survey context
-typedef struct
+struct GravitySurvey
 {
-	PetscInt     i,j,nx,ny;
-	PetscInt     xs,xm,ys,ym;
-	PetscInt     iter;
+	PetscInt     nx,ny, faphase;
+	PetscScalar  xs,xm,ys,ym;
 	PetscScalar  x,y,z,dx,dy;
-	Vec          lvec_dg,lvec_dg2save,gvec_dg;
-	PetscScalar *coord,*dg;
+	Vec          lvec_dg;
+	Vec          gvec_dg;
+	PetscScalar  coordx[_MAX_Gravity_],coordy[_MAX_Gravity_],gravref[_MAX_Gravity_];
 	PetscMPIInt  rank;
+	PetscInt     ComputeGravity, SaveGravity;
+};
 
-} GravitySurvey;
+PetscErrorCode GRVSurveyCreate(FDSTAG *fs, GravitySurvey *survey, FB *fb);
 
-PetscErrorCode GRVSurveyCreate(UserCtx *user, GravitySurvey *survey);
+PetscErrorCode GRVSurveyDestroy(GravitySurvey *survey);
 
-PetscErrorCode GRVSurveyDestroy(GravitySurvey survey);
+PetscErrorCode GRVCompute(FDSTAG *fs, JacRes *jr, GravitySurvey *survey);
 
-PetscErrorCode GRVCompute(FDSTAG *fs, UserCtx *user, JacRes *jr);
+PetscErrorCode GetGravityEffectAnalytical(PetscScalar rho, PetscScalar *dx, PetscScalar *dy, PetscScalar *dz, PetscScalar *gsum);
+
+PetscErrorCode GetGravityEffectAnalytical2(PetscScalar *x,PetscScalar *y, PetscScalar *z,PetscScalar *gsum);
+
+PetscErrorCode SaveGravityField2VTK(Vec lvec_dg, PetscScalar *larray_coords,PetscScalar itime);
 
 
 //---------------------------------------------------------------------------

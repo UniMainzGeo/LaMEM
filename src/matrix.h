@@ -47,6 +47,8 @@
 #define __matrix_h__
 //---------------------------------------------------------------------------
 
+struct JacRes;
+
 // WARNING! Add MatSetNearNullSpace for all matrix types
 
 //---------------------------------------------------------------------------
@@ -60,12 +62,12 @@ PetscErrorCode MatAIJAssemble(Mat P, PetscInt numRows, const PetscInt rows[], Pe
 
 //---------------------------------------------------------------------------
 // preconditioning matrix storage format
-typedef enum
+enum PMatType
 {
 	_MONOLITHIC_,
 	_BLOCK_
 
-} PMatType;
+} ;
 //---------------------------------------------------------------------------
 
 typedef struct _p_PMat *PMat;
@@ -85,10 +87,11 @@ typedef struct _p_PMat
 
 	// get cell stiffness matrix
 	void (*getStiffMat)(
-		PetscScalar, PetscScalar, PetscScalar*,
-		PetscScalar, PetscScalar, PetscScalar,
-		PetscScalar, PetscScalar, PetscScalar,
-		PetscScalar, PetscScalar, PetscScalar);
+		PetscScalar,  PetscScalar,
+		PetscScalar*, PetscScalar*,
+		PetscScalar,  PetscScalar, PetscScalar,
+		PetscScalar,  PetscScalar, PetscScalar,
+		PetscScalar,  PetscScalar, PetscScalar);
 
 } p_PMat;
 
@@ -109,14 +112,14 @@ PetscErrorCode PMatDestroy(PMat pm);
 //.........................   MONOLITHIC MATRIX   ...........................
 //---------------------------------------------------------------------------
 
-typedef struct
+struct PMatMono
 {
 	Mat A; // monolithic matrix
 	Mat M; // penalty terms compensation matrix
 
 	Vec w; // work vector for computing Jacobian action
 
-} PMatMono;
+};
 
 PetscErrorCode PMatMonoCreate(PMat pm);
 
@@ -130,7 +133,7 @@ PetscErrorCode PMatMonoDestroy(PMat pm);
 //...........................   BLOCK MATRIX   ..............................
 //---------------------------------------------------------------------------
 
-typedef struct
+struct PMatBlock
 {
 	Mat Avv, Avp; // velocity sub-matrices
 	Mat Apv, App; // pressure sub-matrices
@@ -140,7 +143,7 @@ typedef struct
 	Vec xv, xp;   // solution blocks
 	Vec wv, wp;   // work vectors
 
-} PMatBlock;
+};
 
 //---------------------------------------------------------------------------
 
@@ -160,14 +163,16 @@ PetscErrorCode PMatBlockDestroy(PMat pm);
 
 // compute cell stiffness matrix with deviatoric projection
 void getStiffMatDevProj(
-	PetscScalar eta, PetscScalar diag, PetscScalar *v,
+	PetscScalar eta, PetscScalar diag,
+	PetscScalar *v,  PetscScalar *cf,
 	PetscScalar dx,  PetscScalar dy,   PetscScalar dz,
 	PetscScalar fdx, PetscScalar fdy,  PetscScalar fdz,
 	PetscScalar bdx, PetscScalar bdy,  PetscScalar bdz);
 
 // compute cell stiffness matrix without deviatoric projection
 void getStiffMatClean(
-	PetscScalar eta, PetscScalar diag, PetscScalar *v,
+	PetscScalar eta, PetscScalar diag,
+	PetscScalar *v,  PetscScalar *cf,
 	PetscScalar dx,  PetscScalar dy,   PetscScalar dz,
 	PetscScalar fdx, PetscScalar fdy,  PetscScalar fdz,
 	PetscScalar bdx, PetscScalar bdy,  PetscScalar bdz);
@@ -201,6 +206,9 @@ PetscErrorCode VecScatterBlockToMonolithic(Vec f, Vec g, Vec b, ScatterMode mode
 
 // check locality / existence of the global DOF
 #define CHECK_DOF(ind, start, num, nd, no) { if(ind != -1) { if(ind >= start && ind < start + num) nd++; else no++; } }
+
+// set pressure two-point constraint
+#define SET_PRES_TPC(bc, i, j, k, ind, lim, cf) { cf = 1.0; if(ind == lim && bc[k][j][i] != DBL_MAX) cf = 2.0; }
 
 //---------------------------------------------------------------------------
 

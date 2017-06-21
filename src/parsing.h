@@ -51,45 +51,138 @@
 //---------------------------------------------------------------------------
 #ifndef __parsing_h__
 #define __parsing_h__
-//-----------------------------------------------------------------------------
-
-#define MAX_LINE_LEN 1024
-#define _TRUE 1
-#define _FALSE 0
 
 //-----------------------------------------------------------------------------
 
-void parse_GetInt( FILE *fp, const char key[], PetscInt *value, PetscInt *found );
+enum ParamType
+{
+	_REQUIRED_,
+	_OPTIONAL_
+};
 
-void parse_GetDouble( FILE *fp, const char key[], double *value, PetscInt *found );
+//-----------------------------------------------------------------------------
+// Input file buffer
+//-----------------------------------------------------------------------------
 
-void parse_GetString( FILE *fp, const char key[], char value[], PetscInt max_L, PetscInt *found );
+struct FB
+{
+	//=====================================================================
+	//
+	// input file buffer
+	//
+	// supports reading information from data blocks of similar type
+	// e.g. material properties or softening law parameters
+	// reading PETSc options is disabled in block mode
+	//
+	// corresponding access modes are:
+	//    * flat  (parse entire file)
+	//    * block (parse current data block, defined by line ranges)
+	//
+	// All strings reserve two null characters in the end to detect overrun
+	//
+	//=====================================================================
 
-void parse_GetDoubleArray( FILE *fp, const char key[], PetscInt *nvalues, double values[], PetscInt *found );
 
-void parse_GetIntArray( FILE *fp, const char key[], PetscInt *nvalues, PetscInt values[], PetscInt *found );
+	PetscInt   nchar;   // number of characters
+	char      *fbuf;    // file buffer
 
-void parse_GetDoubleAllInstances( FILE *fp, const char key[], PetscInt *nvalues, double values[], PetscInt max_L, PetscInt *found );
+	char      *lbuf;    // line buffer
 
-void parse_GetIntAllInstances( FILE *fp, const char key[], PetscInt *nvalues, PetscInt values[], PetscInt max_L, PetscInt *found );
+	PetscInt   nfLines; // number of flat lines
+	char     **pfLines; // pointers to flat lines
 
-PetscInt is_comment_line( const char line[] );
+	PetscInt   nbLines; // number of block lines
+	char     **pbLines; // pointers to block lines
 
-void strip( char line[] );
+	PetscInt   nblocks; // number of data blocks
+	PetscInt   blockID; // ID of block to be retrieved
+	PetscInt  *blBeg;   // starting lines of blocks
+	PetscInt  *blEnd;   // ending lines of blocks
 
-char *trim(char *str);
+	// Constant T
+	PetscInt    PCTphase1,PCTphase2,PCTphase3, PCT;
+	PetscScalar PCTT1,PCTT2,PCTT3;
 
-PetscInt key_matches( const char key[], char line[] );
+};
 
-void strip_all_whitespace( char str[], char str2[] );
+//-----------------------------------------------------------------------------
 
-void trim_past_comment( char line[] );
+PetscErrorCode FBLoad(FB **pfb);
 
-void strip_L( char str[] );
+PetscErrorCode FBDestroy(FB **pfb);
 
-PetscInt material_key_matches( const char key[], char line[] );
+PetscErrorCode FBParseBuffer(FB *fb);
 
-PetscErrorCode PetscOptionsReadFromFile(const char filename[],PetscInt *found, PetscInt PrintOut );
+PetscErrorCode FBFindBlocks(FB *fb, ParamType ptype, const char *keybeg, const char *keyend);
+
+PetscErrorCode FBFreeBlocks(FB *fb);
+
+char ** FBGetLineRanges(FB *fb, PetscInt *lnbeg, PetscInt *lnend);
+
+PetscErrorCode FBGetIntArray(
+		FB         *fb,
+		const char *key,
+		PetscInt   *nvalues,
+		PetscInt   *values,
+		PetscInt    num,
+		PetscBool  *found);
+
+PetscErrorCode FBGetScalarArray(
+		FB          *fb,
+		const char  *key,
+		PetscInt    *nvalues,
+		PetscScalar *values,
+		PetscInt     num,
+		PetscBool   *found);
+
+PetscErrorCode FBGetString(
+		FB         *fb,
+		const char *key,
+		char       *str,    // output string
+		PetscBool  *found);
+
+//-----------------------------------------------------------------------------
+// Wrappers
+//-----------------------------------------------------------------------------
+
+PetscErrorCode getIntParam(
+		FB         *fb,
+		ParamType   ptype,
+		const char *key,
+		PetscInt   *val,
+		PetscInt    num,
+		PetscInt    maxval);
+
+PetscErrorCode getScalarParam(
+		FB          *fb,
+		ParamType    ptype,
+		const char  *key,
+		PetscScalar *val,
+		PetscInt     num,
+		PetscScalar  scal);
+
+// string is initialized with default value, if available, otherwise set to zero
+PetscErrorCode getStringParam(
+		FB          *fb,
+		ParamType    ptype,
+		const char  *key,
+		char        *str,         // output string
+		const char  *_default_);  // default value (optional)
+
+//-----------------------------------------------------------------------------
+// PETSc options parsing functions
+//-----------------------------------------------------------------------------
+
+PetscErrorCode PetscOptionsReadFromFile(FB *fb);
+
+PetscErrorCode PetscOptionsReadRestart(FILE *fp);
+
+PetscErrorCode PetscOptionsWriteRestart(FILE *fp);
+
+PetscErrorCode  PetscOptionsGetCheckString(
+	const char   key[],
+	char         str[],
+	PetscBool   *set);
 
 //-----------------------------------------------------------------------------
 #endif

@@ -1,0 +1,172 @@
+#===============================================================================
+# Scaling
+#===============================================================================
+
+	units = none
+
+#===============================================================================
+# Time stepping parameters
+#===============================================================================
+
+	time_end  = 1.0   # simulation end time
+	dt        = 1e-2  # time step
+	dt_min    = 1e-5  # minimum time step (declare divergence if lower value is attempted)
+	dt_max    = 0.1   # maximum time step
+	dt_out    = 0.2   # output step (output at least at fixed time intervals)
+	inc_dt    = 0.1   # time step increment per time step (fraction of unit)
+	CFL       = 0.5   # CFL (Courant-Friedrichs-Lewy) criterion
+	CFLMAX    = 0.5   # CFL criterion for elasticity
+	nstep_max = 2     # maximum allowed number of steps (lower bound: time_end/dt_max)
+	nstep_out = 1     # save output every n steps
+	nstep_rdb = 0     # save restart database every n steps
+
+
+#===============================================================================
+# Grid & discretization parameters
+#===============================================================================
+
+# Number of cells for all segments
+
+	nel_x = 32
+	nel_y = 32
+	nel_z = 32
+
+# Coordinates of all segments (including start and end points)
+
+	coord_x = 0.0 1.0
+	coord_y = 0.0 1.0
+	coord_z = 0.0 1.0
+
+#===============================================================================
+# Free surface
+#===============================================================================
+
+# Default
+
+#===============================================================================
+# Boundary conditions
+#===============================================================================
+
+# Default
+
+#===============================================================================
+# Solution parameters & controls
+#===============================================================================
+
+	gravity        = 0.0 0.0 -1.0   # gravity vector
+	FSSA           = 1.0            # free surface stabilization parameter [0 - 1]
+	act_temp_diff  = 0              # temperature diffusion activation flag
+	act_p_shift    = 0              # pressure shift activation flag (zero pressure in the top cell layer)
+	init_guess     = 0              # initial guess flag
+	eta_min        = 1e-3           # viscosity upper bound
+	eta_max        = 1e12           # viscosity lower limit
+
+#===============================================================================
+# Model setup & advection
+#===============================================================================
+
+	msetup         = geom              # setup type
+	nmark_x        = 2                 # markers per cell in x-direction
+	nmark_y        = 2                 # ...                 y-direction
+	nmark_z        = 2                 # ...                 z-direction
+	bg_phase       = 0                 # background phase ID
+
+
+# Geometric primtives:
+
+#	<BoxStart>
+#		phase  = 1
+#		bounds = 0.25 0.75 0.25 0.75 0.25 0.75  # (left, right, front, back, bottom, top)
+#	<BoxEnd>
+
+	<HexStart>
+		phase  = 1
+		coord = 0.25 0.25 0.25   0.75 0.25 0.25   0.75 0.75 0.25   0.25 0.75 0.25   0.25 0.25 0.75   0.75 0.25 0.75   0.75 0.75 0.75   0.25 0.75 0.75
+	<HexEnd>
+
+#===============================================================================
+# Output
+#===============================================================================
+
+# Grid output options (output is always active)
+
+	out_file_name       = FB_test # output file name
+	out_pvd             = 1       # activate writing .pvd file
+
+# AVD phase viewer output options (requires activation)
+
+	out_avd     = 1 # activate AVD phase output
+	out_avd_pvd = 1 # activate writing .pvd file
+	out_avd_ref = 3 # AVD grid refinement factor
+
+#===============================================================================
+# Material phase parameters
+#===============================================================================
+
+	# Define properties of matrix
+	<MaterialStart>
+		ID  = 0 # phase id
+		rho = 1 # density
+		eta = 1 # viscosity
+	<MaterialEnd>
+
+	# Define properties of block
+	<MaterialStart>
+		ID  = 1   # phase id
+		rho = 2   # density
+		eta = 100 # viscosity
+	<MaterialEnd>
+
+#===============================================================================
+# PETSc options
+#===============================================================================
+
+<PetscOptionsStart>
+
+	# LINEAR & NONLINEAR SOLVER OPTIONS --------------------------------------------------
+	-snes_type ksponly # no nonlinear solver
+
+	# Jacobian (linear) outer KSP
+	-js_ksp_type gmres
+	-js_ksp_max_it 150
+	-js_ksp_min_it 1
+	-js_ksp_converged_reason
+ 	-js_ksp_monitor
+	-js_ksp_rtol 1e-3
+	-js_ksp_atol 1e-5
+
+	# Stokes Preconditioner
+	-pstokes mg        # multigrid
+
+	# Matrix type
+	-pcmat_type mono   # monolithic matrix [coupled MG solver]
+	-jp_type mg        # multigrid
+
+	# Multigrid preconditioner settings
+	-gmg_pc_type mg
+	-gmg_pc_mg_levels 3    # 3 MG levels, gives coarse grid of 32x16x8
+	-gmg_pc_mg_galerkin
+	-gmg_pc_mg_type multiplicative
+	-gmg_pc_mg_cycle_type v
+	-gmg_pc_mg_log   # monitors time spend in multigrid if using -log_summary @ the end
+
+
+	# RICHARDSON/JACOBI MG Smoothener - [Anton's favorite options]
+	-gmg_mg_levels_ksp_type richardson
+	-gmg_mg_levels_ksp_richardson_scale 0.5
+	-gmg_mg_levels_pc_type jacobi
+	-gmg_mg_levels_ksp_max_it 20
+
+
+	# DIRECT, REDUNDANT COARSE SOLVER
+	-crs_ksp_type preonly
+	-crs_pc_type redundant
+	-crs_pc_redundant_number 1
+	-crs_redundant_pc_factor_mat_solver_package superlu_dist
+
+	-objects_dump
+
+<PetscOptionsEnd>
+
+#===============================================================================
+

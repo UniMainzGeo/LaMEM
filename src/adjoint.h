@@ -45,8 +45,22 @@
 #ifndef __adjoint_h__
 #define __adjoint_h__
 //---------------------------------------------------------------------------
+
+struct Scaling;
+struct FDSTAG;
+struct FreeSurf;
+struct DBMat;
+struct Tensor2RN;
+struct PData;
+struct Material_t;
+struct JacRes;
+struct Controls;
+struct NLSol;
+struct ModParam;
+
+
 // Structure that holds paramters for the adjoint gradient computation
-typedef struct
+struct AdjGrad
 {
 	PetscScalar      Ini;                     // Initial value of perturbed parameter
 	PetscScalar      Ini2;                     // If n is the parameter we need two initials
@@ -55,7 +69,7 @@ typedef struct
 	Vec              dF;
 	Vec 			 pro;
 	Vec              vx, vy, vz;
-} AdjGrad;
+};
 
 // Compute the gradients for the adjoint inversion
 PetscErrorCode AdjointObjectiveAndGradientFunction(AdjGrad *aop, JacRes *jr, NLSol *nl, ModParam *IOparam, SNES snes, FreeSurf *surf);

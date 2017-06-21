@@ -79,24 +79,9 @@ http://www.mcs.anl.gov/petsc/petsc-current/docs/manualpages/Mat/MatCreateMFFD.ht
  */
 
 //---------------------------------------------------------------------------
-// maximum size allowed for the running window
-#define _max_win_size_ 100
-
-//---------------------------------------------------------------------------
-typedef struct
-{
-	PetscScalar rnorm_init;
-	PetscInt    winwidth;
-	PetscScalar rnorms[2];
-	PetscScalar rnormdiffs[_max_win_size_];
-	PetscScalar diffnorm;
-	PetscScalar	epsfrac, eps;
-
-} WinStopCtx;
-//---------------------------------------------------------------------------
 
 // Jacobian type
-typedef enum
+enum JacType
 {
 	//===================
 	// assembled matrices
@@ -112,10 +97,10 @@ typedef enum
 	_MF_,  // analytic
 	_MFFD_ // built-in finite difference approximation
 
-} JacType;
+};
 
 //---------------------------------------------------------------------------
-typedef struct
+struct NLSol
 {
 	Mat       J;      // Jacobian matrix
 	Mat       P;      // preconditioner
@@ -130,9 +115,7 @@ typedef struct
 	PetscInt    nNwtIt;   // number of Newton iterations before switch to Picard
 	PetscScalar rtolNwt;  // Newton divergence tolerance
 
-	WinStopCtx  wsCtx; // window stop criterion context
-
-} NLSol;
+} ;
 
 //---------------------------------------------------------------------------
 
@@ -147,8 +130,6 @@ PetscErrorCode NLSolDestroy(NLSol *nl);
 // compute residual vector
 PetscErrorCode FormResidual(SNES snes, Vec x, Vec f, void *ctx);
 
-PetscErrorCode FormResidualMFFD(void *ctx, Vec x, Vec f);
-
 // compute Jacobian matrix and preconditioner
 PetscErrorCode FormJacobian(SNES snes, Vec x, Mat Amat, Mat Pmat, void *ctx);
 
@@ -158,10 +139,8 @@ PetscErrorCode JacApplyMFFD(Mat A, Vec x, Vec y);
 
 //---------------------------------------------------------------------------
 
-PetscErrorCode SNESPrintConvergedReason(SNES snes, PetscBool *Convergence);
+PetscErrorCode SNESPrintConvergedReason(SNES snes, 	PetscLogDouble t_beg);
 
-//PetscErrorCode SNESBlockStopTest(SNES snes, PetscInt it, PetscReal xnorm,
-//	PetscReal gnorm, PetscReal f, SNESConvergedReason *reason, void *cctx);
 
 PetscErrorCode SNESCoupledTest(
 	SNES                snes,
@@ -171,12 +150,6 @@ PetscErrorCode SNESCoupledTest(
 	PetscReal           f,
 	SNESConvergedReason *reason,
 	void                *cctx);
-
-//---------------------------------------------------------------------------
-
-// performs tests for residual norms
-PetscErrorCode KSPWinStopTest(KSP ksp, PetscInt n, PetscScalar rnorm, KSPConvergedReason *reason, void *mctx);
-PetscErrorCode KSPWinStopMonitor(KSP ksp,PetscInt thisit,PetscScalar thisnorm, void *mctx);
 
 //---------------------------------------------------------------------------
 #endif

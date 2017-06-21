@@ -3,16 +3,16 @@
 # this is taken from anton's earlier file, patched with some info found in the installed versions of PETSC on juqueen
 # run with ./config/JUQUEEN_OPT_64bit.py
 configure_options = [
-  '--prefix=/homeb/hmz30/hmz300/LIB/petsc/3.4.2/JUQUEEN_OPT_64bit',
+  '--prefix=/homeb/hmz30/hmz300/LIB/petsc/3.7.0/JUQUEEN_OPT_64bit',
   'PETSC_ARCH=JUQUEEN_OPT_64bit',
   '--with-cc=mpixlc_r',
   '--with-cxx=mpixlcxx_r',
-  '--with-fc=mpixlf77_r -qnosave',
+  '--with-fc=mpixlf77_r',
   '--with-large-file-io',
   '--with-64-bit-indices',
 # '--with-mpi-dir=/bgsys/drivers/ppcfloor/comm',  # required by BLACS to get mpif.h
 # '--with-blas-lapack-lib=-L/soft/apps/LAPACK -llapack_bgp -L/soft/apps/LIBGOTO -lgoto',
-  '--with-blas-lapack-lib=-L/bgsys/local/lib -lesslbg -L/bgsys/local/lapack/3.4.2/lib -llapack -L/bgsys/local/lib -lesslbg',
+  '--with-blas-lapack-lib=-L/bgsys/local/lib -lesslbg -L/bgsys/local/lapack/3.6.0/lib -llapack -L/bgsys/local/lib -lesslbg',
   '--download-superlu_dist=1',
   '--download-parmetis=1',
   '--download-metis=1',

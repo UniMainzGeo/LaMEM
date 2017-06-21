@@ -1,0 +1,223 @@
+
+#===============================================================================
+# Scaling
+#===============================================================================
+
+	units = geo
+
+	unit_temperature = 1000
+	unit_length      = 10e5
+	unit_viscosity   = 1e22
+	unit_stress      = 1e10
+
+#===============================================================================
+# Time stepping parameters
+#===============================================================================
+
+	dt        = 1e-3  # time step
+	dt_max    = 0.05  # maximum time step
+	inc_dt    = 0.1   # time step increment per time step (fraction of unit)
+	CFL       = 0.5   # CFL (Courant-Friedrichs-Lewy) criterion
+	CFLMAX    = 0.8   # CFL criterion for elasticity
+	nstep_max = 5     # maximum allowed number of steps (lower bound: time_end/dt_max)
+	nstep_out = 1     # save output every n steps
+
+#===============================================================================
+# Grid & discretization parameters
+#===============================================================================
+
+# Number of cells for all segments
+
+	nel_x = 128
+	nel_y = 2
+	nel_z = 32
+
+# Coordinates of all segments (including start and end points)
+
+	coord_x = -2000.0 2000.0
+	coord_y = -5.0    5.0
+	coord_z = -660.0  0.0
+
+#===============================================================================
+# Free surface
+#===============================================================================
+
+# default
+
+#===============================================================================
+# Boundary conditions
+#===============================================================================
+
+# Default (mechanical)
+
+# Temperature on the top and bottom boundaries
+
+	temp_top = 20.0
+	temp_bot = 1465.0;
+
+#===============================================================================
+# Solution parameters & controls
+#===============================================================================
+
+	gravity     = 0.0 0.0 -10.0  # gravity vector
+#	p_lim_plast = 1              # limit pressure at first iteration for plasticity
+	eta_min     = 2.5e18         # viscosity upper bound
+	eta_max     = 2.5e24         # viscosity lower limit
+	eta_ref     = 1e22           # reference viscosity (initial guess)
+	DII_ref     = 1e-16          # background (reference) strain-rate
+#	init_guess  = 0
+
+#===============================================================================
+# Model setup & advection
+#===============================================================================
+
+	msetup         = files             # setup type
+	nmark_x        = 3                 # markers per cell in x-direction
+	nmark_y        = 3                 # ...                 y-direction
+	nmark_z        = 3                 # ...                 z-direction
+	advect         = rk2               # advection scheme
+	new_advect     = 1                 # activate new advection algorithms (temporary)
+	interp         = minmod            # velocity interpolation scheme
+	mark_ctrl      = avd
+
+#===============================================================================
+# Output
+#===============================================================================
+
+# Grid output options (output is always active)
+
+	out_file_name       = SubductionModel # output file name
+	out_pvd             = 1      # activate writing .pvd file
+	out_phase           = 1
+	out_density         = 1
+	out_visc_total      = 1
+	out_visc_creep      = 1
+	out_visc_plast      = 1
+	out_velocity        = 1
+	out_pressure        = 1
+	out_temperature     = 1
+	out_dev_stress      = 1
+	out_j2_dev_stress   = 1
+	out_strain_rate     = 1
+	out_j2_strain_rate  = 1
+	out_plast_strain    = 1
+	out_moment_res      = 1
+	out_cont_res        = 1
+	out_energ_res       = 1
+
+	out_avd             = 1
+#===============================================================================
+# Material phase parameters
+#===============================================================================
+
+	# ------------------- plastic oceanic crust -------------------
+	<MaterialStart>
+		ID   = 0
+		rho  = 3300
+		eta  = 2.5e23
+		G    = 5e10
+		ch   = 20e6
+		fr   = 0
+		k    = 3
+		cp   = 1050
+	<MaterialEnd>
+
+	# ------------------- OceanicPlate -------------------
+	# Crust rheology from Dry Upper Crust  - SchmalholzKausBurg(2009) #
+	<MaterialStart>
+		ID    = 1
+		rho   = 3300
+		Bd    = 1.5e-9
+		Ed    = 375e3
+		Vd    = 3e-6
+		Bn    = 1.4806e-16
+		n     = 3.5
+		En    = 532e3
+		Vn    = 15e-6
+		k     = 3
+		cp    = 1050
+		alpha = 1e-5
+		G     = 5e10
+		ch    = 20e6
+		fr    = 30
+	<MaterialEnd>
+
+	# ------------------- WeakLayer -------------------
+	# Crust rheology from Dry Upper Crust  - SchmalholzKausBurg(2009) #
+	<MaterialStart>
+		ID      = 2
+		rho     = 3300
+		alpha   = 1e-5
+		eta     = 2.5e19
+	<MaterialEnd>
+
+	# ------------------- MANTLE -------------------
+	# Crust rheology from Dry Upper Crust  - SchmalholzKausBurg(2009) #
+	<MaterialStart>
+		ID    = 3
+		rho   = 3300
+		Bd    = 1.5e-9
+		Ed    = 375e3
+		Vd    = 3e-6
+		Bn    = 1.4806e-16
+		n     = 3.5
+		En    = 532e3
+		Vn    = 15e-6
+		k     = 3
+		cp    = 1050
+		alpha = 1e-5
+		G     = 5e10
+		ch    = 20e6
+		fr    = 30
+	<MaterialEnd>
+
+#===============================================================================
+# PETSc options
+#===============================================================================
+
+<PetscOptionsStart>
+
+	# SNES (nonlinear) options
+	-snes_ksp_ew # Eisenstat Walker algorithm
+	-snes_monitor
+#	-snes_converged_reason
+	-snes_atol 1e-4
+	-snes_rtol 1e-3
+	-snes_stol 1e-16
+	-snes_max_it 30
+	-snes_max_funcs 500000
+	-snes_max_linear_solve_fail 10000
+
+	# Newton/picard options
+	-snes_PicardSwitchToNewton_rtol 5e-2 # relative tolerance to switch to Newton (1e-2)
+	-snes_NewtonSwitchToPicard_it   20   # number of Newton iterations after which we switch back to Picard
+	-snes_NewtonSwitchToPicard_rtol 1.1  # relative tolerance compared to first iteration step
+
+	# Linesearch options
+	-snes_linesearch_monitor
+	-snes_linesearch_type basic
+	-snes_linesearch_maxstep 1.0 # very important to prevent the code from "blowing up"
+
+	# Jacobian (linear) outer KSP
+	-js_ksp_type fgmres
+	-js_ksp_max_it 25
+#	-js_ksp_converged_reason
+	-js_ksp_monitor
+	-js_ksp_rtol 1e-5
+	-js_ksp_atol 1e-5
+
+	# Matrix type
+	-pcmat_type mono # monolithic matrix [coupled MG solver]
+	-pcmat_no_dev_proj
+
+	# Direct solver with penalty method
+	-pcmat_type   mono
+	-pcmat_pgamma 1e5 # penalty parameter
+	-jp_type      user
+	-jp_pc_type   lu
+
+	-objects_dump
+
+<PetscOptionsEnd>
+
+#===============================================================================

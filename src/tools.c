@@ -45,6 +45,105 @@
 //---------------------------------------------------------------------------
 #include "LaMEM.h"
 #include "tools.h"
+#include <unistd.h>
+
+//---------------------------------------------------------------------------
+// Printing functions
+//---------------------------------------------------------------------------
+void PrintStart(PetscLogDouble *t_beg, const char *msg, const char *filename)
+{
+	PetscTime(t_beg);
+
+	if(filename)
+	{
+		PetscPrintf(PETSC_COMM_WORLD,"%s file(s) <%s> ... ", msg, filename);
+	}
+	else
+	{
+		PetscPrintf(PETSC_COMM_WORLD,"%s ... ", msg);
+	}
+}
+//---------------------------------------------------------------------------
+void PrintDone(PetscLogDouble t_beg)
+{
+	PetscLogDouble t_end;
+
+	MPI_Barrier(PETSC_COMM_WORLD);
+
+	PetscTime(&t_end);
+
+	PetscPrintf(PETSC_COMM_WORLD,"done (%g sec)\n", t_end - t_beg);
+
+	PetscPrintf(PETSC_COMM_WORLD,"--------------------------------------------------------------------------\n");
+}
+//---------------------------------------------------------------------------
+void PrintStep(PetscInt step)
+{
+	char *number, *p;
+
+	char line[] = "==========================================================================";
+	char left[]  = " STEP ";
+	char right[] = " ";
+	asprintf(&number, "%d", step);
+
+	p = line + (strlen(line) - strlen(left) - strlen(number) - strlen(right))/2;
+
+	memcpy(p, left,   strlen(left));   p += strlen(left);
+	memcpy(p, number, strlen(number)); p += strlen(number);
+	memcpy(p, right,  strlen(right));
+
+	free(number);
+
+	PetscPrintf(PETSC_COMM_WORLD,"%s\n", line);
+}
+//---------------------------------------------------------------------------
+#undef __FUNCT__
+#define __FUNCT__ "VecReadRestart"
+PetscErrorCode VecReadRestart(Vec x, FILE *fp)
+{
+	PetscInt     size;
+	PetscScalar *xarr;
+
+	PetscErrorCode ierr;
+	PetscFunctionBegin;
+
+	ierr = VecGetLocalSize(x, &size); CHKERRQ(ierr);
+
+	// get vector array
+	ierr = VecGetArray(x, &xarr); CHKERRQ(ierr);
+
+	// write to file
+	fread(xarr, sizeof(PetscScalar), (size_t)size, fp);
+
+	// restore vector array
+	ierr = VecRestoreArray(x, &xarr); CHKERRQ(ierr);
+
+	PetscFunctionReturn(0);
+}
+//---------------------------------------------------------------------------
+#undef __FUNCT__
+#define __FUNCT__ "VecWriteRestart"
+PetscErrorCode VecWriteRestart(Vec x, FILE *fp)
+{
+	PetscInt     size;
+	PetscScalar *xarr;
+
+	PetscErrorCode ierr;
+	PetscFunctionBegin;
+
+	ierr = VecGetLocalSize(x, &size); CHKERRQ(ierr);
+
+	// get vector array
+	ierr = VecGetArray(x, &xarr); CHKERRQ(ierr);
+
+	// write to file
+	fwrite(xarr, sizeof(PetscScalar), (size_t)size, fp);
+
+	// restore vector array
+	ierr = VecRestoreArray(x, &xarr); CHKERRQ(ierr);
+
+	PetscFunctionReturn(0);
+}
 //---------------------------------------------------------------------------
 //  basic statistic functions
 //---------------------------------------------------------------------------
@@ -72,165 +171,6 @@ PetscScalar getVar(PetscScalar *data, PetscInt n)
 PetscScalar getStdv(PetscScalar *data, PetscInt n)
 {
     return sqrt(getVar(data,n));
-}
-//---------------------------------------------------------------------------
-// read arrays from PETSC options database with error checking
-//---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "GetScalDataItemCheckScale"
-PetscErrorCode GetScalDataItemCheckScale(
-	const char  ident[],
-	const char  name[],
-	exitType    extp,
-	PetscInt    n,
-	PetscScalar *a,
-	PetscScalar amin,
-	PetscScalar amax,
-	PetscScalar scal)
-{
-	PetscInt  i;
-	PetscBool found;
-	PetscInt  nmax;
-
-	PetscErrorCode ierr;
-	PetscFunctionBegin;
-
-	// skip trivial case
-	if(!n) PetscFunctionReturn(0);
-
-	// set expected number of elements
-	nmax = n;
-
-	// read array
-	ierr = PetscOptionsGetRealArray(NULL, NULL, ident,  a, &nmax, &found); CHKERRQ(ierr);
-
-	// check data item exists
-	if(found != PETSC_TRUE)
-	{
-		if(extp == _NOT_FOUND_ERROR_)
-		{
-			SETERRQ1(PETSC_COMM_SELF, PETSC_ERR_USER, "Data item \"%s\" is not found\n", name);
-		}
-		else if(extp == _NOT_FOUND_EXIT_)
-		{
-			PetscFunctionReturn(0);
-		}
-	}
-
-	// check correct number of elements is provided
-	if(nmax != n)
-	{
-		SETERRQ3(PETSC_COMM_SELF, PETSC_ERR_USER, "Wrong number of elements in data item \"%s\" , actual: %lld, expected: %lld\n", name, (LLD)nmax, (LLD)n);
-	}
-
-	// check ranges
-	if(amin && amax)
-	{
-		for(i = 0; i < n; i++)
-		{
-			if(a[i] < amin || a[i] > amax)
-			{
-				SETERRQ5(PETSC_COMM_SELF, PETSC_ERR_USER, "Data item \"%s\" is out of bound, actual: %e, range: [%e - %e], element %lld\n",
-					name, a[i], amin, amax, (LLD)i);
-			}
-		}
-	}
-
-	// scale
-	if(scal)
-	{
-		for(i = 0; i < n; i++) a[i] /= scal;
-	}
-
-	PetscFunctionReturn(0);
-}
-//---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "GetIntDataItemCheck"
-PetscErrorCode GetIntDataItemCheck(
-	const char  ident[],
-	const char  name[],
-	exitType    extp,
-	PetscInt    n,
-	PetscInt    *a,
-	PetscInt    amin,
-	PetscInt    amax)
-{
-	PetscInt  i;
-	PetscBool found;
-	PetscInt  nmax;
-
-	PetscErrorCode ierr;
-	PetscFunctionBegin;
-
-	// skip trivial case
-	if(!n) PetscFunctionReturn(0);
-
-	// set expected number of elements
-	nmax = n;
-
-	// read array
-	ierr = PetscOptionsGetIntArray(NULL, NULL, ident,  a, &nmax, &found); CHKERRQ(ierr);
-
-	// check data item exists
-	if(found != PETSC_TRUE)
-	{
-		if(extp == _NOT_FOUND_ERROR_)
-		{
-			SETERRQ1(PETSC_COMM_SELF, PETSC_ERR_USER, "Data item \"%s\" is not found\n", name);
-		}
-		else if(extp == _NOT_FOUND_EXIT_)
-		{
-			PetscFunctionReturn(0);
-		}
-	}
-
-	// check correct number of elements is provided
-	if(nmax != n)
-	{
-		SETERRQ3(PETSC_COMM_SELF, PETSC_ERR_USER, "Wrong number of elements in data item \"%s\", actual: %lld, expected: %lld\n", name, (LLD)nmax, (LLD)n);
-	}
-
-	// check ranges
-	if(amin && amax)
-	{
-		for(i = 0; i < n; i++)
-		{
-			if(a[i] < amin || a[i] > amax)
-			{
-				SETERRQ5(PETSC_COMM_SELF, PETSC_ERR_USER, "Data item \"%s\" is out of bound, actual: %lld, range: [%lld - %lld], element %lld\n",
-					name, (LLD)a[i], (LLD)amin, (LLD)amax, (LLD)i);
-			}
-		}
-	}
-
-
-	PetscFunctionReturn(0);
-}
-//---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "DMDAGetProcessorRank"
-PetscErrorCode DMDAGetProcessorRank(DM da, PetscInt *rank_x, PetscInt *rank_y, PetscInt *rank_z, PetscInt *rank_col)
-{
-	PetscMPIInt	rank;
-	PetscInt	m, n, p, i, j, k, colind;
-	PetscFunctionBegin;
-	// get MPI processor rank
-	MPI_Comm_rank(PETSC_COMM_WORLD, &rank);
-	// get number processors in each coordinate direction
-	DMDAGetInfo(da, 0, 0, 0, 0, &m, &n, &p, 0, 0, 0, 0, 0, 0);
-	// determine i-j-k coordinates of processor
-	// x-index runs first (i), then y (j), followed by z (k)
-	getLocalRank(&i, &j, &k, rank, m, n);
-	// compute index of x-y column of processors
-	// (same rule as above for x and y coordinates)
-	colind = i + j*m;
-	// assign output
-	if(rank_x)   (*rank_x)   = i;
-	if(rank_y)   (*rank_y)   = j;
-	if(rank_z)   (*rank_z)   = k;
-	if(rank_col) (*rank_col) = colind;
-	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
 #undef __FUNCT__
@@ -295,7 +235,7 @@ PetscErrorCode makeScalArray(PetscScalar **arr, const PetscScalar *init, const P
 	*arr = tmp;
 	PetscFunctionReturn(0);
 }
-//==========================================================================================================
+//---------------------------------------------------------------------------
 PetscInt ISRankZero(MPI_Comm comm)
 {
 	PetscMPIInt rank;
@@ -304,7 +244,7 @@ PetscInt ISRankZero(MPI_Comm comm)
 
 	return (rank == 0);
 }
-//==========================================================================================================
+//---------------------------------------------------------------------------
 PetscInt ISParallel(MPI_Comm comm)
 {
 	PetscMPIInt size;
@@ -313,35 +253,117 @@ PetscInt ISParallel(MPI_Comm comm)
 
 	return (size > 1);
 }
-//==========================================================================================================
-// Creates an output directory
+//---------------------------------------------------------------------------
 #undef __FUNCT__
-#define __FUNCT__ "LaMEMCreateOutputDirectory"
-PetscErrorCode LaMEMCreateOutputDirectory(const char *DirectoryName)
+#define __FUNCT__ "DirMake"
+PetscErrorCode DirMake(const char *name)
 {
+	int status;
+
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
 
-	// generate a new directory on rank zero
+	// create a new directory on rank zero
 	if(ISRankZero(PETSC_COMM_WORLD))
 	{
-		if(mkdir(DirectoryName, S_IRWXU))
+		// standard access pattern drwxr-xr-x
+		status = mkdir(name, S_IRWXU | S_IRGRP | S_IXGRP | S_IROTH | S_IXOTH);
+
+		if(status && errno != EEXIST)
 		{
-			PetscPrintf(PETSC_COMM_WORLD," Writing to existing directory %s \n", DirectoryName);
-		}
-		else
-		{
-			PetscPrintf(PETSC_COMM_WORLD," Created new directory %s \n", DirectoryName);
+			SETERRQ1(PETSC_COMM_WORLD, PETSC_ERR_USER, "Failed to create directory %s", name);
 		}
 	}
 
-	// all other ranks should wait
+	// synchronize
 	ierr = MPI_Barrier(PETSC_COMM_WORLD); CHKERRQ(ierr);
 
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-//
+#undef __FUNCT__
+#define __FUNCT__ "DirRemove"
+PetscErrorCode DirRemove(const char *name)
+{
+	int status;
+
+	PetscErrorCode ierr;
+	PetscFunctionBegin;
+
+	// synchronize
+	ierr = MPI_Barrier(PETSC_COMM_WORLD); CHKERRQ(ierr);
+
+	// remove directory on rank zero
+	if(ISRankZero(PETSC_COMM_WORLD))
+	{
+		status = rmdir(name);
+
+		if(status)
+		{
+			SETERRQ1(PETSC_COMM_WORLD, PETSC_ERR_USER, "Failed to remove directory %s", name);
+		}
+	}
+
+	PetscFunctionReturn(0);
+}
+//---------------------------------------------------------------------------
+#undef __FUNCT__
+#define __FUNCT__ "DirRename"
+PetscErrorCode DirRename(const char *old_name, const char *new_name)
+{
+	int status;
+
+	PetscErrorCode ierr;
+	PetscFunctionBegin;
+
+	// synchronize
+	ierr = MPI_Barrier(PETSC_COMM_WORLD); CHKERRQ(ierr);
+
+	// rename directory on rank zero
+	if(ISRankZero(PETSC_COMM_WORLD))
+	{
+		status = rename(old_name, new_name);
+
+		if(status)
+		{
+			SETERRQ2(PETSC_COMM_WORLD, PETSC_ERR_USER, "Failed to rename directory %s into %s", old_name, new_name);
+		}
+	}
+
+	PetscFunctionReturn(0);
+}
+//---------------------------------------------------------------------------
+#undef __FUNCT__
+#define __FUNCT__ "DirCheck"
+PetscErrorCode DirCheck(const char *name, PetscInt *exists)
+{
+	struct stat s;
+	int         status;
+	PetscInt    check;
+
+	PetscErrorCode ierr;
+	PetscFunctionBegin;
+
+	// check directory on rank zero
+	if(ISRankZero(PETSC_COMM_WORLD))
+	{
+		status = stat(name, &s);
+
+		// check whether file exists and is a directory
+		check = (!status && S_ISDIR(s.st_mode));
+	}
+
+	// synchronize
+	if(ISParallel(PETSC_COMM_WORLD))
+	{
+		ierr = MPI_Bcast(&check, 1, MPIU_INT, 0, PETSC_COMM_WORLD); CHKERRQ(ierr);
+	}
+
+	(*exists) = check;
+
+	PetscFunctionReturn(0);
+}
+//---------------------------------------------------------------------------
 // Fast detection points inside a polygonal region.
 //
 // Originally written as a MATLAB mexFunction by:
@@ -529,3 +551,92 @@ void in_polygon(
 	}
 }
 //---------------------------------------------------------------------------
+int comp_key_val(const void * a, const void * b)
+{
+	// comparison function for sorting key-value pairs
+
+	return (int)( ((const Pair*)a)->key - ((const Pair*)b)->key );
+}
+//---------------------------------------------------------------------------
+#undef __FUNCT__
+#define __FUNCT__ "sort_key_val"
+PetscErrorCode sort_key_val(PetscScalar *a, PetscInt *idx, PetscInt n)
+{
+	Pair     *p;
+	PetscInt  i;
+
+	PetscErrorCode ierr;
+	PetscFunctionBegin;
+
+	ierr = PetscMalloc((size_t)n*sizeof(Pair), &p); CHKERRQ(ierr);
+
+	// initialize
+	for(i = 0; i < n; i++) { p[i].key = a[i]; p[i].val = idx[i]; }
+
+	// sort
+	qsort(p, (size_t)n, sizeof(Pair), comp_key_val);
+
+	// copy result
+	for(i = 0; i < n; i++) { a[i] = p[i].key; idx[i] = p[i].val;  }
+
+	ierr = PetscFree(p); CHKERRQ(ierr);
+
+	PetscFunctionReturn(0);
+}
+//---------------------------------------------------------------------------
+// service functions
+//-----------------------------------------------------------------------------
+PetscInt getPtrCnt(PetscInt n, PetscInt counts[], PetscInt ptr[])
+{
+	// compute pointers from counts, return total count
+
+	PetscInt i, tcnt = 0;
+
+	for(i = 0; i < n; i++)
+	{
+		ptr[i] = tcnt;
+		tcnt  += counts[i];
+	}
+	return tcnt;
+}
+//---------------------------------------------------------------------------
+void rewindPtr(PetscInt n, PetscInt ptr[])
+{
+	// rewind pointers after using them as access iterators
+
+	PetscInt i, prev = 0, next;
+
+	for(i = 0; i < n; i++)
+	{
+		next   = ptr[i];
+		ptr[i] = prev;
+		prev   = next;
+	}
+}
+//-----------------------------------------------------------------------------
+#undef __FUNCT__
+#define __FUNCT__ "getPhaseRatio"
+PetscErrorCode getPhaseRatio(PetscInt n, PetscScalar *v, PetscScalar *rsum)
+{
+	// compute phase ratio array
+
+	PetscInt    i;
+	PetscScalar sum = 0.0;
+
+	PetscFunctionBegin;
+
+	for(i = 0; i < n; i++) sum  += v[i];
+
+	if(sum == 0.0)
+	{
+		SETERRQ(PETSC_COMM_SELF, PETSC_ERR_USER, " Empty control volume");
+	}
+
+	for(i = 0; i < n; i++) v[i] /= sum;
+
+	(*rsum) = sum;
+
+	PetscFunctionReturn(0);
+}
+//-----------------------------------------------------------------------------
+

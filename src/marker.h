@@ -46,6 +46,17 @@
 #define __marker_h__
 //---------------------------------------------------------------------------
 
+#define _max_geom_ 20
+
+//---------------------------------------------------------------------------
+
+struct FB;
+struct AdvCtx;
+struct Marker;
+struct Material_t;
+
+//---------------------------------------------------------------------------
+
 // input polygon data
 typedef struct
 {
@@ -66,47 +77,79 @@ typedef struct
 
 //---------------------------------------------------------------------------
 
+// geometric primitives (REDO THIS WITH CLASS)
+
+typedef struct GeomPrim GeomPrim;
+
+struct GeomPrim
+{
+	PetscInt    phase;
+	// sphere
+	PetscScalar center[3];
+	PetscScalar radius;
+	// box & hex
+	PetscScalar bounds[6], coord[24];
+	// layer
+	PetscScalar top;
+	PetscScalar bot;
+
+	PetscInt (*setPhase)(GeomPrim*, Marker*);
+};
+
+PetscInt setPhaseSphere(GeomPrim *sphere, Marker *P);
+
+PetscInt setPhaseBox(GeomPrim *box, Marker *P);
+
+PetscInt setPhaseLayer(GeomPrim *layer, Marker *P);
+
+PetscInt setPhaseHex(GeomPrim *hex, Marker *P);
+
+void HexGetBoundingBox(
+		PetscScalar *coord,   // hex coordinates
+		PetscScalar *bounds); // bounding box
+
+PetscInt TetPointTest(
+		PetscScalar *coord, // tetrahedron coordinates
+		PetscInt    *ii,    // corner indices
+		PetscScalar *xp,    // point coordinate
+		PetscScalar  tol);  // relative tolerance
+
+//---------------------------------------------------------------------------
+
 // markers initialization
-PetscErrorCode ADVMarkInit(AdvCtx *actx, UserCtx *user);
+PetscErrorCode ADVMarkInit(AdvCtx *actx, FB *fb);
 
 // generate coordinates of uniformly distributed markers
-PetscErrorCode ADVMarkInitCoord(AdvCtx *actx, UserCtx *user);
+PetscErrorCode ADVMarkInitCoord(AdvCtx *actx);
 
 // save all local markers to disk (parallel output)
-PetscErrorCode ADVMarkSave(AdvCtx *actx, UserCtx *user);
+PetscErrorCode ADVMarkSave(AdvCtx *actx);
 
 // check phase IDs of all the markers
 PetscErrorCode ADVMarkCheckMarkers(AdvCtx *actx);
+
+// initialize temperature on markers redundantly form file
+PetscErrorCode ADVMarkSetTempFromFile(AdvCtx *actx, FB *fb);
+
+// Load and set data from phase diagram
+PetscErrorCode LoadPhaseDiagram(AdvCtx *actx, Material_t  *phases, PetscInt i);
 
 //---------------------------------------------------------------------------
 
 // Specific initialization routines
 
-PetscErrorCode ADVMarkInitFileParallel (AdvCtx *actx, UserCtx *user);
-PetscErrorCode ADVMarkInitFileRedundant(AdvCtx *actx, UserCtx *user);
-PetscErrorCode ADVMarkInitFilePolygons (AdvCtx *actx, UserCtx *user);
-PetscErrorCode ADVMarkInitDiapir       (AdvCtx *actx, UserCtx *user);
-PetscErrorCode ADVMarkInitBlock        (AdvCtx *actx, UserCtx *user);
-PetscErrorCode ADVMarkInitSubduction   (AdvCtx *actx, UserCtx *user);
-PetscErrorCode ADVMarkInitFolding      (AdvCtx *actx, UserCtx *user);
-PetscErrorCode ADVMarkInitDetachment   (AdvCtx *actx, UserCtx *user);
-PetscErrorCode ADVMarkInitSlab         (AdvCtx *actx, UserCtx *user);
-PetscErrorCode ADVMarkInitSpheres      (AdvCtx *actx, UserCtx *user);
-PetscErrorCode ADVMarkInitBands        (AdvCtx *actx, UserCtx *user);
-PetscErrorCode ADVMarkInitDomes        (AdvCtx *actx, UserCtx *user);
-PetscErrorCode ADVMarkInitRotation     (AdvCtx *actx, UserCtx *user);
+PetscErrorCode ADVMarkInitGeom    (AdvCtx *actx, FB *fb);
+PetscErrorCode ADVMarkInitFiles   (AdvCtx *actx, FB *fb);
+PetscErrorCode ADVMarkInitPolygons(AdvCtx *actx, FB *fb);
 
 //---------------------------------------------------------------------------
 
 // service functions
-
-PetscErrorCode ADVMarkSetTempFromFile  (AdvCtx *actx, UserCtx *user);
-
-void ADVMarkSecIdx(AdvCtx *actx, UserCtx *user, PetscInt dir, PetscInt Nslice, PetscInt *idx);
+void ADVMarkSecIdx(AdvCtx *actx, PetscInt dir, PetscInt Nslice, PetscInt *idx);
 
 //---------------------------------------------------------------------------
-
-// definitions
+// MACROS
+//---------------------------------------------------------------------------
 
 #ifndef max
     #define max(a,b) (a >= b ? a : b)

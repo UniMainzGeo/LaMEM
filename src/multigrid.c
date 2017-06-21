@@ -45,14 +45,10 @@
 //---------------------------------------------------------------------------
 #include "LaMEM.h"
 #include "fdstag.h"
-#include "fdstag.h"
-#include "solVar.h"
-#include "scaling.h"
-#include "tssolve.h"
-#include "bc.h"
-#include "JacRes.h"
-#include "matrix.h"
 #include "multigrid.h"
+#include "matrix.h"
+#include "JacRes.h"
+#include "bc.h"
 #include "tools.h"
 //---------------------------------------------------------------------------
 // * remove hierarchy of grids & bc-objects (use info from fine level)
@@ -1747,19 +1743,19 @@ PetscErrorCode MGCreate(MG *mg, JacRes *jr)
 {
 	PetscInt  i, l;
 	MGLevel   *fine;
-	char      pc_type[MAX_NAME_LEN];
+	char      pc_type[_STR_LEN_];
 	PetscBool opt_set;
 
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
 
 	// get preconditioner type
-	ierr = PetscOptionsGetString(NULL, NULL, "-gmg_pc_type", pc_type, MAX_NAME_LEN, &opt_set); CHKERRQ(ierr);
+	ierr = PetscOptionsGetString(NULL, NULL, "-gmg_pc_type", pc_type, _STR_LEN_, &opt_set); CHKERRQ(ierr);
 
 	// check whether multigrid is requested
 	if(opt_set != PETSC_TRUE || strcmp(pc_type, "mg"))
 	{
-		SETERRQ(PETSC_COMM_SELF, PETSC_ERR_USER, "-gmg_pc_type option is not defined of specified incorrectly (use -gmg_pc_type mg)");
+		SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "-gmg_pc_type option is not defined of specified incorrectly (use -gmg_pc_type mg)");
 	}
 
 	// clear object
@@ -2056,10 +2052,13 @@ PetscErrorCode MGGetNumLevels(MG *mg)
 
 	// check discretization in all directions
 	ierr = Discret1DCheckMG(&fs->dsx, "x", &nx); CHKERRQ(ierr);                ncors = nx;
-	ierr = Discret1DCheckMG(&fs->dsy, "y", &ny); CHKERRQ(ierr);
-	if (refine_y>1){
+
+	if(refine_y > 1)
+	{
+		ierr = Discret1DCheckMG(&fs->dsy, "y", &ny); CHKERRQ(ierr);
 		if(ny < ncors) ncors = ny;
 	}
+
 	ierr = Discret1DCheckMG(&fs->dsz, "z", &nz); CHKERRQ(ierr); if(nz < ncors) ncors = nz;
 
 	// check number of levels requested on the command line
@@ -2067,11 +2066,11 @@ PetscErrorCode MGGetNumLevels(MG *mg)
 
 	if(opt_set != PETSC_TRUE)
 	{
-		SETERRQ1(PETSC_COMM_SELF, PETSC_ERR_USER, "Number of multigrid levels is not specified. Use option -gmg_pc_mg_levels. Max # of levels: %lld", (LLD)(ncors+1));
+		SETERRQ1(PETSC_COMM_WORLD, PETSC_ERR_USER, "Number of multigrid levels is not specified. Use option -gmg_pc_mg_levels. Max # of levels: %lld", (LLD)(ncors+1));
 	}
 	else if(nlevels < 2 || nlevels > ncors+1)
 	{
-		SETERRQ2(PETSC_COMM_SELF, PETSC_ERR_USER, "Incorrect # of multigrid levels specified. Requested: %lld. Max. possible: %lld", (LLD)nlevels, (LLD)(ncors+1));
+		SETERRQ2(PETSC_COMM_WORLD, PETSC_ERR_USER, "Incorrect # of multigrid levels specified. Requested: %lld. Max. possible: %lld", (LLD)nlevels, (LLD)(ncors+1));
 	}
 
 	// set actual number of coarsening steps
@@ -2091,10 +2090,9 @@ PetscErrorCode MGGetNumLevels(MG *mg)
 	Nx = nx*fs->dsx.nproc;
 	Ny = ny*fs->dsy.nproc;
 	Nz = nz*fs->dsz.nproc;
-
-	ierr = PetscPrintf(PETSC_COMM_WORLD, " Total coarse grid size    [nx, ny, nz] : [%lld, %lld, %lld]\n", (LLD)Nx, (LLD)Ny, (LLD)Nz); CHKERRQ(ierr);
-	ierr = PetscPrintf(PETSC_COMM_WORLD, " Coarse grid per processor [nx, ny, nz] : [%lld, %lld, %lld]\n", (LLD)nx, (LLD)ny, (LLD)nz); CHKERRQ(ierr);
-	ierr = PetscPrintf(PETSC_COMM_WORLD, " Number of multigrid levels             : %lld\n", (LLD)nlevels);                            CHKERRQ(ierr);
+	ierr = PetscPrintf(PETSC_COMM_WORLD, "   Global coarse grid [nx,ny,nz] : [%lld, %lld, %lld]\n", (LLD)Nx, (LLD)Ny, (LLD)Nz); CHKERRQ(ierr);
+	ierr = PetscPrintf(PETSC_COMM_WORLD, "   Local coarse grid  [nx,ny,nz] : [%lld, %lld, %lld]\n", (LLD)nx, (LLD)ny, (LLD)nz); CHKERRQ(ierr);
+	ierr = PetscPrintf(PETSC_COMM_WORLD, "   Number of multigrid levels    :  %lld\n", (LLD)nlevels);                            CHKERRQ(ierr);
 
 	// store number of levels
 	mg->nlvl = nlevels;

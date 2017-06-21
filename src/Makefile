@@ -58,8 +58,8 @@ endif
 include ${PETSC_DIR}/lib/petsc/conf/variables
 include ${PETSC_DIR}/lib/petsc/conf/rules
 
-# Define PETSc-based C-compiler command
-CCOMPILER = ${PCC} ${PCC_FLAGS} ${CFLAGS} ${CCPPFLAGS}
+# Define PETSc-based C++ compiler command
+CCOMPILER = ${CXX} ${CXX_FLAGS} ${CXXFLAGS} ${CCPPFLAGS}
 
 #====================================================
 
@@ -125,9 +125,9 @@ builddir : ../bin ../lib ../dep ../bin/${mode} ../lib/${mode} ../dep/${mode}
 # force full rebuild when Makefiles are modified
 
 ../dep/$(mode)/makefile.stat : Makefile Makefile.in
-	@rm -f ../lib/$(mode)/*
-	@rm -f ../bin/$(mode)/*
-	@rm -f ../dep/$(mode)/*
+	@rm -rf ../lib/$(mode)/*
+	@rm -rf ../bin/$(mode)/*
+	@rm -rf ../dep/$(mode)/*
 	@echo 'makefile timestamp status file' > ../dep/$(mode)/makefile.stat
 
 #====================================================

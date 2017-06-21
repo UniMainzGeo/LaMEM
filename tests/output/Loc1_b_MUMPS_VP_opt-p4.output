@@ -1,0 +1,61 @@
+-------------------------------------------------------------------------- 
+                   Lithosphere and Mantle Evolution Model                   
+     Compiled: Date: May 29 2017 - Time: 19:19:20 	    
+-------------------------------------------------------------------------- 
+        STAGGERED-GRID FINITE DIFFERENCE CANONICAL IMPLEMENTATION           
+-------------------------------------------------------------------------- 
+Parsing input file : ./t4_Loc/localization_viscoplastic.dat 
+   Adding PETSc option: -snes_ksp_ew
+   Adding PETSc option: -snes_ksp_ew_rtolmax 1e-2
+   Adding PETSc option: -snes_ksp_ew_rtol0 1e-3
+   Adding PETSc option: -snes_monitor
+   Adding PETSc option: -snes_atol 1e-7
+   Adding PETSc option: -snes_rtol 1e-8
+   Adding PETSc option: -snes_stol 1e-16
+   Adding PETSc option: -snes_max_it 200
+   Adding PETSc option: -snes_max_funcs 500000
+   Adding PETSc option: -snes_max_linear_solve_fail 10000
+   Adding PETSc option: -snes_PicardSwitchToNewton_rtol 3e-1
+   Adding PETSc option: -snes_NewtonSwitchToPicard_it 20
+   Adding PETSc option: -snes_NewtonSwitchToPicard_rtol 1.1
+   Adding PETSc option: -snes_linesearch_type l2
+   Adding PETSc option: -snes_linesearch_maxstep 1.0
+   Adding PETSc option: -js_ksp_type gmres
+   Adding PETSc option: -js_ksp_max_it 50
+   Adding PETSc option: -js_ksp_converged_reason
+   Adding PETSc option: -js_ksp_rtol 1e-10
+   Adding PETSc option: -js_ksp_atol 1e-14
+   Adding PETSc option: -pcmat_type mono
+   Adding PETSc option: -pcmat_pgamma 1e3
+   Adding PETSc option: -jp_type user
+   Adding PETSc option: -jp_pc_type lu
+   Adding PETSc option: -jp_pc_factor_mat_solver_package mumps
+   Adding PETSc option: -objects_dump
+Finished parsing input file : ./t4_Loc/localization_viscoplastic.dat 
+--------------------------------------------------------------------------
+Scaling parameters:
+   Temperature : 1. [C/K] 
+   Length      : 1000. [m] 
+   Viscosity   : 1e+20 [Pa*s] 
+   Stress      : 1e+08 [Pa] 
+--------------------------------------------------------------------------
+Time stepping parameters:
+   Simulation end time          : 0.08 [Myr] 
+   Maximum number of steps      : 8 
+   Time step                    : 0.0015 [Myr] 
+   Minimum time step            : 1e-05 [Myr] 
+   Maximum time step            : 0.01 [Myr] 
+   Time step increase factor    : 0.1 
+   CFL criterion                : 0.1 
+   CFLMAX (fixed time steps)    : 0.1 
+   Output every [n] steps       : 1 
+   Output [n] initial steps     : 1 
+--------------------------------------------------------------------------
+Softening laws: 
+--------------------------------------------------------------------------
+   SoftLaw [0] : A = 0.25, APS1 = 1e-09, APS2 = 0.001 
+Material parameters: 
+   Phase ID : 0
+   (dens)   : rho = 2700. [kg/m^3]  
+   (diff)   : eta = 1e+21 [Pa*s]  Bd = 5e-22 [1/Pa/s]  
+   (plast)  : ch = 5e+07 [Pa]  fr = 30. [deg]  frSoftID = 0 chSoftID = 0 

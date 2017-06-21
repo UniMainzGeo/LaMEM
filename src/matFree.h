@@ -47,6 +47,10 @@
 
 //---------------------------------------------------------------------------
 
+struct JacRes;
+
+//---------------------------------------------------------------------------
+
 PetscErrorCode JacApplyPicard(Mat A, Vec x, Vec y);
 
 PetscErrorCode JacResPicardMatFree(JacRes *jr);

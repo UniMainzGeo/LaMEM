@@ -47,14 +47,19 @@
 
 //---------------------------------------------------------------------------
 
+struct FDSTAG;
+
+//---------------------------------------------------------------------------
+
 // Interpolation flags
 
-typedef struct
+struct InterpFlags
 {
-	PetscBool update;    // update vs. overwrite target vector
-	PetscBool use_bound; // use boundary ghost points for interpolation
+ public:
 
-} InterpFlags;
+	PetscInt update;    // update vs. overwrite target vector
+	PetscInt use_bound; // use boundary ghost points for interpolation
+};
 
 //---------------------------------------------------------------------------
 // Interpolation functions:

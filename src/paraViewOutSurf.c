@@ -43,35 +43,65 @@
 //..............   FREE SRUFACE PARAVIEW XML OUTPUT ROUTINES   ..............
 //---------------------------------------------------------------------------
 #include "LaMEM.h"
-#include "fdstag.h"
-#include "solVar.h"
-#include "scaling.h"
-#include "tssolve.h"
-#include "bc.h"
-#include "JacRes.h"
-#include "interpolate.h"
-#include "surf.h"
-#include "paraViewOutBin.h"
 #include "paraViewOutSurf.h"
-#include "outFunct.h"
+#include "paraViewOutBin.h"
+#include "parsing.h"
+#include "scaling.h"
+#include "fdstag.h"
+#include "surf.h"
+#include "JacRes.h"
 #include "tools.h"
 //---------------------------------------------------------------------------
 #undef __FUNCT__
-#define __FUNCT__ "PVSurfClear"
-PetscErrorCode PVSurfClear(PVSurf *pvsurf)
+#define __FUNCT__ "PVSurfCreate"
+PetscErrorCode PVSurfCreate(PVSurf *pvsurf, FB *fb)
 {
+	char filename[_STR_LEN_];
+
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
 
-	// clear object
-	ierr = PetscMemzero(pvsurf, sizeof(PVSurf)); CHKERRQ(ierr);
+	// free surface cases only
+	if(!pvsurf->surf->UseFreeSurf) PetscFunctionReturn(0);
+
+	// check activation
+	ierr = getIntParam(fb, _OPTIONAL_, "out_surf", &pvsurf->outsurf, 1, 1); CHKERRQ(ierr);
+
+	if(!pvsurf->outsurf) PetscFunctionReturn(0);
+
+	// initialize
+	pvsurf->outpvd     = 1;
+	pvsurf->topography = 1;
+
+	// read
+	ierr = getStringParam(fb, _OPTIONAL_, "out_file_name",       filename,        "output"); CHKERRQ(ierr);
+	ierr = getIntParam   (fb, _OPTIONAL_, "out_surf_pvd",        &pvsurf->outpvd,     1, 1); CHKERRQ(ierr);
+	ierr = getIntParam   (fb, _OPTIONAL_, "out_surf_velocity",   &pvsurf->velocity,   1, 1); CHKERRQ(ierr);
+	ierr = getIntParam   (fb, _OPTIONAL_, "out_surf_topography", &pvsurf->topography, 1, 1); CHKERRQ(ierr);
+	ierr = getIntParam   (fb, _OPTIONAL_, "out_surf_amplitude",  &pvsurf->amplitude,  1, 1); CHKERRQ(ierr);
+
+	// print summary
+	PetscPrintf(PETSC_COMM_WORLD, "Surface output parameters:\n");
+	PetscPrintf(PETSC_COMM_WORLD, "   Write .pvd file : %s \n", pvsurf->outpvd ? "yes" : "no");
+
+	if(pvsurf->velocity)   PetscPrintf(PETSC_COMM_WORLD, "   Velocity        @ \n");
+	if(pvsurf->topography) PetscPrintf(PETSC_COMM_WORLD, "   Topography      @ \n");
+	if(pvsurf->amplitude)  PetscPrintf(PETSC_COMM_WORLD, "   Amplitude       @ \n");
+
+	PetscPrintf(PETSC_COMM_WORLD, "--------------------------------------------------------------------------\n");
+
+	// set file name
+	sprintf(pvsurf->outfile, "%s_surf", filename);
+
+	// create output buffer
+	ierr = PVSurfCreateData(pvsurf); CHKERRQ(ierr);
 
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
 #undef __FUNCT__
-#define __FUNCT__ "PVSurfCreate"
-PetscErrorCode PVSurfCreate(PVSurf *pvsurf, FreeSurf *surf, const char *filename)
+#define __FUNCT__ "PVSurfCreateData"
+PetscErrorCode PVSurfCreateData(PVSurf *pvsurf)
 {
 	FDSTAG   *fs;
 	PetscInt  rx, ry, sx, sy, nx, ny;
@@ -79,60 +109,21 @@ PetscErrorCode PVSurfCreate(PVSurf *pvsurf, FreeSurf *surf, const char *filename
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
 
-	// set context
-	pvsurf->surf = surf;
-
-	// free surface cases only
-	if(pvsurf->surf->UseFreeSurf != PETSC_TRUE) PetscFunctionReturn(0);
-
-	// read options
-	ierr = PVSurfReadFromOptions(pvsurf); CHKERRQ(ierr);
+	// check activation
+	if(!pvsurf->outsurf) PetscFunctionReturn(0);
 
 	// access staggered grid layout
-	fs = surf->jr->fs;
+	fs = pvsurf->surf->jr->fs;
 
 	// get local output grid sizes
 	GET_OUTPUT_RANGE(rx, nx, sx, fs->dsx)
 	GET_OUTPUT_RANGE(ry, ny, sy, fs->dsy)
-
-	// set file name
-	asprintf(&pvsurf->outfile, "%s_surf", filename);
 
 	// buffer is only necessary on ranks zero in z direction
 	if(!fs->dsz.rank)
 	{
 		// allocate output buffer
 		ierr = PetscMalloc((size_t)(_max_num_comp_surf_*nx*ny)*sizeof(float), &pvsurf->buff); CHKERRQ(ierr);
-	}
-
-	// set pvd file offset
-	pvsurf->offset = 0;
-
-	PetscFunctionReturn(0);
-}
-//---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "PVSurfReadFromOptions"
-PetscErrorCode PVSurfReadFromOptions(PVSurf *pvsurf)
-{
-	PetscErrorCode ierr;
-	PetscFunctionBegin;
-
-	// set output mask
-	pvsurf->outpvd     = 0;
-	pvsurf->velocity   = 0;
-	pvsurf->topography = 1;
-	pvsurf->amplitude  = 0;
-
-	// read output flags
-	ierr = PetscOptionsGetInt(NULL, NULL, "-out_surf_pvd",        &pvsurf->outpvd,     NULL); CHKERRQ(ierr);
-	ierr = PetscOptionsGetInt(NULL, NULL, "-out_surf_velocity",   &pvsurf->velocity,   NULL); CHKERRQ(ierr);
-	ierr = PetscOptionsGetInt(NULL, NULL, "-out_surf_topography", &pvsurf->topography, NULL); CHKERRQ(ierr);
-	ierr = PetscOptionsGetInt(NULL, NULL, "-out_surf_amplitude",  &pvsurf->amplitude,  NULL); CHKERRQ(ierr);
-
-	if(pvsurf->outpvd)
-	{
-		PetscPrintf(PETSC_COMM_WORLD, " Writing surface .pvd file to disk\n");
 	}
 
 	PetscFunctionReturn(0);
@@ -144,30 +135,26 @@ PetscErrorCode PVSurfDestroy(PVSurf *pvsurf)
 {
 	PetscFunctionBegin;
 
-	// free surface cases only
-	if(pvsurf->surf->UseFreeSurf != PETSC_TRUE) PetscFunctionReturn(0);
+	// check activation
+	if(!pvsurf->outsurf) PetscFunctionReturn(0);
 
-	LAMEM_FREE(pvsurf->outfile);
-	PetscFree (pvsurf->buff);
+	PetscFree(pvsurf->buff);
 
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
 #undef __FUNCT__
 #define __FUNCT__ "PVSurfWriteTimeStep"
-PetscErrorCode PVSurfWriteTimeStep(PVSurf *pvsurf, const char *dirName, PetscScalar ttime, PetscInt tindx)
+PetscErrorCode PVSurfWriteTimeStep(PVSurf *pvsurf, const char *dirName, PetscScalar ttime)
 {
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
 
-	// free surface cases only
-	if(pvsurf->surf->UseFreeSurf != PETSC_TRUE) PetscFunctionReturn(0);
+	// check activation
+	if(!pvsurf->outsurf) PetscFunctionReturn(0);
 
 	// update .pvd file if necessary
-	if(pvsurf->outpvd)
-	{
-		ierr = UpdatePVDFile(dirName, pvsurf->outfile, "pvts", &pvsurf->offset, ttime, tindx); CHKERRQ(ierr);
-	}
+	ierr = UpdatePVDFile(dirName, pvsurf->outfile, "pvts", &pvsurf->offset, ttime, pvsurf->outpvd); CHKERRQ(ierr);
 
 	// write parallel data .pvts file
 	ierr = PVSurfWritePVTS(pvsurf, dirName); CHKERRQ(ierr);
@@ -195,8 +182,8 @@ PetscErrorCode PVSurfWritePVTS(PVSurf *pvsurf, const char *dirName)
 	if(!ISRankZero(PETSC_COMM_WORLD)) PetscFunctionReturn(0);
 
 	// access context
-	fs   =  pvsurf->surf->jr->fs;
-	scal = &pvsurf->surf->jr->scal;
+	fs   = pvsurf->surf->jr->fs;
+	scal = pvsurf->surf->jr->scal;
 
 	// open outfile.pvts file in the output directory (write mode)
 	asprintf(&fname, "%s/%s.pvts", dirName, pvsurf->outfile);
@@ -253,7 +240,7 @@ PetscErrorCode PVSurfWritePVTS(PVSurf *pvsurf, const char *dirName)
 		getLocalRank(&rx, &ry, &rz, iproc, fs->dsx.nproc, fs->dsy.nproc);
 
 		// write data
-		fprintf(fp, "\t\t<Piece Extent=\"%lld %lld %lld %lld 1 1\" Source=\"%s_p%1.6lld.vts\"/>\n",
+		fprintf(fp, "\t\t<Piece Extent=\"%lld %lld %lld %lld 1 1\" Source=\"%s_p%1.8lld.vts\"/>\n",
 			(LLD)(fs->dsx.starts[rx] + 1), (LLD)(fs->dsx.starts[rx+1] + 1),
 			(LLD)(fs->dsy.starts[ry] + 1), (LLD)(fs->dsy.starts[ry+1] + 1),
 			pvsurf->outfile, (LLD)iproc);
@@ -284,14 +271,14 @@ PetscErrorCode PVSurfWriteVTS(PVSurf *pvsurf, const char *dirName)
 	PetscFunctionBegin;
 
 	// access context
-	fs   =  pvsurf->surf->jr->fs;
-	scal = &pvsurf->surf->jr->scal;
+	fs   = pvsurf->surf->jr->fs;
+	scal = pvsurf->surf->jr->scal;
 
 	// only ranks zero in z direction generate this file
 	if(!fs->dsz.rank)
 	{
 		// open outfile_p_XXXXXX.vts file in the output directory (write mode)
-		asprintf(&fname, "%s/%s_p%1.6lld.vts", dirName, pvsurf->outfile, (LLD)fs->dsz.color);
+		asprintf(&fname, "%s/%s_p%1.8lld.vts", dirName, pvsurf->outfile, (LLD)fs->dsz.color);
 		fp = fopen(fname,"w");
 		if(fp == NULL) SETERRQ1(PETSC_COMM_SELF, 1,"cannot open file %s", fname);
 		free(fname);
@@ -424,7 +411,7 @@ PetscErrorCode PVSurfWriteCoord(PVSurf *pvsurf, FILE *fp)
 	buff = pvsurf->buff;
 	surf = pvsurf->surf;
 	fs   = surf->jr->fs;
-	cf   = surf->jr->scal.length;
+	cf   = surf->jr->scal->length;
 
 	GET_OUTPUT_RANGE(rx, nx, sx, fs->dsx)
 	GET_OUTPUT_RANGE(ry, ny, sy, fs->dsy)
@@ -468,7 +455,7 @@ PetscErrorCode PVSurfWriteVel(PVSurf *pvsurf, FILE *fp)
 	buff = pvsurf->buff;
 	surf = pvsurf->surf;
 	fs   = surf->jr->fs;
-	cf   = surf->jr->scal.velocity;
+	cf   = surf->jr->scal->velocity;
 
 	GET_OUTPUT_RANGE(rx, nx, sx, fs->dsx)
 	GET_OUTPUT_RANGE(ry, ny, sy, fs->dsy)
@@ -516,7 +503,7 @@ PetscErrorCode PVSurfWriteTopo(PVSurf *pvsurf, FILE *fp)
 	buff = pvsurf->buff;
 	surf = pvsurf->surf;
 	fs   = surf->jr->fs;
-	cf   = surf->jr->scal.length;
+	cf   = surf->jr->scal->length;
 
 	GET_OUTPUT_RANGE(rx, nx, sx, fs->dsx)
 	GET_OUTPUT_RANGE(ry, ny, sy, fs->dsy)
@@ -558,7 +545,7 @@ PetscErrorCode PVSurfWriteAmplitude(PVSurf *pvsurf, FILE *fp)
 	buff = pvsurf->buff;
 	surf = pvsurf->surf;
 	fs   = surf->jr->fs;
-	cf   = surf->jr->scal.length;
+	cf   = surf->jr->scal->length;
 
 	// retrieve average topography
 	avg_topo = surf->avg_topo;

@@ -71,3 +71,29 @@ Running and debugging Eclipse project:
 2. Switch to debugging perspective: Window -> Open Perspective -> Debug, then click the bug icon 
 
 ======================================
+TRICKS
+======================================
+
+0. Prevent incorrect interpretation of C++ stuff from C files:
+
+Project -> Properties -> C/C++ General -> Language Mappings -> Add
+
+Content type   C Header File
+Language       GNU C++
+
+Content type   C Source File
+Language       GNU C++
+
+Rebuild the index (Project -> Index -> Rebuild) and restart Eclipse
+
+
+1. If global environment is difficult to modify, the following helps to modify environment from Eclipse:
+
+Project -> Properties -> C/C++ Build -> Environment Add
+
+Name:   PETSC_DEB
+Value:  PATH_TO_PETSC_DEBUG_INSTALLATION
+
+Name:   PATH
+Value:  type in console echo $PATH and paste results here
+

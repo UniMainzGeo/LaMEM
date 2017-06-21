@@ -44,87 +44,58 @@
 //..............   MARKER PARAVIEW XML OUTPUT ROUTINES   ....................
 //---------------------------------------------------------------------------
 #include "LaMEM.h"
-#include "tools.h"
-#include "fdstag.h"
-#include "solVar.h"
-#include "scaling.h"
-#include "tssolve.h"
-#include "bc.h"
-#include "JacRes.h"
-#include "interpolate.h"
-#include "surf.h"
-#include "advect.h"
-#include "paraViewOutBin.h"
 #include "paraViewOutMark.h"
-
+#include "paraViewOutBin.h"
+#include "parsing.h"
+#include "scaling.h"
+#include "advect.h"
+#include "JacRes.h"
+#include "tools.h"
 //---------------------------------------------------------------------------
 #undef __FUNCT__
 #define __FUNCT__ "PVMarkCreate"
-PetscErrorCode PVMarkCreate(PVMark *pvmark, AdvCtx *actx, const char *filename)
+PetscErrorCode PVMarkCreate(PVMark *pvmark, FB *fb)
 {
+	char filename[_STR_LEN_];
+
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
 
-	// set context
-	pvmark->actx = actx;
+	// check activation
+	ierr = getIntParam(fb, _OPTIONAL_, "out_mark", &pvmark->outmark, 1, 1); CHKERRQ(ierr);
 
-	// read options
-	ierr = PVMarkReadFromOptions(pvmark); CHKERRQ(ierr);
+	if(!pvmark->outmark) PetscFunctionReturn(0);
+
+	// initialize
+	pvmark->outpvd = 1;
+
+	// read
+	ierr = getStringParam(fb, _OPTIONAL_, "out_file_name", filename,    "output"); CHKERRQ(ierr);
+	ierr = getIntParam   (fb, _OPTIONAL_, "out_mark_pvd",  &pvmark->outpvd, 1, 1); CHKERRQ(ierr);
+
+	// print summary
+	PetscPrintf(PETSC_COMM_WORLD, "Marker output parameters:\n");
+	PetscPrintf(PETSC_COMM_WORLD, "   Write .pvd file : %s \n", pvmark->outpvd ? "yes" : "no");
+	PetscPrintf(PETSC_COMM_WORLD, "--------------------------------------------------------------------------\n");
 
 	// set file name
-	asprintf(&pvmark->outfile, "%s_mark", filename);
-
-	// set .pvd file offset
-	pvmark->offset = 0;
-
-	PetscFunctionReturn(0);
-}
-//---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "PVMarkDestroy"
-PetscErrorCode PVMarkDestroy(PVMark *pvmark)
-{
-	PetscFunctionBegin;
-
-	// file name
-	LAMEM_FREE(pvmark->outfile);
-
-	PetscFunctionReturn(0);
-}
-//---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "PVMarkReadFromOptions"
-PetscErrorCode PVMarkReadFromOptions(PVMark *pvmark)
-{
-	PetscErrorCode ierr;
-	PetscFunctionBegin;
-
-	// set output mask
-	pvmark->outmark    = 0;
-	pvmark->outpvd     = 0;
-
-	// read output flags
-	ierr = PetscOptionsGetInt(NULL, NULL, "-out_markers",         &pvmark->outmark,    NULL); CHKERRQ(ierr);
-	ierr = PetscOptionsGetInt(NULL, NULL, "-out_mark_pvd",        &pvmark->outpvd,     NULL); CHKERRQ(ierr);
+	sprintf(pvmark->outfile, "%s_mark", filename);
 
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
 #undef __FUNCT__
 #define __FUNCT__ "PVMarkWriteTimeStep"
-PetscErrorCode PVMarkWriteTimeStep(PVMark *pvmark, const char *dirName, PetscScalar ttime, PetscInt tindx)
+PetscErrorCode PVMarkWriteTimeStep(PVMark *pvmark, const char *dirName, PetscScalar ttime)
 {
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
 
-	// return if not output
-	if(pvmark->outmark==0) PetscFunctionReturn(0);
+	// check activation
+	if(!pvmark->outmark) PetscFunctionReturn(0);
 
 	// update .pvd file if necessary
-	if(pvmark->outpvd)
-	{
-		ierr = UpdatePVDFile(dirName, pvmark->outfile, "pvtu", &pvmark->offset, ttime, tindx); CHKERRQ(ierr);
-	}
+	ierr = UpdatePVDFile(dirName, pvmark->outfile, "pvtu", &pvmark->offset, ttime, pvmark->outpvd); CHKERRQ(ierr);
 
 	// write parallel data .pvtu file
 	ierr = PVMarkWritePVTU(pvmark, dirName); CHKERRQ(ierr);
@@ -154,7 +125,7 @@ PetscErrorCode PVMarkWriteVTU(PVMark *pvmark, const char *dirName)
 	actx = pvmark->actx;
 
 	// create file name
-	asprintf(&fname, "%s/%s_p%1.6lld.vtu", dirName, pvmark->outfile, (LLD)actx->iproc);
+	asprintf(&fname, "%s/%s_p%1.8lld.vtu", dirName, pvmark->outfile, (LLD)actx->iproc);
 
 	// open file
 	fp = fopen( fname, "w" );
@@ -254,7 +225,7 @@ PetscErrorCode PVMarkWriteVTU(PVMark *pvmark, const char *dirName)
 	fwrite( &length,sizeof(int),1, fp);
 
 	// scaling length
-	scal_length = actx->jr->scal.length;
+	scal_length = actx->jr->scal->length;
 
 	for( i = 0; i < actx->nummark; i++)
 	{
@@ -341,7 +312,7 @@ PetscErrorCode PVMarkWritePVTU(PVMark *pvmark, const char *dirName)
 	fprintf( fp, "\t\t</PPointData>\n");
 
 	for(i = 0; i < actx->nproc; i++){
-		fprintf( fp, "\t\t<Piece Source=\"%s_p%1.6lld.vtu\"/>\n",pvmark->outfile,(LLD)i);
+		fprintf( fp, "\t\t<Piece Source=\"%s_p%1.8lld.vtu\"/>\n",pvmark->outfile,(LLD)i);
 	}
 
 	// close the file

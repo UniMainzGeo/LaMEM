@@ -44,13 +44,11 @@
 //.................   FDSTAG PARAVIEW XML OUTPUT ROUTINES   .................
 //---------------------------------------------------------------------------
 #include "LaMEM.h"
-#include "fdstag.h"
-#include "solVar.h"
-#include "scaling.h"
-#include "tssolve.h"
-#include "bc.h"
-#include "JacRes.h"
 #include "paraViewOutBin.h"
+#include "scaling.h"
+#include "parsing.h"
+#include "fdstag.h"
+#include "JacRes.h"
 #include "outFunct.h"
 #include "tools.h"
 //---------------------------------------------------------------------------
@@ -71,13 +69,10 @@ PetscErrorCode OutBufCreate(OutBuf *outbuf, JacRes *jr)
 
 	fs = jr->fs;
 
-	// clear object
-	ierr = PetscMemzero(outbuf, sizeof(OutBuf)); CHKERRQ(ierr);
-
 	// initialize parameters
-	outbuf->fs    = fs;
-	outbuf->fp    = NULL;
-	outbuf->cn    = 0;
+	outbuf->fs = fs;
+	outbuf->fp = NULL;
+	outbuf->cn = 0;
 
 	// get local output grid sizes
 	GET_OUTPUT_RANGE(rx, nx, sx, fs->dsx)
@@ -309,60 +304,63 @@ void OutVecCreate(
 //---------------------------------------------------------------------------
 void OutVecDestroy(OutVec *outvec)
 {
-	LAMEM_FREE(outvec->name);
+	free(outvec->name);
 }
 //---------------------------------------------------------------------------
 //.......................... Vector output mask .............................
 //---------------------------------------------------------------------------
 void OutMaskSetDefault(OutMask *omask)
 {
-	// clear
-	PetscMemzero(omask, sizeof(OutMask));
-
-	omask->phase          		= 1;
-	omask->visc_total     		= 1;
-	omask->visc_creep     		= 1;
-	omask->visc_viscoplastic 	= 1;
-	
-	omask->velocity       		= 1;
-	omask->pressure       		= 1;
+	omask->phase      = 1;
+	omask->visc_total = 1;
+	omask->visc_creep = 1;
+	omask->visc_plast = 1;
+	omask->velocity   = 1;
+	omask->pressure   = 1;
 }
 //---------------------------------------------------------------------------
 PetscInt OutMaskCountActive(OutMask *omask)
 {
 	PetscInt cnt = 0;
 
-	if(omask->phase)          		cnt++; // phase
-	if(omask->density)        		cnt++; // density
-	if(omask->visc_total)     		cnt++; // total effective viscosity
-	if(omask->visc_creep)     		cnt++; // creep effective viscosity
-	if(omask->visc_viscoplastic) 	cnt++; // viscoplastic viscosity
-	if(omask->velocity)       		cnt++; // velocity
-	if(omask->pressure)       		cnt++; // pressure
-	if(omask->overpressure)   		cnt++; // overpressure
-	if(omask->lithospressure) 	    cnt++; // lithostatic pressure
-	if(omask->temperature)    		cnt++; // temperature
-	if(omask->dev_stress)     		cnt++; // deviatoric stress tensor
-	if(omask->j2_dev_stress)  		cnt++; // deviatoric stress second invariant
-	if(omask->strain_rate)    		cnt++; // deviatoric strain rate tensor
-	if(omask->j2_strain_rate) 		cnt++; // deviatoric strain rate second invariant
-	if(omask->melt_fraction)     	cnt++; // melt fraction
-	if(omask->vol_rate)       		cnt++; // volumetric strain rate
-	if(omask->vorticity)      		cnt++; // vorticity vector
-	if(omask->ang_vel_mag)    		cnt++; // average angular velocity magnitude
-	if(omask->tot_strain)     		cnt++; // total strain
-	if(omask->plast_strain)   		cnt++; // accumulated plastic strain
-	if(omask->plast_dissip)   		cnt++; // plastic dissipation
-	if(omask->tot_displ)     		cnt++; // total displacements
-	if(omask->SHmax)          		cnt++; // maximum horizontal stress
-	if(omask->EHmax)          		cnt++; // maximum horizontal stress
-	if(omask->ISA)            		cnt++; // Infinite Strain Axis
-	if(omask->GOL)            		cnt++; // Grain Orientation Lag
+	if(omask->phase)          cnt++; // phase
+	if(omask->density)        cnt++; // density
+	if(omask->visc_total)     cnt++; // total effective viscosity
+	if(omask->visc_creep)     cnt++; // creep effective viscosity
+	if(omask->visc_plast)     cnt++; // viscoplastic viscosity
+	if(omask->velocity)       cnt++; // velocity
+	if(omask->pressure)       cnt++; // pressure
+	if(omask->eff_press)      cnt++; // effective pressure
+	if(omask->over_press)     cnt++; // overpressure
+	if(omask->litho_press)    cnt++; // lithostatic pressure
+	if(omask->pore_press)     cnt++; // pore pressure
+	if(omask->temperature)    cnt++; // temperature
+	if(omask->dev_stress)     cnt++; // deviatoric stress tensor
+	if(omask->j2_dev_stress)  cnt++; // deviatoric stress second invariant
+	if(omask->strain_rate)    cnt++; // deviatoric strain rate tensor
+	if(omask->j2_strain_rate) cnt++; // deviatoric strain rate second invariant
+	if(omask->melt_fraction)  cnt++; // melt fraction
+	if(omask->alpha)     	  cnt++; // alpha
+	if(omask->K)     	      cnt++; // bulk modulus
+	if(omask->fluid_density)  cnt++; // fluid density
+	if(omask->Vp)             cnt++; // Vp
+	if(omask->Vs)             cnt++; // Vs
+	if(omask->vol_rate)       cnt++; // volumetric strain rate
+	if(omask->vorticity)      cnt++; // vorticity vector
+	if(omask->ang_vel_mag)    cnt++; // average angular velocity magnitude
+	if(omask->tot_strain)     cnt++; // total strain
+	if(omask->plast_strain)   cnt++; // accumulated plastic strain
+	if(omask->plast_dissip)   cnt++; // plastic dissipation
+	if(omask->tot_displ)      cnt++; // total displacements
+	if(omask->SHmax)          cnt++; // maximum horizontal stress
+	if(omask->EHmax)          cnt++; // maximum horizontal stress
+	if(omask->ISA)            cnt++; // Infinite Strain Axis
+	if(omask->GOL)            cnt++; // Grain Orientation Lag
+	if(omask->yield)          cnt++; // yield stress
 	// === debugging vectors ===============================================
-	if(omask->moment_res)     		cnt++; // momentum residual
-	if(omask->cont_res)      	 	cnt++; // continuity residual
-	if(omask->energ_res)      		cnt++; // energy residual
-	if(omask->jac_test)       		cnt++; // matrix-vector Jacobian test
+	if(omask->moment_res)     cnt++; // momentum residual
+	if(omask->cont_res)       cnt++; // continuity residual
+	if(omask->energ_res)      cnt++; // energy residual
 
 	return cnt;
 }
@@ -370,152 +368,176 @@ PetscInt OutMaskCountActive(OutMask *omask)
 //...................... ParaView output driver object ......................
 //---------------------------------------------------------------------------
 #undef __FUNCT__
-#define __FUNCT__ "PVOutClear"
-PetscErrorCode PVOutClear(PVOut *pvout)
-{
-	PetscErrorCode ierr;
-	PetscFunctionBegin;
-
-	// clear object
-	ierr = PetscMemzero(pvout, sizeof(PVOut)); CHKERRQ(ierr);
-
-	PetscFunctionReturn(0);
-}
-//---------------------------------------------------------------------------
-#undef __FUNCT__
 #define __FUNCT__ "PVOutCreate"
-PetscErrorCode PVOutCreate(PVOut *pvout, JacRes *jr, const char *filename)
+PetscErrorCode PVOutCreate(PVOut *pvout, FB *fb)
 {
-	Scaling  *scal;
-	OutMask  *omask;
-	OutVec   *outvecs;
-	PetscInt  cnt;
+	OutMask *omask;
 
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
 
-	scal = &jr->scal;
-
-	// set file name
-	asprintf(&pvout->outfile, "%s", filename);
-
-	// get output mask
 	omask = &pvout->omask;
 
-	// activate default vectors
+	// initialize
+	pvout->outpvd = 1;
+
 	OutMaskSetDefault(omask);
 
-	// create output buffer object
-	ierr = OutBufCreate(&pvout->outbuf, jr); CHKERRQ(ierr);
+	// read
+	ierr = getStringParam(fb, _OPTIONAL_, "out_file_name",       pvout->outfile, "output");       CHKERRQ(ierr);
+	ierr = getIntParam   (fb, _OPTIONAL_, "out_pvd",            &pvout->outpvd,            1, 1); CHKERRQ(ierr);
+	ierr = getIntParam   (fb, _OPTIONAL_, "out_phase",          &omask->phase,             1, 1); CHKERRQ(ierr);
+	ierr = getIntParam   (fb, _OPTIONAL_, "out_density",        &omask->density,           1, 1); CHKERRQ(ierr);
+	ierr = getIntParam   (fb, _OPTIONAL_, "out_visc_total",     &omask->visc_total,        1, 1); CHKERRQ(ierr);
+	ierr = getIntParam   (fb, _OPTIONAL_, "out_visc_creep",     &omask->visc_creep,        1, 1); CHKERRQ(ierr);
+	ierr = getIntParam   (fb, _OPTIONAL_, "out_visc_plast",     &omask->visc_plast,        1, 1); CHKERRQ(ierr);
+	ierr = getIntParam   (fb, _OPTIONAL_, "out_velocity",       &omask->velocity,          1, 1); CHKERRQ(ierr);
+	ierr = getIntParam   (fb, _OPTIONAL_, "out_pressure",       &omask->pressure,          1, 1); CHKERRQ(ierr);
+	ierr = getIntParam   (fb, _OPTIONAL_, "out_eff_press",      &omask->eff_press,         1, 1); CHKERRQ(ierr);
+	ierr = getIntParam   (fb, _OPTIONAL_, "out_over_press",     &omask->over_press,        1, 1); CHKERRQ(ierr);
+	ierr = getIntParam   (fb, _OPTIONAL_, "out_litho_press",    &omask->litho_press,       1, 1); CHKERRQ(ierr);
+	ierr = getIntParam   (fb, _OPTIONAL_, "out_pore_press",     &omask->pore_press,        1, 1); CHKERRQ(ierr);
+	ierr = getIntParam   (fb, _OPTIONAL_, "out_temperature",    &omask->temperature,       1, 1); CHKERRQ(ierr);
+	ierr = getIntParam   (fb, _OPTIONAL_, "out_dev_stress",     &omask->dev_stress,        1, 1); CHKERRQ(ierr);
+	ierr = getIntParam   (fb, _OPTIONAL_, "out_j2_dev_stress",  &omask->j2_dev_stress,     1, 1); CHKERRQ(ierr);
+	ierr = getIntParam   (fb, _OPTIONAL_, "out_strain_rate",    &omask->strain_rate,       1, 1); CHKERRQ(ierr);
+	ierr = getIntParam   (fb, _OPTIONAL_, "out_j2_strain_rate", &omask->j2_strain_rate,    1, 1); CHKERRQ(ierr);
+//	ierr = getIntParam   (fb, _OPTIONAL_, "out_vol_rate",       &omask->vol_rate,          1, 1); CHKERRQ(ierr);
+//	ierr = getIntParam   (fb, _OPTIONAL_, "out_vorticity",      &omask->vorticity,         1, 1); CHKERRQ(ierr);
+//	ierr = getIntParam   (fb, _OPTIONAL_, "out_ang_vel_mag",    &omask->ang_vel_mag,       1, 1); CHKERRQ(ierr);
+//	ierr = getIntParam   (fb, _OPTIONAL_, "out_tot_strain",     &omask->tot_strain,        1, 1); CHKERRQ(ierr);
+	ierr = getIntParam   (fb, _OPTIONAL_, "out_shmax",          &omask->SHmax,             1, 1); CHKERRQ(ierr);
+	ierr = getIntParam   (fb, _OPTIONAL_, "out_ehmax",          &omask->EHmax,             1, 1); CHKERRQ(ierr);
+	ierr = getIntParam   (fb, _OPTIONAL_, "out_isa",            &omask->ISA,               1, 1); CHKERRQ(ierr);
+	ierr = getIntParam   (fb, _OPTIONAL_, "out_gol",            &omask->GOL,               1, 1); CHKERRQ(ierr);
+	ierr = getIntParam   (fb, _OPTIONAL_, "out_yield",          &omask->yield,             1, 1); CHKERRQ(ierr);
+	ierr = getIntParam   (fb, _OPTIONAL_, "out_plast_strain",   &omask->plast_strain,      1, 1); CHKERRQ(ierr);
+	ierr = getIntParam   (fb, _OPTIONAL_, "out_plast_dissip",   &omask->plast_dissip,      1, 1); CHKERRQ(ierr);
+	ierr = getIntParam   (fb, _OPTIONAL_, "out_tot_displ",      &omask->tot_displ,         1, 1); CHKERRQ(ierr);
+	ierr = getIntParam   (fb, _OPTIONAL_, "out_moment_res",     &omask->moment_res,        1, 1); CHKERRQ(ierr);
+	ierr = getIntParam   (fb, _OPTIONAL_, "out_cont_res",       &omask->cont_res,          1, 1); CHKERRQ(ierr);
+	ierr = getIntParam   (fb, _OPTIONAL_, "out_energ_res",      &omask->energ_res,         1, 1); CHKERRQ(ierr);
+	ierr = getIntParam   (fb, _OPTIONAL_, "out_melt_fraction",  &omask->melt_fraction,     1, 1); CHKERRQ(ierr);
+	ierr = getIntParam   (fb, _OPTIONAL_, "out_fluid_density",  &omask->fluid_density,     1, 1); CHKERRQ(ierr);
+	ierr = getIntParam   (fb, _OPTIONAL_, "out_alpha",          &omask->alpha,             1, 1); CHKERRQ(ierr);
+	ierr = getIntParam   (fb, _OPTIONAL_, "out_K",              &omask->K,                 1, 1); CHKERRQ(ierr);
+	ierr = getIntParam   (fb, _OPTIONAL_, "out_Vs",             &omask->Vs,                1, 1); CHKERRQ(ierr);
+	ierr = getIntParam   (fb, _OPTIONAL_, "out_Vp",             &omask->Vp,                1, 1); CHKERRQ(ierr);
 
-	// set pvd file flag & offset
-	pvout->offset = 0;
-	pvout->outpvd = 0;
+	// check
+	if(!pvout->jr->ctrl.actTemp)             omask->energ_res = 0; // heat diffusion is deactivated
+	if( pvout->jr->ctrl.gwType == _GW_NONE_) omask->eff_press = 0; // pore pressure is deactivated
 
-	// read options
-	ierr = PVOutReadFromOptions(pvout); CHKERRQ(ierr);
+	// print summary
+	PetscPrintf(PETSC_COMM_WORLD, "Output parameters:\n");
+	PetscPrintf(PETSC_COMM_WORLD, "   Output file name                        : %s \n", pvout->outfile);
+	PetscPrintf(PETSC_COMM_WORLD, "   Write .pvd file                         : %s \n", pvout->outpvd ? "yes" : "no");
 
-	//===============
-	// OUTPUT VECTORS
-	//===============
+	if(omask->phase)          PetscPrintf(PETSC_COMM_WORLD, "   Phase                                   @ \n");
+	if(omask->density)        PetscPrintf(PETSC_COMM_WORLD, "   Density                                 @ \n");
+	if(omask->visc_total)     PetscPrintf(PETSC_COMM_WORLD, "   Total effective viscosity               @ \n");
+	if(omask->visc_creep)     PetscPrintf(PETSC_COMM_WORLD, "   Creep effective viscosity               @ \n");
+	if(omask->visc_plast)     PetscPrintf(PETSC_COMM_WORLD, "   Viscoplastic viscosity                  @ \n");
+	if(omask->velocity)       PetscPrintf(PETSC_COMM_WORLD, "   Velocity                                @ \n");
+	if(omask->pressure)       PetscPrintf(PETSC_COMM_WORLD, "   Pressure                                @ \n");
+	if(omask->eff_press)      PetscPrintf(PETSC_COMM_WORLD, "   Effective pressure                      @ \n");
+	if(omask->over_press)     PetscPrintf(PETSC_COMM_WORLD, "   Overpressure                            @ \n");
+	if(omask->litho_press)    PetscPrintf(PETSC_COMM_WORLD, "   Lithostatic pressure                    @ \n");
+	if(omask->pore_press)     PetscPrintf(PETSC_COMM_WORLD, "   Pore pressure                           @ \n");
+	if(omask->temperature)    PetscPrintf(PETSC_COMM_WORLD, "   Temperature                             @ \n");
+	if(omask->dev_stress)     PetscPrintf(PETSC_COMM_WORLD, "   Deviatoric stress tensor                @ \n");
+	if(omask->j2_dev_stress)  PetscPrintf(PETSC_COMM_WORLD, "   Deviatoric stress second invariant      @ \n");
+	if(omask->strain_rate)    PetscPrintf(PETSC_COMM_WORLD, "   Deviatoric strain rate tensor           @ \n");
+	if(omask->j2_strain_rate) PetscPrintf(PETSC_COMM_WORLD, "   Deviatoric strain rate second invariant @ \n");
+	if(omask->SHmax)          PetscPrintf(PETSC_COMM_WORLD, "   Maximum horizontal stress               @ \n");
+	if(omask->EHmax)          PetscPrintf(PETSC_COMM_WORLD, "   Maximum horizontal extension            @ \n");
+	if(omask->ISA)            PetscPrintf(PETSC_COMM_WORLD, "   Infinite Strain Axis (ISA)              @ \n");
+	if(omask->GOL)            PetscPrintf(PETSC_COMM_WORLD, "   Grain Orientation Lag (GOL)             @ \n");
+	if(omask->yield)          PetscPrintf(PETSC_COMM_WORLD, "   Yield stress                            @ \n");
+	if(omask->plast_strain)   PetscPrintf(PETSC_COMM_WORLD, "   Accumulated Plastic Strain (APS)        @ \n");
+	if(omask->plast_dissip)   PetscPrintf(PETSC_COMM_WORLD, "   Plastic dissipation                     @ \n");
+	if(omask->tot_displ)      PetscPrintf(PETSC_COMM_WORLD, "   Total displacements                     @ \n");
+	if(omask->moment_res)     PetscPrintf(PETSC_COMM_WORLD, "   Momentum residual                       @ \n");
+	if(omask->cont_res)       PetscPrintf(PETSC_COMM_WORLD, "   Continuity residual                     @ \n");
+	if(omask->energ_res)      PetscPrintf(PETSC_COMM_WORLD, "   energy residual                         @ \n");
+	if(omask->melt_fraction)  PetscPrintf(PETSC_COMM_WORLD, "   Melt fraction                           @ \n");
+	if(omask->fluid_density)  PetscPrintf(PETSC_COMM_WORLD, "   Fluid density                           @ \n");
+	if(omask->alpha)          PetscPrintf(PETSC_COMM_WORLD, "   Alpha                                   @ \n");
+	if(omask->K)              PetscPrintf(PETSC_COMM_WORLD, "   K                                       @ \n");
+	if(omask->Vs)             PetscPrintf(PETSC_COMM_WORLD, "   Vs                                      @ \n");
+	if(omask->Vp)             PetscPrintf(PETSC_COMM_WORLD, "   Vp                                      @ \n");
+
+	PetscPrintf(PETSC_COMM_WORLD, "--------------------------------------------------------------------------\n");
 
 	// count active output vectors
 	pvout->nvec = OutMaskCountActive(omask);
 
-	if(jr->actTemp != PETSC_TRUE) omask->energ_res = 0;
-
-	// allocate space
-	ierr = PetscMalloc(sizeof(OutVec)*(size_t)pvout->nvec, &pvout->outvecs); CHKERRQ(ierr);
-
-	// access output vectors
-	outvecs = pvout->outvecs;
-
-	// set all output functions & collect information to allocate buffers
-	cnt = 0;
-
-	if(omask->phase)          		OutVecCreate(&outvecs[cnt++], "phase",         		scal->lbl_unit,             &PVOutWritePhase,        1);
-	if(omask->density)        		OutVecCreate(&outvecs[cnt++], "density",       		scal->lbl_density,          &PVOutWriteDensity,      1);
-	if(omask->visc_total)     		OutVecCreate(&outvecs[cnt++], "visc_total",    		scal->lbl_viscosity,        &PVOutWriteViscTotal,    1);
-	if(omask->visc_creep)     		OutVecCreate(&outvecs[cnt++], "visc_creep",    		scal->lbl_viscosity,        &PVOutWriteViscCreep,    1);
-	if(omask->visc_viscoplastic) 	OutVecCreate(&outvecs[cnt++], "visc_viscoplastic",	scal->lbl_viscosity,        &PVOutWriteViscoPlastic, 1);
-	if(omask->velocity)       		OutVecCreate(&outvecs[cnt++], "velocity",       	scal->lbl_velocity,         &PVOutWriteVelocity,     3);
-	if(omask->pressure)       		OutVecCreate(&outvecs[cnt++], "pressure",       	scal->lbl_stress,           &PVOutWritePressure,     1);
-	if(omask->overpressure)   		OutVecCreate(&outvecs[cnt++], "overpressure",   	scal->lbl_stress,           &PVOutWriteOverPressure, 1);
-	if(omask->lithospressure)       OutVecCreate(&outvecs[cnt++], "lithospressure",     scal->lbl_stress,           &PVOutWriteLithosPressure,1);
-	if(omask->temperature)    		OutVecCreate(&outvecs[cnt++], "temperature",    	scal->lbl_temperature,      &PVOutWriteTemperature,  1);
-	if(omask->dev_stress)     		OutVecCreate(&outvecs[cnt++], "dev_stress",     	scal->lbl_stress,           &PVOutWriteDevStress,    9);
-	if(omask->strain_rate)    		OutVecCreate(&outvecs[cnt++], "strain_rate",    	scal->lbl_strain_rate,      &PVOutWriteStrainRate,   9);
-	if(omask->j2_dev_stress) 		OutVecCreate(&outvecs[cnt++], "j2_dev_stress",  	scal->lbl_stress,           &PVOutWriteJ2DevStress,  1);
-	if(omask->j2_strain_rate) 		OutVecCreate(&outvecs[cnt++], "j2_strain_rate", 	scal->lbl_strain_rate,      &PVOutWriteJ2StrainRate, 1);
-	if(omask->melt_fraction) 	  	OutVecCreate(&outvecs[cnt++], "melt_fraction",    	scal->lbl_unit,				&PVOutWriteMeltFraction, 1);
-	if(omask->vol_rate)       		OutVecCreate(&outvecs[cnt++], "vol_rate",       	scal->lbl_strain_rate,      &PVOutWriteVolRate,      1);
-	if(omask->vorticity)      		OutVecCreate(&outvecs[cnt++], "vorticity",      	scal->lbl_strain_rate,      &PVOutWriteVorticity,    3);
-	if(omask->ang_vel_mag)    		OutVecCreate(&outvecs[cnt++], "ang_vel_mag",    	scal->lbl_angular_velocity, &PVOutWriteAngVelMag,    1);
-	if(omask->tot_strain)     		OutVecCreate(&outvecs[cnt++], "tot_strain",     	scal->lbl_unit,             &PVOutWriteTotStrain,    1);
-	if(omask->plast_strain)   		OutVecCreate(&outvecs[cnt++], "plast_strain",   	scal->lbl_unit,             &PVOutWritePlastStrain,  1);
-	if(omask->plast_dissip)   		OutVecCreate(&outvecs[cnt++], "plast_dissip",   	scal->lbl_dissipation_rate, &PVOutWritePlastDissip,  1);
-	if(omask->tot_displ)      		OutVecCreate(&outvecs[cnt++], "tot_displ",      	scal->lbl_length,           &PVOutWriteTotDispl,     3);
-	if(omask->SHmax)          		OutVecCreate(&outvecs[cnt++], "SHmax",          	scal->lbl_unit,             &PVOutWriteSHmax,        3);
-	if(omask->EHmax)          		OutVecCreate(&outvecs[cnt++], "EHmax",          	scal->lbl_unit,             &PVOutWriteEHmax,        3);
-	if(omask->ISA)            		OutVecCreate(&outvecs[cnt++], "ISA",            	scal->lbl_unit,             &PVOutWriteISA,          3);
-	if(omask->GOL)            		OutVecCreate(&outvecs[cnt++], "GOL",            	scal->lbl_unit,             &PVOutWriteGOL,          1);
-	// === debugging vectors ===============================================
-	if(omask->moment_res)     		OutVecCreate(&outvecs[cnt++], "moment_res",     	scal->lbl_volumetric_force, &PVOutWriteMomentRes,    3);
-	if(omask->cont_res)       		OutVecCreate(&outvecs[cnt++], "cont_res",       	scal->lbl_strain_rate,      &PVOutWriteContRes,      1);
-	if(omask->energ_res)      		OutVecCreate(&outvecs[cnt++], "energ_res",      	scal->lbl_dissipation_rate, &PVOutWritEnergRes,      1);
-	if(omask->jac_test)       		OutVecCreate(&outvecs[cnt++], "jac_test",       	scal->lbl_unit,             &PVOutWriteJacTest,      3);
+	// create output buffer and vectors
+	ierr = PVOutCreateData(pvout); CHKERRQ(ierr);
 
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
 #undef __FUNCT__
-#define __FUNCT__ "PVOutReadFromOptions"
-PetscErrorCode PVOutReadFromOptions(PVOut *pvout)
+#define __FUNCT__ "PVOutCreateData"
+PetscErrorCode PVOutCreateData(PVOut *pvout)
 {
+	JacRes   *jr;
+	Scaling  *scal;
 	OutMask  *omask;
+	PetscInt  iter;
 
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
 
-	// get output mask
+	jr    =  pvout->jr;
+	scal  =  jr->scal;
 	omask = &pvout->omask;
+	iter  =  0;
 
-	ierr = PetscOptionsGetInt(NULL, NULL, "-out_pvd",            		&pvout->outpvd,         	NULL); CHKERRQ(ierr);
-	ierr = PetscOptionsGetInt(NULL, NULL, "-out_phase",          		&omask->phase,          	NULL); CHKERRQ(ierr);
-	ierr = PetscOptionsGetInt(NULL, NULL, "-out_density",        		&omask->density,        	NULL); CHKERRQ(ierr);
-	ierr = PetscOptionsGetInt(NULL, NULL, "-out_visc_total",     		&omask->visc_total,     	NULL); CHKERRQ(ierr);
-	ierr = PetscOptionsGetInt(NULL, NULL, "-out_visc_creep",     		&omask->visc_creep,     	NULL); CHKERRQ(ierr);
-	ierr = PetscOptionsGetInt(NULL, NULL, "-out_visc_viscoplastic",     &omask->visc_viscoplastic,  NULL); CHKERRQ(ierr);
-	ierr = PetscOptionsGetInt(NULL, NULL, "-out_velocity",       		&omask->velocity,      	 	NULL); CHKERRQ(ierr);
-	ierr = PetscOptionsGetInt(NULL, NULL, "-out_pressure",       		&omask->pressure,       	NULL); CHKERRQ(ierr);
-	ierr = PetscOptionsGetInt(NULL, NULL, "-out_overpressure",   		&omask->overpressure,   	NULL); CHKERRQ(ierr);
-	ierr = PetscOptionsGetInt(NULL, NULL, "-out_lithospressure",        &omask->lithospressure,     NULL); CHKERRQ(ierr);
-	ierr = PetscOptionsGetInt(NULL, NULL, "-out_temperature",    		&omask->temperature,    	NULL); CHKERRQ(ierr);
-	ierr = PetscOptionsGetInt(NULL, NULL, "-out_dev_stress",     		&omask->dev_stress,     	NULL); CHKERRQ(ierr);
-	ierr = PetscOptionsGetInt(NULL, NULL, "-out_j2_dev_stress",  		&omask->j2_dev_stress,  	NULL); CHKERRQ(ierr);
-	ierr = PetscOptionsGetInt(NULL, NULL, "-out_strain_rate",    		&omask->strain_rate,    	NULL); CHKERRQ(ierr);
-	ierr = PetscOptionsGetInt(NULL, NULL, "-out_j2_strain_rate", 		&omask->j2_strain_rate, 	NULL); CHKERRQ(ierr);
-	ierr = PetscOptionsGetInt(NULL, NULL, "-out_melt_fraction", 		&omask->melt_fraction,     	NULL); CHKERRQ(ierr);
-//	ierr = PetscOptionsGetInt(NULL, NULL, "-out_vol_rate",       		&omask->vol_rate,       	NULL); CHKERRQ(ierr);
-//	ierr = PetscOptionsGetInt(NULL, NULL, "-out_vorticity",      		&omask->vorticity,      	NULL); CHKERRQ(ierr);
-//	ierr = PetscOptionsGetInt(NULL, NULL, "-out_ang_vel_mag",    		&omask->ang_vel_mag,    	NULL); CHKERRQ(ierr);
-//	ierr = PetscOptionsGetInt(NULL, NULL, "-out_tot_strain",     		&omask->tot_strain,     	NULL); CHKERRQ(ierr);
-	ierr = PetscOptionsGetInt(NULL, NULL, "-out_shmax",          		&omask->SHmax,          	NULL); CHKERRQ(ierr);
-	ierr = PetscOptionsGetInt(NULL, NULL, "-out_ehmax",          		&omask->EHmax,          	NULL); CHKERRQ(ierr);
-	ierr = PetscOptionsGetInt(NULL, NULL, "-out_isa",            		&omask->ISA,            	NULL); CHKERRQ(ierr);
-	ierr = PetscOptionsGetInt(NULL, NULL, "-out_gol",            		&omask->GOL,            	NULL); CHKERRQ(ierr);
-	ierr = PetscOptionsGetInt(NULL, NULL, "-out_plast_strain",   		&omask->plast_strain,   	NULL); CHKERRQ(ierr);
-	ierr = PetscOptionsGetInt(NULL, NULL, "-out_plast_dissip",   		&omask->plast_dissip,   	NULL); CHKERRQ(ierr);
-	ierr = PetscOptionsGetInt(NULL, NULL, "-out_tot_displ",      		&omask->tot_displ,      	NULL); CHKERRQ(ierr);
-	ierr = PetscOptionsGetInt(NULL, NULL, "-out_moment_res",     		&omask->moment_res,     	NULL); CHKERRQ(ierr);
-	ierr = PetscOptionsGetInt(NULL, NULL, "-out_cont_res",       		&omask->cont_res,       	NULL); CHKERRQ(ierr);
-    ierr = PetscOptionsGetInt(NULL, NULL, "-out_energ_res",      		&omask->energ_res,      	NULL); CHKERRQ(ierr);
-    ierr = PetscOptionsGetInt(NULL, NULL, "-out_jac_test",       		&omask->jac_test,       	NULL); CHKERRQ(ierr);
+	// create vectors
+	ierr = PetscMalloc(sizeof(OutVec)*(size_t)pvout->nvec, &pvout->outvecs); CHKERRQ(ierr);
 
-	if(pvout->outpvd)
-	{
-		PetscPrintf(PETSC_COMM_WORLD, " Writing grid .pvd file to disk\n");
-	}
+	if(omask->phase)          OutVecCreate(&pvout->outvecs[iter++], "phase",          scal->lbl_unit,             &PVOutWritePhase,        1);
+	if(omask->density)        OutVecCreate(&pvout->outvecs[iter++], "density",        scal->lbl_density,          &PVOutWriteDensity,      1);
+	if(omask->visc_total)     OutVecCreate(&pvout->outvecs[iter++], "visc_total",     scal->lbl_viscosity,        &PVOutWriteViscTotal,    1);
+	if(omask->visc_creep)     OutVecCreate(&pvout->outvecs[iter++], "visc_creep",     scal->lbl_viscosity,        &PVOutWriteViscCreep,    1);
+	if(omask->visc_plast)     OutVecCreate(&pvout->outvecs[iter++], "visc_plast",     scal->lbl_viscosity,        &PVOutWriteViscoPlastic, 1);
+	if(omask->velocity)       OutVecCreate(&pvout->outvecs[iter++], "velocity",       scal->lbl_velocity,         &PVOutWriteVelocity,     3);
+	if(omask->pressure)       OutVecCreate(&pvout->outvecs[iter++], "pressure",       scal->lbl_stress,           &PVOutWritePressure,     1);
+	if(omask->eff_press)      OutVecCreate(&pvout->outvecs[iter++], "eff_press",      scal->lbl_stress,           &PVOutWriteEffPress,     1);
+	if(omask->over_press)     OutVecCreate(&pvout->outvecs[iter++], "over_press",     scal->lbl_stress,           &PVOutWriteOverPress,    1);
+	if(omask->litho_press)    OutVecCreate(&pvout->outvecs[iter++], "litho_press",    scal->lbl_stress,           &PVOutWriteLithoPress,   1);
+	if(omask->pore_press)     OutVecCreate(&pvout->outvecs[iter++], "pore_press",     scal->lbl_stress,           &PVOutWritePorePress,    1);
+	if(omask->temperature)    OutVecCreate(&pvout->outvecs[iter++], "temperature",    scal->lbl_temperature,      &PVOutWriteTemperature,  1);
+	if(omask->dev_stress)     OutVecCreate(&pvout->outvecs[iter++], "dev_stress",     scal->lbl_stress,           &PVOutWriteDevStress,    9);
+	if(omask->strain_rate)    OutVecCreate(&pvout->outvecs[iter++], "strain_rate",    scal->lbl_strain_rate,      &PVOutWriteStrainRate,   9);
+	if(omask->j2_dev_stress)  OutVecCreate(&pvout->outvecs[iter++], "j2_dev_stress",  scal->lbl_stress,           &PVOutWriteJ2DevStress,  1);
+	if(omask->j2_strain_rate) OutVecCreate(&pvout->outvecs[iter++], "j2_strain_rate", scal->lbl_strain_rate,      &PVOutWriteJ2StrainRate, 1);
+	if(omask->vol_rate)       OutVecCreate(&pvout->outvecs[iter++], "vol_rate",       scal->lbl_strain_rate,      &PVOutWriteVolRate,      1);
+	if(omask->vorticity)      OutVecCreate(&pvout->outvecs[iter++], "vorticity",      scal->lbl_strain_rate,      &PVOutWriteVorticity,    3);
+	if(omask->ang_vel_mag)    OutVecCreate(&pvout->outvecs[iter++], "ang_vel_mag",    scal->lbl_angular_velocity, &PVOutWriteAngVelMag,    1);
+	if(omask->tot_strain)     OutVecCreate(&pvout->outvecs[iter++], "tot_strain",     scal->lbl_unit,             &PVOutWriteTotStrain,    1);
+	if(omask->plast_strain)   OutVecCreate(&pvout->outvecs[iter++], "plast_strain",   scal->lbl_unit,             &PVOutWritePlastStrain,  1);
+	if(omask->plast_dissip)   OutVecCreate(&pvout->outvecs[iter++], "plast_dissip",   scal->lbl_dissipation_rate, &PVOutWritePlastDissip,  1);
+	if(omask->tot_displ)      OutVecCreate(&pvout->outvecs[iter++], "tot_displ",      scal->lbl_length,           &PVOutWriteTotDispl,     3);
+	if(omask->SHmax)          OutVecCreate(&pvout->outvecs[iter++], "SHmax",          scal->lbl_unit,             &PVOutWriteSHmax,        3);
+	if(omask->EHmax)          OutVecCreate(&pvout->outvecs[iter++], "EHmax",          scal->lbl_unit,             &PVOutWriteEHmax,        3);
+	if(omask->ISA)            OutVecCreate(&pvout->outvecs[iter++], "ISA",            scal->lbl_unit,             &PVOutWriteISA,          3);
+	if(omask->GOL)            OutVecCreate(&pvout->outvecs[iter++], "GOL",            scal->lbl_unit,             &PVOutWriteGOL,          1);
+	if(omask->yield)          OutVecCreate(&pvout->outvecs[iter++], "yield",          scal->lbl_stress,           &PVOutWriteYield,        1);
+	if(omask->melt_fraction)  OutVecCreate(&pvout->outvecs[iter++], "melt_fraction",  scal->lbl_unit,		      &PVOutWriteMeltFraction, 1);
+	if(omask->alpha) 	  	  OutVecCreate(&pvout->outvecs[iter++], "alpha",    	  scal->lbl_expansivity,      &PVOutWriteAlpha,        1);
+	if(omask->K) 	  	      OutVecCreate(&pvout->outvecs[iter++], "K",    	      scal->lbl_stress,			  &PVOutWriteK,            1);
+	if(omask->fluid_density)  OutVecCreate(&pvout->outvecs[iter++], "fluid_density",  scal->lbl_density,	      &PVOutWriteFluidDensity, 1);
+	if(omask->Vp) 	  	      OutVecCreate(&pvout->outvecs[iter++], "Vp",    	      scal->lbl_unit,			  &PVOutWriteVp,           1);
+	if(omask->Vs) 	  	      OutVecCreate(&pvout->outvecs[iter++], "Vs",    	      scal->lbl_unit,			  &PVOutWriteVs,           1);	// === debugging vectors ===============================================
+	if(omask->moment_res)     OutVecCreate(&pvout->outvecs[iter++], "moment_res",     scal->lbl_volumetric_force, &PVOutWriteMomentRes,    3);
+	if(omask->cont_res)       OutVecCreate(&pvout->outvecs[iter++], "cont_res",       scal->lbl_strain_rate,      &PVOutWriteContRes,      1);
+	if(omask->energ_res)      OutVecCreate(&pvout->outvecs[iter++], "energ_res",      scal->lbl_dissipation_rate, &PVOutWritEnergRes,      1);
+
+	// create output buffer
+	ierr = OutBufCreate(&pvout->outbuf, jr); CHKERRQ(ierr);
 
 	PetscFunctionReturn(0);
 }
@@ -529,12 +551,11 @@ PetscErrorCode PVOutDestroy(PVOut *pvout)
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
 
-	// file name
-	LAMEM_FREE(pvout->outfile);
-
 	// output vectors
 	for(i = 0; i < pvout->nvec; i++)
+	{
 		OutVecDestroy(&pvout->outvecs[i]);
+	}
 
 	PetscFree(pvout->outvecs);
 
@@ -546,22 +567,19 @@ PetscErrorCode PVOutDestroy(PVOut *pvout)
 //---------------------------------------------------------------------------
 #undef __FUNCT__
 #define __FUNCT__ "PVOutWriteTimeStep"
-PetscErrorCode PVOutWriteTimeStep(PVOut *pvout, JacRes *jr, const char *dirName, PetscScalar ttime, PetscInt tindx)
+PetscErrorCode PVOutWriteTimeStep(PVOut *pvout, const char *dirName, PetscScalar ttime)
 {
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
 
 	// update .pvd file if necessary
-	if(pvout->outpvd)
-	{
-		ierr = UpdatePVDFile(dirName, pvout->outfile, "pvtr", &pvout->offset, ttime, tindx); CHKERRQ(ierr);
-	}
+	ierr = UpdatePVDFile(dirName, pvout->outfile, "pvtr", &pvout->offset, ttime, pvout->outpvd); CHKERRQ(ierr);
 
 	// write parallel data .pvtr file
 	ierr = PVOutWritePVTR(pvout, dirName); CHKERRQ(ierr);
 
 	// write sub-domain data .vtr files
-	ierr = PVOutWriteVTR(pvout, jr, dirName); CHKERRQ(ierr);
+	ierr = PVOutWriteVTR(pvout, dirName); CHKERRQ(ierr);
 
 	PetscFunctionReturn(0);
 }
@@ -631,7 +649,7 @@ PetscErrorCode PVOutWritePVTR(PVOut *pvout, const char *dirName)
 		getLocalRank(&rx, &ry, &rz, iproc, fs->dsx.nproc, fs->dsy.nproc);
 
 		// write data
-		fprintf(fp, "\t\t<Piece Extent=\"%lld %lld %lld %lld %lld %lld\" Source=\"%s_p%1.6lld.vtr\"/>\n",
+		fprintf(fp, "\t\t<Piece Extent=\"%lld %lld %lld %lld %lld %lld\" Source=\"%s_p%1.8lld.vtr\"/>\n",
 			(LLD)(fs->dsx.starts[rx] + 1), (LLD)(fs->dsx.starts[rx+1] + 1),
 			(LLD)(fs->dsy.starts[ry] + 1), (LLD)(fs->dsy.starts[ry+1] + 1),
 			(LLD)(fs->dsz.starts[rz] + 1), (LLD)(fs->dsz.starts[rz+1] + 1), pvout->outfile, (LLD)iproc);
@@ -648,10 +666,11 @@ PetscErrorCode PVOutWritePVTR(PVOut *pvout, const char *dirName)
 //---------------------------------------------------------------------------
 #undef __FUNCT__
 #define __FUNCT__ "PVOutWriteVTR"
-PetscErrorCode PVOutWriteVTR(PVOut *pvout, JacRes *jr, const char *dirName)
+PetscErrorCode PVOutWriteVTR(PVOut *pvout, const char *dirName)
 {
 	FILE          *fp;
 	FDSTAG        *fs;
+	JacRes        *jr;
 	char          *fname;
 	OutBuf        *outbuf;
 	OutVec        *outvecs;
@@ -667,7 +686,8 @@ PetscErrorCode PVOutWriteVTR(PVOut *pvout, JacRes *jr, const char *dirName)
 
 	// access output buffer object & staggered grid layout
 	outbuf = &pvout->outbuf;
-	fs     = outbuf->fs;
+	fs     =  outbuf->fs;
+	jr     =  pvout->jr;
 
 	// get sizes of output grid
 	GET_OUTPUT_RANGE(rx, nx, sx, fs->dsx)
@@ -675,7 +695,7 @@ PetscErrorCode PVOutWriteVTR(PVOut *pvout, JacRes *jr, const char *dirName)
 	GET_OUTPUT_RANGE(rz, nz, sz, fs->dsz)
 
 	// open outfile_p_XXXXXX.vtr file in the output directory (write mode)
-	asprintf(&fname, "%s/%s_p%1.6lld.vtr", dirName, pvout->outfile, (LLD)rank);
+	asprintf(&fname, "%s/%s_p%1.8lld.vtr", dirName, pvout->outfile, (LLD)rank);
 	fp = fopen(fname,"w");
 	if(fp == NULL) SETERRQ1(PETSC_COMM_SELF, 1,"cannot open file %s", fname);
 	free(fname);
@@ -736,9 +756,9 @@ PetscErrorCode PVOutWriteVTR(PVOut *pvout, JacRes *jr, const char *dirName)
 	fprintf(fp,"_");
 
 	// coordinate vectors
-	OutBufPutCoordVec(outbuf, &fs->dsx, jr->scal.length); OutBufDump(outbuf);
-	OutBufPutCoordVec(outbuf, &fs->dsy, jr->scal.length); OutBufDump(outbuf);
-	OutBufPutCoordVec(outbuf, &fs->dsz, jr->scal.length); OutBufDump(outbuf);
+	OutBufPutCoordVec(outbuf, &fs->dsx, jr->scal->length); OutBufDump(outbuf);
+	OutBufPutCoordVec(outbuf, &fs->dsy, jr->scal->length); OutBufDump(outbuf);
+	OutBufPutCoordVec(outbuf, &fs->dsz, jr->scal->length); OutBufDump(outbuf);
 
 	for(i = 0; i < pvout->nvec; i++)
 	{
@@ -751,6 +771,119 @@ PetscErrorCode PVOutWriteVTR(PVOut *pvout, JacRes *jr, const char *dirName)
 	// close appended data section and file
 	fprintf(fp, "\n\t</AppendedData>\n");
 	fprintf(fp, "</VTKFile>\n");
+
+	// close file
+	fclose(fp);
+
+	PetscFunctionReturn(0);
+}
+//---------------------------------------------------------------------------
+#undef __FUNCT__
+#define __FUNCT__ "PVOutWriteTable"
+PetscErrorCode PVOutWriteTable(PVOut *pvout, JacRes *jr, const char *dirName)
+{
+	FILE          *fp;
+	FDSTAG        *fs;
+	char          *fname;
+	OutBuf        *outbuf;
+	OutVec        *outvecs;
+	PetscInt       i, rx, ry, rz, sx, sy, sz, nx, ny, nz, nod, nCells, jj;
+	PetscMPIInt    rank;
+	size_t         offset = 0;
+	SolVarCell    *svCell;
+
+	// currently used to write Vp and Vs into a matlab readable output
+
+	// ------------------------------- //
+	// 1. Coordinates
+	// ------------------------------- //
+
+	PetscErrorCode ierr;
+	PetscFunctionBegin;
+
+	// get global sub-domain rank
+	ierr = MPI_Comm_rank(PETSC_COMM_WORLD, &rank); CHKERRQ(ierr);
+
+	// access output buffer object & staggered grid layout
+	outbuf = &pvout->outbuf;
+	fs     = outbuf->fs;
+
+	// get sizes of output grid
+	GET_OUTPUT_RANGE(rx, nx, sx, fs->dsx)
+	GET_OUTPUT_RANGE(ry, ny, sy, fs->dsy)
+	GET_OUTPUT_RANGE(rz, nz, sz, fs->dsz)
+
+	asprintf(&fname, "%s/%s_p%1.6lld_Coord.tab", dirName, pvout->outfile, (LLD)rank);
+	fp = fopen(fname,"w");
+	if(fp == NULL) SETERRQ1(PETSC_COMM_SELF, 1,"cannot open file %s", fname);
+	free(fname);
+
+	// link output buffer to file
+	OutBufConnectToFile(outbuf, fp);
+
+	outvecs = pvout->outvecs;
+
+	if(fs->dsx.tnods > fs->dsy.tnods && fs->dsx.tnods > fs->dsz.tnods)
+	{
+		nod = fs->dsx.tnods;
+	}
+	else if(fs->dsy.tnods > fs->dsx.tnods && fs->dsy.tnods > fs->dsz.tnods)
+	{
+		nod = fs->dsy.tnods;
+	}
+	else
+	{
+		nod = fs->dsz.tnods;
+	}
+
+	for(i=0;i<nod;i++)
+	{
+		fprintf(fp, "%lf, %lf, %lf,",fs->dsx.ncoor[i],fs->dsy.ncoor[i],fs->dsz.ncoor[i]);
+	}
+
+
+	// close file
+	fclose(fp);
+
+	// ------------------------------- //
+	// 2. Data (Vp + Vs)
+	// ------------------------------- //
+
+	asprintf(&fname, "%s/%s_p%1.6lld_Data.tab", dirName, pvout->outfile, (LLD)rank);
+	fp = fopen(fname,"w");
+	if(fp == NULL) SETERRQ1(PETSC_COMM_SELF, 1,"cannot open file %s", fname);
+	free(fname);
+
+	// link output buffer to file
+	OutBufConnectToFile(outbuf, fp);
+
+	nCells = fs->nCells;
+
+	// clear history variables
+	for(jj = 0; jj < nCells; jj++)
+	{
+		// access solution variable
+		svCell = &jr->svCell[jj];
+
+		fprintf(fp, "%lf, %lf,",svCell->svBulk.Vs,svCell->svBulk.Vp);
+
+	}
+
+	/*// ------------------------------- //
+	// 3. Data (Vel)
+	// ------------------------------- //
+
+	ierr = JacResCopyVel(jr, jr->gsol); CHKERRQ(ierr);
+	PetscViewer     viewer;
+	PetscViewerCreate(PETSC_COMM_SELF,&viewer);
+	PetscViewerSetType(viewer,PETSCVIEWERASCII);
+	PetscViewerFileSetMode(viewer,FILE_MODE_WRITE);
+	asprintf(&fname, "%s/%s_p%1.6lld_Vel.tab", dirName, pvout->outfile, (LLD)rank);
+	PetscViewerFileSetName(viewer,fname);
+	free(fname);
+	VecView(jr->lvz,viewer);
+	*/
+
 
 	// close file
 	fclose(fp);
@@ -775,7 +908,7 @@ void WriteXMLHeader(FILE *fp, const char *file_type)
 #define __FUNCT__ "UpdatePVDFile"
 PetscErrorCode UpdatePVDFile(
 		const char *dirName, const char *outfile, const char *ext,
-		long int *offset, PetscScalar ttime, PetscInt tindx)
+		long int *offset, PetscScalar ttime, PetscInt outpvd)
 {
 	FILE        *fp;
 	char        *fname;
@@ -783,17 +916,21 @@ PetscErrorCode UpdatePVDFile(
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
 
+	// check whether pvd is requested
+	if(!outpvd) PetscFunctionReturn(0);
+
 	// only first process generates this file (WARNING! Bottleneck!)
 	if(!ISRankZero(PETSC_COMM_WORLD)) PetscFunctionReturn(0);
 
 	// open outfile.pvd file (write or update mode)
 	asprintf(&fname, "%s.pvd", outfile);
-	if(!tindx) fp = fopen(fname,"w");
+	if(!ttime) fp = fopen(fname,"w");
 	else       fp = fopen(fname,"r+");
-	if(fp == NULL) SETERRQ1(PETSC_COMM_SELF, 1,"cannot open file %s", fname);
 	free(fname);
 
-	if(!tindx)
+	if(fp == NULL) SETERRQ1(PETSC_COMM_SELF, 1,"cannot open file %s", fname);
+
+	if(!ttime)
 	{
 		// write header
 		WriteXMLHeader(fp, "Collection");

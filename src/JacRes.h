@@ -45,27 +45,157 @@
 #ifndef __JacRes_h__
 #define __JacRes_h__
 
-//---------------------------------------------------------------------------
-// * replace setting time parameters consistently in the entire code
+struct FB;
+struct Scaling;
+struct TSSol;
+struct FDSTAG;
+struct FreeSurf;
+struct BCCtx;
+struct DBMat;
+struct Tensor2RN;
+struct PData;
+struct GravitySurvey;
 
 //---------------------------------------------------------------------------
-/*
-typedef enum
+//.....................   Deviatoric solution variables   ...................
+//---------------------------------------------------------------------------
+
+struct SolVarDev
 {
-	_APPLY_SPC_,
-	_SKIP_SPC_
-
-} SPCAppType;
-*/
+	PetscScalar  DII;   // effective strain rate
+	PetscScalar  eta;   // effective tangent viscosity
+	PetscScalar  I2Gdt; // inverse elastic parameter (1/2G/dt)
+	PetscScalar  Hr;    // shear heating term (partial)
+	PetscScalar  DIIpl; // plastic strain rate
+	PetscScalar  APS;   // accumulated plastic strain
+	PetscScalar  PSR;   // plastic strain-rate contribution
+	PetscScalar  dEta;  // dEta/dDII derivative (Jacobian)
+	PetscScalar  fr;    // effective friction coefficient (Jacobian)
+	PetscScalar  yield; // average yield stress in control volume
+	PetscScalar  mf;    // melt fraction
+};
 
 //---------------------------------------------------------------------------
+//.....................   Volumetric solution variables   ...................
+//---------------------------------------------------------------------------
 
-// FDSTAG Jacobian and residual evaluation context
-typedef struct
+struct SolVarBulk
+{
+	PetscScalar  theta; // volumetric strain rate
+	PetscScalar  rho;   // strain- & temperature-dependent density
+	PetscScalar  IKdt;  // inverse bulk elastic parameter (1/K/dt)
+	PetscScalar  alpha; // effective thermal expansion
+	PetscScalar  Tn;    // history temperature
+	PetscScalar  pn;    // history pressure
+	PetscScalar  rho_pd;// Density from phase diagram
+	PetscScalar  rho_pf;// Fluid Density from phase diagram
+	PetscScalar  Vp;    // Vp from phase diagram
+	PetscScalar  Vs;    // Vs from phase diagram
+	PetscScalar  mf;    // Melt fraction from phase diagram
+
+};
+
+//---------------------------------------------------------------------------
+//........................   Cell solution variables   ......................
+//---------------------------------------------------------------------------
+
+struct SolVarCell
+{
+	SolVarDev    svDev;         // deviatoric variables
+	SolVarBulk   svBulk;        // volumetric variables
+	PetscScalar  sxx, syy, szz; // deviatoric stress
+	PetscScalar  hxx, hyy, hzz; // history stress (elastic)
+	PetscScalar  dxx, dyy, dzz; // total deviatoric strain rate
+	PetscScalar *phRat;         // phase ratios in the control volume
+	PetscScalar  eta_creep;     // effective creep viscosity (output)
+	PetscScalar  eta_vp;        // viscoplastic viscosity (output)
+	PetscScalar  U[3];          // displacement
+
+};
+
+//---------------------------------------------------------------------------
+//........................   Edge solution variables   ......................
+//---------------------------------------------------------------------------
+
+struct SolVarEdge
+{
+	SolVarDev    svDev; // deviatoric variables
+	PetscScalar  s;     // xy, xz, yz deviatoric stress components
+	PetscScalar  h;     // xy, xz, yz history stress components (elastic)
+	PetscScalar  d;     // xy, xz, yz total deviatoric strain rate components
+	PetscScalar  ws;    // normalization for distance-dependent interpolation
+	PetscScalar *phRat; // phase ratios in the control volume
+
+};
+
+//---------------------------------------------------------------------------
+//...................   Runtime parameters and controls .....................
+//---------------------------------------------------------------------------
+
+// Ground water level type
+enum GWLevelType
+{
+	_GW_NONE_,   // don't compute pore pressure
+	_GW_TOP_,    // top of the domain
+	_GW_SURF_,   // free surface
+	_GW_LEVEL_   // fixed level
+
+};
+
+struct Controls
+{
+	PetscScalar grav[SPDIM];  // global gravity components
+	PetscScalar FSSA;         // free surface stabilization parameter [0 - 1]
+	PetscScalar shearHeatEff; // shear heating efficiency parameter [0 - 1]
+	PetscScalar biot;         // Biot pressure parameter [0 - 1]
+
+	PetscInt    actTemp;	  // temperature diffusion activation flag
+	PetscInt    pShiftAct;    // pressure shift activation flag (zero pressure in the top cell layer)
+	PetscScalar pShift;       // pressure shift for plasticity model and output
+	PetscInt    initGuess;    // initial guess activation flag
+	PetscInt    pLithoVisc;   // use lithostatic pressure for creep laws
+	PetscInt    pLithoPlast;  // use lithostatic pressure for plasticity
+	PetscInt    pLimPlast;    // limit pressure at first iteration for plasticity
+	PetscInt    jac_mat_free; // matrix-free analytical Jacobian activation flag
+	PetscInt    quasiHarmAvg; // use quasi-harmonic averaging regularization for plasticity
+
+	PetscScalar eta_min;      // minimum viscosity
+	PetscScalar inv_eta_max;  // inverse of maximum viscosity
+	PetscScalar eta_ref;      // reference viscosity (initial guess)
+	PetscScalar TRef;         // reference temperature
+	PetscScalar Rugc;         // universal gas constant
+	PetscScalar DII_ref;      // background (reference) strain-rate
+	PetscScalar minCh;        // minimum cohesion
+	PetscScalar minFr;        // minimum friction
+	PetscScalar tauUlt;       // ultimate yield stress
+
+	PetscScalar cf_eta_min;   // visco-plastic regularization parameter (plasticity)
+	PetscScalar n_pw;         // power-law regularization parameter (plasticity)
+
+	PetscScalar rho_fluid;    // fluid density
+	GWLevelType gwType;       // type of ground water level (none, top, surf, level)
+	PetscScalar gwLevel;      // fixed ground water level
+
+	PetscInt    setPhase;     // active phase (override all phases)
+
+};
+
+//---------------------------------------------------------------------------
+//.............. FDSTAG Jacobian and residual evaluation context ............
+//---------------------------------------------------------------------------
+
+struct JacRes
 {
 	// external handles
-	FDSTAG  *fs;  // staggered-grid layout
-	BCCtx   *bc;  // boundary condition context
+	Scaling  *scal;  // scaling
+	TSSol    *ts;    // time-stepping parameters
+	FDSTAG   *fs;    // staggered-grid layout
+	FreeSurf *surf;  // free surface
+	BCCtx    *bc;    // boundary condition context
+	DBMat    *dbm;   // material database
+
+	// parameters and controls
+	Controls ctrl;
 
 	// coupled solution & residual vectors
 	Vec gsol, gres; // global
@@ -90,8 +220,10 @@ typedef struct
 	//  Also to get communication pattern independent of number of phases.
 
 	// pressure
-	Vec gp; // global
-	Vec lp; // local (ghosted)
+	Vec gp;      // global
+	Vec lp;      // local (ghosted)
+	Vec lp_lith; // lithostatic pressure
+	Vec lp_pore; // pore pressure
 
 	// continuity residual
 	Vec gc; // global
@@ -106,34 +238,12 @@ typedef struct
 	SolVarEdge  *svYZEdge; // YZ edges
 	PetscScalar *svBuff;   // storage for phRat
 
-	// phase parameters
-	PetscInt     numPhases;              // number phases
-	Material_t   phases[max_num_phases]; // phase parameters
-	PetscInt     numSoft;                // number material softening laws
-	Soft_t       matSoft[max_num_soft];  // material softening law parameters
-	MatParLim    matLim;                 // phase parameters limiters
-		// Phase diagram
+	// Phase diagram
 	PData       *Pd;
-
-	// parameters & controls
-	Scaling     scal;        // scaling
-	TSSol       ts;          // time-stepping parameters
-	PetscScalar grav[SPDIM]; // global gravity components
-	PetscScalar FSSA;        // density gradient penalty parameter
-	//                          (a.k.a. free-surface-stabilization-algorithm)
-	PetscScalar gtol;        // geometry tolerance
-
-	PetscScalar pShift;      // pressure shift for plasticity model and output
-	PetscBool   pShiftAct;   // pressure shift activation flag
-
-	PetscScalar avg_topo;    // average topography (a copy from free surface)
 
 	//=======================
 	// temperature parameters
 	//=======================
-
-	PetscBool actTemp;  // temperature diffusion activation flag
-	PetscInt  AirPhase; // air phase number
 
 	Vec lT;   // temperature (box stencil, active even without diffusion)
 	DM  DA_T; // temperature cell-centered grid with star stencil
@@ -147,28 +257,31 @@ typedef struct
 	//==========================
 	DM DA_CELL_2D; // 2D cell center grid
 
-	Vec lp_lithos; // lithostatic pressure
+	// Only diffusion solver
+	PetscInt    SkipStokesSolverTemperature, SkipStokesSolverTemperatureTS;
 
-} JacRes;
+	// Gravity solver
+	PetscInt        SaveGravity, ComputeGravity;
+
+};
 //---------------------------------------------------------------------------
 
-PetscErrorCode JacResClear(JacRes *jr);
-
-PetscErrorCode JacResSetFromOptions(JacRes *jr);
-
 // create residual & Jacobian evaluation context
-PetscErrorCode JacResCreate(
-	JacRes   *jr,
-	FDSTAG   *fs,
-	BCCtx    *bc);
+PetscErrorCode JacResCreate(JacRes *jr, FB *fb);
+
+PetscErrorCode JacResCreateData(JacRes *jr);
+
+PetscErrorCode JacResReadRestart(JacRes *jr, FILE *fp);
+
+PetscErrorCode JacResWriteRestart(JacRes *jr, FILE *fp);
 
 // destroy residual & Jacobian evaluation context
 PetscErrorCode JacResDestroy(JacRes *jr);
 
-// initialize and setup scaling object, perform scaling
-PetscErrorCode JacResInitScale(JacRes *jr, UserCtx *usr);
+// form residual vector
+PetscErrorCode JacResFormResidual(JacRes *jr, Vec x, Vec f);
 
-// compute effective inverse elastic viscosity
+// compute effective inverse elastic parameter
 PetscErrorCode JacResGetI2Gdt(JacRes *jr);
 
 // get average pressure near the top surface
@@ -203,18 +316,11 @@ PetscErrorCode JacResCopyContinuityRes(JacRes *jr, Vec f);
 
 PetscErrorCode JacResViewRes(JacRes *jr);
 
-PetscScalar JacResGetTime(JacRes *jr);
+// get maximum inverse time step (CFL)
+PetscErrorCode JacResSelectTimeStep(JacRes *jr, PetscInt *restart);
 
-PetscInt JacResGetStep(JacRes *jr);
-
-PetscErrorCode JacResGetCourantStep(JacRes *jr);
-
-PetscErrorCode JacResSetVelRotation(JacRes *jr);
-
-//---------------------------------------------------------------------------
-
-// get maximum inverse time step on local domain
-PetscErrorCode getMaxInvStep1DLocal(Discret1D *ds, DM da, Vec gv, PetscInt dir, PetscScalar *_idtmax);
+// read cell phases directly form files in parallel
+PetscErrorCode JacResReadCellPhases(JacRes *jr, FB *fb);
 
 //---------------------------------------------------------------------------
 // Infinite Strain Axis (ISA) computation functions
@@ -239,11 +345,6 @@ PetscErrorCode JacResGetSHmax(JacRes *jr);
 
 // compute maximum horizontal extension rate (EHmax) orientation
 PetscErrorCode JacResGetEHmax(JacRes *jr);
-
-//---------------------------------------------------------------------------
-
-// initialize material parameter limits
-PetscErrorCode SetMatParLim(MatParLim *matLim, UserCtx *usr);
 
 //---------------------------------------------------------------------------
 //......................   TEMPERATURE FUNCTIONS   ..........................
@@ -289,6 +390,9 @@ PetscErrorCode JacResGetOverPressure(JacRes *jr, Vec p);
 
 // compute lithostatic pressure in the cell centers
 PetscErrorCode JacResGetLithoStaticPressure(JacRes *jr);
+
+// compute pore pressure from phase properties and lithostatic stress
+PetscErrorCode JacResGetPorePressure(JacRes *jr);
 
 //---------------------------------------------------------------------------
 // MACROS

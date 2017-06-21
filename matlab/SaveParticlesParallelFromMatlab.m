@@ -21,9 +21,9 @@ function a = SaveParticlesParallelFromMatlab(A,fname)
 
 
 % ----------- Function begin ----------- %
-if isdir('MatlabInputParticles')
+if isdir('markers')
 else
-    mkdir MatlabInputParticles
+    mkdir markers
 end
 
 
@@ -59,8 +59,8 @@ z       = dz/2 : dz : H_char-dz/2;
 X       = permute(X,[2 1 3]);
 Y       = permute(Y,[2 1 3]);
 Z       = permute(Z,[2 1 3]);
-    
-% Get particles of respective procs    
+
+% Get particles of respective procs
 [xi,ix_start,ix_end] = get_ind(x,xc,Nprocx,A.nump_x);
 [yi,iy_start,iy_end] = get_ind(y,yc,Nprocy,A.nump_y);
 [zi,iz_start,iz_end] = get_ind(z,zc,Nprocz,A.nump_z);
@@ -84,7 +84,7 @@ cell_z(num) = zi_cell(num_k);
 
 % Loop over all processors partition
 for num=1:Nproc
-    
+
     part_x   = X(x_start(num):x_end(num),y_start(num):y_end(num),z_start(num):z_end(num));
     part_y   = Y(x_start(num):x_end(num),y_start(num):y_end(num),z_start(num):z_end(num));
     part_z   = Z(x_start(num):x_end(num),y_start(num):y_end(num),z_start(num):z_end(num));
@@ -93,8 +93,8 @@ for num=1:Nproc
     	part_T   = A.Temp(x_start(num):x_end(num),y_start(num):y_end(num),z_start(num):z_end(num));
     end
     % No. of particles per processor
-    num_particles = size(part_x,1)* size(part_x,2) * size(part_x,3); 
-    
+    num_particles = size(part_x,1)* size(part_x,2) * size(part_x,3);
+
     % Information vector per processor
     lvec_info(1)  = Nproc;
     lvec_info(2)  = num_particles;
@@ -108,41 +108,41 @@ for num=1:Nproc
     lvec_info(10) = A.npart_x;
     lvec_info(11) = A.npart_y;
     lvec_info(12) = A.npart_z;
-    
+
     part_x   = part_x(:);
     part_y   = part_y(:);
     part_z   = part_z(:);
     part_phs = part_phs(:);
     if (num_prop==6)
     part_T   = part_T(:);
-    end    
+    end
     for i=1:num_particles
         lvec_prtcls((i-1)*num_prop+ 1) = part_x(i);      %x
         lvec_prtcls((i-1)*num_prop+ 2) = part_y(i);      %y
         lvec_prtcls((i-1)*num_prop+ 3) = part_z(i);      %z
         lvec_prtcls((i-1)*num_prop+ 4) = i-1;            %particle id
         lvec_prtcls((i-1)*num_prop+ 5) = part_phs(i);    %phase
-        
+
 	if (num_prop==6)
 	lvec_prtcls((i-1)*num_prop+ 6) = part_T(i);      %T
 	end
     end
-    
+
     % Output files
-    fname = sprintf('./MatlabInputParticles/Input_Particles.%d.out', num-1);
+    fname = sprintf('./markers/mdb.%1.8d.dat', num-1);
     disp(['Writing file -> ',fname])
     lvec_output    = [lvec_info(:); lvec_prtcls(:)];
     PetscBinaryWrite(fname,lvec_output);
-    
+
     %         % For debugging - Ascii output
-    %         fname = sprintf('./MatlabInputParticles/Input_Particles.ascii.%d.out', num-1);
+    %         fname = sprintf('./markers/mdb.ascii.%1.8d.dat', num-1);
     %         disp(['Writing file -> ',fname])
     %         fid = fopen(fname, 'w');
     %         fprintf(fid, '%d\n',lvec_info);
     %         fprintf(fid, '%d\n',lvec_prtcls);
     %         fclose(fid);
-    
-   
+
+
     clearvars part_x part_y part_z part_phs lvec_info lvec_prtcls id_sort No_id_vec No_id lvec_output
 end
 

@@ -43,15 +43,15 @@
 //......................   TEMPERATURE FUNCTIONS   ..........................
 //---------------------------------------------------------------------------
 #include "LaMEM.h"
-#include "fdstag.h"
-#include "solVar.h"
+#include "JacRes.h"
+#include "phase.h"
 #include "scaling.h"
+#include "fdstag.h"
 #include "tssolve.h"
 #include "bc.h"
-#include "JacRes.h"
 #include "matrix.h"
-#include "constEq.h"
-#include "tools.h"
+#include "surf.h"
+
 //---------------------------------------------------------------------------
 
 #define SCATTER_FIELD(da, vec, FIELD) \
@@ -82,11 +82,11 @@ PetscErrorCode JacResGetTempParam(
 		PetscScalar *phRat,
 		PetscScalar *k_,      // conductivity
 		PetscScalar *rho_Cp_, // volumetric heat capacity
-		PetscScalar *rho_A_) // volumetric radiogenic heat
+		PetscScalar *rho_A_)  // volumetric radiogenic heat
 {
 	// compute effective energy parameters in the cell
 
-	PetscInt    i, numPhases;
+	PetscInt    i, numPhases, AirPhase;
     Material_t  *phases, *M;
 
 	PetscScalar cf, k, rho, rho_Cp, rho_A, density;
@@ -97,9 +97,10 @@ PetscErrorCode JacResGetTempParam(
 	k         = 0.0;
 	rho_Cp    = 0.0;
 	rho_A     = 0.0;
-	numPhases = jr->numPhases;
-	phases    = jr->phases;
-	density   = jr->scal.density;
+	numPhases = jr->dbm->numPhases;
+	phases    = jr->dbm->phases;
+	density   = jr->scal->density;
+	AirPhase  = jr->surf->AirPhase;
 
 	// average all phases
 	for(i = 0; i < numPhases; i++)
@@ -109,7 +110,7 @@ PetscErrorCode JacResGetTempParam(
 		rho     =  M->rho;
 
 		// override air phase density
-		if(jr->AirPhase != -1 && i == jr->AirPhase)
+		if(AirPhase != -1 && i == AirPhase)
 		{
 			rho = 1.0/density;
 		}
@@ -133,17 +134,18 @@ PetscErrorCode JacResCheckTempParam(JacRes *jr)
 {
 	// check whether thermal material parameters are properly defined
 
-	PetscInt    i, numPhases;
     Material_t  *phases, *M;
+	PetscInt    i, numPhases, AirPhase;
 
 	PetscFunctionBegin;
 
 	// temperature diffusion cases only
-	if(jr->actTemp != PETSC_TRUE) PetscFunctionReturn(0);
+	if(!jr->ctrl.actTemp) PetscFunctionReturn(0);
 
 	// initialize
-	numPhases = jr->numPhases;
-	phases    = jr->phases;
+	numPhases = jr->dbm->numPhases;
+	phases    = jr->dbm->phases;
+	AirPhase  = jr->surf->AirPhase;
 
 	// check all phases
 	for(i = 0; i < numPhases; i++)
@@ -151,12 +153,12 @@ PetscErrorCode JacResCheckTempParam(JacRes *jr)
 		M = &phases[i];
 
 		// check density of the rock phases
-		if((jr->AirPhase != -1 && i != jr->AirPhase) || jr->AirPhase == -1)
+		if((AirPhase != -1 && i != AirPhase) || AirPhase == -1)
 		{
-			if(M->rho == 0.0) SETERRQ1(PETSC_COMM_SELF, PETSC_ERR_USER, "Define density of phase %lld\n", (LLD)i);
+			if(M->rho == 0.0) SETERRQ1(PETSC_COMM_WORLD, PETSC_ERR_USER, "Define density of phase %lld\n", (LLD)i);
 		}
-			if(M->k   == 0.0) SETERRQ1(PETSC_COMM_SELF, PETSC_ERR_USER, "Define conductivity of phase %lld\n", (LLD)i);
-			if(M->Cp  == 0.0) SETERRQ1(PETSC_COMM_SELF, PETSC_ERR_USER, "Define heat capacity of phase %lld\n", (LLD)i);
+			if(M->k   == 0.0) SETERRQ1(PETSC_COMM_WORLD, PETSC_ERR_USER, "Define conductivity of phase %lld\n", (LLD)i);
+			if(M->Cp  == 0.0) SETERRQ1(PETSC_COMM_WORLD, PETSC_ERR_USER, "Define heat capacity of phase %lld\n", (LLD)i);
 	}
 
 	PetscFunctionReturn(0);
@@ -180,7 +182,7 @@ PetscErrorCode JacResCreateTempParam(JacRes *jr)
 	ierr = DMCreateLocalVector(fs->DA_CEN, &jr->lT); CHKERRQ(ierr);
 
 	// temperature diffusion cases only
-	if(jr->actTemp != PETSC_TRUE) PetscFunctionReturn(0);
+	if(!jr->ctrl.actTemp) PetscFunctionReturn(0);
 
 	// get cell center grid partitioning
 	ierr = DMDAGetOwnershipRanges(fs->DA_CEN, &lx, &ly, &lz); CHKERRQ(ierr);
@@ -228,7 +230,7 @@ PetscErrorCode JacResDestroyTempParam(JacRes *jr)
 	ierr = VecDestroy(&jr->lT);   CHKERRQ(ierr);
 
 	// temperature diffusion cases only
-	if(jr->actTemp != PETSC_TRUE) PetscFunctionReturn(0);
+	if(!jr->ctrl.actTemp) PetscFunctionReturn(0);
 
 	// temperature parameters
 	ierr = DMDestroy (&jr->DA_T); CHKERRQ(ierr);
@@ -417,7 +419,7 @@ PetscErrorCode JacResGetTempRes(JacRes *jr)
 
 	// access residual context variables
 	fs        = jr->fs;
-	dt        = jr->ts.dt;     // time step
+	dt        = jr->ts->dt;     // time step
 	bc        = jr->bc;
 	num       = bc->tNumSPC;
 	list      = bc->tSPCList;
@@ -465,7 +467,7 @@ PetscErrorCode JacResGetTempRes(JacRes *jr)
 		(hxy[k][j][i] + hxy[k][j+1][i] + hxy[k][j][i+1] + hxy[k][j+1][i+1] +
 		 hxz[k][j][i] + hxz[k+1][j][i] + hxz[k][j][i+1] + hxz[k+1][j][i+1] +
 		 hyz[k][j][i] + hyz[k+1][j][i] + hyz[k][j+1][i] + hyz[k+1][j+1][i])/4.0;
-		Hr = Hr * jr->matLim.shearHeatEff;
+		Hr = Hr * jr->ctrl.shearHeatEff;
 
 		// check index bounds
 		Im1 = i-1; if(Im1 < 0)  Im1++;
@@ -550,7 +552,7 @@ PetscErrorCode JacResGetTempMat(JacRes *jr)
 	// access residual context variables
 	fs        = jr->fs;
 	bc        = jr->bc;
-	dt        = jr->ts.dt;     // time step
+	dt        = jr->ts->dt;     // time step
 	num       = bc->tNumSPC;
 	list      = bc->tSPCList;
 

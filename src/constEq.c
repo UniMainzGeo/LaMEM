@@ -44,70 +44,67 @@
 //..... LOCAL LEVEL INTEGRATION ALGORITHMS FOR CONSTITUTIVE EQUATIONS  ......
 //---------------------------------------------------------------------------
 #include "LaMEM.h"
-#include "solVar.h"
 #include "constEq.h"
-#include "dfzero.h"
-#include "tools.h"
-
-//---------------------------------------------------------------------------
-// * add different viscosity averaging methods (echo info to output)
-// * make sure that Peierls creep is deactivated for isothermal analysis
-// ...
+#include "phase.h"
+#include "JacRes.h"
 //---------------------------------------------------------------------------
 #undef __FUNCT__
 #define __FUNCT__ "ConstEqCtxSetup"
 PetscErrorCode ConstEqCtxSetup(
-	ConstEqCtx  *ctx,           // evaluation context
-	Material_t  *mat,           // phase parameters
-	MatParLim   *lim,           // phase parameters limits
-	PetscScalar  DII,           // effective strain-rate
-	PetscScalar  APS,           // accumulated plastic strain
-	PetscScalar  dt,            // time step
-	PetscScalar  p,             // pressure
-	PetscScalar  p_lithos,      // lithostatic pressure
-	PetscScalar  T)             // temperature
+		ConstEqCtx  *ctx,      // evaluation context
+		Material_t  *mat,      // phase parameters
+		Soft_t      *soft,     // material softening laws
+		Controls    *ctrl,     // parameters and controls
+		PetscScalar  DII,      // effective strain-rate
+		PetscScalar  APS,      // accumulated plastic strain
+		PetscScalar  dt,       // time step
+		PetscScalar  p,        // pressure
+		PetscScalar  p_lithos, // lithostatic pressure
+		PetscScalar  p_pore,   // pore pressure
+		PetscScalar  T)        // temperature
 {
 	// setup nonlinear constitutive equation evaluation context
 	// evaluate dependence on constant parameters (pressure, temperature)
 
-	PetscInt    ln, nl, pd;
-	PetscScalar Q, RT, ch, fr, p_viscosity, p_upper, p_lower;
-	PetscBool   flag = PETSC_FALSE,flag2 =PETSC_FALSE, flag3=PETSC_FALSE;
-
-	PetscErrorCode ierr;
+	PetscInt    pd;
+	PetscScalar Q, RT, ch, fr, p_visc, p_upper, p_lower, dP, p_total;
 
 	PetscFunctionBegin;
 
-	if(T) RT =  lim->Rugc*T;
-	else  RT = -1.0;
-
-	ln = 0;
-	nl = 0;
-	pd = 0; // pressure-dependence flag
-
-	p_viscosity = p;			// pressure used in viscosity evaluation
-
-	ierr = PetscOptionsHasName(NULL, NULL, "-ViscoPLithosOff", &flag); CHKERRQ(ierr);
-	ierr = PetscOptionsHasName(NULL, NULL, "-NoPressureLimit", &flag2); CHKERRQ(ierr);
-	ierr = PetscOptionsHasName(NULL, NULL, "-EmployLithostaticPressureInYieldFunction", &flag3); CHKERRQ(ierr);
-	
-	if(!flag) p_viscosity=p_lithos;
-
+	// set RT
+	RT         = ctrl->Rugc*T;
+	if(!RT) RT = -1.0;
 
 	// use reference strain-rate instead of zero
-	if(DII == 0.0) DII = lim->DII_ref;
+	if(DII == 0.0) DII = ctrl->DII_ref;
 
 	// initialize
-	ctx->DII   = DII;         // effective strain-rate
-	ctx->A_els = 0.0;         // elasticity constant
-	ctx->A_dif = 0.0;         // diffusion constant
-	ctx->A_dis = 0.0;         // dislocation constant
-	ctx->N_dis = 1.0;         // dislocation exponent
-	ctx->A_prl = 0.0;         // Peierls constant
-	ctx->N_prl = 1.0;         // Peierls exponent
-	ctx->taupl = 0.0;         // plastic yield stress
-	ctx->cfsol = PETSC_TRUE;  // closed-form solution flag
-	ctx->fr    = 0.0;         // effective friction coefficient
+	ctx->DII   = DII; // effective strain-rate
+	ctx->A_els = 0.0; // elasticity constant
+	ctx->A_dif = 0.0; // diffusion constant
+	ctx->A_dis = 0.0; // dislocation constant
+	ctx->N_dis = 1.0; // dislocation exponent
+	ctx->A_prl = 0.0; // Peierls constant
+	ctx->N_prl = 1.0; // Peierls exponent
+	ctx->taupl = 0.0; // plastic yield stress
+	ctx->fr    = 0.0; // effective friction coefficient
+	pd         = 0;   // pressure-dependence flag
+
+	//===============
+	// TOTAL PRESSURE
+	//===============
+
+	if(ctrl->gwType == _GW_NONE_) p_pore = 0.0;
+
+	p_total = p + ctrl->biot*p_pore;
+
+	//=================
+	// VISCO-ELASTICITY
+	//=================
+
+	// assign pressure for viscous laws
+	if(ctrl->pLithoVisc)  p_visc = p_lithos;
+	else                  p_visc = p_total;
 
 	// ELASTICITY
 	if(mat->G)
@@ -119,100 +116,100 @@ PetscErrorCode ConstEqCtxSetup(
 		// instead it rather acts as a smooth limiter for maximum viscosity.
 
 		ctx->A_els = 0.5/(mat->G*dt);
-		ln++;
 	}
 
 	// LINEAR DIFFUSION CREEP (NEWTONIAN)
 	if(mat->Bd)
 	{
-		Q          = (mat->Ed + p_viscosity*mat->Vd)/RT;
+		Q          = (mat->Ed + p_visc*mat->Vd)/RT;
 		ctx->A_dif =  mat->Bd*exp(-Q);
-		ln++;
 	}
 
 	// DISLOCATION CREEP (POWER LAW)
 	if(mat->Bn)
 	{
-		Q          = (mat->En + p_viscosity*mat->Vn)/RT;
+		Q          = (mat->En + p_visc*mat->Vn)/RT;
 		ctx->N_dis =  mat->n;
 		ctx->A_dis =  mat->Bn*exp(-Q);
-		nl++;
 	}
 
 	// MELT VISCOSITY
 	if(mat->Pd_Me == 1)
 	{
 		ctx->Me_Mu0 = mat->Me_Mu0;
+		ctx->Pd_mf  = mat->Pd_mf;
+		if(ctx->Pd_mf == 0)
+		{
+			ctx->mf = mat->mf;
+		}
 	}
 
 	// PEIERLS CREEP (LOW TEMPERATURE RATE-DEPENDENT PLASTICITY, POWER-LAW APPROXIMATION)
 	// ONLY EVALUATE FOR TEMPERATURE-DEPENDENT CASES
 	if(mat->Bp && T)
 	{
-		Q          = (mat->Ep + p_viscosity*mat->Vp)/RT;
+		Q          = (mat->Ep + p_visc*mat->Vp)/RT;
 		ctx->N_prl =  Q*pow(1.0-mat->gamma, mat->q-1.0)*mat->q*mat->gamma;
 		ctx->A_prl =  mat->Bp/pow(mat->gamma*mat->taup, ctx->N_prl)*exp(-Q*pow(1.0-mat->gamma, mat->q));
-		nl++;
 	}
+
+	//===========
+	// PLASTICITY
+	//===========
 
 	// apply strain softening to friction and cohesion
-	ch = ApplyStrainSoft(mat->chSoft, APS, mat->ch);
-	fr = ApplyStrainSoft(mat->frSoft, APS, mat->fr);
-
-	// compute cohesion and friction coefficient
-	//ch = cos(fr)*ch;
-	//fr = sin(fr);
+	ch = ApplyStrainSoft(soft, mat->chSoftID, APS, mat->ch);
+	fr = ApplyStrainSoft(soft, mat->frSoftID, APS, mat->fr);
 
 	// fit to limits
-	if(ch*cos(fr) < lim->minCh) ch = lim->minCh;
-	if(sin(fr)    < lim->minFr) fr = lim->minFr;
+	if(ch < ctrl->minCh) ch = ctrl->minCh;
+	if(fr < ctrl->minFr) fr = ctrl->minFr;
 
-	// compute yield stress
-	if(p < 0.0) { ctx->taupl = ch;        pd = 0; } // Von-Mises model for extension
-	else  // Drucker-Prager model for compression
+	// override total pressure with lithostatic if requested
+	if(ctrl->pLithoPlast)
 	{
-		if(!flag2 && lim->presLimFlg == PETSC_TRUE)
-		{
-			// yielding surface: (S1-S3)/2 = (S1+S3)/2*sin(phi) + C*cos(phi)
-			// pressure can be write as: P = (S1+S2+S3)/3 and P~=S2,then P=(S1+S3)/2
-			// so the yielding surface can be rewritten as:
-			// P-S3=P*sin(phi) + C*cos(phi)   --> compression
-			// S1-P=P*sin(phi) + C*cos(phi)   --> extension
-			// under pure shear compression, S3=P_Lithos and S1=P_Lithos when extension
-			// P = -( S3+C*cos(phi))/(sin(phi)-1)  --> compression
-			// P = -(-S1+C*cos(phi))/(sin(phi)+1)  --> extension
+		// Use lithostatic, rather than dynamic pressure to evaluate yield stress
+		// This converges better, but does not result in localization of deformation & shear banding,
+		// so only apply it for large-scale simulations where plasticity does not matter much
 
-			// Apply pressure limit
-			p_upper = -( p_lithos + ch * cos(fr))/(sin(fr) - 1.0); // compression
-			p_lower = -(-p_lithos + ch * cos(fr))/(sin(fr) + 1.0); // extension
-			if (p > p_upper) p = p_upper;
-			if (p < p_lower) p = p_lower;
-		}
-		if (flag3){
-			// In case the flag	-EmployLithostaticPressureInYieldFunction is found,
-			// we use lithostatic, rather than dynamic pressure to evaluate yielding
-			//
-			// This converges better, but does not result in localization of deformation & shear banding,
-			// so only apply it for large-scale simulations where plasticity does not matter all that	
-			// much 
-			ctx->taupl = p_lithos * sin(fr) + ch * cos(fr);
-			
-		}
-		else{
-			// use dynamic pressure in evaluating the yield function [default]
-			ctx->taupl = p * sin(fr) + ch * cos(fr);
-		}
-		pd = 1;
+		p_total = p_lithos;
+	}
+	else if(ctrl->pLimPlast)
+	{
+		// apply pressure limits
+
+		// yielding surface: (S1-S3)/2 = (S1+S3)/2*sin(phi) + C*cos(phi)
+		// pressure can be written as: P = (S1+S2+S3)/3 and P~=S2,then P=(S1+S3)/2
+		// so the yield surface can be rewritten as:
+		// P-S3=P*sin(phi) + C*cos(phi)   --> compression
+		// S1-P=P*sin(phi) + C*cos(phi)   --> extension
+		// under pure shear compression, S3=P_Lithos and S1=P_Lithos when extension
+		// P = -( S3+C*cos(phi))/(sin(phi)-1)  --> compression
+		// P = -(-S1+C*cos(phi))/(sin(phi)+1)  --> extension
+
+		p_upper = -( p_lithos + ch * cos(fr))/(sin(fr) - 1.0); // compression
+		p_lower = -(-p_lithos + ch * cos(fr))/(sin(fr) + 1.0); // extension
+
+		if(p_total > p_upper) p_total = p_upper;
+		if(p_total < p_lower) p_total = p_lower;
 	}
 
-	// correct for ultimate yield stress
-	if(ctx->taupl > lim->tauUlt) { ctx->taupl = lim->tauUlt; pd = 0; }
+	// compute cohesion and friction coefficient
+	ch = cos(fr)*ch;
+	fr = sin(fr);
+
+	// compute effective mean stress
+	dP = (p_total - p_pore);
+
+	// compute yield stress
+	if(dP < 0.0) { ctx->taupl =         ch; pd = 0; } // Von-Mises model for extension
+	else         { ctx->taupl = dP*fr + ch; pd = 1; } // Drucker-Prager model for compression
+
+	// correct for ultimate yield stress (if defined)
+	if(ctrl->tauUlt) { if(ctx->taupl > ctrl->tauUlt) { ctx->taupl = ctrl->tauUlt; pd = 0; } }
 
 	// store friction coefficient for a pressure-dependent plasticity model
-	if(pd) ctx->fr = sin(fr);
-
-	// set iteration flag (linear + nonlinear, or more than one nonlinear)
-	if((nl && ln) || nl > 1) ctx->cfsol = PETSC_FALSE;
+	if(pd) ctx->fr = fr;
 
 	PetscFunctionReturn(0);
 }
@@ -245,19 +242,19 @@ PetscScalar GetConsEqRes(PetscScalar eta, void *pctx)
 #undef __FUNCT__
 #define __FUNCT__ "GetEffVisc"
 PetscErrorCode GetEffVisc(
-	ConstEqCtx  *ctx,
-	MatParLim   *lim,
-	PetscScalar *eta_total,
-	PetscScalar *eta_creep,
-	PetscScalar *eta_viscoplastic,
-	PetscScalar *DIIpl,
-	PetscScalar *dEta,
-	PetscScalar *fr,
-	SolVarDev   *svDev)
+		ConstEqCtx  *ctx,
+		Controls    *ctrl,        // parameters and controls
+		PetscScalar *eta_total,
+		PetscScalar *eta_creep,
+		PetscScalar *eta_vp,
+		PetscScalar *DIIpl,
+		PetscScalar *dEta,
+		PetscScalar *fr,
+		SolVarDev   *svDev)
 {
 	// stabilization parameters
-	PetscScalar eta_ve, eta_pl, eta_pw, eta_vp, eta_st, eta_dis, eta_prl, cf;
-	PetscScalar inv_eta_els, inv_eta_dif, inv_eta_dis, inv_eta_prl;
+	PetscScalar eta_ve, eta_pl, eta_pw, eta_vp_reg, eta_st, eta_dis, eta_prl, cf;
+	PetscScalar inv_eta_els, inv_eta_dif, inv_eta_dis, inv_eta_prl, inv_eta_max;
 
 	PetscFunctionBegin;
 
@@ -266,16 +263,18 @@ PetscErrorCode GetEffVisc(
 	(*dEta)  = 0.0;
 	(*fr)    = 0.0;
 
+	inv_eta_max = ctrl->inv_eta_max;
+
 	//==============
 	// INITIAL GUESS
 	//==============
 
 	// set reference viscosity as initial guess
-	if(lim->eta_ref && lim->initGuessFlg == PETSC_TRUE)
+	if(ctrl->initGuess)
 	{
-		(*eta_total) 		= lim->eta_ref;
-		(*eta_creep) 		= lim->eta_ref;
-		(*eta_viscoplastic) = lim->eta_ref;
+		(*eta_total) = ctrl->eta_ref;
+		(*eta_creep) = ctrl->eta_ref;
+		(*eta_vp)    = ctrl->eta_ref;
 		
 		PetscFunctionReturn(0);
 	}
@@ -293,8 +292,10 @@ PetscErrorCode GetEffVisc(
 	if(ctx->A_els) inv_eta_els = 2.0*ctx->A_els;
 	// diffusion
 	if(ctx->A_dif) inv_eta_dif = 2.0*ctx->A_dif;
-	// dislocation with melt (after Kohlstedt 2003)
-	if(ctx->A_dis && ctx->Me_Mu0) inv_eta_dis = 2.0*pow(ctx->A_dis, 1.0/ctx->N_dis)*pow(ctx->DII, 1.0 - 1.0/ctx->N_dis) * pow(exp(40*svDev->mf),-1);
+	// dislocation with melt FROM PD (after Kohlstedt 2003 (Stress-driven melt segregation in partially molten rocks))
+	if(ctx->A_dis && ctx->Me_Mu0 && ctx->Pd_mf == 1) inv_eta_dis = 2.0*pow(ctx->A_dis, 1.0/ctx->N_dis)*pow(ctx->DII, 1.0 - 1.0/ctx->N_dis) * exp(40*svDev->mf);
+	// dislocation with melt CONSTANT MF (after Kohlstedt 2003 (Stress-driven melt segregation in partially molten rocks))
+	else if(ctx->A_dis && ctx->Me_Mu0 && ctx->Pd_mf == 0) inv_eta_dis = 2.0*pow(ctx->A_dis, 1.0/ctx->N_dis)*pow(ctx->DII, 1.0 - 1.0/ctx->N_dis) * exp(40*ctx->mf);
 	// dislocation
 	else if(ctx->A_dis) inv_eta_dis = 2.0*pow(ctx->A_dis, 1.0/ctx->N_dis)*pow(ctx->DII, 1.0 - 1.0/ctx->N_dis);
 	// Peierls
@@ -310,15 +311,15 @@ PetscErrorCode GetEffVisc(
 	//================
 
 	// store creep & viscoplastic viscosity for output
-	(*eta_creep) 		= lim->eta_min + 1.0/(inv_eta_dif + inv_eta_dis + inv_eta_prl + 1.0/lim->eta_max);
-	(*eta_viscoplastic) = (*eta_creep);
+	(*eta_creep) = ctrl->eta_min + 1.0/(inv_eta_dif + inv_eta_dis + inv_eta_prl + inv_eta_max);
+	(*eta_vp)    = (*eta_creep);
 
 	//========================
 	// VISCO-ELASTIC VISCOSITY
 	//========================
 
 	// compute visco-elastic viscosity
-	eta_ve = lim->eta_min + 1.0/(inv_eta_els + inv_eta_dif + inv_eta_dis + inv_eta_prl + 1.0/lim->eta_max);
+	eta_ve = ctrl->eta_min + 1.0/(inv_eta_els + inv_eta_dif + inv_eta_dis + inv_eta_prl + inv_eta_max);
 
 	//===========
 	// MELT
@@ -327,13 +328,12 @@ PetscErrorCode GetEffVisc(
 	{
 		if(svDev->mf >= 0.1 && svDev->mf <= 1)
 		{
-			/*Effective melt viscosity parameterization proposed by Bittner
-		  	  and Schmeling, GJI 1995, V123, p.59-70, equation 7, which is
-		  	  again after Pinkerton and Stevenson
-		  	  Note that this equation has a typo, which is correct in the
-		  	  textbook of Gerya, page 294.
-			 */
-			eta_ve = lim->eta_min + (ctx->Me_Mu0*exp( 2.5 + (1-svDev->mf)*pow(((1-svDev->mf)/svDev->mf),0.48) ));
+			//Effective melt viscosity parameterization proposed by Bittner
+		  	//and Schmeling, GJI 1995, V123, p.59-70, equation 7, which is
+		  	//again after Pinkerton and Stevenson
+		  	//Note that this equation has a typo, which is correct in the
+		  	//textbook of Gerya, page 294.
+			eta_ve = ctrl->eta_min + (ctx->Me_Mu0*exp( 2.5 + (1-svDev->mf)*pow(((1-svDev->mf)/svDev->mf),0.48) ));
 		}
 	}
 
@@ -344,13 +344,13 @@ PetscErrorCode GetEffVisc(
 	if(inv_eta_dis)
 	{
 		eta_dis  = 1.0/inv_eta_dis;
-		cf       = (eta_ve - lim->eta_min)/eta_dis;
+		cf       = (eta_ve - ctrl->eta_min)/eta_dis;
 		(*dEta) += cf*cf*(1.0/ctx->N_dis - 1.0)*eta_dis;
 	}
 	if(inv_eta_prl)
 	{
 		eta_prl  = 1.0/inv_eta_prl;
-		cf       = (eta_ve - lim->eta_min)/eta_prl;
+		cf       = (eta_ve - ctrl->eta_min)/eta_prl;
 		(*dEta) += cf*cf*(1.0/ctx->N_prl - 1.0)*eta_prl;
 	}
 
@@ -358,36 +358,39 @@ PetscErrorCode GetEffVisc(
 	// PLASTICITY
 	//===========
 
-	if(ctx->taupl && lim->initGuessFlg != PETSC_TRUE)
+	if(ctx->taupl && !ctrl->initGuess)
 	{
 		// compute true plastic viscosity
 		eta_pl = ctx->taupl/(2.0*ctx->DII);
+
+		// ultimate viscosity cutoff for plasticity
+		if(eta_pl < ctrl->eta_min) eta_pl = ctrl->eta_min;
 
 		//==============================================
 		// compute total viscosity
 		// minimum viscosity (true) model is the default
 		//==============================================
 
-		if(lim->quasiHarmAvg == PETSC_TRUE)
+		if(ctrl->quasiHarmAvg)
 		{
 			// quasi-harmonic mean
 			(*eta_total) = 1.0/(1.0/eta_pl + 1.0/eta_ve);
 		}
-		else if(lim->n_pw)
+		else if(ctrl->n_pw)
 		{
 			// rate-dependent power-law stabilization
-			eta_pw = (ctx->taupl/2.0)*pow(ctx->DII, 1/lim->n_pw - 1.0);
+			eta_pw = (ctx->taupl/2.0)*pow(ctx->DII, 1/ctrl->n_pw - 1.0);
 
 			if(eta_pw < eta_ve) (*eta_total) = eta_pw;
 		}
-		else if(lim->cf_eta_min)
+		else if(ctrl->cf_eta_min)
 		{
-			// rate-dependent visco-plastic stabilization
-			eta_st = eta_ve/lim->cf_eta_min;
+			// rate-dependent visco-plastic regularization
+			eta_st = eta_ve/ctrl->cf_eta_min;
 
-			eta_vp = (eta_st + eta_pl)/(1.0 + eta_st/eta_ve);
+			eta_vp_reg = (eta_st + eta_pl)/(1.0 + eta_st/eta_ve);
 
-			if(eta_vp < eta_ve) (*eta_total) = eta_vp;
+			if(eta_vp_reg < eta_ve) (*eta_total) = eta_vp_reg;
 		}
 		else if(eta_pl < eta_ve)
 		{
@@ -398,33 +401,37 @@ PetscErrorCode GetEffVisc(
 		if(eta_pl < eta_ve)
 		{
 			// store plastic strain rate, viscosity derivative & effective friction
-			(*eta_viscoplastic) =  eta_pl;	
-			(*DIIpl)     		=  ctx->DII*(1.0 - (*eta_total)/eta_ve);
-			(*dEta)             = -eta_pl;
-			(*fr)               =  ctx->fr;
+			(*eta_vp) =  eta_pl;
+			(*DIIpl)  =  ctx->DII*(1.0 - (*eta_total)/eta_ve);
+			(*dEta)   = -eta_pl;
+			(*fr)     =  ctx->fr;
 		}
 	}
 
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-PetscScalar ApplyStrainSoft(Soft_t *sl, PetscScalar APS, PetscScalar par)
+PetscScalar ApplyStrainSoft(Soft_t *soft, PetscInt ID, PetscScalar APS, PetscScalar par)
 {
 	// Apply strain softening to a parameter (friction, cohesion)
-	PetscScalar k;
-	if(!sl) return par;
+	PetscScalar  k;
+	Soft_t      *s;
+	// check whether softening is defined
+	if(ID == -1) return par;
+	// access parameters
+	s = soft + ID;
 	// compute scaling ratio
-	if(APS <= sl->APS1)
+	if(APS <= s->APS1)
 		k = 1.0;
-	if(APS > sl->APS1 && APS < sl->APS2)
-		k = 1.0 - sl->A*((APS - sl->APS1)/(sl->APS2 - sl->APS1));
-	if(APS >= sl->APS2)
-		k = 1.0 - sl->A;		// so A=0.99, means 99% softening
+	if(APS > s->APS1 && APS < s->APS2)
+		k = 1.0 - s->A*((APS - s->APS1)/(s->APS2 - s->APS1));
+	if(APS >= s->APS2)
+		k = 1.0 - s->A;
 	// apply strain softening
 	return par*k;
 }
 //---------------------------------------------------------------------------
-// compute inverse deviatoric elastic viscosity
+// compute inverse deviatoric elastic parameter
 PetscScalar GetI2Gdt(
 	PetscInt     numPhases,
 	Material_t  *phases,
@@ -432,33 +439,43 @@ PetscScalar GetI2Gdt(
 	PetscScalar  dt)
 {
 	PetscInt    i;
-	PetscScalar I2Gdt;
+	PetscScalar I2Gdt, Gavg;
 
-	// initialize inverse deviatoric elastic viscosity
+	Gavg  = 0.0;
 	I2Gdt = 0.0;
 
 	// scan all phases
 	for(i = 0; i < numPhases; i++)
-	{	// average elastic materials only
-		if(phases[i].G) I2Gdt += 0.5*phRat[i]/phases[i].G/dt;
+	{
+		// average elastic materials only
+		if(phases[i].G)
+		{
+			Gavg += phRat[i]*phases[i].G;
+		}
 	}
+
+	if(Gavg) I2Gdt = 1.0/Gavg/dt/2.0;
+
 	return I2Gdt;
 }
 //---------------------------------------------------------------------------
 #undef __FUNCT__
 #define __FUNCT__ "DevConstEq"
 PetscErrorCode DevConstEq(
-	SolVarDev   *svDev,     		// solution variables
-	PetscScalar *eta_creep, 		// creep viscosity (for output)
-	PetscScalar *eta_viscoplastic, 	// viscoplastic viscosity (for output)
-	PetscInt     numPhases, 		// number phases
-	Material_t  *phases,    		// phase parameters
-	PetscScalar *phRat,     		// phase ratios
-	MatParLim   *lim,       		// phase parameters limits
-	PetscScalar  p_lithos,          // lithostatic pressure
-	PetscScalar  dt,        		// time step
-	PetscScalar  p,         		// pressure
-	PetscScalar  T)         		// temperature
+		SolVarDev   *svDev,     // solution variables
+		PetscScalar *eta_creep, // creep viscosity (for output)
+		PetscScalar *eta_vp,    // viscoplastic viscosity (for output)
+		PetscInt     numPhases, // number phases
+		Material_t  *phases,    // phase parameters
+		Soft_t      *soft,      // material softening laws
+		PetscScalar *phRat,     // phase ratios
+		Controls    *ctrl,       // parameters and controls
+		PetscScalar  p_lithos,  // lithostatic pressure
+		PetscScalar  p_pore,    // pore pressure
+		PetscScalar  dt,        // time step
+		PetscScalar  p,         // pressure
+		PetscScalar  T,         // temperature
+		PData       *pd)        // PD data
 {
 	// Evaluate deviatoric constitutive equations in control volume
 
@@ -475,15 +492,16 @@ PetscErrorCode DevConstEq(
 	APS = svDev->APS;
 
 	// initialize effective viscosity & plastic strain-rate
-	svDev->eta   		= 0.0;
-	svDev->DIIpl 		= 0.0;
-	(*eta_creep) 		= 0.0;
-	(*eta_viscoplastic) = 0.0;
+	svDev->eta   = 0.0;
+	svDev->DIIpl = 0.0;
+	(*eta_creep) = 0.0;
+	(*eta_vp)    = 0.0;
 
-	svDev->dEta = 0.0;
-	svDev->fr   = 0.0;
-	dEta        = 0.0;
-	fr          = 0.0;
+	svDev->dEta  = 0.0;
+	svDev->fr    = 0.0;
+	svDev->yield = 0.0;
+	dEta         = 0.0;
+	fr           = 0.0;
 
 	// scan all phases
 	for(i = 0; i < numPhases; i++)
@@ -494,21 +512,42 @@ PetscErrorCode DevConstEq(
 			// get reference to material parameters table
 			mat = &phases[i];
 
+			// Get PD data
+			if(mat->Pd_rho == 1)
+			{
+				// Get the data from phase diagram
+				ierr = SetDataPhaseDiagram(pd, p, T, 0, mat->pdn); CHKERRQ(ierr);
+
+				// If melt is present get melt information
+				if (mat->Pd_Me == 1 && mat->Pd_mf == 1 && pd->mf >= 0 && pd->mf <= 1 )
+				{
+					svDev->mf  = pd->mf;
+				}
+			}
+			else if(mat->Pd_Me == 1 && mat->Pd_mf == 0)
+			{
+				svDev->mf  = mat->mf;
+			}
+			else
+			{
+				svDev->mf  = 0;
+			}
+
 			// setup nonlinear constitutive equation evaluation context
-			ierr = ConstEqCtxSetup(&ctx, mat, lim, DII, APS, dt, p, p_lithos, T); CHKERRQ(ierr);
+			ierr = ConstEqCtxSetup(&ctx, mat, soft, ctrl, DII, APS, dt, p, p_lithos, p_pore, T); CHKERRQ(ierr);
 
 			// solve effective viscosity & plastic strain rate
-			ierr = GetEffVisc(&ctx, lim, &eta_total, &eta_creep_phase, &eta_viscoplastic_phase, &DIIpl, &dEta, &fr, svDev); CHKERRQ(ierr);
-
-			svDev->eta     += phRat[i]*eta_total;
+			ierr = GetEffVisc(&ctx, ctrl, &eta_total, &eta_creep_phase, &eta_viscoplastic_phase, &DIIpl, &dEta, &fr, svDev); CHKERRQ(ierr);
 
 			// average parameters
-			svDev->DIIpl 		+= phRat[i]*DIIpl;
-			(*eta_creep) 		+= phRat[i]*eta_creep_phase;
-			(*eta_viscoplastic) += phRat[i]*eta_viscoplastic_phase;
+			svDev->eta   += phRat[i]*eta_total;
+			svDev->DIIpl += phRat[i]*DIIpl;
+			(*eta_creep) += phRat[i]*eta_creep_phase;
+			(*eta_vp)    += phRat[i]*eta_viscoplastic_phase;
 
-			svDev->dEta += phRat[i]*dEta;
-			svDev->fr   += phRat[i]*fr;
+			svDev->dEta  += phRat[i]*dEta;
+			svDev->fr    += phRat[i]*fr;
+			svDev->yield += phRat[i]*ctx.taupl;
 		}
 	}
 
@@ -518,28 +557,33 @@ PetscErrorCode DevConstEq(
 #undef __FUNCT__
 #define __FUNCT__ "VolConstEq"
 PetscErrorCode VolConstEq(
-	SolVarBulk  *svBulk,    // solution variables
-	PetscInt     numPhases, // number phases
-	Material_t  *phases,    // phase parameters
-	PetscScalar *phRat,     // phase ratios
-	MatParLim   *lim,       // phase parameters limits
-	PetscScalar  depth,     // depth for depth-dependent density model
-	PetscScalar  dt,        // time step
-	PetscScalar  p,         // pressure
-	PetscScalar  T)         // temperature
+		SolVarBulk  *svBulk,    // solution variables
+		PetscInt     numPhases, // number phases
+		Material_t  *phases,    // phase parameters
+		PetscScalar *phRat,     // phase ratios
+		Controls    *ctrl,      // parameters and controls
+		PetscScalar  depth,     // depth for depth-dependent density model
+		PetscScalar  dt,        // time step
+		PetscScalar  p,         // pressure
+		PetscScalar  T,         // temperature
+		PData       *pd)        // PD data
 {
 	// Evaluate volumetric constitutive equations in control volume
-
 	PetscInt     i;
 	Material_t  *mat;
-	PetscScalar  cf_comp, cf_therm, IKdt, rho;
+	PetscScalar  cf_comp, cf_therm, Kavg, rho;
 
 	PetscFunctionBegin;
 
-	// initialize effective density, thermal expansion & inverse bulk elastic viscosity
+	// initialize effective density, thermal expansion & inverse bulk elastic parameter
 	svBulk->rho   = 0.0;
 	svBulk->alpha = 0.0;
 	svBulk->IKdt  = 0.0;
+	Kavg          = 0.0;
+	svBulk->Vp = 0;
+	svBulk->Vs = 0;
+	svBulk->mf = 0;
+	svBulk->rho_pf = 0;
 
 	// scan all phases
 	for(i = 0; i < numPhases; i++)
@@ -547,20 +591,53 @@ PetscErrorCode VolConstEq(
 		// update present phases only
 		if(phRat[i])
 		{
-
 			// get reference to material parameters table
 			mat = &phases[i];
 
+			// Get PD data
+			if(mat->Pd_rho == 1)
+			{
+				// Get the data from phase diagram
+				SetDataPhaseDiagram(pd, p, T, 0, mat->pdn);
+				svBulk->rho_pd  = pd->rho;
+
+				// If melt is present get melt information
+				if (mat->Pd_Me == 1 && mat->Pd_mf == 1 && pd->mf >= 0 && pd->mf <= 1 )
+				{
+					svBulk->mf += phRat[i]*pd->mf;
+				}
+				// Fluid density
+				if (mat->Pd_rho_f == 1)
+				{
+					svBulk->rho_pf += phRat[i]*pd->rho_f;
+				}
+				// Seismic velocities
+				if (mat->Pd_SV == 1)
+				{
+					svBulk->Vp += phRat[i]*pd->Vp;
+					svBulk->Vs += phRat[i]*pd->Vs;
+					// pd->Vp = -8.1e-5 - 1*((pow(200,-1)*276000)/(3.1416*8.314*pow(T,2)));
+					// svBulk->Vp += phRat[i]*pd->Vp;
+				}
+			}
+			else if(mat->Pd_Me == 1 && mat->Pd_mf == 0)
+			{
+				svBulk->mf += phRat[i]*mat->mf;
+			}
+
 			// initialize
-			IKdt     = 0.0;
 			cf_comp  = 1.0;
 			cf_therm = 1.0;
 
 			// elastic compressiblility correction (Murnaghan's equation)
 			// ro/ro_0 = (1 + K'*P/K)^(1/K')
-			if(mat->K)
+			if(mat->Pd_K)
 			{
-				IKdt = 1.0/mat->K/dt;
+				if(mat->Kp) cf_comp = pow(1.0 + pd->K*(p/pd->K), 1.0/pd->K);
+				else        cf_comp = 1.0 + p/pd->K;
+			}
+			else if(mat->K)
+			{
 				if(mat->Kp) cf_comp = pow(1.0 + mat->Kp*(p/mat->K), 1.0/mat->Kp);
 				else        cf_comp = 1.0 + p/mat->K;
 			}
@@ -574,21 +651,40 @@ PetscErrorCode VolConstEq(
 
 			// thermal expansion correction
 			// ro/ro_0 = 1 - alpha*(T - TRef)
-			if(mat->alpha)
+			if(mat->Pd_alpha == 1)
 			{
-				cf_therm  = 1.0 - mat->alpha*(T - lim->TRef);
+				cf_therm  = 1.0 - pd->alpha*(T - ctrl->TRef);
+				svBulk->alpha += phRat[i]*pd->alpha;
+
+			}
+			else if(mat->alpha)
+			{
+				cf_therm  = 1.0 - mat->alpha*(T - ctrl->TRef);
+				svBulk->alpha += phRat[i]*mat->alpha;
 			}
 
 			// get density
 			if(mat->rho_n)
 			{
 				// depth-dependent density (ad-hoc)
-				rho = mat->rho - (mat->rho - lim->rho_fluid)*mat->rho_n*exp(-mat->rho_c*depth);
+				rho = mat->rho - (mat->rho - ctrl->rho_fluid)*mat->rho_n*exp(-mat->rho_c*depth);
 			}
-			if(mat->Pd_rho == 1)
+
+			// Phase diagram
+			if(mat->Pd_rho == 1)   // Density from a phase diagram (have svBulk->rho = svBulk->rho)
 			{
-				// Density from a phase diagram (have svBulk->rho = svBulk->rho)
-				rho = svBulk->rho_pd;
+				if(mat->Pd_rho_f == 1 && mat->Pd_mf == 1 && svBulk->rho_pf > 0)   // PD MF
+				{
+					rho = (svBulk->mf * svBulk->rho_pf) + ((1-svBulk->mf) * svBulk->rho_pd);
+				}
+				else
+				{
+					rho = svBulk->rho_pd;
+				}
+			}
+			else if(mat->Pd_mf == 0 && svBulk->rho_pf > 0)  // CONSTANT MF
+			{
+				rho = (mat->mf * svBulk->rho_pf) + ((1-mat->mf) * svBulk->rho_pd);
 			}
 			else
 			{
@@ -596,12 +692,13 @@ PetscErrorCode VolConstEq(
 				rho = mat->rho*cf_comp*cf_therm;
 			}
 
-			// update density, thermal expansion & inverse bulk elastic viscosity
+			// update density, thermal expansion & inverse bulk elastic parameter
 			svBulk->rho   += phRat[i]*rho;
 			svBulk->alpha += phRat[i]*mat->alpha;
-			svBulk->IKdt  += phRat[i]*IKdt;
 		}
 	}
+
+	if(Kavg) svBulk->IKdt = 1.0/Kavg/dt;
 
 	PetscFunctionReturn(0);
 }
@@ -609,11 +706,10 @@ PetscErrorCode VolConstEq(
 #undef __FUNCT__
 #define __FUNCT__ "GetStressCell"
 PetscErrorCode GetStressCell(
-	SolVarCell  *svCell, // solution variables
-	MatParLim   *lim,    // phase parameters limits
-	PetscScalar  dxx,    // effective normal strain rate components
-	PetscScalar  dyy,    // ...
-	PetscScalar  dzz)    // ...
+		SolVarCell  *svCell, // solution variables
+		PetscScalar  dxx,    // effective normal strain rate components
+		PetscScalar  dyy,    //
+		PetscScalar  dzz)   //
 {
 	// compute stress, plastic strain-rate and shear heating term on cell
 
@@ -633,11 +729,9 @@ PetscErrorCode GetStressCell(
 	// get strain-rate invariant
 	DII = svDev->DII;
 
-	// use reference strain-rate instead of zero
-	if(DII == 0.0) DII = lim->DII_ref;
-
 	// compute plastic scaling coefficient
-	cfpl = svDev->DIIpl/DII;
+	if(DII) cfpl = svDev->DIIpl/DII;
+	else    cfpl = 0.0;
 
 	// compute plastic strain-rate components
 	txx = cfpl*dxx;
@@ -662,9 +756,8 @@ PetscErrorCode GetStressCell(
 #undef __FUNCT__
 #define __FUNCT__ "GetStressEdge"
 PetscErrorCode GetStressEdge(
-	SolVarEdge  *svEdge, // solution variables
-	MatParLim   *lim,    // phase parameters limits
-	PetscScalar  d)      // effective shear strain rate component
+		SolVarEdge  *svEdge, // solution variables
+		PetscScalar  d)      // effective shear strain rate component
 {
 
 	SolVarDev   *svDev;
@@ -681,11 +774,9 @@ PetscErrorCode GetStressEdge(
 	// get strain-rate invariant
 	DII = svDev->DII;
 
-	// use reference strain-rate instead of zero
-	if(DII == 0.0) DII = lim->DII_ref;
-
 	// compute plastic scaling coefficient
-	cfpl = svDev->DIIpl/DII;
+	if(DII) cfpl = svDev->DIIpl/DII;
+	else    cfpl = 0.0;
 
 	// compute plastic strain-rate components
 	t = cfpl*d;
@@ -702,678 +793,208 @@ PetscErrorCode GetStressEdge(
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-// Elastic stress rotation functions
 //---------------------------------------------------------------------------
-void GetRotationMatrix(
-	Tensor2RN   *R,  // rotation matrix
-	PetscScalar  dt, // time step
-	PetscScalar  wx, // vorticity vector components
-	PetscScalar  wy, // ...
-	PetscScalar  wz) // ...
+// get the density from a phase diagram
+#undef __FUNCT__
+#define __FUNCT__ "SetDataPhaseDiagram"
+PetscErrorCode SetDataPhaseDiagram(PData *pd, PetscScalar p, PetscScalar T, PetscScalar pshift, char pdn[])
 {
-	// compute rotation matrix from axis & angle (Euler-Rodrigues formula)
-	// WARNING! Courant criterion for rotation angle should be implemented
-	// angle tolerance probably should be also larger than machine epsilon
+    PetscInt       i,j,i_pd,indT[2],indP[2],ind[4],found;
+    PetscScalar    fx0,fx1,weight[4];
 
-	PetscScalar w, theta, ct, st, cf;
+	PetscFunctionBegin;
 
-	// get length of the instantaneous rotation axis (vorticity intensity)
-	w = sqrt(wx*wx + wy*wy + wz*wz);
+	// rho_pdval[0] = lowermost temperature value
+	// rho_pdval[1] = dT
+	// rho_pdval[2] = nT
+	// rho_pdval[3] = uppermost temperature value
+	// rho_pdval[4] = lowermost pressure value
+	// rho_pdval[5] = dp
+	// rho_pdval[6] = np
+	// rho_pdval[7] = uppermost pressure value
+	// rho_pdval[8] = # of columns (to determine what needs to be interpolated)
 
-	// get finite rotation angle (vorticity intensity is twice the average angular velocity)
-	theta = dt*(w/2.0);
+	// Function to interpolate values from P-T data from PARTICLES (called in advect.c)
 
-	// round-off
-	if(theta <  2.0*DBL_EPSILON)
+	// Get the correct phase diagram
+	for(i=0; i<max_num_pd; i++)
 	{
-		Tensor2RNUnit(R);
-
-		return;
+		i_pd  = -1;
+		found = 1;
+		if(!pd->rho_pdns[5][i])
+		{
+			// We found an empty phase diagram spot
+		}
+		else
+		{
+			for(j=0; j<max_name; j++)
+			{
+				if((pd->rho_pdns[j][i] != pdn[j]))
+				{
+					found = 0;
+					break;
+				}
+			}
+			if(found==1)
+			{
+				i_pd = i;  // Store the column of the buffer
+				break;
+			}
+		}
 	}
 
-	// get unit rotation axis
-	wx /= w;
-	wy /= w;
-	wz /= w;
-
-	// compute rotation operator using Euler-Rodrigues formula
-	ct = cos(theta);
-	st = sin(theta);
-	cf = 1.0 - ct;
-
-	R->xx =  ct    + cf*wx*wx;   R->xy = -st*wz + cf*wx*wy;   R->xz =  st*wy + cf*wx*wz;
-	R->yx =  st*wz + cf*wy*wx;   R->yy =  ct    + cf*wy*wy;   R->yz = -st*wx + cf*wy*wz;
-	R->zx = -st*wy + cf*wz*wx;   R->zy =  st*wx + cf*wz*wy;   R->zz =  ct    + cf*wz*wz;
-}
-//---------------------------------------------------------------------------
-void RotateStress(Tensor2RN *R, Tensor2RS *S, Tensor2RS *SR)
-{
-	// rotate stress tensor
-	// [SR] = [R] * [S] * [R]^t
-	// SRij = Rik * Skl * Rjl
-
-	PetscScalar dx, dy, dz;
-
-	dx = R->xx*S->xx + R->xy*S->xy + R->xz*S->xz;
-	dy = R->xx*S->xy + R->xy*S->yy + R->xz*S->yz;
-	dz = R->xx*S->xz + R->xy*S->yz + R->xz*S->zz;
-
-	SR->xx = dx*R->xx + dy*R->xy + dz*R->xz;
-	SR->xy = dx*R->yx + dy*R->yy + dz*R->yz;
-	SR->xz = dx*R->zx + dy*R->zy + dz*R->zz;
-
-	dx = R->yx*S->xx + R->yy*S->xy + R->yz*S->xz;
-	dy = R->yx*S->xy + R->yy*S->yy + R->yz*S->yz;
-	dz = R->yx*S->xz + R->yy*S->yz + R->yz*S->zz;
-
-	SR->yy = dx*R->yx + dy*R->yy + dz*R->yz;
-	SR->yz = dx*R->zx + dy*R->zy + dz*R->zz;
-
-	dx = R->zx*S->xx + R->zy*S->xy + R->zz*S->xz;
-	dy = R->zx*S->xy + R->zy*S->yy + R->zz*S->yz;
-	dz = R->zx*S->xz + R->zy*S->yz + R->zz*S->zz;
-
-	SR->zz = dx*R->zx + dy*R->zy + dz*R->zz;
-}
-//---------------------------------------------------------------------------
-void Tensor2RSCopy(Tensor2RS *A, Tensor2RS *B)
-{
-	// copy symmetric second order tensor B = A
-	B->xx = A->xx;
-	B->xy = A->xy; B->yy = A->yy;
-    B->xz = A->xz; B->yz = A->yz; B->zz = A->zz;
-}
-//---------------------------------------------------------------------------
-// Infinite Strain Axis (ISA) calculation functions
-
-// Kaminski et. al, 2004. D-Rex, a program for calculation of seismic
-// anisotropy due to crystal lattice preferred orientation in the convective
-// upper mantle, Gophys. J. Int, 158, 744-752.
-
-//---------------------------------------------------------------------------
-PetscInt Tensor2RNEigen(Tensor2RN *L, PetscScalar tol, PetscScalar eval[])
-{
-	//=======================================================================
-	//
-	// compute eigenvalues of a nonsymmetric tensor with zero trace
-	//
-	// WARNING! TENSOR TRACE MUST BE ZERO (NOT CHECKED HERE)
-	//
-	// return codes:
-	//
-	//    0 - three nearly zero eigenvalues (up to a tolerance)
-	//    1 - three real eigenvalues (can be multiple)
-	//    2 - one positive real eigenvalue & a complex conjugate pair
-	//    3 - one negative real eigenvalue & a complex conjugate pair
-	//
-	// three real eigenvalues are sorted in descending order
-	// real eigenvalue always precedes the complex conjugate pair
-	//
-	//=======================================================================
-
-	PetscInt    code;
-	PetscScalar I2, I3, p, q, D, theta, l1, l2, l3, cx, t, sd, r, s;
-
-	// get invariants
-	I2 = L->xx*L->yy + L->yy*L->zz + L->xx*L->zz
-	-    L->xy*L->yx - L->yz*L->zy - L->xz*L->zx;
-
-	I3 = L->xx*(L->yy*L->zz - L->yz*L->zy)
-	+    L->xy*(L->yz*L->zx - L->yx*L->zz)
-	+    L->xz*(L->yx*L->zy - L->yy*L->zx);
-
-	// get discriminant
-	p =  I2;
-	q = -I3;
-	D = (q*q)/4.0 + (p*p*p)/27.0;
-
-	if(fabs(D) < tol)
+	if(i_pd<0)
 	{
-		//================================
-		// three (nearly) zero eigenvalues
-		//================================
-
-		l1   = 0.0;
-		l2   = 0.0;
-		l3   = 0.0;
-		cx   = 0.0;
-
-		// set return code
-		code = 0;
+		pd->rho = 0;
+		PetscFunctionReturn(0);
 	}
-	else if(D < 0.0)
+
+	// Temporarily add the pressure shift in this function to properly interpolate in the phase digram
+	p = p-pshift;
+
+	// Take absolute value of pressure
+	if(p<0)
 	{
-		//=======================
-		// three real eigenvalues
-		//=======================
-
-		theta = ARCCOS((3.0*q)/(2.0*p)*sqrt(-3.0/p));
-
-		l1   = 2.0*sqrt(-p/3.0)*cos( theta            /3.0);
-		l2   = 2.0*sqrt(-p/3.0)*cos((theta - 2.0*M_PI)/3.0);
-		l3   = 2.0*sqrt(-p/3.0)*cos((theta - 4.0*M_PI)/3.0);
-		cx   = 0.0;
-
-		// set return code
-		code = 1;
-
-		// sort eigenvalues
-		if(l2 > l1) { t = l1; l1 = l2; l2 = t; }
-		if(l3 > l1) { t = l1; l1 = l3; l3 = t; }
-		if(l3 > l2) { t = l2; l2 = l3; l3 = t; }
+		// p = -1*p;
+		p = 0;
 	}
+
+	indT[0] = (PetscInt)floor((T-pd->rho_pdval[0][i_pd])/pd->rho_pdval[1][i_pd]);
+	indT[1] = indT[0] + 1;
+
+	indP[0] = (PetscInt)floor((p-(pd->rho_pdval[4][i_pd]))/pd->rho_pdval[5][i_pd]);
+	indP[1] = indP[0] + 1;
+
+	weight[0] = ((indP[1]*pd->rho_pdval[5][i_pd]    + pd->rho_pdval[4][i_pd]) - p) / ((pd->rho_pdval[5][i_pd]*indP[1]+pd->rho_pdval[4][i_pd]) - (pd->rho_pdval[5][i_pd]*indP[0]+pd->rho_pdval[4][i_pd]));
+	weight[1] = (p - (pd->rho_pdval[5][i_pd]*indP[0]+ pd->rho_pdval[4][i_pd]))     / ((pd->rho_pdval[5][i_pd]*indP[1]+pd->rho_pdval[4][i_pd]) - (pd->rho_pdval[5][i_pd]*indP[0]+pd->rho_pdval[4][i_pd]));
+	weight[2] = ((pd->rho_pdval[1][i_pd]*indT[1]    + pd->rho_pdval[0][i_pd]) - T) / ((pd->rho_pdval[1][i_pd]*indT[1]+pd->rho_pdval[0][i_pd]) - (pd->rho_pdval[1][i_pd]*indT[0]+pd->rho_pdval[0][i_pd]));
+	weight[3] = (T - (pd->rho_pdval[1][i_pd]*indT[0]+ pd->rho_pdval[0][i_pd]))     / ((pd->rho_pdval[1][i_pd]*indT[1]+pd->rho_pdval[0][i_pd]) - (pd->rho_pdval[1][i_pd]*indT[0]+pd->rho_pdval[0][i_pd]));
+
+	if(indT[1]>(*pd->rho_pdval[2]))
+	{
+		indT[0] = (PetscInt)pd->rho_pdval[2][i_pd]-1;
+		indT[1] = (PetscInt)pd->rho_pdval[2][i_pd];
+		weight[2] = 1;
+		weight[3] = 0;
+	}
+	if(indP[1]>(*pd->rho_pdval[6]))
+	{
+		indP[0] = (PetscInt)pd->rho_pdval[6][i_pd]-1;
+		indP[1] = (PetscInt)pd->rho_pdval[6][i_pd];
+		weight[0] = 1;
+		weight[1] = 0;
+	}
+	if(indT[0]<1)
+	{
+		indT[0] = 0;
+		indT[1] = 1;
+		weight[2] = 0;
+		weight[3] = 1;
+	}
+	if(indP[0]<1)
+	{
+		indP[0] = 0;
+		indP[1] = 1;
+		weight[0] = 0;
+		weight[1] = 1;
+	}
+	ind[0] = (PetscInt)pd->rho_pdval[2][i_pd] * (indP[0]-1) + indT[0];
+	ind[1] = (PetscInt)pd->rho_pdval[2][i_pd] * (indP[0]-1) + indT[1];
+	ind[2] = (PetscInt)pd->rho_pdval[2][i_pd] * (indP[1]-1) + indT[0];
+	ind[3] = (PetscInt)pd->rho_pdval[2][i_pd] * (indP[1]-1) + indT[1];
+	if(ind[0]<0)
+	{
+		ind[0] = 0;
+		ind[1] = 1;
+	}
+	if(ind[3]>pd->rho_pdval[2][i_pd]*pd->rho_pdval[6][i_pd])
+	{
+		ind[2] = (PetscInt)pd->rho_pdval[2][i_pd]*(PetscInt)pd->rho_pdval[6][i_pd]-1;
+		ind[3] = (PetscInt)pd->rho_pdval[2][i_pd]*(PetscInt)pd->rho_pdval[6][i_pd];
+	}
+
+	// Interpolate density
+	fx0 = weight[0] * pd->rho_v[ind[0]][i_pd] + weight[1] * pd->rho_v[ind[2]][i_pd];
+	fx1 = weight[0] * pd->rho_v[ind[1]][i_pd] + weight[1] * pd->rho_v[ind[3]][i_pd];
+	pd->rho = weight[2] * fx0           + weight[3] * fx1;
+
+	// Interpolate mf if present
+	if(pd->rho_pdval[8][i_pd] == 4 )
+	{
+		fx0 = weight[0] * pd->Me_v[ind[0]][i_pd] + weight[1] * pd->Me_v[ind[2]][i_pd];
+		fx1 = weight[0] * pd->Me_v[ind[1]][i_pd] + weight[1] * pd->Me_v[ind[3]][i_pd];
+		pd->mf  = weight[2] * fx0      + weight[3] * fx1;
+	}
+	// Interpolate mf + rho fluid if present
+	else if(pd->rho_pdval[8][i_pd] == 5)
+	{
+		fx0 = weight[0] * pd->Me_v[ind[0]][i_pd] + weight[1] * pd->Me_v[ind[2]][i_pd];
+		fx1 = weight[0] * pd->Me_v[ind[1]][i_pd] + weight[1] * pd->Me_v[ind[3]][i_pd];
+		pd->mf  = weight[2] * fx0      + weight[3] * fx1;
+
+		fx0 = weight[0] * pd->rho_f_v[ind[0]][i_pd] + weight[1] * pd->rho_f_v[ind[2]][i_pd];
+		fx1 = weight[0] * pd->rho_f_v[ind[1]][i_pd] + weight[1] * pd->rho_f_v[ind[3]][i_pd];
+		pd->rho_f  = weight[2] * fx0   + weight[3] * fx1;
+
+		// Apply feedback to the density (rho_eff = rho_f*mf+(1-mf)*rho) -> DONE IN constEq.c
+		// pd->rho = (pd->mf * pd->rho_f) + ((1-pd->mf) * pd->rho);
+	}
+	// Interpolate mf + rho fluid  + Vs + Vp
+	else if(pd->rho_pdval[8][i_pd] == 7)
+	{
+		fx0 = weight[0] * pd->Me_v[ind[0]][i_pd] + weight[1] * pd->Me_v[ind[2]][i_pd];
+		fx1 = weight[0] * pd->Me_v[ind[1]][i_pd] + weight[1] * pd->Me_v[ind[3]][i_pd];
+		pd->mf  = weight[2] * fx0      + weight[3] * fx1;
+
+		fx0 = weight[0] * pd->rho_f_v[ind[0]][i_pd] + weight[1] * pd->rho_f_v[ind[2]][i_pd];
+		fx1 = weight[0] * pd->rho_f_v[ind[1]][i_pd] + weight[1] * pd->rho_f_v[ind[3]][i_pd];
+		pd->rho_f  = weight[2] * fx0   + weight[3] * fx1;
+
+		fx0 = weight[0] * pd->rho_vs_v[ind[0]][i_pd] + weight[1] * pd->rho_vs_v[ind[2]][i_pd];
+		fx1 = weight[0] * pd->rho_vs_v[ind[1]][i_pd] + weight[1] * pd->rho_vs_v[ind[3]][i_pd];
+		pd->Vs  = weight[2] * fx0   + weight[3] * fx1;
+
+		fx0 = weight[0] * pd->rho_vp_v[ind[0]][i_pd] + weight[1] * pd->rho_vp_v[ind[2]][i_pd];
+		fx1 = weight[0] * pd->rho_vp_v[ind[1]][i_pd] + weight[1] * pd->rho_vp_v[ind[3]][i_pd];
+		pd->Vp  = weight[2] * fx0   + weight[3] * fx1;
+	}
+	// Interpolate mf + rho fluid  + Vp + Vs + alpha + K
+	else if(pd->rho_pdval[8][i_pd] == 9)
+	{
+		fx0 = weight[0] * pd->Me_v[ind[0]][i_pd] + weight[1] * pd->Me_v[ind[2]][i_pd];
+		fx1 = weight[0] * pd->Me_v[ind[1]][i_pd] + weight[1] * pd->Me_v[ind[3]][i_pd];
+		pd->mf  = weight[2] * fx0      + weight[3] * fx1;
+
+		fx0 = weight[0] * pd->rho_f_v[ind[0]][i_pd] + weight[1] * pd->rho_f_v[ind[2]][i_pd];
+		fx1 = weight[0] * pd->rho_f_v[ind[1]][i_pd] + weight[1] * pd->rho_f_v[ind[3]][i_pd];
+		pd->rho_f  = weight[2] * fx0   + weight[3] * fx1;
+
+		fx0 = weight[0] * pd->rho_vs_v[ind[0]][i_pd] + weight[1] * pd->rho_vs_v[ind[2]][i_pd];
+		fx1 = weight[0] * pd->rho_vs_v[ind[1]][i_pd] + weight[1] * pd->rho_vs_v[ind[3]][i_pd];
+		pd->Vs  = weight[2] * fx0   + weight[3] * fx1;
+
+		fx0 = weight[0] * pd->rho_vp_v[ind[0]][i_pd] + weight[1] * pd->rho_vp_v[ind[2]][i_pd];
+		fx1 = weight[0] * pd->rho_vp_v[ind[1]][i_pd] + weight[1] * pd->rho_vp_v[ind[3]][i_pd];
+		pd->Vp  = weight[2] * fx0   + weight[3] * fx1;
+
+		fx0 = weight[0] * pd->rho_alpha_v[ind[0]][i_pd] + weight[1] * pd->rho_alpha_v[ind[2]][i_pd];
+		fx1 = weight[0] * pd->rho_alpha_v[ind[1]][i_pd] + weight[1] * pd->rho_alpha_v[ind[3]][i_pd];
+		pd->alpha  = weight[2] * fx0   + weight[3] * fx1;
+
+		fx0 = weight[0] * pd->rho_K_v[ind[0]][i_pd] + weight[1] * pd->rho_K_v[ind[2]][i_pd];
+		fx1 = weight[0] * pd->rho_K_v[ind[1]][i_pd] + weight[1] * pd->rho_K_v[ind[3]][i_pd];
+		pd->K  = weight[2] * fx0   + weight[3] * fx1;
+	}
+	// No melt fraction
 	else
 	{
-		//=============================================
-		// one real eigenvalue & complex conjugate pair
-		//=============================================
-
-		sd = sqrt(D);
-
-		r  = ODDROOT(-q/2.0 + sd, 1.0/3.0);
-		s  = ODDROOT(-q/2.0 - sd, 1.0/3.0);
-
-		// get real parts of eigenvalues
-		l1 =  r + s;
-		l2 = -l1/2.0;
-		l3 =  l2;
-
-		// get modulus of imaginary part of complex conjugate pair
-		cx = fabs(r-s)*sqrt(3.0)/2.0;
-
-		// set return code
-		if(l1 > 0.0) code = 2; // positive real root
-		else         code = 3; // negative real root
-
-		// complex eigenvalues are:
-		// l2 = -(r+s)/2 + cx*i
-		// l3 = -(r+s)/2 - cx*i
+		pd->mf = 0;
 	}
 
-	// store result
-	eval[0] = l1;
-	eval[1] = l2;
-	eval[2] = l3;
-	eval[3] = cx;
-
-	return code;
-}
-//---------------------------------------------------------------------------
-PetscInt getISA(Tensor2RN *pL, PetscScalar ISA[], PetscScalar *plnrm)
-{
-	// compute direction of Infinite Strain Axis
-
-	// return codes:
-	//    -2 - spectral decomposition failed to converge
-	//    -1 - ISA is undefined
-	//     0 - ISA is defined, computed, and returned
-	//     1 - simple shear case (ISA has same direction as velocity)
-
-	Tensor2RS   Cs;
-	Tensor2RN   L, L2, I, F, Ft, C;
-	PetscScalar l1, l2, l3, cx, D, lnrm, eval[4], evect[9], ltol, ttol;
-	PetscInt    maxit, code;
-
-	// WARNING! set tolerances via command line using MatParLim structure
-	ltol  = 1e-9;  // loose tolerance
-	ttol  = 1e-13; // tight tolerance
-	maxit = 30;    // maximum number of Jacobi rotations
-
-	// initialize
-	ISA[0] = 0.0;
-	ISA[1] = 0.0;
-	ISA[2] = 0.0;
-
-	// copy velocity gradient, compute norm
-	Tensor2RNCopy(pL, &L);
-	Tensor2RNNorm(&L, &lnrm);
-
-	// return norm of the velocity gradient if necessary
-	if(plnrm) (*plnrm) = lnrm;
-
-	//========================================
-	// *** zero gradient, ISA is undefined ***
-	//========================================
-	if(!lnrm) return -1;
-
-	// normalize velocity gradient, remove trace
-	Tensor2RNDivide(&L, lnrm);
-	Tensor2RNTrace(&L);
-
-	// get eigenvalues of the velocity gradient
-	code = Tensor2RNEigen(&L, ltol, eval);
-
-	//==================================================
-	// *** three zero eigenvalues, simple shear case ***
-	//==================================================
-	if(code == 0) return 1;
-
-	//===================================================================
-	// *** negative real + complex pair eigenvalues, ISA is undefined ***
-	//===================================================================
-	if(code == 3) return -1;
-
-	// get denominator of Sylvester's formula
-	l1 = eval[0];
-	l2 = eval[1];
-	l3 = eval[2];
-	cx = eval[3];
-	D  = (l1 - l2)*(l1 - l3) + cx*cx;
-
-	//===============================================
-	// *** multiple eigenvalues, ISA is undefined ***
-	//===============================================
-	if(fabs(D) < ttol) return -1;
-
-	// three distinct real or one positive real + complex pair eigenvalues
-	// ISA is defined by l2 & l3 eigenvalues
-	// compute deformation gradient
-	// scaling doesn't affect eigenvectors (denominator is set to unit)
-	// F = (L - l2*I)*(L - l3*I)/D
-
-	Tensor2RNUnit(&I);
-	Tensor2RNProduct(&L, &L, &L2);
-	Tensor2RNSum3(&L2, 1.0, &L, -(l2 + l3), &I, (l2*l3 + cx*cx), &F);
-
-	// compute right Cauchy-Green deformation tensor C = F^t*F
-	Tensor2RNTranspose(&F, &Ft);
-	Tensor2RNProduct(&Ft, &F, &C);
-	Tensor2RNCopySym(&C, &Cs);
-
-	// perform spectral decomposition
-	code = Tensor2RSSpectral(&Cs, eval, evect, ttol, ltol, maxit);
-
-	//=====================================================================
-	// *** spectral decomposition failed to converge, ISA is undefined  ***
-	//=====================================================================
-	if(code) return -2;
-
-	// ISA is the eigenvector corresponding to the largest eigenvalue
-	ISA[0] = evect[0];
-	ISA[1] = evect[1];
-	ISA[2] = evect[2];
-
-	//===============================================
-	// *** ISA is defined, computed, and returned ***
-	//===============================================
-	return 0;
-}
-//---------------------------------------------------------------------------
-void Tensor2RNClear(Tensor2RN *A)
-{
-	A->xx = 0.0; A->xy = 0.0; A->xz = 0.0;
-	A->yx = 0.0; A->yy = 0.0; A->yz = 0.0;
-	A->zx = 0.0; A->zy = 0.0; A->zz = 0.0;
-}
-//---------------------------------------------------------------------------
-PetscInt Tensor2RNCheckEq(Tensor2RN *A, Tensor2RN *B, PetscScalar tol)
-{
-	if(!LAMEM_CHECKEQ(A->xx, B->xx, tol, DBL_EPSILON)) return 0;
-	if(!LAMEM_CHECKEQ(A->xy, B->xy, tol, DBL_EPSILON)) return 0;
-	if(!LAMEM_CHECKEQ(A->xz, B->xz, tol, DBL_EPSILON)) return 0;
-	if(!LAMEM_CHECKEQ(A->yx, B->yx, tol, DBL_EPSILON)) return 0;
-	if(!LAMEM_CHECKEQ(A->yy, B->yy, tol, DBL_EPSILON)) return 0;
-	if(!LAMEM_CHECKEQ(A->yz, B->yz, tol, DBL_EPSILON)) return 0;
-	if(!LAMEM_CHECKEQ(A->zx, B->zx, tol, DBL_EPSILON)) return 0;
-	if(!LAMEM_CHECKEQ(A->zy, B->zy, tol, DBL_EPSILON)) return 0;
-	if(!LAMEM_CHECKEQ(A->zz, B->zz, tol, DBL_EPSILON)) return 0;
-
-	return 1;
-}
-//---------------------------------------------------------------------------
-void Tensor2RNNorm(Tensor2RN *A, PetscScalar *pk)
-{
-	// k = |A|
-
-	PetscScalar s, k;
-
-	s = fabs(A->xx) + fabs(A->xy) + fabs(A->xz);           k = s;
-	s = fabs(A->yx) + fabs(A->yy) + fabs(A->yz); if(s > k) k = s;
-	s = fabs(A->zx) + fabs(A->zy) + fabs(A->zz); if(s > k) k = s;
-
-	(*pk) = k;
-}
-//---------------------------------------------------------------------------
-void Tensor2RSNorm(Tensor2RS *A, PetscScalar *pk)
-{
-	// k = |A|
-
-	PetscScalar s, k;
-
-	s = fabs(A->xx) + fabs(A->xy) + fabs(A->xz);           k = s;
-	s = fabs(A->xy) + fabs(A->yy) + fabs(A->yz); if(s > k) k = s;
-	s = fabs(A->xz) + fabs(A->yz) + fabs(A->zz); if(s > k) k = s;
-
-	(*pk) = k;
-}
-//---------------------------------------------------------------------------
-void Tensor2RNDivide(Tensor2RN *A, PetscScalar k)
-{
-	// A = A/k
-
-	A->xx /= k; A->xy /= k; A->xz /= k;
-	A->yx /= k; A->yy /= k; A->yz /= k;
-	A->zx /= k; A->zy /= k; A->zz /= k;
-}
-//---------------------------------------------------------------------------
-void Tensor2RNTrace(Tensor2RN *A)
-{
-	// A = A - tr[A]/3*I
-
-	PetscScalar tr;
-
-	tr = (A->xx + A->yy + A->zz)/3.0;
-
-	A->xx -= tr;
-	A->yy -= tr;
-	A->zz -= tr;
-}
-//---------------------------------------------------------------------------
-void Tensor2RNSym(Tensor2RN *A, Tensor2RN *B)
-{
-	// B = (A + A^t)/2
-
-	B->xx =  A->xx;                B->xy = (A->yx + A->xy)/2.0;   B->xz = (A->zx + A->xz)/2.0;
-	B->yx = (A->xy + A->yx)/2.0;   B->yy =  A->yy;                B->yz = (A->zy + A->yz)/2.0;
-	B->zx = (A->xz + A->zx)/2.0;   B->zy = (A->yz + A->zy)/2.0;   B->zz =  A->zz;
-}
-//---------------------------------------------------------------------------
-void Tensor2RNProduct(Tensor2RN *A, Tensor2RN *B, Tensor2RN *C)
-{
-	// C = A*B
-
-	C->xx = A->xx*B->xx + A->xy*B->yx + A->xz*B->zx;
-	C->xy = A->xx*B->xy + A->xy*B->yy + A->xz*B->zy;
-	C->xz = A->xx*B->xz + A->xy*B->yz + A->xz*B->zz;
-	C->yx = A->yx*B->xx + A->yy*B->yx + A->yz*B->zx;
-	C->yy = A->yx*B->xy + A->yy*B->yy + A->yz*B->zy;
-	C->yz = A->yx*B->xz + A->yy*B->yz + A->yz*B->zz;
-	C->zx = A->zx*B->xx + A->zy*B->yx + A->zz*B->zx;
-	C->zy = A->zx*B->xy + A->zy*B->yy + A->zz*B->zy;
-	C->zz = A->zx*B->xz + A->zy*B->yz + A->zz*B->zz;
-}
-//---------------------------------------------------------------------------
-void Tensor2RNTranspose(Tensor2RN *A, Tensor2RN *B)
-{
-	// B = A^t
-
-	B->xx = A->xx; B->xy = A->yx; B->xz = A->zx;
-	B->yx = A->xy; B->yy = A->yy; B->yz = A->zy;
-	B->zx = A->xz; B->zy = A->yz; B->zz = A->zz;
-}
-//---------------------------------------------------------------------------
-void Tensor2RNCopy(Tensor2RN *A, Tensor2RN *B)
-{
-	// B = A
-
-	B->xx = A->xx; B->xy = A->xy; B->xz = A->xz;
-	B->yx = A->yx; B->yy = A->yy; B->yz = A->yz;
-	B->zx = A->zx; B->zy = A->zy; B->zz = A->zz;
-}
-//---------------------------------------------------------------------------
-void Tensor2RNCopySym(Tensor2RN *A, Tensor2RS *B)
-{
-	// B = A
-
-	B->xx = A->xx;
-	B->xy = A->xy; B->yy = A->yy;
-	B->xz = A->xz; B->yz = A->yz; B->zz = A->zz;
-}
-
-//---------------------------------------------------------------------------
-void Tensor2RNUnit(Tensor2RN *A)
-{
-	// A = I
-
-	A->xx = 1.0; A->xy = 0.0; A->xz = 0.0;
-	A->yx = 0.0; A->yy = 1.0; A->yz = 0.0;
-	A->zx = 0.0; A->zy = 0.0; A->zz = 1.0;
-}
-//---------------------------------------------------------------------------
-void Tensor2RNSum3(
-	Tensor2RN *A, PetscScalar ka,
-	Tensor2RN *B, PetscScalar kb,
-	Tensor2RN *C, PetscScalar kc,
-	Tensor2RN *R)
-{
-	// R = ka*A + kb*B + kc*C
-
-	R->xx = ka*A->xx + kb*B->xx + kc*C->xx;
-	R->xy = ka*A->xy + kb*B->xy + kc*C->xy;
-	R->xz = ka*A->xz + kb*B->xz + kc*C->xz;
-	R->yx = ka*A->yx + kb*B->yx + kc*C->yx;
-	R->yy = ka*A->yy + kb*B->yy + kc*C->yy;
-	R->yz = ka*A->yz + kb*B->yz + kc*C->yz;
-	R->zx = ka*A->zx + kb*B->zx + kc*C->zx;
-	R->zy = ka*A->zy + kb*B->zy + kc*C->zy;
-	R->zz = ka*A->zz + kb*B->zz + kc*C->zz;
-}
-//---------------------------------------------------------------------------
-void Tensor2RNView(Tensor2RN *A, const char *msg)
-{
-	printf("%s: \n\n", msg);
-	printf("%g %g %g \n",   A->xx, A->xy, A->xz);
-	printf("%g %g %g \n",   A->yx, A->yy, A->yz);
-	printf("%g %g %g \n\n", A->zx, A->zy, A->zz);
-}
-//---------------------------------------------------------------------------
-void Tensor2RSView(Tensor2RS *A, const char *msg)
-{
-	printf("%s: \n\n", msg);
-	printf("%g %g %g \n",   A->xx, A->xy, A->xz);
-	printf("%g %g %g \n",   A->xy, A->yy, A->yz);
-	printf("%g %g %g \n\n", A->xz, A->yz, A->zz);
-}
-//---------------------------------------------------------------------------
-PetscInt Tensor2RSSpectral(
-	Tensor2RS   *A,      // symmetric tensor
-	PetscScalar eval[],  // eigenvalues (sorted)
-	PetscScalar evect[], // eigenvectors (corresponding)
-	PetscScalar ttol,    // tight tolerance (convergence condition)
-	PetscScalar ltol,    // loose tolerance (divergence condition)
-	PetscInt    itmax)   // maximum number rotations
-{
-	//=====================================================
-	// Jacobi rotation algorithm for spectral decomposition
-	//=====================================================
-
-	// return codes:
-	// 	 0 - converged to tight tolerance within maximum rotations
-	// 	 1 - failed to converge to loose tolerance within maximum rotations
-
-	PetscInt    iter, opt, code;
-	PetscScalar atmp, ntmp[3], nrm;
-
-	PetscScalar f, max, theta, t, c, s, tau, w, z;
-	PetscScalar a1, a2, a3, a12, a13, a23, *n1, *n2, *n3;
-
-	// macro for single Jacobi rotation
-	#define JAC_ROT(pp, qq, pq, rp, rq, vp, vq) \
-	{	theta = 0.5*(qq - pp)/pq; \
-		t     = 1.0/(fabs(theta) + sqrt(theta*theta + 1.0)); \
-		if(theta < 0.0) t = -t; \
-		c = 1.0/sqrt(t*t + 1.0); s = t*c; tau = s/(1.0 + c); \
-		pp -= t*pq;  qq += t*pq;   pq     = 0.0; \
-		w  =  rp;     z  = rq;     rp    -= s*(z + tau*w);  rq    += s*(w - tau*z); \
-		w  =  vp[0];  z  = vq[0];  vp[0] -= s*(z + tau*w);  vq[0] += s*(w - tau*z); \
-		w  =  vp[1];  z  = vq[1];  vp[1] -= s*(z + tau*w);  vq[1] += s*(w - tau*z); \
-		w  =  vp[2];  z  = vq[2];  vp[2] -= s*(z + tau*w);  vq[2] += s*(w - tau*z); \
-	}
-
-	// macro for swapping two principal values & principal directions
-	#define SWAP_EIG_PAIR(ai, aj, ni, nj) \
-	{	atmp    = ai;    ai    = aj;    aj    = atmp; \
-		ntmp[0] = ni[0]; ni[0] = nj[0]; nj[0] = ntmp[0]; \
-		ntmp[1] = ni[1]; ni[1] = nj[1]; nj[1] = ntmp[1]; \
-		ntmp[2] = ni[2]; ni[2] = nj[2]; nj[2] = ntmp[2]; \
-	}
-
-	// set return code
-	code = 0;
-
-	// compute absolute tolerances
-	Tensor2RSNorm(A, &nrm);
-
-	ttol *= nrm;
-	ltol *= nrm;
-
-	// copy tensor components
-	a1  = A->xx;
-	a12 = A->xy; a2  = A->yy;
-	a13 = A->xz; a23 = A->yz; a3 = A->zz;
-
-	// initialize principal directions
-	n1 = evect;
-	n2 = evect + 3;
-	n3 = evect + 6;
-
-	n1[0] = 1.0; n2[0] = 0.0; n3[0] = 0.0;
-	n1[1] = 0.0; n2[1] = 1.0; n3[1] = 0.0;
-	n1[2] = 0.0; n2[2] = 0.0; n3[2] = 1.0;
-
-	// zero out off-diagonal component by Jacobi rotations
-	iter = 0;
-	do
-	{	// select maximum off-diagonal component
-		f = fabs(a12);               max = f;  opt = 1;
-		f = fabs(a13); if(f > max) { max = f;  opt = 2; }
-		f = fabs(a23); if(f > max) { max = f;  opt = 3; }
-
-		// check convergence
-		if(max < ttol) break;
-
-		// perform Jacobi rotation
-		if     (opt == 1) JAC_ROT(a1, a2, a12, a13, a23, n1, n2) // a12 term
-		else if(opt == 2) JAC_ROT(a1, a3, a13, a12, a23, n1, n3) // a13 term
-		else              JAC_ROT(a2, a3, a23, a12, a13, n2, n3) // a23 term
-
-	} while(++iter < itmax);
-
-	// check divergence
-	if(iter == itmax)
-	{
-		// select maximum off-diagonal component
-		f = fabs(a12);               max = f;  opt = 1;
-		f = fabs(a13); if(f > max) { max = f;  opt = 2; }
-		f = fabs(a23); if(f > max) { max = f;  opt = 3; }
-
-		// check whether algorithm failed to converge to loose
-		// tolerance within prescribed number of iterations
-		if(max > ltol) code = 1;
-	}
-
-	// sort principal values in descending order & permute principal directions
-	if(a2 > a1) SWAP_EIG_PAIR(a1, a2, n1, n2)
-	if(a3 > a1) SWAP_EIG_PAIR(a1, a3, n1, n3)
-	if(a3 > a2) SWAP_EIG_PAIR(a2, a3, n2, n3)
-
-	// store eigenvalues
-	eval[0] = a1;
-	eval[1] = a2;
-	eval[2] = a3;
-
-	return code;
-}
-//---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "Tensor2RS2DSpectral"
-PetscErrorCode Tensor2RS2DSpectral(
-	PetscScalar  axx,
-	PetscScalar  ayy,
-	PetscScalar  axy,
-	PetscScalar *pa1,
-	PetscScalar *pa2,
-	PetscScalar  v1[],
-	PetscScalar  v2[],
-	PetscScalar  tol)
-{
-	PetscScalar theta, t, c, s, tau, nrm, sum, a1, a2, a, v[2];
-
-	// get stress norm
-	sum = fabs(axx) + fabs(axy);               nrm = sum;
-	sum = fabs(axy) + fabs(ayy); if(sum > nrm) nrm = sum;
-
-	// initialize eigenvalues & eigenvectors
-	a1 = axx;
-	a2 = ayy;
-
-	v1[0] = 1.0; v2[0] = 0.0;
-	v1[1] = 0.0; v2[1] = 1.0;
-
-	// compute eigenvectors & eigenvalues
-	if(fabs(axy) > tol*nrm)
-	{
-		theta = 0.5*(ayy - axx)/axy;
-		t     = 1.0/(fabs(theta) + sqrt(theta*theta + 1.0));
-		if(theta < 0.0) t = -t;
-
-		a1 -= t*axy;
-		a2 += t*axy;
-
-		c   = 1.0/sqrt(t*t + 1.0);
-		s   = t*c;
-		tau = s/(1.0 + c);
-
-		v1[0] -= s*tau; v2[0] += s;
-		v1[1] -= s;     v2[1] -= s*tau;
-	}
-
-	// sort principal values in descending order & permute principal directions
-	if(a2 > a1)
-	{
-		a    = a1;    a1    = a2;    a2    = a;
-		v[0] = v1[0]; v1[0] = v2[0]; v2[0] = v[0];
-		v[1] = v1[1]; v1[1] = v2[1]; v2[1] = v[1];
-	}
-
-	(*pa1) = a1;
-	(*pa2) = a2;
+	// Uncomment to debug values
+	// PetscPrintf(PETSC_COMM_WORLD,"i_pd = %i\np = %.60f \n T = %.20lf \n\nFINAL INDICES:\n ind[0] = %i \n ind[1] = %i\n ind[2] = %i\n ind[3] = %i\n weight[0] = %.10f\n  weight[1] = %.10f\n weight[0] = %.10f\n  weight[1] = %.10f\n\n --> rho = %.20f\n \n 1 = %.20lf \n2 = %.20lf \n3 = %.20lf \n4 = %.20lf \n5 = %.20lf \n6 = %.20lf \n7 = %.20lf \n8 = %.20lf \n \n rho[0] = %.20f \nrho[1] = %.20f \nrho[2] = %.20f \nrho[3] = %.20f \n   ",i_pd,p,T,ind[0],ind[1],ind[2],ind[3],weight[0],weight[1],weight[2],weight[3],pd->rho,pd->rho_pdval[0][i_pd] ,pd->rho_pdval[1][i_pd],pd->rho_pdval[2][i_pd],pd->rho_pdval[3][i_pd],pd->rho_pdval[4][i_pd],pd->rho_pdval[5][i_pd],pd->rho_pdval[6][i_pd],pd->rho_pdval[7][i_pd],pd->rho_v[ind[0]][i_pd],pd->rho_v[ind[1]][i_pd],pd->rho_v[ind[2]][i_pd],pd->rho_v[ind[3]][i_pd]);
+	// PetscPrintf(PETSC_COMM_WORLD,"MF = %.20f; RHOF = %.20f; RHO = %.20f; i_pd = %i ; fx = %.20f; fx1 = %.20f; rhof1 = %.20f; rhof2 = %.20f; ind3 = %i; weight0 = %.20f ; %.3f\n",pd->mf,pd->rho_f,pd->rho,i_pd,fx0,fx1,pd->rho_f_v[ind[1]][i_pd],pd->rho_f_v[ind[3]][i_pd],ind[3],weight[0],pd->rho_pdval[8][i_pd]);
 
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-/*
-// ERROR HANDLING FOR CONTEXT EVALUATION ROUTINE
-
- #include <math.h>
-#if defined(math_errhandling) \
-  && (math_errhandling & MATH_ERREXCEPT)
-#include <fenv.h>
-#endif
-
-#if defined(math_errhandling) \
-  && (math_errhandling & MATH_ERREXCEPT)
-  feclearexcept(FE_ALL_EXCEPT);
-#endif
-errno = 0;
-
-// call the function
-
-double x;
-double y;
-double result;
-
-if (((x == 0.f) && islessequal(y, 0)) || (isless(x, 0))) {
-  // handle domain error
-}
-
-result = pow(x, y);
-
-#if !defined(math_errhandling) \
-  || (math_errhandling & MATH_ERRNO)
-if (errno != 0) {
-  // handle range error
-}
-#endif
-#if defined(math_errhandling) \
-  && (math_errhandling & MATH_ERREXCEPT)
-if (fetestexcept(FE_INVALID
-               | FE_DIVBYZERO
-               | FE_OVERFLOW
-               | FE_UNDERFLOW) != 0)
-{
-  // handle range error
-}
-#endif
-*/
-

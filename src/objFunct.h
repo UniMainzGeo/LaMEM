@@ -45,12 +45,92 @@
 #ifndef __objFunct_h__
 #define __objFunct_h__
 //---------------------------------------------------------------------------
+
 // maximum number of obervational types
 #define _max_num_obs_ 7
 #define _max_len_name_ 8
 
+//-----------------------------------------------------------------------------
 
-typedef enum 	// observation type
+struct FB;
+struct FreeSurf;
+
+//-----------------------------------------------------------------------------
+// model parameter type enumeration
+
+#define _max_num_ModParam_type_ 30
+#define _max_num_MatParam_type_ 30
+
+enum PTypes// List of model parameter types (30)
+{
+	// -- material model parameter types --
+	_RHO0_, _RHON_, _RHOC_,                             // density
+	_ETA_, _BD_, _ED_, _VD_,                            // Newtonian linear diffusion creep
+	_ETA0_,	_E0_, _BN_, _N_, _EN_, _VN_,                // power-law (dislocation) creep
+	_BP_, _TAUP_, _GAMMA_, _Q_, _EP_, _VP_,             // Peierls creep
+	_SHEAR_, _BULK_, _KP_,                              // elasticity
+	_COHESION_, _FRICTION_, _CHSOFTID_, _FRSOFTID_,     // plasticity (Drucker-Prager)
+	_ALPHA_, _CP_, _K_, _A_,                             // energy
+	_MFR_                                               // melt fraction
+	// -- others --
+	// ... (geometry, pushing box , etc. ...)
+
+};
+
+/*
+const char *PTypesName[] ={
+		// -- material model parameter types --
+		"rho0","rho_n","rho_c",                        // density
+		"eta","Bd","Ed","Vd",                          // newtonian linear diffiusion
+		"eta0","e0","Bn","n","En","Vn",                // power-law (dislocation) creep
+		"Bp","taup","gamma","q","Ep","Vp",             // Peierls creep
+		"shear","bulk","Kp",                           // elasticity
+		"cohesion","friction","chSoftID","frSoftID",   // plasticity (Drucker Prager)
+		"alpha","cp","k","A"                           // energy
+
+		// -- others --
+		// ... (geometry, pushing box , etc. ...)
+};
+*/
+
+//-----------------------------------------------------------------------------
+// Structure that holds inversion parameters
+struct ModParam
+{
+	PetscInt         use;  // 0 = NO 1 = Tobi's inversion 2 = Compute gradients 3 = full inversion 4 = save this forward simulation as comparison simulation
+	PetscInt         mdN;  // number of model parameters
+	PetscInt         mID;  // current model number
+	PetscInt        *phs;  // model phase number
+	PetscInt        *typ;  // model parameter type
+	PetscScalar     *val;  // model value
+	PetscScalar     *grd;  // gradient value
+	PetscScalar      mfit; // misfit value for current model parameters
+
+	// Variables additionally needed for the adjoint TAO solver
+	Vec              xini;      	// Comparison velocity field for adjoint inversion
+	Vec              P;				// vector containing parameters
+	Vec              fcconv;        // Vector containing all f/fini values to track convergence
+	PetscInt         Ab;    		// Use adjoint bounds (only works with Tao)?
+	PetscInt         Tao;    		// Use Tao?
+	PetscInt         Adv;      		// Advect the point?
+	PetscInt         count;			// iteration counter
+	PetscInt         mdI;    		// number of indices
+	PetscInt         Ap;        	// 1 = several indices ; 2 = whole domain ; 3 = surface
+	PetscInt         reg;       	// 1 = Tikhonov regularization of the adjoint cost function ; 2 = total variation regularization (TV)
+	PetscScalar      mfitini; 		// initial misfit value for current model parameters
+	PetscScalar      tol; 		    // tolerance for F/Fini after which code has converged
+	PetscScalar      factor1;   	// factor to multiply the gradients (should be set such that the highest gradient scales around 1/100 of its parameter ; only used without tao)
+	PetscScalar      factor2;   	// factor that increases the convergence velocity (this value is added to itself after every succesful gradient descent ; only used without tao)
+	PetscScalar      maxfactor2;	// limit on the factor (only used without tao)
+	PetscScalar     *Ax;			// X-coordinates of comparison points
+	PetscScalar     *Ay;			// Y-coordinates of comparison points
+	PetscScalar     *Az;  			// Z-coordinates of comparison points
+	PetscScalar     *Av;			// Velocity components of comparison points
+	PetscScalar     *W;        		// Array of weights for the regularization
+};
+
+// observation type
+enum ObsType
 {
 	_VELX_,            // 1: horizontal velocity (x) at the surface
 	_VELY_,            // 2: horizontal velocity (y) at the surface
@@ -59,12 +139,13 @@ typedef enum 	// observation type
 	_BOUG_,            // 5: bouguer anomaly
 	_ISA_,             // 6: orientation of isa (<-> sks-seismic anisotropy)
 	_SHMAX_            // 7: orientation of SHmax
-} ObsType;
+
+};
 
 //---------------------------------------------------------------------------
 //........................ Objective function object ........................
 //---------------------------------------------------------------------------
-typedef struct
+struct ObjFunct
 {
 	FreeSurf     *surf;                 // free surface object
 	char         *infile;               // input file name
@@ -80,17 +161,17 @@ typedef struct
 	// missing ...
 	// (data) covariance matrix
 
-} ObjFunct;
+};
 //---------------------------------------------------------------------------
 
 // create objective function object
-PetscErrorCode ObjFunctCreate(ObjFunct *objf, ModParam *IOparam, FreeSurf *surf);
+PetscErrorCode ObjFunctCreate(ObjFunct *objf, ModParam *IOparam, FreeSurf *surf, FB *fb);
 
 // destroy object
 PetscErrorCode ObjFunctDestroy(ObjFunct *objf);
 
 // read command line options
-PetscErrorCode ObjFunctReadFromOptions(ObjFunct *objf, const char *on[]);
+PetscErrorCode ObjFunctReadFromOptions(ObjFunct *objf, const char *on[], FB *fb);
 
 // compute error
 PetscErrorCode ObjFunctCompErr(ObjFunct *objf);

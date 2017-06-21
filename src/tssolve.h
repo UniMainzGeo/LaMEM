@@ -41,32 +41,66 @@
  ** ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ @*/
 
 //---------------------------------------------------------------------------
-//........................   TIME STEPPING SOLVER   .........................
+//......................   TIME STEPPING PARAMETERS   .......................
 //---------------------------------------------------------------------------
 #ifndef __tssolve_h__
 #define __tssolve_h__
 //---------------------------------------------------------------------------
 
-typedef struct
-{
-	PetscInt    nstep;   // maximum number of steps
-	PetscScalar dtmax;   // maximum time step
-//	PetscScalar dtmin;   // minimum time step
-	PetscScalar Cmax;    // dimensionless Courant number (should be {significantly} less than unit)
-//	PetscScalar timeEnd; // duration of simulation
-
-	PetscInt    istep;   // current step index
-	PetscScalar pdt;     // previous time step
-	PetscScalar dt;      // current time step (to be defined)
-	PetscScalar time;    // current time
-
-} TSSol;
+struct FB;
+struct Scaling;
 
 //---------------------------------------------------------------------------
 
-PetscErrorCode TSSolSetUp(TSSol *ts, UserCtx *usr);
+struct TSSol
+{
+	Scaling *scal;
 
-PetscErrorCode TSSolUpdate(TSSol *ts, Scaling *scal, PetscBool *done);
+	PetscScalar dt;        // time step
+	PetscScalar dt_next;   // next time step (CFL or dt_max)
+	PetscScalar dt_min;    // minimum time step (declare divergence if lower value is attempted)
+	PetscScalar dt_max;    // maximum time step (if CFL is larger, truncate)
+	PetscScalar dt_out;    // output step (output at least at fixed time intervals)
+	PetscScalar inc_dt;    // time step increment per time step (fraction of unit)
+	PetscScalar CFL;       // CFL (Courant-Friedrichs-Lewy) criterion
+	PetscScalar CFLMAX;    // CFL tolerance for accepting fixed time steps
+	PetscScalar time;      // current time
+	PetscScalar time_out;  // previous output time stamp
+	PetscScalar time_end;  // simulation end time
+	PetscScalar tol;       // tolerance for time comparisons
+	PetscInt    nstep_max; // maximum allowed number of steps (lower bound: time_end/dt_max)
+	PetscInt    nstep_out; // save output every n steps
+	PetscInt    nstep_ini; // save output for n initial steps
+	PetscInt    nstep_rdb; // save restart database every n steps
+	PetscInt    fix_dt;    // flag to keep time steps fixed for advection (elasticity, kinematic block BC)
+	PetscInt    istep;     // time step counter
+
+};
+
+//---------------------------------------------------------------------------
+
+PetscErrorCode TSSolCreate(TSSol *ts, FB *fb);
+
+PetscInt TSSolIsDone(TSSol *ts);
+
+PetscErrorCode TSSolStepForward(TSSol *ts);
+
+PetscInt TSSolIsRestart(TSSol *ts);
+
+PetscInt TSSolIsOutput(TSSol *ts);
+
+PetscErrorCode TSSolGetCFLStep(
+	TSSol       *ts,
+	PetscScalar  gidtmax,  // maximum global inverse time step
+	PetscInt    *restart); // time step restart flag
+
+//---------------------------------------------------------------------------
+
+// compute CFL time step with limit
+#define GET_CFL_STEP(dt, dtmax, CFL, gidtmax) \
+	{ (gidtmax) ? dt = CFL/gidtmax : dt = dtmax;  if(dt > dtmax) dt = dtmax; }
 
 //---------------------------------------------------------------------------
 #endif
+
+

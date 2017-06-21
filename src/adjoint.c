@@ -40,9 +40,10 @@
  **
  ** ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ @*/
 #include "LaMEM.h"
+#include "adjoint.h"
+#include "phase.h"
 #include "tools.h"
 #include "fdstag.h"
-#include "solVar.h"
 #include "scaling.h"
 #include "tssolve.h"
 #include "bc.h"
@@ -59,14 +60,9 @@
 #include "advect.h"
 #include "marker.h"
 #include "paraViewOutMark.h"
-#include "input.h"
-#include "matProps.h"
 #include "objFunct.h"
-#include "AVDView.h"
-#include "break.h"
 #include "parsing.h"
 #include "constEq.h"
-#include "adjoint.h"
 //---------------------------------------------------------------------------
 #undef __FUNCT__
 #define __FUNCT__ "AdjointDestroy"
@@ -85,8 +81,13 @@ PetscErrorCode AdjointDestroy(AdjGrad *aop)
  #define __FUNCT__ "AdjointObjectiveAndGradientFunction"
  PetscErrorCode AdjointObjectiveAndGradientFunction(AdjGrad *aop, JacRes *jr, NLSol *nl, ModParam *IOparam, SNES snes, FreeSurf *surf)
  {
+
+	Scaling             *scal;
+
  	PetscErrorCode ierr;
  	PetscFunctionBegin;
+
+ 	scal = jr->scal;
 
  	ierr = VecDuplicate(jr->gsol, &aop->dF);                                     CHKERRQ(ierr);
 
@@ -150,7 +151,7 @@ PetscErrorCode AdjointDestroy(AdjGrad *aop)
  		// Compute objective function value (F = (1/2)*[P*(x-x_ini)' * P*(x-x_ini)])
  		ierr 	           = VecDot(xini,xini,&Ad);
  		Ad 		          /= 2;
- 		IOparam->mfit 	   = Ad;
+ 		IOparam->mfit 	   = Ad*pow(scal->velocity,2); // Dimensional misfit function
 
  		// Perform Tikhonov regularization (TN)
  		if (IOparam->reg==1)
@@ -231,14 +232,14 @@ PetscErrorCode AdjointComputeGradients(JacRes *jr, AdjGrad *aop, NLSol *nl, SNES
 	Scaling             *scal;
 
 	fs = jr->fs;
-	dt = jr->ts.dt;
+	dt = jr->ts->dt;
 	fd = 0;          // Counts FD approximations
 
 	// Profile time
 	PetscLogDouble     cputime_start, cputime_end;
 	PetscTime(&cputime_start);
 
-	scal = &jr->scal;
+	scal = jr->scal;
 
 	// Create all needed vectors in the same size as the solution vector
 	ierr = VecDuplicate(jr->gsol, &psi);	 	 CHKERRQ(ierr);
@@ -292,6 +293,11 @@ PetscErrorCode AdjointComputeGradients(JacRes *jr, AdjGrad *aop, NLSol *nl, SNES
 			aop->CurScal = (scal->velocity)/(1);
 		}
 		else if(CurPar==_EN_)
+		{
+			ierr = AdjointFormResidual(snes, sol, drdp, nl, CurPar, CurPhase);          CHKERRQ(ierr);
+			aop->CurScal = (scal->velocity)/(1);
+		}
+		else if(CurPar==_MFR_)
 		{
 			ierr = AdjointFormResidual(snes, sol, drdp, nl, CurPar, CurPhase);          CHKERRQ(ierr);
 			aop->CurScal = (scal->velocity)/(1);
@@ -365,7 +371,8 @@ PetscErrorCode AdjointComputeGradients(JacRes *jr, AdjGrad *aop, NLSol *nl, SNES
 				}
 				else if (IOparam->Av[i] == 3)
 				{
-					PetscPrintf(PETSC_COMM_SELF,"Computation variable [Vz] (dimensional) = %.30f at Location x = %g , y = %g , z = %g\n",vz[i]*scal->velocity,IOparam->Ax[i]*scal->length,IOparam->Ay[i]*scal->length,IOparam->Az[i]*scal->length);
+					PetscPrintf(PETSC_COMM_SELF,"Computation variable [Vz] (dimensional) = %.30f\n",vz[i]*scal->velocity);
+					// PetscPrintf(PETSC_COMM_SELF,"Computation variable [Vz] (dimensional) = %.30f at Location x = %g , y = %g , z = %g\n",vz[i]*scal->velocity,IOparam->Ax[i]*scal->length,IOparam->Ay[i]*scal->length,IOparam->Az[i]*scal->length);
 				}
 
 				if (IOparam->Adv == 1)     // advect the point?
@@ -623,7 +630,7 @@ PetscErrorCode AdjointPointInPro(JacRes *jr, AdjGrad *aop, ModParam *IOparam, Fr
 					z = topo[level][j][i];
 			
 					// check whether point belongs to domain
-					if(z >= dsz->crdbeg && z < dsz->crdend)
+					if(z >= dsz->gcrdbeg && z < dsz->gcrdend)
 					{
 						// find containing cell
 						K = FindPointInCell(dsz->ncoor, 0, dsz->ncels, z);
@@ -680,7 +687,7 @@ PetscErrorCode AdjointPointInPro(JacRes *jr, AdjGrad *aop, ModParam *IOparam, Fr
 					z = topo[level][j][i];
 			
 					// check whether point belongs to domain
-					if(z >= dsz->crdbeg && z < dsz->crdend)
+					if(z >= dsz->gcrdbeg && z < dsz->gcrdend)
 					{
 						// find containing cell
 						K = FindPointInCell(dsz->ncoor, 0, dsz->ncels, z);
@@ -738,7 +745,7 @@ PetscErrorCode AdjointPointInPro(JacRes *jr, AdjGrad *aop, ModParam *IOparam, Fr
 					z = topo[level][j][i];
 			
 					// check whether point belongs to domain
-					if(z >= dsz->crdbeg && z < dsz->crdend)
+					if(z >= dsz->gcrdbeg && z < dsz->gcrdend)
 					{
 						// find containing cell
 						K = FindPointInCell(dsz->ncoor, 0, dsz->ncels, z);
@@ -825,11 +832,11 @@ PetscErrorCode AdjointFormResidual(SNES snes, Vec x, Vec f, void *ctx, PetscInt 
 	nl = (NLSol*)ctx;
 	jr = nl->pc->pm->jr;
 
-	// apply pressure limit at the first visco-plastic timestep and iteration
-    if(jr->ts.istep == 1 && jr->matLim.presLimAct == PETSC_TRUE)
+	/*// apply pressure limit at the first visco-plastic timestep and iteration
+    if(jr->ts->istep == 1 && jr->ctrl->pLimPlast == PETSC_TRUE)
     {
     	jr->matLim.presLimFlg = PETSC_TRUE;
-	}
+	}*/
 
 	// copy solution from global to local vectors, enforce boundary constraints
 	ierr = JacResCopySol(jr, x); CHKERRQ(ierr);
@@ -856,6 +863,10 @@ PetscErrorCode AdjointFormResidual(SNES snes, Vec x, Vec f, void *ctx, PetscInt 
 	{
 		ierr = AdjointJacResGetResidual_ViscPowerlaw(jr, CurPar, CurPhase); CHKERRQ(ierr);
 	}
+	else if(CurPar==_MFR_)
+	{
+		ierr = AdjointJacResGetResidual_ViscPowerlaw(jr, CurPar, CurPhase); CHKERRQ(ierr);
+	}
 	else
 	{
 		PetscPrintf(PETSC_COMM_WORLD,"ADJOINT ERROR: This residual computation is not known\n");
@@ -865,7 +876,7 @@ PetscErrorCode AdjointFormResidual(SNES snes, Vec x, Vec f, void *ctx, PetscInt 
 	ierr = JacResCopyRes(jr, f); CHKERRQ(ierr);
 
 	// deactivate pressure limit after it has been activated
-	jr->matLim.presLimFlg = PETSC_FALSE;
+	// jr->matLim.presLimFlg = PETSC_FALSE;
 
 	PetscFunctionReturn(0);
 }
@@ -875,8 +886,11 @@ PetscErrorCode AdjointFormResidual(SNES snes, Vec x, Vec f, void *ctx, PetscInt 
 PetscErrorCode AdjointGradientPerturbParameter(NLSol *nl, PetscInt CurPar, PetscInt CurPhase, AdjGrad *aop, Scaling *scal)
 {
 	PetscScalar         ini, perturb, curscal;
+	Material_t         *mat;
 
 	PetscFunctionBegin;
+
+	mat = nl->pc->pm->jr->dbm->phases;
 
 	// Get the perturbation value & scaling
 	perturb = aop->Perturb;
@@ -885,157 +899,164 @@ PetscErrorCode AdjointGradientPerturbParameter(NLSol *nl, PetscInt CurPar, Petsc
 	// Perturb the current parameter in the current phase (more to be included)
 	if(CurPar==_RHO0_)			// rho
 	{
-		ini = nl->pc->pm->jr->phases[CurPhase].rho;
+		ini = mat[CurPhase].rho;
 		perturb = ini*perturb;
-		nl->pc->pm->jr->phases[CurPhase].rho +=  perturb;
+		mat[CurPhase].rho +=  perturb;
 		curscal = (scal->velocity)/(scal->density);
 	}
 	else if (CurPar==_RHON_)	    // rho_n
 	{
-		ini = nl->pc->pm->jr->phases[CurPhase].rho_n;
+		ini = mat[CurPhase].rho_n;
 		perturb = ini*perturb;
-		nl->pc->pm->jr->phases[CurPhase].rho_n +=  perturb;
+		mat[CurPhase].rho_n +=  perturb;
 		curscal = (scal->velocity)/1;
 	}
 	else if (CurPar==_RHOC_)	    // rho_c
 	{
-		ini = nl->pc->pm->jr->phases[CurPhase].rho_c;
+		ini = mat[CurPhase].rho_c;
 		perturb = ini*perturb;
-		nl->pc->pm->jr->phases[CurPhase].rho_c +=  perturb;
+		mat[CurPhase].rho_c +=  perturb;
 		curscal = (scal->velocity)*(scal->length_si);
 	}
 	else if (CurPar==_K_)	    // K
 	{
-		ini = nl->pc->pm->jr->phases[CurPhase].K;
+		ini = mat[CurPhase].K;
 		perturb = ini*perturb;
-		nl->pc->pm->jr->phases[CurPhase].K +=  perturb;
+		mat[CurPhase].K +=  perturb;
 		curscal = (scal->velocity)/(scal->stress_si);
 	}
 	else if (CurPar==_KP_)	    // Kp
 	{
-		ini = nl->pc->pm->jr->phases[CurPhase].Kp;
+		ini = mat[CurPhase].Kp;
 		perturb = ini*perturb;
-		nl->pc->pm->jr->phases[CurPhase].Kp +=  perturb;
+		mat[CurPhase].Kp +=  perturb;
 		curscal = (scal->velocity)/1;
 	}
 	else if (CurPar==_SHEAR_)	    // G
 	{
-		ini = nl->pc->pm->jr->phases[CurPhase].G;
+		ini = mat[CurPhase].G;
 		perturb = ini*perturb;
-		nl->pc->pm->jr->phases[CurPhase].G +=  perturb;
+		mat[CurPhase].G +=  perturb;
 		curscal = (scal->velocity)/(scal->stress_si);
 	}
 	else if (CurPar==_ETA_)	    // Bd
 	{
 		// This kind of perturbs the whole NEWTONIAN viscosity, consider perturbing the parameters directly
-		ini = nl->pc->pm->jr->phases[CurPhase].Bd;
+		ini = mat[CurPhase].Bd;
 		PetscScalar BdTemp;
 		perturb = perturb*(1.0/(2*ini));
 		BdTemp = (1.0/(2*ini)) + perturb;//(perturb*(1.0/(2*ini)));
-		nl->pc->pm->jr->phases[CurPhase].Bd =  (1.0/(2*BdTemp));
+		mat[CurPhase].Bd =  (1.0/(2*BdTemp));
 		curscal = (scal->velocity)/(scal->viscosity);
 	}
 	else if (CurPar==_ED_)	    // Ed
 	{
-		ini = nl->pc->pm->jr->phases[CurPhase].Ed;
+		ini = mat[CurPhase].Ed;
 		perturb = ini*perturb;
-		nl->pc->pm->jr->phases[CurPhase].Ed +=  perturb;
+		mat[CurPhase].Ed +=  perturb;
 		curscal = (scal->velocity)/(1);   // Not sure
 	}
 	else if (CurPar==_VD_)	// Vd
 	{
-		ini = nl->pc->pm->jr->phases[CurPhase].Vd;
+		ini = mat[CurPhase].Vd;
 		perturb = ini*perturb;
-		nl->pc->pm->jr->phases[CurPhase].Vd +=  perturb;
+		mat[CurPhase].Vd +=  perturb;
 		curscal = (scal->velocity)*(scal->stress_si);
 	}
 	else if (CurPar==_ETA0_)	// Bn
 	{
 		// This kind of perturbs the whole DISLOCATION viscosity, consider perturbing the parameters directly
-		ini = nl->pc->pm->jr->phases[CurPhase].Bn;
+		ini = mat[CurPhase].Bn;
 		PetscScalar BnTemp;
 		// -- Uncomment to compute gradient for ETA0 --
-		perturb = perturb* (pow(nl->pc->pm->jr->phases[CurPhase].Bn * pow(2,nl->pc->pm->jr->phases[CurPhase].n) * pow(nl->pc->pm->jr->matLim.DII_ref, nl->pc->pm->jr->phases[CurPhase].n-1) , -1/nl->pc->pm->jr->phases[CurPhase].n));
-		BnTemp = (pow(nl->pc->pm->jr->phases[CurPhase].Bn * pow(2,nl->pc->pm->jr->phases[CurPhase].n) * pow(nl->pc->pm->jr->matLim.DII_ref, nl->pc->pm->jr->phases[CurPhase].n-1) , -1/nl->pc->pm->jr->phases[CurPhase].n))  + perturb;
-		nl->pc->pm->jr->phases[CurPhase].Bn = pow (2.0*BnTemp, -nl->pc->pm->jr->phases[CurPhase].n) * pow(nl->pc->pm->jr->matLim.DII_ref, 1 - nl->pc->pm->jr->phases[CurPhase].n);
+		perturb = perturb* (pow(mat[CurPhase].Bn * pow(2,mat[CurPhase].n) * pow(nl->pc->pm->jr->ctrl.DII_ref, mat[CurPhase].n-1) , -1/mat[CurPhase].n));
+		BnTemp = (pow(mat[CurPhase].Bn * pow(2,mat[CurPhase].n) * pow(nl->pc->pm->jr->ctrl.DII_ref, mat[CurPhase].n-1) , -1/mat[CurPhase].n))  + perturb;
+		mat[CurPhase].Bn = pow (2.0*BnTemp, -mat[CurPhase].n) * pow(nl->pc->pm->jr->ctrl.DII_ref, 1 - mat[CurPhase].n);
 		// -- Uncomment to compute gradient for BN --
 		//perturb = ini*perturb + 1e-12;
-		//nl->pc->pm->jr->phases[CurPhase].Bn +=  perturb;
+		//mat[CurPhase].Bn +=  perturb;
 		curscal = (scal->velocity)/(scal->viscosity);
 	}
 	else if (CurPar== _N_)	// n
 	{
-		ini = nl->pc->pm->jr->phases[CurPhase].n;
-		aop->Ini2 = nl->pc->pm->jr->phases[CurPhase].Bn;
-		PetscScalar ViscTemp = (pow((aop->Ini2 * pow(2,nl->pc->pm->jr->phases[CurPhase].n) * pow(nl->pc->pm->jr->matLim.DII_ref, nl->pc->pm->jr->phases[CurPhase].n-1)) , -1/nl->pc->pm->jr->phases[CurPhase].n));
+		ini = mat[CurPhase].n;
+		aop->Ini2 = mat[CurPhase].Bn;
+		PetscScalar ViscTemp = (pow((aop->Ini2 * pow(2,mat[CurPhase].n) * pow(nl->pc->pm->jr->ctrl.DII_ref, mat[CurPhase].n-1)) , -1/mat[CurPhase].n));
 		perturb = ini*perturb;
-		nl->pc->pm->jr->phases[CurPhase].n +=  perturb;
+		mat[CurPhase].n +=  perturb;
 		// We also accordingly need to perturb the inverse viscosity in this case
-		nl->pc->pm->jr->phases[CurPhase].Bn = pow (2.0*ViscTemp, -nl->pc->pm->jr->phases[CurPhase].n) * pow(nl->pc->pm->jr->matLim.DII_ref, 1 - nl->pc->pm->jr->phases[CurPhase].n);
+		mat[CurPhase].Bn = pow (2.0*ViscTemp, -mat[CurPhase].n) * pow(nl->pc->pm->jr->ctrl.DII_ref, 1 - mat[CurPhase].n);
 		curscal = (scal->velocity)/(1);
 	}
 	else if (CurPar==_EN_)	// En
 	{
-		ini = nl->pc->pm->jr->phases[CurPhase].En;
+		ini = mat[CurPhase].En;
 		perturb = ini*perturb;
-		nl->pc->pm->jr->phases[CurPhase].En +=  perturb;
+		mat[CurPhase].En +=  perturb;
 		curscal = (scal->velocity)/(1);    // Not sure
 	}
 	else if (CurPar==_VN_)	// Vn
 	{
-		ini = nl->pc->pm->jr->phases[CurPhase].Vn;
+		ini = mat[CurPhase].Vn;
 		perturb = ini*perturb;
-		nl->pc->pm->jr->phases[CurPhase].Vn +=  perturb;
+		mat[CurPhase].Vn +=  perturb;
 		curscal = (scal->velocity)*(scal->stress_si);
 	}
 	else if (CurPar==_TAUP_)	// taup
 	{
-		ini = nl->pc->pm->jr->phases[CurPhase].taup;
+		ini = mat[CurPhase].taup;
 		perturb = ini*perturb;
-		nl->pc->pm->jr->phases[CurPhase].taup +=  perturb;
+		mat[CurPhase].taup +=  perturb;
 		curscal = (scal->velocity)/(scal->stress_si);
 	}
 	else if (CurPar==_GAMMA_)	// gamma
 	{
-		ini = nl->pc->pm->jr->phases[CurPhase].gamma;
+		ini = mat[CurPhase].gamma;
 		perturb = ini*perturb;
-		nl->pc->pm->jr->phases[CurPhase].gamma +=  perturb;
+		mat[CurPhase].gamma +=  perturb;
 		curscal = (scal->velocity)/(1);
 	}
 	else if (CurPar==_Q_)	// q
 	{
-		ini = nl->pc->pm->jr->phases[CurPhase].q;
+		ini = mat[CurPhase].q;
 		perturb = ini*perturb;
-		nl->pc->pm->jr->phases[CurPhase].q +=  perturb;
+		mat[CurPhase].q +=  perturb;
 		curscal = (scal->velocity)/(1);
 	}
 	else if (CurPar==_FRICTION_)	// fr
 	{
-		ini = nl->pc->pm->jr->phases[CurPhase].fr;
+		ini = mat[CurPhase].fr;
 		perturb = ini*perturb;
-		nl->pc->pm->jr->phases[CurPhase].fr +=  perturb;
+		mat[CurPhase].fr +=  perturb;
 		curscal = (scal->velocity)/scal->angle;
 	}
 	else if (CurPar==_COHESION_)	// ch
 	{
-		ini = nl->pc->pm->jr->phases[CurPhase].ch;
+		ini = mat[CurPhase].ch;
 		perturb = ini*perturb;
-		nl->pc->pm->jr->phases[CurPhase].ch +=  perturb;
+		mat[CurPhase].ch +=  perturb;
 		curscal = (scal->velocity)/scal->stress_si;
 	}
 	else if (CurPar==_CP_)	// Cp
 	{
-		ini = nl->pc->pm->jr->phases[CurPhase].Cp;
+		ini = mat[CurPhase].Cp;
 		perturb = ini*perturb;
-		nl->pc->pm->jr->phases[CurPhase].Cp +=  perturb;
+		mat[CurPhase].Cp +=  perturb;
 		curscal = (scal->velocity)/scal->cpecific_heat;
 	}
 	else if (CurPar==_A_)	// A
 	{
-		ini = nl->pc->pm->jr->phases[CurPhase].A;
+		ini = mat[CurPhase].A;
 		perturb = ini*perturb;
-		nl->pc->pm->jr->phases[CurPhase].A +=  perturb;
+		mat[CurPhase].A +=  perturb;
 		curscal = (scal->velocity)/scal->heat_production;
+	}
+	else if (CurPar==_MFR_)	// Melt fraction
+	{
+		ini = mat[CurPhase].mf;
+		perturb = ini*perturb;
+		mat[CurPhase].mf +=  perturb;
+		curscal = (scal->velocity)/1;
 	}
 	else
 	{
@@ -1055,34 +1076,37 @@ PetscErrorCode AdjointGradientPerturbParameter(NLSol *nl, PetscInt CurPar, Petsc
 #define __FUNCT__ "AdjointGradientResetParameter"
 PetscErrorCode AdjointGradientResetParameter(NLSol *nl, PetscInt CurPar, PetscInt CurPhase, AdjGrad *aop)
 {
-	PetscScalar ini;
+	PetscScalar  ini;
+	Material_t  *phases;
 
 	PetscFunctionBegin;
 
 	// Get initial value of currently perturbed parameter
-	ini = aop->Ini;
+	ini    = aop->Ini;
+	phases = nl->pc->pm->jr->dbm->phases;
 
 	// Set the current parameter back to its original value
-	if (CurPar==_RHO0_)        		{nl->pc->pm->jr->phases[CurPhase].rho    = ini;
-	}else if (CurPar==_RHON_)  		{nl->pc->pm->jr->phases[CurPhase].rho_n  = ini;
-	}else if (CurPar==_RHOC_)  		{nl->pc->pm->jr->phases[CurPhase].rho_c  = ini;
-	}else if (CurPar==_K_)  		{nl->pc->pm->jr->phases[CurPhase].K      = ini;
-	}else if (CurPar==_KP_)  		{nl->pc->pm->jr->phases[CurPhase].Kp     = ini;
-	}else if (CurPar==_SHEAR_)  	{nl->pc->pm->jr->phases[CurPhase].G      = ini;
-	}else if (CurPar==_ETA_)  		{nl->pc->pm->jr->phases[CurPhase].Bd     = ini;
-	}else if (CurPar==_ED_)  		{nl->pc->pm->jr->phases[CurPhase].Ed     = ini;
-	}else if (CurPar==_VD_) 		{nl->pc->pm->jr->phases[CurPhase].Vd     = ini;
-	}else if (CurPar==_ETA0_) 		{nl->pc->pm->jr->phases[CurPhase].Bn     = ini;
-	}else if (CurPar==_N_) 			{nl->pc->pm->jr->phases[CurPhase].n      = ini;   nl->pc->pm->jr->phases[CurPhase].Bn = aop->Ini2;
-	}else if (CurPar==_EN_) 		{nl->pc->pm->jr->phases[CurPhase].En     = ini;
-	}else if (CurPar==_VN_) 		{nl->pc->pm->jr->phases[CurPhase].Vn     = ini;
-	}else if (CurPar==_TAUP_) 		{nl->pc->pm->jr->phases[CurPhase].taup   = ini;
-	}else if (CurPar==_GAMMA_) 		{nl->pc->pm->jr->phases[CurPhase].gamma  = ini;
-	}else if (CurPar==_Q_) 			{nl->pc->pm->jr->phases[CurPhase].q      = ini;
-	}else if (CurPar==_FRICTION_) 	{nl->pc->pm->jr->phases[CurPhase].fr 	 = ini;
-	}else if (CurPar==_COHESION_) 	{nl->pc->pm->jr->phases[CurPhase].ch 	 = ini;
-	}else if (CurPar==_CP_) 	    {nl->pc->pm->jr->phases[CurPhase].Cp     = ini;
-	}else if (CurPar==_A_) 			{nl->pc->pm->jr->phases[CurPhase].A      = ini;}
+	if (CurPar==_RHO0_)        		{phases[CurPhase].rho    = ini;
+	}else if (CurPar==_RHON_)  		{phases[CurPhase].rho_n  = ini;
+	}else if (CurPar==_RHOC_)  		{phases[CurPhase].rho_c  = ini;
+	}else if (CurPar==_K_)  		{phases[CurPhase].K      = ini;
+	}else if (CurPar==_KP_)  		{phases[CurPhase].Kp     = ini;
+	}else if (CurPar==_SHEAR_)  	{phases[CurPhase].G      = ini;
+	}else if (CurPar==_ETA_)  		{phases[CurPhase].Bd     = ini;
+	}else if (CurPar==_ED_)  		{phases[CurPhase].Ed     = ini;
+	}else if (CurPar==_VD_) 		{phases[CurPhase].Vd     = ini;
+	}else if (CurPar==_ETA0_) 		{phases[CurPhase].Bn     = ini;
+	}else if (CurPar==_N_) 			{phases[CurPhase].n      = ini;   phases[CurPhase].Bn = aop->Ini2;
+	}else if (CurPar==_EN_) 		{phases[CurPhase].En     = ini;
+	}else if (CurPar==_VN_) 		{phases[CurPhase].Vn     = ini;
+	}else if (CurPar==_TAUP_) 		{phases[CurPhase].taup   = ini;
+	}else if (CurPar==_GAMMA_) 		{phases[CurPhase].gamma  = ini;
+	}else if (CurPar==_Q_) 			{phases[CurPhase].q      = ini;
+	}else if (CurPar==_FRICTION_) 	{phases[CurPhase].fr 	 = ini;
+	}else if (CurPar==_COHESION_) 	{phases[CurPhase].ch 	 = ini;
+	}else if (CurPar==_CP_) 	    {phases[CurPhase].Cp     = ini;
+	}else if (CurPar==_A_) 			{phases[CurPhase].A      = ini;}
+	else if (CurPar==_MFR_)			{phases[CurPhase].mf     = ini;}
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
@@ -1098,21 +1122,19 @@ PetscErrorCode AdjointJacResGetResidual_ViscPowerlaw(JacRes *jr, PetscInt CurPar
 	// form the hosting nodes using arithmetic mean.
 	// DII = (0.5*D_ij*D_ij)^0.5
 	// NOTE: we interpolate and average D_ij*D_ij terms instead of D_ij
-	
-	// RESIDUAL EQUATION (center node) in mathematica format
-	// d/dx((((2*(o+(2*(((2*w)^(-n)*y^(1-n))*exp(-(b+c*d)/(f*g)))^(1/n)*j^(1-1/n)+u^(-1))^(-1))*k)+v*t)/l)+m/2)
-	// d/dx((((2*(etamin+(2*(((2*eta0)^(-n)*e0^(1-n))*exp(-(En+pp*Vn)/(R*T)))^(1/n)*eII^(1-1/n)+etamax^(-1))^(-1))*e)+v*tx)/dx)+gx/2)
 
 	FDSTAG     *fs;
+	BCCtx      *bc;
 	SolVarCell *svCell;
 	SolVarEdge *svEdge;
 	SolVarDev  *svDev;
 	SolVarBulk *svBulk;
 	Material_t *phases;
-	MatParLim  *matLim;
-	PetscInt    iter, numPhases;
+	Soft_t     *soft;
+	Controls   *ctrl;
+	PetscInt    iter, numPhases, AirPhase;
 	PetscInt    I1, I2, J1, J2, K1, K2;
-	PetscInt    i, j, k, nx, ny, nz, sx, sy, sz, mx, my, mz, ijk;
+	PetscInt    i, j, k, nx, ny, nz, sx, sy, sz, mx, my, mz, mcx, mcy, mcz;
 	PetscScalar XX, XX1, XX2, XX3, XX4;
 	PetscScalar YY, YY1, YY2, YY3, YY4;
 	PetscScalar ZZ, ZZ1, ZZ2, ZZ3, ZZ4;
@@ -1121,35 +1143,42 @@ PetscErrorCode AdjointJacResGetResidual_ViscPowerlaw(JacRes *jr, PetscInt CurPar
 	PetscScalar YZ, YZ1, YZ2, YZ3, YZ4;
 	PetscScalar bdx, fdx, bdy, fdy, bdz, fdz;
 	PetscScalar gx, gy, gz, tx, ty, tz, sxx, syy, szz, sxy, sxz, syz;
-	PetscScalar J2Inv, theta, rho, IKdt, Tc, pc, pShift, pn, dt, fssa, *grav, ph, n, eII, Bn, Vn, RT, pp, ep, ef, En, e0, eta0, etamax;
-	PetscScalar ***fx,  ***fy,  ***fz, ***vx,  ***vy,  ***vz, ***gc;
-	PetscScalar ***dxx, ***dyy, ***dzz, ***dxy, ***dxz, ***dyz, ***p, ***T, ***p_lithos;
-	PetscScalar eta_creep, eta_viscoplastic;
-	PetscScalar depth, pc_lithos;
-//	PetscScalar rho_lithos;
+	PetscScalar J2Inv, theta, rho, IKdt, Tc, pc, pShift, pn, dt, fssa, xc, yc, *grav;
+	PetscScalar ph, n, eII, Bn, Vn, RT, pp, ep, ef, En, e0, eta0, etamax, mf, Me_mu;
+	PetscScalar ***fx,  ***fy,  ***fz, ***vx,  ***vy,  ***vz, ***gc, ***bcp;
+	PetscScalar ***dxx, ***dyy, ***dzz, ***dxy, ***dxz, ***dyz, ***p, ***T, ***p_lith, ***p_pore;
+	PetscScalar eta_creep, eta_vp;
+	PetscScalar depth, pc_lith, pc_pore, biot, ptotal, avg_topo;
 //	PetscScalar alpha, Tn,
 
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
 
+	// access context
 	fs = jr->fs;
+	bc = jr->bc;
 
-//	PetscInt mcz = fs->dsz.tcels - 1;
+	// initialize index bounds
+	mcx = fs->dsx.tcels - 1;
+	mcy = fs->dsy.tcels - 1;
+	mcz = fs->dsz.tcels - 1;
 
-	// initialize maximum node index in all directions
-	mx = fs->dsx.tnods - 1;
-	my = fs->dsy.tnods - 1;
-	mz = fs->dsz.tnods - 1;
+	mx  = fs->dsx.tnods - 1;
+	my  = fs->dsy.tnods - 1;
+	mz  = fs->dsz.tnods - 1;
 
 	// access residual context variables
-	numPhases =  jr->numPhases; 	// number phases
-	phases    =  jr->phases;    	// phase parameters
-	matLim    = &jr->matLim;    	// phase parameters limiters
-	dt        =  jr->ts.dt;     	// time step
-	fssa      =  jr->FSSA;      	// density gradient penalty parameter
-	grav      =  jr->grav;      	// gravity acceleration
-//	rho_lithos=  matLim->rho_lithos;// density to compute lithostatic pressure in viscosity formulation
-	pShift    =  jr->pShift;    	// pressure shift
+	numPhases =  jr->dbm->numPhases; // number phases
+	phases    =  jr->dbm->phases;    // phase parameters
+	soft      =  jr->dbm->matSoft;   // material softening laws
+	ctrl      = &jr->ctrl;           // control parameters
+	dt        =  jr->ts->dt;         // time step
+	fssa      =  ctrl->FSSA;         // density gradient penalty parameter
+	grav      =  ctrl->grav;         // gravity acceleration
+	pShift    =  ctrl->pShift;       // pressure shift
+	biot      =  ctrl->biot;         // Biot pressure parameter
+	AirPhase  =  jr->surf->AirPhase; // sticky air phase number
+	avg_topo  =  jr->surf->avg_topo; // average surface topography
 
 	// clear local residual vectors
 	ierr = VecZeroEntries(jr->lfx); CHKERRQ(ierr);
@@ -1158,25 +1187,25 @@ PetscErrorCode AdjointJacResGetResidual_ViscPowerlaw(JacRes *jr, PetscInt CurPar
 	ierr = VecZeroEntries(jr->gc);  CHKERRQ(ierr);
 
 	// access work vectors
-	ierr = DMDAVecGetArray(fs->DA_CEN, jr->gc,   &gc);  CHKERRQ(ierr);
-	ierr = DMDAVecGetArray(fs->DA_CEN, jr->lp,   &p);   CHKERRQ(ierr);
-	ierr = DMDAVecGetArray(fs->DA_CEN, jr->lT,   &T);   CHKERRQ(ierr);
-	ierr = DMDAVecGetArray(fs->DA_CEN, jr->ldxx, &dxx); CHKERRQ(ierr);
-	ierr = DMDAVecGetArray(fs->DA_CEN, jr->ldyy, &dyy); CHKERRQ(ierr);
-	ierr = DMDAVecGetArray(fs->DA_CEN, jr->ldzz, &dzz); CHKERRQ(ierr);
-	ierr = DMDAVecGetArray(fs->DA_XY,  jr->ldxy, &dxy); CHKERRQ(ierr);
-	ierr = DMDAVecGetArray(fs->DA_XZ,  jr->ldxz, &dxz); CHKERRQ(ierr);
-	ierr = DMDAVecGetArray(fs->DA_YZ,  jr->ldyz, &dyz); CHKERRQ(ierr);
-	ierr = DMDAVecGetArray(fs->DA_X,   jr->lfx,  &fx);  CHKERRQ(ierr);
-	ierr = DMDAVecGetArray(fs->DA_Y,   jr->lfy,  &fy);  CHKERRQ(ierr);
-	ierr = DMDAVecGetArray(fs->DA_Z,   jr->lfz,  &fz);  CHKERRQ(ierr);
-	ierr = DMDAVecGetArray(fs->DA_X,   jr->lvx,  &vx);  CHKERRQ(ierr);
-	ierr = DMDAVecGetArray(fs->DA_Y,   jr->lvy,  &vy);  CHKERRQ(ierr);
-	ierr = DMDAVecGetArray(fs->DA_Z,   jr->lvz,  &vz);  CHKERRQ(ierr);
-	ierr = DMDAVecGetArray(fs->DA_CEN, jr->lp_lithos,&p_lithos); CHKERRQ(ierr);
-
-	// compute lithostatic pressure
-	ierr = JacResGetLithoStaticPressure(jr); CHKERRQ(ierr);
+	ierr = DMDAVecGetArray(fs->DA_CEN, jr->gc,      &gc);     CHKERRQ(ierr);
+	ierr = DMDAVecGetArray(fs->DA_CEN, jr->lp,      &p);      CHKERRQ(ierr);
+	ierr = DMDAVecGetArray(fs->DA_CEN, jr->lT,      &T);      CHKERRQ(ierr);
+	ierr = DMDAVecGetArray(fs->DA_CEN, jr->ldxx,    &dxx);    CHKERRQ(ierr);
+	ierr = DMDAVecGetArray(fs->DA_CEN, jr->ldyy,    &dyy);    CHKERRQ(ierr);
+	ierr = DMDAVecGetArray(fs->DA_CEN, jr->ldzz,    &dzz);    CHKERRQ(ierr);
+	ierr = DMDAVecGetArray(fs->DA_XY,  jr->ldxy,    &dxy);    CHKERRQ(ierr);
+	ierr = DMDAVecGetArray(fs->DA_XZ,  jr->ldxz,    &dxz);    CHKERRQ(ierr);
+	ierr = DMDAVecGetArray(fs->DA_YZ,  jr->ldyz,    &dyz);    CHKERRQ(ierr);
+	ierr = DMDAVecGetArray(fs->DA_X,   jr->lfx,     &fx);     CHKERRQ(ierr);
+	ierr = DMDAVecGetArray(fs->DA_Y,   jr->lfy,     &fy);     CHKERRQ(ierr);
+	ierr = DMDAVecGetArray(fs->DA_Z,   jr->lfz,     &fz);     CHKERRQ(ierr);
+	ierr = DMDAVecGetArray(fs->DA_X,   jr->lvx,     &vx);     CHKERRQ(ierr);
+	ierr = DMDAVecGetArray(fs->DA_Y,   jr->lvy,     &vy);     CHKERRQ(ierr);
+	ierr = DMDAVecGetArray(fs->DA_Z,   jr->lvz,     &vz);     CHKERRQ(ierr);
+	ierr = DMDAVecGetArray(fs->DA_CEN, jr->lp_lith, &p_lith); CHKERRQ(ierr);
+	ierr = DMDAVecGetArray(fs->DA_CEN, jr->lp_pore, &p_pore); CHKERRQ(ierr);
+	ierr = DMDAVecGetArray(fs->DA_CEN, jr->lp_pore, &p_pore); CHKERRQ(ierr);
+	ierr = DMDAVecGetArray(fs->DA_CEN, bc->bcp,     &bcp);    CHKERRQ(ierr);
 
 	//-------------------------------
 	// central points
@@ -1226,7 +1255,6 @@ PetscErrorCode AdjointJacResGetResidual_ViscPowerlaw(JacRes *jr, PetscInt CurPar
 		0.25*(XZ1*XZ1 + XZ2*XZ2 + XZ3*XZ3 + XZ4*XZ4) +
 		0.25*(YZ1*YZ1 + YZ2*YZ2 + YZ3*YZ3 + YZ4*YZ4);
 
-
 		// store square root of second invariant
 		svDev->DII = sqrt(J2Inv);
 
@@ -1241,30 +1269,36 @@ PetscErrorCode AdjointJacResGetResidual_ViscPowerlaw(JacRes *jr, PetscInt CurPar
 		Tc = T[k][j][i];
 
 		// access current lithostatic pressure
-		pc_lithos = p_lithos[k][j][i];
+		pc_lith = p_lith[k][j][i];
+
+		// access current pore pressure (zero if deactivated)
+		pc_pore = p_pore[k][j][i];
 
 		// compute depth below the free surface
-		depth = jr->avg_topo - COORD_CELL(k, sz, fs->dsz);
-
-		if(depth < 0.0) depth = 0.0;
+		if(AirPhase != -1) depth = avg_topo - COORD_CELL(k, sz, fs->dsz);
+		else               depth = 0.0;
+		if(depth < 0.0)    depth = 0.0;
 
 		// evaluate deviatoric constitutive equations
-		ierr = DevConstEq(svDev, &eta_creep, &eta_viscoplastic, numPhases, phases, svCell->phRat, matLim, pc_lithos, dt, pc-pShift, Tc); CHKERRQ(ierr);
+		ierr = DevConstEq(svDev, &eta_creep, &eta_vp, numPhases, phases, soft, svCell->phRat, ctrl, pc_lith, pc_pore, dt, pc-pShift, Tc, jr->Pd); CHKERRQ(ierr);
 
 		// store creep viscosity
-		svCell->eta_creep 			= eta_creep;
-		svCell->eta_viscoplastic 	= eta_viscoplastic;
+		svCell->eta_creep = eta_creep;
+		svCell->eta_vp    = eta_vp;
 
 		// compute stress, plastic strain rate and shear heating term on cell
-		ierr = GetStressCell(svCell, matLim, XX, YY, ZZ); CHKERRQ(ierr);
+		ierr = GetStressCell(svCell, XX, YY, ZZ); CHKERRQ(ierr);
+
+		// get total pressure (effective pressure, computed by LaMEM, plus pore pressure)
+		ptotal = pc + biot*pc_pore;
 
 		// compute total Cauchy stresses
-		sxx = svCell->sxx - pc;
-		syy = svCell->syy - pc;
-		szz = svCell->szz - pc;
+		sxx = svCell->sxx - ptotal;
+		syy = svCell->syy - ptotal;
+		szz = svCell->szz - ptotal;
 
 		// evaluate volumetric constitutive equations
-		ierr = VolConstEq(svBulk, numPhases, phases, svCell->phRat, matLim, depth, dt, pc-pShift , Tc); CHKERRQ(ierr);
+		ierr = VolConstEq(svBulk, numPhases, phases, svCell->phRat, ctrl, depth, dt, pc-pShift , Tc, jr->Pd); CHKERRQ(ierr);
 
 		// access
 		theta = svBulk->theta; // volumetric strain rate
@@ -1298,67 +1332,18 @@ PetscErrorCode AdjointJacResGetResidual_ViscPowerlaw(JacRes *jr, PetscInt CurPar
 		n 		 = phases[CurPhase].n;
 		Bn 		 = phases[CurPhase].Bn;
 		eII 	 =  svDev->DII;				
-		if  (eII == 0.0) eII = matLim->DII_ref;
+		if  (eII == 0.0) eII = ctrl->DII_ref;
 		Vn 		 =  phases[CurPhase].Vn;
 		En 		 =  phases[CurPhase].En;
-		if(T) RT =  matLim->Rugc*Tc;   	    
+		if(T) RT =  ctrl->Rugc*Tc;
 		else  RT =  -1.0;
 		pp 		 =  pc-pShift;
-		e0 		 =  matLim->DII_ref;
+		e0 		 =  ctrl->DII_ref;
 		eta0 	 =  pow(Bn*pow(2,n)*pow(e0,n-1),-1/n);
-		etamax   =  matLim->eta_max;
+		etamax   =  1/ctrl->inv_eta_max;
+		mf       =  phases[CurPhase].mf;
+		Me_mu    =  phases[CurPhase].Me_Mu0;
 		
-		// For Naiara density difference
-		/*if (CurPar==_RHO0_)  // Only influences the center node
-		{
-			if(CurPhase == 1 || CurPhase == 3)
-			{
-				for(ijk=0;ijk<2;ijk++)
-				{
-					if(ijk == 0)
-					{
-						CurPhase = 1;
-					}
-					else if(ijk == 1)
-					{
-						CurPhase = 3;
-					}
-					
-					// Get all necessary parameters for residual computation
-					ph 		 = svCell->phRat[CurPhase];
-					n 		 = phases[CurPhase].n;
-					Bn 		 = phases[CurPhase].Bn;
-					eII 	 =  svDev->DII;				
-					if  (eII == 0.0) eII = matLim->DII_ref;
-					Vn 		 =  phases[CurPhase].Vn;
-					En 		 =  phases[CurPhase].En;
-					if(T) RT =  matLim->Rugc*Tc;   	    
-					else  RT =  -1.0;
-					pp 		 =  pc-pShift;
-					e0 		 =  matLim->DII_ref;
-					eta0 	 =  pow(Bn*pow(2,n)*pow(e0,n-1),-1/n);
-					etamax   =  matLim->eta_max;
-					
-					if(svCell->phRat[CurPhase] > 0)
-					{
-						fx[k][j][i] -= ph*(grav[0]*(0.5-(vx[k][j][i] * fssa*dt)/bdx));   fx[k][j][i+1] += ph*(grav[0]*(-(vx[k][j][i+1] * fssa*dt)/fdx - 0.5));
-						fy[k][j][i] -= ph*(grav[1]*(0.5-(vy[k][j][i] * fssa*dt)/bdy));   fy[k][j+1][i] += ph*(grav[1]*(-(vy[k][j+1][i] * fssa*dt)/fdy - 0.5));
-						fz[k][j][i] -= ph*(grav[2]*(0.5-(vz[k][j][i] * fssa*dt)/bdz));   fz[k+1][j][i] += ph*(grav[2]*(-(vz[k+1][j][i] * fssa*dt)/fdz - 0.5));
-					}
-				}
-
-			}
-			else
-			{
-				if(svCell->phRat[CurPhase] > 0)
-				{
-					fx[k][j][i] -= ph*(grav[0]*(0.5-(vx[k][j][i] * fssa*dt)/bdx));   fx[k][j][i+1] += ph*(grav[0]*(-(vx[k][j][i+1] * fssa*dt)/fdx - 0.5));
-					fy[k][j][i] -= ph*(grav[1]*(0.5-(vy[k][j][i] * fssa*dt)/bdy));   fy[k][j+1][i] += ph*(grav[1]*(-(vy[k][j+1][i] * fssa*dt)/fdy - 0.5));
-					fz[k][j][i] -= ph*(grav[2]*(0.5-(vz[k][j][i] * fssa*dt)/bdz));   fz[k+1][j][i] += ph*(grav[2]*(-(vz[k+1][j][i] * fssa*dt)/fdz - 0.5));
-				}
-			}
-
-		}*/
 		if (CurPar==_RHO0_)  // Only influences the center node
 		{
 			if(svCell->phRat[CurPhase] > 0)
@@ -1408,6 +1393,17 @@ PetscErrorCode AdjointJacResGetResidual_ViscPowerlaw(JacRes *jr, PetscInt CurPar
 				fx[k][j][i] -= ph*( (XX*pow(2,2-n)*pow(eII,1-1/n)*pow(eta0,-n)*pow(e0,1-n)*ep*pow(ef,1/n-1))/(RT*bdx*n*pow(2*pow(eII,1-1/n)*pow(ef,1/n)+1/etamax,2)) );   fx[k][j][i+1] += ph*( (XX*pow(2,2-n)*pow(eII,1-1/n)*pow(eta0,-n)*pow(e0,1-n)*ep*pow(ef,1/n-1))/(RT*fdx*n*pow(2*pow(eII,1-1/n)*pow(ef,1/n)+1/etamax,2)) );
 				fy[k][j][i] -= ph*( (YY*pow(2,2-n)*pow(eII,1-1/n)*pow(eta0,-n)*pow(e0,1-n)*ep*pow(ef,1/n-1))/(RT*bdy*n*pow(2*pow(eII,1-1/n)*pow(ef,1/n)+1/etamax,2)) );   fy[k][j+1][i] += ph*( (YY*pow(2,2-n)*pow(eII,1-1/n)*pow(eta0,-n)*pow(e0,1-n)*ep*pow(ef,1/n-1))/(RT*fdy*n*pow(2*pow(eII,1-1/n)*pow(ef,1/n)+1/etamax,2)) );
 				fz[k][j][i] -= ph*( (ZZ*pow(2,2-n)*pow(eII,1-1/n)*pow(eta0,-n)*pow(e0,1-n)*ep*pow(ef,1/n-1))/(RT*bdz*n*pow(2*pow(eII,1-1/n)*pow(ef,1/n)+1/etamax,2)) );   fz[k+1][j][i] += ph*( (ZZ*pow(2,2-n)*pow(eII,1-1/n)*pow(eta0,-n)*pow(e0,1-n)*ep*pow(ef,1/n-1))/(RT*fdz*n*pow(2*pow(eII,1-1/n)*pow(ef,1/n)+1/etamax,2)) );
+			}
+		}
+		else if(CurPar==_MFR_)
+		{
+			if(svCell->phRat[CurPhase] > 0)
+			{
+				ep = ((1-mf)/mf);
+				ef = exp(2.5+(1-mf)*pow(ep,0.48));
+				fx[k][j][i] -= ph*(((2*( Me_mu*ef*((0.48*(-(1-mf)/pow(mf,2)-(1/mf))*(1-mf))/(pow(ep,0.52)) - pow(ep,0.48)) )*XX - vx[k][j][i]*grav[0]*dt*fssa*(svBulk->rho_pf-svBulk->rho_pd))/bdx) + ((grav[0]*(svBulk->rho_pf-svBulk->rho_pd))/2));   fx[k][j][i+1] += ph*(((2*( Me_mu*ef*((0.48*(-(1-mf)/pow(mf,2)-(1/mf))*(1-mf))/(pow(ep,0.52)) - pow(ep,0.48)) )*XX - vx[k][j][i+1]*grav[0]*dt*fssa*(svBulk->rho_pf-svBulk->rho_pd))/fdx) + ((grav[0]*(svBulk->rho_pf-svBulk->rho_pd))/2));
+				fy[k][j][i] -= ph*(((2*( Me_mu*ef*((0.48*(-(1-mf)/pow(mf,2)-(1/mf))*(1-mf))/(pow(ep,0.52)) - pow(ep,0.48)) )*YY - vy[k][j][i]*grav[0]*dt*fssa*(svBulk->rho_pf-svBulk->rho_pd))/bdy) + ((grav[0]*(svBulk->rho_pf-svBulk->rho_pd))/2));   fy[k][j+1][i] += ph*(((2*( Me_mu*ef*((0.48*(-(1-mf)/pow(mf,2)-(1/mf))*(1-mf))/(pow(ep,0.52)) - pow(ep,0.48)) )*YY - vy[k][j+1][i]*grav[0]*dt*fssa*(svBulk->rho_pf-svBulk->rho_pd))/fdy) + ((grav[0]*(svBulk->rho_pf-svBulk->rho_pd))/2));
+				fz[k][j][i] -= ph*(((2*( Me_mu*ef*((0.48*(-(1-mf)/pow(mf,2)-(1/mf))*(1-mf))/(pow(ep,0.52)) - pow(ep,0.48)) )*ZZ - vz[k][j][i]*grav[0]*dt*fssa*(svBulk->rho_pf-svBulk->rho_pd))/bdz) + ((grav[0]*(svBulk->rho_pf-svBulk->rho_pd))/2));   fz[k+1][j][i] += ph*(((2*( Me_mu*ef*((0.48*(-(1-mf)/pow(mf,2)-(1/mf))*(1-mf))/(pow(ep,0.52)) - pow(ep,0.48)) )*ZZ - vz[k+1][j][i]*grav[0]*dt*fssa*(svBulk->rho_pf-svBulk->rho_pd))/fdz) + ((grav[0]*(svBulk->rho_pf-svBulk->rho_pd))/2));
 			}
 		}
 		else
@@ -1513,13 +1509,16 @@ PetscErrorCode AdjointJacResGetResidual_ViscPowerlaw(JacRes *jr, PetscInt CurPar
 		Tc = 0.25*(T[k][j][i] + T[k][j][i-1] + T[k][j-1][i] + T[k][j-1][i-1]);
 
 		// access current lithostatic pressure (x-y plane, i-j indices)
-		pc_lithos = 0.25*(p_lithos[k][j][i] + p_lithos[k][j][i-1] + p_lithos[k][j-1][i] + p_lithos[k][j-1][i-1]);
+		pc_lith = 0.25*(p_lith[k][j][i] + p_lith[k][j][i-1] + p_lith[k][j-1][i] + p_lith[k][j-1][i-1]);
+
+		// access current pore pressure (x-y plane, i-j indices)
+		pc_pore = 0.25*(p_pore[k][j][i] + p_pore[k][j][i-1] + p_pore[k][j-1][i] + p_pore[k][j-1][i-1]);
 
 		// evaluate deviatoric constitutive equations
-		ierr = DevConstEq(svDev, &eta_creep, &eta_viscoplastic, numPhases, phases, svEdge->phRat, matLim, pc_lithos, dt, pc-pShift, Tc); CHKERRQ(ierr);
+		ierr = DevConstEq(svDev, &eta_creep, &eta_vp, numPhases, phases, soft, svEdge->phRat, ctrl, pc_lith, pc_pore, dt, pc-pShift, Tc, jr->Pd); CHKERRQ(ierr);
 
 		// compute stress, plastic strain rate and shear heating term on edge
-		ierr = GetStressEdge(svEdge, matLim, XY); CHKERRQ(ierr);
+		ierr = GetStressEdge(svEdge, XY); CHKERRQ(ierr);
 
 		// access xy component of the Cauchy stress
 		sxy = svEdge->s;
@@ -1537,15 +1536,17 @@ PetscErrorCode AdjointJacResGetResidual_ViscPowerlaw(JacRes *jr, PetscInt CurPar
 		n 		 = phases[CurPhase].n;
 		Bn 		 = phases[CurPhase].Bn;
 		eII 	 =  svDev->DII;				
-		if  (eII == 0.0) eII = matLim->DII_ref;
+		if  (eII == 0.0) eII = ctrl->DII_ref;
 		Vn 		 =  phases[CurPhase].Vn;
 		En 		 =  phases[CurPhase].En;
-		if(T) RT =  matLim->Rugc*Tc;   	    
+		if(T) RT =  ctrl->Rugc*Tc;
 		else  RT =  -1.0;
 		pp 		 =  pc-pShift;
-		e0 		 =  matLim->DII_ref;
+		e0 		 =  ctrl->DII_ref;
 		eta0 	 =  pow(Bn*pow(2,n)*pow(e0,n-1),-1/n);
-		etamax   =  matLim->eta_max;
+		etamax   =  1/ctrl->inv_eta_max;
+		mf       =  phases[CurPhase].mf;
+		Me_mu    =  phases[CurPhase].Me_Mu0;
 
 		if (CurPar==_RHO0_)
 		{
@@ -1587,6 +1588,16 @@ PetscErrorCode AdjointJacResGetResidual_ViscPowerlaw(JacRes *jr, PetscInt CurPar
 				ef = pow(2,-n)*pow(eta0,-n)*pow(e0,1-n)*ep;
 				fx[k][j-1][i] -= ph*( (XY*pow(2,2-n)*pow(eII,1-1/n)*pow(eta0,-n)*pow(e0,1-n)*ep*pow(ef,1/n-1))/(RT*bdy*n*pow(2*pow(eII,1-1/n)*pow(ef,1/n)+1/etamax,2)) );   fx[k][j][i] += ph*( (XY*pow(2,2-n)*pow(eII,1-1/n)*pow(eta0,-n)*pow(e0,1-n)*ep*pow(ef,1/n-1))/(RT*fdy*n*pow(2*pow(eII,1-1/n)*pow(ef,1/n)+1/etamax,2)) );
 				fy[k][j][i-1] -= ph*( (XY*pow(2,2-n)*pow(eII,1-1/n)*pow(eta0,-n)*pow(e0,1-n)*ep*pow(ef,1/n-1))/(RT*bdx*n*pow(2*pow(eII,1-1/n)*pow(ef,1/n)+1/etamax,2)) );   fy[k][j][i] += ph*( (XY*pow(2,2-n)*pow(eII,1-1/n)*pow(eta0,-n)*pow(e0,1-n)*ep*pow(ef,1/n-1))/(RT*fdx*n*pow(2*pow(eII,1-1/n)*pow(ef,1/n)+1/etamax,2)) );
+			}
+		}
+		else if(CurPar==_MFR_)
+		{
+			if(svEdge->phRat[CurPhase] > 0)
+			{
+				ep = ((1-mf)/mf);
+				ef = exp(2.5+(1-mf)*pow(ep,0.48));
+				fx[k][j-1][i] -= ph*((2*( Me_mu*ef*((0.48*(-(1-mf)/pow(mf,2)-(1/mf))*(1-mf))/(pow(ep,0.52)) - pow(ep,0.48)) )*XY) /bdy);   fx[k][j][i] += ph*((2*( Me_mu*ef*((0.48*(-(1-mf)/pow(mf,2)-(1/mf))*(1-mf))/(pow(ep,0.52)) - pow(ep,0.48)) )*XY) /fdy);
+				fy[k][j][i-1] -= ph*((2*( Me_mu*ef*((0.48*(-(1-mf)/pow(mf,2)-(1/mf))*(1-mf))/(pow(ep,0.52)) - pow(ep,0.48)) )*XY) /bdx);   fy[k][j][i] += ph*((2*( Me_mu*ef*((0.48*(-(1-mf)/pow(mf,2)-(1/mf))*(1-mf))/(pow(ep,0.52)) - pow(ep,0.48)) )*XY) /fdx);
 			}
 		}
 		else
@@ -1677,13 +1688,16 @@ PetscErrorCode AdjointJacResGetResidual_ViscPowerlaw(JacRes *jr, PetscInt CurPar
 		Tc = 0.25*(T[k][j][i] + T[k][j][i-1] + T[k-1][j][i] + T[k-1][j][i-1]);
 
 		// access current lithostatic pressure (x-z plane, i-k indices)
-		pc_lithos = 0.25*(p_lithos[k][j][i] + p_lithos[k][j][i-1] + p_lithos[k-1][j][i] + p_lithos[k-1][j][i-1]);
+		pc_lith = 0.25*(p_lith[k][j][i] + p_lith[k][j][i-1] + p_lith[k-1][j][i] + p_lith[k-1][j][i-1]);
+
+		// access current pore pressure (x-z plane, i-k indices)
+		pc_pore = 0.25*(p_pore[k][j][i] + p_pore[k][j][i-1] + p_pore[k-1][j][i] + p_pore[k-1][j][i-1]);
 
 		// evaluate deviatoric constitutive equations
-		ierr = DevConstEq(svDev, &eta_creep, &eta_viscoplastic, numPhases, phases, svEdge->phRat, matLim, pc_lithos, dt, pc-pShift, Tc); CHKERRQ(ierr);
+		ierr = DevConstEq(svDev, &eta_creep, &eta_vp, numPhases, phases, soft, svEdge->phRat, ctrl, pc_lith, pc_pore, dt, pc-pShift, Tc, jr->Pd); CHKERRQ(ierr);
 
 		// compute stress, plastic strain rate and shear heating term on edge
-		ierr = GetStressEdge(svEdge, matLim, XZ); CHKERRQ(ierr);
+		ierr = GetStressEdge(svEdge, XZ); CHKERRQ(ierr);
 
 		// access xz component of the Cauchy stress
 		sxz = svEdge->s;
@@ -1701,15 +1715,17 @@ PetscErrorCode AdjointJacResGetResidual_ViscPowerlaw(JacRes *jr, PetscInt CurPar
 		n 		 = phases[CurPhase].n;
 		Bn 		 = phases[CurPhase].Bn;
 		eII 	 =  svDev->DII;				
-		if  (eII == 0.0) eII = matLim->DII_ref;
+		if  (eII == 0.0) eII = ctrl->DII_ref;
 		Vn 		 =  phases[CurPhase].Vn;
 		En 		 =  phases[CurPhase].En;
-		if(T) RT =  matLim->Rugc*Tc;   	    
+		if(T) RT =  ctrl->Rugc*Tc;
 		else  RT =  -1.0;
 		pp 		 =  pc-pShift;
-		e0 		 =  matLim->DII_ref;
+		e0 		 =  ctrl->DII_ref;
 		eta0 	 =  pow(Bn*pow(2,n)*pow(e0,n-1),-1/n);
-		etamax   =  matLim->eta_max;
+		etamax   =  1/ctrl->inv_eta_max;
+		mf       =  phases[CurPhase].mf;
+		Me_mu    =  phases[CurPhase].Me_Mu0;
 
 		// momentum
 		if (CurPar==_RHO0_)
@@ -1752,6 +1768,16 @@ PetscErrorCode AdjointJacResGetResidual_ViscPowerlaw(JacRes *jr, PetscInt CurPar
 				ef = pow(2,-n)*pow(eta0,-n)*pow(e0,1-n)*ep;
 				fx[k-1][j][i] -= ph*( (XZ*pow(2,2-n)*pow(eII,1-1/n)*pow(eta0,-n)*pow(e0,1-n)*ep*pow(ef,1/n-1))/(RT*bdz*n*pow(2*pow(eII,1-1/n)*pow(ef,1/n)+1/etamax,2)) );   fx[k][j][i] += ph*( (XZ*pow(2,2-n)*pow(eII,1-1/n)*pow(eta0,-n)*pow(e0,1-n)*ep*pow(ef,1/n-1))/(RT*fdz*n*pow(2*pow(eII,1-1/n)*pow(ef,1/n)+1/etamax,2)) );
 				fz[k][j][i-1] -= ph*( (XZ*pow(2,2-n)*pow(eII,1-1/n)*pow(eta0,-n)*pow(e0,1-n)*ep*pow(ef,1/n-1))/(RT*bdx*n*pow(2*pow(eII,1-1/n)*pow(ef,1/n)+1/etamax,2)) );   fz[k][j][i] += ph*( (XZ*pow(2,2-n)*pow(eII,1-1/n)*pow(eta0,-n)*pow(e0,1-n)*ep*pow(ef,1/n-1))/(RT*fdx*n*pow(2*pow(eII,1-1/n)*pow(ef,1/n)+1/etamax,2)) );
+			}
+		}
+		else if(CurPar==_MFR_)
+		{
+			if(svEdge->phRat[CurPhase] > 0)
+			{
+				ep = ((1-mf)/mf);
+				ef = exp(2.5+(1-mf)*pow(ep,0.48));
+				fx[k-1][j][i] -= ph*((2*( Me_mu*ef*((0.48*(-(1-mf)/pow(mf,2)-(1/mf))*(1-mf))/(pow(ep,0.52)) - pow(ep,0.48)) )*XZ) /bdz);   fx[k][j][i] += ph*((2*( Me_mu*ef*((0.48*(-(1-mf)/pow(mf,2)-(1/mf))*(1-mf))/(pow(ep,0.52)) - pow(ep,0.48)) )*XZ) /fdz);
+				fz[k][j][i-1] -= ph*((2*( Me_mu*ef*((0.48*(-(1-mf)/pow(mf,2)-(1/mf))*(1-mf))/(pow(ep,0.52)) - pow(ep,0.48)) )*XZ) /bdx);   fz[k][j][i] += ph*((2*( Me_mu*ef*((0.48*(-(1-mf)/pow(mf,2)-(1/mf))*(1-mf))/(pow(ep,0.52)) - pow(ep,0.48)) )*XZ) /fdx);
 			}
 		}
 		else
@@ -1842,13 +1868,16 @@ PetscErrorCode AdjointJacResGetResidual_ViscPowerlaw(JacRes *jr, PetscInt CurPar
 		Tc = 0.25*(T[k][j][i] + T[k][j-1][i] + T[k-1][j][i] + T[k-1][j-1][i]);
 
 		// access current lithostatic pressure (y-z plane, j-k indices)
-		pc_lithos = 0.25*(p_lithos[k][j][i] + p_lithos[k][j-1][i] + p_lithos[k-1][j][i] + p_lithos[k-1][j-1][i]);
+		pc_lith = 0.25*(p_lith[k][j][i] + p_lith[k][j-1][i] + p_lith[k-1][j][i] + p_lith[k-1][j-1][i]);
+
+		// access current pore pressure (y-z plane, j-k indices)
+		pc_pore = 0.25*(p_pore[k][j][i] + p_pore[k][j-1][i] + p_pore[k-1][j][i] + p_pore[k-1][j-1][i]);
 
 		// evaluate deviatoric constitutive equations
-		ierr = DevConstEq(svDev, &eta_creep, &eta_viscoplastic, numPhases, phases, svEdge->phRat, matLim, pc_lithos, dt, pc-pShift, Tc); CHKERRQ(ierr);
+		ierr = DevConstEq(svDev, &eta_creep, &eta_vp, numPhases, phases, soft, svEdge->phRat, ctrl, pc_lith, pc_pore, dt, pc-pShift, Tc, jr->Pd); CHKERRQ(ierr);
 
 		// compute stress, plastic strain rate and shear heating term on edge
-		ierr = GetStressEdge(svEdge, matLim, YZ); CHKERRQ(ierr);
+		ierr = GetStressEdge(svEdge, YZ); CHKERRQ(ierr);
 
 		// access yz component of the Cauchy stress
 		syz = svEdge->s;
@@ -1866,15 +1895,17 @@ PetscErrorCode AdjointJacResGetResidual_ViscPowerlaw(JacRes *jr, PetscInt CurPar
 		n 		 =  phases[CurPhase].n;
 		Bn 		 =  phases[CurPhase].Bn;
 		eII 	 =  svDev->DII;				
-		if  (eII == 0.0) eII = matLim->DII_ref;
+		if  (eII == 0.0) eII = ctrl->DII_ref;
 		Vn 		 =  phases[CurPhase].Vn;
 		En 		 =  phases[CurPhase].En;
-		if(T) RT =  matLim->Rugc*Tc;   	    
+		if(T) RT =  ctrl->Rugc*Tc;
 		else  RT =  -1.0;
 		pp 		 =  pc-pShift;
-		e0 		 =  matLim->DII_ref;
+		e0 		 =  ctrl->DII_ref;
 		eta0 	 =  pow(Bn*pow(2,n)*pow(e0,n-1),-1/n);
-		etamax   =  matLim->eta_max;
+		etamax   =  1/ctrl->inv_eta_max;
+		mf       =  phases[CurPhase].mf;
+		Me_mu    =  phases[CurPhase].Me_Mu0;
 
 		// update momentum residuals
 		if (CurPar==_RHO0_)
@@ -1919,6 +1950,16 @@ PetscErrorCode AdjointJacResGetResidual_ViscPowerlaw(JacRes *jr, PetscInt CurPar
 				fz[k][j-1][i] -= ph*( (YZ*pow(2,2-n)*pow(eII,1-1/n)*pow(eta0,-n)*pow(e0,1-n)*ep*pow(ef,1/n-1))/(RT*bdy*n*pow(2*pow(eII,1-1/n)*pow(ef,1/n)+1/etamax,2)) );   fz[k][j][i] += ph*( (YZ*pow(2,2-n)*pow(eII,1-1/n)*pow(eta0,-n)*pow(e0,1-n)*ep*pow(ef,1/n-1))/(RT*fdy*n*pow(2*pow(eII,1-1/n)*pow(ef,1/n)+1/etamax,2)) );
 			}
 		}
+		else if(CurPar==_MFR_)
+		{
+			ep = ((1-mf)/mf);
+			ef = exp(2.5+(1-mf)*pow(ep,0.48));
+			if(svEdge->phRat[CurPhase] > 0)
+			{
+				fy[k-1][j][i] -= ph*((2*( Me_mu*ef*((0.48*(-(1-mf)/pow(mf,2)-(1/mf))*(1-mf))/(pow(ep,0.52)) - pow(ep,0.48)) )*YZ) /bdz);   fy[k][j][i] += ph*((2*( Me_mu*ef*((0.48*(-(1-mf)/pow(mf,2)-(1/mf))*(1-mf))/(pow(ep,0.52)) - pow(ep,0.48)) )*YZ) /fdz);
+				fz[k][j-1][i] -= ph*((2*( Me_mu*ef*((0.48*(-(1-mf)/pow(mf,2)-(1/mf))*(1-mf))/(pow(ep,0.52)) - pow(ep,0.48)) )*YZ) /bdy);   fz[k][j][i] += ph*((2*( Me_mu*ef*((0.48*(-(1-mf)/pow(mf,2)-(1/mf))*(1-mf))/(pow(ep,0.52)) - pow(ep,0.48)) )*YZ) /fdy);
+			}
+		}
 		else
 		{
 			fy[k-1][j][i] -= 0;   fy[k][j][i] += 0;
@@ -1928,22 +1969,24 @@ PetscErrorCode AdjointJacResGetResidual_ViscPowerlaw(JacRes *jr, PetscInt CurPar
 	END_STD_LOOP
 
 	// restore vectors
-	ierr = DMDAVecRestoreArray(fs->DA_CEN, jr->gc,   &gc);	CHKERRQ(ierr);
-	ierr = DMDAVecRestoreArray(fs->DA_CEN, jr->lp,   &p);   CHKERRQ(ierr);
-	ierr = DMDAVecRestoreArray(fs->DA_CEN, jr->lT,   &T);   CHKERRQ(ierr);
-	ierr = DMDAVecRestoreArray(fs->DA_CEN, jr->ldxx, &dxx); CHKERRQ(ierr);
-	ierr = DMDAVecRestoreArray(fs->DA_CEN, jr->ldyy, &dyy); CHKERRQ(ierr);
-	ierr = DMDAVecRestoreArray(fs->DA_CEN, jr->ldzz, &dzz); CHKERRQ(ierr);
-	ierr = DMDAVecRestoreArray(fs->DA_XY,  jr->ldxy, &dxy); CHKERRQ(ierr);
-	ierr = DMDAVecRestoreArray(fs->DA_XZ,  jr->ldxz, &dxz); CHKERRQ(ierr);
-	ierr = DMDAVecRestoreArray(fs->DA_YZ,  jr->ldyz, &dyz); CHKERRQ(ierr);
-	ierr = DMDAVecRestoreArray(fs->DA_X,   jr->lfx,  &fx);  CHKERRQ(ierr);
-	ierr = DMDAVecRestoreArray(fs->DA_Y,   jr->lfy,  &fy);  CHKERRQ(ierr);
-	ierr = DMDAVecRestoreArray(fs->DA_Z,   jr->lfz,  &fz);  CHKERRQ(ierr);
-	ierr = DMDAVecRestoreArray(fs->DA_X,   jr->lvx,  &vx);  CHKERRQ(ierr);
-	ierr = DMDAVecRestoreArray(fs->DA_Y,   jr->lvy,  &vy);  CHKERRQ(ierr);
-	ierr = DMDAVecRestoreArray(fs->DA_Z,   jr->lvz,  &vz);  CHKERRQ(ierr);
-	ierr = DMDAVecRestoreArray(fs->DA_CEN, jr->lp_lithos, &p_lithos); CHKERRQ(ierr);
+	ierr = DMDAVecRestoreArray(fs->DA_CEN, jr->gc,      &gc);     CHKERRQ(ierr);
+	ierr = DMDAVecRestoreArray(fs->DA_CEN, jr->lp,      &p);      CHKERRQ(ierr);
+	ierr = DMDAVecRestoreArray(fs->DA_CEN, jr->lT,      &T);      CHKERRQ(ierr);
+	ierr = DMDAVecRestoreArray(fs->DA_CEN, jr->ldxx,    &dxx);    CHKERRQ(ierr);
+	ierr = DMDAVecRestoreArray(fs->DA_CEN, jr->ldyy,    &dyy);    CHKERRQ(ierr);
+	ierr = DMDAVecRestoreArray(fs->DA_CEN, jr->ldzz,    &dzz);    CHKERRQ(ierr);
+	ierr = DMDAVecRestoreArray(fs->DA_XY,  jr->ldxy,    &dxy);    CHKERRQ(ierr);
+	ierr = DMDAVecRestoreArray(fs->DA_XZ,  jr->ldxz,    &dxz);    CHKERRQ(ierr);
+	ierr = DMDAVecRestoreArray(fs->DA_YZ,  jr->ldyz,    &dyz);    CHKERRQ(ierr);
+	ierr = DMDAVecRestoreArray(fs->DA_X,   jr->lfx,     &fx);     CHKERRQ(ierr);
+	ierr = DMDAVecRestoreArray(fs->DA_Y,   jr->lfy,     &fy);     CHKERRQ(ierr);
+	ierr = DMDAVecRestoreArray(fs->DA_Z,   jr->lfz,     &fz);     CHKERRQ(ierr);
+	ierr = DMDAVecRestoreArray(fs->DA_X,   jr->lvx,     &vx);     CHKERRQ(ierr);
+	ierr = DMDAVecRestoreArray(fs->DA_Y,   jr->lvy,     &vy);     CHKERRQ(ierr);
+	ierr = DMDAVecRestoreArray(fs->DA_Z,   jr->lvz,     &vz);     CHKERRQ(ierr);
+	ierr = DMDAVecRestoreArray(fs->DA_CEN, jr->lp_lith, &p_lith); CHKERRQ(ierr);
+	ierr = DMDAVecRestoreArray(fs->DA_CEN, jr->lp_pore, &p_pore); CHKERRQ(ierr);
+	ierr = DMDAVecRestoreArray(fs->DA_CEN, bc->bcp,     &bcp);    CHKERRQ(ierr);
 
 	// assemble global residuals from local contributions
 	LOCAL_TO_GLOBAL(fs->DA_X, jr->lfx, jr->gfx)

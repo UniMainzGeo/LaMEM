@@ -47,54 +47,80 @@
 #define __AVD_h__
 //---------------------------------------------------------------------------
 
+struct Marker;
+struct AdvCtx;
+
+//---------------------------------------------------------------------------
+
 #define AVD_CELL_MASK      -2
 #define AVD_CELL_UNCLAIMED -1
 
-typedef struct
+struct AVDCell
 {
-	PetscInt    ind;   // single cell index
-	PetscInt    i,j,k; // i,j,k  cell index
-	PetscScalar x[3];  // coordinates of center
-	PetscInt    p;     // marker index
-	PetscBool   done;  // flag
-	PetscInt    col;   // colour for half-centroid
+	PetscInt    ind;                       // single cell index
+	PetscInt    i,j,k;                     // i,j,k  cell index
+	PetscScalar x[3];                      // coordinates of center
+	PetscInt    p;                         // marker index
+	PetscBool   done;                      // flag
+	PetscInt    col;                       // colour for half-centroid
 
-} AVDCell;
+} ;
 
-typedef struct
+struct AVDChain
 {
-	PetscInt    p;                      // marker index
-	PetscInt    ind;                    // index
-	PetscInt    length;                 // current length of chain
-	PetscInt    nclaimed;               // claimed cells in the current cycle
-	PetscInt    tclaimed;               // total no of cells claimed
-	PetscInt    ibound;                 // no. of new boundary cells
-	PetscInt    iclaim;                 // no. of new claimed cells
-	PetscInt    *bound;                 // new boundary cells
-	PetscInt    *claim;                 // new claimed cells
-	PetscBool   done;                   // flag
-	PetscInt    gind;                   // marker index in actx->markers
-	PetscScalar xc[3];                  // centroid coordinates
-	PetscScalar xh[3];                  // half-axis of the centroid
-	PetscInt    axis;                   // dominant axis of centroid cell
+	PetscInt    p;                         // marker index
+	PetscInt    ind;                       // index
+	PetscInt    length;                    // current length of chain
+	PetscInt    nclaimed;                  // claimed cells in the current cycle
+	PetscInt    tclaimed;                  // total no of cells claimed
+	PetscInt    ibound;                    // no. of new boundary cells
+	PetscInt    iclaim;                    // no. of new claimed cells
+	PetscInt    *bound;                    // new boundary cells
+	PetscInt    *claim;                    // new claimed cells
+	PetscBool   done;                      // flag
+	PetscInt    gind;                      // marker index in actx->markers
+	PetscScalar xc[3];                     // centroid coordinates
+	PetscScalar xh[3];                     // half-axis of the centroid
+	PetscInt    axis;                      // dominant axis of centroid cell
 
-} AVDChain;
+};
 
-typedef struct
+struct AVD
 {
-	PetscInt    mmin, mmax;       // limit number of markers
-	PetscScalar xs[3],xe[3];      // coordinate limits of the Voronoi diagram
-	PetscScalar dx,dy,dz;         // spacing
-	PetscInt    nx,ny,nz;         // grid cells
-	PetscInt    buffer;           // buffer
-	AVDCell     *cell;            // voronoi grid (size of nx*ny*nz)
-	AVDChain    *chain;           // voronoi chain for every point (size of npoints)
-	Marker      *points;          // points that we want to compute voronoi diagram (size of npoints)
-	PetscInt    npoints;          // no. markers
+	PetscInt    mmin, mmax;                // limit number of markers
+	PetscScalar xs[3],xe[3];               // coordinate limits of the Voronoi diagram
+	PetscScalar dx,dy,dz;                  // spacing
+	PetscInt    nx,ny,nz;                  // grid cells
+	PetscInt    buffer;                    // buffer
+	AVDCell     *cell;                     // voronoi grid (size of nx*ny*nz)
+	AVDChain    *chain;                    // voronoi chain for every point (size of npoints)
+	Marker      *points;                   // points that we want to compute voronoi diagram (size of npoints)
+	PetscInt    npoints;                   // no. markers
 
-} AVD;
+} ;
+
+struct MarkerVolume
+{
+	PetscInt    *cellnum;                  // host cells local number for each marker
+	PetscInt    *markind;                  // id (position) of markers clustered for every cell
+	PetscInt    *markstart;                // start id in markind for every cell
+	PetscInt     ncells;                   // no of total cells
+	PetscScalar *xcoord, *ycoord, *zcoord; // coordinate arrays
+	PetscInt     M, N, P;                  // number of cells in each direction
+
+} ;
+
+enum VolumeCase
+{
+	_CELL_, // center cell
+	_XYED_, // xy-edge
+	_XZED_, // xz-edge
+	_YZED_  // yz-edge
+
+};
 
 //---------------------------------------------------------------------------
+
 // basic AVD routines
 PetscErrorCode AVDCreate     (AVD *A);
 PetscErrorCode AVDDestroy    (AVD *A);
@@ -103,10 +129,23 @@ PetscErrorCode AVDClaimCells (AVD *A, const PetscInt ip);
 PetscErrorCode AVDUpdateChain(AVD *A, const PetscInt ip);
 PetscErrorCode AVDReAlloc    (AVDChain *chain,PetscInt buffer);
 
-// routines for marker control
+// routines for old marker control
 PetscErrorCode AVDLoadPoints            (AdvCtx *actx, AVD *A, PetscInt ind);
 PetscErrorCode AVDInjectDeletePoints    (AdvCtx *actx, AVD *A, PetscInt cellID);
 PetscErrorCode AVDExecuteMarkerInjection(AdvCtx *actx, PetscInt npoints, PetscScalar xs[3], PetscScalar xe[3], PetscInt ind);
+
+// new marker control (for every control volume)
+PetscErrorCode AVDMarkerControl  (AdvCtx *actx);
+PetscErrorCode AVDMarkerControlMV(AdvCtx *actx, VolumeCase vtype);
+PetscErrorCode AVDCheckCellsMV   (AdvCtx *actx, MarkerVolume *mv, PetscInt dir);
+PetscErrorCode AVDMapMarkersMV   (AdvCtx *actx, MarkerVolume *mv, PetscInt dir);
+PetscErrorCode AVDCreateMV       (AdvCtx *actx, MarkerVolume *mv, PetscInt dir);
+PetscErrorCode AVDAlgorithmMV    (AdvCtx *actx, MarkerVolume *mv, PetscInt npoints, PetscScalar xs[3], PetscScalar xe[3], PetscInt ind, PetscInt nmin);
+PetscErrorCode AVDLoadPointsMV   (AdvCtx *actx, MarkerVolume *mv, AVD *A, PetscInt ind);
+PetscErrorCode AVDInjectPointsMV (AdvCtx *actx, AVD *A);
+PetscErrorCode AVDDeletePointsMV (AdvCtx *actx, AVD *A);
+PetscErrorCode AVDDestroyMV      (MarkerVolume *mv);
+
 //---------------------------------------------------------------------------
 static inline PetscScalar AVDDistanceTest(PetscScalar x0[3],PetscScalar x1[3],PetscScalar x2[3])
 {

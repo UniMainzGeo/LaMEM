@@ -43,8 +43,8 @@
 //.............   FDSTAG OUTPUT VECTOR INTERPOLATION ROUTINES   .............
 //---------------------------------------------------------------------------
 #include "LaMEM.h"
-#include "fdstag.h"
 #include "interpolate.h"
+#include "fdstag.h"
 //---------------------------------------------------------------------------
 #undef __FUNCT__
 #define __FUNCT__ "InterpXFaceCorner"
@@ -77,7 +77,7 @@ PetscErrorCode InterpXFaceCorner(FDSTAG *fs, Vec XFace, Vec Corner, InterpFlags 
 		A3 = lXFace[k  ][j-1][i];
 		A4 = lXFace[k  ][j  ][i];
 
-		if(iflag.use_bound != PETSC_TRUE)
+		if(!iflag.use_bound)
 		{
 			// set ghost values on boundaries if not defined
 			if(j == 0)	{ A1 = A2; A3 = A4; }
@@ -94,8 +94,8 @@ PetscErrorCode InterpXFaceCorner(FDSTAG *fs, Vec XFace, Vec Corner, InterpFlags 
 		cf = A1*B1*B2 + A2*E1*B2 + A3*B1*E2 + A4*E1*E2;
 
 		// store
-		if(iflag.update != PETSC_TRUE) lCorner[k][j][i]  = cf;
-		else                           lCorner[k][j][i] += cf;
+		if(!iflag.update) lCorner[k][j][i]  = cf;
+		else              lCorner[k][j][i] += cf;
 
 	}
 	END_STD_LOOP
@@ -138,7 +138,7 @@ PetscErrorCode InterpYFaceCorner(FDSTAG *fs, Vec YFace, Vec Corner, InterpFlags 
 		A3 = lYFace[k  ][j][i-1];
 		A4 = lYFace[k  ][j][i  ];
 
-		if(iflag.use_bound != PETSC_TRUE)
+		if(!iflag.use_bound)
 		{
 			// set ghost values on boundaries if not defined
 			if(i == 0)	{ A1 = A2; A3 = A4; }
@@ -155,8 +155,8 @@ PetscErrorCode InterpYFaceCorner(FDSTAG *fs, Vec YFace, Vec Corner, InterpFlags 
 		cf = A1*B1*B2 + A2*E1*B2 + A3*B1*E2 + A4*E1*E2;
 
 		// store
-		if(iflag.update != PETSC_TRUE) lCorner[k][j][i]  = cf;
-		else                           lCorner[k][j][i] += cf;
+		if(!iflag.update) lCorner[k][j][i]  = cf;
+		else              lCorner[k][j][i] += cf;
 
 	}
 	END_STD_LOOP
@@ -199,7 +199,7 @@ PetscErrorCode InterpZFaceCorner(FDSTAG *fs, Vec ZFace, Vec Corner, InterpFlags 
 		A3 = lZFace[k][j  ][i-1];
 		A4 = lZFace[k][j  ][i  ];
 
-		if(iflag.use_bound != PETSC_TRUE)
+		if(!iflag.use_bound)
 		{
 			// set ghost values on boundaries if not defined
 			if(i == 0)	{ A1 = A2; A3 = A4; }
@@ -216,8 +216,8 @@ PetscErrorCode InterpZFaceCorner(FDSTAG *fs, Vec ZFace, Vec Corner, InterpFlags 
 		cf = A1*B1*B2 + A2*E1*B2 + A3*B1*E2 + A4*E1*E2;
 
 		// store
-		if(iflag.update != PETSC_TRUE) lCorner[k][j][i]  = cf;
-		else                           lCorner[k][j][i] += cf;
+		if(!iflag.update) lCorner[k][j][i]  = cf;
+		else              lCorner[k][j][i] += cf;
 
 	}
 	END_STD_LOOP
@@ -263,7 +263,7 @@ PetscErrorCode InterpCenterCorner(FDSTAG *fs, Vec Center, Vec Corner, InterpFlag
 		K1 = k;
 		K2 = k-1;
 
-		if(iflag.use_bound != PETSC_TRUE)
+		if(!iflag.use_bound)
 		{
 			// check index bounds if ghost points are undefined
 			if(I1 == mx) I1--;
@@ -294,8 +294,8 @@ PetscErrorCode InterpCenterCorner(FDSTAG *fs, Vec Center, Vec Corner, InterpFlag
 		+    A5*B1*B2*E3 + A6*E1*B2*E3 + A7*B1*E2*E3 + A8*E1*E2*E3;
 
 		// store
-		if(iflag.update != PETSC_TRUE) lCorner[k][j][i]  = cf;
-		else                           lCorner[k][j][i] += cf;
+		if(!iflag.update) lCorner[k][j][i]  = cf;
+		else              lCorner[k][j][i] += cf;
 
 	}
 	END_STD_LOOP
@@ -346,8 +346,8 @@ PetscErrorCode InterpXYEdgeCorner(FDSTAG *fs, Vec XYEdge, Vec Corner, InterpFlag
 		cf = A1*B1 + A2*E1;
 
 		// store
-		if(iflag.update != PETSC_TRUE) lCorner[k][j][i]  = cf;
-		else                           lCorner[k][j][i] += cf;
+		if(!iflag.update) lCorner[k][j][i]  = cf;
+		else              lCorner[k][j][i] += cf;
 
 	}
 	END_STD_LOOP
@@ -399,8 +399,8 @@ PetscErrorCode InterpXZEdgeCorner(FDSTAG *fs, Vec XZEdge, Vec Corner, InterpFlag
 		cf = A1*B1 + A2*E1;
 
 		// store
-		if(iflag.update != PETSC_TRUE) lCorner[k][j][i]  = cf;
-		else                           lCorner[k][j][i] += cf;
+		if(!iflag.update) lCorner[k][j][i]  = cf;
+		else              lCorner[k][j][i] += cf;
 
 	}
 	END_STD_LOOP
@@ -452,8 +452,8 @@ PetscErrorCode InterpYZEdgeCorner(FDSTAG *fs, Vec YZEdge, Vec Corner, InterpFlag
 		cf = A1*B1 + A2*E1;
 
 		// store
-		if(iflag.update != PETSC_TRUE) lCorner[k][j][i]  = cf;
-		else                           lCorner[k][j][i] += cf;
+		if(!iflag.update) lCorner[k][j][i]  = cf;
+		else              lCorner[k][j][i] += cf;
 
 	}
 	END_STD_LOOP

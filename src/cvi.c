@@ -49,16 +49,13 @@
 
 
 #include "LaMEM.h"
-#include "fdstag.h"
-#include "solVar.h"
-#include "scaling.h"
-#include "tssolve.h"
-#include "bc.h"
-#include "JacRes.h"
-#include "interpolate.h"
-#include "surf.h"
-#include "advect.h"
 #include "cvi.h"
+#include "JacRes.h"
+#include "fdstag.h"
+#include "advect.h"
+#include "surf.h"
+#include "bc.h"
+#include "tssolve.h"
 #include "tools.h"
 
 //---------------------------------------------------------------------------
@@ -74,48 +71,11 @@ PetscErrorCode ADVelAdvectMain(AdvCtx *actx)
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
 
-	// read options from command line
-	ierr = ADVelReadOptions(&vi); CHKERRQ(ierr);
-
 	// interpolate P,T - needs update
 	ierr = ADVelInterpPT(actx); CHKERRQ(ierr);
 
 	// velocity advection routine - with different velocity interpolations
 	ierr = ADVelAdvectScheme(actx, &vi); CHKERRQ(ierr);
-
-	PetscFunctionReturn(0);
-}
-//---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "ADVelReadOptions"
-PetscErrorCode ADVelReadOptions(AdvVelCtx *vi)
-{
-	// read options from the command line
-
-	PetscInt val0, val1;
-
-	PetscErrorCode ierr;
-	PetscFunctionBegin;
-
-	// default values
-	val0 = 0; // Euler advection
-	val1 = 0; // STAG interp
-
-	// read options
-	ierr = PetscOptionsGetInt(NULL, NULL, "-advection", &val0, NULL); CHKERRQ(ierr);
-	ierr = PetscOptionsGetInt(NULL, NULL, "-velinterp", &val1, NULL); CHKERRQ(ierr);
-
-	// advection scheme
-	if      (val0 == 0) { vi->advection = EULER;         PetscPrintf(PETSC_COMM_WORLD," Advection Scheme: %s\n","Euler 1st order"      ); }
-	else if (val0 == 1) { vi->advection = RUNGE_KUTTA_2; PetscPrintf(PETSC_COMM_WORLD," Advection Scheme: %s\n","Runge-Kutta 2nd order"); }
-	else if (val0 == 2) { vi->advection = RUNGE_KUTTA_4; PetscPrintf(PETSC_COMM_WORLD," Advection Scheme: %s\n","Runge-Kutta 4th order"); }
-	else SETERRQ(PETSC_COMM_SELF, PETSC_ERR_USER," *** Incorrect option for advection scheme ***");
-
-	// velocity interpolation
-	if      (val1 == 0) { vi->velinterp = STAG;   PetscPrintf(PETSC_COMM_WORLD," VelInterp Scheme: %s\n","STAG"  );}
-	else if (val1 == 1) { vi->velinterp = NODES;  PetscPrintf(PETSC_COMM_WORLD," VelInterp Scheme: %s\n","NODES" );}
-	else if (val1 == 2) { vi->velinterp = MINMOD; PetscPrintf(PETSC_COMM_WORLD," VelInterp Scheme: %s\n","MINMOD");}
-	else SETERRQ(PETSC_COMM_SELF, PETSC_ERR_USER," *** Incorrect option for velocity interpolation scheme");
 
 	PetscFunctionReturn(0);
 }
@@ -131,8 +91,8 @@ PetscErrorCode ADVelInterpPT(AdvCtx *actx)
 	Marker      *P;
 	SolVarCell  *svCell;
 	PetscInt    nx, ny, sx, sy, sz;
-	PetscInt    jj, ID, I, J, K;
-	PetscScalar ***lp, ***lT;
+	PetscInt    jj, ID, I, J, K, AirPhase;
+	PetscScalar ***lp, ***lT, Ttop;
 
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
@@ -140,6 +100,15 @@ PetscErrorCode ADVelInterpPT(AdvCtx *actx)
 	// access context
 	fs = actx->fs;
 	jr = actx->jr;
+
+	AirPhase = -1;
+	Ttop     =  0.0;
+
+	if(actx->surf->UseFreeSurf)
+	{
+		AirPhase = actx->surf->AirPhase;
+		Ttop     = actx->jr->bc->Ttop;
+	}
 
 	// starting indices & number of cells
 	nx = fs->dsx.ncels;
@@ -172,7 +141,7 @@ PetscErrorCode ADVelInterpPT(AdvCtx *actx)
 		P->T += lT[sz+K][sy+J][sx+I] - svCell->svBulk.Tn;
 
 		// override temperature of air phase
-		if(actx->AirPhase != -1 &&  P->phase == actx->AirPhase) P->T = actx->Ttop;
+		if(AirPhase != -1 &&  P->phase == AirPhase) P->T = Ttop;
 	}
 
 	// restore access
@@ -201,7 +170,7 @@ PetscErrorCode ADVelAdvectScheme(AdvCtx *actx, AdvVelCtx *vi)
 	ierr = ADVelInitCoord(actx, vi->interp, vi->nmark); CHKERRQ(ierr);
 
 	// get current time step
-	dt = actx->jr->ts.dt;
+	dt = actx->jr->ts->dt;
 
 	//=======================================================================
 	// START ADVECTION
@@ -209,7 +178,7 @@ PetscErrorCode ADVelAdvectScheme(AdvCtx *actx, AdvVelCtx *vi)
 	// ---------------------------------
 	// EULER (1st order)
 	// ---------------------------------
-	if      (vi->advection == EULER        )
+	if(actx->advect == EULER)
 	{
 		// 1. Velocity interpolation
 		ierr = ADVelInterpMain(vi); CHKERRQ(ierr);
@@ -224,7 +193,7 @@ PetscErrorCode ADVelAdvectScheme(AdvCtx *actx, AdvVelCtx *vi)
 	// ---------------------------------
 	// Runge-Kutta 2nd order in space
 	// ---------------------------------
-	else if (vi->advection == RUNGE_KUTTA_2)
+	else if(actx->advect == RUNGE_KUTTA_2)
 	{
 		// velocity interpolation A
 		ierr = ADVelInterpMain(vi); CHKERRQ(ierr);
@@ -232,47 +201,13 @@ PetscErrorCode ADVelAdvectScheme(AdvCtx *actx, AdvVelCtx *vi)
 		// Runge-Kutta step to B
 		ierr = ADVelRungeKuttaStep(vi, dt/2, 1.0, 0); CHKERRQ(ierr);
 
+		// needed for mapping between vi and actx in parallel
+		ierr = ADVelResetCoord(vi->interp, vi->nmark); CHKERRQ(ierr);
+		ierr = ADVelExchange(vi); CHKERRQ(ierr);
+
 		// final position
 		ierr = ADVelAdvectCoord(vi->interp, vi->nmark, dt, 1); CHKERRQ(ierr);
 	}
-
-	// ---------------------------------
-	// Runge-Kutta 4th order in space
-	// ---------------------------------
-	else if (vi->advection == RUNGE_KUTTA_4)
-	{
-		// ---------------
-		// 1) first point - origin
-		// ---------------
-		// velocity interpolation
-		ierr = ADVelInterpMain(vi); CHKERRQ(ierr);
-
-		// update effective velocity
-		ierr = ADVelCalcEffVel(vi->interp, vi->nmark, 1.0); CHKERRQ(ierr);
-
-		// ---------------
-		// 2) second point
-		// ---------------
-		// Runge-Kutta step to B
-		ierr = ADVelRungeKuttaStep(vi, dt/2, 2.0, 0); CHKERRQ(ierr);
-
-		// ---------------
-		// 3) third point
-		// ---------------
-		// Runge-Kutta step to C
-		ierr = ADVelRungeKuttaStep(vi, dt/2, 2.0, 0); CHKERRQ(ierr);
-
-		// ---------------
-		// 4) fourth point
-		// ---------------
-		// Runge-Kutta step to B
-		ierr = ADVelRungeKuttaStep(vi, dt, 1.0, 0); CHKERRQ(ierr);
-
-		// final position
-		ierr = ADVelAdvectCoord(vi->interp, vi->nmark, dt/6, 1); CHKERRQ(ierr);
-
-	}
-	else SETERRQ(PETSC_COMM_SELF, PETSC_ERR_USER," *** Unknown advection scheme ***");
 
 	//=======================================================================
 	// END ADVECTION
@@ -309,19 +244,13 @@ PetscErrorCode ADVelRungeKuttaStep(AdvVelCtx *vi, PetscScalar dt, PetscScalar a,
 	// 2. Delete marker outflow if it happens
 	ierr = ADVelDeleteOutflow(vi); CHKERRQ(ierr);
 
-	// 3. Exchange FORWARD for interpolation
+	// 3. Exchange markers for interpolation
 	ierr = ADVelExchange(vi); CHKERRQ(ierr);
 
 	// 4. Velocity Interpolation
 	ierr = ADVelInterpMain(vi); CHKERRQ(ierr);
 
-	// 5. Reset coordinates to origin
-	ierr = ADVelResetCoord(vi->interp, vi->nmark); CHKERRQ(ierr);
-
-	// 6. Exchange BACK to origin
-	ierr = ADVelExchange(vi); CHKERRQ(ierr);
-
-	// 7. Update effective velocity
+	// 5. Update effective velocity
 	ierr = ADVelCalcEffVel(vi->interp, vi->nmark, a); CHKERRQ(ierr);
 
 	PetscFunctionReturn(0);
@@ -336,8 +265,9 @@ PetscErrorCode ADVelCreate(AdvCtx *actx, AdvVelCtx *vi)
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
 
-	vi->fs = actx->fs;
-	vi->jr = actx->jr;
+	vi->fs   = actx->fs;
+	vi->jr   = actx->jr;
+	vi->actx = actx;
 
 	//=============
 	// COMMUNICATOR
@@ -394,12 +324,12 @@ PetscErrorCode ADVelDestroy(AdvVelCtx *vi)
 	PetscFunctionBegin;
 
 	ierr = PetscFree(vi->interp);    CHKERRQ(ierr);
-	ierr = PetscFree(vi->cellnum);    CHKERRQ(ierr);
-	ierr = PetscFree(vi->markind);    CHKERRQ(ierr);
-	ierr = PetscFree(vi->markstart);  CHKERRQ(ierr);
-	ierr = PetscFree(vi->sendbuf);    CHKERRQ(ierr);
-	ierr = PetscFree(vi->recvbuf);    CHKERRQ(ierr);
-	ierr = PetscFree(vi->idel);       CHKERRQ(ierr);
+	ierr = PetscFree(vi->cellnum);   CHKERRQ(ierr);
+	ierr = PetscFree(vi->markind);   CHKERRQ(ierr);
+	ierr = PetscFree(vi->markstart); CHKERRQ(ierr);
+	ierr = PetscFree(vi->sendbuf);   CHKERRQ(ierr);
+	ierr = PetscFree(vi->recvbuf);   CHKERRQ(ierr);
+	ierr = PetscFree(vi->idel);      CHKERRQ(ierr);
 
 	PetscFunctionReturn(0);
 }
@@ -501,9 +431,9 @@ PetscErrorCode ADVelAdvectCoord(VelInterp *interp, PetscInt n, PetscScalar dt, P
 		else
 		{
 			// intermediate advection of marker
-			interp[jj].x[0] += interp[jj].v[0]*dt;
-			interp[jj].x[1] += interp[jj].v[1]*dt;
-			interp[jj].x[2] += interp[jj].v[2]*dt;
+			interp[jj].x[0] = interp[jj].x0[0] + interp[jj].v[0]*dt;
+			interp[jj].x[1] = interp[jj].x0[1] + interp[jj].v[1]*dt;
+			interp[jj].x[2] = interp[jj].x0[2] + interp[jj].v[2]*dt;
 		}
 	}
 
@@ -719,7 +649,7 @@ PetscErrorCode ADVelExchangeNMark(AdvVelCtx *vi)
 		if(fs->neighb[k] != vi->iproc && fs->neighb[k] != -1)
 		{
 			ierr = MPI_Isend(&vi->nsendm[k], 1, MPIU_INT,
-				fs->neighb[k], 100, vi->icomm, &srequest[scnt++]); CHKERRQ(ierr);
+					fs->neighb[k], 100, vi->icomm, &srequest[scnt++]); CHKERRQ(ierr);
 		}
 	}
 
@@ -729,7 +659,7 @@ PetscErrorCode ADVelExchangeNMark(AdvVelCtx *vi)
 		if(fs->neighb[k] != vi->iproc && fs->neighb[k] != -1)
 		{
 			ierr = MPI_Irecv(&vi->nrecvm[k], 1, MPIU_INT,
-				fs->neighb[k], 100, vi->icomm, &rrequest[rcnt++]); CHKERRQ(ierr);
+					fs->neighb[k], 100, vi->icomm, &rrequest[rcnt++]); CHKERRQ(ierr);
 		}
 		else vi->nrecvm[k] = 0;
 	}
@@ -820,7 +750,7 @@ PetscErrorCode ADVelExchangeMark(AdvVelCtx *vi)
 			nbyte = (PetscMPIInt)(vi->nsendm[k]*(PetscInt)sizeof(VelInterp));
 
 			ierr = MPI_Isend(&vi->sendbuf[vi->ptsend[k]], nbyte, MPI_BYTE,
-				fs->neighb[k], 200, vi->icomm, &srequest[scnt++]); CHKERRQ(ierr);
+					fs->neighb[k], 200, vi->icomm, &srequest[scnt++]); CHKERRQ(ierr);
 
 		}
 	}
@@ -833,7 +763,7 @@ PetscErrorCode ADVelExchangeMark(AdvVelCtx *vi)
 			nbyte = (PetscMPIInt)(vi->nrecvm[k]*(PetscInt)sizeof(VelInterp));
 
 			ierr = MPI_Irecv(&vi->recvbuf[vi->ptrecv[k]], nbyte, MPI_BYTE,
-				fs->neighb[k], 200, vi->icomm, &rrequest[rcnt++]); CHKERRQ(ierr);
+					fs->neighb[k], 200, vi->icomm, &rrequest[rcnt++]); CHKERRQ(ierr);
 		}
 	}
 
@@ -1055,10 +985,10 @@ PetscErrorCode ADVelInterpMain(AdvVelCtx *vi)
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
 
-	if     (vi->velinterp == STAG  )  { ierr = ADVelInterpSTAG  (vi); CHKERRQ(ierr); }
-	else if(vi->velinterp == NODES )  { ierr = ADVelInterpNODES (vi); CHKERRQ(ierr); }
-	else if(vi->velinterp == MINMOD)  { ierr = ADVelInterpMINMOD(vi); CHKERRQ(ierr); }
-	else SETERRQ(PETSC_COMM_SELF, PETSC_ERR_USER," *** Unknown option for velocity interpolation scheme");
+	if     (vi->actx->interp == STAG   )  { ierr = ADVelInterpSTAG   (vi); CHKERRQ(ierr); }
+	else if(vi->actx->interp == MINMOD )  { ierr = ADVelInterpMINMOD (vi); CHKERRQ(ierr); }
+	else if(vi->actx->interp == STAG_P )  { ierr = ADVelInterpSTAGP  (vi); CHKERRQ(ierr); }
+	else SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER," *** Unknown option for velocity interpolation scheme");
 
 	PetscFunctionReturn(0);
 }
@@ -1134,200 +1064,6 @@ PetscErrorCode ADVelInterpSTAG(AdvVelCtx *vi)
 		vi->interp[jj].v[1] = InterpLin3D(lvy, II, J,  KK, sx, sy, sz, xp, yp, zp, ccx, ncy, ccz);
 		vi->interp[jj].v[2] = InterpLin3D(lvz, II, JJ, K,  sx, sy, sz, xp, yp, zp, ccx, ccy, ncz);
 	}
-
-	// restore access
-	ierr = DMDAVecRestoreArray(fs->DA_X,   jr->lvx, &lvx); CHKERRQ(ierr);
-	ierr = DMDAVecRestoreArray(fs->DA_Y,   jr->lvy, &lvy); CHKERRQ(ierr);
-	ierr = DMDAVecRestoreArray(fs->DA_Z,   jr->lvz, &lvz); CHKERRQ(ierr);
-
-	PetscFunctionReturn(0);
-}
-//---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "ADVelInterpNODES"
-PetscErrorCode ADVelInterpNODES(AdvVelCtx *vi)
-{
-	// bilinear interpolation to nodes from fdstag points
-	// then trilinear interpolation to markers
-	// with velocity correction from Jenny et al (2001), Meyer and Jenny (2004) and Wang et al (2015)
-
-	FDSTAG      *fs;
-	JacRes      *jr;
-	PetscInt    sx, sy, sz, nx, ny,nz;
-	PetscInt    i, j, k, I, J, K, II, JJ, KK;
-	PetscInt    ID, pind, jj, n;
-	PetscScalar *ncx, *ncy, *ncz;
-	PetscScalar *ccx, *ccy, *ccz;
-	PetscScalar ***lvx, ***lvy, ***lvz;
-	PetscScalar vxn[8], vyn[8], vzn[8];
-	PetscScalar C12, C23, C31, C10, C20, C30;
-	PetscScalar xp, yp, zp;
-	PetscScalar nxs, nys, nzs, nxe, nye, nze, dx, dy, dz;
-	PetscScalar xpl, ypl, zpl;
-	PetscScalar xn[8], yn[8], zn[8];
-	PetscScalar A[4], xl, yl, zl;
-	PetscScalar xs, ys, zs, xe, ye, ze;
-	PetscInt    ix, iy, iz, ind;
-
-	PetscErrorCode ierr;
-	PetscFunctionBegin;
-
-	// compute host cells for all markers - might not be needed
-	ierr = ADVelMapMarkToCells(vi); CHKERRQ(ierr);
-
-	// access context
-	fs = vi->fs;
-	jr = vi->jr;
-
-	// starting indices & number of cells
-	sx = fs->dsx.pstart; nx = fs->dsx.ncels;
-	sy = fs->dsy.pstart; ny = fs->dsy.ncels;
-	sz = fs->dsz.pstart; nz = fs->dsz.ncels;
-
-	// node & cell coordinates
-	ncx = fs->dsx.ncoor; ccx = fs->dsx.ccoor;
-	ncy = fs->dsy.ncoor; ccy = fs->dsy.ccoor;
-	ncz = fs->dsz.ncoor; ccz = fs->dsz.ccoor;
-
-	// access velocity, pressure & temperature vectors
-	ierr = DMDAVecGetArray(fs->DA_X,   jr->lvx, &lvx); CHKERRQ(ierr);
-	ierr = DMDAVecGetArray(fs->DA_Y,   jr->lvy, &lvy); CHKERRQ(ierr);
-	ierr = DMDAVecGetArray(fs->DA_Z,   jr->lvz, &lvz); CHKERRQ(ierr);
-
-	// scan all local cells
-	START_STD_LOOP
-	{
-		// get local indices
-		I = i-sx;
-		J = j-sy;
-		K = k-sz;
-
-		// get start/end coordinates of nodes
-		nxs = ncx[I]; nxe = ncx[I+1];
-		nys = ncy[J]; nye = ncy[J+1];
-		nzs = ncz[K]; nze = ncz[K+1];
-
-		// get cell dimensions
-		dx = nxe-nxs;
-		dy = nye-nys;
-		dz = nze-nzs;
-
-		// Bilinear interpolation to the nodes
-		// loop over all 8 nodes
-
-		// get coordinates of nodes
-		xn[0] = nxs; yn[0] = nys; zn[0] = nzs;
-		xn[1] = nxe; yn[1] = nys; zn[1] = nzs;
-		xn[2] = nxs; yn[2] = nye; zn[2] = nzs;
-		xn[3] = nxe; yn[3] = nye; zn[3] = nzs;
-		xn[4] = nxs; yn[4] = nys; zn[4] = nze;
-		xn[5] = nxe; yn[5] = nys; zn[5] = nze;
-		xn[6] = nxs; yn[6] = nye; zn[6] = nze;
-		xn[7] = nxe; yn[7] = nye; zn[7] = nze;
-
-		ind = 0;
-		for(iz = 0; iz < 2; iz++)
-		{
-			for(iy = 0; iy < 2; iy++)
-			{
-				for(ix = 0; ix < 2; ix++)
-				{
-					if (iz == 0) KK = K; else KK = K+1;
-					if (iy == 0) JJ = J; else JJ = J+1;
-					if (ix == 0) II = I; else II = I+1;
-
-					// compute local coordinates
-					if (II==0) xs = 2*nxs - ccx[II];
-					else       xs = ccx[II-1];
-
-					if (JJ==0) ys = 2*nys - ccy[JJ];
-					else       ys = ccy[JJ-1];
-
-					if (KK==0) zs = 2*nzs - ccz[KK];
-					else       zs = ccz[KK-1];
-
-					xe = ccx[II];
-					ye = ccy[JJ];
-					ze = ccz[KK];
-
-					xl = (xn[ind]-xs)/(xe-xs);
-					yl = (yn[ind]-ys)/(ye-ys);
-					zl = (zn[ind]-zs)/(ze-zs);
-
-					// prepare bilinear interpolation
-					// Vx
-					A[0] = lvx[sz+KK-1][sy+JJ-1][sx+II  ];
-					A[1] = lvx[sz+KK-1][sy+JJ  ][sx+II  ];
-					A[2] = lvx[sz+KK  ][sy+JJ-1][sx+II  ];
-					A[3] = lvx[sz+KK  ][sy+JJ  ][sx+II  ];
-
-					vxn[ind] = GenInterpLin2D(A,yl,zl);
-
-					// Vy
-					A[0] = lvy[sz+KK-1][sy+JJ  ][sx+II-1];
-					A[1] = lvy[sz+KK-1][sy+JJ  ][sx+II  ];
-					A[2] = lvy[sz+KK  ][sy+JJ  ][sx+II-1];
-					A[3] = lvy[sz+KK  ][sy+JJ  ][sx+II  ];
-
-					vyn[ind] = GenInterpLin2D(A,xl,zl);
-
-					// Vz
-					A[0] = lvz[sz+KK  ][sy+JJ-1][sx+II-1];
-					A[1] = lvz[sz+KK  ][sy+JJ-1][sx+II  ];
-					A[2] = lvz[sz+KK  ][sy+JJ  ][sx+II-1];
-					A[3] = lvz[sz+KK  ][sy+JJ  ][sx+II  ];
-
-					vzn[ind] = GenInterpLin2D(A,xl,yl);
-
-					// increase counter
-					ind++;
-				}
-			}
-		}
-
-		// calculate corrections
-		C12 = dx/2/dy*(-vyn[0]+vyn[1]+vyn[2]-vyn[3]+vyn[4]-vyn[5]-vyn[6]+vyn[7]);
-		C23 = dz/2/dx*(-vxn[0]+vxn[1]+vxn[2]-vxn[3]+vxn[4]-vxn[5]-vxn[6]+vxn[7]);
-		C31 = dy/2/dz*(-vzn[0]+vzn[1]+vzn[2]-vzn[3]+vzn[4]-vzn[5]-vzn[6]+vzn[7]);
-
-		C10 = dx/2/dz*(vzn[0]-vzn[4]+vzn[5]-vzn[1])       + dx/2/dy*(vyn[0]-vyn[2]+vyn[3]-vyn[1] + C31);
-		C20 = dz/2/dx*(vxn[0]-vxn[1]+vxn[5]-vxn[4] + C12) + dz/2/dy*(vyn[0]-vyn[2]+vyn[6]-vyn[4]      );
-		C30 = dy/2/dx*(vxn[0]-vxn[1]+vxn[3]-vxn[2])       + dy/2/dz*(vzn[0]-vzn[4]+vzn[6]-vzn[2] + C23);
-
-		// get cell id
-		GET_CELL_ID(ID, I, J, K, nx, ny);
-
-		// get markers in cell
-		n = vi->markstart[ID+1] - vi->markstart[ID];
-
-		// scan cell markers
-		for(jj = 0; jj < n; jj++)
-		{
-			// get marker index
-			pind = vi->markind[vi->markstart[ID] + jj];
-
-			// get marker coordinates
-			xp = vi->interp[pind].x[0];
-			yp = vi->interp[pind].x[1];
-			zp = vi->interp[pind].x[2];
-
-			// transform into local coordinates
-			xpl = (xp-nxs)/(nxe-nxs);
-			ypl = (yp-nys)/(nye-nys);
-			zpl = (zp-nzs)/(nze-nzs);
-
-			// interpolate velocities
-			vi->interp[pind].v[0] = GenInterpLin3D(vxn,xpl,ypl,zpl);
-			vi->interp[pind].v[1] = GenInterpLin3D(vyn,xpl,ypl,zpl);
-			vi->interp[pind].v[2] = GenInterpLin3D(vzn,xpl,ypl,zpl);
-
-			// add correction
-			vi->interp[pind].v[0] += xpl*(1-xpl)*(C10 + zpl*C12);
-			vi->interp[pind].v[1] += ypl*(1-ypl)*(C30 + xpl*C31);
-			vi->interp[pind].v[2] += zpl*(1-zpl)*(C20 + ypl*C23);
-		}
-	}
-	END_STD_LOOP
 
 	// restore access
 	ierr = DMDAVecRestoreArray(fs->DA_X,   jr->lvx, &lvx); CHKERRQ(ierr);
@@ -1545,6 +1281,255 @@ PetscErrorCode ADVelInterpMINMOD(AdvVelCtx *vi)
 		}
 	}
 	END_STD_LOOP
+
+	// restore access
+	ierr = DMDAVecRestoreArray(fs->DA_X,   jr->lvx, &lvx); CHKERRQ(ierr);
+	ierr = DMDAVecRestoreArray(fs->DA_Y,   jr->lvy, &lvy); CHKERRQ(ierr);
+	ierr = DMDAVecRestoreArray(fs->DA_Z,   jr->lvz, &lvz); CHKERRQ(ierr);
+
+	PetscFunctionReturn(0);
+}
+//---------------------------------------------------------------------------
+#undef __FUNCT__
+#define __FUNCT__ "ADVelInterpSTAGP"
+PetscErrorCode ADVelInterpSTAGP(AdvVelCtx *vi)
+{
+	// interpolate velocities from STAG points to markers + pressure points
+
+	FDSTAG      *fs;
+	JacRes      *jr;
+	PetscInt    sx, sy, sz, nx, ny, nz, nmark;
+	PetscInt    jj, ID, I, J, K, II, JJ, KK;
+	PetscInt    IN, JN, KN;
+	PetscScalar *ncx, *ncy, *ncz;
+	PetscScalar *ccx, *ccy, *ccz;
+	PetscScalar v[3], vp[3];
+	PetscScalar ***lvx, ***lvy, ***lvz;
+	PetscScalar xc, yc, zc, xp, yp, zp;
+	PetscScalar vii[12], vxp[8], vyp[8], vzp[8];
+	PetscScalar nxs, nxe, nys, nye, nzs, nze, xpl, ypl, zpl;
+	PetscScalar A, B;
+
+	PetscErrorCode ierr;
+	PetscFunctionBegin;
+
+	// compute host cells for all markers
+	ierr = ADVelMapMarkToCells(vi); CHKERRQ(ierr);
+
+	// set coefficients
+	if(vi->actx->A) A = vi->actx->A;
+	else            A = 2.0/3.0;
+
+	B = 1.0 - A;
+
+	// access context
+	fs = vi->fs;
+	jr = vi->jr;
+
+	nmark = vi->nmark;
+
+	// starting indices & number of cells
+	sx = fs->dsx.pstart; nx = fs->dsx.ncels;
+	sy = fs->dsy.pstart; ny = fs->dsy.ncels;
+	sz = fs->dsz.pstart; nz = fs->dsz.ncels;
+
+	// node & cell coordinates
+	ncx = fs->dsx.ncoor; ccx = fs->dsx.ccoor;
+	ncy = fs->dsy.ncoor; ccy = fs->dsy.ccoor;
+	ncz = fs->dsz.ncoor; ccz = fs->dsz.ccoor;
+
+	// access velocity, pressure & temperature vectors
+	ierr = DMDAVecGetArray(fs->DA_X,   jr->lvx, &lvx); CHKERRQ(ierr);
+	ierr = DMDAVecGetArray(fs->DA_Y,   jr->lvy, &lvy); CHKERRQ(ierr);
+	ierr = DMDAVecGetArray(fs->DA_Z,   jr->lvz, &lvz); CHKERRQ(ierr);
+
+	// scan all markers
+	for(jj = 0; jj < nmark; jj++)
+	{
+		// get marker coordinates
+		xp = vi->interp[jj].x[0];
+		yp = vi->interp[jj].x[1];
+		zp = vi->interp[jj].x[2];
+
+		// get consecutive index of the host cell
+		ID = vi->cellnum[jj];
+
+		// expand I, J, K cell indices
+		GET_CELL_IJK(ID, I, J, K, nx, ny)
+
+		// get coordinates of cell center
+		xc = ccx[I];
+		yc = ccy[J];
+		zc = ccz[K];
+
+		// map marker on the cells of X, Y, Z & center grids
+		if(xp > xc) { II = I; } else { II = I-1; }
+		if(yp > yc) { JJ = J; } else { JJ = J-1; }
+		if(zp > zc) { KK = K; } else { KK = K-1; }
+
+		// interpolate velocity, pressure & temperature
+		v[0] = InterpLin3D(lvx, I,  JJ, KK, sx, sy, sz, xp, yp, zp, ncx, ccy, ccz);
+		v[1] = InterpLin3D(lvy, II, J,  KK, sx, sy, sz, xp, yp, zp, ccx, ncy, ccz);
+		v[2] = InterpLin3D(lvz, II, JJ, K,  sx, sy, sz, xp, yp, zp, ccx, ccy, ncz);
+
+		// check marker position relative to pressure cube
+		// WARNING! ONLY FOR FREE SLIP BC
+
+		// ----------------
+		// VX
+		// ----------------
+		if(xp > xc) { IN = I+1; } else { IN = I; }
+
+		if (IN == 0)
+		{
+			vii[0] = 2*lvx[sz+KK  ][sy+JJ  ][sx+IN]-lvx[sz+KK  ][sy+JJ  ][sx+IN+1]; vii[1]  = lvx[sz+KK  ][sy+JJ  ][sx+IN  ]; vii[2]  = lvx[sz+KK  ][sy+JJ  ][sx+IN+1];
+			vii[3] = 2*lvx[sz+KK  ][sy+JJ+1][sx+IN]-lvx[sz+KK  ][sy+JJ+1][sx+IN+1]; vii[4]  = lvx[sz+KK  ][sy+JJ+1][sx+IN  ]; vii[5]  = lvx[sz+KK  ][sy+JJ+1][sx+IN+1];
+			vii[6] = 2*lvx[sz+KK+1][sy+JJ  ][sx+IN]-lvx[sz+KK+1][sy+JJ  ][sx+IN+1]; vii[7]  = lvx[sz+KK+1][sy+JJ  ][sx+IN  ]; vii[8]  = lvx[sz+KK+1][sy+JJ  ][sx+IN+1];
+			vii[9] = 2*lvx[sz+KK+1][sy+JJ+1][sx+IN]-lvx[sz+KK+1][sy+JJ+1][sx+IN+1]; vii[10] = lvx[sz+KK+1][sy+JJ+1][sx+IN  ]; vii[11] = lvx[sz+KK+1][sy+JJ+1][sx+IN+1];
+
+			nxs = 2*ccx[IN]-ccx[IN+1]; nxe = ccx[IN];
+		}
+		else if (IN == nx)
+		{
+			vii[0] = lvx[sz+KK  ][sy+JJ  ][sx+IN-1]; vii[1]  = lvx[sz+KK  ][sy+JJ  ][sx+IN  ]; vii[2]  = 2*lvx[sz+KK  ][sy+JJ  ][sx+IN]-lvx[sz+KK  ][sy+JJ  ][sx+IN-1];
+			vii[3] = lvx[sz+KK  ][sy+JJ+1][sx+IN-1]; vii[4]  = lvx[sz+KK  ][sy+JJ+1][sx+IN  ]; vii[5]  = 2*lvx[sz+KK  ][sy+JJ+1][sx+IN]-lvx[sz+KK  ][sy+JJ+1][sx+IN-1];
+			vii[6] = lvx[sz+KK+1][sy+JJ  ][sx+IN-1]; vii[7]  = lvx[sz+KK+1][sy+JJ  ][sx+IN  ]; vii[8]  = 2*lvx[sz+KK+1][sy+JJ  ][sx+IN]-lvx[sz+KK+1][sy+JJ  ][sx+IN-1];
+			vii[9] = lvx[sz+KK+1][sy+JJ+1][sx+IN-1]; vii[10] = lvx[sz+KK+1][sy+JJ+1][sx+IN  ]; vii[11] = 2*lvx[sz+KK+1][sy+JJ+1][sx+IN]-lvx[sz+KK+1][sy+JJ+1][sx+IN-1];
+
+			nxs = ccx[IN-1]; nxe = 2*ccx[IN]-ccx[IN-1];
+		}
+		else
+		{
+			vii[0] = lvx[sz+KK  ][sy+JJ  ][sx+IN-1]; vii[1]  = lvx[sz+KK  ][sy+JJ  ][sx+IN  ]; vii[2]  = lvx[sz+KK  ][sy+JJ  ][sx+IN+1];
+			vii[3] = lvx[sz+KK  ][sy+JJ+1][sx+IN-1]; vii[4]  = lvx[sz+KK  ][sy+JJ+1][sx+IN  ]; vii[5]  = lvx[sz+KK  ][sy+JJ+1][sx+IN+1];
+			vii[6] = lvx[sz+KK+1][sy+JJ  ][sx+IN-1]; vii[7]  = lvx[sz+KK+1][sy+JJ  ][sx+IN  ]; vii[8]  = lvx[sz+KK+1][sy+JJ  ][sx+IN+1];
+			vii[9] = lvx[sz+KK+1][sy+JJ+1][sx+IN-1]; vii[10] = lvx[sz+KK+1][sy+JJ+1][sx+IN  ]; vii[11] = lvx[sz+KK+1][sy+JJ+1][sx+IN+1];
+
+			nxs = ccx[IN-1]; nxe = ccx[IN  ];
+		}
+
+		// get velocities and boundaries
+		vxp[0] = (vii[0] + vii[1] )/2; vxp[1] = (vii[1]  + vii[2] )/2;
+		vxp[2] = (vii[3] + vii[4] )/2; vxp[3] = (vii[4]  + vii[5] )/2;
+		vxp[4] = (vii[6] + vii[7] )/2; vxp[5] = (vii[7]  + vii[8] )/2;
+		vxp[6] = (vii[9] + vii[10])/2; vxp[7] = (vii[10] + vii[11])/2;
+
+		// transform into local coordinates
+		nys = ccy[JJ  ]; nye = ccy[JJ+1];
+		nzs = ccz[KK  ]; nze = ccz[KK+1];
+
+		xpl = (xp-nxs)/(nxe-nxs);
+		ypl = (yp-nys)/(nye-nys);
+		zpl = (zp-nzs)/(nze-nzs);
+
+		// calculate velocity in pressure points
+		vp[0] = GenInterpLin3D(vxp,xpl,ypl,zpl);
+
+		// ----------------
+		// VY
+		// ----------------
+		if(yp > yc) { JN = J+1; } else { JN = J; }
+
+		if (JN == 0)
+		{
+			vii[0] = 2*lvy[sz+KK  ][sy+JN][sx+II  ]-lvy[sz+KK  ][sy+JN+1][sx+II  ]; vii[1]  = lvy[sz+KK  ][sy+JN][sx+II  ]; vii[2]  = lvy[sz+KK  ][sy+JN+1][sx+II  ];
+			vii[3] = 2*lvy[sz+KK  ][sy+JN][sx+II+1]-lvy[sz+KK  ][sy+JN+1][sx+II+1]; vii[4]  = lvy[sz+KK  ][sy+JN][sx+II+1]; vii[5]  = lvy[sz+KK  ][sy+JN+1][sx+II+1];
+			vii[6] = 2*lvy[sz+KK+1][sy+JN][sx+II  ]-lvy[sz+KK+1][sy+JN+1][sx+II  ]; vii[7]  = lvy[sz+KK+1][sy+JN][sx+II  ]; vii[8]  = lvy[sz+KK+1][sy+JN+1][sx+II  ];
+			vii[9] = 2*lvy[sz+KK+1][sy+JN][sx+II+1]-lvy[sz+KK+1][sy+JN+1][sx+II+1]; vii[10] = lvy[sz+KK+1][sy+JN][sx+II+1]; vii[11] = lvy[sz+KK+1][sy+JN+1][sx+II+1];
+
+			nys = 2*ccy[JN]-ccy[JN+1]; nye = ccy[JN];
+		}
+		else if (JN == ny)
+		{
+			vii[0] = lvy[sz+KK  ][sy+JN-1][sx+II  ]; vii[1]  = lvy[sz+KK  ][sy+JN][sx+II  ]; vii[2]  = 2*lvy[sz+KK  ][sy+JN][sx+II  ]-lvy[sz+KK  ][sy+JN-1][sx+II  ];
+			vii[3] = lvy[sz+KK  ][sy+JN-1][sx+II+1]; vii[4]  = lvy[sz+KK  ][sy+JN][sx+II+1]; vii[5]  = 2*lvy[sz+KK  ][sy+JN][sx+II+1]-lvy[sz+KK  ][sy+JN-1][sx+II+1];
+			vii[6] = lvy[sz+KK+1][sy+JN-1][sx+II  ]; vii[7]  = lvy[sz+KK+1][sy+JN][sx+II  ]; vii[8]  = 2*lvy[sz+KK+1][sy+JN][sx+II  ]-lvy[sz+KK+1][sy+JN-1][sx+II  ];
+			vii[9] = lvy[sz+KK+1][sy+JN-1][sx+II+1]; vii[10] = lvy[sz+KK+1][sy+JN][sx+II+1]; vii[11] = 2*lvy[sz+KK+1][sy+JN][sx+II+1]-lvy[sz+KK+1][sy+JN-1][sx+II+1];
+
+			nys = ccy[JN-1]; nye = 2*ccy[JN]-ccy[JN-1];
+		}
+		else
+		{
+			vii[0] = lvy[sz+KK  ][sy+JN-1][sx+II  ]; vii[1]  = lvy[sz+KK  ][sy+JN][sx+II  ]; vii[2]  = lvy[sz+KK  ][sy+JN+1][sx+II  ];
+			vii[3] = lvy[sz+KK  ][sy+JN-1][sx+II+1]; vii[4]  = lvy[sz+KK  ][sy+JN][sx+II+1]; vii[5]  = lvy[sz+KK  ][sy+JN+1][sx+II+1];
+			vii[6] = lvy[sz+KK+1][sy+JN-1][sx+II  ]; vii[7]  = lvy[sz+KK+1][sy+JN][sx+II  ]; vii[8]  = lvy[sz+KK+1][sy+JN+1][sx+II  ];
+			vii[9] = lvy[sz+KK+1][sy+JN-1][sx+II+1]; vii[10] = lvy[sz+KK+1][sy+JN][sx+II+1]; vii[11] = lvy[sz+KK+1][sy+JN+1][sx+II+1];
+
+			nys = ccy[JN-1]; nye = ccy[JN  ];
+		}
+
+		// get velocities and boundaries
+		vyp[0] = (vii[0] + vii[1] )/2; vyp[1] = (vii[3]  + vii[4] )/2;
+		vyp[2] = (vii[1] + vii[2] )/2; vyp[3] = (vii[4]  + vii[5] )/2;
+		vyp[4] = (vii[6] + vii[7] )/2; vyp[5] = (vii[9]  + vii[10])/2;
+		vyp[6] = (vii[7] + vii[8] )/2; vyp[7] = (vii[10] + vii[11])/2;
+
+		// transform into local coordinates
+		nxs = ccx[II  ]; nxe = ccx[II+1];
+		nzs = ccz[KK  ]; nze = ccz[KK+1];
+
+		xpl = (xp-nxs)/(nxe-nxs);
+		ypl = (yp-nys)/(nye-nys);
+		zpl = (zp-nzs)/(nze-nzs);
+
+		// calculate velocity in pressure points
+		vp[1] = GenInterpLin3D(vyp,xpl,ypl,zpl);
+
+		// ----------------
+		// VZ
+		// ----------------
+		if(zp > zc) { KN = K+1; } else { KN = K; }
+
+		if (KN == 0)
+		{
+			vii[0] = 2*lvz[sz+KN][sy+JJ  ][sx+II  ]-lvz[sz+KN+1][sy+JJ  ][sx+II  ]; vii[1]  = lvz[sz+KN][sy+JJ  ][sx+II  ]; vii[2]  = lvz[sz+KN+1][sy+JJ  ][sx+II  ];
+			vii[3] = 2*lvz[sz+KN][sy+JJ  ][sx+II+1]-lvz[sz+KN+1][sy+JJ  ][sx+II+1]; vii[4]  = lvz[sz+KN][sy+JJ  ][sx+II+1]; vii[5]  = lvz[sz+KN+1][sy+JJ  ][sx+II+1];
+			vii[6] = 2*lvz[sz+KN][sy+JJ+1][sx+II  ]-lvz[sz+KN+1][sy+JJ+1][sx+II  ]; vii[7]  = lvz[sz+KN][sy+JJ+1][sx+II  ]; vii[8]  = lvz[sz+KN+1][sy+JJ+1][sx+II  ];
+			vii[9] = 2*lvz[sz+KN][sy+JJ+1][sx+II+1]-lvz[sz+KN+1][sy+JJ+1][sx+II+1]; vii[10] = lvz[sz+KN][sy+JJ+1][sx+II+1]; vii[11] = lvz[sz+KN+1][sy+JJ+1][sx+II+1];
+
+			nzs = 2*ccz[KN]-ccz[KN+1]; nze = ccz[KN];
+		}
+		else if (KN == nz)
+		{
+			vii[0] = lvz[sz+KN-1][sy+JJ  ][sx+II  ]; vii[1]  = lvz[sz+KN][sy+JJ  ][sx+II  ]; vii[2]  = 2*lvz[sz+KN][sy+JJ  ][sx+II  ]-lvz[sz+KN-1][sy+JJ  ][sx+II  ];
+			vii[3] = lvz[sz+KN-1][sy+JJ  ][sx+II+1]; vii[4]  = lvz[sz+KN][sy+JJ  ][sx+II+1]; vii[5]  = 2*lvz[sz+KN][sy+JJ  ][sx+II+1]-lvz[sz+KN-1][sy+JJ  ][sx+II+1];
+			vii[6] = lvz[sz+KN-1][sy+JJ+1][sx+II  ]; vii[7]  = lvz[sz+KN][sy+JJ+1][sx+II  ]; vii[8]  = 2*lvz[sz+KN][sy+JJ+1][sx+II  ]-lvz[sz+KN-1][sy+JJ+1][sx+II  ];
+			vii[9] = lvz[sz+KN-1][sy+JJ+1][sx+II+1]; vii[10] = lvz[sz+KN][sy+JJ+1][sx+II+1]; vii[11] = 2*lvz[sz+KN][sy+JJ+1][sx+II+1]-lvz[sz+KN-1][sy+JJ+1][sx+II+1];
+
+			nzs = ccz[KN-1]; nze = 2*ccz[KN]-ccz[KN-1];
+		}
+		else
+		{
+			vii[0] = lvz[sz+KN-1][sy+JJ  ][sx+II  ]; vii[1]  = lvz[sz+KN][sy+JJ  ][sx+II  ]; vii[2]  = lvz[sz+KN+1][sy+JJ  ][sx+II  ];
+			vii[3] = lvz[sz+KN-1][sy+JJ  ][sx+II+1]; vii[4]  = lvz[sz+KN][sy+JJ  ][sx+II+1]; vii[5]  = lvz[sz+KN+1][sy+JJ  ][sx+II+1];
+			vii[6] = lvz[sz+KN-1][sy+JJ+1][sx+II  ]; vii[7]  = lvz[sz+KN][sy+JJ+1][sx+II  ]; vii[8]  = lvz[sz+KN+1][sy+JJ+1][sx+II  ];
+			vii[9] = lvz[sz+KN-1][sy+JJ+1][sx+II+1]; vii[10] = lvz[sz+KN][sy+JJ+1][sx+II+1]; vii[11] = lvz[sz+KN+1][sy+JJ+1][sx+II+1];
+
+			nzs = ccz[KN-1]; nze = ccz[KN  ];
+		}
+
+		// get velocities and boundaries
+		vzp[0] = (vii[0] + vii[1] )/2; vzp[1] = (vii[3]  + vii[4] )/2;
+		vzp[2] = (vii[6] + vii[7] )/2; vzp[3] = (vii[9]  + vii[10])/2;
+		vzp[4] = (vii[1] + vii[2] )/2; vzp[5] = (vii[4]  + vii[5] )/2;
+		vzp[6] = (vii[7] + vii[8] )/2; vzp[7] = (vii[10] + vii[11])/2;
+
+		// transform into local coordinates
+		nxs = ccx[II  ]; nxe = ccx[II+1];
+		nys = ccy[JJ  ]; nye = ccy[JJ+1];
+
+		xpl = (xp-nxs)/(nxe-nxs);
+		ypl = (yp-nys)/(nye-nys);
+		zpl = (zp-nzs)/(nze-nzs);
+
+		// calculate velocity in pressure points
+		vp[2] = GenInterpLin3D(vzp,xpl,ypl,zpl);
+
+		// interpolate velocity
+		vi->interp[jj].v[0] = A*v[0] + B*vp[0];
+		vi->interp[jj].v[1] = A*v[1] + B*vp[1];
+		vi->interp[jj].v[2] = A*v[2] + B*vp[2];
+	}
 
 	// restore access
 	ierr = DMDAVecRestoreArray(fs->DA_X,   jr->lvx, &lvx); CHKERRQ(ierr);

@@ -47,12 +47,52 @@
 #define __advect_h__
 //---------------------------------------------------------------------------
 
+#include "Tensor.h" // required for Marker declaration
+
+//---------------------------------------------------------------------------
+
 #define _cap_overhead_ 1.3
+#define _max_nmark_ 5
+#define _min_nmark_ 2
+#define  max_name   54     // Length of the unique face diagram name
+
+struct FB;
+struct FDSTAG;
+struct JacRes;
+struct FreeSurf;
+struct DBMat;
+
+//---------------------------------------------------------------------------
+//............   Material marker (history variables advection)   ............
+//---------------------------------------------------------------------------
+
+struct Marker
+{
+	PetscInt    phase; // phase identifier
+	PetscScalar X[3];  // global coordinates
+	PetscScalar p;     // pressure
+	PetscScalar T;     // temperature
+	PetscScalar APS;   // accumulated plastic strain
+	Tensor2RS   S;     // deviatoric stress
+	PetscScalar U[3];  // displacement
+	char        pdn[max_name];   // Phase diagram number
+};
+
+//---------------------------------------------------------------------------
+
+// marker initialization type enumeration
+enum SetupType
+{
+	_GEOM_,    // read geometric primitives from input file
+	_FILES_,   // read coordinates, phase and temperature from files in parallel
+	_POLYGONS_ // read polygons from file redundantly
+
+};
 
 //---------------------------------------------------------------------------
 
 // marker-to-edge / edge-to-marker interpolation cases
-typedef enum
+enum InterpCase
 {
 	_PHASE_,     // phase ratio
 	_STRESS_,    // deviatoric stress
@@ -61,13 +101,44 @@ typedef enum
 	_DISP_,      // displacement
 	_ME_         // Melt fraction
 
-} InterpCase;
+};
 
-typedef struct
+//-----------------------------------------------------------------------------
+
+enum AdvectionType
+{
+	BASIC_EULER,    // basic Euler implementation (STAG interpolation only)
+	EULER,          // Euler explicit in time
+	RUNGE_KUTTA_2,  // Runge-Kutta 2nd order in space
+
+};
+
+//-----------------------------------------------------------------------------
+
+enum VelInterpType
+{
+	STAG,      // trilinear interpolation from FDSTAG points
+	MINMOD,    // MINMOD interpolation to nodes, trilinear interpolation to markers + correction
+	STAG_P     // empirical approach (T. Gerya)
+
+};
+
+//-----------------------------------------------------------------------------
+
+enum MarkCtrlType
+{
+	CTRL_NONE,  // no marker control
+	CTRL_BASIC, // AVD for cells + corner insertion
+	CTRL_AVD    // pure AVD for all control volumes
+};
+
+//---------------------------------------------------------------------------
+
+struct NumCorner
 {
 	PetscInt s[8]; // 8 corners
 
-} NumCorner;
+};
 
 //---------------------------------------------------------------------------
 
@@ -80,14 +151,40 @@ typedef struct
 // mapped on all types of control volumes to update corresponding components.
 
 //---------------------------------------------------------------------------
+
 // Advection context
-typedef struct
+struct AdvCtx
 {
 	// staggered grid
-	FDSTAG *fs;
+	FDSTAG   *fs;
+	JacRes   *jr;
+	FreeSurf *surf;
+	DBMat    *dbm;
 
-	// nonlinear solver context
-	JacRes *jr;
+	SetupType     msetup;              // marker initialization type
+	PetscInt      NumPartX;            // markers per cell in x-direction
+	PetscInt      NumPartY;            //                 ... y-direction
+	PetscInt      NumPartZ;            //                 ... z-direction
+	PetscInt      randNoise;           // random noise flag for marker distribution
+	PetscInt      bgPhase;             // background phase ID
+
+	PetscInt      saveMark;            // flag for saving markers
+	char          saveFile[_STR_LEN_]; // marker output file name
+
+	AdvectionType advect;              // advection scheme
+	VelInterpType interp;              // velocity interpolation scheme
+	PetscScalar   A;                   // FDSTAG velocity interpolation parameter
+
+	MarkCtrlType  mctrl;               // marker control type
+
+	PetscScalar   surfTol;             // tolerance for shifting markers below free surface
+
+	//====================
+	// RUN TIME PARAMETERS
+	//====================
+	PetscInt    cinj, cdel;       // injected & deleted marker counters
+	PetscInt    nmin, nmax;       // minimum and maximum number of markers per cell
+	PetscInt    avdx, avdy, avdz; // AVD cells refinement factors
 
 	//=============
 	// COMMUNICATOR
@@ -127,35 +224,20 @@ typedef struct
 	PetscInt  ndel; // number of markers to be deleted from storage
 	PetscInt *idel; // indices of markers to be deleted
 
-	//=========
-	// CONTROL
-	//=========
-	PetscInt  nmin, nmax;          // min and max no. of markers
-	PetscInt  avdx, avdy, avdz;    // grid cells for AVD
-	PetscInt  cinj, cdel;          // counters
-
-	// Mapping markers on the control volumes:
-	// 1. Viscosities are computed in the centers & then averaged to edges (BY FAR THE SIMPLEST SOLUTION!!!)
-	// 2. Synchronize SEPARATELY every phase for a given edge set xy, xz, or yz (overwhelming communication)
-	// 3. Synchronize SIMULTANEOUSLY all the phases for a given edge set xy, xz, or yz (large memory requirements)
-	// 4. Duplicate the markers in the overlapping control volumes near the inter-processor boundaries (a compromise, but still more memory)
-	// 5. Viscosity and stresses can also be computed on the markers (a-la Taras)
-
-	// Accurate advection schemes:
-	// 1. Map markers on the control volumes and communicate with neighbors at every sub-step of an advection scheme
-	// 2. Duplicate makers in the overlapping control volumes (also requires more velocity data from neighbors)
-
-	PetscInt    AirPhase; // air phase number
-	PetscScalar Ttop;     // top surface temperature
-
-} AdvCtx;
+};
 
 //---------------------------------------------------------------------------
-// create advection context
-PetscErrorCode ADVClear(AdvCtx *actx);
+// create advection object
+PetscErrorCode ADVCreate(AdvCtx *actx, FB *fb);
 
-// create advection context
-PetscErrorCode ADVCreate(AdvCtx *actx, FDSTAG *fs, JacRes *jr);
+// read advection object from restart database
+PetscErrorCode ADVReadRestart(AdvCtx *actx, FILE *fp);
+
+// read advection object from restart database
+PetscErrorCode ADVWriteRestart(AdvCtx *actx, FILE *fp);
+
+// create communicator and separator
+PetscErrorCode ADVCreateData(AdvCtx *actx);
 
 // destroy advection context
 PetscErrorCode ADVDestroy(AdvCtx *actx);
@@ -167,7 +249,7 @@ PetscErrorCode ADVReAllocStorage(AdvCtx *actx, PetscInt capacity);
 PetscErrorCode ADVAdvect(AdvCtx *actx);
 
 // remap markers onto the grid
-PetscErrorCode ADVRemap(AdvCtx *actx, FreeSurf *surf);
+PetscErrorCode ADVRemap(AdvCtx *actx);
 
 // exchange markers between the processors resulting from the position change
 PetscErrorCode ADVExchange(AdvCtx *actx);
@@ -223,115 +305,9 @@ PetscErrorCode ADVCheckCorners(AdvCtx *actx);
 PetscErrorCode ADVMarkDeleteOutflow(AdvCtx *actx);
 
 // change marker phase when crossing free surface
-PetscErrorCode ADVMarkCrossFreeSurf(AdvCtx *actx, FreeSurf *surf, PetscScalar tol);
+PetscErrorCode ADVMarkCrossFreeSurf(AdvCtx *actx);
 
 // check marker phases
-PetscErrorCode ADVCheckMarkPhases(AdvCtx *actx, PetscInt numPhases);
+PetscErrorCode ADVCheckMarkPhases(AdvCtx *actx);
 
-// Load and set data from phase diagram
-PetscErrorCode LoadPhaseDiagram(AdvCtx *actx, PetscInt i);
-PetscErrorCode SetDataPhaseDiagram(PData *pd, PetscScalar p, PetscScalar T, PetscScalar pshift, char pdn[]);
-
-//-----------------------------------------------------------------------------
-// service functions
-//-----------------------------------------------------------------------------
-
-// compute pointers from counts, return total count
-PetscInt getPtrCnt(PetscInt n, PetscInt counts[], PetscInt ptr[]);
-
-// rewind pointers after using them as access iterators
-void rewindPtr(PetscInt n, PetscInt ptr[]);
-
-// compute phase ratio array
-PetscErrorCode getPhaseRatio(PetscInt n, PetscScalar *v, PetscScalar *rsum);
-
-// find ID of the cell containing point (call this function for local point only!)
-static inline PetscInt FindPointInCell(
-	PetscScalar *px, // node coordinates
-	PetscInt     L,  // index of the leftmost node
-	PetscInt     R,  // index of the rightmost node
-	PetscScalar  x)  // point coordinate
-{
-	// get initial guess assuming uniform grid
-	PetscInt M = L + (PetscInt)((x-px[L])/((px[R]-px[L])/(PetscScalar)(R-L)));
-
-	if(M == R) return R-1;
-
-	if(px[M]   <= x) L=M;
-	if(px[M+1] >= x) R=M+1;
-
-	while((R-L) > 1)
-	{
-		M = (L+R)/2;
-		if(px[M] <= x) L=M;
-		if(px[M] >= x) R=M;
-
-	}
-	return(L);
-}
-//-----------------------------------------------------------------------------
-static inline PetscScalar InterpLin3D(
-	PetscScalar ***lv,
-	PetscInt    i,
-	PetscInt    j,
-	PetscInt    k,
-	PetscInt    sx,
-	PetscInt    sy,
-	PetscInt    sz,
-	PetscScalar xp,
-	PetscScalar yp,
-	PetscScalar zp,
-	PetscScalar *cx,
-	PetscScalar *cy,
-	PetscScalar *cz)
-{
-	PetscScalar xb, yb, zb, xe, ye, ze, v;
-
-	// get relative coordinates
-	xe = (xp - cx[i])/(cx[i+1] - cx[i]); xb = 1.0 - xe;
-	ye = (yp - cy[j])/(cy[j+1] - cy[j]); yb = 1.0 - ye;
-	ze = (zp - cz[k])/(cz[k+1] - cz[k]); zb = 1.0 - ze;
-
-	// interpolate & return result
-	v =
-	lv[sz+k  ][sy+j  ][sx+i  ]*xb*yb*zb +
-	lv[sz+k  ][sy+j  ][sx+i+1]*xe*yb*zb +
-	lv[sz+k  ][sy+j+1][sx+i  ]*xb*ye*zb +
-	lv[sz+k  ][sy+j+1][sx+i+1]*xe*ye*zb +
-	lv[sz+k+1][sy+j  ][sx+i  ]*xb*yb*ze +
-	lv[sz+k+1][sy+j  ][sx+i+1]*xe*yb*ze +
-	lv[sz+k+1][sy+j+1][sx+i  ]*xb*ye*ze +
-	lv[sz+k+1][sy+j+1][sx+i+1]*xe*ye*ze;
-
-	return v;
-}
-//-----------------------------------------------------------------------------
-static inline PetscScalar InterpLin2D(
-	PetscScalar ***lv,
-	PetscInt    i,
-	PetscInt    j,
-	PetscInt    L,
-	PetscInt    sx,
-	PetscInt    sy,
-	PetscScalar xp,
-	PetscScalar yp,
-	PetscScalar *cx,
-	PetscScalar *cy)
-{
-	PetscScalar xb, yb, xe, ye, v;
-
-	// get relative coordinates
-	xe = (xp - cx[i])/(cx[i+1] - cx[i]); xb = 1.0 - xe;
-	ye = (yp - cy[j])/(cy[j+1] - cy[j]); yb = 1.0 - ye;
-
-	// interpolate & return result
-	v =
-	lv[L][sy+j  ][sx+i  ]*xb*yb +
-	lv[L][sy+j  ][sx+i+1]*xe*yb +
-	lv[L][sy+j+1][sx+i  ]*xb*ye +
-	lv[L][sy+j+1][sx+i+1]*xe*ye;
-
-	return v;
-}
-//-----------------------------------------------------------------------------
 #endif

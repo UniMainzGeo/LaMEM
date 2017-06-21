@@ -1,0 +1,37 @@
+-------------------------------------------------------------------------- 
+                   Lithosphere and Mantle Evolution Model                   
+     Compiled: Date: May 29 2017 - Time: 19:19:20 	    
+-------------------------------------------------------------------------- 
+        STAGGERED-GRID FINITE DIFFERENCE CANONICAL IMPLEMENTATION           
+-------------------------------------------------------------------------- 
+Parsing input file : ./t1_FB1_Direct/FallingBlock_mono_PenaltyDirect.dat 
+   Adding PETSc option: -snes_type ksponly
+   Adding PETSc option: -js_ksp_type gmres
+   Adding PETSc option: -js_ksp_max_it 25
+   Adding PETSc option: -js_ksp_monitor
+   Adding PETSc option: -js_ksp_rtol 1e-4
+   Adding PETSc option: -js_ksp_atol 1e-10
+   Adding PETSc option: -pcmat_type mono
+   Adding PETSc option: -pcmat_pgamma 1e5
+   Adding PETSc option: -jp_type user
+   Adding PETSc option: -jp_pc_type lu
+   Adding PETSc option: -objects_dump
+Finished parsing input file : ./t1_FB1_Direct/FallingBlock_mono_PenaltyDirect.dat 
+--------------------------------------------------------------------------
+Time stepping parameters:
+   Simulation end time          : 1. [ ] 
+   Maximum number of steps      : 2 
+   Time step                    : 0.01 [ ] 
+   Minimum time step            : 1e-05 [ ] 
+   Maximum time step            : 0.1 [ ] 
+   Time step increase factor    : 0.1 
+   CFL criterion                : 0.5 
+   CFLMAX (fixed time steps)    : 0.5 
+   Output time step             : 0.2 [ ] 
+   Output every [n] steps       : 1 
+   Output [n] initial steps     : 1 
+--------------------------------------------------------------------------
+Material parameters: 
+   Phase ID : 0
+   (dens)   : rho = 1. [ ]  
+   (diff)   : eta = 1. [ ]  Bd = 0.5 [ ]  

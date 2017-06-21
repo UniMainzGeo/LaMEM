@@ -44,36 +44,100 @@
 //.............................. FREE SURFACE ...............................
 //---------------------------------------------------------------------------
 #include "LaMEM.h"
-#include "fdstag.h"
-#include "solVar.h"
+#include "surf.h"
+#include "parsing.h"
 #include "scaling.h"
 #include "tssolve.h"
+#include "fdstag.h"
 #include "bc.h"
+#include "phase.h"
 #include "JacRes.h"
 #include "interpolate.h"
-#include "surf.h"
-#include "advect.h"
 #include "tools.h"
 //---------------------------------------------------------------------------
 // * stair-case type of free surface
 // ...
 //---------------------------------------------------------------------------
 #undef __FUNCT__
-#define __FUNCT__ "FreeSurfClear"
-PetscErrorCode FreeSurfClear(FreeSurf *surf)
+#define __FUNCT__ "FreeSurfCreate"
+PetscErrorCode FreeSurfCreate(FreeSurf *surf, FB *fb)
 {
+	Scaling  *scal;
+	PetscInt  maxPhaseID;
+
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
 
-	// clear object
-	ierr = PetscMemzero(surf, sizeof(FreeSurf)); CHKERRQ(ierr);
+	// initialize
+	surf->phaseCorr   =  1;
+	surf->AirPhase    = -1;
+
+	// check whether free surface is activated
+	ierr = getIntParam(fb, _OPTIONAL_, "surf_use", &surf->UseFreeSurf, 1,  1); CHKERRQ(ierr);
+
+	// free surface cases only
+	if(!surf->UseFreeSurf) PetscFunctionReturn(0);
+
+	// access context
+	scal       = surf->jr->scal;
+	maxPhaseID = surf->jr->dbm->numPhases-1;
+
+	// read from options
+	ierr = getIntParam   (fb, _OPTIONAL_, "surf_corr_phase", &surf->phaseCorr,     1,  1);            CHKERRQ(ierr);
+	ierr = getScalarParam(fb, _REQUIRED_, "surf_level",      &surf->InitLevel,     1,  scal->length); CHKERRQ(ierr);
+	ierr = getIntParam   (fb, _REQUIRED_, "surf_air_phase",  &surf->AirPhase,      1,  maxPhaseID);   CHKERRQ(ierr);
+	ierr = getScalarParam(fb, _OPTIONAL_, "surf_max_angle",  &surf->MaxAngle,      1,  scal->angle);  CHKERRQ(ierr);
+	ierr = getIntParam   (fb, _OPTIONAL_, "erosion_model",   &surf->ErosionModel,  1,  1);            CHKERRQ(ierr);
+	ierr = getIntParam   (fb, _OPTIONAL_, "sediment_model",  &surf->SedimentModel, 1,  1);            CHKERRQ(ierr);
+
+	if(surf->SedimentModel)
+	{
+		// sedimentation model parameters
+		ierr = getIntParam   (fb, _REQUIRED_, "sed_num_layers",  &surf->numLayers,  1,                 _max_layers_);      CHKERRQ(ierr);
+		ierr = getScalarParam(fb, _REQUIRED_, "sed_time_delims",  surf->timeDelims, surf->numLayers-1, scal->time);        CHKERRQ(ierr);
+		ierr = getScalarParam(fb, _REQUIRED_, "sed_rates",        surf->sedRates,   surf->numLayers,   scal->strain_rate); CHKERRQ(ierr);
+		ierr = getIntParam   (fb, _REQUIRED_, "sed_phases",       surf->sedPhases,  surf->numLayers,   maxPhaseID);        CHKERRQ(ierr);
+	}
+
+	// print summary
+	PetscPrintf(PETSC_COMM_WORLD, "Free surface parameters: \n");
+
+	PetscPrintf(PETSC_COMM_WORLD, "   Sticky air phase ID       : %lld \n",  (LLD)surf->AirPhase);
+    PetscPrintf(PETSC_COMM_WORLD, "   Initial surface level     : %g %s \n",  surf->InitLevel*scal->length, scal->lbl_length);
+
+	PetscPrintf(PETSC_COMM_WORLD, "   Erosion model             : ");
+	if      (surf->ErosionModel == 0)  PetscPrintf(PETSC_COMM_WORLD, "none\n");
+	else if (surf->ErosionModel == 1)  PetscPrintf(PETSC_COMM_WORLD, "infinitely fast\n");
+
+	PetscPrintf(PETSC_COMM_WORLD, "   Sedimentation model       : ");
+	if      (surf->SedimentModel == 0) PetscPrintf(PETSC_COMM_WORLD, "none\n");
+	else if (surf->SedimentModel == 1) PetscPrintf(PETSC_COMM_WORLD, "prescribed rate\n");
+
+	if(surf->numLayers) PetscPrintf(PETSC_COMM_WORLD, "   Number of sediment layers : %lld \n",  (LLD)surf->numLayers);
+	if(surf->phaseCorr) PetscPrintf(PETSC_COMM_WORLD, "   Correct marker phases     @ \n");
+	if(surf->MaxAngle)  PetscPrintf(PETSC_COMM_WORLD, "   Maximum surface slope     : %g %s\n",  surf->MaxAngle*scal->angle, scal->lbl_angle);
+
+	PetscPrintf(PETSC_COMM_WORLD,"--------------------------------------------------------------------------\n");
+
+	// create structures
+	ierr = FreeSurfCreateData(surf); CHKERRQ(ierr);
+
+	// set initial internal free surface level
+	ierr = VecSet(surf->gtopo, surf->InitLevel); CHKERRQ(ierr);
+	ierr = VecSet(surf->ltopo, surf->InitLevel); CHKERRQ(ierr);
+
+	// initialize topography from file if provided
+	ierr = FreeSurfSetTopoFromFile(surf, fb); CHKERRQ(ierr);
+
+	// compute & store average topography
+	ierr = FreeSurfGetAvgTopo(surf); CHKERRQ(ierr);
 
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
 #undef __FUNCT__
-#define __FUNCT__ "FreeSurfCreate"
-PetscErrorCode FreeSurfCreate(FreeSurf *surf, JacRes *jr, UserCtx *user)
+#define __FUNCT__ "FreeSurfCreateData"
+PetscErrorCode FreeSurfCreateData(FreeSurf *surf)
 {
 	FDSTAG         *fs;
 	const PetscInt *lx, *ly;
@@ -81,16 +145,8 @@ PetscErrorCode FreeSurfCreate(FreeSurf *surf, JacRes *jr, UserCtx *user)
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
 
-	// store context
-	surf->jr = jr;
-
-	ierr = FreeSurfReadFromOptions(surf, &jr->scal); CHKERRQ(ierr);
-
-	// free surface cases only
-	if(surf->UseFreeSurf != PETSC_TRUE) PetscFunctionReturn(0);
-
 	// access context
-	fs = jr->fs;
+	fs = surf->jr->fs;
 
 	// get grid partitioning in X & Y directions
 	ierr = DMDAGetOwnershipRanges(fs->DA_COR, &lx, &ly, NULL); CHKERRQ(ierr);
@@ -111,70 +167,67 @@ PetscErrorCode FreeSurfCreate(FreeSurf *surf, JacRes *jr, UserCtx *user)
 	ierr = DMCreateGlobalVector(surf->DA_SURF, &surf->vpatch); CHKERRQ(ierr);
 	ierr = DMCreateGlobalVector(surf->DA_SURF, &surf->vmerge); CHKERRQ(ierr);
 
-	// set initial internal free surface level
-	ierr = VecSet(surf->ltopo, surf->InitLevel); CHKERRQ(ierr);
-	ierr = VecSet(surf->gtopo, surf->InitLevel); CHKERRQ(ierr);
+	PetscFunctionReturn(0);
+}
+//---------------------------------------------------------------------------
+#undef __FUNCT__
+#define __FUNCT__ "FreeSurfGetAvgTopo"
+PetscErrorCode FreeSurfGetAvgTopo(FreeSurf *surf)
+{
+	JacRes      *jr;
+	FDSTAG      *fs;
+	PetscScalar  avg_topo;
 
+	PetscErrorCode ierr;
+	PetscFunctionBegin;
 
-	// Set topo rom file if a Topo file is specified in the input
-	PetscPrintf(PETSC_COMM_WORLD, "FileName: %s\n",user->TopoFilename);
-	if(strcmp(user->TopoFilename,"noTopoFileName")!=0)
-	{
-		ierr = FreeSurfSetTopoFromFile(surf,user);
-		CHKERRQ(ierr);
-	}
+	jr = surf->jr;
+	fs = jr->fs;
 
+	// compute & set average topography
+	ierr = VecSum(surf->gtopo, &avg_topo); CHKERRQ(ierr);
+
+	avg_topo /= (PetscScalar)(fs->dsx.tnods*fs->dsy.tnods*fs->dsz.nproc);
+
+	surf->avg_topo = avg_topo;
 
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
 #undef __FUNCT__
-#define __FUNCT__ "FreeSurfReadFromOptions"
-PetscErrorCode FreeSurfReadFromOptions(FreeSurf *surf, Scaling *scal)
+#define __FUNCT__ "FreeSurfReadRestart"
+PetscErrorCode FreeSurfReadRestart(FreeSurf *surf, FILE *fp)
 {
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
 
-	// read output flags
-	ierr = PetscOptionsGetBool  (NULL, NULL, "-surf_use",       &surf->UseFreeSurf, NULL); CHKERRQ(ierr);
-	ierr = PetscOptionsGetScalar(NULL, NULL, "-surf_level",     &surf->InitLevel,   NULL); CHKERRQ(ierr);
-	ierr = PetscOptionsGetInt   (NULL, NULL, "-surf_air_phase", &surf->AirPhase,    NULL); CHKERRQ(ierr);
-	ierr = PetscOptionsGetScalar(NULL, NULL, "-surf_max_angle", &surf->MaxAngle,    NULL); CHKERRQ(ierr);
+	// free surface cases only
+	if(!surf->UseFreeSurf) PetscFunctionReturn(0);
 
-	// nondimensionalize
-	surf->InitLevel /= scal->length;
-	surf->MaxAngle  /= scal->angle;
+	// create structures
+	ierr = FreeSurfCreateData(surf); CHKERRQ(ierr);
 
-	// set average topography & flag level
-	surf->avg_topo     = surf->InitLevel;
-	surf->jr->avg_topo = surf->InitLevel;
-	surf->flat         = PETSC_TRUE;
+	// read topography vector
+	ierr = VecReadRestart(surf->gtopo, fp); CHKERRQ(ierr);
 
-	//======================================
-	// read erosion sedimentation parameters
-	//======================================
+	// get ghosted topography vector
+	GLOBAL_TO_LOCAL(surf->DA_SURF, surf->gtopo, surf->ltopo);
 
-	ierr = GetIntDataItemCheck("-ErosionModel", "Erosion model",
-		_NOT_FOUND_EXIT_, 1, &surf->ErosionModel, 0, 1); CHKERRQ(ierr);
+	PetscFunctionReturn(0);
+}
+//---------------------------------------------------------------------------
+#undef __FUNCT__
+#define __FUNCT__ "FreeSurfWriteRestart"
+PetscErrorCode FreeSurfWriteRestart(FreeSurf *surf, FILE *fp)
+{
+	PetscErrorCode ierr;
+	PetscFunctionBegin;
 
-	ierr = GetIntDataItemCheck("-SedimentModel", "Sedimentation model",
-		_NOT_FOUND_EXIT_, 1, &surf->SedimentModel, 0, 1); CHKERRQ(ierr);
+	// free surface cases only
+	if(!surf->UseFreeSurf) PetscFunctionReturn(0);
 
-	// read prescribed sedimentation rate model parameter
-	if(surf->SedimentModel == 1)
-	{
-		ierr = GetIntDataItemCheck("-numLayers", "Number of sediment layers",
-			_NOT_FOUND_ERROR_, 1, &surf->numLayers, 1, _max_layers_); CHKERRQ(ierr);
-
-		ierr = GetScalDataItemCheckScale("-timeDelims", "Sediment layers time delimiters",
-			_NOT_FOUND_ERROR_, surf->numLayers-1, surf->timeDelims, 0.0, 0.0, scal->time); CHKERRQ(ierr);
-
-		ierr = GetScalDataItemCheckScale("-sedRates", "Sedimentation Rates",
-			_NOT_FOUND_ERROR_, surf->numLayers, surf->sedRates, 0.0, 0.0, scal->velocity); CHKERRQ(ierr);
-
-		ierr = GetIntDataItemCheck("-sedPhases", "Sediment layers phase numbers",
-			_NOT_FOUND_ERROR_, surf->numLayers, surf->sedPhases, 0, 0); CHKERRQ(ierr);
-	}
+	// store topography vector
+	ierr = VecWriteRestart(surf->gtopo, fp); CHKERRQ(ierr);
 
 	PetscFunctionReturn(0);
 }
@@ -187,7 +240,7 @@ PetscErrorCode FreeSurfDestroy(FreeSurf *surf)
 	PetscFunctionBegin;
 
 	// free surface cases only
-	if(surf->UseFreeSurf != PETSC_TRUE) PetscFunctionReturn(0);
+	if(!surf->UseFreeSurf) PetscFunctionReturn(0);
 
 	ierr = DMDestroy (&surf->DA_SURF); CHKERRQ(ierr);
 	ierr = VecDestroy(&surf->ltopo);   CHKERRQ(ierr);
@@ -207,19 +260,16 @@ PetscErrorCode FreeSurfAdvect(FreeSurf *surf)
 {
 	// advect topography of the free surface mesh
 
-	JacRes      *jr;
-	FDSTAG      *fs;
-	PetscScalar  avg_topo;
+	JacRes *jr;
 
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
 
 	// free surface cases only
-	if(surf->UseFreeSurf != PETSC_TRUE) PetscFunctionReturn(0);
+	if(!surf->UseFreeSurf) PetscFunctionReturn(0);
 
 	// access context
 	jr = surf->jr;
-	fs = jr->fs;
 
 	// get surface velocities
 	ierr = FreeSurfGetVelComp(surf, &InterpXFaceCorner, jr->lvx, surf->vx); CHKERRQ(ierr);
@@ -232,14 +282,8 @@ PetscErrorCode FreeSurfAdvect(FreeSurf *surf)
 	// smooth topography spikes
 	ierr = FreeSurfSmoothMaxAngle(surf); CHKERRQ(ierr);
 
-	// set flat flag
-	surf->flat = PETSC_FALSE;
-
 	// compute & store average topography
-	ierr = VecSum(surf->gtopo, &avg_topo); CHKERRQ(ierr);
-	avg_topo /= (PetscScalar)(fs->dsx.tnods*fs->dsy.tnods*fs->dsz.nproc);
-	surf->avg_topo = avg_topo;
-	jr  ->avg_topo = avg_topo;
+	ierr = FreeSurfGetAvgTopo(surf); CHKERRQ(ierr);
 
 	PetscFunctionReturn(0);
 }
@@ -259,7 +303,8 @@ PetscErrorCode FreeSurfGetVelComp(
 	JacRes      *jr;
 	FDSTAG      *fs;
 	Discret1D   *dsz;
-	InterpFlags iflag;
+	InterpFlags iflags;
+	PetscScalar bz, ez;
 	PetscInt    i, j, nx, ny, sx, sy, sz, level, K;
 	PetscScalar ***topo, ***vsurf, ***vgrid, *vpatch, *vmerge, z, w;
 
@@ -272,15 +317,18 @@ PetscErrorCode FreeSurfGetVelComp(
 	dsz   = &fs->dsz;
 	level = (PetscInt)dsz->rank;
 
+	// get local coordinate bounds
+	ierr = FDSTAGGetLocalBox(fs, NULL, NULL, &bz, NULL, NULL, &ez); CHKERRQ(ierr);
+
 	// create column communicator
 	ierr = Discret1DGetColumnComm(dsz); CHKERRQ(ierr);
 
 	// set interpolation flags
-	iflag.update    = PETSC_FALSE;
-	iflag.use_bound = PETSC_TRUE;
+	iflags.update    = 0; // overwrite vectors
+	iflags.use_bound = 1; // use boundary values
 
 	// interpolate velocity component from grid faces to corners
-	ierr = interp(fs, vcomp_grid, jr->lbcor, iflag); CHKERRQ(ierr);
+	ierr = interp(fs, vcomp_grid, jr->lbcor, iflags); CHKERRQ(ierr);
 
 	// load ghost values
 	LOCAL_TO_LOCAL(fs->DA_COR, jr->lbcor)
@@ -302,7 +350,7 @@ PetscErrorCode FreeSurfGetVelComp(
 		z = topo[level][j][i];
 
 		// check whether point belongs to domain
-		if(z >= dsz->crdbeg && z < dsz->crdend)
+		if(z >= bz && z < ez)
 		{
 			// find containing cell
 			K = FindPointInCell(dsz->ncoor, 0, dsz->ncels, z);
@@ -388,11 +436,11 @@ PetscErrorCode FreeSurfAdvectTopo(FreeSurf *surf)
 	// access context
 	jr   = surf->jr;
 	fs   = jr->fs;
-	step = jr->ts.dt;
+	step = jr->ts->dt;
 	mx   = fs->dsx.tnods;
 	my   = fs->dsy.tnods;
 	L    = (PetscInt)fs->dsz.rank;
-	gtol = jr->gtol;
+	gtol = fs->gtol;
 
 	// get current background strain rates
 	ierr = BCGetBGStrainRates(jr->bc, &Exx, &Eyy, NULL); CHKERRQ(ierr);
@@ -533,9 +581,11 @@ PetscErrorCode FreeSurfSmoothMaxAngle(FreeSurf *surf)
 	mx        = fs->dsx.tnods - 1;
 	my        = fs->dsy.tnods - 1;
 	L         = (PetscInt)fs->dsz.rank;
-	step      = jr->ts.dt;
+	step      = jr->ts->dt;
 	tanMaxAng = PetscTanReal(surf->MaxAngle);
-	zbot      = jr->fs->dsz.crdbeg;
+
+	// get local coordinate bounds
+	ierr = FDSTAGGetLocalBox(fs, NULL, NULL, &zbot, NULL, NULL, NULL); CHKERRQ(ierr);
 
 	// get current background strain rates
 	ierr = BCGetBGStrainRates(jr->bc, NULL, NULL, &Ezz); CHKERRQ(ierr);
@@ -679,7 +729,6 @@ PetscErrorCode FreeSurfGetAirPhaseRatio(FreeSurf *surf)
 	PetscScalar xleft, xright, yfront, yback, zbot, ztop;
 	PetscInt    L, jj, iter, numPhases, AirPhase;
 	PetscInt    i, j, k, nx, ny, nz, sx, sy, sz;
-	PetscBool   DeactivateFreeSurfaceCorrection = PETSC_FALSE;
 
 	// cell triangulation
 	PetscInt tria [] =
@@ -694,19 +743,17 @@ PetscErrorCode FreeSurfGetAirPhaseRatio(FreeSurf *surf)
 	PetscFunctionBegin;
 
 	// free surface cases only
-	if(surf->UseFreeSurf != PETSC_TRUE) PetscFunctionReturn(0);
+	if(!surf->UseFreeSurf) PetscFunctionReturn(0);
 
-	// add this to the command line to deactivate the free surface correction
-	PetscOptionsHasName(NULL, NULL,"-DeactivateFreeSurfaceCorrection",&DeactivateFreeSurfaceCorrection);
-	if(DeactivateFreeSurfaceCorrection == PETSC_TRUE) PetscFunctionReturn(0);
-
+	// check whether phase correction is activated
+	if(!surf->phaseCorr) PetscFunctionReturn(0);
 
 	// access context
 	jr        = surf->jr;
 	AirPhase  = surf->AirPhase;
 	fs        = jr->fs;
-	gtol      = jr->gtol;
-	numPhases = jr->numPhases;
+	gtol      = fs->gtol;
+	numPhases = jr->dbm->numPhases;
 	L         = (PetscInt)fs->dsz.rank;
 	iter      = 0;
 
@@ -800,18 +847,15 @@ PetscErrorCode FreeSurfAppErosion(FreeSurf *surf)
 	PetscFunctionBegin;
 
 	// free surface cases only
-	if(surf->UseFreeSurf != PETSC_TRUE) PetscFunctionReturn(0);
+	if(!surf->UseFreeSurf) PetscFunctionReturn(0);
 
-	scal = &surf->jr->scal;
+	scal = surf->jr->scal;
 
 	if(surf->ErosionModel == 1)
 	{
 		// erase topography
-		ierr = VecSet(surf->ltopo, surf->avg_topo); CHKERRQ(ierr);
 		ierr = VecSet(surf->gtopo, surf->avg_topo); CHKERRQ(ierr);
-
-		// set flag
-		surf->flat = PETSC_TRUE;
+		ierr = VecSet(surf->ltopo, surf->avg_topo); CHKERRQ(ierr);
 
 		PetscPrintf(PETSC_COMM_WORLD, "Applying infinitely fast erosion to internal free surface. Average free surface height = %e %s\n",
 			surf->avg_topo*scal->length, scal->lbl_length);
@@ -824,7 +868,6 @@ PetscErrorCode FreeSurfAppErosion(FreeSurf *surf)
 #define __FUNCT__ "FreeSurfAppSedimentation"
 PetscErrorCode FreeSurfAppSedimentation(FreeSurf *surf)
 {
-
 	// Apply sedimentation to the internal free surface.
 	// Currently we only have the option to add a fixed sedimentation rate,
 	// and in this routine we simply advect the internal free surface upwards with
@@ -833,7 +876,7 @@ PetscErrorCode FreeSurfAppSedimentation(FreeSurf *surf)
 	JacRes      *jr;
 	FDSTAG      *fs;
 	PetscScalar ***topo;
-	PetscScalar dt, time, rate, zbot, ztop, z, dz, avg_topo;
+	PetscScalar dt, time, rate, zbot, ztop, z, dz;
 	PetscInt    L, jj, phase;
 	PetscInt    i, j, nx, ny, sx, sy, sz;
 
@@ -841,13 +884,13 @@ PetscErrorCode FreeSurfAppSedimentation(FreeSurf *surf)
 	PetscFunctionBegin;
 
 	// free surface cases only
-	if(surf->UseFreeSurf != PETSC_TRUE) PetscFunctionReturn(0);
+	if(!surf->UseFreeSurf) PetscFunctionReturn(0);
 
 	// access context
 	jr   = surf->jr;
 	fs   = jr->fs;
-	dt   = jr->ts.dt;
-	time = jr->ts.time;
+	dt   = jr->ts->dt;
+	time = jr->ts->time;
 	L    = (PetscInt)fs->dsz.rank;
 
 	// get z-coordinates of the top and bottom boundaries
@@ -900,10 +943,7 @@ PetscErrorCode FreeSurfAppSedimentation(FreeSurf *surf)
 		GLOBAL_TO_LOCAL(surf->DA_SURF, surf->gtopo, surf->ltopo);
 
 		// compute & store average topography
-		ierr = VecSum(surf->gtopo, &avg_topo); CHKERRQ(ierr);
-		avg_topo /= (PetscScalar)(fs->dsx.tnods*fs->dsy.tnods*fs->dsz.nproc);
-		surf->avg_topo = avg_topo;
-		jr  ->avg_topo = avg_topo;
+		ierr = FreeSurfGetAvgTopo(surf); CHKERRQ(ierr);
 
 		// print info
 		PetscPrintf(PETSC_COMM_WORLD, "Applying sedimentation to internal free surface. Phase that is currently being sedimented is %lld   \n",
@@ -915,149 +955,109 @@ PetscErrorCode FreeSurfAppSedimentation(FreeSurf *surf)
 //---------------------------------------------------------------------------
 #undef __FUNCT__
 #define __FUNCT__ "FreeSurfSetTopoFromFile"
-PetscErrorCode FreeSurfSetTopoFromFile(
-	FreeSurf *surf, UserCtx *user)
+PetscErrorCode FreeSurfSetTopoFromFile(FreeSurf *surf, FB *fb)
 {
-	
-	JacRes      *jr;
-	FDSTAG      *fs;
-	Discret1D   *dsz;
-	PetscInt    i, j, nx, ny, sx, sy, sz, level;
-	PetscScalar ***topo;
-	PetscScalar avg_topo;
-	char         *LoadFileName;
-	PetscScalar  xp,yp, Xc, Yc, xpL, ypL;
-	PetscInt 	nxTopo, nyTopo;
-	PetscInt     Fsize;
-	PetscInt Ix,Iy;
-	PetscScalar  DX,DY;
-	
-	PetscScalar  *Topo;
-	PetscScalar  chLen;
-	int          fd;
-	PetscScalar  header[2],dim[2];
-
-	PetscViewer  view_in;
+	FDSTAG         *fs;
+	int            fd;
+	PetscLogDouble t;
+	PetscViewer    view_in;
+	char           filename[_STR_LEN_];
+	PetscInt 	   nxTopo, nyTopo, Ix, Iy, Fsize;
+	PetscInt       i, j, nx, ny, sx, sy, sz, level;
+	PetscScalar    ***topo, *Z, header[2], dim[2];
+	PetscScalar    xp, yp, Xc, Yc, xpL, ypL, DX, DY, bx, by, ex, ey, leng;
 
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
 
+	// get file name
+	ierr = getStringParam(fb, _OPTIONAL_, "topo_file", filename, NULL); CHKERRQ(ierr);
+
+	// check whether file is provided
+	if(!strlen(filename)) PetscFunctionReturn(0);
+
+	PrintStart(&t, "Loading topography redundantly from", filename);
+
 	// access context
-	jr    = surf->jr;
-	fs    = jr->fs;
-	dsz   = &fs->dsz;
-	level = (PetscInt)dsz->rank;
+	fs    = surf->jr->fs;
+	level = fs->dsz.rank;
+	leng  = surf->jr->scal->length;
 
+	// open & read file
+	ierr = PetscViewerBinaryOpen(PETSC_COMM_SELF, filename, FILE_MODE_READ, &view_in); CHKERRQ(ierr);
+	ierr = PetscViewerBinaryGetDescriptor(view_in, &fd);                               CHKERRQ(ierr);
 
-	// characteristic length
-	chLen  = jr->scal.length;
+	// read (and ignore) the silent undocumented file header & size of file
+	ierr = PetscBinaryRead(fd, &header, 2, PETSC_SCALAR); CHKERRQ(ierr);
+	Fsize = (PetscInt)(header[1]) - 2;
 
-	// create column communicator
-	ierr = Discret1DGetColumnComm(dsz); CHKERRQ(ierr);
+	// allocate space for entire file & initialize counter
+	ierr = PetscMalloc((size_t)Fsize*sizeof(PetscScalar), &Z); CHKERRQ(ierr);
 
-	// set interpolation flags
-	//iflag.update    = PETSC_FALSE;
-	//iflag.use_bound = PETSC_TRUE;
+	// read entire file
+	ierr = PetscBinaryRead(fd, &dim, 2,  PETSC_SCALAR); CHKERRQ(ierr);
+	ierr = PetscBinaryRead(fd, Z, Fsize, PETSC_SCALAR); CHKERRQ(ierr);
 
-	// interpolate velocity component from grid faces to corners
-	//ierr = interp(fs, vcomp_grid, jr->lbcor, iflag); CHKERRQ(ierr);
+	// destroy file handle
+	ierr = PetscViewerDestroy(&view_in); CHKERRQ(ierr);
 
-	// load ghost values
-	LOCAL_TO_LOCAL(fs->DA_COR, jr->lbcor)
+	// get mesh extents
+	ierr = FDSTAGGetGlobalBox(fs, &bx, &by, 0, &ex, &ey, 0); CHKERRQ(ierr);
 
-	// access topography, grid and surface velocity
+	// get input topography grid spacing
+	DX = (ex - bx)/(dim[0] - 1.0);
+	DY = (ey - by)/(dim[1] - 1.0);
+
+	nxTopo = (PetscInt)dim[0];
+	nyTopo = (PetscInt)dim[1];
+
+	// access topography vector
 	ierr = DMDAVecGetArray(surf->DA_SURF, surf->gtopo,  &topo);  CHKERRQ(ierr);
 
 	// scan all free surface local points
 	ierr = DMDAGetCorners(fs->DA_COR, &sx, &sy, &sz, &nx, &ny, NULL); CHKERRQ(ierr);
 
-
-	// ****** Read file ******
-	// create filename
-	asprintf(&LoadFileName, "./%s/%s",
-	user->LoadInitialParticlesDirectory,
-	user->TopoFilename);
-
-	PetscPrintf(PETSC_COMM_WORLD," Loading topo redundantly from file: %s \n", LoadFileName);
-	ierr = PetscViewerBinaryOpen(PETSC_COMM_SELF, LoadFileName, FILE_MODE_READ, &view_in); CHKERRQ(ierr);
-	ierr = PetscViewerBinaryGetDescriptor(view_in, &fd); CHKERRQ(ierr);
-
-	// read (and ignore) the silent undocumented file header & size of file
-	ierr = PetscBinaryRead(fd, &header, 2, PETSC_SCALAR); CHKERRQ(ierr);
-	Fsize = (PetscInt)(header[1])-2;
-
-	// allocate space for entire file & initialize counter
-	ierr = PetscMalloc((size_t)Fsize*sizeof(PetscScalar), &Topo); CHKERRQ(ierr);
-
-	// read entire file
-	ierr = PetscBinaryRead(fd, &dim, 2,     PETSC_SCALAR); CHKERRQ(ierr);
-	ierr = PetscBinaryRead(fd, Topo, Fsize, PETSC_SCALAR); CHKERRQ(ierr);
-
-	// grid spacing
-	DX = user->W/(dim[0] - 1.0);
-	DY = user->L/(dim[1] - 1.0);
-
-	nxTopo = (PetscInt)dim[0];
-	nyTopo = (PetscInt)dim[1];
-
 	START_PLANE_LOOP
 	{
+		xp = COORD_NODE(i, sx, fs->dsx);
+		yp = COORD_NODE(j, sy, fs->dsy);
+
+		// get index of the lower left corner of the element
+		Ix = (PetscInt)floor((xp - bx)/DX);
+		Iy = (PetscInt)floor((yp - by)/DY);
 		
-		xp = COORD_NODE(i,   sx, fs->dsx);
-		yp = COORD_NODE(j,   sy, fs->dsy);
-		// index of the lower left corner of the element (of the temperature grid) in which the particle is
-		Ix = (PetscInt)floor((xp - user->x_left) /DX);
-		Iy = (PetscInt)floor((yp - user->y_front)/DY);
+		// take care of boundaries
+		if(Ix == nxTopo - 1) Ix = nxTopo - 2;
+		if(Iy == nyTopo - 1) Iy = nyTopo - 2;
 		
-		// Take care of boundaries
-		if (Ix == nxTopo-1)
-		{
-			Ix =nxTopo-2;
-		}
-		if (Iy == nyTopo-1)
-		{
-			Iy = nyTopo-2;
-		}
+		// coordinate of the first corner (lower left deepest)
+		Xc = bx + (PetscScalar)Ix*DX;
+		Yc = by + (PetscScalar)Iy*DY;
 		
-		// Coordinate of the first corner (lower left deepest)
-		Xc = user->x_left + (PetscScalar)Ix*DX;
-		Yc = user->y_front+ (PetscScalar)Iy*DY;
+		// get local coordinate of the particle inside an element
+		// using the bilinear element in Kwon and Bang, p.161
+		xpL = ((xp - Xc)/DX)*2 - 1.0;
+		ypL = ((yp - Yc)/DY)*2 - 1.0;
 		
-		
-		// Local coordinate of the particle inside a temperature element
-		// Using the bilinear element in Kwon and Bang, p.161
-		xpL = ( (xp - Xc)/DX )*2-1;
-		ypL = ( (yp - Yc)/DY )*2-1;
-		//zpL = (zp - Zc)/DZ;
-		
-		// Interpolate value on the particle using trilinear shape functions
+		// interpolate topography using trilinear shape functions
 		topo[level][j][i] = (
-		1.0/4.0 * (1.0-xpL) * (1.0-ypL)  * Topo[Iy     * nxTopo + Ix   ] +
-		1.0/4.0 * (1.0+xpL) * (1.0-ypL)  * Topo[Iy     * nxTopo + Ix+1 ] +
-		1.0/4.0 * (1.0+xpL) * (1.0+ypL)  * Topo[(Iy+1) * nxTopo + Ix+1 ] +
-		1.0/4.0 * (1.0-xpL) * (1.0+ypL)  * Topo[(Iy+1) * nxTopo + Ix   ])/chLen;
-		
+		1.0/4.0 * (1.0-xpL) * (1.0-ypL) * Z[Iy     * nxTopo + Ix   ] +
+		1.0/4.0 * (1.0+xpL) * (1.0-ypL) * Z[Iy     * nxTopo + Ix+1 ] +
+		1.0/4.0 * (1.0+xpL) * (1.0+ypL) * Z[(Iy+1) * nxTopo + Ix+1 ] +
+		1.0/4.0 * (1.0-xpL) * (1.0+ypL) * Z[(Iy+1) * nxTopo + Ix   ])/leng;
 	}
 	END_PLANE_LOOP
 	
-	
-
 	// restore access
-	ierr = DMDAVecRestoreArray(surf->DA_SURF, surf->gtopo,  &topo);  CHKERRQ(ierr);
+	ierr = DMDAVecRestoreArray(surf->DA_SURF, surf->gtopo, &topo);  CHKERRQ(ierr);
 
+	// clear memory
+	PetscFree(Z);
 
 	// compute ghosted version of the advected surface topography
 	GLOBAL_TO_LOCAL(surf->DA_SURF, surf->gtopo, surf->ltopo);
 
-	// set flat flag
-	surf->flat = PETSC_FALSE;
-
-	// compute & store average topography
-	ierr = VecSum(surf->gtopo, &avg_topo); CHKERRQ(ierr);
-	avg_topo /= (PetscScalar)(fs->dsx.tnods*fs->dsy.tnods*fs->dsz.nproc);
-	surf->avg_topo = avg_topo;
-	jr  ->avg_topo = avg_topo;
-
+	PrintDone(t);
 
 	PetscFunctionReturn(0);
 }
@@ -1199,29 +1199,28 @@ PetscScalar IntersectTriangularPrism(
 	return (vbot - vtop)/2.0/vcell;
 }
 //---------------------------------------------------------------------------
-
 /*
 {
 	// TEST
 
-	PetscScalar bot, top, gtol, v1, v2;
+	PetscScalar bot, top, g_tol, v1, v2;
 
 	PetscScalar x[] = { 1.0, 7.0, 2.0 };
 	PetscScalar y[] = { 2.0, 1.0, 5.0 };
 	PetscScalar z[] = { 1.0, 2.0, 3.0 };
 	PetscInt    i[] = { 0,   1,   2   };
 
-	gtol  = 1e-12;
+	g_tol  = 1e-12;
 
 	bot   = 1.0;
 	top   = 1.5;
 
-	v1 = IntersectTriangularPrism(x, y, z, i, 1.0, bot, top, gtol);
+	v1 = IntersectTriangularPrism(x, y, z, i, 1.0, bot, top, g_tol);
 
 	bot   = 1.5;
 	top   = 3.0;
 
-	v2 = IntersectTriangularPrism(x, y, z, i, 1.0, bot, top, gtol);
+	v2 = IntersectTriangularPrism(x, y, z, i, 1.0, bot, top, g_tol);
 
 
 	printf("\n\n\n v1: %f \n\n\n", v1);
@@ -1231,115 +1230,6 @@ PetscScalar IntersectTriangularPrism(
 	printf("\n\n\n sum: %f \n\n\n", v1+v2);
 
 }
-//---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "SetSinusoidalPerturbation"
-// There are some cases in which we set an initial sinusoidal perturbation on the free surface
-PetscErrorCode SetSinusoidalPerturbation(PetscScalar SinusoidalFreeSurfaceAmplitude, UserCtx *user)
-{
-	PetscErrorCode ierr;
-	PetscScalar    ***LocalSurfaceTopography, x,z, maxVec;
-	PetscInt	   xs_Z, ys_Z, zs_Z, xm_Z, ym_Z, zm_Z, ix, iy;
-	DM			   cda_SurfaceTopo;
-	Vec			   gc_SurfaceTopo;
-	DMDACoor3d	   ***coors_SurfaceTopo;
-	// nondimensionalize
-	SinusoidalFreeSurfaceAmplitude = SinusoidalFreeSurfaceAmplitude/user->Characteristic.Length;
-	ierr = DMGetCoordinateDM(user->DA_SurfaceTopography,	&cda_SurfaceTopo); 	                         CHKERRQ(ierr);
-	ierr = DMGetCoordinatesLocal(user->DA_SurfaceTopography, &gc_SurfaceTopo); 	                     CHKERRQ(ierr);
-	ierr = DMDAVecGetArray(cda_SurfaceTopo,gc_SurfaceTopo, &coors_SurfaceTopo); 	                     CHKERRQ(ierr);
-	ierr = DMDAVecGetArray(user->DA_SurfaceTopography,user->SurfaceTopography, &LocalSurfaceTopography); CHKERRQ(ierr);
-	ierr = DMDAGetCorners(user->DA_SurfaceTopography,&xs_Z,&ys_Z,&zs_Z,&xm_Z,&ym_Z,&zm_Z);               CHKERRQ(ierr);
-	for (iy=ys_Z; iy<ys_Z+ym_Z; iy++)
-	{	for(ix=xs_Z; ix<xs_Z+xm_Z; ix++)
-		{	// Extract x,y,z coordinates of surface topography
-			x = coors_SurfaceTopo[zs_Z][iy][ix].x;
-//			y = coors_SurfaceTopo[zs_Z][iy][ix].y;
-			z = LocalSurfaceTopography[zs_Z][iy][ix];
-			z = z + cos(x/user->W*2*PETSC_PI)*SinusoidalFreeSurfaceAmplitude;
-			// set topography
-			LocalSurfaceTopography[zs_Z][iy][ix] = z;
-		}
-	}
-	ierr = DMDAVecRestoreArray(user->DA_SurfaceTopography,user->SurfaceTopography, 	&LocalSurfaceTopography	);	CHKERRQ(ierr);
-	ierr = DMDAVecRestoreArray(cda_SurfaceTopo,gc_SurfaceTopo,						&coors_SurfaceTopo		); 	CHKERRQ(ierr);
-	VecMax(user->SurfaceTopography,NULL, &maxVec);
-	PetscPrintf(PETSC_COMM_WORLD,"max topo = %f ", maxVec*user->Characteristic.Length/1000.0);
-	PetscFunctionReturn(0);
-}
-//---------------------------------------------------------------------------
-// get partitioning of the free surface in the XY plane
-// ierr = FreeSurfGetPartition(&fs->dsx, xs, dx, fs->dsx.h_min, &nx, &lx); CHKERRQ(ierr);
-// ierr = FreeSurfGetPartition(&fs->dsy, ys, dy, fs->dsy.h_min, &ny, &ly); CHKERRQ(ierr);
-//---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "FreeSurfGetPartition"
-PetscErrorCode FreeSurfGetPartition(
-	Discret1D    *ds,  // discretization
-	PetscScalar   beg, // starting coordinate
-	PetscScalar   len, // domain length
-	PetscScalar   h,   // target mesh step
-	PetscInt     *n,   // total number of nodes
-	PetscInt    **l)   // free surface partitioning vector
-{
-	MPI_Comm    comm;
-	PetscScalar step, tol, rtol;
-	PetscInt    i, first, last, lnum, nnod, ncel, sum, *part;
-
-	PetscErrorCode ierr;
-	PetscFunctionBegin;
-
-	rtol = 1e-8;
-
-	// compute total number of cells & nodes
-	ncel = (PetscInt)ceil(len/h);
-	nnod = ncel + 1;
-
-	if(ds->nproc == 1)
-	{
-		// single processor case
-		part = NULL;
-	}
-	else
-	{
-		// compute actual mesh step & geometric tolerance
-		step = len/(PetscScalar)ncel;
-		tol  = rtol*step;
-
-		// get index of first local node
-		if(ds->grprev != -1) first = (PetscInt)floor((ds->ncoor[0] - beg + tol)/step);
-		else                 first = 0;
-
-		// get index of last local node
-		if(ds->grnext != -1) last = (PetscInt)floor((ds->ncoor[ds->ncels] - beg - tol)/step);
-		else                 last = ncel;
-
-		// get local number of nodes
-		lnum = last - first + 1;
-
-		// create column communicator
-		ierr = Discret1DGetColumnComm(ds, &comm); CHKERRQ(ierr);
-
-		// create partitioning vector
-		ierr = makeIntArray(&part, NULL, ds->nproc); CHKERRQ(ierr);
-
-		// gather partitioning vector
-		ierr = MPI_Allgather(&lnum, 1, MPIU_INT, part, 1, MPIU_INT, comm); CHKERRQ(ierr);
-
-		// free
-		ierr = MPI_Comm_free(&comm); CHKERRQ(ierr);
-
-		// checksum
-		for(i = 0, sum = 0; i < ds->nproc; i++) sum += part[i];
-
-		if(sum != nnod) SETERRQ(PETSC_COMM_SELF, PETSC_ERR_USER, "Inconsistent free surface partitioning");
-	}
-
-	// return partitioning
-	(*n) = nnod;
-	(*l) = part;
-
-	PetscFunctionReturn(0);
-}
-//---------------------------------------------------------------------------
 */
+//---------------------------------------------------------------------------
+

@@ -44,83 +44,100 @@
 //---------------------------------------------------------------------------
 #include "LaMEM.h"
 #include "fdstag.h"
-#include "solVar.h"
 #include "scaling.h"
 #include "tssolve.h"
 #include "bc.h"
 #include "JacRes.h"
 #include "tools.h"
 #include "gravity.h"
+#include "parsing.h"
+#include "phase.h"
 //---------------------------------------------------------------------------
 #undef __FUNCT__
 #define __FUNCT__ "GRVSurveyCreate"
-PetscErrorCode GRVSurveyCreate(UserCtx *user, GravitySurvey *survey)
+PetscErrorCode GRVSurveyCreate(FDSTAG *fs, GravitySurvey *survey, FB *fb)
 {
-	if(user)   user = NULL;
-	if(survey) survey = NULL;
-
-/*
-	PetscInt            n, i, j;
-	PetscInt            i,n;
+	PetscInt           i;
+	PetscInt           iter, j, k, nx, ny, nz, sx, sy, sz, rank;
+	FILE              *fp;
+	char              *fname;
 
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
 
+	ierr = MPI_Comm_rank(PETSC_COMM_WORLD, &rank); CHKERRQ(ierr);
 
-	// create survey coordinates
-	*survey.nx = user->GravityField.survey_nx;
-	*survey.ny = user->GravityField.survey_ny;
-
-	*survey.xs = user->GravityField.survey_xs;
-	*survey.xm = user->GravityField.survey_xm;
-	*survey.ys = user->GravityField.survey_ys;
-	*survey.ym = user->GravityField.survey_ym;
-	*survey.z  = user->GravityField.survey_z ;
-
-	ierr = PetscPrintf(PETSC_COMM_WORLD,"#     gravity profile [m]: \n"); CHKERRQ(ierr);
-	ierr = PetscPrintf(PETSC_COMM_WORLD,"#     xs: %g, xm: %g, nx: %lld\n",*survey.xs, *survey.xm,(LLD)(*survey.nx)); CHKERRQ(ierr);
-	ierr = PetscPrintf(PETSC_COMM_WORLD,"#     ys: %g, ym: %g, ny: %lld\n",*survey.ys, *survey.ym,(LLD)(*survey.ny)); CHKERRQ(ierr);
-	ierr = PetscPrintf(PETSC_COMM_WORLD,"#     z : %g\n", *survey.z); CHKERRQ(ierr);
-	ierr = PetscPrintf(PETSC_COMM_WORLD,"#     calculation with SI-dimensional units \n"); CHKERRQ(ierr);
+	ierr = getIntParam   (fb, _OPTIONAL_, "ComputeGravity",  &survey->ComputeGravity,      1, 1);   CHKERRQ(ierr);
+	ierr = getIntParam   (fb, _OPTIONAL_, "SaveGravity",  &survey->SaveGravity,      1, 1);   CHKERRQ(ierr);
 
 
-//	for(i=0;i<=user->GravityField.LithColNum;i++)
-//	{
-//		if (i<user->GravityField.LithColNum)
-//		{
-//			ierr = PetscPrintf(PETSC_COMM_WORLD,"#     LithColDepth[%lld]: %g \n",(LLD)i,user->GravityField.LithColDepth[i]);CHKERRQ(ierr);
-//		}
-//		ierr = PetscPrintf(PETSC_COMM_WORLD,"#     LithColDens[%lld] : %g \n",(LLD)i,user->GravityField.LithColDens[i]);CHKERRQ(ierr);
-//	}
 
+	ierr = getIntParam   (fb, _OPTIONAL_, "survey_ny",  &survey->ny,      1, 1000);   CHKERRQ(ierr);
+	ierr = getIntParam   (fb, _OPTIONAL_, "survey_nx",  &survey->nx,      1, 1000);   CHKERRQ(ierr);
+	ierr = getScalarParam(fb, _OPTIONAL_, "survey_xs",           &survey->xs,         1, 1.0); CHKERRQ(ierr);
+	ierr = getScalarParam(fb, _OPTIONAL_, "survey_xm",           &survey->xm,         1, 1.0); CHKERRQ(ierr);
+	ierr = getScalarParam(fb, _OPTIONAL_, "survey_ys",           &survey->ys,         1, 1.0); CHKERRQ(ierr);
+	ierr = getScalarParam(fb, _OPTIONAL_, "survey_ym",           &survey->ym,         1, 1.0); CHKERRQ(ierr);
+	ierr = getScalarParam(fb, _OPTIONAL_, "survey_z",           &survey->z,         1, 1.0); CHKERRQ(ierr);
+
+	// survey->faphase = faphase;
+
+	ierr = PetscPrintf(PETSC_COMM_WORLD,"#     gravity profile: \n"); CHKERRQ(ierr);
+	ierr = PetscPrintf(PETSC_COMM_WORLD,"#     xs: %g, xm: %g, nx: %i\n",survey->xs, survey->xm,survey->nx); CHKERRQ(ierr);
+	ierr = PetscPrintf(PETSC_COMM_WORLD,"#     ys: %g, ym: %g, ny: %i\n",survey->ys, survey->ym,survey->ny); CHKERRQ(ierr);
+	ierr = PetscPrintf(PETSC_COMM_WORLD,"#     z : %g\n", survey->z); CHKERRQ(ierr);
+
+	// get ranges of cells in n-dir
+	GET_CELL_RANGE(nx, sx, fs->dsx)
+	GET_CELL_RANGE(ny, sy, fs->dsy)
+	GET_CELL_RANGE(nz, sz, fs->dsz)
+	iter = 0;
+
+	// Read in reference density if available
+
+	asprintf(&fname, "Reference_Density_p%1.6i.tab", rank);
+	fp=fopen(fname,"r");
+	if(fp == NULL) PetscPrintf(PETSC_COMM_WORLD, "Can't open file Reference_Density.dat\n\n");
+	START_STD_LOOP
+	{
+		fscanf(fp, "%lf\n",&survey->gravref[iter++]);
+	}
+	END_STD_LOOP
+	fclose(fp);
 
 	// create local vector for survey
-	ierr = VecCreateSeq(PETSC_COMM_SELF,(*survey.nx) * (*survey.ny), survey->lvec_dg); CHKERRQ(ierr);
+	ierr = VecCreate(PETSC_COMM_WORLD, &survey->lvec_dg); CHKERRQ(ierr);
+	// ierr = VecSetType(survey->lvec_dg, VECSEQ);
+	ierr = VecSetSizes(survey->lvec_dg, (survey->nx) * (survey->ny), PETSC_DECIDE);
+	ierr = VecSetType(survey->lvec_dg, VECSTANDARD);
 	ierr = VecSet(survey->lvec_dg,0.0); CHKERRQ(ierr);
 
 	// define 2D survey spacing
-	*survey.dx = ( *survey.xm - *survey.xs )/( *survey.nx-1 );
-	*survey.dy = ( *survey.ym - *survey.ys )/( *survey.ny-1 );
+	survey->dx = ( survey->xm - survey->xs )/( survey->nx-1 );
+	survey->dy = ( survey->ym - survey->ys )/( survey->ny-1 );
 
 	// create a coordinate array
-	ierr = PetscMalloc((size_t)2*((*survey.nx) * (*survey.ny))*sizeof(PetscScalar), survey->coord); CHKERRQ(ierr);
-	n = 0;
-	for ( i = 0; i < survey.nx; i++ )
+	ierr = PetscMalloc((size_t)2*((survey->nx))*sizeof(PetscScalar), survey->coordx); CHKERRQ(ierr);
+	ierr = PetscMalloc((size_t)2*((survey->nx))*sizeof(PetscScalar), survey->coordy); CHKERRQ(ierr);
+	for ( i = 0; i < survey->nx; i++ )
 	{
-		for ( j = 0; j < (survey.ny*2); j+=2 )
-		{
-			n                   = i * (*survey.ny) * 2 + j;
-			*survey->coord[n]   = (*survey.xs) + i * (*survey.dx);
-			*survey->coord[n+1] = (*survey.ys) + j / 2 * (*survey.dy);
-		}
+		survey->coordx[i] = (survey->xs) + i * (survey->dx);
+	}
+
+	for ( i = 0; i < survey->ny; i++ )
+	{
+		survey->coordy[i] = (survey->ys) + i * (survey->dy);
 	}
 
 	// allocate global vector
-	ierr = VecCreateMPI(PETSC_COMM_WORLD,PETSC_DECIDE, (*survey.nx) * (*survey.ny), survey.gvec_dg); CHKERRQ(ierr);
-	ierr = VecSet(*survey.gvec_dg, 0.0); CHKERRQ(ierr);
-	ierr = MPI_Comm_rank(PETSC_COMM_WORLD, survey->rank); CHKERRQ(ierr);
-*/
+	ierr = VecDuplicate(survey->lvec_dg,&survey->gvec_dg);
+	ierr = VecCopy(survey->lvec_dg,survey->gvec_dg);
+	// ierr = VecCreateMPI(PETSC_COMM_WORLD,PETSC_DECIDE, (survey->nx) * (survey->ny), &survey->gvec_dg); CHKERRQ(ierr);
+	ierr = VecSet(survey->gvec_dg, 0.0); CHKERRQ(ierr);
+	// ierr = MPI_Comm_rank(PETSC_COMM_WORLD, &survey->rank); CHKERRQ(ierr);
+
 	PetscFunctionReturn(0);
+
 }
 //---------------------------------------------------------------------------
 #undef __FUNCT__
@@ -135,140 +152,264 @@ PetscErrorCode GRVSurveyDestroy( GravitySurvey survey)
 	ierr = VecDestroy(&survey.lvec_dg);	CHKERRQ(ierr);
 
 	// free allocated memory of coordinates
-	ierr = PetscFree(survey.coord); CHKERRQ(ierr);
+	// ierr = PetscFree(survey.coordx); CHKERRQ(ierr);
+	// ierr = PetscFree(survey.coordy); CHKERRQ(ierr);
+	// ierr = PetscFree(survey.gravref); CHKERRQ(ierr);
 
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
 #undef __FUNCT__
 #define __FUNCT__ "GRVCompute"
-PetscErrorCode GRVCompute(FDSTAG *fs, UserCtx *user, JacRes *jr)
+PetscErrorCode GRVCompute(FDSTAG *fs, JacRes *jr, GravitySurvey *survey)
 {
-
-	if(fs)   fs = NULL;
-	if(user) user = NULL;
-	if(jr)   jr = NULL;
-
-/*
-	PetscInt      iter, i, j, k, nx, ny, nz, sx, sy, sz;
-	PetscScalar   x,y,z,dxh,dyh,dzh;
-	PetscScalar   corners[8][8];
-	GravitySurvey survey;
+	PetscInt      iter, siter, i, j, k, nx, ny, nz, sx, sy, sz, si, sj, rank, step;
+	PetscScalar   x,y,z,dxh,dyh,dzh, xq[3], yq[3], zq[3], G, fac, sdx, sdy;
+	PetscScalar   rho, result;
+	PetscViewer   view_out;
+	char         *fname;
+	PetscScalar  *gravmerge, *gravpatch;
+	Scaling      *scal;
+	FILE         *fp;
+	PetscLogDouble     cputime_start, cputime_end;
 
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
 
-	// create survey context
-	ierr = GRVSurveyCreate( &user, &survey);
+	PetscTime(&cputime_start);
+
+	scal = jr->scal;
+
+	if(scal->utype == _GEO_)
+	{
+		fac = scal->length*1e3;
+	}
+	else if(scal->utype == _SI_)
+	{
+		fac = scal->length;
+	}
+	else
+	{
+		PetscPrintf(PETSC_COMM_WORLD,"Take care, gravity might not be scaled properly\n");
+	}
+
+	sdx = ((survey->xm*fac)-(survey->xs*fac))/(survey->nx-1);
+	sdy = ((survey->ym*fac)-(survey->ys*fac))/(survey->ny-1);
+
+	ierr = VecSet(survey->lvec_dg,0.0); CHKERRQ(ierr);
+	ierr = VecSet(survey->gvec_dg, 0.0); CHKERRQ(ierr);
 
 	// get ranges of cells in n-dir
 	GET_CELL_RANGE(nx, sx, fs->dsx)
 	GET_CELL_RANGE(ny, sy, fs->dsy)
 	GET_CELL_RANGE(nz, sz, fs->dsz)
 
-
-
-	ierr = VecGetArray(survey.lvec_dg,&survey.dg); CHKERRQ(ierr);
-	for ( survey.i = 0; survey.i < survey.nx; survey.i++)
+	siter = 0;
+	ierr = VecGetArray(survey->lvec_dg,&gravpatch); CHKERRQ(ierr);
+	for ( si = 0; si < survey->nx; si++)
 	{
-		for ( survey.j=0; survey.j<survey.ny*2; survey.j+=2)
+		for ( sj=0; sj<survey->ny; sj++)
 		{
-			survey.x = survey.coord[i * survey.ny * 2 + survey.j];
-			survey.y = survey_coord[i * survey.ny * 2 + survey.j + 1];
-
 			iter = 0;
 			START_STD_LOOP
 			{
 				// get density at the cell center
-				rho = jrctx->svCell[iter].svBulk.rho;
+				rho = jr->svCell[iter++].svBulk.rho;
+
+				/*// If we are at the free surface
+				if(jr->svCell[iter].phRat == survey->faphase)
+				{
+					PetscPrintf(PETSC_COMM_WORLD,"WENT\n");
+					rho = 0;
+				}*/
 
 				// get coordinate of cell center
-				x = fs->dsx.ccoor[iter];
-				y = fs->dsy.ccoor[iter];
-				z = fs->dsz.ccoor[iter];
+				x = fs->dsx.ccoor[i-fs->dsx.pstart] * fac;
+				y = fs->dsy.ccoor[j-fs->dsy.pstart] * fac;
+				z = fs->dsz.ccoor[k-fs->dsz.pstart] * fac;
 
 				// get mesh steps
-				dxh = SIZE_CELL(i, sx, fs->dsx)/2.0;
-				dyh = SIZE_CELL(j, sy, fs->dsy)/2.0;
-				dzh = SIZE_CELL(k, sz, fs->dsz)/2.0;
+				dxh = (SIZE_CELL(i, sx, fs->dsx)/2.0) * fac;
+				dyh = (SIZE_CELL(j, sy, fs->dsy)/2.0) * fac;
+				dzh = (SIZE_CELL(k, sz, fs->dsz)/2.0) * fac;
 
-				// compute cell volume
-				dvol = 2.0*dxh * 2.0*dyh * 2.0*dzh;
+				survey->x=((survey->xs*fac)+(si)*sdx);
+				survey->y=((survey->ys*fac)+(sj)*sdy);
 
-				// get the coordinates at the cell corners
-				corners[0][0] = x-dxh; corners[1][0] = y-dyh; corners[2][0] = z-dzh; //1
-				corners[0][1] = x+dxh; corners[1][1] = y-dyh; corners[2][1] = z-dzh; //4
-				corners[0][2] = x+dxh; corners[1][2] = y+dyh; corners[2][2] = z-dzh; //6
-				corners[0][3] = x-dxh; corners[1][3] = y+dyh; corners[2][3] = z-dzh; //7
-				corners[0][4] = x-dxh; corners[1][4] = y-dyh; corners[2][4] = z+dzh; //2
-				corners[0][5] = x+dxh; corners[1][5] = y-dyh; corners[2][5] = z+dzh; //3
-				corners[0][6] = x+dxh; corners[1][6] = y+dyh; corners[2][6] = z+dzh; //5
-				corners[0][7] = x-dxh; corners[1][7] = y+dyh; corners[2][7] = z+dzh; //8
+				xq[0] = (x-dxh)-survey->x;
+				xq[1] = (x+dxh)-survey->x;
+				yq[0] = (y-dyh)-survey->y;
+				yq[1] = (y+dyh)-survey->y;
+				zq[0] = (z-dzh)-(survey->z*fac);
+				zq[1] = (z+dzh)-(survey->z*fac);
 
 				// compute gravity contribution of particular cell at specified survey point
-				ierr = GetGravityEffectNumerical(dvol,2,survey.x,survey.y,survey.z,cornervec,&result); CHKERRQ(ierr);
-				survey.dg[survey.iter] = survey_dg[survey.iter] + rho*result;
+				ierr = GetGravityEffectAnalytical(survey->gravref[iter]-rho*scal->density, xq, yq, zq, &result);
+
+				// Debug values
+				// PetscPrintf(PETSC_COMM_WORLD,"zm = %.20f\nxm = %.20f\nx = %.20f\ny = %.20f\nz = %.20f\ndzh = %.20f\nsx = %.20f\nsy = %.20f\nxq1 = %.20f\nxq2 = %.20f\nyq1 = %.20f\nyq2 = %.20f\nzq1 = %.20f\nzq2 = %.20f\nrho = %.20f\n",survey->z*fac,survey->xm*fac,x,y,z,dzh,survey->x,survey->y,xq[0],xq[1],yq[0],yq[1],zq[0],zq[1],rho*scal->density-survey->gravref[iter]);
+				// PetscPrintf(PETSC_COMM_WORLD,"RESULT = %.20f\n\n",result);
+
+				gravpatch[siter] = gravpatch[siter] + result;
 
 				// reset local contribution to zero
-				result              = 0.0;
-
-
-				iter++;
+				result  = 0.0;
 			}
 			END_STD_LOOP
-
-			survey.iter++;
+			siter++;
 		}
 	}
-	ierr = VecRestoreArray(survey.lvec_dg,&survey.dg); CHKERRQ(ierr);
-
-	// gather local surveys
-	ierr = Sum_Vectors(PETSC_COMM_WORLD ,&survey.lvec_dg, survey.nx*survey.ny); CHKERRQ(ierr);
-	ierr = VecSeq2VecMpi(rank,survey.lvec_dg ,&survey.gvec_dg); CHKERRQ(ierr);
 
 
-	// save gravity field as binary data
-	if(user->GravityField.SaveRef==1){
-		ierr = PetscPrintf(PETSC_COMM_WORLD,"#  -- save reference data -- \n");							CHKERRQ(ierr);
-		// --- create directory ---
-		asprintf(&DirectoryName, "ReferenceData_%1.6lld",(LLD)itime);
-		ierr = FDSTAGCreateOutputDirectory(DirectoryName); 												CHKERRQ(ierr);
-		// --- create filename ---
-		asprintf(&FileName,"%s/REF_Gravity.bin",DirectoryName);
-		ierr = PetscPrintf(PETSC_COMM_WORLD,"#     save file: %s \n",FileName);							CHKERRQ(ierr);
-		// --- save binary file ---
-		ierr = PetscViewerBinaryOpen(PETSC_COMM_WORLD,FileName , FILE_MODE_WRITE, &view_out);			CHKERRQ(ierr);
-		ierr = VecView(survey.gvec_dg,view_out); 														CHKERRQ(ierr);
-		ierr = PetscViewerDestroy(&view_out); 															CHKERRQ(ierr);
-		// --- clear memory ---
-		free(FileName);
-		free(DirectoryName);
+
+	if (fs->dsz.nproc != 1 )
+	{
+		ierr = Discret1DGetColumnComm(&fs->dsz); CHKERRQ(ierr);
+		ierr = VecGetArray(survey->gvec_dg,&gravmerge); CHKERRQ(ierr);
+		ierr = MPI_Allreduce(gravpatch, gravmerge, (PetscMPIInt)(survey->nx*survey->ny), MPIU_SCALAR, MPI_SUM, PETSC_COMM_WORLD); CHKERRQ(ierr);
+		ierr = VecRestoreArray(survey->lvec_dg,&gravpatch); CHKERRQ(ierr);
+		ierr = VecRestoreArray(survey->gvec_dg,&gravmerge); CHKERRQ(ierr);
+	}
+	else
+	{
+		ierr = VecRestoreArray(survey->lvec_dg,&gravpatch); CHKERRQ(ierr);
+		ierr = VecCopy(survey->lvec_dg,survey->gvec_dg);
+		// VecView(survey->gvec_dg,	PETSC_VIEWER_STDOUT_WORLD 	);
 	}
 
-	// save gravity field as vtk file
-	if(user->GravityField.SaveVTK==1){
-		// --- multiplying with gravitational constant ---
-		ierr = VecDuplicate(survey.lvec_dg,&survey.lvec_dg2save);										CHKERRQ(ierr);
-		ierr = VecCopy(lvec_survey_dg,survey.lvec_dg2save);												CHKERRQ(ierr);
-		ierr = VecScale(survey.lvec_dg2save,G);															CHKERRQ(ierr);
-
-		ierr = SaveGravityField2VTK(user,survey.lvec_dg2save, lvec_survey_coords,itime);				CHKERRQ(ierr);
-
-		ierr = VecDestroy(&lvec_survey_dg2save);														CHKERRQ(ierr);
+	ierr = MPI_Comm_rank(PETSC_COMM_WORLD, &rank); CHKERRQ(ierr);
+	if(rank == 0)
+	{
+		ierr = VecGetArray(survey->gvec_dg,&gravmerge); CHKERRQ(ierr);
+		asprintf(&fname, "Gravity_T%1.6i_p%1.6i.tab", jr->ts->istep, rank);
+		fp = fopen(fname,"w");
+		if(fp == NULL) SETERRQ1(PETSC_COMM_SELF, 1,"cannot open file %s", fname);
+		free(fname);
+		for(i=0;i<(survey->nx) * (survey->ny);i++)
+		{
+			fprintf(fp, "%lf\n",gravmerge[i]);
+		}
+		ierr = VecRestoreArray(survey->gvec_dg,&gravmerge); CHKERRQ(ierr);
+		fclose(fp);
 	}
+	// MPI_Barrier(PETSC_COMM_WORLD);
 
-	// get misfit
-	if(user->Optimisation.GetIt==1){
-		PetscPrintf(PETSC_COMM_WORLD,"#------------------------------------------\n");
-		PetscPrintf(PETSC_COMM_WORLD,"#-- get gravity field misfit --------------\n");
+	PetscTime(&cputime_end);
+	PetscPrintf(PETSC_COMM_WORLD, " Gravity computation took %g (sec) \n", cputime_end - cputime_start);
+	PetscFunctionReturn(0);
+}
+//---------------------------------------------------------------------------
+#undef __FUNCT__
+#define __FUNCT__ "GetGravityEffectAnalytical"
+PetscErrorCode GetGravityEffectAnalytical(PetscScalar rho, PetscScalar *dx, PetscScalar *dy, PetscScalar *dz, PetscScalar *gsum)
+{
+	PetscInt		ind,i,j,k;
+	PetscScalar		R111,R112,R121,R122,R211,R212,R221,R222,G;
+	PetscScalar     g111,g112,g121,g122,g211,g212,g221,g222;
+	PetscScalar     lsum=0.0;
 
-		ierr = GetMisfit_GravityField(user,survey.gvec_dg);												CHKERRQ(ierr);
-	}
+	PetscFunctionBegin;
+
+	// Analytical solution taken from Turcotte & Schubert (taken from chapter 12 (Taras))
+
+	G=(6.6732e-11)*1e5;
+
+	R111=pow(dx[0]*dx[0]+dy[0]*dy[0]+dz[0]*dz[0],0.5);
+	R112=pow(dx[1]*dx[1]+dy[0]*dy[0]+dz[0]*dz[0],0.5);
+	R121=pow(dx[0]*dx[0]+dy[1]*dy[1]+dz[0]*dz[0],0.5);
+	R122=pow(dx[1]*dx[1]+dy[1]*dy[1]+dz[0]*dz[0],0.5);
+	R211=pow(dx[0]*dx[0]+dy[0]*dy[0]+dz[1]*dz[1],0.5);
+	R212=pow(dx[1]*dx[1]+dy[0]*dy[0]+dz[1]*dz[1],0.5);
+	R221=pow(dx[0]*dx[0]+dy[1]*dy[1]+dz[1]*dz[1],0.5);
+	R222=pow(dx[1]*dx[1]+dy[1]*dy[1]+dz[1]*dz[1],0.5);
+
+	g111=-(dz[0]*atan((dx[0]*dy[0])/(dz[0]*R111))-dx[0]*log(R111+dy[0])-dy[0]*log(R111+dx[0]));
+	g112=+(dz[0]*atan((dx[1]*dy[0])/(dz[0]*R112))-dx[1]*log(R112+dy[0])-dy[0]*log(R112+dx[1]));
+	g121=+(dz[0]*atan((dx[0]*dy[1])/(dz[0]*R121))-dx[0]*log(R121+dy[1])-dy[1]*log(R121+dx[0]));
+	g122=-(dz[0]*atan((dx[1]*dy[1])/(dz[0]*R122))-dx[1]*log(R122+dy[1])-dy[1]*log(R122+dx[1]));
+
+	g211=+(dz[1]*atan((dx[0]*dy[0])/(dz[1]*R211))-dx[0]*log(R211+dy[0])-dy[0]*log(R211+dx[0]));
+	g212=-(dz[1]*atan((dx[1]*dy[0])/(dz[1]*R212))-dx[1]*log(R212+dy[0])-dy[0]*log(R212+dx[1]));
+	g221=-(dz[1]*atan((dx[0]*dy[1])/(dz[1]*R221))-dx[0]*log(R221+dy[1])-dy[1]*log(R221+dx[0]));
+	g222=+(dz[1]*atan((dx[1]*dy[1])/(dz[1]*R222))-dx[1]*log(R222+dy[1])-dy[1]*log(R222+dx[1]));
+
+	// Debug values
+	// PetscPrintf(PETSC_COMM_WORLD,"dx1 = %.20f\ndy1 = %.20f\ndz1 = %.20f\nsq1 = %.20f\nsq2 = %.20f\nsq3 = %.20f\ng111 = %.20f\nR111 = %.20f\nR111full = %.20f\n\n",dx[0],dy[0],dz[0],pow(dx[0],2),pow(dy[0],2),pow(dz[0],2),g111,R111,pow(dx[0],2)+pow(dy[0],2)+pow(dz[0],2));
+
+	lsum=G*rho*(g111+g112+g121+g122+g211+g212+g221+g222);
+
+	*gsum = lsum;
 
 
-	// destroy survey context
-	ierr = GRVSurveyDestroy( &user, survey);
+/*
+		PetscScalar		x,y,z,r;
+		PetscInt		ind;
+		PetscScalar		dummy = 0.0;
+
+		// get gravity effect of CURRENT cell
+		for (ind=0; ind<4; ind++) {
+			x	=	survey_x	- cornervec[0][ind];
+			y	=	survey_y	- cornervec[1][ind];
+			z	=	survey_z	- cornervec[2][ind];
+			r	=   pow((x*x+y*y+z*z),0.5);
+			dummy = dummy - (y*log((x+r)) + x*log((y+r)) - z* atan2((x*y),(z*r)));
+		}
+
+		for (ind=4; ind<8; ind++) {
+			x	=	survey_x	- cornervec[0][ind];
+			y	=	survey_y	- cornervec[1][ind];
+			z	=	survey_z	- cornervec[2][ind];
+			r	=   pow((x*x+y*y+z*z),0.5);
+
+			dummy = G * rho * (y*log((x+r)) + x*log((y+r)) - z* atan2((x*y),(z*r)));
+		}
+
+
+
+		*gsum = dummy;
 */
+
+	PetscFunctionReturn(0);
+}
+//---------------------------------------------------------------------------
+#undef __FUNCT__
+#define __FUNCT__ "GetGravityEffectAnalytical2"
+PetscErrorCode GetGravityEffectAnalytical2(PetscScalar *x,PetscScalar *y, PetscScalar *z,PetscScalar *gsum)
+{
+	// HANDLE WITH CARE; Probably not correct
+	PetscInt		ind,i,j,k;
+	PetscScalar		rijk=0.0,arg1,arg2,arg3;
+	PetscScalar     ijk[] ={-1.0,1.0,1.0,-1.0,1.0,-1.0,-1.0,1.0};
+	PetscScalar     lsum=0.0;
+
+	PetscFunctionBegin;
+
+	ind  = 0;
+	for (i=0;i<2;i++)
+	{
+	    for (j=0;j<2;j++)
+	    {
+	        for (k=0;k<2;k++)
+	        {
+	            //rijk = sqrt(x[i]*x[i]+y[j]*y[j]+z[k]*z[k]);
+	            rijk = pow(x[i]*x[i]+y[j]*y[j]+z[k]*z[k],0.5); // factor 10 faster on mogon
+	            arg1 = atan2( x[i]*y[j], z[k]*rijk );
+	            if(arg1 < 0 )
+	            {
+	            	arg1 =arg1 + 2*M_PI;
+	            }
+	            arg2 = log(rijk +y[j]);
+	            arg3 = log(rijk +x[i]);
+	            lsum = lsum + ijk[ind] *( z[k]*arg1  - x[i]*arg2 -y[j]*arg3 );
+	            // Error checking
+	            if( PetscIsInfOrNanScalar(lsum) == 1) lsum = 0;
+	            ind =ind+1;
+	        }
+	    }
+	}
+
+	*gsum = lsum;
+
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------

@@ -44,19 +44,14 @@
 //.....................   NONLINEAR SOLVER ROUTINES   .......................
 //---------------------------------------------------------------------------
 #include "LaMEM.h"
-#include "fdstag.h"
-#include "solVar.h"
-#include "scaling.h"
-#include "tssolve.h"
-#include "bc.h"
-#include "JacRes.h"
-#include "matFree.h"
-#include "multigrid.h"
 #include "matrix.h"
+#include "fdstag.h"
+#include "tssolve.h"
+#include "multigrid.h"
 #include "lsolve.h"
 #include "nlsolve.h"
-#include "tools.h"
-
+#include "JacRes.h"
+#include "matFree.h"
 //---------------------------------------------------------------------------
 // * add bound checking for iterative solution vector in SNES
 // * automatically set -snes_type ksponly (for linear problems)
@@ -89,7 +84,7 @@ PetscErrorCode NLSolCreate(NLSol *nl, PCStokes pc, SNES *p_snes)
 	SNESLineSearch  ls;
 	JacRes         *jr;
 	DOFIndex       *dof;
-	PetscBool       flg, useCustomTest=PETSC_FALSE,custom_ksp_monitor=PETSC_FALSE;
+	PetscBool       flg;
 
     PetscErrorCode ierr;
     PetscFunctionBegin;
@@ -134,47 +129,6 @@ PetscErrorCode NLSolCreate(NLSol *nl, PCStokes pc, SNES *p_snes)
 	ierr = KSPGetPC(ksp, &ipc);            CHKERRQ(ierr);
 	ierr = PCSetType(ipc, PCMAT);          CHKERRQ(ierr);
 
-	// activate custom test for linear iterations?
-	ierr = PetscOptionsGetBool(NULL, NULL,"-js_use_custom_test",&useCustomTest,&flg); CHKERRQ(ierr);
-
-	if(useCustomTest)
-	{
-		PetscPrintf(PETSC_COMM_WORLD,"Using custom test function for residuals\n");
-		nl->wsCtx.epsfrac    = 0.005; // set default to 1 percent
-		nl->wsCtx.eps        = 0.0;
-		nl->wsCtx.rnorm_init = 0.0;
-		nl->wsCtx.winwidth   = 20;
-
-		ierr = PetscOptionsGetInt (NULL, NULL,"-js_ksp_difftol_winwidth",&nl->wsCtx.winwidth,NULL ); CHKERRQ(ierr);
-		ierr = PetscOptionsGetReal(NULL, NULL,"-js_ksp_difftol_eps"    ,&nl->wsCtx.epsfrac,NULL ); CHKERRQ(ierr);
-		ierr = PetscOptionsGetBool(NULL, NULL, "-js_custom_ksp_monitor", &custom_ksp_monitor, &flg ); CHKERRQ(ierr);
-		
-		if ( (nl->wsCtx.winwidth < 1) | (nl->wsCtx.winwidth > _max_win_size_))
-		{
-			SETERRQ1(PETSC_COMM_SELF, PETSC_ERR_USER, "js_ksp_difftol_winwidth should be between to be between 1 and %lld\n",(LLD) _max_win_size_);
-		}
-		if ( (nl->wsCtx.epsfrac < 0.0) | (nl->wsCtx.epsfrac > 1.0) ) 
-		{
-			SETERRQ(PETSC_COMM_SELF, PETSC_ERR_USER, "js_ksp_difftol_eps should be chosen to be between 0 and 1\n");
-		}
-		
-		// set residual monitors
-		if(custom_ksp_monitor)
-		{
-			ierr = KSPMonitorSet(ksp, &KSPWinStopMonitor,&nl->wsCtx, NULL); CHKERRQ(ierr);
-		}
-/*
-		ierr = PetscPrintf( PETSC_COMM_WORLD, "Stopping conditions: \n");
-		PetscPrintf( PETSC_COMM_WORLD, "rtol : %14.12e\n",(double)ctx->rtol);
-		PetscPrintf( PETSC_COMM_WORLD, "atol : %14.12e\n",(double)ctx->atol);
-		PetscPrintf( PETSC_COMM_WORLD, "maxit: %D\n",ctx->maxits);
-		PetscPrintf( PETSC_COMM_WORLD, "difftol_eps: %14.12e\n",nl->wsCtx.epsfrac);
-		PetscPrintf( PETSC_COMM_WORLD, "difftol_winwidth: %D\n",nl->wsCtx.winwidth);
-*/
-//		ierr = KSPStopCondConfig(ksp, &nl->wsCtx); CHKERRQ(ierr);
-//		ierr = KSPSetConvergenceTest(ksp, &KSPWinStopTest, &nl->wsCtx, NULL);CHKERRQ(ierr);
-	}
-
 	ierr = SNESSetConvergenceTest(snes, &SNESCoupledTest, nl, NULL); CHKERRQ(ierr);
 
 	// initialize Jacobian controls
@@ -195,6 +149,8 @@ PetscErrorCode NLSolCreate(NLSol *nl, PCStokes pc, SNES *p_snes)
 
 	// return solver
 	(*p_snes) = snes;
+
+	PetscPrintf(PETSC_COMM_WORLD, "--------------------------------------------------------------------------\n");
 
 	PetscFunctionReturn(0);
 }
@@ -230,57 +186,7 @@ PetscErrorCode FormResidual(SNES snes, Vec x, Vec f, void *ctx)
 	nl = (NLSol*)ctx;
 	jr = nl->pc->pm->jr;
 
-	// apply pressure limit at the first visco-plastic timestep and iteration
-    if(jr->ts.istep == 1 && jr->matLim.presLimAct == PETSC_TRUE)
-    {
-    	jr->matLim.presLimFlg = PETSC_TRUE;
-	}
-
-	// copy solution from global to local vectors, enforce boundary constraints
-	ierr = JacResCopySol(jr, x); CHKERRQ(ierr);
-
-	ierr = JacResGetPressShift(jr); CHKERRQ(ierr);
-
-	// compute effective strain rate
-	ierr = JacResGetEffStrainRate(jr); CHKERRQ(ierr);
-
-	// compute residual
-	ierr = JacResGetResidual(jr); CHKERRQ(ierr);
-
-	// copy residuals to global vector
-	ierr = JacResCopyRes(jr, f); CHKERRQ(ierr);
-
-	// deactivate pressure limit after it has been activated
-	jr->matLim.presLimFlg = PETSC_FALSE;
-
-	PetscFunctionReturn(0);
-}
-//---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "FormResidualMFFD"
-PetscErrorCode FormResidualMFFD(void *ctx, Vec x, Vec f)
-{
-	JacRes *jr;
-
-	PetscErrorCode ierr;
-	PetscFunctionBegin;
-
-	// access context
-	jr = (JacRes*)ctx;
-
-	// copy solution from global to local vectors, enforce boundary constraints
-	ierr = JacResCopySol(jr, x); CHKERRQ(ierr);
-
-	ierr = JacResGetPressShift(jr); CHKERRQ(ierr);
-
-	// compute effective strain rate
-	ierr = JacResGetEffStrainRate(jr); CHKERRQ(ierr);
-
-	// compute residual
-	ierr = JacResGetResidual(jr); CHKERRQ(ierr);
-
-	// copy residuals to global vector
-	ierr = JacResCopyRes(jr, f); CHKERRQ(ierr);
+	ierr = JacResFormResidual(jr, x, f); CHKERRQ(ierr);
 
 	PetscFunctionReturn(0);
 }
@@ -297,6 +203,7 @@ PetscErrorCode FormJacobian(SNES snes, Vec x, Mat Amat, Mat Pmat, void *ctx)
 	PMat        pm;
 	JacRes      *jr;
 	PetscInt    it, it_newton;
+	Controls   *ctrl;
 	PetscScalar nrm;
 
 	// clear unused parameters
@@ -307,10 +214,12 @@ PetscErrorCode FormJacobian(SNES snes, Vec x, Mat Amat, Mat Pmat, void *ctx)
 	PetscFunctionBegin;
 
 	// access context
-	nl = (NLSol*)ctx;
-	pc = nl->pc;
-	pm = pc->pm;
-	jr = pm->jr;
+	nl   = (NLSol*)ctx;
+	pc   =  nl->pc;
+	pm   =  pc->pm;
+	jr   =  pm->jr;
+	ctrl = &jr->ctrl;
+
     it_newton = 0;
 
     //========================
@@ -322,6 +231,8 @@ PetscErrorCode FormJacobian(SNES snes, Vec x, Mat Amat, Mat Pmat, void *ctx)
 	ierr = SNESGetFunction(snes, &r, NULL, NULL); CHKERRQ(ierr);
 	ierr = VecNorm(r, NORM_2, &nrm);              CHKERRQ(ierr);
     
+	if(!nrm) nrm = 1.0;
+
     // initialize
 	if(!it)
 	{
@@ -335,20 +246,12 @@ PetscErrorCode FormJacobian(SNES snes, Vec x, Mat Amat, Mat Pmat, void *ctx)
 		//if(nrm < nl->refRes*nl->tolPic || nl->it > nl->nPicIt)
 		if(nrm < nl->refRes*nl->rtolPic)
 		{
-			if(jr->matLim.jac_mat_free == PETSC_TRUE)
+			if(ctrl->jac_mat_free)
 			{
-				PetscPrintf(PETSC_COMM_WORLD,"===================================================\n");
-				PetscPrintf(PETSC_COMM_WORLD,"SWITCH TO MF JACOBIAN: ||F||/||F0||=%e, PicIt=%lld \n", nrm/nl->refRes, (LLD)nl->nPicIt);
-				PetscPrintf(PETSC_COMM_WORLD,"===================================================\n");
-
 				nl->jtype = _MF_;
 			}
 			else
 			{
-				PetscPrintf(PETSC_COMM_WORLD,"=====================================================\n");
-				PetscPrintf(PETSC_COMM_WORLD,"SWITCH TO MMFD JACOBIAN: ||F||/||F0||=%e, PicIt=%lld \n", nrm/nl->refRes, (LLD)nl->nPicIt);
-				PetscPrintf(PETSC_COMM_WORLD,"=====================================================\n");
-
 				nl->jtype = _MFFD_;
 			}
 		}
@@ -358,15 +261,11 @@ PetscErrorCode FormJacobian(SNES snes, Vec x, Mat Amat, Mat Pmat, void *ctx)
 		// Newton case, check to switch to Picard
 		if(nrm > nl->refRes*nl->rtolNwt || it_newton > nl->nNwtIt)
 		{
-			PetscPrintf(PETSC_COMM_WORLD,"=======================================================\n");
-			PetscPrintf(PETSC_COMM_WORLD,"SWITCH TO PICARD JACOBIAN: ||F||/||F0||=%e, PicIt=%lld \n", nrm/nl->refRes, (LLD)nl->nNwtIt);
-			PetscPrintf(PETSC_COMM_WORLD,"=======================================================\n");
-
 			nl->jtype = _PICARD_;
 		}
 	}
 
-	if(JacResGetStep(jr) < 2 && nl->it == 0)
+	if(jr->ts->istep < 2 && nl->it == 0)
 	{
 		// During the first and second timestep of a simulation, always start with picard iterations
 		// that is important as plasticity is only activated during the second timestep, whereas the code might have
@@ -377,23 +276,23 @@ PetscErrorCode FormJacobian(SNES snes, Vec x, Mat Amat, Mat Pmat, void *ctx)
 	// print info
 	if(nl->jtype == _PICARD_)
 	{
-		PetscPrintf(PETSC_COMM_WORLD,"USING PICARD JACOBIAN for iteration %lld, ||F||/||F0||=%e \n", (LLD)nl->it, nrm/nl->refRes);
+		PetscPrintf(PETSC_COMM_WORLD,"%3lld PICARD ||F||/||F0||=%e \n", (LLD)nl->it, nrm/nl->refRes);
 	}
 	else if(nl->jtype == _MFFD_)
 	{
-		PetscPrintf(PETSC_COMM_WORLD,"USING MMFD JACOBIAN for iteration %lld, ||F||/||F0||=%e \n", (LLD)nl->it, nrm/nl->refRes);
+		PetscPrintf(PETSC_COMM_WORLD,"%3lld MMFD   ||F||/||F0||=%e \n", (LLD)nl->it, nrm/nl->refRes);
 		it_newton++;
 	}
 	else if(nl->jtype == _MF_)
 	{
-		PetscPrintf(PETSC_COMM_WORLD,"USING MF JACOBIAN for iteration %lld, ||F||/||F0||=%e \n", (LLD)nl->it, nrm/nl->refRes);
+		PetscPrintf(PETSC_COMM_WORLD,"%3lld MF     ||F||/||F0||=%e \n", (LLD)nl->it, nrm/nl->refRes);
 		it_newton++;
 	}
 
-	// switch off pressure limit for plasticity after first timestep and iteration (after GetResidual)
-	if(jr->ts.istep >=1)
+	// switch off pressure limit for plasticity after first iteration
+	if(!ctrl->initGuess && it > 1)
 	{
-		jr->matLim.presLimAct = PETSC_FALSE;
+		ctrl->pLimPlast = 0;
 	}
 
 	// count iterations
@@ -457,86 +356,94 @@ PetscErrorCode JacApplyMFFD(Mat A, Vec x, Vec y)
 //---------------------------------------------------------------------------
 #undef __FUNCT__
 #define __FUNCT__ "SNESPrintConvergedReason"
-PetscErrorCode SNESPrintConvergedReason(SNES snes, PetscBool *Convergence)
+PetscErrorCode SNESPrintConvergedReason(SNES snes, 	PetscLogDouble t_beg)
 {
+	PetscLogDouble      t_end;
 	SNESConvergedReason reason;
 	PetscInt            its;
 
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
 
+	PetscTime(&t_end);
+
 	ierr = SNESGetIterationNumber(snes, &its);    CHKERRQ(ierr);
 	ierr = SNESGetConvergedReason(snes, &reason);  CHKERRQ(ierr);
 
-    // CONVERGENCE
-	*Convergence = PETSC_TRUE;
+	PetscPrintf(PETSC_COMM_WORLD, "--------------------------------------------------------------------------\n");
 
-    if(reason == SNES_CONVERGED_FNORM_ABS)
+	if(reason < 0)
+	{
+		PetscPrintf(PETSC_COMM_WORLD, "**************   NONLINEAR SOLVER FAILED TO CONVERGE!   ****************** \n");
+		PetscPrintf(PETSC_COMM_WORLD, "--------------------------------------------------------------------------\n");
+	}
+
+	if(reason == SNES_CONVERGED_FNORM_ABS)
 	{
 
-		ierr = PetscPrintf(PETSC_COMM_WORLD, " SNES Convergence Reason: ||F|| < atol \n"); CHKERRQ(ierr);
+		ierr = PetscPrintf(PETSC_COMM_WORLD, "SNES Convergence Reason : ||F|| < atol \n"); CHKERRQ(ierr);
 	}
 	else if(reason == SNES_CONVERGED_FNORM_RELATIVE)
 	{
-		ierr = PetscPrintf(PETSC_COMM_WORLD, " SNES Convergence Reason: ||F|| < rtol*||F_initial|| \n"); CHKERRQ(ierr);
+		ierr = PetscPrintf(PETSC_COMM_WORLD, "SNES Convergence Reason : ||F|| < rtol*||F_initial|| \n"); CHKERRQ(ierr);
 	}
 	else if(reason == SNES_CONVERGED_SNORM_RELATIVE)
 	{
-		ierr = PetscPrintf(PETSC_COMM_WORLD, " SNES Convergence Reason: Newton computed step size small; || delta x || < stol || x ||\n"); CHKERRQ(ierr);
+		ierr = PetscPrintf(PETSC_COMM_WORLD, "SNES Convergence Reason : Newton computed step size small; || delta x || < stol || x ||\n"); CHKERRQ(ierr);
 	}
 	else if(reason == SNES_CONVERGED_ITS)
 	{
-		ierr = PetscPrintf(PETSC_COMM_WORLD, " SNES Convergence Reason: maximum iterations reached\n"); CHKERRQ(ierr);
+		ierr = PetscPrintf(PETSC_COMM_WORLD, "SNES Convergence Reason : maximum iterations reached\n"); CHKERRQ(ierr);
 	}
 	else if(reason == SNES_CONVERGED_TR_DELTA)
 	{
-		ierr = PetscPrintf(PETSC_COMM_WORLD, " SNES Convergence Reason: SNES_CONVERGED_TR_DELTA\n"); CHKERRQ(ierr);
+		ierr = PetscPrintf(PETSC_COMM_WORLD, "SNES Convergence Reason : SNES_CONVERGED_TR_DELTA\n"); CHKERRQ(ierr);
+	}
+	else if(reason == SNES_CONVERGED_ITERATING)
+	{
+		ierr = PetscPrintf(PETSC_COMM_WORLD, "SNES Convergence Reason : SNES_CONVERGED_ITERATING\n"); CHKERRQ(ierr);
 	}
 
-    // DIVERGENCE
+	// DIVERGENCE
 
 	else if(reason == SNES_DIVERGED_FUNCTION_DOMAIN)
 	{
-		*Convergence = PETSC_FALSE;
-		ierr = PetscPrintf(PETSC_COMM_WORLD, " SNES Divergence Reason: the new x location passed the function is not in the domain of F\n"); CHKERRQ(ierr);
+		ierr = PetscPrintf(PETSC_COMM_WORLD, "SNES Divergence Reason  : the new x location passed the function is not in the domain of F\n"); CHKERRQ(ierr);
 	}
 	else if(reason == SNES_DIVERGED_FUNCTION_COUNT)
 	{
-		*Convergence = PETSC_FALSE;
-		ierr = PetscPrintf(PETSC_COMM_WORLD, " SNES Divergence Reason: too many function evaluations\n"); CHKERRQ(ierr);
+		ierr = PetscPrintf(PETSC_COMM_WORLD, "SNES Divergence Reason  : too many function evaluations\n"); CHKERRQ(ierr);
 	}
 	else if(reason == SNES_DIVERGED_LINEAR_SOLVE)
 	{
-		*Convergence = PETSC_FALSE;
-		ierr = PetscPrintf(PETSC_COMM_WORLD, " SNES Divergence Reason: the linear solve failed\n"); CHKERRQ(ierr);
+		ierr = PetscPrintf(PETSC_COMM_WORLD, "SNES Divergence Reason  : the linear solve failed\n"); CHKERRQ(ierr);
 	}
 	else if(reason == SNES_DIVERGED_FNORM_NAN)
 	{
-		*Convergence = PETSC_FALSE;
-		ierr = PetscPrintf(PETSC_COMM_WORLD, " SNES Divergence Reason: residual norm is NAN\n"); CHKERRQ(ierr);
+		ierr = PetscPrintf(PETSC_COMM_WORLD, "SNES Divergence Reason  : residual norm is NAN\n"); CHKERRQ(ierr);
 	}
 	else if(reason == SNES_DIVERGED_MAX_IT)
 	{
-		*Convergence = PETSC_FALSE;
-		ierr = PetscPrintf(PETSC_COMM_WORLD, " SNES Divergence Reason: maximum iterations reached\n"); CHKERRQ(ierr);
+		ierr = PetscPrintf(PETSC_COMM_WORLD, "SNES Divergence Reason  : maximum iterations reached\n"); CHKERRQ(ierr);
 	}
 	else if(reason == SNES_DIVERGED_LINE_SEARCH)
 	{
-		*Convergence = PETSC_FALSE;
-		ierr = PetscPrintf(PETSC_COMM_WORLD, " SNES Divergence Reason: the line search failed\n"); CHKERRQ(ierr);
+		ierr = PetscPrintf(PETSC_COMM_WORLD, "SNES Divergence Reason  : the line search failed\n"); CHKERRQ(ierr);
 	}
 	else if(reason == SNES_DIVERGED_INNER)
 	{
-		*Convergence = PETSC_FALSE;
-		ierr = PetscPrintf(PETSC_COMM_WORLD, " SNES Divergence Reason: the inner solve failed\n"); CHKERRQ(ierr);
+		ierr = PetscPrintf(PETSC_COMM_WORLD, "SNES Divergence Reason  : the inner solve failed\n"); CHKERRQ(ierr);
 	}
 	else if(reason == SNES_DIVERGED_LOCAL_MIN)
 	{
-		*Convergence = PETSC_FALSE;
-		ierr = PetscPrintf(PETSC_COMM_WORLD, " SNES Divergence Reason: || J^T b || is small, implies converged to local minimum of F\n"); CHKERRQ(ierr);
+		ierr = PetscPrintf(PETSC_COMM_WORLD, "SNES Divergence Reason  : || J^T b || is small, implies converged to local minimum of F\n"); CHKERRQ(ierr);
 	}
 
-	PetscPrintf(PETSC_COMM_WORLD," Number of iterations : %lld\n", (LLD)its);
+	PetscPrintf(PETSC_COMM_WORLD, "Number of iterations    : %lld\n", (LLD)its);
+
+	PetscPrintf(PETSC_COMM_WORLD, "SNES solution time      : %g (sec)\n", t_end - t_beg);
+
+	PetscPrintf(PETSC_COMM_WORLD, "--------------------------------------------------------------------------\n");
 
 	PetscFunctionReturn(0);
 }
@@ -579,7 +486,7 @@ PetscErrorCode SNESCoupledTest(
 
 	if(!it) PetscFunctionReturn(0);
 
-    if(jr->actTemp == PETSC_TRUE)
+    if(jr->ctrl.actTemp)
     {
     	ierr = JacResGetTempRes(jr);                        CHKERRQ(ierr);
     	ierr = JacResGetTempMat(jr);                        CHKERRQ(ierr);
@@ -593,107 +500,6 @@ PetscErrorCode SNESCoupledTest(
 }
 //---------------------------------------------------------------------------
 /*
-#undef __FUNCT__
-#define __FUNCT__ "CheckVelocityError"
-PetscErrorCode CheckVelocityError(UserCtx *user)
-{
-	PetscScalar MaxVel, MinVel;
-
-	PetscErrorCode ierr;
-	PetscFunctionBegin;
-
-	// Error detection
-	ierr = VecMax(user->sol_advect, NULL, &MaxVel);	CHKERRQ(ierr);
-	ierr = VecMin(user->sol_advect, NULL, &MinVel); CHKERRQ(ierr);
-	MaxVel = PetscMax(MaxVel, PetscAbsScalar(MinVel));
-
-	if(isnan(MaxVel))
-	{
-		SETERRQ(PETSC_COMM_SELF, PETSC_ERR_USER, "  *** Emergency stop! Maximum velocity is NaN ***  \n");
-	}
-
-	PetscFunctionReturn(0);
-}
-//---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "SNESBlockStopTest"
-PetscErrorCode SNESBlockStopTest(SNES snes, PetscInt it, PetscReal xnorm,
-	PetscReal gnorm, PetscReal f, SNESConvergedReason *reason, void *cctx)
-{
-	// monitor residual & perform stop test
-
-	Vec         Bx, Bdx;
-	PetscInt    maxit;
-	PetscScalar stol;
-	PetscScalar nrmSolUpVels, nrmSolVels, resVels, tolVels;
-	PetscScalar nrmSolUpPres, nrmSolPres, resPres, tolPres;
-
-	PetscErrorCode ierr;
-	PetscFunctionBegin;
-
-	// following parameters are not currently used (stop warning messages):
-	if(xnorm) xnorm = 0.0;
-	if(gnorm) gnorm = 0.0;
-	if(f)     f     = 0.0;
-
-	// access context
-	NLCtx    *nlctx = (NLCtx*)cctx;
-	BlockMat *bmat  = nlctx->bmat;
-
-	// get relative tolerance & maximum number of iterations
-	ierr = SNESGetTolerances(snes, NULL, NULL, &stol, &maxit, NULL); CHKERRQ(ierr);
-
-	// later may assign different tolerances for velocity and pressure
-	tolVels = stol;
-	tolPres = stol;
-
-	// get norms of solution update
-	ierr = SNESGetSolutionUpdate(snes, &Bdx);               CHKERRQ(ierr);
-	ierr = BlockMatMonolithicToBlock(bmat, Bdx);            CHKERRQ(ierr);
-	ierr = VecNorm(bmat->wv, NORM_INFINITY, &nrmSolUpVels); CHKERRQ(ierr);
-	ierr = VecNorm(bmat->wp, NORM_INFINITY, &nrmSolUpPres); CHKERRQ(ierr);
-
-	// get norms of current solution
-	ierr = SNESGetSolution(snes, &Bx);                      CHKERRQ(ierr);
-	ierr = BlockMatMonolithicToBlock(bmat, Bx);             CHKERRQ(ierr);
-	ierr = VecNorm(bmat->wv, NORM_INFINITY, &nrmSolVels);   CHKERRQ(ierr);
-	ierr = VecNorm(bmat->wp, NORM_INFINITY, &nrmSolPres);   CHKERRQ(ierr);
-
-	// fuses
-	if(nrmSolUpVels == 0.0) nrmSolUpVels = 1.0;
-	if(nrmSolUpPres == 0.0) nrmSolUpPres = 1.0;
-	if(nrmSolVels   == 0.0) nrmSolVels   = nrmSolUpVels;
-	if(nrmSolPres   == 0.0) nrmSolPres   = nrmSolUpPres;
-
-	// compute residuals
-	resVels = nrmSolUpVels/nrmSolVels;
-	resPres = nrmSolUpPres/nrmSolPres;
-
-	// print residuals and tolerances
-	ierr = PetscPrintf(PETSC_COMM_WORLD,"#========================================================================================================/\n"); CHKERRQ(ierr);
-	ierr = PetscPrintf(PETSC_COMM_WORLD,"# SNES Iteration # /  vel.  res.:         vel.  tol.:         /  pres. res.:         pres. tol.:         /\n"); CHKERRQ(ierr);
-	ierr = PetscPrintf(PETSC_COMM_WORLD,"#  %3D             /  %14.12e  %14.12e  /  %14.12e  %14.12e  /\n", it, resVels, tolVels, resPres, tolPres);     CHKERRQ(ierr);
-	ierr = PetscPrintf(PETSC_COMM_WORLD,"#========================================================================================================/\n"); CHKERRQ(ierr);
-
-	// check convergence
-	if(resVels <= tolVels && resPres <= tolPres)
-	{
-//		ierr = PetscPrintf(PETSC_COMM_WORLD, "Nonlinear solution converged\n"); CHKERRQ(ierr);
-		*reason = SNES_CONVERGED_SNORM_RELATIVE;
-	}
-	else if(it+1 == maxit)
-	{
-//		ierr = PetscPrintf(PETSC_COMM_WORLD, "Nonlinear solution reached maximum number iterations\n"); CHKERRQ(ierr);
-		*reason = SNES_DIVERGED_MAX_IT;
-	}
-	else
-	{
-		// continue iterations
-		*reason = SNES_CONVERGED_ITERATING;
-	}
-
-	PetscFunctionReturn(0);
-}
 
 	//====================================================================
 
@@ -749,149 +555,4 @@ PetscErrorCode PostCheck(SNESLineSearch,Vec,Vec,Vec,PetscBool*,PetscBool*,void*)
 
 	//====================================================================
 */
-//---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "KSPWinStopTest"
-PetscErrorCode KSPWinStopTest(KSP ksp, PetscInt thisit, PetscScalar thisnorm, KSPConvergedReason *reason, void *mctx)
-{
-	PetscInt          i=0, inow=0, maxits;
-	PetscScalar       rtol, abstol, dtol, ttol;
-	WinStopCtx       *winstop = (WinStopCtx*) mctx;
-	PetscBool         winnorm =  PETSC_FALSE;
-
-	PetscErrorCode ierr;
-	PetscFunctionBegin;
-
-	// initialise converged reason
-	*reason = KSP_CONVERGED_ITERATING;
-
-	// only evaluate the norm in the second iteration
-	if(!thisit)
-	{
-		return(0);
-	}
-
-	// get tolerances
-	ierr = KSPGetTolerances(ksp, &rtol, &abstol, &dtol, &maxits); CHKERRQ(ierr);
-
-	// store current and last norm
-	i = thisit % 2;
-	winstop->rnorms[i] = thisnorm;
-
-	// set initial norm (mean of frist and second residual) and epsilon
-	if(thisit == 1)
-	{
-		winstop->rnorm_init = 0.5 * (winstop->rnorms[0] + winstop->rnorms[1]);
-		winstop->eps        = winstop->epsfrac * winstop->rnorm_init;
-		// Maybe, epsilon should be independent of the initial residual and a rather small number of the order 1e-4
-		// winstop->eps        = winstop->epsfrac;
-	}
-
-	// compute the total tolerance
-	ttol = PetscMax(rtol * winstop->rnorm_init, abstol);
-
-	// compute residual difference and store it in the running window
-	inow = thisit % (winstop->winwidth-1);
-	if(inow == 0) inow = winstop->winwidth-1;
-	else          inow = inow-1;
-	winstop->rnormdiffs[inow] = PetscAbsScalar(winstop->rnorms[1]- winstop->rnorms[0]);
-
-	// compute the criterion as soon as we have enough iterations
-	if(thisit >= winstop->winwidth)
-	{
-		// winstop->diffnorm = getStdv(winstop->rnormdiffs, winstop->winwidth-1);
-		winstop->diffnorm = getVar(winstop->rnormdiffs, winstop->winwidth-1);
-		winnorm  = PETSC_TRUE;
-	}
-	else
-	{
-		winstop->diffnorm = 0.0;
-		winnorm  = PETSC_FALSE;
-	}
-
-	//====================
-	// --- Check norms ---
-	//====================
-
-	// problems?
-	if(PetscIsInfOrNanScalar(thisnorm))
-	{
-		PetscInfo(ksp,"Linear solver has created a not a number (NaN) as the residual norm, declaring divergence \n");
-		*reason = KSP_DIVERGED_NANORINF;
-	}
-	else if(thisnorm <= ttol) // ttol
-	{
-		if(thisnorm < abstol) // atol
-		{
-			PetscInfo3(ksp,"Linear solver has converged. Residual norm %14.12e is less than absolute tolerance %14.12e at iteration %D\n",
-				thisnorm, abstol, thisit);
-			*reason = KSP_CONVERGED_ATOL;
-		}
-		else // rtol
-		{
-			if(winstop->rnorm_init)
-			{
-				PetscInfo4(ksp,"Linear solver has converged. Residual norm %14.12e is less than relative tolerance %14.12e times initial residual norm %14.12e at iteration %D\n",
-					thisnorm, rtol, winstop->rnorm_init, thisit);
-			}
-			else
-			{
-				PetscInfo4(ksp,"Linear solver has converged. Residual norm %14.12e is less than relative tolerance %14.12e times initial right hand side norm %14.12e at iteration %D\n",
-					thisnorm, rtol, winstop->rnorm_init, thisit);
-			}
-			*reason = KSP_CONVERGED_RTOL;
-		}
-	}
-	else if(winnorm == PETSC_TRUE && (winstop->diffnorm < winstop->eps)) // difftol
-	{
-		PetscInfo4(ksp,"Linear solver has converged. The standard deviation of the residual differences within the running window %14.12e is less than %g % of the initial right hand side norm %14.12e at iteration %D\n",
-				(double)winstop->diffnorm, (double)winstop->eps, (double)winstop->rnorm_init, thisit);
-		*reason = KSP_CONVERGED_ITS;
-	}
-	else if(thisit == maxits+1) // maxits
-	{
-		PetscInfo2(ksp,"Linear solver has converged. The maximum number of iterations %D has been reached at iteration %D\n",
-			maxits, thisit);
-		*reason = KSP_CONVERGED_ITS;
-	}
-	else if(thisnorm >= (dtol * winstop->rnorm_init)) // divergence
-	{
-		PetscInfo3(ksp,"Linear solver is diverging. Initial right hand size norm %14.12e, current residual norm %14.12e at iteration %D\n",
-			(double)winstop->rnorm_init,(double)thisnorm,thisit);
-		*reason = KSP_DIVERGED_DTOL;
-	}
-
-	return(0);
-}
-//---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "KSPWinStopMonitor"
-PetscErrorCode KSPWinStopMonitor(KSP ksp, PetscInt thisit, PetscScalar thisnorm, void *mctx)
-{
-	const char *prefix;
-	WinStopCtx *winstop = (WinStopCtx*) mctx;
-
-	PetscErrorCode ierr;
-	PetscFunctionBegin;
-
-	ierr = KSPGetOptionsPrefix(ksp, &prefix); CHKERRQ(ierr);
-
-	// Output to screen
-	if(thisit == 0)
-	{
-		ierr = PetscPrintf(PETSC_COMM_WORLD,"  Residual norms for %sksp solve.\n", prefix); CHKERRQ(ierr);
-		ierr = PetscPrintf(PETSC_COMM_WORLD,"  KSP_it       KSP_res      Var(dKSP_res(1..%0.2d))        Eps\n",winstop->winwidth); CHKERRQ(ierr);
-	}
-	else if(thisit < winstop->winwidth)
-	{
-		ierr = PetscPrintf(PETSC_COMM_WORLD, "   %0.3d   %14.12e         ---                 ---\n",thisit, thisnorm); CHKERRQ(ierr);
-	}
-	else
-	{
-		ierr = PetscPrintf(PETSC_COMM_WORLD, "   %0.3d   %14.12e  %14.12e  %14.12e  \n",thisit, thisnorm, winstop->diffnorm, winstop->eps); CHKERRQ(ierr);
-	}
-
-
-	return(0);
-}
 //---------------------------------------------------------------------------

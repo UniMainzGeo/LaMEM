@@ -1,0 +1,218 @@
+#===============================================================================
+# Scaling
+#===============================================================================
+
+	units = geo
+
+	unit_temperature = 1.0
+	unit_length      = 1e3
+	unit_viscosity   = 1e20
+	unit_stress      = 1e8
+
+#===============================================================================
+# Time stepping parameters
+#===============================================================================
+
+	dt        = 1.5e-3 # time step
+	dt_min    = 1e-5   # minimum time step (declare divergence if lower value is attempted)
+	dt_max    = 1e-2   # maximum time step
+	inc_dt    = 0.1    # time step increment per time step (fraction of unit)
+	CFL       = 0.1    # CFL (Courant-Friedrichs-Lewy) criterion
+	CFLMAX    = 0.1    # CFL criterion for elasticity
+	nstep_max = 8      # maximum allowed number of steps (lower bound: time_end/dt_max)
+	nstep_out = 1      # save output every n steps
+
+#===============================================================================
+# Grid & discretization parameters
+#===============================================================================
+
+# Number of cells for all segments
+
+	nel_x = 64
+	nel_y = 2
+	nel_z = 16
+
+# Coordinates of all segments (including start and end points)
+
+	coord_x = -20.0  20.0
+	coord_y =  0.0   0.625
+	coord_z =  0.0   15.0
+
+#===============================================================================
+# Free surface
+#===============================================================================
+
+# default
+
+#===============================================================================
+# Boundary conditions
+#===============================================================================
+
+# Background strain rate parameters
+
+	exx_num_periods  = 1      # number intervals of constant strain rate (x-axis)
+	exx_strain_rates = -1e-15 # strain rates for each interval
+
+#===============================================================================
+# Solution parameters & controls
+#===============================================================================
+
+	gravity        = 0.0 0.0 -10.0  # gravity vector
+	FSSA           = 1.0            # free surface stabilization parameter [0 - 1]
+	act_p_shift    = 0              # pressure shift activation flag (zero pressure in the top cell layer)
+	init_guess     = 1              # initial guess flag
+	p_lim_plast    = 0              # limit pressure at first iteration for plasticity
+	eta_min        = 1e16           # viscosity upper bound
+	eta_max        = 1e27           # viscosity lower limit
+	eta_ref        = 1e20           # reference viscosity (initial guess)
+	min_cohes      = 1e6            # cohesion lower bound
+	min_fric       = 5.0            # friction lower bound
+	tau_ult        = 1e9            # ultimate yield stress
+	quasi_harm_avg = 1              # quasi-harmonic averaging regularization flag (plasticity)
+
+#===============================================================================
+# Model setup & advection
+#===============================================================================
+
+	msetup         = geom              # setup type
+	nmark_x        = 5                 # markers per cell in x-direction
+	nmark_y        = 5                 # ...                 y-direction
+	nmark_z        = 5                 # ...                 z-direction
+	rand_noise     = 1                 # random noise flag
+	bg_phase       = 1                 # background phase ID
+
+# Geometric primtives:
+
+	<LayerStart>
+		phase  = 2     # Air layer
+		top    = 15.0
+		bottom = 10.0
+	<LayerEnd>
+
+	<BoxStart>        # Weak inclusion
+		phase  = 0
+		# box bound coordinates: left, right, front, back, bottom, top
+		bounds = -1.0 1.0   0.0 2.0   0.0 2.0
+	<BoxEnd>
+
+#===============================================================================
+# Output
+#===============================================================================
+
+# Grid output options (output is always active)
+
+	out_file_name       = test_vp_quasiharmonic # output file name
+	out_pvd             = 1                     # activate writing .pvd file
+	out_phase           = 1
+	out_density         = 1
+	out_visc_total      = 1
+	out_velocity        = 1
+	out_pressure        = 1
+	out_dev_stress      = 1
+	out_j2_dev_stress   = 1
+	out_strain_rate     = 1
+	out_j2_strain_rate  = 1
+	out_plast_strain    = 1
+	out_plast_dissip    = 1
+	out_moment_res      = 1
+	out_cont_res        = 1
+
+# AVD phase viewer output options (requires activation)
+
+	out_avd     = 1 # activate AVD phase output
+	out_avd_pvd = 1 # activate writing .pvd file
+	out_avd_ref = 1 # AVD grid refinement factor
+
+#===============================================================================
+# Material phase parameters
+#===============================================================================
+
+	# Strain softening parameters
+	<SofteningStart>
+		ID   = 0
+		A    = 0.25
+		APS1 = 0.000000001
+		APS2 = 0.001
+	<SofteningEnd>
+
+
+	# Inclusion
+	<MaterialStart>
+		ID         = 0     # phase id  [-]
+		rho        = 2700  # density - if dimensional [kg/m3]
+		eta        = 1e21  # Viscosity - dimensional [Pa.s]
+		ch         =  50e6
+		fr         =  30
+		frSoftID   =  0    # softening ID
+		chSoftID   =  0
+	<MaterialEnd>
+
+
+	# Matrix
+	<MaterialStart>
+		ID        =  1    # phase id  [-]
+		rho       =  2700 # density - if dimensional [kg/m3]
+		eta       =  1e24 # Viscosity - dimensional [Pa.s]
+		ch        =  50e6
+		fr        =  30
+		frSoftID  =  0     # softening ID
+		chSoftID  =  0
+	<MaterialEnd>
+
+	# sticky-air layer
+	<MaterialStart>
+		ID         = 2      # phase id  [-]
+		rho0       = 100    # density - if dimensional [kg/m3]
+		eta        = 1e21   # Viscosity - dimensional [Pa.s]
+		ch         =  50e6
+		fr         =  30
+		frSoftID   =  0     # softening ID
+		chSoftID   =  0
+	<MaterialEnd>
+
+#===============================================================================
+# PETSc options
+#===============================================================================
+
+<PetscOptionsStart>
+
+	# SNES (nonlinear) options
+	-snes_ksp_ew                          # Eisenstat Walker algorithm
+	-snes_ksp_ew_rtolmax  1e-2
+	-snes_ksp_ew_rtol0 1e-3
+	-snes_monitor
+	-snes_atol 1e-7
+	-snes_rtol 1e-8
+	-snes_stol 1e-16
+	-snes_max_it 200
+	-snes_max_funcs 500000
+	-snes_max_linear_solve_fail 10000
+
+	# Newton/picard options
+	-snes_PicardSwitchToNewton_rtol 3e-1   # relative tolerance to switch to Newton (1e-2)
+	-snes_NewtonSwitchToPicard_it  	20     # number of Newton iterations after which we switch back to Picard
+	-snes_NewtonSwitchToPicard_rtol 1.1    # relative tolerance compared to first iteration step
+
+	# Linesearch options
+	-snes_linesearch_type l2     # Linesearch type (shell basic l2 bt cp) [l2 seems to work better with VEP]
+	-snes_linesearch_maxstep 1.0 # very important to prevent the code from "blowing up"
+
+	# Jacobian solver
+	-js_ksp_type gmres
+	-js_ksp_max_it 50
+	-js_ksp_converged_reason
+	-js_ksp_rtol 1e-10
+	-js_ksp_atol 1e-14
+
+	# Direct solver
+	-pcmat_type mono
+	-pcmat_pgamma 1e3
+	-jp_type user
+	-jp_pc_type lu
+	-jp_pc_factor_mat_solver_package mumps
+
+	-objects_dump
+
+<PetscOptionsEnd>
+
+#===============================================================================

@@ -78,7 +78,6 @@
 #include "LaMEM.h"
 #include "tools.h"
 #include "fdstag.h"
-#include "solVar.h"
 #include "scaling.h"
 #include "tssolve.h"
 #include "bc.h"
@@ -95,13 +94,11 @@
 #include "advect.h"
 #include "marker.h"
 #include "paraViewOutMark.h"
-#include "input.h"
-#include "matProps.h"
 #include "objFunct.h"
-#include "AVDView.h"
-#include "break.h"
 #include "parsing.h"
 #include "adjoint.h"
+#include "phase.h"
+#include "constEq.h"
 //---------------------------------------------------------------------------
 static char help[] = "Adjoint inversion computation .\n\n";
 //--------------------------------------------------------------------------
@@ -126,16 +123,16 @@ int main(int argc, char **argv)
 	PetscInt        i;
 
 	// INITIALIZE
-	IOparam.use = 0;   		// 0 = no inversion ; 1 = Tobis inversion ; 2 = only compute adjoint gradients ; 3 = 'full' adjoint inversion with TAO ; 4 = assume this as a forward simulation and save the solution
+	IOparam.use = 2;   		// 0 = no inversion ; 1 = Tobis inversion ; 2 = only compute adjoint gradients ; 3 = 'full' adjoint inversion with TAO ; 4 = assume this as a forward simulation and save the solution
 	IOparam.Tao = 0;   		// Use TAO?
-	IOparam.mdN = 2;   		// Number of parameters
+	IOparam.mdN = 1;   		// Number of parameters
 	IOparam.mdI = 1;   		// Number of indices
 	IOparam.Ab  = 0;   		// Apply bounds?
 	IOparam.Ap  = 1;   		// 1 = several indices ; 2 = the whole domain ; 3 = surface
 	IOparam.reg = 0;   		// 1 = tikhonov regularization of the cost function (TN) 2 = total variation regularization (TV)
 	IOparam.Adv = 0;   		// 1 = advect the point
-	IOparam.tol = 1e-15;    // tolerance for F/Fini after which code has converged
-	IOparam.factor1 = 1e-17; 	// factor to multiply the gradients (should be set such that the highest gradient scales around 1/100 of its parameter ; only used without tao)
+	IOparam.tol = 1e-3;    // tolerance for F/Fini after which code has converged
+	IOparam.factor1 = 1e2; 	// factor to multiply the gradients (should be set such that the highest gradient scales around 1/100 of its parameter ; only used without tao)
 	IOparam.factor2 = 5;  // factor that increases the convergence velocity (this value is added to itself after every succesful gradient descent ; only used without tao)
 	IOparam.maxfactor2 = 500; // limit on the factor (only used without tao)
 
@@ -162,74 +159,103 @@ int main(int argc, char **argv)
 	PetscScalar 	length,viscosity,temperature,stress,time,force,acceleration,mass;
 	
 	/// RAYLEIGH  Boris'Repro
-	scal.utype  = _NONE_;//_GEO_;   // _NONE_ or _SI_ or _GEO_
+	scal.utype  = _GEO_;//_GEO_;   // _NONE_ or _SI_ or _GEO_
 
-	length      = 1;
-	viscosity   = 1;
-	temperature = 1;
-	stress      = 1;
+	length      = 1;    // if geo: length= unit_length/1e3
+	viscosity   = 1e18;
+	temperature = 600;
+	stress      = 1e12;
 
-	time         = viscosity/stress;
-	force        = stress*length*length;
-	acceleration = length/time/time;
-	mass         = force/acceleration;
-
-	scal.inp_mass        = mass;
-	scal.inp_time        = time;
-	scal.inp_length      = length;
-	scal.inp_temperature = temperature;
-	scal.inp_force       = force;
-
-	ierr = ScalingCreate(&scal);
-	
 	// PHASES
 	phsar[0] = 1;
-	phsar[1] = 2;
 	IOparam.phs = phsar;
 
 	// X-COORDINATE
-	Ax[0] = 7.69	/scal.length;    // 7.69
+	Ax[0] = 15	/length;    // 7.69
+	// Ax[1] = 20	/scal.length;    // 7.69
+	// Ax[2] = 30	/scal.length;    // 7.69
+	// Ax[3] = 40	/scal.length;    // 7.69
+	// Ax[4] = 50	/scal.length;    // 7.69
+	// Ax[5] = 60	/scal.length;    // 7.69
+	// Ax[6] = 70	/scal.length;    // 7.69
 	IOparam.Ax = Ax;
 
 	// Y-COORDINATE
-	Ay[0] = 0		/scal.length;
+	Ay[0] = 15		/length;
+	// Ay[1] = 5		/scal.length;
+	// Ay[2] = 5		/scal.length;
+	// Ay[3] = 5		/scal.length;
+	// Ay[4] = 5		/scal.length;
+	// Ay[5] = 5		/scal.length;
+	// Ay[6] = 5		/scal.length;
 	IOparam.Ay = Ay;
 
 	// Z-COORDINATE
-	Az[0] = 1.19	/scal.length;   // 1.2099
+	Az[0] = 0	/length;   // 1.2099
+	// Az[1] = -6.4	/scal.length;   // 1.2099
+	// Az[2] = -6.4	/scal.length;   // 1.2099
+	// Az[3] = -6.4	/scal.length;   // 1.2099
+	// Az[4] = -6.4	/scal.length;   // 1.2099
+	// Az[5] = -6.4	/scal.length;   // 1.2099
+	// Az[6] = -6.4	/scal.length;   // 1.2099
 	IOparam.Az = Az;
 
 	// VELOCITY COMPONENT
 	Av[0] = 3;
+	// Av[1] = 3;
+	// Av[2] = 3;
+	// Av[3] = 3;
+	// Av[4] = 3;
+	// Av[5] = 3;
+	// Av[6] = 3;
 	IOparam.Av = Av;
 
 	// PARAMETER TYPES
-	typar[0] = _ETA0_;
-	typar[1] = _ETA0_;
+	typar[0] = _RHO0_;
 	IOparam.typ = typar;
 
 	// PARAMETER VALUES (only taken into account if IOparam.use = 3)
 	VecGetArray(P,&Par);
-	Par[0] = 1e10;    // 1 (initial solution)
-	Par[1] = 1e8;        // 1 (initial solution)
+	Par[0] = 0.15;    // 1 (initial solution)
+	Par[1] = 0.15;        // 1 (initial solution)
+	/*Par[2] = 2500;    // 1 (initial solution)
+	Par[3] = 0.5;        // 1 (initial solution)
+	Par[4] = 4;    // 1 (initial solution)
+	Par[5] = 4;        // 1 (initial solution)
+	Par[6] = 4;    // 1 (initial solution)
+	Par[7] = 4;        // 1 (initial solution)
+	Par[8] = 4;    // 1 (initial solution)*/
 	VecRestoreArray(P,&Par);
 
 	// UPPER BOUND
 	VecGetArray(Ub,&Ubar);
-	Ubar[0] = 5;
-	Ubar[1] = 5;
+	Ubar[0] = 1;
+	Ubar[1] = 1;
+	/*Ubar[2] = 1;
+	Ubar[3] = 1;
+	Ubar[4] = 5;
+	Ubar[5] = 5;
+	Ubar[6] = 5;
+	Ubar[7] = 5;
+	Ubar[8] = 5;*/
 	VecRestoreArray(Ub,&Ubar);
 
 	// LOWER BOUND
 	VecGetArray(Lb,&Lbar);
-	Lbar[0] = 0;
-	Lbar[1] = 0;
+	Lbar[0] = 0.1;
+	Lbar[1] = 0.1;
+	/*Lbar[2] = 1000;
+	Lbar[3] = 0;
+	Lbar[4] = 0;
+	Lbar[5] = 0;
+	Lbar[6] = 0;
+	Lbar[7] = 0;
+	Lbar[8] = 0;*/
 	VecRestoreArray(Lb,&Lbar);
 
 	// INITIALIZE GRADIENTS
 	VecGetArray(grad,&gradar);
 	gradar[0] = 0;
-	gradar[1] = 0;
 	IOparam.grd = gradar;
 	VecRestoreArray(grad,&gradar);
 
@@ -248,7 +274,7 @@ int main(int argc, char **argv)
  		VecCopy(P,IOparam.P);
 
  		// call LaMEM main library function
- 		ierr = LaMEMLib(&IOparam); CHKERRQ(ierr);
+ 		ierr = LaMEMLibMain(&IOparam); CHKERRQ(ierr);
  	}
  	// compute 'full' adjoint inversion
  	else if(IOparam.use == 3)
@@ -278,8 +304,8 @@ int main(int argc, char **argv)
  	 		// 2. Set up Tao
  	 	 	ierr = TaoSetObjectiveAndGradientRoutine(tao, AdjointOptimisationTAO, &IOparam);	 	CHKERRQ(ierr);
  	 	 	ierr = TaoSetInitialVector(tao,P);	 									CHKERRQ(ierr);
- 	 	 	// ierr = TaoSetTolerances(tao,1e-30,1e-30,1e-30,1e-30,1e-30);	CHKERRQ(ierr);
- 	 	 	ierr = TaoSetFunctionLowerBound(tao,0.0001);CHKERRQ(ierr);
+ 	 	 	ierr = TaoSetTolerances(tao,1e-30,1e-30,1e-30);	CHKERRQ(ierr);
+ 	 	 	ierr = TaoSetFunctionLowerBound(tao,1e-5);CHKERRQ(ierr);
  	 	 	ierr = TaoSetFromOptions(tao);	 										CHKERRQ(ierr);
 
  	 	 	// 3. Solve Tao & view result
@@ -324,7 +350,7 @@ int main(int argc, char **argv)
  	else if(IOparam.use == 4)
  	{
  		// call LaMEM main library function
- 		ierr = LaMEMLib(&IOparam); CHKERRQ(ierr);
+ 		ierr = LaMEMLibMain(&IOparam); CHKERRQ(ierr);
 
  		// Save output
  		PetscViewer     viewer;
@@ -392,7 +418,7 @@ PetscErrorCode AdjointOptimisation(Vec P, PetscScalar F, Vec grad, void *ctx)
 
 	// Initialize parameters
 	a = -1.0;
-	b = 1.0;   // initial value for factor2
+	b = 1;   // initial value for factor2
 
 	// Initialize cost functions
 	F = 1e100;
@@ -407,7 +433,7 @@ PetscErrorCode AdjointOptimisation(Vec P, PetscScalar F, Vec grad, void *ctx)
 		LScount = 1;
 
 		// call LaMEM main library function
-		ierr = LaMEMLib(IOparam); CHKERRQ(ierr);
+		ierr = LaMEMLibMain(IOparam); CHKERRQ(ierr);
 
 		// Save intial cost function & create initial Hessian
 		if(IOparam->count==1)
@@ -453,7 +479,7 @@ PetscErrorCode AdjointOptimisation(Vec P, PetscScalar F, Vec grad, void *ctx)
 			VecCopy(P,IOparam->P);
 
 			// call LaMEM main library function
-			ierr = LaMEMLib(IOparam); CHKERRQ(ierr);
+			ierr = LaMEMLibMain(IOparam); CHKERRQ(ierr);
 
 			F = IOparam->mfit;
 
@@ -744,7 +770,7 @@ PetscErrorCode AdjointOptimisationTAO(Tao tao, Vec P, PetscReal *F, Vec grad, vo
 	VecCopy(P,IOparam->P);
 
 	// call LaMEM main library function
-	ierr = LaMEMLib(IOparam); CHKERRQ(ierr);
+	ierr = LaMEMLibMain(IOparam); CHKERRQ(ierr);
 
 	// restore parameter values
 	VecDuplicate(IOparam->P,&P);

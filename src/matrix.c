@@ -43,14 +43,13 @@
 //.....................   PRECONDITIONING MATRICES   ........................
 //---------------------------------------------------------------------------
 #include "LaMEM.h"
-#include "fdstag.h"
-#include "solVar.h"
-#include "scaling.h"
+#include "matrix.h"
 #include "tssolve.h"
+#include "fdstag.h"
 #include "bc.h"
 #include "JacRes.h"
-#include "matrix.h"
 #include "tools.h"
+
 //---------------------------------------------------------------------------
 // * pressure Schur complement preconditioners
 // * matrix-free preconditioner action
@@ -196,31 +195,33 @@ PetscErrorCode PMatSetFromOptions(PMat pm)
 {
 	PetscBool   flg;
 	PetscScalar pgamma;
-	char        pname[MAX_NAME_LEN];
+	char        pname[_STR_LEN_];
 
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
 
+	PetscPrintf(PETSC_COMM_WORLD, "Preconditioner parameters: \n");
+
 	// set matrix type
-	ierr = PetscOptionsGetString(NULL, NULL,"-pcmat_type", pname, MAX_NAME_LEN, &flg); CHKERRQ(ierr);
+	ierr = PetscOptionsGetString(NULL, NULL,"-pcmat_type", pname, _STR_LEN_, &flg); CHKERRQ(ierr);
 
 	if(flg == PETSC_TRUE)
 	{
 		if(!strcmp(pname, "mono"))
 		{
-			PetscPrintf(PETSC_COMM_WORLD, " Preconditioner matrix type     : monolithic\n");
+			PetscPrintf(PETSC_COMM_WORLD, "   Matrix type                   : monolithic\n");
 			pm->type = _MONOLITHIC_;
 		}
 		else if(!strcmp(pname, "block"))
 		{
-			PetscPrintf(PETSC_COMM_WORLD, " Preconditioner matrix type     : block\n");
+			PetscPrintf(PETSC_COMM_WORLD, "   Matrix type                   : block\n");
 			pm->type = _BLOCK_;
 		}
-		else SETERRQ1(PETSC_COMM_SELF, PETSC_ERR_USER,"Incorrect matrix storage format: %s", pname);
+		else SETERRQ1(PETSC_COMM_WORLD, PETSC_ERR_USER,"Incorrect matrix storage format: %s", pname);
 	}
 	else
 	{
-		PetscPrintf(PETSC_COMM_WORLD, " Preconditioner matrix type     : monolithic\n");
+		PetscPrintf(PETSC_COMM_WORLD, "   Matrix type                   : monolithic\n");
 		pm->type = _MONOLITHIC_;
 	}
 
@@ -233,7 +234,7 @@ PetscErrorCode PMatSetFromOptions(PMat pm)
 	{
 		if(pgamma < 1.0)
 		{
-			SETERRQ(PETSC_COMM_SELF, PETSC_ERR_USER,"Penalty parameter [-pcmat_pgamma] is less than unit");
+			SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER,"Penalty parameter [-pcmat_pgamma] is less than unit");
 		}
 
 		pm->pgamma = pgamma;
@@ -241,7 +242,7 @@ PetscErrorCode PMatSetFromOptions(PMat pm)
 
 	if(pm->pgamma > 1.0)
 	{
-		PetscPrintf(PETSC_COMM_WORLD, " Penalty parameter (pgamma)     : %e\n", pm->pgamma);
+		PetscPrintf(PETSC_COMM_WORLD, "   Penalty parameter (pgamma)    : %e\n", pm->pgamma);
 	}
 
 	// set cell stiffness function
@@ -249,7 +250,7 @@ PetscErrorCode PMatSetFromOptions(PMat pm)
 
 	if(flg == PETSC_TRUE)
 	{
-		PetscPrintf(PETSC_COMM_WORLD, " Excluding deviatoric projection from preconditioner\n");
+		PetscPrintf(PETSC_COMM_WORLD, "   Exclude deviatoric projection @ \n");
 		pm->getStiffMat = getStiffMatClean;
 	}
 	else
@@ -550,6 +551,7 @@ PetscErrorCode PMatMonoAssemble(PMat pm)
 	PMatMono    *P;
 	PetscInt    idx[7];
 	PetscScalar v[49];
+	PetscInt    mcx, mcy, mcz;
 	PetscInt    iter, i, j, k, nx, ny, nz, sx, sy, sz;
 	PetscScalar eta, rho, IKdt, diag, pgamma, pt, dt, fssa, *grav;
 	PetscScalar dx, dy, dz, bdx, fdx, bdy, fdy, bdz, fdz;
@@ -569,12 +571,17 @@ PetscErrorCode PMatMonoAssemble(PMat pm)
 	P      = (PMatMono*)pm->data;
 
 	// get density gradient stabilization parameters
-	dt   = jr->ts.dt; // time step
-	fssa = jr->FSSA;  // density gradient penalty parameter
-    grav = jr->grav;  // gravity acceleration
+	dt   = jr->ts->dt; // time step
+	fssa = jr->ctrl.FSSA;   // density gradient penalty parameter
+    grav = jr->ctrl.grav;   // gravity acceleration
 
 	// get penalty parameter
 	pgamma = pm->pgamma;
+
+	// initialize index bounds
+	mcx = fs->dsx.tcels - 1;
+	mcy = fs->dsy.tcels - 1;
+	mcz = fs->dsz.tcels - 1;
 
 	// clear matrix coefficients
 	ierr = MatZeroEntries(P->A); CHKERRQ(ierr);
@@ -626,8 +633,16 @@ PetscErrorCode PMatMonoAssemble(PMat pm)
 		// get pressure diagonal element (with penalty)
 		diag = -IKdt + pt;
 
+		// set pressure two-point constraints
+		SET_PRES_TPC(bcp, i-1, j,   k,   i, 0,   cf[0])
+		SET_PRES_TPC(bcp, i+1, j,   k,   i, mcx, cf[1])
+		SET_PRES_TPC(bcp, i,   j-1, k,   j, 0,   cf[2])
+		SET_PRES_TPC(bcp, i,   j+1, k,   j, mcy, cf[3])
+		SET_PRES_TPC(bcp, i,   j,   k-1, k, 0,   cf[4])
+		SET_PRES_TPC(bcp, i,   j,   k+1, k, mcz, cf[5])
+
 		// compute local matrix
-		pm->getStiffMat(eta, diag, v, dx, dy, dz, fdx, fdy, fdz, bdx, bdy, bdz);
+		pm->getStiffMat(eta, diag, v, cf, dx, dy, dz, fdx, fdy, fdz, bdx, bdy, bdz);
 
 		// compute density gradient stabilization terms
 		addDensGradStabil(fssa, v, rho, dt, grav, fdx, fdy, fdz, bdx, bdy, bdz);
@@ -1149,6 +1164,7 @@ PetscErrorCode PMatBlockAssemble(PMat pm)
 	PMatBlock   *P;
 	PetscInt    idx[7];
 	PetscScalar v[49], a[36], d[6], g[6];
+	PetscInt    mcx, mcy, mcz;
 	PetscInt    iter, i, j, k, nx, ny, nz, sx, sy, sz;
 	PetscScalar eta, rho, IKdt, diag, pgamma, dt, fssa, *grav;
 	PetscScalar dx, dy, dz, bdx, fdx, bdy, fdy, bdz, fdz;
@@ -1167,12 +1183,17 @@ PetscErrorCode PMatBlockAssemble(PMat pm)
 	P   = (PMatBlock*)pm->data;
 
 	// get density gradient stabilization parameters
-	dt   = jr->ts.dt; // time step
-	fssa = jr->FSSA;  // density gradient penalty parameter
-    grav = jr->grav;  // gravity acceleration
+	dt   = jr->ts->dt; // time step
+	fssa = jr->ctrl.FSSA;   // density gradient penalty parameter
+    grav = jr->ctrl.grav;   // gravity acceleration
 
 	// get penalty parameter
 	pgamma = pm->pgamma;
+
+	// initialize index bounds
+	mcx = fs->dsx.tcels - 1;
+	mcy = fs->dsy.tcels - 1;
+	mcz = fs->dsz.tcels - 1;
 
 	// clear matrix coefficients
 	ierr = MatZeroEntries(P->Avv); CHKERRQ(ierr);
@@ -1220,8 +1241,16 @@ PetscErrorCode PMatBlockAssemble(PMat pm)
 		// get pressure diagonal element (with penalty)
 		diag = -IKdt -1.0/(pgamma*eta);
 
+		// set pressure two-point constraints
+		SET_PRES_TPC(bcp, i-1, j,   k,   i, 0,   cf[0])
+		SET_PRES_TPC(bcp, i+1, j,   k,   i, mcx, cf[1])
+		SET_PRES_TPC(bcp, i,   j-1, k,   j, 0,   cf[2])
+		SET_PRES_TPC(bcp, i,   j+1, k,   j, mcy, cf[3])
+		SET_PRES_TPC(bcp, i,   j,   k-1, k, 0,   cf[4])
+		SET_PRES_TPC(bcp, i,   j,   k+1, k, mcz, cf[5])
+
 		// compute local matrix
-		pm->getStiffMat(eta, diag, v, dx, dy, dz, fdx, fdy, fdz, bdx, bdy, bdz);
+		pm->getStiffMat(eta, diag, v, cf, dx, dy, dz, fdx, fdy, fdz, bdx, bdy, bdz);
 
 		// compute density gradient stabilization terms
 		addDensGradStabil(fssa, v, rho, dt, grav, fdx, fdy, fdz, bdx, bdy, bdz);
@@ -1555,10 +1584,11 @@ PetscErrorCode PMatBlockDestroy(PMat pm)
 // SERVICE FUNCTIONS
 //---------------------------------------------------------------------------
 void getStiffMatDevProj(
-	PetscScalar eta, PetscScalar diag,PetscScalar *v,
-	PetscScalar dx,  PetscScalar dy,  PetscScalar dz,
-	PetscScalar fdx, PetscScalar fdy, PetscScalar fdz,
-	PetscScalar bdx, PetscScalar bdy, PetscScalar bdz)
+	PetscScalar eta, PetscScalar diag,
+	PetscScalar *v,  PetscScalar *cf,
+	PetscScalar dx,  PetscScalar dy,   PetscScalar dz,
+	PetscScalar fdx, PetscScalar fdy,  PetscScalar fdz,
+	PetscScalar bdx, PetscScalar bdy,  PetscScalar bdz)
 {
 	// compute cell stiffness matrix with deviatoric projection
 
@@ -1566,32 +1596,33 @@ void getStiffMatDevProj(
 	PetscScalar E23 = 2.0*eta/3.0;
 
 	//       vx_(i)               vx_(i+1)             vy_(j)               vy_(j+1)             vz_(k)               vz_(k+1)             p
-	v[0]  =  E43/dx/bdx; v[1]  = -E43/dx/bdx; v[2]  = -E23/dy/bdx; v[3]  =  E23/dy/bdx; v[4]  = -E23/dz/bdx; v[5]  =  E23/dz/bdx; v[6]  =  1.0/bdx; // fx_(i)   [sxx]
-	v[7]  = -E43/dx/fdx; v[8]  =  E43/dx/fdx; v[9]  =  E23/dy/fdx; v[10] = -E23/dy/fdx; v[11] =  E23/dz/fdx; v[12] = -E23/dz/fdx; v[13] = -1.0/fdx; // fx_(i+1) [sxx]
-	v[14] = -E23/dx/bdy; v[15] =  E23/dx/bdy; v[16] =  E43/dy/bdy; v[17] = -E43/dy/bdy; v[18] = -E23/dz/bdy; v[19] =  E23/dz/bdy; v[20] =  1.0/bdy; // fy_(j)   [syy]
-	v[21] =  E23/dx/fdy; v[22] = -E23/dx/fdy; v[23] = -E43/dy/fdy; v[24] =  E43/dy/fdy; v[25] =  E23/dz/fdy; v[26] = -E23/dz/fdy; v[27] = -1.0/fdy; // fy_(j+1) [syy]
-	v[28] = -E23/dx/bdz; v[29] =  E23/dx/bdz; v[30] = -E23/dy/bdz; v[31] =  E23/dy/bdz; v[32] =  E43/dz/bdz; v[33] = -E43/dz/bdz; v[34] =  1.0/bdz; // fz_(k)   [szz]
-	v[35] =  E23/dx/fdz; v[36] = -E23/dx/fdz; v[37] =  E23/dy/fdz; v[38] = -E23/dy/fdz; v[39] = -E43/dz/fdz; v[40] =  E43/dz/fdz; v[41] = -1.0/fdz; // fz_(k+1) [szz]
-	v[42] =  1.0/dx;     v[43] = -1.0/dx;     v[44] =  1.0/dy;     v[45] = -1.0/dy;     v[46] =  1.0/dz;     v[47] = -1.0/dz;     v[48] =  diag;    // g
+	v[0]  =  E43/dx/bdx; v[1]  = -E43/dx/bdx; v[2]  = -E23/dy/bdx; v[3]  =  E23/dy/bdx; v[4]  = -E23/dz/bdx; v[5]  =  E23/dz/bdx; v[6]  =  cf[0]/bdx; // fx_(i)   [sxx]
+	v[7]  = -E43/dx/fdx; v[8]  =  E43/dx/fdx; v[9]  =  E23/dy/fdx; v[10] = -E23/dy/fdx; v[11] =  E23/dz/fdx; v[12] = -E23/dz/fdx; v[13] = -cf[1]/fdx; // fx_(i+1) [sxx]
+	v[14] = -E23/dx/bdy; v[15] =  E23/dx/bdy; v[16] =  E43/dy/bdy; v[17] = -E43/dy/bdy; v[18] = -E23/dz/bdy; v[19] =  E23/dz/bdy; v[20] =  cf[2]/bdy; // fy_(j)   [syy]
+	v[21] =  E23/dx/fdy; v[22] = -E23/dx/fdy; v[23] = -E43/dy/fdy; v[24] =  E43/dy/fdy; v[25] =  E23/dz/fdy; v[26] = -E23/dz/fdy; v[27] = -cf[3]/fdy; // fy_(j+1) [syy]
+	v[28] = -E23/dx/bdz; v[29] =  E23/dx/bdz; v[30] = -E23/dy/bdz; v[31] =  E23/dy/bdz; v[32] =  E43/dz/bdz; v[33] = -E43/dz/bdz; v[34] =  cf[4]/bdz; // fz_(k)   [szz]
+	v[35] =  E23/dx/fdz; v[36] = -E23/dx/fdz; v[37] =  E23/dy/fdz; v[38] = -E23/dy/fdz; v[39] = -E43/dz/fdz; v[40] =  E43/dz/fdz; v[41] = -cf[5]/fdz; // fz_(k+1) [szz]
+	v[42] =  1.0/dx;     v[43] = -1.0/dx;     v[44] =  1.0/dy;     v[45] = -1.0/dy;     v[46] =  1.0/dz;     v[47] = -1.0/dz;     v[48] =  diag;     // g
 }
 //---------------------------------------------------------------------------
 void getStiffMatClean(
-	PetscScalar eta, PetscScalar diag,PetscScalar *v,
-	PetscScalar dx,  PetscScalar dy,  PetscScalar dz,
-	PetscScalar fdx, PetscScalar fdy, PetscScalar fdz,
-	PetscScalar bdx, PetscScalar bdy, PetscScalar bdz)
+	PetscScalar eta, PetscScalar diag,
+	PetscScalar *v,  PetscScalar *cf,
+	PetscScalar dx,  PetscScalar dy,   PetscScalar dz,
+	PetscScalar fdx, PetscScalar fdy,  PetscScalar fdz,
+	PetscScalar bdx, PetscScalar bdy,  PetscScalar bdz)
 {
 	// compute cell stiffness matrix without deviatoric projection
 
 	PetscScalar E2 = 2.0*eta;
 
 	//       vx_(i)               vx_(i+1)             vy_(j)               vy_(j+1)             vz_(k)               vz_(k+1)             p
-	v[0]  =  E2/dx/bdx;  v[1]  = -E2/dx/bdx;  v[2]  =  0.0;        v[3]  =  0.0;        v[4]  =  0.0;        v[5]  =  0.0;        v[6]  =  1.0/bdx; // fx_(i)   [sxx]
-	v[7]  = -E2/dx/fdx;  v[8]  =  E2/dx/fdx;  v[9]  =  0.0;        v[10] =  0.0;        v[11] =  0.0;        v[12] =  0.0;        v[13] = -1.0/fdx; // fx_(i+1) [sxx]
-	v[14] =  0.0;        v[15] =  0.0;        v[16] =  E2/dy/bdy;  v[17] = -E2/dy/bdy;  v[18] =  0.0;        v[19] =  0.0;        v[20] =  1.0/bdy; // fy_(j)   [syy]
-	v[21] =  0.0;        v[22] =  0.0;        v[23] = -E2/dy/fdy;  v[24] =  E2/dy/fdy;  v[25] =  0.0;        v[26] =  0.0;        v[27] = -1.0/fdy; // fy_(j+1) [syy]
-	v[28] =  0.0;        v[29] =  0.0;        v[30] =  0.0;        v[31] =  0.0;        v[32] =  E2/dz/bdz;  v[33] = -E2/dz/bdz;  v[34] =  1.0/bdz; // fz_(k)   [szz]
-	v[35] =  0.0;        v[36] =  0.0;        v[37] =  0.0;        v[38] =  0.0;        v[39] = -E2/dz/fdz;  v[40] =  E2/dz/fdz;  v[41] = -1.0/fdz; // fz_(k+1) [szz]
+	v[0]  =  E2/dx/bdx;  v[1]  = -E2/dx/bdx;  v[2]  =  0.0;        v[3]  =  0.0;        v[4]  =  0.0;        v[5]  =  0.0;        v[6]  =  cf[0]/bdx; // fx_(i)   [sxx]
+	v[7]  = -E2/dx/fdx;  v[8]  =  E2/dx/fdx;  v[9]  =  0.0;        v[10] =  0.0;        v[11] =  0.0;        v[12] =  0.0;        v[13] = -cf[1]/fdx; // fx_(i+1) [sxx]
+	v[14] =  0.0;        v[15] =  0.0;        v[16] =  E2/dy/bdy;  v[17] = -E2/dy/bdy;  v[18] =  0.0;        v[19] =  0.0;        v[20] =  cf[2]/bdy; // fy_(j)   [syy]
+	v[21] =  0.0;        v[22] =  0.0;        v[23] = -E2/dy/fdy;  v[24] =  E2/dy/fdy;  v[25] =  0.0;        v[26] =  0.0;        v[27] = -cf[3]/fdy; // fy_(j+1) [syy]
+	v[28] =  0.0;        v[29] =  0.0;        v[30] =  0.0;        v[31] =  0.0;        v[32] =  E2/dz/bdz;  v[33] = -E2/dz/bdz;  v[34] =  cf[4]/bdz; // fz_(k)   [szz]
+	v[35] =  0.0;        v[36] =  0.0;        v[37] =  0.0;        v[38] =  0.0;        v[39] = -E2/dz/fdz;  v[40] =  E2/dz/fdz;  v[41] = -cf[5]/fdz; // fz_(k+1) [szz]
 	v[42] =  1.0/dx;     v[43] = -1.0/dx;     v[44] =  1.0/dy;     v[45] = -1.0/dy;     v[46] =  1.0/dz;     v[47] = -1.0/dz;     v[48] =  diag;    // g
 }
 //---------------------------------------------------------------------------
@@ -1610,14 +1641,6 @@ void addDensGradStabil(
 	v[24] += cf*(rho*grav[1])/fdy;
 	v[32] -= cf*(rho*grav[2])/bdz;
 	v[40] += cf*(rho*grav[2])/fdz;
-/*
-	fx[k][j][i]   -= vx[k][j][i]  *tx/bdx
-	fx[k][j][i+1] += vx[k][j][i+1]*tx/fdx
-	fy[k][j][i]   -= vy[k][j][i]  *ty/bdy
-	fy[k][j+1][i] += vy[k][j+1][i]*ty/fdy
-	fz[k][j][i]   -= vz[k][j][i]  *tz/bdz
-	fz[k+1][j][i] += vz[k+1][j][i]*tz/fdz
-*/
 }
 //---------------------------------------------------------------------------
 void getVelSchur(PetscScalar v[], PetscScalar d[], PetscScalar g[])
@@ -1658,23 +1681,6 @@ void getSubMat(PetscScalar v[],  PetscScalar a[], PetscScalar d[], PetscScalar g
 	a[24] = v[28]; a[25] = v[29]; a[26] = v[30]; a[27] = v[31]; a[28] = v[32]; a[29] = v[33];
 	a[30] = v[35]; a[31] = v[36]; a[32] = v[37]; a[33] = v[38]; a[34] = v[39]; a[35] = v[40];
 }
-//---------------------------------------------------------------------------
-/*
-	// Pressure constraints implementation
-
-	PetscScalar  cbot, ctop;
-	PetscInt     mcz;
-	cbot = 1.0; if(k == 0) 	 cbot = 2.0;
-	ctop = 1.0; if(k == mcz) ctop = 2.0;
-	//       vx_(i)               vx_(i+1)             vy_(j)               vy_(j+1)             vz_(k)               vz_(k+1)             p
-	v[0]  =  E43/dx/bdx; v[1]  = -E43/dx/bdx; v[2]  = -E23/dy/bdx; v[3]  =  E23/dy/bdx; v[4]  = -E23/dz/bdx; v[5]  =  E23/dz/bdx; v[6]  =  1.0/bdx;  // fx_(i)   [sxx]
-	v[7]  = -E43/dx/fdx; v[8]  =  E43/dx/fdx; v[9]  =  E23/dy/fdx; v[10] = -E23/dy/fdx; v[11] =  E23/dz/fdx; v[12] = -E23/dz/fdx; v[13] = -1.0/fdx;  // fx_(i+1) [sxx]
-	v[14] = -E23/dx/bdy; v[15] =  E23/dx/bdy; v[16] =  E43/dy/bdy; v[17] = -E43/dy/bdy; v[18] = -E23/dz/bdy; v[19] =  E23/dz/bdy; v[20] =  1.0/bdy;  // fy_(j)   [syy]
-	v[21] =  E23/dx/fdy; v[22] = -E23/dx/fdy; v[23] = -E43/dy/fdy; v[24] =  E43/dy/fdy; v[25] =  E23/dz/fdy; v[26] = -E23/dz/fdy; v[27] = -1.0/fdy;  // fy_(j+1) [syy]
-	v[28] = -E23/dx/bdz; v[29] =  E23/dx/bdz; v[30] = -E23/dy/bdz; v[31] =  E23/dy/bdz; v[32] =  E43/dz/bdz; v[33] = -E43/dz/bdz; v[34] =  cbot/bdz; // fz_(k)   [szz]
-	v[35] =  E23/dx/fdz; v[36] = -E23/dx/fdz; v[37] =  E23/dy/fdz; v[38] = -E23/dy/fdz; v[39] = -E43/dz/fdz; v[40] =  E43/dz/fdz; v[41] = -ctop/fdz; // fz_(k+1) [szz]
-	v[42] =  1.0/dx;     v[43] = -1.0/dx;     v[44] =  1.0/dy;     v[45] = -1.0/dy;     v[46] =  1.0/dz;     v[47] = -1.0/dz;     v[48] =  0.0;      // g
-*/
 //---------------------------------------------------------------------------
 void getTwoPointConstr(PetscInt n, PetscInt idx[], PetscInt pdofidx[], PetscScalar cf[])
 {

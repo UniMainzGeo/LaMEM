@@ -1,0 +1,52 @@
+-------------------------------------------------------------------------- 
+                   Lithosphere and Mantle Evolution Model                   
+     Compiled: Date: May 29 2017 - Time: 19:19:20 	    
+-------------------------------------------------------------------------- 
+        STAGGERED-GRID FINITE DIFFERENCE CANONICAL IMPLEMENTATION           
+-------------------------------------------------------------------------- 
+Parsing input file : ./t2_FB2_MG/FallingBlock_mono_CoupledMG_RedundantCoarse.dat 
+   Adding PETSc option: -snes_type ksponly
+   Adding PETSc option: -js_ksp_type gmres
+   Adding PETSc option: -js_ksp_max_it 150
+   Adding PETSc option: -js_ksp_min_it 1
+   Adding PETSc option: -js_ksp_converged_reason
+   Adding PETSc option: -js_ksp_monitor
+   Adding PETSc option: -js_ksp_rtol 1e-3
+   Adding PETSc option: -js_ksp_atol 1e-5
+   Adding PETSc option: -pstokes mg
+   Adding PETSc option: -pcmat_type mono
+   Adding PETSc option: -jp_type mg
+   Adding PETSc option: -gmg_pc_type mg
+   Adding PETSc option: -gmg_pc_mg_levels 3
+   Adding PETSc option: -gmg_pc_mg_galerkin
+   Adding PETSc option: -gmg_pc_mg_type multiplicative
+   Adding PETSc option: -gmg_pc_mg_cycle_type v
+   Adding PETSc option: -gmg_pc_mg_log
+   Adding PETSc option: -gmg_mg_levels_ksp_type richardson
+   Adding PETSc option: -gmg_mg_levels_ksp_richardson_scale 0.5
+   Adding PETSc option: -gmg_mg_levels_pc_type jacobi
+   Adding PETSc option: -gmg_mg_levels_ksp_max_it 20
+   Adding PETSc option: -crs_ksp_type preonly
+   Adding PETSc option: -crs_pc_type redundant
+   Adding PETSc option: -crs_pc_redundant_number 1
+   Adding PETSc option: -crs_redundant_pc_factor_mat_solver_package superlu_dist
+   Adding PETSc option: -objects_dump
+Finished parsing input file : ./t2_FB2_MG/FallingBlock_mono_CoupledMG_RedundantCoarse.dat 
+--------------------------------------------------------------------------
+Time stepping parameters:
+   Simulation end time          : 1. [ ] 
+   Maximum number of steps      : 2 
+   Time step                    : 0.01 [ ] 
+   Minimum time step            : 1e-05 [ ] 
+   Maximum time step            : 0.1 [ ] 
+   Time step increase factor    : 0.1 
+   CFL criterion                : 0.5 
+   CFLMAX (fixed time steps)    : 0.5 
+   Output time step             : 0.2 [ ] 
+   Output every [n] steps       : 1 
+   Output [n] initial steps     : 1 
+--------------------------------------------------------------------------
+Material parameters: 
+   Phase ID : 0
+   (dens)   : rho = 1. [ ]  
+   (diff)   : eta = 1. [ ]  Bd = 0.5 [ ]  

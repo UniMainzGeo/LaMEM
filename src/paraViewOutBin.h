@@ -70,13 +70,21 @@
 #ifndef __paraViewOutBin_h__
 #define __paraViewOutBin_h__
 //---------------------------------------------------------------------------
-//#define _timestep_buff_size_ 4096
+
 // maximum number of components in the output vector
 #define _max_num_comp_ 9
+
+//---------------------------------------------------------------------------
+
+struct FB;
+struct FDSTAG;
+struct JacRes;
+struct Discret1D;
+
 //---------------------------------------------------------------------------
 //............................. Output buffer ...............................
 //---------------------------------------------------------------------------
-typedef struct
+struct OutBuf
 {
 	FDSTAG   *fs;    // staggered grid layout
 	FILE     *fp;    // output file handler
@@ -86,7 +94,7 @@ typedef struct
 	// grid buffer vectors
 	Vec lbcen, lbcor, lbxy, lbxz, lbyz; // local (ghosted)
 
-} OutBuf;
+};
 //---------------------------------------------------------------------------
 PetscErrorCode OutBufCreate(OutBuf *outbuf, JacRes *jr);
 
@@ -125,13 +133,13 @@ typedef PetscErrorCode (*OutVecFunctPtr)(JacRes*, OutBuf*);
 //---------------------------------------------------------------------------
 //...........  Multi-component output vector data structure .................
 //---------------------------------------------------------------------------
-typedef struct
+struct OutVec
 {
 	char          *name;        // output vector name
 	OutVecFunctPtr OutVecFunct; // pointer to vector output function
 	PetscInt       ncomp;       // number of components
 
-} OutVec;
+};
 //---------------------------------------------------------------------------
 void OutVecCreate(
 	OutVec         *outvec,
@@ -145,44 +153,47 @@ void OutVecDestroy(OutVec *outvec);
 //---------------------------------------------------------------------------
 //.......................... Vector output mask .............................
 //---------------------------------------------------------------------------
-typedef struct
+struct OutMask
 {
-	PetscInt phase;          		// phase
-	PetscInt density;        		// density
-	PetscInt visc_total;     		// total effective viscosity
-	PetscInt visc_creep;     		// creep effective viscosity
-	PetscInt visc_viscoplastic;     // viscoplastic viscosity
-	PetscInt velocity;       		// velocity
-	PetscInt pressure;       		// pressure
-	PetscInt overpressure;   		// overpressure
-	PetscInt lithospressure; 		// lithostatic pressure
-	PetscInt temperature;    		// temperature
-	PetscInt dev_stress;     		// deviatoric stress tensor
-	PetscInt j2_dev_stress;  		// deviatoric stress second invariant
-	PetscInt strain_rate;    		// deviatoric strain rate tensor
-	PetscInt j2_strain_rate; 		// deviatoric strain rate second invariant
+	PetscInt phase;          // phase
+	PetscInt density;        // density
+	PetscInt visc_total;     // total effective viscosity
+	PetscInt visc_creep;     // creep effective viscosity
+	PetscInt visc_plast;     // viscoplastic viscosity
+	PetscInt velocity;       // velocity
+	PetscInt pressure;       // pressure
+	PetscInt eff_press;      // effective pressure
+	PetscInt over_press;     // overpressure
+	PetscInt litho_press;    // lithostatic pressure
+	PetscInt pore_press;     // pore pressure
+	PetscInt temperature;    // temperature
+	PetscInt dev_stress;     // deviatoric stress tensor
+	PetscInt j2_dev_stress;  // deviatoric stress second invariant
+	PetscInt strain_rate;    // deviatoric strain rate tensor
+	PetscInt j2_strain_rate; // deviatoric strain rate second invariant
 	PetscInt melt_fraction;   		// melt fraction
-	PetscInt vol_rate;       		// volumetric strain rate
-	PetscInt vorticity;      		// vorticity vector
-	PetscInt ang_vel_mag;    		// average angular velocity magnitude
-	PetscInt tot_strain;     		// total strain
-	PetscInt plast_strain;   		// accumulated plastic strain
-	PetscInt plast_dissip;   		// plastic dissipation
-	PetscInt tot_displ;      		// total displacements
-	PetscInt SHmax;          		// maximum horizontal stress
-	PetscInt EHmax;          		// maximum horizontal extension
-	PetscInt ISA;            		// Infinite Strain Axis
-	PetscInt GOL;            		// Grain Orientation Lag
-	// === debugging vectors ===============================================
-	PetscInt moment_res;     		// momentum residual
-	PetscInt cont_res;       		// continuity residual
-	PetscInt energ_res;      		// energy residual
-	PetscInt jac_test;       		// matrix-vector Jacobian test
+	PetscInt alpha;   		        // thermal expansivity
+	PetscInt K;   		            // bulk modulus
+	PetscInt fluid_density;   		// fluid density
+	PetscInt Vp;   		            // Vp
+	PetscInt Vs;   		            // Vs
+	PetscInt vol_rate;       // volumetric strain rate
+	PetscInt vorticity;      // vorticity vector
+	PetscInt ang_vel_mag;    // average angular velocity magnitude
+	PetscInt tot_strain;     // total strain
+	PetscInt plast_strain;   // accumulated plastic strain
+	PetscInt plast_dissip;   // plastic dissipation
+	PetscInt tot_displ;      // total displacements
+	PetscInt SHmax;          // maximum horizontal stress
+	PetscInt EHmax;          // maximum horizontal extension
+	PetscInt ISA;            // Infinite Strain Axis
+	PetscInt GOL;            // Grain Orientation Lag
+	PetscInt yield;          // yield stress
+	PetscInt moment_res;     // momentum residual
+	PetscInt cont_res;       // continuity residual
+	PetscInt energ_res;      // energy residual
 
-	// ... add more output vector identifiers here
-//	PetscInt phrat[max_num_phases]; // phase ratios
-
-} OutMask;
+};
 //---------------------------------------------------------------------------
 
 void OutMaskSetDefault(OutMask *omask);
@@ -192,39 +203,39 @@ PetscInt OutMaskCountActive(OutMask *omask);
 //---------------------------------------------------------------------------
 //...................... ParaView output driver object ......................
 //---------------------------------------------------------------------------
-typedef struct
+struct PVOut
 {
-	char        *outfile; // output file name
-	OutMask      omask;   // output vector mask
-	PetscInt     nvec;    // number of output vectors
-	OutVec      *outvecs; // output vectors
-	OutBuf       outbuf;  // output buffer
-	long int     offset;  // pvd file offset
-	PetscInt     outpvd;  // pvd file output flag
+	JacRes   *jr;
+	char      outfile[_STR_LEN_]; // output file name
+	OutMask   omask;              // output vector mask
+	PetscInt  nvec;               // number of output vectors
+	OutVec   *outvecs;            // output vectors
+	OutBuf    outbuf;             // output buffer
+	long int  offset;             // pvd file offset
+	PetscInt  outpvd;             // pvd file output flag
 
-} PVOut;
+};
 //---------------------------------------------------------------------------
 
-PetscErrorCode PVOutClear(PVOut *pvout);
-
 // create ParaView output driver
-PetscErrorCode PVOutCreate(PVOut *pvout, JacRes *jr, const char *filename);
+PetscErrorCode PVOutCreate(PVOut *pvout, FB *fb);
 
-// read options
-PetscErrorCode PVOutReadFromOptions(PVOut *pvout);
+// create output buffer and vectors
+PetscErrorCode PVOutCreateData(PVOut *pvout);
 
 // destroy ParaView output driver
 PetscErrorCode PVOutDestroy(PVOut *pvout);
 
 // write all time-step output files to disk (PVD, PVTR, VTR)
-PetscErrorCode PVOutWriteTimeStep(PVOut *pvout, JacRes *jr, const char *dirName, PetscScalar ttime, PetscInt tindx);
+PetscErrorCode PVOutWriteTimeStep(PVOut *pvout, const char *dirName, PetscScalar ttime);
 
 // write parallel PVTR file (called every time step on first processor)
 // WARNING! this is potential bottleneck, get rid of writing every time-step
 PetscErrorCode PVOutWritePVTR(PVOut *pvout, const char *dirName);
 
 // write sequential VTR files on every processor (called every time step)
-PetscErrorCode PVOutWriteVTR(PVOut *pvout, JacRes *jr, const char *dirName);
+PetscErrorCode PVOutWriteVTR(PVOut *pvout, const char *dirName);
+PetscErrorCode PVOutWriteTable(PVOut *pvout, JacRes *jr, const char *dirName);
 
 //---------------------------------------------------------------------------
 //........................... Service Functions .............................
@@ -237,8 +248,7 @@ void WriteXMLHeader(FILE *fp, const char *file_type);
 // WARNING! this is potential bottleneck, get rid of writing every time-step
 PetscErrorCode UpdatePVDFile(
 		const char *dirName, const char *outfile, const char *ext,
-		long int *offset, PetscScalar ttime, PetscInt tindx);
+		long int *offset, PetscScalar ttime, PetscInt outpvd);
 
 //---------------------------------------------------------------------------
-
 #endif

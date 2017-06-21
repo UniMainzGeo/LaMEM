@@ -44,20 +44,19 @@
 //...................   MATERIAL ADVECTION ROUTINES   .......................
 //---------------------------------------------------------------------------
 #include "LaMEM.h"
-#include "tools.h"
-#include "fdstag.h"
-#include "solVar.h"
+#include "advect.h"
+#include "phase.h"
+#include "parsing.h"
 #include "scaling.h"
 #include "tssolve.h"
+#include "fdstag.h"
 #include "bc.h"
 #include "JacRes.h"
-#include "interpolate.h"
 #include "surf.h"
-#include "advect.h"
-#include "constEq.h"
 #include "marker.h"
 #include "AVD.h"
 #include "cvi.h"
+#include "tools.h"
 
 /*
 #START_DOC#
@@ -73,43 +72,251 @@ Main advection routine
 #END_DOC#
 */
 //---------------------------------------------------------------------------
-// * add different advection methods (echo to output)
-// * add different types of GRID->MARKER interpolation (echo to output)
-//   (currently piece-wise constant, alternative - linear)
-// * check weights of distance-dependent MARKER->GRID interpolation
-// * implement GHOST marker approach
-//---------------------------------------------------------------------------
 #undef __FUNCT__
-#define __FUNCT__ "ADVClear"
-PetscErrorCode ADVClear(AdvCtx *actx)
+#define __FUNCT__ "ADVCreate"
+PetscErrorCode ADVCreate(AdvCtx *actx, FB *fb)
 {
+	// create advection context
+
+	PetscInt nmark_lim[ ] = { 0, 0    };
+	PetscInt nmark_avd[ ] = { 0, 0, 0 };
+
+	PetscInt maxPhaseID;
+	char     msetup[_STR_LEN_], advect[_STR_LEN_], interp[_STR_LEN_], mctrl[_STR_LEN_];
+
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
 
-	// clear object
-	ierr = PetscMemzero(actx, sizeof(AdvCtx)); CHKERRQ(ierr);
+	// initialize
+	actx->NumPartX =  2;
+	actx->NumPartY =  2;
+	actx->NumPartZ =  2;
+	actx->bgPhase  = -1;
+	actx->A        =  2.0/3.0;
+	actx->surfTol  =  0.05;
+	maxPhaseID     = actx->dbm->numPhases - 1;
+
+	// READ
+
+	// read parameters
+	ierr = getStringParam(fb, _OPTIONAL_, "msetup",          msetup,         "geom");          CHKERRQ(ierr);
+	ierr = getIntParam   (fb, _OPTIONAL_, "nmark_x",        &actx->NumPartX, 1, _max_nmark_);  CHKERRQ(ierr);
+	ierr = getIntParam   (fb, _OPTIONAL_, "nmark_y",        &actx->NumPartY, 1, _max_nmark_);  CHKERRQ(ierr);
+	ierr = getIntParam   (fb, _OPTIONAL_, "nmark_z",        &actx->NumPartZ, 1, _max_nmark_);  CHKERRQ(ierr);
+	ierr = getIntParam   (fb, _OPTIONAL_, "rand_noise",     &actx->randNoise,1, 1);            CHKERRQ(ierr);
+	ierr = getIntParam   (fb, _OPTIONAL_, "bg_phase",       &actx->bgPhase,  1, maxPhaseID);   CHKERRQ(ierr);
+	ierr = getIntParam   (fb, _OPTIONAL_, "save_mark",      &actx->saveMark, 1, 1);            CHKERRQ(ierr);
+	ierr = getStringParam(fb, _OPTIONAL_, "mark_save_file",  actx->saveFile, "./markers/mdb"); CHKERRQ(ierr);
+	ierr = getStringParam(fb, _OPTIONAL_, "advect",          advect,         "basic");         CHKERRQ(ierr);
+	ierr = getStringParam(fb, _OPTIONAL_, "interp",          interp,         "stag");          CHKERRQ(ierr);
+	ierr = getScalarParam(fb, _OPTIONAL_, "stagp_a",        &actx->A,        1, 1.0);          CHKERRQ(ierr);
+	ierr = getStringParam(fb, _OPTIONAL_, "mark_ctrl",       mctrl,          "none");          CHKERRQ(ierr);
+	ierr = getScalarParam(fb, _OPTIONAL_, "surf_tol",       &actx->surfTol,  1, 1.0);          CHKERRQ(ierr);
+	ierr = getIntParam   (fb, _OPTIONAL_, "nmark_lim",       nmark_lim,      2, 0);            CHKERRQ(ierr);
+	ierr = getIntParam   (fb, _OPTIONAL_, "nmark_avd",       nmark_avd,      3, 0);            CHKERRQ(ierr);
+
+	// CHECK
+
+	// initialize types
+	if     (!strcmp(msetup, "geom"))     actx->msetup = _GEOM_;
+	else if(!strcmp(msetup, "files"))    actx->msetup = _FILES_;
+	else if(!strcmp(msetup, "polygons")) actx->msetup = _POLYGONS_;
+	else SETERRQ1(PETSC_COMM_WORLD, PETSC_ERR_USER, "Incorrect setup type (msetup): %s", msetup);
+
+	if     (!strcmp(advect, "basic"))    actx->advect = BASIC_EULER;
+	else if(!strcmp(advect, "euler"))    actx->advect = EULER;
+	else if(!strcmp(advect, "rk2"))      actx->advect = RUNGE_KUTTA_2;
+	else SETERRQ1(PETSC_COMM_WORLD, PETSC_ERR_USER, "Incorrect advection type (advect): %s", advect);
+
+	if     (!strcmp(interp, "stag"))     actx->interp = STAG;
+	else if(!strcmp(interp, "minmod"))   actx->interp = MINMOD;
+	else if(!strcmp(interp, "stagp"))    actx->interp = STAG_P;
+	else SETERRQ1(PETSC_COMM_WORLD, PETSC_ERR_USER, "Incorrect velocity interpolation type (interp): %s", interp);
+
+	if     (!strcmp(mctrl,  "none"))     actx->mctrl = CTRL_NONE;
+	else if(!strcmp(mctrl,  "basic"))    actx->mctrl = CTRL_BASIC;
+	else if(!strcmp(mctrl,  "avd"))      actx->mctrl = CTRL_AVD;
+	else SETERRQ1(PETSC_COMM_WORLD, PETSC_ERR_USER, "Incorrect marker control type (mark_ctrl): %s", mctrl);
+
+	// check marker resolution
+	if(actx->NumPartX < _min_nmark_)
+	{
+		SETERRQ2(PETSC_COMM_WORLD, PETSC_ERR_USER, "nmark_x (%lld) is smaller than allowed (%lld)", (LLD)actx->NumPartX, _min_nmark_);
+	}
+	if(actx->NumPartY < _min_nmark_)
+	{
+		SETERRQ2(PETSC_COMM_WORLD, PETSC_ERR_USER, "nmark_y (%lld) is smaller than allowed (%lld)", (LLD)actx->NumPartY, _min_nmark_);
+	}
+	if(actx->NumPartZ < _min_nmark_)
+	{
+		SETERRQ2(PETSC_COMM_WORLD, PETSC_ERR_USER, "nmark_z (%lld) is smaller than allowed (%lld)", (LLD)actx->NumPartZ, _min_nmark_);
+	}
+
+	// check advection & interpolation types compatibility
+	if(actx->advect == BASIC_EULER && actx->interp != STAG)
+	{
+		SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "Basic advection scheme only supports stag interpolation (advect, interp)");
+	}
+
+	// check background phase
+	if(actx->msetup == _GEOM_ && actx->bgPhase == -1)
+	{
+		SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "Using geometric primitives requires setting background phase (msetup, bg_phase)");
+	}
+
+	if(actx->A < 0.0 || actx->A > 1.0)
+	{
+		SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "Interpolation constant must be between 0 and 1 (stagp_a)");
+	}
+
+	if( actx->interp != STAG_P)  actx->A = 0.0;
+	if( actx->msetup != _GEOM_)  actx->bgPhase = -1;
+	if(!actx->surf->UseFreeSurf) actx->surfTol = 0.0;
+
+	// initialize variables for marker control
+	if(actx->mctrl != CTRL_NONE)
+	{
+		actx->nmin = actx->NumPartX*actx->NumPartY*actx->NumPartZ / 2; // min # of markers/cell 50%
+		actx->nmax = actx->NumPartX*actx->NumPartY*actx->NumPartZ * 3; // max # of markers/cell 300%
+
+		if(nmark_lim[0]) actx->nmin = nmark_lim[0];
+		if(nmark_lim[1]) actx->nmax = nmark_lim[1];
+	}
+
+	if(actx->mctrl == CTRL_AVD)
+	{
+		actx->avdx = actx->NumPartX * 3;
+		actx->avdy = actx->NumPartY * 3;
+		actx->avdz = actx->NumPartZ * 3;
+
+		if(nmark_avd[0]) actx->avdx = nmark_avd[0];
+		if(nmark_avd[1]) actx->avdy = nmark_avd[1];
+		if(nmark_avd[2]) actx->avdz = nmark_avd[2];
+	}
+
+	// PRINT
+	PetscPrintf(PETSC_COMM_WORLD, "Advection parameters:\n");
+
+	PetscPrintf(PETSC_COMM_WORLD,"   Marker setup scheme           : ");
+	if     (actx->msetup == _GEOM_)     PetscPrintf(PETSC_COMM_WORLD,"geometric primitives\n");
+	else if(actx->msetup == _FILES_)    PetscPrintf(PETSC_COMM_WORLD,"binary files (MATLAB)\n");
+	else if(actx->msetup == _POLYGONS_) PetscPrintf(PETSC_COMM_WORLD,"volumes form polygons (geomIO)\n");
+
+	// print advection scheme
+ 	PetscPrintf(PETSC_COMM_WORLD,"   Advection scheme              : ");
+	if     (actx->advect == BASIC_EULER)   PetscPrintf(PETSC_COMM_WORLD, "Euler 1-st order (basic implementation)\n");
+	else if(actx->advect == EULER)         PetscPrintf(PETSC_COMM_WORLD, "Euler 1-st order\n");
+	else if(actx->advect == RUNGE_KUTTA_2) PetscPrintf(PETSC_COMM_WORLD, "Runge-Kutta 2-nd order\n");
+
+	// print velocity interpolation scheme
+	PetscPrintf(PETSC_COMM_WORLD,"   Velocity interpolation scheme : ");
+	if      (actx->interp == STAG)   PetscPrintf(PETSC_COMM_WORLD, "STAG (Linear)\n");
+	else if (actx->interp == MINMOD) PetscPrintf(PETSC_COMM_WORLD, "MINMOD (Correction + MINMOD)\n");
+	else if (actx->interp == STAG_P) PetscPrintf(PETSC_COMM_WORLD, "empirical STAGP (STAG + pressure points)\n");
+
+	// print marker control type
+	PetscPrintf(PETSC_COMM_WORLD,"   Marker control type           : ");
+	if      (actx->mctrl == CTRL_NONE)  PetscPrintf(PETSC_COMM_WORLD, "no marker control\n");
+	else if (actx->mctrl == CTRL_BASIC) PetscPrintf(PETSC_COMM_WORLD, "AVD for cells + corner insertion\n");
+	else if (actx->mctrl == CTRL_AVD)   PetscPrintf(PETSC_COMM_WORLD, "pure AVD for all control volumes\n");
+
+	PetscPrintf(PETSC_COMM_WORLD,"   Markers per cell [nx, ny, nz] : [%lld, %lld, %lld] \n",
+		(LLD)(actx->NumPartX),
+		(LLD)(actx->NumPartY),
+		(LLD)(actx->NumPartZ));
+
+	PetscPrintf(PETSC_COMM_WORLD,"   Marker distribution type type : ");
+	if   (actx->randNoise)  PetscPrintf(PETSC_COMM_WORLD, "uniform\n");
+	else                    PetscPrintf(PETSC_COMM_WORLD, "random noise\n");
+
+	if(actx->saveMark)          PetscPrintf(PETSC_COMM_WORLD,"   Marker storage file           : %s \n", actx->saveFile);
+	if(actx->bgPhase != -1)     PetscPrintf(PETSC_COMM_WORLD,"   Background phase ID           : %lld \n", (LLD)actx->bgPhase);
+	if(actx->A)                 PetscPrintf(PETSC_COMM_WORLD,"   Interpolation constant        : %g \n", actx->A);
+	if(actx->surfTol)           PetscPrintf(PETSC_COMM_WORLD,"   Surface correction tolerance  : %g \n", actx->surfTol);
+
+	PetscPrintf(PETSC_COMM_WORLD,"--------------------------------------------------------------------------\n");
+
+	// create communicator and separator
+	ierr = ADVCreateData(actx); CHKERRQ(ierr);
+
+	// initialize markers
+	ierr = ADVMarkInit(actx, fb); CHKERRQ(ierr);
+
+	// compute host cells for all the markers
+	ierr = ADVMapMarkToCells(actx); CHKERRQ(ierr);
+
+	// change marker phase when crossing free surface
+	ierr = ADVMarkCrossFreeSurf(actx); CHKERRQ(ierr);
+
+	// check marker distribution
+	ierr = ADVMarkCheckMarkers(actx); CHKERRQ(ierr);
+
+	// project initial history from markers to grid
+	ierr = ADVProjHistMarkToGrid(actx); CHKERRQ(ierr);
 
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
 #undef __FUNCT__
-#define __FUNCT__ "ADVCreate"
-PetscErrorCode ADVCreate(AdvCtx *actx, FDSTAG *fs, JacRes *jr)
+#define __FUNCT__ "ADVReadRestart"
+PetscErrorCode ADVReadRestart(AdvCtx *actx, FILE *fp)
 {
-	// create advection context
-
-	PetscMPIInt nproc, iproc;
+	// read advection object from restart database
 
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
 
-	actx->fs = fs;
-	actx->jr = jr;
+	// allocate memory for markers
+	ierr = PetscMalloc((size_t)actx->markcap*sizeof(Marker), &actx->markers); CHKERRQ(ierr);
+	ierr = PetscMemzero(actx->markers, (size_t)actx->markcap*sizeof(Marker)); CHKERRQ(ierr);
 
-	//=============
-	// COMMUNICATOR
-	//=============
+	// allocate memory for host cell numbers
+	ierr = makeIntArray(&actx->cellnum, NULL, actx->markcap); CHKERRQ(ierr);
 
+	// allocate memory for indices of all markers in each cell
+	ierr = makeIntArray(&actx->markind, NULL, actx->markcap); CHKERRQ(ierr);
+
+	// read markers from disk
+	fread(actx->markers, (size_t)actx->nummark*sizeof(Marker), 1, fp);
+
+	// create communicator and separator
+	ierr = ADVCreateData(actx); CHKERRQ(ierr);
+
+	// compute host cells for all the markers
+	ierr = ADVMapMarkToCells(actx); CHKERRQ(ierr);
+
+	// project history from markers to grid (initialize solution variables)
+	ierr = ADVProjHistMarkToGrid(actx); CHKERRQ(ierr);
+
+	PetscFunctionReturn(0);
+}
+//---------------------------------------------------------------------------
+#undef __FUNCT__
+#define __FUNCT__ "ADVWriteRestart"
+PetscErrorCode ADVWriteRestart(AdvCtx *actx, FILE *fp)
+{
+	// store local markers to disk
+	fwrite(actx->markers, (size_t)actx->nummark*sizeof(Marker), 1, fp);
+
+	PetscFunctionReturn(0);
+}
+//---------------------------------------------------------------------------
+#undef __FUNCT__
+#define __FUNCT__ "ADVCreateData"
+PetscErrorCode ADVCreateData(AdvCtx *actx)
+{
+	// create communicator and separator
+
+	FDSTAG      *fs;
+	PetscMPIInt  nproc, iproc;
+
+	PetscErrorCode ierr;
+	PetscFunctionBegin;
+
+	// access context
+	fs = actx->fs;
+
+	// create MPI communicator
 	ierr = MPI_Comm_dup(PETSC_COMM_WORLD, &actx->icomm); CHKERRQ(ierr);
 
 	ierr = MPI_Comm_size(actx->icomm, &nproc); CHKERRQ(ierr);
@@ -118,43 +325,8 @@ PetscErrorCode ADVCreate(AdvCtx *actx, FDSTAG *fs, JacRes *jr)
 	actx->nproc = (PetscInt)nproc;
 	actx->iproc = (PetscInt)iproc;
 
-	//========
-	// STORAGE
-	//========
-
-	actx->nummark = 0;
-	actx->markcap = 0;
-	actx->markers = NULL;
-
-	//========================
-	// MARKER-CELL INTERACTION
-	//========================
-
-	actx->cellnum   = NULL;
-	actx->markind   = NULL;
-
-	ierr = makeIntArray(&actx->markstart, NULL, fs->nCells+1); CHKERRQ(ierr);
-
-	//=========
-	// EXCHANGE
-	//=========
-
-	actx->sendbuf = NULL;
-	actx->recvbuf = NULL;
-
-	actx->nsend = 0;
-	ierr = PetscMemzero(actx->nsendm, _num_neighb_*sizeof(PetscInt)); CHKERRQ(ierr);
-	ierr = PetscMemzero(actx->ptsend, _num_neighb_*sizeof(PetscInt)); CHKERRQ(ierr);
-
-	actx->nrecv = 0;
-	ierr = PetscMemzero(actx->nrecvm, _num_neighb_*sizeof(PetscInt)); CHKERRQ(ierr);
-	ierr = PetscMemzero(actx->ptrecv, _num_neighb_*sizeof(PetscInt)); CHKERRQ(ierr);
-
-	actx->ndel = 0;
-	actx->idel = NULL;
-
-	actx->AirPhase = -1;  // air phase number
-	actx->Ttop     = 0.0; // top surface temperature
+	// allocate memory for marker index array separators
+	ierr = makeIntArray(&actx->markstart, NULL, fs->nCells + 1); CHKERRQ(ierr);
 
 	PetscFunctionReturn(0);
 }
@@ -240,9 +412,6 @@ PetscErrorCode ADVAdvect(AdvCtx *actx)
 {
 	//=======================================================================
 	// MAJOR ADVECTION ROUTINE
-	//
-	// WARNING!
-	// Currently only implements Forward Euler Explicit algorithm.
 	//=======================================================================
 
 	PetscErrorCode ierr;
@@ -251,18 +420,15 @@ PetscErrorCode ADVAdvect(AdvCtx *actx)
 	// project history INCREMENTS from grid to markers
 	ierr = ADVProjHistGridToMark(actx); CHKERRQ(ierr);
 
-	PetscBool flag = PETSC_FALSE;
-	PetscOptionsGetBool(NULL, NULL, "-new_advection", &flag, NULL);
-
-	if (!flag)
-	{
-		// advect markers (Forward Euler)
-		ierr = ADVAdvectMark(actx); CHKERRQ(ierr);
-	}
-	else
+	if(actx->advect != BASIC_EULER)
 	{
 		// advect markers (extended by Adina)
 		ierr = ADVelAdvectMain(actx); CHKERRQ(ierr);
+	}
+	else
+	{
+		// advect markers (Forward Euler)
+		ierr = ADVAdvectMark(actx); CHKERRQ(ierr);
 	}
 
 	PetscFunctionReturn(0);
@@ -270,33 +436,59 @@ PetscErrorCode ADVAdvect(AdvCtx *actx)
 //---------------------------------------------------------------------------
 #undef __FUNCT__
 #define __FUNCT__ "ADVRemap"
-PetscErrorCode ADVRemap(AdvCtx *actx, FreeSurf *surf)
+PetscErrorCode ADVRemap(AdvCtx *actx)
 {
 	//=======================================================================
 	// MAJOR ADVECTION REMAPPING
-	//
-	// WARNING!
-	// MarkerControl should be for all control volumes and include neighbors.
-	// After that CheckCorners can be removed.
 	//=======================================================================
 
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
 
-	// compute host cells for all the markers received
-	ierr = ADVMapMarkToCells(actx); CHKERRQ(ierr);
+	if(actx->mctrl == CTRL_NONE)
+	{
+		// compute host cells for all the markers received
+		ierr = ADVMapMarkToCells(actx); CHKERRQ(ierr);
 
-	// update arrays for marker-cell interaction
-	ierr = ADVUpdateMarkCell(actx); CHKERRQ(ierr);
+		// update arrays for marker-cell interaction
+		ierr = ADVUpdateMarkCell(actx); CHKERRQ(ierr);
+	}
+	else if(actx->mctrl == CTRL_BASIC)
+	{
+		PetscPrintf(PETSC_COMM_WORLD,"Performing marker control (standard algorithm)\n");
 
-	// check markers and inject/delete if necessary
-	ierr = ADVMarkControl(actx); CHKERRQ(ierr);
+		// compute host cells for all the markers received
+		ierr = ADVMapMarkToCells(actx); CHKERRQ(ierr);
 
-	// check corners and inject 1 particle if empty
-	ierr = ADVCheckCorners(actx);    CHKERRQ(ierr);
+		// update arrays for marker-cell interaction
+		ierr = ADVUpdateMarkCell(actx); CHKERRQ(ierr);
+
+		// check markers and inject/delete if necessary
+		ierr = ADVMarkControl(actx); CHKERRQ(ierr);
+
+		// check corners and inject 1 particle if empty
+		ierr = ADVCheckCorners(actx); CHKERRQ(ierr);
+
+		PetscPrintf(PETSC_COMM_WORLD, "--------------------------------------------------------------------------\n");
+	}
+	else if(actx->mctrl == CTRL_AVD)
+	{
+		PetscPrintf(PETSC_COMM_WORLD,"Performing marker control (updated algorithm)\n");
+
+		// check markers and inject/delete if necessary in all control volumes
+		ierr = AVDMarkerControl(actx); CHKERRQ(ierr);
+
+		// compute host cells for all the markers received
+		ierr = ADVMapMarkToCells(actx); CHKERRQ(ierr);
+
+		// update arrays for marker-cell interaction
+		ierr = ADVUpdateMarkCell(actx); CHKERRQ(ierr);
+
+		PetscPrintf(PETSC_COMM_WORLD, "--------------------------------------------------------------------------\n");
+	}
 
 	// change marker phase when crossing flat surface or free surface with fast sedimentation/erosion
-	ierr = ADVMarkCrossFreeSurf(actx, surf, 0.05); CHKERRQ(ierr);
+	ierr = ADVMarkCrossFreeSurf(actx); CHKERRQ(ierr);
 
 	// project advected history from markers back to grid
 	ierr = ADVProjHistMarkToGrid(actx); CHKERRQ(ierr);
@@ -390,7 +582,7 @@ PetscErrorCode ADVInterpFieldToMark(AdvCtx *actx, InterpCase icase)
 	jr = actx->jr;
 
 	// current time step
-	dt = jr->ts.dt;
+	dt = jr->ts->dt;
 
 	// starting indices & number of cells
 	sx = fs->dsx.pstart; nx = fs->dsx.ncels;
@@ -528,11 +720,20 @@ PetscErrorCode ADVAdvectMark(AdvCtx *actx)
 	Marker      *P;
 	SolVarCell  *svCell;
 	PetscInt    sx, sy, sz, nx, ny;
-	PetscInt    jj, ID, I, J, K, II, JJ, KK;
+	PetscInt    jj, ID, I, J, K, II, JJ, KK, AirPhase;
 	PetscScalar *ncx, *ncy, *ncz;
 	PetscScalar *ccx, *ccy, *ccz;
 	PetscScalar ***lvx, ***lvy, ***lvz, ***lp, ***lT;
-	PetscScalar vx, vy, vz, xc, yc, zc, xp, yp, zp, dt;
+	PetscScalar vx, vy, vz, xc, yc, zc, xp, yp, zp, dt, Ttop;
+
+	AirPhase = -1;
+	Ttop     =  0.0;
+
+	if(actx->surf->UseFreeSurf)
+	{
+		AirPhase = actx->surf->AirPhase;
+		Ttop     = actx->jr->bc->Ttop;
+	}
 
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
@@ -542,7 +743,7 @@ PetscErrorCode ADVAdvectMark(AdvCtx *actx)
 	jr = actx->jr;
 
 	// current time step
-	dt = jr->ts.dt;
+	dt = jr->ts->dt;
 
 	// starting indices & number of cells
 	sx = fs->dsx.pstart; nx = fs->dsx.ncels;
@@ -601,7 +802,7 @@ PetscErrorCode ADVAdvectMark(AdvCtx *actx)
 		P->T += lT[sz+K][sy+J][sx+I] - svCell->svBulk.Tn;
 
 		// override temperature of air phase
-		if(actx->AirPhase != -1 &&  P->phase == actx->AirPhase) P->T = actx->Ttop;
+		if(AirPhase != -1 && P->phase == AirPhase) P->T = Ttop;
 
 		// advect marker
 		P->X[0] = xp + vx*dt;
@@ -1011,11 +1212,6 @@ PetscErrorCode ADVMarkControl(AdvCtx *actx)
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
 
-	PetscBool flag = PETSC_FALSE;
-	PetscOptionsGetBool(NULL, NULL, "-use_marker_control", &flag, NULL);
-
-	if (!flag) PetscFunctionReturn(0);
-
 	fs = actx->fs;
 
 	ierr = PetscTime(&t0); CHKERRQ(ierr);
@@ -1086,7 +1282,7 @@ PetscErrorCode ADVMarkControl(AdvCtx *actx)
 
 	// print info
 	ierr = PetscTime(&t1); CHKERRQ(ierr);
-	PetscPrintf(PETSC_COMM_WORLD,"# Marker Control [%lld]: (AVD Cell) injected %lld markers and deleted %lld markers in %1.4e s\n",(LLD)actx->iproc, (LLD)ninj, (LLD)ndel, t1-t0);
+	PetscPrintf(PETSC_COMM_WORLD,"Marker control [%lld]: (AVD Cell) injected %lld markers and deleted %lld markers in %1.4e s\n",(LLD)actx->iproc, (LLD)ninj, (LLD)ndel, t1-t0);
 
 	// clear
 	ierr = PetscFree(actx->recvbuf); CHKERRQ(ierr);
@@ -1119,11 +1315,6 @@ PetscErrorCode ADVCheckCorners(AdvCtx *actx)
 	PetscFunctionBegin;
 
 	bc = actx->jr->bc;
-
-	PetscBool flag = PETSC_FALSE;
-	PetscOptionsGetBool(NULL, NULL, "-use_marker_control", &flag, NULL);
-
-	if (!flag) PetscFunctionReturn(0);
 
 	ierr = PetscTime(&t0); CHKERRQ(ierr);
 
@@ -1356,9 +1547,12 @@ PetscErrorCode ADVCheckCorners(AdvCtx *actx)
 	// compute host cells for all the markers
 	ierr = ADVMapMarkToCells(actx); CHKERRQ(ierr);
 
+	// update arrays for marker-cell interaction
+	ierr = ADVUpdateMarkCell(actx); CHKERRQ(ierr);
+
 	// print info
 	ierr = PetscTime(&t1); CHKERRQ(ierr);
-	PetscPrintf(PETSC_COMM_WORLD,"# Marker Control [%lld]: (Corners ) injected %lld markers in %1.4e s \n",(LLD)actx->iproc, (LLD)ninj, t1-t0);
+	PetscPrintf(PETSC_COMM_WORLD,"Marker control [%lld]: (Corners ) injected %lld markers in %1.4e s \n",(LLD)actx->iproc, (LLD)ninj, t1-t0);
 
 	// clear
 	ierr = PetscFree(numcorner);     CHKERRQ(ierr);
@@ -1434,13 +1628,17 @@ PetscErrorCode ADVProjHistMarkToGrid(AdvCtx *actx)
 
 	FDSTAG   *fs;
 	JacRes   *jr;
-	PetscInt  ii, jj;
+	PetscInt  ii, jj, numPhases;
 
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
 
-	fs = actx->fs;
-	jr = actx->jr;
+	fs        = actx->fs;
+	jr        = actx->jr;
+	numPhases = actx->dbm->numPhases;
+
+	// check marker phases
+	ierr = ADVCheckMarkPhases(actx); CHKERRQ(ierr);
 
 	//======
 	// CELLS
@@ -1462,27 +1660,24 @@ PetscErrorCode ADVProjHistMarkToGrid(AdvCtx *actx)
 	// *****************************************
 
 	// compute edge phase ratios (consecutively)
-	for(ii = 0; ii < jr->numPhases; ii++)
+	for(ii = 0; ii < numPhases; ii++)
 	{
 		ierr = ADVInterpMarkToEdge(actx, ii, _PHASE_); CHKERRQ(ierr);
-
-		// interpolate melt fraction if needed
-		if(jr->phases[ii].Pd_rho == 1 && jr->phases[ii].Pd_Me == 1)
-		{
-			ierr = ADVInterpMarkToEdge(actx, ii, _ME_); CHKERRQ(ierr);
-		}
 	}
 
 	// normalize phase ratios
-	for(jj = 0; jj < fs->nXYEdg; jj++)  { ierr = getPhaseRatio(jr->numPhases, jr->svXYEdge[jj].phRat, &jr->svXYEdge[jj].ws); CHKERRQ(ierr); }
-	for(jj = 0; jj < fs->nXZEdg; jj++)  { ierr = getPhaseRatio(jr->numPhases, jr->svXZEdge[jj].phRat, &jr->svXZEdge[jj].ws); CHKERRQ(ierr); }
-	for(jj = 0; jj < fs->nYZEdg; jj++)  { ierr = getPhaseRatio(jr->numPhases, jr->svYZEdge[jj].phRat, &jr->svYZEdge[jj].ws); CHKERRQ(ierr); }
+	for(jj = 0; jj < fs->nXYEdg; jj++)  { ierr = getPhaseRatio(numPhases, jr->svXYEdge[jj].phRat, &jr->svXYEdge[jj].ws); CHKERRQ(ierr); }
+	for(jj = 0; jj < fs->nXZEdg; jj++)  { ierr = getPhaseRatio(numPhases, jr->svXZEdge[jj].phRat, &jr->svXZEdge[jj].ws); CHKERRQ(ierr); }
+	for(jj = 0; jj < fs->nYZEdg; jj++)  { ierr = getPhaseRatio(numPhases, jr->svYZEdge[jj].phRat, &jr->svYZEdge[jj].ws); CHKERRQ(ierr); }
 
 	// interpolate history stress to edges
 	ierr = ADVInterpMarkToEdge(actx, 0, _STRESS_); CHKERRQ(ierr);
 
 	// interpolate plastic strain to edges
 	ierr = ADVInterpMarkToEdge(actx, 0, _APS_); CHKERRQ(ierr);
+
+	// update phase ratios taking into account actual free surface position
+	ierr = FreeSurfGetAirPhaseRatio(actx->surf); CHKERRQ(ierr);
 
 	PetscFunctionReturn(0);
 }
@@ -1498,15 +1693,15 @@ PetscErrorCode ADVInterpMarkToCell(AdvCtx *actx)
 	Marker      *P;
 	SolVarCell  *svCell;
 	PetscInt     ii, jj, ID, I, J, K;
-	PetscInt     nx, ny, nCells;
+	PetscInt     nx, ny, nCells, numPhases;
 	PetscScalar  xp, yp, zp, wxc, wyc, wzc, w = 0.0;
-	PData       *pd;
 
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
 
-	fs = actx->fs;
-	jr = actx->jr;
+	fs        = actx->fs;
+	jr        = actx->jr;
+	numPhases = actx->dbm->numPhases;
 
 	// number of cells
 	nx     = fs->dsx.ncels;
@@ -1520,20 +1715,18 @@ PetscErrorCode ADVInterpMarkToCell(AdvCtx *actx)
 		svCell = &jr->svCell[jj];
 
 		// clear phase ratios
-		for(ii = 0; ii < jr->numPhases; ii++) svCell->phRat[ii] = 0.0;
+		for(ii = 0; ii < numPhases; ii++) svCell->phRat[ii] = 0.0;
 
 		// clear history variables
-		svCell->svBulk.pn 		= 0.0;
-		svCell->svBulk.Tn 		= 0.0;
-		svCell->svBulk.rho_pd 	= 0.0;
-		svCell->svDev.mf  		= 0.0;
-		svCell->svDev.APS 		= 0.0;
-		svCell->hxx       		= 0.0;
-		svCell->hyy       		= 0.0;
-		svCell->hzz       		= 0.0;
-		svCell->U[0]      		= 0.0;
-		svCell->U[1]      		= 0.0;
-		svCell->U[2]      		= 0.0;
+		svCell->svBulk.pn = 0.0;
+		svCell->svBulk.Tn = 0.0;
+		svCell->svDev.APS = 0.0;
+		svCell->hxx       = 0.0;
+		svCell->hyy       = 0.0;
+		svCell->hzz       = 0.0;
+		svCell->U[0]      = 0.0;
+		svCell->U[1]      = 0.0;
+		svCell->U[2]      = 0.0;
 	}
 
 	// scan ALL markers
@@ -1578,24 +1771,6 @@ PetscErrorCode ADVInterpMarkToCell(AdvCtx *actx)
 		svCell->U[1]      += w*P->U[1];
 		svCell->U[2]      += w*P->U[2];
 
-		// If melt is present get melt information
-		if(jr->phases[P->phase].Pd_rho == 1)
-		{
-			// Get the data from phase diagram
-			pd = jr->Pd;
-			ierr = SetDataPhaseDiagram(pd, P->p, P->T, jr->pShift, P->pdn); CHKERRQ(ierr);
-			svCell->svBulk.rho_pd  += w*pd->rho;
-			if (jr->phases[P->phase].Pd_Me == 1 && pd->mf >= 0 && pd->mf <= 1 )
-			{
-				svCell->svDev.mf += w*pd->mf;
-			}
-			else
-			{
-				svCell->svDev.mf = 0;
-				// PetscPrintf(PETSC_COMM_WORLD,"Melt fraction was set to zero because it exceeded the material limits (<3% || >100%)\n");
-			}
-		}
-
 	}
 
 	// normalize interpolated values
@@ -1605,20 +1780,18 @@ PetscErrorCode ADVInterpMarkToCell(AdvCtx *actx)
 		svCell = &jr->svCell[jj];
 
 		// normalize phase ratios
-		ierr = getPhaseRatio(jr->numPhases, svCell->phRat, &w); CHKERRQ(ierr);
+		ierr = getPhaseRatio(numPhases, svCell->phRat, &w); CHKERRQ(ierr);
 
-		// normalize history variables    // Das hier auskommentieren dann sind die density values richtig
-		svCell->svBulk.pn 		/= w;
-		svCell->svBulk.Tn 		/= w;
-		svCell->svBulk.rho_pd 	/= w;
-		svCell->svDev.APS 		/= w;
-		svCell->svDev.mf  		/= w;
-		svCell->hxx       		/= w;
-		svCell->hyy       		/= w;
-		svCell->hzz       		/= w;
-		svCell->U[0]      		/= w;
-		svCell->U[1]      		/= w;
-		svCell->U[2]      		/= w;
+		// normalize history variables
+		svCell->svBulk.pn /= w;
+		svCell->svBulk.Tn /= w;
+		svCell->svDev.APS /= w;
+		svCell->hxx       /= w;
+		svCell->hyy       /= w;
+		svCell->hzz       /= w;
+		svCell->U[0]      /=w;
+		svCell->U[1]      /=w;
+		svCell->U[2]      /=w;
 	}
 
 	PetscFunctionReturn(0);
@@ -1633,7 +1806,6 @@ PetscErrorCode ADVInterpMarkToEdge(AdvCtx *actx, PetscInt iphase, InterpCase ica
 	FDSTAG      *fs;
 	JacRes      *jr;
 	Marker      *P;
-	PData       *pd;
 	PetscScalar  UPXY, UPXZ, UPYZ;
 	PetscInt     nx, ny, sx, sy, sz;
 	PetscInt     jj, ID, I, J, K, II, JJ, KK;
@@ -1671,8 +1843,7 @@ PetscErrorCode ADVInterpMarkToEdge(AdvCtx *actx, PetscInt iphase, InterpCase ica
 		P = &actx->markers[jj];
 
 		// perform phase ID test
-		if      (icase == _PHASE_ && P->phase != iphase) continue;
-		else if (icase == _ME_    && P->phase == iphase) { pd = jr->Pd; SetDataPhaseDiagram(pd, P->p, P->T, jr->pShift,P->pdn); UPXY = pd->mf; UPXZ = pd->mf; UPYZ = pd->mf; }
+		if(icase == _PHASE_ && P->phase != iphase) continue;
 
 		// get consecutive index of the host cell
 		ID = actx->cellnum[jj];
@@ -1748,12 +1919,6 @@ PetscErrorCode ADVInterpMarkToEdge(AdvCtx *actx, PetscInt iphase, InterpCase ica
 		for(jj = 0; jj < fs->nXZEdg; jj++) jr->svXZEdge[jj].svDev.APS = gxz[jj]/jr->svXZEdge[jj].ws;
 		for(jj = 0; jj < fs->nYZEdg; jj++) jr->svYZEdge[jj].svDev.APS = gyz[jj]/jr->svYZEdge[jj].ws;
 	}
-	else if(icase == _ME_)
-	{
-		for(jj = 0; jj < fs->nXYEdg; jj++) jr->svXYEdge[jj].svDev.mf = gxy[jj]/jr->svXYEdge[jj].ws;
-		for(jj = 0; jj < fs->nXZEdg; jj++) jr->svXZEdge[jj].svDev.mf = gxz[jj]/jr->svXZEdge[jj].ws;
-		for(jj = 0; jj < fs->nYZEdg; jj++) jr->svYZEdge[jj].svDev.mf = gyz[jj]/jr->svYZEdge[jj].ws;
-	}
 
 	// restore access
 	ierr = VecRestoreArray(jr->gdxy, &gxy); CHKERRQ(ierr);
@@ -1765,26 +1930,29 @@ PetscErrorCode ADVInterpMarkToEdge(AdvCtx *actx, PetscInt iphase, InterpCase ica
 //---------------------------------------------------------------------------
 #undef __FUNCT__
 #define __FUNCT__ "ADVMarkCrossFreeSurf"
-PetscErrorCode ADVMarkCrossFreeSurf(AdvCtx *actx, FreeSurf *surf, PetscScalar tol)
+PetscErrorCode ADVMarkCrossFreeSurf(AdvCtx *actx)
 {
 
 	// change marker phase when crossing free surface
-	FDSTAG      *fs;
 	Marker      *P;
+	FDSTAG      *fs;
+	FreeSurf    *surf;
 	PetscInt    sx, sy, nx, ny;
 	PetscInt    jj, ID, I, J, K, L, AirPhase;
-	PetscScalar ***ltopo, *ncx, *ncy, topo, xp, yp, zp;
+	PetscScalar ***ltopo, *ncx, *ncy, topo, xp, yp, zp, tol;
 
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
 
 	// free-surface cases only
-	if(surf->UseFreeSurf != PETSC_TRUE) PetscFunctionReturn(0);
+	if(!actx->surf->UseFreeSurf) PetscFunctionReturn(0);
 
 	// access context
+	surf      = actx->surf;
 	fs        = actx->fs;
 	L         = fs->dsz.rank;
 	AirPhase  = surf->AirPhase;
+	tol       = actx->surfTol;
 
 	// starting indices & number of cells
 	sx = fs->dsx.pstart; nx = fs->dsx.ncels;
@@ -1854,383 +2022,18 @@ PetscErrorCode ADVMarkCrossFreeSurf(AdvCtx *actx, FreeSurf *surf, PetscScalar to
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-// get the density from a phase diagram
-#undef __FUNCT__
-#define __FUNCT__ "LoadPhaseDiagram"
-PetscErrorCode LoadPhaseDiagram(AdvCtx *actx, PetscInt i)
-{
-	FILE          *fp;
-    PetscInt       i_pd,j,jj,ij,lineStart,n,found;
-    PetscScalar    fl[2];
-    char           buf[1000],name[100];
-    PData         *pd;
-    Marker        *P;
-    Scaling        scal;
-    JacRes        *jr;
-
-	PetscFunctionBegin;
-
-	// rho_pdval[0] = lowermost temperature value
-	// rho_pdval[1] = dT
-	// rho_pdval[2] = nT
-	// rho_pdval[3] = uppermost temperature value
-	// rho_pdval[4] = lowermost pressure value
-	// rho_pdval[5] = dp
-	// rho_pdval[6] = np
-	// rho_pdval[7] = uppermost pressure value
-	// rho_pdval[8] = # of columns (to determine what needs to be interpolated)
-
-	jr   = actx->jr;
-	scal = actx->jr->scal;
-	pd   = actx->jr->Pd;
-
-	// Extrapolate the name on the markers
-	for(jj = 0; jj < actx->nummark; jj++)
-	{
-		P      = &actx->markers[jj];
-		if(P->phase == i)
-		{
-			for(j=0; j<max_name; j++)
-			{
-				P->pdn[j] = jr->phases[i].pdn[j];
-			}
-		}
-	}
-
-	found = 0;
-	// Get the next empty row in the buffer
-	for(j=0; j<max_num_pd; j++)
-	{
-		if(!pd->rho_pdns[5][j])
-		{
-			found = 1;
-			i_pd = j;
-			break;
-		}
-		else
-		{
-			found = 1;
-			// Check if we have this diagram already in the buffer
-			for(ij=0; ij<max_name; ij++)
-			{
-				if((pd->rho_pdns[ij][j] != jr->phases[i].pdn[ij]))
-				{
-					found = 0;
-					break;
-				}
-			}
-			if(found == 1)
-			{
-				// We already loaded that diagram so no need to do anything here except setting the flags for the melt
-				sprintf(name,"%s.in",jr->phases[i].pdn);
-				fp=fopen(name,"r");
-				for(j=0;j<1;j++)
-				{
-					if(j==0)
-					{
-						fscanf(fp, "%lf,",&fl[0]);
-					}
-				}
-				if(fl[0] == 4 || fl[0] == 5)
-				{
-					jr->phases[i].Pd_Me = 1;
-				}
-				fclose(fp);
-				PetscFunctionReturn(0);
-			}
-		}
-	}
-
-	if(found == 0)
-	{
-		PetscPrintf(PETSC_COMM_WORLD,"Phase diagram buffer too small!\n\n");
-		PetscFunctionReturn(0);
-	}
-
-	// Create the name
-	sprintf(name,"%s.in",jr->phases[i].pdn);
-
-	lineStart = 50.0;    // 50 lines are reserved for header
-
-	fp=fopen(name,"r");
-	if (fp==NULL)
-	{
-		SETERRQ1(PETSC_COMM_SELF, PETSC_ERR_USER, "No such phase diagram: %s in phase %i!\n",name);
-	}
-
-	// Read header
-	for(j=0;j<lineStart;j++)
-	{
-		if(j==0)
-		{
-			fscanf(fp, "%lf,",&pd->rho_pdval[8][i_pd]);
-		}
-		else
-		{
-			fgets(buf, 1000, fp);
-		}
-	}
-
-	// Read important phase diagram info
-	fscanf(fp, "%lf,",&pd->rho_pdval[0][i_pd]);
-	pd->rho_pdval[0][i_pd] = (pd->rho_pdval[0][i_pd])/scal.temperature;
-	fscanf(fp, "%lf,",&pd->rho_pdval[1][i_pd]);
-	pd->rho_pdval[1][i_pd] = (pd->rho_pdval[1][i_pd])/scal.temperature;
-	fscanf(fp, "%lf,",&pd->rho_pdval[2][i_pd]);
-	pd->rho_pdval[3][i_pd] = pd->rho_pdval[2][i_pd]*pd->rho_pdval[1][i_pd] + pd->rho_pdval[0][i_pd];
-	fscanf(fp, "%lf,",&pd->rho_pdval[4][i_pd]);
-	pd->rho_pdval[4][i_pd] = (pd->rho_pdval[4][i_pd]*1e5)/scal.stress_si;
-	fscanf(fp, "%lf,",&pd->rho_pdval[5][i_pd]);
-	pd->rho_pdval[5][i_pd] = (pd->rho_pdval[5][i_pd]*1e5)/scal.stress_si;
-	fscanf(fp, "%lf,",&pd->rho_pdval[6][i_pd]);
-	pd->rho_pdval[7][i_pd] = pd->rho_pdval[6][i_pd]*pd->rho_pdval[5][i_pd] + pd->rho_pdval[4][i_pd];
-
-	n = (PetscInt)pd->rho_pdval[2][i_pd] * (PetscInt)pd->rho_pdval[6][i_pd];
-
-	/*
-	Check what data is available:
-	1 column = rho fluid [kg/m3]
-	2 column = melt fraction []
-	3 column = density [kg/m3]
-	4 column = T [K]
-	5 column = P [b]
-	*/
-
-	if(pd->rho_pdval[8][i_pd] == 3)  // density
-	{
-		fscanf(fp,"%lf %lf %lf,",&pd->rho_v[0][i_pd],&fl[0],&fl[1]);
-		pd->rho_v[0][i_pd] /= scal.density;
-		for (j=1; j<n; j++)
-		{
-			fscanf(fp, "%lf %lf %lf,",&pd->rho_v[j][i_pd],&fl[0],&fl[1]);
-			pd->rho_v[j][i_pd] /= scal.density;
-		}
-	}
-	else if(pd->rho_pdval[8][i_pd] == 4)   // density + mf
-	{
-		jr->phases[i].Pd_Me = 1;
-		fscanf(fp, "%lf %lf %lf %lf,",&pd->Me_v[0][i_pd],&pd->rho_v[0][i_pd],&fl[0],&fl[1]);
-		pd->rho_v[0][i_pd] /= scal.density;
-
-		for (j=1; j<n; j++)
-		{
-			fscanf(fp, "%lf %lf %lf %lf,",&pd->Me_v[j][i_pd],&pd->rho_v[j][i_pd],&fl[0],&fl[1]);
-			pd->rho_v[j][i_pd] /= scal.density;
-		}
-	}
-	else if(pd->rho_pdval[8][i_pd] == 5)   // density + mf + density_fluid
-	{
-		jr->phases[i].Pd_Me = 1;
-		fscanf(fp, "%lf %lf %lf %lf %lf,",&pd->rho_f_v[0][i_pd],&pd->Me_v[0][i_pd],&pd->rho_v[0][i_pd],&fl[0],&fl[1]);
-		pd->rho_v[0][i_pd] /= scal.density;
-		pd->rho_f_v[0][i_pd] /= scal.density;
-
-		for (j=1; j<n; j++)
-		{
-			fscanf(fp, "%lf %lf %lf %lf %lf,",&pd->rho_f_v[j][i_pd],&pd->Me_v[j][i_pd],&pd->rho_v[j][i_pd],&fl[0],&fl[1]);
-			pd->rho_v[j][i_pd] /= scal.density;
-			pd->rho_f_v[j][i_pd] /= scal.density;
-		}
-	}
-	else
-	{
-		PetscPrintf(PETSC_COMM_WORLD,"Unknown phase diagram data!\n");
-		PetscFunctionReturn(0);
-	}
-
-	// Interpolate the name
-	for(j=0; j<max_name; j++)
-	{
-		pd->rho_pdns[j][i_pd] = jr->phases[i].pdn[j];
-	}
-	fclose(fp);
-
-	PetscPrintf(PETSC_COMM_WORLD," Succesfully loaded Phase diagram %s\n",name);
-
-	// Uncomment to debug values
-	// PetscPrintf(PETSC_COMM_WORLD,"RHO = %.20f ; scal = %lf\n 2 = %lf\n  3 = %lf\n 3m = %lf\n  4 = %.20f ; scal = %lf\n 5 = %lf\n 6 = %lf\n 6m = %lf\n n = %i ; scal = %lf\n",pd->rho_v[20000][0], scal.temperature,pd->rho_pdval[1][i_pd],pd->rho_pdval[2][i_pd],pd->rho_pdval[3][i_pd],pd->rho_pdval[4][i_pd], scal.stress_si,pd->rho_pdval[5][i_pd],pd->rho_pdval[6][i_pd],pd->rho_pdval[7][i_pd],n, scal.density);
-
-	PetscFunctionReturn(0);
-}
-//---------------------------------------------------------------------------
-// get the density from a phase diagram
-#undef __FUNCT__
-#define __FUNCT__ "SetDataPhaseDiagram"
-PetscErrorCode SetDataPhaseDiagram(PData *pd, PetscScalar p, PetscScalar T, PetscScalar pshift, char pdn[])
-{
-    PetscInt       i,j,i_pd,indT[2],indP[2],ind[4],found;
-    PetscScalar    fx0,fx1,weight[4];
-
-	PetscFunctionBegin;
-
-	// rho_pdval[0] = lowermost temperature value
-	// rho_pdval[1] = dT
-	// rho_pdval[2] = nT
-	// rho_pdval[3] = uppermost temperature value
-	// rho_pdval[4] = lowermost pressure value
-	// rho_pdval[5] = dp
-	// rho_pdval[6] = np
-	// rho_pdval[7] = uppermost pressure value
-	// rho_pdval[8] = # of columns (to determine what needs to be interpolated)
-
-	// Function to interpolate values from P-T data from PARTICLES (called in advect.c)
-
-	/* ------------------------------------------------------------------------------
-	 * WARNING: THERE IS SOME WEIRD RANDOM BEHAVIOUR.
-	 * 			RHOF BECOMES NAN IN SOME COMPLETELY RANDOM LOCATIONS
-	 * ------------------------------------------------------------------------------ */
-
-	// Get the correct phase diagram
-	for(i=0; i<max_num_pd; i++)
-	{
-		i_pd  = -1;
-		found = 1;
-		if(!pd->rho_pdns[5][i])
-		{
-			// We found an empty phase diagram spot
-		}
-		else
-		{
-			for(j=0; j<max_name; j++)
-			{
-				if((pd->rho_pdns[j][i] != pdn[j]))
-				{
-					found = 0;
-					break;
-				}
-			}
-			if(found==1)
-			{
-				i_pd = i;  // Store the column of the buffer
-				break;
-			}
-		}
-	}
-
-	if(i_pd<0)
-	{
-		pd->rho = 0;
-		PetscFunctionReturn(0);
-	}
-
-	// Temporarily add the pressure shift in this function to properly interpolate in the phase digram
-	p = p-pshift;
-
-	// Take absolute value of pressure
-	if(p<0)
-	{
-		// p = -1*p;
-		p = 0;
-	}
-
-	indT[0] = (PetscInt)floor((T-pd->rho_pdval[0][i_pd])/pd->rho_pdval[1][i_pd]);
-	indT[1] = indT[0] + 1;
-
-	indP[0] = (PetscInt)floor((p-(pd->rho_pdval[4][i_pd]))/pd->rho_pdval[5][i_pd]);
-	indP[1] = indP[0] + 1;
-
-	weight[0] = ((indP[1]*pd->rho_pdval[5][i_pd]    + pd->rho_pdval[4][i_pd]) - p) / ((pd->rho_pdval[5][i_pd]*indP[1]+pd->rho_pdval[4][i_pd]) - (pd->rho_pdval[5][i_pd]*indP[0]+pd->rho_pdval[4][i_pd]));
-	weight[1] = (p - (pd->rho_pdval[5][i_pd]*indP[0]+ pd->rho_pdval[4][i_pd]))     / ((pd->rho_pdval[5][i_pd]*indP[1]+pd->rho_pdval[4][i_pd]) - (pd->rho_pdval[5][i_pd]*indP[0]+pd->rho_pdval[4][i_pd]));
-	weight[2] = ((pd->rho_pdval[1][i_pd]*indT[1]    + pd->rho_pdval[0][i_pd]) - T) / ((pd->rho_pdval[1][i_pd]*indT[1]+pd->rho_pdval[0][i_pd]) - (pd->rho_pdval[1][i_pd]*indT[0]+pd->rho_pdval[0][i_pd]));
-	weight[3] = (T - (pd->rho_pdval[1][i_pd]*indT[0]+ pd->rho_pdval[0][i_pd]))     / ((pd->rho_pdval[1][i_pd]*indT[1]+pd->rho_pdval[0][i_pd]) - (pd->rho_pdval[1][i_pd]*indT[0]+pd->rho_pdval[0][i_pd]));
-
-	if(indT[1]>(*pd->rho_pdval[2]))
-	{
-		indT[0] = (PetscInt)pd->rho_pdval[2][i_pd]-1;
-		indT[1] = (PetscInt)pd->rho_pdval[2][i_pd];
-		weight[2] = 1;
-		weight[3] = 0;
-	}
-	if(indP[1]>(*pd->rho_pdval[6]))
-	{
-		indP[0] = (PetscInt)pd->rho_pdval[6][i_pd]-1;
-		indP[1] = (PetscInt)pd->rho_pdval[6][i_pd];
-		weight[0] = 1;
-		weight[1] = 0;
-	}
-	if(indT[0]<1)
-	{
-		indT[0] = 0;
-		indT[1] = 1;
-		weight[2] = 0;
-		weight[3] = 1;
-	}
-	if(indP[0]<1)
-	{
-		indP[0] = 0;
-		indP[1] = 1;
-		weight[0] = 0;
-		weight[1] = 1;
-	}
-	ind[0] = (PetscInt)pd->rho_pdval[2][i_pd] * (indP[0]-1) + indT[0];
-	ind[1] = (PetscInt)pd->rho_pdval[2][i_pd] * (indP[0]-1) + indT[1];
-	ind[2] = (PetscInt)pd->rho_pdval[2][i_pd] * (indP[1]-1) + indT[0];
-	ind[3] = (PetscInt)pd->rho_pdval[2][i_pd] * (indP[1]-1) + indT[1];
-	if(ind[0]<0)
-	{
-		ind[0] = 0;
-		ind[1] = 1;
-	}
-	if(ind[3]>pd->rho_pdval[2][i_pd]*pd->rho_pdval[6][i_pd])
-	{
-		ind[2] = (PetscInt)pd->rho_pdval[2][i_pd]*(PetscInt)pd->rho_pdval[6][i_pd]-1;
-		ind[3] = (PetscInt)pd->rho_pdval[2][i_pd]*(PetscInt)pd->rho_pdval[6][i_pd];
-	}
-
-	// Interpolate density
-	fx0 = weight[0] * pd->rho_v[ind[0]][i_pd] + weight[1] * pd->rho_v[ind[2]][i_pd];
-	fx1 = weight[0] * pd->rho_v[ind[1]][i_pd] + weight[1] * pd->rho_v[ind[3]][i_pd];
-	pd->rho = weight[2] * fx0           + weight[3] * fx1;
-
-	// Interpolate mf if present
-	if(pd->rho_pdval[8][i_pd] == 4 )
-	{
-		fx0 = weight[0] * pd->Me_v[ind[0]][i_pd] + weight[1] * pd->Me_v[ind[2]][i_pd];
-		fx1 = weight[0] * pd->Me_v[ind[1]][i_pd] + weight[1] * pd->Me_v[ind[3]][i_pd];
-		pd->mf  = weight[2] * fx0      + weight[3] * fx1;
-	}
-	// Interpolate mf + rho fluid if present
-	else if(pd->rho_pdval[8][i_pd] == 5)
-	{
-		fx0 = weight[0] * pd->Me_v[ind[0]][i_pd] + weight[1] * pd->Me_v[ind[2]][i_pd];
-		fx1 = weight[0] * pd->Me_v[ind[1]][i_pd] + weight[1] * pd->Me_v[ind[3]][i_pd];
-		pd->mf  = weight[2] * fx0      + weight[3] * fx1;
-
-		fx0 = weight[0] * pd->rho_f_v[ind[0]][i_pd] + weight[1] * pd->rho_f_v[ind[2]][i_pd];
-		fx1 = weight[0] * pd->rho_f_v[ind[1]][i_pd] + weight[1] * pd->rho_f_v[ind[3]][i_pd];
-		pd->rho_f  = weight[2] * fx0   + weight[3] * fx1;
-
-		// Error checking
-		// if(PetscIsInfOrNanScalar(pd->rho_f)) pd->rho_f = 0;
-
-		// Apply feedback to the density (rho_eff = rho_f*mf+(1-mf)*rho)
-		pd->rho = (pd->mf * pd->rho_f) + ((1-pd->mf) * pd->rho);
-	}
-	// No melt fraction
-	else
-	{
-		pd->mf = 0;
-	}
-
-	// Error checking
-	// if(PetscIsInfOrNanScalar(pd->rho)) pd->rho = 2500;
-
-	// Uncomment to debug values
-	// PetscPrintf(PETSC_COMM_WORLD,"i_pd = %i\np = %.60f \n T = %.20lf \n\nFINAL INDICES:\n ind[0] = %i \n ind[1] = %i\n ind[2] = %i\n ind[3] = %i\n weight[0] = %.10f\n  weight[1] = %.10f\n weight[0] = %.10f\n  weight[1] = %.10f\n\n --> rho = %.20f\n \n 1 = %.20lf \n2 = %.20lf \n3 = %.20lf \n4 = %.20lf \n5 = %.20lf \n6 = %.20lf \n7 = %.20lf \n8 = %.20lf \n \n rho[0] = %.20f \nrho[1] = %.20f \nrho[2] = %.20f \nrho[3] = %.20f \n   ",i_pd,p,T,ind[0],ind[1],ind[2],ind[3],weight[0],weight[1],weight[2],weight[3],pd->rho,pd->rho_pdval[0][i_pd] ,pd->rho_pdval[1][i_pd],pd->rho_pdval[2][i_pd],pd->rho_pdval[3][i_pd],pd->rho_pdval[4][i_pd],pd->rho_pdval[5][i_pd],pd->rho_pdval[6][i_pd],pd->rho_pdval[7][i_pd],pd->rho_v[ind[0]][i_pd],pd->rho_v[ind[1]][i_pd],pd->rho_v[ind[2]][i_pd],pd->rho_v[ind[3]][i_pd]);
-	// PetscPrintf(PETSC_COMM_WORLD,"MF = %.20f; RHOF = %.20f; RHO = %.20f; i_pd = %i ; fx = %.20f; fx1 = %.20f; rhof1 = %.20f; rhof2 = %.20f; ind3 = %i; weight0 = %.20f ; %.3f\n",pd->mf,pd->rho_f,pd->rho,i_pd,fx0,fx1,pd->rho_f_v[ind[1]][i_pd],pd->rho_f_v[ind[3]][i_pd],ind[3],weight[0],pd->rho_pdval[8][i_pd]);
-
-	PetscFunctionReturn(0);
-}
-//---------------------------------------------------------------------------
 #undef __FUNCT__
 #define __FUNCT__ "ADVCheckMarkPhases"
-PetscErrorCode ADVCheckMarkPhases(AdvCtx *actx, PetscInt numPhases)
+PetscErrorCode ADVCheckMarkPhases(AdvCtx *actx)
 {
 	// check phases of markers
-	Marker      *P;
-	PetscInt     jj;
+	Marker    *P;
+	PetscInt  jj;
+	PetscInt  numPhases;
 
 	PetscFunctionBegin;
+
+	numPhases = actx->dbm->numPhases;
 
 	// scan all markers
 	for(jj = 0; jj < actx->nummark; jj++)
@@ -2247,59 +2050,3 @@ PetscErrorCode ADVCheckMarkPhases(AdvCtx *actx, PetscInt numPhases)
 
 	PetscFunctionReturn(0);
 }
-//---------------------------------------------------------------------------
-// service functions
-//-----------------------------------------------------------------------------
-PetscInt getPtrCnt(PetscInt n, PetscInt counts[], PetscInt ptr[])
-{
-	// compute pointers from counts, return total count
-
-	PetscInt i, tcnt = 0;
-
-	for(i = 0; i < n; i++)
-	{
-		ptr[i] = tcnt;
-		tcnt  += counts[i];
-	}
-	return tcnt;
-}
-//---------------------------------------------------------------------------
-void rewindPtr(PetscInt n, PetscInt ptr[])
-{
-	// rewind pointers after using them as access iterators
-
-	PetscInt i, prev = 0, next;
-
-	for(i = 0; i < n; i++)
-	{
-		next   = ptr[i];
-		ptr[i] = prev;
-		prev   = next;
-	}
-}
-//-----------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "getPhaseRatio"
-PetscErrorCode getPhaseRatio(PetscInt n, PetscScalar *v, PetscScalar *rsum)
-{
-	// compute phase ratio array
-
-	PetscInt    i;
-	PetscScalar sum = 0.0;
-
-	PetscFunctionBegin;
-
-	for(i = 0; i < n; i++) sum  += v[i];
-
-	if(sum == 0.0)
-	{
-		SETERRQ(PETSC_COMM_SELF, PETSC_ERR_USER, " Empty control volume");
-	}
-
-	for(i = 0; i < n; i++) v[i] /= sum;
-
-	(*rsum) = sum;
-
-	PetscFunctionReturn(0);
-}
-//-----------------------------------------------------------------------------

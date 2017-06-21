@@ -44,14 +44,10 @@
 //---------------------------------------------------------------------------
 #include "LaMEM.h"
 #include "fdstag.h"
-#include "solVar.h"
-#include "scaling.h"
-#include "tssolve.h"
-#include "bc.h"
-#include "JacRes.h"
-#include "multigrid.h"
 #include "matrix.h"
+#include "multigrid.h"
 #include "lsolve.h"
+#include "JacRes.h"
 //---------------------------------------------------------------------------
 // * implement preconditioners in PETSc
 // * add default solver options
@@ -61,36 +57,35 @@
 PetscErrorCode PCStokesSetFromOptions(PCStokes pc)
 {
 	PetscBool found;
-	char      pname[MAX_NAME_LEN];
+	char      pname[_STR_LEN_];
 
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
 
-	ierr = PetscOptionsGetString(NULL, NULL,"-jp_type", pname, MAX_NAME_LEN, &found); CHKERRQ(ierr);
+	ierr = PetscOptionsGetString(NULL, NULL,"-jp_type", pname, _STR_LEN_, &found); CHKERRQ(ierr);
 
 	if(found == PETSC_TRUE)
 	{
 		if(!strcmp(pname, "bf"))
 		{
-			PetscPrintf(PETSC_COMM_WORLD, " Preconditioner type            : block factorization\n");
-            
+			PetscPrintf(PETSC_COMM_WORLD, "   Preconditioner type           : block factorization\n");
 			pc->type = _STOKES_BF_;
 		}
 		else if(!strcmp(pname, "mg"))
 		{
-			PetscPrintf(PETSC_COMM_WORLD, " Preconditioner type            : coupled Galerkin geometric multigrid\n");
+			PetscPrintf(PETSC_COMM_WORLD, "   Preconditioner type           : coupled Galerkin geometric multigrid\n");
 			pc->type = _STOKES_MG_;
 		}
 		else if(!strcmp(pname, "user"))
 		{
-			PetscPrintf(PETSC_COMM_WORLD, " Preconditioner type            : user-defined\n");
+			PetscPrintf(PETSC_COMM_WORLD, "   Preconditioner type           : user-defined\n");
 			pc->type = _STOKES_USER_;
 		}
-		else SETERRQ1(PETSC_COMM_SELF, PETSC_ERR_USER,"#Incorrect Jacobian preconditioner type: %s", pname);
+		else SETERRQ1(PETSC_COMM_WORLD, PETSC_ERR_USER,"Incorrect Jacobian preconditioner type: %s", pname);
 	}
 	else
 	{
-		PetscPrintf(PETSC_COMM_WORLD, " Preconditioner type            : user-defined\n");
+		PetscPrintf(PETSC_COMM_WORLD, "   Preconditioner type           : user-defined\n");
 		pc->type = _STOKES_USER_;
 	}
 
@@ -149,7 +144,7 @@ PetscErrorCode PCStokesCreate(PCStokes *p_pc, PMat pm)
 	}
 
 	// check matrix type
-	if(pm->type != pm_type) SETERRQ(PETSC_COMM_SELF, PETSC_ERR_USER, "Incorrect Stokes preconditioner matrix type used");
+	if(pm->type != pm_type) SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "Incorrect Stokes preconditioner matrix type used");
 
 	// set matrix
 	pc->pm = pm;
@@ -241,7 +236,7 @@ PetscErrorCode PCStokesBFSetFromOptions(PCStokes pc)
 	PCStokesBF *bf;
 
 	PetscBool   flg;
-	char        pname[MAX_NAME_LEN];
+	char        pname[_STR_LEN_];
 
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
@@ -250,7 +245,7 @@ PetscErrorCode PCStokesBFSetFromOptions(PCStokes pc)
 	bf = (PCStokesBF*)pc->data;
 
 	// set factorization type
-	ierr = PetscOptionsGetString(NULL, NULL,"-bf_type", pname, MAX_NAME_LEN, &flg); CHKERRQ(ierr);
+	ierr = PetscOptionsGetString(NULL, NULL,"-bf_type", pname, _STR_LEN_, &flg); CHKERRQ(ierr);
 
 	if(flg == PETSC_TRUE)
 	{
@@ -266,7 +261,7 @@ PetscErrorCode PCStokesBFSetFromOptions(PCStokes pc)
 
 			bf->type = _LOWER_;
 		}
-		else SETERRQ1(PETSC_COMM_SELF, PETSC_ERR_USER,"#Incorrect block factorization type: %s", pname);
+		else SETERRQ1(PETSC_COMM_WORLD, PETSC_ERR_USER,"Incorrect block factorization type: %s", pname);
 	}
 	else
 	{
@@ -276,7 +271,7 @@ PetscErrorCode PCStokesBFSetFromOptions(PCStokes pc)
 	}
 
 	// set velocity solver type
-	ierr = PetscOptionsGetString(NULL, NULL,"-bf_vs_type", pname, MAX_NAME_LEN, &flg); CHKERRQ(ierr);
+	ierr = PetscOptionsGetString(NULL, NULL,"-bf_vs_type", pname, _STR_LEN_, &flg); CHKERRQ(ierr);
 
 	if(flg == PETSC_TRUE)
 	{
@@ -292,7 +287,7 @@ PetscErrorCode PCStokesBFSetFromOptions(PCStokes pc)
 
 			bf->vtype = _VEL_USER_;
 		}
-		else SETERRQ1(PETSC_COMM_SELF, PETSC_ERR_USER,"#Incorrect velocity solver type: %s", pname);
+		else SETERRQ1(PETSC_COMM_WORLD, PETSC_ERR_USER,"Incorrect velocity solver type: %s", pname);
 	}
 	else
 	{
