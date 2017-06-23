@@ -91,6 +91,8 @@ struct GeomPrim
 	// layer
 	PetscScalar top;
 	PetscScalar bot;
+	// cylinder
+	PetscInt normal;
 
 	PetscInt (*setPhase)(GeomPrim*, Marker*);
 };
@@ -102,6 +104,8 @@ PetscInt setPhaseBox(GeomPrim *box, Marker *P);
 PetscInt setPhaseLayer(GeomPrim *layer, Marker *P);
 
 PetscInt setPhaseHex(GeomPrim *hex, Marker *P);
+
+PetscInt setPhaseCylinder(GeomPrim *cylinder, Marker *P);
 
 void HexGetBoundingBox(
 		PetscScalar *coord,   // hex coordinates
