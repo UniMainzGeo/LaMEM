@@ -1,33 +1,28 @@
-function FDSTAGSaveMarkersParallelMatlab(A,fname, Is64BIT)
+function FDSTAGSaveMarkersParallelMatlab(A, fname, Is64BIT)
 % This function saves model setup into a parallel configuration
-%       A - structure built with ParallelMatlab_CreatePhases.m and contais:
-%            W - width of domain in X-dir
-%            L - length of domain in Y-dir
-%            H - height of domain in Z-dir
-%            nump_x - no. of particles in X-dir
-%            nump_y - no. of particles in Y-dir
-%            nump_z - no. of particles in Z-dir
-%            Phase  - phase information of the particles
-%            Temp  - Temperature information of the particles
-%            x  - vector containing the x coordinates of particles
-%            y  - vector containing the y coordinates of particles
-%            z  - vector containing the y coordinates of particles
-%            npart_x - no. of particles/cell in X-dir
-%            npart_y - no. of particles/cell in Y-dir
-%            npart_z - no. of particles/cell in Z-dir
-%       fname - name of the file with the processor configuration;
-%               in LaMEM this is saved with -SavePartitioning 1
-%       Is64BIT - logical(1) if you are reading a 64 bit file
-
+%
+%  A - structure that contains:
+%            Xpart   - 3D matrix containing the x coordinates of markers
+%            Ypart   - 3D matrix containing the y coordinates of markers
+%            Zpart   - 3D matrix containing the z coordinates of markers
+%            x       - 1D vector containing the x coordinates of markers
+%            y       - 1D vector containing the y coordinates of markers
+%            z       - 1D vector containing the z coordinates of markers
+%            Phase   - phase information of the markers
+%            Temp    - Temperature information of the markers
+%        
+%   fname   - name of the file with the processor configuration
+%             (in LaMEM this is created with -mode save_grid)
+%   Is64BIT - logical(1) if you are reading a 64 bit file
 
 % ----------- Function begin ----------- %
-if isdir('markers')
-else
+
+if ~isdir('markers')
     mkdir markers
 end
 
 % No. of properties the markers carry: x,y,z-coord, phase, T
-num_prop      = 5;
+num_prop = 5;
 
 % Read Processor Partitioning
 [Nprocx,Nprocy,Nprocz,xc,yc,zc] = GetProcessorPartitioning(fname, Is64BIT);
@@ -52,15 +47,6 @@ y_end(num)  = iy_end(num_j);
 z_start(num)= iz_start(num_k);
 z_end(num)  = iz_end(num_k);
 
-% Partition grid cells
-% xi_cell     = xi/A.npart_x;
-% yi_cell     = yi/A.npart_y;
-% zi_cell     = zi/A.npart_z;
-
-% cell_x(num) = xi_cell(num_i);
-% cell_y(num) = yi_cell(num_j);
-% cell_z(num) = zi_cell(num_k);
-
 % Loop over all processors partition
 
 for num=1:Nproc
@@ -77,13 +63,6 @@ for num=1:Nproc
     % Information vector per processor
     lvec_info(1)  = num_particles;
 
-%     part_x   = part_x(:);
-%     part_y   = part_y(:);
-%     part_z   = part_z(:);
-%     part_phs = part_phs(:);
-%     part_T   = part_T(:);
-
-
     lvec_prtcls = zeros(1,num_prop*num_particles);
 
     lvec_prtcls(1:num_prop:end) = part_x(:);
@@ -92,33 +71,14 @@ for num=1:Nproc
     lvec_prtcls(4:num_prop:end) = part_phs(:);
     lvec_prtcls(5:num_prop:end) = part_T(:);
 
-%     for i=1:num_particles
-%         lvec_prtcls((i-1)*num_prop+ 1) = part_x(i);      %x
-%         lvec_prtcls((i-1)*num_prop+ 2) = part_y(i);      %y
-%         lvec_prtcls((i-1)*num_prop+ 3) = part_z(i);      %z
-%         lvec_prtcls((i-1)*num_prop+ 4) = part_phs(i);    %phase
-%         lvec_prtcls((i-1)*num_prop+ 5) = part_T(i);      %T
-%
-%     end
-
     % Output files
     fname = sprintf('./markers/mdb.%1.8d.dat', num-1);
     disp(['Writing file -> ',fname])
-     lvec_output    = [lvec_info(:); lvec_prtcls(:)];
-
+    lvec_output    = [lvec_info(:); lvec_prtcls(:)];
 
     PetscBinaryWrite(fname,lvec_output);
 
-    %         % For debugging - Ascii output
-    %         fname = sprintf('./markers/mdb.ascii.%1.8d.dat', num-1);
-    %         disp(['Writing file -> ',fname])
-    %         fid = fopen(fname, 'w');
-    %         fprintf(fid, '%d\n',lvec_info);
-    %         fprintf(fid, '%d\n',lvec_prtcls);
-    %         fclose(fid);
-
-
-     clear part_x part_y part_z part_phs lvec_info lvec_prtcls id_sort No_id_vec No_id lvec_output
+    clear part_x part_y part_z part_phs lvec_info lvec_prtcls id_sort No_id_vec No_id lvec_output
 end
 
 end

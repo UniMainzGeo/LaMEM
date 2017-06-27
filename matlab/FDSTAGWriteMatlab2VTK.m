@@ -1,38 +1,28 @@
 % Function FDSTAGWriteMatlab2VTK using ASCII or BINARY format
-% syntax:
+% Syntax:
 %         FDSTAGWriteMatlab2VTK(A,'BINARY')
 %         FDSTAGWriteMatlab2VTK(A,'ASCII')
-% where A - structure built with ParallelMatlab_CreatePhases.m and contais:
-%            W - width of domain in X-dir
-%            L - length of domain in Y-dir
-%            H - height of domain in Z-dir
-%            nump_x - no. of particles in X-dir
-%            nump_y - no. of particles in Y-dir
-%            nump_z - no. of particles in Z-dir
-%            Phase  - phase information of the particles
-%            Temp  - Temperature information of the particles
-%            x  - vector containing the x coordinates of particles
-%            y  - vector containing the y coordinates of particles
-%            z  - vector containing the y coordinates of particles
-%            npart_x - no. of particles/cell in X-dir
-%            npart_y - no. of particles/cell in Y-dir
-%            npart_z - no. of particles/cell in Z-dir
-
+%
+% A - structure that contains:
+%            x      - 1D vector containing the x coordinates of markers
+%            y      - 1D vector containing the y coordinates of markers
+%            z      - 1D vector containing the y coordinates of markers
+%            Phase  - phase information of the markers
+%            Temp   - temperature information of the markers
+%
+%-------------------------------------------------------------------------
 
 function a = FDSTAGWriteMatlab2VTK(A,format)
-% Main function
-
-if strcmp(format,'ASCII')
-    %print in ASCII format
-    WriteVTKModelSetup_ASCII(A);
-elseif strcmp(format,'BINARY')
-    WriteVTKModelSetup_BINARY(A);
-elseif strcmp(format,'VTU_BINARY')
-    WriteVTUModelSetup_BINARY(A);
-else
-    disp(['Required INCORRECT output format. Correct format: ASCII or BINARY '])
-end
-
+    % Main function
+    if strcmp(format,'ASCII')
+        % print in ASCII format
+        WriteVTKModelSetup_ASCII(A);
+    elseif strcmp(format,'BINARY')
+        % print in BINARY format
+        WriteVTKModelSetup_BINARY(A);
+    else
+        disp(['Required INCORRECT output format. Correct format: ASCII or BINARY '])
+    end
 end
 
 
@@ -40,14 +30,18 @@ end
 function a = WriteVTKModelSetup_ASCII(A)
 % Write rectilinear file in ASCII format
 
+nump_x = length(A.x);
+nump_y = length(A.y);
+nump_z = length(A.z);
+
 fname_vtk   = 'VTK_ModelSetup_paraview_ascii.vtr';
 fid         = fopen(fname_vtk,'w','b');           % 'b': BigEndian
 
 fprintf(fid,'<?xml version="1.0"?> \n');
 fprintf(fid,'<VTKFile type="RectilinearGrid" version="0.1" byte_order="BigEndian" >\n');
 
-fprintf(fid,'\t<RectilinearGrid WholeExtent=\"%d %d %d %d %d %d\">\n',1,A.nump_x,1,A.nump_y,1,A.nump_z);
-fprintf(fid,'\t\t<Piece Extent=\"%d %d %d %d %d %d\">\n',1,A.nump_x,1,A.nump_y,1,A.nump_z);
+fprintf(fid,'\t<RectilinearGrid WholeExtent=\"%d %d %d %d %d %d\">\n',1,nump_x,1,nump_y,1,nump_z);
+fprintf(fid,'\t\t<Piece Extent=\"%d %d %d %d %d %d\">\n',1,nump_x,1,nump_y,1,nump_z);
 
 fprintf(fid,'\t\t\t<CellData></CellData>\n');
 
@@ -126,13 +120,17 @@ end
 function a = WriteVTKModelSetup_BINARY(A)
 % Write rectilinear file in BINARY format
 
+nump_x = length(A.x);
+nump_y = length(A.y);
+nump_z = length(A.z);
+
 % Definitions and initialization
-sizeof_Float32  =   4;      
-sizeof_Float64  =   4;     
-sizeof_UInt64   =   8; 
-sizeof_UInt32   =   4; 
-sizeof_UInt16   =   2; 
-sizeof_UInt8    =   1; 
+sizeof_Float32  =   4;
+sizeof_Float64  =   4;
+sizeof_UInt64   =   8;
+sizeof_UInt32   =   4;
+sizeof_UInt16   =   2;
+sizeof_UInt8    =   1;
 
 offset = 0;
 
@@ -142,15 +140,15 @@ fid         = fopen(fname_vtk,'w','b');           % 'b': BigEndian
 fprintf(fid,'<?xml version="1.0"?> \n');
 fprintf(fid,'<VTKFile type="RectilinearGrid" version="0.1" byte_order="BigEndian" >\n');
 
-fprintf(fid,'\t<RectilinearGrid WholeExtent=\"%d %d %d %d %d %d\">\n',1,A.nump_x,1,A.nump_y,1,A.nump_z);
-fprintf(fid,'\t\t<Piece Extent=\"%d %d %d %d %d %d\">\n',1,A.nump_x,1,A.nump_y,1,A.nump_z);
+fprintf(fid,'\t<RectilinearGrid WholeExtent=\"%d %d %d %d %d %d\">\n',1,nump_x,1,nump_y,1,nump_z);
+fprintf(fid,'\t\t<Piece Extent=\"%d %d %d %d %d %d\">\n',1,nump_x,1,nump_y,1,nump_z);
 
 fprintf(fid,'\t\t\t<CellData></CellData>\n');
 
 fprintf(fid,'\t\t\t<Coordinates>\n');
 
 fprintf(fid,'\t\t\t\t<DataArray type=\"Float32\" Name=\"Coordinates_X\" NumberOfComponents=\"1\" format=\"appended\"  offset=\"%ld\"/>\n',int64(offset));
-offset = offset + 1*sizeof_UInt32 + sizeof_Float32*length(A.x); 
+offset = offset + 1*sizeof_UInt32 + sizeof_Float32*length(A.x);
 
 fprintf(fid,'\t\t\t\t<DataArray type=\"Float32\" Name=\"Coordinates_Y\" NumberOfComponents=\"1\" format=\"appended\"  offset=\"%ld\"/>\n',int64(offset));
 offset = offset + 1*sizeof_UInt32 + sizeof_Float32*length(A.y);
@@ -164,19 +162,19 @@ fprintf(fid,'\n');
 fprintf(fid,'\n');
 fprintf(fid,'\t\t\t<PointData Scalars=\"Dimensional\">\n');
 fprintf(fid,'\n');
-% 
+%
 if  max(A.Phase(:))<256
     fprintf(fid,'\t\t\t\t<DataArray type=\"Int8\" Name=\"Phase\" NumberOfComponents=\"1\" format=\"appended\"  offset=\"%ld\"/>\n',int64(offset));
     offset = offset + 1*sizeof_UInt32 + sizeof_UInt8*(size(A.Phase,1)*size(A.Phase,2)*size(A.Phase,3));
 
 else
-    
+
     fprintf(fid,'\t\t\t\t<DataArray type=\"Int16\" Name=\"Phase\" NumberOfComponents=\"1\" format=\"appended\"  offset=\"%ld\"/>\n',int64(offset));
     offset = offset + 1*sizeof_UInt32 + sizeof_UInt16*(size(A.Phase,1)*size(A.Phase,2)*size(A.Phase,3));
 end
 fprintf(fid,'\t\t\t\t<DataArray type=\"Float32\" Name=\"Temp\" NumberOfComponents=\"1\" format=\"appended\"  offset=\"%ld\"/>\n',int64(offset));
 offset = offset + 1*sizeof_UInt32 + sizeof_Float32*(size(A.Phase,1)*size(A.Phase,2)*size(A.Phase,3));
- 
+
 
 fprintf(fid,'\t\t\t</PointData>\n');
 fprintf(fid,'\t\t</Piece>\n');
@@ -186,7 +184,7 @@ fprintf(fid,'\t</RectilinearGrid>\n');
 fprintf(fid,'  <AppendedData encoding=\"raw\">\n');
 fprintf(fid,'_');
 
-disp(['Writing Appended data for binary output in Paraview... '])
+disp(['Writing Appended data for binary output in Paraview ... '])
 % X coord
 fwrite(fid,int32(length(A.x)*sizeof_Float32),'int32');
 fwrite(fid,A.x(:),'float32');
@@ -201,17 +199,17 @@ fwrite(fid,A.z(:),'float32');
 
 %% Properties
 % Phase information - save as integer
-% 
+%
 if  max(A.Phase(:))<256
     % we can safely save our data as 8 bit integers (implying that we can
     % have up to 256 phases)
     if size(A.Phase,1)*size(A.Phase,2)*size(A.Phase,3)*sizeof_UInt8>2^32
         warning('Problem with writing data to VTK file, as the number of entries is larger than 2^32')
     end
-    
+
     fwrite(fid,int32(size(A.Phase,1)*size(A.Phase,2)*size(A.Phase,3)*sizeof_UInt8),'int32');
     fwrite(fid,int8(A.Phase(:)),'int8');
-    
+
 else
     % Use 16 bit, which would allow us to have 65535 phases, which seems
     % sufficient for most model setups
@@ -224,106 +222,6 @@ fwrite(fid,int32(size(A.Phase,1)*size(A.Phase,2)*size(A.Phase,3)*sizeof_Float32)
 fwrite(fid,(A.Temp(:)),'float32');
 
 
-fprintf(fid,'</VTKFile>\n');
-
-fclose(fid);
-
-end
-
-%% =======================================================================
-function a = WriteVTUModelSetup_BINARY(A)
-% Write rectilinear file in BINARY format
-
-% Definitions and initialization
-sizeof_Float32  =   4;      
-sizeof_Float64  =   4;     
-sizeof_UInt64   =   8; 
-sizeof_UInt32   =   4; 
-sizeof_UInt16   =   2; 
-sizeof_UInt8    =   1; 
-
-offset = 0;
-
-connect = A.nump_x*A.nump_y*A.nump_z;
-
-fname_vtk   = 'VTU_ModelSetup_paraview_binary.vtu';
-fid         = fopen(fname_vtk,'w','b');           % 'b': BigEndian
-
-fprintf(fid,'<?xml version="1.0"?> \n');
-fprintf(fid,'<VTKFile type="UnstructuredGrid" version="0.1" byte_order="BigEndian" >\n');
-
-fprintf(fid,'\t<UnstructuredGrid>\n');
-fprintf(fid,'\t\t<Piece NumberOfPoints=\"%d\" NumberOfCells=\"%d\">\n',connect,connect);
-
-fprintf(fid,'\t\t\t<Cells>\n');
-
-fprintf(fid,'\t\t\t\t<DataArray type=\"Int32\" Name=\"connectivity\" format=\"appended\"  offset=\"%ld\"/>\n',int64(offset));
-offset = offset + 1*sizeof_UInt32 + sizeof_UInt32*connect; 
-
-fprintf(fid,'\t\t\t\t<DataArray type=\"Int32\" Name=\"offsets\" format=\"appended\"  offset=\"%ld\"/>\n',int64(offset));
-offset = offset + 1*sizeof_UInt32 + sizeof_UInt32*connect; 
-
-fprintf(fid,'\t\t\t\t<DataArray type=\"Int32\" Name=\"types\" format=\"appended\"  offset=\"%ld\"/>\n',int64(offset));
-offset = offset + 1*sizeof_UInt32 + sizeof_UInt32*connect; 
-
-fprintf(fid,'\t\t\t</Cells>\n');
-
-fprintf(fid,'\t\t\t<CellData></CellData>\n');
-
-fprintf(fid,'\t\t\t<Points>\n');
-
-fprintf(fid,'\t\t\t\t<DataArray type=\"Float32\" NumberOfComponents=\"3\" format=\"appended\"  offset=\"%ld\"/>\n',int64(offset));
-offset = offset + 1*sizeof_UInt32 + sizeof_Float32*(connect*3); 
-
-fprintf(fid,'\t\t\t</Points>\n');
-
-fprintf(fid,'\t\t\t<PointData Scalars=\"\">\n');
-
-fprintf(fid,'\t\t\t\t<DataArray type=\"Int32\" Name=\"Phase\" format=\"appended\"  offset=\"%ld\"/>\n',int64(offset));
-offset = offset + 1*sizeof_UInt32 + sizeof_UInt32*connect; 
-
-fprintf(fid,'\t\t\t\t<DataArray type=\"Float32\" Name=\"Temp\" format=\"appended\"  offset=\"%ld\"/>\n',int64(offset));
-
-fprintf(fid,'\t\t\t</PointData>\n');
-
-fprintf(fid,'\t\t</Piece>\n');
-fprintf(fid,'\t</UnstructuredGrid>\n');
-
-%%% ---------------- Appended ---------------- data %%%
-fprintf(fid,'  <AppendedData encoding=\"raw\">\n');
-fprintf(fid,'_');
-
-disp(['Writing Appended data for binary output in Paraview... '])
-
-% Connectivity
-x = 0:connect-1;
-fwrite(fid,int32(connect*sizeof_UInt32),'int32');
-fwrite(fid,x(:),'int32');
-
-% Offsets
-x = x+1;
-fwrite(fid,int32(connect*sizeof_UInt32),'int32');
-fwrite(fid,x(:),'int32');
-
-% Types
-x = ones(connect,1);
-fwrite(fid,int32(connect*sizeof_UInt32),'int32');
-fwrite(fid,x(:),'int32');
-
-% X, Y, Z coord
-C = [A.Xpart(:) A.Ypart(:) A.Zpart(:)];
-fwrite(fid,int32(3*connect*sizeof_Float32),'int32');
-fwrite(fid,C','float32');
-
-% Phase
-fwrite(fid,int32(connect*sizeof_UInt32),'int32');
-fwrite(fid,(A.Phase(:)),'int32');
-
-% Temperature
-fwrite(fid,int32(connect*sizeof_Float32),'int32');
-fwrite(fid,(A.Temp(:)),'float32');
-
-fprintf(fid,'\n\t</AppendedData>\n');
 fprintf(fid,'</VTKFile>\n');
 
 fclose(fid);
