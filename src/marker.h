@@ -46,7 +46,7 @@
 #define __marker_h__
 //---------------------------------------------------------------------------
 
-#define _max_geom_ 20
+#define _max_geom_ 100
 
 //---------------------------------------------------------------------------
 
@@ -83,16 +83,16 @@ typedef struct GeomPrim GeomPrim;
 struct GeomPrim
 {
 	PetscInt    phase;
-	// sphere
+	// sphere & cylinder
 	PetscScalar center[3];
 	PetscScalar radius;
+	// cylinder
+	PetscScalar base[3], cap[3];
 	// box & hex
 	PetscScalar bounds[6], coord[24];
 	// layer
 	PetscScalar top;
 	PetscScalar bot;
-	// cylinder
-	PetscInt normal;
 
 	PetscInt (*setPhase)(GeomPrim*, Marker*);
 };

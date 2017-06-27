@@ -582,8 +582,8 @@ PetscErrorCode ADVMarkInitFiles(AdvCtx *actx, FB *fb)
 PetscErrorCode ADVMarkInitGeom(AdvCtx *actx, FB *fb)
 {
 	Marker         *P;
-	PetscScalar    chLen;
 	PetscLogDouble t;
+	PetscScalar    chLen;
 	PetscInt       jj, iter, ngeom, imark, maxPhaseID;
 	GeomPrim       geom[_max_geom_], *sphere, *box, *hex, *layer, *cylinder;
 
@@ -618,8 +618,8 @@ PetscErrorCode ADVMarkInitGeom(AdvCtx *actx, FB *fb)
 		sphere = &geom[iter++];
 
 		ierr = getIntParam   (fb, _REQUIRED_, "phase",  &sphere->phase,  1, maxPhaseID); CHKERRQ(ierr);
-		ierr = getScalarParam(fb, _REQUIRED_, "center",  sphere->center, 3, chLen);      CHKERRQ(ierr);
 		ierr = getScalarParam(fb, _REQUIRED_, "radius", &sphere->radius, 1, chLen);      CHKERRQ(ierr);
+		ierr = getScalarParam(fb, _REQUIRED_, "center",  sphere->center, 3, chLen);      CHKERRQ(ierr);
 
 		sphere->setPhase = setPhaseSphere;
 
@@ -714,9 +714,9 @@ PetscErrorCode ADVMarkInitGeom(AdvCtx *actx, FB *fb)
 
 	ierr = FBFreeBlocks(fb); CHKERRQ(ierr);
 
-	//=======
-	// CYLINDER
-	//=======
+	//==========
+	// CYLINDERS
+	//==========
 
 	ierr = FBFindBlocks(fb, _OPTIONAL_, "<CylinderStart>", "<CylinderEnd>"); CHKERRQ(ierr);
 
@@ -731,12 +731,10 @@ PetscErrorCode ADVMarkInitGeom(AdvCtx *actx, FB *fb)
 	{
 		cylinder = &geom[iter++];
 
-		ierr = getIntParam   (fb, _REQUIRED_, "phase",  &cylinder->phase,  1, maxPhaseID); CHKERRQ(ierr);
-		ierr = getIntParam   (fb, _REQUIRED_, "normal", &cylinder->normal, 1, 3); CHKERRQ(ierr);
-		ierr = getScalarParam(fb, _REQUIRED_, "radius", &cylinder->radius, 1, chLen);      CHKERRQ(ierr);
-		ierr = getScalarParam(fb, _REQUIRED_, "top",    &cylinder->top,    1, chLen);      CHKERRQ(ierr);
-		ierr = getScalarParam(fb, _REQUIRED_, "bottom", &cylinder->bot,    1, chLen);      CHKERRQ(ierr);
-		ierr = getScalarParam(fb, _REQUIRED_, "center",  cylinder->center, 3, chLen);      CHKERRQ(ierr);
+		ierr = getIntParam   (fb, _REQUIRED_, "phase",   &cylinder->phase,  1, maxPhaseID); CHKERRQ(ierr);
+		ierr = getScalarParam(fb, _REQUIRED_, "radius",  &cylinder->radius, 1, chLen);      CHKERRQ(ierr);
+		ierr = getScalarParam(fb, _REQUIRED_, "base",     cylinder->base,   3, chLen);      CHKERRQ(ierr);
+		ierr = getScalarParam(fb, _REQUIRED_, "cap",      cylinder->cap,    3, chLen);      CHKERRQ(ierr);
 
 		cylinder->setPhase = setPhaseCylinder;
 
@@ -1208,46 +1206,32 @@ PetscInt setPhaseHex(GeomPrim *hex, Marker *P)
 //---------------------------------------------------------------------------
 PetscInt setPhaseCylinder(GeomPrim *cylinder, Marker *P)
 {
-	PetscInt    i;
-	PetscScalar tol = 1e-6;
-	PetscScalar dx,dy,dz;
+	PetscScalar px, py, pz, ax, ay, az, dx, dy, dz, t;
 
-	dx = P->X[0] - cylinder->center[0];
-	dy = P->X[1] - cylinder->center[1];
-	dz = P->X[2] - cylinder->center[2];
+	// get vector between point and base
+	px = P->X[0] - cylinder->base[0];
+	py = P->X[1] - cylinder->base[1];
+	pz = P->X[2] - cylinder->base[2];
 
-	// normal on X
-	if(cylinder->normal == 1 && P->X[2] >= cylinder->bot && P->X[2] <= cylinder->top)
+	// get cylinder axis vector
+	ax = cylinder->cap[0] - cylinder->base[0];
+	ay = cylinder->cap[1] - cylinder->base[1];
+	az = cylinder->cap[2] - cylinder->base[2];
+
+	// find normalized parametric coordinate of a point-axis projection
+	t = (ax*px + ay*py + az*pz)/(ax*ax + ay*ay + az*az);
+
+	// find distance vector between point and axis
+	dx = px - t*ax;
+	dy = py - t*ay;
+	dz = pz - t*az;
+
+	// check cylinder
+	if(t >= 0.0 && t <= 1.0 && sqrt(dx*dx + dy*dy + dz*dz) <= cylinder->radius)
 	{
-		if(sqrt(dx*dx+dy*dy) <= cylinder->radius)
-		{
-			P->phase = cylinder->phase;
-			return 1;
-		}
+		P->phase = cylinder->phase;
+		return 1;
 	}
-
-	// normal on Y
-	if(cylinder->normal == 2 && P->X[0] >= cylinder->bot && P->X[0] <= cylinder->top)
-	{
-		if(sqrt(dy*dy+dz*dz) <= cylinder->radius)
-		{
-			P->phase = cylinder->phase;
-			return 1;
-		}
-	}
-
-	// normal on Z
-	if(cylinder->normal == 3 && P->X[1] >= cylinder->bot && P->X[1] <= cylinder->top)
-	{
-		if(sqrt(dx*dx+dz*dz) <= cylinder->radius)
-		{
-			P->phase = cylinder->phase;
-			return 1;
-		}
-	}
-
-
-
 
 	return 0;
 }

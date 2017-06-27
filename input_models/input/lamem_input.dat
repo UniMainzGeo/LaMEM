@@ -177,6 +177,10 @@
 
 	noslip = 0 0 1 1 0 0
 
+# fixed phase (no-flow condition)
+
+	fix_phase = 1
+
 # Temperature on the top & bottom boundaries
 
 	temp_top = 0.0
@@ -276,8 +280,8 @@
 
 	<SphereStart>
 		phase  = 1
-		center = 1.0 2.0 3.0
 		radius = 1.5
+		center = 1.0 2.0 3.0
 	<SphereEnd>
 
 	<BoxStart>
@@ -298,6 +302,14 @@
 		top    = 5.0
 		bottom = 3.0
 	<LayerEnd>
+
+	<CylinderStart>
+		phase  = 1
+		radius = 1.5
+		base   = 1.0 2.0 3.0
+		cap    = 3.0 5.0 7.0
+	<CylinderEnd>
+
 
 #===============================================================================
 # Output
