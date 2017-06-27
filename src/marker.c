@@ -585,7 +585,7 @@ PetscErrorCode ADVMarkInitGeom(AdvCtx *actx, FB *fb)
 	PetscScalar    chLen;
 	PetscLogDouble t;
 	PetscInt       jj, iter, ngeom, imark, maxPhaseID;
-	GeomPrim       geom[_max_geom_], *sphere, *box, *hex, *layer;
+	GeomPrim       geom[_max_geom_], *sphere, *box, *hex, *layer, *cylinder;
 
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
@@ -714,6 +714,37 @@ PetscErrorCode ADVMarkInitGeom(AdvCtx *actx, FB *fb)
 
 	ierr = FBFreeBlocks(fb); CHKERRQ(ierr);
 
+	//=======
+	// CYLINDER
+	//=======
+
+	ierr = FBFindBlocks(fb, _OPTIONAL_, "<CylinderStart>", "<CylinderEnd>"); CHKERRQ(ierr);
+
+	ngeom += fb->nblocks;
+
+	if(ngeom > _max_geom_)
+	{
+		SETERRQ1(PETSC_COMM_WORLD, PETSC_ERR_USER, "Too many geometric primitives! Max allowed: %lld", (LLD)_max_geom_);
+	}
+
+	for(jj = 0; jj < fb->nblocks; jj++)
+	{
+		cylinder = &geom[iter++];
+
+		ierr = getIntParam   (fb, _REQUIRED_, "phase",  &cylinder->phase,  1, maxPhaseID); CHKERRQ(ierr);
+		ierr = getIntParam   (fb, _REQUIRED_, "normal", &cylinder->normal, 1, 3); CHKERRQ(ierr);
+		ierr = getScalarParam(fb, _REQUIRED_, "radius", &cylinder->radius, 1, chLen);      CHKERRQ(ierr);
+		ierr = getScalarParam(fb, _REQUIRED_, "top",    &cylinder->top,    1, chLen);      CHKERRQ(ierr);
+		ierr = getScalarParam(fb, _REQUIRED_, "bottom", &cylinder->bot,    1, chLen);      CHKERRQ(ierr);
+		ierr = getScalarParam(fb, _REQUIRED_, "center",  cylinder->center, 3, chLen);      CHKERRQ(ierr);
+
+		cylinder->setPhase = setPhaseCylinder;
+
+		fb->blockID++;
+	}
+
+	ierr = FBFreeBlocks(fb); CHKERRQ(ierr);
+
 	//==============
 	// ASSIGN PHASES
 	//==============
@@ -732,6 +763,7 @@ PetscErrorCode ADVMarkInitGeom(AdvCtx *actx, FB *fb)
 			if(geom[jj].setPhase(&geom[jj], P)) break;
 		}
 	}
+
 
 	PrintDone(t);
 
@@ -1170,6 +1202,52 @@ PetscInt setPhaseHex(GeomPrim *hex, Marker *P)
 			}
 		}
 	}
+
+	return 0;
+}
+//---------------------------------------------------------------------------
+PetscInt setPhaseCylinder(GeomPrim *cylinder, Marker *P)
+{
+	PetscInt    i;
+	PetscScalar tol = 1e-6;
+	PetscScalar dx,dy,dz;
+
+	dx = P->X[0] - cylinder->center[0];
+	dy = P->X[1] - cylinder->center[1];
+	dz = P->X[2] - cylinder->center[2];
+
+	// normal on X
+	if(cylinder->normal == 1 && P->X[2] >= cylinder->bot && P->X[2] <= cylinder->top)
+	{
+		if(sqrt(dx*dx+dy*dy) <= cylinder->radius)
+		{
+			P->phase = cylinder->phase;
+			return 1;
+		}
+	}
+
+	// normal on Y
+	if(cylinder->normal == 2 && P->X[0] >= cylinder->bot && P->X[0] <= cylinder->top)
+	{
+		if(sqrt(dy*dy+dz*dz) <= cylinder->radius)
+		{
+			P->phase = cylinder->phase;
+			return 1;
+		}
+	}
+
+	// normal on Z
+	if(cylinder->normal == 3 && P->X[1] >= cylinder->bot && P->X[1] <= cylinder->top)
+	{
+		if(sqrt(dx*dx+dz*dz) <= cylinder->radius)
+		{
+			P->phase = cylinder->phase;
+			return 1;
+		}
+	}
+
+
+
 
 	return 0;
 }
