@@ -136,7 +136,7 @@ enum GWLevelType
 
 struct Controls
 {
-	PetscScalar grav[SPDIM];  // global gravity components
+	PetscScalar grav[3];      // global gravity components
 	PetscScalar FSSA;         // free surface stabilization parameter [0 - 1]
 	PetscScalar shearHeatEff; // shear heating efficiency parameter [0 - 1]
 	PetscScalar biot;         // Biot pressure parameter [0 - 1]

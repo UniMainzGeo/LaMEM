@@ -42,6 +42,10 @@
 //---------------------------------------------------------------------------
 //........................   MARKER ROUTINES   ..............................
 //---------------------------------------------------------------------------
+#include <map>
+#include <iostream>
+using namespace std;
+//---------------------------------------------------------------------------
 #include "LaMEM.h"
 #include "marker.h"
 #include "parsing.h"
@@ -584,19 +588,23 @@ PetscErrorCode ADVMarkInitGeom(AdvCtx *actx, FB *fb)
 	Marker         *P;
 	PetscLogDouble t;
 	PetscScalar    chLen;
-	PetscInt       jj, iter, ngeom, imark, maxPhaseID;
-	GeomPrim       geom[_max_geom_], *sphere, *box, *hex, *layer, *cylinder;
+	PetscInt       jj, ngeom, imark, maxPhaseID;
+	GeomPrim       geom[_max_geom_], *pgeom[_max_geom_], *sphere, *box, *hex, *layer, *cylinder;
+
+	// map container to sort primitives in the order of appearance
+	map<PetscInt, GeomPrim*> cgeom;
+	map<PetscInt, GeomPrim*>::iterator it, ie;
 
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
 
-	iter       = 0;
 	ngeom      = 0;
 	maxPhaseID = actx->dbm->numPhases - 1;
 	chLen      = actx->jr->scal->length;
 
 	// clear storage
-	ierr = PetscMemzero(geom, sizeof(GeomPrim)*(size_t)_max_geom_); CHKERRQ(ierr);
+	ierr = PetscMemzero(geom,  sizeof(GeomPrim) *(size_t)_max_geom_); CHKERRQ(ierr);
+	ierr = PetscMemzero(pgeom, sizeof(GeomPrim*)*(size_t)_max_geom_); CHKERRQ(ierr);
 
 	PrintStart(&t, "Reading geometric primitives", NULL);
 
@@ -606,16 +614,9 @@ PetscErrorCode ADVMarkInitGeom(AdvCtx *actx, FB *fb)
 
 	ierr = FBFindBlocks(fb, _OPTIONAL_, "<SphereStart>", "<SphereEnd>"); CHKERRQ(ierr);
 
-	ngeom += fb->nblocks;
-
-	if(ngeom > _max_geom_)
-	{
-		SETERRQ1(PETSC_COMM_WORLD, PETSC_ERR_USER, "Too many geometric primitives! Max allowed: %lld", (LLD)_max_geom_);
-	}
-
 	for(jj = 0; jj < fb->nblocks; jj++)
 	{
-		sphere = &geom[iter++];
+		GET_GEOM(sphere, geom, ngeom, _max_geom_);
 
 		ierr = getIntParam   (fb, _REQUIRED_, "phase",  &sphere->phase,  1, maxPhaseID); CHKERRQ(ierr);
 		ierr = getScalarParam(fb, _REQUIRED_, "radius", &sphere->radius, 1, chLen);      CHKERRQ(ierr);
@@ -623,7 +624,7 @@ PetscErrorCode ADVMarkInitGeom(AdvCtx *actx, FB *fb)
 
 		sphere->setPhase = setPhaseSphere;
 
-		fb->blockID++;
+		cgeom.insert(make_pair(fb->blBeg[fb->blockID++], sphere));
 	}
 
 	ierr = FBFreeBlocks(fb); CHKERRQ(ierr);
@@ -634,23 +635,16 @@ PetscErrorCode ADVMarkInitGeom(AdvCtx *actx, FB *fb)
 
 	ierr = FBFindBlocks(fb, _OPTIONAL_, "<BoxStart>", "<BoxEnd>"); CHKERRQ(ierr);
 
-	ngeom += fb->nblocks;
-
-	if(ngeom > _max_geom_)
-	{
-		SETERRQ1(PETSC_COMM_WORLD, PETSC_ERR_USER, "Too many geometric primitives! Max allowed: %lld", (LLD)_max_geom_);
-	}
-
 	for(jj = 0; jj < fb->nblocks; jj++)
 	{
-		box = &geom[iter++];
+		GET_GEOM(box, geom, ngeom, _max_geom_);
 
 		ierr = getIntParam   (fb, _REQUIRED_, "phase",  &box->phase,  1, maxPhaseID); CHKERRQ(ierr);
 		ierr = getScalarParam(fb, _REQUIRED_, "bounds",  box->bounds, 6, chLen);      CHKERRQ(ierr);
 
 		box->setPhase = setPhaseBox;
 
-		fb->blockID++;
+		cgeom.insert(make_pair(fb->blBeg[fb->blockID++], box));
 	}
 
 	ierr = FBFreeBlocks(fb); CHKERRQ(ierr);
@@ -661,30 +655,22 @@ PetscErrorCode ADVMarkInitGeom(AdvCtx *actx, FB *fb)
 
 	ierr = FBFindBlocks(fb, _OPTIONAL_, "<HexStart>", "<HexEnd>"); CHKERRQ(ierr);
 
-	ngeom += fb->nblocks;
-
-	if(ngeom > _max_geom_)
-	{
-		SETERRQ1(PETSC_COMM_WORLD, PETSC_ERR_USER, "Too many geometric primitives! Max allowed: %lld", (LLD)_max_geom_);
-	}
-
 	for(jj = 0; jj < fb->nblocks; jj++)
 	{
-		hex = &geom[iter++];
+		GET_GEOM(hex, geom, ngeom, _max_geom_);
 
 		ierr = getIntParam   (fb, _REQUIRED_, "phase",  &hex->phase, 1,  maxPhaseID); CHKERRQ(ierr);
 		ierr = getScalarParam(fb, _REQUIRED_, "coord",   hex->coord, 24, chLen);      CHKERRQ(ierr);
 
-		hex->setPhase = setPhaseHex;
-
 		// compute bounding box
 		HexGetBoundingBox(hex->coord, hex->bounds);
 
-		fb->blockID++;
+		hex->setPhase = setPhaseHex;
+
+		cgeom.insert(make_pair(fb->blBeg[fb->blockID++], hex));
 	}
 
 	ierr = FBFreeBlocks(fb); CHKERRQ(ierr);
-
 
 	//=======
 	// LAYERS
@@ -692,16 +678,9 @@ PetscErrorCode ADVMarkInitGeom(AdvCtx *actx, FB *fb)
 
 	ierr = FBFindBlocks(fb, _OPTIONAL_, "<LayerStart>", "<LayerEnd>"); CHKERRQ(ierr);
 
-	ngeom += fb->nblocks;
-
-	if(ngeom > _max_geom_)
-	{
-		SETERRQ1(PETSC_COMM_WORLD, PETSC_ERR_USER, "Too many geometric primitives! Max allowed: %lld", (LLD)_max_geom_);
-	}
-
 	for(jj = 0; jj < fb->nblocks; jj++)
 	{
-		layer = &geom[iter++];
+		GET_GEOM(layer, geom, ngeom, _max_geom_);
 
 		ierr = getIntParam   (fb, _REQUIRED_, "phase",  &layer->phase,  1, maxPhaseID); CHKERRQ(ierr);
 		ierr = getScalarParam(fb, _REQUIRED_, "top",    &layer->top,    1, chLen);      CHKERRQ(ierr);
@@ -709,7 +688,7 @@ PetscErrorCode ADVMarkInitGeom(AdvCtx *actx, FB *fb)
 
 		layer->setPhase = setPhaseLayer;
 
-		fb->blockID++;
+		cgeom.insert(make_pair(fb->blBeg[fb->blockID++], layer));
 	}
 
 	ierr = FBFreeBlocks(fb); CHKERRQ(ierr);
@@ -720,16 +699,9 @@ PetscErrorCode ADVMarkInitGeom(AdvCtx *actx, FB *fb)
 
 	ierr = FBFindBlocks(fb, _OPTIONAL_, "<CylinderStart>", "<CylinderEnd>"); CHKERRQ(ierr);
 
-	ngeom += fb->nblocks;
-
-	if(ngeom > _max_geom_)
-	{
-		SETERRQ1(PETSC_COMM_WORLD, PETSC_ERR_USER, "Too many geometric primitives! Max allowed: %lld", (LLD)_max_geom_);
-	}
-
 	for(jj = 0; jj < fb->nblocks; jj++)
 	{
-		cylinder = &geom[iter++];
+		GET_GEOM(cylinder, geom, ngeom, _max_geom_);
 
 		ierr = getIntParam   (fb, _REQUIRED_, "phase",   &cylinder->phase,  1, maxPhaseID); CHKERRQ(ierr);
 		ierr = getScalarParam(fb, _REQUIRED_, "radius",  &cylinder->radius, 1, chLen);      CHKERRQ(ierr);
@@ -738,10 +710,16 @@ PetscErrorCode ADVMarkInitGeom(AdvCtx *actx, FB *fb)
 
 		cylinder->setPhase = setPhaseCylinder;
 
-		fb->blockID++;
+		cgeom.insert(make_pair(fb->blBeg[fb->blockID++], cylinder));
 	}
 
 	ierr = FBFreeBlocks(fb); CHKERRQ(ierr);
+
+	// store pointers to primitives in the order of appearance in the file
+	for(it = cgeom.begin(), ie = cgeom.end(), ngeom = 0; it != ie; it++)
+	{
+		pgeom[ngeom++] = (*it).second;
+	}
 
 	//==============
 	// ASSIGN PHASES
@@ -758,10 +736,9 @@ PetscErrorCode ADVMarkInitGeom(AdvCtx *actx, FB *fb)
 		// override from geometric primitives
 		for(jj = 0; jj < ngeom; jj++)
 		{
-			if(geom[jj].setPhase(&geom[jj], P)) break;
+			pgeom[jj]->setPhase(pgeom[jj], P);
 		}
 	}
-
 
 	PrintDone(t);
 
@@ -1132,7 +1109,7 @@ void ADVMarkSecIdx(AdvCtx *actx, PetscInt dir, PetscInt Islice, PetscInt *idx)
 //---------------------------------------------------------------------------
 // geometric primitives functions
 //---------------------------------------------------------------------------
-PetscInt setPhaseSphere(GeomPrim *sphere, Marker *P)
+void setPhaseSphere(GeomPrim *sphere, Marker *P)
 {
 	PetscScalar dx, dy, dz;
 
@@ -1143,34 +1120,28 @@ PetscInt setPhaseSphere(GeomPrim *sphere, Marker *P)
 	if(sqrt(dx*dx + dy*dy + dz*dz) <= sphere->radius)
 	{
 		P->phase = sphere->phase;
-		return 1;
 	}
-	return 0;
 }
 //---------------------------------------------------------------------------
-PetscInt setPhaseBox(GeomPrim *box, Marker *P)
+void setPhaseBox(GeomPrim *box, Marker *P)
 {
 	if(P->X[0] >= box->bounds[0] && P->X[0] <= box->bounds[1]
 	&& P->X[1] >= box->bounds[2] && P->X[1] <= box->bounds[3]
 	&& P->X[2] >= box->bounds[4] && P->X[2] <= box->bounds[5])
 	{
 		P->phase = box->phase;
-		return 1;
 	}
-	return 0;
 }
 //---------------------------------------------------------------------------
-PetscInt setPhaseLayer(GeomPrim *layer, Marker *P)
+void setPhaseLayer(GeomPrim *layer, Marker *P)
 {
 	if(P->X[2] >= layer->bot && P->X[2] <= layer->top)
 	{
 		P->phase = layer->phase;
-		return 1;
 	}
-	return 0;
 }
 //---------------------------------------------------------------------------
-PetscInt setPhaseHex(GeomPrim *hex, Marker *P)
+void setPhaseHex(GeomPrim *hex, Marker *P)
 {
 	PetscInt    i;
 	PetscScalar tol = 1e-6;
@@ -1196,19 +1167,17 @@ PetscInt setPhaseHex(GeomPrim *hex, Marker *P)
 			if(TetPointTest(hex->coord, tet + 4*i, P->X, tol))
 			{
 				P->phase = hex->phase;
-				return 1;
+				return;
 			}
 		}
 	}
-
-	return 0;
 }
 //---------------------------------------------------------------------------
-PetscInt setPhaseCylinder(GeomPrim *cylinder, Marker *P)
+void setPhaseCylinder(GeomPrim *cylinder, Marker *P)
 {
 	PetscScalar px, py, pz, ax, ay, az, dx, dy, dz, t;
 
-	// get vector between point and base
+	// get vector between a test point and cylinder base
 	px = P->X[0] - cylinder->base[0];
 	py = P->X[1] - cylinder->base[1];
 	pz = P->X[2] - cylinder->base[2];
@@ -1230,10 +1199,7 @@ PetscInt setPhaseCylinder(GeomPrim *cylinder, Marker *P)
 	if(t >= 0.0 && t <= 1.0 && sqrt(dx*dx + dy*dy + dz*dz) <= cylinder->radius)
 	{
 		P->phase = cylinder->phase;
-		return 1;
 	}
-
-	return 0;
 }
 //---------------------------------------------------------------------------
 void HexGetBoundingBox(

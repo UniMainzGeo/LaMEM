@@ -65,15 +65,15 @@ CCOMPILER = ${CXX} ${CXX_FLAGS} ${CXXFLAGS} ${CCPPFLAGS}
 
 # Define list of LaMEM library source files
 # List files to be excluded after filter-out
-CSRC = $(filter-out LaMEM.c, $(wildcard *.c))
+CSRC = $(filter-out LaMEM.cpp, $(wildcard *.cpp))
 
 #====================================================
 
 # Generate lists of library object files:
-COBJ := $(addprefix ../lib/${mode}/, $(notdir $(CSRC:.c=.o)))
+COBJ := $(addprefix ../lib/${mode}/, $(notdir $(CSRC:.cpp=.o)))
 
 # Generate lists of library dependency files:
-CDEP := $(addprefix ../dep/${mode}/, $(notdir $(CSRC:.c=.d)))
+CDEP := $(addprefix ../dep/${mode}/, $(notdir $(CSRC:.cpp=.d)))
 
 # Get library and executable objects:
 LaMEM = ../bin/${mode}/LaMEM
@@ -165,7 +165,7 @@ ${LaMEM} : ${LaMEM_LIB} ${LaMEM_OBJ}
 # Insert full path to object files in dependency files with sed command
 # NOTE: IBM XL compiler generates dependency as a by-product of compilation
 
-../lib/${mode}/%.o : %.c
+../lib/${mode}/%.o : %.cpp
 	${CCOMPILER} ${LAMEM_FLAGS} -c $< -o $@
 ifeq ($(PLATFORM), ppc64)
 	@mv -f ../lib/${mode}/$*.d ../dep/${mode}/$*.d.tmp

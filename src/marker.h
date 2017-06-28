@@ -94,18 +94,18 @@ struct GeomPrim
 	PetscScalar top;
 	PetscScalar bot;
 
-	PetscInt (*setPhase)(GeomPrim*, Marker*);
+	void (*setPhase)(GeomPrim*, Marker*);
 };
 
-PetscInt setPhaseSphere(GeomPrim *sphere, Marker *P);
+void setPhaseSphere(GeomPrim *sphere, Marker *P);
 
-PetscInt setPhaseBox(GeomPrim *box, Marker *P);
+void setPhaseBox(GeomPrim *box, Marker *P);
 
-PetscInt setPhaseLayer(GeomPrim *layer, Marker *P);
+void setPhaseLayer(GeomPrim *layer, Marker *P);
 
-PetscInt setPhaseHex(GeomPrim *hex, Marker *P);
+void setPhaseHex(GeomPrim *hex, Marker *P);
 
-PetscInt setPhaseCylinder(GeomPrim *cylinder, Marker *P);
+void setPhaseCylinder(GeomPrim *cylinder, Marker *P);
 
 void HexGetBoundingBox(
 		PetscScalar *coord,   // hex coordinates
@@ -155,6 +155,9 @@ void ADVMarkSecIdx(AdvCtx *actx, PetscInt dir, PetscInt Nslice, PetscInt *idx);
     #define max(a,b) (a >= b ? a : b)
     #define min(a,b) (a <= b ? a : b)
 #endif
+
+#define GET_GEOM(p, s, i, n) if(i < n) { p = &s[i++]; } \
+	else { SETERRQ1(PETSC_COMM_WORLD, PETSC_ERR_USER, "Too many geometric primitives! Max allowed: %lld", (LLD)n); }
 
 //---------------------------------------------------------------------------
 #endif
