@@ -197,9 +197,9 @@ PetscErrorCode ConstEqCtxSetup(
 	// compute effective mean stress
 	dP = (p_total - p_pore);
 
-	// compute yield stress
-	//if(dP < 0.0) { ctx->taupl =         ch; pd = 0; } // Von-Mises model for extension
-	//else         { ctx->taupl = dP*fr + ch; pd = 1; } // Drucker-Prager model for compression
+	/*// compute yield stress
+	if(dP < 0.0) { ctx->taupl =         ch; pd = 0; } // Von-Mises model for extension
+	else         { ctx->taupl = dP*fr + ch; pd = 1; } // Drucker-Prager model for compression*/
 
 	// compute yield stress
 	tensileS = mat->TS; // Tensile strength
@@ -683,7 +683,7 @@ PetscErrorCode VolConstEq(
 
 
 
-	if(lim->actPorePres != PETSC_TRUE) p_pore = 0.0;
+	/*if(lim->actPorePres != PETSC_TRUE) p_pore = 0.0;
 
 	p_total = p + lim->biot*p_pore;
 
@@ -697,8 +697,8 @@ PetscErrorCode VolConstEq(
 
 		// dP = tensileS
 		p  = tensileS - lim->biot*p_pore + p_pore;
-		svBulk->IKdt = theta/(pn-p);
-	}
+		svBulk->IKdt = theta/(pn-p_total);
+	}*/
 
 
 

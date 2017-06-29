@@ -96,6 +96,7 @@ PetscErrorCode ADVMarkInitBands        (AdvCtx *actx, UserCtx *user);
 PetscErrorCode ADVMarkInitPipes        (AdvCtx *actx, UserCtx *user);
 PetscErrorCode ADVMarkInitGeoth		   (AdvCtx *actx, UserCtx *user);
 PetscErrorCode ADVMarkInitFault        (AdvCtx *actx, UserCtx *user);
+PetscErrorCode ADVMarkInitRozhko       (AdvCtx *actx, UserCtx *user);
 PetscErrorCode ADVMarkInitDomes        (AdvCtx *actx, UserCtx *user);
 PetscErrorCode ADVMarkInitRotation     (AdvCtx *actx, UserCtx *user);
 

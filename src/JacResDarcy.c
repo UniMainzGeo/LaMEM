@@ -415,7 +415,7 @@ PetscErrorCode JacResGetDarcyRes(JacRes *jr)
  	PetscScalar 	Kphi, mu, lrho, Ss, Pl_c, Pl_n, Pl_h, gz, *grav;
 	PetscScalar 	***mul, ***lKphi, ***Ssl, ***rhol, ***sol, ***res, *e, ***hydro;
 	Vec 			local_Kphi, Ss_local, mul_local, rhol_local;
-	Vec 			mul_vec, Ss_vec, Kphi_vec, rhol_vec;	PetscScalar H, magnitude;
+	Vec 			mul_vec, Ss_vec, Kphi_vec, rhol_vec;	PetscScalar H, magnitude, increment;
 	PetscInt src;
 
 
@@ -500,7 +500,8 @@ PetscErrorCode JacResGetDarcyRes(JacRes *jr)
 		{
 			if (jr->DarcySources[src].i == i && jr->DarcySources[src].j == j && jr->DarcySources[src].k == k)
 			{
-				magnitude = jr->DarcySources[src].magnitude *      (1.0 +JacResGetTime(jr)); // [m^3/s]
+				increment = jr->DarcySources[src].increment;
+				magnitude = jr->DarcySources[src].magnitude *      (1.0 +JacResGetTime(jr)*increment); // [m^3/s]
 				// If source is Volumetric flow [m^3/s] then H = magnitude / volume of the cell [1/s]
 				//H = H/(dx*dy*dz);
 				H = H + magnitude/(dx*dy*dz);
@@ -1032,6 +1033,7 @@ PetscErrorCode SourcePropGetStruct(FILE *fp,
 	getMatPropScalar(fp, ils, ile, "y",     	&m->y, 			NULL);
 	getMatPropScalar(fp, ils, ile, "z",     	&m->z,		 	NULL);
 	getMatPropScalar(fp, ils, ile, "magnitude", &m->magnitude,  NULL); // pressure-dependence of density
+	getMatPropScalar(fp, ils, ile, "increment", &m->increment,  NULL); // pressure-dependence of density
 
 	// print
 	if(utype == _NONE_)

@@ -137,6 +137,7 @@ typedef enum
 	PIPES,      // Darcy
 	GEOTH,		// Darcy, injection/production
 	FAULT,      // Darcy
+	ROZHKO,     // Darcy
 	DOMES,      // salt domes 2D
 	ROTATION,   // rotation benchmark 2D
 	RESTART     // restart of simulation
@@ -203,6 +204,7 @@ typedef struct // Improve and put more options
 	PetscInt j;
 	PetscInt k;
 	PetscScalar magnitude;
+	PetscScalar increment;
 } DarcySourceParam;
 
 // Structure that holds user input data
