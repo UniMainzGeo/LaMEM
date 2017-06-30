@@ -589,7 +589,7 @@ PetscErrorCode JacResGetI2Gdt(JacRes *jr)
 	PetscFunctionBegin;
 
 	fs        = jr->fs;
-	dt        = jr->ts->dt;
+	dt        = PetscAbs(jr->ts->dt);		// should always be positive, even for reverse cases
 	numPhases = jr->dbm->numPhases;
 	phases    = jr->dbm->phases;
 
