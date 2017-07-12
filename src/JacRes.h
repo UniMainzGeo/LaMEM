@@ -169,6 +169,7 @@ struct Controls
 	PetscScalar gwLevel;      // fixed ground water level
 
 	PetscInt    setPhase;     // active phase (override all phases)
+	PetscInt    getPermea;    // effective permeability computation activation flag
 
 };
 
@@ -328,6 +329,12 @@ PetscErrorCode JacResGetSHmax(JacRes *jr);
 
 // compute maximum horizontal extension rate (EHmax) orientation
 PetscErrorCode JacResGetEHmax(JacRes *jr);
+
+//---------------------------------------------------------------------------
+// Effective permeability functions
+//---------------------------------------------------------------------------
+
+PetscErrorCode JacResGetPermea(JacRes *jr, PetscInt step);
 
 //---------------------------------------------------------------------------
 //......................   TEMPERATURE FUNCTIONS   ..........................

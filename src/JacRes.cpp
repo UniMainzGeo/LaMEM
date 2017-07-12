@@ -122,6 +122,8 @@ PetscErrorCode JacResCreate(JacRes *jr, FB *fb)
 	ierr = getStringParam(fb, _OPTIONAL_, "gw_level_type",  gwtype,              "none"); CHKERRQ(ierr);
 	ierr = getScalarParam(fb, _OPTIONAL_, "gw_level",      &ctrl->gwLevel,       1, 1.0); CHKERRQ(ierr);
 	ierr = getIntParam   (fb, _OPTIONAL_, "set_phase",     &ctrl->setPhase,      1, mID); CHKERRQ(ierr);
+	ierr = getIntParam   (fb, _OPTIONAL_, "get_permea",    &ctrl->getPermea,     1, 1);   CHKERRQ(ierr);
+
 
 	if     (!strcmp(gwtype, "none"))  ctrl->gwType = _GW_NONE_;
 	else if(!strcmp(gwtype, "top"))   ctrl->gwType = _GW_TOP_;

@@ -42,6 +42,8 @@
 //---------------------------------------------------------------------------
 
 #include "LaMEM.h"
+#include "scaling.h"
+#include "bc.h"
 #include "JacRes.h"
 #include "fdstag.h"
 #include "surf.h"
@@ -902,107 +904,84 @@ PetscErrorCode JacResSetPhase(JacRes *jr)
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-
-
-
-/*
 #undef __FUNCT__
-#define __FUNCT__ "DarcyPostProcess"
-PetscErrorCode DarcyPostProcess(NLCtx *nlctx, UserCtx *user)
+#define __FUNCT__ "JacResGetPermea"
+PetscErrorCode JacResGetPermea(JacRes *jr, PetscInt step)
 {
 	FILE        *db;
-	PetscBool   flg;
+	FDSTAG      *fs;
+	BCCtx       *bc;
+	Material_t  *phases;
+	Scaling     *scal;
 	PetscInt    i, j, k, nx, ny, nz, sx, sy, sz;
-	PetscScalar ***vz, dx, dy, lflux, gflux, L, A, dp, eta, vf, pgrad, K;
+	PetscScalar ***vz, nZFace, lvel, gvel, dp, eta, ks;
 
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
 
+	// check activation
+	if(!jr->ctrl.getPermea || !step) PetscFunctionReturn(0);
+
 	// access context variables
-	FDSTAG    *fs      = nlctx->fs;
-	JacResCtx *jrctx   = nlctx->jrctx;
-	Material_t *phases = jrctx->phases;
+	fs     = jr->fs;
+	bc     = jr->bc;
+	phases = jr->dbm->phases;
+	scal   = jr->scal;
+
+	// get total number of z-faces
+	nZFace = (PetscScalar)(fs->dsx.tcels*fs->dsy.tcels*fs->dsz.tnods);
+
+	// get fluid viscosity (fluid phase ID is 1)
+	eta = 1.0/(2.0*phases[1].Bd);
+
+	// get pressure gradient
+	dp = bc->pbot - bc->ptop;
+
+	// get local grid sizes
+	ierr = DMDAGetCorners(fs->DA_Z, &sx, &sy, &sz, &nx, &ny, &nz); CHKERRQ(ierr);
 
 	// access z-velocity vector
-	ierr = DMDAVecGetArray(fs->DA_Z, jrctx->lvz, &vz);  CHKERRQ(ierr);
+	ierr = DMDAVecGetArray(fs->DA_Z, jr->lvz, &vz);  CHKERRQ(ierr);
 
-	// compute local part of fluid volume flux [m^3/s]
-	// approximate integral of abs(vz) over xy-plane at z=0 (outflux face)
-
-	lflux = 0.0;
+	// compute volume average absolute velocity
+	lvel = 0.0;
 
 	//---------
 	// Z-points
 	//---------
-	GET_CELL_RANGE(nx, sx, fs->dsx)
-	GET_CELL_RANGE(ny, sy, fs->dsy)
-	GET_NODE_RANGE(nz, sz, fs->dsz)
 
 	START_STD_LOOP
 	{
-		// integrate over outflux face only
-		if(k == 0)
-		{
-			// get local mesh sizes
-			dx = SIZE_CELL(i, sx, fs->dsx);
-			dy = SIZE_CELL(j, sy, fs->dsy);
-
-			// update integral
-			lflux += PetscAbsScalar(vz[k][j][i])*dx*dy;
-		}
+		lvel += PetscAbsScalar(vz[k][j][i]);
 	}
 	END_STD_LOOP
 
 	// restore access
-	ierr = DMDAVecRestoreArray(fs->DA_Z, jrctx->lvz, &vz);  CHKERRQ(ierr);
+	ierr = DMDAVecRestoreArray(fs->DA_Z, jr->lvz, &vz);  CHKERRQ(ierr);
 
-	// compute global flux
+	// compute global sum
 	if(ISParallel(PETSC_COMM_WORLD))
 	{
-		ierr = MPI_Allreduce(&lflux, &gflux, 1, MPIU_SCALAR, MPI_SUM, PETSC_COMM_WORLD); CHKERRQ(ierr);
+		ierr = MPI_Allreduce(&lvel, &gvel, 1, MPIU_SCALAR, MPI_SUM, PETSC_COMM_WORLD); CHKERRQ(ierr);
 	}
 	else
 	{
-		gflux = lflux;
+		gvel = lvel;
 	}
 
-	// get length of the specimen along the flow direction
-	L = user->H;
-
-	// get area of outflux face
-	A = user->W*user->L;
-
-	// get applied pressure difference
-	ierr = PetscOptionsGetScalar(NULL, "-pgrad", &dp, &flg); CHKERRQ(ierr);
-	if(flg != PETSC_TRUE) dp = 1.0;
-
-	// get fluid viscosity (fluid phase is #1)
-	eta = 1.0/(2.0*phases[1].Bd);
-
-	// ***
-
-	// compute average fluid velocity (normalized by outlux area)
-	vf = gflux/A;
-
-	// compute pressure gradient (normalized by length along flow direction)
-	pgrad = dp/L;
+	// normalize
+	gvel /= nZFace;
 
 	// compute permeability
-	K = vf*eta/pgrad;
+	ks = gvel*eta/dp;
 
-	// ***
-
-	// output to the screen and to the file
-	PetscPrintf(PETSC_COMM_WORLD,"# ==============================================\n");
-	PetscPrintf(PETSC_COMM_WORLD,"# EFFECTIVE PERMEABILITY CONSTANT: %E\n", K);
-	PetscPrintf(PETSC_COMM_WORLD,"# ==============================================\n");
-
+	// output to the file
 	if(ISRankZero(PETSC_COMM_WORLD))
 	{
 		db = fopen("darcy.dat", "w");
 
 		fprintf(db,"# ==============================================\n");
-		fprintf(db,"# EFFECTIVE PERMEABILITY CONSTANT: %E\n", K);
+		fprintf(db,"# EFFECTIVE PERMEABILITY CONSTANT: %E %s\n ", ks*scal->area_si, scal->lbl_area_si);
 		fprintf(db,"# ==============================================\n");
 
 		fclose(db);
@@ -1010,7 +989,4 @@ PetscErrorCode DarcyPostProcess(NLCtx *nlctx, UserCtx *user)
 
 	PetscFunctionReturn(0);
 }
-*/
-
-
-
+//---------------------------------------------------------------------------

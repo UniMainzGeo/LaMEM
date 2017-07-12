@@ -221,6 +221,7 @@
 	gw_level_type  = top            # ground water level type for pore pressure computation (see below)
 	gw_level       = 10.0           # ground water level at the free surface (if defined)
 	biot           = 0.7            # Biot pressure parameer
+	get_permea     = 1              # effective permeability computation activation flag
 
 # Groundwater level type specification:
 

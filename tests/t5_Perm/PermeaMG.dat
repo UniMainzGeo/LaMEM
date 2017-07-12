@@ -56,6 +56,8 @@
 
 	set_phase = 1
 
+	get_permea = 1
+
 #===============================================================================
 # Model setup & advection
 #===============================================================================
@@ -116,9 +118,6 @@
  	-js_ksp_monitor
 	-js_ksp_rtol 1e-6
 	-js_ksp_atol 1e-10
-
-	# Stokes Preconditioner
-	-pstokes mg        # multigrid
 
 	# Matrix type
 	-pcmat_type mono   # monolithic matrix [coupled MG solver]

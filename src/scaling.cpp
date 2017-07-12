@@ -87,6 +87,7 @@ PetscErrorCode ScalingCreate(Scaling *scal, FB *fb)
 		scal->time_si             = 1.0;
 		scal->length              = 1.0;   sprintf(scal->lbl_length,           "[ ]");
 		scal->length_si           = 1.0;
+		scal->area_si             = 1.0;   sprintf(scal->lbl_area_si,          "[ ]");
 		scal->temperature         = 1.0;   sprintf(scal->lbl_temperature,      "[ ]");
 		scal->force               = 1.0;   sprintf(scal->lbl_force,            "[ ]");
 		scal->angle               = 1.0;   sprintf(scal->lbl_angle,            "[ ]");
@@ -185,6 +186,7 @@ PetscErrorCode ScalingCreate(Scaling *scal, FB *fb)
 		scal->time_si             = time;
 		scal->length              = length;                   sprintf(scal->lbl_length,           "[m]");
 		scal->length_si           = length;
+		scal->area_si             = area;                     sprintf(scal->lbl_area_si,          "[m^2]");
 		scal->temperature         = temperature;              sprintf(scal->lbl_temperature,      "[K]");
 		scal->force               = force;                    sprintf(scal->lbl_force,            "[N]");
 		scal->angle               = angle;                    sprintf(scal->lbl_angle,            "[deg]");   // @
@@ -217,7 +219,6 @@ PetscErrorCode ScalingCreate(Scaling *scal, FB *fb)
 		sprintf(scal->lbl_inverse_length,    "[1/m]");
 		sprintf(scal->lbl_inverse_stress,    "[1/Pa]");
 		sprintf(scal->lbl_gas_constant,      "[J/mol/K]");
-
 	}
 	else if(scal->utype == _GEO_)
 	{
@@ -242,6 +243,7 @@ PetscErrorCode ScalingCreate(Scaling *scal, FB *fb)
 		scal->time_si             = time;
 		scal->length              = length/km;                sprintf(scal->lbl_length,           "[km]");    // @
 		scal->length_si           = length;
+		scal->area_si             = area;                     sprintf(scal->lbl_area_si,          "[m^2]");
 		scal->temperature         = temperature;              sprintf(scal->lbl_temperature,      "[C]");     // @
 		scal->force               = force;                    sprintf(scal->lbl_force,            "[N]");
 		scal->angle               = angle;                    sprintf(scal->lbl_angle,            "[deg]");   // @

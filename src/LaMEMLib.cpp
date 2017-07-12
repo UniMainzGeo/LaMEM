@@ -208,8 +208,6 @@ PetscErrorCode LaMEMLibCreate(LaMEMLib *lm)
 	// create residual & Jacobian evaluation context
 	ierr = JacResCreate(&lm->jr, fb); CHKERRQ(ierr);
 
-//	ierr = JacResReadCellPhases(&lm->jr, fb);  CHKERRQ(ierr);
-
 	// create advection context
 	ierr = ADVCreate(&lm->actx, fb); CHKERRQ(ierr);
 
@@ -569,6 +567,9 @@ PetscErrorCode LaMEMLibSaveOutput(LaMEMLib *lm)
 	// marker ParaView output
 	ierr = PVMarkWriteTimeStep(&lm->pvmark, dirName, time); CHKERRQ(ierr);
 
+	// compute and output effective permeability
+	ierr = JacResGetPermea(&lm->jr, step); CHKERRQ(ierr);
+
 	// clean up
 	free(dirName);
 
@@ -787,7 +788,6 @@ PetscErrorCode LaMEMLibInitGuess(LaMEMLib *lm, SNES snes)
 PetscErrorCode LaMEMLib_reverse(LaMEMLib *lm)
 {
 	PetscErrorCode ierr;
-	RunMode        mode;
 	PetscBool      found;
 	char           str[_STR_LEN_];
 	PetscFunctionBegin;
@@ -812,11 +812,8 @@ PetscErrorCode LaMEMLib_reverse(LaMEMLib *lm)
 	
 	}
 
-
-
 	PetscFunctionReturn(0);
 }
-
 //---------------------------------------------------------------------------
 
 //	ObjFunct objf;   // objective function
