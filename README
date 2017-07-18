@@ -18,7 +18,7 @@ The current version is developed by
   Anton Popov       (Johannes Gutenberg University Mainz, popov@uni-mainz.de), 2011-
   Boris Kaus        (JGU Mainz, kaus@uni-mainz.de), 2011-
   Tobias Baumann    (JGU Mainz), 2011-
-  Adina PÃ¼sÃ¶k       (JGU Mainz), 2012-
+  Adina Püsök       (JGU Mainz), 2012-
   Naiara Fernandez  (JGU Mainz), 2011-2014
   Arthur Bauville   (JGU Mainz), 2015
 
@@ -65,7 +65,7 @@ bin             -       Contains binaries after compilation (/deb contains the d
 ---------------
 
 Essential dependencies-
-  i) PETSc 3.5.x
+  i) PETSc 3.7.x
   
 1) Dependency Installation
 - i) PETSc: 
