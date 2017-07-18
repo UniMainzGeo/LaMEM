@@ -183,6 +183,17 @@ PetscErrorCode ADVCreate(AdvCtx *actx, FB *fb)
 		if(nmark_lim[1]) actx->nmax = nmark_lim[1];
 	}
 
+	if(actx->mctrl == CTRL_BASIC)
+	{
+		actx->avdx = actx->NumPartX * 3;
+		actx->avdy = actx->NumPartY * 3;
+		actx->avdz = actx->NumPartZ * 3;
+
+		if(nmark_avd[0]) actx->avdx = nmark_avd[0];
+		if(nmark_avd[1]) actx->avdy = nmark_avd[1];
+		if(nmark_avd[2]) actx->avdz = nmark_avd[2];
+	}
+
 	if(actx->mctrl == CTRL_AVD)
 	{
 		actx->avdx = actx->NumPartX * 3;
