@@ -401,9 +401,8 @@ PetscErrorCode DBMatReadPhase(DBMat *dbm, FB *fb)
 
 	PetscPrintf(PETSC_COMM_WORLD,"   Phase ID : %lld",(LLD)(m->ID));
 
-	if(strlen(ndiff)) PetscPrintf(PETSC_COMM_WORLD,"    diffusion creep profile  : %s \n", ndiff);
-	if(strlen(ndisl)) PetscPrintf(PETSC_COMM_WORLD,"    dislocation creep profile: %s \n", ndisl);
-	if(strlen(ndisl)) PetscPrintf(PETSC_COMM_WORLD,"    dislocation creep profile: %s \n", ndisl);
+	if(strlen(ndiff)) PetscPrintf(PETSC_COMM_WORLD,"    diffusion creep profile  : %s", ndiff);
+	if(strlen(ndisl)) PetscPrintf(PETSC_COMM_WORLD,"    dislocation creep profile: %s", ndisl);
 
 	sprintf(title, "   (dens)   : "); print_title = 1;
 	MatPrintScalParam(m->rho,   "rho",   "[kg/m^3]", scal, title, &print_title);
@@ -454,7 +453,7 @@ PetscErrorCode DBMatReadPhase(DBMat *dbm, FB *fb)
 	MatPrintScalParam(m->Cp,    "Cp",    "[J/kg/K]", scal, title, &print_title);
 	MatPrintScalParam(m->k,     "k",     "[W/m/k]",  scal, title, &print_title);
 	MatPrintScalParam(m->A,     "A",     "[W/kg]",   scal, title, &print_title);
-	PetscPrintf(PETSC_COMM_WORLD,"\n");
+	PetscPrintf(PETSC_COMM_WORLD,"\n\n");
 
 	// SCALE
 
