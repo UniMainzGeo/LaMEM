@@ -236,8 +236,8 @@ PetscErrorCode ADVCreate(AdvCtx *actx, FB *fb)
 		(LLD)(actx->NumPartY),
 		(LLD)(actx->NumPartZ));
 
-	PetscPrintf(PETSC_COMM_WORLD,"   Marker distribution type type : ");
-	if   (actx->randNoise)  PetscPrintf(PETSC_COMM_WORLD, "uniform\n");
+	PetscPrintf(PETSC_COMM_WORLD,"   Marker distribution type      : ");
+	if   (!actx->randNoise)  PetscPrintf(PETSC_COMM_WORLD, "uniform\n");
 	else                    PetscPrintf(PETSC_COMM_WORLD, "random noise\n");
 
 	if(actx->saveMark)          PetscPrintf(PETSC_COMM_WORLD,"   Marker storage file           : %s \n", actx->saveFile);
