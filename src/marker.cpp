@@ -324,11 +324,11 @@ PetscErrorCode ADVMarkCheckMarkers(AdvCtx *actx)
 		if(X[0] < bx || X[0] > ex
 		|| X[1] < by || X[1] > ey
 		|| X[2] < bz || X[2] > ez) numNonLocal++;
-
+		
 		// count number of markers in the cells
 		numMarkCell[actx->cellnum[i]]++;
 	}
-
+	
 	// count empty & sparse cells
 	numEmpty = 0;
 	numWrong = 0;

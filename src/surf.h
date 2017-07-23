@@ -74,7 +74,8 @@ struct FreeSurf
 	PetscScalar InitLevel;   // initial level
 	PetscInt    AirPhase;    // air phase number
 	PetscScalar MaxAngle;    // maximum angle with horizon (smoothed if larger)
-
+	PetscInt 	NoShiftMark; // deactivate shifting markers @ free surface
+	
 	// erosion/sedimentation parameters
 	PetscInt    ErosionModel;               // [0-none, 1-infinitely fast, ...]
 	PetscInt    SedimentModel;              // [0-none, 1-prescribed rate, ...]

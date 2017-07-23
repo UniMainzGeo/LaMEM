@@ -211,7 +211,7 @@ PetscErrorCode ADVCreate(AdvCtx *actx, FB *fb)
 	PetscPrintf(PETSC_COMM_WORLD,"   Marker setup scheme           : ");
 	if     (actx->msetup == _GEOM_)     PetscPrintf(PETSC_COMM_WORLD,"geometric primitives\n");
 	else if(actx->msetup == _FILES_)    PetscPrintf(PETSC_COMM_WORLD,"binary files (MATLAB)\n");
-	else if(actx->msetup == _POLYGONS_) PetscPrintf(PETSC_COMM_WORLD,"volumes form polygons (geomIO)\n");
+	else if(actx->msetup == _POLYGONS_) PetscPrintf(PETSC_COMM_WORLD,"volumes from polygons (geomIO)\n");
 
 	// print advection scheme
  	PetscPrintf(PETSC_COMM_WORLD,"   Advection scheme              : ");
@@ -2006,8 +2006,11 @@ PetscErrorCode ADVMarkCrossFreeSurf(AdvCtx *actx)
 			}
 			else
 			{
-				// put marker below the free surface
-				P->X[2] = topo - tol*(zp - topo);
+				if (!surf->NoShiftMark)
+				{	
+					// put marker below the free surface
+					P->X[2] = topo - tol*(zp - topo);
+				}
 			}
 		}
 
@@ -2021,8 +2024,11 @@ PetscErrorCode ADVMarkCrossFreeSurf(AdvCtx *actx)
 			}
 			else
 			{
-				// put marker above the free surface
-				P->X[2] = topo + tol*(topo - zp);
+				if (!surf->NoShiftMark)
+				{	
+					// put marker above the free surface
+					P->X[2] = topo + tol*(topo - zp);
+				}
 			}
 		}
 	}
