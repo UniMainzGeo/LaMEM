@@ -144,7 +144,7 @@ enum GWLevelType
 
 struct Controls
 {
-	PetscScalar grav[SPDIM];  // global gravity components
+	PetscScalar grav[3];      // global gravity components
 	PetscScalar FSSA;         // free surface stabilization parameter [0 - 1]
 	PetscScalar shearHeatEff; // shear heating efficiency parameter [0 - 1]
 	PetscScalar biot;         // Biot pressure parameter [0 - 1]
@@ -177,6 +177,7 @@ struct Controls
 	PetscScalar gwLevel;      // fixed ground water level
 
 	PetscInt    setPhase;     // active phase (override all phases)
+	PetscInt    getPermea;    // effective permeability computation activation flag
 
 };
 
@@ -345,6 +346,12 @@ PetscErrorCode JacResGetSHmax(JacRes *jr);
 
 // compute maximum horizontal extension rate (EHmax) orientation
 PetscErrorCode JacResGetEHmax(JacRes *jr);
+
+//---------------------------------------------------------------------------
+// Effective permeability functions
+//---------------------------------------------------------------------------
+
+PetscErrorCode JacResGetPermea(JacRes *jr, PetscInt step);
 
 //---------------------------------------------------------------------------
 //......................   TEMPERATURE FUNCTIONS   ..........................

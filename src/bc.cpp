@@ -369,14 +369,15 @@ PetscErrorCode BCCreate(BCCtx *bc, FB *fb)
 
 	PetscPrintf(PETSC_COMM_WORLD, "\n");
 
-	if(bc->ExxNumPeriods) PetscPrintf(PETSC_COMM_WORLD, "   Number of x-background strain rate periods : %lld \n", (LLD)bc->ExxNumPeriods);
-	if(bc->EyyNumPeriods) PetscPrintf(PETSC_COMM_WORLD, "   Number of y-background strain rate periods : %lld \n", (LLD)bc->EyyNumPeriods);
-	if(bc->nblocks)       PetscPrintf(PETSC_COMM_WORLD, "   Number of Bezier blocks                    : %lld \n", (LLD)bc->nblocks);
-	if(bc->top_open)      PetscPrintf(PETSC_COMM_WORLD, "   Open top boundary                          @ \n");
-	if(bc->Ttop != -1.0)  PetscPrintf(PETSC_COMM_WORLD, "   Top boundary temperature                   : %g %s \n", bc->Ttop, scal->lbl_temperature);
-	if(bc->Tbot != -1.0)  PetscPrintf(PETSC_COMM_WORLD, "   Bottom boundary temperature                : %g %s \n", bc->Tbot, scal->lbl_temperature);
-	if(bc->ptop != -1.0)  PetscPrintf(PETSC_COMM_WORLD, "   Top boundary pressure                      : %g %s \n", bc->ptop, scal->lbl_stress);
-	if(bc->pbot != -1.0)  PetscPrintf(PETSC_COMM_WORLD, "   Bottom boundary pressure                   : %g %s \n", bc->pbot, scal->lbl_stress);
+	if(bc->ExxNumPeriods)    PetscPrintf(PETSC_COMM_WORLD, "   Number of x-background strain rate periods : %lld \n",  (LLD)bc->ExxNumPeriods);
+	if(bc->EyyNumPeriods)    PetscPrintf(PETSC_COMM_WORLD, "   Number of y-background strain rate periods : %lld \n",  (LLD)bc->EyyNumPeriods);
+	if(bc->nblocks)          PetscPrintf(PETSC_COMM_WORLD, "   Number of Bezier blocks                    : %lld \n",  (LLD)bc->nblocks);
+	if(bc->top_open)         PetscPrintf(PETSC_COMM_WORLD, "   Open top boundary                          @ \n");
+	if(bc->fixPhase != -1)   PetscPrintf(PETSC_COMM_WORLD, "   Fixed phase                                : %lld  \n", (LLD)bc->fixPhase);
+	if(bc->Ttop     != -1.0) PetscPrintf(PETSC_COMM_WORLD, "   Top boundary temperature                   : %g %s \n", bc->Ttop, scal->lbl_temperature);
+	if(bc->Tbot     != -1.0) PetscPrintf(PETSC_COMM_WORLD, "   Bottom boundary temperature                : %g %s \n", bc->Tbot, scal->lbl_temperature);
+	if(bc->ptop     != -1.0) PetscPrintf(PETSC_COMM_WORLD, "   Top boundary pressure                      : %g %s \n", bc->ptop, scal->lbl_stress);
+	if(bc->pbot     != -1.0) PetscPrintf(PETSC_COMM_WORLD, "   Bottom boundary pressure                   : %g %s \n", bc->pbot, scal->lbl_stress);
 
 	PetscPrintf(PETSC_COMM_WORLD,"--------------------------------------------------------------------------\n");
 
@@ -644,7 +645,7 @@ PetscErrorCode BCApplyPres(BCCtx *bc)
 	//-----------------------------------------------------
 	// P points (TPC only, hence looping over ghost points)
 	//-----------------------------------------------------
-	if(pbot >= 0.0 || ptop >= 0.0 )
+	if(pbot >= 0.0 || ptop >= 0.0)
 	{
 		GET_CELL_RANGE_GHOST_INT(nx, sx, fs->dsx)
 		GET_CELL_RANGE_GHOST_INT(ny, sy, fs->dsy)

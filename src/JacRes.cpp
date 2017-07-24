@@ -123,6 +123,7 @@ PetscErrorCode JacResCreate(JacRes *jr, FB *fb)
 	ierr = getStringParam(fb, _OPTIONAL_, "gw_level_type",  gwtype,              "none"); CHKERRQ(ierr);
 	ierr = getScalarParam(fb, _OPTIONAL_, "gw_level",      &ctrl->gwLevel,       1, 1.0); CHKERRQ(ierr);
 	ierr = getIntParam   (fb, _OPTIONAL_, "set_phase",     &ctrl->setPhase,      1, mID); CHKERRQ(ierr);
+	ierr = getIntParam   (fb, _OPTIONAL_, "get_permea",    &ctrl->getPermea,     1, 1);   CHKERRQ(ierr);
 
 	// Constant T
 	ierr = getScalarParam(fb, _OPTIONAL_, "PCTT1",       &fb->PCTT1,         1, 1.0); CHKERRQ(ierr);
@@ -630,7 +631,7 @@ PetscErrorCode JacResGetI2Gdt(JacRes *jr)
 	PetscFunctionBegin;
 
 	fs        = jr->fs;
-	dt        = jr->ts->dt;
+	dt        = PetscAbs(jr->ts->dt);		// should always be positive, even for reverse cases
 	numPhases = jr->dbm->numPhases;
 	phases    = jr->dbm->phases;
 

@@ -71,6 +71,7 @@ PetscErrorCode FreeSurfCreate(FreeSurf *surf, FB *fb)
 	// initialize
 	surf->phaseCorr   =  1;
 	surf->AirPhase    = -1;
+	surf->NoShiftMark =  0;
 
 	// check whether free surface is activated
 	ierr = getIntParam(fb, _OPTIONAL_, "surf_use", &surf->UseFreeSurf, 1,  1); CHKERRQ(ierr);
@@ -83,12 +84,13 @@ PetscErrorCode FreeSurfCreate(FreeSurf *surf, FB *fb)
 	maxPhaseID = surf->jr->dbm->numPhases-1;
 
 	// read from options
-	ierr = getIntParam   (fb, _OPTIONAL_, "surf_corr_phase", &surf->phaseCorr,     1,  1);            CHKERRQ(ierr);
-	ierr = getScalarParam(fb, _REQUIRED_, "surf_level",      &surf->InitLevel,     1,  scal->length); CHKERRQ(ierr);
-	ierr = getIntParam   (fb, _REQUIRED_, "surf_air_phase",  &surf->AirPhase,      1,  maxPhaseID);   CHKERRQ(ierr);
-	ierr = getScalarParam(fb, _OPTIONAL_, "surf_max_angle",  &surf->MaxAngle,      1,  scal->angle);  CHKERRQ(ierr);
-	ierr = getIntParam   (fb, _OPTIONAL_, "erosion_model",   &surf->ErosionModel,  1,  1);            CHKERRQ(ierr);
-	ierr = getIntParam   (fb, _OPTIONAL_, "sediment_model",  &surf->SedimentModel, 1,  1);            CHKERRQ(ierr);
+	ierr = getIntParam   (fb, _OPTIONAL_, "surf_corr_phase", 		&surf->phaseCorr,     1,  1);            CHKERRQ(ierr);
+	ierr = getScalarParam(fb, _REQUIRED_, "surf_level",      		&surf->InitLevel,     1,  scal->length); CHKERRQ(ierr);
+	ierr = getIntParam   (fb, _REQUIRED_, "surf_air_phase",  		&surf->AirPhase,      1,  maxPhaseID);   CHKERRQ(ierr);
+	ierr = getScalarParam(fb, _OPTIONAL_, "surf_max_angle",  		&surf->MaxAngle,      1,  scal->angle);  CHKERRQ(ierr);
+	ierr = getIntParam   (fb, _OPTIONAL_, "surf_no_shift_mark",  	&surf->NoShiftMark,   1,  1);   		 CHKERRQ(ierr);
+	ierr = getIntParam   (fb, _OPTIONAL_, "erosion_model",   		&surf->ErosionModel,  1,  1);            CHKERRQ(ierr);
+	ierr = getIntParam   (fb, _OPTIONAL_, "sediment_model",  		&surf->SedimentModel, 1,  1);            CHKERRQ(ierr);
 
 	if(surf->SedimentModel)
 	{

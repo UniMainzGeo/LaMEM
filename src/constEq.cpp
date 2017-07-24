@@ -638,6 +638,7 @@ PetscErrorCode VolConstEq(
 			}
 			else if(mat->K)
 			{
+				Kavg += phRat[i]*mat->K;
 				if(mat->Kp) cf_comp = pow(1.0 + mat->Kp*(p/mat->K), 1.0/mat->Kp);
 				else        cf_comp = 1.0 + p/mat->K;
 			}
@@ -660,7 +661,6 @@ PetscErrorCode VolConstEq(
 			else if(mat->alpha)
 			{
 				cf_therm  = 1.0 - mat->alpha*(T - ctrl->TRef);
-				svBulk->alpha += phRat[i]*mat->alpha;
 			}
 
 			// get density
@@ -694,7 +694,10 @@ PetscErrorCode VolConstEq(
 
 			// update density, thermal expansion & inverse bulk elastic parameter
 			svBulk->rho   += phRat[i]*rho;
-			svBulk->alpha += phRat[i]*mat->alpha;
+			if(mat->alpha)
+			{
+				svBulk->alpha += phRat[i]*mat->alpha;
+			}
 		}
 	}
 

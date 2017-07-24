@@ -183,6 +183,17 @@ PetscErrorCode ADVCreate(AdvCtx *actx, FB *fb)
 		if(nmark_lim[1]) actx->nmax = nmark_lim[1];
 	}
 
+	if(actx->mctrl == CTRL_BASIC)
+	{
+		actx->avdx = actx->NumPartX * 3;
+		actx->avdy = actx->NumPartY * 3;
+		actx->avdz = actx->NumPartZ * 3;
+
+		if(nmark_avd[0]) actx->avdx = nmark_avd[0];
+		if(nmark_avd[1]) actx->avdy = nmark_avd[1];
+		if(nmark_avd[2]) actx->avdz = nmark_avd[2];
+	}
+
 	if(actx->mctrl == CTRL_AVD)
 	{
 		actx->avdx = actx->NumPartX * 3;
@@ -200,7 +211,7 @@ PetscErrorCode ADVCreate(AdvCtx *actx, FB *fb)
 	PetscPrintf(PETSC_COMM_WORLD,"   Marker setup scheme           : ");
 	if     (actx->msetup == _GEOM_)     PetscPrintf(PETSC_COMM_WORLD,"geometric primitives\n");
 	else if(actx->msetup == _FILES_)    PetscPrintf(PETSC_COMM_WORLD,"binary files (MATLAB)\n");
-	else if(actx->msetup == _POLYGONS_) PetscPrintf(PETSC_COMM_WORLD,"volumes form polygons (geomIO)\n");
+	else if(actx->msetup == _POLYGONS_) PetscPrintf(PETSC_COMM_WORLD,"volumes from polygons (geomIO)\n");
 
 	// print advection scheme
  	PetscPrintf(PETSC_COMM_WORLD,"   Advection scheme              : ");
@@ -225,8 +236,8 @@ PetscErrorCode ADVCreate(AdvCtx *actx, FB *fb)
 		(LLD)(actx->NumPartY),
 		(LLD)(actx->NumPartZ));
 
-	PetscPrintf(PETSC_COMM_WORLD,"   Marker distribution type type : ");
-	if   (actx->randNoise)  PetscPrintf(PETSC_COMM_WORLD, "uniform\n");
+	PetscPrintf(PETSC_COMM_WORLD,"   Marker distribution type      : ");
+	if   (!actx->randNoise)  PetscPrintf(PETSC_COMM_WORLD, "uniform\n");
 	else                    PetscPrintf(PETSC_COMM_WORLD, "random noise\n");
 
 	if(actx->saveMark)          PetscPrintf(PETSC_COMM_WORLD,"   Marker storage file           : %s \n", actx->saveFile);
@@ -1995,8 +2006,11 @@ PetscErrorCode ADVMarkCrossFreeSurf(AdvCtx *actx)
 			}
 			else
 			{
-				// put marker below the free surface
-				P->X[2] = topo - tol*(zp - topo);
+				if (!surf->NoShiftMark)
+				{	
+					// put marker below the free surface
+					P->X[2] = topo - tol*(zp - topo);
+				}
 			}
 		}
 
@@ -2010,8 +2024,11 @@ PetscErrorCode ADVMarkCrossFreeSurf(AdvCtx *actx)
 			}
 			else
 			{
-				// put marker above the free surface
-				P->X[2] = topo + tol*(topo - zp);
+				if (!surf->NoShiftMark)
+				{	
+					// put marker above the free surface
+					P->X[2] = topo + tol*(topo - zp);
+				}
 			}
 		}
 	}

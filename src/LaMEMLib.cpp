@@ -109,6 +109,7 @@ PetscErrorCode LaMEMLibMain(void *param)
 		else if(!strcmp(str, "restart"))   mode = _RESTART_;
 		else if(!strcmp(str, "dry_run"))   mode = _DRY_RUN_;
 		else if(!strcmp(str, "save_grid")) mode = _SAVE_GRID_;
+		else if(!strcmp(str, "reverse"))   mode = _REVERSE_;
 		else SETERRQ1(PETSC_COMM_WORLD, PETSC_ERR_USER, "Incorrect run mode type: %s", str);
 	}
 
@@ -140,7 +141,7 @@ PetscErrorCode LaMEMLibMain(void *param)
 
 		PetscFunctionReturn(0);
 	}
-	if(mode == _NORMAL_ || mode == _DRY_RUN_)
+	if(mode == _NORMAL_ || mode == _DRY_RUN_ || mode == _REVERSE_ )
 	{
 		// create library objects
 		ierr = LaMEMLibCreate(&lm); CHKERRQ(ierr);
@@ -160,7 +161,7 @@ PetscErrorCode LaMEMLibMain(void *param)
 		// compute initial residual, output & stop
 		ierr = LaMEMLibDryRun(&lm); CHKERRQ(ierr);
 	}
-	else if(mode == _NORMAL_ || mode == _RESTART_)
+	else if(mode == _NORMAL_ || mode == _RESTART_ || mode == _REVERSE_)
 	{
 		// solve coupled nonlinear equations
 		ierr = LaMEMLibSolve(&lm, param); CHKERRQ(ierr);
@@ -577,6 +578,9 @@ PetscErrorCode LaMEMLibSaveOutput(LaMEMLib *lm)
 	// marker ParaView output
 	ierr = PVMarkWriteTimeStep(&lm->pvmark, dirName, time); CHKERRQ(ierr);
 
+	// compute and output effective permeability
+	ierr = JacResGetPermea(&lm->jr, step); CHKERRQ(ierr);
+
 	// clean up
 	free(dirName);
 
@@ -814,6 +818,9 @@ PetscErrorCode LaMEMLibInitGuess(LaMEMLib *lm, SNES snes)
 
 	PetscLogDouble t;
 
+	// check if we do a reverse simulation or not
+	ierr = LaMEMLib_reverse(lm); CHKERRQ(ierr);
+
 	// initialize boundary constraint vectors
 	ierr = BCApply(&lm->bc); CHKERRQ(ierr);
 
@@ -850,6 +857,39 @@ PetscErrorCode LaMEMLibInitGuess(LaMEMLib *lm, SNES snes)
 
 	// save output for inspection
 	ierr = LaMEMLibSaveOutput(lm); CHKERRQ(ierr);
+
+	PetscFunctionReturn(0);
+}
+
+//---------------------------------------------------------------------------
+#undef __FUNCT__
+#define __FUNCT__ "LaMEMLib_reverse"
+PetscErrorCode LaMEMLib_reverse(LaMEMLib *lm)
+{
+	PetscErrorCode ierr;
+	PetscBool      found;
+	char           str[_STR_LEN_];
+	PetscFunctionBegin;
+
+
+	// are we running this in reverse mode?
+	
+	ierr = PetscOptionsGetCheckString("-mode", str, &found); CHKERRQ(ierr);
+
+	if(found)
+	{
+		if(!strcmp(str, "reverse")){
+			PetscPrintf(PETSC_COMM_WORLD, "--------------------------------------------------------------------------\n");
+			PetscPrintf(PETSC_COMM_WORLD,"Running simulation in reverse mode \n");	
+			PetscPrintf(PETSC_COMM_WORLD, "--------------------------------------------------------------------------\n");
+			
+			// make timestep negative
+			lm->ts.dt= -PetscAbs(lm->ts.dt);
+
+
+		}   
+	
+	}
 
 	PetscFunctionReturn(0);
 }

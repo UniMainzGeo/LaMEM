@@ -59,8 +59,6 @@
 //   MPIU_INT    - appropriate MPI Data Type for sending/receiving PetscInt
 //
 //-----------------------------------------------------------------------------
-// space dimension
-#define SPDIM 3
 
 // number of neighbor domains in 3D lattice (including self)
 #define _num_neighb_ 27
@@ -69,22 +67,6 @@
 #define LLD long long int
 
 #define _STR_LEN_ 130 // (two null characters are reserved in the end, i.e. 128)
-
-// use this to enable asprintf
-#ifndef _GNU_SOURCE
-	#define _GNU_SOURCE
-#endif
-
-// identify gcc compiler.
-// take care that other compilers may also define __GNUC__ macro.
-
-#undef GCC_COMPILER
-
-#if defined (__GNUC__) && !defined (__INTEL_COMPILER)
-
-	#define GCC_COMPILER
-
-#endif
 
 //-----------------------------------------------------------------------------
 // EXTERNAL INCLUDES
@@ -98,33 +80,8 @@
 #include <ctype.h>
 #include <sys/stat.h>
 #include <errno.h>
+#include <petsc.h>
 
-// Get rid of unnecessary PETSc-induced warnings when using gcc compiler
-
-#ifdef GCC_COMPILER
-
-	#pragma GCC diagnostic ignored "-Wconversion"
-	#pragma GCC diagnostic ignored "-Wunused-parameter"
-	#pragma GCC diagnostic ignored "-Wcast-qual"
-
-	#include <petsc.h>
-
-	#pragma GCC diagnostic warning "-Wconversion"
-	#pragma GCC diagnostic warning "-Wunused-parameter"
-	#pragma GCC diagnostic warning "-Wcast-qual"
-
-#else
-
-	#include <petsc.h>
-
-#endif
-
-//-----------------------------------------------------------------------------
-// UDEFINE COMPLEX UNIT MACRO
-//-----------------------------------------------------------------------------
-#ifdef I
-	#undef I
-#endif
 
 //-----------------------------------------------------------------------------
 // PROTOTYPES
