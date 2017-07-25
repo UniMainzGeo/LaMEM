@@ -78,10 +78,9 @@ PetscErrorCode ADVCreate(AdvCtx *actx, FB *fb)
 {
 	// create advection context
 
+	PetscInt maxPhaseID, nmarkCell;
 	PetscInt nmark_lim[ ] = { 0, 0    };
 	PetscInt nmark_avd[ ] = { 0, 0, 0 };
-
-	PetscInt maxPhaseID;
 	char     msetup[_STR_LEN_], advect[_STR_LEN_], interp[_STR_LEN_], mctrl[_STR_LEN_];
 
 	PetscErrorCode ierr;
@@ -173,33 +172,21 @@ PetscErrorCode ADVCreate(AdvCtx *actx, FB *fb)
 	if( actx->msetup != _GEOM_)  actx->bgPhase = -1;
 	if(!actx->surf->UseFreeSurf) actx->surfTol = 0.0;
 
-	// initialize variables for marker control
+
 	if(actx->mctrl != CTRL_NONE)
 	{
-		actx->nmin = actx->NumPartX*actx->NumPartY*actx->NumPartZ / 2; // min # of markers/cell 50%
-		actx->nmax = actx->NumPartX*actx->NumPartY*actx->NumPartZ * 3; // max # of markers/cell 300%
+		nmarkCell = actx->NumPartX*actx->NumPartY*actx->NumPartZ;
 
+		// set default values for marker control variables
+		actx->nmin = nmarkCell      / 2; // min # of markers/cell 50%
+		actx->nmax = nmarkCell      * 3; // max # of markers/cell 300%
+		actx->avdx = actx->NumPartX * 3;
+		actx->avdy = actx->NumPartY * 3;
+		actx->avdz = actx->NumPartZ * 3;
+
+		// override from input
 		if(nmark_lim[0]) actx->nmin = nmark_lim[0];
 		if(nmark_lim[1]) actx->nmax = nmark_lim[1];
-	}
-
-	if(actx->mctrl == CTRL_BASIC)
-	{
-		actx->avdx = actx->NumPartX * 3;
-		actx->avdy = actx->NumPartY * 3;
-		actx->avdz = actx->NumPartZ * 3;
-
-		if(nmark_avd[0]) actx->avdx = nmark_avd[0];
-		if(nmark_avd[1]) actx->avdy = nmark_avd[1];
-		if(nmark_avd[2]) actx->avdz = nmark_avd[2];
-	}
-
-	if(actx->mctrl == CTRL_AVD)
-	{
-		actx->avdx = actx->NumPartX * 3;
-		actx->avdy = actx->NumPartY * 3;
-		actx->avdz = actx->NumPartZ * 3;
-
 		if(nmark_avd[0]) actx->avdx = nmark_avd[0];
 		if(nmark_avd[1]) actx->avdy = nmark_avd[1];
 		if(nmark_avd[2]) actx->avdz = nmark_avd[2];
