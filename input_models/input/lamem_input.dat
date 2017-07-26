@@ -117,7 +117,7 @@
 	surf_air_phase     = 0                # phase ID of sticky air layer
 	surf_max_angle     = 45.0             # maximum angle with horizon (smoothed if larger)
 	surf_topo_file     = ./input/topo.dat # initial topography file (redundant)
-	surf_no_shift_mark = 1				  # deactivate shifting markers at the free surface
+	surf_no_shift_mark = 1                # deactivate shifting markers at the free surface.
 	erosion_model      = 1                # erosion model [0-none (default), 1-infinitely fast]
 	sediment_model     = 1                # sedimentation model [0-none (dafault), 1-prescribed rate]
 	sed_num_layers     = 3                # number of sediment layers

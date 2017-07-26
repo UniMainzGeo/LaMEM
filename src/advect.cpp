@@ -224,8 +224,8 @@ PetscErrorCode ADVCreate(AdvCtx *actx, FB *fb)
 		(LLD)(actx->NumPartZ));
 
 	PetscPrintf(PETSC_COMM_WORLD,"   Marker distribution type      : ");
-	if   (!actx->randNoise)  PetscPrintf(PETSC_COMM_WORLD, "uniform\n");
-	else                    PetscPrintf(PETSC_COMM_WORLD, "random noise\n");
+	if(!actx->randNoise) PetscPrintf(PETSC_COMM_WORLD, "uniform\n");
+	else                 PetscPrintf(PETSC_COMM_WORLD, "random noise\n");
 
 	if(actx->saveMark)          PetscPrintf(PETSC_COMM_WORLD,"   Marker storage file           : %s \n", actx->saveFile);
 	if(actx->bgPhase != -1)     PetscPrintf(PETSC_COMM_WORLD,"   Background phase ID           : %lld \n", (LLD)actx->bgPhase);
@@ -1993,7 +1993,7 @@ PetscErrorCode ADVMarkCrossFreeSurf(AdvCtx *actx)
 			}
 			else
 			{
-				if (!surf->NoShiftMark)
+				if(!surf->NoShiftMark)
 				{	
 					// put marker below the free surface
 					P->X[2] = topo - tol*(zp - topo);
@@ -2011,7 +2011,7 @@ PetscErrorCode ADVMarkCrossFreeSurf(AdvCtx *actx)
 			}
 			else
 			{
-				if (!surf->NoShiftMark)
+				if(!surf->NoShiftMark)
 				{	
 					// put marker above the free surface
 					P->X[2] = topo + tol*(topo - zp);
