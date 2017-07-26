@@ -1827,16 +1827,6 @@ PetscErrorCode MGDestroy(MG *mg)
 
 	ierr = PetscFree(mg->lvls); CHKERRQ(ierr);
 
-	if(mg->crs_setup == PETSC_TRUE)
-	{
-		ierr = MatNullSpaceDestroy(&mg->crs_nullsp); CHKERRQ(ierr);
-
-		for(i = 0; i < mg->nullsp_sz; i++)
-		{
-			ierr = VecDestroy(&mg->crs_vecs[i]); CHKERRQ(ierr);
-		}
-	}
-
 	ierr = PCDestroy(&mg->pc); CHKERRQ(ierr);
 
 	PetscFunctionReturn(0);
@@ -1847,13 +1837,11 @@ PetscErrorCode MGDestroy(MG *mg)
 #define __FUNCT__ "MGSetupCoarse"
 PetscErrorCode MGSetupCoarse(MG *mg, Mat A)
 {
-	KSP          ksp;
-	PC           pc;
-	Mat          mat;
-	MGLevel     *lvl;
-	DOFIndex    *dof;
-	PetscScalar *v;
-	PetscInt    i, j, sz, ln, iter, lbsz[_max_nullsp_sz_];
+	KSP        ksp;
+	PC         pc;
+	Mat        mat;
+	MGLevel   *lvl;
+	DOFIndex  *dof;
 
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
@@ -1864,40 +1852,9 @@ PetscErrorCode MGSetupCoarse(MG *mg, Mat A)
 		PetscFunctionReturn(0);
 	}
 
-	// get coarse level
+	// get coarse level index object
 	lvl = mg->lvls + mg->nlvl - 1;
 	dof = &lvl->dof;
-
-	if     (dof->idxmod == IDXCOUPLED)   { mg->nullsp_sz = 4; ln = dof->lnv + dof->lnp; }
-	else if(dof->idxmod == IDXUNCOUPLED) { mg->nullsp_sz = 3; ln = dof->lnv; }
-
-	// set local block sizes & iterator
-	iter    = 0;
-	lbsz[0] = dof->lnvx;
-	lbsz[1] = dof->lnvy;
-	lbsz[2] = dof->lnvz;
-	lbsz[3] = dof->lnp;
-
-	// create near null space vectors
-	for(i = 0; i < mg->nullsp_sz; i++)
-	{
-		// create
-		ierr = VecCreateMPI(PETSC_COMM_WORLD, ln, PETSC_DETERMINE, &mg->crs_vecs[i]); CHKERRQ(ierr);
-
-		// initialize
-		ierr = VecZeroEntries (mg->crs_vecs[i]);     CHKERRQ(ierr);
-		ierr = VecGetArray    (mg->crs_vecs[i], &v); CHKERRQ(ierr);
-
-		for(j = 0, sz = lbsz[i]; j < sz; j++) v[iter++] = 1.0;
-
-		ierr = VecRestoreArray(mg->crs_vecs[i], &v); CHKERRQ(ierr);
-
-		// normalize
-		ierr = VecNormalize(mg->crs_vecs[i], NULL); CHKERRQ(ierr);
-	}
-
-	// create near null space
-	ierr = MatNullSpaceCreate(PETSC_COMM_WORLD, PETSC_FALSE, mg->nullsp_sz, (const Vec*)mg->crs_vecs, &mg->crs_nullsp); CHKERRQ(ierr);
 
 	// set dummy coarse solver
 	ierr = PCMGGetCoarseSolve(mg->pc, &ksp); CHKERRQ(ierr);
@@ -1909,13 +1866,13 @@ PetscErrorCode MGSetupCoarse(MG *mg, Mat A)
 	ierr = PCSetOperators(mg->pc, A, A);     CHKERRQ(ierr);
 	ierr = PCSetUp(mg->pc);                  CHKERRQ(ierr);
 
-	// attach near null space to the coarse grid operator matrix
-	ierr = KSPGetOperators(ksp, &mat, NULL);         CHKERRQ(ierr);
-	ierr = MatSetNearNullSpace(mat, mg->crs_nullsp); CHKERRQ(ierr);
+	// set near null space on coarse level matrix
+	ierr = KSPGetOperators(ksp, &mat, NULL); CHKERRQ(ierr);
+	ierr = MatAIJSetNullSpace(mat, dof);     CHKERRQ(ierr);
 
 	// set actual coarse solver options
-	ierr = KSPSetOptionsPrefix(ksp, "crs_");  CHKERRQ(ierr);
-	ierr = KSPSetFromOptions(ksp);            CHKERRQ(ierr);
+	ierr = KSPSetOptionsPrefix(ksp, "crs_"); CHKERRQ(ierr);
+	ierr = KSPSetFromOptions(ksp);           CHKERRQ(ierr);
 
 	// set setup flag
 	mg->crs_setup = PETSC_TRUE;

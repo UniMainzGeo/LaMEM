@@ -48,6 +48,7 @@
 //---------------------------------------------------------------------------
 
 struct JacRes;
+struct DOFIndex;
 
 // WARNING! Add MatSetNearNullSpace for all matrix types
 
@@ -59,6 +60,8 @@ PetscErrorCode MatAIJCreate(PetscInt m, PetscInt n, PetscInt d_nz,
 PetscErrorCode MatAIJCreateDiag(PetscInt m, PetscInt istart, Mat *P);
 
 PetscErrorCode MatAIJAssemble(Mat P, PetscInt numRows, const PetscInt rows[], PetscScalar diag);
+
+PetscErrorCode MatAIJSetNullSpace(Mat P, DOFIndex *dof);
 
 //---------------------------------------------------------------------------
 // preconditioning matrix storage format

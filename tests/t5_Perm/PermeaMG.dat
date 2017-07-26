@@ -123,6 +123,8 @@
 
 	# Matrix type
 	-pcmat_type mono   # monolithic matrix [coupled MG solver]
+	-pcmat_set_null_space
+
 	-jp_type mg        # multigrid
 
 	# Multigrid preconditioner settings

@@ -139,6 +139,69 @@ PetscErrorCode MatAIJAssemble(Mat P, PetscInt numRows, const PetscInt rows[], Pe
 }
 //---------------------------------------------------------------------------
 #undef __FUNCT__
+#define __FUNCT__ "MatAIJSetNullSpace"
+PetscErrorCode MatAIJSetNullSpace(Mat P, DOFIndex *dof)
+{
+	MatNullSpace nullsp;                       // near null space
+	Vec          nullsp_vecs[_max_nullsp_sz_]; // near null space vectors
+	PetscScalar *v;
+	PetscBool    set_nullsp;
+	PetscInt     i, j, sz, ln, iter, nullsp_sz, lbsz[_max_nullsp_sz_];
+
+	PetscErrorCode ierr;
+	PetscFunctionBegin;
+
+	ierr = PetscOptionsHasName(NULL, NULL, "-pcmat_set_null_space", &set_nullsp); CHKERRQ(ierr);
+
+	if(set_nullsp != PETSC_TRUE) PetscFunctionReturn(0);
+
+	// get number of vectors
+	if     (dof->idxmod == IDXCOUPLED)   { nullsp_sz = 4; ln = dof->lnv + dof->lnp; }
+	else if(dof->idxmod == IDXUNCOUPLED) { nullsp_sz = 3; ln = dof->lnv; }
+
+	// set local block sizes & iterator
+	iter    = 0;
+	lbsz[0] = dof->lnvx;
+	lbsz[1] = dof->lnvy;
+	lbsz[2] = dof->lnvz;
+	lbsz[3] = dof->lnp;
+
+	// create near null space vectors
+	for(i = 0; i < nullsp_sz; i++)
+	{
+		// create
+		ierr = VecCreateMPI(PETSC_COMM_WORLD, ln, PETSC_DETERMINE, &nullsp_vecs[i]); CHKERRQ(ierr);
+
+		// initialize
+		ierr = VecZeroEntries (nullsp_vecs[i]);     CHKERRQ(ierr);
+		ierr = VecGetArray    (nullsp_vecs[i], &v); CHKERRQ(ierr);
+
+		for(j = 0, sz = lbsz[i]; j < sz; j++) v[iter++] = 1.0;
+
+		ierr = VecRestoreArray(nullsp_vecs[i], &v); CHKERRQ(ierr);
+
+		// normalize
+		ierr = VecNormalize(nullsp_vecs[i], NULL); CHKERRQ(ierr);
+	}
+
+	// create near null space
+	ierr = MatNullSpaceCreate(PETSC_COMM_WORLD, PETSC_FALSE, nullsp_sz, (const Vec*)nullsp_vecs, &nullsp); CHKERRQ(ierr);
+
+	// attach near null space to the matrix
+	ierr = MatSetNearNullSpace(P, nullsp); CHKERRQ(ierr);
+
+	// clear storage
+	ierr = MatNullSpaceDestroy(&nullsp); CHKERRQ(ierr);
+
+	for(i = 0; i < nullsp_sz; i++)
+	{
+		ierr = VecDestroy(&nullsp_vecs[i]); CHKERRQ(ierr);
+	}
+
+	PetscFunctionReturn(0);
+}
+//---------------------------------------------------------------------------
+#undef __FUNCT__
 #define __FUNCT__ "PMatCreate"
 PetscErrorCode PMatCreate(PMat *p_pm, JacRes *jr)
 {
@@ -523,6 +586,9 @@ PetscErrorCode PMatMonoCreate(PMat pm)
 	// clear work arrays
 	ierr = PetscFree(d_nnz); CHKERRQ(ierr);
 	ierr = PetscFree(o_nnz); CHKERRQ(ierr);
+
+	// attach near null space
+	ierr = MatAIJSetNullSpace(P->A, dof); CHKERRQ(ierr);
 
 	PetscFunctionReturn(0);
 }
@@ -1137,6 +1203,9 @@ PetscErrorCode PMatBlockCreate(PMat pm)
 	ierr = PetscFree(Avp_o_nnz); CHKERRQ(ierr);
 	ierr = PetscFree(Apv_d_nnz); CHKERRQ(ierr);
 	ierr = PetscFree(Apv_o_nnz); CHKERRQ(ierr);
+
+	// attach near null space
+	ierr = MatAIJSetNullSpace(P->Avv, dof); CHKERRQ(ierr);
 
 	PetscFunctionReturn(0);
 }

@@ -45,9 +45,6 @@
 //---------------------------------------------------------------------------
 #ifndef __multigrid_h__
 #define __multigrid_h__
-//---------------------------------------------------------------------------
-// FDSTAG near null space size
-#define _max_nullsp_sz_ 4
 
 //---------------------------------------------------------------------------
 
@@ -139,10 +136,7 @@ struct MG
 	PC        pc;   // internal preconditioner context
 	JacRes   *jr;   // finest level context
 
-	PetscBool    crs_setup;                 // coarse solver setup flag
-	PetscInt     nullsp_sz;                 // number of nullspace vectors
-	Vec          crs_vecs[_max_nullsp_sz_]; // near nullspace vectors
-	MatNullSpace crs_nullsp;                // coarse grid near null space
+	PetscBool crs_setup; // coarse solver setup flag
 
 };
 

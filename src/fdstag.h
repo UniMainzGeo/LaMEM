@@ -56,6 +56,9 @@
 // maximum number of processes in every direction
 #define MaxNumProcs 1024
 
+// FDSTAG near null space size
+#define _max_nullsp_sz_ 4
+
 //---------------------------------------------------------------------------
 
 struct FB;
