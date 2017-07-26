@@ -187,11 +187,16 @@
 	temp_top = 0.0
 	temp_bot = 1300.0;
 
-# Pressure on the top & bottom boundaries
+# Pressure on the top & bottom boundaries (if specified, initial guess is linear distribution)
 
 	pres_top = 0.0
 	pres_bot = 10.0;
 
+# pressure initial guess flag
+# linear profile between pres_top and pres_bot in the unconstrained cells
+
+	init_pres = 1
+	
 #===============================================================================
 # Solution parameters & controls
 #===============================================================================

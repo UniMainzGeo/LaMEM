@@ -348,8 +348,9 @@ PetscErrorCode BCCreate(BCCtx *bc, FB *fb)
 	// PRESSURE CONSTRAINTS
 	//=====================
 
-	ierr = getScalarParam(fb, _OPTIONAL_, "pres_bot", &bc->pbot, 1, 1.0); CHKERRQ(ierr);
-	ierr = getScalarParam(fb, _OPTIONAL_, "pres_top", &bc->ptop, 1, 1.0); CHKERRQ(ierr);
+	ierr = getScalarParam(fb, _OPTIONAL_, "pres_bot",  &bc->pbot,     1, 1.0); CHKERRQ(ierr);
+	ierr = getScalarParam(fb, _OPTIONAL_, "pres_top",  &bc->ptop,     1, 1.0); CHKERRQ(ierr);
+	ierr = getIntParam   (fb, _OPTIONAL_, "init_pres", &bc->initPres, 1, -1);  CHKERRQ(ierr);
 
 	// CHECK
 	if(bc->top_open && bc->noslip[5])

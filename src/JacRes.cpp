@@ -1841,6 +1841,77 @@ PetscErrorCode JacResCopyPres(JacRes *jr, Vec x)
 }
 //---------------------------------------------------------------------------
 #undef __FUNCT__
+#define __FUNCT__ "JacResInitPres"
+PetscErrorCode JacResInitPres(JacRes *jr)
+{
+	FDSTAG            *fs;
+	BCCtx             *bc;
+	SolVarCell        *svCell;
+	const PetscScalar *p;
+	PetscScalar       ***gp, *sol, *psol, dpdz, bz, ez, cz;
+	PetscInt          i, j, k, nx, ny, nz, sx, sy, sz, iter, fixPhase;
+
+	PetscErrorCode ierr;
+	PetscFunctionBegin;
+
+	// access context
+	fs       = jr->fs;
+	bc       = jr->bc;
+	svCell   = jr->svCell;
+	fixPhase = bc->fixPhase;
+
+	// check activation
+	if(!bc->initPres) PetscFunctionReturn(0);
+
+	// get grid coordinate bounds in z-direction
+	ierr = FDSTAGGetGlobalBox(fs, NULL, NULL, &bz, NULL, NULL, &ez); CHKERRQ(ierr);
+
+	// get pressure gradient in z-direction
+	dpdz = (bc->ptop - bc->pbot)/(ez - bz);
+
+	// set pressure to zero
+	ierr = VecZeroEntries(jr->gp); CHKERRQ(ierr);
+
+	// get local grid sizes
+	ierr = DMDAGetCorners(fs->DA_CEN, &sx, &sy, &sz, &nx, &ny, &nz); CHKERRQ(ierr);
+
+	ierr = DMDAVecGetArray(fs->DA_CEN, jr->gp, &gp);  CHKERRQ(ierr);
+
+	iter = 0;
+
+	START_STD_LOOP
+	{
+		// check for unconstrained cell
+		if(svCell[iter++].phRat[fixPhase] != 1.0)
+		{
+			// get z-coordinate of cell center
+			cz = COORD_CELL(k, sz, fs->dsz);
+
+			// set pressure initial guess
+			gp[k][j][i] = bc->pbot + dpdz*(cz - bz);
+		}
+	}
+	END_STD_LOOP
+
+	ierr = DMDAVecRestoreArray(fs->DA_CEN, jr->gp, &gp);  CHKERRQ(ierr);
+
+	// access vectors
+	ierr = VecGetArrayRead(jr->gp,   &p);   CHKERRQ(ierr);
+	ierr = VecGetArray    (jr->gsol, &sol); CHKERRQ(ierr);
+
+	// copy pressure to coupled solution vector
+	psol = sol + fs->nXFace + fs->nYFace + fs->nZFace;
+
+	ierr = PetscMemcpy(psol, p, (size_t)fs->nCells*sizeof(PetscScalar)); CHKERRQ(ierr);
+
+	// restore access
+	ierr = VecRestoreArrayRead(jr->gp,   &p);   CHKERRQ(ierr);
+	ierr = VecRestoreArray    (jr->gsol, &sol); CHKERRQ(ierr);
+
+	PetscFunctionReturn(0);
+}
+//---------------------------------------------------------------------------
+#undef __FUNCT__
 #define __FUNCT__ "JacResCopyRes"
 PetscErrorCode JacResCopyRes(JacRes *jr, Vec f)
 {

@@ -41,8 +41,10 @@
 
 	noslip   = 1 1 0 0 0 0
 
-	pres_top = 0.0;
-	pres_bot = 1.0;
+	pres_top = 0.0
+	pres_bot = 1.0
+
+	init_pres = 1
 
 	fix_phase = 0
 
@@ -54,7 +56,7 @@
 	init_guess  = 0
 	FSSA        = 0.0;
 
-	set_phase = 1
+	set_phase = 0
 
 	get_permea = 1
 

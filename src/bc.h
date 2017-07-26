@@ -238,8 +238,10 @@ struct BCCtx
 	// PRESSURE CONSTRAINTS
 	//=====================
 
-	// pressure on top and bottom boundaries
+	// pressure on top and bottom boundaries and initial guess activation flag
 	PetscScalar  pbot, ptop;
+	PetscInt     initPres;
+
 };
 //---------------------------------------------------------------------------
 

@@ -289,6 +289,9 @@ PetscErrorCode JacResCopyVel(JacRes *jr, Vec x);
 // copy solution from global to local vectors, enforce boundary constraints
 PetscErrorCode JacResCopyPres(JacRes *jr, Vec x);
 
+// initialize pressure
+PetscErrorCode JacResInitPres(JacRes *jr);
+
 // copy residuals from local to global vectors, enforce boundary constraints
 PetscErrorCode JacResCopyRes(JacRes *jr, Vec f);
 
