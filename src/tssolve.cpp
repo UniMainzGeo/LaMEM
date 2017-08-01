@@ -257,8 +257,8 @@ PetscErrorCode TSSolGetCFLStep(
 {
 	Scaling     *scal;
 	PetscScalar  dt_cfl, dt_cfl_max, timestep_sign;
-	PetscBool      found;
-	char           str[_STR_LEN_];
+	PetscBool    found;
+	char         str[_STR_LEN_];
 
 	PetscFunctionBegin;
 

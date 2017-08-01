@@ -793,120 +793,8 @@ PetscErrorCode JacResGetPorePressure(JacRes *jr)
 }
 //---------------------------------------------------------------------------
 #undef __FUNCT__
-#define __FUNCT__ "JacResReadCellPhases"
-PetscErrorCode JacResReadCellPhases(JacRes *jr, FB *fb)
-{
-	FDSTAG      *fs;
-	int          fd;
-	PetscMPIInt  rank;
-	PetscViewer  view_in;
-	char        *filename, file[_STR_LEN_];
-	PetscScalar *phasebuf, header, s_ncells;
-	PetscInt     jj, PhaseID, ncells, numPhases;
-
-	PetscErrorCode ierr;
-	PetscFunctionBegin;
-
-	// access context
-	fs        = jr->fs;
-	numPhases = jr->dbm->numPhases;
-
-	// get MPI processor rank
-	MPI_Comm_rank(PETSC_COMM_WORLD, &rank);
-
-	// get file name
-	ierr = getStringParam(fb, _OPTIONAL_, "phase_load_file", file, "./phases/pdb"); CHKERRQ(ierr);
-
-	PetscPrintf(PETSC_COMM_WORLD,"Loading cell phases in parallel from files: %s.xxxxxxxx.dat\n", file);
-
-	// compile input file name with extension
-	asprintf(&filename, "%s.%1.8lld.dat", file, (LLD)rank);
-
-	// open file
-	ierr = PetscViewerBinaryOpen(PETSC_COMM_SELF, filename, FILE_MODE_READ, &view_in); CHKERRQ(ierr);
-	ierr = PetscViewerBinaryGetDescriptor(view_in, &fd);                               CHKERRQ(ierr);
-
-	// read (and ignore) the silent undocumented file header
-	ierr = PetscBinaryRead(fd, &header, 1, PETSC_SCALAR); CHKERRQ(ierr);
-
-	// read number of local cells
-	ierr = PetscBinaryRead(fd, &s_ncells, 1, PETSC_SCALAR); CHKERRQ(ierr);
-
-	ncells = (PetscInt)s_ncells;
-
-	if(ncells != fs->nCells)
-	{
-		SETERRQ2(PETSC_COMM_SELF, PETSC_ERR_USER, "Number of cells don't match: %lld, %lld", (LLD)ncells, (LLD)fs->nCells);
-	}
-
-	// allocate marker buffer
-	ierr = PetscMalloc((size_t)(ncells)*sizeof(PetscScalar), &phasebuf); CHKERRQ(ierr);
-
-	// read markers into buffer
-	ierr = PetscBinaryRead(fd, phasebuf, ncells, PETSC_SCALAR); CHKERRQ(ierr);
-
-	// destroy file handle & file name
-	ierr = PetscViewerDestroy(&view_in); CHKERRQ(ierr);
-
-	free(filename);
-
-	for(jj = 0; jj < ncells; jj++)
-	{
-		PhaseID = (PetscInt)phasebuf[jj];
-
-		if(PhaseID > numPhases - 1)
-		{
-			SETERRQ2(PETSC_COMM_SELF, PETSC_ERR_USER, "Phase ID out of range: %lld, %lld", (LLD)PhaseID, (LLD)numPhases);
-		}
-
-		jr->svCell[jj].phRat[PhaseID] = 1.0;
-	}
-
-	// free marker buffer
-	ierr = PetscFree(phasebuf); CHKERRQ(ierr);
-
-	// wait until all processors finished reading markers
-	ierr = MPI_Barrier(PETSC_COMM_WORLD); CHKERRQ(ierr);
-
-	PetscPrintf(PETSC_COMM_WORLD,"Finished Loading cell phases in parallel \n");
-
-	PetscFunctionReturn(0);
-}
-//---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "JacResSetPhase"
-PetscErrorCode JacResSetPhase(JacRes *jr)
-{
-	FDSTAG   *fs;
-	PetscInt  i, n, svBuffSz, setPhase;
-
-	PetscErrorCode ierr;
-	PetscFunctionBegin;
-
-	// access context
-	fs       = jr->fs;
-	setPhase = jr->ctrl.setPhase;
-
-	if(setPhase == -1) PetscFunctionReturn(0);
-
-	// compute buffer size
-	svBuffSz = jr->dbm->numPhases*(fs->nCells + fs->nXYEdg + fs->nXZEdg + fs->nYZEdg);
-
-	// zero out phase ratios
-	ierr = PetscMemzero(jr->svBuff, sizeof(PetscScalar)*(size_t)svBuffSz); CHKERRQ(ierr);
-
-	// set active phase
-	for(i = 0, n = fs->nCells; i < n; i++) jr->svCell  [i].phRat[setPhase] = 1.0;
-	for(i = 0, n = fs->nXYEdg; i < n; i++) jr->svXYEdge[i].phRat[setPhase] = 1.0;
-	for(i = 0, n = fs->nXZEdg; i < n; i++) jr->svXZEdge[i].phRat[setPhase] = 1.0;
-	for(i = 0, n = fs->nYZEdg; i < n; i++) jr->svYZEdge[i].phRat[setPhase] = 1.0;
-
-	PetscFunctionReturn(0);
-}
-//---------------------------------------------------------------------------
-#undef __FUNCT__
 #define __FUNCT__ "JacResGetPermea"
-PetscErrorCode JacResGetPermea(JacRes *jr, PetscInt step)
+PetscErrorCode JacResGetPermea(JacRes *jr, PetscInt bgPhase, PetscInt step)
 {
 	FILE        *db;
 	FDSTAG      *fs;
@@ -931,8 +819,8 @@ PetscErrorCode JacResGetPermea(JacRes *jr, PetscInt step)
 	// get total number of z-faces
 	nZFace = (PetscScalar)(fs->dsx.tcels*fs->dsy.tcels*fs->dsz.tnods);
 
-	// get fluid viscosity (fluid phase ID is 1)
-	eta = 1.0/(2.0*phases[1].Bd);
+	// get fluid viscosity (background phase is fluid)
+	eta = 1.0/(2.0*phases[bgPhase].Bd);
 
 	// get pressure gradient
 	dp = bc->pbot - bc->ptop;

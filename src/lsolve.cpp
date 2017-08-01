@@ -596,6 +596,9 @@ PetscErrorCode PCStokesUserSetup(PCStokes pc)
 	ierr = PCSetOperators(user->pc, P->A, P->A);  CHKERRQ(ierr);
 	ierr = PCSetUp(user->pc);                     CHKERRQ(ierr);
 
+	ierr = PCView(user->pc, PETSC_VIEWER_STDOUT_SELF); CHKERRQ(ierr);
+
+
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------

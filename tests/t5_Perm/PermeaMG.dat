@@ -39,14 +39,14 @@
 # Boundary conditions
 #===============================================================================
 
-	noslip   = 1 1 0 0 0 0
+	noslip   = 1 1 1 1 0 0
 
 	pres_top = 0.0
 	pres_bot = 1.0
 
 	init_pres = 1
 
-	fix_phase = 0
+#	fix_phase = 0
 
 #===============================================================================
 # Solution parameters & controls
@@ -56,25 +56,20 @@
 	init_guess  = 0
 	FSSA        = 0.0;
 
-	set_phase = 0
-
 	get_permea = 1
 
 #===============================================================================
 # Model setup & advection
 #===============================================================================
 
-	msetup         = geom              # setup type
-	nmark_x        = 2                 # markers per cell in x-direction
-	nmark_y        = 2                 # ...                 y-direction
-	nmark_z        = 2                 # ...                 z-direction
-	bg_phase       = 0                 # background phase ID
+	advect    = none              # advection type
+	bg_phase  = 0                 # background phase ID
 
 
-	<BoxStart>
-		phase  = 1
-		bounds = 0.25 0.75 0.0 1.0 0.0 1.0  # (left, right, front, back, bottom, top)
-	<BoxEnd>
+#	<BoxStart>
+#		phase  = 1
+#		bounds = 0.25 0.75 0.0 1.0 0.0 1.0  # (left, right, front, back, bottom, top)
+#	<BoxEnd>
 
 #===============================================================================
 # Output
@@ -96,12 +91,6 @@
 	# Define properties of matrix
 	<MaterialStart>
 		ID  = 0   # phase id
-		eta = 1   # viscosity
-	<MaterialEnd>
-
-	# Define properties of fracture
-	<MaterialStart>
-		ID  = 1   # phase id
 		eta = 1   # viscosity
 	<MaterialEnd>
 

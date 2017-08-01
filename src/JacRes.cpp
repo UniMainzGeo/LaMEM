@@ -63,7 +63,7 @@ PetscErrorCode JacResCreate(JacRes *jr, FB *fb)
 	Controls   *ctrl;
 	PetscScalar input_eta_max, gx, gy, gz;
 	char        gwtype [_STR_LEN_];
-	PetscInt    i, cnt, numPhases, mID;
+	PetscInt    i, cnt, numPhases;
 	PetscInt    is_elastic, need_DII_ref, need_RUGC, need_rho_fluid, need_surf, need_gw_type;
 
 	PetscErrorCode ierr;
@@ -74,7 +74,6 @@ PetscErrorCode JacResCreate(JacRes *jr, FB *fb)
 	ctrl      = &jr->ctrl;
 	surf      =  jr->surf;
 	numPhases =  jr->dbm->numPhases;
-	mID       =  numPhases - 1;
 
 	// set defaults
 	ctrl->gwLevel      =  DBL_MAX;
@@ -85,8 +84,6 @@ PetscErrorCode JacResCreate(JacRes *jr, FB *fb)
 	ctrl->pLithoVisc   =  1;
 	ctrl->initGuess    =  1;
 	input_eta_max      =  0;
-	ctrl->setPhase     = -1;
-
 
 	if(scal->utype != _NONE_)
 	{
@@ -121,7 +118,6 @@ PetscErrorCode JacResCreate(JacRes *jr, FB *fb)
 	ierr = getScalarParam(fb, _OPTIONAL_, "rho_fluid",      &ctrl->rho_fluid,    1, 1.0); CHKERRQ(ierr);
 	ierr = getStringParam(fb, _OPTIONAL_, "gw_level_type",  gwtype,              "none"); CHKERRQ(ierr);
 	ierr = getScalarParam(fb, _OPTIONAL_, "gw_level",      &ctrl->gwLevel,       1, 1.0); CHKERRQ(ierr);
-	ierr = getIntParam   (fb, _OPTIONAL_, "set_phase",     &ctrl->setPhase,      1, mID); CHKERRQ(ierr);
 	ierr = getIntParam   (fb, _OPTIONAL_, "get_permea",    &ctrl->getPermea,     1, 1);   CHKERRQ(ierr);
 
 
@@ -2098,47 +2094,6 @@ PetscErrorCode JacResViewRes(JacRes *jr)
 	{
 		SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, " *** Emergency stop! Maximum divergence or momentum residual is too large; solver did not converge! *** \n");
 	}
-
-	PetscFunctionReturn(0);
-}
-//---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "JacResSelectTimeStep"
-PetscErrorCode JacResSelectTimeStep(JacRes *jr, PetscInt *restart)
-{
-	//-------------------------------------
-	// compute length of the next time step
-	//-------------------------------------
-
-	FDSTAG      *fs;
-	TSSol       *ts;
-	PetscScalar  lidtmax, gidtmax;
-
-	PetscErrorCode ierr;
-	PetscFunctionBegin;
-
-	fs = jr->fs;
-	ts = jr->ts;
-
-	lidtmax = 0.0;
-
-	// determine maximum local inverse time step
-	ierr = Discret1DgetMaxInvStep(&fs->dsx, fs->DA_X, jr->gvx, 0, &lidtmax); CHKERRQ(ierr);
-	ierr = Discret1DgetMaxInvStep(&fs->dsy, fs->DA_Y, jr->gvy, 1, &lidtmax); CHKERRQ(ierr);
-	ierr = Discret1DgetMaxInvStep(&fs->dsz, fs->DA_Z, jr->gvz, 2, &lidtmax); CHKERRQ(ierr);
-
-	// synchronize
-	if(ISParallel(PETSC_COMM_WORLD))
-	{
-		ierr = MPI_Allreduce(&lidtmax, &gidtmax, 1, MPIU_SCALAR, MPI_MAX, PETSC_COMM_WORLD); CHKERRQ(ierr);
-	}
-	else
-	{
-		gidtmax = lidtmax;
-	}
-
-	// select new time step
-	ierr = TSSolGetCFLStep(ts, gidtmax, restart); CHKERRQ(ierr);
 
 	PetscFunctionReturn(0);
 }

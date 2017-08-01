@@ -288,6 +288,9 @@ PetscErrorCode BCApplyDBox(BCCtx *bc);
 // constraint all cells containing phase
 PetscErrorCode BCApplyPhase(BCCtx *bc);
 
+// constrain cells listed in files in parallel
+PetscErrorCode BCApplyCells(BCCtx *bc, FB *fb);
+
 // create SPC constraint lists
 PetscErrorCode BCListSPC(BCCtx *bc);
 

@@ -687,6 +687,9 @@ PetscErrorCode PVAVDCreate(PVAVD *pvavd, FB *fb)
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
 
+	// check advection type
+	if(pvavd->actx->advect == ADV_NONE) PetscFunctionReturn(0);
+
 	// check activation
 	ierr = getIntParam(fb, _OPTIONAL_, "out_avd", &pvavd->outavd, 1, 1); CHKERRQ(ierr);
 

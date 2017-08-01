@@ -168,9 +168,7 @@ struct Controls
 	GWLevelType gwType;       // type of ground water level (none, top, surf, level)
 	PetscScalar gwLevel;      // fixed ground water level
 
-	PetscInt    setPhase;     // active phase (override all phases)
 	PetscInt    getPermea;    // effective permeability computation activation flag
-
 };
 
 //---------------------------------------------------------------------------
@@ -303,12 +301,6 @@ PetscErrorCode JacResCopyContinuityRes(JacRes *jr, Vec f);
 
 PetscErrorCode JacResViewRes(JacRes *jr);
 
-// get maximum inverse time step (CFL)
-PetscErrorCode JacResSelectTimeStep(JacRes *jr, PetscInt *restart);
-
-// read cell phases directly form files in parallel
-PetscErrorCode JacResReadCellPhases(JacRes *jr, FB *fb);
-
 //---------------------------------------------------------------------------
 // Infinite Strain Axis (ISA) computation functions
 //---------------------------------------------------------------------------
@@ -337,7 +329,7 @@ PetscErrorCode JacResGetEHmax(JacRes *jr);
 // Effective permeability functions
 //---------------------------------------------------------------------------
 
-PetscErrorCode JacResGetPermea(JacRes *jr, PetscInt step);
+PetscErrorCode JacResGetPermea(JacRes *jr, PetscInt bgPhase, PetscInt step);
 
 //---------------------------------------------------------------------------
 //......................   TEMPERATURE FUNCTIONS   ..........................

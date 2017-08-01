@@ -187,7 +187,7 @@
 	temp_top = 0.0
 	temp_bot = 1300.0;
 
-# Pressure on the top & bottom boundaries (if specified, initial guess is linear distribution)
+# Pressure on the top & bottom boundaries
 
 	pres_top = 0.0
 	pres_bot = 10.0;
@@ -261,6 +261,7 @@
 
 # Advection types:
 
+#	advect = none  # no advection (no markers)
 #	advect = basic # basic (Euler classic implementation)
 #	advect = euler # Euler explicit in time
 #	advect = rk2   # Runge-Kutta 2nd order in space

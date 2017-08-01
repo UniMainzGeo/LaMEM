@@ -532,7 +532,7 @@ PetscErrorCode LaMEMLibSaveOutput(LaMEMLib *lm)
 	Scaling        *scal;
 	TSSol          *ts;
 	PetscScalar    time;
-	PetscInt       step;
+	PetscInt       bgPhase, step;
 	char           *dirName;
 	PetscLogDouble t;
 
@@ -546,8 +546,9 @@ PetscErrorCode LaMEMLibSaveOutput(LaMEMLib *lm)
 
 	PrintStart(&t, "Saving output", NULL);
 
-	time = ts->time*scal->time;
-	step = ts->istep;
+	time    = ts->time*scal->time;
+	step    = ts->istep;
+	bgPhase = lm->actx.bgPhase;
 
 	// create directory (encode current time & step number)
 	asprintf(&dirName, "Timestep_%1.8lld_%1.8e", (LLD)step, time);
@@ -568,7 +569,7 @@ PetscErrorCode LaMEMLibSaveOutput(LaMEMLib *lm)
 	ierr = PVMarkWriteTimeStep(&lm->pvmark, dirName, time); CHKERRQ(ierr);
 
 	// compute and output effective permeability
-	ierr = JacResGetPermea(&lm->jr, step); CHKERRQ(ierr);
+	ierr = JacResGetPermea(&lm->jr, bgPhase, step); CHKERRQ(ierr);
 
 	// clean up
 	free(dirName);
@@ -641,7 +642,7 @@ PetscErrorCode LaMEMLibSolve(LaMEMLib *lm, void *param)
 		//==========================================
 
 		// calculate current time step
-		ierr = JacResSelectTimeStep(&lm->jr, &restart); CHKERRQ(ierr);
+		ierr = ADVSelectTimeStep(&lm->actx, &restart); CHKERRQ(ierr);
 		
 		// restart if fixed time step is larger than CFLMAX
 		if(restart) continue;

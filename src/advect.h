@@ -104,10 +104,10 @@ enum InterpCase
 
 enum AdvectionType
 {
+	ADV_NONE,       // no advection (grid-based solution)
 	BASIC_EULER,    // basic Euler implementation (STAG interpolation only)
 	EULER,          // Euler explicit in time
 	RUNGE_KUTTA_2,  // Runge-Kutta 2nd order in space
-
 };
 
 //-----------------------------------------------------------------------------
@@ -227,6 +227,8 @@ struct AdvCtx
 // create advection object
 PetscErrorCode ADVCreate(AdvCtx *actx, FB *fb);
 
+PetscErrorCode ADVSetType(AdvCtx *actx, FB *fb);
+
 // read advection object from restart database
 PetscErrorCode ADVReadRestart(AdvCtx *actx, FILE *fp);
 
@@ -238,6 +240,9 @@ PetscErrorCode ADVCreateData(AdvCtx *actx);
 
 // destroy advection context
 PetscErrorCode ADVDestroy(AdvCtx *actx);
+
+// set background phase in all control volumes
+PetscErrorCode ADVSetBGPhase(AdvCtx *actx);
 
 // (re)allocate marker storage
 PetscErrorCode ADVReAllocStorage(AdvCtx *actx, PetscInt capacity);
@@ -306,6 +311,12 @@ PetscErrorCode ADVMarkCrossFreeSurf(AdvCtx *actx);
 
 // check marker phases
 PetscErrorCode ADVCheckMarkPhases(AdvCtx *actx);
+
+// update history variables without advection
+PetscErrorCode ADVUpdateHistADVNone(AdvCtx *actx);
+
+// get maximum inverse time step (CFL)
+PetscErrorCode ADVSelectTimeStep(AdvCtx *actx, PetscInt *restart);
 
 //---------------------------------------------------------------------------
 #endif

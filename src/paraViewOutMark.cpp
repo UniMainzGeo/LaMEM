@@ -61,6 +61,9 @@ PetscErrorCode PVMarkCreate(PVMark *pvmark, FB *fb)
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
 
+	// check advection type
+	if(pvmark->actx->advect == ADV_NONE) PetscFunctionReturn(0);
+
 	// check activation
 	ierr = getIntParam(fb, _OPTIONAL_, "out_mark", &pvmark->outmark, 1, 1); CHKERRQ(ierr);
 

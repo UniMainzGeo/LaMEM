@@ -76,7 +76,7 @@ typedef struct
 
 //---------------------------------------------------------------------------
 
-// geometric primitives (REDO THIS WITH CLASS)
+// geometric primitives
 
 typedef struct GeomPrim GeomPrim;
 

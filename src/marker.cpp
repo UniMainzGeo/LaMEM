@@ -217,6 +217,8 @@ PetscErrorCode ADVMarkSave(AdvCtx *actx)
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
 
+	if(actx->advect == ADV_NONE) PetscFunctionReturn(0);
+
 	if(!actx->saveMark) PetscFunctionReturn(0);
 
 	PrintStart(&t, "Saving markers in parallel to", actx->saveFile);
