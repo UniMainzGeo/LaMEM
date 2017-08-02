@@ -46,7 +46,8 @@
 
 	init_pres = 1
 
-#	fix_phase = 0
+	fix_cell = 1
+	fix_cell_file = ./bc/cdb
 
 #===============================================================================
 # Solution parameters & controls

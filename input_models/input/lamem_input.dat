@@ -182,6 +182,14 @@
 
 	fix_phase = 1
 
+# fixed cells (no-flow condition)
+	
+	fix_cell = 1
+	
+# fixed cells input file (extension is .xxxxxxxx.dat)
+
+	fix_cell_file = ./bc/cdb 
+	
 # Temperature on the top & bottom boundaries
 
 	temp_top = 0.0

@@ -300,7 +300,7 @@ PetscErrorCode LaMEMLibLoadRestart(LaMEMLib *lm)
 	ierr = FreeSurfReadRestart(&lm->surf, fp); CHKERRQ(ierr);
 
 	// boundary conditions context
-	ierr = BCCreateData(&lm->bc); CHKERRQ(ierr);
+	ierr = BCReadRestart(&lm->bc, fp); CHKERRQ(ierr);
 
 	// solution variables
 	ierr = JacResReadRestart(&lm->jr, fp); CHKERRQ(ierr);
@@ -368,6 +368,9 @@ PetscErrorCode LaMEMLibSaveRestart(LaMEMLib *lm)
 
 	// free surface
 	ierr = FreeSurfWriteRestart(&lm->surf, fp); CHKERRQ(ierr);
+
+	// boundary conditions context
+	ierr = BCReadRestart(&lm->bc, fp); CHKERRQ(ierr);
 
 	// solution variables
 	ierr = JacResWriteRestart(&lm->jr, fp); CHKERRQ(ierr);

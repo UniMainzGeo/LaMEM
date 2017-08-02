@@ -227,6 +227,10 @@ struct BCCtx
 	// fixed phase (no-flow condition)
 	PetscInt     fixPhase;
 
+	// fixed cells (no-flow condition)
+	PetscInt     fixCell;
+	char        *fixCellFlag;
+
 	//========================
 	// TEMPERATURE CONSTRAINTS
 	//========================
@@ -248,11 +252,20 @@ struct BCCtx
 // create boundary condition context
 PetscErrorCode BCCreate(BCCtx *bc, FB *fb);
 
+// read boundary condition context from restart database
+PetscErrorCode BCReadRestart(BCCtx *bc, FILE *fp);
+
+// write boundary condition context to restart database
+PetscErrorCode BCWriteRestart(BCCtx *bc, FILE *fp);
+
 // allocate internal vectors and arrays
 PetscErrorCode BCCreateData(BCCtx *bc);
 
 // destroy boundary condition context
 PetscErrorCode BCDestroy(BCCtx *bc);
+
+// read fixed cells from files in parallel
+PetscErrorCode BCReadFixCell(BCCtx *bc, FB *fb);
 
 // apply ALL boundary conditions
 PetscErrorCode BCApply(BCCtx *bc);
@@ -288,8 +301,8 @@ PetscErrorCode BCApplyDBox(BCCtx *bc);
 // constraint all cells containing phase
 PetscErrorCode BCApplyPhase(BCCtx *bc);
 
-// constrain cells listed in files in parallel
-PetscErrorCode BCApplyCells(BCCtx *bc, FB *fb);
+// constrain cells marked in files in parallel
+PetscErrorCode BCApplyCells(BCCtx *bc);
 
 // create SPC constraint lists
 PetscErrorCode BCListSPC(BCCtx *bc);

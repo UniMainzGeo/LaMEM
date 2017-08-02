@@ -337,6 +337,9 @@ PetscErrorCode BCCreate(BCCtx *bc, FB *fb)
 	// fixed phase (no-flow condition)
 	ierr = getIntParam(fb, _OPTIONAL_, "fix_phase", &bc->fixPhase, 1, mID); CHKERRQ(ierr);
 
+	// fixed cells (no-flow condition)
+	ierr = getIntParam(fb, _OPTIONAL_, "fix_cell", &bc->fixCell, 1, mID); CHKERRQ(ierr);
+
 	//========================
 	// TEMPERATURE CONSTRAINTS
 	//========================
@@ -391,6 +394,51 @@ PetscErrorCode BCCreate(BCCtx *bc, FB *fb)
 	// allocate vectors and arrays
 	ierr = BCCreateData(bc); CHKERRQ(ierr);
 
+	// read fixed cells from files in parallel
+	ierr = BCReadFixCell(bc, fb); CHKERRQ(ierr);
+
+	PetscFunctionReturn(0);
+}
+//---------------------------------------------------------------------------
+#undef __FUNCT__
+#define __FUNCT__ "BCReadRestart"
+PetscErrorCode BCReadRestart(BCCtx *bc, FILE *fp)
+{
+	PetscInt nCells;
+
+	PetscErrorCode ierr;
+	PetscFunctionBegin;
+
+	nCells = bc->fs->nCells;
+
+	// allocate memory
+	ierr = BCCreateData(bc); CHKERRQ(ierr);
+
+	// read fixed cell IDs
+	if(bc->fixCell)
+	{
+		fread(bc->fixCellFlag, (size_t)nCells, 1, fp);
+	}
+
+	PetscFunctionReturn(0);
+}
+//---------------------------------------------------------------------------
+#undef __FUNCT__
+#define __FUNCT__ "BCWriteRestart"
+PetscErrorCode BCWriteRestart(BCCtx *bc, FILE *fp)
+{
+	PetscInt nCells;
+
+	PetscFunctionBegin;
+
+	nCells = bc->fs->nCells;
+
+	// write fixed cell IDs
+	if(bc->fixCell)
+	{
+		fwrite(bc->fixCellFlag, (size_t)nCells, 1, fp);
+	}
+
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
@@ -398,11 +446,14 @@ PetscErrorCode BCCreate(BCCtx *bc, FB *fb)
 #define __FUNCT__ "BCCreateData"
 PetscErrorCode BCCreateData(BCCtx *bc)
 {
+	FDSTAG   *fs;
+	DOFIndex *dof;
+
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
 
-	FDSTAG   *fs  =  bc->fs;
-	DOFIndex *dof = &fs->dof;
+	fs  =  bc->fs;
+	dof = &fs->dof;
 
 	// create boundary conditions vectors (velocity, pressure, temperature)
 	ierr = DMCreateLocalVector(fs->DA_X,   &bc->bcvx);  CHKERRQ(ierr);
@@ -418,6 +469,11 @@ PetscErrorCode BCCreateData(BCCtx *bc)
 	// SPC (temperature)
 	ierr = makeIntArray (&bc->tSPCList, NULL, dof->lnp); CHKERRQ(ierr);
 	ierr = makeScalArray(&bc->tSPCVals, NULL, dof->lnp); CHKERRQ(ierr);
+
+	if(bc->fixCell)
+	{
+		ierr = PetscMalloc((size_t)fs->nCells, &bc->fixCellFlag); CHKERRQ(ierr);
+	}
 
 	PetscFunctionReturn(0);
 }
@@ -444,101 +500,65 @@ PetscErrorCode BCDestroy(BCCtx *bc)
 	ierr = PetscFree(bc->tSPCList); CHKERRQ(ierr);
 	ierr = PetscFree(bc->tSPCVals); CHKERRQ(ierr);
 
-	// two-point constraints
-//	ierr = PetscFree(bc->TPCList);      CHKERRQ(ierr);
-//	ierr = PetscFree(bc->TPCPrimeDOF);  CHKERRQ(ierr);
-//	ierr = PetscFree(bc->TPCVals);      CHKERRQ(ierr);
-//	ierr = PetscFree(bc->TPCLinComPar); CHKERRQ(ierr);
+	// fixed cell IDs
+	ierr = PetscFree(bc->fixCellFlag); CHKERRQ(ierr);
 
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-
-/*
-//---------------------------------------------------------------------------
 #undef __FUNCT__
-#define __FUNCT__ "JacResReadCellPhases"
-PetscErrorCode JacResReadCellPhases(JacRes *jr, FB *fb)
+#define __FUNCT__ "BCReadFixCell"
+PetscErrorCode BCReadFixCell(BCCtx *bc, FB *fb)
 {
-	FDSTAG      *fs;
-	int          fd;
-	PetscMPIInt  rank;
-	PetscViewer  view_in;
-	char        *filename, file[_STR_LEN_];
-	PetscScalar *phasebuf, header, s_ncells;
-	PetscInt     jj, PhaseID, ncells, numPhases;
+	FILE           *fp;
+	PetscLogDouble  t;
+	PetscMPIInt     rank;
+	struct          stat sb;
+	char           *filename, file[_STR_LEN_];
 
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
 
-	// access context
-	fs        = jr->fs;
-	numPhases = jr->dbm->numPhases;
-
-	// get MPI processor rank
-	MPI_Comm_rank(PETSC_COMM_WORLD, &rank);
+	// check activation
+	if(!bc->fixCell) PetscFunctionReturn(0);
 
 	// get file name
-	ierr = getStringParam(fb, _OPTIONAL_, "phase_load_file", file, "./phases/pdb"); CHKERRQ(ierr);
+	ierr = getStringParam(fb, _OPTIONAL_, "fix_cell_file", file, "./bc/cdb"); CHKERRQ(ierr);
 
-	PetscPrintf(PETSC_COMM_WORLD,"Loading cell phases in parallel from files: %s.xxxxxxxx.dat\n", file);
+	PrintStart(&t, "Loading fixed cell IDs in parallel from", file);
 
 	// compile input file name with extension
+	MPI_Comm_rank(PETSC_COMM_WORLD, &rank);
+
 	asprintf(&filename, "%s.%1.8lld.dat", file, (LLD)rank);
 
 	// open file
-	ierr = PetscViewerBinaryOpen(PETSC_COMM_SELF, filename, FILE_MODE_READ, &view_in); CHKERRQ(ierr);
-	ierr = PetscViewerBinaryGetDescriptor(view_in, &fd);                               CHKERRQ(ierr);
+	fp = fopen(file, "rb");
 
-	// read (and ignore) the silent undocumented file header
-	ierr = PetscBinaryRead(fd, &header, 1, PETSC_SCALAR); CHKERRQ(ierr);
-
-	// read number of local cells
-	ierr = PetscBinaryRead(fd, &s_ncells, 1, PETSC_SCALAR); CHKERRQ(ierr);
-
-	ncells = (PetscInt)s_ncells;
-
-	if(ncells != fs->nCells)
+	if(fp == NULL)
 	{
-		SETERRQ2(PETSC_COMM_SELF, PETSC_ERR_USER, "Number of cells don't match: %lld, %lld", (LLD)ncells, (LLD)fs->nCells);
+		SETERRQ1(PETSC_COMM_WORLD, PETSC_ERR_USER, "Cannot open input file %s\n", filename);
 	}
 
-	// allocate marker buffer
-	ierr = PetscMalloc((size_t)(ncells)*sizeof(PetscScalar), &phasebuf); CHKERRQ(ierr);
+	// check file size
+	stat(filename, &sb);
 
-	// read markers into buffer
-	ierr = PetscBinaryRead(fd, phasebuf, ncells, PETSC_SCALAR); CHKERRQ(ierr);
-
-	// destroy file handle & file name
-	ierr = PetscViewerDestroy(&view_in); CHKERRQ(ierr);
-
-	free(filename);
-
-	for(jj = 0; jj < ncells; jj++)
+	if((PetscInt)sb.st_size != bc->fs->nCells)
 	{
-		PhaseID = (PetscInt)phasebuf[jj];
-
-		if(PhaseID > numPhases - 1)
-		{
-			SETERRQ2(PETSC_COMM_SELF, PETSC_ERR_USER, "Phase ID out of range: %lld, %lld", (LLD)PhaseID, (LLD)numPhases);
-		}
-
-		jr->svCell[jj].phRat[PhaseID] = 1.0;
+		SETERRQ1(PETSC_COMM_WORLD, PETSC_ERR_USER, "Wrong fixed cell file size %s\n", filename);
 	}
 
-	// free marker buffer
-	ierr = PetscFree(phasebuf); CHKERRQ(ierr);
+	// read flags
+	fread(bc->fixCellFlag, (size_t)bc->fs->nCells, 1, fp);
 
-	// wait until all processors finished reading markers
-	ierr = MPI_Barrier(PETSC_COMM_WORLD); CHKERRQ(ierr);
+	// close file
+	fclose(fp);
 
-	PetscPrintf(PETSC_COMM_WORLD,"Finished Loading cell phases in parallel \n");
+	PrintDone(t);
 
 	PetscFunctionReturn(0);
 }
-*/
-
-
+//---------------------------------------------------------------------------
 #undef __FUNCT__
 #define __FUNCT__ "BCApply"
 PetscErrorCode BCApply(BCCtx *bc)
@@ -594,6 +614,9 @@ PetscErrorCode BCApply(BCCtx *bc)
 
 	// fix all cells occupied by phase
 	ierr = BCApplyPhase(bc); CHKERRQ(ierr);
+
+	// fix specific cells
+	ierr = BCApplyCells(bc); CHKERRQ(ierr);
 
 	// synchronize SPC constraints in the internal ghost points
 	// WARNING! IN MULTIGRID ONLY REPEAT BC COARSENING WHEN BC CHANGE
@@ -1356,6 +1379,62 @@ PetscErrorCode BCApplyPhase(BCCtx *bc)
 	{
 		// check for constrained cell
 		if(svCell[iter++].phRat[fixPhase] == 1.0)
+		{
+			bcvx[k][j][i]   = 0.0;
+			bcvx[k][j][i+1] = 0.0;
+
+			bcvy[k][j][i]   = 0.0;
+			bcvy[k][j+1][i] = 0.0;
+
+			bcvz[k][j][i]   = 0.0;
+			bcvz[k+1][j][i] = 0.0;
+		}
+	}
+	END_STD_LOOP
+
+	// restore access
+	ierr = DMDAVecRestoreArray(fs->DA_X,   bc->bcvx, &bcvx); CHKERRQ(ierr);
+	ierr = DMDAVecRestoreArray(fs->DA_Y,   bc->bcvy, &bcvy); CHKERRQ(ierr);
+	ierr = DMDAVecRestoreArray(fs->DA_Z,   bc->bcvz, &bcvz); CHKERRQ(ierr);
+
+	PetscFunctionReturn(0);
+}
+//---------------------------------------------------------------------------
+#undef __FUNCT__
+#define __FUNCT__ "BCApplyCells"
+PetscErrorCode BCApplyCells(BCCtx *bc)
+{
+	// apply default velocity constraints on the boundaries
+
+	FDSTAG      *fs;
+	char        *fixCellFlag;
+	PetscInt    i, j, k, nx, ny, nz, sx, sy, sz, iter;
+	PetscScalar ***bcvx,  ***bcvy,  ***bcvz;
+
+	PetscErrorCode ierr;
+	PetscFunctionBegin;
+
+	// check activation
+	if(!bc->fixCell) PetscFunctionReturn(0);
+
+	// access context
+	fs          = bc->fs;
+	fixCellFlag = bc->fixCellFlag;
+
+	// access constraint vectors
+	ierr = DMDAVecGetArray(fs->DA_X,   bc->bcvx, &bcvx); CHKERRQ(ierr);
+	ierr = DMDAVecGetArray(fs->DA_Y,   bc->bcvy, &bcvy); CHKERRQ(ierr);
+	ierr = DMDAVecGetArray(fs->DA_Z,   bc->bcvz, &bcvz); CHKERRQ(ierr);
+
+	// get local grid sizes
+	ierr = DMDAGetCorners(fs->DA_CEN, &sx, &sy, &sz, &nx, &ny, &nz); CHKERRQ(ierr);
+
+	iter = 0;
+
+	START_STD_LOOP
+	{
+		// check for constrained cell
+		if(fixCellFlag[iter++])
 		{
 			bcvx[k][j][i]   = 0.0;
 			bcvx[k][j][i+1] = 0.0;
