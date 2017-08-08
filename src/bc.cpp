@@ -525,7 +525,7 @@ PetscErrorCode BCReadFixCell(BCCtx *bc, FB *fb)
 	// get file name
 	ierr = getStringParam(fb, _OPTIONAL_, "fix_cell_file", file, "./bc/cdb"); CHKERRQ(ierr);
 
-	PrintStart(&t, "Loading fixed cell IDs in parallel from", file);
+	PrintStart(&t, "Loading fixed cell flags in parallel from", file);
 
 	// compile input file name with extension
 	MPI_Comm_rank(PETSC_COMM_WORLD, &rank);
@@ -1366,9 +1366,9 @@ PetscErrorCode BCApplyPhase(BCCtx *bc)
 	if(fixPhase == -1) PetscFunctionReturn(0);
 
 	// access constraint vectors
-	ierr = DMDAVecGetArray(fs->DA_X,   bc->bcvx, &bcvx); CHKERRQ(ierr);
-	ierr = DMDAVecGetArray(fs->DA_Y,   bc->bcvy, &bcvy); CHKERRQ(ierr);
-	ierr = DMDAVecGetArray(fs->DA_Z,   bc->bcvz, &bcvz); CHKERRQ(ierr);
+	ierr = DMDAVecGetArray(fs->DA_X, bc->bcvx, &bcvx); CHKERRQ(ierr);
+	ierr = DMDAVecGetArray(fs->DA_Y, bc->bcvy, &bcvy); CHKERRQ(ierr);
+	ierr = DMDAVecGetArray(fs->DA_Z, bc->bcvz, &bcvz); CHKERRQ(ierr);
 
 	// get local grid sizes
 	ierr = DMDAGetCorners(fs->DA_CEN, &sx, &sy, &sz, &nx, &ny, &nz); CHKERRQ(ierr);
@@ -1393,9 +1393,9 @@ PetscErrorCode BCApplyPhase(BCCtx *bc)
 	END_STD_LOOP
 
 	// restore access
-	ierr = DMDAVecRestoreArray(fs->DA_X,   bc->bcvx, &bcvx); CHKERRQ(ierr);
-	ierr = DMDAVecRestoreArray(fs->DA_Y,   bc->bcvy, &bcvy); CHKERRQ(ierr);
-	ierr = DMDAVecRestoreArray(fs->DA_Z,   bc->bcvz, &bcvz); CHKERRQ(ierr);
+	ierr = DMDAVecRestoreArray(fs->DA_X, bc->bcvx, &bcvx); CHKERRQ(ierr);
+	ierr = DMDAVecRestoreArray(fs->DA_Y, bc->bcvy, &bcvy); CHKERRQ(ierr);
+	ierr = DMDAVecRestoreArray(fs->DA_Z, bc->bcvz, &bcvz); CHKERRQ(ierr);
 
 	PetscFunctionReturn(0);
 }
@@ -1406,10 +1406,10 @@ PetscErrorCode BCApplyCells(BCCtx *bc)
 {
 	// apply default velocity constraints on the boundaries
 
-	FDSTAG      *fs;
-	char        *fixCellFlag;
-	PetscInt    i, j, k, nx, ny, nz, sx, sy, sz, iter;
-	PetscScalar ***bcvx,  ***bcvy,  ***bcvz;
+	FDSTAG        *fs;
+	unsigned char *fixCellFlag;
+	PetscInt      i, j, k, nx, ny, nz, sx, sy, sz, iter;
+	PetscScalar   ***bcvx,  ***bcvy,  ***bcvz;
 
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
@@ -1422,9 +1422,9 @@ PetscErrorCode BCApplyCells(BCCtx *bc)
 	fixCellFlag = bc->fixCellFlag;
 
 	// access constraint vectors
-	ierr = DMDAVecGetArray(fs->DA_X,   bc->bcvx, &bcvx); CHKERRQ(ierr);
-	ierr = DMDAVecGetArray(fs->DA_Y,   bc->bcvy, &bcvy); CHKERRQ(ierr);
-	ierr = DMDAVecGetArray(fs->DA_Z,   bc->bcvz, &bcvz); CHKERRQ(ierr);
+	ierr = DMDAVecGetArray(fs->DA_X, bc->bcvx, &bcvx); CHKERRQ(ierr);
+	ierr = DMDAVecGetArray(fs->DA_Y, bc->bcvy, &bcvy); CHKERRQ(ierr);
+	ierr = DMDAVecGetArray(fs->DA_Z, bc->bcvz, &bcvz); CHKERRQ(ierr);
 
 	// get local grid sizes
 	ierr = DMDAGetCorners(fs->DA_CEN, &sx, &sy, &sz, &nx, &ny, &nz); CHKERRQ(ierr);
@@ -1449,9 +1449,9 @@ PetscErrorCode BCApplyCells(BCCtx *bc)
 	END_STD_LOOP
 
 	// restore access
-	ierr = DMDAVecRestoreArray(fs->DA_X,   bc->bcvx, &bcvx); CHKERRQ(ierr);
-	ierr = DMDAVecRestoreArray(fs->DA_Y,   bc->bcvy, &bcvy); CHKERRQ(ierr);
-	ierr = DMDAVecRestoreArray(fs->DA_Z,   bc->bcvz, &bcvz); CHKERRQ(ierr);
+	ierr = DMDAVecRestoreArray(fs->DA_X, bc->bcvx, &bcvx); CHKERRQ(ierr);
+	ierr = DMDAVecRestoreArray(fs->DA_Y, bc->bcvy, &bcvy); CHKERRQ(ierr);
+	ierr = DMDAVecRestoreArray(fs->DA_Z, bc->bcvz, &bcvz); CHKERRQ(ierr);
 
 	PetscFunctionReturn(0);
 }

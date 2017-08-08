@@ -10,7 +10,7 @@ function FDSTAGSaveMarkersParallelMatlab(A, fname, Is64BIT)
 %            z       - 1D vector containing the z coordinates of markers
 %            Phase   - phase information of the markers
 %            Temp    - Temperature information of the markers
-%        
+%
 %   fname   - name of the file with the processor configuration
 %             (in LaMEM this is created with -mode save_grid)
 %   Is64BIT - logical(1) if you are reading a 64 bit file
@@ -25,15 +25,24 @@ end
 num_prop = 5;
 
 % Read Processor Partitioning
-[Nprocx,Nprocy,Nprocz,xc,yc,zc] = GetProcessorPartitioning(fname, Is64BIT);
-Nproc                           = Nprocx*Nprocy*Nprocz;
-[num,num_i,num_j,num_k]         = get_numscheme(Nprocx,Nprocy,Nprocz);
+[P] = GetProcessorPartitioning(fname, Is64BIT);
+
+% get number of processors and processor coordnate bounds
+Nprocx = P.Nprocx;
+Nprocy = P.Nprocy;
+Nprocz = P.Nprocz;
+xc     = P.xc;
+yc     = P.yc;
+zc     = P.zc;
+
+Nproc                      = Nprocx*Nprocy*Nprocz;
+[num, num_i, num_j, num_k] = get_numscheme(Nprocx, Nprocy, Nprocz);
 
 % Particle coordinates (should be permuted such that it has the same size
 % as A.phase)
-X       = A.Xpart;
-Y       = A.Ypart;
-Z       = A.Zpart;
+X = A.Xpart;
+Y = A.Ypart;
+Z = A.Zpart;
 
 % Get particles of respective procs
 [xi,ix_start,ix_end] = get_ind(A.x,xc,Nprocx);
@@ -83,55 +92,6 @@ end
 
 end
 % ----------- Function end ----------- %
-
-% --------------------------------------
-function [Nprocx,Nprocy,Nprocz,xc,yc,zc] = GetProcessorPartitioning(test, Is64BIT)
-% Read Processor Partitioning
-fid=PetscOpenFile(test);
-
-if Is64BIT
-    % In case file was written  by 64 BIT compiled PETSC version
-    Precision_INT       = 'int64';
-    Precision_SCALAR    = 'float64';
-else
-    Precision_INT       = 'int32';
-    Precision_SCALAR    = 'double';
-end
-
-Nprocx=read(fid,1,Precision_INT);
-Nprocy=read(fid,1,Precision_INT);
-Nprocz=read(fid,1,Precision_INT);
-
-nnodx=read(fid,1,Precision_INT);
-nnody=read(fid,1,Precision_INT);
-nnodz=read(fid,1,Precision_INT);
-
-ix=read(fid,Nprocx+1,Precision_INT);
-iy=read(fid,Nprocy+1,Precision_INT);
-iz=read(fid,Nprocz+1,Precision_INT);
-
-CharLength=read(fid,1,Precision_SCALAR);
-
-xcoor=read(fid,nnodx,Precision_SCALAR);
-ycoor=read(fid,nnody,Precision_SCALAR);
-zcoor=read(fid,nnodz,Precision_SCALAR);
-
-close(fid);
-
-% Dimensionalize
-xcoor = xcoor*CharLength;
-ycoor = ycoor*CharLength;
-zcoor = zcoor*CharLength;
-
-ix = ix+1;
-iy = iy+1;
-iz = iz+1;
-
-xc = xcoor(ix);
-yc = ycoor(iy);
-zc = zcoor(iz);
-
-end
 
 % --------------------------------------
 function [n,nix,njy,nkz] = get_numscheme(Nprocx,Nprocy,Nprocz)

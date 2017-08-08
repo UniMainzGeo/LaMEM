@@ -4,7 +4,12 @@ function [X,Y,Z,xcoor,ycoor,zcoor, Xpart, Ypart, Zpart] = FDSTAGMeshGeneratorMat
 %    fname - name of the file with the processor configuration;
 %               in LaMEM this is saved with -SavePartitioning 1
 
-[Nprocx,Nprocy,Nprocz,xc,yc,zc,xcoor,ycoor,zcoor] = GetProcessorPartitioning(fname, Is64BIT);
+[P] = GetProcessorPartitioning(fname, Is64BIT);
+
+% get nodal coordinates
+xcoor = P.xcoor;
+ycoor = P.ycoor;
+zcoor = P.zcoor;
 
 dx = xcoor(2:end)-xcoor(1:end-1);
 dy = ycoor(2:end)-ycoor(1:end-1);
@@ -87,50 +92,3 @@ end
 end
 
 % --------------------------------------
-function [Nprocx,Nprocy,Nprocz,xc,yc,zc,xcoor,ycoor,zcoor] = GetProcessorPartitioning(test, Is64BIT)
-% Read Processor Partitioning
-fid=PetscOpenFile(test);
-
-if Is64BIT
-    % In case file was written  by 64 BIT compiled PETSC version
-    Precision_INT       = 'int64';
-    Precision_SCALAR    = 'float64';
-else
-    Precision_INT       = 'int32';
-    Precision_SCALAR    = 'double';
-end
-
-Nprocx=read(fid,1,Precision_INT);
-Nprocy=read(fid,1,Precision_INT);
-Nprocz=read(fid,1,Precision_INT);
-
-nnodx=read(fid,1,Precision_INT);
-nnody=read(fid,1,Precision_INT);
-nnodz=read(fid,1,Precision_INT);
-
-ix=read(fid,Nprocx+1,Precision_INT);
-iy=read(fid,Nprocy+1,Precision_INT);
-iz=read(fid,Nprocz+1,Precision_INT);
-
-CharLength=read(fid,1,Precision_SCALAR);
-
-xcoor=read(fid,nnodx,Precision_SCALAR);
-ycoor=read(fid,nnody,Precision_SCALAR);
-zcoor=read(fid,nnodz,Precision_SCALAR);
-
-close(fid);
-
-% Dimensionalize
-xcoor = xcoor*CharLength;
-ycoor = ycoor*CharLength;
-zcoor = zcoor*CharLength;
-
-ix = ix+1;
-iy = iy+1;
-iz = iz+1;
-
-xc = xcoor(ix);
-yc = ycoor(iy);
-zc = zcoor(iz);
-
-end

@@ -228,8 +228,8 @@ struct BCCtx
 	PetscInt     fixPhase;
 
 	// fixed cells (no-flow condition)
-	PetscInt     fixCell;
-	char        *fixCellFlag;
+	PetscInt       fixCell;
+	unsigned char *fixCellFlag;
 
 	//========================
 	// TEMPERATURE CONSTRAINTS
