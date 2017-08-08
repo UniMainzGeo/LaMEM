@@ -533,7 +533,7 @@ PetscErrorCode BCReadFixCell(BCCtx *bc, FB *fb)
 	asprintf(&filename, "%s.%1.8lld.dat", file, (LLD)rank);
 
 	// open file
-	fp = fopen(file, "rb");
+	fp = fopen(filename, "rb");
 
 	if(fp == NULL)
 	{
