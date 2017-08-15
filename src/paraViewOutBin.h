@@ -182,6 +182,7 @@ typedef struct
 	PetscInt porosity;       // Porosity
 	PetscInt liquiddensity;	 // Liquid density
 	PetscInt liquidvelocity; // Liquid velocity
+	//PetscInt failure;        // Type of Failure
 
 
 	// === debugging vectors ===============================================

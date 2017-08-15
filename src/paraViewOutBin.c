@@ -367,6 +367,7 @@ PetscInt OutMaskCountActive(OutMask *omask, JacRes *jr)
 		if(omask->porosity)       cnt++; // Porosity
 		if(omask->liquiddensity)  cnt++; // Liquid density
 		if(omask->liquidvelocity) cnt++; // Liquid velocity
+		//if(omask->failure) cnt++;        // Type of failure
 	}
 
 	if(omask->yield)          		cnt++; // yield stress
@@ -484,6 +485,7 @@ PetscErrorCode PVOutCreate(PVOut *pvout, JacRes *jr, const char *filename)
 		if(omask->porosity)    		OutVecCreate(&outvecs[cnt++], "Porosity",       scal->lbl_unit,           &PVOutWritePorosity,      1);
 		if(omask->liquiddensity)	OutVecCreate(&outvecs[cnt++], "LiquidDensity",	scal->lbl_density, 		  &PVOutWriteLiquidDensity, 1);
 		if(omask->liquidvelocity)   OutVecCreate(&outvecs[cnt++], "LiquidVelocity", scal->lbl_velocity,       &PVOutWriteLiquidVelocity,3);
+		//if(omask->failure)          OutVecCreate(&outvecs[cnt++], "Failure",        scal->lbl_unit,           &PVOutWriteFailure,1);
 	}
 
 	// === debugging vectors ===============================================
@@ -548,6 +550,7 @@ PetscErrorCode PVOutReadFromOptions(PVOut *pvout)
     ierr = PetscOptionsGetInt(NULL, NULL, "-out_porosity",   	&omask->porosity,      NULL); CHKERRQ(ierr);	// porosity
     ierr = PetscOptionsGetInt(NULL, NULL, "-out_liquiddensity", &omask->liquiddensity, NULL); CHKERRQ(ierr);	// liquid density
     ierr = PetscOptionsGetInt(NULL, NULL, "-out_liquidvelocity",&omask->liquidvelocity,NULL); CHKERRQ(ierr);	// liquid velocity
+    //ierr = PetscOptionsGetInt(NULL, NULL, "-out_failure",       &omask->failure,       NULL); CHKERRQ(ierr);	// type of failure
 
     // deactivate effective pressure if pore pressure is deactivated
 	ierr = PetscOptionsHasName(NULL, NULL, "-actPorePres", &flg); CHKERRQ(ierr);

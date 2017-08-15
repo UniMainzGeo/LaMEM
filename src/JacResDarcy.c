@@ -58,6 +58,7 @@
  *		P_l 	=	liquid pressure
  *		g 		=	gravitational acceleration (acting in the z-direction )
  *		H		=   source
+ *		Ts      =   Tensile Strength
  *
  */
 
@@ -73,7 +74,7 @@
 #include "constEq.h"
 #include "tools.h"
 #include "interpolate.h"
-#include "matprops.h"
+#include "matProps.h"
 #include "parsing.h"
 
 //---------------------------------------------------------------------------
@@ -88,25 +89,60 @@
 	ierr = DMDAVecRestoreArray(da, vec, &buff); CHKERRQ(ierr); \
 	LOCAL_TO_LOCAL(da, vec)
 
-// permeability
-#define GET_Kphi \
-	ierr = JacResGetDarcyParam(jr, jr->svCell[iter++].phRat, &kphi, NULL, NULL, NULL); CHKERRQ(ierr); \
-	buff[k][j][i] 	= 	kphi;
+// liquid density
+#define GET_rhol \
+	ierr = JacResGetDarcyParam(jr, jr->svCell[iter++].phRat, &rhol, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL); CHKERRQ(ierr); \
+	buff[k][j][i] 	= 	rhol;
 
 // liquid viscosity
 #define GET_mul \
-	ierr = JacResGetDarcyParam(jr, jr->svCell[iter++].phRat, NULL, &mul, NULL, NULL); CHKERRQ(ierr); \
+	ierr = JacResGetDarcyParam(jr, jr->svCell[iter++].phRat, NULL, &mul, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL); CHKERRQ(ierr); \
 	buff[k][j][i] 	= 	mul;
 
-// specific storage
-#define GET_Ssl \
-	ierr = JacResGetDarcyParam(jr, jr->svCell[iter++].phRat, NULL, NULL, &Ssl, NULL); CHKERRQ(ierr); \
-	buff[k][j][i] 	= 	Ssl;
+// permeability
+#define GET_Kphi \
+	ierr = JacResGetDarcyParam(jr, jr->svCell[iter++].phRat, NULL, NULL, &Kphi, NULL, NULL, NULL, NULL, NULL, NULL, NULL); CHKERRQ(ierr); \
+	buff[k][j][i] 	= 	Kphi;
 
-// liquid density
-#define GET_rhol \
-	ierr = JacResGetDarcyParam(jr, jr->svCell[iter++].phRat, NULL, NULL, NULL, &rhol); CHKERRQ(ierr); \
-	buff[k][j][i] 	= 	rhol;
+// matrix compressibility
+#define GET_betam \
+	ierr = JacResGetDarcyParam(jr, jr->svCell[iter++].phRat, NULL, NULL, NULL, &betam, NULL, NULL, NULL, NULL, NULL, NULL); CHKERRQ(ierr); \
+	buff[k][j][i] 	= 	betam;
+
+// liquid compressibility
+#define GET_betal \
+	ierr = JacResGetDarcyParam(jr, jr->svCell[iter++].phRat, NULL, NULL, NULL, NULL, &betal, NULL, NULL, NULL, NULL, NULL); CHKERRQ(ierr); \
+	buff[k][j][i] 	= 	betal;
+
+// porosity
+#define GET_Phi \
+	ierr = JacResGetDarcyParam(jr, jr->svCell[iter++].phRat, NULL, NULL, NULL, NULL, NULL, &Phi, NULL, NULL, NULL, NULL); CHKERRQ(ierr); \
+	buff[k][j][i] 	= 	Phi;
+
+//// specific storage
+//#define GET_Ssl \
+//	ierr = JacResGetDarcyParam(jr, jr->svCell[iter++].phRat, NULL, NULL, &Ssl, NULL, NULL); CHKERRQ(ierr); \
+//	buff[k][j][i] 	= 	Ssl;
+
+// Tensile Strength
+#define GET_Tsl \
+	ierr = JacResGetDarcyParam(jr, jr->svCell[iter++].phRat, NULL, NULL, NULL, NULL, NULL, NULL, &Tsl, NULL, NULL, NULL); CHKERRQ(ierr); \
+	buff[k][j][i] 	= 	Tsl;
+
+// Undrained Poisson's ratio
+#define GET_nuu \
+	ierr = JacResGetDarcyParam(jr, jr->svCell[iter++].phRat, NULL, NULL, NULL, NULL, NULL, NULL, NULL, &nuu, NULL, NULL); CHKERRQ(ierr); \
+	buff[k][j][i] 	= 	nuu;
+
+// Undrained permeability
+#define GET_Kphiu \
+	ierr = JacResGetDarcyParam(jr, jr->svCell[iter++].phRat, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, &Kphiu, NULL); CHKERRQ(ierr); \
+	buff[k][j][i] 	= 	Kphiu;
+
+// Undrained porosity
+#define GET_Phiu \
+	ierr = JacResGetDarcyParam(jr, jr->svCell[iter++].phRat, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, &Phiu); CHKERRQ(ierr); \
+	buff[k][j][i] 	= 	Phiu;
 
 //---------------------------------------------------------------------------
 // This extracts coefficients from named vectors attached to a da
@@ -133,10 +169,17 @@
 PetscErrorCode JacResGetDarcyParam(
 		JacRes      *jr,
 		PetscScalar *phRat,
-		PetscScalar *Kphi_,     	// Permeability
-		PetscScalar *mul_,			// Liquid viscosity
-		PetscScalar *Ss_, 			// Specific storage
- 	 	PetscScalar *rhol_)			// Liquid density
+		PetscScalar *rhol_,      // Liquid density
+		PetscScalar *mul_,       // Liquid viscosity
+		PetscScalar *Kphi_,      // Permeability
+		PetscScalar *betam_,     // Matrix compressibility
+		PetscScalar *betal_,     // Liquid compressibility
+		PetscScalar *Phi_,       // Effective porosity
+		PetscScalar *Ts_,        // Tensile strength
+		PetscScalar *nuu_,       // Undrained poisson's ratio
+		PetscScalar *Kphiu_,     // Undrained permeability
+		PetscScalar *Phiu_)      // Undrained porosity
+//PetscScalar *Ss_,      // Specific storage
 {
 
 	// compute effective darcy parameters in the cell
@@ -144,15 +187,22 @@ PetscErrorCode JacResGetDarcyParam(
 	PetscInt    i, numPhases;
     Material_t  *phases, *M;
 
-	PetscScalar Kphi, mul, cf, Ss, rhol;
+	PetscScalar cf, rhol, mul, Kphi, betam, betal, Phi, Ts, nuu, Kphiu, Phiu; //Ss,
 
 	PetscFunctionBegin;
 
 	// initialize
-	Kphi	= 0.0;
-	mul		= 0.0;
-	Ss 		= 0.0;
-	rhol	= 0.0;
+	rhol    = 0.0;
+	mul     = 0.0;
+	Kphi    = 0.0;
+	//Ss     = 0.0;
+	betam   = 0.0;
+	betal   = 0.0;
+	Phi     = 0.0;
+	Ts      = 0.0;
+	nuu     = 0.0;
+	Kphiu   = 0.0;
+	Phiu    = 0.0;
 
 	numPhases 	= 	jr->numPhases;
 	phases    	= 	jr->phases;
@@ -164,17 +214,31 @@ PetscErrorCode JacResGetDarcyParam(
 		cf      =  phRat[i];
 
 		// compute average permeability, liquid density and liquid viscosity
-		Kphi += cf*M->Kphi;
-		mul  += cf*M->mul;
-		Ss   += cf*M->Ss;
-		rhol += cf*M->rhol;
+		rhol   += cf*M->rhol;
+		mul    += cf*M->mul;
+		Kphi   += cf*M->Kphi;
+		//Ss   += cf*M->Ss;
+		betam  += cf*M->betam;
+		betal  += cf*M->betal;
+		Phi    += cf*M->Phi;
+		Ts     += cf*M->TS;
+		nuu    += cf*M->nuu;
+		Kphiu  += cf*M->Kphiu;
+		Phiu   += cf*M->Phiu;
 	}
 
 	// store
-	if(Kphi_) 	(*Kphi_) = Kphi;
-	if(mul_) 	(*mul_)  = mul;
-	if(Ss_)   	(*Ss_)   = Ss;
-	if(rhol_)   (*rhol_) = rhol;
+	if(rhol_)   (*rhol_)  = rhol;
+	if(mul_) 	(*mul_)   = mul;
+	if(Kphi_) 	(*Kphi_)  = Kphi;
+	//if(Ss_)   	(*Ss_)   = Ss;
+	if(betam_) 	(*betam_) = betam;
+	if(betal_) 	(*betal_) = betal;
+	if(Phi_) 	(*Phi_)   = Phi;
+	if(Ts_)     (*Ts_)    = Ts;
+	if(nuu_) 	(*nuu_)   = nuu;
+	if(Kphiu_) 	(*Kphiu_) = Kphiu;
+	if(Phiu_) 	(*Phiu_)  = Phiu;
 
 	PetscFunctionReturn(0);
 }
@@ -201,10 +265,14 @@ PetscErrorCode JacResCheckDarcyParam(JacRes *jr)
 	for(i = 0; i < numPhases; i++)
 	{
 		M = &phases[i];
-		if(M->Kphi  == 0.0)  SETERRQ1(PETSC_COMM_SELF, PETSC_ERR_USER, "Define permeability of phase %lld\n", 		(LLD)i);
-		if(M->mul   == 0.0)  SETERRQ1(PETSC_COMM_SELF, PETSC_ERR_USER, "Define liquid viscosity of phase %lld\n", 	(LLD)i);
-		if(M->rhol  == 0.0)  SETERRQ1(PETSC_COMM_SELF, PETSC_ERR_USER, "Define liquid density of phase %lld\n", 	(LLD)i);
-		if(M->Ss  == 0.0)    SETERRQ1(PETSC_COMM_SELF, PETSC_ERR_USER, "Define specific storage of phase %lld\n", 	(LLD)i);
+		if(M->rhol  == 0.0)  SETERRQ1(PETSC_COMM_SELF, PETSC_ERR_USER, "Define liquid density of phase %lld\n",        (LLD)i);
+		if(M->mul   == 0.0)  SETERRQ1(PETSC_COMM_SELF, PETSC_ERR_USER, "Define liquid viscosity of phase %lld\n",      (LLD)i);
+		if(M->Kphi  == 0.0)  SETERRQ1(PETSC_COMM_SELF, PETSC_ERR_USER, "Define permeability of phase %lld\n",          (LLD)i);
+		//if(M->Ss    == 0.0)    SETERRQ1(PETSC_COMM_SELF, PETSC_ERR_USER, "Define specific storage of phase %lld\n", 	(LLD)i);
+		if(M->betal == 0.0)  SETERRQ1(PETSC_COMM_SELF, PETSC_ERR_USER, "Define liquid compressibility of phase %lld\n",(LLD)i);
+		if(M->betam == 0.0)  SETERRQ1(PETSC_COMM_SELF, PETSC_ERR_USER, "Define matrix compressibility of phase %lld\n",(LLD)i);
+		if(M->Phi   == 0.0)  SETERRQ1(PETSC_COMM_SELF, PETSC_ERR_USER, "Define porosity of phase %lld\n",              (LLD)i);
+		if(M->TS    == 0.0)  SETERRQ1(PETSC_COMM_SELF, PETSC_ERR_USER, "Define tensile strength of phase %lld\n",      (LLD)i);
 	}
 
 	PetscFunctionReturn(0);
@@ -402,26 +470,38 @@ PetscErrorCode JacResGetDarcyRes(JacRes *jr)
 
 	FDSTAG     *fs;
 	SolVarCell *svCell;
+	SolVarDev  *svDev;
 	SolVarBulk *svBulk;
 	BCCtx      		*bc;
-	PetscInt    	iter, num, *list;
+	PetscInt    	iter, num, *list, numPhases;
 	PetscInt    	Ip1, Im1, Jp1, Jm1, Kp1, Km1;
-	PetscInt    	i, j, k, nx, ny, nz, sx, sy, sz, mx, my, mz;
+	PetscInt    	i, j, k, nx, ny, nz, sx, sy, sz, mx, my, mz, l;
 	//PetscInt 		sx_fine,sy_fine,sz_fine;
  	PetscScalar 	bkx, fkx, bky, fky, bkz, fkz;
 	PetscScalar 	bdx, fdx, bdy, fdy, bdz, fdz;
 	PetscScalar	 	bqx, fqx, bqy, fqy, bqz, fqz;
  	PetscScalar 	dt, dx, dy, dz;
- 	PetscScalar 	Kphi, mu, lrho, Ss, Pl_c, Pl_n, Pl_h, gz, *grav;
-	PetscScalar 	***mul, ***lKphi, ***Ssl, ***rhol, ***sol, ***res, *e, ***hydro;
-	Vec 			local_Kphi, Ss_local, mul_local, rhol_local;
-	Vec 			mul_vec, Ss_vec, Kphi_vec, rhol_vec;	PetscScalar H, magnitude, increment;
+ 	PetscScalar 	Pl_c, Pl_h, pc, gz, Pl_n, *grav;
+ 	PetscScalar 	***sol, ***hydro, ***p, ***res, *e;
+
+ 	PetscScalar 	lrho, mu, Kphi, betam, betal, Phi, Ts, nuu, Kphiu, Phiu, Ss;
+	PetscScalar 	***rhol, ***mul, ***lKphi, ***lbetam, ***lbetal, ***lPhi, ***Tsl, ***lnuu, ***lKphiu, ***lPhiu; //, ***Ss
+
+	Vec 			rhol_local, mul_local, local_Kphi, betam_local, betal_local, Phi_local, Ts_local, nuu_local, Kphiu_local, Phiu_local; //Ss_local, ;
+	Vec 			rhol_vec, mul_vec, Kphi_vec, betam_vec, betal_vec, Phi_vec, Ts_vec, nuu_vec, Kphiu_vec, Phiu_vec;   //, Ss_vec
+
+	PetscScalar     H, magnitude, increment, tini, tfin;
+
+	PetscScalar     p_total, dP, biot, Kd, yield;
+	PetscScalar     min_overpressure, max_overpressure, dPmin, dPmax;
 	PetscInt src;
+	MatParLim  *matLim;
+	Material_t *phases;
+
 
 
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
-
 
 	// access residual context variables
 	fs        = jr->fs;
@@ -432,21 +512,34 @@ PetscErrorCode JacResGetDarcyRes(JacRes *jr)
 	num       = bc->Pl_NumSPC;
 	list      = bc->Pl_SPCList;
 
+	// access residual context variables
+	numPhases =  jr->numPhases; 	// number phases
+	phases    =  jr->phases;    	// phase parameters
+	matLim    = &jr->matLim;    	// phase parameters limiters
+
 	// initialize maximum cell index in all directions
 	mx = fs->dsx.tcels - 1;
 	my = fs->dsy.tcels - 1;
 	mz = fs->dsz.tcels - 1;
 
 	// Extract required material parameters
-	ExtractCoefficientsFromDA(jr->DA_Pl, "mul",	mul_local, 		mul_vec, 	mul);		// Liquid viscosity
-	ExtractCoefficientsFromDA(jr->DA_Pl,"Kphi",	local_Kphi,  	Kphi_vec,  	lKphi);		// Permeability K
-	ExtractCoefficientsFromDA(jr->DA_Pl, "Ssl",	Ss_local, 		Ss_vec, 	Ssl);		// specific storage
-	ExtractCoefficientsFromDA(jr->DA_Pl, "rhol",rhol_local, 	rhol_vec, 	rhol);		// liquid density
+	ExtractCoefficientsFromDA(jr->DA_Pl, "rhol",  rhol_local,   rhol_vec, 	rhol);		// liquid density
+	ExtractCoefficientsFromDA(jr->DA_Pl, "mul",	  mul_local,    mul_vec, 	mul);		// Liquid viscosity
+	ExtractCoefficientsFromDA(jr->DA_Pl,"Kphi",	  local_Kphi,  	Kphi_vec,  	lKphi);		// Permeability K
+	//ExtractCoefficientsFromDA(jr->DA_Pl, "Ssl",	Ss_local, 		Ss_vec, 	Ssl);	// specific storage
+	ExtractCoefficientsFromDA(jr->DA_Pl, "betam", betam_local,  betam_vec, 	lbetam);    // matrix compressibility
+	ExtractCoefficientsFromDA(jr->DA_Pl, "betal", betal_local,  betal_vec, 	lbetal);    // liquid compressibility
+	ExtractCoefficientsFromDA(jr->DA_Pl, "Phi",   Phi_local,    Phi_vec, 	lPhi);      // porosity
+	ExtractCoefficientsFromDA(jr->DA_Pl, "Tsl",   Ts_local,     Ts_vec, 	Tsl);       // tensile strength
+	ExtractCoefficientsFromDA(jr->DA_Pl, "nuu",   nuu_local, 	nuu_vec, 	lnuu);      // undrained Poisson's ratio
+	ExtractCoefficientsFromDA(jr->DA_Pl, "Kphiu", Kphiu_local, 	Kphiu_vec, 	lKphiu);    // undrained permeability
+	ExtractCoefficientsFromDA(jr->DA_Pl, "Phiu",  Phiu_local, 	Phiu_vec, 	lPhiu);     // undrained porosity
 
 	// access work vectors
-	ierr = DMDAVecGetArray(jr->DA_Pl,  jr->r_Pl, &res); 		 CHKERRQ(ierr);
-	ierr = DMDAVecGetArray(fs->DA_CEN, jr->lPl,  &sol);  		 CHKERRQ(ierr);
-	ierr = DMDAVecGetArray(fs->DA_CEN, jr->hydro_lPl,  &hydro);  CHKERRQ(ierr);
+	ierr = DMDAVecGetArray(jr->DA_Pl,  jr->r_Pl,          &res);    CHKERRQ(ierr);
+	ierr = DMDAVecGetArray(fs->DA_CEN, jr->lPl,           &sol);    CHKERRQ(ierr);
+	ierr = DMDAVecGetArray(fs->DA_CEN, jr->hydro_lPl,     &hydro);  CHKERRQ(ierr);
+	ierr = DMDAVecGetArray(fs->DA_CEN, jr->lp,            &p);      CHKERRQ(ierr);
 
 	//---------------
 	// central points
@@ -460,11 +553,13 @@ PetscErrorCode JacResGetDarcyRes(JacRes *jr)
 
 		// access solution variables
 		svCell = &jr->svCell[iter++];
+		svDev  = &svCell->svDev;
 		svBulk = &svCell->svBulk;
 
 		Pl_n  = svBulk->Pln;  	// liquid pressure history
 		Pl_c  = sol[k][j][i]; 	// current liquid pressure
 		Pl_h  = hydro[k][j][i]; // hydrostatic liquid pressure
+		pc    = p[k][j][i];     // current pressure
 
 		// check index bounds
 		Im1 = i-1; if(Im1 < 0)  Im1++;
@@ -474,10 +569,57 @@ PetscErrorCode JacResGetDarcyRes(JacRes *jr)
 		Km1 = k-1; if(Km1 < 0)  Km1++;
 		Kp1 = k+1; if(Kp1 > mz) Kp1--;
 
-		mu		=	mul[k][j][i];		// liquid viscosity
-		lrho	=   rhol[k][j][i];		// liquid density
-		Ss		= 	Ssl[k][j][i];		// Specific storage
+		lrho	=   rhol[k][j][i];
+		mu		=	mul[k][j][i];
 		Kphi 	=	lKphi[k][j][i];
+		//Ss		= 	Ssl[k][j][i];
+		betam 	=	lbetam[k][j][i];
+		betal 	=	lbetal[k][j][i];
+		Phi 	=	lPhi[k][j][i];
+		Ts 	    =	Tsl[k][j][i];
+		nuu 	=	lnuu[k][j][i];
+		Kphiu 	=	lKphiu[k][j][i];
+		Phiu 	=	lPhiu[k][j][i];
+
+		//pShift?!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+		matLim    = &jr->matLim;       // phase parameters limiters
+		biot      = matLim->biot;      // Biot pressure parameter
+		p_total   = pc + biot*Pl_c;
+		dP        = p_total - Pl_c;
+
+		dPmin= pc+biot*Pl_h-Pl_h;
+		dPmax= Ts;
+
+		// Liquid density
+		svBulk->Rhol = lrho;
+
+		//// Permeability and porosity
+		if (dP <= dPmin && dP > dPmax)
+		{
+			if (Kphiu && Kphi != Kphiu)
+			{
+				Kphi = Kphi + (Kphiu - Kphi)/(dPmax-dPmin)*(dP-dPmin); //Kphi = svBulk->Kphi * exp(-(dP/Kd));
+			}
+			if (Phiu  && Phi  != Phiu)
+			{
+				Phi  = Phi + (Phiu - Phi)/(dPmax-dPmin)*(dP-dPmin);
+			}
+		}
+		else if (dP > dPmin)
+		{
+			//!!!!
+		}
+		else
+		{
+			// Tensile failure
+			Kphi = Kphiu;
+			Phi  = Phiu;
+		}
+		svBulk->Kphi = Kphi;
+		svBulk->Phi  = Phi;
+
+		// Specific storage
+		Ss = (betam + Phi*betal);
 
 		bkx 	= 	((Kphi + lKphi[k][j][Im1])/2.0);       fkx = ((Kphi + lKphi[k][j][Ip1])/2.0);
 		bky 	= 	((Kphi + lKphi[k][Jm1][i])/2.0);       fky = ((Kphi + lKphi[k][Jp1][i])/2.0);
@@ -493,18 +635,22 @@ PetscErrorCode JacResGetDarcyRes(JacRes *jr)
 		dy = SIZE_CELL(j, sy, fs->dsy);
 		dz = SIZE_CELL(k, sz, fs->dsz);
 
+
 		// SOURCE ----------------------------------------------------------------------------------------------------------------------------
 		H = 0.0;
 		// read each source
 		for(src = 0; src < jr->NumDarcySources; src++)
 		{
-			if (jr->DarcySources[src].i == i && jr->DarcySources[src].j == j && jr->DarcySources[src].k == k)
+			if (JacResGetTime(jr) >= jr->DarcySources[src].tini && JacResGetTime(jr) <= jr->DarcySources[src].tfin)
 			{
-				increment = jr->DarcySources[src].increment;
-				magnitude = jr->DarcySources[src].magnitude *      (1.0 +JacResGetTime(jr)*increment); // [m^3/s]
-				// If source is Volumetric flow [m^3/s] then H = magnitude / volume of the cell [1/s]
-				//H = H/(dx*dy*dz);
-				H = H + magnitude/(dx*dy*dz);
+				if (jr->DarcySources[src].i == i && jr->DarcySources[src].j == j && jr->DarcySources[src].k == k)
+				{
+					increment = jr->DarcySources[src].increment;
+					magnitude = jr->DarcySources[src].magnitude *      (1.0 +JacResGetTime(jr)*increment); // [m^3/s]
+					// If source is Volumetric flow [m^3/s] then H = magnitude / volume of the cell [1/s]
+					//H = H/(dx*dy*dz);
+					H = H + magnitude/(dx*dy*dz);
+				}
 			}
 		}
 		// ------------------------------------------------------------------------------------------------------------------------------------
@@ -530,17 +676,25 @@ PetscErrorCode JacResGetDarcyRes(JacRes *jr)
 	END_STD_LOOP
 
 	// restore access
-	ierr = DMDAVecRestoreArray(fs->DA_CEN, jr->lPl,   	&sol);  	CHKERRQ(ierr);
-	ierr = DMDAVecRestoreArray(jr->DA_Pl,  jr->r_Pl,   	&res);  	CHKERRQ(ierr);
+	ierr = DMDAVecRestoreArray(fs->DA_CEN, jr->lPl,   	 &sol);  	CHKERRQ(ierr);
+	ierr = DMDAVecRestoreArray(jr->DA_Pl,  jr->r_Pl,   	 &res);  	CHKERRQ(ierr);
 	ierr = DMDAVecRestoreArray(fs->DA_CEN, jr->hydro_lPl,&hydro);  	CHKERRQ(ierr);
+	ierr = DMDAVecRestoreArray(fs->DA_CEN, jr->lp,       &p);  	    CHKERRQ(ierr);
 
 	// restore material coefficients on DA
-	RestoreCoefficientsFromDA(jr->DA_Pl, "mul",	mul_local, 		mul_vec, 	mul);		// Liquid viscosity
-	RestoreCoefficientsFromDA(jr->DA_Pl, "Ssl",	Ss_local, 		Ss_vec, 	Ssl);		// Specific storage
-	RestoreCoefficientsFromDA(jr->DA_Pl, "Kphi",local_Kphi, 	Kphi_vec, 	lKphi);		// Permeability coefficients
-	RestoreCoefficientsFromDA(jr->DA_Pl, "rhol",rhol_local, 	rhol_vec, 	rhol);		// Liquid density
+	RestoreCoefficientsFromDA(jr->DA_Pl, "rhol", rhol_local,    rhol_vec,   rhol);
+	RestoreCoefficientsFromDA(jr->DA_Pl, "mul",	 mul_local,     mul_vec,    mul);
+	RestoreCoefficientsFromDA(jr->DA_Pl, "Kphi", local_Kphi,    Kphi_vec,   lKphi);
+	//RestoreCoefficientsFromDA(jr->DA_Pl, "Ssl",	Ss_local, 		Ss_vec, 	Ssl);
+	RestoreCoefficientsFromDA(jr->DA_Pl, "betam",betam_local,   betam_vec,  lbetam);
+	RestoreCoefficientsFromDA(jr->DA_Pl, "betal",betal_local,   betal_vec,  lbetal);
+	RestoreCoefficientsFromDA(jr->DA_Pl, "Phi",  Phi_local,     Phi_vec,    lPhi);
+	RestoreCoefficientsFromDA(jr->DA_Pl, "Tsl",  Ts_local,      Ts_vec,     Tsl);
+	RestoreCoefficientsFromDA(jr->DA_Pl, "nuu",  nuu_local,     nuu_vec,    lnuu);
+	RestoreCoefficientsFromDA(jr->DA_Pl, "Kphiu",Kphiu_local,   Kphiu_vec,  lKphiu);
+	RestoreCoefficientsFromDA(jr->DA_Pl, "Phiu", Phiu_local,    Phiu_vec,    lPhiu);
 
-	// impose primary temperature constraints
+	// impose primary pressure constraints
 	ierr = VecGetArray(jr->r_Pl, &e); CHKERRQ(ierr);
 
 	for(i = 0; i < num; i++) e[list[i]] = 0.0;
@@ -558,20 +712,32 @@ PetscErrorCode JacResGetDarcyMat(JacRes *jr)
 	// Ss*Pl/dt - d/dxi (Kphi/mu (dPl/dxj))
 
 	FDSTAG     *fs;
+	SolVarCell *svCell;
+	SolVarDev  *svDev;
+	SolVarBulk *svBulk;
 	BCCtx      *bc;
-	//SolVarCell *svCell;
 	PetscInt    iter, num, *list;
 	PetscInt    Ip1, Im1, Jp1, Jm1, Kp1, Km1;
 	PetscInt    i, j, k, nx, ny, nz, sx, sy, sz, mx, my, mz;
 	PetscScalar bkx, fkx, bky, fky, bkz, fkz;
 	PetscScalar bdx, fdx, bdy, fdy, bdz, fdz;
- 	PetscScalar dx, dy, dz;
-	PetscScalar v[7], cf[6], mu,  Kphi, Ss;
+ 	PetscScalar dt, dx, dy, dz;
+ 	PetscScalar 	Pl_c, Pl_h, pc, gz, Pl_n;
+ 	 PetscScalar 	***sol, ***hydro, ***p;
+	PetscScalar v[7], cf[6], lrho, mu, Kphi, betam, betal, Phi, Ts, nuu, Kphiu, Phiu, Ss;
 	MatStencil  row[1], col[7];
-	PetscScalar ***lKphi, ***mul, ***Ssl, ***rhol, ***bcPl;
-	Vec 			mul_local, 	mul_vec, local_Kphi, Kphi_vec, Ss_local, Ss_vec, rhol_local, rhol_vec;
-	PetscScalar dt;
+	PetscScalar 	***rhol, ***mul, ***lKphi, ***lbetam, ***lbetal, ***lPhi, ***Tsl, ***lnuu, ***lKphiu, ***lPhiu, ***bcPl;
+	//Vec         rhol_local, mul_local, local_Kphi;
+	//Vec 		rhol_vec,   mul_vec,   Kphi_vec;
+	Vec 			rhol_local, mul_local, local_Kphi, betam_local, betal_local, Phi_local, Ts_local, nuu_local, Kphiu_local, Phiu_local; //Ss_local, ;
+	Vec 			rhol_vec, mul_vec, Kphi_vec, betam_vec, betal_vec, Phi_vec, Ts_vec, nuu_vec, Kphiu_vec, Phiu_vec;   //, Ss_vec
 
+
+	PetscScalar     p_total, dP, biot, Kd, yield;
+	PetscScalar     min_overpressure, max_overpressure, dPmin, dPmax;
+	PetscInt src;
+	MatParLim  *matLim;
+	Material_t *phases;
 
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
@@ -596,10 +762,22 @@ PetscErrorCode JacResGetDarcyMat(JacRes *jr)
 	ierr = DMDAVecGetArray(fs->DA_CEN, bc->bcPl,  &bcPl); 	CHKERRQ(ierr);
 
 	// Extract required material parameters
-	ExtractCoefficientsFromDA(jr->DA_Pl, "mul",	mul_local, 		mul_vec, 	mul);		// Liquid viscosity
-	ExtractCoefficientsFromDA(jr->DA_Pl,"Kphi",	local_Kphi,  	Kphi_vec,  	lKphi);		// Permeability K
-	ExtractCoefficientsFromDA(jr->DA_Pl, "Ssl",	Ss_local, 		Ss_vec, 	Ssl);		// Specific storage
-	ExtractCoefficientsFromDA(jr->DA_Pl, "rhol",	rhol_local, 	rhol_vec, 	rhol);		// liquid density
+	ExtractCoefficientsFromDA(jr->DA_Pl, "rhol",  rhol_local,   rhol_vec, 	rhol);		// liquid density
+	ExtractCoefficientsFromDA(jr->DA_Pl, "mul",	  mul_local,    mul_vec, 	mul);		// Liquid viscosity
+	ExtractCoefficientsFromDA(jr->DA_Pl,"Kphi",	  local_Kphi,  	Kphi_vec,  	lKphi);		// Permeability K
+	//ExtractCoefficientsFromDA(jr->DA_Pl, "Ssl",	Ss_local, 		Ss_vec, 	Ssl);	// specific storage
+	ExtractCoefficientsFromDA(jr->DA_Pl, "betam", betam_local,  betam_vec, 	lbetam);    // matrix compressibility
+	ExtractCoefficientsFromDA(jr->DA_Pl, "betal", betal_local,  betal_vec, 	lbetal);    // liquid compressibility
+	ExtractCoefficientsFromDA(jr->DA_Pl, "Phi",   Phi_local,    Phi_vec, 	lPhi);      // porosity
+	ExtractCoefficientsFromDA(jr->DA_Pl, "Tsl",   Ts_local,     Ts_vec, 	Tsl);       // tensile strength
+	ExtractCoefficientsFromDA(jr->DA_Pl, "nuu",   nuu_local, 	nuu_vec, 	lnuu);      // undrained Poisson's ratio
+	ExtractCoefficientsFromDA(jr->DA_Pl, "Kphiu", Kphiu_local, 	Kphiu_vec, 	lKphiu);    // undrained permeability
+	ExtractCoefficientsFromDA(jr->DA_Pl, "Phiu",  Phiu_local, 	Phiu_vec, 	lPhiu);     // undrained porosity
+
+	// access work vectors
+	ierr = DMDAVecGetArray(fs->DA_CEN, jr->lPl,           &sol);    CHKERRQ(ierr);
+	ierr = DMDAVecGetArray(fs->DA_CEN, jr->hydro_lPl,     &hydro);  CHKERRQ(ierr);
+	ierr = DMDAVecGetArray(fs->DA_CEN, jr->lp,            &p);      CHKERRQ(ierr);
 
 	//---------------
 	// central points
@@ -609,6 +787,15 @@ PetscErrorCode JacResGetDarcyMat(JacRes *jr)
 
 	START_STD_LOOP
 	{
+		// access solution variables
+		svCell = &jr->svCell[iter++];
+		svDev  = &svCell->svDev;
+		svBulk = &svCell->svBulk;
+
+		Pl_n  = svBulk->Pln;  	// liquid pressure history
+		Pl_c  = sol[k][j][i]; 	// current liquid pressure
+		Pl_h  = hydro[k][j][i]; // hydrostatic liquid pressure
+		pc    = p[k][j][i];     // current pressure
 
 		// check index bounds and TPC multipliers
 		Im1 = i-1; cf[0] = 1.0; if(Im1 < 0)  { Im1++; if(bcPl[k][j][i-1] != DBL_MAX) cf[0] = -1.0;}
@@ -618,19 +805,62 @@ PetscErrorCode JacResGetDarcyMat(JacRes *jr)
 		Km1 = k-1; cf[4] = 1.0; if(Km1 < 0)  { Km1++; if(bcPl[k-1][j][i] != DBL_MAX) cf[4] = -1.0;}
 		Kp1 = k+1; cf[5] = 1.0; if(Kp1 > mz) { Kp1--; if(bcPl[k+1][j][i] != DBL_MAX) cf[5] = -1.0;}
 
+		lrho	=   rhol[k][j][i];
+		mu		=	mul[k][j][i];
+		Kphi 	=	lKphi[k][j][i];
+		//Ss		= 	Ssl[k][j][i];
+		betam 	=	lbetam[k][j][i];
+		betal 	=	lbetal[k][j][i];
+		Phi 	=	lPhi[k][j][i];
+		Ts 	    =	Tsl[k][j][i];
+		nuu 	=	lnuu[k][j][i];
+		Kphiu 	=	lKphiu[k][j][i];
+		Phiu 	=	lPhiu[k][j][i];
+
+		//pShift?!!
+		matLim    = &jr->matLim;       // phase parameters limiters
+		biot      = matLim->biot;      // Biot pressure parameter
+		p_total   = pc + biot*Pl_c;
+		dP        = p_total - Pl_c;
+
+		dPmin= pc+biot*Pl_h-Pl_h;
+		dPmax= Ts;
+
+		//// Permeability and porosity
+		if (dP <= dPmin && dP > dPmax)
+		{
+			if (Kphiu && Kphi != Kphiu)
+			{
+				Kphi = Kphi + (Kphiu - Kphi)/(dPmax-dPmin)*(dP-dPmin); //Kphi = svBulk->Kphi * exp(-(dP/Kd));
+			}
+			if (Phiu  && Phi  != Phiu)
+			{
+				Phi  = Phi + (Phiu - Phi)/(dPmax-dPmin)*(dP-dPmin);
+			}
+		}
+		else if (dP > dPmin)
+		{
+			//!!!!
+		}
+		else
+		{
+			// Tensile failure
+			Kphi = Kphiu;
+			Phi  = Phiu;
+		}
+
+		// Specific storage
+		Ss = (betam + Phi*betal);
+
 		// compute average permeabilities
-		Kphi 	=	 lKphi[k][j][i];
 		bkx 	= 	(Kphi + lKphi[k][j][Im1])/2.0;       fkx = (Kphi + lKphi[k][j][Ip1])/2.0;
 		bky 	= 	(Kphi + lKphi[k][Jm1][i])/2.0;       fky = (Kphi + lKphi[k][Jp1][i])/2.0;
 		bkz 	= 	(Kphi + lKphi[Km1][j][i])/2.0;       fkz = (Kphi + lKphi[Kp1][j][i])/2.0;
 
-		//
-		mu		=	mul[k][j][i];		// liquid viscosity
+		// liquid viscosity
 		bkx /= mu;							fkx /= mu;
 		bky /= mu;							fky /= mu;
 		bkz /= mu;							fkz /= mu;
-
-		Ss		=	Ssl[k][j][i];		// specific storage
 
 		// get mesh steps
 		bdx = SIZE_NODE(i, sx, fs->dsx);     fdx = SIZE_NODE(i+1, sx, fs->dsx);
@@ -673,11 +903,23 @@ PetscErrorCode JacResGetDarcyMat(JacRes *jr)
 	// restore access
 	ierr = DMDAVecRestoreArray(jr->DA_Pl, bc->bcPl, &bcPl); CHKERRQ(ierr);
 
+	// restore access
+	ierr = DMDAVecRestoreArray(fs->DA_CEN, jr->lPl,   	 &sol);  	CHKERRQ(ierr);
+	ierr = DMDAVecRestoreArray(fs->DA_CEN, jr->hydro_lPl,&hydro);  	CHKERRQ(ierr);
+	ierr = DMDAVecRestoreArray(fs->DA_CEN, jr->lp,       &p);  	    CHKERRQ(ierr);
+
 	// restore material coefficients on DA
-	RestoreCoefficientsFromDA(jr->DA_Pl, "mul"	,	mul_local, 		mul_vec, 		mul);		// Liquid viscosity
-	RestoreCoefficientsFromDA(jr->DA_Pl, "Kphi",	local_Kphi, 	Kphi_vec, 		lKphi);		// Permeability coefficients
-	RestoreCoefficientsFromDA(jr->DA_Pl, "Ssl" ,	Ss_local, 		Ss_vec, 		Ssl);		// specific storage
-	RestoreCoefficientsFromDA(jr->DA_Pl, "rhol" ,	rhol_local, 	rhol_vec, 		rhol);		// specific storage
+	RestoreCoefficientsFromDA(jr->DA_Pl, "rhol", rhol_local,    rhol_vec,   rhol);
+	RestoreCoefficientsFromDA(jr->DA_Pl, "mul",	 mul_local,     mul_vec,    mul);
+	RestoreCoefficientsFromDA(jr->DA_Pl, "Kphi", local_Kphi,    Kphi_vec,   lKphi);
+	//RestoreCoefficientsFromDA(jr->DA_Pl, "Ssl",	Ss_local, 		Ss_vec, 	Ssl);
+	RestoreCoefficientsFromDA(jr->DA_Pl, "betam",betam_local,   betam_vec,  lbetam);
+	RestoreCoefficientsFromDA(jr->DA_Pl, "betal",betal_local,   betal_vec,  lbetal);
+	RestoreCoefficientsFromDA(jr->DA_Pl, "Phi",  Phi_local,     Phi_vec,    lPhi);
+	RestoreCoefficientsFromDA(jr->DA_Pl, "Tsl",  Ts_local,      Ts_vec, 	Tsl);
+	RestoreCoefficientsFromDA(jr->DA_Pl, "nuu",  nuu_local,     nuu_vec,    lnuu);
+	RestoreCoefficientsFromDA(jr->DA_Pl, "Kphiu",Kphiu_local,   Kphiu_vec,  lKphiu);
+	RestoreCoefficientsFromDA(jr->DA_Pl, "Phiu", Phiu_local,    Phiu_vec,   lPhiu);
 
 	// assemble LiquidPressure/Darcy matrix
 	ierr = MatAIJAssemble(jr->App, num, list, 1.0); CHKERRQ(ierr);
@@ -703,12 +945,19 @@ PetscErrorCode UpdateDarcy_DA(JacRes *jr)
 	PetscErrorCode ierr;
 	PetscInt 	   	iter, sx, sy, sz;
 	PetscInt       	i, j, k, nx, ny, nz;
-	Vec 			Kphi_vec, 		local_KPhi;
-	Vec 			Mul_vec, 		local_Mul;
-	Vec 			Ss_vec,	local_Ss;
-	Vec 			rhol_vec,	local_rhol;
-	Vec 			BC_vec, 		local_BC;
-	PetscScalar    	***buff, kphi, mul, Ssl, rhol;
+	Vec 			rhol_vec,   local_rhol;
+	Vec 			Mul_vec,    local_Mul;
+	Vec 			Kphi_vec,   local_KPhi;
+	//Vec 			Ss_vec,	    local_Ss;
+	Vec 			betam_vec,  local_betam;
+	Vec 			betal_vec,  local_betal;
+	Vec 			Phi_vec,    local_Phi;
+	Vec 			Ts_vec,     local_Ts;
+	Vec 			nuu_vec,	local_nuu;
+	Vec 			Kphiu_vec,  local_Kphiu;
+	Vec 			Phiu_vec,   local_Phiu;
+	Vec 			BC_vec,     local_BC;
+	PetscScalar    	***buff, rhol, mul, Kphi, betam, betal, Phi, Tsl, nuu, Kphiu, Phiu; //, Ssl
 
 	//---------------------------------------------
 	// (1) Update coordinates on 3D DMDA object
@@ -719,55 +968,113 @@ PetscErrorCode UpdateDarcy_DA(JacRes *jr)
 	// (2) Update material properties on local vector & attach to DM
 
 	// Create temporary local vectors
-	ierr = 	DMCreateLocalVector(jr->DA_Pl, &local_KPhi); 				CHKERRQ(ierr);
-	ierr = 	DMCreateLocalVector(jr->DA_Pl, &local_Mul); 				CHKERRQ(ierr);
-	ierr = 	DMCreateLocalVector(jr->DA_Pl, &local_Ss);					CHKERRQ(ierr);
 	ierr = 	DMCreateLocalVector(jr->DA_Pl, &local_rhol);				CHKERRQ(ierr);
+	ierr = 	DMCreateLocalVector(jr->DA_Pl, &local_Mul); 				CHKERRQ(ierr);
+	ierr = 	DMCreateLocalVector(jr->DA_Pl, &local_KPhi); 				CHKERRQ(ierr);
+	//ierr = 	DMCreateLocalVector(jr->DA_Pl, &local_Ss);					CHKERRQ(ierr);
+	ierr = 	DMCreateLocalVector(jr->DA_Pl, &local_betam);				CHKERRQ(ierr);
+	ierr = 	DMCreateLocalVector(jr->DA_Pl, &local_betal); 				CHKERRQ(ierr);
+	ierr = 	DMCreateLocalVector(jr->DA_Pl, &local_Phi); 				CHKERRQ(ierr);
+	ierr = 	DMCreateLocalVector(jr->DA_Pl, &local_Ts);					CHKERRQ(ierr);
+	ierr = 	DMCreateLocalVector(jr->DA_Pl, &local_nuu); 				CHKERRQ(ierr);
+	ierr = 	DMCreateLocalVector(jr->DA_Pl, &local_Kphiu); 				CHKERRQ(ierr);
+	ierr = 	DMCreateLocalVector(jr->DA_Pl, &local_Phiu); 				CHKERRQ(ierr);
 	ierr = 	DMCreateLocalVector(jr->DA_Pl, &local_BC); 					CHKERRQ(ierr);
 
 	// Set data on local vectors
-	SCATTER_FIELD(jr->DA_Pl, local_Mul,  GET_mul);				// compute 3D array of liquid viscosity
-	SCATTER_FIELD(jr->DA_Pl, local_KPhi, GET_Kphi);				// 3D array of permeability pre-coefficient
-	SCATTER_FIELD(jr->DA_Pl, local_Ss,   GET_Ssl);				// specific storage
-	SCATTER_FIELD(jr->DA_Pl, local_rhol, GET_rhol);				// liquid density
+	SCATTER_FIELD(jr->DA_Pl, local_rhol, GET_rhol);            // liquid density
+	SCATTER_FIELD(jr->DA_Pl, local_Mul,  GET_mul);             // compute 3D array of liquid viscosity
+	SCATTER_FIELD(jr->DA_Pl, local_KPhi, GET_Kphi);            // 3D array of permeability pre-coefficient
+	//SCATTER_FIELD(jr->DA_Pl, local_Ss,   GET_Ssl);            // specific storage
+	SCATTER_FIELD(jr->DA_Pl, local_betam,GET_betam);
+	SCATTER_FIELD(jr->DA_Pl, local_betal,GET_betal);
+	SCATTER_FIELD(jr->DA_Pl, local_Phi,  GET_Phi);
+	SCATTER_FIELD(jr->DA_Pl, local_Ts,   GET_Tsl);				// tensile strength
+	SCATTER_FIELD(jr->DA_Pl, local_nuu,  GET_nuu);
+	SCATTER_FIELD(jr->DA_Pl, local_Kphiu,GET_Kphiu);
+	SCATTER_FIELD(jr->DA_Pl, local_Phiu, GET_Phiu);
 
 	// Get/Create global vector, attached to DM
-	ierr = 	DMGetNamedGlobalVector(jr->DA_Pl,"mul",			&Mul_vec); 				CHKERRQ(ierr);
-	ierr = 	DMGetNamedGlobalVector(jr->DA_Pl,"Kphi",		&Kphi_vec); 			CHKERRQ(ierr);
-	ierr = 	DMGetNamedGlobalVector(jr->DA_Pl,"Ssl",			&Ss_vec); 				CHKERRQ(ierr);
-	ierr = 	DMGetNamedGlobalVector(jr->DA_Pl,"rhol",		&rhol_vec); 			CHKERRQ(ierr);
-	ierr = 	DMGetNamedGlobalVector(jr->DA_Pl,"BC",			&BC_vec); 				CHKERRQ(ierr);
+	ierr = 	DMGetNamedGlobalVector(jr->DA_Pl,"rhol",        &rhol_vec);         CHKERRQ(ierr);
+	ierr = 	DMGetNamedGlobalVector(jr->DA_Pl,"mul",         &Mul_vec);          CHKERRQ(ierr);
+	ierr = 	DMGetNamedGlobalVector(jr->DA_Pl,"Kphi",        &Kphi_vec);         CHKERRQ(ierr);
+	//ierr = 	DMGetNamedGlobalVector(jr->DA_Pl,"Ssl",			&Ss_vec);         CHKERRQ(ierr);
+	ierr = 	DMGetNamedGlobalVector(jr->DA_Pl,"betam",       &betam_vec);        CHKERRQ(ierr);
+	ierr = 	DMGetNamedGlobalVector(jr->DA_Pl,"betal",       &betal_vec);        CHKERRQ(ierr);
+	ierr = 	DMGetNamedGlobalVector(jr->DA_Pl,"Phi",         &Phi_vec);          CHKERRQ(ierr);
+	ierr = 	DMGetNamedGlobalVector(jr->DA_Pl,"Tsl",         &Ts_vec);           CHKERRQ(ierr);
+	ierr = 	DMGetNamedGlobalVector(jr->DA_Pl,"nuu",         &nuu_vec);          CHKERRQ(ierr);
+	ierr = 	DMGetNamedGlobalVector(jr->DA_Pl,"Kphiu",       &Kphiu_vec);        CHKERRQ(ierr);
+	ierr = 	DMGetNamedGlobalVector(jr->DA_Pl,"Phiu",        &Phiu_vec);         CHKERRQ(ierr);
+
+	ierr = 	DMGetNamedGlobalVector(jr->DA_Pl,"BC",          &BC_vec);           CHKERRQ(ierr);
 
 	// Move local values to global vector
-
-	ierr = 	DMLocalToGlobalBegin(jr->DA_Pl,local_Mul,INSERT_VALUES ,Mul_vec);		CHKERRQ(ierr);
-	ierr = 	DMLocalToGlobalEnd  (jr->DA_Pl,local_Mul,INSERT_VALUES ,Mul_vec);		CHKERRQ(ierr);
 
 	ierr = 	DMLocalToGlobalBegin(jr->DA_Pl,local_rhol,INSERT_VALUES ,rhol_vec);		CHKERRQ(ierr);
 	ierr = 	DMLocalToGlobalEnd  (jr->DA_Pl,local_rhol,INSERT_VALUES ,rhol_vec);		CHKERRQ(ierr);
 
+	ierr = 	DMLocalToGlobalBegin(jr->DA_Pl,local_Mul,INSERT_VALUES ,Mul_vec);		CHKERRQ(ierr);
+	ierr = 	DMLocalToGlobalEnd  (jr->DA_Pl,local_Mul,INSERT_VALUES ,Mul_vec);		CHKERRQ(ierr);
+
 	ierr = 	DMLocalToGlobalBegin(jr->DA_Pl,local_KPhi,INSERT_VALUES ,Kphi_vec);	CHKERRQ(ierr);
 	ierr = 	DMLocalToGlobalEnd  (jr->DA_Pl,local_KPhi,INSERT_VALUES ,Kphi_vec);	CHKERRQ(ierr);
 
-	ierr = 	DMLocalToGlobalBegin(jr->DA_Pl,local_Ss,INSERT_VALUES ,Ss_vec);	CHKERRQ(ierr);
-	ierr = 	DMLocalToGlobalEnd  (jr->DA_Pl,local_Ss,INSERT_VALUES ,Ss_vec);	CHKERRQ(ierr);
+	//ierr = 	DMLocalToGlobalBegin(jr->DA_Pl,local_Ss,INSERT_VALUES ,Ss_vec);	CHKERRQ(ierr);
+	//ierr = 	DMLocalToGlobalEnd  (jr->DA_Pl,local_Ss,INSERT_VALUES ,Ss_vec);	CHKERRQ(ierr);
+
+	ierr = 	DMLocalToGlobalBegin(jr->DA_Pl,local_betam,INSERT_VALUES ,betam_vec);	CHKERRQ(ierr);
+	ierr = 	DMLocalToGlobalEnd  (jr->DA_Pl,local_betam,INSERT_VALUES ,betam_vec);	CHKERRQ(ierr);
+
+	ierr = 	DMLocalToGlobalBegin(jr->DA_Pl,local_betal,INSERT_VALUES ,betal_vec);	CHKERRQ(ierr);
+	ierr = 	DMLocalToGlobalEnd  (jr->DA_Pl,local_betal,INSERT_VALUES ,betal_vec);	CHKERRQ(ierr);
+
+	ierr = 	DMLocalToGlobalBegin(jr->DA_Pl,local_Phi,INSERT_VALUES ,Phi_vec);	CHKERRQ(ierr);
+	ierr = 	DMLocalToGlobalEnd  (jr->DA_Pl,local_Phi,INSERT_VALUES ,Phi_vec);	CHKERRQ(ierr);
+
+	ierr = 	DMLocalToGlobalBegin(jr->DA_Pl,local_Ts,INSERT_VALUES ,Ts_vec);	CHKERRQ(ierr);
+	ierr = 	DMLocalToGlobalEnd  (jr->DA_Pl,local_Ts,INSERT_VALUES ,Ts_vec);	CHKERRQ(ierr);
+
+	ierr = 	DMLocalToGlobalBegin(jr->DA_Pl,local_nuu,INSERT_VALUES ,nuu_vec);	CHKERRQ(ierr);
+	ierr = 	DMLocalToGlobalEnd  (jr->DA_Pl,local_nuu,INSERT_VALUES ,nuu_vec);	CHKERRQ(ierr);
+
+	ierr = 	DMLocalToGlobalBegin(jr->DA_Pl,local_Kphiu,INSERT_VALUES ,Kphiu_vec);	CHKERRQ(ierr);
+	ierr = 	DMLocalToGlobalEnd  (jr->DA_Pl,local_Kphiu,INSERT_VALUES ,Kphiu_vec);	CHKERRQ(ierr);
+
+	ierr = 	DMLocalToGlobalBegin(jr->DA_Pl,local_Phiu,INSERT_VALUES ,Phiu_vec);	CHKERRQ(ierr);
+	ierr = 	DMLocalToGlobalEnd  (jr->DA_Pl,local_Phiu,INSERT_VALUES ,Phiu_vec);	CHKERRQ(ierr);
 
 	ierr = 	DMLocalToGlobalBegin(jr->DA_Pl,jr->bc->bcPl,INSERT_VALUES ,BC_vec);			CHKERRQ(ierr);
 	ierr = 	DMLocalToGlobalEnd  (jr->DA_Pl,jr->bc->bcPl,INSERT_VALUES ,BC_vec);			CHKERRQ(ierr);
 
 	// attach the named vector to the DM
 
-	ierr = 	DMRestoreNamedGlobalVector(jr->DA_Pl,"mul",			&Mul_vec); 				CHKERRQ(ierr);
 	ierr = 	DMRestoreNamedGlobalVector(jr->DA_Pl,"rhol",		&rhol_vec); 			CHKERRQ(ierr);
+	ierr = 	DMRestoreNamedGlobalVector(jr->DA_Pl,"mul",			&Mul_vec); 				CHKERRQ(ierr);
 	ierr = 	DMRestoreNamedGlobalVector(jr->DA_Pl,"Kphi",		&Kphi_vec); 			CHKERRQ(ierr);
-	ierr = 	DMRestoreNamedGlobalVector(jr->DA_Pl,"Ssl",			&Ss_vec); 				CHKERRQ(ierr);
+	//ierr = 	DMRestoreNamedGlobalVector(jr->DA_Pl,"Ssl",			&Ss_vec); 				CHKERRQ(ierr);
+	ierr = 	DMRestoreNamedGlobalVector(jr->DA_Pl,"betam",		&betam_vec); 			CHKERRQ(ierr);
+	ierr = 	DMRestoreNamedGlobalVector(jr->DA_Pl,"betal",		&betal_vec); 			CHKERRQ(ierr);
+	ierr = 	DMRestoreNamedGlobalVector(jr->DA_Pl,"Phi",		    &Phi_vec); 			    CHKERRQ(ierr);
+	ierr = 	DMRestoreNamedGlobalVector(jr->DA_Pl,"Tsl",			&Ts_vec); 				CHKERRQ(ierr);
+	ierr = 	DMRestoreNamedGlobalVector(jr->DA_Pl,"nuu",         &nuu_vec);              CHKERRQ(ierr);
+	ierr = 	DMRestoreNamedGlobalVector(jr->DA_Pl,"Kphiu",		&Kphiu_vec); 			CHKERRQ(ierr);
+	ierr = 	DMRestoreNamedGlobalVector(jr->DA_Pl,"Phiu",		&Phiu_vec); 			CHKERRQ(ierr);
 	ierr = 	DMRestoreNamedGlobalVector(jr->DA_Pl,"BC",			&BC_vec); 				CHKERRQ(ierr);
 
 	// cleaning up
+	ierr = 	VecDestroy(&local_rhol);		CHKERRQ(ierr);
 	ierr = 	VecDestroy(&local_Mul);			CHKERRQ(ierr);
 	ierr = 	VecDestroy(&local_KPhi);		CHKERRQ(ierr);
-	ierr = 	VecDestroy(&local_Ss);			CHKERRQ(ierr);
-	ierr = 	VecDestroy(&local_rhol);		CHKERRQ(ierr);
+	//ierr = 	VecDestroy(&local_Ss);			CHKERRQ(ierr);
+	ierr = 	VecDestroy(&local_betam);		CHKERRQ(ierr);
+	ierr = 	VecDestroy(&local_betal);		CHKERRQ(ierr);
+	ierr = 	VecDestroy(&local_Phi);         CHKERRQ(ierr);
+	ierr = 	VecDestroy(&local_Ts);			CHKERRQ(ierr);
+	ierr = 	VecDestroy(&local_nuu);         CHKERRQ(ierr);
+	ierr = 	VecDestroy(&local_Kphiu);       CHKERRQ(ierr);
+	ierr = 	VecDestroy(&local_Phiu);        CHKERRQ(ierr);
+
 	ierr = 	VecDestroy(&local_BC);			CHKERRQ(ierr);
 
 	PetscFunctionReturn(0);
@@ -1000,6 +1307,8 @@ PetscErrorCode SourcePropGetStruct(FILE *fp,
 	// output labels
 	char        lbl_x  			[_lbl_sz_];
 	char        lbl_magnitude  	[_lbl_sz_];
+	char        lbl_tini  		[_lbl_sz_];
+	char        lbl_tfin  		[_lbl_sz_];
 
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
@@ -1029,25 +1338,31 @@ PetscErrorCode SourcePropGetStruct(FILE *fp,
 	// set ID
 	m->ID = ID;
 
-	getMatPropScalar(fp, ils, ile, "x",      	&m->x,  		NULL);
-	getMatPropScalar(fp, ils, ile, "y",     	&m->y, 			NULL);
-	getMatPropScalar(fp, ils, ile, "z",     	&m->z,		 	NULL);
+	getMatPropScalar(fp, ils, ile, "x",         &m->x,          NULL);
+	getMatPropScalar(fp, ils, ile, "y",         &m->y,          NULL);
+	getMatPropScalar(fp, ils, ile, "z",         &m->z,          NULL);
 	getMatPropScalar(fp, ils, ile, "magnitude", &m->magnitude,  NULL); // pressure-dependence of density
 	getMatPropScalar(fp, ils, ile, "increment", &m->increment,  NULL); // pressure-dependence of density
+	getMatPropScalar(fp, ils, ile, "tini",      &m->tini,       NULL); // Time to start the source
+	getMatPropScalar(fp, ils, ile, "tfin",      &m->tfin,       NULL); // Time to stop the source
 
 	// print
 	if(utype == _NONE_)
 	{
-		sprintf(lbl_x,   		"[ ]"     );
-		sprintf(lbl_magnitude,  "[ ]"     );
+		sprintf(lbl_x,   		 "[ ]"     );
+		sprintf(lbl_magnitude,   "[ ]"     );
+		sprintf(lbl_tini,        "[ ]"     );
+		sprintf(lbl_tfin,        "[ ]"     );
 	}
 	else
 	{
 		sprintf(lbl_x,   		"[m]"     );
 		sprintf(lbl_magnitude,  "[1/s]"   );
+		sprintf(lbl_tini,       "[s]"     );
+		sprintf(lbl_tfin,       "[s]"     );
 	}
 
-	PetscPrintf(PETSC_COMM_WORLD,"    Source [%lld]: x = %g %s, y = %g %s, z = %g %s, magnitude = %g %s", (LLD)(m->ID), m->x, lbl_x, m->y, lbl_x, m->z, lbl_x, m->magnitude, lbl_magnitude);
+	PetscPrintf(PETSC_COMM_WORLD,"    Source [%lld]: x = %g %s, y = %g %s, z = %g %s, magnitude = %g %s, tini = %g %s, tini = %g %s", (LLD)(m->ID), m->x, lbl_x, m->y, lbl_x, m->z, lbl_x, m->magnitude, lbl_magnitude, m->tini, lbl_tini, m->tfin, lbl_tfin);
 	PetscPrintf(PETSC_COMM_WORLD,"    \n");
 
 	PetscFunctionReturn(0);

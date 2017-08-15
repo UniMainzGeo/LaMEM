@@ -58,10 +58,17 @@
 PetscErrorCode JacResGetDarcyParam(
 		JacRes      *jr,
 		PetscScalar *phRat,
-		PetscScalar *Kphi_, 	// Permeability
-		PetscScalar *mu_, 		// Liquid viscosity
-		PetscScalar *Ss_,		// Specific storage
-		PetscScalar *rhol_);	// Liquid density
+		PetscScalar *rhol_,      // Liquid density
+		PetscScalar *mul_,       // Liquid viscosity
+		PetscScalar *Kphi_,      // Permeability
+		//PetscScalar *Ss_,      // Specific storage
+		PetscScalar *betam_,     // Matrix compressibility
+		PetscScalar *betal_,     // Liquid compressibility
+		PetscScalar *Phi_,       // Effective porosity
+		PetscScalar *Ts_,        // Tensile strength
+		PetscScalar *nuu_,       // Undrained poisson's ratio
+		PetscScalar *Kphiu_,     // Undrained permeability
+		PetscScalar *Phiu_);      // Undrained porosity
 
 // check whether Darcy material parameters are properly defined
 PetscErrorCode JacResCheckDarcyParam(JacRes *jr);
@@ -82,6 +89,7 @@ PetscErrorCode JacResUpdateDarcy(JacRes *jr);
 PetscErrorCode JacResApplyDarcyBC(JacRes *jr);
 
 PetscErrorCode JacResGetDarcyRes(JacRes *jr);
+PetscErrorCode JacResUpdateDarcyPermeability(JacRes *jr);
 
 // assemble Darcy preconditioner matrix
 PetscErrorCode JacResGetDarcyMat(JacRes *jr);

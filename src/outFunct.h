@@ -83,6 +83,7 @@ PetscErrorCode PVOutWritePorosity      (JacRes*, OutBuf*);
 PetscErrorCode PVOutWritePermeability  (JacRes*, OutBuf*);
 PetscErrorCode PVOutWriteLiquidDensity (JacRes*, OutBuf*);
 PetscErrorCode PVOutWriteLiquidVelocity(JacRes*, OutBuf*);
+PetscErrorCode PVOutWriteFailure       (JacRes*, OutBuf*);
 
 // === debug vectors ===============================================
 PetscErrorCode PVOutWriteJacTest     (JacRes*, OutBuf*);

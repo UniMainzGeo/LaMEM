@@ -127,7 +127,8 @@ PetscErrorCode VolConstEq(
 	PetscScalar  dt,        // time step
 	PetscScalar  p,         // pressure
 	PetscScalar  p_pore,    // pore pressure
-	PetscScalar  T);        // temperature
+	PetscScalar  T,         // temperature
+	PetscScalar  p_hydro);  // hydrostatic pressure
 
 // compute stress, plastic strain-rate and shear heating term on cell
 PetscErrorCode GetStressCell(

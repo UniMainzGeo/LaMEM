@@ -963,3 +963,20 @@ PetscErrorCode PVOutWritEnergRes(JacRes *jr, OutBuf *outbuf)
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
+/*#undef __FUNCT__
+#define __FUNCT__ "PVOutWriteFailure"
+PetscErrorCode PVOutWriteFailure(JacRes *jr, OutBuf *outbuf)
+{
+	// New come back to the previous way
+	COPY_FUNCTION_HEADER
+
+	cf = scal->unit;
+
+	// macro to copy Failure to buffer
+	#define GET_FAILURE buff[k][j][i] = jr->svCell[iter++].svBulk.fail;
+
+	INTERPOLATE_COPY(fs->DA_CEN, outbuf->lbcen, InterpCenterCorner, GET_FAILURE, 1, 0)
+
+	PetscFunctionReturn(0);
+}*/
+//---------------------------------------------------------------------------

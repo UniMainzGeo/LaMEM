@@ -1514,6 +1514,7 @@ PetscErrorCode ADVInterpMarkToCell(AdvCtx *actx)
 	PetscInt     ii, jj, ID, I, J, K;
 	PetscInt     nx, ny, nCells;
 	PetscScalar  xp, yp, zp, wxc, wyc, wzc, w = 0.0;
+	PetscScalar  p_total, dP, Ts;
 
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
@@ -1545,7 +1546,6 @@ PetscErrorCode ADVInterpMarkToCell(AdvCtx *actx)
 		svCell->U[0]      = 0.0;
 		svCell->U[1]      = 0.0;
 		svCell->U[2]      = 0.0;
-
 		// Darcy
 		if(jr->actDarcy == PETSC_TRUE) {
 			svCell->svBulk.Pln = 0.0;
@@ -1580,6 +1580,22 @@ PetscErrorCode ADVInterpMarkToCell(AdvCtx *actx)
 		// access solution variable of the host cell
 		svCell = &jr->svCell[ID];
 
+		// Darcy
+		if (jr->actDarcy == PETSC_TRUE)
+		{
+			if (JacResGetStep(jr) > 2) // 2 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+			{
+				p_total   = P->p + (jr->matLim.biot)*P->Pl;
+				dP        = p_total - P->Pl;
+				Ts = svCell->svBulk.Ts;
+				if ( dP < Ts)
+				{
+					P->phase = 0;
+				}
+			}
+		}
+
+
 		// update phase ratios
 		svCell->phRat[P->phase] += w;
 
@@ -1593,12 +1609,10 @@ PetscErrorCode ADVInterpMarkToCell(AdvCtx *actx)
 		svCell->U[0]      += w*P->U[0];
 		svCell->U[1]      += w*P->U[1];
 		svCell->U[2]      += w*P->U[2];
-
 		// Darcy
 		if(jr->actDarcy == PETSC_TRUE) {
 			svCell->svBulk.Pln += w*P->Pl;
 		}
-
 	}
 
 	// normalize interpolated values
@@ -1990,6 +2004,7 @@ PetscErrorCode ADVUpdateLiquidPressureMark(AdvCtx *actx)
 		// update liquid pressure
 		//P->Pl += lPl[sz+K][sy+J][sx+I] - svCell->svBulk.Pln;
 		P->Pl += svCell->svBulk.Pln;
+		//P->fail = 1;
 	}
 
 	// restore access

@@ -150,10 +150,9 @@ PetscErrorCode MatPropGetStruct(FILE *fp,
 
 	// Darcy
 	char        lbl_Kphi [_lbl_sz_];
-	char        lbl_Ss [_lbl_sz_];
-	char		lbl_mul [_lbl_sz_];
-
-	char        lbl_TS  [_lbl_sz_]; // Tensile strength
+	//char        lbl_Ss   [_lbl_sz_];
+	//char		lbl_mul  [_lbl_sz_];
+	//char        lbl_TS   [_lbl_sz_]; // Tensile strength
 
 
 	PetscErrorCode ierr;
@@ -257,7 +256,6 @@ PetscErrorCode MatPropGetStruct(FILE *fp,
 	getMatPropScalar(fp, ils, ile, "lambda",    &m->rp,    NULL);
 	getMatPropInt   (fp, ils, ile, "chSoftID",  &chSoftID, NULL);
 	getMatPropInt   (fp, ils, ile, "frSoftID",  &frSoftID, NULL);
-	getMatPropScalar(fp, ils, ile, "TensileS",  &m->TS,    NULL); // Tensile strength
 	//============================================================
 	// energy
 	//============================================================
@@ -268,13 +266,17 @@ PetscErrorCode MatPropGetStruct(FILE *fp,
 	//============================================================
 	// Darcy
 	//============================================================
-	getMatPropScalar(fp, ils, ile, "rhol",      &m->rhol,  NULL);
-	getMatPropScalar(fp, ils, ile, "mul",       &m->mul,   NULL);
-	getMatPropScalar(fp, ils, ile, "Ss",        &m->Ss,    NULL);
-	//============================================================
-	// Permeability law parameters
-	//============================================================
-	getMatPropScalar(fp, ils, ile, "Kphi",      &m->Kphi,  NULL);
+	getMatPropScalar(fp, ils, ile, "rhol",      &m->rhol,   NULL);
+	getMatPropScalar(fp, ils, ile, "mul",       &m->mul,    NULL);
+	getMatPropScalar(fp, ils, ile, "Kphi",      &m->Kphi,   NULL);
+	//getMatPropScalar(fp, ils, ile, "Ss",        &m->Ss,    NULL);
+	getMatPropScalar(fp, ils, ile, "betam",     &m->betam,  NULL);
+	getMatPropScalar(fp, ils, ile, "betal",     &m->betal,  NULL);
+	getMatPropScalar(fp, ils, ile, "Phi",       &m->Phi,    NULL);
+	getMatPropScalar(fp, ils, ile, "TensileS",  &m->TS,     NULL);
+	getMatPropScalar(fp, ils, ile, "poisonu",   &m->nuu,    NULL);
+	getMatPropScalar(fp, ils, ile, "Kphiu",     &m->Kphiu,  NULL);
+	getMatPropScalar(fp, ils, ile, "Phiu",      &m->Phiu,   NULL);
 	//============================================================
 
 
@@ -385,10 +387,9 @@ PetscErrorCode MatPropGetStruct(FILE *fp,
 		sprintf(lbl_vel,   "[ ]"         );
 		// Darcy
 		sprintf(lbl_Kphi,  "[ ]"         );
-		sprintf(lbl_Ss,    "[ ]"         );
-		sprintf(lbl_mul,   "[ ]"         );
-
-		sprintf(lbl_TS,    "[ ]"         );
+		//sprintf(lbl_Ss,    "[ ]"         );
+		//sprintf(lbl_mul,   "[ ]"         );
+		//sprintf(lbl_TS,    "[ ]"         );
 	}
 	else
 	{
@@ -409,10 +410,9 @@ PetscErrorCode MatPropGetStruct(FILE *fp,
 		sprintf(lbl_vel,   "[m/s]"       );
 		// Darcy
 		sprintf(lbl_Kphi,  "[m2]"      	 );
-		sprintf(lbl_Ss,    "[1/Pa]"      );
-		sprintf(lbl_mul,   "[Pa*s]"      );
-
-		sprintf(lbl_TS,    "[Pa]"        );
+		//sprintf(lbl_Ss,    "[1/Pa]"      );
+		//sprintf(lbl_mul,   "[Pa*s]"      );
+		//sprintf(lbl_TS,    "[Pa]"        );
 	}
 
 	PetscPrintf(PETSC_COMM_WORLD,"    Phase [%lld]: rho = %g %s, eta = %g %s, beta = %g %s\n", (LLD)(m->ID), m->rho, lbl_rho,  eta, lbl_eta, m->beta, lbl_beta);
@@ -421,7 +421,7 @@ PetscErrorCode MatPropGetStruct(FILE *fp,
 	if (strlen(ndisl)) PetscPrintf(PETSC_COMM_WORLD,"    Phase [%lld]: (disl ) dislocation creep profile: %s \n",(LLD)(m->ID), ndisl);
 	PetscPrintf(PETSC_COMM_WORLD,"    Phase [%lld]: (disl ) Bn = %g %s, En = %g %s, Vn = %g %s, n = %g [ ] \n", (LLD)(m->ID), m->Bn, lbl_Bn, m->En , lbl_E, m->Vn, lbl_V, m->n);
 	PetscPrintf(PETSC_COMM_WORLD,"    Phase [%lld]: (peirl) Bp = %g %s, Ep = %g %s, Vp = %g %s, taup = %g %s, gamma = %g [ ], q = %g [ ] \n", (LLD)(m->ID), m->Bp, lbl_Bp, m->Ep, lbl_E, m->Vp, lbl_V, m->taup, lbl_tau, m->gamma, m->q);
-	PetscPrintf(PETSC_COMM_WORLD,"    Phase [%lld]: (elast) G = %g %s, K = %g %s, Kp = %g [ ] \n", (LLD)(m->ID), m->G, lbl_tau, m->K, lbl_tau, m->Kp);
+	PetscPrintf(PETSC_COMM_WORLD,"    Phase [%lld]: (elast) G = %g %s, K = %g %s, Kp = %g [ ]\n", (LLD)(m->ID), m->G, lbl_tau, m->K, lbl_tau, m->Kp);
 
 	if(m->K && m->G && m->rho)
 	{
@@ -438,14 +438,15 @@ PetscErrorCode MatPropGetStruct(FILE *fp,
 		Vp = sqrt((K + 4.3*G)/rho);
 		Vs = sqrt((G/rho));
 		
-		PetscPrintf(PETSC_COMM_WORLD,"    Phase [%lld]: (elast) poison = %g, E (youngs modulus) = %g %s, Vp = %g %s Vs = %g %s \n", (LLD)(m->ID), nu, E, lbl_tau, Vp, lbl_vel, Vs, lbl_vel);
+		PetscPrintf(PETSC_COMM_WORLD,"    Phase [%lld]: (elast) poisson = %g, E (youngs modulus) = %g %s, Vp = %g %s Vs = %g %s \n", (LLD)(m->ID), nu, E, lbl_tau, Vp, lbl_vel, Vs, lbl_vel);
 	}
 
-	PetscPrintf(PETSC_COMM_WORLD,"    Phase [%lld]: (plast) cohesion = %g %s, friction angle = %g %s, pore pressure ratio = %g [ ], tensile strength = %g %s \n", (LLD)(m->ID),m->ch, lbl_tau, m->fr, lbl_fr, m->rp,m->TS, lbl_TS);
+	PetscPrintf(PETSC_COMM_WORLD,"    Phase [%lld]: (plast) cohesion = %g %s, friction angle = %g %s, pore pressure ratio = %g [ ]\n", (LLD)(m->ID),m->ch, lbl_tau, m->fr, lbl_fr, m->rp);
 	PetscPrintf(PETSC_COMM_WORLD,"    Phase [%lld]: (sweak) cohesion SoftLaw = %lld [ ], friction SoftLaw = %lld [ ] \n", (LLD)(m->ID),(LLD)chSoftID, (LLD)frSoftID);
 	PetscPrintf(PETSC_COMM_WORLD,"    Phase [%lld]: (temp ) alpha = %g %s, cp = %g %s, k = %g %s, A = %g %s \n", (LLD)(m->ID),m->alpha, lbl_alpha, m->Cp, lbl_cp,m->k, lbl_k, m->A, lbl_A);
 	// Darcy
-	PetscPrintf(PETSC_COMM_WORLD,"    Phase [%lld]: (darcy) (darcy) rhol = %g %s, mu = %g %s, Kphi = %g %s , Ssl = %g %s \n", (LLD)(m->ID), m->rhol, lbl_rho, m->mul, lbl_mul, m->Kphi, lbl_Kphi, m->Ss, lbl_Ss);
+	PetscPrintf(PETSC_COMM_WORLD,"    Phase [%lld]: (darcy) (darcy) liquid density = %g %s, liquid viscosity = %g %s, permeability = %g %s, matrix compressibility = %g %s, liquid compressibility = %g %s, porosity = %g [ ], tensile strength = %g %s\n", (LLD)(m->ID), m->rhol, lbl_rho, m->mul, lbl_eta, m->Kphi, lbl_Kphi, m->betam, lbl_beta, m->betal, lbl_beta, m->Phi, m->TS, lbl_tau);
+	PetscPrintf(PETSC_COMM_WORLD,"    Phase [%lld]: (darcy) (undrained values) undrained poisson ratio = %g [ ], undrained permeability = %g %s , undrained porosity = %g [ ]\n", (LLD)(m->ID), m->nuu, m->Kphiu, lbl_Kphi, m->Phiu);
 	PetscPrintf(PETSC_COMM_WORLD,"    \n");
 
 	PetscFunctionReturn(0);

@@ -309,6 +309,14 @@ PetscErrorCode LaMEMLib(ModParam *IOparam)
 	{
 		PetscPrintf(PETSC_COMM_WORLD,"Time step %lld -------------------------------------------------------- \n", (LLD)JacResGetStep(&jr));
 
+		/*// To remove
+			if (jr.ts.istep == 10)  {
+				jr.ts.dt 	= 1.0;
+		    }
+		//*/
+
+
+
 		//====================================
 		//	NONLINEAR THERMO-MECHANICAL SOLVER
 		//====================================
@@ -334,6 +342,8 @@ PetscErrorCode LaMEMLib(ModParam *IOparam)
 			ierr = SolveDarcyKSP(&jr);				CHKERRQ(ierr);		// solve linear problem
 
 			ierr = JacResUpdateDarcy(&jr);			CHKERRQ(ierr);
+
+			//JacResUpdateDarcyPermeability(&jr);
 		}
 
 		if(user.SkipStokesSolver != PETSC_TRUE)

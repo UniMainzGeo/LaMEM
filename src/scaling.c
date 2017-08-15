@@ -184,7 +184,7 @@ PetscErrorCode ScalingCreate(Scaling *scal)
 		scal->expansivity         = 1.0;
 		// Darcy
 		scal->permeability        = 1.0;   sprintf(scal->lbl_permeability,     "[ ]");
-		scal->storage        	  = 1.0;   sprintf(scal->lbl_storage,     	   "[ ]");
+		//scal->storage        	  = 1.0;   sprintf(scal->lbl_storage,     	   "[ ]");
 
 	}
 	else if(scal->utype == _SI_)
@@ -239,7 +239,7 @@ PetscErrorCode ScalingCreate(Scaling *scal)
 		scal->expansivity         = 1.0/temperature;
 		// Darcy code
 		scal->permeability        = length*length;            sprintf(scal->lbl_permeability,     "[m2]");
-		scal->storage        	  = 1/stress;            	  sprintf(scal->lbl_storage,     	  "[1/Pa]");
+		//scal->storage        	  = 1/stress;            	  sprintf(scal->lbl_storage,     	  "[1/Pa]");
 
 	}
 	else if(scal->utype == _GEO_)
@@ -304,7 +304,7 @@ PetscErrorCode ScalingCreate(Scaling *scal)
 
 		// Darcy code
 		scal->permeability        = length*length;            sprintf(scal->lbl_permeability,     "[m2]");
-		scal->storage        	  = 1/stress;            	  sprintf(scal->lbl_storage,          "[1/Pa]");
+		//scal->storage        	  = 1/stress;            	  sprintf(scal->lbl_storage,          "[1/Pa]");
 
 	}
 
@@ -450,7 +450,11 @@ void ScalingMatProp(Scaling *scal, Material_t *phases, PetscInt numPhases)
 		phases[i].rhol     /= scal->density;
 		phases[i].mul      /= scal->viscosity;
 		phases[i].Kphi     /= scal->permeability;
-		phases[i].Ss       /= scal->storage;
+		//phases[i].Ss       /= scal->storage;
+		phases[i].betam    *= scal->stress_si; // [1/Pa]
+		phases[i].betal    *= scal->stress_si; // [1/Pa]
+		phases[i].TS       /= scal->stress_si;
+		phases[i].Kphiu    /= scal->permeability;
 	}
 }
 //---------------------------------------------------------------------------

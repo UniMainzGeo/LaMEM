@@ -802,7 +802,7 @@ PetscErrorCode JacResGetResidual(JacRes *jr)
 	MatParLim  *matLim;
 	PetscInt    iter, numPhases;
 	PetscInt    I1, I2, J1, J2, K1, K2;
-	PetscInt    i, j, k, nx, ny, nz, sx, sy, sz, mx, my, mz;
+	PetscInt    i, j, k, nx, ny, nz, sx, sy, sz, mx, my, mz, l;
 	PetscScalar XX, XX1, XX2, XX3, XX4;
 	PetscScalar YY, YY1, YY2, YY3, YY4;
 	PetscScalar ZZ, ZZ1, ZZ2, ZZ3, ZZ4;
@@ -813,9 +813,9 @@ PetscErrorCode JacResGetResidual(JacRes *jr)
 	PetscScalar gx, gy, gz, tx, ty, tz, sxx, syy, szz, sxy, sxz, syz;
 	PetscScalar J2Inv, theta, rho, IKdt, Tc, pc, pShift, pn, dt, fssa, *grav;
 	PetscScalar ***fx,  ***fy,  ***fz, ***vx,  ***vy,  ***vz, ***gc;
-	PetscScalar ***dxx, ***dyy, ***dzz, ***dxy, ***dxz, ***dyz, ***p, ***T, ***p_lithos, ***p_pore;
+	PetscScalar ***dxx, ***dyy, ***dzz, ***dxy, ***dxz, ***dyz, ***p, ***T, ***p_lithos, ***p_pore, ***p_hydro;
 	PetscScalar eta_creep, eta_viscoplastic;
-	PetscScalar depth, pc_lithos, pc_pore, biot, ptotal;
+	PetscScalar depth, pc_lithos, pc_pore, pc_hydro, biot, ptotal;
 //	PetscScalar alpha, Tn,
 
 	PetscErrorCode ierr;
@@ -865,6 +865,7 @@ PetscErrorCode JacResGetResidual(JacRes *jr)
 	ierr = DMDAVecGetArray(fs->DA_Z,   jr->lvz,  &vz);  CHKERRQ(ierr);
 	ierr = DMDAVecGetArray(fs->DA_CEN, jr->lp_lithos,&p_lithos); CHKERRQ(ierr);
 	ierr = DMDAVecGetArray(fs->DA_CEN, jr->lp_pore,  &p_pore);   CHKERRQ(ierr);
+	ierr = DMDAVecGetArray(fs->DA_CEN, jr->hydro_lPl,  &p_hydro);   CHKERRQ(ierr);
 
 	// compute lithostatic pressure
 	ierr = JacResGetLithoStaticPressure(jr); CHKERRQ(ierr);
@@ -934,8 +935,8 @@ PetscErrorCode JacResGetResidual(JacRes *jr)
 		pc_lithos = p_lithos[k][j][i];
 
 		// access current pore pressure (zero if deactivated)
-		pc_pore = p_pore[k][j][i];
-		//PetscPrintf(PETSC_COMM_WORLD,"p_pore(%i,%i,%i)=%12.12e \n",i,j,k,p_pore[k][j][i] );
+		pc_pore  = p_pore[k][j][i];
+		pc_hydro = p_hydro[k][j][i];
 
 		// compute depth below the free surface
 		depth = jr->avg_topo - COORD_CELL(k, sz, fs->dsz);
@@ -961,9 +962,9 @@ PetscErrorCode JacResGetResidual(JacRes *jr)
 		szz = svCell->szz - ptotal;
 
 		// evaluate volumetric constitutive equations
-		ierr = VolConstEq(svBulk, numPhases, phases, svCell->phRat, matLim, depth, dt, pc-pShift, pc_pore, Tc); CHKERRQ(ierr);
-
-
+		//ierr = VolConstEq(svBulk, numPhases, phases, svCell->phRat, matLim, depth, dt, pc-pShift, pc_pore, Tc); CHKERRQ(ierr);
+		// Darcy: just to do some tests, we add hydrostatic pressure to update material parameters
+		ierr = VolConstEq(svBulk, numPhases, phases, svCell->phRat, matLim, depth, dt, pc-pShift, pc_pore, Tc, pc_hydro); CHKERRQ(ierr);
 
 		// access
 		theta = svBulk->theta; // volumetric strain rate
@@ -1006,8 +1007,11 @@ PetscErrorCode JacResGetResidual(JacRes *jr)
 
 		// mass - currently T-dependency is deactivated
 //		gc[k][j][i] = -IKdt*(pc - pn) - theta + alpha*(Tc - Tn)/dt;
+
         
-        gc[k][j][i] = -IKdt*(pc - pn) - theta;
+       gc[k][j][i] = -IKdt*(pc - pn) - theta;
+	   // ptotal - ptotal_historic
+       //gc[k][j][i] = -IKdt*(ptotal - (pn + biot*svBulk->Pln)) - theta;
         
 	}
 	END_STD_LOOP
@@ -1095,6 +1099,9 @@ PetscErrorCode JacResGetResidual(JacRes *jr)
 
 		// access current pore pressure (x-y plane, i-j indices)
 		pc_pore   = 0.25*(p_pore[k][j][i] + p_pore[k][j][i-1] + p_pore[k][j-1][i] + p_pore[k][j-1][i-1]);
+
+		// access current pore pressure (x-y plane, i-j indices)
+		pc_hydro   = 0.25*(p_hydro[k][j][i] + p_hydro[k][j][i-1] + p_hydro[k][j-1][i] + p_hydro[k][j-1][i-1]);
 
 		// evaluate deviatoric constitutive equations
 		ierr = DevConstEq(svDev, &eta_creep, &eta_viscoplastic, numPhases, phases, svEdge->phRat, matLim, pc_lithos, pc_pore, dt, pc-pShift, Tc); CHKERRQ(ierr);
@@ -1204,6 +1211,9 @@ PetscErrorCode JacResGetResidual(JacRes *jr)
 		// access current pore pressure (x-z plane, i-k indices)
 		pc_pore = 0.25*(p_pore[k][j][i] + p_pore[k][j][i-1] + p_pore[k-1][j][i] + p_pore[k-1][j][i-1]);
 
+		// access current pore pressure (x-y plane, i-j indices)
+		pc_hydro   = 0.25*(p_hydro[k][j][i] + p_hydro[k][j][i-1] + p_hydro[k][j-1][i] + p_hydro[k][j-1][i-1]);
+
 		// evaluate deviatoric constitutive equations
 		ierr = DevConstEq(svDev, &eta_creep, &eta_viscoplastic, numPhases, phases, svEdge->phRat, matLim, pc_lithos, pc_pore, dt, pc-pShift, Tc); CHKERRQ(ierr);
 
@@ -1311,6 +1321,9 @@ PetscErrorCode JacResGetResidual(JacRes *jr)
 
 		// access current pore pressure (y-z plane, j-k indices)
 		pc_pore = 0.25*(p_pore[k][j][i] + p_pore[k][j-1][i] + p_pore[k-1][j][i] + p_pore[k-1][j-1][i]);
+		// access current pore pressure (x-y plane, i-j indices)
+
+		pc_hydro   = 0.25*(p_hydro[k][j][i] + p_hydro[k][j][i-1] + p_hydro[k][j-1][i] + p_hydro[k][j-1][i-1]);
 
 		// evaluate deviatoric constitutive equations
 		ierr = DevConstEq(svDev, &eta_creep, &eta_viscoplastic, numPhases, phases, svEdge->phRat, matLim, pc_lithos, pc_pore, dt, pc-pShift, Tc); CHKERRQ(ierr);
@@ -1354,6 +1367,7 @@ PetscErrorCode JacResGetResidual(JacRes *jr)
 	ierr = DMDAVecRestoreArray(fs->DA_Z,   jr->lvz,  &vz);  CHKERRQ(ierr);
 	ierr = DMDAVecRestoreArray(fs->DA_CEN, jr->lp_lithos, &p_lithos); CHKERRQ(ierr);
 	ierr = DMDAVecRestoreArray(fs->DA_CEN, jr->lp_pore,   &p_pore); CHKERRQ(ierr);
+	ierr = DMDAVecRestoreArray(fs->DA_CEN, jr->hydro_lPl,   &p_hydro); CHKERRQ(ierr);
 
 	// assemble global residuals from local contributions
 	LOCAL_TO_GLOBAL(fs->DA_X, jr->lfx, jr->gfx)

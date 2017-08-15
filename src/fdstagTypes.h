@@ -138,6 +138,7 @@ typedef enum
 	GEOTH,		// Darcy, injection/production
 	FAULT,      // Darcy
 	ROZHKO,     // Darcy
+	PREFRAC,    // Darcy
 	DOMES,      // salt domes 2D
 	ROTATION,   // rotation benchmark 2D
 	RESTART     // restart of simulation
@@ -205,6 +206,8 @@ typedef struct // Improve and put more options
 	PetscInt k;
 	PetscScalar magnitude;
 	PetscScalar increment;
+	PetscScalar tini; // time to start the source
+	PetscScalar tfin; // time to stop the source
 } DarcySourceParam;
 
 // Structure that holds user input data

@@ -135,7 +135,7 @@ typedef struct
 	PetscScalar expansivity;        // 1 / temperature
 	// From Darcy code
 	PetscScalar permeability;       // length*leng
-	PetscScalar storage;            // 1 / stress
+	//PetscScalar storage;            // 1 / stress
 	//PetscScalar flow;				// length*length*length / time
 
 	// output labels
@@ -157,7 +157,7 @@ typedef struct
 
 	// From Darcy code
 	char lbl_permeability    [_lbl_sz_];
-	char lbl_storage    	 [_lbl_sz_];
+	//char lbl_storage    	 [_lbl_sz_];
 
 } Scaling;
 //---------------------------------------------------------------------------

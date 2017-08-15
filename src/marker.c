@@ -146,6 +146,7 @@ PetscErrorCode ADVMarkInit(AdvCtx *actx, UserCtx *user)
 	else if(user->msetup == GEOTH)      { PetscPrintf(PETSC_COMM_WORLD,"%s\n","geoth");           ierr = ADVMarkInitGeoth        (actx, user); CHKERRQ(ierr); }
 	else if(user->msetup == FAULT)      { PetscPrintf(PETSC_COMM_WORLD,"%s\n","fault");           ierr = ADVMarkInitFault        (actx, user); CHKERRQ(ierr); }
 	else if(user->msetup == ROZHKO)     { PetscPrintf(PETSC_COMM_WORLD,"%s\n","rozhko");          ierr = ADVMarkInitRozhko       (actx, user); CHKERRQ(ierr); }
+	else if(user->msetup == PREFRAC)     { PetscPrintf(PETSC_COMM_WORLD,"%s\n","prefrac");        ierr = ADVMarkInitPrefrac       (actx, user); CHKERRQ(ierr); }
 	else if(user->msetup == DOMES)      { PetscPrintf(PETSC_COMM_WORLD,"%s\n","domes");           ierr = ADVMarkInitDomes        (actx, user); CHKERRQ(ierr); }
 	else if(user->msetup == ROTATION)   { PetscPrintf(PETSC_COMM_WORLD,"%s\n","rotation");        ierr = ADVMarkInitRotation     (actx, user); CHKERRQ(ierr); }
 	else if(user->msetup == RESTART)    { PetscPrintf(PETSC_COMM_WORLD,"%s\n","restart");         ierr = BreakReadMark           (actx      ); CHKERRQ(ierr); }
@@ -1543,6 +1544,82 @@ PetscErrorCode ADVMarkInitPipes(AdvCtx *actx, UserCtx *user)
 
 		// assign temperature
 		P->T = Tshift;
+	}
+
+	PetscFunctionReturn(0);
+}
+//---------------------------------------------------------------------------
+#undef __FUNCT__
+#define __FUNCT__ "ADVMarkInitPrefrac"
+PetscErrorCode ADVMarkInitPrefrac(AdvCtx *actx, UserCtx *user)
+{
+	Marker     *P;
+	PetscInt    imark;
+	PetscScalar P1x, P1z, P2x, P2z, P3x, P3z, P4x, P4z, P5x, P5z, P6x, P6z, faultWidth, x, z, Tshift;
+
+	PetscErrorCode ierr;
+	PetscFunctionBegin;
+
+	Tshift = actx->jr->scal.Tshift;
+
+	// set default values
+
+	// fault from point P1 to point P2
+	P1x = 0.0; //(user->W+2.0*user->x_left)/3.0  - (user->W / 5.0) ;
+	P1z = user->H/4.0;
+
+	P2x = user->W / 2.0 - user->W / 5.0; //P1x + 2.0 * (user->W / 5.0);
+	P2z = P1z + user->H/2.0;
+
+	// fault from point P3 to point P4
+	P3x = 0.0; //P1x-user->W / 5.0;
+	P3z = 3000.0; //user->H/4.0;
+
+	P4x = P2x-user->W / 5.0;
+	P4z = P1z + user->H/2.0;
+
+	// fault from point P3 to point P4
+	P3x = -300.0;	//0.0; //P1x-user->W / 5.0;
+	P3z = 2300.0; //user->H/4.0;
+
+	P4x = 1300.0; 	//P2x-user->W / 5.0;
+	P4z = 3600.0; 	//P1z + user->H/2.0;
+
+	P5x = -700.0; //P1x-user->W / 5.0;
+	P5z = 2800.0; //user->H/4.0;
+
+	P6x = 500.0;
+	P6z = 3800.0;
+
+	faultWidth = user->H / 500.0;
+
+	// loop over local markers
+	for(imark = 0; imark < actx->nummark; imark++)
+	{
+		P = &actx->markers[imark];
+
+		// get coordinates
+		x = P->X[0];
+		z = P->X[2];
+
+		// assign phase in layers
+		//if     (  x >  P1x && x <  P2x  && z >= P1z + (x-P1x)/(P2x-P1x)*(P2z-P1z) && z < faultWidth + P1z + (x-P1x)/(P2x-P1x)*(P2z-P1z ) )
+		//{
+		//	P->phase = 1; //fault
+		//}
+		//else
+			if (  x >=  P3x && x <  P4x  && z >= P3z + (x-P3x)/(P4x-P3x)*(P4z-P3z) && z < faultWidth + P3z + (x-P3x)/(P4x-P3x)*(P4z-P3z ) )
+		{
+			P->phase = 2; //fault
+		}
+		else if (  x >=  P5x && x <  P6x  && z >= P5z + (x-P5x)/(P6x-P5x)*(P6z-P5z) && z < faultWidth + P5z + (x-P5x)/(P6x-P5x)*(P6z-P5z ) )
+		{
+			P->phase = 2; //fault
+		}
+		else
+		{
+			P->phase = 1;
+		}
 	}
 
 	PetscFunctionReturn(0);

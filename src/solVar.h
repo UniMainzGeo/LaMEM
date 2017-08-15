@@ -83,8 +83,8 @@ typedef struct
 	Tensor2RS   S;     // deviatoric stress
 	PetscScalar U[3];  // displacement
 	// Darcy
-	PetscScalar Pl;  // liquid pressure
-
+	PetscScalar Pl;    // liquid pressure
+	//PetscInt    fail;  // 0 not fails, 1 fails in tensile mode, 2 fails in shear fracturing mode
 } Marker;
 
 //---------------------------------------------------------------------------
@@ -103,7 +103,7 @@ typedef struct
 	PetscScalar  dEta;  // dEta/dDII derivative (Jacobian)
 	PetscScalar  fr;    // effective friction coefficient (Jacobian)
 	PetscScalar  yield; // average yield stress in control volume
-
+	PetscInt     fail;  // 0 not fails, 1 fails in tensile mode, 2 fails in shear fracturing mode
 } SolVarDev;
 
 //---------------------------------------------------------------------------
@@ -125,7 +125,8 @@ typedef struct
 	PetscScalar  Rhol;  // liquid density
 	PetscScalar  Pln;    // history liquid pressure
 	PetscScalar  liquidvelocity[3];// liquid flow
-
+	PetscScalar  Ts;    // ensile strength
+	//PetscInt     fail;  // 0 not fails, 1 fails in tensile mode, 2 fails in shear fracturing mode
 } SolVarBulk;
 
 //---------------------------------------------------------------------------
@@ -221,15 +222,17 @@ typedef struct
 	PetscScalar  A;       // radiogenic heat production
 
 	// Darcy/liquid pressure parameters
-	PetscScalar  Kphi;    // permeability
 	PetscScalar  rhol;    // liquid density
 	PetscScalar  mul;     // liquid viscosity
-	PetscScalar  Ss;      // Specific storage
-	////////////
-
-
-	PetscScalar TS; // Tensile strength
-
+	PetscScalar  Kphi;    // permeability
+	PetscScalar  betam;   // matrix compressibility
+	PetscScalar  betal;   // liquid compressibility
+	PetscScalar  Phi;     // porosity
+	//PetscScalar  Ss;      // Specific storage
+	PetscScalar  TS;      // tensile strength
+	PetscScalar  nuu;     // undrained Poisson's ratio
+	PetscScalar  Kphiu;   // undrained permeability
+	PetscScalar  Phiu;    // undrained porosity
 } Material_t;
 
 //---------------------------------------------------------------------------

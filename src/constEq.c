@@ -48,6 +48,7 @@
 #include "constEq.h"
 #include "dfzero.h"
 #include "tools.h"
+#include "scaling.h"
 
 //---------------------------------------------------------------------------
 // * add different viscosity averaging methods (echo info to output)
@@ -202,9 +203,10 @@ PetscErrorCode ConstEqCtxSetup(
 	else         { ctx->taupl = dP*fr + ch; pd = 1; } // Drucker-Prager model for compression*/
 
 	// compute yield stress
-	tensileS = mat->TS; // Tensile strength
-	if(dP >= tensileS) 							{ ctx->taupl = 		 dP*fr + ch; 	pd = 1; } 		// Drucker-Prager model for compression
-	else if (ctx->taupl >= tensileS*fr + ch) 	{ ctx->taupl = tensileS*fr + ch; 	pd = 0; } 		// Von-Mises model for extension
+	tensileS = mat->TS; // Tensile strength - Darcy
+	if(dP >= tensileS) {ctx->taupl =       dP*fr + ch; 	pd = 1;} // Drucker-Prager model for compression
+	else               {ctx->taupl = tensileS*fr + ch; 	pd = 0;} // Von-Mises model for extension
+	//else if (ctx->taupl >= tensileS*fr + ch) {ctx->taupl = tensileS*fr + ch; 	pd = 0;} 	// Von-Mises model for extension
 
 	// correct for ultimate yield stress
 	if(ctx->taupl > lim->tauUlt) { ctx->taupl = lim->tauUlt; pd = 0; }
@@ -262,6 +264,7 @@ PetscErrorCode GetEffVisc(
 	(*DIIpl) = 0.0;
 	(*dEta)  = 0.0;
 	(*fr)    = 0.0;
+
 
 	//==============
 	// INITIAL GUESS
@@ -532,7 +535,8 @@ PetscErrorCode VolConstEq(
 	PetscScalar  dt,        // time step
 	PetscScalar  p,         // pressure
 	PetscScalar  p_pore,    // pore pressure
-	PetscScalar  T)         // temperature
+	PetscScalar  T,         // temperature
+	PetscScalar  p_hydro)
 {
 	// Evaluate volumetric constitutive equations in control volume
 /*
@@ -605,7 +609,8 @@ PetscErrorCode VolConstEq(
 */
 	PetscInt     i;
 	Material_t  *mat;
-	PetscScalar  cf_comp, cf_therm, Kavg, rho, p_total, dP, tensileS, pn, theta;
+	PetscScalar cf_comp, cf_therm, Kavg, rho, p_total, dP;
+	PetscScalar tS, pn, theta, max_overpressure, min_overpressure, nuu, nud, Ku, Kd, Kc, aux;
 
 	PetscFunctionBegin;
 
@@ -614,10 +619,14 @@ PetscErrorCode VolConstEq(
 	svBulk->alpha = 0.0;
 	svBulk->IKdt  = 0.0;
 	Kavg          = 0.0;
+	// Darcy, initialize tensile strength
+	svBulk->Ts    = 0.0;
 
-	// Liquid-pressure/Darcy
-	svBulk->Kphi   = 0.0;
-	svBulk->Rhol   = 0.0;
+	// Darcy
+	if(lim->actPorePres != PETSC_TRUE) p_pore = 0.0;
+	p_total = p + lim->biot*p_pore;
+	dP = p_total - p_pore;
+	pn = svBulk->pn;    		   // pressure history
 
 	// scan all phases
 	for(i = 0; i < numPhases; i++)
@@ -636,7 +645,37 @@ PetscErrorCode VolConstEq(
 			// ro/ro_0 = (1 + K'*P/K)^(1/K')
 			if(mat->K)
 			{
-				Kavg += phRat[i]*mat->K;
+				///////////////////////// Darcy: just to do some tests
+				if(lim->actPorePres != PETSC_TRUE) p_pore = 0.0;
+				tS  = mat->TS;                                          // tensile strength
+				nud = mat->nu;                                          // poisson ratio (drained)
+				nuu = mat->nuu;                                         // undrained poisson ratio
+				Kd  = mat->K;                                           // drained bulk modulus
+				if (nuu) Ku  = 2.0*mat->G*(1.0+nuu)/3.0/(1.0-2.0*nuu);  // undrained bulk modulus
+				else     Ku  = Kd;
+				min_overpressure = p_hydro;
+				max_overpressure = p_total-tS;
+				if (p_pore >= min_overpressure && p_pore < max_overpressure)
+				{
+					Kc = Kd + (Ku - Kd)/(max_overpressure-min_overpressure)*(p_pore-min_overpressure);
+					if (Kc > Ku || Kc < Kd )
+					{
+						//!!!!
+						Kc = Kd;
+					}
+				}
+				else if (p_pore < min_overpressure)
+				{
+					Kc = Kd;
+				}
+				else
+				{
+					// Tensile failure
+					Kc = Ku;
+				}
+				Kavg += phRat[i]*Kc;
+				////////////////////////
+				//Kavg += phRat[i]*mat->K;
 
 				if(mat->Kp) cf_comp = pow(1.0 + mat->Kp*(p/mat->K), 1.0/mat->Kp);
 				else        cf_comp = 1.0 + p/mat->K;
@@ -671,36 +710,12 @@ PetscErrorCode VolConstEq(
 			// update density, thermal expansion & inverse bulk elastic viscosity
 			svBulk->rho   += phRat[i]*rho;
 			svBulk->alpha += phRat[i]*mat->alpha;
-
-			// Liquid-pressure/Darcy
-			svBulk->Kphi   +=phRat[i]*mat->Kphi;
-			svBulk->Rhol   +=phRat[i]*mat->rhol;
+			// Darcy, update tensile strength
+			svBulk->Ts    += phRat[i]*mat->TS;
 		}
 	}
 
 	if(Kavg) svBulk->IKdt = 1.0/Kavg/dt;
-
-
-
-
-	/*if(lim->actPorePres != PETSC_TRUE) p_pore = 0.0;
-
-	p_total = p + lim->biot*p_pore;
-
-	dP = (p_total - p_pore);
-
-	tensileS = mat->TS; // Tensile strength
-	if(dP < tensileS )
-	{
-		pn = svBulk->pn;    		// pressure history
-		theta = svBulk->theta;		// volumetric strain rate
-
-		// dP = tensileS
-		p  = tensileS - lim->biot*p_pore + p_pore;
-		svBulk->IKdt = theta/(pn-p_total);
-	}*/
-
-
 
 	PetscFunctionReturn(0);
 }
