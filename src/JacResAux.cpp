@@ -802,7 +802,7 @@ PetscErrorCode JacResGetPermea(JacRes *jr, PetscInt bgPhase, PetscInt step)
 	Material_t  *phases;
 	Scaling     *scal;
 	PetscInt    i, j, k, nx, ny, nz, sx, sy, sz;
-	PetscScalar ***vz, nZFace, lvel, gvel, dp, eta, ks;
+	PetscScalar ***vz, nZFace, lvel, gvel, dp, eta, ks, bz, ez;
 
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
@@ -816,6 +816,9 @@ PetscErrorCode JacResGetPermea(JacRes *jr, PetscInt bgPhase, PetscInt step)
 	phases = jr->dbm->phases;
 	scal   = jr->scal;
 
+	// get grid bounds in z-direction
+	ierr = FDSTAGGetGlobalBox(fs, NULL, NULL, &bz, NULL, NULL, &ez); CHKERRQ(ierr);
+
 	// get total number of z-faces
 	nZFace = (PetscScalar)(fs->dsx.tcels*fs->dsy.tcels*fs->dsz.tnods);
 
@@ -823,7 +826,7 @@ PetscErrorCode JacResGetPermea(JacRes *jr, PetscInt bgPhase, PetscInt step)
 	eta = 1.0/(2.0*phases[bgPhase].Bd);
 
 	// get pressure gradient
-	dp = bc->pbot - bc->ptop;
+	dp = (bc->pbot - bc->ptop)/(ez-bz);
 
 	// get local grid sizes
 	ierr = DMDAGetCorners(fs->DA_Z, &sx, &sy, &sz, &nx, &ny, &nz); CHKERRQ(ierr);
@@ -862,6 +865,8 @@ PetscErrorCode JacResGetPermea(JacRes *jr, PetscInt bgPhase, PetscInt step)
 
 	// compute permeability
 	ks = gvel*eta/dp;
+
+	ks = PetscAbsScalar(ks);
 
 	// output to the file
 	if(ISRankZero(PETSC_COMM_WORLD))
