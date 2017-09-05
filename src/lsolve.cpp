@@ -582,6 +582,7 @@ PetscErrorCode PCStokesUserDestroy(PCStokes pc)
 #define __FUNCT__ "PCStokesUserSetup"
 PetscErrorCode PCStokesUserSetup(PCStokes pc)
 {
+	PetscBool    flg;
 	PCStokesUser *user;
 	PMatMono     *P;
 
@@ -596,8 +597,13 @@ PetscErrorCode PCStokesUserSetup(PCStokes pc)
 	ierr = PCSetOperators(user->pc, P->A, P->A);  CHKERRQ(ierr);
 	ierr = PCSetUp(user->pc);                     CHKERRQ(ierr);
 
-	ierr = PCView(user->pc, PETSC_VIEWER_STDOUT_SELF); CHKERRQ(ierr);
+	// inspect preconditioner if requested
+	ierr = PetscOptionsHasName(NULL, NULL, "-pc_view", &flg); CHKERRQ(ierr);
 
+	if(flg == PETSC_TRUE)
+	{
+		ierr = PCView(user->pc, PETSC_VIEWER_STDOUT_SELF); CHKERRQ(ierr);
+	}
 
 	PetscFunctionReturn(0);
 }
