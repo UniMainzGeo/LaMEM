@@ -237,8 +237,12 @@ PetscErrorCode DBoxReadCreate(DBox *dbox, Scaling *scal, FB *fb)
 
 	if(dbox->num)
 	{
-		ierr = getScalarParam(fb, _REQUIRED_, "dbox_bounds",  dbox->bounds, 6*dbox->num, scal->time    ); CHKERRQ(ierr);
-		ierr = getScalarParam(fb, _REQUIRED_, "dbox_zvel",   &dbox->zvel,   1,           scal->velocity); CHKERRQ(ierr);
+		ierr = getScalarParam(fb, _REQUIRED_, "dbox_bounds",  dbox->bounds, 6*dbox->num, scal->length  ); 	CHKERRQ(ierr);
+		ierr = getScalarParam(fb, _REQUIRED_, "dbox_zvel",    &dbox->zvel,   1,           scal->velocity); 	CHKERRQ(ierr);
+		
+		dbox->advect_box=1;
+		ierr = getIntParam(fb, _OPTIONAL_, "dbox_advect",     &dbox->advect_box,   1,           1); 		CHKERRQ(ierr);	// advect box (=1) or not? Default is yes
+		
 
 	}
 
@@ -1290,15 +1294,17 @@ PetscErrorCode BCApplyDBox(BCCtx *bc)
 	// copy original coordinates
 	ierr = PetscMemcpy(bounds, dbox->bounds, (size_t)(6*dbox->num)*sizeof(PetscScalar)); CHKERRQ(ierr);
 
-	// integrate box positions
+	// integrate box positions (if requested)
 	t  = bc->ts->time;
 	vz = dbox->zvel;
 
-	for(jj = 0; jj < dbox->num; jj++)
-	{
-		pbounds     = bounds + 6*jj;
-		pbounds[4] += t*vz;
-		pbounds[5] += t*vz;
+	if (dbox->advect_box==1){	
+		for(jj = 0; jj < dbox->num; jj++)
+		{
+			pbounds     = bounds + 6*jj;
+			pbounds[4] += t*vz;
+			pbounds[5] += t*vz;
+		}
 	}
 
 	// access velocity constraint vectors
