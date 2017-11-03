@@ -391,7 +391,7 @@ PetscErrorCode MGLevelRestrictEta(MGLevel *lvl, MGLevel *fine)
 //---------------------------------------------------------------------------
 #undef __FUNCT__
 #define __FUNCT__ "MGLevelRestrictBC"
-PetscErrorCode MGLevelRestrictBC(MGLevel *lvl, MGLevel *fine)
+PetscErrorCode MGLevelRestrictBC(MGLevel *lvl, MGLevel *fine, PetscBool no_restric_bc)
 {
 	// restrict boundary condition vectors from fine to coarse level
 
@@ -409,6 +409,9 @@ PetscErrorCode MGLevelRestrictBC(MGLevel *lvl, MGLevel *fine)
 	ierr = VecSet(lvl->bcvy, DBL_MAX); CHKERRQ(ierr);
 	ierr = VecSet(lvl->bcvz, DBL_MAX); CHKERRQ(ierr);
 	ierr = VecSet(lvl->bcp,  DBL_MAX); CHKERRQ(ierr);
+
+	// check activation
+	if(no_restric_bc == PETSC_TRUE) PetscFunctionReturn(0);
 
 	// access index vectors in fine grid
 	ierr = DMDAVecGetArray(fine->DA_X,   fine->dof.ivx, &ivx);   CHKERRQ(ierr);
@@ -1764,6 +1767,9 @@ PetscErrorCode MGCreate(MG *mg, JacRes *jr)
 	// store finest grid context
 	mg->jr = jr;
 
+	// set boundary constraint restriction flag
+	ierr = PetscOptionsHasName(NULL, NULL, "-gmg_no_restric_bc", &mg->no_restric_bc); CHKERRQ(ierr);
+
 	// check multigrid mesh restrictions & get actual number of levels
 	ierr = MGGetNumLevels(mg); CHKERRQ(ierr);
 
@@ -1899,11 +1905,11 @@ PetscErrorCode MGSetup(MG *mg, Mat A)
 
 	for(i = 1; i < mg->nlvl; i++)
 	{
-		ierr = MGLevelRestrictBC   (&mg->lvls[i], &mg->lvls[i-1]); CHKERRQ(ierr);
-		ierr = MGLevelRestrictEta  (&mg->lvls[i], &mg->lvls[i-1]); CHKERRQ(ierr);
-		ierr = MGLevelAverageEta   (&mg->lvls[i]);                 CHKERRQ(ierr);
-		ierr = MGLevelSetupRestrict(&mg->lvls[i], &mg->lvls[i-1]); CHKERRQ(ierr);
-		ierr = MGLevelSetupProlong (&mg->lvls[i], &mg->lvls[i-1]); CHKERRQ(ierr);
+		ierr = MGLevelRestrictBC   (&mg->lvls[i], &mg->lvls[i-1], mg->no_restric_bc); CHKERRQ(ierr);
+		ierr = MGLevelRestrictEta  (&mg->lvls[i], &mg->lvls[i-1]);                    CHKERRQ(ierr);
+		ierr = MGLevelAverageEta   (&mg->lvls[i]);                                    CHKERRQ(ierr);
+		ierr = MGLevelSetupRestrict(&mg->lvls[i], &mg->lvls[i-1]);                    CHKERRQ(ierr);
+		ierr = MGLevelSetupProlong (&mg->lvls[i], &mg->lvls[i-1]);                    CHKERRQ(ierr);
 	}
 
 	// setup coarse grid solver if necessary

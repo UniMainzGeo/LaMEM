@@ -92,7 +92,7 @@ PetscErrorCode MGLevelRestrictEta(MGLevel *lvl, MGLevel *fine);
 
 PetscErrorCode MGLevelAverageEta(MGLevel *lvl);
 
-PetscErrorCode MGLevelRestrictBC(MGLevel *lvl, MGLevel *fine);
+PetscErrorCode MGLevelRestrictBC(MGLevel *lvl, MGLevel *fine, PetscBool restric_bc);
 
 PetscErrorCode MGLevelSetupRestrict(MGLevel *lvl, MGLevel *fine);
 
@@ -136,7 +136,8 @@ struct MG
 	PC        pc;   // internal preconditioner context
 	JacRes   *jr;   // finest level context
 
-	PetscBool crs_setup; // coarse solver setup flag
+	PetscBool crs_setup;     // coarse solver setup flag
+	PetscBool no_restric_bc; // boundary constraint restriction deactivation flag
 
 };
 
