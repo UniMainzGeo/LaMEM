@@ -988,6 +988,19 @@ PetscErrorCode SetDislProfile(Material_t *m, char name[])
         r                =   0;
     }
 
+	else if (!strcmp(name,"RockSaltReference_BGRa_class3-Braeumer_et_al_2011"))
+    {
+        // Taken from Bräuer et al. (2011) Description of the Gorleben site (PART 4): Geotechnical exploration of the Gorleben salt dome - page 126
+        m->Bn            =   5.2083e-7; // 2^(class==3)/32 * 0.18 * 1/24/3600 * (1MPa^(-1))^5
+        m->n             =   5;
+        m->En            =   54e3;
+        m->Vn            =   0;
+        tensorCorrection =   _UniAxial_;
+        MPa              =   1;
+        C_OH_0           =   1;
+        r                =   0;
+    }
+
     else if (!strcmp(name,"Polycrystalline_Anhydrite-Mueller_and_Briegel(1978)"))
     {
         //
