@@ -608,6 +608,8 @@ PetscErrorCode LaMEMLibSolve(LaMEMLib *lm, void *param)
 	// INITIAL GUESS
 	//==============
 
+	ierr = LaMEMLibInitGuessTemp(lm, snes); CHKERRQ(ierr);
+
 	ierr = LaMEMLibInitGuess(lm, snes); CHKERRQ(ierr);
 
 	//===============
@@ -729,6 +731,35 @@ PetscErrorCode LaMEMLibDryRun(LaMEMLib *lm)
 
 	// save output for inspection
 	ierr = LaMEMLibSaveOutput(lm); CHKERRQ(ierr);
+
+	PetscFunctionReturn(0);
+}
+//---------------------------------------------------------------------------
+#undef __FUNCT__
+#define __FUNCT__ "LaMEMLibInitGuessTemp"
+PetscErrorCode LaMEMLibInitGuessTemp(LaMEMLib *lm, SNES snes)
+{
+/*
+
+	// time step loop for temperature diffusion
+
+	//=============================
+	// Temperature diffusion solver
+	//=============================
+
+	if(!it) PetscFunctionReturn(0);
+
+    if(jr->ctrl.actTemp)
+    {
+    	ierr = JacResGetTempRes(jr);                        CHKERRQ(ierr);
+    	ierr = JacResGetTempMat(jr);                        CHKERRQ(ierr);
+    	ierr = KSPSetOperators(jr->tksp, jr->Att, jr->Att); CHKERRQ(ierr);
+    	ierr = KSPSetUp(jr->tksp);                          CHKERRQ(ierr);
+    	ierr = KSPSolve(jr->tksp, jr->ge, jr->dT);          CHKERRQ(ierr);
+    	ierr = JacResUpdateTemp(jr);                        CHKERRQ(ierr);
+     }
+
+*/
 
 	PetscFunctionReturn(0);
 }
