@@ -190,10 +190,14 @@
 
 	fix_cell_file = ./bc/cdb 
 	
-# Temperature on the top & bottom boundaries
+# temperature on the top & bottom boundaries
 
-	temp_top = 0.0
-	temp_bot = 1300.0;
+	temp_top  = 0.0
+	temp_bot  = 1300.0;
+
+# temperature initial guess flag
+# linear profile between temp_top and temp_bot
+	init_temp = 1;
 
 # Pressure on the top & bottom boundaries
 
@@ -444,6 +448,7 @@
 		Cp        = 1.2e3  # specific heat (capacity)
 		k         = 2.5    # thermal conductivity
 		A         = 1e-9   # radiogenic heat production
+		T         = 100.0  # optional temperature to set within the phase
 	<MaterialEnd>
 
 #===============================================================================

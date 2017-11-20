@@ -55,6 +55,7 @@ using namespace std;
 #include "JacRes.h"
 #include "phase.h"
 #include "tools.h"
+#include "bc.h"
 
 /*
 #START_DOC#
@@ -101,11 +102,14 @@ PetscErrorCode ADVMarkInit(AdvCtx *actx, FB *fb)
 	else if(actx->msetup == _FILES_)      { ierr = ADVMarkInitFiles   (actx, fb); CHKERRQ(ierr); }
 	else if(actx->msetup == _POLYGONS_)   { ierr = ADVMarkInitPolygons(actx, fb); CHKERRQ(ierr); }
 
-	// optionally read temperature from file
-	if(actx->msetup != _FILES_)
-	{
-		ierr = ADVMarkSetTempFromFile(actx, fb); CHKERRQ(ierr);
-	}
+	// optional temperature initialization
+
+	// linear gradient
+
+	// phase-based
+
+	// from file
+	ierr = ADVMarkSetTempFromFile(actx, fb); CHKERRQ(ierr);
 
 	PetscFunctionReturn(0);
 }
@@ -503,6 +507,99 @@ PetscErrorCode ADVMarkSetTempFromFile(AdvCtx *actx, FB *fb)
 	ierr = PetscViewerDestroy(&view_in); CHKERRQ(ierr);
 
 	PrintDone(t);
+
+	PetscFunctionReturn(ierr);
+}
+//---------------------------------------------------------------------------
+
+
+
+#undef __FUNCT__
+#define __FUNCT__ "ADVMarkSetInitTemp"
+PetscErrorCode ADVMarkSetInitTemp(AdvCtx *actx, FB *fb)
+{
+	// initialize temperature on markers based on phase and/or linear gradient
+	FDSTAG      *fs;
+	BCCtx       *bc;
+	Material_t  *phases;
+	PetscInt     i, n, phase_set;
+	PetscScalar  phase_temp[max_num_phases];
+	PetscScalar  dTdz, bz, ez, cz;
+
+	PetscErrorCode ierr;
+	PetscFunctionBegin;
+
+	bc     = actx->jr->bc;
+	fs     = actx->fs;
+	n      = actx->dbm->numPhases;
+	phases = actx->dbm->phases;
+
+	for(i = 0, phase_set = 0; i < n; i++)
+	{
+		if(phases[i].T) { phase_temp[i] = phases[i].T; phase_set = 1; }
+		else              phase_temp[i] = 0.0;
+	}
+
+	// check activation
+	if(!bc->initTemp && !phase_set) PetscFunctionReturn(ierr);
+
+	// get grid coordinate bounds in z-direction
+	ierr = FDSTAGGetGlobalBox(fs, NULL, NULL, &bz, NULL, NULL, &ez); CHKERRQ(ierr);
+
+	// get pressure gradient in z-direction
+	dTdz = (bc->Ttop - bc->Tbot)/(ez - bz);
+
+
+	// loop over markers and set temperature based on phase and/or linear gradient
+
+
+	// get z-coordinate of cell center
+//	cz = COORD_CELL(k, sz, fs->dsz); Z coord of a marker
+
+	// set pressure initial guess
+//	gp[k][j][i] = bc->pbot + dpdz*(cz - bz); T on a marker
+
+
+/*
+	for(imark = 0; imark < nummark; imark++)
+	{
+		// get current marker
+		P = &actx->markers[imark];
+
+		// get global marker coordinates
+		xp = P->X[0];
+		yp = P->X[1];
+		zp = P->X[2];
+
+		// index of the lower left corner of the element (of the temperature grid) in which the particle is
+		Ix = (PetscInt)floor((xp - bx)/DX);
+		Iy = (PetscInt)floor((yp - by)/DY);
+		Iz = (PetscInt)floor((zp - bz)/DZ);
+
+		// coordinate of the first corner (lower left deepest)
+		Xc = bx + (PetscScalar)Ix*DX;
+		Yc = by + (PetscScalar)Iy*DY;
+		Zc = bz + (PetscScalar)Iz*DZ;
+
+		// Local coordinate of the particle inside a temperature element
+		xpL = (xp - Xc)/DX;
+		ypL = (yp - Yc)/DY;
+		zpL = (zp - Zc)/DZ;
+
+		// Interpolate value on the particle using trilinear shape functions
+		P->T = ((
+		(1.0-xpL) * (1.0-ypL) * (1.0-zpL) * Temp[Iz    *nx*ny + Iy     * nx + Ix   ] +
+		 xpL      * (1.0-ypL) * (1.0-zpL) * Temp[Iz    *nx*ny + Iy     * nx + Ix+1 ] +
+		 xpL      *  ypL      * (1.0-zpL) * Temp[Iz    *nx*ny + (Iy+1) * nx + Ix+1 ] +
+		(1.0-xpL) *  ypL      * (1.0-zpL) * Temp[Iz    *nx*ny + (Iy+1) * nx + Ix   ] +
+		(1.0-xpL) * (1.0-ypL) *  zpL      * Temp[(Iz+1)*nx*ny + Iy     * nx + Ix   ] +
+		 xpL      * (1.0-ypL) *  zpL      * Temp[(Iz+1)*nx*ny + Iy     * nx + Ix+1 ] +
+		 xpL      *  ypL      *  zpL      * Temp[(Iz+1)*nx*ny + (Iy+1) * nx + Ix+1 ] +
+		(1.0-xpL) *  ypL      *  zpL      * Temp[(Iz+1)*nx*ny + (Iy+1) * nx + Ix   ] ) + Tshift)/chTemp;
+	}
+*/
+
+
 
 	PetscFunctionReturn(ierr);
 }

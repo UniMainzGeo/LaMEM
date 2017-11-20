@@ -117,6 +117,7 @@ public:
 	PetscScalar  Cp;       // cpecific heat (capacity)                   [J/kg/K]
 	PetscScalar  k;        // thermal conductivity                       [W/m/k]
 	PetscScalar  A;        // radiogenic heat production                 [W/kg]
+	PetscScalar  T;        // optional temperature to set within the phase
 };
 
 //---------------------------------------------------------------------------

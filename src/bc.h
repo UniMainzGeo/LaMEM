@@ -238,6 +238,7 @@ struct BCCtx
 
 	// temperature on top and bottom boundaries
 	PetscScalar  Tbot, Ttop;
+	PetscInt     initTemp;
 
 	//=====================
 	// PRESSURE CONSTRAINTS

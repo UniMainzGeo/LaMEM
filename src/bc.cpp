@@ -348,8 +348,9 @@ PetscErrorCode BCCreate(BCCtx *bc, FB *fb)
 	// TEMPERATURE CONSTRAINTS
 	//========================
 
-	ierr = getScalarParam(fb, _OPTIONAL_, "temp_bot", &bc->Tbot, 1, 1.0); CHKERRQ(ierr);
-	ierr = getScalarParam(fb, _OPTIONAL_, "temp_top", &bc->Ttop, 1, 1.0); CHKERRQ(ierr);
+	ierr = getScalarParam(fb, _OPTIONAL_, "temp_bot",  &bc->Tbot,     1, 1.0); CHKERRQ(ierr);
+	ierr = getScalarParam(fb, _OPTIONAL_, "temp_top",  &bc->Ttop,     1, 1.0); CHKERRQ(ierr);
+	ierr = getIntParam   (fb, _OPTIONAL_, "init_temp", &bc->initTemp, 1, -1);  CHKERRQ(ierr);
 
 	//=====================
 	// PRESSURE CONSTRAINTS

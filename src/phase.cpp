@@ -288,6 +288,7 @@ PetscErrorCode DBMatReadPhase(DBMat *dbm, FB *fb)
 	ierr = getScalarParam(fb, _OPTIONAL_, "Cp",       &m->Cp,    1, 1.0); CHKERRQ(ierr);
 	ierr = getScalarParam(fb, _OPTIONAL_, "k",        &m->k,     1, 1.0); CHKERRQ(ierr);
 	ierr = getScalarParam(fb, _OPTIONAL_, "A",        &m->A,     1, 1.0); CHKERRQ(ierr);
+	ierr = getScalarParam(fb, _OPTIONAL_, "T",        &m->T,     1, 1.0); CHKERRQ(ierr);
 	//=================================================================================
 
 	// DEPTH-DEPENDENT
@@ -453,6 +454,7 @@ PetscErrorCode DBMatReadPhase(DBMat *dbm, FB *fb)
 	MatPrintScalParam(m->Cp,    "Cp",    "[J/kg/K]", scal, title, &print_title);
 	MatPrintScalParam(m->k,     "k",     "[W/m/k]",  scal, title, &print_title);
 	MatPrintScalParam(m->A,     "A",     "[W/kg]",   scal, title, &print_title);
+	MatPrintScalParam(m->T,     "T",     "[C]",      scal, title, &print_title);
 	PetscPrintf(PETSC_COMM_WORLD,"\n\n");
 
 	// SCALE
@@ -490,6 +492,7 @@ PetscErrorCode DBMatReadPhase(DBMat *dbm, FB *fb)
 	m->Cp    /= scal->cpecific_heat;
 	m->k     /= scal->conductivity;
 	m->A     /= scal->heat_production;
+	m->T      = (m->T + scal->Tshift)/scal->temperature;
 
 	PetscFunctionReturn(0);
 }
