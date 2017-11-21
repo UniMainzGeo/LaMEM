@@ -361,7 +361,7 @@ PetscErrorCode JacResUpdateTemp(JacRes *jr);
 PetscErrorCode JacResApplyTempBC(JacRes *jr);
 
 // compute temperature residual vector
-PetscErrorCode JacResGetTempRes(JacRes *jr);
+PetscErrorCode JacResGetTempRes(JacRes *jr, PetscScalar dt);
 
 // assemble temperature preconditioner matrix
 PetscErrorCode JacResGetTempMat(JacRes *jr);

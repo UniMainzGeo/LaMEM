@@ -395,7 +395,7 @@ PetscErrorCode JacResApplyTempBC(JacRes *jr)
 //---------------------------------------------------------------------------
 #undef __FUNCT__
 #define __FUNCT__ "JacResGetTempRes"
-PetscErrorCode JacResGetTempRes(JacRes *jr)
+PetscErrorCode JacResGetTempRes(JacRes *jr, PetscScalar dt)
 {
 	// compute temperature residual vector
 
@@ -411,7 +411,7 @@ PetscErrorCode JacResGetTempRes(JacRes *jr)
 	PetscScalar bdx, fdx, bdy, fdy, bdz, fdz;
 	PetscScalar bqx, fqx, bqy, fqy, bqz, fqz;
  	PetscScalar dx, dy, dz;
-	PetscScalar kc, rho_Cp, rho_A, Tc, Tn, dt, Hr;
+	PetscScalar kc, rho_Cp, rho_A, Tc, Tn, Hr;
 	PetscScalar ***ge, ***lT, ***lk, ***hxy, ***hxz, ***hyz, ***buff, *e;
 
 	PetscErrorCode ierr;
@@ -419,7 +419,6 @@ PetscErrorCode JacResGetTempRes(JacRes *jr)
 
 	// access residual context variables
 	fs        = jr->fs;
-	dt        = jr->ts->dt;     // time step
 	bc        = jr->bc;
 	num       = bc->tNumSPC;
 	list      = bc->tSPCList;

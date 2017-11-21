@@ -134,8 +134,11 @@ PetscErrorCode ADVMarkCheckMarkers(AdvCtx *actx);
 // initialize temperature on markers redundantly form file
 PetscErrorCode ADVMarkSetTempFromFile(AdvCtx *actx, FB *fb);
 
-// initialize temperature on markers based on phase and/or linear gradient
-PetscErrorCode ADVMarkSetInitTemp(AdvCtx *actx, FB *fb);
+// initialize temperature on markers based on linear gradient
+PetscErrorCode ADVMarkSetInitTempProf(AdvCtx *actx);
+
+// initialize temperature on markers based on phase temperature
+PetscErrorCode ADVMarkSetInitTempPhs(AdvCtx *actx);
 
 //---------------------------------------------------------------------------
 

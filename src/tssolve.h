@@ -75,7 +75,7 @@ struct TSSol
 	PetscInt    fix_dt;     // flag to keep time steps fixed for advection (elasticity, kinematic block BC)
 	PetscInt    istep;      // time step counter
 	PetscScalar time_diff;  // initial temperature diffusion time
-	PetscScalar nstep_diff; // number of time steps for thermal diffusion
+	PetscInt    nstep_diff; // number of time steps for thermal diffusion
 };
 
 //---------------------------------------------------------------------------

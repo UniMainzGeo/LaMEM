@@ -72,19 +72,22 @@ PetscErrorCode TSSolCreate(TSSol *ts, FB *fb)
 	ts->tol       = 1e-8;
 
 	// read parameters
-	ierr = getScalarParam(fb, _OPTIONAL_, "time_end",  &ts->time_end,  1, time);  CHKERRQ(ierr);
-	ierr = getScalarParam(fb, _REQUIRED_, "dt_max",    &ts->dt_max,    1, time);  CHKERRQ(ierr);
-	ierr = getScalarParam(fb, _OPTIONAL_, "dt",        &ts->dt,        1, time);  CHKERRQ(ierr);
-	ierr = getScalarParam(fb, _OPTIONAL_, "dt_min",    &ts->dt_min,    1, time);  CHKERRQ(ierr);
-	ierr = getScalarParam(fb, _OPTIONAL_, "dt_out",    &ts->dt_out,    1, time);  CHKERRQ(ierr);
-	ierr = getScalarParam(fb, _OPTIONAL_, "inc_dt",    &ts->inc_dt,    1, 1.0 );  CHKERRQ(ierr);
-	ierr = getScalarParam(fb, _OPTIONAL_, "CFL",       &ts->CFL,       1, 1.0 );  CHKERRQ(ierr);
-	ierr = getScalarParam(fb, _OPTIONAL_, "CFLMAX",    &ts->CFLMAX,    1, 1.0 );  CHKERRQ(ierr);
-	ierr = getIntParam   (fb, _OPTIONAL_, "nstep_max", &ts->nstep_max, 1, -1  );  CHKERRQ(ierr);
-	ierr = getIntParam   (fb, _OPTIONAL_, "nstep_out", &ts->nstep_out, 1, -1  );  CHKERRQ(ierr);
-	ierr = getIntParam   (fb, _OPTIONAL_, "nstep_ini", &ts->nstep_ini, 1, -1  );  CHKERRQ(ierr);
-	ierr = getIntParam   (fb, _OPTIONAL_, "nstep_rdb", &ts->nstep_rdb, 1, -1  );  CHKERRQ(ierr);
-	ierr = getScalarParam(fb, _OPTIONAL_, "time_tol",  &ts->tol,       1, 1.0 );  CHKERRQ(ierr);
+	ierr = getScalarParam(fb, _OPTIONAL_, "time_end",  &ts->time_end,   1, time);  CHKERRQ(ierr);
+	ierr = getScalarParam(fb, _REQUIRED_, "dt_max",    &ts->dt_max,     1, time);  CHKERRQ(ierr);
+	ierr = getScalarParam(fb, _OPTIONAL_, "dt",        &ts->dt,         1, time);  CHKERRQ(ierr);
+	ierr = getScalarParam(fb, _OPTIONAL_, "dt_min",    &ts->dt_min,     1, time);  CHKERRQ(ierr);
+	ierr = getScalarParam(fb, _OPTIONAL_, "dt_out",    &ts->dt_out,     1, time);  CHKERRQ(ierr);
+	ierr = getScalarParam(fb, _OPTIONAL_, "inc_dt",    &ts->inc_dt,     1, 1.0 );  CHKERRQ(ierr);
+	ierr = getScalarParam(fb, _OPTIONAL_, "CFL",       &ts->CFL,        1, 1.0 );  CHKERRQ(ierr);
+	ierr = getScalarParam(fb, _OPTIONAL_, "CFLMAX",    &ts->CFLMAX,     1, 1.0 );  CHKERRQ(ierr);
+	ierr = getIntParam   (fb, _OPTIONAL_, "nstep_max", &ts->nstep_max,  1, -1  );  CHKERRQ(ierr);
+	ierr = getIntParam   (fb, _OPTIONAL_, "nstep_out", &ts->nstep_out,  1, -1  );  CHKERRQ(ierr);
+	ierr = getIntParam   (fb, _OPTIONAL_, "nstep_ini", &ts->nstep_ini,  1, -1  );  CHKERRQ(ierr);
+	ierr = getIntParam   (fb, _OPTIONAL_, "nstep_rdb", &ts->nstep_rdb,  1, -1  );  CHKERRQ(ierr);
+	ierr = getScalarParam(fb, _OPTIONAL_, "time_tol",  &ts->tol,        1, 1.0 );  CHKERRQ(ierr);
+	ierr = getScalarParam(fb, _OPTIONAL_, "time_diff", &ts->time_diff,  1, 1.0 );  CHKERRQ(ierr);
+	ierr = getIntParam   (fb, _OPTIONAL_, "nstep_diff",&ts->nstep_diff,1, -1  );  CHKERRQ(ierr);
+
 
 	if(ts->CFL < 0.0 && ts->CFL > 1.0)
 	{

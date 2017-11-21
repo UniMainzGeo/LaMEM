@@ -2065,7 +2065,7 @@ PetscErrorCode JacResViewRes(JacRes *jr)
 
 	if(jr->ctrl.actTemp)
 	{
-		ierr = JacResGetTempRes(jr);         CHKERRQ(ierr);
+		ierr = JacResGetTempRes(jr,jr->ts->dt);         CHKERRQ(ierr);
 		ierr = VecNorm(jr->ge, NORM_2, &e2); CHKERRQ(ierr);
 	}
 

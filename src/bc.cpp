@@ -361,6 +361,11 @@ PetscErrorCode BCCreate(BCCtx *bc, FB *fb)
 	ierr = getIntParam   (fb, _OPTIONAL_, "init_pres", &bc->initPres, 1, -1);  CHKERRQ(ierr);
 
 	// CHECK
+	if((bc->Tbot == bc->Ttop) && bc->initTemp)
+	{
+		SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "Top and bottom temperatures (Tbot,Ttop) are incompatible with request of initial temperature profile (initTemp) \n");
+	}
+
 	if(bc->top_open && bc->noslip[5])
 	{
 		SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "No-slip condition is incompatible with open boundary (open_top_bound, noslip) \n");

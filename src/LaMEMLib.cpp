@@ -608,7 +608,7 @@ PetscErrorCode LaMEMLibSolve(LaMEMLib *lm, void *param)
 	// INITIAL GUESS
 	//==============
 
-	ierr = LaMEMLibInitGuessTemp(lm, snes); CHKERRQ(ierr);
+	ierr = LaMEMLibInitGuessTemp(lm); CHKERRQ(ierr);
 
 	ierr = LaMEMLibInitGuess(lm, snes); CHKERRQ(ierr);
 
@@ -737,29 +737,64 @@ PetscErrorCode LaMEMLibDryRun(LaMEMLib *lm)
 //---------------------------------------------------------------------------
 #undef __FUNCT__
 #define __FUNCT__ "LaMEMLibInitGuessTemp"
-PetscErrorCode LaMEMLibInitGuessTemp(LaMEMLib *lm, SNES snes)
+PetscErrorCode LaMEMLibInitGuessTemp(LaMEMLib *lm)
 {
-/*
+	JacRes     *jr;
+	TSSol      *ts;
+	Scaling    *scal;
+	PetscInt    i;
+	PetscScalar dt;
+
+	PetscErrorCode ierr;
+	PetscFunctionBegin;
+
+	// Timestep solver context
+	jr = &lm->jr;
+	ts = jr->ts;
+	scal = &lm->scal;
+	
+	// Return if no diffusion timesteps are given
+	if(ts->nstep_diff==0) PetscFunctionReturn(0);
+
+
+
+
+
+	// modify timestep according to diffusion time an dnumber of diffusion timesteps
+	dt = ts->time_diff/ts->nstep_diff;
+	
+
 
 	// time step loop for temperature diffusion
+	for (i=0;i<ts->nstep_diff;i++)
+	{
+		//=============================
+		// Temperature diffusion solver
+		//=============================
+		
+		if(jr->ctrl.actTemp)
+		{
+			ierr = JacResGetTempRes(jr, dt);                    CHKERRQ(ierr);
+			ierr = JacResGetTempMat(jr);                        CHKERRQ(ierr);
+			ierr = KSPSetOperators(jr->tksp, jr->Att, jr->Att); CHKERRQ(ierr);
+			ierr = KSPSetUp(jr->tksp);                          CHKERRQ(ierr);
+			ierr = KSPSolve(jr->tksp, jr->ge, jr->dT);          CHKERRQ(ierr);
+			ierr = JacResUpdateTemp(jr);                        CHKERRQ(ierr);
+		}
 
-	//=============================
-	// Temperature diffusion solver
-	//=============================
 
-	if(!it) PetscFunctionReturn(0);
-
-    if(jr->ctrl.actTemp)
-    {
-    	ierr = JacResGetTempRes(jr);                        CHKERRQ(ierr);
-    	ierr = JacResGetTempMat(jr);                        CHKERRQ(ierr);
-    	ierr = KSPSetOperators(jr->tksp, jr->Att, jr->Att); CHKERRQ(ierr);
-    	ierr = KSPSetUp(jr->tksp);                          CHKERRQ(ierr);
-    	ierr = KSPSolve(jr->tksp, jr->ge, jr->dT);          CHKERRQ(ierr);
-    	ierr = JacResUpdateTemp(jr);                        CHKERRQ(ierr);
-     }
-
-*/
+		if(i == ts->nstep_diff)
+		{
+			PetscPrintf(PETSC_COMM_WORLD, "Initial temperature is set up\n");
+			PetscPrintf(PETSC_COMM_WORLD, "--------------------------------------------------------------------------\n");
+		}
+		else
+		{
+			// output time step information
+			PetscPrintf(PETSC_COMM_WORLD, "--------------------------------------------------------------------------\n");
+			PetscPrintf(PETSC_COMM_WORLD, "Current time        : %7.5f %s \n", ts->time*scal->time, scal->lbl_time);
+		}
+	}
 
 	PetscFunctionReturn(0);
 }
