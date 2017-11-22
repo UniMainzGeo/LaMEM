@@ -492,7 +492,7 @@ PetscErrorCode DBMatReadPhase(DBMat *dbm, FB *fb)
 	m->Cp    /= scal->cpecific_heat;
 	m->k     /= scal->conductivity;
 	m->A     /= scal->heat_production;
-	m->T      = (m->T + scal->Tshift)/scal->temperature;
+	if(m->T)   m->T    = (m->T + scal->Tshift)/scal->temperature;
 
 	PetscFunctionReturn(0);
 }

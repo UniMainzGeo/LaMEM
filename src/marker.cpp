@@ -573,7 +573,7 @@ PetscErrorCode ADVMarkSetInitTempPhs(AdvCtx *actx)
 	n      = actx->dbm->numPhases;
 	phases = actx->dbm->phases;
 	nummark = actx->nummark;
-
+	
 	// set temperature based on phase
 	for(i = 0, phase_set = 0; i < n; i++)
 	{
@@ -583,7 +583,7 @@ PetscErrorCode ADVMarkSetInitTempPhs(AdvCtx *actx)
 	
 
 	// check activation
-	if(!bc->initTemp && !phase_set) PetscFunctionReturn(0);
+	if(!bc->initTemp || !phase_set) PetscFunctionReturn(0);
 
 	for(imark = 0; imark < nummark; imark++)
 	{
