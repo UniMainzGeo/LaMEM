@@ -29,7 +29,13 @@ mv mpiexec mpiexec-bak
 
 Create desktop launcher
 As "command" simply type paraview
-Icon file is supplied
+Icon file can be found in share/icons in paraview installation directory
+
+In KDE icon can be created with right-click on Apllication Launcher and selecting Edit Apllication
+Add New Item, provide command and icon
+Application icon will appear in Application menu.
+It can be added to the panel by right click and selecting  Add to panel
+Widgets should be unlocked
 
 ------------------------------------------------------------------
 MATLAB
@@ -40,24 +46,22 @@ Mount MATLAB .iso file
 sudo mkdir /media/disk
 sudo mount -o loop PATH_TO_MATLAB.iso /media/disk
 
-Start installation with sudo command from terminal
+Start installation with sudo command from terminal (WARNING! from outside of the /media/disk directory!)
 Select install without Internet, copy-paste code, and point to license file
 Select all packages including License Manager
 Choose to create symbolic link for MATLAB starting command
 
-After installation just create desktop launcher after installation
-As "command" type matlab -desktop -singleCompThread
-Icon file is supplied
-
-If you have OpenGl errors at startup, do this:
-
-Rename the file found at " $MATLAB_ROOT$/sys/os/glnxa64/libstdc++.so.6" to "libstdc++.so.6.old"
-
-This will force MATLAB to use system libstdc++ library
-
-MATLAB_ROOT is usually /usr/local/MATLAB/R2015a (depending on your version)
-
 Unmount MATLAB .iso file after installation
 
 sudo umount /media/disk -l
+
+Create desktop launcher
+As "command" type matlab -desktop -singleCompThread
+Icon file is supplied (can be copied to /usr/local/MATLAB for safety)
+
+See above how to create launcher in KDE
+
+If Windows shortcuts are preffered in the editor (ctrl+c, ctr+v), they can be activated in 
+HOME -> Preferences -> Keyboards->Shortcuts-> "Windows Default Set" insted of "Emacs Default Set" 
+
 ------------------------------------------------------------------

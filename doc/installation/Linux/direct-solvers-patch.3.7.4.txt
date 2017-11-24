@@ -1,5 +1,0 @@
-To use the latest SuperLU_DIST and PaStiX solvers in PETSc 3.7.4 override the defaults with the supplied custom scripts.
-
-cp PaStiX.py petsc-3.7.4/config/BuildSystem/config/packages
-cp SuperLU_DIST.py petsc-3.7.4/config/BuildSystem/config/packages
-
