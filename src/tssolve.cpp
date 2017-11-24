@@ -85,9 +85,6 @@ PetscErrorCode TSSolCreate(TSSol *ts, FB *fb)
 	ierr = getIntParam   (fb, _OPTIONAL_, "nstep_ini", &ts->nstep_ini,  1, -1  );  CHKERRQ(ierr);
 	ierr = getIntParam   (fb, _OPTIONAL_, "nstep_rdb", &ts->nstep_rdb,  1, -1  );  CHKERRQ(ierr);
 	ierr = getScalarParam(fb, _OPTIONAL_, "time_tol",  &ts->tol,        1, 1.0 );  CHKERRQ(ierr);
-	ierr = getScalarParam(fb, _OPTIONAL_, "time_diff", &ts->time_diff,  1, 1.0 );  CHKERRQ(ierr);
-	ierr = getIntParam   (fb, _OPTIONAL_, "nstep_diff",&ts->nstep_diff,1, -1  );  CHKERRQ(ierr);
-
 
 	if(ts->CFL < 0.0 && ts->CFL > 1.0)
 	{

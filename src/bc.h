@@ -236,7 +236,7 @@ struct BCCtx
 	// TEMPERATURE CONSTRAINTS
 	//========================
 
-	// temperature on top and bottom boundaries
+	// temperature on top and bottom boundaries and initial guess activation flag
 	PetscScalar  Tbot, Ttop;
 	PetscInt     initTemp;
 

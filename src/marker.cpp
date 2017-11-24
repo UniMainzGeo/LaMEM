@@ -56,6 +56,7 @@ using namespace std;
 #include "phase.h"
 #include "tools.h"
 #include "bc.h"
+#include "surf.h"
 
 /*
 #START_DOC#
@@ -105,10 +106,10 @@ PetscErrorCode ADVMarkInit(AdvCtx *actx, FB *fb)
 	// optional temperature initialization
 
 	// linear gradient
-	ierr = ADVMarkSetInitTempProf(actx); CHKERRQ(ierr);
+	ierr = ADVMarkSetInitTempProfile(actx); CHKERRQ(ierr);
 
 	// phase-based
-	ierr = ADVMarkSetInitTempPhs(actx); CHKERRQ(ierr);
+	ierr = ADVMarkSetInitTempPhase(actx); CHKERRQ(ierr);
 
 	// from file
 	ierr = ADVMarkSetTempFromFile(actx, fb); CHKERRQ(ierr);
@@ -514,8 +515,8 @@ PetscErrorCode ADVMarkSetTempFromFile(AdvCtx *actx, FB *fb)
 }
 //---------------------------------------------------------------------------
 #undef __FUNCT__
-#define __FUNCT__ "ADVMarkSetInitTempProf"
-PetscErrorCode ADVMarkSetInitTempProf(AdvCtx *actx)
+#define __FUNCT__ "ADVMarkSetInitTempProfile"
+PetscErrorCode ADVMarkSetInitTempProfile(AdvCtx *actx)
 {
 	// initialize temperature on markers based on linear gradient
 	FDSTAG      *fs;
@@ -527,8 +528,8 @@ PetscErrorCode ADVMarkSetInitTempProf(AdvCtx *actx)
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
 
-	bc     = actx->jr->bc;
-	fs     = actx->fs;
+	bc      = actx->jr->bc;
+	fs      = actx->fs;
 	nummark = actx->nummark;
 
 	// return if not set
@@ -557,11 +558,10 @@ PetscErrorCode ADVMarkSetInitTempProf(AdvCtx *actx)
 }
 //---------------------------------------------------------------------------
 #undef __FUNCT__
-#define __FUNCT__ "ADVMarkSetInitTempPhs"
-PetscErrorCode ADVMarkSetInitTempPhs(AdvCtx *actx)
+#define __FUNCT__ "ADVMarkSetInitTempPhase"
+PetscErrorCode ADVMarkSetInitTempPhase(AdvCtx *actx)
 {
 	// initialize temperature on markers based on phase temperature
-	BCCtx       *bc;
 	Material_t  *phases;
 	Marker      *P;
 	PetscInt     i, n, phase_set, imark, nummark;
@@ -569,21 +569,20 @@ PetscErrorCode ADVMarkSetInitTempPhs(AdvCtx *actx)
 
 	PetscFunctionBegin;
 
-	bc     = actx->jr->bc;
-	n      = actx->dbm->numPhases;
-	phases = actx->dbm->phases;
-	nummark = actx->nummark;
+	n         = actx->dbm->numPhases;
+	phases    = actx->dbm->phases;
+	nummark   = actx->nummark;
+	phase_set = 0;
 	
 	// set temperature based on phase
-	for(i = 0, phase_set = 0; i < n; i++)
+	for(i = 0; i < n; i++)
 	{
 		if(phases[i].T) { phase_temp[i] = phases[i].T; phase_set = 1; }
 		else              phase_temp[i] = 0.0;
 	}
 	
-
 	// check activation
-	if(!bc->initTemp || !phase_set) PetscFunctionReturn(0);
+	if(!phase_set) PetscFunctionReturn(0);
 
 	for(imark = 0; imark < nummark; imark++)
 	{
@@ -593,6 +592,86 @@ PetscErrorCode ADVMarkSetInitTempPhs(AdvCtx *actx)
 		// assign phase temperature to markers, if initial phase temperature is set 	
 		if(phase_temp[P->phase]) P->T = phase_temp[P->phase];
 	}
+
+	PetscFunctionReturn(0);
+}
+//---------------------------------------------------------------------------
+#undef __FUNCT__
+#define __FUNCT__ "ADVMarkSetInitTempVector"
+PetscErrorCode ADVMarkSetInitTempVector(AdvCtx *actx)
+{
+	FDSTAG      *fs;
+	JacRes      *jr;
+	Marker      *P;
+	PetscInt    sx, sy, sz, nx, ny, jj, ID, I, J, K, II, JJ, KK, AirPhase;
+	PetscScalar *ccx, *ccy, *ccz, ***lT;
+	PetscScalar xc, yc, zc, xp, yp, zp, Ttop;
+
+	PetscErrorCode ierr;
+	PetscFunctionBegin;
+
+	AirPhase = -1;
+	Ttop     =  0.0;
+
+	if(actx->surf->UseFreeSurf)
+	{
+		AirPhase = actx->surf->AirPhase;
+		Ttop     = actx->jr->bc->Ttop;
+	}
+
+	// access context
+	fs = actx->fs;
+	jr = actx->jr;
+
+	// starting indices & number of cells
+	sx = fs->dsx.pstart; nx = fs->dsx.ncels;
+	sy = fs->dsy.pstart; ny = fs->dsy.ncels;
+	sz = fs->dsz.pstart;
+
+	// cell coordinates
+	ccx = fs->dsx.ccoor;
+	ccy = fs->dsy.ccoor;
+	ccz = fs->dsz.ccoor;
+
+	// access temperature vector
+	ierr = DMDAVecGetArray(fs->DA_CEN, jr->lT,  &lT);  CHKERRQ(ierr);
+
+	// scan all markers
+	for(jj = 0; jj < actx->nummark; jj++)
+	{
+		// access next marker
+		P = &actx->markers[jj];
+
+		// get consecutive index of the host cell
+		ID = actx->cellnum[jj];
+
+		// expand I, J, K cell indices
+		GET_CELL_IJK(ID, I, J, K, nx, ny)
+
+		// get marker coordinates
+		xp = P->X[0];
+		yp = P->X[1];
+		zp = P->X[2];
+
+		// get coordinates of cell center
+		xc = ccx[I];
+		yc = ccy[J];
+		zc = ccz[K];
+
+		// map marker on the cells of center grids
+		if(xp > xc) { II = I; } else { II = I-1; }
+		if(yp > yc) { JJ = J; } else { JJ = J-1; }
+		if(zp > zc) { KK = K; } else { KK = K-1; }
+
+		// interpolate temperature on the marker
+		P->T = InterpLin3D(lT, II, JJ, KK,  sx, sy, sz, xp, yp, zp, ccx, ccy, ccz);
+
+		// override temperature of air phase
+		if(AirPhase != -1 && P->phase == AirPhase) P->T = Ttop;
+	}
+
+	// restore access
+	ierr = DMDAVecRestoreArray(fs->DA_CEN, jr->lT,  &lT);  CHKERRQ(ierr);
 
 	PetscFunctionReturn(0);
 }

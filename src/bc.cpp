@@ -363,7 +363,7 @@ PetscErrorCode BCCreate(BCCtx *bc, FB *fb)
 	// CHECK
 	if((bc->Tbot == bc->Ttop) && bc->initTemp)
 	{
-		SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "Top and bottom temperatures (Tbot,Ttop) are incompatible with request of initial temperature profile (initTemp) \n");
+		SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "Top and bottom temperatures give zero initial gradient (Tbot, Ttop, initTemp) \n");
 	}
 
 	if(bc->top_open && bc->noslip[5])

@@ -743,31 +743,35 @@ PetscErrorCode LaMEMLibInitGuessTemp(LaMEMLib *lm)
 	TSSol      *ts;
 	Scaling    *scal;
 	PetscInt    i;
-	PetscScalar dt;
 
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
 
-	// Timestep solver context
-	jr = &lm->jr;
-	ts = jr->ts;
+	// Time step solver context
+	jr   = &lm->jr;
+	ts   = jr->ts;
 	scal = &lm->scal;
 	
-	// Return if no diffusion timesteps are given
-	if(ts->nstep_diff==0) PetscFunctionReturn(0);
+/*
+
+	Vec lT;   // temperature (box stencil, active even without diffusion)
+	DM  DA_T; // temperature cell-centered grid with star stencil
+	Mat Att;  // temperature preconditioner matrix
+	Vec dT;   // temperature increment (global)
+	Vec ge;   // energy residual (global)
+	KSP tksp; // temperature diffusion solver
+
+
+ */
+
+	// Return if no diffusion time steps are given
+//	if(ts->nstep_diff == 0) PetscFunctionReturn(0);
 
 
 
+	// compute steadz state temperature diffusion problem
 
-
-	// modify timestep according to diffusion time an dnumber of diffusion timesteps
-	dt = ts->time_diff/ts->nstep_diff;
-	
-
-
-	// time step loop for temperature diffusion
-	for (i=0;i<ts->nstep_diff;i++)
-	{
+/*
 		//=============================
 		// Temperature diffusion solver
 		//=============================
@@ -795,6 +799,11 @@ PetscErrorCode LaMEMLibInitGuessTemp(LaMEMLib *lm)
 			PetscPrintf(PETSC_COMM_WORLD, "Current time        : %7.5f %s \n", ts->time*scal->time, scal->lbl_time);
 		}
 	}
+*/
+
+
+	// override temperature on the markers from the steady-state solution
+	ierr = ADVMarkSetInitTempVector(&lm->actx); CHKERRQ(ierr);
 
 	PetscFunctionReturn(0);
 }
