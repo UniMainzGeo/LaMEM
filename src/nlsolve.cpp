@@ -489,7 +489,7 @@ PetscErrorCode SNESCoupledTest(
     if(jr->ctrl.actTemp)
     {
     	ierr = JacResGetTempRes(jr, jr->ts->dt);            CHKERRQ(ierr);
-    	ierr = JacResGetTempMat(jr);                        CHKERRQ(ierr);
+    	ierr = JacResGetTempMat(jr, jr->ts->dt);            CHKERRQ(ierr);
     	ierr = KSPSetOperators(jr->tksp, jr->Att, jr->Att); CHKERRQ(ierr);
     	ierr = KSPSetUp(jr->tksp);                          CHKERRQ(ierr);
     	ierr = KSPSolve(jr->tksp, jr->ge, jr->dT);          CHKERRQ(ierr);

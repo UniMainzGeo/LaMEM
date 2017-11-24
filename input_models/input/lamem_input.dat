@@ -213,33 +213,34 @@
 # Solution parameters & controls
 #===============================================================================
 
-	gravity        = 0.0 0.0 -10.0  # gravity vector
-	FSSA           = 1.0            # free surface stabilization parameter [0 - 1]
-	shear_heat_eff = 1.0            # shear heating efficiency parameter   [0 - 1]
-	act_temp_diff  = 1              # temperature diffusion activation flag
-	act_p_shift    = 1              # pressure shift activation flag (zero pressure in the top cell layer)
-	init_guess     = 1              # initial guess flag
-	p_litho_visc   = 1              # use lithostatic pressure for creep laws
-	p_litho_plast  = 1              # use lithostatic pressure for plasticity
-	p_lim_plast    = 1              # limit pressure at first iteration for plasticity
-	jac_mat_free   = 1              # matrix-free closed-form jacobian
-	eta_min        = 1e18           # viscosity upper bound
-	eta_max        = 1e25           # viscosity lower limit
-	eta_ref        = 1e20           # reference viscosity (initial guess)
-	T_ref          = 20.0           # reference temperature
-	RUGC           = 8.31           # universal gas constant (required only for non-dimensional setups)
-	DII_ref        = 1e-15          # background (reference) strain-rate
-	min_cohes      = 2e7            # cohesion lower bound
-	min_fric       = 5.0            # friction lower bound
-	tau_ult        = 1e9            # ultimate yield stress
-	quasi_harm_avg = 1              # quasi-harmonic averaging regularization flag (plasticity)
-	cf_eta_min     = 10.0           # visco-plastic regularization parameter (plasticity)
-	n_pw           = 15.0           # power-law regularization parameter (plasticity)
-	rho_fluid      = 1e3            # fluid density for depth-dependent density model
-	gw_level_type  = top            # ground water level type for pore pressure computation (see below)
-	gw_level       = 10.0           # ground water level at the free surface (if defined)
-	biot           = 0.7            # Biot pressure parameer
-	get_permea     = 1              # effective permeability computation activation flag
+	gravity         = 0.0 0.0 -10.0  # gravity vector
+	FSSA            = 1.0            # free surface stabilization parameter [0 - 1]
+	shear_heat_eff  = 1.0            # shear heating efficiency parameter   [0 - 1]
+	act_temp_diff   = 1              # temperature diffusion activation flag
+	act_steady_temp = 1              # steady-state temperature initial guess activation flag   
+	act_p_shift     = 1              # pressure shift activation flag (zero pressure in the top cell layer)
+	init_guess      = 1              # initial guess flag
+	p_litho_visc    = 1              # use lithostatic pressure for creep laws
+	p_litho_plast   = 1              # use lithostatic pressure for plasticity
+	p_lim_plast     = 1              # limit pressure at first iteration for plasticity
+	jac_mat_free    = 1              # matrix-free closed-form jacobian
+	eta_min         = 1e18           # viscosity upper bound
+	eta_max         = 1e25           # viscosity lower limit
+	eta_ref         = 1e20           # reference viscosity (initial guess)
+	T_ref           = 20.0           # reference temperature
+	RUGC            = 8.31           # universal gas constant (required only for non-dimensional setups)
+	DII_ref         = 1e-15          # background (reference) strain-rate
+	min_cohes       = 2e7            # cohesion lower bound
+	min_fric        = 5.0            # friction lower bound
+	tau_ult         = 1e9            # ultimate yield stress
+	quasi_harm_avg  = 1              # quasi-harmonic averaging regularization flag (plasticity)
+	cf_eta_min      = 10.0           # visco-plastic regularization parameter (plasticity)
+	n_pw            = 15.0           # power-law regularization parameter (plasticity)
+	rho_fluid       = 1e3            # fluid density for depth-dependent density model
+	gw_level_type   = top            # ground water level type for pore pressure computation (see below)
+	gw_level        = 10.0           # ground water level at the free surface (if defined)
+	biot            = 0.7            # Biot pressure parameer
+	get_permea      = 1              # effective permeability computation activation flag
 
 # Groundwater level type specification:
 

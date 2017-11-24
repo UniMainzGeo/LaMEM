@@ -136,39 +136,40 @@ enum GWLevelType
 
 struct Controls
 {
-	PetscScalar grav[3];      // global gravity components
-	PetscScalar FSSA;         // free surface stabilization parameter [0 - 1]
-	PetscScalar shearHeatEff; // shear heating efficiency parameter [0 - 1]
-	PetscScalar biot;         // Biot pressure parameter [0 - 1]
+	PetscScalar grav[3];       // global gravity components
+	PetscScalar FSSA;          // free surface stabilization parameter [0 - 1]
+	PetscScalar shearHeatEff;  // shear heating efficiency parameter [0 - 1]
+	PetscScalar biot;          // Biot pressure parameter [0 - 1]
 
-	PetscInt    actTemp;	  // temperature diffusion activation flag
-	PetscInt    pShiftAct;    // pressure shift activation flag (zero pressure in the top cell layer)
-	PetscScalar pShift;       // pressure shift for plasticity model and output
-	PetscInt    initGuess;    // initial guess activation flag
-	PetscInt    pLithoVisc;   // use lithostatic pressure for creep laws
-	PetscInt    pLithoPlast;  // use lithostatic pressure for plasticity
-	PetscInt    pLimPlast;    // limit pressure at first iteration for plasticity
-	PetscInt    jac_mat_free; // matrix-free analytical Jacobian activation flag
-	PetscInt    quasiHarmAvg; // use quasi-harmonic averaging regularization for plasticity
+	PetscInt    actTemp;	   // temperature diffusion activation flag
+	PetscInt    actSteadyTemp; // steady-state temperature initial guess flag
+	PetscInt    pShiftAct;     // pressure shift activation flag (zero pressure in the top cell layer)
+	PetscScalar pShift;        // pressure shift for plasticity model and output
+	PetscInt    initGuess;     // initial guess activation flag
+	PetscInt    pLithoVisc;    // use lithostatic pressure for creep laws
+	PetscInt    pLithoPlast;   // use lithostatic pressure for plasticity
+	PetscInt    pLimPlast;     // limit pressure at first iteration for plasticity
+	PetscInt    jac_mat_free;  // matrix-free analytical Jacobian activation flag
+	PetscInt    quasiHarmAvg;  // use quasi-harmonic averaging regularization for plasticity
 
-	PetscScalar eta_min;      // minimum viscosity
-	PetscScalar inv_eta_max;  // inverse of maximum viscosity
-	PetscScalar eta_ref;      // reference viscosity (initial guess)
-	PetscScalar TRef;         // reference temperature
-	PetscScalar Rugc;         // universal gas constant
-	PetscScalar DII_ref;      // background (reference) strain-rate
-	PetscScalar minCh;        // minimum cohesion
-	PetscScalar minFr;        // minimum friction
-	PetscScalar tauUlt;       // ultimate yield stress
+	PetscScalar eta_min;       // minimum viscosity
+	PetscScalar inv_eta_max;   // inverse of maximum viscosity
+	PetscScalar eta_ref;       // reference viscosity (initial guess)
+	PetscScalar TRef;          // reference temperature
+	PetscScalar Rugc;          // universal gas constant
+	PetscScalar DII_ref;       // background (reference) strain-rate
+	PetscScalar minCh;         // minimum cohesion
+	PetscScalar minFr;         // minimum friction
+	PetscScalar tauUlt;        // ultimate yield stress
 
-	PetscScalar cf_eta_min;   // visco-plastic regularization parameter (plasticity)
-	PetscScalar n_pw;         // power-law regularization parameter (plasticity)
+	PetscScalar cf_eta_min;    // visco-plastic regularization parameter (plasticity)
+	PetscScalar n_pw;          // power-law regularization parameter (plasticity)
 
-	PetscScalar rho_fluid;    // fluid density
-	GWLevelType gwType;       // type of ground water level (none, top, surf, level)
-	PetscScalar gwLevel;      // fixed ground water level
+	PetscScalar rho_fluid;     // fluid density
+	GWLevelType gwType;        // type of ground water level (none, top, surf, level)
+	PetscScalar gwLevel;       // fixed ground water level
 
-	PetscInt    getPermea;    // effective permeability computation activation flag
+	PetscInt    getPermea;     // effective permeability computation activation flag
 };
 
 //---------------------------------------------------------------------------
@@ -364,7 +365,7 @@ PetscErrorCode JacResApplyTempBC(JacRes *jr);
 PetscErrorCode JacResGetTempRes(JacRes *jr, PetscScalar dt);
 
 // assemble temperature preconditioner matrix
-PetscErrorCode JacResGetTempMat(JacRes *jr);
+PetscErrorCode JacResGetTempMat(JacRes *jr, PetscScalar dt);
 
 //---------------------------------------------------------------------------
 //......................   INTEGRATION FUNCTIONS   ..........................

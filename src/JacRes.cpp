@@ -92,33 +92,34 @@ PetscErrorCode JacResCreate(JacRes *jr, FB *fb)
 	}
 
 	// read from options
-	ierr = getScalarParam(fb, _OPTIONAL_, "gravity",         ctrl->grav,         3, 1.0); CHKERRQ(ierr);
-	ierr = getScalarParam(fb, _OPTIONAL_, "FSSA",           &ctrl->FSSA,         1, 1.0); CHKERRQ(ierr);
-	ierr = getScalarParam(fb, _OPTIONAL_, "shear_heat_eff", &ctrl->shearHeatEff, 1, 1.0); CHKERRQ(ierr);
-	ierr = getScalarParam(fb, _OPTIONAL_, "biot",           &ctrl->biot,         1, 1.0); CHKERRQ(ierr);
-	ierr = getIntParam   (fb, _OPTIONAL_, "act_temp_diff",  &ctrl->actTemp,      1, 1);   CHKERRQ(ierr);
-	ierr = getIntParam   (fb, _OPTIONAL_, "act_p_shift",    &ctrl->pShiftAct,    1, 1);   CHKERRQ(ierr);
-	ierr = getIntParam   (fb, _OPTIONAL_, "init_guess",     &ctrl->initGuess,    1, 1);   CHKERRQ(ierr);
-	ierr = getIntParam   (fb, _OPTIONAL_, "p_litho_visc",   &ctrl->pLithoVisc,   1, 1);   CHKERRQ(ierr);
-	ierr = getIntParam   (fb, _OPTIONAL_, "p_litho_plast",  &ctrl->pLithoPlast,  1, 1);   CHKERRQ(ierr);
-	ierr = getIntParam   (fb, _OPTIONAL_, "p_lim_plast",    &ctrl->pLimPlast,    1, 1);   CHKERRQ(ierr);
-	ierr = getIntParam   (fb, _OPTIONAL_, "jac_mat_free",   &ctrl->jac_mat_free, 1, 1);   CHKERRQ(ierr);
-	ierr = getIntParam   (fb, _OPTIONAL_, "quasi_harm_avg", &ctrl->quasiHarmAvg, 1, 1);   CHKERRQ(ierr);
-	ierr = getScalarParam(fb, _OPTIONAL_, "eta_min",        &ctrl->eta_min,      1, 1.0); CHKERRQ(ierr);
-	ierr = getScalarParam(fb, _OPTIONAL_, "eta_max",        &input_eta_max,      1, 1.0); CHKERRQ(ierr);
-	ierr = getScalarParam(fb, _OPTIONAL_, "eta_ref",        &ctrl->eta_ref,      1, 1.0); CHKERRQ(ierr);
-	ierr = getScalarParam(fb, _OPTIONAL_, "T_ref",          &ctrl->TRef,         1, 1.0); CHKERRQ(ierr);
-	ierr = getScalarParam(fb, _OPTIONAL_, "RUGC",           &ctrl->Rugc,         1, 1.0); CHKERRQ(ierr);
-	ierr = getScalarParam(fb, _OPTIONAL_, "DII_ref",        &ctrl->DII_ref,      1, 1.0); CHKERRQ(ierr);
-	ierr = getScalarParam(fb, _OPTIONAL_, "min_cohes",      &ctrl->minCh,        1, 1.0); CHKERRQ(ierr);
-	ierr = getScalarParam(fb, _OPTIONAL_, "min_fric",       &ctrl->minFr,        1, 1.0); CHKERRQ(ierr);
-	ierr = getScalarParam(fb, _OPTIONAL_, "tau_ult",        &ctrl->tauUlt,       1, 1.0); CHKERRQ(ierr);
-	ierr = getScalarParam(fb, _OPTIONAL_, "cf_eta_min",     &ctrl->cf_eta_min,   1, 1.0); CHKERRQ(ierr);
-	ierr = getScalarParam(fb, _OPTIONAL_, "n_pw",           &ctrl->n_pw,         1, 1.0); CHKERRQ(ierr);
-	ierr = getScalarParam(fb, _OPTIONAL_, "rho_fluid",      &ctrl->rho_fluid,    1, 1.0); CHKERRQ(ierr);
-	ierr = getStringParam(fb, _OPTIONAL_, "gw_level_type",  gwtype,              "none"); CHKERRQ(ierr);
-	ierr = getScalarParam(fb, _OPTIONAL_, "gw_level",      &ctrl->gwLevel,       1, 1.0); CHKERRQ(ierr);
-	ierr = getIntParam   (fb, _OPTIONAL_, "get_permea",    &ctrl->getPermea,     1, 1);   CHKERRQ(ierr);
+	ierr = getScalarParam(fb, _OPTIONAL_, "gravity",          ctrl->grav,          3, 1.0); CHKERRQ(ierr);
+	ierr = getScalarParam(fb, _OPTIONAL_, "FSSA",            &ctrl->FSSA,          1, 1.0); CHKERRQ(ierr);
+	ierr = getScalarParam(fb, _OPTIONAL_, "shear_heat_eff",  &ctrl->shearHeatEff,  1, 1.0); CHKERRQ(ierr);
+	ierr = getScalarParam(fb, _OPTIONAL_, "biot",            &ctrl->biot,          1, 1.0); CHKERRQ(ierr);
+	ierr = getIntParam   (fb, _OPTIONAL_, "act_temp_diff",   &ctrl->actTemp,       1, 1);   CHKERRQ(ierr);
+	ierr = getIntParam   (fb, _OPTIONAL_, "act_steady_temp", &ctrl->actSteadyTemp, 1, 1);   CHKERRQ(ierr);
+	ierr = getIntParam   (fb, _OPTIONAL_, "act_p_shift",     &ctrl->pShiftAct,     1, 1);   CHKERRQ(ierr);
+	ierr = getIntParam   (fb, _OPTIONAL_, "init_guess",      &ctrl->initGuess,     1, 1);   CHKERRQ(ierr);
+	ierr = getIntParam   (fb, _OPTIONAL_, "p_litho_visc",    &ctrl->pLithoVisc,    1, 1);   CHKERRQ(ierr);
+	ierr = getIntParam   (fb, _OPTIONAL_, "p_litho_plast",   &ctrl->pLithoPlast,   1, 1);   CHKERRQ(ierr);
+	ierr = getIntParam   (fb, _OPTIONAL_, "p_lim_plast",     &ctrl->pLimPlast,     1, 1);   CHKERRQ(ierr);
+	ierr = getIntParam   (fb, _OPTIONAL_, "jac_mat_free",    &ctrl->jac_mat_free,  1, 1);   CHKERRQ(ierr);
+	ierr = getIntParam   (fb, _OPTIONAL_, "quasi_harm_avg",  &ctrl->quasiHarmAvg,  1, 1);   CHKERRQ(ierr);
+	ierr = getScalarParam(fb, _OPTIONAL_, "eta_min",         &ctrl->eta_min,       1, 1.0); CHKERRQ(ierr);
+	ierr = getScalarParam(fb, _OPTIONAL_, "eta_max",         &input_eta_max,       1, 1.0); CHKERRQ(ierr);
+	ierr = getScalarParam(fb, _OPTIONAL_, "eta_ref",         &ctrl->eta_ref,       1, 1.0); CHKERRQ(ierr);
+	ierr = getScalarParam(fb, _OPTIONAL_, "T_ref",           &ctrl->TRef,          1, 1.0); CHKERRQ(ierr);
+	ierr = getScalarParam(fb, _OPTIONAL_, "RUGC",            &ctrl->Rugc,          1, 1.0); CHKERRQ(ierr);
+	ierr = getScalarParam(fb, _OPTIONAL_, "DII_ref",         &ctrl->DII_ref,       1, 1.0); CHKERRQ(ierr);
+	ierr = getScalarParam(fb, _OPTIONAL_, "min_cohes",       &ctrl->minCh,         1, 1.0); CHKERRQ(ierr);
+	ierr = getScalarParam(fb, _OPTIONAL_, "min_fric",        &ctrl->minFr,         1, 1.0); CHKERRQ(ierr);
+	ierr = getScalarParam(fb, _OPTIONAL_, "tau_ult",         &ctrl->tauUlt,        1, 1.0); CHKERRQ(ierr);
+	ierr = getScalarParam(fb, _OPTIONAL_, "cf_eta_min",      &ctrl->cf_eta_min,    1, 1.0); CHKERRQ(ierr);
+	ierr = getScalarParam(fb, _OPTIONAL_, "n_pw",            &ctrl->n_pw,          1, 1.0); CHKERRQ(ierr);
+	ierr = getScalarParam(fb, _OPTIONAL_, "rho_fluid",       &ctrl->rho_fluid,     1, 1.0); CHKERRQ(ierr);
+	ierr = getStringParam(fb, _OPTIONAL_, "gw_level_type",   gwtype,               "none"); CHKERRQ(ierr);
+	ierr = getScalarParam(fb, _OPTIONAL_, "gw_level",        &ctrl->gwLevel,       1, 1.0); CHKERRQ(ierr);
+	ierr = getIntParam   (fb, _OPTIONAL_, "get_permea",      &ctrl->getPermea,     1, 1);   CHKERRQ(ierr);
 
 
 	if     (!strcmp(gwtype, "none"))  ctrl->gwType = _GW_NONE_;
@@ -268,6 +269,7 @@ PetscErrorCode JacResCreate(JacRes *jr, FB *fb)
 	if(ctrl->shearHeatEff)  PetscPrintf(PETSC_COMM_WORLD, "   Shear heating efficiency                :  %g \n", ctrl->shearHeatEff);
 	if(ctrl->biot)          PetscPrintf(PETSC_COMM_WORLD, "   Biot pressure parameter                 :  %g \n", ctrl->biot);
 	if(ctrl->actTemp)       PetscPrintf(PETSC_COMM_WORLD, "   Activate temperature diffusion          @ \n");
+	if(ctrl->actSteadyTemp) PetscPrintf(PETSC_COMM_WORLD, "   Steady state initial temperature        @ \n");
 	if(ctrl->pShiftAct)     PetscPrintf(PETSC_COMM_WORLD, "   Enforce zero pressure on top boundary   @ \n");
 	if(ctrl->initGuess)     PetscPrintf(PETSC_COMM_WORLD, "   Compute initial guess                   @ \n");
 	if(ctrl->pLithoVisc)    PetscPrintf(PETSC_COMM_WORLD, "   Use lithostatic pressure for creep      @ \n");

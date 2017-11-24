@@ -411,22 +411,26 @@ PetscErrorCode JacResGetTempRes(JacRes *jr, PetscScalar dt)
 	PetscScalar bdx, fdx, bdy, fdy, bdz, fdz;
 	PetscScalar bqx, fqx, bqy, fqy, bqz, fqz;
  	PetscScalar dx, dy, dz;
-	PetscScalar kc, rho_Cp, rho_A, Tc, Tn, Hr;
+	PetscScalar invdt, kc, rho_Cp, rho_A, Tc, Tn, Hr;
 	PetscScalar ***ge, ***lT, ***lk, ***hxy, ***hxz, ***hyz, ***buff, *e;
 
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
 
 	// access residual context variables
-	fs        = jr->fs;
-	bc        = jr->bc;
-	num       = bc->tNumSPC;
-	list      = bc->tSPCList;
+	fs    = jr->fs;
+	bc    = jr->bc;
+	num   = bc->tNumSPC;
+	list  = bc->tSPCList;
 
 	// initialize maximum cell index in all directions
 	mx = fs->dsx.tcels - 1;
 	my = fs->dsy.tcels - 1;
 	mz = fs->dsz.tcels - 1;
+
+	// compute inverse time step
+	if(dt) invdt = 1.0/dt;
+	else   invdt = 0.0;
 
 	SCATTER_FIELD(fs->DA_CEN, jr->ldxx, GET_KC)
 	SCATTER_FIELD(fs->DA_XY,  jr->ldxy, GET_HRXY)
@@ -503,7 +507,7 @@ PetscErrorCode JacResGetTempRes(JacRes *jr, PetscScalar dt)
 		// to get positive diagonal in the preconditioner matrix
 		// put right hand side to the left, which gives the following:
 
-		ge[k][j][i] = rho_Cp*(Tc - Tn)/dt - (fqx - bqx)/dx - (fqy - bqy)/dy - (fqz - bqz)/dz - Hr - rho_A;
+		ge[k][j][i] = rho_Cp*(invdt*(Tc - Tn)) - (fqx - bqx)/dx - (fqy - bqy)/dy - (fqz - bqz)/dz - Hr - rho_A;
 	}
 	END_STD_LOOP
 
@@ -527,7 +531,7 @@ PetscErrorCode JacResGetTempRes(JacRes *jr, PetscScalar dt)
 //---------------------------------------------------------------------------
 #undef __FUNCT__
 #define __FUNCT__ "JacResGetTempMat"
-PetscErrorCode JacResGetTempMat(JacRes *jr)
+PetscErrorCode JacResGetTempMat(JacRes *jr, PetscScalar dt)
 {
 	// assemble temperature preconditioner matrix
 	// COMPLETE SINGLE-POINT CONSTRIANT IMLEMENTATION !!!
@@ -541,7 +545,7 @@ PetscErrorCode JacResGetTempMat(JacRes *jr)
 	PetscScalar bkx, fkx, bky, fky, bkz, fkz;
 	PetscScalar bdx, fdx, bdy, fdy, bdz, fdz;
  	PetscScalar dx, dy, dz;
-	PetscScalar v[7], cf[6], kc, rho_Cp, dt;
+	PetscScalar v[7], cf[6], kc, rho_Cp, invdt;
 	MatStencil  row[1], col[7];
 	PetscScalar ***lk, ***bcT, ***buff;
 
@@ -549,11 +553,14 @@ PetscErrorCode JacResGetTempMat(JacRes *jr)
 	PetscFunctionBegin;
 
 	// access residual context variables
-	fs        = jr->fs;
-	bc        = jr->bc;
-	dt        = jr->ts->dt;     // time step
-	num       = bc->tNumSPC;
-	list      = bc->tSPCList;
+	fs   = jr->fs;
+	bc   = jr->bc;
+	num  = bc->tNumSPC;
+	list = bc->tSPCList;
+
+	// compute inverse time step
+	if(dt) invdt = 1.0/dt;
+	else   invdt = 0.0;
 
 	// initialize maximum cell index in all directions
 	mx = fs->dsx.tcels - 1;
@@ -623,7 +630,7 @@ PetscErrorCode JacResGetTempMat(JacRes *jr)
 		v[3] = -fky/fdy/dy*cf[3];
 		v[4] = -bkz/bdz/dz*cf[4];
 		v[5] = -fkz/fdz/dz*cf[5];
-		v[6] =  rho_Cp/dt
+		v[6] =  invdt*rho_Cp
 		+       (bkx/bdx + fkx/fdx)/dx
 		+       (bky/bdy + fky/fdy)/dy
 		+       (bkz/bdz + fkz/fdz)/dz;

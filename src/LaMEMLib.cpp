@@ -739,71 +739,48 @@ PetscErrorCode LaMEMLibDryRun(LaMEMLib *lm)
 #define __FUNCT__ "LaMEMLibInitGuessTemp"
 PetscErrorCode LaMEMLibInitGuessTemp(LaMEMLib *lm)
 {
-	JacRes     *jr;
-	TSSol      *ts;
-	Scaling    *scal;
-	PetscInt    i;
+	JacRes         *jr;
+	Controls       *ctrl;
+	KSP            tksp; // temperature diffusion solver
+	PetscLogDouble t;
 
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
 
-	// Time step solver context
+	// access context
 	jr   = &lm->jr;
-	ts   = jr->ts;
-	scal = &lm->scal;
-	
-/*
+	ctrl = &jr->ctrl;
 
-	Vec lT;   // temperature (box stencil, active even without diffusion)
-	DM  DA_T; // temperature cell-centered grid with star stencil
-	Mat Att;  // temperature preconditioner matrix
-	Vec dT;   // temperature increment (global)
-	Vec ge;   // energy residual (global)
-	KSP tksp; // temperature diffusion solver
+	// check activation
+	if(!ctrl->actTemp || !ctrl->actSteadyTemp) PetscFunctionReturn(0);
 
+	PrintStart(&t,"Computing stead-state temperature distribution", NULL);
 
- */
+	// create temperature diffusion solver
+	ierr = KSPCreate(PETSC_COMM_WORLD, &tksp); CHKERRQ(ierr);
+	ierr = KSPSetOptionsPrefix(tksp,"its_");   CHKERRQ(ierr);
+	ierr = KSPSetFromOptions(tksp);            CHKERRQ(ierr);
 
-	// Return if no diffusion time steps are given
-//	if(ts->nstep_diff == 0) PetscFunctionReturn(0);
+	// compute matrix and rhs
+	ierr = JacResGetTempRes(jr, 0); CHKERRQ(ierr);
+	ierr = JacResGetTempMat(jr, 0); CHKERRQ(ierr);
 
+	// solve linear system
+	ierr = KSPSetOperators(tksp, jr->Att, jr->Att); CHKERRQ(ierr);
+	ierr = KSPSetUp(tksp);                          CHKERRQ(ierr);
+	ierr = KSPSolve(tksp, jr->ge, jr->dT);          CHKERRQ(ierr);
 
-
-	// compute steadz state temperature diffusion problem
-
-/*
-		//=============================
-		// Temperature diffusion solver
-		//=============================
-		
-		if(jr->ctrl.actTemp)
-		{
-			ierr = JacResGetTempRes(jr, dt);                    CHKERRQ(ierr);
-			ierr = JacResGetTempMat(jr);                        CHKERRQ(ierr);
-			ierr = KSPSetOperators(jr->tksp, jr->Att, jr->Att); CHKERRQ(ierr);
-			ierr = KSPSetUp(jr->tksp);                          CHKERRQ(ierr);
-			ierr = KSPSolve(jr->tksp, jr->ge, jr->dT);          CHKERRQ(ierr);
-			ierr = JacResUpdateTemp(jr);                        CHKERRQ(ierr);
-		}
-
-
-		if(i == ts->nstep_diff)
-		{
-			PetscPrintf(PETSC_COMM_WORLD, "Initial temperature is set up\n");
-			PetscPrintf(PETSC_COMM_WORLD, "--------------------------------------------------------------------------\n");
-		}
-		else
-		{
-			// output time step information
-			PetscPrintf(PETSC_COMM_WORLD, "--------------------------------------------------------------------------\n");
-			PetscPrintf(PETSC_COMM_WORLD, "Current time        : %7.5f %s \n", ts->time*scal->time, scal->lbl_time);
-		}
-	}
-*/
-
+	// store computed temperature in ghosted vector, enforce boundary constraints
+	ierr = VecZeroEntries(jr->lT); CHKERRQ(ierr);
+	ierr = JacResUpdateTemp(jr);   CHKERRQ(ierr);
 
 	// override temperature on the markers from the steady-state solution
 	ierr = ADVMarkSetInitTempVector(&lm->actx); CHKERRQ(ierr);
+
+	// destroy initial temperature solver
+	ierr = KSPDestroy(&tksp); CHKERRQ(ierr);
+
+	PrintDone(t);
 
 	PetscFunctionReturn(0);
 }
