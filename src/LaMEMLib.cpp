@@ -608,8 +608,6 @@ PetscErrorCode LaMEMLibSolve(LaMEMLib *lm, void *param)
 	// INITIAL GUESS
 	//==============
 
-	ierr = LaMEMLibInitGuessTemp(lm); CHKERRQ(ierr);
-
 	ierr = LaMEMLibInitGuess(lm, snes); CHKERRQ(ierr);
 
 	//===============
@@ -731,56 +729,6 @@ PetscErrorCode LaMEMLibDryRun(LaMEMLib *lm)
 
 	// save output for inspection
 	ierr = LaMEMLibSaveOutput(lm); CHKERRQ(ierr);
-
-	PetscFunctionReturn(0);
-}
-//---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "LaMEMLibInitGuessTemp"
-PetscErrorCode LaMEMLibInitGuessTemp(LaMEMLib *lm)
-{
-	JacRes         *jr;
-	Controls       *ctrl;
-	KSP            tksp; // temperature diffusion solver
-	PetscLogDouble t;
-
-	PetscErrorCode ierr;
-	PetscFunctionBegin;
-
-	// access context
-	jr   = &lm->jr;
-	ctrl = &jr->ctrl;
-
-	// check activation
-	if(!ctrl->actTemp || !ctrl->actSteadyTemp) PetscFunctionReturn(0);
-
-	PrintStart(&t,"Computing stead-state temperature distribution", NULL);
-
-	// create temperature diffusion solver
-	ierr = KSPCreate(PETSC_COMM_WORLD, &tksp); CHKERRQ(ierr);
-	ierr = KSPSetOptionsPrefix(tksp,"its_");   CHKERRQ(ierr);
-	ierr = KSPSetFromOptions(tksp);            CHKERRQ(ierr);
-
-	// compute matrix and rhs
-	ierr = JacResGetTempRes(jr, 0); CHKERRQ(ierr);
-	ierr = JacResGetTempMat(jr, 0); CHKERRQ(ierr);
-
-	// solve linear system
-	ierr = KSPSetOperators(tksp, jr->Att, jr->Att); CHKERRQ(ierr);
-	ierr = KSPSetUp(tksp);                          CHKERRQ(ierr);
-	ierr = KSPSolve(tksp, jr->ge, jr->dT);          CHKERRQ(ierr);
-
-	// store computed temperature in ghosted vector, enforce boundary constraints
-	ierr = VecZeroEntries(jr->lT); CHKERRQ(ierr);
-	ierr = JacResUpdateTemp(jr);   CHKERRQ(ierr);
-
-	// override temperature on the markers from the steady-state solution
-	ierr = ADVMarkSetInitTempVector(&lm->actx); CHKERRQ(ierr);
-
-	// destroy initial temperature solver
-	ierr = KSPDestroy(&tksp); CHKERRQ(ierr);
-
-	PrintDone(t);
 
 	PetscFunctionReturn(0);
 }

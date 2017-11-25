@@ -131,17 +131,20 @@ PetscErrorCode ADVMarkSave(AdvCtx *actx);
 // check phase IDs of all the markers
 PetscErrorCode ADVMarkCheckMarkers(AdvCtx *actx);
 
-// initialize temperature on markers redundantly form file
-PetscErrorCode ADVMarkSetTempFromFile(AdvCtx *actx, FB *fb);
+// initialize temperature (optional methods)
+PetscErrorCode ADVMarkSetTemp(AdvCtx *actx, FB *fb);
 
 // initialize temperature on markers based on linear gradient
-PetscErrorCode ADVMarkSetInitTempProfile(AdvCtx *actx);
+PetscErrorCode ADVMarkSetTempGrad(AdvCtx *actx);
 
 // initialize temperature on markers based on phase temperature
-PetscErrorCode ADVMarkSetInitTempPhase(AdvCtx *actx);
+PetscErrorCode ADVMarkSetTempPhase(AdvCtx *actx);
 
-// initialize temperature on markers from the vector (steady-state solution)
-PetscErrorCode ADVMarkSetInitTempVector(AdvCtx *actx);
+// initialize temperature on markers redundantly form file
+PetscErrorCode ADVMarkSetTempFile(AdvCtx *actx, FB *fb);
+
+// initialize temperature on markers from steady-state solution
+PetscErrorCode ADVMarkSetTempSteady(AdvCtx *actx);
 
 //---------------------------------------------------------------------------
 
