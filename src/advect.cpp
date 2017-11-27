@@ -242,11 +242,11 @@ PetscErrorCode ADVCreate(AdvCtx *actx, FB *fb)
 	// check marker distribution
 	ierr = ADVMarkCheckMarkers(actx); CHKERRQ(ierr);
 
-	// set optional temperature distributions
-	ierr = ADVMarkSetTemp(actx, fb); CHKERRQ(ierr);
-
 	// project initial history from markers to grid
 	ierr = ADVProjHistMarkToGrid(actx); CHKERRQ(ierr);
+
+	// set optional temperature distributions
+	ierr = ADVMarkSetTemp(actx, fb); CHKERRQ(ierr);
 
 	PetscFunctionReturn(0);
 }

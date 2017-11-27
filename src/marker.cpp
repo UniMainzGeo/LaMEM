@@ -670,6 +670,15 @@ PetscErrorCode ADVMarkSetTempSteady(AdvCtx *actx)
 	ierr = KSPSetUp(tksp);                          CHKERRQ(ierr);
 	ierr = KSPSolve(tksp, jr->ge, jr->dT);          CHKERRQ(ierr);
 
+PetscScalar maxval, minval;
+
+VecScale(jr->dT, -1.0);
+
+VecMax(jr->dT, NULL, &maxval); maxval = maxval*jr->scal->temperature - jr->scal->Tshift;
+
+VecMin(jr->dT, NULL, &minval); minval = minval*jr->scal->temperature - jr->scal->Tshift;
+
+
 	// destroy initial temperature solver
 	ierr = KSPDestroy(&tksp); CHKERRQ(ierr);
 
@@ -716,6 +725,9 @@ PetscErrorCode ADVMarkSetTempSteady(AdvCtx *actx)
 
 	// restore access
 	ierr = DMDAVecRestoreArray(fs->DA_CEN, jr->lT,  &lT);  CHKERRQ(ierr);
+
+	// project initial history from markers to grid
+	ierr = ADVProjHistMarkToGrid(actx); CHKERRQ(ierr);
 
 	PrintDone(t);
 
