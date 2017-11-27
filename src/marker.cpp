@@ -103,6 +103,17 @@ PetscErrorCode ADVMarkInit(AdvCtx *actx, FB *fb)
 	else if(actx->msetup == _FILES_)      { ierr = ADVMarkInitFiles   (actx, fb); CHKERRQ(ierr); }
 	else if(actx->msetup == _POLYGONS_)   { ierr = ADVMarkInitPolygons(actx, fb); CHKERRQ(ierr); }
 
+	// set temperature (optional methods)
+
+	// linear gradient
+	ierr = ADVMarkSetTempGrad(actx); CHKERRQ(ierr);
+
+	// phase-based
+	ierr = ADVMarkSetTempPhase(actx); CHKERRQ(ierr);
+
+	// from file
+	ierr = ADVMarkSetTempFile(actx, fb); CHKERRQ(ierr);
+
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
@@ -391,30 +402,6 @@ PetscErrorCode ADVMarkCheckMarkers(AdvCtx *actx)
 }
 //---------------------------------------------------------------------------
 #undef __FUNCT__
-#define __FUNCT__ "ADVMarkSetTemp"
-PetscErrorCode ADVMarkSetTemp(AdvCtx *actx, FB *fb)
-{
-	// initialize temperature (optional methods)
-
-	PetscErrorCode ierr;
-	PetscFunctionBegin;
-
-	// linear gradient
-	ierr = ADVMarkSetTempGrad(actx); CHKERRQ(ierr);
-
-	// phase-based
-	ierr = ADVMarkSetTempPhase(actx); CHKERRQ(ierr);
-
-	// from file
-	ierr = ADVMarkSetTempFile(actx, fb); CHKERRQ(ierr);
-
-	// steady-state solution
-	ierr = ADVMarkSetTempSteady(actx); CHKERRQ(ierr);
-
-	PetscFunctionReturn(ierr);
-}
-//---------------------------------------------------------------------------
-#undef __FUNCT__
 #define __FUNCT__ "ADVMarkSetTempGrad"
 PetscErrorCode ADVMarkSetTempGrad(AdvCtx *actx)
 {
@@ -423,7 +410,7 @@ PetscErrorCode ADVMarkSetTempGrad(AdvCtx *actx)
 	BCCtx       *bc;
 	Marker      *P;
 	PetscInt     imark, nummark;
-	PetscScalar  dTdz, bz, ez, zp;
+	PetscScalar  dTdz, zbot, ztop, zp;
 
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
@@ -436,10 +423,16 @@ PetscErrorCode ADVMarkSetTempGrad(AdvCtx *actx)
 	if(!bc->initTemp) PetscFunctionReturn(0);
 
 	// get grid coordinate bounds in z-direction
-	ierr = FDSTAGGetGlobalBox(fs, NULL, NULL, &bz, NULL, NULL, &ez); CHKERRQ(ierr);
+	ierr = FDSTAGGetGlobalBox(fs, NULL, NULL, &zbot, NULL, NULL, &ztop); CHKERRQ(ierr);
+
+	// override top boundary with free surface level
+	if(actx->surf->UseFreeSurf)
+	{
+		ztop = actx->surf->InitLevel;
+	}
 
 	// get temperature gradient in z-direction
-	dTdz = (bc->Ttop - bc->Tbot)/(ez - bz);
+	dTdz = (bc->Ttop - bc->Tbot)/(ztop - zbot);
 
 	// set temperature based on temperature gradient
 	for(imark = 0; imark < nummark; imark++)
@@ -451,7 +444,8 @@ PetscErrorCode ADVMarkSetTempGrad(AdvCtx *actx)
 		zp = P->X[2];
 
 		// set temperature
-		P->T = bc->Tbot + dTdz*(zp-bz);
+		if(zp > ztop) P->T = bc->Ttop;
+		else          P->T = bc->Tbot + dTdz*(zp - zbot);
 	}
 
 	PetscFunctionReturn(ierr);
@@ -610,18 +604,15 @@ PetscErrorCode ADVMarkSetTempFile(AdvCtx *actx, FB *fb)
 }
 //---------------------------------------------------------------------------
 #undef __FUNCT__
-#define __FUNCT__ "ADVMarkSetTempSteady"
-PetscErrorCode ADVMarkSetTempSteady(AdvCtx *actx)
+#define __FUNCT__ "ADVMarkSetTempVector"
+PetscErrorCode ADVMarkSetTempVector(AdvCtx *actx)
 {
 	FDSTAG         *fs;
 	JacRes         *jr;
-	Controls       *ctrl;
 	Marker         *P;
-	KSP            tksp;
 	PetscInt       sx, sy, sz, nx, ny, jj, ID, I, J, K, II, JJ, KK, AirPhase;
 	PetscScalar    *ccx, *ccy, *ccz, ***lT;
 	PetscScalar    xc, yc, zc, xp, yp, zp, Ttop;
-	PetscLogDouble t;
 
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
@@ -629,12 +620,6 @@ PetscErrorCode ADVMarkSetTempSteady(AdvCtx *actx)
 	// access context
 	fs   =  actx->fs;
 	jr   =  actx->jr;
-	ctrl = &jr->ctrl;
-
-	// check activation
-	if(!ctrl->actTemp || !ctrl->actSteadyTemp) PetscFunctionReturn(0);
-
-	PrintStart(&t,"Computing stead-state temperature distribution", NULL);
 
 	// get air phase
 	AirPhase = -1;
@@ -655,36 +640,6 @@ PetscErrorCode ADVMarkSetTempSteady(AdvCtx *actx)
 	ccx = fs->dsx.ccoor;
 	ccy = fs->dsy.ccoor;
 	ccz = fs->dsz.ccoor;
-
-	// create temperature diffusion solver
-	ierr = KSPCreate(PETSC_COMM_WORLD, &tksp); CHKERRQ(ierr);
-	ierr = KSPSetOptionsPrefix(tksp,"its_");   CHKERRQ(ierr);
-	ierr = KSPSetFromOptions(tksp);            CHKERRQ(ierr);
-
-	// compute matrix and rhs
-	ierr = JacResGetTempRes(jr, 0); CHKERRQ(ierr);
-	ierr = JacResGetTempMat(jr, 0); CHKERRQ(ierr);
-
-	// solve linear system
-	ierr = KSPSetOperators(tksp, jr->Att, jr->Att); CHKERRQ(ierr);
-	ierr = KSPSetUp(tksp);                          CHKERRQ(ierr);
-	ierr = KSPSolve(tksp, jr->ge, jr->dT);          CHKERRQ(ierr);
-
-PetscScalar maxval, minval;
-
-VecScale(jr->dT, -1.0);
-
-VecMax(jr->dT, NULL, &maxval); maxval = maxval*jr->scal->temperature - jr->scal->Tshift;
-
-VecMin(jr->dT, NULL, &minval); minval = minval*jr->scal->temperature - jr->scal->Tshift;
-
-
-	// destroy initial temperature solver
-	ierr = KSPDestroy(&tksp); CHKERRQ(ierr);
-
-	// store computed temperature in ghosted vector, enforce boundary constraints
-	ierr = VecZeroEntries(jr->lT); CHKERRQ(ierr);
-	ierr = JacResUpdateTemp(jr);   CHKERRQ(ierr);
 
 	// access temperature vector
 	ierr = DMDAVecGetArray(fs->DA_CEN, jr->lT,  &lT);  CHKERRQ(ierr);
@@ -725,11 +680,6 @@ VecMin(jr->dT, NULL, &minval); minval = minval*jr->scal->temperature - jr->scal-
 
 	// restore access
 	ierr = DMDAVecRestoreArray(fs->DA_CEN, jr->lT,  &lT);  CHKERRQ(ierr);
-
-	// project initial history from markers to grid
-	ierr = ADVProjHistMarkToGrid(actx); CHKERRQ(ierr);
-
-	PrintDone(t);
 
 	PetscFunctionReturn(0);
 }

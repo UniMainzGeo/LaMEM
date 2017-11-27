@@ -751,6 +751,9 @@ PetscErrorCode LaMEMLibInitGuess(LaMEMLib *lm, SNES snes)
 	// initialize temperature
 	ierr = JacResInitTemp(&lm->jr); CHKERRQ(ierr);
 
+	// solve for steady-state temperature (if requested)
+	ierr = LaMEMLibSolveTemp(lm); CHKERRQ(ierr);
+
 	// initialize pressure
 	ierr = JacResInitPres(&lm->jr); CHKERRQ(ierr);
 
@@ -787,7 +790,66 @@ PetscErrorCode LaMEMLibInitGuess(LaMEMLib *lm, SNES snes)
 
 	PetscFunctionReturn(0);
 }
+//---------------------------------------------------------------------------
+#undef __FUNCT__
+#define __FUNCT__ "LaMEMLibSolveTemp"
+PetscErrorCode LaMEMLibSolveTemp(LaMEMLib *lm)
+{
+	JacRes         *jr;
+	AdvCtx         *actx;
+	Controls       *ctrl;
+	KSP            tksp;
+	PetscLogDouble t;
 
+	PetscErrorCode ierr;
+	PetscFunctionBegin;
+
+	// access context
+	jr   = &lm->jr;
+	actx = &lm->actx;
+	ctrl = &jr->ctrl;
+
+	// check activation
+	if(!ctrl->actTemp || !ctrl->actSteadyTemp) PetscFunctionReturn(0);
+
+	PrintStart(&t,"Computing stead-state temperature distribution", NULL);
+
+	// create temperature diffusion solver
+	ierr = KSPCreate(PETSC_COMM_WORLD, &tksp); CHKERRQ(ierr);
+	ierr = KSPSetOptionsPrefix(tksp,"its_");   CHKERRQ(ierr);
+	ierr = KSPSetFromOptions(tksp);            CHKERRQ(ierr);
+
+	// compute matrix and rhs
+	ierr = JacResGetTempRes(jr, 0); CHKERRQ(ierr);
+	ierr = JacResGetTempMat(jr, 0); CHKERRQ(ierr);
+
+	// solve linear system
+	ierr = KSPSetOperators(tksp, jr->Att, jr->Att); CHKERRQ(ierr);
+	ierr = KSPSetUp(tksp);                          CHKERRQ(ierr);
+	ierr = KSPSolve(tksp, jr->ge, jr->dT);          CHKERRQ(ierr);
+
+	// destroy initial temperature solver
+	ierr = KSPDestroy(&tksp); CHKERRQ(ierr);
+
+	// clear current temperature
+	ierr = VecZeroEntries(jr->lT); CHKERRQ(ierr);
+
+	// store computed temperature, enforce boundary constraints
+	ierr = JacResUpdateTemp(jr); CHKERRQ(ierr);
+
+	// copy temperature to markers
+	ierr = ADVMarkSetTempVector(actx); CHKERRQ(ierr);
+
+	// project temperature from markers to grid
+	ierr = ADVProjHistMarkToGrid(actx); CHKERRQ(ierr);
+
+	// initialize temperature
+	ierr = JacResInitTemp(&lm->jr); CHKERRQ(ierr);
+
+	PrintDone(t);
+
+	PetscFunctionReturn(0);
+}
 //---------------------------------------------------------------------------
 #undef __FUNCT__
 #define __FUNCT__ "LaMEMLib_reverse"

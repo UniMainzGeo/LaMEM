@@ -245,9 +245,6 @@ PetscErrorCode ADVCreate(AdvCtx *actx, FB *fb)
 	// project initial history from markers to grid
 	ierr = ADVProjHistMarkToGrid(actx); CHKERRQ(ierr);
 
-	// set optional temperature distributions
-	ierr = ADVMarkSetTemp(actx, fb); CHKERRQ(ierr);
-
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
