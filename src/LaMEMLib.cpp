@@ -67,6 +67,7 @@
 #include "paraViewOutMark.h"
 #include "paraViewOutAVD.h"
 #include "objFunct.h"
+#include "adjoint.h"
 #include "LaMEMLib.h"
 //---------------------------------------------------------------------------
 #undef __FUNCT__
@@ -79,8 +80,6 @@ PetscErrorCode LaMEMLibMain(void *param)
 	PetscInt       exists;
 	char           str[_STR_LEN_];
 	PetscLogDouble cputime_start, cputime_end;
-
-	if(param) param = NULL;
 
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
@@ -141,7 +140,7 @@ PetscErrorCode LaMEMLibMain(void *param)
 	if(mode == _NORMAL_ || mode == _DRY_RUN_ || mode == _REVERSE_ )
 	{
 		// create library objects
-		ierr = LaMEMLibCreate(&lm); CHKERRQ(ierr);
+		ierr = LaMEMLibCreate(&lm, param); CHKERRQ(ierr);
 	}
 	else if(mode == _RESTART_)
 	{
@@ -177,7 +176,7 @@ PetscErrorCode LaMEMLibMain(void *param)
 //---------------------------------------------------------------------------
 #undef __FUNCT__
 #define __FUNCT__ "LaMEMLibCreate"
-PetscErrorCode LaMEMLibCreate(LaMEMLib *lm)
+PetscErrorCode LaMEMLibCreate(LaMEMLib *lm, void *param )
 {
 	FB *fb;
 
@@ -195,6 +194,9 @@ PetscErrorCode LaMEMLibCreate(LaMEMLib *lm)
 
 	// create material database
 	ierr = DBMatCreate(&lm->dbm, fb); CHKERRQ(ierr);
+
+	// Overwrite material parameters for inverse run
+	ierr = MatPropSetFromLibCall(&lm->jr, (ModParam *)param, fb);
 
 	// create parallel grid
 	ierr = FDSTAGCreate(&lm->fs, fb); CHKERRQ(ierr);
@@ -589,15 +591,13 @@ PetscErrorCode LaMEMLibSolve(LaMEMLib *lm, void *param)
 	PMat           pm;     // preconditioner matrix    (to be removed!)
 	PCStokes       pc;     // Stokes preconditioner    (to be removed!)
 	NLSol          nl;     // nonlinear solver context (to be removed!)
+	AdjGrad        aop;    // Adjoint options          (to be removed!)
 	SNES           snes;   // PETSc nonlinear solver
 	PetscInt       restart;
 	PetscLogDouble t;
 
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
-
-	// ad-hoc
-	if(param) param = NULL;
 
 	// create Stokes preconditioner, matrix and nonlinear solver
 	ierr = PMatCreate(&pm, &lm->jr);    CHKERRQ(ierr);
@@ -639,6 +639,18 @@ PetscErrorCode LaMEMLibSolve(LaMEMLib *lm, void *param)
 
 		// view nonlinear residual
 		ierr = JacResViewRes(&lm->jr); CHKERRQ(ierr);
+
+		// Compute adjoint gradients every TS
+		if (param)
+		{
+			ModParam      *IOparam;
+			IOparam       = (ModParam *)param;
+
+			if (IOparam->use == 2)
+			{	// Compute adjoint gradients
+				ierr = AdjointObjectiveAndGradientFunction(&aop, &lm->jr, &nl, (ModParam *)param, snes, &lm->surf); CHKERRQ(ierr);
+			}
+		}
 
 		//==========================================
 		// MARKER & FREE SURFACE ADVECTION + EROSION
@@ -692,6 +704,23 @@ PetscErrorCode LaMEMLibSolve(LaMEMLib *lm, void *param)
 	//======================
 	// END OF TIME STEP LOOP
 	//======================
+
+	if (param)
+	{
+		ModParam      *IOparam;
+		IOparam       = (ModParam *)param;
+
+		if(IOparam->use == 3)
+		{	// Compute 'full' adjoint inversion
+	 		ierr = AdjointObjectiveAndGradientFunction(&aop, &lm->jr, &nl, (ModParam *)param, snes, &lm->surf); CHKERRQ(ierr);
+		}
+
+		if(IOparam->use == 4)
+		{	// Assume this as a forward simulation and save the solution vector
+	 		VecDuplicate(lm->jr.gsol, &IOparam->xini);
+			VecCopy(lm->jr.gsol, IOparam->xini);
+		}
+	}
 
 	// delete restart database
 	ierr = LaMEMLibDeleteRestart(); CHKERRQ(ierr);

@@ -1,0 +1,181 @@
+#===============================================================================
+# Scaling
+#===============================================================================
+
+	units = none
+
+#===============================================================================
+# Time stepping parameters
+#===============================================================================
+
+	time_end  = 1.0   # simulation end time
+	dt        = 1e-2  # time step
+	dt_min    = 1e-5  # minimum time step (declare divergence if lower value is attempted)
+	dt_max    = 0.1   # maximum time step
+	dt_out    = 0.2   # output step (output at least at fixed time intervals)
+	inc_dt    = 0.1   # time step increment per time step (fraction of unit)
+	CFL       = 0.5   # CFL (Courant-Friedrichs-Lewy) criterion
+	CFLMAX    = 0.5   # CFL criterion for elasticity
+	nstep_max = 1     # maximum allowed number of steps (lower bound: time_end/dt_max)
+	nstep_out = 1     # save output every n steps
+	nstep_rdb = 0     # save restart database every n steps
+
+
+#===============================================================================
+# Grid & discretization parameters
+#===============================================================================
+
+# Number of cells for all segments
+
+	nel_x = 128
+	nel_y = 2
+	nel_z = 32
+
+# Coordinates of all segments (including start and end points)
+
+	coord_x = 0.0 10.0
+	coord_y = 0.0 0.1
+	coord_z = 0.0 1.0
+
+#===============================================================================
+# Free surface
+#===============================================================================
+
+# Default
+
+#===============================================================================
+# Boundary conditions
+#===============================================================================
+
+# Default
+
+#===============================================================================
+# Solution parameters & controls
+#===============================================================================
+
+	gravity        = 0.0 0.0 -1.0   # gravity vector
+	FSSA           = 1.0            # free surface stabilization parameter [0 - 1]
+	act_p_shift    = 0              # pressure shift activation flag (zero pressure in the top cell layer)
+	init_guess     = 0              # initial guess flag
+	DII_ref        = 1e-6          # background (reference) strain-rate
+	eta_min        = 1e-3           # viscosity upper bound
+	eta_max        = 1e12           # viscosity lower limit
+
+#===============================================================================
+# Model setup & advection
+#===============================================================================
+
+	msetup         = files             # setup type
+        #mark_load_file = ./t6_AdjointGradientScaling/markers/mdb
+	nmark_x        = 3                 # markers per cell in x-direction
+	nmark_y        = 3                 # ...                 y-direction
+	nmark_z        = 3                 # ...                 z-direction
+	bg_phase       = 0                 # background phase ID
+
+#===============================================================================
+# Output
+#===============================================================================
+
+# Grid output options (output is always active)
+
+	out_file_name       = AdjointGradients_test # output file name
+	out_pvd             = 1                     # activate writing .pvd file
+	out_density         = 1
+
+# AVD phase viewer output options (requires activation)
+
+	out_avd     = 1 # activate AVD phase output
+	out_avd_pvd = 1 # activate writing .pvd file
+	out_avd_ref = 3 # AVD grid refinement factor
+
+#===============================================================================
+# Material phase parameters
+#===============================================================================
+
+	# Define properties of overburden
+	<MaterialStart>
+		ID  = 0 # phase id
+		rho = 2 # density
+		eta0 = 1   # viscosity
+		n = 1      # viscosity
+		e0 = 1e-6  # viscosity
+	<MaterialEnd>
+
+	# Define properties of block
+	<MaterialStart>
+		ID  = 1   # phase id
+		rho = 1   # density
+		eta0 = 100   # viscosity
+		n = 1      # viscosity
+		e0 = 1e-6  # viscosity
+	<MaterialEnd>
+	
+#===============================================================================
+# Inverse Part (look into comments in LaMEM.cpp for info)
+#===============================================================================
+	
+	# General
+    Inv_use       = 2
+    Inv_Ap        = 1
+    
+    # Parameters
+    <InverseParStart>
+	   	Inv_ID  = 0
+		Inv_Typ = rho0      
+		Inv_Par = 2  
+	<InverseParEnd>
+	       
+	<InverseParStart>  
+		Inv_ID  = 1
+		Inv_Typ = rho0      
+		Inv_Par = 1    
+	<InverseParEnd>
+	
+	<InverseParStart>
+	   	Inv_ID  = 0
+		Inv_Typ = eta0      
+		Inv_Par = 1  
+	<InverseParEnd>
+	       
+	<InverseParStart>  
+		Inv_ID  = 1
+		Inv_Typ = eta0      
+		Inv_Par = 1    
+	<InverseParEnd>
+	
+	# Comparison indices
+	<InverseIndStart>
+		Inv_Ax = 9.98;
+		Inv_Ay = 0.05;
+		Inv_Az = 0.68;
+		Inv_Av = 3;
+	<InverseIndEnd>
+
+#===============================================================================
+# PETSc options
+#===============================================================================
+
+<PetscOptionsStart>
+
+	# LINEAR & NONLINEAR SOLVER OPTIONS
+	-snes_type ksponly # no nonlinear solver
+
+	# Jacobian (linear) outer KSP
+	-js_ksp_type gmres
+	-js_ksp_max_it 25
+#	-js_ksp_converged_reason
+ 	-js_ksp_monitor
+	-js_ksp_rtol 1e-4
+	-js_ksp_atol 1e-10
+
+	# Direct solver with penalty method
+	-pcmat_type    mono
+	-pcmat_pgamma  1e5	# penalty parameter
+	-jp_type       user
+	-jp_pc_type    lu
+
+	-objects_dump
+
+<PetscOptionsEnd>
+
+#===============================================================================

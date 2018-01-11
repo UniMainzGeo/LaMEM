@@ -56,6 +56,8 @@
 
 struct Scaling;
 struct FB;
+struct JacRes;
+struct ModParam;
 
 //---------------------------------------------------------------------------
 //.......................   Softening Law Parameters  .......................
@@ -182,7 +184,7 @@ PetscErrorCode SetProfileCorrection(PetscScalar *B, PetscScalar n, TensorCorrect
 // PetscErrorCode MatPropSetFromCL(JacRes *jr);
 
 // assign phases from calling function
-//PetscErrorCode MatPropSetFromLibCall(JacRes *jr, ModParam *mod);
+PetscErrorCode MatPropSetFromLibCall(JacRes *jr, ModParam *mod, FB *fb);
 
 //---------------------------------------------------------------------------
 #endif

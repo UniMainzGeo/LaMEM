@@ -46,6 +46,8 @@
 #include "phase.h"
 #include "parsing.h"
 #include "scaling.h"
+#include "objFunct.h"
+#include "JacRes.h"
 //---------------------------------------------------------------------------
 #undef __FUNCT__
 #define __FUNCT__ "DBMatCreate"
@@ -538,6 +540,120 @@ PetscErrorCode GetProfileName(FB *fb, Scaling *scal, char name[], const char key
 	if(strlen(name) && scal->utype == _NONE_)
 	{
 		SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "Predefined creep profile is not supported for non-dimensional setup");
+	}
+
+	PetscFunctionReturn(0);
+}
+//---------------------------------------------------------------------------
+#undef __FUNCT__
+#define __FUNCT__ "MatPropSetFromLibCall"
+PetscErrorCode MatPropSetFromLibCall(JacRes *jr, ModParam *mod, FB *fb)
+{
+	// overwrite MATERIAL PARAMETERS with model parameters provided by a calling function
+
+	PetscInt 	id, im, count_starts, count_ends;
+	PetscScalar eta, eta0, e0;
+	Material_t *m;
+	Scaling    *scal;
+
+
+	PetscErrorCode ierr;
+	PetscFunctionBegin;
+
+	scal = jr->scal;
+
+	if(mod == NULL) PetscFunctionReturn(0);
+
+	// does a calling function provide model parameters?
+	if(mod->use == 0 || mod->use == 2 || mod->use == 4) PetscFunctionReturn(0);
+
+	// set material properties
+	if(mod->use == 1 || mod->use == 3) {
+		PetscPrintf(PETSC_COMM_WORLD,"# ------------------------------------------------------------------------\n");
+		PetscPrintf(PETSC_COMM_WORLD,"# Material properties set from calling function: \n");
+
+		if(mod->use == 3)
+		{
+			VecGetArray(mod->P,&mod->val);
+		}
+
+		for(im=0;im<mod->mdN;im++)
+		{
+
+			id = mod->phs[im];
+			// get pointer to specified phase
+			m = jr->dbm->phases + id;
+
+			// linear viscosity
+			if(mod->typ[im] == _ETA_)
+			{
+				eta    =  mod->val[im];
+				m->Bd  =  (1.0/(2.0*eta)) * scal->viscosity;
+				PetscPrintf(PETSC_COMM_WORLD,"#    eta[%lld] = %g \n",(LLD)id,eta);	
+			}
+			// powerlaw viscosity
+			else if(mod->typ[im] == _ETA0_)
+			{
+				eta0   =  mod->val[im];
+				
+				// get reference strainrate from file  ( this is super unnecessary but unfortunately there is no other way to recompute Bn here)
+				ierr = getScalarParam(fb, _OPTIONAL_, "e0",       &e0,       1, 1.0); CHKERRQ(ierr);
+				
+				m->Bn  =  (pow (2.0*eta0, -m->n)*pow(e0, 1 - m->n)) * pow(scal->stress_si, m->n)*scal->time_si;
+				PetscPrintf(PETSC_COMM_WORLD,"#    eta[%lld] = %g \n",(LLD)id,eta0);
+			}
+			// constant density
+			else if(mod->typ[im] == _RHO0_) 
+			{
+				m->rho = mod->val[im] / scal->density;
+				PetscPrintf(PETSC_COMM_WORLD,"#    rho0[%lld] = %5.5f \n",(LLD)id,m->rho * scal->density);
+			}
+			// depth dependent density
+			else if(mod->typ[im] == _RHON_)
+			{
+				m->rho_n = mod->val[im];
+				PetscPrintf(PETSC_COMM_WORLD,"#    rho_n[%lld] = %3.5f \n",(LLD)id,m->rho_n);
+			}
+			// depth dependent density
+			else if(mod->typ[im] == _RHOC_)
+			{
+				m->rho_c = mod->val[im] / scal->length_si;
+				PetscPrintf(PETSC_COMM_WORLD,"#    rho_c[%lld] = %3.5f \n",(LLD)id,m->rho_c * scal->length_si);
+			}
+			// powerlaw exponent
+			else if(mod->typ[im] == _N_)
+			{
+				char ndisl[_STR_LEN_];
+				PetscScalar F2;
+				m->n = mod->val[im];
+				// in case of Ranalli dislocation creep
+				F2 = pow(0.5,(m->n-1)/m->n) / pow(3,(m->n+1)/(2*m->n)); //  F2 = 1/2^((n-1)/n)/3^((n+1)/2/n);
+				m->Bn = (pow(2*F2,-m->n) * pow(1e6*pow((m->Bn),-1/m->n),-m->n));
+				m->Bn    *= pow(scal->stress_si, m->n)*scal->time_si;
+
+				// in caswe of simple powerlaw
+				// m->Bn = (pow (2.0*eta0, -m->n)*pow(e0, 1 - m->n)) * (pow(scal->stress_si, m->n)*scal->time_si);
+				PetscPrintf(PETSC_COMM_WORLD,"#    n[%lld] = %3.3f \n",(LLD)id,m->n);
+			}
+			// activation energy
+			else if(mod->typ[im] == _EN_)
+			{
+				m->En = mod->val[im];
+				PetscPrintf(PETSC_COMM_WORLD,"#    En[%lld] = %7.2f \n",(LLD)id,m->En);
+			}
+			else
+			{
+				PetscPrintf(PETSC_COMM_WORLD,"WARNING: inversion parameter type is not yet implemented \n");
+			}
+
+		}
+
+		if(mod->use == 3)
+		{
+			VecRestoreArray(mod->P,&mod->val);
+		}
+
+		PetscPrintf(PETSC_COMM_WORLD,"# ------------------------------------------------------------------------\n");
 	}
 
 	PetscFunctionReturn(0);

@@ -17,19 +17,25 @@ os.system('cd ../src/;  make mode=deb all; cd ../tests')
 sys.path.append(os.path.join(os.environ['PWD'], 't1_FB1_Direct'))
 sys.path.append(os.path.join(os.environ['PWD'], 't2_FB2_MG'))
 sys.path.append(os.path.join(os.environ['PWD'], 't4_Loc'))
+sys.path.append(os.path.join(os.environ['PWD'], 't8_AdjointGradientScalingFB'))
 
 # add matlab-tests if matlab is available as ENVIRONMENTAL variable MATLAB
 if os.environ.get('MATLAB') != None:
     sys.path.append(os.path.join(os.environ['PWD'], 't3_SubductionMATLABinput'))
+    sys.path.append(os.path.join(os.environ['PWD'], 't6_AdjointGradientScaling'))
+    sys.path.append(os.path.join(os.environ['PWD'], 't7_AdjointGradientInversion'))
 else:
     print('MATLAB tests cannot be executed, as the environmental variable $MATLAB is not set')
 
 import test_1_FB1 as FB1
 import test_2_FB2 as FB2
 import test_4_localization as Loc1
+import test_8_AdjointGradientScalingFB1 as Adj3
 
 if os.environ.get('MATLAB') != None:
-  import test_3_Subduction1 as Sub1 # import test that requires MATLAB
+  import test_3_Subduction1               as Sub1 # import test that requires MATLAB
+  import test_6_AdjointGradientScaling1   as Adj1 # import test that requires MATLAB
+  import test_7_AdjointGradientInversion1 as Adj2 # import test that requires MATLAB
 
 def run_unittests_example1():
   os.environ['PYTHONUNBUFFERED'] = str('1')
@@ -39,7 +45,7 @@ def run_unittests_example1():
 
   # Register all non-MATLAB tests
   registeredTests = [ FB1.test_a(),  FB1.test_b(),  FB1.test_c(),  FB1.test_d(),
-                      FB2.test_a(), Loc1.test_a(), Loc1.test_b(), Loc1.test_c()];
+                      FB2.test_a(), Loc1.test_a(), Loc1.test_b(), Loc1.test_c(), Adj3.test_a()];
 
   # Add matlab tests (There should be a better way to do this for a range of files at the same time)
   if os.environ.get('MATLAB') != None:
@@ -47,6 +53,8 @@ def run_unittests_example1():
     registeredTests.append(Sub1.test_b());
     registeredTests.append(Sub1.test_c());
     registeredTests.append(Sub1.test_d());
+    registeredTests.append(Adj1.test_a());
+    registeredTests.append(Adj2.test_a());
 
   # Force output to be written somewhere else, can be invoked using -o <path>
   for test in registeredTests:
