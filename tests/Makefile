@@ -3,6 +3,9 @@
 #  2) delete basic output (make clean)
 #  3) delete all output (make purge)
 
+export PYTHONPATH=$(PWD)/pythontestharness/lib
+export PYTHONUNBUFFERED
+
 .PHONY : test clean purge
 
 test:
