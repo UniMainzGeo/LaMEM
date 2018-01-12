@@ -1,0 +1,3 @@
+[submodule "tests/pythontestharness"]
+	path = tests/pythontestharness
+	url = https://bitbucket.org/dmay/pythontestharness.git

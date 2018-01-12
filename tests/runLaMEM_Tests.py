@@ -1,13 +1,16 @@
 #!/usr/bin/env python
 import os,sys
 import subprocess
-sys.path.append(os.path.join(os.environ['PWD'], 'pyTestHarness'))
+sys.path.append(os.path.join(os.environ['PWD'], 'pythontestharness/lib/pyTestHarness'))
 
 import argparse
 
 #import pyTestHarness.unittest as pth
-import pyTestHarness.launch as launch
-import pyTestHarness.harness as harness
+import pyTestHarness.harness as pthharness
+import pyTestHarness.launcher as launch
+
+#import pyTestHarness.test as pthtest
+#import pyTestHarness.harness as pthharness
 
 # Build optimized and debug versions of LaMEM
 os.system('cd ../src/;  make mode=opt all; cd ../tests')
@@ -37,17 +40,17 @@ if os.environ.get('MATLAB') != None:
   import test_6_AdjointGradientScaling1   as Adj1 # import test that requires MATLAB
   import test_7_AdjointGradientInversion1 as Adj2 # import test that requires MATLAB
 
-def run_unittests_example1():
+def makeLocalPathAbsolute(localRelPath) :
+  thisDir = os.path.split(os.path.abspath(__file__))[0]
+  return(os.path.join(thisDir,localRelPath))
+
+def run_tests():
   os.environ['PYTHONUNBUFFERED'] = str('1')
 
-  if os.path.isdir('output') == False:
-    os.mkdir('output')
-
-  # Register all non-MATLAB tests
   registeredTests = [ FB1.test_a(),  FB1.test_b(),  FB1.test_c(),  FB1.test_d(),
                       FB2.test_a(), Loc1.test_a(), Loc1.test_b(), Loc1.test_c(), Adj3.test_a()];
 
-  # Add matlab tests (There should be a better way to do this for a range of files at the same time)
+# Add matlab tests (There should be a better way to do this for a range of files at the same time)
   if os.environ.get('MATLAB') != None:
     registeredTests.append(Sub1.test_a());
     registeredTests.append(Sub1.test_b());
@@ -56,37 +59,14 @@ def run_unittests_example1():
     registeredTests.append(Adj1.test_a());
     registeredTests.append(Adj2.test_a());
 
-  # Force output to be written somewhere else, can be invoked using -o <path>
-  for test in registeredTests:
-    test.setOutputPath('output')
+  # Run the tests:
+  h = pthharness.Harness(registeredTests)
+  h.execute()
+  h.verify()
 
-  launcher = launch.pthLaunch();
-
-  # Filter tests <could be promoted into batch execute()/verify() methods
-  args = launcher.args
-  subset = []
-  if args.test:
-    #print(registeredTests)
-    tnames = args.test.split(',')
-    for name in tnames:
-      for t in registeredTests:
-        if name == t.name:
-          subset.append(t)
-    if subset == []:
-      raise RuntimeError('You requested to test a subset of registered tests, \n',
-                         'but no registed test matched the name list provided')
-    #else:
-    #  print(subset)
-  else:
-    subset = registeredTests
-
-  launcher = harness.pthHarness(subset)
-  launcher.execute()
-  launcher.verify()
-  launcher.clean()
 
 if __name__ == "__main__":
-  run_unittests_example1()
+  run_tests()
 
   os.system('make clean')
 

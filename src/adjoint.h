@@ -74,6 +74,10 @@ struct AdjGrad
 	Vec              vx, vy, vz;
 };
 
+// Adjoint optimization driving routines
+PetscErrorCode AdjointOptimisation(Vec P, PetscScalar F, Vec grad, void *ctx);
+PetscErrorCode AdjointOptimisationTAO(Tao tao, Vec P, PetscReal *F, Vec grad, void *ctx);
+
 // Compute the gradients for the adjoint inversion
 PetscErrorCode AdjointObjectiveAndGradientFunction(AdjGrad *aop, JacRes *jr, NLSol *nl, ModParam *IOparam, SNES snes, FreeSurf *surf);
 

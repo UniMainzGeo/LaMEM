@@ -1,7 +1,7 @@
 
 import os
 import pyTestHarness.unittest as pth
-import pyTestHarness.launch as launch
+import pyTestHarness.launcher as launch
 import re
 import subprocess
 
