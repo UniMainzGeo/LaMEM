@@ -453,6 +453,45 @@
 	<MaterialEnd>
 
 #===============================================================================
+# Adjoint gradients (and inversion) options (ALL OPTIONAL - defaults are applied)
+#===============================================================================
+
+    # General
+    Inv_use        = 3      # 0 = forward run ; 1 = Neighbourhood algorithm (requires NAPlus) ; 2 = only compute adjoint gradients ; 3 = 'full' adjoint inversion with TAO ; 4 = assume this as a forward simulation and save the solution
+    Inv_Ab         = 0      # Apply bounds?                                                                                                                                
+    Inv_Ap         = 1      # 1 = several indices ; 2 = the whole domain ; 3 = surface                                                                                     
+    Inv_reg        = 0      # 1 = tikhonov regularization of the cost function (TN) 2 = total variation regularization (TV)                                                  
+    Inv_Adv        = 0      # 1 = advect the point                                                                                                                         
+    Inv_OFdef      = 1      # Objective function defined by hand?                                                                                                          
+    Inv_Tao        = 1      # Use TAO?                                                                                                                                     
+    Inv_tol        = 1e-3   # tolerance for F/Fini after which code has converged                                                                                          
+    Inv_factor1    = 1e-1   # factor to multiply the gradients (should be set such that the highest gradient scales around 1/100 of its parameter ; only used without tao) 
+    Inv_factor2    = 1e-1   # factor that increases the convergence velocity (this value is added to itself after every succesful gradient descent ; only used without tao)
+    Inv_maxfactor2 = 10     # limit on the factor (only used without tao)                                                                                                  
+    
+    # Parameters
+    <InverseParStart>       
+	   	Inv_ID  = 0         # Phase id of paramter
+		Inv_Typ = rho0      # Parameter type (choose: rho0 rhon rhoc eta eta0 n En; and feel free to extend this list)
+		Inv_Par = 2         # Parameter value
+		Inv_Uba = 2         # Upper bound for parameter
+		Inv_Lba = 2         # Lower bound for parameter
+		Inv_Wei = 2         # Weight for the parameter if regularized
+	<InverseParEnd>
+	
+	# Comparison indices
+	<InverseIndStart>
+		Inv_Ax = 9.98;      # x coordinate of comparison point
+		Inv_Ay = 0.05;      # y coordinate of comparison point 
+		Inv_Az = 0.68;      # z coordinate of comparison point
+		Inv_Av = 3;         # Velocity component of comparison point (1 = Vx; 2 = Vy; 3 = Vz)
+		Inv_Ae = 0.00005;   # Velcoity value if Ofdef = 1
+	<InverseIndEnd>
+	
+	# Generally:
+	# Handle tao object as optimization algorithm with tao_[*] in the Petsc_Options section. Have a look at available options: http://www.mcs.anl.gov/petsc/petsc-current/docs/manualpages/Tao/index.html
+
+#===============================================================================
 # PETSc options
 #===============================================================================
 
