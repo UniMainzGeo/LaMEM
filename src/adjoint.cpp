@@ -39,6 +39,111 @@
  **         Arthur Bauville
  **
  ** ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ @*/
+
+// FRAMEWORK CODE FOR LaMEM TO USE ADJOINT GRADIENT (INVERSION)
+// *  developed by Georg Reuber (JGU Mainz)
+// *  publication: Georg S. Reuber, Anton A. Popov, Boris J.P. Kaus, Deriving scaling laws in geodynamics using adjoint gradients, Tectonophysics, 2017
+//---------------------------------------------------------------------------
+// COMPUTATION OF ADJOINT INVERSION
+//---------------------------------------------------------------------------
+// RECIPE:
+// Objective function    F(x,x(p)) = (1/2)*[P*(x-x_ini)' * P*(x-x_ini)]      // p = parameter ; x = converged solution ; xini = comparison solution (same size as jr->gsol) ; P = Projection vector containing the proportions of solution influence
+// Derivative I          dF/dx     = p*x-P*x_ini
+// Adjoint operation     psi       = J^-T * dF/dx           // J = converged Jacobain matrix
+// Derivative II         dr/dp     = [r(p+h) - r(p)]/h      // finite difference approximation of derivative of residual r vs parameter
+// Gradients             dF/dp     = -psi^T * dr/dp
+//
+// ------------------------------------------------------------
+// DETAILS:
+// In your input file you need to define:
+// IOparam.use	                   		= 1	                                // 0 = NO 1 = Free for other inversion methods 2 = Compute gradients 3 = full inversion 4 = save this forward simulation as comparison simulation
+// IOparam.Tao                     		= 0                                 // 0 = Self written gradient descent using (BFGS) Hessian 1 = Use PETSCs TAO (LMVM/BLMVM)
+// IOparam.mdN                     		= 4                                 // Number of parameters (same as lengths of phs & P )
+// IOparam.mdI                     		= 1                                 // Number of indices (same as lengths of Ax & Ay & Az )
+// IOparam.Ab                      		= 0                                 // 0 = No usage of bounds 1 = use bounds
+// IOparam.Ap                      		= 1                                 // 1 = several indices ; 2 = the whole domain (will exclude mdI & Ax & Ay & Az) ; 3 = the point with maximum velocity
+// IOparam.reg                     		= 1                                 // 1 = tikhonov regularization of the cost function (TN) 2 = total variation regularization (TV) (HANDLE WITH CARE)
+// IOparam.OFdef                  		= 1                                 // Objective function defined by hand? - meaning you give the comparison value at specific point by hand
+// IOparam.Ax					   		= {1.2}                             // Array (same length as Ay, Az) containing the x coordinates of the point where you want to compute the gradients
+// IOparam.Ay					   		= {0.6}                             // Array (same length as Ax, Az) containing the y coordinates of the point where you want to compute the gradients
+// IOparam.Az					   		= {0.4}                             // Array (same length as Ax, Ay) containing the z coordinates of the point where you want to compute the gradients
+// IOparam.Ae					   		= {1}                               // Array (same length as Ax, Ay) containing the velocity value of the point where you want to compute the gradients (used then in cost function evaluation)
+// IOparam.phs                     		= {1 2 1 2}                         // Array (same length as mdN) containing the phase of the parameter
+// IOparam.typ                    		= {_RHO0_, _RHO0_, _ETA_,_ETA_}     // Array (same length as mdN) containing the parameter corresponding to the phase
+// IOparam.Av                      		= {3}                               // Array (same length as Ax, Ay, Az, mdI) containing the related velocity direction in which to compute the gradient
+// IOparam.Adv                     		= 1                                 // Should the point be advected?
+// IOparam.tol 							= 1e-3;    							// tolerance for F/Fini after which code has converged
+// (optional - tao) Lb                  = {1 0 0 0}                         // Array (same length as mdN) containing the lower bounds for the parameters (only taken into account if 'IOparam.Ab  = 1;')
+// (optional - tao) Ub                  = {5 8 8 8}                         // Array (same length as mdN) containing the upper bounds for the parameters (only taken into account if 'IOparam.Ab  = 1;')
+// (optional - GD)  IOparam.factor1     = 1e1 								// factor to multiply the gradients (should be set such that the highest gradient scales around 1/100 of its parameter)
+// (optional - GD)  IOparam.factor2 	= 1.5  								// factor that increases the convergence velocity (this value is added to itself after every succesful gradient descent)
+// (optional - GD)  IOparam.maxfactor2 	= 100 								// limit on the factor2
+//
+// ------------------------------------------------------------
+// EXAMPLE IN INPUT FILE:
+//  # General
+//	Inv_use       = 2
+//  Inv_Ap        = 1
+//  Inv_OFdef     = 1
+//  Inv_Tao       = 1
+//  # Parameters
+//  <InverseParStart>
+//	   	Inv_ID  = 0
+//		Inv_Typ = rho0
+//		Inv_Par = 1
+//	<InverseParEnd>
+//  # Index
+//	<InverseIndStart>
+//		Inv_Ax = 4.95;
+//		Inv_Ay = 0.05;
+//		Inv_Az = 0.68;
+//		Inv_Av = 3;
+//		Inv_Ae = 1;
+//	<InverseIndEnd>
+//
+// --> EXECUTE your input file (*.dat) (f.e. mpiexec -n 2 /home/user/lamem/bin/opt/LaMEM -ParamFile Input.dat)
+//
+// ------------------------------------------------------------
+// Possible parameters (Inv_Typ):
+//	_RHO0_, _RHON_, _RHOC_,                             // density
+//	_ETA_, _BD_, _ED_, _VD_,                            // Newtonian linear diffusion creep
+//	_ETA0_,	_E0_, _BN_, _N_, _EN_, _VN_,                // power-law (dislocation) creep
+//	_BP_, _TAUP_, _GAMMA_, _Q_, _EP_, _VP_,             // Peierls creep
+//	_SHEAR_, _BULK_, _KP_,                              // elasticity
+//	_COHESION_, _FRICTION_, _CHSOFTID_, _FRSOFTID_,     // plasticity (Drucker-Prager)
+//	_ALPHA_, _CP_, _K_, _A_                             // energy
+//
+// ------------------------------------------------------------
+// Possible Velocities:  (Vx   Vy   Vz
+//                       (1    2    3)
+//
+// ------------------------------------------------------------
+// LINEAR SOLVER:
+// You can control the behaviour of the KSP object for the adjoint with the prefix "as_" (the same way as "js_")
+//
+// ------------------------------------------------------------
+// FULL INVERSION REMARKS:
+// 1) In case you want to perform the full adjoint inversion (use = 3)  and you do not want to specify comparison points by hand (OFdef = 1) make sure that you have a
+//    comparison file with a petsc vector the same size as jr->gsol and called Forward_Solution.bin. Most likely you want to run a forward simulation and then change
+//    the parameters to do so just run your forward model with use = 4 which automatically saves this file. Perturb the values within the input script and solve again
+//    with use = 3.
+//
+// 2) You can control the behaviour of the TAO object for the adjoint with the prefix "tao_" (example: '-tao_type lmvm' ; '-tao_fatol 1e-15' ; '-tao_converged_reason')
+//
+// 3) If not using tao, play around with the factors: factor1 should be set such that the smallest gradient multiplied by this factor is around 1/100 of its paramter.
+//    Size of factor2 controls how fast the step size will increase (gives faster convergence but you might overstep couple of minimas).
+//
+// 4) In case you want to use powerlaw viscosities make sure the reference strainrate is the same as the one that you use in the viscosity computation!!
+//
+// ------------------------------------------------------------
+// IMPORTANT REMARKS:
+// 1) Since the Adjoint needs the Jacobian matrix for computing the gradients it's crucial to make sure that
+//    you compute the Jacobian matrix in the timesteps where you want to compute the gradients
+//    (f.e. a linear problem would need a low value for -snes_atol [1e-20] and a low max iteration count -snes_max_it [2] to
+//    guarantee the computation of the Jacobian + the option '-snes_type ksponly')
+// 2) This code does not actually solve the system with the transposed Jacobian but uses the original Jacobian as approximation. So you should make
+//    sure that your Jacobian is symmteric (e.g. use lithostatic pressure in plasticity, etc..)
+//---------------------------------------------------------------------------
 #include "LaMEM.h"
 #include "adjoint.h"
 #include "phase.h"
