@@ -89,8 +89,6 @@
 // LaMEM library main function
 
 PetscErrorCode LaMEMLibMain(void *param);
-PetscErrorCode AdjointOptimisation(Vec P, PetscScalar F, Vec grad, void *ctx);
-PetscErrorCode AdjointOptimisationTAO(Tao tao, Vec P, PetscReal *F, Vec grad, void *ctx);
 
 //-----------------------------------------------------------------------------
 #endif

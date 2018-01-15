@@ -707,11 +707,13 @@ PetscErrorCode LaMEMLibSolve(LaMEMLib *lm, void *param)
 
 	if (param)
 	{
+
 		ModParam      *IOparam;
 		IOparam       = (ModParam *)param;
 
 		if(IOparam->use == 3)
 		{	// Compute 'full' adjoint inversion
+
 	 		ierr = AdjointObjectiveAndGradientFunction(&aop, &lm->jr, &nl, (ModParam *)param, snes, &lm->surf); CHKERRQ(ierr);
 		}
 
