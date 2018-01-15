@@ -52,6 +52,7 @@
 #include "nlsolve.h"
 #include "JacRes.h"
 #include "matFree.h"
+#include "tools.h"
 //---------------------------------------------------------------------------
 // * add bound checking for iterative solution vector in SNES
 // * automatically set -snes_type ksponly (for linear problems)
@@ -60,6 +61,7 @@
 // * residual function scaling
 // * adaptive setting of absolute tolerance based on previous steps residual norms
 //   (also for linear solves)
+//---------------------------------------------------------------------------
 //---------------------------------------------------------------------------
 #undef __FUNCT__
 #define __FUNCT__ "NLSolClear"
@@ -150,7 +152,172 @@ PetscErrorCode NLSolCreate(NLSol *nl, PCStokes pc, SNES *p_snes)
 	// return solver
 	(*p_snes) = snes;
 
+	// Display specified solver options
+	ierr =  DisplaySpecifiedSolverOptions(pc, snes);  CHKERRQ(ierr);
+
+
+
+	PetscFunctionReturn(0);
+}
+//---------------------------------------------------------------------------
+#undef __FUNCT__
+#define __FUNCT__ "DisplaySpecifiedSolverOptions"
+PetscErrorCode DisplaySpecifiedSolverOptions(PCStokes pc, SNES snes)
+{
+	PetscErrorCode 	ierr;
+	KSP 			ksp_coarse, ksp_levels, ksp;
+	PC 				pc_coarse, pc_levels;
+	char      		pname[_STR_LEN_];
+	PCStokesMG 		*mg;
+	PCType 			pc_type;
+	KSPType 	    ksp_type;
+	PCStokesUser 	*user;
+	PetscScalar 	scalar;
+	PetscInt 		integer;
+	PetscBool		found;
+	const MatSolverPackage solver_type; 
+
+ 	PetscFunctionBegin;
+
+	/* 	This routine prints the solver options that are specified on the command-line or in the PetscOptions of the LaMEM input script 
+	 	More complete options can be displayed with the command-line options
+		-js_ksp_view 
+		and -in case of multigrid- 
+		-gmg_pc_view
+		This however clutters the output a bit
+	*/
+
 	PetscPrintf(PETSC_COMM_WORLD, "--------------------------------------------------------------------------\n");
+
+
+	// Report (linear and  nonlinear) solver options currently used
+	// get solver context
+	user = (PCStokesUser*)pc->data;
+
+	PetscPrintf(PETSC_COMM_WORLD, "Solver parameters specified: \n");
+	ierr = SNESGetKSP(snes, &ksp);         CHKERRQ(ierr);
+	KSPGetType(ksp, &ksp_type);
+	PetscPrintf(PETSC_COMM_WORLD, "   Outermost Krylov solver       : %s \n", ksp_type);
+	if (pc->type == _STOKES_MG_){
+		
+		mg 		= 	(PCStokesMG*)pc->data; // retrieve MG object
+		ierr 	= 	PCMGGetSmoother(mg->mg.pc, 1, &ksp_levels); 	CHKERRQ(ierr);
+		ierr 	= 	KSPGetPC(ksp_levels, &pc_levels);        	CHKERRQ(ierr);
+
+		// Multigrid solver
+		PetscPrintf(PETSC_COMM_WORLD, "   Solver type                   : multigrid \n");	
+
+		/* Multigrid parameters for the smootheners at the various levels */
+
+		ierr = PetscOptionsGetString(NULL, NULL,"-gmg_mg_levels_ksp_type", pname, _STR_LEN_, &found); CHKERRQ(ierr);
+		if (found){
+			PetscPrintf(PETSC_COMM_WORLD, "   Multigrid smoother levels KSP : %s \n", pname); 
+		}
+		else{ // default
+			ierr = KSPGetType(ksp_levels, &ksp_type); CHKERRQ(ierr);
+			PetscPrintf(PETSC_COMM_WORLD, "   Multigrid smoother levels KSP : %s \n", ksp_type); 
+		}
+	
+		// depending on the smoother, there may be more options
+		if (!strcmp(pname, "richardson")){ 
+			// Options that go with the Richardson solver
+			ierr = PetscOptionsGetScalar(NULL, NULL,"-gmg_mg_levels_ksp_richardson_scale", &scalar, &found); CHKERRQ(ierr);
+			if (found){PetscPrintf(PETSC_COMM_WORLD, "   Multigrid dampening parameter : %f \n", scalar); }
+		}
+		
+		// preconditioner
+		ierr = PetscOptionsGetString(NULL, NULL,"-gmg_mg_levels_pc_type", pname, _STR_LEN_, &found); CHKERRQ(ierr);
+		if (found){ 
+			PetscPrintf(PETSC_COMM_WORLD, "   Multigrid smoother levels PC  : %s \n", pname); 
+		}
+		else{
+			ierr = PCGetType(pc_levels, &pc_type); CHKERRQ(ierr);	
+			PetscPrintf(PETSC_COMM_WORLD, "   Multigrid smoother levels PC  : %s \n", pc_type); 
+		}
+		
+		ierr = PetscOptionsGetInt(NULL, NULL,"-gmg_mg_levels_ksp_max_it", &integer, &found); CHKERRQ(ierr);
+		if (found){PetscPrintf(PETSC_COMM_WORLD, "   Number of smoothening steps   : %i \n", integer); }
+		/* ----- */
+
+		/* Coarse grid parameters */
+
+		// Extract PETSc default parameters
+		ierr = PCMGGetCoarseSolve(mg->mg.pc, &ksp_coarse); CHKERRQ(ierr);
+		ierr = KSPGetPC(ksp_coarse, &pc_coarse);               CHKERRQ(ierr);
+
+		ierr = PetscOptionsGetString(NULL, NULL,"-crs_ksp_type", pname, _STR_LEN_, &found); CHKERRQ(ierr);
+		if (found){	
+			PetscPrintf(PETSC_COMM_WORLD, "   Coarse level KSP              : %s \n", pname); 
+		}
+		else{ // default
+			ierr = KSPGetType(ksp_coarse, &ksp_type); CHKERRQ(ierr);
+			PetscPrintf(PETSC_COMM_WORLD, "   Coarse level KSP              : %s \n", ksp_type); 
+		}
+
+		ierr = PetscOptionsGetString(NULL, NULL,"-crs_pc_type", pname, _STR_LEN_, &found); CHKERRQ(ierr);
+		if (found){	
+			PetscPrintf(PETSC_COMM_WORLD, "   Coarse level PC               : %s \n", pname); 
+		}
+		else{ // default
+			ierr = PCGetType(pc_coarse, &pc_type); CHKERRQ(ierr);
+			PetscPrintf(PETSC_COMM_WORLD, "   Coarse level PC               : %s \n", pc_type); 
+		}
+
+		if (!strcmp(pname, PCLU)){
+			// direct solver @ coarse level
+			ierr = PetscOptionsGetString(NULL, NULL,"-crs_pc_factor_mat_solver_package", pname, _STR_LEN_, &found); CHKERRQ(ierr);
+			if (found){	
+				PetscPrintf(PETSC_COMM_WORLD, "   Coarse level solver package   : %s \n", pname);
+			}
+			else{ // default
+				ierr = PCFactorGetMatSolverPackage(pc_coarse, &solver_type); CHKERRQ(ierr);
+				PetscPrintf(PETSC_COMM_WORLD, "   Coarse level solver package   : %s \n", solver_type);
+			}
+		}
+		else if (!strcmp(pname, PCREDUNDANT))
+		{
+			//redundant solver @ coarse level
+			ierr = PetscOptionsGetInt(NULL, NULL,"-crs_pc_redundant_number", &integer, &found); CHKERRQ(ierr);
+			if (found){PetscPrintf(PETSC_COMM_WORLD, "   Number of redundant solvers   : %i \n", integer); }
+			ierr = PetscOptionsGetString(NULL, NULL,"-crs_redundant_pc_factor_mat_solver_package", pname, _STR_LEN_, &found); CHKERRQ(ierr);
+			if (found){	
+				PetscPrintf(PETSC_COMM_WORLD, "   Redundant solver package      : %s \n", pname);
+			}
+			
+		}
+		// we can add more options here if interested [e.g. for telescope]
+		/* ----- */
+
+	}
+	else if (pc->type == _STOKES_USER_){
+	
+		// Direct solver
+		ierr = PetscOptionsGetString(NULL, NULL,"-jp_pc_type", pname, _STR_LEN_, &found); CHKERRQ(ierr);
+		if (found){ 
+			if(!strcmp(pname, "lu")){ 
+				if (ISParallel(PETSC_COMM_WORLD)){
+					PetscPrintf(PETSC_COMM_WORLD, "   Solver type                   : parallel direct/lu \n");
+				}
+				else{
+					PetscPrintf(PETSC_COMM_WORLD, "   Solver type                   : serial direct/lu \n");
+				}
+			}
+		}
+
+		PCGetType(user->pc, &pc_type);
+		PCFactorGetMatSolverPackage(user->pc,&solver_type);
+		if (!solver_type){
+			PetscPrintf(PETSC_COMM_WORLD, "   Solver package                : petsc default\n");
+		}
+		else{
+			PetscPrintf(PETSC_COMM_WORLD, "   Solver package                : %s \n", solver_type);
+		}
+   		
+	}
+
+
+	PetscPrintf(PETSC_COMM_WORLD, "--------------------------------------------------------------------------\n");
+
 
 	PetscFunctionReturn(0);
 }

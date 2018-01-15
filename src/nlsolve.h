@@ -152,4 +152,7 @@ PetscErrorCode SNESCoupledTest(
 	void                *cctx);
 
 //---------------------------------------------------------------------------
+
+PetscErrorCode DisplaySpecifiedSolverOptions(PCStokes pc, SNES snes);
+
 #endif
