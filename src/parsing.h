@@ -181,4 +181,10 @@ PetscErrorCode  PetscOptionsGetCheckString(
 	PetscBool   *set);
 
 //-----------------------------------------------------------------------------
+
+
+//-----------------------------------------------------------------------------
+// Set default solver options
+//-----------------------------------------------------------------------------
+PetscErrorCode StokesSetDefaultSolverOptions(FB *fb);
 #endif

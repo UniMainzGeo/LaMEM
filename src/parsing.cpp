@@ -45,6 +45,7 @@
 #include "LaMEM.h"
 #include "parsing.h"
 #include "tools.h"
+
 //---------------------------------------------------------------------------
 #undef __FUNCT__
 #define __FUNCT__ "FBLoad"
@@ -54,7 +55,7 @@ PetscErrorCode FBLoad(FB **pfb)
 	FILE      *fp;
 	size_t    sz;
 	PetscBool found;
-	char      filename[_STR_LEN_];
+	char      filename[_STR_LEN_], *all_options;
 
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
@@ -119,12 +120,27 @@ PetscErrorCode FBLoad(FB **pfb)
 	{
 		ierr = MPI_Bcast(fb->fbuf, (PetscMPIInt)fb->nchar, MPI_CHAR, 0, PETSC_COMM_WORLD); CHKERRQ(ierr);
 	}
-
+	
 	// parse buffer
 	ierr = FBParseBuffer(fb); CHKERRQ(ierr);
 
+	// copy all command line and previously specified options to buffer
+	ierr = PetscOptionsGetAll(NULL, &all_options);  CHKERRQ(ierr);
+
+	// remove command line options from database
+	ierr = PetscOptionsClear(NULL); CHKERRQ(ierr);
+
+	// Set default solver options if defined in file
+	ierr = StokesSetDefaultSolverOptions(fb); CHKERRQ(ierr);
+
 	// load additional options from file
 	ierr = PetscOptionsReadFromFile(fb); CHKERRQ(ierr);
+
+	// push command line options to the end of database (priority)
+	ierr = PetscOptionsInsertString(NULL, all_options); CHKERRQ(ierr);
+	
+	// clean
+	ierr = PetscFree(all_options); CHKERRQ(ierr);
 
 	// return pointer
 	(*pfb) = fb;
@@ -712,18 +728,13 @@ PetscErrorCode PetscOptionsReadFromFile(FB *fb)
 
 	PetscBool found;
 	PetscInt  jj, i, lnbeg, lnend;
-	char     *all_options, *line, **lines, *key, *val, *option, filename[_STR_LEN_];
+	char     *line, **lines, *key, *val, *option, filename[_STR_LEN_];
 
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
 
 	if(!fb) PetscFunctionReturn(0);
 
-	// copy all command line options to buffer
-	ierr = PetscOptionsGetAll(NULL, &all_options);  CHKERRQ(ierr);
-
-	// remove command line options from database
-	ierr = PetscOptionsClear(NULL); CHKERRQ(ierr);
 
 	// setup block access mode
 	ierr = FBFindBlocks(fb, _OPTIONAL_, "<PetscOptionsStart>", "<PetscOptionsEnd>"); CHKERRQ(ierr);
@@ -763,11 +774,6 @@ PetscErrorCode PetscOptionsReadFromFile(FB *fb)
 	}
 
 	ierr = FBFreeBlocks(fb); CHKERRQ(ierr);
-
-	// push command line options to the end of database (priority)
-	ierr = PetscOptionsInsertString(NULL, all_options); CHKERRQ(ierr);
-
-	ierr = PetscFree(all_options); CHKERRQ(ierr);
 
 	// print message
 	ierr = PetscOptionsGetCheckString("-ParamFile", filename, &found); CHKERRQ(ierr);
@@ -854,6 +860,148 @@ PetscErrorCode  PetscOptionsGetCheckString(
 	{
 		SETERRQ2(PETSC_COMM_WORLD, PETSC_ERR_USER, "String %s is more than %lld symbols long, (_STR_LEN_ in parsing.h) \"%s\" \n", key, _STR_LEN_-2);
 	}
+
+	PetscFunctionReturn(0);
+}
+//-----------------------------------------------------------------------------
+
+//---------------------------------------------------------------------------
+#undef __FUNCT__
+#define __FUNCT__ "StokesSetDefaultSolverOptions"
+PetscErrorCode StokesSetDefaultSolverOptions(FB *fb)
+{
+	PetscErrorCode ierr;
+ 	char     		SolverType[_STR_LEN_], DirectSolver[_STR_LEN_], str[_STR_LEN_], SmootherType[_STR_LEN_];
+	PetscScalar 	scalar;
+	PetscInt 		integer;
+	
+	PetscFunctionBegin;
+	
+	// Set some 'best-guess' default solver paramaters to help the average user
+	// All options can be overridden by the usual PETSC options
+	ierr = PetscPrintf(PETSC_COMM_WORLD,"Setting default solver options ****** \n"); 
+
+	// Set default parameters for the outer iterations
+	ierr = PetscOptionsInsertString(NULL, "-js_ksp_monitor"); 			CHKERRQ(ierr);
+	ierr = PetscOptionsInsertString(NULL, "-js_ksp_converged_reason"); 	CHKERRQ(ierr);
+	ierr = PetscOptionsInsertString(NULL, "-js_ksp_min_it 1"); 			CHKERRQ(ierr);
+	
+	// Read input file to see if we set solver options 
+	ierr = getStringParam(fb, _OPTIONAL_, "SolverType",          SolverType,         NULL);          CHKERRQ(ierr);
+
+	// depending on what was chosen, set the command-line parameters accordingly
+	// These parameters can be overruled by parameters given in the PetscOptionsStart/PetscOptionsEnd block or on the command-line
+	if     		(!strcmp(SolverType, "direct")){
+		// Direct solver
+		ierr = PetscOptionsInsertString(NULL, "-pcmat_type mono"); 	CHKERRQ(ierr);
+		ierr = PetscOptionsInsertString(NULL, "-jp_type user"); 	CHKERRQ(ierr);
+		ierr = PetscOptionsInsertString(NULL, "-jp_pc_type lu"); 	CHKERRQ(ierr);
+		
+		// Set penalty parameter if specified
+		scalar 	= NULL;
+		ierr 	= getScalarParam(fb, _OPTIONAL_, "DirectPenalty",       &scalar,        1, 1.0);          CHKERRQ(ierr);
+		if (scalar){
+ 			sprintf(str, "-pcmat_pgamma %e", scalar);	ierr = PetscOptionsInsertString(NULL, str); 	CHKERRQ(ierr);
+		}
+
+		// if the type of direct solver is specified, use that
+		ierr = getStringParam(fb, _OPTIONAL_, "DirectSolver",        DirectSolver,       NULL );          CHKERRQ(ierr);
+		if     		(!strcmp(DirectSolver, "mumps")){        ierr = PetscOptionsInsertString(NULL, "-jp_pc_factor_mat_solver_package mumps"); 			CHKERRQ(ierr); }
+		else if     (!strcmp(DirectSolver, "superlu_dist")){ ierr = PetscOptionsInsertString(NULL, "-jp_pc_factor_mat_solver_package superlu_dist"); 	CHKERRQ(ierr); }
+		else if     (!strcmp(DirectSolver, "pastix"))	   { ierr = PetscOptionsInsertString(NULL, "-jp_pc_factor_mat_solver_package pastix"); 			CHKERRQ(ierr); }
+		else {
+			// solver is not specified; set a default one
+			if (ISParallel(PETSC_COMM_WORLD))
+			{
+				// We need to set one of the parallel solvers. Determine if we have one of them installed in the current PETSC version
+				ierr = PetscOptionsInsertString(NULL, "-jp_pc_factor_mat_solver_package superlu_dist"); 	CHKERRQ(ierr);
+			}
+		}
+
+	
+		// Report
+		ierr = PetscPrintf(PETSC_COMM_WORLD,"Solver Type 		: 	%s \n",SolverType); 
+
+	}
+	else if 	(!strcmp(SolverType, "multigrid")){
+		// Multigrid solver
+
+		ierr = PetscOptionsInsertString(NULL, "-pcmat_type mono"); 					CHKERRQ(ierr);
+		ierr = PetscOptionsInsertString(NULL, "-jp_type mg"); 						CHKERRQ(ierr);
+		ierr = PetscOptionsInsertString(NULL, "-gmg_pc_type mg"); 					CHKERRQ(ierr);
+		ierr = PetscOptionsInsertString(NULL, "-gmg_pc_mg_galerkin"); 				CHKERRQ(ierr);
+		ierr = PetscOptionsInsertString(NULL, "-gmg_pc_mg_type multiplicative"); 	CHKERRQ(ierr);
+		ierr = PetscOptionsInsertString(NULL, "-gmg_pc_mg_cycle_type v"); 			CHKERRQ(ierr);
+		ierr = PetscOptionsInsertString(NULL, "-gmg_pc_mg_log"); 					CHKERRQ(ierr);
+
+		integer 	= 3;
+		ierr 	= getIntParam(fb, _OPTIONAL_, "MGLevels",       &integer,        1, 100);          CHKERRQ(ierr);
+		if (integer){
+ 			sprintf(str, "-gmg_pc_mg_levels %i", integer);	ierr = PetscOptionsInsertString(NULL, str); 	CHKERRQ(ierr);
+		}
+		
+		integer 	= 10;
+		ierr 	= getIntParam(fb, _OPTIONAL_, "MGSweeps",       &integer,        1, 100);          CHKERRQ(ierr);
+		if (integer){
+ 			sprintf(str, "-gmg_mg_levels_ksp_max_it %i", integer);	ierr = PetscOptionsInsertString(NULL, str); 	CHKERRQ(ierr);
+		}
+
+		/* Specify smoother type options */
+		ierr = getStringParam(fb, _OPTIONAL_, "MGSmoother",          SmootherType,         "chebyshev");          CHKERRQ(ierr);
+		if 	(!strcmp(SmootherType, "jacobi")){
+
+			ierr = PetscOptionsInsertString(NULL, "-gmg_mg_levels_ksp_type richardson"); 		CHKERRQ(ierr);
+			ierr = PetscOptionsInsertString(NULL, "-gmg_mg_levels_pc_type jacobi"); 			CHKERRQ(ierr);
+
+			scalar 	= 0.6;
+			ierr 	= getScalarParam(fb, _OPTIONAL_, "MGJacobiDamp",       &scalar,        1, 1.0);          CHKERRQ(ierr);
+			if (scalar){
+ 				sprintf(str, "-gmg_mg_levels_ksp_richardson_scale %f", scalar);	ierr = PetscOptionsInsertString(NULL, str); 	CHKERRQ(ierr);
+			}
+		}
+		else if (!strcmp(SmootherType, "chebyshev")){
+			ierr = PetscOptionsInsertString(NULL, "-gmg_mg_levels_ksp_type chebyshev"); 		CHKERRQ(ierr);
+
+		}
+
+		/* Specify coarse grid direct solver options */
+		ierr = getStringParam(fb, _OPTIONAL_, "MGCoarseSolver",          SolverType,         "direct");          CHKERRQ(ierr);
+		PetscPrintf(PETSC_COMM_WORLD,"MGCoarseSolver=%s \n",SolverType);
+		if 	(!strcmp(SolverType, "direct") | !strcmp(SolverType, "mumps") | !strcmp(SolverType, "superlu_dist")){
+			PetscPrintf(PETSC_COMM_WORLD,"Setting direct solver options for crs \n",SolverType);
+
+			ierr = PetscOptionsInsertString(NULL, "-crs_ksp_type preonly"); 		CHKERRQ(ierr);
+			ierr = PetscOptionsInsertString(NULL, "-crs_pc_type lu"); 		CHKERRQ(ierr);
+			if (ISParallel(PETSC_COMM_WORLD)){
+				if (!strcmp(SolverType, "direct") | !strcmp(SolverType, "superlu_dist")){
+					ierr = PetscOptionsInsertString(NULL, "-crs_pc_factor_mat_solver_package superlu_dist"); 		CHKERRQ(ierr);
+				}
+				else if (!strcmp(SolverType, "mumps")){
+					ierr = PetscOptionsInsertString(NULL, "-crs_pc_factor_mat_solver_package mumps"); 		CHKERRQ(ierr);
+				}
+			}
+		}
+		else if (!strcmp(SolverType, "redundant")){
+			ierr = PetscOptionsInsertString(NULL, "-crs_ksp_type preonly"); 		CHKERRQ(ierr);
+			ierr = PetscOptionsInsertString(NULL, "-crs_pc_type redundant"); 		CHKERRQ(ierr);
+			
+			// define number of redundant solves
+			integer 	= 	4;
+			ierr 		= 	getIntParam(fb, _OPTIONAL_, "MGRedundantNum",       &integer,        1, 100);          CHKERRQ(ierr);
+			sprintf(str, "-crs_pc_redundant_number %i", integer);	ierr = PetscOptionsInsertString(NULL, str); 	CHKERRQ(ierr);
+
+			ierr = getStringParam(fb, _OPTIONAL_, "MGRedundantSolver",          SolverType,         "superlu_dist");          CHKERRQ(ierr);
+			sprintf(str, "-crs_redundant_pc_factor_mat_solver_package %s", SolverType);	ierr = PetscOptionsInsertString(NULL, str); 	CHKERRQ(ierr);
+			
+
+		}
+		// More can be added here later, such as telescope etc. (once we have a bit more experience with those solvers)
+
+	} 
+	else{
+		ierr = PetscPrintf(PETSC_COMM_WORLD,"NOT SETTING DEFAULT OPTIONS ****** \n"); 
+	} 
+
 
 	PetscFunctionReturn(0);
 }
