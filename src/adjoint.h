@@ -57,6 +57,7 @@ struct JacRes;
 struct Controls;
 struct NLSol;
 struct ModParam;
+struct FB;
 
 // Some global maxes on parameter and index numbers
 #define _MAX_PAR_ 50
@@ -77,6 +78,8 @@ struct AdjGrad
 // Adjoint optimization driving routines
 PetscErrorCode AdjointOptimisation(Vec P, PetscScalar F, Vec grad, void *ctx);
 PetscErrorCode AdjointOptimisationTAO(Tao tao, Vec P, PetscReal *F, Vec grad, void *ctx);
+
+PetscErrorCode LaMIMLibMain(ModParam *IOparam, FB *fb);
 
 // Compute the gradients for the adjoint inversion
 PetscErrorCode AdjointObjectiveAndGradientFunction(AdjGrad *aop, JacRes *jr, NLSol *nl, ModParam *IOparam, SNES snes, FreeSurf *surf);
