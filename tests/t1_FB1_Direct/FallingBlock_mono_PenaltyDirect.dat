@@ -65,7 +65,7 @@
 #===============================================================================
 	SolverType 		=	direct 			# solver [direct or multigrid]
 	DirectSolver 	=	mumps			# mumps/superlu_dist/pastix	
-	DirectPenalty 	=	1e4
+	DirectPenalty 	=	1e5
 
 		
 #===============================================================================
@@ -143,7 +143,7 @@
 
 	# Direct solver with penalty method
 #	-pcmat_type    mono
-	-pcmat_pgamma  1e5	# penalty parameter
+#	-pcmat_pgamma  1e5	# penalty parameter
 #	-jp_type       user
 #	-jp_pc_type    lu
 
