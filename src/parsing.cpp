@@ -49,7 +49,7 @@
 //---------------------------------------------------------------------------
 #undef __FUNCT__
 #define __FUNCT__ "FBLoad"
-PetscErrorCode FBLoad(FB **pfb)
+PetscErrorCode FBLoad(FB **pfb, PetscBool DisplayOutput)
 {
 	FB        *fb;
 	FILE      *fp;
@@ -82,7 +82,9 @@ PetscErrorCode FBLoad(FB **pfb)
 			SETERRQ1(PETSC_COMM_WORLD, PETSC_ERR_USER, "Cannot open input file %s\n", filename);
 		}
 
-		PetscPrintf(PETSC_COMM_WORLD, "Parsing input file : %s \n", filename);
+		if (DisplayOutput){
+			PetscPrintf(PETSC_COMM_WORLD, "Parsing input file : %s \n", filename);
+		}
 
 		// get file size
 		fseek(fp, 0L, SEEK_END);
@@ -134,18 +136,27 @@ PetscErrorCode FBLoad(FB **pfb)
 	ierr = StokesSetDefaultSolverOptions(fb); CHKERRQ(ierr);
 
 	// load additional options from file
-	ierr = PetscOptionsReadFromFile(fb); CHKERRQ(ierr);
+	ierr = PetscOptionsReadFromFile(fb, DisplayOutput); CHKERRQ(ierr);
 
 	// push command line options to the end of database (priority)
 	ierr = PetscOptionsInsertString(NULL, all_options); CHKERRQ(ierr);
 	
+	// print message
+	ierr = PetscOptionsGetCheckString("-ParamFile", filename, &found); CHKERRQ(ierr);
+	
+	if (DisplayOutput){
+		PetscPrintf(PETSC_COMM_WORLD, "Finished parsing input file : %s \n", filename);
+	}
+
 	// clean
 	ierr = PetscFree(all_options); CHKERRQ(ierr);
 
 	// return pointer
 	(*pfb) = fb;
 
-	PetscPrintf(PETSC_COMM_WORLD,"--------------------------------------------------------------------------\n");
+	if (DisplayOutput){
+		PetscPrintf(PETSC_COMM_WORLD,"--------------------------------------------------------------------------\n");
+	}
 
 	PetscFunctionReturn(0);
 }
@@ -720,7 +731,7 @@ PetscErrorCode getStringParam(
 //-----------------------------------------------------------------------------
 #undef __FUNCT__
 #define __FUNCT__ "PetscOptionsReadFromFile"
-PetscErrorCode PetscOptionsReadFromFile(FB *fb)
+PetscErrorCode PetscOptionsReadFromFile(FB *fb, PetscBool DisplayOutput)
 {
 	// * load additional options from input file
 	// * push command line options to the end of database
@@ -763,8 +774,9 @@ PetscErrorCode PetscOptionsReadFromFile(FB *fb)
 			else     asprintf(&option, "%s %s", key, val);
 
 			// add to PETSc options
-			PetscPrintf(PETSC_COMM_WORLD, "   Adding PETSc option: %s\n", option);
-
+			if (DisplayOutput){
+				PetscPrintf(PETSC_COMM_WORLD, "   Adding PETSc option: %s\n", option);
+			}
 			ierr = PetscOptionsInsertString(NULL, option); CHKERRQ(ierr);
 
 			if(val) free(option);
@@ -774,11 +786,6 @@ PetscErrorCode PetscOptionsReadFromFile(FB *fb)
 	}
 
 	ierr = FBFreeBlocks(fb); CHKERRQ(ierr);
-
-	// print message
-	ierr = PetscOptionsGetCheckString("-ParamFile", filename, &found); CHKERRQ(ierr);
-
-	PetscPrintf(PETSC_COMM_WORLD, "Finished parsing input file : %s \n", filename);
 
 	PetscFunctionReturn(0);
 }
@@ -879,7 +886,6 @@ PetscErrorCode StokesSetDefaultSolverOptions(FB *fb)
 	
 	// Set some 'best-guess' default solver paramaters to help the average user
 	// All options can be overridden by the usual PETSC options
-	ierr = PetscPrintf(PETSC_COMM_WORLD,"Setting default solver options ****** \n"); 
 
 	// Set default parameters for the outer iterations
 	ierr = PetscOptionsInsertString(NULL, "-js_ksp_monitor"); 			CHKERRQ(ierr);
@@ -898,9 +904,9 @@ PetscErrorCode StokesSetDefaultSolverOptions(FB *fb)
 		ierr = PetscOptionsInsertString(NULL, "-jp_pc_type lu"); 	CHKERRQ(ierr);
 		
 		// Set penalty parameter if specified
-		scalar 	= NULL;
+		scalar 	= 0;
 		ierr 	= getScalarParam(fb, _OPTIONAL_, "DirectPenalty",       &scalar,        1, 1.0);          CHKERRQ(ierr);
-		if (scalar){
+		if (scalar>0){
  			sprintf(str, "-pcmat_pgamma %e", scalar);	ierr = PetscOptionsInsertString(NULL, str); 	CHKERRQ(ierr);
 		}
 
@@ -966,7 +972,6 @@ PetscErrorCode StokesSetDefaultSolverOptions(FB *fb)
 
 		/* Specify coarse grid direct solver options */
 		ierr = getStringParam(fb, _OPTIONAL_, "MGCoarseSolver",          SolverType,         "direct");          CHKERRQ(ierr);
-		PetscPrintf(PETSC_COMM_WORLD,"MGCoarseSolver=%s \n",SolverType);
 		if 	(!strcmp(SolverType, "direct") | !strcmp(SolverType, "mumps") | !strcmp(SolverType, "superlu_dist")){
 			PetscPrintf(PETSC_COMM_WORLD,"Setting direct solver options for crs \n",SolverType);
 
@@ -997,9 +1002,6 @@ PetscErrorCode StokesSetDefaultSolverOptions(FB *fb)
 		}
 		// More can be added here later, such as telescope etc. (once we have a bit more experience with those solvers)
 
-	} 
-	else{
-		ierr = PetscPrintf(PETSC_COMM_WORLD,"NOT SETTING DEFAULT OPTIONS ****** \n"); 
 	} 
 
 

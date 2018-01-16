@@ -184,7 +184,7 @@ PetscErrorCode LaMEMLibCreate(LaMEMLib *lm, void *param )
 	PetscFunctionBegin;
 
 	// load input file
-	ierr = FBLoad(&fb); CHKERRQ(ierr);
+	ierr = FBLoad(&fb, PETSC_TRUE); CHKERRQ(ierr);
 
 	// create scaling object
 	ierr = ScalingCreate(&lm->scal, fb); CHKERRQ(ierr);
@@ -241,7 +241,7 @@ PetscErrorCode LaMEMLibSaveGrid(LaMEMLib *lm)
 	PetscFunctionBegin;
 
 	// load input file
-	ierr = FBLoad(&fb); CHKERRQ(ierr);
+	ierr = FBLoad(&fb, PETSC_TRUE); CHKERRQ(ierr);
 
 	// create scaling object
 	ierr = ScalingCreate(&lm->scal, fb); CHKERRQ(ierr);

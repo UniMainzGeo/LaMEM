@@ -1,6 +1,6 @@
 /*@ ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
  **
- **    Copyright (c) 2011-2015, JGU Mainz, Anton Popov, Boris Kaus
+ **    Copyright (c) 2011-2018, JGU Mainz, Anton Popov, Boris Kaus
  **    All rights reserved.
  **
  **    This software was developed at:
@@ -35,6 +35,7 @@
  **         Anton Popov      [popov@uni-mainz.de]
  **         Boris Kaus       [kaus@uni-mainz.de]
  **         Tobias Baumann
+ **			Georg Reuber
  **         Adina Pusok
  **         Arthur Bauville
  **
@@ -64,16 +65,18 @@ int main(int argc, char **argv)
 
 	// set default to be a forward run and overwrite it with input file options
 	IOparam.use        = 0;   		// 0 = forward run ; 1 = Neighbourhood algorithm (requires NAPlus) ; 2 = only compute adjoint gradients ; 3 = 'full' adjoint inversion with TAO ; 4 = assume this as a forward simulation and save the solution
-	ierr = FBLoad(&fb); CHKERRQ(ierr);
+	ierr = FBLoad(&fb, PETSC_FALSE); CHKERRQ(ierr);
 	ierr = getIntParam   (fb, _OPTIONAL_, "Inv_use"       , &IOparam.use,       1, 4        ); CHKERRQ(ierr);
 
-	// Forward simulation
+	
 	if(IOparam.use == 0)
 	{
+		// Forward simulation
 		ierr = LaMEMLibMain(NULL); CHKERRQ(ierr);
 	}
 	else
 	{
+		// Inversion or gradient computation
 		ierr = LaMIMLibMain(&IOparam, fb); CHKERRQ(ierr);
 	}
 

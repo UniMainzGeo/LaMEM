@@ -4,11 +4,7 @@
 #  3) delete all output (make purge)
 
 # Set environmental variables
-export PYTHONPATH=$(PWD)/pythontestharness/lib
 export PYTHONUNBUFFERED
-target=/Users/kausb/WORK/LaMEM/LaMEM/tests/pythontestharness
-
-
 
 # Check whether pythonharness has been downloaded properly
 
@@ -16,7 +12,7 @@ target=/Users/kausb/WORK/LaMEM/LaMEM/tests/pythontestharness
 
 test:
 	@echo "Testing whether pyTestHarness exists"
-	@test -s $(target)/LICENSE1.txt || { echo "pyTestHarness does not exist! Installing..."; git submodule init; git submodule update; git submodule status;  }
+	@test -s ./pythontestharness/lib || { echo "Looks like pyTestHarness does not exist! Installing from git..."; git submodule init; git submodule update; git submodule status;  }
 
 	@python runLaMEM_Tests.py
 

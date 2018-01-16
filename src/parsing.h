@@ -103,7 +103,7 @@ struct FB
 
 //-----------------------------------------------------------------------------
 
-PetscErrorCode FBLoad(FB **pfb);
+PetscErrorCode FBLoad(FB **pfb, PetscBool DisplayOutput);
 
 PetscErrorCode FBDestroy(FB **pfb);
 
@@ -169,7 +169,7 @@ PetscErrorCode getStringParam(
 // PETSc options parsing functions
 //-----------------------------------------------------------------------------
 
-PetscErrorCode PetscOptionsReadFromFile(FB *fb);
+PetscErrorCode PetscOptionsReadFromFile(FB *fb, PetscBool DisplayOutput);
 
 PetscErrorCode PetscOptionsReadRestart(FILE *fp);
 

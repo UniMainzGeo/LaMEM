@@ -61,6 +61,14 @@
 	eta_max        = 1e12           # viscosity lower limit
 
 #===============================================================================
+# Solver options
+#===============================================================================
+	SolverType 		=	direct 			# solver [direct or multigrid]
+	DirectSolver 	=	mumps			# mumps/superlu_dist/pastix	
+	DirectPenalty 	=	1e4
+
+		
+#===============================================================================
 # Model setup & advection
 #===============================================================================
 
@@ -71,7 +79,7 @@
 	bg_phase       = 0                 # background phase ID
 
 
-# Geometric primtives:
+# Geometric primitives:
 
 #	<BoxStart>
 #		phase  = 1
@@ -134,10 +142,10 @@
 	-js_ksp_atol 1e-10
 
 	# Direct solver with penalty method
-	-pcmat_type    mono
+#	-pcmat_type    mono
 	-pcmat_pgamma  1e5	# penalty parameter
-	-jp_type       user
-	-jp_pc_type    lu
+#	-jp_type       user
+#	-jp_pc_type    lu
 
 	-objects_dump
 

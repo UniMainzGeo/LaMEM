@@ -1,16 +1,13 @@
 #!/usr/bin/env python
 import os,sys
 import subprocess
-sys.path.append(os.path.join(os.environ['PWD'], 'pythontestharness/lib/pyTestHarness'))
+sys.path.insert(0, "./pythontestharness/lib")
 
 import argparse
 
 #import pyTestHarness.unittest as pth
 import pyTestHarness.harness as pthharness
 import pyTestHarness.launcher as launch
-
-#import pyTestHarness.test as pthtest
-#import pyTestHarness.harness as pthharness
 
 # Build optimized and debug versions of LaMEM
 os.system('cd ../src/;  make mode=opt all; cd ../tests')
@@ -49,6 +46,7 @@ def run_tests():
 
   registeredTests = [ FB1.test_a(),  FB1.test_b(),  FB1.test_c(),  FB1.test_d(),
                       FB2.test_a(), Loc1.test_a(), Loc1.test_b(), Loc1.test_c(), Adj3.test_a()];
+ 
 
 # Add matlab tests (There should be a better way to do this for a range of files at the same time)
   if os.environ.get('MATLAB') != None:
