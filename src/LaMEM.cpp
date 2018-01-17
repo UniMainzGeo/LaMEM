@@ -77,7 +77,7 @@ int main(int argc, char **argv)
 	else
 	{
 		// Inversion or gradient computation
-		ierr = LaMIMLibMain(&IOparam, fb); CHKERRQ(ierr);
+		ierr = LaMEMAdjointMain(&IOparam, fb); CHKERRQ(ierr);
 	}
 
 	// destroy file buffer

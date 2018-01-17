@@ -164,8 +164,8 @@
 #include "parsing.h"
 //---------------------------------------------------------------------------
 #undef __FUNCT__
-#define __FUNCT__ "LaMIMLibMain"
-PetscErrorCode LaMIMLibMain(ModParam *IOparam, FB *fb)
+#define __FUNCT__ "LaMEMAdjointMain"
+PetscErrorCode LaMEMAdjointMain(ModParam *IOparam, FB *fb)
 {
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
