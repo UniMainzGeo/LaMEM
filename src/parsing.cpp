@@ -71,7 +71,7 @@ PetscErrorCode FBLoad(FB **pfb, PetscBool DisplayOutput)
 		// read additional PETSc options from input file
 		if(found != PETSC_TRUE)
 		{
-			SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "Input file name is not specified\n");
+			SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "Input file name is not specified. You must add the -ParamFile option to specify a LaMEM input file as in:  ./LaMEM -ParamFile your_input_file.dat \n");
 		}
 
 		// open input file
