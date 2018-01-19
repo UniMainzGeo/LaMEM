@@ -9,8 +9,8 @@ def test_a():
 
   # Test a falling block with phase diagram with build-in direct solver on 2 core, using optimized
   ranks = 2
-  launch = '../bin/opt/LaMEM -ParamFile ./t9_FB1_Direct_PD/FallingBlock_PD.dat' # This must be a relative path with respect to runLaMEM_Tests.py
-  expected_file = 't9_FB1_Direct_PD/FallingBlock_PD.expected'
+  launch = '../bin/opt/LaMEM -ParamFile ./t9_FB1_Direct_PhaseDiagrams/test_9_FallingBlock_PhaseDiagrams.dat' # This must be a relative path with respect to runLaMEM_Tests.py
+  expected_file = 't9_FB1_Direct_PhaseDiagrams/test_9_FallingBlock_PhaseDiagrams.expected'
 
   def comparefunc(unittest):
 
@@ -24,7 +24,7 @@ def test_a():
     unittest.compareFloatingPoint(key,1e-4)
 
   # Create unit test object
-  ex1 = pth.pthUnitTest('t9_FB1_Direct_PD',ranks,launch,expected_file)
+  ex1 = pth.pthUnitTest('FB1_Direct_PhaseDiagrams',ranks,launch,expected_file)
   ex1.setVerifyMethod(comparefunc)
   ex1.appendKeywords('@')
 

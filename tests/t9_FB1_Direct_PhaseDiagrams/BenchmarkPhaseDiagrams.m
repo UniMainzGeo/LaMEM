@@ -2,7 +2,7 @@
 clear
 close
 
-PD_name = '90001540050402480359032702800300006400100010102736230.in';
+PD_name = 'TestPD.in';
 
 
 H = dlmread(PD_name, ' ', [50 0 55 1]);

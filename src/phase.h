@@ -127,6 +127,7 @@ public:
 	PetscScalar  T;        // optional temperature to set within the phase
 	// Phase diagram
 	char         pdn[max_name];   // Unique phase diagram number
+	char         pdf[max_name];   // Unique phase diagram number
 	PetscInt     Pd_rho;          // density from phase diagram?
 };
 

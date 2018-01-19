@@ -121,6 +121,8 @@
 	out_avd_pvd = 1 # activate writing .pvd file
 	out_avd_ref = 3 # AVD grid refinement factor
 
+	
+
 #===============================================================================
 # Material phase parameters
 #===============================================================================
@@ -130,7 +132,8 @@
 		ID  = 0 # phase id
 		rho = 3000 # density
 		disl_prof = Quarzite-Ranalli_1995
-		rho_ph = 90001540050402480359032702800300006400100010102736230
+		rho_ph = TestPD
+		rho_ph_file = t9_FB1_Direct_PhaseDiagrams/
 	<MaterialEnd>
 
 	# Define properties of block
@@ -139,7 +142,8 @@
 		rho = 2500   # density
 		disl_prof = Quarzite-Ranalli_1995
 		T   = 800.0  # optional temperature to set within the phase
-		rho_ph = 90001540050402480359032702800300006400100010102736230
+		rho_ph = TestPD
+		rho_ph_file = t9_FB1_Direct_PhaseDiagrams/
 	<MaterialEnd>
 
 #===============================================================================

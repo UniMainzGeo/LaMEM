@@ -464,6 +464,8 @@
 		k         = 2.5    # thermal conductivity
 		A         = 1e-9   # radiogenic heat production
 		T         = 100.0  # optional temperature to set within the phase
+		rho_ph    = TestPD # name of the phase diagram you want to use (still needs rho defined for the initial guess fo pressure)
+                rho_ph_file = #in case the phase diagram has a different path provide the path (without the name of the actual PD) here
 	<MaterialEnd>
 
 #===============================================================================

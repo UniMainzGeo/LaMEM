@@ -1,4 +1,24 @@
 5    
+  
+
+DATA:  
+Phase diagram always needs this 5 columns:    
+1                     2              3         4       5    
+rho_fluid [kg/m3]   melt []    rho [kg/m3]   T [K]   P [bar]    
+
+
+LINES:    
+1:     Number fo columns (to be able to increase this later)   
+1-50:  Comments    
+50:    Lowest T [K]
+51:    T increment    
+52:    # of T values    
+53-55: Same for pressure
+    
+    
+    
+
+
     
     
     
@@ -15,33 +35,13 @@
     
     
     
+        
     
     
     
     
     
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
+        
     
     
     

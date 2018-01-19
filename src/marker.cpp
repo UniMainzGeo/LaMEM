@@ -1378,7 +1378,7 @@ PetscErrorCode LoadPhaseDiagram(AdvCtx *actx, Material_t  *phases, PetscInt i)
 			{
 				// We already loaded that diagram so no need to do anything here except setting the flags for the melt
 				sprintf(name,"%s.in",phases[i].pdn);
-				fp=fopen(name,"r");
+				fp=fopen(phases[i].pdf,"r");
 				for(j=0;j<1;j++)
 				{
 					if(j==0)
@@ -1407,7 +1407,7 @@ PetscErrorCode LoadPhaseDiagram(AdvCtx *actx, Material_t  *phases, PetscInt i)
 
 	lineStart = 50.0;    // 50 lines are reserved for header
 
-	fp=fopen(name,"r");
+	fp=fopen(phases[i].pdf,"r");
 	if (fp==NULL)
 	{
 		SETERRQ1(PETSC_COMM_SELF, PETSC_ERR_USER, "No such phase diagram: %s in phase %i!\n",name);

@@ -18,7 +18,7 @@ sys.path.append(os.path.join(os.environ['PWD'], 't1_FB1_Direct'))
 sys.path.append(os.path.join(os.environ['PWD'], 't2_FB2_MG'))
 sys.path.append(os.path.join(os.environ['PWD'], 't4_Loc'))
 sys.path.append(os.path.join(os.environ['PWD'], 't8_AdjointGradientScalingFB'))
-sys.path.append(os.path.join(os.environ['PWD'], 't9_FB1_Direct_PD'))
+sys.path.append(os.path.join(os.environ['PWD'], 't9_FB1_Direct_PhaseDiagrams'))
 
 # add matlab-tests if matlab is available as ENVIRONMENTAL variable MATLAB
 if os.environ.get('MATLAB') != None:
@@ -32,7 +32,7 @@ import test_1_FB1 as FB1
 import test_2_FB2 as FB2
 import test_4_localization as Loc1
 import test_8_AdjointGradientScalingFB1 as Adj3
-import test_9_FBPD1 as FBPD1
+import test_9_FB_PhaseDiagrams1 as FBPD1
 
 if os.environ.get('MATLAB') != None:
   import test_3_Subduction1               as Sub1 # import test that requires MATLAB

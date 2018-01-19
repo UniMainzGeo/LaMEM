@@ -186,7 +186,7 @@ PetscErrorCode DBMatReadPhase(DBMat *dbm, FB *fb)
 	Material_t *m;
 	PetscInt    ID = -1, chSoftID, frSoftID, MSN, print_title, j;
 	PetscScalar eta, eta0, e0, K, G, E, nu, Vp, Vs;
-	char        ndiff[_STR_LEN_], ndisl[_STR_LEN_], npeir[_STR_LEN_], title[_STR_LEN_], pd[max_name];
+	char        ndiff[_STR_LEN_], ndisl[_STR_LEN_], npeir[_STR_LEN_], title[_STR_LEN_], pd[max_name], pdf[max_name];
 
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
@@ -228,6 +228,8 @@ PetscErrorCode DBMatReadPhase(DBMat *dbm, FB *fb)
 	//============================================================
 	// Get phase diagram names
 	ierr = getStringParam(fb, _OPTIONAL_, "rho_ph", pd, "none"); CHKERRQ(ierr);
+	// Get the PD path
+	ierr = getStringParam(fb, _OPTIONAL_, "rho_ph_file", pdf, NULL); CHKERRQ(ierr);
 	for(j=0; j<max_name; j++)
 	{
 		m->pdn[j] = pd[j];
@@ -235,12 +237,14 @@ PetscErrorCode DBMatReadPhase(DBMat *dbm, FB *fb)
 	if(strcmp(m->pdn, "none"))
 	{
 		m->Pd_rho = 1;
+		strcpy(m->pdf, pdf);
+		strcat(m->pdf, pd);
+		strcat(m->pdf, ".in");
 	}
 	else
 	{
 		m->Pd_rho = 0;
 	}
-
 
 	//============================================================
 	// Creep profiles
@@ -427,7 +431,8 @@ PetscErrorCode DBMatReadPhase(DBMat *dbm, FB *fb)
 	if(strlen(ndisl)) PetscPrintf(PETSC_COMM_WORLD,"    dislocation creep profile: %s", ndisl);
 
 	sprintf(title, "   (dens)   : "); print_title = 1;
-	MatPrintScalParam(m->rho,   "rho",   "[kg/m^3]", scal, title, &print_title);
+	if (m->Pd_rho == 1) MatPrintScalParam(m->rho,   "rho (PD used)",   "[kg/m^3]", scal, title, &print_title);
+	else                MatPrintScalParam(m->rho,   "rho",   "[kg/m^3]", scal, title, &print_title);
 	MatPrintScalParam(m->rho_n, "rho_n", "[ ]",      scal, title, &print_title);
 	MatPrintScalParam(m->rho_c, "rho_c", "[1/m]",    scal, title, &print_title);
 	MatPrintScalParam(m->beta,  "beta",  "[1/Pa]",   scal, title, &print_title);
