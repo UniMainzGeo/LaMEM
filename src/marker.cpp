@@ -114,6 +114,29 @@ PetscErrorCode ADVMarkInit(AdvCtx *actx, FB *fb)
 	// from file
 	ierr = ADVMarkSetTempFile(actx, fb); CHKERRQ(ierr);
 
+	// Load phase diagrams for the phases where it is required + interpolate the reference density for the first timestep
+	for(PetscInt i=0; i<actx->jr->dbm->numPhases; i++)
+	{
+		if(actx->jr->dbm->phases[i].Pd_rho == 1)
+		{
+			ierr = LoadPhaseDiagram(actx, actx->jr->dbm->phases, i); CHKERRQ(ierr);
+			SolVarCell  *svCell;
+			PetscInt     jj;
+
+			// interpolate reference density
+			for(jj = 0; jj < actx->fs->nCells; jj++)
+			{
+				// access solution variable
+				svCell = &actx->jr->svCell[jj];
+
+				svCell->svBulk.rho_pd  	= actx->jr->dbm->phases[i].rho;
+				svCell->svDev.mf  		= 0;
+				svCell->svBulk.mf 		= 0;
+				svCell->svBulk.rho_pf 	= 0;
+			}
+		}
+	}
+
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
@@ -1284,6 +1307,204 @@ void ADVMarkSecIdx(AdvCtx *actx, PetscInt dir, PetscInt Islice, PetscInt *idx)
 	}
 
 	return;
+}
+//---------------------------------------------------------------------------
+// get the density from a phase diagram
+#undef __FUNCT__
+#define __FUNCT__ "LoadPhaseDiagram"
+PetscErrorCode LoadPhaseDiagram(AdvCtx *actx, Material_t  *phases, PetscInt i)
+{
+	FILE          *fp;
+    PetscInt       i_pd,j,jj,ij,lineStart,n,found;
+    PetscScalar    fl[2];
+    char           buf[1000],name[100];
+    PData         *pd;
+    Marker        *P;
+    Scaling       *scal;
+    JacRes        *jr;
+
+	PetscFunctionBegin;
+
+	// rho_pdval[0] = lowermost temperature value
+	// rho_pdval[1] = dT
+	// rho_pdval[2] = nT
+	// rho_pdval[3] = uppermost temperature value
+	// rho_pdval[4] = lowermost pressure value
+	// rho_pdval[5] = dp
+	// rho_pdval[6] = np
+	// rho_pdval[7] = uppermost pressure value
+	// rho_pdval[8] = # of columns (to determine what needs to be interpolated)
+
+	jr   = actx->jr;
+	scal = actx->jr->scal;
+	pd   = actx->jr->Pd;
+
+	// Extrapolate the name on the markers
+	for(jj = 0; jj < actx->nummark; jj++)
+	{
+		P      = &actx->markers[jj];
+		if(P->phase == i)
+		{
+			for(j=0; j<max_name; j++)
+			{
+				P->pdn[j] = phases[i].pdn[j];
+			}
+		}
+	}
+
+	found = 0;
+	// Get the next empty row in the buffer
+	for(j=0; j<max_num_pd; j++)
+	{
+		if(!pd->rho_pdns[5][j])
+		{
+			found = 1;
+			i_pd = j;
+			break;
+		}
+		else
+		{
+			found = 1;
+			// Check if we have this diagram already in the buffer
+			for(ij=0; ij<max_name; ij++)
+			{
+				if((pd->rho_pdns[ij][j] != phases[i].pdn[ij]))
+				{
+					found = 0;
+					break;
+				}
+			}
+			if(found == 1)
+			{
+				// We already loaded that diagram so no need to do anything here except setting the flags for the melt
+				sprintf(name,"%s.in",phases[i].pdn);
+				fp=fopen(name,"r");
+				for(j=0;j<1;j++)
+				{
+					if(j==0)
+					{
+						fscanf(fp, "%lf,",&fl[0]);
+					}
+				}
+				if(fl[0] == 4 || fl[0] == 5)
+				{
+					phases[i].Pd_rho = 1;
+				}
+				fclose(fp);
+				PetscFunctionReturn(0);
+			}
+		}
+	}
+
+	if(found == 0)
+	{
+		PetscPrintf(PETSC_COMM_WORLD,"Phase diagram buffer too small!\n\n");
+		PetscFunctionReturn(0);
+	}
+
+	// Create the name
+	sprintf(name,"%s.in",phases[i].pdn);
+
+	lineStart = 50.0;    // 50 lines are reserved for header
+
+	fp=fopen(name,"r");
+	if (fp==NULL)
+	{
+		SETERRQ1(PETSC_COMM_SELF, PETSC_ERR_USER, "No such phase diagram: %s in phase %i!\n",name);
+	}
+
+	// Read header
+	for(j=0;j<lineStart;j++)
+	{
+		if(j==0)
+		{
+			fscanf(fp, "%lf,",&pd->rho_pdval[8][i_pd]);
+		}
+		else
+		{
+			fgets(buf, 1000, fp);
+		}
+	}
+
+	// Read important phase diagram info
+	fscanf(fp, "%lf,",&pd->rho_pdval[0][i_pd]);
+	pd->rho_pdval[0][i_pd] = (pd->rho_pdval[0][i_pd])/scal->temperature;
+	fscanf(fp, "%lf,",&pd->rho_pdval[1][i_pd]);
+	pd->rho_pdval[1][i_pd] = (pd->rho_pdval[1][i_pd])/scal->temperature;
+	fscanf(fp, "%lf,",&pd->rho_pdval[2][i_pd]);
+	pd->rho_pdval[3][i_pd] = pd->rho_pdval[2][i_pd]*pd->rho_pdval[1][i_pd] + pd->rho_pdval[0][i_pd];
+	fscanf(fp, "%lf,",&pd->rho_pdval[4][i_pd]);
+	pd->rho_pdval[4][i_pd] = (pd->rho_pdval[4][i_pd]*1e5)/scal->stress_si;
+	fscanf(fp, "%lf,",&pd->rho_pdval[5][i_pd]);
+	pd->rho_pdval[5][i_pd] = (pd->rho_pdval[5][i_pd]*1e5)/scal->stress_si;
+	fscanf(fp, "%lf,",&pd->rho_pdval[6][i_pd]);
+	pd->rho_pdval[7][i_pd] = pd->rho_pdval[6][i_pd]*pd->rho_pdval[5][i_pd] + pd->rho_pdval[4][i_pd];
+
+	n = (PetscInt)pd->rho_pdval[2][i_pd] * (PetscInt)pd->rho_pdval[6][i_pd];
+
+	/*
+	Check what data is available:
+	1 column = rho fluid [kg/m3]
+	2 column = melt fraction []
+	3 column = density [kg/m3]
+	4 column = T [K]
+	5 column = P [b]
+	*/
+
+	if(pd->rho_pdval[8][i_pd] == 3)  // density
+	{
+		fscanf(fp,"%lf %lf %lf,",&pd->rho_v[0][i_pd],&fl[0],&fl[1]);
+		pd->rho_v[0][i_pd] /= scal->density;
+		for (j=1; j<n; j++)
+		{
+			fscanf(fp, "%lf %lf %lf,",&pd->rho_v[j][i_pd],&fl[0],&fl[1]);
+			pd->rho_v[j][i_pd] /= scal->density;
+		}
+	}
+	else if(pd->rho_pdval[8][i_pd] == 4)   // density + mf
+	{
+		fscanf(fp, "%lf %lf %lf %lf,",&pd->Me_v[0][i_pd],&pd->rho_v[0][i_pd],&fl[0],&fl[1]);
+		pd->rho_v[0][i_pd] /= scal->density;
+
+		for (j=1; j<n; j++)
+		{
+			fscanf(fp, "%lf %lf %lf %lf,",&pd->Me_v[j][i_pd],&pd->rho_v[j][i_pd],&fl[0],&fl[1]);
+			pd->rho_v[j][i_pd] /= scal->density;
+		}
+	}
+	else if(pd->rho_pdval[8][i_pd] == 5)   // density + mf + density_fluid
+	{
+		fscanf(fp, "%lf %lf %lf %lf %lf,",&pd->rho_f_v[0][i_pd],&pd->Me_v[0][i_pd],&pd->rho_v[0][i_pd],&fl[0],&fl[1]);
+		pd->rho_v[0][i_pd] /= scal->density;
+		pd->rho_f_v[0][i_pd] /= scal->density;
+
+		for (j=1; j<n; j++)
+		{
+			fscanf(fp, "%lf %lf %lf %lf %lf,",&pd->rho_f_v[j][i_pd],&pd->Me_v[j][i_pd],&pd->rho_v[j][i_pd],&fl[0],&fl[1]);
+			pd->rho_v[j][i_pd] /= scal->density;
+			pd->rho_f_v[j][i_pd] /= scal->density;
+		}
+	}
+	else
+	{
+		PetscPrintf(PETSC_COMM_WORLD,"Unknown phase diagram data!\n");
+		PetscFunctionReturn(0);
+	}
+
+	// Interpolate the name
+	for(j=0; j<max_name; j++)
+	{
+		pd->rho_pdns[j][i_pd] = phases[i].pdn[j];
+	}
+	fclose(fp);
+
+	PetscPrintf(PETSC_COMM_WORLD,"Succesfully loaded Phase diagram %s\n",name);
+	PetscPrintf(PETSC_COMM_WORLD,"--------------------------------------------------------------------------\n",name);
+
+	// Uncomment to debug values
+	// PetscPrintf(PETSC_COMM_WORLD,"RHO = %.20f ; scal = %lf\n 2 = %lf\n  3 = %lf\n 3m = %lf\n  4 = %.20f ; scal = %lf\n 5 = %lf\n 6 = %lf\n 6m = %lf\n n = %i ; scal = %lf\n",pd->rho_v[20000][0], scal.temperature,pd->rho_pdval[1][i_pd],pd->rho_pdval[2][i_pd],pd->rho_pdval[3][i_pd],pd->rho_pdval[4][i_pd], scal.stress_si,pd->rho_pdval[5][i_pd],pd->rho_pdval[6][i_pd],pd->rho_pdval[7][i_pd],n, scal.density);
+
+	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
 // geometric primitives functions

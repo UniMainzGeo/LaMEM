@@ -184,9 +184,9 @@ PetscErrorCode DBMatReadPhase(DBMat *dbm, FB *fb)
 	// read material properties from file with error checking
 	Scaling    *scal;
 	Material_t *m;
-	PetscInt    ID = -1, chSoftID, frSoftID, MSN, print_title;
+	PetscInt    ID = -1, chSoftID, frSoftID, MSN, print_title, j;
 	PetscScalar eta, eta0, e0, K, G, E, nu, Vp, Vs;
-	char        ndiff[_STR_LEN_], ndisl[_STR_LEN_], npeir[_STR_LEN_], title[_STR_LEN_];
+	char        ndiff[_STR_LEN_], ndisl[_STR_LEN_], npeir[_STR_LEN_], title[_STR_LEN_], pd[max_name];
 
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
@@ -223,9 +223,28 @@ PetscErrorCode DBMatReadPhase(DBMat *dbm, FB *fb)
 	// set ID
 	m->ID = ID;
 
-	//=================================================================================
-	// creep profiles
-	//=================================================================================
+	//============================================================
+	// density & phase diagram info
+	//============================================================
+	// Get phase diagram names
+	ierr = getStringParam(fb, _OPTIONAL_, "rho_ph", pd, "none"); CHKERRQ(ierr);
+	for(j=0; j<max_name; j++)
+	{
+		m->pdn[j] = pd[j];
+	}
+	if(strcmp(m->pdn, "none"))
+	{
+		m->Pd_rho = 1;
+	}
+	else
+	{
+		m->Pd_rho = 0;
+	}
+
+
+	//============================================================
+	// Creep profiles
+	//============================================================
 	// set predefined diffusion creep profile
 	ierr = GetProfileName(fb, scal, ndiff, "diff_prof"); CHKERRQ(ierr);
 	ierr = SetDiffProfile(m, ndiff);                     CHKERRQ(ierr);

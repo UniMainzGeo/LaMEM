@@ -52,6 +52,11 @@
 // max number of soft laws
 #define max_num_soft   10
 
+// maximums for Pds
+#define max_num_pd    8     // max no of phase diagrams
+#define max_num_ro    40100  // max grid size of Pd
+#define max_name      54     // Length of the unique face diagram name
+
 //---------------------------------------------------------------------------
 
 struct Scaling;
@@ -120,6 +125,28 @@ public:
 	PetscScalar  k;        // thermal conductivity                       [W/m/k]
 	PetscScalar  A;        // radiogenic heat production                 [W/kg]
 	PetscScalar  T;        // optional temperature to set within the phase
+	// Phase diagram
+	char         pdn[max_name];   // Unique phase diagram number
+	PetscInt     Pd_rho;          // density from phase diagram?
+};
+
+//---------------------------------------------------------------------------
+//............   Phase diagram data   .......................................
+//---------------------------------------------------------------------------
+
+struct PData
+{
+	// Density from phase diagram
+	PetscScalar  rho_pdval[10][max_num_pd]; // Array storing dp and dT as well as information on the max and min values
+	char         rho_pdns[max_name][max_num_pd];// loaded phase diagram numbers
+	PetscScalar  rho_v[max_num_ro][max_num_pd];					// Array containing the actual density data
+	PetscScalar  rho;
+	// Melt content data
+	PetscScalar  Me_v[max_num_ro][max_num_pd];          // Array containing the actual melt content data
+	PetscScalar  mf;
+	// Rho fluid data
+	PetscScalar rho_f_v[max_num_ro][max_num_pd];
+	PetscScalar rho_f;
 };
 
 //---------------------------------------------------------------------------

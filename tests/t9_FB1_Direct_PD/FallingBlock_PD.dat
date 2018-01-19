@@ -1,0 +1,155 @@
+#===============================================================================
+# Scaling
+#===============================================================================
+
+	units = geo
+
+	unit_temperature = 273
+	unit_length      = 10e3
+	unit_viscosity   = 1e22
+	unit_stress      = 1e10
+
+#===============================================================================
+# Time stepping parameters
+#===============================================================================
+
+	time_end  = 1.0   # simulation end time
+	dt        = 1e-5  # time step
+	dt_min    = 1e-5  # minimum time step (declare divergence if lower value is attempted)
+	dt_max    = 0.1   # maximum time step
+	dt_out    = 0.2   # output step (output at least at fixed time intervals)
+	inc_dt    = 0.1   # time step increment per time step (fraction of unit)
+	CFL       = 0.5   # CFL (Courant-Friedrichs-Lewy) criterion
+	CFLMAX    = 0.5   # CFL criterion for elasticity
+	nstep_max = 2     # maximum allowed number of steps (lower bound: time_end/dt_max)
+	nstep_out = 1     # save output every n steps
+	nstep_rdb = 0     # save restart database every n steps
+
+
+#===============================================================================
+# Grid & discretization parameters
+#===============================================================================
+
+# Number of cells for all segments
+
+	nel_x = 32
+	nel_y = 32
+	nel_z = 32
+
+# Coordinates of all segments (including start and end points)
+
+	coord_x = 0.0 10.0
+	coord_y = 0.0 10.0
+	coord_z = -10.0 0.0
+
+#===============================================================================
+# Free surface
+#===============================================================================
+
+# Default
+
+#===============================================================================
+# Boundary conditions
+#===============================================================================
+
+# temperature on the top & bottom boundaries
+
+	temp_top  = 0.0
+	temp_bot  = 300.0;
+
+# temperature initial guess flag
+# linear profile between temp_top and temp_bot
+	init_temp = 1;
+
+#===============================================================================
+# Solution parameters & controls
+#===============================================================================
+
+	gravity        = 0.0 0.0 -9.81   # gravity vector
+	FSSA           = 1.0            # free surface stabilization parameter [0 - 1]
+	act_p_shift    = 1              # pressure shift activation flag (zero pressure in the top cell layer)
+	init_guess     = 0              # initial guess flag
+	eta_min        = 1e19           # viscosity upper bound
+	eta_max        = 1e25           # viscosity lower limit
+	DII_ref        = 1e-16          # background (reference) strain-rate
+
+#===============================================================================
+# Solver options
+#===============================================================================
+	SolverType 		=	direct 			# solver [direct or multigrid]
+	DirectSolver 	=	mumps			# mumps/superlu_dist/pastix	
+	DirectPenalty 	=	1e5
+
+		
+#===============================================================================
+# Model setup & advection
+#===============================================================================
+
+	msetup         = geom              # setup type
+	nmark_x        = 2                 # markers per cell in x-direction
+	nmark_y        = 2                 # ...                 y-direction
+	nmark_z        = 2                 # ...                 z-direction
+	bg_phase       = 0                 # background phase ID
+
+
+# Geometric primitives:
+
+	<BoxStart>
+		phase  = 1
+		bounds = 2.5 7.5 2.5 7.5 -7.5 -2.5  # (left, right, front, back, bottom, top)
+	<BoxEnd>
+
+#===============================================================================
+# Output
+#===============================================================================
+
+# Grid output options (output is always active)
+
+	out_file_name       = FB_test # output file name
+	out_pvd             = 1       # activate writing .pvd file
+	out_phase           = 1
+	out_density         = 1
+	out_visc_total      = 1
+	out_pressure        = 1
+	out_temperature     = 1
+	out_melt_fraction   = 1
+	out_fluid_density   = 1
+      
+# AVD phase viewer output options (requires activation)
+
+	out_avd     = 1 # activate AVD phase output
+	out_avd_pvd = 1 # activate writing .pvd file
+	out_avd_ref = 3 # AVD grid refinement factor
+
+#===============================================================================
+# Material phase parameters
+#===============================================================================
+
+	# Define properties of matrix
+	<MaterialStart>
+		ID  = 0 # phase id
+		rho = 3000 # density
+		disl_prof = Quarzite-Ranalli_1995
+		rho_ph = 90001540050402480359032702800300006400100010102736230
+	<MaterialEnd>
+
+	# Define properties of block
+	<MaterialStart>
+		ID  = 1   # phase id
+		rho = 2500   # density
+		disl_prof = Quarzite-Ranalli_1995
+		T   = 800.0  # optional temperature to set within the phase
+		rho_ph = 90001540050402480359032702800300006400100010102736230
+	<MaterialEnd>
+
+#===============================================================================
+# PETSc options
+#===============================================================================
+
+<PetscOptionsStart>
+
+	-objects_dump
+
+<PetscOptionsEnd>
+
+#===============================================================================

@@ -53,6 +53,7 @@ struct FreeSurf;
 struct BCCtx;
 struct DBMat;
 struct Tensor2RN;
+struct PData;
 
 //---------------------------------------------------------------------------
 //.....................   Deviatoric solution variables   ...................
@@ -70,6 +71,7 @@ struct SolVarDev
 	PetscScalar  dEta;  // dEta/dDII derivative (Jacobian)
 	PetscScalar  fr;    // effective friction coefficient (Jacobian)
 	PetscScalar  yield; // average yield stress in control volume
+	PetscScalar  mf;    // melt fraction
 };
 
 //---------------------------------------------------------------------------
@@ -84,6 +86,9 @@ struct SolVarBulk
 	PetscScalar  alpha; // effective thermal expansion
 	PetscScalar  Tn;    // history temperature
 	PetscScalar  pn;    // history pressure
+	PetscScalar  rho_pd;// Density from phase diagram
+	PetscScalar  rho_pf;// Fluid Density from phase diagram
+	PetscScalar  mf;    // Melt fraction from phase diagram
 
 };
 
@@ -229,6 +234,9 @@ struct JacRes
 	SolVarEdge  *svXZEdge; // XZ edges
 	SolVarEdge  *svYZEdge; // YZ edges
 	PetscScalar *svBuff;   // storage for phRat
+
+	// Phase diagram
+	PData       *Pd;
 
 	//=======================
 	// temperature parameters

@@ -53,6 +53,7 @@
 struct FB;
 struct AdvCtx;
 struct Marker;
+struct Material_t;
 
 //---------------------------------------------------------------------------
 
@@ -142,6 +143,9 @@ PetscErrorCode ADVMarkSetTempFile(AdvCtx *actx, FB *fb);
 
 // initialize temperature on markers from vector
 PetscErrorCode ADVMarkSetTempVector(AdvCtx *actx);
+
+// Load and set data from phase diagram
+PetscErrorCode LoadPhaseDiagram(AdvCtx *actx, Material_t  *phases, PetscInt i);
 
 //---------------------------------------------------------------------------
 

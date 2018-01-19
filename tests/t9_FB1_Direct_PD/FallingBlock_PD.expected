@@ -1,0 +1,209 @@
+Solver Type 		: 	direct 
+-------------------------------------------------------------------------- 
+                   Lithosphere and Mantle Evolution Model                   
+     Compiled: Date: Jan 18 2018 - Time: 13:56:32 	    
+-------------------------------------------------------------------------- 
+        STAGGERED-GRID FINITE DIFFERENCE CANONICAL IMPLEMENTATION           
+-------------------------------------------------------------------------- 
+Parsing input file : FallingBlock_PD.dat 
+Solver Type 		: 	direct 
+   Adding PETSc option: -objects_dump
+Finished parsing input file : FallingBlock_PD.dat 
+--------------------------------------------------------------------------
+Scaling parameters:
+   Temperature : 273. [C/K] 
+   Length      : 10000. [m] 
+   Viscosity   : 1e+22 [Pa*s] 
+   Stress      : 1e+10 [Pa] 
+--------------------------------------------------------------------------
+Time stepping parameters:
+   Simulation end time          : 1. [Myr] 
+   Maximum number of steps      : 2 
+   Time step                    : 1e-05 [Myr] 
+   Minimum time step            : 1e-05 [Myr] 
+   Maximum time step            : 0.1 [Myr] 
+   Time step increase factor    : 0.1 
+   CFL criterion                : 0.5 
+   CFLMAX (fixed time steps)    : 0.5 
+   Output time step             : 0.2 [Myr] 
+   Output every [n] steps       : 1 
+   Output [n] initial steps     : 1 
+--------------------------------------------------------------------------
+Material parameters: 
+   Phase ID : 0    dislocation creep profile: Quarzite-Ranalli_1995
+   (dens)   : rho = 3000. [kg/m^3]  
+   (disl)   : Bn = 8.63279e-20 [1/Pa^n/s]  En = 156000. [J/mol]  n = 2.4 [ ]  
+
+   Phase ID : 1    dislocation creep profile: Quarzite-Ranalli_1995
+   (dens)   : rho = 2500. [kg/m^3]  
+   (disl)   : Bn = 8.63279e-20 [1/Pa^n/s]  En = 156000. [J/mol]  n = 2.4 [ ]  
+   (temp)   : T = 800. [C]  
+
+--------------------------------------------------------------------------
+Grid parameters:
+   Total number of cpu                  : 2 
+   Processor grid  [nx, ny, nz]         : [1, 1, 2]
+   Fine grid cells [nx, ny, nz]         : [32, 32, 32]
+   Number of cells                      :  32768
+   Number of faces                      :  101376
+   Maximum cell aspect ratio            :  1.00000
+   Lower coordinate bounds [bx, by, bz] : [0., 0., -10.]
+   Upper coordinate bounds [ex, ey, ez] : [10., 10., 0.]
+--------------------------------------------------------------------------
+Boundary condition parameters: 
+   No-slip boundary mask [lt rt ft bk bm tp]  : 0 0 0 0 0 0 
+   Top boundary temperature                   : 0. [C] 
+   Bottom boundary temperature                : 300. [C] 
+--------------------------------------------------------------------------
+Solution parameters & controls:
+   Gravity [gx, gy, gz]                    : [0., 0., -9.81] [m/s^2] 
+   Surface stabilization (FSSA)            :  1. 
+   Enforce zero pressure on top boundary   @ 
+   Use lithostatic pressure for creep      @ 
+   Minimum viscosity                       : 1e+19 [Pa*s] 
+   Maximum viscosity                       : 1e+25 [Pa*s] 
+   Universal gas constant                  : 8.31446 [J/mol/K] 
+   Background (reference) strain-rate      : 1e-16 [1/s] 
+   Ground water level type                 : none 
+--------------------------------------------------------------------------
+Advection parameters:
+   Advection scheme              : Euler 1-st order (basic implementation)
+   Marker setup scheme           : geometric primitives
+   Velocity interpolation scheme : STAG (linear)
+   Marker control type           : no marker control
+   Markers per cell [nx, ny, nz] : [2, 2, 2] 
+   Marker distribution type      : uniform
+   Background phase ID           : 0 
+--------------------------------------------------------------------------
+Reading geometric primitives ... done (0.00335431 sec)
+--------------------------------------------------------------------------
+Succesfully loaded Phase diagram 90001540050402480359032702800300006400100010102736230.in
+--------------------------------------------------------------------------
+Output parameters:
+   Output file name                        : FB_test 
+   Write .pvd file                         : yes 
+   Phase                                   @ 
+   Density                                 @ 
+   Total effective viscosity               @ 
+   Creep effective viscosity               @ 
+   Viscoplastic viscosity                  @ 
+   Velocity                                @ 
+   Pressure                                @ 
+   Temperature                             @ 
+   Melt fraction                           @ 
+   Fluid density                           @ 
+--------------------------------------------------------------------------
+AVD output parameters:
+   Write .pvd file       : yes 
+   AVD refinement factor : 3 
+--------------------------------------------------------------------------
+Preconditioner parameters: 
+   Matrix type                   : monolithic
+   Penalty parameter (pgamma)    : 1.000000e+05
+   Preconditioner type           : user-defined
+--------------------------------------------------------------------------
+Solver parameters specified: 
+   Outermost Krylov solver       : gmres 
+   Solver type                   : parallel direct/lu 
+   Solver package                : mumps 
+--------------------------------------------------------------------------
+Saving output ... done (0.163527 sec)
+--------------------------------------------------------------------------
+================================= STEP 1 =================================
+--------------------------------------------------------------------------
+Current time        : 0.00000 [Myr] 
+Tentative time step : 0.00001 [Myr] 
+--------------------------------------------------------------------------
+  0 PICARD ||F||/||F0||=1.000000e+00 
+    Residual norms for js_ solve.
+    0 KSP Residual norm 1.364047051268e+00 
+    1 KSP Residual norm 2.911090206187e-04 
+    2 KSP Residual norm 5.635770318217e-09 
+  Linear js_ solve converged due to CONVERGED_RTOL iterations 2
+  1 PICARD ||F||/||F0||=5.487251e-02 
+    Residual norms for js_ solve.
+    0 KSP Residual norm 3.139972501618e-02 
+    1 KSP Residual norm 1.701192267894e-06 
+    2 KSP Residual norm 2.838241072142e-10 
+  Linear js_ solve converged due to CONVERGED_RTOL iterations 2
+  2 MMFD   ||F||/||F0||=2.512163e-03 
+    Residual norms for js_ solve.
+    0 KSP Residual norm 1.007552541756e-03 
+    1 KSP Residual norm 4.637924378078e-05 
+    2 KSP Residual norm 2.380629708061e-06 
+    3 KSP Residual norm 2.572044894095e-07 
+    4 KSP Residual norm 7.077425890058e-08 
+    5 KSP Residual norm 5.590708924488e-09 
+  Linear js_ solve converged due to CONVERGED_RTOL iterations 5
+  3 MMFD   ||F||/||F0||=6.153617e-05 
+    Residual norms for js_ solve.
+    0 KSP Residual norm 2.248855424636e-05 
+    1 KSP Residual norm 2.771514766245e-06 
+    2 KSP Residual norm 1.188068631223e-07 
+    3 KSP Residual norm 1.093281828430e-08 
+    4 KSP Residual norm 2.363413004165e-09 
+    5 KSP Residual norm 2.586624257076e-10 
+    6 KSP Residual norm 3.134910772483e-11 
+  Linear js_ solve converged due to CONVERGED_RTOL iterations 6
+  4 MMFD   ||F||/||F0||=3.378223e-07 
+    Residual norms for js_ solve.
+    0 KSP Residual norm 1.546087821953e-08 
+    1 KSP Residual norm 3.161457380401e-09 
+    2 KSP Residual norm 4.035974594039e-10 
+    3 KSP Residual norm 6.313327550592e-11 
+    4 KSP Residual norm 1.309906284652e-11 
+    5 KSP Residual norm 4.899132518480e-12 
+    6 KSP Residual norm 1.026750644564e-12 
+    7 KSP Residual norm 1.805848161579e-13 
+    8 KSP Residual norm 3.037705603267e-14 
+  Linear js_ solve converged due to CONVERGED_RTOL iterations 8
+--------------------------------------------------------------------------
+SNES Convergence Reason : ||F|| < rtol*||F_initial|| 
+Number of iterations    : 5
+SNES solution time      : 51.3799 (sec)
+--------------------------------------------------------------------------
+Residual summary: 
+   Continuity: 
+      |Div|_inf = 1.777164458846e-19 
+      |Div|_2   = 1.819115051221e-18 
+   Momentum: 
+      |mRes|_2  = 1.593940948375e-08 
+--------------------------------------------------------------------------
+Actual time step : 0.00001 [Myr] 
+--------------------------------------------------------------------------
+Saving output ... done (0.181741 sec)
+--------------------------------------------------------------------------
+================================= STEP 2 =================================
+--------------------------------------------------------------------------
+Current time        : 0.00001 [Myr] 
+Tentative time step : 0.00001 [Myr] 
+--------------------------------------------------------------------------
+  0 PICARD ||F||/||F0||=1.000000e+00 
+    Residual norms for js_ solve.
+    0 KSP Residual norm 7.090538351199e-11 
+    1 KSP Residual norm 1.957286341670e-15 
+    2 KSP Residual norm 8.980840429565e-19 
+  Linear js_ solve converged due to CONVERGED_RTOL iterations 2
+--------------------------------------------------------------------------
+SNES Convergence Reason : Newton computed step size small; || delta x || < stol || x ||
+Number of iterations    : 1
+SNES solution time      : 9.37726 (sec)
+--------------------------------------------------------------------------
+Residual summary: 
+   Continuity: 
+      |Div|_inf = 3.745473813640e-20 
+      |Div|_2   = 2.046549744176e-19 
+   Momentum: 
+      |mRes|_2  = 3.012090430377e-09 
+--------------------------------------------------------------------------
+Actual time step : 0.00001 [Myr] 
+--------------------------------------------------------------------------
+Saving output ... done (0.180247 sec)
+--------------------------------------------------------------------------
+=========================== SOLUTION IS DONE! ============================
+--------------------------------------------------------------------------
+Total solution time : 61.7495 (sec) 
+--------------------------------------------------------------------------
+WARNING! There are options you set that were not used!
+WARNING! could be spelling mistake, etc!
+Option left: name:-js_ksp_min_it value: 1

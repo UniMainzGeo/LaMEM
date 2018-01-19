@@ -339,6 +339,8 @@ PetscInt OutMaskCountActive(OutMask *omask)
 	if(omask->j2_dev_stress)  cnt++; // deviatoric stress second invariant
 	if(omask->strain_rate)    cnt++; // deviatoric strain rate tensor
 	if(omask->j2_strain_rate) cnt++; // deviatoric strain rate second invariant
+	if(omask->melt_fraction)  cnt++; // melt fraction
+	if(omask->fluid_density)  cnt++; // fluid density
 	if(omask->vol_rate)       cnt++; // volumetric strain rate
 	if(omask->vorticity)      cnt++; // vorticity vector
 	if(omask->ang_vel_mag)    cnt++; // average angular velocity magnitude
@@ -411,6 +413,8 @@ PetscErrorCode PVOutCreate(PVOut *pvout, FB *fb)
 	ierr = getIntParam   (fb, _OPTIONAL_, "out_moment_res",     &omask->moment_res,        1, 1); CHKERRQ(ierr);
 	ierr = getIntParam   (fb, _OPTIONAL_, "out_cont_res",       &omask->cont_res,          1, 1); CHKERRQ(ierr);
 	ierr = getIntParam   (fb, _OPTIONAL_, "out_energ_res",      &omask->energ_res,         1, 1); CHKERRQ(ierr);
+	ierr = getIntParam   (fb, _OPTIONAL_, "out_melt_fraction",  &omask->melt_fraction,     1, 1); CHKERRQ(ierr);
+	ierr = getIntParam   (fb, _OPTIONAL_, "out_fluid_density",  &omask->fluid_density,     1, 1); CHKERRQ(ierr);
 
 	// check
 	if(!pvout->jr->ctrl.actTemp)             omask->energ_res = 0; // heat diffusion is deactivated
@@ -448,6 +452,8 @@ PetscErrorCode PVOutCreate(PVOut *pvout, FB *fb)
 	if(omask->moment_res)     PetscPrintf(PETSC_COMM_WORLD, "   Momentum residual                       @ \n");
 	if(omask->cont_res)       PetscPrintf(PETSC_COMM_WORLD, "   Continuity residual                     @ \n");
 	if(omask->energ_res)      PetscPrintf(PETSC_COMM_WORLD, "   energy residual                         @ \n");
+	if(omask->melt_fraction)  PetscPrintf(PETSC_COMM_WORLD, "   Melt fraction                           @ \n");
+	if(omask->fluid_density)  PetscPrintf(PETSC_COMM_WORLD, "   Fluid density                           @ \n");
 
 	PetscPrintf(PETSC_COMM_WORLD, "--------------------------------------------------------------------------\n");
 
@@ -509,6 +515,8 @@ PetscErrorCode PVOutCreateData(PVOut *pvout)
 	if(omask->GOL)            OutVecCreate(&pvout->outvecs[iter++], "GOL",            scal->lbl_unit,             &PVOutWriteGOL,          1);
 	if(omask->yield)          OutVecCreate(&pvout->outvecs[iter++], "yield",          scal->lbl_stress,           &PVOutWriteYield,        1);
 	// === debugging vectors ===============================================
+	if(omask->melt_fraction)  OutVecCreate(&pvout->outvecs[iter++], "melt_fraction",  scal->lbl_unit,             &PVOutWriteMeltFraction, 1);
+	if(omask->fluid_density)  OutVecCreate(&pvout->outvecs[iter++], "fluid_density",  scal->lbl_density,	      &PVOutWriteFluidDensity, 1);
 	if(omask->moment_res)     OutVecCreate(&pvout->outvecs[iter++], "moment_res",     scal->lbl_volumetric_force, &PVOutWriteMomentRes,    3);
 	if(omask->cont_res)       OutVecCreate(&pvout->outvecs[iter++], "cont_res",       scal->lbl_strain_rate,      &PVOutWriteContRes,      1);
 	if(omask->energ_res)      OutVecCreate(&pvout->outvecs[iter++], "energ_res",      scal->lbl_dissipation_rate, &PVOutWritEnergRes,      1);

@@ -54,6 +54,7 @@
 #define _cap_overhead_ 1.3
 #define _max_nmark_ 5
 #define _min_nmark_ 2
+#define  max_name   54     // Length of the unique face diagram name
 
 struct FB;
 struct FDSTAG;
@@ -74,6 +75,7 @@ struct Marker
 	PetscScalar APS;   // accumulated plastic strain
 	Tensor2RS   S;     // deviatoric stress
 	PetscScalar U[3];  // displacement
+	char        pdn[max_name];   // Phase diagram number
 };
 
 //---------------------------------------------------------------------------

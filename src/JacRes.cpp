@@ -347,6 +347,17 @@ PetscErrorCode JacResCreateData(JacRes *jr)
 	fs        =  jr->fs;
 	dof       = &fs->dof;
 	numPhases =  jr->dbm->numPhases;
+	
+	// If any phase involves phase diagram initialize the data
+	for(i=0; i<jr->dbm->numPhases; i++)
+	{
+		if (jr->dbm->phases[i].Pd_rho == 1)
+		{
+			ierr = PetscMalloc(sizeof(PData), &jr->Pd);   CHKERRQ(ierr);
+			ierr = PetscMemzero(jr->Pd,   sizeof(PData)); CHKERRQ(ierr);
+			break;
+		}
+	}
 
 	//========================
 	// create solution vectors
@@ -483,6 +494,9 @@ PetscErrorCode JacResWriteRestart(JacRes *jr, FILE *fp)
 #define __FUNCT__ "JacResDestroy"
 PetscErrorCode JacResDestroy(JacRes *jr)
 {
+
+	PetscInt   i;
+
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
 
@@ -532,6 +546,15 @@ PetscErrorCode JacResDestroy(JacRes *jr)
 	ierr = PetscFree(jr->svXZEdge);  CHKERRQ(ierr);
 	ierr = PetscFree(jr->svYZEdge);  CHKERRQ(ierr);
 	ierr = PetscFree(jr->svBuff);    CHKERRQ(ierr);
+
+	for(i=0; i<jr->dbm->numPhases; i++)
+	{
+		if (jr->dbm->phases[i].Pd_rho == 1)
+		{
+			ierr = PetscFree(jr->Pd); CHKERRQ(ierr);
+			break;
+		}
+	}
 
 	// temperature parameters
 	ierr = JacResDestroyTempParam(jr); CHKERRQ(ierr);
@@ -1153,7 +1176,7 @@ PetscErrorCode JacResGetResidual(JacRes *jr)
 		if(depth < 0.0)    depth = 0.0;
 
 		// evaluate deviatoric constitutive equations
-		ierr = DevConstEq(svDev, &eta_creep, &eta_vp, numPhases, phases, soft, svCell->phRat, ctrl, pc_lith, pc_pore, dt, pc-pShift, Tc); CHKERRQ(ierr);
+		ierr = DevConstEq(svDev, &eta_creep, &eta_vp, numPhases, phases, soft, svCell->phRat, ctrl, pc_lith, pc_pore, dt, pc-pShift, Tc, jr-> Pd); CHKERRQ(ierr);
 
 		// store creep viscosity
 		svCell->eta_creep = eta_creep;
@@ -1171,7 +1194,7 @@ PetscErrorCode JacResGetResidual(JacRes *jr)
 		szz = svCell->szz - ptotal;
 
 		// evaluate volumetric constitutive equations
-		ierr = VolConstEq(svBulk, numPhases, phases, svCell->phRat, ctrl, depth, dt, pc-pShift , Tc); CHKERRQ(ierr);
+		ierr = VolConstEq(svBulk, numPhases, phases, svCell->phRat, ctrl, depth, dt, pc-pShift , Tc, jr-> Pd); CHKERRQ(ierr);
 
 		// access
 		theta = svBulk->theta; // volumetric strain rate
@@ -1314,7 +1337,7 @@ PetscErrorCode JacResGetResidual(JacRes *jr)
 		pc_pore = 0.25*(p_pore[k][j][i] + p_pore[k][j][i-1] + p_pore[k][j-1][i] + p_pore[k][j-1][i-1]);
 
 		// evaluate deviatoric constitutive equations
-		ierr = DevConstEq(svDev, &eta_creep, &eta_vp, numPhases, phases, soft, svEdge->phRat, ctrl, pc_lith, pc_pore, dt, pc-pShift, Tc); CHKERRQ(ierr);
+		ierr = DevConstEq(svDev, &eta_creep, &eta_vp, numPhases, phases, soft, svEdge->phRat, ctrl, pc_lith, pc_pore, dt, pc-pShift, Tc, jr-> Pd); CHKERRQ(ierr);
 
 		// compute stress, plastic strain rate and shear heating term on edge
 		ierr = GetStressEdge(svEdge, XY); CHKERRQ(ierr);
@@ -1422,7 +1445,7 @@ PetscErrorCode JacResGetResidual(JacRes *jr)
 		pc_pore = 0.25*(p_pore[k][j][i] + p_pore[k][j][i-1] + p_pore[k-1][j][i] + p_pore[k-1][j][i-1]);
 
 		// evaluate deviatoric constitutive equations
-		ierr = DevConstEq(svDev, &eta_creep, &eta_vp, numPhases, phases, soft, svEdge->phRat, ctrl, pc_lith, pc_pore, dt, pc-pShift, Tc); CHKERRQ(ierr);
+		ierr = DevConstEq(svDev, &eta_creep, &eta_vp, numPhases, phases, soft, svEdge->phRat, ctrl, pc_lith, pc_pore, dt, pc-pShift, Tc, jr-> Pd); CHKERRQ(ierr);
 
 		// compute stress, plastic strain rate and shear heating term on edge
 		ierr = GetStressEdge(svEdge, XZ); CHKERRQ(ierr);
@@ -1530,7 +1553,7 @@ PetscErrorCode JacResGetResidual(JacRes *jr)
 		pc_pore = 0.25*(p_pore[k][j][i] + p_pore[k][j-1][i] + p_pore[k-1][j][i] + p_pore[k-1][j-1][i]);
 
 		// evaluate deviatoric constitutive equations
-		ierr = DevConstEq(svDev, &eta_creep, &eta_vp, numPhases, phases, soft, svEdge->phRat, ctrl, pc_lith, pc_pore, dt, pc-pShift, Tc); CHKERRQ(ierr);
+		ierr = DevConstEq(svDev, &eta_creep, &eta_vp, numPhases, phases, soft, svEdge->phRat, ctrl, pc_lith, pc_pore, dt, pc-pShift, Tc, jr-> Pd); CHKERRQ(ierr);
 
 		// compute stress, plastic strain rate and shear heating term on edge
 		ierr = GetStressEdge(svEdge, YZ); CHKERRQ(ierr);

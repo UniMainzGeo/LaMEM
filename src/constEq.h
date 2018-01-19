@@ -55,6 +55,7 @@ struct SolVarDev;
 struct SolVarBulk;
 struct SolVarCell;
 struct SolVarEdge;
+struct PData;
 
 //---------------------------------------------------------------------------
 
@@ -70,7 +71,7 @@ struct ConstEqCtx
 	PetscScalar  N_prl; // Peierls exponent
 	PetscScalar  taupl; // plastic yield stress
 	PetscScalar  fr;    // effective friction coefficient
-
+	PetscScalar  Pd_rho;  // melt fraction constant?
 } ;
 
 //---------------------------------------------------------------------------
@@ -101,7 +102,8 @@ PetscErrorCode GetEffVisc(
 	PetscScalar *eta_vp,
 	PetscScalar *DIIpl,
 	PetscScalar *dEta,
-	PetscScalar *fr);
+	PetscScalar *fr,
+	SolVarDev   *svDev);
 
 // apply strain softening to a parameter (friction, cohesion)
 PetscScalar ApplyStrainSoft(Soft_t *soft, PetscInt ID, PetscScalar APS, PetscScalar par);
@@ -127,7 +129,8 @@ PetscErrorCode DevConstEq(
 	PetscScalar  p_pore,    // pore pressure
 	PetscScalar  dt,        // time step
 	PetscScalar  p,         // pressure
-	PetscScalar  T);        // temperature
+	PetscScalar  T,         // temperature
+	PData       *pd);        		// PD data
 
 // Evaluate volumetric constitutive equations in control volume
 PetscErrorCode VolConstEq(
@@ -139,7 +142,8 @@ PetscErrorCode VolConstEq(
 	PetscScalar  depth,     // depth for depth-dependent density model
 	PetscScalar  dt,        // time step
 	PetscScalar  p,         // pressure
-	PetscScalar  T);        // temperature
+	PetscScalar  T,         // temperature
+	PData       *pd);   	// PD Data
 
 // compute stress, plastic strain-rate and shear heating term on cell
 PetscErrorCode GetStressCell(
@@ -154,4 +158,5 @@ PetscErrorCode GetStressEdge(
 	PetscScalar  d);     // effective shear strain rate component
 
 //---------------------------------------------------------------------------
+PetscErrorCode SetDataPhaseDiagram(PData *pd, PetscScalar p, PetscScalar T, PetscScalar pshift, char pdn[]);
 #endif
