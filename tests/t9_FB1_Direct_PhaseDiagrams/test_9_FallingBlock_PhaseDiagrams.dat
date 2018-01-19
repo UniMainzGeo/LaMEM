@@ -33,7 +33,7 @@
 # Number of cells for all segments
 
 	nel_x = 32
-	nel_y = 32
+	nel_y = 8
 	nel_z = 32
 
 # Coordinates of all segments (including start and end points)
@@ -142,8 +142,8 @@
 		rho = 2500   # density
 		disl_prof = Quarzite-Ranalli_1995
 		T   = 800.0  # optional temperature to set within the phase
-		rho_ph = TestPD
-		rho_ph_file = t9_FB1_Direct_PhaseDiagrams/
+		rho_ph = TestPD1
+		rho_ph_file = t9_FB1_Direct_PhaseDiagrams/PD_Dir1/
 	<MaterialEnd>
 
 #===============================================================================

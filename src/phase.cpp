@@ -185,8 +185,10 @@ PetscErrorCode DBMatReadPhase(DBMat *dbm, FB *fb)
 	Scaling    *scal;
 	Material_t *m;
 	PetscInt    ID = -1, chSoftID, frSoftID, MSN, print_title, j;
+	PetscInt 	StringLength;
 	PetscScalar eta, eta0, e0, K, G, E, nu, Vp, Vs;
-	char        ndiff[_STR_LEN_], ndisl[_STR_LEN_], npeir[_STR_LEN_], title[_STR_LEN_], pd[max_name], pdf[max_name];
+	char        ndiff[_STR_LEN_], ndisl[_STR_LEN_], npeir[_STR_LEN_], title[_STR_LEN_], PhaseDiagram[_STR_LEN_], PhaseDiagram_Dir[_STR_LEN_];
+	
 
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
@@ -226,26 +228,40 @@ PetscErrorCode DBMatReadPhase(DBMat *dbm, FB *fb)
 	//============================================================
 	// density & phase diagram info
 	//============================================================
-	// Get phase diagram names
-	ierr = getStringParam(fb, _OPTIONAL_, "rho_ph", pd, "none"); CHKERRQ(ierr);
-	// Get the PD path
-	ierr = getStringParam(fb, _OPTIONAL_, "rho_ph_file", pdf, NULL); CHKERRQ(ierr);
-	for(j=0; j<max_name; j++)
+	// Get the name of the phase diagram
+	ierr = getStringParam(fb, _OPTIONAL_, "rho_ph",   PhaseDiagram, "none");          CHKERRQ(ierr);
+	if (strcmp(PhaseDiagram, "none"))
 	{
-		m->pdn[j] = pd[j];
-	}
-	if(strcmp(m->pdn, "none"))
-	{
+		// Note: the maximum length of the string PhaseDiagram is _STR_LEN_
+		// internally, however, a smaller string length is employed to save spac
+		StringLength = strlen(PhaseDiagram)+3;		// 3, because we will add ".in" to the filename 
+
+		// implies we are loading a phase diagram file from disk
 		m->Pd_rho = 1;
-		strcpy(m->pdf, pdf);
-		strcat(m->pdf, pd);
-		strcat(m->pdf, ".in");
+		
+		// Get the directory of the phase diagram if specified
+		ierr = getStringParam(fb, _OPTIONAL_, "rho_ph_file", PhaseDiagram_Dir, "none"); CHKERRQ(ierr);
+		if(strcmp(PhaseDiagram_Dir, "none")){
+			StringLength = StringLength + strlen(PhaseDiagram_Dir);	
+			strcpy(m->pdf, PhaseDiagram_Dir);
+		}
+		// check that the length of the directory and the length of the file name does not exceed 	
+		if (StringLength>max_name){
+			SETERRQ1(PETSC_COMM_WORLD,PETSC_ERR_USER,"The length of the Phase Diagram Name and directory exceeds the maximum allowed length of %i /n", max_name);
+		}
+
+		// copy string
+		strcat(m->pdf, PhaseDiagram);
+		strcat(m->pdf, ".in");		// add the file ending
+
+		strcpy(m->pdn, PhaseDiagram);
+
 	}
 	else
 	{
-		m->Pd_rho = 0;
+		m->Pd_rho = 0;	// no phase diagram is used
 	}
-
+	
 	//============================================================
 	// Creep profiles
 	//============================================================
@@ -431,7 +447,10 @@ PetscErrorCode DBMatReadPhase(DBMat *dbm, FB *fb)
 	if(strlen(ndisl)) PetscPrintf(PETSC_COMM_WORLD,"    dislocation creep profile: %s", ndisl);
 
 	sprintf(title, "   (dens)   : "); print_title = 1;
-	if (m->Pd_rho == 1) MatPrintScalParam(m->rho,   "rho (PD used)",   "[kg/m^3]", scal, title, &print_title);
+	if (m->Pd_rho == 1){ 
+		MatPrintScalParam(m->rho,   "rho",   "[kg/m^3]", scal, title, &print_title);
+		PetscPrintf(PETSC_COMM_WORLD,"- Employing phase diagram: %s",PhaseDiagram);
+	}
 	else                MatPrintScalParam(m->rho,   "rho",   "[kg/m^3]", scal, title, &print_title);
 	MatPrintScalParam(m->rho_n, "rho_n", "[ ]",      scal, title, &print_title);
 	MatPrintScalParam(m->rho_c, "rho_c", "[1/m]",    scal, title, &print_title);

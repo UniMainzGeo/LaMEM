@@ -67,8 +67,9 @@ using namespace std;
 #define __FUNCT__ "ADVMarkInit"
 PetscErrorCode ADVMarkInit(AdvCtx *actx, FB *fb)
 {
-	FDSTAG   *fs;
+	FDSTAG    *fs;
 	PetscInt  nmarkx, nmarky, nmarkz, nummark;
+	PetscBool LoadPhaseDiagrams;
 
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
@@ -115,10 +116,18 @@ PetscErrorCode ADVMarkInit(AdvCtx *actx, FB *fb)
 	ierr = ADVMarkSetTempFile(actx, fb); CHKERRQ(ierr);
 
 	// Load phase diagrams for the phases where it is required + interpolate the reference density for the first timestep
+	LoadPhaseDiagrams = PETSC_FALSE;
+	for(PetscInt i=0; i<actx->jr->dbm->numPhases; i++){ if(actx->jr->dbm->phases[i].Pd_rho == 1){LoadPhaseDiagrams = PETSC_TRUE;} }
+	
+	if 	(LoadPhaseDiagrams){
+		PetscPrintf(PETSC_COMM_WORLD,"Phase Diagrams: \n");
+	}	
+
 	for(PetscInt i=0; i<actx->jr->dbm->numPhases; i++)
 	{
 		if(actx->jr->dbm->phases[i].Pd_rho == 1)
 		{
+			PetscPrintf(PETSC_COMM_WORLD,"   Phase %i,  ",i);
 			ierr = LoadPhaseDiagram(actx, actx->jr->dbm->phases, i); CHKERRQ(ierr);
 			SolVarCell  *svCell;
 			PetscInt     jj;
@@ -136,6 +145,11 @@ PetscErrorCode ADVMarkInit(AdvCtx *actx, FB *fb)
 			}
 		}
 	}
+
+	if 	(LoadPhaseDiagrams){
+		PetscPrintf(PETSC_COMM_WORLD,"--------------------------------------------------------------------------\n");
+	}
+
 
 	PetscFunctionReturn(0);
 }
@@ -1498,9 +1512,8 @@ PetscErrorCode LoadPhaseDiagram(AdvCtx *actx, Material_t  *phases, PetscInt i)
 	}
 	fclose(fp);
 
-	PetscPrintf(PETSC_COMM_WORLD,"Succesfully loaded Phase diagram %s\n",name);
-	PetscPrintf(PETSC_COMM_WORLD,"--------------------------------------------------------------------------\n",name);
-
+	PetscPrintf(PETSC_COMM_WORLD," loaded PhaseDiagram %s from file %s \n",name, phases[i].pdf);
+	
 	// Uncomment to debug values
 	// PetscPrintf(PETSC_COMM_WORLD,"RHO = %.20f ; scal = %lf\n 2 = %lf\n  3 = %lf\n 3m = %lf\n  4 = %.20f ; scal = %lf\n 5 = %lf\n 6 = %lf\n 6m = %lf\n n = %i ; scal = %lf\n",pd->rho_v[20000][0], scal.temperature,pd->rho_pdval[1][i_pd],pd->rho_pdval[2][i_pd],pd->rho_pdval[3][i_pd],pd->rho_pdval[4][i_pd], scal.stress_si,pd->rho_pdval[5][i_pd],pd->rho_pdval[6][i_pd],pd->rho_pdval[7][i_pd],n, scal.density);
 
