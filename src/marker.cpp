@@ -1329,9 +1329,9 @@ void ADVMarkSecIdx(AdvCtx *actx, PetscInt dir, PetscInt Islice, PetscInt *idx)
 PetscErrorCode LoadPhaseDiagram(AdvCtx *actx, Material_t  *phases, PetscInt i)
 {
 	FILE          *fp;
-    PetscInt       i_pd,j,jj,ij,lineStart,n,found;
+    PetscInt       i_pd,j,jj,ij,lineStart,n,found, NumberOfPhaseDiagramProperties;
     PetscScalar    fl[2];
-    char           buf[1000],name[100];
+    char           buf[1000],name[_STR_LEN_];
     PData         *pd;
     Marker        *P;
     Scaling       *scal;
@@ -1339,21 +1339,12 @@ PetscErrorCode LoadPhaseDiagram(AdvCtx *actx, Material_t  *phases, PetscInt i)
 
 	PetscFunctionBegin;
 
-	// rho_pdval[0] = lowermost temperature value
-	// rho_pdval[1] = dT
-	// rho_pdval[2] = nT
-	// rho_pdval[3] = uppermost temperature value
-	// rho_pdval[4] = lowermost pressure value
-	// rho_pdval[5] = dp
-	// rho_pdval[6] = np
-	// rho_pdval[7] = uppermost pressure value
-	// rho_pdval[8] = # of columns (to determine what needs to be interpolated)
-
 	jr   = actx->jr;
 	scal = actx->jr->scal;
 	pd   = actx->jr->Pd;
 
 	// Extrapolate the name on the markers
+	// NOTE: THIS MUST BE CHANGED TO AN INTEGER NUMBER, TO SUBSTANTIALLY SAVE MEMORY OF THE PARTICLES!
 	for(jj = 0; jj < actx->nummark; jj++)
 	{
 		P      = &actx->markers[jj];
@@ -1372,13 +1363,13 @@ PetscErrorCode LoadPhaseDiagram(AdvCtx *actx, Material_t  *phases, PetscInt i)
 	{
 		if(!pd->rho_pdns[5][j])
 		{
-			found = 1;
-			i_pd = j;
+			found 	= 1;
+			i_pd 	= j;
 			break;
 		}
 		else
 		{
-			found = 1;
+			found 	= 1;
 			// Check if we have this diagram already in the buffer
 			for(ij=0; ij<max_name; ij++)
 			{
@@ -1391,7 +1382,7 @@ PetscErrorCode LoadPhaseDiagram(AdvCtx *actx, Material_t  *phases, PetscInt i)
 			if(found == 1)
 			{
 				// We already loaded that diagram so no need to do anything here except setting the flags for the melt
-				sprintf(name,"%s.in",phases[i].pdn);
+				sprintf(name,"%s.in",phases[i].pdn);  // is this ever used?
 				fp=fopen(phases[i].pdf,"r");
 				for(j=0;j<1;j++)
 				{
@@ -1419,7 +1410,7 @@ PetscErrorCode LoadPhaseDiagram(AdvCtx *actx, Material_t  *phases, PetscInt i)
 	// Create the name
 	sprintf(name,"%s.in",phases[i].pdn);
 
-	lineStart = 50.0;    // 50 lines are reserved for header
+	lineStart = 50;    // 50 lines are reserved for the header in the phase diagram
 
 	fp=fopen(phases[i].pdf,"r");
 	if (fp==NULL)
@@ -1432,7 +1423,7 @@ PetscErrorCode LoadPhaseDiagram(AdvCtx *actx, Material_t  *phases, PetscInt i)
 	{
 		if(j==0)
 		{
-			fscanf(fp, "%lf,",&pd->rho_pdval[8][i_pd]);
+			fscanf(fp, "%i,",&pd->numProps[i_pd]);
 		}
 		else
 		{
@@ -1440,21 +1431,21 @@ PetscErrorCode LoadPhaseDiagram(AdvCtx *actx, Material_t  *phases, PetscInt i)
 		}
 	}
 
-	// Read important phase diagram info
-	fscanf(fp, "%lf,",&pd->rho_pdval[0][i_pd]);
-	pd->rho_pdval[0][i_pd] = (pd->rho_pdval[0][i_pd])/scal->temperature;
-	fscanf(fp, "%lf,",&pd->rho_pdval[1][i_pd]);
-	pd->rho_pdval[1][i_pd] = (pd->rho_pdval[1][i_pd])/scal->temperature;
-	fscanf(fp, "%lf,",&pd->rho_pdval[2][i_pd]);
-	pd->rho_pdval[3][i_pd] = pd->rho_pdval[2][i_pd]*pd->rho_pdval[1][i_pd] + pd->rho_pdval[0][i_pd];
-	fscanf(fp, "%lf,",&pd->rho_pdval[4][i_pd]);
-	pd->rho_pdval[4][i_pd] = (pd->rho_pdval[4][i_pd]*1e5)/scal->stress_si;
-	fscanf(fp, "%lf,",&pd->rho_pdval[5][i_pd]);
-	pd->rho_pdval[5][i_pd] = (pd->rho_pdval[5][i_pd]*1e5)/scal->stress_si;
-	fscanf(fp, "%lf,",&pd->rho_pdval[6][i_pd]);
-	pd->rho_pdval[7][i_pd] = pd->rho_pdval[6][i_pd]*pd->rho_pdval[5][i_pd] + pd->rho_pdval[4][i_pd];
-
-	n = (PetscInt)pd->rho_pdval[2][i_pd] * (PetscInt)pd->rho_pdval[6][i_pd];
+	// Read important phase diagram info about the pressure & temperature range of the diagram
+	fscanf(fp, "%lf,",&pd->minT[i_pd]);														// minimum T of diagram [in Kelvin]
+	pd->minT[i_pd] 			=	pd->minT[i_pd]/scal->temperature;							// non-dimensionalize
+	fscanf(fp, "%lf,",&pd->dT[i_pd]);														// Temperature increment
+	pd->dT[i_pd] 			=	pd->dT[i_pd]/scal->temperature;								// non-dimensionalize
+	fscanf(fp, "%i,",&pd->nT[i_pd]);														// # of temperature points in diagram 
+	pd->maxT[i_pd] 	 		=	pd->minT[i_pd] + (PetscScalar)(pd->nT[i_pd])*pd->dT[i_pd];	// maximum T of diagram
+	fscanf(fp, "%lf,",&pd->minP[i_pd]);														// minimum P of diagram [in bar]
+	pd->minP[i_pd] 			=	(pd->minP[i_pd]*1e5)/scal->stress_si;						// non-dimensionalize
+	fscanf(fp, "%lf,",&pd->dP[i_pd]);														// Pressure increment
+	pd->dP[i_pd] 			=	(pd->dP[i_pd]*1e5)/scal->stress_si;							// non-dimensionalize
+	fscanf(fp, "%i,",&pd->nP[i_pd]);														// # of pressure points in diagram 
+	pd->maxP[i_pd] 	 		=	pd->minP[i_pd] + (PetscScalar)(pd->nP[i_pd])*pd->dP[i_pd];	// maximum P of diagram
+	
+	n = pd->nT[i_pd]*pd->nP[i_pd]; // number of points
 
 	/*
 	Check what data is available:
@@ -1464,8 +1455,8 @@ PetscErrorCode LoadPhaseDiagram(AdvCtx *actx, Material_t  *phases, PetscInt i)
 	4 column = T [K]
 	5 column = P [b]
 	*/
-
-	if(pd->rho_pdval[8][i_pd] == 3)  // density
+	NumberOfPhaseDiagramProperties = pd->numProps[i_pd];
+	if (NumberOfPhaseDiagramProperties == 3)  // density
 	{
 		fscanf(fp,"%lf %lf %lf,",&pd->rho_v[0][i_pd],&fl[0],&fl[1]);
 		pd->rho_v[0][i_pd] /= scal->density;
@@ -1475,7 +1466,7 @@ PetscErrorCode LoadPhaseDiagram(AdvCtx *actx, Material_t  *phases, PetscInt i)
 			pd->rho_v[j][i_pd] /= scal->density;
 		}
 	}
-	else if(pd->rho_pdval[8][i_pd] == 4)   // density + mf
+	else if(NumberOfPhaseDiagramProperties == 4)   // density + mf
 	{
 		fscanf(fp, "%lf %lf %lf %lf,",&pd->Me_v[0][i_pd],&pd->rho_v[0][i_pd],&fl[0],&fl[1]);
 		pd->rho_v[0][i_pd] /= scal->density;
@@ -1486,7 +1477,7 @@ PetscErrorCode LoadPhaseDiagram(AdvCtx *actx, Material_t  *phases, PetscInt i)
 			pd->rho_v[j][i_pd] /= scal->density;
 		}
 	}
-	else if(pd->rho_pdval[8][i_pd] == 5)   // density + mf + density_fluid
+	else if(NumberOfPhaseDiagramProperties == 5)   // density + mf + density_fluid
 	{
 		fscanf(fp, "%lf %lf %lf %lf %lf,",&pd->rho_f_v[0][i_pd],&pd->Me_v[0][i_pd],&pd->rho_v[0][i_pd],&fl[0],&fl[1]);
 		pd->rho_v[0][i_pd] /= scal->density;

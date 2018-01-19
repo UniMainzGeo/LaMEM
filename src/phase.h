@@ -137,14 +137,28 @@ public:
 
 struct PData
 {
-	// Density from phase diagram
-	PetscScalar  rho_pdval[10][max_num_pd]; // Array storing dp and dT as well as information on the max and min values
-	char         rho_pdns[max_name][max_num_pd];// loaded phase diagram numbers
-	PetscScalar  rho_v[max_num_ro][max_num_pd];					// Array containing the actual density data
+	// Stores data related to Phase Diagrams
+
+	// Size of the phase diagram in P-T space
+	PetscScalar  minT[max_num_pd];						// minimum temperature of diagram
+	PetscScalar  maxT[max_num_pd];						// maximum temperature of diagram
+	PetscScalar  dT[max_num_pd];						// temperature increment
+	PetscInt  	 nT[max_num_pd];						// number of temperature points
+
+	PetscScalar  minP[max_num_pd];						// minimum pressure of diagram
+	PetscScalar  maxP[max_num_pd];						// maximum pressure of diagram
+	PetscScalar  dP[max_num_pd];						// pressure increment
+	PetscInt  	 nP[max_num_pd];						// number of pressure points
+	PetscInt 	 numProps[max_num_pd];					// number of collumns (or stored properties) in phase diagram
+
+	char         rho_pdns[max_name][max_num_pd];		// loaded phase diagram numbers
+	PetscScalar  rho_v[max_num_ro][max_num_pd];			// Array containing the actual density data (= bulk density, including that of partial melt)
 	PetscScalar  rho;
+
 	// Melt content data
 	PetscScalar  Me_v[max_num_ro][max_num_pd];          // Array containing the actual melt content data
 	PetscScalar  mf;
+	
 	// Rho fluid data
 	PetscScalar rho_f_v[max_num_ro][max_num_pd];
 	PetscScalar rho_f;

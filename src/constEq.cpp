@@ -721,20 +721,11 @@ PetscErrorCode GetStressEdge(
 #define __FUNCT__ "SetDataPhaseDiagram"
 PetscErrorCode SetDataPhaseDiagram(PData *pd, PetscScalar p, PetscScalar T, PetscScalar pshift, char pdn[])
 {
-    PetscInt       i,j,i_pd,indT[2],indP[2],ind[4],found;
-    PetscScalar    fx0,fx1,weight[4];
+    PetscInt       	i,j,i_pd,indT[2],indP[2],ind[4],found;
+    PetscScalar    	fx0,fx1,weight[4];
+	PetscScalar 	minP, dP, minT, dT;
 
 	PetscFunctionBegin;
-
-	// rho_pdval[0] = lowermost temperature value
-	// rho_pdval[1] = dT
-	// rho_pdval[2] = nT
-	// rho_pdval[3] = uppermost temperature value
-	// rho_pdval[4] = lowermost pressure value
-	// rho_pdval[5] = dp
-	// rho_pdval[6] = np
-	// rho_pdval[7] = uppermost pressure value
-	// rho_pdval[8] = # of columns (to determine what needs to be interpolated)
 
 	// Function to interpolate values from P-T data from PARTICLES (called in advect.c)
 
@@ -781,28 +772,34 @@ PetscErrorCode SetDataPhaseDiagram(PData *pd, PetscScalar p, PetscScalar T, Pets
 		p = 0;
 	}
 
-	indT[0] = (PetscInt)floor((T-pd->rho_pdval[0][i_pd])/pd->rho_pdval[1][i_pd]);
+	// copy in temporary variables for code readability (and speed in fact as less reading from memory is triggered)
+	minP 	=	pd->minP[i_pd];
+	minT 	=	pd->minT[i_pd];
+	dP 		=	pd->dP[i_pd];
+	dT 		=	pd->dT[i_pd];
+
+	indT[0] = (PetscInt)floor((T-minT)/dT);
 	indT[1] = indT[0] + 1;
 
-	indP[0] = (PetscInt)floor((p-(pd->rho_pdval[4][i_pd]))/pd->rho_pdval[5][i_pd]);
+	indP[0] = (PetscInt)floor((p-(minP))/dP);
 	indP[1] = indP[0] + 1;
 
-	weight[0] = ((indP[1]*pd->rho_pdval[5][i_pd]    + pd->rho_pdval[4][i_pd]) - p) / ((pd->rho_pdval[5][i_pd]*indP[1]+pd->rho_pdval[4][i_pd]) - (pd->rho_pdval[5][i_pd]*indP[0]+pd->rho_pdval[4][i_pd]));
-	weight[1] = (p - (pd->rho_pdval[5][i_pd]*indP[0]+ pd->rho_pdval[4][i_pd]))     / ((pd->rho_pdval[5][i_pd]*indP[1]+pd->rho_pdval[4][i_pd]) - (pd->rho_pdval[5][i_pd]*indP[0]+pd->rho_pdval[4][i_pd]));
-	weight[2] = ((pd->rho_pdval[1][i_pd]*indT[1]    + pd->rho_pdval[0][i_pd]) - T) / ((pd->rho_pdval[1][i_pd]*indT[1]+pd->rho_pdval[0][i_pd]) - (pd->rho_pdval[1][i_pd]*indT[0]+pd->rho_pdval[0][i_pd]));
-	weight[3] = (T - (pd->rho_pdval[1][i_pd]*indT[0]+ pd->rho_pdval[0][i_pd]))     / ((pd->rho_pdval[1][i_pd]*indT[1]+pd->rho_pdval[0][i_pd]) - (pd->rho_pdval[1][i_pd]*indT[0]+pd->rho_pdval[0][i_pd]));
+	weight[0] = (    (dP*((PetscScalar)indP[1]) + minP) - p) / ((dP*((PetscScalar)indP[1]) + minP) - (dP*((PetscScalar)indP[0]) +minP) );
+	weight[1] = (p - (dP*((PetscScalar)indP[0]) + minP)    ) / ((dP*((PetscScalar)indP[1]) + minP) - (dP*((PetscScalar)indP[0]) +minP) );
+	weight[2] = (    (dT*((PetscScalar)indT[1]) + minT) - T) / ((dT*((PetscScalar)indT[1]) + minT) - (dT*((PetscScalar)indT[0]) +minT) );
+	weight[3] = (T - (dT*((PetscScalar)indT[0]) + minT)    ) / ((dT*((PetscScalar)indT[1]) + minT) - (dT*((PetscScalar)indT[0]) +minT) );
 
-	if(indT[1]>(*pd->rho_pdval[2]))
+	if(indT[1]>(pd->nT[i_pd]))
 	{
-		indT[0] = (PetscInt)pd->rho_pdval[2][i_pd]-1;
-		indT[1] = (PetscInt)pd->rho_pdval[2][i_pd];
+		indT[0] = pd->nT[i_pd]-1;
+		indT[1] = pd->nT[i_pd];
 		weight[2] = 1;
 		weight[3] = 0;
 	}
-	if(indP[1]>(*pd->rho_pdval[6]))
+	if(indP[1]>(pd->nP[i_pd]))
 	{
-		indP[0] = (PetscInt)pd->rho_pdval[6][i_pd]-1;
-		indP[1] = (PetscInt)pd->rho_pdval[6][i_pd];
+		indP[0] = pd->nP[i_pd]-1;
+		indP[1] = pd->nP[i_pd];
 		weight[0] = 1;
 		weight[1] = 0;
 	}
@@ -820,19 +817,19 @@ PetscErrorCode SetDataPhaseDiagram(PData *pd, PetscScalar p, PetscScalar T, Pets
 		weight[0] = 0;
 		weight[1] = 1;
 	}
-	ind[0] = (PetscInt)pd->rho_pdval[2][i_pd] * (indP[0]-1) + indT[0];
-	ind[1] = (PetscInt)pd->rho_pdval[2][i_pd] * (indP[0]-1) + indT[1];
-	ind[2] = (PetscInt)pd->rho_pdval[2][i_pd] * (indP[1]-1) + indT[0];
-	ind[3] = (PetscInt)pd->rho_pdval[2][i_pd] * (indP[1]-1) + indT[1];
+	ind[0] = pd->nT[i_pd] * (indP[0]-1) + indT[0];
+	ind[1] = pd->nT[i_pd] * (indP[0]-1) + indT[1];
+	ind[2] = pd->nT[i_pd] * (indP[1]-1) + indT[0];
+	ind[3] = pd->nT[i_pd] * (indP[1]-1) + indT[1];
 	if(ind[0]<0)
 	{
 		ind[0] = 0;
 		ind[1] = 1;
 	}
-	if(ind[3]>pd->rho_pdval[2][i_pd]*pd->rho_pdval[6][i_pd])
+	if(ind[3]>pd->nT[i_pd]*pd->nP[i_pd])
 	{
-		ind[2] = (PetscInt)pd->rho_pdval[2][i_pd]*(PetscInt)pd->rho_pdval[6][i_pd]-1;
-		ind[3] = (PetscInt)pd->rho_pdval[2][i_pd]*(PetscInt)pd->rho_pdval[6][i_pd];
+		ind[2] = pd->nT[i_pd]*pd->nP[i_pd]-1;
+		ind[3] = pd->nT[i_pd]*pd->nP[i_pd];
 	}
 
 	// Interpolate density
@@ -840,15 +837,15 @@ PetscErrorCode SetDataPhaseDiagram(PData *pd, PetscScalar p, PetscScalar T, Pets
 	fx1 = weight[0] * pd->rho_v[ind[1]][i_pd] + weight[1] * pd->rho_v[ind[3]][i_pd];
 	pd->rho = weight[2] * fx0           + weight[3] * fx1;
 
-	// Interpolate mf if present
-	if(pd->rho_pdval[8][i_pd] == 4 )
+	// Interpolate melt fraction if present
+	if(pd->numProps[i_pd] == 4 )
 	{
 		fx0 = weight[0] * pd->Me_v[ind[0]][i_pd] + weight[1] * pd->Me_v[ind[2]][i_pd];
 		fx1 = weight[0] * pd->Me_v[ind[1]][i_pd] + weight[1] * pd->Me_v[ind[3]][i_pd];
 		pd->mf  = weight[2] * fx0      + weight[3] * fx1;
 	}
 	// Interpolate mf + rho fluid if present
-	else if(pd->rho_pdval[8][i_pd] == 5)
+	else if(pd->numProps[i_pd] == 5)
 	{
 		fx0 = weight[0] * pd->Me_v[ind[0]][i_pd] + weight[1] * pd->Me_v[ind[2]][i_pd];
 		fx1 = weight[0] * pd->Me_v[ind[1]][i_pd] + weight[1] * pd->Me_v[ind[3]][i_pd];
@@ -868,7 +865,7 @@ PetscErrorCode SetDataPhaseDiagram(PData *pd, PetscScalar p, PetscScalar T, Pets
 	}
 
 	// Uncomment to debug values
-	// PetscPrintf(PETSC_COMM_WORLD,"i_pd = %i\np = %.60f \n T = %.20lf \n\nFINAL INDICES:\n ind[0] = %i \n ind[1] = %i\n ind[2] = %i\n ind[3] = %i\n weight[0] = %.10f\n  weight[1] = %.10f\n weight[0] = %.10f\n  weight[1] = %.10f\n\n --> rho = %.20f\n \n 1 = %.20lf \n2 = %.20lf \n3 = %.20lf \n4 = %.20lf \n5 = %.20lf \n6 = %.20lf \n7 = %.20lf \n8 = %.20lf \n \n rho[0] = %.20f \nrho[1] = %.20f \nrho[2] = %.20f \nrho[3] = %.20f \n   ",i_pd,p,T,ind[0],ind[1],ind[2],ind[3],weight[0],weight[1],weight[2],weight[3],pd->rho,pd->rho_pdval[0][i_pd] ,pd->rho_pdval[1][i_pd],pd->rho_pdval[2][i_pd],pd->rho_pdval[3][i_pd],pd->rho_pdval[4][i_pd],pd->rho_pdval[5][i_pd],pd->rho_pdval[6][i_pd],pd->rho_pdval[7][i_pd],pd->rho_v[ind[0]][i_pd],pd->rho_v[ind[1]][i_pd],pd->rho_v[ind[2]][i_pd],pd->rho_v[ind[3]][i_pd]);
+	// PetscPrintf(PETSC_COMM_WORLD,"i_pd = %i\np = %.60f \n T = %.20lf \n\nFINAL INDICES:\n ind[0] = %i \n ind[1] = %i\n ind[2] = %i\n ind[3] = %i\n weight[0] = %.10f\n  weight[1] = %.10f\n weight[0] = %.10f\n  weight[1] = %.10f\n\n --> rho = %.20f\n \n 1 = %.20lf \n2 = %.20lf \n3 = %.20lf \n4 = %.20lf \n5 = %.20lf \n6 = %.20lf \n7 = %.20lf \n8 = %.20lf \n \n rho[0] = %.20f \nrho[1] = %.20f \nrho[2] = %.20f \nrho[3] = %.20f \n   ",i_pd,p,T,ind[0],ind[1],ind[2],ind[3],weight[0],weight[1],weight[2],weight[3],pd->rho,minT ,dT,pd->rho_pdval[2][i_pd],pd->maxT[i_pd],minP,dP,pd->rho_pdval[6][i_pd],pd->rho_pdval[7][i_pd],pd->rho_v[ind[0]][i_pd],pd->rho_v[ind[1]][i_pd],pd->rho_v[ind[2]][i_pd],pd->rho_v[ind[3]][i_pd]);
 	// PetscPrintf(PETSC_COMM_WORLD,"MF = %.20f; RHOF = %.20f; RHO = %.20f; i_pd = %i ; fx = %.20f; fx1 = %.20f; rhof1 = %.20f; rhof2 = %.20f; ind3 = %i; weight0 = %.20f ; %.3f\n",pd->mf,pd->rho_f,pd->rho,i_pd,fx0,fx1,pd->rho_f_v[ind[1]][i_pd],pd->rho_f_v[ind[3]][i_pd],ind[3],weight[0],pd->rho_pdval[8][i_pd]);
 
 	PetscFunctionReturn(0);
