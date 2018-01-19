@@ -52,13 +52,14 @@ along with LaMEM. If not, see <http://www.gnu.org/licenses/>.
 0. Directory structure
 ----------------------
 doc		-	Some documentation (remains incomplete)
-input_models 	-       Various input models (run with ../bin/LaMEM -ParamFile *.dat)
 matlab 		-	Various matlab files to change initial mesh and read binary output into matlab.
 scripts 	-	Various scripts, currently mainly related to Paraview VTK files.
 src		-	LaMEM source code; compile with "make mode=opt all"
-tests		-	Directory with various benchmarks. TO BE UPDATED TO LATEST VERSION OF LAMEM
+tests		-	Directory with various benchmarks. 
 utils		-	Various non-essential files.
 bin             -       Contains binaries after compilation (/deb contains the debug version and /opt the optimized)
+input_models 	-       Various input models (run with ../bin/LaMEM -ParamFile *.dat) TO BE UPDATED TO LATEST VERSION OF LAMEM
+
 
 
 1. Dependencies
