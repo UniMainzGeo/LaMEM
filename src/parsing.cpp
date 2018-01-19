@@ -891,7 +891,13 @@ PetscErrorCode StokesSetDefaultSolverOptions(FB *fb)
 	ierr = PetscOptionsInsertString(NULL, "-js_ksp_monitor"); 			CHKERRQ(ierr);
 	ierr = PetscOptionsInsertString(NULL, "-js_ksp_converged_reason"); 	CHKERRQ(ierr);
 	ierr = PetscOptionsInsertString(NULL, "-js_ksp_min_it 1"); 			CHKERRQ(ierr);
-	
+
+	// Set default SNES options
+	ierr = PetscOptionsInsertString(NULL, "-snes_atol 1e-7");           CHKERRQ(ierr);
+	ierr = PetscOptionsInsertString(NULL, "-snes_rtol 1e-4");           CHKERRQ(ierr);
+	ierr = PetscOptionsInsertString(NULL, "-snes_stol 1e-16");          CHKERRQ(ierr);
+
+
 	// Read input file to see if we set solver options 
 	ierr = getStringParam(fb, _OPTIONAL_, "SolverType",          SolverType,         NULL);          CHKERRQ(ierr);
 

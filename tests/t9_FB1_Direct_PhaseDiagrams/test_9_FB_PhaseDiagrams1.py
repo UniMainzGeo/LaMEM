@@ -15,13 +15,13 @@ def test_a():
   def comparefunc(unittest):
 
     key = re.escape("|Div|_inf")
-    unittest.compareFloatingPoint(key,1e-10)
+    unittest.compareFloatingPoint(key,1e-7)
 
     key = re.escape("|Div|_2")
-    unittest.compareFloatingPoint(key,1e-8)
+    unittest.compareFloatingPoint(key,1e-6)
 
     key = re.escape("|mRes|_2")
-    unittest.compareFloatingPoint(key,1e-9)
+    unittest.compareFloatingPoint(key,1e-6)
 
   # Create unit test object
   ex1 = pth.pthUnitTest('FB1_Direct_PhaseDiagrams',ranks,launch,expected_file)
