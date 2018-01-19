@@ -1335,11 +1335,9 @@ PetscErrorCode LoadPhaseDiagram(AdvCtx *actx, Material_t  *phases, PetscInt i)
     PData         *pd;
     Marker        *P;
     Scaling       *scal;
-    JacRes        *jr;
-
+   
 	PetscFunctionBegin;
 
-	jr   = actx->jr;
 	scal = actx->jr->scal;
 	pd   = actx->jr->Pd;
 
