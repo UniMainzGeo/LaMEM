@@ -65,7 +65,7 @@ bin             -       Contains binaries after compilation (/deb contains the d
 ---------------
 
 Essential dependencies-
-  i) PETSc 3.7.x
+  i) PETSc 3.7.7, ideally installed with the external packages SUPERLU_DIST, MUMPS and PASTIX
   
 1) Dependency Installation
 - i) PETSc: 
@@ -78,17 +78,17 @@ Essential dependencies-
 2) Building LaMEM
 - Set the environment variable
      export PETSC_OPT=DIRECTORY_FOR_OPTIMIZED_PETSC
-     export PETSC_OPT=DIRECTORY_FOR_DEBUG_PETSC 
+     export PETSC_DEB=DIRECTORY_FOR_DEBUG_PETSC 
 
 - To build the source in the /src directory
      make mode=opt all
 
 - Once build, you can verify that it works with:
-    ./bin/opt/LaMEM
-
-    which will run a falling block test with default parameters.
+    cd /tests
+    make test
 
 3) Visualize results
    We usually use PARAVIEW for this; a serial binary version can be downloaded 
    from www.paraview.org. Instructions on how to use a parallel version are in /doc
+   Simply open the *.pvd files in paraview and push the play button  
 
