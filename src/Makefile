@@ -1,6 +1,6 @@
 	#==============================================================================
 #
-#     Copyright (c) 2011-2015, JGU Mainz, Anton Popov, Boris Kaus
+#     Copyright (c) 2011-2018, JGU Mainz, Anton Popov, Boris Kaus
 #     All rights reserved.
 #
 #     This software was developed at:
@@ -47,12 +47,28 @@ include Makefile.in
 #====================================================
 
 # Include PETSc library
+# You must set the environmental variables
+#  PETSC_DEB = /directory/where/petsc debug/is/installed
+# and
+#  PETSC_OPT = /directory/where/petsc optimized/is/installed
+# which tell where the debug and optimized version of PETSc is installed.
+#
+# The proper way to compile LaMEM is:
+#  make mode=deb all 		-> Compile the debug version of LaMEM, which will be put in /bin/deb
+#  make mode=opt all 		-> Compile the optimized version of LaMEM, which will be put in /bin/opt
 ifeq ($(mode), deb)
 	PETSC_DIR = ${PETSC_DEB}
+else ifeq ($(mode), opt)
+	PETSC_DIR = ${PETSC_OPT}
 endif
 
-ifeq ($(mode), opt)
-	PETSC_DIR = ${PETSC_OPT}
+#====================================================
+# Check whether the environmental variables are correctly set
+ifeq ($(origin PETSC_OPT), undefined)
+$(error The environmental variable PETSC_OPT must be set to the directory where the optimized version of PETSc is installed)
+endif
+ifeq ($(origin PETSC_DEB), undefined)
+$(error The environmental variable PETSC_DEB must be set to the directory where the debug version of PETSc is installed)
 endif
 
 include ${PETSC_DIR}/lib/petsc/conf/variables
