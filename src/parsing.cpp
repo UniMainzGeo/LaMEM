@@ -924,10 +924,6 @@ PetscErrorCode StokesSetDefaultSolverOptions(FB *fb)
 			}
 		}
 
-	
-		// Report
-		ierr = PetscPrintf(PETSC_COMM_WORLD,"Solver Type 		: 	%s \n",SolverType); 
-
 	}
 	else if 	(!strcmp(SolverType, "multigrid")){
 		// Multigrid solver
