@@ -892,12 +892,14 @@ PetscErrorCode StokesSetDefaultSolverOptions(FB *fb)
 	ierr = PetscOptionsInsertString(NULL, "-js_ksp_converged_reason"); 	CHKERRQ(ierr);
 	ierr = PetscOptionsInsertString(NULL, "-js_ksp_min_it 1"); 			CHKERRQ(ierr);
 
-	// Set default SNES options	
+	// Set default nonlinear (SNES) options	
 	ierr = PetscOptionsInsertString(NULL, "-snes_atol 1e-7");           		CHKERRQ(ierr);
 	ierr = PetscOptionsInsertString(NULL, "-snes_rtol 1e-4");           		CHKERRQ(ierr);
 	ierr = PetscOptionsInsertString(NULL, "-snes_stol 1e-16");          		CHKERRQ(ierr);
 	ierr = PetscOptionsInsertString(NULL, "-snes_max_linear_solve_fail 10000");	CHKERRQ(ierr);
 	ierr = PetscOptionsInsertString(NULL, "-snes_max_it 50");          			CHKERRQ(ierr);
+	ierr = PetscOptionsInsertString(NULL, "-snes_linesearch_type basic");       CHKERRQ(ierr);  // in many VEP cases, cp or l2 linesearch work more efficiently 
+	ierr = PetscOptionsInsertString(NULL, "-snes_linesearch_maxstep 1.0");      CHKERRQ(ierr);  // Limits the maximum stepsize to be no larger than 100% (important for some model setups - prevents blowup)
 
 	// Read input file to see if we set solver options 
 	ierr = getStringParam(fb, _OPTIONAL_, "SolverType",          SolverType,         NULL);          CHKERRQ(ierr);
