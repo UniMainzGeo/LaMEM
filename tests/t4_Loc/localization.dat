@@ -189,11 +189,18 @@
 	# Eisenstatt-Walker (sometimes converges faster for nonlinear cases)
 	-snes_ksp_ew
     -snes_ksp_ew_rtolmax 1e-1
-   	
+    -snes_max_linear_solve_fail 10000
+ 	-snes_max_it 			50
+   		
 	# Newton/picard options
 	-snes_PicardSwitchToNewton_rtol 1e-1   # relative tolerance to switch to Newton (1e-2)
 	-snes_NewtonSwitchToPicard_it  	20     # number of Newton iterations after which we switch back to Picard
 
+	# Linesearch options
+#	-snes_linesearch_type 		cp 				#Linesearch type (one of) shell basic l2 bt cp (SNESLineSearchSetType) 
+#	-snes_linesearch_maxstep 	1.0				# very important to prevent the code from "blowing up"
+	
+	
 	# Jacobian solver
 	-js_ksp_type fgmres	
 	-js_ksp_max_it 50
