@@ -286,11 +286,11 @@ PetscErrorCode GetEffVisc(
 	// elasticity
 	if(ctx->A_els) inv_eta_els = 2.0*ctx->A_els;
 	// diffusion with melt FROM PD (after Kohlstedt 2003 (Stress-driven melt segregation in partially molten rocks))
-	if(ctx->A_dif && ctx->Pd_rho == 1 && svDev->mf <= 0.1 && svDev->mf >= 0) inv_eta_dif = 2.0*ctx->A_dif * exp(40*svDev->mf);
+	if(ctx->A_dif && ctx->Pd_rho == 1) inv_eta_dif = 2.0*ctx->A_dif * exp(40*svDev->mf);
 	// diffusion
 	else if(ctx->A_dif) inv_eta_dif = 2.0*ctx->A_dif;
 	// dislocation with melt FROM PD (after Kohlstedt 2003 (Stress-driven melt segregation in partially molten rocks))
-	if(ctx->A_dis && ctx->Pd_rho == 1 && svDev->mf <= 0.1 && svDev->mf >= 0) inv_eta_dis = 2.0*pow(ctx->A_dis, 1.0/ctx->N_dis)*pow(ctx->DII, 1.0 - 1.0/ctx->N_dis) * exp(40*svDev->mf);
+	if(ctx->A_dis && ctx->Pd_rho == 1) inv_eta_dis = 2.0*pow(ctx->A_dis, 1.0/ctx->N_dis)*pow(ctx->DII, 1.0 - 1.0/ctx->N_dis) * exp(40*svDev->mf);
 	// dislocation
 	else if(ctx->A_dis) inv_eta_dis = 2.0*pow(ctx->A_dis, 1.0/ctx->N_dis)*pow(ctx->DII, 1.0 - 1.0/ctx->N_dis);
 	// Peierls

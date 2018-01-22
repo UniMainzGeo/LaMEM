@@ -1341,20 +1341,6 @@ PetscErrorCode LoadPhaseDiagram(AdvCtx *actx, Material_t  *phases, PetscInt i)
 	scal = actx->jr->scal;
 	pd   = actx->jr->Pd;
 
-	// Extrapolate the name on the markers
-	// NOTE: THIS MUST BE CHANGED TO AN INTEGER NUMBER, TO SUBSTANTIALLY SAVE MEMORY OF THE PARTICLES!
-	for(jj = 0; jj < actx->nummark; jj++)
-	{
-		P      = &actx->markers[jj];
-		if(P->phase == i)
-		{
-			for(j=0; j<max_name; j++)
-			{
-				P->pdn[j] = phases[i].pdn[j];
-			}
-		}
-	}
-
 	found = 0;
 	// Get the next empty row in the buffer
 	for(j=0; j<max_num_pd; j++)
@@ -1413,7 +1399,7 @@ PetscErrorCode LoadPhaseDiagram(AdvCtx *actx, Material_t  *phases, PetscInt i)
 	fp=fopen(phases[i].pdf,"r");
 	if (fp==NULL)
 	{
-		SETERRQ1(PETSC_COMM_SELF, PETSC_ERR_USER, "No such phase diagram: %s in phase %i!\n",name);
+		SETERRQ1(PETSC_COMM_SELF, PETSC_ERR_USER, "No such phase diagram: %s\n",name);
 	}
 
 	// Read header
