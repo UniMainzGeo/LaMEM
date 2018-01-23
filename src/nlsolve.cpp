@@ -169,11 +169,12 @@ PetscErrorCode DisplaySpecifiedSolverOptions(PCStokes pc, SNES snes)
 	PC 				pc_coarse, pc_levels;
 	char      		pname[_STR_LEN_];
 	PCStokesMG 		*mg;
+	FDSTAG          *fs;
 	PCType 			pc_type;
 	KSPType 	    ksp_type;
 	PCStokesUser 	*user;
 	PetscScalar 	scalar;
-	PetscInt 		integer;
+	PetscInt 		integer, refine_y;
 	PetscBool		found;
 	const MatSolverPackage solver_type; 
 
@@ -207,8 +208,14 @@ PetscErrorCode DisplaySpecifiedSolverOptions(PCStokes pc, SNES snes)
 		// Multigrid solver
 		PetscPrintf(PETSC_COMM_WORLD, "   Solver type                   : multigrid \n");	
 
-		/* Multigrid parameters for the smootheners at the various levels */
+		/* Do we have a 2D setup & only refine in x/z direction? */
+		fs  = pc->pm->jr->fs;
+		ierr = DMDAGetRefinementFactor(fs->DA_CEN, PETSC_NULL, &refine_y,PETSC_NULL); CHKERRQ(ierr);
+		if (refine_y==1){
+			PetscPrintf(PETSC_COMM_WORLD, "   Multigrid refinement in x/z \n"); 
+		}
 
+		/* Multigrid parameters for the smootheners at the various levels */
 		ierr = PetscOptionsGetString(NULL, NULL,"-gmg_mg_levels_ksp_type", pname, _STR_LEN_, &found); CHKERRQ(ierr);
 		if (found){
 			PetscPrintf(PETSC_COMM_WORLD, "   Multigrid smoother levels KSP : %s \n", pname); 
@@ -223,7 +230,7 @@ PetscErrorCode DisplaySpecifiedSolverOptions(PCStokes pc, SNES snes)
 			// Options that go with the Richardson solver
 			ierr = PetscOptionsGetScalar(NULL, NULL,"-gmg_mg_levels_ksp_richardson_scale", &scalar, &found); CHKERRQ(ierr);
 			if (found){PetscPrintf(PETSC_COMM_WORLD, "   Multigrid dampening parameter : %f \n", scalar); }
-		}
+		}		
 		
 		// preconditioner
 		ierr = PetscOptionsGetString(NULL, NULL,"-gmg_mg_levels_pc_type", pname, _STR_LEN_, &found); CHKERRQ(ierr);

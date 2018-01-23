@@ -880,7 +880,7 @@ PetscErrorCode StokesSetDefaultSolverOptions(FB *fb)
 	PetscErrorCode ierr;
  	char     		SolverType[_STR_LEN_], DirectSolver[_STR_LEN_], str[_STR_LEN_], SmootherType[_STR_LEN_];
 	PetscScalar 	scalar;
-	PetscInt 		integer;
+	PetscInt 		integer, nel_y;
 	
 	PetscFunctionBegin;
 	
@@ -888,7 +888,7 @@ PetscErrorCode StokesSetDefaultSolverOptions(FB *fb)
 	// All options can be overridden by the usual PETSC options
 
 	// Set default parameters for the outer iterations
-	ierr = PetscOptionsInsertString(NULL, "-js_ksp_monitor"); 			CHKERRQ(ierr);
+//	ierr = PetscOptionsInsertString(NULL, "-js_ksp_monitor"); 			CHKERRQ(ierr);
 	ierr = PetscOptionsInsertString(NULL, "-js_ksp_converged_reason"); 	CHKERRQ(ierr);
 	ierr = PetscOptionsInsertString(NULL, "-js_ksp_min_it 1"); 			CHKERRQ(ierr);
 
@@ -945,9 +945,18 @@ PetscErrorCode StokesSetDefaultSolverOptions(FB *fb)
 		ierr = PetscOptionsInsertString(NULL, "-gmg_pc_mg_cycle_type v"); 			CHKERRQ(ierr);
 		ierr = PetscOptionsInsertString(NULL, "-gmg_pc_mg_log"); 					CHKERRQ(ierr);
 
+		// determine whether we are running a quasi-2D simulation
+		nel_y 	= 0;
+		ierr 	= getIntParam(fb, _OPTIONAL_, "nel_y", &nel_y, 1, 100);          	CHKERRQ(ierr);
+		if (nel_y==2){ 
+			// quasi-2D - multgrid should only coarsen in x and z direction
+			ierr = PetscOptionsInsertString(NULL, "-da_refine_y 1"); 				CHKERRQ(ierr);
+		}
+
 		integer 	= 3;
 		ierr 	= getIntParam(fb, _OPTIONAL_, "MGLevels",       &integer,        1, 100);          CHKERRQ(ierr);
 		if (integer){
+			
  			sprintf(str, "-gmg_pc_mg_levels %i", integer);	ierr = PetscOptionsInsertString(NULL, str); 	CHKERRQ(ierr);
 		}
 		
