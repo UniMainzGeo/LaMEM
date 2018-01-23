@@ -727,14 +727,12 @@ PetscErrorCode SetDataPhaseDiagram(PData *pd, PetscScalar p, PetscScalar T, Pets
 
 	PetscFunctionBegin;
 
-	// Function to interpolate values from P-T data from PARTICLES (called in advect.c)
-
 	// Get the correct phase diagram
 	for(i=0; i<max_num_pd; i++)
 	{
 		i_pd  = -1;
 		found = 1;
-		if(!pd->rho_pdns[5][i])
+		if(!pd->rho_pdns[0][i])
 		{
 			// We found an empty phase diagram spot
 		}

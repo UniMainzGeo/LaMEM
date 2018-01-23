@@ -1345,7 +1345,7 @@ PetscErrorCode LoadPhaseDiagram(AdvCtx *actx, Material_t  *phases, PetscInt i)
 	// Get the next empty row in the buffer
 	for(j=0; j<max_num_pd; j++)
 	{
-		if(!pd->rho_pdns[5][j])
+		if(!pd->rho_pdns[0][j])
 		{
 			found 	= 1;
 			i_pd 	= j;
@@ -1439,6 +1439,7 @@ PetscErrorCode LoadPhaseDiagram(AdvCtx *actx, Material_t  *phases, PetscInt i)
 	4 column = T [K]
 	5 column = P [b]
 	*/
+
 	NumberOfPhaseDiagramProperties = pd->numProps[i_pd];
 	if (NumberOfPhaseDiagramProperties == 3)  // density
 	{
@@ -1487,8 +1488,6 @@ PetscErrorCode LoadPhaseDiagram(AdvCtx *actx, Material_t  *phases, PetscInt i)
 	}
 	fclose(fp);
 
-	PetscPrintf(PETSC_COMM_WORLD," loaded PhaseDiagram %s from file %s \n",name, phases[i].pdf);
-	
 	// Uncomment to debug values
 	// PetscPrintf(PETSC_COMM_WORLD,"RHO = %.20f ; scal = %lf\n 2 = %lf\n  3 = %lf\n 3m = %lf\n  4 = %.20f ; scal = %lf\n 5 = %lf\n 6 = %lf\n 6m = %lf\n n = %i ; scal = %lf\n",pd->rho_v[20000][0], scal.temperature,pd->rho_pdval[1][i_pd],pd->rho_pdval[2][i_pd],pd->rho_pdval[3][i_pd],pd->rho_pdval[4][i_pd], scal.stress_si,pd->rho_pdval[5][i_pd],pd->rho_pdval[6][i_pd],pd->rho_pdval[7][i_pd],n, scal.density);
 
