@@ -5,10 +5,10 @@ close
 PD_name = 'TestPD.in';
 
 
-H = dlmread(PD_name, ' ', [50 0 55 1]);
-np = H(5);
-nt = H(2);
-M = dlmread(PD_name, ' ', 56, 0);
+H = dlmread(PD_name, ' ', [49 0 54 0]);
+np = H(6);
+nt = H(3);
+M = dlmread(PD_name, ' ', 55, 0);
 
 rho = reshape(M(:,3),np,nt);
 rho_fluid = reshape(M(:,1),np,nt);
