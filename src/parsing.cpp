@@ -986,19 +986,16 @@ PetscErrorCode StokesSetDefaultSolverOptions(FB *fb)
 
 		/* Specify coarse grid direct solver options */
 		ierr = getStringParam(fb, _OPTIONAL_, "MGCoarseSolver",          SolverType,         "direct");          CHKERRQ(ierr);
-		if 	(!strcmp(SolverType, "direct") | !strcmp(SolverType, "mumps") | !strcmp(SolverType, "superlu_dist")){
-			PetscPrintf(PETSC_COMM_WORLD,"Setting direct solver options for crs \n",SolverType);
-
+		if 	( (!strcmp(SolverType, "direct")) || (!strcmp(SolverType, "mumps")) || (!strcmp(SolverType, "superlu_dist")) ){
 			ierr = PetscOptionsInsertString(NULL, "-crs_ksp_type preonly"); 		CHKERRQ(ierr);
 			ierr = PetscOptionsInsertString(NULL, "-crs_pc_type lu"); 		CHKERRQ(ierr);
-			if (ISParallel(PETSC_COMM_WORLD)){
-				if (!strcmp(SolverType, "direct") | !strcmp(SolverType, "superlu_dist")){
-					ierr = PetscOptionsInsertString(NULL, "-crs_pc_factor_mat_solver_package superlu_dist"); 		CHKERRQ(ierr);
-				}
-				else if (!strcmp(SolverType, "mumps")){
-					ierr = PetscOptionsInsertString(NULL, "-crs_pc_factor_mat_solver_package mumps"); 		CHKERRQ(ierr);
-				}
+			if (!strcmp(SolverType, "superlu_dist")){
+				ierr = PetscOptionsInsertString(NULL, "-crs_pc_factor_mat_solver_package superlu_dist"); 		CHKERRQ(ierr);
 			}
+			else if (!strcmp(SolverType, "mumps")){
+				ierr = PetscOptionsInsertString(NULL, "-crs_pc_factor_mat_solver_package mumps"); 		CHKERRQ(ierr);
+			}
+		
 		}
 		else if (!strcmp(SolverType, "redundant")){
 			ierr = PetscOptionsInsertString(NULL, "-crs_ksp_type preonly"); 		CHKERRQ(ierr);
