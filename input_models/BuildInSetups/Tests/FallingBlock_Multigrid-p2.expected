@@ -1,0 +1,267 @@
+-------------------------------------------------------------------------- 
+                   Lithosphere and Mantle Evolution Model                   
+     Compiled: Date: Jan 22 2018 - Time: 16:52:15 	    
+-------------------------------------------------------------------------- 
+        STAGGERED-GRID FINITE DIFFERENCE CANONICAL IMPLEMENTATION           
+-------------------------------------------------------------------------- 
+Parsing input file : ./BuildInSetups/FallingBlock_Multigrid.dat 
+   Adding PETSc option: -snes_type ksponly
+   Adding PETSc option: -js_ksp_monitor
+Finished parsing input file : ./BuildInSetups/FallingBlock_Multigrid.dat 
+--------------------------------------------------------------------------
+Time stepping parameters:
+   Simulation end time          : 100. [ ] 
+   Maximum number of steps      : 3 
+   Time step                    : 10. [ ] 
+   Minimum time step            : 1e-05 [ ] 
+   Maximum time step            : 100. [ ] 
+   Time step increase factor    : 0.1 
+   CFL criterion                : 0.5 
+   CFLMAX (fixed time steps)    : 0.5 
+   Output every [n] steps       : 1 
+--------------------------------------------------------------------------
+Material parameters: 
+   Phase ID : 0
+   (dens)   : rho = 1. [ ]  
+   (diff)   : eta = 1. [ ]  Bd = 0.5 [ ]  
+
+   Phase ID : 1
+   (dens)   : rho = 2. [ ]  
+   (diff)   : eta = 100. [ ]  Bd = 0.005 [ ]  
+
+   Phase ID : 2
+   (dens)   : rho = 2. [ ]  
+   (diff)   : eta = 1000. [ ]  Bd = 0.0005 [ ]  
+
+--------------------------------------------------------------------------
+Grid parameters:
+   Total number of cpu                  : 2 
+   Processor grid  [nx, ny, nz]         : [1, 1, 2]
+   Fine grid cells [nx, ny, nz]         : [32, 32, 32]
+   Number of cells                      :  32768
+   Number of faces                      :  101376
+   Maximum cell aspect ratio            :  1.00000
+   Lower coordinate bounds [bx, by, bz] : [0., 0., 0.]
+   Upper coordinate bounds [ex, ey, ez] : [1., 1., 1.]
+--------------------------------------------------------------------------
+Boundary condition parameters: 
+   No-slip boundary mask [lt rt ft bk bm tp]  : 0 0 0 0 0 0 
+--------------------------------------------------------------------------
+Solution parameters & controls:
+   Gravity [gx, gy, gz]                    : [0., 0., -1.] [ ] 
+   Surface stabilization (FSSA)            :  1. 
+   Use lithostatic pressure for creep      @ 
+   Minimum viscosity                       : 0.001 [ ] 
+   Maximum viscosity                       : 1e+12 [ ] 
+   Ground water level type                 : none 
+--------------------------------------------------------------------------
+Advection parameters:
+   Advection scheme              : Runge-Kutta 2-nd order
+   Marker setup scheme           : geometric primitives
+   Velocity interpolation scheme : empirical STAGP (STAG + pressure points)
+   Marker control type           : pure AVD for all control volumes
+   Markers per cell [nx, ny, nz] : [3, 3, 3] 
+   Marker distribution type      : random noise
+   Background phase ID           : 0 
+   Interpolation constant        : 0.7 
+--------------------------------------------------------------------------
+Reading geometric primitives ... done (0.00846401 sec)
+--------------------------------------------------------------------------
+Output parameters:
+   Output file name                        : FB_multigrid 
+   Write .pvd file                         : yes 
+   Phase                                   @ 
+   Total effective viscosity               @ 
+   Creep effective viscosity               @ 
+   Viscoplastic viscosity                  @ 
+   Velocity                                @ 
+   Pressure                                @ 
+   Deviatoric stress second invariant      @ 
+   Deviatoric strain rate tensor           @ 
+   Deviatoric strain rate second invariant @ 
+--------------------------------------------------------------------------
+AVD output parameters:
+   Write .pvd file       : yes 
+   AVD refinement factor : 3 
+--------------------------------------------------------------------------
+Preconditioner parameters: 
+   Matrix type                   : monolithic
+   Preconditioner type           : coupled Galerkin geometric multigrid
+   Global coarse grid [nx,ny,nz] : [4, 4, 4]
+   Local coarse grid  [nx,ny,nz] : [4, 4, 2]
+   Number of multigrid levels    :  4
+--------------------------------------------------------------------------
+Solver parameters specified: 
+   Outermost Krylov solver       : gmres 
+   Solver type                   : multigrid 
+   Multigrid smoother levels KSP : chebyshev 
+   Multigrid smoother levels PC  : sor 
+   Number of smoothening steps   : 10 
+   Coarse level KSP              : preonly 
+   Coarse level PC               : lu 
+   Coarse level solver package   : mumps 
+--------------------------------------------------------------------------
+Saving output ... done (0.51512 sec)
+--------------------------------------------------------------------------
+================================= STEP 1 =================================
+--------------------------------------------------------------------------
+Current time        : 0.00000 [ ] 
+Tentative time step : 10.00000 [ ] 
+--------------------------------------------------------------------------
+  0 PICARD ||F||/||F0||=1.000000e+00 
+    Residual norms for js_ solve.
+    0 KSP Residual norm 2.299414212178e+01 
+    1 KSP Residual norm 1.378358002316e+01 
+    2 KSP Residual norm 3.756123323905e+00 
+    3 KSP Residual norm 1.452430695036e+00 
+    4 KSP Residual norm 6.008179440614e-01 
+    5 KSP Residual norm 3.872186644992e-01 
+    6 KSP Residual norm 2.465787131792e-01 
+    7 KSP Residual norm 1.325819940879e-01 
+    8 KSP Residual norm 1.082824956124e-01 
+    9 KSP Residual norm 9.560621541019e-02 
+   10 KSP Residual norm 6.472047994140e-02 
+   11 KSP Residual norm 4.361432951327e-02 
+   12 KSP Residual norm 2.126361343856e-02 
+   13 KSP Residual norm 9.961802045611e-03 
+   14 KSP Residual norm 5.531374887777e-03 
+   15 KSP Residual norm 2.818935030860e-03 
+   16 KSP Residual norm 1.267759851212e-03 
+   17 KSP Residual norm 6.807735726729e-04 
+   18 KSP Residual norm 3.446156870793e-04 
+   19 KSP Residual norm 1.742956549000e-04 
+  Linear js_ solve converged due to CONVERGED_RTOL iterations 19
+--------------------------------------------------------------------------
+SNES Convergence Reason : maximum iterations reached
+Number of iterations    : 1
+SNES solution time      : 2.42649 (sec)
+--------------------------------------------------------------------------
+Residual summary: 
+   Continuity: 
+      |Div|_inf = 5.481373300471e-05 
+      |Div|_2   = 1.474253908958e-04 
+   Momentum: 
+      |mRes|_2  = 2.119474206966e-02 
+--------------------------------------------------------------------------
+Actual time step : 6.72978 [ ] 
+--------------------------------------------------------------------------
+Performing marker control (updated algorithm)
+Marker control [0]: (AVD YZED) injected 12 markers and deleted 0 markers in 1.5216e-03 s
+Marker control [0]: (AVD XZED) injected 5 markers and deleted 0 markers in 8.2830e-04 s
+Marker control [0]: (AVD XYED) injected 6 markers and deleted 0 markers in 8.8481e-04 s
+--------------------------------------------------------------------------
+Saving output ... done (0.651729 sec)
+--------------------------------------------------------------------------
+================================= STEP 2 =================================
+--------------------------------------------------------------------------
+Current time        : 6.72978 [ ] 
+Tentative time step : 6.72978 [ ] 
+--------------------------------------------------------------------------
+  0 PICARD ||F||/||F0||=1.000000e+00 
+    Residual norms for js_ solve.
+    0 KSP Residual norm 5.434639832138e-01 
+    1 KSP Residual norm 1.593193819207e-01 
+    2 KSP Residual norm 8.164943279341e-02 
+    3 KSP Residual norm 3.533787194529e-02 
+    4 KSP Residual norm 2.041942025877e-02 
+    5 KSP Residual norm 1.397158052693e-02 
+    6 KSP Residual norm 1.175405989676e-02 
+    7 KSP Residual norm 7.792138083720e-03 
+    8 KSP Residual norm 4.967606371094e-03 
+    9 KSP Residual norm 2.977390097112e-03 
+   10 KSP Residual norm 1.951382433647e-03 
+   11 KSP Residual norm 1.429040380140e-03 
+   12 KSP Residual norm 9.854850981720e-04 
+   13 KSP Residual norm 7.372961364922e-04 
+   14 KSP Residual norm 4.121543861312e-04 
+   15 KSP Residual norm 3.271345266470e-04 
+   16 KSP Residual norm 2.399388451243e-04 
+   17 KSP Residual norm 1.784524625455e-04 
+   18 KSP Residual norm 1.287759663881e-04 
+   19 KSP Residual norm 8.458705171425e-05 
+   20 KSP Residual norm 6.016028897337e-05 
+   21 KSP Residual norm 4.966428958132e-05 
+   22 KSP Residual norm 4.174401013145e-05 
+   23 KSP Residual norm 3.103637901925e-05 
+   24 KSP Residual norm 2.154977220874e-05 
+   25 KSP Residual norm 1.451195718543e-05 
+   26 KSP Residual norm 1.103136040875e-05 
+   27 KSP Residual norm 7.631440149665e-06 
+   28 KSP Residual norm 5.630565439852e-06 
+   29 KSP Residual norm 3.781715277523e-06 
+  Linear js_ solve converged due to CONVERGED_RTOL iterations 29
+--------------------------------------------------------------------------
+SNES Convergence Reason : maximum iterations reached
+Number of iterations    : 1
+SNES solution time      : 2.93165 (sec)
+--------------------------------------------------------------------------
+Residual summary: 
+   Continuity: 
+      |Div|_inf = 5.003089550491e-07 
+      |Div|_2   = 2.469401765116e-06 
+   Momentum: 
+      |mRes|_2  = 2.569698077659e-03 
+--------------------------------------------------------------------------
+Actual time step : 7.15174 [ ] 
+--------------------------------------------------------------------------
+Performing marker control (updated algorithm)
+Marker control [0]: (AVD YZED) injected 25 markers and deleted 0 markers in 3.9234e-03 s
+Marker control [0]: (AVD XZED) injected 11 markers and deleted 0 markers in 1.6470e-03 s
+Marker control [0]: (AVD XYED) injected 7 markers and deleted 0 markers in 1.2520e-03 s
+--------------------------------------------------------------------------
+Saving output ... done (0.648276 sec)
+--------------------------------------------------------------------------
+================================= STEP 3 =================================
+--------------------------------------------------------------------------
+Current time        : 13.88152 [ ] 
+Tentative time step : 7.15174 [ ] 
+--------------------------------------------------------------------------
+  0 PICARD ||F||/||F0||=1.000000e+00 
+    Residual norms for js_ solve.
+    0 KSP Residual norm 4.060401255458e-01 
+    1 KSP Residual norm 1.289055881980e-01 
+    2 KSP Residual norm 5.372694534680e-02 
+    3 KSP Residual norm 2.920150117135e-02 
+    4 KSP Residual norm 1.943521640109e-02 
+    5 KSP Residual norm 8.031624950424e-03 
+    6 KSP Residual norm 3.633113697628e-03 
+    7 KSP Residual norm 1.605047313330e-03 
+    8 KSP Residual norm 7.976307554846e-04 
+    9 KSP Residual norm 4.550520330555e-04 
+   10 KSP Residual norm 2.393058300929e-04 
+   11 KSP Residual norm 1.324579104729e-04 
+   12 KSP Residual norm 7.172473469843e-05 
+   13 KSP Residual norm 5.285672288812e-05 
+   14 KSP Residual norm 4.148978186325e-05 
+   15 KSP Residual norm 2.319813773597e-05 
+   16 KSP Residual norm 1.444357202270e-05 
+   17 KSP Residual norm 1.016267207785e-05 
+   18 KSP Residual norm 5.885016368208e-06 
+   19 KSP Residual norm 3.882270331742e-06 
+  Linear js_ solve converged due to CONVERGED_RTOL iterations 19
+--------------------------------------------------------------------------
+SNES Convergence Reason : maximum iterations reached
+Number of iterations    : 1
+SNES solution time      : 1.98849 (sec)
+--------------------------------------------------------------------------
+Residual summary: 
+   Continuity: 
+      |Div|_inf = 3.151133740342e-07 
+      |Div|_2   = 2.478871662957e-06 
+   Momentum: 
+      |mRes|_2  = 5.432453527995e-04 
+--------------------------------------------------------------------------
+Actual time step : 7.06370 [ ] 
+--------------------------------------------------------------------------
+Performing marker control (updated algorithm)
+Marker control [0]: (AVD CELL) injected 1 markers and deleted 0 markers in 2.6794e-04 s
+Marker control [0]: (AVD YZED) injected 28 markers and deleted 0 markers in 3.1093e-03 s
+Marker control [0]: (AVD XZED) injected 6 markers and deleted 0 markers in 7.3369e-04 s
+Marker control [0]: (AVD XYED) injected 5 markers and deleted 0 markers in 1.0491e-03 s
+--------------------------------------------------------------------------
+Saving output ... done (0.668371 sec)
+--------------------------------------------------------------------------
+=========================== SOLUTION IS DONE! ============================
+--------------------------------------------------------------------------
+Total solution time : 11.253 (sec) 
+--------------------------------------------------------------------------

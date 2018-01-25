@@ -1,0 +1,24 @@
+This folder contains a few setups for LaMEM, which are build-in setups implying
+that you can create the setup within the input file. LaMEM has a few geometrical
+objects build in (see /input/lamem_input.dat for a full overview), which you can 
+use to construct your own (simple) setup.
+
+Running files with LaMEM is done with:
+
+../../bin/opt/LaMEM -ParamFile <FileName.dat>
+
+And as always, you can use Paraview to visualize the files.
+
+If you are a new user of LaMEM, we recommend you look & run the files in the
+following order:
+
+1) FallingBlock_DirectSolver.dat    -> Nondimensional falling block setup (3D)
+                                       using direct solvers. 
+
+2) FallingBlock_Multigrid.dat 	    -> Two falling blocks, using a multigrid solver and 
+                                       slightly higher resolution.
+
+3) FallingSpheres_Multigrid.dat     -> Ten falling spheres with multigrid (good benchmark)
+
+
+                                       
