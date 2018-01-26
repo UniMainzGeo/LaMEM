@@ -897,6 +897,8 @@ PetscErrorCode StokesSetDefaultSolverOptions(FB *fb)
 	ierr = PetscOptionsInsertString(NULL, "-snes_rtol 1e-4");           		CHKERRQ(ierr);
 	ierr = PetscOptionsInsertString(NULL, "-snes_stol 1e-16");          		CHKERRQ(ierr);
 	ierr = PetscOptionsInsertString(NULL, "-snes_max_linear_solve_fail 10000");	CHKERRQ(ierr);
+	ierr = PetscOptionsInsertString(NULL, "-snes_max_funcs 500000");			CHKERRQ(ierr);
+	
 	ierr = PetscOptionsInsertString(NULL, "-snes_max_it 50");          			CHKERRQ(ierr);
 	ierr = PetscOptionsInsertString(NULL, "-snes_linesearch_type basic");       CHKERRQ(ierr);  // in many VEP cases, cp or l2 linesearch work more efficiently 
 	ierr = PetscOptionsInsertString(NULL, "-snes_linesearch_maxstep 1.0");      CHKERRQ(ierr);  // Limits the maximum stepsize to be no larger than 100% (important for some model setups - prevents blowup)
@@ -947,7 +949,7 @@ PetscErrorCode StokesSetDefaultSolverOptions(FB *fb)
 
 		// determine whether we are running a quasi-2D simulation
 		nel_y 	= 0;
-		ierr 	= getIntParam(fb, _OPTIONAL_, "nel_y", &nel_y, 1, 100);          	CHKERRQ(ierr);
+		ierr 	= getIntParam(fb, _OPTIONAL_, "nel_y", &nel_y, 1, 10000);          	CHKERRQ(ierr);
 		if (nel_y==2){ 
 			// quasi-2D - multgrid should only coarsen in x and z direction
 			ierr = PetscOptionsInsertString(NULL, "-da_refine_y 1"); 				CHKERRQ(ierr);
