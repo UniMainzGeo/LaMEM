@@ -1,0 +1,56 @@
+In this folder, several examples are given of input files for LaMEM
+with different level of complexities.
+
+Note that not all input files are consistent with the latest LaMEM 
+input file format, as this changed in recent months and we have not
+been able to keep all up-to-date. While we are working on doiung this,
+we also created a testing framework that runs the input scripts at low
+resolution to ensure that they give results that are consistent with a 
+previous version of the code.
+You can run that with:
+
+python verify_InputModels.py 
+
+If you are a new user of LaMEM, we suggest you to look at the files
+in the order given below. Where appropriate, we have added README files 
+in the directories.
+
+Boris Kaus, Jan. 2018
+
+
+1) /BuildInSetups
+This contains a number of files in which the geometry of the model
+is created from within the LaMEM input file. This is a good starting
+point if you are a new LaMEM user, and explains both how to run the
+code in nondimensional and in dimensional units, for both a simple
+linear viscous rheology and for a more realistic viscoelastoplastic 
+rheology. 
+
+2) /input
+This contains the file lamem_input.dat, which is a generic file
+that lists all specifiable LaMEM options. 
+
+3) SubductionWithMATLABParticles
+Example of performing a subduction setup, in which the initial model geometry
+and temperature structure is generated from within a MATLAB script.
+INPUT FILE NOT WORKING - REQUIRES UPDATING TO THE LATEST LaMEM VERSION
+
+4) /FSSA_Benchmark
+Example of a Rayleigh-Taylor bennchmark, showing how the free surface
+stabilization algorithm is useful in allowing larger timesteps. It also
+shows how a MATLAB-based script is used to create the model setup.
+INPUT FILE NOT WORKING - REQUIRES UPDATING TO THE LATEST LaMEM VERSION
+
+5) /LemialeLocalization
+Example of a 2D shear localization setup, which is an often-used bench-
+mark for plastic rheologies.
+INPUT FILE NOT WORKING - REQUIRES UPDATING TO THE LATEST LaMEM VERSION
+
+6) /MCC
+Example of a 3D metamorphic core complex setup/
+INPUT FILE NOT WORKING - REQUIRES UPDATING TO THE LATEST LaMEM VERSION
+
+7) /Bezier
+Gives an example of using a complicated pushing block in a 3D
+setup that changes direction with time
+INPUT FILE NOT WORKING - REQUIRES UPDATING TO THE LATEST LaMEM VERSION
