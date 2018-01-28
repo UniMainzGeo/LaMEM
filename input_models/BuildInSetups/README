@@ -30,7 +30,7 @@ following order:
 6) Subduction3D_DoubleSubduction_FreeSlip_Multigrid.dat: 
     3D viscous setup with 2 subduction zones. Note: you will need to run this one in 
     parallel on larger machine (64 cores or so) as it require a quite large resolution 
-    to resolve the weak zones
+    to resolve the weak zones.
     
 7) Rifting2D_MultigridSolver.dat:
     2D viscoelastoplastic rifting which results in an asymmetric rift (or symmetric one

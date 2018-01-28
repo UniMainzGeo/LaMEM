@@ -4,10 +4,10 @@
 -------------------------------------------------------------------------- 
         STAGGERED-GRID FINITE DIFFERENCE CANONICAL IMPLEMENTATION           
 -------------------------------------------------------------------------- 
-Parsing input file : ./BuildInSetups/FallingBlock_DirectSolver.dat 
+Parsing input file : ../BuildInSetups/FallingBlock_DirectSolver.dat 
    Adding PETSc option: -snes_type ksponly
    Adding PETSc option: -js_ksp_monitor
-Finished parsing input file : ./BuildInSetups/FallingBlock_DirectSolver.dat 
+Finished parsing input file : ../BuildInSetups/FallingBlock_DirectSolver.dat 
 --------------------------------------------------------------------------
 Time stepping parameters:
    Simulation end time          : 100. [ ] 
@@ -61,7 +61,7 @@ Advection parameters:
    Background phase ID           : 0 
    Interpolation constant        : 0.7 
 --------------------------------------------------------------------------
-Reading geometric primitives ... done (0.0010022 sec)
+Reading geometric primitives ... done (0.00353533 sec)
 --------------------------------------------------------------------------
 Output parameters:
    Output file name                        : FB_direct 
@@ -85,96 +85,102 @@ Preconditioner parameters:
 Solver parameters specified: 
    Outermost Krylov solver       : gmres 
    Solver type                   : parallel direct/lu 
-   Solver package                : superlu_dist 
+   Solver package                : mumps 
 --------------------------------------------------------------------------
-Saving output ... done (0.0673942 sec)
+Saving output ... done (0.0657174 sec)
 --------------------------------------------------------------------------
 ================================= STEP 1 =================================
 --------------------------------------------------------------------------
 Current time        : 0.00000 [ ] 
 Tentative time step : 10.00000 [ ] 
 --------------------------------------------------------------------------
+  0 SNES Function norm 7.310266752999e+01 
   0 PICARD ||F||/||F0||=1.000000e+00 
     Residual norms for js_ solve.
-    0 KSP Residual norm 2.136373623452e+01 
-    1 KSP Residual norm 1.870892323131e-04 
+    0 KSP Residual norm 2.136373621552e+01 
+    1 KSP Residual norm 1.870823656058e-04 
   Linear js_ solve converged due to CONVERGED_RTOL iterations 1
+  1 SNES Function norm 1.005088439546e-03 
 --------------------------------------------------------------------------
 SNES Convergence Reason : maximum iterations reached
 Number of iterations    : 1
-SNES solution time      : 1.53228 (sec)
+SNES solution time      : 0.755226 (sec)
 --------------------------------------------------------------------------
 Residual summary: 
    Continuity: 
-      |Div|_inf = 5.556757472509e-06 
-      |Div|_2   = 2.110469019716e-04 
+      |Div|_inf = 5.556758267321e-06 
+      |Div|_2   = 2.110468861329e-04 
    Momentum: 
-      |mRes|_2  = 9.826771378084e-04 
+      |mRes|_2  = 9.826810180129e-04 
 --------------------------------------------------------------------------
 Actual time step : 7.70279 [ ] 
 --------------------------------------------------------------------------
 Performing marker control (updated algorithm)
-Marker control [0]: (AVD YZED) injected 5 markers and deleted 0 markers in 7.5868e-04 s
-Marker control [0]: (AVD XZED) injected 4 markers and deleted 0 markers in 8.4182e-04 s
-Marker control [0]: (AVD XYED) injected 1 markers and deleted 0 markers in 2.1422e-04 s
+Marker control [0]: (AVD YZED) injected 5 markers and deleted 0 markers in 7.1791e-04 s
+Marker control [0]: (AVD XZED) injected 4 markers and deleted 0 markers in 7.0415e-04 s
+Marker control [0]: (AVD XYED) injected 1 markers and deleted 0 markers in 1.9433e-04 s
 --------------------------------------------------------------------------
 ================================= STEP 2 =================================
 --------------------------------------------------------------------------
 Current time        : 7.70279 [ ] 
 Tentative time step : 7.70279 [ ] 
 --------------------------------------------------------------------------
+  0 SNES Function norm 1.309391928161e+02 
   0 PICARD ||F||/||F0||=1.000000e+00 
     Residual norms for js_ solve.
-    0 KSP Residual norm 1.187616533207e+00 
-    1 KSP Residual norm 1.075469081352e-05 
+    0 KSP Residual norm 1.187616482911e+00 
+    1 KSP Residual norm 1.075386742222e-05 
   Linear js_ solve converged due to CONVERGED_RTOL iterations 1
+  1 SNES Function norm 2.263673420936e-03 
 --------------------------------------------------------------------------
 SNES Convergence Reason : maximum iterations reached
 Number of iterations    : 1
-SNES solution time      : 1.26524 (sec)
+SNES solution time      : 0.577421 (sec)
 --------------------------------------------------------------------------
 Residual summary: 
    Continuity: 
-      |Div|_inf = 4.487130108571e-07 
-      |Div|_2   = 3.386043195039e-06 
+      |Div|_inf = 4.487123069254e-07 
+      |Div|_2   = 3.386057090210e-06 
    Momentum: 
-      |mRes|_2  = 2.263662450734e-03 
+      |mRes|_2  = 2.263670888462e-03 
 --------------------------------------------------------------------------
 Actual time step : 8.23501 [ ] 
 --------------------------------------------------------------------------
 Performing marker control (updated algorithm)
-Marker control [0]: (AVD YZED) injected 6 markers and deleted 0 markers in 9.6299e-04 s
-Marker control [0]: (AVD XYED) injected 4 markers and deleted 0 markers in 6.9269e-04 s
+Marker control [0]: (AVD YZED) injected 6 markers and deleted 0 markers in 1.1041e-03 s
+Marker control [0]: (AVD XYED) injected 4 markers and deleted 0 markers in 7.2264e-04 s
 --------------------------------------------------------------------------
 ================================= STEP 3 =================================
 --------------------------------------------------------------------------
 Current time        : 15.93780 [ ] 
 Tentative time step : 8.23501 [ ] 
 --------------------------------------------------------------------------
+  0 SNES Function norm 4.891019751180e+01 
   0 PICARD ||F||/||F0||=1.000000e+00 
     Residual norms for js_ solve.
-    0 KSP Residual norm 9.888681422947e-01 
-    1 KSP Residual norm 1.004458542284e-05 
-    2 KSP Residual norm 3.317800087623e-09 
+    0 KSP Residual norm 9.888679320560e-01 
+    1 KSP Residual norm 1.004441821415e-05 
+    2 KSP Residual norm 2.095026626725e-10 
   Linear js_ solve converged due to CONVERGED_RTOL iterations 2
+  1 SNES Function norm 1.673805646373e-08 
 --------------------------------------------------------------------------
 SNES Convergence Reason : maximum iterations reached
 Number of iterations    : 1
-SNES solution time      : 1.30708 (sec)
+SNES solution time      : 0.591463 (sec)
 --------------------------------------------------------------------------
 Residual summary: 
    Continuity: 
-      |Div|_inf = 7.803391093996e-09 
-      |Div|_2   = 1.031444115238e-08 
+      |Div|_inf = 1.075179528742e-11 
+      |Div|_2   = 5.246965757878e-11 
    Momentum: 
-      |mRes|_2  = 1.278032955801e-06 
+      |mRes|_2  = 1.673797422385e-08 
 --------------------------------------------------------------------------
 Actual time step : 8.52236 [ ] 
 --------------------------------------------------------------------------
 Performing marker control (updated algorithm)
-Marker control [0]: (AVD XYED) injected 1 markers and deleted 0 markers in 2.0278e-04 s
+Marker control [0]: (AVD XYED) injected 1 markers and deleted 0 markers in 1.8553e-04 s
 --------------------------------------------------------------------------
 =========================== SOLUTION IS DONE! ============================
 --------------------------------------------------------------------------
-Total solution time : 4.34715 (sec) 
+Total solution time : 2.17026 (sec) 
 --------------------------------------------------------------------------

@@ -13,9 +13,9 @@ def makeLocalPathAbsolute(localRelPath) :
 def test_1():
 
   # Test a falling block case with build-in direct solver on 1 core, using optimized LaMEM
-  ranks  = 1
+  ranks  = 2
   launch =  makeLocalPathAbsolute('../../../bin/opt/LaMEM -ParamFile ../BuildInSetups/FallingBlock_DirectSolver.dat -nstep_max 3 -dt_out 0 -nstep_ini 0') 
-  expected_file = makeLocalPathAbsolute('FallingBlock_DirectSolver-p1.expected')
+  expected_file = makeLocalPathAbsolute('FallingBlock_DirectSolver-MUMPS-p2.expected')
 
   def comparefunc(unittest):
 
@@ -43,9 +43,9 @@ def test_1():
 def test_2():
 
   # Test a falling block case with SUPERLU_DIST direct solver
-  ranks = 2
+  ranks = 1
   launch =  makeLocalPathAbsolute('../../../bin/opt/LaMEM -ParamFile ../BuildInSetups/FallingBlock_DirectSolver.dat -nstep_max 3 -dt_out 0 -nstep_ini 0 -jp_pc_factor_mat_solver_package superlu_dist') 
-  expected_file = makeLocalPathAbsolute('FallingBlock_DirectSolver-p2.expected')
+  expected_file = makeLocalPathAbsolute('FallingBlock_DirectSolver-SUPERLU_DIST-p1.expected')
 
   def comparefunc(unittest):
 
