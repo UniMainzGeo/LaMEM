@@ -202,10 +202,10 @@ def test_6():
 
 #------------------------------------------------------------------------------------------------
 def test_7():
-  # 2D viscous free sufave subduction setup with direct solvers
-  ranks = 2
+  # 2D viscous free surface subduction setup with direct solvers
+  ranks = 1
   launch =  makeLocalPathAbsolute('../../../bin/opt/LaMEM -ParamFile ../BuildInSetups/Subduction2D_FreeSurface_DirectSolver.dat -dt_out 0 -nstep_ini 0 -nel_x 128 -nel_z 32 -nstep_max 3 -rand_noise 0') 
-  expected_file = makeLocalPathAbsolute('Subduction2D_FreeSurface_DirectSolver-p2.expected')
+  expected_file = makeLocalPathAbsolute('Subduction2D_FreeSurface_DirectSolver-p1.expected')
 
   def comparefunc(unittest):
 

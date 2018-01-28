@@ -4,10 +4,10 @@
 -------------------------------------------------------------------------- 
         STAGGERED-GRID FINITE DIFFERENCE CANONICAL IMPLEMENTATION           
 -------------------------------------------------------------------------- 
-Parsing input file : ./BuildInSetups/Subduction2D_FreeSurface_DirectSolver.dat 
+Parsing input file : ../BuildInSetups/Subduction2D_FreeSurface_DirectSolver.dat 
    Adding PETSc option: -snes_ksp_ew
    Adding PETSc option: -js_ksp_monitor
-Finished parsing input file : ./BuildInSetups/Subduction2D_FreeSurface_DirectSolver.dat 
+Finished parsing input file : ../BuildInSetups/Subduction2D_FreeSurface_DirectSolver.dat 
 --------------------------------------------------------------------------
 Scaling parameters:
    Temperature : 1000. [C/K] 
@@ -82,7 +82,7 @@ Advection parameters:
    Background phase ID           : 0 
    Surface correction tolerance  : 0.05 
 --------------------------------------------------------------------------
-Reading geometric primitives ... done (0.00405313 sec)
+Reading geometric primitives ... done (0.00307858 sec)
 --------------------------------------------------------------------------
 Output parameters:
    Output file name                        : Subduction2D_FreeSurface_direct 
@@ -126,27 +126,30 @@ Solver parameters specified:
    Solver type                   : serial direct/lu 
    Solver package                : mumps 
 --------------------------------------------------------------------------
-Saving output ... done (0.311036 sec)
+Saving output ... done (0.268474 sec)
 --------------------------------------------------------------------------
 ================================= STEP 1 =================================
 --------------------------------------------------------------------------
 Current time        : 0.00000 [Myr] 
 Tentative time step : 0.10000 [Myr] 
 --------------------------------------------------------------------------
+  0 SNES Function norm 2.725696866375e+00 
   0 PICARD ||F||/||F0||=1.000000e+00 
     Residual norms for js_ solve.
     0 KSP Residual norm 1.009469158140e+03 
     1 KSP Residual norm 5.151170781632e-01 
   Linear js_ solve converged due to CONVERGED_RTOL iterations 1
+  1 SNES Function norm 4.931114474655e-03 
   1 MMFD   ||F||/||F0||=1.809121e-03 
     Residual norms for js_ solve.
     0 KSP Residual norm 5.151170781629e-01 
     1 KSP Residual norm 2.552310183173e-04 
   Linear js_ solve converged due to CONVERGED_RTOL iterations 1
+  2 SNES Function norm 6.539947450503e-07 
 --------------------------------------------------------------------------
 SNES Convergence Reason : ||F|| < rtol*||F_initial|| 
 Number of iterations    : 2
-SNES solution time      : 1.54434 (sec)
+SNES solution time      : 1.35699 (sec)
 --------------------------------------------------------------------------
 Residual summary: 
    Continuity: 
@@ -164,20 +167,23 @@ Performing marker control (standard algorithm)
 Current time        : 0.04589 [Myr] 
 Tentative time step : 0.04589 [Myr] 
 --------------------------------------------------------------------------
+  0 SNES Function norm 5.226533049230e-03 
   0 PICARD ||F||/||F0||=1.000000e+00 
     Residual norms for js_ solve.
     0 KSP Residual norm 4.955524174993e-01 
     1 KSP Residual norm 8.824264286430e-04 
   Linear js_ solve converged due to CONVERGED_RTOL iterations 1
+  1 SNES Function norm 1.056429468375e-05 
   1 MMFD   ||F||/||F0||=2.021282e-03 
     Residual norms for js_ solve.
     0 KSP Residual norm 8.824264286187e-04 
     1 KSP Residual norm 1.508721205553e-06 
   Linear js_ solve converged due to CONVERGED_RTOL iterations 1
+  2 SNES Function norm 2.525591391256e-08 
 --------------------------------------------------------------------------
 SNES Convergence Reason : ||F|| < atol 
 Number of iterations    : 2
-SNES solution time      : 1.18438 (sec)
+SNES solution time      : 0.956362 (sec)
 --------------------------------------------------------------------------
 Residual summary: 
    Continuity: 
@@ -195,20 +201,23 @@ Performing marker control (standard algorithm)
 Current time        : 0.08912 [Myr] 
 Tentative time step : 0.04323 [Myr] 
 --------------------------------------------------------------------------
+  0 SNES Function norm 4.939640239026e-03 
   0 PICARD ||F||/||F0||=1.000000e+00 
     Residual norms for js_ solve.
     0 KSP Residual norm 2.779331108683e+00 
     1 KSP Residual norm 4.430955445936e-03 
   Linear js_ solve converged due to CONVERGED_RTOL iterations 1
+  1 SNES Function norm 2.644069742825e-05 
   1 MMFD   ||F||/||F0||=5.352758e-03 
     Residual norms for js_ solve.
     0 KSP Residual norm 4.430955445953e-03 
     1 KSP Residual norm 7.312464034151e-06 
   Linear js_ solve converged due to CONVERGED_RTOL iterations 1
+  2 SNES Function norm 4.680093764477e-08 
 --------------------------------------------------------------------------
 SNES Convergence Reason : ||F|| < atol 
 Number of iterations    : 2
-SNES solution time      : 1.15713 (sec)
+SNES solution time      : 0.981767 (sec)
 --------------------------------------------------------------------------
 Residual summary: 
    Continuity: 
@@ -223,5 +232,5 @@ Performing marker control (standard algorithm)
 --------------------------------------------------------------------------
 =========================== SOLUTION IS DONE! ============================
 --------------------------------------------------------------------------
-Total solution time : 4.78843 (sec) 
+Total solution time : 4.1061 (sec) 
 --------------------------------------------------------------------------
