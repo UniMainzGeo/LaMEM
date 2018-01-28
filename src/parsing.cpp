@@ -898,6 +898,7 @@ PetscErrorCode StokesSetDefaultSolverOptions(FB *fb)
 	ierr = PetscOptionsInsertString(NULL, "-snes_stol 1e-16");          		CHKERRQ(ierr);
 	ierr = PetscOptionsInsertString(NULL, "-snes_max_linear_solve_fail 10000");	CHKERRQ(ierr);
 	ierr = PetscOptionsInsertString(NULL, "-snes_max_funcs 500000");			CHKERRQ(ierr);
+	ierr = PetscOptionsInsertString(NULL, "-snes_monitor");						CHKERRQ(ierr);
 	
 	ierr = PetscOptionsInsertString(NULL, "-snes_max_it 50");          			CHKERRQ(ierr);
 	ierr = PetscOptionsInsertString(NULL, "-snes_linesearch_type basic");       CHKERRQ(ierr);  // in many VEP cases, cp or l2 linesearch work more efficiently 

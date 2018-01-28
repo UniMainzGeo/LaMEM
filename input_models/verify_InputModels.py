@@ -38,7 +38,8 @@ def run_tests():
   os.environ['PYTHONUNBUFFERED'] = str('1')
 
   registeredTests = [ BuildIn.test_1(), BuildIn.test_2(), BuildIn.test_3(), BuildIn.test_4(),
-                      BuildIn.test_5()];
+                      BuildIn.test_5(), BuildIn.test_6(), BuildIn.test_7(), BuildIn.test_8(),
+                      BuildIn.test_9()];
  
   if os.path.isdir('TestOutput') == False:
     os.mkdir('TestOutput')
@@ -56,11 +57,13 @@ def run_tests():
   h.execute()
   h.verify()
 
+  os.system('cp pthErrorReport.log pthErrorReport_Temp.log')
+
+  h.clean()   # clean output (remove sandbox test directories); as this also removes the logfile, we have the commands above/below to circumvent this)
+
+  os.system('mv pthErrorReport_Temp.log pthErrorReport.log')
+
 
 if __name__ == "__main__":
   run_tests()
-
-  # Cleanup
-  os.system('rm -rf Timestep*')
-  os.system('rm -rf *.pvd')
 

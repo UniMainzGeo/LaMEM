@@ -14,7 +14,7 @@ def test_1():
 
   # Test a falling block case with build-in direct solver on 1 core, using optimized LaMEM
   ranks  = 1
-  launch =  makeLocalPathAbsolute('../../../bin/opt/LaMEM -ParamFile ./BuildInSetups/FallingBlock_DirectSolver.dat -nstep_max 3 -dt_out 0 -nstep_ini 0') 
+  launch =  makeLocalPathAbsolute('../../../bin/opt/LaMEM -ParamFile ../BuildInSetups/FallingBlock_DirectSolver.dat -nstep_max 3 -dt_out 0 -nstep_ini 0') 
   expected_file = makeLocalPathAbsolute('FallingBlock_DirectSolver-p1.expected')
 
   def comparefunc(unittest):
@@ -35,6 +35,7 @@ def test_1():
   test = pth.pthUnitTest('FallingBlock_Direct_MUMPS_serial',ranks,launch,expected_file)
   test.setVerifyMethod(comparefunc)
   test.appendKeywords('@')
+  test.setUseSandbox()      # put test output in seperate directory
 
   return(test)
 
@@ -43,7 +44,7 @@ def test_2():
 
   # Test a falling block case with SUPERLU_DIST direct solver
   ranks = 2
-  launch =  makeLocalPathAbsolute('../../../bin/opt/LaMEM -ParamFile ./BuildInSetups/FallingBlock_DirectSolver.dat -nstep_max 3 -dt_out 0 -nstep_ini 0 -jp_pc_factor_mat_solver_package superlu_dist') 
+  launch =  makeLocalPathAbsolute('../../../bin/opt/LaMEM -ParamFile ../BuildInSetups/FallingBlock_DirectSolver.dat -nstep_max 3 -dt_out 0 -nstep_ini 0 -jp_pc_factor_mat_solver_package superlu_dist') 
   expected_file = makeLocalPathAbsolute('FallingBlock_DirectSolver-p2.expected')
 
   def comparefunc(unittest):
@@ -64,6 +65,7 @@ def test_2():
   test = pth.pthUnitTest('FallingBlock_Direct_SUPERLU_DIST',ranks,launch,expected_file)
   test.setVerifyMethod(comparefunc)
   test.appendKeywords('@')
+  test.setUseSandbox()      # put test output in seperate directory
 
   return(test)
 
@@ -71,7 +73,7 @@ def test_2():
 def test_3():
   # Falling block setup with multigrid solver
   ranks = 2
-  launch =  makeLocalPathAbsolute('../../../bin/opt/LaMEM -ParamFile ./BuildInSetups/FallingBlock_Multigrid.dat -nstep_max 3 -dt_out 0 -nstep_ini 0') 
+  launch =  makeLocalPathAbsolute('../../../bin/opt/LaMEM -ParamFile ../BuildInSetups/FallingBlock_Multigrid.dat -nstep_max 3 -dt_out 0 -nstep_ini 0') 
   expected_file = makeLocalPathAbsolute('FallingBlock_Multigrid-p2.expected')
 
   def comparefunc(unittest):
@@ -95,6 +97,7 @@ def test_3():
   test = pth.pthUnitTest('FallingBlock_Multigrid',ranks,launch,expected_file)
   test.setVerifyMethod(comparefunc)
   test.appendKeywords('@')
+  test.setUseSandbox()      # put test output in seperate directory
 
   return(test)
 
@@ -103,7 +106,7 @@ def test_3():
 def test_4():
   # Falling spheres setup with multigrid solver
   ranks = 2
-  launch =  makeLocalPathAbsolute('../../../bin/opt/LaMEM -ParamFile ./BuildInSetups/FallingSpheres_Multigrid.dat -dt_out 0 -nstep_ini 0') 
+  launch =  makeLocalPathAbsolute('../../../bin/opt/LaMEM -ParamFile ../BuildInSetups/FallingSpheres_Multigrid.dat -dt_out 0 -nstep_ini 0') 
   expected_file = makeLocalPathAbsolute('FallingSpheres_Multigrid-p2.expected')
 
   def comparefunc(unittest):
@@ -127,6 +130,7 @@ def test_4():
   test = pth.pthUnitTest('FallingSpheres_Multigrid',ranks,launch,expected_file)
   test.setVerifyMethod(comparefunc)
   test.appendKeywords('@')
+  test.setUseSandbox()      # put test output in seperate directory
 
   return(test)
 
@@ -134,8 +138,8 @@ def test_4():
 def test_5():
   # Falling spheres setup with multigrid solver but jacobi smoother
   ranks = 2
-  launch =  makeLocalPathAbsolute('../../../bin/opt/LaMEM -ParamFile ./BuildInSetups/FallingSpheres_Multigrid.dat -gmg_mg_levels_ksp_type richardson -gmg_mg_levels_pc_type jacobi -gmg_mg_levels_ksp_richardson_scale 0.5') 
-  expected_file = makeLocalPathAbsolute('FallingSpheres_Multigrid-Jacobi-p2.output')
+  launch =  makeLocalPathAbsolute('../../../bin/opt/LaMEM -ParamFile ../BuildInSetups/FallingSpheres_Multigrid.dat -gmg_mg_levels_ksp_type richardson -gmg_mg_levels_pc_type jacobi -gmg_mg_levels_ksp_richardson_scale 0.5') 
+  expected_file = makeLocalPathAbsolute('FallingSpheres_Multigrid-Jacobi-p2.expected')
 
   def comparefunc(unittest):
 
@@ -158,5 +162,141 @@ def test_5():
   test = pth.pthUnitTest('FallingSpheres_Multigrid_Jacobi',ranks,launch,expected_file)
   test.setVerifyMethod(comparefunc)
   test.appendKeywords('@')
+  test.setUseSandbox()      # put test output in seperate directory
+
+  return(test)
+
+
+#------------------------------------------------------------------------------------------------
+def test_6():
+  # 2D viscoplastic free slip subduction setup with direct solvers
+  ranks = 2
+  launch =  makeLocalPathAbsolute('../../../bin/opt/LaMEM -ParamFile ../BuildInSetups/Subduction2D_FreeSlip_DirectSolver.dat -dt_out 0 -nstep_ini 0 -nel_x 64 -nel_z 16 -nstep_max 3 -rand_noise 0') 
+  expected_file = makeLocalPathAbsolute('Subduction2D_FreeSlip_DirectSolver-p2.expected')
+
+  def comparefunc(unittest):
+
+    key = re.escape("|Div|_inf")
+    unittest.compareFloatingPoint(key,1e-7)
+
+    key = re.escape("|Div|_2")
+    unittest.compareFloatingPoint(key,1e-6)
+
+    key = re.escape("|mRes|_2")
+    unittest.compareFloatingPoint(key,1e-6)
+
+    key = 'CONVERGED_RTOL iterations'
+    unittest.compareInteger(key,0)
+
+    key = 'KSP Residual norm'
+    unittest.compareFloatingPoint(key,1e-6)
+    
+  # Create unit test object
+  test = pth.pthUnitTest('Subduction2D_FreeSlip_DirectSolver',ranks,launch,expected_file)
+  test.setVerifyMethod(comparefunc)
+  test.appendKeywords('@')
+  test.setUseSandbox()      # put test output in seperate directory
+
+  return(test)
+
+
+#------------------------------------------------------------------------------------------------
+def test_7():
+  # 2D viscous free sufave subduction setup with direct solvers
+  ranks = 2
+  launch =  makeLocalPathAbsolute('../../../bin/opt/LaMEM -ParamFile ../BuildInSetups/Subduction2D_FreeSurface_DirectSolver.dat -dt_out 0 -nstep_ini 0 -nel_x 128 -nel_z 32 -nstep_max 3 -rand_noise 0') 
+  expected_file = makeLocalPathAbsolute('Subduction2D_FreeSurface_DirectSolver-p2.expected')
+
+  def comparefunc(unittest):
+
+    key = re.escape("|Div|_inf")
+    unittest.compareFloatingPoint(key,1e-7)
+
+    key = re.escape("|Div|_2")
+    unittest.compareFloatingPoint(key,1e-6)
+
+    key = re.escape("|mRes|_2")
+    unittest.compareFloatingPoint(key,1e-6)
+
+    key = 'CONVERGED_RTOL iterations'
+    unittest.compareInteger(key,0)
+
+    key = 'KSP Residual norm'
+    unittest.compareFloatingPoint(key,1e-6)
+    
+  # Create unit test object
+  test = pth.pthUnitTest('Subduction2D_FreeSurface_DirectSolver',ranks,launch,expected_file)
+  test.setVerifyMethod(comparefunc)
+  test.appendKeywords('@')
+  test.setUseSandbox()      # put test output in seperate directory
+
+  return(test)
+
+
+#------------------------------------------------------------------------------------------------
+def test_8():
+  # 3D viscous double subduction setup with multigrid solver
+  ranks = 2
+  launch =  makeLocalPathAbsolute('../../../bin/opt/LaMEM -ParamFile ../BuildInSetups/Subduction3D_DoubleSubduction_FreeSlip_Multigrid.dat -dt_out 0 -nstep_ini 0 -nel_x 64 -nel_y 32 -nel_z 16 -nstep_max 3 -rand_noise 0') 
+  expected_file = makeLocalPathAbsolute('Subduction3D_FreeSlip_MultigridSolver-p2.expected')
+
+  def comparefunc(unittest):
+
+    key = re.escape("|Div|_inf")
+    unittest.compareFloatingPoint(key,1e-7)
+
+    key = re.escape("|Div|_2")
+    unittest.compareFloatingPoint(key,1e-6)
+
+    key = re.escape("|mRes|_2")
+    unittest.compareFloatingPoint(key,1e-6)
+
+    key = 'CONVERGED_RTOL iterations'
+    unittest.compareInteger(key,0)
+
+    key = 'KSP Residual norm'
+    unittest.compareFloatingPoint(key,1e-6)
+    
+  # Create unit test object
+  test = pth.pthUnitTest('Subduction3D_FreeSlip_MultigridSolver',ranks,launch,expected_file)
+  test.setVerifyMethod(comparefunc)
+  test.appendKeywords('@')
+  test.setUseSandbox()      # put test output in seperate directory
+
+  return(test)
+
+
+#------------------------------------------------------------------------------------------------
+def test_9():
+  # 2D assymmetric rifting setup
+  ranks = 2
+  launch =  makeLocalPathAbsolute('../../../bin/opt/LaMEM -ParamFile ../BuildInSetups/Rifting2D_MultigridSolver.dat -dt_out 0 -nstep_ini 0 -nel_x 64 -nel_z 32 -nstep_max 3 -rand_noise 0') 
+  expected_file = makeLocalPathAbsolute('Rifting2D_VEP_MultigridSolver-p2.expected')
+
+  def comparefunc(unittest):
+
+    key = re.escape("|Div|_inf")
+    unittest.compareFloatingPoint(key,1e-7)
+
+    key = re.escape("|Div|_2")
+    unittest.compareFloatingPoint(key,1e-6)
+
+    key = re.escape("|mRes|_2")
+    unittest.compareFloatingPoint(key,1e-6)
+
+    key = 'CONVERGED_RTOL iterations'
+    unittest.compareInteger(key,0)
+
+    key = 'KSP Residual norm'
+    unittest.compareFloatingPoint(key,1e-6)
+    
+    key = 'SNES Function norm'
+    unittest.compareFloatingPoint(key,1e-4)
+
+  # Create unit test object
+  test = pth.pthUnitTest('Rifting2D_VEP_MultigridSolver',ranks,launch,expected_file)
+  test.setVerifyMethod(comparefunc)
+  test.appendKeywords('@')
+  test.setUseSandbox()      # put test output in seperate directory
 
   return(test)

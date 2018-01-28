@@ -12,13 +12,28 @@ And as always, you can use Paraview to visualize the files.
 If you are a new user of LaMEM, we recommend you look & run the files in the
 following order:
 
-1) FallingBlock_DirectSolver.dat    -> Nondimensional falling block setup (3D)
-                                       using direct solvers. 
+1) FallingBlock_DirectSolver.dat:    
+    Nondimensional falling block setup (3D) using direct solvers. 
 
-2) FallingBlock_Multigrid.dat 	    -> Two falling blocks, using a multigrid solver and 
-                                       slightly higher resolution.
+2) FallingBlock_Multigrid.dat: 	   
+    Two falling blocks, using a multigrid solver and slightly higher resolution.
 
-3) FallingSpheres_Multigrid.dat     -> Ten falling spheres with multigrid (good benchmark)
+3) FallingSpheres_Multigrid.dat:
+    Ten falling spheres with multigrid (useful benchmark to test iterative solvers)
 
-
+4) Subduction2D_FreeSlip_DirectSolver.dat:
+    2D viscoplastic free subduction setup
                                        
+5) Subduction2D_FreeSurface_DirectSolver.dat: 
+    2D viscous free subduction setup with a free surface
+
+6) Subduction3D_DoubleSubduction_FreeSlip_Multigrid.dat: 
+    3D viscous setup with 2 subduction zones. Note: you will need to run this one in 
+    parallel on larger machine (64 cores or so) as it require a quite large resolution 
+    to resolve the weak zones
+    
+7) Rifting2D_MultigridSolver.dat:
+    2D viscoelastoplastic rifting which results in an asymmetric rift (or symmetric one
+    if you change the viscosity of the lower layer).    
+    
+    

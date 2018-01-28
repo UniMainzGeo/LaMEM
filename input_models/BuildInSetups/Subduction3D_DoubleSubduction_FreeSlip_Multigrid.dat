@@ -1,7 +1,9 @@
-# This is a simple 2D subduction setup with GEO units and a free slip upper boundary
+# This is a 3D double subduction setup with GEO units and a free slip upper boundary
 # The model is viscoplastic and the geometry is created with the build-in geometry tools
+# Multigrid solvers are being used, and it is best to run this in parallel	
 #
-# 
+# The target resolution is -nel_x 512 -nel_y 256 -nel_z 128 
+#  This is likely too much for a laptop, but a 64-128 core machine should do the job
 
 #===============================================================================
 # Scaling
@@ -38,13 +40,13 @@
 # Number of cells for all segments
 
 	nel_x = 256
-	nel_y = 2
+	nel_y = 128
 	nel_z = 64
 
 # Coordinates of all segments (including start and end points)
 
-	coord_x = -1500 1500
-	coord_y = -10   10
+	coord_x = -3960 3960
+	coord_y =  0    2640
 	coord_z = -660  0
 
 #===============================================================================
@@ -68,9 +70,9 @@
 	gravity        = 0.0 0.0 -9.81  # gravity vector
 	FSSA           = 1.0            # free surface stabilization parameter [0 - 1]
 	act_p_shift    = 0              # pressure shift activation flag (zero pressure in the top cell layer)
-	init_guess     = 1              # initial guess flag
+	init_guess     = 0              # initial guess flag
 	eta_min        = 1e18           # viscosity upper bound
-	eta_ref 	   = 1e20			# reference viscosity for initial guess	
+	eta_ref        = 1e20			# reference viscosity for initial guess	
 	eta_max        = 1e23           # viscosity lower limit
 	act_p_shift    = 1              # pressure shift activation flag (zero pressure in the top cell layer)
 	quasi_harm_avg  = 0              # quasi-harmonic averaging regularization flag (plasticity)
@@ -79,11 +81,13 @@
 #===============================================================================
 # Solver options
 #===============================================================================
-	SolverType 		=	direct 			# solver [direct or multigrid]
-	DirectSolver 	=	mumps			# mumps/superlu_dist/pastix	
-	DirectPenalty 	=	1e5
-
-		
+	SolverType 		=	multigrid 	# solver [direct or multigrid]
+	MGLevels 		=	3			# number of MG levels [default=3]
+	MGSweeps 		=	5			# number of MG smoothening steps per level [default=10]
+	MGSmoother 		=	chebyshev 	# type of smoothener used [chebyshev or jacobi]
+	MGCoarseSolver 	=	mumps 		# coarse grid solver [direct/mumps/superlu_dist or redundant - more options specifiable through the command-line options -crs_ksp_type & -crs_pc_type]
+	
+	
 #===============================================================================
 # Model setup & advection
 #===============================================================================
@@ -103,29 +107,76 @@
 
 # Geometric primitives:
 	
-	# horizontal part of slab
+	#================================================
+	# First define the horizontal parts of the slab
+	# SLAB 1 -
+	# horizontal part of slab 1
 	<BoxStart>
 		phase  = 1
-		bounds = 0 1200 -25 25 -80 0  # (left, right, front, back, bottom, top)
+		bounds = -3000 -1000 0 1000 -80 0  # (left, right, front, back, bottom, top)
 	<BoxEnd>
-	
-	# Inclined part of slab
-	<HexStart>
-		phase  = 1
-		coord = -250 -25 -230   0 -25 -80   0 25 -80   -250 25 -230  -250 -25 -150   0 -25 0   0 25 0   -250 25 -150
-	<HexEnd>
-	
-	# Crust in horizontal part of slab
+
+	# Crust in horizontal part of slab 1
 	<BoxStart>
 		phase  = 2
-		bounds = 0 1200 -25 25 -20 0  # (left, right, front, back, bottom, top)
+		bounds = -3000 -1000 0 1000 -20 0  # (left, right, front, back, bottom, top)
+	<BoxEnd>
+
+	# SLAB 2 -
+	# horizontal part of slab 2
+	<BoxStart>
+		phase  = 3
+		bounds = -1000  1000 0 1000 -80 0  # (left, right, front, back, bottom, top)
+	<BoxEnd>
+
+	# Crust in horizontal part of slab 2
+	<BoxStart>
+		phase  = 4
+		bounds = -1000  1000 0 1000 -20 0  # (left, right, front, back, bottom, top)
+	<BoxEnd>
+
+	# OVERRIDING PLATE EAST
+	# horizontal part of OP
+	<BoxStart>
+		phase  = 5
+		bounds =  1000  3000 0 1000 -80 0  # (left, right, front, back, bottom, top)
+	<BoxEnd>
+
+	# OVERRIDING PLATE Back
+	# horizontal part of OP
+	<BoxStart>
+		phase  = 6
+		bounds = -3000  3000 1025 2640 -80 0  # (left, right, front, back, bottom, top)
 	<BoxEnd>
 	
-	# Inclined part of crust
+	
+	#=============
+	# Next define the inclined parts of the slabs
+	# Inclined part of slab 1
+	<HexStart>
+		phase  = 1
+		coord = -1000 0 -80   -800 0 -230   -800 1000 -230  -1000 1000 -80  -1000 0 0   -800 0 -150   -800 1000 -150   -1000 1000 0
+	<HexEnd>
+	
+	# Inclined part of crust 1
 	<HexStart>
 		phase  = 2
-		coord = -250 -25 -170   0 -25 -20   0 25 -20   -250 25 -170  -250 -25 -150   0 -25 0   0 25 0   -250 25 -150
+		coord = -1000 0 -20   -800 0 -170   -800 1000 -170  -1000 1000 -20  -1000 0 0   -800 0 -150   -800 1000 -150   -1000 1000 0
 	<HexEnd>
+	
+	# Inclined part of slab 2
+	<HexStart>
+		phase  = 3
+		coord =  1000 0 -80   1200 0 -230   1200 1000 -230   1000 1000 -80  1000 0 0   1200 0 -150   1200 1000 -150   1000 1000 0
+	<HexEnd>
+	
+	# Inclined part of crust 2
+	<HexStart>
+		phase  = 4
+		coord =  1000 0 -20   1200 0 -170   1200 1000 -170   1000 1000 -20  1000 0 0   1200 0 -150   1200 1000 -150   1000 1000 0
+	<HexEnd>
+	
+	# NOTE: we do noty include a 'stiff-core' in this setup, which could be useful to have
 	
 #===============================================================================
 # Output
@@ -133,8 +184,8 @@
 
 # Grid output options (output is always active)
 
-	out_file_name       = Subduction2D_direct # output file name
-	out_pvd             = 1       	# activate writing .pvd file
+	out_file_name       = DoubleSubduction_3D 	# output file name
+	out_pvd             = 1       				# activate writing .pvd file
 
 # AVD phase viewer output options (requires activation)
 
@@ -168,28 +219,52 @@
 	# Define properties of mantle
 	<MaterialStart>
 		ID  = 0 # phase id
-		rho = 3200 # density
-		eta = 1e21 # viscosity
+		rho = 3300 # density
+		eta = 2.8e20 # viscosity
 	<MaterialEnd>
 
-	# Define properties of slab
+	# Define properties of slab 1
 	<MaterialStart>
 		ID  = 1       # phase id
-		rho = 3300    # density
-		eta = 1e23    # viscosity
+		rho = 3385    # density
+		eta = 1.4e23  # viscosity
 	<MaterialEnd>
 
-	# Define properties of plastic crust
+	# Define properties weak crust 1
 	<MaterialStart>
 		ID  	=  2       # phase id
-		rho 	=  3300    # density
-		eta 	=  1e23    # viscosity
-		
-		ch		=	5e6			# cohesion [MPa]
-		fr 		=	5			# friction angle	
-		
-		
+		rho 	= 3385     # density
+		eta 	= 1.4e20   # viscosity
 	<MaterialEnd>
+	
+	# Define properties of slab 2
+	<MaterialStart>
+		ID  = 3       # phase id
+		rho = 3385    # density
+		eta = 1.4e23  # viscosity
+	<MaterialEnd>
+
+	# Define properties weak crust 2
+	<MaterialStart>
+		ID  	=  4       # phase id
+		rho 	= 3385     # density
+		eta 	= 1.4e20   # viscosity
+	<MaterialEnd>
+	
+	# Define properties of OP
+	<MaterialStart>
+		ID  = 5       # phase id
+		rho = 3385    # density
+		eta = 1.4e23  # viscosity
+	<MaterialEnd>
+	
+	# Define properties of OP in the back
+	<MaterialStart>
+		ID  = 6       # phase id
+		rho = 3385    # density
+		eta = 1.4e23  # viscosity
+	<MaterialEnd>
+	
 	
 #===============================================================================
 # PETSc options
@@ -198,12 +273,14 @@
 <PetscOptionsStart>
 
 	# LINEAR & NONLINEAR SOLVER OPTIONS
-	-snes_ksp_ew
+	-snes_type ksponly
 
 
 	-js_ksp_monitor # display how the inner iterations converge
-
-
+	
+	-js_ksp_rtol 1e-3
+	-js_ksp_atol 1e-4
+	
 <PetscOptionsEnd>
 
 #===============================================================================

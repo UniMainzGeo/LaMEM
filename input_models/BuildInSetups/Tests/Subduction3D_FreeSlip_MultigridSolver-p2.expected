@@ -1,0 +1,324 @@
+-------------------------------------------------------------------------- 
+                   Lithosphere and Mantle Evolution Model                   
+     Compiled: Date: Jan 22 2018 - Time: 16:52:15 	    
+-------------------------------------------------------------------------- 
+        STAGGERED-GRID FINITE DIFFERENCE CANONICAL IMPLEMENTATION           
+-------------------------------------------------------------------------- 
+Parsing input file : ../BuildInSetups/Subduction3D_DoubleSubduction_FreeSlip_Multigrid.dat 
+   Adding PETSc option: -snes_type ksponly
+   Adding PETSc option: -js_ksp_monitor
+   Adding PETSc option: -js_ksp_rtol 1e-3
+   Adding PETSc option: -js_ksp_atol 1e-4
+Finished parsing input file : ../BuildInSetups/Subduction3D_DoubleSubduction_FreeSlip_Multigrid.dat 
+--------------------------------------------------------------------------
+Scaling parameters:
+   Temperature : 1000. [C/K] 
+   Length      : 1000. [m] 
+   Viscosity   : 1e+20 [Pa*s] 
+   Stress      : 1e+09 [Pa] 
+--------------------------------------------------------------------------
+Time stepping parameters:
+   Simulation end time          : 100. [Myr] 
+   Maximum number of steps      : 3 
+   Time step                    : 0.1 [Myr] 
+   Minimum time step            : 1e-05 [Myr] 
+   Maximum time step            : 100. [Myr] 
+   Time step increase factor    : 0.1 
+   CFL criterion                : 0.5 
+   CFLMAX (fixed time steps)    : 0.5 
+   Output every [n] steps       : 5 
+--------------------------------------------------------------------------
+Material parameters: 
+   Phase ID : 0
+   (dens)   : rho = 3300. [kg/m^3]  
+   (diff)   : eta = 2.8e+20 [Pa*s]  Bd = 1.78571e-21 [1/Pa/s]  
+
+   Phase ID : 1
+   (dens)   : rho = 3385. [kg/m^3]  
+   (diff)   : eta = 1.4e+23 [Pa*s]  Bd = 3.57143e-24 [1/Pa/s]  
+
+   Phase ID : 2
+   (dens)   : rho = 3385. [kg/m^3]  
+   (diff)   : eta = 1.4e+20 [Pa*s]  Bd = 3.57143e-21 [1/Pa/s]  
+
+   Phase ID : 3
+   (dens)   : rho = 3385. [kg/m^3]  
+   (diff)   : eta = 1.4e+23 [Pa*s]  Bd = 3.57143e-24 [1/Pa/s]  
+
+   Phase ID : 4
+   (dens)   : rho = 3385. [kg/m^3]  
+   (diff)   : eta = 1.4e+20 [Pa*s]  Bd = 3.57143e-21 [1/Pa/s]  
+
+   Phase ID : 5
+   (dens)   : rho = 3385. [kg/m^3]  
+   (diff)   : eta = 1.4e+23 [Pa*s]  Bd = 3.57143e-24 [1/Pa/s]  
+
+   Phase ID : 6
+   (dens)   : rho = 3385. [kg/m^3]  
+   (diff)   : eta = 1.4e+23 [Pa*s]  Bd = 3.57143e-24 [1/Pa/s]  
+
+--------------------------------------------------------------------------
+Grid parameters:
+   Total number of cpu                  : 2 
+   Processor grid  [nx, ny, nz]         : [2, 1, 1]
+   Fine grid cells [nx, ny, nz]         : [64, 32, 16]
+   Number of cells                      :  32768
+   Number of faces                      :  101888
+   Maximum cell aspect ratio            :  3.00000
+   Lower coordinate bounds [bx, by, bz] : [-3960., 0., -660.]
+   Upper coordinate bounds [ex, ey, ez] : [3960., 2640., 0.]
+--------------------------------------------------------------------------
+Boundary condition parameters: 
+   No-slip boundary mask [lt rt ft bk bm tp]  : 0 0 0 0 1 0 
+--------------------------------------------------------------------------
+Solution parameters & controls:
+   Gravity [gx, gy, gz]                    : [0., 0., -9.81] [m/s^2] 
+   Surface stabilization (FSSA)            :  1. 
+   Use lithostatic pressure for creep      @ 
+   Minimum viscosity                       : 1e+18 [Pa*s] 
+   Maximum viscosity                       : 1e+23 [Pa*s] 
+   Reference viscosity (initial guess)     : 1e+20 [Pa*s] 
+   Ground water level type                 : none 
+--------------------------------------------------------------------------
+Advection parameters:
+   Advection scheme              : Runge-Kutta 2-nd order
+   Marker setup scheme           : geometric primitives
+   Velocity interpolation scheme : empirical STAGP (STAG + pressure points)
+   Marker control type           : AVD for cells + corner insertion
+   Markers per cell [nx, ny, nz] : [3, 3, 3] 
+   Marker distribution type      : uniform
+   Background phase ID           : 0 
+   Interpolation constant        : 0.7 
+--------------------------------------------------------------------------
+Reading geometric primitives ... done (0.0188797 sec)
+--------------------------------------------------------------------------
+Output parameters:
+   Output file name                        : DoubleSubduction_3D 
+   Write .pvd file                         : yes 
+   Phase                                   @ 
+   Density                                 @ 
+   Total effective viscosity               @ 
+   Creep effective viscosity               @ 
+   Viscoplastic viscosity                  @ 
+   Velocity                                @ 
+   Pressure                                @ 
+   Temperature                             @ 
+   Deviatoric stress tensor                @ 
+   Deviatoric stress second invariant      @ 
+   Deviatoric strain rate tensor           @ 
+   Deviatoric strain rate second invariant @ 
+   Yield stress                            @ 
+   Accumulated Plastic Strain (APS)        @ 
+   Plastic dissipation                     @ 
+   Total displacements                     @ 
+   Momentum residual                       @ 
+   Continuity residual                     @ 
+--------------------------------------------------------------------------
+AVD output parameters:
+   Write .pvd file       : yes 
+   AVD refinement factor : 3 
+--------------------------------------------------------------------------
+Preconditioner parameters: 
+   Matrix type                   : monolithic
+   Preconditioner type           : coupled Galerkin geometric multigrid
+   Global coarse grid [nx,ny,nz] : [16, 8, 4]
+   Local coarse grid  [nx,ny,nz] : [8, 8, 4]
+   Number of multigrid levels    :  3
+--------------------------------------------------------------------------
+Solver parameters specified: 
+   Outermost Krylov solver       : gmres 
+   Solver type                   : multigrid 
+   Multigrid smoother levels KSP : chebyshev 
+   Multigrid smoother levels PC  : sor 
+   Number of smoothening steps   : 5 
+   Coarse level KSP              : preonly 
+   Coarse level PC               : lu 
+   Coarse level solver package   : mumps 
+--------------------------------------------------------------------------
+Saving output ... done (0.500648 sec)
+--------------------------------------------------------------------------
+================================= STEP 1 =================================
+--------------------------------------------------------------------------
+Current time        : 0.00000 [Myr] 
+Tentative time step : 0.10000 [Myr] 
+--------------------------------------------------------------------------
+  0 SNES Function norm 5.685421586994e+00 
+  0 PICARD ||F||/||F0||=1.000000e+00 
+    Residual norms for js_ solve.
+    0 KSP Residual norm 2.753426400018e+04 
+    1 KSP Residual norm 8.555092517793e+02 
+    2 KSP Residual norm 5.908277025053e+02 
+    3 KSP Residual norm 2.847474738784e+02 
+    4 KSP Residual norm 1.961002347942e+02 
+    5 KSP Residual norm 1.473399942265e+02 
+    6 KSP Residual norm 9.509120670288e+01 
+    7 KSP Residual norm 7.399628343171e+01 
+    8 KSP Residual norm 5.244758438751e+01 
+    9 KSP Residual norm 4.725923561047e+01 
+   10 KSP Residual norm 3.420086488071e+01 
+   11 KSP Residual norm 2.480437535446e+01 
+  Linear js_ solve converged due to CONVERGED_RTOL iterations 11
+  1 SNES Function norm 4.133357606071e+00 
+--------------------------------------------------------------------------
+SNES Convergence Reason : maximum iterations reached
+Number of iterations    : 1
+SNES solution time      : 1.30831 (sec)
+--------------------------------------------------------------------------
+Residual summary: 
+   Continuity: 
+      |Div|_inf = 9.086959888511e-02 
+      |Div|_2   = 4.131345863771e+00 
+   Momentum: 
+      |mRes|_2  = 1.289436061528e-01 
+--------------------------------------------------------------------------
+Actual time step : 0.00786 [Myr] 
+--------------------------------------------------------------------------
+Performing marker control (standard algorithm)
+--------------------------------------------------------------------------
+================================= STEP 2 =================================
+--------------------------------------------------------------------------
+Current time        : 0.00786 [Myr] 
+Tentative time step : 0.00786 [Myr] 
+--------------------------------------------------------------------------
+  0 SNES Function norm 4.206591883016e+00 
+  0 PICARD ||F||/||F0||=1.000000e+00 
+    Residual norms for js_ solve.
+    0 KSP Residual norm 3.303880962600e+01 
+    1 KSP Residual norm 3.296375672188e+01 
+    2 KSP Residual norm 2.853449723546e+01 
+    3 KSP Residual norm 2.512419201724e+01 
+    4 KSP Residual norm 2.378992519995e+01 
+    5 KSP Residual norm 2.248509199152e+01 
+    6 KSP Residual norm 1.552359554985e+01 
+    7 KSP Residual norm 1.333297679116e+01 
+    8 KSP Residual norm 1.222570787221e+01 
+    9 KSP Residual norm 1.059958237105e+01 
+   10 KSP Residual norm 6.637391502653e+00 
+   11 KSP Residual norm 6.025277115296e+00 
+   12 KSP Residual norm 5.878797597923e+00 
+   13 KSP Residual norm 5.003078368031e+00 
+   14 KSP Residual norm 4.167259691575e+00 
+   15 KSP Residual norm 3.835963840201e+00 
+   16 KSP Residual norm 2.920688576468e+00 
+   17 KSP Residual norm 2.644273739388e+00 
+   18 KSP Residual norm 2.247185020495e+00 
+   19 KSP Residual norm 2.149738146949e+00 
+   20 KSP Residual norm 1.720947707559e+00 
+   21 KSP Residual norm 1.556726857247e+00 
+   22 KSP Residual norm 1.405672698546e+00 
+   23 KSP Residual norm 1.130954429626e+00 
+   24 KSP Residual norm 9.311083107105e-01 
+   25 KSP Residual norm 7.159771128046e-01 
+   26 KSP Residual norm 5.594807664730e-01 
+   27 KSP Residual norm 3.462422249024e-01 
+   28 KSP Residual norm 2.460121282427e-01 
+   29 KSP Residual norm 1.779223711416e-01 
+   30 KSP Residual norm 1.241778605008e-01 
+   31 KSP Residual norm 1.234398282194e-01 
+   32 KSP Residual norm 1.176520983330e-01 
+   33 KSP Residual norm 9.416525337589e-02 
+   34 KSP Residual norm 8.620491752543e-02 
+   35 KSP Residual norm 6.879794935274e-02 
+   36 KSP Residual norm 5.756440607809e-02 
+   37 KSP Residual norm 5.280112350636e-02 
+   38 KSP Residual norm 4.724371130323e-02 
+   39 KSP Residual norm 4.106751030147e-02 
+   40 KSP Residual norm 3.490899464475e-02 
+   41 KSP Residual norm 2.749031316517e-02 
+  Linear js_ solve converged due to CONVERGED_RTOL iterations 41
+  1 SNES Function norm 1.048775391443e-03 
+--------------------------------------------------------------------------
+SNES Convergence Reason : maximum iterations reached
+Number of iterations    : 1
+SNES solution time      : 2.40184 (sec)
+--------------------------------------------------------------------------
+Residual summary: 
+   Continuity: 
+      |Div|_inf = 2.481286279122e-04 
+      |Div|_2   = 1.045890591420e-03 
+   Momentum: 
+      |mRes|_2  = 7.773475719913e-05 
+--------------------------------------------------------------------------
+Actual time step : 0.00865 [Myr] 
+--------------------------------------------------------------------------
+Performing marker control (standard algorithm)
+--------------------------------------------------------------------------
+================================= STEP 3 =================================
+--------------------------------------------------------------------------
+Current time        : 0.01651 [Myr] 
+Tentative time step : 0.00865 [Myr] 
+--------------------------------------------------------------------------
+  0 SNES Function norm 1.048993039172e-03 
+  0 PICARD ||F||/||F0||=1.000000e+00 
+    Residual norms for js_ solve.
+    0 KSP Residual norm 2.755836891424e-02 
+    1 KSP Residual norm 2.747377459626e-02 
+    2 KSP Residual norm 2.652102961755e-02 
+    3 KSP Residual norm 2.255070838978e-02 
+    4 KSP Residual norm 2.118910765945e-02 
+    5 KSP Residual norm 2.054860849772e-02 
+    6 KSP Residual norm 1.884306221136e-02 
+    7 KSP Residual norm 1.655335541824e-02 
+    8 KSP Residual norm 1.540079254400e-02 
+    9 KSP Residual norm 1.220864838620e-02 
+   10 KSP Residual norm 1.024462521964e-02 
+   11 KSP Residual norm 9.567652587141e-03 
+   12 KSP Residual norm 7.744682795633e-03 
+   13 KSP Residual norm 7.525718908087e-03 
+   14 KSP Residual norm 6.648663248174e-03 
+   15 KSP Residual norm 6.318762919848e-03 
+   16 KSP Residual norm 6.185755872863e-03 
+   17 KSP Residual norm 5.002382750793e-03 
+   18 KSP Residual norm 4.226509638459e-03 
+   19 KSP Residual norm 4.048648255874e-03 
+   20 KSP Residual norm 3.264378784853e-03 
+   21 KSP Residual norm 2.910893098043e-03 
+   22 KSP Residual norm 2.345443481009e-03 
+   23 KSP Residual norm 1.933750955986e-03 
+   24 KSP Residual norm 1.444812617559e-03 
+   25 KSP Residual norm 1.188390492316e-03 
+   26 KSP Residual norm 9.963518917954e-04 
+   27 KSP Residual norm 7.940573179760e-04 
+   28 KSP Residual norm 7.064272350462e-04 
+   29 KSP Residual norm 5.774490347007e-04 
+   30 KSP Residual norm 4.446928914464e-04 
+   31 KSP Residual norm 4.435833249952e-04 
+   32 KSP Residual norm 4.394792924198e-04 
+   33 KSP Residual norm 3.939187165818e-04 
+   34 KSP Residual norm 3.717819600815e-04 
+   35 KSP Residual norm 3.545241961012e-04 
+   36 KSP Residual norm 3.413185352738e-04 
+   37 KSP Residual norm 3.061075892883e-04 
+   38 KSP Residual norm 2.967497942326e-04 
+   39 KSP Residual norm 2.901744421353e-04 
+   40 KSP Residual norm 2.615504785538e-04 
+   41 KSP Residual norm 2.296700361144e-04 
+   42 KSP Residual norm 2.196339266457e-04 
+   43 KSP Residual norm 2.046001865479e-04 
+   44 KSP Residual norm 1.875112584693e-04 
+   45 KSP Residual norm 1.671071690506e-04 
+   46 KSP Residual norm 1.392033303113e-04 
+   47 KSP Residual norm 1.178308808095e-04 
+   48 KSP Residual norm 9.987341174848e-05 
+  Linear js_ solve converged due to CONVERGED_ATOL iterations 48
+  1 SNES Function norm 3.296687967199e-06 
+--------------------------------------------------------------------------
+SNES Convergence Reason : maximum iterations reached
+Number of iterations    : 1
+SNES solution time      : 2.69664 (sec)
+--------------------------------------------------------------------------
+Residual summary: 
+   Continuity: 
+      |Div|_inf = 1.718207747851e-06 
+      |Div|_2   = 3.262698715532e-06 
+   Momentum: 
+      |mRes|_2  = 4.721743795860e-07 
+--------------------------------------------------------------------------
+Actual time step : 0.00951 [Myr] 
+--------------------------------------------------------------------------
+Performing marker control (standard algorithm)
+--------------------------------------------------------------------------
+=========================== SOLUTION IS DONE! ============================
+--------------------------------------------------------------------------
+Total solution time : 8.22329 (sec) 
+--------------------------------------------------------------------------
