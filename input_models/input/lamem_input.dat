@@ -224,8 +224,8 @@
 	p_litho_plast   = 1              # use lithostatic pressure for plasticity
 	p_lim_plast     = 1              # limit pressure at first iteration for plasticity
 	jac_mat_free    = 1              # matrix-free closed-form jacobian
-	eta_min         = 1e18           # viscosity upper bound
-	eta_max         = 1e25           # viscosity lower limit
+	eta_min         = 1e18           # viscosity lower bound
+	eta_max         = 1e25           # viscosity upper limit
 	eta_ref         = 1e20           # reference viscosity (initial guess)
 	T_ref           = 20.0           # reference temperature
 	RUGC            = 8.31           # universal gas constant (required only for non-dimensional setups)
