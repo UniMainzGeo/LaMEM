@@ -973,7 +973,7 @@ PetscErrorCode FreeSurfSetTopoFromFile(FreeSurf *surf, FB *fb)
 	PetscFunctionBegin;
 
 	// get file name
-	ierr = getStringParam(fb, _OPTIONAL_, "topo_file", filename, NULL); CHKERRQ(ierr);
+	ierr = getStringParam(fb, _OPTIONAL_, "surf_topo_file", filename, NULL); CHKERRQ(ierr);
 
 	// check whether file is provided
 	if(!strlen(filename)) PetscFunctionReturn(0);
@@ -1047,9 +1047,14 @@ PetscErrorCode FreeSurfSetTopoFromFile(FreeSurf *surf, FB *fb)
 		1.0/4.0 * (1.0+xpL) * (1.0-ypL) * Z[Iy     * nxTopo + Ix+1 ] +
 		1.0/4.0 * (1.0+xpL) * (1.0+ypL) * Z[(Iy+1) * nxTopo + Ix+1 ] +
 		1.0/4.0 * (1.0-xpL) * (1.0+ypL) * Z[(Iy+1) * nxTopo + Ix   ])/leng;
+
+		// Hack for the last corner, where the interpolation above does not work.
+		if ((j==sy+ny-1) & (i==sx+nx-1)){
+			topo[level][j][i] = topo[level][j-1][i-1];
+		}
 	}
 	END_PLANE_LOOP
-	
+
 	// restore access
 	ierr = DMDAVecRestoreArray(surf->DA_SURF, surf->gtopo, &topo);  CHKERRQ(ierr);
 
