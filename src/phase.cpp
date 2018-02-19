@@ -331,6 +331,18 @@ PetscErrorCode DBMatReadPhase(DBMat *dbm, FB *fb)
 	ierr = getScalarParam(fb, _OPTIONAL_, "A",        &m->A,     1, 1.0); CHKERRQ(ierr);
 	ierr = getScalarParam(fb, _OPTIONAL_, "T",        &m->T,     1, 1.0); CHKERRQ(ierr);
 	//=================================================================================
+	//=================================================================================
+	//Melt Extraction
+	//=================================================================================
+	ierr = getScalarParam(fb,_OPTIONAL_,"M1",         &m->M1,    1, 1.0); CHKERRQ(ierr);
+	ierr = getScalarParam(fb,_OPTIONAL_,"M2",         &m->M2,    1, 1.0); CHKERRQ(ierr);
+	ierr = getScalarParam(fb,_OPTIONAL_,"M3",         &m->M3,    1, 1.0); CHKERRQ(ierr);
+	ierr = getScalarParam(fb,_OPTIONAL_,"Ir",         &m->Ir,    1, 1.0); CHKERRQ(ierr);
+	ierr = getScalarParam(fb,_OPTIONAL_,"TInt",       &m->TInt,  1, 1.0); CHKERRQ(ierr);
+	ierr = getScalarParam(fb,_OPTIONAL_,"TExt",       &m->TExt,  1, 1.0); CHKERRQ(ierr);
+	ierr = getScalarParam(fb,_OPTIONAL_,"PhInt",      &m->PhInt, 1, 1.0); CHKERRQ(ierr);
+	ierr = getScalarParam(fb,_OPTIONAL_,"PhExt",      &m->PhExt, 1, 1.0); CHKERRQ(ierr);
+
 
 	// DEPTH-DEPENDENT
 

@@ -69,6 +69,7 @@
 #include "objFunct.h"
 #include "adjoint.h"
 #include "LaMEMLib.h"
+#include "meltextraction.h"
 //---------------------------------------------------------------------------
 #undef __FUNCT__
 #define __FUNCT__ "LaMEMLibMain"
@@ -652,9 +653,12 @@ PetscErrorCode LaMEMLibSolve(LaMEMLib *lm, void *param)
 			}
 		}
 
-		//==========================================
-		// MARKER & FREE SURFACE ADVECTION + EROSION
-		//==========================================
+		//==================================================================
+		// MELT EXTRACTION + MARKER & FREE SURFACE ADVECTION + EROSION
+		//==================================================================
+
+		// Extract melt
+		ierr = MeltExtraction(&lm->jr);  CHKERRQ(ierr);
 
 		// calculate current time step
 		ierr = ADVSelectTimeStep(&lm->actx, &restart); CHKERRQ(ierr);

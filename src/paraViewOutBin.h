@@ -172,6 +172,7 @@ struct OutMask
 	PetscInt strain_rate;    // deviatoric strain rate tensor
 	PetscInt j2_strain_rate; // deviatoric strain rate second invariant
 	PetscInt melt_fraction;   		// melt fraction
+	PetscInt mf_ext;   		// melt fraction extreacted
 	PetscInt fluid_density;   		// fluid density
 	PetscInt vol_rate;       // volumetric strain rate
 	PetscInt vorticity;      // vorticity vector

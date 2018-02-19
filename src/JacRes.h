@@ -72,6 +72,7 @@ struct SolVarDev
 	PetscScalar  fr;    // effective friction coefficient (Jacobian)
 	PetscScalar  yield; // average yield stress in control volume
 	PetscScalar  mf;    // melt fraction
+	PetscScalar  mfext; // Melt fraction extracted
 };
 
 //---------------------------------------------------------------------------
@@ -89,6 +90,7 @@ struct SolVarBulk
 	PetscScalar  rho_pd;// Density from phase diagram
 	PetscScalar  rho_pf;// Fluid Density from phase diagram
 	PetscScalar  mf;    // Melt fraction from phase diagram
+	PetscScalar  mfext; // Melt fraction extracted
 
 };
 

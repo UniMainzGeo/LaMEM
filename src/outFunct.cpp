@@ -530,7 +530,21 @@ PetscErrorCode PVOutWriteMeltFraction(JacRes *jr, OutBuf *outbuf)
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
+#undef __FUNCT__
+#define __FUNCT__ "PVOutWriteMFExt"
+PetscErrorCode PVOutWriteMFExt(JacRes *jr, OutBuf *outbuf)
+{
+	COPY_FUNCTION_HEADER
 
+	// macros to copy melt fraction to buffer
+	#define GET_MFE_CENTER  buff[k][j][i] = jr->svCell[iter++].svDev.mfext;
+
+	cf = 1.0;
+
+	INTERPOLATE_COPY(fs->DA_CEN, outbuf->lbcen, InterpCenterCorner, GET_MFE_CENTER,  1, 0)
+
+	PetscFunctionReturn(0);
+}
 //---------------------------------------------------------------------------
 #undef __FUNCT__
 #define __FUNCT__ "PVOutWriteVolRate"
