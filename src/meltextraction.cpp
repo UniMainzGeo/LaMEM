@@ -101,15 +101,18 @@ PetscErrorCode MeltExtraction(JacRes *jr)
 				{
 					// Get the data from phase diagram
 					SetDataPhaseDiagram(jr->Pd, p[k][j][i]-pShift, T[k][j][i], 0, phases[ii].pdn);  CHKERRQ(ierr);
-					if (jr->Pd->mf > phases[ii].M1)
+					if (jr->Pd->mf > phases[ii].Mtrs)
 					{
-						jr->Pd->mfext  = jr->Pd->mf - phases[ii].M2;
-						jr->Pd->mf     = phases[ii].M2;
+						jr->Pd->mfext    = jr->Pd->mf - phases[ii].Mleft;
+						jr->Pd->mf       = phases[ii].Mleft;
+						jr->Pd->mfextot += jr->Pd->mfext;
 					}
-					svBulk->mf    += svCell->phRat[ii]*jr->Pd->mf;
-					svBulk->mfext += svCell->phRat[ii]*jr->Pd->mfext;
-					svDev->mf      = jr->Pd->mf;
-					svDev->mfext   = jr->Pd->mfext;
+					svBulk->mf       += svCell->phRat[ii]*jr->Pd->mf;
+					svBulk->mfext    += svCell->phRat[ii]*jr->Pd->mfext;
+					svBulk->mfextot += svCell->phRat[ii]*jr->Pd->mfextot;
+					svDev->mf         = jr->Pd->mf;
+					svDev->mfext      = jr->Pd->mfext;
+					svDev->mfextot    = jr->Pd->mfextot;
 				}
 			}
 		}
@@ -152,13 +155,15 @@ PetscErrorCode MeltExtraction(JacRes *jr)
 				{
 					// Get the data from phase diagram
 					SetDataPhaseDiagram(jr->Pd, 0.25*(p[k][j][i] + p[k][j][i-1] + p[k][j-1][i] + p[k][j-1][i-1])-pShift, 0.25*(T[k][j][i] + T[k][j][i-1] + T[k][j-1][i] + T[k][j-1][i-1]), 0, phases[ii].pdn);  CHKERRQ(ierr);
-					if (jr->Pd->mf > phases[ii].M1)
+					if (jr->Pd->mf > phases[ii].Mtrs)
 					{
-						jr->Pd->mfext  = jr->Pd->mf - phases[ii].M2;
-						jr->Pd->mf     = phases[ii].M2;
+						jr->Pd->mfext    = jr->Pd->mf - phases[ii].Mleft;
+						jr->Pd->mf       = phases[ii].Mleft;
+						jr->Pd->mfextot += jr->Pd->mfext;
 					}
-					svDev->mf      = jr->Pd->mf;
-					svDev->mfext   = jr->Pd->mfext;
+					svDev->mf        = jr->Pd->mf;
+				    svDev->mfext     = jr->Pd->mfext;
+				    svDev->mfextot   = jr->Pd->mfextot;
 				}
 			}
 		}
@@ -201,13 +206,15 @@ PetscErrorCode MeltExtraction(JacRes *jr)
 				{
 					// Get the data from phase diagram
 					SetDataPhaseDiagram(jr->Pd, 0.25*(p[k][j][i] + p[k][j][i-1] + p[k-1][j][i] + p[k-1][j][i-1])-pShift, 0.25*(T[k][j][i] + T[k][j][i-1] + T[k-1][j][i] + T[k-1][j][i-1]), 0, phases[ii].pdn);  CHKERRQ(ierr);
-					if (jr->Pd->mf > phases[ii].M1)
+					if (jr->Pd->mf > phases[ii].Mtrs)
 					{
-						jr->Pd->mfext  = jr->Pd->mf - phases[ii].M2;
-						jr->Pd->mf     = phases[ii].M2;
+						jr->Pd->mfext    = jr->Pd->mf - phases[ii].Mleft;
+						jr->Pd->mf       = phases[ii].Mleft;
+						jr->Pd->mfextot += jr->Pd->mfext;
 					}
-					svDev->mf      = jr->Pd->mf;
-					svDev->mfext   = jr->Pd->mfext;
+					svDev->mf       = jr->Pd->mf;
+				    svDev->mfext    = jr->Pd->mfext;
+					svDev->mfextot  = jr->Pd->mfextot;
 				}
 			}
 		}
@@ -250,13 +257,15 @@ PetscErrorCode MeltExtraction(JacRes *jr)
 				{
 					// Get the data from phase diagram
 					SetDataPhaseDiagram(jr->Pd, 0.25*(p[k][j][i] + p[k][j-1][i] + p[k-1][j][i] + p[k-1][j-1][i])-pShift, 0.25*(T[k][j][i] + T[k][j-1][i] + T[k-1][j][i] + T[k-1][j-1][i]), 0, phases[ii].pdn);  CHKERRQ(ierr);
-					if (jr->Pd->mf > phases[ii].M1)
+					if (jr->Pd->mf > phases[ii].Mtrs)
 					{
-						jr->Pd->mfext  = jr->Pd->mf - phases[ii].M2;
-						jr->Pd->mf     = phases[ii].M2;
+						jr->Pd->mfext    = jr->Pd->mf - phases[ii].Mleft;
+						jr->Pd->mf       = phases[ii].Mleft;
+						jr->Pd->mfextot += jr->Pd->mfext;
 					}
-					svDev->mf      = jr->Pd->mf;
-					svDev->mfext   = jr->Pd->mfext;
+					svDev->mf        = jr->Pd->mf;
+					svDev->mfext     = jr->Pd->mfext;
+				    svDev->mfextot   = jr->Pd->mfextot;
 				}
 			}
 		}

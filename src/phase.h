@@ -130,14 +130,14 @@ public:
 	char         pdf[max_name];   // Unique phase diagram number
 	PetscInt     Pd_rho;          // density from phase diagram?
 	// MeltExtraction Parameter
-	PetscScalar M1;        // Threshold melt extractio                   []
-	PetscScalar M2;        // Minimum amount of melt left in the source  []
-	PetscScalar M3;        // Maximum Melt extractable from phase        []
-	PetscScalar Ir;        // Relative amount of intrusion               []
-	PetscScalar TInt;      // Temperature of the intrusion               []
-	PetscScalar TExt;      // Temperature of extrusion                   []
-	PetscScalar PhInt;     // Phase Id of the intrusion                  []
-	PetscScalar PhExt;     // Phase Id of the effusion                   []
+	PetscScalar Mtrs;          // Threshold melt extractio                   []
+	PetscScalar Mleft;         // Minimum amount of melt left in the source  []
+	PetscScalar Mmax;          // Maximum Melt extractable from phase        []
+	PetscScalar RelInt;        // Relative amount of intrusion               []
+	PetscScalar TInt;          // Temperature of the intrusion               []
+	PetscScalar TExt;          // Temperature of extrusion                   []
+	PetscScalar PhInt;         // Phase Id of the intrusion                  [deg C]
+	PetscScalar PhExt;         // Phase Id of the effusion                   [deg C]
 };
 
 //---------------------------------------------------------------------------
@@ -168,6 +168,7 @@ struct PData
 	PetscScalar  Me_v[max_num_ro][max_num_pd];          // Array containing the actual melt content data
 	PetscScalar  mf;
 	PetscScalar  mfext;
+	PetscScalar  mfextot;
 	
 	// Rho fluid data
 	PetscScalar rho_f_v[max_num_ro][max_num_pd];

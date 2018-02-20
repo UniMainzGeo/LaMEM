@@ -334,10 +334,10 @@ PetscErrorCode DBMatReadPhase(DBMat *dbm, FB *fb)
 	//=================================================================================
 	//Melt Extraction
 	//=================================================================================
-	ierr = getScalarParam(fb,_OPTIONAL_,"M1",         &m->M1,    1, 1.0); CHKERRQ(ierr);
-	ierr = getScalarParam(fb,_OPTIONAL_,"M2",         &m->M2,    1, 1.0); CHKERRQ(ierr);
-	ierr = getScalarParam(fb,_OPTIONAL_,"M3",         &m->M3,    1, 1.0); CHKERRQ(ierr);
-	ierr = getScalarParam(fb,_OPTIONAL_,"Ir",         &m->Ir,    1, 1.0); CHKERRQ(ierr);
+	ierr = getScalarParam(fb,_OPTIONAL_,"Mtrs",       &m->Mtrs,  1, 1.0); CHKERRQ(ierr);
+	ierr = getScalarParam(fb,_OPTIONAL_,"Mleft",      &m->Mleft, 1, 1.0); CHKERRQ(ierr);
+	ierr = getScalarParam(fb,_OPTIONAL_,"Mmax",       &m->Mmax,  1, 1.0); CHKERRQ(ierr);
+	ierr = getScalarParam(fb,_OPTIONAL_,"RelInt",     &m->RelInt,1, 1.0); CHKERRQ(ierr);
 	ierr = getScalarParam(fb,_OPTIONAL_,"TInt",       &m->TInt,  1, 1.0); CHKERRQ(ierr);
 	ierr = getScalarParam(fb,_OPTIONAL_,"TExt",       &m->TExt,  1, 1.0); CHKERRQ(ierr);
 	ierr = getScalarParam(fb,_OPTIONAL_,"PhInt",      &m->PhInt, 1, 1.0); CHKERRQ(ierr);
@@ -512,6 +512,16 @@ PetscErrorCode DBMatReadPhase(DBMat *dbm, FB *fb)
 	MatPrintScalParam(m->k,     "k",     "[W/m/k]",  scal, title, &print_title);
 	MatPrintScalParam(m->A,     "A",     "[W/kg]",   scal, title, &print_title);
 	MatPrintScalParam(m->T,     "T",     "[C]",      scal, title, &print_title);
+	
+	sprintf(title, "   (Melt_extraction)   : "); print_title = 1;
+	MatPrintScalParam(m->Mtrs,     "Mtrs",     "[]" ,      scal, title, &print_title);
+	MatPrintScalParam(m->Mleft,    "Mleft",    "[]" ,      scal, title, &print_title);
+	MatPrintScalParam(m->Mmax,     "Mmax",     "[]" ,      scal, title, &print_title);
+	MatPrintScalParam(m->RelInt,   "RelInt",   "[]" ,      scal, title, &print_title);
+	MatPrintScalParam(m->TInt,     "TInt",     "[C]",      scal, title, &print_title);
+	MatPrintScalParam(m->TExt,     "TExt",     "[C]",      scal, title, &print_title);
+	MatPrintScalParam(m->PhInt,    "PhInt",    "[]" ,      scal, title, &print_title);
+	MatPrintScalParam(m->PhExt,    "PhExt",    "[]" ,      scal, title, &print_title);
 	PetscPrintf(PETSC_COMM_WORLD,"\n\n");
 
 	// SCALE

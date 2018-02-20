@@ -73,6 +73,7 @@ struct SolVarDev
 	PetscScalar  yield; // average yield stress in control volume
 	PetscScalar  mf;    // melt fraction
 	PetscScalar  mfext; // Melt fraction extracted
+	PetscScalar  mfextot; // Total Melt Extracted from a a nodes
 };
 
 //---------------------------------------------------------------------------
@@ -91,6 +92,7 @@ struct SolVarBulk
 	PetscScalar  rho_pf;// Fluid Density from phase diagram
 	PetscScalar  mf;    // Melt fraction from phase diagram
 	PetscScalar  mfext; // Melt fraction extracted
+	PetscScalar  mfextot;// Total Melt extracted from a node
 
 };
 
