@@ -184,7 +184,7 @@ PetscErrorCode DBMatReadPhase(DBMat *dbm, FB *fb)
 	// read material properties from file with error checking
 	Scaling    *scal;
 	Material_t *m;
-	PetscInt    ID = -1, chSoftID, frSoftID, MSN, print_title, j;
+	PetscInt    ID = -1, chSoftID, frSoftID, MSN, print_title;
 	PetscInt 	StringLength;
 	PetscScalar eta, eta0, e0, K, G, E, nu, Vp, Vs;
 	char        ndiff[_STR_LEN_], ndisl[_STR_LEN_], npeir[_STR_LEN_], title[_STR_LEN_], PhaseDiagram[_STR_LEN_], PhaseDiagram_Dir[_STR_LEN_];
@@ -594,7 +594,7 @@ PetscErrorCode MatPropSetFromLibCall(JacRes *jr, ModParam *mod, FB *fb)
 {
 	// overwrite MATERIAL PARAMETERS with model parameters provided by a calling function
 
-	PetscInt 	id, im, count_starts, count_ends;
+	PetscInt 	id, im;
 	PetscScalar eta, eta0, e0;
 	Material_t *m;
 	Scaling    *scal;
@@ -666,7 +666,6 @@ PetscErrorCode MatPropSetFromLibCall(JacRes *jr, ModParam *mod, FB *fb)
 			// powerlaw exponent
 			else if(mod->typ[im] == _N_)
 			{
-				char ndisl[_STR_LEN_];
 				PetscScalar F2;
 				m->n = mod->val[im];
 				// in case of Ranalli dislocation creep

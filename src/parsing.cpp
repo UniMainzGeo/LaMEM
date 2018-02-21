@@ -737,9 +737,8 @@ PetscErrorCode PetscOptionsReadFromFile(FB *fb, PetscBool DisplayOutput)
 	// * push command line options to the end of database
 	// (PETSc prioritizes options appearing LAST)
 
-	PetscBool found;
 	PetscInt  jj, i, lnbeg, lnend;
-	char     *line, **lines, *key, *val, *option, filename[_STR_LEN_];
+	char     *line, **lines, *key, *val, *option;
 
 	PetscErrorCode ierr;
 	PetscFunctionBegin;

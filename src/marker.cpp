@@ -1329,11 +1329,10 @@ void ADVMarkSecIdx(AdvCtx *actx, PetscInt dir, PetscInt Islice, PetscInt *idx)
 PetscErrorCode LoadPhaseDiagram(AdvCtx *actx, Material_t  *phases, PetscInt i)
 {
 	FILE          *fp;
-    PetscInt       i_pd,j,jj,ij,lineStart,n,found, NumberOfPhaseDiagramProperties;
+    PetscInt       i_pd,j,ij,lineStart,n,found, NumberOfPhaseDiagramProperties;
     PetscScalar    fl[2];
     char           buf[1000],name[_STR_LEN_];
     PData         *pd;
-    Marker        *P;
     Scaling       *scal;
    
 	PetscFunctionBegin;
