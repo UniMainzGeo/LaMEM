@@ -30,5 +30,6 @@ clean :
 
 purge : clean
 	@rm -rf *.log
+	@rm -rf *.output
 	@rm -f output/*
 	@rm -f log/*
