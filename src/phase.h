@@ -138,6 +138,8 @@ public:
 	PetscScalar TExt;          // Temperature of extrusion                   []
 	PetscScalar PhInt;         // Phase Id of the intrusion                  [deg C]
 	PetscScalar PhExt;         // Phase Id of the effusion                   [deg C]
+	PetscScalar DInt;          // Depth of intrusion
+	PetscScalar DExt;          // Depth of intrusion
 };
 
 //---------------------------------------------------------------------------

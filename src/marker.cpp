@@ -115,6 +115,9 @@ PetscErrorCode ADVMarkInit(AdvCtx *actx, FB *fb)
 	// from file
 	ierr = ADVMarkSetTempFile(actx, fb); CHKERRQ(ierr);
 
+	// Initialize melt variables
+	ierr = ADVMarkSetME(actx); CHKERRQ(ierr);
+
 	// Load phase diagrams for the phases where it is required + interpolate the reference density for the first timestep
 	LoadPhaseDiagrams = PETSC_FALSE;
 	for(PetscInt i=0; i<actx->jr->dbm->numPhases; i++){ if(actx->jr->dbm->phases[i].Pd_rho == 1){LoadPhaseDiagrams = PETSC_TRUE;} }
@@ -522,6 +525,31 @@ PetscErrorCode ADVMarkSetTempPhase(AdvCtx *actx)
 
 		// assign phase temperature to markers, if initial phase temperature is set
 		if(phase_temp[P->phase]) P->T = phase_temp[P->phase];
+	}
+
+	PetscFunctionReturn(0);
+}
+//---------------------------------------------------------------------------
+#undef __FUNCT__
+#define __FUNCT__ "ADVMarkSetME"
+PetscErrorCode ADVMarkSetME(AdvCtx *actx)
+{
+	// initialize melt extraction parameters on markers
+	Marker      *P;
+	PetscInt     imark, nummark;
+
+	PetscFunctionBegin;
+
+	nummark   = actx->nummark;
+
+	for(imark = 0; imark < nummark; imark++)
+	{
+		// get current marker
+		P = &actx->markers[imark];
+
+		P->Mtot = 0;
+		P->Mvol = 1;
+
 	}
 
 	PetscFunctionReturn(0);

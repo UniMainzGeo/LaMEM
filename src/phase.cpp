@@ -342,6 +342,8 @@ PetscErrorCode DBMatReadPhase(DBMat *dbm, FB *fb)
 	ierr = getScalarParam(fb,_OPTIONAL_,"TExt",       &m->TExt,  1, 1.0); CHKERRQ(ierr);
 	ierr = getScalarParam(fb,_OPTIONAL_,"PhInt",      &m->PhInt, 1, 1.0); CHKERRQ(ierr);
 	ierr = getScalarParam(fb,_OPTIONAL_,"PhExt",      &m->PhExt, 1, 1.0); CHKERRQ(ierr);
+	ierr = getScalarParam(fb,_OPTIONAL_,"DInt",       &m->DInt,  1, 1.0); CHKERRQ(ierr);
+	ierr = getScalarParam(fb,_OPTIONAL_,"DExt",       &m->DExt,  1, 1.0); CHKERRQ(ierr);
 
 
 	// DEPTH-DEPENDENT

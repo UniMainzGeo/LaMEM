@@ -53,7 +53,9 @@
 #include "phase.h"
 #include "constEq.h"
 #include "tools.h"
-
+#include "advect.h"
+#include "cvi.h"
+#include "meltextraction.h"
 //---------------------------------------------------------------------------
 PetscErrorCode JacResCreate(JacRes *jr, FB *fb)
 {
@@ -535,6 +537,8 @@ PetscErrorCode JacResDestroy(JacRes *jr)
 	ierr = VecDestroy(&jr->lp);      CHKERRQ(ierr);
 	ierr = VecDestroy(&jr->lp_lith); CHKERRQ(ierr);
 	ierr = VecDestroy(&jr->lp_pore); CHKERRQ(ierr);
+
+	ierr =  MeltExtractionDestroy(jr);
 
 	ierr = VecDestroy(&jr->gc);      CHKERRQ(ierr);
 

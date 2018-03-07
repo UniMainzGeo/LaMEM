@@ -496,7 +496,12 @@ PetscErrorCode DevConstEq(
 			{
 				// Get the data from phase diagram
 				ierr = SetDataPhaseDiagram(pd, p, T, 0, mat->pdn); CHKERRQ(ierr);
-				svDev->mf  = pd->mf;
+				/*if (pd->mf > phases[i].Mtrs)
+				{
+					pd->mf       = phases[i].Mleft;
+				}*/
+				svDev->mf        = (pd->mf-svDev->mfextot);
+				// svDev->dMF       = ((pd->mf - svDev->mfextot)-phases[i].Mleft);
 			}
 
 			// setup nonlinear constitutive equation evaluation context
@@ -546,12 +551,14 @@ PetscErrorCode VolConstEq(
 	svBulk->alpha = 0.0;
 	svBulk->IKdt  = 0.0;
 	Kavg          = 0.0;
-	svBulk->mf = 0;
 	svBulk->rho_pf = 0;
+	svBulk->mf     = 0;
+	svBulk->dMF    = 0;
 
 	// scan all phases
 	for(i = 0; i < numPhases; i++)
 	{
+
 		// update present phases only
 		if(phRat[i])
 		{
@@ -564,8 +571,13 @@ PetscErrorCode VolConstEq(
 				// Get the data from phase diagram
 				SetDataPhaseDiagram(pd, p, T, 0, mat->pdn);
 				svBulk->rho_pd  = pd->rho;
-				svBulk->mf += phRat[i]*pd->mf;
-				svBulk->rho_pf += phRat[i]*pd->rho_f;
+				/*if (pd->mf > phases[i].Mtrs)
+				{
+					pd->mf       = phases[i].Mleft;
+				}*/
+				svBulk->dMF    -= phRat[i] * ((pd->mf - svBulk->mfextot)-phases[i].Mleft);
+				svBulk->mf     += phRat[i] * ( pd->mf-svBulk->mfextot);
+				svBulk->rho_pf += phRat[i] *   pd->rho_f;
 			}
 
 			// initialize

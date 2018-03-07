@@ -74,7 +74,8 @@ struct Marker
 	PetscScalar APS;   // accumulated plastic strain
 	Tensor2RS   S;     // deviatoric stress
 	PetscScalar U[3];  // displacement
-        PetscScalar Mtot;  // Total Melt Extracted
+    PetscScalar Mtot;  // Total Melt Extracted
+    PetscScalar Mvol;  // Volume of the marker used in melt extraction
 };
 
 //---------------------------------------------------------------------------

@@ -69,6 +69,7 @@
 #include "objFunct.h"
 #include "adjoint.h"
 #include "LaMEMLib.h"
+#include "cvi.h"
 #include "meltextraction.h"
 //---------------------------------------------------------------------------
 #undef __FUNCT__
@@ -225,6 +226,9 @@ PetscErrorCode LaMEMLibCreate(LaMEMLib *lm, void *param )
 
 	// AVD output driver
 	ierr = PVAVDCreate(&lm->pvavd, fb); CHKERRQ(ierr);
+
+	// Create melt extraction context
+	ierr = MeltExtractionCreate(&lm->jr);
 
 	// destroy file buffer
 	ierr = FBDestroy(&fb); CHKERRQ(ierr);
@@ -654,17 +658,31 @@ PetscErrorCode LaMEMLibSolve(LaMEMLib *lm, void *param)
 		}
 
 		//==================================================================
-		// MELT EXTRACTION + MARKER & FREE SURFACE ADVECTION + EROSION
+		// MARKER & FREE SURFACE ADVECTION + EROSION 1
 		//==================================================================
-
-		// Extract melt
-		ierr = MeltExtraction(&lm->jr);  CHKERRQ(ierr);
 
 		// calculate current time step
 		ierr = ADVSelectTimeStep(&lm->actx, &restart); CHKERRQ(ierr);
 		
 		// restart if fixed time step is larger than CFLMAX
 		if(restart) continue;
+
+		//==================
+		// MELT EXTRACTION 1
+		//==================
+
+		// Save the melt extraction parameters in local vectors
+		ierr = MeltExtractionSave(&lm->jr);
+
+		// Send the extracted volume to the processor it belongs to and interpolate it back to the nodes
+		ierr =  MeltExtractionExchangeVolume(&lm->jr);
+
+		// Interpolate the history variables for the melt extraction and inject new markers based on volume
+		ierr =  MeltExtractionInterpMarker(&lm->actx);
+
+		//==================================================================
+		// MARKER & FREE SURFACE ADVECTION + EROSION 2
+		//==================================================================
 
 		// advect free surface
 		ierr = FreeSurfAdvect(&lm->surf); CHKERRQ(ierr);
@@ -674,6 +692,17 @@ PetscErrorCode LaMEMLibSolve(LaMEMLib *lm, void *param)
 
 		// apply background strain-rate "DWINDLAR" BC (Bob Shaw "Ship of Strangers")
 		ierr = BCStretchGrid(&lm->bc); CHKERRQ(ierr);
+
+		//==================
+		// MELT EXTRACTION 2
+		//==================
+
+		// Interpolate melt extraction parameters back from the markers after advection
+		ierr =  MeltExtractionInterpMarkerBackToGrid(&lm->actx);
+
+		//==================================================================
+		// MARKER & FREE SURFACE ADVECTION + EROSION 3
+		//==================================================================
 
 		// exchange markers between the processors (after mesh advection)
 		ierr = ADVExchange(&lm->actx); CHKERRQ(ierr);
@@ -702,7 +731,6 @@ PetscErrorCode LaMEMLibSolve(LaMEMLib *lm, void *param)
 
 		// restart database
 		ierr = LaMEMLibSaveRestart(lm); CHKERRQ(ierr);
-		
 	}
 
 	//======================

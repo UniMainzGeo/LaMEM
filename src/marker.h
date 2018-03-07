@@ -138,6 +138,9 @@ PetscErrorCode ADVMarkSetTempGrad(AdvCtx *actx);
 // initialize temperature on markers based on phase temperature
 PetscErrorCode ADVMarkSetTempPhase(AdvCtx *actx);
 
+// initialize melt extraction parameters on markers
+PetscErrorCode ADVMarkSetME(AdvCtx *actx);
+
 // initialize temperature on markers redundantly form file
 PetscErrorCode ADVMarkSetTempFile(AdvCtx *actx, FB *fb);
 

@@ -45,6 +45,8 @@
 #ifndef __JacRes_h__
 #define __JacRes_h__
 
+#define max_num_phases 32
+
 struct FB;
 struct Scaling;
 struct TSSol;
@@ -72,7 +74,7 @@ struct SolVarDev
 	PetscScalar  fr;    // effective friction coefficient (Jacobian)
 	PetscScalar  yield; // average yield stress in control volume
 	PetscScalar  mf;    // melt fraction
-	PetscScalar  mfext; // Melt fraction extracted
+	// PetscScalar  mfext[max_num_phases]; // Melt fraction extracted
 	PetscScalar  mfextot; // Total Melt Extracted from a a nodes
 };
 
@@ -91,9 +93,10 @@ struct SolVarBulk
 	PetscScalar  rho_pd;// Density from phase diagram
 	PetscScalar  rho_pf;// Fluid Density from phase diagram
 	PetscScalar  mf;    // Melt fraction from phase diagram
-	PetscScalar  mfext; // Melt fraction extracted
+	// PetscScalar  mfext[max_num_phases]; // Melt fraction extracted
 	PetscScalar  mfextot;// Total Melt extracted from a node
-
+	PetscScalar  mfVol; // Total Melt Extracted from a a nodes
+	PetscScalar  dMF;
 };
 
 //---------------------------------------------------------------------------
@@ -241,6 +244,11 @@ struct JacRes
 
 	// Phase diagram
 	PData       *Pd;
+
+	// Melt extraction
+	Vec   gdMV, gdMVmerge;
+	Vec   ldMV;
+	Vec   gdc, ldc;
 
 	//=======================
 	// temperature parameters

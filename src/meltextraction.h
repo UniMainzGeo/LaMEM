@@ -46,6 +46,12 @@
 #define __meltextraction__
 //---------------------------------------------------------------------------
 
-PetscErrorCode MeltExtraction(JacRes *jr);
+PetscErrorCode MeltExtractionCreate(JacRes *jr);
+PetscErrorCode MeltExtractionDestroy(JacRes *jr);
+PetscErrorCode MeltExtractionSave(JacRes *jr);
+PetscErrorCode MeltExtractionInterpMarker(AdvCtx *actx);
+PetscErrorCode MeltExtractionInterpMarkerBackToGrid(AdvCtx *actx);
+PetscErrorCode MeltExtractionExchangeVolume(JacRes *jr);
+PetscErrorCode MeltExtractionInject(AdvCtx *actx, AdvVelCtx *vi, PetscInt ID, PetscInt I, PetscInt J, PetscInt K, PetscScalar UP);
 
 #endif

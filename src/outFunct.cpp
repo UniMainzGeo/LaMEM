@@ -515,13 +515,30 @@ PetscErrorCode PVOutWriteFluidDensity(JacRes *jr, OutBuf *outbuf)
 }
 //---------------------------------------------------------------------------
 #undef __FUNCT__
-#define __FUNCT__ "PVOutWriteMeltFraction"
-PetscErrorCode PVOutWriteMeltFraction(JacRes *jr, OutBuf *outbuf)
+#define __FUNCT__ "PVOutWriteVolume"
+PetscErrorCode PVOutWriteVolume(JacRes *jr, OutBuf *outbuf)
 {
 	COPY_FUNCTION_HEADER
 
+	// macros to copy fluid density to buffer
+	#define GET_VOLUME_CENTER  buff[k][j][i] = jr->svCell[iter++].svBulk.mfVol;
+
+	cf = 1.0;
+
+	INTERPOLATE_COPY(fs->DA_CEN, outbuf->lbcen, InterpCenterCorner, GET_VOLUME_CENTER,  1, 0)
+
+	PetscFunctionReturn(0);
+}
+//---------------------------------------------------------------------------
+#undef __FUNCT__
+#define __FUNCT__ "PVOutWriteMeltFraction"
+PetscErrorCode PVOutWriteMeltFraction(JacRes *jr, OutBuf *outbuf)
+{
+
+	COPY_FUNCTION_HEADER
+
 	// macros to copy melt fraction to buffer
-	#define GET_MF_CENTER  buff[k][j][i] = jr->svCell[iter++].svDev.mf;
+	#define GET_MF_CENTER  buff[k][j][i] = jr->svCell[iter++].svBulk.mf;
 
 	cf = 1.0;
 
@@ -531,17 +548,35 @@ PetscErrorCode PVOutWriteMeltFraction(JacRes *jr, OutBuf *outbuf)
 }
 //---------------------------------------------------------------------------
 #undef __FUNCT__
-#define __FUNCT__ "PVOutWriteMFExt"
-PetscErrorCode PVOutWriteMFExt(JacRes *jr, OutBuf *outbuf)
+#define __FUNCT__ "PVOutWriteMeltExtTot"
+PetscErrorCode PVOutWriteMeltExtTot(JacRes *jr, OutBuf *outbuf)
 {
+
 	COPY_FUNCTION_HEADER
 
 	// macros to copy melt fraction to buffer
-	#define GET_MFE_CENTER  buff[k][j][i] = jr->svCell[iter++].svDev.mfext;
+	#define GET_MFT_CENTER  buff[k][j][i] = jr->svCell[iter++].svBulk.mfextot;
 
 	cf = 1.0;
 
-	INTERPOLATE_COPY(fs->DA_CEN, outbuf->lbcen, InterpCenterCorner, GET_MFE_CENTER,  1, 0)
+	INTERPOLATE_COPY(fs->DA_CEN, outbuf->lbcen, InterpCenterCorner, GET_MFT_CENTER,  1, 0)
+
+	PetscFunctionReturn(0);
+}
+//---------------------------------------------------------------------------
+#undef __FUNCT__
+#define __FUNCT__ "PVOutWriteMeltdVdt"
+PetscErrorCode PVOutWriteMeltdVdt(JacRes *jr, OutBuf *outbuf)
+{
+
+	COPY_FUNCTION_HEADER
+
+	// macros to copy melt fraction to buffer
+	#define GET_MFDVDT_CENTER  buff[k][j][i] = jr->svCell[iter++].svBulk.dMF;
+
+	cf = 1.0;
+
+	INTERPOLATE_COPY(fs->DA_CEN, outbuf->lbcen, InterpCenterCorner, GET_MFDVDT_CENTER,  1, 0)
 
 	PetscFunctionReturn(0);
 }

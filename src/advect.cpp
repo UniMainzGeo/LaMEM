@@ -57,6 +57,7 @@
 #include "AVD.h"
 #include "cvi.h"
 #include "tools.h"
+#include "meltextraction.h"
 
 /*
 #START_DOC#
@@ -244,6 +245,9 @@ PetscErrorCode ADVCreate(AdvCtx *actx, FB *fb)
 
 	// project initial history from markers to grid
 	ierr = ADVProjHistMarkToGrid(actx); CHKERRQ(ierr);
+
+	// Also project the melt extraction variables to the grid otherwise they are uninitialised
+	ierr =  MeltExtractionInterpMarkerBackToGrid(actx);
 
 	PetscFunctionReturn(0);
 }
