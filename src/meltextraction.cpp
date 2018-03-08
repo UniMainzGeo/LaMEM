@@ -431,6 +431,7 @@ PetscErrorCode MeltExtractionExchangeVolume(JacRes *jr)
 	FDSTAG      *fs;
 	Discret1D   *dsz;
 	SolVarCell  *svCell;
+	Controls    *ctrl;
 	PetscInt     i, j, k, K, sx, sy, sz, nx, ny, nz, iter;
 	Vec          dgMVVec, dgMVVecmerge, dlMVVec, dlMVVecmerge;
 	PetscScalar  bz, ez;
@@ -443,6 +444,7 @@ PetscErrorCode MeltExtractionExchangeVolume(JacRes *jr)
 	// access context
 	fs    = jr->fs;
 	dsz   = &fs->dsz;
+	ctrl  = &jr->ctrl;
 
 	// get local coordinate bounds
 	ierr = FDSTAGGetLocalBox(fs, NULL, NULL, &bz, NULL, NULL, &ez); CHKERRQ(ierr);
@@ -496,9 +498,7 @@ PetscErrorCode MeltExtractionExchangeVolume(JacRes *jr)
 		GLOBAL_TO_LOCAL(jr->DA_CELL_2D, dgMVVecmerge, dlMVVecmerge);
 	}
 
-	// ATTENTION hard-coded here!!!
-	level = 0.9;
-	// ATTENTION hard-coded here!!!
+	level = ctrl->DExt;
 
 	// scan all local cells
 	GET_CELL_RANGE(nx, sx, fs->dsx)
@@ -577,17 +577,18 @@ PetscErrorCode MeltExtractionInject(AdvCtx *actx, AdvVelCtx *vi, PetscInt ID, Pe
 	PetscRandom    rctx;
 	Marker      *P;
 	FDSTAG      *fs;
+	Controls    *ctrl;
+	JacRes      *jr;
 
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
 
 	found = 0;
-	fs        = actx->fs;
+	jr    = actx->jr;
+	fs    = actx->fs;
+	ctrl  = &jr->ctrl;
 
-	// ATTENTION hard-coded
-	PhInject = 2;
-	// ATTENTION hard-coded
-
+	PhInject = ctrl->PhExt;
 
 	// get markers in cell
 	n = vi->markstart[ID+1] - vi->markstart[ID];
