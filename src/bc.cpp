@@ -238,7 +238,7 @@ PetscErrorCode DBoxReadCreate(DBox *dbox, Scaling *scal, FB *fb)
 	if(dbox->num)
 	{
 		ierr = getScalarParam(fb, _REQUIRED_, "dbox_bounds",  dbox->bounds, 6*dbox->num, scal->length  ); 	CHKERRQ(ierr);
-		ierr = getScalarParam(fb, _REQUIRED_, "dbox_zvel",    &dbox->zvel,   1,           scal->velocity); 	CHKERRQ(ierr);
+		ierr = getScalarParam(fb, _REQUIRED_, "dbox_zvel",    &dbox->zvel,   1,          scal->velocity); 	CHKERRQ(ierr);
 		
 		dbox->advect_box=1;
 		ierr = getIntParam(fb, _OPTIONAL_, "dbox_advect",     &dbox->advect_box,   1,           1); 		CHKERRQ(ierr);	// advect box (=1) or not? Default is yes
@@ -284,6 +284,7 @@ PetscErrorCode BCCreate(BCCtx *bc, FB *fb)
 	ierr = getIntParam   (fb, _OPTIONAL_, "eyy_num_periods",  &bc->EyyNumPeriods,  1,                   _max_periods_    ); CHKERRQ(ierr);
 	ierr = getScalarParam(fb, _REQUIRED_, "eyy_time_delims",   bc->EyyTimeDelims,  bc->EyyNumPeriods-1, scal->time       ); CHKERRQ(ierr);
 	ierr = getScalarParam(fb, _REQUIRED_, "eyy_strain_rates",  bc->EyyStrainRates, bc->EyyNumPeriods,   scal->strain_rate); CHKERRQ(ierr);
+	ierr = getScalarParam(fb, _OPTIONAL_, "bg_ref_point",      bc->BGRefPoint,     3,                   scal->length);      CHKERRQ(ierr);
 
 	// Bezier blocks
 	ierr = FBFindBlocks(fb, _OPTIONAL_, "<BCBlockStart>", "<BCBlockEnd>"); CHKERRQ(ierr);
@@ -845,6 +846,7 @@ PetscErrorCode BCApplyVelDefault(BCCtx *bc)
 
 	FDSTAG      *fs;
 	PetscScalar Exx, Eyy, Ezz;
+	PetscScalar Rxx, Ryy, Rzz;
 	PetscScalar bx,  by,  bz;
 	PetscScalar ex,  ey,  ez;
 	PetscScalar vbx, vby, vbz;
@@ -871,14 +873,14 @@ PetscErrorCode BCApplyVelDefault(BCCtx *bc)
 	ierr = FDSTAGGetGlobalBox(fs, &bx, &by, &bz, &ex, &ey, &ez); CHKERRQ(ierr);
 
 	// get background strain rates
-	ierr = BCGetBGStrainRates(bc, &Exx, &Eyy, &Ezz); CHKERRQ(ierr);
+	ierr = BCGetBGStrainRates(bc, &Exx, &Eyy, &Ezz, &Rxx, &Ryy, &Rzz); CHKERRQ(ierr);
 
 	// get boundary velocities
-	// coordinate origin is assumed to be fixed
-	// velocity is a product of strain rate and coordinate
-	vbx = bx*Exx;   vex = ex*Exx;
-	vby = by*Eyy;   vey = ey*Eyy;
-	vbz = bz*Ezz;   vez = ez*Ezz;
+	// reference point is assumed to be fixed
+	// velocity is a product of strain rate and coordinate w.r.t. reference point
+	vbx = (bx - Rxx)*Exx;   vex = (ex - Rxx)*Exx;
+	vby = (by - Ryy)*Eyy;   vey = (ey - Ryy)*Eyy;
+	vbz = (bz - Rzz)*Ezz;   vez = (ez - Rzz)*Ezz;
 
 	if(top_open)
 	{
@@ -1572,9 +1574,16 @@ PetscErrorCode BCListSPC(BCCtx *bc)
 //---------------------------------------------------------------------------
 #undef __FUNCT__
 #define __FUNCT__ "BCGetBGStrainRates"
-PetscErrorCode BCGetBGStrainRates(BCCtx *bc, PetscScalar *Exx_, PetscScalar *Eyy_, PetscScalar *Ezz_)
+PetscErrorCode BCGetBGStrainRates(
+		BCCtx       *bc,
+		PetscScalar *Exx_,
+		PetscScalar *Eyy_,
+		PetscScalar *Ezz_,
+		PetscScalar *Rxx_,
+		PetscScalar *Ryy_,
+		PetscScalar *Rzz_)
 {
-	// get current background strain rates
+	// get current background strain rates & reference point coordinates
 
 	PetscInt    jj;
 	PetscScalar time, Exx, Eyy, Ezz;
@@ -1614,6 +1623,9 @@ PetscErrorCode BCGetBGStrainRates(BCCtx *bc, PetscScalar *Exx_, PetscScalar *Eyy
 	if(Exx_) (*Exx_) = Exx;
 	if(Eyy_) (*Eyy_) = Eyy;
 	if(Ezz_) (*Ezz_) = Ezz;
+	if(Rxx_) (*Rxx_) = bc->BGRefPoint[0];
+	if(Ryy_) (*Ryy_) = bc->BGRefPoint[1];
+	if(Rzz_) (*Rzz_) = bc->BGRefPoint[2];
 
 	PetscFunctionReturn(0);
 }
@@ -1624,17 +1636,18 @@ PetscErrorCode BCStretchGrid(BCCtx *bc)
 {
 	// apply background strain-rate "DWINDLAR" BC (Bob Shaw "Ship of Strangers")
 
-	// Stretch grid with constant stretch factor about coordinate origin.
-	// The origin point remains fixed, and the displacements of all points are
-	// proportional to the distance from the origin (i.e. coordinate).
+	// Stretch grid with constant stretch factor about reference point.
+	// The reference point remains fixed, and the displacements of all points are
+	// proportional to the distance from the reference point.
 	// Stretch factor is positive at extension, i.e.:
-	// eps = (L_new-L_old)/L_old
+	// eps   = (L_new - L_old)/L_old
 	// L_new = L_old + eps*L_old
-	// x_new = x_old + eps*x_old
+	// x_new = x_old + eps*(x_old - x_ref)
 
 	TSSol       *ts;
 	FDSTAG      *fs;
 	PetscScalar Exx, Eyy, Ezz;
+	PetscScalar Rxx, Ryy, Rzz;
 
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
@@ -1644,12 +1657,12 @@ PetscErrorCode BCStretchGrid(BCCtx *bc)
 	ts = bc->ts;
 
 	// get background strain rates
-	ierr = BCGetBGStrainRates(bc, &Exx, &Eyy, &Ezz); CHKERRQ(ierr);
+	ierr = BCGetBGStrainRates(bc, &Exx, &Eyy, &Ezz, &Rxx, &Ryy, &Rzz); CHKERRQ(ierr);
 
 	// stretch grid
-	if(Exx) { ierr = Discret1DStretch(&fs->dsx, Exx*ts->dt); CHKERRQ(ierr); }
-	if(Eyy) { ierr = Discret1DStretch(&fs->dsy, Eyy*ts->dt); CHKERRQ(ierr); }
-	if(Ezz) { ierr = Discret1DStretch(&fs->dsz, Ezz*ts->dt); CHKERRQ(ierr); }
+	if(Exx) { ierr = Discret1DStretch(&fs->dsx, Exx*ts->dt, Rxx); CHKERRQ(ierr); }
+	if(Eyy) { ierr = Discret1DStretch(&fs->dsy, Eyy*ts->dt, Ryy); CHKERRQ(ierr); }
+	if(Ezz) { ierr = Discret1DStretch(&fs->dsz, Ezz*ts->dt, Rzz); CHKERRQ(ierr); }
 
 	PetscFunctionReturn(0);
 }

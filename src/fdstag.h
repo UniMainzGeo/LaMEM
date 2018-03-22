@@ -157,8 +157,8 @@ PetscErrorCode Discret1DGetNumCells(Discret1D  *ds, PetscInt **ncelProc);
 // generate local coordinates
 PetscErrorCode Discret1DGenCoord(Discret1D *ds, MeshSeg1D *ms);
 
-// stretch grid with constant stretch factor about coordinate origin.
-PetscErrorCode Discret1DStretch(Discret1D *ds,  PetscScalar eps);
+// stretch grid with constant stretch factor about reference point
+PetscErrorCode Discret1DStretch(Discret1D *ds,  PetscScalar eps, PetscScalar ref);
 
 // create 1D communicator of the processor column in the base direction
 PetscErrorCode Discret1DGetColumnComm(Discret1D *ds);

@@ -143,6 +143,8 @@
 	eyy_time_delims  = 1.0
 	eyy_strain_rates = 1e-15 2e-15
 
+	bg_ref_point     = 0.0 0.0 0.0       # background strain rate reference point (fixed)
+	
 # Bezier blocks (single entry per block)
 
 	<BCBlockStart>
