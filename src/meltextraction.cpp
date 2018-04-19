@@ -43,15 +43,18 @@
 /*
  * TODO:
  * - Pay attention local and global might still be inconsistent in Exchange Volume
+ *
  * - So far only tested for exactly 1 extraction step
  * - What happens if the melt quantity actually decreases instead of increase? This might be not treated here yet
  * - What pressure and T should the new marker have?
+ *   #The temperature is fixed and given as material parameter. The pressure must be interpolated from the surrounding.
  * - Two things are hard-coded (ctrl+F "hard-coded" to find them)
  * - How to handle the actual volume change in injection?:
- * 		1) Delete all markers from cell and inject equally distributed (and volume equal) markers of injection phase?
- * 		2) Reduce volume of existing markers in the cell such that volume is again correct?
- * 		3) Is it phyiscally actually correct if it is just corrected for the inflated volumeas is done right now?
- * 		4) Artificially massively increase the injected volume until it is correct?
+ * 		1) Delete all markers from cell and inject equally distributed (and volume equal)
+ *
+ *      2) Reduce volume of existing markers in the cell such that volume is again correct?
+ * 		3) Is it phyiscally  correct if it is just corrected for the inflated volumeas is done right now? <?>
+ * 		4) Artificially massively increase the injected volume until it is correct? No
  *
  * 	POTENTIAL HELP:
  * 	- Implement a timestep criterium for the melt extraction. Only incrementally move melt up such that velocity doesn't run away.
@@ -70,17 +73,19 @@
 #undef __FUNCT__
 #define __FUNCT__ "MeltExtractionCreate"
 PetscErrorCode MeltExtractionCreate(JacRes *jr)
-{
+{ // First functions that is called
 
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
 
-	ierr = DMCreateGlobalVector(jr->fs->DA_CEN, &jr->gdMV);      CHKERRQ(ierr);
-	ierr = DMCreateGlobalVector(jr->fs->DA_CEN, &jr->gdMVmerge); CHKERRQ(ierr);
-	ierr = DMCreateLocalVector (jr->fs->DA_CEN, &jr->ldMV);      CHKERRQ(ierr);
-	ierr = DMCreateGlobalVector(jr->fs->DA_CEN, &jr->gdc);       CHKERRQ(ierr);
-	ierr = DMCreateLocalVector (jr->fs->DA_CEN, &jr->ldc);       CHKERRQ(ierr);
-
+	ierr = DMCreateGlobalVector(jr->fs->DA_CEN, &jr->gdMV)       ; CHKERRQ(ierr);
+	ierr = DMCreateGlobalVector(jr->fs->DA_CEN, &jr->gdMVmerge)  ; CHKERRQ(ierr);
+	ierr = DMCreateLocalVector (jr->fs->DA_CEN, &jr->ldMV)       ; CHKERRQ(ierr);
+	ierr = DMCreateGlobalVector(jr->fs->DA_CEN, &jr->gdc)        ; CHKERRQ(ierr);
+	ierr = DMCreateLocalVector (jr->fs->DA_CEN, &jr->ldc)        ; CHKERRQ(ierr);
+	ierr = DMCreateGlobalVector(jr->fs->DA_CEN, &jr->gdMoho)     ; CHKERRQ(ierr);
+	ierr = DMCreateGlobalVector(jr->fs->DA_CEN, &jr->gdMohomerge); CHKERRQ(ierr);
+	ierr = DMCreateLocalVector (jr->fs->DA_CEN, &jr->ldMoho)     ; CHKERRQ(ierr);
 	PetscFunctionReturn(0);
 
 }
@@ -88,7 +93,7 @@ PetscErrorCode MeltExtractionCreate(JacRes *jr)
 #undef __FUNCT__
 #define __FUNCT__ "MeltExtractionDestroy"
 PetscErrorCode MeltExtractionDestroy(JacRes *jr)
-{
+{ // Last
 
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
@@ -98,6 +103,8 @@ PetscErrorCode MeltExtractionDestroy(JacRes *jr)
 	ierr = VecDestroy(&jr->ldMV);           CHKERRQ(ierr);
 	ierr = VecDestroy(&jr->gdc);            CHKERRQ(ierr);
 	ierr = VecDestroy(&jr->ldc);            CHKERRQ(ierr);
+	ierr = VecDestroy(&jr->ldMoho);         CHKERRQ(ierr);
+
 
 	PetscFunctionReturn(0);
 
@@ -106,36 +113,99 @@ PetscErrorCode MeltExtractionDestroy(JacRes *jr)
 #undef __FUNCT__
 #define __FUNCT__ "MeltExtractionSave"
 PetscErrorCode MeltExtractionSave(JacRes *jr)
-{
+{    /* 2:Create the structure data that must be used to inject new particles, and compute the associated sink and source term.Copy dMF (see Consteq.cpp)
+        into a grid whose coordinate are based on the center of cell, and which save the variable from the bulk variables */
 
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
 
-	PetscScalar  ***ldMV;
-	PetscInt      i, j, k, nx, ny, nz, sx, sy, sz, iter;
-	SolVarBulk   *svBulk;
-	SolVarCell   *svCell;
-	FDSTAG       *fs;
+	PetscScalar  ***ldMV,***Mipbuff                            ;   // 3D structure storing the melt that has been extracted
+	PetscInt      i, j, k, nx, ny, nz, sx, sy, sz, iter, iphase;   // Iteration
+	SolVarBulk   *svBulk                                       ;   // pointer 2 the solution variable defined as "bulk cell properties"
+	SolVarCell   *svCell                                       ;   // pointer 2 the Solution variable defined in the cell
+	FDSTAG       *fs                                           ;   // pointer 2 the grid structure and variables
+	PData        *pd                                           ;   // pointer 2 the phase diagram structure
+	PetscInt     numPhases                                     ;   // number of phases
+    PetscScalar  *phRat                                        ;   // Phase Ratio
+    PetscScalar  ***p,pc                                       ;   // pressure
+    PetscScalar  ***T,Tc                                       ;   // temperature
+    PetscScalar  mfeff                                         ;   // Effective melt extracted
+    Material_t   *mat                                          ;   // Material properties structure
+    Material_t   *phases                                       ;   // Phases
+    AdvCtx       *actx                                         ;
 
-	fs = jr->fs;
+    // Access to the context (?)
+	fs        = jr->fs                                         ;   // take the structured grid data from jr. The out put is a pointer structure
+	numPhases = jr->dbm->numPhases                             ;   // take the number of phases from dbm structures
+    pd        = jr->Pd                                         ;   // take the structure associated to the phase diagram
+    phases    = jr->dbm->phases                                ;   // take the phases
 
-	ierr = DMDAVecGetArray (jr->fs->DA_CEN, jr->ldMV, &ldMV);      CHKERRQ(ierr);
+    //
+    // Calling Moho_Tracking (working on)
+    //
+    // Initialize & get array
 
-	iter = 0;
-	GET_CELL_RANGE(nx, sx, fs->dsx);
-	GET_CELL_RANGE(ny, sy, fs->dsy);
-	GET_CELL_RANGE(nz, sz, fs->dsz);
+	//ierr = DMDAVecGetArray(jr->fs->DA_CEN, jr->ldMV, &ldMV)    ;      CHKERRQ(ierr); /* Create a vector containing all the information of a cell center based grid, and create the object that will stored the information of the melt extracted*/
+	ierr = DMDAVecGetArray(fs->DA_CEN, jr->lp,      &p)        ;      CHKERRQ(ierr);
+    ierr = DMDAVecGetArray(fs->DA_CEN, jr->lT,      &T)        ;      CHKERRQ(ierr);
 
-	START_STD_LOOP
-	{
-		svCell = &jr->svCell[iter++];
-		svBulk = &svCell->svBulk;
+	iter = 0                                                   ;
+	GET_CELL_RANGE(nx, sx, fs->dsx)                            ;
+	GET_CELL_RANGE(ny, sy, fs->dsy)                            ;
+	GET_CELL_RANGE(nz, sz, fs->dsz)                            ;
 
-		ldMV[k][j][i] = svBulk->dMF;
+    for(iphase=0;iphase<numPhases;iphase++)
+    {
+      	  mat=&phases[iphase];
+    	  if(mat->Pd_rho == 1)
+    	  {
+    	//Create the buffer
+    	ierr = VecZeroEntries(jr->Miphase)                       ; CHKERRQ(ierr);
+    	ierr = DMDAVecGetArray(fs->DA_CEN, jr->Miphase, &Mipbuff); CHKERRQ(ierr);
+        START_STD_LOOP
+          {
+    		  svCell    = &jr->svCell[iter++]                 ;     // take the central node based properties
+     		  svBulk    = &svCell->svBulk                     ;     // take the bulk solution variables
+    		  phRat     = jr->svCell[iter++].phRat            ;     // take phase ratio on the central node
 
-	}END_STD_LOOP
+        	if(phRat[iphase])
+        	{
+    	           // Temperature&Pressure
+    	           // access current pressure
+    		    	pc    = p[k][j][i]                                                  ;
+    			   // current temperature
+    			    Tc    = T[k][j][i]                                                  ;
+    		        ierr  = SetDataPhaseDiagram(pd, pc, Tc, 0, mat->pdn); CHKERRQ(ierr) ;
+    			    mfeff = pd->mf-svBulk->mfextot                                      ;// historical variables
+    		        if (mfeff<0) mfeff=0                                                ;//Correction
+    			    if( mfeff>phases[iphase].Mtrs)
+    				  {
+    			    	Mipbuff[k][j][i]   = - phRat[iphase] * (mfeff-phases[iphase].Mleft);
+    				   }
+    			    else
+    			    {
+    			    	Mipbuff[k][j][i]   = 0                                           ;
+    			    }
+        	   }
 
-	ierr = DMDAVecRestoreArray (jr->fs->DA_CEN, jr->ldMV, &ldMV);      CHKERRQ(ierr);
+           }END_STD_LOOP
+           ierr = DMDAVecRestoreArray(fs->DA_CEN, jr->Miphase, &Mipbuff)                 ;        CHKERRQ(ierr);
+           // Send the data to Melt Extraction Exchange volume & compute the injection
+
+           ierr =  MeltExtractionExchangeVolume(jr,iphase)	;	CHKERRQ(ierr);
+
+           ierr =  MeltExtractionInterpMarker(actx,iphase)	;	CHKERRQ(ierr);
+
+           // Inject volume
+
+           // Update Marker
+
+           // Compute the total dVdt to send to the mass conservation
+
+               	  }
+     }
+
+	ierr = DMDAVecRestoreArray (jr->fs->DA_CEN, jr->ldMV, &ldMV)                         ;        CHKERRQ(ierr);
 
 	LOCAL_TO_GLOBAL(fs->DA_CEN, jr->ldMV, jr->gdMV);
 
@@ -145,20 +215,20 @@ PetscErrorCode MeltExtractionSave(JacRes *jr)
 //---------------------------------------------------------------------------
 #undef __FUNCT__
 #define __FUNCT__ "MeltExtractionInterpMarker"
-PetscErrorCode MeltExtractionInterpMarker(AdvCtx *actx)
+PetscErrorCode MeltExtractionInterpMarker(AdvCtx *actx, PetscInt iphase)
 {
 	//=======================================================================
 	// interpolate increments of the history field of melt extraction to markers
 	//=======================================================================
 
-		FDSTAG      *fs;
-		JacRes      *jr;
-		Marker      *P;
-		AdvVelCtx   vi;
-		PetscScalar  UP;
-		PetscInt     nx, ny, sx, sy, sz;
-		PetscInt     jj, ID, I, J, K;
-		PetscScalar *vgdc, ***vldc;
+		FDSTAG      *fs ;
+		JacRes      *jr ;
+		Marker      *P  ;
+		AdvVelCtx   vi  ;
+		PetscScalar UP  ;
+		PetscInt    nx, ny, sx, sy, sz;
+		PetscInt    jj, ID, I, J, K   ;
+		PetscScalar *vgdc, ***vldc, *Mipbuff ;
 
 		PetscErrorCode ierr;
 		PetscFunctionBegin;
@@ -175,45 +245,49 @@ PetscErrorCode MeltExtractionInterpMarker(AdvCtx *actx)
 
 
 		// access 1D layouts of global vectors
+    	ierr = DMDAVecGetArray(fs->DA_CEN, jr->Miphase, &Mipbuff); CHKERRQ(ierr);
 		ierr = VecGetArray(jr->gdc, &vgdc);  CHKERRQ(ierr);
-
-		for(jj = 0; jj < fs->nCells; jj++) vgdc[jj] = jr->svCell[jj].svBulk.dMF;
+        // Loop over the cell, to take dMF 
+		for(jj = 0; jj < fs->nCells; jj++) vgdc[jj] = Mipbuff[jj]; // Save (again?) the dMF in a vector without takint into account k,j,i but the global indexing
 
 		// restore access
 		ierr = VecRestoreArray(jr->gdc, &vgdc);  CHKERRQ(ierr);
-
+        ierr = DMDAVecRestoreArray(fs->DA_CEN, jr->Miphase, &Mipbuff)                 ;        CHKERRQ(ierr);
 		// communicate boundary values
-		GLOBAL_TO_LOCAL(fs->DA_CEN, jr->gdc, jr->ldc);
+		GLOBAL_TO_LOCAL(fs->DA_CEN, jr->gdc, jr->ldc);   // Local/Global Grid and MPI communication routines
 
 
 		// access 3D layouts of local vectors
-		ierr = DMDAVecGetArray(fs->DA_CEN, jr->ldc, &vldc); CHKERRQ(ierr);
+		ierr = DMDAVecGetArray(fs->DA_CEN, jr->ldc, &vldc); CHKERRQ(ierr); // Create the local vector containing all the information related to the dM
 
 		// scan ALL markers
 		for(jj = 0; jj < actx->nummark; jj++)
 		{
-			// access next marker
-			P = &actx->markers[jj];
+		    if(actx->markers[jj].phase==iphase)
+		    {
+		    // access next marker
+		    	P = &actx->markers[jj];
 
 			// get consecutive index of the host cell
-			ID = actx->cellnum[jj];
+		    	ID = actx->cellnum[jj];
 
 			// expand I, J, K cell indices
-			GET_CELL_IJK(ID, I, J, K, nx, ny)
+		    	GET_CELL_IJK(ID, I, J, K, nx, ny)
 
 			// access buffer
-			UP = vldc[sz+K][sy+J][sx+I];
+		    	UP = vldc[sz+K][sy+J][sx+I];
 
-			if(UP > 0)
-			{
-				ierr = MeltExtractionInject(actx,&vi, ID, I, J, K, UP);  CHKERRQ(ierr);
+		    	if(UP > 0)
+		    	{
+				ierr = MeltExtractionInject(jr,actx,&vi, ID, I, J, K, UP,iphase);  CHKERRQ(ierr);
 				vldc[sz+K][sy+J][sx+I] = 0; // It is all distributed in markers
-			}
-			else
-			{
-				P->Mtot += -UP;  // has to increase by the amount of melt change
-				P->Mvol +=  UP;  // has to decrease
-			}
+		    	}
+		    	else
+		    	{
+		    		P->Mtot += -UP;  // has to increase by the amount of melt change
+		    		P->Mvol +=  UP;  // has to decrease
+		    	}
+		    }
 		}
 
 		// restore access
@@ -228,10 +302,6 @@ PetscErrorCode MeltExtractionInterpMarker(AdvCtx *actx)
 #define __FUNCT__ "MeltExtractionInterpMarkerBackToGrid"
 PetscErrorCode MeltExtractionInterpMarkerBackToGrid(AdvCtx *actx)
 {
-	// Project the following history fields from markers to grid:
-
-	// - Mtot
-
 	FDSTAG      *fs;
 	JacRes      *jr;
 	Marker      *P;
@@ -426,169 +496,158 @@ PetscErrorCode MeltExtractionInterpMarkerBackToGrid(AdvCtx *actx)
 //---------------------------------------------------------------------------
 #undef __FUNCT__
 #define __FUNCT__ "MeltExtractionExchangeVolume"
-PetscErrorCode MeltExtractionExchangeVolume(JacRes *jr)
+PetscErrorCode MeltExtractionExchangeVolume(JacRes *jr, PetscInt iphase)
 {
-	FDSTAG      *fs;
-	Discret1D   *dsz;
-	SolVarCell  *svCell;
-	Controls    *ctrl;
-	PetscInt     i, j, k, K, sx, sy, sz, nx, ny, nz, iter;
-	Vec          dgMVVec, dgMVVecmerge, dlMVVec, dlMVVecmerge;
-	PetscScalar  bz, ez;
-	PetscScalar  level;
-	PetscScalar *vdlMVVecmerge, *vdgMVVec, *vdgMVVecmerge, **vdgMVVecmerge2, **vdgMVVec2, **vdlMVVecmerge2, **vdlMVVec2, ***vdlMV, ***vdgMV;
+	    FDSTAG      *fs                                                          ;
+		Discret1D   *dsz                                                         ;
+		SolVarCell  *svCell                                                      ;
+		Controls    *ctrl                                                        ;
+		PetscInt     i, j, k, K, sx, sy, sz, nx, ny, nz, iter,L                  ;
+		Vec          dgmvvec, dgmvvecmerge                                       ;
+		PetscScalar  bz, ez                                                      ;
+		PetscScalar  level, IR                                                   ;
+		PetscScalar  *vdgmvvec, *vdgmvvecmerge, **vdgmvvecmerge2, ***vdgmvvec2, ***vdgmv, ***Mipbuff ;
+		Material_t   *phases                                                     ;         // Phases
+		PetscErrorCode ierr;
+		PetscFunctionBegin;
 
-	PetscErrorCode ierr;
-	PetscFunctionBegin;
+		// access context
+		fs     = jr->fs                       ;
+		dsz    = &fs->dsz                     ;
+		ctrl   = &jr->ctrl                    ;
+		L      = (PetscInt)fs->dsz.rank       ; // rank of the processor
+		phases = jr->dbm->phases              ;
+		level  = phases[iphase].DInt          ; // It has to be modified
+		IR     = phases[iphase].RelInt        ; // Amount of intrusion that has to be injected within the crust, at level
 
-	// access context
-	fs    = jr->fs;
-	dsz   = &fs->dsz;
-	ctrl  = &jr->ctrl;
+		// get local coordinate bounds
+		ierr = FDSTAGGetLocalBox(fs, NULL, NULL, &bz, NULL, NULL, &ez); CHKERRQ(ierr);
 
-	// get local coordinate bounds
-	ierr = FDSTAGGetLocalBox(fs, NULL, NULL, &bz, NULL, NULL, &ez); CHKERRQ(ierr);
+		// create column communicator
+		ierr = Discret1DGetColumnComm(dsz); CHKERRQ(ierr);
 
-	// create column communicator
-	ierr = Discret1DGetColumnComm(dsz); CHKERRQ(ierr);
+		ierr = DMDAVecGetArray  (fs->DA_CEN, jr->Miphase, &Mipbuff)   ; CHKERRQ(ierr);
+		ierr = DMGetGlobalVector(jr->DA_CELL_2D, &dgmvvec)            ; CHKERRQ(ierr);
+		ierr = DMGetGlobalVector(jr->DA_CELL_2D, &dgmvvecmerge)       ; CHKERRQ(ierr);
+		ierr = VecZeroEntries   (dgmvvec)                             ; CHKERRQ(ierr);
+		ierr = VecZeroEntries   (dgmvvecmerge)                        ; CHKERRQ(ierr);
+		// scan all local cells
+		GET_CELL_RANGE(nx, sx, fs->dsx)
+		GET_CELL_RANGE(ny, sy, fs->dsy)
+		GET_CELL_RANGE(nz, sz, fs->dsz)
+		ierr = FDSTAGGetLocalBox(fs, NULL, NULL, &bz, NULL, NULL, &ez) ; CHKERRQ(ierr);
+		ierr = DMDAVecGetArray(jr->DA_CELL_2D, dgmvvec, &vdgmvvec2)    ; CHKERRQ(ierr);
 
-	ierr = DMGetGlobalVector(jr->DA_CELL_2D, &dgMVVec);      CHKERRQ(ierr);
-	ierr = DMGetGlobalVector(jr->DA_CELL_2D, &dgMVVecmerge); CHKERRQ(ierr);
-	ierr = DMGetLocalVector (jr->DA_CELL_2D, &dlMVVec);      CHKERRQ(ierr);
-	ierr = DMGetLocalVector (jr->DA_CELL_2D, &dlMVVecmerge); CHKERRQ(ierr);
-	ierr = VecZeroEntries   (dgMVVec);                       CHKERRQ(ierr);
-	ierr = VecZeroEntries   (dgMVVecmerge);                  CHKERRQ(ierr);
-	ierr = VecZeroEntries   (dlMVVec);                       CHKERRQ(ierr);
-	ierr = VecZeroEntries   (dlMVVecmerge);                  CHKERRQ(ierr);
+		iter = 0 ;
 
-	// scan all local cells
-	GET_CELL_RANGE(nx, sx, fs->dsx)
-	GET_CELL_RANGE(ny, sy, fs->dsy)
-	GET_CELL_RANGE(nz, sz, fs->dsz)
-	ierr = FDSTAGGetLocalBox(fs, NULL, NULL, &bz, NULL, NULL, &ez); CHKERRQ(ierr);
-
-	iter = 0;
-	ierr = DMDAVecGetArray(jr->DA_CELL_2D, dlMVVec, &vdlMVVec2); CHKERRQ(ierr);
-	ierr = DMDAVecGetArray(fs->DA_CEN, jr->ldMV ,    &vdlMV);CHKERRQ(ierr);
-	START_STD_LOOP
-	{
-		vdlMVVec2[j][i] += vdlMV[k][j][i];
-	}
-	END_STD_LOOP
-	ierr = DMDAVecRestoreArray(fs->DA_CEN, jr->ldMV  ,   &vdlMV);CHKERRQ(ierr);
-	ierr = DMDAVecRestoreArray(jr->DA_CELL_2D, dlMVVec, &vdlMVVec2); CHKERRQ(ierr);
-
-	LOCAL_TO_GLOBAL(jr->DA_CELL_2D,dlMVVec,dgMVVec);
-
-	if(dsz->nproc != 1 )
-	{
-		ierr = VecGetArray(dgMVVec, &vdgMVVec); CHKERRQ(ierr);
-		ierr = VecGetArray(dgMVVecmerge, &vdgMVVecmerge); CHKERRQ(ierr);
-
-		ierr = MPI_Allreduce(vdgMVVec, vdgMVVecmerge, (PetscMPIInt)(nx*ny), MPIU_SCALAR, MPI_SUM, dsz->comm); CHKERRQ(ierr);
-
-		ierr = VecRestoreArray(dgMVVec, &vdgMVVec); CHKERRQ(ierr);
-		ierr = VecRestoreArray(dgMVVecmerge, &vdgMVVecmerge); CHKERRQ(ierr);
-
-		GLOBAL_TO_LOCAL(jr->DA_CELL_2D, dgMVVecmerge, dlMVVecmerge);
-	}
-	else
-	{
-		ierr = VecCopy(dgMVVec,dgMVVecmerge);  CHKERRQ(ierr);
-		GLOBAL_TO_LOCAL(jr->DA_CELL_2D, dgMVVecmerge, dlMVVecmerge);
-	}
-
-	level = ctrl->DExt;
-
-	// scan all local cells
-	GET_CELL_RANGE(nx, sx, fs->dsx)
-	GET_CELL_RANGE(ny, sy, fs->dsy)
-	GET_CELL_RANGE(nz, sz, fs->dsz)
-	ierr = DMDAVecGetArray(jr->DA_CELL_2D, dlMVVecmerge, &vdlMVVecmerge2); CHKERRQ(ierr);
-	ierr = DMDAVecGetArray(fs->DA_CEN, jr->ldMV ,    &vdlMV);CHKERRQ(ierr);
-	START_PLANE_LOOP
-	{
-		if(vdlMVVecmerge2[j][i] < 0)
+		START_STD_LOOP
 		{
-			// check whether point belongs to domain
-			if(level >= bz && level < ez)
-			{
-				// find containing cell
-				K = FindPointInCell(dsz->ncoor, 0, dsz->ncels, level);
+			vdgmvvec2[L][j][i] += Mipbuff[k][j][i];
+		}
+		END_STD_LOOP
+		ierr = DMDAVecRestoreArray(fs->DA_CEN, jr->Miphase  , &Mipbuff)     ; CHKERRQ(ierr);
+		ierr = DMDAVecRestoreArray(jr->DA_CELL_2D, dgmvvec, &vdgmvvec2)     ; CHKERRQ(ierr);
 
-				// interpolate velocity
-				vdlMV[sz+K][j][i] = -vdlMVVecmerge2[j][i];
+		if(dsz->nproc != 1 )
+		{
+			ierr = VecGetArray(dgmvvec, &vdgmvvec)           ; CHKERRQ(ierr);
+			ierr = VecGetArray(dgmvvecmerge, &vdgmvvecmerge) ; CHKERRQ(ierr);
+
+			ierr = MPI_Allreduce(vdgmvvec, vdgmvvecmerge, (PetscMPIInt)(nx*ny), MPIU_SCALAR, MPI_SUM, dsz->comm); CHKERRQ(ierr);
+
+			ierr = VecRestoreArray(dgmvvec, &vdgmvvec); CHKERRQ(ierr);
+			ierr = VecRestoreArray(dgmvvecmerge, &vdgmvvecmerge); CHKERRQ(ierr);
+		}
+		else
+		{
+			ierr = VecCopy(dgmvvec,dgmvvecmerge);  CHKERRQ(ierr);
+		}
+		// scan all local cells
+		GET_CELL_RANGE(nx, sx, fs->dsx)
+		GET_CELL_RANGE(ny, sy, fs->dsy)
+		GET_CELL_RANGE(nz, sz, fs->dsz)
+		START_PLANE_LOOP
+		{
+			if(vdgmvvecmerge2[j][i] < 0)
+			{
+				// check whether point belongs to domain
+				if(level >= bz && level < ez)
+				{
+					// find containing cell
+					K = FindPointInCell(dsz->ncoor, 0, dsz->ncels, level);
+
+					// interpolate velocity
+					Mipbuff[sz+K][j][i] = -vdgmvvecmerge2[j][i];
+				}
 			}
 		}
-	}
-	END_PLANE_LOOP
-	ierr = DMDAVecRestoreArray(jr->DA_CELL_2D, dlMVVecmerge, &vdlMVVecmerge2); CHKERRQ(ierr);
-	ierr = DMDAVecRestoreArray(fs->DA_CEN, jr->ldMV ,    &vdlMV);CHKERRQ(ierr);
-	LOCAL_TO_GLOBAL(jr->DA_CELL_2D, dlMVVecmerge, dgMVVecmerge);
+		END_PLANE_LOOP
+		ierr = DMDAVecRestoreArray(jr->DA_CELL_2D, dgmvvecmerge, &vdgmvvecmerge2); CHKERRQ(ierr);
+		ierr = DMDAVecRestoreArray(fs->DA_CEN, jr->Miphase ,    &Mipbuff)        ; CHKERRQ(ierr);
 
+/*		// Finally bring it back to the center nodes
+		START_STD_LOOP
+		{
+			// access solution variables
+			svCell = &jr->svCell[iter++];
 
-	ierr = DMDAVecGetArray(fs->DA_CEN, jr->ldMV ,    &vdlMV);CHKERRQ(ierr);
-	iter = 0;
-	// Finally bring it back to the center nodes
-	START_STD_LOOP
-	{
-		// access solution variables
-		svCell = &jr->svCell[iter++];
-
-		// scan all phases
-		//for(i = 0; i < numPhases; i++)
-		//{
-
-			// update present phases only
-			//if(phRat[i])
+			// scan all phases
+			//for(i = 0; i < numPhases; i++)
 			//{
-				// get reference to material parameters table
-				//mat = &phases[i];
 
-				// Get PD data
-				//if(mat->Pd_rho == 1)
+				// update present phases only
+				//if(phRat[i])
 				//{
-					// Only interpolate positive anomalies (negative was already extracted)
-					if(vdlMV[k][j][i] > 0)
-					{
-						svCell->svBulk.dMF  = vdlMV[k][j][i];
-					}
+					// get reference to material parameters table
+					//mat = &phases[i];
+
+					// Get PD data
+					//if(mat->Pd_rho == 1)
+					//{
+						// Only interpolate positive anomalies (negative was already extracted)
+						if(vdlMV[k][j][i] > 0)
+						{
+							svCell->svBulk.dMF  = vdlMV[k][j][i];
+						}
+					//}
+
 				//}
 
 			//}
 
-		//}
-
-	}END_STD_LOOP
-	ierr = DMDAVecRestoreArray(fs->DA_CEN, jr->ldMV ,    &vdlMV);CHKERRQ(ierr);
-	LOCAL_TO_GLOBAL(fs->DA_CEN, jr->ldMV, jr->gdMV);
+		}END_STD_LOOP
+		ierr = DMDAVecRestoreArray(fs->DA_CEN, jr->ldMV ,    &vdlMV);CHKERRQ(ierr);
+		LOCAL_TO_GLOBAL(fs->DA_CEN, jr->ldMV, jr->gdMV);
+*/
 
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
 #undef __FUNCT__
 #define __FUNCT__ "MeltExtractionInject"
-PetscErrorCode MeltExtractionInject(AdvCtx *actx, AdvVelCtx *vi, PetscInt ID, PetscInt I, PetscInt J, PetscInt K, PetscScalar UP)
-{
+PetscErrorCode MeltExtractionInject(JacRes *jr,AdvCtx *actx, AdvVelCtx *vi, PetscInt ID, PetscInt I, PetscInt J, PetscInt K, PetscScalar UP, PetscInt iphase)
+{ /* 3_b
+   */
 
-	PetscInt    jj, ipn, n, ninj, pind, found, PhInject;
-	PetscScalar xs[3], xe[3], xp[3];
+	PetscInt    jj, ipn, n, ninj, pind, found, PhInject,ii,sind=0;
+	PetscScalar xs[3], xe[3], xp[3],*X,dx[3];
+	PetscScalar x,sumind=0.0;
 	PetscScalar cf_rand;
 	PetscRandom    rctx;
 	Marker      *P;
 	FDSTAG      *fs;
-	Controls    *ctrl;
-	JacRes      *jr;
-
+	Material_t  *phases;
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
 
 	found = 0;
-	jr    = actx->jr;
-	fs    = actx->fs;
-	ctrl  = &jr->ctrl;
+	fs        = actx->fs;
+    phases    = jr->dbm->phases                                ;   // take the phases
 
-	PhInject = ctrl->PhExt;
+	// ATTENTION hard-coded
+	PhInject = phases->PhInt;
+	// ATTENTION hard-coded
+
 
 	// get markers in cell
 	n = vi->markstart[ID+1] - vi->markstart[ID];
@@ -646,10 +705,10 @@ PetscErrorCode MeltExtractionInject(AdvCtx *actx, AdvVelCtx *vi, PetscInt ID, Pe
 			ierr = PetscRandomGetValueReal(rctx, &cf_rand); CHKERRQ(ierr);
 			xp[2] = (xe[2] - xs[2]) * cf_rand + xs[2];
 
-			/*// calculate the closest (parent marker)
+			// calculate the closest (parent marker)
 			for (ii = 0; ii < n; ii++)
 			{
-				X  = markers[ii].X;
+				X  = actx->markers[ii].X;
 				dx[0] = X[0] - xp[0];
 				dx[1] = X[1] - xp[1];
 				dx[2] = X[2] - xp[2];
@@ -657,15 +716,15 @@ PetscErrorCode MeltExtractionInject(AdvCtx *actx, AdvVelCtx *vi, PetscInt ID, Pe
 
 				if (ii == 0)    { sumind = x; sind = ii; }
 				if (x < sumind) { sumind = x; sind = ii; }
-			}*/
+			}
 
 			// create new marker
 			// actx->recvbuf[ipn]      = markers[sind];
 
 			// hard-coded new marker properties for debugging
 			actx->recvbuf[ipn].phase = PhInject;
-			actx->recvbuf[ipn].p = 10000;
-			actx->recvbuf[ipn].T = 10000;
+			actx->recvbuf[ipn].p = actx->markers[sind].p;
+			actx->recvbuf[ipn].T = phases->TInt;
 			actx->recvbuf[ipn].APS = 5;
 			actx->recvbuf[ipn].Mtot = 0;
 
@@ -716,18 +775,5 @@ PetscErrorCode MeltExtractionInject(AdvCtx *actx, AdvVelCtx *vi, PetscInt ID, Pe
 	}
 	PetscFunctionReturn(0);
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+//----------------------------------------------------------------------------------------------------------------------------------------//
 

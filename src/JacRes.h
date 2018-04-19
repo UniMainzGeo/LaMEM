@@ -183,7 +183,6 @@ struct Controls
 
 	PetscInt    getPermea;     // effective permeability computation activation flag
 
-	PetscScalar DExt, PhExt;
 };
 
 //---------------------------------------------------------------------------
@@ -248,8 +247,8 @@ struct JacRes
 	PData       *Pd;
 
 	// Melt extraction
-	Vec   gdMV, gdMVmerge;
-	Vec   ldMV;
+	Vec   gdMV, gdMVmerge,gdMoho, gdMohomerge;
+	Vec   ldMV,ldMoho,Miphase;
 	Vec   gdc, ldc;
 
 	//=======================

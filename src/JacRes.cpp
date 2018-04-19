@@ -319,13 +319,6 @@ PetscErrorCode JacResCreate(JacRes *jr, FB *fb)
 	ctrl->tauUlt      /=  scal->stress_si;
 	ctrl->rho_fluid   /=  scal->density;
 	ctrl->gwLevel     /=  scal->length;
-
-	// Melt extraction
-	ctrl->DExt = 0;
-	ierr = getScalarParam(fb,_OPTIONAL_,"PhExt",      &ctrl->PhExt,  1, 1.0); CHKERRQ(ierr);
-	ierr = getScalarParam(fb,_OPTIONAL_,"DExt",       &ctrl->DExt,   1, 1.0); CHKERRQ(ierr);
-	ctrl->DExt     /=  scal->length;
-
 	// set inverse of maximum viscosity
 	if(input_eta_max) ctrl->inv_eta_max = 1.0/input_eta_max;
 
