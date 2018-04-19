@@ -542,7 +542,7 @@ PetscErrorCode VolConstEq(
 	// Evaluate volumetric constitutive equations in control volume
 	PetscInt     i;
 	Material_t  *mat;
-	PetscScalar  cf_comp, cf_therm, Kavg, rho;
+	PetscScalar  cf_comp, cf_therm, Kavg, rho,mfeff;
 
 	PetscFunctionBegin;
 
@@ -571,14 +571,35 @@ PetscErrorCode VolConstEq(
 				// Get the data from phase diagram
 				SetDataPhaseDiagram(pd, p, T, 0, mat->pdn);
 				svBulk->rho_pd  = pd->rho;
-				/*if (pd->mf > phases[i].Mtrs)
+				/* Compute the volume extracted as function of the phase material properties;
+				 * 1)Compute the effective quantity of melt: meff=M(phase_diagram)-Total_melt extracted;
+				 * 2)If mfeff is less than zero, it is zero (we cannot have less mass);
+				 * 3)If mfeff is higher than the threshold value stored in the material properties, do the extraction;
+				 *      3a):update the total amount of melt extracted in that node;
+				 *      3b):set the actual value of melt fraction equal to the minimum amount of melt that remains in the source
+				 * 4)In case the previous condition are not met, do not update the dMdF & put the effective melt quantity equal to the svBulk
+				 * [# Issue: if there is any melt to extract in that nodes, the information would be lost, overestimating the melt extraction for
+				 * that phase in this particular node & lowering this value for the phases that actually has melt phRat*Mv+...phRat*0. Since
+				 * in the melt extraction routine has only the final value, not the whole set of values. One possible strategy is to create an additional
+				 * svBulk variables, which saves the phRat of the effective melt. The best solution is to introduce an other svBulk variable: svBulk->phME that
+				 * clearly states that a phase(ii) has contribuite to the melt extraction;]
+				 */
+				mfeff = pd->mf-svBulk->mfextot;// historical variables
+				if (mfeff<0) mfeff=0;          //Correction
+				if( mfeff>phases[i].Mtrs)
 				{
-					pd->mf       = phases[i].Mleft;
-				}*/
-				svBulk->dMF    -= phRat[i] * ((pd->mf - svBulk->mfextot)-phases[i].Mleft);
-				svBulk->mf     += phRat[i] * ( pd->mf-svBulk->mfextot);
-				svBulk->rho_pf += phRat[i] *   pd->rho_f;
-			}
+					svBulk->dMF    += phRat[i] * (mfeff-phases[i].Mleft);
+//                  svBulk->mf     += phRat[i] * ( pd->mf-svBulk->mfextot);
+					svBulk->mf      = phRat[i] * (phases[i].Mleft);
+				}
+				else
+				{
+					svBulk->dMF    += phRat[i] * 0;
+					svBulk->mf     += phRat[i]*mfeff;
+	             }
+		     }
+				svBulk->rho_pf += phRat[i] * pd->rho_f;
+
 
 			// initialize
 			cf_comp  = 1.0;
