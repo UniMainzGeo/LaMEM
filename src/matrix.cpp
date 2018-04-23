@@ -618,7 +618,7 @@ PetscErrorCode PMatMonoAssemble(PMat pm)
 	PetscInt    idx[7];
 	PetscScalar v[49];
 	PetscInt    mcx, mcy, mcz;
-	PetscInt    iter, i, j, k, nx, ny, nz, sx, sy, sz;
+	PetscInt    iter, i, j, k, nx, ny, nz, sx, sy, sz, rescal, dr;
 	PetscScalar eta, rho, IKdt, diag, pgamma, pt, dt, fssa, *grav;
 	PetscScalar dx, dy, dz, bdx, fdx, bdy, fdy, bdz, fdz;
 	PetscScalar ***ivx, ***ivy, ***ivz, ***ip;
@@ -637,9 +637,10 @@ PetscErrorCode PMatMonoAssemble(PMat pm)
 	P      = (PMatMono*)pm->data;
 
 	// get density gradient stabilization parameters
-	dt   = jr->ts->dt; // time step
-	fssa = jr->ctrl.FSSA;   // density gradient penalty parameter
-    grav = jr->ctrl.grav;   // gravity acceleration
+	dt     = jr->ts->dt;      // time step
+	fssa   = jr->ctrl.FSSA;   // density gradient penalty parameter
+    grav   = jr->ctrl.grav;   // gravity acceleration
+    rescal = jr->ctrl.rescal; // stencil rescling flag
 
 	// get penalty parameter
 	pgamma = pm->pgamma;
@@ -762,6 +763,16 @@ PetscErrorCode PMatMonoAssemble(PMat pm)
 		bdx = SIZE_CELL(i-1, sx, fs->dsx);   fdx = SIZE_CELL(i, sx, fs->dsx);
 		bdy = SIZE_CELL(j-1, sy, fs->dsy);   fdy = SIZE_CELL(j, sy, fs->dsy);
 
+		// get boundary constraints
+		pdofidx[0] = 1;   cf[0] = bcvx[k][j-1][i];
+		pdofidx[1] = 0;   cf[1] = bcvx[k][j][i];
+		pdofidx[2] = 3;   cf[2] = bcvy[k][j][i-1];
+		pdofidx[3] = 2;   cf[3] = bcvy[k][j][i];
+
+		// stencil rescaling
+		RESCALE_STECIL(rescal, dx, fdx, bdx, cf[1], cf[0], dr);
+		RESCALE_STECIL(rescal, dy, fdy, bdy, cf[3], cf[2], dr);
+
 		// compute local matrix
 		//       vx_(j-1)             vx_(j)               vy_(i-1)             vy_(i)
 		v[0]  =  eta/dy/bdy; v[1]  = -eta/dy/bdy; v[2]  =  eta/dx/bdy; v[3]  = -eta/dx/bdy; // fx_(j-1) [sxy]
@@ -774,12 +785,6 @@ PetscErrorCode PMatMonoAssemble(PMat pm)
 		idx[1] = (PetscInt) ivx[k][j][i];
 		idx[2] = (PetscInt) ivy[k][j][i-1];
 		idx[3] = (PetscInt) ivy[k][j][i];
-
-		// get boundary constraints
-		pdofidx[0] = 1;   cf[0] = bcvx[k][j-1][i];
-		pdofidx[1] = 0;   cf[1] = bcvx[k][j][i];
-		pdofidx[2] = 3;   cf[2] = bcvy[k][j][i-1];
-		pdofidx[3] = 2;   cf[3] = bcvy[k][j][i];
 
 		// apply two-point constraints on the ghost nodes
 		getTwoPointConstr(4, idx, pdofidx, cf);
@@ -813,6 +818,16 @@ PetscErrorCode PMatMonoAssemble(PMat pm)
 		bdx = SIZE_CELL(i-1, sx, fs->dsx);   fdx = SIZE_CELL(i, sx, fs->dsx);
 		bdz = SIZE_CELL(k-1, sz, fs->dsz);   fdz = SIZE_CELL(k, sz, fs->dsz);
 
+		// get boundary constraints
+		pdofidx[0] = 1;   cf[0] = bcvx[k-1][j][i];
+		pdofidx[1] = 0;   cf[1] = bcvx[k][j][i];
+		pdofidx[2] = 3;   cf[2] = bcvz[k][j][i-1];
+		pdofidx[3] = 2;   cf[3] = bcvz[k][j][i];
+
+		// stencil rescaling
+		RESCALE_STECIL(rescal, dx, fdx, bdx, cf[1], cf[0], dr);
+		RESCALE_STECIL(rescal, dz, fdz, bdz, cf[3], cf[2], dr);
+
 		// compute local matrix
 		//       vx_(k-1)             vx_(k)               vz_(i-1)             vz_(i)
 		v[0]  =  eta/dz/bdz; v[1]  = -eta/dz/bdz; v[2]  =  eta/dx/bdz; v[3]  = -eta/dx/bdz; // fx_(k-1) [sxz]
@@ -825,12 +840,6 @@ PetscErrorCode PMatMonoAssemble(PMat pm)
 		idx[1] = (PetscInt) ivx[k][j][i];
 		idx[2] = (PetscInt) ivz[k][j][i-1];
 		idx[3] = (PetscInt) ivz[k][j][i];
-
-		// get boundary constraints
-		pdofidx[0] = 1;   cf[0] = bcvx[k-1][j][i];
-		pdofidx[1] = 0;   cf[1] = bcvx[k][j][i];
-		pdofidx[2] = 3;   cf[2] = bcvz[k][j][i-1];
-		pdofidx[3] = 2;   cf[3] = bcvz[k][j][i];
 
 		// apply two-point constraints on the ghost nodes
 		getTwoPointConstr(4, idx, pdofidx, cf);
@@ -864,6 +873,16 @@ PetscErrorCode PMatMonoAssemble(PMat pm)
 		bdy = SIZE_CELL(j-1, sy, fs->dsy);   fdy = SIZE_CELL(j, sy, fs->dsy);
 		bdz = SIZE_CELL(k-1, sz, fs->dsz);   fdz = SIZE_CELL(k, sz, fs->dsz);
 
+		// get boundary constraints
+		pdofidx[0] = 1;   cf[0] = bcvy[k-1][j][i];
+		pdofidx[1] = 0;   cf[1] = bcvy[k][j][i];
+		pdofidx[2] = 3;   cf[2] = bcvz[k][j-1][i];
+		pdofidx[3] = 2;   cf[3] = bcvz[k][j][i];
+
+		// stencil rescaling
+		RESCALE_STECIL(rescal, dy, fdy, bdy, cf[1], cf[0], dr);
+		RESCALE_STECIL(rescal, dz, fdz, bdz, cf[3], cf[2], dr);
+
 		// compute local matrix
 		//       vy_(k-1)             vy_(k)               vz_(j-1)             vz_(j)
 		v[0]  =  eta/dz/bdz; v[1]  = -eta/dz/bdz; v[2]  =  eta/dy/bdz; v[3]  = -eta/dy/bdz; // fy_(k-1) [syz]
@@ -876,12 +895,6 @@ PetscErrorCode PMatMonoAssemble(PMat pm)
 		idx[1] = (PetscInt) ivy[k][j][i];
 		idx[2] = (PetscInt) ivz[k][j-1][i];
 		idx[3] = (PetscInt) ivz[k][j][i];
-
-		// get boundary constraints
-		pdofidx[0] = 1;   cf[0] = bcvy[k-1][j][i];
-		pdofidx[1] = 0;   cf[1] = bcvy[k][j][i];
-		pdofidx[2] = 3;   cf[2] = bcvz[k][j-1][i];
-		pdofidx[3] = 2;   cf[3] = bcvz[k][j][i];
 
 		// apply two-point constraints on the ghost nodes
 		getTwoPointConstr(4, idx, pdofidx, cf);

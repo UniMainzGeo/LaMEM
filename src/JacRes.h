@@ -175,6 +175,8 @@ struct Controls
 	PetscScalar gwLevel;       // fixed ground water level
 
 	PetscInt    getPermea;     // effective permeability computation activation flag
+	PetscInt    rescal;        // stensil rescaling flag (for interval constraints)
+
 };
 
 //---------------------------------------------------------------------------

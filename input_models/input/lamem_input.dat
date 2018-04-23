@@ -243,6 +243,7 @@
 	gw_level        = 10.0           # ground water level at the free surface (if defined)
 	biot            = 0.7            # Biot pressure parameer
 	get_permea      = 1              # effective permeability computation activation flag
+	rescal          = 1              # stensil rescaling flag (for interval constraints)
 
 # Groundwater level type specification:
 
