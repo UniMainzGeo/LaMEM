@@ -130,16 +130,16 @@ public:
 	char         pdf[max_name];   // Unique phase diagram number
 	PetscInt     Pd_rho;          // density from phase diagram?
 	// MeltExtraction Parameter
-	PetscScalar Mtrs;          // Threshold melt extractio                   []
+	PetscScalar Mtrs;          // Threshold melt extraction                   []
 	PetscScalar Mleft;         // Minimum amount of melt left in the source  []
 	PetscScalar Mmax;          // Maximum Melt extractable from phase        []
 	PetscScalar RelInt;        // Relative amount of intrusion               []
-	PetscScalar TInt;          // Temperature of the intrusion               []
-	PetscScalar TExt;          // Temperature of extrusion                   []
-	PetscInt 	PhInt;         // Phase Id of the intrusion                  [deg C]
-	PetscInt	PhExt;         // Phase Id of the effusion                   [deg C]
-	PetscScalar DInt;          // Depth of intrusion
-	PetscScalar DExt;          // Depth of intrusion
+	PetscScalar TInt;          // Temperature of the intrusion               [Deg C]
+	PetscScalar TExt;          // Temperature of extrusion                   [Deg C]
+	PetscInt 	PhInt;  // Phase Id of the intrusion                  []
+	PetscInt	PhExt;  // Phase Id of the effusion                   []
+	PetscScalar DInt;          // Depth of intrusion                         [m]
+	PetscScalar DExt;          // Depth of intrusion                         [m]
 	PetscScalar pMant;         // Specify if a phase is mantle or not [0 or 1]
 };
 

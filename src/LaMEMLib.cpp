@@ -228,7 +228,7 @@ PetscErrorCode LaMEMLibCreate(LaMEMLib *lm, void *param )
 	ierr = PVAVDCreate(&lm->pvavd, fb); CHKERRQ(ierr);
 
 	// Create melt extraction context
-	ierr = MeltExtractionCreate(&lm->jr);
+	ierr = MeltExtractionCreate(&lm->jr,fb);
 
 	// destroy file buffer
 	ierr = FBDestroy(&fb); CHKERRQ(ierr);
@@ -672,7 +672,7 @@ PetscErrorCode LaMEMLibSolve(LaMEMLib *lm, void *param)
 		//==================
 
 		// Save the melt extraction parameters in local vectors
-        ierr = MeltExtractionSave(&lm->jr);
+        ierr = MeltExtractionSave(&lm->actx,&lm->jr);
 
 		// Interpolate the history variables for the melt extraction and inject new markers based on volume
 

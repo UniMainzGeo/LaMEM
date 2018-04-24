@@ -97,6 +97,7 @@ struct SolVarBulk
 	PetscScalar  mfextot;// Total Melt extracted from a node
 	PetscScalar  mfVol; // Total Melt Extracted from a a nodes
 	PetscScalar  dMF;
+	PetscScalar  Vol;   //Volume changes to send to the continuity equation
 };
 
 //---------------------------------------------------------------------------
@@ -250,7 +251,7 @@ struct JacRes
 	Vec   gdMV, gdMVmerge,gdMoho, gdMohomerge;
 	Vec   ldMV,ldMoho,Miphase;
 	Vec   gdc, ldc;
-
+	Vec   Vol;
 	//=======================
 	// temperature parameters
 	//=======================

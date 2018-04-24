@@ -185,7 +185,7 @@ PetscErrorCode DBMatReadPhase(DBMat *dbm, FB *fb)
 	Scaling    *scal;
 	Material_t *m;
 	PetscInt    ID = -1, chSoftID, frSoftID, MSN, print_title, j;
-	PetscInt 	StringLength;
+	PetscInt 	StringLength, maxphase;
 	PetscScalar eta, eta0, e0, K, G, E, nu, Vp, Vs;
 	char        ndiff[_STR_LEN_], ndisl[_STR_LEN_], npeir[_STR_LEN_], title[_STR_LEN_], PhaseDiagram[_STR_LEN_], PhaseDiagram_Dir[_STR_LEN_];
 	
@@ -209,6 +209,7 @@ PetscErrorCode DBMatReadPhase(DBMat *dbm, FB *fb)
 	chSoftID = -1;
 	frSoftID = -1;
 	MSN      =  dbm->numSoft - 1;
+	maxphase =  dbm->numPhases-1;
 
 	// phase ID
 	ierr = getIntParam(fb, _REQUIRED_, "ID", &ID, 1, dbm->numPhases-1); CHKERRQ(ierr);
@@ -340,8 +341,8 @@ PetscErrorCode DBMatReadPhase(DBMat *dbm, FB *fb)
 	ierr = getScalarParam(fb,_OPTIONAL_,"RelInt",     &m->RelInt,1, 1.0); CHKERRQ(ierr);
 	ierr = getScalarParam(fb,_OPTIONAL_,"TInt",       &m->TInt,  1, 1.0); CHKERRQ(ierr);
 	ierr = getScalarParam(fb,_OPTIONAL_,"TExt",       &m->TExt,  1, 1.0); CHKERRQ(ierr);
-	ierr = getIntParam   (fb,_OPTIONAL_,"PhInt",      &m->PhInt, 1, 1.0); CHKERRQ(ierr);
-	ierr = getIntParam   (fb,_OPTIONAL_,"PhExt",      &m->PhExt, 1, 1.0); CHKERRQ(ierr);
+	ierr = getIntParam   (fb,_OPTIONAL_,"PhInt",      &m->PhInt, 1, maxphase); CHKERRQ(ierr);
+	ierr = getIntParam   (fb,_OPTIONAL_,"PhExt",      &m->PhExt, 1, maxphase); CHKERRQ(ierr);
 	ierr = getScalarParam(fb,_OPTIONAL_,"DInt",       &m->DInt,  1, 1.0); CHKERRQ(ierr);
 	ierr = getScalarParam(fb,_OPTIONAL_,"DExt",       &m->DExt,  1, 1.0); CHKERRQ(ierr);
 	ierr = getScalarParam(fb,_OPTIONAL_,"pMant",      &m->pMant, 1, 1.0); CHKERRQ(ierr);
