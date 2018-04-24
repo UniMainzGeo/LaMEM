@@ -49,7 +49,7 @@ mode = opt
 #====================================================
 
 # Define LaMEM flags & include directories
-LAMEM_FLAGS = -I./fdstag -I.
+#LAMEM_FLAGS = -I./fdstag -I.
 
 #====================================================
 

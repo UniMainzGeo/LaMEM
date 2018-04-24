@@ -670,6 +670,8 @@ PetscErrorCode AdjointOptimisationTAO(Tao tao, Vec P, PetscReal *F, Vec grad, vo
 	ModParam    *IOparam;
 	IOparam     = (ModParam*)ctx;
 
+	if(tao) tao = NULL;
+
 	// get parameter values
 	VecDuplicate(P,&IOparam->P);
 	VecCopy(P,IOparam->P);

@@ -617,8 +617,9 @@ PetscErrorCode PMatMonoAssemble(PMat pm)
 	PMatMono    *P;
 	PetscInt    idx[7];
 	PetscScalar v[49];
+	PetscScalar dr;
 	PetscInt    mcx, mcy, mcz;
-	PetscInt    iter, i, j, k, nx, ny, nz, sx, sy, sz, rescal, dr;
+	PetscInt    iter, i, j, k, nx, ny, nz, sx, sy, sz, rescal;
 	PetscScalar eta, rho, IKdt, diag, pgamma, pt, dt, fssa, *grav;
 	PetscScalar dx, dy, dz, bdx, fdx, bdy, fdy, bdz, fdz;
 	PetscScalar ***ivx, ***ivy, ***ivz, ***ip;
@@ -640,7 +641,7 @@ PetscErrorCode PMatMonoAssemble(PMat pm)
 	dt     = jr->ts->dt;      // time step
 	fssa   = jr->ctrl.FSSA;   // density gradient penalty parameter
     grav   = jr->ctrl.grav;   // gravity acceleration
-    rescal = jr->ctrl.rescal; // stencil rescling flag
+    rescal = jr->ctrl.rescal; // stencil rescaling flag
 
 	// get penalty parameter
 	pgamma = pm->pgamma;
@@ -770,8 +771,8 @@ PetscErrorCode PMatMonoAssemble(PMat pm)
 		pdofidx[3] = 2;   cf[3] = bcvy[k][j][i];
 
 		// stencil rescaling
-		RESCALE_STECIL(rescal, dx, fdx, bdx, cf[1], cf[0], dr);
-		RESCALE_STECIL(rescal, dy, fdy, bdy, cf[3], cf[2], dr);
+		RESCALE_STENCIL(rescal, dx, fdx, bdx, cf[1], cf[0], dr);
+		RESCALE_STENCIL(rescal, dy, fdy, bdy, cf[3], cf[2], dr);
 
 		// compute local matrix
 		//       vx_(j-1)             vx_(j)               vy_(i-1)             vy_(i)
@@ -825,8 +826,8 @@ PetscErrorCode PMatMonoAssemble(PMat pm)
 		pdofidx[3] = 2;   cf[3] = bcvz[k][j][i];
 
 		// stencil rescaling
-		RESCALE_STECIL(rescal, dx, fdx, bdx, cf[1], cf[0], dr);
-		RESCALE_STECIL(rescal, dz, fdz, bdz, cf[3], cf[2], dr);
+		RESCALE_STENCIL(rescal, dx, fdx, bdx, cf[1], cf[0], dr);
+		RESCALE_STENCIL(rescal, dz, fdz, bdz, cf[3], cf[2], dr);
 
 		// compute local matrix
 		//       vx_(k-1)             vx_(k)               vz_(i-1)             vz_(i)
@@ -880,8 +881,8 @@ PetscErrorCode PMatMonoAssemble(PMat pm)
 		pdofidx[3] = 2;   cf[3] = bcvz[k][j][i];
 
 		// stencil rescaling
-		RESCALE_STECIL(rescal, dy, fdy, bdy, cf[1], cf[0], dr);
-		RESCALE_STECIL(rescal, dz, fdz, bdz, cf[3], cf[2], dr);
+		RESCALE_STENCIL(rescal, dy, fdy, bdy, cf[1], cf[0], dr);
+		RESCALE_STENCIL(rescal, dz, fdz, bdz, cf[3], cf[2], dr);
 
 		// compute local matrix
 		//       vy_(k-1)             vy_(k)               vz_(j-1)             vz_(j)

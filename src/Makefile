@@ -40,12 +40,6 @@
 #
 #==============================================================================
 
-# Include platform-specific constants
-
-include Makefile.in
-
-#====================================================
-
 # Include PETSc library
 # You must set the environmental variables
 #  PETSC_DEB = /directory/where/petsc debug/is/installed
@@ -61,6 +55,12 @@ ifeq ($(mode), deb)
 else ifeq ($(mode), opt)
 	PETSC_DIR = ${PETSC_OPT}
 endif
+
+#====================================================
+
+# Include platform-specific constants
+
+include Makefile.in
 
 #====================================================
 # Check whether the environmental variables are correctly set

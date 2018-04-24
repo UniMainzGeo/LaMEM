@@ -185,7 +185,7 @@ PetscErrorCode DBMatReadPhase(DBMat *dbm, FB *fb)
 	Scaling    *scal;
 	Material_t *m;
 	PetscInt    ID = -1, chSoftID, frSoftID, MSN, print_title;
-	PetscInt 	StringLength;
+	size_t 	    StringLength;
 	PetscScalar eta, eta0, e0, K, G, E, nu, Vp, Vs;
 	char        ndiff[_STR_LEN_], ndisl[_STR_LEN_], npeir[_STR_LEN_], title[_STR_LEN_], PhaseDiagram[_STR_LEN_], PhaseDiagram_Dir[_STR_LEN_];
 	
@@ -241,7 +241,8 @@ PetscErrorCode DBMatReadPhase(DBMat *dbm, FB *fb)
 		
 		// Get the directory of the phase diagram if specified
 		ierr = getStringParam(fb, _OPTIONAL_, "rho_ph_file", PhaseDiagram_Dir, "none"); CHKERRQ(ierr);
-		if(strcmp(PhaseDiagram_Dir, "none")){
+		if(strcmp(PhaseDiagram_Dir, "none"))
+		{
 			StringLength = StringLength + strlen(PhaseDiagram_Dir);	
 			strcpy(m->pdf, PhaseDiagram_Dir);
 		}
