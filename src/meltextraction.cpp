@@ -123,6 +123,8 @@ PetscErrorCode MeltExtractionDestroy(JacRes *jr)
 	ierr = VecDestroy(&jr->gdc);            CHKERRQ(ierr);
 	ierr = VecDestroy(&jr->ldc);            CHKERRQ(ierr);
 	ierr = VecDestroy(&jr->ldMoho);         CHKERRQ(ierr);
+	ierr = VecDestroy(&jr->gdMoho);         CHKERRQ(ierr);
+	ierr = VecDestroy(&jr->gdMohomerge);    CHKERRQ(ierr);
 	ierr = VecDestroy(&jr->Miphase);		CHKERRQ(ierr);
 	ierr = VecDestroy(&jr->Vol);		CHKERRQ(ierr);
 
@@ -140,7 +142,7 @@ PetscErrorCode MeltExtractionSave(AdvCtx *actx, JacRes *jr)
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
 
-	PetscScalar  ***ldMV,***Mipbuff,***Volume                  ;   // 3D structure storing the melt that has been extracted
+	PetscScalar  ***Mipbuff,***Volume                  ;   // 3D structure storing the melt that has been extracted
 	PetscInt      i, j, k, nx, ny, nz, sx, sy, sz, iter, iphase;   // Iteration
 	SolVarBulk   *svBulk                                       ;   // pointer 2 the solution variable defined as "bulk cell properties"
 	SolVarCell   *svCell                                       ;   // pointer 2 the Solution variable defined in the cell
@@ -528,8 +530,6 @@ PetscErrorCode MeltExtractionExchangeVolume(JacRes *jr, PetscInt iphase)
 {
 	    FDSTAG      *fs                                                          ;
 		Discret1D   *dsz                                                         ;
-		SolVarCell  *svCell                                                      ;
-		Controls    *ctrl                                                        ;
 		PetscInt     i, j, k, K, sx, sy, sz, nx, ny, nz, iter,L                  ;
 		Vec          dgmvvec, dgmvvecmerge                                       ;
 		PetscScalar  bz, ez                                                      ;
@@ -542,7 +542,6 @@ PetscErrorCode MeltExtractionExchangeVolume(JacRes *jr, PetscInt iphase)
 		// access context
 		fs     = jr->fs                       ;
 		dsz    = &fs->dsz                     ;
-		ctrl   = &jr->ctrl                    ;
 		L      = (PetscInt)fs->dsz.rank       ; // rank of the processor
 		phases = jr->dbm->phases              ;
 		level  = phases[iphase].DInt/jr->scal->length; // It has to be modified
@@ -609,7 +608,6 @@ PetscErrorCode MeltExtractionExchangeVolume(JacRes *jr, PetscInt iphase)
 
 					// interpolate velocity
 					Mipbuff[sz+K][j][i] = -IR*vdgmvvecmerge2[L][j][i];
-					PetscPrintf(PETSC_COMM_WORLD, "Mipbuff=%.20f ",Mipbuff[sz+K][j][i]);
 				}
 			}
 		}
@@ -634,7 +632,6 @@ PetscErrorCode MeltExtractionInject(JacRes *jr,AdvCtx *actx, AdvVelCtx *vi, Pets
 	FDSTAG      *fs;
 	Material_t  *phases;
 	PetscErrorCode ierr;
-	Scaling    *scal;
 	PetscFunctionBegin;
 
 	found = 0;
@@ -773,44 +770,94 @@ PetscErrorCode MeltExtractionInject(JacRes *jr,AdvCtx *actx, AdvVelCtx *vi, Pets
 	PetscFunctionReturn(0);
 }
 //----------------------------------------------------------------------------------------------------------------------------------------//
-/*#undef __FUNCT__
+#undef __FUNCT__
 #define __FUNCT__ "Moho_Tracking"
 PetscErrorCode Moho_Tracking(JacRes *jr)
 {
-	// based on Melt exchange
-	FDSTAG      *fs                                                          ;
-	Discret1D   *dsz                                                         ;
-	SolVarCell  *svCell                                                      ;
-	Controls    *ctrl                                                        ;
-	PetscInt     i, j, k, K, sx, sy, sz, nx, ny, nz, iter,L                  ;
-	Vec          dgmvvec, dgmvvecmerge                                       ;
-	PetscScalar  bz, ez                                                      ;
-	PetscScalar  level, IR                                                   ;
-	PetscScalar  *vdgmvvec, *vdgmvvecmerge, **vdgmvvecmerge2, ***vdgmvvec2, ***vdgmv, ***Mipbuff ;
-	Material_t   *phases  ;
-	PetscScalar  *phRat	;
+	        FDSTAG      *fs                                                          ;
+			Discret1D   *dsz                                                         ;
+			Vec          MantPhase;
+			PetscInt     i, j, k, sx, sy, sz, nx, ny, nz, iter,L,numPhases,ii;
+			PetscScalar  bz, ez                                                      ;
+			PetscScalar  ***Mohovec2, ***MantP ;
+			Material_t   *phases                                                     ;         // Phases
+			PetscScalar  *phRat;
 
-	// access context
-	fs     = jr->fs	;
-	dsz    = &fs->dsz	;
-	ctrl   = &jr->ctrl	;
-	L      = (PetscInt)fs->dsz.rank ; // rank of the processor
-	phases = jr->dbm->phases;
+			PetscErrorCode ierr;
+			PetscFunctionBegin;
 
-	// Loop over the nodes to find where there is mantle phases
+			// access context
+			fs     = jr->fs                       ;
+			dsz    = &fs->dsz                     ;
+			L      = (PetscInt)fs->dsz.rank       ; // rank of the processor
+			phases = jr->dbm->phases              ;
+			numPhases = jr->dbm->numPhases        ;   // take the number of phases from dbm structures
+			// get local coordinate bounds
+			ierr = FDSTAGGetLocalBox(fs, NULL, NULL, &bz, NULL, NULL, &ez); CHKERRQ(ierr);
 
-	// Loop to find threshold mantle phase = 0
-
-	// Merge the information into a 2D grid
+			// create column communicator
 
 
+			// Moho Tracking is called before the melt extraction. Each time all the vector are initialised as zero vector
+			// such that all the information are related to the current time step. NB: this function is called only once
+			// so it will not store any information of the changes of the composition occuring for the melt extraction
+
+			//ierr = VecZeroEntries   (MantPhase)                       ; CHKERRQ(ierr);
+			ierr = DMDAVecGetArray  (fs->DA_CEN,MantPhase, &MantP)    ; CHKERRQ(ierr);
+			ierr = VecZeroEntries   (MantPhase)                       ; CHKERRQ(ierr);
+
+			GET_CELL_RANGE(nx, sx, fs->dsx)
+			GET_CELL_RANGE(ny, sy, fs->dsy)
+			GET_CELL_RANGE(nz, sz, fs->dsz)
+
+			iter = 0;
+
+			// Sum all the mantle phase contribution [0-1]
+
+			START_STD_LOOP{
+			phRat     = jr->svCell[iter++].phRat            ;     // take phase ratio on the central node
+			for(ii=0;ii<numPhases;ii++)
+			{
+				if(phases[ii].pMant==1)
+				{
+					MantP[k][j][i] += phRat[ii];
+				}
+			}
+			}END_STD_LOOP
+            ierr =DMDAVecRestoreArray(fs->DA_CEN,MantPhase,&MantP); CHKERRQ(ierr);
+
+			ierr = VecZeroEntries   (jr->gdMoho)                             ; CHKERRQ(ierr);
+			ierr = VecZeroEntries   (jr->gdMohomerge)                        ; CHKERRQ(ierr);
 
 
+			ierr = Discret1DGetColumnComm(dsz); CHKERRQ(ierr);
+			// scan all local cells
+			GET_CELL_RANGE(nx, sx, fs->dsx)
+			GET_CELL_RANGE(ny, sy, fs->dsy)
+			GET_CELL_RANGE(nz, sz, fs->dsz)
+			ierr = FDSTAGGetLocalBox(fs, NULL, NULL, &bz, NULL, NULL, &ez) ; CHKERRQ(ierr);
+			ierr = DMDAVecGetArray(jr->DA_CELL_2D, jr->gdMoho, &Mohovec2)    ; CHKERRQ(ierr);
+			ierr = DMDAVecGetArray(jr->DA_CELL_2D, MantPhase, &MantP)    ; CHKERRQ(ierr);
+			iter = 0 ;
+
+			START_STD_LOOP
+			{
+				if(MantP[k][j][i]>0)
+				{
+					  // find containing cell
+                  Mohovec2[L][j][i] =COORD_NODE(k, sz, fs->dsz) ;
+
+				}
+			}END_STD_LOOP
+			ierr = DMDAVecRestoreArray(fs->DA_CEN, MantPhase , &MantP)     ; CHKERRQ(ierr);
+			ierr = DMDAVecRestoreArray(jr->DA_CELL_2D, jr->gdMoho, &Mohovec2)     ; CHKERRQ(ierr);
+
+		PetscFunctionReturn(0);
 
 
-
-
-	PetscFunctionReturn(0);
 }
 
-*/
+
+
+
+
