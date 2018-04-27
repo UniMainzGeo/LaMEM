@@ -771,8 +771,8 @@ PetscErrorCode PMatMonoAssemble(PMat pm)
 		pdofidx[3] = 2;   cf[3] = bcvy[k][j][i];
 
 		// stencil rescaling
-		RESCALE_STENCIL(rescal, dx, fdx, bdx, cf[1], cf[0], dr);
-		RESCALE_STENCIL(rescal, dy, fdy, bdy, cf[3], cf[2], dr);
+		RESCALE_STENCIL(rescal, dx, fdx, bdx, cf[3], cf[2], dr);
+		RESCALE_STENCIL(rescal, dy, fdy, bdy, cf[1], cf[0], dr);
 
 		// compute local matrix
 		//       vx_(j-1)             vx_(j)               vy_(i-1)             vy_(i)
@@ -826,8 +826,8 @@ PetscErrorCode PMatMonoAssemble(PMat pm)
 		pdofidx[3] = 2;   cf[3] = bcvz[k][j][i];
 
 		// stencil rescaling
-		RESCALE_STENCIL(rescal, dx, fdx, bdx, cf[1], cf[0], dr);
-		RESCALE_STENCIL(rescal, dz, fdz, bdz, cf[3], cf[2], dr);
+		RESCALE_STENCIL(rescal, dx, fdx, bdx, cf[3], cf[2], dr);
+		RESCALE_STENCIL(rescal, dz, fdz, bdz, cf[1], cf[0], dr);
 
 		// compute local matrix
 		//       vx_(k-1)             vx_(k)               vz_(i-1)             vz_(i)
@@ -881,8 +881,8 @@ PetscErrorCode PMatMonoAssemble(PMat pm)
 		pdofidx[3] = 2;   cf[3] = bcvz[k][j][i];
 
 		// stencil rescaling
-		RESCALE_STENCIL(rescal, dy, fdy, bdy, cf[1], cf[0], dr);
-		RESCALE_STENCIL(rescal, dz, fdz, bdz, cf[3], cf[2], dr);
+		RESCALE_STENCIL(rescal, dy, fdy, bdy, cf[3], cf[2], dr);
+		RESCALE_STENCIL(rescal, dz, fdz, bdz, cf[1], cf[0], dr);
 
 		// compute local matrix
 		//       vy_(k-1)             vy_(k)               vz_(j-1)             vz_(j)
