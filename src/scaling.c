@@ -439,6 +439,7 @@ void ScalingMatProp(Scaling *scal, Material_t *phases, PetscInt numPhases)
 		// plasticity
 		phases[i].ch      /= scal->stress_si;
 		phases[i].fr      /= scal->angle;
+		phases[i].dl      /= scal->angle;
 
 		// temperature
 		phases[i].alpha   /= scal->expansivity;

@@ -146,7 +146,8 @@ PetscErrorCode ADVMarkInit(AdvCtx *actx, UserCtx *user)
 	else if(user->msetup == GEOTH)      { PetscPrintf(PETSC_COMM_WORLD,"%s\n","geoth");           ierr = ADVMarkInitGeoth        (actx, user); CHKERRQ(ierr); }
 	else if(user->msetup == FAULT)      { PetscPrintf(PETSC_COMM_WORLD,"%s\n","fault");           ierr = ADVMarkInitFault        (actx, user); CHKERRQ(ierr); }
 	else if(user->msetup == ROZHKO)     { PetscPrintf(PETSC_COMM_WORLD,"%s\n","rozhko");          ierr = ADVMarkInitRozhko       (actx, user); CHKERRQ(ierr); }
-	else if(user->msetup == PREFRAC)     { PetscPrintf(PETSC_COMM_WORLD,"%s\n","prefrac");        ierr = ADVMarkInitPrefrac       (actx, user); CHKERRQ(ierr); }
+	else if(user->msetup == CON)        { PetscPrintf(PETSC_COMM_WORLD,"%s\n","con");             ierr = ADVMarkInitCon       (actx, user); CHKERRQ(ierr); }
+	else if(user->msetup == PREFRAC)    { PetscPrintf(PETSC_COMM_WORLD,"%s\n","prefrac");         ierr = ADVMarkInitPrefrac       (actx, user); CHKERRQ(ierr); }
 	else if(user->msetup == DOMES)      { PetscPrintf(PETSC_COMM_WORLD,"%s\n","domes");           ierr = ADVMarkInitDomes        (actx, user); CHKERRQ(ierr); }
 	else if(user->msetup == ROTATION)   { PetscPrintf(PETSC_COMM_WORLD,"%s\n","rotation");        ierr = ADVMarkInitRotation     (actx, user); CHKERRQ(ierr); }
 	else if(user->msetup == RESTART)    { PetscPrintf(PETSC_COMM_WORLD,"%s\n","restart");         ierr = BreakReadMark           (actx      ); CHKERRQ(ierr); }
@@ -1306,8 +1307,8 @@ PetscErrorCode ADVMarkInitBands(AdvCtx *actx, UserCtx *user)
 
 		// check inclusion
 		if(use_inc == PETSC_TRUE && z >= Hb && z <= Hb + size
-		&& ((y <= length         && x >= -(offset + size)/2.0 && x <= -(offset - size)/2.0)
-		||  (y >= user->L-length && x >=  (offset - size)/2.0 && x <=  (offset + size)/2.0))){
+		&& ((y <= length         && x >= -(offset + size)/1.0 && x <= -(offset - size)/1.0)
+		||  (y >= user->L-length && x >=  (offset - size)/1.0 && x <=  (offset + size)/1.0))){
 			P->phase = 0;
 		}
 
@@ -1322,6 +1323,85 @@ PetscErrorCode ADVMarkInitBands(AdvCtx *actx, UserCtx *user)
 #define __FUNCT__ "ADVMarkInitRozhko"
 PetscErrorCode ADVMarkInitRozhko(AdvCtx *actx, UserCtx *user)
 {
+	/*Marker     *P;
+	PetscInt    imark;
+	PetscBool   use_inc;
+	PetscScalar H, Hb, size, offset, length, x, y, z, scal, Tshift;
+
+	PetscErrorCode ierr;
+	PetscFunctionBegin;
+
+	scal   = actx->jr->scal.length;
+	Tshift = actx->jr->scal.Tshift;
+
+	// set default values
+	H      = 10.0;               // layer thickness               [km]
+	Hb     = 2.0;                // basal layer thickness         [km]
+	size   = 1.0;                // inclusion size in XZ-plane    [km]
+	offset = 0.0;                // inclusion offset along X axis [km]
+	length = (user->L*scal)/2.0; // inclusion length along Y axis [km]
+
+	// get layer thickness
+	ierr = PetscOptionsGetReal(NULL, NULL, "-H_layer",  &H,  NULL);  CHKERRQ(ierr);
+	ierr = PetscOptionsGetReal(NULL, NULL, "-H_bottom", &Hb, NULL);  CHKERRQ(ierr);
+
+	// get inclusion parameters
+	ierr = PetscOptionsHasName(NULL, NULL, "-Inclusion_use", &use_inc); CHKERRQ(ierr);
+	if(use_inc == PETSC_TRUE)
+	{
+		ierr = PetscOptionsGetReal(NULL, NULL, "-Inclusion_size",   &size,   NULL); CHKERRQ(ierr);
+		ierr = PetscOptionsGetReal(NULL, NULL, "-Inclusion_offset", &offset, NULL); CHKERRQ(ierr);
+		ierr = PetscOptionsGetReal(NULL, NULL, "-Inclusion_length", &length, NULL); CHKERRQ(ierr);
+	}
+
+	// scale
+	H      /= scal;
+	Hb     /= scal;
+	size   /= scal;
+	offset /= scal;
+	length /= scal;
+
+	// loop over local markers
+	for(imark = 0; imark < actx->nummark; imark++)
+	{
+		P = &actx->markers[imark];
+
+		// get coordinates
+		x = P->X[0];
+		y = P->X[1];
+		z = P->X[2];
+
+		// assign phase in layers
+		if     (z >  Hb + H)            {
+			P->phase = 3; // air
+		}
+		else if(z >= Hb && z <= Hb + H) {
+			P->phase = 2; // matrix
+		}
+		else                            {
+			P->phase = 1; // basal layer
+		}
+
+		// check inclusion
+		//if(use_inc == PETSC_TRUE && z >= Hb && z <= Hb + length
+		//&& (x < -2.0*size/3.0 || x >= size/3.0)){
+
+		if(use_inc == PETSC_TRUE && z >= Hb && z <= Hb + length
+					&& (x < -4000.0/151.0/2.0 || x >= 4000.0/151.0/2.0)){
+			P->phase = 1;
+		}
+		//if(use_inc == PETSC_TRUE && z <= Hb + length/2){
+		//			P->phase = 1;
+		//		}
+
+		// assign temperature
+		P->T = Tshift;
+	}
+
+	PetscFunctionReturn(0);*/
+
+
+
 	Marker     *P;
 	PetscInt    imark;
 	PetscBool   use_inc;
@@ -1378,13 +1458,100 @@ PetscErrorCode ADVMarkInitRozhko(AdvCtx *actx, UserCtx *user)
 			P->phase = 1; // matrix
 		}
 		else                            {
-			P->phase = 0; // basal layer
+			P->phase = 3; // basal layer
 		}
 
 		// check inclusion
 		if(use_inc == PETSC_TRUE && z >= Hb && z <= Hb + size
-		&& (x < -size*2 || x > size)){
+		&& ((y <= length         && x >= -(offset + 2*size)/2.0 && x <= -(offset - 2*size)/2.0)
+		||  (y >= user->L-length && x >=  (offset - 2*size)/2.0 && x <=  (offset + 2*size)/2.0))){
 			P->phase = 0;
+		}
+
+
+		if (x >= ((user->W+user->x_left)) - Hb || x <= (-(user->W+user->x_left)) + Hb) {
+			P->phase = 3; // low permeability
+		}
+
+		// assign temperature
+		P->T = Tshift;
+	}
+
+	PetscFunctionReturn(0);
+
+
+
+}
+//---------------------------------------------------------------------------
+#undef __FUNCT__
+#define __FUNCT__ "ADVMarkInitCon"
+PetscErrorCode ADVMarkInitCon(AdvCtx *actx, UserCtx *user)
+{
+	Marker     *P;
+	PetscInt    imark;
+	PetscBool   use_inc;
+	PetscScalar H, Hb, size, offset, length, height, x, y, z, scal, Tshift, radius, center, aux;
+
+	PetscErrorCode ierr;
+	PetscFunctionBegin;
+
+	scal   = actx->jr->scal.length;
+	Tshift = actx->jr->scal.Tshift;
+
+	// set default values
+	H      = 10.0;               // layer thickness               [km]
+	Hb     = 2.0;                // basal layer thickness         [km]
+	size   = 1.0;                // inclusion size in XZ-plane    [km]
+	offset = 0.0;                // inclusion offset along X axis [km]
+	length = (user->L*scal)/2.0; // inclusion length along Y axis [km]
+	height = (user->H*scal);
+
+	// get layer thickness
+	ierr = PetscOptionsGetReal(NULL, NULL, "-H_layer",  &H,  NULL);  CHKERRQ(ierr);
+	ierr = PetscOptionsGetReal(NULL, NULL, "-H_bottom", &Hb, NULL);  CHKERRQ(ierr);
+
+	// get inclusion parameters
+	ierr = PetscOptionsHasName(NULL, NULL, "-Inclusion_use", &use_inc); CHKERRQ(ierr);
+	if(use_inc == PETSC_TRUE)
+	{
+		ierr = PetscOptionsGetReal(NULL, NULL, "-Inclusion_size",   &size,   NULL); CHKERRQ(ierr);
+		ierr = PetscOptionsGetReal(NULL, NULL, "-Inclusion_offset", &offset, NULL); CHKERRQ(ierr);
+		ierr = PetscOptionsGetReal(NULL, NULL, "-Inclusion_length", &length, NULL); CHKERRQ(ierr);
+	}
+
+	// scale
+	H      /= scal;
+	Hb     /= scal;
+	size   /= scal;
+	offset /= scal;
+	length /= scal;
+	height /= scal;
+
+	// loop over local markers
+	for(imark = 0; imark < actx->nummark; imark++)
+	{
+		P = &actx->markers[imark];
+
+		// get coordinates
+		x = P->X[0];
+		y = P->X[1];
+		z = P->X[2];
+
+		// assign phase in layers
+		P->phase = 2; // air
+		//if     ((x*x + (y-length)*(y-length) + z*z) > (height *height))
+		aux = 1.1;
+		radius =  (z-height/aux)*(z-height/aux)*1.5;
+		if     ( ( (z< height/aux)   &&   (  x*x + (y-length)*(y-length)  < radius ) ) ) { //|| (z < height/8.0 )) {
+			P->phase = 1; // basal layer
+		}
+
+		//Cilinder
+		center = user->W/2.0;
+		radius = user->W/4.0;
+
+		if     (  (x-center)*(x-center) + (y-length)*(y-length)  < radius*radius   ) { //|| (z < height/8.0 )) {
+					P->phase = 2; // basal layer
 		}
 
 		// assign temperature

@@ -358,6 +358,8 @@ PetscErrorCode ADVProjHistGridToMark(AdvCtx *actx)
 
 	ierr = ADVInterpFieldToMark(actx, _VORTICITY_); CHKERRQ(ierr);
 
+	ierr = ADVInterpFieldToMark(actx, _FAIL_); CHKERRQ(ierr);
+
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
@@ -422,6 +424,12 @@ PetscErrorCode ADVInterpFieldToMark(AdvCtx *actx, InterpCase icase)
 			for(jj = 0; jj < fs->nXYEdg; jj++) gxy[jj] = jr->svXYEdge[jj].svDev.PSR;
 			for(jj = 0; jj < fs->nXZEdg; jj++) gxz[jj] = jr->svXZEdge[jj].svDev.PSR;
 			for(jj = 0; jj < fs->nYZEdg; jj++) gyz[jj] = jr->svYZEdge[jj].svDev.PSR;
+		}
+		else if(icase == _FAIL_)
+		{
+			for(jj = 0; jj < fs->nXYEdg; jj++) gxy[jj] = jr->svXYEdge[jj].svDev.fail;
+			for(jj = 0; jj < fs->nXZEdg; jj++) gxz[jj] = jr->svXZEdge[jj].svDev.fail;
+			for(jj = 0; jj < fs->nYZEdg; jj++) gyz[jj] = jr->svYZEdge[jj].svDev.fail;
 		}
 
 		// restore access
@@ -506,6 +514,10 @@ PetscErrorCode ADVInterpFieldToMark(AdvCtx *actx, InterpCase icase)
 			// store rotated stress on the marker
 			Tensor2RSCopy(&SR, &P->S);
 		}
+		else if(icase == _FAIL_)
+		{
+			P->fail = svCell->svDev.fail + UPXY + UPXZ + UPYZ;
+		}
 	}
 
 	// restore access
@@ -566,6 +578,8 @@ PetscErrorCode ADVAdvectMark(AdvCtx *actx)
 	ierr = DMDAVecGetArray(fs->DA_Z,   jr->lvz, &lvz); CHKERRQ(ierr);
 	ierr = DMDAVecGetArray(fs->DA_CEN, jr->lp,  &lp);  CHKERRQ(ierr);
 	ierr = DMDAVecGetArray(fs->DA_CEN, jr->lT,  &lT);  CHKERRQ(ierr);
+
+
 	// Darcy
 	// only when Darcy is active
 	if(jr->actDarcy == PETSC_TRUE) {
@@ -623,6 +637,8 @@ PetscErrorCode ADVAdvectMark(AdvCtx *actx)
 		P->U[0] += vx*dt;
 		P->U[1] += vy*dt;
 		P->U[2] += vz*dt;
+
+		P->fail = svCell->svDev.fail;
 
 		// update liquid pressure
 		if(jr->actDarcy == PETSC_TRUE) {
@@ -1498,6 +1514,10 @@ PetscErrorCode ADVProjHistMarkToGrid(AdvCtx *actx)
 	// interpolate plastic strain to edges
 	ierr = ADVInterpMarkToEdge(actx, 0, _APS_); CHKERRQ(ierr);
 
+	//New
+	// interpolate type of failure to edges
+	ierr = ADVInterpMarkToEdge(actx, 0, _FAIL_); CHKERRQ(ierr);
+
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
@@ -1546,6 +1566,9 @@ PetscErrorCode ADVInterpMarkToCell(AdvCtx *actx)
 		svCell->U[0]      = 0.0;
 		svCell->U[1]      = 0.0;
 		svCell->U[2]      = 0.0;
+
+		svCell->svDev.fail = 0.0; // New
+
 		// Darcy
 		if(jr->actDarcy == PETSC_TRUE) {
 			svCell->svBulk.Pln = 0.0;
@@ -1580,7 +1603,7 @@ PetscErrorCode ADVInterpMarkToCell(AdvCtx *actx)
 		// access solution variable of the host cell
 		svCell = &jr->svCell[ID];
 
-		// Darcy
+		/*// Darcy
 		if (jr->actDarcy == PETSC_TRUE)
 		{
 			if (JacResGetStep(jr) > 2) // 2 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -1593,7 +1616,7 @@ PetscErrorCode ADVInterpMarkToCell(AdvCtx *actx)
 					P->phase = 0;
 				}
 			}
-		}
+		}*/
 
 
 		// update phase ratios
@@ -1609,10 +1632,14 @@ PetscErrorCode ADVInterpMarkToCell(AdvCtx *actx)
 		svCell->U[0]      += w*P->U[0];
 		svCell->U[1]      += w*P->U[1];
 		svCell->U[2]      += w*P->U[2];
+
+		svCell->svDev.fail =w*P->fail; // New
+
 		// Darcy
 		if(jr->actDarcy == PETSC_TRUE) {
 			svCell->svBulk.Pln += w*P->Pl;
 		}
+
 	}
 
 	// normalize interpolated values
@@ -1634,6 +1661,8 @@ PetscErrorCode ADVInterpMarkToCell(AdvCtx *actx)
 		svCell->U[0]      /=w;
 		svCell->U[1]      /=w;
 		svCell->U[2]      /=w;
+
+		svCell->svDev.fail /= w; // New
 
 		// Darcy
 		if(jr->actDarcy == PETSC_TRUE) {
@@ -1723,8 +1752,10 @@ PetscErrorCode ADVInterpMarkToEdge(AdvCtx *actx, PetscInt iphase, InterpCase ica
 		wyn = WEIGHT_POINT_NODE(JJ, yp, fs->dsy);
 		wzn = WEIGHT_POINT_NODE(KK, zp, fs->dsz);
 
-		if      (icase == _STRESS_) { UPXY = P->S.xy; UPXZ = P->S.xz; UPYZ = P->S.yz; }
-		else if (icase == _APS_)    { UPXY = P->APS;  UPXZ = P->APS;  UPYZ = P->APS;  }
+		if      (icase == _STRESS_) { UPXY = P->S.xy; UPXZ = P->S.xz;  UPYZ = P->S.yz; }
+		else if (icase == _APS_)    { UPXY = P->APS;  UPXZ = P->APS;   UPYZ = P->APS;  }
+
+		else if (icase == _FAIL_)   { UPXY = P->fail; UPXZ = P->fail;  UPYZ = P->fail; } // New
 
 		// update required fields from marker to edge nodes
 		lxy[sz+K ][sy+JJ][sx+II] += wxn*wyn*wzc*UPXY;
@@ -1765,6 +1796,12 @@ PetscErrorCode ADVInterpMarkToEdge(AdvCtx *actx, PetscInt iphase, InterpCase ica
 		for(jj = 0; jj < fs->nXYEdg; jj++) jr->svXYEdge[jj].svDev.APS = gxy[jj]/jr->svXYEdge[jj].ws;
 		for(jj = 0; jj < fs->nXZEdg; jj++) jr->svXZEdge[jj].svDev.APS = gxz[jj]/jr->svXZEdge[jj].ws;
 		for(jj = 0; jj < fs->nYZEdg; jj++) jr->svYZEdge[jj].svDev.APS = gyz[jj]/jr->svYZEdge[jj].ws;
+	}
+	else if(icase == _FAIL_) // New
+	{
+		for(jj = 0; jj < fs->nXYEdg; jj++) jr->svXYEdge[jj].svDev.fail = gxy[jj]/jr->svXYEdge[jj].ws;
+		for(jj = 0; jj < fs->nXZEdg; jj++) jr->svXZEdge[jj].svDev.fail = gxz[jj]/jr->svXZEdge[jj].ws;
+		for(jj = 0; jj < fs->nYZEdg; jj++) jr->svYZEdge[jj].svDev.fail = gyz[jj]/jr->svYZEdge[jj].ws;
 	}
 
 	// restore access

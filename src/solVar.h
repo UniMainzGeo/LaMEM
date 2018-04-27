@@ -84,7 +84,7 @@ typedef struct
 	PetscScalar U[3];  // displacement
 	// Darcy
 	PetscScalar Pl;    // liquid pressure
-	//PetscInt    fail;  // 0 not fails, 1 fails in tensile mode, 2 fails in shear fracturing mode
+	PetscScalar fail;  // fracturing mode
 } Marker;
 
 //---------------------------------------------------------------------------
@@ -102,8 +102,10 @@ typedef struct
 	PetscScalar  PSR;   // plastic strain-rate contribution
 	PetscScalar  dEta;  // dEta/dDII derivative (Jacobian)
 	PetscScalar  fr;    // effective friction coefficient (Jacobian)
+	PetscScalar  ch;    // cohesion
+	// Darcy
 	PetscScalar  yield; // average yield stress in control volume
-	PetscInt     fail;  // 0 not fails, 1 fails in tensile mode, 2 fails in shear fracturing mode
+	PetscScalar  fail;  // fracturing mode
 } SolVarDev;
 
 //---------------------------------------------------------------------------
@@ -125,7 +127,8 @@ typedef struct
 	PetscScalar  Rhol;  // liquid density
 	PetscScalar  Pln;    // history liquid pressure
 	PetscScalar  liquidvelocity[3];// liquid flow
-	PetscScalar  Ts;    // ensile strength
+	PetscScalar  Ts;    // Tensile strength
+	PetscScalar  dl; // dilation angle
 	//PetscInt     fail;  // 0 not fails, 1 fails in tensile mode, 2 fails in shear fracturing mode
 } SolVarBulk;
 
@@ -212,6 +215,7 @@ typedef struct
 	// plasticity parameters
 	PetscScalar  fr;      // friction coefficient
 	PetscScalar  ch;      // cohesion
+	PetscScalar  dl;      // dilation (//Darcy)
 	PetscScalar  rp;      // ratio of pore pressure to overburden stress
 	Soft_t      *frSoft;  // friction softening law parameters
 	Soft_t      *chSoft;  // cohesion softening law parameters

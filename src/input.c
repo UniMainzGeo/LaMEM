@@ -554,7 +554,8 @@ PetscErrorCode InputReadFile(JacRes *jr, UserCtx *user, FILE *fp)
 		else if(!strcmp(setup_name, "geoth"))      user->msetup = GEOTH;
 		else if(!strcmp(setup_name, "fault"))      user->msetup = FAULT;
 		else if(!strcmp(setup_name, "rozhko"))     user->msetup = ROZHKO;
-		else if(!strcmp(setup_name, "prefrac"))      user->msetup = PREFRAC;
+		else if(!strcmp(setup_name, "con"))        user->msetup = CON;
+		else if(!strcmp(setup_name, "prefrac"))    user->msetup = PREFRAC;
 		else if(!strcmp(setup_name, "domes"))      user->msetup = DOMES;
 		else if(!strcmp(setup_name, "rotation"))   user->msetup = ROTATION;
 		else SETERRQ1(PETSC_COMM_SELF, PETSC_ERR_USER,"#ERROR! Incorrect model setup: %s", setup_name);
@@ -711,7 +712,8 @@ PetscErrorCode InputReadCommLine(UserCtx *user )
 		else if(!strcmp(setup_name, "geoth"))      user->msetup = GEOTH;
 		else if(!strcmp(setup_name, "fault"))      user->msetup = FAULT;
 		else if(!strcmp(setup_name, "rozhko"))     user->msetup = ROZHKO;
-		else if(!strcmp(setup_name, "prefrac"))     user->msetup = PREFRAC;
+		else if(!strcmp(setup_name, "con"))        user->msetup = CON;
+		else if(!strcmp(setup_name, "prefrac"))    user->msetup = PREFRAC;
 		else if(!strcmp(setup_name, "domes"))      user->msetup = DOMES;
 		else SETERRQ1(PETSC_COMM_SELF, PETSC_ERR_USER,"ERROR! Incorrect model setup: %s", setup_name);
 	}

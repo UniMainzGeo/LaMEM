@@ -138,6 +138,7 @@ typedef enum
 	GEOTH,		// Darcy, injection/production
 	FAULT,      // Darcy
 	ROZHKO,     // Darcy
+	CON,        // Darcy
 	PREFRAC,    // Darcy
 	DOMES,      // salt domes 2D
 	ROTATION,   // rotation benchmark 2D
@@ -157,7 +158,7 @@ typedef enum // List of model parameter types (30)
 	_ETA0_,	_E0_, _BN_, _N_, _EN_, _VN_,                // power-law (dislocation) creep
 	_BP_, _TAUP_, _GAMMA_, _Q_, _EP_, _VP_,             // Peierls creep
 	_SHEAR_, _BULK_, _KP_,                              // elasticity
-	_COHESION_, _FRICTION_, _CHSOFTID_, _FRSOFTID_,     // plasticity (Drucker-Prager)
+	_COHESION_, _FRICTION_, _DILATION_, _CHSOFTID_, _FRSOFTID_,     // plasticity (Drucker-Prager)
 	_ALPHA_, _CP_, _K_, _A_                             // energy
 	// -- others --
 	// ... (geometry, pushing box , etc. ...)

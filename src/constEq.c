@@ -67,13 +67,14 @@ PetscErrorCode ConstEqCtxSetup(
 	PetscScalar  p,             // pressure
 	PetscScalar  p_lithos,      // lithostatic pressure
 	PetscScalar  p_pore,        // pore pressure
-	PetscScalar  T)             // temperature
+	PetscScalar  T,             // temperature
+	PetscScalar actDarcy)      // Darcy active or not
 {
 	// setup nonlinear constitutive equation evaluation context
 	// evaluate dependence on constant parameters (pressure, temperature)
 
 	PetscInt    pd;
-	PetscScalar Q, RT, ch, fr, p_visc, p_upper, p_lower, dP, p_total, tensileS;
+	PetscScalar Q, RT, ch, fr, p_visc, p_upper, p_lower, dP, p_total, tensileS, aux, yieldTensile, yieldShear, minimStress;
 
 	PetscFunctionBegin;
 
@@ -94,6 +95,7 @@ PetscErrorCode ConstEqCtxSetup(
 	ctx->N_prl = 1.0; // Peierls exponent
 	ctx->taupl = 0.0; // plastic yield stress
 	ctx->fr    = 0.0; // effective friction coefficient
+	ctx->ch    = 0.0; // NEw
 	pd         = 0;   // pressure-dependence flag
 
 	//===============
@@ -183,36 +185,131 @@ PetscErrorCode ConstEqCtxSetup(
 		// under pure shear compression, S3=P_Lithos and S1=P_Lithos when extension
 		// P = -( S3+C*cos(phi))/(sin(phi)-1)  --> compression
 		// P = -(-S1+C*cos(phi))/(sin(phi)+1)  --> extension
+		// Darcy P = (S1-Ts)/2    --> extension
+		tensileS = -mat->TS; // Tensile strength - Darcy
 
 		p_upper = -( p_lithos + ch * cos(fr))/(sin(fr) - 1.0); // compression
-		p_lower = -(-p_lithos + ch * cos(fr))/(sin(fr) + 1.0); // extension
+		//p_lower = -(-p_lithos + ch * cos(fr))/(sin(fr) + 1.0); // extension /////////////// Darcy
+		//p_lower = (p_lithos -tensileS)/2.0; // extension /////////////// Darcy
 
 		if(p_total > p_upper) p_total = p_upper;
-		if(p_total < p_lower) p_total = p_lower;
+		//if(p_total < p_lower) p_total = p_lower;
+
 	}
 
 	// compute cohesion and friction coefficient
 	ch = cos(fr)*ch;
 	fr = sin(fr);
 
+	minimStress = 1.0; // for SI 2e+6; for GEO = 2.0;
+	tensileS = -mat->TS; // Tensile strength - Darcy
+
+	p_lower = (p_lithos -tensileS)/2.0; // extension /////////////// Darcy
+	if(p_total < p_lower)
+		{
+		p_total = p_lower;
+		}
+
 	// compute effective mean stress
-	dP = (p_total - p_pore);
+	dP = p_total - p_pore;
 
-	/*// compute yield stress
-	if(dP < 0.0) { ctx->taupl =         ch; pd = 0; } // Von-Mises model for extension
-	else         { ctx->taupl = dP*fr + ch; pd = 1; } // Drucker-Prager model for compression*/
+	if (dP < 0) {
+		dP = p_total - p_pore; // effective mean stress
+	}
 
-	// compute yield stress
-	tensileS = mat->TS; // Tensile strength - Darcy
-	if(dP >= tensileS) {ctx->taupl =       dP*fr + ch; 	pd = 1;} // Drucker-Prager model for compression
-	else               {ctx->taupl = tensileS*fr + ch; 	pd = 0;} // Von-Mises model for extension
-	//else if (ctx->taupl >= tensileS*fr + ch) {ctx->taupl = tensileS*fr + ch; 	pd = 0;} 	// Von-Mises model for extension
+	/*if (dP < -tensileS) {
+		dP = -tensileS;
+		p_total = -tensileS + p_pore;
+	}*/
 
-	// correct for ultimate yield stress
-	if(ctx->taupl > lim->tauUlt) { ctx->taupl = lim->tauUlt; pd = 0; }
+	//if (actDarcy){
+
+					/*// compute yield stress 0/////////////////////////////////////////////////////////////////////////////////////////////
+					if(dP < 0.0) {
+						ctx->taupl =         ch; pd = 0;
+					} // Von-Mises model for extension
+					else         { ctx->taupl = dP*fr + ch; pd = 1; } // Drucker-Prager model for compression
+					///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////*/
+
+					/*// compute yield stress 1/////////////////////////////////////////////////////////////////////////////////////////////
+					if(dP >= -tensileS) {
+						ctx->taupl =       dP*fr + ch;
+						pd = 1;
+					} // Drucker-Prager model for compression
+					else               {
+						ctx->taupl = tensileS*fr + ch;
+						pd = 1;
+					} // Von-Mises model for extension
+					//else if (ctx->taupl >= tensileS*fr + ch) {ctx->taupl = tensileS*fr + ch; 	pd = 0;} 	// Von-Mises model for extension
+					///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////*/
+
+
+					// compute yield stress 2/////////////////////////////////////////////////////////////////////////////////////////////
+					yieldTensile = dP+tensileS;    if (yieldTensile < minimStress) yieldTensile = minimStress;
+					yieldShear = dP*fr + ch;       if (yieldShear   < minimStress) yieldShear   = minimStress;
+					if (yieldTensile < yieldShear){
+						ctx->taupl = yieldTensile;
+						pd = 1;
+					}
+					else{
+						ctx->taupl = yieldShear;
+						pd = 1;
+					}
+					///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////*/
+
+
+					/*// compute yield stress 3///////////////////////////////////////////////////////////////////////////////////////////////
+					if (dP < 0) {
+						// Line by (x0,y0) and (x1,y1):
+						// L0=(x-x1)/(x0-x1);
+						// L1=(x-x0)/(x1-x0);
+						// y= y0*L0 + y1*L1;
+						// Line by (-tensileS,0) and (0,ch):
+						if (tensileS > minimStress) {ctx->taupl= 0.0*(dP-0.0)/(-tensileS-0.0) + ch*(dP+tensileS)/(0.0+tensileS);}
+						else {ctx->taupl = minimStress;}
+						pd = 1;
+					}
+					else{
+						ctx->taupl = dP*fr + ch;
+						pd = 1;
+					}
+					if (ctx->taupl   < minimStress) ctx->taupl = minimStress;
+					///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////*/
+
+					/*// compute yield stress 5/////////////////////////////////////////////////////////////////////////////////////////////
+					if(dP >= 0) {
+						ctx->taupl =       dP*fr + ch;
+						pd = 1;
+					} // Drucker-Prager model for compression
+					else               {
+						ctx->taupl = tensileS*fr + ch;
+						pd = 1;
+					} // Von-Mises model for extension
+					//else if (ctx->taupl >= tensileS*fr + ch) {ctx->taupl = tensileS*fr + ch; 	pd = 0;} 	// Von-Mises model for extension
+					///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////*/
+
+
+		// correct for ultimate yield stress
+		if(ctx->taupl > lim->tauUlt) { ctx->taupl = lim->tauUlt; pd = 1; }
+	/*}
+	else {
+		// compute yield stress
+		if(dP < 0.0) {
+			ctx->taupl =         ch; pd = 0;
+		} // Von-Mises model for extension
+		else         { ctx->taupl = dP*fr + ch; pd = 1; } // Drucker-Prager model for compression
+
+		// correct for ultimate yield stress
+		if(ctx->taupl > lim->tauUlt) { ctx->taupl = lim->tauUlt; pd = 0; }
+	}*/
+
+
 
 	// store friction coefficient for a pressure-dependent plasticity model
-	if(pd) ctx->fr = fr;
+	if(pd) {
+		ctx->fr = fr;
+		ctx->ch = ch; //New
+	}
 
 	PetscFunctionReturn(0);
 }
@@ -252,7 +349,8 @@ PetscErrorCode GetEffVisc(
 	PetscScalar *eta_viscoplastic,
 	PetscScalar *DIIpl,
 	PetscScalar *dEta,
-	PetscScalar *fr)
+	PetscScalar *fr,
+	PetscScalar *ch)  //New
 {
 	// stabilization parameters
 	PetscScalar eta_ve, eta_pl, eta_pw, eta_vp, eta_st, eta_dis, eta_prl, cf;
@@ -264,6 +362,7 @@ PetscErrorCode GetEffVisc(
 	(*DIIpl) = 0.0;
 	(*dEta)  = 0.0;
 	(*fr)    = 0.0;
+	(*ch)    = 0.0;
 
 
 	//==============
@@ -386,6 +485,7 @@ PetscErrorCode GetEffVisc(
 			(*DIIpl)     		=  ctx->DII*(1.0 - (*eta_total)/eta_ve);
 			(*dEta)             = -eta_pl;
 			(*fr)               =  ctx->fr;
+			(*ch)               =  ctx->ch;
 		}
 	}
 
@@ -464,14 +564,16 @@ PetscErrorCode DevConstEq(
 	PetscScalar  p_pore,            // pore pressure
 	PetscScalar  dt,        		// time step
 	PetscScalar  p,         		// pressure
-	PetscScalar  T)         		// temperature
+	PetscScalar  T,         		// temperature
+	PetscScalar  actDarcy)          // Darcy active or not
 {
 	// Evaluate deviatoric constitutive equations in control volume
 
 	PetscInt     i;
 	ConstEqCtx   ctx;
 	Material_t  *mat;
-	PetscScalar  DII, APS, eta_total, eta_creep_phase, eta_viscoplastic_phase, DIIpl, dEta, fr;
+	PetscScalar  DII, APS, eta_total, eta_creep_phase, eta_viscoplastic_phase, DIIpl, dEta, fr, ch;
+	PetscScalar fail, p_total, aux, dP, tensileS, dl;  //New 'fail'
 
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
@@ -486,11 +588,20 @@ PetscErrorCode DevConstEq(
 	(*eta_creep) 		= 0.0;
 	(*eta_viscoplastic) = 0.0;
 
+	//svDev->fail         = 0.0; //New
+
 	svDev->dEta  = 0.0;
 	svDev->fr    = 0.0;
+	svDev->ch    = 0.0;
 	svDev->yield = 0.0;
 	dEta         = 0.0;
 	fr           = 0.0;
+	ch           = 0.0;
+	//fail         = 0.0;
+	p_total = 0.0;
+	aux = 0.0;
+	dP = 0.0;
+	tensileS = 0.0;
 
 
 	// scan all phases
@@ -503,10 +614,10 @@ PetscErrorCode DevConstEq(
 			mat = &phases[i];
 
 			// setup nonlinear constitutive equation evaluation context
-			ierr = ConstEqCtxSetup(&ctx, mat, lim, DII, APS, dt, p, p_lithos, p_pore, T); CHKERRQ(ierr);
+			ierr = ConstEqCtxSetup(&ctx, mat, lim, DII, APS, dt, p, p_lithos, p_pore, T, actDarcy); CHKERRQ(ierr);
 
 			// solve effective viscosity & plastic strain rate
-			ierr = GetEffVisc(&ctx, lim, &eta_total, &eta_creep_phase, &eta_viscoplastic_phase, &DIIpl, &dEta, &fr); CHKERRQ(ierr);
+			ierr = GetEffVisc(&ctx, lim, &eta_total, &eta_creep_phase, &eta_viscoplastic_phase, &DIIpl, &dEta, &fr, &ch); CHKERRQ(ierr);
 
 			// average parameters
 			svDev->eta   		+= phRat[i]*eta_total;
@@ -516,7 +627,24 @@ PetscErrorCode DevConstEq(
 
 			svDev->dEta  += phRat[i]*dEta;
 			svDev->fr    += phRat[i]*fr;
+			svDev->ch    += phRat[i]*ch;
 			svDev->yield += phRat[i]*ctx.taupl;
+
+			/*if (fail) {
+				p_total = p + lim->biot*p_pore;
+				// compute effective mean stress
+				//aux = 0.972571;
+				aux = 1.0;
+				dP = (p_total - aux*p_pore);
+                tensileS = mat->TS; // Tensile strength - Darcy
+				if(dP >= tensileS) {
+					fail = 2.0;
+				}
+				else {
+					fail = 1.0;
+				}
+			}
+			svDev->fail  += phRat[i]*fail;*/
 		}
 	}
 
@@ -609,7 +737,7 @@ PetscErrorCode VolConstEq(
 */
 	PetscInt     i;
 	Material_t  *mat;
-	PetscScalar cf_comp, cf_therm, Kavg, rho, p_total, dP;
+	PetscScalar cf_comp, cf_therm, Kavg, rho, p_total, dP, dl;
 	PetscScalar tS, pn, theta, max_overpressure, min_overpressure, nuu, nud, Ku, Kd, Kc, aux;
 
 	PetscFunctionBegin;
@@ -621,6 +749,7 @@ PetscErrorCode VolConstEq(
 	Kavg          = 0.0;
 	// Darcy, initialize tensile strength
 	svBulk->Ts    = 0.0;
+	svBulk->dl    = 0.0;
 
 	// Darcy
 	if(lim->actPorePres != PETSC_TRUE) p_pore = 0.0;
@@ -645,7 +774,7 @@ PetscErrorCode VolConstEq(
 			// ro/ro_0 = (1 + K'*P/K)^(1/K')
 			if(mat->K)
 			{
-				///////////////////////// Darcy: just to do some tests
+				/*///////////////////////// Darcy: just to do some tests
 				if(lim->actPorePres != PETSC_TRUE) p_pore = 0.0;
 				tS  = mat->TS;                                          // tensile strength
 				nud = mat->nu;                                          // poisson ratio (drained)
@@ -675,7 +804,9 @@ PetscErrorCode VolConstEq(
 				}
 				Kavg += phRat[i]*Kc;
 				////////////////////////
-				//Kavg += phRat[i]*mat->K;
+				*/
+
+				Kavg += phRat[i]*mat->K;
 
 				if(mat->Kp) cf_comp = pow(1.0 + mat->Kp*(p/mat->K), 1.0/mat->Kp);
 				else        cf_comp = 1.0 + p/mat->K;
@@ -712,6 +843,7 @@ PetscErrorCode VolConstEq(
 			svBulk->alpha += phRat[i]*mat->alpha;
 			// Darcy, update tensile strength
 			svBulk->Ts    += phRat[i]*mat->TS;
+			svBulk->dl    += phRat[i]*mat->dl;
 		}
 	}
 
@@ -733,6 +865,8 @@ PetscErrorCode GetStressCell(
 
 	SolVarDev   *svDev;
 	PetscScalar  DII, cfpl, txx, tyy, tzz;
+
+	PetscScalar aux;
 
 	PetscFunctionBegin;
 
@@ -757,6 +891,16 @@ PetscErrorCode GetStressCell(
 	txx = cfpl*dxx;
 	tyy = cfpl*dyy;
 	tzz = cfpl*dzz;
+
+
+	// Darcy
+	//aux=sin(3.14/6.0);
+	//aux=?*svDev->DIIpl*aux;
+	//aux=4.0*svDev->DIIpl*aux;
+	//txx = cfpl*dxx-aux;
+	//tyy = cfpl*dyy-aux;
+	//tzz = cfpl*dzz-aux;
+
 
 	// store contribution to the second invariant of plastic strain-rate
 	svDev->PSR = 0.5*(txx*txx + tyy*tyy + tzz*tzz);

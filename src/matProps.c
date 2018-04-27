@@ -253,6 +253,7 @@ PetscErrorCode MatPropGetStruct(FILE *fp,
 	//============================================================
 	getMatPropScalar(fp, ils, ile, "cohesion",  &m->ch,    NULL);
 	getMatPropScalar(fp, ils, ile, "friction",  &m->fr,    NULL);
+	getMatPropScalar(fp, ils, ile, "dilation",  &m->dl,    NULL);
 	getMatPropScalar(fp, ils, ile, "lambda",    &m->rp,    NULL);
 	getMatPropInt   (fp, ils, ile, "chSoftID",  &chSoftID, NULL);
 	getMatPropInt   (fp, ils, ile, "frSoftID",  &frSoftID, NULL);
@@ -441,7 +442,7 @@ PetscErrorCode MatPropGetStruct(FILE *fp,
 		PetscPrintf(PETSC_COMM_WORLD,"    Phase [%lld]: (elast) poisson = %g, E (youngs modulus) = %g %s, Vp = %g %s Vs = %g %s \n", (LLD)(m->ID), nu, E, lbl_tau, Vp, lbl_vel, Vs, lbl_vel);
 	}
 
-	PetscPrintf(PETSC_COMM_WORLD,"    Phase [%lld]: (plast) cohesion = %g %s, friction angle = %g %s, pore pressure ratio = %g [ ]\n", (LLD)(m->ID),m->ch, lbl_tau, m->fr, lbl_fr, m->rp);
+	PetscPrintf(PETSC_COMM_WORLD,"    Phase [%lld]: (plast) cohesion = %g %s, friction angle = %g %s, dilation angle = %g %s, pore pressure ratio = %g [ ]\n", (LLD)(m->ID),m->ch, lbl_tau, m->fr, lbl_fr, m->dl, lbl_fr, m->rp);
 	PetscPrintf(PETSC_COMM_WORLD,"    Phase [%lld]: (sweak) cohesion SoftLaw = %lld [ ], friction SoftLaw = %lld [ ] \n", (LLD)(m->ID),(LLD)chSoftID, (LLD)frSoftID);
 	PetscPrintf(PETSC_COMM_WORLD,"    Phase [%lld]: (temp ) alpha = %g %s, cp = %g %s, k = %g %s, A = %g %s \n", (LLD)(m->ID),m->alpha, lbl_alpha, m->Cp, lbl_cp,m->k, lbl_k, m->A, lbl_A);
 	// Darcy

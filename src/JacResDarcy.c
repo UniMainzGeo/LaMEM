@@ -497,6 +497,7 @@ PetscErrorCode JacResGetDarcyRes(JacRes *jr)
 	PetscInt src;
 	MatParLim  *matLim;
 	Material_t *phases;
+	PetscScalar scal;
 
 
 
@@ -511,6 +512,9 @@ PetscErrorCode JacResGetDarcyRes(JacRes *jr)
 	dt        = jr->ts.dt;      // time step
 	num       = bc->Pl_NumSPC;
 	list      = bc->Pl_SPCList;
+
+
+	scal   = jr->scal.length;
 
 	// access residual context variables
 	numPhases =  jr->numPhases; 	// number phases
@@ -593,17 +597,17 @@ PetscErrorCode JacResGetDarcyRes(JacRes *jr)
 		// Liquid density
 		svBulk->Rhol = lrho;
 
-		//// Permeability and porosity
-		if (dP <= dPmin && dP > dPmax)
+		// Permeability and porosity
+		/*if (dP <= dPmin && dP > dPmax)
 		{
 			if (Kphiu && Kphi != Kphiu)
 			{
 				Kphi = Kphi + (Kphiu - Kphi)/(dPmax-dPmin)*(dP-dPmin); //Kphi = svBulk->Kphi * exp(-(dP/Kd));
 			}
-			if (Phiu  && Phi  != Phiu)
-			{
-				Phi  = Phi + (Phiu - Phi)/(dPmax-dPmin)*(dP-dPmin);
-			}
+			//if (Phiu  && Phi  != Phiu)
+			//{
+			//	Phi  = Phi + (Phiu - Phi)/(dPmax-dPmin)*(dP-dPmin);
+			//}
 		}
 		else if (dP > dPmin)
 		{
@@ -613,8 +617,8 @@ PetscErrorCode JacResGetDarcyRes(JacRes *jr)
 		{
 			// Tensile failure
 			Kphi = Kphiu;
-			Phi  = Phiu;
-		}
+			//Phi  = Phiu;
+		}*/
 		svBulk->Kphi = Kphi;
 		svBulk->Phi  = Phi;
 
@@ -646,9 +650,10 @@ PetscErrorCode JacResGetDarcyRes(JacRes *jr)
 				if (jr->DarcySources[src].i == i && jr->DarcySources[src].j == j && jr->DarcySources[src].k == k)
 				{
 					increment = jr->DarcySources[src].increment;
-					magnitude = jr->DarcySources[src].magnitude *      (1.0 +JacResGetTime(jr)*increment); // [m^3/s]
+					magnitude = jr->DarcySources[src].magnitude *      (1.0 +(JacResGetTime(jr)-jr->DarcySources[src].tini)*increment); // [m^3/s]
 					// If source is Volumetric flow [m^3/s] then H = magnitude / volume of the cell [1/s]
 					//H = H/(dx*dy*dz);
+					//H = H + magnitude/(dx*scal*dy*scal*dz*scal);
 					H = H + magnitude/(dx*dy*dz);
 				}
 			}
@@ -660,7 +665,7 @@ PetscErrorCode JacResGetDarcyRes(JacRes *jr)
 		bqy = bky/mu*(Pl_c - sol[k][j-1][i])/bdy;   									fqy = fky/mu*(sol[k][j+1][i] - Pl_c)/fdy;
 		//bqz = bkz/mu*( (   Pl_c - sol[k-1][j][i]  )/bdz ); 	fqz = fkz/mu*( (   sol[k+1][j][i] - Pl_c)/fdz );
 		//bqz = bkz/mu*( (   (Pl_c-Pl_h) - (sol[k-1][j][i]-hydro[k-1][j][i])  )/bdz ); 	fqz = fkz/mu*((   (sol[k+1][j][i]-hydro[k+1][j][i]) - (Pl_c-Pl_h))/fdz );
-		bqz = bkz/mu*( (   Pl_c - sol[k-1][j][i]  )/bdz - lrho*gz); 	fqz = fkz/mu*( (   sol[k+1][j][i] - Pl_c)/fdz - lrho*gz);
+		bqz = bkz/mu*( (   Pl_c - sol[k-1][j][i]  )/bdz - lrho*gz); 	fqz = fkz/mu*( (   sol[k+1][j][i] - Pl_c)/fdz - lrho*gz); // change if liquid density is not constant
 
 
 		// compute Liquid velocity flow
@@ -826,7 +831,7 @@ PetscErrorCode JacResGetDarcyMat(JacRes *jr)
 		dPmin= pc+biot*Pl_h-Pl_h;
 		dPmax= Ts;
 
-		//// Permeability and porosity
+		/*//// Permeability and porosity
 		if (dP <= dPmin && dP > dPmax)
 		{
 			if (Kphiu && Kphi != Kphiu)
@@ -848,7 +853,7 @@ PetscErrorCode JacResGetDarcyMat(JacRes *jr)
 			Kphi = Kphiu;
 			Phi  = Phiu;
 		}
-
+*/
 		// Specific storage
 		Ss = (betam + Phi*betal);
 
@@ -1362,7 +1367,7 @@ PetscErrorCode SourcePropGetStruct(FILE *fp,
 		sprintf(lbl_tfin,       "[s]"     );
 	}
 
-	PetscPrintf(PETSC_COMM_WORLD,"    Source [%lld]: x = %g %s, y = %g %s, z = %g %s, magnitude = %g %s, tini = %g %s, tini = %g %s", (LLD)(m->ID), m->x, lbl_x, m->y, lbl_x, m->z, lbl_x, m->magnitude, lbl_magnitude, m->tini, lbl_tini, m->tfin, lbl_tfin);
+	PetscPrintf(PETSC_COMM_WORLD,"    Source [%lld]: x = %g %s, y = %g %s, z = %g %s, magnitude = %g %s, tini = %g %s, tfin = %g %s", (LLD)(m->ID), m->x, lbl_x, m->y, lbl_x, m->z, lbl_x, m->magnitude, lbl_magnitude, m->tini, lbl_tini, m->tfin, lbl_tfin);
 	PetscPrintf(PETSC_COMM_WORLD,"    \n");
 
 	PetscFunctionReturn(0);

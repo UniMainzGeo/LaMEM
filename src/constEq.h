@@ -59,6 +59,7 @@ typedef struct
 	PetscScalar  N_prl; // Peierls exponent
 	PetscScalar  taupl; // plastic yield stress
 	PetscScalar  fr;    // effective friction coefficient
+	PetscScalar  ch;
 
 } ConstEqCtx;
 
@@ -76,7 +77,8 @@ PetscErrorCode ConstEqCtxSetup(
 	PetscScalar  p,    			// pressure
 	PetscScalar  p_lithos,    	// lithostatic pressure
 	PetscScalar  p_pore,    	// pore pressure
-	PetscScalar  T);   	 		// temperature
+	PetscScalar  T,   	 		// temperature
+	PetscScalar  actDarcy);      // Darcy active or not
 
 // compute residual of the visco-elastic constitutive equation
 PetscScalar GetConsEqRes(PetscScalar eta, void *pctx);
@@ -89,7 +91,8 @@ PetscErrorCode GetEffVisc(
 	PetscScalar *eta_viscoplastic,
 	PetscScalar *DIIpl,
 	PetscScalar *dEta,
-	PetscScalar *fr);
+	PetscScalar *fr,
+	PetscScalar *ch); // New
 
 // apply strain softening to a parameter (friction, cohesion)
 PetscScalar ApplyStrainSoft(Soft_t *sl, PetscScalar APS, PetscScalar par);
@@ -114,7 +117,8 @@ PetscErrorCode DevConstEq(
 	PetscScalar  p_pore,     		// pore pressure
 	PetscScalar  dt,        		// time step
 	PetscScalar  p,        			// pressure
-	PetscScalar  T);        		// temperature
+	PetscScalar  T,        		// temperature
+	PetscScalar actDarcy);      // Darcy active or not
 
 // Evaluate volumetric constitutive equations in control volume
 PetscErrorCode VolConstEq(

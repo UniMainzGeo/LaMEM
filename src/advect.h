@@ -58,7 +58,8 @@ typedef enum
 	_STRESS_,    // deviatoric stress
 	_APS_,       // accumulated plastic strain
 	_VORTICITY_, // vorticity pseudo-vector components
-	_DISP_       // displacement
+	_DISP_,       // displacement
+	_FAIL_       // New -> type of failure
 
 } InterpCase;
 

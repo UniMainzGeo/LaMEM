@@ -815,8 +815,10 @@ PetscErrorCode JacResGetResidual(JacRes *jr)
 	PetscScalar ***fx,  ***fy,  ***fz, ***vx,  ***vy,  ***vz, ***gc;
 	PetscScalar ***dxx, ***dyy, ***dzz, ***dxy, ***dxz, ***dyz, ***p, ***T, ***p_lithos, ***p_pore, ***p_hydro;
 	PetscScalar eta_creep, eta_viscoplastic;
-	PetscScalar depth, pc_lithos, pc_pore, pc_hydro, biot, ptotal;
+	PetscScalar depth, pc_lithos, pc_pore, pc_hydro, biot, ptotal, dP, actDarcy, TensileS, yieldT, yieldS, minimStress, fr, ch, pc_upper, pc_lower, sindl, intersection;
 //	PetscScalar alpha, Tn,
+
+	PetscScalar aux;
 
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
@@ -840,6 +842,18 @@ PetscErrorCode JacResGetResidual(JacRes *jr)
 	grav      =  jr->grav;      	// gravity acceleration
 	pShift    =  jr->pShift;    	// pressure shift
 	biot      =  matLim->biot;      // Biot pressure parameter
+	actDarcy  = jr->actDarcy;
+	TensileS  = 0.0;
+	yieldT    = 0.0;
+	yieldS    = 0.0;
+	minimStress = 0.0;
+	fr          = 0.0;
+	ch          = 0.0;
+	pc_upper = 0.0;
+	pc_lower = 0.0;
+	sindl = 0.0;
+	intersection = 0.0;
+
 
 	// clear local residual vectors
 	ierr = VecZeroEntries(jr->lfx); CHKERRQ(ierr);
@@ -944,7 +958,7 @@ PetscErrorCode JacResGetResidual(JacRes *jr)
 		if(depth < 0.0) depth = 0.0;
 
 		// evaluate deviatoric constitutive equations
-		ierr = DevConstEq(svDev, &eta_creep, &eta_viscoplastic, numPhases, phases, svCell->phRat, matLim, pc_lithos, pc_pore, dt, pc-pShift, Tc); CHKERRQ(ierr);
+		ierr = DevConstEq(svDev, &eta_creep, &eta_viscoplastic, numPhases, phases, svCell->phRat, matLim, pc_lithos, pc_pore, dt, pc-pShift, Tc, jr->actDarcy); CHKERRQ(ierr);
 
 		// store creep viscosity
 		svCell->eta_creep 			= eta_creep;
@@ -955,6 +969,16 @@ PetscErrorCode JacResGetResidual(JacRes *jr)
 
 		// get total pressure (effective pressure, computed by LaMEM, plus pore pressure)
 		ptotal = pc + biot*pc_pore;
+
+		////// Darcy
+		/*// compute effective mean stress
+		dP = ptotal - pc_pore;
+		if (dP < svBulk->Ts) {
+			dP = svBulk->Ts;
+			ptotal = dP + pc_pore;
+			pc = ptotal - biot*pc_pore;
+		}*/
+		//////////////////////////////
 
 		// compute total Cauchy stresses
 		sxx = svCell->sxx - ptotal;
@@ -1008,9 +1032,159 @@ PetscErrorCode JacResGetResidual(JacRes *jr)
 		// mass - currently T-dependency is deactivated
 //		gc[k][j][i] = -IKdt*(pc - pn) - theta + alpha*(Tc - Tn)/dt;
 
-        
-       gc[k][j][i] = -IKdt*(pc - pn) - theta;
-	   // ptotal - ptotal_historic
+		// Darcy
+		//gc[k][j][i] = -IKdt*(pc - pn) - theta;
+
+
+		// NEW for Darcy (the same that in ConstEqCtxSetup) ////////////////////////////////
+		////////////////////////////////////////////////////////////////////////////////////
+		fr = svDev->fr;
+		ch = svDev->ch;
+
+		// override total pressure with lithostatic if requested
+		if(matLim->p_plast_litho == PETSC_TRUE)
+		{
+			// In case the flag	-EmployLithostaticPressureInYieldFunction is found,
+			// we use lithostatic, rather than dynamic pressure to evaluate yielding
+			// This converges better, but does not result in localization of deformation & shear banding,
+			// so only apply it for large-scale simulations where plasticity does not matter much
+
+			ptotal = pc_lithos;
+		}
+		else if(matLim->presLimFlg == PETSC_TRUE
+		&&      matLim->p_no_lim   != PETSC_TRUE)
+		{
+			// apply pressure limits
+
+			// yielding surface: (S1-S3)/2 = (S1+S3)/2*sin(phi) + C*cos(phi)
+			// pressure can be written as: P = (S1+S2+S3)/3 and P~=S2,then P=(S1+S3)/2
+			// so the yield surface can be rewritten as:
+			// P-S3=P*sin(phi) + C*cos(phi)   --> compression
+			// S1-P=P*sin(phi) + C*cos(phi)   --> extension
+			// under pure shear compression, S3=P_Lithos and S1=P_Lithos when extension
+			// P = -( S3+C*cos(phi))/(sin(phi)-1)  --> compression
+			// P = -(-S1+C*cos(phi))/(sin(phi)+1)  --> extension
+			// Darcy P = (S1-Ts)/2    --> extension
+			TensileS    = -svBulk->Ts;
+
+
+			pc_upper = -( pc_lithos + ch)/(fr - 1.0); // compression
+			//pc_lower = -(-pc_lithos + ch)/(fr + 1.0); // extension  /////////////// Darcy
+			//pc_lower = (pc_lithos -TensileS)/2.0; // extension /////////////// Darcy
+
+			if(ptotal > pc_upper) ptotal = pc_upper;
+			//if(ptotal < pc_lower) ptotal = pc_lower;  /////////////// Darcy
+		}
+		////////////////////////////////////////////////////////////////////////////////////
+		////////////////////////////////////////////////////////////////////////////////////
+
+
+
+		//if (actDarcy){
+			////// Darcy
+			fr = svDev->fr;
+			ch = svDev->ch;
+			minimStress = 3.0; // for SI 2+6; for GEO = 2.0;
+			TensileS    = -svBulk->Ts;
+			sindl       = sin(svBulk->dl);
+
+			pc_lower = (pc_lithos -TensileS)/2.0; // extension /////////////// Darcy
+			if(ptotal < pc_lower) {
+				ptotal = pc_lower;  /////////////// Darcy
+			}
+
+			dP = ptotal - pc_pore; // effective mean stress
+
+			if (dP < 0) {
+				dP = ptotal - pc_pore; // effective mean stress
+			}
+
+			/*if (dP < -TensileS) {
+				dP = -TensileS;
+				ptotal = -TensileS + pc_pore;
+			}*/
+
+			/// compute yield stress 0/////////////////////////////////////////////////////////
+			aux = 0.0;
+			//////////////////////////////////////////////////////////////////////////////////
+
+			/*// compute yield stress 1/////////////////////////////////////////////////////////
+			if (dP <= -TensileS) {
+				aux = 1.0;
+				if (svDev->DIIpl > 0) svDev->fail = 1;
+			}
+			else{
+				aux = sin(svBulk->dl);
+			}
+			aux = 2.0*svDev->DIIpl*aux;
+			//////////////////////////////////////////////////////////////////////////////////*/
+
+
+			// compute yield stress 2/////////////////////////////////////////////////////////
+			yieldT = dP+TensileS;               if (yieldT < minimStress) yieldT = minimStress;
+			yieldS = dP*fr + ch;  if (yieldS < minimStress) yieldS = minimStress;
+			//yieldS = dP*(sin(30.0/180.0*3.1416)) + 40e+6*cos((30.0/180.0*3.1416));
+			intersection = (TensileS-ch)/(fr-1.0);
+			if (yieldS > yieldT){
+				aux = sindl;
+			}
+			else { //if (yieldT > minimStress){
+				aux = 1.0;
+				// smoothing transition
+				//aux = sindl + (1.0 - sindl)*(1.0 - (dP+TensileS)/(intersection+TensileS))  ;
+				if (svDev->DIIpl > 0) svDev->fail = 1;
+			}
+			//else {
+			//	aux = 0;
+			//}
+			aux= 2.0*svDev->DIIpl*aux;
+			//////////////////////////////////////////////////////////////////////////////////*/
+
+			/*// compute yield stress 3/////////////////////////////////////////////////////////
+			if (dP < 0.0) {
+				//aux = 1.0;
+				// smoothing transition
+				aux = sindl + (1.0 - sindl)*(1.0 - (dP+TensileS)/(0.0+TensileS))  ;
+				svDev->fail = 1;
+			}
+			else{
+				aux = sindl;
+			}
+			aux = 2.0*svDev->DIIpl*aux;
+			//////////////////////////////////////////////////////////////////////////////////*/
+
+			// compute yield stress 4/////////////////////////////////////////////////////////
+			//aux = 2.0*svDev->DIIpl*sin(svBulk->dl);
+			//////////////////////////////////////////////////////////////////////////////////*/
+
+
+
+		//}
+		//else{
+			//aux = 2.0*svDev->DIIpl*sin(svBulk->dl);
+		//}
+
+		//aux=0.0;
+
+		gc[k][j][i] = -IKdt*(pc - pn) - theta + aux;
+
+		/*aux=0.0;
+		//if (actDarcy){
+			////// Darcy
+			dP = ptotal - pc_pore; // effective mean stress
+			if (dP <= svBulk->Ts) {
+				aux = 1.0;
+				svDev->fail = 1;
+			}
+			else{
+				aux = sin(svBulk->dl);
+			}
+			aux = 2.0*svDev->DIIpl*aux;
+		//}
+		gc[k][j][i] = -IKdt*(pc - pn) - theta + aux;*/
+
+
+	   // ptotal - ptotal_historic Darcy
        //gc[k][j][i] = -IKdt*(ptotal - (pn + biot*svBulk->Pln)) - theta;
         
 	}
@@ -1104,7 +1278,7 @@ PetscErrorCode JacResGetResidual(JacRes *jr)
 		pc_hydro   = 0.25*(p_hydro[k][j][i] + p_hydro[k][j][i-1] + p_hydro[k][j-1][i] + p_hydro[k][j-1][i-1]);
 
 		// evaluate deviatoric constitutive equations
-		ierr = DevConstEq(svDev, &eta_creep, &eta_viscoplastic, numPhases, phases, svEdge->phRat, matLim, pc_lithos, pc_pore, dt, pc-pShift, Tc); CHKERRQ(ierr);
+		ierr = DevConstEq(svDev, &eta_creep, &eta_viscoplastic, numPhases, phases, svEdge->phRat, matLim, pc_lithos, pc_pore, dt, pc-pShift, Tc, jr->actDarcy); CHKERRQ(ierr);
 
 		// compute stress, plastic strain rate and shear heating term on edge
 		ierr = GetStressEdge(svEdge, matLim, XY); CHKERRQ(ierr);
@@ -1215,7 +1389,7 @@ PetscErrorCode JacResGetResidual(JacRes *jr)
 		pc_hydro   = 0.25*(p_hydro[k][j][i] + p_hydro[k][j][i-1] + p_hydro[k][j-1][i] + p_hydro[k][j-1][i-1]);
 
 		// evaluate deviatoric constitutive equations
-		ierr = DevConstEq(svDev, &eta_creep, &eta_viscoplastic, numPhases, phases, svEdge->phRat, matLim, pc_lithos, pc_pore, dt, pc-pShift, Tc); CHKERRQ(ierr);
+		ierr = DevConstEq(svDev, &eta_creep, &eta_viscoplastic, numPhases, phases, svEdge->phRat, matLim, pc_lithos, pc_pore, dt, pc-pShift, Tc, jr->actDarcy); CHKERRQ(ierr);
 
 		// compute stress, plastic strain rate and shear heating term on edge
 		ierr = GetStressEdge(svEdge, matLim, XZ); CHKERRQ(ierr);
@@ -1326,7 +1500,7 @@ PetscErrorCode JacResGetResidual(JacRes *jr)
 		pc_hydro   = 0.25*(p_hydro[k][j][i] + p_hydro[k][j][i-1] + p_hydro[k][j-1][i] + p_hydro[k][j-1][i-1]);
 
 		// evaluate deviatoric constitutive equations
-		ierr = DevConstEq(svDev, &eta_creep, &eta_viscoplastic, numPhases, phases, svEdge->phRat, matLim, pc_lithos, pc_pore, dt, pc-pShift, Tc); CHKERRQ(ierr);
+		ierr = DevConstEq(svDev, &eta_creep, &eta_viscoplastic, numPhases, phases, svEdge->phRat, matLim, pc_lithos, pc_pore, dt, pc-pShift, Tc, jr->actDarcy); CHKERRQ(ierr);
 
 		// compute stress, plastic strain rate and shear heating term on edge
 		ierr = GetStressEdge(svEdge, matLim, YZ); CHKERRQ(ierr);
