@@ -248,7 +248,7 @@ struct JacRes
 	PData       *Pd;
 
 	// Melt extraction
-	Vec   gdMV, gdMVmerge,gdMoho, gdMohomerge;
+	Vec   gdMV, gdMVmerge,gdMoho1, gdMoho;
 	Vec   ldMV,ldMoho,Miphase;
 	Vec   gdc, ldc;
 	Vec   Vol;
