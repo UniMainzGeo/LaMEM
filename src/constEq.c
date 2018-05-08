@@ -74,7 +74,7 @@ PetscErrorCode ConstEqCtxSetup(
 	// evaluate dependence on constant parameters (pressure, temperature)
 
 	PetscInt    pd;
-	PetscScalar Q, RT, ch, fr, p_visc, p_upper, p_lower, dP, p_total, tensileS, aux, yieldTensile, yieldShear, minimStress;
+	PetscScalar Q, RT, ch, fr, p_visc, p_upper, p_lower, dP, p_total, tensileS, aux, yieldTensile, yieldShear, minimStress, a,b,c,intersection;
 
 	PetscFunctionBegin;
 
@@ -189,7 +189,7 @@ PetscErrorCode ConstEqCtxSetup(
 		tensileS = -mat->TS; // Tensile strength - Darcy
 
 		p_upper = -( p_lithos + ch * cos(fr))/(sin(fr) - 1.0); // compression
-		//p_lower = -(-p_lithos + ch * cos(fr))/(sin(fr) + 1.0); // extension /////////////// Darcy
+		p_lower = -(-p_lithos + ch * cos(fr))/(sin(fr) + 1.0); // extension
 		//p_lower = (p_lithos -tensileS)/2.0; // extension /////////////// Darcy
 
 		if(p_total > p_upper) p_total = p_upper;
@@ -201,21 +201,17 @@ PetscErrorCode ConstEqCtxSetup(
 	ch = cos(fr)*ch;
 	fr = sin(fr);
 
-	minimStress = 1.0; // for SI 2e+6; for GEO = 2.0;
+	minimStress = 1e+0; // for SI 2e+6; for GEO = 2.0;
 	tensileS = -mat->TS; // Tensile strength - Darcy
 
 	p_lower = (p_lithos -tensileS)/2.0; // extension /////////////// Darcy
 	if(p_total < p_lower)
 		{
-		p_total = p_lower;
+		//p_total = p_lower;
 		}
 
 	// compute effective mean stress
 	dP = p_total - p_pore;
-
-	if (dP < 0) {
-		dP = p_total - p_pore; // effective mean stress
-	}
 
 	/*if (dP < -tensileS) {
 		dP = -tensileS;
@@ -245,7 +241,7 @@ PetscErrorCode ConstEqCtxSetup(
 
 
 					// compute yield stress 2/////////////////////////////////////////////////////////////////////////////////////////////
-					yieldTensile = dP+tensileS;    if (yieldTensile < minimStress) yieldTensile = minimStress;
+					yieldTensile = 1.1*(dP+tensileS);    if (yieldTensile < minimStress) yieldTensile = minimStress;
 					yieldShear = dP*fr + ch;       if (yieldShear   < minimStress) yieldShear   = minimStress;
 					if (yieldTensile < yieldShear){
 						ctx->taupl = yieldTensile;
@@ -277,7 +273,7 @@ PetscErrorCode ConstEqCtxSetup(
 					///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////*/
 
 					/*// compute yield stress 5/////////////////////////////////////////////////////////////////////////////////////////////
-					if(dP >= 0) {
+					if(dP >= -tensileS) {
 						ctx->taupl =       dP*fr + ch;
 						pd = 1;
 					} // Drucker-Prager model for compression
@@ -286,6 +282,25 @@ PetscErrorCode ConstEqCtxSetup(
 						pd = 1;
 					} // Von-Mises model for extension
 					//else if (ctx->taupl >= tensileS*fr + ch) {ctx->taupl = tensileS*fr + ch; 	pd = 0;} 	// Von-Mises model for extension
+					///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////*/
+
+					/*// compute yield stress 6/////////////////////////////////////////////////////////////////////////////////////////////
+					yieldTensile = dP+tensileS;    if (yieldTensile < minimStress) yieldTensile = minimStress;
+					yieldShear = dP*fr + ch;       if (yieldShear   < minimStress) yieldShear   = minimStress;
+					intersection = (tensileS-ch)/(fr-1.0);
+					//x0=intersection; y0=intersection+T; x1=-T; y1=0;
+					a=(intersection+T-fr*(intersection+T))/(intersection*intersection-T*T-2.0*intersection*(intersection+T));
+					b=fr-2.0*a*intersection;
+					c=intersection+T-a*intersection*intersection-(fr-2.0*a*intersection)*intersection;
+					if (dP > intersection){
+						ctx->taupl = yieldShear;
+						pd = 1;
+					}
+					else {
+						ctx->taupl = a*dP*dP+b*dP+c;;
+						pd = 1;
+					}
+					//////////////////////////////////////////////////////////////////////////////////*/
 					///////////////////////////////////////////////////////////////////////////////////////////////////////////////////////*/
 
 
@@ -364,6 +379,10 @@ PetscErrorCode GetEffVisc(
 	(*fr)    = 0.0;
 	(*ch)    = 0.0;
 
+	// New Darcy, save friction and cohesion
+	(*fr)               =  ctx->fr;
+	(*ch)               =  ctx->ch;
+	//////////
 
 	//==============
 	// INITIAL GUESS

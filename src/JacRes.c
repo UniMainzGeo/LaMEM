@@ -1069,14 +1069,14 @@ PetscErrorCode JacResGetResidual(JacRes *jr)
 
 
 			pc_upper = -( pc_lithos + ch)/(fr - 1.0); // compression
-			//pc_lower = -(-pc_lithos + ch)/(fr + 1.0); // extension  /////////////// Darcy
+			pc_lower = -(-pc_lithos + ch)/(fr + 1.0); // extension
 			//pc_lower = (pc_lithos -TensileS)/2.0; // extension /////////////// Darcy
 
 			if(ptotal > pc_upper) ptotal = pc_upper;
 			//if(ptotal < pc_lower) ptotal = pc_lower;  /////////////// Darcy
 		}
 		////////////////////////////////////////////////////////////////////////////////////
-		////////////////////////////////////////////////////////////////////////////////////
+		////////////////////////////////////////////////////////////////////////////////////*/
 
 
 
@@ -1084,18 +1084,18 @@ PetscErrorCode JacResGetResidual(JacRes *jr)
 			////// Darcy
 			fr = svDev->fr;
 			ch = svDev->ch;
-			minimStress = 3.0; // for SI 2+6; for GEO = 2.0;
+			minimStress = 1e+0; // for SI 2e+6; for GEO = 2.0; !!!!!!!!!!!!!!!!!!!!!!!!!!!
 			TensileS    = -svBulk->Ts;
 			sindl       = sin(svBulk->dl);
 
 			pc_lower = (pc_lithos -TensileS)/2.0; // extension /////////////// Darcy
 			if(ptotal < pc_lower) {
-				ptotal = pc_lower;  /////////////// Darcy
+				//ptotal = pc_lower;  /////////////// Darcy
 			}
 
 			dP = ptotal - pc_pore; // effective mean stress
 
-			if (dP < 0) {
+			if (dP <= -TensileS) {//just to debug
 				dP = ptotal - pc_pore; // effective mean stress
 			}
 
@@ -1121,14 +1121,25 @@ PetscErrorCode JacResGetResidual(JacRes *jr)
 
 
 			// compute yield stress 2/////////////////////////////////////////////////////////
-			yieldT = dP+TensileS;               if (yieldT < minimStress) yieldT = minimStress;
-			yieldS = dP*fr + ch;  if (yieldS < minimStress) yieldS = minimStress;
+			yieldT = 1.1*(dP+TensileS);
+			if (yieldT < minimStress) {
+				yieldT = minimStress;
+			}
+			yieldS = dP*fr + ch;
+			if (yieldS < minimStress) {
+				yieldS = minimStress;
+			}
 			//yieldS = dP*(sin(30.0/180.0*3.1416)) + 40e+6*cos((30.0/180.0*3.1416));
 			intersection = (TensileS-ch)/(fr-1.0);
-			if (yieldS > yieldT){
+			if (dP>=intersection) {
+			//if (yieldS < yieldT){
 				aux = sindl;
 			}
 			else { //if (yieldT > minimStress){
+				// compute cohesion and friction coefficient
+				//svDev->fr = 1.0;
+				//fr = svDev->fr;
+				//ch = svDev->ch;
 				aux = 1.0;
 				// smoothing transition
 				//aux = sindl + (1.0 - sindl)*(1.0 - (dP+TensileS)/(intersection+TensileS))  ;
@@ -1142,10 +1153,10 @@ PetscErrorCode JacResGetResidual(JacRes *jr)
 
 			/*// compute yield stress 3/////////////////////////////////////////////////////////
 			if (dP < 0.0) {
-				//aux = 1.0;
+				aux = 1.0;
 				// smoothing transition
-				aux = sindl + (1.0 - sindl)*(1.0 - (dP+TensileS)/(0.0+TensileS))  ;
-				svDev->fail = 1;
+				//aux = sindl + (1.0 - sindl)*(1.0 - (dP+TensileS)/(0.0+TensileS))  ;
+				if (svDev->DIIpl > 0) svDev->fail = 1;
 			}
 			else{
 				aux = sindl;
@@ -1155,6 +1166,18 @@ PetscErrorCode JacResGetResidual(JacRes *jr)
 
 			// compute yield stress 4/////////////////////////////////////////////////////////
 			//aux = 2.0*svDev->DIIpl*sin(svBulk->dl);
+			//////////////////////////////////////////////////////////////////////////////////*/
+
+			/*// compute yield stress 6/////////////////////////////////////////////////////////
+			intersection = (TensileS-ch)/(fr-1.0);
+			if (dP > 0 ) {//intersection){
+				aux = sindl;
+			}
+			else {
+				aux = 1.0;
+				if (svDev->DIIpl > 0) svDev->fail = 1;
+			}
+			aux= 2.0*svDev->DIIpl*aux;
 			//////////////////////////////////////////////////////////////////////////////////*/
 
 
