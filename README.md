@@ -3,9 +3,8 @@
 LaMEM is a parallel 3D numerical code that can be used to model various thermomechanical 
 geodynamical processes such as mantle-lithosphere interaction for rocks 
 that have visco-elasto-plastic rheologies. It was developed to better understand geological 
-processes, particularly related to the dynamics of the crust and the lithosphere and their 
-interaction with the mantle. The code is build on top of PETSc and uses a marker-in-cell 
-approach with a staggered finite difference discretization. 
+processes, particularly related to the dynamics of the crust and  lithosphere and their 
+interaction with the mantle. It can, however, also be used to solve geomechanical problems, includes (compressible) poroelasticity, can be used to compute gravity anomalies and has an (adjoint) inversion framework. The code uses a marker-in-cell approach with a staggered finite difference discretization and is build on top of PETSc such that it can run on anything from a laptop to a massively parallel machine. 
 
 A range of (Galerkin) multigrid and iterative solvers are 
 available, for both linear and non-linear rheologies, using Picard and 
@@ -112,7 +111,7 @@ We develop LaMEM on Linux and Mac machines, but we also have had success on Wind
         make test
 ```
 
-  Note that we use the PyTestHarness framework, which is a set of Python scripts that simplify regression testing (developed by Dave May and Patrick Sanan). The first time you run the makefile, it will download the git repository and put it in the directory ```./pythontestharness```. If this fails for some reason, you can download it directly from the Dave's bitbucket repository and put it in the directory. In that case, it will ask you which batch queuing system to use, which should be ```<none>```.	
+  Note that we use the PythonTestHarness framework, which is a set of Python scripts that simplify regression testing (developed by Dave May and Patrick Sanan). The first time you run the makefile, it will download the git repository and put it in the directory ```./pythontestharness```. If this fails for some reason, you can download it directly from the Dave's bitbucket repository and put it in the directory. In that case, it will ask you which batch queuing system to use, which should be ```<none>```.	
 
   Ideally, the tests should run all with no problems. Depending on which external direct solver packages you installed, some may fail (for example, if you did not install PASTIX). The python test harness will give some hints as where the issues came from.  
 
@@ -138,4 +137,4 @@ We develop LaMEM on Linux and Mac machines, but we also have had success on Wind
 #### 3b. Learning more
  As we do not have an extensive user-guide yet (it takes time to create one, but will come at some point..), the best way to learn LaMEM is by looking at the input files in the order that is recommended in the README files. Start with ```/BuildInSetups```, which shows various example with geometries that are specified in the LaMEM input file. 
 
-All possible input parameters in LaMEM are listed in the file ```/input/lamem_input.dat```, which is worthwhile having a look at.
+All possible input parameters in LaMEM are listed in the file ```/input_models/input/lamem_input.dat```, which is worthwhile having a look at.
