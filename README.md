@@ -96,11 +96,11 @@ We develop LaMEM on Linux and Mac machines, but we also have had success on Wind
    which will download LaMEM and put it in the directory ./LaMEM. Alternatively, you can download a ZIP file from the BitBucket page. 
 
 - Set the environment variables in your .bashrc or .bash_profile scripts such that the LaMEM makefile knows where to look for PETSc:
-
+  
     ```
-     export PETSC_OPT=DIRECTORY_WHERE_YOU_INSTALLED_YOUR_OPTIMIZED_PETSC
+    export PETSC_OPT=DIRECTORY_WHERE_YOU_INSTALLED_YOUR_OPTIMIZED_PETSC
 
-     export PETSC_DEB=DIRECTORY_WHERE_YOU_INSTALLED_YOUR_DEBUG_PETSC 
+    export PETSC_DEB=DIRECTORY_WHERE_YOU_INSTALLED_YOUR_DEBUG_PETSC 
     ```
 
 - To build the source in the /src directory:
@@ -113,6 +113,7 @@ We develop LaMEM on Linux and Mac machines, but we also have had success on Wind
 
      ```  
      cd /tests
+
      make test
     ```
 
@@ -125,9 +126,9 @@ We develop LaMEM on Linux and Mac machines, but we also have had success on Wind
   You can run your first LaMEM simulation with 
 
   ``` 
-     cd /input_models/BuildInSetups
+    cd /input_models/BuildInSetups
 
-     ../../bin/opt/LaMEM -ParamFile FallingBlock_DirectSolver.dat
+    ../../bin/opt/LaMEM -ParamFile FallingBlock_DirectSolver.dat
   ```
   
   which will run a setup that has a falling block of higher density embedded in a lower density fluid for 10 timesteps.  
