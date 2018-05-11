@@ -60,16 +60,18 @@ LaMEM consists of the following directories:
 
 ### Main dependencies
 LaMEM crucially relies on:
-* PETSc 3.7.7, ideally installed with the external packages SUPERLU_DIST, MUMPS and PASTIX
+
+  * PETSc 3.7.7, ideally installed with the external packages SUPERLU_DIST, MUMPS and PASTIX
 
 and to a minor extend on:
-* Python, to run the LaMEM testing environment, and see if things work as expected. 
-* Paraview, to visualize results.
-* GIT, in order to pull the latest version of LaMEM
-* MATLAB (version not important), in order to facilitate creating more complicated input geometries
-* geomIO, to create input geometries from Inkscape (see https://geomio.bitbucket.io) 
-* Any text editor, to modify the LaMEM input files. 
-* Visual Studio Code, in case you want to develop new code (some on the development team has )
+
+  * Python, to run the LaMEM testing environment, and see if things work as expected. 
+  * Paraview, to visualize results.
+  * GIT, in order to pull the latest version of LaMEM
+  * MATLAB (version not important), in order to facilitate creating more complicated input geometries
+  * geomIO, to create input geometries from Inkscape (see https://geomio.bitbucket.io) 
+  * Any text editor, to modify the LaMEM input files. 
+  * Visual Studio Code, in case you want to develop new code (some on the development team has )
 
 ### Dependency installation
 We develop LaMEM on Linux and Mac machines, but we also have had success on Windows 10, where we recommend installing it through the (new) bash shell. In order for LaMEM to work, you'll need to install the correct version of PETSc first. PETSc is usually not backwards compatible, so it won't work with the incorrect version.  
