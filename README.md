@@ -14,18 +14,20 @@ quasi-Newton solvers (provided through the PETSc interface).
 LaMEM has been tested on over 458'000 cores.
 
 The main developed of the current version are:
-  * Anton Popov       (Johannes Gutenberg University Mainz, popov@uni-mainz.de), 2011-
-  * Boris Kaus        (JGU Mainz, kaus@uni-mainz.de), 2011-
-  * Tobias Baumann    (JGU Mainz), 2011-
-  * Georg Reuber      (JGU Mainz), 2015-	
-  * Adina Puesoek     (JGU Mainz, UC San Diego), 2012-
-  * Naiara Fernandez  (JGU Mainz), 2011-2014
-  * Arthur Bauville   (JGU Mainz), 2015
+
+* Anton Popov       (Johannes Gutenberg University Mainz, popov@uni-mainz.de), 2011-
+* Boris Kaus        (JGU Mainz, kaus@uni-mainz.de), 2011-
+* Tobias Baumann    (JGU Mainz), 2011-
+* Georg Reuber      (JGU Mainz), 2015-	
+* Adina Puesoek     (JGU Mainz, UC San Diego), 2012-
+* Naiara Fernandez  (JGU Mainz), 2011-2014
+* Arthur Bauville   (JGU Mainz), 2015
 
 Older versions of LaMEM included a finite element solver as well, 
 and were developed by:
-  * Boris J.P. Kaus (ETH Zurich, Switzerland). 2007-2011
-  * Dave A. May     (ETH Zurich, Switzerland). 2009-2011
+
+* Boris J.P. Kaus (ETH Zurich, Switzerland). 2007-2011
+* Dave A. May     (ETH Zurich, Switzerland). 2009-2011
 
 Development work was supported by the European Research Council, 
 with ERC Starting Grant 258830, ERC Proof of Concept Grant 713397 and ERC Consolidator Grant 771143 awarded to Boris Kaus. 
@@ -87,37 +89,28 @@ We develop LaMEM on Linux and Mac machines, but we also have had success on Wind
 
 	
 ## 2. Download and build LaMEM
-- Download LaMEM from BitBucket, preferable by using GIT on your system:
+* Download LaMEM from BitBucket, preferable by using GIT on your system:
 
-    ```
-    git clone https://bkaus@bitbucket.org/bkaus/lamem.git ./LaMEM
-    ```
+```
+        git clone https://bkaus@bitbucket.org/bkaus/lamem.git ./LaMEM
+``` 
 
-   which will download LaMEM and put it in the directory ./LaMEM. Alternatively, you can download a ZIP file from the BitBucket page. 
+* Set the environment variables in your .bashrc or .bash_profile scripts such that the LaMEM makefile knows where to look for PETSc:
+```
+        export PETSC_OPT=DIRECTORY_WHERE_YOU_INSTALLED_YOUR_OPTIMIZED_PETSC
+        export PETSC_DEB=DIRECTORY_WHERE_YOU_INSTALLED_YOUR_DEBUG_PETSC 
+```
 
-- Set the environment variables in your .bashrc or .bash_profile scripts such that the LaMEM makefile knows where to look for PETSc:
-  
-    ```
-    export PETSC_OPT=DIRECTORY_WHERE_YOU_INSTALLED_YOUR_OPTIMIZED_PETSC
+* To build the source in the /src directory:
+```
+        make mode=opt all 
+```
 
-    export PETSC_DEB=DIRECTORY_WHERE_YOU_INSTALLED_YOUR_DEBUG_PETSC 
-    ```
-
-- To build the source in the /src directory:
-
-     ```
-     make mode=opt all 
-     
-     ```
-
-- Once build, you can verify that LaMEM works correctly with:
-
-     ```  
-     cd /tests
-
-     make test
-
-    ```
+* Once build, you can verify that LaMEM works correctly with:
+```  
+        cd /tests
+        make test
+```
 
   Note that we use the PyTestHarness framework, which is a set of Python scripts that simplify regression testing (developed by Dave May and Patrick Sanan). The first time you run the makefile, it will download the git repository and put it in the directory ```./pythontestharness```. If this fails for some reason, you can download it directly from the Dave's bitbucket repository and put it in the directory. In that case, it will ask you which batch queuing system to use, which should be ```<none>```.	
 
@@ -127,19 +120,16 @@ We develop LaMEM on Linux and Mac machines, but we also have had success on Wind
 #### 3a. First simulation
   You can run your first LaMEM simulation with 
 
-  ``` 
-    cd /input_models/BuildInSetups
-
-    ../../bin/opt/LaMEM -ParamFile FallingBlock_DirectSolver.dat
-
-  ```
-  
+```
+      cd /input_models/BuildInSetups
+      ../../bin/opt/LaMEM -ParamFile FallingBlock_DirectSolver.dat
+```
   which will run a setup that has a falling block of higher density embedded in a lower density fluid for 10 timesteps.  
   Run the same in parallel with:
   
-  ``` 
+``` 
      mpiexec -n 4 ../../bin/opt/LaMEM -ParamFile FallingBlock_DirectSolver.dat
-  ```
+```
 
   You can visualize the results with Paraview by opening the file ```FB_direct.pvd```, and pushing the play button (after selecting the appropriate view, such as surface and the appropriate field such as velocity).
   
