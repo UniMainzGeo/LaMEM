@@ -51,7 +51,7 @@ LaMEM consists of the following directories:
 /doc          -  Some documentation (remains incomplete)
 /matlab       -  Various matlab files to change initial mesh and read binary output into matlab.
 /scripts      -	 Various scripts, currently mainly related to Paraview VTK files.
-/src          -	 LaMEM source code; compile with "make mode=opt all"
+/src          -	 LaMEM source code; compile with "make mode=opt all" and "make mode=deb all"
 /tests        -	 Directory with various benchmarks. 
 /utils        -	 Various non-essential files.
 /bin          -  Contains binaries after compilation (/deb contains the debug version and /opt the optimized)
