@@ -107,6 +107,7 @@ We develop LaMEM on Linux and Mac machines, but we also have had success on Wind
 
      ```
      make mode=opt all 
+     
      ```
 
 - Once build, you can verify that LaMEM works correctly with:
@@ -115,6 +116,7 @@ We develop LaMEM on Linux and Mac machines, but we also have had success on Wind
      cd /tests
 
      make test
+
     ```
 
   Note that we use the PyTestHarness framework, which is a set of Python scripts that simplify regression testing (developed by Dave May and Patrick Sanan). The first time you run the makefile, it will download the git repository and put it in the directory ```./pythontestharness```. If this fails for some reason, you can download it directly from the Dave's bitbucket repository and put it in the directory. In that case, it will ask you which batch queuing system to use, which should be ```<none>```.	
@@ -129,6 +131,7 @@ We develop LaMEM on Linux and Mac machines, but we also have had success on Wind
     cd /input_models/BuildInSetups
 
     ../../bin/opt/LaMEM -ParamFile FallingBlock_DirectSolver.dat
+
   ```
   
   which will run a setup that has a falling block of higher density embedded in a lower density fluid for 10 timesteps.  
