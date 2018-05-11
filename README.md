@@ -91,7 +91,7 @@ We develop LaMEM on Linux and Mac machines, but we also have had success on Wind
 * Download LaMEM from BitBucket, preferable by using GIT on your system:
 
 ```
-        git clone https://bkaus@bitbucket.org/bkaus/lamem.git ./LaMEM
+        $ git clone https://bkaus@bitbucket.org/bkaus/lamem.git ./LaMEM
 ``` 
 
 * Set the environment variables in your .bashrc or .bash_profile scripts such that the LaMEM makefile knows where to look for PETSc:
@@ -102,13 +102,13 @@ We develop LaMEM on Linux and Mac machines, but we also have had success on Wind
 
 * To build the source in the /src directory:
 ```
-        make mode=opt all 
+        $ make mode=opt all 
 ```
 
 * Once build, you can verify that LaMEM works correctly with:
 ```  
-        cd /tests
-        make test
+        $ cd /tests
+        $ make test
 ```
 
   Note that we use the PythonTestHarness framework, which is a set of Python scripts that simplify regression testing (developed by Dave May and Patrick Sanan). The first time you run the makefile, it will download the git repository and put it in the directory ```./pythontestharness```. If this fails for some reason, you can download it directly from the Dave's bitbucket repository and put it in the directory. In that case, it will ask you which batch queuing system to use, which should be ```<none>```.	
@@ -120,14 +120,14 @@ We develop LaMEM on Linux and Mac machines, but we also have had success on Wind
   You can run your first LaMEM simulation with 
 
 ```
-      cd /input_models/BuildInSetups
-      ../../bin/opt/LaMEM -ParamFile FallingBlock_DirectSolver.dat
+      $ cd /input_models/BuildInSetups
+      $ ../../bin/opt/LaMEM -ParamFile FallingBlock_DirectSolver.dat
 ```
   which will run a setup that has a falling block of higher density embedded in a lower density fluid for 10 timesteps.  
   Run the same in parallel with:
   
 ``` 
-     mpiexec -n 4 ../../bin/opt/LaMEM -ParamFile FallingBlock_DirectSolver.dat
+     $ mpiexec -n 4 ../../bin/opt/LaMEM -ParamFile FallingBlock_DirectSolver.dat
 ```
 
   You can visualize the results with Paraview by opening the file ```FB_direct.pvd```, and pushing the play button (after selecting the appropriate view, such as surface and the appropriate field such as velocity).
