@@ -10,7 +10,7 @@ A range of (Galerkin) multigrid and iterative solvers are
 available, for both linear and non-linear rheologies, using Picard and 
 quasi-Newton solvers (provided through the PETSc interface).
 
-LaMEM has been tested on over 458'000 cores.
+LaMEM has been tested on a variety of machines ranging from laptops to a massively parallel cluster with 458'752 cores.
 
 The main developed of the current version are:
 
