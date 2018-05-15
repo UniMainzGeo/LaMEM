@@ -552,11 +552,12 @@ PetscErrorCode MeltExtractionExchangeVolume(JacRes *jr, PetscInt iphase)
 
 		// create column communicator
 		ierr = Discret1DGetColumnComm(dsz); CHKERRQ(ierr);
+		ierr = DMGetGlobalVector(jr->DA_CELL_2D, &dgmvvec)            ; CHKERRQ(ierr);
+		ierr = DMGetGlobalVector(jr->DA_CELL_2D, &dgmvvecmerge)       ; CHKERRQ(ierr);
         ierr = VecZeroEntries   (dgmvvec)                             ; CHKERRQ(ierr);
 		ierr = VecZeroEntries   (dgmvvecmerge)                        ; CHKERRQ(ierr);
 		ierr = DMDAVecGetArray  (fs->DA_CEN, jr->Miphase, &Mipbuff)   ; CHKERRQ(ierr);
-		ierr = DMGetGlobalVector(jr->DA_CELL_2D, &dgmvvec)            ; CHKERRQ(ierr);
-		ierr = DMGetGlobalVector(jr->DA_CELL_2D, &dgmvvecmerge)       ; CHKERRQ(ierr);
+
 
 		// scan all local cells
 		GET_CELL_RANGE(nx, sx, fs->dsx)
@@ -645,7 +646,9 @@ PetscErrorCode MeltExtractionInject(JacRes *jr,AdvCtx *actx, AdvVelCtx *vi, Pets
 	// get markers in cell
 	n = vi->markstart[ID+1] - vi->markstart[ID];
 
-	// scan cell markers
+	// scan cell markers. If it finds a particles that has the same phase of the injection and whose volume is less than saturation volume
+	// it update its volume, and update Up. If it does not find anything goes to the injection routine
+	// I assume that the saturation volume is 2, but I think we need to discuss about it.
 	for(jj = 0; jj < n; jj++)
 	{
 		// get marker index
@@ -653,24 +656,25 @@ PetscErrorCode MeltExtractionInject(JacRes *jr,AdvCtx *actx, AdvVelCtx *vi, Pets
 
 		P = &actx->markers[pind];
 
-		if(P->phase == PhInject && UP > 0)
+		if(P->phase == PhInject && P->Mvol<2)
 		{
-			UP = UP - (1-P->Mvol);
-			if (UP < 0)
+			if(UP-= 2-P->Mvol>=0)
 			{
-				P->Mvol += UP + (1-P->Mvol);   // has to increase
-				UP = 0;
+				P->T= ((P->T*P->Mvol)+(2-P->Mvol)*phases[iphase].TInt)/2; // Correct the temperature of the particles
+				P->Mvol = 2;
+				UP-= 2-P->Mvol;
 			}
 			else
 			{
-				P->Mvol += (1-P->Mvol);   // has to increase
+				P->T= ((P->T*P->Mvol)+(UP)*phases[iphase].TInt)/2; // Correct the temperature of the particles
+				P->Mvol+=UP;
+				UP=0;
 			}
-			found = 1;
 		}
 	}
 
 	// We have not found a marker of the correct phase or there is still melt to be injected
-	if(found == 0 || UP > 0)
+	if( UP > 0)
 	{
 		ninj = (PetscInt)ceil(UP);  // Amount of markers we have to inject
 
