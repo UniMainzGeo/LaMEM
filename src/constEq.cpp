@@ -461,7 +461,7 @@ PetscErrorCode DevConstEq(
 	PetscInt     i;
 	ConstEqCtx   ctx;
 	Material_t  *mat;
-	PetscScalar  DII, APS, eta_total, eta_creep_phase, eta_viscoplastic_phase, DIIpl, dEta, fr;
+	PetscScalar  DII, APS, eta_total, eta_creep_phase, eta_viscoplastic_phase, DIIpl, dEta, fr, mf;
 
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
@@ -485,6 +485,7 @@ PetscErrorCode DevConstEq(
 	// scan all phases
 	for(i = 0; i < numPhases; i++)
 	{
+		svDev->mf=0;
 		// update present phases only
 		if(phRat[i])
 		{
@@ -500,7 +501,11 @@ PetscErrorCode DevConstEq(
 				{
 					pd->mf       = phases[i].Mleft;
 				}*/
-				svDev->mf        = (pd->mf-svDev->mfextot);
+
+				// Viscosity Feedback
+				if(pd->mf-svDev->mfextot<0) mf = (pd->mf-svDev->mfextot);
+				if(mf>mat->Mtrs) mf=mat->Mleft;
+                svDev->mf =mf;
 				// svDev->dMF       = ((pd->mf - svDev->mfextot)-phases[i].Mleft);
 			}
 
@@ -543,7 +548,8 @@ PetscErrorCode VolConstEq(
 	PetscInt     i;
 	Material_t  *mat;
 	PetscScalar  cf_comp, cf_therm, Kavg, rho,mfeff;
-
+	PetscScalar  dMas;
+    PetscScalar  mf_temp,rho_in;
 	PetscFunctionBegin;
 
 	// initialize effective density, thermal expansion & inverse bulk elastic parameter
@@ -554,6 +560,7 @@ PetscErrorCode VolConstEq(
 	svBulk->rho_pf = 0;
 	svBulk->mf     = 0;
 	svBulk->dMF    = 0;
+    svBulk->rho_in = 0;
 
 	// scan all phases
 	for(i = 0; i < numPhases; i++)
@@ -571,33 +578,19 @@ PetscErrorCode VolConstEq(
 				// Get the data from phase diagram
 				SetDataPhaseDiagram(pd, p, T, 0, mat->pdn);
 				svBulk->rho_pd  = pd->rho;
-				/* Compute the volume extracted as function of the phase material properties;
-				 * 1)Compute the effective quantity of melt: meff=M(phase_diagram)-Total_melt extracted;
-				 * 2)If mfeff is less than zero, it is zero (we cannot have less mass);
-				 * 3)If mfeff is higher than the threshold value stored in the material properties, do the extraction;
-				 *      3a):update the total amount of melt extracted in that node;
-				 *      3b):set the actual value of melt fraction equal to the minimum amount of melt that remains in the source
-				 * 4)In case the previous condition are not met, do not update the dMdF & put the effective melt quantity equal to the svBulk
-				 * [# Issue: if there is any melt to extract in that nodes, the information would be lost, overestimating the melt extraction for
-				 * that phase in this particular node & lowering this value for the phases that actually has melt phRat*Mv+...phRat*0. Since
-				 * in the melt extraction routine has only the final value, not the whole set of values. One possible strategy is to create an additional
-				 * svBulk variables, which saves the phRat of the effective melt. The best solution is to introduce an other svBulk variable: svBulk->phME that
-				 * clearly states that a phase(ii) has contribuite to the melt extraction;]
-				 */
-				mfeff = pd->mf-svBulk->mfextot;// historical variables
+				mfeff = pd->mf-svBulk->mfextot;// historical variables  !!!!!!!! POSSIBLE GENERATION OF ARTIFACT!!!!! {sv->Bulk is computed using all the contributes of the phase
+				// which means that or we find a way to separate each contribute or there is the possibility the melt extracted is underestimated
 				if (mfeff<0) mfeff=0;          //Correction
 				if( mfeff>phases[i].Mtrs)
 				{
-					svBulk->dMF    += phRat[i] * (mfeff-phases[i].Mleft);
-//                  svBulk->mf     += phRat[i] * ( pd->mf-svBulk->mfextot);
-					svBulk->mf      = phRat[i] * (phases[i].Mleft);
+			    mf_temp      = (phases[i].Mleft);
 				}
 				else
 				{
-					svBulk->dMF    += phRat[i] * 0;
-					svBulk->mf     += phRat[i]*mfeff;
+				mf_temp     += mfeff;
 	             }
 		     }
+
 				svBulk->rho_pf += phRat[i] * pd->rho_f;
 
 
@@ -639,16 +632,20 @@ PetscErrorCode VolConstEq(
 			// Phase diagram
 			if(mat->Pd_rho == 1)   // Density from a phase diagram (have svBulk->rho = svBulk->rho)
 			{
-				rho = (svBulk->mf * svBulk->rho_pf) + ((1-svBulk->mf) * svBulk->rho_pd);
+				// you need to use the actual mf associated specifically with all the phases... . Or we have to assume that the effective melt fraction is actually equally distribuited in the volume?
+				rho = (mf_temp * pd->rho_f) + ((1-mf_temp) * pd->rho);
+				rho_in=(mfeff * pd->rho_f) + ((1-mfeff) * pd->rho);
 			}
 			else
 			{
 				// temperature & pressure-dependent density
 				rho = mat->rho*cf_comp*cf_therm;
+				rho_in=rho;
 			}
 
 			// update density, thermal expansion & inverse bulk elastic parameter
 			svBulk->rho   += phRat[i]*rho;
+			svBulk->rho_in+= phRat[i]*rho_in;
 			svBulk->alpha += phRat[i]*mat->alpha;
 		}
 	}

@@ -672,7 +672,7 @@ PetscErrorCode LaMEMLibSolve(LaMEMLib *lm, void *param)
 		//==================
 
 		// Save the melt extraction parameters in local vectors
-        ierr = MeltExtractionSave(&lm->actx,&lm->jr);
+   //     ierr = MeltExtractionSave(&lm->actx,&lm->jr);
 
 		// Interpolate the history variables for the melt extraction and inject new markers based on volume
 

@@ -94,10 +94,11 @@ struct SolVarBulk
 	PetscScalar  rho_pf;// Fluid Density from phase diagram
 	PetscScalar  mf;    // Melt fraction from phase diagram
 	// PetscScalar  mfext[max_num_phases]; // Melt fraction extracted
+	PetscScalar  mfVol;
 	PetscScalar  mfextot;// Total Melt extracted from a node
-	PetscScalar  mfVol; // Total Melt Extracted from a a nodes
 	PetscScalar  dMF;
 	PetscScalar  Vol;   //Volume changes to send to the continuity equation
+	PetscScalar  rho_in;
 };
 
 //---------------------------------------------------------------------------

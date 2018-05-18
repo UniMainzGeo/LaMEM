@@ -589,7 +589,8 @@ PetscErrorCode JacResFormResidual(JacRes *jr, Vec x, Vec f)
 
 	// compute effective strain rate
 	ierr = JacResGetEffStrainRate(jr); CHKERRQ(ierr);
-
+    // compute melt extracted
+	ierr = MeltExtractionSave(jr); CHKERRQ(ierr);
 	// compute residual
 	ierr = JacResGetResidual(jr); CHKERRQ(ierr);
 
