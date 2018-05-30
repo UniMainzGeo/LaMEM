@@ -521,9 +521,10 @@ PetscErrorCode PVOutWriteVolume(JacRes *jr, OutBuf *outbuf)
 	COPY_FUNCTION_HEADER
 
 	// macros to copy fluid density to buffer
-	#define GET_VOLUME_CENTER  buff[k][j][i] = jr->svCell[iter++].svBulk.mfVol;
+	#define GET_VOLUME_CENTER  buff[k][j][i] = jr->svCell[iter++].svBulk.Mass;
 
 	cf = 1.0;
+
 
 	INTERPOLATE_COPY(fs->DA_CEN, outbuf->lbcen, InterpCenterCorner, GET_VOLUME_CENTER,  1, 0)
 

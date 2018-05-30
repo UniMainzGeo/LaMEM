@@ -600,6 +600,7 @@ PetscErrorCode LaMEMLibSolve(LaMEMLib *lm, void *param)
 	SNES           snes;   // PETSc nonlinear solver
 	PetscInt       restart;
 	PetscLogDouble t;
+	PetscInt       a;
 
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
@@ -618,7 +619,7 @@ PetscErrorCode LaMEMLibSolve(LaMEMLib *lm, void *param)
 	//===============
 	// TIME STEP LOOP
 	//===============
-
+    a=0;
 	while(!TSSolIsDone(&lm->ts))
 	{
 		//====================================
@@ -636,6 +637,10 @@ PetscErrorCode LaMEMLibSolve(LaMEMLib *lm, void *param)
 
 		// solve nonlinear equation system with SNES
 		PetscTime(&t);
+        // Call Melt Extraction to compute the mass.
+
+		if(a>1) ierr = MeltExtractionSave(&lm->jr); CHKERRQ(ierr);
+
 
 		ierr = SNESSolve(snes, NULL, lm->jr.gsol); CHKERRQ(ierr);
 
@@ -660,6 +665,8 @@ PetscErrorCode LaMEMLibSolve(LaMEMLib *lm, void *param)
 		//==================================================================
 		// MARKER & FREE SURFACE ADVECTION + EROSION 1
 		//==================================================================
+		// Call Melt Extraction to compute the number of particles, and to inject the new particles
+		if(a>1) ierr = MeltExtractionUpdate(&lm->jr,&lm->actx); CHKERRQ(ierr);
 
 		// calculate current time step
 		ierr = ADVSelectTimeStep(&lm->actx, &restart); CHKERRQ(ierr);
@@ -683,18 +690,15 @@ PetscErrorCode LaMEMLibSolve(LaMEMLib *lm, void *param)
 		// advect free surface
 		ierr = FreeSurfAdvect(&lm->surf); CHKERRQ(ierr);
 
+		// Interpolate back all the properties
+
+		if(a>1) ierr =  MeltExtractionInterpMarkerBackToGrid(&lm->actx);
+
 		// advect markers
 		ierr = ADVAdvect(&lm->actx); CHKERRQ(ierr);
 
 		// apply background strain-rate "DWINDLAR" BC (Bob Shaw "Ship of Strangers")
 		ierr = BCStretchGrid(&lm->bc); CHKERRQ(ierr);
-
-		//==================
-		// MELT EXTRACTION 2
-		//==================
-
-		// Interpolate melt extraction parameters back from the markers after advection
-		ierr =  MeltExtractionInterpMarkerBackToGrid(&lm->actx);
 
 		//==================================================================
 		// MARKER & FREE SURFACE ADVECTION + EROSION 3
@@ -727,6 +731,7 @@ PetscErrorCode LaMEMLibSolve(LaMEMLib *lm, void *param)
 
 		// restart database
 		ierr = LaMEMLibSaveRestart(lm); CHKERRQ(ierr);
+	    a+=1;
 	}
 
 	//======================

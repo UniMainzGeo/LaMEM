@@ -589,8 +589,8 @@ PetscErrorCode JacResFormResidual(JacRes *jr, Vec x, Vec f)
 
 	// compute effective strain rate
 	ierr = JacResGetEffStrainRate(jr); CHKERRQ(ierr);
+
     // compute melt extracted
-	ierr = MeltExtractionSave(jr); CHKERRQ(ierr);
 	// compute residual
 	ierr = JacResGetResidual(jr); CHKERRQ(ierr);
 
@@ -1051,6 +1051,7 @@ PetscErrorCode JacResGetResidual(JacRes *jr)
 	PetscScalar eta_creep, eta_vp;
 	PetscScalar depth, pc_lith, pc_pore, biot, ptotal, avg_topo;
 //	PetscScalar alpha, Tn,
+ 	PetscScalar dx,dy,dz,mass_in,mass_fin, mass_r,strain_scale;
 
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
@@ -1250,9 +1251,47 @@ PetscErrorCode JacResGetResidual(JacRes *jr)
 
 		// mass - currently T-dependency is deactivated
 //		gc[k][j][i] = -IKdt*(pc - pn) - theta + alpha*(Tc - Tn)/dt;
-        
-        gc[k][j][i] = -IKdt*(pc - pn) - theta;
-        
+	  // 	mass_r=0;
+
+        strain_scale=jr->scal->strain_rate;
+
+		dx = SIZE_CELL(i,sx,fs->dsx);
+	    dy = SIZE_CELL(j,sy,fs->dsy);
+	    dz = SIZE_CELL(k,sz,fs->dsz);
+        mass_in=svBulk->rho_in*dx*dy*dz;
+        mass_fin=(mass_in+svBulk->Mass);
+        mass_r=(mass_in)/mass_fin;
+
+      /*  if(svBulk->Mass != 0)
+        {
+    	    PetscPrintf(PETSC_COMM_WORLD,"*** NODE*** %d %d %d\n", k, j, i);
+    	    PetscPrintf(PETSC_COMM_WORLD,"--------------------------------------------------------------------------------------------------- \n");
+        	PetscPrintf(PETSC_COMM_WORLD,"1) mi/mf   %6f\n", mass_in/mass_fin);
+        	PetscPrintf(PETSC_COMM_WORLD,"2) Mass_flow   %10f\n", svBulk->Mass);
+        	PetscPrintf(PETSC_COMM_WORLD,"3) mass_f   %10f\n", mass_fin);
+        	PetscPrintf(PETSC_COMM_WORLD,"4) mass_in   %10f\n", mass_in);
+        	PetscPrintf(PETSC_COMM_WORLD,"5) Vol_def   %6f\n", (1-mass_r));
+        	PetscPrintf(PETSC_COMM_WORLD,"6) Vol_def/dt   %6f\n", 1/(dt)*(1-mass_r));
+        	PetscPrintf(PETSC_COMM_WORLD,"6) Vol_def/dt   %12.5e\n", (1/(dt)*(1-mass_r))*strain_scale);
+        	PetscPrintf(PETSC_COMM_WORLD,"7) mfrac   %6f\n", svBulk->mfextot);
+        	PetscPrintf(PETSC_COMM_WORLD,"8) dMextracted   %6f\n", svBulk->dMF);
+        	PetscPrintf(PETSC_COMM_WORLD,"9) dx= dy= dz=   %6f %6f %6f\n", dx, dy, dz);
+        	PetscPrintf(PETSC_COMM_WORLD,"10) -IKdT   %6f\n", -IKdt*(pc - pn));
+        	PetscPrintf(PETSC_COMM_WORLD,"11)rho_fluid= %6f\n",svBulk->rho_pf);
+
+        	if(svBulk->mf>0.2)
+        	{
+            	PetscPrintf(PETSC_COMM_WORLD,"AAAAAAAAAAAAAAAAAAAAAAAALT\n");
+
+        	}
+        	PetscPrintf(PETSC_COMM_WORLD,"--------------------------------------------------------------------------------------------------- \n");
+
+
+        }
+       */// if(svBulk->S<0) PetscPrintf(PETSC_COMM_WORLD,"S= %12.5e\n", ((svBulk->S)/dt)*strain_scale);
+
+        gc[k][j][i] = -IKdt*(pc - pn) -theta+1/dt*(1-mass_r); //-(svBulk->S);
+
 	}
 	END_STD_LOOP
 

@@ -141,7 +141,9 @@ public:
 	PetscScalar DInt;          // Depth of intrusion                         [m]
 	PetscScalar DExt;          // Depth of intrusion                         [m]
 	PetscScalar pMant;         // Specify if a phase is mantle or not [0 or 1]
-};
+	PetscScalar S;             // Random Source
+	PetscInt    MeltE;         // Control value that states if
+	};
 
 //---------------------------------------------------------------------------
 //............   Phase diagram data   .......................................

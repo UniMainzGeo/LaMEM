@@ -461,7 +461,7 @@ PetscErrorCode DevConstEq(
 	PetscInt     i;
 	ConstEqCtx   ctx;
 	Material_t  *mat;
-	PetscScalar  DII, APS, eta_total, eta_creep_phase, eta_viscoplastic_phase, DIIpl, dEta, fr, mf;
+	PetscScalar  DII, APS, eta_total, eta_creep_phase, eta_viscoplastic_phase, DIIpl, dEta, fr, mf,mf_temp;
 
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
@@ -493,19 +493,36 @@ PetscErrorCode DevConstEq(
 			mat = &phases[i];
 
 			// Get PD data
-			if(mat->Pd_rho == 1)
+    		if(mat->Pd_rho == 1)
 			{
 				// Get the data from phase diagram
 				ierr = SetDataPhaseDiagram(pd, p, T, 0, mat->pdn); CHKERRQ(ierr);
-				/*if (pd->mf > phases[i].Mtrs)
-				{
-					pd->mf       = phases[i].Mleft;
-				}*/
+
 
 				// Viscosity Feedback
+				if(mat->MeltE>0 && !ctrl->initGuess)
+				{
 				if(pd->mf-svDev->mfextot<0) mf = (pd->mf-svDev->mfextot);
-				if(mf>mat->Mtrs) mf=mat->Mleft;
+				if(mf>mat->Mtrs)
+				{
+				  mf_temp=mf-mat->Mleft;
+				  if(mf_temp<0)
+				  {
+					  mf_temp=0;
+				  }
+				  svDev->mf=mf_temp;
+				}
+				else
+				{
                 svDev->mf =mf;
+				}
+				}
+				else
+				{
+					svDev->mf=pd->mf;
+				}
+
+
 				// svDev->dMF       = ((pd->mf - svDev->mfextot)-phases[i].Mleft);
 			}
 
@@ -548,7 +565,7 @@ PetscErrorCode VolConstEq(
 	PetscInt     i;
 	Material_t  *mat;
 	PetscScalar  cf_comp, cf_therm, Kavg, rho,mfeff;
-	PetscScalar  dMas;
+	PetscScalar  dM;
     PetscScalar  mf_temp,rho_in;
 	PetscFunctionBegin;
 
@@ -558,8 +575,8 @@ PetscErrorCode VolConstEq(
 	svBulk->IKdt  = 0.0;
 	Kavg          = 0.0;
 	svBulk->rho_pf = 0;
-	svBulk->mf     = 0;
-	svBulk->dMF    = 0;
+//	svBulk->mf     = 0;
+//	svBulk->dMF    = 0;
     svBulk->rho_in = 0;
 
 	// scan all phases
@@ -578,17 +595,31 @@ PetscErrorCode VolConstEq(
 				// Get the data from phase diagram
 				SetDataPhaseDiagram(pd, p, T, 0, mat->pdn);
 				svBulk->rho_pd  = pd->rho;
+				if(mat->MeltE>0 && !ctrl->initGuess)
+				{
 				mfeff = pd->mf-svBulk->mfextot;// historical variables  !!!!!!!! POSSIBLE GENERATION OF ARTIFACT!!!!! {sv->Bulk is computed using all the contributes of the phase
 				// which means that or we find a way to separate each contribute or there is the possibility the melt extracted is underestimated
 				if (mfeff<0) mfeff=0;          //Correction
 				if( mfeff>phases[i].Mtrs)
 				{
-			    mf_temp      = (phases[i].Mleft);
+					dM=phases[i].Mleft;
+					mf_temp=mfeff-dM;
+					if(mf_temp<0)
+					{
+					 dM=mfeff-0;
+					 mf_temp=0;
+					}
+
 				}
 				else
 				{
-				mf_temp     += mfeff;
+				mf_temp      = mfeff;
 	             }
+				}
+				else
+				{
+					mf_temp=pd->mf;
+				}
 		     }
 
 				svBulk->rho_pf += phRat[i] * pd->rho_f;
@@ -647,6 +678,15 @@ PetscErrorCode VolConstEq(
 			svBulk->rho   += phRat[i]*rho;
 			svBulk->rho_in+= phRat[i]*rho_in;
 			svBulk->alpha += phRat[i]*mat->alpha;
+		//	if(ctrl->initGuess)
+			//	{
+			//		svBulk->S=0;
+				//}
+			//else
+			//{
+		//	svBulk->S     += phRat[i]*mat->S;
+
+			//}
 		}
 	}
 

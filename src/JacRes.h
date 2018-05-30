@@ -97,8 +97,9 @@ struct SolVarBulk
 	PetscScalar  mfVol;
 	PetscScalar  mfextot;// Total Melt extracted from a node
 	PetscScalar  dMF;
-	PetscScalar  Vol;   //Volume changes to send to the continuity equation
+	PetscScalar  Mass;   //Volume changes to send to the continuity equation
 	PetscScalar  rho_in;
+	PetscScalar  S;// volumetric source of mass
 };
 
 //---------------------------------------------------------------------------

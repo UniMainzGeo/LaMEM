@@ -152,7 +152,7 @@ PetscErrorCode MeltExtractionSave(JacRes *jr)
     PetscScalar  *phRat                                        ;   // Phase Ratio
     PetscScalar  ***p,pc                                       ;   // pressure
     PetscScalar  ***T,Tc                                       ;   // temperature
-    PetscScalar  mfeff,dx,dy,dz                                ;   // Effective melt extracted
+    PetscScalar  mfeff,dx,dy,dz,dM,mf_temp	;   // Effective melt extracted
     Material_t   *mat                                          ;   // Material properties structure
     Material_t   *phases                                       ;   // Phases
     //AdvCtx       *actx                                         ;
@@ -175,7 +175,14 @@ PetscErrorCode MeltExtractionSave(JacRes *jr)
 	GET_CELL_RANGE(ny, sy, fs->dsy)                            ;
 	GET_CELL_RANGE(nz, sz, fs->dsz)                            ;
 	ierr = VecZeroEntries(jr->Vol)                       ; CHKERRQ(ierr);
-
+	  START_STD_LOOP{
+		     svCell    = &jr->svCell[iter]                         ;     // take the central node based properties
+		     svBulk    = &svCell->svBulk;
+		     svBulk->dMF=0;
+		     svBulk->Mass=0;
+		     svBulk->mf  =0;
+		     iter++;
+		}END_STD_LOOP
 
     for(iphase=0;iphase<numPhases;iphase++)
     {
@@ -185,6 +192,7 @@ PetscErrorCode MeltExtractionSave(JacRes *jr)
     	//Create the buffer
     	ierr = VecZeroEntries(jr->Miphase)                       ; CHKERRQ(ierr);
     	ierr = DMDAVecGetArray(fs->DA_CEN, jr->Miphase, &Mipbuff); CHKERRQ(ierr);
+    	iter=0;
         START_STD_LOOP
           {
     		  svCell    = &jr->svCell[iter]                 ;     // take the central node based properties
@@ -201,15 +209,23 @@ PetscErrorCode MeltExtractionSave(JacRes *jr)
     		        ierr  = SetDataPhaseDiagram(pd, pc, Tc, 0, mat->pdn); CHKERRQ(ierr) ;
     			    mfeff = pd->mf-svBulk->mfextot                                      ;// historical variables
     		        if (mfeff<0) mfeff=0                                                ;//Correction
-    			    if( mfeff>phases[iphase].Mtrs)
+    			    if( mfeff>=phases[iphase].Mtrs)
     				  {
     			    	// Compute the Mass Escaping from the local volume
     			    	dx = SIZE_CELL(i,sx,fs->dsx);
-    			    	dy = SIZE_CELL(i,sy,fs->dsy);
-    			    	dz = SIZE_CELL(i,sz,fs->dsz);
-    			    	Mipbuff[k][j][i]   = - phRat[iphase] * (mfeff-phases[iphase].Mleft)*dx*dy*dz*pd->rho_f;
-    			    	svBulk->mf +=phRat[iphase]*phases[iphase].Mleft;
-    			    	svBulk->dMF+=phRat[iphase]*(mfeff-phases[iphase].Mleft);
+    			    	dy = SIZE_CELL(j,sy,fs->dsy);
+    			    	dz = SIZE_CELL(k,sz,fs->dsz);
+    			    	dM=phases[iphase].Mleft;
+    			    	mf_temp=mfeff-dM;
+    			    	if(mf_temp<0)
+    			    	{
+    			    		dM=mfeff-0;
+    			    		mf_temp=0;
+    			    	}
+
+    			    	Mipbuff[k][j][i]   = - phRat[iphase] * dM*dx*dy*dz*pd->rho_f;
+    			    	svBulk->mf +=phRat[iphase]*mf_temp;
+    			    	svBulk->dMF+=phRat[iphase]*dM;
     				   }
     			    else
     			    {
@@ -225,31 +241,131 @@ PetscErrorCode MeltExtractionSave(JacRes *jr)
            // Send the data to Melt Extraction Exchange volume & compute the injection
 
            // Update Miphase
-           ierr =  MeltExtractionExchangeVolume(jr,iphase)	;	CHKERRQ(ierr);
+            ierr =  MeltExtractionExchangeVolume(jr,iphase)	;	CHKERRQ(ierr);
            // Update the marker properties (Interpolate the properties back to the marker, then eventually inject)
            // ierr =  MeltExtractionInterpMarker(AdvCtx *actx,iphase)	;	CHKERRQ(ierr);		// Issue1: How to handle the extrusion&free surface?
 
-           ierr = DMDAVecGetArray(fs->DA_CEN,jr->Vol,&Volume); CHKERRQ(ierr);
+          // ierr = DMDAVecGetArray(fs->DA_CEN,jr->Vol,&Volume); CHKERRQ(ierr);
            ierr = DMDAVecGetArray(fs->DA_CEN,jr->Miphase,&Mipbuff); CHKERRQ(ierr);
             iter=0;
 
             // Change name into MASS when it is REALLY SURE THAT EVERYTHING IS WORKING !!!!!!!!!!!!!!!!!!!
            START_STD_LOOP{
-               Volume[k][j][i] +=Mipbuff[k][j][i] ;
-
+                svCell    = &jr->svCell[iter]                         ;     // take the central node based properties
+                svBulk    = &svCell->svBulk                           ;
+                svBulk->Mass +=Mipbuff[k][j][i] ;
+                iter++;
            }END_STD_LOOP
 
            ierr = DMDAVecRestoreArray(fs->DA_CEN, jr->Miphase, &Mipbuff)                 ;        CHKERRQ(ierr);
-           ierr = DMDAVecRestoreArray(fs->DA_CEN, jr->Vol, &Volume)                      ;        CHKERRQ(ierr);
            }
      }
 
-    ierr = DMDAVecGetArray(fs->DA_CEN,jr->Vol,&Volume); CHKERRQ(ierr);
 
 	PetscFunctionReturn(0);
 
 }
 //---------------------------------------------------------------------------
+
+#undef __FUNCT__
+#define __FUNCT__ "MeltExtractionUpdate"
+PetscErrorCode MeltExtractionUpdate(JacRes *jr, AdvCtx *actx)
+{    /*This function must be called inside the free surface routine. Such that it could handle even the "melt" sedimentation by phase.
+*/
+	PetscErrorCode ierr;
+	PetscFunctionBegin;
+
+	PetscScalar  ***Mipbuff,***Volume                  ;   // 3D structure storing the melt that has been extracted
+	PetscInt      i, j, k, nx, ny, nz, sx, sy, sz, iter, iphase;   // Iteration
+	SolVarBulk   *svBulk                                       ;   // pointer 2 the solution variable defined as "bulk cell properties"
+	SolVarCell   *svCell                                       ;   // pointer 2 the Solution variable defined in the cell
+	FDSTAG       *fs                                           ;   // pointer 2 the grid structure and variables
+	PData        *pd                                           ;   // pointer 2 the phase diagram structure
+	PetscInt     numPhases                                     ;   // number of phases
+    PetscScalar  *phRat                                        ;   // Phase Ratio
+    PetscScalar  ***p,pc                                       ;   // pressure
+    PetscScalar  ***T,Tc                                       ;   // temperature
+    PetscScalar  mfeff,dx,dy,dz,dM,mf_temp	;   // Effective melt extracted
+    Material_t   *mat                                          ;   // Material properties structure
+    Material_t   *phases                                       ;   // Phases
+	fs        = jr->fs                                         ;   // take the structured grid data from jr. The out put is a pointer structure
+	numPhases = jr->dbm->numPhases                             ;   // take the number of phases from dbm structures
+    pd        = jr->Pd                                         ;   // take the structure associated to the phase diagram
+    phases    = jr->dbm->phases                                ;   // take the phases
+    //
+    // Calling Moho_Tracking (working on)
+    //
+
+	ierr = DMDAVecGetArray(fs->DA_CEN, jr->lp,      &p)        ;      CHKERRQ(ierr);
+    ierr = DMDAVecGetArray(fs->DA_CEN, jr->lT,      &T)        ;      CHKERRQ(ierr);
+
+	iter = 0                                                   ;
+	GET_CELL_RANGE(nx, sx, fs->dsx)                            ;
+	GET_CELL_RANGE(ny, sy, fs->dsy)                            ;
+	GET_CELL_RANGE(nz, sz, fs->dsz)                            ;
+
+    for(iphase=0;iphase<numPhases;iphase++)
+    {
+      	  mat=&phases[iphase];
+    	  if(mat->Pd_rho == 1)
+    	  {
+    	//Create the buffer
+    	ierr = VecZeroEntries(jr->Vol)                       ; CHKERRQ(ierr);
+    	ierr = DMDAVecGetArray(fs->DA_CEN, jr->Miphase, &Mipbuff); CHKERRQ(ierr);
+    	iter=0;
+        START_STD_LOOP
+          {
+    		  svCell    = &jr->svCell[iter]                 ;     // take the central node based properties
+     		  svBulk    = &svCell->svBulk                     ;     // take the bulk solution variables
+    		  phRat     = jr->svCell[iter++].phRat            ;     // take phase ratio on the central node
+
+    		  if(phRat[iphase])
+    		          	{
+    		      	           // Temperature&Pressure
+    		      	           // access current pressure
+    		      		    	pc    = p[k][j][i]                                                  ;
+    		      			   // current temperature
+    		      			    Tc    = T[k][j][i]                                                  ;
+    		      		        ierr  = SetDataPhaseDiagram(pd, pc, Tc, 0, mat->pdn); CHKERRQ(ierr) ;
+    		      			    mfeff = pd->mf-svBulk->mfextot                                      ;// historical variables
+    		      		        if (mfeff<0) mfeff=0                                                ;//Correction
+    		      			    if( mfeff>=phases[iphase].Mtrs)
+    		      				  {
+    		      			    	// Compute the Mass Escaping from the local volume
+    		      			    	dx = SIZE_CELL(i,sx,fs->dsx);
+    		      			    	dy = SIZE_CELL(j,sy,fs->dsy);
+    		      			    	dz = SIZE_CELL(k,sz,fs->dsz);
+    		      			    	dM=phases[iphase].Mleft;
+    		      			    	mf_temp=mfeff-dM;
+    		      			    	if(mf_temp<0)
+    		      			    	{
+    		      			    		dM=mfeff-0;
+    		      			    		mf_temp=0;
+    		      			    	}
+
+    		      			    	Mipbuff[k][j][i]   = - phRat[iphase] * dM*dx*dy*dz;
+    		      				   }
+    		      			    else
+    		      			    {
+    		      			    	Mipbuff[k][j][i]   = 0;
+
+    		      			    }
+        	   }
+
+           }END_STD_LOOP
+           ierr = DMDAVecRestoreArray(fs->DA_CEN, jr->Miphase, &Mipbuff)                 ;        CHKERRQ(ierr);
+           ierr =  MeltExtractionExchangeVolume(jr,iphase)	;	CHKERRQ(ierr);
+           ierr =  MeltExtractionInterpMarker(actx,iphase)	;	CHKERRQ(ierr);
+           }
+     }
+
+
+	PetscFunctionReturn(0);
+
+}
+//-----------------------------
+
+
 #undef __FUNCT__
 #define __FUNCT__ "MeltExtractionInterpMarker"
 PetscErrorCode MeltExtractionInterpMarker(AdvCtx *actx, PetscInt iphase)
@@ -261,11 +377,12 @@ PetscErrorCode MeltExtractionInterpMarker(AdvCtx *actx, PetscInt iphase)
 		FDSTAG      *fs ;
 		JacRes      *jr ;
 		Marker      *P  ;
+	    SolVarCell   *svCell	;   // pointer 2 the Solution variable defined in the cell
 		AdvVelCtx   vi  ;
 		PetscScalar UP  ;
 		PetscInt    nx, ny, sx, sy, sz;
 		PetscInt    jj, ID, I, J, K   ;
-		PetscScalar *vgdc, ***vldc, *Mipbuff ;
+		PetscScalar *vgdc, ***vldc, *Mipbuff,Dx,Dy,Dz ;
 
 		PetscErrorCode ierr;
 		PetscFunctionBegin;
@@ -304,22 +421,30 @@ PetscErrorCode MeltExtractionInterpMarker(AdvCtx *actx, PetscInt iphase)
 
 			// get consecutive index of the host cell
 		    	ID = actx->cellnum[jj];
+		        svCell	= &jr->svCell[ID];
 
 			// expand I, J, K cell indices
 		    	GET_CELL_IJK(ID, I, J, K, nx, ny)
+
+		    	Dx = SIZE_CELL(sx+I,sx,fs->dsx);
+		        Dy = SIZE_CELL(sy+J,sy,fs->dsy);
+		    	Dz = SIZE_CELL(sz+K,sz,fs->dsz);
 
 			// access buffer
 		    	UP = vldc[sz+K][sy+J][sx+I];
 
 		    	if(UP > 0)
 		    	{
-				ierr = MeltExtractionInject(jr,actx,&vi, ID, I, J, K, UP,iphase);  CHKERRQ(ierr);
+				ierr = MeltExtractionInject(jr,actx,&vi, ID, I, J, K, UP,iphase,Dx,Dy,Dz);  CHKERRQ(ierr);
 				vldc[sz+K][sy+J][sx+I] = 0; // It avoid to repeat the injection.
+	        	PetscPrintf(PETSC_COMM_WORLD,"1) UP+   %40f\n", UP/(Dx*Dy*Dz));
+
 		    	}
 		    	else if(UP<0)
 		    	{
 		    		if(P->phase==iphase)
 		    		{
+		    	    UP/=(Dx*Dy*Dz*svCell->phRat[iphase]);
 		    		P->Mtot += -UP;  // has to increase by the amount of melt change
 		    		P->Mvol +=  UP;  // has to decrease
 		    		}
@@ -615,6 +740,8 @@ PetscErrorCode MeltExtractionExchangeVolume(JacRes *jr, PetscInt iphase)
 
 					// interpolate velocity
 					Mipbuff[sz+K][j][i] = -IR*vdgmvvecmerge2[L][j][i];
+		        	PetscPrintf(PETSC_COMM_WORLD,"1) Mipbuff   %6f\n", Mipbuff[sz+K][j][i]);
+
 				}
 			}
 		}
@@ -626,7 +753,7 @@ PetscErrorCode MeltExtractionExchangeVolume(JacRes *jr, PetscInt iphase)
 //---------------------------------------------------------------------------
 #undef __FUNCT__
 #define __FUNCT__ "MeltExtractionInject"
-PetscErrorCode MeltExtractionInject(JacRes *jr,AdvCtx *actx, AdvVelCtx *vi, PetscInt ID, PetscInt I, PetscInt J, PetscInt K, PetscScalar UP, PetscInt iphase)
+PetscErrorCode MeltExtractionInject(JacRes *jr,AdvCtx *actx, AdvVelCtx *vi, PetscInt ID, PetscInt I, PetscInt J, PetscInt K, PetscScalar UP, PetscInt iphase,PetscScalar Dx,PetscScalar Dy,PetscScalar Dz)
 { /* 3_b
    */
 
@@ -651,15 +778,12 @@ PetscErrorCode MeltExtractionInject(JacRes *jr,AdvCtx *actx, AdvVelCtx *vi, Pets
 
 	// get markers in cell
 	n = vi->markstart[ID+1] - vi->markstart[ID];
-	if(n>0)
-	{
-		PetscPrintf(PETSC_COMM_WORLD," I found it");
-	}
+
 
 	// scan cell markers. If it finds a particles that has the same phase of the injection and whose volume is less than saturation volume
 	// it update its volume, and update Up. If it does not find anything goes to the injection routine
 	// I assume that the saturation volume is 2, but I think we need to discuss about it.
-	for(jj = 0; jj < n; jj++)
+	/*for(jj = 0; jj < n; jj++)
 	{
 		// get marker index
 		pind = vi->markind[vi->markstart[ID] + jj];
@@ -682,11 +806,12 @@ PetscErrorCode MeltExtractionInject(JacRes *jr,AdvCtx *actx, AdvVelCtx *vi, Pets
 			}
 		}
 	}
-
+*/
 	// We have not found a marker of the correct phase or there is still melt to be injected
 	if( UP > 0)
 	{
-		ninj = (PetscInt)ceil(UP);  // Amount of markers we have to inject
+		UP=UP/(Dx*Dy*Dz);
+		ninj = (PetscInt)ceil(UP)*2;  // Amount of markers we have to inject
 
 		// allocate memory for new markers
 		actx->nrecv = ninj;
@@ -741,18 +866,7 @@ PetscErrorCode MeltExtractionInject(JacRes *jr,AdvCtx *actx, AdvVelCtx *vi, Pets
 			actx->recvbuf[ipn].S.yy = 0;
 			actx->recvbuf[ipn].S.yz = 0;
 			actx->recvbuf[ipn].S.zz = 0;
-
-			if (UP > 1)
-			{
-				actx->recvbuf[ipn].Mvol = 2;
-				UP -= 1;
-			}
-			else
-			{
-				actx->recvbuf[ipn].Mvol = 1+UP;
-				UP = 0;
-			}
-
+			actx->recvbuf[ipn].Mvol = 1;
 			actx->recvbuf[ipn].U[0] = 0;
 			actx->recvbuf[ipn].U[1] = 0;
 			actx->recvbuf[ipn].U[2] = 0;
@@ -775,7 +889,7 @@ PetscErrorCode MeltExtractionInject(JacRes *jr,AdvCtx *actx, AdvVelCtx *vi, Pets
 		ierr = ADVUpdateMarkCell(actx); CHKERRQ(ierr);
 
 		// print info
-		// PetscPrintf(PETSC_COMM_WORLD,"Melt extraction injected %i markers.\n", ninj);
+		 PetscPrintf(PETSC_COMM_WORLD,"Melt extraction injected %i markers.\n", ninj);
 
 		// clear
 		ierr = PetscFree(actx->recvbuf); CHKERRQ(ierr);
