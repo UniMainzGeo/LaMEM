@@ -437,7 +437,8 @@ PetscErrorCode MeltExtractionInterpMarker(AdvCtx *actx, PetscInt iphase)
 		    	{
 				ierr = MeltExtractionInject(jr,actx,&vi, ID, I, J, K, UP,iphase,Dx,Dy,Dz);  CHKERRQ(ierr);
 				vldc[sz+K][sy+J][sx+I] = 0; // It avoid to repeat the injection.
-	        	PetscPrintf(PETSC_COMM_WORLD,"1) UP+   %40f\n", UP/(Dx*Dy*Dz));
+	        	PetscPrintf(PETSC_COMM_WORLD,"Z coord %6f\n",COORD_NODE(sz+K, sz, fs->dsz)*jr->scal->length);
+	        //	PetscPrintf(PETSC_COMM_WORLD,"1) UP+   %40f\n", UP/(Dx*Dy*Dz));
 
 		    	}
 		    	else if(UP<0)
@@ -740,7 +741,7 @@ PetscErrorCode MeltExtractionExchangeVolume(JacRes *jr, PetscInt iphase)
 
 					// interpolate velocity
 					Mipbuff[sz+K][j][i] = -IR*vdgmvvecmerge2[L][j][i];
-		        	PetscPrintf(PETSC_COMM_WORLD,"1) Mipbuff   %6f\n", Mipbuff[sz+K][j][i]);
+		        	PetscPrintf(PETSC_COMM_WORLD,"Z coord %6f\n",COORD_NODE(sz+K, sz, fs->dsz)*jr->scal->length);
 
 				}
 			}
@@ -775,9 +776,8 @@ PetscErrorCode MeltExtractionInject(JacRes *jr,AdvCtx *actx, AdvVelCtx *vi, Pets
 
 	PhInject = phases[iphase].PhInt;
 
-
 	// get markers in cell
-	n = vi->markstart[ID+1] - vi->markstart[ID];
+	n = actx->markstart[ID+1] - actx->markstart[ID];
 
 
 	// scan cell markers. If it finds a particles that has the same phase of the injection and whose volume is less than saturation volume
@@ -825,7 +825,7 @@ PetscErrorCode MeltExtractionInject(JacRes *jr,AdvCtx *actx, AdvVelCtx *vi, Pets
 		// get cell coordinates
 		xs[0] = fs->dsx.ncoor[I]; xe[0] = fs->dsx.ncoor[I+1];
 		xs[1] = fs->dsy.ncoor[J]; xe[1] = fs->dsy.ncoor[J+1];
-		xs[2] = fs->dsz.ncoor[K]; xe[2] = fs->dsz.ncoor[K+1];
+		xs[2] = phases[iphase].DInt/jr->scal->length; xe[2] = fs->dsz.ncoor[K+1];
 
 		for(ipn = 0; ipn<ninj; ipn++)
 		{
@@ -855,6 +855,8 @@ PetscErrorCode MeltExtractionInject(JacRes *jr,AdvCtx *actx, AdvVelCtx *vi, Pets
 
 			// hard-coded new marker properties for debugging
 			actx->recvbuf[ipn].phase = PhInject;
+        	PetscPrintf(PETSC_COMM_WORLD,"I'm injecting phase= %d\n",actx->recvbuf[ipn].phase = PhInject);
+        	PetscPrintf(PETSC_COMM_WORLD,"The new marker has the following coordinates X=%6f Y=%6f Z=%6f \n", xp[0]*jr->scal->length, xp[1]*jr->scal->length,xp[2]*jr->scal->length);
 			actx->recvbuf[ipn].p = actx->markers[sind].p;
 			actx->recvbuf[ipn].T = phases[iphase].TInt;
 			actx->recvbuf[ipn].APS = 5;

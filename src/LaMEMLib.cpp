@@ -666,7 +666,6 @@ PetscErrorCode LaMEMLibSolve(LaMEMLib *lm, void *param)
 		// MARKER & FREE SURFACE ADVECTION + EROSION 1
 		//==================================================================
 		// Call Melt Extraction to compute the number of particles, and to inject the new particles
-		if(a>1) ierr = MeltExtractionUpdate(&lm->jr,&lm->actx); CHKERRQ(ierr);
 
 		// calculate current time step
 		ierr = ADVSelectTimeStep(&lm->actx, &restart); CHKERRQ(ierr);
@@ -692,10 +691,12 @@ PetscErrorCode LaMEMLibSolve(LaMEMLib *lm, void *param)
 
 		// Interpolate back all the properties
 
-		if(a>1) ierr =  MeltExtractionInterpMarkerBackToGrid(&lm->actx);
 
 		// advect markers
 		ierr = ADVAdvect(&lm->actx); CHKERRQ(ierr);
+
+		if(a>1) ierr = MeltExtractionUpdate(&lm->jr,&lm->actx); CHKERRQ(ierr);
+		if(a>1) ierr =  MeltExtractionInterpMarkerBackToGrid(&lm->actx);
 
 		// apply background strain-rate "DWINDLAR" BC (Bob Shaw "Ship of Strangers")
 		ierr = BCStretchGrid(&lm->bc); CHKERRQ(ierr);
