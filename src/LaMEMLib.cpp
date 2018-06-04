@@ -696,6 +696,8 @@ PetscErrorCode LaMEMLibSolve(LaMEMLib *lm, void *param)
 		ierr = ADVAdvect(&lm->actx); CHKERRQ(ierr);
 
 		if(a>1) ierr = MeltExtractionUpdate(&lm->jr,&lm->actx); CHKERRQ(ierr);
+
+
 		if(a>1) ierr =  MeltExtractionInterpMarkerBackToGrid(&lm->actx);
 
 		// apply background strain-rate "DWINDLAR" BC (Bob Shaw "Ship of Strangers")

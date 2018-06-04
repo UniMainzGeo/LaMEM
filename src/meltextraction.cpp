@@ -310,7 +310,7 @@ PetscErrorCode MeltExtractionUpdate(JacRes *jr, AdvCtx *actx)
     	  if(mat->Pd_rho == 1)
     	  {
     	//Create the buffer
-    	ierr = VecZeroEntries(jr->Vol)                       ; CHKERRQ(ierr);
+    	ierr = VecZeroEntries(jr->Miphase)                       ; CHKERRQ(ierr);
     	ierr = DMDAVecGetArray(fs->DA_CEN, jr->Miphase, &Mipbuff); CHKERRQ(ierr);
     	iter=0;
         START_STD_LOOP
@@ -402,7 +402,7 @@ PetscErrorCode MeltExtractionInterpMarker(AdvCtx *actx, PetscInt iphase)
     	ierr = VecGetArray(jr->Miphase, &Mipbuff); CHKERRQ(ierr);
 
         // Loop over the cell, to take dMF 
-		for(jj = 0; jj < fs->nCells; jj++) vgdc[jj] = Mipbuff[jj]; // Save (again?) the dMF in a vector without takint into account k,j,i but the global indexing
+		for(jj = 0; jj < fs->nCells; jj++) vgdc[jj] = Mipbuff[jj];
 
 		// restore access
 		ierr = VecRestoreArray(jr->gdc, &vgdc);  CHKERRQ(ierr);
@@ -435,10 +435,12 @@ PetscErrorCode MeltExtractionInterpMarker(AdvCtx *actx, PetscInt iphase)
 
 		    	if(UP > 0)
 		    	{
-				ierr = MeltExtractionInject(jr,actx,&vi, ID, I, J, K, UP,iphase,Dx,Dy,Dz);  CHKERRQ(ierr);
+		        UP=UP/(Dx*Dy*Dz);
+				ierr = MeltExtractionInject(jr,actx,&vi, ID, I, J, K, UP,iphase,sz,sy,sx);  CHKERRQ(ierr);
 				vldc[sz+K][sy+J][sx+I] = 0; // It avoid to repeat the injection.
 	        	PetscPrintf(PETSC_COMM_WORLD,"Z coord %6f\n",COORD_NODE(sz+K, sz, fs->dsz)*jr->scal->length);
-	        //	PetscPrintf(PETSC_COMM_WORLD,"1) UP+   %40f\n", UP/(Dx*Dy*Dz));
+	        	PetscPrintf(PETSC_COMM_WORLD,"1) UP+   %40f\n", UP);
+	        	PetscPrintf(PETSC_COMM_WORLD,"1) sz   %40f\n",sz);
 
 		    	}
 		    	else if(UP<0)
@@ -754,7 +756,7 @@ PetscErrorCode MeltExtractionExchangeVolume(JacRes *jr, PetscInt iphase)
 //---------------------------------------------------------------------------
 #undef __FUNCT__
 #define __FUNCT__ "MeltExtractionInject"
-PetscErrorCode MeltExtractionInject(JacRes *jr,AdvCtx *actx, AdvVelCtx *vi, PetscInt ID, PetscInt I, PetscInt J, PetscInt K, PetscScalar UP, PetscInt iphase,PetscScalar Dx,PetscScalar Dy,PetscScalar Dz)
+PetscErrorCode MeltExtractionInject(JacRes *jr,AdvCtx *actx, AdvVelCtx *vi, PetscInt ID, PetscInt I, PetscInt J, PetscInt K, PetscScalar UP, PetscInt iphase,PetscInt sx,PetscInt sy,PetscInt sz)
 { /* 3_b
    */
 
@@ -769,7 +771,6 @@ PetscErrorCode MeltExtractionInject(JacRes *jr,AdvCtx *actx, AdvVelCtx *vi, Pets
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
 
-	found = 0;
 	fs        = actx->fs;
     phases    = jr->dbm->phases                                ;   // take the phases
 
@@ -779,39 +780,10 @@ PetscErrorCode MeltExtractionInject(JacRes *jr,AdvCtx *actx, AdvVelCtx *vi, Pets
 	// get markers in cell
 	n = actx->markstart[ID+1] - actx->markstart[ID];
 
-
-	// scan cell markers. If it finds a particles that has the same phase of the injection and whose volume is less than saturation volume
-	// it update its volume, and update Up. If it does not find anything goes to the injection routine
-	// I assume that the saturation volume is 2, but I think we need to discuss about it.
-	/*for(jj = 0; jj < n; jj++)
-	{
-		// get marker index
-		pind = vi->markind[vi->markstart[ID] + jj];
-
-		P = &actx->markers[pind];
-
-		if(P->phase == PhInject && P->Mvol<2)
-		{
-			if(UP-= 2-P->Mvol>=0)
-			{
-				P->T= ((P->T*P->Mvol)+(2-P->Mvol)*phases[iphase].TInt)/2; // Correct the temperature of the particles
-				P->Mvol = 2;
-				UP-= 2-P->Mvol;
-			}
-			else
-			{
-				P->T= ((P->T*P->Mvol)+(UP)*phases[iphase].TInt)/2; // Correct the temperature of the particles
-				P->Mvol+=UP;
-				UP=0;
-			}
-		}
-	}
-*/
 	// We have not found a marker of the correct phase or there is still melt to be injected
 	if( UP > 0)
 	{
-		UP=UP/(Dx*Dy*Dz);
-		ninj = (PetscInt)ceil(UP)*2;  // Amount of markers we have to inject
+		ninj = (PetscInt)ceil(UP)*3;  // Amount of markers we have to inject
 
 		// allocate memory for new markers
 		actx->nrecv = ninj;
@@ -825,8 +797,7 @@ PetscErrorCode MeltExtractionInject(JacRes *jr,AdvCtx *actx, AdvVelCtx *vi, Pets
 		// get cell coordinates
 		xs[0] = fs->dsx.ncoor[I]; xe[0] = fs->dsx.ncoor[I+1];
 		xs[1] = fs->dsy.ncoor[J]; xe[1] = fs->dsy.ncoor[J+1];
-		xs[2] = phases[iphase].DInt/jr->scal->length; xe[2] = fs->dsz.ncoor[K+1];
-
+		xs[2] = fs->dsz.ncoor[K];xe[2] = fs->dsz.ncoor[K+1];
 		for(ipn = 0; ipn<ninj; ipn++)
 		{
 			// create random coordinate within this cell
@@ -835,7 +806,9 @@ PetscErrorCode MeltExtractionInject(JacRes *jr,AdvCtx *actx, AdvVelCtx *vi, Pets
 			ierr = PetscRandomGetValueReal(rctx, &cf_rand); CHKERRQ(ierr);
 			xp[1] = (xe[1] - xs[1]) * cf_rand + xs[1];
 			ierr = PetscRandomGetValueReal(rctx, &cf_rand); CHKERRQ(ierr);
-			xp[2] = (xe[2] - xs[2]) * cf_rand + xs[2];
+			xp[2] = (xe[2] - xs[2])* cf_rand + xs[2];
+			PetscPrintf(PETSC_COMM_WORLD,"xe-xs %6f \n", xe[2]-xs[2]);
+
 
 			// calculate the closest (parent marker)
 			for (ii = 0; ii < n; ii++)
@@ -855,7 +828,7 @@ PetscErrorCode MeltExtractionInject(JacRes *jr,AdvCtx *actx, AdvVelCtx *vi, Pets
 
 			// hard-coded new marker properties for debugging
 			actx->recvbuf[ipn].phase = PhInject;
-        	PetscPrintf(PETSC_COMM_WORLD,"I'm injecting phase= %d\n",actx->recvbuf[ipn].phase = PhInject);
+        	//PetscPrintf(PETSC_COMM_WORLD,"I'm injecting phase= %d\n",actx->recvbuf[ipn].phase = PhInject);
         	PetscPrintf(PETSC_COMM_WORLD,"The new marker has the following coordinates X=%6f Y=%6f Z=%6f \n", xp[0]*jr->scal->length, xp[1]*jr->scal->length,xp[2]*jr->scal->length);
 			actx->recvbuf[ipn].p = actx->markers[sind].p;
 			actx->recvbuf[ipn].T = phases[iphase].TInt;
