@@ -71,6 +71,7 @@
 #include "meltextraction.h"
 #include "scaling.h"
 #include "parsing.h"
+#include "surf.h"
 //---------------------------------------------------------------------------
 #undef __FUNCT__
 #define __FUNCT__ "MeltExtractionCreate"
@@ -78,6 +79,7 @@ PetscErrorCode MeltExtractionCreate(JacRes *jr, FB *fb)
 { // First functions that is called
 	Scaling *scal;
 	Material_t *mat;
+	FreeSurf *surf;
 	PetscInt maxPhaseID;
 
 
@@ -87,6 +89,7 @@ PetscErrorCode MeltExtractionCreate(JacRes *jr, FB *fb)
 	scal       = jr->scal;
     maxPhaseID = jr->dbm->numPhases-1;
     mat        = jr->dbm->phases;
+    surf       = jr->surf;
 
 
 	ierr = DMCreateGlobalVector(jr->fs->DA_CEN, &jr->gdMV)       ; CHKERRQ(ierr);
@@ -94,8 +97,8 @@ PetscErrorCode MeltExtractionCreate(JacRes *jr, FB *fb)
 	ierr = DMCreateLocalVector (jr->fs->DA_CEN, &jr->ldMV)       ; CHKERRQ(ierr);
 	ierr = DMCreateGlobalVector(jr->fs->DA_CEN, &jr->gdc)        ; CHKERRQ(ierr);
 	ierr = DMCreateLocalVector (jr->fs->DA_CEN, &jr->ldc)        ; CHKERRQ(ierr);
-	ierr = DMCreateGlobalVector(jr->fs->DA_CEN, &jr->gdMoho)     ; CHKERRQ(ierr);
-	ierr = DMCreateGlobalVector(jr->fs->DA_CEN, &jr->gdMoho1); CHKERRQ(ierr);
+	ierr = DMCreateGlobalVector(jr->DA_CELL_2D, &jr->gdMoho)     ; CHKERRQ(ierr);
+	ierr = DMCreateGlobalVector(jr->DA_CELL_2D, &jr->gdMoho1); CHKERRQ(ierr);
 	ierr = DMCreateGlobalVector(jr->fs->DA_CEN, &jr->Miphase)    ; CHKERRQ(ierr);
 	ierr = DMCreateGlobalVector(jr->fs->DA_CEN, &jr->Vol); CHKERRQ(ierr);
 	ierr = getIntParam   (fb, _OPTIONAL_, "PhInt", &mat->PhInt,   1,  maxPhaseID); CHKERRQ(ierr);
@@ -155,16 +158,17 @@ PetscErrorCode MeltExtractionSave(JacRes *jr)
     PetscScalar  mfeff,dx,dy,dz,dM,mf_temp	;   // Effective melt extracted
     Material_t   *mat                                          ;   // Material properties structure
     Material_t   *phases                                       ;   // Phases
-    //AdvCtx       *actx                                         ;
-
+    FreeSurf     *surf ;
     // Access to the context (?)
 	fs        = jr->fs                                         ;   // take the structured grid data from jr. The out put is a pointer structure
 	numPhases = jr->dbm->numPhases                             ;   // take the number of phases from dbm structures
     pd        = jr->Pd                                         ;   // take the structure associated to the phase diagram
     phases    = jr->dbm->phases                                ;   // take the phases
+    surf	= jr->surf;
     //
     // Calling Moho_Tracking (working on)
-    //
+    ierr=Moho_Tracking(surf);	CHKERRQ(ierr)	;
+
     // Initialize & get array
 
 	ierr = DMDAVecGetArray(fs->DA_CEN, jr->lp,      &p)        ;      CHKERRQ(ierr);
@@ -292,9 +296,8 @@ PetscErrorCode MeltExtractionUpdate(JacRes *jr, AdvCtx *actx)
 	numPhases = jr->dbm->numPhases                             ;   // take the number of phases from dbm structures
     pd        = jr->Pd                                         ;   // take the structure associated to the phase diagram
     phases    = jr->dbm->phases                                ;   // take the phases
-    //
+
     // Calling Moho_Tracking (working on)
-    //
 
 	ierr = DMDAVecGetArray(fs->DA_CEN, jr->lp,      &p)        ;      CHKERRQ(ierr);
     ierr = DMDAVecGetArray(fs->DA_CEN, jr->lT,      &T)        ;      CHKERRQ(ierr);
@@ -783,7 +786,7 @@ PetscErrorCode MeltExtractionInject(JacRes *jr,AdvCtx *actx, AdvVelCtx *vi, Pets
 	// We have not found a marker of the correct phase or there is still melt to be injected
 	if( UP > 0)
 	{
-		ninj = (PetscInt)ceil(UP)*3;  // Amount of markers we have to inject
+		ninj = (PetscInt)ceil(UP)*4;  // Amount of markers we have to inject
 
 		// allocate memory for new markers
 		actx->nrecv = ninj;
@@ -874,7 +877,7 @@ PetscErrorCode MeltExtractionInject(JacRes *jr,AdvCtx *actx, AdvVelCtx *vi, Pets
 //----------------------------------------------------------------------------------------------------------------------------------------//
 #undef __FUNCT__
 #define __FUNCT__ "Moho_Tracking"
-PetscErrorCode Moho_Tracking(AdvVelCtx *vi,AdvCtx *actx)
+PetscErrorCode Moho_Tracking(FreeSurf *surf)
 {
 	        FDSTAG      *fs;
 	        JacRes      *jr;
@@ -886,27 +889,27 @@ PetscErrorCode Moho_Tracking(AdvVelCtx *vi,AdvCtx *actx)
 			Material_t   *phases;         // Phases
 			PetscScalar  *phRat;
 //			PetscScalar  zbottom;
-			PetscScalar  *ccz;
 			PetscErrorCode ierr;
 			PetscFunctionBegin;
 
 			// access context
-			fs     = vi->fs ;
-			jr     = vi->jr	;
+			jr     = surf->jr;
+			fs     = jr->fs ;
 			dsz    = &fs->dsz	;
 			L      = (PetscInt)fs->dsz.rank	; // rank of the processor
 			phases = jr->dbm->phases	;
 			numPhases = jr->dbm->numPhases	;   // take the number of phases from dbm structures
 			// get local coordinate bounds
+			ierr = Discret1DGetColumnComm(dsz); CHKERRQ(ierr);
 			ierr = FDSTAGGetLocalBox(fs, NULL, NULL, &bz, NULL, NULL, &ez); CHKERRQ(ierr);
 		//	ierr = FDSTAGGetGlobalBox(fs, NULL, NULL, &zbottom, NULL, NULL, NULL); CHKERRQ(ierr);
 			ierr = VecZeroEntries   (jr->gdMoho1);	 CHKERRQ(ierr);
+			ierr = VecZeroEntries   (jr->gdMoho);	 CHKERRQ(ierr);
 			ierr = DMDAVecGetArray  (jr->DA_CELL_2D,jr->gdMoho1, &Mohovec2);	CHKERRQ(ierr);
 
 			GET_CELL_RANGE(nx, sx, fs->dsx)
 			GET_CELL_RANGE(ny, sy, fs->dsy)
 			GET_CELL_RANGE(nz, sz, fs->dsz)
-			ccz = fs->dsz.ccoor;
 
 			// Sum all the mantle phase contribution [0-1]
            iter = 0;
@@ -920,8 +923,8 @@ PetscErrorCode Moho_Tracking(AdvVelCtx *vi,AdvCtx *actx)
 				if(MantP>0)
 				{
 
-					Mohovec2[L][j][i] = ccz[k];
-
+					Mohovec2[L][j][i] = COORD_NODE(sz+k, sz, fs->dsz);
+		        	PetscPrintf(PETSC_COMM_WORLD,"Moho_Depth & i & j & K%6f %d %d %d\n",COORD_NODE(k, sz, fs->dsz)*jr->scal->length,i,j,k);
 				}
 			}END_STD_LOOP
 
