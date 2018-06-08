@@ -67,7 +67,6 @@ struct FreeSurf
 	Vec     ltopo, gtopo;   // topography vectors                (local and global)
 	Vec     vx, vy, vz;     // velocity vectors                  (local)
 	Vec     vpatch, vmerge; // patch and merged velocity vectors (global)
-	Vec     gdMoho,gdMoho1; // Moho depth vector
 
 	// flags/parameters
 	PetscInt    UseFreeSurf; // free surface activation flag

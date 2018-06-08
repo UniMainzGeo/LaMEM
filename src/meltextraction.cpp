@@ -72,6 +72,8 @@
 #include "scaling.h"
 #include "parsing.h"
 #include "surf.h"
+#include "tssolve.h"
+#include "bc.h"
 //---------------------------------------------------------------------------
 #undef __FUNCT__
 #define __FUNCT__ "MeltExtractionCreate"
@@ -98,7 +100,8 @@ PetscErrorCode MeltExtractionCreate(JacRes *jr, FB *fb)
 	ierr = DMCreateGlobalVector(jr->fs->DA_CEN, &jr->gdc)        ; CHKERRQ(ierr);
 	ierr = DMCreateLocalVector (jr->fs->DA_CEN, &jr->ldc)        ; CHKERRQ(ierr);
 	ierr = DMCreateGlobalVector(jr->DA_CELL_2D, &jr->gdMoho)     ; CHKERRQ(ierr);
-	ierr = DMCreateGlobalVector(jr->DA_CELL_2D, &jr->gdMoho1); CHKERRQ(ierr);
+    ierr = DMCreateLocalVector(jr->DA_CELL_2D, &jr->ldMoho)       ; CHKERRQ(ierr);
+ 	ierr = DMCreateGlobalVector(jr->DA_CELL_2D, &jr->gdMoho1); CHKERRQ(ierr);
 	ierr = DMCreateGlobalVector(jr->fs->DA_CEN, &jr->Miphase)    ; CHKERRQ(ierr);
 	ierr = DMCreateGlobalVector(jr->fs->DA_CEN, &jr->Vol); CHKERRQ(ierr);
 	ierr = getIntParam   (fb, _OPTIONAL_, "PhInt", &mat->PhInt,   1,  maxPhaseID); CHKERRQ(ierr);
@@ -666,12 +669,16 @@ PetscErrorCode MeltExtractionInterpMarkerBackToGrid(AdvCtx *actx)
 PetscErrorCode MeltExtractionExchangeVolume(JacRes *jr, PetscInt iphase)
 {
 	    FDSTAG      *fs                                                          ;
+	    FreeSurf    *surf	;
 		Discret1D   *dsz                                                         ;
-		PetscInt     i, j, k, K, sx, sy, sz, nx, ny, nz, iter,L                  ;
+		PetscInt     i, j, k, K, sx, sy, sz, nx, ny, nz, iter,L ,cnt,gcnt        ;
 		Vec          dgmvvec, dgmvvecmerge                                       ;
 		PetscScalar  bz, ez                                                      ;
-		PetscScalar  level, IR                                                   ;
+		PetscScalar  level, IR,dx,dy,dz,cz[4]                                       ;
+		Vec	 DeInt,DeIntG;
+		PetscScalar ***topo,***lmoho,zbot,***ntopo,***Depth,h,***DepthG,D,D1,***MohoG;
 		PetscScalar  *vdgmvvec, *vdgmvvecmerge, ***vdgmvvecmerge2, ***vdgmvvec2, ***vdgmv, ***Mipbuff ;
+		PetscScalar Ezz,step;
 		Material_t   *phases                                                     ;         // Phases
 		PetscErrorCode ierr;
 		PetscFunctionBegin;
@@ -681,9 +688,10 @@ PetscErrorCode MeltExtractionExchangeVolume(JacRes *jr, PetscInt iphase)
 		dsz    = &fs->dsz                     ;
 		L      = (PetscInt)fs->dsz.rank       ; // rank of the processor
 		phases = jr->dbm->phases              ;
-		level  = phases[iphase].DInt/jr->scal->length; // It has to be modified
+		level  = phases[iphase].DInt; // It has to be modified
 		IR     = phases[iphase].RelInt        ; // Amount of intrusion that has to be injected within the crust, at level
-
+		step   = jr->ts->dt;
+        surf = jr->surf;
 		// get local coordinate bounds
 		ierr = FDSTAGGetLocalBox(fs, NULL, NULL, &bz, NULL, NULL, &ez); CHKERRQ(ierr);
 
@@ -727,32 +735,128 @@ PetscErrorCode MeltExtractionExchangeVolume(JacRes *jr, PetscInt iphase)
 		{
 			ierr = VecCopy(dgmvvec,dgmvvecmerge);  CHKERRQ(ierr);
 		}
-		ierr = DMDAVecGetArray  (fs->DA_CEN, jr->Miphase, &Mipbuff)   ; CHKERRQ(ierr);
-		ierr = DMDAVecGetArray  (jr->DA_CELL_2D, dgmvvecmerge, &vdgmvvecmerge2)   ; CHKERRQ(ierr);
+
 		// scan all local cells
+
+
+		// Relative Depth of intrusion
+
+		// get local coordinate bounds
+		ierr = FDSTAGGetLocalBox(fs, NULL, NULL, &zbot, NULL, NULL, NULL); CHKERRQ(ierr);
+
+		// get current background strain rates
+		ierr = BCGetBGStrainRates(jr->bc, NULL, NULL, &Ezz); CHKERRQ(ierr);
+
+		// update position of bottom boundary
+		zbot *= (1.0 + step*Ezz);
+
+		// get cell topography vector
+		ierr = DMGetLocalVector(jr->DA_CELL_2D, &DeInt); CHKERRQ(ierr);
+
+		ierr = VecZeroEntries(DeInt); CHKERRQ(ierr);
+
+		// access cell topography
+		ierr = DMDAVecGetArray(jr->DA_CELL_2D, DeInt, &Depth); CHKERRQ(ierr);
+
+		// access surface topography (corner nodes)
+		ierr = DMDAVecGetArray(surf->DA_SURF, surf->ltopo,  &ntopo); CHKERRQ(ierr);
+
+		ierr = DMDAVecGetArray(jr->DA_CELL_2D, jr->ldMoho,  &lmoho); CHKERRQ(ierr);
+
+
+		// scan all local cells
+		ierr = DMDAGetCorners(fs->DA_CEN, &sx, &sy, NULL, &nx, &ny, NULL); CHKERRQ(ierr);
+
+		cnt = 0;
+
+		START_PLANE_LOOP
+		{
+			// get topography at cell corners
+			cz[0] = ntopo[L][j  ][i  ];
+			cz[1] = ntopo[L][j  ][i+1];
+			cz[2] = ntopo[L][j+1][i  ];
+			cz[3] = ntopo[L][j+1][i+1];
+			// get average cell height
+            h=(cz[0] + cz[1] + cz[2] + cz[3])/4.0 - zbot;;
+
+			// mark (with negative value) and count local affected cells
+			// store cell topography
+			Depth[L][j][i] =(h-lmoho[L][j][i]);
+		}
+		END_PLANE_LOOP
+
+		// restore access
+			ierr = DMDAVecRestoreArray(jr->DA_CELL_2D, DeInt, &Depth); CHKERRQ(ierr);
+		    ierr = DMDAVecRestoreArray(jr->DA_CELL_2D, jr->ldMoho, &lmoho); CHKERRQ(ierr);
+			ierr = DMDAVecRestoreArray(surf->DA_SURF, surf->ltopo, &ntopo); CHKERRQ(ierr);
+
+			// count global affected cells
+			if(ISParallel(PETSC_COMM_WORLD))
+			{
+				ierr = MPI_Allreduce(&cnt, &gcnt, 1, MPIU_INT, MPI_SUM, PETSC_COMM_WORLD); CHKERRQ(ierr);
+			}
+			else
+			{
+				gcnt = cnt;
+			}
+
+			// return if topography is within the limits
+	//		if(!gcnt)
+		//	{
+				//ierr = DMRestoreLocalVector(jr->DA_CELL_2D, &DeInt); CHKERRQ(ierr);
+
+		//		PetscFunctionReturn(0);
+			//}
+			LOCAL_TO_LOCAL(jr->DA_CELL_2D, DeInt)
+
+			ierr = DMGetGlobalVector(jr->DA_CELL_2D, &DeIntG); CHKERRQ(ierr);
+
+		   ierr = VecZeroEntries(DeIntG); CHKERRQ(ierr);
+
+
+			LOCAL_TO_GLOBAL(jr->DA_CELL_2D,DeInt,DeIntG)
+
+			ierr = DMDAVecGetArray(jr->DA_CELL_2D,DeIntG,&DepthG); CHKERRQ(ierr);
+			ierr = DMDAVecGetArray(jr->DA_CELL_2D,jr->gdMoho,&MohoG); CHKERRQ(ierr);
+
+
 		iter=0;
 		GET_CELL_RANGE(nx, sx, fs->dsx)
 		GET_CELL_RANGE(ny, sy, fs->dsy)
 		GET_CELL_RANGE(nz, sz, fs->dsz)
+		ierr = DMDAVecGetArray  (fs->DA_CEN, jr->Miphase, &Mipbuff)   ; CHKERRQ(ierr);
+	    ierr = DMDAVecGetArray  (jr->DA_CELL_2D, dgmvvecmerge, &vdgmvvecmerge2)   ; CHKERRQ(ierr);
 		START_PLANE_LOOP
 		{
 			if(vdgmvvecmerge2[L][j][i] < 0)
 			{
+				D1=DepthG[L][j][i];
+                D = MohoG[L][j][i]+D1*level;
+	        	PetscPrintf(PETSC_COMM_WORLD,"level & Phase %6f %d \n",level, phases[iphase].PhInt);
+	        	PetscPrintf(PETSC_COMM_WORLD,"Moho &D  %6f %6f \n",MohoG[L][j][i], D1);
 				// check whether point belongs to domain
-				if(level >= bz && level < ez)
+				if(D >= bz && D < ez)
 				{
 					// find containing cell
-					K = FindPointInCell(dsz->ncoor, 0, dsz->ncels, level);
-
+					K = FindPointInCell(dsz->ncoor, 0, dsz->ncels, D);
+					dz = SIZE_CELL(sz+K, sz, fs->dsz);
+                   if(D1>dz)
+                   {
 					// interpolate velocity
 					Mipbuff[sz+K][j][i] = -IR*vdgmvvecmerge2[L][j][i];
 		        	PetscPrintf(PETSC_COMM_WORLD,"Z coord %6f\n",COORD_NODE(sz+K, sz, fs->dsz)*jr->scal->length);
-
+                   }
+                   else
+                   {
+                	   // We posit that if the crust is less than 3dZ cell size everything is converted into effusion.
+                	   Mipbuff[sz+K][j][i]=0;
+                   }
 				}
 			}
 		}
 		END_PLANE_LOOP
 		ierr = DMDAVecRestoreArray(jr->DA_CELL_2D, dgmvvecmerge, &vdgmvvecmerge2); CHKERRQ(ierr);
+		ierr = DMDAVecRestoreArray(jr->DA_CELL_2D, DeIntG, &DepthG); CHKERRQ(ierr);
 		ierr = DMDAVecRestoreArray(fs->DA_CEN, jr->Miphase ,    &Mipbuff)        ; CHKERRQ(ierr);
 	PetscFunctionReturn(0);
 }
@@ -885,7 +989,7 @@ PetscErrorCode Moho_Tracking(FreeSurf *surf)
 			PetscInt     i, j, k,numPhases,ii;
 			PetscInt     sx, sy, sz, nx, ny, nz, iter,L;
 			PetscScalar  bz, ez;
-			PetscScalar  ***Mohovec2,*Mohovec22,*MMerge ,MantP;
+			PetscScalar  ***Mohovec2,*Mohovec22,*MMerge ,MantP,*Moho;
 			Material_t   *phases;         // Phases
 			PetscScalar  *phRat;
 //			PetscScalar  zbottom;
@@ -924,7 +1028,6 @@ PetscErrorCode Moho_Tracking(FreeSurf *surf)
 				{
 
 					Mohovec2[L][j][i] = COORD_NODE(sz+k, sz, fs->dsz);
-		        	PetscPrintf(PETSC_COMM_WORLD,"Moho_Depth & i & j & K%6f %d %d %d\n",COORD_NODE(k, sz, fs->dsz)*jr->scal->length,i,j,k);
 				}
 			}END_STD_LOOP
 
@@ -945,9 +1048,7 @@ PetscErrorCode Moho_Tracking(FreeSurf *surf)
 					ierr = VecCopy(jr->gdMoho1,jr->gdMoho);  CHKERRQ(ierr);
 					}
 			// Find the values at the top
-
-
-
+            GLOBAL_TO_LOCAL(jr->DA_CELL_2D, jr->gdMoho, jr->ldMoho);
 
 		PetscFunctionReturn(0);
 
