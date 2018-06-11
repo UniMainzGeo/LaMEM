@@ -191,6 +191,7 @@ struct OutMask
 	PetscInt moment_res;     // momentum residual
 	PetscInt cont_res;       // continuity residual
 	PetscInt energ_res;      // energy residual
+	PetscInt Moho;
 
 };
 //---------------------------------------------------------------------------

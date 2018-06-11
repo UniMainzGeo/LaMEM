@@ -246,12 +246,8 @@ PetscErrorCode MeltExtractionSave(JacRes *jr)
            }END_STD_LOOP
            ierr = DMDAVecRestoreArray(fs->DA_CEN, jr->Miphase, &Mipbuff)                 ;        CHKERRQ(ierr);
            // Send the data to Melt Extraction Exchange volume & compute the injection
-
            // Update Miphase
             ierr =  MeltExtractionExchangeVolume(jr,iphase)	;	CHKERRQ(ierr);
-           // Update the marker properties (Interpolate the properties back to the marker, then eventually inject)
-           // ierr =  MeltExtractionInterpMarker(AdvCtx *actx,iphase)	;	CHKERRQ(ierr);		// Issue1: How to handle the extrusion&free surface?
-
           // ierr = DMDAVecGetArray(fs->DA_CEN,jr->Vol,&Volume); CHKERRQ(ierr);
            ierr = DMDAVecGetArray(fs->DA_CEN,jr->Miphase,&Mipbuff); CHKERRQ(ierr);
             iter=0;
@@ -668,21 +664,20 @@ PetscErrorCode MeltExtractionInterpMarkerBackToGrid(AdvCtx *actx)
 #define __FUNCT__ "MeltExtractionExchangeVolume"
 PetscErrorCode MeltExtractionExchangeVolume(JacRes *jr, PetscInt iphase)
 {
-	    FDSTAG      *fs                                                          ;
+	    FDSTAG      *fs	;
 	    FreeSurf    *surf	;
-		Discret1D   *dsz                                                         ;
-		PetscInt     i, j, k, K, sx, sy, sz, nx, ny, nz, iter,L ,cnt,gcnt        ;
-		Vec          dgmvvec, dgmvvecmerge                                       ;
-		PetscScalar  bz, ez                                                      ;
-		PetscScalar  level, IR,dx,dy,dz,cz[4]                                       ;
-		Vec	 DeInt,DeIntG;
-		PetscScalar ***topo,***lmoho,zbot,***ntopo,***Depth,h,***DepthG,D,D1,***MohoG;
+		Discret1D   *dsz	;
+		PetscInt     i, j, k, K, sx, sy, sz, nx, ny, nz, iter,L ,cnt,gcnt	;
+		Vec          dgmvvec, dgmvvecmerge	;
+		PetscScalar  bz, ez	;
+		PetscScalar  level, IR,dx,dy,dz,cz[4]	;
+		Vec	 DeInt,DeIntG	;
+		PetscScalar ***topo,***lmoho,zbot,***ntopo,***Depth,h,***DepthG,D,D1,***MohoG	;
 		PetscScalar  *vdgmvvec, *vdgmvvecmerge, ***vdgmvvecmerge2, ***vdgmvvec2, ***vdgmv, ***Mipbuff ;
 		PetscScalar Ezz,step;
-		Material_t   *phases                                                     ;         // Phases
+		Material_t   *phases	;         // Phases
 		PetscErrorCode ierr;
 		PetscFunctionBegin;
-
 		// access context
 		fs     = jr->fs                       ;
 		dsz    = &fs->dsz                     ;
@@ -693,8 +688,6 @@ PetscErrorCode MeltExtractionExchangeVolume(JacRes *jr, PetscInt iphase)
 		step   = jr->ts->dt;
         surf = jr->surf;
 		// get local coordinate bounds
-		ierr = FDSTAGGetLocalBox(fs, NULL, NULL, &bz, NULL, NULL, &ez); CHKERRQ(ierr);
-
 		// create column communicator
 		ierr = Discret1DGetColumnComm(dsz); CHKERRQ(ierr);
 		ierr = DMGetGlobalVector(jr->DA_CELL_2D, &dgmvvec)            ; CHKERRQ(ierr);
@@ -702,20 +695,16 @@ PetscErrorCode MeltExtractionExchangeVolume(JacRes *jr, PetscInt iphase)
         ierr = VecZeroEntries   (dgmvvec)                             ; CHKERRQ(ierr);
 		ierr = VecZeroEntries   (dgmvvecmerge)                        ; CHKERRQ(ierr);
 		ierr = DMDAVecGetArray  (fs->DA_CEN, jr->Miphase, &Mipbuff)   ; CHKERRQ(ierr);
-
-
 		// scan all local cells
 		GET_CELL_RANGE(nx, sx, fs->dsx)
 		GET_CELL_RANGE(ny, sy, fs->dsy)
 		GET_CELL_RANGE(nz, sz, fs->dsz)
 		ierr = FDSTAGGetLocalBox(fs, NULL, NULL, &bz, NULL, NULL, &ez) ; CHKERRQ(ierr);
 		ierr = DMDAVecGetArray(jr->DA_CELL_2D, dgmvvec, &vdgmvvec2)    ; CHKERRQ(ierr);
-
-		iter = 0 ;
-
 		START_STD_LOOP
 		{
 			vdgmvvec2[L][j][i] += Mipbuff[k][j][i];
+
 		}
 		END_STD_LOOP
 		ierr = DMDAVecRestoreArray(fs->DA_CEN, jr->Miphase  , &Mipbuff)     ; CHKERRQ(ierr);
@@ -735,40 +724,23 @@ PetscErrorCode MeltExtractionExchangeVolume(JacRes *jr, PetscInt iphase)
 		{
 			ierr = VecCopy(dgmvvec,dgmvvecmerge);  CHKERRQ(ierr);
 		}
-
-		// scan all local cells
-
-
-		// Relative Depth of intrusion
-
 		// get local coordinate bounds
 		ierr = FDSTAGGetLocalBox(fs, NULL, NULL, &zbot, NULL, NULL, NULL); CHKERRQ(ierr);
-
 		// get current background strain rates
 		ierr = BCGetBGStrainRates(jr->bc, NULL, NULL, &Ezz); CHKERRQ(ierr);
-
 		// update position of bottom boundary
 		zbot *= (1.0 + step*Ezz);
-
 		// get cell topography vector
 		ierr = DMGetLocalVector(jr->DA_CELL_2D, &DeInt); CHKERRQ(ierr);
-
 		ierr = VecZeroEntries(DeInt); CHKERRQ(ierr);
-
 		// access cell topography
 		ierr = DMDAVecGetArray(jr->DA_CELL_2D, DeInt, &Depth); CHKERRQ(ierr);
-
 		// access surface topography (corner nodes)
 		ierr = DMDAVecGetArray(surf->DA_SURF, surf->ltopo,  &ntopo); CHKERRQ(ierr);
-
 		ierr = DMDAVecGetArray(jr->DA_CELL_2D, jr->ldMoho,  &lmoho); CHKERRQ(ierr);
-
-
 		// scan all local cells
 		ierr = DMDAGetCorners(fs->DA_CEN, &sx, &sy, NULL, &nx, &ny, NULL); CHKERRQ(ierr);
-
 		cnt = 0;
-
 		START_PLANE_LOOP
 		{
 			// get topography at cell corners
@@ -777,49 +749,22 @@ PetscErrorCode MeltExtractionExchangeVolume(JacRes *jr, PetscInt iphase)
 			cz[2] = ntopo[L][j+1][i  ];
 			cz[3] = ntopo[L][j+1][i+1];
 			// get average cell height
-            h=(cz[0] + cz[1] + cz[2] + cz[3])/4.0 - zbot;;
-
+            h=(cz[0] + cz[1] + cz[2] + cz[3])/4.0;;
 			// mark (with negative value) and count local affected cells
 			// store cell topography
 			Depth[L][j][i] =(h-lmoho[L][j][i]);
 		}
 		END_PLANE_LOOP
-
 		// restore access
-			ierr = DMDAVecRestoreArray(jr->DA_CELL_2D, DeInt, &Depth); CHKERRQ(ierr);
-		    ierr = DMDAVecRestoreArray(jr->DA_CELL_2D, jr->ldMoho, &lmoho); CHKERRQ(ierr);
-			ierr = DMDAVecRestoreArray(surf->DA_SURF, surf->ltopo, &ntopo); CHKERRQ(ierr);
-
-			// count global affected cells
-			if(ISParallel(PETSC_COMM_WORLD))
-			{
-				ierr = MPI_Allreduce(&cnt, &gcnt, 1, MPIU_INT, MPI_SUM, PETSC_COMM_WORLD); CHKERRQ(ierr);
-			}
-			else
-			{
-				gcnt = cnt;
-			}
-
-			// return if topography is within the limits
-	//		if(!gcnt)
-		//	{
-				//ierr = DMRestoreLocalVector(jr->DA_CELL_2D, &DeInt); CHKERRQ(ierr);
-
-		//		PetscFunctionReturn(0);
-			//}
-			LOCAL_TO_LOCAL(jr->DA_CELL_2D, DeInt)
-
-			ierr = DMGetGlobalVector(jr->DA_CELL_2D, &DeIntG); CHKERRQ(ierr);
-
-		   ierr = VecZeroEntries(DeIntG); CHKERRQ(ierr);
-
-
-			LOCAL_TO_GLOBAL(jr->DA_CELL_2D,DeInt,DeIntG)
-
-			ierr = DMDAVecGetArray(jr->DA_CELL_2D,DeIntG,&DepthG); CHKERRQ(ierr);
-			ierr = DMDAVecGetArray(jr->DA_CELL_2D,jr->gdMoho,&MohoG); CHKERRQ(ierr);
-
-
+		ierr = DMDAVecRestoreArray(jr->DA_CELL_2D, DeInt, &Depth); CHKERRQ(ierr);
+		ierr = DMDAVecRestoreArray(jr->DA_CELL_2D, jr->ldMoho, &lmoho); CHKERRQ(ierr);
+	    ierr = DMDAVecRestoreArray(surf->DA_SURF, surf->ltopo, &ntopo); CHKERRQ(ierr);
+	   	ierr = DMGetGlobalVector(jr->DA_CELL_2D, &DeIntG); CHKERRQ(ierr);
+	    ierr = VecZeroEntries(DeIntG); CHKERRQ(ierr);
+	    LOCAL_TO_GLOBAL(jr->DA_CELL_2D,DeInt,DeIntG)
+		ierr = DMDAVecGetArray(jr->DA_CELL_2D,DeIntG,&DepthG); CHKERRQ(ierr);
+		ierr = DMDAVecGetArray(jr->DA_CELL_2D,jr->gdMoho,&MohoG); CHKERRQ(ierr);
+		ierr = FDSTAGGetLocalBox(fs, NULL, NULL, &bz, NULL, NULL, &ez); CHKERRQ(ierr);
 		iter=0;
 		GET_CELL_RANGE(nx, sx, fs->dsx)
 		GET_CELL_RANGE(ny, sy, fs->dsy)
@@ -828,29 +773,24 @@ PetscErrorCode MeltExtractionExchangeVolume(JacRes *jr, PetscInt iphase)
 	    ierr = DMDAVecGetArray  (jr->DA_CELL_2D, dgmvvecmerge, &vdgmvvecmerge2)   ; CHKERRQ(ierr);
 		START_PLANE_LOOP
 		{
-			if(vdgmvvecmerge2[L][j][i] < 0)
+          D = MohoG[L][j][i]+DepthG[L][j][i]*level;
+          D1 =DepthG[L][j][i];
+		  if(vdgmvvecmerge2[L][j][i] < 0)
 			{
-				D1=DepthG[L][j][i];
-                D = MohoG[L][j][i]+D1*level;
-	        	PetscPrintf(PETSC_COMM_WORLD,"level & Phase %6f %d \n",level, phases[iphase].PhInt);
-	        	PetscPrintf(PETSC_COMM_WORLD,"Moho &D  %6f %6f \n",MohoG[L][j][i], D1);
 				// check whether point belongs to domain
 				if(D >= bz && D < ez)
 				{
 					// find containing cell
 					K = FindPointInCell(dsz->ncoor, 0, dsz->ncels, D);
-					dz = SIZE_CELL(sz+K, sz, fs->dsz);
-                   if(D1>dz)
-                   {
-					// interpolate velocity
-					Mipbuff[sz+K][j][i] = -IR*vdgmvvecmerge2[L][j][i];
-		        	PetscPrintf(PETSC_COMM_WORLD,"Z coord %6f\n",COORD_NODE(sz+K, sz, fs->dsz)*jr->scal->length);
-                   }
-                   else
-                   {
-                	   // We posit that if the crust is less than 3dZ cell size everything is converted into effusion.
-                	   Mipbuff[sz+K][j][i]=0;
-                   }
+					dz = SIZE_CELL(sz+K,sz,fs->dsz);
+					if(D1>2*dz)
+					{
+						Mipbuff[sz+K][j][i] = -IR*vdgmvvecmerge2[L][j][i];
+					}
+					else
+					{
+						Mipbuff[sz+K][j][i] = 0;
+					}
 				}
 			}
 		}
@@ -935,8 +875,6 @@ PetscErrorCode MeltExtractionInject(JacRes *jr,AdvCtx *actx, AdvVelCtx *vi, Pets
 
 			// hard-coded new marker properties for debugging
 			actx->recvbuf[ipn].phase = PhInject;
-        	//PetscPrintf(PETSC_COMM_WORLD,"I'm injecting phase= %d\n",actx->recvbuf[ipn].phase = PhInject);
-        	PetscPrintf(PETSC_COMM_WORLD,"The new marker has the following coordinates X=%6f Y=%6f Z=%6f \n", xp[0]*jr->scal->length, xp[1]*jr->scal->length,xp[2]*jr->scal->length);
 			actx->recvbuf[ipn].p = actx->markers[sind].p;
 			actx->recvbuf[ipn].T = phases[iphase].TInt;
 			actx->recvbuf[ipn].APS = 5;
@@ -969,10 +907,6 @@ PetscErrorCode MeltExtractionInject(JacRes *jr,AdvCtx *actx, AdvVelCtx *vi, Pets
 
 		// update arrays for marker-cell interaction
 		ierr = ADVUpdateMarkCell(actx); CHKERRQ(ierr);
-
-		// print info
-		 PetscPrintf(PETSC_COMM_WORLD,"Melt extraction injected %i markers.\n", ninj);
-
 		// clear
 		ierr = PetscFree(actx->recvbuf); CHKERRQ(ierr);
 	}
@@ -1006,7 +940,6 @@ PetscErrorCode Moho_Tracking(FreeSurf *surf)
 			// get local coordinate bounds
 			ierr = Discret1DGetColumnComm(dsz); CHKERRQ(ierr);
 			ierr = FDSTAGGetLocalBox(fs, NULL, NULL, &bz, NULL, NULL, &ez); CHKERRQ(ierr);
-		//	ierr = FDSTAGGetGlobalBox(fs, NULL, NULL, &zbottom, NULL, NULL, NULL); CHKERRQ(ierr);
 			ierr = VecZeroEntries   (jr->gdMoho1);	 CHKERRQ(ierr);
 			ierr = VecZeroEntries   (jr->gdMoho);	 CHKERRQ(ierr);
 			ierr = DMDAVecGetArray  (jr->DA_CELL_2D,jr->gdMoho1, &Mohovec2);	CHKERRQ(ierr);
@@ -1026,8 +959,7 @@ PetscErrorCode Moho_Tracking(FreeSurf *surf)
 				}
 				if(MantP>0)
 				{
-
-					Mohovec2[L][j][i] = COORD_NODE(sz+k, sz, fs->dsz);
+					Mohovec2[L][j][i] = COORD_NODE(k, sz, fs->dsz);
 				}
 			}END_STD_LOOP
 
