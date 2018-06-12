@@ -87,6 +87,8 @@ struct FreeSurf
 	// run-time parameters
 	PetscScalar avg_topo; // average topography (updated by all functions changing topography)
 	PetscInt    phase;    // current sediment phase
+	PetscInt    phaseEx;
+	PetscInt    MeltExtraction;
 
 };
 

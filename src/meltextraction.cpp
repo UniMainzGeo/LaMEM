@@ -141,7 +141,7 @@ PetscErrorCode MeltExtractionDestroy(JacRes *jr)
 //---------------------------------------------------------------------------
 #undef __FUNCT__
 #define __FUNCT__ "MeltExtractionSave"
-PetscErrorCode MeltExtractionSave(JacRes *jr)
+PetscErrorCode MeltExtractionSave(JacRes *jr,AdvCtx *actx)
 {    /* 2:Create the structure data that must be used to inject new particles, and compute the associated sink and source term.Copy dMF (see Consteq.cpp)
         into a grid whose coordinate are based on the center of cell, and which save the variable from the bulk variables */
 
@@ -162,7 +162,9 @@ PetscErrorCode MeltExtractionSave(JacRes *jr)
     Material_t   *mat                                          ;   // Material properties structure
     Material_t   *phases                                       ;   // Phases
     FreeSurf     *surf ;
+    PetscInt	update;
     // Access to the context (?)
+    update	=	0;
 	fs        = jr->fs                                         ;   // take the structured grid data from jr. The out put is a pointer structure
 	numPhases = jr->dbm->numPhases                             ;   // take the number of phases from dbm structures
     pd        = jr->Pd                                         ;   // take the structure associated to the phase diagram
@@ -247,7 +249,7 @@ PetscErrorCode MeltExtractionSave(JacRes *jr)
            ierr = DMDAVecRestoreArray(fs->DA_CEN, jr->Miphase, &Mipbuff)                 ;        CHKERRQ(ierr);
            // Send the data to Melt Extraction Exchange volume & compute the injection
            // Update Miphase
-            ierr =  MeltExtractionExchangeVolume(jr,iphase)	;	CHKERRQ(ierr);
+            ierr =  MeltExtractionExchangeVolume(jr,iphase,update,actx)	;	CHKERRQ(ierr);
           // ierr = DMDAVecGetArray(fs->DA_CEN,jr->Vol,&Volume); CHKERRQ(ierr);
            ierr = DMDAVecGetArray(fs->DA_CEN,jr->Miphase,&Mipbuff); CHKERRQ(ierr);
             iter=0;
@@ -291,6 +293,8 @@ PetscErrorCode MeltExtractionUpdate(JacRes *jr, AdvCtx *actx)
     PetscScalar  mfeff,dx,dy,dz,dM,mf_temp	;   // Effective melt extracted
     Material_t   *mat                                          ;   // Material properties structure
     Material_t   *phases                                       ;   // Phases
+    PetscInt	update	;
+    update = 1;
 	fs        = jr->fs                                         ;   // take the structured grid data from jr. The out put is a pointer structure
 	numPhases = jr->dbm->numPhases                             ;   // take the number of phases from dbm structures
     pd        = jr->Pd                                         ;   // take the structure associated to the phase diagram
@@ -356,7 +360,7 @@ PetscErrorCode MeltExtractionUpdate(JacRes *jr, AdvCtx *actx)
 
            }END_STD_LOOP
            ierr = DMDAVecRestoreArray(fs->DA_CEN, jr->Miphase, &Mipbuff)                 ;        CHKERRQ(ierr);
-           ierr =  MeltExtractionExchangeVolume(jr,iphase)	;	CHKERRQ(ierr);
+           ierr =  MeltExtractionExchangeVolume(jr,iphase,update,actx)	;	CHKERRQ(ierr);
            ierr =  MeltExtractionInterpMarker(actx,iphase)	;	CHKERRQ(ierr);
            }
      }
@@ -440,10 +444,6 @@ PetscErrorCode MeltExtractionInterpMarker(AdvCtx *actx, PetscInt iphase)
 		        UP=UP/(Dx*Dy*Dz);
 				ierr = MeltExtractionInject(jr,actx,&vi, ID, I, J, K, UP,iphase,sz,sy,sx);  CHKERRQ(ierr);
 				vldc[sz+K][sy+J][sx+I] = 0; // It avoid to repeat the injection.
-	        	PetscPrintf(PETSC_COMM_WORLD,"Z coord %6f\n",COORD_NODE(sz+K, sz, fs->dsz)*jr->scal->length);
-	        	PetscPrintf(PETSC_COMM_WORLD,"1) UP+   %40f\n", UP);
-	        	PetscPrintf(PETSC_COMM_WORLD,"1) sz   %40f\n",sz);
-
 		    	}
 		    	else if(UP<0)
 		    	{
@@ -662,10 +662,10 @@ PetscErrorCode MeltExtractionInterpMarkerBackToGrid(AdvCtx *actx)
 //---------------------------------------------------------------------------
 #undef __FUNCT__
 #define __FUNCT__ "MeltExtractionExchangeVolume"
-PetscErrorCode MeltExtractionExchangeVolume(JacRes *jr, PetscInt iphase)
+PetscErrorCode MeltExtractionExchangeVolume(JacRes *jr, PetscInt iphase,PetscInt update,AdvCtx *actx)
 {
 	    FDSTAG      *fs	;
-	    FreeSurf    *surf	;
+	    FreeSurf    *surf ;
 		Discret1D   *dsz	;
 		PetscInt     i, j, k, K, sx, sy, sz, nx, ny, nz, iter,L ,cnt,gcnt	;
 		Vec          dgmvvec, dgmvvecmerge	;
@@ -782,22 +782,54 @@ PetscErrorCode MeltExtractionExchangeVolume(JacRes *jr, PetscInt iphase)
 				{
 					// find containing cell
 					K = FindPointInCell(dsz->ncoor, 0, dsz->ncels, D);
-					dz = SIZE_CELL(sz+K,sz,fs->dsz);
-					if(D1>2*dz)
+					dz = SIZE_CELL(sz+k,sz,fs->dsz);
+					if(D1>0)
 					{
 						Mipbuff[sz+K][j][i] = -IR*vdgmvvecmerge2[L][j][i];
+						// Update the vector for being ready to the extrusion
+						if(update>0)
+						{
+							// The first time that Exchange volume is called, has as input the mass. The second time
+							// it takes into account the volume. In order to retrive the thickness of the "melt extracted"
+							// you need to divide for the area.
+						dx = SIZE_CELL(sx+i,sx,fs->dsx);
+		                dy = SIZE_CELL(sy+j,sy,fs->dsy);
+						vdgmvvecmerge2[L][j][i]= -((1-IR)*vdgmvvecmerge2[L][j][i])/(dx*dy);
+						PetscPrintf(PETSC_COMM_SELF, "dx =%6f && Thickness is %6f \n",dx,vdgmvvecmerge2[L][j][i]*jr->scal->length);
+
+
+						}
 					}
 					else
 					{
 						Mipbuff[sz+K][j][i] = 0;
+						if(update>0)
+					     {
+							// The first time that Exchange volume is called, has as input the mass. The second time
+							// it takes into account the volume. In order to retrive the thickness of the "melt extracted"
+							// you need to divide for the area.
+							dx = SIZE_CELL(sx+i,sx,fs->dsx);
+							dy = SIZE_CELL(sy+j,sy,fs->dsy);
+							vdgmvvecmerge2[L][j][i]= -(vdgmvvecmerge2[L][j][i])/(dx*dy);
+					     }
 					}
-				}
+			      }
 			}
 		}
 		END_PLANE_LOOP
 		ierr = DMDAVecRestoreArray(jr->DA_CELL_2D, dgmvvecmerge, &vdgmvvecmerge2); CHKERRQ(ierr);
 		ierr = DMDAVecRestoreArray(jr->DA_CELL_2D, DeIntG, &DepthG); CHKERRQ(ierr);
 		ierr = DMDAVecRestoreArray(fs->DA_CEN, jr->Miphase ,    &Mipbuff)        ; CHKERRQ(ierr);
+
+
+
+		if(update>0 && IR<1)
+			{
+			// The first time that Exchange volume is called, has as input the mass. The second time
+			// it takes into account the volume. In order to retrive the thickness of the "melt extracted"
+			// you need to divide for the area.
+			ierr=Extrusion_melt(surf,iphase,dgmvvecmerge,actx); CHKERRQ(ierr);
+			}
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
@@ -854,7 +886,7 @@ PetscErrorCode MeltExtractionInject(JacRes *jr,AdvCtx *actx, AdvVelCtx *vi, Pets
 			xp[1] = (xe[1] - xs[1]) * cf_rand + xs[1];
 			ierr = PetscRandomGetValueReal(rctx, &cf_rand); CHKERRQ(ierr);
 			xp[2] = (xe[2] - xs[2])* cf_rand + xs[2];
-			PetscPrintf(PETSC_COMM_WORLD,"xe-xs %6f \n", xe[2]-xs[2]);
+		//	PetscPrintf(PETSC_COMM_WORLD,"xe-xs %6f \n", xe[2]-xs[2]);
 
 
 			// calculate the closest (parent marker)
@@ -986,8 +1018,126 @@ PetscErrorCode Moho_Tracking(FreeSurf *surf)
 
 
 }
+//========================================================================================================================================//
+#undef __FUNCT__
+#define __FUNCT__ "Extrusion_melt"
+PetscErrorCode Extrusion_melt(FreeSurf *surf,PetscInt iphase,Vec dgmvvecmerge, AdvCtx *actx)
+{
+	// Apply sedimentation to the internal free surface.
+	// Currently we only have the option to add a fixed sedimentation rate,
+	// and in this routine we simply advect the internal free surface upwards with
+	// this rate. In the future we can think about adding different sedimentation routines.
+
+	JacRes      *jr;
+	FDSTAG      *fs;
+	PetscScalar ***topo,***lmelt;
+	PetscScalar zbot, ztop, z,Melt[4],Layer;
+	PetscInt    L, phase;
+	PetscInt    i, j, nx, ny, sx, sy, sz,I1,I2,J1,J2,mx,my;
+	PetscErrorCode ierr;
+	Material_t  *phases;
+	Vec         ldvecmerge;
+	PetscFunctionBegin;
+	// free surface cases only
+	if(!surf->UseFreeSurf) PetscFunctionReturn(0);
+	// access context
+	jr   = surf->jr;
+	fs   = jr->fs;
+	L    = (PetscInt)fs->dsz.rank;
+	phases= jr->dbm->phases;
+	surf->MeltExtraction = 1;
+	// get z-coordinates of the top and bottom boundaries
+	ierr = FDSTAGGetGlobalBox(fs, NULL, NULL, &zbot, NULL, NULL, &ztop); CHKERRQ(ierr);
+	phase = phases[iphase].PhExt;
+	surf->phaseEx=phase;
+		// store the phase that is being sedimented
+		// access topography
+	ierr = DMDAVecGetArray(surf->DA_SURF, surf->ltopo,  &topo);  CHKERRQ(ierr);
+
+	// scan all free surface local points
+
+   	ierr = DMGetLocalVector(jr->DA_CELL_2D, &ldvecmerge); CHKERRQ(ierr);
+    GLOBAL_TO_LOCAL(jr->DA_CELL_2D, dgmvvecmerge, ldvecmerge);
+    ierr = DMDAVecGetArray(jr->DA_CELL_2D, ldvecmerge,  &lmelt);  CHKERRQ(ierr);
+    ierr = DMDAGetCorners(fs->DA_CEN, &sx, &sy, NULL, &nx, &ny, NULL); CHKERRQ(ierr);
+    START_PLANE_LOOP
+    {
+    	PetscPrintf(PETSC_COMM_SELF, "lmelt =%6g \n",lmelt[L][j][i]);
+    }
+    END_PLANE_LOOP
 
 
+
+    ierr = DMDAVecRestoreArray(jr->DA_CELL_2D, ldvecmerge,  &lmelt);  CHKERRQ(ierr);
+    ierr = DMDAGetCorners(fs->DA_COR, &sx, &sy, NULL, &nx, &ny, NULL); CHKERRQ(ierr);
+    ierr = DMDAVecGetArray(jr->DA_CELL_2D, ldvecmerge,  &lmelt);  CHKERRQ(ierr);
+
+    GET_NODE_RANGE(nx, sx, fs->dsx)
+    GET_NODE_RANGE(ny, sy, fs->dsy)
+    mx = fs->dsx.tnods - 1;
+    my = fs->dsy.tnods - 1;
+	START_PLANE_LOOP
+	{
+    	// This function is highly based on the sedimentation routine in surf.cpp. There is no need to
+    	// use dt, since the thickness is already in its integral form by default.
+
+       	I1 = i;
+    	I2 = i-1;
+    	J1 = j;
+    	J2 = j-1;
+    	// check index bounds if ghost points are undefined
+    	if(I1 == mx) I1--;
+    	if(I2 == -1) I2++;
+    	if(J1 == my) J1--;
+        if(J2 == -1) J2++;
+
+
+
+    	Melt[0]=lmelt[L][J1][I1];if(Melt[0]<0) Melt[0]=0;
+    	Melt[1]=lmelt[L][J1][I2];if(Melt[1]<0) Melt[1]=0;
+    	Melt[2]=lmelt[L][J2][I1];if(Melt[2]<0) Melt[2]=0;
+    	Melt[3]=lmelt[L][J2][I2];if(Melt[3]<0) Melt[3]=0;
+
+    	Layer=(Melt[0]+Melt[1]+Melt[2]+Melt[3])/4;
+    	//if(Melt[0]!=0 || Melt[1]|| Melt[2]!=0 ||Melt[3]!=0) PetscPrintf(PETSC_COMM_SELF, "melt0 = %6f, melt1 = %6f, melt2=%6f, melt3 =%6f \n",Melt[0],Melt[1],Melt[2],Melt[3]);
+	  // get topography
+		z = topo[L][j][i];
+
+			// uniformly advect
+		z += Layer;
+		//PetscPrintf(PETSC_COMM_SELF, "ExtrusionPhase =%d && Thickness is %6f \n",phase,Layer*jr->scal->length);
+
+
+			// check if internal free surface goes outside the model domain
+		if(z > ztop) z = ztop;
+		if(z < zbot) z = zbot;
+
+			// store advected topography
+		topo[L][j][i] = z;
+		}
+		END_PLANE_LOOP
+
+		// restore access
+		ierr = DMDAVecRestoreArray(surf->DA_SURF, surf->ltopo,  &topo);  CHKERRQ(ierr);
+		// compute ghosted version of the topography
+		LOCAL_TO_GLOBAL(surf->DA_SURF, surf->ltopo, surf->gtopo);
+	    ierr = DMDAVecRestoreArray(jr->DA_CELL_2D, ldvecmerge,  &lmelt);  CHKERRQ(ierr);
+
+		// compute & store average topography
+		ierr = FreeSurfGetAvgTopo(surf); CHKERRQ(ierr);
+		// compute host cells for all the markers
+		ierr = ADVMarkCrossFreeSurf(actx); CHKERRQ(ierr);
+		ierr = ADVMapMarkToCells(actx); CHKERRQ(ierr);
+		// update arrays for marker-cell interaction
+		ierr = ADVUpdateMarkCell(actx); CHKERRQ(ierr);
+		ierr = FreeSurfGetAirPhaseRatio(surf); CHKERRQ(ierr);
+
+		// print info
+		//PetscPrintf(PETSC_COMM_SELF, "ExtrusionPhase =%d \n",phase);
+		surf->MeltExtraction = 0;
+
+	PetscFunctionReturn(0);
+}
 
 
 

@@ -639,7 +639,7 @@ PetscErrorCode LaMEMLibSolve(LaMEMLib *lm, void *param)
 		PetscTime(&t);
         // Call Melt Extraction to compute the mass.
 
-		if(a>1) ierr = MeltExtractionSave(&lm->jr); CHKERRQ(ierr);
+		if(a>1) ierr = MeltExtractionSave(&lm->jr,&lm->actx); CHKERRQ(ierr);
 
 
 		ierr = SNESSolve(snes, NULL, lm->jr.gsol); CHKERRQ(ierr);
@@ -672,15 +672,6 @@ PetscErrorCode LaMEMLibSolve(LaMEMLib *lm, void *param)
 		
 		// restart if fixed time step is larger than CFLMAX
 		if(restart) continue;
-
-		//==================
-		// MELT EXTRACTION 1
-		//==================
-
-		// Save the melt extraction parameters in local vectors
-   //     ierr = MeltExtractionSave(&lm->actx,&lm->jr);
-
-		// Interpolate the history variables for the melt extraction and inject new markers based on volume
 
 		//==================================================================
 		// MARKER & FREE SURFACE ADVECTION + EROSION 2

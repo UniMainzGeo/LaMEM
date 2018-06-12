@@ -2066,6 +2066,8 @@ PetscErrorCode ADVMarkCrossFreeSurf(AdvCtx *actx)
 
 	// access topography
 	ierr = DMDAVecGetArray(surf->DA_SURF, surf->ltopo, &ltopo);  CHKERRQ(ierr);
+	 PetscPrintf(PETSC_COMM_SELF, "I'm converting marker \n");
+
 
 	// scan all markers
 	for(jj = 0; jj < actx->nummark; jj++)
@@ -2086,6 +2088,8 @@ PetscErrorCode ADVMarkCrossFreeSurf(AdvCtx *actx)
 
 		// compute surface topography at marker position
 		topo = InterpLin2D(ltopo, I, J, L, sx, sy, xp, yp, ncx, ncy);
+		//PetscPrintf(PETSC_COMM_SELF, "I'm converting marker TOPO =%6f \n",topo);
+
 
 		// check whether rock marker is above the free surface
 		if(P->phase != AirPhase && zp > topo)
@@ -2108,6 +2112,15 @@ PetscErrorCode ADVMarkCrossFreeSurf(AdvCtx *actx)
 		// check whether air marker is below the free surface
 		if(P->phase == AirPhase && zp < topo)
 		{
+
+			if(surf->MeltExtraction == 1)
+			{
+			// sedimentation -> air turns into a sediment
+			 P->phase = surf->phaseEx;
+		//	 PetscPrintf(PETSC_COMM_SELF, "I'm converting marker to %d \n",P->phase);
+			}
+
+
 			if(surf->SedimentModel == 1)
 			{
 				// sedimentation -> air turns into a sediment
@@ -2115,13 +2128,14 @@ PetscErrorCode ADVMarkCrossFreeSurf(AdvCtx *actx)
 			}
 			else
 			{
-				if(!surf->NoShiftMark)
+				if(!surf->NoShiftMark || surf->MeltExtraction == 1)
 				{	
 					// put marker above the free surface
 					P->X[2] = topo + tol*(topo - zp);
 				}
 			}
 		}
+
 	}
 
 	// restore access
