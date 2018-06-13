@@ -2120,7 +2120,6 @@ PetscErrorCode ADVMarkCrossFreeSurf(AdvCtx *actx)
 		//	 PetscPrintf(PETSC_COMM_SELF, "I'm converting marker to %d \n",P->phase);
 			}
 
-
 			if(surf->SedimentModel == 1)
 			{
 				// sedimentation -> air turns into a sediment

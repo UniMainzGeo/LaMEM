@@ -53,7 +53,7 @@ PetscErrorCode MeltExtractionUpdate(JacRes *jr, AdvCtx *actx);
 PetscErrorCode MeltExtractionInterpMarker(AdvCtx *actx, PetscInt iphase);
 PetscErrorCode MeltExtractionInterpMarkerBackToGrid(AdvCtx *actx);
 PetscErrorCode MeltExtractionExchangeVolume(JacRes *jr,PetscInt iphase,PetscInt update, AdvCtx *actx);
-PetscErrorCode MeltExtractionInject(JacRes *jr,AdvCtx *actx, AdvVelCtx *vi, PetscInt ID, PetscInt I, PetscInt J, PetscInt K, PetscScalar UP,PetscInt iphase, PetscInt sx, PetscInt sy, PetscInt sz);
+PetscErrorCode MeltExtractionInject(JacRes *jr,AdvCtx *actx, PetscInt ID, PetscInt I, PetscInt J, PetscInt K, PetscScalar UP,PetscInt iphase);
 PetscErrorCode Moho_Tracking(FreeSurf *surf);
 PetscErrorCode Extrusion_melt(FreeSurf *surf,PetscInt iphase,Vec dgmvvecmerge,AdvCtx *actx);
 #endif
