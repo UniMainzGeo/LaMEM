@@ -251,9 +251,9 @@ struct JacRes
 
 	// Melt extraction
 	Vec   gdMV, gdMVmerge,gdMoho1, gdMoho;
-	Vec   ldMV,ldMoho,Miphase,MOHOV;
+	Vec   ldMV,ldMoho,Miphase;
 	Vec   gdc, ldc;
-	Vec   Vol;
+	Vec   ldvecmerge, dgmvvecmerge;
 	//=======================
 	// temperature parameters
 	//=======================
