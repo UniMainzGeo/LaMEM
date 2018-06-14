@@ -749,7 +749,7 @@ PetscErrorCode MeltExtractionExchangeVolume(JacRes *jr, PetscInt iphase,PetscInt
 			{
 				// find containing cell
 				K = FindPointInCell(dsz->ncoor, 0, dsz->ncels, D);
-				dz = SIZE_CELL(sz+k,sz,fs->dsz);
+				dz = SIZE_CELL(K,sz,fs->dsz);
 				if(D1>dz)
 				{
 					Mipbuff[sz+K][j][i] = -IR*vdgmvvecmerge2[L][j][i];
@@ -765,8 +765,8 @@ PetscErrorCode MeltExtractionExchangeVolume(JacRes *jr, PetscInt iphase,PetscInt
 				// The first time that Exchange volume is called, has as input the mass. The second time
 				// it takes into account the volume. In order to retrive the thickness of the "melt extracted"
 				// you need to divide for the area.
-				dx = SIZE_CELL(sx+i,sx,fs->dsx);
-				dy = SIZE_CELL(sy+j,sy,fs->dsy);
+				dx = SIZE_CELL(i,sx,fs->dsx);
+				dy = SIZE_CELL(j,sy,fs->dsy);
 				if(condition = 0)
 				{
 					vdgmvvecmerge2[L][j][i]= -((1-IR)*vdgmvvecmerge2[L][j][i])/(dx*dy);
@@ -777,6 +777,7 @@ PetscErrorCode MeltExtractionExchangeVolume(JacRes *jr, PetscInt iphase,PetscInt
 				}
 				PetscPrintf(PETSC_COMM_SELF, "dx =%6f && Thickness is %6f \n",dx,vdgmvvecmerge2[L][j][i]*jr->scal->length);
 			}
+
 		}
 	}
 	END_PLANE_LOOP
@@ -807,6 +808,7 @@ PetscErrorCode MeltExtractionExchangeVolume(JacRes *jr, PetscInt iphase,PetscInt
 		// you need to divide for the area.
 		ierr=Extrusion_melt(surf,iphase,actx); CHKERRQ(ierr);
 	}
+
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
@@ -1025,15 +1027,7 @@ PetscErrorCode Extrusion_melt(FreeSurf *surf,PetscInt iphase, AdvCtx *actx)
 
 	// store the phase that is being sedimented
 	surf->phaseEx = phases[iphase].PhExt;
-
-
 	ierr = DMGetLocalVector(jr->DA_CELL_2D, &ldvecmerge); CHKERRQ(ierr);
-
-
-	// access vectors
-
-
-
 	ierr = DMDAGetCorners(fs->DA_CEN, &sx, &sy, NULL, &nx, &ny, NULL); CHKERRQ(ierr);
 	ierr = DMDAVecGetArray(jr->DA_CELL_2D, jr->ldvecmerge,  &lmelt);  CHKERRQ(ierr);
 	START_PLANE_LOOP
