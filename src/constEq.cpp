@@ -502,28 +502,25 @@ PetscErrorCode DevConstEq(
 				// Viscosity Feedback
 				if(mat->MeltE>0 && !ctrl->initGuess)
 				{
-				if(pd->mf-svDev->mfextot<0) mf = (pd->mf-svDev->mfextot);
+				if(pd->mf-svDev->mfextot<0.0) mf = (pd->mf-svDev->mfextot);
 				if(mf>mat->Mtrs)
 				{
-				  mf_temp=mf-mat->Mleft;
-				  if(mf_temp<0)
-				  {
-					  mf_temp=0;
-				  }
-				  svDev->mf=mf_temp;
+					mf_temp=mf-mat->Mleft;
+					if(mf_temp<0.0)
+					{
+						mf_temp=0.0;
+					}
+					svDev->mf=mf_temp;
 				}
 				else
-				{
-                svDev->mf =mf;
-				}
+					{
+					svDev->mf =mf;
+					}
 				}
 				else
 				{
 					svDev->mf=pd->mf;
 				}
-
-
-				// svDev->dMF       = ((pd->mf - svDev->mfextot)-phases[i].Mleft);
 			}
 
 			// setup nonlinear constitutive equation evaluation context
@@ -574,10 +571,10 @@ PetscErrorCode VolConstEq(
 	svBulk->alpha = 0.0;
 	svBulk->IKdt  = 0.0;
 	Kavg          = 0.0;
-	svBulk->rho_pf = 0;
+	svBulk->rho_pf = 0.0;
 //	svBulk->mf     = 0;
 //	svBulk->dMF    = 0;
-    svBulk->rho_in = 0;
+    svBulk->rho_in = 0.0;
 
 	// scan all phases
 	for(i = 0; i < numPhases; i++)
@@ -599,28 +596,28 @@ PetscErrorCode VolConstEq(
 				{
 				mfeff = pd->mf-svBulk->mfextot;// historical variables  !!!!!!!! POSSIBLE GENERATION OF ARTIFACT!!!!! {sv->Bulk is computed using all the contributes of the phase
 				// which means that or we find a way to separate each contribute or there is the possibility the melt extracted is underestimated
-				if (mfeff<0) mfeff=0;          //Correction
+				if (mfeff<0.0) mfeff=0.0;          //Correction
 				if( mfeff>phases[i].Mtrs)
 				{
 					dM=phases[i].Mleft;
 					mf_temp=mfeff-dM;
-					if(mf_temp<0)
+					if(mf_temp<0.0)
 					{
-					 dM=mfeff-0;
-					 mf_temp=0;
+					 dM=mfeff-0.0;
+					 mf_temp=0.0;
 					}
 
 				}
 				else
 				{
-				mf_temp      = mfeff;
-	             }
+				mf_temp = mfeff;
+				}
 				}
 				else
 				{
 					mf_temp=pd->mf;
 				}
-		     }
+			}
 
 				svBulk->rho_pf += phRat[i] * pd->rho_f;
 
