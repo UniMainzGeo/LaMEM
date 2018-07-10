@@ -176,7 +176,7 @@ PetscErrorCode DisplaySpecifiedSolverOptions(PCStokes pc, SNES snes)
 	PetscScalar 	scalar;
 	PetscInt 		integer, refine_y;
 	PetscBool		found;
-	const MatSolverPackage solver_type; 
+	MatSolverType   solver_type;
 
  	PetscFunctionBegin;
 
@@ -277,7 +277,7 @@ PetscErrorCode DisplaySpecifiedSolverOptions(PCStokes pc, SNES snes)
 				PetscPrintf(PETSC_COMM_WORLD, "   Coarse level solver package   : %s \n", pname);
 			}
 			else{ // default
-				ierr = PCFactorGetMatSolverPackage(pc_coarse, &solver_type); CHKERRQ(ierr);
+				ierr = PCFactorGetMatSolverType(pc_coarse, &solver_type); CHKERRQ(ierr);
 				PetscPrintf(PETSC_COMM_WORLD, "   Coarse level solver package   : %s \n", solver_type);
 			}
 		}
@@ -311,12 +311,15 @@ PetscErrorCode DisplaySpecifiedSolverOptions(PCStokes pc, SNES snes)
 			}
 		}
 
-		PCGetType(user->pc, &pc_type);
-		PCFactorGetMatSolverPackage(user->pc,&solver_type);
-		if (!solver_type){
+		ierr = PCGetType(user->pc, &pc_type);  CHKERRQ(ierr);
+		ierr = PCFactorGetMatSolverType(user->pc, &solver_type);  CHKERRQ(ierr);
+
+		if(!solver_type)
+		{
 			PetscPrintf(PETSC_COMM_WORLD, "   Solver package                : petsc default\n");
 		}
-		else{
+		else
+		{
 			PetscPrintf(PETSC_COMM_WORLD, "   Solver package                : %s \n", solver_type);
 		}
    		

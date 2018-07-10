@@ -1787,13 +1787,13 @@ PetscErrorCode MGCreate(MG *mg, JacRes *jr)
 	}
 
 	// create Galerkin multigrid preconditioner
-	ierr = PCCreate(PETSC_COMM_WORLD, &mg->pc);       CHKERRQ(ierr);
-	ierr = PCSetOptionsPrefix(mg->pc, "gmg_");        CHKERRQ(ierr);
-	ierr = PCSetType(mg->pc, PCMG);                   CHKERRQ(ierr);
-	ierr = PCMGSetLevels(mg->pc, mg->nlvl, NULL);     CHKERRQ(ierr);
-	ierr = PCMGSetType(mg->pc, PC_MG_MULTIPLICATIVE); CHKERRQ(ierr);
-	ierr = PCMGSetGalerkin(mg->pc, PETSC_TRUE);       CHKERRQ(ierr);
-	ierr = PCSetFromOptions(mg->pc);                  CHKERRQ(ierr);
+	ierr = PCCreate(PETSC_COMM_WORLD, &mg->pc);          CHKERRQ(ierr);
+	ierr = PCSetOptionsPrefix(mg->pc, "gmg_");           CHKERRQ(ierr);
+	ierr = PCSetType(mg->pc, PCMG);                      CHKERRQ(ierr);
+	ierr = PCMGSetLevels(mg->pc, mg->nlvl, NULL);        CHKERRQ(ierr);
+	ierr = PCMGSetType(mg->pc, PC_MG_MULTIPLICATIVE);    CHKERRQ(ierr);
+	ierr = PCMGSetGalerkin(mg->pc, PC_MG_GALERKIN_BOTH); CHKERRQ(ierr);
+	ierr = PCSetFromOptions(mg->pc);                     CHKERRQ(ierr);
 
 	// attach restriction/prolongation matrices to the preconditioner
 	for(i = 1, l = mg->nlvl-1; i < mg->nlvl; i++, l--)
