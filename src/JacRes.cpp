@@ -1051,7 +1051,6 @@ PetscErrorCode JacResGetResidual(JacRes *jr)
 	PetscScalar eta_creep, eta_vp;
 	PetscScalar depth, pc_lith, pc_pore, biot, ptotal, avg_topo;
 //	PetscScalar alpha, Tn,
- 	PetscScalar dx,dy,dz,mass_in,mass_fin, mass_r,strain_scale;
 
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
@@ -1253,15 +1252,15 @@ PetscErrorCode JacResGetResidual(JacRes *jr)
 //		gc[k][j][i] = -IKdt*(pc - pn) - theta + alpha*(Tc - Tn)/dt;
 	  // 	mass_r=0;
 
-
+/*
 		dx = SIZE_CELL(i,sx,fs->dsx);
 		dy = SIZE_CELL(j,sy,fs->dsy);
 		dz = SIZE_CELL(k,sz,fs->dsz);
 		mass_in=svBulk->rho_in*dx*dy*dz;
 		mass_fin=(mass_in+svBulk->Mass);
 		mass_r=(mass_in)/mass_fin;
-
-gc[k][j][i] = -IKdt*(pc - pn) -theta+1/dt*(1-mass_r); //-(svBulk->S);
+*/
+gc[k][j][i] = -IKdt*(pc - pn) -theta+1/dt*svBulk->Mass; //-(svBulk->S);
 
 	}
 	END_STD_LOOP

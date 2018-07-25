@@ -155,12 +155,15 @@ PetscErrorCode PVSurfWriteTimeStep(PVSurf *pvsurf, const char *dirName, PetscSca
 
 	// update .pvd file if necessary
 	ierr = UpdatePVDFile(dirName, pvsurf->outfile, "pvts", &pvsurf->offset, ttime, pvsurf->outpvd); CHKERRQ(ierr);
+	PetscPrintf(PETSC_COMM_WORLD, "After InterpBacktoGrid here pvd \n");
 
 	// write parallel data .pvts file
 	ierr = PVSurfWritePVTS(pvsurf, dirName); CHKERRQ(ierr);
+	PetscPrintf(PETSC_COMM_WORLD, "After InterpBacktoGrid pvd2\n");
 
 	// write sub-domain data .vts files
 	ierr = PVSurfWriteVTS(pvsurf, dirName); CHKERRQ(ierr);
+	PetscPrintf(PETSC_COMM_WORLD, "After InterpBacktoGrid pvd3\n");
 
 	PetscFunctionReturn(0);
 }

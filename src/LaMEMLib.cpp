@@ -687,9 +687,14 @@ PetscErrorCode LaMEMLibSolve(LaMEMLib *lm, void *param)
 		ierr = ADVAdvect(&lm->actx); CHKERRQ(ierr);
 
 		if(a>1) ierr = MeltExtractionUpdate(&lm->jr,&lm->actx); CHKERRQ(ierr);
+		PetscPrintf(PETSC_COMM_WORLD, "After Update \n");
+
 
 
 		if(a>1) ierr =  MeltExtractionInterpMarkerBackToGrid(&lm->actx);
+
+		PetscPrintf(PETSC_COMM_WORLD, "After InterpBacktoGrid \n");
+
 
 		// apply background strain-rate "DWINDLAR" BC (Bob Shaw "Ship of Strangers")
 		ierr = BCStretchGrid(&lm->bc); CHKERRQ(ierr);
@@ -701,17 +706,21 @@ PetscErrorCode LaMEMLibSolve(LaMEMLib *lm, void *param)
 		// exchange markers between the processors (after mesh advection)
 		ierr = ADVExchange(&lm->actx); CHKERRQ(ierr);
 
+
 		// apply erosion to the free surface
 		ierr = FreeSurfAppErosion(&lm->surf); CHKERRQ(ierr);
 
 		// apply sedimentation to the free surface
 		ierr = FreeSurfAppSedimentation(&lm->surf); CHKERRQ(ierr);
 
+
 		// remap markers onto (stretched) grid
 		ierr = ADVRemap(&lm->actx); CHKERRQ(ierr);
+		PetscPrintf(PETSC_COMM_WORLD, "After InterpBacktoGrid \n");
 
 		// update phase ratios taking into account actual free surface position
 		ierr = FreeSurfGetAirPhaseRatio(&lm->surf); CHKERRQ(ierr);
+		PetscPrintf(PETSC_COMM_WORLD, "After InterpBacktoGrid \n");
 
 		//==================
 		// Save data to disk
@@ -722,9 +731,12 @@ PetscErrorCode LaMEMLibSolve(LaMEMLib *lm, void *param)
 		
 		// grid & marker output
 		ierr = LaMEMLibSaveOutput(lm); CHKERRQ(ierr);
+		PetscPrintf(PETSC_COMM_WORLD, "After InterpBacktoGrid \n");
 
 		// restart database
 		ierr = LaMEMLibSaveRestart(lm); CHKERRQ(ierr);
+		PetscPrintf(PETSC_COMM_WORLD, "After InterpBacktoGrid \n");
+
 	    a+=1;
 	}
 

@@ -662,18 +662,15 @@ PetscErrorCode VolConstEq(
 			{
 				// you need to use the actual mf associated specifically with all the phases... . Or we have to assume that the effective melt fraction is actually equally distribuited in the volume?
 				rho = (mf_temp * pd->rho_f) + ((1-mf_temp) * pd->rho);
-				rho_in=(mfeff * pd->rho_f) + ((1-mfeff) * pd->rho);
 			}
 			else
 			{
 				// temperature & pressure-dependent density
 				rho = mat->rho*cf_comp*cf_therm;
-				rho_in=rho;
 			}
 
 			// update density, thermal expansion & inverse bulk elastic parameter
 			svBulk->rho   += phRat[i]*rho;
-			svBulk->rho_in+= phRat[i]*rho_in;
 			svBulk->alpha += phRat[i]*mat->alpha;
 		//	if(ctrl->initGuess)
 			//	{
