@@ -1049,7 +1049,7 @@ PetscErrorCode JacResGetResidual(JacRes *jr)
 	PetscScalar ***fx,  ***fy,  ***fz, ***vx,  ***vy,  ***vz, ***gc, ***bcp;
 	PetscScalar ***dxx, ***dyy, ***dzz, ***dxy, ***dxz, ***dyz, ***p, ***T, ***p_lith, ***p_pore;
 	PetscScalar eta_creep, eta_vp;
-	PetscScalar depth, pc_lith, pc_pore, biot, ptotal, avg_topo;
+	PetscScalar depth, pc_lith, pc_pore, biot, ptotal, avg_topo,dx,dy,dz;
 //	PetscScalar alpha, Tn,
 
 	PetscErrorCode ierr;
@@ -1199,6 +1199,11 @@ PetscErrorCode JacResGetResidual(JacRes *jr)
 
 		// evaluate volumetric constitutive equations
 		ierr = VolConstEq(svBulk, numPhases, phases, svCell->phRat, ctrl, depth, dt, pc-pShift , Tc, jr-> Pd); CHKERRQ(ierr);
+		dx = SIZE_CELL(i,sx,fs->dsx);
+		dy = SIZE_CELL(j,sy,fs->dsy);
+		dz = SIZE_CELL(k,sz,fs->dsz);
+		svBulk->Mass=0.0;
+		ierr = ExchangeMassME(svBulk,dx,dy,dz); CHKERRQ(ierr);
 
 		// access
 		theta = svBulk->theta; // volumetric strain rate
@@ -1260,6 +1265,9 @@ PetscErrorCode JacResGetResidual(JacRes *jr)
 		mass_fin=(mass_in+svBulk->Mass);
 		mass_r=(mass_in)/mass_fin;
 */
+		if(svBulk->Mass!=0)PetscPrintf(PETSC_COMM_SELF, "Mass is %6f \n",svBulk->Mass);
+
+
 gc[k][j][i] = -IKdt*(pc - pn) -theta+1/dt*svBulk->Mass; //-(svBulk->S);
 
 	}

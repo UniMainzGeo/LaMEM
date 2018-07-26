@@ -99,7 +99,7 @@ struct SolVarBulk
 	PetscScalar  dMF;
 	PetscScalar  Mass;   //Volume changes to send to the continuity equation
 	PetscScalar  rho_in;
-	PetscScalar  S;// volumetric source of mass
+	PetscScalar  dMass;// Variation of mass associated with the melt extraction
 };
 
 //---------------------------------------------------------------------------

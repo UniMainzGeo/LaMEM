@@ -279,7 +279,7 @@
 	poly_file      = ./input/poly.dat  # polygon geometry file    (redundant)
 	temp_file      = ./input/temp.dat  # initial temperature file (redundant)
 	advect         = basic             # advection scheme
-	interp         = stag              # velocity interpolation scheme
+	interp         = minmod              # velocity interpolation scheme
 	stagp_a        = 0.7               # STAG_P velocity interpolation parameter
 	mark_ctrl      = none              # marker control type
 	surf_tol       = 0.05              # tolerance for shifting markers below free surface

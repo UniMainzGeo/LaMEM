@@ -145,7 +145,7 @@ PetscErrorCode MeltExtractionSave(JacRes *jr,AdvCtx *actx)
 	PData *pd; // pointer 2 the phase diagram structure
 	PetscInt numPhases ; // number of phases
 	PetscScalar *phRat; // Phase Ratio
-	PetscScalar ***p,pc,mass_in,dmass; // pressure
+	PetscScalar ***p,pc; // pressure
 	PetscScalar ***T,Tc; // temperature
 	PetscScalar mfeff,dx,dy,dz,dM,mf_temp; // Effective melt extracted
 	Material_t *mat; // Material properties structure
@@ -176,6 +176,7 @@ PetscErrorCode MeltExtractionSave(JacRes *jr,AdvCtx *actx)
 		svBulk = &svCell->svBulk;
 		svBulk->dMF=0.0;
 		svBulk->Mass=0.0;
+		svBulk->dMass=0.0;
 		svBulk->mf = 0.0;
 		iter++;
 	}END_STD_LOOP
@@ -241,32 +242,12 @@ PetscErrorCode MeltExtractionSave(JacRes *jr,AdvCtx *actx)
 			// Here we compute the right-side term to plug in the residuum (JacRes). Mass_in is the initial mass, while dMass is representing the term that has to be
 			// add to svBulk->Mass. This allow us to avoid to dirty JacRes
 			START_STD_LOOP{
-				svCell    = &jr->svCell[iter] ;// take the central node based properties
-				svBulk    = &svCell->svBulk ;
-				dmass =0.0;
-				if(phRat[i])
-					{
-					// Temperature&Pressure
-					// access current pressure
-					pc = p[k][j][i];
-					// current temperature
-					Tc = T[k][j][i];
-					ierr = SetDataPhaseDiagram(pd, pc, Tc, 0, mat->pdn); CHKERRQ(ierr);
-					mfeff = pd->mf-svBulk->mfextot;// historical variables
-					if (Mipbuff[k][j][i]!=0.0)
-					{
-						dx = SIZE_CELL(i,sx,fs->dsx);
-						dy = SIZE_CELL(j,sy,fs->dsy);
-						dz = SIZE_CELL(k,sz,fs->dsz);
-						mass_in=phRat[i]*(mfeff*pd->rho_f)+((1-mfeff)*pd->rho)*dx*dy*dz;
-						dmass=(1-mass_in/(mass_in+Mipbuff[k][j][i]));
-					}
-
-					svBulk->Mass +=dmass;
-				}
+				svCell = &jr->svCell[iter] ;// take the central node based properties
+				svBulk = &svCell->svBulk ;
+				svBulk->dMass +=Mipbuff[k][j][i];
 				iter++;
 			}END_STD_LOOP
-			ierr = DMDAVecRestoreArray(fs->DA_CEN, jr->Miphase, &Mipbuff)                 ;        CHKERRQ(ierr);
+			ierr = DMDAVecRestoreArray(fs->DA_CEN, jr->Miphase, &Mipbuff) ; CHKERRQ(ierr);
 		}
 	}
 	ierr = DMDAVecRestoreArray(fs->DA_CEN, jr->lp,&p); CHKERRQ(ierr);
@@ -453,6 +434,7 @@ PetscErrorCode MeltExtractionInterpMarker(AdvCtx *actx, PetscInt iphase)
 				if(P->Mtot > phases[iphase].Mmax)
 				{
 					P->phase=phases[iphase].PhNext;
+					// It is necessary to set to zero the total melt extracted from this particles. Otherwise the melt production is discontinous
 					P->Mtot = 0.0;
 				}
 			}
@@ -816,7 +798,6 @@ PetscErrorCode MeltExtractionExchangeVolume(JacRes *jr, PetscInt iphase,PetscInt
 				{
 					vdgmvvecmerge2[L][j][i]= -vdgmvvecmerge2[L][j][i]/(dx*dy);
 				}
-				PetscPrintf(PETSC_COMM_SELF, "dx =%6f && Thickness is %6f \n",dx,vdgmvvecmerge2[L][j][i]*jr->scal->length);
 			}
 
 		}
@@ -1156,3 +1137,22 @@ PetscErrorCode Extrusion_melt(FreeSurf *surf,PetscInt iphase, AdvCtx *actx)
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
+#undef __FUNCT__
+#define __FUNCT__ "ExchangeMassME"
+PetscErrorCode ExchangeMassME(SolVarBulk *svBulk,PetscScalar dx,PetscScalar dy,PetscScalar dz)
+{
+	PetscFunctionBegin;
+	if(svBulk->dMass!=0.0)
+	{
+		PetscPrintf(PETSC_COMM_SELF, "initial mass =%6f && dMass is %6f && Mass is = %6f\n",svBulk->rho_in*dx*dy*dz,svBulk->dMass,svBulk->Mass);
+	svBulk->Mass=(1-svBulk->rho_in*dx*dy*dz/(svBulk->rho_in*dx*dy*dz+svBulk->dMass));
+	}
+	else
+	{
+		svBulk->Mass=0.0;
+	}
+	PetscFunctionReturn(0);
+
+}
+
+

@@ -56,4 +56,6 @@ PetscErrorCode MeltExtractionExchangeVolume(JacRes *jr,PetscInt iphase,PetscInt 
 PetscErrorCode MeltExtractionInject(JacRes *jr,AdvCtx *actx, PetscInt ID, PetscInt I, PetscInt J, PetscInt K, PetscScalar UP,PetscInt iphase);
 PetscErrorCode Moho_Tracking(FreeSurf *surf);
 PetscErrorCode Extrusion_melt(FreeSurf *surf,PetscInt iphase,AdvCtx *actx);
+PetscErrorCode ExchangeMassME(SolVarBulk *svBulk,PetscScalar dx,PetscScalar dy,PetscScalar dz);
+
 #endif
