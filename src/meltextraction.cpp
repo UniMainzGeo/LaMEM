@@ -184,7 +184,7 @@ PetscErrorCode MeltExtractionSave(JacRes *jr,AdvCtx *actx)
 	for(iphase=0;iphase<numPhases;iphase++)
 	{
 		mat=&phases[iphase];
-		if(mat->Pd_rho == 1)
+		if(mat->Pd_rho == 1 && mat->MeltE==1)
 		{
 			//Create the buffer
 			ierr = VecZeroEntries(jr->Miphase); CHKERRQ(ierr);
@@ -299,7 +299,7 @@ PetscErrorCode MeltExtractionUpdate(JacRes *jr, AdvCtx *actx)
 	for(iphase=0;iphase<numPhases;iphase++)
 	{
 		mat=&phases[iphase];
-		if(mat->Pd_rho == 1)
+		if(mat->Pd_rho == 1 && mat->MeltE==1)
 		{
 			//Create the buffer & getting the buffer
 			ierr = VecZeroEntries(jr->Miphase); CHKERRQ(ierr);
