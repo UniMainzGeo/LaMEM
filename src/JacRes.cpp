@@ -1203,7 +1203,7 @@ PetscErrorCode JacResGetResidual(JacRes *jr)
 		dy = SIZE_CELL(j,sy,fs->dsy);
 		dz = SIZE_CELL(k,sz,fs->dsz);
 		svBulk->Mass=0.0;
-		ierr = ExchangeMassME(svBulk,dx,dy,dz); CHKERRQ(ierr);
+		ierr = ExchangeMassME(svBulk,dx,dy,dz,dt); CHKERRQ(ierr);
 
 		// access
 		theta = svBulk->theta; // volumetric strain rate
@@ -1248,27 +1248,15 @@ PetscErrorCode JacResGetResidual(JacRes *jr)
 		if(j == mcy && bcp[k][j+1][i] != DBL_MAX) fy[k][j+1][i] -= -p[k][j+1][i]/fdy;
 
 		if(k == 0   && bcp[k-1][j][i] != DBL_MAX) fz[k][j][i]   += -p[k-1][j][i]/bdz;
-		if(k == mcz && bcp[k+1][j][i] != DBL_MAX) fz[k+1][j][i] -= -p[k+1][j][i]/fdz;
+			if(k == mcz && bcp[k+1][j][i] != DBL_MAX) fz[k+1][j][i] -= -p[k+1][j][i]/fdz;
 
-//		if(k == 0   ) fz[k][j][i]   += -p[k-1][j][i]/bdz;
-//		if(k == mcz ) fz[k+1][j][i] -= -p[k+1][j][i]/fdz;
+	//		if(k == 0   ) fz[k][j][i]   += -p[k-1][j][i]/bdz;
+	//		if(k == mcz ) fz[k+1][j][i] -= -p[k+1][j][i]/fdz;
 
-		// mass - currently T-dependency is deactivated
-//		gc[k][j][i] = -IKdt*(pc - pn) - theta + alpha*(Tc - Tn)/dt;
-	  // 	mass_r=0;
+			// mass - currently T-dependency is deactivated
+	//		gc[k][j][i] = -IKdt*(pc - pn) - theta + alpha*(Tc - Tn)/dt;
 
-/*
-		dx = SIZE_CELL(i,sx,fs->dsx);
-		dy = SIZE_CELL(j,sy,fs->dsy);
-		dz = SIZE_CELL(k,sz,fs->dsz);
-		mass_in=svBulk->rho_in*dx*dy*dz;
-		mass_fin=(mass_in+svBulk->Mass);
-		mass_r=(mass_in)/mass_fin;
-*/
-		if(svBulk->Mass!=0)PetscPrintf(PETSC_COMM_SELF, "Mass is %6f \n",svBulk->Mass);
-
-
-gc[k][j][i] = -IKdt*(pc - pn) -theta+1/dt*svBulk->Mass; //-(svBulk->S);
+			gc[k][j][i] = -IKdt*(pc - pn) -theta+svBulk->Mass; //-(svBulk->S);
 
 	}
 	END_STD_LOOP

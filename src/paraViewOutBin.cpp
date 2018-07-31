@@ -341,8 +341,8 @@ PetscInt OutMaskCountActive(OutMask *omask)
 	if(omask->j2_strain_rate) cnt++; // deviatoric strain rate second invariant
 	if(omask->melt_fraction)  cnt++; // melt fraction
 	if(omask->melt_exttot)    cnt++; // melt fraction
-	if(omask->melt_dVdt)      cnt++; // melt fraction
-	if(omask->Volume)         cnt++; // Volume
+	if(omask->MassEx)       cnt++; // melt fraction
+	if(omask->Mass)           cnt++; // Volume
 	if(omask->fluid_density)  cnt++; // fluid density
 	if(omask->vol_rate)       cnt++; // volumetric strain rate
 	if(omask->vorticity)      cnt++; // vorticity vector
@@ -418,8 +418,8 @@ PetscErrorCode PVOutCreate(PVOut *pvout, FB *fb)
 	ierr = getIntParam   (fb, _OPTIONAL_, "out_energ_res",      &omask->energ_res,         1, 1); CHKERRQ(ierr);
 	ierr = getIntParam   (fb, _OPTIONAL_, "out_melt_fraction",  &omask->melt_fraction,     1, 1); CHKERRQ(ierr);
 	ierr = getIntParam   (fb, _OPTIONAL_, "out_melt_extot",     &omask->melt_exttot,       1, 1); CHKERRQ(ierr);
-	ierr = getIntParam   (fb, _OPTIONAL_, "out_melt_dVdt",      &omask->melt_dVdt,         1, 1); CHKERRQ(ierr);
-	ierr = getIntParam   (fb, _OPTIONAL_, "out_Volume",         &omask->Volume,            1, 1); CHKERRQ(ierr);
+	ierr = getIntParam   (fb, _OPTIONAL_, "out_MassEx",         &omask->MassEx,          1, 1); CHKERRQ(ierr);
+	ierr = getIntParam   (fb, _OPTIONAL_, "out_Mass",           &omask->Mass,            1, 1); CHKERRQ(ierr);
 	ierr = getIntParam   (fb, _OPTIONAL_, "out_fluid_density",  &omask->fluid_density,     1, 1); CHKERRQ(ierr);
 
 	// check
@@ -460,8 +460,8 @@ PetscErrorCode PVOutCreate(PVOut *pvout, FB *fb)
 	if(omask->energ_res)      PetscPrintf(PETSC_COMM_WORLD, "   energy residual                         @ \n");
 	if(omask->melt_fraction)  PetscPrintf(PETSC_COMM_WORLD, "   Melt fraction                           @ \n");
 	if(omask->melt_exttot)    PetscPrintf(PETSC_COMM_WORLD, "   Melt fraction extracted total           @ \n");
-	if(omask->melt_dVdt)      PetscPrintf(PETSC_COMM_WORLD, "   Melt fraction Volume change             @ \n");
-	if(omask->Volume)         PetscPrintf(PETSC_COMM_WORLD, "   Volume                                  @ \n");
+	if(omask->MassEx)         PetscPrintf(PETSC_COMM_WORLD, "   Mass Exchange                           @ \n");
+	if(omask->Mass)           PetscPrintf(PETSC_COMM_WORLD, "   Source_Sink                             @ \n");
 	if(omask->fluid_density)  PetscPrintf(PETSC_COMM_WORLD, "   Fluid density                           @ \n");
 
 	PetscPrintf(PETSC_COMM_WORLD, "--------------------------------------------------------------------------\n");
@@ -526,8 +526,8 @@ PetscErrorCode PVOutCreateData(PVOut *pvout)
 	// === debugging vectors ===============================================
 	if(omask->melt_fraction)  OutVecCreate(&pvout->outvecs[iter++], "melt_fraction",  scal->lbl_unit,             &PVOutWriteMeltFraction, 1);
 	if(omask->melt_exttot)    OutVecCreate(&pvout->outvecs[iter++], "melt_exttot",    scal->lbl_unit,             &PVOutWriteMeltExtTot,   1);
-	if(omask->melt_dVdt)      OutVecCreate(&pvout->outvecs[iter++], "melt_dVdt",      scal->lbl_unit,             &PVOutWriteMeltdVdt,     1);
-	if(omask->Volume)         OutVecCreate(&pvout->outvecs[iter++], "Volume",         scal->lbl_unit,             &PVOutWriteVolume,       1);
+	if(omask->MassEx)      OutVecCreate(&pvout->outvecs[iter++], "MassEx",      scal->lbl_unit,             &PVOutWriteMassEx,     1);
+	if(omask->Mass)         OutVecCreate(&pvout->outvecs[iter++], "Mass",         scal->lbl_unit,             &PVOutWriteMass,       1);
 	if(omask->fluid_density)  OutVecCreate(&pvout->outvecs[iter++], "fluid_density",  scal->lbl_density,	      &PVOutWriteFluidDensity, 1);
 	if(omask->moment_res)     OutVecCreate(&pvout->outvecs[iter++], "moment_res",     scal->lbl_volumetric_force, &PVOutWriteMomentRes,    3);
 	if(omask->cont_res)       OutVecCreate(&pvout->outvecs[iter++], "cont_res",       scal->lbl_strain_rate,      &PVOutWriteContRes,      1);

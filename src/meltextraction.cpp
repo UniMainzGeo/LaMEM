@@ -176,15 +176,15 @@ PetscErrorCode MeltExtractionSave(JacRes *jr,AdvCtx *actx)
 		svBulk = &svCell->svBulk;
 		svBulk->dMF=0.0;
 		svBulk->Mass=0.0;
-		svBulk->dMass=0.0;
 		svBulk->mf = 0.0;
+		svBulk->dMass = 0.0;
 		iter++;
 	}END_STD_LOOP
 
 	for(iphase=0;iphase<numPhases;iphase++)
 	{
 		mat=&phases[iphase];
-		if(mat->Pd_rho == 1 && mat->MeltE==1)
+		if(mat->Pd_rho == 1 && mat->MeltE)
 		{
 			//Create the buffer
 			ierr = VecZeroEntries(jr->Miphase); CHKERRQ(ierr);
@@ -299,7 +299,7 @@ PetscErrorCode MeltExtractionUpdate(JacRes *jr, AdvCtx *actx)
 	for(iphase=0;iphase<numPhases;iphase++)
 	{
 		mat=&phases[iphase];
-		if(mat->Pd_rho == 1 && mat->MeltE==1)
+		if(mat->Pd_rho == 1 && mat->MeltE)
 		{
 			//Create the buffer & getting the buffer
 			ierr = VecZeroEntries(jr->Miphase); CHKERRQ(ierr);
@@ -867,7 +867,7 @@ PetscErrorCode MeltExtractionInject(JacRes *jr,AdvCtx *actx, PetscInt ID, PetscI
 	// We have not found a marker of the correct phase or there is still melt to be injected
 	if( UP > 0)
 	{
-		ninj = (PetscInt)ceil(UP)*3;  // Amount of markers we have to inject
+		ninj = (PetscInt)ceil((UP)*30);  // Amount of markers we have to inject
 
 		// allocate memory for new markers
 		actx->nrecv = ninj;
@@ -1139,18 +1139,16 @@ PetscErrorCode Extrusion_melt(FreeSurf *surf,PetscInt iphase, AdvCtx *actx)
 //---------------------------------------------------------------------------
 #undef __FUNCT__
 #define __FUNCT__ "ExchangeMassME"
-PetscErrorCode ExchangeMassME(SolVarBulk *svBulk,PetscScalar dx,PetscScalar dy,PetscScalar dz)
+PetscErrorCode ExchangeMassME(SolVarBulk *svBulk,PetscScalar dx,PetscScalar dy,PetscScalar dz, PetscScalar dt)
 {
 	PetscFunctionBegin;
 	if(svBulk->dMass!=0.0)
 	{
-		PetscPrintf(PETSC_COMM_SELF, "initial mass =%6f && dMass is %6f && Mass is = %6f\n",svBulk->rho_in*dx*dy*dz,svBulk->dMass,svBulk->Mass);
-	svBulk->Mass=(1-svBulk->rho_in*dx*dy*dz/(svBulk->rho_in*dx*dy*dz+svBulk->dMass));
+	//PetscPrintf(PETSC_COMM_SELF, "initial mass =%6f && dMass is %6f && Mass is = %6f\n",svBulk->rho_in*dx*dy*dz,svBulk->dMass,svBulk->Mass);
+
+	svBulk->Mass=1/dt*(1-svBulk->rho_in*dx*dy*dz/(svBulk->rho_in*dx*dy*dz+svBulk->dMass));
 	}
-	else
-	{
-		svBulk->Mass=0.0;
-	}
+
 	PetscFunctionReturn(0);
 
 }

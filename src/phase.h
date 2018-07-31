@@ -53,9 +53,9 @@
 #define max_num_soft   10
 
 // maximums for Pds
-#define max_num_pd    8     // max no of phase diagrams
+#define max_num_pd    20     // max no of phase diagrams
 #define max_num_ro    40100  // max grid size of Pd
-#define max_name      54     // Length of the unique face diagram name
+#define max_name      100     // Length of the unique face diagram name
 
 //---------------------------------------------------------------------------
 
@@ -130,20 +130,20 @@ public:
 	char         pdf[max_name];   // Unique phase diagram number
 	PetscInt     Pd_rho;          // density from phase diagram?
 	// MeltExtraction Parameter
-	PetscScalar Mtrs;          // Threshold melt extraction                   []
+	PetscScalar Mtrs;          // Threshold melt extraction                  []
 	PetscScalar Mleft;         // Minimum amount of melt left in the source  []
 	PetscScalar Mmax;          // Maximum Melt extractable from phase        []
 	PetscScalar RelInt;        // Relative amount of intrusion               []
 	PetscScalar TInt;          // Temperature of the intrusion               [Deg C]
 	PetscScalar TExt;          // Temperature of extrusion                   [Deg C]
-	PetscInt 	PhInt;  // Phase Id of the intrusion                  []
-	PetscInt	PhExt;  // Phase Id of the effusion                   []
-	PetscInt	PhNext;  // Phase Id of the effusion                   []
-	PetscScalar DInt;          // Depth of intrusion                         [m]
+	PetscInt 	PhInt;         // Phase Id of the intrusion                  []
+	PetscInt	PhExt;         // Phase Id of the effusion                   []
+	PetscInt	PhNext;        // Phase Id of the next phase                 []
+	PetscScalar DInt;          // Depth of intrusion                         [m/z(moho)]
 	PetscScalar DExt;          // Depth of intrusion                         [m]
 	PetscScalar pMant;         // Specify if a phase is mantle or not [0 or 1]
-	PetscScalar S;             // Random Source
-	PetscInt    MeltE;         // Control value that states if
+	PetscScalar S;             // Random Source                               [1/s]
+	PetscInt    MeltE;         // Control value                           [0 or 1]
 	};
 
 //---------------------------------------------------------------------------

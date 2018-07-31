@@ -500,7 +500,7 @@ PetscErrorCode DevConstEq(
 
 
 				// Viscosity Feedback
-				if(mat->MeltE>0 && !ctrl->initGuess)
+			/*	if(mat->MeltE>0 && !ctrl->initGuess)
 				{
 				if(pd->mf-svDev->mfextot<0.0) mf = (pd->mf-svDev->mfextot);
 				if(mf>mat->Mtrs)
@@ -514,13 +514,13 @@ PetscErrorCode DevConstEq(
 				}
 				else
 					{
+
 					svDev->mf =mf;
-					}
 				}
 				else
-				{
+				{*/
 					svDev->mf=pd->mf;
-				}
+
 			}
 
 			// setup nonlinear constitutive equation evaluation context
@@ -587,12 +587,12 @@ PetscErrorCode VolConstEq(
 			mat = &phases[i];
 
 			// Get PD data
-			if(mat->Pd_rho == 1)
+			if(mat->Pd_rho == 1 && mat->MeltE)
 			{
 				// Get the data from phase diagram
 				SetDataPhaseDiagram(pd, p, T, 0, mat->pdn);
 				svBulk->rho_pd  = pd->rho;
-				if(mat->MeltE>0 && !ctrl->initGuess)
+				if(!ctrl->initGuess)
 				{
 				mfeff = pd->mf-svBulk->mfextot;// historical variables  !!!!!!!! POSSIBLE GENERATION OF ARTIFACT!!!!! {sv->Bulk is computed using all the contributes of the phase
 				// which means that or we find a way to separate each contribute or there is the possibility the melt extracted is underestimated
