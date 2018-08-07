@@ -637,9 +637,9 @@ PetscErrorCode LaMEMLibSolve(LaMEMLib *lm, void *param)
 
 		// solve nonlinear equation system with SNES
 		PetscTime(&t);
-        // Call Melt Extraction to compute the mass.
+		// Call Melt Extraction to compute the mass.
 
-		if(a>1) ierr = MeltExtractionSave(&lm->jr,&lm->actx); CHKERRQ(ierr);
+		if(a>0) ierr = MeltExtractionSave(&lm->jr,&lm->actx); CHKERRQ(ierr);
 
 
 		ierr = SNESSolve(snes, NULL, lm->jr.gsol); CHKERRQ(ierr);
@@ -686,12 +686,12 @@ PetscErrorCode LaMEMLibSolve(LaMEMLib *lm, void *param)
 		// advect markers
 		ierr = ADVAdvect(&lm->actx); CHKERRQ(ierr);
 
-		if(a>1) ierr = MeltExtractionUpdate(&lm->jr,&lm->actx); CHKERRQ(ierr);
+		if(a>0) ierr = MeltExtractionUpdate(&lm->jr,&lm->actx); CHKERRQ(ierr);
 		PetscPrintf(PETSC_COMM_WORLD, "After Update \n");
 
 
 
-		if(a>1) ierr =  MeltExtractionInterpMarkerBackToGrid(&lm->actx);
+		if(a>0) ierr =  MeltExtractionInterpMarkerBackToGrid(&lm->actx);
 
 		PetscPrintf(PETSC_COMM_WORLD, "After InterpBacktoGrid \n");
 

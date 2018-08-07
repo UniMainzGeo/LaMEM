@@ -143,9 +143,10 @@ PetscErrorCode MeltExtractionSave(JacRes *jr,AdvCtx *actx)
 	SolVarCell *svCell; // pointer 2 the Solution variable defined in the cell
 	FDSTAG *fs; // pointer 2 the grid structure and variables
 	PData *pd; // pointer 2 the phase diagram structure
+	Controls *ctrl;
 	PetscInt numPhases ; // number of phases
 	PetscScalar *phRat; // Phase Ratio
-	PetscScalar ***p,pc; // pressure
+	PetscScalar ***p,pc,pShift; // pressure
 	PetscScalar ***T,Tc; // temperature
 	PetscScalar mfeff,dx,dy,dz,dM,mf_temp; // Effective melt extracted
 	Material_t *mat; // Material properties structure
@@ -159,6 +160,9 @@ PetscErrorCode MeltExtractionSave(JacRes *jr,AdvCtx *actx)
 	pd  = jr->Pd; // take the structure associated to the phase diagram
 	phases = jr->dbm->phases; // take the phases
 	surf = jr->surf;
+	ctrl=&jr->ctrl;
+	pShift    =  ctrl->pShift;       // pressure shift
+
 	// Calling Moho_Tracking (working on)
 	ierr=Moho_Tracking(surf); CHKERRQ(ierr);
 
@@ -184,7 +188,7 @@ PetscErrorCode MeltExtractionSave(JacRes *jr,AdvCtx *actx)
 	for(iphase=0;iphase<numPhases;iphase++)
 	{
 		mat=&phases[iphase];
-		if(mat->Pd_rho == 1 && mat->MeltE)
+		if(mat->Pd_rho == 1 )
 		{
 			//Create the buffer
 			ierr = VecZeroEntries(jr->Miphase); CHKERRQ(ierr);
@@ -195,12 +199,13 @@ PetscErrorCode MeltExtractionSave(JacRes *jr,AdvCtx *actx)
 				svCell = &jr->svCell[iter]; // take the central node based properties
 				svBulk = &svCell->svBulk ; // take the bulk solution variables
 				phRat = jr->svCell[iter++].phRat; // take phase ratio on the central node
-
+				mfeff=0.0;
+				mf_temp=0.0;
 				if(phRat[iphase])
 				{
 					// Temperature&Pressure
 					// access current pressure
-					pc = p[k][j][i];
+					pc = p[k][j][i]-pShift;
 					// current temperature
 					Tc = T[k][j][i];
 					ierr = SetDataPhaseDiagram(pd, pc, Tc, 0, mat->pdn); CHKERRQ(ierr);
@@ -271,9 +276,10 @@ PetscErrorCode MeltExtractionUpdate(JacRes *jr, AdvCtx *actx)
 	SolVarCell *svCell; // pointer 2 the Solution variable defined in the cell
 	FDSTAG *fs; // pointer 2 the grid structure and variables
 	PData *pd; // pointer 2 the phase diagram structure
+	Controls *ctrl;
 	PetscInt numPhases; // number of phases
 	PetscScalar *phRat; // Phase Ratio
-	PetscScalar ***p,pc; // pressure
+	PetscScalar ***p,pc,pShift; // pressure
 	PetscScalar ***T,Tc; // temperature
 	PetscScalar mfeff,dx,dy,dz,dM,mf_temp; // Effective melt extracted
 	Material_t *mat; // Material properties structure
@@ -286,6 +292,8 @@ PetscErrorCode MeltExtractionUpdate(JacRes *jr, AdvCtx *actx)
 	numPhases = jr->dbm->numPhases ; // take the number of phases from dbm structures
 	pd = jr->Pd ; // take the structure associated to the phase diagram
 	phases = jr->dbm->phases; // take the phases
+	ctrl=&jr->ctrl;
+	pShift    =  ctrl->pShift;       // pressure shift
 
 	// Getting the array
 	ierr = DMDAVecGetArray(fs->DA_CEN, jr->lp,&p); CHKERRQ(ierr);
@@ -299,7 +307,7 @@ PetscErrorCode MeltExtractionUpdate(JacRes *jr, AdvCtx *actx)
 	for(iphase=0;iphase<numPhases;iphase++)
 	{
 		mat=&phases[iphase];
-		if(mat->Pd_rho == 1 && mat->MeltE)
+		if(mat->Pd_rho == 1)
 		{
 			//Create the buffer & getting the buffer
 			ierr = VecZeroEntries(jr->Miphase); CHKERRQ(ierr);
@@ -310,11 +318,15 @@ PetscErrorCode MeltExtractionUpdate(JacRes *jr, AdvCtx *actx)
 				svCell = &jr->svCell[iter] ;// take the central node based properties
 				svBulk = &svCell->svBulk ;// take the bulk solution variables
 				phRat = jr->svCell[iter++].phRat ; // take phase ratio on the central node
+				mfeff=0.0;
+				mf_temp=0.0;
 				if(phRat[iphase])
 				{
 					// Temperature&Pressure
 					// access current pressure
-					pc = p[k][j][i] ;
+					pc = p[k][j][i] - pShift;
+					if(iphase==1)PetscPrintf(PETSC_COMM_SELF, "P is %6f\n",pc);
+
 					// current temperature
 					Tc = T[k][j][i];
 					ierr = SetDataPhaseDiagram(pd, pc, Tc, 0, mat->pdn); CHKERRQ(ierr);
@@ -335,11 +347,17 @@ PetscErrorCode MeltExtractionUpdate(JacRes *jr, AdvCtx *actx)
 						}
 
 						Mipbuff[k][j][i] = -phRat[iphase]*dM*dx*dy*dz;
+						//svBulk->mf +=phRat[iphase]*mf_temp;
+						//svBulk->dMF+=phRat[iphase]*dM;
+
 					}
 					else
 					{
 						Mipbuff[k][j][i] = 0.0;
+					//svBulk->mf +=phRat[iphase]*mf_temp;
+					//svBulk->dMF+=phRat[iphase]*0.0;
 					}
+
 				}
 			}END_STD_LOOP
 
@@ -454,6 +472,7 @@ PetscErrorCode MeltExtractionInterpMarkerBackToGrid(AdvCtx *actx)
 	JacRes *jr;
 	Marker *P;
 	SolVarCell *svCell;
+	Controls *ctrl;
 	PetscInt ID, I, J, K, II, JJ, KK;
 	PetscInt ii, jj, numPhases;
 	PetscInt nx, ny, sx, sy, sz, nCells;
@@ -467,7 +486,8 @@ PetscErrorCode MeltExtractionInterpMarkerBackToGrid(AdvCtx *actx)
 	fs = actx->fs;
 	jr = actx->jr;
 	numPhases = actx->dbm->numPhases;
-
+	ctrl= &jr->ctrl;
+		if(ctrl->initGuess) PetscFunctionReturn(0);
 	// check marker phases
 	ierr = ADVCheckMarkPhases(actx); CHKERRQ(ierr);
 
@@ -1130,7 +1150,7 @@ PetscErrorCode Extrusion_melt(FreeSurf *surf,PetscInt iphase, AdvCtx *actx)
 	ierr = FreeSurfGetAirPhaseRatio(surf); CHKERRQ(ierr);
 
 	// print info
-	//PetscPrintf(PETSC_COMM_SELF, "ExtrusionPhase =%d \n",phase);
+	PetscPrintf(PETSC_COMM_SELF, "ExtrusionPhase =%d \n",phases[iphase].PhExt);
 
 	surf->MeltExtraction = 0;
 
@@ -1144,9 +1164,10 @@ PetscErrorCode ExchangeMassME(SolVarBulk *svBulk,PetscScalar dx,PetscScalar dy,P
 	PetscFunctionBegin;
 	if(svBulk->dMass!=0.0)
 	{
-	//PetscPrintf(PETSC_COMM_SELF, "initial mass =%6f && dMass is %6f && Mass is = %6f\n",svBulk->rho_in*dx*dy*dz,svBulk->dMass,svBulk->Mass);
 
 	svBulk->Mass=1/dt*(1-svBulk->rho_in*dx*dy*dz/(svBulk->rho_in*dx*dy*dz+svBulk->dMass));
+	//if(svBulk->dMass>0)PetscPrintf(PETSC_COMM_SELF, "Yes, I've been here.\n");
+
 	}
 
 	PetscFunctionReturn(0);

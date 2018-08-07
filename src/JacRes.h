@@ -56,6 +56,7 @@ struct BCCtx;
 struct DBMat;
 struct Tensor2RN;
 struct PData;
+struct AdvCtx;
 
 //---------------------------------------------------------------------------
 //.....................   Deviatoric solution variables   ...................
@@ -201,6 +202,7 @@ struct JacRes
 	FreeSurf *surf;  // free surface
 	BCCtx    *bc;    // boundary condition context
 	DBMat    *dbm;   // material database
+	AdvCtx	*actx ;
 
 	// parameters and controls
 	Controls ctrl;
