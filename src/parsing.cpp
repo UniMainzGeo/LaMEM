@@ -923,15 +923,15 @@ PetscErrorCode StokesSetDefaultSolverOptions(FB *fb)
 
 		// if the type of direct solver is specified, use that
 		ierr = getStringParam(fb, _OPTIONAL_, "DirectSolver",        DirectSolver,       NULL );          CHKERRQ(ierr);
-		if     		(!strcmp(DirectSolver, "mumps")){        ierr = PetscOptionsInsertString(NULL, "-jp_pc_factor_mat_solver_package mumps"); 			CHKERRQ(ierr); }
-		else if     (!strcmp(DirectSolver, "superlu_dist")){ ierr = PetscOptionsInsertString(NULL, "-jp_pc_factor_mat_solver_package superlu_dist"); 	CHKERRQ(ierr); }
-		else if     (!strcmp(DirectSolver, "pastix"))	   { ierr = PetscOptionsInsertString(NULL, "-jp_pc_factor_mat_solver_package pastix"); 			CHKERRQ(ierr); }
+		if     		(!strcmp(DirectSolver, "mumps")){        ierr = PetscOptionsInsertString(NULL, "-jp_pc_factor_mat_solver_type mumps"); 			CHKERRQ(ierr); }
+		else if     (!strcmp(DirectSolver, "superlu_dist")){ ierr = PetscOptionsInsertString(NULL, "-jp_pc_factor_mat_solver_type superlu_dist"); 	CHKERRQ(ierr); }
+		else if     (!strcmp(DirectSolver, "pastix"))	   { ierr = PetscOptionsInsertString(NULL, "-jp_pc_factor_mat_solver_type pastix"); 			CHKERRQ(ierr); }
 		else {
 			// solver is not specified; set a default one
 			if (ISParallel(PETSC_COMM_WORLD))
 			{
 				// We need to set one of the parallel solvers. Determine if we have one of them installed in the current PETSC version
-				ierr = PetscOptionsInsertString(NULL, "-jp_pc_factor_mat_solver_package superlu_dist"); 	CHKERRQ(ierr);
+				ierr = PetscOptionsInsertString(NULL, "-jp_pc_factor_mat_solver_type superlu_dist"); 	CHKERRQ(ierr);
 			}
 		}
 
@@ -992,10 +992,10 @@ PetscErrorCode StokesSetDefaultSolverOptions(FB *fb)
 			ierr = PetscOptionsInsertString(NULL, "-crs_ksp_type preonly"); 		CHKERRQ(ierr);
 			ierr = PetscOptionsInsertString(NULL, "-crs_pc_type lu"); 		CHKERRQ(ierr);
 			if (!strcmp(SolverType, "superlu_dist")){
-				ierr = PetscOptionsInsertString(NULL, "-crs_pc_factor_mat_solver_package superlu_dist"); 		CHKERRQ(ierr);
+				ierr = PetscOptionsInsertString(NULL, "-crs_pc_factor_mat_solver_type superlu_dist"); 		CHKERRQ(ierr);
 			}
 			else if (!strcmp(SolverType, "mumps")){
-				ierr = PetscOptionsInsertString(NULL, "-crs_pc_factor_mat_solver_package mumps"); 		CHKERRQ(ierr);
+				ierr = PetscOptionsInsertString(NULL, "-crs_pc_factor_mat_solver_type mumps"); 		CHKERRQ(ierr);
 			}
 		
 		}
@@ -1009,7 +1009,7 @@ PetscErrorCode StokesSetDefaultSolverOptions(FB *fb)
 			sprintf(str, "-crs_pc_redundant_number %i", integer);	ierr = PetscOptionsInsertString(NULL, str); 	CHKERRQ(ierr);
 
 			ierr = getStringParam(fb, _OPTIONAL_, "MGRedundantSolver",          SolverType,         "superlu_dist");          CHKERRQ(ierr);
-			sprintf(str, "-crs_redundant_pc_factor_mat_solver_package %s", SolverType);	ierr = PetscOptionsInsertString(NULL, str); 	CHKERRQ(ierr);
+			sprintf(str, "-crs_redundant_pc_factor_mat_solver_type %s", SolverType);	ierr = PetscOptionsInsertString(NULL, str); 	CHKERRQ(ierr);
 			
 
 		}
