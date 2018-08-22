@@ -67,6 +67,8 @@ ifeq (${PETSC_OPT},)
 $(error Environmental variable PETSC_OPT must be set to PETSc optimized installation directory)
 endif
 PETSC_DIR = ${PETSC_OPT}
+else
+$(error Unknown compilation mode specified)
 endif
 
 include ${PETSC_DIR}/lib/petsc/conf/variables
