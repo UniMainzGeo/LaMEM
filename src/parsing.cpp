@@ -857,12 +857,12 @@ PetscErrorCode  PetscOptionsGetCheckString(
 
 	ierr = PetscOptionsGetString(NULL, NULL, key, str, _STR_LEN_, set); CHKERRQ(ierr);
 
-	if((*set) == PETSC_TRUE && !strlen(str))
+	if(*set && !strlen(str))
 	{
 		SETERRQ1(PETSC_COMM_WORLD, PETSC_ERR_USER, "No value specified for parameter \"%s\"\n", key);
 	}
 
-	if(strlen(str) > _STR_LEN_-2)
+	if(*set && strlen(str) > _STR_LEN_-2)
 	{
 		SETERRQ2(PETSC_COMM_WORLD, PETSC_ERR_USER, "String %s is more than %lld symbols long, (_STR_LEN_ in parsing.h) \"%s\" \n", key, _STR_LEN_-2);
 	}
