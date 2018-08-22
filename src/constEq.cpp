@@ -479,8 +479,15 @@ PetscErrorCode DevConstEq(
 	svDev->dEta  = 0.0;
 	svDev->fr    = 0.0;
 	svDev->yield = 0.0;
+	svDev->mf  	 = 0.0;
 	dEta         = 0.0;
 	fr           = 0.0;
+
+//////
+	DIIpl = 0.0;
+eta_viscoplastic_phase=0;
+eta_creep_phase = 0;
+eta_total = 0;
 
 	// scan all phases
 	for(i = 0; i < numPhases; i++)
@@ -498,7 +505,7 @@ PetscErrorCode DevConstEq(
 				ierr = SetDataPhaseDiagram(pd, p, T, 0, mat->pdn); CHKERRQ(ierr);
 				svDev->mf  = pd->mf;
 			}
-
+		
 			// setup nonlinear constitutive equation evaluation context
 			ierr = ConstEqCtxSetup(&ctx, mat, soft, ctrl, DII, APS, dt, p, p_lithos, p_pore, T); CHKERRQ(ierr);
 
