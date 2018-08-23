@@ -1257,7 +1257,7 @@ PetscErrorCode JacResGetResidual(JacRes *jr)
 			// mass - currently T-dependency is deactivated
 	//		gc[k][j][i] = -IKdt*(pc - pn) - theta + alpha*(Tc - Tn)/dt;
 
-			gc[k][j][i] = -IKdt*(pc - pn) -theta+svBulk->Mass; //-(svBulk->S);
+			gc[k][j][i] = -IKdt*(pc - pn) -theta + svBulk->Mass; //-(svBulk->S);
 
 	}
 	END_STD_LOOP

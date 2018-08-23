@@ -575,7 +575,7 @@ PetscErrorCode PVOutWriteMassEx(JacRes *jr, OutBuf *outbuf)
 	// macros to copy melt fraction to buffer
 	#define GET_MFDVDT_CENTER  buff[k][j][i] = jr->svCell[iter++].svBulk.dMass;
 
-	cf = scal->length*scal->density*scal->length*scal->length;
+	cf = scal->length*scal->length*scal->length;
 
 	INTERPOLATE_COPY(fs->DA_CEN, outbuf->lbcen, InterpCenterCorner, GET_MFDVDT_CENTER,  1, 0)
 

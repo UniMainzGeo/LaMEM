@@ -188,7 +188,7 @@ PetscErrorCode MeltExtractionSave(JacRes *jr,AdvCtx *actx)
 	for(iphase=0;iphase<numPhases;iphase++)
 	{
 		mat=&phases[iphase];
-		if(mat->Pd_rho == 1 )
+		if(mat->Pd_rho == 1 && mat->MeltE>0)
 		{
 			//Create the buffer
 			ierr = VecZeroEntries(jr->Miphase); CHKERRQ(ierr);
@@ -225,7 +225,7 @@ PetscErrorCode MeltExtractionSave(JacRes *jr,AdvCtx *actx)
 							mf_temp=0.0;
 						}
 
-						Mipbuff[k][j][i] = -phRat[iphase] * dM*dx*dy*dz*pd->rho_f;
+						Mipbuff[k][j][i] = -phRat[iphase] * dM*dx*dy*dz;//*pd->rho_f;
 						svBulk->mf +=phRat[iphase]*mf_temp;
 						svBulk->dMF+=phRat[iphase]*dM;
 					}
@@ -246,12 +246,29 @@ PetscErrorCode MeltExtractionSave(JacRes *jr,AdvCtx *actx)
 			iter=0;
 			// Here we compute the right-side term to plug in the residuum (JacRes). Mass_in is the initial mass, while dMass is representing the term that has to be
 			// add to svBulk->Mass. This allow us to avoid to dirty JacRes
+			/*
 			START_STD_LOOP{
 				svCell = &jr->svCell[iter] ;// take the central node based properties
 				svBulk = &svCell->svBulk ;
 				svBulk->dMass +=Mipbuff[k][j][i];
 				iter++;
 			}END_STD_LOOP
+			*/
+			START_STD_LOOP{
+				svCell = &jr->svCell[iter] ;// take the central node based properties
+				svBulk = &svCell->svBulk ;
+				if(Mipbuff[k][j][i]>0)
+				{
+				svBulk->dMass +=Mipbuff[k][j][i];
+				}
+				else
+				{
+				svBulk->dMass +=Mipbuff[k][j][i];
+				}
+				iter++;
+			}END_STD_LOOP
+
+
 			ierr = DMDAVecRestoreArray(fs->DA_CEN, jr->Miphase, &Mipbuff) ; CHKERRQ(ierr);
 		}
 	}
@@ -307,7 +324,7 @@ PetscErrorCode MeltExtractionUpdate(JacRes *jr, AdvCtx *actx)
 	for(iphase=0;iphase<numPhases;iphase++)
 	{
 		mat=&phases[iphase];
-		if(mat->Pd_rho == 1)
+		if(mat->Pd_rho == 1 && mat->MeltE>0)
 		{
 			//Create the buffer & getting the buffer
 			ierr = VecZeroEntries(jr->Miphase); CHKERRQ(ierr);
@@ -325,7 +342,7 @@ PetscErrorCode MeltExtractionUpdate(JacRes *jr, AdvCtx *actx)
 					// Temperature&Pressure
 					// access current pressure
 					pc = p[k][j][i] - pShift;
-					if(iphase==1)PetscPrintf(PETSC_COMM_SELF, "P is %6f\n",pc);
+					//if(iphase==1)PetscPrintf(PETSC_COMM_SELF, "P is %6f\n",pc);
 
 					// current temperature
 					Tc = T[k][j][i];
@@ -785,17 +802,20 @@ PetscErrorCode MeltExtractionExchangeVolume(JacRes *jr, PetscInt iphase,PetscInt
 		condition = 0;
 		D = MohoG[L][j][i] + Depth[L][j][i]*phases[iphase].DInt;;
 		D1 =Depth[L][j][i];
+		PetscPrintf(PETSC_COMM_SELF, "Depth intrusion %6f and the thickness is %6f \n",D*jr->scal->length,D1*jr->scal->length);
+
 		if(vdgmvvecmerge2[L][j][i] < 0.0)
 		{
 			// check whether point belongs to domain
 			if(D >= bz && D < ez)
 			{
+
 				// find containing cell
 				K = FindPointInCell(dsz->ncoor, 0, dsz->ncels, D);
 				dz = SIZE_CELL(K,sz,fs->dsz);
 				if(D1>dz)
 				{
-					Mipbuff[sz+K][j][i] = -IR*vdgmvvecmerge2[L][j][i];
+					Mipbuff[sz+K][j][i] = -IR*0.9*vdgmvvecmerge2[L][j][i];
 				}
 				else
 				{
@@ -812,11 +832,11 @@ PetscErrorCode MeltExtractionExchangeVolume(JacRes *jr, PetscInt iphase,PetscInt
 				dy = SIZE_CELL(j,sy,fs->dsy);
 				if(condition = 0)
 				{
-					vdgmvvecmerge2[L][j][i]= -((1-IR)*vdgmvvecmerge2[L][j][i])/(dx*dy);
+					vdgmvvecmerge2[L][j][i]= -((1-IR)*0.9*vdgmvvecmerge2[L][j][i])/(dx*dy);
 				}
 				else
 				{
-					vdgmvvecmerge2[L][j][i]= -vdgmvvecmerge2[L][j][i]/(dx*dy);
+					vdgmvvecmerge2[L][j][i]= -0.9*vdgmvvecmerge2[L][j][i]/(dx*dy);
 				}
 			}
 
@@ -887,7 +907,7 @@ PetscErrorCode MeltExtractionInject(JacRes *jr,AdvCtx *actx, PetscInt ID, PetscI
 	// We have not found a marker of the correct phase or there is still melt to be injected
 	if( UP > 0)
 	{
-		ninj = (PetscInt)ceil((UP)*30);  // Amount of markers we have to inject
+		ninj = (PetscInt)ceil((UP*n)*10);  // Amount of markers we have to inject
 
 		// allocate memory for new markers
 		actx->nrecv = ninj;
@@ -977,7 +997,7 @@ PetscErrorCode Moho_Tracking(FreeSurf *surf)
 	Discret1D *dsz;
 	PetscInt i, j, k,numPhases,ii;
 	PetscInt sx, sy, sz, nx, ny, nz, iter,L;
-	PetscScalar bz, ez;
+	PetscScalar bz, ez, bottom;
 	PetscScalar ***Mohovec2,*Mohovec22,*MMerge ,MantP;
 	Material_t *phases; // Phases
 	PetscScalar *phRat;
@@ -991,14 +1011,16 @@ PetscErrorCode Moho_Tracking(FreeSurf *surf)
 	L = (PetscInt)fs->dsz.rank; // rank of the processor
 	phases = jr->dbm->phases;
 	numPhases = jr->dbm->numPhases; // take the number of phases from dbm structures
+
+	// Find the bottom of the domain
+	ierr = FDSTAGGetGlobalBox(fs, 0, 0, &bottom, 0, 0, 0); CHKERRQ(ierr);
 	// get local coordinate bounds
-	ierr = Discret1DGetColumnComm(dsz); CHKERRQ(ierr);
-	ierr = FDSTAGGetLocalBox(fs, NULL, NULL, &bz, NULL, NULL, &ez); CHKERRQ(ierr);
-	ierr = VecZeroEntries   (jr->gdMoho1);	 CHKERRQ(ierr);
+	ierr = VecSet   (jr->gdMoho1,bottom);	 CHKERRQ(ierr);
 	ierr = VecZeroEntries   (jr->gdMoho);	 CHKERRQ(ierr);
 	ierr = DMDAVecGetArray  (jr->DA_CELL_2D,jr->gdMoho1, &Mohovec2);	CHKERRQ(ierr);
-
-
+	// Std Loop
+	ierr = Discret1DGetColumnComm(dsz); CHKERRQ(ierr);
+	ierr = FDSTAGGetLocalBox(fs, NULL, NULL, &bz, NULL, NULL, &ez); CHKERRQ(ierr);
 	GET_CELL_RANGE(nx, sx, fs->dsx)
 	GET_CELL_RANGE(ny, sy, fs->dsy)
 	GET_CELL_RANGE(nz, sz, fs->dsz)
@@ -1150,7 +1172,7 @@ PetscErrorCode Extrusion_melt(FreeSurf *surf,PetscInt iphase, AdvCtx *actx)
 	ierr = FreeSurfGetAirPhaseRatio(surf); CHKERRQ(ierr);
 
 	// print info
-	PetscPrintf(PETSC_COMM_SELF, "ExtrusionPhase =%d \n",phases[iphase].PhExt);
+	PetscPrintf(PETSC_COMM_SELF, "ExtrusionPhase =%d && iphase =%d\n",phases[iphase].PhExt,iphase);
 
 	surf->MeltExtraction = 0;
 
@@ -1165,7 +1187,8 @@ PetscErrorCode ExchangeMassME(SolVarBulk *svBulk,PetscScalar dx,PetscScalar dy,P
 	if(svBulk->dMass!=0.0)
 	{
 
-	svBulk->Mass=1/dt*(1-svBulk->rho_in*dx*dy*dz/(svBulk->rho_in*dx*dy*dz+svBulk->dMass));
+	svBulk->Mass=1/dt*(1-(dx*dy*dz)/(dx*dy*dz+svBulk->dMass));
+	//svBulk->Mass=1/dt*(1-svBulk->rho_in*dx*dy*dz/(svBulk->rho_in*dx*dy*dz+svBulk->dMass));
 	//if(svBulk->dMass>0)PetscPrintf(PETSC_COMM_SELF, "Yes, I've been here.\n");
 
 	}

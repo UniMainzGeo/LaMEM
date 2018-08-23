@@ -491,7 +491,7 @@ PetscErrorCode DevConstEq(
 		{
 			// get reference to material parameters table
 			mat = &phases[i];
-
+/*
 			// Get PD data
     		if(mat->Pd_rho == 1)
 			{
@@ -500,7 +500,7 @@ PetscErrorCode DevConstEq(
 
 
 				// Viscosity Feedback
-			/*	if(mat->MeltE>0 && !ctrl->initGuess)
+				if(mat->MeltE>0 && !ctrl->initGuess)
 				{
 				if(pd->mf-svDev->mfextot<0.0) mf = (pd->mf-svDev->mfextot);
 				if(mf>mat->Mtrs)
@@ -518,11 +518,11 @@ PetscErrorCode DevConstEq(
 					svDev->mf =mf;
 				}
 				else
-				{*/
+				{
 					svDev->mf=pd->mf;
 
 			}
-
+*/
 			// setup nonlinear constitutive equation evaluation context
 			ierr = ConstEqCtxSetup(&ctx, mat, soft, ctrl, DII, APS, dt, p, p_lithos, p_pore, T); CHKERRQ(ierr);
 
@@ -675,15 +675,6 @@ PetscErrorCode VolConstEq(
 			svBulk->rho   += phRat[i]*rho;
 			svBulk->rho_in+= phRat[i]*rho_in;
 			svBulk->alpha += phRat[i]*mat->alpha;
-		//	if(ctrl->initGuess)
-			//	{
-			//		svBulk->S=0;
-				//}
-			//else
-			//{
-		//	svBulk->S     += phRat[i]*mat->S;
-
-			//}
 		}
 	}
 
