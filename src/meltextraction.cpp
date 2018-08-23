@@ -802,7 +802,7 @@ PetscErrorCode MeltExtractionExchangeVolume(JacRes *jr, PetscInt iphase,PetscInt
 		condition = 0;
 		D = MohoG[L][j][i] + Depth[L][j][i]*phases[iphase].DInt;;
 		D1 =Depth[L][j][i];
-		PetscPrintf(PETSC_COMM_SELF, "Depth intrusion %6f and the thickness is %6f \n",D*jr->scal->length,D1*jr->scal->length);
+		//PetscPrintf(PETSC_COMM_SELF, "Depth intrusion %6f and the thickness is %6f \n",D*jr->scal->length,D1*jr->scal->length);
 
 		if(vdgmvvecmerge2[L][j][i] < 0.0)
 		{
