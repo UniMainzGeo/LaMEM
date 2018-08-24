@@ -203,11 +203,12 @@ PetscErrorCode FBParseBuffer(FB *fb)
 	b     = fb->fbuf;
 	nchar = fb->nchar;
 
-	// purge line delimiters
+	// purge line delimiters, replace tabs with spaces
 	for(i = 0; i < nchar; i++)
 	{
 		if(b[i] == '\r') b[i] = '\0';
 		if(b[i] == '\n') b[i] = '\0';
+		if(b[i] == '\t') b[i] = ' ';
 	}
 
 	// purge comments
@@ -215,6 +216,23 @@ PetscErrorCode FBParseBuffer(FB *fb)
 	{
 		if(comment) { if(b[i] == '\0') { comment = 0; } b[i] = '\0';   }
 		else        { if(b[i] == '#')  { comment = 1;   b[i] = '\0'; } }
+	}
+
+	// check equal signs
+	for(i = 0; i < nchar; i++)
+	{
+		if(b[i] == '=')
+		{
+			if(!i)
+			{
+				SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "Input file cannot start with equal sign");
+			}
+
+			if(b[i-1] != ' ' || b[i+1] != ' ')
+			{
+				SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "Equal signs must be surrounded by spaces or tabs");
+			}
+		}
 	}
 
 	// purge empty lines, count actual number of lines
@@ -405,12 +423,12 @@ PetscErrorCode FBGetIntArray(
 		strcpy(line, lines[i]);
 
 		// check for key match
-		ptr = strtok(line, " \t");
+		ptr = strtok(line, " ");
 
 		if(!ptr || strcmp(ptr, key)) continue;
 
 		// check equal sign
-		ptr = strtok(NULL, " \t");
+		ptr = strtok(NULL, " ");
 
 		if(!ptr || strcmp(ptr, "="))
 		{
@@ -419,13 +437,13 @@ PetscErrorCode FBGetIntArray(
 
 		// retrieve values after equal sign
 		count = 0;
-		ptr   = strtok(NULL, " \t");
+		ptr   = strtok(NULL, " ");
 
 		while(ptr != NULL && count < num)
 		{
 			values[count++] = (PetscInt)strtol(ptr, NULL, 0);
 
-			ptr = strtok(NULL, " \t");
+			ptr = strtok(NULL, " ");
 		}
 
 		if(!count) SETERRQ1(PETSC_COMM_WORLD, PETSC_ERR_USER, "No value specified for parameter \"%s\"\n", key);
@@ -468,12 +486,18 @@ PetscErrorCode FBGetScalarArray(
 		strcpy(line, lines[i]);
 
 		// check for key match
-		ptr = strtok(line, " \t");
+		ptr = strtok(line, " ");
 
 		if(!ptr || strcmp(ptr, key)) continue;
 
+		if(!strcmp(ptr, "huj"))
+		{
+			printf("fuck off");
+
+		}
+
 		// check equal sign
-		ptr = strtok(NULL, " \t");
+		ptr = strtok(NULL, " ");
 
 		if(!ptr || strcmp(ptr, "="))
 		{
@@ -482,13 +506,13 @@ PetscErrorCode FBGetScalarArray(
 
 		// retrieve values after equal sign
 		count = 0;
-		ptr   = strtok(NULL, " \t");
+		ptr   = strtok(NULL, " ");
 
 		while(ptr != NULL && count < num)
 		{
 			values[count++] = (PetscScalar)strtod(ptr, NULL);
 
-			ptr = strtok(NULL, " \t");
+			ptr = strtok(NULL, " ");
 		}
 
 		if(!count) SETERRQ1(PETSC_COMM_WORLD, PETSC_ERR_USER, "No value specified for parameter \"%s\"\n", key);
@@ -528,12 +552,12 @@ PetscErrorCode FBGetString(
 		strcpy(line, lines[i]);
 
 		// check for key match
-		ptr = strtok(line, " \t");
+		ptr = strtok(line, " ");
 
 		if(!ptr || strcmp(ptr, key)) continue;
 
 		// check equal sign
-		ptr = strtok(NULL, " \t");
+		ptr = strtok(NULL, " ");
 
 		if(!ptr || strcmp(ptr, "="))
 		{
@@ -541,7 +565,7 @@ PetscErrorCode FBGetString(
 		}
 
 		// retrieve values after equal sign
-		ptr = strtok(NULL, " \t");
+		ptr = strtok(NULL, " ");
 
 		if(!ptr) SETERRQ1(PETSC_COMM_WORLD, PETSC_ERR_USER, "No value specified for parameter \"%s\"\n", key);
 
@@ -762,12 +786,12 @@ PetscErrorCode PetscOptionsReadFromFile(FB *fb, PetscBool DisplayOutput)
 			strcpy(line, lines[i]);
 
 			// get key
-			key = strtok(line, " \t");
+			key = strtok(line, " ");
 
 			if(!key) continue;
 
 			// get value
-			val = strtok(NULL, " \t");
+			val = strtok(NULL, " ");
 
 			if(!val) option = key;
 			else     asprintf(&option, "%s %s", key, val);
