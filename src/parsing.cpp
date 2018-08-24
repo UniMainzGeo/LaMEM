@@ -490,12 +490,6 @@ PetscErrorCode FBGetScalarArray(
 
 		if(!ptr || strcmp(ptr, key)) continue;
 
-		if(!strcmp(ptr, "huj"))
-		{
-			printf("fuck off");
-
-		}
-
 		// check equal sign
 		ptr = strtok(NULL, " ");
 
