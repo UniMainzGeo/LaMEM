@@ -925,38 +925,30 @@ PetscErrorCode PMatMonoAssemble(PMat pm)
 	ierr = MatAIJAssemble(P->A, bc->numSPC, bc->SPCList, 1.0); CHKERRQ(ierr);
 	ierr = MatAIJAssemble(P->M, bc->numSPC, bc->SPCList, 0.0); CHKERRQ(ierr);
 
+	// dump preconditioning matrices to disk to inspect them with MATLAB (mainly for debugging)
+	PetscViewer viewer;
+	PetscBool   flg, flg_name;
+	char        name[_STR_LEN_], name_A[_STR_LEN_], name_M[_STR_LEN_];
 
+	ierr = PetscOptionsHasName(NULL, NULL, "-dump_precondition_matrixes", &flg); CHKERRQ(ierr);
+
+	if (flg)
 	{
-		// dump preconditioning matrixes to disk to inspect them with MATLAB (mainly for debugging)
-		PetscViewer 	viewer;
-		PetscBool 		flg, flg_name;
-		char            name[_STR_LEN_], name_A[_STR_LEN_], name_M[_STR_LEN_], name_in[_STR_LEN_];
+		PetscOptionsGetString(NULL,NULL,"-dump_precondition_matrixes_prefix",name,sizeof(name),&flg_name);
+		if (!flg_name) SETERRQ(PETSC_COMM_WORLD,1,"Must indicate binary file name with the -dump_precondition_matrixes_prefix option");
 
-		ierr = PetscOptionsHasName(NULL, NULL, "-dump_precondition_matrixes", &flg); CHKERRQ(ierr);
-		
-		if (flg){
-			
-			PetscOptionsGetString(NULL,NULL,"-dump_precondition_matrixes_prefix",name,sizeof(name),&flg_name);
-			if (!flg_name) SETERRQ(PETSC_COMM_WORLD,1,"Must indicate binary file name with the -dump_precondition_matrixes_prefix option");
+		// dump the A preconditioning matrix 2 disk
+		sprintf(name_A,"%s_A.bin",name);
+		PetscViewerBinaryOpen(PETSC_COMM_WORLD,name_A,FILE_MODE_WRITE,&viewer);
+		MatView(P->A, viewer);
+		PetscViewerDestroy(&viewer);
 
-			// dump the A preconditioning matrix 2 disk
-			sprintf(name_A,"%s_A.bin",name);
-			PetscViewerBinaryOpen(PETSC_COMM_WORLD,name_A,FILE_MODE_WRITE,&viewer);
-			MatView(P->A, viewer);
-			PetscViewerDestroy(&viewer);
-
-			// dump the M preconditioning matrix 2 disk
-			sprintf(name_M,"%s_M.bin",name);
-			PetscViewerBinaryOpen(PETSC_COMM_WORLD,name_M,FILE_MODE_WRITE,&viewer);
-			MatView(P->A, viewer);
-			PetscViewerDestroy(&viewer);
-		}
-
-
-
-		
+		// dump the M preconditioning matrix 2 disk
+		sprintf(name_M,"%s_M.bin",name);
+		PetscViewerBinaryOpen(PETSC_COMM_WORLD,name_M,FILE_MODE_WRITE,&viewer);
+		MatView(P->A, viewer);
+		PetscViewerDestroy(&viewer);
 	}
-
 
 	PetscFunctionReturn(0);
 }
