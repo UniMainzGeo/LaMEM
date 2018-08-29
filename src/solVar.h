@@ -84,7 +84,9 @@ typedef struct
 	PetscScalar U[3];  // displacement
 	// Darcy
 	PetscScalar Pl;    // liquid pressure
-	PetscScalar fail;  // fracturing mode
+	PetscScalar failT;  // fracturing mode Tensile
+	PetscScalar failS;  // fracturing mode Shear
+	PetscScalar failTS; // pressure arrived to tensile strength
 } Marker;
 
 //---------------------------------------------------------------------------
@@ -105,7 +107,9 @@ typedef struct
 	PetscScalar  ch;    // cohesion
 	// Darcy
 	PetscScalar  yield; // average yield stress in control volume
-	PetscScalar  fail;  // fracturing mode
+	PetscScalar  failT;  // fracturing mode Tensile
+	PetscScalar  failS;  // fracturing mode Shear
+	PetscScalar  failTS; // Pressure arrived to tensile strength
 } SolVarDev;
 
 //---------------------------------------------------------------------------
@@ -291,6 +295,9 @@ typedef struct
 	PetscBool   p_visc_total;  // use total pressure in viscous laws
 	PetscBool   p_plast_litho; // use lithostatic pressure for plasticity
 	PetscBool   p_no_lim;      // skip pressure limits for plasticity
+
+	// For tensile (Darcy)
+	PetscScalar stress_min;
 
 } MatParLim;
 

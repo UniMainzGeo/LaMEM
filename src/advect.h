@@ -59,8 +59,9 @@ typedef enum
 	_APS_,       // accumulated plastic strain
 	_VORTICITY_, // vorticity pseudo-vector components
 	_DISP_,       // displacement
-	_FAIL_       // New -> type of failure
-
+	_FAILT_,       // New -> type of failure Tensile
+	_FAILS_,       // New -> type of failure Shear
+	_FAILTS_       // New -> to save if pressure arrived to tensile strength
 } InterpCase;
 
 typedef struct

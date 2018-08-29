@@ -102,6 +102,9 @@ PetscErrorCode DarcySourcePropInit(JacRes *jr, FILE *fp);
 PetscErrorCode SourcePropGetStruct(FILE *fp,PetscInt numSources, DarcySourceParam *sources,PetscInt ils, PetscInt ile, UnitsType utype);
 
 
+PetscErrorCode UpdateFailureType(JacRes *jr);
+
+
 //---------------------------------------------------------------------------
 // MACROS
 //---------------------------------------------------------------------------

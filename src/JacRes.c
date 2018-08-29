@@ -398,6 +398,10 @@ PetscErrorCode JacResGetI2Gdt(JacRes *jr)
 		svCell = &jr->svCell[i];
 		// compute & store inverse viscosity
 		svCell->svDev.I2Gdt = GetI2Gdt(jr->numPhases, jr->phases, svCell->phRat, dt);
+
+		//// New Darcy, to check (put in a better place)
+		//svCell->svDev.fail = 0.0;
+		////////////////////////////////////////////////
 	}
 	//===========
 	// xy - edges
@@ -816,6 +820,8 @@ PetscErrorCode JacResGetResidual(JacRes *jr)
 	PetscScalar ***dxx, ***dyy, ***dzz, ***dxy, ***dxz, ***dyz, ***p, ***T, ***p_lithos, ***p_pore, ***p_hydro;
 	PetscScalar eta_creep, eta_viscoplastic;
 	PetscScalar depth, pc_lithos, pc_pore, pc_hydro, biot, ptotal, dP, actDarcy, TensileS, yieldT, yieldS, minimStress, fr, ch, pc_upper, pc_lower, sindl, intersection;
+	PetscInt step;
+	TSSol ts;
 //	PetscScalar alpha, Tn,
 
 	PetscScalar aux;
@@ -853,6 +859,10 @@ PetscErrorCode JacResGetResidual(JacRes *jr)
 	pc_lower = 0.0;
 	sindl = 0.0;
 	intersection = 0.0;
+
+	//Darcy
+	ts = jr->ts;
+	step = ts.istep;
 
 
 	// clear local residual vectors
@@ -903,6 +913,10 @@ PetscErrorCode JacResGetResidual(JacRes *jr)
 		// SECOND INVARIANT
 		//=================
 
+		//if (k==0 && j==0 && i==0) {
+		//	XX = dxx[k][j][i];
+		//}
+
 		// access strain rates
 		XX = dxx[k][j][i];
 		YY = dyy[k][j][i];
@@ -952,13 +966,20 @@ PetscErrorCode JacResGetResidual(JacRes *jr)
 		pc_pore  = p_pore[k][j][i];
 		pc_hydro = p_hydro[k][j][i];
 
+		// Darcy - as pressure and liquid pressure are not computed at the same rhythm we can have wrong values
+		// Then, provisional solution: wait to apply pore pressure:
+		//if (step < 10)  {
+			//pc_pore = 0.0;
+		//}
+		///////////////////////////////////////////////////////////////////////////////////////////////
+
 		// compute depth below the free surface
 		depth = jr->avg_topo - COORD_CELL(k, sz, fs->dsz);
 
 		if(depth < 0.0) depth = 0.0;
 
 		// evaluate deviatoric constitutive equations
-		ierr = DevConstEq(svDev, &eta_creep, &eta_viscoplastic, numPhases, phases, svCell->phRat, matLim, pc_lithos, pc_pore, dt, pc-pShift, Tc, jr->actDarcy); CHKERRQ(ierr);
+		ierr = DevConstEq(svDev, &eta_creep, &eta_viscoplastic, numPhases, phases, svCell->phRat, matLim, pc_lithos, pc_pore, dt, pc-pShift, Tc, jr->actDarcy, step ); CHKERRQ(ierr);
 
 		// store creep viscosity
 		svCell->eta_creep 			= eta_creep;
@@ -1036,7 +1057,7 @@ PetscErrorCode JacResGetResidual(JacRes *jr)
 		//gc[k][j][i] = -IKdt*(pc - pn) - theta;
 
 
-		// NEW for Darcy (the same that in ConstEqCtxSetup) ////////////////////////////////
+		/*// NEW for Darcy (the same that in ConstEqCtxSetup) ////////////////////////////////
 		////////////////////////////////////////////////////////////////////////////////////
 		fr = svDev->fr;
 		ch = svDev->ch;
@@ -1084,25 +1105,17 @@ PetscErrorCode JacResGetResidual(JacRes *jr)
 			////// Darcy
 			fr = svDev->fr;
 			ch = svDev->ch;
-			minimStress = 1e+0; // for SI 2e+6; for GEO = 2.0; !!!!!!!!!!!!!!!!!!!!!!!!!!!
+
+			minimStress = matLim->stress_min; //1e+6 / jr->scal->stress; //  1e+0; // for SI 2e+6; for GEO = 2.0; !!!!!!!!!!!!!!!!!!!!!!!!!!!
 			TensileS    = -svBulk->Ts;
 			sindl       = sin(svBulk->dl);
 
-			pc_lower = (pc_lithos -TensileS)/2.0; // extension /////////////// Darcy
+			/*pc_lower = (pc_lithos -TensileS)/2.0; // extension /////////////// Darcy
 			if(ptotal < pc_lower) {
-				//ptotal = pc_lower;  /////////////// Darcy
-			}
+				ptotal = pc_lower;  /////////////// Darcy
+			}*/
 
 			dP = ptotal - pc_pore; // effective mean stress
-
-			if (dP <= -TensileS) {//just to debug
-				dP = ptotal - pc_pore; // effective mean stress
-			}
-
-			/*if (dP < -TensileS) {
-				dP = -TensileS;
-				ptotal = -TensileS + pc_pore;
-			}*/
 
 			/// compute yield stress 0/////////////////////////////////////////////////////////
 			aux = 0.0;
@@ -1121,7 +1134,8 @@ PetscErrorCode JacResGetResidual(JacRes *jr)
 
 
 			// compute yield stress 2/////////////////////////////////////////////////////////
-			yieldT = 1.1*(dP+TensileS);
+			//svDev->fail = 0.0;
+			yieldT = dP+TensileS;
 			if (yieldT < minimStress) {
 				yieldT = minimStress;
 			}
@@ -1130,12 +1144,17 @@ PetscErrorCode JacResGetResidual(JacRes *jr)
 				yieldS = minimStress;
 			}
 			//yieldS = dP*(sin(30.0/180.0*3.1416)) + 40e+6*cos((30.0/180.0*3.1416));
-			intersection = (TensileS-ch)/(fr-1.0);
-			if (dP>=intersection) {
+			if (fr-1.0 == 0.0)  intersection = 0.0;
+			else         intersection = (TensileS-ch)/(fr-1.0);
+			if (dP >= intersection) {
 			//if (yieldS < yieldT){
 				aux = sindl;
+				//if (svDev->DIIpl > 0) {
+				//	if      (svDev->fail == 0.0)  svDev->fail = 1.0;
+				//	else if (svDev->fail == 2.0)  svDev->fail = 3.0;
+				//}
 			}
-			else { //if (yieldT > minimStress){
+			else {
 				// compute cohesion and friction coefficient
 				//svDev->fr = 1.0;
 				//fr = svDev->fr;
@@ -1143,7 +1162,10 @@ PetscErrorCode JacResGetResidual(JacRes *jr)
 				aux = 1.0;
 				// smoothing transition
 				//aux = sindl + (1.0 - sindl)*(1.0 - (dP+TensileS)/(intersection+TensileS))  ;
-				if (svDev->DIIpl > 0) svDev->fail = 1;
+				//if (svDev->DIIpl > 0) {
+				//	if      (svDev->fail == 0.0)  svDev->fail = 2.0;
+				//	else if (svDev->fail == 1.0)  svDev->fail = 3.0;
+				//}
 			}
 			//else {
 			//	aux = 0;
@@ -1301,7 +1323,7 @@ PetscErrorCode JacResGetResidual(JacRes *jr)
 		pc_hydro   = 0.25*(p_hydro[k][j][i] + p_hydro[k][j][i-1] + p_hydro[k][j-1][i] + p_hydro[k][j-1][i-1]);
 
 		// evaluate deviatoric constitutive equations
-		ierr = DevConstEq(svDev, &eta_creep, &eta_viscoplastic, numPhases, phases, svEdge->phRat, matLim, pc_lithos, pc_pore, dt, pc-pShift, Tc, jr->actDarcy); CHKERRQ(ierr);
+		ierr = DevConstEq(svDev, &eta_creep, &eta_viscoplastic, numPhases, phases, svEdge->phRat, matLim, pc_lithos, pc_pore, dt, pc-pShift, Tc, jr->actDarcy,step); CHKERRQ(ierr);
 
 		// compute stress, plastic strain rate and shear heating term on edge
 		ierr = GetStressEdge(svEdge, matLim, XY); CHKERRQ(ierr);
@@ -1412,7 +1434,7 @@ PetscErrorCode JacResGetResidual(JacRes *jr)
 		pc_hydro   = 0.25*(p_hydro[k][j][i] + p_hydro[k][j][i-1] + p_hydro[k][j-1][i] + p_hydro[k][j-1][i-1]);
 
 		// evaluate deviatoric constitutive equations
-		ierr = DevConstEq(svDev, &eta_creep, &eta_viscoplastic, numPhases, phases, svEdge->phRat, matLim, pc_lithos, pc_pore, dt, pc-pShift, Tc, jr->actDarcy); CHKERRQ(ierr);
+		ierr = DevConstEq(svDev, &eta_creep, &eta_viscoplastic, numPhases, phases, svEdge->phRat, matLim, pc_lithos, pc_pore, dt, pc-pShift, Tc, jr->actDarcy,step); CHKERRQ(ierr);
 
 		// compute stress, plastic strain rate and shear heating term on edge
 		ierr = GetStressEdge(svEdge, matLim, XZ); CHKERRQ(ierr);
@@ -1523,7 +1545,7 @@ PetscErrorCode JacResGetResidual(JacRes *jr)
 		pc_hydro   = 0.25*(p_hydro[k][j][i] + p_hydro[k][j][i-1] + p_hydro[k][j-1][i] + p_hydro[k][j-1][i-1]);
 
 		// evaluate deviatoric constitutive equations
-		ierr = DevConstEq(svDev, &eta_creep, &eta_viscoplastic, numPhases, phases, svEdge->phRat, matLim, pc_lithos, pc_pore, dt, pc-pShift, Tc, jr->actDarcy); CHKERRQ(ierr);
+		ierr = DevConstEq(svDev, &eta_creep, &eta_viscoplastic, numPhases, phases, svEdge->phRat, matLim, pc_lithos, pc_pore, dt, pc-pShift, Tc, jr->actDarcy,step); CHKERRQ(ierr);
 
 		// compute stress, plastic strain rate and shear heating term on edge
 		ierr = GetStressEdge(svEdge, matLim, YZ); CHKERRQ(ierr);
@@ -2092,6 +2114,13 @@ PetscErrorCode SetMatParLim(MatParLim *matLim, UserCtx *usr)
 	matLim->warn         = PETSC_TRUE;
 	matLim->jac_mat_free = PETSC_FALSE;
 	matLim->biot         = 0.0;
+
+	// New for tensile (Darcy)
+	matLim->stress_min = 0.0;
+	ierr = PetscOptionsGetScalar(NULL, NULL, "-stress_min",  &matLim->stress_min, NULL); CHKERRQ(ierr);
+	if (matLim->stress_min <= 0.0) matLim->stress_min = DBL_MIN;
+	//
+
 
 	if(usr->DII_ref) matLim->DII_ref = usr->DII_ref;
 	else

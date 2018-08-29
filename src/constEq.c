@@ -68,7 +68,7 @@ PetscErrorCode ConstEqCtxSetup(
 	PetscScalar  p_lithos,      // lithostatic pressure
 	PetscScalar  p_pore,        // pore pressure
 	PetscScalar  T,             // temperature
-	PetscScalar actDarcy)      // Darcy active or not
+	PetscScalar actDarcy, PetscInt step)      // Darcy active or not
 {
 	// setup nonlinear constitutive equation evaluation context
 	// evaluate dependence on constant parameters (pressure, temperature)
@@ -104,7 +104,7 @@ PetscErrorCode ConstEqCtxSetup(
 
 	if(lim->actPorePres != PETSC_TRUE) p_pore = 0.0;
 
-	p_total = p + lim->biot*p_pore;
+	p_total =p + lim->biot*p_pore;
 
 	//=================
 	// VISCO-ELASTICITY
@@ -170,7 +170,7 @@ PetscErrorCode ConstEqCtxSetup(
 		// This converges better, but does not result in localization of deformation & shear banding,
 		// so only apply it for large-scale simulations where plasticity does not matter much
 
-		p_total = p_lithos;
+		//p_total = p_lithos;
 	}
 	else if(lim->presLimFlg == PETSC_TRUE
 	&&      lim->p_no_lim   != PETSC_TRUE)
@@ -192,8 +192,11 @@ PetscErrorCode ConstEqCtxSetup(
 		p_lower = -(-p_lithos + ch * cos(fr))/(sin(fr) + 1.0); // extension
 		//p_lower = (p_lithos -tensileS)/2.0; // extension /////////////// Darcy
 
-		if(p_total > p_upper) p_total = p_upper;
+		if(p_total > p_upper) {
+			//p_total = p_upper;
+		}
 		//if(p_total < p_lower) p_total = p_lower;
+
 
 	}
 
@@ -201,17 +204,45 @@ PetscErrorCode ConstEqCtxSetup(
 	ch = cos(fr)*ch;
 	fr = sin(fr);
 
-	minimStress = 1e+0; // for SI 2e+6; for GEO = 2.0;
+	minimStress = lim->stress_min; //1e+0; // for SI 2e+6; for GEO = 2.0;
 	tensileS = -mat->TS; // Tensile strength - Darcy
 
-	p_lower = (p_lithos -tensileS)/2.0; // extension /////////////// Darcy
-	if(p_total < p_lower)
-		{
-		//p_total = p_lower;
-		}
+
+
+	// Darcy - as pressure are still not well computed in the first steps,
+	// Then, provisional solution: wait to apply plasticity:
+	//if (step < 10)  {
+	//	ch = 1e+50;
+	//}
+	///////////////////////////////////////////////////////////////////////////////////////////////
+
+	// Darcy - as pressure and liquid pressure are not computed at the same rhythm we can have wrong values
+	// Then, provisional solution: wait to apply pore pressure:
+	//if (step < 10)  {
+		//ch = 1e+10;
+		//tensileS = 1e+10;
+	//}
+	///////////////////////////////////////////////////////////////////////////////////////////////
 
 	// compute effective mean stress
 	dP = p_total - p_pore;
+
+	// Darcy - as pressure are still not well computed in the first steps,
+	//p_lower = (p_lithos -tensileS)/2.0;
+	//if(p_total < p_lithos)
+	//{
+		//p_total = p_lower;
+		//ch = 1e+10;
+		//tensileS = 1e+10;
+	//}
+
+	// as pressure and liquid pressure are not computed at the same rhythm we can have wrong values
+	// Then, provisional solution: wait to apply pore pressure:
+	//if (step < 100) {
+	//	p_total = p;
+	//	dP = p_total;
+	//}
+	///////////////////////////////////////////////////////////////////////////////////////////////
 
 	/*if (dP < -tensileS) {
 		dP = -tensileS;
@@ -241,7 +272,7 @@ PetscErrorCode ConstEqCtxSetup(
 
 
 					// compute yield stress 2/////////////////////////////////////////////////////////////////////////////////////////////
-					yieldTensile = 1.1*(dP+tensileS);    if (yieldTensile < minimStress) yieldTensile = minimStress;
+					yieldTensile = dP+tensileS;    if (yieldTensile < minimStress) yieldTensile = minimStress;
 					yieldShear = dP*fr + ch;       if (yieldShear   < minimStress) yieldShear   = minimStress;
 					if (yieldTensile < yieldShear){
 						ctx->taupl = yieldTensile;
@@ -379,9 +410,9 @@ PetscErrorCode GetEffVisc(
 	(*fr)    = 0.0;
 	(*ch)    = 0.0;
 
-	// New Darcy, save friction and cohesion
-	(*fr)               =  ctx->fr;
-	(*ch)               =  ctx->ch;
+	//// New Darcy, save friction and cohesion
+	//(*fr)               =  ctx->fr;
+	//(*ch)               =  ctx->ch;
 	//////////
 
 	//==============
@@ -584,7 +615,7 @@ PetscErrorCode DevConstEq(
 	PetscScalar  dt,        		// time step
 	PetscScalar  p,         		// pressure
 	PetscScalar  T,         		// temperature
-	PetscScalar  actDarcy)          // Darcy active or not
+	PetscScalar  actDarcy, PetscInt step)          // Darcy active or not
 {
 	// Evaluate deviatoric constitutive equations in control volume
 
@@ -633,7 +664,7 @@ PetscErrorCode DevConstEq(
 			mat = &phases[i];
 
 			// setup nonlinear constitutive equation evaluation context
-			ierr = ConstEqCtxSetup(&ctx, mat, lim, DII, APS, dt, p, p_lithos, p_pore, T, actDarcy); CHKERRQ(ierr);
+			ierr = ConstEqCtxSetup(&ctx, mat, lim, DII, APS, dt, p, p_lithos, p_pore, T, actDarcy, step); CHKERRQ(ierr);
 
 			// solve effective viscosity & plastic strain rate
 			ierr = GetEffVisc(&ctx, lim, &eta_total, &eta_creep_phase, &eta_viscoplastic_phase, &DIIpl, &dEta, &fr, &ch); CHKERRQ(ierr);

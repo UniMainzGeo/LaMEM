@@ -78,7 +78,7 @@ PetscErrorCode ConstEqCtxSetup(
 	PetscScalar  p_lithos,    	// lithostatic pressure
 	PetscScalar  p_pore,    	// pore pressure
 	PetscScalar  T,   	 		// temperature
-	PetscScalar  actDarcy);      // Darcy active or not
+	PetscScalar  actDarcy, PetscInt step);      // Darcy active or not
 
 // compute residual of the visco-elastic constitutive equation
 PetscScalar GetConsEqRes(PetscScalar eta, void *pctx);
@@ -92,7 +92,7 @@ PetscErrorCode GetEffVisc(
 	PetscScalar *DIIpl,
 	PetscScalar *dEta,
 	PetscScalar *fr,
-	PetscScalar *ch); // New
+	PetscScalar *ch);  // New
 
 // apply strain softening to a parameter (friction, cohesion)
 PetscScalar ApplyStrainSoft(Soft_t *sl, PetscScalar APS, PetscScalar par);
@@ -118,7 +118,7 @@ PetscErrorCode DevConstEq(
 	PetscScalar  dt,        		// time step
 	PetscScalar  p,        			// pressure
 	PetscScalar  T,        		// temperature
-	PetscScalar actDarcy);      // Darcy active or not
+	PetscScalar actDarcy, PetscInt step);       // Darcy active or not
 
 // Evaluate volumetric constitutive equations in control volume
 PetscErrorCode VolConstEq(

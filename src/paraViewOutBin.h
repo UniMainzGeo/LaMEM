@@ -182,7 +182,9 @@ typedef struct
 	PetscInt porosity;       // Porosity
 	PetscInt liquiddensity;	 // Liquid density
 	PetscInt liquidvelocity; // Liquid velocity
-	PetscInt failure;        // Type of Failure
+	PetscInt failureT;        // Type of Failure tensile
+	PetscInt failureS;        // Type of Failure shear
+	PetscInt failureTS;       // If pressure arrived to tensile strength
 
 
 	// === debugging vectors ===============================================

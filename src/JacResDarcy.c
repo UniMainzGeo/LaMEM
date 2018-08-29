@@ -1372,3 +1372,239 @@ PetscErrorCode SourcePropGetStruct(FILE *fp,
 
 	PetscFunctionReturn(0);
 }
+
+//---------------------------------------------------------------------------
+#undef __FUNCT__
+#define __FUNCT__ "UpdateFailureType"
+PetscErrorCode UpdateFailureType(JacRes *jr)
+{
+	FDSTAG     *fs;
+	SolVarCell *svCell;
+	SolVarEdge *svEdge;
+	SolVarDev  *svDev;
+	SolVarBulk *svBulk;
+	Material_t *phases;
+	MatParLim  *matLim;
+	PetscInt    iter, numPhases;
+	PetscInt    I1, I2, J1, J2, K1, K2;
+	PetscInt    i, j, k, nx, ny, nz, sx, sy, sz, mx, my, mz, l;
+	PetscScalar XX, XX1, XX2, XX3, XX4;
+	PetscScalar YY, YY1, YY2, YY3, YY4;
+	PetscScalar ZZ, ZZ1, ZZ2, ZZ3, ZZ4;
+	PetscScalar XY, XY1, XY2, XY3, XY4;
+	PetscScalar XZ, XZ1, XZ2, XZ3, XZ4;
+	PetscScalar YZ, YZ1, YZ2, YZ3, YZ4;
+	PetscScalar pc, pc_pore, ptotal, biot, dt, dP, TensileS, intersection, fr, ch, sensitivity;
+	PetscScalar ***dxx, ***dyy, ***dzz, ***dxy, ***dxz, ***dyz, ***p, ***p_pore;
+	PetscBool actDarcy;
+
+
+	PetscScalar DevStressII;
+
+	PetscErrorCode ierr;
+	PetscFunctionBegin;
+
+	fs = jr->fs;
+
+	numPhases =  jr->numPhases; 	// number phases
+	phases    =  jr->phases;    	// phase parameters
+	matLim    = &jr->matLim;    	// phase parameters limiters
+	dt        =  jr->ts.dt;     	// time step
+	biot      =  matLim->biot;      // Biot pressure parameter
+	actDarcy  = jr->actDarcy;
+	sensitivity = 0.0;
+
+	if (actDarcy == PETSC_TRUE) {
+
+		ierr = DMDAVecGetArray(fs->DA_CEN, jr->ldxx, &dxx);   CHKERRQ(ierr);
+		ierr = DMDAVecGetArray(fs->DA_CEN, jr->ldyy, &dyy);   CHKERRQ(ierr);
+		ierr = DMDAVecGetArray(fs->DA_CEN, jr->ldzz, &dzz);   CHKERRQ(ierr);
+		ierr = DMDAVecGetArray(fs->DA_XY,  jr->ldxy, &dxy);   CHKERRQ(ierr);
+		ierr = DMDAVecGetArray(fs->DA_XZ,  jr->ldxz, &dxz);   CHKERRQ(ierr);
+		ierr = DMDAVecGetArray(fs->DA_YZ,  jr->ldyz, &dyz);   CHKERRQ(ierr);
+		ierr = DMDAVecGetArray(fs->DA_CEN, jr->lp,       &p);        CHKERRQ(ierr);
+		ierr = DMDAVecGetArray(fs->DA_CEN, jr->lp_pore,  &p_pore);   CHKERRQ(ierr);
+
+		iter = 0;
+
+		//-------------------------------
+		// xy edge points
+		//-------------------------------
+		iter = 0;
+		GET_NODE_RANGE(nx, sx, fs->dsx)
+		GET_NODE_RANGE(ny, sy, fs->dsy)
+		GET_CELL_RANGE(nz, sz, fs->dsz)
+
+		START_STD_LOOP
+		{
+			svEdge = &jr->svXYEdge[iter++];
+			dxy[k][j][i] = svEdge->s;
+			svEdge->svDev.failS = 0.0;
+			svEdge->svDev.failT = 0.0;
+			svEdge->svDev.failTS = 0.0;
+
+			//dxy[k][j][i] = jr->svXYEdge[iter++].s;
+
+
+		}
+		END_STD_LOOP
+
+		//ierr = DMDAVecRestoreArray(fs->DA_XY, jr->ldxy, &dxy); CHKERRQ(ierr);
+
+		LOCAL_TO_LOCAL(fs->DA_XY, jr->ldxy);
+
+		//-------------------------------
+		// xz edge points
+		//-------------------------------
+		iter = 0;
+		GET_NODE_RANGE(nx, sx, fs->dsx)
+		GET_CELL_RANGE(ny, sy, fs->dsy)
+		GET_NODE_RANGE(nz, sz, fs->dsz)
+
+		START_STD_LOOP
+		{
+			svEdge = &jr->svXZEdge[iter++];
+			dxz[k][j][i] = svEdge->s;
+			svEdge->svDev.failS = 0.0;
+			svEdge->svDev.failT = 0.0;
+			svEdge->svDev.failTS = 0.0;
+
+			// access solution variables
+			//dxz[k][j][i] = jr->svXZEdge[iter++].s;
+
+		}
+		END_STD_LOOP
+
+		//ierr = DMDAVecRestoreArray(fs->DA_XZ, jr->ldxz, &dxz); CHKERRQ(ierr);
+
+		LOCAL_TO_LOCAL(fs->DA_XZ, jr->ldxz);
+
+		//-------------------------------
+		// yz edge points
+		//-------------------------------
+		iter = 0;
+		GET_CELL_RANGE(nx, sx, fs->dsx)
+		GET_NODE_RANGE(ny, sy, fs->dsy)
+		GET_NODE_RANGE(nz, sz, fs->dsz)
+
+		START_STD_LOOP
+		{
+			svEdge = &jr->svYZEdge[iter++];
+			dyz[k][j][i] = svEdge->s;
+			svEdge->svDev.failS = 0.0;
+			svEdge->svDev.failT = 0.0;
+			svEdge->svDev.failTS = 0.0;
+
+			// access solution variables
+			//dyz[k][j][i] = jr->svYZEdge[iter++].s;
+
+		}
+		END_STD_LOOP
+
+		//ierr = DMDAVecRestoreArray(fs->DA_YZ, jr->ldyz, &dyz); CHKERRQ(ierr);
+
+		LOCAL_TO_LOCAL(fs->DA_YZ, jr->ldyz);
+
+		//-------------------------------
+		// central points
+		//-------------------------------
+		iter = 0;
+		GET_CELL_RANGE(nx, sx, fs->dsx)
+		GET_CELL_RANGE(ny, sy, fs->dsy)
+		GET_CELL_RANGE(nz, sz, fs->dsz)
+
+		START_STD_LOOP
+		{
+			// access solution variables
+			svCell = &jr->svCell[iter++];
+			svDev  = &svCell->svDev;
+			svBulk = &svCell->svBulk;
+
+			//=================
+			// SECOND INVARIANT of deviatoric stress
+			//=================
+
+			// x-y plane, i-j indices
+			XY1 = dxy[k][j][i];
+			XY2 = dxy[k][j+1][i];
+			XY3 = dxy[k][j][i+1];
+			XY4 = dxy[k][j+1][i+1];
+
+			// x-z plane, i-k indices
+			XZ1 = dxz[k][j][i];
+			XZ2 = dxz[k+1][j][i];
+			XZ3 = dxz[k][j][i+1];
+			XZ4 = dxz[k+1][j][i+1];
+
+			// y-z plane, j-k indices
+			YZ1 = dyz[k][j][i];
+			YZ2 = dyz[k+1][j][i];
+			YZ3 = dyz[k][j+1][i];
+			YZ4 = dyz[k+1][j+1][i];
+
+			// compute second invariant
+			DevStressII = 0.5*(svCell->sxx*svCell->sxx + svCell->syy*svCell->syy + svCell->szz*svCell->szz) +
+						  0.25*(XY1*XY1 + XY2*XY2 + XY3*XY3 + XY4*XY4) +
+						  0.25*(XZ1*XZ1 + XZ2*XZ2 + XZ3*XZ3 + XZ4*XZ4) +
+						  0.25*(YZ1*YZ1 + YZ2*YZ2 + YZ3*YZ3 + YZ4*YZ4);
+
+			// store square root of second invariant
+			DevStressII = sqrt(DevStressII);
+
+			// access current pressures
+			pc = p[k][j][i];
+
+			// access current pore pressure (zero if deactivated)
+			pc_pore  = p_pore[k][j][i];
+
+			// get total pressure (effective pressure, computed by LaMEM, plus pore pressure)
+			ptotal = pc + biot*pc_pore;
+
+			dP = ptotal - pc_pore; // effective mean stress
+
+			TensileS    = -svBulk->Ts;
+			fr = svDev->fr;
+			ch = svDev->ch;
+			if (ch > 0.0) { // if ch is 0 means that is not yet calculated, so there are not plasticity for sure
+
+				if (fr-1.0 == 0.0)  intersection = 0.0;
+				else                intersection = (TensileS-ch)/(fr-1.0);
+
+				//svDev->failT = 0.0;
+				//svDev->failS = 0.0;
+
+				// sensitivity
+				sensitivity =jr->matLim.stress_min;; //1e+3; //0.5e2; //0.01e0; //1e+1; // Pascals
+
+				if (dP < -(TensileS+sensitivity)) {// + 1e+6) {
+					//svDev->failTS = 1.0;
+					//svDev->failT = 1.0;
+				}
+
+				if (DevStressII > svDev->yield + sensitivity) {
+					if (dP>=intersection) {
+						// Shear
+						svDev->failS = 1.0;
+					}else {
+						// Tensile
+						svDev->failT = 1.0;
+					}
+				}
+			}
+		}
+		END_STD_LOOP
+
+		// restore vectors
+		ierr = DMDAVecRestoreArray(fs->DA_XY, jr->ldxy, &dxy); CHKERRQ(ierr);
+		ierr = DMDAVecRestoreArray(fs->DA_XZ, jr->ldxz, &dxz); CHKERRQ(ierr);
+		ierr = DMDAVecRestoreArray(fs->DA_YZ, jr->ldyz, &dyz); CHKERRQ(ierr);
+		ierr = DMDAVecRestoreArray(fs->DA_CEN, jr->ldxx, &dxx); CHKERRQ(ierr);
+		ierr = DMDAVecRestoreArray(fs->DA_CEN, jr->ldyy, &dyy); CHKERRQ(ierr);
+		ierr = DMDAVecRestoreArray(fs->DA_CEN, jr->ldzz, &dzz); CHKERRQ(ierr);
+		ierr = DMDAVecRestoreArray(fs->DA_CEN, jr->lp,   &p);   CHKERRQ(ierr);
+		ierr = DMDAVecRestoreArray(fs->DA_CEN, jr->lp_pore,   &p_pore); CHKERRQ(ierr);
+	}
+
+	PetscFunctionReturn(0);
+}
+//---------------------------------------------------------------------------

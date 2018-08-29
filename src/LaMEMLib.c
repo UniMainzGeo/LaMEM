@@ -379,6 +379,18 @@ PetscErrorCode LaMEMLib(ModParam *IOparam)
 			ierr = FormResidual(snes, jr.gsol, jr.gres, &nl); CHKERRQ(ierr);
 		}
 
+
+
+		// Darcy /////////////////////////////////////////////
+		if (jr.actDarcy){
+		if (JacResGetStep(&jr) > 2) // 2 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+		{
+			ierr = UpdateFailureType(&jr);
+		}
+		}
+		//////////////////////////////////////////////////////
+
+
 		// switch off initial guess flag
 		if(!JacResGetStep(&jr))
 		{

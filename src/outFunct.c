@@ -855,49 +855,56 @@ PetscErrorCode PVOutWriteLiquidVelocity(JacRes *jr, OutBuf *outbuf)
 
 // New ---------------------------------------------------------------------------
 #undef __FUNCT__
-#define __FUNCT__ "PVOutWriteFailure"
-PetscErrorCode PVOutWriteFailure(JacRes *jr, OutBuf *outbuf)
+#define __FUNCT__ "PVOutWriteFailureT"
+PetscErrorCode PVOutWriteFailureT(JacRes *jr, OutBuf *outbuf)
 {
-
-	/* COPY_FUNCTION_HEADER
-
-	// macro to copy to buffer
-	#define GET_FAIL_CENTER   buff[k][j][i] = jr->svCell[iter++].svDev.fail;
-	#define GET_FAIL_XY_EDGE  buff[k][j][i] = jr->svXYEdge[iter++].svDev.fail;
-    #define GET_FAIL_YZ_EDGE  buff[k][j][i] = jr->svYZEdge[iter++].svDev.fail;
-    #define GET_FAIL_XZ_EDGE  buff[k][j][i] = jr->svXZEdge[iter++].svDev.fail;
-
-	cf = scal->unit;
-
-	iflag.update = PETSC_TRUE; //??
-
-    ierr = VecSet(outbuf->lbcor, 0.0); CHKERRQ(ierr); //??
-
-	INTERPOLATE_COPY(fs->DA_CEN, outbuf->lbcen, InterpCenterCorner, GET_FAIL_CENTER,  1, 0)
-	INTERPOLATE_COPY(fs->DA_XY,  outbuf->lbxy,  InterpXYEdgeCorner, GET_FAIL_XY_EDGE, 1, 0)
-	INTERPOLATE_COPY(fs->DA_YZ,  outbuf->lbyz,  InterpYZEdgeCorner, GET_FAIL_YZ_EDGE, 1, 0)
-	INTERPOLATE_COPY(fs->DA_XZ,  outbuf->lbxz,  InterpXZEdgeCorner, GET_FAIL_YZ_EDGE, 1, 0)
-
-	// compute & store failure
-	ierr = VecSqrtAbs(outbuf->lbcor); CHKERRQ(ierr); //??
-
-	ierr = OutBufPut3DVecComp(outbuf, 1, 0, cf, 0.0); CHKERRQ(ierr); //??
-
-	PetscFunctionReturn(0);*/
 
 	COPY_FUNCTION_HEADER
 
-	// macro to copy accumulated plastic strain (APS) to buffer
-	#define GET_FAILURE buff[k][j][i] = jr->svCell[iter++].svDev.fail;
+	#define GET_FAILURET buff[k][j][i] = jr->svCell[iter++].svDev.failT;
 
 	cf = scal->unit;
 
-	INTERPOLATE_COPY(fs->DA_CEN, outbuf->lbcen, InterpCenterCorner, GET_FAILURE, 1, 0)
+	INTERPOLATE_COPY(fs->DA_CEN, outbuf->lbcen, InterpCenterCorner, GET_FAILURET, 1, 0)
 
 	PetscFunctionReturn(0);
 
+}
 
+// New ---------------------------------------------------------------------------
+#undef __FUNCT__
+#define __FUNCT__ "PVOutWriteFailureS"
+PetscErrorCode PVOutWriteFailureS(JacRes *jr, OutBuf *outbuf)
+{
 
+	COPY_FUNCTION_HEADER
+
+	#define GET_FAILURES buff[k][j][i] = jr->svCell[iter++].svDev.failS;
+
+	cf = scal->unit;
+
+	INTERPOLATE_COPY(fs->DA_CEN, outbuf->lbcen, InterpCenterCorner, GET_FAILURES, 1, 0)
+
+	PetscFunctionReturn(0);
+
+}
+// New ---------------------------------------------------------------------------
+#undef __FUNCT__
+#define __FUNCT__ "PVOutWriteFailureTS"
+PetscErrorCode PVOutWriteFailureTS(JacRes *jr, OutBuf *outbuf)
+{
+
+	COPY_FUNCTION_HEADER
+
+	//#define GET_FAILURETS buff[k][j][i] = jr->svCell[iter++].svDev.failTS;
+
+    #define GET_FAILURETS buff[k][j][i] = jr->svCell[iter].svDev.failT + jr->svCell[iter++].svDev.failS;
+
+	cf = scal->unit;
+
+	INTERPOLATE_COPY(fs->DA_CEN, outbuf->lbcen, InterpCenterCorner, GET_FAILURETS, 1, 0)
+
+	PetscFunctionReturn(0);
 
 }
 

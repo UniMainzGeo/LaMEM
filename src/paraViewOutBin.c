@@ -368,7 +368,9 @@ PetscInt OutMaskCountActive(OutMask *omask, JacRes *jr)
 		if(omask->liquiddensity)  cnt++; // Liquid density
 		if(omask->liquidvelocity) cnt++; // Liquid velocity
 	}
-	if(omask->failure)            cnt++; // Type of failure // New
+	if(omask->failureT)            cnt++; // Type of failure tensile // New
+	if(omask->failureS)            cnt++; // Type of failure shaer // New
+	if(omask->failureTS)           cnt++; //
 
 	if(omask->yield)          		cnt++; // yield stress
 	// === debugging vectors ===============================================
@@ -486,7 +488,9 @@ PetscErrorCode PVOutCreate(PVOut *pvout, JacRes *jr, const char *filename)
 		if(omask->liquiddensity)	OutVecCreate(&outvecs[cnt++], "LiquidDensity",	scal->lbl_density, 		  &PVOutWriteLiquidDensity, 1);
 		if(omask->liquidvelocity)   OutVecCreate(&outvecs[cnt++], "LiquidVelocity", scal->lbl_velocity,       &PVOutWriteLiquidVelocity,3);
 	}
-	if(omask->failure)              OutVecCreate(&outvecs[cnt++], "Failure",        scal->lbl_unit,           &PVOutWriteFailure,1); // New
+	if(omask->failureT)              OutVecCreate(&outvecs[cnt++], "FailureT",        scal->lbl_unit,           &PVOutWriteFailureT,1); // New
+	if(omask->failureS)              OutVecCreate(&outvecs[cnt++], "FailureS",        scal->lbl_unit,           &PVOutWriteFailureS,1); // New
+	if(omask->failureTS)             OutVecCreate(&outvecs[cnt++], "FailureTS",        scal->lbl_unit,          &PVOutWriteFailureTS,1); // New
 
 	// === debugging vectors ===============================================
 	if(omask->moment_res)     		OutVecCreate(&outvecs[cnt++], "moment_res",     	scal->lbl_volumetric_force, &PVOutWriteMomentRes,    3);
@@ -551,7 +555,9 @@ PetscErrorCode PVOutReadFromOptions(PVOut *pvout)
     ierr = PetscOptionsGetInt(NULL, NULL, "-out_liquiddensity", &omask->liquiddensity, NULL); CHKERRQ(ierr);	// liquid density
     ierr = PetscOptionsGetInt(NULL, NULL, "-out_liquidvelocity",&omask->liquidvelocity,NULL); CHKERRQ(ierr);	// liquid velocity
 
-    ierr = PetscOptionsGetInt(NULL, NULL, "-out_failure",       &omask->failure,       NULL); CHKERRQ(ierr);	// type of failure
+    ierr = PetscOptionsGetInt(NULL, NULL, "-out_failureT",       &omask->failureT,       NULL); CHKERRQ(ierr);	// type of failure tensile
+    ierr = PetscOptionsGetInt(NULL, NULL, "-out_failureS",       &omask->failureS,       NULL); CHKERRQ(ierr);	// type of failure shear
+    ierr = PetscOptionsGetInt(NULL, NULL, "-out_failureTS",       &omask->failureTS,     NULL); CHKERRQ(ierr);	// if pressure arrived to tensile strength
 
     // deactivate effective pressure if pore pressure is deactivated
 	ierr = PetscOptionsHasName(NULL, NULL, "-actPorePres", &flg); CHKERRQ(ierr);
