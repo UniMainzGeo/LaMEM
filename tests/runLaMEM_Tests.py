@@ -19,6 +19,7 @@ sys.path.append(os.path.join(os.environ['PWD'], 't2_FB2_MG'))
 sys.path.append(os.path.join(os.environ['PWD'], 't4_Loc'))
 sys.path.append(os.path.join(os.environ['PWD'], 't8_AdjointGradientScalingFB'))
 sys.path.append(os.path.join(os.environ['PWD'], 't9_FB1_Direct_PhaseDiagrams'))
+sys.path.append(os.path.join(os.environ['PWD'], 't10_Compressibility'))
 
 # add matlab-tests if matlab is available as ENVIRONMENTAL variable MATLAB
 if os.environ.get('MATLAB') != None:
@@ -33,6 +34,8 @@ import test_2_FB2 as FB2
 import test_4_localization as Loc1
 import test_8_AdjointGradientScalingFB1 as Adj3
 import test_9_FB_PhaseDiagrams1 as FBPD1
+import test_10_Compressibility as Comp1
+
 
 if os.environ.get('MATLAB') != None:
   import test_3_Subduction1               as Sub1 # import test that requires MATLAB
@@ -47,7 +50,8 @@ def run_tests():
   os.environ['PYTHONUNBUFFERED'] = str('1')
 
   registeredTests = [ FB1.test_a(),  FB1.test_b(),  FB1.test_c(),  FB1.test_d(),
-                      FB2.test_a(), Loc1.test_a(), Loc1.test_b(), Loc1.test_c(), Adj3.test_a(), FBPD1.test_a()];
+                      FB2.test_a(), Loc1.test_a(), Loc1.test_b(), Loc1.test_c(), Adj3.test_a(), FBPD1.test_a(),
+                      Comp1.test_a()];
  
 
 # Add matlab tests (There should be a better way to do this for a range of files at the same time)
@@ -68,5 +72,5 @@ def run_tests():
 if __name__ == "__main__":
   run_tests()
 
-  os.system('make clean')
+  #os.system('make clean')
 
