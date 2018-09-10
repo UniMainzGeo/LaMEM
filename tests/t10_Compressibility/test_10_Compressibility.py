@@ -217,7 +217,6 @@ def test_a():
 
 
 def test_b():
-
   # Test visco-elasto-plastic localization case on 1 core, using optimized LaMEM
   ranks = 2
   launch = '../bin/deb/LaMEM -ParamFile ./t10_Compressibility/Compressible1D_withSaltandBasement.dat' # This must be a relative path with respect to runLaMEM_Tests.py
@@ -239,7 +238,7 @@ def test_b():
       data = LoadData('Timestep_00000020_5.72749995e-02');    # Load the data using the VTK toolbox
       data = AnalyticalSolution(data);                        # Compute analytical solution
       PlotData(data,'./t10_Compressibility/Compressible1D_2Cores_output.png');             # Create Plot
-
+    
       print('Created output figure ./t10_Compressibility/Compressible1D_2Cores_output.png comparing analytics vs. numerics')
     except:
       print('VTK/MatPlotLib/NumPy toolboxes are not installed; will not create plots')
