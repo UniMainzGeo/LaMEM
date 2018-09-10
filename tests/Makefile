@@ -17,6 +17,7 @@ test:
 	@echo "Running LaMEM tests using the pythontestharness"
 	@echo "You can do this, and have additional options, with:" 
 	@echo "$ python runLaMEM_Tests.py"
+	@echo "In case problems occur, delete 'pthBatchQueuingSystem.conf', and run the python script directly"
 	@python runLaMEM_Tests.py
 
 clean :
