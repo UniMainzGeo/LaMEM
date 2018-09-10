@@ -49,9 +49,9 @@ def makeLocalPathAbsolute(localRelPath) :
 def run_tests():
   os.environ['PYTHONUNBUFFERED'] = str('1')
 
-  registeredTests = [ FB1.test_a(),  FB1.test_b(),  FB1.test_c(),  FB1.test_d(),
-                      FB2.test_a(), Loc1.test_a(), Loc1.test_b(), Loc1.test_c(), Adj3.test_a(), FBPD1.test_a(),
-                      Comp1.test_a()];
+  registeredTests = [ FB1.test_a(),   FB1.test_b(),  FB1.test_c(),  FB1.test_d(),
+                      FB2.test_a(),   Loc1.test_a(), Loc1.test_b(), Loc1.test_c(), Adj3.test_a(), FBPD1.test_a(),
+                      Comp1.test_a(), Comp1.test_b() ];
  
 
 # Add matlab tests (There should be a better way to do this for a range of files at the same time)
@@ -72,5 +72,5 @@ def run_tests():
 if __name__ == "__main__":
   run_tests()
 
-  #os.system('make clean')
+  os.system('make clean')
 

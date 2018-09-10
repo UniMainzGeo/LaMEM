@@ -219,9 +219,9 @@ def test_a():
 def test_b():
 
   # Test visco-elasto-plastic localization case on 1 core, using optimized LaMEM
-  ranks = 1
-  launch = '../bin/opt/LaMEM -ParamFile ./t10_Compressibility/Compressible1D_withSaltandBasement.dat' # This must be a relative path with respect to runLaMEM_Tests.py
-  expected_file = 't10_Compressibility/test_10_Compressibility_opt-p1.expected'
+  ranks = 2
+  launch = '../bin/deb/LaMEM -ParamFile ./t10_Compressibility/Compressible1D_withSaltandBasement.dat' # This must be a relative path with respect to runLaMEM_Tests.py
+  expected_file = 't10_Compressibility/Compressibility_Direct_deb-p2.expected'
 
   def comparefunc(unittest):
 
@@ -234,8 +234,19 @@ def test_b():
     key = re.escape("|mRes|_2")
     unittest.compareFloatingPoint(key,1e-4)
 
+    #----------------------------  
+    try: 
+      data = LoadData('Timestep_00000020_5.72749995e-02');    # Load the data using the VTK toolbox
+      data = AnalyticalSolution(data);                        # Compute analytical solution
+      PlotData(data,'./t10_Compressibility/Compressible1D_2Cores_output.png');             # Create Plot
+
+      print('Created output figure ./t10_Compressibility/Compressible1D_2Cores_output.png comparing analytics vs. numerics')
+    except:
+      print('VTK/MatPlotLib/NumPy toolboxes are not installed; will not create plots')
+    #----------------------------
+
   # Create unit test object
-  ex1 = pth.pthUnitTest('Compressibility_Direct_opt',ranks,launch,expected_file)
+  ex1 = pth.pthUnitTest('Compressibility_Direct_deb',ranks,launch,expected_file)
   ex1.setVerifyMethod(comparefunc)
   ex1.appendKeywords('@')
 
