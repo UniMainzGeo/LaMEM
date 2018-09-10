@@ -613,9 +613,8 @@ PetscErrorCode VolConstEq(
 				// depth-dependent density (ad-hoc)
 				rho = mat->rho - (mat->rho - ctrl->rho_fluid)*mat->rho_n*exp(-mat->rho_c*depth);
 			}
-
 			// Phase diagram
-			if(mat->Pd_rho == 1)   // Density from a phase diagram (have svBulk->rho = svBulk->rho)
+			else if(mat->Pd_rho == 1)   // Density from a phase diagram (have svBulk->rho = svBulk->rho)
 			{
 				rho = (svBulk->mf * svBulk->rho_pf) + ((1-svBulk->mf) * svBulk->rho_pd);
 			}
