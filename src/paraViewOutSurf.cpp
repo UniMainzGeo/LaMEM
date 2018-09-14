@@ -79,14 +79,19 @@ PetscErrorCode PVSurfCreate(PVSurf *pvsurf, FB *fb)
 	ierr = getIntParam   (fb, _OPTIONAL_, "out_surf_velocity",   &pvsurf->velocity,   1, 1); CHKERRQ(ierr);
 	ierr = getIntParam   (fb, _OPTIONAL_, "out_surf_topography", &pvsurf->topography, 1, 1); CHKERRQ(ierr);
 	ierr = getIntParam   (fb, _OPTIONAL_, "out_surf_amplitude",  &pvsurf->amplitude,  1, 1); CHKERRQ(ierr);
+	ierr = getIntParam   (fb, _OPTIONAL_, "out_surf_new_mafic",  &pvsurf->newmafic,  1, 1); CHKERRQ(ierr);
+	ierr = getIntParam   (fb, _OPTIONAL_, "out_surf_new_continental",  &pvsurf->newcontinental,  1, 1); CHKERRQ(ierr);
+
 
 	// print summary
 	PetscPrintf(PETSC_COMM_WORLD, "Surface output parameters:\n");
 	PetscPrintf(PETSC_COMM_WORLD, "   Write .pvd file : %s \n", pvsurf->outpvd ? "yes" : "no");
 
-	if(pvsurf->velocity)   PetscPrintf(PETSC_COMM_WORLD, "   Velocity        @ \n");
-	if(pvsurf->topography) PetscPrintf(PETSC_COMM_WORLD, "   Topography      @ \n");
-	if(pvsurf->amplitude)  PetscPrintf(PETSC_COMM_WORLD, "   Amplitude       @ \n");
+	if(pvsurf->velocity)       PetscPrintf(PETSC_COMM_WORLD, "   Velocity              @ \n");
+	if(pvsurf->topography)     PetscPrintf(PETSC_COMM_WORLD, "   Topography            @ \n");
+	if(pvsurf->amplitude)      PetscPrintf(PETSC_COMM_WORLD, "   Amplitude             @ \n");
+	if(pvsurf->newmafic)       PetscPrintf(PETSC_COMM_WORLD, "   New Mafic Crust       @ \n");
+	if(pvsurf->newcontinental) PetscPrintf(PETSC_COMM_WORLD, "   New Continental Crust @ \n");
 
 	PetscPrintf(PETSC_COMM_WORLD, "--------------------------------------------------------------------------\n");
 
@@ -217,16 +222,28 @@ PetscErrorCode PVSurfWritePVTS(PVSurf *pvsurf, const char *dirName)
 	{
 		fprintf(fp,"\t\t\t<PDataArray type=\"Float32\" Name=\"velocity %s\" NumberOfComponents=\"3\" format=\"appended\"/>\n", scal->lbl_velocity);
 	}
-
+//=-----------------------
 	if(pvsurf->topography)
 	{
 		fprintf(fp,"\t\t\t<PDataArray type=\"Float32\" Name=\"topography %s\" NumberOfComponents=\"1\" format=\"appended\"/>\n", scal->lbl_length);
 	}
-
+	//=-----------------------
 	if(pvsurf->amplitude)
 	{
 		fprintf(fp,"\t\t\t<PDataArray type=\"Float32\" Name=\"amplitude %s\" NumberOfComponents=\"1\" format=\"appended\"/>\n", scal->lbl_length);
 	}
+	//=-----------------------
+	if(pvsurf->newmafic)
+	{
+		fprintf(fp,"\t\t\t<PDataArray type=\"Float32\" Name=\"newmafic %s\" NumberOfComponents=\"1\" format=\"appended\"/>\n",scal->lbl_volume);
+	}
+	//=-----------------------
+	if(pvsurf->newcontinental)
+	{
+		fprintf(fp,"\t\t\t<PDataArray type=\"Float32\" Name=\"newcontinental %s\" NumberOfComponents=\"1\" format=\"appended\"/>\n",scal->lbl_volume);
+	}
+	//=-----------------------
+
 
 	fprintf(fp, "\t\t</PPointData>\n");
 
@@ -337,9 +354,22 @@ PetscErrorCode PVSurfWriteVTS(PVSurf *pvsurf, const char *dirName)
 		{
 			fprintf(fp,"\t\t\t<DataArray type=\"Float32\" Name=\"amplitude %s\" NumberOfComponents=\"1\" format=\"appended\" offset=\"%lld\"/>\n",
 				scal->lbl_length, (LLD)offset);
-
 			offset += sizeof(int) + sizeof(float)*(size_t)(nx*ny);
 		}
+
+		if(pvsurf->newmafic)
+		{
+		fprintf(fp,"\t\t\t<DataArray type=\"Float32\" Name=\"newmafic %s\" NumberOfComponents=\"1\" format=\"appended\" offset=\"%lld\"/>\n",
+		scal->lbl_volume, (LLD)offset);
+		offset += sizeof(int) + sizeof(float)*(size_t)(nx*ny);
+		}
+		if(pvsurf->newcontinental)
+		{
+		fprintf(fp,"\t\t\t<DataArray type=\"Float32\" Name=\"newcontinental %s\" NumberOfComponents=\"1\" format=\"appended\" offset=\"%lld\"/>\n",
+		scal->lbl_volume, (LLD)offset);
+		offset += sizeof(int) + sizeof(float)*(size_t)(nx*ny);
+		}
+
 
 		fprintf(fp, "\t\t</PointData>\n");
 
@@ -356,9 +386,12 @@ PetscErrorCode PVSurfWriteVTS(PVSurf *pvsurf, const char *dirName)
 	ierr = PVSurfWriteCoord (pvsurf, fp); CHKERRQ(ierr);
 
 	// write output vectors
-	if(pvsurf->velocity)   { ierr = PVSurfWriteVel      (pvsurf, fp); CHKERRQ(ierr); }
-	if(pvsurf->topography) { ierr = PVSurfWriteTopo     (pvsurf, fp); CHKERRQ(ierr); }
-	if(pvsurf->amplitude)  { ierr = PVSurfWriteAmplitude(pvsurf, fp); CHKERRQ(ierr); }
+	if(pvsurf->velocity)        { ierr = PVSurfWriteVel      (pvsurf, fp); CHKERRQ(ierr); }
+	if(pvsurf->topography)      { ierr = PVSurfWriteTopo     (pvsurf, fp); CHKERRQ(ierr); }
+	if(pvsurf->amplitude)       { ierr = PVSurfWriteAmplitude(pvsurf, fp); CHKERRQ(ierr); }
+	if(pvsurf->newmafic)        { ierr = PVSurfWriteNewMafic(pvsurf, fp); CHKERRQ(ierr); }
+	if(pvsurf->newcontinental)  { ierr = PVSurfWriteNewContinental(pvsurf, fp); CHKERRQ(ierr); }
+
 
 	if(!fs->dsz.rank)
 	{
@@ -572,3 +605,90 @@ PetscErrorCode PVSurfWriteAmplitude(PVSurf *pvsurf, FILE *fp)
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
+#undef __FUNCT__
+#define __FUNCT__ "PVSurfWriteNewMafic"
+PetscErrorCode PVSurfWriteNewMafic(PVSurf *pvsurf, FILE *fp)
+{
+	FreeSurf    *surf;
+	FDSTAG      *fs;
+	float       *buff;
+	PetscScalar ***MC, cf;
+	PetscInt    i, j, rx, ry, nx, ny, sx, sy, cn, L;
+
+	PetscErrorCode ierr;
+	PetscFunctionBegin;
+
+	L    = 0;
+	cn   = 0;
+	buff = pvsurf->buff;
+	surf = pvsurf->surf;
+	fs   = surf->jr->fs;
+	cf   = (surf->jr->scal->volume);
+
+	GET_OUTPUT_RANGE(rx, nx, sx, fs->dsx)
+	GET_OUTPUT_RANGE(ry, ny, sy, fs->dsy)
+
+
+	ierr = DMDAVecGetArray(surf->DA_SURF, surf->lNewMafic, &MC); CHKERRQ(ierr);
+
+	if(!fs->dsz.rank)
+	{
+		START_PLANE_LOOP
+		{
+			// store surface topography
+			buff[cn++] = (float)(cf*MC[L][j][i]);
+		}
+		END_PLANE_LOOP
+
+	}
+
+	ierr = DMDAVecRestoreArray(surf->DA_SURF, surf->lNewMafic, &MC); CHKERRQ(ierr);
+
+	OutputBufferWrite(fp, buff, cn);
+
+	PetscFunctionReturn(0);
+}
+//---------------------------------------------------------------------------
+#undef __FUNCT__
+#define __FUNCT__ "PVSurfWriteNewContinental"
+PetscErrorCode PVSurfWriteNewContinental(PVSurf *pvsurf, FILE *fp)
+{
+	FreeSurf    *surf;
+	FDSTAG      *fs;
+	float       *buff;
+	PetscScalar ***CC, cf;
+	PetscInt    i, j, rx, ry, nx, ny, sx, sy, cn, L;
+
+	PetscErrorCode ierr;
+	PetscFunctionBegin;
+
+	L    = 0;
+	cn   = 0;
+	buff = pvsurf->buff;
+	surf = pvsurf->surf;
+	fs   = surf->jr->fs;
+	cf   = (surf->jr->scal->volume);
+
+	GET_OUTPUT_RANGE(rx, nx, sx, fs->dsx)
+	GET_OUTPUT_RANGE(ry, ny, sy, fs->dsy)
+
+	ierr = DMDAVecGetArray(surf->DA_SURF, surf->lNewContinental, &CC); CHKERRQ(ierr);
+
+	if(!fs->dsz.rank)
+	{
+		START_PLANE_LOOP
+		{
+			// store surface topography
+			buff[cn++] = (float)(cf*CC[L][j][i]);
+		}
+		END_PLANE_LOOP
+	}
+
+	ierr = DMDAVecRestoreArray(surf->DA_SURF, surf->lNewContinental, &CC); CHKERRQ(ierr);
+
+	OutputBufferWrite(fp, buff, cn);
+
+	PetscFunctionReturn(0);
+}
+//----------------------------------------------------------------------------------------//
+

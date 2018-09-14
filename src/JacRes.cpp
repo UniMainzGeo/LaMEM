@@ -85,6 +85,7 @@ PetscErrorCode JacResCreate(JacRes *jr, FB *fb)
 	ctrl->pShiftAct    =  1;
 	ctrl->pLithoVisc   =  1;
 	ctrl->initGuess    =  1;
+	ctrl->MinTk        =  0.0;
 	input_eta_max      =  0;
 
 	if(scal->utype != _NONE_)
@@ -122,7 +123,7 @@ PetscErrorCode JacResCreate(JacRes *jr, FB *fb)
 	ierr = getStringParam(fb, _OPTIONAL_, "gw_level_type",   gwtype,               "none"); CHKERRQ(ierr);
 	ierr = getScalarParam(fb, _OPTIONAL_, "gw_level",        &ctrl->gwLevel,       1, 1.0); CHKERRQ(ierr);
 	ierr = getIntParam   (fb, _OPTIONAL_, "get_permea",      &ctrl->getPermea,     1, 1);   CHKERRQ(ierr);
-
+	ierr = getScalarParam(fb, _OPTIONAL_, "MinTk",           &ctrl->MinTk,        1, 1.0); CHKERRQ(ierr);
 
 	if     (!strcmp(gwtype, "none"))  ctrl->gwType = _GW_NONE_;
 	else if(!strcmp(gwtype, "top"))   ctrl->gwType = _GW_TOP_;
@@ -291,6 +292,7 @@ PetscErrorCode JacResCreate(JacRes *jr, FB *fb)
 	if(ctrl->cf_eta_min)    PetscPrintf(PETSC_COMM_WORLD, "   Visco-plastic regularization parameter  : %g \n",    ctrl->cf_eta_min);
 	if(ctrl->n_pw)          PetscPrintf(PETSC_COMM_WORLD, "   Power-law regularization parameter      : %g \n",    ctrl->n_pw);
 	if(ctrl->rho_fluid)     PetscPrintf(PETSC_COMM_WORLD, "   Fluid density                           : %g %s \n", ctrl->rho_fluid,  scal->lbl_density);
+	if(ctrl->MinTk)         PetscPrintf(PETSC_COMM_WORLD, "   Minimal crustal thickness               : %g %s \n", ctrl->MinTk,  scal->lbl_length);
 
 	PetscPrintf(PETSC_COMM_WORLD, "   Ground water level type                 : ");
 	if     (ctrl->gwType == _GW_NONE_)  PetscPrintf(PETSC_COMM_WORLD, "none \n");
@@ -319,6 +321,8 @@ PetscErrorCode JacResCreate(JacRes *jr, FB *fb)
 	ctrl->tauUlt      /=  scal->stress_si;
 	ctrl->rho_fluid   /=  scal->density;
 	ctrl->gwLevel     /=  scal->length;
+	ctrl->MinTk       /=  scal->length;
+
 	// set inverse of maximum viscosity
 	if(input_eta_max) ctrl->inv_eta_max = 1.0/input_eta_max;
 
@@ -590,7 +594,8 @@ PetscErrorCode JacResFormResidual(JacRes *jr, Vec x, Vec f)
 	// compute effective strain rate
 	ierr = JacResGetEffStrainRate(jr); CHKERRQ(ierr);
 
-    // compute melt extracted
+	// compute melt extracted
+//	ierr = MeltExtractionSave(jr,actx); CHKERRQ(ierr);
 	// compute residual
 	ierr = JacResGetResidual(jr); CHKERRQ(ierr);
 
@@ -1049,9 +1054,8 @@ PetscErrorCode JacResGetResidual(JacRes *jr)
 	PetscScalar ***fx,  ***fy,  ***fz, ***vx,  ***vy,  ***vz, ***gc, ***bcp;
 	PetscScalar ***dxx, ***dyy, ***dzz, ***dxy, ***dxz, ***dyz, ***p, ***T, ***p_lith, ***p_pore;
 	PetscScalar eta_creep, eta_vp;
-	PetscScalar depth, pc_lith, pc_pore, biot, ptotal, avg_topo;
+	PetscScalar depth, pc_lith, pc_pore, biot, ptotal, avg_topo,dx,dy,dz;
 //	PetscScalar alpha, Tn,
- 	PetscScalar dx,dy,dz,mass_in,mass_fin, mass_r,strain_scale;
 
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
@@ -1200,6 +1204,11 @@ PetscErrorCode JacResGetResidual(JacRes *jr)
 
 		// evaluate volumetric constitutive equations
 		ierr = VolConstEq(svBulk, numPhases, phases, svCell->phRat, ctrl, depth, dt, pc-pShift , Tc, jr-> Pd); CHKERRQ(ierr);
+		dx = SIZE_CELL(i,sx,fs->dsx);
+		dy = SIZE_CELL(j,sy,fs->dsy);
+		dz = SIZE_CELL(k,sz,fs->dsz);
+		svBulk->Mass=0.0;
+		ierr = ExchangeMassME(svBulk,dx,dy,dz,dt); CHKERRQ(ierr);
 
 		// access
 		theta = svBulk->theta; // volumetric strain rate
@@ -1244,53 +1253,15 @@ PetscErrorCode JacResGetResidual(JacRes *jr)
 		if(j == mcy && bcp[k][j+1][i] != DBL_MAX) fy[k][j+1][i] -= -p[k][j+1][i]/fdy;
 
 		if(k == 0   && bcp[k-1][j][i] != DBL_MAX) fz[k][j][i]   += -p[k-1][j][i]/bdz;
-		if(k == mcz && bcp[k+1][j][i] != DBL_MAX) fz[k+1][j][i] -= -p[k+1][j][i]/fdz;
+			if(k == mcz && bcp[k+1][j][i] != DBL_MAX) fz[k+1][j][i] -= -p[k+1][j][i]/fdz;
 
-//		if(k == 0   ) fz[k][j][i]   += -p[k-1][j][i]/bdz;
-//		if(k == mcz ) fz[k+1][j][i] -= -p[k+1][j][i]/fdz;
+	//		if(k == 0   ) fz[k][j][i]   += -p[k-1][j][i]/bdz;
+	//		if(k == mcz ) fz[k+1][j][i] -= -p[k+1][j][i]/fdz;
 
-		// mass - currently T-dependency is deactivated
-//		gc[k][j][i] = -IKdt*(pc - pn) - theta + alpha*(Tc - Tn)/dt;
-	  // 	mass_r=0;
+			// mass - currently T-dependency is deactivated
+	//		gc[k][j][i] = -IKdt*(pc - pn) - theta + alpha*(Tc - Tn)/dt;
 
-        strain_scale=jr->scal->strain_rate;
-
-		dx = SIZE_CELL(i,sx,fs->dsx);
-	    dy = SIZE_CELL(j,sy,fs->dsy);
-	    dz = SIZE_CELL(k,sz,fs->dsz);
-        mass_in=svBulk->rho_in*dx*dy*dz;
-        mass_fin=(mass_in+svBulk->Mass);
-        mass_r=(mass_in)/mass_fin;
-
-      /*  if(svBulk->Mass != 0)
-        {
-    	    PetscPrintf(PETSC_COMM_WORLD,"*** NODE*** %d %d %d\n", k, j, i);
-    	    PetscPrintf(PETSC_COMM_WORLD,"--------------------------------------------------------------------------------------------------- \n");
-        	PetscPrintf(PETSC_COMM_WORLD,"1) mi/mf   %6f\n", mass_in/mass_fin);
-        	PetscPrintf(PETSC_COMM_WORLD,"2) Mass_flow   %10f\n", svBulk->Mass);
-        	PetscPrintf(PETSC_COMM_WORLD,"3) mass_f   %10f\n", mass_fin);
-        	PetscPrintf(PETSC_COMM_WORLD,"4) mass_in   %10f\n", mass_in);
-        	PetscPrintf(PETSC_COMM_WORLD,"5) Vol_def   %6f\n", (1-mass_r));
-        	PetscPrintf(PETSC_COMM_WORLD,"6) Vol_def/dt   %6f\n", 1/(dt)*(1-mass_r));
-        	PetscPrintf(PETSC_COMM_WORLD,"6) Vol_def/dt   %12.5e\n", (1/(dt)*(1-mass_r))*strain_scale);
-        	PetscPrintf(PETSC_COMM_WORLD,"7) mfrac   %6f\n", svBulk->mfextot);
-        	PetscPrintf(PETSC_COMM_WORLD,"8) dMextracted   %6f\n", svBulk->dMF);
-        	PetscPrintf(PETSC_COMM_WORLD,"9) dx= dy= dz=   %6f %6f %6f\n", dx, dy, dz);
-        	PetscPrintf(PETSC_COMM_WORLD,"10) -IKdT   %6f\n", -IKdt*(pc - pn));
-        	PetscPrintf(PETSC_COMM_WORLD,"11)rho_fluid= %6f\n",svBulk->rho_pf);
-
-        	if(svBulk->mf>0.2)
-        	{
-            	PetscPrintf(PETSC_COMM_WORLD,"AAAAAAAAAAAAAAAAAAAAAAAALT\n");
-
-        	}
-        	PetscPrintf(PETSC_COMM_WORLD,"--------------------------------------------------------------------------------------------------- \n");
-
-
-        }
-       */// if(svBulk->S<0) PetscPrintf(PETSC_COMM_WORLD,"S= %12.5e\n", ((svBulk->S)/dt)*strain_scale);
-
-        gc[k][j][i] = -IKdt*(pc - pn) -theta+1/dt*(1-mass_r); //-(svBulk->S);
+			gc[k][j][i] = -IKdt*(pc - pn) -theta + svBulk->Mass; //-(svBulk->S);
 
 	}
 	END_STD_LOOP

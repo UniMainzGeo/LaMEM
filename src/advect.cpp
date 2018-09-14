@@ -2066,9 +2066,6 @@ PetscErrorCode ADVMarkCrossFreeSurf(AdvCtx *actx)
 
 	// access topography
 	ierr = DMDAVecGetArray(surf->DA_SURF, surf->ltopo, &ltopo);  CHKERRQ(ierr);
-	 PetscPrintf(PETSC_COMM_SELF, "I'm converting marker \n");
-
-
 	// scan all markers
 	for(jj = 0; jj < actx->nummark; jj++)
 	{
@@ -2127,7 +2124,7 @@ PetscErrorCode ADVMarkCrossFreeSurf(AdvCtx *actx)
 			}
 			else
 			{
-				if(!surf->NoShiftMark || surf->MeltExtraction == 1)
+				if(!surf->NoShiftMark)
 				{	
 					// put marker above the free surface
 					P->X[2] = topo + tol*(topo - zp);

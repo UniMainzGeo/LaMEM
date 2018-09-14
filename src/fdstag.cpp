@@ -1035,6 +1035,10 @@ PetscErrorCode FDSTAGReadRestart(FDSTAG *fs, FILE *fp)
 	ierr = PetscFree(ly); CHKERRQ(ierr);
 	ierr = PetscFree(lz); CHKERRQ(ierr);
 
+	fs->dsx.comm = MPI_COMM_NULL;
+	fs->dsy.comm = MPI_COMM_NULL;
+	fs->dsz.comm = MPI_COMM_NULL;
+
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------

@@ -228,7 +228,7 @@ PetscErrorCode LaMEMLibCreate(LaMEMLib *lm, void *param )
 	ierr = PVAVDCreate(&lm->pvavd, fb); CHKERRQ(ierr);
 
 	// Create melt extraction context
-	ierr = MeltExtractionCreate(&lm->jr,fb);
+	ierr = MeltExtractionCreate(&lm->jr);
 
 	// destroy file buffer
 	ierr = FBDestroy(&fb); CHKERRQ(ierr);
@@ -320,6 +320,9 @@ PetscErrorCode LaMEMLibLoadRestart(LaMEMLib *lm)
 
 	// surface output driver
 	ierr = PVSurfCreateData(&lm->pvsurf); CHKERRQ(ierr);
+
+	//	Create ME vectors
+	ierr = MeltExtractionCreate(&lm->jr);
 
 	// close temporary restart file
 	fclose(fp);
@@ -637,9 +640,9 @@ PetscErrorCode LaMEMLibSolve(LaMEMLib *lm, void *param)
 
 		// solve nonlinear equation system with SNES
 		PetscTime(&t);
-        // Call Melt Extraction to compute the mass.
+		// Call Melt Extraction to compute the mass.
 
-		if(a>1) ierr = MeltExtractionSave(&lm->jr,&lm->actx); CHKERRQ(ierr);
+		if(a>0) ierr = MeltExtractionSave(&lm->jr,&lm->actx); CHKERRQ(ierr);
 
 
 		ierr = SNESSolve(snes, NULL, lm->jr.gsol); CHKERRQ(ierr);
@@ -676,20 +679,16 @@ PetscErrorCode LaMEMLibSolve(LaMEMLib *lm, void *param)
 		//==================================================================
 		// MARKER & FREE SURFACE ADVECTION + EROSION 2
 		//==================================================================
-
+		if(a>0) ierr = MeltExtractionUpdate(&lm->jr,&lm->actx); CHKERRQ(ierr);
 		// advect free surface
 		ierr = FreeSurfAdvect(&lm->surf); CHKERRQ(ierr);
-
-		// Interpolate back all the properties
-
 
 		// advect markers
 		ierr = ADVAdvect(&lm->actx); CHKERRQ(ierr);
 
-		if(a>1) ierr = MeltExtractionUpdate(&lm->jr,&lm->actx); CHKERRQ(ierr);
+		if(a>0) ierr =  MeltExtractionInterpMarkerBackToGrid(&lm->actx);
 
 
-		if(a>1) ierr =  MeltExtractionInterpMarkerBackToGrid(&lm->actx);
 
 		// apply background strain-rate "DWINDLAR" BC (Bob Shaw "Ship of Strangers")
 		ierr = BCStretchGrid(&lm->bc); CHKERRQ(ierr);
@@ -701,17 +700,21 @@ PetscErrorCode LaMEMLibSolve(LaMEMLib *lm, void *param)
 		// exchange markers between the processors (after mesh advection)
 		ierr = ADVExchange(&lm->actx); CHKERRQ(ierr);
 
+
 		// apply erosion to the free surface
 		ierr = FreeSurfAppErosion(&lm->surf); CHKERRQ(ierr);
 
 		// apply sedimentation to the free surface
 		ierr = FreeSurfAppSedimentation(&lm->surf); CHKERRQ(ierr);
 
+
 		// remap markers onto (stretched) grid
 		ierr = ADVRemap(&lm->actx); CHKERRQ(ierr);
+		PetscPrintf(PETSC_COMM_WORLD, "After InterpBacktoGrid \n");
 
 		// update phase ratios taking into account actual free surface position
 		ierr = FreeSurfGetAirPhaseRatio(&lm->surf); CHKERRQ(ierr);
+		PetscPrintf(PETSC_COMM_WORLD, "After InterpBacktoGrid \n");
 
 		//==================
 		// Save data to disk
@@ -722,9 +725,11 @@ PetscErrorCode LaMEMLibSolve(LaMEMLib *lm, void *param)
 		
 		// grid & marker output
 		ierr = LaMEMLibSaveOutput(lm); CHKERRQ(ierr);
+		PetscPrintf(PETSC_COMM_WORLD, "After InterpBacktoGrid \n");
 
 		// restart database
 		ierr = LaMEMLibSaveRestart(lm); CHKERRQ(ierr);
+
 	    a+=1;
 	}
 

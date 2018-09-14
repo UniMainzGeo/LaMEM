@@ -105,6 +105,8 @@ struct Scaling
 	PetscScalar length;
 	PetscScalar length_si;   // length in SI units for material parameter scaling
 	PetscScalar area_si;     // area in SI units for material parameter scaling
+	PetscScalar volume;     // area in SI units for material parameter scaling
+	PetscScalar volume_si;     // area in SI units for material parameter scaling
 	PetscScalar temperature; // Kelvin (if dimensional)
 	PetscScalar force;       // additional variable for quasi-static case
 	PetscScalar angle;       // radian expressed in degrees (if dimensional)
@@ -136,6 +138,7 @@ struct Scaling
 	char lbl_time             [_lbl_sz_];
 	char lbl_length           [_lbl_sz_];
 	char lbl_area_si          [_lbl_sz_];
+	char lbl_volume        [_lbl_sz_];
 	char lbl_temperature      [_lbl_sz_];
 	char lbl_force            [_lbl_sz_];
 	char lbl_velocity         [_lbl_sz_];

@@ -46,7 +46,7 @@
 #define __meltextraction__
 //---------------------------------------------------------------------------
 
-PetscErrorCode MeltExtractionCreate(JacRes *jr, FB *fb);
+PetscErrorCode MeltExtractionCreate(JacRes *jr);
 PetscErrorCode MeltExtractionDestroy(JacRes *jr);
 PetscErrorCode MeltExtractionSave(JacRes *jr, AdvCtx *actx);
 PetscErrorCode MeltExtractionUpdate(JacRes *jr, AdvCtx *actx);
@@ -56,4 +56,7 @@ PetscErrorCode MeltExtractionExchangeVolume(JacRes *jr,PetscInt iphase,PetscInt 
 PetscErrorCode MeltExtractionInject(JacRes *jr,AdvCtx *actx, PetscInt ID, PetscInt I, PetscInt J, PetscInt K, PetscScalar UP,PetscInt iphase);
 PetscErrorCode Moho_Tracking(FreeSurf *surf);
 PetscErrorCode Extrusion_melt(FreeSurf *surf,PetscInt iphase,AdvCtx *actx);
+PetscErrorCode ExchangeMassME(SolVarBulk *svBulk,PetscScalar dx,PetscScalar dy,PetscScalar dz, PetscScalar dt);
+PetscErrorCode Compute_Thickness(JacRes *jr);
+PetscErrorCode OutPutVolume(FreeSurf *surf,PetscInt iphase);
 #endif

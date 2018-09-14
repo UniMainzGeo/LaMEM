@@ -515,15 +515,15 @@ PetscErrorCode PVOutWriteFluidDensity(JacRes *jr, OutBuf *outbuf)
 }
 //---------------------------------------------------------------------------
 #undef __FUNCT__
-#define __FUNCT__ "PVOutWriteVolume"
-PetscErrorCode PVOutWriteVolume(JacRes *jr, OutBuf *outbuf)
+#define __FUNCT__ "PVOutWriteMass"
+PetscErrorCode PVOutWriteMass(JacRes *jr, OutBuf *outbuf)
 {
 	COPY_FUNCTION_HEADER
 
 	// macros to copy fluid density to buffer
 	#define GET_VOLUME_CENTER  buff[k][j][i] = jr->svCell[iter++].svBulk.Mass;
 
-	cf = 1.0;
+	cf = scal->strain_rate;
 
 
 	INTERPOLATE_COPY(fs->DA_CEN, outbuf->lbcen, InterpCenterCorner, GET_VOLUME_CENTER,  1, 0)
@@ -566,17 +566,16 @@ PetscErrorCode PVOutWriteMeltExtTot(JacRes *jr, OutBuf *outbuf)
 }
 //---------------------------------------------------------------------------
 #undef __FUNCT__
-#define __FUNCT__ "PVOutWriteMeltdVdt"
-PetscErrorCode PVOutWriteMeltdVdt(JacRes *jr, OutBuf *outbuf)
+#define __FUNCT__ "PVOutWriteMassEx"
+PetscErrorCode PVOutWriteMassEx(JacRes *jr, OutBuf *outbuf)
 {
 
 	COPY_FUNCTION_HEADER
 
 	// macros to copy melt fraction to buffer
-	#define GET_MFDVDT_CENTER  buff[k][j][i] = jr->svCell[iter++].svBulk.dMF;
+	#define GET_MFDVDT_CENTER  buff[k][j][i] = jr->svCell[iter++].svBulk.dMass;
 
-	cf = 1.0;
-
+	cf = scal->volume;
 	INTERPOLATE_COPY(fs->DA_CEN, outbuf->lbcen, InterpCenterCorner, GET_MFDVDT_CENTER,  1, 0)
 
 	PetscFunctionReturn(0);

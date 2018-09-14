@@ -479,6 +479,7 @@ PetscErrorCode DevConstEq(
 	svDev->dEta  = 0.0;
 	svDev->fr    = 0.0;
 	svDev->yield = 0.0;
+	svDev->mf    = 0.0;
 	dEta         = 0.0;
 	fr           = 0.0;
 
@@ -491,53 +492,45 @@ PetscErrorCode DevConstEq(
 		{
 			// get reference to material parameters table
 			mat = &phases[i];
-
+			/*
 			// Get PD data
-    		if(mat->Pd_rho == 1)
+			if(mat->Pd_rho == 1)
 			{
 				// Get the data from phase diagram
 				ierr = SetDataPhaseDiagram(pd, p, T, 0, mat->pdn); CHKERRQ(ierr);
-
-
 				// Viscosity Feedback
 				if(mat->MeltE>0 && !ctrl->initGuess)
 				{
-				if(pd->mf-svDev->mfextot<0) mf = (pd->mf-svDev->mfextot);
-				if(mf>mat->Mtrs)
-				{
-				  mf_temp=mf-mat->Mleft;
-				  if(mf_temp<0)
-				  {
-					  mf_temp=0;
-				  }
-				  svDev->mf=mf_temp;
-				}
-				else
-				{
-                svDev->mf =mf;
-				}
+					if(pd->mf-svDev->mfextot<0.0) mf = (pd->mf-svDev->mfextot);
+					if(mf>mat->Mtrs)
+					{
+						mf_temp=mf-mat->Mleft;
+						if(mf_temp<0.0)
+						{
+							mf_temp=0.0;
+						}
+						svDev->mf=mf_temp;
+					}
+					else
+					{
+						svDev->mf =mf;
+					}
 				}
 				else
 				{
 					svDev->mf=pd->mf;
 				}
-
-
-				// svDev->dMF       = ((pd->mf - svDev->mfextot)-phases[i].Mleft);
 			}
-
+			*/
 			// setup nonlinear constitutive equation evaluation context
 			ierr = ConstEqCtxSetup(&ctx, mat, soft, ctrl, DII, APS, dt, p, p_lithos, p_pore, T); CHKERRQ(ierr);
-
 			// solve effective viscosity & plastic strain rate
 			ierr = GetEffVisc(&ctx, ctrl, &eta_total, &eta_creep_phase, &eta_viscoplastic_phase, &DIIpl, &dEta, &fr, svDev); CHKERRQ(ierr);
-
 			// average parameters
 			svDev->eta   += phRat[i]*eta_total;
 			svDev->DIIpl += phRat[i]*DIIpl;
 			(*eta_creep) += phRat[i]*eta_creep_phase;
 			(*eta_vp)    += phRat[i]*eta_viscoplastic_phase;
-
 			svDev->dEta  += phRat[i]*dEta;
 			svDev->fr    += phRat[i]*fr;
 			svDev->yield += phRat[i]*ctx.taupl;
@@ -566,7 +559,7 @@ PetscErrorCode VolConstEq(
 	Material_t  *mat;
 	PetscScalar  cf_comp, cf_therm, Kavg, rho,mfeff;
 	PetscScalar  dM;
-    PetscScalar  mf_temp,rho_in;
+    PetscScalar  mf_temp;
 	PetscFunctionBegin;
 
 	// initialize effective density, thermal expansion & inverse bulk elastic parameter
@@ -574,15 +567,12 @@ PetscErrorCode VolConstEq(
 	svBulk->alpha = 0.0;
 	svBulk->IKdt  = 0.0;
 	Kavg          = 0.0;
-	svBulk->rho_pf = 0;
-//	svBulk->mf     = 0;
-//	svBulk->dMF    = 0;
-    svBulk->rho_in = 0;
+	svBulk->rho_pf = 0.0;
+
 
 	// scan all phases
 	for(i = 0; i < numPhases; i++)
 	{
-
 		// update present phases only
 		if(phRat[i])
 		{
@@ -595,36 +585,32 @@ PetscErrorCode VolConstEq(
 				// Get the data from phase diagram
 				SetDataPhaseDiagram(pd, p, T, 0, mat->pdn);
 				svBulk->rho_pd  = pd->rho;
-				if(mat->MeltE>0 && !ctrl->initGuess)
+				if(!ctrl->initGuess && mat->MeltE)
 				{
-				mfeff = pd->mf-svBulk->mfextot;// historical variables  !!!!!!!! POSSIBLE GENERATION OF ARTIFACT!!!!! {sv->Bulk is computed using all the contributes of the phase
-				// which means that or we find a way to separate each contribute or there is the possibility the melt extracted is underestimated
-				if (mfeff<0) mfeff=0;          //Correction
-				if( mfeff>phases[i].Mtrs)
-				{
-					dM=phases[i].Mleft;
-					mf_temp=mfeff-dM;
-					if(mf_temp<0)
+					mfeff = pd->mf-svBulk->mfextot;// historical variables  !!!!!!!! POSSIBLE GENERATION OF ARTIFACT!!!!! {sv->Bulk is computed using all the contributes of the phase
+					// which means that or we find a way to separate each contribute or there is the possibility the melt extracted is underestimated
+					if (mfeff<0.0) mfeff=0.0;          //Correction
+					if( mfeff>phases[i].Mtrs)
 					{
-					 dM=mfeff-0;
-					 mf_temp=0;
+						dM=phases[i].Mleft;
+						mf_temp=mfeff-dM;
+						if(mf_temp<0.0)
+						{
+							dM=mfeff-0.0;
+							mf_temp=0.0;
+						}
 					}
-
-				}
-				else
-				{
-				mf_temp      = mfeff;
-	             }
+					else
+					{
+						mf_temp = mfeff;
+					}
 				}
 				else
 				{
 					mf_temp=pd->mf;
 				}
-		     }
-
-				svBulk->rho_pf += phRat[i] * pd->rho_f;
-
-
+			}
+			svBulk->rho_pf += phRat[i] * pd->rho_f;
 			// initialize
 			cf_comp  = 1.0;
 			cf_therm = 1.0;
@@ -659,34 +645,19 @@ PetscErrorCode VolConstEq(
 				// depth-dependent density (ad-hoc)
 				rho = mat->rho - (mat->rho - ctrl->rho_fluid)*mat->rho_n*exp(-mat->rho_c*depth);
 			}
-
-			// Phase diagram
-			if(mat->Pd_rho == 1)   // Density from a phase diagram (have svBulk->rho = svBulk->rho)
+			else if(mat->Pd_rho == 1)   // Density from a phase diagram (have svBulk->rho = svBulk->rho)
 			{
 				// you need to use the actual mf associated specifically with all the phases... . Or we have to assume that the effective melt fraction is actually equally distribuited in the volume?
 				rho = (mf_temp * pd->rho_f) + ((1-mf_temp) * pd->rho);
-				rho_in=(mfeff * pd->rho_f) + ((1-mfeff) * pd->rho);
 			}
 			else
 			{
 				// temperature & pressure-dependent density
 				rho = mat->rho*cf_comp*cf_therm;
-				rho_in=rho;
 			}
-
 			// update density, thermal expansion & inverse bulk elastic parameter
 			svBulk->rho   += phRat[i]*rho;
-			svBulk->rho_in+= phRat[i]*rho_in;
 			svBulk->alpha += phRat[i]*mat->alpha;
-		//	if(ctrl->initGuess)
-			//	{
-			//		svBulk->S=0;
-				//}
-			//else
-			//{
-		//	svBulk->S     += phRat[i]*mat->S;
-
-			//}
 		}
 	}
 

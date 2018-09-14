@@ -67,6 +67,12 @@ struct FreeSurf
 	Vec     ltopo, gtopo;   // topography vectors                (local and global)
 	Vec     vx, vy, vz;     // velocity vectors                  (local)
 	Vec     vpatch, vmerge; // patch and merged velocity vectors (global)
+	// Optional
+
+	Vec     NewMafic,NewContinental,lNewMafic,lNewContinental; // Store how much continental have been produced (m3)
+	Vec     TtotMaf,TtotCon,VcurrentMaf,VcurrentCon,TProductionCon,TProductionMaf;
+	Vec     PtotMaf,PtotCon,PProductionCon,PProductionMaf;
+
 
 	// flags/parameters
 	PetscInt    UseFreeSurf; // free surface activation flag
@@ -89,6 +95,8 @@ struct FreeSurf
 	PetscInt    phase;    // current sediment phase
 	PetscInt    phaseEx;
 	PetscInt    MeltExtraction;
+
+
 
 };
 

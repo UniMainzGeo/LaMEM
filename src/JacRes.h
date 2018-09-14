@@ -56,6 +56,7 @@ struct BCCtx;
 struct DBMat;
 struct Tensor2RN;
 struct PData;
+struct AdvCtx;
 
 //---------------------------------------------------------------------------
 //.....................   Deviatoric solution variables   ...................
@@ -74,7 +75,6 @@ struct SolVarDev
 	PetscScalar  fr;    // effective friction coefficient (Jacobian)
 	PetscScalar  yield; // average yield stress in control volume
 	PetscScalar  mf;    // melt fraction
-	// PetscScalar  mfext[max_num_phases]; // Melt fraction extracted
 	PetscScalar  mfextot; // Total Melt Extracted from a a nodes
 };
 
@@ -93,13 +93,11 @@ struct SolVarBulk
 	PetscScalar  rho_pd;// Density from phase diagram
 	PetscScalar  rho_pf;// Fluid Density from phase diagram
 	PetscScalar  mf;    // Melt fraction from phase diagram
-	// PetscScalar  mfext[max_num_phases]; // Melt fraction extracted
 	PetscScalar  mfVol;
 	PetscScalar  mfextot;// Total Melt extracted from a node
 	PetscScalar  dMF;
 	PetscScalar  Mass;   //Volume changes to send to the continuity equation
-	PetscScalar  rho_in;
-	PetscScalar  S;// volumetric source of mass
+	PetscScalar  dMass;// Variation of mass associated with the melt extraction
 };
 
 //---------------------------------------------------------------------------
@@ -180,6 +178,9 @@ struct Controls
 	PetscScalar cf_eta_min;    // visco-plastic regularization parameter (plasticity)
 	PetscScalar n_pw;          // power-law regularization parameter (plasticity)
 
+	PetscScalar MinTk;         // Minimum Tk of the crust. If the crust is less than this value all the melt is converted into extrusion
+	PetscInt    MeltE;         // Control activaction Melt Extraction
+
 	PetscScalar rho_fluid;     // fluid density
 	GWLevelType gwType;        // type of ground water level (none, top, surf, level)
 	PetscScalar gwLevel;       // fixed ground water level
@@ -201,6 +202,7 @@ struct JacRes
 	FreeSurf *surf;  // free surface
 	BCCtx    *bc;    // boundary condition context
 	DBMat    *dbm;   // material database
+	AdvCtx	*actx ;
 
 	// parameters and controls
 	Controls ctrl;
@@ -250,10 +252,14 @@ struct JacRes
 	PData       *Pd;
 
 	// Melt extraction
-	Vec   gdMV, gdMVmerge,gdMoho1, gdMoho;
-	Vec   ldMV,ldMoho,Miphase;
+	Vec   gdMoho1, gdMoho,Thickness;
+	Vec   ldMoho,Miphase;
 	Vec   gdc, ldc;
 	Vec   ldvecmerge, dgmvvecmerge;
+
+
+	Vec TdM,TC2D;
+	Vec PdM,PC2D;
 	//=======================
 	// temperature parameters
 	//=======================

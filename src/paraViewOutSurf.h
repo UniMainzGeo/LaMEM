@@ -68,6 +68,9 @@ struct PVSurf
 	PetscInt   velocity;           // velocity output flag
 	PetscInt   topography;         // surface topography output flag
 	PetscInt   amplitude;          // topography amplitude output flag
+	PetscInt   newcontinental;    // new continental crust produced
+	PetscInt   newmafic;          // new mafic crust produced
+
 
 };
 
@@ -91,6 +94,9 @@ PetscErrorCode PVSurfWritePVTS(PVSurf *pvsurf, const char *dirName);
 // sequential output file .vts
 PetscErrorCode PVSurfWriteVTS(PVSurf *pvsurf, const char *dirName);
 
+
+
+
 //---------------------------------------------------------------------------
 
 void OutputBufferWrite(
@@ -105,6 +111,12 @@ PetscErrorCode PVSurfWriteVel(PVSurf *pvsurf, FILE *fp);
 PetscErrorCode PVSurfWriteTopo(PVSurf *pvsurf, FILE *fp);
 
 PetscErrorCode PVSurfWriteAmplitude(PVSurf *pvsurf, FILE *fp);
+
+PetscErrorCode PVSurfWriteNewContinental(PVSurf *pvsurf, FILE *fp);
+
+PetscErrorCode PVSurfWriteNewMafic(PVSurf *pvsurf, FILE *fp);
+
+
 
 //---------------------------------------------------------------------------
 #endif
