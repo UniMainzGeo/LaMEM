@@ -940,18 +940,22 @@ PetscErrorCode StokesSetDefaultSolverOptions(FB *fb)
 		}
 
 		// if the type of direct solver is specified, use that
-		ierr = getStringParam(fb, _OPTIONAL_, "DirectSolver",        DirectSolver,       NULL );          CHKERRQ(ierr);
-		if     		(!strcmp(DirectSolver, "mumps")){        ierr = PetscOptionsInsertString(NULL, "-jp_pc_factor_mat_solver_type mumps"); 			CHKERRQ(ierr); }
-		else if     (!strcmp(DirectSolver, "superlu_dist")){ ierr = PetscOptionsInsertString(NULL, "-jp_pc_factor_mat_solver_type superlu_dist"); 	CHKERRQ(ierr); }
-		else if     (!strcmp(DirectSolver, "pastix"))	   { ierr = PetscOptionsInsertString(NULL, "-jp_pc_factor_mat_solver_type pastix"); 			CHKERRQ(ierr); }
-		else {
-			// solver is not specified; set a default one
-			if (ISParallel(PETSC_COMM_WORLD))
-			{
-				// We need to set one of the parallel solvers. Determine if we have one of them installed in the current PETSC version
-				ierr = PetscOptionsInsertString(NULL, "-jp_pc_factor_mat_solver_type superlu_dist"); 	CHKERRQ(ierr);
+		if (ISParallel(PETSC_COMM_WORLD)){
+			// Parallel simulation
+			ierr = getStringParam(fb, _OPTIONAL_, "DirectSolver",        DirectSolver,       NULL );          CHKERRQ(ierr);
+			if     		(!strcmp(DirectSolver, "mumps")){        ierr = PetscOptionsInsertString(NULL, "-jp_pc_factor_mat_solver_type mumps"); 			CHKERRQ(ierr); }
+			else if     (!strcmp(DirectSolver, "superlu_dist")){ ierr = PetscOptionsInsertString(NULL, "-jp_pc_factor_mat_solver_type superlu_dist"); 	CHKERRQ(ierr); }
+			else if     (!strcmp(DirectSolver, "pastix"))	   { ierr = PetscOptionsInsertString(NULL, "-jp_pc_factor_mat_solver_type pastix"); 			CHKERRQ(ierr); }
+			else {
+						// We need to set one of the parallel solvers. Determine if we have one of them installed in the current PETSC version
+						ierr = PetscOptionsInsertString(NULL, "-jp_pc_factor_mat_solver_type superlu_dist"); 	CHKERRQ(ierr);
 			}
 		}
+		else {
+			// Serial simulation
+			ierr = PetscOptionsInsertString(NULL, "-jp_pc_factor_mat_solver_type petsc"); 	CHKERRQ(ierr); // Set PETSc default factorization
+		}	
+			
 
 	}
 	else if 	(!strcmp(SolverType, "multigrid")){
