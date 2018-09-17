@@ -642,7 +642,7 @@ PetscErrorCode LaMEMLibSolve(LaMEMLib *lm, void *param)
 		PetscTime(&t);
 		// Call Melt Extraction to compute the mass.
 
-		if(a>0) ierr = MeltExtractionSave(&lm->jr,&lm->actx); CHKERRQ(ierr);
+		if(lm->jr.ctrl.initGuess == 0) ierr = MeltExtractionSave(&lm->jr,&lm->actx); CHKERRQ(ierr);
 
 
 		ierr = SNESSolve(snes, NULL, lm->jr.gsol); CHKERRQ(ierr);
@@ -679,14 +679,18 @@ PetscErrorCode LaMEMLibSolve(LaMEMLib *lm, void *param)
 		//==================================================================
 		// MARKER & FREE SURFACE ADVECTION + EROSION 2
 		//==================================================================
-		if(a>0) ierr = MeltExtractionUpdate(&lm->jr,&lm->actx); CHKERRQ(ierr);
+
+
+		PrintStart(&t, "MeltExInjectionRoutine", NULL);
+		if(lm->jr.ctrl.initGuess == 0) ierr = MeltExtractionUpdate(&lm->jr,&lm->actx); CHKERRQ(ierr);
+		PrintDone(t);
 		// advect free surface
 		ierr = FreeSurfAdvect(&lm->surf); CHKERRQ(ierr);
 
 		// advect markers
 		ierr = ADVAdvect(&lm->actx); CHKERRQ(ierr);
 
-		if(a>0) ierr =  MeltExtractionInterpMarkerBackToGrid(&lm->actx);
+		if(lm->jr.ctrl.initGuess == 0) ierr =  MeltExtractionInterpMarkerBackToGrid(&lm->actx);
 
 
 
@@ -710,11 +714,9 @@ PetscErrorCode LaMEMLibSolve(LaMEMLib *lm, void *param)
 
 		// remap markers onto (stretched) grid
 		ierr = ADVRemap(&lm->actx); CHKERRQ(ierr);
-		PetscPrintf(PETSC_COMM_WORLD, "After InterpBacktoGrid \n");
 
 		// update phase ratios taking into account actual free surface position
 		ierr = FreeSurfGetAirPhaseRatio(&lm->surf); CHKERRQ(ierr);
-		PetscPrintf(PETSC_COMM_WORLD, "After InterpBacktoGrid \n");
 
 		//==================
 		// Save data to disk
@@ -725,12 +727,11 @@ PetscErrorCode LaMEMLibSolve(LaMEMLib *lm, void *param)
 		
 		// grid & marker output
 		ierr = LaMEMLibSaveOutput(lm); CHKERRQ(ierr);
-		PetscPrintf(PETSC_COMM_WORLD, "After InterpBacktoGrid \n");
 
 		// restart database
 		ierr = LaMEMLibSaveRestart(lm); CHKERRQ(ierr);
 
-	    a+=1;
+		a+=1;
 	}
 
 	//======================

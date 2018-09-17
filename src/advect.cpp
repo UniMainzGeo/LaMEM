@@ -340,6 +340,33 @@ PetscErrorCode ADVReadRestart(AdvCtx *actx, FILE *fp)
 	// project history from markers to grid (initialize solution variables)
 	ierr = ADVProjHistMarkToGrid(actx); CHKERRQ(ierr);
 
+	// restart Phase Diagram
+
+	for(PetscInt i=0; i<actx->jr->dbm->numPhases; i++)
+		{
+			if(actx->jr->dbm->phases[i].Pd_rho == 1)
+			{
+				PetscPrintf(PETSC_COMM_WORLD,"   Phase %i  \n",i);
+				ierr = LoadPhaseDiagram(actx, actx->jr->dbm->phases, i); CHKERRQ(ierr);
+				SolVarCell  *svCell;
+				PetscInt     jj;
+
+				// interpolate reference density
+				for(jj = 0; jj < actx->fs->nCells; jj++)
+				{
+					// access solution variable
+					svCell = &actx->jr->svCell[jj];
+
+					svCell->svBulk.rho_pd  	= actx->jr->dbm->phases[i].rho;
+
+				}
+			}
+		}
+
+			PetscPrintf(PETSC_COMM_WORLD,"------------Reloading Phase Diagrams-------\n");
+
+
+
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------

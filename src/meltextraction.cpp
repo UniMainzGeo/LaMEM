@@ -87,7 +87,6 @@ PetscErrorCode MeltExtractionCreate(JacRes *jr)
 	ierr = DMCreateGlobalVector(jr->DA_CELL_2D, &jr->gdMoho1)                   ;     CHKERRQ(ierr);
 	ierr = DMCreateGlobalVector(jr->DA_CELL_2D, &jr->dgmvvecmerge)              ;     CHKERRQ(ierr);
 	ierr = DMCreateGlobalVector(jr->DA_CELL_2D, &jr->Thickness)                 ;     CHKERRQ(ierr);
-
 	ierr = DMCreateLocalVector(jr->fs->DA_CEN, &jr->ldc)                        ;     CHKERRQ(ierr);
 	ierr = DMCreateLocalVector(jr->DA_CELL_2D, &jr->ldvecmerge)                 ;     CHKERRQ(ierr);
 	ierr = DMCreateLocalVector(jr->DA_CELL_2D, &jr->ldMoho)                     ;     CHKERRQ(ierr);
@@ -100,22 +99,7 @@ PetscErrorCode MeltExtractionCreate(JacRes *jr)
 	ierr = DMCreateLocalVector(jr->surf->DA_SURF, &jr->surf->lNewContinental)   ;     CHKERRQ(ierr);
 	ierr = DMCreateGlobalVector(jr->surf->DA_SURF, &jr->surf->NewMafic)         ;     CHKERRQ(ierr);
 	ierr = DMCreateGlobalVector(jr->surf->DA_SURF, &jr->surf->NewContinental)   ;     CHKERRQ(ierr);
-	/*
-	ierr = DMCreateGlobalVector(jr->fs->DA_CEN,&jr->PdM)                       ;     CHKERRQ(ierr);
-	ierr = DMCreateGlobalVector(jr->fs->DA_CEN,&jr->TdM)                       ;     CHKERRQ(ierr);
-	ierr = DMCreateLocalVector(jr->DA_CELL_2D, &jr->TC2D)                      ;     CHKERRQ(ierr);
-	ierr = DMCreateLocalVector(jr->DA_CELL_2D, &jr->PC2D)                      ;     CHKERRQ(ierr);
-	ierr = DMCreateGlobalVector(jr->surf->DA_SURF,&jr->surf->TtotMaf)          ;     CHKERRQ(ierr);
-	ierr = DMCreateGlobalVector(jr->surf->DA_SURF,&jr->surf->TtotCon)          ;     CHKERRQ(ierr);
-	ierr = DMCreateGlobalVector(jr->surf->DA_SURF,&jr->surf->PtotMaf)          ;     CHKERRQ(ierr);
-	ierr = DMCreateGlobalVector(jr->surf->DA_SURF,&jr->surf->PtotCon)          ;     CHKERRQ(ierr);
-	ierr = DMCreateGlobalVector(jr->surf->DA_SURF,&jr->surf->VcurrentMaf)      ;     CHKERRQ(ierr);
-	ierr = DMCreateGlobalVector(jr->surf->DA_SURF,&jr->surf->VcurrentCon)      ;     CHKERRQ(ierr);
-	ierr = DMCreateLocalVector(jr->surf->DA_SURF,&jr->surf->TProductionCon)   ;     CHKERRQ(ierr);
-	ierr = DMCreateLocalVector(jr->surf->DA_SURF,&jr->surf->TProductionMaf)   ;     CHKERRQ(ierr);
-	ierr = DMCreateLocalVector(jr->surf->DA_SURF,&jr->surf->PProductionCon)   ;     CHKERRQ(ierr);
-	ierr = DMCreateLocalVector(jr->surf->DA_SURF,&jr->surf->PProductionMaf)   ;     CHKERRQ(ierr);
-   */
+
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
@@ -137,30 +121,11 @@ PetscErrorCode MeltExtractionDestroy(JacRes *jr)
 	ierr = VecDestroy(&jr->ldc)                              ;     CHKERRQ(ierr);
 	ierr = VecDestroy(&jr->gdc)                              ;     CHKERRQ(ierr);
 
-
-
-
-
 	ierr = VecDestroy(&jr->surf->NewMafic)                   ;     CHKERRQ(ierr);
 	ierr = VecDestroy(&jr->surf->NewContinental)             ;     CHKERRQ(ierr);
 	ierr = VecDestroy(&jr->surf->lNewMafic)                  ;     CHKERRQ(ierr);
 	ierr = VecDestroy(&jr->surf->lNewContinental)            ;     CHKERRQ(ierr);
-	/*
-	ierr = VecDestroy(&jr->PdM)                       ;     CHKERRQ(ierr);
-	ierr = VecDestroy(&jr->TdM)                       ;     CHKERRQ(ierr);
-	ierr = VecDestroy(&jr->TC2D)                      ;     CHKERRQ(ierr);
-	ierr = VecDestroy(&jr->PC2D)                      ;     CHKERRQ(ierr);
-	ierr = VecDestroy(&jr->surf->TtotMaf)          ;     CHKERRQ(ierr);
-	ierr = VecDestroy(&jr->surf->TtotCon)          ;     CHKERRQ(ierr);
-	ierr = VecDestroy(&jr->surf->PtotMaf)          ;     CHKERRQ(ierr);
-	ierr = VecDestroy(&jr->surf->PtotCon)          ;     CHKERRQ(ierr);
-	ierr = VecDestroy(&jr->surf->VcurrentMaf)      ;     CHKERRQ(ierr);
-	ierr = VecDestroy(&jr->surf->VcurrentCon)      ;     CHKERRQ(ierr);
-	ierr = VecDestroy(&jr->surf->TProductionCon)   ;     CHKERRQ(ierr);
-	ierr = VecDestroy(&jr->surf->TProductionMaf)   ;     CHKERRQ(ierr);
-	ierr = VecDestroy(&jr->surf->PProductionCon)   ;     CHKERRQ(ierr);
-	ierr = VecDestroy(&jr->surf->PProductionMaf)   ;     CHKERRQ(ierr);
-*/
+
 	PetscFunctionReturn(0);
 
 }
@@ -228,7 +193,7 @@ PetscErrorCode MeltExtractionSave(JacRes *jr,AdvCtx *actx)
 	for(iphase=0;iphase<numPhases;iphase++)
 	{
 		mat=&phases[iphase];
-		if(mat->Pd_rho == 1 && mat->MeltE>0)
+		if(mat->MeltE>0)
 		{
 			//Create the buffer
 			ierr = VecZeroEntries(jr->Miphase); CHKERRQ(ierr);
@@ -292,7 +257,7 @@ PetscErrorCode MeltExtractionSave(JacRes *jr,AdvCtx *actx)
 				svBulk->dMass +=Mipbuff[k][j][i];
 				iter++;
 			}END_STD_LOOP
-			ierr = DMDAVecRestoreArray(fs->DA_CEN, jr->Miphase, &Mipbuff) ; CHKERRQ(ierr);
+			ierr = DMDAVecRestoreArray(fs->DA_CEN, jr->Miphase, &Mipbuff) ; CHKERRQ(ierr);\
 		}
 	}
 	ierr = DMDAVecRestoreArray(fs->DA_CEN, jr->lp,&p); CHKERRQ(ierr);
@@ -347,18 +312,6 @@ PetscErrorCode MeltExtractionUpdate(JacRes *jr, AdvCtx *actx)
 	ierr = DMDAVecGetArray(fs->DA_CEN, jr->lT,&T); CHKERRQ(ierr);
 
 
-	// ONLY FOR VISUALIZATION PURPOUSE
-	/*ierr = VecZeroEntries(jr->surf->TProductionMaf);     CHKERRQ(ierr);
-	ierr = VecZeroEntries(jr->surf->TProductionCon);     CHKERRQ(ierr);
-	ierr = VecZeroEntries(jr->surf->TtotMaf)       ;     CHKERRQ(ierr);
-	ierr = VecZeroEntries(jr->surf->TtotCon)       ;     CHKERRQ(ierr);
-	ierr = VecZeroEntries(jr->surf->PProductionMaf);     CHKERRQ(ierr);
-	ierr = VecZeroEntries(jr->surf->PProductionCon);     CHKERRQ(ierr);
-	ierr = VecZeroEntries(jr->surf->PtotMaf)       ;     CHKERRQ(ierr);
-	ierr = VecZeroEntries(jr->surf->PtotCon)       ;     CHKERRQ(ierr);
-	ierr = VecZeroEntries(jr->surf->VcurrentMaf)   ;     CHKERRQ(ierr);
-	ierr = VecZeroEntries(jr->surf->VcurrentCon)   ;     CHKERRQ(ierr);
-*/
 	iter = 0;
 	GET_CELL_RANGE(nx, sx, fs->dsx);
 	GET_CELL_RANGE(ny, sy, fs->dsy);
@@ -367,15 +320,11 @@ PetscErrorCode MeltExtractionUpdate(JacRes *jr, AdvCtx *actx)
 	for(iphase=0;iphase<numPhases;iphase++)
 	{
 		mat=&phases[iphase];
-		if(mat->Pd_rho == 1 && mat->MeltE>0)
+		if(mat->MeltE==1)
 		{
 			//Create the buffer & getting the buffer
 			ierr = VecZeroEntries(jr->Miphase); CHKERRQ(ierr);
 			ierr = DMDAVecGetArray(fs->DA_CEN, jr->Miphase, &Mipbuff); CHKERRQ(ierr);
-	//		ierr = VecZeroEntries(jr->TdM); CHKERRQ(ierr);
-	//		ierr = DMDAVecGetArray(fs->DA_CEN, jr->TdM, &Tcon); CHKERRQ(ierr);
-	//		ierr = VecZeroEntries(jr->PdM); CHKERRQ(ierr);
-	//		ierr = DMDAVecGetArray(fs->DA_CEN, jr->PdM, &Pcon); CHKERRQ(ierr);
 			iter=0;
 			START_STD_LOOP
 			{
@@ -409,10 +358,7 @@ PetscErrorCode MeltExtractionUpdate(JacRes *jr, AdvCtx *actx)
 							dM=mfeff-0.0;
 							mf_temp=0.0;
 						}
-
 						Mipbuff[k][j][i] = -phRat[iphase]*dM*dx*dy*dz;
-					//	Tcon[k][j][i] = -Mipbuff[k][j][i]*Tc;
-					//	Pcon[k][j][i] = -Mipbuff[k][j][i]*pc;
 					}
 					else
 					{
@@ -429,6 +375,7 @@ PetscErrorCode MeltExtractionUpdate(JacRes *jr, AdvCtx *actx)
 
 			ierr = MeltExtractionExchangeVolume(jr, iphase, update, actx) ; CHKERRQ(ierr);
 			ierr = MeltExtractionInterpMarker(actx, iphase) ; CHKERRQ(ierr);
+
 		}
 	}
 	ierr = DMDAVecRestoreArray(fs->DA_CEN, jr->lp,&p); CHKERRQ(ierr);
@@ -480,6 +427,7 @@ PetscErrorCode MeltExtractionInterpMarker(AdvCtx *actx, PetscInt iphase)
 	// access 3D layouts of local vectors
 	ierr = DMDAVecGetArray(fs->DA_CEN, jr->ldc, &vldc); CHKERRQ(ierr); // Create the local vector containing all the information related to the dM
 	// scan ALL markers
+	/////////// TRY TO MAKE EFFICIENT DOING A LOOP OVER THE CELL RATHER THAN THE MARKER AND THEN INJECT
 	for(jj = 0; jj < actx->nummark; jj++)
 	{
 		// access next marker
@@ -936,14 +884,7 @@ PetscErrorCode MeltExtractionExchangeVolume(JacRes *jr, PetscInt iphase,PetscInt
 	// Access to Melt extrusion if we are updating the phase field and if there something to extrude
 
 
-	if(ISParallel(PETSC_COMM_WORLD))
-		{
-			ierr = MPI_Allreduce(&cnt, &gcnt, 1, MPIU_INT, MPI_SUM, PETSC_COMM_WORLD); CHKERRQ(ierr);
-		}
-	else
-		{
-			gcnt = cnt;
-		}
+
 
 	if(update==1 && IR<1)
 	{
@@ -1303,7 +1244,7 @@ PetscErrorCode OutPutVolume(FreeSurf *surf,PetscInt iphase)
 	Vec Crust_produced;
 	PetscScalar ***lmelt;
 	PetscScalar zbot, ztop, Melt[4],***Layer,***MC,***CC;
-	PetscInt L, cnt, gcnt;
+	PetscInt L;
 	PetscInt i, j, nx, ny, sx, sy, I1, I2, J1, J2, mx, my;
 	Material_t *phases;
 	PetscErrorCode ierr;
@@ -1339,7 +1280,6 @@ PetscErrorCode OutPutVolume(FreeSurf *surf,PetscInt iphase)
 
 
 	ierr = DMDAGetCorners(fs->DA_COR, &sx, &sy, NULL, &nx, &ny, NULL); CHKERRQ(ierr);
-	cnt=0;
 	// scan all free surface local points
 
 	START_PLANE_LOOP
@@ -1370,16 +1310,6 @@ PetscErrorCode OutPutVolume(FreeSurf *surf,PetscInt iphase)
 	// restore access
 	ierr = DMDAVecRestoreArray(jr->DA_CELL_2D, jr->ldvecmerge,  &lmelt);  CHKERRQ(ierr);
 	ierr = DMDAVecRestoreArray(surf->DA_SURF, Crust_produced,  &Layer);  CHKERRQ(ierr);
-
-	if(ISParallel(PETSC_COMM_WORLD))
-	{
-		ierr = MPI_Allreduce(&cnt, &gcnt, 1, MPIU_INT, MPI_SUM, PETSC_COMM_WORLD); CHKERRQ(ierr);
-	}
-	else
-	{
-		gcnt = cnt;
-	}
-
 
 	// Save 2 Surf structure for later visualization
 	if(phases[iphase].pMant==1)
@@ -1425,477 +1355,3 @@ PetscErrorCode OutPutVolume(FreeSurf *surf,PetscInt iphase)
 	PetscFunctionReturn(0);
 }
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-// Unfourtantely is too expensive. But I keep it such that I can eventually make it more efficient, time consuming. I think I overdid with parallel communication. Was taking double the time.
-// The total volume is less expensive because I'm using something that I need in any case.
-
-
-/*
-#undef __FUNCT__
-#define __FUNCT__ "OutPutVolume"
-PetscErrorCode OutPutVolume(FreeSurf *surf,PetscInt iphase)
-{
-	JacRes *jr;
-	FDSTAG *fs;
-	Vec Crust_produced,MeanT,MeanP,BufferTemperature,BufferPressure;
-	PetscScalar ***lmelt,***t2d,***p2d,***t,***p,***bt,***bp,***vcm,***vcc,***totalTMafcts,***totalTConcts,***totalPMafcts,***totalPConcts;
-	PetscScalar zbot, ztop, Melt[4], T[4],P[4],***Layer,***MC,***CC;
-	PetscScalar wt[4],wp[4];
-	PetscInt L, cnt, gcnt;
-	PetscInt i, j, nx, ny, sx, sy, I1, I2, J1, J2, mx, my;
-	Material_t *phases;
-	PetscErrorCode ierr;
-	PetscFunctionBegin;
-	// free surface cases only
-
-	// access context
-	jr = surf->jr;
-	fs = jr->fs;
-	L  = (PetscInt)fs->dsz.rank;
-	phases = jr->dbm->phases;
-	// Construct the local vector, being sure that represents the actual volume
-	ierr = VecZeroEntries(jr->ldvecmerge); CHKERRQ(ierr);
-	GLOBAL_TO_LOCAL(jr->DA_CELL_2D, jr->dgmvvecmerge, jr->ldvecmerge);
-
-	// Create buffer Vector and set it equal to zero
-	ierr = DMGetGlobalVector(surf->DA_SURF, &Crust_produced); CHKERRQ(ierr);
-	ierr = VecZeroEntries(Crust_produced);CHKERRQ(ierr);
-
-	ierr = DMGetGlobalVector(surf->DA_SURF, &MeanT); CHKERRQ(ierr);
-	ierr = VecZeroEntries(MeanT);CHKERRQ(ierr);
-
-	ierr = DMGetGlobalVector(surf->DA_SURF, &MeanP); CHKERRQ(ierr);
-	ierr = VecZeroEntries(MeanP);CHKERRQ(ierr);
-
-	mx = fs->dsx.tnods - 1;
-	my = fs->dsy.tnods - 1;
-
-	// get z-coordinates of the top and bottom boundaries
-	ierr = FDSTAGGetGlobalBox(fs, NULL, NULL, &zbot, NULL, NULL, &ztop); CHKERRQ(ierr);
-
-	// store the phase that is being sedimented
-
-	ierr = DMDAVecGetArray(jr->DA_CELL_2D, jr->ldvecmerge,  &lmelt);  CHKERRQ(ierr);
-	ierr = DMDAVecGetArray(surf->DA_SURF, Crust_produced,  &Layer);  CHKERRQ(ierr);
-	ierr = DMDAVecGetArray(surf->DA_SURF, MeanT,  &t);  CHKERRQ(ierr);
-	ierr = DMDAVecGetArray(surf->DA_SURF, MeanP,  &p);  CHKERRQ(ierr);
-	ierr = DMDAVecGetArray(jr->DA_CELL_2D,jr->TC2D ,&t2d);  CHKERRQ(ierr);
-	ierr = DMDAVecGetArray(jr->DA_CELL_2D,jr->PC2D ,&p2d);  CHKERRQ(ierr);
-
-
-
-
-	ierr = DMDAGetCorners(fs->DA_COR, &sx, &sy, NULL, &nx, &ny, NULL); CHKERRQ(ierr);
-	cnt=0;
-	// scan all free surface local points
-
-	START_PLANE_LOOP
-	{
-		// temperature weight
-		wt[0] = 1.0  ;  wt[1] = 1.0  ;  wt[2] = 1.0  ;  wt[3] = 1.0  ;
-		// Pressure weight
-		wp[0] = 1.0  ;  wp[1] = 1.0  ;  wp[2] = 1.0  ;  wp[3] = 1.0  ;
-
-		I1 = i;
-		I2 = i-1;
-		J1 = j;
-		J2 = j-1;
-		// check index bounds if ghost points are undefined
-		if(I1 == mx) I1--;
-		if(I2 == -1) I2++;
-		if(J1 == my) J1--;
-		if(J2 == -1) J2++;
-
-		// Crust Produced
-		Melt[0] = -lmelt[L][J1][I1]; if(Melt[0] < 0.0) Melt[0] = 0.0;
-		Melt[1] = -lmelt[L][J1][I2]; if(Melt[1] < 0.0) Melt[1] = 0.0;
-		Melt[2] = -lmelt[L][J2][I1]; if(Melt[2] < 0.0) Melt[2] = 0.0;
-		Melt[3] = -lmelt[L][J2][I2]; if(Melt[3] < 0.0) Melt[3] = 0.0;
-
-		Layer[L][j][i] = (Melt[0] + Melt[1] + Melt[2] + Melt[3])/4;
-
-		// Temperature
-
-		T[0] = t2d[L][J1][I1]  ;
-		if(T[0]<=0.0)
-		{
-			T[0] = 0.0  ;
-			wt[0] = 0.0  ;
-		}
-		T[1] = t2d[L][J1][I2]  ;
-		if(T[1]<=0.0)
-		{
-			T[1] = 0.0  ;
-			wt[1] = 0.0  ;
-		}
-		T[2] = t2d[L][J2][I1]  ;
-		if(T[2]<=0.0)
-		{
-			T[2] = 0.0  ;
-			wt[2] = 0.0  ;
-		}
-		T[3] = t2d[L][J2][I2]  ;
-		if(T[3]<=0.0)
-		{
-			T[3] = 0.0  ;
-			wt[3] = 0.0  ;
-		}
-
-		if(wt[0] == 0.0 && wt[1] == 0.0 && wt[2] == 0.0 && wt[3] == 0.0)
-		{
-		t[L][j][i] = 0.0 ;
-		}
-		else
-		{
-		t[L][j][i] = (wt[0]*T[0]+wt[1]*T[1]+wt[2]*T[2]+wt[3]*T[3])/(wt[0]+wt[1]+wt[2]+wt[3]);
-		}
-
-
-		P[0] = p2d[L][J1][I1]  ;
-		if(P[0]<=0.0)
-		{
-			P[0] = 0.0  ;
-			wp[0] = 0.0  ;
-		}
-		P[1] = p2d[L][J1][I2]  ;
-		if(P[1]<=0.0)
-		{
-			P[1] = 0.0  ;
-			wp[1] = 0.0  ;
-		}
-		P[2] = p2d[L][J2][I1]  ;
-		if(P[2]<=0.0)
-		{
-			P[2] = 0.0  ;
-			wp[2] = 0.0  ;
-		}
-		P[3] = p2d[L][J2][I2]  ;
-		if(P[3]<=0.0)
-		{
-			P[3] = 0.0  ;
-			wp[3] = 0.0  ;
-		}
-
-
-		if(wp[0] == 0.0 && wp[1] == 0.0 && wp[2] == 0.0 && wp[3] == 0.0)
-		{
-		p[L][j][i] = 0.0 ;
-		}
-		else
-		{
-		p[L][j][i] = (wp[0]*P[0]+wp[1]*P[1]+wp[2]*P[2]+wp[3]*P[3])/(wp[0]+wp[1]+wp[2]+wp[3]);
-		}
-
-	}
-	END_PLANE_LOOP
-
-	// restore access
-	ierr = DMDAVecRestoreArray(jr->DA_CELL_2D, jr->ldvecmerge,  &lmelt);  CHKERRQ(ierr);
-	ierr = DMDAVecRestoreArray(surf->DA_SURF, Crust_produced,  &Layer);  CHKERRQ(ierr);
-	ierr = DMDAVecRestoreArray(surf->DA_SURF,MeanT,&t); CHKERRQ(ierr);
-	ierr = DMDAVecRestoreArray(surf->DA_SURF,MeanP,&p); CHKERRQ(ierr);
-
-
-	if(ISParallel(PETSC_COMM_WORLD))
-	{
-		ierr = MPI_Allreduce(&cnt, &gcnt, 1, MPIU_INT, MPI_SUM, PETSC_COMM_WORLD); CHKERRQ(ierr);
-	}
-	else
-	{
-		gcnt = cnt;
-	}
-
-	// Create Temporary Buffer for pressure and temperature
-	ierr = DMGetGlobalVector(surf->DA_SURF, &BufferTemperature); CHKERRQ(ierr);
-	ierr = VecZeroEntries(BufferTemperature);CHKERRQ(ierr);
-
-	ierr = DMGetGlobalVector(surf->DA_SURF, &BufferPressure); CHKERRQ(ierr);
-	ierr = VecZeroEntries(BufferPressure);CHKERRQ(ierr);
-
-	// Save 2 Surf structure for later visualization
-	if(phases[iphase].pMant==1)
-	{
-
-		ierr = DMDAVecGetArray(surf->DA_SURF, Crust_produced,  &Layer)     ;   CHKERRQ(ierr);
-		ierr = DMDAVecGetArray(surf->DA_SURF, MeanT,           &t    )     ;   CHKERRQ(ierr);
-		ierr = DMDAVecGetArray(surf->DA_SURF, MeanP,           &p    )     ;   CHKERRQ(ierr);
-		ierr = DMDAVecGetArray(surf->DA_SURF, surf->NewMafic,  &MC)        ;   CHKERRQ(ierr);
-		ierr = DMDAVecGetArray(surf->DA_SURF, BufferTemperature,&bt)       ;   CHKERRQ(ierr);
-		ierr = DMDAVecGetArray(surf->DA_SURF, BufferPressure,&bp)       ;   CHKERRQ(ierr);
-		ierr = DMDAVecGetArray(surf->DA_SURF, surf->VcurrentMaf,&vcm)      ;   CHKERRQ(ierr);
-		ierr = DMDAVecGetArray(surf->DA_SURF, surf->TtotMaf,&totalTMafcts) ;   CHKERRQ(ierr);
-		ierr = DMDAVecGetArray(surf->DA_SURF, surf->PtotMaf,&totalPMafcts) ;   CHKERRQ(ierr);
-
-		ierr = DMDAGetCorners(fs->DA_CEN, &sx, &sy, NULL, &nx, &ny, NULL); CHKERRQ(ierr);
-		START_PLANE_LOOP
-		{
-		MC[L][j][i]  += Layer[L][j][i];
-		vcm[L][j][i] += Layer[L][j][i];
-		totalTMafcts[L][j][i] += Layer[L][j][i]*t[L][j][i];
-		totalPMafcts[L][j][i] += Layer[L][j][i]*p[L][j][i];
-		if(vcm[L][j][i]==0.0)
-		{
-			bt[L][j][i] = 0.0;
-			bp[L][j][i] = 0.0;
-		}
-		else
-		{
-			bt[L][j][i] = totalTMafcts[L][j][i]/vcm[L][j][i];
-			bp[L][j][i] = totalPMafcts[L][j][i]/vcm[L][j][i];
-
-
-		}
-		}
-		END_PLANE_LOOP
-		GLOBAL_TO_LOCAL(surf->DA_SURF, surf->NewMafic, surf->lNewMafic);
-		ierr = VecZeroEntries(surf->TProductionMaf);     CHKERRQ(ierr);
-		GLOBAL_TO_LOCAL(surf->DA_SURF, BufferTemperature, surf->TProductionMaf);
-		ierr = VecZeroEntries(surf->PProductionMaf);     CHKERRQ(ierr);
-		GLOBAL_TO_LOCAL(surf->DA_SURF, BufferPressure, surf->PProductionMaf);
-
-
-		ierr = DMDAVecRestoreArray(surf->DA_SURF, Crust_produced,  &Layer)     ;   CHKERRQ(ierr);
-		ierr = DMDAVecRestoreArray(surf->DA_SURF, MeanT,           &t    )     ;   CHKERRQ(ierr);
-		ierr = DMDAVecRestoreArray(surf->DA_SURF, MeanP,           &p    )     ;   CHKERRQ(ierr);
-		ierr = DMDAVecRestoreArray(surf->DA_SURF, surf->NewMafic,  &MC)        ;   CHKERRQ(ierr);
-		ierr = DMDAVecRestoreArray(surf->DA_SURF, BufferTemperature,&bt)       ;   CHKERRQ(ierr);
-		ierr = DMDAVecRestoreArray(surf->DA_SURF, BufferPressure,   &bp)       ;   CHKERRQ(ierr);
-		ierr = DMDAVecRestoreArray(surf->DA_SURF, surf->VcurrentMaf,&vcm)      ;   CHKERRQ(ierr);
-		ierr = DMDAVecRestoreArray(surf->DA_SURF, surf->TtotMaf,&totalTMafcts) ;   CHKERRQ(ierr);
-		ierr = DMDAVecRestoreArray(surf->DA_SURF, surf->PtotMaf,&totalPMafcts) ;   CHKERRQ(ierr);
-
-
-
-	}
-	else if(phases[iphase].pMc==1)
-	{
-
-		ierr = DMDAVecGetArray(surf->DA_SURF, Crust_produced,  &Layer)     ;   CHKERRQ(ierr);
-		ierr = DMDAVecGetArray(surf->DA_SURF, MeanT,           &t    )     ;   CHKERRQ(ierr);
-		ierr = DMDAVecGetArray(surf->DA_SURF, MeanP,           &p    )     ;   CHKERRQ(ierr);
-		ierr = DMDAVecGetArray(surf->DA_SURF, surf->NewContinental,  &CC)        ;   CHKERRQ(ierr);
-		ierr = DMDAVecGetArray(surf->DA_SURF, BufferTemperature,&bt)       ;   CHKERRQ(ierr);
-		ierr = DMDAVecGetArray(surf->DA_SURF, BufferPressure,&bp)       ;   CHKERRQ(ierr);
-		ierr = DMDAVecGetArray(surf->DA_SURF, surf->VcurrentCon,&vcc)      ;   CHKERRQ(ierr);
-		ierr = DMDAVecGetArray(surf->DA_SURF, surf->TtotCon,&totalTConcts) ;   CHKERRQ(ierr);
-		ierr = DMDAVecGetArray(surf->DA_SURF, surf->PtotCon,&totalPConcts) ;   CHKERRQ(ierr);
-
-
-		ierr = DMDAGetCorners(fs->DA_CEN, &sx, &sy, NULL, &nx, &ny, NULL); CHKERRQ(ierr);
-		START_PLANE_LOOP
-		{
-			CC[L][j][i]  += Layer[L][j][i];
-			vcc[L][j][i] += Layer[L][j][i];
-			totalTConcts[L][j][i] += Layer[L][j][i]*t[L][j][i];
-			totalPConcts[L][j][i] += Layer[L][j][i]*p[L][j][i];
-			if(vcc[L][j][i]==0.0)
-			{
-				bt[L][j][i] = 0.0;
-				bp[L][j][i] = 0.0;
-			}
-			else
-			{
-				bt[L][j][i] = totalTConcts[L][j][i]/vcc[L][j][i];
-				bp[L][j][i] = totalPConcts[L][j][i]/vcc[L][j][i];
-
-			}
-		}
-		END_PLANE_LOOP
-		GLOBAL_TO_LOCAL(surf->DA_SURF, surf->NewContinental, surf->lNewContinental);
-
-		ierr = VecZeroEntries(surf->TProductionCon);     CHKERRQ(ierr);
-		GLOBAL_TO_LOCAL(surf->DA_SURF, BufferTemperature, surf->TProductionCon);
-		ierr = VecZeroEntries(surf->PProductionCon);     CHKERRQ(ierr);
-		GLOBAL_TO_LOCAL(surf->DA_SURF, BufferPressure, surf->PProductionCon);
-
-		ierr = DMDAVecRestoreArray(surf->DA_SURF, Crust_produced,  &Layer)     ;   CHKERRQ(ierr);
-		ierr = DMDAVecRestoreArray(surf->DA_SURF, MeanT,           &t    )     ;   CHKERRQ(ierr);
-		ierr = DMDAVecRestoreArray(surf->DA_SURF, MeanP,           &p    )     ;   CHKERRQ(ierr);
-		ierr = DMDAVecRestoreArray(surf->DA_SURF, surf->NewContinental,  &CC)        ;   CHKERRQ(ierr);
-		ierr = DMDAVecRestoreArray(surf->DA_SURF, BufferTemperature,&bt)       ;   CHKERRQ(ierr);
-		ierr = DMDAVecRestoreArray(surf->DA_SURF, BufferPressure,   &bp)       ;   CHKERRQ(ierr);
-		ierr = DMDAVecRestoreArray(surf->DA_SURF, surf->VcurrentCon,&vcc)      ;   CHKERRQ(ierr);
-		ierr = DMDAVecRestoreArray(surf->DA_SURF, surf->TtotCon,&totalTConcts) ;   CHKERRQ(ierr);
-		ierr = DMDAVecRestoreArray(surf->DA_SURF, surf->PtotCon,&totalPConcts) ;   CHKERRQ(ierr);
-	}
-
-	ierr = DMRestoreGlobalVector(surf->DA_SURF,&Crust_produced); CHKERRQ(ierr);
-	ierr = DMRestoreGlobalVector(surf->DA_SURF,&MeanT); CHKERRQ(ierr);
-	ierr = DMRestoreGlobalVector(surf->DA_SURF,&MeanP); CHKERRQ(ierr);
-	ierr = DMRestoreGlobalVector(surf->DA_SURF,&BufferTemperature); CHKERRQ(ierr);
-	ierr = DMRestoreGlobalVector(surf->DA_SURF,&BufferPressure); CHKERRQ(ierr);
-
-
-	PetscFunctionReturn(0);
-}
-//----------------------------------------------------------------------------------//
-#undef __FUNCT__
-#define __FUNCT__ "AverageP_T"
-PetscErrorCode AverageP_T(JacRes *jr, PetscInt iphase)
-{
-	FDSTAG       *fs;
-	Discret1D    *dsz;
-	PetscInt     i, j, k, sx, sy, sz, nx, ny, nz, L;
-	Vec          TemperaturePart, TemperatureTot ;
-	Vec          PressurePart,PressureTot;
-	PetscScalar  bz, ez;
-	PetscScalar ***tc,***T3D,*tcm,*t,***vol;
-	PetscScalar ***pc,***P3D,*pcm,*p;
-	PetscErrorCode ierr;
-	PetscFunctionBegin;
-	// access context
-	fs = jr->fs;
-	dsz = &fs->dsz;
-	L = (PetscInt)fs->dsz.rank; // rank of the processor
-
-	// Default value
-
-	ierr = Discret1DGetColumnComm(dsz); CHKERRQ(ierr);
-	// Temperature Extraction Condition
-
-	// Initialize the necessary vector
-	ierr = DMGetGlobalVector(jr->DA_CELL_2D, &TemperaturePart); CHKERRQ(ierr);
-	ierr = VecZeroEntries(TemperaturePart) ; CHKERRQ(ierr);
-	ierr = DMGetGlobalVector(jr->DA_CELL_2D, &TemperatureTot); CHKERRQ(ierr);
-	ierr = VecZeroEntries(TemperaturePart) ; CHKERRQ(ierr);
-
-	// Retrieve the vectors
-	ierr = DMDAVecGetArray(fs->DA_CEN, jr->TdM,&T3D); CHKERRQ(ierr);
-	ierr = DMDAVecGetArray(jr->DA_CELL_2D, TemperaturePart, &tc); CHKERRQ(ierr);
-
-	// scan all local cells
-	ierr = FDSTAGGetLocalBox(fs, NULL, NULL, &bz, NULL, NULL, &ez) ; CHKERRQ(ierr);
-	GET_CELL_RANGE(nx, sx, fs->dsx)
-	GET_CELL_RANGE(ny, sy, fs->dsy)
-	GET_CELL_RANGE(nz, sz, fs->dsz)
-
-	START_STD_LOOP
-	{
-		tc[L][j][i] += T3D[k][j][i];
-
-	}
-	END_STD_LOOP
-
-	// Restore the vector
-	ierr = DMDAVecRestoreArray(fs->DA_CEN, jr->TdM,&T3D); CHKERRQ(ierr);
-	ierr = DMDAVecRestoreArray(jr->DA_CELL_2D, TemperaturePart, &tc); CHKERRQ(ierr);
-
-	// Perform the integral
-	if(dsz->nproc != 1 )
-	{
-		ierr = VecGetArray(TemperaturePart, &tcm); CHKERRQ(ierr);
-		ierr = VecGetArray(TemperatureTot, &t); CHKERRQ(ierr);
-		ierr = MPI_Allreduce(tcm, t, (PetscMPIInt)(nx*ny), MPIU_SCALAR, MPI_SUM, dsz->comm); CHKERRQ(ierr);
-		ierr = VecRestoreArray(TemperaturePart, &tcm); CHKERRQ(ierr);
-		ierr = VecRestoreArray(TemperatureTot, &t); CHKERRQ(ierr);
-	}
-	else
-	{
-		ierr = VecCopy(TemperaturePart,TemperatureTot);  CHKERRQ(ierr);
-	}
-
-	// Pressure
-
-		// Initialize the necessary vector
-		ierr = DMGetGlobalVector(jr->DA_CELL_2D, &PressurePart); CHKERRQ(ierr);
-		ierr = VecZeroEntries(TemperaturePart) ; CHKERRQ(ierr);
-		ierr = DMGetGlobalVector(jr->DA_CELL_2D, &PressureTot); CHKERRQ(ierr);
-		ierr = VecZeroEntries(TemperaturePart) ; CHKERRQ(ierr);
-
-		// Retrieve the vectors
-		ierr = DMDAVecGetArray(fs->DA_CEN, jr->PdM,&P3D); CHKERRQ(ierr);
-		ierr = DMDAVecGetArray(jr->DA_CELL_2D, PressurePart, &pc); CHKERRQ(ierr);
-
-		// scan all local cells
-		ierr = FDSTAGGetLocalBox(fs, NULL, NULL, &bz, NULL, NULL, &ez) ; CHKERRQ(ierr);
-		GET_CELL_RANGE(nx, sx, fs->dsx)
-		GET_CELL_RANGE(ny, sy, fs->dsy)
-		GET_CELL_RANGE(nz, sz, fs->dsz)
-
-		START_STD_LOOP
-		{
-			pc[L][j][i] += P3D[k][j][i];
-
-		}
-		END_STD_LOOP
-
-		// Restore the vector
-		ierr = DMDAVecRestoreArray(fs->DA_CEN, jr->PdM,&P3D); CHKERRQ(ierr);
-		ierr = DMDAVecRestoreArray(jr->DA_CELL_2D, TemperaturePart, &pc); CHKERRQ(ierr);
-
-		// Perform the integral
-		if(dsz->nproc != 1 )
-		{
-			ierr = VecGetArray(PressurePart, &pcm); CHKERRQ(ierr);
-			ierr = VecGetArray(PressureTot, &p); CHKERRQ(ierr);
-			ierr = MPI_Allreduce(pcm, p, (PetscMPIInt)(nx*ny), MPIU_SCALAR, MPI_SUM, dsz->comm); CHKERRQ(ierr);
-			ierr = VecRestoreArray(PressurePart,   &pcm); CHKERRQ(ierr);
-			ierr = VecRestoreArray(PressureTot, &p  ); CHKERRQ(ierr);
-		}
-		else
-		{
-			ierr = VecCopy(PressurePart,PressureTot);  CHKERRQ(ierr);
-		}
-
-	// Computing the actual volume weightened average of P/T condition of extraction
-
-
-	ierr = DMDAVecGetArray(jr->DA_CELL_2D, TemperatureTot,&tc); CHKERRQ(ierr);
-	ierr = DMDAVecGetArray(jr->DA_CELL_2D, PressureTot,&pc); CHKERRQ(ierr);
-	ierr = DMDAVecGetArray(jr->DA_CELL_2D, jr->dgmvvecmerge, &vol); CHKERRQ(ierr);
-
-	// scan all local cells
-	ierr = FDSTAGGetLocalBox(fs, NULL, NULL, &bz, NULL, NULL, &ez) ; CHKERRQ(ierr);
-	GET_CELL_RANGE(nx, sx, fs->dsx)
-	GET_CELL_RANGE(ny, sy, fs->dsy)
-	GET_CELL_RANGE(nz, sz, fs->dsz)
-
-	START_PLANE_LOOP
-	{
-		if(vol[L][j][i]<0)
-		{
-			tc[L][j][i]    /= -vol[L][j][i];
-			pc[L][j][i]    /= -vol[L][j][i];
-		}
-		else
-		{
-			tc[L][j][i] = 0.0;
-			pc[L][j][i] = 0.0;
-
-		}
-	}
-	END_PLANE_LOOP
-
-	GLOBAL_TO_LOCAL(jr->DA_CELL_2D,TemperatureTot,jr->TC2D)
-	GLOBAL_TO_LOCAL(jr->DA_CELL_2D,TemperatureTot,jr->PC2D)
-
-	ierr = DMDAVecRestoreArray(jr->DA_CELL_2D, TemperatureTot,&tc); CHKERRQ(ierr);
-	ierr = DMDAVecRestoreArray(jr->DA_CELL_2D, PressureTot,&pc); CHKERRQ(ierr);
-	ierr = DMDAVecRestoreArray(jr->DA_CELL_2D, jr->dgmvvecmerge, &vol); CHKERRQ(ierr);
-
-	// Get Rid of the Buffer
-	ierr = DMRestoreGlobalVector(jr->DA_CELL_2D,&TemperatureTot); CHKERRQ(ierr);
-	ierr = DMRestoreGlobalVector(jr->DA_CELL_2D,&TemperaturePart); CHKERRQ(ierr);
-	ierr = DMRestoreGlobalVector(jr->DA_CELL_2D,&PressureTot); CHKERRQ(ierr);
-	ierr = DMRestoreGlobalVector(jr->DA_CELL_2D,&PressurePart); CHKERRQ(ierr);
-
-	PetscFunctionReturn(0);
-
-}
-*/

@@ -130,7 +130,7 @@ PetscErrorCode ADVMarkInit(AdvCtx *actx, FB *fb)
 	{
 		if(actx->jr->dbm->phases[i].Pd_rho == 1)
 		{
-			PetscPrintf(PETSC_COMM_WORLD,"   Phase %i,  ",i);
+			PetscPrintf(PETSC_COMM_WORLD,"   Phase %i  \n",i);
 			ierr = LoadPhaseDiagram(actx, actx->jr->dbm->phases, i); CHKERRQ(ierr);
 			SolVarCell  *svCell;
 			PetscInt     jj;
