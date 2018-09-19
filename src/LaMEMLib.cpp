@@ -603,7 +603,6 @@ PetscErrorCode LaMEMLibSolve(LaMEMLib *lm, void *param)
 	SNES           snes;   // PETSc nonlinear solver
 	PetscInt       restart;
 	PetscLogDouble t;
-	PetscInt       a;
 
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
@@ -622,7 +621,6 @@ PetscErrorCode LaMEMLibSolve(LaMEMLib *lm, void *param)
 	//===============
 	// TIME STEP LOOP
 	//===============
-    a=0;
 	while(!TSSolIsDone(&lm->ts))
 	{
 		//====================================
@@ -641,8 +639,9 @@ PetscErrorCode LaMEMLibSolve(LaMEMLib *lm, void *param)
 		// solve nonlinear equation system with SNES
 		PetscTime(&t);
 		// Call Melt Extraction to compute the mass.
-
+		PrintStart(&t, "MeltExInjectionRoutine", NULL);
 		if(lm->jr.ctrl.initGuess == 0) ierr = MeltExtractionSave(&lm->jr,&lm->actx); CHKERRQ(ierr);
+		PrintDone(t);
 
 
 		ierr = SNESSolve(snes, NULL, lm->jr.gsol); CHKERRQ(ierr);
@@ -731,7 +730,6 @@ PetscErrorCode LaMEMLibSolve(LaMEMLib *lm, void *param)
 		// restart database
 		ierr = LaMEMLibSaveRestart(lm); CHKERRQ(ierr);
 
-		a+=1;
 	}
 
 	//======================
