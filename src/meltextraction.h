@@ -59,4 +59,5 @@ PetscErrorCode Extrusion_melt(FreeSurf *surf,PetscInt iphase,AdvCtx *actx);
 PetscErrorCode ExchangeMassME(SolVarBulk *svBulk,PetscScalar dx,PetscScalar dy,PetscScalar dz, PetscScalar dt);
 PetscErrorCode Compute_Thickness(JacRes *jr);
 PetscErrorCode OutPutVolume(FreeSurf *surf,PetscInt iphase);
+PetscErrorCode AverageP_T(JacRes *jr, PetscInt iphase);
 #endif

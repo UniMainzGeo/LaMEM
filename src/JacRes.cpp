@@ -99,6 +99,7 @@ PetscErrorCode JacResCreate(JacRes *jr, FB *fb)
 	ierr = getScalarParam(fb, _OPTIONAL_, "FSSA",            &ctrl->FSSA,          1, 1.0); CHKERRQ(ierr);
 	ierr = getScalarParam(fb, _OPTIONAL_, "shear_heat_eff",  &ctrl->shearHeatEff,  1, 1.0); CHKERRQ(ierr);
 	ierr = getScalarParam(fb, _OPTIONAL_, "biot",            &ctrl->biot,          1, 1.0); CHKERRQ(ierr);
+	ierr = getIntParam   (fb, _OPTIONAL_, "Adiabatic_Heat",  &ctrl->AdiabHeat,     1, 1  ); CHKERRQ(ierr);
 	ierr = getIntParam   (fb, _OPTIONAL_, "act_temp_diff",   &ctrl->actTemp,       1, 1);   CHKERRQ(ierr);
 	ierr = getIntParam   (fb, _OPTIONAL_, "act_steady_temp", &ctrl->actSteadyTemp, 1, 1);   CHKERRQ(ierr);
 	ierr = getIntParam   (fb, _OPTIONAL_, "act_p_shift",     &ctrl->pShiftAct,     1, 1);   CHKERRQ(ierr);
@@ -271,6 +272,7 @@ PetscErrorCode JacResCreate(JacRes *jr, FB *fb)
 	if(ctrl->FSSA)          PetscPrintf(PETSC_COMM_WORLD, "   Surface stabilization (FSSA)            :  %g \n", ctrl->FSSA);
 	if(ctrl->shearHeatEff)  PetscPrintf(PETSC_COMM_WORLD, "   Shear heating efficiency                :  %g \n", ctrl->shearHeatEff);
 	if(ctrl->biot)          PetscPrintf(PETSC_COMM_WORLD, "   Biot pressure parameter                 :  %g \n", ctrl->biot);
+	if(ctrl->AdiabHeat)     PetscPrintf(PETSC_COMM_WORLD, "   Adiabatic Heating                       @     \n", ctrl->shearHeatEff);
 	if(ctrl->actTemp)       PetscPrintf(PETSC_COMM_WORLD, "   Activate temperature diffusion          @ \n");
 	if(ctrl->actSteadyTemp) PetscPrintf(PETSC_COMM_WORLD, "   Steady state initial temperature        @ \n");
 	if(ctrl->pShiftAct)     PetscPrintf(PETSC_COMM_WORLD, "   Enforce zero pressure on top boundary   @ \n");

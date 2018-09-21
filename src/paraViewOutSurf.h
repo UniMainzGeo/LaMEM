@@ -70,6 +70,10 @@ struct PVSurf
 	PetscInt   amplitude;          // topography amplitude output flag
 	PetscInt   newcontinental;    // new continental crust produced
 	PetscInt   newmafic;          // new mafic crust produced
+	PetscInt   TMafic;
+	PetscInt   PMafic;
+	PetscInt   TCon;
+	PetscInt   PCon;
 
 
 };
@@ -116,7 +120,11 @@ PetscErrorCode PVSurfWriteNewContinental(PVSurf *pvsurf, FILE *fp);
 
 PetscErrorCode PVSurfWriteNewMafic(PVSurf *pvsurf, FILE *fp);
 
+PetscErrorCode PVSurfWriteTMafic(PVSurf *pvsurf, FILE *fp);
+PetscErrorCode PVSurfWritePMafic(PVSurf *pvsurf, FILE *fp);
 
+PetscErrorCode PVSurfWriteTCon(PVSurf *pvsurf, FILE *fp);
+PetscErrorCode PVSurfWritePCon(PVSurf *pvsurf, FILE *fp);
 
 //---------------------------------------------------------------------------
 #endif
