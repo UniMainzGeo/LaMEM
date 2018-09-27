@@ -413,6 +413,7 @@ PetscErrorCode InputSetDefaultValues(JacRes *jr, UserCtx *user)
 	// Liquid-pressure/Darcy
 	user->Pl_top         = 0.0;
 	user->Pl_bottom      = 0.0;
+	user->GradientStraintRate = PETSC_FALSE;
 
 	user->Gravity          = 1.0;
 	user->GravityAngle     = 0.0; // angle of gravity with z-axis (can be changed in the x-z plane)
@@ -491,6 +492,8 @@ PetscErrorCode InputSetDefaultValues(JacRes *jr, UserCtx *user)
 
 	// Darcy
 	user->NumDarcySources=0;
+	jr->num_of_first_dt = 0;
+	jr->first_dt = 0;
 
 	PetscFunctionReturn(0);
 }
@@ -637,6 +640,7 @@ PetscErrorCode InputReadFile(JacRes *jr, UserCtx *user, FILE *fp)
 	{
 		user->NumDarcySources=0;
 	}
+	//parse_GetInt(fp,"GradientStraintRate",&user->GradientStraintRate,&found);
 
 
 /*

@@ -530,33 +530,37 @@ PetscErrorCode ADVInterpFieldToMark(AdvCtx *actx, InterpCase icase)
 			// store rotated stress on the marker
 			Tensor2RSCopy(&SR, &P->S);
 		}
-		else if(icase == _FAILT_) // is not used, yes
+		else if(icase == _FAILT_)
 		{
-			if (JacResGetStep(jr) > 2) // 2 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-			{
-				P->failT = svCell->svDev.failT + UPXY + UPXZ + UPYZ;
-				if ( svCell->svDev.failT >= 1.0 )
+			if ( (jr->change_phase_if_failure == 0) || (jr->change_phase_if_failure == 1)) {
+				if (JacResGetStep(jr) > 1) // 2 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 				{
-					//if (P->phase!=2)
-						P->phase = 0;
+					P->failT = svCell->svDev.failT + UPXY + UPXZ + UPYZ;
+					if ( svCell->svDev.failT >= 1.0 )
+					{
+						//if (P->phase!=2)
+							P->phase = 0;
+					}
 				}
 			}
 		}
-		else if(icase == _FAILS_) // is not used, yes
+		else if(icase == _FAILS_) // is not used
 		{
-			if (JacResGetStep(jr) > 2) // 2 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-			{
-				P->failS = svCell->svDev.failS + UPXY + UPXZ + UPYZ;
-				if ( svCell->svDev.failS >= 1.0 )
+			if (jr->change_phase_if_failure == 0 || jr->change_phase_if_failure == 2) {
+				if (JacResGetStep(jr) > 1) // 2 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 				{
-					//if (P->phase!=2)
-						P->phase = 0;
+					P->failS = svCell->svDev.failS + UPXY + UPXZ + UPYZ;
+					if ( svCell->svDev.failS >= 1.0 )
+					{
+						//if (P->phase!=2)
+							P->phase = 0;
+					}
 				}
 			}
 		}
-		else if(icase == _FAILTS_) // is not used, yes
+		/*else if(icase == _FAILTS_) // is not used, now FAILTS is just to visualize tensile and shear fractures together
 		{
-			if (JacResGetStep(jr) > 2) // 2 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+			if (JacResGetStep(jr) > 1) // 2 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 			{
 				P->failTS = svCell->svDev.failTS + UPXY + UPXZ + UPYZ;
 				if ( svCell->svDev.failTS > 0.0 )
@@ -565,7 +569,7 @@ PetscErrorCode ADVInterpFieldToMark(AdvCtx *actx, InterpCase icase)
 						P->phase = 0;
 				}
 			}
-		}
+		}*/
 	}
 
 	// restore access

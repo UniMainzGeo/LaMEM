@@ -307,13 +307,18 @@ PetscErrorCode LaMEMLib(ModParam *IOparam)
 
 	do
 	{
-		PetscPrintf(PETSC_COMM_WORLD,"Time step %lld -------------------------------------------------------- \n", (LLD)JacResGetStep(&jr));
+ 		PetscPrintf(PETSC_COMM_WORLD,"Time step %lld -------------------------------------------------------- \n", (LLD)JacResGetStep(&jr));
 
-		/*// To remove
-			if (jr.ts.istep == 10)  {
-				jr.ts.dt 	= 1.0;
-		    }
-		//*/
+ 		// Darcy, to start with a different time step
+		if (jr.num_of_first_dt > jr.ts.istep) {
+			jr.ts.dt 	    = jr.first_dt;
+			jr.ts.dtmax 	= jr.first_dt;
+		}
+		else{
+			jr.ts.dt 	    = user.dt;
+			jr.ts.dtmax 	= user.dt_max;
+		}
+
 
 
 
@@ -383,7 +388,7 @@ PetscErrorCode LaMEMLib(ModParam *IOparam)
 
 		// Darcy /////////////////////////////////////////////
 		if (jr.actDarcy){
-		if (JacResGetStep(&jr) > 2) // 2 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+		if (JacResGetStep(&jr) > 0) // 2 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 		{
 			ierr = UpdateFailureType(&jr);
 		}
@@ -411,13 +416,13 @@ PetscErrorCode LaMEMLib(ModParam *IOparam)
 		//==========================================
 
 		// advect free surface
-		ierr = FreeSurfAdvect(&surf); CHKERRQ(ierr);
+        ierr = FreeSurfAdvect(&surf); CHKERRQ(ierr);
 
 		// advect markers
 		ierr = ADVAdvect(&actx); CHKERRQ(ierr);
 
 		// apply background strain-rate "DWINDLAR" BC (Bob Shaw "Ship of Strangers")
-		ierr = BCStretchGrid(&bc); CHKERRQ(ierr);
+        ierr = BCStretchGrid(&bc); CHKERRQ(ierr);
 
 		// exchange markers between the processors (after mesh advection)
 		ierr = ADVExchange(&actx); CHKERRQ(ierr);

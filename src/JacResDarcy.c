@@ -598,7 +598,7 @@ PetscErrorCode JacResGetDarcyRes(JacRes *jr)
 		svBulk->Rhol = lrho;
 
 		// Permeability and porosity
-		/*if (dP <= dPmin && dP > dPmax)
+		if (dP <= dPmin && dP > dPmax)
 		{
 			if (Kphiu && Kphi != Kphiu)
 			{
@@ -618,7 +618,9 @@ PetscErrorCode JacResGetDarcyRes(JacRes *jr)
 			// Tensile failure
 			Kphi = Kphiu;
 			//Phi  = Phiu;
-		}*/
+		}
+
+
 		svBulk->Kphi = Kphi;
 		svBulk->Phi  = Phi;
 
@@ -831,7 +833,7 @@ PetscErrorCode JacResGetDarcyMat(JacRes *jr)
 		dPmin= pc+biot*Pl_h-Pl_h;
 		dPmax= Ts;
 
-		/*//// Permeability and porosity
+		//// Permeability and porosity
 		if (dP <= dPmin && dP > dPmax)
 		{
 			if (Kphiu && Kphi != Kphiu)
@@ -853,7 +855,7 @@ PetscErrorCode JacResGetDarcyMat(JacRes *jr)
 			Kphi = Kphiu;
 			Phi  = Phiu;
 		}
-*/
+
 		// Specific storage
 		Ss = (betam + Phi*betal);
 
@@ -1574,20 +1576,22 @@ PetscErrorCode UpdateFailureType(JacRes *jr)
 				//svDev->failS = 0.0;
 
 				// sensitivity
-				sensitivity =jr->matLim.stress_min;; //1e+3; //0.5e2; //0.01e0; //1e+1; // Pascals
+				sensitivity =jr->matLim.stress_sensitivity_for_failure; // Pascals
 
 				if (dP < -(TensileS+sensitivity)) {// + 1e+6) {
 					//svDev->failTS = 1.0;
-					//svDev->failT = 1.0;
+					svDev->failT = 1.0;
 				}
-
-				if (DevStressII > svDev->yield + sensitivity) {
-					if (dP>=intersection) {
-						// Shear
-						svDev->failS = 1.0;
-					}else {
-						// Tensile
-						svDev->failT = 1.0;
+				else
+				{
+					if (DevStressII > svDev->yield + sensitivity) {
+						if (dP>=intersection) {
+							// Shear
+							svDev->failS = 1.0;
+						}else {
+							// Tensile
+							svDev->failT = 1.0;
+						}
 					}
 				}
 			}

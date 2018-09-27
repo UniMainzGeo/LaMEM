@@ -152,6 +152,7 @@ typedef struct
 
 	// Liquid-pressure/Darcy on top and bottom boundaries
 	PetscScalar  Plbot, Pltop;
+	PetscBool GradientStraintRate;
 
 	// horizontal background strain-rate parameters
 	PetscBool    ExxAct;

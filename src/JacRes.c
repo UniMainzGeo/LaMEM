@@ -85,7 +85,7 @@ PetscErrorCode JacResSetFromOptions(JacRes *jr)
 
 	if(flg == PETSC_TRUE) jr->actTemp = PETSC_TRUE;
 
-	// Darcy code
+	// Darcy code ///////
 	// activate energy equation (diffusion)
 	ierr = PetscOptionsHasName(NULL, NULL, "-act_darcy", &flg); CHKERRQ(ierr);
 	if(flg == PETSC_TRUE) jr->actDarcy = PETSC_TRUE;
@@ -93,6 +93,20 @@ PetscErrorCode JacResSetFromOptions(JacRes *jr)
 	// consider hydrostatic pressure as initial condition
 	ierr = PetscOptionsHasName(NULL, NULL, "-act_initialguess_hydro", &flg); CHKERRQ(ierr);
 	if(flg == PETSC_TRUE) jr->actInitialGuessHydro = PETSC_TRUE;
+
+	// change phase when failure
+	jr->change_phase_if_failure = -1;
+	ierr = PetscOptionsGetInt(NULL, NULL, "-change_phase_if_failure",  &jr->change_phase_if_failure, NULL); CHKERRQ(ierr);
+	if (jr->change_phase_if_failure != 1 && jr->change_phase_if_failure != 2 && jr->change_phase_if_failure != 0) jr->change_phase_if_failure = -1;
+
+	jr->first_dt = 0.0;
+	ierr = PetscOptionsGetReal(NULL, NULL, "-first_dt",  &jr->first_dt, NULL); CHKERRQ(ierr);
+
+	jr->num_of_first_dt = 0;
+	if (jr->first_dt > 0) ierr = PetscOptionsGetInt(NULL, NULL, "-num_of_first_dt",  &jr->num_of_first_dt, NULL); CHKERRQ(ierr);
+	if (jr->num_of_first_dt < 0) jr->num_of_first_dt = 0;
+
+	//////////////////////
 
 	// set geometry tolerance
 	ierr = PetscOptionsGetScalar(NULL, NULL, "-geom_tol", &gtol, &flg); CHKERRQ(ierr);
@@ -1106,7 +1120,7 @@ PetscErrorCode JacResGetResidual(JacRes *jr)
 			fr = svDev->fr;
 			ch = svDev->ch;
 
-			minimStress = matLim->stress_min; //1e+6 / jr->scal->stress; //  1e+0; // for SI 2e+6; for GEO = 2.0; !!!!!!!!!!!!!!!!!!!!!!!!!!!
+			minimStress = matLim->stress_min; //1e+6 / jr->scal->stress; //  1e+0; // SI ; !!!!!!!!!!!!!!!!!!!!!!!!!!!
 			TensileS    = -svBulk->Ts;
 			sindl       = sin(svBulk->dl);
 
@@ -2119,6 +2133,10 @@ PetscErrorCode SetMatParLim(MatParLim *matLim, UserCtx *usr)
 	matLim->stress_min = 0.0;
 	ierr = PetscOptionsGetScalar(NULL, NULL, "-stress_min",  &matLim->stress_min, NULL); CHKERRQ(ierr);
 	if (matLim->stress_min <= 0.0) matLim->stress_min = DBL_MIN;
+
+	matLim->stress_sensitivity_for_failure = 0.0;
+	ierr = PetscOptionsGetScalar(NULL, NULL, "-stress_sensitivity_for_failure",  &matLim->stress_sensitivity_for_failure, NULL); CHKERRQ(ierr);
+	if (matLim->stress_sensitivity_for_failure <= 0.0) matLim->stress_sensitivity_for_failure = 0.0;
 	//
 
 

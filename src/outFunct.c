@@ -781,7 +781,7 @@ PetscErrorCode PVOutWritePorosity(JacRes *jr, OutBuf *outbuf)
 
 
 	// macro to copy porosity to buffer
-	#define GET_POROSITY buff[k][j][i] = jr->svCell[iter++].svBulk.dl; //  Phi; ////// CHANGE !!!!
+	#define GET_POROSITY buff[k][j][i] = jr->svCell[iter++].svBulk.Phi; ////// CHANGE !!!!
 
 	INTERPOLATE_COPY(fs->DA_CEN, outbuf->lbcen, InterpCenterCorner, GET_POROSITY, 1, 0)
 

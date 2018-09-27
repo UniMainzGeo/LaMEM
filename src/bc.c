@@ -778,6 +778,14 @@ PetscErrorCode BCSetParam(BCCtx *bc, UserCtx *user)
 	else
 		bc->AddBezier = PETSC_FALSE;
 
+	// Darcy
+	//if(user->GradientStraintRate)
+	//{
+	//	bc->GradientStraintRate = PETSC_TRUE;
+	//}
+	//else
+	//	bc->GradientStraintRate = PETSC_FALSE;
+
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
@@ -874,6 +882,9 @@ PetscErrorCode BCReadFromOptions(BCCtx *bc)
 	// read no-slip boundary condition mask
 	ierr = GetIntDataItemCheck("-noslip", "no-slip mask",
 		_NOT_FOUND_EXIT_, 6, bc->noslip, 0, 1); CHKERRQ(ierr);
+
+	// Darcy
+	ierr = PetscOptionsHasName(NULL, NULL, "-gradientStraintRate", &set); CHKERRQ(ierr); if(set == PETSC_TRUE) bc->GradientStraintRate = PETSC_TRUE;
 
 	PetscFunctionReturn(0);
 }
@@ -1154,6 +1165,7 @@ PetscErrorCode BCApplyBound(BCCtx *bc)
 	PetscInt    nsLeft, nsRight, nsFront, nsBack, nsBottom, nsTop;
 	PetscInt 	simpleShear;
 	PetscScalar ***bcvx,  ***bcvy,  ***bcvz, ***bcT, ***bcPl, *SPCVals;
+	PetscScalar fac;
 
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
@@ -1235,8 +1247,16 @@ PetscErrorCode BCApplyBound(BCCtx *bc)
 
 	START_STD_LOOP
 	{
-		if(i == 0)   { bcvx[k][j][i] = vbx; SPCVals[iter] = vbx; }
-		if(i == mnx) { bcvx[k][j][i] = vex; SPCVals[iter] = vex; }
+		//if(i == 0)   { bcvx[k][j][i] = fac*vbx; SPCVals[iter] = fac*vbx; }
+		//if(i == mnx) { bcvx[k][j][i] = fac*vex; SPCVals[iter] = fac*vex; }
+
+		// Darcy
+		fac = 1.0;
+		if (bc->GradientStraintRate == PETSC_TRUE) fac=(double)(mcz-k)/(double)mcz;
+		if(i == 0)   { bcvx[k][j][i] = fac*vbx; SPCVals[iter] = fac*vbx; }
+		if(i == mnx) { bcvx[k][j][i] = fac*vex; SPCVals[iter] = fac*vex; }
+		///////////////////////////////////////////////////////////////////////////
+
 		iter++;
 	}
 	END_STD_LOOP
@@ -1250,8 +1270,16 @@ PetscErrorCode BCApplyBound(BCCtx *bc)
 
 	START_STD_LOOP
 	{
-		if(j == 0)   { bcvy[k][j][i] = vby; SPCVals[iter] = vby; }
-		if(j == mny) { bcvy[k][j][i] = vey; SPCVals[iter] = vey; }
+		//if(j == 0)   { bcvy[k][j][i] = fac*vby; SPCVals[iter] = fac*vby; }
+		//if(j == mny) { bcvy[k][j][i] = fac*vey; SPCVals[iter] = fac*vey; }
+
+		// Darcy
+		fac = 1.0;
+		if (bc->GradientStraintRate == PETSC_TRUE) fac=(double)(mcz-k)/(double)mcz;
+		if(j == 0)   { bcvy[k][j][i] = fac*vby; SPCVals[iter] = fac*vby; }
+		if(j == mny) { bcvy[k][j][i] = fac*vey; SPCVals[iter] = fac*vey; }
+		///////////////////////////////////////////////////////////////////////////
+
 		iter++;
 	}
 	END_STD_LOOP
@@ -1265,9 +1293,18 @@ PetscErrorCode BCApplyBound(BCCtx *bc)
 
 	START_STD_LOOP
 	{
-		if(k == 0)                { bcvz[k][j][i] = vbz; SPCVals[iter] = vbz; }
-		if(k == mnz && !top_open) { bcvz[k][j][i] = vez; SPCVals[iter] = vez; }
+		//if(k == 0)                { bcvz[k][j][i] = vbz; SPCVals[iter] = vbz; }
+		//if(k == mnz && !top_open) { bcvz[k][j][i] = vez; SPCVals[iter] = vez; }
+
+		// Darcy
+		fac = 1.0;
+		if (bc->GradientStraintRate == PETSC_TRUE) fac=(double)(mcz-k)/(double)mcz;
+		if(k == 0)                                                              { bcvz[k][j][i] = fac*vbz; SPCVals[iter] = fac*vbz; }
+		if(k == mnz  && (!top_open || bc->GradientStraintRate == PETSC_TRUE) )  { bcvz[k][j][i] = fac*vez; SPCVals[iter] = fac*vez; }
+		///////////////////////////////////////////////////////////////////////////
+
 		iter++;
+
 	}
 	END_STD_LOOP
 

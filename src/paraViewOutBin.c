@@ -483,7 +483,7 @@ PetscErrorCode PVOutCreate(PVOut *pvout, JacRes *jr, const char *filename)
 	// === Darcy output if active ==========================================
 	if(jr->actDarcy == PETSC_TRUE){
 		if(omask->Pl)          		OutVecCreate(&outvecs[cnt++], "LiquidPressure", scal->lbl_stress,         &PVOutWriteLiquidPressure,1);
-		if(omask->permeability)		OutVecCreate(&outvecs[cnt++], "Permeability",   scal->lbl_permeability,   &PVOutWritePermeability,  1);
+		if(omask->permeability)		OutVecCreate(&outvecs[cnt++], "log Permeability",   scal->lbl_permeability,   &PVOutWritePermeability,  1);
 		if(omask->porosity)    		OutVecCreate(&outvecs[cnt++], "Porosity",       scal->lbl_unit,           &PVOutWritePorosity,      1);
 		if(omask->liquiddensity)	OutVecCreate(&outvecs[cnt++], "LiquidDensity",	scal->lbl_density, 		  &PVOutWriteLiquidDensity, 1);
 		if(omask->liquidvelocity)   OutVecCreate(&outvecs[cnt++], "LiquidVelocity", scal->lbl_velocity,       &PVOutWriteLiquidVelocity,3);
@@ -876,7 +876,7 @@ PetscErrorCode UpdatePVDFile(
 	}
 
 	// add entry to .pvd file
-	fprintf(fp,"\t<DataSet timestep=\"%1.6e\" file=\"%s/%s.%s\"/>\n",
+	fprintf(fp,"\t<DataSet timestep=\"%1.10e\" file=\"%s/%s.%s\"/>\n",
 		ttime, dirName, outfile, ext);
 
 	// store current position in the file

@@ -157,6 +157,7 @@ typedef struct
 
 	PetscBool actDarcy;  // Darcy activation flag
 	PetscBool actInitialGuessHydro; //If true, consider hydrostatic pressure as initial condition
+	PetscInt change_phase_if_failure; // // change phase when failure
 
 	DM  DA_Pl; 		// LiquidPressure cell-centered grid with star stencil
 	Mat App;  		// LiquidPressure preconditioner matrix
@@ -166,8 +167,12 @@ typedef struct
 	Vec hydro_lPl;  // hydrostatic liquid pressure (local)
 	KSP  Pl_ksp; 	// LiquidPressure    linear diffusion solver
 
+	PetscScalar first_dt;     // In case you need to have a different time step at the beginning of the simulation
+	PetscInt num_of_first_dt; // How many
+
 	PetscInt NumDarcySources;
 	DarcySourceParam   DarcySources[Max_Num_Darcy_Sources]; // darcy source parameters
+	////////////////////////////////////////////////////////////////////////////////////
 
 } JacRes;
 //---------------------------------------------------------------------------

@@ -307,6 +307,7 @@ typedef struct
 	// Liquid-pressure/Darcy
 	PetscScalar      Pl_bottom, Pl_top;
 	PetscInt		 NumDarcySources;
+	PetscBool        GradientStraintRate;
 
 } UserCtx;
 

@@ -298,6 +298,8 @@ typedef struct
 
 	// For tensile (Darcy)
 	PetscScalar stress_min;
+	PetscScalar stress_sensitivity_for_failure;
+	PetscInt change_phase_if_failure;
 
 } MatParLim;
 
