@@ -146,16 +146,11 @@ PetscErrorCode NLSolCreate(NLSol *nl, PCStokes pc, SNES *p_snes)
 	ierr = PetscOptionsGetInt   (NULL, NULL, "-snes_NewtonSwitchToPicard_it",   &nl->nNwtIt, &flg); CHKERRQ(ierr);
 	ierr = PetscOptionsGetScalar(NULL, NULL, "-snes_NewtonSwitchToPicard_rtol", &nl->rtolNwt, &flg); CHKERRQ(ierr);
 
-	// set initial guess
-	ierr = VecSet(jr->gsol, 0.0); CHKERRQ(ierr);
-
 	// return solver
 	(*p_snes) = snes;
 
 	// Display specified solver options
 	ierr =  DisplaySpecifiedSolverOptions(pc, snes);  CHKERRQ(ierr);
-
-
 
 	PetscFunctionReturn(0);
 }
