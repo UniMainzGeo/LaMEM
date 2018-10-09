@@ -85,6 +85,7 @@ PetscErrorCode PVSurfCreate(PVSurf *pvsurf, FB *fb)
 	ierr = getIntParam   (fb, _OPTIONAL_, "out_surf_PMaficgeneration",  &pvsurf->PMafic,  1, 1); CHKERRQ(ierr);
 	ierr = getIntParam   (fb, _OPTIONAL_, "out_surf_TContinentalgeneration",  &pvsurf->TCon,  1, 1); CHKERRQ(ierr);
 	ierr = getIntParam   (fb, _OPTIONAL_, "out_surf_PContinentalgeneration",  &pvsurf->PCon,  1, 1); CHKERRQ(ierr);
+	ierr = getIntParam   (fb, _OPTIONAL_, "out_surf_Felsic",                  &pvsurf->Felsic,  1, 1); CHKERRQ(ierr);
 
 
 	// print summary
@@ -100,6 +101,7 @@ PetscErrorCode PVSurfCreate(PVSurf *pvsurf, FB *fb)
 	if(pvsurf->PMafic)         PetscPrintf(PETSC_COMM_WORLD, "   Average P generation Mafic @ \n");
 	if(pvsurf->TCon)           PetscPrintf(PETSC_COMM_WORLD, "   Average T generation Con   @ \n");
 	if(pvsurf->PCon)           PetscPrintf(PETSC_COMM_WORLD, "   Average P generation Con   @ \n");
+	if(pvsurf->Felsic)         PetscPrintf(PETSC_COMM_WORLD, "   Felsic Crust    @ \n");
 	PetscPrintf(PETSC_COMM_WORLD, "--------------------------------------------------------------------------\n");
 
 	// set file name
@@ -250,10 +252,6 @@ PetscErrorCode PVSurfWritePVTS(PVSurf *pvsurf, const char *dirName)
 		fprintf(fp,"\t\t\t<PDataArray type=\"Float32\" Name=\"newcontinental %s\" NumberOfComponents=\"1\" format=\"appended\"/>\n",scal->lbl_volume);
 	}
 	//=-----------------------
-
-
-
-
 	if(pvsurf->TMafic)
 	{
 		fprintf(fp,"\t\t\t<PDataArray type=\"Float32\" Name=\"TGMafic %s\" NumberOfComponents=\"1\" format=\"appended\"/>\n",scal->lbl_temperature);
@@ -273,6 +271,11 @@ PetscErrorCode PVSurfWritePVTS(PVSurf *pvsurf, const char *dirName)
 	{
 		fprintf(fp,"\t\t\t<PDataArray type=\"Float32\" Name=\"PGContinenal %s\" NumberOfComponents=\"1\" format=\"appended\"/>\n",scal->lbl_stress);
 	}
+
+	if(pvsurf->Felsic)
+		{
+			fprintf(fp,"\t\t\t<PDataArray type=\"Float32\" Name=\"FelsicComposition %s\" NumberOfComponents=\"1\" format=\"appended\"/>\n",scal->lbl_unit);
+		}
 
 	fprintf(fp, "\t\t</PPointData>\n");
 
@@ -425,6 +428,12 @@ PetscErrorCode PVSurfWriteVTS(PVSurf *pvsurf, const char *dirName)
 		scal->lbl_stress, (LLD)offset);
 		offset += sizeof(int) + sizeof(float)*(size_t)(nx*ny);
 		}
+		if(pvsurf->Felsic)
+		{
+		fprintf(fp,"\t\t\t<DataArray type=\"Float32\" Name=\"FelsicComposition %s\" NumberOfComponents=\"1\" format=\"appended\" offset=\"%lld\"/>\n",
+		scal->lbl_unit, (LLD)offset);
+		offset += sizeof(int) + sizeof(float)*(size_t)(nx*ny);
+		}
 
 		fprintf(fp, "\t\t</PointData>\n");
 
@@ -450,6 +459,8 @@ PetscErrorCode PVSurfWriteVTS(PVSurf *pvsurf, const char *dirName)
 	if(pvsurf->PMafic)         { ierr = PVSurfWritePMafic(pvsurf, fp); CHKERRQ(ierr); }
 	if(pvsurf->TCon)           { ierr = PVSurfWriteTCon(pvsurf, fp); CHKERRQ(ierr); }
 	if(pvsurf->PCon)           { ierr = PVSurfWritePCon(pvsurf, fp); CHKERRQ(ierr); }
+	if(pvsurf->Felsic)         { ierr = PVSurfWriteFelsic(pvsurf, fp); CHKERRQ(ierr); }
+
 
 
 	if(!fs->dsz.rank)
@@ -925,3 +936,48 @@ PetscErrorCode PVSurfWritePCon(PVSurf *pvsurf, FILE *fp)
 	PetscFunctionReturn(0);
 }
 //----------------------------------------------------------------------------//
+
+//---------------------------------------------------------------------------
+#undef __FUNCT__
+#define __FUNCT__ "PVSurfWriteFelsic"
+PetscErrorCode PVSurfWriteFelsic(PVSurf *pvsurf, FILE *fp)
+{
+	FreeSurf    *surf;
+	FDSTAG      *fs;
+	float       *buff;
+	PetscScalar ***CC, cf;
+	PetscInt    i, j, rx, ry, nx, ny, sx, sy, cn, L;
+
+	PetscErrorCode ierr;
+	PetscFunctionBegin;
+
+	L    = 0;
+	cn   = 0;
+	buff = pvsurf->buff;
+	surf = pvsurf->surf;
+	fs   = surf->jr->fs;
+	cf   = 1.0;
+
+	GET_OUTPUT_RANGE(rx, nx, sx, fs->dsx)
+	GET_OUTPUT_RANGE(ry, ny, sy, fs->dsy)
+
+	ierr = DMDAVecGetArray(surf->DA_SURF, surf->R_Cont, &CC); CHKERRQ(ierr);
+
+	if(!fs->dsz.rank)
+	{
+		START_PLANE_LOOP
+		{
+			// store surface topography
+			buff[cn++] = (float)(cf*CC[L][j][i]);
+		}
+		END_PLANE_LOOP
+	}
+
+	ierr = DMDAVecRestoreArray(surf->DA_SURF, surf->R_Cont, &CC); CHKERRQ(ierr);
+
+	OutputBufferWrite(fp, buff, cn);
+
+	PetscFunctionReturn(0);
+}
+//----------------------------------------------------------------------------//
+

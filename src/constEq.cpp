@@ -461,7 +461,7 @@ PetscErrorCode DevConstEq(
 	PetscInt     i;
 	ConstEqCtx   ctx;
 	Material_t  *mat;
-	PetscScalar  DII, APS, eta_total, eta_creep_phase, eta_viscoplastic_phase, DIIpl, dEta, fr, mf,mf_temp;
+	PetscScalar  DII, APS, eta_total, eta_creep_phase, eta_viscoplastic_phase, DIIpl, dEta, fr, mf,mf_temp=0.0;
 
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
@@ -492,12 +492,13 @@ PetscErrorCode DevConstEq(
 		{
 			// get reference to material parameters table
 			mat = &phases[i];
-			/*
+
 			// Get PD data
 			if(mat->Pd_rho == 1)
 			{
 				// Get the data from phase diagram
 				ierr = SetDataPhaseDiagram(pd, p, T, 0, mat->pdn); CHKERRQ(ierr);
+				/*
 				// Viscosity Feedback
 				if(mat->MeltE>0 && !ctrl->initGuess)
 				{
@@ -520,8 +521,9 @@ PetscErrorCode DevConstEq(
 				{
 					svDev->mf=pd->mf;
 				}
+				*/
 			}
-			*/
+
 			// setup nonlinear constitutive equation evaluation context
 			ierr = ConstEqCtxSetup(&ctx, mat, soft, ctrl, DII, APS, dt, p, p_lithos, p_pore, T); CHKERRQ(ierr);
 			// solve effective viscosity & plastic strain rate
@@ -585,7 +587,7 @@ PetscErrorCode VolConstEq(
 				// Get the data from phase diagram
 				SetDataPhaseDiagram(pd, p, T, 0, mat->pdn);
 				svBulk->rho_pd  = pd->rho;
-				if(!ctrl->initGuess && mat->MeltE)
+				if(!ctrl->initGuess && mat->MeltE==1)
 				{
 					mfeff = pd->mf-svBulk->mfextot;// historical variables  !!!!!!!! POSSIBLE GENERATION OF ARTIFACT!!!!! {sv->Bulk is computed using all the contributes of the phase
 					// which means that or we find a way to separate each contribute or there is the possibility the melt extracted is underestimated

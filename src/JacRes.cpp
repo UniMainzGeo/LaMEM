@@ -374,6 +374,11 @@ PetscErrorCode JacResCreateData(JacRes *jr)
 	ierr = VecCreateMPI(PETSC_COMM_WORLD, dof->ln, PETSC_DETERMINE, &jr->gsol); CHKERRQ(ierr);
 	ierr = VecCreateMPI(PETSC_COMM_WORLD, dof->ln, PETSC_DETERMINE, &jr->gres); CHKERRQ(ierr);
 
+	// zero out global vectors
+
+	ierr = VecSet(jr->gsol, 0.0); CHKERRQ(ierr);
+	ierr = VecSet(jr->gres, 0.0); CHKERRQ(ierr);
+
 	// velocity components
 	ierr = DMCreateGlobalVector(fs->DA_X, &jr->gvx); CHKERRQ(ierr);
 	ierr = DMCreateGlobalVector(fs->DA_Y, &jr->gvy); CHKERRQ(ierr);

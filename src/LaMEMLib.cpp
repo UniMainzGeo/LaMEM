@@ -563,6 +563,9 @@ PetscErrorCode LaMEMLibSaveOutput(LaMEMLib *lm)
 	step    = ts->istep;
 	bgPhase = lm->actx.bgPhase;
 
+	if(lm->jr.ctrl.initGuess==0) ierr = Mean_Continental_Crust(&lm->jr); CHKERRQ(ierr);
+
+
 	// create directory (encode current time & step number)
 	asprintf(&dirName, "Timestep_%1.8lld_%1.8e", (LLD)step, time);
 
@@ -637,6 +640,9 @@ PetscErrorCode LaMEMLibSolve(LaMEMLib *lm, void *param)
 		ierr = JacResGetI2Gdt(&lm->jr); CHKERRQ(ierr);
 
 		// solve nonlinear equation system with SNES
+
+
+
 		PetscTime(&t);
 		// Call Melt Extraction to compute the mass.
 		PrintStart(&t, "MeltExInjectionRoutine", NULL);
@@ -716,6 +722,8 @@ PetscErrorCode LaMEMLibSolve(LaMEMLib *lm, void *param)
 
 		// update phase ratios taking into account actual free surface position
 		ierr = FreeSurfGetAirPhaseRatio(&lm->surf); CHKERRQ(ierr);
+
+
 
 		//==================
 		// Save data to disk

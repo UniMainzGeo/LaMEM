@@ -72,6 +72,7 @@ struct FreeSurf
 	Vec     NewMafic,NewContinental,lNewMafic,lNewContinental; // Store how much continental have been produced (m3)
 	Vec     TtotMaf,TtotCon,VcurrentMaf,VcurrentCon,TProductionCon,TProductionMaf;
 	Vec     PtotMaf,PtotCon,PProductionCon,PProductionMaf;
+	Vec     R_Cont;
 
 
 	// flags/parameters

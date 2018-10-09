@@ -138,12 +138,13 @@ public:
 	PetscInt 	PhInt;         // Phase Id of the intrusion                  []
 	PetscInt	PhExt;         // Phase Id of the effusion                   []
 	PetscInt	PhNext;        // Phase Id of the next phase                 []
-	PetscScalar DInt;          // Depth of intrusion                         [m/z(moho)]
-	PetscScalar DTol;          // Depth of intrusion                         [m]
+	PetscScalar DInt;          // Depth of intrusion                         [m/Thickness]
+	PetscScalar DTol;          // Depth of intrusion                         [m/Thickness]
 	PetscScalar pMant;         // Specify if a phase is mantle or not [0 or 1]
 	PetscInt    MeltE;         // Control value                           [0 or 1]
 	PetscScalar VolCor;       // It corrects the volume injected. When you extract melt, its specific volume is not the same of the mush/rock. If the injected material could further melt user can adjust it such that it is close to 1
 	PetscInt    pMc ;          // Indicate if the crust is mafic (visualization)
+	PetscInt    pCc ;           // It is a parameter useful for visualization
 };
 
 //---------------------------------------------------------------------------

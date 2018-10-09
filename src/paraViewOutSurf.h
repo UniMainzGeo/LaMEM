@@ -74,6 +74,7 @@ struct PVSurf
 	PetscInt   PMafic;
 	PetscInt   TCon;
 	PetscInt   PCon;
+	PetscInt   Felsic;
 
 
 };
@@ -125,6 +126,7 @@ PetscErrorCode PVSurfWritePMafic(PVSurf *pvsurf, FILE *fp);
 
 PetscErrorCode PVSurfWriteTCon(PVSurf *pvsurf, FILE *fp);
 PetscErrorCode PVSurfWritePCon(PVSurf *pvsurf, FILE *fp);
+PetscErrorCode PVSurfWriteFelsic(PVSurf *pvsurf, FILE *fp);
 
 //---------------------------------------------------------------------------
 #endif

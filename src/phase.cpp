@@ -352,7 +352,7 @@ PetscErrorCode DBMatReadPhase(DBMat *dbm, FB *fb)
 	ierr = getScalarParam(fb,_OPTIONAL_,"pMant",      &m->pMant, 1, 1.0); CHKERRQ(ierr);
 	ierr = getIntParam   (fb,_OPTIONAL_,"MeltE",      &m->MeltE, 1, 1.0); CHKERRQ(ierr);
 	ierr = getIntParam   (fb,_OPTIONAL_,"pMc",        &m->pMc,   1, 1.0); CHKERRQ(ierr);
-
+	ierr = getIntParam   (fb,_OPTIONAL_,"pCc",        &m->pCc,   1, 1.0); CHKERRQ(ierr);
 
 	// DEPTH-DEPENDENT
 
