@@ -125,6 +125,8 @@ PetscErrorCode JacResCreate(JacRes *jr, FB *fb)
 	ierr = getScalarParam(fb, _OPTIONAL_, "gw_level",        &ctrl->gwLevel,       1, 1.0); CHKERRQ(ierr);
 	ierr = getIntParam   (fb, _OPTIONAL_, "get_permea",      &ctrl->getPermea,     1, 1);   CHKERRQ(ierr);
 	ierr = getScalarParam(fb, _OPTIONAL_, "MinTk",           &ctrl->MinTk,        1, 1.0); CHKERRQ(ierr);
+	ierr = getIntParam   (fb, _OPTIONAL_, "rescal",          &ctrl->rescal,        1, 1);   CHKERRQ(ierr);
+
 
 	if     (!strcmp(gwtype, "none"))  ctrl->gwType = _GW_NONE_;
 	else if(!strcmp(gwtype, "top"))   ctrl->gwType = _GW_TOP_;
@@ -1730,7 +1732,7 @@ PetscErrorCode JacResCopyVel(JacRes *jr, Vec x)
 		if(k == 0)   { fk = 1; K = k-1; SET_TPC(bcvx, lvx, K, j, i, pmdof) }
 		if(k == mcz) { fk = 1; K = k+1; SET_TPC(bcvx, lvx, K, j, i, pmdof) }
 
-		if(fj*fk) SET_EDGE_CORNER(n, lvx, K, J, i, k, j, i, pmdof)
+		if(fj && fk) SET_EDGE_CORNER(n, lvx, K, J, i, k, j, i, pmdof)
 	}
 	END_STD_LOOP
 
@@ -1753,7 +1755,7 @@ PetscErrorCode JacResCopyVel(JacRes *jr, Vec x)
 		if(k == 0)   { fk = 1; K = k-1; SET_TPC(bcvy, lvy, K, j, i, pmdof) }
 		if(k == mcz) { fk = 1; K = k+1; SET_TPC(bcvy, lvy, K, j, i, pmdof) }
 
-		if(fi*fk) SET_EDGE_CORNER(n, lvy, K, j, I, k, j, i, pmdof)
+		if(fi && fk) SET_EDGE_CORNER(n, lvy, K, j, I, k, j, i, pmdof)
 	}
 	END_STD_LOOP
 
@@ -1777,7 +1779,7 @@ PetscErrorCode JacResCopyVel(JacRes *jr, Vec x)
 		if(j == 0)   { fj = 1; J = j-1; SET_TPC(bcvz, lvz, k, J, i, pmdof) }
 		if(j == mcy) { fj = 1; J = j+1; SET_TPC(bcvz, lvz, k, J, i, pmdof) }
 
-		if(fi*fj) SET_EDGE_CORNER(n, lvz, k, J, I, k, j, i, pmdof)
+		if(fi && fj) SET_EDGE_CORNER(n, lvz, k, J, I, k, j, i, pmdof)
 	}
 	END_STD_LOOP
 
@@ -1867,10 +1869,10 @@ PetscErrorCode JacResCopyPres(JacRes *jr, Vec x)
 		if(k == 0)   { fk = 1; K = k-1; SET_TPC(bcp, lp, K, j, i, pmdof) }
 		if(k == mcz) { fk = 1; K = k+1; SET_TPC(bcp, lp, K, j, i, pmdof) }
 
-		if(fi*fj)    SET_EDGE_CORNER(n, lp, k, J, I, k, j, i, pmdof)
-		if(fi*fk)    SET_EDGE_CORNER(n, lp, K, j, I, k, j, i, pmdof)
-		if(fj*fk)    SET_EDGE_CORNER(n, lp, K, J, i, k, j, i, pmdof)
-		if(fi*fj*fk) SET_EDGE_CORNER(n, lp, K, J, I, k, j, i, pmdof)
+		if(fi && fj)       SET_EDGE_CORNER(n, lp, k, J, I, k, j, i, pmdof)
+		if(fi && fk)       SET_EDGE_CORNER(n, lp, K, j, I, k, j, i, pmdof)
+		if(fj && fk)       SET_EDGE_CORNER(n, lp, K, J, i, k, j, i, pmdof)
+		if(fi && fj && fk) SET_EDGE_CORNER(n, lp, K, J, I, k, j, i, pmdof)
 	}
 	END_STD_LOOP
 

@@ -14,6 +14,10 @@ test:
 	@echo "Testing whether pyTestHarness exists"
 	@test -s ./pythontestharness/lib || { echo "Looks like pyTestHarness does not exist! Installing from git..."; git submodule init; git submodule update; git submodule status;  }
 
+	@echo "Running LaMEM tests using the pythontestharness"
+	@echo "You can do this, and have additional options, with:" 
+	@echo "$ python runLaMEM_Tests.py"
+	@echo "In case problems occur, delete 'pthBatchQueuingSystem.conf', and run the python script directly"
 	@python runLaMEM_Tests.py
 
 clean :
@@ -30,5 +34,6 @@ clean :
 
 purge : clean
 	@rm -rf *.log
+	@rm -rf *.output
 	@rm -f output/*
 	@rm -f log/*

@@ -143,6 +143,8 @@
 	eyy_time_delims  = 1.0
 	eyy_strain_rates = 1e-15 2e-15
 
+	bg_ref_point     = 0.0 0.0 0.0       # background strain rate reference point (fixed)
+	
 # Bezier blocks (single entry per block)
 
 	<BCBlockStart>
@@ -224,8 +226,8 @@
 	p_litho_plast   = 1              # use lithostatic pressure for plasticity
 	p_lim_plast     = 1              # limit pressure at first iteration for plasticity
 	jac_mat_free    = 1              # matrix-free closed-form jacobian
-	eta_min         = 1e18           # viscosity upper bound
-	eta_max         = 1e25           # viscosity lower limit
+	eta_min         = 1e18           # viscosity lower bound
+	eta_max         = 1e25           # viscosity upper limit
 	eta_ref         = 1e20           # reference viscosity (initial guess)
 	T_ref           = 20.0           # reference temperature
 	RUGC            = 8.31           # universal gas constant (required only for non-dimensional setups)
@@ -241,6 +243,7 @@
 	gw_level        = 10.0           # ground water level at the free surface (if defined)
 	biot            = 0.7            # Biot pressure parameer
 	get_permea      = 1              # effective permeability computation activation flag
+	rescal          = 1              # stensil rescaling flag (for interval constraints)
 
 # Groundwater level type specification:
 

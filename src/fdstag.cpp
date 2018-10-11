@@ -432,17 +432,17 @@ PetscErrorCode Discret1DGenCoord(Discret1D *ds, MeshSeg1D *ms)
 //---------------------------------------------------------------------------
 #undef __FUNCT__
 #define __FUNCT__ "Discret1DStretch"
-PetscErrorCode Discret1DStretch(Discret1D *ds, PetscScalar eps)
+PetscErrorCode Discret1DStretch(Discret1D *ds, PetscScalar eps, PetscScalar ref)
 {
-	// stretch grid with constant stretch factor about coordinate origin.
-	// x_new = x_old + eps*x_old
+	// stretch grid with constant stretch factor about reference point
+	// x_new = x_old + eps*(x_old - x_ref)
 
 	PetscInt i;
 
 	PetscFunctionBegin;
 
 	// recompute (stretch) node coordinates in the buffer
-	for(i = 0; i < ds->bufsz; i++) ds->nbuff[i] *= (1.0 + eps);
+	for(i = 0; i < ds->bufsz; i++) ds->nbuff[i] += eps*(ds->nbuff[i] - ref);
 
 	// recompute cell coordinates
 	for(i = -1; i < ds->ncels+1; i++)

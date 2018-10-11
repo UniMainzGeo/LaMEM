@@ -541,7 +541,7 @@ PetscErrorCode PVOutWriteMeltFraction(JacRes *jr, OutBuf *outbuf)
 	// macros to copy melt fraction to buffer
 	#define GET_MF_CENTER  buff[k][j][i] = jr->svCell[iter++].svBulk.mf;
 
-	cf = 1.0;
+	cf = scal->unit;
 
 	INTERPOLATE_COPY(fs->DA_CEN, outbuf->lbcen, InterpCenterCorner, GET_MF_CENTER,  1, 0)
 

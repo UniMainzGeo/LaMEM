@@ -207,6 +207,9 @@ struct BCCtx
 	PetscScalar  EyyTimeDelims [_max_periods_-1];
 	PetscScalar  EyyStrainRates[_max_periods_  ];
 
+	// background strain rate reference point
+	PetscScalar  BGRefPoint[3];
+
 	// Bezier block
 	PetscInt 	 nblocks;             // number of Bezier blocks
 	BCBlock      blocks[_max_boxes_]; // BC block
@@ -316,12 +319,15 @@ PetscErrorCode BCApplyVelTPC(BCCtx *bc);
 // Service functions
 //---------------------------------------------------------------------------
 
-// get current background strain rates
+// get current background strain rates & reference point coordinates
 PetscErrorCode BCGetBGStrainRates(
-	BCCtx       *bc,
-	PetscScalar *Exx_,
-	PetscScalar *Eyy_,
-	PetscScalar *Ezz_);
+		BCCtx       *bc,
+		PetscScalar *Exx_,
+		PetscScalar *Eyy_,
+		PetscScalar *Ezz_,
+		PetscScalar *Rxx_,
+		PetscScalar *Ryy_,
+		PetscScalar *Rzz_);
 
 // stretch staggered grid if background strain rates are defined
 PetscErrorCode BCStretchGrid(BCCtx *bc);

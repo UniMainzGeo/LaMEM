@@ -48,11 +48,6 @@ mode = opt
 
 #====================================================
 
-# Define LaMEM flags & include directories
-LAMEM_FLAGS = -I./fdstag -I.
-
-#====================================================
-
 # Define additional warning & dependency generation flags (compiler-dependent)
 
 PLATFORM = $(shell uname -m)

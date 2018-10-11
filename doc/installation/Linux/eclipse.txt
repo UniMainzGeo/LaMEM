@@ -71,7 +71,7 @@ CONFIGURE PROJECT
 
    PETSc (version X.Y.Z) applications would require setting:
       /opt/mpich3/include
-      /opt/petsc/petsc-X.Y.Z-debug/include
+      /opt/petsc/petsc-X.Y.Z-deb/include
 
     Each path can be added as follows:
     In the project properties select Path and Symbols -> Includes -> Add

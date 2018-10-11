@@ -147,21 +147,24 @@ PetscInt TSSolIsDone(TSSol *ts)
 	//=================================================
 
 	Scaling     *scal;
-	PetscScalar  time_end, timestep_sign;
+	PetscScalar  time_end;
 	PetscInt     done;
-	PetscBool      found;
-	char           str[_STR_LEN_];
 
 	scal = ts->scal;
 
-	PetscOptionsGetCheckString("-mode", str, &found); 
-	timestep_sign = 1.0;
-	if(found)
-	{
-		if(!strcmp(str, "reverse")){ 
-			timestep_sign = -1.0;		// so we can deal with reverse simulations
-		}
-	}
+//  This doesn't seem to be used here
+//	PetscScalar timestep_sign
+//	PetscBool      found;
+//	char           str[_STR_LEN_];
+//	PetscOptionsGetCheckString("-mode", str, &found);
+//	timestep_sign = 1.0;
+//	if(found)
+//	{
+//		if(!strcmp(str, "reverse"))
+//		{
+//			timestep_sign = -1.0; // so we can deal with reverse simulations
+//		}
+//	}
 	
 	// get end time (with tolerance)
 	time_end = ts->time_end - ts->tol*ts->dt_max;

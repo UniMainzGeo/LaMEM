@@ -97,7 +97,7 @@ PetscErrorCode FreeSurfCreate(FreeSurf *surf, FB *fb)
 		// sedimentation model parameters
 		ierr = getIntParam   (fb, _REQUIRED_, "sed_num_layers",  &surf->numLayers,  1,                 _max_layers_);      CHKERRQ(ierr);
 		ierr = getScalarParam(fb, _REQUIRED_, "sed_time_delims",  surf->timeDelims, surf->numLayers-1, scal->time);        CHKERRQ(ierr);
-		ierr = getScalarParam(fb, _REQUIRED_, "sed_rates",        surf->sedRates,   surf->numLayers,   scal->strain_rate); CHKERRQ(ierr);
+		ierr = getScalarParam(fb, _REQUIRED_, "sed_rates",        surf->sedRates,   surf->numLayers,   scal->velocity);    CHKERRQ(ierr);
 		ierr = getIntParam   (fb, _REQUIRED_, "sed_phases",       surf->sedPhases,  surf->numLayers,   maxPhaseID);        CHKERRQ(ierr);
 	}
 
@@ -406,7 +406,7 @@ PetscErrorCode FreeSurfAdvectTopo(FreeSurf *surf)
 	PetscInt    I, I1, I2, J, J1, J2;
 	PetscInt    i, j, jj, found, nx, ny, sx, sy, L, mx, my;
 	PetscScalar cx[13], cy[13], cz[13];
-	PetscScalar X, X1, X2, Y, Y1, Y2, Z, Exx, Eyy, step, gtol;
+	PetscScalar X, X1, X2, Y, Y1, Y2, Z, Exx, Eyy, Rxx, Ryy, step, gtol;
 	PetscScalar ***advect, ***topo, ***vx, ***vy, ***vz;
 
 	// local search grid triangulation
@@ -446,7 +446,7 @@ PetscErrorCode FreeSurfAdvectTopo(FreeSurf *surf)
 	gtol = fs->gtol;
 
 	// get current background strain rates
-	ierr = BCGetBGStrainRates(jr->bc, &Exx, &Eyy, NULL); CHKERRQ(ierr);
+	ierr = BCGetBGStrainRates(jr->bc, &Exx, &Eyy, NULL, &Rxx, &Ryy, NULL); CHKERRQ(ierr);
 
 	// access surface topography and velocity
 	ierr = DMDAVecGetArray(surf->DA_SURF, surf->gtopo, &advect); CHKERRQ(ierr);
@@ -522,8 +522,8 @@ PetscErrorCode FreeSurfAdvectTopo(FreeSurf *surf)
 		cz[12] = (cz[4] + cz[5] + cz[7] + cz[8])/4.0;
 
 		// compute updated node position if background strain rate is defined
-		X *= (1.0 + step*Exx);
-		Y *= (1.0 + step*Eyy);
+		X += step*Exx*(X - Rxx);
+		Y += step*Eyy*(Y - Ryy);
 
 		// find point in the deformed grid, interpolate topography
 		found = 0;
@@ -569,7 +569,7 @@ PetscErrorCode FreeSurfSmoothMaxAngle(FreeSurf *surf)
 	FDSTAG      *fs;
 	Vec         cellTopo;
 	PetscScalar ***ntopo, ***ctopo;
-	PetscScalar tanMaxAng, zbot, dx, dy, h, t, tmax, cz[4], Ezz, step;
+	PetscScalar tanMaxAng, zbot, dx, dy, h, t, tmax, cz[4], Ezz, Rzz, step;
 	PetscInt    i, j, nx, ny, sx, sy, L, cnt, gcnt, I1, I2, J1, J2, mx, my;
 
 	PetscErrorCode ierr;
@@ -591,10 +591,10 @@ PetscErrorCode FreeSurfSmoothMaxAngle(FreeSurf *surf)
 	ierr = FDSTAGGetLocalBox(fs, NULL, NULL, &zbot, NULL, NULL, NULL); CHKERRQ(ierr);
 
 	// get current background strain rates
-	ierr = BCGetBGStrainRates(jr->bc, NULL, NULL, &Ezz); CHKERRQ(ierr);
+	ierr = BCGetBGStrainRates(jr->bc, NULL, NULL, &Ezz, NULL, NULL, &Rzz); CHKERRQ(ierr);
 
 	// update position of bottom boundary
-	zbot *= (1.0 + step*Ezz);
+	zbot += step*Ezz*(zbot - Rzz);
 
 	// get cell topography vector
 	ierr = DMGetLocalVector(jr->DA_CELL_2D, &cellTopo); CHKERRQ(ierr);
@@ -974,7 +974,7 @@ PetscErrorCode FreeSurfSetTopoFromFile(FreeSurf *surf, FB *fb)
 	PetscFunctionBegin;
 
 	// get file name
-	ierr = getStringParam(fb, _OPTIONAL_, "topo_file", filename, NULL); CHKERRQ(ierr);
+	ierr = getStringParam(fb, _OPTIONAL_, "surf_topo_file", filename, NULL); CHKERRQ(ierr);
 
 	// check whether file is provided
 	if(!strlen(filename)) PetscFunctionReturn(0);
@@ -1048,9 +1048,14 @@ PetscErrorCode FreeSurfSetTopoFromFile(FreeSurf *surf, FB *fb)
 		1.0/4.0 * (1.0+xpL) * (1.0-ypL) * Z[Iy     * nxTopo + Ix+1 ] +
 		1.0/4.0 * (1.0+xpL) * (1.0+ypL) * Z[(Iy+1) * nxTopo + Ix+1 ] +
 		1.0/4.0 * (1.0-xpL) * (1.0+ypL) * Z[(Iy+1) * nxTopo + Ix   ])/leng;
+
+		// Hack for the last corner, where the interpolation above does not work.
+		if ((j==sy+ny-1) & (i==sx+nx-1)){
+			topo[level][j][i] = topo[level][j-1][i-1];
+		}
 	}
 	END_PLANE_LOOP
-	
+
 	// restore access
 	ierr = DMDAVecRestoreArray(surf->DA_SURF, surf->gtopo, &topo);  CHKERRQ(ierr);
 

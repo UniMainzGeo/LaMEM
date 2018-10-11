@@ -380,10 +380,10 @@ PetscErrorCode JacResApplyTempBC(JacRes *jr)
 		if(k == 0)   { fk = 1; K = k-1; SET_TPC(bcT, lT, K, j, i, pmdof) }
 		if(k == mcz) { fk = 1; K = k+1; SET_TPC(bcT, lT, K, j, i, pmdof) }
 
-		if(fi*fj)    SET_EDGE_CORNER(n, lT, k, J, I, k, j, i, pmdof)
-		if(fi*fk)    SET_EDGE_CORNER(n, lT, K, j, I, k, j, i, pmdof)
-		if(fj*fk)    SET_EDGE_CORNER(n, lT, K, J, i, k, j, i, pmdof)
-		if(fi*fj*fk) SET_EDGE_CORNER(n, lT, K, J, I, k, j, i, pmdof)
+		if(fi && fj)       SET_EDGE_CORNER(n, lT, k, J, I, k, j, i, pmdof)
+		if(fi && fk)       SET_EDGE_CORNER(n, lT, K, j, I, k, j, i, pmdof)
+		if(fj && fk)       SET_EDGE_CORNER(n, lT, K, J, i, k, j, i, pmdof)
+		if(fi && fj && fk) SET_EDGE_CORNER(n, lT, K, J, I, k, j, i, pmdof)
 	}
 	END_STD_LOOP
 

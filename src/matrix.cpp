@@ -124,6 +124,7 @@ PetscErrorCode MatAIJAssemble(Mat P, PetscInt numRows, const PetscInt rows[], Pe
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
 
+	ierr = MatSetOption(P, MAT_NEW_NONZERO_LOCATION_ERR, PETSC_FALSE); CHKERRQ(ierr);
 	ierr = MatAssemblyBegin(P, MAT_FINAL_ASSEMBLY); CHKERRQ(ierr);
 	ierr = MatAssemblyEnd  (P, MAT_FINAL_ASSEMBLY); CHKERRQ(ierr);
 
@@ -134,6 +135,7 @@ PetscErrorCode MatAIJAssemble(Mat P, PetscInt numRows, const PetscInt rows[], Pe
 
 	// zero out constrained rows, form unit diagonal for the constrained block
 	ierr = MatZeroRows(P, numRows, rows, diag, NULL, NULL); CHKERRQ(ierr);
+
 
 	PetscFunctionReturn(0);
 }
@@ -617,8 +619,9 @@ PetscErrorCode PMatMonoAssemble(PMat pm)
 	PMatMono    *P;
 	PetscInt    idx[7];
 	PetscScalar v[49];
+	PetscScalar dr;
 	PetscInt    mcx, mcy, mcz;
-	PetscInt    iter, i, j, k, nx, ny, nz, sx, sy, sz;
+	PetscInt    iter, i, j, k, nx, ny, nz, sx, sy, sz, rescal;
 	PetscScalar eta, rho, IKdt, diag, pgamma, pt, dt, fssa, *grav;
 	PetscScalar dx, dy, dz, bdx, fdx, bdy, fdy, bdz, fdz;
 	PetscScalar ***ivx, ***ivy, ***ivz, ***ip;
@@ -637,9 +640,10 @@ PetscErrorCode PMatMonoAssemble(PMat pm)
 	P      = (PMatMono*)pm->data;
 
 	// get density gradient stabilization parameters
-	dt   = jr->ts->dt; // time step
-	fssa = jr->ctrl.FSSA;   // density gradient penalty parameter
-    grav = jr->ctrl.grav;   // gravity acceleration
+	dt     = jr->ts->dt;      // time step
+	fssa   = jr->ctrl.FSSA;   // density gradient penalty parameter
+    grav   = jr->ctrl.grav;   // gravity acceleration
+    rescal = jr->ctrl.rescal; // stencil rescaling flag
 
 	// get penalty parameter
 	pgamma = pm->pgamma;
@@ -762,6 +766,16 @@ PetscErrorCode PMatMonoAssemble(PMat pm)
 		bdx = SIZE_CELL(i-1, sx, fs->dsx);   fdx = SIZE_CELL(i, sx, fs->dsx);
 		bdy = SIZE_CELL(j-1, sy, fs->dsy);   fdy = SIZE_CELL(j, sy, fs->dsy);
 
+		// get boundary constraints
+		pdofidx[0] = 1;   cf[0] = bcvx[k][j-1][i];
+		pdofidx[1] = 0;   cf[1] = bcvx[k][j][i];
+		pdofidx[2] = 3;   cf[2] = bcvy[k][j][i-1];
+		pdofidx[3] = 2;   cf[3] = bcvy[k][j][i];
+
+		// stencil rescaling
+		RESCALE_STENCIL(rescal, dx, fdx, bdx, cf[3], cf[2], dr);
+		RESCALE_STENCIL(rescal, dy, fdy, bdy, cf[1], cf[0], dr);
+
 		// compute local matrix
 		//       vx_(j-1)             vx_(j)               vy_(i-1)             vy_(i)
 		v[0]  =  eta/dy/bdy; v[1]  = -eta/dy/bdy; v[2]  =  eta/dx/bdy; v[3]  = -eta/dx/bdy; // fx_(j-1) [sxy]
@@ -774,12 +788,6 @@ PetscErrorCode PMatMonoAssemble(PMat pm)
 		idx[1] = (PetscInt) ivx[k][j][i];
 		idx[2] = (PetscInt) ivy[k][j][i-1];
 		idx[3] = (PetscInt) ivy[k][j][i];
-
-		// get boundary constraints
-		pdofidx[0] = 1;   cf[0] = bcvx[k][j-1][i];
-		pdofidx[1] = 0;   cf[1] = bcvx[k][j][i];
-		pdofidx[2] = 3;   cf[2] = bcvy[k][j][i-1];
-		pdofidx[3] = 2;   cf[3] = bcvy[k][j][i];
 
 		// apply two-point constraints on the ghost nodes
 		getTwoPointConstr(4, idx, pdofidx, cf);
@@ -813,6 +821,16 @@ PetscErrorCode PMatMonoAssemble(PMat pm)
 		bdx = SIZE_CELL(i-1, sx, fs->dsx);   fdx = SIZE_CELL(i, sx, fs->dsx);
 		bdz = SIZE_CELL(k-1, sz, fs->dsz);   fdz = SIZE_CELL(k, sz, fs->dsz);
 
+		// get boundary constraints
+		pdofidx[0] = 1;   cf[0] = bcvx[k-1][j][i];
+		pdofidx[1] = 0;   cf[1] = bcvx[k][j][i];
+		pdofidx[2] = 3;   cf[2] = bcvz[k][j][i-1];
+		pdofidx[3] = 2;   cf[3] = bcvz[k][j][i];
+
+		// stencil rescaling
+		RESCALE_STENCIL(rescal, dx, fdx, bdx, cf[3], cf[2], dr);
+		RESCALE_STENCIL(rescal, dz, fdz, bdz, cf[1], cf[0], dr);
+
 		// compute local matrix
 		//       vx_(k-1)             vx_(k)               vz_(i-1)             vz_(i)
 		v[0]  =  eta/dz/bdz; v[1]  = -eta/dz/bdz; v[2]  =  eta/dx/bdz; v[3]  = -eta/dx/bdz; // fx_(k-1) [sxz]
@@ -825,12 +843,6 @@ PetscErrorCode PMatMonoAssemble(PMat pm)
 		idx[1] = (PetscInt) ivx[k][j][i];
 		idx[2] = (PetscInt) ivz[k][j][i-1];
 		idx[3] = (PetscInt) ivz[k][j][i];
-
-		// get boundary constraints
-		pdofidx[0] = 1;   cf[0] = bcvx[k-1][j][i];
-		pdofidx[1] = 0;   cf[1] = bcvx[k][j][i];
-		pdofidx[2] = 3;   cf[2] = bcvz[k][j][i-1];
-		pdofidx[3] = 2;   cf[3] = bcvz[k][j][i];
 
 		// apply two-point constraints on the ghost nodes
 		getTwoPointConstr(4, idx, pdofidx, cf);
@@ -864,6 +876,16 @@ PetscErrorCode PMatMonoAssemble(PMat pm)
 		bdy = SIZE_CELL(j-1, sy, fs->dsy);   fdy = SIZE_CELL(j, sy, fs->dsy);
 		bdz = SIZE_CELL(k-1, sz, fs->dsz);   fdz = SIZE_CELL(k, sz, fs->dsz);
 
+		// get boundary constraints
+		pdofidx[0] = 1;   cf[0] = bcvy[k-1][j][i];
+		pdofidx[1] = 0;   cf[1] = bcvy[k][j][i];
+		pdofidx[2] = 3;   cf[2] = bcvz[k][j-1][i];
+		pdofidx[3] = 2;   cf[3] = bcvz[k][j][i];
+
+		// stencil rescaling
+		RESCALE_STENCIL(rescal, dy, fdy, bdy, cf[3], cf[2], dr);
+		RESCALE_STENCIL(rescal, dz, fdz, bdz, cf[1], cf[0], dr);
+
 		// compute local matrix
 		//       vy_(k-1)             vy_(k)               vz_(j-1)             vz_(j)
 		v[0]  =  eta/dz/bdz; v[1]  = -eta/dz/bdz; v[2]  =  eta/dy/bdz; v[3]  = -eta/dy/bdz; // fy_(k-1) [syz]
@@ -876,12 +898,6 @@ PetscErrorCode PMatMonoAssemble(PMat pm)
 		idx[1] = (PetscInt) ivy[k][j][i];
 		idx[2] = (PetscInt) ivz[k][j-1][i];
 		idx[3] = (PetscInt) ivz[k][j][i];
-
-		// get boundary constraints
-		pdofidx[0] = 1;   cf[0] = bcvy[k-1][j][i];
-		pdofidx[1] = 0;   cf[1] = bcvy[k][j][i];
-		pdofidx[2] = 3;   cf[2] = bcvz[k][j-1][i];
-		pdofidx[3] = 2;   cf[3] = bcvz[k][j][i];
 
 		// apply two-point constraints on the ghost nodes
 		getTwoPointConstr(4, idx, pdofidx, cf);
@@ -908,6 +924,31 @@ PetscErrorCode PMatMonoAssemble(PMat pm)
 	// assemble velocity-pressure matrix, remove constrained rows
 	ierr = MatAIJAssemble(P->A, bc->numSPC, bc->SPCList, 1.0); CHKERRQ(ierr);
 	ierr = MatAIJAssemble(P->M, bc->numSPC, bc->SPCList, 0.0); CHKERRQ(ierr);
+
+	// dump preconditioning matrices to disk to inspect them with MATLAB (mainly for debugging)
+	PetscViewer viewer;
+	PetscBool   flg, flg_name;
+	char        name[_STR_LEN_], name_A[_STR_LEN_], name_M[_STR_LEN_];
+
+	ierr = PetscOptionsHasName(NULL, NULL, "-dump_precondition_matrixes", &flg); CHKERRQ(ierr);
+
+	if (flg)
+	{
+		PetscOptionsGetString(NULL,NULL,"-dump_precondition_matrixes_prefix",name,sizeof(name),&flg_name);
+		if (!flg_name) SETERRQ(PETSC_COMM_WORLD,1,"Must indicate binary file name with the -dump_precondition_matrixes_prefix option");
+
+		// dump the A preconditioning matrix 2 disk
+		sprintf(name_A,"%s_A.bin",name);
+		PetscViewerBinaryOpen(PETSC_COMM_WORLD,name_A,FILE_MODE_WRITE,&viewer);
+		MatView(P->A, viewer);
+		PetscViewerDestroy(&viewer);
+
+		// dump the M preconditioning matrix 2 disk
+		sprintf(name_M,"%s_M.bin",name);
+		PetscViewerBinaryOpen(PETSC_COMM_WORLD,name_M,FILE_MODE_WRITE,&viewer);
+		MatView(P->A, viewer);
+		PetscViewerDestroy(&viewer);
+	}
 
 	PetscFunctionReturn(0);
 }

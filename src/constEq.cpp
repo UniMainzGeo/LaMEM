@@ -151,10 +151,14 @@ PetscErrorCode ConstEqCtxSetup(
 	//===========
 	// PLASTICITY
 	//===========
+	if (!mat->ch && !mat->fr){
+		PetscFunctionReturn(0);		// return if no plasticity is set
+	}
 
 	// apply strain softening to friction and cohesion
 	ch = ApplyStrainSoft(soft, mat->chSoftID, APS, mat->ch);
 	fr = ApplyStrainSoft(soft, mat->frSoftID, APS, mat->fr);
+
 
 	// fit to limits
 	if(ch < ctrl->minCh) ch = ctrl->minCh;
@@ -483,6 +487,12 @@ PetscErrorCode DevConstEq(
 	dEta         = 0.0;
 	fr           = 0.0;
 
+//////
+	DIIpl = 0.0;
+eta_viscoplastic_phase=0;
+eta_creep_phase = 0;
+eta_total = 0;
+
 	// scan all phases
 	for(i = 0; i < numPhases; i++)
 	{
@@ -498,6 +508,8 @@ PetscErrorCode DevConstEq(
 			{
 				// Get the data from phase diagram
 				ierr = SetDataPhaseDiagram(pd, p, T, 0, mat->pdn); CHKERRQ(ierr);
+				svDev->mf  = pd->mf;
+
 				/*
 				// Viscosity Feedback
 				if(mat->MeltE>0 && !ctrl->initGuess)
@@ -523,7 +535,7 @@ PetscErrorCode DevConstEq(
 				}
 				*/
 			}
-
+		
 			// setup nonlinear constitutive equation evaluation context
 			ierr = ConstEqCtxSetup(&ctx, mat, soft, ctrl, DII, APS, dt, p, p_lithos, p_pore, T); CHKERRQ(ierr);
 			// solve effective viscosity & plastic strain rate
@@ -647,6 +659,8 @@ PetscErrorCode VolConstEq(
 				// depth-dependent density (ad-hoc)
 				rho = mat->rho - (mat->rho - ctrl->rho_fluid)*mat->rho_n*exp(-mat->rho_c*depth);
 			}
+
+			// Phase diagram
 			else if(mat->Pd_rho == 1)   // Density from a phase diagram (have svBulk->rho = svBulk->rho)
 			{
 				// you need to use the actual mf associated specifically with all the phases... . Or we have to assume that the effective melt fraction is actually equally distribuited in the volume?
@@ -764,8 +778,8 @@ PetscErrorCode GetStressEdge(
 #define __FUNCT__ "SetDataPhaseDiagram"
 PetscErrorCode SetDataPhaseDiagram(PData *pd, PetscScalar p, PetscScalar T, PetscScalar pshift, char pdn[])
 {
-    PetscInt       	i,j,i_pd,indT[2],indP[2],ind[4],found;
-    PetscScalar    	fx0,fx1,weight[4];
+	PetscInt       	i,j,i_pd,indT[2],indP[2],ind[4],found;
+	PetscScalar    	fx0,fx1,weight[4];
 	PetscScalar 	minP, dP, minT, dT;
 
 	PetscFunctionBegin;

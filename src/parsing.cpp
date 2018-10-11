@@ -203,11 +203,12 @@ PetscErrorCode FBParseBuffer(FB *fb)
 	b     = fb->fbuf;
 	nchar = fb->nchar;
 
-	// purge line delimiters
+	// purge line delimiters, replace tabs with spaces
 	for(i = 0; i < nchar; i++)
 	{
 		if(b[i] == '\r') b[i] = '\0';
 		if(b[i] == '\n') b[i] = '\0';
+		if(b[i] == '\t') b[i] = ' ';
 	}
 
 	// purge comments
@@ -215,6 +216,23 @@ PetscErrorCode FBParseBuffer(FB *fb)
 	{
 		if(comment) { if(b[i] == '\0') { comment = 0; } b[i] = '\0';   }
 		else        { if(b[i] == '#')  { comment = 1;   b[i] = '\0'; } }
+	}
+
+	// check equal signs
+	for(i = 0; i < nchar; i++)
+	{
+		if(b[i] == '=')
+		{
+			if(!i)
+			{
+				SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "Input file cannot start with equal sign");
+			}
+
+			if(b[i-1] != ' ' || b[i+1] != ' ')
+			{
+				SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "Equal signs must be surrounded by spaces or tabs");
+			}
+		}
 	}
 
 	// purge empty lines, count actual number of lines
@@ -405,12 +423,12 @@ PetscErrorCode FBGetIntArray(
 		strcpy(line, lines[i]);
 
 		// check for key match
-		ptr = strtok(line, " \t");
+		ptr = strtok(line, " ");
 
 		if(!ptr || strcmp(ptr, key)) continue;
 
 		// check equal sign
-		ptr = strtok(NULL, " \t");
+		ptr = strtok(NULL, " ");
 
 		if(!ptr || strcmp(ptr, "="))
 		{
@@ -419,13 +437,13 @@ PetscErrorCode FBGetIntArray(
 
 		// retrieve values after equal sign
 		count = 0;
-		ptr   = strtok(NULL, " \t");
+		ptr   = strtok(NULL, " ");
 
 		while(ptr != NULL && count < num)
 		{
 			values[count++] = (PetscInt)strtol(ptr, NULL, 0);
 
-			ptr = strtok(NULL, " \t");
+			ptr = strtok(NULL, " ");
 		}
 
 		if(!count) SETERRQ1(PETSC_COMM_WORLD, PETSC_ERR_USER, "No value specified for parameter \"%s\"\n", key);
@@ -468,12 +486,12 @@ PetscErrorCode FBGetScalarArray(
 		strcpy(line, lines[i]);
 
 		// check for key match
-		ptr = strtok(line, " \t");
+		ptr = strtok(line, " ");
 
 		if(!ptr || strcmp(ptr, key)) continue;
 
 		// check equal sign
-		ptr = strtok(NULL, " \t");
+		ptr = strtok(NULL, " ");
 
 		if(!ptr || strcmp(ptr, "="))
 		{
@@ -482,13 +500,13 @@ PetscErrorCode FBGetScalarArray(
 
 		// retrieve values after equal sign
 		count = 0;
-		ptr   = strtok(NULL, " \t");
+		ptr   = strtok(NULL, " ");
 
 		while(ptr != NULL && count < num)
 		{
 			values[count++] = (PetscScalar)strtod(ptr, NULL);
 
-			ptr = strtok(NULL, " \t");
+			ptr = strtok(NULL, " ");
 		}
 
 		if(!count) SETERRQ1(PETSC_COMM_WORLD, PETSC_ERR_USER, "No value specified for parameter \"%s\"\n", key);
@@ -528,12 +546,12 @@ PetscErrorCode FBGetString(
 		strcpy(line, lines[i]);
 
 		// check for key match
-		ptr = strtok(line, " \t");
+		ptr = strtok(line, " ");
 
 		if(!ptr || strcmp(ptr, key)) continue;
 
 		// check equal sign
-		ptr = strtok(NULL, " \t");
+		ptr = strtok(NULL, " ");
 
 		if(!ptr || strcmp(ptr, "="))
 		{
@@ -541,7 +559,7 @@ PetscErrorCode FBGetString(
 		}
 
 		// retrieve values after equal sign
-		ptr = strtok(NULL, " \t");
+		ptr = strtok(NULL, " ");
 
 		if(!ptr) SETERRQ1(PETSC_COMM_WORLD, PETSC_ERR_USER, "No value specified for parameter \"%s\"\n", key);
 
@@ -737,9 +755,8 @@ PetscErrorCode PetscOptionsReadFromFile(FB *fb, PetscBool DisplayOutput)
 	// * push command line options to the end of database
 	// (PETSc prioritizes options appearing LAST)
 
-	PetscBool found;
 	PetscInt  jj, i, lnbeg, lnend;
-	char     *line, **lines, *key, *val, *option, filename[_STR_LEN_];
+	char     *line, **lines, *key, *val, *option;
 
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
@@ -763,12 +780,12 @@ PetscErrorCode PetscOptionsReadFromFile(FB *fb, PetscBool DisplayOutput)
 			strcpy(line, lines[i]);
 
 			// get key
-			key = strtok(line, " \t");
+			key = strtok(line, " ");
 
 			if(!key) continue;
 
 			// get value
-			val = strtok(NULL, " \t");
+			val = strtok(NULL, " ");
 
 			if(!val) option = key;
 			else     asprintf(&option, "%s %s", key, val);
@@ -858,12 +875,12 @@ PetscErrorCode  PetscOptionsGetCheckString(
 
 	ierr = PetscOptionsGetString(NULL, NULL, key, str, _STR_LEN_, set); CHKERRQ(ierr);
 
-	if((*set) == PETSC_TRUE && !strlen(str))
+	if(*set && !strlen(str))
 	{
 		SETERRQ1(PETSC_COMM_WORLD, PETSC_ERR_USER, "No value specified for parameter \"%s\"\n", key);
 	}
 
-	if(strlen(str) > _STR_LEN_-2)
+	if(*set && strlen(str) > _STR_LEN_-2)
 	{
 		SETERRQ2(PETSC_COMM_WORLD, PETSC_ERR_USER, "String %s is more than %lld symbols long, (_STR_LEN_ in parsing.h) \"%s\" \n", key, _STR_LEN_-2);
 	}
@@ -924,15 +941,15 @@ PetscErrorCode StokesSetDefaultSolverOptions(FB *fb)
 
 		// if the type of direct solver is specified, use that
 		ierr = getStringParam(fb, _OPTIONAL_, "DirectSolver",        DirectSolver,       NULL );          CHKERRQ(ierr);
-		if     		(!strcmp(DirectSolver, "mumps")){        ierr = PetscOptionsInsertString(NULL, "-jp_pc_factor_mat_solver_package mumps"); 			CHKERRQ(ierr); }
-		else if     (!strcmp(DirectSolver, "superlu_dist")){ ierr = PetscOptionsInsertString(NULL, "-jp_pc_factor_mat_solver_package superlu_dist"); 	CHKERRQ(ierr); }
-		else if     (!strcmp(DirectSolver, "pastix"))	   { ierr = PetscOptionsInsertString(NULL, "-jp_pc_factor_mat_solver_package pastix"); 			CHKERRQ(ierr); }
+		if     		(!strcmp(DirectSolver, "mumps")){        ierr = PetscOptionsInsertString(NULL, "-jp_pc_factor_mat_solver_type mumps"); 			CHKERRQ(ierr); }
+		else if     (!strcmp(DirectSolver, "superlu_dist")){ ierr = PetscOptionsInsertString(NULL, "-jp_pc_factor_mat_solver_type superlu_dist"); 	CHKERRQ(ierr); }
+		else if     (!strcmp(DirectSolver, "pastix"))	   { ierr = PetscOptionsInsertString(NULL, "-jp_pc_factor_mat_solver_type pastix"); 			CHKERRQ(ierr); }
 		else {
 			// solver is not specified; set a default one
 			if (ISParallel(PETSC_COMM_WORLD))
 			{
 				// We need to set one of the parallel solvers. Determine if we have one of them installed in the current PETSC version
-				ierr = PetscOptionsInsertString(NULL, "-jp_pc_factor_mat_solver_package superlu_dist"); 	CHKERRQ(ierr);
+				ierr = PetscOptionsInsertString(NULL, "-jp_pc_factor_mat_solver_type superlu_dist"); 	CHKERRQ(ierr);
 			}
 		}
 
@@ -993,10 +1010,10 @@ PetscErrorCode StokesSetDefaultSolverOptions(FB *fb)
 			ierr = PetscOptionsInsertString(NULL, "-crs_ksp_type preonly"); 		CHKERRQ(ierr);
 			ierr = PetscOptionsInsertString(NULL, "-crs_pc_type lu"); 		CHKERRQ(ierr);
 			if (!strcmp(SolverType, "superlu_dist")){
-				ierr = PetscOptionsInsertString(NULL, "-crs_pc_factor_mat_solver_package superlu_dist"); 		CHKERRQ(ierr);
+				ierr = PetscOptionsInsertString(NULL, "-crs_pc_factor_mat_solver_type superlu_dist"); 		CHKERRQ(ierr);
 			}
 			else if (!strcmp(SolverType, "mumps")){
-				ierr = PetscOptionsInsertString(NULL, "-crs_pc_factor_mat_solver_package mumps"); 		CHKERRQ(ierr);
+				ierr = PetscOptionsInsertString(NULL, "-crs_pc_factor_mat_solver_type mumps"); 		CHKERRQ(ierr);
 			}
 		
 		}
@@ -1010,7 +1027,7 @@ PetscErrorCode StokesSetDefaultSolverOptions(FB *fb)
 			sprintf(str, "-crs_pc_redundant_number %i", integer);	ierr = PetscOptionsInsertString(NULL, str); 	CHKERRQ(ierr);
 
 			ierr = getStringParam(fb, _OPTIONAL_, "MGRedundantSolver",          SolverType,         "superlu_dist");          CHKERRQ(ierr);
-			sprintf(str, "-crs_redundant_pc_factor_mat_solver_package %s", SolverType);	ierr = PetscOptionsInsertString(NULL, str); 	CHKERRQ(ierr);
+			sprintf(str, "-crs_redundant_pc_factor_mat_solver_type %s", SolverType);	ierr = PetscOptionsInsertString(NULL, str); 	CHKERRQ(ierr);
 			
 
 		}
