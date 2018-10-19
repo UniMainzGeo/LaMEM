@@ -1399,6 +1399,7 @@ PetscErrorCode UpdateFailureType(JacRes *jr)
 	PetscScalar pc, pc_pore, ptotal, biot, dt, dP, TensileS, intersection, fr, ch, sensitivity;
 	PetscScalar ***dxx, ***dyy, ***dzz, ***dxy, ***dxz, ***dyz, ***p, ***p_pore;
 	PetscBool actDarcy;
+	PetscInt src, frac;
 
 
 	PetscScalar DevStressII;
@@ -1415,6 +1416,8 @@ PetscErrorCode UpdateFailureType(JacRes *jr)
 	biot      =  matLim->biot;      // Biot pressure parameter
 	actDarcy  = jr->actDarcy;
 	sensitivity = 0.0;
+	src = 0;
+	frac=0;
 
 	if (actDarcy == PETSC_TRUE) {
 
@@ -1517,6 +1520,9 @@ PetscErrorCode UpdateFailureType(JacRes *jr)
 
 		START_STD_LOOP
 		{
+			frac = 0;
+
+
 			// access solution variables
 			svCell = &jr->svCell[iter++];
 			svDev  = &svCell->svDev;
@@ -1564,6 +1570,10 @@ PetscErrorCode UpdateFailureType(JacRes *jr)
 
 			dP = ptotal - pc_pore; // effective mean stress
 
+			//if (k==25 && j==0 && i==127) {
+			//	dP = ptotal - pc_pore; // effective mean stress
+			//}
+
 			TensileS    = -svBulk->Ts;
 			fr = svDev->fr;
 			ch = svDev->ch;
@@ -1581,6 +1591,7 @@ PetscErrorCode UpdateFailureType(JacRes *jr)
 				if (dP < -(TensileS+sensitivity)) {// + 1e+6) {
 					//svDev->failTS = 1.0;
 					svDev->failT = 1.0;
+					frac = 1;
 				}
 				else
 				{
@@ -1588,12 +1599,28 @@ PetscErrorCode UpdateFailureType(JacRes *jr)
 						if (dP>=intersection) {
 							// Shear
 							svDev->failS = 1.0;
+							frac = 1;
 						}else {
 							// Tensile
 							svDev->failT = 1.0;
+							frac = 1;
 						}
 					}
 				}
+			}
+
+			// Save pore pressure in the source point, just to analyze data after the simulation
+			for(src = 0; src < jr->NumDarcySources; src++)
+			{
+				if (jr->DarcySources[src].i == i && jr->DarcySources[src].j == j && jr->DarcySources[src].k == k)
+				{
+					PetscPrintf(PETSC_COMM_WORLD,"------------------------------------------ \n");
+					PetscPrintf(PETSC_COMM_WORLD,"In point source %lld, Liquid pressure Pl= %g; Effective pressure dP= %g; TAU_II = %g; \n", (LLD)src, pc_pore, dP, DevStressII);
+					if (frac==1) {
+						PetscPrintf(PETSC_COMM_WORLD,"          Fracture !!!!!!!!!!!!!!!! \n");
+					}
+				}
+
 			}
 		}
 		END_STD_LOOP
