@@ -563,7 +563,7 @@ PetscErrorCode LaMEMLibSaveOutput(LaMEMLib *lm)
 	step    = ts->istep;
 	bgPhase = lm->actx.bgPhase;
 
-	if(lm->jr.ctrl.initGuess==0) ierr = Mean_Continental_Crust(&lm->jr); CHKERRQ(ierr);
+	//if(lm->jr.ctrl.initGuess==0) ierr = Mean_Continental_Crust(&lm->jr); CHKERRQ(ierr);
 
 
 	// create directory (encode current time & step number)

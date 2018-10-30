@@ -69,12 +69,6 @@ struct FreeSurf
 	Vec     vpatch, vmerge; // patch and merged velocity vectors (global)
 	// Optional
 
-	Vec     NewMafic,NewContinental,lNewMafic,lNewContinental; // Store how much continental have been produced (m3)
-	Vec     TtotMaf,TtotCon,VcurrentMaf,VcurrentCon,TProductionCon,TProductionMaf;
-	Vec     PtotMaf,PtotCon,PProductionCon,PProductionMaf;
-	Vec     R_Cont;
-
-
 	// flags/parameters
 	PetscInt    UseFreeSurf; // free surface activation flag
 	PetscInt    phaseCorr;   // free surface phase correction flag

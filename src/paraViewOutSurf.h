@@ -117,16 +117,7 @@ PetscErrorCode PVSurfWriteTopo(PVSurf *pvsurf, FILE *fp);
 
 PetscErrorCode PVSurfWriteAmplitude(PVSurf *pvsurf, FILE *fp);
 
-PetscErrorCode PVSurfWriteNewContinental(PVSurf *pvsurf, FILE *fp);
 
-PetscErrorCode PVSurfWriteNewMafic(PVSurf *pvsurf, FILE *fp);
-
-PetscErrorCode PVSurfWriteTMafic(PVSurf *pvsurf, FILE *fp);
-PetscErrorCode PVSurfWritePMafic(PVSurf *pvsurf, FILE *fp);
-
-PetscErrorCode PVSurfWriteTCon(PVSurf *pvsurf, FILE *fp);
-PetscErrorCode PVSurfWritePCon(PVSurf *pvsurf, FILE *fp);
-PetscErrorCode PVSurfWriteFelsic(PVSurf *pvsurf, FILE *fp);
 
 //---------------------------------------------------------------------------
 #endif

@@ -180,7 +180,7 @@ struct Controls
 	PetscScalar n_pw;          // power-law regularization parameter (plasticity)
 
 	PetscScalar MinTk;         // Minimum Tk of the crust. If the crust is less than this value all the melt is converted into extrusion
-	PetscInt    MeltE;         // Control activaction Melt Extraction
+	PetscInt    MeltExt;         // Control activaction Melt Extraction
 
 	PetscScalar rho_fluid;     // fluid density
 	GWLevelType gwType;        // type of ground water level (none, top, surf, level)
@@ -263,9 +263,6 @@ struct JacRes
 	Vec   gdc, ldc;
 	Vec   ldvecmerge, dgmvvecmerge;
 
-
-	Vec TdM,TC2D;
-	Vec PdM,PC2D;
 	//=======================
 	// temperature parameters
 	//=======================

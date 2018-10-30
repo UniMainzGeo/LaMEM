@@ -386,10 +386,10 @@ PetscErrorCode DBMatReadPhase(DBMat *dbm, FB *fb)
 		SETERRQ1(PETSC_COMM_WORLD, PETSC_ERR_USER, "Cohesion must be specified for phase %lld (chSoftID + ch)", (LLD)ID);
 	}
 
-	if(m->MeltE ==-1)
-	{
-	SETERRQ1(PETSC_COMM_WORLD, PETSC_ERR_USER, "It is unknown if phase %lld can extract melt or not. Please specify it. MeltE=0 (off) or MeltE=1(on)", (LLD)ID);
-	}
+//	if(m->MeltE ==-1)
+//	{
+//	SETERRQ1(PETSC_COMM_WORLD, PETSC_ERR_USER, "It is unknown if phase %lld can extract melt or not. Please specify it. MeltE=0 (off) or MeltE=1(on)", (LLD)ID);
+//	}
 	if(m->pMant == -1 && m->MeltE !=-1)
 	{
 	SETERRQ1(PETSC_COMM_WORLD, PETSC_ERR_USER, "It is unknown if phase %lld is a mantle phase or not. Please specify it pMant=1 (mantle), pMant=0(crust)", (LLD)ID);
