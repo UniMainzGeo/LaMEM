@@ -86,6 +86,7 @@ PetscErrorCode PVOutWriteLiquidVelocity(JacRes*, OutBuf*);
 PetscErrorCode PVOutWriteFailureT       (JacRes*, OutBuf*);
 PetscErrorCode PVOutWriteFailureS       (JacRes*, OutBuf*);
 PetscErrorCode PVOutWriteFailureTS       (JacRes*, OutBuf*);
+PetscErrorCode PVOutWriteOverLiquidPressure(JacRes *jr, OutBuf *outbuf);
 
 // === debug vectors ===============================================
 PetscErrorCode PVOutWriteJacTest     (JacRes*, OutBuf*);

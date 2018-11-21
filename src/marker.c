@@ -145,8 +145,8 @@ PetscErrorCode ADVMarkInit(AdvCtx *actx, UserCtx *user)
 	else if(user->msetup == PIPES)      { PetscPrintf(PETSC_COMM_WORLD,"%s\n","pipes");           ierr = ADVMarkInitPipes        (actx, user); CHKERRQ(ierr); }
 	else if(user->msetup == GEOTH)      { PetscPrintf(PETSC_COMM_WORLD,"%s\n","geoth");           ierr = ADVMarkInitGeoth        (actx, user); CHKERRQ(ierr); }
 	else if(user->msetup == FAULT)      { PetscPrintf(PETSC_COMM_WORLD,"%s\n","fault");           ierr = ADVMarkInitFault        (actx, user); CHKERRQ(ierr); }
-	else if(user->msetup == ROZHKO)     { PetscPrintf(PETSC_COMM_WORLD,"%s\n","rozhko");          ierr = ADVMarkInitRozhkoComplex       (actx, user); CHKERRQ(ierr); }
-	//else if(user->msetup == ROZHKO)     { PetscPrintf(PETSC_COMM_WORLD,"%s\n","rozhko");          ierr = ADVMarkInitRozhko       (actx, user); CHKERRQ(ierr); }
+	//else if(user->msetup == ROZHKO)     { PetscPrintf(PETSC_COMM_WORLD,"%s\n","rozhko");          ierr = ADVMarkInitRozhkoComplex       (actx, user); CHKERRQ(ierr); }
+	else if(user->msetup == ROZHKO)     { PetscPrintf(PETSC_COMM_WORLD,"%s\n","rozhko");          ierr = ADVMarkInitRozhko       (actx, user); CHKERRQ(ierr); }
 	else if(user->msetup == CON)        { PetscPrintf(PETSC_COMM_WORLD,"%s\n","con");             ierr = ADVMarkInitCon       (actx, user); CHKERRQ(ierr); }
 	else if(user->msetup == PREFRAC)    { PetscPrintf(PETSC_COMM_WORLD,"%s\n","prefrac");         ierr = ADVMarkInitPrefrac       (actx, user); CHKERRQ(ierr); }
 	else if(user->msetup == DOMES)      { PetscPrintf(PETSC_COMM_WORLD,"%s\n","domes");           ierr = ADVMarkInitDomes        (actx, user); CHKERRQ(ierr); }

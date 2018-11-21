@@ -1396,13 +1396,16 @@ PetscErrorCode UpdateFailureType(JacRes *jr)
 	PetscScalar XY, XY1, XY2, XY3, XY4;
 	PetscScalar XZ, XZ1, XZ2, XZ3, XZ4;
 	PetscScalar YZ, YZ1, YZ2, YZ3, YZ4;
-	PetscScalar pc, pc_pore, ptotal, biot, dt, dP, TensileS, intersection, fr, ch, sensitivity;
-	PetscScalar ***dxx, ***dyy, ***dzz, ***dxy, ***dxz, ***dyz, ***p, ***p_pore;
+	PetscScalar pc, pc_pore, pc_hydro, ptotal, biot, dt, dP, TensileS, intersection, fr, ch, sensitivity;
+	PetscScalar ***dxx, ***dyy, ***dzz, ***dxy, ***dxz, ***dyz, ***p, ***p_pore, ***p_hydro;
 	PetscBool actDarcy;
-	PetscInt src, frac;
+	PetscInt src, frac, frac2;
 
-
+	PetscScalar sxx,syy,szz;
 	PetscScalar DevStressII;
+
+	// To plot mohr's cercles
+	PetscScalar C1, C2, C3, R1, R2, R3;
 
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
@@ -1417,7 +1420,7 @@ PetscErrorCode UpdateFailureType(JacRes *jr)
 	actDarcy  = jr->actDarcy;
 	sensitivity = 0.0;
 	src = 0;
-	frac=0;
+	frac=0; frac2=0;
 
 	if (actDarcy == PETSC_TRUE) {
 
@@ -1429,6 +1432,7 @@ PetscErrorCode UpdateFailureType(JacRes *jr)
 		ierr = DMDAVecGetArray(fs->DA_YZ,  jr->ldyz, &dyz);   CHKERRQ(ierr);
 		ierr = DMDAVecGetArray(fs->DA_CEN, jr->lp,       &p);        CHKERRQ(ierr);
 		ierr = DMDAVecGetArray(fs->DA_CEN, jr->lp_pore,  &p_pore);   CHKERRQ(ierr);
+		ierr = DMDAVecGetArray(fs->DA_CEN, jr->hydro_lPl,  &p_hydro);   CHKERRQ(ierr);
 
 		iter = 0;
 
@@ -1559,16 +1563,26 @@ PetscErrorCode UpdateFailureType(JacRes *jr)
 			// store square root of second invariant
 			DevStressII = sqrt(DevStressII);
 
+			// Radio of Mohr's cercles
+			//R1=1/2*sqrt( (svCell->sxx-svCell->syy)*(svCell->sxx-svCell->syy)) + (XY1+syx)^2)/2.0;
+			//R2=1/2*sqrt((Sxx-Szz)^2); %+(sxz+szx)^2);
+			//R3=1/2*sqrt((Syy-Szz)^2); %+(sxz+szx)^2);
+
+
+
 			// access current pressures
 			pc = p[k][j][i];
 
 			// access current pore pressure (zero if deactivated)
 			pc_pore  = p_pore[k][j][i];
+			pc_hydro  = p_hydro[k][j][i];
 
 			// get total pressure (effective pressure, computed by LaMEM, plus pore pressure)
+			//ptotal = pc + biot*(pc_pore-pc_hydro);
 			ptotal = pc + biot*pc_pore;
 
 			dP = ptotal - pc_pore; // effective mean stress
+			//dP = ptotal - (pc_pore-pc_hydro); // effective mean stress
 
 			//if (k==25 && j==0 && i==127) {
 			//	dP = ptotal - pc_pore; // effective mean stress
@@ -1577,7 +1591,7 @@ PetscErrorCode UpdateFailureType(JacRes *jr)
 			TensileS    = -svBulk->Ts;
 			fr = svDev->fr;
 			ch = svDev->ch;
-			if (ch > 0.0) { // if ch is 0 means that is not yet calculated, so there are not plasticity for sure
+			if (ch > 0.0) { // if ch is 0 means that is not yet calculated
 
 				if (fr-1.0 == 0.0)  intersection = 0.0;
 				else                intersection = (TensileS-ch)/(fr-1.0);
@@ -1588,25 +1602,25 @@ PetscErrorCode UpdateFailureType(JacRes *jr)
 				// sensitivity
 				sensitivity =jr->matLim.stress_sensitivity_for_failure; // Pascals
 
-				if (dP < -(TensileS+sensitivity)) {// + 1e+6) {
-					//svDev->failTS = 1.0;
-					svDev->failT = 1.0;
-					frac = 1;
-				}
-				else
-				{
-					if (DevStressII > svDev->yield + sensitivity) {
-						if (dP>=intersection) {
-							// Shear
-							svDev->failS = 1.0;
-							frac = 1;
-						}else {
-							// Tensile
-							svDev->failT = 1.0;
-							frac = 1;
+					if (dP < -(TensileS+sensitivity)) {// + 1e+6) {
+						//svDev->failTS = 1.0;
+						if (jr->ts.istep > jr->num_of_first_dt) svDev->failT = 1.0;
+						frac = 1;
+					}
+					else
+					{
+						if (DevStressII > svDev->yield + sensitivity) {
+							if (dP>=intersection) {
+								// Shear
+								if (jr->ts.istep > jr->num_of_first_dt) svDev->failS = 1.0;
+								frac = 1;
+							}else {
+								// Tensile
+								if (jr->ts.istep > jr->num_of_first_dt) svDev->failT = 1.0;
+								frac = 1;
+							}
 						}
 					}
-				}
 			}
 
 			// Save pore pressure in the source point, just to analyze data after the simulation
@@ -1614,16 +1628,22 @@ PetscErrorCode UpdateFailureType(JacRes *jr)
 			{
 				if (jr->DarcySources[src].i == i && jr->DarcySources[src].j == j && jr->DarcySources[src].k == k)
 				{
-					PetscPrintf(PETSC_COMM_WORLD,"------------------------------------------ \n");
-					PetscPrintf(PETSC_COMM_WORLD,"In point source %lld, Liquid pressure Pl= %g; Effective pressure dP= %g; TAU_II = %g; \n", (LLD)src, pc_pore, dP, DevStressII);
+					PetscSynchronizedPrintf(PETSC_COMM_WORLD,"------------------------------------------ \n");
+					sxx = svCell->sxx-ptotal; syy=svCell->syy-ptotal; szz=svCell->szz-ptotal;
+					PetscSynchronizedPrintf(PETSC_COMM_WORLD,"In point source %lld, Liquid pressure Pl= %g; Effective pressure dP= %g; TAU_II = %g;\n", (LLD)src, pc_pore, dP,DevStressII);
+
+					PetscSynchronizedPrintf(PETSC_COMM_WORLD,"         P=%g; Sxx=%g; Syy=%g; Szz=%g; A=%g;\n", ptotal, sxx,syy,szz,sxx/szz);
+					//PetscSynchronizedPrintf(PETSC_COMM_WORLD,"         sxy=%g; sxz=%g; syz=%g;\n", 0.25*(XY1*XY1 + XY2*XY2 + XY3*XY3 + XY4*XY4), 0.25*(XZ1*XZ1 + XZ2*XZ2 + XZ3*XZ3 + XZ4*XZ4), 0.25*(YZ1*YZ1 + YZ2*YZ2 + YZ3*YZ3 + YZ4*YZ4));
 					if (frac==1) {
-						PetscPrintf(PETSC_COMM_WORLD,"          Fracture !!!!!!!!!!!!!!!! \n");
+						PetscSynchronizedPrintf(PETSC_COMM_WORLD,"          Fracture !!!!!!!!!!!!!!!! \n");
 					}
 				}
 
 			}
 		}
 		END_STD_LOOP
+
+		PetscSynchronizedFlush(PETSC_COMM_WORLD,PETSC_STDOUT);
 
 		// restore vectors
 		ierr = DMDAVecRestoreArray(fs->DA_XY, jr->ldxy, &dxy); CHKERRQ(ierr);
@@ -1634,6 +1654,7 @@ PetscErrorCode UpdateFailureType(JacRes *jr)
 		ierr = DMDAVecRestoreArray(fs->DA_CEN, jr->ldzz, &dzz); CHKERRQ(ierr);
 		ierr = DMDAVecRestoreArray(fs->DA_CEN, jr->lp,   &p);   CHKERRQ(ierr);
 		ierr = DMDAVecRestoreArray(fs->DA_CEN, jr->lp_pore,   &p_pore); CHKERRQ(ierr);
+		ierr = DMDAVecRestoreArray(fs->DA_CEN, jr->hydro_lPl,   &p_hydro); CHKERRQ(ierr);
 	}
 
 	PetscFunctionReturn(0);

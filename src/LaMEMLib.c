@@ -388,10 +388,12 @@ PetscErrorCode LaMEMLib(ModParam *IOparam)
 
 		// Darcy /////////////////////////////////////////////
 		if (jr.actDarcy){
+			//if (jr.ts.istep > jr.num_of_first_dt) {
 		//if (JacResGetStep(&jr) > 0) // 2 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 		//{
 			ierr = UpdateFailureType(&jr);
 		//}
+			//}
 		}
 		//////////////////////////////////////////////////////
 

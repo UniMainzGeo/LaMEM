@@ -77,6 +77,7 @@ PetscErrorCode ConstEqCtxSetup(
 	PetscScalar  p,    			// pressure
 	PetscScalar  p_lithos,    	// lithostatic pressure
 	PetscScalar  p_pore,    	// pore pressure
+	PetscScalar  p_hydro,    	// hydrostatic pressure
 	PetscScalar  T,   	 		// temperature
 	PetscScalar  actDarcy, PetscInt step);      // Darcy active or not
 
@@ -115,6 +116,7 @@ PetscErrorCode DevConstEq(
 	MatParLim   *lim,       		// phase parameters limits
 	PetscScalar  p_lithos,     		// lithostatic pressure
 	PetscScalar  p_pore,     		// pore pressure
+	PetscScalar  p_hydro,     		// hydro pressure
 	PetscScalar  dt,        		// time step
 	PetscScalar  p,        			// pressure
 	PetscScalar  T,        		// temperature

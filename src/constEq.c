@@ -67,6 +67,7 @@ PetscErrorCode ConstEqCtxSetup(
 	PetscScalar  p,             // pressure
 	PetscScalar  p_lithos,      // lithostatic pressure
 	PetscScalar  p_pore,        // pore pressure
+	PetscScalar  p_hydro,    	// hydrostatic pressure
 	PetscScalar  T,             // temperature
 	PetscScalar actDarcy, PetscInt step)      // Darcy active or not
 {
@@ -105,6 +106,7 @@ PetscErrorCode ConstEqCtxSetup(
 	if(lim->actPorePres != PETSC_TRUE) p_pore = 0.0;
 
 	p_total =p + lim->biot*p_pore;
+	//p_total =p + lim->biot*(p_pore-p_hydro);
 
 	//=================
 	// VISCO-ELASTICITY
@@ -226,6 +228,7 @@ PetscErrorCode ConstEqCtxSetup(
 
 	// compute effective mean stress
 	dP = p_total - p_pore;
+	//dP = p_total - (p_pore-p_hydro);
 
 	// Darcy - as pressure are still not well computed in the first steps,
 	//p_lower = (p_lithos -tensileS)/2.0;
@@ -612,6 +615,7 @@ PetscErrorCode DevConstEq(
 	MatParLim   *lim,       		// phase parameters limits
 	PetscScalar  p_lithos,          // lithostatic pressure
 	PetscScalar  p_pore,            // pore pressure
+	PetscScalar  p_hydro,           // hydrostatic pressure
 	PetscScalar  dt,        		// time step
 	PetscScalar  p,         		// pressure
 	PetscScalar  T,         		// temperature
@@ -664,7 +668,7 @@ PetscErrorCode DevConstEq(
 			mat = &phases[i];
 
 			// setup nonlinear constitutive equation evaluation context
-			ierr = ConstEqCtxSetup(&ctx, mat, lim, DII, APS, dt, p, p_lithos, p_pore, T, actDarcy, step); CHKERRQ(ierr);
+			ierr = ConstEqCtxSetup(&ctx, mat, lim, DII, APS, dt, p, p_lithos, p_pore, p_hydro, T, actDarcy, step); CHKERRQ(ierr);
 
 			// solve effective viscosity & plastic strain rate
 			ierr = GetEffVisc(&ctx, lim, &eta_total, &eta_creep_phase, &eta_viscoplastic_phase, &DIIpl, &dEta, &fr, &ch); CHKERRQ(ierr);
@@ -803,8 +807,10 @@ PetscErrorCode VolConstEq(
 
 	// Darcy
 	if(lim->actPorePres != PETSC_TRUE) p_pore = 0.0;
+	//p_total = p + lim->biot*(p_pore-p_hydro);
 	p_total = p + lim->biot*p_pore;
 	dP = p_total - p_pore;
+	//dP = p_total - (p_pore-p_hydro);
 	pn = svBulk->pn;    		   // pressure history
 
 	// scan all phases

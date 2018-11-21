@@ -185,6 +185,7 @@ typedef struct
 	PetscInt failureT;        // Type of Failure tensile
 	PetscInt failureS;        // Type of Failure shear
 	PetscInt failureTS;       // If pressure arrived to tensile strength
+	PetscInt overliquidpressure; 	    	// overporepressure
 
 
 	// === debugging vectors ===============================================

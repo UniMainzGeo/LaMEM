@@ -312,6 +312,12 @@ PetscErrorCode JacResGetTempMat(JacRes *jr);
 // compute overpressure field in the cell centers
 PetscErrorCode JacResGetOverPressure(JacRes *jr, Vec p);
 
+// Darcy
+// compute overliquid pressure field in the cell centers
+PetscErrorCode JacResGetLiquidOverPressure(JacRes *jr, Vec p);
+//
+
+
 // compute lithostatic pressure in the cell centers
 PetscErrorCode JacResGetLithoStaticPressure(JacRes *jr);
 

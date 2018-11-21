@@ -987,13 +987,18 @@ PetscErrorCode JacResGetResidual(JacRes *jr)
 		//}
 		///////////////////////////////////////////////////////////////////////////////////////////////
 
+		if (jr->DarcySources[0].i == i && jr->DarcySources[0].j == j && jr->DarcySources[0].k == k)
+		{
+			//PetscSynchronizedPrintf(PETSC_COMM_WORLD,"------------------------------------------ \n");
+		}
+
 		// compute depth below the free surface
 		depth = jr->avg_topo - COORD_CELL(k, sz, fs->dsz);
 
 		if(depth < 0.0) depth = 0.0;
 
 		// evaluate deviatoric constitutive equations
-		ierr = DevConstEq(svDev, &eta_creep, &eta_viscoplastic, numPhases, phases, svCell->phRat, matLim, pc_lithos, pc_pore, dt, pc-pShift, Tc, jr->actDarcy, step ); CHKERRQ(ierr);
+		ierr = DevConstEq(svDev, &eta_creep, &eta_viscoplastic, numPhases, phases, svCell->phRat, matLim, pc_lithos, pc_pore, pc_hydro, dt, pc-pShift, Tc, jr->actDarcy, step ); CHKERRQ(ierr);
 
 		// store creep viscosity
 		svCell->eta_creep 			= eta_creep;
@@ -1004,6 +1009,7 @@ PetscErrorCode JacResGetResidual(JacRes *jr)
 
 		// get total pressure (effective pressure, computed by LaMEM, plus pore pressure)
 		ptotal = pc + biot*pc_pore;
+		//ptotal = pc + biot*(pc_pore-pc_hydro);
 
 		////// Darcy
 		/*// compute effective mean stress
@@ -1130,6 +1136,7 @@ PetscErrorCode JacResGetResidual(JacRes *jr)
 			}*/
 
 			dP = ptotal - pc_pore; // effective mean stress
+			//dP = ptotal - (pc_pore-pc_hydro); // effective mean stress
 
 			/// compute yield stress 0/////////////////////////////////////////////////////////
 			aux = 0.0;
@@ -1337,7 +1344,7 @@ PetscErrorCode JacResGetResidual(JacRes *jr)
 		pc_hydro   = 0.25*(p_hydro[k][j][i] + p_hydro[k][j][i-1] + p_hydro[k][j-1][i] + p_hydro[k][j-1][i-1]);
 
 		// evaluate deviatoric constitutive equations
-		ierr = DevConstEq(svDev, &eta_creep, &eta_viscoplastic, numPhases, phases, svEdge->phRat, matLim, pc_lithos, pc_pore, dt, pc-pShift, Tc, jr->actDarcy,step); CHKERRQ(ierr);
+		ierr = DevConstEq(svDev, &eta_creep, &eta_viscoplastic, numPhases, phases, svEdge->phRat, matLim, pc_lithos, pc_pore, pc_hydro, dt, pc-pShift, Tc, jr->actDarcy,step); CHKERRQ(ierr);
 
 		// compute stress, plastic strain rate and shear heating term on edge
 		ierr = GetStressEdge(svEdge, matLim, XY); CHKERRQ(ierr);
@@ -1448,7 +1455,7 @@ PetscErrorCode JacResGetResidual(JacRes *jr)
 		pc_hydro   = 0.25*(p_hydro[k][j][i] + p_hydro[k][j][i-1] + p_hydro[k][j-1][i] + p_hydro[k][j-1][i-1]);
 
 		// evaluate deviatoric constitutive equations
-		ierr = DevConstEq(svDev, &eta_creep, &eta_viscoplastic, numPhases, phases, svEdge->phRat, matLim, pc_lithos, pc_pore, dt, pc-pShift, Tc, jr->actDarcy,step); CHKERRQ(ierr);
+		ierr = DevConstEq(svDev, &eta_creep, &eta_viscoplastic, numPhases, phases, svEdge->phRat, matLim, pc_lithos, pc_pore, pc_hydro, dt, pc-pShift, Tc, jr->actDarcy,step); CHKERRQ(ierr);
 
 		// compute stress, plastic strain rate and shear heating term on edge
 		ierr = GetStressEdge(svEdge, matLim, XZ); CHKERRQ(ierr);
@@ -1559,7 +1566,7 @@ PetscErrorCode JacResGetResidual(JacRes *jr)
 		pc_hydro   = 0.25*(p_hydro[k][j][i] + p_hydro[k][j][i-1] + p_hydro[k][j-1][i] + p_hydro[k][j-1][i-1]);
 
 		// evaluate deviatoric constitutive equations
-		ierr = DevConstEq(svDev, &eta_creep, &eta_viscoplastic, numPhases, phases, svEdge->phRat, matLim, pc_lithos, pc_pore, dt, pc-pShift, Tc, jr->actDarcy,step); CHKERRQ(ierr);
+		ierr = DevConstEq(svDev, &eta_creep, &eta_viscoplastic, numPhases, phases, svEdge->phRat, matLim, pc_lithos, pc_pore, pc_hydro, dt, pc-pShift, Tc, jr->actDarcy,step); CHKERRQ(ierr);
 
 		// compute stress, plastic strain rate and shear heating term on edge
 		ierr = GetStressEdge(svEdge, matLim, YZ); CHKERRQ(ierr);
@@ -2992,6 +2999,51 @@ PetscErrorCode JacResGetOverPressure(JacRes *jr, Vec lop)
 	ierr = DMDAVecRestoreArray(fs->DA_CEN, lop,           &op);       CHKERRQ(ierr);
 	ierr = DMDAVecRestoreArray(fs->DA_CEN, jr->lp,        &p);        CHKERRQ(ierr);
 	ierr = DMDAVecRestoreArray(fs->DA_CEN, jr->lp_lithos, &p_lithos); CHKERRQ(ierr);
+
+	// fill ghost points
+	LOCAL_TO_LOCAL(fs->DA_CEN, lop)
+
+	PetscFunctionReturn(0);
+}
+//---------------------------------------------------------------------------
+// Darcy
+#undef __FUNCT__
+#define __FUNCT__ "JacResGetLiquidOverPressure"
+PetscErrorCode JacResGetLiquidOverPressure(JacRes *jr, Vec lop)
+{
+	// compute overliquidpressure
+
+	FDSTAG      *fs;
+	PetscScalar ***op, ***pl, ***p_hydro;
+	PetscInt    i, j, k, sx, sy, sz, nx, ny, nz;
+
+	PetscErrorCode ierr;
+	PetscFunctionBegin;
+
+	// access context
+	fs  =  jr->fs;
+
+	// get local grid sizes
+	ierr = DMDAGetCorners(fs->DA_CEN, &sx, &sy, &sz, &nx, &ny, &nz); CHKERRQ(ierr);
+
+	// access pressure vectors
+	ierr = VecZeroEntries(lop); CHKERRQ(ierr);
+
+	ierr = DMDAVecGetArray(fs->DA_CEN, lop,           &op);       CHKERRQ(ierr);
+	ierr = DMDAVecGetArray(fs->DA_CEN, jr->lPl,       &pl);        CHKERRQ(ierr);
+	ierr = DMDAVecGetArray(fs->DA_CEN, jr->hydro_lPl, &p_hydro); CHKERRQ(ierr);
+
+	START_STD_LOOP
+	{
+		// overpressure = darcy - hydrostatic
+		op[k][j][i] = pl[k][j][i] - p_hydro[k][j][i];
+	}
+	END_STD_LOOP
+
+	// restore buffer and pressure vectors
+	ierr = DMDAVecRestoreArray(fs->DA_CEN, lop,           &op);      CHKERRQ(ierr);
+	ierr = DMDAVecRestoreArray(fs->DA_CEN, jr->lPl,       &pl);      CHKERRQ(ierr);
+	ierr = DMDAVecRestoreArray(fs->DA_CEN, jr->hydro_lPl, &p_hydro); CHKERRQ(ierr);
 
 	// fill ghost points
 	LOCAL_TO_LOCAL(fs->DA_CEN, lop)

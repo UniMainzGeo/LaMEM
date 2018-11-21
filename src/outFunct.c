@@ -354,17 +354,36 @@ PetscErrorCode PVOutWritePorePressure(JacRes *jr, OutBuf *outbuf)
 
 	cf = scal->stress;
 
+	// Darcy
 	if(jr->actDarcy != PETSC_TRUE)
 	{
 		ierr = JacResGetPorePressure(jr); CHKERRQ(ierr);
+
 	}
 	else
 	{
 		ierr = JacResGetDarcyPorePressure(jr); CHKERRQ(ierr);
 	}
-
 	INTERPOLATE_ACCESS(jr->lp_pore, InterpCenterCorner, 1, 0, 0.0)
 
+
+	PetscFunctionReturn(0);
+}
+//---------------------------------------------------------------------------
+#undef __FUNCT__
+#define __FUNCT__ "PVOutWriteOverLiquidPressure"
+PetscErrorCode PVOutWriteOverLiquidPressure(JacRes *jr, OutBuf *outbuf)
+{
+	ACCESS_FUNCTION_HEADER
+
+	cf = scal->stress;
+
+	// Darcy
+	if(jr->actDarcy == PETSC_TRUE)
+	{
+		ierr = JacResGetLiquidOverPressure(jr, outbuf->lbcen); CHKERRQ(ierr);
+		INTERPOLATE_ACCESS(outbuf->lbcen, InterpCenterCorner, 1, 0, 0.0)
+	}
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
