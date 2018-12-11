@@ -97,6 +97,7 @@ PetscErrorCode JacResCreate(JacRes *jr, FB *fb)
 	ierr = getScalarParam(fb, _OPTIONAL_, "shear_heat_eff",  &ctrl->shearHeatEff,  1, 1.0); CHKERRQ(ierr);
 	ierr = getScalarParam(fb, _OPTIONAL_, "biot",            &ctrl->biot,          1, 1.0); CHKERRQ(ierr);
 	ierr = getIntParam   (fb, _OPTIONAL_, "act_temp_diff",   &ctrl->actTemp,       1, 1);   CHKERRQ(ierr);
+	ierr = getIntParam   (fb, _OPTIONAL_, "act_therm_exp",   &ctrl->actExp,        1, 1);   CHKERRQ(ierr);
 	ierr = getIntParam   (fb, _OPTIONAL_, "act_steady_temp", &ctrl->actSteadyTemp, 1, 1);   CHKERRQ(ierr);
 	ierr = getIntParam   (fb, _OPTIONAL_, "act_p_shift",     &ctrl->pShiftAct,     1, 1);   CHKERRQ(ierr);
 	ierr = getIntParam   (fb, _OPTIONAL_, "init_guess",      &ctrl->initGuess,     1, 1);   CHKERRQ(ierr);
@@ -1035,7 +1036,7 @@ PetscErrorCode JacResGetResidual(JacRes *jr)
 	Material_t *phases;
 	Soft_t     *soft;
 	Controls   *ctrl;
-	PetscInt    iter, numPhases, AirPhase;
+	PetscInt    iter, numPhases, AirPhase, actExp;
 	PetscInt    I1, I2, J1, J2, K1, K2;
 	PetscInt    i, j, k, nx, ny, nz, sx, sy, sz, mx, my, mz, mcx, mcy, mcz;
 	PetscScalar XX, XX1, XX2, XX3, XX4;
@@ -1051,7 +1052,7 @@ PetscErrorCode JacResGetResidual(JacRes *jr)
 	PetscScalar ***dxx, ***dyy, ***dzz, ***dxy, ***dxz, ***dyz, ***p, ***T, ***p_lith, ***p_pore;
 	PetscScalar eta_creep, eta_vp;
 	PetscScalar depth, pc_lith, pc_pore, biot, ptotal, avg_topo;
-//	PetscScalar alpha, Tn,
+	PetscScalar alpha, Tn;
 
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
@@ -1081,6 +1082,7 @@ PetscErrorCode JacResGetResidual(JacRes *jr)
 	biot      =  ctrl->biot;         // Biot pressure parameter
 	AirPhase  =  jr->surf->AirPhase; // sticky air phase number
 	avg_topo  =  jr->surf->avg_topo; // average surface topography
+	actExp    =  ctrl->actExp;
 
 	// clear local residual vectors
 	ierr = VecZeroEntries(jr->lfx); CHKERRQ(ierr);
@@ -1205,9 +1207,9 @@ PetscErrorCode JacResGetResidual(JacRes *jr)
 		theta = svBulk->theta; // volumetric strain rate
 		rho   = svBulk->rho;   // effective density
 		IKdt  = svBulk->IKdt;  // inverse bulk viscosity
-//		alpha = svBulk->alpha; // effective thermal expansion
+		alpha = svBulk->alpha; // effective thermal expansion
 		pn    = svBulk->pn;    // pressure history
-//		Tn    = svBulk->Tn;    // temperature history
+		Tn    = svBulk->Tn;    // temperature history
 
 		// compute gravity terms
 		gx = rho*grav[0];
@@ -1246,13 +1248,15 @@ PetscErrorCode JacResGetResidual(JacRes *jr)
 		if(k == 0   && bcp[k-1][j][i] != DBL_MAX) fz[k][j][i]   += -p[k-1][j][i]/bdz;
 		if(k == mcz && bcp[k+1][j][i] != DBL_MAX) fz[k+1][j][i] -= -p[k+1][j][i]/fdz;
 
-//		if(k == 0   ) fz[k][j][i]   += -p[k-1][j][i]/bdz;
-//		if(k == mcz ) fz[k+1][j][i] -= -p[k+1][j][i]/fdz;
-
-		// mass - currently T-dependency is deactivated
-//		gc[k][j][i] = -IKdt*(pc - pn) - theta + alpha*(Tc - Tn)/dt;
+		if(actExp)
+		{
+			gc[k][j][i] = -IKdt*(pc - pn) - theta + alpha*(Tc - Tn)/dt;
+		}
+		else
+		{
+			gc[k][j][i] = -IKdt*(pc - pn) - theta;
+		}
         
-        gc[k][j][i] = -IKdt*(pc - pn) - theta;
         
 	}
 	END_STD_LOOP

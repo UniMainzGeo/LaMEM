@@ -147,6 +147,7 @@ struct Controls
 	PetscScalar biot;          // Biot pressure parameter [0 - 1]
 
 	PetscInt    actTemp;	   // temperature diffusion activation flag
+	PetscInt    actExp;	       // thermal expansion activation flag
 	PetscInt    actSteadyTemp; // steady-state temperature initial guess flag
 	PetscInt    pShiftAct;     // pressure shift activation flag (zero pressure in the top cell layer)
 	PetscScalar pShift;        // pressure shift for plasticity model and output
