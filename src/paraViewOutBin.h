@@ -188,6 +188,11 @@ struct OutMask
 	PetscInt moment_res;     // momentum residual
 	PetscInt cont_res;       // continuity residual
 	PetscInt energ_res;      // energy residual
+	PetscInt nadai_strain;   // octahedral shear strain
+	PetscInt lodes_ratio;    // lode's ratio
+	PetscInt FSA;            // finite strain major principal strain axis vector
+    PetscInt FSA_trend;      // finite strain major principal strain axis trend
+    PetscInt FSA_dip;        // finite strain major principal strain axis dip
 
 };
 //---------------------------------------------------------------------------

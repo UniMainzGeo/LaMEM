@@ -647,6 +647,8 @@ PetscErrorCode ADVProjHistGridToMark(AdvCtx *actx)
 
 	ierr = ADVInterpFieldToMark(actx, _VORTICITY_); CHKERRQ(ierr);
 
+	ierr = ADVInterpFieldToMark(actx, _STRAIN_);     CHKERRQ(ierr);
+
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
@@ -663,15 +665,15 @@ PetscErrorCode ADVInterpFieldToMark(AdvCtx *actx, InterpCase icase)
 	FDSTAG      *fs;
 	JacRes      *jr;
 	Marker      *P;
-	Tensor2RN    R;
-	Tensor2RS    SR;
+	Tensor2RN    R, D, Dtot, DT;
+	Tensor2RS    SR, U;
 	SolVarCell  *svCell;
 	PetscScalar  UPXY, UPXZ, UPYZ;
 	PetscInt     nx, ny, sx, sy, sz;
 	PetscInt     jj, ID, I, J, K, II, JJ, KK;
-	PetscScalar *gxy, *gxz, *gyz, ***lxy, ***lxz, ***lyz;
+	PetscScalar *gxy, *gxz, *gyz, ***lxy, ***lxz, ***lyz, ***lvx, ***lvy, ***lvz;
 
-	PetscScalar  xc, yc, zc, xp, yp, zp, wx, wy, wz, dt;
+	PetscScalar  xc, yc, zc, xp, yp, zp, wx, wy, wz, dt, eval[3], FSA[3];
 
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
@@ -729,6 +731,9 @@ PetscErrorCode ADVInterpFieldToMark(AdvCtx *actx, InterpCase icase)
 	ierr = DMDAVecGetArray(fs->DA_XY, jr->ldxy, &lxy); CHKERRQ(ierr);
 	ierr = DMDAVecGetArray(fs->DA_XZ, jr->ldxz, &lxz); CHKERRQ(ierr);
 	ierr = DMDAVecGetArray(fs->DA_YZ, jr->ldyz, &lyz); CHKERRQ(ierr);
+    ierr = DMDAVecGetArray(fs->DA_X,   jr->lvx, &lvx); CHKERRQ(ierr);
+	ierr = DMDAVecGetArray(fs->DA_Y,   jr->lvy, &lvy); CHKERRQ(ierr);
+	ierr = DMDAVecGetArray(fs->DA_Z,   jr->lvz, &lvz); CHKERRQ(ierr);
 
 	// scan ALL markers
 	for(jj = 0; jj < actx->nummark; jj++)
@@ -795,12 +800,74 @@ PetscErrorCode ADVInterpFieldToMark(AdvCtx *actx, InterpCase icase)
 			// store rotated stress on the marker
 			Tensor2RSCopy(&SR, &P->S);
 		}
+		else if(icase == _STRAIN_)
+		{
+		ierr  = getGradientDeform(fs, lvx, lvy, lvz, I, J, K, sx, sy, sz, dt, &D); CHKERRQ(ierr);
+		if(jr->ts->istep == 0  )
+		{	
+		// initialize D
+		P->D.xx += 1.0; P->D.xy += 0.0; P->D.xz += 0.0;
+		P->D.yx += 0.0; P->D.yy += 1.0; P->D.yz += 0.0;
+		P->D.zx += 0.0; P->D.zy += 0.0; P->D.zz += 1.0;
+		Tensor2RNProduct(&D, &P->D, &Dtot);
+		Tensor2RNCopy(&Dtot, &P->D);
+		
+		// get stretch tensor and rotation matrix
+		ierr = PolarDecomp(&P->D, &DT, &R, &U, eval, &P->es, &P->nu, FSA); CHKERRQ(ierr);
+		// rotate stretch tensor
+		RotateStress(&R,&U,&P->RU);
+		
+		// store major principal strain axis ( could be deleted, not useful for first time step)
+		if(FSA[2] < 0){
+		// eigenvector orientation should always pointing upwards from surface mirror eigenvector if Z smaller zero
+		P->FSA[0] = -FSA[0];
+		P->FSA[1] = -FSA[1];
+		P->FSA[2] = -FSA[2];
+        }
+		else
+		{
+	    P->FSA[0] = FSA[0];
+		P->FSA[1] = FSA[1];
+		P->FSA[2] = FSA[2];
+		} 
+		// get trend (=direction in degrees) and dip angle in degrees
+		ierr = getFSATrend(P->FSA, &P->tr, &P->dp); CHKERRQ(ierr);
+		}
+		else
+		{
+		Tensor2RNProduct(&D, &P->D, &Dtot);
+		Tensor2RNCopy(&Dtot, &P->D);
+		// get stretch tensor and rotation matrix
+		ierr = PolarDecomp(&P->D, &DT, &R, &U, eval, &P->es, &P->nu, FSA); CHKERRQ(ierr);
+		// rotate stretch tensor
+		RotateStress(&R, &U, &P->RU); 
+
+		// store major principal strain axis
+		if(FSA[2] < 0){
+		// eigenvector orientation should always pointing upwards from surface mirror eigenvector if Z smaller zero
+		P->FSA[0] = -FSA[0];
+		P->FSA[1] = -FSA[1];
+		P->FSA[2] = -FSA[2];
+        }
+		else
+		{
+	    P->FSA[0] = FSA[0];
+		P->FSA[1] = FSA[1];
+		P->FSA[2] = FSA[2];
+		} 
+		// get trend (=direction in degrees) and dip angle in degrees
+		ierr = getFSATrend(P->FSA, &P->tr, &P->dp); CHKERRQ(ierr);	
+		}
+		}
 	}
 
 	// restore access
 	ierr = DMDAVecRestoreArray(fs->DA_XY, jr->ldxy, &lxy); CHKERRQ(ierr);
 	ierr = DMDAVecRestoreArray(fs->DA_XZ, jr->ldxz, &lxz); CHKERRQ(ierr);
 	ierr = DMDAVecRestoreArray(fs->DA_YZ, jr->ldyz, &lyz); CHKERRQ(ierr);
+	ierr = DMDAVecRestoreArray(fs->DA_X,   jr->lvx, &lvx); CHKERRQ(ierr);
+	ierr = DMDAVecRestoreArray(fs->DA_Y,   jr->lvy, &lvy); CHKERRQ(ierr);
+	ierr = DMDAVecRestoreArray(fs->DA_Z,   jr->lvz, &lvz); CHKERRQ(ierr);
 
 	PetscFunctionReturn(0);
 }
@@ -1774,6 +1841,9 @@ PetscErrorCode ADVProjHistMarkToGrid(AdvCtx *actx)
 	// interpolate plastic strain to edges
 	ierr = ADVInterpMarkToEdge(actx, 0, _APS_); CHKERRQ(ierr);
 
+	// interpolate finite strain to edges
+	ierr = ADVInterpMarkToEdge(actx, 0, _STRAIN_); CHKERRQ(ierr);
+
 	// update phase ratios taking into account actual free surface position
 	ierr = FreeSurfGetAirPhaseRatio(actx->surf); CHKERRQ(ierr);
 
@@ -1825,6 +1895,16 @@ PetscErrorCode ADVInterpMarkToCell(AdvCtx *actx)
 		svCell->U[0]      = 0.0;
 		svCell->U[1]      = 0.0;
 		svCell->U[2]      = 0.0;
+		svCell->uxx       = 0.0;
+		svCell->uyy       = 0.0;
+		svCell->uzz       = 0.0;
+		svCell->nu        = 0.0;
+		svCell->es        = 0.0;
+		svCell->FSA[0]    = 0.0;
+		svCell->FSA[1]    = 0.0;
+		svCell->FSA[2]    = 0.0;
+		svCell->tr        = 0.0;
+		svCell->dp        = 0.0;
 	}
 
 	// scan ALL markers
@@ -1868,6 +1948,16 @@ PetscErrorCode ADVInterpMarkToCell(AdvCtx *actx)
 		svCell->U[0]      += w*P->U[0];
 		svCell->U[1]      += w*P->U[1];
 		svCell->U[2]      += w*P->U[2];
+		svCell->uxx       += w*P->RU.xx;
+		svCell->uyy       += w*P->RU.yy;
+		svCell->uzz       += w*P->RU.zz;
+		svCell->nu        += w*P->nu;
+		svCell->es        += w*P->es;
+		svCell->FSA[0]      += w*P->FSA[0];
+		svCell->FSA[1]      += w*P->FSA[1];
+		svCell->FSA[2]      += w*P->FSA[2];
+		svCell->tr          += w*P->tr;
+		svCell->dp          += w*P->dp;
 
 	}
 
@@ -1890,6 +1980,16 @@ PetscErrorCode ADVInterpMarkToCell(AdvCtx *actx)
 		svCell->U[0]      /= w;
 		svCell->U[1]      /= w;
 		svCell->U[2]      /= w;
+		svCell->uxx       /= w;
+		svCell->uyy       /= w;
+		svCell->uzz       /= w;
+		svCell->nu        /= w;
+	    svCell->es        /= w;
+		svCell->FSA[0]    /= w;
+		svCell->FSA[1]    /= w;
+		svCell->FSA[2]    /= w;
+		svCell->tr        /= w;
+		svCell->dp        /= w;
 	}
 
 	PetscFunctionReturn(0);
@@ -1976,6 +2076,7 @@ PetscErrorCode ADVInterpMarkToEdge(AdvCtx *actx, PetscInt iphase, InterpCase ica
 
 		if      (icase == _STRESS_) { UPXY = P->S.xy; UPXZ = P->S.xz; UPYZ = P->S.yz; }
 		else if (icase == _APS_)    { UPXY = P->APS;  UPXZ = P->APS;  UPYZ = P->APS;  }
+		else if (icase == _STRAIN_) { UPXY = P->RU.xy; UPXZ = P->RU.xz; UPYZ = P->RU.yz; }
 
 		// update required fields from marker to edge nodes
 		lxy[sz+K ][sy+JJ][sx+II] += wxn*wyn*wzc*UPXY;
@@ -2016,6 +2117,12 @@ PetscErrorCode ADVInterpMarkToEdge(AdvCtx *actx, PetscInt iphase, InterpCase ica
 		for(jj = 0; jj < fs->nXYEdg; jj++) jr->svXYEdge[jj].svDev.APS = gxy[jj]/jr->svXYEdge[jj].ws;
 		for(jj = 0; jj < fs->nXZEdg; jj++) jr->svXZEdge[jj].svDev.APS = gxz[jj]/jr->svXZEdge[jj].ws;
 		for(jj = 0; jj < fs->nYZEdg; jj++) jr->svYZEdge[jj].svDev.APS = gyz[jj]/jr->svYZEdge[jj].ws;
+	}
+	else if(icase == _STRAIN_)
+	{
+		for(jj = 0; jj < fs->nXYEdg; jj++) jr->svXYEdge[jj].u = gxy[jj]/jr->svXYEdge[jj].ws;
+		for(jj = 0; jj < fs->nXZEdg; jj++) jr->svXZEdge[jj].u = gxz[jj]/jr->svXZEdge[jj].ws;
+		for(jj = 0; jj < fs->nYZEdg; jj++) jr->svYZEdge[jj].u = gyz[jj]/jr->svYZEdge[jj].ws;
 	}
 
 	// restore access
@@ -2261,4 +2368,76 @@ PetscErrorCode ADVSelectTimeStep(AdvCtx *actx, PetscInt *restart)
 
 	PetscFunctionReturn(0);
 }
+//-------------------------------------------------------------------------------
+#define deformGradComp(v, dx, dt, bdx1, fdx1, bdx2, fdx2, dvdx, dvdx1, dvdx2)\
+	dvdx  =   (1 + ((v[9] - v[4])/dx)*dt); \
+	dvdx1 = ((v[4] - v[0] + v[9] - v[5])/bdx1 + (v[1] - v[4] + v[6] - v[9])/fdx1)*dt/4.0; \
+	dvdx2 = ((v[4] - v[2] + v[9] - v[7])/bdx2 + (v[3] - v[4] + v[8] - v[9])/fdx2)*dt/4.0; 
 //---------------------------------------------------------------------------
+#undef __FUNCT__
+#define __FUNCT__ "getGradientDeform"
+PetscErrorCode getGradientDeform(FDSTAG *fs, PetscScalar ***lvx, PetscScalar ***lvy, PetscScalar ***lvz,
+	PetscInt i, PetscInt j, PetscInt k, PetscInt sx, PetscInt sy, PetscInt sz, PetscScalar dt, Tensor2RN *D) // 
+{
+	// compute velocity gradient and normalized velocities at cell center
+
+	PetscScalar dx, dy, dz, bdx, fdx, bdy, fdy, bdz, fdz;
+	PetscScalar vx[10], vy[10], vz[10];
+    
+	// get cell sizes
+	dx = SIZE_CELL(sx+i, sx, fs->dsx);   bdx = SIZE_NODE(sx+i, sx, fs->dsx);   fdx = SIZE_NODE(sx+i+1, sx, fs->dsx);
+	dy = SIZE_CELL(sy+j, sy, fs->dsy);   bdy = SIZE_NODE(sy+j, sy, fs->dsy);   fdy = SIZE_NODE(sy+j+1, sy, fs->dsy);
+	dz = SIZE_CELL(sz+k, sz, fs->dsz);   bdz = SIZE_NODE(sz+k, sz, fs->dsz);   fdz = SIZE_NODE(sz+k+1, sz, fs->dsz);
+
+	// vx - stencil access x faces
+	
+	// front faces
+	vx[0] = lvx[sz+k]  [sy+j-1][sx+i];
+	vx[1] = lvx[sz+k]  [sy+j+1][sx+i];
+	vx[2] = lvx[sz+k-1][sy+j]  [sx+i];
+	vx[3] = lvx[sz+k+1][sy+j]  [sx+i];
+	vx[4] = lvx[sz+k]  [sy+j]  [sx+i];
+	// back faces
+	vx[5] = lvx[sz+k]  [sy+j-1][sx+i+1];
+	vx[6] = lvx[sz+k]  [sy+j+1][sx+i+1];
+	vx[7] = lvx[sz+k-1][sy+j]  [sx+i+1];
+	vx[8] = lvx[sz+k+1][sy+j]  [sx+i+1];
+	vx[9] = lvx[sz+k]  [sy+j]  [sx+i+1];
+
+	// vy - stencil access y faces
+	// front faces
+	vy[0] = lvy[sz+k]  [sy+j]  [sx+i-1];
+	vy[1] = lvy[sz+k]  [sy+j]  [sx+i+1];
+	vy[2] = lvy[sz+k-1][sy+j]  [sx+i];
+	vy[3] = lvy[sz+k+1][sy+j]  [sx+i];
+	vy[4] = lvy[sz+k]  [sy+j]  [sx+i];
+	// back faces
+	vy[5] = lvy[sz+k]  [sy+j+1][sx+i-1];
+	vy[6] = lvy[sz+k]  [sy+j+1][sx+i+1];
+	vy[7] = lvy[sz+k-1][sy+j+1][sx+i];
+	vy[8] = lvy[sz+k+1][sy+j+1][sx+i];
+	vy[9] = lvy[sz+k]  [sy+j+1][sx+i];
+
+	// vz - stencil access z faces
+	// front faces
+	vz[0] = lvz[sz+k]  [sy+j]  [sx+i-1];
+	vz[1] = lvz[sz+k]  [sy+j]  [sx+i+1];
+	vz[2] = lvz[sz+k]  [sy+j-1][sx+i];
+	vz[3] = lvz[sz+k]  [sy+j+1][sx+i];
+	vz[4] = lvz[sz+k]  [sy+j]  [sx+i];
+	// back faces
+	vz[5] = lvz[sz+k+1][sy+j]  [sx+i-1];
+	vz[6] = lvz[sz+k+1][sy+j]  [sx+i+1];
+	vz[7] = lvz[sz+k+1][sy+j-1][sx+i];
+	vz[8] = lvz[sz+k+1][sy+j+1][sx+i];
+	vz[9] = lvz[sz+k+1][sy+j]  [sx+i];
+
+	// compute gradient and store it in tensor D
+	deformGradComp(vx, dx, dt, bdy, fdy, bdz, fdz, D->xx, D->xy, D->xz)
+	deformGradComp(vy, dy, dt, bdx, fdx, bdz, fdz, D->yy, D->yx, D->yz)
+	deformGradComp(vz, dz, dt, bdx, fdx, bdy, fdy, D->zz, D->zx, D->zy)
+
+	PetscFunctionReturn(0);
+}
+//---------------------------------------------------------------------------
+

@@ -678,6 +678,107 @@ PetscErrorCode Tensor2RS2DSpectral(
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
+// aditional functions for finite strain ellipsoid visualization
+//--------------------------------------------------------------------------
+void Tensor1RNProduct(PetscScalar A[], Tensor2RN *B)
+{
+// B = A (x) A ,Dyadic product
+
+	B->xx = A[0] * A[0];
+	B->xy = A[0] * A[1];
+	B->xz = A[0] * A[2];
+	B->yx = A[1] * A[0];
+	B->yy = A[1] * A[1];
+	B->yz = A[1] * A[2];
+	B->zx = A[2] * A[0];
+	B->zy = A[2] * A[1];
+	B->zz = A[2] * A[2];
+}
+//---------------------------------------------------------------------------
+PetscInt PolarDecomp(Tensor2RN *Dtot,Tensor2RN *DT,  Tensor2RN *R, Tensor2RS *U, PetscScalar eval[], PetscScalar *es, PetscScalar *nu, PetscScalar FSA[])
+{
+	
+	Tensor2RN    D, C,  U1, U2, U3, Utot, UI;
+	Tensor2RS    Cs, EVRs;
+	PetscScalar  ev1[3], ev2[3], ev3[3];
+	PetscScalar  evect[9], evr[9];
+
+	PetscInt    maxit, code;
+	PetscScalar ltol, ttol;
+
+	ltol  = 1e-9;  // loose tolerance
+	ttol  = 1e-12; // tight tolerance
+	maxit = 32;    // maximum number of Jacobi rotations
+	
+	// compute right cauchy green tensor
+	Tensor2RNCopy(Dtot, &D);
+   	Tensor2RNTranspose(&D, DT);
+        Tensor2RNProduct(DT ,&D,  &C);
+        Tensor2RNCopySym(&C, &Cs);		
+	code = Tensor2RSSpectral(&Cs, eval, evect, ttol, ltol, maxit);
+	if(code) return -2; //spectral decomposition failed to converge
+
+	// distribute eigenvectors to compute stretch tensor
+	ev1[0] = evect[0]; ev2[0] = evect[3]; ev3[0] = evect[6];
+	ev1[1] = evect[1]; ev2[1] = evect[4]; ev3[1] = evect[7];
+	ev1[2] = evect[2]; ev2[2] = evect[5]; ev3[2] = evect[8];
+
+	// compute stretch tensor
+	Tensor1RNProduct(ev1, &U1);
+	Tensor1RNProduct(ev2, &U2);
+	Tensor1RNProduct(ev3, &U3);
+	Tensor2RNSum3(&U1,(sqrt(eval[0])),&U2,(sqrt(eval[1])),&U3,(sqrt((eval[2]))), &Utot); 
+	Tensor2RNCopySym(&Utot, U);
+	
+	// compute stretch tensor inverse
+	Tensor2RNSum3(&U1,(1.0/sqrt(eval[0])),&U2,(1.0/sqrt(eval[1])),&U3,(1.0/sqrt((eval[2]))), &UI); 
+	// compute rotation tensor
+	Tensor2RNProduct(&D, &UI, R);
+
+	// calculate nadai strain
+	(*es) = (1.0/sqrt(3))*sqrt( (log(sqrt(eval[0]))-log(sqrt(eval[1])))*(log(sqrt(eval[0]))-log(sqrt(eval[1])))  \
+		  + (log(sqrt(eval[1]))-log(sqrt(eval[2])))*(log(sqrt(eval[1]))-log(sqrt(eval[2]))) + (log(sqrt(eval[2])) \
+		  -  log(sqrt(eval[0])))*(log(sqrt(eval[2]))-log(sqrt(eval[0]))) );
+	// calculate lode's ratio 
+	(*nu) = ((2.0*log(sqrt(eval[1])) - log(sqrt(eval[0])) - log(sqrt(eval[2])))/(log(sqrt(eval[0]))-log(sqrt(eval[2]))));	
+	 //--------------------------------------------------------
+	 // Compute prinicipal strain axis direction and dip angle
+	 //--------------------------------------------------------
+	 FSA[0] = 0.0;
+	 FSA[1] = 0.0;
+ 	 FSA[2] = 0.0;
+        // rotate stretch tensor to get correct orientation when extracting eigenvectors
+	RotateStress(R,U,&EVRs);
+	// get get largest eigenvector
+        code = Tensor2RSSpectral(&EVRs, eval, evr, ttol, ltol, maxit);
+        if(code) return -2; //spectral decomposition failed to converge
+  	// store eigenvector corresponding to largest eigenvalue ->  major principal strain axis 
+  	FSA[0] = evr[0];
+	FSA[1] = evr[1];
+ 	FSA[2] = evr[2];
+	return 0;
+}
+
+
+PetscInt getFSATrend(PetscScalar FSA[], PetscScalar *trend, PetscScalar *dip)
+{
+	PetscScalar d, r, plunge, trendrad, dipdeg, trenddeg;
+	d         =  sqrt(FSA[0]*FSA[0] + FSA[1]*FSA[1] + FSA[2]*FSA[2]);
+	plunge    = ARCCOS(FSA[2]/d);
+	r         = d*sin(plunge);
+	trendrad  = ARCCOS(FSA[0]/r);
+	trenddeg  = trendrad*180/M_PI;
+	dipdeg    = plunge*180/M_PI;
+	// trend correction, colorcoding from 0° to 360°
+        if(FSA[1] < 0.0 && trenddeg > 0.0)
+	{(*trend) = 360.0 - trenddeg;}
+	else
+	{(*trend) = trenddeg;}
+	(*dip)    = dipdeg; 
+  
+	return 0;
+}
+//---------------------------------------------------------------------------
 /*
 // ERROR HANDLING FOR CONTEXT EVALUATION ROUTINE
 
