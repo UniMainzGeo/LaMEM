@@ -1,5 +1,5 @@
-function [Location] = BackwardTracingParticles_LaMEM(Velocity, Location, time, time_end_Myrs, TimeIntegrationSteps);
-% This routine uses LaMEM matlab files with velocities to trace a particle backwards
+function [Location] = TracingParticles_LaMEM(Velocity, Location, time, time_end_Myrs, TimeIntegrationSteps, Mode);
+% This routine uses LaMEM matlab files with velocities to trace a particle forwards/backwards
 % in time. The velocity field is assumed to be fixed with time.
 % We assume GEO-units, with lengths in [km] and velocities in [cm/yr].
 %
@@ -7,7 +7,7 @@ function [Location] = BackwardTracingParticles_LaMEM(Velocity, Location, time, t
 %
 % Usage:
 %
-%  [Location] = BackwardTracingParticles(Velocity, StartingLocation, time_end_Myrs, TimeIntegrationSteps);;
+%  [Location] = TracingParticles(Velocity, StartingLocation, time_end_Myrs, TimeIntegrationSteps, Mode);;
 %
 %       Input:
 %               Directory               -   Directory which has the MVEP2 output files
@@ -19,6 +19,7 @@ function [Location] = BackwardTracingParticles_LaMEM(Velocity, Location, time, t
 %                                           (Attention the higher the
 %                                           spacing the less exact the
 %                                           tracing)
+%               Mode                    -   'Forward' or 'Backwards' in time 
 %
 %
 
@@ -38,6 +39,17 @@ function [Location] = BackwardTracingParticles_LaMEM(Velocity, Location, time, t
 
 % start_BackwardTracing;
 
+switch Mode
+    case 'Forward'
+        TimeStepDirection =  1;
+   
+    case 'Backwards'
+        TimeStepDirection = -1;
+       
+    otherwise
+        error('Choose whether you advect Forward or Backward in time') 
+end
+            
 
 numTimesteps 	= length(Velocity);
 
@@ -194,33 +206,33 @@ for num =1:TimeIntegrationSteps
     Vy1     = interp3(x_half(iy,ix,iz),y_half(iy,ix,iz),z_half(iy,ix,iz),Vy_half(iy,ix,iz),Location.x(:,end),Location.y(:,end),Location.z(:,end));
     Vz1     = interp3(x_half(iy,ix,iz),y_half(iy,ix,iz),z_half(iy,ix,iz),Vz_half(iy,ix,iz),Location.x(:,end),Location.y(:,end),Location.z(:,end));
     
-    k1_x    = - dt*Vx1/1e5;     % transform from cm/yr to km/yr
-    k1_y    = - dt*Vy1/1e5;
-    k1_z    = - dt*Vz1/1e5;
+    k1_x    = TimeStepDirection*dt*Vx1/1e5;     % transform from cm/yr to km/yr
+    k1_y    = TimeStepDirection*dt*Vy1/1e5;
+    k1_z    = TimeStepDirection*dt*Vz1/1e5;
     
     Vx2     = interp3(x_half(iy,ix,iz),y_half(iy,ix,iz),z_half(iy,ix,iz),Vx_half(iy,ix,iz),Location.x(:,end)  + 0.5*k1_x,Location.y(:,end)  + 0.5*k1_y,Location.z(:,end)  + 0.5*k1_z);
     Vy2     = interp3(x_half(iy,ix,iz),y_half(iy,ix,iz),z_half(iy,ix,iz),Vy_half(iy,ix,iz),Location.x(:,end)  + 0.5*k1_x,Location.y(:,end)  + 0.5*k1_y,Location.z(:,end)  + 0.5*k1_z);
     Vz2     = interp3(x_half(iy,ix,iz),y_half(iy,ix,iz),z_half(iy,ix,iz),Vz_half(iy,ix,iz),Location.x(:,end)  + 0.5*k1_x,Location.y(:,end)  + 0.5*k1_y,Location.z(:,end)  + 0.5*k1_z);
-    k2_x    = - dt*Vx2/1e5;
-    k2_y    = - dt*Vy2/1e5;
-    k2_z    = - dt*Vz2/1e5;
+    k2_x    = TimeStepDirection*dt*Vx2/1e5;
+    k2_y    = TimeStepDirection*dt*Vy2/1e5;
+    k2_z    = TimeStepDirection*dt*Vz2/1e5;
     
    
     Vx3     = interp3(x_half(iy,ix,iz),y_half(iy,ix,iz),z_half(iy,ix,iz),Vx_half(iy,ix,iz),Location.x(:,end)  + 0.5*k2_x,Location.y(:,end)  + 0.5*k2_y,Location.z(:,end)  + 0.5*k2_z);
     Vy3     = interp3(x_half(iy,ix,iz),y_half(iy,ix,iz),z_half(iy,ix,iz),Vy_half(iy,ix,iz),Location.x(:,end)  + 0.5*k2_x,Location.y(:,end)  + 0.5*k2_y,Location.z(:,end)  + 0.5*k2_z);
     Vz3     = interp3(x_half(iy,ix,iz),y_half(iy,ix,iz),z_half(iy,ix,iz),Vz_half(iy,ix,iz),Location.x(:,end)  + 0.5*k2_x,Location.y(:,end)  + 0.5*k2_y,Location.z(:,end)  + 0.5*k2_z);
-    k3_x    = - dt*Vx3/1e5;
-    k3_y    = - dt*Vy3/1e5;
-    k3_z    = - dt*Vz3/1e5;
+    k3_x    = TimeStepDirection*dt*Vx3/1e5;
+    k3_y    = TimeStepDirection*dt*Vy3/1e5;
+    k3_z    = TimeStepDirection*dt*Vz3/1e5;
     
     
     Vx4     = interp3(x_half(iy,ix,iz),y_half(iy,ix,iz),z_half(iy,ix,iz),Vx_half(iy,ix,iz),Location.x(:,end)  + 0.5*k3_x,Location.y(:,end)  + 0.5*k3_y,Location.z(:,end)  + 0.5*k3_z);
     Vy4     = interp3(x_half(iy,ix,iz),y_half(iy,ix,iz),z_half(iy,ix,iz),Vy_half(iy,ix,iz),Location.x(:,end)  + 0.5*k3_x,Location.y(:,end)  + 0.5*k3_y,Location.z(:,end)  + 0.5*k3_z);
     Vz4     = interp3(x_half(iy,ix,iz),y_half(iy,ix,iz),z_half(iy,ix,iz),Vz_half(iy,ix,iz),Location.x(:,end)  + 0.5*k3_x,Location.y(:,end)  + 0.5*k3_y,Location.z(:,end)  + 0.5*k3_z);
     
-    k4_x    = - dt*Vx4/1e5;
-    k4_y    = - dt*Vy4/1e5;
-    k4_z    = - dt*Vz4/1e5;
+    k4_x    = TimeStepDirection*dt*Vx4/1e5;
+    k4_y    = TimeStepDirection*dt*Vy4/1e5;
+    k4_z    = TimeStepDirection*dt*Vz4/1e5;
     
     % Compute location of the particle @ OldStep
     Location.x(:,end+1) = Location.x(:,end) + 1/6*(k1_x + 2*k2_x + 2*k3_x + k4_x);
@@ -233,7 +245,7 @@ for num =1:TimeIntegrationSteps
     Location.Vz_cmYr(:,end+1) = (Location.z(:,end)-Location.z(:,end-1))/dt*1e5;      % average velocity in cm/yr
     
     % Compute properties at the particle (temperature, etc)
-    time = time-dt;
+    time = time + TimeStepDirection*dt;
     Location.time_Myrs(end+1)= time/1e6;
     
    
