@@ -1,0 +1,10 @@
+
+
+output commands for finite strain
+
+-out_tot_strain   // finite strain tensor, used as input for the "Tensorglyph Filter" in Paraview
+-out_nadai_strain // finite strain magnitude
+-out_lodes_ratio  // paramter to describe shape of the ellipsoid, varies between -1(pure constriction) and 1 (pure flattening), 0 corresponds to plane strain
+-out_fsa          // vector to display the major finite strain axis orientation, use Glyph Filter
+-out_fsa_trend    // dip direction of the fsa, values from 0 to 360 degrees
+-out_fsa_dip      // dip angle of the fsa fsa,values from 0 to 90 degrees
