@@ -62,7 +62,7 @@ LaMEM consists of the following directories:
 ### Main dependencies
 LaMEM crucially relies on:
 
-  * PETSc 3.9.3, ideally installed with the external packages SUPERLU_DIST, MUMPS and PASTIX
+  * PETSc 3.9.4, ideally installed with the external packages SUPERLU_DIST, MUMPS and PASTIX
 
 and to a minor extend on:
 
@@ -121,20 +121,20 @@ We develop LaMEM on Linux and Mac machines, but we also have had success on Wind
 
 ```
       $ cd /input_models/BuildInSetups
-      $ ../../bin/opt/LaMEM -ParamFile FallingBlock_DirectSolver.dat
+      $ ../../bin/opt/LaMEM -ParamFile FallingBlock_IterativeSolver.dat
 ```
   which will run a setup that has a falling block of higher density embedded in a lower density fluid for 10 timesteps.  
   Run the same in parallel with:
   
 ``` 
-     $ mpiexec -n 4 ../../bin/opt/LaMEM -ParamFile FallingBlock_DirectSolver.dat
+     $ mpiexec -n 4 ../../bin/opt/LaMEM -ParamFile FallingBlock_IterativeSolver.dat
 ```
 
-  You can visualize the results with Paraview by opening the file ```FB_direct.pvd```, and pushing the play button (after selecting the appropriate view, such as surface and the appropriate field such as velocity).
+  You can visualize the results with Paraview by opening the file ```FB_iterative.pvd```, and pushing the play button (after selecting the appropriate view, such as surface and the appropriate field such as velocity).
   
-  You can change the input parameters (such as resolution) by opening the file ```FallingBlock_DirectSolver.dat``` with a texteditor and changing the parameters.
+  You can change the input parameters (such as resolution) by opening the file ```FallingBlock_IterativeSolver.dat``` with a texteditor and changing the parameters.
 
 #### 3b. Learning more
  As we do not have an extensive user-guide yet (it takes time to create one, but will come at some point..), the best way to learn LaMEM is by looking at the input files in the order that is recommended in the README files. Start with ```/BuildInSetups```, which shows various example with geometries that are specified in the LaMEM input file. 
 
-All possible input parameters in LaMEM are listed in the file ```/input_models/input/lamem_input.dat```, which is worthwhile having a look at.
+All possible input parameters in LaMEM are listed in the file ```/input_models/input/lamem_input.dat```, which is worthwhile having a look at. Note that not all of these parameters have to be set (we select useful default options in most cases). 
