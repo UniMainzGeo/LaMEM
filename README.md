@@ -15,12 +15,14 @@ LaMEM has been tested on a variety of machines ranging from laptops to a massive
 The main developed of the current version are:
 
 * Anton Popov       (Johannes Gutenberg University Mainz, popov@uni-mainz.de), 2011-
-* Boris Kaus        (JGU Mainz, kaus@uni-mainz.de), 2011-
-* Tobias Baumann    (JGU Mainz), 2011-
-* Georg Reuber      (JGU Mainz), 2015-	
-* Adina Puesoek     (JGU Mainz, UC San Diego), 2012-
-* Naiara Fernandez  (JGU Mainz), 2011-2014
-* Arthur Bauville   (JGU Mainz), 2015
+* Boris Kaus         (JGU Mainz, kaus@uni-mainz.de), 2011-
+* Tobias Baumann     (JGU Mainz), 2011-
+* Georg Reuber       (JGU Mainz), 2015-	
+* Adina Puesoek      (JGU Mainz, UC San Diego), 2012-
+* Naiara Fernandez   (JGU Mainz), 2011-2014
+* Arthur Bauville    (JGU Mainz), 2015
+* Andrea Piccolo     (JGU Mainz), 2015-
+* Beatriz Montesinos (JGU Mainz), 2015-
 
 Older versions of LaMEM included a finite element solver as well, 
 and were developed by:
@@ -72,19 +74,19 @@ and to a minor extend on:
   * MATLAB (version not important), in order to facilitate creating more complicated input geometries
   * geomIO, to create input geometries from Inkscape (see https://geomio.bitbucket.io) 
   * Any text editor, to modify the LaMEM input files. 
-  * Visual Studio Code, in case you want to develop new code (some on the development team has )
+  * Visual Studio Code, in case you want to develop new code (some on the development team prefer Eclipse for this)
 
 ### Dependency installation
-We develop LaMEM on Linux and Mac machines, but we also have had success on Windows 10, where we recommend installing it through the (new) bash shell. In order for LaMEM to work, you'll need to install the correct version of PETSc first. PETSc is usually not backwards compatible, so it won't work with the incorrect version.  
+We develop LaMEM on Linux and Mac machines, but we also have had success on Windows 10, where we recommend installing it through the (new) bash shell. In order for LaMEM to work, you'll need to install the correct version of PETSc first. PETSc is usually not backwards compatible, so it won't work with the incorrect version. Also please note that we do not always immediately update LaMEM to the latest version of PETSc, so you may have to download/install an older version.
 
 * PETSc: 
      See http://www.mcs.anl.gov/petsc/petsc-as/documentation/installation.html
      for installation instructions. We also provide some installation instructions on how to compile 
-     PETSc (and mpich, gcc, as well as PETSc) on various machines in /doc/installation. The simplest manner is sometimes to let PETSc install all additional packages (like MPICH), but that often does not result in the most efficient code. You also have to make sure that the path is set correctly in that case (for MPICH, for example). On large scale cluster, you will have to link against the cluster libraries (for MPI, for example).
+     PETSc (and mpich, gcc, as well as PETSc) on various machines in /doc/installation. The simplest manner is sometimes to let PETSc install all additional packages (like MPICH), but that often does not result in the most efficient code. You also have to make sure that the path is set correctly in that case (for MPICH, for example). On a large scale cluster, you will have to link against the cluster libraries (for MPI, for example).
 
 * If you want to do debugging of LaMEM as well, it is a good idea to install both a DEBUG and an OPTIMIZED version of LaMEM, in separate directories.
 
-* Nothing else - if PETSc installs correctly, LaMEM runs fine in nearly all cases.
+* Nothing else - if the correct version of PETSc is installed, LaMEM will work fine.
 
 	
 ## 2. Download and build LaMEM
@@ -115,6 +117,16 @@ We develop LaMEM on Linux and Mac machines, but we also have had success on Wind
 
   Ideally, the tests should run all with no problems. Depending on which external direct solver packages you installed, some may fail (for example, if you did not install PASTIX). The python test harness will give some hints as where the issues came from.  
 
+  In case you happen to have MATLAB installed on your system, additional tests will be performed in which an input setup is generated from within MATLAB. In order for this to work, you will have to let the system know where the MATLAB-binary is located by setting the following environmental variable (which can also be set in your .bashrc file):
+```  
+        $ which matlab
+        /path_to_your_matlab_library/matlab
+        $ export MATLAB=/path_to_your_matlab_library/matlab
+        $ make test
+```
+Note that you can look at the ```tests``` directory contains subdirectories that are named: ```t?_***``` (for example ```./t1_FB1_Direct/``` which contains a test for a Falling Block setup). Within each of these directories you will find a working LaMEM input file (```*.dat```), and a python file that runs the actual tests in that directory (such as ```test_1_FB1.py```). Have a look at these files to learn more on how to run LaMEM.
+
+
 ## 3. Getting started
 #### 3a. First simulation
   You can run your first LaMEM simulation with 
@@ -137,4 +149,7 @@ We develop LaMEM on Linux and Mac machines, but we also have had success on Wind
 #### 3b. Learning more
  As we do not have an extensive user-guide yet (it takes time to create one, but will come at some point..), the best way to learn LaMEM is by looking at the input files in the order that is recommended in the README files. Start with ```/BuildInSetups```, which shows various example with geometries that are specified in the LaMEM input file. 
 
+In addition, you can also look at the [Wiki](https://bitbucket.org/bkaus/lamem/wiki/Home) page (left menu) for additional instructions on how to install & use LaMEM. This will be the location where we will add more extensive documentaion on how to use LaMEM.
+
 All possible input parameters in LaMEM are listed in the file ```/input_models/input/lamem_input.dat```, which is worthwhile having a look at. Note that not all of these parameters have to be set (we select useful default options in most cases). 
+
