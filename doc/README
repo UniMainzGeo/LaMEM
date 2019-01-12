@@ -20,8 +20,6 @@ This directory contains the following info:
                   the unlikely case that we decide to finalize this
 /Paraview      -  Some instructions on how to connect remotely to Paraview and run pvserver 
                   in parallel (not tested if this still works).
-/ScalingTest   -  Parallel Scalability tests, performed with an older version of LaMEM 				  
-				    		
 				
 Boris Kaus, 12.01.2019
 
