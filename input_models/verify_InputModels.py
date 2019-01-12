@@ -37,9 +37,9 @@ def makeLocalPathAbsolute(localRelPath) :
 def run_tests():
   os.environ['PYTHONUNBUFFERED'] = str('1')
 
-  registeredTests = [ BuildIn.test_1(), BuildIn.test_2(), BuildIn.test_3(), BuildIn.test_4(),
-                      BuildIn.test_5(), BuildIn.test_6(), BuildIn.test_7(), BuildIn.test_8(),
-                      BuildIn.test_9()];
+  registeredTests = [ BuildIn.test_1(), BuildIn.test_2(),  BuildIn.test_3(), BuildIn.test_4(),
+                      BuildIn.test_5(), BuildIn.test_6(),  BuildIn.test_7(), BuildIn.test_8(),
+                      BuildIn.test_9(), BuildIn.test_10(), BuildIn.test_11()];
  
   if os.path.isdir('TestOutput') == False:
     os.mkdir('TestOutput')

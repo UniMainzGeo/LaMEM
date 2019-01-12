@@ -71,6 +71,66 @@ def test_2():
 
 #------------------------------------------------------------------------------------------------
 def test_3():
+
+  # Test a falling block case with build-in iterative solver on 1 core
+  ranks = 1
+  launch =  makeLocalPathAbsolute('../../../bin/opt/LaMEM -ParamFile ../BuildInSetups/FallingBlock_IterativeSolver.dat -nstep_max 3') 
+  expected_file = makeLocalPathAbsolute('FallingBlock_Iterative-p1.expected')
+
+  def comparefunc(unittest):
+
+    key = re.escape("|Div|_inf")
+    unittest.compareFloatingPoint(key,1e-7)
+
+    key = re.escape("|Div|_2")
+    unittest.compareFloatingPoint(key,1e-6)
+
+    key = re.escape("|mRes|_2")
+    unittest.compareFloatingPoint(key,1e-6)
+
+    key = 'CONVERGED_RTOL iterations'
+    unittest.compareInteger(key,0)
+
+  # Create unit test object
+  test = pth.pthUnitTest('FallingBlock_Iterative',ranks,launch,expected_file)
+  test.setVerifyMethod(comparefunc)
+  test.appendKeywords('@')
+  test.setUseSandbox()      # put test output in seperate directory
+
+  return(test)
+
+#------------------------------------------------------------------------------------------------
+def test_4():
+
+  # Test a falling block case with build-in iterative solver on 2 cores
+  ranks = 2
+  launch =  makeLocalPathAbsolute('../../../bin/opt/LaMEM -ParamFile ../BuildInSetups/FallingBlock_IterativeSolver.dat -nstep_max 3') 
+  expected_file = makeLocalPathAbsolute('FallingBlock_Iterative_p2.expected')
+
+  def comparefunc(unittest):
+
+    key = re.escape("|Div|_inf")
+    unittest.compareFloatingPoint(key,1e-7)
+
+    key = re.escape("|Div|_2")
+    unittest.compareFloatingPoint(key,1e-6)
+
+    key = re.escape("|mRes|_2")
+    unittest.compareFloatingPoint(key,1e-6)
+
+    key = 'CONVERGED_RTOL iterations'
+    unittest.compareInteger(key,0)
+
+  # Create unit test object
+  test = pth.pthUnitTest('FallingBlock_Iterative_parallel',ranks,launch,expected_file)
+  test.setVerifyMethod(comparefunc)
+  test.appendKeywords('@')
+  test.setUseSandbox()      # put test output in seperate directory
+
+  return(test)
+
+#------------------------------------------------------------------------------------------------
+def test_5():
   # Falling block setup with multigrid solver
   ranks = 2
   launch =  makeLocalPathAbsolute('../../../bin/opt/LaMEM -ParamFile ../BuildInSetups/FallingBlock_Multigrid.dat -nstep_max 3 -dt_out 0 -nstep_ini 0') 
@@ -103,7 +163,7 @@ def test_3():
 
 
 #------------------------------------------------------------------------------------------------
-def test_4():
+def test_6():
   # Falling spheres setup with multigrid solver
   ranks = 2
   launch =  makeLocalPathAbsolute('../../../bin/opt/LaMEM -ParamFile ../BuildInSetups/FallingSpheres_Multigrid.dat -dt_out 0 -nstep_ini 0') 
@@ -135,7 +195,7 @@ def test_4():
   return(test)
 
 #------------------------------------------------------------------------------------------------
-def test_5():
+def test_7():
   # Falling spheres setup with multigrid solver but jacobi smoother
   ranks = 2
   launch =  makeLocalPathAbsolute('../../../bin/opt/LaMEM -ParamFile ../BuildInSetups/FallingSpheres_Multigrid.dat -gmg_mg_levels_ksp_type richardson -gmg_mg_levels_pc_type jacobi -gmg_mg_levels_ksp_richardson_scale 0.5') 
@@ -168,7 +228,7 @@ def test_5():
 
 
 #------------------------------------------------------------------------------------------------
-def test_6():
+def test_8():
   # 2D viscoplastic free slip subduction setup with direct solvers
   ranks = 2
   launch =  makeLocalPathAbsolute('../../../bin/opt/LaMEM -ParamFile ../BuildInSetups/Subduction2D_FreeSlip_DirectSolver.dat -dt_out 0 -nstep_ini 0 -nel_x 64 -nel_z 16 -nstep_max 3 -rand_noise 0') 
@@ -201,7 +261,7 @@ def test_6():
 
 
 #------------------------------------------------------------------------------------------------
-def test_7():
+def test_9():
   # 2D viscous free surface subduction setup with direct solvers
   ranks = 1
   launch =  makeLocalPathAbsolute('../../../bin/opt/LaMEM -ParamFile ../BuildInSetups/Subduction2D_FreeSurface_DirectSolver.dat -dt_out 0 -nstep_ini 0 -nel_x 128 -nel_z 32 -nstep_max 3 -rand_noise 0') 
@@ -234,7 +294,7 @@ def test_7():
 
 
 #------------------------------------------------------------------------------------------------
-def test_8():
+def test_10():
   # 3D viscous double subduction setup with multigrid solver
   ranks = 2
   launch =  makeLocalPathAbsolute('../../../bin/opt/LaMEM -ParamFile ../BuildInSetups/Subduction3D_DoubleSubduction_FreeSlip_Multigrid.dat -dt_out 0 -nstep_ini 0 -nel_x 64 -nel_y 32 -nel_z 16 -nstep_max 3 -rand_noise 0') 
@@ -267,7 +327,7 @@ def test_8():
 
 
 #------------------------------------------------------------------------------------------------
-def test_9():
+def test_11():
   # 2D assymmetric rifting setup
   ranks = 2
   launch =  makeLocalPathAbsolute('../../../bin/opt/LaMEM -ParamFile ../BuildInSetups/Rifting2D_MultigridSolver.dat -dt_out 0 -nstep_ini 0 -nel_x 64 -nel_z 32 -nstep_max 3 -rand_noise 0') 
@@ -300,3 +360,5 @@ def test_9():
   test.setUseSandbox()      # put test output in seperate directory
 
   return(test)
+
+  
