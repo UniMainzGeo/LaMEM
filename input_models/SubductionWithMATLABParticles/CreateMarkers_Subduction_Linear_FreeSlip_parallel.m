@@ -9,7 +9,7 @@ addpath ../../matlab
 
 
 % Define parallel partition file
-Parallel_partition     = 'ProcessorPartitioning_4cpu_4.1.1.bin'
+Parallel_partition     = 'ProcessorPartitioning_2cpu_2.1.1.bin'
 
 
 % Number of markers in a grid cell [Note that this needs to be changed if 
@@ -59,15 +59,14 @@ H       =   zcoor(end)-zcoor(1);    % z-dir
 % SPECIFY PARAMETERS OF THE SLAB
 %==========================================================================
 Trench_x_location   = -500;     % trench location
-Length_Subduct_Slab =  300;     % length of subducted slab
+Length_Subduct_Slab =  200;     % length of subducted slab
 Length_Horiz_Slab   =  1500;    % length of overriding plate of slab
-Width_Slab          =  1000;    % Width of slab (in case we run a 3D model)         
+Width_Slab          =  750;     % Width of slab (in case we run a 3D model)         
+
 
 SubductionAngle     =   34;     % Subduction angle
-ThermalAge_Myrs     =   50;     % Thermal age of the slab in Myrs
 ThicknessCrust      =   10;
-
-z_surface           =   0;      % initial free surface
+ThicknessSlab       =   75;    % Thickness of mantle lithosphere
 
 
 %==========================================================================
@@ -76,81 +75,65 @@ z_surface           =   0;      % initial free surface
 
 %% 1) Create the top (and bottom) of the slab
 
-dx              =   (Length_Horiz_Slab+Length_Subduct_Slab)/100;
+% Create polygon of crust and mantle lithoshere
+x_s             =   Trench_x_location-Length_Subduct_Slab;  % start
+x_t             =   Trench_x_location;                      % trench
+x_e             =   Trench_x_location+Length_Horiz_Slab;    % end
 
-Slab_Top        =   ndgrid(Trench_x_location-Length_Subduct_Slab:dx:Trench_x_location+Length_Horiz_Slab); 
-Slab_Top        =   unique([Slab_Top; Trench_x_location; Trench_x_location+Length_Horiz_Slab])'; % ensure that the Trench is included
-Slab_Top(2,:)   =   ones(size(Slab_Top))*z_surface;                           % top of slab
-ind_T           =   find(Slab_Top(1,:)==Trench_x_location);                   % trench location
+% First create a horizontal crust/slab
+Slab_Crust(1,:) =   [x_s x_t x_e x_e x_t x_s];
+Slab_Crust(2,:) =   [0   0     0 -ThicknessCrust -ThicknessCrust -ThicknessCrust];
 
-Slab_Bot        =   Slab_Top;
-Slab_Bot(2,:)   =   -500;
+Slab_ML         =   Slab_Crust;
+Slab_ML(2,:)    =   [0   0     0 -ThicknessSlab -ThicknessSlab -ThicknessSlab];
 
-% Rotate inclined piece of slab
+% Next rotate the inclined portions
 alpha           =   -SubductionAngle*pi/180;
 R               =   [cos(alpha) sin(alpha); -sin(alpha) cos(alpha)];
 
-% Top & Bottom of slab
-SlabInclined    =   [Slab_Top(:,1:ind_T), Slab_Bot(:,1:ind_T)];
-SlabInclined(1,:)    =   SlabInclined(1,:)-Trench_x_location;
-SlabInclined    =   R*SlabInclined;
-SlabInclined(1,:)    =   SlabInclined(1,:)+Trench_x_location;
+% Crust
+Inclined        =   Slab_Crust(:,[1:2 end-1:end]);
+Inclined(1,:)   =   Inclined(1,:)-Trench_x_location;
+Inclined        =   R*Inclined;
+Inclined(1,:)   =   Inclined(1,:)+Trench_x_location;
+Inclined(2,end-1) =   -ThicknessCrust;
 
-Slab_Top(:,1:ind_T) = SlabInclined(:,1:ind_T);
-Slab_Bot        =   [SlabInclined(:,ind_T+1:end), [Slab_Top(1,end); SlabInclined(2,end)]];
+Slab_Crust(:,1:2) = Inclined(:,1:2);
+Slab_Crust(:,end-1:end) = Inclined(:,end-1:end);
 
+% rotate slab
+Inclined        =   Slab_ML(:,[1:2 end-1:end]);
+Inclined(1,:)   =   Inclined(1,:)-Trench_x_location;
+Inclined        =   R*Inclined;
+Inclined(1,:)   =   Inclined(1,:)+Trench_x_location;
 
-%% 2) Compute the perpendicular distance of all "slab" points to top of slab
-X2d             =   squeeze(X(1,:,:));
-Z2d             =   squeeze(Z(1,:,:));
+Slab_ML(:,1:2) = Inclined(:,1:2);
+Slab_ML(:,end-1:end) = Inclined(:,end-1:end);
+Slab_ML(2,end-2) = Slab_ML(2,end-1);                    % NOTE: the final thickness is no longer the specified slab thicknes!!
 
-Distance        =   ones(size(X))*NaN;      % 3D matrix with distance to 
-Dist_2D         =   ones(size(X2d))*NaN;    % in x-z plane
+% Now we have a polygon that described the crust and one that describes the
+% mantle lithosphere.
+% You can plot them with
+% fill(Slab_ML(1,:),Slab_ML(2,:),'bo-',Slab_Crust(1,:),Slab_Crust(2,:),'ro-'), axis equal
 
-[d_min]         =   p_poly_dist(X2d(:), Z2d(:), Slab_Top(1,:), Slab_Top(2,:), false);
-Dist_2D(find(Dist_2D)) = d_min;
+%% Set phases based on whether we are in the crust or in the mantle lithosphere
+Phase           =   zeros(size(X)); % initialize to have mantle phase
 
-SlabPolygon     =   [Slab_Top, Slab_Bot(:,end:-1:1)];
-in              =   inpolygon(X2d,Z2d,SlabPolygon(1,:),SlabPolygon(2,:));
-Dist_2D(~in)    =   NaN;
+% Note that the mantle lithosphere should be set first in the way we define
+% the polygons
+in              =   inpolygon(X,Z,Slab_ML(1,:),Slab_ML(2,:));       % ML
+Phase(in)       =   2;
 
-for iy=1:size(X,1);
-    Distance(iy,:,:) = Dist_2D;
-end
+in              =   inpolygon(X,Z,Slab_Crust(1,:),Slab_Crust(2,:)); % crust
+Phase(in)       =   1;
 
+% For 3D setups, take the width of the slab in Y-direction into account
+ind             =  find(Y>Width_Slab);
+Phase(ind)      =   0;
 
-%% Set phases and temperature based on distance of top of slab
-T_surface   =   20;
+% Temperature is not used in the setup, so set it to a constant value
 T_mantle    =   1350;
-Phase       =   ones(size(X)); % initialize to have mantle phase
 Temp        =   T_mantle*ones(size(Phase));
-
-% Set air
-ind        =    find(Z>z_surface);
-Phase(ind) =    0;
-Temp(ind)  =    0;
-
-% Set Crust
-ind        =    find(Distance<ThicknessCrust);
-Phase(ind) =    2;
-
-% Set 3D temperature based on halfspace cooling & distance to top of slab
-kappa       =   1e-6;
-ThermalAge  =   ThermalAge_Myrs*1e6*(365*24*3600);
-
-% halfspace cooling
-ind         =   ~isnan(Distance);
-Temp(ind)   =   (T_mantle -T_surface) * erf(abs(Distance(ind))*1000/2/sqrt(kappa*ThermalAge)) + T_surface;
-
-% Set Mantle Lithosphere for mantle points that have temperatures < 1200 Celcius
-ind        =    find(Temp<1200 & Phase==1);
-Phase(ind) =    3;
-
-
-% Limit lateral size of slab (in 3D cases)
-ind         =   find(Y>Width_Slab & Phase>0);
-Phase(ind)  =   1;
-Temp(ind)   =   T_mantle;
 
 
 

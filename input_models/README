@@ -33,7 +33,6 @@ that lists all specifiable LaMEM options.
 3) SubductionWithMATLABParticles
 Example of performing a subduction setup, in which the initial model geometry
 and temperature structure is generated from within a MATLAB script.
-INPUT FILE NOT WORKING - REQUIRES UPDATING TO THE LATEST LaMEM VERSION
 
 4) /FSSA_Benchmark
 Example of a Rayleigh-Taylor bennchmark, showing how the free surface
