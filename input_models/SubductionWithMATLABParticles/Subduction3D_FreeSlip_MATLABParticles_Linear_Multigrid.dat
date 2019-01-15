@@ -105,7 +105,7 @@
 
 # Grid output options (output is always active)
 
-	out_file_name       = Subduction2D_FreeSlip_direct # output file name
+	out_file_name       = Subduction3D_FreeSlip_direct # output file name
 	out_pvd             = 1       	# activate writing .pvd file
 	out_phase           = 1
 	out_density         = 1

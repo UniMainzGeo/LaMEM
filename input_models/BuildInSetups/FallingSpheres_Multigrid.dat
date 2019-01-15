@@ -14,7 +14,7 @@
 # Time stepping parameters
 #===============================================================================
 
-	time_end  = 100   # simulation end time
+	time_end  = 1000  # simulation end time
 	dt        = 10    # time step
 	dt_min    = 1e-5  # minimum time step (declare divergence if lower value is attempted)
 	dt_max    = 100   # maximum time step

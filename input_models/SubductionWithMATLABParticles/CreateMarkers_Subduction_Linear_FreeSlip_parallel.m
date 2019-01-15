@@ -1,7 +1,7 @@
 % Create a 2D subduction setup with particles & temperature, 
 
 
-clear, clf, close all
+clear
 
 
 % Tell the code where the LaMEM matlab routines are 
