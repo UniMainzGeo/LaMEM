@@ -132,14 +132,7 @@
 	out_avd_pvd 		= 1 # activate writing .pvd file
 	out_avd_ref 		= 3 # AVD grid refinement factor
 	
-# Free surface output options (can be activated only if surface tracking is enabled)
 
-	out_surf            = 1 # activate surface output
-	out_surf_pvd        = 1 # activate writing .pvd file
-	out_surf_velocity   = 1
-	out_surf_topography = 1
-	out_surf_amplitude  = 1
-	
 #===============================================================================
 # Material phase parameters
 #===============================================================================

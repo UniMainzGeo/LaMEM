@@ -26,10 +26,10 @@
 	time_end  = 100   # simulation end time
 	dt        = 0.001 # initial time step
 	dt_min    = 1e-5  # minimum time step (declare divergence if lower value is attempted)
-	dt_max    = 100   # maximum time step
+	dt_max    = 0.1  # maximum time step
 	inc_dt    = 0.1   # time step increment per time step (fraction of unit)
 	CFL       = 0.5   # CFL (Courant-Friedrichs-Lewy) criterion
-	CFLMAX    = 0.5   # CFL criterion for elasticity
+	CFLMAX    = 0.9   # CFL criterion for elasticity
 	nstep_max = 1000  # maximum allowed number of steps (lower bound: time_end/dt_max)
 	nstep_out = 5     # save output every n steps
 	nstep_rdb = 100   # save restart database every n steps
@@ -66,7 +66,11 @@
 
 	noslip = 0 0 0 0 1 0
 	
+# temperature on the top & bottom boundaries
 
+	temp_top  = 0.0
+	temp_bot  = 1350.0;
+	
 #===============================================================================
 # Solution parameters & controls
 #===============================================================================
@@ -170,6 +174,7 @@
 		rho 		= 	1000 # density
 		alpha  	 	= 	3e-5 			# coeff. of thermal expansion [1/K]
 		
+		
 		# Thermal properties
         k           =   100        		# conductivity
         Cp          =   1e6        		# heat capacity - should be artificially large for sticky air
@@ -193,7 +198,7 @@
         diff_prof   =   Dry_Olivine_diff_creep-Hirth_Kohlstedt_2003
         Vd       	=  	8e-6
 
-		ch			=	50e6			# cohesion [MPa]
+		ch			=	10e6	    		# cohesion [MPa]
 		fr 			=	30				# friction angle	
 		
      	# Thermal properties
@@ -217,7 +222,7 @@
 		
 		# frictional/plastic properties 
 		ch			=	10e6			# cohesion [MPa]
-		fr 			=	5				# friction angle	
+		fr 			=	30				# friction angle	
 		
         # Thermal properties
         k			=    3        		# conductivity
@@ -241,7 +246,7 @@
         diff_prof   =   Dry_Olivine_diff_creep-Hirth_Kohlstedt_2003
         Vd       	=  	8e-6
 
-		ch			=	50e6			# cohesion [MPa]
+		ch			=	10e6	   			# cohesion [MPa]
 		fr 			=	30				# friction angle	
 		
      	# Thermal properties
