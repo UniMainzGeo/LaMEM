@@ -803,7 +803,8 @@ PetscErrorCode ADVMarkInitGeom(AdvCtx *actx, FB *fb)
 {
 	Marker         *P;
 	PetscLogDouble t;
-	PetscScalar    chLen;
+	PetscScalar    chLen, chTime, chTemp;
+	char 		   TemperatureStructure[_STR_LEN_];
 	PetscInt       jj, ngeom, imark, maxPhaseID;
 	GeomPrim       geom[_max_geom_], *pgeom[_max_geom_], *sphere, *box, *hex, *layer, *cylinder;
 
@@ -817,12 +818,63 @@ PetscErrorCode ADVMarkInitGeom(AdvCtx *actx, FB *fb)
 	ngeom      = 0;
 	maxPhaseID = actx->dbm->numPhases - 1;
 	chLen      = actx->jr->scal->length;
-
+	chTime 	   = actx->jr->scal->time;
+	chTemp 	   = actx->jr->scal->temperature;
+	
+	
 	// clear storage
 	ierr = PetscMemzero(geom,  sizeof(GeomPrim) *(size_t)_max_geom_); CHKERRQ(ierr);
 	ierr = PetscMemzero(pgeom, sizeof(GeomPrim*)*(size_t)_max_geom_); CHKERRQ(ierr);
 
 	PrintStart(&t, "Reading geometric primitives", NULL);
+
+	//=======
+	// LAYERS
+	//=======
+
+	ierr = FBFindBlocks(fb, _OPTIONAL_, "<LayerStart>", "<LayerEnd>"); CHKERRQ(ierr);
+
+	for(jj = 0; jj < fb->nblocks; jj++)
+	{
+		GET_GEOM(layer, geom, ngeom, _max_geom_);
+
+		ierr = getIntParam   (fb, _REQUIRED_, "phase",  &layer->phase,  1, maxPhaseID); CHKERRQ(ierr);
+		ierr = getScalarParam(fb, _REQUIRED_, "top",    &layer->top,    1, chLen);      CHKERRQ(ierr);
+		ierr = getScalarParam(fb, _REQUIRED_, "bottom", &layer->bot,    1, chLen);      CHKERRQ(ierr);
+
+		// Optional temperature options:
+		layer->setTemp = 0;
+		ierr = getStringParam(fb, _OPTIONAL_, "Temperature",     TemperatureStructure,       NULL ); CHKERRQ(ierr);
+		if 		(!strcmp(TemperatureStructure, "constant"))	    {layer->setTemp=1;}
+		else if (!strcmp(TemperatureStructure, "linear"))	    {layer->setTemp=2;}
+		else if (!strcmp(TemperatureStructure, "halfspace"))    {layer->setTemp=3;}
+		
+		// Depending on temperature options, get required input parameters
+		if (layer->setTemp==1){
+			ierr = getScalarParam(fb, _REQUIRED_, "cstTemp", 	&layer->cstTemp, 1, 1);     CHKERRQ(ierr); 
+		
+			// take potential shift C->K into account	
+			layer->cstTemp = (layer->cstTemp +  actx->jr->scal->Tshift)/actx->jr->scal->temperature; 		
+		}
+		if (layer->setTemp>1){
+			ierr = getScalarParam(fb, _REQUIRED_, "topTemp", 	&layer->topTemp, 1, 1);     CHKERRQ(ierr); 
+			ierr = getScalarParam(fb, _REQUIRED_, "botTemp", 	&layer->botTemp, 1, 1);     CHKERRQ(ierr); 
+
+			// take potential shift C->K into account	
+			layer->topTemp = (layer->topTemp +  actx->jr->scal->Tshift)/actx->jr->scal->temperature; 		
+			layer->botTemp = (layer->botTemp +  actx->jr->scal->Tshift)/actx->jr->scal->temperature;
+		}
+		if (layer->setTemp==3){
+			ierr 			= getScalarParam(fb, _REQUIRED_, "thermalAge", &layer->thermalAge, 1, chTime); CHKERRQ(ierr); 
+			layer->kappa    = 1e-6/( (actx->jr->scal->length_si)*(actx->jr->scal->length_si)/(actx->jr->scal->time_si)); // thermal diffusivity in m2/s	
+		}
+
+		layer->setPhase = setPhaseLayer;
+
+		cgeom.insert(make_pair(fb->blBeg[fb->blockID++], layer));
+	}
+
+	ierr = FBFreeBlocks(fb); CHKERRQ(ierr);
 
 	//========
 	// SPHERES
@@ -838,6 +890,19 @@ PetscErrorCode ADVMarkInitGeom(AdvCtx *actx, FB *fb)
 		ierr = getScalarParam(fb, _REQUIRED_, "radius", &sphere->radius, 1, chLen);      CHKERRQ(ierr);
 		ierr = getScalarParam(fb, _REQUIRED_, "center",  sphere->center, 3, chLen);      CHKERRQ(ierr);
 
+		// Optional temperature options:
+		sphere->setTemp = 0;
+		ierr = getStringParam(fb, _OPTIONAL_, "Temperature",     TemperatureStructure,       NULL ); CHKERRQ(ierr);
+		if 		(!strcmp(TemperatureStructure, "constant"))	    {sphere->setTemp=1;}
+		
+		// Depending on temperature options, get required input parameters
+		if (sphere->setTemp==1){
+			ierr = getScalarParam(fb, _REQUIRED_, "cstTemp", 	&sphere->cstTemp, 1, 1);     CHKERRQ(ierr); 
+		
+			// take potential shift C->K into account	
+			sphere->cstTemp = (sphere->cstTemp +  actx->jr->scal->Tshift)/actx->jr->scal->temperature; 		
+		}
+		
 		sphere->setPhase = setPhaseSphere;
 
 		cgeom.insert(make_pair(fb->blBeg[fb->blockID++], sphere));
@@ -855,9 +920,33 @@ PetscErrorCode ADVMarkInitGeom(AdvCtx *actx, FB *fb)
 	{
 		GET_GEOM(box, geom, ngeom, _max_geom_);
 
-		ierr = getIntParam   (fb, _REQUIRED_, "phase",  &box->phase,  1, maxPhaseID); CHKERRQ(ierr);
-		ierr = getScalarParam(fb, _REQUIRED_, "bounds",  box->bounds, 6, chLen);      CHKERRQ(ierr);
+		box->setTemp = 0;	//default is no	
+		ierr = getIntParam   (fb, _REQUIRED_, "phase",  	&box->phase,   1, maxPhaseID); 	CHKERRQ(ierr);
+		ierr = getScalarParam(fb, _REQUIRED_, "bounds",  	 box->bounds,  6, chLen);      	CHKERRQ(ierr);
+		box->bot = box->bounds[4]; box->top = box->bounds[5];
 
+		// Optional temperature options:
+		box->setTemp = 0;
+		ierr = getStringParam(fb, _OPTIONAL_, "Temperature",        TemperatureStructure,       NULL );          CHKERRQ(ierr);
+		if 		(!strcmp(TemperatureStructure, "constant"))	    {box->setTemp=1;}
+		else if (!strcmp(TemperatureStructure, "linear"))	    {box->setTemp=2;}
+		else if (!strcmp(TemperatureStructure, "halfspace"))    {box->setTemp=3;}
+		
+		// Depending on temperature options, get required input parameters
+		if (box->setTemp==1){
+			ierr = getScalarParam(fb, _REQUIRED_, "cstTemp", 	&box->cstTemp, 1, chTemp);     CHKERRQ(ierr); 
+		}
+		if (box->setTemp>1){
+			ierr = getScalarParam(fb, _REQUIRED_, "topTemp", 	&box->topTemp, 1, chTemp);     CHKERRQ(ierr); 
+			ierr = getScalarParam(fb, _REQUIRED_, "botTemp", 	&box->botTemp, 1, chTemp);     CHKERRQ(ierr); 
+		}
+		if (box->setTemp==3){
+			
+			ierr = getScalarParam(fb, _REQUIRED_, "thermalAge", &box->thermalAge, 1, chTime); CHKERRQ(ierr); 
+
+			box->kappa      = 1e-6/( (actx->jr->scal->length_si)*(actx->jr->scal->length_si)/(actx->jr->scal->time_si)); // thermal diffusivity in m2/s	
+		}
+		
 		box->setPhase = setPhaseBox;
 
 		cgeom.insert(make_pair(fb->blBeg[fb->blockID++], box));
@@ -888,26 +977,7 @@ PetscErrorCode ADVMarkInitGeom(AdvCtx *actx, FB *fb)
 
 	ierr = FBFreeBlocks(fb); CHKERRQ(ierr);
 
-	//=======
-	// LAYERS
-	//=======
 
-	ierr = FBFindBlocks(fb, _OPTIONAL_, "<LayerStart>", "<LayerEnd>"); CHKERRQ(ierr);
-
-	for(jj = 0; jj < fb->nblocks; jj++)
-	{
-		GET_GEOM(layer, geom, ngeom, _max_geom_);
-
-		ierr = getIntParam   (fb, _REQUIRED_, "phase",  &layer->phase,  1, maxPhaseID); CHKERRQ(ierr);
-		ierr = getScalarParam(fb, _REQUIRED_, "top",    &layer->top,    1, chLen);      CHKERRQ(ierr);
-		ierr = getScalarParam(fb, _REQUIRED_, "bottom", &layer->bot,    1, chLen);      CHKERRQ(ierr);
-
-		layer->setPhase = setPhaseLayer;
-
-		cgeom.insert(make_pair(fb->blBeg[fb->blockID++], layer));
-	}
-
-	ierr = FBFreeBlocks(fb); CHKERRQ(ierr);
 
 	//==========
 	// CYLINDERS
@@ -923,6 +993,19 @@ PetscErrorCode ADVMarkInitGeom(AdvCtx *actx, FB *fb)
 		ierr = getScalarParam(fb, _REQUIRED_, "radius",  &cylinder->radius, 1, chLen);      CHKERRQ(ierr);
 		ierr = getScalarParam(fb, _REQUIRED_, "base",     cylinder->base,   3, chLen);      CHKERRQ(ierr);
 		ierr = getScalarParam(fb, _REQUIRED_, "cap",      cylinder->cap,    3, chLen);      CHKERRQ(ierr);
+
+		// Optional temperature options:
+		cylinder->setTemp = 0;
+		ierr = getStringParam(fb, _OPTIONAL_, "Temperature",     TemperatureStructure,       NULL ); CHKERRQ(ierr);
+		if 		(!strcmp(TemperatureStructure, "constant"))	    {cylinder->setTemp=1;}
+		
+		// Depending on temperature options, get required input parameters
+		if (cylinder->setTemp==1){
+			ierr = getScalarParam(fb, _REQUIRED_, "cstTemp", 	&cylinder->cstTemp, 1, 1);     CHKERRQ(ierr); 
+		
+			// take potential shift C->K into account	
+			cylinder->cstTemp = (cylinder->cstTemp +  actx->jr->scal->Tshift)/actx->jr->scal->temperature; 		
+		}
 
 		cylinder->setPhase = setPhaseCylinder;
 
@@ -1506,6 +1589,13 @@ void setPhaseSphere(GeomPrim *sphere, Marker *P)
 	if(sqrt(dx*dx + dy*dy + dz*dz) <= sphere->radius)
 	{
 		P->phase = sphere->phase;
+		if (sphere->setTemp>0)
+		{	
+			PetscScalar T=0;
+			computeTemperature(sphere, P, &T);
+
+			P->T = T; 			// set Temperature
+		}
 	}
 }
 //---------------------------------------------------------------------------
@@ -1516,6 +1606,14 @@ void setPhaseBox(GeomPrim *box, Marker *P)
 	&& P->X[2] >= box->bounds[4] && P->X[2] <= box->bounds[5])
 	{
 		P->phase = box->phase;
+		if (box->setTemp>0)
+		{	
+			PetscScalar T=0;
+			computeTemperature(box, P, &T);
+
+			P->T = T; 			// set Temperature
+		}
+
 	}
 }
 //---------------------------------------------------------------------------
@@ -1524,6 +1622,13 @@ void setPhaseLayer(GeomPrim *layer, Marker *P)
 	if(P->X[2] >= layer->bot && P->X[2] <= layer->top)
 	{
 		P->phase = layer->phase;
+		if (layer->setTemp>0)
+		{	
+			PetscScalar T=0;
+			computeTemperature(layer, P, &T);
+
+			P->T = T; 			// set Temperature
+		}
 	}
 }
 //---------------------------------------------------------------------------
@@ -1585,7 +1690,57 @@ void setPhaseCylinder(GeomPrim *cylinder, Marker *P)
 	if(t >= 0.0 && t <= 1.0 && sqrt(dx*dx + dy*dy + dz*dz) <= cylinder->radius)
 	{
 		P->phase = cylinder->phase;
+
+		if (cylinder->setTemp>0)
+		{	
+			PetscScalar T=0;
+			computeTemperature(cylinder, P, &T);
+
+			P->T = T; 			// set Temperature
+		}
 	}
+}
+//---------------------------------------------------------------------------
+// geometric primitives temperature functions
+//---------------------------------------------------------------------------
+void computeTemperature(GeomPrim *geom, Marker *P, PetscScalar *T )
+{
+	// computes the temperature at the point based on the top of the geometric object
+	
+	if (geom->setTemp==1){
+		// constant temperature
+		*T = geom->cstTemp;
+	}
+	else if (geom->setTemp==2)
+	{
+		// linear temperature between top & bottom
+		PetscScalar z_top, z_bot, z, T_top, T_bot;
+		
+		z_top 		= 	geom->top;		z_bot =	geom->bot;
+		T_top 		=	geom->topTemp;	T_bot = geom->botTemp;
+		z     		= 	P->X[2];
+
+		*T          =   (z-z_top)*(T_top - T_bot)/(z_top-z_bot) + T_top;	// linear gradient between top & bottom
+		
+
+	}
+	else if (geom->setTemp==3)
+	{
+		// Half space cooling profile
+		PetscScalar z_top, z, T_top, T_bot, kappa, thermalAge;
+
+		z_top 		= 	geom->top;			
+		T_top 		=	geom->topTemp;		T_bot = geom->botTemp;
+		thermalAge 	=   geom->thermalAge;
+		z     		= 	PetscAbs(P->X[2]-z_top);		
+		kappa 		=	geom->kappa;
+
+		*T = (T_bot-T_top)*erf(z/2.0/sqrt(kappa*thermalAge)) + T_top;
+
+
+	}
+
+
 }
 //---------------------------------------------------------------------------
 void HexGetBoundingBox(

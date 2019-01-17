@@ -94,6 +94,12 @@ struct GeomPrim
 	// layer
 	PetscScalar top;
 	PetscScalar bot;
+	// temperature
+	PetscInt    setTemp;
+	PetscScalar cstTemp;
+	PetscScalar topTemp, botTemp;
+	PetscScalar thermalAge;	
+	PetscScalar kappa;		
 
 	void (*setPhase)(GeomPrim*, Marker*);
 };
@@ -117,6 +123,8 @@ PetscInt TetPointTest(
 		PetscInt    *ii,    // corner indices
 		PetscScalar *xp,    // point coordinate
 		PetscScalar  tol);  // relative tolerance
+
+void computeTemperature(GeomPrim *geom, Marker *P, PetscScalar *T );		
 
 //---------------------------------------------------------------------------
 

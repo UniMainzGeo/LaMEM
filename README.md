@@ -149,7 +149,7 @@ Note that you can look at the ```tests``` directory contains subdirectories that
 #### 3b. Learning more
  As we do not have an extensive user-guide yet (it takes time to create one, but will come at some point..), the best way to learn LaMEM is by looking at the input files in the order that is recommended in the README files. Start with ```/BuildInSetups```, which shows various example with geometries that are specified in the LaMEM input file. 
 
-In addition, you can also look at the [Wiki](https://bitbucket.org/bkaus/lamem/wiki/Home) page (left menu) for additional instructions on how to install & use LaMEM. This will be the location where we will add more extensive documentaion on how to use LaMEM.
+In addition, you can also look at the [Wiki](https://bitbucket.org/bkaus/lamem/wiki/Home) page (left menu). This will be the location where we will add more extensive documentation on how to use LaMEM.
 
 All possible input parameters in LaMEM are listed in the file ```/input_models/input/lamem_input.dat```, which is worthwhile having a look at. Note that not all of these parameters have to be set (we select useful default options in most cases). 
 

@@ -315,18 +315,30 @@
 #	mark_ctrl = basic # AVD for cells + corner insertion
 #	mark_ctrl = avd   # pure AVD for all control volumes
 
-# Geometric primtives:
+# Geometric primitives:
 
 	<SphereStart>
 		phase  = 1
 		radius = 1.5
 		center = 1.0 2.0 3.0
+		
+		Temperature = 	constant  # optional: Temperature of the sphere. possibilities: [constant]
+		cstTemp     =   1000    # required in case of [constant]: temperature value [in Celcius in case of GEO units]
+
 	<SphereEnd>
 
 	<BoxStart>
 		phase  = 1
+		
 		# box bound coordinates: left, right, front, back, bottom, top
 		bounds = 1.0 2.0 1.0 2.0 1.0 2.0
+		
+		Temperature = 	linear  # optional: Temperature structure. possibilities: [constant, linear, halfspace]
+		cstTemp     =   1000    # required in case of [constant]: temperature value [in Celcius in case of GEO units]
+		topTemp     =   0       # required in case of [linear,halfspace]: temperature @ top [in Celcius in case of GEO units]
+		botTemp     =   1300    # required in case of [linear,halfspace]: temperature @ bottom [in Celcius in case of GEO units]
+		thermalAge  =   70      # required in case of [halfspace]: thermal age of lithosphere [in Myrs if GEO units are used]
+
 	<BoxEnd>
 
 	<HexStart>
@@ -340,6 +352,14 @@
 		phase  = 1
 		top    = 5.0
 		bottom = 3.0
+		
+			
+		Temperature = 	halfspace  # optional: Temperature structure. possibilities: [constant, linear, halfspace]
+		cstTemp     =   1000    # required in case of [constant]: temperature value [in Celcius in case of GEO units]
+		topTemp     =   0       # required in case of [linear,halfspace]: temperature @ top [in Celcius in case of GEO units]
+		botTemp     =   1300    # required in case of [linear,halfspace]: temperature @ bottom [in Celcius in case of GEO units]
+		thermalAge  =   70      # required in case of [halfspace]: thermal age of lithosphere [in Myrs if GEO units are used]
+
 	<LayerEnd>
 
 	<CylinderStart>
@@ -347,6 +367,9 @@
 		radius = 1.5
 		base   = 1.0 2.0 3.0
 		cap    = 3.0 5.0 7.0
+		
+		Temperature = 	constant  # optional: Temperature of the cylinder. possibilities: [constant]
+		cstTemp     =   1000    # required in case of [constant]: temperature value [in Celcius in case of GEO units]
 	<CylinderEnd>
 
 

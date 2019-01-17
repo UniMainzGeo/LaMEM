@@ -38,5 +38,11 @@ following order:
 8) Rifting2D_MultigridSolver.dat:
     2D viscoelastoplastic rifting which results in an asymmetric rift (or symmetric one
     if you change the viscosity of the lower layer).    
+
+9) PlumeLithosphereInteraction.dat:
+    2D setup with a rising plume underneath a viscoelastoplastic lithosphere. This 
+    example shows how to specify temperature in the initial model setup and how to 
+    employ nonlinear temperature-dependent rheologies.
+
     
     

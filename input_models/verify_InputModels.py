@@ -20,12 +20,16 @@ os.system('cd ../src/;  make mode=deb all; cd ../input_models')
 sys.path.append(os.path.join(os.environ['PWD'], 'BuildInSetups/Tests'))
 
 # add matlab-tests if matlab is available as ENVIRONMENTAL variable MATLAB
-#if os.environ.get('MATLAB') != None:
-#    sys.path.append(os.path.join(os.environ['PWD'], 't3_SubductionMATLABinput'))
-#else:
-#   print('MATLAB tests cannot be executed, as the environmental variable $MATLAB is not set')
+if os.environ.get('MATLAB') != None:
+    sys.path.append(os.path.join(os.environ['PWD'], 'SubductionWithMATLABParticles/Tests'))
+else:
+   print('MATLAB tests cannot be executed, as the environmental variable $MATLAB is not set')
 
 import test_BuildInSetup as BuildIn
+
+if os.environ.get('MATLAB') != None:
+  import test_SubductionWithMATLABParticles as SubdMAT  # requires MATLAB to run
+
 
 #if os.environ.get('MATLAB') != None:
 #  import test_3_Subduction1               as Sub1 # import test that requires MATLAB
@@ -39,18 +43,19 @@ def run_tests():
 
   registeredTests = [ BuildIn.test_1(), BuildIn.test_2(),  BuildIn.test_3(), BuildIn.test_4(),
                       BuildIn.test_5(), BuildIn.test_6(),  BuildIn.test_7(), BuildIn.test_8(),
-                      BuildIn.test_9(), BuildIn.test_10(), BuildIn.test_11()];
+                      BuildIn.test_9(), BuildIn.test_10(), BuildIn.test_11(), BuildIn.test_12()];
  
+
+  # Add matlab tests (There should be a better way to do this for a range of files at the same time)
+  #if os.environ.get('MATLAB') != None:
+    #registeredTests.append(SubdMAT.test_1());
+
+
   if os.path.isdir('TestOutput') == False:
     os.mkdir('TestOutput')
 
   for test in registeredTests:
     test.setOutputPath(makeLocalPathAbsolute('TestOutput'))
-
-# Add matlab tests (There should be a better way to do this for a range of files at the same time)
-  #if os.environ.get('MATLAB') != None:
-  #  registeredTests.append(Sub1.test_a());
-  
 
   # Run the tests:
   h = pthharness.Harness(registeredTests)
