@@ -362,3 +362,37 @@ def test_11():
   return(test)
 
   
+  #------------------------------------------------------------------------------------------------
+def test_12():
+  # 2D plume-lithosphere interaction
+  ranks = 2
+  launch =  makeLocalPathAbsolute('../../../bin/opt/LaMEM -ParamFile ../BuildInSetups/PlumeLithosphereInteraction.dat -dt_out 0 -nstep_ini 0 -nel_x 32 -nel_z 32 -nstep_max 3 -rand_noise 0') 
+  expected_file = makeLocalPathAbsolute('PlumeLithosphereInteraction-p2.expected')
+
+  def comparefunc(unittest):
+
+    key = re.escape("|Div|_inf")
+    unittest.compareFloatingPoint(key,1e-7)
+
+    key = re.escape("|Div|_2")
+    unittest.compareFloatingPoint(key,1e-6)
+
+    key = re.escape("|mRes|_2")
+    unittest.compareFloatingPoint(key,1e-6)
+
+    key = 'CONVERGED_RTOL iterations'
+    unittest.compareInteger(key,0)
+
+    key = 'KSP Residual norm'
+    unittest.compareFloatingPoint(key,1e-6)
+    
+    key = 'SNES Function norm'
+    unittest.compareFloatingPoint(key,1e-4)
+
+  # Create unit test object
+  test = pth.pthUnitTest('PlumeLithosphereInteraction_Direct',ranks,launch,expected_file)
+  test.setVerifyMethod(comparefunc)
+  test.appendKeywords('@')
+  test.setUseSandbox()      # put test output in seperate directory
+
+  return(test)
