@@ -20,15 +20,15 @@ os.system('cd ../src/;  make mode=deb all; cd ../input_models')
 sys.path.append(os.path.join(os.environ['PWD'], 'BuildInSetups/Tests'))
 
 # add matlab-tests if matlab is available as ENVIRONMENTAL variable MATLAB
-if os.environ.get('MATLAB') != None:
-    sys.path.append(os.path.join(os.environ['PWD'], 'SubductionWithMATLABParticles/Tests'))
-else:
-   print('MATLAB tests cannot be executed, as the environmental variable $MATLAB is not set')
+#if os.environ.get('MATLAB') != None:
+#    sys.path.append(os.path.join(os.environ['PWD'], 'SubductionWithMATLABParticles/Tests'))
+#else:
+#   print('MATLAB tests cannot be executed, as the environmental variable $MATLAB is not set')
 
 import test_BuildInSetup as BuildIn
 
-if os.environ.get('MATLAB') != None:
-  import test_SubductionWithMATLABParticles as SubdMAT  # requires MATLAB to run
+#if os.environ.get('MATLAB') != None:
+#  import test_SubductionWithMATLABParticles as SubdMAT  # requires MATLAB to run
 
 
 #if os.environ.get('MATLAB') != None:
