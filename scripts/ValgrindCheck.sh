@@ -1,7 +1,13 @@
 #!/bin/bash
 
 #=========================================================================================
-# Script to lunch parallel MPI application on Linux under valgrind with MPI wrappers
+# Script to test an MPI-parallel application for memory leaks with Valgrind.
+#
+# - Modify the path of LD_PRELOAD below
+# - Run as follows 
+#
+# ./ValgrindCheck.sh num_proc "exec_path prog_args" outfile_name
+#
 #
 # All errors and screen output will be redirected to the file: 
 #      outfile_name.out
@@ -11,14 +17,11 @@
 # 
 # To visualize memory check summary in human readable format use Valkyrie GUI.
 #
-# Invocation pattern:
-#
-# ./ValgrindCheck.sh num_proc "exec_path prog_args" outfile_name
-#
+# upadted 01/2019 - Tobias Baumann
 #=========================================================================================
 
 MPIWRAP_DEBUG=quiet \
-LD_PRELOAD=/opt/valgrind/lib/valgrind/libmpiwrap-amd64-linux.so \
+LD_PRELOAD=/usr/lib/valgrind/libmpiwrap-amd64-linux.so \
 mpirun -np $1 \
 valgrind -v \
 --leak-check=full \
