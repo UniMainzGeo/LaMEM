@@ -293,6 +293,7 @@ PetscErrorCode LaMEMLib(ModParam *IOparam)
 			// Get hydrostatic pressure and update bc->Plbot (only if it is not set in the imput file), historic liquid pressure (svBulk->Pln) and liquid pressure in the markers
 			JacResGetHydroStaticLiquidPressure(&jr, &bc, &user);
 			ADVUpdateLiquidPressureMark(&actx);
+			PetscPrintf(PETSC_COMM_WORLD,"---------------- InitialGuessHydro ----------------------------------- \n");
 		}
 
 	}
@@ -335,7 +336,7 @@ PetscErrorCode LaMEMLib(ModParam *IOparam)
 		ierr = JacResInitTemp(&jr); CHKERRQ(ierr);
 
 		// Liquid-pressure/Darcy
-		if (jr.actDarcy){
+		if (jr.actDarcy ){ //&& jr.ts.istep >= jr.num_of_first_dt
 
 			//JacResGetHydroStaticLiquidPressure(&jr, &bc, &user);
 
@@ -387,7 +388,7 @@ PetscErrorCode LaMEMLib(ModParam *IOparam)
 
 
 		// Darcy /////////////////////////////////////////////
-		if (jr.actDarcy){
+		if (jr.actDarcy ){ //&& jr.ts.istep >= jr.num_of_first_dt
 			//if (jr.ts.istep > jr.num_of_first_dt) {
 		//if (JacResGetStep(&jr) > 0) // 2 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 		//{

@@ -833,7 +833,7 @@ PetscErrorCode JacResGetDarcyMat(JacRes *jr)
 		dPmin= pc+biot*Pl_h-Pl_h;
 		dPmax= Ts;
 
-		//// Permeability and porosity
+		/*//// Permeability and porosity
 		if (dP <= dPmin && dP > dPmax)
 		{
 			if (Kphiu && Kphi != Kphiu)
@@ -854,7 +854,7 @@ PetscErrorCode JacResGetDarcyMat(JacRes *jr)
 			// Tensile failure
 			Kphi = Kphiu;
 			Phi  = Phiu;
-		}
+		}*/
 
 		// Specific storage
 		Ss = (betam + Phi*betal);
