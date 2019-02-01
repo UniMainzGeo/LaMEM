@@ -732,6 +732,7 @@ PetscErrorCode BCDestroy(BCCtx *bc)
 	ierr = VecDestroy(&bc->bcvz); CHKERRQ(ierr);
 	ierr = VecDestroy(&bc->bcp);  CHKERRQ(ierr);
 	ierr = VecDestroy(&bc->bcT);  CHKERRQ(ierr);
+	ierr = VecDestroy(&bc->bcPl);  CHKERRQ(ierr);// liquidPressure/Darcy
 
 	// SPC velocity-pressure
 	ierr = PetscFree(bc->SPCList);  CHKERRQ(ierr);
