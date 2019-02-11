@@ -897,7 +897,8 @@ PetscErrorCode AdjointComputeGradients(JacRes *jr, AdjGrad *aop, NLSol *nl, SNES
 	FDSTAG              *fs;
 	KSP                 ksp;
 	KSPConvergedReason  reason;
-	PetscInt            i, j, CurPhase, CurPar, lrank, grank, fd;
+	PetscMPIInt         grank;
+	PetscInt            i, j, CurPhase, CurPar, lrank, fd;
 	PetscScalar         dt, grd, Perturb, coord_local[3], *vx, *vy, *vz;
 	Vec 				rpl, sol, psi, drdp, res, Perturb_vec;
 	PC                  ipc;
@@ -1085,7 +1086,8 @@ PetscErrorCode AdjointPointInPro(JacRes *jr, AdjGrad *aop, ModParam *IOparam, Fr
 	Vec                 lproX, lproY, lproZ, gproX, gproY, gproZ, pro, xini, lxiniX, lxiniY, lxiniZ, gxiniX, gxiniY, gxiniZ;
 	PetscScalar         coord_local[3], *temppro, ***llproX, ***llproY, ***llproZ, *dggproX, *dggproY, *dggproZ, *tempxini, ***llxiniX, ***llxiniY, ***llxiniZ, *dggxiniX, *dggxiniY, *dggxiniZ;
 	PetscScalar         *vx, *vy, *vz;
-	PetscInt            j, i, ii, sx, sy, sz, nx, ny, nz, I, J, K, II, JJ, KK, lrank, grank, level;
+	PetscMPIInt         grank;
+	PetscInt            j, i, ii, sx, sy, sz, nx, ny, nz, I, J, K, II, JJ, KK, lrank, level;
 	PetscScalar         w, z, xb, yb, zb, xe, ye, ze, xc, yc, zc, *iter, *ncx, *ncy, *ncz, *ccx, *ccy, *ccz, ***lvx, ***lvy, ***lvz, ***vgrid, ***topo, ***vsurf;
 	Discret1D           *dsz;
 	InterpFlags         iflag;
