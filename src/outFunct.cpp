@@ -45,6 +45,7 @@
 //---------------------------------------------------------------------------
 #include "LaMEM.h"
 #include "outFunct.h"
+#include "tssolve.h"
 #include "scaling.h"
 #include "fdstag.h"
 #include "phase.h"
@@ -578,12 +579,20 @@ PetscErrorCode PVOutWriteAngVelMag(JacRes *jr, OutBuf *outbuf)
 #define __FUNCT__ "PVOutWriteTotStrain"
 PetscErrorCode PVOutWriteTotStrain(JacRes *jr, OutBuf *outbuf)
 {
-	PetscErrorCode ierr;
-	PetscFunctionBegin;
+	PetscScalar  dt;
+	SolVarDev   *svDev;
 
-	ierr = 0; CHKERRQ(ierr);
-	if(jr)  jr = NULL;
-	if(outbuf) outbuf = NULL;
+	COPY_FUNCTION_HEADER
+
+	// macro to copy accumulated plastic strain (APS) to buffer
+	#define GET_ATS \
+		svDev         = &jr->svCell[iter++].svDev; \
+		buff[k][j][i] = svDev->ATS + dt*svDev->DII;
+
+	cf = scal->unit;
+	dt = jr->ts->dt;
+
+	INTERPOLATE_COPY(fs->DA_CEN, outbuf->lbcen, InterpCenterCorner, GET_ATS, 1, 0)
 
 	PetscFunctionReturn(0);
 }

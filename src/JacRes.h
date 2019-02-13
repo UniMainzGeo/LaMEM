@@ -67,6 +67,7 @@ struct SolVarDev
 	PetscScalar  Hr;    // shear heating term (partial)
 	PetscScalar  DIIpl; // plastic strain rate
 	PetscScalar  APS;   // accumulated plastic strain
+	PetscScalar  ATS;   // accumulated total strain for output
 	PetscScalar  PSR;   // plastic strain-rate contribution
 	PetscScalar  dEta;  // dEta/dDII derivative (Jacobian)
 	PetscScalar  fr;    // effective friction coefficient (Jacobian)
