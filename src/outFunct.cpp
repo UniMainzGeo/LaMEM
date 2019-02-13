@@ -579,20 +579,16 @@ PetscErrorCode PVOutWriteAngVelMag(JacRes *jr, OutBuf *outbuf)
 #define __FUNCT__ "PVOutWriteTotStrain"
 PetscErrorCode PVOutWriteTotStrain(JacRes *jr, OutBuf *outbuf)
 {
-	PetscScalar  dt;
-	SolVarDev   *svDev;
-
 	COPY_FUNCTION_HEADER
 
 	// macro to copy accumulated plastic strain (APS) to buffer
-	#define GET_ATS \
-		svDev         = &jr->svCell[iter++].svDev; \
-		buff[k][j][i] = svDev->ATS + dt*svDev->DII;
+	#define GET_ATS buff[k][j][i] = jr->svCell[iter++].svDev.ATS;
 
 	cf = scal->unit;
-	dt = jr->ts->dt;
 
 	INTERPOLATE_COPY(fs->DA_CEN, outbuf->lbcen, InterpCenterCorner, GET_ATS, 1, 0)
+
+	PetscFunctionReturn(0);
 
 	PetscFunctionReturn(0);
 }
