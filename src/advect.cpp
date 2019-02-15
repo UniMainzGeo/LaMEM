@@ -643,6 +643,8 @@ PetscErrorCode ADVProjHistGridToMark(AdvCtx *actx)
 
 	ierr = ADVInterpFieldToMark(actx, _APS_);       CHKERRQ(ierr);
 
+	ierr = ADVInterpFieldToMark(actx, _ATS_);       CHKERRQ(ierr);
+
 	ierr = ADVInterpFieldToMark(actx, _STRESS_);    CHKERRQ(ierr);
 
 	ierr = ADVInterpFieldToMark(actx, _VORTICITY_); CHKERRQ(ierr);
@@ -666,12 +668,12 @@ PetscErrorCode ADVInterpFieldToMark(AdvCtx *actx, InterpCase icase)
 	Tensor2RN    R;
 	Tensor2RS    SR;
 	SolVarCell  *svCell;
-	PetscScalar  UPXY, UPXZ, UPYZ;
+	PetscScalar  UPXX, UPYY, UPZZ, UPXY, UPXZ, UPYZ;
 	PetscInt     nx, ny, sx, sy, sz;
 	PetscInt     jj, ID, I, J, K, II, JJ, KK;
 	PetscScalar *gxy, *gxz, *gyz, ***lxy, ***lxz, ***lyz;
 
-	PetscScalar  xc, yc, zc, xp, yp, zp, wx, wy, wz, dt;
+	PetscScalar  xc, yc, zc, xp, yp, zp, wx, wy, wz, d, dt;
 
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
@@ -711,6 +713,12 @@ PetscErrorCode ADVInterpFieldToMark(AdvCtx *actx, InterpCase icase)
 			for(jj = 0; jj < fs->nXYEdg; jj++) gxy[jj] = jr->svXYEdge[jj].svDev.PSR;
 			for(jj = 0; jj < fs->nXZEdg; jj++) gxz[jj] = jr->svXZEdge[jj].svDev.PSR;
 			for(jj = 0; jj < fs->nYZEdg; jj++) gyz[jj] = jr->svYZEdge[jj].svDev.PSR;
+		}
+		else if(icase == _ATS_)
+		{
+			for(jj = 0; jj < fs->nXYEdg; jj++) { d = jr->svXYEdge[jj].d;  gxy[jj] = d*d; }
+			for(jj = 0; jj < fs->nXZEdg; jj++) { d = jr->svXZEdge[jj].d;  gxz[jj] = d*d; }
+			for(jj = 0; jj < fs->nYZEdg; jj++) { d = jr->svYZEdge[jj].d;  gyz[jj] = d*d; }
 		}
 
 		// restore access
@@ -778,7 +786,14 @@ PetscErrorCode ADVInterpFieldToMark(AdvCtx *actx, InterpCase icase)
 		else if(icase == _APS_)
 		{
 			P->APS += dt*sqrt(svCell->svDev.PSR + UPXY + UPXZ + UPYZ);
-			P->ATS += dt*svCell->svDev.DII;
+		}
+		else if(icase == _ATS_)
+		{
+			UPXX = svCell->dxx; UPXX = UPXX*UPXX;
+			UPYY = svCell->dyy; UPYY = UPYY*UPYY;
+			UPZZ = svCell->dzz; UPZZ = UPZZ*UPZZ;
+
+			P->ATS += dt*sqrt(0.5*(UPXX + UPYY + UPZZ) + UPXY + UPXZ + UPYZ);
 		}
 		else if(icase == _VORTICITY_)
 		{

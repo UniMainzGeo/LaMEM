@@ -581,7 +581,7 @@ PetscErrorCode PVOutWriteTotStrain(JacRes *jr, OutBuf *outbuf)
 {
 	COPY_FUNCTION_HEADER
 
-	// macro to copy accumulated plastic strain (APS) to buffer
+	// macro to copy accumulated total strain (ATS) to buffer
 	#define GET_ATS buff[k][j][i] = jr->svCell[iter++].svDev.ATS;
 
 	cf = scal->unit;

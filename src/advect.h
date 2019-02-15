@@ -96,6 +96,7 @@ enum InterpCase
 	_PHASE_,     // phase ratio
 	_STRESS_,    // deviatoric stress
 	_APS_,       // accumulated plastic strain
+	_ATS_,       // accumulated total strain
 	_VORTICITY_, // vorticity pseudo-vector components
 	_DISP_       // displacement
 
