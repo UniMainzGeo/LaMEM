@@ -850,9 +850,14 @@ PetscErrorCode LaMEMLibSolveTemp(LaMEMLib *lm)
 	ierr = KSPSetOptionsPrefix(tksp,"its_");   CHKERRQ(ierr);
 	ierr = KSPSetFromOptions(tksp);            CHKERRQ(ierr);
 
+	// ignore existing temperature initialization
+	ierr = VecZeroEntries(jr->lT); CHKERRQ(ierr);
+	ierr = JacResApplyTempBC(jr); CHKERRQ(ierr);
+
 	// compute matrix and rhs
-	ierr = JacResGetTempRes(jr, 0); CHKERRQ(ierr);
-	ierr = JacResGetTempMat(jr, 0); CHKERRQ(ierr);
+	// STEADY STATE solution is activated by setting time step to zero
+	ierr = JacResGetTempRes(jr, 0.0); CHKERRQ(ierr);
+	ierr = JacResGetTempMat(jr, 0.0); CHKERRQ(ierr);
 
 	// solve linear system
 	ierr = KSPSetOperators(tksp, jr->Att, jr->Att); CHKERRQ(ierr);
@@ -861,9 +866,6 @@ PetscErrorCode LaMEMLibSolveTemp(LaMEMLib *lm)
 
 	// destroy initial temperature solver
 	ierr = KSPDestroy(&tksp); CHKERRQ(ierr);
-
-	// clear current temperature
-	ierr = VecZeroEntries(jr->lT); CHKERRQ(ierr);
 
 	// store computed temperature, enforce boundary constraints
 	ierr = JacResUpdateTemp(jr); CHKERRQ(ierr);

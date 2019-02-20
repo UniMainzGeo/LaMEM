@@ -398,6 +398,7 @@ PetscErrorCode JacResApplyTempBC(JacRes *jr)
 PetscErrorCode JacResGetTempRes(JacRes *jr, PetscScalar dt)
 {
 	// compute temperature residual vector
+	// STEADY STATE solution is activated by setting time step to zero
 
 	FDSTAG     *fs;
 	BCCtx      *bc;
@@ -534,6 +535,7 @@ PetscErrorCode JacResGetTempRes(JacRes *jr, PetscScalar dt)
 PetscErrorCode JacResGetTempMat(JacRes *jr, PetscScalar dt)
 {
 	// assemble temperature preconditioner matrix
+	// STEADY STATE solution is activated by setting time step to zero
 	// COMPLETE SINGLE-POINT CONSTRIANT IMLEMENTATION !!!
 
 	FDSTAG     *fs;
