@@ -112,6 +112,16 @@ PetscErrorCode TSSolCreate(TSSol *ts, FB *fb)
 	if(!ts->nstep_max) ts->nstep_max = 50*(PetscInt)PetscCeilReal(ts->time_end/ts->dt_max);
 	if(!ts->time_end)  ts->time_end  = ((PetscScalar)ts->nstep_max)*ts->dt_max;
 
+	if(ts->dt_min > ts->dt_max)
+	{
+		SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "dt_max should be larger than dt_min");
+	}
+
+	if(!(ts->dt > ts->dt_min && ts->dt < ts->dt_max))
+	{
+		SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "dt should lay between dt_min and dt_max");
+	}
+
 	// print summary
 	PetscPrintf(PETSC_COMM_WORLD, "Time stepping parameters:\n");
 	PetscPrintf(PETSC_COMM_WORLD, "   Simulation end time          : %g %s \n", ts->time_end*time, scal->lbl_time);

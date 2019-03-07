@@ -128,7 +128,9 @@ enum MarkCtrlType
 {
 	CTRL_NONE,  // no marker control
 	CTRL_BASIC, // AVD for cells + corner insertion
-	CTRL_AVD    // pure AVD for all control volumes
+	CTRL_AVD,   // pure AVD for all control volumes
+	CTRL_SUB    // simple marker control method based on higher resolution grid (subgrid)
+
 };
 
 //---------------------------------------------------------------------------
