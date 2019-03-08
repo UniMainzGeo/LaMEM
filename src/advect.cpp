@@ -561,7 +561,7 @@ PetscErrorCode ADVRemap(AdvCtx *actx)
 		ierr = ADVUpdateMarkCell(actx); CHKERRQ(ierr);
 
 		// check markers and inject/delete if necessary
-		ierr = ADVMarkControl(actx); CHKERRQ(ierr);
+//		ierr = ADVMarkControl(actx); CHKERRQ(ierr);
 
 		// check corners and inject 1 particle if empty
 		ierr = ADVCheckCorners(actx); CHKERRQ(ierr);
