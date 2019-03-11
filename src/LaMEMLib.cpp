@@ -574,7 +574,7 @@ PetscErrorCode LaMEMLibSaveOutput(LaMEMLib *lm)
 	ierr = PVMarkWriteTimeStep(&lm->pvmark, dirName, time); CHKERRQ(ierr);
 
 	// compute and output effective permeability
-	ierr = JacResGetPermea(&lm->jr, bgPhase, step); CHKERRQ(ierr);
+	ierr = JacResGetPermea(&lm->jr, bgPhase, step, lm->pvout.outfile); CHKERRQ(ierr);
 
 	// clean up
 	free(dirName);

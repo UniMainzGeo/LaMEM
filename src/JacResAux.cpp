@@ -794,7 +794,7 @@ PetscErrorCode JacResGetPorePressure(JacRes *jr)
 //---------------------------------------------------------------------------
 #undef __FUNCT__
 #define __FUNCT__ "JacResGetPermea"
-PetscErrorCode JacResGetPermea(JacRes *jr, PetscInt bgPhase, PetscInt step)
+PetscErrorCode JacResGetPermea(JacRes *jr, PetscInt bgPhase, PetscInt step, char *outfile)
 {
 	FILE        *db;
 	FDSTAG      *fs;
@@ -803,6 +803,8 @@ PetscErrorCode JacResGetPermea(JacRes *jr, PetscInt bgPhase, PetscInt step)
 	Scaling     *scal;
 	PetscInt    i, j, k, nx, ny, nz, sx, sy, sz;
 	PetscScalar ***vz, nZFace, lvel, gvel, dp, eta, ks, bz, ez;
+	char        path[_STR_LEN_];
+
 
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
@@ -871,7 +873,12 @@ PetscErrorCode JacResGetPermea(JacRes *jr, PetscInt bgPhase, PetscInt step)
 	// output to the file
 	if(ISRankZero(PETSC_COMM_WORLD))
 	{
-		db = fopen("darcy.dat", "w");
+
+		memset(path, 0, _STR_LEN_);
+		strcpy(path, outfile);
+		strcat(path, ".darcy.dat");
+
+		db = fopen(path, "w");
 
 		fprintf(db,"# ==============================================\n");
 		fprintf(db,"# EFFECTIVE PERMEABILITY CONSTANT: %E %s\n ", ks*scal->area_si, scal->lbl_area_si);

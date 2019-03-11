@@ -342,7 +342,7 @@ PetscErrorCode JacResGetEHmax(JacRes *jr);
 // Effective permeability functions
 //---------------------------------------------------------------------------
 
-PetscErrorCode JacResGetPermea(JacRes *jr, PetscInt bgPhase, PetscInt step);
+PetscErrorCode JacResGetPermea(JacRes *jr, PetscInt bgPhase, PetscInt step, char *outfile);
 
 //---------------------------------------------------------------------------
 //......................   TEMPERATURE FUNCTIONS   ..........................
