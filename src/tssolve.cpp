@@ -117,7 +117,7 @@ PetscErrorCode TSSolCreate(TSSol *ts, FB *fb)
 		SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "dt_max should be larger than dt_min");
 	}
 
-	if(!(ts->dt > ts->dt_min && ts->dt < ts->dt_max))
+	if(!(ts->dt >= ts->dt_min && ts->dt <= ts->dt_max))
 	{
 		SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "dt should lay between dt_min and dt_max");
 	}
