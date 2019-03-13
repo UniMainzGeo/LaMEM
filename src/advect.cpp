@@ -616,9 +616,6 @@ PetscErrorCode ADVExchange(AdvCtx *actx)
 
 	if(actx->advect == ADV_NONE) PetscFunctionReturn(0);
 
-	// delete marker outflow if it happens
-	ierr = ADVMarkDeleteOutflow(actx); CHKERRQ(ierr);
-
 	// count number of markers to be sent to each neighbor domain
 	ierr = ADVMapMarkToDomains(actx); CHKERRQ(ierr);
 
@@ -974,14 +971,9 @@ PetscErrorCode ADVMapMarkToDomains(AdvCtx *actx)
 
 		if(grank == -1)
 		{
-			// currently all the markers must remain in the box
-			SETERRQ(PETSC_COMM_SELF, PETSC_ERR_USER, "ERROR! Marker outflow is currently not implemented!");
-
-			// otherwise, number of deleted markers should be updated here, i.e.:
-			// cnt++;
-
-			// we should also decide what to do with the outflow markers
-			// periodic boundary conditions?
+			// count outflow markers
+			// WARNING! periodic boundary condition requires different treatment!
+			cnt++;
 		}
 		else if(grank != actx->iproc)
 		{
@@ -1083,12 +1075,9 @@ PetscErrorCode ADVCreateMPIBuff(AdvCtx *actx)
 
 		if(grank == -1)
 		{
-			// currently this situation is prohibited in ADVMapMarkersDomains
-			// but we already handle it here anyway
-
-			// delete marker from the storage
+			// delete outflow marker from the storage
+			// WARNING! periodic boundary condition requires different treatment!
 			actx->idel[cnt++] = i;
-
 		}
 		else if(grank != actx->iproc)
 		{
@@ -1680,58 +1669,6 @@ PetscErrorCode ADVCheckCorners(AdvCtx *actx)
 	// clear
 	ierr = PetscFree(numcorner);     CHKERRQ(ierr);
 	ierr = PetscFree(actx->recvbuf); CHKERRQ(ierr);
-
-	PetscFunctionReturn(0);
-}
-//---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "ADVMarkDeleteOutflow"
-PetscErrorCode ADVMarkDeleteOutflow(AdvCtx *actx)
-{
-	// checks if markers are within the box bounds
-	PetscInt     i, lrank, ndel;
-	PetscMPIInt  grank;
-	FDSTAG      *fs;
-
-	PetscErrorCode ierr;
-	PetscFunctionBegin;
-
-	fs = actx->fs;
-
-	// scan markers
-	for(i = 0, ndel = 0; i < actx->nummark; i++)
-	{
-		// get global & local ranks of a marker
-		ierr = FDSTAGGetPointRanks(fs, actx->markers[i].X, &lrank, &grank); CHKERRQ(ierr);
-
-		// count markers outside
-		if(grank == -1) ndel++;
-	}
-
-	// if no need for deletion return
-	if (!ndel) PetscFunctionReturn(0);
-
-	// allocate storage
-	actx->ndel  = ndel;
-	ierr = PetscMalloc((size_t)actx->ndel *sizeof(PetscInt), &actx->idel); CHKERRQ(ierr);
-
-	// save markers indices to be deleted
-	for(i = 0, ndel = 0; i < actx->nummark; i++)
-	{
-		// get global & local ranks of a marker
-		ierr = FDSTAGGetPointRanks(fs, actx->markers[i].X, &lrank, &grank); CHKERRQ(ierr);
-
-		// save markers outside
-		if(grank == -1) actx->idel[ndel++] = i;
-	}
-
-	// delete outside markers
-	actx->nrecv   = 0;
-	actx->recvbuf = NULL;
-	ierr = ADVCollectGarbage(actx); CHKERRQ(ierr);
-
-	// clear
-	ierr = PetscFree(actx->idel);   CHKERRQ(ierr);
 
 	PetscFunctionReturn(0);
 }
