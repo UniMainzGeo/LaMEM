@@ -186,6 +186,7 @@ struct AdvCtx
 	PetscInt    cinj, cdel;       // injected & deleted marker counters
 	PetscInt    nmin, nmax;       // minimum and maximum number of markers per cell
 	PetscInt    avdx, avdy, avdz; // AVD cells refinement factors
+	PetscInt    npmax;            // maximum number of same phase markers per subcell
 
 	//=============
 	// COMMUNICATOR

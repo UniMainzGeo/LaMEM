@@ -56,6 +56,7 @@
 #include "marker.h"
 #include "AVD.h"
 #include "cvi.h"
+#include "subgrid.h"
 #include "tools.h"
 
 /*
@@ -99,6 +100,7 @@ PetscErrorCode ADVCreate(AdvCtx *actx, FB *fb)
 	actx->bgPhase  = -1;
 	actx->A        =  2.0/3.0;
 	actx->surfTol  =  0.05;
+	actx->npmax    =  1;
 	maxPhaseID     = actx->dbm->numPhases-1;
 
 	// READ
@@ -118,6 +120,7 @@ PetscErrorCode ADVCreate(AdvCtx *actx, FB *fb)
 	ierr = getScalarParam(fb, _OPTIONAL_, "surf_tol",       &actx->surfTol,  1, 1.0);          CHKERRQ(ierr);
 	ierr = getIntParam   (fb, _OPTIONAL_, "nmark_lim",       nmark_lim,      2, 0);            CHKERRQ(ierr);
 	ierr = getIntParam   (fb, _OPTIONAL_, "nmark_avd",       nmark_avd,      3, 0);            CHKERRQ(ierr);
+	ierr = getIntParam   (fb, _OPTIONAL_, "nmark_sub",      &actx->npmax,    1, 3);            CHKERRQ(ierr);
 
 	// CHECK
 
@@ -587,7 +590,14 @@ PetscErrorCode ADVRemap(AdvCtx *actx)
 	{
 		PetscPrintf(PETSC_COMM_WORLD,"Performing marker control (subgrid algorithm)\n");
 
-		SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "... ooops subgrid marker control lacks implementation ...");
+		// compute host cells for all the markers received
+		ierr = ADVMapMarkToCells(actx); CHKERRQ(ierr);
+
+		// update arrays for marker-cell interaction
+		ierr = ADVUpdateMarkCell(actx); CHKERRQ(ierr);
+
+		// check markers and inject/delete if necessary in all control volumes
+		ierr = ADVMarkSubGrid(actx); CHKERRQ(ierr);
 
 		PetscPrintf(PETSC_COMM_WORLD, "--------------------------------------------------------------------------\n");
 	}

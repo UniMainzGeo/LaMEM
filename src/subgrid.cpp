@@ -43,6 +43,9 @@
 //---------------------------------------------------------------------------
 //...................   MATERIAL ADVECTION ROUTINES   .......................
 //---------------------------------------------------------------------------
+#include <vector>
+using namespace std;
+//---------------------------------------------------------------------------
 #include "LaMEM.h"
 #include "subgrid.h"
 #include "advect.h"
@@ -80,40 +83,123 @@ Main advection routine
 PetscErrorCode ADVMarkSubGrid(AdvCtx *actx)
 {
 
-/*
+
 	// check marker distribution and delete or inject markers if necessary
-	FDSTAG         *fs;
-	PetscScalar    xs[3], xe[3];
-	PetscInt       ind, i, j, k, M, N;
-	PetscInt       n, ninj, ndel;
-	PetscLogDouble t0,t1;
+
+	FDSTAG      *fs;
+	Marker      *P;
+
+
+	PetscInt     ID, I, J, K, i, ii;
+	PetscInt     ncx, ncy,  npx, npy, npz;
+	PetscInt     n, ninj, ndel, nmax;
+	PetscInt     *pid;
+	PetscScalar  s[3], h[3], *x;
+//	PetscInt    *cellid;
+
+//	PetscInt      randNoise;           // random noise flag for marker distribution
+
+
+	PetscLogDouble t0, t1;
+
+    vector < pair <PetscScalar, PetscInt> > dist;
+    vector < PetscInt >                     pcellid;
+    vector < PetscInt >                     cellcnt;
+
+
 
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
 
-	fs = actx->fs;
-
 	ierr = PetscTime(&t0); CHKERRQ(ierr);
 
-	// get number of cells
-	M = fs->dsx.ncels;
-	N = fs->dsy.ncels;
+	fs  = actx->fs;
+	ncx = fs->dsx.ncels;
+	ncy = fs->dsy.ncels;
+	npx = actx->NumPartX;
+	npy = actx->NumPartY;
+	npz = actx->NumPartZ;
+
+
+	// get max number of markers estimate per cell
+	nmax = _max_nmark_*actx->npmax;
+	nmax = nmax*nmax*nmax;
+
+
+	pcellid.reserve(nmax);
+	cellcnt.reserve(nmax);
+
+
+	// allocate marker subcell ID storage
+//	ierr = makeIntArray(&cellid, NULL, nmax); CHKERRQ(ierr);
+
+
 
 	// calculate storage
 	ninj = 0;
 	ndel = 0;
+
+
+
+
+
 	for(i = 0; i < fs->nCells; i++)
 	{
-		// no of markers in cell
+		// get number of markers per cell
 		n = actx->markstart[i+1] - actx->markstart[i];
 
-		if (n < actx->nmin)
+		if(!n)
 		{
-			if ((actx->nmin - n) > n) ninj += n;
-			else                      ninj += actx->nmin - n;
+			SETERRQ(PETSC_COMM_SELF, PETSC_ERR_USER, " Empty control volume");
 		}
-		if (n > actx->nmax) ndel += n - actx->nmax;
+
+		// expand I, J, K cell indices
+		GET_CELL_IJK(i, I, J, K, ncx, ncy)
+
+		// get cell starting coordinates
+		s[0] = COORD_NODE(I, 0, fs->dsx);
+		s[1] = COORD_NODE(J, 0, fs->dsy);
+		s[2] = COORD_NODE(K, 0, fs->dsz);
+
+		// get subcell sizes
+		h[0] = SIZE_CELL(I, 0, fs->dsx)/(PetscScalar)npx;
+		h[1] = SIZE_CELL(J, 0, fs->dsy)/(PetscScalar)npy;
+		h[2] = SIZE_CELL(K, 0, fs->dsz)/(PetscScalar)npz;
+
+		// map markers on subcells
+		pid = actx->markind + actx->markstart[i];
+
+		pcellid.clear();
+		cellcnt.clear();
+
+		for(ii = 0; ii < n; ii++)
+		{
+			// get marker & coordinate
+			P = &actx->markers[pid[ii]];
+			x = P->X;
+
+			// compute containing subcell index
+			MAP_SUBCELL(I, x[0], s[0], h[0], npx);
+			MAP_SUBCELL(J, x[1], s[1], h[1], npy);
+			MAP_SUBCELL(K, x[2], s[2], h[2], npz);
+
+			GET_CELL_ID(ID, I, J, K, npx, npy);
+
+
+
+		}
+
+
+		//actx->npmax
+
+
 	}
+
+
+
+
+/*
+	pair
 
 	// if no need for injection/deletion
 	if ((!ninj) && (!ndel)) PetscFunctionReturn(0);
@@ -121,9 +207,6 @@ PetscErrorCode ADVMarkSubGrid(AdvCtx *actx)
 	actx->nrecv = ninj;
 	actx->ndel  = ndel;
 
-	// allocate memory
-	if(ninj) { ierr = PetscMalloc((size_t)actx->nrecv*sizeof(Marker),   &actx->recvbuf); CHKERRQ(ierr); }
-	if(ndel) { ierr = PetscMalloc((size_t)actx->ndel *sizeof(PetscInt), &actx->idel);    CHKERRQ(ierr); }
 
 	actx->cinj = 0;
 	actx->cdel = 0;
@@ -150,134 +233,35 @@ PetscErrorCode ADVMarkSubGrid(AdvCtx *actx)
 		}
 	}
 
+*/
+
+
 	// store new markers
-	ierr = ADVCollectGarbage(actx); CHKERRQ(ierr);
+//	ierr = ADVCollectGarbage(actx); CHKERRQ(ierr);
+
+
 
 	// compute host cells for all the markers
-	ierr = ADVMapMarkToCells(actx); CHKERRQ(ierr);
+//	ierr = ADVMapMarkToCells(actx); CHKERRQ(ierr);
 
 	// update arrays for marker-cell interaction
-	ierr = ADVUpdateMarkCell(actx); CHKERRQ(ierr);
+//	ierr = ADVUpdateMarkCell(actx); CHKERRQ(ierr);
+
+
+//	ierr = PetscFree(cellid); CHKERRQ(ierr);
+
 
 	// print info
 	ierr = PetscTime(&t1); CHKERRQ(ierr);
-	PetscPrintf(PETSC_COMM_WORLD,"Marker control [%lld]: (AVD Cell) injected %lld markers and deleted %lld markers in %1.4e s\n",(LLD)actx->iproc, (LLD)ninj, (LLD)ndel, t1-t0);
+	PetscPrintf(PETSC_COMM_WORLD,"Marker control [%lld]: (subgrid) injected %lld markers and merged %lld markers in %1.4e s\n",(LLD)actx->iproc, (LLD)ninj, (LLD)ndel, t1-t0);
 
-	// clear
-	ierr = PetscFree(actx->recvbuf); CHKERRQ(ierr);
-	ierr = PetscFree(actx->idel);    CHKERRQ(ierr);
-*/
+
 	PetscFunctionReturn(0);
 }
 
 
 /*
-//---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "ADVAdvect"
-PetscErrorCode ADVAdvect(AdvCtx *actx)
-{
-	//=======================================================================
-	// MAJOR ADVECTION ROUTINE
-	//=======================================================================
 
-	PetscErrorCode ierr;
-	PetscFunctionBegin;
-
-	if(actx->advect == ADV_NONE) PetscFunctionReturn(0);
-
-	// project history INCREMENTS from grid to markers
-	ierr = ADVProjHistGridToMark(actx); CHKERRQ(ierr);
-
-	if(actx->advect != BASIC_EULER)
-	{
-		// advect markers (extended by Adina)
-		ierr = ADVelAdvectMain(actx); CHKERRQ(ierr);
-	}
-	else
-	{
-		// advect markers (Forward Euler)
-		ierr = ADVAdvectMark(actx); CHKERRQ(ierr);
-	}
-
-	PetscFunctionReturn(0);
-}
-//---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "ADVRemap"
-PetscErrorCode ADVRemap(AdvCtx *actx)
-{
-	//=======================================================================
-	// MAJOR ADVECTION REMAPPING
-	//=======================================================================
-
-	PetscErrorCode ierr;
-	PetscFunctionBegin;
-
-	if(actx->advect == ADV_NONE)
-	{
-		ierr = ADVUpdateHistADVNone(actx); CHKERRQ(ierr);
-
-		PetscFunctionReturn(0);
-	}
-	if(actx->mctrl == CTRL_NONE)
-	{
-		// compute host cells for all the markers received
-		ierr = ADVMapMarkToCells(actx); CHKERRQ(ierr);
-
-		// update arrays for marker-cell interaction
-		ierr = ADVUpdateMarkCell(actx); CHKERRQ(ierr);
-	}
-	else if(actx->mctrl == CTRL_BASIC)
-	{
-		PetscPrintf(PETSC_COMM_WORLD,"Performing marker control (standard algorithm)\n");
-
-		// compute host cells for all the markers received
-		ierr = ADVMapMarkToCells(actx); CHKERRQ(ierr);
-
-		// update arrays for marker-cell interaction
-		ierr = ADVUpdateMarkCell(actx); CHKERRQ(ierr);
-
-		// check markers and inject/delete if necessary
-		ierr = ADVMarkControl(actx); CHKERRQ(ierr);
-
-		// check corners and inject 1 particle if empty
-		ierr = ADVCheckCorners(actx); CHKERRQ(ierr);
-
-		PetscPrintf(PETSC_COMM_WORLD, "--------------------------------------------------------------------------\n");
-	}
-	else if(actx->mctrl == CTRL_AVD)
-	{
-		PetscPrintf(PETSC_COMM_WORLD,"Performing marker control (updated algorithm)\n");
-
-		// check markers and inject/delete if necessary in all control volumes
-		ierr = AVDMarkerControl(actx); CHKERRQ(ierr);
-
-		// compute host cells for all the markers received
-		ierr = ADVMapMarkToCells(actx); CHKERRQ(ierr);
-
-		// update arrays for marker-cell interaction
-		ierr = ADVUpdateMarkCell(actx); CHKERRQ(ierr);
-
-		PetscPrintf(PETSC_COMM_WORLD, "--------------------------------------------------------------------------\n");
-	}
-	else if(actx->mctrl == CTRL_SUB)
-	{
-		PetscPrintf(PETSC_COMM_WORLD,"Performing marker control (subgrid algorithm)\n");
-
-		SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "... ooops subgrid marker control lacks implementation ...");
-
-		PetscPrintf(PETSC_COMM_WORLD, "--------------------------------------------------------------------------\n");
-	}
-
-	// change marker phase when crossing flat surface or free surface with fast sedimentation/erosion
-	ierr = ADVMarkCrossFreeSurf(actx); CHKERRQ(ierr);
-
-	// project advected history from markers back to grid
-	ierr = ADVProjHistMarkToGrid(actx); CHKERRQ(ierr);
-
-	PetscFunctionReturn(0);
-}
 //---------------------------------------------------------------------------
 #undef __FUNCT__
 #define __FUNCT__ "ADVExchange"
@@ -294,8 +278,6 @@ PetscErrorCode ADVExchange(AdvCtx *actx)
 
 	if(actx->advect == ADV_NONE) PetscFunctionReturn(0);
 
-	// delete marker outflow if it happens
-	ierr = ADVMarkDeleteOutflow(actx); CHKERRQ(ierr);
 
 	// count number of markers to be sent to each neighbor domain
 	ierr = ADVMapMarkToDomains(actx); CHKERRQ(ierr);
@@ -318,123 +300,7 @@ PetscErrorCode ADVExchange(AdvCtx *actx)
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "ADVAdvectMark"
-PetscErrorCode ADVAdvectMark(AdvCtx *actx)
-{
-	// update marker positions from current velocities & time step
-	// WARNING! Forward Euler Explicit algorithm
-	// (need to implement more accurate schemes)
 
-	FDSTAG      *fs;
-	JacRes      *jr;
-	Marker      *P;
-	SolVarCell  *svCell;
-	PetscInt    sx, sy, sz, nx, ny;
-	PetscInt    jj, ID, I, J, K, II, JJ, KK, AirPhase;
-	PetscScalar *ncx, *ncy, *ncz;
-	PetscScalar *ccx, *ccy, *ccz;
-	PetscScalar ***lvx, ***lvy, ***lvz, ***lp, ***lT;
-	PetscScalar vx, vy, vz, xc, yc, zc, xp, yp, zp, dt, Ttop;
-
-	AirPhase = -1;
-	Ttop     =  0.0;
-
-	if(actx->surf->UseFreeSurf)
-	{
-		AirPhase = actx->surf->AirPhase;
-		Ttop     = actx->jr->bc->Ttop;
-	}
-
-	PetscErrorCode ierr;
-	PetscFunctionBegin;
-
-	// access context
-	fs = actx->fs;
-	jr = actx->jr;
-
-	// current time step
-	dt = jr->ts->dt;
-
-	// starting indices & number of cells
-	sx = fs->dsx.pstart; nx = fs->dsx.ncels;
-	sy = fs->dsy.pstart; ny = fs->dsy.ncels;
-	sz = fs->dsz.pstart;
-
-	// node & cell coordinates
-	ncx = fs->dsx.ncoor; ccx = fs->dsx.ccoor;
-	ncy = fs->dsy.ncoor; ccy = fs->dsy.ccoor;
-	ncz = fs->dsz.ncoor; ccz = fs->dsz.ccoor;
-
-	// access velocity, pressure & temperature vectors
-	ierr = DMDAVecGetArray(fs->DA_X,   jr->lvx, &lvx); CHKERRQ(ierr);
-	ierr = DMDAVecGetArray(fs->DA_Y,   jr->lvy, &lvy); CHKERRQ(ierr);
-	ierr = DMDAVecGetArray(fs->DA_Z,   jr->lvz, &lvz); CHKERRQ(ierr);
-	ierr = DMDAVecGetArray(fs->DA_CEN, jr->lp,  &lp);  CHKERRQ(ierr);
-	ierr = DMDAVecGetArray(fs->DA_CEN, jr->lT,  &lT);  CHKERRQ(ierr);
-
-	// scan all markers
-	for(jj = 0; jj < actx->nummark; jj++)
-	{
-		// access next marker
-		P = &actx->markers[jj];
-
-		// get consecutive index of the host cell
-		ID = actx->cellnum[jj];
-
-		// expand I, J, K cell indices
-		GET_CELL_IJK(ID, I, J, K, nx, ny)
-
-		// get marker coordinates
-		xp = P->X[0];
-		yp = P->X[1];
-		zp = P->X[2];
-
-		// get coordinates of cell center
-		xc = ccx[I];
-		yc = ccy[J];
-		zc = ccz[K];
-
-		// map marker on the cells of X, Y, Z & center grids
-		if(xp > xc) { II = I; } else { II = I-1; }
-		if(yp > yc) { JJ = J; } else { JJ = J-1; }
-		if(zp > zc) { KK = K; } else { KK = K-1; }
-
-		// interpolate velocity, pressure & temperature
-		vx = InterpLin3D(lvx, I,  JJ, KK, sx, sy, sz, xp, yp, zp, ncx, ccy, ccz);
-		vy = InterpLin3D(lvy, II, J,  KK, sx, sy, sz, xp, yp, zp, ccx, ncy, ccz);
-		vz = InterpLin3D(lvz, II, JJ, K,  sx, sy, sz, xp, yp, zp, ccx, ccy, ncz);
-
-		// access host cell solution variables
-		svCell = &jr->svCell[ID];
-
-		// update pressure & temperature variables
-		P->p += lp[sz+K][sy+J][sx+I] - svCell->svBulk.pn;
-		P->T += lT[sz+K][sy+J][sx+I] - svCell->svBulk.Tn;
-
-		// override temperature of air phase
-		if(AirPhase != -1 && P->phase == AirPhase) P->T = Ttop;
-
-		// advect marker
-		P->X[0] = xp + vx*dt;
-		P->X[1] = yp + vy*dt;
-		P->X[2] = zp + vz*dt;
-
-		// update displacement
-		P->U[0] += vx*dt;
-		P->U[1] += vy*dt;
-		P->U[2] += vz*dt;
-	}
-
-	// restore access
-	ierr = DMDAVecRestoreArray(fs->DA_X,   jr->lvx, &lvx); CHKERRQ(ierr);
-	ierr = DMDAVecRestoreArray(fs->DA_Y,   jr->lvy, &lvy); CHKERRQ(ierr);
-	ierr = DMDAVecRestoreArray(fs->DA_Z,   jr->lvz, &lvz); CHKERRQ(ierr);
-	ierr = DMDAVecRestoreArray(fs->DA_CEN, jr->lp,  &lp);  CHKERRQ(ierr);
-	ierr = DMDAVecRestoreArray(fs->DA_CEN, jr->lT,  &lT);  CHKERRQ(ierr);
-
-	PetscFunctionReturn(0);
-}
 //---------------------------------------------------------------------------
 #undef __FUNCT__
 #define __FUNCT__ "ADVMapMarkToDomains"
@@ -1078,405 +944,8 @@ PetscErrorCode ADVCheckCorners(AdvCtx *actx)
 
 	PetscFunctionReturn(0);
 }
-//---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "ADVMarkDeleteOutflow"
-PetscErrorCode ADVMarkDeleteOutflow(AdvCtx *actx)
-{
-	// checks if markers are within the box bounds
-	PetscInt     i, lrank, ndel;
-	PetscMPIInt  grank;
-	FDSTAG      *fs;
 
-	PetscErrorCode ierr;
-	PetscFunctionBegin;
 
-	fs = actx->fs;
 
-	// scan markers
-	for(i = 0, ndel = 0; i < actx->nummark; i++)
-	{
-		// get global & local ranks of a marker
-		ierr = FDSTAGGetPointRanks(fs, actx->markers[i].X, &lrank, &grank); CHKERRQ(ierr);
-
-		// count markers outside
-		if(grank == -1) ndel++;
-	}
-
-	// if no need for deletion return
-	if (!ndel) PetscFunctionReturn(0);
-
-	// allocate storage
-	actx->ndel  = ndel;
-	ierr = PetscMalloc((size_t)actx->ndel *sizeof(PetscInt), &actx->idel); CHKERRQ(ierr);
-
-	// save markers indices to be deleted
-	for(i = 0, ndel = 0; i < actx->nummark; i++)
-	{
-		// get global & local ranks of a marker
-		ierr = FDSTAGGetPointRanks(fs, actx->markers[i].X, &lrank, &grank); CHKERRQ(ierr);
-
-		// save markers outside
-		if(grank == -1) actx->idel[ndel++] = i;
-	}
-
-	// delete outside markers
-	actx->nrecv   = 0;
-	actx->recvbuf = NULL;
-	ierr = ADVCollectGarbage(actx); CHKERRQ(ierr);
-
-	// clear
-	ierr = PetscFree(actx->idel);   CHKERRQ(ierr);
-
-	PetscFunctionReturn(0);
-}
-//-----------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "ADVProjHistMarkToGrid"
-PetscErrorCode ADVProjHistMarkToGrid(AdvCtx *actx)
-{
-	// Project the following history fields from markers to grid:
-
-	// - phase ratios (centers and edges)
-	// - pressure     (centers)
-	// - temperature  (centers)
-	// - APS          (centers and edges)
-	// - stress       (centers or edges)
-	// - displacement (centers)
-
-	FDSTAG   *fs;
-	JacRes   *jr;
-	PetscInt  ii, jj, numPhases;
-
-	PetscErrorCode ierr;
-	PetscFunctionBegin;
-
-	fs        = actx->fs;
-	jr        = actx->jr;
-	numPhases = actx->dbm->numPhases;
-
-	// check marker phases
-	ierr = ADVCheckMarkPhases(actx); CHKERRQ(ierr);
-
-	//======
-	// CELLS
-	//======
-
-	ierr = ADVInterpMarkToCell(actx); CHKERRQ(ierr);
-
-	//======
-	// EDGES
-	//======
-
-	// NOTE: edge phase ratio computation algorithm is the worst possible.
-	// The xy, xz, yz edge points phase ratios are first computed locally,
-	// and then assembled separately for each phase. This step involves
-	// excessive communication, which is proportional to the number of phases.
-
-	// *****************************************
-	// SO PLEASE KEEP NUMBER OF PHASES MINIMIZED
-	// *****************************************
-
-	// compute edge phase ratios (consecutively)
-	for(ii = 0; ii < numPhases; ii++)
-	{
-		ierr = ADVInterpMarkToEdge(actx, ii, _PHASE_); CHKERRQ(ierr);
-	}
-
-	// normalize phase ratios
-	for(jj = 0; jj < fs->nXYEdg; jj++)  { ierr = getPhaseRatio(numPhases, jr->svXYEdge[jj].phRat, &jr->svXYEdge[jj].ws); CHKERRQ(ierr); }
-	for(jj = 0; jj < fs->nXZEdg; jj++)  { ierr = getPhaseRatio(numPhases, jr->svXZEdge[jj].phRat, &jr->svXZEdge[jj].ws); CHKERRQ(ierr); }
-	for(jj = 0; jj < fs->nYZEdg; jj++)  { ierr = getPhaseRatio(numPhases, jr->svYZEdge[jj].phRat, &jr->svYZEdge[jj].ws); CHKERRQ(ierr); }
-
-	// interpolate history stress to edges
-	ierr = ADVInterpMarkToEdge(actx, 0, _STRESS_); CHKERRQ(ierr);
-
-	// interpolate plastic strain to edges
-	ierr = ADVInterpMarkToEdge(actx, 0, _APS_); CHKERRQ(ierr);
-
-	// update phase ratios taking into account actual free surface position
-	ierr = FreeSurfGetAirPhaseRatio(actx->surf); CHKERRQ(ierr);
-
-	PetscFunctionReturn(0);
-}
-//---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "ADVInterpMarkToCell"
-PetscErrorCode ADVInterpMarkToCell(AdvCtx *actx)
-{
-	// marker-to-grid projection (cell nodes)
-
-	FDSTAG      *fs;
-	JacRes      *jr;
-	Marker      *P;
-	SolVarCell  *svCell;
-	PetscInt     ii, jj, ID, I, J, K;
-	PetscInt     nx, ny, nCells, numPhases;
-	PetscScalar  xp, yp, zp, wxc, wyc, wzc, w = 0.0;
-
-	PetscErrorCode ierr;
-	PetscFunctionBegin;
-
-	fs        = actx->fs;
-	jr        = actx->jr;
-	numPhases = actx->dbm->numPhases;
-
-	// number of cells
-	nx     = fs->dsx.ncels;
-	ny     = fs->dsy.ncels;
-	nCells = fs->nCells;
-
-	// clear history variables
-	for(jj = 0; jj < nCells; jj++)
-	{
-		// access solution variable
-		svCell = &jr->svCell[jj];
-
-		// clear phase ratios
-		for(ii = 0; ii < numPhases; ii++) svCell->phRat[ii] = 0.0;
-
-		// clear history variables
-		svCell->svBulk.pn = 0.0;
-		svCell->svBulk.Tn = 0.0;
-		svCell->svDev.APS = 0.0;
-		svCell->svDev.ATS = 0.0;
-		svCell->hxx       = 0.0;
-		svCell->hyy       = 0.0;
-		svCell->hzz       = 0.0;
-		svCell->U[0]      = 0.0;
-		svCell->U[1]      = 0.0;
-		svCell->U[2]      = 0.0;
-	}
-
-	// scan ALL markers
-	for(jj = 0; jj < actx->nummark; jj++)
-	{
-		// access next marker
-		P = &actx->markers[jj];
-
-		// get consecutive index of the host cell
-		ID = actx->cellnum[jj];
-
-		// expand I, J, K cell indices
-		GET_CELL_IJK(ID, I, J, K, nx, ny)
-
-		// get marker coordinates
-		xp = P->X[0];
-		yp = P->X[1];
-		zp = P->X[2];
-
-		// get interpolation weights in cell control volumes
-		wxc = WEIGHT_POINT_CELL(I, xp, fs->dsx);
-		wyc = WEIGHT_POINT_CELL(J, yp, fs->dsy);
-		wzc = WEIGHT_POINT_CELL(K, zp, fs->dsz);
-
-		// get total interpolation weight
-		w = wxc*wyc*wzc;
-
-		// access solution variable of the host cell
-		svCell = &jr->svCell[ID];
-
-		// update phase ratios
-		svCell->phRat[P->phase] += w;
-
-		// update history variables
-		svCell->svBulk.pn += w*P->p;
-		svCell->svBulk.Tn += w*P->T;
-		svCell->svDev.APS += w*P->APS;
-		svCell->svDev.ATS += w*P->ATS;
-		svCell->hxx       += w*P->S.xx;
-		svCell->hyy       += w*P->S.yy;
-		svCell->hzz       += w*P->S.zz;
-		svCell->U[0]      += w*P->U[0];
-		svCell->U[1]      += w*P->U[1];
-		svCell->U[2]      += w*P->U[2];
-
-	}
-
-	// normalize interpolated values
-	for(jj = 0; jj < nCells; jj++)
-	{
-		// access solution variable
-		svCell = &jr->svCell[jj];
-
-		// normalize phase ratios
-		ierr = getPhaseRatio(numPhases, svCell->phRat, &w); CHKERRQ(ierr);
-
-		// normalize history variables
-		svCell->svBulk.pn /= w;
-		svCell->svBulk.Tn /= w;
-		svCell->svDev.APS /= w;
-		svCell->svDev.ATS /= w;
-		svCell->hxx       /= w;
-		svCell->hyy       /= w;
-		svCell->hzz       /= w;
-		svCell->U[0]      /= w;
-		svCell->U[1]      /= w;
-		svCell->U[2]      /= w;
-	}
-
-	PetscFunctionReturn(0);
-}
-//---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "ADVInterpMarkToEdge"
-PetscErrorCode ADVInterpMarkToEdge(AdvCtx *actx, PetscInt iphase, InterpCase icase)
-{
-	// marker-to-grid projection (edge nodes)
-
-	FDSTAG      *fs;
-	JacRes      *jr;
-	Marker      *P;
-	PetscScalar  UPXY, UPXZ, UPYZ;
-	PetscInt     nx, ny, sx, sy, sz;
-	PetscInt     jj, ID, I, J, K, II, JJ, KK;
-	PetscScalar *gxy, *gxz, *gyz, ***lxy, ***lxz, ***lyz;
-	PetscScalar  xc, yc, zc, xp, yp, zp, wxc, wyc, wzc, wxn, wyn, wzn;
-
-	PetscErrorCode ierr;
-	PetscFunctionBegin;
-
-	fs = actx->fs;
-	jr = actx->jr;
-
-	// starting indices & number of cells
-	sx = fs->dsx.pstart; nx = fs->dsx.ncels;
-	sy = fs->dsy.pstart; ny = fs->dsy.ncels;
-	sz = fs->dsz.pstart;
-
-	// clear local vectors
-	ierr = VecZeroEntries(jr->ldxy); CHKERRQ(ierr);
-	ierr = VecZeroEntries(jr->ldxz); CHKERRQ(ierr);
-	ierr = VecZeroEntries(jr->ldyz); CHKERRQ(ierr);
-
-	// access 3D layouts of local vectors
-	ierr = DMDAVecGetArray(fs->DA_XY, jr->ldxy, &lxy); CHKERRQ(ierr);
-	ierr = DMDAVecGetArray(fs->DA_XZ, jr->ldxz, &lxz); CHKERRQ(ierr);
-	ierr = DMDAVecGetArray(fs->DA_YZ, jr->ldyz, &lyz); CHKERRQ(ierr);
-
-	// set interpolated fields to defaults
-	UPXY = 1.0; UPXZ = 1.0; UPYZ = 1.0;
-
-	// scan ALL markers
-	for(jj = 0; jj < actx->nummark; jj++)
-	{
-		// access next marker
-		P = &actx->markers[jj];
-
-		// perform phase ID test
-		if(icase == _PHASE_ && P->phase != iphase) continue;
-
-		// get consecutive index of the host cell
-		ID = actx->cellnum[jj];
-
-		// expand I, J, K cell indices
-		GET_CELL_IJK(ID, I, J, K, nx, ny)
-
-		// get marker coordinates
-		xp = P->X[0];
-		yp = P->X[1];
-		zp = P->X[2];
-
-		// get coordinates of cell center
-		xc = fs->dsx.ccoor[I];
-		yc = fs->dsy.ccoor[J];
-		zc = fs->dsz.ccoor[K];
-
-		// map marker on the control volumes of edge nodes
-		if(xp > xc) { II = I+1; } else { II = I; }
-		if(yp > yc) { JJ = J+1; } else { JJ = J; }
-		if(zp > zc) { KK = K+1; } else { KK = K; }
-
-		// get interpolation weights in cell control volumes
-		wxc = WEIGHT_POINT_CELL(I, xp, fs->dsx);
-		wyc = WEIGHT_POINT_CELL(J, yp, fs->dsy);
-		wzc = WEIGHT_POINT_CELL(K, zp, fs->dsz);
-
-		// get interpolation weights in node control volumes
-		wxn = WEIGHT_POINT_NODE(II, xp, fs->dsx);
-		wyn = WEIGHT_POINT_NODE(JJ, yp, fs->dsy);
-		wzn = WEIGHT_POINT_NODE(KK, zp, fs->dsz);
-
-		if      (icase == _STRESS_) { UPXY = P->S.xy; UPXZ = P->S.xz; UPYZ = P->S.yz; }
-		else if (icase == _APS_)    { UPXY = P->APS;  UPXZ = P->APS;  UPYZ = P->APS;  }
-
-		// update required fields from marker to edge nodes
-		lxy[sz+K ][sy+JJ][sx+II] += wxn*wyn*wzc*UPXY;
-		lxz[sz+KK][sy+J ][sx+II] += wxn*wyc*wzn*UPXZ;
-		lyz[sz+KK][sy+JJ][sx+I ] += wxc*wyn*wzn*UPYZ;
-	}
-
-	// restore access
-	ierr = DMDAVecRestoreArray(fs->DA_XY, jr->ldxy, &lxy); CHKERRQ(ierr);
-	ierr = DMDAVecRestoreArray(fs->DA_XZ, jr->ldxz, &lxz); CHKERRQ(ierr);
-	ierr = DMDAVecRestoreArray(fs->DA_YZ, jr->ldyz, &lyz); CHKERRQ(ierr);
-
-	// assemble global vectors
-	LOCAL_TO_GLOBAL(fs->DA_XY, jr->ldxy, jr->gdxy)
-	LOCAL_TO_GLOBAL(fs->DA_XZ, jr->ldxz, jr->gdxz)
-	LOCAL_TO_GLOBAL(fs->DA_YZ, jr->ldyz, jr->gdyz)
-
-	// access 1D layouts of global vectors
-	ierr = VecGetArray(jr->gdxy, &gxy);  CHKERRQ(ierr);
-	ierr = VecGetArray(jr->gdxz, &gxz);  CHKERRQ(ierr);
-	ierr = VecGetArray(jr->gdyz, &gyz);  CHKERRQ(ierr);
-
-	// copy (normalized) data to the residual context
-	if(icase == _PHASE_)
-	{
-		for(jj = 0; jj < fs->nXYEdg; jj++) jr->svXYEdge[jj].phRat[iphase] = gxy[jj];
-		for(jj = 0; jj < fs->nXZEdg; jj++) jr->svXZEdge[jj].phRat[iphase] = gxz[jj];
-		for(jj = 0; jj < fs->nYZEdg; jj++) jr->svYZEdge[jj].phRat[iphase] = gyz[jj];
-	}
-	else if(icase == _STRESS_)
-	{
-		for(jj = 0; jj < fs->nXYEdg; jj++) jr->svXYEdge[jj].h = gxy[jj]/jr->svXYEdge[jj].ws;
-		for(jj = 0; jj < fs->nXZEdg; jj++) jr->svXZEdge[jj].h = gxz[jj]/jr->svXZEdge[jj].ws;
-		for(jj = 0; jj < fs->nYZEdg; jj++) jr->svYZEdge[jj].h = gyz[jj]/jr->svYZEdge[jj].ws;
-	}
-	else if(icase == _APS_)
-	{
-		for(jj = 0; jj < fs->nXYEdg; jj++) jr->svXYEdge[jj].svDev.APS = gxy[jj]/jr->svXYEdge[jj].ws;
-		for(jj = 0; jj < fs->nXZEdg; jj++) jr->svXZEdge[jj].svDev.APS = gxz[jj]/jr->svXZEdge[jj].ws;
-		for(jj = 0; jj < fs->nYZEdg; jj++) jr->svYZEdge[jj].svDev.APS = gyz[jj]/jr->svYZEdge[jj].ws;
-	}
-
-	// restore access
-	ierr = VecRestoreArray(jr->gdxy, &gxy); CHKERRQ(ierr);
-	ierr = VecRestoreArray(jr->gdxz, &gxz); CHKERRQ(ierr);
-	ierr = VecRestoreArray(jr->gdyz, &gyz); CHKERRQ(ierr);
-
-	PetscFunctionReturn(0);
-}
-
-//---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "ADVCheckMarkPhases"
-PetscErrorCode ADVCheckMarkPhases(AdvCtx *actx)
-{
-	// check phases of markers
-	Marker    *P;
-	PetscInt  jj;
-	PetscInt  numPhases;
-
-	PetscFunctionBegin;
-
-	numPhases = actx->dbm->numPhases;
-
-	// scan all markers
-	for(jj = 0; jj < actx->nummark; jj++)
-	{
-		// access marker
-		P = &actx->markers[jj];
-
-		// check marker phase
-		if ((P->phase < 0) || (P->phase > numPhases-1))
-		{
-			SETERRQ(PETSC_COMM_SELF, PETSC_ERR_USER, " Detected markers with wrong phase! \n");
-		}
-	}
-
-	PetscFunctionReturn(0);
-}
 */
 //---------------------------------------------------------------------------
