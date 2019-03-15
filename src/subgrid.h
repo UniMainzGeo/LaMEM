@@ -121,7 +121,7 @@ PetscErrorCode ADVSelectTimeStep(AdvCtx *actx, PetscInt *restart);
 */
 
 #define MAP_SUBCELL(i, x, s, h, n) \
-{ i = (PetscInt)PetscFloorReal(((x) - (s))/(h)); if(i > n - 1) i = n - 1; if(i < 0) i = 0; }
+{ i = (PetscInt)PetscFloorReal(((x) - (s))/(h)); if(i > n - 1) { i = n - 1; } if(i < 0) { i = 0; } }
 
 
 //---------------------------------------------------------------------------

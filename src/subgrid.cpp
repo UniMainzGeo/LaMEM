@@ -44,6 +44,7 @@
 //...................   MATERIAL ADVECTION ROUTINES   .......................
 //---------------------------------------------------------------------------
 #include <vector>
+#include <algorithm>
 using namespace std;
 //---------------------------------------------------------------------------
 #include "LaMEM.h"
@@ -82,73 +83,55 @@ Main advection routine
 #define __FUNCT__ "ADVMarkSubGrid"
 PetscErrorCode ADVMarkSubGrid(AdvCtx *actx)
 {
-
-
 	// check marker distribution and delete or inject markers if necessary
 
-	FDSTAG      *fs;
-	Marker      *P;
-
-
-	PetscInt     ID, I, J, K, i, ii;
-	PetscInt     ncx, ncy,  npx, npy, npz;
-	PetscInt     n, ninj, ndel, nmax;
-	PetscInt     *pid;
-	PetscScalar  s[3], h[3], *x;
-//	PetscInt    *cellid;
-
-//	PetscInt      randNoise;           // random noise flag for marker distribution
-
-
+	FDSTAG         *fs;
+	Marker         *P;
+	PetscInt       ID, I, J, K, i, ii, jj;
+	PetscInt       ncx, ncy,  npx, npy, npz, nmark, ncell;
+	PetscInt       ninj, nmrg, nmax;
+	PetscInt       *pid;
+	PetscScalar    s[3], h[3], *x;
+	PetscInt       jb, je, cellid;
 	PetscLogDouble t0, t1;
 
-    vector < pair <PetscScalar, PetscInt> > dist;
-    vector < PetscInt >                     pcellid;
-    vector < PetscInt >                     cellcnt;
+    vector < pair < PetscScalar, PetscInt > > dist;
+    vector < pair < PetscInt,    PetscInt > > cell;
+    pair          < PetscInt,    PetscInt >   t;
 
 
+//	PetscInt      randNoise;           // random noise flag for marker distribution
 
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
 
 	ierr = PetscTime(&t0); CHKERRQ(ierr);
 
-	fs  = actx->fs;
-	ncx = fs->dsx.ncels;
-	ncy = fs->dsy.ncels;
-	npx = actx->NumPartX;
-	npy = actx->NumPartY;
-	npz = actx->NumPartZ;
-
+	// access context
+	fs    = actx->fs;
+	ncx   = fs->dsx.ncels;
+	ncy   = fs->dsy.ncels;
+	npx   = actx->NumPartX;
+	npy   = actx->NumPartY;
+	npz   = actx->NumPartZ;
+	ncell = npx*npy*npz;
+	ninj  = 0;
+	nmrg  = 0;
 
 	// get max number of markers estimate per cell
 	nmax = _max_nmark_*actx->npmax;
 	nmax = nmax*nmax*nmax;
 
+	// reserve space for index storage
+	cell.reserve(nmax);
 
-	pcellid.reserve(nmax);
-	cellcnt.reserve(nmax);
-
-
-	// allocate marker subcell ID storage
-//	ierr = makeIntArray(&cellid, NULL, nmax); CHKERRQ(ierr);
-
-
-
-	// calculate storage
-	ninj = 0;
-	ndel = 0;
-
-
-
-
-
+	// process local cells
 	for(i = 0; i < fs->nCells; i++)
 	{
 		// get number of markers per cell
-		n = actx->markstart[i+1] - actx->markstart[i];
+		nmark = actx->markstart[i+1] - actx->markstart[i];
 
-		if(!n)
+		if(!nmark)
 		{
 			SETERRQ(PETSC_COMM_SELF, PETSC_ERR_USER, " Empty control volume");
 		}
@@ -166,80 +149,76 @@ PetscErrorCode ADVMarkSubGrid(AdvCtx *actx)
 		h[1] = SIZE_CELL(J, 0, fs->dsy)/(PetscScalar)npy;
 		h[2] = SIZE_CELL(K, 0, fs->dsz)/(PetscScalar)npz;
 
+		// clear index storage
+		cell.clear();
+
 		// map markers on subcells
 		pid = actx->markind + actx->markstart[i];
 
-		pcellid.clear();
-		cellcnt.clear();
-
-		for(ii = 0; ii < n; ii++)
+		for(ii = 0; ii < nmark; ii++)
 		{
-			// get marker & coordinate
-			P = &actx->markers[pid[ii]];
-			x = P->X;
+			// get marker & coordinates
+			jj = pid[ii];
+			P  = &actx->markers[jj];
+			x  = P->X;
 
 			// compute containing subcell index
 			MAP_SUBCELL(I, x[0], s[0], h[0], npx);
 			MAP_SUBCELL(J, x[1], s[1], h[1], npy);
 			MAP_SUBCELL(K, x[2], s[2], h[2], npz);
-
 			GET_CELL_ID(ID, I, J, K, npx, npy);
 
-
+			// store marker and cell numbers
+			t.first  = ID;
+			t.second = jj;
+			cell.push_back(t);
 
 		}
 
+		// sort markers by subcells
+		sort(cell.begin(), cell.end());
 
-		//actx->npmax
+		// push and-of-array stamp
+		t.first  = -1;
+		t.second =  0;
+		cell.push_back(t);
 
-
-	}
-
-
-
-
-/*
-	pair
-
-	// if no need for injection/deletion
-	if ((!ninj) && (!ndel)) PetscFunctionReturn(0);
-
-	actx->nrecv = ninj;
-	actx->ndel  = ndel;
-
-
-	actx->cinj = 0;
-	actx->cdel = 0;
-	ind        = 0;
-
-	// inject/delete
-	for(ind = 0; ind < fs->nCells; ind++)
-	{
-		// no of markers in cell
-		n = actx->markstart[ind+1] - actx->markstart[ind];
-
-		if ((n < actx->nmin) || (n > actx->nmax))
+		// process cells
+		for(ii = 0, jb = 0; ii < ncell; ii++)
 		{
-			// expand i, j, k cell indices
-			GET_CELL_IJK(ind, i, j, k, M, N);
+			// get index of next populated cell
+			cellid = cell[jb].first;
 
-			// get cell coordinates
-			xs[0] = fs->dsx.ncoor[i]; xe[0] = fs->dsx.ncoor[i+1];
-			xs[1] = fs->dsy.ncoor[j]; xe[1] = fs->dsy.ncoor[j+1];
-			xs[2] = fs->dsz.ncoor[k]; xe[2] = fs->dsz.ncoor[k+1];
+			// check whether current cell is empty
+			if(cellid > ii)
+			{
+				// process empty subcell (insert markers)
 
-			// inject/delete markers
-			ierr = AVDExecuteMarkerInjection(actx, n, xs, xe, ind); CHKERRQ(ierr);
+				// ...............
+
+				ninj++;
+			}
+			else
+			{
+				// find next populated cell or and-of-array stamp
+				je = jb; while(cell[je].first == cellid) je++;
+
+				// process non-empty subcell (merge markers of same phase)
+				if(jb-je > actx->npmax)
+				{
+					// ...............
+
+					nmrg++;
+				}
+
+				// switch to next populated cell
+				jb = je;
+			}
 		}
 	}
-
-*/
-
 
 	// store new markers
 //	ierr = ADVCollectGarbage(actx); CHKERRQ(ierr);
-
-
 
 	// compute host cells for all the markers
 //	ierr = ADVMapMarkToCells(actx); CHKERRQ(ierr);
@@ -248,13 +227,9 @@ PetscErrorCode ADVMarkSubGrid(AdvCtx *actx)
 //	ierr = ADVUpdateMarkCell(actx); CHKERRQ(ierr);
 
 
-//	ierr = PetscFree(cellid); CHKERRQ(ierr);
-
-
 	// print info
 	ierr = PetscTime(&t1); CHKERRQ(ierr);
-	PetscPrintf(PETSC_COMM_WORLD,"Marker control [%lld]: (subgrid) injected %lld markers and merged %lld markers in %1.4e s\n",(LLD)actx->iproc, (LLD)ninj, (LLD)ndel, t1-t0);
-
+	PetscPrintf(PETSC_COMM_WORLD,"Marker control [%lld]: (subgrid) injected %lld markers and merged %lld markers in %1.4e s\n",(LLD)actx->iproc, (LLD)ninj, (LLD)nmrg, t1-t0);
 
 	PetscFunctionReturn(0);
 }
@@ -299,8 +274,6 @@ PetscErrorCode ADVExchange(AdvCtx *actx)
 
 	PetscFunctionReturn(0);
 }
-//---------------------------------------------------------------------------
-
 //---------------------------------------------------------------------------
 #undef __FUNCT__
 #define __FUNCT__ "ADVMapMarkToDomains"
@@ -350,54 +323,7 @@ PetscErrorCode ADVMapMarkToDomains(AdvCtx *actx)
 
 	PetscFunctionReturn(0);
 }
-//---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "ADVExchangeNumMark"
-PetscErrorCode ADVExchangeNumMark(AdvCtx *actx)
-{
-	// communicate number of markers with neighbor processes
-	FDSTAG     *fs;
-	PetscInt    k;
-	PetscMPIInt scnt, rcnt;
-	MPI_Request srequest[_num_neighb_];
-	MPI_Request rrequest[_num_neighb_];
 
-	PetscErrorCode ierr;
-	PetscFunctionBegin;
-
-	fs = actx->fs;
-
-	// zero out message counters
-	scnt = 0;
-	rcnt = 0;
-
-	// send number of markers to ALL neighbor processes (except self & non-existing)
-	for(k = 0; k < _num_neighb_; k++)
-	{
-		if(fs->neighb[k] != actx->iproc && fs->neighb[k] != -1)
-		{
-			ierr = MPI_Isend(&actx->nsendm[k], 1, MPIU_INT,
-				fs->neighb[k], 100, actx->icomm, &srequest[scnt++]); CHKERRQ(ierr);
-		}
-	}
-
-	// receive number of markers from ALL neighbor processes (except self & non-existing)
-	for(k = 0; k < _num_neighb_; k++)
-	{
-		if(fs->neighb[k] != actx->iproc && fs->neighb[k] != -1)
-		{
-			ierr = MPI_Irecv(&actx->nrecvm[k], 1, MPIU_INT,
-				fs->neighb[k], 100, actx->icomm, &rrequest[rcnt++]); CHKERRQ(ierr);
-		}
-		else actx->nrecvm[k] = 0;
-	}
-
-	// wait until all communication processes have been terminated
-	if(scnt) { ierr = MPI_Waitall(scnt, srequest, MPI_STATUSES_IGNORE); CHKERRQ(ierr); }
-	if(rcnt) { ierr = MPI_Waitall(rcnt, rrequest, MPI_STATUSES_IGNORE); CHKERRQ(ierr); }
-
-	PetscFunctionReturn(0);
-}
 //---------------------------------------------------------------------------
 #undef __FUNCT__
 #define __FUNCT__ "ADVCreateMPIBuff"
@@ -456,58 +382,6 @@ PetscErrorCode ADVCreateMPIBuff(AdvCtx *actx)
 
 	// rewind send buffer pointers
 	rewindPtr(_num_neighb_, actx->ptsend);
-
-	PetscFunctionReturn(0);
-}
-//---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "ADVExchangeMark"
-PetscErrorCode ADVExchangeMark(AdvCtx *actx)
-{
-	// communicate markers with neighbor processes
-	FDSTAG     *fs;
-	PetscInt    k;
-	PetscMPIInt scnt, rcnt, nbyte;
-	MPI_Request srequest[_num_neighb_];
-	MPI_Request rrequest[_num_neighb_];
-
-	PetscErrorCode ierr;
-	PetscFunctionBegin;
-
-	fs = actx->fs;
-
-	// zero out message counters
-	scnt = 0;
-	rcnt = 0;
-
-	// send packages (if any) with markers to neighbor processes
-	for(k = 0; k < _num_neighb_; k++)
-	{
-		if(actx->nsendm[k])
-		{
-			nbyte = (PetscMPIInt)(actx->nsendm[k]*(PetscInt)sizeof(Marker));
-
-			ierr = MPI_Isend(&actx->sendbuf[actx->ptsend[k]], nbyte, MPI_BYTE,
-				fs->neighb[k], 200, actx->icomm, &srequest[scnt++]); CHKERRQ(ierr);
-
-		}
-	}
-
-	// receive packages (if any) with markers from neighbor processes
-	for(k = 0; k < _num_neighb_; k++)
-	{
-		if(actx->nrecvm[k])
-		{
-			nbyte = (PetscMPIInt)(actx->nrecvm[k]*(PetscInt)sizeof(Marker));
-
-			ierr = MPI_Irecv(&actx->recvbuf[actx->ptrecv[k]], nbyte, MPI_BYTE,
-				fs->neighb[k], 200, actx->icomm, &rrequest[rcnt++]); CHKERRQ(ierr);
-		}
-	}
-
-	// wait until all communication processes have been terminated
-	if(scnt) { ierr = MPI_Waitall(scnt, srequest, MPI_STATUSES_IGNORE); CHKERRQ(ierr); }
-	if(rcnt) { ierr = MPI_Waitall(rcnt, rrequest, MPI_STATUSES_IGNORE); CHKERRQ(ierr); }
 
 	PetscFunctionReturn(0);
 }
@@ -589,46 +463,6 @@ PetscErrorCode ADVCollectGarbage(AdvCtx *actx)
 
 	// store new number of markers
 	actx->nummark = nummark;
-
-	PetscFunctionReturn(0);
-}
-//-----------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "ADVMapMarkToCells"
-PetscErrorCode ADVMapMarkToCells(AdvCtx *actx)
-{
-	// computes local numbers of the host cells containing markers
-	// NOTE: this routine MUST be called for the local markers only
-
-	FDSTAG      *fs;
-	PetscScalar *X;
-	PetscInt     i, ID, I, J, K, M, N, P;
-
-	PetscFunctionBegin;
-
-	fs = actx->fs;
-
-	// get number of cells
-	M = fs->dsx.ncels;
-	N = fs->dsy.ncels;
-	P = fs->dsz.ncels;
-
-	// loop over all local particles
-	for(i = 0; i < actx->nummark; i++)
-	{
-		// get marker coordinates
-		X = actx->markers[i].X;
-
-		// find I, J, K indices by bisection algorithm
-		I = FindPointInCell(fs->dsx.ncoor, 0, M, X[0]);
-		J = FindPointInCell(fs->dsy.ncoor, 0, N, X[1]);
-		K = FindPointInCell(fs->dsz.ncoor, 0, P, X[2]);
-
-		// compute and store consecutive index
-		GET_CELL_ID(ID, I, J, K, M, N);
-
-		actx->cellnum[i] = ID;
-	}
 
 	PetscFunctionReturn(0);
 }
@@ -944,8 +778,6 @@ PetscErrorCode ADVCheckCorners(AdvCtx *actx)
 
 	PetscFunctionReturn(0);
 }
-
-
 
 */
 //---------------------------------------------------------------------------
