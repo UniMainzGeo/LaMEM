@@ -88,6 +88,7 @@ struct Material_t
 public:
 
 	PetscInt     ID;       // material ID
+	PetscInt     visID;    // visualization ID
 	// density parameters
 	PetscScalar  rho;      // reference density                          [kg/m^3]
 	PetscScalar  rho_n;    // depth-dependent density model parameter    [ ]

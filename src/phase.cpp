@@ -184,7 +184,7 @@ PetscErrorCode DBMatReadPhase(DBMat *dbm, FB *fb)
 	// read material properties from file with error checking
 	Scaling    *scal;
 	Material_t *m;
-	PetscInt    ID = -1, chSoftID, frSoftID, MSN, print_title;
+	PetscInt    ID = -1, visID = -1, chSoftID, frSoftID, MSN, print_title;
 	size_t 	    StringLength;
 	PetscScalar eta, eta0, e0, K, G, E, nu, Vp, Vs;
 	char        ndiff[_STR_LEN_], ndisl[_STR_LEN_], npeir[_STR_LEN_], title[_STR_LEN_], PhaseDiagram[_STR_LEN_], PhaseDiagram_Dir[_STR_LEN_];
@@ -224,6 +224,12 @@ PetscErrorCode DBMatReadPhase(DBMat *dbm, FB *fb)
 
 	// set ID
 	m->ID = ID;
+
+	// visualization ID
+	ierr = getIntParam(fb, _OPTIONAL_, "visID", &visID, 1, 0); CHKERRQ(ierr);
+
+	if(visID != -1) m->visID = visID;
+	else            m->visID = ID;
 
 	//============================================================
 	// density & phase diagram info

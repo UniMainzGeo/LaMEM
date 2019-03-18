@@ -124,7 +124,7 @@ PetscErrorCode PVOutWritePhase(JacRes *jr, OutBuf *outbuf)
 		phRat = jr->svCell[iter++].phRat; \
 		mID = 0.0; \
 		for(jj = 0; jj < numPhases; jj++) \
-			mID += phRat[jj]*(PetscScalar)phases[jj].ID; \
+			mID += phRat[jj]*(PetscScalar)phases[jj].visID; \
 		buff[k][j][i] = mID;
 
 	// no scaling is necessary for the phase

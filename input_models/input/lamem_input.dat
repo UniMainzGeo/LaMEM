@@ -459,6 +459,7 @@
 
 	<MaterialStart>
 		ID        = 1      # material phase ID
+		visID     = 10     # material ID for phase visualization (default is ID)
 		diff_prof = Dry_Olivine_diff_creep-Hirth_Kohlstedt_2003 # DIFFUSION creep profile
 		disl_prof = Granite-Tirel_et_al_2008                    # DISLOCATION creep profile
 		peir_prof = Olivine_Peierls-Kameyama_1999               # PEIERLS creep profile
