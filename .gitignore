@@ -1,0 +1,7 @@
+/.gitignore 
+/bin/ 
+/dep/ 
+/lib/ 
+/.cproject 
+/.project
+/.vscode
