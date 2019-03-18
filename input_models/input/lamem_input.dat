@@ -127,7 +127,7 @@
 	marginO            = 0.0 0.0          # lateral coordinates of continental margin - origin
 	marginE            = 10.0 10.0        # lateral coordinates of continental margin - 2nd point
 	hUp                = 1.5              # up dip thickness of sediment cover (onshore)
-	hUp                = 0.1              # down dip thickness of sediment cover (off shore)
+	hDown              = 0.1              # down dip thickness of sediment cover (off shore)
 	dTrans             = 1.0              # half of transition zone
 
 #===============================================================================

@@ -974,8 +974,6 @@ PetscErrorCode FreeSurfAppSedimentation(FreeSurf *surf)
 		// store the phase that is being sedimented
 		surf->phase = phase;
 
-	
-
 		// strike of current margin
 		b[0] = surf->marginE[0] - surf->marginO[0];
 		b[1] = surf->marginE[1] - surf->marginO[1];
@@ -992,8 +990,6 @@ PetscErrorCode FreeSurfAppSedimentation(FreeSurf *surf)
 		aO[1] = surf->marginO[1]-dr*c[1]; 
 		aE[0] = surf->marginE[0]-dr*c[0];  
 		aE[1] = surf->marginE[1]-dr*c[1]; 
-
-
 
 		// access topography
 		ierr = DMDAVecGetArray(surf->DA_SURF, surf->gtopo,  &topo);  CHKERRQ(ierr);
@@ -1054,19 +1050,11 @@ PetscErrorCode FreeSurfAppSedimentation(FreeSurf *surf)
 		surf->marginE[0] = aE[0];
 		surf->marginE[1] = aE[1];
 
-
-
 		// print info
 		PetscPrintf(PETSC_COMM_WORLD, "Applying directed (cont. margin) sedimentation to internal free surface. Phase that is currently being sedimented is %lld   \n",
 			(LLD)phase);
 	}
-	else
-	{
-		PetscPrintf(PETSC_COMM_WORLD, "Unknown sedimentation model %lld   \n",(LLD)phase);
-	}
 	
-
-
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
