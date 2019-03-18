@@ -90,15 +90,21 @@ PetscErrorCode FreeSurfCreate(FreeSurf *surf, FB *fb)
 	ierr = getScalarParam(fb, _OPTIONAL_, "surf_max_angle",     &surf->MaxAngle,      1,  scal->angle);  CHKERRQ(ierr);
 	ierr = getIntParam   (fb, _OPTIONAL_, "surf_no_shift_mark", &surf->NoShiftMark,   1,  1);            CHKERRQ(ierr);
 	ierr = getIntParam   (fb, _OPTIONAL_, "erosion_model",      &surf->ErosionModel,  1,  1);            CHKERRQ(ierr);
-	ierr = getIntParam   (fb, _OPTIONAL_, "sediment_model",     &surf->SedimentModel, 1,  1);            CHKERRQ(ierr);
+	ierr = getIntParam   (fb, _OPTIONAL_, "sediment_model",     &surf->SedimentModel, 1,  2);            CHKERRQ(ierr);
 
 	if(surf->SedimentModel)
 	{
 		// sedimentation model parameters
 		ierr = getIntParam   (fb, _REQUIRED_, "sed_num_layers",  &surf->numLayers,  1,                 _max_layers_);      CHKERRQ(ierr);
 		ierr = getScalarParam(fb, _REQUIRED_, "sed_time_delims",  surf->timeDelims, surf->numLayers-1, scal->time);        CHKERRQ(ierr);
-		ierr = getScalarParam(fb, _REQUIRED_, "sed_rates",        surf->sedRates,   surf->numLayers,   scal->velocity);    CHKERRQ(ierr);
+		ierr = getScalarParam(fb, _REQUIRED_, "sed_rates",        surf->sedRates,   surf->numLayers,   scal->length);    CHKERRQ(ierr);
 		ierr = getIntParam   (fb, _REQUIRED_, "sed_phases",       surf->sedPhases,  surf->numLayers,   maxPhaseID);        CHKERRQ(ierr);
+		ierr = getScalarParam(fb, _REQUIRED_, "marginO",          surf->marginO,    2,                 scal->length);      CHKERRQ(ierr);
+		ierr = getScalarParam(fb, _REQUIRED_, "marginE",          surf->marginE,    2,                 scal->length);      CHKERRQ(ierr);
+		ierr = getScalarParam(fb, _REQUIRED_, "marginE",          surf->marginE,    2,                 scal->length);      CHKERRQ(ierr);
+		ierr = getScalarParam(fb, _REQUIRED_, "hUp",             &surf->hUp,        1,                 scal->length);      CHKERRQ(ierr);
+		ierr = getScalarParam(fb, _REQUIRED_, "hDown",           &surf->hDown,      1,                 scal->length);      CHKERRQ(ierr);
+		ierr = getScalarParam(fb, _REQUIRED_, "dTrans",          &surf->dTrans,     1,                 scal->length);      CHKERRQ(ierr);
 	}
 
 	// print summary
@@ -114,6 +120,7 @@ PetscErrorCode FreeSurfCreate(FreeSurf *surf, FB *fb)
 	PetscPrintf(PETSC_COMM_WORLD, "   Sedimentation model       : ");
 	if      (surf->SedimentModel == 0) PetscPrintf(PETSC_COMM_WORLD, "none\n");
 	else if (surf->SedimentModel == 1) PetscPrintf(PETSC_COMM_WORLD, "prescribed rate\n");
+	else if (surf->SedimentModel == 2) PetscPrintf(PETSC_COMM_WORLD, "directed sedimentation (continental margin) with prescribed rate\n");
 
 	if(surf->numLayers) PetscPrintf(PETSC_COMM_WORLD, "   Number of sediment layers : %lld \n",  (LLD)surf->numLayers);
 	if(surf->phaseCorr) PetscPrintf(PETSC_COMM_WORLD, "   Correct marker phases     @ \n");
@@ -878,7 +885,7 @@ PetscErrorCode FreeSurfAppSedimentation(FreeSurf *surf)
 	JacRes      *jr;
 	FDSTAG      *fs;
 	PetscScalar ***topo;
-	PetscScalar dt, time, rate, zbot, ztop, z, dz;
+	PetscScalar dt, time, rate, zbot, ztop, z, dz, dr, rsq, x,y,t0, l[2], aE[2], aO[2], b[2],c[2],d;
 	PetscInt    L, jj, phase;
 	PetscInt    i, j, nx, ny, sx, sy, sz;
 
@@ -951,6 +958,114 @@ PetscErrorCode FreeSurfAppSedimentation(FreeSurf *surf)
 		PetscPrintf(PETSC_COMM_WORLD, "Applying sedimentation to internal free surface. Phase that is currently being sedimented is %lld   \n",
 			(LLD)phase);
 	}
+	else if(surf->SedimentModel == 2) 
+	{ 
+		// sedimentation after Gemmer et al. 2004 - Moving Gaussian to mimic the sedimentation at a continental margin
+
+		// determine sedimentation rate & phase number
+		for(jj = 0; jj < surf->numLayers-1; jj++)
+		{
+			if(time < surf->timeDelims[jj]) break;
+		}
+
+		rate  = surf->sedRates [jj];
+		phase = surf->sedPhases[jj];
+
+		// store the phase that is being sedimented
+		surf->phase = phase;
+
+	
+
+		// strike of current margin
+		b[0] = surf->marginE[0] - surf->marginO[0];
+		b[1] = surf->marginE[1] - surf->marginO[1];
+
+		// right lateral normal vector of current margin
+		c[0] = -b[1]/sqrt(b[0]*b[0]+b[1]*b[1]);
+		c[1] = b[0]/sqrt(b[0]*b[0]+b[1]*b[1]);
+
+		// lateral offset
+		dr = rate*dt;
+
+		// new margin with offset computed with given rate 	
+		aO[0] = surf->marginO[0]-dr*c[0];  
+		aO[1] = surf->marginO[1]-dr*c[1]; 
+		aE[0] = surf->marginE[0]-dr*c[0];  
+		aE[1] = surf->marginE[1]-dr*c[1]; 
+
+
+
+		// access topography
+		ierr = DMDAVecGetArray(surf->DA_SURF, surf->gtopo,  &topo);  CHKERRQ(ierr);
+
+		// scan all free surface local points
+		ierr = DMDAGetCorners(fs->DA_COR, &sx, &sy, &sz, &nx, &ny, NULL); CHKERRQ(ierr);
+		
+		START_PLANE_LOOP
+		{
+
+			x = COORD_NODE(i, sx, fs->dsx);
+			y = COORD_NODE(j, sy, fs->dsy);
+
+			// get topography
+			z = topo[L][j][i];
+
+
+			// compute distance to margin
+			t0 = ((x-aO[0])*b[0] + (y-aO[1])*b[1]) / (b[0]*b[0]+b[1]*b[1]);
+			l[0] = aO[0] + t0 * b[0];
+			l[1] = aO[1] + t0 * b[1];
+			rsq = ((x-l[0]) *(x-l[0])+(y-l[1])*(y-l[1]));
+			
+			// identify side of margin (left lateral < 0)
+			d = (x-aO[0])*(aE[1]-aO[1]) - (y-aO[1])*(aE[0]-aO[0]);
+
+			if(d<0) 
+			{
+				z = surf->InitLevel+surf->hUp;
+			}
+			else
+			{
+				z = surf->InitLevel + surf->hDown + (surf->hUp-surf->hDown) * exp(-rsq /surf->dTrans/surf->dTrans );
+			}
+			
+			
+			// check if internal free surface goes outside the model domain
+			if(z > ztop) z = ztop;
+			if(z < zbot) z = zbot;
+
+			// store advected topography
+			topo[L][j][i] = z;
+		}
+		END_PLANE_LOOP
+
+		// restore access
+		ierr = DMDAVecRestoreArray(surf->DA_SURF, surf->gtopo,  &topo);  CHKERRQ(ierr);
+
+		// compute ghosted version of the topography
+		GLOBAL_TO_LOCAL(surf->DA_SURF, surf->gtopo, surf->ltopo);
+
+		// compute & store average topography
+		ierr = FreeSurfGetAvgTopo(surf); CHKERRQ(ierr);
+
+		// update margin
+		surf->marginO[0] = aO[0];
+		surf->marginO[1] = aO[1];
+		surf->marginE[0] = aE[0];
+		surf->marginE[1] = aE[1];
+
+
+
+		// print info
+		PetscPrintf(PETSC_COMM_WORLD, "Applying directed (cont. margin) sedimentation to internal free surface. Phase that is currently being sedimented is %lld   \n",
+			(LLD)phase);
+	}
+	else
+	{
+		PetscPrintf(PETSC_COMM_WORLD, "Unknown sedimentation model %lld   \n",(LLD)phase);
+	}
+	
+
 
 	PetscFunctionReturn(0);
 }

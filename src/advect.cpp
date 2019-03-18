@@ -2079,7 +2079,7 @@ PetscErrorCode ADVMarkCrossFreeSurf(AdvCtx *actx)
 		// check whether air marker is below the free surface
 		if(P->phase == AirPhase && zp < topo)
 		{
-			if(surf->SedimentModel == 1)
+			if(surf->SedimentModel == 1 || surf->SedimentModel == 2)
 			{
 				// sedimentation -> air turns into a sediment
 				P->phase = surf->phase;
