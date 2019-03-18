@@ -171,12 +171,13 @@
 
 # Velocity boundary condition
 
-	bvel_face  =  1     # face identifier  (1-left 2-right 3-front 4-back)
-	bvel_phase =  1     # phase number of inflow material
-	bvel_bot   = -20.0  # bottom coordinate of inflow window
-	bvel_top   = -10.0  # top coordinate of inflow window
-	bvel_velin =  1.0   # inflow velocity
-
+	bvel_face   =  1     # face identifier  (1-left 2-right 3-front 4-back)
+	bvel_phase  =  1     # phase number of inflow material
+	bvel_bot    = -20.0  # bottom coordinate of inflow window
+	bvel_top    = -10.0  # top coordinate of inflow window
+	bvel_velin  =  1.0   # inflow velocity
+	bvel_velout =  0.0   # outflow velocity (if not specified, computed from mass balance)
+	
 # Free surface top boundary flag
 
 	open_top_bound = 1

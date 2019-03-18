@@ -272,6 +272,7 @@ PetscErrorCode BCCreate(BCCtx *bc, FB *fb)
 	bc->pbot     = -1.0;
 	bc->ptop     = -1.0;
 	bc->fixPhase = -1;
+	bc->velout   =  DBL_MAX;
 
 	//=====================
 	// VELOCITY CONSTRAINTS
@@ -319,18 +320,21 @@ PetscErrorCode BCCreate(BCCtx *bc, FB *fb)
 
 	if(bc->face)
 	{
-		ierr = getIntParam   (fb, _REQUIRED_, "bvel_phase", &bc->phase, 1, mID           ); CHKERRQ(ierr);
-		ierr = getScalarParam(fb, _REQUIRED_, "bvel_bot",   &bc->bot,   1, scal->length  ); CHKERRQ(ierr);
-		ierr = getScalarParam(fb, _REQUIRED_, "bvel_top",   &bc->top,   1, scal->length  ); CHKERRQ(ierr);
-		ierr = getScalarParam(fb, _REQUIRED_, "bvel_velin", &bc->velin, 1, scal->velocity); CHKERRQ(ierr);
+		ierr = getIntParam   (fb, _REQUIRED_, "bvel_phase",  &bc->phase,  1, mID           ); CHKERRQ(ierr);
+		ierr = getScalarParam(fb, _REQUIRED_, "bvel_bot",    &bc->bot,    1, scal->length  ); CHKERRQ(ierr);
+		ierr = getScalarParam(fb, _REQUIRED_, "bvel_top",    &bc->top,    1, scal->length  ); CHKERRQ(ierr);
+		ierr = getScalarParam(fb, _REQUIRED_, "bvel_velin",  &bc->velin,  1, scal->velocity); CHKERRQ(ierr);
+		ierr = getScalarParam(fb, _OPTIONAL_, "bvel_velout", &bc->velout, 1, scal->velocity); CHKERRQ(ierr);
 
 		ierr = FDSTAGGetGlobalBox(bc->fs, NULL, NULL, &bz, NULL, NULL, NULL); CHKERRQ(ierr);
 
-		// compute outflow velocity
-		// INTRODUCE CORRECTION FOR CELL SIZES
-		// MUST BE MASS CONSERVATIVE IN DISCRETE SENSE
-
-		bc->velout = -bc->velin*(bc->top - bc->bot)/(bc->bot - bz);
+		// compute outflow velocity (if required)
+		if(bc->velout == DBL_MAX)
+		{
+			// INTRODUCE CORRECTION FOR CELL SIZES
+			// MUST BE MASS CONSERVATIVE IN DISCRETE SENSE
+			bc->velout = -bc->velin*(bc->top - bc->bot)/(bc->bot - bz);
+		}
 	}
 
 	// open boundary flag
