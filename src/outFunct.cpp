@@ -67,26 +67,34 @@
 //---------------------------------------------------------------------------
 // interpolation function header
 #define COPY_FUNCTION_HEADER \
+	JacRes      *jr; \
+	OutBuf      *outbuf; \
 	FDSTAG      *fs; \
 	Scaling     *scal; \
 	PetscScalar ***buff, cf; \
-	PetscInt     i, j, k, nx, ny, nz, sx, sy, sz, iter; \
-	InterpFlags  iflag; \
+	PetscInt    i, j, k, nx, ny, nz, sx, sy, sz, iter; \
+	InterpFlags iflag; \
 	PetscErrorCode ierr; \
 	PetscFunctionBegin; \
-	fs   = outbuf->fs; \
-	scal = jr->scal; \
+	jr     = outvec->jr; \
+	outbuf = outvec->outbuf; \
+	fs     = outbuf->fs; \
+	scal   = jr->scal; \
 	iflag.update    = 0; \
 	iflag.use_bound = 0;
 //---------------------------------------------------------------------------
 // access function header
 #define ACCESS_FUNCTION_HEADER \
-	PetscScalar cf; \
+	JacRes      *jr; \
+	OutBuf      *outbuf; \
 	Scaling     *scal; \
+	PetscScalar  cf; \
 	InterpFlags  iflag; \
 	PetscErrorCode ierr; \
 	PetscFunctionBegin; \
-	scal = jr->scal; \
+	jr     = outvec->jr; \
+	outbuf = outvec->outbuf; \
+	scal   = jr->scal; \
 	iflag.update    = 0; \
 	iflag.use_bound = 0;
 //---------------------------------------------------------------------------
@@ -108,10 +116,46 @@
 #define INTERPOLATE_ACCESS(vec, IFUNCT, ncomp, dir, shift) \
 	ierr = IFUNCT(outbuf->fs, vec, outbuf->lbcor, iflag); CHKERRQ(ierr); \
 	ierr = OutBufPut3DVecComp(outbuf, ncomp, dir, cf, shift); CHKERRQ(ierr);
+
+//---------------------------------------------------------------------------
+//...........  Multi-component output vector data structure .................
+//---------------------------------------------------------------------------
+
+//---------------------------------------------------------------------------
+//...........  Multi-component output vector data structure .................
+//---------------------------------------------------------------------------
+void OutVecCreate(
+	OutVec         *outvec,
+	JacRes         *jr,
+	OutBuf         *outbuf,
+	const char     *name,
+	const char     *label,
+	PetscErrorCode (*OutVecWrite)(OutVec*),
+	PetscInt        ncomp)
+{
+	// store context
+	outvec->jr     = jr;
+	outvec->outbuf = outbuf;
+
+	// store name
+	asprintf(&outvec->name, "%s %s", name, label);
+
+	// number of components
+	outvec->ncomp = ncomp;
+
+	// output function pointer
+	outvec->OutVecWrite = OutVecWrite;
+
+}
+//---------------------------------------------------------------------------
+void OutVecDestroy(OutVec *outvec)
+{
+	free(outvec->name);
+}
 //---------------------------------------------------------------------------
 #undef __FUNCT__
 #define __FUNCT__ "PVOutWritePhase"
-PetscErrorCode PVOutWritePhase(JacRes *jr, OutBuf *outbuf)
+PetscErrorCode PVOutWritePhase(OutVec* outvec)
 {
 	Material_t  *phases;
 	PetscScalar *phRat, mID;
@@ -141,7 +185,7 @@ PetscErrorCode PVOutWritePhase(JacRes *jr, OutBuf *outbuf)
 //---------------------------------------------------------------------------
 #undef __FUNCT__
 #define __FUNCT__ "PVOutWriteDensity"
-PetscErrorCode PVOutWriteDensity(JacRes *jr, OutBuf *outbuf)
+PetscErrorCode PVOutWriteDensity(OutVec* outvec)
 {
 	COPY_FUNCTION_HEADER
 
@@ -157,7 +201,7 @@ PetscErrorCode PVOutWriteDensity(JacRes *jr, OutBuf *outbuf)
 //---------------------------------------------------------------------------
 #undef __FUNCT__
 #define __FUNCT__ "PVOutWriteViscTotal"
-PetscErrorCode PVOutWriteViscTotal(JacRes *jr, OutBuf *outbuf)
+PetscErrorCode PVOutWriteViscTotal(OutVec* outvec)
 {
 	COPY_FUNCTION_HEADER
 
@@ -176,7 +220,7 @@ PetscErrorCode PVOutWriteViscTotal(JacRes *jr, OutBuf *outbuf)
 //---------------------------------------------------------------------------
 #undef __FUNCT__
 #define __FUNCT__ "PVOutWriteViscCreep"
-PetscErrorCode PVOutWriteViscCreep(JacRes *jr, OutBuf *outbuf)
+PetscErrorCode PVOutWriteViscCreep(OutVec* outvec)
 {
 	COPY_FUNCTION_HEADER
 
@@ -195,7 +239,7 @@ PetscErrorCode PVOutWriteViscCreep(JacRes *jr, OutBuf *outbuf)
 //---------------------------------------------------------------------------
 #undef __FUNCT__
 #define __FUNCT__ "PVOutWriteViscoPlastic"
-PetscErrorCode PVOutWriteViscoPlastic(JacRes *jr, OutBuf *outbuf)
+PetscErrorCode PVOutWriteViscoPlastic(OutVec* outvec)
 {
 	COPY_FUNCTION_HEADER
 
@@ -214,7 +258,7 @@ PetscErrorCode PVOutWriteViscoPlastic(JacRes *jr, OutBuf *outbuf)
 //---------------------------------------------------------------------------
 #undef __FUNCT__
 #define __FUNCT__ "PVOutWriteVelocity"
-PetscErrorCode PVOutWriteVelocity(JacRes *jr, OutBuf *outbuf)
+PetscErrorCode PVOutWriteVelocity(OutVec* outvec)
 {
 	ACCESS_FUNCTION_HEADER
 
@@ -232,18 +276,18 @@ PetscErrorCode PVOutWriteVelocity(JacRes *jr, OutBuf *outbuf)
 //---------------------------------------------------------------------------
 #undef __FUNCT__
 #define __FUNCT__ "PVOutWritePressure"
-PetscErrorCode PVOutWritePressure(JacRes *jr, OutBuf *outbuf)
+PetscErrorCode PVOutWritePressure(OutVec* outvec)
 {
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
 
-	if(jr->ctrl.gwType != _GW_NONE_)
+	if(outvec->jr->ctrl.gwType != _GW_NONE_)
 	{
-		ierr = PVOutWriteTotalPress(jr, outbuf); CHKERRQ(ierr);
+		ierr = PVOutWriteTotalPress(outvec); CHKERRQ(ierr);
 	}
 	else
 	{
-		ierr = PVOutWriteEffPress(jr, outbuf); CHKERRQ(ierr);
+		ierr = PVOutWriteEffPress(outvec); CHKERRQ(ierr);
 	}
 
 	PetscFunctionReturn(0);
@@ -251,7 +295,7 @@ PetscErrorCode PVOutWritePressure(JacRes *jr, OutBuf *outbuf)
 //---------------------------------------------------------------------------
 #undef __FUNCT__
 #define __FUNCT__ "PVOutWriteTotalPress"
-PetscErrorCode PVOutWriteTotalPress(JacRes *jr, OutBuf *outbuf)
+PetscErrorCode PVOutWriteTotalPress(OutVec* outvec)
 {
 	PetscScalar pShift, biot;
 
@@ -276,7 +320,7 @@ PetscErrorCode PVOutWriteTotalPress(JacRes *jr, OutBuf *outbuf)
 //---------------------------------------------------------------------------
 #undef __FUNCT__
 #define __FUNCT__ "PVOutWriteEffPress"
-PetscErrorCode PVOutWriteEffPress(JacRes *jr, OutBuf *outbuf)
+PetscErrorCode PVOutWriteEffPress(OutVec* outvec)
 {
 	PetscScalar pShift;
 
@@ -297,7 +341,7 @@ PetscErrorCode PVOutWriteEffPress(JacRes *jr, OutBuf *outbuf)
 //---------------------------------------------------------------------------
 #undef __FUNCT__
 #define __FUNCT__ "PVOutWriteOverPress"
-PetscErrorCode PVOutWriteOverPress(JacRes *jr, OutBuf *outbuf)
+PetscErrorCode PVOutWriteOverPress(OutVec* outvec)
 {
 	PetscScalar pShift;
 
@@ -317,7 +361,7 @@ PetscErrorCode PVOutWriteOverPress(JacRes *jr, OutBuf *outbuf)
 //---------------------------------------------------------------------------
 #undef __FUNCT__
 #define __FUNCT__ "PVOutWriteLithoPress"
-PetscErrorCode PVOutWriteLithoPress(JacRes *jr, OutBuf *outbuf)
+PetscErrorCode PVOutWriteLithoPress(OutVec* outvec)
 {
 	ACCESS_FUNCTION_HEADER
 
@@ -330,7 +374,7 @@ PetscErrorCode PVOutWriteLithoPress(JacRes *jr, OutBuf *outbuf)
 //---------------------------------------------------------------------------
 #undef __FUNCT__
 #define __FUNCT__ "PVOutWritePorePress"
-PetscErrorCode PVOutWritePorePress(JacRes *jr, OutBuf *outbuf)
+PetscErrorCode PVOutWritePorePress(OutVec* outvec)
 {
 
 	ACCESS_FUNCTION_HEADER
@@ -344,7 +388,7 @@ PetscErrorCode PVOutWritePorePress(JacRes *jr, OutBuf *outbuf)
 //---------------------------------------------------------------------------
 #undef __FUNCT__
 #define __FUNCT__ "PVOutWriteTemperature"
-PetscErrorCode PVOutWriteTemperature(JacRes *jr, OutBuf *outbuf)
+PetscErrorCode PVOutWriteTemperature(OutVec* outvec)
 {
 	ACCESS_FUNCTION_HEADER
 
@@ -358,7 +402,7 @@ PetscErrorCode PVOutWriteTemperature(JacRes *jr, OutBuf *outbuf)
 //---------------------------------------------------------------------------
 #undef __FUNCT__
 #define __FUNCT__ "PVOutWriteDevStress"
-PetscErrorCode PVOutWriteDevStress(JacRes *jr, OutBuf *outbuf)
+PetscErrorCode PVOutWriteDevStress(OutVec* outvec)
 {
 	// NOTE! See warning about component ordering scheme above
 
@@ -390,7 +434,7 @@ PetscErrorCode PVOutWriteDevStress(JacRes *jr, OutBuf *outbuf)
 //---------------------------------------------------------------------------
 #undef __FUNCT__
 #define __FUNCT__ "PVOutWriteJ2DevStress"
-PetscErrorCode PVOutWriteJ2DevStress(JacRes *jr, OutBuf *outbuf)
+PetscErrorCode PVOutWriteJ2DevStress(OutVec* outvec)
 {
 	SolVarCell *svCell;
 	PetscScalar s, J2;
@@ -430,7 +474,7 @@ PetscErrorCode PVOutWriteJ2DevStress(JacRes *jr, OutBuf *outbuf)
 //---------------------------------------------------------------------------
 #undef __FUNCT__
 #define __FUNCT__ "PVOutWriteStrainRate"
-PetscErrorCode PVOutWriteStrainRate(JacRes *jr, OutBuf *outbuf)
+PetscErrorCode PVOutWriteStrainRate(OutVec* outvec)
 {
 	// NOTE! See warning about component ordering scheme above
 
@@ -461,7 +505,7 @@ PetscErrorCode PVOutWriteStrainRate(JacRes *jr, OutBuf *outbuf)
 //---------------------------------------------------------------------------
 #undef __FUNCT__
 #define __FUNCT__ "PVOutWriteJ2StrainRate"
-PetscErrorCode PVOutWriteJ2StrainRate(JacRes *jr, OutBuf *outbuf)
+PetscErrorCode PVOutWriteJ2StrainRate(OutVec* outvec)
 {
 	SolVarCell *svCell;
 	PetscScalar d, J2;
@@ -501,7 +545,7 @@ PetscErrorCode PVOutWriteJ2StrainRate(JacRes *jr, OutBuf *outbuf)
 //---------------------------------------------------------------------------
 #undef __FUNCT__
 #define __FUNCT__ "PVOutWriteFluidDensity"
-PetscErrorCode PVOutWriteFluidDensity(JacRes *jr, OutBuf *outbuf)
+PetscErrorCode PVOutWriteFluidDensity(OutVec* outvec)
 {
 	COPY_FUNCTION_HEADER
 
@@ -517,7 +561,7 @@ PetscErrorCode PVOutWriteFluidDensity(JacRes *jr, OutBuf *outbuf)
 //---------------------------------------------------------------------------
 #undef __FUNCT__
 #define __FUNCT__ "PVOutWriteMeltFraction"
-PetscErrorCode PVOutWriteMeltFraction(JacRes *jr, OutBuf *outbuf)
+PetscErrorCode PVOutWriteMeltFraction(OutVec* outvec)
 {
 	COPY_FUNCTION_HEADER
 
@@ -535,49 +579,46 @@ PetscErrorCode PVOutWriteMeltFraction(JacRes *jr, OutBuf *outbuf)
 //---------------------------------------------------------------------------
 #undef __FUNCT__
 #define __FUNCT__ "PVOutWriteVolRate"
-PetscErrorCode PVOutWriteVolRate(JacRes *jr, OutBuf *outbuf)
+PetscErrorCode PVOutWriteVolRate(OutVec* outvec)
 {
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
 
-	ierr = 0; CHKERRQ(ierr);
-	if(jr)     jr = NULL;
-	if(outbuf) outbuf = NULL;
+	ierr = 0;  CHKERRQ(ierr);
+	if(outvec) outvec = NULL;
 
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
 #undef __FUNCT__
 #define __FUNCT__ "PVOutWriteVorticity"
-PetscErrorCode PVOutWriteVorticity(JacRes *jr, OutBuf *outbuf)
+PetscErrorCode PVOutWriteVorticity(OutVec* outvec)
 {
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
 
-	ierr = 0; CHKERRQ(ierr);
-	if(jr)  jr = NULL;
-	if(outbuf) outbuf = NULL;
+	ierr = 0;  CHKERRQ(ierr);
+	if(outvec) outvec = NULL;
 
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
 #undef __FUNCT__
 #define __FUNCT__ "PVOutWriteAngVelMag"
-PetscErrorCode PVOutWriteAngVelMag(JacRes *jr, OutBuf *outbuf)
+PetscErrorCode PVOutWriteAngVelMag(OutVec* outvec)
 {
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
 
-	ierr = 0; CHKERRQ(ierr);
-	if(jr)  jr = NULL;
-	if(outbuf) outbuf = NULL;
+	ierr = 0;  CHKERRQ(ierr);
+	if(outvec) outvec = NULL;
 
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
 #undef __FUNCT__
 #define __FUNCT__ "PVOutWriteTotStrain"
-PetscErrorCode PVOutWriteTotStrain(JacRes *jr, OutBuf *outbuf)
+PetscErrorCode PVOutWriteTotStrain(OutVec* outvec)
 {
 	COPY_FUNCTION_HEADER
 
@@ -595,7 +636,7 @@ PetscErrorCode PVOutWriteTotStrain(JacRes *jr, OutBuf *outbuf)
 //---------------------------------------------------------------------------
 #undef __FUNCT__
 #define __FUNCT__ "PVOutWritePlastStrain"
-PetscErrorCode PVOutWritePlastStrain(JacRes *jr, OutBuf *outbuf)
+PetscErrorCode PVOutWritePlastStrain(OutVec* outvec)
 {
 	COPY_FUNCTION_HEADER
 
@@ -611,7 +652,7 @@ PetscErrorCode PVOutWritePlastStrain(JacRes *jr, OutBuf *outbuf)
 //---------------------------------------------------------------------------
 #undef __FUNCT__
 #define __FUNCT__ "PVOutWritePlastDissip"
-PetscErrorCode PVOutWritePlastDissip(JacRes *jr, OutBuf *outbuf)
+PetscErrorCode PVOutWritePlastDissip(OutVec* outvec)
 {
 	SolVarCell *svCell;
 	SolVarEdge *svEdge;
@@ -647,7 +688,7 @@ PetscErrorCode PVOutWritePlastDissip(JacRes *jr, OutBuf *outbuf)
 //---------------------------------------------------------------------------
 #undef __FUNCT__
 #define __FUNCT__ "PVOutWriteTotDispl"
-PetscErrorCode PVOutWriteTotDispl(JacRes *jr, OutBuf *outbuf)
+PetscErrorCode PVOutWriteTotDispl(OutVec* outvec)
 {
 
 	COPY_FUNCTION_HEADER
@@ -668,7 +709,7 @@ PetscErrorCode PVOutWriteTotDispl(JacRes *jr, OutBuf *outbuf)
 //---------------------------------------------------------------------------
 #undef __FUNCT__
 #define __FUNCT__ "PVOutWriteSHmax"
-PetscErrorCode PVOutWriteSHmax(JacRes *jr, OutBuf *outbuf)
+PetscErrorCode PVOutWriteSHmax(OutVec* outvec)
 {
 	ACCESS_FUNCTION_HEADER
 
@@ -687,7 +728,7 @@ PetscErrorCode PVOutWriteSHmax(JacRes *jr, OutBuf *outbuf)
 //---------------------------------------------------------------------------
 #undef __FUNCT__
 #define __FUNCT__ "PVOutWriteEHmax"
-PetscErrorCode PVOutWriteEHmax(JacRes *jr, OutBuf *outbuf)
+PetscErrorCode PVOutWriteEHmax(OutVec* outvec)
 {
 	ACCESS_FUNCTION_HEADER
 
@@ -706,7 +747,7 @@ PetscErrorCode PVOutWriteEHmax(JacRes *jr, OutBuf *outbuf)
 //---------------------------------------------------------------------------
 #undef __FUNCT__
 #define __FUNCT__ "PVOutWriteISA"
-PetscErrorCode PVOutWriteISA(JacRes *jr, OutBuf *outbuf)
+PetscErrorCode PVOutWriteISA(OutVec* outvec)
 {
 	ACCESS_FUNCTION_HEADER
 
@@ -725,7 +766,7 @@ PetscErrorCode PVOutWriteISA(JacRes *jr, OutBuf *outbuf)
 //---------------------------------------------------------------------------
 #undef __FUNCT__
 #define __FUNCT__ "PVOutWriteGOL"
-PetscErrorCode PVOutWriteGOL(JacRes *jr, OutBuf *outbuf)
+PetscErrorCode PVOutWriteGOL(OutVec* outvec)
 {
 	ACCESS_FUNCTION_HEADER
 
@@ -741,7 +782,7 @@ PetscErrorCode PVOutWriteGOL(JacRes *jr, OutBuf *outbuf)
 //---------------------------------------------------------------------------
 #undef __FUNCT__
 #define __FUNCT__ "PVOutWriteYield"
-PetscErrorCode PVOutWriteYield(JacRes *jr, OutBuf *outbuf)
+PetscErrorCode PVOutWriteYield(OutVec* outvec)
 {
 	COPY_FUNCTION_HEADER
 
@@ -760,7 +801,7 @@ PetscErrorCode PVOutWriteYield(JacRes *jr, OutBuf *outbuf)
 //---------------------------------------------------------------------------
 #undef __FUNCT__
 #define __FUNCT__ "PVOutWriteMomentRes"
-PetscErrorCode PVOutWriteMomentRes(JacRes *jr, OutBuf *outbuf)
+PetscErrorCode PVOutWriteMomentRes(OutVec* outvec)
 {
 	ACCESS_FUNCTION_HEADER
 
@@ -781,7 +822,7 @@ PetscErrorCode PVOutWriteMomentRes(JacRes *jr, OutBuf *outbuf)
 //---------------------------------------------------------------------------
 #undef __FUNCT__
 #define __FUNCT__ "PVOutWriteContRes"
-PetscErrorCode PVOutWriteContRes(JacRes *jr, OutBuf *outbuf)
+PetscErrorCode PVOutWriteContRes(OutVec* outvec)
 {
 	ACCESS_FUNCTION_HEADER
 
@@ -798,7 +839,7 @@ PetscErrorCode PVOutWriteContRes(JacRes *jr, OutBuf *outbuf)
 //---------------------------------------------------------------------------
 #undef __FUNCT__
 #define __FUNCT__ "PVOutWritEnergRes"
-PetscErrorCode PVOutWritEnergRes(JacRes *jr, OutBuf *outbuf)
+PetscErrorCode PVOutWritEnergRes(OutVec* outvec)
 {
 	FDSTAG      *fs;
 	PetscScalar ***lbcen, ***ge;

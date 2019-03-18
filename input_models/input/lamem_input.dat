@@ -325,60 +325,51 @@
 # Geometric primitives:
 
 	<SphereStart>
-		phase  = 1
-		radius = 1.5
-		center = 1.0 2.0 3.0
-		
-		Temperature = 	constant  # optional: Temperature of the sphere. possibilities: [constant]
-		cstTemp     =   1000    # required in case of [constant]: temperature value [in Celcius in case of GEO units]
+		phase       = 1
+		radius      = 1.5
+		center      = 1.0 2.0 3.0
+		Temperature = constant # optional: Temperature of the sphere. possibilities: [constant]
+		cstTemp     = 1000     # required in case of [constant]: temperature value [in Celcius in case of GEO units]
 
 	<SphereEnd>
 
 	<BoxStart>
-		phase  = 1
-		
-		# box bound coordinates: left, right, front, back, bottom, top
-		bounds = 1.0 2.0 1.0 2.0 1.0 2.0
-		
-		Temperature = 	linear  # optional: Temperature structure. possibilities: [constant, linear, halfspace]
-		cstTemp     =   1000    # required in case of [constant]: temperature value [in Celcius in case of GEO units]
-		topTemp     =   0       # required in case of [linear,halfspace]: temperature @ top [in Celcius in case of GEO units]
-		botTemp     =   1300    # required in case of [linear,halfspace]: temperature @ bottom [in Celcius in case of GEO units]
-		thermalAge  =   70      # required in case of [halfspace]: thermal age of lithosphere [in Myrs if GEO units are used]
+		phase       = 1
+		bounds      = 1.0 2.0 1.0 2.0 1.0 2.0 # box bound coordinates: left, right, front, back, bottom, top
+		Temperature = linear  # optional: Temperature structure. possibilities: [constant, linear, halfspace]
+		cstTemp     = 1000    # required in case of [constant]: temperature value [in Celcius in case of GEO units]
+		topTemp     = 0       # required in case of [linear,halfspace]: temperature @ top [in Celcius in case of GEO units]
+		botTemp     = 1300    # required in case of [linear,halfspace]: temperature @ bottom [in Celcius in case of GEO units]
+		thermalAge  = 70      # required in case of [halfspace]: thermal age of lithosphere [in Myrs if GEO units are used]
 
 	<BoxEnd>
 
 	<HexStart>
-		phase  = 1
+		phase = 1
+		coord = 0.25 0.25 0.25   0.5 0.2 0.2   0.6 0.7 0.25   0.3 0.5 0.3   0.2 0.3 0.75   0.6 0.15 0.75   0.5 0.6 0.80   0.2 0.4 0.75
 		# x-y-z coordinates for each of 8 nodes (24 parameters)
 		# (counter)-clockwise for an arbitrary face, followed by the opposite face
-		coord = 0.25 0.25 0.25   0.5 0.2 0.2   0.6 0.7 0.25   0.3 0.5 0.3   0.2 0.3 0.75   0.6 0.15 0.75   0.5 0.6 0.80   0.2 0.4 0.75
 	<HexEnd>
 
 	<LayerStart>
-		phase  = 1
-		top    = 5.0
-		bottom = 3.0
-		
-			
-		Temperature = 	halfspace  # optional: Temperature structure. possibilities: [constant, linear, halfspace]
-		cstTemp     =   1000    # required in case of [constant]: temperature value [in Celcius in case of GEO units]
-		topTemp     =   0       # required in case of [linear,halfspace]: temperature @ top [in Celcius in case of GEO units]
-		botTemp     =   1300    # required in case of [linear,halfspace]: temperature @ bottom [in Celcius in case of GEO units]
-		thermalAge  =   70      # required in case of [halfspace]: thermal age of lithosphere [in Myrs if GEO units are used]
-
+		phase       = 1
+		top         = 5.0
+		bottom      = 3.0
+		Temperature = halfspace # optional: Temperature structure. possibilities: [constant, linear, halfspace]
+		cstTemp     = 1000      # required in case of [constant]: temperature value [in Celcius in case of GEO units]
+		topTemp     = 0         # required in case of [linear,halfspace]: temperature @ top [in Celcius in case of GEO units]
+		botTemp     = 1300      # required in case of [linear,halfspace]: temperature @ bottom [in Celcius in case of GEO units]
+		thermalAge  = 70        # required in case of [halfspace]: thermal age of lithosphere [in Myrs if GEO units are used]
 	<LayerEnd>
 
 	<CylinderStart>
-		phase  = 1
-		radius = 1.5
-		base   = 1.0 2.0 3.0
-		cap    = 3.0 5.0 7.0
-		
-		Temperature = 	constant  # optional: Temperature of the cylinder. possibilities: [constant]
-		cstTemp     =   1000    # required in case of [constant]: temperature value [in Celcius in case of GEO units]
+		phase       = 1
+		radius      = 1.5
+		base        = 1.0 2.0 3.0
+		cap         = 3.0 5.0 7.0
+		Temperature = constant # optional: Temperature of the cylinder. possibilities: [constant]
+		cstTemp     = 1000     # required in case of [constant]: temperature value [in Celcius in case of GEO units]
 	<CylinderEnd>
-
 
 #===============================================================================
 # Output
@@ -415,6 +406,16 @@
 	out_moment_res      = 1
 	out_cont_res        = 1
 	out_energ_res       = 1
+
+# Phase aggregate output paramter
+# Phase ratios of listed phases are summed up and output as a scalar vector
+# Phase aggregate can consist of a single phase
+
+	<PhaseAggStart>
+		name    = crust  # phase aggregate output vector name
+		num     = 3      # number of phases to aggregate
+		phaseID = 1 5 15 # list of phase IDs to aggregate
+	<PhaseAggEnd>
 
 # Free surface output options (can be activated only if surface tracking is enabled)
 

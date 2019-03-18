@@ -51,44 +51,74 @@ struct OutBuf;
 struct JacRes;
 
 //---------------------------------------------------------------------------
+//...........  Multi-component output vector data structure .................
+//---------------------------------------------------------------------------
 
-PetscErrorCode PVOutWritePhase       (JacRes*, OutBuf*);
-PetscErrorCode PVOutWriteDensity     (JacRes*, OutBuf*);
-PetscErrorCode PVOutWriteViscTotal   (JacRes*, OutBuf*);
-PetscErrorCode PVOutWriteViscCreep   (JacRes*, OutBuf*);
-PetscErrorCode PVOutWriteViscoPlastic(JacRes*, OutBuf*);
-PetscErrorCode PVOutWriteVelocity    (JacRes*, OutBuf*);
-PetscErrorCode PVOutWritePressure    (JacRes*, OutBuf*);
-PetscErrorCode PVOutWriteTotalPress  (JacRes*, OutBuf*);
-PetscErrorCode PVOutWriteEffPress    (JacRes*, OutBuf*);
-PetscErrorCode PVOutWriteOverPress   (JacRes*, OutBuf*);
-PetscErrorCode PVOutWriteLithoPress  (JacRes*, OutBuf*);
-PetscErrorCode PVOutWritePorePress   (JacRes*, OutBuf*);
-PetscErrorCode PVOutWriteTemperature (JacRes*, OutBuf*);
-PetscErrorCode PVOutWriteDevStress   (JacRes*, OutBuf*);
-PetscErrorCode PVOutWriteJ2DevStress (JacRes*, OutBuf*);
-PetscErrorCode PVOutWriteStrainRate  (JacRes*, OutBuf*);
-PetscErrorCode PVOutWriteJ2StrainRate(JacRes*, OutBuf*);
-PetscErrorCode PVOutWriteMeltFraction  (JacRes*, OutBuf*);
-PetscErrorCode PVOutWriteFluidDensity  (JacRes*, OutBuf*);
-PetscErrorCode PVOutWriteVolRate     (JacRes*, OutBuf*);
-PetscErrorCode PVOutWriteVorticity   (JacRes*, OutBuf*);
-PetscErrorCode PVOutWriteAngVelMag   (JacRes*, OutBuf*);
-PetscErrorCode PVOutWriteTotStrain   (JacRes*, OutBuf*);
-PetscErrorCode PVOutWritePlastStrain (JacRes*, OutBuf*);
-PetscErrorCode PVOutWritePlastDissip (JacRes*, OutBuf*);
-PetscErrorCode PVOutWriteTotDispl    (JacRes*, OutBuf*);
-PetscErrorCode PVOutWriteSHmax       (JacRes*, OutBuf*);
-PetscErrorCode PVOutWriteEHmax       (JacRes*, OutBuf*);
-PetscErrorCode PVOutWriteISA         (JacRes*, OutBuf*);
-PetscErrorCode PVOutWriteGOL         (JacRes*, OutBuf*);
-PetscErrorCode PVOutWriteYield       (JacRes*, OutBuf*);
+typedef struct OutVec OutVec;
+
+struct OutVec
+{
+	JacRes   *jr;
+	OutBuf   *outbuf;
+	char     *name;    // output vector name
+	PetscInt  ncomp;   // number of components
+
+//	PetscInt  phase_mask[max_num_phases];
+
+	PetscErrorCode (*OutVecWrite)(OutVec*); // output function pointer
+
+};
+
+void OutVecCreate(
+	OutVec         *outvec,
+	JacRes         *jr,
+	OutBuf         *outbuf,
+	const char     *name,
+	const char     *label,
+	PetscErrorCode (*OutVecWrite)(OutVec*),
+	PetscInt        ncomp);
+
+void OutVecDestroy(OutVec *outvec);
+
+//---------------------------------------------------------------------------
+
+PetscErrorCode PVOutWritePhase       (OutVec*);
+PetscErrorCode PVOutWriteDensity     (OutVec*);
+PetscErrorCode PVOutWriteViscTotal   (OutVec*);
+PetscErrorCode PVOutWriteViscCreep   (OutVec*);
+PetscErrorCode PVOutWriteViscoPlastic(OutVec*);
+PetscErrorCode PVOutWriteVelocity    (OutVec*);
+PetscErrorCode PVOutWritePressure    (OutVec*);
+PetscErrorCode PVOutWriteTotalPress  (OutVec*);
+PetscErrorCode PVOutWriteEffPress    (OutVec*);
+PetscErrorCode PVOutWriteOverPress   (OutVec*);
+PetscErrorCode PVOutWriteLithoPress  (OutVec*);
+PetscErrorCode PVOutWritePorePress   (OutVec*);
+PetscErrorCode PVOutWriteTemperature (OutVec*);
+PetscErrorCode PVOutWriteDevStress   (OutVec*);
+PetscErrorCode PVOutWriteJ2DevStress (OutVec*);
+PetscErrorCode PVOutWriteStrainRate  (OutVec*);
+PetscErrorCode PVOutWriteJ2StrainRate(OutVec*);
+PetscErrorCode PVOutWriteMeltFraction(OutVec*);
+PetscErrorCode PVOutWriteFluidDensity(OutVec*);
+PetscErrorCode PVOutWriteVolRate     (OutVec*);
+PetscErrorCode PVOutWriteVorticity   (OutVec*);
+PetscErrorCode PVOutWriteAngVelMag   (OutVec*);
+PetscErrorCode PVOutWriteTotStrain   (OutVec*);
+PetscErrorCode PVOutWritePlastStrain (OutVec*);
+PetscErrorCode PVOutWritePlastDissip (OutVec*);
+PetscErrorCode PVOutWriteTotDispl    (OutVec*);
+PetscErrorCode PVOutWriteSHmax       (OutVec*);
+PetscErrorCode PVOutWriteEHmax       (OutVec*);
+PetscErrorCode PVOutWriteISA         (OutVec*);
+PetscErrorCode PVOutWriteGOL         (OutVec*);
+PetscErrorCode PVOutWriteYield       (OutVec*);
 // === debug vectors ===============================================
-PetscErrorCode PVOutWriteMomentRes   (JacRes*, OutBuf*);
-PetscErrorCode PVOutWriteContRes     (JacRes*, OutBuf*);
-PetscErrorCode PVOutWritEnergRes     (JacRes*, OutBuf*);
-PetscErrorCode PVOutWriteMeltFraction(JacRes*, OutBuf*);
-PetscErrorCode PVOutWriteFluidDensity(JacRes*, OutBuf*);
+PetscErrorCode PVOutWriteMomentRes   (OutVec*);
+PetscErrorCode PVOutWriteContRes     (OutVec*);
+PetscErrorCode PVOutWritEnergRes     (OutVec*);
+PetscErrorCode PVOutWriteMeltFraction(OutVec*);
+PetscErrorCode PVOutWriteFluidDensity(OutVec*);
 
 // ... add more output functions here
 

@@ -43,6 +43,7 @@
 //........................   MARKER ROUTINES   ..............................
 //---------------------------------------------------------------------------
 #include <map>
+#include <utility>
 using namespace std;
 //---------------------------------------------------------------------------
 #include "LaMEM.h"
@@ -976,8 +977,6 @@ PetscErrorCode ADVMarkInitGeom(AdvCtx *actx, FB *fb)
 
 	ierr = FBFreeBlocks(fb); CHKERRQ(ierr);
 
-
-
 	//==========
 	// CYLINDERS
 	//==========
@@ -1016,7 +1015,7 @@ PetscErrorCode ADVMarkInitGeom(AdvCtx *actx, FB *fb)
 	// store pointers to primitives in the order of appearance in the file
 	for(it = cgeom.begin(), ie = cgeom.end(), ngeom = 0; it != ie; it++)
 	{
-		pgeom[ngeom++] = (*it).second;
+		pgeom[ngeom++] = it->second;
 	}
 
 	//==============

@@ -49,6 +49,7 @@
 #include "parsing.h"
 #include "fdstag.h"
 #include "JacRes.h"
+#include "phase.h"
 #include "outFunct.h"
 #include "tools.h"
 //---------------------------------------------------------------------------
@@ -282,31 +283,6 @@ PetscErrorCode OutBufZero3DVecComp(
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-//...........  Multi-component output vector data structure .................
-//---------------------------------------------------------------------------
-void OutVecCreate(
-	OutVec         *outvec,
-	const char     *name,
-	const char     *label,
-	OutVecFunctPtr  OutVecFunct,
-	PetscInt        ncomp)
-{
-	// store name
-	asprintf(&outvec->name, "%s %s", name, label);
-
-	// output function
-	outvec->OutVecFunct = OutVecFunct;
-
-	// number of components
-	outvec->ncomp = ncomp;
-
-}
-//---------------------------------------------------------------------------
-void OutVecDestroy(OutVec *outvec)
-{
-	free(outvec->name);
-}
-//---------------------------------------------------------------------------
 //.......................... Vector output mask .............................
 //---------------------------------------------------------------------------
 void OutMaskSetDefault(OutMask *omask)
@@ -416,6 +392,35 @@ PetscErrorCode PVOutCreate(PVOut *pvout, FB *fb)
 	ierr = getIntParam   (fb, _OPTIONAL_, "out_melt_fraction",  &omask->melt_fraction,     1, 1); CHKERRQ(ierr);
 	ierr = getIntParam   (fb, _OPTIONAL_, "out_fluid_density",  &omask->fluid_density,     1, 1); CHKERRQ(ierr);
 
+
+	ierr = FBFindBlocks(fb, _OPTIONAL_, "<PhaseAggStart>", "<PhaseAggEnd>"); CHKERRQ(ierr);
+
+/*
+	PetsInt jj;
+
+	for(jj = 0; jj < fb->nblocks; jj++)
+	{
+		GET_GEOM(hex, geom, ngeom, _max_geom_);
+
+		ierr = getIntParam   (fb, _REQUIRED_, "phase",  &hex->phase, 1,  maxPhaseID); CHKERRQ(ierr);
+		ierr = getScalarParam(fb, _REQUIRED_, "coord",   hex->coord, 24, chLen);      CHKERRQ(ierr);
+
+		// compute bounding box
+		HexGetBoundingBox(hex->coord, hex->bounds);
+
+		hex->setPhase = setPhaseHex;
+
+
+	}
+
+	ierr = FBFreeBlocks(fb); CHKERRQ(ierr);
+*/
+
+
+
+
+
+
 	// check
 	if(!pvout->jr->ctrl.actTemp)             omask->energ_res = 0; // heat diffusion is deactivated
 	if( pvout->jr->ctrl.gwType == _GW_NONE_) omask->eff_press = 0; // pore pressure is deactivated
@@ -472,6 +477,7 @@ PetscErrorCode PVOutCreate(PVOut *pvout, FB *fb)
 PetscErrorCode PVOutCreateData(PVOut *pvout)
 {
 	JacRes   *jr;
+	OutBuf   *outbuf;
 	Scaling  *scal;
 	OutMask  *omask;
 	PetscInt  iter;
@@ -479,48 +485,49 @@ PetscErrorCode PVOutCreateData(PVOut *pvout)
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
 
-	jr    =  pvout->jr;
-	scal  =  jr->scal;
-	omask = &pvout->omask;
-	iter  =  0;
+	jr     =  pvout->jr;
+	outbuf = &pvout->outbuf;
+	omask  = &pvout->omask;
+	scal   =  jr->scal;
+	iter   =  0;
 
 	// create vectors
 	ierr = PetscMalloc(sizeof(OutVec)*(size_t)pvout->nvec, &pvout->outvecs); CHKERRQ(ierr);
 
-	if(omask->phase)          OutVecCreate(&pvout->outvecs[iter++], "phase",          scal->lbl_unit,             &PVOutWritePhase,        1);
-	if(omask->density)        OutVecCreate(&pvout->outvecs[iter++], "density",        scal->lbl_density,          &PVOutWriteDensity,      1);
-	if(omask->visc_total)     OutVecCreate(&pvout->outvecs[iter++], "visc_total",     scal->lbl_viscosity,        &PVOutWriteViscTotal,    1);
-	if(omask->visc_creep)     OutVecCreate(&pvout->outvecs[iter++], "visc_creep",     scal->lbl_viscosity,        &PVOutWriteViscCreep,    1);
-	if(omask->visc_plast)     OutVecCreate(&pvout->outvecs[iter++], "visc_plast",     scal->lbl_viscosity,        &PVOutWriteViscoPlastic, 1);
-	if(omask->velocity)       OutVecCreate(&pvout->outvecs[iter++], "velocity",       scal->lbl_velocity,         &PVOutWriteVelocity,     3);
-	if(omask->pressure)       OutVecCreate(&pvout->outvecs[iter++], "pressure",       scal->lbl_stress,           &PVOutWritePressure,     1);
-	if(omask->eff_press)      OutVecCreate(&pvout->outvecs[iter++], "eff_press",      scal->lbl_stress,           &PVOutWriteEffPress,     1);
-	if(omask->over_press)     OutVecCreate(&pvout->outvecs[iter++], "over_press",     scal->lbl_stress,           &PVOutWriteOverPress,    1);
-	if(omask->litho_press)    OutVecCreate(&pvout->outvecs[iter++], "litho_press",    scal->lbl_stress,           &PVOutWriteLithoPress,   1);
-	if(omask->pore_press)     OutVecCreate(&pvout->outvecs[iter++], "pore_press",     scal->lbl_stress,           &PVOutWritePorePress,    1);
-	if(omask->temperature)    OutVecCreate(&pvout->outvecs[iter++], "temperature",    scal->lbl_temperature,      &PVOutWriteTemperature,  1);
-	if(omask->dev_stress)     OutVecCreate(&pvout->outvecs[iter++], "dev_stress",     scal->lbl_stress,           &PVOutWriteDevStress,    9);
-	if(omask->strain_rate)    OutVecCreate(&pvout->outvecs[iter++], "strain_rate",    scal->lbl_strain_rate,      &PVOutWriteStrainRate,   9);
-	if(omask->j2_dev_stress)  OutVecCreate(&pvout->outvecs[iter++], "j2_dev_stress",  scal->lbl_stress,           &PVOutWriteJ2DevStress,  1);
-	if(omask->j2_strain_rate) OutVecCreate(&pvout->outvecs[iter++], "j2_strain_rate", scal->lbl_strain_rate,      &PVOutWriteJ2StrainRate, 1);
-	if(omask->vol_rate)       OutVecCreate(&pvout->outvecs[iter++], "vol_rate",       scal->lbl_strain_rate,      &PVOutWriteVolRate,      1);
-	if(omask->vorticity)      OutVecCreate(&pvout->outvecs[iter++], "vorticity",      scal->lbl_strain_rate,      &PVOutWriteVorticity,    3);
-	if(omask->ang_vel_mag)    OutVecCreate(&pvout->outvecs[iter++], "ang_vel_mag",    scal->lbl_angular_velocity, &PVOutWriteAngVelMag,    1);
-	if(omask->tot_strain)     OutVecCreate(&pvout->outvecs[iter++], "tot_strain",     scal->lbl_unit,             &PVOutWriteTotStrain,    1);
-	if(omask->plast_strain)   OutVecCreate(&pvout->outvecs[iter++], "plast_strain",   scal->lbl_unit,             &PVOutWritePlastStrain,  1);
-	if(omask->plast_dissip)   OutVecCreate(&pvout->outvecs[iter++], "plast_dissip",   scal->lbl_dissipation_rate, &PVOutWritePlastDissip,  1);
-	if(omask->tot_displ)      OutVecCreate(&pvout->outvecs[iter++], "tot_displ",      scal->lbl_length,           &PVOutWriteTotDispl,     3);
-	if(omask->SHmax)          OutVecCreate(&pvout->outvecs[iter++], "SHmax",          scal->lbl_unit,             &PVOutWriteSHmax,        3);
-	if(omask->EHmax)          OutVecCreate(&pvout->outvecs[iter++], "EHmax",          scal->lbl_unit,             &PVOutWriteEHmax,        3);
-	if(omask->ISA)            OutVecCreate(&pvout->outvecs[iter++], "ISA",            scal->lbl_unit,             &PVOutWriteISA,          3);
-	if(omask->GOL)            OutVecCreate(&pvout->outvecs[iter++], "GOL",            scal->lbl_unit,             &PVOutWriteGOL,          1);
-	if(omask->yield)          OutVecCreate(&pvout->outvecs[iter++], "yield",          scal->lbl_stress,           &PVOutWriteYield,        1);
+	if(omask->phase)          OutVecCreate(&pvout->outvecs[iter++], jr, outbuf, "phase",          scal->lbl_unit,             &PVOutWritePhase,        1);
+	if(omask->density)        OutVecCreate(&pvout->outvecs[iter++], jr, outbuf, "density",        scal->lbl_density,          &PVOutWriteDensity,      1);
+	if(omask->visc_total)     OutVecCreate(&pvout->outvecs[iter++], jr, outbuf, "visc_total",     scal->lbl_viscosity,        &PVOutWriteViscTotal,    1);
+	if(omask->visc_creep)     OutVecCreate(&pvout->outvecs[iter++], jr, outbuf, "visc_creep",     scal->lbl_viscosity,        &PVOutWriteViscCreep,    1);
+	if(omask->visc_plast)     OutVecCreate(&pvout->outvecs[iter++], jr, outbuf, "visc_plast",     scal->lbl_viscosity,        &PVOutWriteViscoPlastic, 1);
+	if(omask->velocity)       OutVecCreate(&pvout->outvecs[iter++], jr, outbuf, "velocity",       scal->lbl_velocity,         &PVOutWriteVelocity,     3);
+	if(omask->pressure)       OutVecCreate(&pvout->outvecs[iter++], jr, outbuf, "pressure",       scal->lbl_stress,           &PVOutWritePressure,     1);
+	if(omask->eff_press)      OutVecCreate(&pvout->outvecs[iter++], jr, outbuf, "eff_press",      scal->lbl_stress,           &PVOutWriteEffPress,     1);
+	if(omask->over_press)     OutVecCreate(&pvout->outvecs[iter++], jr, outbuf, "over_press",     scal->lbl_stress,           &PVOutWriteOverPress,    1);
+	if(omask->litho_press)    OutVecCreate(&pvout->outvecs[iter++], jr, outbuf, "litho_press",    scal->lbl_stress,           &PVOutWriteLithoPress,   1);
+	if(omask->pore_press)     OutVecCreate(&pvout->outvecs[iter++], jr, outbuf, "pore_press",     scal->lbl_stress,           &PVOutWritePorePress,    1);
+	if(omask->temperature)    OutVecCreate(&pvout->outvecs[iter++], jr, outbuf, "temperature",    scal->lbl_temperature,      &PVOutWriteTemperature,  1);
+	if(omask->dev_stress)     OutVecCreate(&pvout->outvecs[iter++], jr, outbuf, "dev_stress",     scal->lbl_stress,           &PVOutWriteDevStress,    9);
+	if(omask->strain_rate)    OutVecCreate(&pvout->outvecs[iter++], jr, outbuf, "strain_rate",    scal->lbl_strain_rate,      &PVOutWriteStrainRate,   9);
+	if(omask->j2_dev_stress)  OutVecCreate(&pvout->outvecs[iter++], jr, outbuf, "j2_dev_stress",  scal->lbl_stress,           &PVOutWriteJ2DevStress,  1);
+	if(omask->j2_strain_rate) OutVecCreate(&pvout->outvecs[iter++], jr, outbuf, "j2_strain_rate", scal->lbl_strain_rate,      &PVOutWriteJ2StrainRate, 1);
+	if(omask->vol_rate)       OutVecCreate(&pvout->outvecs[iter++], jr, outbuf, "vol_rate",       scal->lbl_strain_rate,      &PVOutWriteVolRate,      1);
+	if(omask->vorticity)      OutVecCreate(&pvout->outvecs[iter++], jr, outbuf, "vorticity",      scal->lbl_strain_rate,      &PVOutWriteVorticity,    3);
+	if(omask->ang_vel_mag)    OutVecCreate(&pvout->outvecs[iter++], jr, outbuf, "ang_vel_mag",    scal->lbl_angular_velocity, &PVOutWriteAngVelMag,    1);
+	if(omask->tot_strain)     OutVecCreate(&pvout->outvecs[iter++], jr, outbuf, "tot_strain",     scal->lbl_unit,             &PVOutWriteTotStrain,    1);
+	if(omask->plast_strain)   OutVecCreate(&pvout->outvecs[iter++], jr, outbuf, "plast_strain",   scal->lbl_unit,             &PVOutWritePlastStrain,  1);
+	if(omask->plast_dissip)   OutVecCreate(&pvout->outvecs[iter++], jr, outbuf, "plast_dissip",   scal->lbl_dissipation_rate, &PVOutWritePlastDissip,  1);
+	if(omask->tot_displ)      OutVecCreate(&pvout->outvecs[iter++], jr, outbuf, "tot_displ",      scal->lbl_length,           &PVOutWriteTotDispl,     3);
+	if(omask->SHmax)          OutVecCreate(&pvout->outvecs[iter++], jr, outbuf, "SHmax",          scal->lbl_unit,             &PVOutWriteSHmax,        3);
+	if(omask->EHmax)          OutVecCreate(&pvout->outvecs[iter++], jr, outbuf, "EHmax",          scal->lbl_unit,             &PVOutWriteEHmax,        3);
+	if(omask->ISA)            OutVecCreate(&pvout->outvecs[iter++], jr, outbuf, "ISA",            scal->lbl_unit,             &PVOutWriteISA,          3);
+	if(omask->GOL)            OutVecCreate(&pvout->outvecs[iter++], jr, outbuf, "GOL",            scal->lbl_unit,             &PVOutWriteGOL,          1);
+	if(omask->yield)          OutVecCreate(&pvout->outvecs[iter++], jr, outbuf, "yield",          scal->lbl_stress,           &PVOutWriteYield,        1);
 	// === debugging vectors ===============================================
-	if(omask->melt_fraction)  OutVecCreate(&pvout->outvecs[iter++], "melt_fraction",  scal->lbl_unit,             &PVOutWriteMeltFraction, 1);
-	if(omask->fluid_density)  OutVecCreate(&pvout->outvecs[iter++], "fluid_density",  scal->lbl_density,	      &PVOutWriteFluidDensity, 1);
-	if(omask->moment_res)     OutVecCreate(&pvout->outvecs[iter++], "moment_res",     scal->lbl_volumetric_force, &PVOutWriteMomentRes,    3);
-	if(omask->cont_res)       OutVecCreate(&pvout->outvecs[iter++], "cont_res",       scal->lbl_strain_rate,      &PVOutWriteContRes,      1);
-	if(omask->energ_res)      OutVecCreate(&pvout->outvecs[iter++], "energ_res",      scal->lbl_dissipation_rate, &PVOutWritEnergRes,      1);
+	if(omask->melt_fraction)  OutVecCreate(&pvout->outvecs[iter++], jr, outbuf, "melt_fraction",  scal->lbl_unit,             &PVOutWriteMeltFraction, 1);
+	if(omask->fluid_density)  OutVecCreate(&pvout->outvecs[iter++], jr, outbuf, "fluid_density",  scal->lbl_density,	      &PVOutWriteFluidDensity, 1);
+	if(omask->moment_res)     OutVecCreate(&pvout->outvecs[iter++], jr, outbuf, "moment_res",     scal->lbl_volumetric_force, &PVOutWriteMomentRes,    3);
+	if(omask->cont_res)       OutVecCreate(&pvout->outvecs[iter++], jr, outbuf, "cont_res",       scal->lbl_strain_rate,      &PVOutWriteContRes,      1);
+	if(omask->energ_res)      OutVecCreate(&pvout->outvecs[iter++], jr, outbuf, "energ_res",      scal->lbl_dissipation_rate, &PVOutWritEnergRes,      1);
 
 	// create output buffer
 	ierr = OutBufCreate(&pvout->outbuf, jr); CHKERRQ(ierr);
@@ -749,7 +756,7 @@ PetscErrorCode PVOutWriteVTR(PVOut *pvout, const char *dirName)
 	for(i = 0; i < pvout->nvec; i++)
 	{
 		// compute each output vector using its own setup function
-		ierr = outvecs[i].OutVecFunct(jr, outbuf); CHKERRQ(ierr);
+		ierr = outvecs[i].OutVecWrite(&outvecs[i]); CHKERRQ(ierr);
 		// write vector to output file
 		OutBufDump(outbuf);
 	}

@@ -80,6 +80,7 @@ struct FB;
 struct FDSTAG;
 struct JacRes;
 struct Discret1D;
+struct OutVec;
 
 //---------------------------------------------------------------------------
 //............................. Output buffer ...............................
@@ -123,32 +124,6 @@ PetscErrorCode OutBufZero3DVecComp(
 	OutBuf      *outbuf,
 	PetscInt     ncomp,  // number of components
 	PetscInt     dir);   // component identifier
-
-//---------------------------------------------------------------------------
-// ...................  Vector output function pointer ......................
-//---------------------------------------------------------------------------
-
-typedef PetscErrorCode (*OutVecFunctPtr)(JacRes*, OutBuf*);
-
-//---------------------------------------------------------------------------
-//...........  Multi-component output vector data structure .................
-//---------------------------------------------------------------------------
-struct OutVec
-{
-	char          *name;        // output vector name
-	OutVecFunctPtr OutVecFunct; // pointer to vector output function
-	PetscInt       ncomp;       // number of components
-
-};
-//---------------------------------------------------------------------------
-void OutVecCreate(
-	OutVec         *outvec,
-	const char     *name,
-	const char     *label,
-	OutVecFunctPtr  OutVecFunct,
-	PetscInt        ncomp);
-
-void OutVecDestroy(OutVec *outvec);
 
 //---------------------------------------------------------------------------
 //.......................... Vector output mask .............................
