@@ -412,9 +412,9 @@
 # Phase aggregate can consist of a single phase
 
 	<PhaseAggStart>
-		name    = crust  # phase aggregate output vector name
-		num     = 3      # number of phases to aggregate
-		phaseID = 1 5 15 # list of phase IDs to aggregate
+		name     = crust  # phase aggregate output vector name
+		numPhase = 3      # number of phases to aggregate
+		phaseID  = 1 5 15 # list of phase IDs to aggregate
 	<PhaseAggEnd>
 
 # Free surface output options (can be activated only if surface tracking is enabled)

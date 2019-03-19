@@ -116,11 +116,6 @@
 #define INTERPOLATE_ACCESS(vec, IFUNCT, ncomp, dir, shift) \
 	ierr = IFUNCT(outbuf->fs, vec, outbuf->lbcor, iflag); CHKERRQ(ierr); \
 	ierr = OutBufPut3DVecComp(outbuf, ncomp, dir, cf, shift); CHKERRQ(ierr);
-
-//---------------------------------------------------------------------------
-//...........  Multi-component output vector data structure .................
-//---------------------------------------------------------------------------
-
 //---------------------------------------------------------------------------
 //...........  Multi-component output vector data structure .................
 //---------------------------------------------------------------------------
@@ -131,26 +126,38 @@ void OutVecCreate(
 	const char     *name,
 	const char     *label,
 	PetscErrorCode (*OutVecWrite)(OutVec*),
-	PetscInt        ncomp)
+	PetscInt        num,
+	PetscInt       *phase_ID)
 {
-	// store context
+	PetscInt i;
+
+	// context
 	outvec->jr     = jr;
 	outvec->outbuf = outbuf;
 
 	// store name
-	asprintf(&outvec->name, "%s %s", name, label);
+	sprintf(outvec->name, "%s %s", name, label);
 
-	// number of components
-	outvec->ncomp = ncomp;
+	// phase mask for phase aggregate
+	if(phase_ID)
+	{
+		// set number of components
+		outvec->ncomp = 1;
+
+		// setup phase mask
+		for(i = 0; i < num; i++)
+		{
+			outvec->phase_mask[phase_ID[i]] = 1;
+		}
+	}
+	else
+	{
+		// set number of components
+		outvec->ncomp = num;
+	}
 
 	// output function pointer
 	outvec->OutVecWrite = OutVecWrite;
-
-}
-//---------------------------------------------------------------------------
-void OutVecDestroy(OutVec *outvec)
-{
-	free(outvec->name);
 }
 //---------------------------------------------------------------------------
 #undef __FUNCT__
@@ -179,6 +186,35 @@ PetscErrorCode PVOutWritePhase(OutVec* outvec)
 	numPhases = jr->dbm->numPhases;
 
 	INTERPOLATE_COPY(fs->DA_CEN, outbuf->lbcen, InterpCenterCorner, GET_PHASE, 1, 0)
+
+	PetscFunctionReturn(0);
+}
+//---------------------------------------------------------------------------
+#undef __FUNCT__
+#define __FUNCT__ "PVOutWritePhaseAgg"
+PetscErrorCode PVOutWritePhaseAgg(OutVec* outvec)
+{
+	PetscScalar *phRat, agg;
+	PetscInt     jj, numPhases, *phase_mask;
+
+	COPY_FUNCTION_HEADER
+
+	// macro to copy aggregated phase ratio to buffer
+	#define GET_PHASE_AGG \
+		phRat = jr->svCell[iter++].phRat; \
+		agg   = 0.0; \
+		for(jj = 0; jj < numPhases; jj++) \
+			if(phase_mask[jj]) agg += phRat[jj]; \
+		buff[k][j][i] = agg;
+
+	// no scaling is necessary for the phase
+	cf = scal->unit;
+
+	// access material parameters
+	numPhases  = jr->dbm->numPhases;
+	phase_mask = outvec->phase_mask;
+
+	INTERPOLATE_COPY(fs->DA_CEN, outbuf->lbcen, InterpCenterCorner, GET_PHASE_AGG, 1, 0)
 
 	PetscFunctionReturn(0);
 }

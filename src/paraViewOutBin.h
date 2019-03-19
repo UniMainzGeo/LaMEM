@@ -160,7 +160,14 @@ struct OutMask
 	PetscInt cont_res;       // continuity residual
 	PetscInt energ_res;      // energy residual
 
+	// phase aggregates
+	PetscInt num_agg;                                              // number of phase aggregates
+	char     agg_name     [_max_num_phase_agg_][_str_len_];        // names
+	PetscInt agg_num_phase[_max_num_phase_agg_];                   // number of phases
+	PetscInt agg_phase_ID [_max_num_phase_agg_][_max_num_phases_]; // phase IDs
+
 };
+
 //---------------------------------------------------------------------------
 
 void OutMaskSetDefault(OutMask *omask);

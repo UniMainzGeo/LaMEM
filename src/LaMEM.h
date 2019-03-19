@@ -102,7 +102,7 @@
 // maximum number of geometry primitives
 #define _max_geom_ 100
 
-// maximum number of obervational types
+// maximum number of observation types
 #define _max_num_obs_ 7
 
 // maximum number of components in the output vector (3D)
@@ -110,6 +110,9 @@
 
 // maximum number of components in the output vector (surface)
 #define _max_num_comp_surf_ 3
+
+// maximum number of phase aggregates for output
+#define _max_num_phase_agg_ 5
 
 // maximum number of phases
 #define _max_num_phases_ 32
@@ -123,7 +126,7 @@
 // maximum grid size of phase diagram
 #define _max_pd_sz_ 40100
 
-// length of the unique face diagram name
+// length of unique phase diagram name
 #define _pd_name_sz_ 54
 
 // length of scaling unit label
@@ -135,7 +138,7 @@
 // maximum number of adjoint parameters
 #define _max_adj_par_ 50
 
-// maximum number of adjoint parameters
+// maximum number of adjoint points
 #define _max_adj_point_ 100
 
 // cast macros
