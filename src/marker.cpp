@@ -109,11 +109,11 @@ PetscErrorCode ADVMarkInit(AdvCtx *actx, FB *fb)
 	// linear gradient
 	ierr = ADVMarkSetTempGrad(actx); CHKERRQ(ierr);
 
-	// phase-based
-	ierr = ADVMarkSetTempPhase(actx); CHKERRQ(ierr);
-
 	// from file
 	ierr = ADVMarkSetTempFile(actx, fb); CHKERRQ(ierr);
+
+	// phase-based
+	ierr = ADVMarkSetTempPhase(actx); CHKERRQ(ierr);
 
 	// Load phase diagrams for the phases where it is required + interpolate the reference density for the first timestep
 	LoadPhaseDiagrams = PETSC_FALSE;
