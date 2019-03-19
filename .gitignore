@@ -1,7 +1,7 @@
-/.gitignore 
-/bin/ 
-/dep/ 
-/lib/ 
-/.cproject 
+/.gitignore
+/bin/
+/dep/
+/lib/
+/.cproject
 /.project
 /.vscode
