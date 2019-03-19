@@ -62,7 +62,7 @@ PetscErrorCode JacResCreate(JacRes *jr, FB *fb)
 	Scaling    *scal;
 	Controls   *ctrl;
 	PetscScalar input_eta_max, gx, gy, gz;
-	char        gwtype [_STR_LEN_];
+	char        gwtype [_str_len_];
 	PetscInt    i, cnt, numPhases;
 	PetscInt    is_elastic, need_DII_ref, need_RUGC, need_rho_fluid, need_surf, need_gw_type;
 

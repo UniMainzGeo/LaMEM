@@ -165,7 +165,7 @@ PetscInt TSSolIsDone(TSSol *ts)
 //  This doesn't seem to be used here
 //	PetscScalar timestep_sign
 //	PetscBool      found;
-//	char           str[_STR_LEN_];
+//	char           str[_str_len_];
 //	PetscOptionsGetCheckString("-mode", str, &found);
 //	timestep_sign = 1.0;
 //	if(found)
@@ -271,7 +271,7 @@ PetscErrorCode TSSolGetCFLStep(
 	Scaling     *scal;
 	PetscScalar  dt_cfl, dt_cfl_max, timestep_sign;
 	PetscBool    found;
-	char         str[_STR_LEN_];
+	char         str[_str_len_];
 
 	PetscFunctionBegin;
 

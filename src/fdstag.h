@@ -47,20 +47,6 @@
 #define __fdstag_h__
 //---------------------------------------------------------------------------
 
-// maximum number of mesh segments in every direction
-#define MaxNumSegs 10
-
-// maximum number of cells per mesh segment
-#define MaxNumCells 4096
-
-// maximum number of processes in every direction
-#define MaxNumProcs 1024
-
-// FDSTAG near null space size
-#define _max_nullsp_sz_ 4
-
-//---------------------------------------------------------------------------
-
 struct FB;
 struct Scaling;
 
@@ -71,9 +57,9 @@ struct Scaling;
 struct MeshSeg1D
 {
 	PetscInt    nsegs;                // number of segments
-	PetscInt    istart[MaxNumSegs+1]; // indices of the first nodes plus last index
-	PetscScalar xstart[MaxNumSegs+1]; // coordinates of the first nodes plus total size
-	PetscScalar biases[MaxNumSegs  ]; // biases for each segment
+	PetscInt    istart[_max_num_segs_+1]; // indices of the first nodes plus last index
+	PetscScalar xstart[_max_num_segs_+1]; // coordinates of the first nodes plus total size
+	PetscScalar biases[_max_num_segs_  ]; // biases for each segment
 	PetscInt    tcels;                // total number of cells
 	PetscInt    uniform;              // uniform grid flag
 

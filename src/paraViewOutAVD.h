@@ -196,7 +196,7 @@ void AVD3DUpdateChain(AVD3D A,const PetscInt p_i);
 struct PVAVD
 {
 	AdvCtx    *actx;              // advection context
-	char      outfile[_STR_LEN_]; // output file name
+	char      outfile[_str_len_]; // output file name
 	long int  offset;             // pvd file offset
 	PetscInt  outavd;             // AVD output flag
 	PetscInt  refine;             // Voronoi Diagram refinement factor

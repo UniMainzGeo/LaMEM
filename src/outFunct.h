@@ -63,7 +63,7 @@ struct OutVec
 	char     *name;    // output vector name
 	PetscInt  ncomp;   // number of components
 
-//	PetscInt  phase_mask[max_num_phases];
+//	PetscInt  phase_mask[_max_num_phases_];
 
 	PetscErrorCode (*OutVecWrite)(OutVec*); // output function pointer
 

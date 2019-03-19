@@ -255,7 +255,7 @@ PetscErrorCode ADVMarkSave(AdvCtx *actx)
 	Marker         *P;
 	PetscViewer    view_out;
 	PetscLogDouble t;
-	char           *filename, path[_STR_LEN_];
+	char           *filename, path[_str_len_];
 	PetscScalar    *markbuf, *markptr, header, chLen, chTemp, Tshift, s_nummark;
 
 	PetscErrorCode ierr;
@@ -496,7 +496,7 @@ PetscErrorCode ADVMarkSetTempPhase(AdvCtx *actx)
 	Material_t  *phases;
 	Marker      *P;
 	PetscInt     i, n, phase_set, imark, nummark;
-	PetscScalar  phase_temp[max_num_phases];
+	PetscScalar  phase_temp[_max_num_phases_];
 
 	PetscFunctionBegin;
 
@@ -536,7 +536,7 @@ PetscErrorCode ADVMarkSetTempFile(AdvCtx *actx, FB *fb)
 	Marker         *P;
 	PetscViewer    view_in;
 	PetscLogDouble t;
-	char           filename[_STR_LEN_];
+	char           filename[_str_len_];
 	PetscScalar    header[2], dim[3];
 	PetscInt       Fsize, imark, nummark, nmarkx, nmarky, nmarkz;
 	PetscScalar    DX, DY, DZ, bx, by, bz, ex, ey, ez;
@@ -731,7 +731,7 @@ PetscErrorCode ADVMarkInitFiles(AdvCtx *actx, FB *fb)
 	Marker         *P;
 	PetscViewer    view_in;
 	PetscLogDouble t;
-	char           *filename, file[_STR_LEN_];
+	char           *filename, file[_str_len_];
 	PetscScalar    *markbuf, *markptr, header, chTemp, chLen, Tshift, s_nummark;
 	PetscInt       imark, nummark;
 
@@ -804,7 +804,7 @@ PetscErrorCode ADVMarkInitGeom(AdvCtx *actx, FB *fb)
 	Marker         *P;
 	PetscLogDouble t;
 	PetscScalar    chLen, chTime, chTemp;
-	char 		   TemperatureStructure[_STR_LEN_];
+	char 		   TemperatureStructure[_str_len_];
 	PetscInt       jj, ngeom, imark, maxPhaseID;
 	GeomPrim       geom[_max_geom_], *pgeom[_max_geom_], *sphere, *box, *hex, *layer, *cylinder;
 
@@ -1052,7 +1052,7 @@ PetscErrorCode ADVMarkInitPolygons(AdvCtx *actx, FB *fb)
 	FDSTAG        *fs;
 	int            fd;
 	PetscViewer    view_in;
-	char           filename[_STR_LEN_];
+	char           filename[_str_len_];
 	PetscScalar    header[2];
 	PetscInt       tstart[3], tend[3], nmark[3], nidx[3], nidxmax;
 	PetscInt       k, n, kvol, Fcount, Fsize, VolN, Nmax, Lmax, kpoly;
@@ -1412,7 +1412,7 @@ PetscErrorCode LoadPhaseDiagram(AdvCtx *actx, Material_t  *phases, PetscInt i)
 	FILE          *fp;
     PetscInt       i_pd,j,ij,lineStart,n,found, NumberOfPhaseDiagramProperties;
     PetscScalar    fl[2];
-    char           buf[1000],name[_STR_LEN_];
+    char           buf[1000],name[_str_len_];
     PData         *pd;
     Scaling       *scal;
    
@@ -1423,7 +1423,7 @@ PetscErrorCode LoadPhaseDiagram(AdvCtx *actx, Material_t  *phases, PetscInt i)
 
 	found = 0;
 	// Get the next empty row in the buffer
-	for(j=0; j<max_num_pd; j++)
+	for(j=0; j<_max_num_pd_; j++)
 	{
 		if(!pd->rho_pdns[0][j])
 		{
@@ -1435,7 +1435,7 @@ PetscErrorCode LoadPhaseDiagram(AdvCtx *actx, Material_t  *phases, PetscInt i)
 		{
 			found 	= 1;
 			// Check if we have this diagram already in the buffer
-			for(ij=0; ij<max_name; ij++)
+			for(ij=0; ij<_pd_name_sz_; ij++)
 			{
 				if((pd->rho_pdns[ij][j] != phases[i].pdn[ij]))
 				{
@@ -1562,7 +1562,7 @@ PetscErrorCode LoadPhaseDiagram(AdvCtx *actx, Material_t  *phases, PetscInt i)
 	}
 
 	// Interpolate the name
-	for(j=0; j<max_name; j++)
+	for(j=0; j<_pd_name_sz_; j++)
 	{
 		pd->rho_pdns[j][i_pd] = phases[i].pdn[j];
 	}

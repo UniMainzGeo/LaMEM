@@ -60,14 +60,20 @@ int main(int argc, char **argv)
 	// Initialize PETSC
 	ierr = PetscInitialize(&argc,&argv,(char *)0, help); CHKERRQ(ierr);
 
-	ModParam        IOparam;
-	FB             *fb;
+	ModParam IOparam;
+	FB       *fb;
 
 	// set default to be a forward run and overwrite it with input file options
-	IOparam.use        = 0;   		// 0 = forward run ; 1 = Neighbourhood algorithm (requires NAPlus) ; 2 = only compute adjoint gradients ; 3 = 'full' adjoint inversion with TAO ; 4 = assume this as a forward simulation and save the solution
-	ierr = FBLoad(&fb, PETSC_FALSE); CHKERRQ(ierr);
-	ierr = getIntParam   (fb, _OPTIONAL_, "Inv_use"       , &IOparam.use,       1, 4        ); CHKERRQ(ierr);
 
+	// 0 = forward run
+	// 1 = Neighbourhood algorithm (requires NAPlus)
+	// 2 = only compute adjoint gradients
+	// 3 = 'full' adjoint inversion with TAO
+	// 4 = assume this as a forward simulation and save the solution
+
+	IOparam.use = 0;
+	ierr = FBLoad(&fb, PETSC_FALSE); CHKERRQ(ierr);
+	ierr = getIntParam (fb, _OPTIONAL_, "Inv_use", &IOparam.use, 1, 4); CHKERRQ(ierr);
 	
 	if(IOparam.use == 0)
 	{
@@ -91,19 +97,4 @@ int main(int argc, char **argv)
 	return 0;
 }
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+//--------------------------------------------------------------------------

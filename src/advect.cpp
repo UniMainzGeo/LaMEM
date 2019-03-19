@@ -82,7 +82,7 @@ PetscErrorCode ADVCreate(AdvCtx *actx, FB *fb)
 	PetscInt maxPhaseID, nmarkCell;
 	PetscInt nmark_lim[ ] = { 0, 0    };
 	PetscInt nmark_avd[ ] = { 0, 0, 0 };
-	char     msetup[_STR_LEN_], interp[_STR_LEN_], mctrl[_STR_LEN_];
+	char     msetup[_str_len_], interp[_str_len_], mctrl[_str_len_];
 
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
@@ -258,7 +258,7 @@ PetscErrorCode ADVCreate(AdvCtx *actx, FB *fb)
 PetscErrorCode ADVSetType(AdvCtx *actx, FB *fb)
 {
 	PetscInt maxPhaseID;
-	char     advect[_STR_LEN_];
+	char     advect[_str_len_];
 
 	PetscErrorCode ierr;
 	PetscFunctionBegin;

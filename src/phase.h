@@ -46,19 +46,6 @@
 #define __phase_h__
 //---------------------------------------------------------------------------
 
-// max number of phases
-#define max_num_phases 32
-
-// max number of soft laws
-#define max_num_soft   10
-
-// maximums for Pds
-#define max_num_pd    8     // max no of phase diagrams
-#define max_num_ro    40100  // max grid size of Pd
-#define max_name      54     // Length of the unique face diagram name
-
-//---------------------------------------------------------------------------
-
 struct Scaling;
 struct FB;
 struct JacRes;
@@ -127,8 +114,8 @@ public:
 	PetscScalar  A;        // radiogenic heat production                 [W/kg]
 	PetscScalar  T;        // optional temperature to set within the phase
 	// Phase diagram
-	char         pdn[max_name];   // Unique phase diagram number
-	char         pdf[max_name];   // Unique phase diagram number
+	char         pdn[_pd_name_sz_];   // Unique phase diagram number
+	char         pdf[_pd_name_sz_];   // Unique phase diagram number
 	PetscInt     Pd_rho;          // density from phase diagram?
 };
 
@@ -141,27 +128,27 @@ struct PData
 	// Stores data related to Phase Diagrams
 
 	// Size of the phase diagram in P-T space
-	PetscScalar  minT[max_num_pd];                      // minimum temperature of diagram
-	PetscScalar  maxT[max_num_pd];                      // maximum temperature of diagram
-	PetscScalar  dT[max_num_pd];                        // temperature increment
-	PetscInt     nT[max_num_pd];                        // number of temperature points
+	PetscScalar  minT[_max_num_pd_];                      // minimum temperature of diagram
+	PetscScalar  maxT[_max_num_pd_];                      // maximum temperature of diagram
+	PetscScalar  dT[_max_num_pd_];                        // temperature increment
+	PetscInt     nT[_max_num_pd_];                        // number of temperature points
 
-	PetscScalar  minP[max_num_pd];                      // minimum pressure of diagram
-	PetscScalar  maxP[max_num_pd];                      // maximum pressure of diagram
-	PetscScalar  dP[max_num_pd];                        // pressure increment
-	PetscInt     nP[max_num_pd];                        // number of pressure points
-	PetscInt     numProps[max_num_pd];                  // number of collumns (or stored properties) in phase diagram
+	PetscScalar  minP[_max_num_pd_];                      // minimum pressure of diagram
+	PetscScalar  maxP[_max_num_pd_];                      // maximum pressure of diagram
+	PetscScalar  dP[_max_num_pd_];                        // pressure increment
+	PetscInt     nP[_max_num_pd_];                        // number of pressure points
+	PetscInt     numProps[_max_num_pd_];                  // number of collumns (or stored properties) in phase diagram
 
-	char         rho_pdns[max_name][max_num_pd];        // loaded phase diagram numbers
-	PetscScalar  rho_v[max_num_ro][max_num_pd];         // Array containing the actual density data (= bulk density, including that of partial melt)
+	char         rho_pdns[_pd_name_sz_][_max_num_pd_];        // loaded phase diagram numbers
+	PetscScalar  rho_v[_max_pd_sz_][_max_num_pd_];         // Array containing the actual density data (= bulk density, including that of partial melt)
 	PetscScalar  rho;
 
 	// Melt content data
-	PetscScalar  Me_v[max_num_ro][max_num_pd];          // Array containing the actual melt content data
+	PetscScalar  Me_v[_max_pd_sz_][_max_num_pd_];          // Array containing the actual melt content data
 	PetscScalar  mf;					
 	
 	// Rho fluid data
-	PetscScalar rho_f_v[max_num_ro][max_num_pd];
+	PetscScalar rho_f_v[_max_pd_sz_][_max_num_pd_];
 	PetscScalar rho_f;
 };
 
@@ -169,15 +156,14 @@ struct PData
 
 struct DBMat
 {
-public:
 
 	Scaling *scal;
 
 	// phase parameters
 	PetscInt     numPhases;              // number phases
-	Material_t   phases[max_num_phases]; // phase parameters
+	Material_t   phases[_max_num_phases_]; // phase parameters
 	PetscInt     numSoft;                // number material softening laws
-	Soft_t       matSoft[max_num_soft];  // material softening law parameters
+	Soft_t       matSoft[_max_num_soft_];  // material softening law parameters
 
 };
 

@@ -56,7 +56,7 @@
 #define __FUNCT__ "PVMarkCreate"
 PetscErrorCode PVMarkCreate(PVMark *pvmark, FB *fb)
 {
-	char filename[_STR_LEN_];
+	char filename[_str_len_];
 
 	PetscErrorCode ierr;
 	PetscFunctionBegin;

@@ -47,13 +47,6 @@
 #define __bc_h__
 //---------------------------------------------------------------------------
 
-#define _max_periods_ 20
-#define _max_boxes_ 5
-#define _max_path_points_ 25
-#define _max_poly_points_ 50
-
-//---------------------------------------------------------------------------
-
 struct FB;
 struct Scaling;
 struct TSSol;

@@ -738,7 +738,7 @@ PetscErrorCode SetDataPhaseDiagram(PData *pd, PetscScalar p, PetscScalar T, Pets
 	PetscFunctionBegin;
 
 	// Get the correct phase diagram
-	for(i=0; i<max_num_pd; i++)
+	for(i=0; i<_max_num_pd_; i++)
 	{
 		i_pd  = -1;
 		found = 1;
@@ -748,7 +748,7 @@ PetscErrorCode SetDataPhaseDiagram(PData *pd, PetscScalar p, PetscScalar T, Pets
 		}
 		else
 		{
-			for(j=0; j<max_name; j++)
+			for(j=0; j<_pd_name_sz_; j++)
 			{
 				if((pd->rho_pdns[j][i] != pdn[j]))
 				{

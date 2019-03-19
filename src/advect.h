@@ -51,10 +51,6 @@
 
 //---------------------------------------------------------------------------
 
-#define _cap_overhead_ 1.3
-#define _max_nmark_ 5
-#define _min_nmark_ 2
-
 struct FB;
 struct FDSTAG;
 struct JacRes;
@@ -170,7 +166,7 @@ struct AdvCtx
 	PetscInt      bgPhase;             // background phase ID
 
 	PetscInt      saveMark;            // flag for saving markers
-	char          saveFile[_STR_LEN_]; // marker output file name
+	char          saveFile[_str_len_]; // marker output file name
 
 	AdvectionType advect;              // advection scheme
 	VelInterpType interp;              // velocity interpolation scheme

@@ -45,9 +45,6 @@
 //---------------------------------------------------------------------------
 #ifndef __surf_h__
 #define __surf_h__
-//---------------------------------------------------------------------------
-
-#define _max_layers_ 50
 
 //---------------------------------------------------------------------------
 
@@ -80,9 +77,9 @@ struct FreeSurf
 	PetscInt    ErosionModel;               // [0-none, 1-infinitely fast, ...]
 	PetscInt    SedimentModel;              // [0-none, 1-prescribed rate, 2-gaussian margin...]
 	PetscInt    numLayers;                  // number of sediment layers
-	PetscScalar timeDelims[_max_layers_-1]; // sediment layers time delimiters
-	PetscScalar sedRates  [_max_layers_  ]; // sedimentation rates
-	PetscInt    sedPhases [_max_layers_  ]; // sediment layers phase numbers
+	PetscScalar timeDelims[_max_sed_layers_-1]; // sediment layers time delimiters
+	PetscScalar sedRates  [_max_sed_layers_  ]; // sedimentation rates
+	PetscInt    sedPhases [_max_sed_layers_  ]; // sediment layers phase numbers
 	PetscScalar marginO [2];                // lateral coordinates of continental margin - origin
 	PetscScalar marginE [2];                // lateral coordinates of continental margin - 2nd point
 	PetscScalar hUp;                        // up dip thickness of sediment cover

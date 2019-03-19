@@ -52,7 +52,7 @@ PetscErrorCode ScalingCreate(Scaling *scal, FB *fb)
 {
 	// characteristic values must ALWAYS be given in SI units
 
-	char        utype [_STR_LEN_];
+	char        utype [_str_len_];
 	PetscScalar viscosity, stress, density;
 	PetscScalar mass, time, length, temperature, force;
 	PetscScalar angle, area, volume, energy, power;
