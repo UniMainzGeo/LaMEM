@@ -1094,7 +1094,7 @@ PetscErrorCode FreeSurfSetTopoFromFile(FreeSurf *surf, FB *fb)
 
 	// read (and ignore) the silent undocumented file header & size of file
 	ierr = PetscBinaryRead(fd, &header, 2, PETSC_SCALAR); CHKERRQ(ierr);
-	Fsize = (PetscInt)(header[1]) - 2;
+	Fsize = (PetscInt)(header[1]);
 
 	// allocate space for entire file & initialize counter
 	ierr = PetscMalloc((size_t)Fsize*sizeof(PetscScalar), &Z); CHKERRQ(ierr);
@@ -1152,7 +1152,7 @@ PetscErrorCode FreeSurfSetTopoFromFile(FreeSurf *surf, FB *fb)
 		1.0/4.0 * (1.0-xpL) * (1.0+ypL) * Z[(Iy+1) * nxTopo + Ix   ])/leng;
 
 		// Hack for the last corner, where the interpolation above does not work.
-		if ((j==sy+ny-1) & (i==sx+nx-1)){
+		if ((j==sy+ny-1) && (i==sx+nx-1)){
 			topo[level][j][i] = topo[level][j-1][i-1];
 		}
 	}
