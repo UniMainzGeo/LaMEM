@@ -101,7 +101,7 @@ PetscErrorCode ObjFunctCreate(ObjFunct *objf, ModParam *IOparam, FreeSurf *surf,
 	const char           *topo_name="topo";
 	const char           *boug_name="boug";
 	const char           *isa_name="isa";
-	const char           *sh_pd_name_sz_="shmax";
+	const char           *shmax_name="shmax";
 
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
@@ -125,7 +125,7 @@ PetscErrorCode ObjFunctCreate(ObjFunct *objf, ModParam *IOparam, FreeSurf *surf,
 	on[_TOPO_] = topo_name;
 	on[_BOUG_] = boug_name;
 	on[_ISA_]  = isa_name;
-	on[_SHMAX_] = sh_pd_name_sz_;
+	on[_SHMAX_] = shmax_name;
 
 	// read options
 	ierr = ObjFunctReadFromOptions(objf, on, fb); CHKERRQ(ierr);
