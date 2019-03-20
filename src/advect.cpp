@@ -454,8 +454,7 @@ PetscErrorCode ADVReAllocStorage(AdvCtx *actx, PetscInt nummark)
 	// or fixed maximum number markers per cell + deleting excessive markers.
 	// The latter has an advantage of maintaining memory locality).
 
-	PetscInt  markcap;
-	Marker   *markers;
+	Marker *markers;
 
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
@@ -463,15 +462,19 @@ PetscErrorCode ADVReAllocStorage(AdvCtx *actx, PetscInt nummark)
 	// check whether current storage is insufficient
 	if(nummark > actx->markcap)
 	{
-		// delete host cell numbers
+		// update capacity
+		actx->markcap = (PetscInt)(_cap_overhead_*(PetscScalar)nummark);
+
+		// reallocate memory for host cell and marker-in-cell indices
 		ierr = PetscFree(actx->cellnum); CHKERRQ(ierr);
+		ierr = PetscFree(actx->markind); CHKERRQ(ierr);
 
-		// compute new capacity
-		markcap = (PetscInt)(_cap_overhead_*(PetscScalar)nummark);
+		ierr = makeIntArray(&actx->cellnum, NULL, actx->markcap); CHKERRQ(ierr);
+		ierr = makeIntArray(&actx->markind, NULL, actx->markcap); CHKERRQ(ierr);
 
-		// allocate memory for markers
-		ierr = PetscMalloc((size_t)markcap*sizeof(Marker), &markers); CHKERRQ(ierr);
-		ierr = PetscMemzero(markers, (size_t)markcap*sizeof(Marker)); CHKERRQ(ierr);
+		// reallocate memory for markers
+		ierr = PetscMalloc((size_t)actx->markcap*sizeof(Marker), &markers); CHKERRQ(ierr);
+		ierr = PetscMemzero(markers, (size_t)actx->markcap*sizeof(Marker)); CHKERRQ(ierr);
 
 		// copy current data
 		if(actx->nummark)
@@ -479,20 +482,9 @@ PetscErrorCode ADVReAllocStorage(AdvCtx *actx, PetscInt nummark)
 			ierr = PetscMemcpy(markers, actx->markers, (size_t)actx->nummark*sizeof(Marker)); CHKERRQ(ierr);
 		}
 
-		// delete previous marker storage
+		// update marker storage
 		ierr = PetscFree(actx->markers); CHKERRQ(ierr);
-
-		// save new capacity & storage
-		actx->markcap = markcap;
 		actx->markers = markers;
-
-		// allocate memory for host cell numbers
-		ierr = PetscMalloc((size_t)markcap*sizeof(PetscInt), &actx->cellnum); CHKERRQ(ierr);
-		ierr = PetscMemzero(actx->cellnum, (size_t)markcap*sizeof(PetscInt)); CHKERRQ(ierr);
-
-		// allocate memory for id marker arranging per cell
-		ierr = PetscMalloc((size_t)markcap*sizeof(PetscInt), &actx->markind); CHKERRQ(ierr);
-		ierr = PetscMemzero(actx->markind, (size_t)markcap*sizeof(PetscInt)); CHKERRQ(ierr);
 	}
 
 	PetscFunctionReturn(0);
