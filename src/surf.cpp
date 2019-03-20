@@ -1152,9 +1152,9 @@ PetscErrorCode FreeSurfSetTopoFromFile(FreeSurf *surf, FB *fb)
 		1.0/4.0 * (1.0-xpL) * (1.0+ypL) * Z[(Iy+1) * nxTopo + Ix   ])/leng;
 
 		// Hack for the last corner, where the interpolation above does not work.
-		if ((j==sy+ny-1) && (i==sx+nx-1)){
-			topo[level][j][i] = topo[level][j-1][i-1];
-		}
+		//if ((j==sy+ny-1) && (i==sx+nx-1)){
+			//topo[level][j][i] = topo[level][j-1][i-1];
+		//}
 	}
 	END_PLANE_LOOP
 
