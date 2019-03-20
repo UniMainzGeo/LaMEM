@@ -78,17 +78,17 @@ Main advection routine
 #define __FUNCT__ "ADVMarkSubGrid"
 PetscErrorCode ADVMarkSubGrid(AdvCtx *actx)
 {
-	// check marker distribution and merge or inject markers if necessary
+	// check marker distribution and merge or inject markers based on subgrid
 
 	FDSTAG           *fs;
-	PetscInt          cellid, markid, icell, I, J, K, i, j, ib, ie;  //ii,
-	PetscInt          ncx, ncy,  npx, npy, npz, nmark, ncell;
-	PetscInt          ninj, nmrg;
+	PetscInt          cellid, markid, icell, I, J, K, i, j, ib, ie;
+	PetscInt          ncx, ncy, npx, npy, npz, nmark, ncell;
 	PetscInt         *markind;
 	PetscScalar       s[3], h[3], xc[3], *x;
 	PetscLogDouble    t0, t1;
     ipair             t;
     spair             d;
+    Marker            P;
 	vector <Marker>   inject;
 	vector <PetscInt> imerge;
 	vector <ipair>    cell;
@@ -107,8 +107,6 @@ PetscErrorCode ADVMarkSubGrid(AdvCtx *actx)
 	npy   = actx->NumPartY;
 	npz   = actx->NumPartZ;
 	ncell = npx*npy*npz;
-	ninj  = 0;
-	nmrg  = 0;
 
 	// reserve space for index & distance storage
 	cell.reserve(1000);
@@ -116,6 +114,9 @@ PetscErrorCode ADVMarkSubGrid(AdvCtx *actx)
 
 	inject.reserve(actx->nummark/10);
 	imerge.reserve(actx->nummark/10);
+
+	inject.clear();
+	imerge.clear();
 
 	// process local cells
 	for(icell = 0; icell < fs->nCells; icell++)
@@ -184,6 +185,9 @@ PetscErrorCode ADVMarkSubGrid(AdvCtx *actx)
 			// check whether current cell is empty
 			if(cellid != i)
 			{
+				// expand I, J, K indices
+				GET_CELL_IJK(i, I, J, K, npx, npy)
+
 				// get coordinates of cell center
 				COORD_SUBCELL(xc[0], I, s[0], h[0]);
 				COORD_SUBCELL(xc[1], J, s[1], h[1]);
@@ -192,7 +196,7 @@ PetscErrorCode ADVMarkSubGrid(AdvCtx *actx)
 				// clear distance storage
 				dist.clear();
 
-				// find & clone closest marker in the entire cell
+				// find closest marker (cell-wise approximation)
 				for(j = 0; j < nmark; j++)
 				{
 					// get marker index & coordinates
@@ -210,9 +214,15 @@ PetscErrorCode ADVMarkSubGrid(AdvCtx *actx)
 				sort(dist.begin(), dist.end());
 
 				// clone closest marker
-				inject.push_back(actx->markers[dist.begin()->second]);
+				P = actx->markers[dist.begin()->second];
 
-				ninj++;
+				// place clone in cell center
+				P.X[0] = xc[0];
+				P.X[1] = xc[1];
+				P.X[2] = xc[2];
+
+				// store injected marker
+				inject.push_back(P);
 			}
 			else
 			{
@@ -238,7 +248,7 @@ PetscErrorCode ADVMarkSubGrid(AdvCtx *actx)
 
 	// print info
 	ierr = PetscTime(&t1); CHKERRQ(ierr);
-	PetscPrintf(PETSC_COMM_WORLD,"Marker control [%lld]: (subgrid) injected %lld markers and merged %lld markers in %1.4e s\n",(LLD)actx->iproc, (LLD)ninj, (LLD)nmrg, t1-t0);
+	PetscPrintf(PETSC_COMM_WORLD,"Marker control [%lld]: (subgrid) injected %lld markers and merged %lld markers in %1.4e s\n",(LLD)actx->iproc, (LLD)inject.size(), (LLD)imerge.size(), t1-t0);
 
 	PetscFunctionReturn(0);
 }
