@@ -43,11 +43,6 @@
 //---------------------------------------------------------------------------
 //...................   MATERIAL ADVECTION ROUTINES   .......................
 //---------------------------------------------------------------------------
-#include <vector>
-#include <algorithm>
-#include <utility>
-using namespace std;
-//---------------------------------------------------------------------------
 #include "LaMEM.h"
 #include "subgrid.h"
 #include "advect.h"
@@ -78,30 +73,26 @@ Main advection routine
 #END_DOC#
 */
 
-
 //---------------------------------------------------------------------------
 #undef __FUNCT__
 #define __FUNCT__ "ADVMarkSubGrid"
 PetscErrorCode ADVMarkSubGrid(AdvCtx *actx)
 {
-	// check marker distribution and delete or inject markers if necessary
+	// check marker distribution and merge or inject markers if necessary
 
-	FDSTAG         *fs;
-	Marker         *P;
-	PetscInt       ID, I, J, K, i, ii, jj;
-	PetscInt       ncx, ncy,  npx, npy, npz, nmark, ncell;
-	PetscInt       ninj, nmrg, nmax;
-	PetscInt       *pid;
-	PetscScalar    s[3], h[3], *x;
-	PetscInt       jb, je, cellid;
-	PetscLogDouble t0, t1;
-
-    vector < pair < PetscScalar, PetscInt > > dist;
-    vector < pair < PetscInt,    PetscInt > > cell;
-    pair          < PetscInt,    PetscInt >   t;
-
-
-//	PetscInt      randNoise;           // random noise flag for marker distribution
+	FDSTAG           *fs;
+	PetscInt          cellid, markid, icell, I, J, K, i, j, ib, ie;  //ii,
+	PetscInt          ncx, ncy,  npx, npy, npz, nmark, ncell;
+	PetscInt          ninj, nmrg;
+	PetscInt         *markind;
+	PetscScalar       s[3], h[3], xc[3], *x;
+	PetscLogDouble    t0, t1;
+    ipair             t;
+    spair             d;
+	vector <Marker>   inject;
+	vector <PetscInt> imerge;
+	vector <ipair>    cell;
+    vector <spair>    dist;
 
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
@@ -119,18 +110,18 @@ PetscErrorCode ADVMarkSubGrid(AdvCtx *actx)
 	ninj  = 0;
 	nmrg  = 0;
 
-	// get max number of markers estimate per cell
-	nmax = _max_nmark_*actx->npmax;
-	nmax = nmax*nmax*nmax;
+	// reserve space for index & distance storage
+	cell.reserve(1000);
+	dist.reserve(1000);
 
-	// reserve space for index storage
-	cell.reserve(nmax);
+	inject.reserve(actx->nummark/10);
+	imerge.reserve(actx->nummark/10);
 
 	// process local cells
-	for(i = 0; i < fs->nCells; i++)
+	for(icell = 0; icell < fs->nCells; icell++)
 	{
 		// get number of markers per cell
-		nmark = actx->markstart[i+1] - actx->markstart[i];
+		nmark = actx->markstart[icell+1] - actx->markstart[icell];
 
 		if(!nmark)
 		{
@@ -138,7 +129,7 @@ PetscErrorCode ADVMarkSubGrid(AdvCtx *actx)
 		}
 
 		// expand I, J, K cell indices
-		GET_CELL_IJK(i, I, J, K, ncx, ncy)
+		GET_CELL_IJK(icell, I, J, K, ncx, ncy)
 
 		// get cell starting coordinates
 		s[0] = COORD_NODE(I, 0, fs->dsx);
@@ -154,24 +145,24 @@ PetscErrorCode ADVMarkSubGrid(AdvCtx *actx)
 		cell.clear();
 
 		// map markers on subcells
-		pid = actx->markind + actx->markstart[i];
+		markind = actx->markind + actx->markstart[icell];
 
-		for(ii = 0; ii < nmark; ii++)
+		for(j = 0; j < nmark; j++)
 		{
-			// get marker & coordinates
-			jj = pid[ii];
-			P  = &actx->markers[jj];
-			x  = P->X;
+			// get marker index & coordinates
+			markid = markind[j];
+			x      = actx->markers[markid].X;
 
 			// compute containing subcell index
 			MAP_SUBCELL(I, x[0], s[0], h[0], npx);
 			MAP_SUBCELL(J, x[1], s[1], h[1], npy);
 			MAP_SUBCELL(K, x[2], s[2], h[2], npz);
-			GET_CELL_ID(ID, I, J, K, npx, npy);
+
+			GET_CELL_ID(cellid, I, J, K, npx, npy);
 
 			// store marker and cell numbers
-			t.first  = ID;
-			t.second = jj;
+			t.first  = cellid;
+			t.second = markid;
 			cell.push_back(t);
 
 		}
@@ -179,54 +170,71 @@ PetscErrorCode ADVMarkSubGrid(AdvCtx *actx)
 		// sort markers by subcells
 		sort(cell.begin(), cell.end());
 
-		// push and-of-array stamp
+		// push end-of-array stamp
 		t.first  = -1;
 		t.second =  0;
 		cell.push_back(t);
 
 		// process cells
-		for(ii = 0, jb = 0; ii < ncell; ii++)
+		for(i = 0, ib = 0; i < ncell; i++)
 		{
 			// get index of next populated cell
-			cellid = cell[jb].first;
+			cellid = cell[ib].first;
 
 			// check whether current cell is empty
-			if(cellid > ii)
+			if(cellid != i)
 			{
-				// process empty subcell (insert markers)
+				// get coordinates of cell center
+				COORD_SUBCELL(xc[0], I, s[0], h[0]);
+				COORD_SUBCELL(xc[1], J, s[1], h[1]);
+				COORD_SUBCELL(xc[2], K, s[2], h[2]);
 
-				// ...............
+				// clear distance storage
+				dist.clear();
+
+				// find & clone closest marker in the entire cell
+				for(j = 0; j < nmark; j++)
+				{
+					// get marker index & coordinates
+					markid = markind[j];
+					x      = actx->markers[markid].X;
+
+					// store marker and distance
+					d.first  = EDIST(x, xc);
+					d.second = markid;
+					dist.push_back(d);
+
+				}
+
+				// sort markers by distance
+				sort(dist.begin(), dist.end());
+
+				// clone closest marker
+				inject.push_back(actx->markers[dist.begin()->second]);
 
 				ninj++;
 			}
 			else
 			{
-				// find next populated cell or and-of-array stamp
-				je = jb; while(cell[je].first == cellid) je++;
+				// find next populated cell or end-of-array stamp
+				ie = ib; while(cell[ie].first == cellid) ie++;
 
-				// process non-empty subcell (merge markers of same phase)
-				if(jb-je > actx->npmax)
-				{
-					// ...............
-
-					nmrg++;
-				}
+				// merge markers
 
 				// switch to next populated cell
-				jb = je;
+				ib = ie;
 			}
 		}
 	}
 
-	// store new markers
-//	ierr = ADVCollectGarbage(actx); CHKERRQ(ierr);
+	// rearrange storage after marker resampling
+	ierr = ADVCollectGarbageVec(actx, inject, imerge); CHKERRQ(ierr);
 
 	// compute host cells for all the markers
-//	ierr = ADVMapMarkToCells(actx); CHKERRQ(ierr);
+	ierr = ADVMapMarkToCells(actx); CHKERRQ(ierr);
 
 	// update arrays for marker-cell interaction
-//	ierr = ADVUpdateMarkCell(actx); CHKERRQ(ierr);
-
+	ierr = ADVUpdateMarkCell(actx); CHKERRQ(ierr);
 
 	// print info
 	ierr = PetscTime(&t1); CHKERRQ(ierr);
@@ -235,8 +243,158 @@ PetscErrorCode ADVMarkSubGrid(AdvCtx *actx)
 	PetscFunctionReturn(0);
 }
 
+//---------------------------------------------------------------------------
+/*
+void checkMergeMarkers(
+	Marker            *markers,
+	vector <PetscInt> &imerge,
+	vector <ipair>    &cell,
+	PetscInt           jb,
+	PetscInt           je)
+{
+	PetscInt i;
+
+	for(i = jb; i < je; i++)
+	{
+		cell[i].first = markers[cell[i].second].phase;
+	}
+
+	// sort markers by phase
+	sort(cell.begin() + jb, cell.begin() + je);
+
+					// sort markers by phase
+					sort(ib+jb, ib+je);
+
+					// collect marker phases
+
+					for(jj = je, jb = 0; ii < ncell; ii++)
+
+					// process non-empty subcell (merge markers of same phase)
+					if(je-jb > actx->npmax)
+					{
+						// ...............
+
+						nmrg++;
+
+					}
+
+	je = jb; while(cell[je].first == cellid) je++;
+
+
+
+				// replace cell ID with marker phase number
+
+		// get start iterator
+		ib = cell.begin();
+	je = jb;
+	while(cell[je].first == cellid)
+	{
+
+		je++;
+	}
+
+	// sort markers by phase
+	sort(ib+jb, ib+je);
+
+}
+*/
+//---------------------------------------------------------------------------
+
+#undef __FUNCT__
+#define __FUNCT__ "ADVCollectGarbageVec"
+PetscErrorCode ADVCollectGarbageVec(AdvCtx *actx, vector <Marker> &recvbuf, vector <PetscInt> &idel)
+{
+	// rearrange storage after marker resampling
+
+	Marker   *markers;
+	PetscInt  nummark, nrecv, ndel;
+
+	PetscErrorCode ierr;
+	PetscFunctionBegin;
+
+	// access storage
+	nummark = actx->nummark;
+	markers = actx->markers;
+	nrecv   = (PetscInt)recvbuf.size();
+	ndel    = (PetscInt)idel.size();
+
+	// close holes in marker storage
+	while(nrecv && ndel)
+	{
+		markers[idel[ndel-1]] = recvbuf[nrecv-1];
+		nrecv--;
+		ndel--;
+	}
+
+	if(nrecv)
+	{
+		// make sure space is enough
+		ierr = ADVReAllocStorage(actx, nummark + nrecv); CHKERRQ(ierr);
+
+		// make sure we have a correct storage pointer
+		markers = actx->markers;
+
+		// put the rest in the end of marker storage
+		while(nrecv)
+		{
+			markers[nummark++] = recvbuf[nrecv-1];
+			nrecv--;
+		}
+	}
+
+	if(ndel)
+	{
+		// collect garbage
+		while(ndel)
+		{
+			if(idel[ndel-1] != nummark-1)
+			{
+				markers[idel[ndel-1]] = markers[nummark-1];
+			}
+			nummark--;
+			ndel--;
+		}
+	}
+
+	// store new number of markers
+	actx->nummark = nummark;
+
+	PetscFunctionReturn(0);
+}
+//---------------------------------------------------------------------------
+
 
 /*
+//---------------------------------------------------------------------------
+
+		cell.clear();
+
+		for(ii = 0; ii < 3; ii++)
+		{
+			t.first  = 5;
+			t.second = 99;
+			cell.push_back(t);
+		}
+
+		for(ii = 0; ii < 5; ii++)
+		{
+			t.first  = 1;
+			t.second = 99;
+			cell.push_back(t);
+		}
+
+		for(ii = 0; ii < 7; ii++)
+		{
+			t.first  = 3;
+			t.second = 99;
+			cell.push_back(t);
+		}
+
+		sort(cell.begin(), cell.end());
+
+		t.first  = -1;
+		t.second =  0;
+		cell.push_back(t);
 
 //---------------------------------------------------------------------------
 #undef __FUNCT__
