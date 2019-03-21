@@ -588,7 +588,7 @@ PetscErrorCode ADVRemap(AdvCtx *actx)
 		// update arrays for marker-cell interaction
 		ierr = ADVUpdateMarkCell(actx); CHKERRQ(ierr);
 
-		// check markers and inject/delete if necessary in all control volumes
+		// check markers and inject/merge if necessary based on subgrid
 		ierr = ADVMarkSubGrid(actx); CHKERRQ(ierr);
 
 		PetscPrintf(PETSC_COMM_WORLD, "--------------------------------------------------------------------------\n");

@@ -229,7 +229,14 @@ PetscErrorCode ADVMarkSubGrid(AdvCtx *actx)
 				// find next populated cell or end-of-array stamp
 				ie = ib; while(cell[ie].first == cellid) ie++;
 
+
+
+
 				// merge markers
+
+
+
+
 
 				// switch to next populated cell
 				ib = ie;
@@ -259,20 +266,50 @@ void checkMergeMarkers(
 	Marker            *markers,
 	vector <PetscInt> &imerge,
 	vector <ipair>    &cell,
+	PetscInt           npmax,
 	PetscInt           ib,
 	PetscInt           ie)
 {
-	PetscInt i;
+	PetscInt j, jb, je, phaseid;
 
-	for(i = ib; i < ie; i++)
+	// replace marker cell index with phase ID
+	for(j = ib; j < ie; j++)
 	{
-		cell[i].first = markers[cell[i].second].phase;
+		cell[j].first = markers[cell[j].second].phase;
 	}
 
 	// sort markers by phase
 	sort(cell.begin() + ib, cell.begin() + ie);
 
+
+	jb = ib;
+
+	do
+	{
+		// get next phase ID
+		phaseid = cell[jb].first;
+
+
+		je = jb; while(cell[je].first == phaseid && je < ie) je++;
+
+		if((je-jb) > npmax)
+		{
+
 	imerge.push_back(99); // **************** ALITA BATTLE ANGEL !!! *********************
+
+
+	// EDIST
+
+
+		}
+
+
+
+	} while(je < ie);
+
+
+
+
 
 /*
 
