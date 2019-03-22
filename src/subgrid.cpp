@@ -57,6 +57,7 @@
 #include "marker.h"
 #include "AVD.h"
 #include "cvi.h"
+#include "Tensor.h"
 #include "tools.h"
 
 /*
@@ -272,6 +273,10 @@ void checkMergeMarkers(
 {
 	PetscInt j, jb, je, phaseid;
 
+
+//	1. more than npmax markers of each phase
+//	2. find and merge two closest markers of each phase (recursively)
+
 	// replace marker cell index with phase ID
 	for(j = ib; j < ie; j++)
 	{
@@ -295,10 +300,12 @@ void checkMergeMarkers(
 		if((je-jb) > npmax)
 		{
 
+
 	imerge.push_back(99); // **************** ALITA BATTLE ANGEL !!! *********************
 
 
 	// EDIST
+
 
 
 		}
@@ -330,6 +337,75 @@ void checkMergeMarkers(
 
 
 }
+
+//---------------------------------------------------------------------------
+
+void MergeMarkers(
+	Marker            *markers,
+	vector <PetscInt> &imerge,
+	vector <ipair>    &cell,
+	PetscInt           jb,
+	PetscInt           je)
+{
+	// merge two closest markers
+
+
+	Marker      *pj, *pk;
+	PetscInt     j, k, jmin, kmin;
+	PetscScalar *xj, *xk, *uj, *uk, d, dmin;
+
+
+
+
+	dmin = DBL_MAX;
+	jmin = 0;
+	kmin = 0;
+
+	for(j = jb; j < je; j++)
+	{
+		xj = markers[cell[j].second].X;
+
+		for(k = j+1; k < je; k++)
+		{
+			xk = markers[cell[k].second].X;
+
+			d = EDIST(xj, xk);
+
+			if(d < dmin)
+			{
+				dmin = d;
+				jmin = j;
+				kmin = k;
+			}
+		}
+	}
+
+	// merge markers
+	pj = &markers[cell[jmin].second];
+	pk = &markers[cell[kmin].second];
+	xj = pj->X;
+	xk = pk->X;
+	uj = pj->U;
+	uk = pk->U;
+
+
+	xj[0]   = (xj[0]   + xk[0])  /2.0;
+	xj[1]   = (xj[1]   + xk[1])  /2.0;
+	xj[2]   = (xj[2]   + xk[2])  /2.0;
+	pj->p   = (pj->p   + pk->p)  /2.0;
+	pj->T   = (pj->T   + pk->T)  /2.0;
+	pj->APS = (pj->APS + pk->APS)/2.0;
+	pj->ATS = (pj->ATS + pk->ATS)/2.0;
+	uj[0]   = (uj[0]   + uk[0])  /2.0;
+	uj[1]   = (uj[1]   + uk[1])  /2.0;
+	uj[2]   = (uj[2]   + uk[2])  /2.0;
+
+	Tensor2RSSum2(&pj->S, 0.5, &pk->S, 0.5, &pj->S);
+
+	// store merged marker
+	imerge.push_back(cell[kmin].second);
+}
+
 //---------------------------------------------------------------------------
 #undef __FUNCT__
 #define __FUNCT__ "ADVCollectGarbageVec"
