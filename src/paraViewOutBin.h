@@ -69,10 +69,6 @@
 //---------------------------------------------------------------------------
 #ifndef __paraViewOutBin_h__
 #define __paraViewOutBin_h__
-//---------------------------------------------------------------------------
-
-// maximum number of components in the output vector
-#define _max_num_comp_ 9
 
 //---------------------------------------------------------------------------
 
@@ -146,8 +142,8 @@ struct OutMask
 	PetscInt j2_dev_stress;  // deviatoric stress second invariant
 	PetscInt strain_rate;    // deviatoric strain rate tensor
 	PetscInt j2_strain_rate; // deviatoric strain rate second invariant
-	PetscInt melt_fraction;   		// melt fraction
-	PetscInt fluid_density;   		// fluid density
+	PetscInt melt_fraction;  // melt fraction
+	PetscInt fluid_density;  // fluid density
 	PetscInt vol_rate;       // volumetric strain rate
 	PetscInt vorticity;      // vorticity vector
 	PetscInt ang_vel_mag;    // average angular velocity magnitude
@@ -164,7 +160,14 @@ struct OutMask
 	PetscInt cont_res;       // continuity residual
 	PetscInt energ_res;      // energy residual
 
+	// phase aggregates
+	PetscInt num_agg;                                              // number of phase aggregates
+	char     agg_name     [_max_num_phase_agg_][_str_len_];        // names
+	PetscInt agg_num_phase[_max_num_phase_agg_];                   // number of phases
+	PetscInt agg_phase_ID [_max_num_phase_agg_][_max_num_phases_]; // phase IDs
+
 };
+
 //---------------------------------------------------------------------------
 
 void OutMaskSetDefault(OutMask *omask);
@@ -177,7 +180,7 @@ PetscInt OutMaskCountActive(OutMask *omask);
 struct PVOut
 {
 	JacRes   *jr;
-	char      outfile[_STR_LEN_]; // output file name
+	char      outfile[_str_len_]; // output file name
 	OutMask   omask;              // output vector mask
 	PetscInt  nvec;               // number of output vectors
 	OutVec   *outvecs;            // output vectors

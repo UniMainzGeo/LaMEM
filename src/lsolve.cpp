@@ -57,12 +57,12 @@
 PetscErrorCode PCStokesSetFromOptions(PCStokes pc)
 {
 	PetscBool found;
-	char      pname[_STR_LEN_];
+	char      pname[_str_len_];
 
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
 
-	ierr = PetscOptionsGetString(NULL, NULL,"-jp_type", pname, _STR_LEN_, &found); CHKERRQ(ierr);
+	ierr = PetscOptionsGetString(NULL, NULL,"-jp_type", pname, _str_len_, &found); CHKERRQ(ierr);
 
 	if(found == PETSC_TRUE)
 	{
@@ -236,7 +236,7 @@ PetscErrorCode PCStokesBFSetFromOptions(PCStokes pc)
 	PCStokesBF *bf;
 
 	PetscBool   flg;
-	char        pname[_STR_LEN_];
+	char        pname[_str_len_];
 
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
@@ -245,7 +245,7 @@ PetscErrorCode PCStokesBFSetFromOptions(PCStokes pc)
 	bf = (PCStokesBF*)pc->data;
 
 	// set factorization type
-	ierr = PetscOptionsGetString(NULL, NULL,"-bf_type", pname, _STR_LEN_, &flg); CHKERRQ(ierr);
+	ierr = PetscOptionsGetString(NULL, NULL,"-bf_type", pname, _str_len_, &flg); CHKERRQ(ierr);
 
 	if(flg == PETSC_TRUE)
 	{
@@ -271,7 +271,7 @@ PetscErrorCode PCStokesBFSetFromOptions(PCStokes pc)
 	}
 
 	// set velocity solver type
-	ierr = PetscOptionsGetString(NULL, NULL,"-bf_vs_type", pname, _STR_LEN_, &flg); CHKERRQ(ierr);
+	ierr = PetscOptionsGetString(NULL, NULL,"-bf_vs_type", pname, _str_len_, &flg); CHKERRQ(ierr);
 
 	if(flg == PETSC_TRUE)
 	{

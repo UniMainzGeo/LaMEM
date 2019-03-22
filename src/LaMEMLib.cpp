@@ -78,7 +78,7 @@ PetscErrorCode LaMEMLibMain(void *param)
 	RunMode        mode;
 	PetscBool      found;
 	PetscInt       exists;
-	char           str[_STR_LEN_];
+	char           str[_str_len_];
 	PetscLogDouble cputime_start, cputime_end;
 
 	PetscErrorCode ierr;
@@ -890,7 +890,7 @@ PetscErrorCode LaMEMLib_reverse(LaMEMLib *lm)
 {
 	PetscErrorCode ierr;
 	PetscBool      found;
-	char           str[_STR_LEN_];
+	char           str[_str_len_];
 	PetscFunctionBegin;
 
 

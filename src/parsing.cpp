@@ -55,7 +55,7 @@ PetscErrorCode FBLoad(FB **pfb, PetscBool DisplayOutput)
 	FILE      *fp;
 	size_t    sz;
 	PetscBool found;
-	char      filename[_STR_LEN_], *all_options;
+	char      filename[_str_len_], *all_options;
 
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
@@ -564,13 +564,13 @@ PetscErrorCode FBGetString(
 		if(!ptr) SETERRQ1(PETSC_COMM_WORLD, PETSC_ERR_USER, "No value specified for parameter \"%s\"\n", key);
 
 		// make sure string fits & is null terminated (two null characters are reserved in the end)
-		if(strlen(ptr) > _STR_LEN_-2)
+		if(strlen(ptr) > _str_len_-2)
 		{
-			SETERRQ2(PETSC_COMM_WORLD, PETSC_ERR_USER, "String %s is more than %lld symbols long, (_STR_LEN_ in parsing.h) \"%s\" \n", key, _STR_LEN_-2);
+			SETERRQ2(PETSC_COMM_WORLD, PETSC_ERR_USER, "String %s is more than %lld symbols long, (_str_len_ in parsing.h) \"%s\" \n", key, _str_len_-2);
 		}
 
 		// copy & pad the rest of the string with zeros
-		strncpy(str, ptr, _STR_LEN_);
+		strncpy(str, ptr, _str_len_);
 
 		(*found) = PETSC_TRUE;
 
@@ -718,8 +718,8 @@ PetscErrorCode getStringParam(
 	found = PETSC_FALSE;
 
 	// set defaults
-	if(_default_) { ierr = PetscStrncpy(str, _default_, _STR_LEN_); CHKERRQ(ierr); }
-	else          { ierr = PetscMemzero(str,            _STR_LEN_); CHKERRQ(ierr); }
+	if(_default_) { ierr = PetscStrncpy(str, _default_, _str_len_); CHKERRQ(ierr); }
+	else          { ierr = PetscMemzero(str,            _str_len_); CHKERRQ(ierr); }
 
 	if(!fb->nblocks)
 	{
@@ -873,16 +873,16 @@ PetscErrorCode  PetscOptionsGetCheckString(
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
 
-	ierr = PetscOptionsGetString(NULL, NULL, key, str, _STR_LEN_, set); CHKERRQ(ierr);
+	ierr = PetscOptionsGetString(NULL, NULL, key, str, _str_len_, set); CHKERRQ(ierr);
 
 	if(*set && !strlen(str))
 	{
 		SETERRQ1(PETSC_COMM_WORLD, PETSC_ERR_USER, "No value specified for parameter \"%s\"\n", key);
 	}
 
-	if(*set && strlen(str) > _STR_LEN_-2)
+	if(*set && strlen(str) > _str_len_-2)
 	{
-		SETERRQ2(PETSC_COMM_WORLD, PETSC_ERR_USER, "String %s is more than %lld symbols long, (_STR_LEN_ in parsing.h) \"%s\" \n", key, _STR_LEN_-2);
+		SETERRQ2(PETSC_COMM_WORLD, PETSC_ERR_USER, "String %s is more than %lld symbols long, (_str_len_ in parsing.h) \"%s\" \n", key, _str_len_-2);
 	}
 
 	PetscFunctionReturn(0);
@@ -895,7 +895,7 @@ PetscErrorCode  PetscOptionsGetCheckString(
 PetscErrorCode StokesSetDefaultSolverOptions(FB *fb)
 {
 	PetscErrorCode ierr;
- 	char     		SolverType[_STR_LEN_], DirectSolver[_STR_LEN_], str[_STR_LEN_], SmootherType[_STR_LEN_];
+ 	char     		SolverType[_str_len_], DirectSolver[_str_len_], str[_str_len_], SmootherType[_str_len_];
 	PetscScalar 	scalar;
 	PetscInt 		integer, nel_y;
 	

@@ -59,11 +59,7 @@ struct NLSol;
 struct ModParam;
 struct FB;
 
-// Some global maxes on parameter and index numbers
-#define _MAX_PAR_ 50
-#define _MAX_IND_ 100
-
-// Structure that holds paramters for the adjoint gradient computation
+// Structure that holds parameters for the adjoint gradient computation
 struct AdjGrad
 {
 	PetscScalar      Ini;                     // Initial value of perturbed parameter

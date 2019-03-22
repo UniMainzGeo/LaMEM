@@ -82,7 +82,7 @@ PetscErrorCode ADVCreate(AdvCtx *actx, FB *fb)
 	PetscInt maxPhaseID, nmarkCell;
 	PetscInt nmark_lim[ ] = { 0, 0    };
 	PetscInt nmark_avd[ ] = { 0, 0, 0 };
-	char     msetup[_STR_LEN_], interp[_STR_LEN_], mctrl[_STR_LEN_];
+	char     msetup[_str_len_], interp[_str_len_], mctrl[_str_len_];
 
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
@@ -258,7 +258,7 @@ PetscErrorCode ADVCreate(AdvCtx *actx, FB *fb)
 PetscErrorCode ADVSetType(AdvCtx *actx, FB *fb)
 {
 	PetscInt maxPhaseID;
-	char     advect[_STR_LEN_];
+	char     advect[_str_len_];
 
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
@@ -454,8 +454,7 @@ PetscErrorCode ADVReAllocStorage(AdvCtx *actx, PetscInt nummark)
 	// or fixed maximum number markers per cell + deleting excessive markers.
 	// The latter has an advantage of maintaining memory locality).
 
-	PetscInt  markcap;
-	Marker   *markers;
+	Marker *markers;
 
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
@@ -463,15 +462,19 @@ PetscErrorCode ADVReAllocStorage(AdvCtx *actx, PetscInt nummark)
 	// check whether current storage is insufficient
 	if(nummark > actx->markcap)
 	{
-		// delete host cell numbers
+		// update capacity
+		actx->markcap = (PetscInt)(_cap_overhead_*(PetscScalar)nummark);
+
+		// reallocate memory for host cell and marker-in-cell indices
 		ierr = PetscFree(actx->cellnum); CHKERRQ(ierr);
+		ierr = PetscFree(actx->markind); CHKERRQ(ierr);
 
-		// compute new capacity
-		markcap = (PetscInt)(_cap_overhead_*(PetscScalar)nummark);
+		ierr = makeIntArray(&actx->cellnum, NULL, actx->markcap); CHKERRQ(ierr);
+		ierr = makeIntArray(&actx->markind, NULL, actx->markcap); CHKERRQ(ierr);
 
-		// allocate memory for markers
-		ierr = PetscMalloc((size_t)markcap*sizeof(Marker), &markers); CHKERRQ(ierr);
-		ierr = PetscMemzero(markers, (size_t)markcap*sizeof(Marker)); CHKERRQ(ierr);
+		// reallocate memory for markers
+		ierr = PetscMalloc((size_t)actx->markcap*sizeof(Marker), &markers); CHKERRQ(ierr);
+		ierr = PetscMemzero(markers, (size_t)actx->markcap*sizeof(Marker)); CHKERRQ(ierr);
 
 		// copy current data
 		if(actx->nummark)
@@ -479,20 +482,9 @@ PetscErrorCode ADVReAllocStorage(AdvCtx *actx, PetscInt nummark)
 			ierr = PetscMemcpy(markers, actx->markers, (size_t)actx->nummark*sizeof(Marker)); CHKERRQ(ierr);
 		}
 
-		// delete previous marker storage
+		// update marker storage
 		ierr = PetscFree(actx->markers); CHKERRQ(ierr);
-
-		// save new capacity & storage
-		actx->markcap = markcap;
 		actx->markers = markers;
-
-		// allocate memory for host cell numbers
-		ierr = PetscMalloc((size_t)markcap*sizeof(PetscInt), &actx->cellnum); CHKERRQ(ierr);
-		ierr = PetscMemzero(actx->cellnum, (size_t)markcap*sizeof(PetscInt)); CHKERRQ(ierr);
-
-		// allocate memory for id marker arranging per cell
-		ierr = PetscMalloc((size_t)markcap*sizeof(PetscInt), &actx->markind); CHKERRQ(ierr);
-		ierr = PetscMemzero(actx->markind, (size_t)markcap*sizeof(PetscInt)); CHKERRQ(ierr);
 	}
 
 	PetscFunctionReturn(0);
@@ -596,7 +588,7 @@ PetscErrorCode ADVRemap(AdvCtx *actx)
 		// update arrays for marker-cell interaction
 		ierr = ADVUpdateMarkCell(actx); CHKERRQ(ierr);
 
-		// check markers and inject/delete if necessary in all control volumes
+		// check markers and inject/merge if necessary based on subgrid
 		ierr = ADVMarkSubGrid(actx); CHKERRQ(ierr);
 
 		PetscPrintf(PETSC_COMM_WORLD, "--------------------------------------------------------------------------\n");

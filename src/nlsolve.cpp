@@ -162,7 +162,7 @@ PetscErrorCode DisplaySpecifiedSolverOptions(PCStokes pc, SNES snes)
 	PetscErrorCode 	ierr;
 	KSP 			ksp_coarse, ksp_levels, ksp;
 	PC 				pc_coarse, pc_levels;
-	char      		pname[_STR_LEN_];
+	char      		pname[_str_len_];
 	PCStokesMG 		*mg;
 	FDSTAG          *fs;
 	PCType 			pc_type;
@@ -211,7 +211,7 @@ PetscErrorCode DisplaySpecifiedSolverOptions(PCStokes pc, SNES snes)
 		}
 
 		/* Multigrid parameters for the smootheners at the various levels */
-		ierr = PetscOptionsGetString(NULL, NULL,"-gmg_mg_levels_ksp_type", pname, _STR_LEN_, &found); CHKERRQ(ierr);
+		ierr = PetscOptionsGetString(NULL, NULL,"-gmg_mg_levels_ksp_type", pname, _str_len_, &found); CHKERRQ(ierr);
 		if (found){
 			PetscPrintf(PETSC_COMM_WORLD, "   Multigrid smoother levels KSP : %s \n", pname); 
 		}
@@ -228,7 +228,7 @@ PetscErrorCode DisplaySpecifiedSolverOptions(PCStokes pc, SNES snes)
 		}		
 		
 		// preconditioner
-		ierr = PetscOptionsGetString(NULL, NULL,"-gmg_mg_levels_pc_type", pname, _STR_LEN_, &found); CHKERRQ(ierr);
+		ierr = PetscOptionsGetString(NULL, NULL,"-gmg_mg_levels_pc_type", pname, _str_len_, &found); CHKERRQ(ierr);
 		if (found){ 
 			PetscPrintf(PETSC_COMM_WORLD, "   Multigrid smoother levels PC  : %s \n", pname); 
 		}
@@ -247,7 +247,7 @@ PetscErrorCode DisplaySpecifiedSolverOptions(PCStokes pc, SNES snes)
 		ierr = PCMGGetCoarseSolve(mg->mg.pc, &ksp_coarse); CHKERRQ(ierr);
 		ierr = KSPGetPC(ksp_coarse, &pc_coarse);               CHKERRQ(ierr);
 
-		ierr = PetscOptionsGetString(NULL, NULL,"-crs_ksp_type", pname, _STR_LEN_, &found); CHKERRQ(ierr);
+		ierr = PetscOptionsGetString(NULL, NULL,"-crs_ksp_type", pname, _str_len_, &found); CHKERRQ(ierr);
 		if (found){	
 			PetscPrintf(PETSC_COMM_WORLD, "   Coarse level KSP              : %s \n", pname); 
 		}
@@ -256,7 +256,7 @@ PetscErrorCode DisplaySpecifiedSolverOptions(PCStokes pc, SNES snes)
 			PetscPrintf(PETSC_COMM_WORLD, "   Coarse level KSP              : %s \n", ksp_type); 
 		}
 
-		ierr = PetscOptionsGetString(NULL, NULL,"-crs_pc_type", pname, _STR_LEN_, &found); CHKERRQ(ierr);
+		ierr = PetscOptionsGetString(NULL, NULL,"-crs_pc_type", pname, _str_len_, &found); CHKERRQ(ierr);
 		if (found){	
 			PetscPrintf(PETSC_COMM_WORLD, "   Coarse level PC               : %s \n", pname); 
 		}
@@ -267,7 +267,7 @@ PetscErrorCode DisplaySpecifiedSolverOptions(PCStokes pc, SNES snes)
 
 		if (!strcmp(pname, PCLU)){
 			// direct solver @ coarse level
-			ierr = PetscOptionsGetString(NULL, NULL,"-crs_pc_factor_mat_solver_package", pname, _STR_LEN_, &found); CHKERRQ(ierr);
+			ierr = PetscOptionsGetString(NULL, NULL,"-crs_pc_factor_mat_solver_package", pname, _str_len_, &found); CHKERRQ(ierr);
 			if (found){	
 				PetscPrintf(PETSC_COMM_WORLD, "   Coarse level solver package   : %s \n", pname);
 			}
@@ -281,7 +281,7 @@ PetscErrorCode DisplaySpecifiedSolverOptions(PCStokes pc, SNES snes)
 			//redundant solver @ coarse level
 			ierr = PetscOptionsGetInt(NULL, NULL,"-crs_pc_redundant_number", &integer, &found); CHKERRQ(ierr);
 			if (found){PetscPrintf(PETSC_COMM_WORLD, "   Number of redundant solvers   : %i \n", integer); }
-			ierr = PetscOptionsGetString(NULL, NULL,"-crs_redundant_pc_factor_mat_solver_package", pname, _STR_LEN_, &found); CHKERRQ(ierr);
+			ierr = PetscOptionsGetString(NULL, NULL,"-crs_redundant_pc_factor_mat_solver_package", pname, _str_len_, &found); CHKERRQ(ierr);
 			if (found){	
 				PetscPrintf(PETSC_COMM_WORLD, "   Redundant solver package      : %s \n", pname);
 			}
@@ -294,7 +294,7 @@ PetscErrorCode DisplaySpecifiedSolverOptions(PCStokes pc, SNES snes)
 	else if (pc->type == _STOKES_USER_){
 	
 		// Direct solver
-		ierr = PetscOptionsGetString(NULL, NULL,"-jp_pc_type", pname, _STR_LEN_, &found); CHKERRQ(ierr);
+		ierr = PetscOptionsGetString(NULL, NULL,"-jp_pc_type", pname, _str_len_, &found); CHKERRQ(ierr);
 		if (found){ 
 			if(!strcmp(pname, "lu")){ 
 				if (ISParallel(PETSC_COMM_WORLD)){

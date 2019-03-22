@@ -95,7 +95,7 @@ PetscErrorCode FreeSurfCreate(FreeSurf *surf, FB *fb)
 	if(surf->SedimentModel)
 	{
 		// sedimentation model parameters
-		ierr = getIntParam   (fb, _REQUIRED_, "sed_num_layers",  &surf->numLayers,  1,                 _max_layers_);      CHKERRQ(ierr);
+		ierr = getIntParam   (fb, _REQUIRED_, "sed_num_layers",  &surf->numLayers,  1,                 _max_sed_layers_);      CHKERRQ(ierr);
 		ierr = getScalarParam(fb, _REQUIRED_, "sed_time_delims",  surf->timeDelims, surf->numLayers-1, scal->time);        CHKERRQ(ierr);
 		ierr = getScalarParam(fb, _REQUIRED_, "sed_rates",        surf->sedRates,   surf->numLayers,   scal->length);    CHKERRQ(ierr);
 		ierr = getIntParam   (fb, _REQUIRED_, "sed_phases",       surf->sedPhases,  surf->numLayers,   maxPhaseID);        CHKERRQ(ierr);
@@ -1089,7 +1089,7 @@ PetscErrorCode FreeSurfSetTopoFromFile(FreeSurf *surf, FB *fb)
 	int            fd;
 	PetscLogDouble t;
 	PetscViewer    view_in;
-	char           filename[_STR_LEN_];
+	char           filename[_str_len_];
 	PetscInt 	   nxTopo, nyTopo, Ix, Iy, Fsize;
 	PetscInt       i, j, nx, ny, sx, sy, sz, level;
 	PetscScalar    ***topo, *Z, header[2], dim[2];
@@ -1117,7 +1117,7 @@ PetscErrorCode FreeSurfSetTopoFromFile(FreeSurf *surf, FB *fb)
 
 	// read (and ignore) the silent undocumented file header & size of file
 	ierr = PetscBinaryRead(fd, &header, 2, PETSC_SCALAR); CHKERRQ(ierr);
-	Fsize = (PetscInt)(header[1]) - 2;
+	Fsize = (PetscInt)(header[1]);
 
 	// allocate space for entire file & initialize counter
 	ierr = PetscMalloc((size_t)Fsize*sizeof(PetscScalar), &Z); CHKERRQ(ierr);
@@ -1175,9 +1175,9 @@ PetscErrorCode FreeSurfSetTopoFromFile(FreeSurf *surf, FB *fb)
 		1.0/4.0 * (1.0-xpL) * (1.0+ypL) * Z[(Iy+1) * nxTopo + Ix   ])/leng;
 
 		// Hack for the last corner, where the interpolation above does not work.
-		if ((j==sy+ny-1) & (i==sx+nx-1)){
-			topo[level][j][i] = topo[level][j-1][i-1];
-		}
+		//if ((j==sy+ny-1) && (i==sx+nx-1)){
+			//topo[level][j][i] = topo[level][j-1][i-1];
+		//}
 	}
 	END_PLANE_LOOP
 

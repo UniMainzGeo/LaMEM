@@ -44,9 +44,6 @@
 //---------------------------------------------------------------------------
 #ifndef __paraViewOutSurf_h__
 #define __paraViewOutSurf_h__
-//---------------------------------------------------------------------------
-// maximum number of components in the output vector
-#define _max_num_comp_surf_ 3
 
 //---------------------------------------------------------------------------
 
@@ -60,7 +57,7 @@ struct FreeSurf;
 struct PVSurf
 {
 	FreeSurf  *surf;               // free surface object
-	char       outfile[_STR_LEN_]; // output file name
+	char       outfile[_str_len_]; // output file name
 	float     *buff;               // direct output buffer
 	long int   offset;             // pvd file offset
 	PetscInt   outsurf;            // free surface output flag

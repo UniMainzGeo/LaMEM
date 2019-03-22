@@ -60,13 +60,93 @@
 //
 //-----------------------------------------------------------------------------
 
+//-----------------------------------------------------------------------------
+// SIZE LIMITS
+//-----------------------------------------------------------------------------
+
 // number of neighbor domains in 3D lattice (including self)
 #define _num_neighb_ 27
 
+// string length (two null characters are reserved in the end, i.e. 128)
+#define _str_len_ 130
+
+// marker storage capacity overhead
+#define _cap_overhead_ 1.3
+
+// maximum marker per cell per direction
+#define _max_nmark_ 5
+
+// minimum marker per cell per direction
+#define _min_nmark_ 2
+
+// maximum number of strain rate application periods
+#define _max_periods_ 20
+
+// maximum number of Bezier blocks
+#define _max_boxes_ 5
+
+// maximum number of Bezier path points
+#define _max_path_points_ 25
+
+// maximum number of polygon points of Bezier block
+#define _max_poly_points_ 50
+
+// maximum number of mesh segments in every direction
+#define _max_num_segs_ 10
+
+// maximum number of cells per mesh segment
+#define _max_num_cells_ 4096
+
+// maximum number of processes in every direction
+#define _max_num_procs_ 1024
+
+// FDSTAG near null space size
+#define _max_nullsp_sz_ 4
+
+// maximum number of geometry primitives
+#define _max_geom_ 100
+
+// maximum number of observation types
+#define _max_num_obs_ 7
+
+// maximum number of components in the output vector (3D)
+#define _max_num_comp_ 9
+
+// maximum number of components in the output vector (surface)
+#define _max_num_comp_surf_ 3
+
+// maximum number of phase aggregates for output
+#define _max_num_phase_agg_ 5
+
+// maximum number of phases
+#define _max_num_phases_ 32
+
+// maximum number of softening laws
+#define _max_num_soft_ 10
+
+// maximum number of phase diagrams
+#define _max_num_pd_ 8
+
+// maximum grid size of phase diagram
+#define _max_pd_sz_ 40100
+
+// length of unique phase diagram name
+#define _pd_name_sz_ 54
+
+// length of scaling unit label
+#define _lbl_sz_ 23
+
+// maximum number of sedimentary layers (free surface sedimentation)
+#define _max_sed_layers_ 50
+
+// maximum number of adjoint parameters
+#define _max_adj_par_ 50
+
+// maximum number of adjoint points
+#define _max_adj_point_ 100
+
 // cast macros
 #define LLD long long int
-
-#define _STR_LEN_ 130 // (two null characters are reserved in the end, i.e. 128)
 
 //-----------------------------------------------------------------------------
 // EXTERNAL INCLUDES
@@ -81,6 +161,19 @@
 #include <sys/stat.h>
 #include <errno.h>
 #include <petsc.h>
+#include <map>
+#include <vector>
+#include <algorithm>
+#include <utility>
+
+using namespace std;
+
+//-----------------------------------------------------------------------------
+// TYPE DEFINITIONS
+//-----------------------------------------------------------------------------
+
+typedef pair <PetscScalar, PetscInt> spair;
+typedef pair <PetscInt,    PetscInt> ipair;
 
 //-----------------------------------------------------------------------------
 // PROTOTYPES

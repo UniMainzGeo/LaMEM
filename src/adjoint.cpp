@@ -174,7 +174,7 @@ PetscErrorCode LaMEMAdjointMain(ModParam *IOparam, FB *fb)
 	PetscScalar    *gradar,*Ubar,*Lbar, *Par, *fcconvar, F, ts;
 	Vec             val, Ub, Lb, grad, P;
 	PetscInt        i, ti;
-	char            str[_STR_LEN_];
+	char            str[_str_len_];
 
 	IOparam->count = 1;  // iteration counter for the initial cost function
 	F              = 1e100;
@@ -205,22 +205,22 @@ PetscErrorCode LaMEMAdjointMain(ModParam *IOparam, FB *fb)
 	ierr = getScalarParam(fb, _OPTIONAL_, "Inv_maxfactor2", &IOparam->maxfactor2,1, 1        ); CHKERRQ(ierr);  // limit on the factor (only used without tao)
 
 	// VECTORS
-	ierr = VecCreateMPI(PETSC_COMM_WORLD, _MAX_PAR_  , PETSC_DETERMINE, &Lb);   CHKERRQ(ierr);
-	ierr = VecCreateMPI(PETSC_COMM_WORLD, _MAX_PAR_  , PETSC_DETERMINE, &Ub);   CHKERRQ(ierr);
-	ierr = VecCreateMPI(PETSC_COMM_WORLD, _MAX_PAR_  , PETSC_DETERMINE, &val);  CHKERRQ(ierr);
-	ierr = VecCreateMPI(PETSC_COMM_WORLD, _MAX_PAR_  , PETSC_DETERMINE, &P);    CHKERRQ(ierr);
-	ierr = VecCreateMPI(PETSC_COMM_WORLD, _MAX_PAR_  , PETSC_DETERMINE, &grad); CHKERRQ(ierr);
+	ierr = VecCreateMPI(PETSC_COMM_WORLD, _max_adj_par_  , PETSC_DETERMINE, &Lb);   CHKERRQ(ierr);
+	ierr = VecCreateMPI(PETSC_COMM_WORLD, _max_adj_par_  , PETSC_DETERMINE, &Ub);   CHKERRQ(ierr);
+	ierr = VecCreateMPI(PETSC_COMM_WORLD, _max_adj_par_  , PETSC_DETERMINE, &val);  CHKERRQ(ierr);
+	ierr = VecCreateMPI(PETSC_COMM_WORLD, _max_adj_par_  , PETSC_DETERMINE, &P);    CHKERRQ(ierr);
+	ierr = VecCreateMPI(PETSC_COMM_WORLD, _max_adj_par_  , PETSC_DETERMINE, &grad); CHKERRQ(ierr);
 	ierr = VecCreateMPI(PETSC_COMM_WORLD, 1501       , PETSC_DETERMINE, &IOparam->fcconv);   CHKERRQ(ierr);   // 1500 is the maximum inversion iterations that are accepted
 
 	// TEMPORARY VARIABLES
-	PetscInt		phsar[_MAX_PAR_];
-	PetscInt      	typar[_MAX_PAR_];
-	PetscScalar     W[_MAX_PAR_];
-	PetscScalar     Ax[_MAX_IND_];
-	PetscScalar     Ay[_MAX_IND_];
-	PetscScalar     Az[_MAX_IND_];
-	PetscScalar     Av[_MAX_IND_];
-	PetscScalar     Ae[_MAX_IND_];
+	PetscInt		phsar[_max_adj_par_];
+	PetscInt      	typar[_max_adj_par_];
+	PetscScalar     W[_max_adj_par_];
+	PetscScalar     Ax[_max_adj_point_];
+	PetscScalar     Ay[_max_adj_point_];
+	PetscScalar     Az[_max_adj_point_];
+	PetscScalar     Av[_max_adj_point_];
+	PetscScalar     Ae[_max_adj_point_];
 
 	ierr =  ScalingCreate(&scal, fb);
 
@@ -229,9 +229,9 @@ PetscErrorCode LaMEMAdjointMain(ModParam *IOparam, FB *fb)
 	ierr = FBFindBlocks(fb, _OPTIONAL_, "<InverseParStart>", "<InverseParEnd>"); CHKERRQ(ierr);
 
 	// error checking
-	if(fb->nblocks > _MAX_PAR_)
+	if(fb->nblocks > _max_adj_par_)
 	{
-		SETERRQ1(PETSC_COMM_WORLD, PETSC_ERR_USER, "Too many inverse parameters specified! Max allowed: %lld", (LLD)_MAX_PAR_);
+		SETERRQ1(PETSC_COMM_WORLD, PETSC_ERR_USER, "Too many inverse parameters specified! Max allowed: %lld", (LLD)_max_adj_par_);
 	}
 	if(!fb->nblocks)
 	{
@@ -246,7 +246,7 @@ PetscErrorCode LaMEMAdjointMain(ModParam *IOparam, FB *fb)
 
 	for(i = 0; i < fb->nblocks; i++)
 	{
-		ierr = getIntParam   (fb, _OPTIONAL_, "Inv_ID" , &ti, 1, max_num_phases); CHKERRQ(ierr);
+		ierr = getIntParam   (fb, _OPTIONAL_, "Inv_ID" , &ti, 1, _max_num_phases_); CHKERRQ(ierr);
 		phsar[i]  = ti;                    // PHASE
 		ierr = getScalarParam(fb, _OPTIONAL_, "Inv_Par", &ts, 1, 1 ); CHKERRQ(ierr);
 		Par[i]    = ts;                    // PARAMETER VALUES
@@ -290,9 +290,9 @@ PetscErrorCode LaMEMAdjointMain(ModParam *IOparam, FB *fb)
 	ierr = FBFindBlocks(fb, _OPTIONAL_, "<InverseIndStart>", "<InverseIndEnd>"); CHKERRQ(ierr);
 
 	// error checking
-	if(fb->nblocks > _MAX_IND_)
+	if(fb->nblocks > _max_adj_point_)
 	{
-		SETERRQ1(PETSC_COMM_WORLD, PETSC_ERR_USER, "Too many inverse indices specified! Max allowed: %lld", (LLD)_MAX_IND_);
+		SETERRQ1(PETSC_COMM_WORLD, PETSC_ERR_USER, "Too many inverse indices specified! Max allowed: %lld", (LLD)_max_adj_point_);
 	}
 	if(!fb->nblocks)
 	{
@@ -1007,7 +1007,7 @@ PetscErrorCode AdjointComputeGradients(JacRes *jr, AdjGrad *aop, NLSol *nl, SNES
 		ierr = VecDestroy(&res);
 	}
 
-	if(IOparam->mdI<_MAX_IND_ && IOparam->Ap == 1)
+	if(IOparam->mdI<_max_adj_point_ && IOparam->Ap == 1)
 	{
 		VecGetArray(aop->vx,&vx);
 		VecGetArray(aop->vy,&vy);

@@ -260,7 +260,7 @@ PetscErrorCode PMatSetFromOptions(PMat pm)
 {
 	PetscBool   flg;
 	PetscScalar pgamma;
-	char        pname[_STR_LEN_];
+	char        pname[_str_len_];
 
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
@@ -268,7 +268,7 @@ PetscErrorCode PMatSetFromOptions(PMat pm)
 	PetscPrintf(PETSC_COMM_WORLD, "Preconditioner parameters: \n");
 
 	// set matrix type
-	ierr = PetscOptionsGetString(NULL, NULL,"-pcmat_type", pname, _STR_LEN_, &flg); CHKERRQ(ierr);
+	ierr = PetscOptionsGetString(NULL, NULL,"-pcmat_type", pname, _str_len_, &flg); CHKERRQ(ierr);
 
 	if(flg == PETSC_TRUE)
 	{
@@ -928,7 +928,7 @@ PetscErrorCode PMatMonoAssemble(PMat pm)
 	// dump preconditioning matrices to disk to inspect them with MATLAB (mainly for debugging)
 	PetscViewer viewer;
 	PetscBool   flg, flg_name;
-	char        name[_STR_LEN_], name_A[_STR_LEN_], name_M[_STR_LEN_];
+	char        name[_str_len_], name_A[_str_len_], name_M[_str_len_];
 
 	ierr = PetscOptionsHasName(NULL, NULL, "-dump_precondition_matrixes", &flg); CHKERRQ(ierr);
 

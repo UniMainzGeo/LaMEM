@@ -287,7 +287,7 @@ PetscErrorCode ObjFunctReadFromOptions(ObjFunct *objf, const char *on[], FB *fb)
 	PetscErrorCode ierr;
 	PetscBool      found, exists;
 	PetscInt       k;
-	char           otname [_STR_LEN_];
+	char           otname [_str_len_];
 	PetscFunctionBegin;
 
 	// read filename of observation file

@@ -108,6 +108,12 @@
 	out_file_name       = FB_test # output file name
 	out_pvd             = 1       # activate writing .pvd file
 
+	<PhaseAggStart>
+		name     = block  # phase aggregate output vector name
+		numPhase = 1      # number of phases to aggregate
+		phaseID  = 1      # list of phase IDs to aggregate
+	<PhaseAggEnd>
+
 # AVD phase viewer output options (requires activation)
 
 #	out_avd     = 1 # activate AVD phase output

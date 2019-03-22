@@ -529,7 +529,7 @@ PetscErrorCode BCReadFixCell(BCCtx *bc, FB *fb)
 	PetscLogDouble  t;
 	PetscMPIInt     rank;
 	struct          stat sb;
-	char           *filename, file[_STR_LEN_];
+	char           *filename, file[_str_len_];
 
 	PetscErrorCode ierr;
 	PetscFunctionBegin;

@@ -50,6 +50,8 @@ Start installation with sudo command from terminal (WARNING! from outside of the
 Select install without Internet, copy-paste code, and point to license file
 Select all packages including License Manager
 Choose to create symbolic link for MATLAB starting command
+Ignore Window: "Your installation may require additional configuration steps"
+(just select "Next")
 
 Unmount MATLAB .iso file after installation
 

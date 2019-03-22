@@ -60,13 +60,10 @@ struct OutVec
 {
 	JacRes   *jr;
 	OutBuf   *outbuf;
-	char     *name;    // output vector name
-	PetscInt  ncomp;   // number of components
-
-//	PetscInt  phase_mask[max_num_phases];
-
+	PetscInt  ncomp;                        // number of components
+	char      name      [_str_len_];        // output vector name
+	PetscInt  phase_mask[_max_num_phases_]; // phase mask for phase aggregate
 	PetscErrorCode (*OutVecWrite)(OutVec*); // output function pointer
-
 };
 
 void OutVecCreate(
@@ -76,13 +73,13 @@ void OutVecCreate(
 	const char     *name,
 	const char     *label,
 	PetscErrorCode (*OutVecWrite)(OutVec*),
-	PetscInt        ncomp);
-
-void OutVecDestroy(OutVec *outvec);
+	PetscInt        num,       // number of vector components or phases to aggregate
+	PetscInt       *phase_ID); // phase IDs to aggregate
 
 //---------------------------------------------------------------------------
 
 PetscErrorCode PVOutWritePhase       (OutVec*);
+PetscErrorCode PVOutWritePhaseAgg    (OutVec*);
 PetscErrorCode PVOutWriteDensity     (OutVec*);
 PetscErrorCode PVOutWriteViscTotal   (OutVec*);
 PetscErrorCode PVOutWriteViscCreep   (OutVec*);

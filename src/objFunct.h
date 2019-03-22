@@ -46,20 +46,10 @@
 #define __objFunct_h__
 //---------------------------------------------------------------------------
 
-// maximum number of obervational types
-#define _max_num_obs_ 7
-#define _max_len_name_ 8
-
-//-----------------------------------------------------------------------------
-
 struct FB;
 struct FreeSurf;
 
 //-----------------------------------------------------------------------------
-// model parameter type enumeration
-
-#define _max_num_ModParam_type_ 30
-#define _max_num_MatParam_type_ 30
 
 enum PTypes// List of model parameter types (30)
 {

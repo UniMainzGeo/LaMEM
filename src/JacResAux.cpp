@@ -803,7 +803,7 @@ PetscErrorCode JacResGetPermea(JacRes *jr, PetscInt bgPhase, PetscInt step, char
 	Scaling     *scal;
 	PetscInt    i, j, k, nx, ny, nz, sx, sy, sz;
 	PetscScalar ***vz, nZFace, lvel, gvel, dp, eta, ks, bz, ez;
-	char        path[_STR_LEN_];
+	char        path[_str_len_];
 
 
 	PetscErrorCode ierr;
@@ -874,7 +874,7 @@ PetscErrorCode JacResGetPermea(JacRes *jr, PetscInt bgPhase, PetscInt step, char
 	if(ISRankZero(PETSC_COMM_WORLD))
 	{
 
-		memset(path, 0, _STR_LEN_);
+		memset(path, 0, _str_len_);
 		strcpy(path, outfile);
 		strcat(path, ".darcy.dat");
 

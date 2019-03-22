@@ -73,12 +73,12 @@ PetscErrorCode DBMatCreate(DBMat *dbm, FB *fb)
 		PetscPrintf(PETSC_COMM_WORLD,"Softening laws: \n");
 
 		// initialize ID for consistency checks
-		for(jj = 0; jj < max_num_soft; jj++) dbm->matSoft[jj].ID = -1;
+		for(jj = 0; jj < _max_num_soft_; jj++) dbm->matSoft[jj].ID = -1;
 
 		// error checking
-		if(fb->nblocks > max_num_soft)
+		if(fb->nblocks > _max_num_soft_)
 		{
-			SETERRQ1(PETSC_COMM_WORLD, PETSC_ERR_USER, "Too many softening laws specified! Max allowed: %lld", (LLD)max_num_soft);
+			SETERRQ1(PETSC_COMM_WORLD, PETSC_ERR_USER, "Too many softening laws specified! Max allowed: %lld", (LLD)_max_num_soft_);
 		}
 
 		// store actual number of softening laws
@@ -108,12 +108,12 @@ PetscErrorCode DBMatCreate(DBMat *dbm, FB *fb)
 	ierr = FBFindBlocks(fb, _REQUIRED_, "<MaterialStart>", "<MaterialEnd>"); CHKERRQ(ierr);
 
 	// initialize ID for consistency checks
-	for(jj = 0; jj < max_num_phases; jj++) dbm->phases[jj].ID = -1;
+	for(jj = 0; jj < _max_num_phases_; jj++) dbm->phases[jj].ID = -1;
 
 	// error checking
-	if(fb->nblocks > max_num_phases)
+	if(fb->nblocks > _max_num_phases_)
 	{
-		SETERRQ1(PETSC_COMM_WORLD, PETSC_ERR_USER, "Too many material structures specified! Max allowed: %lld", (LLD)max_num_phases);
+		SETERRQ1(PETSC_COMM_WORLD, PETSC_ERR_USER, "Too many material structures specified! Max allowed: %lld", (LLD)_max_num_phases_);
 	}
 
 	// store actual number of phases
@@ -187,7 +187,7 @@ PetscErrorCode DBMatReadPhase(DBMat *dbm, FB *fb)
 	PetscInt    ID = -1, visID = -1, chSoftID, frSoftID, MSN, print_title;
 	size_t 	    StringLength;
 	PetscScalar eta, eta0, e0, K, G, E, nu, Vp, Vs;
-	char        ndiff[_STR_LEN_], ndisl[_STR_LEN_], npeir[_STR_LEN_], title[_STR_LEN_], PhaseDiagram[_STR_LEN_], PhaseDiagram_Dir[_STR_LEN_];
+	char        ndiff[_str_len_], ndisl[_str_len_], npeir[_str_len_], title[_str_len_], PhaseDiagram[_str_len_], PhaseDiagram_Dir[_str_len_];
 	
 
 	PetscErrorCode ierr;
@@ -238,7 +238,7 @@ PetscErrorCode DBMatReadPhase(DBMat *dbm, FB *fb)
 	ierr = getStringParam(fb, _OPTIONAL_, "rho_ph",   PhaseDiagram, "none");          CHKERRQ(ierr);
 	if (strcmp(PhaseDiagram, "none"))
 	{
-		// Note: the maximum length of the string PhaseDiagram is _STR_LEN_
+		// Note: the maximum length of the string PhaseDiagram is _str_len_
 		// internally, however, a smaller string length is employed to save spac
 		StringLength = strlen(PhaseDiagram)+3;		// 3, because we will add ".in" to the filename 
 
@@ -253,8 +253,8 @@ PetscErrorCode DBMatReadPhase(DBMat *dbm, FB *fb)
 			strcpy(m->pdf, PhaseDiagram_Dir);
 		}
 		// check that the length of the directory and the length of the file name does not exceed 	
-		if (StringLength>max_name){
-			SETERRQ1(PETSC_COMM_WORLD,PETSC_ERR_USER,"The length of the Phase Diagram Name and directory exceeds the maximum allowed length of %i /n", max_name);
+		if (StringLength>_pd_name_sz_){
+			SETERRQ1(PETSC_COMM_WORLD,PETSC_ERR_USER,"The length of the Phase Diagram Name and directory exceeds the maximum allowed length of %i /n", _pd_name_sz_);
 		}
 
 		// copy string
