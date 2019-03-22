@@ -885,7 +885,8 @@ PetscErrorCode FreeSurfAppSedimentation(FreeSurf *surf)
 	JacRes      *jr;
 	FDSTAG      *fs;
 	PetscScalar ***topo;
-	PetscScalar dt, time, rate, zbot, ztop, z, dz, dr, rsq, x,y,t0, l[2], aE[2], aO[2], b[2],c[2],d;
+	PetscScalar dt, time, rate, zbot, ztop, z,zprop,zpropn, dz, dr, x,y;
+	PetscScalar rsq, rsqn, t0, t0n, l[2], aE[2], aO[2],ln[2], aEn[2], aOn[2], b[2],c[2],d,dn;
 	PetscInt    L, jj, phase;
 	PetscInt    i, j, nx, ny, sx, sy, sz;
 
@@ -985,11 +986,17 @@ PetscErrorCode FreeSurfAppSedimentation(FreeSurf *surf)
 		// lateral offset
 		dr = rate*dt;
 
-		// new margin with offset computed with given rate 	
-		aO[0] = surf->marginO[0]-dr*c[0];  
-		aO[1] = surf->marginO[1]-dr*c[1]; 
-		aE[0] = surf->marginE[0]-dr*c[0];  
-		aE[1] = surf->marginE[1]-dr*c[1]; 
+		// current margin 
+		aO[0] = surf->marginO[0];  
+		aO[1] = surf->marginO[1]; 
+		aE[0] = surf->marginE[0];  
+		aE[1] = surf->marginE[1]; 
+		
+		// new margin with offset computed with given rate
+		aOn[0] = surf->marginO[0]-dr*c[0];  
+		aOn[1] = surf->marginO[1]-dr*c[1]; 
+		aEn[0] = surf->marginE[0]-dr*c[0];  
+		aEn[1] = surf->marginE[1]-dr*c[1]; 
 
 		// access topography
 		ierr = DMDAVecGetArray(surf->DA_SURF, surf->gtopo,  &topo);  CHKERRQ(ierr);
@@ -1008,23 +1015,39 @@ PetscErrorCode FreeSurfAppSedimentation(FreeSurf *surf)
 
 
 			// compute distance to margin
-			t0 = ((x-aO[0])*b[0] + (y-aO[1])*b[1]) / (b[0]*b[0]+b[1]*b[1]);
-			l[0] = aO[0] + t0 * b[0];
-			l[1] = aO[1] + t0 * b[1];
-			rsq = ((x-l[0]) *(x-l[0])+(y-l[1])*(y-l[1]));
+
+			t0    = ((x-aO[0])*b[0] + (y-aO[1])*b[1]) / (b[0]*b[0]+b[1]*b[1]);
+			t0n   = ((x-aOn[0])*b[0] + (y-aOn[1])*b[1]) / (b[0]*b[0]+b[1]*b[1]);
+			l[0]  = aO[0] + t0 * b[0];
+			l[1]  = aO[1] + t0 * b[1];
+			ln[0] = aOn[0] + t0n * b[0];
+			ln[1] = aOn[1] + t0n * b[1];
+			rsq   = ((x-l[0]) *(x-l[0])+(y-l[1])*(y-l[1]));
+			rsqn  = ((x-ln[0]) *(x-ln[0])+(y-ln[1])*(y-ln[1]));
 			
 			// identify side of margin (left lateral < 0)
-			d = (x-aO[0])*(aE[1]-aO[1]) - (y-aO[1])*(aE[0]-aO[0]);
+			dn = (x-aOn[0])*(aEn[1]-aOn[1]) - (y-aOn[1])*(aEn[0]-aOn[0]);
+			d  = (x-aO[0])*(aE[1]-aO[1]) - (y-aO[1])*(aE[0]-aO[0]);
 
-			if(d<0) 
+			if(dn<0) 
 			{
-				z = surf->InitLevel+surf->hUp;
+
+				zprop = surf->InitLevel+surf->hUp;
+			}
+			else if(d<0)
+			{
+				zpropn = surf->InitLevel+surf->hUp;
 			}
 			else
 			{
-				z = surf->InitLevel + surf->hDown + (surf->hUp-surf->hDown) * exp(-rsq /surf->dTrans/surf->dTrans );
+				zprop  = surf->InitLevel + surf->hDown + (surf->hUp-surf->hDown) * exp(-rsq /surf->dTrans/surf->dTrans );
+				zpropn = surf->InitLevel + surf->hDown + (surf->hUp-surf->hDown) * exp(-rsqn /surf->dTrans/surf->dTrans );
 			}
 			
+			dz = zpropn-zprop;
+
+			if (time == 0.0) z = zprop;
+			if (z <= zprop) z += dz;
 			
 			// check if internal free surface goes outside the model domain
 			if(z > ztop) z = ztop;
@@ -1045,10 +1068,10 @@ PetscErrorCode FreeSurfAppSedimentation(FreeSurf *surf)
 		ierr = FreeSurfGetAvgTopo(surf); CHKERRQ(ierr);
 
 		// update margin
-		surf->marginO[0] = aO[0];
-		surf->marginO[1] = aO[1];
-		surf->marginE[0] = aE[0];
-		surf->marginE[1] = aE[1];
+		surf->marginO[0] = aOn[0];
+		surf->marginO[1] = aOn[1];
+		surf->marginE[0] = aEn[0];
+		surf->marginE[1] = aEn[1];
 
 		// print info
 		PetscPrintf(PETSC_COMM_WORLD, "Applying directed (cont. margin) sedimentation to internal free surface. Phase that is currently being sedimented is %lld   \n",
