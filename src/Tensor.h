@@ -117,6 +117,11 @@ void Tensor2RNUnit(Tensor2RN *A);
 
 void Tensor2RNDivide(Tensor2RN *A, PetscScalar k);
 
+void Tensor2RSSum2(
+	Tensor2RS *A, PetscScalar ka,
+	Tensor2RS *B, PetscScalar kb,
+	Tensor2RS *R);
+
 void Tensor2RNSum3(
 	Tensor2RN *A, PetscScalar ka,
 	Tensor2RN *B, PetscScalar kb,

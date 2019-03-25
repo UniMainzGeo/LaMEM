@@ -71,7 +71,10 @@ struct Marker
 	PetscScalar ATS;   // accumulated total strain
 	Tensor2RS   S;     // deviatoric stress
 	PetscScalar U[3];  // displacement
+
+	// WARNING! after adding new field modify subgrid marker control routine (merge)
 };
+
 
 //---------------------------------------------------------------------------
 
