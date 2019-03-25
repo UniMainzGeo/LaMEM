@@ -58,60 +58,6 @@ PetscErrorCode ADVMarkSubGrid(AdvCtx *actx);
 // rearrange storage after marker resampling
 PetscErrorCode ADVCollectGarbageVec(AdvCtx *actx, vector <Marker> &recvbuf, vector <PetscInt> &idel);
 
-/*
-
-// exchange markers between the processors resulting from the position change
-PetscErrorCode ADVExchange(AdvCtx *actx);
-
-// project history INCREMENTS from grid to markers
-PetscErrorCode ADVProjHistGridToMark(AdvCtx *actx);
-
-// interpolate field history increments to markers
-PetscErrorCode ADVInterpFieldToMark(AdvCtx *actx, InterpCase icase);
-
-// update marker positions from current velocities & time step
-PetscErrorCode ADVAdvectMark(AdvCtx *actx);
-
-// count number of markers to be sent to each neighbor domain
-PetscErrorCode ADVMapMarkToDomains(AdvCtx *actx);
-
-// communicate number of markers with neighbor processes
-PetscErrorCode ADVExchangeNumMark(AdvCtx *actx);
-
-// create send and receive buffers for asynchronous MPI communication
-PetscErrorCode ADVCreateMPIBuff(AdvCtx *actx);
-
-// communicate markers with neighbor processes
-PetscErrorCode ADVExchangeMark(AdvCtx *actx);
-
-// store received markers, collect garbage
-PetscErrorCode ADVCollectGarbage(AdvCtx *actx);
-
-// free communication buffer
-PetscErrorCode ADVDestroyMPIBuff(AdvCtx *actx);
-
-// find host cells for local markers
-PetscErrorCode ADVMapMarkToCells(AdvCtx *actx);
-
-// creates arrays to optimize marker-cell interaction
-PetscErrorCode ADVUpdateMarkCell(AdvCtx *actx);
-
-// delete marker outflow
-PetscErrorCode ADVMarkDeleteOutflow(AdvCtx *actx);
-
-// change marker phase when crossing free surface
-PetscErrorCode ADVMarkCrossFreeSurf(AdvCtx *actx);
-
-// check marker phases
-PetscErrorCode ADVCheckMarkPhases(AdvCtx *actx);
-
-// update history variables without advection
-PetscErrorCode ADVUpdateHistADVNone(AdvCtx *actx);
-
-// get maximum inverse time step (CFL)
-PetscErrorCode ADVSelectTimeStep(AdvCtx *actx, PetscInt *restart);
-
-*/
 
 #define MAP_SUBCELL(i, x, s, h, n) \
 { i = (PetscInt)PetscFloorReal(((x) - (s))/(h)); if(i > n - 1) { i = n - 1; } if(i < 0) { i = 0; } }

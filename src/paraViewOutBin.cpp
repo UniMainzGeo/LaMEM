@@ -473,7 +473,7 @@ PetscErrorCode PVOutCreate(PVOut *pvout, FB *fb)
 			PetscPrintf(PETSC_COMM_WORLD, "%lld ", (LLD)omask->agg_phase_ID[i][j]);
 		}
 
-		PetscPrintf(PETSC_COMM_WORLD, " >\n");
+		PetscPrintf(PETSC_COMM_WORLD, ">\n");
 	}
 
 	PetscPrintf(PETSC_COMM_WORLD, "--------------------------------------------------------------------------\n");

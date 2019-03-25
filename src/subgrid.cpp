@@ -353,7 +353,7 @@ void MergeMarkers(
 	Marker      *pj, *pk;
 	PetscInt     j, k, jmin, kmin;
 	PetscScalar *xj, *xk, *uj, *uk, d, dmin;
-
+	Tensor2RS   *sj, *sk;
 
 
 
@@ -383,11 +383,12 @@ void MergeMarkers(
 	// merge markers
 	pj = &markers[cell[jmin].second];
 	pk = &markers[cell[kmin].second];
-	xj = pj->X;
-	xk = pk->X;
-	uj = pj->U;
-	uk = pk->U;
-
+	xj =  pj->X;
+	xk =  pk->X;
+	uj =  pj->U;
+	uk =  pk->U;
+	sj = &pj->S;
+	sk = &pk->S;
 
 	xj[0]   = (xj[0]   + xk[0])  /2.0;
 	xj[1]   = (xj[1]   + xk[1])  /2.0;
@@ -399,8 +400,14 @@ void MergeMarkers(
 	uj[0]   = (uj[0]   + uk[0])  /2.0;
 	uj[1]   = (uj[1]   + uk[1])  /2.0;
 	uj[2]   = (uj[2]   + uk[2])  /2.0;
+	sj->xx  = (sj->xx  + sk->xx) /2.0;
+	sj->xy  = (sj->xy  + sk->xy) /2.0;
+	sj->xz  = (sj->xz  + sk->xz) /2.0;
+	sj->yy  = (sj->yy  + sk->yy) /2.0;
+	sj->yz  = (sj->yz  + sk->yz) /2.0;
+	sj->zz  = (sj->zz  + sk->zz) /2.0;
 
-	Tensor2RSSum2(&pj->S, 0.5, &pk->S, 0.5, &pj->S);
+
 
 	// store merged marker
 	imerge.push_back(cell[kmin].second);
