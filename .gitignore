@@ -1,4 +1,5 @@
-/.gitignore
+# please make sure that trailing spaces are removed from all lines
+# otherwise Eclipse will fail to correctly interpret this file
 /bin/
 /dep/
 /lib/

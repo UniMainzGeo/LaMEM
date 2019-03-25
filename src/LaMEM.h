@@ -60,6 +60,10 @@
 //
 //-----------------------------------------------------------------------------
 
+//-----------------------------------------------------------------------------
+// SIZE LIMITS
+//-----------------------------------------------------------------------------
+
 // number of neighbor domains in 3D lattice (including self)
 #define _num_neighb_ 27
 
@@ -157,6 +161,19 @@
 #include <sys/stat.h>
 #include <errno.h>
 #include <petsc.h>
+#include <map>
+#include <vector>
+#include <algorithm>
+#include <utility>
+
+using namespace std;
+
+//-----------------------------------------------------------------------------
+// TYPE DEFINITIONS
+//-----------------------------------------------------------------------------
+
+typedef pair <PetscScalar, PetscInt> spair;
+typedef pair <PetscInt,    PetscInt> ipair;
 
 //-----------------------------------------------------------------------------
 // PROTOTYPES
