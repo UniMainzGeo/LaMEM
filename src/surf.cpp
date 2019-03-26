@@ -1074,8 +1074,9 @@ PetscErrorCode FreeSurfSetTopoFromFile(FreeSurf *surf, FB *fb)
 	char           filename[_str_len_];
 	PetscInt 	   nxTopo, nyTopo, Ix, Iy, GridSize;
 	PetscInt       i, j, nx, ny, sx, sy, sz, level;
-	PetscScalar    ***topo, *Z, header, dim[2];
-	PetscScalar    xp, yp, Xc, Yc, xpL, ypL, DX, DY, bx, by, ex, ey, leng;
+	PetscScalar    ***topo, *Z, header, dim[2], start[2], spacing[2];
+	PetscScalar    xp, yp, xpL, ypL, DX, DY, bx, by, ex, ey, leng, X1, Y1;
+	PetscScalar    node_x, node_y;
 
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
@@ -1103,6 +1104,12 @@ PetscErrorCode FreeSurfSetTopoFromFile(FreeSurf *surf, FB *fb)
 	// read grid dimensions
 	ierr = PetscBinaryRead(fd, &dim, 2,  PETSC_SCALAR); CHKERRQ(ierr);
 
+	// read south-west corner coordinates
+	ierr = PetscBinaryRead(fd, &start, 2,  PETSC_SCALAR); CHKERRQ(ierr);
+
+	// read grid spacing
+	ierr = PetscBinaryRead(fd, &spacing, 2,  PETSC_SCALAR); CHKERRQ(ierr);
+
 	// compute grid size
 	nxTopo = (PetscInt)dim[0];
 	nyTopo = (PetscInt)dim[1];
@@ -1117,12 +1124,16 @@ PetscErrorCode FreeSurfSetTopoFromFile(FreeSurf *surf, FB *fb)
 	// destroy file handle
 	ierr = PetscViewerDestroy(&view_in); CHKERRQ(ierr);
 
+	// get input topography grid spacing
+	DX = spacing[0];
+	DY = spacing[1];
+
+	// get input topography south-west corner
+	X1 = start[0];
+	Y1 = start[1];
+
 	// get mesh extents
 	ierr = FDSTAGGetGlobalBox(fs, &bx, &by, 0, &ex, &ey, 0); CHKERRQ(ierr);
-
-	// get input topography grid spacing
-	DX = (ex - bx)/(nxTopo - 1.0);
-	DY = (ey - by)/(nyTopo - 1.0);
 
 	// access topography vector
 	ierr = DMDAVecGetArray(surf->DA_SURF, surf->gtopo,  &topo);  CHKERRQ(ierr);
@@ -1130,34 +1141,49 @@ PetscErrorCode FreeSurfSetTopoFromFile(FreeSurf *surf, FB *fb)
 	// scan all free surface local points
 	ierr = DMDAGetCorners(fs->DA_COR, &sx, &sy, &sz, &nx, &ny, NULL); CHKERRQ(ierr);
 
+	// check if input grid covers at least the entire LaMEM grid
+	if(X1 > bx){
+		SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "Topography input file does not cover western edge of the LaMEM box!");
+	}
+
+	if(X1+(nxTopo-1)*DX < ex){
+		SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "Topography input file does not cover eastern edge of the LaMEM box!");
+	}
+
+	if(Y1 > by){
+		SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "Topography input file does not cover southern edge of the LaMEM box!");
+	}
+
+	if(Y1+(nyTopo-1)*DY < ey){
+		SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "Topography input file does not cover northern edge of the LaMEM box!");
+	}
+
+
+	// runs over all LaMEM nodes
 	START_PLANE_LOOP
 	{
+		// get node coordinate
 		xp = COORD_NODE(i, sx, fs->dsx);
 		yp = COORD_NODE(j, sy, fs->dsy);
 
-		// get index of the lower left corner of the element
-		Ix = (PetscInt)floor((xp - bx)/DX);
-		Iy = (PetscInt)floor((yp - by)/DY);
-		
-		// take care of boundaries
-		if(Ix == nxTopo - 1) Ix = nxTopo - 2;
-		if(Iy == nyTopo - 1) Iy = nyTopo - 2;
-		
-		// coordinate of the first corner (lower left deepest)
-		Xc = bx + (PetscScalar)Ix*DX;
-		Yc = by + (PetscScalar)Iy*DY;
-		
-		// get local coordinate of the particle inside an element
-		// using the bilinear element in Kwon and Bang, p.161
-		xpL = ((xp - Xc)/DX)*2 - 1.0;
-		ypL = ((yp - Yc)/DY)*2 - 1.0;
-		
-		// interpolate topography using trilinear shape functions
+		// check in which element of the input grid the LaMEM node is
+		Ix = (PetscInt)PetscFloorReal((xp-X1)/DX);
+		Iy = (PetscInt)PetscFloorReal((yp-Y1)/DY);
+
+		// in case the last LaMEM node is identical with the last input grid node
+		if (Ix == nxTopo - 1) Ix = nxTopo - 2;
+		if (Iy == nyTopo - 1) Iy = nyTopo - 2;
+
+		// get relative coordinates of the LaMEM node in relation to SW node of inout grid element
+		xpL = (PetscScalar)((xp-(X1+(Ix*DX)))/DX);
+		ypL = (PetscScalar)((yp-(Y1+(Iy*DY)))/DY);
+
+		// interpolate topography from input grid onto LaMEM nodes
 		topo[level][j][i] = (
-		1.0/4.0 * (1.0-xpL) * (1.0-ypL) * Z[Iy     * nxTopo + Ix   ] +
-		1.0/4.0 * (1.0+xpL) * (1.0-ypL) * Z[Iy     * nxTopo + Ix+1 ] +
-		1.0/4.0 * (1.0+xpL) * (1.0+ypL) * Z[(Iy+1) * nxTopo + Ix+1 ] +
-		1.0/4.0 * (1.0-xpL) * (1.0+ypL) * Z[(Iy+1) * nxTopo + Ix   ])/leng;
+			(1.0-xpL) * (1.0-ypL) * Z[Ix   + Iy     * nxTopo] +
+			(xpL)     * (1.0-ypL) * Z[Ix+1 + Iy     * nxTopo] +
+			(xpL)     * (ypL)     * Z[Ix+1 + (Iy+1) * nxTopo] +
+			(1.0-xpL) * (ypL)     * Z[Ix   + (Iy+1) * nxTopo])/leng;
 	}
 	END_PLANE_LOOP
 
