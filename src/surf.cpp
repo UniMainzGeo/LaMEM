@@ -92,13 +92,18 @@ PetscErrorCode FreeSurfCreate(FreeSurf *surf, FB *fb)
 	ierr = getIntParam   (fb, _OPTIONAL_, "erosion_model",      &surf->ErosionModel,  1,  1);            CHKERRQ(ierr);
 	ierr = getIntParam   (fb, _OPTIONAL_, "sediment_model",     &surf->SedimentModel, 1,  2);            CHKERRQ(ierr);
 
-	if(surf->SedimentModel)
+	if(surf->SedimentModel == 1 || surf->SedimentModel == 2)
 	{
 		// sedimentation model parameters
-		ierr = getIntParam   (fb, _REQUIRED_, "sed_num_layers",  &surf->numLayers,  1,                 _max_sed_layers_);      CHKERRQ(ierr);
+		ierr = getIntParam   (fb, _REQUIRED_, "sed_num_layers",  &surf->numLayers,  1,                 _max_sed_layers_);  CHKERRQ(ierr);
 		ierr = getScalarParam(fb, _REQUIRED_, "sed_time_delims",  surf->timeDelims, surf->numLayers-1, scal->time);        CHKERRQ(ierr);
-		ierr = getScalarParam(fb, _REQUIRED_, "sed_rates",        surf->sedRates,   surf->numLayers,   scal->length);    CHKERRQ(ierr);
+		ierr = getScalarParam(fb, _REQUIRED_, "sed_rates",        surf->sedRates,   surf->numLayers,   scal->length);      CHKERRQ(ierr);
 		ierr = getIntParam   (fb, _REQUIRED_, "sed_phases",       surf->sedPhases,  surf->numLayers,   maxPhaseID);        CHKERRQ(ierr);
+	}
+
+	if(surf->SedimentModel == 2)
+	{
+		// sedimentation model parameters
 		ierr = getScalarParam(fb, _REQUIRED_, "marginO",          surf->marginO,    2,                 scal->length);      CHKERRQ(ierr);
 		ierr = getScalarParam(fb, _REQUIRED_, "marginE",          surf->marginE,    2,                 scal->length);      CHKERRQ(ierr);
 		ierr = getScalarParam(fb, _REQUIRED_, "marginE",          surf->marginE,    2,                 scal->length);      CHKERRQ(ierr);
