@@ -71,7 +71,7 @@
 #define _str_len_ 130
 
 // marker storage capacity overhead
-#define _cap_overhead_ 1.3
+#define _cap_overhead_ 1.61803398875
 
 // maximum marker per cell per direction
 #define _max_nmark_ 5
