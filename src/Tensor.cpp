@@ -476,22 +476,6 @@ void Tensor2RNUnit(Tensor2RN *A)
 	A->zx = 0.0; A->zy = 0.0; A->zz = 1.0;
 }
 //---------------------------------------------------------------------------
-void Tensor2RSSum2(
-	Tensor2RS *A, PetscScalar ka,
-	Tensor2RS *B, PetscScalar kb,
-	Tensor2RS *R)
-{
-	// R = ka*A + kb*B
-
-	R->xx = ka*A->xx + kb*B->xx;
-	R->xy = ka*A->xy + kb*B->xy;
-	R->xz = ka*A->xz + kb*B->xz;
-	R->yy = ka*A->yy + kb*B->yy;
-	R->yz = ka*A->yz + kb*B->yz;
-	R->zz = ka*A->zz + kb*B->zz;
-
-}
-//---------------------------------------------------------------------------
 void Tensor2RNSum3(
 	Tensor2RN *A, PetscScalar ka,
 	Tensor2RN *B, PetscScalar kb,

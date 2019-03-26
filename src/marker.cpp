@@ -534,8 +534,8 @@ PetscErrorCode ADVMarkSetTempFile(AdvCtx *actx, FB *fb)
 	PetscViewer    view_in;
 	PetscLogDouble t;
 	char           filename[_str_len_];
-	PetscScalar    header[2], dim[3];
-	PetscInt       Fsize, imark, nummark, nmarkx, nmarky, nmarkz;
+	PetscScalar    header, dim[3];
+	PetscInt       GridSize, nx, ny, nz, imark, nummark, nmarkx, nmarky, nmarkz;
 	PetscScalar    DX, DY, DZ, bx, by, bz, ex, ey, ez;
 	PetscScalar    xp, yp, zp, Xc, Yc, Zc, xpL, ypL, zpL;
 	PetscScalar    *Temp;
@@ -562,16 +562,23 @@ PetscErrorCode ADVMarkSetTempFile(AdvCtx *actx, FB *fb)
 	ierr = PetscViewerBinaryOpen(PETSC_COMM_SELF, filename, FILE_MODE_READ, &view_in); CHKERRQ(ierr);
 	ierr = PetscViewerBinaryGetDescriptor(view_in, &fd); CHKERRQ(ierr);
 
-	// read (and ignore) the silent undocumented file header & size of file
-	ierr = PetscBinaryRead(fd, &header, 2, PETSC_SCALAR); CHKERRQ(ierr);
-	Fsize = (PetscInt)(header[1])-3;
+	// read (and ignore) the silent undocumented file header
+	ierr = PetscBinaryRead(fd, &header, 1, PETSC_SCALAR); CHKERRQ(ierr);
+
+	// read grid dimensions
+	ierr = PetscBinaryRead(fd, &dim, 3,  PETSC_SCALAR); CHKERRQ(ierr);
+
+	// compute grid size
+	nx = (PetscInt)dim[0];
+	ny = (PetscInt)dim[1];
+	nz = (PetscInt)dim[2];
+	GridSize = nx * ny * nz;
 
 	// allocate space for entire file & initialize counter
-	ierr = PetscMalloc((size_t)Fsize*sizeof(PetscScalar), &Temp); CHKERRQ(ierr);
+	ierr = PetscMalloc((size_t)GridSize*sizeof(PetscScalar), &Temp); CHKERRQ(ierr);
 
 	// read entire file
-	ierr = PetscBinaryRead(fd, &dim, 3,     PETSC_SCALAR); CHKERRQ(ierr);
-	ierr = PetscBinaryRead(fd, Temp, Fsize, PETSC_SCALAR); CHKERRQ(ierr);
+	ierr = PetscBinaryRead(fd, Temp, GridSize, PETSC_SCALAR); CHKERRQ(ierr);
 
 	// get mesh extents
 	ierr = FDSTAGGetGlobalBox(fs, &bx, &by, &bz, &ex, &ey, &ez); CHKERRQ(ierr);
@@ -586,10 +593,6 @@ PetscErrorCode ADVMarkSetTempFile(AdvCtx *actx, FB *fb)
 	nmarky  = fs->dsy.ncels * actx->NumPartY;
 	nmarkz  = fs->dsz.ncels * actx->NumPartZ;
 	nummark = nmarkx*nmarky*nmarkz;
-
-	PetscInt nx, ny;
-	nx = (PetscInt)dim[0];
-	ny = (PetscInt)dim[1];
 
 	for(imark = 0; imark < nummark; imark++)
 	{

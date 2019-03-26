@@ -92,13 +92,18 @@ PetscErrorCode FreeSurfCreate(FreeSurf *surf, FB *fb)
 	ierr = getIntParam   (fb, _OPTIONAL_, "erosion_model",      &surf->ErosionModel,  1,  1);            CHKERRQ(ierr);
 	ierr = getIntParam   (fb, _OPTIONAL_, "sediment_model",     &surf->SedimentModel, 1,  2);            CHKERRQ(ierr);
 
-	if(surf->SedimentModel)
+	if(surf->SedimentModel == 1 || surf->SedimentModel == 2)
 	{
 		// sedimentation model parameters
-		ierr = getIntParam   (fb, _REQUIRED_, "sed_num_layers",  &surf->numLayers,  1,                 _max_sed_layers_);      CHKERRQ(ierr);
+		ierr = getIntParam   (fb, _REQUIRED_, "sed_num_layers",  &surf->numLayers,  1,                 _max_sed_layers_);  CHKERRQ(ierr);
 		ierr = getScalarParam(fb, _REQUIRED_, "sed_time_delims",  surf->timeDelims, surf->numLayers-1, scal->time);        CHKERRQ(ierr);
-		ierr = getScalarParam(fb, _REQUIRED_, "sed_rates",        surf->sedRates,   surf->numLayers,   scal->length);    CHKERRQ(ierr);
+		ierr = getScalarParam(fb, _REQUIRED_, "sed_rates",        surf->sedRates,   surf->numLayers,   scal->length);      CHKERRQ(ierr);
 		ierr = getIntParam   (fb, _REQUIRED_, "sed_phases",       surf->sedPhases,  surf->numLayers,   maxPhaseID);        CHKERRQ(ierr);
+	}
+
+	if(surf->SedimentModel == 2)
+	{
+		// sedimentation model parameters
 		ierr = getScalarParam(fb, _REQUIRED_, "marginO",          surf->marginO,    2,                 scal->length);      CHKERRQ(ierr);
 		ierr = getScalarParam(fb, _REQUIRED_, "marginE",          surf->marginE,    2,                 scal->length);      CHKERRQ(ierr);
 		ierr = getScalarParam(fb, _REQUIRED_, "marginE",          surf->marginE,    2,                 scal->length);      CHKERRQ(ierr);
@@ -1090,9 +1095,9 @@ PetscErrorCode FreeSurfSetTopoFromFile(FreeSurf *surf, FB *fb)
 	PetscLogDouble t;
 	PetscViewer    view_in;
 	char           filename[_str_len_];
-	PetscInt 	   nxTopo, nyTopo, Ix, Iy, Fsize;
+	PetscInt 	   nxTopo, nyTopo, Ix, Iy, GridSize;
 	PetscInt       i, j, nx, ny, sx, sy, sz, level;
-	PetscScalar    ***topo, *Z, header[2], dim[2];
+	PetscScalar    ***topo, *Z, header, dim[2];
 	PetscScalar    xp, yp, Xc, Yc, xpL, ypL, DX, DY, bx, by, ex, ey, leng;
 
 	PetscErrorCode ierr;
@@ -1115,16 +1120,22 @@ PetscErrorCode FreeSurfSetTopoFromFile(FreeSurf *surf, FB *fb)
 	ierr = PetscViewerBinaryOpen(PETSC_COMM_SELF, filename, FILE_MODE_READ, &view_in); CHKERRQ(ierr);
 	ierr = PetscViewerBinaryGetDescriptor(view_in, &fd);                               CHKERRQ(ierr);
 
-	// read (and ignore) the silent undocumented file header & size of file
-	ierr = PetscBinaryRead(fd, &header, 2, PETSC_SCALAR); CHKERRQ(ierr);
-	Fsize = (PetscInt)(header[1]);
+	// read (and ignore) the silent undocumented file header
+	ierr = PetscBinaryRead(fd, &header, 1, PETSC_SCALAR); CHKERRQ(ierr);
+
+	// read grid dimensions
+	ierr = PetscBinaryRead(fd, &dim, 2,  PETSC_SCALAR); CHKERRQ(ierr);
+
+	// compute grid size
+	nxTopo = (PetscInt)dim[0];
+	nyTopo = (PetscInt)dim[1];
+	GridSize = nxTopo * nyTopo;
 
 	// allocate space for entire file & initialize counter
-	ierr = PetscMalloc((size_t)Fsize*sizeof(PetscScalar), &Z); CHKERRQ(ierr);
-
+	ierr = PetscMalloc((size_t)GridSize*sizeof(PetscScalar), &Z); CHKERRQ(ierr);
+	
 	// read entire file
-	ierr = PetscBinaryRead(fd, &dim, 2,  PETSC_SCALAR); CHKERRQ(ierr);
-	ierr = PetscBinaryRead(fd, Z, Fsize, PETSC_SCALAR); CHKERRQ(ierr);
+	ierr = PetscBinaryRead(fd, Z, GridSize, PETSC_SCALAR); CHKERRQ(ierr);
 
 	// destroy file handle
 	ierr = PetscViewerDestroy(&view_in); CHKERRQ(ierr);
@@ -1133,11 +1144,8 @@ PetscErrorCode FreeSurfSetTopoFromFile(FreeSurf *surf, FB *fb)
 	ierr = FDSTAGGetGlobalBox(fs, &bx, &by, 0, &ex, &ey, 0); CHKERRQ(ierr);
 
 	// get input topography grid spacing
-	DX = (ex - bx)/(dim[0] - 1.0);
-	DY = (ey - by)/(dim[1] - 1.0);
-
-	nxTopo = (PetscInt)dim[0];
-	nyTopo = (PetscInt)dim[1];
+	DX = (ex - bx)/(nxTopo - 1.0);
+	DY = (ey - by)/(nyTopo - 1.0);
 
 	// access topography vector
 	ierr = DMDAVecGetArray(surf->DA_SURF, surf->gtopo,  &topo);  CHKERRQ(ierr);
@@ -1173,11 +1181,6 @@ PetscErrorCode FreeSurfSetTopoFromFile(FreeSurf *surf, FB *fb)
 		1.0/4.0 * (1.0+xpL) * (1.0-ypL) * Z[Iy     * nxTopo + Ix+1 ] +
 		1.0/4.0 * (1.0+xpL) * (1.0+ypL) * Z[(Iy+1) * nxTopo + Ix+1 ] +
 		1.0/4.0 * (1.0-xpL) * (1.0+ypL) * Z[(Iy+1) * nxTopo + Ix   ])/leng;
-
-		// Hack for the last corner, where the interpolation above does not work.
-		//if ((j==sy+ny-1) && (i==sx+nx-1)){
-			//topo[level][j][i] = topo[level][j-1][i-1];
-		//}
 	}
 	END_PLANE_LOOP
 

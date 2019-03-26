@@ -417,6 +417,9 @@ PetscErrorCode PVOutCreate(PVOut *pvout, FB *fb)
 
 		// store number of phases
 		omask->agg_num_phase[i] = np;
+
+		fb->blockID++;
+
 	}
 
 	ierr = FBFreeBlocks(fb); CHKERRQ(ierr);
@@ -467,10 +470,10 @@ PetscErrorCode PVOutCreate(PVOut *pvout, FB *fb)
 
 		for(j = 0; j < omask->agg_num_phase[i]; j++)
 		{
-			PetscPrintf(PETSC_COMM_WORLD, "%lld", (LLD)omask->agg_phase_ID[i][j]);
+			PetscPrintf(PETSC_COMM_WORLD, "%lld ", (LLD)omask->agg_phase_ID[i][j]);
 		}
 
-		PetscPrintf(PETSC_COMM_WORLD, " >\n");
+		PetscPrintf(PETSC_COMM_WORLD, ">\n");
 	}
 
 	PetscPrintf(PETSC_COMM_WORLD, "--------------------------------------------------------------------------\n");
