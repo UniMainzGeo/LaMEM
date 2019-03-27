@@ -1076,7 +1076,6 @@ PetscErrorCode FreeSurfSetTopoFromFile(FreeSurf *surf, FB *fb)
 	PetscInt       i, j, nx, ny, sx, sy, sz, level;
 	PetscScalar    ***topo, *Z, header, dim[2], start[2], spacing[2];
 	PetscScalar    xp, yp, xpL, ypL, DX, DY, bx, by, ex, ey, leng, X1, Y1;
-	PetscScalar    node_x, node_y;
 
 	PetscErrorCode ierr;
 	PetscFunctionBegin;

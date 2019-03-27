@@ -110,11 +110,11 @@ PetscErrorCode ADVMarkSubGrid(AdvCtx *actx)
 	ncell = npx*npy*npz;
 
 	// reserve space for index & distance storage
-	cell.reserve(1000);
-	dist.reserve(1000);
+	cell.reserve(_mark_buff_sz_);
+	dist.reserve(_mark_buff_sz_);
 
-	inject.reserve(actx->nummark/10);
-	imerge.reserve(actx->nummark/10);
+	inject.reserve(actx->nummark*_mark_buff_ratio_/100);
+	imerge.reserve(actx->nummark*_mark_buff_ratio_/100);
 
 	inject.clear();
 	imerge.clear();
@@ -582,13 +582,15 @@ PetscErrorCode ADVMarkCrossFreeSurfUpdate(AdvCtx *actx)
 {
 	// change marker phase when crossing free surface
 
-	Marker      *P;
-	FDSTAG      *fs;
-	FreeSurf    *surf;
-	Vec         vphase;
-	PetscInt    sx, sy, sz, nx, ny;
-	PetscInt    jj, ID, I, J, K, L, AirPhase, phaseID;
-	PetscScalar ***ltopo, ***phase, *ncx, *ncy, topo, xp, yp, zp;
+	Marker          *P, *IP;
+	FDSTAG          *fs;
+	FreeSurf        *surf;
+	Vec             vphase;
+	PetscInt        sx, sy, sz, nx, ny;
+	PetscInt        ii, jj, ID, I, J, K, L, AirPhase, phaseID, nmark, *markind, markid;
+	PetscScalar     ***ltopo, ***phase, *ncx, *ncy, topo, xp, yp, zp, *X, *XI;
+    spair           d;
+	vector <spair>  dist;
 
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
@@ -610,6 +612,9 @@ PetscErrorCode ADVMarkCrossFreeSurfUpdate(AdvCtx *actx)
 	// node & cell coordinates
 	ncx = fs->dsx.ncoor;
 	ncy = fs->dsy.ncoor;
+
+	// reserve marker distance buffer
+	dist.reserve(_mark_buff_sz_);
 
 	// request local vector for reference sedimentation phases
 	ierr = DMGetLocalVector(fs->DA_CEN, &vphase);
@@ -668,17 +673,59 @@ PetscErrorCode ADVMarkCrossFreeSurfUpdate(AdvCtx *actx)
 			}
 			else
 			{
-				// WARNING! add direct search for closest rock marker within the cell
+				// sedimentation (numerical) -> air turns into closest (reference) rock
+				X = P->X;
 
-				// sedimentation (numerical) -> air turns into a dominant phase rock
-				phaseID = (PetscInt)phase[sz+K][sy+J][sx+I];
+				// get marker list in containing cell
+				nmark   = actx->markstart[ID+1] - actx->markstart[ID];
+				markind = actx->markind + actx->markstart[ID];
 
-				if(phaseID == -1)
+				// clear distance storage
+				dist.clear();
+
+				for(ii = 0; ii < nmark; ii++)
 				{
-					SETERRQ(PETSC_COMM_SELF, PETSC_ERR_USER, "Incorrect sedimentation phase");
+					// get current marker
+					markid = markind[ii];
+					IP     = &actx->markers[markid];
+
+					// sort out air markers
+					if(IP->phase == AirPhase) continue;
+
+					// get marker coordinates
+					XI = IP->X;
+
+					// store marker index and distance
+					d.first  = EDIST(X, XI);
+					d.second = markid;
+
+					dist.push_back(d);
 				}
 
-				P->phase = phaseID;
+				// find closest rock marker (if any)
+				if(dist.size())
+				{
+					// sort rock markers by distance
+					sort(dist.begin(), dist.end());
+
+					// copy phase from closest marker
+					IP = &actx->markers[dist.begin()->second];
+
+					P->phase = IP->phase;
+				}
+				else
+				{
+					// no local rock marker found, set phase to reference
+					phaseID = (PetscInt)phase[sz+K][sy+J][sx+I];
+
+					if(phaseID == -1)
+					{
+						SETERRQ(PETSC_COMM_SELF, PETSC_ERR_USER, "Incorrect sedimentation phase");
+					}
+
+					P->phase = phaseID;
+				}
+
 			}
 		}
 	}
@@ -692,9 +739,7 @@ PetscErrorCode ADVMarkCrossFreeSurfUpdate(AdvCtx *actx)
 
 	PetscFunctionReturn(0);
 }
-
 //---------------------------------------------------------------------------
-
 #undef __FUNCT__
 #define __FUNCT__ "ADVGetSedPhase"
 PetscErrorCode ADVGetSedPhase(AdvCtx *actx, Vec vphase)
