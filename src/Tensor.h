@@ -93,6 +93,8 @@ void Tensor2RSCopy(Tensor2RS *A, Tensor2RS *B);
 //---------------------------------------------------------------------------
 void Tensor2RNClear(Tensor2RN *A);
 
+void Tensor2RSClear(Tensor2RS *A);
+
 PetscInt Tensor2RNCheckEq(Tensor2RN *A, Tensor2RN *B, PetscScalar tol);
 
 void Tensor2RNNorm(Tensor2RN *A, PetscScalar *pk);

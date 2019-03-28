@@ -352,6 +352,13 @@ void Tensor2RNClear(Tensor2RN *A)
 	A->zx = 0.0; A->zy = 0.0; A->zz = 0.0;
 }
 //---------------------------------------------------------------------------
+void Tensor2RSClear(Tensor2RS *A)
+{
+	A->xx = 0.0;
+	A->xy = 0.0; A->yy = 0.0;
+	A->xz = 0.0; A->yz = 0.0; A->zz = 0.0;
+}
+//---------------------------------------------------------------------------
 PetscInt Tensor2RNCheckEq(Tensor2RN *A, Tensor2RN *B, PetscScalar tol)
 {
 	if(!CHECKEQ(A->xx, B->xx, tol, DBL_EPSILON)) return 0;

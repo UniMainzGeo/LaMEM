@@ -79,6 +79,12 @@
 // minimum marker per cell per direction
 #define _min_nmark_ 2
 
+// cell marker buffer size
+#define _mark_buff_sz_ 256
+
+// local marker buffer size as percentage of local number of markers
+#define _mark_buff_ratio_ 5
+
 // maximum number of strain rate application periods
 #define _max_periods_ 20
 

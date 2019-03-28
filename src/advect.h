@@ -177,8 +177,6 @@ struct AdvCtx
 
 	MarkCtrlType  mctrl;               // marker control type
 
-	PetscScalar   surfTol;             // tolerance for shifting markers below free surface
-
 	//====================
 	// RUN TIME PARAMETERS
 	//====================
@@ -306,9 +304,6 @@ PetscErrorCode ADVInterpMarkToEdge(AdvCtx *actx, PetscInt iphase, InterpCase ica
 PetscErrorCode ADVMarkControl(AdvCtx *actx);
 
 PetscErrorCode ADVCheckCorners(AdvCtx *actx);
-
-// change marker phase when crossing free surface
-PetscErrorCode ADVMarkCrossFreeSurf(AdvCtx *actx);
 
 // check marker phases
 PetscErrorCode ADVCheckMarkPhases(AdvCtx *actx);

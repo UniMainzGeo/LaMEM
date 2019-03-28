@@ -55,9 +55,15 @@ struct Marker;
 // resample markers
 PetscErrorCode ADVMarkSubGrid(AdvCtx *actx);
 
+// change marker phase when crossing free surface
+PetscErrorCode ADVMarkCrossFreeSurf(AdvCtx *actx);
+PetscErrorCode ADVMarkCrossFreeSurfUpdate(AdvCtx *actx);
+
+// compute reference sedimentation phases
+PetscErrorCode ADVGetSedPhase(AdvCtx *actx, Vec vphase);
+
 // rearrange storage after marker resampling
 PetscErrorCode ADVCollectGarbageVec(AdvCtx *actx, vector <Marker> &recvbuf, vector <PetscInt> &idel);
-
 
 #define MAP_SUBCELL(i, x, s, h, n) \
 { i = (PetscInt)PetscFloorReal(((x) - (s))/(h)); if(i > n - 1) { i = n - 1; } if(i < 0) { i = 0; } }
@@ -65,7 +71,6 @@ PetscErrorCode ADVCollectGarbageVec(AdvCtx *actx, vector <Marker> &recvbuf, vect
 #define COORD_SUBCELL(x, i, s, h) (x) = (s) + (i)*(h) + (h)/2.0
 
 #define EDIST(a, b) sqrt((a[0]-b[0])*(a[0]-b[0]) + (a[1]-b[1])*(a[1]-b[1]) + (a[2]-b[2])*(a[2]-b[2]));
-
 
 //---------------------------------------------------------------------------
 #endif

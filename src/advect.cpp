@@ -99,7 +99,6 @@ PetscErrorCode ADVCreate(AdvCtx *actx, FB *fb)
 	actx->NumPartZ =  2;
 	actx->bgPhase  = -1;
 	actx->A        =  2.0/3.0;
-	actx->surfTol  =  0.05;
 	actx->npmax    =  1;
 	maxPhaseID     = actx->dbm->numPhases-1;
 
@@ -117,7 +116,6 @@ PetscErrorCode ADVCreate(AdvCtx *actx, FB *fb)
 	ierr = getStringParam(fb, _OPTIONAL_, "interp",          interp,         "stag");          CHKERRQ(ierr);
 	ierr = getScalarParam(fb, _OPTIONAL_, "stagp_a",        &actx->A,        1, 1.0);          CHKERRQ(ierr);
 	ierr = getStringParam(fb, _OPTIONAL_, "mark_ctrl",       mctrl,          "none");          CHKERRQ(ierr);
-	ierr = getScalarParam(fb, _OPTIONAL_, "surf_tol",       &actx->surfTol,  1, 1.0);          CHKERRQ(ierr);
 	ierr = getIntParam   (fb, _OPTIONAL_, "nmark_lim",       nmark_lim,      2, 0);            CHKERRQ(ierr);
 	ierr = getIntParam   (fb, _OPTIONAL_, "nmark_avd",       nmark_avd,      3, 0);            CHKERRQ(ierr);
 	ierr = getIntParam   (fb, _OPTIONAL_, "nmark_sub",      &actx->npmax,    1, 3);            CHKERRQ(ierr);
@@ -174,7 +172,6 @@ PetscErrorCode ADVCreate(AdvCtx *actx, FB *fb)
 
 	if( actx->interp != STAG_P)  actx->A       = 0.0;
 	if( actx->msetup != _GEOM_)  actx->bgPhase = -1;
-	if(!actx->surf->UseFreeSurf) actx->surfTol = 0.0;
 
 
 	if(actx->mctrl != CTRL_NONE)
@@ -228,7 +225,6 @@ PetscErrorCode ADVCreate(AdvCtx *actx, FB *fb)
 	if(actx->saveMark)      PetscPrintf(PETSC_COMM_WORLD,"   Marker storage file           : %s \n", actx->saveFile);
 	if(actx->bgPhase != -1) PetscPrintf(PETSC_COMM_WORLD,"   Background phase ID           : %lld \n", (LLD)actx->bgPhase);
 	if(actx->A)             PetscPrintf(PETSC_COMM_WORLD,"   Interpolation constant        : %g \n", actx->A);
-	if(actx->surfTol)       PetscPrintf(PETSC_COMM_WORLD,"   Surface correction tolerance  : %g \n", actx->surfTol);
 
 	PetscPrintf(PETSC_COMM_WORLD,"--------------------------------------------------------------------------\n");
 
@@ -1989,106 +1985,6 @@ PetscErrorCode ADVInterpMarkToEdge(AdvCtx *actx, PetscInt iphase, InterpCase ica
 	ierr = VecRestoreArray(jr->gdxy, &gxy); CHKERRQ(ierr);
 	ierr = VecRestoreArray(jr->gdxz, &gxz); CHKERRQ(ierr);
 	ierr = VecRestoreArray(jr->gdyz, &gyz); CHKERRQ(ierr);
-
-	PetscFunctionReturn(0);
-}
-//---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "ADVMarkCrossFreeSurf"
-PetscErrorCode ADVMarkCrossFreeSurf(AdvCtx *actx)
-{
-
-	// change marker phase when crossing free surface
-	Marker      *P;
-	FDSTAG      *fs;
-	FreeSurf    *surf;
-	PetscInt    sx, sy, nx, ny;
-	PetscInt    jj, ID, I, J, K, L, AirPhase;
-	PetscScalar ***ltopo, *ncx, *ncy, topo, xp, yp, zp, tol;
-
-	PetscErrorCode ierr;
-	PetscFunctionBegin;
-
-	// free-surface cases only
-	if(!actx->surf->UseFreeSurf) PetscFunctionReturn(0);
-
-	// access context
-	surf      = actx->surf;
-	fs        = actx->fs;
-	L         = fs->dsz.rank;
-	AirPhase  = surf->AirPhase;
-	tol       = actx->surfTol;
-
-	// starting indices & number of cells
-	sx = fs->dsx.pstart; nx = fs->dsx.ncels;
-	sy = fs->dsy.pstart; ny = fs->dsy.ncels;
-
-	// node & cell coordinates
-	ncx = fs->dsx.ncoor;
-	ncy = fs->dsy.ncoor;
-
-	// access topography
-	ierr = DMDAVecGetArray(surf->DA_SURF, surf->ltopo, &ltopo);  CHKERRQ(ierr);
-
-	// scan all markers
-	for(jj = 0; jj < actx->nummark; jj++)
-	{
-		// access next marker
-		P = &actx->markers[jj];
-
-		// get consecutive index of the host cell
-		ID = actx->cellnum[jj];
-
-		// expand I, J, K cell indices
-		GET_CELL_IJK(ID, I, J, K, nx, ny)
-
-		// get marker coordinates
-		xp = P->X[0];
-		yp = P->X[1];
-		zp = P->X[2];
-
-		// compute surface topography at marker position
-		topo = InterpLin2D(ltopo, I, J, L, sx, sy, xp, yp, ncx, ncy);
-
-		// check whether rock marker is above the free surface
-		if(P->phase != AirPhase && zp > topo)
-		{
-			if(surf->ErosionModel == 1)
-			{
-				// erosion -> rock turns into air
-				P->phase = AirPhase;
-			}
-			else
-			{
-				if(!surf->NoShiftMark)
-				{	
-					// put marker below the free surface
-					P->X[2] = topo - tol*(zp - topo);
-				}
-			}
-		}
-
-		// check whether air marker is below the free surface
-		if(P->phase == AirPhase && zp < topo)
-		{
-			if(surf->SedimentModel == 1 || surf->SedimentModel == 2)
-			{
-				// sedimentation -> air turns into a sediment
-				P->phase = surf->phase;
-			}
-			else
-			{
-				if(!surf->NoShiftMark)
-				{	
-					// put marker above the free surface
-					P->X[2] = topo + tol*(topo - zp);
-				}
-			}
-		}
-	}
-
-	// restore access
-	ierr = DMDAVecRestoreArray(surf->DA_SURF, surf->ltopo, &ltopo);  CHKERRQ(ierr);
 
 	PetscFunctionReturn(0);
 }

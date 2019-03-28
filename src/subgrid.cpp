@@ -110,11 +110,11 @@ PetscErrorCode ADVMarkSubGrid(AdvCtx *actx)
 	ncell = npx*npy*npz;
 
 	// reserve space for index & distance storage
-	cell.reserve(1000);
-	dist.reserve(1000);
+	cell.reserve(_mark_buff_sz_);
+	dist.reserve(_mark_buff_sz_);
 
-	inject.reserve(actx->nummark/10);
-	imerge.reserve(actx->nummark/10);
+	inject.reserve(actx->nummark*_mark_buff_ratio_/100);
+	imerge.reserve(actx->nummark*_mark_buff_ratio_/100);
 
 	inject.clear();
 	imerge.clear();
@@ -127,7 +127,7 @@ PetscErrorCode ADVMarkSubGrid(AdvCtx *actx)
 
 		if(!nmark)
 		{
-			SETERRQ(PETSC_COMM_SELF, PETSC_ERR_USER, " Empty control volume");
+			SETERRQ(PETSC_COMM_SELF, PETSC_ERR_USER, "Empty control volume");
 		}
 
 		// expand I, J, K cell indices
@@ -476,7 +476,377 @@ PetscErrorCode ADVCollectGarbageVec(AdvCtx *actx, vector <Marker> &recvbuf, vect
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
+#undef __FUNCT__
+#define __FUNCT__ "ADVMarkCrossFreeSurf"
+PetscErrorCode ADVMarkCrossFreeSurf(AdvCtx *actx)
+{
 
+	// change marker phase when crossing free surface
+	Marker      *P;
+	FDSTAG      *fs;
+	FreeSurf    *surf;
+	PetscInt    sx, sy, nx, ny;
+	PetscInt    jj, ID, I, J, K, L, AirPhase;
+	PetscScalar ***ltopo, *ncx, *ncy, topo, xp, yp, zp, tol;
+
+	PetscErrorCode ierr;
+	PetscFunctionBegin;
+
+	// free-surface cases only
+	if(!actx->surf->UseFreeSurf) PetscFunctionReturn(0);
+
+	// access context
+	surf      = actx->surf;
+	fs        = actx->fs;
+	L         = fs->dsz.rank;
+	AirPhase  = surf->AirPhase;
+	tol       = 0.05;
+
+	// starting indices & number of cells
+	sx = fs->dsx.pstart; nx = fs->dsx.ncels;
+	sy = fs->dsy.pstart; ny = fs->dsy.ncels;
+
+	// node & cell coordinates
+	ncx = fs->dsx.ncoor;
+	ncy = fs->dsy.ncoor;
+
+	// access topography
+	ierr = DMDAVecGetArray(surf->DA_SURF, surf->ltopo, &ltopo);  CHKERRQ(ierr);
+
+	// scan all markers
+	for(jj = 0; jj < actx->nummark; jj++)
+	{
+		// access next marker
+		P = &actx->markers[jj];
+
+		// get consecutive index of the host cell
+		ID = actx->cellnum[jj];
+
+		// expand I, J, K cell indices
+		GET_CELL_IJK(ID, I, J, K, nx, ny)
+
+		// get marker coordinates
+		xp = P->X[0];
+		yp = P->X[1];
+		zp = P->X[2];
+
+		// compute surface topography at marker position
+		topo = InterpLin2D(ltopo, I, J, L, sx, sy, xp, yp, ncx, ncy);
+
+		// check whether rock marker is above the free surface
+		if(P->phase != AirPhase && zp > topo)
+		{
+			if(surf->ErosionModel == 1)
+			{
+				// erosion -> rock turns into air
+				P->phase = AirPhase;
+			}
+			else
+			{
+				if(!surf->NoShiftMark)
+				{
+					// put marker below the free surface
+					P->X[2] = topo - tol*(zp - topo);
+				}
+			}
+		}
+
+		// check whether air marker is below the free surface
+		if(P->phase == AirPhase && zp < topo)
+		{
+			if(surf->SedimentModel == 1 || surf->SedimentModel == 2)
+			{
+				// sedimentation -> air turns into a sediment
+				P->phase = surf->phase;
+			}
+			else
+			{
+				if(!surf->NoShiftMark)
+				{
+					// put marker above the free surface
+					P->X[2] = topo + tol*(topo - zp);
+				}
+			}
+		}
+	}
+
+	// restore access
+	ierr = DMDAVecRestoreArray(surf->DA_SURF, surf->ltopo, &ltopo);  CHKERRQ(ierr);
+
+	PetscFunctionReturn(0);
+}
+//---------------------------------------------------------------------------
+#undef __FUNCT__
+#define __FUNCT__ "ADVMarkCrossFreeSurfUpdate"
+PetscErrorCode ADVMarkCrossFreeSurfUpdate(AdvCtx *actx)
+{
+	// change marker phase when crossing free surface
+
+	Marker          *P, *IP;
+	FDSTAG          *fs;
+	FreeSurf        *surf;
+	Vec             vphase;
+	PetscInt        sx, sy, sz, nx, ny;
+	PetscInt        ii, jj, ID, I, J, K, L, AirPhase, phaseID, nmark, *markind, markid;
+	PetscScalar     ***ltopo, ***phase, *ncx, *ncy, topo, xp, yp, zp, *X, *XI;
+    spair           d;
+	vector <spair>  dist;
+
+	PetscErrorCode ierr;
+	PetscFunctionBegin;
+
+	// free-surface cases only
+	if(!actx->surf->UseFreeSurf) PetscFunctionReturn(0);
+
+	// access context
+	surf      = actx->surf;
+	fs        = actx->fs;
+	L         = fs->dsz.rank;
+	AirPhase  = surf->AirPhase;
+
+	// starting indices & number of cells
+	sx = fs->dsx.pstart; nx = fs->dsx.ncels;
+	sy = fs->dsy.pstart; ny = fs->dsy.ncels;
+	sz = fs->dsz.pstart;
+
+	// node & cell coordinates
+	ncx = fs->dsx.ncoor;
+	ncy = fs->dsy.ncoor;
+
+	// reserve marker distance buffer
+	dist.reserve(_mark_buff_sz_);
+
+	// request local vector for reference sedimentation phases
+	ierr = DMGetLocalVector(fs->DA_CEN, &vphase);
+
+	// compute reference sedimentation phases
+	ierr = ADVGetSedPhase(actx, vphase); CHKERRQ(ierr);
+
+	// access topography & phases
+	ierr = DMDAVecGetArray(surf->DA_SURF, surf->ltopo, &ltopo);  CHKERRQ(ierr);
+	ierr = DMDAVecGetArray(fs->DA_CEN,    vphase,      &phase);  CHKERRQ(ierr);
+
+	// scan all markers
+	for(jj = 0; jj < actx->nummark; jj++)
+	{
+		// access next marker
+		P = &actx->markers[jj];
+
+		// get consecutive index of the host cell
+		ID = actx->cellnum[jj];
+
+		// expand I, J, K cell indices
+		GET_CELL_IJK(ID, I, J, K, nx, ny)
+
+		// get marker coordinates
+		xp = P->X[0];
+		yp = P->X[1];
+		zp = P->X[2];
+
+		// compute surface topography at marker position
+		topo = InterpLin2D(ltopo, I, J, L, sx, sy, xp, yp, ncx, ncy);
+
+		// check whether rock marker is above the free surface
+		if(P->phase != AirPhase && zp > topo)
+		{
+			// erosion (physical or numerical) -> rock turns into air
+			P->phase = AirPhase;
+
+			// erase stress history
+			Tensor2RSClear(&P->S);
+
+			//=======================================================================
+			// WARNING! decide what to do with the other air history parameters
+			// e.g. P should be set to lithostatic
+			// APS and ATS and U should be set to zero
+			// T should be set to upper boundary value (we do that anyway)
+			//=======================================================================
+		}
+
+		// check whether air marker is below the free surface
+		if(P->phase == AirPhase && zp < topo)
+		{
+			if(surf->SedimentModel == 1 || surf->SedimentModel == 2)
+			{
+				// sedimentation (physical) -> air turns into a prescribed rock
+				P->phase = surf->phase;
+			}
+			else
+			{
+				// sedimentation (numerical) -> air turns into closest (reference) rock
+				X = P->X;
+
+				// get marker list in containing cell
+				nmark   = actx->markstart[ID+1] - actx->markstart[ID];
+				markind = actx->markind + actx->markstart[ID];
+
+				// clear distance storage
+				dist.clear();
+
+				for(ii = 0; ii < nmark; ii++)
+				{
+					// get current marker
+					markid = markind[ii];
+					IP     = &actx->markers[markid];
+
+					// sort out air markers
+					if(IP->phase == AirPhase) continue;
+
+					// get marker coordinates
+					XI = IP->X;
+
+					// store marker index and distance
+					d.first  = EDIST(X, XI);
+					d.second = markid;
+
+					dist.push_back(d);
+				}
+
+				// find closest rock marker (if any)
+				if(dist.size())
+				{
+					// sort rock markers by distance
+					sort(dist.begin(), dist.end());
+
+					// copy phase from closest marker
+					IP = &actx->markers[dist.begin()->second];
+
+					P->phase = IP->phase;
+				}
+				else
+				{
+					// no local rock marker found, set phase to reference
+					phaseID = (PetscInt)phase[sz+K][sy+J][sx+I];
+
+					if(phaseID == -1)
+					{
+						SETERRQ(PETSC_COMM_SELF, PETSC_ERR_USER, "Incorrect sedimentation phase");
+					}
+
+					P->phase = phaseID;
+				}
+
+			}
+		}
+	}
+
+	// restore access
+	ierr = DMDAVecRestoreArray(surf->DA_SURF, surf->ltopo, &ltopo);  CHKERRQ(ierr);
+	ierr = DMDAVecRestoreArray(fs->DA_CEN,    vphase,      &phase);  CHKERRQ(ierr);
+
+	// restore phase vector
+	ierr = DMRestoreLocalVector(fs->DA_CEN, &vphase); CHKERRQ(ierr);
+
+	PetscFunctionReturn(0);
+}
+//---------------------------------------------------------------------------
+#undef __FUNCT__
+#define __FUNCT__ "ADVGetSedPhase"
+PetscErrorCode ADVGetSedPhase(AdvCtx *actx, Vec vphase)
+{
+	// compute reference sedimentation phases
+
+	FDSTAG      *fs;
+	JacRes      *jr;
+	Marker      *P;
+	SolVarCell  *svCell;
+	PetscInt     i, j, k, nx, ny, nz, sx, sy, sz, iter;
+	PetscInt     nCells, nMarks, numPhases, sedPhase, AirPhase, ii, jj, ID;
+	PetscScalar  maxMark, ***phase;
+
+	PetscErrorCode ierr;
+	PetscFunctionBegin;
+
+	fs        = actx->fs;
+	jr        = actx->jr;
+	numPhases = actx->dbm->numPhases;
+	AirPhase  = jr->surf->AirPhase;
+
+	// number of cells & markers
+	nCells = fs->nCells;
+	nMarks = actx->nummark;
+
+	// clear marker counters
+	for(jj = 0; jj < nCells; jj++)
+	{
+		// access solution variable
+		svCell = &jr->svCell[jj];
+
+		for(ii = 0; ii < numPhases; ii++)
+		{
+			svCell->phRat[ii] = 0.0;
+		}
+	}
+
+	// update marker counters
+	for(jj = 0; jj < nMarks; jj++)
+	{
+		// access next marker
+		P = &actx->markers[jj];
+
+		// get consecutive index of the host cell
+		ID = actx->cellnum[jj];
+
+		// access solution variable of the host cell
+		svCell = &jr->svCell[ID];
+
+		svCell->phRat[P->phase] += 1.0;
+	}
+
+	// compute dominant sedimentation phase
+	ierr = VecSet(vphase, -1.0); CHKERRQ(ierr);
+
+	iter = 0;
+	ierr = DMDAVecGetArray(fs->DA_CEN, vphase, &phase);               CHKERRQ(ierr);
+	ierr = DMDAGetCorners (fs->DA_CEN, &sx, &sy, &sz, &nx, &ny, &nz); CHKERRQ(ierr);
+
+	START_STD_LOOP
+	{
+		// access solution variables
+		svCell = &jr->svCell[iter++];
+
+		maxMark  =  0.0;
+		sedPhase = -1;
+
+		for(ii = 0; ii < numPhases; ii++)
+		{
+			if(ii == AirPhase) continue;
+
+			if(svCell->phRat[ii] > maxMark)
+			{
+				maxMark  = svCell->phRat[ii];
+				sedPhase = ii;
+
+			}
+		}
+
+		phase[k][j][i] = sedPhase;
+
+	}
+	END_STD_LOOP
+
+	ierr = DMDAVecRestoreArray(fs->DA_CEN, vphase, &phase); CHKERRQ(ierr);
+
+	// exchange ghost points
+	LOCAL_TO_LOCAL(fs->DA_CEN, vphase)
+
+	// propagate sedimentation phases to rock-air boundary cells
+	ierr = DMDAVecGetArray(fs->DA_CEN, vphase, &phase);               CHKERRQ(ierr);
+	ierr = DMDAGetCorners (fs->DA_CEN, &sx, &sy, &sz, &nx, &ny, &nz); CHKERRQ(ierr);
+
+	START_STD_LOOP
+	{
+		if(phase[k][j][i] == -1.0 && phase[k-1][j][i] != -1.0)
+		{
+			phase[k][j][i] = phase[k-1][j][i];
+		}
+	}
+	END_STD_LOOP
+
+	ierr = DMDAVecRestoreArray(fs->DA_CEN, vphase, &phase); CHKERRQ(ierr);
+
+	PetscFunctionReturn(0);
+}
 
 /*
 //---------------------------------------------------------------------------
