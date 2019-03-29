@@ -511,6 +511,7 @@ PetscErrorCode PVOutCreateData(PVOut *pvout)
 
 	// create vectors
 	ierr = PetscMalloc(sizeof(OutVec)*(size_t)pvout->nvec, &pvout->outvecs); CHKERRQ(ierr);
+	ierr = PetscMemzero(pvout->outvecs, sizeof(OutVec)*(size_t)pvout->nvec); CHKERRQ(ierr);
 
 	if(omask->phase)          OutVecCreate(&pvout->outvecs[iter++], jr, outbuf, "phase",          scal->lbl_unit,             &PVOutWritePhase,        1, NULL);
 	if(omask->density)        OutVecCreate(&pvout->outvecs[iter++], jr, outbuf, "density",        scal->lbl_density,          &PVOutWriteDensity,      1, NULL);
