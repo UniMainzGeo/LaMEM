@@ -802,11 +802,12 @@ PetscErrorCode ADVMarkInitFiles(AdvCtx *actx, FB *fb)
 PetscErrorCode ADVMarkInitGeom(AdvCtx *actx, FB *fb)
 {
 	Marker         *P;
-	PetscLogDouble t;
-	PetscScalar    chLen, chTime, chTemp;
-	char 		   TemperatureStructure[_str_len_];
-	PetscInt       jj, ngeom, imark, maxPhaseID;
-	GeomPrim       geom[_max_geom_], *pgeom[_max_geom_], *sphere, *box, *hex, *layer, *cylinder;
+	FDSTAG         *fs;
+	PetscLogDouble  t;
+	PetscScalar     chLen, chTime, chTemp;
+	char            TemperatureStructure[_str_len_];
+	PetscInt        jj, ngeom, imark, maxPhaseID;
+	GeomPrim        geom[_max_geom_], *pgeom[_max_geom_], *sphere, *box, *hex, *layer, *cylinder;
 
 	// map container to sort primitives in the order of appearance
 	map<PetscInt, GeomPrim*> cgeom;
@@ -818,10 +819,9 @@ PetscErrorCode ADVMarkInitGeom(AdvCtx *actx, FB *fb)
 	ngeom      = 0;
 	maxPhaseID = actx->dbm->numPhases - 1;
 	chLen      = actx->jr->scal->length;
-	chTime 	   = actx->jr->scal->time;
-	chTemp 	   = actx->jr->scal->temperature;
-	
-	
+	chTime     = actx->jr->scal->time;
+	chTemp     = actx->jr->scal->temperature;
+
 	// clear storage
 	ierr = PetscMemzero(geom,  sizeof(GeomPrim) *(size_t)_max_geom_); CHKERRQ(ierr);
 	ierr = PetscMemzero(pgeom, sizeof(GeomPrim*)*(size_t)_max_geom_); CHKERRQ(ierr);

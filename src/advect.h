@@ -166,6 +166,7 @@ struct AdvCtx
 	PetscInt      NumPartY;            //                 ... y-direction
 	PetscInt      NumPartZ;            //                 ... z-direction
 	PetscInt      randNoise;           // random noise flag for marker distribution
+	PetscInt      randNoiseGP;         // random noise flag, subsequently applied to geometric primitives
 	PetscInt      bgPhase;             // background phase ID
 
 	PetscInt      saveMark;            // flag for saving markers
@@ -287,6 +288,9 @@ PetscErrorCode ADVDestroyMPIBuff(AdvCtx *actx);
 
 // find host cells for local markers
 PetscErrorCode ADVMapMarkToCells(AdvCtx *actx);
+
+// perturb markers
+PetscErrorCode ADVMarkPerturb(AdvCtx *actx);
 
 // creates arrays to optimize marker-cell interaction
 PetscErrorCode ADVUpdateMarkCell(AdvCtx *actx);

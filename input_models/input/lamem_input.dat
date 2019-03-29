@@ -282,6 +282,7 @@
 	nmark_y         = 2                 # ...                 y-direction
 	nmark_z         = 2                 # ...                 z-direction
 	rand_noise      = 1                 # random noise flag
+	rand_noiseGP    = 1                 # random noise flag, subsequently applied to geometric primitives
 	bg_phase        = 1                 # background phase ID
 	save_mark       = 1                 # save marker to disk flag
 	mark_load_file  = ./markers/mdb     # marker input file (extension is .xxxxxxxx.dat)
