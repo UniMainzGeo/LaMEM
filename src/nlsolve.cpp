@@ -533,9 +533,15 @@ PetscErrorCode SNESPrintConvergedReason(SNES snes, 	PetscLogDouble t_beg)
 	PetscLogDouble      t_end;
 	SNESConvergedReason reason;
 	PetscInt            its;
+	KSP                 ksp;
+	KSPConvergedReason  ksp_reason;
+	PetscInt            div_severe;
 
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
+
+	// set flag for severe divergence
+	div_severe = 0;
 
 	PetscTime(&t_end);
 
@@ -552,7 +558,6 @@ PetscErrorCode SNESPrintConvergedReason(SNES snes, 	PetscLogDouble t_beg)
 
 	if(reason == SNES_CONVERGED_FNORM_ABS)
 	{
-
 		ierr = PetscPrintf(PETSC_COMM_WORLD, "SNES Convergence Reason : ||F|| < atol \n"); CHKERRQ(ierr);
 	}
 	else if(reason == SNES_CONVERGED_FNORM_RELATIVE)
@@ -589,10 +594,24 @@ PetscErrorCode SNESPrintConvergedReason(SNES snes, 	PetscLogDouble t_beg)
 	else if(reason == SNES_DIVERGED_LINEAR_SOLVE)
 	{
 		ierr = PetscPrintf(PETSC_COMM_WORLD, "SNES Divergence Reason  : the linear solve failed\n"); CHKERRQ(ierr);
+
+		// detect severe divergence reason
+		ierr = SNESGetKSP(snes, &ksp);                  CHKERRQ(ierr);
+		ierr = KSPGetConvergedReason(ksp, &ksp_reason); CHKERRQ(ierr);
+
+		if(ksp_reason == KSP_DIVERGED_BREAKDOWN
+		|| ksp_reason == KSP_DIVERGED_INDEFINITE_PC
+		|| ksp_reason == KSP_DIVERGED_NANORINF
+		|| ksp_reason == KSP_DIVERGED_INDEFINITE_MAT)
+		{
+			div_severe = 1;
+		}
 	}
 	else if(reason == SNES_DIVERGED_FNORM_NAN)
 	{
 		ierr = PetscPrintf(PETSC_COMM_WORLD, "SNES Divergence Reason  : residual norm is NAN\n"); CHKERRQ(ierr);
+
+		div_severe = 1;
 	}
 	else if(reason == SNES_DIVERGED_MAX_IT)
 	{
@@ -609,6 +628,12 @@ PetscErrorCode SNESPrintConvergedReason(SNES snes, 	PetscLogDouble t_beg)
 	else if(reason == SNES_DIVERGED_LOCAL_MIN)
 	{
 		ierr = PetscPrintf(PETSC_COMM_WORLD, "SNES Divergence Reason  : || J^T b || is small, implies converged to local minimum of F\n"); CHKERRQ(ierr);
+	}
+
+	// stop if severe divergence reason detected
+	if(div_severe)
+	{
+		SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "Severe divergence reason detected (see above)");
 	}
 
 	PetscPrintf(PETSC_COMM_WORLD, "Number of iterations    : %lld\n", (LLD)its);
