@@ -598,8 +598,8 @@ PetscErrorCode FreeSurfSmoothMaxAngle(FreeSurf *surf)
 	step      = jr->ts->dt;
 	tanMaxAng = PetscTanReal(surf->MaxAngle);
 
-	// get local coordinate bounds
-	ierr = FDSTAGGetLocalBox(fs, NULL, NULL, &zbot, NULL, NULL, NULL); CHKERRQ(ierr);
+	// get global coordinate bounds
+	ierr = FDSTAGGetGlobalBox(fs, NULL, NULL, &zbot, NULL, NULL, NULL); CHKERRQ(ierr);
 
 	// get current background strain rates
 	ierr = BCGetBGStrainRates(jr->bc, NULL, NULL, &Ezz, NULL, NULL, &Rzz); CHKERRQ(ierr);
