@@ -131,6 +131,9 @@ PetscErrorCode ADVMarkInit(AdvCtx *actx, FB *fb);
 // generate coordinates of uniformly distributed markers
 PetscErrorCode ADVMarkInitCoord(AdvCtx *actx);
 
+// perturb marker coordinates after initialization
+PetscErrorCode ADVMarkPerturb(AdvCtx *actx);
+
 // save all local markers to disk (parallel output)
 PetscErrorCode ADVMarkSave(AdvCtx *actx);
 

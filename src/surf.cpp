@@ -71,7 +71,6 @@ PetscErrorCode FreeSurfCreate(FreeSurf *surf, FB *fb)
 	// initialize
 	surf->phaseCorr   =  1;
 	surf->AirPhase    = -1;
-	surf->NoShiftMark =  0;
 
 	// check whether free surface is activated
 	ierr = getIntParam(fb, _OPTIONAL_, "surf_use", &surf->UseFreeSurf, 1,  1); CHKERRQ(ierr);
@@ -88,7 +87,6 @@ PetscErrorCode FreeSurfCreate(FreeSurf *surf, FB *fb)
 	ierr = getScalarParam(fb, _REQUIRED_, "surf_level",         &surf->InitLevel,     1,  scal->length); CHKERRQ(ierr);
 	ierr = getIntParam   (fb, _REQUIRED_, "surf_air_phase",     &surf->AirPhase,      1,  maxPhaseID);   CHKERRQ(ierr);
 	ierr = getScalarParam(fb, _OPTIONAL_, "surf_max_angle",     &surf->MaxAngle,      1,  scal->angle);  CHKERRQ(ierr);
-	ierr = getIntParam   (fb, _OPTIONAL_, "surf_no_shift_mark", &surf->NoShiftMark,   1,  1);            CHKERRQ(ierr);
 	ierr = getIntParam   (fb, _OPTIONAL_, "erosion_model",      &surf->ErosionModel,  1,  1);            CHKERRQ(ierr);
 	ierr = getIntParam   (fb, _OPTIONAL_, "sediment_model",     &surf->SedimentModel, 1,  2);            CHKERRQ(ierr);
 
@@ -367,7 +365,7 @@ PetscErrorCode FreeSurfGetVelComp(
 		if(z >= bz && z < ez)
 		{
 			// find containing cell
-			K = FindPointInCell(dsz->ncoor, 0, dsz->ncels, z);
+			ierr = Discret1DFindPoint(&fs->dsz, z, K); CHKERRQ(ierr);
 
 			// get interpolation weight
 			w = (z - dsz->ncoor[K])/(dsz->ncoor[K+1] - dsz->ncoor[K]);

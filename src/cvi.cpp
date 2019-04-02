@@ -917,7 +917,7 @@ PetscErrorCode ADVelMapMarkToCells(AdvVelCtx *vi)
 
 	FDSTAG      *fs;
 	PetscScalar *X;
-	PetscInt     i, ID, I, J, K, M, N, P;
+	PetscInt     i, ID, I, J, K, M, N;
 	PetscInt    *numMarkCell, *m, p;
 
 	PetscErrorCode ierr;
@@ -928,7 +928,6 @@ PetscErrorCode ADVelMapMarkToCells(AdvVelCtx *vi)
 	// get number of cells
 	M = fs->dsx.ncels;
 	N = fs->dsy.ncels;
-	P = fs->dsz.ncels;
 
 	// loop over all local particles
 	for(i = 0; i < vi->nmark; i++)
@@ -936,10 +935,10 @@ PetscErrorCode ADVelMapMarkToCells(AdvVelCtx *vi)
 		// get marker coordinates
 		X = vi->interp[i].x;
 
-		// find I, J, K indices by bisection algorithm
-		I = FindPointInCell(fs->dsx.ncoor, 0, M, X[0]);
-		J = FindPointInCell(fs->dsy.ncoor, 0, N, X[1]);
-		K = FindPointInCell(fs->dsz.ncoor, 0, P, X[2]);
+		// get host cell IDs in all directions
+		ierr = Discret1DFindPoint(&fs->dsx, X[0], I); CHKERRQ(ierr);
+		ierr = Discret1DFindPoint(&fs->dsy, X[1], J); CHKERRQ(ierr);
+		ierr = Discret1DFindPoint(&fs->dsz, X[2], K); CHKERRQ(ierr);
 
 		// compute and store consecutive index
 		GET_CELL_ID(ID, I, J, K, M, N);

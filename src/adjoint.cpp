@@ -1087,7 +1087,7 @@ PetscErrorCode AdjointPointInPro(JacRes *jr, AdjGrad *aop, ModParam *IOparam, Fr
 	PetscScalar         coord_local[3], *temppro, ***llproX, ***llproY, ***llproZ, *dggproX, *dggproY, *dggproZ, *tempxini, ***llxiniX, ***llxiniY, ***llxiniZ, *dggxiniX, *dggxiniY, *dggxiniZ;
 	PetscScalar         *vx, *vy, *vz;
 	PetscMPIInt         grank;
-	PetscInt            j, i, ii, sx, sy, sz, nx, ny, nz, I, J, K, II, JJ, KK, lrank, level;
+	PetscInt            j, i, ii, sx, sy, sz, nx, ny, I, J, K, II, JJ, KK, lrank, level;
 	PetscScalar         w, z, xb, yb, zb, xe, ye, ze, xc, yc, zc, *iter, *ncx, *ncy, *ncz, *ccx, *ccy, *ccz, ***lvx, ***lvy, ***lvz, ***vgrid, ***topo, ***vsurf;
 	Discret1D           *dsz;
 	InterpFlags         iflag;
@@ -1166,7 +1166,7 @@ PetscErrorCode AdjointPointInPro(JacRes *jr, AdjGrad *aop, ModParam *IOparam, Fr
 				// starting indices & number of cells
 				sx = fs->dsx.pstart; nx = fs->dsx.ncels;
 				sy = fs->dsy.pstart; ny = fs->dsy.ncels;
-				sz = fs->dsz.pstart; nz = fs->dsz.ncels;
+				sz = fs->dsz.pstart;
 
 				// node & cell coordinates
 				ncx = fs->dsx.ncoor; ccx = fs->dsx.ccoor;
@@ -1174,9 +1174,10 @@ PetscErrorCode AdjointPointInPro(JacRes *jr, AdjGrad *aop, ModParam *IOparam, Fr
 				ncz = fs->dsz.ncoor; ccz = fs->dsz.ccoor;
 
 				// find I, J, K indices by bisection algorithm
-				I = FindPointInCell(ncx, 0, nx, coord_local[0]);
-				J = FindPointInCell(ncy, 0, ny, coord_local[1]);
-				K = FindPointInCell(ncz, 0, nz, coord_local[2]);
+				ierr = Discret1DFindPoint(&fs->dsx, coord_local[0], I); CHKERRQ(ierr);
+				ierr = Discret1DFindPoint(&fs->dsy, coord_local[1], J); CHKERRQ(ierr);
+				ierr = Discret1DFindPoint(&fs->dsz, coord_local[2], K); CHKERRQ(ierr);
+
 
 				// get coordinates of cell center
 				xc = ccx[I];
@@ -1377,7 +1378,7 @@ PetscErrorCode AdjointPointInPro(JacRes *jr, AdjGrad *aop, ModParam *IOparam, Fr
 					if(z >= dsz->gcrdbeg && z < dsz->gcrdend)
 					{
 						// find containing cell
-						K = FindPointInCell(dsz->ncoor, 0, dsz->ncels, z);
+						ierr = Discret1DFindPoint(&fs->dsz, z, K); CHKERRQ(ierr);
 			
 						// get interpolation weight
 						w = (z - dsz->ncoor[K])/(dsz->ncoor[K+1] - dsz->ncoor[K]);
@@ -1434,7 +1435,7 @@ PetscErrorCode AdjointPointInPro(JacRes *jr, AdjGrad *aop, ModParam *IOparam, Fr
 					if(z >= dsz->gcrdbeg && z < dsz->gcrdend)
 					{
 						// find containing cell
-						K = FindPointInCell(dsz->ncoor, 0, dsz->ncels, z);
+						ierr = Discret1DFindPoint(&fs->dsz, z, K); CHKERRQ(ierr);
 			
 						// get interpolation weight
 						w = (z - dsz->ncoor[K])/(dsz->ncoor[K+1] - dsz->ncoor[K]);
@@ -1492,7 +1493,7 @@ PetscErrorCode AdjointPointInPro(JacRes *jr, AdjGrad *aop, ModParam *IOparam, Fr
 					if(z >= dsz->gcrdbeg && z < dsz->gcrdend)
 					{
 						// find containing cell
-						K = FindPointInCell(dsz->ncoor, 0, dsz->ncels, z);
+						ierr = Discret1DFindPoint(&fs->dsz, z, K); CHKERRQ(ierr);
 			
 						// get interpolation weight
 						w = (z - dsz->ncoor[K])/(dsz->ncoor[K+1] - dsz->ncoor[K]);

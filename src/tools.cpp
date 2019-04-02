@@ -195,6 +195,24 @@ PetscErrorCode makeMPIIntArray(PetscMPIInt **arr, const PetscMPIInt *init, const
 }
 //---------------------------------------------------------------------------
 #undef __FUNCT__
+#define __FUNCT__ "clearIntArray"
+PetscErrorCode clearIntArray(PetscInt *arr, const PetscInt n)
+{
+	size_t          sz;
+	PetscErrorCode 	ierr;
+
+	PetscFunctionBegin;
+
+	// compute size in bytes
+	sz = (size_t)n*sizeof(PetscInt);
+
+	// clear memory
+	ierr = PetscMemzero(arr, sz); CHKERRQ(ierr);
+
+	PetscFunctionReturn(0);
+}
+//---------------------------------------------------------------------------
+#undef __FUNCT__
 #define __FUNCT__ "makeIntArray"
 PetscErrorCode makeIntArray(PetscInt **arr, const PetscInt *init, const PetscInt n)
 {
@@ -551,51 +569,20 @@ void in_polygon(
 	}
 }
 //---------------------------------------------------------------------------
-int comp_key_val(const void * a, const void * b)
-{
-	// comparison function for sorting key-value pairs
-
-	return (int)( ((const Pair*)a)->key - ((const Pair*)b)->key );
-}
+// indexing functions
 //---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "sort_key_val"
-PetscErrorCode sort_key_val(PetscScalar *a, PetscInt *idx, PetscInt n)
-{
-	Pair     *p;
-	PetscInt  i;
-
-	PetscErrorCode ierr;
-	PetscFunctionBegin;
-
-	ierr = PetscMalloc((size_t)n*sizeof(Pair), &p); CHKERRQ(ierr);
-
-	// initialize
-	for(i = 0; i < n; i++) { p[i].key = a[i]; p[i].val = idx[i]; }
-
-	// sort
-	qsort(p, (size_t)n, sizeof(Pair), comp_key_val);
-
-	// copy result
-	for(i = 0; i < n; i++) { a[i] = p[i].key; idx[i] = p[i].val;  }
-
-	ierr = PetscFree(p); CHKERRQ(ierr);
-
-	PetscFunctionReturn(0);
-}
-//---------------------------------------------------------------------------
-// service functions
-//-----------------------------------------------------------------------------
 PetscInt getPtrCnt(PetscInt n, PetscInt counts[], PetscInt ptr[])
 {
 	// compute pointers from counts, return total count
+	// if counts and pointers are stored in the same array, counts are overwritten
 
-	PetscInt i, tcnt = 0;
+	PetscInt i, t, tcnt = 0;
 
 	for(i = 0; i < n; i++)
 	{
+		t      = counts[i];
 		ptr[i] = tcnt;
-		tcnt  += counts[i];
+		tcnt  += t;
 	}
 	return tcnt;
 }
@@ -613,6 +600,18 @@ void rewindPtr(PetscInt n, PetscInt ptr[])
 		prev   = next;
 	}
 }
+//---------------------------------------------------------------------------
+/*
+	PetscInt arr[18];
+	PetscInt counts[] = {3, 5, 7, 2, 1, 0};
+	PetscInt tnum = getPtrCnt(5, counts, counts);
+	counts[5] = tnum;
+	for(int i = 0; i < 5; i++) { for(int j = counts[i]; j < counts[i+1]; j++) arr[j] = i; }
+	for(int i = 0; i < 18; i++) counts[arr[i]]++;
+	rewindPtr(5, counts);
+*/
+//---------------------------------------------------------------------------
+// service functions
 //-----------------------------------------------------------------------------
 #undef __FUNCT__
 #define __FUNCT__ "getPhaseRatio"
@@ -639,4 +638,5 @@ PetscErrorCode getPhaseRatio(PetscInt n, PetscScalar *v, PetscScalar *rsum)
 	PetscFunctionReturn(0);
 }
 //-----------------------------------------------------------------------------
+
 

@@ -242,6 +242,68 @@ PetscErrorCode ADVMarkInitCoord(AdvCtx *actx)
 
 	PetscFunctionReturn(0);
 }
+//-----------------------------------------------------------------------------
+#undef __FUNCT__
+#define __FUNCT__ "ADVMarkPerturb"
+PetscErrorCode ADVMarkPerturb(AdvCtx *actx)
+{
+	FDSTAG      *fs;
+	PetscScalar *X;
+	PetscInt     i, ID, I, J, K, nx,ny;
+	PetscScalar  dx,dy,dz;
+	PetscRandom  rctx;
+	PetscScalar  cf_rand;
+
+	PetscErrorCode ierr;
+	PetscFunctionBegin;
+
+	// return if not set
+	if(!actx->randNoiseGP) PetscFunctionReturn(0);
+
+	PetscPrintf(PETSC_COMM_WORLD,"Apply random noise to markers after initialization\n");
+
+	fs = actx->fs;
+
+	// get random number context
+	ierr = PetscRandomCreate(PETSC_COMM_SELF, &rctx); CHKERRQ(ierr);
+	ierr = PetscRandomSetFromOptions(rctx);           CHKERRQ(ierr);
+
+	// get number of cells
+	nx = fs->dsx.ncels;
+	ny = fs->dsy.ncels;
+
+	// loop over all local particles
+	for(i = 0; i < actx->nummark; i++)
+	{
+		// get marker coordinates
+		X = actx->markers[i].X;
+
+		// get consecutive index of the host cell
+		ID = actx->cellnum[i];
+
+		// expand I, J, K cell indices
+		GET_CELL_IJK(ID, I, J, K, nx, ny)
+
+		// get subgrid cell widths
+		dx = SIZE_CELL(I, 0, fs->dsx)/(PetscScalar)actx->NumPartX;
+		dy = SIZE_CELL(J, 0, fs->dsy)/(PetscScalar)actx->NumPartY;
+		dz = SIZE_CELL(K, 0, fs->dsz)/(PetscScalar)actx->NumPartZ;
+
+		// Perturb marker location
+		ierr = PetscRandomGetValueReal(rctx, &cf_rand); CHKERRQ(ierr);
+		X[0] += (cf_rand - 0.5)*dx;
+		ierr = PetscRandomGetValueReal(rctx, &cf_rand); CHKERRQ(ierr);
+		X[1] += (cf_rand - 0.5)*dy;
+		ierr = PetscRandomGetValueReal(rctx, &cf_rand); CHKERRQ(ierr);
+		X[2] += (cf_rand - 0.5)*dz;
+	}
+
+	// destroy random context
+	ierr = PetscRandomDestroy(&rctx); CHKERRQ(ierr);
+
+	PetscPrintf(PETSC_COMM_WORLD,"--------------------------------------------------------------------------\n");
+	PetscFunctionReturn(0);
+}
 //---------------------------------------------------------------------------
 #undef __FUNCT__
 #define __FUNCT__ "ADVMarkSave"
@@ -802,7 +864,6 @@ PetscErrorCode ADVMarkInitFiles(AdvCtx *actx, FB *fb)
 PetscErrorCode ADVMarkInitGeom(AdvCtx *actx, FB *fb)
 {
 	Marker         *P;
-	FDSTAG         *fs;
 	PetscLogDouble  t;
 	PetscScalar     chLen, chTime, chTemp;
 	char            TemperatureStructure[_str_len_];

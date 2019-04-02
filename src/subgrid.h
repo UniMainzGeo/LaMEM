@@ -57,7 +57,6 @@ PetscErrorCode ADVMarkSubGrid(AdvCtx *actx);
 
 // change marker phase when crossing free surface
 PetscErrorCode ADVMarkCrossFreeSurf(AdvCtx *actx);
-PetscErrorCode ADVMarkCrossFreeSurfUpdate(AdvCtx *actx);
 
 // compute reference sedimentation phases
 PetscErrorCode ADVGetSedPhase(AdvCtx *actx, Vec vphase);

@@ -78,6 +78,8 @@ PetscErrorCode makeMPIIntArray(PetscMPIInt **arr, const PetscMPIInt *init, const
 
 PetscErrorCode makeIntArray(PetscInt **arr, const PetscInt *init, const PetscInt n);
 
+PetscErrorCode clearIntArray(PetscInt *arr, const PetscInt n);
+
 PetscErrorCode makeScalArray(PetscScalar **arr, const PetscScalar *init, const PetscInt n);
 
 //---------------------------------------------------------------------------
@@ -160,20 +162,8 @@ void in_polygon(
 	PetscInt    *in);    // point location flags (1-inside, 0-outside)
 
 //---------------------------------------------------------------------------
-// indexing & sorting functions
+// indexing functions
 //---------------------------------------------------------------------------
-
-struct Pair
-{
-	PetscScalar key;
-	PetscInt    val;
-
-};
-
-// comparison function for sorting key-value pairs
-int comp_key_val(const void * a, const void * b);
-
-PetscErrorCode sort_key_val(PetscScalar *a, PetscInt *idx, PetscInt n);
 
 // compute pointers from counts, return total count
 PetscInt getPtrCnt(PetscInt n, PetscInt counts[], PetscInt ptr[]);
@@ -187,31 +177,6 @@ void rewindPtr(PetscInt n, PetscInt ptr[]);
 
 // compute phase ratio array
 PetscErrorCode getPhaseRatio(PetscInt n, PetscScalar *v, PetscScalar *rsum);
-
-// find ID of the cell containing point (call this function for local point only!)
-static inline PetscInt FindPointInCell(
-	PetscScalar *px, // node coordinates
-	PetscInt     L,  // index of the leftmost node
-	PetscInt     R,  // index of the rightmost node
-	PetscScalar  x)  // point coordinate
-{
-	// get initial guess assuming uniform grid
-	PetscInt M = L + (PetscInt)((x-px[L])/((px[R]-px[L])/(PetscScalar)(R-L)));
-
-	if(M == R) return R-1;
-
-	if(px[M]   <= x) L=M;
-	if(px[M+1] >= x) R=M+1;
-
-	while((R-L) > 1)
-	{
-		M = (L+R)/2;
-		if(px[M] <= x) L=M;
-		if(px[M] >= x) R=M;
-
-	}
-	return(L);
-}
 
 static inline void RotDispPoint2D(PetscScalar Xa[], PetscScalar Xb[], PetscScalar costh, PetscScalar sinth, PetscScalar xa[], PetscScalar xb[])
 {

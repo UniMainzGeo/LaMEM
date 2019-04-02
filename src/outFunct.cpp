@@ -412,7 +412,6 @@ PetscErrorCode PVOutWriteLithoPress(OutVec* outvec)
 #define __FUNCT__ "PVOutWritePorePress"
 PetscErrorCode PVOutWritePorePress(OutVec* outvec)
 {
-
 	ACCESS_FUNCTION_HEADER
 
 	cf = scal->stress;
