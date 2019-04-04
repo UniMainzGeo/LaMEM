@@ -1129,7 +1129,7 @@ PetscErrorCode FreeSurfAppSedimentation(FreeSurf *surf)
 			z = topo[L][j][i];
 
 
-			dz_x = dz/BoxWidth * x + dz1;
+			dz_x = -dz/BoxWidth * x + dz1;
 
 			// uniformly advect
 			z += dz_x;
