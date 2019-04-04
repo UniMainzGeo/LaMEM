@@ -226,7 +226,8 @@
 	shear_heat_eff  = 1.0            # shear heating efficiency parameter   [0 - 1]
 	act_temp_diff   = 1              # temperature diffusion activation flag
 	act_therm_exp   = 1              # thermal expansion activation flag
-	act_steady_temp = 1              # steady-state temperature initial guess activation flag   
+	act_steady_temp = 1              # steady-state temperature initial guess activation flag
+	pre_comp_diff	= 1e-3			 # activate pre-computational temperature diffusion for x amount of time   
 	act_p_shift     = 1              # pressure shift activation flag (zero pressure in the top cell layer)
 	init_guess      = 1              # initial guess flag
 	p_litho_visc    = 1              # use lithostatic pressure for creep laws
