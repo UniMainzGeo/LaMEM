@@ -108,6 +108,8 @@ PetscErrorCode LaMEMLibInitGuess(LaMEMLib *lm, SNES snes);
 
 PetscErrorCode LaMEMLibSolveTemp(LaMEMLib *lm);
 
+PetscErrorCode PreCompDiff(LaMEMLib *lm);
+
 PetscErrorCode LaMEMLib_reverse(LaMEMLib *lm);
 
 //---------------------------------------------------------------------------
