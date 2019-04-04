@@ -56,12 +56,12 @@ struct Scaling;
 
 struct MeshSeg1D
 {
-	PetscInt    nsegs;                // number of segments
+	PetscInt    nsegs;                    // number of segments
 	PetscInt    istart[_max_num_segs_+1]; // indices of the first nodes plus last index
 	PetscScalar xstart[_max_num_segs_+1]; // coordinates of the first nodes plus total size
 	PetscScalar biases[_max_num_segs_  ]; // biases for each segment
-	PetscInt    tcels;                // total number of cells
-	PetscInt    uniform;              // uniform grid flag
+	PetscInt    tcels;                    // total number of cells
+	PetscInt    uniform;                  // uniform grid flag
 
 };
 
@@ -116,6 +116,7 @@ struct Discret1D
 	PetscScalar   gcrdbeg; // global grid coordinate bound (begin)
 	PetscScalar   gcrdend; // global grid coordinate bound (end)
 
+	PetscScalar   gtol;    // geometric tolerance
 };
 
 //---------------------------------------------------------------------------
@@ -129,7 +130,8 @@ PetscErrorCode Discret1DCreate(
 	PetscInt   *nnodProc,  // number of nodes per processor
 	PetscInt    color,     // column color
 	PetscMPIInt grprev,    // global rank of previous process
-	PetscMPIInt grnext);   // global rank of next process
+	PetscMPIInt grnext,    // global rank of next process
+	PetscScalar gtol);     // geometric tolerance
 
 PetscErrorCode Discret1DDestroy(Discret1D *ds);
 
@@ -162,6 +164,9 @@ PetscErrorCode Discret1DCheckMG(Discret1D *ds, const char *dir, PetscInt *_ncors
 
 // get maximum inverse time step on local domain (CFL)
 PetscErrorCode Discret1DgetMaxInvStep(Discret1D *ds, DM da, Vec gv, PetscInt dir, PetscScalar *_idtmax);
+
+// find index of a cell containing point (local points only)
+PetscErrorCode Discret1DFindPoint(Discret1D *ds, PetscScalar x, PetscInt &ID);
 
 //---------------------------------------------------------------------------
 

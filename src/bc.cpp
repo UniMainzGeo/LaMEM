@@ -1681,6 +1681,8 @@ PetscErrorCode BCOverridePhase(BCCtx *bc, PetscInt cellID, Marker *P)
 
 	PetscFunctionBegin;
 
+	if(!bc->face) PetscFunctionReturn(0);
+
 	fs = bc->fs;
 	M  = fs->dsx.ncels;
 	N  = fs->dsy.ncels;

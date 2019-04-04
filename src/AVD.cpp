@@ -881,6 +881,35 @@ PetscErrorCode AVDCheckCellsMV(AdvCtx *actx, MarkerVolume *mv, PetscInt dir)
 	PetscFunctionReturn(0);
 }
 //-----------------------------------------------------------------------------
+PetscInt FindPointInCell(
+	PetscScalar *px, // node coordinates
+	PetscInt     L,  // index of the leftmost node
+	PetscInt     R,  // index of the rightmost node
+	PetscScalar  x)  // point coordinate
+{
+	// find ID of the cell containing point (call this function for local point only!)
+	if(x < px[L] || x > px[R])
+	{
+		SETERRQ(PETSC_COMM_SELF, PETSC_ERR_USER, "Non-local marker");
+	}
+	// get initial guess assuming uniform grid
+	PetscInt M = L + (PetscInt)((x-px[L])/((px[R]-px[L])/(PetscScalar)(R-L)));
+
+	if(M == R) return R-1;
+
+	if(px[M]   <= x) L=M;
+	if(px[M+1] >= x) R=M+1;
+
+	while((R-L) > 1)
+	{
+		M = (L+R)/2;
+		if(px[M] <= x) L=M;
+		if(px[M] >= x) R=M;
+
+	}
+	return(L);
+}
+//-----------------------------------------------------------------------------
 #undef __FUNCT__
 #define __FUNCT__ "AVDMapMarkersMV"
 PetscErrorCode AVDMapMarkersMV(AdvCtx *actx, MarkerVolume *mv, PetscInt dir)

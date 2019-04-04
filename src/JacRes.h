@@ -179,7 +179,6 @@ struct Controls
 
 	PetscInt    getPermea;     // effective permeability computation activation flag
 	PetscInt    rescal;        // stensil rescaling flag (for interval constraints)
-
 };
 
 //---------------------------------------------------------------------------
@@ -258,7 +257,6 @@ struct JacRes
 	// 2D integration primitives
 	//==========================
 	DM DA_CELL_2D; // 2D cell center grid
-
 };
 //---------------------------------------------------------------------------
 

@@ -238,7 +238,7 @@ PetscErrorCode ADVCreate(AdvCtx *actx, FB *fb)
 	// compute host cells for all the markers
 	ierr = ADVMapMarkToCells(actx); CHKERRQ(ierr);
 
-	// Perturb markers
+	// perturb markers
 	ierr = ADVMarkPerturb(actx); CHKERRQ(ierr);
 
 	// change marker phase when crossing free surface
@@ -443,6 +443,7 @@ PetscErrorCode ADVSetBGPhase(AdvCtx *actx)
 
 	PetscFunctionReturn(0);
 }
+
 //---------------------------------------------------------------------------
 #undef __FUNCT__
 #define __FUNCT__ "ADVReAllocStorage"
@@ -541,9 +542,6 @@ PetscErrorCode ADVRemap(AdvCtx *actx)
 	{
 		// compute host cells for all the markers received
 		ierr = ADVMapMarkToCells(actx); CHKERRQ(ierr);
-
-		// update arrays for marker-cell interaction
-		ierr = ADVUpdateMarkCell(actx); CHKERRQ(ierr);
 	}
 	else if(actx->mctrl == CTRL_BASIC)
 	{
@@ -551,9 +549,6 @@ PetscErrorCode ADVRemap(AdvCtx *actx)
 
 		// compute host cells for all the markers received
 		ierr = ADVMapMarkToCells(actx); CHKERRQ(ierr);
-
-		// update arrays for marker-cell interaction
-		ierr = ADVUpdateMarkCell(actx); CHKERRQ(ierr);
 
 		// check markers and inject/delete if necessary
 //		ierr = ADVMarkControl(actx); CHKERRQ(ierr);
@@ -573,9 +568,6 @@ PetscErrorCode ADVRemap(AdvCtx *actx)
 		// compute host cells for all the markers received
 		ierr = ADVMapMarkToCells(actx); CHKERRQ(ierr);
 
-		// update arrays for marker-cell interaction
-		ierr = ADVUpdateMarkCell(actx); CHKERRQ(ierr);
-
 		PetscPrintf(PETSC_COMM_WORLD, "--------------------------------------------------------------------------\n");
 	}
 	else if(actx->mctrl == CTRL_SUB)
@@ -584,9 +576,6 @@ PetscErrorCode ADVRemap(AdvCtx *actx)
 
 		// compute host cells for all the markers received
 		ierr = ADVMapMarkToCells(actx); CHKERRQ(ierr);
-
-		// update arrays for marker-cell interaction
-		ierr = ADVUpdateMarkCell(actx); CHKERRQ(ierr);
 
 		// check markers and inject/merge if necessary based on subgrid
 		ierr = ADVMarkSubGrid(actx); CHKERRQ(ierr);
@@ -1234,6 +1223,83 @@ PetscErrorCode ADVCollectGarbage(AdvCtx *actx)
 #define __FUNCT__ "ADVMapMarkToCells"
 PetscErrorCode ADVMapMarkToCells(AdvCtx *actx)
 {
+	// store host cell ID for every marker & list of marker IDs in every cell
+	// NOTE: this routine MUST be called for the local markers only
+
+	FDSTAG      *fs;
+	PetscScalar *X;
+	PetscInt     i, ID, I, J, K, M, N, nummark;
+
+	PetscErrorCode ierr;
+	PetscFunctionBegin;
+
+	// get context
+	fs = actx->fs;
+	M  = fs->dsx.ncels;
+	N  = fs->dsy.ncels;
+
+	// loop over all local particles
+	for(i = 0; i < actx->nummark; i++)
+	{
+		// get marker coordinates
+		X = actx->markers[i].X;
+
+		// get host cell IDs in all directions
+		ierr = Discret1DFindPoint(&fs->dsx, X[0], I); CHKERRQ(ierr);
+		ierr = Discret1DFindPoint(&fs->dsy, X[1], J); CHKERRQ(ierr);
+		ierr = Discret1DFindPoint(&fs->dsz, X[2], K); CHKERRQ(ierr);
+
+		// compute and store consecutive index
+		GET_CELL_ID(ID, I, J, K, M, N);
+
+		if(ID < 0 || ID > fs->nCells-1)
+		{
+			SETERRQ(PETSC_COMM_SELF, PETSC_ERR_USER, "Wrong marker-to-cell-mapping (cell ID)");
+		}
+
+		actx->cellnum[i] = ID;
+	}
+
+	// count number of markers per cell
+	ierr = clearIntArray(actx->markstart, fs->nCells+1); CHKERRQ(ierr);
+
+	for(i = 0; i < actx->nummark; i++)
+	{
+		actx->markstart[actx->cellnum[i]]++;
+	}
+
+	// setup storage pointers
+	nummark = getPtrCnt(fs->nCells, actx->markstart, actx->markstart);
+
+	if(nummark != actx->nummark)
+	{
+		SETERRQ(PETSC_COMM_SELF, PETSC_ERR_USER, "Wrong marker-to-cell-mapping (marker counts)");
+	}
+
+	// store marker indices cell-wise
+	for(i = 0; i < actx->nummark; i++)
+	{
+		// index
+		actx->markind[actx->markstart[actx->cellnum[i]]] = i;
+
+		// iterator
+		actx->markstart[actx->cellnum[i]]++;
+	}
+
+	// rewind iterators
+	rewindPtr(fs->nCells, actx->markstart);
+
+	// set end-of-array index
+	actx->markstart[fs->nCells] = nummark;
+
+	PetscFunctionReturn(0);
+}
+//-----------------------------------------------------------------------------
+/*
+#undef __FUNCT__
+#define __FUNCT__ "ADVMapMarkToCells"
+PetscErrorCode ADVMapMarkToCells(AdvCtx *actx)
+{
 	// computes local numbers of the host cells containing markers
 	// NOTE: this routine MUST be called for the local markers only
 
@@ -1264,6 +1330,11 @@ PetscErrorCode ADVMapMarkToCells(AdvCtx *actx)
 		// compute and store consecutive index
 		GET_CELL_ID(ID, I, J, K, M, N);
 
+		if(ID < 0 || ID > fs->nCells-1)
+		{
+			SETERRQ(PETSC_COMM_SELF, PETSC_ERR_USER, "Wrong marker-to-cell-mapping (cell ID)");
+		}
+
 		actx->cellnum[i] = ID;
 	}
 
@@ -1271,108 +1342,54 @@ PetscErrorCode ADVMapMarkToCells(AdvCtx *actx)
 }
 //-----------------------------------------------------------------------------
 #undef __FUNCT__
-#define __FUNCT__ "ADVMarkPerturb"
-PetscErrorCode ADVMarkPerturb(AdvCtx *actx)
-{
-	FDSTAG      *fs;
-	PetscScalar *X;
-	PetscInt     i, ID, I, J, K, nx,ny;
-	PetscScalar  dx,dy,dz;
-	PetscRandom  rctx;
-	PetscScalar  cf_rand;
-
-	PetscErrorCode ierr;
-	PetscFunctionBegin;
-
-	// return if not set
-	if(!actx->randNoiseGP) PetscFunctionReturn(0);
-	
-	PetscPrintf(PETSC_COMM_WORLD,"Apply Random Noise subsequent to geometric primitives\n");
-	
-	fs = actx->fs;
-
-	// get random number context
-	ierr = PetscRandomCreate(PETSC_COMM_SELF, &rctx); CHKERRQ(ierr);
-	ierr = PetscRandomSetFromOptions(rctx);           CHKERRQ(ierr);
-
-	// get number of cells
-	nx = fs->dsx.ncels;
-	ny = fs->dsy.ncels;
-
-	// loop over all local particles
-	for(i = 0; i < actx->nummark; i++)
-	{
-		// get marker coordinates
-		X = actx->markers[i].X;
-
-		// get consecutive index of the host cell
-		ID = actx->cellnum[i];
-
-		// expand I, J, K cell indices
-		GET_CELL_IJK(ID, I, J, K, nx, ny)
-
-		// get subgrid cell widths
-		dx = SIZE_CELL(I, 0, fs->dsx)/(PetscScalar)actx->NumPartX;
-		dy = SIZE_CELL(J, 0, fs->dsy)/(PetscScalar)actx->NumPartY;
-		dz = SIZE_CELL(K, 0, fs->dsz)/(PetscScalar)actx->NumPartZ;
-		
-		// Perturb marker location
-		ierr = PetscRandomGetValueReal(rctx, &cf_rand); CHKERRQ(ierr);
-		X[0] += (cf_rand - 0.5)*dx;
-		ierr = PetscRandomGetValueReal(rctx, &cf_rand); CHKERRQ(ierr);
-		X[1] += (cf_rand - 0.5)*dy;
-		ierr = PetscRandomGetValueReal(rctx, &cf_rand); CHKERRQ(ierr);
-		X[2] += (cf_rand - 0.5)*dz;
-	}
-
-	// destroy random context
-	ierr = PetscRandomDestroy(&rctx); CHKERRQ(ierr);
-
-	PetscPrintf(PETSC_COMM_WORLD,"--------------------------------------------------------------------------\n");
-	PetscFunctionReturn(0);
-}
-//-----------------------------------------------------------------------------
-#undef __FUNCT__
 #define __FUNCT__ "ADVUpdateMarkCell"
 PetscErrorCode ADVUpdateMarkCell(AdvCtx *actx)
 {
-	// creates arrays to optimize marker-cell interaction
+	// store marker list in every cell
 
 	FDSTAG      *fs;
-	PetscInt    *numMarkCell, *m, i, p;
+	PetscInt     i, nummark;
 
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
 
 	fs = actx->fs;
 
-	// allocate marker counter array
-	ierr = makeIntArray(&numMarkCell, NULL, fs->nCells); CHKERRQ(ierr);
+	// count number of markers per cells
+	ierr = clearIntArray(actx->markstart, fs->nCells+1); CHKERRQ(ierr);
 
-	// count number of markers in the cells
-	for(i = 0; i < actx->nummark; i++) numMarkCell[actx->cellnum[i]]++;
-
-	// store starting indices of markers belonging to a cell
-	actx->markstart[0] = 0;
-	for(i = 1; i < fs->nCells+1; i++) actx->markstart[i] = actx->markstart[i-1]+numMarkCell[i-1];
-
-	// allocate memory for id offset
-	ierr = makeIntArray(&m, NULL, fs->nCells); CHKERRQ(ierr);
-
-	// store marker indices belonging to a cell
 	for(i = 0; i < actx->nummark; i++)
 	{
-		p = actx->markstart[actx->cellnum[i]];
-		actx->markind[p + m[actx->cellnum[i]]] = i;
-		m[actx->cellnum[i]]++;
+		actx->markstart[actx->cellnum[i]]++;
 	}
 
-	// free memory
-	ierr = PetscFree(m);           CHKERRQ(ierr);
-	ierr = PetscFree(numMarkCell); CHKERRQ(ierr);
+	// setup storage pointers
+	nummark = getPtrCnt(fs->nCells, actx->markstart, actx->markstart);
+
+	if(nummark != actx->nummark)
+	{
+		SETERRQ(PETSC_COMM_SELF, PETSC_ERR_USER, "Wrong marker-to-cell-mapping (marker counts)");
+	}
+
+	// store marker indices cell-wise
+	for(i = 0; i < actx->nummark; i++)
+	{
+		// index
+		actx->markind[actx->markstart[actx->cellnum[i]]] = i;
+
+		// iterator
+		actx->markstart[actx->cellnum[i]]++;
+	}
+
+	// rewind storage pointers
+	rewindPtr(fs->nCells, actx->markstart);
+
+	// set end-of-array index
+	actx->markstart[fs->nCells] = nummark;
 
 	PetscFunctionReturn(0);
 }
+*/
 //---------------------------------------------------------------------------
 #undef __FUNCT__
 #define __FUNCT__ "ADVMarkControl"
@@ -1452,9 +1469,6 @@ PetscErrorCode ADVMarkControl(AdvCtx *actx)
 
 	// compute host cells for all the markers
 	ierr = ADVMapMarkToCells(actx); CHKERRQ(ierr);
-
-	// update arrays for marker-cell interaction
-	ierr = ADVUpdateMarkCell(actx); CHKERRQ(ierr);
 
 	// print info
 	ierr = PetscTime(&t1); CHKERRQ(ierr);
@@ -1722,9 +1736,6 @@ PetscErrorCode ADVCheckCorners(AdvCtx *actx)
 
 	// compute host cells for all the markers
 	ierr = ADVMapMarkToCells(actx); CHKERRQ(ierr);
-
-	// update arrays for marker-cell interaction
-	ierr = ADVUpdateMarkCell(actx); CHKERRQ(ierr);
 
 	// print info
 	ierr = PetscTime(&t1); CHKERRQ(ierr);

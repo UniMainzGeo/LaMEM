@@ -214,7 +214,8 @@ PetscErrorCode Discret1DCreate(
 		PetscInt   *nnodProc,  // number of nodes per processor
 		PetscInt    color,     // column color
 		PetscMPIInt grprev,    // global rank of previous process
-		PetscMPIInt grnext)    // global rank of next process
+		PetscMPIInt grnext,    // global rank of next process
+		PetscScalar gtol)      // geometric tolerance
 {
 	PetscInt       i, cnt;
 	PetscErrorCode ierr;
@@ -279,6 +280,9 @@ PetscErrorCode Discret1DCreate(
 
 	// column communicator
 	ds->comm = MPI_COMM_NULL;
+
+	// geometric tolerance
+	ds->gtol = gtol;
 
 	PetscFunctionReturn(0);
 }
@@ -685,6 +689,75 @@ PetscErrorCode Discret1DgetMaxInvStep(Discret1D *ds, DM da, Vec gv, PetscInt dir
 
 }
 //---------------------------------------------------------------------------
+#undef __FUNCT__
+#define __FUNCT__ "Discret1DFindPoint"
+PetscErrorCode Discret1DFindPoint(Discret1D *ds, PetscScalar x, PetscInt &ID)
+{
+	// find index of a cell containing point (local points only)
+
+	PetscScalar  *px, dx, tol;
+	PetscInt      n, M, L, R;
+
+	n   =  ds->ncels;
+	px  =  ds->ncoor;
+	dx  = (px[n] - px[0])/((PetscScalar)n);
+	tol =  ds->gtol*dx;
+
+	// check bounds
+	if(x < px[0] - tol || x > px[n] + tol)
+	{
+		SETERRQ(PETSC_COMM_SELF, PETSC_ERR_USER, "Non-local point cannot be mapped to local cell");
+	}
+
+	if(ds->uniform)
+	{
+		// get cell index
+		ID = (PetscInt)PetscFloorReal((x - px[0])/dx);
+
+		// check bounds
+		if(ID < 0)   ID = 0;
+		if(ID > n-1) ID = n-1;
+	}
+	else
+	{
+		// binary search
+		L = 0;
+		R = n;
+
+		while((R - L) > 1)
+		{
+			M = (L + R)/2;
+			if(px[M] <= x) L = M;
+			if(px[M] >= x) R = M;
+		}
+
+		ID = L;
+
+		if(ID < 0 || ID > n-1)
+		{
+			SETERRQ(PETSC_COMM_SELF, PETSC_ERR_USER, "Out-of-bound cell index occurred while mapping point to cell");
+		}
+	}
+
+	PetscFunctionReturn(0);
+/*
+	Discret1D       ds;
+	PetscInt        ID;
+	PetscErrorCode 	ierr;
+	PetscScalar     x[]     = { 0.0, 0.3, 0.8, 1.4, 2.4, 2.9, 3.2, 3.5 };
+	PetscInt        uniform = 0;
+	PetscScalar     x[]     = { 0.0, 0.5, 1.0, 1.5, 2.0, 2.5, 3.0, 3.5 };
+	PetscInt        uniform = 1;
+	PetscScalar     p = 2.0 - 2.0*DBL_EPSILON;
+	ds.ncels   = 7;
+	ds.ncoor   = x;
+	ds.uniform = uniform;
+	ds.gtol    = 1e-9;
+	ierr = Discret1DFindPoint(&ds, p, ID); CHKERRQ(ierr);
+
+ */
+}
+//---------------------------------------------------------------------------
 // DOFIndex functions
 //---------------------------------------------------------------------------
 #undef __FUNCT__
@@ -943,15 +1016,18 @@ PetscErrorCode FDSTAGCreate(FDSTAG *fs, FB *fb)
 	// set discretization / domain decomposition data
 	ierr = Discret1DCreate(&fs->dsx, Px, rx, lx, cx,
 			getGlobalRank(rx-1, ry, rz, Px, Py, Pz),
-			getGlobalRank(rx+1, ry, rz, Px, Py, Pz)); CHKERRQ(ierr);
+			getGlobalRank(rx+1, ry, rz, Px, Py, Pz),
+			fs->gtol); CHKERRQ(ierr);
 
 	ierr = Discret1DCreate(&fs->dsy, Py, ry, ly, cy,
 			getGlobalRank(rx, ry-1, rz, Px, Py, Pz),
-			getGlobalRank(rx, ry+1, rz, Px, Py, Pz)); CHKERRQ(ierr);
+			getGlobalRank(rx, ry+1, rz, Px, Py, Pz),
+			fs->gtol); CHKERRQ(ierr);
 
 	ierr = Discret1DCreate(&fs->dsz, Pz, rz, lz, cz,
 			getGlobalRank(rx, ry, rz-1, Px, Py, Pz),
-			getGlobalRank(rx, ry, rz+1, Px, Py, Pz)); CHKERRQ(ierr);
+			getGlobalRank(rx, ry, rz+1, Px, Py, Pz),
+			fs->gtol); CHKERRQ(ierr);
 
 	// delete temporary arrays
 	ierr = PetscFree(lx); CHKERRQ(ierr);

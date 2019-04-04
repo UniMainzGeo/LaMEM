@@ -71,7 +71,6 @@ struct FreeSurf
 	PetscScalar InitLevel;   // initial level
 	PetscInt    AirPhase;    // air phase number
 	PetscScalar MaxAngle;    // maximum angle with horizon (smoothed if larger)
-	PetscInt    NoShiftMark; // deactivate shifting markers @ free surface
 
 	// erosion/sedimentation parameters
 	PetscInt    ErosionModel;               // [0-none, 1-infinitely fast, ...]
@@ -79,6 +78,7 @@ struct FreeSurf
 	PetscInt    numLayers;                  // number of sediment layers
 	PetscScalar timeDelims[_max_sed_layers_-1]; // sediment layers time delimiters
 	PetscScalar sedRates  [_max_sed_layers_  ]; // sedimentation rates
+	PetscScalar sedRates2nd [_max_sed_layers_  ]; // sedimentation rates
 	PetscInt    sedPhases [_max_sed_layers_  ]; // sediment layers phase numbers
 	PetscScalar marginO [2];                // lateral coordinates of continental margin - origin
 	PetscScalar marginE [2];                // lateral coordinates of continental margin - 2nd point

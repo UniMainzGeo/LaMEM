@@ -286,14 +286,8 @@ PetscErrorCode ADVCollectGarbage(AdvCtx *actx);
 // free communication buffer
 PetscErrorCode ADVDestroyMPIBuff(AdvCtx *actx);
 
-// find host cells for local markers
+// store host cell ID for every marker & list of marker IDs in every cell
 PetscErrorCode ADVMapMarkToCells(AdvCtx *actx);
-
-// perturb markers
-PetscErrorCode ADVMarkPerturb(AdvCtx *actx);
-
-// creates arrays to optimize marker-cell interaction
-PetscErrorCode ADVUpdateMarkCell(AdvCtx *actx);
 
 // project history fields from markers to grid
 PetscErrorCode ADVProjHistMarkToGrid(AdvCtx *actx);

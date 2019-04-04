@@ -47,9 +47,11 @@
 #include "parsing.h"
 #include "adjoint.h"
 #include "phase.h"
+
 //---------------------------------------------------------------------------
 static char help[] = "Solves 3D Stokes equations using multigrid .\n\n";
-//--------------------------------------------------------------------------
+//---------------------------------------------------------------------------
+
 #undef __FUNCT__
 #define __FUNCT__ "main"
 int main(int argc, char **argv)
@@ -66,7 +68,7 @@ int main(int argc, char **argv)
 	// set default to be a forward run and overwrite it with input file options
 
 	// 0 = forward run
-	// 1 = Neighbourhood algorithm (requires NAPlus)
+	// 1 = Neighborhood algorithm (requires NAPlus)
 	// 2 = only compute adjoint gradients
 	// 3 = 'full' adjoint inversion with TAO
 	// 4 = assume this as a forward simulation and save the solution

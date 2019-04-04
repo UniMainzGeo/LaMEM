@@ -79,9 +79,10 @@ Main advection routine
 #define __FUNCT__ "ADVMarkSubGrid"
 PetscErrorCode ADVMarkSubGrid(AdvCtx *actx)
 {
-	// check marker distribution and merge or inject markers based on subgrid
+	// check marker distribution and merge or clone markers based on subgrid
 
 	FDSTAG           *fs;
+	BCCtx            *bc;
 	PetscInt          cellid, markid, icell, I, J, K, i, j, ib, ie;
 	PetscInt          ncx, ncy, npx, npy, npz, nmark, ncell;
 	PetscInt         *markind;
@@ -90,7 +91,7 @@ PetscErrorCode ADVMarkSubGrid(AdvCtx *actx)
     ipair             t;
     spair             d;
     Marker            P;
-	vector <Marker>   inject;
+	vector <Marker>   iclone;
 	vector <PetscInt> imerge;
 	vector <ipair>    cell;
     vector <spair>    dist;
@@ -101,6 +102,7 @@ PetscErrorCode ADVMarkSubGrid(AdvCtx *actx)
 	ierr = PetscTime(&t0); CHKERRQ(ierr);
 
 	// access context
+	bc    = actx->jr->bc;
 	fs    = actx->fs;
 	ncx   = fs->dsx.ncels;
 	ncy   = fs->dsy.ncels;
@@ -113,10 +115,10 @@ PetscErrorCode ADVMarkSubGrid(AdvCtx *actx)
 	cell.reserve(_mark_buff_sz_);
 	dist.reserve(_mark_buff_sz_);
 
-	inject.reserve(actx->nummark*_mark_buff_ratio_/100);
+	iclone.reserve(actx->nummark*_mark_buff_ratio_/100);
 	imerge.reserve(actx->nummark*_mark_buff_ratio_/100);
 
-	inject.clear();
+	iclone.clear();
 	imerge.clear();
 
 	// process local cells
@@ -166,7 +168,6 @@ PetscErrorCode ADVMarkSubGrid(AdvCtx *actx)
 			t.first  = cellid;
 			t.second = markid;
 			cell.push_back(t);
-
 		}
 
 		// sort markers by subcells
@@ -222,8 +223,11 @@ PetscErrorCode ADVMarkSubGrid(AdvCtx *actx)
 				P.X[1] = xc[1];
 				P.X[2] = xc[2];
 
-				// store injected marker
-				inject.push_back(P);
+				// override marker phase (if necessary)
+				ierr = BCOverridePhase(bc, icell, &P); CHKERRQ(ierr);
+
+				// store cloned marker
+				iclone.push_back(P);
 			}
 			else
 			{
@@ -246,17 +250,16 @@ PetscErrorCode ADVMarkSubGrid(AdvCtx *actx)
 	}
 
 	// rearrange storage after marker resampling
-	ierr = ADVCollectGarbageVec(actx, inject, imerge); CHKERRQ(ierr);
+	ierr = ADVCollectGarbageVec(actx, iclone, imerge); CHKERRQ(ierr);
 
 	// compute host cells for all the markers
 	ierr = ADVMapMarkToCells(actx); CHKERRQ(ierr);
 
-	// update arrays for marker-cell interaction
-	ierr = ADVUpdateMarkCell(actx); CHKERRQ(ierr);
-
 	// print info
 	ierr = PetscTime(&t1); CHKERRQ(ierr);
-	PetscPrintf(PETSC_COMM_WORLD,"Marker control [%lld]: (subgrid) injected %lld markers and merged %lld markers in %1.4e s\n",(LLD)actx->iproc, (LLD)inject.size(), (LLD)imerge.size(), t1-t0);
+	PetscPrintf(PETSC_COMM_WORLD,
+		"Marker control [%lld]: (subgrid) cloned %lld markers and merged %lld markers in %1.4e s\n",
+		(LLD)actx->iproc, (LLD)iclone.size(), (LLD)imerge.size(), t1-t0);
 
 	PetscFunctionReturn(0);
 }
@@ -412,7 +415,6 @@ void MergeMarkers(
 	// store merged marker
 	imerge.push_back(cell[kmin].second);
 }
-
 //---------------------------------------------------------------------------
 #undef __FUNCT__
 #define __FUNCT__ "ADVCollectGarbageVec"
@@ -480,106 +482,6 @@ PetscErrorCode ADVCollectGarbageVec(AdvCtx *actx, vector <Marker> &recvbuf, vect
 #define __FUNCT__ "ADVMarkCrossFreeSurf"
 PetscErrorCode ADVMarkCrossFreeSurf(AdvCtx *actx)
 {
-
-	// change marker phase when crossing free surface
-	Marker      *P;
-	FDSTAG      *fs;
-	FreeSurf    *surf;
-	PetscInt    sx, sy, nx, ny;
-	PetscInt    jj, ID, I, J, K, L, AirPhase;
-	PetscScalar ***ltopo, *ncx, *ncy, topo, xp, yp, zp, tol;
-
-	PetscErrorCode ierr;
-	PetscFunctionBegin;
-
-	// free-surface cases only
-	if(!actx->surf->UseFreeSurf) PetscFunctionReturn(0);
-
-	// access context
-	surf      = actx->surf;
-	fs        = actx->fs;
-	L         = fs->dsz.rank;
-	AirPhase  = surf->AirPhase;
-	tol       = 0.05;
-
-	// starting indices & number of cells
-	sx = fs->dsx.pstart; nx = fs->dsx.ncels;
-	sy = fs->dsy.pstart; ny = fs->dsy.ncels;
-
-	// node & cell coordinates
-	ncx = fs->dsx.ncoor;
-	ncy = fs->dsy.ncoor;
-
-	// access topography
-	ierr = DMDAVecGetArray(surf->DA_SURF, surf->ltopo, &ltopo);  CHKERRQ(ierr);
-
-	// scan all markers
-	for(jj = 0; jj < actx->nummark; jj++)
-	{
-		// access next marker
-		P = &actx->markers[jj];
-
-		// get consecutive index of the host cell
-		ID = actx->cellnum[jj];
-
-		// expand I, J, K cell indices
-		GET_CELL_IJK(ID, I, J, K, nx, ny)
-
-		// get marker coordinates
-		xp = P->X[0];
-		yp = P->X[1];
-		zp = P->X[2];
-
-		// compute surface topography at marker position
-		topo = InterpLin2D(ltopo, I, J, L, sx, sy, xp, yp, ncx, ncy);
-
-		// check whether rock marker is above the free surface
-		if(P->phase != AirPhase && zp > topo)
-		{
-			if(surf->ErosionModel == 1)
-			{
-				// erosion -> rock turns into air
-				P->phase = AirPhase;
-			}
-			else
-			{
-				if(!surf->NoShiftMark)
-				{
-					// put marker below the free surface
-					P->X[2] = topo - tol*(zp - topo);
-				}
-			}
-		}
-
-		// check whether air marker is below the free surface
-		if(P->phase == AirPhase && zp < topo)
-		{
-			if(surf->SedimentModel == 1 || surf->SedimentModel == 2)
-			{
-				// sedimentation -> air turns into a sediment
-				P->phase = surf->phase;
-			}
-			else
-			{
-				if(!surf->NoShiftMark)
-				{
-					// put marker above the free surface
-					P->X[2] = topo + tol*(topo - zp);
-				}
-			}
-		}
-	}
-
-	// restore access
-	ierr = DMDAVecRestoreArray(surf->DA_SURF, surf->ltopo, &ltopo);  CHKERRQ(ierr);
-
-	PetscFunctionReturn(0);
-}
-//---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "ADVMarkCrossFreeSurfUpdate"
-PetscErrorCode ADVMarkCrossFreeSurfUpdate(AdvCtx *actx)
-{
 	// change marker phase when crossing free surface
 
 	Marker          *P, *IP;
@@ -588,7 +490,7 @@ PetscErrorCode ADVMarkCrossFreeSurfUpdate(AdvCtx *actx)
 	Vec             vphase;
 	PetscInt        sx, sy, sz, nx, ny;
 	PetscInt        ii, jj, ID, I, J, K, L, AirPhase, phaseID, nmark, *markind, markid;
-	PetscScalar     ***ltopo, ***phase, *ncx, *ncy, topo, xp, yp, zp, *X, *XI;
+	PetscScalar     ***ltopo, ***phase, *ncx, *ncy, topo, xp, yp, zp, *X, *IX;
     spair           d;
 	vector <spair>  dist;
 
@@ -609,7 +511,7 @@ PetscErrorCode ADVMarkCrossFreeSurfUpdate(AdvCtx *actx)
 	sy = fs->dsy.pstart; ny = fs->dsy.ncels;
 	sz = fs->dsz.pstart;
 
-	// node & cell coordinates
+	// grid coordinates
 	ncx = fs->dsx.ncoor;
 	ncy = fs->dsy.ncoor;
 
@@ -652,21 +554,15 @@ PetscErrorCode ADVMarkCrossFreeSurfUpdate(AdvCtx *actx)
 			// erosion (physical or numerical) -> rock turns into air
 			P->phase = AirPhase;
 
-			// erase stress history
-			Tensor2RSClear(&P->S);
-
 			//=======================================================================
-			// WARNING! decide what to do with the other air history parameters
-			// e.g. P should be set to lithostatic
-			// APS and ATS and U should be set to zero
-			// T should be set to upper boundary value (we do that anyway)
+			// WARNING! At best clone history from nearest air marker
 			//=======================================================================
 		}
 
 		// check whether air marker is below the free surface
 		if(P->phase == AirPhase && zp < topo)
 		{
-			if(surf->SedimentModel == 1 || surf->SedimentModel == 2)
+			if(surf->SedimentModel > 0)
 			{
 				// sedimentation (physical) -> air turns into a prescribed rock
 				P->phase = surf->phase;
@@ -693,10 +589,10 @@ PetscErrorCode ADVMarkCrossFreeSurfUpdate(AdvCtx *actx)
 					if(IP->phase == AirPhase) continue;
 
 					// get marker coordinates
-					XI = IP->X;
+					IX = IP->X;
 
 					// store marker index and distance
-					d.first  = EDIST(X, XI);
+					d.first  = EDIST(X, IX);
 					d.second = markid;
 
 					dist.push_back(d);
@@ -718,7 +614,7 @@ PetscErrorCode ADVMarkCrossFreeSurfUpdate(AdvCtx *actx)
 					// no local rock marker found, set phase to reference
 					phaseID = (PetscInt)phase[sz+K][sy+J][sx+I];
 
-					if(phaseID == -1)
+					if(phaseID < 0)
 					{
 						SETERRQ(PETSC_COMM_SELF, PETSC_ERR_USER, "Incorrect sedimentation phase");
 					}
@@ -726,6 +622,9 @@ PetscErrorCode ADVMarkCrossFreeSurfUpdate(AdvCtx *actx)
 					P->phase = phaseID;
 				}
 
+				//=======================================================================
+				// WARNING! At best clone history from nearest rock marker
+				//=======================================================================
 			}
 		}
 	}
@@ -793,12 +692,15 @@ PetscErrorCode ADVGetSedPhase(AdvCtx *actx, Vec vphase)
 		svCell->phRat[P->phase] += 1.0;
 	}
 
-	// compute dominant sedimentation phase
+	// initialize phase vector
 	ierr = VecSet(vphase, -1.0); CHKERRQ(ierr);
 
+	// compute dominant sedimentation phase
+	ierr = DMDAGetCorners(fs->DA_CEN, &sx, &sy, &sz, &nx, &ny, &nz); CHKERRQ(ierr);
+
+	ierr = DMDAVecGetArray(fs->DA_CEN, vphase, &phase); CHKERRQ(ierr);
+
 	iter = 0;
-	ierr = DMDAVecGetArray(fs->DA_CEN, vphase, &phase);               CHKERRQ(ierr);
-	ierr = DMDAGetCorners (fs->DA_CEN, &sx, &sy, &sz, &nx, &ny, &nz); CHKERRQ(ierr);
 
 	START_STD_LOOP
 	{
@@ -816,12 +718,10 @@ PetscErrorCode ADVGetSedPhase(AdvCtx *actx, Vec vphase)
 			{
 				maxMark  = svCell->phRat[ii];
 				sedPhase = ii;
-
 			}
 		}
 
-		phase[k][j][i] = sedPhase;
-
+		phase[k][j][i] = (PetscScalar)sedPhase;
 	}
 	END_STD_LOOP
 
@@ -830,24 +730,26 @@ PetscErrorCode ADVGetSedPhase(AdvCtx *actx, Vec vphase)
 	// exchange ghost points
 	LOCAL_TO_LOCAL(fs->DA_CEN, vphase)
 
-	// propagate sedimentation phases to rock-air boundary cells
-	ierr = DMDAVecGetArray(fs->DA_CEN, vphase, &phase);               CHKERRQ(ierr);
-	ierr = DMDAGetCorners (fs->DA_CEN, &sx, &sy, &sz, &nx, &ny, &nz); CHKERRQ(ierr);
+	// propagate sedimentation phases into one layer of air cells
+	ierr = DMDAVecGetArray(fs->DA_CEN, vphase, &phase); CHKERRQ(ierr);
 
 	START_STD_LOOP
 	{
-		if(phase[k][j][i] == -1.0 && phase[k-1][j][i] != -1.0)
+		if(phase[k][j][i] == -1.0 && phase[k-1][j][i] >= 0.0)
 		{
-			phase[k][j][i] = phase[k-1][j][i];
+			phase[k][j][i]   =  phase[k-1][j][i];
+			phase[k+1][j][i] = -2.0;
 		}
 	}
 	END_STD_LOOP
 
 	ierr = DMDAVecRestoreArray(fs->DA_CEN, vphase, &phase); CHKERRQ(ierr);
 
+	// exchange ghost points
+	LOCAL_TO_LOCAL(fs->DA_CEN, vphase)
+
 	PetscFunctionReturn(0);
 }
-
 /*
 //---------------------------------------------------------------------------
 
