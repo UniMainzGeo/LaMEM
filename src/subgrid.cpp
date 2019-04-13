@@ -82,19 +82,17 @@ PetscErrorCode ADVMarkSubGrid(AdvCtx *actx)
 	// check marker distribution and merge or clone markers based on subgrid
 
 	FDSTAG           *fs;
-	BCCtx            *bc;
-	PetscInt          cellid, markid, icell, I, J, K, i, j, ib, ie;
+	PetscInt          icell, isubcell, imark, I, J, K, i, j, ib, ie;
 	PetscInt          ncx, ncy, npx, npy, npz, nmark, ncell;
 	PetscInt         *markind;
-	PetscScalar       s[3], h[3], xc[3], *x;
+	PetscScalar       s[3], h[3], *x;
 	PetscLogDouble    t0, t1;
-    ipair             t;
-    spair             d;
-    Marker            P;
+	ipair             t;
+	spair             d;
 	vector <Marker>   iclone;
 	vector <PetscInt> imerge;
 	vector <ipair>    cell;
-    vector <spair>    dist;
+	vector <spair>    dist;
 
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
@@ -102,7 +100,6 @@ PetscErrorCode ADVMarkSubGrid(AdvCtx *actx)
 	ierr = PetscTime(&t0); CHKERRQ(ierr);
 
 	// access context
-	bc    = actx->jr->bc;
 	fs    = actx->fs;
 	ncx   = fs->dsx.ncels;
 	ncy   = fs->dsy.ncels;
@@ -154,19 +151,19 @@ PetscErrorCode ADVMarkSubGrid(AdvCtx *actx)
 		for(j = 0; j < nmark; j++)
 		{
 			// get marker index & coordinates
-			markid = markind[j];
-			x      = actx->markers[markid].X;
+			imark = markind[j];
+			x      = actx->markers[imark].X;
 
 			// compute containing subcell index
 			MAP_SUBCELL(I, x[0], s[0], h[0], npx);
 			MAP_SUBCELL(J, x[1], s[1], h[1], npy);
 			MAP_SUBCELL(K, x[2], s[2], h[2], npz);
 
-			GET_CELL_ID(cellid, I, J, K, npx, npy);
+			GET_CELL_ID(isubcell, I, J, K, npx, npy);
 
-			// store marker and cell numbers
-			t.first  = cellid;
-			t.second = markid;
+			// store marker and subcell indices
+			t.first  = isubcell;
+			t.second = imark;
 			cell.push_back(t);
 		}
 
@@ -178,64 +175,22 @@ PetscErrorCode ADVMarkSubGrid(AdvCtx *actx)
 		t.second =  0;
 		cell.push_back(t);
 
-		// process cells
+		// process subcells
 		for(i = 0, ib = 0; i < ncell; i++)
 		{
-			// get index of next populated cell
-			cellid = cell[ib].first;
+			// get index of next populated subcell
+			isubcell = cell[ib].first;
 
-			// check whether current cell is empty
-			if(cellid != i)
+			// check whether current subcell is empty
+			if(isubcell != i)
 			{
-				// expand I, J, K indices
-				GET_CELL_IJK(i, I, J, K, npx, npy)
-
-				// get coordinates of cell center
-				COORD_SUBCELL(xc[0], I, s[0], h[0]);
-				COORD_SUBCELL(xc[1], J, s[1], h[1]);
-				COORD_SUBCELL(xc[2], K, s[2], h[2]);
-
-				// clear distance storage
-				dist.clear();
-
-				// find closest marker (cell-wise approximation)
-				for(j = 0; j < nmark; j++)
-				{
-					// get marker index & coordinates
-					markid = markind[j];
-					x      = actx->markers[markid].X;
-
-					// store marker and distance
-					d.first  = EDIST(x, xc);
-					d.second = markid;
-					dist.push_back(d);
-
-				}
-
-				// sort markers by distance
-				sort(dist.begin(), dist.end());
-
-				// clone closest marker
-				P = actx->markers[dist.begin()->second];
-
-				// place clone in cell center
-				P.X[0] = xc[0];
-				P.X[1] = xc[1];
-				P.X[2] = xc[2];
-
-				// override marker phase (if necessary)
-				ierr = BCOverridePhase(bc, icell, &P); CHKERRQ(ierr);
-
-				// store cloned marker
-				iclone.push_back(P);
+				// clone markers
+				ierr = ADVMarkClone(actx, icell, i, s, h, dist, iclone); CHKERRQ(ierr);
 			}
 			else
 			{
-				// find next populated cell or end-of-array stamp
-				ie = ib; while(cell[ie].first == cellid) ie++;
-
-
-
+				// find next populated subcell or end-of-array stamp
+				ie = ib; while(cell[ie].first == isubcell) ie++;
 
 				// merge markers
 
@@ -243,7 +198,7 @@ PetscErrorCode ADVMarkSubGrid(AdvCtx *actx)
 
 
 
-				// switch to next populated cell
+				// switch to next populated subcell
 				ib = ie;
 			}
 		}
@@ -263,9 +218,95 @@ PetscErrorCode ADVMarkSubGrid(AdvCtx *actx)
 
 	PetscFunctionReturn(0);
 }
+//---------------------------------------------------------------------------
+#undef __FUNCT__
+#define __FUNCT__ "ADVMarkClone"
+PetscErrorCode ADVMarkClone(
+	AdvCtx          *actx,
+	PetscInt         icell,
+	PetscInt         isubcell,
+	PetscScalar      s[3],
+	PetscScalar      h[3],
+	vector <spair>  &dist,
+	vector <Marker> &iclone)
+{
+	BCCtx            *bc;
+	spair             d;
+	Marker            P;
+	PetscScalar       xc[3], *x;
+	PetscInt          I, J, K, j, npx, npy, imark, nmark, *markind;
+
+	PetscErrorCode ierr;
+	PetscFunctionBegin;
+
+	// access context
+	bc      = actx->jr->bc;
+	npx     = actx->NumPartX;
+	npy     = actx->NumPartY;
+	nmark   = actx->markstart[icell+1] - actx->markstart[icell];
+	markind = actx->markind + actx->markstart[icell];
+
+	// expand I, J, K subcell indices
+	GET_CELL_IJK(isubcell, I, J, K, npx, npy)
+
+	// get coordinates of subcell center
+	COORD_SUBCELL(xc[0], I, s[0], h[0]);
+	COORD_SUBCELL(xc[1], J, s[1], h[1]);
+	COORD_SUBCELL(xc[2], K, s[2], h[2]);
+
+	// clear distance storage
+	dist.clear();
+
+	// find closest marker (cell-wise approximation)
+	for(j = 0; j < nmark; j++)
+	{
+		// get marker index & coordinates
+		imark = markind[j];
+		x     = actx->markers[imark].X;
+
+		// store marker and distance
+		d.first  = EDIST(x, xc);
+		d.second = imark;
+		dist.push_back(d);
+
+	}
+
+	// sort markers by distance
+	sort(dist.begin(), dist.end());
+
+	// clone closest marker
+	P = actx->markers[dist.begin()->second];
+
+	// place clone in cell center
+	P.X[0] = xc[0];
+	P.X[1] = xc[1];
+	P.X[2] = xc[2];
+
+	// override marker phase (if necessary)
+	ierr = BCOverridePhase(bc, icell, &P); CHKERRQ(ierr);
+
+	// store cloned marker
+	iclone.push_back(P);
+
+	PetscFunctionReturn(0);
+}
 
 //---------------------------------------------------------------------------
+#undef __FUNCT__
+#define __FUNCT__ "ADVMarkMerge"
+PetscErrorCode ADVMarkMerge(AdvCtx *actx)
+{
+	PetscErrorCode ierr;
+	PetscFunctionBegin;
 
+
+	PetscFunctionReturn(0);
+}
+
+
+
+//---------------------------------------------------------------------------
+/*
 void checkMergeMarkers(
 	Marker            *markers,
 	vector <PetscInt> &imerge,
@@ -321,7 +362,7 @@ void checkMergeMarkers(
 
 
 
-/*
+
 
 					// collect marker phases
 
@@ -336,7 +377,7 @@ void checkMergeMarkers(
 
 					}
 
-*/
+
 
 
 }
@@ -415,6 +456,7 @@ void MergeMarkers(
 	// store merged marker
 	imerge.push_back(cell[kmin].second);
 }
+*/
 //---------------------------------------------------------------------------
 #undef __FUNCT__
 #define __FUNCT__ "ADVCollectGarbageVec"

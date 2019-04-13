@@ -55,6 +55,19 @@ struct Marker;
 // resample markers
 PetscErrorCode ADVMarkSubGrid(AdvCtx *actx);
 
+// clone closest marker to empty subcell center
+PetscErrorCode ADVMarkClone(
+	AdvCtx          *actx,
+	PetscInt         icell,
+	PetscInt         isubcell,
+	PetscScalar     *s,
+	PetscScalar     *h,
+	vector <spair>  &dist,
+	vector <Marker> &iclone);
+
+// merge markers in densely populated subcell
+PetscErrorCode ADVMarkMerge(AdvCtx *actx);
+
 // change marker phase when crossing free surface
 PetscErrorCode ADVMarkCrossFreeSurf(AdvCtx *actx);
 
