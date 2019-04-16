@@ -74,6 +74,36 @@ Main advection routine
 */
 //---------------------------------------------------------------------------
 #undef __FUNCT__
+#define __FUNCT__ "MarkerMerge"
+PetscErrorCode MarkerMerge(Marker &A, Marker &B, Marker &C)
+{
+	if(A.phase != B.phase)
+	{
+		SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "Attempt to merge markers with different phases");
+	}
+
+	C.phase =  A.phase;
+	C.X[0]  = (A.X[0] + B.X[0])/2.0;
+	C.X[1]  = (A.X[1] + B.X[1])/2.0;
+	C.X[2]  = (A.X[2] + B.X[2])/2.0;
+	C.p     = (A.p    + B.p)   /2.0;
+	C.T     = (A.T    + B.T)   /2.0;
+	C.APS   = (A.APS  + B.APS) /2.0;
+	C.ATS   = (A.ATS  + B.ATS) /2.0;
+	C.S.xx  = (A.S.xx + B.S.xx)/2.0;
+	C.S.xy  = (A.S.xy + B.S.xy)/2.0;
+	C.S.xz  = (A.S.xz + B.S.xz)/2.0;
+	C.S.yy  = (A.S.yy + B.S.yy)/2.0;
+	C.S.yz  = (A.S.yz + B.S.yz)/2.0;
+	C.S.zz  = (A.S.zz + B.S.zz)/2.0;
+	C.U[0]  = (A.U[0] + B.U[0])/2.0;
+	C.U[1]  = (A.U[1] + B.U[1])/2.0;
+	C.U[2]  = (A.U[2] + B.U[2])/2.0;
+
+	PetscFunctionReturn(0);
+}
+//---------------------------------------------------------------------------
+#undef __FUNCT__
 #define __FUNCT__ "ADVCreate"
 PetscErrorCode ADVCreate(AdvCtx *actx, FB *fb)
 {

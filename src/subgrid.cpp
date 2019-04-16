@@ -83,7 +83,7 @@ PetscErrorCode ADVMarkSubGrid(AdvCtx *actx)
 
 	FDSTAG           *fs;
 	PetscInt          icell, isubcell, imark, I, J, K, i, j, ib, ie;
-	PetscInt          ncx, ncy, npx, npy, npz, nmark, ncell;
+	PetscInt          ncx, ncy, npx, npy, npz, nmark, ncell, nclone, nmerge;
 	PetscInt         *markind;
 	PetscScalar       s[3], h[3], *x;
 	PetscLogDouble    t0, t1;
@@ -93,6 +93,7 @@ PetscErrorCode ADVMarkSubGrid(AdvCtx *actx)
 	vector <PetscInt> imerge;
 	vector <ipair>    cell;
 	vector <spair>    dist;
+	vector <Marker>   mark;
 
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
@@ -111,12 +112,16 @@ PetscErrorCode ADVMarkSubGrid(AdvCtx *actx)
 	// reserve space for index & distance storage
 	cell.reserve(_mark_buff_sz_);
 	dist.reserve(_mark_buff_sz_);
+	mark.reserve(_mark_buff_sz_);
 
 	iclone.reserve(actx->nummark*_mark_buff_ratio_/100);
 	imerge.reserve(actx->nummark*_mark_buff_ratio_/100);
 
 	iclone.clear();
 	imerge.clear();
+
+	nclone = 0;
+	nmerge = 0;
 
 	// process local cells
 	for(icell = 0; icell < fs->nCells; icell++)
@@ -186,17 +191,20 @@ PetscErrorCode ADVMarkSubGrid(AdvCtx *actx)
 			{
 				// clone markers
 				ierr = ADVMarkClone(actx, icell, i, s, h, dist, iclone); CHKERRQ(ierr);
+
+				// update counter
+				nclone++;
 			}
 			else
 			{
-				// find next populated subcell or end-of-array stamp
+				// find next populated subcell
 				ie = ib; while(cell[ie].first == isubcell) ie++;
 
-				// merge markers
-
-
-
-
+				// merge markers if required
+				if(ie - ib > actx->npmax)
+				{
+					ierr = ADVMarkCheckMerge(actx, ib, ie, nmerge, mark, cell, iclone, imerge); CHKERRQ(ierr);
+				}
 
 				// switch to next populated subcell
 				ib = ie;
@@ -214,7 +222,7 @@ PetscErrorCode ADVMarkSubGrid(AdvCtx *actx)
 	ierr = PetscTime(&t1); CHKERRQ(ierr);
 	PetscPrintf(PETSC_COMM_WORLD,
 		"Marker control [%lld]: (subgrid) cloned %lld markers and merged %lld markers in %1.4e s\n",
-		(LLD)actx->iproc, (LLD)iclone.size(), (LLD)imerge.size(), t1-t0);
+		(LLD)actx->iproc, (LLD)nclone, (LLD)nmerge, t1-t0);
 
 	PetscFunctionReturn(0);
 }
@@ -230,6 +238,10 @@ PetscErrorCode ADVMarkClone(
 	vector <spair>  &dist,
 	vector <Marker> &iclone)
 {
+	// clone closest marker & put it in the center of an empty subcell
+	// current marker storage is not modified, the following is done instead:
+	//  - all newly created markers are stored for insertion in iclone
+
 	BCCtx            *bc;
 	spair             d;
 	Marker            P;
@@ -268,7 +280,6 @@ PetscErrorCode ADVMarkClone(
 		d.first  = EDIST(x, xc);
 		d.second = imark;
 		dist.push_back(d);
-
 	}
 
 	// sort markers by distance
@@ -290,173 +301,162 @@ PetscErrorCode ADVMarkClone(
 
 	PetscFunctionReturn(0);
 }
-
 //---------------------------------------------------------------------------
 #undef __FUNCT__
-#define __FUNCT__ "ADVMarkMerge"
-PetscErrorCode ADVMarkMerge(AdvCtx *actx)
+#define __FUNCT__ "ADVMarkCheckMerge"
+PetscErrorCode ADVMarkCheckMerge(
+	AdvCtx            *actx,
+	PetscInt           ib,
+	PetscInt           ie,
+	PetscInt          &nmerge,
+	vector <Marker>   &mark,
+	vector <ipair>    &cell,
+	vector <Marker>   &iclone,
+	vector <PetscInt> &imerge)
 {
+	// merge markers in a densely populated subcell
+	// never merge markers of different phases
+	// current marker storage is not modified, the following is done instead:
+	//  - indices of merged markers are flagged for removal in imerge
+	//  - all newly created markers are stored for insertion in iclone
+	//  - difference between original and final number of markers is added to counter
+
+	PetscInt j, jb, je, k, sz, phase, nmark;
+
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
 
-
-	PetscFunctionReturn(0);
-}
-
-
-
-//---------------------------------------------------------------------------
-/*
-void checkMergeMarkers(
-	Marker            *markers,
-	vector <PetscInt> &imerge,
-	vector <ipair>    &cell,
-	PetscInt           npmax,
-	PetscInt           ib,
-	PetscInt           ie)
-{
-	PetscInt j, jb, je, phaseid;
-
-
-//	1. more than npmax markers of each phase
-//	2. find and merge two closest markers of each phase (recursively)
-
-	// replace marker cell index with phase ID
+	// copy marker phase IDs
 	for(j = ib; j < ie; j++)
 	{
-		cell[j].first = markers[cell[j].second].phase;
+		cell[j].first = actx->markers[cell[j].second].phase;
 	}
 
 	// sort markers by phase
 	sort(cell.begin() + ib, cell.begin() + ie);
 
-
+	// merge markers of the same phase
 	jb = ib;
 
 	do
 	{
-		// get next phase ID
-		phaseid = cell[jb].first;
+		// get current phase ID
+		phase = cell[jb].first;
 
+		// find all markers of current phase
+		je = jb; while(cell[je].first == phase && je < ie) je++;
 
-		je = jb; while(cell[je].first == phaseid && je < ie) je++;
+		// get number of markers
+		nmark = je - jb;
 
-		if((je-jb) > npmax)
+		// merge if number of markers exceeds threshold
+		if(nmark > actx->npmax)
 		{
+			// copy markers to buffer
+			mark.clear();
 
+			for(j = jb; j < je; j++)
+			{
+				mark.push_back(actx->markers[cell[j].second]);
+			}
 
-	imerge.push_back(99); // **************** ALITA BATTLE ANGEL !!! *********************
+			// merge markers
+			ierr = ADVMarkMerge(mark, nmark, actx->npmax, sz); CHKERRQ(ierr);
 
+			// update counter
+			nmerge += nmark - actx->npmax;
 
-	// EDIST
+			// flag merged markers
+			for(j = jb, k = 0; j < je; j++, k++)
+			{
+				if(mark[k].phase == -1)
+				{
+					imerge.push_back(cell[j].second);
+				}
+			}
 
-
-
+			// store new markers
+			for(k = nmark; k < sz; k++)
+			{
+				if(mark[k].phase != -1)
+				{
+					iclone.push_back(mark[k]);
+				}
+			}
 		}
 
-
+		// switch to next phase
+		jb = je;
 
 	} while(je < ie);
 
-
-
-
-
-
-
-					// collect marker phases
-
-					for(jj = je, jb = 0; ii < ncell; ii++)
-
-					// process non-empty subcell (merge markers of same phase)
-					if(je-jb > actx->npmax)
-					{
-						// ...............
-
-						nmrg++;
-
-					}
-
-
-
-
+	PetscFunctionReturn(0);
 }
-
 //---------------------------------------------------------------------------
-
-void MergeMarkers(
-	Marker            *markers,
-	vector <PetscInt> &imerge,
-	vector <ipair>    &cell,
-	PetscInt           jb,
-	PetscInt           je)
+#undef __FUNCT__
+#define __FUNCT__ "ADVMarkMerge"
+PetscErrorCode ADVMarkMerge(
+	vector <Marker> &mark,
+	PetscInt         nmark,
+	PetscInt         npmax,
+	PetscInt        &sz)
 {
-	// merge two closest markers
+	// recursively find and merge closest markers until required number is reached
+	// put new markers in the end of the storage, mark merged markers with phase -1
 
-
-	Marker      *pj, *pk;
+	Marker       P;
 	PetscInt     j, k, jmin, kmin;
-	PetscScalar *xj, *xk, *uj, *uk, d, dmin;
-	Tensor2RS   *sj, *sk;
+	PetscScalar  d, dmin;
 
+	PetscErrorCode ierr;
+	PetscFunctionBegin;
 
+	// initialize storage size
+	sz = nmark;
 
-	dmin = DBL_MAX;
-	jmin = 0;
-	kmin = 0;
-
-	for(j = jb; j < je; j++)
+	while(nmark > npmax)
 	{
-		xj = markers[cell[j].second].X;
+		// find closest markers
+		dmin  = DBL_MAX;
+		jmin  = 0;
+		kmin  = 0;
 
-		for(k = j+1; k < je; k++)
+		for(j = 0; j < sz; j++)
 		{
-			xk = markers[cell[k].second].X;
+			if(mark[j].phase == -1) continue;
 
-			d = EDIST(xj, xk);
-
-			if(d < dmin)
+			for(k = j+1; k < sz; k++)
 			{
-				dmin = d;
-				jmin = j;
-				kmin = k;
+				if(mark[k].phase == -1) continue;
+
+				d = EDIST(mark[j].X, mark[k].X);
+
+				if(d < dmin)
+				{
+					dmin = d;
+					jmin = j;
+					kmin = k;
+				}
 			}
 		}
+
+		// merge closest markers
+		ierr = MarkerMerge(mark[jmin], mark[kmin], P); CHKERRQ(ierr);
+
+		// store new marker
+		mark.push_back(P);
+
+		// mark original markers as merged
+		mark[jmin].phase = -1;
+		mark[kmin].phase = -1;
+
+		// update counters
+		nmark--;
+		sz++;
 	}
 
-	// merge markers
-	pj = &markers[cell[jmin].second];
-	pk = &markers[cell[kmin].second];
-	xj =  pj->X;
-	xk =  pk->X;
-	uj =  pj->U;
-	uk =  pk->U;
-	sj = &pj->S;
-	sk = &pk->S;
-
-	xj[0]   = (xj[0]   + xk[0])  /2.0;
-	xj[1]   = (xj[1]   + xk[1])  /2.0;
-	xj[2]   = (xj[2]   + xk[2])  /2.0;
-	pj->p   = (pj->p   + pk->p)  /2.0;
-	pj->T   = (pj->T   + pk->T)  /2.0;
-	pj->APS = (pj->APS + pk->APS)/2.0;
-	pj->ATS = (pj->ATS + pk->ATS)/2.0;
-	uj[0]   = (uj[0]   + uk[0])  /2.0;
-	uj[1]   = (uj[1]   + uk[1])  /2.0;
-	uj[2]   = (uj[2]   + uk[2])  /2.0;
-	sj->xx  = (sj->xx  + sk->xx) /2.0;
-	sj->xy  = (sj->xy  + sk->xy) /2.0;
-	sj->xz  = (sj->xz  + sk->xz) /2.0;
-	sj->yy  = (sj->yy  + sk->yy) /2.0;
-	sj->yz  = (sj->yz  + sk->yz) /2.0;
-	sj->zz  = (sj->zz  + sk->zz) /2.0;
-
-
-
-	// store merged marker
-	imerge.push_back(cell[kmin].second);
+	PetscFunctionReturn(0);
 }
-*/
 //---------------------------------------------------------------------------
 #undef __FUNCT__
 #define __FUNCT__ "ADVCollectGarbageVec"
@@ -792,38 +792,51 @@ PetscErrorCode ADVGetSedPhase(AdvCtx *actx, Vec vphase)
 
 	PetscFunctionReturn(0);
 }
+//---------------------------------------------------------------------------
 /*
-//---------------------------------------------------------------------------
+	Marker   P;
+	PetscInt nmark = 5, npmax = 2, sz;
+	vector   <Marker> mark;
+	mark.reserve(_mark_buff_sz_);
+	mark.clear();
+	PetscMemzero(&P, sizeof(Marker));
+	P.phase = 1; P.X[0] = 1; P.X[1] = 1; P.X[2] = 0; mark.push_back(P);
+	P.phase = 1; P.X[0] = 1; P.X[1] = 5; P.X[2] = 0; mark.push_back(P);
+	P.phase = 1; P.X[0] = 3; P.X[1] = 4; P.X[2] = 0; mark.push_back(P);
+	P.phase = 1; P.X[0] = 4; P.X[1] = 3; P.X[2] = 0; mark.push_back(P);
+	P.phase = 1; P.X[0] = 5; P.X[1] = 5; P.X[2] = 0; mark.push_back(P);
+	ierr = ADVMarkMerge(mark, nmark, npmax, sz); CHKERRQ(ierr);
 
-		cell.clear();
-
-		for(ii = 0; ii < 3; ii++)
-		{
-			t.first  = 5;
-			t.second = 99;
-			cell.push_back(t);
-		}
-
-		for(ii = 0; ii < 5; ii++)
-		{
-			t.first  = 1;
-			t.second = 99;
-			cell.push_back(t);
-		}
-
-		for(ii = 0; ii < 7; ii++)
-		{
-			t.first  = 3;
-			t.second = 99;
-			cell.push_back(t);
-		}
-
-		sort(cell.begin(), cell.end());
-
-		t.first  = -1;
-		t.second =  0;
-		cell.push_back(t);
-
-//---------------------------------------------------------------------------
+	AdvCtx actx;
+	Marker  P;
+	PetscMemzero(&actx, sizeof(AdvCtx));
+	PetscMemzero(&P,    sizeof(Marker));
+	ierr = ADVReAllocStorage(&actx, 100); CHKERRQ(ierr);
+	P.phase = 2; P.X[0] = 5; P.X[1] = 5; P.X[2] = 0; actx.markers[0] = P;
+	P.phase = 1; P.X[0] = 1; P.X[1] = 1; P.X[2] = 0; actx.markers[1] = P;
+	P.phase = 2; P.X[0] = 4; P.X[1] = 3; P.X[2] = 0; actx.markers[2] = P;
+	P.phase = 1; P.X[0] = 1; P.X[1] = 5; P.X[2] = 0; actx.markers[3] = P;
+	P.phase = 2; P.X[0] = 3; P.X[1] = 4; P.X[2] = 0; actx.markers[4] = P;
+	actx.npmax   = 2;
+	actx.nummark = 5;
+	vector <Marker>   iclone;
+	vector <PetscInt> imerge;
+	vector <ipair>    cell;
+	vector <Marker>   mark;
+	cell.reserve(_mark_buff_sz_);
+	mark.reserve(_mark_buff_sz_);
+	iclone.reserve(actx.nummark*_mark_buff_ratio_/100);
+	imerge.reserve(actx.nummark*_mark_buff_ratio_/100);
+	cell.clear();
+	mark.clear();
+	iclone.clear();
+	imerge.clear();
+	PetscInt nmerge = 0, ib = 0, ie = 5;
+	ipair    t;
+	t.first = 0; t.second = 0; cell.push_back(t);
+	t.first = 0; t.second = 1; cell.push_back(t);
+	t.first = 0; t.second = 2; cell.push_back(t);
+	t.first = 0; t.second = 3; cell.push_back(t);
+	t.first = 0; t.second = 4; cell.push_back(t);
+	ierr = ADVMarkCheckMerge(&actx, ib, ie, nmerge, mark, cell, iclone, imerge); CHKERRQ(ierr);
 */
-
