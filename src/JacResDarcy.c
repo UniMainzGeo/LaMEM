@@ -120,8 +120,8 @@
 	buff[k][j][i] 	= 	Phi;
 
 //// specific storage
-//#define GET_Ssl \
-//	ierr = JacResGetDarcyParam(jr, jr->svCell[iter++].phRat, NULL, NULL, &Ssl, NULL, NULL); CHKERRQ(ierr); \
+//#define GET_Ssl
+//	ierr = JacResGetDarcyParam(jr, jr->svCell[iter++].phRat, NULL, NULL, &Ssl, NULL, NULL); CHKERRQ(ierr);
 //	buff[k][j][i] 	= 	Ssl;
 
 // Tensile Strength
@@ -448,10 +448,10 @@ PetscErrorCode JacResApplyDarcyBC(JacRes *jr)
 			SET_TPC_DARCY(bcPl, sol, K, j, i, pmdof)
 		}
 
-		if(fi*fj)    SET_EDGE_CORNER_DARCY(n, sol, k, J, I, k, j, i, pmdof)
-		if(fi*fk)    SET_EDGE_CORNER_DARCY(n, sol, K, j, I, k, j, i, pmdof)
-		if(fj*fk)    SET_EDGE_CORNER_DARCY(n, sol, K, J, i, k, j, i, pmdof)
-		if(fi*fj*fk) SET_EDGE_CORNER_DARCY(n, sol, K, J, I, k, j, i, pmdof)
+		if(fi && fj)       SET_EDGE_CORNER_DARCY(n, sol, k, J, I, k, j, i, pmdof)
+		if(fi && fk)       SET_EDGE_CORNER_DARCY(n, sol, K, j, I, k, j, i, pmdof)
+		if(fj && fk)       SET_EDGE_CORNER_DARCY(n, sol, K, J, i, k, j, i, pmdof)
+		if(fi && fj && fk) SET_EDGE_CORNER_DARCY(n, sol, K, J, I, k, j, i, pmdof)
 	}
 	END_STD_LOOP
 
@@ -470,12 +470,11 @@ PetscErrorCode JacResGetDarcyRes(JacRes *jr)
 
 	FDSTAG     *fs;
 	SolVarCell *svCell;
-	SolVarDev  *svDev;
 	SolVarBulk *svBulk;
 	BCCtx      		*bc;
-	PetscInt    	iter, num, *list, numPhases;
+	PetscInt    	iter, num, *list;
 	PetscInt    	Ip1, Im1, Jp1, Jm1, Kp1, Km1;
-	PetscInt    	i, j, k, nx, ny, nz, sx, sy, sz, mx, my, mz, l;
+	PetscInt    	i, j, k, nx, ny, nz, sx, sy, sz, mx, my, mz;
 	//PetscInt 		sx_fine,sy_fine,sz_fine;
  	PetscScalar 	bkx, fkx, bky, fky, bkz, fkz;
 	PetscScalar 	bdx, fdx, bdy, fdy, bdz, fdz;
@@ -484,22 +483,18 @@ PetscErrorCode JacResGetDarcyRes(JacRes *jr)
  	PetscScalar 	Pl_c, Pl_h, pc, gz, Pl_n, *grav;
  	PetscScalar 	***sol, ***hydro, ***p, ***res, *e;
 
- 	PetscScalar 	lrho, mu, Kphi, betam, betal, Phi, Ts, nuu, Kphiu, Phiu, Ss;
+ 	PetscScalar 	lrho, mu, Kphi, betam, betal, Phi, Ts, Kphiu, Ss;
 	PetscScalar 	***rhol, ***mul, ***lKphi, ***lbetam, ***lbetal, ***lPhi, ***Tsl, ***lnuu, ***lKphiu, ***lPhiu; //, ***Ss
 
 	Vec 			rhol_local, mul_local, local_Kphi, betam_local, betal_local, Phi_local, Ts_local, nuu_local, Kphiu_local, Phiu_local; //Ss_local, ;
 	Vec 			rhol_vec, mul_vec, Kphi_vec, betam_vec, betal_vec, Phi_vec, Ts_vec, nuu_vec, Kphiu_vec, Phiu_vec;   //, Ss_vec
 
-	PetscScalar     H, magnitude, increment, tini, tfin;
+	PetscScalar     H, magnitude, increment;
 
-	PetscScalar     p_total, dP, biot, Kd, yield;
-	PetscScalar     min_overpressure, max_overpressure, dPmin, dPmax;
+	PetscScalar     p_total, dP, biot;
+	PetscScalar     dPmin, dPmax;
 	PetscInt src;
 	MatParLim  *matLim;
-	Material_t *phases;
-	PetscScalar scal;
-
-
 
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
@@ -513,12 +508,7 @@ PetscErrorCode JacResGetDarcyRes(JacRes *jr)
 	num       = bc->Pl_NumSPC;
 	list      = bc->Pl_SPCList;
 
-
-	scal   = jr->scal.length;
-
 	// access residual context variables
-	numPhases =  jr->numPhases; 	// number phases
-	phases    =  jr->phases;    	// phase parameters
 	matLim    = &jr->matLim;    	// phase parameters limiters
 
 	// initialize maximum cell index in all directions
@@ -557,7 +547,6 @@ PetscErrorCode JacResGetDarcyRes(JacRes *jr)
 
 		// access solution variables
 		svCell = &jr->svCell[iter++];
-		svDev  = &svCell->svDev;
 		svBulk = &svCell->svBulk;
 
 		Pl_n  = svBulk->Pln;  	// liquid pressure history
@@ -581,9 +570,7 @@ PetscErrorCode JacResGetDarcyRes(JacRes *jr)
 		betal 	=	lbetal[k][j][i];
 		Phi 	=	lPhi[k][j][i];
 		Ts 	    =	Tsl[k][j][i];
-		nuu 	=	lnuu[k][j][i];
 		Kphiu 	=	lKphiu[k][j][i];
-		Phiu 	=	lPhiu[k][j][i];
 
 		//pShift?!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 		matLim    = &jr->matLim;       // phase parameters limiters
@@ -719,19 +706,15 @@ PetscErrorCode JacResGetDarcyMat(JacRes *jr)
 	// Ss*Pl/dt - d/dxi (Kphi/mu (dPl/dxj))
 
 	FDSTAG     *fs;
-	SolVarCell *svCell;
-	SolVarDev  *svDev;
-	SolVarBulk *svBulk;
 	BCCtx      *bc;
-	PetscInt    iter, num, *list;
+	PetscInt    num, *list;
 	PetscInt    Ip1, Im1, Jp1, Jm1, Kp1, Km1;
 	PetscInt    i, j, k, nx, ny, nz, sx, sy, sz, mx, my, mz;
 	PetscScalar bkx, fkx, bky, fky, bkz, fkz;
 	PetscScalar bdx, fdx, bdy, fdy, bdz, fdz;
  	PetscScalar dt, dx, dy, dz;
- 	PetscScalar 	Pl_c, Pl_h, pc, gz, Pl_n;
  	 PetscScalar 	***sol, ***hydro, ***p;
-	PetscScalar v[7], cf[6], lrho, mu, Kphi, betam, betal, Phi, Ts, nuu, Kphiu, Phiu, Ss;
+	PetscScalar v[7], cf[6], mu, Kphi, betam, betal, Phi, Ss;
 	MatStencil  row[1], col[7];
 	PetscScalar 	***rhol, ***mul, ***lKphi, ***lbetam, ***lbetal, ***lPhi, ***Tsl, ***lnuu, ***lKphiu, ***lPhiu, ***bcPl;
 	//Vec         rhol_local, mul_local, local_Kphi;
@@ -739,12 +722,6 @@ PetscErrorCode JacResGetDarcyMat(JacRes *jr)
 	Vec 			rhol_local, mul_local, local_Kphi, betam_local, betal_local, Phi_local, Ts_local, nuu_local, Kphiu_local, Phiu_local; //Ss_local, ;
 	Vec 			rhol_vec, mul_vec, Kphi_vec, betam_vec, betal_vec, Phi_vec, Ts_vec, nuu_vec, Kphiu_vec, Phiu_vec;   //, Ss_vec
 
-
-	PetscScalar     p_total, dP, biot, Kd, yield;
-	PetscScalar     min_overpressure, max_overpressure, dPmin, dPmax;
-	PetscInt src;
-	MatParLim  *matLim;
-	Material_t *phases;
 
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
@@ -789,21 +766,10 @@ PetscErrorCode JacResGetDarcyMat(JacRes *jr)
 	//---------------
 	// central points
 	//---------------
-	iter = 0;
 	ierr = DMDAGetCorners(fs->DA_CEN, &sx, &sy, &sz, &nx, &ny, &nz); CHKERRQ(ierr);
 
 	START_STD_LOOP
 	{
-		// access solution variables
-		svCell = &jr->svCell[iter++];
-		svDev  = &svCell->svDev;
-		svBulk = &svCell->svBulk;
-
-		Pl_n  = svBulk->Pln;  	// liquid pressure history
-		Pl_c  = sol[k][j][i]; 	// current liquid pressure
-		Pl_h  = hydro[k][j][i]; // hydrostatic liquid pressure
-		pc    = p[k][j][i];     // current pressure
-
 		// check index bounds and TPC multipliers
 		Im1 = i-1; cf[0] = 1.0; if(Im1 < 0)  { Im1++; if(bcPl[k][j][i-1] != DBL_MAX) cf[0] = -1.0;}
 		Ip1 = i+1; cf[1] = 1.0; if(Ip1 > mx) { Ip1--; if(bcPl[k][j][i+1] != DBL_MAX) cf[1] = -1.0;}
@@ -812,26 +778,15 @@ PetscErrorCode JacResGetDarcyMat(JacRes *jr)
 		Km1 = k-1; cf[4] = 1.0; if(Km1 < 0)  { Km1++; if(bcPl[k-1][j][i] != DBL_MAX) cf[4] = -1.0;}
 		Kp1 = k+1; cf[5] = 1.0; if(Kp1 > mz) { Kp1--; if(bcPl[k+1][j][i] != DBL_MAX) cf[5] = -1.0;}
 
-		lrho	=   rhol[k][j][i];
 		mu		=	mul[k][j][i];
 		Kphi 	=	lKphi[k][j][i];
 		//Ss		= 	Ssl[k][j][i];
 		betam 	=	lbetam[k][j][i];
 		betal 	=	lbetal[k][j][i];
 		Phi 	=	lPhi[k][j][i];
-		Ts 	    =	Tsl[k][j][i];
-		nuu 	=	lnuu[k][j][i];
-		Kphiu 	=	lKphiu[k][j][i];
-		Phiu 	=	lPhiu[k][j][i];
 
 		//pShift?!!
-		matLim    = &jr->matLim;       // phase parameters limiters
-		biot      = matLim->biot;      // Biot pressure parameter
-		p_total   = pc + biot*Pl_c;
-		dP        = p_total - Pl_c;
 
-		dPmin= pc+biot*Pl_h-Pl_h;
-		dPmax= Ts;
 
 		/*//// Permeability and porosity
 		if (dP <= dPmin && dP > dPmax)
@@ -1317,7 +1272,6 @@ PetscErrorCode SourcePropGetStruct(FILE *fp,
 	char        lbl_tini  		[_lbl_sz_];
 	char        lbl_tfin  		[_lbl_sz_];
 
-	PetscErrorCode ierr;
 	PetscFunctionBegin;
 
 	// phase ID
@@ -1385,42 +1339,32 @@ PetscErrorCode UpdateFailureType(JacRes *jr)
 	SolVarEdge *svEdge;
 	SolVarDev  *svDev;
 	SolVarBulk *svBulk;
-	Material_t *phases;
 	MatParLim  *matLim;
-	PetscInt    iter, numPhases;
-	PetscInt    I1, I2, J1, J2, K1, K2;
-	PetscInt    i, j, k, nx, ny, nz, sx, sy, sz, mx, my, mz, l;
-	PetscScalar XX, XX1, XX2, XX3, XX4;
-	PetscScalar YY, YY1, YY2, YY3, YY4;
-	PetscScalar ZZ, ZZ1, ZZ2, ZZ3, ZZ4;
-	PetscScalar XY, XY1, XY2, XY3, XY4;
-	PetscScalar XZ, XZ1, XZ2, XZ3, XZ4;
-	PetscScalar YZ, YZ1, YZ2, YZ3, YZ4;
-	PetscScalar pc, pc_pore, pc_hydro, ptotal, biot, dt, dP, TensileS, intersection, fr, ch, sensitivity;
+	PetscInt    iter;
+	PetscInt    i, j, k, nx, ny, nz, sx, sy, sz;
+	PetscScalar XY1, XY2, XY3, XY4;
+	PetscScalar XZ1, XZ2, XZ3, XZ4;
+	PetscScalar YZ1, YZ2, YZ3, YZ4;
+	PetscScalar pc, pc_pore, ptotal, biot, dP, TensileS, intersection, fr, ch, sensitivity;
 	PetscScalar ***dxx, ***dyy, ***dzz, ***dxy, ***dxz, ***dyz, ***p, ***p_pore, ***p_hydro;
 	PetscBool actDarcy;
-	PetscInt src, frac, frac2;
+	PetscInt src, frac;
 
 	PetscScalar sxx,syy,szz;
 	PetscScalar DevStressII;
 
-	// To plot mohr's cercles
-	PetscScalar C1, C2, C3, R1, R2, R3;
 
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
 
 	fs = jr->fs;
 
-	numPhases =  jr->numPhases; 	// number phases
-	phases    =  jr->phases;    	// phase parameters
 	matLim    = &jr->matLim;    	// phase parameters limiters
-	dt        =  jr->ts.dt;     	// time step
 	biot      =  matLim->biot;      // Biot pressure parameter
 	actDarcy  = jr->actDarcy;
 	sensitivity = 0.0;
 	src = 0;
-	frac=0; frac2=0;
+	frac=0;
 
 	if (actDarcy == PETSC_TRUE) {
 
@@ -1575,7 +1519,6 @@ PetscErrorCode UpdateFailureType(JacRes *jr)
 
 			// access current pore pressure (zero if deactivated)
 			pc_pore  = p_pore[k][j][i];
-			pc_hydro  = p_hydro[k][j][i];
 
 			// get total pressure (effective pressure, computed by LaMEM, plus pore pressure)
 			//ptotal = pc + biot*(pc_pore-pc_hydro);

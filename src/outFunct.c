@@ -915,9 +915,11 @@ PetscErrorCode PVOutWriteFailureTS(JacRes *jr, OutBuf *outbuf)
 
 	COPY_FUNCTION_HEADER
 
-	//#define GET_FAILURETS buff[k][j][i] = jr->svCell[iter++].svDev.failTS;
+	SolVarDev *svDev;
 
-    #define GET_FAILURETS buff[k][j][i] = jr->svCell[iter].svDev.failT + jr->svCell[iter++].svDev.failS;
+    #define GET_FAILURETS \
+		svDev         = &jr->svCell[iter++].svDev; \
+		buff[k][j][i] = svDev->failT + svDev->failS;
 
 	cf = scal->unit;
 

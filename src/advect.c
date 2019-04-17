@@ -1596,7 +1596,6 @@ PetscErrorCode ADVInterpMarkToCell(AdvCtx *actx)
 	PetscInt     ii, jj, ID, I, J, K;
 	PetscInt     nx, ny, nCells;
 	PetscScalar  xp, yp, zp, wxc, wyc, wzc, w = 0.0;
-	PetscScalar  p_total, dP, Ts, ch, fr, intersection;
 
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
@@ -2103,8 +2102,7 @@ PetscErrorCode ADVUpdateLiquidPressureMark(AdvCtx *actx)
 	JacRes      *jr;
 	Marker      *P;
 	SolVarCell  *svCell;
-	PetscInt    nx, ny;
-	PetscInt    jj, ID, I, J, K, II;
+	PetscInt    jj, ID;
 	PetscScalar ***lPl;
 
 	PetscErrorCode ierr;
@@ -2113,10 +2111,6 @@ PetscErrorCode ADVUpdateLiquidPressureMark(AdvCtx *actx)
 	// access context
 	fs = actx->fs;
 	jr = actx->jr;
-
-	// starting indices & number of cells
-	nx = fs->dsx.ncels;
-	ny = fs->dsy.ncels;
 
 	ierr = DMDAVecGetArray(fs->DA_CEN, jr->lPl,  &lPl);  CHKERRQ(ierr);
 
@@ -2130,7 +2124,7 @@ PetscErrorCode ADVUpdateLiquidPressureMark(AdvCtx *actx)
 		ID = actx->cellnum[jj];
 
 		// expand I, J, K cell indices
-		GET_CELL_IJK(ID, I, J, K, nx, ny)
+		//GET_CELL_IJK(ID, I, J, K, nx, ny)
 
 		// access host cell solution variables
 		svCell = &jr->svCell[ID];
