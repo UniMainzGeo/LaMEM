@@ -783,7 +783,7 @@ PetscErrorCode LaMEMLibInitGuess(LaMEMLib *lm, SNES snes)
 	ierr = JacResInitTemp(&lm->jr); CHKERRQ(ierr);
 
 	// solve for steady-state temperature (if requested)
-	ierr = LaMEMLibSolveTemp(lm); CHKERRQ(ierr);
+	ierr = LaMEMLibDiffuseTemp(lm); CHKERRQ(ierr);
 
 	// initialize pressure
 	ierr = JacResInitPres(&lm->jr); CHKERRQ(ierr);
@@ -823,15 +823,75 @@ PetscErrorCode LaMEMLibInitGuess(LaMEMLib *lm, SNES snes)
 }
 //---------------------------------------------------------------------------
 #undef __FUNCT__
+#define __FUNCT__ "LaMEMLibDiffuseTemp"
+PetscErrorCode LaMEMLibDiffuseTemp(LaMEMLib *lm)
+{
+	JacRes         *jr;
+	Controls       *ctrl;
+	AdvCtx         *actx;
+	PetscLogDouble t;
+	PetscScalar    dt_max;
+	PetscInt       i;
+
+	PetscErrorCode ierr;
+	PetscFunctionBegin;
+
+	// access context
+	jr      = &lm->jr;
+	ctrl    = &jr->ctrl;
+	actx    = &lm->actx;
+	dt_max  = jr->ts->dt_max;
+
+	// check for infinite diffusion
+	if (ctrl->actTemp && ctrl->actSteadyTemp)
+	{
+		PrintStart(&t,"Computing steady-state temperature distribution", NULL);
+
+		// ignore existing temperature initialization
+		ierr = VecZeroEntries(jr->lT); CHKERRQ(ierr);
+		ierr = JacResApplyTempBC(jr); CHKERRQ(ierr);
+
+		// compute steady-state temperature distribution
+		ierr = LaMEMLibSolveTemp(lm, 0.0); CHKERRQ(ierr);
+
+		// overwrite markers where T(phase) is set
+		ierr = ADVMarkSetTempPhase(actx); CHKERRQ(ierr);
+
+		// project temperature from markers to grid
+		ierr = ADVProjHistMarkToGrid(actx); CHKERRQ(ierr);
+	
+		// initialize temperature
+		ierr = JacResInitTemp(&lm->jr); CHKERRQ(ierr);
+		
+		PrintDone(t);
+	}
+
+	// check for additional limited diffusion
+	if (ctrl->actTemp && ctrl->steadyTempStep)
+	{
+		PrintStart(&t,"Diffusing temperature", NULL);
+		
+		for(i=0;i*dt_max<ctrl->steadyTempStep;++i)
+		{
+			// diffuse
+			ierr = LaMEMLibSolveTemp(lm, dt_max); CHKERRQ(ierr);
+		}
+		
+		PrintDone(t);		
+	}
+
+	PetscFunctionReturn(0);
+}
+//---------------------------------------------------------------------------
+#undef __FUNCT__
 #define __FUNCT__ "LaMEMLibSolveTemp"
-PetscErrorCode LaMEMLibSolveTemp(LaMEMLib *lm)
+PetscErrorCode LaMEMLibSolveTemp(LaMEMLib *lm, PetscScalar dt)
 {
 	JacRes         *jr;
 	AdvCtx         *actx;
 	Controls       *ctrl;
 	KSP            tksp;
-	PetscLogDouble t;
-
+	
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
 
@@ -839,25 +899,16 @@ PetscErrorCode LaMEMLibSolveTemp(LaMEMLib *lm)
 	jr   = &lm->jr;
 	actx = &lm->actx;
 	ctrl = &jr->ctrl;
-
-	// check activation
-	if(!ctrl->actTemp || !ctrl->actSteadyTemp) PetscFunctionReturn(0);
-
-	PrintStart(&t,"Computing steady-state temperature distribution", NULL);
-
+	
 	// create temperature diffusion solver
 	ierr = KSPCreate(PETSC_COMM_WORLD, &tksp); CHKERRQ(ierr);
 	ierr = KSPSetOptionsPrefix(tksp,"its_");   CHKERRQ(ierr);
 	ierr = KSPSetFromOptions(tksp);            CHKERRQ(ierr);
 
-	// ignore existing temperature initialization
-	ierr = VecZeroEntries(jr->lT); CHKERRQ(ierr);
-	ierr = JacResApplyTempBC(jr); CHKERRQ(ierr);
-
 	// compute matrix and rhs
 	// STEADY STATE solution is activated by setting time step to zero
-	ierr = JacResGetTempRes(jr, ctrl->steadyTempStep); CHKERRQ(ierr);
-	ierr = JacResGetTempMat(jr, ctrl->steadyTempStep); CHKERRQ(ierr);
+	ierr = JacResGetTempRes(jr, dt); CHKERRQ(ierr);
+	ierr = JacResGetTempMat(jr, dt); CHKERRQ(ierr);
 
 	// solve linear system
 	ierr = KSPSetOperators(tksp, jr->Att, jr->Att); CHKERRQ(ierr);
@@ -873,16 +924,11 @@ PetscErrorCode LaMEMLibSolveTemp(LaMEMLib *lm)
 	// copy temperature to markers
 	ierr = ADVMarkSetTempVector(actx); CHKERRQ(ierr);
 
-	// overwrite markers where T(phase) is set
-	ierr = ADVMarkSetTempPhase(actx); CHKERRQ(ierr);
-
 	// project temperature from markers to grid
 	ierr = ADVProjHistMarkToGrid(actx); CHKERRQ(ierr);
 	
 	// initialize temperature
 	ierr = JacResInitTemp(&lm->jr); CHKERRQ(ierr);
-
-	PrintDone(t);
 
 	PetscFunctionReturn(0);
 }
