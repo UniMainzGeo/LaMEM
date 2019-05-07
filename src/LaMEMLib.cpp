@@ -830,8 +830,8 @@ PetscErrorCode LaMEMLibDiffuseTemp(LaMEMLib *lm)
 	Controls       *ctrl;
 	AdvCtx         *actx;
 	PetscLogDouble t;
-	PetscScalar    dt_max;
-	PetscInt       i;
+	PetscScalar    diff_step;
+	PetscInt       i, num_steps;
 
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
@@ -840,7 +840,6 @@ PetscErrorCode LaMEMLibDiffuseTemp(LaMEMLib *lm)
 	jr      = &lm->jr;
 	ctrl    = &jr->ctrl;
 	actx    = &lm->actx;
-	dt_max  = jr->ts->dt_max;
 
 	// check for infinite diffusion
 	if (ctrl->actTemp && ctrl->actSteadyTemp)
@@ -870,11 +869,20 @@ PetscErrorCode LaMEMLibDiffuseTemp(LaMEMLib *lm)
 	if (ctrl->actTemp && ctrl->steadyTempStep)
 	{
 		PrintStart(&t,"Diffusing temperature", NULL);
+
+		diff_step = ctrl->steadyTempStep;
+		num_steps = 1;
+
+		if (ctrl->steadyNumStep)
+		{
+			num_steps = ctrl->steadyNumStep;
+			diff_step = diff_step/num_steps;
+		}
 		
-		for(i=0;i*dt_max<ctrl->steadyTempStep;++i)
+		for(i=0;i<num_steps;i++)
 		{
 			// diffuse
-			ierr = LaMEMLibSolveTemp(lm, dt_max); CHKERRQ(ierr);
+			ierr = LaMEMLibSolveTemp(lm, diff_step); CHKERRQ(ierr);
 		}
 		
 		PrintDone(t);		

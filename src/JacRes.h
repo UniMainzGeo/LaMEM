@@ -150,7 +150,8 @@ struct Controls
 	PetscInt    actTemp;        // temperature diffusion activation flag
 	PetscInt    actExp;         // thermal expansion activation flag
 	PetscInt    actSteadyTemp;  // steady-state temperature initial guess flag
-	PetscScalar steadyTempStep; // time step for (quasi-)steady-state temperature initial guess
+	PetscScalar steadyTempStep; // time for (quasi-)steady-state temperature initial guess
+	PetscInt    steadyNumStep;  // number of steps for (quasi-)steady-state temperature initial guess
 	PetscInt    pShiftAct;      // pressure shift activation flag (zero pressure in the top cell layer)
 	PetscScalar pShift;         // pressure shift for plasticity model and output
 	PetscInt    initGuess;      // initial guess activation flag
