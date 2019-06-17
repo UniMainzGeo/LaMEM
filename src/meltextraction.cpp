@@ -93,11 +93,6 @@ PetscErrorCode MeltExtractionCreate(JacRes *jr)
 	ierr = DMCreateLocalVector(jr->DA_CELL_2D, &jr->ldvecmerge)                 ;     CHKERRQ(ierr);
 	ierr = DMCreateLocalVector(jr->DA_CELL_2D, &jr->ldMoho)                     ;     CHKERRQ(ierr);
 
-
-
-	// UnderConstruction && This vectors are propedeutic to visualization of data that I need (Andrea).
-
-
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
@@ -441,10 +436,6 @@ PetscErrorCode MeltExtractionExchangeVolume(JacRes *jr, PetscInt iphase,PetscInt
 	{
 		ierr = VecCopy(dgmvvec,jr->dgmvvecmerge);  CHKERRQ(ierr);
 	}
-
-
-	// Access to Vector
-
 
 	// Access to the vectors
 	ierr = DMDAVecGetArray(fs->DA_CEN, jr->Miphase, &Mipbuff)   ; CHKERRQ(ierr);
