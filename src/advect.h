@@ -71,8 +71,11 @@ struct Marker
 	PetscScalar ATS;   // accumulated total strain
 	Tensor2RS   S;     // deviatoric stress
 	PetscScalar U[3];  // displacement
-
+	// Melt Extraction
+    PetscScalar Mtot;  // Total Melt Extracted
+    PetscScalar Mvol;  // Volume of the marker used in melt extraction
 	// WARNING! after adding new field modify marker merge routine (below)
+
 };
 
 // merge two markers and average history and position C = (A + B)/2

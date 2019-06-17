@@ -69,6 +69,8 @@
 #include "objFunct.h"
 #include "adjoint.h"
 #include "LaMEMLib.h"
+#include "cvi.h"
+#include "meltextraction.h"
 //---------------------------------------------------------------------------
 #undef __FUNCT__
 #define __FUNCT__ "LaMEMLibMain"
@@ -225,6 +227,9 @@ PetscErrorCode LaMEMLibCreate(LaMEMLib *lm, void *param )
 	// AVD output driver
 	ierr = PVAVDCreate(&lm->pvavd, fb); CHKERRQ(ierr);
 
+	// Create melt extraction context
+	ierr = MeltExtractionCreate(&lm->jr);
+
 	// destroy file buffer
 	ierr = FBDestroy(&fb); CHKERRQ(ierr);
 
@@ -315,6 +320,9 @@ PetscErrorCode LaMEMLibLoadRestart(LaMEMLib *lm)
 
 	// surface output driver
 	ierr = PVSurfCreateData(&lm->pvsurf); CHKERRQ(ierr);
+
+	//	Create ME vectors
+	ierr = MeltExtractionCreate(&lm->jr);
 
 	// close temporary restart file
 	fclose(fp);
@@ -555,6 +563,9 @@ PetscErrorCode LaMEMLibSaveOutput(LaMEMLib *lm)
 	step    = ts->istep;
 	bgPhase = lm->actx.bgPhase;
 
+	//if(lm->jr.ctrl.initGuess==0) ierr = Mean_Continental_Crust(&lm->jr); CHKERRQ(ierr);
+
+
 	// create directory (encode current time & step number)
 	asprintf(&dirName, "Timestep_%1.8lld_%1.8e", (LLD)step, time);
 
@@ -613,7 +624,6 @@ PetscErrorCode LaMEMLibSolve(LaMEMLib *lm, void *param)
 	//===============
 	// TIME STEP LOOP
 	//===============
-
 	while(!TSSolIsDone(&lm->ts))
 	{
 		//====================================
@@ -630,7 +640,15 @@ PetscErrorCode LaMEMLibSolve(LaMEMLib *lm, void *param)
 		ierr = JacResGetI2Gdt(&lm->jr); CHKERRQ(ierr);
 
 		// solve nonlinear equation system with SNES
+
+
+
 		PetscTime(&t);
+		// Call Melt Extraction to compute the mass.
+		PrintStart(&t, "MeltExInjectionRoutine", NULL);
+		if(lm->jr.ctrl.initGuess == 0) ierr = MeltExtractionSave(&lm->jr,&lm->actx); CHKERRQ(ierr);
+		PrintDone(t);
+
 
 		ierr = SNESSolve(snes, NULL, lm->jr.gsol); CHKERRQ(ierr);
 
@@ -652,9 +670,10 @@ PetscErrorCode LaMEMLibSolve(LaMEMLib *lm, void *param)
 			}
 		}
 
-		//==========================================
-		// MARKER & FREE SURFACE ADVECTION + EROSION
-		//==========================================
+		//==================================================================
+		// MARKER & FREE SURFACE ADVECTION + EROSION 1
+		//==================================================================
+		// Call Melt Extraction to compute the number of particles, and to inject the new particles
 
 		// calculate current time step
 		ierr = ADVSelectTimeStep(&lm->actx, &restart); CHKERRQ(ierr);
@@ -662,17 +681,34 @@ PetscErrorCode LaMEMLibSolve(LaMEMLib *lm, void *param)
 		// restart if fixed time step is larger than CFLMAX
 		if(restart) continue;
 
+		//==================================================================
+		// MARKER & FREE SURFACE ADVECTION + EROSION 2
+		//==================================================================
+
+
+		PrintStart(&t, "MeltExInjectionRoutine", NULL);
+		if(lm->jr.ctrl.initGuess == 0) ierr = MeltExtractionUpdate(&lm->jr,&lm->actx); CHKERRQ(ierr);
+		PrintDone(t);
 		// advect free surface
 		ierr = FreeSurfAdvect(&lm->surf); CHKERRQ(ierr);
 
 		// advect markers
 		ierr = ADVAdvect(&lm->actx); CHKERRQ(ierr);
 
+		if(lm->jr.ctrl.initGuess == 0) ierr =  MeltExtractionInterpMarkerBackToGrid(&lm->actx);
+
+
+
 		// apply background strain-rate "DWINDLAR" BC (Bob Shaw "Ship of Strangers")
 		ierr = BCStretchGrid(&lm->bc); CHKERRQ(ierr);
 
+		//==================================================================
+		// MARKER & FREE SURFACE ADVECTION + EROSION 3
+		//==================================================================
+
 		// exchange markers between the processors (after mesh advection)
 		ierr = ADVExchange(&lm->actx); CHKERRQ(ierr);
+
 
 		// apply erosion to the free surface
 		ierr = FreeSurfAppErosion(&lm->surf); CHKERRQ(ierr);
@@ -680,11 +716,14 @@ PetscErrorCode LaMEMLibSolve(LaMEMLib *lm, void *param)
 		// apply sedimentation to the free surface
 		ierr = FreeSurfAppSedimentation(&lm->surf); CHKERRQ(ierr);
 
+
 		// remap markers onto (stretched) grid
 		ierr = ADVRemap(&lm->actx); CHKERRQ(ierr);
 
 		// update phase ratios taking into account actual free surface position
 		ierr = FreeSurfGetAirPhaseRatio(&lm->surf); CHKERRQ(ierr);
+
+
 
 		//==================
 		// Save data to disk
@@ -698,7 +737,7 @@ PetscErrorCode LaMEMLibSolve(LaMEMLib *lm, void *param)
 
 		// restart database
 		ierr = LaMEMLibSaveRestart(lm); CHKERRQ(ierr);
-		
+
 	}
 
 	//======================

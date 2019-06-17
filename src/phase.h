@@ -117,6 +117,22 @@ public:
 	char         pdn[_pd_name_sz_];   // Unique phase diagram number
 	char         pdf[_pd_name_sz_];   // Unique phase diagram number
 	PetscInt     Pd_rho;          // density from phase diagram?
+	// MeltExtraction Parameter
+	PetscScalar Mtrs;          // Threshold melt extraction                  []
+	PetscScalar Mleft;         // Minimum amount of melt left in the source  []
+	PetscScalar Mmax;          // Maximum Melt extractable from phase        []
+	PetscScalar RelInt;        // Relative amount of intrusion               []
+	PetscScalar TInt;          // Temperature of the intrusion               [Deg C]
+	PetscInt 	PhInt;         // Phase Id of the intrusion                  []
+	PetscInt	PhExt;         // Phase Id of the effusion                   []
+	PetscInt	PhNext;        // Phase Id of the next phase                 []
+	PetscScalar DInt;          // Depth of intrusion                         [m/Thickness]
+	PetscScalar DTol;          // Depth of intrusion                         [m/Thickness]
+	PetscScalar pMant;         // Specify if a phase is mantle or not [0 or 1]
+	PetscInt    MeltE;         // Control value                           [0 or 1]
+	PetscScalar VolCor;       // It corrects the volume injected. When you extract melt, its specific volume is not the same of the mush/rock. If the injected material could further melt user can adjust it such that it is close to 1
+	PetscInt    pMc ;          // Indicate if the crust is mafic (visualization)
+	PetscInt    pCc ;           // It is a parameter useful for visualization
 };
 
 //---------------------------------------------------------------------------
@@ -146,6 +162,9 @@ struct PData
 	// Melt content data
 	PetscScalar  Me_v[_max_pd_sz_][_max_num_pd_];          // Array containing the actual melt content data
 	PetscScalar  mf;					
+	// Melt Extraction
+	PetscScalar  mfext;
+	PetscScalar  mfextot;
 	
 	// Rho fluid data
 	PetscScalar rho_f_v[_max_pd_sz_][_max_num_pd_];

@@ -184,8 +184,8 @@ PetscErrorCode DBMatReadPhase(DBMat *dbm, FB *fb)
 	// read material properties from file with error checking
 	Scaling    *scal;
 	Material_t *m;
-	PetscInt    ID = -1, visID = -1, chSoftID, frSoftID, MSN, print_title;
-	size_t 	    StringLength;
+	PetscInt    ID = -1, visID = -1, chSoftID, frSoftID, MSN, print_title,j;
+	size_t 	    StringLength, maxphase;
 	PetscScalar eta, eta0, e0, K, G, E, nu, Vp, Vs;
 	char        ndiff[_str_len_], ndisl[_str_len_], npeir[_str_len_], title[_str_len_], PhaseDiagram[_str_len_], PhaseDiagram_Dir[_str_len_];
 	
@@ -209,6 +209,7 @@ PetscErrorCode DBMatReadPhase(DBMat *dbm, FB *fb)
 	chSoftID = -1;
 	frSoftID = -1;
 	MSN      =  dbm->numSoft - 1;
+	maxphase =  dbm->numPhases-1;
 
 	// phase ID
 	ierr = getIntParam(fb, _REQUIRED_, "ID", &ID, 1, dbm->numPhases-1); CHKERRQ(ierr);
@@ -268,6 +269,9 @@ PetscErrorCode DBMatReadPhase(DBMat *dbm, FB *fb)
 	{
 		m->Pd_rho = 0;	// no phase diagram is used
 	}
+	m->pMant    =  -1 ;
+	m->MeltE    =  -1 ;
+	m->pMc      =   0 ;
 	
 	//============================================================
 	// Creep profiles
@@ -338,6 +342,24 @@ PetscErrorCode DBMatReadPhase(DBMat *dbm, FB *fb)
 	ierr = getScalarParam(fb, _OPTIONAL_, "A",        &m->A,     1, 1.0); CHKERRQ(ierr);
 	ierr = getScalarParam(fb, _OPTIONAL_, "T",        &m->T,     1, 1.0); CHKERRQ(ierr);
 	//=================================================================================
+	//=================================================================================
+	//Melt Extraction
+	//=================================================================================
+	ierr = getScalarParam(fb,_OPTIONAL_,"Mtrs",       &m->Mtrs,  1, 1.0); CHKERRQ(ierr);
+	ierr = getScalarParam(fb,_OPTIONAL_,"Mleft",      &m->Mleft, 1, 1.0); CHKERRQ(ierr);
+	ierr = getScalarParam(fb,_OPTIONAL_,"Mmax",       &m->Mmax,  1, 1.0); CHKERRQ(ierr);
+	ierr = getScalarParam(fb,_OPTIONAL_,"RelInt",     &m->RelInt,1, 1.0); CHKERRQ(ierr);
+	ierr = getScalarParam(fb,_OPTIONAL_,"TInt",       &m->TInt,  1, 1.0); CHKERRQ(ierr);
+	ierr = getScalarParam(fb,_OPTIONAL_,"VolCor",     &m->VolCor,1, 1.0); CHKERRQ(ierr);
+	ierr = getIntParam   (fb,_OPTIONAL_,"PhInt",      &m->PhInt, 1,  maxphase); CHKERRQ(ierr);
+	ierr = getIntParam   (fb,_OPTIONAL_,"PhExt",      &m->PhExt, 1,  maxphase); CHKERRQ(ierr);
+	ierr = getIntParam   (fb,_OPTIONAL_,"PhNext",     &m->PhNext, 1, maxphase); CHKERRQ(ierr);
+	ierr = getScalarParam(fb,_OPTIONAL_,"DInt",       &m->DInt,  1, 1.0); CHKERRQ(ierr);
+	ierr = getScalarParam(fb,_OPTIONAL_,"DTol",       &m->DTol,  1, 1.0); CHKERRQ(ierr);
+	ierr = getScalarParam(fb,_OPTIONAL_,"pMant",      &m->pMant, 1, 1.0); CHKERRQ(ierr);
+	ierr = getIntParam   (fb,_OPTIONAL_,"MeltE",      &m->MeltE, 1, 1.0); CHKERRQ(ierr);
+	ierr = getIntParam   (fb,_OPTIONAL_,"pMc",        &m->pMc,   1, 1.0); CHKERRQ(ierr);
+	ierr = getIntParam   (fb,_OPTIONAL_,"pCc",        &m->pCc,   1, 1.0); CHKERRQ(ierr);
 
 	// DEPTH-DEPENDENT
 
@@ -368,6 +390,16 @@ PetscErrorCode DBMatReadPhase(DBMat *dbm, FB *fb)
 	{
 		SETERRQ1(PETSC_COMM_WORLD, PETSC_ERR_USER, "Cohesion must be specified for phase %lld (chSoftID + ch)", (LLD)ID);
 	}
+
+//	if(m->MeltE ==-1)
+//	{
+//	SETERRQ1(PETSC_COMM_WORLD, PETSC_ERR_USER, "It is unknown if phase %lld can extract melt or not. Please specify it. MeltE=0 (off) or MeltE=1(on)", (LLD)ID);
+//	}
+	if(m->pMant == -1 && m->MeltE !=-1)
+	{
+	SETERRQ1(PETSC_COMM_WORLD, PETSC_ERR_USER, "It is unknown if phase %lld is a mantle phase or not. Please specify it pMant=1 (mantle), pMant=0(crust)", (LLD)ID);
+	}
+
 
 	// set softening law IDs
 	m->chSoftID = chSoftID;
@@ -507,6 +539,25 @@ PetscErrorCode DBMatReadPhase(DBMat *dbm, FB *fb)
 	MatPrintScalParam(m->k,     "k",     "[W/m/k]",  scal, title, &print_title);
 	MatPrintScalParam(m->A,     "A",     "[W/kg]",   scal, title, &print_title);
 	MatPrintScalParam(m->T,     "T",     "[C]",      scal, title, &print_title);
+	
+	sprintf(title, "   (Melt_extraction)   : "); print_title = 1;
+	MatPrintScalParam(m->Mtrs,     "Mtrs",     "[]" ,      scal, title, &print_title);
+	MatPrintScalParam(m->Mleft,    "Mleft",    "[]" ,      scal, title, &print_title);
+	MatPrintScalParam(m->Mmax,     "Mmax",     "[]" ,      scal, title, &print_title);
+	MatPrintScalParam(m->RelInt,   "RelInt",   "[]" ,      scal, title, &print_title);
+	MatPrintScalParam(m->TInt,     "TInt",     "[C]",      scal, title, &print_title);
+	MatPrintScalParam(m->VolCor,    "VolCor", "[]",      scal, title, &print_title);
+	MatPrintScalParam(m->PhInt,    "PhInt",    "[]" ,      scal, title, &print_title);
+	MatPrintScalParam(m->PhExt,    "PhExt",    "[]" ,      scal, title, &print_title);
+	MatPrintScalParam(m->DInt,     "DInt",    "[]" ,      scal, title, &print_title);
+	MatPrintScalParam(m->DTol,     "DTol",    "[]" ,      scal, title, &print_title);
+	// Melt Extraction
+		if((!m->VolCor && m->MeltE))
+			{
+			PetscPrintf(PETSC_COMM_WORLD, "Melt-Solid volume correction has not be set for %lld . The Default value 0.9 has been set \n", (LLD)ID);
+				m->VolCor = 0.9;
+			}
+
 	PetscPrintf(PETSC_COMM_WORLD,"\n\n");
 
 	// SCALE
@@ -545,6 +596,8 @@ PetscErrorCode DBMatReadPhase(DBMat *dbm, FB *fb)
 	m->k     /= scal->conductivity;
 	m->A     /= scal->heat_production;
 	if(m->T)   m->T    = (m->T + scal->Tshift)/scal->temperature;
+	if(m->TInt) m->TInt = (m->TInt + scal->Tshift)/scal->temperature;
+
 
 	PetscFunctionReturn(0);
 }

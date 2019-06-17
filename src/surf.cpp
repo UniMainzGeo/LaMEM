@@ -377,6 +377,7 @@ PetscErrorCode FreeSurfGetVelComp(
 
 			// interpolate velocity
 			vsurf[level][j][i] = (1.0 - w)*vgrid[sz+K][j][i] + w*vgrid[sz+K+1][j][i];
+
 		}
 	}
 	END_PLANE_LOOP

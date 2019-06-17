@@ -64,6 +64,7 @@ struct FreeSurf
 	Vec     ltopo, gtopo;   // topography vectors                (local and global)
 	Vec     vx, vy, vz;     // velocity vectors                  (local)
 	Vec     vpatch, vmerge; // patch and merged velocity vectors (global)
+	// Optional
 
 	// flags/parameters
 	PetscInt    UseFreeSurf; // free surface activation flag
@@ -89,6 +90,10 @@ struct FreeSurf
 	// run-time parameters
 	PetscScalar avg_topo; // average topography (updated by all functions changing topography)
 	PetscInt    phase;    // current sediment phase
+	PetscInt    phaseEx;
+	PetscInt    MeltExtraction;
+
+
 
 };
 

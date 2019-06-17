@@ -45,6 +45,8 @@
 #ifndef __JacRes_h__
 #define __JacRes_h__
 
+#define max_num_phases 32
+
 struct FB;
 struct Scaling;
 struct TSSol;
@@ -54,6 +56,7 @@ struct BCCtx;
 struct DBMat;
 struct Tensor2RN;
 struct PData;
+struct AdvCtx;
 
 //---------------------------------------------------------------------------
 //.....................   Deviatoric solution variables   ...................
@@ -73,6 +76,7 @@ struct SolVarDev
 	PetscScalar  fr;    // effective friction coefficient (Jacobian)
 	PetscScalar  yield; // average yield stress in control volume
 	PetscScalar  mf;    // melt fraction
+	PetscScalar  mfextot; // Total Melt Extracted from a a nodes
 };
 
 //---------------------------------------------------------------------------
@@ -90,7 +94,11 @@ struct SolVarBulk
 	PetscScalar  rho_pd;// Density from phase diagram
 	PetscScalar  rho_pf;// Fluid Density from phase diagram
 	PetscScalar  mf;    // Melt fraction from phase diagram
-
+	PetscScalar  mfVol;
+	PetscScalar  mfextot;// Total Melt extracted from a node
+	PetscScalar  dMF;
+	PetscScalar  Mass;   //Volume changes to send to the continuity equation
+	PetscScalar  dMass;// Variation of mass associated with the melt extraction
 };
 
 //---------------------------------------------------------------------------
@@ -147,6 +155,7 @@ struct Controls
 	PetscScalar shearHeatEff;  // shear heating efficiency parameter [0 - 1]
 	PetscScalar biot;          // Biot pressure parameter [0 - 1]
 
+
 	PetscInt    actTemp;        // temperature diffusion activation flag
 	PetscInt    actExp;         // thermal expansion activation flag
 	PetscInt    actSteadyTemp;  // steady-state temperature initial guess flag
@@ -180,6 +189,12 @@ struct Controls
 
 	PetscInt    getPermea;      // effective permeability computation activation flag
 	PetscInt    rescal;         // stensil rescaling flag (for interval constraints)
+
+	PetscInt    AdiabHeat;     // flag that activate adiabatic heating computation
+
+	PetscScalar MinTk;         // Minimum Tk of the crust. If the crust is less than this value all the melt is converted into extrusion
+	PetscInt    MeltExt;         // Control activaction Melt Extraction
+
 };
 
 //---------------------------------------------------------------------------
@@ -195,6 +210,7 @@ struct JacRes
 	FreeSurf *surf;  // free surface
 	BCCtx    *bc;    // boundary condition context
 	DBMat    *dbm;   // material database
+	AdvCtx	*actx ;
 
 	// parameters and controls
 	Controls ctrl;
@@ -242,6 +258,12 @@ struct JacRes
 
 	// Phase diagram
 	PData       *Pd;
+
+	// Melt extraction
+	Vec   gdMoho1, gdMoho,Thickness;
+	Vec   ldMoho,Miphase;
+	Vec   gdc, ldc;
+	Vec   ldvecmerge, dgmvvecmerge;
 
 	//=======================
 	// temperature parameters

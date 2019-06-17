@@ -77,7 +77,6 @@ void OutVecCreate(
 	PetscInt       *phase_ID); // phase IDs to aggregate
 
 //---------------------------------------------------------------------------
-
 PetscErrorCode PVOutWritePhase       (OutVec*);
 PetscErrorCode PVOutWritePhaseAgg    (OutVec*);
 PetscErrorCode PVOutWriteDensity     (OutVec*);
@@ -116,6 +115,13 @@ PetscErrorCode PVOutWriteContRes     (OutVec*);
 PetscErrorCode PVOutWritEnergRes     (OutVec*);
 PetscErrorCode PVOutWriteMeltFraction(OutVec*);
 PetscErrorCode PVOutWriteFluidDensity(OutVec*);
+//=================Melt Extraction==================================
+PetscErrorCode PVOutWriteMass        (OutVec*);
+PetscErrorCode PVOutWriteMeltFraction(OutVec*);
+PetscErrorCode PVOutWriteMeltExtTot  (OutVec*);
+PetscErrorCode PVOutWriteMassEx      (OutVec*);
+
+
 
 // ... add more output functions here
 

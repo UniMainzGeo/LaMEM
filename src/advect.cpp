@@ -58,6 +58,7 @@
 #include "cvi.h"
 #include "subgrid.h"
 #include "tools.h"
+#include "meltextraction.h"
 
 /*
 #START_DOC#
@@ -99,6 +100,9 @@ PetscErrorCode MarkerMerge(Marker &A, Marker &B, Marker &C)
 	C.U[0]  = (A.U[0] + B.U[0])/2.0;
 	C.U[1]  = (A.U[1] + B.U[1])/2.0;
 	C.U[2]  = (A.U[2] + B.U[2])/2.0;
+	// Melt Extraction
+	C.Mtot  = (A.Mtot+B.Mtot)/2.0;
+	C.Mvol  = (A.Mvol+B.Mvol)/2.0;
 
 	PetscFunctionReturn(0);
 }
@@ -280,6 +284,9 @@ PetscErrorCode ADVCreate(AdvCtx *actx, FB *fb)
 	// project initial history from markers to grid
 	ierr = ADVProjHistMarkToGrid(actx); CHKERRQ(ierr);
 
+	// Also project the melt extraction variables to the grid otherwise they are uninitialised
+	ierr =  MeltExtractionInterpMarkerBackToGrid(actx);
+
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
@@ -370,6 +377,33 @@ PetscErrorCode ADVReadRestart(AdvCtx *actx, FILE *fp)
 
 	// project history from markers to grid (initialize solution variables)
 	ierr = ADVProjHistMarkToGrid(actx); CHKERRQ(ierr);
+
+	// restart Phase Diagram
+
+	for(PetscInt i=0; i<actx->jr->dbm->numPhases; i++)
+		{
+			if(actx->jr->dbm->phases[i].Pd_rho == 1)
+			{
+				PetscPrintf(PETSC_COMM_WORLD,"   Phase %i  \n",i);
+				ierr = LoadPhaseDiagram(actx, actx->jr->dbm->phases, i); CHKERRQ(ierr);
+				SolVarCell  *svCell;
+				PetscInt     jj;
+
+				// interpolate reference density
+				for(jj = 0; jj < actx->fs->nCells; jj++)
+				{
+					// access solution variable
+					svCell = &actx->jr->svCell[jj];
+
+					svCell->svBulk.rho_pd  	= actx->jr->dbm->phases[i].rho;
+
+				}
+			}
+		}
+
+			PetscPrintf(PETSC_COMM_WORLD,"------------Reloading Phase Diagrams-------\n");
+
+
 
 	PetscFunctionReturn(0);
 }
@@ -2000,7 +2034,7 @@ PetscErrorCode ADVInterpMarkToEdge(AdvCtx *actx, PetscInt iphase, InterpCase ica
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-#undef __FUNCT__
+
 #define __FUNCT__ "ADVCheckMarkPhases"
 PetscErrorCode ADVCheckMarkPhases(AdvCtx *actx)
 {

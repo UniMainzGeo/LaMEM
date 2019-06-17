@@ -53,7 +53,9 @@
 #include "phase.h"
 #include "constEq.h"
 #include "tools.h"
-
+#include "advect.h"
+#include "cvi.h"
+#include "meltextraction.h"
 //---------------------------------------------------------------------------
 PetscErrorCode JacResCreate(JacRes *jr, FB *fb)
 {
@@ -83,6 +85,7 @@ PetscErrorCode JacResCreate(JacRes *jr, FB *fb)
 	ctrl->pShiftAct    =  1;
 	ctrl->pLithoVisc   =  1;
 	ctrl->initGuess    =  1;
+	ctrl->MinTk        =  0.0;
 	input_eta_max      =  0;
 
 	if(scal->utype != _NONE_)
@@ -92,6 +95,7 @@ PetscErrorCode JacResCreate(JacRes *jr, FB *fb)
 	}
 
 	// read from options
+
 	ierr = getScalarParam(fb, _OPTIONAL_, "gravity",          ctrl->grav,           3, 1.0); CHKERRQ(ierr);
 	ierr = getScalarParam(fb, _OPTIONAL_, "FSSA",            &ctrl->FSSA,           1, 1.0); CHKERRQ(ierr);
 	ierr = getScalarParam(fb, _OPTIONAL_, "shear_heat_eff",  &ctrl->shearHeatEff,   1, 1.0); CHKERRQ(ierr);
@@ -124,7 +128,9 @@ PetscErrorCode JacResCreate(JacRes *jr, FB *fb)
 	ierr = getScalarParam(fb, _OPTIONAL_, "gw_level",        &ctrl->gwLevel,        1, 1.0); CHKERRQ(ierr);
 	ierr = getIntParam   (fb, _OPTIONAL_, "get_permea",      &ctrl->getPermea,      1, 1);   CHKERRQ(ierr);
 	ierr = getIntParam   (fb, _OPTIONAL_, "rescal",          &ctrl->rescal,         1, 1);   CHKERRQ(ierr);
-
+	ierr = getIntParam   (fb, _OPTIONAL_, "Adiabatic_Heat",  &ctrl->AdiabHeat,     1, 1  ); CHKERRQ(ierr);
+	ierr = getIntParam   (fb, _OPTIONAL_, "MeltExt",          &ctrl->MeltExt,     1, 1  ); CHKERRQ(ierr);
+	ierr = getScalarParam(fb, _OPTIONAL_, "MinTk",           &ctrl->MinTk,        1, 1.0); CHKERRQ(ierr);
 
 	if     (!strcmp(gwtype, "none"))  ctrl->gwType = _GW_NONE_;
 	else if(!strcmp(gwtype, "top"))   ctrl->gwType = _GW_TOP_;
@@ -294,6 +300,12 @@ PetscErrorCode JacResCreate(JacRes *jr, FB *fb)
 	if(ctrl->cf_eta_min)     PetscPrintf(PETSC_COMM_WORLD, "   Visco-plastic regularization parameter  : %g \n",    ctrl->cf_eta_min);
 	if(ctrl->n_pw)           PetscPrintf(PETSC_COMM_WORLD, "   Power-law regularization parameter      : %g \n",    ctrl->n_pw);
 	if(ctrl->rho_fluid)      PetscPrintf(PETSC_COMM_WORLD, "   Fluid density                           : %g %s \n", ctrl->rho_fluid,  scal->lbl_density);
+	if(ctrl->AdiabHeat)      PetscPrintf(PETSC_COMM_WORLD, "   Adiabatic Heating                       @   %g \n", ctrl->AdiabHeat);
+
+	// Melt Extraction
+	if(ctrl->MinTk)          PetscPrintf(PETSC_COMM_WORLD, "   Minimal crustal thickness               : %g %s \n", ctrl->MinTk,  scal->lbl_length);
+	if(ctrl->MeltExt)        PetscPrintf(PETSC_COMM_WORLD, "   Melt Extraction is active               @   %g  \n",ctrl->MeltExt);
+
 
 	PetscPrintf(PETSC_COMM_WORLD, "   Ground water level type                 : ");
 	if     (ctrl->gwType == _GW_NONE_)  PetscPrintf(PETSC_COMM_WORLD, "none \n");
@@ -311,6 +323,7 @@ PetscErrorCode JacResCreate(JacRes *jr, FB *fb)
 	{
 		ctrl->grav[i] /=  scal->gravity_strength;
 	}
+
 	ctrl->eta_min        /=  scal->viscosity;
 	input_eta_max        /=  scal->viscosity;
 	ctrl->eta_ref        /=  scal->viscosity;
@@ -323,6 +336,9 @@ PetscErrorCode JacResCreate(JacRes *jr, FB *fb)
 	ctrl->rho_fluid      /=  scal->density;
 	ctrl->gwLevel        /=  scal->length;
 	ctrl->steadyTempStep /=  scal->time;
+	// Melt Extraction
+	ctrl->MinTk       /=  scal->length;
+
 
 	// set inverse of maximum viscosity
 	if(input_eta_max) ctrl->inv_eta_max = 1.0/input_eta_max;
@@ -374,6 +390,7 @@ PetscErrorCode JacResCreateData(JacRes *jr)
 	ierr = VecCreateMPI(PETSC_COMM_WORLD, dof->ln, PETSC_DETERMINE, &jr->gres); CHKERRQ(ierr);
 
 	// zero out global vectors
+
 	ierr = VecSet(jr->gsol, 0.0); CHKERRQ(ierr);
 	ierr = VecSet(jr->gres, 0.0); CHKERRQ(ierr);
 
@@ -546,6 +563,8 @@ PetscErrorCode JacResDestroy(JacRes *jr)
 	ierr = VecDestroy(&jr->lp_lith); CHKERRQ(ierr);
 	ierr = VecDestroy(&jr->lp_pore); CHKERRQ(ierr);
 
+	ierr =  MeltExtractionDestroy(jr);
+
 	ierr = VecDestroy(&jr->gc);      CHKERRQ(ierr);
 
 	ierr = VecDestroy(&jr->lbcor);   CHKERRQ(ierr);
@@ -597,6 +616,8 @@ PetscErrorCode JacResFormResidual(JacRes *jr, Vec x, Vec f)
 	// compute effective strain rate
 	ierr = JacResGetEffStrainRate(jr); CHKERRQ(ierr);
 
+	// compute melt extracted
+//	ierr = MeltExtractionSave(jr,actx); CHKERRQ(ierr);
 	// compute residual
 	ierr = JacResGetResidual(jr); CHKERRQ(ierr);
 
@@ -1055,7 +1076,8 @@ PetscErrorCode JacResGetResidual(JacRes *jr)
 	PetscScalar ***fx,  ***fy,  ***fz, ***vx,  ***vy,  ***vz, ***gc, ***bcp;
 	PetscScalar ***dxx, ***dyy, ***dzz, ***dxy, ***dxz, ***dyz, ***p, ***T, ***p_lith, ***p_pore;
 	PetscScalar eta_creep, eta_vp;
-	PetscScalar depth, pc_lith, pc_pore, biot, ptotal, avg_topo;
+
+	PetscScalar depth, pc_lith, pc_pore, biot, ptotal, avg_topo,dx,dy,dz;;
 	PetscScalar alpha, Tn;
 
 	PetscErrorCode ierr;
@@ -1206,6 +1228,13 @@ PetscErrorCode JacResGetResidual(JacRes *jr)
 
 		// evaluate volumetric constitutive equations
 		ierr = VolConstEq(svBulk, numPhases, phases, svCell->phRat, ctrl, depth, dt, pc-pShift , Tc, jr-> Pd); CHKERRQ(ierr);
+		dx = SIZE_CELL(i,sx,fs->dsx);
+		dy = SIZE_CELL(j,sy,fs->dsy);
+		dz = SIZE_CELL(k,sz,fs->dsz);
+		// It assumes that the variation of mass/volume is equal to zero and if the dMass (a.k.a. melt extracted/injected is different than zero, then it performs all the processes to compute the volumetric source term)
+
+		svBulk->Mass=0.0;
+		ierr = ExchangeMassME(svBulk,dx,dy,dz,dt); CHKERRQ(ierr);
 
 		// access
 		theta = svBulk->theta; // volumetric strain rate
@@ -1250,18 +1279,28 @@ PetscErrorCode JacResGetResidual(JacRes *jr)
 		if(j == mcy && bcp[k][j+1][i] != DBL_MAX) fy[k][j+1][i] -= -p[k][j+1][i]/fdy;
 
 		if(k == 0   && bcp[k-1][j][i] != DBL_MAX) fz[k][j][i]   += -p[k-1][j][i]/bdz;
-		if(k == mcz && bcp[k+1][j][i] != DBL_MAX) fz[k+1][j][i] -= -p[k+1][j][i]/fdz;
+			if(k == mcz && bcp[k+1][j][i] != DBL_MAX) fz[k+1][j][i] -= -p[k+1][j][i]/fdz;
+
+	//		if(k == 0   ) fz[k][j][i]   += -p[k-1][j][i]/bdz;
+	//		if(k == mcz ) fz[k+1][j][i] -= -p[k+1][j][i]/fdz;
+
+			// mass - currently T-dependency is deactivated
+	//		gc[k][j][i] = -IKdt*(pc - pn) - theta + alpha*(Tc - Tn)/dt;
+
+
+			// If Melt extraction is not active the so called source term is equal to zero, so it is not affecting the residual computation (AP)
 
 		if(actExp)
 		{
-			gc[k][j][i] = -IKdt*(pc - pn) - theta + alpha*(Tc - Tn)/dt;
+			gc[k][j][i] = -IKdt*(pc - pn) - theta + alpha*(Tc - Tn)/dt + svBulk->Mass;
 		}
 		else
 		{
-			gc[k][j][i] = -IKdt*(pc - pn) - theta;
+			gc[k][j][i] = -IKdt*(pc - pn) - theta + svBulk->Mass;
 		}
         
-        
+
+
 	}
 	END_STD_LOOP
 

@@ -144,6 +144,8 @@ struct OutMask
 	PetscInt j2_strain_rate; // deviatoric strain rate second invariant
 	PetscInt melt_fraction;  // melt fraction
 	PetscInt fluid_density;  // fluid density
+
+
 	PetscInt vol_rate;       // volumetric strain rate
 	PetscInt vorticity;      // vorticity vector
 	PetscInt ang_vel_mag;    // average angular velocity magnitude
@@ -159,6 +161,12 @@ struct OutMask
 	PetscInt moment_res;     // momentum residual
 	PetscInt cont_res;       // continuity residual
 	PetscInt energ_res;      // energy residual
+	PetscInt Moho;
+
+	// Melt Extraction
+	PetscInt melt_exttot;   // melt fraction
+	PetscInt MassEx;    	// melt fraction
+	PetscInt Mass;   		// melt fraction extreacted
 
 	// phase aggregates
 	PetscInt num_agg;                                              // number of phase aggregates
