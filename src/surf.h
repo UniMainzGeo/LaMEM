@@ -73,15 +73,18 @@ struct FreeSurf
 	PetscScalar MaxAngle;    // maximum angle with horizon (smoothed if larger)
 
 	// erosion/sedimentation parameters
-	PetscInt    ErosionModel;               // [0-none, 1-infinitely fast, ...]
+	PetscInt    ErosionModel;               // [0-none, 1-infinitely fast, 2-prescribed rate...]
 	PetscInt    SedimentModel;              // [0-none, 1-prescribed rate, 2-gaussian margin...]
 	PetscInt    numLayers;                  // number of sediment layers
-	PetscScalar timeDelims[_max_sed_layers_-1]; // sediment layers time delimiters
-	PetscScalar sedRates  [_max_sed_layers_  ]; // sedimentation rates
-	PetscScalar sedRates2nd [_max_sed_layers_  ]; // sedimentation rates
-	PetscInt    sedPhases [_max_sed_layers_  ]; // sediment layers phase numbers
-	PetscScalar marginO [2];                // lateral coordinates of continental margin - origin
-	PetscScalar marginE [2];                // lateral coordinates of continental margin - 2nd point
+	PetscInt    numErPhs;                   // number of erosion phases
+	PetscScalar timeDelims[_max_sed_layers_-1];  // sediment layers time delimiters
+	PetscScalar timeDelimsEr[_max_er_phases_-1]; // sediment layers time delimiters
+	PetscScalar erRates[_max_er_phases_];        // erosion rates
+	PetscScalar sedRates[_max_sed_layers_  ];    // sedimentation rates
+	PetscScalar sedRates2nd[_max_sed_layers_  ]; // sedimentation rates
+	PetscInt    sedPhases[_max_sed_layers_  ];   // sediment layers phase numbers
+	PetscScalar marginO[2];                 // lateral coordinates of continental margin - origin
+	PetscScalar marginE[2];                 // lateral coordinates of continental margin - 2nd point
 	PetscScalar hUp;                        // up dip thickness of sediment cover
 	PetscScalar hDown;                      // down dip thickness of sediment cover
 	PetscScalar dTrans;                     // half of transition zone

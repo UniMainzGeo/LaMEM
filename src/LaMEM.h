@@ -145,6 +145,9 @@
 // maximum number of sedimentary layers (free surface sedimentation)
 #define _max_sed_layers_ 50
 
+// maximum number of erosion phases (free surface erosion)
+#define _max_er_phases_ 50
+
 // maximum number of adjoint parameters
 #define _max_adj_par_ 50
 
