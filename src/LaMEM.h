@@ -131,7 +131,7 @@
 #define _max_num_soft_ 10
 
 // maximum number of phase diagrams
-#define _max_num_pd_ 8
+#define _max_num_pd_ 20
 
 // maximum grid size of phase diagram
 #define _max_pd_sz_ 40100

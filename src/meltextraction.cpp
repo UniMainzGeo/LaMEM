@@ -660,10 +660,13 @@ PetscErrorCode MeltExtractionInterpMarker(AdvCtx *actx, PetscInt iphase)
 			Dx = SIZE_CELL(sx+I,sx,fs->dsx);
 			Dy = SIZE_CELL(sy+J,sy,fs->dsy);
 			Dz = SIZE_CELL(sz+K,sz,fs->dsz);
+			newM=0;
 			if(UP>0)
 			{
 				UP=UP/(Dx*Dy*Dz);
+
 				newM = (PetscInt)ceil((UP*mrk_inj));
+
 				ierr = MeltExtractionInject(jr, actx, ID, I, J, K, UP,iphase,newM,n_in);  CHKERRQ(ierr);
 				n_in += newM;
 			}
@@ -697,8 +700,11 @@ PetscErrorCode MeltExtractionInterpMarker(AdvCtx *actx, PetscInt iphase)
 
 		// access buffer
 		UP = vldc[sz+K][sy+J][sx+I];
+
+
 		if(UP<0.0)
 		{
+
 			if(P->phase==iphase)
 			{
 				UP/=(Dx*Dy*Dz*svCell->phRat[iphase]);
@@ -706,13 +712,15 @@ PetscErrorCode MeltExtractionInterpMarker(AdvCtx *actx, PetscInt iphase)
 				P->Mvol +=  UP;  // has to decrease
 				if(P->Mtot > phases[iphase].Mmax)
 				{
-					P->phase=phases[iphase].PhNext;
-					// It is necessary to set to zero the total melt extracted from this particles. Otherwise the melt production is discontinous
+					P->phase=phases[iphase].PhNext;					// It is necessary to set to zero the total melt extracted from this particles. Otherwise the melt production is discontinous
 					P->Mtot = 0.0;
+
 				}
 			}
 		}
 	}
+	ierr = ADVMapMarkToCells(actx); CHKERRQ(ierr);
+
 	ierr = DMDAVecRestoreArray(fs->DA_CEN, jr->ldc, &vldc); CHKERRQ(ierr);
 
 	ierr = ADVelDestroy(&vi); CHKERRQ(ierr);
@@ -741,6 +749,7 @@ PetscErrorCode MeltExtractionInject(JacRes *jr,AdvCtx *actx, PetscInt ID, PetscI
 
 
 	PhInject = phases[iphase].PhInt;
+
 
 	// get markers in cell
 	n = actx->markstart[ID+1] - actx->markstart[ID];
@@ -993,6 +1002,7 @@ PetscErrorCode ExchangeMassME(SolVarBulk *svBulk,PetscScalar dx,PetscScalar dy,P
 	if(svBulk->dMass!=0.0)
 	{
 	svBulk->Mass=1/dt*(1-(dx*dy*dz)/(dx*dy*dz+svBulk->dMass));
+
 	}
 
 	PetscFunctionReturn(0);
