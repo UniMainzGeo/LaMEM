@@ -897,7 +897,6 @@ PetscErrorCode LaMEMLibSolveTemp(LaMEMLib *lm, PetscScalar dt)
 {
 	JacRes         *jr;
 	AdvCtx         *actx;
-	Controls       *ctrl;
 	KSP            tksp;
 	
 	PetscErrorCode ierr;
@@ -906,7 +905,6 @@ PetscErrorCode LaMEMLibSolveTemp(LaMEMLib *lm, PetscScalar dt)
 	// access context
 	jr   = &lm->jr;
 	actx = &lm->actx;
-	ctrl = &jr->ctrl;
 	
 	// create temperature diffusion solver
 	ierr = KSPCreate(PETSC_COMM_WORLD, &tksp); CHKERRQ(ierr);
