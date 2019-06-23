@@ -186,9 +186,8 @@ void MatPrintScalParam(
 //---------------------------------------------------------------------------
 enum TensorCorrection
 {
-	_UniAxial_,      // Uni-axial experiment
-	_SimpleShear_,   // Simple shear experiment
-	_None_           // geological-scale units
+	_UniAxial_,     // Uni-axial experiment
+	_SimpleShear_   // Simple shear experiment
 
 };
 

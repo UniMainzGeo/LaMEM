@@ -1246,30 +1246,24 @@ PetscErrorCode SetProfileCorrection(PetscScalar *B, PetscScalar n, TensorCorrect
 {
 	// set tensor and units correction for rheological profiles
 
-	PetscScalar F2, Bi;
 	// Lab. experiments are typically done under simple shear or uni-axial
 	// compression, which requires a correction in order to use them in tensorial format.
 	// An explanation is given in the textbook of Taras Gerya, chapter 6, p. 71-78.
 
 	PetscFunctionBegin;
 
-	Bi = *B;
 
 	// Tensor correction
-	// In LaMEM this is added to the pre-factor and not to the effective viscosity as in T. Gerya
-	if      (tensorCorrection == _UniAxial_)    F2 = pow(0.5,(n-1)/n) / pow(3,(n+1)/(2*n)); //  F2 = 1/2^((n-1)/n)/3^((n+1)/2/n);
-	else if (tensorCorrection == _SimpleShear_) F2 = pow(0.5,(2*n-1)/n);                    //  F2 = 1/2^((2*n-1)/n);
-	else if (tensorCorrection == _None_)        F2 = 0.5;
+	if      (tensorCorrection == _UniAxial_)    (*B) *= pow(3.0, (n+1)/2); //  F = 3^(n+1)/2
+	else if (tensorCorrection == _SimpleShear_) (*B) *= pow(2.0,  n-1);    //  F = 2^(n-1)
 	else
 	{
 		 SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "Unknown tensor correction in creep mechanism profile!");
 	}
 
-	// Units correction from [MPa^(-n)s^(-1)] to [Pa^(-n)s^(-1)] if required
-	if (MPa) Bi = pow(2*F2,-n) * pow(1e6*pow(Bi,-1/n),-n);
-	else     Bi = pow(2*F2,-n) * Bi;
+	// Apply correction from [MPa^(-n) s^(-1)] to [Pa^(-n) s^(-1)] if required
+	if(MPa) (*B) *= pow(10, -6*n);
 
-	(*B) = Bi;
 
 	PetscFunctionReturn(0);
 }
