@@ -434,17 +434,17 @@ PetscErrorCode DBMatReadPhase(DBMat *dbm, FB *fb)
 
 	if(m->Bps && (!m->Eps || !m->d))
 	{
-		SETERRQ1(PETSC_COMM_WORLD, PETSC_ERR_USER, "pc-creep parameters are incomplete for phase %lld (Bps + Eps + d)", (LLD)ID);
+		SETERRQ1(PETSC_COMM_WORLD, PETSC_ERR_USER, "ps-creep parameters are incomplete for phase %lld (Bps + Eps + d)", (LLD)ID);
 	}
 
 	if(m->Bps && !m->Bdc && !m->Bn)
 	{
-		SETERRQ1(PETSC_COMM_WORLD, PETSC_ERR_USER, "pc-creep requires either dc-creep or dislocation creep for phase %lld (Bps + Bdc, Bps + Bn)", (LLD)ID);
+		SETERRQ1(PETSC_COMM_WORLD, PETSC_ERR_USER, "ps-creep requires either dc-creep or dislocation creep for phase %lld (Bps + Bdc, Bps + Bn)", (LLD)ID);
 	}
 
 	if(m->Bps && m->Bd)
 	{
-		SETERRQ1(PETSC_COMM_WORLD, PETSC_ERR_USER, "Cannot combine pc-creep with diffusion creep for phase %lld (Bps + Bd)", (LLD)ID);
+		SETERRQ1(PETSC_COMM_WORLD, PETSC_ERR_USER, "Cannot combine ps-creep with diffusion creep for phase %lld (Bps + Bd)", (LLD)ID);
 	}
 
 	// ELASTICITY
