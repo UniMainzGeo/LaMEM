@@ -905,7 +905,7 @@ PetscErrorCode SetDislProfile(Material_t *m, char name[])
 		m->En            =   276e3;
 		m->Vn            =   1;
 		tensorCorrection =   _UniAxial_;
-		MPa              =   0;
+		MPa              =   1;
 		C_OH_0           =   1;
 		r                =   0;
 	}
