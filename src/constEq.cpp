@@ -151,14 +151,14 @@ PetscErrorCode ConstEqCtxSetup(
 	//===========
 	// PLASTICITY
 	//===========
-	if (!mat->ch && !mat->fr){
+	if(!mat->ch && !mat->fr)
+	{
 		PetscFunctionReturn(0);		// return if no plasticity is set
 	}
 
 	// apply strain softening to friction and cohesion
 	ch = ApplyStrainSoft(soft, mat->chSoftID, APS, mat->ch);
 	fr = ApplyStrainSoft(soft, mat->frSoftID, APS, mat->fr);
-
 
 	// fit to limits
 	if(ch < ctrl->minCh) ch = ctrl->minCh;

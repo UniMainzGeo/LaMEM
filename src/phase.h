@@ -52,8 +52,19 @@ struct JacRes;
 struct ModParam;
 
 //---------------------------------------------------------------------------
+//.....................   Rheology experiment type  .........................
+//---------------------------------------------------------------------------
+
+enum ExpType
+{
+	_UniAxial_,     // Uni-axial experiment
+	_SimpleShear_   // Simple shear experiment
+};
+
+//---------------------------------------------------------------------------
 //.......................   Softening Law Parameters  .......................
 //---------------------------------------------------------------------------
+
 
 struct Soft_t
 {
@@ -101,6 +112,15 @@ public:
 	PetscScalar  taup;     // scaling stress                             [Pa]
 	PetscScalar  gamma;    // approximation parameter                    [ ]
 	PetscScalar  q;        // stress-dependence parameter                [ ]
+	// dc-creep
+	PetscScalar  Bdc;      // pre-exponential constant                   [1/s]
+	PetscScalar  Edc;      // activation energy                          [J/mol]
+	PetscScalar  t0mu0;    // stress/shear modulus ratio at abs. zero    []
+	PetscScalar  mu;       // average shear modulus                      [Pa]
+	// ps-creep
+	PetscScalar  Bps;      // pre-exponential constant                   [K*m^3/Pa/s]
+	PetscScalar  Eps;      // activation energy                          [J/mol]
+	PetscScalar  d;        // grain size                                 [m]
 	// plasticity parameters
 	PetscScalar  fr;       // friction angle                             [deg]
 	PetscScalar  ch;       // cohesion
@@ -139,8 +159,8 @@ struct PData
 	PetscInt     nP[_max_num_pd_];                        // number of pressure points
 	PetscInt     numProps[_max_num_pd_];                  // number of collumns (or stored properties) in phase diagram
 
-	char         rho_pdns[_pd_name_sz_][_max_num_pd_];        // loaded phase diagram numbers
-	PetscScalar  rho_v[_max_pd_sz_][_max_num_pd_];         // Array containing the actual density data (= bulk density, including that of partial melt)
+	char         rho_pdns[_pd_name_sz_][_max_num_pd_];    // loaded phase diagram numbers
+	PetscScalar  rho_v[_max_pd_sz_][_max_num_pd_];        // Array containing the actual density data (= bulk density, including that of partial melt)
 	PetscScalar  rho;
 
 	// Melt content data
@@ -184,12 +204,6 @@ void MatPrintScalParam(
 //---------------------------------------------------------------------------
 //............ PREDEFINED RHEOLOGICAL PROFILES (from literature) ............
 //---------------------------------------------------------------------------
-enum TensorCorrection
-{
-	_UniAxial_,     // Uni-axial experiment
-	_SimpleShear_   // Simple shear experiment
-
-};
 
 // read profile name from file
 PetscErrorCode GetProfileName(FB *fb, Scaling *scal, char name[], const char key[]);
@@ -203,8 +217,9 @@ PetscErrorCode SetDislProfile(Material_t *m, char name[]);
 // Peierls creep profiles
 PetscErrorCode SetPeirProfile(Material_t *m, char name[]);
 
-// units and tensor correction
-PetscErrorCode SetProfileCorrection(PetscScalar *B, PetscScalar n, TensorCorrection tensorCorrection, PetscInt MPa);
+// correct creep parameters from experimental to tensor units (combined and separate)
+PetscErrorCode CorrExpTensCom(PetscScalar &B, PetscScalar  n, ExpType type, PetscInt MPa);
+PetscErrorCode CorrExpTensSep(PetscScalar &D, PetscScalar &S, ExpType type, PetscInt MPa);
 
 //---------------------------------------------------------------------------
 

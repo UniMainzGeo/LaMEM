@@ -187,7 +187,8 @@ PetscErrorCode DBMatReadPhase(DBMat *dbm, FB *fb)
 	PetscInt    ID = -1, visID = -1, chSoftID, frSoftID, MSN, print_title;
 	size_t 	    StringLength;
 	PetscScalar eta, eta0, e0, K, G, E, nu, Vp, Vs;
-	char        ndiff[_str_len_], ndisl[_str_len_], npeir[_str_len_], title[_str_len_], PhaseDiagram[_str_len_], PhaseDiagram_Dir[_str_len_];
+	char        ndiff[_str_len_], ndisl[_str_len_], npeir[_str_len_], title[_str_len_];
+	char        PhaseDiagram[_str_len_], PhaseDiagram_Dir[_str_len_];
 	
 
 	PetscErrorCode ierr;
@@ -321,6 +322,19 @@ PetscErrorCode DBMatReadPhase(DBMat *dbm, FB *fb)
 	ierr = getScalarParam(fb, _OPTIONAL_, "taup",     &m->taup,  1, 1.0); CHKERRQ(ierr);
 	ierr = getScalarParam(fb, _OPTIONAL_, "gamma",    &m->gamma, 1, 1.0); CHKERRQ(ierr);
 	ierr = getScalarParam(fb, _OPTIONAL_, "q",        &m->q,     1, 1.0); CHKERRQ(ierr);
+	//=================================================================================
+	// dc-creep
+	//=================================================================================
+	ierr = getScalarParam(fb, _OPTIONAL_, "Bdc",      &m->Bdc,   1, 1.0); CHKERRQ(ierr);
+	ierr = getScalarParam(fb, _OPTIONAL_, "Edc",      &m->Edc,   1, 1.0); CHKERRQ(ierr);
+	ierr = getScalarParam(fb, _OPTIONAL_, "t0mu0",    &m->t0mu0, 1, 1.0); CHKERRQ(ierr);
+	ierr = getScalarParam(fb, _OPTIONAL_, "mu",       &m->mu,    1, 1.0); CHKERRQ(ierr);
+	//=================================================================================
+	// ps-creep
+	//=================================================================================
+	ierr = getScalarParam(fb, _OPTIONAL_, "Bps",      &m->Bps,   1, 1.0); CHKERRQ(ierr);
+	ierr = getScalarParam(fb, _OPTIONAL_, "Eps",      &m->Eps,   1, 1.0); CHKERRQ(ierr);
+	ierr = getScalarParam(fb, _OPTIONAL_, "d",        &m->d,     1, 1.0); CHKERRQ(ierr);
 	//=================================================================================
 	// plasticity (Drucker-Prager)
 	//=================================================================================
@@ -714,7 +728,7 @@ PetscErrorCode SetDiffProfile(Material_t *m, char name[])
 {
 	// set diffusion creep profiles from literature
 
-	TensorCorrection tensorCorrection;
+	ExpType          type;
 	PetscInt         MPa;
 	PetscScalar      d0, p;
 	PetscScalar      C_OH_0, r;
@@ -724,15 +738,7 @@ PetscErrorCode SetDiffProfile(Material_t *m, char name[])
 	// Dislocation: eII = An*Tau^n * C_OH^r        *exp( - (En + P*Vn)/(R*T))
 	//
 	// In addition, we take into account that the creep-laws are typically measured under uniaxial or simple shear,
-	// whereas we need them in tensorial format (tensorCorrection and F2) as defined in T. Gerya book.
-	//
-	// The resulting expressions for effective viscosity:
-	// Diffusion:   inv_eta_diff = 2 * [Bd * exp(-(Ed + P*Vd)/(R*T))]
-	// Dislocation: inv_eta_disl = 2 * [Bn * exp(-(En + P*Vn)/(R*T))]^(1/n) * eII^(1-1/n)
-	//
-	// In LaMEM we include the effect of grain size, H2O and tensor correction in the pre-factor (Bd,Bn) such that:
-	// Diffusion:   Bd  = (2*F2)^(-1) * Ad [Pa] * d^-p * C_OH^r
-	// Dislocation: Bn  = (2*F2)^(-n) * An [Pa]        * C_OH^r
+	// whereas we need them in tensorial format (for correction see e.g. T. Gerya book).
 	//
 	//   eII     -   strain rate             [1/s]
 	//   Tau     -   stress                  [Pa]
@@ -761,7 +767,7 @@ PetscErrorCode SetDiffProfile(Material_t *m, char name[])
 		m->Bd            =   1.5e9;
 		m->Ed            =   375e3;
 		m->Vd            =   5e-6;
-		tensorCorrection =   _SimpleShear_;
+		type             =   _SimpleShear_;
 		MPa              =   1;
 		d0               =   10e3;
 		p                =   3;
@@ -775,7 +781,7 @@ PetscErrorCode SetDiffProfile(Material_t *m, char name[])
 		m->Bd            =   1.0e6;
 		m->Ed            =   335e3;
 		m->Vd            =   4e-6;
-		tensorCorrection =   _SimpleShear_;
+		type             =   _SimpleShear_;
 		MPa              =   1;
 		d0               =   10e3;
 		p                =   3;
@@ -789,9 +795,8 @@ PetscErrorCode SetDiffProfile(Material_t *m, char name[])
 		m->Bd            =   2.5e7;
 		m->Ed            =   375e3;
 		m->Vd            =   10e-6;
-		tensorCorrection =   _SimpleShear_;
+		type             =   _SimpleShear_;
 		MPa              =   1;
-
 		d0               =   10e3;
 		p                =   3;
 		C_OH_0           =   1000;
@@ -803,8 +808,8 @@ PetscErrorCode SetDiffProfile(Material_t *m, char name[])
 		SETERRQ1(PETSC_COMM_WORLD, PETSC_ERR_USER, "No such diffusion creep profile: %s! ",name);
 	}
 
-	// make tensor correction and transform units from MPa if necessary
-	ierr = SetProfileCorrection(&m->Bd,1,tensorCorrection,MPa); CHKERRQ(ierr);
+	// correct creep parameters from experimental to tensor units
+	ierr = CorrExpTensCom(m->Bd, 1, type, MPa); CHKERRQ(ierr);
 
 	// take into account grain size and water content
 	m->Bd *= pow(d0,-p)*pow(C_OH_0,r);
@@ -818,7 +823,7 @@ PetscErrorCode SetDislProfile(Material_t *m, char name[])
 {
 	// set dislocation creep profiles from literature
 
-	TensorCorrection tensorCorrection;
+	ExpType          type;
 	PetscInt         MPa;
 	PetscScalar      C_OH_0, r;
 
@@ -827,15 +832,7 @@ PetscErrorCode SetDislProfile(Material_t *m, char name[])
 	// Dislocation: eII = An*Tau^n * C_OH^r        *exp( - (En + P*Vn)/(R*T))
 	//
 	// In addition, we take into account that the creep-laws are typically measured under uniaxial or simple shear,
-	// whereas we need them in tensorial format (tensorCorrection and F2) as defined in T. Gerya book.
-	//
-	// The resulting expressions for effective viscosity:
-	// Diffusion:   inv_eta_diff = 2 * [Bd * exp(-(Ed + P*Vd)/(R*T))]
-	// Dislocation: inv_eta_disl = 2 * [Bn * exp(-(En + P*Vn)/(R*T))]^(1/n) * eII^(1-1/n)
-	//
-	// In LaMEM we include the effect of grain size (d,p), H2O fugacity (C_OH_0,r) and tensor correction (F2) in the pre-factor (Bd,Bn) such that:
-	// Diffusion:   Bd  = (2*F2)^(-1) * Ad [Pa] * d^-p * C_OH^r
-	// Dislocation: Bn  = (2*F2)^(-n) * An [Pa]        * C_OH^r
+	// whereas we need them in tensorial format (for correction see e.g. T. Gerya book).
 	//
 	//   eII     -   strain rate             [1/s]
 	//   Tau     -   stress                  [Pa]
@@ -865,7 +862,7 @@ PetscErrorCode SetDislProfile(Material_t *m, char name[])
 		m->n             =   3.5;
 		m->En            =   532e3;
 		m->Vn            =   17e-6;
-		tensorCorrection =   _UniAxial_;
+		type             =   _UniAxial_;
 		MPa              =   1;
 		C_OH_0           =   1;
 		r                =   0;
@@ -878,7 +875,7 @@ PetscErrorCode SetDislProfile(Material_t *m, char name[])
 		m->n             =   4.0;
 		m->En            =   471e3;
 		m->Vn            =   0;
-		tensorCorrection =   _UniAxial_;
+		type             =   _UniAxial_;
 		MPa              =   1;
 		C_OH_0           =   1;
 		r                =   0;
@@ -891,7 +888,7 @@ PetscErrorCode SetDislProfile(Material_t *m, char name[])
 		m->n             =   2.4;
 		m->En            =   212e3;
 		m->Vn            =   0;
-		tensorCorrection =   _SimpleShear_;
+		type             =   _SimpleShear_;
 		MPa              =   1;
 		C_OH_0           =   1;
 		r                =   0;
@@ -904,7 +901,7 @@ PetscErrorCode SetDislProfile(Material_t *m, char name[])
 		m->n             =   3.05;
 		m->En            =   276e3;
 		m->Vn            =   1;
-		tensorCorrection =   _UniAxial_;
+		type             =   _UniAxial_;
 		MPa              =   1;
 		C_OH_0           =   1;
 		r                =   0;
@@ -917,7 +914,7 @@ PetscErrorCode SetDislProfile(Material_t *m, char name[])
 		m->n             =   2.8;
 		m->En            =   66e3;
 		m->Vn            =   0;
-		tensorCorrection =   _UniAxial_;
+		type             =   _UniAxial_;
 		MPa              =   1;
 		C_OH_0           =   1;
 		r                =   0;
@@ -933,7 +930,7 @@ PetscErrorCode SetDislProfile(Material_t *m, char name[])
 		m->n             =   2.3;
 		m->En            =   154e3;
 		m->Vn            =   0;
-		tensorCorrection =   _UniAxial_;
+		type             =   _UniAxial_;
 		MPa              =   1;
 		C_OH_0           =   1;
 		r                =   0;
@@ -949,7 +946,7 @@ PetscErrorCode SetDislProfile(Material_t *m, char name[])
 		m->n             =   2.4;
 		m->En            =   156e3;
 		m->Vn            =   0;
-		tensorCorrection =   _UniAxial_;
+		type             =   _UniAxial_;
 		MPa              =   1;
 		C_OH_0           =   1;
 		r                =   0;
@@ -965,7 +962,7 @@ PetscErrorCode SetDislProfile(Material_t *m, char name[])
 		m->n             =   4.2;
 		m->En            =   445e3;
 		m->Vn            =   0;
-		tensorCorrection =   _UniAxial_;
+		type             =   _UniAxial_;
 		MPa              =   1;
 		C_OH_0           =   1;
 		r                =   0;
@@ -979,7 +976,7 @@ PetscErrorCode SetDislProfile(Material_t *m, char name[])
 		m->n             =   4.7;
 		m->En            =   485e3;
 		m->Vn            =   0;
-		tensorCorrection =   _UniAxial_;
+		type             =   _UniAxial_;
 		MPa              =   1;
 		C_OH_0           =   1;
 		r                =   0;
@@ -992,7 +989,7 @@ PetscErrorCode SetDislProfile(Material_t *m, char name[])
 		m->n             =   2.3;
 		m->En            =   154e3;
 		m->Vn            =   0;
-		tensorCorrection =   _UniAxial_;
+		type             =   _UniAxial_;
 		MPa              =   1;
 		C_OH_0           =   1;
 		r                =   0;
@@ -1005,7 +1002,7 @@ PetscErrorCode SetDislProfile(Material_t *m, char name[])
 		m->n             =   3.05;
 		m->En            =   276e3;
 		m->Vn            =   0;
-		tensorCorrection =   _UniAxial_;
+		type             =   _UniAxial_;
 		MPa              =   0;
 		C_OH_0           =   1;
 		r                =   0;
@@ -1018,7 +1015,7 @@ PetscErrorCode SetDislProfile(Material_t *m, char name[])
 		m->n             =   3.3;
 		m->En            =   186.5e3;
 		m->Vn            =   0;
-		tensorCorrection =   _UniAxial_;
+		type             =   _UniAxial_;
 		MPa              =   0;
 		C_OH_0           =   1;
 		r                =   0;
@@ -1031,7 +1028,7 @@ PetscErrorCode SetDislProfile(Material_t *m, char name[])
 		m->n             =   3.3;
 		m->En            =   190e3;
 		m->Vn            =   0;
-		tensorCorrection =   _UniAxial_;
+		type             =   _UniAxial_;
 		MPa              =   0;
 		C_OH_0           =   1;
 		r                =   0;
@@ -1044,7 +1041,7 @@ PetscErrorCode SetDislProfile(Material_t *m, char name[])
 		m->n             =   3.0;
 		m->En            =   276e3;
 		m->Vn            =   0;
-		tensorCorrection =   _UniAxial_;
+		type             =   _UniAxial_;
 		MPa              =   0;
 		C_OH_0           =   1;
 		r                =   0;
@@ -1056,7 +1053,7 @@ PetscErrorCode SetDislProfile(Material_t *m, char name[])
 		m->n             =   3.2;
 		m->En            =   238e3;
 		m->Vn            =   0;
-		tensorCorrection =   _UniAxial_;
+		type             =   _UniAxial_;
 		MPa              =   1;
 		C_OH_0           =   1;
 		r                =   0;
@@ -1070,7 +1067,7 @@ PetscErrorCode SetDislProfile(Material_t *m, char name[])
 		m->n             =   3.5;
 		m->En            =   520e3;
 		m->Vn            =   22e-6;
-		tensorCorrection =   _SimpleShear_;
+		type             =   _SimpleShear_;
 		MPa              =   1;
 		C_OH_0           =   1000;
 		r                =   1.2;
@@ -1084,7 +1081,7 @@ PetscErrorCode SetDislProfile(Material_t *m, char name[])
 		m->n             =   3.5;
 		m->En            =   480e3;
 		m->Vn            =   11e-6;
-		tensorCorrection =   _SimpleShear_;
+		type             =   _SimpleShear_;
 		MPa              =   1;
 		C_OH_0           =   1000;
 		r                =   1.2;
@@ -1098,7 +1095,7 @@ PetscErrorCode SetDislProfile(Material_t *m, char name[])
 		m->n             =   3.5;
 		m->En            =   530e3;
 		m->Vn            =   15e-6;
-		tensorCorrection =   _SimpleShear_;
+		type             =   _SimpleShear_;
 		MPa              =   1;
 		C_OH_0           =   1;
 		r                =   0;
@@ -1111,7 +1108,7 @@ PetscErrorCode SetDislProfile(Material_t *m, char name[])
 		m->n             =   3.0;
 		m->En            =   510e3;
 		m->Vn            =   0;
-		tensorCorrection =   _SimpleShear_;
+		type             =   _SimpleShear_;
 		MPa              =   0;
 		C_OH_0           =   1;
 		r                =   0;
@@ -1124,7 +1121,7 @@ PetscErrorCode SetDislProfile(Material_t *m, char name[])
 		m->n             =   4.0;
 		m->En            =   471e3;
 		m->Vn            =   0;
-		tensorCorrection =   _SimpleShear_;
+		type             =   _SimpleShear_;
 		MPa              =   0;
 		C_OH_0           =   1;
 		r                =   0;
@@ -1137,7 +1134,7 @@ PetscErrorCode SetDislProfile(Material_t *m, char name[])
 		m->n             =   3.2;
 		m->En            =   123e3;
 		m->Vn            =   0;
-		tensorCorrection =   _SimpleShear_;
+		type             =   _SimpleShear_;
 		MPa              =   1;
 		C_OH_0           =   1;
 		r                =   0;
@@ -1150,7 +1147,7 @@ PetscErrorCode SetDislProfile(Material_t *m, char name[])
         m->n             =   5;
         m->En            =   32.4e3;
         m->Vn            =   0;
-        tensorCorrection =   _UniAxial_;
+        type             =   _UniAxial_;
         MPa              =   1;
         C_OH_0           =   1;
         r                =   0;
@@ -1163,7 +1160,7 @@ PetscErrorCode SetDislProfile(Material_t *m, char name[])
         m->n             =   5;
         m->En            =   54e3;
         m->Vn            =   0;
-        tensorCorrection =   _UniAxial_;
+        type             =   _UniAxial_;
         MPa              =   1;
         C_OH_0           =   1;
         r                =   0;
@@ -1176,7 +1173,7 @@ PetscErrorCode SetDislProfile(Material_t *m, char name[])
         m->n             =   2;
         m->En            =   152.3e3;
         m->Vn            =   0;
-        tensorCorrection =   _UniAxial_;
+        type             =   _UniAxial_;
         MPa              =   1;
         C_OH_0           =   1;
         r                =   0;
@@ -1187,8 +1184,8 @@ PetscErrorCode SetDislProfile(Material_t *m, char name[])
 		SETERRQ1(PETSC_COMM_WORLD, PETSC_ERR_USER, "No such dislocation creep profile: %s! ",name);
 	}
 
-	// make tensor correction and transform units from MPa if necessary
-	ierr = SetProfileCorrection(&m->Bn,m->n,tensorCorrection,MPa); CHKERRQ(ierr);
+	// correct creep parameters from experimental to tensor units
+	ierr = CorrExpTensCom(m->Bn, m->n, type, MPa); CHKERRQ(ierr);
 
 	// take into account grain size and water content
 	m->Bn *= pow(C_OH_0,r);
@@ -1210,7 +1207,7 @@ PetscErrorCode SetPeirProfile(Material_t *m, char name[])
 	// Bp         - pre-exponential constant for the Peierls mechanism [1/s]
 	// Ep         - activation energy [J/mol K]
 	// Vp         - activation volume [m3/mol ]
-	// taup       - Peierl stress [Pa]
+	// taup       - Peierls stress [Pa]
 	// gamma      - adjustable constant [-]
 	// q          - stress dependence for Peierls creep [-]
 	// s          - Peierls creep exponent (typical values between 7-11) [-]
@@ -1241,32 +1238,51 @@ PetscErrorCode SetPeirProfile(Material_t *m, char name[])
 }
 //---------------------------------------------------------------------------
 #undef __FUNCT__
-#define __FUNCT__ "SetProfileCorrection"
-PetscErrorCode SetProfileCorrection(PetscScalar *B, PetscScalar n, TensorCorrection tensorCorrection, PetscInt MPa)
+#define __FUNCT__ "CorrExpTensCom"
+PetscErrorCode CorrExpTensCom(PetscScalar &B, PetscScalar n, ExpType type, PetscInt MPa)
 {
-	// set tensor and units correction for rheological profiles
-
-	// Lab. experiments are typically done under simple shear or uni-axial
-	// compression, which requires a correction in order to use them in tensorial format.
-	// An explanation is given in the textbook of Taras Gerya, chapter 6, p. 71-78.
+	// correct a combination of stress & strain rate parameters (prefactor) from experimental to tensor units
+	// correction factor depends on experiment type
+	// (e.g. Gerya, 2010, chapter 6, p. 71-78)
 
 	PetscFunctionBegin;
 
-
-	// Tensor correction
-	if      (tensorCorrection == _UniAxial_)    (*B) *= pow(3.0, (n+1)/2); //  F = 3^(n+1)/2
-	else if (tensorCorrection == _SimpleShear_) (*B) *= pow(2.0,  n-1);    //  F = 2^(n-1)
-	else
+	// apply experimental to tensor correction
+	if      (type == _UniAxial_)    B *= pow(3.0, (n+1)/2); //  F = 3^(n+1)/2
+	else if (type == _SimpleShear_) B *= pow(2.0,  n-1);    //  F = 2^(n-1)
 	{
-		 SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "Unknown tensor correction in creep mechanism profile!");
+		 SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "Unknown rheology experiment type!");
 	}
 
-	// Apply correction from [MPa^(-n) s^(-1)] to [Pa^(-n) s^(-1)] if required
-	if(MPa) (*B) *= pow(10, -6*n);
-
+	// apply correction from [MPa^(-n) s^(-1)] to [Pa^(-n) s^(-1)] if required
+	if(MPa) B *= pow(10, -6*n);
 
 	PetscFunctionReturn(0);
 }
+//---------------------------------------------------------------------------
+#undef __FUNCT__
+#define __FUNCT__ "CorrExpTensSep"
+PetscErrorCode CorrExpTensSep(PetscScalar &D, PetscScalar &S, ExpType type, PetscInt MPa)
+{
+	// separately correct stress and strain rate parameters from experimental to tensor units
+	// correction factor depends on experiment type
+	// (e.g. Gerya, 2010, chapter 6, p. 71-78)
+
+	PetscFunctionBegin;
+
+	// apply experimental to tensor correction
+	if      (type == _UniAxial_)    { D *= sqrt(3.0)/2.0; S /= sqrt(3.0); }
+	else if (type == _SimpleShear_) { D /= 2.0;           S /= 2.0;       }
+	{
+		 SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "Unknown rheology experiment type!");
+	}
+
+	// apply correction from [MPa^(-n) s^(-1)] to [Pa^(-n) s^(-1)] if required
+	if(MPa) S *= 1e6;
+
+	PetscFunctionReturn(0);
+}
+
 /*
 //---------------------------------------------------------------------------
 // This needs to be updated for the use in the inversion routines
