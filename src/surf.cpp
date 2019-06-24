@@ -94,8 +94,8 @@ PetscErrorCode FreeSurfCreate(FreeSurf *surf, FB *fb)
 	{
 		// sedimentation model parameters
 		ierr = getIntParam   (fb, _REQUIRED_, "er_num_phases",  &surf->numErPhs,  1,                 _max_er_phases_);   CHKERRQ(ierr);
-		ierr = getScalarParam(fb, _REQUIRED_, "er_time_delims",  surf->timeDelims, surf->numErPhs-1, scal->time);        CHKERRQ(ierr);
-		ierr = getScalarParam(fb, _REQUIRED_, "er_rates",        surf->sedRates,   surf->numErPhs,   scal->velocity);    CHKERRQ(ierr);
+		ierr = getScalarParam(fb, _REQUIRED_, "er_time_delims",  surf->timeDelimsEr, surf->numErPhs-1, scal->time);        CHKERRQ(ierr);
+		ierr = getScalarParam(fb, _REQUIRED_, "er_rates",        surf->erRates,   surf->numErPhs,   scal->velocity);    CHKERRQ(ierr);
 	}
 	if(surf->SedimentModel == 1 || surf->SedimentModel == 2 || surf->SedimentModel == 3 )
 	{
