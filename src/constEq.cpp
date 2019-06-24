@@ -269,8 +269,10 @@ PetscErrorCode GetEffVisc(
 		SolVarDev   *svDev)
 {
 	// stabilization parameters
-	PetscScalar eta_ve, eta_pl, eta_pw, eta_vp_reg, eta_st, eta_dis, eta_prl, cf, mf;
+	PetscScalar eta_ve, eta_pl, eta_pw, eta_vp_reg, eta_st, mf;
 	PetscScalar inv_eta_els, inv_eta_dif, inv_eta_dis, inv_eta_prl, inv_eta_max;
+	PetscScalar srt, inv_eta_car, eta;
+
 
 	PetscFunctionBegin;
 
@@ -312,9 +314,9 @@ PetscErrorCode GetEffVisc(
 	// elasticity
 	if(ctx->A_els) inv_eta_els = 2.0*ctx->A_els;
 	// diffusion
-	if(ctx->A_dif) inv_eta_dif = 2.0*ctx->A_dif*mf;
+	if(ctx->A_dif) inv_eta_dif = 2.0*ctx->A_dif;
 	// dislocation
-	if(ctx->A_dis) inv_eta_dis = 2.0*pow(ctx->A_dis, 1.0/ctx->N_dis)*pow(ctx->DII, 1.0 - 1.0/ctx->N_dis)*mf;
+	if(ctx->A_dis) inv_eta_dis = 2.0*pow(ctx->A_dis, 1.0/ctx->N_dis)*pow(ctx->DII, 1.0 - 1.0/ctx->N_dis);
 	// Peierls
 	if(ctx->A_prl) inv_eta_prl = 2.0*pow(ctx->A_prl, 1.0/ctx->N_prl)*pow(ctx->DII, 1.0 - 1.0/ctx->N_prl);
 
@@ -323,37 +325,53 @@ PetscErrorCode GetEffVisc(
 	if(PetscIsInfOrNanScalar(inv_eta_dis)) inv_eta_dis = 0.0;
 	if(PetscIsInfOrNanScalar(inv_eta_prl)) inv_eta_prl = 0.0;
 
+	//==============
+	// CARREAU MODEL
+	//==============
+
+	inv_eta_car = 0.0;
+
+	if(ctx->A_dif && ctx->A_dis)
+	{
+		// transition strain rate
+		srt = ctx->A_dif * pow(ctx->A_dis/ctx->A_dif, 1.0/(1.0 - ctx->N_dis));
+
+		// inverse Carreau viscosity
+		inv_eta_car = inv_eta_dif * pow(1.0 + pow(ctx->DII/srt, 2.0), (1.0 - 1.0/ctx->N_dis)/2.0);
+
+		//	PetscScalar srt, eta0, eta;
+		//	srt  = ctx->A_dif * pow(ctx->A_dis/ctx->A_dif, 1.0/(1.0 - ctx->N_dis));
+		//	eta0 = 1.0/ctx->A_dif/2.0;
+		//	eta = eta0*pow(1.0 + pow(ctx->DII/srt, 2.0), (1.0/ctx->N_dis - 1.0)/2.0);
+		//	srt  = P.Aps*(P.Adc/P.Aps)^(1/(1-P.ndc));
+		//	eta0 = 1/P.Aps/2;
+		//	eta = eta0*(1 + (sr/srt).^2).^((1/P.ndc-1)/2);
+
+		// error handling
+		if(PetscIsInfOrNanScalar(inv_eta_car)) inv_eta_car = 0.0;
+	}
+
 	//================
 	// CREEP VISCOSITY
 	//================
 
+	if(inv_eta_car) eta = ctrl->eta_min + 1.0/(inv_eta_car*mf                  + inv_eta_prl + inv_eta_max);
+	else            eta = ctrl->eta_min + 1.0/(inv_eta_dif*mf + inv_eta_dis*mf + inv_eta_prl + inv_eta_max);
+
 	// store creep & viscoplastic viscosity for output
-	(*eta_creep) = ctrl->eta_min + 1.0/(inv_eta_dif + inv_eta_dis + inv_eta_prl + inv_eta_max);
-	(*eta_vp)    = (*eta_creep);
+	(*eta_creep) = eta;
+	(*eta_vp)    = eta;
 
 	//========================
 	// VISCO-ELASTIC VISCOSITY
 	//========================
 
 	// compute visco-elastic viscosity
-	eta_ve = ctrl->eta_min + 1.0/(inv_eta_els + inv_eta_dif + inv_eta_dis + inv_eta_prl + inv_eta_max);
+	if(inv_eta_els) eta_ve = 1.0/(inv_eta_els + 1.0/eta);
+	else            eta_ve = eta;
 
 	// set visco-elastic prediction
 	(*eta_total) = eta_ve;
-
-	// get viscosity derivatives
-	if(inv_eta_dis)
-	{
-		eta_dis  = 1.0/inv_eta_dis;
-		cf       = (eta_ve - ctrl->eta_min)/eta_dis;
-		(*dEta) += cf*cf*(1.0/ctx->N_dis - 1.0)*eta_dis;
-	}
-	if(inv_eta_prl)
-	{
-		eta_prl  = 1.0/inv_eta_prl;
-		cf       = (eta_ve - ctrl->eta_min)/eta_prl;
-		(*dEta) += cf*cf*(1.0/ctx->N_prl - 1.0)*eta_prl;
-	}
 
 	//===========
 	// PLASTICITY
@@ -742,7 +760,6 @@ PetscErrorCode GetStressEdge(
 
 	PetscFunctionReturn(0);
 }
-//---------------------------------------------------------------------------
 //---------------------------------------------------------------------------
 // get the density from a phase diagram
 #undef __FUNCT__
