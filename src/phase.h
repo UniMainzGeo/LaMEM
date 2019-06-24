@@ -58,7 +58,8 @@ struct ModParam;
 enum ExpType
 {
 	_UniAxial_,     // Uni-axial experiment
-	_SimpleShear_   // Simple shear experiment
+	_SimpleShear_,  // Simple shear experiment
+	_None_
 };
 
 //---------------------------------------------------------------------------
@@ -115,7 +116,7 @@ public:
 	// dc-creep
 	PetscScalar  Bdc;      // pre-exponential constant                   [1/s]
 	PetscScalar  Edc;      // activation energy                          [J/mol]
-	PetscScalar  t0mu0;    // stress/shear modulus ratio at abs. zero    []
+	PetscScalar  Rdc;      // stress/shear modulus ratio at abs. zero    []
 	PetscScalar  mu;       // average shear modulus                      [Pa]
 	// ps-creep
 	PetscScalar  Bps;      // pre-exponential constant                   [K*m^3/Pa/s]
@@ -217,9 +218,11 @@ PetscErrorCode SetDislProfile(Material_t *m, char name[]);
 // Peierls creep profiles
 PetscErrorCode SetPeirProfile(Material_t *m, char name[]);
 
-// correct creep parameters from experimental to tensor units (combined and separate)
-PetscErrorCode CorrExpTensCom(PetscScalar &B, PetscScalar  n, ExpType type, PetscInt MPa);
-PetscErrorCode CorrExpTensSep(PetscScalar &D, PetscScalar &S, ExpType type, PetscInt MPa);
+// correct experimental creep prefactor to tensor units
+PetscErrorCode CorrExpPreFactor(PetscScalar &B, PetscScalar  n, ExpType type, PetscInt MPa);
+
+// correct experimental stress and strain rate parameters to tensor units
+PetscErrorCode CorrExpStressStrainRate(PetscScalar &D, PetscScalar &S, ExpType type, PetscInt MPa);
 
 //---------------------------------------------------------------------------
 

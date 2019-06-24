@@ -327,7 +327,7 @@ PetscErrorCode DBMatReadPhase(DBMat *dbm, FB *fb)
 	//=================================================================================
 	ierr = getScalarParam(fb, _OPTIONAL_, "Bdc",      &m->Bdc,   1, 1.0); CHKERRQ(ierr);
 	ierr = getScalarParam(fb, _OPTIONAL_, "Edc",      &m->Edc,   1, 1.0); CHKERRQ(ierr);
-	ierr = getScalarParam(fb, _OPTIONAL_, "t0mu0",    &m->t0mu0, 1, 1.0); CHKERRQ(ierr);
+	ierr = getScalarParam(fb, _OPTIONAL_, "Rdc",      &m->Rdc,   1, 1.0); CHKERRQ(ierr);
 	ierr = getScalarParam(fb, _OPTIONAL_, "mu",       &m->mu,    1, 1.0); CHKERRQ(ierr);
 	//=================================================================================
 	// ps-creep
@@ -418,6 +418,35 @@ PetscErrorCode DBMatReadPhase(DBMat *dbm, FB *fb)
 		SETERRQ1(PETSC_COMM_WORLD, PETSC_ERR_USER, "Peierls creep parameters are incomplete for phase %lld (Bp + taup + gamma + q + Ep)", (LLD)ID);
 	}
 
+	// DC
+
+	if(m->Bdc && (!m->Edc || !m->Rdc || !m->mu))
+	{
+		SETERRQ1(PETSC_COMM_WORLD, PETSC_ERR_USER, "dc-creep parameters are incomplete for phase %lld (Bdc + Edc + Rdc + mu)", (LLD)ID);
+	}
+
+	if(m->Bdc && m->Bn)
+	{
+		SETERRQ1(PETSC_COMM_WORLD, PETSC_ERR_USER, "Cannot combine dc-creep with dislocation creep for phase %lld (Bdc + Bn)", (LLD)ID);
+	}
+
+	// PS
+
+	if(m->Bps && (!m->Eps || !m->d))
+	{
+		SETERRQ1(PETSC_COMM_WORLD, PETSC_ERR_USER, "pc-creep parameters are incomplete for phase %lld (Bps + Eps + d)", (LLD)ID);
+	}
+
+	if(m->Bps && !m->Bdc && !m->Bn)
+	{
+		SETERRQ1(PETSC_COMM_WORLD, PETSC_ERR_USER, "pc-creep requires either dc-creep or dislocation creep for phase %lld (Bps + Bdc, Bps + Bn)", (LLD)ID);
+	}
+
+	if(m->Bps && m->Bd)
+	{
+		SETERRQ1(PETSC_COMM_WORLD, PETSC_ERR_USER, "Cannot combine pc-creep with diffusion creep for phase %lld (Bps + Bd)", (LLD)ID);
+	}
+
 	// ELASTICITY
 
 	if(!(( G && !K && !E && !nu)   // G
@@ -468,11 +497,12 @@ PetscErrorCode DBMatReadPhase(DBMat *dbm, FB *fb)
 	if(strlen(ndisl)) PetscPrintf(PETSC_COMM_WORLD,"    dislocation creep profile: %s", ndisl);
 
 	sprintf(title, "   (dens)   : "); print_title = 1;
-	if (m->Pd_rho == 1){ 
-		MatPrintScalParam(m->rho,   "rho",   "[kg/m^3]", scal, title, &print_title);
-		PetscPrintf(PETSC_COMM_WORLD,"- Employing phase diagram: %s",PhaseDiagram);
+	MatPrintScalParam(m->rho,   "rho",   "[kg/m^3]", scal, title, &print_title);
+	if(m->Pd_rho == 1)
+	{
+		PetscPrintf(PETSC_COMM_WORLD,"- Employing phase diagram: %s", PhaseDiagram);
 	}
-	else                MatPrintScalParam(m->rho,   "rho",   "[kg/m^3]", scal, title, &print_title);
+	else
 	MatPrintScalParam(m->rho_n, "rho_n", "[ ]",      scal, title, &print_title);
 	MatPrintScalParam(m->rho_c, "rho_c", "[1/m]",    scal, title, &print_title);
 	MatPrintScalParam(m->beta,  "beta",  "[1/Pa]",   scal, title, &print_title);
@@ -508,6 +538,17 @@ PetscErrorCode DBMatReadPhase(DBMat *dbm, FB *fb)
 	MatPrintScalParam(m->gamma, "gamma", "[ ]",       scal, title, &print_title);
 	MatPrintScalParam(m->q,     "q",     "[ ]",       scal, title, &print_title);
 
+	sprintf(title, "   (dc)  : "); print_title = 1;
+	MatPrintScalParam(m->Bdc,   "Bdc",  "[1/s]",   scal, title, &print_title);
+	MatPrintScalParam(m->Edc,   "Edc",  "[J/mol]", scal, title, &print_title);
+	MatPrintScalParam(m->Rdc,   "Rdc",  "[ ]",     scal, title, &print_title);
+	MatPrintScalParam(m->mu,    "mu",   "[Pa]",    scal, title, &print_title);
+
+	sprintf(title, "   (ps)  : "); print_title = 1;
+	MatPrintScalParam(m->Bps,   "Bps",  "[K*m^3/Pa/s]", scal, title, &print_title);
+	MatPrintScalParam(m->Eps,   "Eps",  "[J/mol]",      scal, title, &print_title);
+	MatPrintScalParam(m->d,     "d",    "[m]",          scal, title, &print_title);
+
 	sprintf(title, "   (plast)  : "); print_title = 1;
 	MatPrintScalParam(m->ch, "ch", "[Pa]",  scal, title, &print_title);
 	MatPrintScalParam(m->fr, "fr", "[deg]", scal, title, &print_title);
@@ -541,9 +582,17 @@ PetscErrorCode DBMatReadPhase(DBMat *dbm, FB *fb)
 	m->Vn    *= scal->stress_si;
 
 	// Peierls creep
-	m->Bp     /=  scal->strain_rate;
-	m->Vp     *=  scal->stress_si;
-	m->taup   /=  scal->stress_si;
+	m->Bp    /=  scal->strain_rate;
+	m->Vp    *=  scal->stress_si;
+	m->taup  /=  scal->stress_si;
+
+	// dc-creep
+	m->Bdc   /=  scal->strain_rate;
+	m->mu    /=  scal->stress_si;
+
+	// ps-creep
+	m->Bps  *= scal->viscosity/scal->temperature/pow(scal->length_si, 3.0);
+	m->d    /= scal->length_si;
 
 	// elasticity
 	m->G     /= scal->stress_si;
@@ -558,7 +607,9 @@ PetscErrorCode DBMatReadPhase(DBMat *dbm, FB *fb)
 	m->Cp    /= scal->cpecific_heat;
 	m->k     /= scal->conductivity;
 	m->A     /= scal->heat_production;
-	if(m->T)   m->T    = (m->T + scal->Tshift)/scal->temperature;
+
+	// phase-temperature
+	if(m->T) m->T = (m->T + scal->Tshift)/scal->temperature;
 
 	PetscFunctionReturn(0);
 }
@@ -728,11 +779,6 @@ PetscErrorCode SetDiffProfile(Material_t *m, char name[])
 {
 	// set diffusion creep profiles from literature
 
-	ExpType          type;
-	PetscInt         MPa;
-	PetscScalar      d0, p;
-	PetscScalar      C_OH_0, r;
-
 	// We assume that the creep law has the form:
 	// Diffusion:   eII = Ad*Tau   * C_OH^r * d^-p *exp( - (Ed + P*Vd)/(R*T))
 	// Dislocation: eII = An*Tau^n * C_OH^r        *exp( - (En + P*Vn)/(R*T))
@@ -754,6 +800,11 @@ PetscErrorCode SetDiffProfile(Material_t *m, char name[])
 	//   C_OH    -   water fugacity in H/10^6 Si  (see Hirth & Kohlstedt 2003 for a description)
 	//   r       -   power-law exponent of C_OH term
 	//   MPa     -   transform units: 0 - units in Pa; 1 - units in MPa
+
+	ExpType          type;
+	PetscInt         MPa;
+	PetscScalar      d0, p;
+	PetscScalar      C_OH_0, r;
 
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
@@ -808,8 +859,8 @@ PetscErrorCode SetDiffProfile(Material_t *m, char name[])
 		SETERRQ1(PETSC_COMM_WORLD, PETSC_ERR_USER, "No such diffusion creep profile: %s! ",name);
 	}
 
-	// correct creep parameters from experimental to tensor units
-	ierr = CorrExpTensCom(m->Bd, 1, type, MPa); CHKERRQ(ierr);
+	// correct experimental creep prefactor to tensor units
+	ierr = CorrExpPreFactor(m->Bd, 1, type, MPa); CHKERRQ(ierr);
 
 	// take into account grain size and water content
 	m->Bd *= pow(d0,-p)*pow(C_OH_0,r);
@@ -822,10 +873,6 @@ PetscErrorCode SetDiffProfile(Material_t *m, char name[])
 PetscErrorCode SetDislProfile(Material_t *m, char name[])
 {
 	// set dislocation creep profiles from literature
-
-	ExpType          type;
-	PetscInt         MPa;
-	PetscScalar      C_OH_0, r;
 
 	// We assume that the creep law has the form:
 	// Diffusion:   eII = Ad*Tau   * C_OH^r * d^-p *exp( - (Ed + P*Vd)/(R*T))
@@ -848,6 +895,10 @@ PetscErrorCode SetDislProfile(Material_t *m, char name[])
 	//   C_OH    -   water fugacity in H/10^6 Si  (see Hirth & Kohlstedt 2003 for a description)
 	//   r       -   power-law exponent of C_OH term
 	//   MPa     -   transform units: 0 - units in Pa; 1 - units in MPa
+
+	ExpType          type;
+	PetscInt         MPa;
+	PetscScalar      C_OH_0, r;
 
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
@@ -1184,8 +1235,8 @@ PetscErrorCode SetDislProfile(Material_t *m, char name[])
 		SETERRQ1(PETSC_COMM_WORLD, PETSC_ERR_USER, "No such dislocation creep profile: %s! ",name);
 	}
 
-	// correct creep parameters from experimental to tensor units
-	ierr = CorrExpTensCom(m->Bn, m->n, type, MPa); CHKERRQ(ierr);
+	// correct experimental creep prefactor to tensor units
+	ierr = CorrExpPreFactor(m->Bn, m->n, type, MPa); CHKERRQ(ierr);
 
 	// take into account grain size and water content
 	m->Bn *= pow(C_OH_0,r);
@@ -1212,6 +1263,10 @@ PetscErrorCode SetPeirProfile(Material_t *m, char name[])
 	// q          - stress dependence for Peierls creep [-]
 	// s          - Peierls creep exponent (typical values between 7-11) [-]
 
+	ExpType  type;
+	PetscInt MPa;
+
+	PetscErrorCode ierr;
 	PetscFunctionBegin;
 
 	// check for empty string
@@ -1227,6 +1282,8 @@ PetscErrorCode SetPeirProfile(Material_t *m, char name[])
 		m->taup          = 8.5e9;
 		m->gamma         = 0.1;
 		m->q             = 2;
+        type             = _None_; // what to use for indenter-type tests? (set to none for now)
+        MPa              = 0;
 	}
 
 	else
@@ -1234,50 +1291,59 @@ PetscErrorCode SetPeirProfile(Material_t *m, char name[])
 		SETERRQ1(PETSC_COMM_WORLD, PETSC_ERR_USER, "No such Peierls creep profile: %s! ",name);
 	}
 
+	// correct Peierls prefactor & stress to tensor units
+	ierr = CorrExpStressStrainRate(m->Bp, m->taup, type, MPa); CHKERRQ(ierr);
+
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
 #undef __FUNCT__
-#define __FUNCT__ "CorrExpTensCom"
-PetscErrorCode CorrExpTensCom(PetscScalar &B, PetscScalar n, ExpType type, PetscInt MPa)
+#define __FUNCT__ "CorrExpPreFactor"
+PetscErrorCode CorrExpPreFactor(PetscScalar &B, PetscScalar n, ExpType type, PetscInt MPa)
 {
-	// correct a combination of stress & strain rate parameters (prefactor) from experimental to tensor units
-	// correction factor depends on experiment type
-	// (e.g. Gerya, 2010, chapter 6, p. 71-78)
+	// correct experimental creep prefactor to tensor units
+	// correction factor depends on experiment type (see e.g. Gerya, 2010, chapter 6, p. 71-78)
+
+	// B - creep prefactor
+	// n - power law exponent
 
 	PetscFunctionBegin;
 
 	// apply experimental to tensor correction
 	if      (type == _UniAxial_)    B *= pow(3.0, (n+1)/2); //  F = 3^(n+1)/2
 	else if (type == _SimpleShear_) B *= pow(2.0,  n-1);    //  F = 2^(n-1)
+	else if (type != _None_)
 	{
-		 SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "Unknown rheology experiment type!");
+			SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "Unknown rheology experiment type!");
 	}
 
 	// apply correction from [MPa^(-n) s^(-1)] to [Pa^(-n) s^(-1)] if required
-	if(MPa) B *= pow(10, -6*n);
+	if(MPa) B *= pow(10, -6.0*n);
 
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
 #undef __FUNCT__
-#define __FUNCT__ "CorrExpTensSep"
-PetscErrorCode CorrExpTensSep(PetscScalar &D, PetscScalar &S, ExpType type, PetscInt MPa)
+#define __FUNCT__ "CorrExpStressStrainRate"
+PetscErrorCode CorrExpStressStrainRate(PetscScalar &D, PetscScalar &S, ExpType type, PetscInt MPa)
 {
-	// separately correct stress and strain rate parameters from experimental to tensor units
-	// correction factor depends on experiment type
-	// (e.g. Gerya, 2010, chapter 6, p. 71-78)
+	// correct experimental stress and strain rate parameters to tensor units
+	// correction factor depends on experiment type (see e.g. Gerya, 2010, chapter 6, p. 71-78)
+
+	// D - creep strain rate parameter (e.g. Peierls prefactor)
+	// S - creep stress parameter (e.g. Peierls stress)
 
 	PetscFunctionBegin;
 
 	// apply experimental to tensor correction
 	if      (type == _UniAxial_)    { D *= sqrt(3.0)/2.0; S /= sqrt(3.0); }
 	else if (type == _SimpleShear_) { D /= 2.0;           S /= 2.0;       }
+	else if (type != _None_)
 	{
-		 SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "Unknown rheology experiment type!");
+		SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "Unknown rheology experiment type!");
 	}
 
-	// apply correction from [MPa^(-n) s^(-1)] to [Pa^(-n) s^(-1)] if required
+	// apply correction from [MPa] to [Pa] if required
 	if(MPa) S *= 1e6;
 
 	PetscFunctionReturn(0);

@@ -145,7 +145,8 @@ PetscErrorCode ScalingCreate(Scaling *scal, FB *fb)
 	PetscPrintf(PETSC_COMM_WORLD,"   Stress      : %g [Pa] \n",     stress);
 
 	if(density)
-	{	PetscPrintf(PETSC_COMM_WORLD,"   Density     : %g [kg/m^3] \n", density);
+	{
+		PetscPrintf(PETSC_COMM_WORLD,"   Density     : %g [kg/m^3] \n", density);
 		PetscPrintf(PETSC_COMM_WORLD,"   WRNING! Unconventional scaling is employed");
 	}
 

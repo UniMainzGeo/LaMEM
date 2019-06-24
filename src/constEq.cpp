@@ -125,6 +125,14 @@ PetscErrorCode ConstEqCtxSetup(
 		ctx->A_dif =  mat->Bd*exp(-Q);
 	}
 
+	// PS-CREEP
+	// ONLY EVALUATE FOR TEMPERATURE-DEPENDENT CASES
+	else if(mat->Bps && T)
+	{
+		Q          =  mat->Eps/RT;
+		ctx->A_dif =  mat->Bps*exp(-Q)/T/pow(mat->d, 3.0);
+	}
+
 	// DISLOCATION CREEP (POWER LAW)
 	if(mat->Bn)
 	{
@@ -133,10 +141,19 @@ PetscErrorCode ConstEqCtxSetup(
 		ctx->A_dis =  mat->Bn*exp(-Q);
 	}
 
+	// DC-CREEP
+	// ONLY EVALUATE FOR TEMPERATURE-DEPENDENT CASES
+	else if(mat->Bdc && T)
+	{
+		Q          = mat->Edc/RT;
+		ctx->N_dis =  Q;
+		ctx->A_dis =  mat->Bdc*exp(-Q*mat->Rdc)*pow(mat->mu, -Q);
+	}
+
 	// MELT VISCOSITY
 	if(mat->Pd_rho == 1)
 	{
-		ctx->Pd_rho  = mat->Pd_rho;
+		ctx->Pd_rho = mat->Pd_rho;
 	}
 
 	// PEIERLS CREEP (LOW TEMPERATURE RATE-DEPENDENT PLASTICITY, POWER-LAW APPROXIMATION)
