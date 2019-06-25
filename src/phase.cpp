@@ -418,6 +418,11 @@ PetscErrorCode DBMatReadPhase(DBMat *dbm, FB *fb)
 		SETERRQ1(PETSC_COMM_WORLD, PETSC_ERR_USER, "Peierls creep parameters are incomplete for phase %lld (Bp + taup + gamma + q + Ep)", (LLD)ID);
 	}
 
+	if(m->Bp && !m->Bn)
+	{
+		SETERRQ1(PETSC_COMM_WORLD, PETSC_ERR_USER, "Peierls creep requires dislocation creep for phase %lld (Bp, Bn)", (LLD)ID);
+	}
+
 	// DC
 
 	if(m->Bdc && (!m->Edc || !m->Rdc || !m->mu))
@@ -484,9 +489,9 @@ PetscErrorCode DBMatReadPhase(DBMat *dbm, FB *fb)
 	m->K = K;
 
 	// check that at least one essential deformation mechanism is specified
-	if(!m->Bd && !m->Bn && !m->G)
+	if(!m->Bd && !m->Bn && !m->G && !m->Bdc)
 	{
-		SETERRQ1(PETSC_COMM_WORLD, PETSC_ERR_USER, "At least one of the parameter (set) Bd (eta), Bn (eta0, e0), G must be specified for phase %lld", (LLD)ID);
+		SETERRQ1(PETSC_COMM_WORLD, PETSC_ERR_USER, "At least one of the parameter (set) Bd (eta), Bn (eta0, e0), Bdc, G must be specified for phase %lld", (LLD)ID);
 	}
 
 	// PRINT

@@ -72,7 +72,7 @@ PetscErrorCode ConstEqCtxSetup(
 	PetscFunctionBegin;
 
 	// set RT
-	RT         = ctrl->Rugc*T;
+	RT         =  ctrl->Rugc*T;
 	if(!RT) RT = -1.0;
 
 	// use reference strain-rate instead of zero
@@ -147,7 +147,7 @@ PetscErrorCode ConstEqCtxSetup(
 	{
 		Q          = mat->Edc/RT;
 		ctx->N_dis =  Q;
-		ctx->A_dis =  mat->Bdc*exp(-Q*mat->Rdc)*pow(mat->mu, -Q);
+		ctx->A_dis =  mat->Bdc*exp(-Q*log(mat->Rdc))*pow(mat->mu, -Q);
 	}
 
 	// MELT VISCOSITY
