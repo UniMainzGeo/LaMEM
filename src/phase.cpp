@@ -543,13 +543,13 @@ PetscErrorCode DBMatReadPhase(DBMat *dbm, FB *fb)
 	MatPrintScalParam(m->gamma, "gamma", "[ ]",       scal, title, &print_title);
 	MatPrintScalParam(m->q,     "q",     "[ ]",       scal, title, &print_title);
 
-	sprintf(title, "   (dc)  : "); print_title = 1;
+	sprintf(title, "   (dc)     : "); print_title = 1;
 	MatPrintScalParam(m->Bdc,   "Bdc",  "[1/s]",   scal, title, &print_title);
 	MatPrintScalParam(m->Edc,   "Edc",  "[J/mol]", scal, title, &print_title);
 	MatPrintScalParam(m->Rdc,   "Rdc",  "[ ]",     scal, title, &print_title);
 	MatPrintScalParam(m->mu,    "mu",   "[Pa]",    scal, title, &print_title);
 
-	sprintf(title, "   (ps)  : "); print_title = 1;
+	sprintf(title, "   (ps)     : "); print_title = 1;
 	MatPrintScalParam(m->Bps,   "Bps",  "[K*m^3/Pa/s]", scal, title, &print_title);
 	MatPrintScalParam(m->Eps,   "Eps",  "[J/mol]",      scal, title, &print_title);
 	MatPrintScalParam(m->d,     "d",    "[m]",          scal, title, &print_title);
@@ -571,8 +571,8 @@ PetscErrorCode DBMatReadPhase(DBMat *dbm, FB *fb)
 
 	// SCALE
 
-	// NOTE: [1] activation energy is not scaled
-	//       [2] activation volume is multiplied with characteristic stress in SI units
+	// NOTE: [1] activation energy is not scaled, gas constant is scaled with temperature (RT)
+	//       [2] activation volume is scaled with characteristic stress in SI units       (pV)
 
 	m->rho    /= scal->density;
 	m->rho_c  *= scal->length_si;
@@ -596,7 +596,7 @@ PetscErrorCode DBMatReadPhase(DBMat *dbm, FB *fb)
 	m->mu    /=  scal->stress_si;
 
 	// ps-creep
-	m->Bps  *= scal->viscosity/scal->temperature/pow(scal->length_si, 3.0);
+	m->Bps  *= scal->viscosity/scal->volume_si/scal->temperature;
 	m->d    /= scal->length_si;
 
 	// elasticity
