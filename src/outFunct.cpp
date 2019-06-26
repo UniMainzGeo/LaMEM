@@ -821,7 +821,7 @@ PetscErrorCode PVOutWriteYield(OutVec* outvec)
 {
 	COPY_FUNCTION_HEADER
 
-	// macro to copy density to buffer
+	// macro to copy yield stress to buffer
 
 	#define GET_YIELD buff[k][j][i] = jr->svCell[iter++].svDev.yield;
 
@@ -831,6 +831,24 @@ PetscErrorCode PVOutWriteYield(OutVec* outvec)
 
 	PetscFunctionReturn(0);
 }
+//---------------------------------------------------------------------------
+#undef __FUNCT__
+#define __FUNCT__ "PVOutWriteRelDIId"
+PetscErrorCode PVOutWriteRelDIId(OutVec* outvec)
+{
+	COPY_FUNCTION_HEADER
+
+	// macro to copy diffusion creep relative strain rate to buffer
+
+	#define GET_DIId buff[k][j][i] = jr->svCell[iter++].svDev.DIId;
+
+	cf = scal->unit;
+
+	INTERPOLATE_COPY(fs->DA_CEN, outbuf->lbcen, InterpCenterCorner, GET_DIId, 1, 0)
+
+	PetscFunctionReturn(0);
+}
+
 //---------------------------------------------------------------------------
 // DEBUG VECTORS
 //---------------------------------------------------------------------------

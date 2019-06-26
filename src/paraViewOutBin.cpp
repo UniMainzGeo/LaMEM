@@ -329,6 +329,7 @@ PetscInt OutMaskCountActive(OutMask *omask)
 	if(omask->ISA)            cnt++; // Infinite Strain Axis
 	if(omask->GOL)            cnt++; // Grain Orientation Lag
 	if(omask->yield)          cnt++; // yield stress
+	if(omask->DIId)           cnt++; // diffusion creep relative strain rate
 	// === debugging vectors ===============================================
 	if(omask->moment_res)     cnt++; // momentum residual
 	if(omask->cont_res)       cnt++; // continuity residual
@@ -389,6 +390,7 @@ PetscErrorCode PVOutCreate(PVOut *pvout, FB *fb)
 	ierr = getIntParam   (fb, _OPTIONAL_, "out_isa",            &omask->ISA,               1, 1); CHKERRQ(ierr);
 	ierr = getIntParam   (fb, _OPTIONAL_, "out_gol",            &omask->GOL,               1, 1); CHKERRQ(ierr);
 	ierr = getIntParam   (fb, _OPTIONAL_, "out_yield",          &omask->yield,             1, 1); CHKERRQ(ierr);
+	ierr = getIntParam   (fb, _OPTIONAL_, "out_rel_diff_rate",  &omask->DIId,              1, 1); CHKERRQ(ierr);
 	ierr = getIntParam   (fb, _OPTIONAL_, "out_tot_strain",     &omask->tot_strain,        1, 1); CHKERRQ(ierr);
 	ierr = getIntParam   (fb, _OPTIONAL_, "out_plast_strain",   &omask->plast_strain,      1, 1); CHKERRQ(ierr);
 	ierr = getIntParam   (fb, _OPTIONAL_, "out_plast_dissip",   &omask->plast_dissip,      1, 1); CHKERRQ(ierr);
@@ -454,6 +456,7 @@ PetscErrorCode PVOutCreate(PVOut *pvout, FB *fb)
 	if(omask->ISA)            PetscPrintf(PETSC_COMM_WORLD, "   Infinite Strain Axis (ISA)              @ \n");
 	if(omask->GOL)            PetscPrintf(PETSC_COMM_WORLD, "   Grain Orientation Lag (GOL)             @ \n");
 	if(omask->yield)          PetscPrintf(PETSC_COMM_WORLD, "   Yield stress                            @ \n");
+	if(omask->DIId)           PetscPrintf(PETSC_COMM_WORLD, "   Diffusion creep relative strain rate    @ \n");
 	if(omask->tot_strain)     PetscPrintf(PETSC_COMM_WORLD, "   Accumulated Total Strain (ATS)          @ \n");
 	if(omask->plast_strain)   PetscPrintf(PETSC_COMM_WORLD, "   Accumulated Plastic Strain (APS)        @ \n");
 	if(omask->plast_dissip)   PetscPrintf(PETSC_COMM_WORLD, "   Plastic dissipation                     @ \n");
@@ -541,6 +544,7 @@ PetscErrorCode PVOutCreateData(PVOut *pvout)
 	if(omask->ISA)            OutVecCreate(&pvout->outvecs[iter++], jr, outbuf, "ISA",            scal->lbl_unit,             &PVOutWriteISA,          3, NULL);
 	if(omask->GOL)            OutVecCreate(&pvout->outvecs[iter++], jr, outbuf, "GOL",            scal->lbl_unit,             &PVOutWriteGOL,          1, NULL);
 	if(omask->yield)          OutVecCreate(&pvout->outvecs[iter++], jr, outbuf, "yield",          scal->lbl_stress,           &PVOutWriteYield,        1, NULL);
+	if(omask->DIId)           OutVecCreate(&pvout->outvecs[iter++], jr, outbuf, "rel_diff_rate",  scal->lbl_unit,             &PVOutWriteRelDIId,      1, NULL);
 	// === debugging vectors ===============================================
 	if(omask->melt_fraction)  OutVecCreate(&pvout->outvecs[iter++], jr, outbuf, "melt_fraction",  scal->lbl_unit,             &PVOutWriteMeltFraction, 1, NULL);
 	if(omask->fluid_density)  OutVecCreate(&pvout->outvecs[iter++], jr, outbuf, "fluid_density",  scal->lbl_density,	      &PVOutWriteFluidDensity, 1, NULL);

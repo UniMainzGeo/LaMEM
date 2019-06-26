@@ -110,6 +110,7 @@ PetscErrorCode PVOutWriteEHmax       (OutVec*);
 PetscErrorCode PVOutWriteISA         (OutVec*);
 PetscErrorCode PVOutWriteGOL         (OutVec*);
 PetscErrorCode PVOutWriteYield       (OutVec*);
+PetscErrorCode PVOutWriteRelDIId     (OutVec*);
 // === debug vectors ===============================================
 PetscErrorCode PVOutWriteMomentRes   (OutVec*);
 PetscErrorCode PVOutWriteContRes     (OutVec*);

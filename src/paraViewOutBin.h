@@ -156,6 +156,7 @@ struct OutMask
 	PetscInt ISA;            // Infinite Strain Axis
 	PetscInt GOL;            // Grain Orientation Lag
 	PetscInt yield;          // yield stress
+	PetscInt DIId;           // diffusion creep relative strain rate
 	PetscInt moment_res;     // momentum residual
 	PetscInt cont_res;       // continuity residual
 	PetscInt energ_res;      // energy residual

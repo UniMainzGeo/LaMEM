@@ -401,6 +401,7 @@
 	out_isa             = 1
 	out_gol             = 1
 	out_yield           = 1
+	out_rel_diff_rate   = 1
 	out_plast_strain    = 1
 	out_plast_dissip    = 1
 	out_tot_displ       = 1

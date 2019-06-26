@@ -339,14 +339,6 @@ PetscErrorCode GetEffVisc(
 		// inverse Carreau viscosity
 		inv_eta_car = inv_eta_dif * pow(1.0 + pow(ctx->DII/srt, 2.0), (1.0 - 1.0/ctx->N_dis)/2.0);
 
-		//	PetscScalar srt, eta0, eta;
-		//	srt  = ctx->A_dif * pow(ctx->A_dis/ctx->A_dif, 1.0/(1.0 - ctx->N_dis));
-		//	eta0 = 1.0/ctx->A_dif/2.0;
-		//	eta = eta0*pow(1.0 + pow(ctx->DII/srt, 2.0), (1.0/ctx->N_dis - 1.0)/2.0);
-		//	srt  = P.Aps*(P.Adc/P.Aps)^(1/(1-P.ndc));
-		//	eta0 = 1/P.Aps/2;
-		//	eta = eta0*(1 + (sr/srt).^2).^((1/P.ndc-1)/2);
-
 		// error handling
 		if(PetscIsInfOrNanScalar(inv_eta_car)) inv_eta_car = 0.0;
 	}
@@ -427,6 +419,9 @@ PetscErrorCode GetEffVisc(
 		}
 	}
 
+	// diffusion creep relative strain rate
+	svDev->DIId = inv_eta_dif*((*eta_total) - ctrl->eta_min);
+
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
@@ -488,7 +483,7 @@ PetscErrorCode DevConstEq(
 		Material_t  *phases,    // phase parameters
 		Soft_t      *soft,      // material softening laws
 		PetscScalar *phRat,     // phase ratios
-		Controls    *ctrl,       // parameters and controls
+		Controls    *ctrl,      // parameters and controls
 		PetscScalar  p_lithos,  // lithostatic pressure
 		PetscScalar  p_pore,    // pore pressure
 		PetscScalar  dt,        // time step
@@ -523,11 +518,10 @@ PetscErrorCode DevConstEq(
 	dEta         = 0.0;
 	fr           = 0.0;
 
-//////
-	DIIpl = 0.0;
-eta_viscoplastic_phase=0;
-eta_creep_phase = 0;
-eta_total = 0;
+	DIIpl                  = 0.0;
+	eta_viscoplastic_phase = 0.0;
+	eta_creep_phase        = 0.0;
+	eta_total              = 0.0;
 
 	// scan all phases
 	for(i = 0; i < numPhases; i++)

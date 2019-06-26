@@ -73,6 +73,8 @@ struct SolVarDev
 	PetscScalar  fr;    // effective friction coefficient (Jacobian)
 	PetscScalar  yield; // average yield stress in control volume
 	PetscScalar  mf;    // melt fraction
+	PetscScalar  DIId;  // diffusion creep relative strain rate
+
 };
 
 //---------------------------------------------------------------------------
