@@ -149,6 +149,7 @@ struct Controls
 	PetscScalar shearHeatEff;  // shear heating efficiency parameter [0 - 1]
 	PetscScalar biot;          // Biot pressure parameter [0 - 1]
 
+	PetscInt    AdiabHeat;		// Adiabatic Heating flag
 	PetscInt    actTemp;        // temperature diffusion activation flag
 	PetscInt    actExp;         // thermal expansion activation flag
 	PetscInt    actSteadyTemp;  // steady-state temperature initial guess flag
