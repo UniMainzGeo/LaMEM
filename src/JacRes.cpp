@@ -78,7 +78,7 @@ PetscErrorCode JacResCreate(JacRes *jr, FB *fb)
 	// set defaults
 	ctrl->gwLevel      =  DBL_MAX;
 	ctrl->FSSA         =  1.0;
-	ctrl->AdiabHeat    =  0  ;
+	ctrl->AdiabHeat    =  0.0;
 	ctrl->shearHeatEff =  1.0;
 	ctrl->biot         =  1.0;
 	ctrl->pShiftAct    =  1;
@@ -97,7 +97,7 @@ PetscErrorCode JacResCreate(JacRes *jr, FB *fb)
 	ierr = getScalarParam(fb, _OPTIONAL_, "FSSA",            &ctrl->FSSA,           1, 1.0); CHKERRQ(ierr);
 	ierr = getScalarParam(fb, _OPTIONAL_, "shear_heat_eff",  &ctrl->shearHeatEff,   1, 1.0); CHKERRQ(ierr);
 	ierr = getScalarParam(fb, _OPTIONAL_, "biot",            &ctrl->biot,           1, 1.0); CHKERRQ(ierr);
-	ierr = getIntParam   (fb, _OPTIONAL_, "Adiabatic_Heat",  &ctrl->AdiabHeat,     1, 1  ); CHKERRQ(ierr);
+	ierr = getIntParam   (fb, _OPTIONAL_, "Adiabatic_Heat",  &ctrl->AdiabHeat,     	1, 1.0  ); CHKERRQ(ierr);
 	ierr = getIntParam   (fb, _OPTIONAL_, "act_temp_diff",   &ctrl->actTemp,        1, 1);   CHKERRQ(ierr);
 	ierr = getIntParam   (fb, _OPTIONAL_, "act_therm_exp",   &ctrl->actExp,         1, 1);   CHKERRQ(ierr);
 	ierr = getIntParam   (fb, _OPTIONAL_, "act_steady_temp", &ctrl->actSteadyTemp,  1, 1);   CHKERRQ(ierr);
@@ -219,6 +219,12 @@ PetscErrorCode JacResCreate(JacRes *jr, FB *fb)
 		SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "Shear heating efficiency parameter must be between 0 and 1 (shear_heat_eff)");
 	}
 
+	if(ctrl->AdiabHeat < 0.0 || ctrl->AdiabHeat > 1.0)
+	{
+		SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "Adiabatic heating efficiency parameter must be between 0 and 1 (Adiabatic_Heat)");
+	}
+
+
 	if(!ctrl->actTemp) ctrl->shearHeatEff = 0.0;
 
 	if(ctrl->biot < 0.0 || ctrl->biot > 1.0)
@@ -273,7 +279,7 @@ PetscErrorCode JacResCreate(JacRes *jr, FB *fb)
 
 	if(gx || gy || gz)       PetscPrintf(PETSC_COMM_WORLD, "   Gravity [gx, gy, gz]                    : [%g, %g, %g] %s \n", gx, gy, gz, scal->lbl_gravity_strength);
 	if(ctrl->FSSA)           PetscPrintf(PETSC_COMM_WORLD, "   Surface stabilization (FSSA)            :  %g \n", ctrl->FSSA);
-	if(ctrl->AdiabHeat)      PetscPrintf(PETSC_COMM_WORLD, "   Adiabatic Heating                       @   %g \n", ctrl->AdiabHeat);
+	if(ctrl->AdiabHeat)      PetscPrintf(PETSC_COMM_WORLD, "   Adiabatic Heating Efficiency             @   %g \n", ctrl->AdiabHeat);
 	if(ctrl->shearHeatEff)   PetscPrintf(PETSC_COMM_WORLD, "   Shear heating efficiency                :  %g \n", ctrl->shearHeatEff);
 	if(ctrl->biot)           PetscPrintf(PETSC_COMM_WORLD, "   Biot pressure parameter                 :  %g \n", ctrl->biot);
 	if(ctrl->actTemp)        PetscPrintf(PETSC_COMM_WORLD, "   Activate temperature diffusion          @ \n");

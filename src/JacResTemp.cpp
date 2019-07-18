@@ -507,13 +507,13 @@ PetscErrorCode JacResGetTempRes(JacRes *jr, PetscScalar dt)
 		bqz = bkz*(Tc - lT[k-1][j][i])/bdz;   fqz = fkz*(lT[k+1][j][i] - Tc)/fdz;
 
 		// Compute the pressure gradient
-			if(jr->ctrl.AdiabHeat == 1 && jr->ctrl.initGuess == 0)
+			if(jr->ctrl.AdiabHeat != 0.0 && jr->ctrl.initGuess == 0)
 			{
 			bdpdx = ((Pc - P[k][j][i-1])/bdx)*vx[k][j][i];        fdpdx = ((P[k][j][i+1] - Pc)/fdx)*vx[k][j][i+1];
 			bdpdy = ((Pc - P[k][j-1][i])/bdy)*vy[k][j][i];        fdpdy = ((P[k][j+1][i] - Pc)/fdy)*vy[k][j+1][i];
 			bdpdz = ((Pc - P[k-1][j][i])/bdz)*vz[k][j][i];        fdpdz = ((P[k+1][j][i] - Pc)/fdz)*vz[k+1][j][i];
 			// Adiabatic Heat term
-			Ha = Tc*svBulk->alpha*((bdpdx+fdpdx)*0.5+(bdpdy+fdpdy)*0.5+(bdpdz+fdpdz)*0.5);
+			Ha = jr->ctrl.AdiabHeat*(Tc*svBulk->alpha*((bdpdx+fdpdx)*0.5+(bdpdy+fdpdy)*0.5+(bdpdz+fdpdz)*0.5));
 			}
 			else
 			{
@@ -532,7 +532,7 @@ PetscErrorCode JacResGetTempRes(JacRes *jr, PetscScalar dt)
 		// to get positive diagonal in the preconditioner matrix
 		// put right hand side to the left, which gives the following:
 
-		ge[k][j][i] = rho_Cp*(invdt*(Tc - Tn)) - (fqx - bqx)/dx - (fqy - bqy)/dy - (fqz - bqz)/dz - Hr - rho_A;
+		ge[k][j][i] = rho_Cp*(invdt*(Tc - Tn)) - (fqx - bqx)/dx - (fqy - bqy)/dy - (fqz - bqz)/dz - Hr - rho_A - Ha;
 	}
 	END_STD_LOOP
 

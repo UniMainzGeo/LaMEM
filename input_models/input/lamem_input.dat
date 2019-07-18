@@ -223,7 +223,7 @@
 	gravity         = 0.0 0.0 -10.0  # gravity vector
 	FSSA            = 1.0            # free surface stabilization parameter [0 - 1]
 	shear_heat_eff  = 1.0            # shear heating efficiency parameter   [0 - 1]
-	Adiabatic_Heat  = 1              # Adiabatic Heating activaction flag [0 - 1]  
+	Adiabatic_Heat  = 0.0           # Adiabatic Heating activaction flag and efficiency. [0.0 - 1.0] (e.g. 0.5 means that only 50% of the potential adiabatic heating affects the energy equation)   
 	act_temp_diff   = 1              # temperature diffusion activation flag
 	act_therm_exp   = 1              # thermal expansion activation flag
 	act_steady_temp = 1              # steady-state temperature initial guess activation flag
