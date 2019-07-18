@@ -146,7 +146,8 @@ PetscErrorCode ADVMarkInit(AdvCtx *actx, UserCtx *user)
 	else if(user->msetup == GEOTH)      { PetscPrintf(PETSC_COMM_WORLD,"%s\n","geoth");           ierr = ADVMarkInitGeoth        (actx, user); CHKERRQ(ierr); }
 	else if(user->msetup == FAULT)      { PetscPrintf(PETSC_COMM_WORLD,"%s\n","fault");           ierr = ADVMarkInitFault        (actx, user); CHKERRQ(ierr); }
 	//else if(user->msetup == ROZHKO)     { PetscPrintf(PETSC_COMM_WORLD,"%s\n","rozhko");          ierr = ADVMarkInitRozhkoComplex       (actx, user); CHKERRQ(ierr); }
-	else if(user->msetup == ROZHKO)     { PetscPrintf(PETSC_COMM_WORLD,"%s\n","rozhko");          ierr = ADVMarkInitRozhko       (actx, user); CHKERRQ(ierr); }
+	//else if(user->msetup == ROZHKO)     { PetscPrintf(PETSC_COMM_WORLD,"%s\n","rozhko");          ierr = ADVMarkInitRozhko       (actx, user); CHKERRQ(ierr); }
+	else if(user->msetup == KM8)     { PetscPrintf(PETSC_COMM_WORLD,"%s\n","km8");          ierr = ADVMarkInitKM8       (actx, user); CHKERRQ(ierr); }
 	else if(user->msetup == CON)        { PetscPrintf(PETSC_COMM_WORLD,"%s\n","con");             ierr = ADVMarkInitCon       (actx, user); CHKERRQ(ierr); }
 	else if(user->msetup == PREFRAC)    { PetscPrintf(PETSC_COMM_WORLD,"%s\n","prefrac");         ierr = ADVMarkInitPrefrac       (actx, user); CHKERRQ(ierr); }
 	else if(user->msetup == DOMES)      { PetscPrintf(PETSC_COMM_WORLD,"%s\n","domes");           ierr = ADVMarkInitDomes        (actx, user); CHKERRQ(ierr); }
@@ -1775,6 +1776,196 @@ PetscErrorCode ADVMarkInitRozhkoComplex(AdvCtx *actx, UserCtx *user)
 }
 //---------------------------------------------------------------------------
 
+//---------------------------------------------------------------------------
+#undef __FUNCT__
+#define __FUNCT__ "ADVMarkInitKM8"
+PetscErrorCode ADVMarkInitKM8(AdvCtx *actx, UserCtx *user)
+{
+	Marker     *P;
+	PetscInt    imark;
+	PetscBool   use_inc;
+	PetscScalar H, Hb, size, offset, length, x, y, z, scal, Tshift, P1x, P1z, P2x, P2z, faultWidth, Fshift;
+	PetscScalar x1,y1,z1,x2,y2,z2,x3,y3,z3, aux, aux2, aux3, aux4;
+
+	// initialize the random number generator
+	PetscRandom   rctx;
+	PetscScalar   cf_rand;
+
+	PetscErrorCode ierr;
+	PetscFunctionBegin;
+
+	ierr = PetscRandomCreate(PETSC_COMM_SELF, &rctx); CHKERRQ(ierr);
+	ierr = PetscRandomSetFromOptions(rctx);           CHKERRQ(ierr);
+
+	scal   = actx->jr->scal.length;
+	Tshift = actx->jr->scal.Tshift;
+
+	// set default values
+	H      = 10.0;               // layer thickness               [km]
+	Hb     = 2.0;                // basal layer thickness         [km]
+	size   = 1.0;                // inclusion size in XZ-plane    [km]
+	offset = 0.0;                // inclusion offset along X axis [km]
+	length = (user->L*scal)/2.0; // inclusion length along Y axis [km]
+
+	// get layer thickness
+	ierr = PetscOptionsGetReal(NULL, NULL, "-H_layer",  &H,  NULL);  CHKERRQ(ierr);
+	ierr = PetscOptionsGetReal(NULL, NULL, "-H_bottom", &Hb, NULL);  CHKERRQ(ierr);
+
+	// get inclusion parameters
+	ierr = PetscOptionsHasName(NULL, NULL, "-Inclusion_use", &use_inc); CHKERRQ(ierr);
+	if(use_inc == PETSC_TRUE)
+	{
+		ierr = PetscOptionsGetReal(NULL, NULL, "-Inclusion_size",   &size,   NULL); CHKERRQ(ierr);
+		ierr = PetscOptionsGetReal(NULL, NULL, "-Inclusion_offset", &offset, NULL); CHKERRQ(ierr);
+		ierr = PetscOptionsGetReal(NULL, NULL, "-Inclusion_length", &length, NULL); CHKERRQ(ierr);
+	}
+
+	// scale
+	H      /= scal;
+	Hb     /= scal;
+	size   /= scal;
+	offset /= scal;
+	length /= scal;
+
+	// loop over local markers
+	for(imark = 0; imark < actx->nummark; imark++)
+	{
+		P = &actx->markers[imark];
+
+		P->phase = 1;
+
+		// get coordinates
+		x = P->X[0];
+		y = P->X[1];
+		z = P->X[2];
+
+		if (x<2900.0 && x>-2900.0 && y<2900.0 && y>-2900.0 && z>100.0 && z< 3500.0)
+		{
+
+			//pre existing fractures
+			aux2=10e6;
+			x1=-2000.0; y1=0.0; z1=960.0;
+			x2=-1900.0; y2=0.0; z2=860.0;
+			x3=-1900.0; y3=10.0; z3=860.0;
+			aux=(x-x1)*(y2-y1)*(z3-z1)+(y-y1)*(z2-z1)*(x3-x1)+(x2-x1)*(y3-y1)*(z-z1)-(x3-x1)*(y2-y1)*(z-z1)-(y-y1)*(x2-x1)*(z3-z1)-(z2-z1)*(y3-y1)*(x-x1);
+			if ( aux  < aux2 && aux  > -aux2)
+			{
+				P->phase = 2;
+			}
+		}
+
+
+        /*// faults
+		aux2=10e6;
+
+		if (x<2900.0 && x>-2900.0 && y<2900.0 && y>-2900.0 && z>100.0 && z< 3500.0)
+		{
+
+			//P2, P7, P8 (KM-ML)
+			x1=2400.0; y1=0.0; z1=960.0;
+			x2=500.0; y2=-2500.0; z2=960.0;
+			x3=500.0; y3=0.0; z3=2400.0;
+			aux=(x-x1)*(y2-y1)*(z3-z1)+(y-y1)*(z2-z1)*(x3-x1)+(x2-x1)*(y3-y1)*(z-z1)-(x3-x1)*(y2-y1)*(z-z1)-(y-y1)*(x2-x1)*(z3-z1)-(z2-z1)*(y3-y1)*(x-x1);
+			if ( aux  < aux2 && aux  > -aux2)
+			{
+				P->phase = 3;
+			}
+
+
+			//P4, P7, P9 (KMWB)
+			if (z<1900.0)
+			{
+			x1=-2550.0; y1=0.0; z1=960.0;
+			x2=500.0; y2=-2600.0; z2=960.0;
+			x3=-2600.0; y3=0.0; z3=1345.0;
+			//P13, P7, P9
+			x1=-2150.0; y1=0.0; z1=0.0;
+			x2=500.0; y2=-2600.0; z2=960.0;
+			x3=-2700.0; y3=0.0; z3=1345.0;
+			aux=(x-x1)*(y2-y1)*(z3-z1)+(y-y1)*(z2-z1)*(x3-x1)+(x2-x1)*(y3-y1)*(z-z1)-(x3-x1)*(y2-y1)*(z-z1)-(y-y1)*(x2-x1)*(z3-z1)-(z2-z1)*(y3-y1)*(x-x1);
+			if ( aux  < aux2/1.0 && aux  > -aux2/1.0)
+			{
+				P->phase = 4;
+			}
+			}
+
+			//P1, P5, P10 (kme)
+			if (z<1237.0)
+			{
+			x1=1200.0; y1=0.0; z1=960.0;
+			x2=0.0; y2=1500.0; z2=960.0;
+			x3=700.0; y3=0.0; z3=340.0;
+			aux=(x-x1)*(y2-y1)*(z3-z1)+(y-y1)*(z2-z1)*(x3-x1)+(x2-x1)*(y3-y1)*(z-z1)-(x3-x1)*(y2-y1)*(z-z1)-(y-y1)*(x2-x1)*(z3-z1)-(z2-z1)*(y3-y1)*(x-x1);
+			if ( aux  < aux2/1.0 && aux  > -aux2/1.0)
+			{
+				P->phase = 5;
+			}
+			}
+
+			//P3, P11, P12 (kmw)
+			if (z<1900.0)
+			{
+			x1=-1000.0; y1=0.0; z1=960.0;
+			x2=-200.0; y2=-2200.0; z2=960.0;
+			x3=-1700.0; y3=0.0; z3=1874.0;
+			aux=(x-x1)*(y2-y1)*(z3-z1)+(y-y1)*(z2-z1)*(x3-x1)+(x2-x1)*(y3-y1)*(z-z1)-(x3-x1)*(y2-y1)*(z-z1)-(y-y1)*(x2-x1)*(z3-z1)-(z2-z1)*(y3-y1)*(x-x1);
+			if ( aux  < aux2/1.0 && aux  > -aux2/1.0)
+			{
+				P->phase = 6;
+			}
+			}
+
+
+
+			// assign phase in layers
+			if  (   (z <  1050.0) && (z>1020.0))
+			{
+				//P->phase = 2;
+			}
+		}
+		//Aquifers
+		if (   (    (x-400.0)*(x-400.0)  +  (z-(-4000.0))*(z-(-4000.0))  < 6050.0*6050.0)
+				&& ((x-400.0)*(x-400.0)  +  (z-(-4000.0))*(z-(-4000.0))  > 6000.0*6000.0)
+                && (x>-1700.0) && (x<600.0)
+		)
+		{
+
+			//P3, P11, P12 (kmw)
+
+						x1=-1000.0; y1=0.0; z1=960.0;
+						x2=-200.0; y2=-2200.0; z2=960.0;
+						x3=-1700.0; y3=0.0; z3=1874.0;
+						aux=(x-x1)*(y2-y1)*(z3-z1)+(y-y1)*(z2-z1)*(x3-x1)+(x2-x1)*(y3-y1)*(z-z1)-(x3-x1)*(y2-y1)*(z-z1)-(y-y1)*(x2-x1)*(z3-z1)-(z2-z1)*(y3-y1)*(x-x1);
+						if ( aux  < aux2/1.0 )
+						{
+
+
+							//P2, P7, P8 (KM-ML)
+							x1=2400.0; y1=0.0; z1=960.0;
+							x2=500.0; y2=-2500.0; z2=960.0;
+							x3=500.0; y3=0.0; z3=2400.0;
+							aux=(x-x1)*(y2-y1)*(z3-z1)+(y-y1)*(z2-z1)*(x3-x1)+(x2-x1)*(y3-y1)*(z-z1)-(x3-x1)*(y2-y1)*(z-z1)-(y-y1)*(x2-x1)*(z3-z1)-(z2-z1)*(y3-y1)*(x-x1);
+							if ( aux  > -aux2/5.0)
+							{
+								P->phase = 2;
+							}
+
+						}
+
+
+			//P->phase = 2;
+		}
+		*/
+
+	}
+
+	// destroy random context
+	ierr = PetscRandomDestroy(&rctx);    CHKERRQ(ierr);
+
+	PetscFunctionReturn(0);
+}
+//---------------------------------------------------------------------------
+
 
 #undef __FUNCT__
 #define __FUNCT__ "ADVMarkInitCon"
@@ -1934,8 +2125,8 @@ PetscErrorCode ADVMarkInitFault(AdvCtx *actx, UserCtx *user)
 		z = P->X[2];
 
 		// assign phase in layers
-		//if     (   x >  -10000.0 && x < 10000.0 &&  z >= 5000.0 + 1.0/2.0*(x+10000.0) && z <= 5200.0 + 1.0/2.0*(x+10000.0)     )
-		if     (  x >  P1x && x <  P2x  && z >= P1z + (x-P1x)/(P2x-P1x)*(P2z-P1z) && z < faultWidth + P1z + (x-P1x)/(P2x-P1x)*(P2z-P1z ) )
+		if     (   x >  -10000.0 && x < 10000.0 &&  z >= 5000.0 + 1.0/2.0*(x+10000.0) && z <= 5200.0 + 1.0/2.0*(x+10000.0)     )
+		//if     (  x >  P1x && x <  P2x  && z >= P1z + (x-P1x)/(P2x-P1x)*(P2z-P1z) && z < faultWidth + P1z + (x-P1x)/(P2x-P1x)*(P2z-P1z ) )
 		{
 			P->phase = 1; //fault
 		}

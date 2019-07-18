@@ -492,7 +492,7 @@ PetscErrorCode JacResGetDarcyRes(JacRes *jr)
 
 	PetscScalar     H, magnitude, increment, tini, tfin;
 
-	PetscScalar     p_total, dP, biot, Kd, yield;
+	PetscScalar     p_total, dP, biot, Kd, yield, theta;
 	PetscScalar     min_overpressure, max_overpressure, dPmin, dPmax;
 	PetscInt src;
 	MatParLim  *matLim;
@@ -622,10 +622,12 @@ PetscErrorCode JacResGetDarcyRes(JacRes *jr)
 
 
 		svBulk->Kphi = Kphi;
+		//svBulk->Kphi = Kphi*(exp(dP/10e6));
+
 		svBulk->Phi  = Phi;
 
 		// Specific storage
-		Ss = (betam + Phi*betal);
+		Ss =  Phi*betal; //(betam + Phi*betal);
 
 		bkx 	= 	((Kphi + lKphi[k][j][Im1])/2.0);       fkx = ((Kphi + lKphi[k][j][Ip1])/2.0);
 		bky 	= 	((Kphi + lKphi[k][Jm1][i])/2.0);       fky = ((Kphi + lKphi[k][Jp1][i])/2.0);
@@ -657,6 +659,9 @@ PetscErrorCode JacResGetDarcyRes(JacRes *jr)
 					//H = H/(dx*dy*dz);
 					//H = H + magnitude/(dx*scal*dy*scal*dz*scal);
 					H = H + magnitude/(dx*dy*dz);
+
+					PetscSynchronizedPrintf(PETSC_COMM_WORLD,"         theta=%g;\n", svBulk->theta);
+					PetscSynchronizedPrintf(PETSC_COMM_WORLD,"         H=%g;\n", H);
 				}
 			}
 		}
@@ -675,12 +680,18 @@ PetscErrorCode JacResGetDarcyRes(JacRes *jr)
 		svBulk->liquidvelocity[1] = -(fqy+bqy)/2.0;
 		svBulk->liquidvelocity[2] = -(fqz+bqz)/2.0;
 
+		theta = svBulk->theta; // volumetric strain rate
+
+
 		// Residual
-		res[k][j][i] = Ss*(Pl_c-Pl_n)/dt -   (fqx - bqx)/dx - (fqy - bqy)/dy - (fqz - bqz)/dz - H;
+		//res[k][j][i] = Ss*(Pl_c-Pl_n)/dt -   (fqx - bqx)/dx - (fqy - bqy)/dy - (fqz - bqz)/dz - H;
+		res[k][j][i] = Ss*(Pl_c-Pl_n)/dt -   (fqx - bqx)/dx - (fqy - bqy)/dy - (fqz - bqz)/dz - H + biot*theta;
 
 
 	}
 	END_STD_LOOP
+
+	PetscSynchronizedFlush(PETSC_COMM_WORLD,PETSC_STDOUT);
 
 	// restore access
 	ierr = DMDAVecRestoreArray(fs->DA_CEN, jr->lPl,   	 &sol);  	CHKERRQ(ierr);
@@ -857,7 +868,7 @@ PetscErrorCode JacResGetDarcyMat(JacRes *jr)
 		}*/
 
 		// Specific storage
-		Ss = (betam + Phi*betal);
+		Ss =  Phi*betal; //(betam + Phi*betal);
 
 		// compute average permeabilities
 		bkx 	= 	(Kphi + lKphi[k][j][Im1])/2.0;       fkx = (Kphi + lKphi[k][j][Ip1])/2.0;
@@ -1604,6 +1615,7 @@ PetscErrorCode UpdateFailureType(JacRes *jr)
 
 					if (dP < -(TensileS+sensitivity)) {// + 1e+6) {
 						//svDev->failTS = 1.0;
+						//if (jr->ts.istep > jr->num_of_first_dt) svDev->failT = 1.0;
 						if (jr->ts.istep > jr->num_of_first_dt) svDev->failT = 1.0;
 						frac = 1;
 					}
@@ -1613,10 +1625,12 @@ PetscErrorCode UpdateFailureType(JacRes *jr)
 							if (dP>=intersection) {
 								// Shear
 								if (jr->ts.istep > jr->num_of_first_dt) svDev->failS = 1.0;
+								//svDev->failS = 1.0;
 								frac = 1;
 							}else {
 								// Tensile
 								if (jr->ts.istep > jr->num_of_first_dt) svDev->failT = 1.0;
+								//svDev->failT = 1.0;
 								frac = 1;
 							}
 						}

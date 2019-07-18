@@ -138,6 +138,7 @@ typedef enum
 	GEOTH,		// Darcy, injection/production
 	FAULT,      // Darcy
 	ROZHKO,     // Darcy
+	KM8,        // WELL KM8
 	CON,        // Darcy
 	PREFRAC,    // Darcy
 	DOMES,      // salt domes 2D

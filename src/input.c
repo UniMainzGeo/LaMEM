@@ -557,6 +557,7 @@ PetscErrorCode InputReadFile(JacRes *jr, UserCtx *user, FILE *fp)
 		else if(!strcmp(setup_name, "geoth"))      user->msetup = GEOTH;
 		else if(!strcmp(setup_name, "fault"))      user->msetup = FAULT;
 		else if(!strcmp(setup_name, "rozhko"))     user->msetup = ROZHKO;
+		else if(!strcmp(setup_name, "km8"))        user->msetup = KM8;
 		else if(!strcmp(setup_name, "con"))        user->msetup = CON;
 		else if(!strcmp(setup_name, "prefrac"))    user->msetup = PREFRAC;
 		else if(!strcmp(setup_name, "domes"))      user->msetup = DOMES;
@@ -716,6 +717,7 @@ PetscErrorCode InputReadCommLine(UserCtx *user )
 		else if(!strcmp(setup_name, "geoth"))      user->msetup = GEOTH;
 		else if(!strcmp(setup_name, "fault"))      user->msetup = FAULT;
 		else if(!strcmp(setup_name, "rozhko"))     user->msetup = ROZHKO;
+		else if(!strcmp(setup_name, "km8"))        user->msetup = KM8;
 		else if(!strcmp(setup_name, "con"))        user->msetup = CON;
 		else if(!strcmp(setup_name, "prefrac"))    user->msetup = PREFRAC;
 		else if(!strcmp(setup_name, "domes"))      user->msetup = DOMES;

@@ -98,6 +98,7 @@ PetscErrorCode ADVMarkInitGeoth		   (AdvCtx *actx, UserCtx *user);
 PetscErrorCode ADVMarkInitFault        (AdvCtx *actx, UserCtx *user);
 PetscErrorCode ADVMarkInitRozhko       (AdvCtx *actx, UserCtx *user);
 PetscErrorCode ADVMarkInitRozhkoComplex(AdvCtx *actx, UserCtx *user);
+PetscErrorCode ADVMarkInitKM8(AdvCtx *actx, UserCtx *user);
 PetscErrorCode ADVMarkInitCon          (AdvCtx *actx, UserCtx *user);
 PetscErrorCode ADVMarkInitPrefrac      (AdvCtx *actx, UserCtx *user);
 PetscErrorCode ADVMarkInitDomes        (AdvCtx *actx, UserCtx *user);
