@@ -472,7 +472,7 @@ PetscErrorCode ADVMarkInitFileParallel(AdvCtx *actx, UserCtx *user)
 	PetscViewer  view_in;
 	char        *LoadFileName;
 	PetscScalar *markbuf, *markptr, header, chTemp, chLen, Tshift, s_nummark;
-	PetscInt     imark, nummark, NumPropsPerMarker;
+	PetscInt     imark, nummark;
 
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
@@ -2051,9 +2051,8 @@ PetscErrorCode ADVMarkInitGeoth(AdvCtx *actx, UserCtx *user)
 {
 	Marker     *P;
 	PetscInt    imark;
-	PetscScalar x, y, z;
+	PetscScalar x, z;
 
-	PetscErrorCode ierr;
 	PetscFunctionBegin;
 
 	// loop over local markers
@@ -2063,7 +2062,6 @@ PetscErrorCode ADVMarkInitGeoth(AdvCtx *actx, UserCtx *user)
 
 		// get coordinates
 		x = P->X[0];
-		y = P->X[1];
 		z = P->X[2];
 
 		//if     (    (x >= user->x_left+(user->W/40.0) && x<= user->x_left+2.0*(user->W/40.0) && z>user->H/4.0) || (x <= user->W+user->x_left-(user->W/40.0) && x>= user->W+user->x_left-2.0*(user->W/40.0) && z>3.0*user->H/4.0)   )
@@ -2092,7 +2090,6 @@ PetscErrorCode ADVMarkInitFault(AdvCtx *actx, UserCtx *user)
 	PetscInt    imark;
 	PetscScalar P1x, P1z, P2x, P2z, faultWidth, x, z, Tshift;
 
-	PetscErrorCode ierr;
 	PetscFunctionBegin;
 
 	Tshift = actx->jr->scal.Tshift;
@@ -2148,9 +2145,8 @@ PetscErrorCode ADVMarkInitPipes(AdvCtx *actx, UserCtx *user)
 
 	Marker     *P;
 	PetscInt    imark;
-	PetscScalar P1x, P1z, P2x, P2z, P3x, P3z, P4x, P4z, P5x, P5z, pipeWidth, x, z, Tshift;
+	PetscScalar P1x, P1z, P2x, P2z, P3x, P3z, P4x, P4z, P5z, pipeWidth, x, z, Tshift;
 
-	PetscErrorCode ierr;
 	PetscFunctionBegin;
 
 	Tshift = actx->jr->scal.Tshift;
@@ -2171,7 +2167,7 @@ PetscErrorCode ADVMarkInitPipes(AdvCtx *actx, UserCtx *user)
 	P4x =  user->x_left + 4.0*user->W/5.0;
 	P4z = 3.0*user->H/4.0;
 
-	P5x = P4x;
+//	P5x = P4x;
 	P5z = 5.0*user->H/6.0;
 
 	pipeWidth = user->H / 80.0;
@@ -2213,21 +2209,16 @@ PetscErrorCode ADVMarkInitPrefrac(AdvCtx *actx, UserCtx *user)
 {
 	Marker     *P;
 	PetscInt    imark;
-	PetscScalar P1x, P1z, P2x, P2z, P3x, P3z, P4x, P4z, P5x, P5z, P6x, P6z, faultWidth, x, z, Tshift;
+	PetscScalar P1z, P2x, P3x, P3z, P4x, P4z, P5x, P5z, P6x, P6z, faultWidth, x, z;
 
-	PetscErrorCode ierr;
 	PetscFunctionBegin;
-
-	Tshift = actx->jr->scal.Tshift;
 
 	// set default values
 
 	// fault from point P1 to point P2
-	P1x = 0.0; //(user->W+2.0*user->x_left)/3.0  - (user->W / 5.0) ;
 	P1z = user->H/4.0;
 
 	P2x = user->W / 2.0 - user->W / 5.0; //P1x + 2.0 * (user->W / 5.0);
-	P2z = P1z + user->H/2.0;
 
 	// fault from point P3 to point P4
 	P3x = 0.0; //P1x-user->W / 5.0;

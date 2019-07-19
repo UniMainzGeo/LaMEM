@@ -511,7 +511,7 @@ PetscErrorCode UpdateCoordinatesOnCellCenterDA(DM da, FDSTAG *fs)
 	PetscErrorCode ierr;
 	PetscInt       i,j,mstart,m,nstart,n,pstart,p,k;
 	PetscInt 	   sx, sy, sz;
-	Vec            local,global;
+	Vec            global;
 	DMDACoor3d     ***coors;
 	DM             cda;
 

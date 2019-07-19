@@ -67,15 +67,13 @@ PetscErrorCode ConstEqCtxSetup(
 	PetscScalar  p,             // pressure
 	PetscScalar  p_lithos,      // lithostatic pressure
 	PetscScalar  p_pore,        // pore pressure
-	PetscScalar  p_hydro,    	// hydrostatic pressure
-	PetscScalar  T,             // temperature
-	PetscScalar actDarcy, PetscInt step)      // Darcy active or not
+	PetscScalar  T)            // temperature
 {
 	// setup nonlinear constitutive equation evaluation context
 	// evaluate dependence on constant parameters (pressure, temperature)
 
 	PetscInt    pd;
-	PetscScalar Q, RT, ch, fr, p_visc, p_upper, p_lower, dP, p_total, tensileS, aux, yieldTensile, yieldShear, minimStress, a,b,c,intersection;
+	PetscScalar Q, RT, ch, fr, p_visc, p_upper, dP, p_total, tensileS, yieldTensile, yieldShear, minimStress;
 
 	PetscFunctionBegin;
 
@@ -191,7 +189,7 @@ PetscErrorCode ConstEqCtxSetup(
 		tensileS = -mat->TS; // Tensile strength - Darcy
 
 		p_upper = -( p_lithos + ch * cos(fr))/(sin(fr) - 1.0); // compression
-		p_lower = -(-p_lithos + ch * cos(fr))/(sin(fr) + 1.0); // extension
+//		p_lower = -(-p_lithos + ch * cos(fr))/(sin(fr) + 1.0); // extension
 		//p_lower = (p_lithos -tensileS)/2.0; // extension /////////////// Darcy
 
 		if(p_total > p_upper) {
@@ -615,11 +613,9 @@ PetscErrorCode DevConstEq(
 	MatParLim   *lim,       		// phase parameters limits
 	PetscScalar  p_lithos,          // lithostatic pressure
 	PetscScalar  p_pore,            // pore pressure
-	PetscScalar  p_hydro,           // hydrostatic pressure
 	PetscScalar  dt,        		// time step
 	PetscScalar  p,         		// pressure
-	PetscScalar  T,         		// temperature
-	PetscScalar  actDarcy, PetscInt step)          // Darcy active or not
+	PetscScalar  T)        		    // temperature
 {
 	// Evaluate deviatoric constitutive equations in control volume
 
@@ -627,7 +623,6 @@ PetscErrorCode DevConstEq(
 	ConstEqCtx   ctx;
 	Material_t  *mat;
 	PetscScalar  DII, APS, eta_total, eta_creep_phase, eta_viscoplastic_phase, DIIpl, dEta, fr, ch;
-	PetscScalar fail, p_total, aux, dP, tensileS, dl;  //New 'fail'
 
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
@@ -652,10 +647,6 @@ PetscErrorCode DevConstEq(
 	fr           = 0.0;
 	ch           = 0.0;
 	//fail         = 0.0;
-	p_total = 0.0;
-	aux = 0.0;
-	dP = 0.0;
-	tensileS = 0.0;
 
 
 	// scan all phases
@@ -668,7 +659,7 @@ PetscErrorCode DevConstEq(
 			mat = &phases[i];
 
 			// setup nonlinear constitutive equation evaluation context
-			ierr = ConstEqCtxSetup(&ctx, mat, lim, DII, APS, dt, p, p_lithos, p_pore, p_hydro, T, actDarcy, step); CHKERRQ(ierr);
+			ierr = ConstEqCtxSetup(&ctx, mat, lim, DII, APS, dt, p, p_lithos, p_pore, T); CHKERRQ(ierr);
 
 			// solve effective viscosity & plastic strain rate
 			ierr = GetEffVisc(&ctx, lim, &eta_total, &eta_creep_phase, &eta_viscoplastic_phase, &DIIpl, &dEta, &fr, &ch); CHKERRQ(ierr);
@@ -716,9 +707,7 @@ PetscErrorCode VolConstEq(
 	PetscScalar  depth,     // depth for depth-dependent density model
 	PetscScalar  dt,        // time step
 	PetscScalar  p,         // pressure
-	PetscScalar  p_pore,    // pore pressure
-	PetscScalar  T,         // temperature
-	PetscScalar  p_hydro)
+	PetscScalar  T)         // temperature
 {
 	// Evaluate volumetric constitutive equations in control volume
 /*
@@ -791,8 +780,7 @@ PetscErrorCode VolConstEq(
 */
 	PetscInt     i;
 	Material_t  *mat;
-	PetscScalar cf_comp, cf_therm, Kavg, rho, p_total, dP, dl;
-	PetscScalar tS, pn, theta, max_overpressure, min_overpressure, nuu, nud, Ku, Kd, Kc, aux;
+	PetscScalar cf_comp, cf_therm, Kavg, rho;
 
 	PetscFunctionBegin;
 
@@ -806,12 +794,9 @@ PetscErrorCode VolConstEq(
 	svBulk->dl    = 0.0;
 
 	// Darcy
-	if(lim->actPorePres != PETSC_TRUE) p_pore = 0.0;
+	//if(lim->actPorePres != PETSC_TRUE) p_pore = 0.0;
 	//p_total = p + lim->biot*(p_pore-p_hydro);
-	p_total = p + lim->biot*p_pore;
-	dP = p_total - p_pore;
 	//dP = p_total - (p_pore-p_hydro);
-	pn = svBulk->pn;    		   // pressure history
 
 	// scan all phases
 	for(i = 0; i < numPhases; i++)
@@ -921,8 +906,6 @@ PetscErrorCode GetStressCell(
 
 	SolVarDev   *svDev;
 	PetscScalar  DII, cfpl, txx, tyy, tzz;
-
-	PetscScalar aux;
 
 	PetscFunctionBegin;
 

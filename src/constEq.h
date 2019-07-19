@@ -77,9 +77,7 @@ PetscErrorCode ConstEqCtxSetup(
 	PetscScalar  p,    			// pressure
 	PetscScalar  p_lithos,    	// lithostatic pressure
 	PetscScalar  p_pore,    	// pore pressure
-	PetscScalar  p_hydro,    	// hydrostatic pressure
-	PetscScalar  T,   	 		// temperature
-	PetscScalar  actDarcy, PetscInt step);      // Darcy active or not
+	PetscScalar  T);   	 		// temperature
 
 // compute residual of the visco-elastic constitutive equation
 PetscScalar GetConsEqRes(PetscScalar eta, void *pctx);
@@ -116,11 +114,9 @@ PetscErrorCode DevConstEq(
 	MatParLim   *lim,       		// phase parameters limits
 	PetscScalar  p_lithos,     		// lithostatic pressure
 	PetscScalar  p_pore,     		// pore pressure
-	PetscScalar  p_hydro,     		// hydro pressure
 	PetscScalar  dt,        		// time step
 	PetscScalar  p,        			// pressure
-	PetscScalar  T,        		// temperature
-	PetscScalar actDarcy, PetscInt step);       // Darcy active or not
+	PetscScalar  T);        		// temperature
 
 // Evaluate volumetric constitutive equations in control volume
 PetscErrorCode VolConstEq(
@@ -132,9 +128,7 @@ PetscErrorCode VolConstEq(
 	PetscScalar  depth,     // depth for depth-dependent density model
 	PetscScalar  dt,        // time step
 	PetscScalar  p,         // pressure
-	PetscScalar  p_pore,    // pore pressure
-	PetscScalar  T,         // temperature
-	PetscScalar  p_hydro);  // hydrostatic pressure
+	PetscScalar  T);         // temperature
 
 // compute stress, plastic strain-rate and shear heating term on cell
 PetscErrorCode GetStressCell(
