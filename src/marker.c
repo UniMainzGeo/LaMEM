@@ -1855,7 +1855,7 @@ PetscErrorCode ADVMarkInitKM8(AdvCtx *actx, UserCtx *user)
 		}
 
 
-        /*// faults
+        // faults
 		aux2=10e6;
 
 		if (x<2900.0 && x>-2900.0 && y<2900.0 && y>-2900.0 && z>100.0 && z< 3500.0)
@@ -1868,7 +1868,7 @@ PetscErrorCode ADVMarkInitKM8(AdvCtx *actx, UserCtx *user)
 			aux=(x-x1)*(y2-y1)*(z3-z1)+(y-y1)*(z2-z1)*(x3-x1)+(x2-x1)*(y3-y1)*(z-z1)-(x3-x1)*(y2-y1)*(z-z1)-(y-y1)*(x2-x1)*(z3-z1)-(z2-z1)*(y3-y1)*(x-x1);
 			if ( aux  < aux2 && aux  > -aux2)
 			{
-				P->phase = 3;
+				P->phase = 2;
 			}
 
 
@@ -1885,7 +1885,7 @@ PetscErrorCode ADVMarkInitKM8(AdvCtx *actx, UserCtx *user)
 			aux=(x-x1)*(y2-y1)*(z3-z1)+(y-y1)*(z2-z1)*(x3-x1)+(x2-x1)*(y3-y1)*(z-z1)-(x3-x1)*(y2-y1)*(z-z1)-(y-y1)*(x2-x1)*(z3-z1)-(z2-z1)*(y3-y1)*(x-x1);
 			if ( aux  < aux2/1.0 && aux  > -aux2/1.0)
 			{
-				P->phase = 4;
+				P->phase = 2;
 			}
 			}
 
@@ -1898,7 +1898,7 @@ PetscErrorCode ADVMarkInitKM8(AdvCtx *actx, UserCtx *user)
 			aux=(x-x1)*(y2-y1)*(z3-z1)+(y-y1)*(z2-z1)*(x3-x1)+(x2-x1)*(y3-y1)*(z-z1)-(x3-x1)*(y2-y1)*(z-z1)-(y-y1)*(x2-x1)*(z3-z1)-(z2-z1)*(y3-y1)*(x-x1);
 			if ( aux  < aux2/1.0 && aux  > -aux2/1.0)
 			{
-				P->phase = 5;
+				P->phase = 2;
 			}
 			}
 
@@ -1911,7 +1911,7 @@ PetscErrorCode ADVMarkInitKM8(AdvCtx *actx, UserCtx *user)
 			aux=(x-x1)*(y2-y1)*(z3-z1)+(y-y1)*(z2-z1)*(x3-x1)+(x2-x1)*(y3-y1)*(z-z1)-(x3-x1)*(y2-y1)*(z-z1)-(y-y1)*(x2-x1)*(z3-z1)-(z2-z1)*(y3-y1)*(x-x1);
 			if ( aux  < aux2/1.0 && aux  > -aux2/1.0)
 			{
-				P->phase = 6;
+				P->phase = 2;
 			}
 			}
 
@@ -1955,7 +1955,7 @@ PetscErrorCode ADVMarkInitKM8(AdvCtx *actx, UserCtx *user)
 
 			//P->phase = 2;
 		}
-		*/
+
 
 	}
 
