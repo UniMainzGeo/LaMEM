@@ -1,0 +1,418 @@
+# Grid
+nel_x	= 128
+nel_y	= 128
+nel_z	= 256
+
+# Geometry
+
+W			=	6000		# Width  (x-direction)
+H			=	4000		# Height (z-direction)
+x_left		=   -3000		# Left side of domain
+y_front		=	-3000	    # Front side of domain
+z_bot		=	0			# Bottom of box
+L			=	6000		# Length (y-direction)
+
+# Scaling
+units 	= si
+Characteristic.Length      	= 1 #100e3
+Characteristic.Viscosity   	= 1 #1e20
+Characteristic.Temperature 	= 1 #1300
+Characteristic.Stress      	= 1 #1e8
+
+
+# --- Model setup and noise ---
+msetup 	= km8 			#heterogeneous, layer, homo
+
+# Time stepping and output
+OutputFile	               =	sim_changek1e-11_faults_weak
+
+save_timesteps	=	10	  # save every ? timesteps
+time_end	    =	91		# last timestep
+CFL		        =	0.5		# CFL, dt-based criterium
+dt_max		    =	1e2	  	# Maximum timestep [years if dimensional]
+save_breakpoints= 	-1 		# -1: don't save breakpoints + initial particles
+
+# Boundary conditions
+BC.LeftBound				=	1				# 0 - free surface, 1-free slip with BG strainrate Eyy, 2 - no slip, 5 - growthrate 2D, 7 - growthrate 3D
+BC.RightBound				=	1				# 0 - free surface, 1-free slip with BG strainrate Eyy, 2 - no slip, 5 - growthrate 2D, 7 - growthrate 3D
+BC.FrontBound				=	1				# 0 - free surface, 1-free slip with BG strainrate Exx, 2 - no slip, 5 - growthrate 2D, 7 - growthrate 3D
+BC.BackBound				=	1				# 0 - free surface, 1-free slip with BG strainrate Exx, 2 - no slip, 5 - growthrate 2D, 7 - growthrate 3D
+BC.LowerBound				=	1				# 0 - free surface, 1-free slip, 				  2 - no slip, 5 - growthrate 2D, 7 - growthrate 3D
+BC.UpperBound				=	0				# 0 - free surface, 1-free slip, 				  2 - no slip, 5 - growthrate 2D, 7 - growthrate 3D
+
+
+Temp_top	    		=   0				# Temperature @ top
+Temp_bottom				=   0 				# Temperature @ bottom; side BC's are flux-free
+Gravity					=  -10;				# [m/s2] - gravitational acceleration
+
+# Darcy
+Pl_top       = 0.0			            # Liquid-pressure @ top
+Pl_bottom    = 40000000 # 4000*1000*10                  # Liquid-pressure @ bottom
+
+
+# Define phase transitions for particles
+LowerViscosityCutoff = 1e-30
+UpperViscosityCutoff = 1e30
+DII_ref              = 1
+
+# Control parameters
+FSSA                 = 1.0
+InitViscosity        = 1e20
+
+
+# Phase distribution
+NumPartX				=	3   # Particles/Cell in x-direction
+NumPartY				=	3   # Particles/Cell in y-direction
+NumPartZ				=	3   # Particles/Cell in z-direction
+
+
+#===============================================================================
+# ............................... PETSc options.................................
+#===============================================================================												
+
+<PetscOptionsStart>
+
+	 -ExxNumPeriods 1
+	 -ExxStrainRates -0.96e-13
+	
+	 -EyyNumPeriods 1
+	 -EyyStrainRates 2.4e-14
+	
+#-gradientStraintRate	 
+-stress_min 1e+6                      # [Pa if SI]
+-stress_sensitivity_for_failure 0.0   # [Pa if SI]
+-first_dt 1e+10
+-num_of_first_dt 1 
+
+
+	#-ExplicitSolver 1
+	#-NumImpSteps 0
+
+	#-SkipStokesSolver 1
+	#-SavePartitioning
+
+	# Initial timestep
+	-dt 1e2 #0.5e-2	#1.5e-10		#1e-2
+
+	# shear bands setup
+	-H_layer 		  5000
+	-H_bottom 		  0
+	-Inclusion_use
+	-Inclusion_size	  0
+	#-Inclusion_offset 0
+	#-Inclusion_length 0
+
+
+#-ViscoPLithosOff 
+#-NoPressureLimit
+
+#-DeactivateFreeSurfaceCorrection
+	
+# Use free surface stabilization algorithm
+#-surf_use        1
+#-surf_level      0
+#-surf_air_phase  0
+#-surf_max_angle 30
+
+#-FSSA 0.0
+	
+#-noslip 0,0,0,0,1,0  # no slip BC face order: left,right,front,back,bottom,top
+	
+# Fine-tune solver options here (add command-line Petsc Options)
+
+#-AddRandomNoiseParticles	0				# Adding noise to the particles (1) or not (0)
+	-restart 0
+
+
+#///////////////////////////////////////////
+#////////////////////////////////////////////
+	# matrix-free closed-form Jacobian if this is uncommented
+	#-jac_mat_free
+	#-out_jac_test 1
+	
+	-skip_press_shift
+	#-press_shift  # pressure about 0 in the surface
+	
+	-open_top_bound
+
+
+	# SNES (nonlinear) options
+	#-snes_ksp_ew			# Eisenstat Walker algorithm
+	-snes_ksp_ew_rtolmax  1e-1
+	-snes_monitor
+#	-snes_atol 1e-9
+	-snes_atol 1e-7
+	-snes_rtol 1e-4
+	-snes_stol 1e-16
+	-snes_max_it 50
+	-snes_max_funcs 500000
+	-snes_max_linear_solve_fail 10000
+	
+	#-snes_type ksponly
+
+	# Newton/picard options
+	-snes_PicardSwitchToNewton_rtol 1e-1 		# relative tolerance to switch to Newton (1e-2)
+	-snes_NewtonSwitchToPicard_it  	20		# number of Newton iterations after which we switch back to Picard
+	-snes_NewtonSwitchToPicard_rtol 1.1		# relative tolerance compared to first iteration step
+
+	# Linesearch options
+	-snes_linesearch_monitor
+	-snes_linesearch_type l2 				# Linesearch type (one of) shell basic l2 bt cp (SNESLineSearchSetType)  [l2 seems to work better with VEP]
+	-snes_linesearch_maxstep 1.0			# very important to prevent the code from "blowing up"
+
+	# Jacobian solver
+	-js_ksp_type fgmres
+	-js_ksp_max_it 50
+	-js_ksp_converged_reason
+	-js_ksp_rtol 1e-10
+	-js_ksp_atol 1e-14
+
+
+	# Direct solver
+	#-pcmat_type mono
+	#-pcmat_pgamma 1e3
+	#-jp_type user
+	#-jp_pc_type lu
+	#-jp_pc_factor_mat_solver_package mumps
+
+
+	# Additional command-line Petsc Options
+	#-AddRandomNoiseParticles 0
+	-restart 0
+	-save_breakpoints 0
+	-objects_dump
+	-restart 0
+#	-SkipStokesSolver 1
+#	-SavePartitioning
+
+#-------------------------------------------------------------------------------------
+
+
+#Stokes Preconditioner
+-pstokes mg
+
+# Matrix type
+-pcmat_type mono                        # monolithic matrix [coupled MG solver]
+-jp_type mg                             # multigrid
+#
+# Multigrid preconditioner settings
+-gmg_pc_type mg
+-gmg_pc_mg_levels 4                     # 5 MG levels, gives coarse grid of 32x16x8
+-gmg_pc_mg_galerkin                     #
+-gmg_pc_mg_type multiplicative
+-gmg_pc_mg_cycle_type v
+-gmg_pc_mg_log                          # monitors time spend in multigrid if using -log_summary @ the end
+
+# RICHARDSON/JACOBI MG Smoothener - [Anton's favorite options]
+-gmg_mg_levels_ksp_type richardson
+-gmg_mg_levels_ksp_richardson_scale 0.6
+-gmg_mg_levels_pc_type jacobi
+-gmg_mg_levels_ksp_max_it 10
+
+# DIRECT, REDUNDANT COARSE SOLVER
+-crs_ksp_type preonly
+-crs_pc_type redundant
+-crs_pc_redundant_number 4                                   # split domain in 4 pieces so ever direct solver step is done on 512 cores
+-crs_redundant_pc_factor_mat_solver_package superlu_dist     # uses mumps as local direct solver     [superlu_dist is another option]
+
+#########################################################################################
+
+
+
+	#-------------------------------------------------------------------------------------
+
+	# output
+	-out_pvd 1
+	-out_phase 1
+	-out_density 1
+	-out_bulk 1
+	-out_viscosity 1
+	-out_velocity 1
+	-out_pressure 1
+	-out_temperature 1#
+	-out_dev_stress 1
+	-out_j2_dev_stress 1
+	-out_strain_rate 1
+	-out_j2_strain_rate 1
+	-out_plast_strain 1
+	-out_plast_strain 1
+	-out_moment_res 1
+	-out_cont_res 1
+	-out_yield 1
+	-out_shmax 1
+	
+	-out_porepressure 1
+	
+	# output Darcy parameters
+	-out_Pl 1				# fluid pressure
+	-out_porosity 1 		# porosity
+	-out_permeability 1		# permeability
+	-out_liquiddensity 1	# liquid density
+	-out_liquidvelocity 1	# liquid flow
+	-out_failureT 1          # type of failure tensile
+	-out_failureS 1          # type of failure shear
+	-out_failureTS 1         # if pressure arrived to tensile strength
+
+	-AVDPhaseViewer 0
+
+	-actPorePres
+	-biot 0.9
+	# Darcy: #########################################
+	-act_darcy					# Activates Darcy solver
+	-act_initialguess_hydro	# Consider hydrostatic pressure as initial condition
+	-change_phase_if_failure 0        # 0 change phase in both cases, if tensile or shear failure are reached
+                                      # 1 change phase only in case of tensile, 2 only in case of shear
+                                      # any other, do not change phase
+	-darcy_ksp_type fgmres
+	-darcy_pc_type lu
+	-darcy_pc_factor_mat_solver_package mumps
+	#-darcy_ksp_monitor
+	#-darcy_ksp_max_it 100
+	#-darcy_ksp_converged_reason
+	#-darcy_ksp_rtol 1e-20
+	#-darcy_ksp_atol 1e-20
+	###########################################################	
+
+	
+<PetscOptionsEnd>
+    
+#===============================================================================
+# ............................ Material Parameters .............................
+#===============================================================================
+
+#	# Strain softening parameters
+#	<SofteningStart>
+#		softID = 0
+#		A      = 0.25
+##		A      = 1.0
+#		APS1   = 0.000000001
+#		APS2   = 0.001
+#	<SofteningEnd>
+
+# Define material properties for all phases -------------------------------------------------
+
+	# Define properties of matrix -----------------
+	<MaterialStart>
+		ID              =  0      # phase id  [-]
+		rho0            =  2470   # density - if dimensional [kg/m3]
+		#ta           =  1e24   # Viscosity - dimensional [Pa.s]
+		poison          =  0.28
+		shear           =  2.66e10
+		cohesion        =  40e6
+		dilation        =  10
+		friction        =  35
+		# DARCY Parameters:
+		rhol            = 1000      # liquid density
+		mul             = 1e-4      # liquid viscosity	
+		Kphi            = 1e-11     # permeability	
+		# Ss              = 1e-10     # specific storage
+		TensileS        = -6.50e6   # Tensile strength
+		betam           = 1e-10      # matrix compressibility
+		betal           = 1e-9     # liquid compressibility
+		Phi             = 0.1      # porosity
+		poisonu         = 0.28      # undrained poison ratio
+		Kphiu           = 1e-11     # undrained permeability
+		Phiu            = 0.1       # undrained porosity
+	<MaterialEnd>
+	<MaterialStart>
+		ID              =  1      # phase id  [-]
+		rho0            =  2470   # density - if dimensional [kg/m3]
+		#ta           =  1e24   # Viscosity - dimensional [Pa.s]
+		poison          =  0.28
+		shear           =  2.66e10
+		cohesion        =  40e6
+		dilation        =  10
+		friction        =  35
+		# DARCY Parameters:
+		rhol            = 1000      # liquid density
+		mul             = 1e-4      # liquid viscosity	
+		Kphi            = 1e-16     # permeability	
+		# Ss              = 1e-10     # specific storage
+		TensileS        = -6.50e6   # Tensile strength
+		betam           = 1e-10      # matrix compressibility
+		betal           = 1e-9     # liquid compressibility
+		Phi             = 0.1      # porosity
+		poisonu         = 0.28      # undrained poison ratio
+		Kphiu           = 1e-16     # undrained permeability
+		Phiu            = 0.1       # undrained porosity
+	<MaterialEnd>
+        <MaterialStart>
+                ID              =  2      # phase id  [-]
+                rho0            =  2470   # density - if dimensional [kg/m3]
+                #ta           =  1e24   # Viscosity - dimensional [Pa.s]
+                poison          =  0.28
+                shear           =  2.66e10
+                cohesion        =  5e6
+                dilation        =  10
+                friction        =  30
+                rhol            = 1000      # liquid density
+                mul             = 1e-4      # liquid viscosity  
+                Kphi            = 1e-11     # permeability     
+                TensileS        = -2e6   # Tensile strength
+                betam           = 1e-10      # matrix compressibility
+                betal           = 1e-9     # liquid compressibility
+                Phi             = 0.1      # porosity
+                poisonu         = 0.28      # undrained poison ratio
+                Kphiu           = 1e-11     # undrained permeability
+                Phiu            = 0.01       # undrained porosity
+        <MaterialEnd>
+
+
+# End of defining material properties for all phases ----------------------------------------
+
+# Darcy source --------------------------------------------------------------------------------------
+# ---------------------------------------------------------------------------------------------------
+# ---------------------------------------------------------------------------------------------------
+NumDarcySources 	= 5
+<DarcySourceStart>
+	ID         = 0          # source id
+	x          = 0.0 
+	y          = 0.0
+	z          = 960.0
+	magnitude  = 1         #m3/s
+	increment  = 0
+	tini       = 10000000005
+	tfin       = 20000000000
+<DarcySourceEnd>
+<DarcySourceStart>
+	ID 			=	1			# source id
+	x   		= 	0.0	
+	y			=	0.0
+	z			=   1237.0
+	magnitude 	= 	0.5
+	increment   =   0e-5
+	tini        =   10000000005
+	tfin        =   20000000000
+<DarcySourceEnd>
+<DarcySourceStart>
+	ID 			=	2			# source id
+	x   		= 	0.0	
+	y			=	0.0
+	z			=   1345.0
+	magnitude 	= 0.5
+	increment   =   0e-5
+	tini        =   10000000005
+	tfin        =   20000000000
+<DarcySourceEnd>
+<DarcySourceStart>
+	ID 			=	3			# source id
+	x   		= 	0.0	
+	y			=	0.0
+	z			=   1750.0
+	magnitude 	= 	0.5
+	increment   =   0e-5
+	tini        =   10000000005
+	tfin        =   20000000000
+<DarcySourceEnd>
+<DarcySourceStart>
+	ID 			=	4			# source id
+	x   		= 	0.0	
+	y			=	0.0
+	z			=   1874.0
+	magnitude 	= 	0.5
+	increment   =   0e-5
+	tini        =   10000000005
+	tfin        =   20000000000
+<DarcySourceEnd>
+
+# ---------------------------------------------------------------------------------------------------

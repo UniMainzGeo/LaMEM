@@ -1,0 +1,559 @@
+ Parsing input file : input.dat 
+# Adding PetscOption: -ExxNumPeriods 1 
+# Adding PetscOption: -ExxStrainRates -0.96e-13 
+# Adding PetscOption: -EyyNumPeriods 1 
+# Adding PetscOption: -EyyStrainRates 2.4e-14 
+# Adding PetscOption: -stress_min 1e+6 
+# Adding PetscOption: -stress_sensitivity_for_failure 0.0 
+# Adding PetscOption: -first_dt 1e+10 
+# Adding PetscOption: -num_of_first_dt 1 
+# Adding PetscOption: -dt 1e2 
+# Adding PetscOption: -H_layer 5000 
+# Adding PetscOption: -H_bottom 0 
+# Adding PetscOption: -Inclusion_use 
+# Adding PetscOption: -Inclusion_size 0 
+# Adding PetscOption: -restart 0 
+# Adding PetscOption: -skip_press_shift 
+# Adding PetscOption: -open_top_bound 
+# Adding PetscOption: -snes_ksp_ew_rtolmax 1e-1 
+# Adding PetscOption: -snes_monitor 
+# Adding PetscOption: -snes_atol 1e-7 
+# Adding PetscOption: -snes_rtol 1e-4 
+# Adding PetscOption: -snes_stol 1e-16 
+# Adding PetscOption: -snes_max_it 50 
+# Adding PetscOption: -snes_max_funcs 500000 
+# Adding PetscOption: -snes_max_linear_solve_fail 10000 
+# Adding PetscOption: -snes_PicardSwitchToNewton_rtol 1e-1 
+# Adding PetscOption: -snes_NewtonSwitchToPicard_it 20 
+# Adding PetscOption: -snes_NewtonSwitchToPicard_rtol 1.1 
+# Adding PetscOption: -snes_linesearch_monitor 
+# Adding PetscOption: -snes_linesearch_type l2 
+# Adding PetscOption: -snes_linesearch_maxstep 1.0 
+# Adding PetscOption: -js_ksp_type fgmres 
+# Adding PetscOption: -js_ksp_max_it 50 
+# Adding PetscOption: -js_ksp_converged_reason 
+# Adding PetscOption: -js_ksp_rtol 1e-10 
+# Adding PetscOption: -js_ksp_atol 1e-14 
+# Adding PetscOption: -restart 0 
+# Adding PetscOption: -save_breakpoints 0 
+# Adding PetscOption: -objects_dump 
+# Adding PetscOption: -restart 0 
+# Adding PetscOption: -pstokes mg 
+# Adding PetscOption: -pcmat_type mono 
+# Adding PetscOption: -jp_type mg 
+# Adding PetscOption: -gmg_pc_type mg 
+# Adding PetscOption: -gmg_pc_mg_levels 4 
+# Adding PetscOption: -gmg_pc_mg_galerkin 
+# Adding PetscOption: -gmg_pc_mg_type multiplicative 
+# Adding PetscOption: -gmg_pc_mg_cycle_type v 
+# Adding PetscOption: -gmg_pc_mg_log 
+# Adding PetscOption: -gmg_mg_levels_ksp_type richardson 
+# Adding PetscOption: -gmg_mg_levels_ksp_richardson_scale 0.6 
+# Adding PetscOption: -gmg_mg_levels_pc_type jacobi 
+# Adding PetscOption: -gmg_mg_levels_ksp_max_it 10 
+# Adding PetscOption: -crs_ksp_type preonly 
+# Adding PetscOption: -crs_pc_type redundant 
+# Adding PetscOption: -crs_pc_redundant_number 4 
+# Adding PetscOption: -crs_redundant_pc_factor_mat_solver_package superlu_dist 
+# Adding PetscOption: -out_pvd 1 
+# Adding PetscOption: -out_phase 1 
+# Adding PetscOption: -out_density 1 
+# Adding PetscOption: -out_bulk 1 
+# Adding PetscOption: -out_viscosity 1 
+# Adding PetscOption: -out_velocity 1 
+# Adding PetscOption: -out_pressure 1 
+# Adding PetscOption: -out_temperature 1 
+# Adding PetscOption: -out_dev_stress 1 
+# Adding PetscOption: -out_j2_dev_stress 1 
+# Adding PetscOption: -out_strain_rate 1 
+# Adding PetscOption: -out_j2_strain_rate 1 
+# Adding PetscOption: -out_plast_strain 1 
+# Adding PetscOption: -out_plast_strain 1 
+# Adding PetscOption: -out_moment_res 1 
+# Adding PetscOption: -out_cont_res 1 
+# Adding PetscOption: -out_yield 1 
+# Adding PetscOption: -out_shmax 1 
+# Adding PetscOption: -out_porepressure 1 
+# Adding PetscOption: -out_Pl 1 
+# Adding PetscOption: -out_porosity 1 
+# Adding PetscOption: -out_permeability 1 
+# Adding PetscOption: -out_liquiddensity 1 
+# Adding PetscOption: -out_liquidvelocity 1 
+# Adding PetscOption: -out_failureT 1 
+# Adding PetscOption: -out_failureS 1 
+# Adding PetscOption: -out_failureTS 1 
+# Adding PetscOption: -AVDPhaseViewer 0 
+# Adding PetscOption: -actPorePres 
+# Adding PetscOption: -biot 0.9 
+# Adding PetscOption: -act_darcy 
+# Adding PetscOption: -act_initialguess_hydro 
+# Adding PetscOption: -change_phase_if_failure 0 
+# Adding PetscOption: -darcy_ksp_type fgmres 
+# Adding PetscOption: -darcy_pc_type lu 
+# Adding PetscOption: -darcy_pc_factor_mat_solver_package mumps 
+-------------------------------------------------------------------------- 
+                   Lithosphere and Mantle Evolution Model                   
+     Compiled: Date: Apr 12 2019 - Time: 15:18:06 	    
+-------------------------------------------------------------------------- 
+        STAGGERED-GRID FINITE DIFFERENCE CANONICAL IMPLEMENTATION           
+-------------------------------------------------------------------------- 
+ Characteristic Length      = 1. [m] 
+ Characteristic Viscosity   = 1. [Pa*s] 
+ Characteristic Temperature = 1. [C/K] 
+ Characteristic Stress      = 1. [Pa] 
+--------------------------------------------------------------------------
+Reading pushing parameters: 
+
+Reading softening laws: 
+
+Reading material parameters: 
+
+    Phase [0]: rho = 2470. [kg/m3], eta = 0. [Pa*s], beta = 0. [1/Pa]
+    Phase [0]: (diff ) Bd = 0. [1/(Pa*s)], Ed = 0. [J/mol], Vd = 0. [m3/mol] 
+    Phase [0]: (disl ) Bn = 0. [1/(Pa^n*s)], En = 0. [J/mol], Vn = 0. [m3/mol], n = 0. [ ] 
+    Phase [0]: (peirl) Bp = 0. [1/s], Ep = 0. [J/mol], Vp = 0. [m3/mol], taup = 0. [Pa], gamma = 0. [ ], q = 0. [ ] 
+    Phase [0]: (elast) G = 2.66e+10 [Pa], K = 5.15879e+10 [Pa], Kp = 0. [ ]
+    Phase [0]: (elast) poisson = 0.28, E (youngs modulus) = 6.8096e+10 [Pa], Vp = 8197.16 [m/s] Vs = 3281.65 [m/s] 
+    Phase [0]: (plast) cohesion = 4e+07 [Pa], friction angle = 35. [deg], dilation angle = 10. [deg], pore pressure ratio = 0. [ ]
+    Phase [0]: (sweak) cohesion SoftLaw = -1 [ ], friction SoftLaw = -1 [ ] 
+    Phase [0]: (temp ) alpha = 0. [1/K], cp = 0. [J/kg/K], k = 0. [W/m/K], A = 0. [W/m3] 
+    Phase [0]: (darcy) (darcy) liquid density = 1000. [kg/m3], liquid viscosity = 0.0001 [Pa*s], permeability = 1e-11 [m2], matrix compressibility = 1e-10 [1/Pa], liquid compressibility = 1e-09 [1/Pa], porosity = 0.1 [ ], tensile strength = -6.5e+06 [Pa]
+    Phase [0]: (darcy) (undrained values) undrained poisson ratio = 0.28 [ ], undrained permeability = 1e-11 [m2] , undrained porosity = 0.1 [ ]
+    
+    Phase [1]: rho = 2470. [kg/m3], eta = 0. [Pa*s], beta = 0. [1/Pa]
+    Phase [1]: (diff ) Bd = 0. [1/(Pa*s)], Ed = 0. [J/mol], Vd = 0. [m3/mol] 
+    Phase [1]: (disl ) Bn = 0. [1/(Pa^n*s)], En = 0. [J/mol], Vn = 0. [m3/mol], n = 0. [ ] 
+    Phase [1]: (peirl) Bp = 0. [1/s], Ep = 0. [J/mol], Vp = 0. [m3/mol], taup = 0. [Pa], gamma = 0. [ ], q = 0. [ ] 
+    Phase [1]: (elast) G = 2.66e+10 [Pa], K = 5.15879e+10 [Pa], Kp = 0. [ ]
+    Phase [1]: (elast) poisson = 0.28, E (youngs modulus) = 6.8096e+10 [Pa], Vp = 8197.16 [m/s] Vs = 3281.65 [m/s] 
+    Phase [1]: (plast) cohesion = 4e+07 [Pa], friction angle = 35. [deg], dilation angle = 10. [deg], pore pressure ratio = 0. [ ]
+    Phase [1]: (sweak) cohesion SoftLaw = -1 [ ], friction SoftLaw = -1 [ ] 
+    Phase [1]: (temp ) alpha = 0. [1/K], cp = 0. [J/kg/K], k = 0. [W/m/K], A = 0. [W/m3] 
+    Phase [1]: (darcy) (darcy) liquid density = 1000. [kg/m3], liquid viscosity = 0.0001 [Pa*s], permeability = 1e-16 [m2], matrix compressibility = 1e-10 [1/Pa], liquid compressibility = 1e-09 [1/Pa], porosity = 0.1 [ ], tensile strength = -6.5e+06 [Pa]
+    Phase [1]: (darcy) (undrained values) undrained poisson ratio = 0.28 [ ], undrained permeability = 1e-16 [m2] , undrained porosity = 0.1 [ ]
+    
+    Phase [2]: rho = 2470. [kg/m3], eta = 0. [Pa*s], beta = 0. [1/Pa]
+    Phase [2]: (diff ) Bd = 0. [1/(Pa*s)], Ed = 0. [J/mol], Vd = 0. [m3/mol] 
+    Phase [2]: (disl ) Bn = 0. [1/(Pa^n*s)], En = 0. [J/mol], Vn = 0. [m3/mol], n = 0. [ ] 
+    Phase [2]: (peirl) Bp = 0. [1/s], Ep = 0. [J/mol], Vp = 0. [m3/mol], taup = 0. [Pa], gamma = 0. [ ], q = 0. [ ] 
+    Phase [2]: (elast) G = 2.66e+10 [Pa], K = 5.15879e+10 [Pa], Kp = 0. [ ]
+    Phase [2]: (elast) poisson = 0.28, E (youngs modulus) = 6.8096e+10 [Pa], Vp = 8197.16 [m/s] Vs = 3281.65 [m/s] 
+    Phase [2]: (plast) cohesion = 5e+06 [Pa], friction angle = 30. [deg], dilation angle = 10. [deg], pore pressure ratio = 0. [ ]
+    Phase [2]: (sweak) cohesion SoftLaw = -1 [ ], friction SoftLaw = -1 [ ] 
+    Phase [2]: (temp ) alpha = 0. [1/K], cp = 0. [J/kg/K], k = 0. [W/m/K], A = 0. [W/m3] 
+    Phase [2]: (darcy) (darcy) liquid density = 1000. [kg/m3], liquid viscosity = 0.0001 [Pa*s], permeability = 1e-11 [m2], matrix compressibility = 1e-10 [1/Pa], liquid compressibility = 1e-09 [1/Pa], porosity = 0.1 [ ], tensile strength = -2e+06 [Pa]
+    Phase [2]: (darcy) (undrained values) undrained poisson ratio = 0.28 [ ], undrained permeability = 1e-11 [m2] , undrained porosity = 0.01 [ ]
+    
+--------------------------------------------------------------------------
+Reading liquid source parameters: 
+
+    Source [0]: x = 0. [m], y = 0. [m], z = 960. [m], magnitude = 1. [1/s], tini = 1e+10 [s], tfin = 2e+10 [s]    
+    Source [1]: x = 0. [m], y = 0. [m], z = 1237. [m], magnitude = 0.5 [1/s], tini = 1e+10 [s], tfin = 2e+10 [s]    
+    Source [2]: x = 0. [m], y = 0. [m], z = 1345. [m], magnitude = 0.5 [1/s], tini = 1e+10 [s], tfin = 2e+10 [s]    
+    Source [3]: x = 0. [m], y = 0. [m], z = 1750. [m], magnitude = 0.5 [1/s], tini = 1e+10 [s], tfin = 2e+10 [s]    
+    Source [4]: x = 0. [m], y = 0. [m], z = 1874. [m], magnitude = 0.5 [1/s], tini = 1e+10 [s], tfin = 2e+10 [s]    
+--------------------------------------------------------------------------
+ Total # of cpu's               : 256 
+ Number of tracers/cell         : [3,3,3] 
+ Initial time step              : 100.  [s] 
+ BC employed                    : BC.[LeftBound=1 RightBound=1; FrontBound=1 BackBound=1; LowerBound=1 UpperBound=0] 
+ CFL timestep factor            : 0.500000 
+ Processor grid  [nx, ny, nz]   : [4, 4, 16]
+ Fine grid cells [nx, ny, nz]   : [128, 128, 256]
+ Number of cells                :  4194304
+ Number of velocity DOF         :  12664832
+ Maximum cell aspect cell ratio :  3.00000
+ Starting marker initialization routine
+ Marker setup employed [msetup] : km8
+ Finished marker initialization routine
+ Preconditioner matrix type     : monolithic
+ Preconditioner type            : coupled Galerkin geometric multigrid
+ Total coarse grid size    [nx, ny, nz] : [16, 16, 32]
+ Coarse grid per processor [nx, ny, nz] : [4, 4, 2]
+ Number of multigrid levels             : 4
+ Writing grid .pvd file to disk
+ 
+-------------------------------------------------------------------------- 
+                             Darcy solver                					 
+-------------------------------------------------------------------------- 
+---------------- InitialGuessHydro ----------------------------------- 
+Time step 0 -------------------------------------------------------- 
+  0 SNES Function norm 4.631808574775e+09 
+USING PICARD JACOBIAN for iteration 0, ||F||/||F0||=1.000000e+00 
+  Linear js_ solve converged due to CONVERGED_RTOL iterations 16
+      Line search: lambdas = [1., 0.5, 0.], fnorms = [38284.6, 2.3159e+09, 4.63181e+09]
+      Line search terminated: lambda = 1., fnorms = 38284.6
+  1 SNES Function norm 3.828457954258e+04 
+ SNES Convergence Reason: ||F|| < rtol*||F_initial|| 
+ Number of iterations : 1
+ Nonlinear solve took 5.00353 (sec)
+------------------------------------------ 
+In point source 0, Liquid pressure Pl= 3.03906e+07; Effective pressure dP= 4.63187e+07; TAU_II = 1.20841e+07;
+         P=7.67093e+07; Sxx=-8.95309e+07; Syy=-6.55309e+07; Szz=-7.50663e+07; A=1.19269;
+------------------------------------------ 
+In point source 1, Liquid pressure Pl= 2.75781e+07; Effective pressure dP= 4.30912e+07; TAU_II = 1.22015e+07;
+         P=7.06693e+07; Sxx=-8.39443e+07; Syy=-5.99443e+07; Szz=-6.81194e+07; A=1.23231;
+------------------------------------------ 
+In point source 2, Liquid pressure Pl= 2.64844e+07; Effective pressure dP= 4.18361e+07; TAU_II = 1.22605e+07;
+         P=6.83204e+07; Sxx=-8.17717e+07; Syy=-5.77717e+07; Szz=-6.54178e+07; A=1.24999;
+------------------------------------------ 
+In point source 3, Liquid pressure Pl= 2.25781e+07; Effective pressure dP= 3.73534e+07; TAU_II = 1.25297e+07;
+         P=5.99315e+07; Sxx=-7.40126e+07; Syy=-5.00126e+07; Szz=-5.57694e+07; A=1.32712;
+------------------------------------------ 
+In point source 4, Liquid pressure Pl= 2.13281e+07; Effective pressure dP= 3.5919e+07; TAU_II = 1.26345e+07;
+         P=5.72471e+07; Sxx=-7.15297e+07; Syy=-4.75297e+07; Szz=-5.26819e+07; A=1.35777;
+------------------------------------------
+Residual summary: 
+  Continuity: 
+    Div_min  = -3.813825907988e-22 
+    Div_max  = 8.610229007708e-22 
+    |Div|_2  = 8.820766755532e-20 
+  Momentum: 
+    |mRes|_2 = 3.828457954258e+04 
+  Darcy: 
+    |Pl_Res|_2  = 1.638347477773e-19 
+------------------------------------------
+ Writing to existing directory Timestep_000000_0.000000e+00 
+ Time = 1e+10[s], dt = 1e+10[s] 
+ Finished timestep 0 out of 5 
+ 
+Time step 1 -------------------------------------------------------- 
+  0 SNES Function norm 5.393216767515e+05 
+USING PICARD JACOBIAN for iteration 0, ||F||/||F0||=1.000000e+00 
+  Linear js_ solve converged due to CONVERGED_RTOL iterations 16
+      Line search: lambdas = [1., 0.5, 0.], fnorms = [12123.6, 272177., 539322.]
+      Line search terminated: lambda = 1., fnorms = 12123.6
+  1 SNES Function norm 1.212363675047e+04 
+=====================================================
+SWITCH TO MMFD JACOBIAN: ||F||/||F0||=2.247942e-02, PicIt=5 
+=====================================================
+USING MMFD JACOBIAN for iteration 1, ||F||/||F0||=2.247942e-02 
+  Linear js_ solve converged due to CONVERGED_RTOL iterations 14
+      Line search: lambdas = [1., 0.5, 0.], fnorms = [9.92081, 6061.87, 12123.6]
+      Line search terminated: lambda = 1., fnorms = 9.92081
+  2 SNES Function norm 9.920812847903e+00 
+ SNES Convergence Reason: ||F|| < rtol*||F_initial|| 
+ Number of iterations : 2
+ Nonlinear solve took 5.55161 (sec)
+------------------------------------------ 
+In point source 0, Liquid pressure Pl= 3.03906e+07; Effective pressure dP= 4.63761e+07; TAU_II = 1.20801e+07;
+         P=7.67667e+07; Sxx=-8.95685e+07; Syy=-6.55685e+07; Szz=-7.51631e+07; A=1.19165;
+------------------------------------------ 
+In point source 1, Liquid pressure Pl= 2.75781e+07; Effective pressure dP= 4.31418e+07; TAU_II = 1.21961e+07;
+         P=7.072e+07; Sxx=-8.39775e+07; Syy=-5.99775e+07; Szz=-6.82048e+07; A=1.23125;
+------------------------------------------ 
+In point source 2, Liquid pressure Pl= 2.64844e+07; Effective pressure dP= 4.18841e+07; TAU_II = 1.22546e+07;
+         P=6.83685e+07; Sxx=-8.18033e+07; Syy=-5.78033e+07; Szz=-6.5499e+07; A=1.24892;
+------------------------------------------ 
+In point source 3, Liquid pressure Pl= 2.25781e+07; Effective pressure dP= 3.73927e+07; TAU_II = 1.2523e+07;
+         P=5.99708e+07; Sxx=-7.40384e+07; Syy=-5.00384e+07; Szz=-5.58357e+07; A=1.326;
+------------------------------------------ 
+In point source 4, Liquid pressure Pl= 2.13281e+07; Effective pressure dP= 3.59556e+07; TAU_II = 1.26277e+07;
+         P=5.72837e+07; Sxx=-7.15537e+07; Syy=-4.75537e+07; Szz=-5.27437e+07; A=1.35663;
+------------------------------------------
+Residual summary: 
+  Continuity: 
+    Div_min  = -1.014494309472e-14 
+    Div_max  = 1.015951268128e-14 
+    |Div|_2  = 5.973306717814e-12 
+  Momentum: 
+    |mRes|_2 = 9.920812847903e+00 
+  Darcy: 
+    |Pl_Res|_2  = 1.749852191923e-05 
+------------------------------------------
+ Writing to existing directory Timestep_000001_1.000000e+10 
+ Time = 1e+10[s], dt = 100.[s] 
+ Finished timestep 1 out of 5 
+ 
+Time step 2 -------------------------------------------------------- 
+  0 SNES Function norm 1.893111911870e+06 
+USING PICARD JACOBIAN for iteration 0, ||F||/||F0||=1.000000e+00 
+  Linear js_ solve converged due to CONVERGED_RTOL iterations 14
+      Line search: lambdas = [1., 0.5, 0.], fnorms = [4138.9, 946569., 1.89311e+06]
+      Line search terminated: lambda = 1., fnorms = 4138.9
+  1 SNES Function norm 4.138904059491e+03 
+=====================================================
+SWITCH TO MMFD JACOBIAN: ||F||/||F0||=2.186297e-03, PicIt=5 
+=====================================================
+USING MMFD JACOBIAN for iteration 1, ||F||/||F0||=2.186297e-03 
+  Linear js_ solve converged due to CONVERGED_RTOL iterations 14
+      Line search: lambdas = [1., 0.5, 0.], fnorms = [2.44688, 2069.46, 4138.9]
+      Line search terminated: lambda = 1., fnorms = 2.44688
+  2 SNES Function norm 2.446880234085e+00 
+ SNES Convergence Reason: ||F|| < rtol*||F_initial|| 
+ Number of iterations : 2
+ Nonlinear solve took 5.26708 (sec)
+------------------------------------------ 
+In point source 0, Liquid pressure Pl= 4.48869e+07; Effective pressure dP= 3.71952e+07; TAU_II = 1.26898e+07;
+         P=8.20821e+07; Sxx=-9.63364e+07; Syy=-7.23388e+07; Szz=-7.7571e+07; A=1.24191;
+------------------------------------------ 
+In point source 1, Liquid pressure Pl= 3.48282e+07; Effective pressure dP= 3.85502e+07; TAU_II = 1.24944e+07;
+         P=7.33784e+07; Sxx=-8.73507e+07; Syy=-6.33519e+07; Szz=-6.94325e+07; A=1.25807;
+------------------------------------------ 
+In point source 2, Liquid pressure Pl= 3.37342e+07; Effective pressure dP= 3.72927e+07; TAU_II = 1.25821e+07;
+         P=7.10268e+07; Sxx=-8.51769e+07; Syy=-6.11781e+07; Szz=-6.67256e+07; A=1.27653;
+------------------------------------------ 
+In point source 3, Liquid pressure Pl= 2.98272e+07; Effective pressure dP= 3.28017e+07; TAU_II = 1.29516e+07;
+         P=6.26289e+07; Sxx=-7.74157e+07; Syy=-5.34169e+07; Szz=-5.7054e+07; A=1.35688;
+------------------------------------------ 
+In point source 4, Liquid pressure Pl= 2.85769e+07; Effective pressure dP= 3.13647e+07; TAU_II = 1.30864e+07;
+         P=5.99416e+07; Sxx=-7.49311e+07; Syy=-5.09322e+07; Szz=-5.39616e+07; A=1.3886;
+------------------------------------------
+Residual summary: 
+  Continuity: 
+    Div_min  = -2.293130716981e-15 
+    Div_max  = 2.266027781431e-15 
+    |Div|_2  = 1.437670266223e-12 
+  Momentum: 
+    |mRes|_2 = 2.446880234085e+00 
+  Darcy: 
+    |Pl_Res|_2  = 4.488412045677e-05 
+------------------------------------------
+ Writing to existing directory Timestep_000002_1.000000e+10 
+ Time = 1e+10[s], dt = 100.[s] 
+ Finished timestep 2 out of 5 
+ 
+Time step 3 -------------------------------------------------------- 
+  0 SNES Function norm 1.000903909300e+06 
+USING PICARD JACOBIAN for iteration 0, ||F||/||F0||=1.000000e+00 
+  Linear js_ solve converged due to CONVERGED_RTOL iterations 13
+      Line search: lambdas = [1., 0.5, 0.], fnorms = [1705.58, 500461., 1.0009e+06]
+      Line search terminated: lambda = 1., fnorms = 1705.58
+  1 SNES Function norm 1.705580544571e+03 
+=====================================================
+SWITCH TO MMFD JACOBIAN: ||F||/||F0||=1.704040e-03, PicIt=5 
+=====================================================
+USING MMFD JACOBIAN for iteration 1, ||F||/||F0||=1.704040e-03 
+  Linear js_ solve converged due to CONVERGED_RTOL iterations 13
+      Line search: lambdas = [1., 0.5, 0.], fnorms = [1.16699, 852.79, 1705.58]
+      Line search terminated: lambda = 0.999998, fnorms = 1.16699
+  2 SNES Function norm 1.166987460171e+00 
+ SNES Convergence Reason: ||F|| < rtol*||F_initial|| 
+ Number of iterations : 2
+ Nonlinear solve took 4.99935 (sec)
+------------------------------------------ 
+In point source 0, Liquid pressure Pl= 5.86352e+07; Effective pressure dP= 2.84515e+07; TAU_II = 1.37661e+07;
+         P=8.70867e+07; Sxx=-1.02687e+08; Syy=-7.87528e+07; Szz=-7.98204e+07; A=1.28647;
+------------------------------------------ 
+In point source 1, Liquid pressure Pl= 4.17022e+07; Effective pressure dP= 3.42066e+07; TAU_II = 1.29156e+07;
+         P=7.59089e+07; Sxx=-9.05635e+07; Syy=-6.65658e+07; Szz=-7.05973e+07; A=1.28282;
+------------------------------------------ 
+In point source 2, Liquid pressure Pl= 4.06083e+07; Effective pressure dP= 3.29491e+07; TAU_II = 1.30287e+07;
+         P=7.35573e+07; Sxx=-8.83902e+07; Syy=-6.43925e+07; Szz=-6.78892e+07; A=1.30198;
+------------------------------------------ 
+In point source 3, Liquid pressure Pl= 3.67013e+07; Effective pressure dP= 2.84581e+07; TAU_II = 1.34864e+07;
+         P=6.51594e+07; Sxx=-8.06332e+07; Syy=-5.66355e+07; Szz=-5.82095e+07; A=1.38523;
+------------------------------------------ 
+In point source 4, Liquid pressure Pl= 3.5451e+07; Effective pressure dP= 2.70211e+07; TAU_II = 1.36468e+07;
+         P=6.24722e+07; Sxx=-7.81488e+07; Syy=-5.4151e+07; Szz=-5.51168e+07; A=1.41788;
+------------------------------------------
+Residual summary: 
+  Continuity: 
+    Div_min  = -1.081173651036e-15 
+    Div_max  = 1.077780739279e-15 
+    |Div|_2  = 6.727907390129e-13 
+  Momentum: 
+    |mRes|_2 = 1.166987460171e+00 
+  Darcy: 
+    |Pl_Res|_2  = 3.908917719331e-05 
+------------------------------------------
+ Writing to existing directory Timestep_000003_1.000000e+10 
+ Time = 1e+10[s], dt = 100.[s] 
+ Finished timestep 3 out of 5 
+ 
+Time step 4 -------------------------------------------------------- 
+  0 SNES Function norm 1.026668307345e+06 
+USING PICARD JACOBIAN for iteration 0, ||F||/||F0||=1.000000e+00 
+  Linear js_ solve converged due to CONVERGED_RTOL iterations 12
+      Line search: lambdas = [1., 0.5, 0.], fnorms = [1035.36, 513335., 1.02667e+06]
+      Line search terminated: lambda = 1., fnorms = 1035.36
+  1 SNES Function norm 1.035358985704e+03 
+=====================================================
+SWITCH TO MMFD JACOBIAN: ||F||/||F0||=1.008465e-03, PicIt=5 
+=====================================================
+USING MMFD JACOBIAN for iteration 1, ||F||/||F0||=1.008465e-03 
+  Linear js_ solve converged due to CONVERGED_RTOL iterations 13
+      Line search: lambdas = [1., 0.5, 0.], fnorms = [0.774638, 517.679, 1035.36]
+      Line search terminated: lambda = 0.999999, fnorms = 0.774636
+  2 SNES Function norm 7.746363957977e-01 
+ SNES Convergence Reason: ||F|| < rtol*||F_initial|| 
+ Number of iterations : 2
+ Nonlinear solve took 4.89693 (sec)
+------------------------------------------ 
+In point source 0, Liquid pressure Pl= 7.23468e+07; Effective pressure dP= 1.97622e+07; TAU_II = 1.52663e+07;
+         P=9.2109e+07; Sxx=-1.09075e+08; Syy=-8.51484e+07; Szz=-8.21035e+07; A=1.32851;
+------------------------------------------ 
+In point source 1, Liquid pressure Pl= 4.85605e+07; Effective pressure dP= 2.98628e+07; TAU_II = 1.34517e+07;
+         P=7.84234e+07; Sxx=-9.37519e+07; Syy=-6.97547e+07; Szz=-7.17634e+07; A=1.3064;
+------------------------------------------ 
+In point source 2, Liquid pressure Pl= 4.74666e+07; Effective pressure dP= 2.86054e+07; TAU_II = 1.35872e+07;
+         P=7.60719e+07; Sxx=-9.15791e+07; Syy=-6.75821e+07; Szz=-6.90547e+07; A=1.32618;
+------------------------------------------ 
+In point source 3, Liquid pressure Pl= 4.35596e+07; Effective pressure dP= 2.41145e+07; TAU_II = 1.41223e+07;
+         P=6.76741e+07; Sxx=-8.3826e+07; Syy=-5.98293e+07; Szz=-5.93671e+07; A=1.41199;
+------------------------------------------ 
+In point source 4, Liquid pressure Pl= 4.23093e+07; Effective pressure dP= 2.26776e+07; TAU_II = 1.43045e+07;
+         P=6.49869e+07; Sxx=-8.13417e+07; Syy=-5.7345e+07; Szz=-5.62741e+07; A=1.44546;
+------------------------------------------
+Residual summary: 
+  Continuity: 
+    Div_min  = -7.224841294694e-16 
+    Div_max  = 7.184498402034e-16 
+    |Div|_2  = 4.485375354559e-13 
+  Momentum: 
+    |mRes|_2 = 7.746363957977e-01 
+  Darcy: 
+    |Pl_Res|_2  = 3.898365762322e-05 
+------------------------------------------
+ Writing to existing directory Timestep_000004_1.000000e+10 
+ Time = 1e+10[s], dt = 100.[s] 
+ Finished timestep 4 out of 5 
+ 
+Time step 5 -------------------------------------------------------- 
+  0 SNES Function norm 1.021815777752e+06 
+USING PICARD JACOBIAN for iteration 0, ||F||/||F0||=1.000000e+00 
+  Linear js_ solve converged due to CONVERGED_RTOL iterations 12
+      Line search: lambdas = [1., 0.5, 0.], fnorms = [974.593, 510909., 1.02182e+06]
+      Line search terminated: lambda = 1., fnorms = 974.593
+  1 SNES Function norm 9.745925209130e+02 
+=====================================================
+SWITCH TO MMFD JACOBIAN: ||F||/||F0||=9.537850e-04, PicIt=5 
+=====================================================
+USING MMFD JACOBIAN for iteration 1, ||F||/||F0||=9.537850e-04 
+  Linear js_ solve converged due to CONVERGED_RTOL iterations 13
+      Line search: lambdas = [1., 0.5, 0.], fnorms = [0.724272, 487.296, 974.593]
+      Line search terminated: lambda = 0.999999, fnorms = 0.72427
+  2 SNES Function norm 7.242704760137e-01 
+ SNES Convergence Reason: ||F|| < rtol*||F_initial|| 
+ Number of iterations : 2
+ Nonlinear solve took 5.6379 (sec)
+------------------------------------------ 
+In point source 0, Liquid pressure Pl= 8.59951e+07; Effective pressure dP= 1.10438e+07; TAU_II = 1.70243e+07;
+         P=9.70389e+07; Sxx=-1.15344e+08; Syy=-9.14299e+07; Szz=-8.4343e+07; A=1.36756;
+------------------------------------------ 
+In point source 1, Liquid pressure Pl= 5.53848e+07; Effective pressure dP= 2.55375e+07; TAU_II = 1.40903e+07;
+         P=8.09223e+07; Sxx=-9.69224e+07; Syy=-7.29225e+07; Szz=-7.29219e+07; A=1.32913;
+------------------------------------------ 
+In point source 2, Liquid pressure Pl= 5.42908e+07; Effective pressure dP= 2.42825e+07; TAU_II = 1.4244e+07;
+         P=7.85734e+07; Sxx=-9.47509e+07; Syy=-7.07532e+07; Szz=-7.0216e+07; A=1.34942;
+------------------------------------------ 
+In point source 3, Liquid pressure Pl= 5.03838e+07; Effective pressure dP= 1.97925e+07; TAU_II = 1.48462e+07;
+         P=7.01764e+07; Sxx=-8.70017e+07; Syy=-6.30062e+07; Szz=-6.05211e+07; A=1.43754;
+------------------------------------------ 
+In point source 4, Liquid pressure Pl= 4.91336e+07; Effective pressure dP= 1.83555e+07; TAU_II = 1.50471e+07;
+         P=6.74891e+07; Sxx=-8.45176e+07; Syy=-6.05221e+07; Szz=-5.74278e+07; A=1.47172;
+------------------------------------------
+Residual summary: 
+  Continuity: 
+    Div_min  = -6.741247430877e-16 
+    Div_max  = 6.786632375348e-16 
+    |Div|_2  = 4.190563514109e-13 
+  Momentum: 
+    |mRes|_2 = 7.242704760137e-01 
+  Darcy: 
+    |Pl_Res|_2  = 3.879703592675e-05 
+------------------------------------------
+ Writing to existing directory Timestep_000005_1.000000e+10 
+ Time = 1e+10[s], dt = 100.[s] 
+ Finished timestep 5 out of 5 
+ 
+ Simulation took 1093.84 (sec) 
+#PETSc Option Table entries:
+-AVDPhaseViewer 0
+-ExxNumPeriods 1
+-ExxStrainRates -0.96e-13
+-EyyNumPeriods 1
+-EyyStrainRates 2.4e-14
+-H_bottom 0
+-H_layer 5000
+-Inclusion_size 0
+-Inclusion_use
+-ParamFile sim3.dat
+-actPorePres
+-act_darcy
+-act_initialguess_hydro
+-biot 0.9
+-change_phase_if_failure 0
+-crs_ksp_type preonly
+-crs_pc_redundant_number 4
+-crs_pc_type redundant
+-crs_redundant_pc_factor_mat_solver_package superlu_dist
+-darcy_ksp_type fgmres
+-darcy_pc_factor_mat_solver_package mumps
+-darcy_pc_type lu
+-dt 1e2
+-first_dt 1e+10
+-gmg_mg_levels_ksp_max_it 10
+-gmg_mg_levels_ksp_richardson_scale 0.6
+-gmg_mg_levels_ksp_type richardson
+-gmg_mg_levels_pc_type jacobi
+-gmg_pc_mg_cycle_type v
+-gmg_pc_mg_galerkin
+-gmg_pc_mg_levels 4
+-gmg_pc_mg_log
+-gmg_pc_mg_type multiplicative
+-gmg_pc_type mg
+-jp_type mg
+-js_ksp_atol 1e-14
+-js_ksp_converged_reason
+-js_ksp_max_it 50
+-js_ksp_rtol 1e-10
+-js_ksp_type fgmres
+-mat_superlu_dist_fact SamePattern_SameRowPerm
+-num_of_first_dt 1
+-objects_dump
+-open_top_bound
+-options_left
+-out_Pl 1
+-out_bulk 1
+-out_cont_res 1
+-out_density 1
+-out_dev_stress 1
+-out_failureS 1
+-out_failureT 1
+-out_failureTS 1
+-out_j2_dev_stress 1
+-out_j2_strain_rate 1
+-out_liquiddensity 1
+-out_liquidvelocity 1
+-out_moment_res 1
+-out_permeability 1
+-out_phase 1
+-out_plast_strain 1
+-out_porepressure 1
+-out_porosity 1
+-out_pressure 1
+-out_pvd 1
+-out_shmax 1
+-out_strain_rate 1
+-out_temperature 1
+-out_velocity 1
+-out_viscosity 1
+-out_yield 1
+-pcmat_type mono
+-pstokes mg
+-restart 0
+-save_breakpoints 0
+-skip_press_shift
+-snes_NewtonSwitchToPicard_it 20
+-snes_NewtonSwitchToPicard_rtol 1.1
+-snes_PicardSwitchToNewton_rtol 1e-1
+-snes_atol 1e-7
+-snes_ksp_ew_rtolmax 1e-1
+-snes_linesearch_maxstep 1.0
+-snes_linesearch_monitor
+-snes_linesearch_type l2
+-snes_max_funcs 500000
+-snes_max_it 50
+-snes_max_linear_solve_fail 10000
+-snes_monitor
+-snes_rtol 1e-4
+-snes_stol 1e-16
+-stress_min 1e+6
+-stress_sensitivity_for_failure 0.0
+#End of PETSc Option Table entries
+There are 4 unused database options. They are:
+Option left: name:-AVDPhaseViewer value: 0
+Option left: name:-out_bulk value: 1
+Option left: name:-out_viscosity value: 1
+Option left: name:-pstokes value: mg
