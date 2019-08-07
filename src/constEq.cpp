@@ -604,7 +604,7 @@ PetscErrorCode VolConstEq(
 			{
 				// Get the data from phase diagram
 				SetDataPhaseDiagram(pd, p, T, 0, mat->pdn);
-				svBulk->rho_pd  = pd->rho;
+				svBulk->rho_pd  += phRat[i]*pd->rho;
 				svBulk->mf += phRat[i]*pd->mf;
 				svBulk->rho_pf += phRat[i]*pd->rho_f;
 			}
