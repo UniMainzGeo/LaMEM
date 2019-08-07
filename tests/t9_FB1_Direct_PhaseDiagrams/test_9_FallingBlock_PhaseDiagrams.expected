@@ -1,12 +1,12 @@
 -------------------------------------------------------------------------- 
                    Lithosphere and Mantle Evolution Model                   
-     Compiled: Date: Jan 22 2018 - Time: 10:49:57 	    
+     Compiled: Date: Aug  7 2019 - Time: 17:16:04 	    
 -------------------------------------------------------------------------- 
         STAGGERED-GRID FINITE DIFFERENCE CANONICAL IMPLEMENTATION           
 -------------------------------------------------------------------------- 
-Parsing input file : t9_FB1_Direct_PhaseDiagrams/test_9_FallingBlock_PhaseDiagrams.dat 
+Parsing input file : test_9_FallingBlock_PhaseDiagrams.dat 
    Adding PETSc option: -objects_dump
-Finished parsing input file : t9_FB1_Direct_PhaseDiagrams/test_9_FallingBlock_PhaseDiagrams.dat 
+Finished parsing input file : test_9_FallingBlock_PhaseDiagrams.dat 
 --------------------------------------------------------------------------
 Scaling parameters:
    Temperature : 273. [C/K] 
@@ -30,17 +30,17 @@ Time stepping parameters:
 Material parameters: 
    Phase ID : 0    dislocation creep profile: Quarzite-Ranalli_1995
    (dens)   : rho = 3000. [kg/m^3]  - Employing phase diagram: TestPD
-   (disl)   : Bn = 8.63279e-20 [1/Pa^n/s]  En = 156000. [J/mol]  n = 2.4 [ ]  
+   (disl)   : Bn = 1.72656e-19 [1/Pa^n/s]  En = 156000. [J/mol]  n = 2.4 [ ]  
 
    Phase ID : 1    dislocation creep profile: Quarzite-Ranalli_1995
    (dens)   : rho = 2500. [kg/m^3]  - Employing phase diagram: TestPD1
-   (disl)   : Bn = 8.63279e-20 [1/Pa^n/s]  En = 156000. [J/mol]  n = 2.4 [ ]  
+   (disl)   : Bn = 1.72656e-19 [1/Pa^n/s]  En = 156000. [J/mol]  n = 2.4 [ ]  
    (temp)   : T = 800. [C]  
 
 --------------------------------------------------------------------------
 Grid parameters:
-   Total number of cpu                  : 2 
-   Processor grid  [nx, ny, nz]         : [1, 1, 2]
+   Total number of cpu                  : 1 
+   Processor grid  [nx, ny, nz]         : [1, 1, 1]
    Fine grid cells [nx, ny, nz]         : [32, 8, 32]
    Number of cells                      :  8192
    Number of faces                      :  26112
@@ -73,12 +73,10 @@ Advection parameters:
    Marker distribution type      : uniform
    Background phase ID           : 0 
 --------------------------------------------------------------------------
-Reading geometric primitives ... done (0.000603437 sec)
+Reading geometric primitives ... done (0.000634193 sec)
 --------------------------------------------------------------------------
 Phase Diagrams: 
-   Phase 0,   loaded PhaseDiagram TestPD.in from file t9_FB1_Direct_PhaseDiagrams/TestPD.in 
-   Phase 1,   loaded PhaseDiagram TestPD1.in from file t9_FB1_Direct_PhaseDiagrams/PD_Dir1/TestPD1.in 
---------------------------------------------------------------------------
+   Phase 0,     Phase 1,  --------------------------------------------------------------------------
 Output parameters:
    Output file name                        : FB_test 
    Write .pvd file                         : yes 
@@ -104,104 +102,74 @@ Preconditioner parameters:
 --------------------------------------------------------------------------
 Solver parameters specified: 
    Outermost Krylov solver       : gmres 
-   Solver type                   : parallel direct/lu 
-   Solver package                : mumps 
+   Solver type                   : serial direct/lu 
+   Solver package                : petsc 
 --------------------------------------------------------------------------
-Saving output ... done (0.0444207 sec)
+Saving output ... done (0.0617268 sec)
 --------------------------------------------------------------------------
 ================================= STEP 1 =================================
 --------------------------------------------------------------------------
 Current time        : 0.00000 [Myr] 
 Tentative time step : 0.00001 [Myr] 
 --------------------------------------------------------------------------
+  0 SNES Function norm 2.332692371613e+00 
   0 PICARD ||F||/||F0||=1.000000e+00 
-    Residual norms for js_ solve.
-    0 KSP Residual norm 6.820625593649e-01 
-    1 KSP Residual norm 1.461582377975e-04 
-    2 KSP Residual norm 2.088879144902e-09 
   Linear js_ solve converged due to CONVERGED_RTOL iterations 2
-  1 PICARD ||F||/||F0||=5.473981e-02 
-    Residual norms for js_ solve.
-    0 KSP Residual norm 1.640468797072e-02 
-    1 KSP Residual norm 3.951555553493e-04 
-    2 KSP Residual norm 1.165120428057e-05 
-    3 KSP Residual norm 1.029599555156e-07 
+  1 SNES Function norm 1.253605519306e-01 
+  1 PICARD ||F||/||F0||=5.374071e-02 
   Linear js_ solve converged due to CONVERGED_RTOL iterations 3
-  2 MMFD   ||F||/||F0||=3.414131e-03 
-    Residual norms for js_ solve.
-    0 KSP Residual norm 5.540230295625e-04 
-    1 KSP Residual norm 3.586378094165e-05 
-    2 KSP Residual norm 5.649811907093e-06 
-    3 KSP Residual norm 6.335700516832e-07 
-    4 KSP Residual norm 1.766958084530e-07 
-    5 KSP Residual norm 4.628887277874e-08 
-    6 KSP Residual norm 8.002742833169e-09 
-    7 KSP Residual norm 2.722467434289e-09 
+  2 SNES Function norm 8.185423980871e-03 
+  2 MMFD   ||F||/||F0||=3.509003e-03 
   Linear js_ solve converged due to CONVERGED_RTOL iterations 7
-  3 MMFD   ||F||/||F0||=1.194839e-04 
-    Residual norms for js_ solve.
-    0 KSP Residual norm 1.093024797248e-05 
-    1 KSP Residual norm 1.663362097344e-06 
-    2 KSP Residual norm 1.300892485598e-07 
-    3 KSP Residual norm 1.196594716893e-08 
-    4 KSP Residual norm 2.362035201996e-09 
-    5 KSP Residual norm 8.466519015988e-10 
-    6 KSP Residual norm 1.449082541448e-10 
-    7 KSP Residual norm 1.688094694893e-11 
+  3 SNES Function norm 3.140441179957e-04 
+  3 MMFD   ||F||/||F0||=1.346273e-04 
   Linear js_ solve converged due to CONVERGED_RTOL iterations 7
+  4 SNES Function norm 3.028600320233e-06 
 --------------------------------------------------------------------------
 SNES Convergence Reason : ||F|| < rtol*||F_initial|| 
 Number of iterations    : 4
-SNES solution time      : 2.98098 (sec)
+SNES solution time      : 45.0886 (sec)
 --------------------------------------------------------------------------
 Residual summary: 
    Continuity: 
-      |Div|_inf = 7.882517588248e-14 
-      |Div|_2   = 1.764608046750e-13 
+      |Div|_inf = 2.900896774558e-14 
+      |Div|_2   = 1.224285571829e-13 
    Momentum: 
-      |mRes|_2  = 1.406827970829e-06 
+      |mRes|_2  = 3.028600320233e-06 
 --------------------------------------------------------------------------
 Actual time step : 0.00001 [Myr] 
 --------------------------------------------------------------------------
-Saving output ... done (0.0502827 sec)
+Saving output ... done (0.0775962 sec)
 --------------------------------------------------------------------------
 ================================= STEP 2 =================================
 --------------------------------------------------------------------------
 Current time        : 0.00001 [Myr] 
 Tentative time step : 0.00001 [Myr] 
 --------------------------------------------------------------------------
+  0 SNES Function norm 3.028600313734e-06 
   0 PICARD ||F||/||F0||=1.000000e+00 
-    Residual norms for js_ solve.
-    0 KSP Residual norm 2.104277487615e-08 
-    1 KSP Residual norm 3.329929492641e-11 
-    2 KSP Residual norm 1.300432225973e-13 
   Linear js_ solve converged due to CONVERGED_RTOL iterations 2
-  1 PICARD ||F||/||F0||=1.470170e-01 
-    Residual norms for js_ solve.
-    0 KSP Residual norm 3.924782020136e-09 
-    1 KSP Residual norm 5.909086381962e-12 
-    2 KSP Residual norm 2.465122261730e-14 
+  1 SNES Function norm 2.268224267618e-07 
+  1 PICARD ||F||/||F0||=7.489348e-02 
   Linear js_ solve converged due to CONVERGED_RTOL iterations 2
+  2 SNES Function norm 3.678408100346e-08 
 --------------------------------------------------------------------------
 SNES Convergence Reason : ||F|| < atol 
 Number of iterations    : 2
-SNES solution time      : 1.11276 (sec)
+SNES solution time      : 23.009 (sec)
 --------------------------------------------------------------------------
 Residual summary: 
    Continuity: 
-      |Div|_inf = 7.212810859462e-16 
-      |Div|_2   = 2.237508028929e-15 
+      |Div|_inf = 2.005310334734e-16 
+      |Div|_2   = 1.050256744246e-15 
    Momentum: 
-      |mRes|_2  = 3.368551680356e-08 
+      |mRes|_2  = 3.678408100346e-08 
 --------------------------------------------------------------------------
 Actual time step : 0.00001 [Myr] 
 --------------------------------------------------------------------------
-Saving output ... done (0.0464208 sec)
+Saving output ... done (0.0740242 sec)
 --------------------------------------------------------------------------
 =========================== SOLUTION IS DONE! ============================
 --------------------------------------------------------------------------
-Total solution time : 4.47247 (sec) 
+Total solution time : 68.48 (sec) 
 --------------------------------------------------------------------------
-WARNING! There are options you set that were not used!
-WARNING! could be spelling mistake, etc!
-Option left: name:-js_ksp_min_it value: 1

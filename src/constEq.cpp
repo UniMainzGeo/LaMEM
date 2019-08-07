@@ -604,6 +604,7 @@ PetscErrorCode VolConstEq(
 			{
 				// Get the data from phase diagram
 				SetDataPhaseDiagram(pd, p, T, 0, mat->pdn);
+				
 				svBulk->rho_pd  += phRat[i]*pd->rho;
 				svBulk->mf += phRat[i]*pd->mf;
 				svBulk->rho_pf += phRat[i]*pd->rho_f;
@@ -646,7 +647,7 @@ PetscErrorCode VolConstEq(
 			// Phase diagram
 			else if(mat->Pd_rho == 1)   // Density from a phase diagram (have svBulk->rho = svBulk->rho)
 			{
-				rho = (svBulk->mf * svBulk->rho_pf) + ((1-svBulk->mf) * svBulk->rho_pd);
+				rho = (pd->mf * pd->rho_f) + ((1-pd->mf) * pd->rho);
 			}
 			else
 			{
