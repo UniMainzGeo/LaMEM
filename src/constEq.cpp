@@ -583,12 +583,12 @@ PetscErrorCode VolConstEq(
 	PetscFunctionBegin;
 
 	// initialize effective density, thermal expansion & inverse bulk elastic parameter
-	svBulk->rho   = 0.0;
-	svBulk->alpha = 0.0;
-	svBulk->IKdt  = 0.0;
-	Kavg          = 0.0;
-	svBulk->mf = 0;
-	svBulk->rho_pf = 0;
+	svBulk->rho    = 0.0;
+	svBulk->alpha  = 0.0;
+	svBulk->IKdt   = 0.0;
+	Kavg           = 0.0;
+	svBulk->mf     = 0.0;
+	svBulk->rho_pf = 0.0;
 
 	// scan all phases
 	for(i = 0; i < numPhases; i++)
