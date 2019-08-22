@@ -53,6 +53,7 @@
 #include "phase.h"
 #include "constEq.h"
 #include "tools.h"
+#include "advect.h"
 
 //---------------------------------------------------------------------------
 PetscErrorCode JacResCreate(JacRes *jr, FB *fb)
@@ -104,6 +105,7 @@ PetscErrorCode JacResCreate(JacRes *jr, FB *fb)
 	ierr = getScalarParam(fb, _OPTIONAL_, "steady_temp_t",   &ctrl->steadyTempStep, 1, 1.0); CHKERRQ(ierr);
 	ierr = getIntParam   (fb, _OPTIONAL_, "nstep_steady",    &ctrl->steadyNumStep,  1, 0);   CHKERRQ(ierr);
 	ierr = getIntParam   (fb, _OPTIONAL_, "act_p_shift",     &ctrl->pShiftAct,      1, 1);   CHKERRQ(ierr);
+	ierr = getIntParam   (fb, _OPTIONAL_, "init_lith_pres",  &ctrl->initLithPres,   1, 1);   CHKERRQ(ierr);
 	ierr = getIntParam   (fb, _OPTIONAL_, "init_guess",      &ctrl->initGuess,      1, 1);   CHKERRQ(ierr);
 	ierr = getIntParam   (fb, _OPTIONAL_, "p_litho_visc",    &ctrl->pLithoVisc,     1, 1);   CHKERRQ(ierr);
 	ierr = getIntParam   (fb, _OPTIONAL_, "p_litho_plast",   &ctrl->pLithoPlast,    1, 1);   CHKERRQ(ierr);
@@ -1950,6 +1952,137 @@ PetscErrorCode JacResInitPres(JacRes *jr)
 	// restore access
 	ierr = VecRestoreArrayRead(jr->gp,   &p);   CHKERRQ(ierr);
 	ierr = VecRestoreArray    (jr->gsol, &sol); CHKERRQ(ierr);
+
+	PetscFunctionReturn(0);
+}
+//---------------------------------------------------------------------------
+#undef __FUNCT__
+#define __FUNCT__ "JacResInitLithPres"
+PetscErrorCode JacResInitLithPres(JacRes *jr, AdvCtx *actx)
+{
+	FDSTAG            *fs;
+	SolVarCell        *svCell;
+	SolVarBulk        *svBulk;
+	Marker            *P;
+	Material_t        *phases;
+	Controls          *ctrl;
+	PetscInt          ID, ii, i, j, k, nx, ny, nz, sx, sy, sz, M, N;
+	PetscInt          numPhases, iter, AirPhase;
+	PetscScalar       dt, depth, avg_topo, Tc, pc, pShift, norm_old, norm_new;
+	PetscScalar       ***T, ***p, ***lp_lith;
+	PetscLogDouble    t;
+
+	PetscErrorCode ierr;
+	PetscFunctionBegin;
+
+	// check activation
+	if(!jr->ctrl.initLithPres) PetscFunctionReturn(0);
+
+	// print
+	PrintStart(&t, "Initializing pressure with lithostatic pressure", NULL);
+
+	// access context
+	fs         =  jr->fs;
+	M          =  fs->dsx.ncels;
+	N          =  fs->dsy.ncels;
+	phases     =  jr->dbm->phases;
+	numPhases  =  jr->dbm->numPhases; // number phases
+	ctrl       = &jr->ctrl;           // control parameters
+	dt         =  jr->ts->dt;         // time step
+	AirPhase   =  jr->surf->AirPhase; // sticky air phase number
+	avg_topo   =  jr->surf->avg_topo; // average surface topography
+	pShift     =  ctrl->pShift;       // pressure shift
+
+	do
+	{
+		// get current norm of lithostatic pressure
+		ierr = VecNorm(jr->lp_lith, NORM_2, &norm_old); CHKERRQ(ierr);
+		
+		// access pressure and temperature
+		ierr = DMDAVecGetArray(fs->DA_CEN, jr->lp, &p); CHKERRQ(ierr);
+		ierr = DMDAVecGetArray(fs->DA_CEN, jr->lT, &T); CHKERRQ(ierr);
+
+		// loop over cell centers
+		iter = 0;
+			
+		ierr = DMDAGetCorners(fs->DA_CEN, &sx, &sy, &sz, &nx, &ny, &nz); CHKERRQ(ierr);
+
+		START_STD_LOOP
+		{
+			// access cell
+			svCell = &jr->svCell[iter++];
+			svBulk = &svCell->svBulk;
+
+			// access pressure
+			pc = p[k][j][i];
+
+			// access Temperature
+			Tc = T[k][j][i];
+
+			// compute depth below the free surface
+			if (AirPhase != -1)
+				depth = avg_topo - COORD_CELL(k, sz, fs->dsz);
+			else
+				depth = 0.0;
+			if (depth < 0.0)
+				depth = 0.0;
+
+			// compute density
+			ierr = VolConstEq(svBulk, numPhases, phases, svCell->phRat, ctrl, depth, dt, pc - pShift, Tc, jr->Pd); CHKERRQ(ierr);
+		}
+		END_STD_LOOP
+
+		// compute new lithostatic pressure
+		ierr = JacResGetLithoStaticPressure(jr); CHKERRQ(ierr);
+
+		// get new norm of lithostatic pressure
+		ierr = VecNorm(jr->lp_lith, NORM_2, &norm_new); CHKERRQ(ierr);
+
+		// copy lithostatic pressure to pressure history of grid
+		iter = 0;
+				
+		ierr = DMDAGetCorners(fs->DA_CEN, &sx, &sy, &sz, &nx, &ny, &nz); CHKERRQ(ierr);
+
+		ierr = DMDAVecGetArray(fs->DA_CEN, jr->lp_lith, &lp_lith); CHKERRQ(ierr);
+
+		START_STD_LOOP
+		{
+			// access cell
+			svCell = &jr->svCell[iter++];
+
+			// copy pressure
+			svCell->svBulk.pn = lp_lith[k][j][i];
+			p[k][j][i]        = lp_lith[k][j][i];
+		}
+		END_STD_LOOP
+
+		// restore access
+		ierr = DMDAVecRestoreArray(fs->DA_CEN, jr->lp_lith, &lp_lith); CHKERRQ(ierr);
+		ierr = DMDAVecRestoreArray(fs->DA_CEN, jr->lp,      &p);       CHKERRQ(ierr);
+		ierr = DMDAVecRestoreArray(fs->DA_CEN, jr->lT,      &T);       CHKERRQ(ierr);
+	
+	} while((abs(norm_new) - abs(norm_old))/(abs(norm_new) + abs(norm_old)) > 1e-3);
+
+	// copy pressure to pressure history of markers
+	for (ii = 0; ii < actx->nummark; ii++)
+	{
+		// access next marker
+		P = &actx->markers[ii];
+
+		// get consecutive index of the host cell
+		ID = actx->cellnum[ii];
+
+		// get indices of host cell
+		GET_CELL_IJK(ID, i, j, k, M, N);
+
+		// access host cell
+		svCell = &jr->svCell[ID];
+
+		// copy pressure history
+		P->p = svCell->svBulk.pn;
+	}
+
+	PrintDone(t);
 
 	PetscFunctionReturn(0);
 }

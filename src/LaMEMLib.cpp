@@ -788,6 +788,9 @@ PetscErrorCode LaMEMLibInitGuess(LaMEMLib *lm, SNES snes)
 	// initialize pressure
 	ierr = JacResInitPres(&lm->jr); CHKERRQ(ierr);
 
+	// lithostatic pressure initializtaion
+	ierr = JacResInitLithPres(&lm->jr, &lm->actx); CHKERRQ(ierr);
+
 	// compute inverse elastic parameters (dependent on dt)
 	ierr = JacResGetI2Gdt(&lm->jr); CHKERRQ(ierr);
 

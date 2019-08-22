@@ -54,6 +54,7 @@ struct BCCtx;
 struct DBMat;
 struct Tensor2RN;
 struct PData;
+struct AdvCtx;
 
 //---------------------------------------------------------------------------
 //.....................   Deviatoric solution variables   ...................
@@ -157,6 +158,7 @@ struct Controls
 	PetscInt    steadyNumStep;  // number of steps for (quasi-)steady-state temperature initial guess
 	PetscInt    pShiftAct;      // pressure shift activation flag (zero pressure in the top cell layer)
 	PetscScalar pShift;         // pressure shift for plasticity model and output
+	PetscInt    initLithPres;   // set initial pressure to lithostatic pressure
 	PetscInt    initGuess;      // initial guess activation flag
 	PetscInt    pLithoVisc;     // use lithostatic pressure for creep laws
 	PetscInt    pLithoPlast;    // use lithostatic pressure for plasticity
@@ -305,6 +307,9 @@ PetscErrorCode JacResCopyPres(JacRes *jr, Vec x);
 
 // initialize pressure
 PetscErrorCode JacResInitPres(JacRes *jr);
+
+// initialize pressure to lithostatic pressure
+PetscErrorCode JacResInitLithPres(JacRes *jr, AdvCtx *actx);
 
 // copy residuals from local to global vectors, enforce boundary constraints
 PetscErrorCode JacResCopyRes(JacRes *jr, Vec f);
