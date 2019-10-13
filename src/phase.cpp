@@ -1315,8 +1315,8 @@ PetscErrorCode CorrExpPreFactor(PetscScalar &B, PetscScalar n, ExpType type, Pet
 	PetscFunctionBegin;
 
 	// apply experimental to tensor correction
-	if      (type == _UniAxial_)    B *= pow(3.0, (n+1)/2); //  F = 3^(n+1)/2
-	else if (type == _SimpleShear_) B *= pow(2.0,  n-1);    //  F = 2^(n-1)
+	if      (type == _UniAxial_)    B *= pow(3.0, (n + 1.0)/2.0)/2.0; //  F = (3^(n+1)/2)/2
+	else if (type == _SimpleShear_) B *= pow(2.0,  n - 1.0);          //  F =  2^(n-1)
 	else if (type != _None_)
 	{
 			SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "Unknown rheology experiment type!");
