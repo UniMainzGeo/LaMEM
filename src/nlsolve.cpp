@@ -87,6 +87,7 @@ PetscErrorCode NLSolCreate(NLSol *nl, PCStokes pc, SNES *p_snes)
 	JacRes         *jr;
 	DOFIndex       *dof;
 	PetscBool       flg;
+	SNESType        type;
 
     PetscErrorCode ierr;
     PetscFunctionBegin;
@@ -149,8 +150,19 @@ PetscErrorCode NLSolCreate(NLSol *nl, PCStokes pc, SNES *p_snes)
 	// return solver
 	(*p_snes) = snes;
 
-	// Display specified solver options
-	ierr =  DisplaySpecifiedSolverOptions(pc, snes);  CHKERRQ(ierr);
+	// display specified solver options
+	ierr = DisplaySpecifiedSolverOptions(pc, snes); CHKERRQ(ierr);
+
+	// check solver type compatibility with temperature diffsion activation
+	ierr = SNESGetType(snes, &type); CHKERRQ(ierr);
+
+	if(jr->ctrl.actTemp && !strcmp(type, SNESKSPONLY))
+	{
+		SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "act_temp_diff = 1 and -snes_type ksponly are incompatible, use -snes_max_it 1 instead\n");
+	}
+
+	// force one nonlinear iteration regardless of the initial residual
+	ierr = SNESSetForceIteration(snes, PETSC_TRUE); CHKERRQ(ierr);
 
 	PetscFunctionReturn(0);
 }
