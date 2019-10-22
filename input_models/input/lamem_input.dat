@@ -321,9 +321,10 @@
 
 # Marker control type specification:
 
-#	mark_ctrl = none  # no marker control
-#	mark_ctrl = basic # AVD for cells + corner insertion
-#	mark_ctrl = avd   # pure AVD for all control volumes
+#	mark_ctrl = none    # no marker control
+#	mark_ctrl = basic   # AVD for cells + corner insertion
+#	mark_ctrl = avd     # pure AVD for all control volumes
+#	mark_ctrl = subgrid # simple marker control enforced over fine scale grid
 
 # Geometric primitives:
 
