@@ -118,6 +118,7 @@ PetscErrorCode PCStokesCreate(PCStokes *p_pc, PMat pm)
 	if(pc->type == _STOKES_BF_)
 	{
 		// Block Factorization
+		// this code needs to be modified
 		pc->Create  = PCStokesBFCreate;
 		pc->Setup   = PCStokesBFSetup;
 		pc->Destroy = PCStokesBFDestroy;
