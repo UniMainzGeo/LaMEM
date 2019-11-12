@@ -94,7 +94,6 @@ enum JacType
 	//============
 	// matrix-free
 	//============
-	_MF_,  // analytic
 	_MFFD_ // built-in finite difference approximation
 
 };

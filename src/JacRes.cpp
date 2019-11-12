@@ -110,7 +110,6 @@ PetscErrorCode JacResCreate(JacRes *jr, FB *fb)
 	ierr = getIntParam   (fb, _OPTIONAL_, "p_litho_visc",    &ctrl->pLithoVisc,     1, 1);   CHKERRQ(ierr);
 	ierr = getIntParam   (fb, _OPTIONAL_, "p_litho_plast",   &ctrl->pLithoPlast,    1, 1);   CHKERRQ(ierr);
 	ierr = getIntParam   (fb, _OPTIONAL_, "p_lim_plast",     &ctrl->pLimPlast,      1, 1);   CHKERRQ(ierr);
-	ierr = getIntParam   (fb, _OPTIONAL_, "jac_mat_free",    &ctrl->jac_mat_free,   1, 1);   CHKERRQ(ierr);
 	ierr = getIntParam   (fb, _OPTIONAL_, "quasi_harm_avg",  &ctrl->quasiHarmAvg,   1, 1);   CHKERRQ(ierr);
 	ierr = getScalarParam(fb, _OPTIONAL_, "eta_min",         &ctrl->eta_min,        1, 1.0); CHKERRQ(ierr);
 	ierr = getScalarParam(fb, _OPTIONAL_, "eta_max",         &input_eta_max,        1, 1.0); CHKERRQ(ierr);
@@ -121,8 +120,6 @@ PetscErrorCode JacResCreate(JacRes *jr, FB *fb)
 	ierr = getScalarParam(fb, _OPTIONAL_, "min_cohes",       &ctrl->minCh,          1, 1.0); CHKERRQ(ierr);
 	ierr = getScalarParam(fb, _OPTIONAL_, "min_fric",        &ctrl->minFr,          1, 1.0); CHKERRQ(ierr);
 	ierr = getScalarParam(fb, _OPTIONAL_, "tau_ult",         &ctrl->tauUlt,         1, 1.0); CHKERRQ(ierr);
-	ierr = getScalarParam(fb, _OPTIONAL_, "cf_eta_min",      &ctrl->cf_eta_min,     1, 1.0); CHKERRQ(ierr);
-	ierr = getScalarParam(fb, _OPTIONAL_, "n_pw",            &ctrl->n_pw,           1, 1.0); CHKERRQ(ierr);
 	ierr = getScalarParam(fb, _OPTIONAL_, "rho_fluid",       &ctrl->rho_fluid,      1, 1.0); CHKERRQ(ierr);
 	ierr = getStringParam(fb, _OPTIONAL_, "gw_level_type",   gwtype,                "none"); CHKERRQ(ierr);
 	ierr = getScalarParam(fb, _OPTIONAL_, "gw_level",        &ctrl->gwLevel,        1, 1.0); CHKERRQ(ierr);
@@ -248,27 +245,10 @@ PetscErrorCode JacResCreate(JacRes *jr, FB *fb)
 
 	cnt = 0;
 	if(ctrl->quasiHarmAvg) cnt++;
-	if(ctrl->cf_eta_min)   cnt++;
-	if(ctrl->n_pw)         cnt++;
 
 	if(cnt > 1)
 	{
 		SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "Cannot combine plasticity stabilization methods (quasi_harm_avg, cf_eta_min, n_pw) \n");
-	}
-
-	if(cnt && ctrl->jac_mat_free)
-	{
-		SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "Analytical Jacobian is not available for plasticity stabilizations (jac_mat_free, quasi_harm_avg, cf_eta_min, n_pw) \n");
-	}
-
-	if(ctrl->pShiftAct && ctrl->jac_mat_free)
-	{
-		SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "Analytical Jacobian is incompatible with pressure shifting (jac_mat_free, act_p_shift) \n");
-	}
-
-	if(!jr->bc->top_open && ctrl->jac_mat_free)
-	{
-		SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "Analytical Jacobian requires open top boundary (jac_mat_free, open_top_bound) \n");
 	}
 
 	if(ctrl->initGuess && !ctrl->eta_ref)
@@ -292,7 +272,6 @@ PetscErrorCode JacResCreate(JacRes *jr, FB *fb)
 	if(ctrl->pLithoVisc)     PetscPrintf(PETSC_COMM_WORLD, "   Use lithostatic pressure for creep      @ \n");
 	if(ctrl->pLithoPlast)    PetscPrintf(PETSC_COMM_WORLD, "   Use lithostatic pressure for plasticity @ \n");
 	if(ctrl->pLimPlast)      PetscPrintf(PETSC_COMM_WORLD, "   Limit pressure at first iteration       @ \n");
-	if(ctrl->jac_mat_free)   PetscPrintf(PETSC_COMM_WORLD, "   Use matrix-free analytical Jacobian     @ \n");
 	if(ctrl->quasiHarmAvg)   PetscPrintf(PETSC_COMM_WORLD, "   Use quasi-harmonic averaging            @ \n");
 	if(ctrl->eta_min)        PetscPrintf(PETSC_COMM_WORLD, "   Minimum viscosity                       : %g %s \n", ctrl->eta_min, scal->lbl_viscosity);
 	if(input_eta_max)        PetscPrintf(PETSC_COMM_WORLD, "   Maximum viscosity                       : %g %s \n", input_eta_max, scal->lbl_viscosity);
@@ -303,8 +282,6 @@ PetscErrorCode JacResCreate(JacRes *jr, FB *fb)
 	if(ctrl->minCh)          PetscPrintf(PETSC_COMM_WORLD, "   Minimum cohesion                        : %g %s \n", ctrl->minCh,   scal->lbl_stress_si);
 	if(ctrl->minFr)          PetscPrintf(PETSC_COMM_WORLD, "   Minimum friction                        : %g %s \n", ctrl->minFr,   scal->lbl_angle);
 	if(ctrl->tauUlt)         PetscPrintf(PETSC_COMM_WORLD, "   Ultimate yield stress                   : %g %s \n", ctrl->tauUlt,  scal->lbl_stress_si);
-	if(ctrl->cf_eta_min)     PetscPrintf(PETSC_COMM_WORLD, "   Visco-plastic regularization parameter  : %g \n",    ctrl->cf_eta_min);
-	if(ctrl->n_pw)           PetscPrintf(PETSC_COMM_WORLD, "   Power-law regularization parameter      : %g \n",    ctrl->n_pw);
 	if(ctrl->rho_fluid)      PetscPrintf(PETSC_COMM_WORLD, "   Fluid density                           : %g %s \n", ctrl->rho_fluid,  scal->lbl_density);
 
 	PetscPrintf(PETSC_COMM_WORLD, "   Ground water level type                 : ");

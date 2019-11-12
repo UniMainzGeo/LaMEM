@@ -191,6 +191,16 @@ static inline void RotDispPoint2D(PetscScalar Xa[], PetscScalar Xb[], PetscScala
 	xb[1] = sinth*r[0] + costh*r[1] + Xb[1];
 }
 
+// bisection algorithm for scalar nonlinear equation
+PetscInt SolveBisect(
+		PetscScalar a,
+		PetscScalar b,
+		PetscScalar tol,
+		PetscScalar maxit,
+		PetscScalar &x,
+		PetscScalar (*f) (PetscScalar x, void *pctx),
+		void *pctx);
+
 //---------------------------------------------------------------------------
 // Interpolation functions
 //---------------------------------------------------------------------------

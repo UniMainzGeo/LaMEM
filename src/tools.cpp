@@ -638,5 +638,54 @@ PetscErrorCode getPhaseRatio(PetscInt n, PetscScalar *v, PetscScalar *rsum)
 	PetscFunctionReturn(0);
 }
 //-----------------------------------------------------------------------------
+// bisection algorithm for scalar nonlinear equation
+PetscInt SolveBisect(
+	PetscScalar a,
+	PetscScalar b,
+	PetscScalar tol,
+	PetscScalar maxit,
+	PetscScalar &x,
+	PetscScalar (*f) (PetscScalar x, void *pctx),
+	void *pctx)
+{
+	PetscInt    it;
+	PetscScalar fa, fx;
 
+	// initialize
+	it = 0;
+	x  = a;
 
+	// get residual of left bound (initial guess)
+	fa = f(a, pctx);
+
+	// check for closed-form case
+    if(PetscAbsScalar(fa) < tol)
+	{
+    	return it;
+    }
+
+	do
+	{	// get new iterate
+	    x = (a + b)/2.0;
+
+	    // get new residual
+	    fx = f(x, pctx);
+
+	    // update interval
+	    if(fa*fx < 0.0)
+	    {
+	    	b = x;
+	    }
+	    else
+	    {
+	    	a = x; fa = fx;
+	    }
+
+	    // update iteration count
+	    it++;
+
+	} while(PetscAbsScalar(fx) > tol && it < maxit);
+
+	return it;
+}
+//-----------------------------------------------------------------------------

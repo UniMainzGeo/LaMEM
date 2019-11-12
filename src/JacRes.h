@@ -70,8 +70,6 @@ struct SolVarDev
 	PetscScalar  APS;   // accumulated plastic strain
 	PetscScalar  ATS;   // accumulated total strain for output
 	PetscScalar  PSR;   // plastic strain-rate contribution
-	PetscScalar  dEta;  // dEta/dDII derivative (Jacobian)
-	PetscScalar  fr;    // effective friction coefficient (Jacobian)
 	PetscScalar  yield; // average yield stress in control volume
 	PetscScalar  mf;    // melt fraction
 	PetscScalar  DIId;  // diffusion creep relative strain rate
@@ -163,7 +161,6 @@ struct Controls
 	PetscInt    pLithoVisc;     // use lithostatic pressure for creep laws
 	PetscInt    pLithoPlast;    // use lithostatic pressure for plasticity
 	PetscInt    pLimPlast;      // limit pressure at first iteration for plasticity
-	PetscInt    jac_mat_free;   // matrix-free analytical Jacobian activation flag
 	PetscInt    quasiHarmAvg;   // use quasi-harmonic averaging regularization for plasticity
 
 	PetscScalar eta_min;        // minimum viscosity
@@ -175,9 +172,6 @@ struct Controls
 	PetscScalar minCh;          // minimum cohesion
 	PetscScalar minFr;          // minimum friction
 	PetscScalar tauUlt;         // ultimate yield stress
-
-	PetscScalar cf_eta_min;     // visco-plastic regularization parameter (plasticity)
-	PetscScalar n_pw;           // power-law regularization parameter (plasticity)
 
 	PetscScalar rho_fluid;      // fluid density
 	GWLevelType gwType;         // type of ground water level (none, top, surf, level)

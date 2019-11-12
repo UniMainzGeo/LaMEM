@@ -235,7 +235,6 @@
 	p_litho_visc    = 1              # use lithostatic pressure for creep laws
 	p_litho_plast   = 1              # use lithostatic pressure for plasticity
 	p_lim_plast     = 1              # limit pressure at first iteration for plasticity
-	jac_mat_free    = 1              # matrix-free closed-form jacobian
 	eta_min         = 1e18           # viscosity lower bound
 	eta_max         = 1e25           # viscosity upper limit
 	eta_ref         = 1e20           # reference viscosity (initial guess)
@@ -246,8 +245,6 @@
 	min_fric        = 5.0            # friction lower bound
 	tau_ult         = 1e9            # ultimate yield stress
 	quasi_harm_avg  = 1              # quasi-harmonic averaging regularization flag (plasticity)
-	cf_eta_min      = 10.0           # visco-plastic regularization parameter (plasticity)
-	n_pw            = 15.0           # power-law regularization parameter (plasticity)
 	rho_fluid       = 1e3            # fluid density for depth-dependent density model
 	gw_level_type   = top            # ground water level type for pore pressure computation (see below)
 	gw_level        = 10.0           # ground water level at the free surface (if defined)

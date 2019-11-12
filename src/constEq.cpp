@@ -252,7 +252,7 @@ PetscScalar GetConsEqRes(PetscScalar eta, void *pctx)
 	// r < 0 if eta > solution (negative on overshoot)
 	// r > 0 if eta < solution (positive on undershoot)
 
-	return ctx->DII - (DII_els + DII_dif + DII_dis + DII_prl);
+	return 1.0 - (DII_els + DII_dif + DII_dis + DII_prl)/ctx->DII;
 }
 //---------------------------------------------------------------------------
 #undef __FUNCT__
@@ -269,10 +269,9 @@ PetscErrorCode GetEffVisc(
 		SolVarDev   *svDev)
 {
 	// stabilization parameters
-	PetscScalar eta_ve, eta_pl, eta_pw, eta_vp_reg, eta_st, mf;
+	PetscScalar eta_ve, eta_pl, mf;
 	PetscScalar inv_eta_els, inv_eta_dif, inv_eta_dis, inv_eta_prl, inv_eta_max;
 	PetscScalar srt, inv_eta_car, eta;
-
 
 	PetscFunctionBegin;
 
@@ -387,22 +386,6 @@ PetscErrorCode GetEffVisc(
 			// quasi-harmonic mean
 			(*eta_total) = 1.0/(1.0/eta_pl + 1.0/eta_ve);
 		}
-		else if(ctrl->n_pw)
-		{
-			// rate-dependent power-law stabilization
-			eta_pw = (ctx->taupl/2.0)*pow(ctx->DII, 1/ctrl->n_pw - 1.0);
-
-			if(eta_pw < eta_ve) (*eta_total) = eta_pw;
-		}
-		else if(ctrl->cf_eta_min)
-		{
-			// rate-dependent visco-plastic regularization
-			eta_st = eta_ve/ctrl->cf_eta_min;
-
-			eta_vp_reg = (eta_st + eta_pl)/(1.0 + eta_st/eta_ve);
-
-			if(eta_vp_reg < eta_ve) (*eta_total) = eta_vp_reg;
-		}
 		else if(eta_pl < eta_ve)
 		{
 			// minimum viscosity model (unstable) (default)
@@ -511,8 +494,6 @@ PetscErrorCode DevConstEq(
 	(*eta_creep) = 0.0;
 	(*eta_vp)    = 0.0;
 
-	svDev->dEta  = 0.0;
-	svDev->fr    = 0.0;
 	svDev->yield = 0.0;
 	svDev->mf  	 = 0.0;
 	dEta         = 0.0;
@@ -551,9 +532,6 @@ PetscErrorCode DevConstEq(
 			svDev->DIIpl += phRat[i]*DIIpl;
 			(*eta_creep) += phRat[i]*eta_creep_phase;
 			(*eta_vp)    += phRat[i]*eta_viscoplastic_phase;
-
-			svDev->dEta  += phRat[i]*dEta;
-			svDev->fr    += phRat[i]*fr;
 			svDev->yield += phRat[i]*ctx.taupl;
 		}
 	}
