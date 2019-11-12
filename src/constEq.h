@@ -101,8 +101,6 @@ PetscErrorCode GetEffVisc(
 	PetscScalar *eta_creep,
 	PetscScalar *eta_vp,
 	PetscScalar *DIIpl,
-	PetscScalar *dEta,
-	PetscScalar *fr,
 	SolVarDev   *svDev);
 
 // apply strain softening to a parameter (friction, cohesion)
@@ -130,7 +128,7 @@ PetscErrorCode DevConstEq(
 	PetscScalar  dt,        // time step
 	PetscScalar  p,         // pressure
 	PetscScalar  T,         // temperature
-	PData       *pd);        		// PD data
+	PData       *pd);       // PD data
 
 // Evaluate volumetric constitutive equations in control volume
 PetscErrorCode VolConstEq(

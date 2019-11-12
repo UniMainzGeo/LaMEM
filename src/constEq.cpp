@@ -264,8 +264,6 @@ PetscErrorCode GetEffVisc(
 		PetscScalar *eta_creep,
 		PetscScalar *eta_vp,
 		PetscScalar *DIIpl,
-		PetscScalar *dEta,
-		PetscScalar *fr,
 		SolVarDev   *svDev)
 {
 	// stabilization parameters
@@ -277,8 +275,6 @@ PetscErrorCode GetEffVisc(
 
 	// initialize
 	(*DIIpl) = 0.0;
-	(*dEta)  = 0.0;
-	(*fr)    = 0.0;
 
 	inv_eta_max = ctrl->inv_eta_max;
 
@@ -397,8 +393,6 @@ PetscErrorCode GetEffVisc(
 			// store plastic strain rate, viscosity derivative & effective friction
 			(*eta_vp) =  eta_pl;
 			(*DIIpl)  =  ctx->DII*(1.0 - (*eta_total)/eta_ve);
-			(*dEta)   = -eta_pl;
-			(*fr)     =  ctx->fr;
 		}
 	}
 
@@ -479,7 +473,7 @@ PetscErrorCode DevConstEq(
 	PetscInt     i;
 	ConstEqCtx   ctx;
 	Material_t  *mat;
-	PetscScalar  DII, APS, eta_total, eta_creep_phase, eta_viscoplastic_phase, DIIpl, dEta, fr;
+	PetscScalar  DII, APS, eta_total, eta_creep_phase, eta_viscoplastic_phase, DIIpl;
 
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
@@ -496,8 +490,6 @@ PetscErrorCode DevConstEq(
 
 	svDev->yield = 0.0;
 	svDev->mf  	 = 0.0;
-	dEta         = 0.0;
-	fr           = 0.0;
 
 	DIIpl                  = 0.0;
 	eta_viscoplastic_phase = 0.0;
@@ -525,7 +517,7 @@ PetscErrorCode DevConstEq(
 			ierr = ConstEqCtxSetup(&ctx, mat, soft, ctrl, DII, APS, dt, p, p_lithos, p_pore, T); CHKERRQ(ierr);
 
 			// solve effective viscosity & plastic strain rate
-			ierr = GetEffVisc(&ctx, ctrl, &eta_total, &eta_creep_phase, &eta_viscoplastic_phase, &DIIpl, &dEta, &fr, svDev); CHKERRQ(ierr);
+			ierr = GetEffVisc(&ctx, ctrl, &eta_total, &eta_creep_phase, &eta_viscoplastic_phase, &DIIpl, svDev); CHKERRQ(ierr);
 
 			// average parameters
 			svDev->eta   += phRat[i]*eta_total;
