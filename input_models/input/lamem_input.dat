@@ -56,9 +56,9 @@
 # Grid & discretization parameters
 #===============================================================================
 
-# relative geometry tolerance for grid manipuations (default 1e-9)
+# relative geometry tolerance for grid manipuations (default 1e-6)
 
-	gtol = 1e-9
+	gtol = 1e-7
 
 # Number of processes
 # If not provided, calculated internally

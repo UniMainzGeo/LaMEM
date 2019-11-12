@@ -82,15 +82,15 @@ sudo make PREFIX=/opt/openblas install
 BLAS/LAPACK on AMD Ryzen 
 ------------------------------------------------------------------
 
-Download single-threaded packages AMD-BLIS-Linux and AMD-libFLAME-Linux
+Download single-threaded packages AMD BLIS and AMD libFLAME 
 (https://developer.amd.com/amd-cpu-libraries/blas-library/)
 
-Unpack and copy to e.g. /opt/amd/blis and /opt/amd/libFLAME
+Unpack and copy to e.g. /opt/amd/
 
 Install optimized PETSc with these options:
 
---with-blas-lib=/opt/amd/blis/lib/libblis.a \
---with-lapack-lib=/opt/amd/libFLAME/lib/libflame.a \
+--with-blas-lib=/opt/amd/amd-blis/lib/libblis.a \
+--with-lapack-lib=/opt/amd/amd-libflame/lib/libflame.a \
 --COPTFLAGS="-O3 -march=znver1" \
 --FOPTFLAGS="-O3 -march=znver1" \
 --CXXOPTFLAGS="-O3 -march=znver1" \
