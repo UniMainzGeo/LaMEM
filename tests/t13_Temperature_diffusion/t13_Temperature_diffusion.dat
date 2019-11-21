@@ -1,0 +1,130 @@
+#===============================================================================
+# Scaling
+#===============================================================================
+
+	units = geo
+
+	unit_temperature = 1.0
+	unit_length      = 1e3
+	unit_viscosity   = 1e18
+	unit_stress      = 1e6
+#===============================================================================
+# Time stepping parameters
+#===============================================================================
+
+	time_end  = 20  # simulation end time
+	dt        = 0.1    # time step
+	dt_min    = 0.001     # minimum time step (declare divergence if lower value is attempted)
+	dt_max    = 100   # maximum time step
+	dt_out    = 0.2   # output step (output at least at fixed time intervals)
+	inc_dt    = 0.1   # time step increment per time step (fraction of unit)
+	CFL       = 0.5   # CFL (Courant-Friedrichs-Lewy) criterion
+	CFLMAX    = 0.5   # CFL criterion for elasticity
+	nstep_max = 5    # maximum allowed number of steps (lower bound: time_end/dt_max)
+	nstep_out = 5     # save output every n steps
+	nstep_rdb = 0     # save restart database every n steps
+
+
+#===============================================================================
+# Grid & discretization parameters
+#===============================================================================
+
+# Number of cells for all segments
+
+	nel_x = 2
+	nel_y = 2
+	nel_z = 128
+
+# Coordinates of all segments (including start and end points)
+
+	coord_x = 0.0 2.0
+	coord_y = 0.0 2.0
+	coord_z = -50 50
+
+#===============================================================================
+# Boundary conditions
+#===============================================================================
+	temp_top = 150.0
+	temp_bot = 150.0
+#===============================================================================
+# Solution parameters & controls
+#===============================================================================
+
+	gravity           = 0.0 0.0 -1.0   # gravity vector
+	FSSA              = 1.0            # free surface stabilization parameter [0 - 1]
+	act_temp_diff     = 1              # temperature diffusion activation flag
+	act_p_shift       = 0              # pressure shift activation flag (zero pressure in the top cell layer)
+	init_guess        = 1              # initial guess flag
+	eta_min           = 1e18           # viscosity upper bound
+	eta_ref           = 1e20
+	eta_max           = 1e20           # viscosity lower limit
+
+#===============================================================================
+# Solver options
+#===============================================================================
+
+	SolverType              =       direct                  # solver [direct or multigrid]
+	DirectSolver            =       superlu_dist                   # mumps/superlu_dist/pastix     
+#===============================================================================
+# Model setup & advection
+#===============================================================================
+
+	msetup         = files             # setup type
+	nmark_x        = 3                 # markers per cell in x-direction
+	nmark_y        = 3                 # ...                 y-direction
+	nmark_z        = 3                 # ...                 z-direction
+#	mark_load_file = ./markers_p1/mdb     # marker input file (extension is .xxxxxxxx.dat)
+	bg_phase       = 0                 # background phase ID
+	mark_ctrl      = basic             # marker control type
+	nmark_lim      = 8 27              # min/max number per cell (marker control)
+	nmark_avd      = 5 5 5             # x-y-z AVD refinement factors (marker control)
+	nmark_sub      = 2                 # max number of same phase markers per subcell (subgrid marker control)
+#==============================================================================
+# Output
+#===============================================================================
+
+# Grid output options (output is always active)
+
+	out_file_name       = t13 # output file name
+	out_pvd             = 1   # activate writing .pvd file
+	out_file_name       = t13 # output file name
+	out_pvd             = 1   # activate writing .pvd file
+	out_temperature     = 1
+	out_moment_res      = 1
+	out_cont_res        = 1
+	out_energ_res       = 1
+
+
+#===============================================================================
+# Material phase parameters
+#===============================================================================
+	#Rock
+	<MaterialStart>
+		ID  = 0    # phase id
+		rho = 3000 # density
+		eta = 1e20 # viscosity
+		Cp  = 1050
+		k   = 3
+	<MaterialEnd>
+#===============================================================================
+# PETSc options
+#===============================================================================
+
+<PetscOptionsStart>
+
+	-snes_npicard 2
+	-snes_monitor
+	-snes_max_it 1
+#	-snes_type ksponly  
+	
+## Jacobian solver
+#
+	-js_ksp_type fgmres
+	-js_ksp_max_it 30
+	
+	-objects_dump
+
+<PetscOptionsEnd>
+
+#===============================================================================
+
