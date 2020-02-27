@@ -47,510 +47,34 @@
 #include "constEq.h"
 #include "phase.h"
 #include "JacRes.h"
+#include "tools.h"
 //---------------------------------------------------------------------------
+
 #undef __FUNCT__
-#define __FUNCT__ "ConstEqCtxSetup"
-PetscErrorCode ConstEqCtxSetup(
-		ConstEqCtx  *ctx,      // evaluation context
-		Material_t  *mat,      // phase parameters
-		Soft_t      *soft,     // material softening laws
-		Controls    *ctrl,     // parameters and controls
-		PetscScalar  DII,      // effective strain-rate
-		PetscScalar  APS,      // accumulated plastic strain
-		PetscScalar  dt,       // time step
-		PetscScalar  p,        // pressure
-		PetscScalar  p_lithos, // lithostatic pressure
-		PetscScalar  p_pore,   // pore pressure
-		PetscScalar  T)        // temperature
+#define __FUNCT__ "volConstEq"
+PetscErrorCode volConstEq(SolVarBulk *svBulk, ConstEqCtx *ctx)
 {
-	// setup nonlinear constitutive equation evaluation context
-	// evaluate dependence on constant parameters (pressure, temperature)
-
-	PetscInt    pd;
-	PetscScalar Q, RT, ch, fr, p_visc, p_upper, p_lower, dP, p_total;
-
-	PetscFunctionBegin;
-
-	// set RT
-	RT         =  ctrl->Rugc*T;
-	if(!RT) RT = -1.0;
-
-	// use reference strain-rate instead of zero
-	if(DII == 0.0) DII = ctrl->DII_ref;
-
-	// initialize
-	ctx->DII   = DII; // effective strain-rate
-	ctx->A_els = 0.0; // elasticity constant
-	ctx->A_dif = 0.0; // diffusion constant
-	ctx->A_dis = 0.0; // dislocation constant
-	ctx->N_dis = 1.0; // dislocation exponent
-	ctx->A_prl = 0.0; // Peierls constant
-	ctx->N_prl = 1.0; // Peierls exponent
-	ctx->taupl = 0.0; // plastic yield stress
-	ctx->fr    = 0.0; // effective friction coefficient
-	pd         = 0;   // pressure-dependence flag
-
-	//===============
-	// TOTAL PRESSURE
-	//===============
-
-	if(ctrl->gwType == _GW_NONE_) p_pore = 0.0;
-
-	p_total = p + ctrl->biot*p_pore;
-
-	//=================
-	// VISCO-ELASTICITY
-	//=================
-
-	// assign pressure for viscous laws
-	if(ctrl->pLithoVisc)  p_visc = p_lithos;
-	else                  p_visc = p_total;
-
-	// ELASTICITY
-	if(mat->G)
-	{
-		// Elasticity correction can only DECREASE the viscosity.
-		// eta/G << dt (viscous regime)  eta*(dt/(dt + eta/G)) -> eta
-		// eta/G >> dt (elastic regime)  eta*(dt/(dt + eta/G)) -> G*dt < eta
-		// Elasticity doesn't normally interact with the bottom viscosity limit,
-		// instead it rather acts as a smooth limiter for maximum viscosity.
-
-		ctx->A_els = 0.5/(mat->G*dt);
-	}
-
-	// LINEAR DIFFUSION CREEP (NEWTONIAN)
-	if(mat->Bd)
-	{
-		Q          = (mat->Ed + p_visc*mat->Vd)/RT;
-		ctx->A_dif =  mat->Bd*exp(-Q);
-	}
-
-	// PS-CREEP
-	// ONLY EVALUATE FOR TEMPERATURE-DEPENDENT CASES
-	else if(mat->Bps && T)
-	{
-		Q          = mat->Eps/RT;
-		ctx->A_dif = mat->Bps*exp(-Q)/T/pow(mat->d, 3.0);
-	}
-
-	// DISLOCATION CREEP (POWER LAW)
-	if(mat->Bn)
-	{
-		Q          = (mat->En + p_visc*mat->Vn)/RT;
-		ctx->N_dis =  mat->n;
-		ctx->A_dis =  mat->Bn*exp(-Q);
-	}
-
-	// DC-CREEP
-	// ONLY EVALUATE FOR TEMPERATURE-DEPENDENT CASES
-	else if(mat->Bdc && T)
-	{
-		Q          = mat->Edc/RT;
-		ctx->N_dis = Q;
-		ctx->A_dis = mat->Bdc*exp(-Q*log(mat->Rdc))*pow(mat->mu, -Q);
-	}
-
-	// MELT VISCOSITY
-	if(mat->Pd_rho == 1)
-	{
-		ctx->Pd_rho = mat->Pd_rho;
-	}
-
-	// PEIERLS CREEP (LOW TEMPERATURE RATE-DEPENDENT PLASTICITY, POWER-LAW APPROXIMATION)
-	// ONLY EVALUATE FOR TEMPERATURE-DEPENDENT CASES
-	if(mat->Bp && T)
-	{
-		Q          = (mat->Ep + p_visc*mat->Vp)/RT;
-		ctx->N_prl =  Q*pow(1.0-mat->gamma, mat->q-1.0)*mat->q*mat->gamma;
-		ctx->A_prl =  mat->Bp/pow(mat->gamma*mat->taup, ctx->N_prl)*exp(-Q*pow(1.0-mat->gamma, mat->q));
-	}
-
-	//===========
-	// PLASTICITY
-	//===========
-	if(!mat->ch && !mat->fr)
-	{
-		PetscFunctionReturn(0);		// return if no plasticity is set
-	}
-
-	// apply strain softening to friction and cohesion
-	ch = ApplyStrainSoft(soft, mat->chSoftID, APS, mat->ch);
-	fr = ApplyStrainSoft(soft, mat->frSoftID, APS, mat->fr);
-
-	// fit to limits
-	if(ch < ctrl->minCh) ch = ctrl->minCh;
-	if(fr < ctrl->minFr) fr = ctrl->minFr;
-
-	// override total pressure with lithostatic if requested
-	if(ctrl->pLithoPlast)
-	{
-		// Use lithostatic, rather than dynamic pressure to evaluate yield stress
-		// This converges better, but does not result in localization of deformation & shear banding,
-		// so only apply it for large-scale simulations where plasticity does not matter much
-
-		p_total = p_lithos;
-	}
-	else if(ctrl->pLimPlast)
-	{
-		// apply pressure limits
-
-		// yielding surface: (S1-S3)/2 = (S1+S3)/2*sin(phi) + C*cos(phi)
-		// pressure can be written as: P = (S1+S2+S3)/3 and P~=S2,then P=(S1+S3)/2
-		// so the yield surface can be rewritten as:
-		// P-S3=P*sin(phi) + C*cos(phi)   --> compression
-		// S1-P=P*sin(phi) + C*cos(phi)   --> extension
-		// under pure shear compression, S3=P_Lithos and S1=P_Lithos when extension
-		// P = -( S3+C*cos(phi))/(sin(phi)-1)  --> compression
-		// P = -(-S1+C*cos(phi))/(sin(phi)+1)  --> extension
-
-		p_upper = -( p_lithos + ch * cos(fr))/(sin(fr) - 1.0); // compression
-		p_lower = -(-p_lithos + ch * cos(fr))/(sin(fr) + 1.0); // extension
-
-		if(p_total > p_upper) p_total = p_upper;
-		if(p_total < p_lower) p_total = p_lower;
-	}
-
-	// compute cohesion and friction coefficient
-	ch = cos(fr)*ch;
-	fr = sin(fr);
-
-	// compute effective mean stress
-	dP = (p_total - p_pore);
-
-	// compute yield stress
-	if(dP < 0.0) { ctx->taupl =         ch; pd = 0; } // Von-Mises model for extension
-	else         { ctx->taupl = dP*fr + ch; pd = 1; } // Drucker-Prager model for compression
-
-	// correct for ultimate yield stress (if defined)
-	if(ctrl->tauUlt) { if(ctx->taupl > ctrl->tauUlt) { ctx->taupl = ctrl->tauUlt; pd = 0; } }
-
-	// store friction coefficient for a pressure-dependent plasticity model
-	if(pd) ctx->fr = fr;
-
-	PetscFunctionReturn(0);
-}
-//---------------------------------------------------------------------------
-PetscScalar GetConsEqRes(PetscScalar eta, void *pctx)
-{
-	// Compute residual of the nonlinear visco-elastic constitutive equation:
-
-	PetscScalar tauII, DII_els, DII_dif, DII_dis, DII_prl;
-
-	// access context
-	ConstEqCtx *ctx = (ConstEqCtx*)pctx;
-
-	// compute stress
-	tauII = 2.0*eta*ctx->DII;
-
-	// creep strain rates
-	DII_els = ctx->A_els*tauII;                  // elasticity
-	DII_dif = ctx->A_dif*tauII;                  // diffusion
-	DII_dis = ctx->A_dis*pow(tauII, ctx->N_dis); // dislocation
-	DII_prl = ctx->A_prl*pow(tauII, ctx->N_prl); // Peierls
-
-	// residual function (r)
-	// r < 0 if eta > solution (negative on overshoot)
-	// r > 0 if eta < solution (positive on undershoot)
-
-	return 1.0 - (DII_els + DII_dif + DII_dis + DII_prl)/ctx->DII;
-}
-//---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "GetEffVisc"
-PetscErrorCode GetEffVisc(
-		ConstEqCtx  *ctx,
-		Controls    *ctrl,        // parameters and controls
-		PetscScalar *eta_total,
-		PetscScalar *eta_creep,
-		PetscScalar *eta_vp,
-		PetscScalar *DIIpl,
-		SolVarDev   *svDev)
-{
-	// stabilization parameters
-	PetscScalar eta_ve, eta_pl, mf;
-	PetscScalar inv_eta_els, inv_eta_dif, inv_eta_dis, inv_eta_prl, inv_eta_max;
-	PetscScalar srt, inv_eta_car, eta;
-
-	PetscFunctionBegin;
-
-	// initialize
-	(*DIIpl) = 0.0;
-
-	inv_eta_max = ctrl->inv_eta_max;
-
-	//==============
-	// INITIAL GUESS
-	//==============
-
-	// set reference viscosity as initial guess
-	if(ctrl->initGuess)
-	{
-		(*eta_total) = ctrl->eta_ref;
-		(*eta_creep) = ctrl->eta_ref;
-		(*eta_vp)    = ctrl->eta_ref;
-		
-		PetscFunctionReturn(0);
-	}
-
-	// melt fraction correction from phase-diagram
-	// (Kohlstedt, 2003, Stress-driven melt segregation in partially molten rocks)
-	if(ctx->Pd_rho == 1) mf = exp(40*svDev->mf);
-	else                 mf = 1.0;
-
-	//=====================
-	// ISOLATED VISCOSITIES
-	//=====================
-
-	inv_eta_els = 0.0;
-	inv_eta_dif = 0.0;
-	inv_eta_dis = 0.0;
-	inv_eta_prl = 0.0;
-
-	// elasticity
-	if(ctx->A_els) inv_eta_els = 2.0*ctx->A_els;
-	// diffusion
-	if(ctx->A_dif) inv_eta_dif = 2.0*ctx->A_dif;
-	// dislocation
-	if(ctx->A_dis) inv_eta_dis = 2.0*pow(ctx->A_dis, 1.0/ctx->N_dis)*pow(ctx->DII, 1.0 - 1.0/ctx->N_dis);
-	// Peierls
-	if(ctx->A_prl) inv_eta_prl = 2.0*pow(ctx->A_prl, 1.0/ctx->N_prl)*pow(ctx->DII, 1.0 - 1.0/ctx->N_prl);
-
-	// error handling
-	if(PetscIsInfOrNanScalar(inv_eta_dif)) inv_eta_dif = 0.0;
-	if(PetscIsInfOrNanScalar(inv_eta_dis)) inv_eta_dis = 0.0;
-	if(PetscIsInfOrNanScalar(inv_eta_prl)) inv_eta_prl = 0.0;
-
-	//==============
-	// CARREAU MODEL
-	//==============
-
-	inv_eta_car = 0.0;
-
-	if(ctx->A_dif && ctx->A_dis)
-	{
-		// transition strain rate
-		srt = ctx->A_dif * pow(ctx->A_dis/ctx->A_dif, 1.0/(1.0 - ctx->N_dis));
-
-		// inverse Carreau viscosity
-		inv_eta_car = inv_eta_dif * pow(1.0 + pow(ctx->DII/srt, 2.0), (1.0 - 1.0/ctx->N_dis)/2.0);
-
-		// error handling
-		if(PetscIsInfOrNanScalar(inv_eta_car)) inv_eta_car = 0.0;
-	}
-
-	//================
-	// CREEP VISCOSITY
-	//================
-
-	if(inv_eta_car) eta = ctrl->eta_min + 1.0/(inv_eta_car*mf                  + inv_eta_prl + inv_eta_max);
-	else            eta = ctrl->eta_min + 1.0/(inv_eta_dif*mf + inv_eta_dis*mf + inv_eta_prl + inv_eta_max);
-
-	// store creep & viscoplastic viscosity for output
-	(*eta_creep) = eta;
-	(*eta_vp)    = eta;
-
-	//========================
-	// VISCO-ELASTIC VISCOSITY
-	//========================
-
-	// compute visco-elastic viscosity
-	if(inv_eta_els) eta_ve = 1.0/(inv_eta_els + 1.0/eta);
-	else            eta_ve = eta;
-
-	// set visco-elastic prediction
-	(*eta_total) = eta_ve;
-
-	//===========
-	// PLASTICITY
-	//===========
-
-	if(ctx->taupl && !ctrl->initGuess)
-	{
-		// compute true plastic viscosity
-		eta_pl = ctx->taupl/(2.0*ctx->DII);
-
-		// ultimate viscosity cutoff for plasticity
-		if(eta_pl < ctrl->eta_min) eta_pl = ctrl->eta_min;
-
-		//==============================================
-		// compute total viscosity
-		// minimum viscosity (true) model is the default
-		//==============================================
-
-		if(ctrl->quasiHarmAvg)
-		{
-			// quasi-harmonic mean
-			(*eta_total) = 1.0/(1.0/eta_pl + 1.0/eta_ve);
-		}
-		else if(eta_pl < eta_ve)
-		{
-			// minimum viscosity model (unstable) (default)
-			(*eta_total) = eta_pl;
-		}
-
-		if(eta_pl < eta_ve)
-		{
-			// store plastic strain rate, viscosity derivative & effective friction
-			(*eta_vp) =  eta_pl;
-			(*DIIpl)  =  ctx->DII*(1.0 - (*eta_total)/eta_ve);
-		}
-	}
-
-	// diffusion creep relative strain rate
-	svDev->DIId = inv_eta_dif*((*eta_total) - ctrl->eta_min);
-
-	PetscFunctionReturn(0);
-}
-//---------------------------------------------------------------------------
-PetscScalar ApplyStrainSoft(Soft_t *soft, PetscInt ID, PetscScalar APS, PetscScalar par)
-{
-	// Apply strain softening to a parameter (friction, cohesion)
-	PetscScalar  k;
-	Soft_t      *s;
-	// check whether softening is defined
-	if(ID == -1) return par;
-	// access parameters
-	s = soft + ID;
-	// compute scaling ratio
-	if(APS <= s->APS1)
-		k = 1.0;
-	if(APS > s->APS1 && APS < s->APS2)
-		k = 1.0 - s->A*((APS - s->APS1)/(s->APS2 - s->APS1));
-	if(APS >= s->APS2)
-		k = 1.0 - s->A;
-	// apply strain softening
-	return par*k;
-}
-//---------------------------------------------------------------------------
-// compute inverse deviatoric elastic parameter
-PetscScalar GetI2Gdt(
-	PetscInt     numPhases,
-	Material_t  *phases,
-	PetscScalar *phRat,
-	PetscScalar  dt)
-{
-	PetscInt    i;
-	PetscScalar I2Gdt, Gavg;
-
-	Gavg  = 0.0;
-	I2Gdt = 0.0;
-
-	// scan all phases
-	for(i = 0; i < numPhases; i++)
-	{
-		// average elastic materials only
-		if(phases[i].G)
-		{
-			Gavg += phRat[i]*phases[i].G;
-		}
-	}
-
-	if(Gavg) I2Gdt = 1.0/Gavg/dt/2.0;
-
-	return I2Gdt;
-}
-//---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "DevConstEq"
-PetscErrorCode DevConstEq(
-		SolVarDev   *svDev,     // solution variables
-		PetscScalar *eta_creep, // creep viscosity (for output)
-		PetscScalar *eta_vp,    // viscoplastic viscosity (for output)
-		PetscInt     numPhases, // number phases
-		Material_t  *phases,    // phase parameters
-		Soft_t      *soft,      // material softening laws
-		PetscScalar *phRat,     // phase ratios
-		Controls    *ctrl,      // parameters and controls
-		PetscScalar  p_lithos,  // lithostatic pressure
-		PetscScalar  p_pore,    // pore pressure
-		PetscScalar  dt,        // time step
-		PetscScalar  p,         // pressure
-		PetscScalar  T,         // temperature
-		PData       *pd)        // PD data
-{
-	// Evaluate deviatoric constitutive equations in control volume
-
-	PetscInt     i;
-	ConstEqCtx   ctx;
-	Material_t  *mat;
-	PetscScalar  DII, APS, eta_total, eta_creep_phase, eta_viscoplastic_phase, DIIpl;
+	// evaluate volumetric constitutive equations in control volume
+
+	Controls    *ctrl;
+	PData       *pd;
+	Material_t  *mat, *phases;
+	PetscInt     i, numPhases;
+	PetscScalar *phRat, dt, p, depth, T, cf_comp, cf_therm, Kavg, rho;
 
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
 
-	// initialize total effective strain rate & APS
-	DII = svDev->DII;
-	APS = svDev->APS;
-
-	// initialize effective viscosity & plastic strain-rate
-	svDev->eta   = 0.0;
-	svDev->DIIpl = 0.0;
-	(*eta_creep) = 0.0;
-	(*eta_vp)    = 0.0;
-
-	svDev->yield = 0.0;
-	svDev->mf  	 = 0.0;
-
-	DIIpl                  = 0.0;
-	eta_viscoplastic_phase = 0.0;
-	eta_creep_phase        = 0.0;
-	eta_total              = 0.0;
-
-	// scan all phases
-	for(i = 0; i < numPhases; i++)
-	{
-		// update present phases only
-		if(phRat[i])
-		{
-			// get reference to material parameters table
-			mat = &phases[i];
-
-			// Get PD data
-			if(mat->Pd_rho == 1)
-			{
-				// Get the data from phase diagram
-				ierr = SetDataPhaseDiagram(pd, p, T, 0, mat->pdn); CHKERRQ(ierr);
-				svDev->mf  = pd->mf;
-			}
-		
-			// setup nonlinear constitutive equation evaluation context
-			ierr = ConstEqCtxSetup(&ctx, mat, soft, ctrl, DII, APS, dt, p, p_lithos, p_pore, T); CHKERRQ(ierr);
-
-			// solve effective viscosity & plastic strain rate
-			ierr = GetEffVisc(&ctx, ctrl, &eta_total, &eta_creep_phase, &eta_viscoplastic_phase, &DIIpl, svDev); CHKERRQ(ierr);
-
-			// average parameters
-			svDev->eta   += phRat[i]*eta_total;
-			svDev->DIIpl += phRat[i]*DIIpl;
-			(*eta_creep) += phRat[i]*eta_creep_phase;
-			(*eta_vp)    += phRat[i]*eta_viscoplastic_phase;
-			svDev->yield += phRat[i]*ctx.taupl;
-		}
-	}
-
-	PetscFunctionReturn(0);
-}
-//---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "VolConstEq"
-PetscErrorCode VolConstEq(
-		SolVarBulk  *svBulk,    // solution variables
-		PetscInt     numPhases, // number phases
-		Material_t  *phases,    // phase parameters
-		PetscScalar *phRat,     // phase ratios
-		Controls    *ctrl,      // parameters and controls
-		PetscScalar  depth,     // depth for depth-dependent density model
-		PetscScalar  dt,        // time step
-		PetscScalar  p,         // pressure
-		PetscScalar  T,         // temperature
-		PData       *pd)        // PD data
-{
-	// Evaluate volumetric constitutive equations in control volume
-	PetscInt     i;
-	Material_t  *mat;
-	PetscScalar  cf_comp, cf_therm, Kavg, rho;
-
-	PetscFunctionBegin;
+	// access context
+	ctrl      = ctx->ctrl;
+	numPhases = ctx->numPhases;
+	phases    = ctx->phases;
+	phRat     = ctx->phRat;
+	pd        = ctx->pd;
+	depth     = ctx->depth;
+	dt        = ctx->dt;
+	p         = ctx->p;
+	T         = ctx->T;
 
 	// initialize effective density, thermal expansion & inverse bulk elastic parameter
 	svBulk->rho    = 0.0;
@@ -569,14 +93,12 @@ PetscErrorCode VolConstEq(
 			// get reference to material parameters table
 			mat = &phases[i];
 
-			// Get PD data
-			if(mat->Pd_rho == 1)
+			if(mat->pdAct == 1)
 			{
-				// Get the data from phase diagram
-				SetDataPhaseDiagram(pd, p, T, 0, mat->pdn);
-				
-				svBulk->rho_pd  += phRat[i]*pd->rho;
-				svBulk->mf += phRat[i]*pd->mf;
+				// compute melt fraction from phase diagram
+				ierr = setDataPhaseDiagram(pd, p, T, mat->pdn); CHKERRQ(ierr);
+
+				svBulk->mf     += phRat[i]*pd->mf;
 				svBulk->rho_pf += phRat[i]*pd->rho_f;
 			}
 
@@ -614,8 +136,8 @@ PetscErrorCode VolConstEq(
 				// depth-dependent density (ad-hoc)
 				rho = mat->rho - (mat->rho - ctrl->rho_fluid)*mat->rho_n*exp(-mat->rho_c*depth);
 			}
-			// Phase diagram
-			else if(mat->Pd_rho == 1)   // Density from a phase diagram (have svBulk->rho = svBulk->rho)
+			// phase diagram
+			else if(mat->pdAct == 1)
 			{
 				rho = (pd->mf * pd->rho_f) + ((1-pd->mf) * pd->rho);
 			}
@@ -637,17 +159,414 @@ PetscErrorCode VolConstEq(
 }
 //---------------------------------------------------------------------------
 #undef __FUNCT__
-#define __FUNCT__ "GetStressCell"
-PetscErrorCode GetStressCell(
+#define __FUNCT__ "devConstEq"
+PetscErrorCode devConstEq(SolVarDev *svDev, ConstEqCtx *ctx)
+{
+	// evaluate deviatoric constitutive equations in control volume
+
+	Controls    *ctrl;
+	PetscScalar *phRat;
+	PetscInt     i, numPhases;
+
+	PetscErrorCode ierr;
+	PetscFunctionBegin;
+
+	// access context
+	ctrl      = ctx->ctrl;
+	numPhases = ctx->numPhases;
+	phRat     = ctx->phRat;
+
+	// zero out results
+	ctx->eta    = 0.0; // effective viscosity
+	ctx->eta_cr = 0.0; // creep viscosity
+	ctx->eta_vp = 0.0; // visco-plastic viscosity
+	ctx->DIIdif = 0.0; // diffusion creep strain rate
+	ctx->DIIdis = 0.0; // dislocation creep strain rate
+	ctx->DIIprl = 0.0; // Peierls creep strain rate
+	ctx->DIIpl  = 0.0; // plastic strain rate
+	ctx->yield  = 0.0; // yield stress
+
+	// viscous initial guess
+	if(ctrl->initGuess)
+	{
+		svDev->eta    = ctrl->eta_ref;
+		ctx  ->eta    = ctrl->eta_ref;
+		ctx  ->eta_cr = ctrl->eta_ref;
+		ctx  ->eta_vp = ctrl->eta_ref;
+		ctx  ->DIIdif = 1.0;
+
+		PetscFunctionReturn(0);
+	}
+
+	// scan all phases
+	for(i = 0; i < numPhases; i++)
+	{
+		// update present phases only
+		if(phRat[i])
+		{
+			// setup phase parameters
+			ierr = setUpPhase(ctx, i); CHKERRQ(ierr);
+
+			// compute phase viscosities and strain rate partitioning
+			ierr = getPhaseVisc(ctx, i); CHKERRQ(ierr);
+
+		}
+	}
+
+	// normalize strain rates
+	if(ctx->DII)
+	{
+		ctx->DIIdif /= ctx->DII;
+		ctx->DIIdis /= ctx->DII;
+		ctx->DIIprl /= ctx->DII;
+		ctx->DIIpl  /= ctx->DII;
+	}
+
+	// store viscosity
+	svDev->eta = ctx->eta + ctrl->eta_min;
+
+	PetscFunctionReturn(0);
+}
+//---------------------------------------------------------------------------
+#undef __FUNCT__
+#define __FUNCT__ "getPhaseVisc"
+PetscErrorCode getPhaseVisc(ConstEqCtx *ctx, PetscInt ID)
+{
+	Controls    *ctrl;
+	PetscInt    it, fail;
+	PetscScalar eta_min, eta_mean, eta, eta_cr, eta_vp, tauII, taupl, DII;
+	PetscScalar DIIdif, DIImax, DIIdis, DIIprl, DIIpl, DIIvs, DIIvp, phRat;
+	PetscScalar inv_eta_els, inv_eta_dif, inv_eta_max, inv_eta_dis, inv_eta_prl, inv_eta_min;
+
+	PetscFunctionBegin;
+
+	// access context
+	ctrl  = ctx->ctrl;      // global controls
+	phRat = ctx->phRat[ID]; // phase ratio
+	taupl = ctx->taupl;     // plastic yield stress
+	DII   = ctx->DII;       // effective strain rate
+
+	// initialize
+	it     = 1;
+	fail   = 0;
+	DIIpl  = 0.0;
+	eta_cr = 0.0;
+	eta_vp = 0.0;
+
+	//===========
+	// PLASTICITY
+	//===========
+	if(taupl && DII)
+	{
+		// compute plastic stress and viscosity
+		tauII = taupl;
+		eta   = tauII/(2.0*DII);
+
+		// compute plastic strain rate
+		DIIpl = getConsEqRes(eta, ctx);
+
+		// reset if plasticity is not active
+		if(DIIpl < 0.0)
+		{
+			DIIpl = 0.0;
+		}
+	}
+
+	//=================
+	// VISCO-ELASTICITY
+	//=================
+	if(!DIIpl)
+	{
+		// get isolated viscosities
+		inv_eta_els = 0.0;
+		inv_eta_dif = 0.0;
+		inv_eta_max = 0.0;
+		inv_eta_dis = 0.0;
+		inv_eta_prl = 0.0;
+
+		// elasticity
+		if(ctx->A_els) inv_eta_els = 2.0*ctx->A_els;
+		// diffusion
+		if(ctx->A_dif) inv_eta_dif = 2.0*ctx->A_dif;
+		// upper bound
+		if(ctx->A_max) inv_eta_max = 2.0*ctx->A_max;
+		// dislocation
+		if(ctx->A_dis) inv_eta_dis = 2.0*pow(ctx->A_dis, 1.0/ctx->N_dis)*pow(DII, 1.0 - 1.0/ctx->N_dis);
+		// Peierls
+		if(ctx->A_prl) inv_eta_prl = 2.0*pow(ctx->A_prl, 1.0/ctx->N_prl)*pow(DII, 1.0 - 1.0/ctx->N_prl);
+
+		// get minimum viscosity (upper bound)
+		inv_eta_min                               = inv_eta_els;
+		if(inv_eta_dif > inv_eta_min) inv_eta_min = inv_eta_dif;
+		if(inv_eta_max > inv_eta_min) inv_eta_min = inv_eta_max;
+		if(inv_eta_dis > inv_eta_min) inv_eta_min = inv_eta_dis;
+		if(inv_eta_prl > inv_eta_min) inv_eta_min = inv_eta_prl;
+		eta_min = 1.0/inv_eta_min;
+
+		// get quasi-harmonic mean (lower bound)
+		eta_mean = 1.0/(inv_eta_els + inv_eta_dif + inv_eta_max + inv_eta_dis + inv_eta_prl);
+
+		// NOTE: if closed-form solution exists, it is equal to lower bound
+		// If only one mechanism is active, then both bounds are coincident
+		// Bisection will return immediately if closed-form solution exists
+
+		if(DII)
+		{
+			// apply bisection algorithm to nonlinear scalar equation
+			fail = solveBisect(eta_mean, eta_min, ctrl->lrtol, ctrl->lmaxit, eta, it, getConsEqRes, ctx);
+		}
+		else
+		{
+			eta = eta_mean;
+		}
+
+		// compute stress
+		tauII = 2.0*eta*DII;
+	}
+
+	// update iteration statistics
+	ctx->stats[0] += 1.0;               // starts
+	ctx->stats[1] += (PetscScalar)fail; // fails
+	ctx->stats[2] += (PetscScalar)it;   // iterations
+
+	// compute strain rates
+	DIIdif = ctx->A_dif*tauII;                  // diffusion
+	DIImax = ctx->A_max*tauII;                  // upper bound
+	DIIdis = ctx->A_dis*pow(tauII, ctx->N_dis); // dislocation
+	DIIprl = ctx->A_prl*pow(tauII, ctx->N_prl); // Peierls
+	DIIvs  = DIIdif + DIImax + DIIdis + DIIprl; // viscous (total)
+	DIIvp  = DIIvs + DIIpl;                     // visco-plastic
+
+	// compute viscosities
+	if(DIIvs) eta_cr = tauII/DIIvs/2.0;
+	if(DIIvp) eta_vp = tauII/DIIvp/2.0;
+
+	// update results
+	ctx->eta    += phRat*eta;    // effective viscosity
+	ctx->eta_cr += phRat*eta_cr; // creep viscosity
+	ctx->eta_vp += phRat*eta_vp; // visco-plastic viscosity
+	ctx->DIIdif += phRat*DIIdif; // diffusion creep strain rate
+	ctx->DIIdis += phRat*DIIdis; // dislocation creep strain rate
+	ctx->DIIprl += phRat*DIIprl; // Peierls creep strain rate
+	ctx->DIIpl  += phRat*DIIpl;  // plastic strain rate
+	ctx->yield  += phRat*taupl;  // plastic yield rate
+
+
+	PetscFunctionReturn(0);
+}
+//---------------------------------------------------------------------------
+#undef __FUNCT__
+#define __FUNCT__ "setUpPhase"
+PetscErrorCode setUpPhase(ConstEqCtx *ctx, PetscInt ID)
+{
+	// setup nonlinear constitutive equation evaluation context
+	// evaluate dependence on constant parameters (pressure, temperature)
+	Material_t  *mat;
+	Soft_t      *soft;
+	Controls    *ctrl;
+	PData       *pd;
+	PetscScalar  APS, dt, p, p_lith, p_pore, T, mf, mfd, mfn;
+	PetscScalar  Q, RT, ch, fr, p_visc, p_upper, p_lower, dP, p_total;
+
+	PetscErrorCode ierr;
+	PetscFunctionBegin;
+
+	// access context
+	mat    = ctx->phases + ID;
+	soft   = ctx->soft;
+	ctrl   = ctx->ctrl;
+	pd     = ctx->pd;
+	APS    = ctx->APS;
+	dt     = ctx->dt;
+	p      = ctx->p;
+	p_lith = ctx->p_lith;
+	p_pore = ctx->p_pore;
+	T      = ctx->T;
+	mf     = 0.0;
+
+	if(mat->pdAct == 1)
+	{
+		// compute melt fraction from phase diagram
+		ierr = setDataPhaseDiagram(pd, p, T, mat->pdn); CHKERRQ(ierr);
+
+		// store melt fraction
+		mf = pd->mf;
+	}
+
+	// set RT
+	RT         =  ctrl->Rugc*T;
+	if(!RT) RT = -1.0;
+
+	// initialize phase parameters
+	ctx->A_els = 0.0; // elasticity constant
+	ctx->A_dif = 0.0; // diffusion constant
+	ctx->A_max = 0.0; // upper bound constant
+	ctx->A_dis = 0.0; // dislocation constant
+	ctx->N_dis = 1.0; // dislocation exponent
+	ctx->A_prl = 0.0; // Peierls constant
+	ctx->N_prl = 1.0; // Peierls exponent
+	ctx->taupl = 0.0; // plastic yield stress
+
+	// MELT FRACTION
+	mfd = 1.0;
+	mfn = 1.0;
+
+	if(mf)
+	{
+		// limit melt fraction
+		if(mf > ctrl->mfmax) mf = ctrl->mfmax;
+
+		// compute corrections factors for diffusion & dislocation creep
+		mfd = exp(mat->mfc*mf);
+		mfn = exp(mat->mfc*mf*mat->n);
+	}
+
+	// PRESSURE
+
+	// pore pressure
+	if(ctrl->gwType == _GW_NONE_) p_pore = 0.0;
+
+	// total pressure
+	p_total = p + ctrl->biot*p_pore;
+
+	// assign pressure for viscous laws
+	if(ctrl->pLithoVisc)  p_visc = p_lith;
+	else                  p_visc = p_total;
+
+	// ELASTICITY
+	if(mat->G)
+	{
+		// Elasticity correction can only DECREASE the viscosity.
+		// eta/G << dt (viscous regime)  eta*(dt/(dt + eta/G)) -> eta
+		// eta/G >> dt (elastic regime)  eta*(dt/(dt + eta/G)) -> G*dt < eta
+		// Elasticity doesn't normally interact with the bottom viscosity limit,
+		// instead it rather acts as a smooth limiter for maximum viscosity.
+
+		ctx->A_els = 1.0/(mat->G*dt)/2.0;
+	}
+
+	// LINEAR DIFFUSION CREEP (NEWTONIAN)
+	if(mat->Bd)
+	{
+		Q          = (mat->Ed + p_visc*mat->Vd)/RT;
+		ctx->A_dif =  mat->Bd*exp(-Q)*mfd;
+	}
+
+	// PS-CREEP
+	else if(mat->Bps && T)
+	{
+		Q          = mat->Eps/RT;
+		ctx->A_dif = mat->Bps*exp(-Q)/T/pow(mat->d, 3.0);
+	}
+
+	// UPPER BOUND CREEP
+	if(ctrl->eta_max)
+	{
+		ctx->A_max = 1.0/(ctrl->eta_max)/2.0;
+	}
+
+	// DISLOCATION CREEP (POWER LAW)
+	if(mat->Bn)
+	{
+		Q          = (mat->En + p_visc*mat->Vn)/RT;
+		ctx->N_dis =  mat->n;
+		ctx->A_dis =  mat->Bn*exp(-Q)*mfn;
+	}
+
+	// DC-CREEP
+	else if(mat->Bdc && T)
+	{
+		Q          = mat->Edc/RT;
+		ctx->N_dis = Q;
+		ctx->A_dis = mat->Bdc*exp(-Q*log(mat->Rdc))*pow(mat->mu, -Q);
+	}
+
+	// PEIERLS CREEP (LOW TEMPERATURE RATE-DEPENDENT PLASTICITY, POWER-LAW APPROXIMATION)
+	if(mat->Bp && T)
+	{
+		Q           = (mat->Ep + p_visc*mat->Vp)/RT;
+		ctx->N_prl =  Q*pow(1.0-mat->gamma, mat->q-1.0)*mat->q*mat->gamma;
+		ctx->A_prl =  mat->Bp/pow(mat->gamma*mat->taup, ctx->N_prl)*exp(-Q*pow(1.0-mat->gamma, mat->q));
+	}
+
+	if(PetscIsInfOrNanScalar(ctx->A_dif)) ctx->A_dif = 0.0;
+	if(PetscIsInfOrNanScalar(ctx->A_dis)) ctx->A_dis = 0.0;
+	if(PetscIsInfOrNanScalar(ctx->A_prl)) ctx->A_prl = 0.0;
+
+	// PLASTICITY
+	if(!mat->ch && !mat->fr)
+	{
+		PetscFunctionReturn(0); // return if no plasticity is set
+	}
+
+	// apply strain softening to friction and cohesion
+	ch = applyStrainSoft(soft, mat->chSoftID, APS, mat->ch);
+	fr = applyStrainSoft(soft, mat->frSoftID, APS, mat->fr);
+
+	// fit to limits
+	if(ch < ctrl->minCh) ch = ctrl->minCh;
+	if(fr < ctrl->minFr) fr = ctrl->minFr;
+
+	// override total pressure with lithostatic if requested
+	if(ctrl->pLithoPlast)
+	{
+		// Use lithostatic, rather than dynamic pressure to evaluate yield stress
+		// This converges better, but does not result in localization of deformation & shear banding,
+		// so only apply it for large-scale simulations where plasticity does not matter much
+
+		p_total = p_lith;
+	}
+	else if(ctrl->pLimPlast)
+	{
+		// apply pressure limits
+
+		// yielding surface: (S1-S3)/2 = (S1+S3)/2*sin(phi) + C*cos(phi)
+		// pressure can be written as: P = (S1+S2+S3)/3 and P~=S2,then P=(S1+S3)/2
+		// so the yield surface can be rewritten as:
+		// P-S3=P*sin(phi) + C*cos(phi)   --> compression
+		// S1-P=P*sin(phi) + C*cos(phi)   --> extension
+		// under pure shear compression, S3=P_Lithos and S1=P_Lithos when extension
+		// P = -( S3+C*cos(phi))/(sin(phi)-1)  --> compression
+		// P = -(-S1+C*cos(phi))/(sin(phi)+1)  --> extension
+
+		p_upper = -( p_lith + ch * cos(fr))/(sin(fr) - 1.0); // compression
+		p_lower = -(-p_lith + ch * cos(fr))/(sin(fr) + 1.0); // extension
+
+		if(p_total > p_upper) p_total = p_upper;
+		if(p_total < p_lower) p_total = p_lower;
+	}
+
+	// compute cohesion and friction coefficient
+	ch = cos(fr)*ch;
+	fr = sin(fr);
+
+	// compute effective mean stress
+	dP = (p_total - p_pore);
+
+	// compute yield stress
+	if(dP < 0.0) ctx->taupl =         ch; // Von-Mises model for extension
+	else         ctx->taupl = dP*fr + ch; // Drucker-Prager model for compression
+
+	// correct for ultimate yield stress (if defined)
+	if(ctrl->tauUlt) { if(ctx->taupl > ctrl->tauUlt) ctx->taupl = ctrl->tauUlt; }
+
+	PetscFunctionReturn(0);
+}
+
+//---------------------------------------------------------------------------
+#undef __FUNCT__
+#define __FUNCT__ "getStressCell"
+PetscErrorCode getStressCell(
 		SolVarCell  *svCell, // solution variables
+		ConstEqCtx  *ctx,    // evaluation context
 		PetscScalar  dxx,    // effective normal strain rate components
-		PetscScalar  dyy,    //
-		PetscScalar  dzz)   //
+		PetscScalar  dyy,    // ...
+		PetscScalar  dzz)    // ...
 {
 	// compute stress, plastic strain-rate and shear heating term on cell
 
 	SolVarDev   *svDev;
-	PetscScalar  DII, cfpl, txx, tyy, tzz;
+	PetscScalar  txx, tyy, tzz;
 
 	PetscFunctionBegin;
 
@@ -659,17 +578,10 @@ PetscErrorCode GetStressCell(
 	svCell->syy = 2.0*svDev->eta*dyy;
 	svCell->szz = 2.0*svDev->eta*dzz;
 
-	// get strain-rate invariant
-	DII = svDev->DII;
-
-	// compute plastic scaling coefficient
-	if(DII) cfpl = svDev->DIIpl/DII;
-	else    cfpl = 0.0;
-
 	// compute plastic strain-rate components
-	txx = cfpl*dxx;
-	tyy = cfpl*dyy;
-	tzz = cfpl*dzz;
+//	txx = cfpl*dxx;
+//	tyy = cfpl*dyy;
+//	tzz = cfpl*dzz;
 
 	// store contribution to the second invariant of plastic strain-rate
 	svDev->PSR = 0.5*(txx*txx + tyy*tyy + tzz*tzz);
@@ -682,19 +594,38 @@ PetscErrorCode GetStressCell(
 	// compute shear heating term contribution
 	svDev->Hr = (txx*svCell->sxx + tyy*svCell->syy + tzz*svCell->szz);
 
+
+/*
+	svDev->eta = ctx->eta + ctrl->eta_min;
+
+	// update results
+	ctx->eta    += phRat*eta;    // effective viscosity
+	ctx->eta_cr += phRat*eta_cr; // creep viscosity
+	ctx->eta_vp += phRat*eta_vp; // visco-plastic viscosity
+	ctx->DIIdif += phRat*DIIdif; // diffusion creep strain rate
+	ctx->DIIdis += phRat*DIIdis; // dislocation creep strain rate
+	ctx->DIIprl += phRat*DIIprl; // Peierls creep strain rate
+	ctx->DIIpl  += phRat*DIIpl;  // plastic strain rate
+	ctx->yield  += phRat*taupl;  // plastic yield rate
+
+*/
+
+
+
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
 // compute stress, plastic strain-rate and shear heating term on edge
 #undef __FUNCT__
-#define __FUNCT__ "GetStressEdge"
-PetscErrorCode GetStressEdge(
+#define __FUNCT__ "getStressEdge"
+PetscErrorCode getStressEdge(
 		SolVarEdge  *svEdge, // solution variables
-		PetscScalar  d)      // effective shear strain rate component
+		PetscScalar  d,      // effective shear strain rate component
+		PetscScalar  cfpl)   // plastic scaling coefficient
 {
 
 	SolVarDev   *svDev;
-	PetscScalar  DII, cfpl, t;
+	PetscScalar  t;
 
 	PetscFunctionBegin;
 
@@ -703,13 +634,6 @@ PetscErrorCode GetStressEdge(
 
 	// compute shear stress
 	svEdge->s = 2.0*svDev->eta*d;
-
-	// get strain-rate invariant
-	DII = svDev->DII;
-
-	// compute plastic scaling coefficient
-	if(DII) cfpl = svDev->DIIpl/DII;
-	else    cfpl = 0.0;
 
 	// compute plastic strain-rate components
 	t = cfpl*d;
@@ -726,10 +650,96 @@ PetscErrorCode GetStressEdge(
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
+PetscScalar getConsEqRes(PetscScalar eta, void *pctx)
+{
+	// Compute residual of the nonlinear visco-elastic constitutive equation:
+
+	PetscScalar tauII, DIIels, DIIdif, DIImax, DIIdis, DIIprl;
+
+	// access context
+	ConstEqCtx *ctx = (ConstEqCtx*)pctx;
+
+	// compute stress
+	tauII = 2.0*eta*ctx->DII;
+
+	// creep strain rates
+	DIIels = ctx->A_els*tauII;                  // elasticity
+	DIIdif = ctx->A_dif*tauII;                  // diffusion
+	DIImax = ctx->A_max*tauII;                  // upper bound
+	DIIdis = ctx->A_dis*pow(tauII, ctx->N_dis); // dislocation
+	DIIprl = ctx->A_prl*pow(tauII, ctx->N_prl); // Peierls
+
+	// residual function (r)
+	// r < 0 if eta > solution (negative on overshoot)
+	// r > 0 if eta < solution (positive on undershoot)
+
+	return 1.0 - (DIIels + DIIdif + DIImax + DIIdis + DIIprl)/ctx->DII;
+}
+//---------------------------------------------------------------------------
+PetscScalar applyStrainSoft(
+		Soft_t      *soft, // material softening laws
+		PetscInt     ID,   // softening law ID
+		PetscScalar  APS,  // accumulated plastic strain
+		PetscScalar  par) // softening parameter
+{
+	// Apply strain softening to a parameter (friction, cohesion)
+
+	PetscScalar  k;
+	Soft_t      *s;
+
+	// check whether softening is defined
+	if(ID == -1) return par;
+
+	// access parameters
+	s = soft + ID;
+
+	// compute scaling ratio
+	if(APS <= s->APS1)
+		k = 1.0;
+	if(APS > s->APS1 && APS < s->APS2)
+		k = 1.0 - s->A*((APS - s->APS1)/(s->APS2 - s->APS1));
+	if(APS >= s->APS2)
+		k = 1.0 - s->A;
+
+	// apply strain softening
+	return par*k;
+}
+//---------------------------------------------------------------------------
+PetscScalar getI2Gdt(
+		PetscInt     numPhases, // number phases
+		Material_t  *phases,    // phase parameters
+		PetscScalar *phRat,     // phase ratios in the control volume
+		PetscScalar  dt)        // time step
+{
+	// compute inverse deviatoric elastic parameter
+
+	PetscInt    i;
+	PetscScalar I2Gdt, Gavg;
+
+	Gavg  = 0.0;
+	I2Gdt = 0.0;
+
+	// scan all phases
+	for(i = 0; i < numPhases; i++)
+	{
+		Gavg += phRat[i]*phases[i].G;
+	}
+
+	if(Gavg) I2Gdt = 1.0/Gavg/dt/2.0;
+
+	return I2Gdt;
+}
+//---------------------------------------------------------------------------
+//.............................. PHASE DIAGRAM  .............................
+//---------------------------------------------------------------------------
 // get the density from a phase diagram
 #undef __FUNCT__
-#define __FUNCT__ "SetDataPhaseDiagram"
-PetscErrorCode SetDataPhaseDiagram(PData *pd, PetscScalar p, PetscScalar T, PetscScalar pshift, char pdn[])
+#define __FUNCT__ "setDataPhaseDiagram"
+PetscErrorCode setDataPhaseDiagram(
+		PData       *pd,
+		PetscScalar  p,
+		PetscScalar  T,
+		char         pdn[])
 {
     PetscInt       	i,j,i_pd,indT[2],indP[2],ind[4],found;
     PetscScalar    	fx0,fx1,weight[4];
@@ -769,9 +779,6 @@ PetscErrorCode SetDataPhaseDiagram(PData *pd, PetscScalar p, PetscScalar T, Pets
 		pd->rho = 0;
 		PetscFunctionReturn(0);
 	}
-
-	// Temporarily add the pressure shift in this function to properly interpolate in the phase digram
-	p = p-pshift;
 
 	// Take absolute value of pressure
 	if(p<0)
@@ -863,18 +870,12 @@ PetscErrorCode SetDataPhaseDiagram(PData *pd, PetscScalar p, PetscScalar T, Pets
 		fx1 = weight[0] * pd->rho_f_v[ind[1]][i_pd] + weight[1] * pd->rho_f_v[ind[3]][i_pd];
 		pd->rho_f  = weight[2] * fx0   + weight[3] * fx1;
 
-		// Apply feedback to the density (rho_eff = rho_f*mf+(1-mf)*rho) -> DONE IN constEq.c
-		// pd->rho = (pd->mf * pd->rho_f) + ((1-pd->mf) * pd->rho);
 	}
 	// No melt fraction
 	else
 	{
 		pd->mf = 0;
 	}
-
-	// Uncomment to debug values
-	// PetscPrintf(PETSC_COMM_WORLD,"i_pd = %i\np = %.60f \n T = %.20lf \n\nFINAL INDICES:\n ind[0] = %i \n ind[1] = %i\n ind[2] = %i\n ind[3] = %i\n weight[0] = %.10f\n  weight[1] = %.10f\n weight[0] = %.10f\n  weight[1] = %.10f\n\n --> rho = %.20f\n \n 1 = %.20lf \n2 = %.20lf \n3 = %.20lf \n4 = %.20lf \n5 = %.20lf \n6 = %.20lf \n7 = %.20lf \n8 = %.20lf \n \n rho[0] = %.20f \nrho[1] = %.20f \nrho[2] = %.20f \nrho[3] = %.20f \n   ",i_pd,p,T,ind[0],ind[1],ind[2],ind[3],weight[0],weight[1],weight[2],weight[3],pd->rho,minT ,dT,pd->rho_pdval[2][i_pd],pd->maxT[i_pd],minP,dP,pd->rho_pdval[6][i_pd],pd->rho_pdval[7][i_pd],pd->rho_v[ind[0]][i_pd],pd->rho_v[ind[1]][i_pd],pd->rho_v[ind[2]][i_pd],pd->rho_v[ind[3]][i_pd]);
-	// PetscPrintf(PETSC_COMM_WORLD,"MF = %.20f; RHOF = %.20f; RHO = %.20f; i_pd = %i ; fx = %.20f; fx1 = %.20f; rhof1 = %.20f; rhof2 = %.20f; ind3 = %i; weight0 = %.20f ; %.3f\n",pd->mf,pd->rho_f,pd->rho,i_pd,fx0,fx1,pd->rho_f_v[ind[1]][i_pd],pd->rho_f_v[ind[3]][i_pd],ind[3],weight[0],pd->rho_pdval[8][i_pd]);
 
 	PetscFunctionReturn(0);
 }

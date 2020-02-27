@@ -39,6 +39,7 @@
  **         Arthur Bauville
  **
  ** ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ @*/
+
 //---------------------------------------------------------------------------
 // COMPUTATION OF ADJOINT GRADIENTS
 //---------------------------------------------------------------------------
@@ -58,7 +59,7 @@ struct Controls;
 struct NLSol;
 struct ModParam;
 struct FB;
-
+/*
 // Structure that holds parameters for the adjoint gradient computation
 struct AdjGrad
 {
@@ -100,5 +101,5 @@ PetscErrorCode AdjointJacResGetResidual_ViscPowerlaw(JacRes *jr, PetscInt CurPar
 
 // To clear the memory
 PetscErrorCode AdjointDestroy(AdjGrad *aop);
-
+*/
 #endif

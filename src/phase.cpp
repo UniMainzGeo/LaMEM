@@ -244,7 +244,7 @@ PetscErrorCode DBMatReadPhase(DBMat *dbm, FB *fb)
 		StringLength = strlen(PhaseDiagram)+3;		// 3, because we will add ".in" to the filename 
 
 		// implies we are loading a phase diagram file from disk
-		m->Pd_rho = 1;
+		m->pdAct = 1;
 		
 		// Get the directory of the phase diagram if specified
 		ierr = getStringParam(fb, _OPTIONAL_, "rho_ph_file", PhaseDiagram_Dir, "none"); CHKERRQ(ierr);
@@ -267,7 +267,7 @@ PetscErrorCode DBMatReadPhase(DBMat *dbm, FB *fb)
 	}
 	else
 	{
-		m->Pd_rho = 0;	// no phase diagram is used
+		m->pdAct = 0;	// no phase diagram is used
 	}
 	
 	//============================================================
@@ -352,6 +352,9 @@ PetscErrorCode DBMatReadPhase(DBMat *dbm, FB *fb)
 	ierr = getScalarParam(fb, _OPTIONAL_, "A",        &m->A,     1, 1.0); CHKERRQ(ierr);
 	ierr = getScalarParam(fb, _OPTIONAL_, "T",        &m->T,     1, 1.0); CHKERRQ(ierr);
 	//=================================================================================
+	// melt fraction viscosity parametrization
+	//=================================================================================
+	ierr = getScalarParam(fb, _OPTIONAL_, "mfc",      &m->mfc,   1, 1.0); CHKERRQ(ierr);
 
 	// DEPTH-DEPENDENT
 
@@ -503,7 +506,7 @@ PetscErrorCode DBMatReadPhase(DBMat *dbm, FB *fb)
 
 	sprintf(title, "   (dens)   : "); print_title = 1;
 	MatPrintScalParam(m->rho,   "rho",   "[kg/m^3]", scal, title, &print_title);
-	if(m->Pd_rho == 1)
+	if(m->pdAct == 1)
 	{
 		PetscPrintf(PETSC_COMM_WORLD,"- Employing phase diagram: %s", PhaseDiagram);
 	}

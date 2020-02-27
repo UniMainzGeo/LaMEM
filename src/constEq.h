@@ -59,102 +59,103 @@ struct PData;
 
 //---------------------------------------------------------------------------
 
-// nonlinear constitutive equations evaluation context
+// constitutive equations evaluation context
 struct ConstEqCtx
 {
-	PetscScalar  DII;   // effective strain-rate
-	PetscScalar  A_els; // elasticity constant
-	PetscScalar  A_dif; // diffusion constant
-	PetscScalar  A_dis; // dislocation constant
-	PetscScalar  N_dis; // dislocation exponent
-	PetscScalar  A_prl; // Peierls constant
-	PetscScalar  N_prl; // Peierls exponent
-	PetscScalar  taupl; // plastic yield stress
-	PetscScalar  fr;    // effective friction coefficient
-	PetscScalar  Pd_rho;  // melt fraction constant?
-} ;
+	// database parameters
+	PetscInt     numPhases; // number phases
+	Material_t  *phases;    // phase parameters
+	Soft_t      *soft;      // material softening laws
+	Controls    *ctrl;      // parameters and controls
+	PData       *pd;        // phase diagram data
+	PetscScalar  dt;        // time step
+	PetscScalar  stats[3];  // total number of [starts, fails, iterations]
+
+	// control volume parameters
+	PetscScalar *phRat;  // phase ratios in the control volume
+	PetscScalar  p;      // pressure
+	PetscScalar  p_lith; // lithostatic pressure
+	PetscScalar  p_pore; // pore pressure
+	PetscScalar  depth;  // depth for depth-dependent density model
+	PetscScalar  T;      // temperature
+	PetscScalar  DII;    // effective strain rate
+	PetscScalar  APS;    // accumulated plastic strain
+
+	// phase parameters
+	PetscScalar  A_els;  // elasticity constant
+	PetscScalar  A_dif;  // diffusion constant
+	PetscScalar  A_max;  // upper bound constant
+	PetscScalar  A_dis;  // dislocation constant
+	PetscScalar  N_dis;  // dislocation exponent
+	PetscScalar  A_prl;  // Peierls constant
+	PetscScalar  N_prl;  // Peierls exponent
+	PetscScalar  taupl;  // plastic yield stress
+
+	// control volume results
+	PetscScalar  eta;    // effective viscosity
+	PetscScalar  eta_cr; // creep viscosity
+	PetscScalar  eta_vp; // visco-plastic viscosity
+	PetscScalar  DIIdif; // diffusion creep strain rate
+	PetscScalar  DIIdis; // dislocation creep strain rate
+	PetscScalar  DIIprl; // Peierls creep strain rate
+	PetscScalar  DIIpl;  // plastic strain rate
+	PetscScalar  yield;  // yield stress
+
+};
 
 //---------------------------------------------------------------------------
+// evaluate volumetric constitutive equations in control volume
+PetscErrorCode volConstEq(SolVarBulk *svBulk, ConstEqCtx *ctx);
+
+// evaluate deviatoric constitutive equations in control volume
+PetscErrorCode devConstEq(SolVarDev *svDev, ConstEqCtx *ctx);
+
+// compute phase viscosities and strain rate partitioning
+PetscErrorCode getPhaseVisc(ConstEqCtx *ctx, PetscInt ID);
 
 // setup nonlinear constitutive equation evaluation context
-// evaluate dependence on constant parameters (pressure, temperature)
-PetscErrorCode ConstEqCtxSetup(
-	ConstEqCtx  *ctx,      // evaluation context
-	Material_t  *mat,      // phase parameters
-	Soft_t      *soft,     // material softening laws
-	Controls    *ctrl,     // parameters and controls
-	PetscScalar  DII,      // effective strain-rate
-	PetscScalar  APS,      // accumulated plastic strain
-	PetscScalar  dt,       // time step
-	PetscScalar  p,        // pressure
-	PetscScalar  p_lithos, // lithostatic pressure
-	PetscScalar  p_pore,   // pore pressure
-	PetscScalar  T);       // temperature
-
-// compute residual of the visco-elastic constitutive equation
-PetscScalar GetConsEqRes(PetscScalar eta, void *pctx);
-
-PetscErrorCode GetEffVisc(
-	ConstEqCtx  *ctx,
-	Controls    *ctrl,        // parameters and controls
-	PetscScalar *eta_total,
-	PetscScalar *eta_creep,
-	PetscScalar *eta_vp,
-	PetscScalar *DIIpl,
-	SolVarDev   *svDev);
-
-// apply strain softening to a parameter (friction, cohesion)
-PetscScalar ApplyStrainSoft(Soft_t *soft, PetscInt ID, PetscScalar APS, PetscScalar par);
-
-// compute inverse elastic parameter in control volume
-PetscScalar GetI2Gdt(
-	PetscInt     numPhases,
-	Material_t  *phases,
-	PetscScalar *phRat,
-	PetscScalar  dt);
-
-// Evaluate deviatoric constitutive equations in control volume
-PetscErrorCode DevConstEq(
-	SolVarDev   *svDev,     // solution variables
-	PetscScalar *eta_creep, // creep viscosity (for output)
-	PetscScalar *eta_vp,    // viscoplastic viscosity (for output)
-	PetscInt     numPhases, // number phases
-	Material_t  *phases,    // phase parameters
-	Soft_t      *soft,      // material softening laws
-	PetscScalar *phRat,     // phase ratios
-	Controls    *ctrl,      // parameters and controls
-	PetscScalar  p_lithos,  // lithostatic pressure
-	PetscScalar  p_pore,    // pore pressure
-	PetscScalar  dt,        // time step
-	PetscScalar  p,         // pressure
-	PetscScalar  T,         // temperature
-	PData       *pd);       // PD data
-
-// Evaluate volumetric constitutive equations in control volume
-PetscErrorCode VolConstEq(
-	SolVarBulk  *svBulk,    // solution variables
-	PetscInt     numPhases, // number phases
-	Material_t  *phases,    // phase parameters
-	PetscScalar *phRat,     // phase ratios
-	Controls    *ctrl,      // parameters and controls
-	PetscScalar  depth,     // depth for depth-dependent density model
-	PetscScalar  dt,        // time step
-	PetscScalar  p,         // pressure
-	PetscScalar  T,         // temperature
-	PData       *pd);   	// PD Data
+PetscErrorCode setUpPhase(ConstEqCtx *ctx, PetscInt ID);
 
 // compute stress, plastic strain-rate and shear heating term on cell
-PetscErrorCode GetStressCell(
+PetscErrorCode getStressCell(
 		SolVarCell  *svCell, // solution variables
+		ConstEqCtx  *ctx,    // evaluation context
 		PetscScalar  dxx,    // effective normal strain rate components
 		PetscScalar  dyy,    // ...
 		PetscScalar  dzz);   // ...
 
 // compute stress, plastic strain-rate and shear heating term on edge
-PetscErrorCode GetStressEdge(
-	SolVarEdge  *svEdge, // solution variables
-	PetscScalar  d);     // effective shear strain rate component
+PetscErrorCode getStressEdge(
+		SolVarEdge  *svEdge, // solution variables
+		ConstEqCtx  *ctx,    // evaluation context
+		PetscScalar  d);     // effective shear strain rate component
+
+// compute residual of the visco-elastic constitutive equation
+PetscScalar getConsEqRes(PetscScalar eta, void *pctx);
+
+// apply strain softening to a parameter (friction, cohesion)
+PetscScalar applyStrainSoft(
+		Soft_t      *soft, // material softening laws
+		PetscInt     ID,   // softening law ID
+		PetscScalar  APS,  // accumulated plastic strain
+		PetscScalar  par); // softening parameter
+
+// compute inverse elastic parameter in control volume
+PetscScalar getI2Gdt(
+		PetscInt     numPhases, // number phases
+		Material_t  *phases,    // phase parameters
+		PetscScalar *phRat,     // phase ratios in the control volume
+		PetscScalar  dt);       // time step
 
 //---------------------------------------------------------------------------
-PetscErrorCode SetDataPhaseDiagram(PData *pd, PetscScalar p, PetscScalar T, PetscScalar pshift, char pdn[]);
+//.............................. PHASE DIAGRAM  .............................
+//---------------------------------------------------------------------------
+
+PetscErrorCode setDataPhaseDiagram(
+		PData       *pd,
+		PetscScalar  p,
+		PetscScalar  T,
+		char         pdn[]);
+
+//---------------------------------------------------------------------------
 #endif

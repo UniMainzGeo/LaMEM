@@ -955,7 +955,7 @@ PetscErrorCode FDSTAGCreate(FDSTAG *fs, FB *fb)
 	scal = fs->scal;
 
 	// set & read geometry tolerance
-	fs->gtol = 1e-9;
+	fs->gtol = 1e-6;
 	ierr = getScalarParam(fb, _OPTIONAL_, "gtol", &fs->gtol, 1, 1.0); CHKERRQ(ierr);
 
 	// set number of processors

@@ -261,7 +261,7 @@ PetscErrorCode PVOutWriteViscCreep(OutVec* outvec)
 	COPY_FUNCTION_HEADER
 
 	// macro to copy viscosity to buffer
-	#define GET_VISC_CREEP buff[k][j][i] = jr->svCell[iter++].eta_creep;
+	#define GET_VISC_CREEP buff[k][j][i] = jr->svCell[iter++].eta_cr;
 
 	// output viscosity logarithm in GEO-mode
 	// (negative scaling requests logarithmic output)
@@ -601,7 +601,7 @@ PetscErrorCode PVOutWriteMeltFraction(OutVec* outvec)
 	COPY_FUNCTION_HEADER
 
 	// macros to copy melt fraction to buffer
-	#define GET_MF_CENTER  buff[k][j][i] = jr->svCell[iter++].svDev.mf;
+	#define GET_MF_CENTER  buff[k][j][i] = jr->svCell[iter++].svBulk.mf;
 
 	cf = scal->unit;
 
@@ -658,7 +658,7 @@ PetscErrorCode PVOutWriteTotStrain(OutVec* outvec)
 	COPY_FUNCTION_HEADER
 
 	// macro to copy accumulated total strain (ATS) to buffer
-	#define GET_ATS buff[k][j][i] = jr->svCell[iter++].svDev.ATS;
+	#define GET_ATS buff[k][j][i] = jr->svCell[iter++].ATS;
 
 	cf = scal->unit;
 
@@ -781,41 +781,6 @@ PetscErrorCode PVOutWriteEHmax(OutVec* outvec)
 }
 //---------------------------------------------------------------------------
 #undef __FUNCT__
-#define __FUNCT__ "PVOutWriteISA"
-PetscErrorCode PVOutWriteISA(OutVec* outvec)
-{
-	ACCESS_FUNCTION_HEADER
-
-	cf = scal->unit;
-
-	// compute Infinite Strain Axis (ISA)
-	ierr = JacResGetISA(jr); CHKERRQ(ierr);
-
-	INTERPOLATE_ACCESS(jr->ldxx, InterpCenterCorner, 3, 0, 0.0)
-	INTERPOLATE_ACCESS(jr->ldyy, InterpCenterCorner, 3, 1, 0.0)
-
-	ierr = OutBufZero3DVecComp(outbuf, 3, 2); CHKERRQ(ierr);
-
-	PetscFunctionReturn(0);
-}
-//---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "PVOutWriteGOL"
-PetscErrorCode PVOutWriteGOL(OutVec* outvec)
-{
-	ACCESS_FUNCTION_HEADER
-
-	cf = scal->unit;
-
-	// compute Grain Orientation Lag (GOL) parameter
-	ierr = JacResGetGOL(jr); CHKERRQ(ierr);
-
-	INTERPOLATE_ACCESS(jr->ldxx, InterpCenterCorner, 1, 0, 0.0)
-
-	PetscFunctionReturn(0);
-}
-//---------------------------------------------------------------------------
-#undef __FUNCT__
 #define __FUNCT__ "PVOutWriteYield"
 PetscErrorCode PVOutWriteYield(OutVec* outvec)
 {
@@ -823,7 +788,7 @@ PetscErrorCode PVOutWriteYield(OutVec* outvec)
 
 	// macro to copy yield stress to buffer
 
-	#define GET_YIELD buff[k][j][i] = jr->svCell[iter++].svDev.yield;
+	#define GET_YIELD buff[k][j][i] = jr->svCell[iter++].yield;
 
 	cf = scal->stress;
 
@@ -833,22 +798,58 @@ PetscErrorCode PVOutWriteYield(OutVec* outvec)
 }
 //---------------------------------------------------------------------------
 #undef __FUNCT__
-#define __FUNCT__ "PVOutWriteRelDIId"
-PetscErrorCode PVOutWriteRelDIId(OutVec* outvec)
+#define __FUNCT__ "PVOutWriteRelDIIdif"
+PetscErrorCode PVOutWriteRelDIIdif(OutVec* outvec)
 {
+
 	COPY_FUNCTION_HEADER
 
 	// macro to copy diffusion creep relative strain rate to buffer
 
-	#define GET_DIId buff[k][j][i] = jr->svCell[iter++].svDev.DIId;
+	#define GET_DIIdif buff[k][j][i] = jr->svCell[iter++].DIIdif;
 
 	cf = scal->unit;
 
-	INTERPOLATE_COPY(fs->DA_CEN, outbuf->lbcen, InterpCenterCorner, GET_DIId, 1, 0)
+	INTERPOLATE_COPY(fs->DA_CEN, outbuf->lbcen, InterpCenterCorner, GET_DIIdif, 1, 0)
 
 	PetscFunctionReturn(0);
 }
+//---------------------------------------------------------------------------
+#undef __FUNCT__
+#define __FUNCT__ "PVOutWriteRelDIIdis"
+PetscErrorCode PVOutWriteRelDIIdis(OutVec* outvec)
+{
 
+	COPY_FUNCTION_HEADER
+
+	// macro to copy diffusion creep relative strain rate to buffer
+
+	#define GET_DIIdis buff[k][j][i] = jr->svCell[iter++].DIIdis;
+
+	cf = scal->unit;
+
+	INTERPOLATE_COPY(fs->DA_CEN, outbuf->lbcen, InterpCenterCorner, GET_DIIdis, 1, 0)
+
+	PetscFunctionReturn(0);
+}
+//---------------------------------------------------------------------------
+#undef __FUNCT__
+#define __FUNCT__ "PVOutWriteRelDIIprl"
+PetscErrorCode PVOutWriteRelDIIprl(OutVec* outvec)
+{
+
+	COPY_FUNCTION_HEADER
+
+	// macro to copy diffusion creep relative strain rate to buffer
+
+	#define GET_DIIprl buff[k][j][i] = jr->svCell[iter++].DIIprl;
+
+	cf = scal->unit;
+
+	INTERPOLATE_COPY(fs->DA_CEN, outbuf->lbcen, InterpCenterCorner, GET_DIIprl, 1, 0)
+
+	PetscFunctionReturn(0);
+}
 //---------------------------------------------------------------------------
 // DEBUG VECTORS
 //---------------------------------------------------------------------------

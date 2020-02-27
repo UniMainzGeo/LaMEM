@@ -58,7 +58,7 @@
 
 # relative geometry tolerance for grid manipuations (default 1e-6)
 
-	gtol = 1e-7
+	gtol = 1e-6
 
 # Number of processes
 # If not provided, calculated internally
@@ -223,7 +223,7 @@
 	gravity         = 0.0 0.0 -10.0  # gravity vector
 	FSSA            = 1.0            # free surface stabilization parameter [0 - 1]
 	shear_heat_eff  = 1.0            # shear heating efficiency parameter   [0 - 1]
-	Adiabatic_Heat  = 0.0           # Adiabatic Heating activaction flag and efficiency. [0.0 - 1.0] (e.g. 0.5 means that only 50% of the potential adiabatic heating affects the energy equation)   
+	Adiabatic_Heat  = 0.0            # Adiabatic Heating activaction flag and efficiency. [0.0 - 1.0] (e.g. 0.5 means that only 50% of the potential adiabatic heating affects the energy equation)   
 	act_temp_diff   = 1              # temperature diffusion activation flag
 	act_therm_exp   = 1              # thermal expansion activation flag
 	act_steady_temp = 1              # steady-state temperature initial guess activation flag
@@ -244,13 +244,16 @@
 	min_cohes       = 2e7            # cohesion lower bound
 	min_fric        = 5.0            # friction lower bound
 	tau_ult         = 1e9            # ultimate yield stress
-	quasi_harm_avg  = 1              # quasi-harmonic averaging regularization flag (plasticity)
 	rho_fluid       = 1e3            # fluid density for depth-dependent density model
 	gw_level_type   = top            # ground water level type for pore pressure computation (see below)
 	gw_level        = 10.0           # ground water level at the free surface (if defined)
 	biot            = 0.7            # Biot pressure parameer
 	get_permea      = 1              # effective permeability computation activation flag
 	rescal          = 1              # stensil rescaling flag (for internal constraints)
+	mfmax           = 0.1            # maximum melt fraction affecting viscosity reduction
+	lmaxit          = 25             # maximum number of local rheology iterations 
+	lrtol           = 1e-6           # local rheology iterations relative tolerance
+	
 
 # Groundwater level type specification:
 
@@ -398,10 +401,10 @@
 	out_j2_strain_rate  = 1
 	out_shmax           = 1
 	out_ehmax           = 1
-	out_isa             = 1
-	out_gol             = 1
 	out_yield           = 1
-	out_rel_diff_rate   = 1
+	out_rel_dif_rate    = 1
+	out_rel_dis_rate    = 1
+	out_rel_prl_rate    = 1
 	out_plast_strain    = 1
 	out_plast_dissip    = 1
 	out_tot_displ       = 1
@@ -462,48 +465,49 @@
 	<MaterialEnd>
 
 	<MaterialStart>
-		ID        = 1      # material phase ID
-		visID     = 10     # material ID for phase visualization (default is ID)
-		diff_prof = Dry_Olivine_diff_creep-Hirth_Kohlstedt_2003 # DIFFUSION creep profile
-		disl_prof = Granite-Tirel_et_al_2008                    # DISLOCATION creep profile
-		peir_prof = Olivine_Peierls-Kameyama_1999               # PEIERLS creep profile
-		rho       = 3e3    # reference density
-		rho_n     = 0.5    # depth-dependent density model parameter
-		rho_c     = 1e-4   # depth-dependent density model parameter
-		beta      = 1e-11  # pressure-dependent density model parameter
-		G         = 4e10   # shear modulus
-		K         = 6e10   # bulk modulus
-		E         = 6e10   # Young's modulus
-		nu        = 0.25   # Poisson's ratio
-		Kp        = 5.0    # pressure dependence parameter
-		eta       = 1e23   # NEWTONIAN viscosity
-		Bd        = 1.5e9  # DIFFUSION creep pre-exponential constant
-		Ed        = 375e3  # activation energy
-		Vd        = 5e-6   # activation volume
-		eta0      = 1e23   # POWER LAW reference viscosity
-		e0        = 1e-15  # reference strain rate
-		Bn        = 2.5e4  # DISLOCATION creep pre-exponential constant
-		En        = 532e3  # activation energy
-		Vn        = 17e-6  # activation volume
-		n         = 3.5    # power law exponent
-		Bp        = 5.7e11 # PEIERLS creep pre-exponential constant
-		Ep        = 5.4e5  # activation energy
-		Vp        = 0.0    # activation volume
-		taup      = 8.5e9  # scaling stress
-		gamma     = 0.1    # approximation parameter
-		q         = 2.0    # stress-dependence parameter
-		ch        = 2e7    # cohesion
-		fr        = 30.0   # friction angle
-		rp        = 0.7    # pore-pressure ratio
-		chSoftID  = 0      # friction softening law ID
-		frSoftID  = 0      # cohesion softening law ID
-		alpha     = 3e-5   # thermal expansivity
-		Cp        = 1.2e3  # specific heat (capacity)
-		k         = 2.5    # thermal conductivity
-		A         = 1e-9   # radiogenic heat production
-		T         = 100.0  # optional temperature to set within the phase
-		rho_ph    = TestPD # name of the phase diagram you want to use (still needs rho to be defined for the initial guess of pressure)
-        rho_ph_dir= 		#in case the phase diagram has a different path provide the path (without the name of the actual PD) here
+		ID         = 1      # material phase ID
+		visID      = 10     # material ID for phase visualization (default is ID)
+		diff_prof  = Dry_Olivine_diff_creep-Hirth_Kohlstedt_2003 # DIFFUSION creep profile
+		disl_prof  = Granite-Tirel_et_al_2008                    # DISLOCATION creep profile
+		peir_prof  = Olivine_Peierls-Kameyama_1999               # PEIERLS creep profile
+		rho        = 3e3    # reference density
+		rho_n      = 0.5    # depth-dependent density model parameter
+		rho_c      = 1e-4   # depth-dependent density model parameter
+		beta       = 1e-11  # pressure-dependent density model parameter
+		G          = 4e10   # shear modulus
+		K          = 6e10   # bulk modulus
+		E          = 6e10   # Young's modulus
+		nu         = 0.25   # Poisson's ratio
+		Kp         = 5.0    # pressure dependence parameter
+		eta        = 1e23   # NEWTONIAN viscosity
+		Bd         = 1.5e9  # DIFFUSION creep pre-exponential constant
+		Ed         = 375e3  # activation energy
+		Vd         = 5e-6   # activation volume
+		eta0       = 1e23   # POWER LAW reference viscosity
+		e0         = 1e-15  # reference strain rate
+		Bn         = 2.5e4  # DISLOCATION creep pre-exponential constant
+		En         = 532e3  # activation energy
+		Vn         = 17e-6  # activation volume
+		n          = 3.5    # power law exponent
+		Bp         = 5.7e11 # PEIERLS creep pre-exponential constant
+		Ep         = 5.4e5  # activation energy
+		Vp         = 0.0    # activation volume
+		taup       = 8.5e9  # scaling stress
+		gamma      = 0.1    # approximation parameter
+		q          = 2.0    # stress-dependence parameter
+		ch         = 2e7    # cohesion
+		fr         = 30.0   # friction angle
+		rp         = 0.7    # pore-pressure ratio
+		chSoftID   = 0      # friction softening law ID
+		frSoftID   = 0      # cohesion softening law ID
+		alpha      = 3e-5   # thermal expansivity
+		Cp         = 1.2e3  # specific heat (capacity)
+		k          = 2.5    # thermal conductivity
+		A          = 1e-9   # radiogenic heat production
+		T          = 100.0  # optional temperature to set within the phase
+		rho_ph     = TestPD # name of the phase diagram you want to use (still needs rho to be defined for the initial guess of pressure)
+        rho_ph_dir =        # in case the phase diagram has a different path provide the path (without the name of the actual PD) here
+		mfc        = 0.0    # melt fraction viscosity correction factor (positive scalar)
 	<MaterialEnd>
 
 #===============================================================================

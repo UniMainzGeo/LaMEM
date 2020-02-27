@@ -163,6 +163,7 @@
 #include "constEq.h"
 #include "parsing.h"
 //---------------------------------------------------------------------------
+/*
 #undef __FUNCT__
 #define __FUNCT__ "LaMEMAdjointMain"
 PetscErrorCode LaMEMAdjointMain(ModParam *IOparam, FB *fb)
@@ -760,21 +761,21 @@ PetscErrorCode AdjointOptimisationTAO(Tao tao, Vec P, PetscReal *F, Vec grad, vo
  		// -------- Only get gradients with respect to the solution --------
 
  		// -------- Get gradients with respect of cost function -------------
- 			/* PetscPrintf(PETSC_COMM_WORLD,"******************************************\n      COMPUTATION OF THE COST FUNCTION\n******************************************\n");
-
-			PetscScalar Ad;
-
-			// Incorporate projection vector (F = (1/2)*[P*(x-x_ini)' * P*(x-x_ini)])
-			ierr = VecAYPX(xini,-1,jr->gsol);                                       CHKERRQ(ierr);
-			ierr = VecPointwiseMult(xini, xini,aop->pro);                           CHKERRQ(ierr);
-
-			// Compute objective function value (F = (1/2)*[P*(x-x_ini)' * P*(x-x_ini)])
-			ierr 	           = VecDot(xini,xini,&Ad);
-			Ad 		          /= 2;
-			IOparam->mfit 	   = Ad*pow(scal->velocity,2); // Dimensional misfit function
-
-			PetscPrintf(PETSC_COMM_WORLD,"Current Cost function = %.20f\n",IOparam->mfit);*/
-		// -------- Get gradients with respect of cost function -------------
+// 			 PetscPrintf(PETSC_COMM_WORLD,"******************************************\n      COMPUTATION OF THE COST FUNCTION\n******************************************\n");
+//
+//			PetscScalar Ad;
+//
+//			// Incorporate projection vector (F = (1/2)*[P*(x-x_ini)' * P*(x-x_ini)])
+//			ierr = VecAYPX(xini,-1,jr->gsol);                                       CHKERRQ(ierr);
+//			ierr = VecPointwiseMult(xini, xini,aop->pro);                           CHKERRQ(ierr);
+//
+//			// Compute objective function value (F = (1/2)*[P*(x-x_ini)' * P*(x-x_ini)])
+//			ierr 	           = VecDot(xini,xini,&Ad);
+//			Ad 		          /= 2;
+//			IOparam->mfit 	   = Ad*pow(scal->velocity,2); // Dimensional misfit function
+//
+//			PetscPrintf(PETSC_COMM_WORLD,"Current Cost function = %.20f\n",IOparam->mfit);
+//		// -------- Get gradients with respect of cost function -------------
 
  		// Get the gradients
  		ierr = AdjointComputeGradients(jr, aop, nl, snes, IOparam, surf);        CHKERRQ(ierr);
@@ -872,18 +873,18 @@ PetscErrorCode AdjointOptimisationTAO(Tao tao, Vec P, PetscReal *F, Vec grad, vo
 
  	PetscFunctionReturn(0);
  }
- /*//---------------------------------------------------------------------------
- #undef __FUNCT__
- #define __FUNCT__ "AdjointFormHessian"
- PetscErrorCode AdjointFormHessian(Tao tao, Mat H, Mat Hre, void *ctx)
- {
- 	PetscErrorCode ierr;
- 	PetscFunctionBegin;
-
-	// You should use lmvm (or the bounded version blmvm) tao_solve because this is using the bfgs approximated Hessian which is reasonable.
-
- 	PetscFunctionReturn(0);
- }*/
+// //---------------------------------------------------------------------------
+// #undef __FUNCT__
+// #define __FUNCT__ "AdjointFormHessian"
+// PetscErrorCode AdjointFormHessian(Tao tao, Mat H, Mat Hre, void *ctx)
+// {
+// 	PetscErrorCode ierr;
+// 	PetscFunctionBegin;
+//
+//	// You should use lmvm (or the bounded version blmvm) tao_solve because this is using the bfgs approximated Hessian which is reasonable.
+//
+// 	PetscFunctionReturn(0);
+// }
 //---------------------------------------------------------------------------
 #undef __FUNCT__
 #define __FUNCT__ "AdjointComputeGradients"
@@ -1619,11 +1620,11 @@ PetscErrorCode AdjointFormResidual(SNES snes, Vec x, Vec f, void *ctx, PetscInt 
 	nl = (NLSol*)ctx;
 	jr = nl->pc->pm->jr;
 
-	/*// apply pressure limit at the first visco-plastic timestep and iteration
-    if(jr->ts->istep == 1 && jr->ctrl->pLimPlast == PETSC_TRUE)
-    {
-    	jr->matLim.presLimFlg = PETSC_TRUE;
-	}*/
+//	// apply pressure limit at the first visco-plastic timestep and iteration
+//    if(jr->ts->istep == 1 && jr->ctrl->pLimPlast == PETSC_TRUE)
+//    {
+//    	jr->matLim.presLimFlg = PETSC_TRUE;
+//	}
 
 	// copy solution from global to local vectors, enforce boundary constraints
 	ierr = JacResCopySol(jr, x); CHKERRQ(ierr);
@@ -2047,15 +2048,17 @@ PetscErrorCode AdjointJacResGetResidual_ViscPowerlaw(JacRes *jr, PetscInt CurPar
 		else               depth = 0.0;
 		if(depth < 0.0)    depth = 0.0;
 
+// ACHTUNG!!!
+
 		// evaluate deviatoric constitutive equations
-		ierr = DevConstEq(svDev, &eta_creep, &eta_vp, numPhases, phases, soft, svCell->phRat, ctrl, pc_lith, pc_pore, dt, pc-pShift, Tc, jr-> Pd); CHKERRQ(ierr);
+//		ierr = DevConstEq(svDev, &eta_creep, &eta_vp, numPhases, phases, soft, svCell->phRat, ctrl, pc_lith, pc_pore, dt, pc-pShift, Tc, jr-> Pd); CHKERRQ(ierr);
 
 		// store creep viscosity
 		svCell->eta_creep = eta_creep;
 		svCell->eta_vp    = eta_vp;
 
 		// compute stress, plastic strain rate and shear heating term on cell
-		ierr = GetStressCell(svCell, XX, YY, ZZ); CHKERRQ(ierr);
+		ierr = getStressCell(svCell, XX, YY, ZZ); CHKERRQ(ierr);
 
 		// evaluate volumetric constitutive equations
 		ierr = VolConstEq(svBulk, numPhases, phases, svCell->phRat, ctrl, depth, dt, pc-pShift , Tc, jr-> Pd); CHKERRQ(ierr);
@@ -2090,7 +2093,7 @@ PetscErrorCode AdjointJacResGetResidual_ViscPowerlaw(JacRes *jr, PetscInt CurPar
 		pp 		 =  pc-pShift;
 		e0 		 =  ctrl->DII_ref;
 		eta0 	 =  pow(Bn*pow(2,n)*pow(e0,n-1),-1/n);
-		etamax   =  1/ctrl->inv_eta_max;
+		etamax   =  ctrl->eta_max;
 
 		if (CurPar==_RHO0_)  // Only influences the center node
 		{
@@ -2103,14 +2106,14 @@ PetscErrorCode AdjointJacResGetResidual_ViscPowerlaw(JacRes *jr, PetscInt CurPar
 		}
 		else if(CurPar==_ETA0_)
 		{
-			// BN
-			/*if(svCell->phRat[CurPhase] > 0)
-			{
-				ep = exp((-En-pp*Vn)/RT);
-				fx[k][j][i] -= ph*( (-XX*pow(eII,1/n-1)*ep*pow(Bn*ep,-1/n-1))/(bdx*n) );   fx[k][j][i+1] += ph*( (-XX*pow(eII,1/n-1)*ep*pow(Bn*ep,-1/n-1))/(fdx*n) );
-				fy[k][j][i] -= ph*( (-YY*pow(eII,1/n-1)*ep*pow(Bn*ep,-1/n-1))/(bdy*n) );   fy[k][j+1][i] += ph*( (-YY*pow(eII,1/n-1)*ep*pow(Bn*ep,-1/n-1))/(fdy*n) );
-				fz[k][j][i] -= ph*( (-ZZ*pow(eII,1/n-1)*ep*pow(Bn*ep,-1/n-1))/(bdz*n) );   fz[k+1][j][i] += ph*( (-ZZ*pow(eII,1/n-1)*ep*pow(Bn*ep,-1/n-1))/(fdz*n) );
-			}*/
+//			// BN
+//			if(svCell->phRat[CurPhase] > 0)
+//			{
+//				ep = exp((-En-pp*Vn)/RT);
+//				fx[k][j][i] -= ph*( (-XX*pow(eII,1/n-1)*ep*pow(Bn*ep,-1/n-1))/(bdx*n) );   fx[k][j][i+1] += ph*( (-XX*pow(eII,1/n-1)*ep*pow(Bn*ep,-1/n-1))/(fdx*n) );
+//				fy[k][j][i] -= ph*( (-YY*pow(eII,1/n-1)*ep*pow(Bn*ep,-1/n-1))/(bdy*n) );   fy[k][j+1][i] += ph*( (-YY*pow(eII,1/n-1)*ep*pow(Bn*ep,-1/n-1))/(fdy*n) );
+//				fz[k][j][i] -= ph*( (-ZZ*pow(eII,1/n-1)*ep*pow(Bn*ep,-1/n-1))/(bdz*n) );   fz[k+1][j][i] += ph*( (-ZZ*pow(eII,1/n-1)*ep*pow(Bn*ep,-1/n-1))/(fdz*n) );
+//			}
 			// ETA0
 			if(svCell->phRat[CurPhase] > 0)
 			{
@@ -2152,9 +2155,9 @@ PetscErrorCode AdjointJacResGetResidual_ViscPowerlaw(JacRes *jr, PetscInt CurPar
 		}
 
 
-//****************************************
+//----------------------------------------
 // ADHOC (HARD-CODED PRESSURE CONSTRAINTS)
-//****************************************
+//----------------------------------------
 
 //		if(k == 0)   fz[k][j][i]   += -p[k-1][j][i]/bdz;
 //		if(k == mcz) fz[k+1][j][i] -= -p[k+1][j][i]/fdz;
@@ -2252,10 +2255,10 @@ PetscErrorCode AdjointJacResGetResidual_ViscPowerlaw(JacRes *jr, PetscInt CurPar
 		pc_pore = 0.25*(p_pore[k][j][i] + p_pore[k][j][i-1] + p_pore[k][j-1][i] + p_pore[k][j-1][i-1]);
 
 		// evaluate deviatoric constitutive equations
-		ierr = DevConstEq(svDev, &eta_creep, &eta_vp, numPhases, phases, soft, svEdge->phRat, ctrl, pc_lith, pc_pore, dt, pc-pShift, Tc, jr-> Pd); CHKERRQ(ierr);
+//		ierr = DevConstEq(svDev, &eta_creep, &eta_vp, numPhases, phases, soft, svEdge->phRat, ctrl, pc_lith, pc_pore, dt, pc-pShift, Tc, jr-> Pd); CHKERRQ(ierr);
 
 		// compute stress, plastic strain rate and shear heating term on edge
-		ierr = GetStressEdge(svEdge, XY); CHKERRQ(ierr);
+		ierr = getStressEdge(svEdge, XY); CHKERRQ(ierr);
 
 		//=========
 		// RESIDUAL
@@ -2279,7 +2282,7 @@ PetscErrorCode AdjointJacResGetResidual_ViscPowerlaw(JacRes *jr, PetscInt CurPar
 		pp 		 =  pc-pShift;
 		e0 		 =  ctrl->DII_ref;
 		eta0 	 =  pow(Bn*pow(2,n)*pow(e0,n-1),-1/n);
-		etamax   =  1/ctrl->inv_eta_max;
+		etamax   =  ctrl->eta_max;
 
 		if (CurPar==_RHO0_)
 		{
@@ -2295,13 +2298,13 @@ PetscErrorCode AdjointJacResGetResidual_ViscPowerlaw(JacRes *jr, PetscInt CurPar
 				fx[k][j-1][i] -= ph*( (XY*pow(2,2-n)*pow(eII,1-1/n)*pow(eta0,-n-1)*pow(e0,1-n)*ep*pow(ef,1/n-1))/(bdy*pow(2*pow(eII,1-1/n)*pow(ef,1/n)+1/etamax,2)) );   fx[k][j][i] += ph*( (XY*pow(2,2-n)*pow(eII,1-1/n)*pow(eta0,-n-1)*pow(e0,1-n)*ep*pow(ef,1/n-1))/(fdy*pow(2*pow(eII,1-1/n)*pow(ef,1/n)+1/etamax,2)) );
 				fy[k][j][i-1] -= ph*( (XY*pow(2,2-n)*pow(eII,1-1/n)*pow(eta0,-n-1)*pow(e0,1-n)*ep*pow(ef,1/n-1))/(bdx*pow(2*pow(eII,1-1/n)*pow(ef,1/n)+1/etamax,2)) );   fy[k][j][i] += ph*( (XY*pow(2,2-n)*pow(eII,1-1/n)*pow(eta0,-n-1)*pow(e0,1-n)*ep*pow(ef,1/n-1))/(fdx*pow(2*pow(eII,1-1/n)*pow(ef,1/n)+1/etamax,2)) );
 			}
-			// BN
-			/*if(svEdge->phRat[CurPhase] > 0)
-			{
-				ep = exp((-En-pp*Vn)/RT);
-				fx[k][j-1][i] -= ph*( (-XY*pow(eII,1/n-1)*ep*pow(Bn*ep,-1/n-1))/(bdy*n) );   fx[k][j][i] += ph*( (-XY*pow(eII,1/n-1)*ep*pow(Bn*ep,-1/n-1))/(fdy*n) );
-				fy[k][j][i-1] -= ph*( (-XY*pow(eII,1/n-1)*ep*pow(Bn*ep,-1/n-1))/(bdx*n) );   fy[k][j][i] += ph*( (-XY*pow(eII,1/n-1)*ep*pow(Bn*ep,-1/n-1))/(fdx*n) );
-			}*/
+//			// BN
+//			if(svEdge->phRat[CurPhase] > 0)
+//			{
+//				ep = exp((-En-pp*Vn)/RT);
+//				fx[k][j-1][i] -= ph*( (-XY*pow(eII,1/n-1)*ep*pow(Bn*ep,-1/n-1))/(bdy*n) );   fx[k][j][i] += ph*( (-XY*pow(eII,1/n-1)*ep*pow(Bn*ep,-1/n-1))/(fdy*n) );
+//				fy[k][j][i-1] -= ph*( (-XY*pow(eII,1/n-1)*ep*pow(Bn*ep,-1/n-1))/(bdx*n) );   fy[k][j][i] += ph*( (-XY*pow(eII,1/n-1)*ep*pow(Bn*ep,-1/n-1))/(fdx*n) );
+//			}
 		}
 		else if(CurPar==_N_)
 		{
@@ -2417,10 +2420,10 @@ PetscErrorCode AdjointJacResGetResidual_ViscPowerlaw(JacRes *jr, PetscInt CurPar
 		pc_pore = 0.25*(p_pore[k][j][i] + p_pore[k][j][i-1] + p_pore[k-1][j][i] + p_pore[k-1][j][i-1]);
 
 		// evaluate deviatoric constitutive equations
-		ierr = DevConstEq(svDev, &eta_creep, &eta_vp, numPhases, phases, soft, svEdge->phRat, ctrl, pc_lith, pc_pore, dt, pc-pShift, Tc, jr-> Pd); CHKERRQ(ierr);
+//		ierr = DevConstEq(svDev, &eta_creep, &eta_vp, numPhases, phases, soft, svEdge->phRat, ctrl, pc_lith, pc_pore, dt, pc-pShift, Tc, jr-> Pd); CHKERRQ(ierr);
 
 		// compute stress, plastic strain rate and shear heating term on edge
-		ierr = GetStressEdge(svEdge, XZ); CHKERRQ(ierr);
+		ierr = getStressEdge(svEdge, XZ); CHKERRQ(ierr);
 
 		//=========
 		// RESIDUAL
@@ -2444,7 +2447,7 @@ PetscErrorCode AdjointJacResGetResidual_ViscPowerlaw(JacRes *jr, PetscInt CurPar
 		pp 		 =  pc-pShift;
 		e0 		 =  ctrl->DII_ref;
 		eta0 	 =  pow(Bn*pow(2,n)*pow(e0,n-1),-1/n);
-		etamax   =  1/ctrl->inv_eta_max;
+		etamax   =  ctrl->eta_max;
 
 		// momentum
 		if (CurPar==_RHO0_)
@@ -2461,13 +2464,13 @@ PetscErrorCode AdjointJacResGetResidual_ViscPowerlaw(JacRes *jr, PetscInt CurPar
 				fx[k-1][j][i] -= ph*( (XZ*pow(2,2-n)*pow(eII,1-1/n)*pow(eta0,-n-1)*pow(e0,1-n)*ep*pow(ef,1/n-1))/(bdz*pow(2*pow(eII,1-1/n)*pow(ef,1/n)+1/etamax,2)) );   fx[k][j][i] += ph*( (XZ*pow(2,2-n)*pow(eII,1-1/n)*pow(eta0,-n-1)*pow(e0,1-n)*ep*pow(ef,1/n-1))/(fdz*pow(2*pow(eII,1-1/n)*pow(ef,1/n)+1/etamax,2)) );
 				fz[k][j][i-1] -= ph*( (XZ*pow(2,2-n)*pow(eII,1-1/n)*pow(eta0,-n-1)*pow(e0,1-n)*ep*pow(ef,1/n-1))/(bdx*pow(2*pow(eII,1-1/n)*pow(ef,1/n)+1/etamax,2)) );   fz[k][j][i] += ph*( (XZ*pow(2,2-n)*pow(eII,1-1/n)*pow(eta0,-n-1)*pow(e0,1-n)*ep*pow(ef,1/n-1))/(fdx*pow(2*pow(eII,1-1/n)*pow(ef,1/n)+1/etamax,2)) );
 			}
-			// BN
-			/*if(svEdge->phRat[CurPhase] > 0)
-			{
-				ep = exp((-En-pp*Vn)/RT);
-				fx[k-1][j][i] -= ph*( (-XZ*pow(eII,1/n-1)*ep*pow(Bn*ep,-1/n-1))/(bdz*n) );   fx[k][j][i] += ph*( (-XZ*pow(eII,1/n-1)*ep*pow(Bn*ep,-1/n-1))/(fdz*n) );
-				fz[k][j][i-1] -= ph*( (-XZ*pow(eII,1/n-1)*ep*pow(Bn*ep,-1/n-1))/(bdx*n) );   fz[k][j][i] += ph*( (-XZ*pow(eII,1/n-1)*ep*pow(Bn*ep,-1/n-1))/(fdx*n) );
-			}*/
+//			// BN
+//			if(svEdge->phRat[CurPhase] > 0)
+//			{
+//				ep = exp((-En-pp*Vn)/RT);
+//				fx[k-1][j][i] -= ph*( (-XZ*pow(eII,1/n-1)*ep*pow(Bn*ep,-1/n-1))/(bdz*n) );   fx[k][j][i] += ph*( (-XZ*pow(eII,1/n-1)*ep*pow(Bn*ep,-1/n-1))/(fdz*n) );
+//				fz[k][j][i-1] -= ph*( (-XZ*pow(eII,1/n-1)*ep*pow(Bn*ep,-1/n-1))/(bdx*n) );   fz[k][j][i] += ph*( (-XZ*pow(eII,1/n-1)*ep*pow(Bn*ep,-1/n-1))/(fdx*n) );
+//			}
 		}
 		else if(CurPar==_N_)
 		{
@@ -2583,10 +2586,10 @@ PetscErrorCode AdjointJacResGetResidual_ViscPowerlaw(JacRes *jr, PetscInt CurPar
 		pc_pore = 0.25*(p_pore[k][j][i] + p_pore[k][j-1][i] + p_pore[k-1][j][i] + p_pore[k-1][j-1][i]);
 
 		// evaluate deviatoric constitutive equations
-		ierr = DevConstEq(svDev, &eta_creep, &eta_vp, numPhases, phases, soft, svEdge->phRat, ctrl, pc_lith, pc_pore, dt, pc-pShift, Tc, jr-> Pd); CHKERRQ(ierr);
+//		ierr = DevConstEq(svDev, &eta_creep, &eta_vp, numPhases, phases, soft, svEdge->phRat, ctrl, pc_lith, pc_pore, dt, pc-pShift, Tc, jr-> Pd); CHKERRQ(ierr);
 
 		// compute stress, plastic strain rate and shear heating term on edge
-		ierr = GetStressEdge(svEdge, YZ); CHKERRQ(ierr);
+		ierr = getStressEdge(svEdge, YZ); CHKERRQ(ierr);
 
 		//=========
 		// RESIDUAL
@@ -2610,7 +2613,7 @@ PetscErrorCode AdjointJacResGetResidual_ViscPowerlaw(JacRes *jr, PetscInt CurPar
 		pp 		 =  pc-pShift;
 		e0 		 =  ctrl->DII_ref;
 		eta0 	 =  pow(Bn*pow(2,n)*pow(e0,n-1),-1/n);
-		etamax   =  1/ctrl->inv_eta_max;
+		etamax   =  ctrl->eta_max;
 
 		// update momentum residuals
 		if (CurPar==_RHO0_)
@@ -2628,12 +2631,12 @@ PetscErrorCode AdjointJacResGetResidual_ViscPowerlaw(JacRes *jr, PetscInt CurPar
 				fz[k][j-1][i] -= ph*( (YZ*pow(2,2-n)*pow(eII,1-1/n)*pow(eta0,-n-1)*pow(e0,1-n)*ep*pow(ef,1/n-1))/(bdy*pow(2*pow(eII,1-1/n)*pow(ef,1/n)+1/etamax,2)) );   fz[k][j][i] += ph*( (YZ*pow(2,2-n)*pow(eII,1-1/n)*pow(eta0,-n-1)*pow(e0,1-n)*ep*pow(ef,1/n-1))/(fdy*pow(2*pow(eII,1-1/n)*pow(ef,1/n)+1/etamax,2)) );
 			}
 			// BN
-			/*if(svEdge->phRat[CurPhase] > 0)
-			{
-				ep = exp((-En-pp*Vn)/RT);
-				fy[k-1][j][i] -= ph*( (-YZ*pow(eII,1/n-1)*ep*pow(Bn*ep,-1/n-1))/(bdz*n) );   fy[k][j][i] += ph*( (-YZ*pow(eII,1/n-1)*ep*pow(Bn*ep,-1/n-1))/(fdz*n) );
-				fz[k][j-1][i] -= ph*( (-YZ*pow(eII,1/n-1)*ep*pow(Bn*ep,-1/n-1))/(bdy*n) );   fz[k][j][i] += ph*( (-YZ*pow(eII,1/n-1)*ep*pow(Bn*ep,-1/n-1))/(fdy*n) );
-			}*/
+//			if(svEdge->phRat[CurPhase] > 0)
+//			{
+//				ep = exp((-En-pp*Vn)/RT);
+//				fy[k-1][j][i] -= ph*( (-YZ*pow(eII,1/n-1)*ep*pow(Bn*ep,-1/n-1))/(bdz*n) );   fy[k][j][i] += ph*( (-YZ*pow(eII,1/n-1)*ep*pow(Bn*ep,-1/n-1))/(fdz*n) );
+//				fz[k][j-1][i] -= ph*( (-YZ*pow(eII,1/n-1)*ep*pow(Bn*ep,-1/n-1))/(bdy*n) );   fz[k][j][i] += ph*( (-YZ*pow(eII,1/n-1)*ep*pow(Bn*ep,-1/n-1))/(fdy*n) );
+//			}
 		}
 		else if(CurPar==_N_)
 		{
@@ -2690,6 +2693,4 @@ PetscErrorCode AdjointJacResGetResidual_ViscPowerlaw(JacRes *jr, PetscInt CurPar
 
 	PetscFunctionReturn(0);
 }
-
-
-
+*/

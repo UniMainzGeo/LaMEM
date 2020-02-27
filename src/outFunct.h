@@ -107,16 +107,14 @@ PetscErrorCode PVOutWritePlastDissip (OutVec*);
 PetscErrorCode PVOutWriteTotDispl    (OutVec*);
 PetscErrorCode PVOutWriteSHmax       (OutVec*);
 PetscErrorCode PVOutWriteEHmax       (OutVec*);
-PetscErrorCode PVOutWriteISA         (OutVec*);
-PetscErrorCode PVOutWriteGOL         (OutVec*);
 PetscErrorCode PVOutWriteYield       (OutVec*);
-PetscErrorCode PVOutWriteRelDIId     (OutVec*);
+PetscErrorCode PVOutWriteRelDIIdif   (OutVec*);
+PetscErrorCode PVOutWriteRelDIIdis   (OutVec*);
+PetscErrorCode PVOutWriteRelDIIprl   (OutVec*);
 // === debug vectors ===============================================
 PetscErrorCode PVOutWriteMomentRes   (OutVec*);
 PetscErrorCode PVOutWriteContRes     (OutVec*);
 PetscErrorCode PVOutWritEnergRes     (OutVec*);
-PetscErrorCode PVOutWriteMeltFraction(OutVec*);
-PetscErrorCode PVOutWriteFluidDensity(OutVec*);
 
 // ... add more output functions here
 

@@ -56,47 +56,45 @@ static char help[] = "Solves 3D Stokes equations using multigrid .\n\n";
 #define __FUNCT__ "main"
 int main(int argc, char **argv)
 {
-
 	PetscErrorCode 	ierr;
 
 	// Initialize PETSC
 	ierr = PetscInitialize(&argc,&argv,(char *)0, help); CHKERRQ(ierr);
 
-	ModParam IOparam;
-	FB       *fb;
-
-	// set default to be a forward run and overwrite it with input file options
-
-	// 0 = forward run
-	// 1 = Neighborhood algorithm (requires NAPlus)
-	// 2 = only compute adjoint gradients
-	// 3 = 'full' adjoint inversion with TAO
-	// 4 = assume this as a forward simulation and save the solution
-
-	IOparam.use = 0;
-	ierr = FBLoad(&fb, PETSC_FALSE); CHKERRQ(ierr);
-	ierr = getIntParam (fb, _OPTIONAL_, "Inv_use", &IOparam.use, 1, 4); CHKERRQ(ierr);
-	
-	if(IOparam.use == 0)
-	{
-		// Forward simulation
+//	ModParam IOparam;
+//	FB       *fb;
+//
+//	// set default to be a forward run and overwrite it with input file options
+//
+//	// 0 = forward run
+//	// 1 = Neighborhood algorithm (requires NAPlus)
+//	// 2 = only compute adjoint gradients
+//	// 3 = 'full' adjoint inversion with TAO
+//	// 4 = assume this as a forward simulation and save the solution
+//
+//	IOparam.use = 0;
+//	ierr = FBLoad(&fb, PETSC_FALSE); CHKERRQ(ierr);
+//	ierr = getIntParam (fb, _OPTIONAL_, "Inv_use", &IOparam.use, 1, 4); CHKERRQ(ierr);
+//
+//	if(IOparam.use == 0)
+//	{
+//		// Forward simulation
 		ierr = LaMEMLibMain(NULL); CHKERRQ(ierr);
-	}
-	else
-	{
-		// Inversion or gradient computation
-		ierr = LaMEMAdjointMain(&IOparam, fb); CHKERRQ(ierr);
-	}
-
-	// destroy file buffer
-	ierr = FBDestroy(&fb); CHKERRQ(ierr);
-
-	ierr = PetscMemzero(&IOparam, sizeof(ModParam)); CHKERRQ(ierr);
+//	}
+//	else
+//	{
+//		// Inversion or gradient computation
+//		ierr = LaMEMAdjointMain(&IOparam, fb); CHKERRQ(ierr);
+//	}
+//
+//	// destroy file buffer
+//	ierr = FBDestroy(&fb); CHKERRQ(ierr);
+//
+//	ierr = PetscMemzero(&IOparam, sizeof(ModParam)); CHKERRQ(ierr);
 
 	// cleanup PETSC
 	ierr = PetscFinalize(); CHKERRQ(ierr);
 
 	return 0;
 }
-
 //--------------------------------------------------------------------------
