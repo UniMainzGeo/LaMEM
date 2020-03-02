@@ -661,8 +661,8 @@ PetscInt solveBisect(
 	// check whether closed-form solution exists
     if(PetscAbsScalar(fa) <= tol)
 	{
-    	// return divergence flag
-    	return 0;
+    	// return convergence flag
+    	return 1;
     }
 
 	do
@@ -687,7 +687,7 @@ PetscInt solveBisect(
 
 	} while(PetscAbsScalar(fx) > tol && it < maxit);
 
-	// return failure flag
-	return PetscAbsScalar(fx) > tol;
+	// return convergence flag
+	return PetscAbsScalar(fx) <= tol;
 }
 //-----------------------------------------------------------------------------

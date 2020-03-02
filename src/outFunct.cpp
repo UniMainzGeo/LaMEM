@@ -333,7 +333,7 @@ PetscErrorCode PVOutWritePressure(OutVec* outvec)
 #define __FUNCT__ "PVOutWriteTotalPress"
 PetscErrorCode PVOutWriteTotalPress(OutVec* outvec)
 {
-	PetscScalar pShift, biot;
+	PetscScalar biot;
 
 	ACCESS_FUNCTION_HEADER
 
@@ -341,15 +341,12 @@ PetscErrorCode PVOutWriteTotalPress(OutVec* outvec)
 
 	cf  = scal->stress;
 
-	// scale pressure shift
-	pShift = cf*jr->ctrl.pShift;
-
 	ierr = JacResCopyPres(jr, jr->gsol); CHKERRQ(ierr);
 
 	// compute total pressure
 	ierr = VecWAXPY(outbuf->lbcen, biot, jr->lp_pore, jr->lp); CHKERRQ(ierr);
 
-	INTERPOLATE_ACCESS(outbuf->lbcen, InterpCenterCorner, 1, 0, pShift)
+	INTERPOLATE_ACCESS(outbuf->lbcen, InterpCenterCorner, 1, 0, 0.0)
 
 	PetscFunctionReturn(0);
 }
@@ -358,19 +355,14 @@ PetscErrorCode PVOutWriteTotalPress(OutVec* outvec)
 #define __FUNCT__ "PVOutWriteEffPress"
 PetscErrorCode PVOutWriteEffPress(OutVec* outvec)
 {
-	PetscScalar pShift;
-
 	ACCESS_FUNCTION_HEADER
 
 	cf = scal->stress;
 	iflag.use_bound = 1;
 
-	// scale pressure shift
-	pShift = cf*jr->ctrl.pShift;
-
 	ierr = JacResCopyPres(jr, jr->gsol); CHKERRQ(ierr);
 
-	INTERPOLATE_ACCESS(jr->lp, InterpCenterCorner, 1, 0, pShift)
+	INTERPOLATE_ACCESS(jr->lp, InterpCenterCorner, 1, 0, 0.0)
 
 	PetscFunctionReturn(0);
 }
@@ -379,18 +371,13 @@ PetscErrorCode PVOutWriteEffPress(OutVec* outvec)
 #define __FUNCT__ "PVOutWriteOverPress"
 PetscErrorCode PVOutWriteOverPress(OutVec* outvec)
 {
-	PetscScalar pShift;
-
 	ACCESS_FUNCTION_HEADER
 
 	cf = scal->stress;
 
-	// scale pressure shift
-	pShift = cf*jr->ctrl.pShift;
-
 	ierr = JacResGetOverPressure(jr, outbuf->lbcen); CHKERRQ(ierr);
 
-	INTERPOLATE_ACCESS(outbuf->lbcen, InterpCenterCorner, 1, 0, pShift)
+	INTERPOLATE_ACCESS(outbuf->lbcen, InterpCenterCorner, 1, 0, 0.0)
 
 	PetscFunctionReturn(0);
 }

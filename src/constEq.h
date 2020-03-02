@@ -56,6 +56,7 @@ struct SolVarBulk;
 struct SolVarCell;
 struct SolVarEdge;
 struct PData;
+struct JacRes;
 
 //---------------------------------------------------------------------------
 
@@ -67,19 +68,20 @@ struct ConstEqCtx
 	Material_t  *phases;    // phase parameters
 	Soft_t      *soft;      // material softening laws
 	Controls    *ctrl;      // parameters and controls
-	PData       *pd;        // phase diagram data
+	PData       *Pd;        // phase diagram data
 	PetscScalar  dt;        // time step
-	PetscScalar  stats[3];  // total number of [starts, fails, iterations]
+	PetscScalar  stats[3];  // total number of [starts, successes, iterations]
+	PetscScalar  avg_topo;  // average surface topography
 
 	// control volume parameters
 	PetscScalar *phRat;  // phase ratios in the control volume
 	PetscScalar  p;      // pressure
 	PetscScalar  p_lith; // lithostatic pressure
 	PetscScalar  p_pore; // pore pressure
-	PetscScalar  depth;  // depth for depth-dependent density model
 	PetscScalar  T;      // temperature
 	PetscScalar  DII;    // effective strain rate
 	PetscScalar  APS;    // accumulated plastic strain
+	PetscScalar  depth;  // depth for depth-dependent density model
 
 	// phase parameters
 	PetscScalar  A_els;  // elasticity constant
@@ -104,31 +106,29 @@ struct ConstEqCtx
 };
 
 //---------------------------------------------------------------------------
-// evaluate volumetric constitutive equations in control volume
-PetscErrorCode volConstEq(SolVarBulk *svBulk, ConstEqCtx *ctx);
+// setup evaluation context
+PetscErrorCode setUpConstEq(ConstEqCtx *ctx, JacRes *jr);
+
+// setup control volume parameters
+PetscErrorCode setUpCtrlVol(
+	ConstEqCtx  *ctx,    // context
+	PetscScalar *phRat,  // phase ratios in the control volume
+	PetscScalar  APS,    // accumulated plastic strain
+	PetscScalar  p,      // pressure
+	PetscScalar  p_lith, // lithostatic pressure
+	PetscScalar  p_pore, // pore pressure
+	PetscScalar  T,      // temperature
+	PetscScalar  DII,    // effective strain rate
+	PetscScalar  z);     // z-coordinate of control volume
+
+// setup phase parameters for deviatoric constitutive equation
+PetscErrorCode setUpPhase(ConstEqCtx *ctx, PetscInt ID);
 
 // evaluate deviatoric constitutive equations in control volume
-PetscErrorCode devConstEq(SolVarDev *svDev, ConstEqCtx *ctx);
+PetscErrorCode devConstEq(ConstEqCtx *ctx, SolVarDev *svDev);
 
 // compute phase viscosities and strain rate partitioning
 PetscErrorCode getPhaseVisc(ConstEqCtx *ctx, PetscInt ID);
-
-// setup nonlinear constitutive equation evaluation context
-PetscErrorCode setUpPhase(ConstEqCtx *ctx, PetscInt ID);
-
-// compute stress, plastic strain-rate and shear heating term on cell
-PetscErrorCode getStressCell(
-		SolVarCell  *svCell, // solution variables
-		ConstEqCtx  *ctx,    // evaluation context
-		PetscScalar  dxx,    // effective normal strain rate components
-		PetscScalar  dyy,    // ...
-		PetscScalar  dzz);   // ...
-
-// compute stress, plastic strain-rate and shear heating term on edge
-PetscErrorCode getStressEdge(
-		SolVarEdge  *svEdge, // solution variables
-		ConstEqCtx  *ctx,    // evaluation context
-		PetscScalar  d);     // effective shear strain rate component
 
 // compute residual of the visco-elastic constitutive equation
 PetscScalar getConsEqRes(PetscScalar eta, void *pctx);
@@ -146,6 +146,29 @@ PetscScalar getI2Gdt(
 		Material_t  *phases,    // phase parameters
 		PetscScalar *phRat,     // phase ratios in the control volume
 		PetscScalar  dt);       // time step
+
+// evaluate volumetric constitutive equations in control volume
+PetscErrorCode volConstEq(ConstEqCtx *ctx, SolVarBulk *svBulk);
+
+// evaluate constitutive equations on the cell
+PetscErrorCode cellConstEq(
+		ConstEqCtx  *ctx,    // evaluation context
+		SolVarCell  *svCell, // solution variables
+		PetscScalar  dxx,    // effective normal strain rate components
+		PetscScalar  dyy,    // ...
+		PetscScalar  dzz,    // ...
+		PetscScalar &sxx,    // Cauchy stress components
+		PetscScalar &syy,    // ...
+		PetscScalar &szz,    // ...
+		PetscScalar &gres,   // volumetric residual
+		PetscScalar &rho);   // effective density
+
+// evaluate constitutive equations on the edge
+PetscErrorCode edgeConstEq(
+		ConstEqCtx  *ctx,    // evaluation context
+		SolVarEdge  *svEdge, // solution variables
+		PetscScalar  d,      // effective shear strain rate component
+		PetscScalar &s);     // Cauchy stress component
 
 //---------------------------------------------------------------------------
 //.............................. PHASE DIAGRAM  .............................

@@ -82,7 +82,6 @@ PetscErrorCode JacResCreate(JacRes *jr, FB *fb)
 	ctrl->AdiabHeat    =  0.0;
 	ctrl->shearHeatEff =  1.0;
 	ctrl->biot         =  1.0;
-	ctrl->pShiftAct    =  1;
 	ctrl->pLithoVisc   =  1;
 	ctrl->initGuess    =  1;
 	ctrl->mfmax        =  0.15;
@@ -106,7 +105,6 @@ PetscErrorCode JacResCreate(JacRes *jr, FB *fb)
 	ierr = getIntParam   (fb, _OPTIONAL_, "act_steady_temp", &ctrl->actSteadyTemp,  1, 1);   CHKERRQ(ierr);
 	ierr = getScalarParam(fb, _OPTIONAL_, "steady_temp_t",   &ctrl->steadyTempStep, 1, 1.0); CHKERRQ(ierr);
 	ierr = getIntParam   (fb, _OPTIONAL_, "nstep_steady",    &ctrl->steadyNumStep,  1, 0);   CHKERRQ(ierr);
-	ierr = getIntParam   (fb, _OPTIONAL_, "act_p_shift",     &ctrl->pShiftAct,      1, 1);   CHKERRQ(ierr);
 	ierr = getIntParam   (fb, _OPTIONAL_, "init_lith_pres",  &ctrl->initLithPres,   1, 1);   CHKERRQ(ierr);
 	ierr = getIntParam   (fb, _OPTIONAL_, "init_guess",      &ctrl->initGuess,      1, 1);   CHKERRQ(ierr);
 	ierr = getIntParam   (fb, _OPTIONAL_, "p_litho_visc",    &ctrl->pLithoVisc,     1, 1);   CHKERRQ(ierr);
@@ -252,7 +250,6 @@ PetscErrorCode JacResCreate(JacRes *jr, FB *fb)
 	if(ctrl->actTemp)        PetscPrintf(PETSC_COMM_WORLD, "   Activate temperature diffusion          @ \n");
 	if(ctrl->actSteadyTemp)  PetscPrintf(PETSC_COMM_WORLD, "   Steady state initial temperature        @ \n");
 	if(ctrl->steadyTempStep) PetscPrintf(PETSC_COMM_WORLD, "   Steady state initial temperature step   : %g %s \n", ctrl->steadyTempStep, scal->lbl_time);
-	if(ctrl->pShiftAct)      PetscPrintf(PETSC_COMM_WORLD, "   Enforce zero pressure on top boundary   @ \n");
 	if(ctrl->initGuess)      PetscPrintf(PETSC_COMM_WORLD, "   Compute initial guess                   @ \n");
 	if(ctrl->pLithoVisc)     PetscPrintf(PETSC_COMM_WORLD, "   Use lithostatic pressure for creep      @ \n");
 	if(ctrl->pLithoPlast)    PetscPrintf(PETSC_COMM_WORLD, "   Use lithostatic pressure for plasticity @ \n");
@@ -556,9 +553,6 @@ PetscErrorCode JacResFormResidual(JacRes *jr, Vec x, Vec f)
 	// copy solution from global to local vectors, enforce boundary constraints
 	ierr = JacResCopySol(jr, x); CHKERRQ(ierr);
 
-	// get pressure shift to enforce zero pressure in top layer of cells
-	ierr = JacResGetPressShift(jr); CHKERRQ(ierr);
-
 	// compute lithostatic pressure
 	ierr = JacResGetLithoStaticPressure(jr); CHKERRQ(ierr);
 
@@ -670,55 +664,6 @@ PetscErrorCode JacResGetI2Gdt(JacRes *jr)
 }
 //---------------------------------------------------------------------------
 #undef __FUNCT__
-#define __FUNCT__ "JacResGetPressShift"
-PetscErrorCode JacResGetPressShift(JacRes *jr)
-{
-	// get average pressure near the top surface
-
-	FDSTAG      *fs;
-	PetscScalar ***p;
-	PetscScalar lpShift, gpShift;
-	PetscInt    i, j, k, nx, ny, nz, sx, sy, sz, mcz;
-
-	PetscErrorCode ierr;
-	PetscFunctionBegin;
-
-	// check if requested
-	if(!jr->ctrl.pShiftAct) PetscFunctionReturn(0);
-
-	fs      = jr->fs;
-	mcz     = fs->dsz.tcels - 1;
-	lpShift = 0.0;
-
-	ierr = DMDAVecGetArray(fs->DA_CEN, jr->gp, &p);  CHKERRQ(ierr);
-
-	ierr = DMDAGetCorners(fs->DA_CEN, &sx, &sy, &sz, &nx, &ny, &nz); CHKERRQ(ierr);
-
-	START_STD_LOOP
-	{
-		if(k == mcz) lpShift += p[k][j][i];
-	}
-	END_STD_LOOP
-
-	ierr = DMDAVecRestoreArray(fs->DA_CEN, jr->gp, &p);  CHKERRQ(ierr);
-
-	// synchronize
-	if(ISParallel(PETSC_COMM_WORLD))
-	{
-		ierr = MPI_Allreduce(&lpShift, &gpShift, 1, MPIU_SCALAR, MPI_SUM, PETSC_COMM_WORLD); CHKERRQ(ierr);
-	}
-	else
-	{
-		gpShift = lpShift;
-	}
-
-	// store pressure shift
-	jr->ctrl.pShift = gpShift/(PetscScalar)(fs->dsx.tcels*fs->dsy.tcels);
-
-	PetscFunctionReturn(0);
-}
-//---------------------------------------------------------------------------
-#undef __FUNCT__
 #define __FUNCT__ "JacResGetEffStrainRate"
 PetscErrorCode JacResGetEffStrainRate(JacRes *jr)
 {
@@ -783,7 +728,6 @@ PetscErrorCode JacResGetEffStrainRate(JacRes *jr)
 		svBulk->theta = theta;
 
 		// compute & store total deviatoric strain rates
-
 		tr  = theta/3.0;
 		xx -= tr;
 		yy -= tr;
@@ -1034,12 +978,8 @@ PetscErrorCode JacResGetResidual(JacRes *jr)
 	BCCtx      *bc;
 	SolVarCell *svCell;
 	SolVarEdge *svEdge;
-	SolVarDev  *svDev;
-	SolVarBulk *svBulk;
-	Material_t *phases;
-	Soft_t     *soft;
-	Controls   *ctrl;
-	PetscInt    iter, numPhases, AirPhase, actExp;
+	ConstEqCtx  ctx;
+	PetscInt    iter;
 	PetscInt    I1, I2, J1, J2, K1, K2;
 	PetscInt    i, j, k, nx, ny, nz, sx, sy, sz, mx, my, mz, mcx, mcy, mcz;
 	PetscScalar XX, XX1, XX2, XX3, XX4;
@@ -1049,13 +989,10 @@ PetscErrorCode JacResGetResidual(JacRes *jr)
 	PetscScalar XZ, XZ1, XZ2, XZ3, XZ4;
 	PetscScalar YZ, YZ1, YZ2, YZ3, YZ4;
 	PetscScalar bdx, fdx, bdy, fdy, bdz, fdz;
-	PetscScalar gx, gy, gz, tx, ty, tz, sxx, syy, szz, sxy, sxz, syz;
-	PetscScalar J2Inv, theta, rho, IKdt, Tc, pc, pShift, pn, dt, fssa, *grav;
+	PetscScalar gx, gy, gz, tx, ty, tz, sxx, syy, szz, sxy, sxz, syz, gres;
+	PetscScalar J2Inv, DII, z, rho, Tc, pc, pc_lith, pc_pore, dt, fssa, *grav;
 	PetscScalar ***fx,  ***fy,  ***fz, ***vx,  ***vy,  ***vz, ***gc, ***bcp;
 	PetscScalar ***dxx, ***dyy, ***dzz, ***dxy, ***dxz, ***dyz, ***p, ***T, ***p_lith, ***p_pore;
-	PetscScalar eta_creep, eta_vp;
-	PetscScalar depth, pc_lith, pc_pore, biot, ptotal, avg_topo;
-	PetscScalar alpha, Tn;
 
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
@@ -1074,18 +1011,12 @@ PetscErrorCode JacResGetResidual(JacRes *jr)
 	mz  = fs->dsz.tnods - 1;
 
 	// access residual context variables
-	numPhases =  jr->dbm->numPhases; // number phases
-	phases    =  jr->dbm->phases;    // phase parameters
-	soft      =  jr->dbm->matSoft;   // material softening laws
-	ctrl      = &jr->ctrl;           // control parameters
-	dt        =  jr->ts->dt;         // time step
-	fssa      =  ctrl->FSSA;         // density gradient penalty parameter
-	grav      =  ctrl->grav;         // gravity acceleration
-	pShift    =  ctrl->pShift;       // pressure shift
-	biot      =  ctrl->biot;         // Biot pressure parameter
-	AirPhase  =  jr->surf->AirPhase; // sticky air phase number
-	avg_topo  =  jr->surf->avg_topo; // average surface topography
-	actExp    =  ctrl->actExp;
+	fssa   =  jr->ctrl.FSSA; // density gradient penalty parameter
+	grav   =  jr->ctrl.grav; // gravity acceleration
+	dt     =  jr->ts->dt;    // time step
+
+	// setup constitutive equation evaluation context parameters
+	ierr = setUpConstEq(&ctx, jr); CHKERRQ(ierr);
 
 	// clear local residual vectors
 	ierr = VecZeroEntries(jr->lfx); CHKERRQ(ierr);
@@ -1125,8 +1056,6 @@ PetscErrorCode JacResGetResidual(JacRes *jr)
 	{
 		// access solution variables
 		svCell = &jr->svCell[iter++];
-		svDev  = &svCell->svDev;
-		svBulk = &svCell->svBulk;
 
 		//=================
 		// SECOND INVARIANT
@@ -1161,8 +1090,7 @@ PetscErrorCode JacResGetResidual(JacRes *jr)
 		0.25*(XZ1*XZ1 + XZ2*XZ2 + XZ3*XZ3 + XZ4*XZ4) +
 		0.25*(YZ1*YZ1 + YZ2*YZ2 + YZ3*YZ3 + YZ4*YZ4);
 
-		// store square root of second invariant
-//		svDev->DII = sqrt(J2Inv);
+		DII = sqrt(J2Inv);
 
 		//=======================
 		// CONSTITUTIVE EQUATIONS
@@ -1180,43 +1108,14 @@ PetscErrorCode JacResGetResidual(JacRes *jr)
 		// access current pore pressure (zero if deactivated)
 		pc_pore = p_pore[k][j][i];
 
-		// compute depth below the free surface
-		if(AirPhase != -1) depth = avg_topo - COORD_CELL(k, sz, fs->dsz);
-		else               depth = 0.0;
-		if(depth < 0.0)    depth = 0.0;
+		// z-coordinate of control volume
+		z = COORD_CELL(k, sz, fs->dsz);
 
-		// set deviatoric solution variables
-//		ctx->DII = svDev->DII;
-//		ctx->APS = svDev->APS;
+		// setup control volume parameters
+		ierr = setUpCtrlVol(&ctx, svCell->phRat, svCell->svDev.APS, pc, pc_lith, pc_pore, Tc, DII, z); CHKERRQ(ierr);
 
-		// evaluate deviatoric constitutive equations
-//		ierr = DevConstEq(svDev, &eta_creep, &eta_vp, numPhases, phases, soft, svCell->phRat, ctrl, pc_lith, pc_pore, dt, pc-pShift, Tc, jr-> Pd); CHKERRQ(ierr);
-
-		// store creep viscosity
-//		svCell->eta_creep = eta_creep;
-		svCell->eta_vp    = eta_vp;
-
-		// compute stress, plastic strain rate and shear heating term on cell
-//		ierr = GetStressCell(svCell, XX, YY, ZZ); CHKERRQ(ierr);
-
-		// get total pressure (effective pressure, computed by LaMEM, plus pore pressure)
-		ptotal = pc + biot*pc_pore;
-
-		// compute total Cauchy stresses
-		sxx = svCell->sxx - ptotal;
-		syy = svCell->syy - ptotal;
-		szz = svCell->szz - ptotal;
-
-		// evaluate volumetric constitutive equations
-//		ierr = VolConstEq(svBulk, numPhases, phases, svCell->phRat, ctrl, depth, dt, pc-pShift , Tc, jr-> Pd); CHKERRQ(ierr);
-
-		// access
-		theta = svBulk->theta; // volumetric strain rate
-		rho   = svBulk->rho;   // effective density
-		IKdt  = svBulk->IKdt;  // inverse bulk viscosity
-		alpha = svBulk->alpha; // effective thermal expansion
-		pn    = svBulk->pn;    // pressure history
-		Tn    = svBulk->Tn;    // temperature history
+		// evaluate constitutive equations on the cell
+		ierr = cellConstEq(&ctx, svCell, XX, YY, ZZ, sxx, syy, szz, gres, rho); CHKERRQ(ierr);
 
 		// compute gravity terms
 		gx = rho*grav[0];
@@ -1242,29 +1141,17 @@ PetscErrorCode JacResGetResidual(JacRes *jr)
 		fy[k][j][i] -= (syy + vy[k][j][i]*ty)/bdy + gy/2.0;   fy[k][j+1][i] += (syy + vy[k][j+1][i]*ty)/fdy - gy/2.0;
 		fz[k][j][i] -= (szz + vz[k][j][i]*tz)/bdz + gz/2.0;   fz[k+1][j][i] += (szz + vz[k+1][j][i]*tz)/fdz - gz/2.0;
 
-		//==============================
-		// PRESSURE BOUNDARY CONSTRAINTS
-		//==============================
-
+		// pressure boundary constraints
 		if(i == 0   && bcp[k][j][i-1] != DBL_MAX) fx[k][j][i]   += -p[k][j][i-1]/bdx;
 		if(i == mcx && bcp[k][j][i+1] != DBL_MAX) fx[k][j][i+1] -= -p[k][j][i+1]/fdx;
-
 		if(j == 0   && bcp[k][j-1][i] != DBL_MAX) fy[k][j][i]   += -p[k][j-1][i]/bdy;
 		if(j == mcy && bcp[k][j+1][i] != DBL_MAX) fy[k][j+1][i] -= -p[k][j+1][i]/fdy;
-
 		if(k == 0   && bcp[k-1][j][i] != DBL_MAX) fz[k][j][i]   += -p[k-1][j][i]/bdz;
 		if(k == mcz && bcp[k+1][j][i] != DBL_MAX) fz[k+1][j][i] -= -p[k+1][j][i]/fdz;
 
-		if(actExp)
-		{
-			gc[k][j][i] = -IKdt*(pc - pn) - theta + alpha*(Tc - Tn)/dt;
-		}
-		else
-		{
-			gc[k][j][i] = -IKdt*(pc - pn) - theta;
-		}
-        
-        
+		// mass (volume)
+		gc[k][j][i] = gres;
+
 	}
 	END_STD_LOOP
 
@@ -1280,7 +1167,6 @@ PetscErrorCode JacResGetResidual(JacRes *jr)
 	{
 		// access solution variables
 		svEdge = &jr->svXYEdge[iter++];
-		svDev  = &svEdge->svDev;
 
 		//=================
 		// SECOND INVARIANT
@@ -1333,8 +1219,7 @@ PetscErrorCode JacResGetResidual(JacRes *jr)
 		0.25 *(XZ1*XZ1 + XZ2*XZ2 + XZ3*XZ3 + XZ4*XZ4) +
 		0.25 *(YZ1*YZ1 + YZ2*YZ2 + YZ3*YZ3 + YZ4*YZ4);
 
-		// store square root of second invariant
-//		svDev->DII = sqrt(J2Inv);
+		DII = sqrt(J2Inv);
 
 		//=======================
 		// CONSTITUTIVE EQUATIONS
@@ -1352,14 +1237,11 @@ PetscErrorCode JacResGetResidual(JacRes *jr)
 		// access current pore pressure (x-y plane, i-j indices)
 		pc_pore = 0.25*(p_pore[k][j][i] + p_pore[k][j][i-1] + p_pore[k][j-1][i] + p_pore[k][j-1][i-1]);
 
-		// evaluate deviatoric constitutive equations
-//		ierr = DevConstEq(svDev, &eta_creep, &eta_vp, numPhases, phases, soft, svEdge->phRat, ctrl, pc_lith, pc_pore, dt, pc-pShift, Tc, jr-> Pd); CHKERRQ(ierr);
+		// setup control volume parameters
+		ierr = setUpCtrlVol(&ctx, svEdge->phRat, svEdge->svDev.APS, pc, pc_lith, pc_pore, Tc, DII, DBL_MAX); CHKERRQ(ierr);
 
-		// compute stress, plastic strain rate and shear heating term on edge
-//		ierr = getStressEdge(svEdge, XY); CHKERRQ(ierr);
-
-		// access xy component of the Cauchy stress
-		sxy = svEdge->s;
+		// evaluate constitutive equations on the cell
+		ierr = edgeConstEq(&ctx, svEdge, XY, sxy); CHKERRQ(ierr);
 
 		//=========
 		// RESIDUAL
@@ -1388,7 +1270,6 @@ PetscErrorCode JacResGetResidual(JacRes *jr)
 	{
 		// access solution variables
 		svEdge = &jr->svXZEdge[iter++];
-		svDev  = &svEdge->svDev;
 
 		//=================
 		// SECOND INVARIANT
@@ -1441,8 +1322,7 @@ PetscErrorCode JacResGetResidual(JacRes *jr)
 		0.25 *(XY1*XY1 + XY2*XY2 + XY3*XY3 + XY4*XY4) +
 		0.25 *(YZ1*YZ1 + YZ2*YZ2 + YZ3*YZ3 + YZ4*YZ4);
 
-		// store square root of second invariant
-//		svDev->DII = sqrt(J2Inv);
+		DII = sqrt(J2Inv);
 
 		//=======================
 		// CONSTITUTIVE EQUATIONS
@@ -1460,14 +1340,11 @@ PetscErrorCode JacResGetResidual(JacRes *jr)
 		// access current pore pressure (x-z plane, i-k indices)
 		pc_pore = 0.25*(p_pore[k][j][i] + p_pore[k][j][i-1] + p_pore[k-1][j][i] + p_pore[k-1][j][i-1]);
 
-		// evaluate deviatoric constitutive equations
-//		ierr = DevConstEq(svDev, &eta_creep, &eta_vp, numPhases, phases, soft, svEdge->phRat, ctrl, pc_lith, pc_pore, dt, pc-pShift, Tc, jr-> Pd); CHKERRQ(ierr);
+		// setup control volume parameters
+		ierr = setUpCtrlVol(&ctx, svEdge->phRat, svEdge->svDev.APS, pc, pc_lith, pc_pore, Tc, DII, DBL_MAX); CHKERRQ(ierr);
 
-		// compute stress, plastic strain rate and shear heating term on edge
-//		ierr = getStressEdge(svEdge, XZ); CHKERRQ(ierr);
-
-		// access xz component of the Cauchy stress
-		sxz = svEdge->s;
+		// evaluate constitutive equations on the cell
+		ierr = edgeConstEq(&ctx, svEdge, XZ, sxz); CHKERRQ(ierr);
 
 		//=========
 		// RESIDUAL
@@ -1496,7 +1373,6 @@ PetscErrorCode JacResGetResidual(JacRes *jr)
 	{
 		// access solution variables
 		svEdge = &jr->svYZEdge[iter++];
-		svDev  = &svEdge->svDev;
 
 		//=================
 		// SECOND INVARIANT
@@ -1549,8 +1425,7 @@ PetscErrorCode JacResGetResidual(JacRes *jr)
 		0.25 *(XY1*XY1 + XY2*XY2 + XY3*XY3 + XY4*XY4) +
 		0.25 *(XZ1*XZ1 + XZ2*XZ2 + XZ3*XZ3 + XZ4*XZ4);
 
-		// store square root of second invariant
-//		svDev->DII = sqrt(J2Inv);
+		DII = sqrt(J2Inv);
 
 		//=======================
 		// CONSTITUTIVE EQUATIONS
@@ -1568,14 +1443,11 @@ PetscErrorCode JacResGetResidual(JacRes *jr)
 		// access current pore pressure (y-z plane, j-k indices)
 		pc_pore = 0.25*(p_pore[k][j][i] + p_pore[k][j-1][i] + p_pore[k-1][j][i] + p_pore[k-1][j-1][i]);
 
-		// evaluate deviatoric constitutive equations
-//		ierr = DevConstEq(svDev, &eta_creep, &eta_vp, numPhases, phases, soft, svEdge->phRat, ctrl, pc_lith, pc_pore, dt, pc-pShift, Tc, jr-> Pd); CHKERRQ(ierr);
+		// setup control volume parameters
+		ierr = setUpCtrlVol(&ctx, svEdge->phRat, svEdge->svDev.APS, pc, pc_lith, pc_pore, Tc, DII, DBL_MAX); CHKERRQ(ierr);
 
-		// compute stress, plastic strain rate and shear heating term on edge
-//		ierr = getStressEdge(svEdge, YZ); CHKERRQ(ierr);
-
-		// access yz component of the Cauchy stress
-		syz = svEdge->s;
+		// evaluate constitutive equations on the cell
+		ierr = edgeConstEq(&ctx, svEdge, YZ, syz); CHKERRQ(ierr);
 
 		//=========
 		// RESIDUAL
@@ -1954,6 +1826,168 @@ PetscErrorCode JacResInitLithPres(JacRes *jr, AdvCtx *actx)
 	FDSTAG            *fs;
 	SolVarCell        *svCell;
 	SolVarBulk        *svBulk;
+	ConstEqCtx        ctx;
+	Marker            *P;
+	PetscInt          ID, ii, i, j, k, nx, ny, nz, sx, sy, sz, M, N;
+	PetscInt          iter, it, maxit, conv;
+	PetscScalar       z, Tc, pc, nprev, norm, lnorm, stop, tol;
+	PetscScalar       ***T, ***p;
+	PetscLogDouble    t;
+
+	PetscErrorCode ierr;
+	PetscFunctionBegin;
+
+	// check activation
+	if(!jr->ctrl.initLithPres) PetscFunctionReturn(0);
+
+	// print
+	PrintStart(&t, "Initializing pressure with lithostatic pressure", NULL);
+
+	// access context
+	fs         =  jr->fs;
+	M          =  fs->dsx.ncels;
+	N          =  fs->dsy.ncels;
+
+	// setup constitutive equation evaluation context parameters
+	ierr = setUpConstEq(&ctx, jr); CHKERRQ(ierr);
+
+	// iterate until convergence
+	norm  = 0.0;
+	maxit = 10;
+	tol   = 1e-3;
+	it    = 0;
+	stop  = 0.0;
+	conv  = 0;
+
+	do
+	{	// access pressure and temperature
+		ierr = DMDAVecGetArray(fs->DA_CEN, jr->lp_lith, &p); CHKERRQ(ierr);
+		ierr = DMDAVecGetArray(fs->DA_CEN, jr->lT,      &T); CHKERRQ(ierr);
+
+		// loop over cell centers
+		iter = 0;
+			
+		ierr = DMDAGetCorners(fs->DA_CEN, &sx, &sy, &sz, &nx, &ny, &nz); CHKERRQ(ierr);
+
+		START_STD_LOOP
+		{
+			// access cell variables
+			svCell = &jr->svCell[iter++];
+			svBulk = &svCell->svBulk;
+
+			// access pressure
+			pc = p[k][j][i];
+
+			// access temperature
+			Tc = T[k][j][i];
+
+			// z-coordinate of control volume
+			z = COORD_CELL(k, sz, fs->dsz);
+
+			// setup control volume parameters
+			ierr = setUpCtrlVol(&ctx, svCell->phRat, svCell->svDev.APS, pc, 0.0, 0.0, Tc, 0.0, z); CHKERRQ(ierr);
+
+			// compute density
+			ierr = volConstEq(&ctx, svBulk); CHKERRQ(ierr);
+
+		}
+		END_STD_LOOP
+
+		ierr = DMDAVecRestoreArray(fs->DA_CEN, jr->lp_lith, &p); CHKERRQ(ierr);
+		ierr = DMDAVecRestoreArray(fs->DA_CEN, jr->lT,      &T); CHKERRQ(ierr);
+
+		// compute new lithostatic pressure
+		ierr = JacResGetLithoStaticPressure(jr); CHKERRQ(ierr);
+
+		// store current norm
+		nprev = norm;
+
+		// compute norm
+		ierr = DMDAVecGetArray(fs->DA_CEN, jr->lp_lith, &p); CHKERRQ(ierr);
+
+		lnorm = 0.0;
+
+		ierr = DMDAGetCorners(fs->DA_CEN, &sx, &sy, &sz, &nx, &ny, &nz); CHKERRQ(ierr);
+
+		START_STD_LOOP
+		{
+			lnorm += PetscAbsScalar(p[k][j][i]);
+		}
+		END_STD_LOOP
+
+		ierr = DMDAVecRestoreArray(fs->DA_CEN, jr->lp_lith, &p); CHKERRQ(ierr);
+
+		// compute global sum
+		if(ISParallel(PETSC_COMM_WORLD))
+		{
+			ierr = MPI_Allreduce(&lnorm, &norm, 1, MPIU_SCALAR, MPI_SUM, PETSC_COMM_WORLD); CHKERRQ(ierr);
+		}
+		else
+		{
+			norm = lnorm;
+		}
+
+		// get stop criterion
+		stop = PetscAbsScalar((norm - nprev)) / (norm + nprev);
+
+		conv = stop < tol;
+
+	} while(!conv && it++ < maxit);
+
+	// copy lithostatic pressure to pressure history of grid
+	iter = 0;
+
+	ierr = DMDAGetCorners(fs->DA_CEN, &sx, &sy, &sz, &nx, &ny, &nz); CHKERRQ(ierr);
+
+	ierr = DMDAVecGetArray(fs->DA_CEN, jr->lp_lith, &p); CHKERRQ(ierr);
+
+	START_STD_LOOP
+	{
+		// access cell
+		svCell = &jr->svCell[iter++];
+
+		// copy pressure
+		svCell->svBulk.pn = p[k][j][i];
+	}
+	END_STD_LOOP
+
+	// restore access
+	ierr = DMDAVecRestoreArray(fs->DA_CEN, jr->lp_lith, &p); CHKERRQ(ierr);
+
+	// copy pressure to pressure history of markers
+	for (ii = 0; ii < actx->nummark; ii++)
+	{
+		// access next marker
+		P = &actx->markers[ii];
+
+		// get consecutive index of the host cell
+		ID = actx->cellnum[ii];
+
+		// get indices of host cell
+		GET_CELL_IJK(ID, i, j, k, M, N);
+
+		// access host cell
+		svCell = &jr->svCell[ID];
+
+		// copy pressure history
+		P->p = svCell->svBulk.pn;
+	}
+
+	PrintDone(t);
+
+	if(!conv) PetscPrintf(PETSC_COMM_WORLD, "WARNING: Unable to converge initial pressure (tol: %g maxit: %lld)\n", tol, (LLD)maxit);
+
+	PetscFunctionReturn(0);
+}
+//---------------------------------------------------------------------------
+/*
+#undef __FUNCT__
+#define __FUNCT__ "JacResInitLithPres"
+PetscErrorCode JacResInitLithPres(JacRes *jr, AdvCtx *actx)
+{
+	FDSTAG            *fs;
+	SolVarCell        *svCell;
+	SolVarBulk        *svBulk;
 	Marker            *P;
 	Material_t        *phases;
 	Controls          *ctrl;
@@ -1998,7 +2032,7 @@ PetscErrorCode JacResInitLithPres(JacRes *jr, AdvCtx *actx)
 
 		// loop over cell centers
 		iter = 0;
-			
+
 		ierr = DMDAGetCorners(fs->DA_CEN, &sx, &sy, &sz, &nx, &ny, &nz); CHKERRQ(ierr);
 
 		START_STD_LOOP
@@ -2019,7 +2053,7 @@ PetscErrorCode JacResInitLithPres(JacRes *jr, AdvCtx *actx)
 			if (depth < 0.0)   depth = 0.0;
 
 			// compute density
-			// HUJ
+			// HUJ ACHTUNG
 //			ierr = VolConstEq(svBulk, numPhases, phases, svCell->phRat, ctrl, depth, dt, pc, Tc, jr->Pd); CHKERRQ(ierr);
 		}
 		END_STD_LOOP
@@ -2110,6 +2144,7 @@ PetscErrorCode JacResInitLithPres(JacRes *jr, AdvCtx *actx)
 
 	PetscFunctionReturn(0);
 }
+*/
 //---------------------------------------------------------------------------
 #undef __FUNCT__
 #define __FUNCT__ "JacResCopyRes"

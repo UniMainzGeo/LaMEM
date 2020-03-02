@@ -229,7 +229,6 @@
 	act_steady_temp = 1              # steady-state temperature initial guess activation flag
 	steady_temp_t   = 0.0            # time for (quasi-)steady-state temperature initial guess
 	nstep_steady    = 1              # number of steps for (quasi-)steady-state temperature initial guess (default = 1)
-	act_p_shift     = 1              # pressure shift activation flag (zero pressure in the top cell layer)
 	init_lith_pres  = 1              # initial pressure with lithostatic pressure (stabilizes compressible setups in the first steps)
 	init_guess      = 1              # initial guess flag
 	p_litho_visc    = 1              # use lithostatic pressure for creep laws

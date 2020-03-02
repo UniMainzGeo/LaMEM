@@ -152,8 +152,6 @@ struct Controls
 	PetscInt    actSteadyTemp;  // steady-state temperature initial guess flag
 	PetscScalar steadyTempStep; // time for (quasi-)steady-state temperature initial guess
 	PetscInt    steadyNumStep;  // number of steps for (quasi-)steady-state temperature initial guess
-	PetscInt    pShiftAct;      // pressure shift activation flag (zero pressure in the top cell layer)
-	PetscScalar pShift;         // pressure shift for plasticity model and output
 	PetscInt    initLithPres;   // set initial pressure to lithostatic pressure
 	PetscInt    initGuess;      // initial guess activation flag
 	PetscInt    pLithoVisc;     // use lithostatic pressure for creep laws
@@ -222,6 +220,11 @@ struct JacRes
 	//  Really really really need to switch to ghost marker approach!
 	//  Also to get communication pattern independent of number of phases.
 
+	// For almost all the purposes only one center-based array is necessary instead of three
+	// for example - strain rate contributions from centers can be stored in one array
+
+	// IN GENERAL GET RID OF BUFFER VECTORS, USE LOCAL DMGetLocalVector (GET_INIT_LOCAL_VECTOR)
+
 	// pressure
 	Vec gp;      // global
 	Vec lp;      // local (ghosted)
@@ -279,9 +282,6 @@ PetscErrorCode JacResFormResidual(JacRes *jr, Vec x, Vec f);
 
 // compute effective inverse elastic parameter
 PetscErrorCode JacResGetI2Gdt(JacRes *jr);
-
-// get average pressure near the top surface
-PetscErrorCode JacResGetPressShift(JacRes *jr);
 
 // evaluate effective strain rate components in basic nodes
 PetscErrorCode JacResGetEffStrainRate(JacRes *jr);

@@ -45,312 +45,80 @@
 //---------------------------------------------------------------------------
 #include "LaMEM.h"
 #include "constEq.h"
+#include "tssolve.h"
+#include "surf.h"
 #include "phase.h"
 #include "JacRes.h"
 #include "tools.h"
+
 //---------------------------------------------------------------------------
-
 #undef __FUNCT__
-#define __FUNCT__ "volConstEq"
-PetscErrorCode volConstEq(SolVarBulk *svBulk, ConstEqCtx *ctx)
+#define __FUNCT__ "setUpConstEq"
+PetscErrorCode setUpConstEq(ConstEqCtx *ctx, JacRes *jr)
 {
-	// evaluate volumetric constitutive equations in control volume
+	// setup constitutive equation evaluation context parameters
 
-	Controls    *ctrl;
-	PData       *pd;
-	Material_t  *mat, *phases;
-	PetscInt     i, numPhases;
-	PetscScalar *phRat, dt, p, depth, T, cf_comp, cf_therm, Kavg, rho;
-
-	PetscErrorCode ierr;
 	PetscFunctionBegin;
 
-	// access context
-	ctrl      = ctx->ctrl;
-	numPhases = ctx->numPhases;
-	phases    = ctx->phases;
-	phRat     = ctx->phRat;
-	pd        = ctx->pd;
-	depth     = ctx->depth;
-	dt        = ctx->dt;
-	p         = ctx->p;
-	T         = ctx->T;
+	ctx->numPhases =  jr->dbm->numPhases; // number phases
+	ctx->phases    =  jr->dbm->phases;    // phase parameters
+	ctx->soft      =  jr->dbm->matSoft;   // material softening laws
+	ctx->ctrl      = &jr->ctrl;           // control parameters
+	ctx->Pd        =  jr-> Pd;            // phase diagram data
+	ctx->dt        =  jr->ts->dt;         // time step
+	ctx->stats[0]  =  0.0;                // total number of [starts, ...
+	ctx->stats[1]  =  0.0;                //  ... successes,
+	ctx->stats[2]  =  0.0;                // ... iterations]
 
-	// initialize effective density, thermal expansion & inverse bulk elastic parameter
-	svBulk->rho    = 0.0;
-	svBulk->alpha  = 0.0;
-	svBulk->IKdt   = 0.0;
-	Kavg           = 0.0;
-	svBulk->mf     = 0.0;
-	svBulk->rho_pf = 0.0;
+	// set average surface topography for depth computation
+	ctx->avg_topo = DBL_MAX;
 
-	// scan all phases
-	for(i = 0; i < numPhases; i++)
+	if(jr->surf->AirPhase != -1)
 	{
-		// update present phases only
-		if(phRat[i])
-		{
-			// get reference to material parameters table
-			mat = &phases[i];
-
-			if(mat->pdAct == 1)
-			{
-				// compute melt fraction from phase diagram
-				ierr = setDataPhaseDiagram(pd, p, T, mat->pdn); CHKERRQ(ierr);
-
-				svBulk->mf     += phRat[i]*pd->mf;
-				svBulk->rho_pf += phRat[i]*pd->rho_f;
-			}
-
-			// initialize
-			cf_comp  = 1.0;
-			cf_therm = 1.0;
-
-			// elastic compressiblility correction (Murnaghan's equation)
-			// ro/ro_0 = (1 + K'*P/K)^(1/K')
-			if(mat->K)
-			{
-				Kavg += phRat[i]*mat->K;
-
-				if(mat->Kp) cf_comp = pow(1.0 + mat->Kp*(p/mat->K), 1.0/mat->Kp);
-				else        cf_comp = 1.0 + p/mat->K;
-			}
-
-			// ro/ro_0 = (1 + beta*P)
-			if(mat->beta)
-			{
-				// negative sign as compressive pressures (increasing depth) is negative in LaMEM
-				cf_comp = 1.0 + p*mat->beta;
-			}
-
-			// thermal expansion correction
-			// ro/ro_0 = 1 - alpha*(T - TRef)
-			if(mat->alpha)
-			{
-				cf_therm  = 1.0 - mat->alpha*(T - ctrl->TRef);
-			}
-
-			// get density
-			if(mat->rho_n)
-			{
-				// depth-dependent density (ad-hoc)
-				rho = mat->rho - (mat->rho - ctrl->rho_fluid)*mat->rho_n*exp(-mat->rho_c*depth);
-			}
-			// phase diagram
-			else if(mat->pdAct == 1)
-			{
-				rho = (pd->mf * pd->rho_f) + ((1-pd->mf) * pd->rho);
-			}
-			else
-			{
-				// temperature & pressure-dependent density
-				rho = mat->rho*cf_comp*cf_therm;
-			}
-
-			// update density, thermal expansion & inverse bulk elastic parameter
-			svBulk->rho   += phRat[i]*rho;
-			svBulk->alpha += phRat[i]*mat->alpha;
-		}
+		ctx->avg_topo = jr->surf->avg_topo;
 	}
-
-	if(Kavg) svBulk->IKdt = 1.0/Kavg/dt;
 
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
 #undef __FUNCT__
-#define __FUNCT__ "devConstEq"
-PetscErrorCode devConstEq(SolVarDev *svDev, ConstEqCtx *ctx)
+#define __FUNCT__ "setUpCtrlVol"
+PetscErrorCode setUpCtrlVol(
+		ConstEqCtx  *ctx,    // context
+		PetscScalar *phRat,  // phase ratios in the control volume
+		PetscScalar  APS,    // accumulated plastic strain
+		PetscScalar  p,      // pressure
+		PetscScalar  p_lith, // lithostatic pressure
+		PetscScalar  p_pore, // pore pressure
+		PetscScalar  T,      // temperature
+		PetscScalar  DII,    // effective strain rate
+		PetscScalar  z)     // z-coordinate of control volume
 {
-	// evaluate deviatoric constitutive equations in control volume
-
-	Controls    *ctrl;
-	PetscScalar *phRat;
-	PetscInt     i, numPhases;
-
-	PetscErrorCode ierr;
-	PetscFunctionBegin;
-
-	// access context
-	ctrl      = ctx->ctrl;
-	numPhases = ctx->numPhases;
-	phRat     = ctx->phRat;
-
-	// zero out results
-	ctx->eta    = 0.0; // effective viscosity
-	ctx->eta_cr = 0.0; // creep viscosity
-	ctx->eta_vp = 0.0; // visco-plastic viscosity
-	ctx->DIIdif = 0.0; // diffusion creep strain rate
-	ctx->DIIdis = 0.0; // dislocation creep strain rate
-	ctx->DIIprl = 0.0; // Peierls creep strain rate
-	ctx->DIIpl  = 0.0; // plastic strain rate
-	ctx->yield  = 0.0; // yield stress
-
-	// viscous initial guess
-	if(ctrl->initGuess)
-	{
-		svDev->eta    = ctrl->eta_ref;
-		ctx  ->eta    = ctrl->eta_ref;
-		ctx  ->eta_cr = ctrl->eta_ref;
-		ctx  ->eta_vp = ctrl->eta_ref;
-		ctx  ->DIIdif = 1.0;
-
-		PetscFunctionReturn(0);
-	}
-
-	// scan all phases
-	for(i = 0; i < numPhases; i++)
-	{
-		// update present phases only
-		if(phRat[i])
-		{
-			// setup phase parameters
-			ierr = setUpPhase(ctx, i); CHKERRQ(ierr);
-
-			// compute phase viscosities and strain rate partitioning
-			ierr = getPhaseVisc(ctx, i); CHKERRQ(ierr);
-
-		}
-	}
-
-	// normalize strain rates
-	if(ctx->DII)
-	{
-		ctx->DIIdif /= ctx->DII;
-		ctx->DIIdis /= ctx->DII;
-		ctx->DIIprl /= ctx->DII;
-		ctx->DIIpl  /= ctx->DII;
-	}
-
-	// store viscosity
-	svDev->eta = ctx->eta + ctrl->eta_min;
-
-	PetscFunctionReturn(0);
-}
-//---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "getPhaseVisc"
-PetscErrorCode getPhaseVisc(ConstEqCtx *ctx, PetscInt ID)
-{
-	Controls    *ctrl;
-	PetscInt    it, fail;
-	PetscScalar eta_min, eta_mean, eta, eta_cr, eta_vp, tauII, taupl, DII;
-	PetscScalar DIIdif, DIImax, DIIdis, DIIprl, DIIpl, DIIvs, DIIvp, phRat;
-	PetscScalar inv_eta_els, inv_eta_dif, inv_eta_max, inv_eta_dis, inv_eta_prl, inv_eta_min;
+	// setup control volume parameters
 
 	PetscFunctionBegin;
 
-	// access context
-	ctrl  = ctx->ctrl;      // global controls
-	phRat = ctx->phRat[ID]; // phase ratio
-	taupl = ctx->taupl;     // plastic yield stress
-	DII   = ctx->DII;       // effective strain rate
+	ctx->phRat  = phRat;  // phase ratios in the control volume
+	ctx->p      = p;      // pressure
+	ctx->p_lith = p_lith; // lithostatic pressure
+	ctx->p_pore = p_pore; // pore pressure
+	ctx->T      = T;      // temperature
+	ctx->DII    = DII;    // effective strain rate
+	ctx->APS    = APS;    // accumulated plastic strain
 
-	// initialize
-	it     = 1;
-	fail   = 0;
-	DIIpl  = 0.0;
-	eta_cr = 0.0;
-	eta_vp = 0.0;
+	// compute depth below the free surface
+	// WARNING! "depth" is loosely defined for large topography variations
+	ctx->depth = 0.0;
 
-	//===========
-	// PLASTICITY
-	//===========
-	if(taupl && DII)
+	if(ctx->avg_topo != DBL_MAX && z != DBL_MAX)
 	{
-		// compute plastic stress and viscosity
-		tauII = taupl;
-		eta   = tauII/(2.0*DII);
+		ctx->depth = ctx->avg_topo - z;
 
-		// compute plastic strain rate
-		DIIpl = getConsEqRes(eta, ctx);
-
-		// reset if plasticity is not active
-		if(DIIpl < 0.0)
+		if(ctx->depth < 0.0)
 		{
-			DIIpl = 0.0;
+			ctx->depth = 0.0;
 		}
 	}
-
-	//=================
-	// VISCO-ELASTICITY
-	//=================
-	if(!DIIpl)
-	{
-		// get isolated viscosities
-		inv_eta_els = 0.0;
-		inv_eta_dif = 0.0;
-		inv_eta_max = 0.0;
-		inv_eta_dis = 0.0;
-		inv_eta_prl = 0.0;
-
-		// elasticity
-		if(ctx->A_els) inv_eta_els = 2.0*ctx->A_els;
-		// diffusion
-		if(ctx->A_dif) inv_eta_dif = 2.0*ctx->A_dif;
-		// upper bound
-		if(ctx->A_max) inv_eta_max = 2.0*ctx->A_max;
-		// dislocation
-		if(ctx->A_dis) inv_eta_dis = 2.0*pow(ctx->A_dis, 1.0/ctx->N_dis)*pow(DII, 1.0 - 1.0/ctx->N_dis);
-		// Peierls
-		if(ctx->A_prl) inv_eta_prl = 2.0*pow(ctx->A_prl, 1.0/ctx->N_prl)*pow(DII, 1.0 - 1.0/ctx->N_prl);
-
-		// get minimum viscosity (upper bound)
-		inv_eta_min                               = inv_eta_els;
-		if(inv_eta_dif > inv_eta_min) inv_eta_min = inv_eta_dif;
-		if(inv_eta_max > inv_eta_min) inv_eta_min = inv_eta_max;
-		if(inv_eta_dis > inv_eta_min) inv_eta_min = inv_eta_dis;
-		if(inv_eta_prl > inv_eta_min) inv_eta_min = inv_eta_prl;
-		eta_min = 1.0/inv_eta_min;
-
-		// get quasi-harmonic mean (lower bound)
-		eta_mean = 1.0/(inv_eta_els + inv_eta_dif + inv_eta_max + inv_eta_dis + inv_eta_prl);
-
-		// NOTE: if closed-form solution exists, it is equal to lower bound
-		// If only one mechanism is active, then both bounds are coincident
-		// Bisection will return immediately if closed-form solution exists
-
-		if(DII)
-		{
-			// apply bisection algorithm to nonlinear scalar equation
-			fail = solveBisect(eta_mean, eta_min, ctrl->lrtol, ctrl->lmaxit, eta, it, getConsEqRes, ctx);
-		}
-		else
-		{
-			eta = eta_mean;
-		}
-
-		// compute stress
-		tauII = 2.0*eta*DII;
-	}
-
-	// update iteration statistics
-	ctx->stats[0] += 1.0;               // starts
-	ctx->stats[1] += (PetscScalar)fail; // fails
-	ctx->stats[2] += (PetscScalar)it;   // iterations
-
-	// compute strain rates
-	DIIdif = ctx->A_dif*tauII;                  // diffusion
-	DIImax = ctx->A_max*tauII;                  // upper bound
-	DIIdis = ctx->A_dis*pow(tauII, ctx->N_dis); // dislocation
-	DIIprl = ctx->A_prl*pow(tauII, ctx->N_prl); // Peierls
-	DIIvs  = DIIdif + DIImax + DIIdis + DIIprl; // viscous (total)
-	DIIvp  = DIIvs + DIIpl;                     // visco-plastic
-
-	// compute viscosities
-	if(DIIvs) eta_cr = tauII/DIIvs/2.0;
-	if(DIIvp) eta_vp = tauII/DIIvp/2.0;
-
-	// update results
-	ctx->eta    += phRat*eta;    // effective viscosity
-	ctx->eta_cr += phRat*eta_cr; // creep viscosity
-	ctx->eta_vp += phRat*eta_vp; // visco-plastic viscosity
-	ctx->DIIdif += phRat*DIIdif; // diffusion creep strain rate
-	ctx->DIIdis += phRat*DIIdis; // dislocation creep strain rate
-	ctx->DIIprl += phRat*DIIprl; // Peierls creep strain rate
-	ctx->DIIpl  += phRat*DIIpl;  // plastic strain rate
-	ctx->yield  += phRat*taupl;  // plastic yield rate
-
 
 	PetscFunctionReturn(0);
 }
@@ -359,12 +127,13 @@ PetscErrorCode getPhaseVisc(ConstEqCtx *ctx, PetscInt ID)
 #define __FUNCT__ "setUpPhase"
 PetscErrorCode setUpPhase(ConstEqCtx *ctx, PetscInt ID)
 {
-	// setup nonlinear constitutive equation evaluation context
+	// setup phase parameters for deviatoric constitutive equation
 	// evaluate dependence on constant parameters (pressure, temperature)
+
 	Material_t  *mat;
 	Soft_t      *soft;
 	Controls    *ctrl;
-	PData       *pd;
+	PData       *Pd;
 	PetscScalar  APS, dt, p, p_lith, p_pore, T, mf, mfd, mfn;
 	PetscScalar  Q, RT, ch, fr, p_visc, p_upper, p_lower, dP, p_total;
 
@@ -375,7 +144,7 @@ PetscErrorCode setUpPhase(ConstEqCtx *ctx, PetscInt ID)
 	mat    = ctx->phases + ID;
 	soft   = ctx->soft;
 	ctrl   = ctx->ctrl;
-	pd     = ctx->pd;
+	Pd     = ctx->Pd;
 	APS    = ctx->APS;
 	dt     = ctx->dt;
 	p      = ctx->p;
@@ -387,10 +156,10 @@ PetscErrorCode setUpPhase(ConstEqCtx *ctx, PetscInt ID)
 	if(mat->pdAct == 1)
 	{
 		// compute melt fraction from phase diagram
-		ierr = setDataPhaseDiagram(pd, p, T, mat->pdn); CHKERRQ(ierr);
+		ierr = setDataPhaseDiagram(Pd, p, T, mat->pdn); CHKERRQ(ierr);
 
 		// store melt fraction
-		mf = pd->mf;
+		mf = Pd->mf;
 	}
 
 	// set RT
@@ -552,51 +321,184 @@ PetscErrorCode setUpPhase(ConstEqCtx *ctx, PetscInt ID)
 
 	PetscFunctionReturn(0);
 }
-
 //---------------------------------------------------------------------------
 #undef __FUNCT__
-#define __FUNCT__ "getStressCell"
-PetscErrorCode getStressCell(
-		SolVarCell  *svCell, // solution variables
-		ConstEqCtx  *ctx,    // evaluation context
-		PetscScalar  dxx,    // effective normal strain rate components
-		PetscScalar  dyy,    // ...
-		PetscScalar  dzz)    // ...
+#define __FUNCT__ "devConstEq"
+PetscErrorCode devConstEq(ConstEqCtx *ctx, SolVarDev *svDev)
 {
-	// compute stress, plastic strain-rate and shear heating term on cell
+	// evaluate deviatoric constitutive equations in control volume
 
-	SolVarDev   *svDev;
-	PetscScalar  txx, tyy, tzz;
+	Controls    *ctrl;
+	PetscScalar *phRat;
+	PetscInt     i, numPhases;
+
+	PetscErrorCode ierr;
+	PetscFunctionBegin;
+
+	// access context
+	ctrl      = ctx->ctrl;
+	numPhases = ctx->numPhases;
+	phRat     = ctx->phRat;
+
+	// zero out results
+	ctx->eta    = 0.0; // effective viscosity
+	ctx->eta_cr = 0.0; // creep viscosity
+	ctx->eta_vp = 0.0; // visco-plastic viscosity
+	ctx->DIIdif = 0.0; // diffusion creep strain rate
+	ctx->DIIdis = 0.0; // dislocation creep strain rate
+	ctx->DIIprl = 0.0; // Peierls creep strain rate
+	ctx->DIIpl  = 0.0; // plastic strain rate
+	ctx->yield  = 0.0; // yield stress
+
+	// viscous initial guess
+	if(ctrl->initGuess)
+	{
+		svDev->eta    = ctrl->eta_ref;
+		ctx  ->eta    = ctrl->eta_ref;
+		ctx  ->eta_cr = ctrl->eta_ref;
+		ctx  ->eta_vp = ctrl->eta_ref;
+		ctx  ->DIIdif = 1.0;
+
+		PetscFunctionReturn(0);
+	}
+
+	// scan all phases
+	for(i = 0; i < numPhases; i++)
+	{
+		// update present phases only
+		if(phRat[i])
+		{
+			// setup phase parameters
+			ierr = setUpPhase(ctx, i); CHKERRQ(ierr);
+
+			// compute phase viscosities and strain rate partitioning
+			ierr = getPhaseVisc(ctx, i); CHKERRQ(ierr);
+
+		}
+	}
+
+	// normalize strain rates
+	if(ctx->DII)
+	{
+		ctx->DIIdif /= ctx->DII;
+		ctx->DIIdis /= ctx->DII;
+		ctx->DIIprl /= ctx->DII;
+		ctx->DIIpl  /= ctx->DII;
+	}
+
+	// store viscosity
+	svDev->eta = ctx->eta + ctrl->eta_min;
+
+	PetscFunctionReturn(0);
+}
+//---------------------------------------------------------------------------
+#undef __FUNCT__
+#define __FUNCT__ "getPhaseVisc"
+PetscErrorCode getPhaseVisc(ConstEqCtx *ctx, PetscInt ID)
+{
+	// compute phase viscosities and strain rate partitioning
+
+	Controls    *ctrl;
+	PetscInt    it, conv;
+	PetscScalar eta_min, eta_mean, eta, eta_cr, eta_vp, tauII, taupl, DII;
+	PetscScalar DIIdif, DIImax, DIIdis, DIIprl, DIIpl, DIIvs, DIIvp, phRat;
+	PetscScalar inv_eta_els, inv_eta_dif, inv_eta_max, inv_eta_dis, inv_eta_prl, inv_eta_min;
 
 	PetscFunctionBegin;
 
-	// access deviatoric variables
-	svDev = &svCell->svDev;
+	// access context
+	ctrl  = ctx->ctrl;      // global controls
+	phRat = ctx->phRat[ID]; // phase ratio
+	taupl = ctx->taupl;     // plastic yield stress
+	DII   = ctx->DII;       // effective strain rate
 
-	// compute deviatoric stresses
-	svCell->sxx = 2.0*svDev->eta*dxx;
-	svCell->syy = 2.0*svDev->eta*dyy;
-	svCell->szz = 2.0*svDev->eta*dzz;
+	// initialize
+	it     = 1;
+	conv   = 1;
+	DIIpl  = 0.0;
+	eta_cr = 0.0;
+	eta_vp = 0.0;
 
-	// compute plastic strain-rate components
-//	txx = cfpl*dxx;
-//	tyy = cfpl*dyy;
-//	tzz = cfpl*dzz;
+	//===========
+	// PLASTICITY
+	//===========
+	if(taupl && DII)
+	{
+		// compute plastic stress and viscosity
+		tauII = taupl;
+		eta   = tauII/(2.0*DII);
 
-	// store contribution to the second invariant of plastic strain-rate
-	svDev->PSR = 0.5*(txx*txx + tyy*tyy + tzz*tzz);
+		// compute plastic strain rate
+		DIIpl = getConsEqRes(eta, ctx);
 
-	// compute dissipative part of total strain rate (viscous + plastic = total - elastic)
-	txx = svCell->dxx - svDev->I2Gdt*(svCell->sxx - svCell->hxx);
-	tyy = svCell->dyy - svDev->I2Gdt*(svCell->syy - svCell->hyy);
-	tzz = svCell->dzz - svDev->I2Gdt*(svCell->szz - svCell->hzz);
+		// reset if plasticity is not active
+		if(DIIpl < 0.0)
+		{
+			DIIpl = 0.0;
+		}
+	}
 
-	// compute shear heating term contribution
-	svDev->Hr = (txx*svCell->sxx + tyy*svCell->syy + tzz*svCell->szz);
+	//=================
+	// VISCO-ELASTICITY
+	//=================
+	if(!DIIpl)
+	{
+		// get isolated viscosities
+		inv_eta_els = 0.0;
+		inv_eta_dif = 0.0;
+		inv_eta_max = 0.0;
+		inv_eta_dis = 0.0;
+		inv_eta_prl = 0.0;
 
+		// elasticity
+		if(ctx->A_els) inv_eta_els = 2.0*ctx->A_els;
+		// diffusion
+		if(ctx->A_dif) inv_eta_dif = 2.0*ctx->A_dif;
+		// upper bound
+		if(ctx->A_max) inv_eta_max = 2.0*ctx->A_max;
+		// dislocation
+		if(ctx->A_dis) inv_eta_dis = 2.0*pow(ctx->A_dis, 1.0/ctx->N_dis)*pow(DII, 1.0 - 1.0/ctx->N_dis);
+		// Peierls
+		if(ctx->A_prl) inv_eta_prl = 2.0*pow(ctx->A_prl, 1.0/ctx->N_prl)*pow(DII, 1.0 - 1.0/ctx->N_prl);
 
-/*
-	svDev->eta = ctx->eta + ctrl->eta_min;
+		// get minimum viscosity (upper bound)
+		inv_eta_min                               = inv_eta_els;
+		if(inv_eta_dif > inv_eta_min) inv_eta_min = inv_eta_dif;
+		if(inv_eta_max > inv_eta_min) inv_eta_min = inv_eta_max;
+		if(inv_eta_dis > inv_eta_min) inv_eta_min = inv_eta_dis;
+		if(inv_eta_prl > inv_eta_min) inv_eta_min = inv_eta_prl;
+		eta_min = 1.0/inv_eta_min;
+
+		// get quasi-harmonic mean (lower bound)
+		eta_mean = 1.0/(inv_eta_els + inv_eta_dif + inv_eta_max + inv_eta_dis + inv_eta_prl);
+
+		// NOTE: if closed-form solution exists, it is equal to lower bound
+		// If only one mechanism is active, then both bounds are coincident
+		// Bisection will return immediately if closed-form solution exists
+
+		// apply bisection algorithm to nonlinear scalar equation
+		conv = solveBisect(eta_mean, eta_min, ctrl->lrtol*DII, ctrl->lmaxit, eta, it, getConsEqRes, ctx);
+
+		// compute stress
+		tauII = 2.0*eta*DII;
+	}
+
+	// update iteration statistics
+	ctx->stats[0] += 1.0;               // start counter
+	ctx->stats[1] += (PetscScalar)conv; // convergence counter
+	ctx->stats[2] += (PetscScalar)it;   // iteration counter
+
+	// compute strain rates
+	DIIdif = ctx->A_dif*tauII;                  // diffusion
+	DIImax = ctx->A_max*tauII;                  // upper bound
+	DIIdis = ctx->A_dis*pow(tauII, ctx->N_dis); // dislocation
+	DIIprl = ctx->A_prl*pow(tauII, ctx->N_prl); // Peierls
+	DIIvs  = DIIdif + DIImax + DIIdis + DIIprl; // viscous (total)
+	DIIvp  = DIIvs + DIIpl;                     // visco-plastic
+
+	// compute viscosities
+	if(DIIvs) eta_cr = tauII/DIIvs/2.0;
+	if(DIIvp) eta_vp = tauII/DIIvp/2.0;
 
 	// update results
 	ctx->eta    += phRat*eta;    // effective viscosity
@@ -606,53 +508,14 @@ PetscErrorCode getStressCell(
 	ctx->DIIdis += phRat*DIIdis; // dislocation creep strain rate
 	ctx->DIIprl += phRat*DIIprl; // Peierls creep strain rate
 	ctx->DIIpl  += phRat*DIIpl;  // plastic strain rate
-	ctx->yield  += phRat*taupl;  // plastic yield rate
-
-*/
-
-
-
-	PetscFunctionReturn(0);
-}
-//---------------------------------------------------------------------------
-// compute stress, plastic strain-rate and shear heating term on edge
-#undef __FUNCT__
-#define __FUNCT__ "getStressEdge"
-PetscErrorCode getStressEdge(
-		SolVarEdge  *svEdge, // solution variables
-		PetscScalar  d,      // effective shear strain rate component
-		PetscScalar  cfpl)   // plastic scaling coefficient
-{
-
-	SolVarDev   *svDev;
-	PetscScalar  t;
-
-	PetscFunctionBegin;
-
-	// access deviatoric variables
-	svDev = &svEdge->svDev;
-
-	// compute shear stress
-	svEdge->s = 2.0*svDev->eta*d;
-
-	// compute plastic strain-rate components
-	t = cfpl*d;
-
-	// store contribution to the second invariant of plastic strain-rate
-	svDev->PSR = t*t;
-
-	// compute dissipative part of total strain rate (viscous + plastic = total - elastic)
-	t = svEdge->d - svDev->I2Gdt*(svEdge->s - svEdge->h);
-
-	// compute shear heating term contribution
-	svDev->Hr = 2.0*t*svEdge->s;
+	ctx->yield  += phRat*taupl;  // plastic yield stress
 
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
 PetscScalar getConsEqRes(PetscScalar eta, void *pctx)
 {
-	// Compute residual of the nonlinear visco-elastic constitutive equation:
+	// compute residual of the nonlinear visco-elastic constitutive equation
 
 	PetscScalar tauII, DIIels, DIIdif, DIImax, DIIdis, DIIprl;
 
@@ -673,7 +536,7 @@ PetscScalar getConsEqRes(PetscScalar eta, void *pctx)
 	// r < 0 if eta > solution (negative on overshoot)
 	// r > 0 if eta < solution (positive on undershoot)
 
-	return 1.0 - (DIIels + DIIdif + DIImax + DIIdis + DIIprl)/ctx->DII;
+	return ctx->DII - (DIIels + DIIdif + DIImax + DIIdis + DIIprl);
 }
 //---------------------------------------------------------------------------
 PetscScalar applyStrainSoft(
@@ -682,7 +545,7 @@ PetscScalar applyStrainSoft(
 		PetscScalar  APS,  // accumulated plastic strain
 		PetscScalar  par) // softening parameter
 {
-	// Apply strain softening to a parameter (friction, cohesion)
+	// apply strain softening to a parameter (friction, cohesion)
 
 	PetscScalar  k;
 	Soft_t      *s;
@@ -728,6 +591,289 @@ PetscScalar getI2Gdt(
 	if(Gavg) I2Gdt = 1.0/Gavg/dt/2.0;
 
 	return I2Gdt;
+}
+//---------------------------------------------------------------------------
+#undef __FUNCT__
+#define __FUNCT__ "volConstEq"
+PetscErrorCode volConstEq( ConstEqCtx *ctx, SolVarBulk *svBulk)
+{
+	// evaluate volumetric constitutive equations in control volume
+
+	Controls    *ctrl;
+	PData       *Pd;
+	Material_t  *mat, *phases;
+	PetscInt     i, numPhases;
+	PetscScalar *phRat, dt, p, depth, T, cf_comp, cf_therm, Kavg, rho;
+
+	PetscErrorCode ierr;
+	PetscFunctionBegin;
+
+	// access context
+	ctrl      = ctx->ctrl;
+	numPhases = ctx->numPhases;
+	phases    = ctx->phases;
+	phRat     = ctx->phRat;
+	Pd        = ctx->Pd;
+	depth     = ctx->depth;
+	dt        = ctx->dt;
+	p         = ctx->p;
+	T         = ctx->T;
+
+	// initialize effective density, thermal expansion & inverse bulk elastic parameter
+	svBulk->rho    = 0.0;
+	svBulk->alpha  = 0.0;
+	svBulk->IKdt   = 0.0;
+	Kavg           = 0.0;
+	svBulk->mf     = 0.0;
+	svBulk->rho_pf = 0.0;
+
+	// scan all phases
+	for(i = 0; i < numPhases; i++)
+	{
+		// update present phases only
+		if(phRat[i])
+		{
+			// get reference to material parameters table
+			mat = &phases[i];
+
+			if(mat->pdAct == 1)
+			{
+				// compute melt fraction from phase diagram
+				ierr = setDataPhaseDiagram(Pd, p, T, mat->pdn); CHKERRQ(ierr);
+
+				svBulk->mf     += phRat[i]*Pd->mf;
+				svBulk->rho_pf += phRat[i]*Pd->rho_f;
+			}
+
+			// initialize
+			cf_comp  = 1.0;
+			cf_therm = 1.0;
+
+			// elastic compressiblility correction (Murnaghan's equation)
+			// ro/ro_0 = (1 + K'*P/K)^(1/K')
+			if(mat->K)
+			{
+				Kavg += phRat[i]*mat->K;
+
+				if(mat->Kp) cf_comp = pow(1.0 + mat->Kp*(p/mat->K), 1.0/mat->Kp);
+				else        cf_comp = 1.0 + p/mat->K;
+			}
+
+			// ro/ro_0 = (1 + beta*P)
+			if(mat->beta)
+			{
+				// negative sign as compressive pressures (increasing depth) is negative in LaMEM
+				cf_comp = 1.0 + p*mat->beta;
+			}
+
+			// thermal expansion correction
+			// ro/ro_0 = 1 - alpha*(T - TRef)
+			if(mat->alpha)
+			{
+				cf_therm  = 1.0 - mat->alpha*(T - ctrl->TRef);
+			}
+
+			// get density
+			if(mat->rho_n)
+			{
+				// depth-dependent density (ad-hoc)
+				rho = mat->rho - (mat->rho - ctrl->rho_fluid)*mat->rho_n*exp(-mat->rho_c*depth);
+			}
+			// phase diagram
+			else if(mat->pdAct == 1)
+			{
+				rho = (Pd->mf * Pd->rho_f) + ((1-Pd->mf) * Pd->rho);
+			}
+			else
+			{
+				// temperature & pressure-dependent density
+				rho = mat->rho*cf_comp*cf_therm;
+			}
+
+			// update density, thermal expansion & inverse bulk elastic parameter
+			svBulk->rho   += phRat[i]*rho;
+			svBulk->alpha += phRat[i]*mat->alpha;
+		}
+	}
+
+	if(Kavg) svBulk->IKdt = 1.0/Kavg/dt;
+
+	PetscFunctionReturn(0);
+}
+
+
+
+//---------------------------------------------------------------------------
+#undef __FUNCT__
+#define __FUNCT__ "cellConstEq"
+PetscErrorCode cellConstEq(
+		ConstEqCtx  *ctx,    // evaluation context
+		SolVarCell  *svCell, // solution variables
+		PetscScalar  dxx,    // effective normal strain rate components
+		PetscScalar  dyy,    // ...
+		PetscScalar  dzz,    // ...
+		PetscScalar &sxx,    // Cauchy stress components
+		PetscScalar &syy,    // ...
+		PetscScalar &szz,    // ...
+		PetscScalar &gres,   // volumetric residual
+		PetscScalar &rho)    // effective density
+{
+	// evaluate constitutive equations on the cell
+
+	SolVarDev   *svDev;
+	PetscScalar  txx, tyy, tzz;
+
+	PetscErrorCode ierr;
+	PetscFunctionBegin;
+
+	// access deviatoric variables
+	svDev = &svCell->svDev;
+	svDev  = &svCell->svDev;
+//	svBulk = &svCell->svBulk;
+
+	// compute deviatoric stresses
+	svCell->sxx = 2.0*svDev->eta*dxx;
+	svCell->syy = 2.0*svDev->eta*dyy;
+	svCell->szz = 2.0*svDev->eta*dzz;
+
+	// compute plastic strain-rate components
+//	txx = cfpl*dxx;
+//	tyy = cfpl*dyy;
+//	tzz = cfpl*dzz;
+
+	// store contribution to the second invariant of plastic strain-rate
+	svDev->PSR = 0.5*(txx*txx + tyy*tyy + tzz*tzz);
+
+	// compute dissipative part of total strain rate (viscous + plastic = total - elastic)
+	txx = svCell->dxx - svDev->I2Gdt*(svCell->sxx - svCell->hxx);
+	tyy = svCell->dyy - svDev->I2Gdt*(svCell->syy - svCell->hyy);
+	tzz = svCell->dzz - svDev->I2Gdt*(svCell->szz - svCell->hzz);
+
+	// compute shear heating term contribution
+	svDev->Hr = (txx*svCell->sxx + tyy*svCell->syy + tzz*svCell->szz);
+
+
+/*
+	svDev->eta = ctx->eta + ctrl->eta_min;
+
+	// update results
+	ctx->eta    += phRat*eta;    // effective viscosity
+	ctx->eta_cr += phRat*eta_cr; // creep viscosity
+	ctx->eta_vp += phRat*eta_vp; // visco-plastic viscosity
+	ctx->DIIdif += phRat*DIIdif; // diffusion creep strain rate
+	ctx->DIIdis += phRat*DIIdis; // dislocation creep strain rate
+	ctx->DIIprl += phRat*DIIprl; // Peierls creep strain rate
+	ctx->DIIpl  += phRat*DIIpl;  // plastic strain rate
+	ctx->yield  += phRat*taupl;  // plastic yield rate
+
+
+		// access
+		theta = svBulk->theta; // volumetric strain rate
+		rho   = svBulk->rho;   // effective density
+		IKdt  = svBulk->IKdt;  // inverse bulk viscosity
+		alpha = svBulk->alpha; // effective thermal expansion
+		pn    = svBulk->pn;    // pressure history
+		Tn    = svBulk->Tn;    // temperature history
+
+	actExp =  jr->ctrl.actExp; // thermal expansion activation flag
+
+		if(actExp)
+		{
+			gc[k][j][i] = -IKdt*(pc - pn) - theta + alpha*(Tc - Tn)/dt;
+		}
+		else
+		{
+			gc[k][j][i] = -IKdt*(pc - pn) - theta;
+		}
+
+
+		// get total pressure (effective pressure, computed by LaMEM, plus pore pressure)
+		ptotal = pc + biot*pc_pore;
+
+		// compute total Cauchy stresses
+		sxx = svCell->sxx - ptotal;
+		syy = svCell->syy - ptotal;
+		szz = svCell->szz - ptotal;
+
+		// evaluate deviatoric constitutive equations
+//		ierr = DevConstEq(svDev, &eta_creep, &eta_vp, numPhases, phases, soft, svCell->phRat, ctrl, pc_lith, pc_pore, dt, pc-pShift, Tc, jr-> Pd); CHKERRQ(ierr);
+
+		// compute stress, plastic strain rate and shear heating term on cell
+//		ierr = GetStressCell(svCell, XX, YY, ZZ); CHKERRQ(ierr);
+
+		// get total pressure (effective pressure, computed by LaMEM, plus pore pressure)
+		ptotal = pc + biot*pc_pore;
+
+		// compute total Cauchy stresses
+		sxx = svCell->sxx - ptotal;
+		syy = svCell->syy - ptotal;
+		szz = svCell->szz - ptotal;
+
+		// evaluate volumetric constitutive equations
+//		ierr = VolConstEq(svBulk, numPhases, phases, svCell->phRat, ctrl, depth, dt, pc-pShift , Tc, jr-> Pd); CHKERRQ(ierr);
+
+		// access
+		theta = svBulk->theta; // volumetric strain rate
+		rho   = svBulk->rho;   // effective density
+		IKdt  = svBulk->IKdt;  // inverse bulk viscosity
+		alpha = svBulk->alpha; // effective thermal expansion
+		pn    = svBulk->pn;    // pressure history
+		Tn    = svBulk->Tn;    // temperature history
+*/
+
+
+	PetscFunctionReturn(0);
+}
+
+
+
+
+//---------------------------------------------------------------------------
+#undef __FUNCT__
+#define __FUNCT__ "edgeConstEq"
+PetscErrorCode edgeConstEq(
+		ConstEqCtx  *ctx,    // evaluation context
+		SolVarEdge  *svEdge, // solution variables
+		PetscScalar  d,      // effective shear strain rate component
+		PetscScalar &s)      // Cauchy stress component
+{
+
+	// evaluate constitutive equations on the edge
+
+	SolVarDev   *svDev;
+
+	PetscScalar  t, sm, sb;
+
+	PetscErrorCode ierr;
+	PetscFunctionBegin;
+
+	// access deviatoric variables
+	svDev = &svEdge->svDev;
+
+	// evaluate deviatoric constitutive equation
+	ierr = devConstEq(ctx, svDev); CHKERRQ(ierr);
+
+	// compute shear stresses
+	sb = 2.0*ctx->eta*d;
+	sm = 2.0*ctx->ctrl->eta_min*svEdge->d;
+	s  = sb + sm;
+
+	// compute plastic strain-rate component
+	t = ctx->DIIpl*d;
+
+	// store contribution to the second invariant of plastic strain-rate
+	svDev->PSR = t*t;
+
+	// compute dissipative part of total strain rate (viscous + plastic = total - elastic)
+	t = svEdge->d - svDev->I2Gdt*(sb - svEdge->h);
+
+	// compute shear heating term contribution
+	svDev->Hr = 2.0*t*svEdge->s +  2.0*svEdge->d*sm;
+
+	// store history stress (for advection, not for output)
+	svEdge->s = sb;
+
+	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
 //.............................. PHASE DIAGRAM  .............................
