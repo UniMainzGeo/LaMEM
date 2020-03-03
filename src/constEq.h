@@ -75,12 +75,13 @@ struct ConstEqCtx
 
 	// control volume parameters
 	PetscScalar *phRat;  // phase ratios in the control volume
+	SolVarDev   *svDev;  // deviatoric variables
+	SolVarBulk  *svBulk; // volumetric variables
 	PetscScalar  p;      // pressure
 	PetscScalar  p_lith; // lithostatic pressure
 	PetscScalar  p_pore; // pore pressure
 	PetscScalar  T;      // temperature
 	PetscScalar  DII;    // effective strain rate
-	PetscScalar  APS;    // accumulated plastic strain
 	PetscScalar  depth;  // depth for depth-dependent density model
 
 	// phase parameters
@@ -96,7 +97,6 @@ struct ConstEqCtx
 	// control volume results
 	PetscScalar  eta;    // effective viscosity
 	PetscScalar  eta_cr; // creep viscosity
-	PetscScalar  eta_vp; // visco-plastic viscosity
 	PetscScalar  DIIdif; // diffusion creep strain rate
 	PetscScalar  DIIdis; // dislocation creep strain rate
 	PetscScalar  DIIprl; // Peierls creep strain rate
@@ -113,7 +113,8 @@ PetscErrorCode setUpConstEq(ConstEqCtx *ctx, JacRes *jr);
 PetscErrorCode setUpCtrlVol(
 	ConstEqCtx  *ctx,    // context
 	PetscScalar *phRat,  // phase ratios in the control volume
-	PetscScalar  APS,    // accumulated plastic strain
+	SolVarDev   *svDev,  // deviatoric variables
+	SolVarBulk  *svBulk, // volumetric variables
 	PetscScalar  p,      // pressure
 	PetscScalar  p_lith, // lithostatic pressure
 	PetscScalar  p_pore, // pore pressure
@@ -125,7 +126,7 @@ PetscErrorCode setUpCtrlVol(
 PetscErrorCode setUpPhase(ConstEqCtx *ctx, PetscInt ID);
 
 // evaluate deviatoric constitutive equations in control volume
-PetscErrorCode devConstEq(ConstEqCtx *ctx, SolVarDev *svDev);
+PetscErrorCode devConstEq(ConstEqCtx *ctx);
 
 // compute phase viscosities and strain rate partitioning
 PetscErrorCode getPhaseVisc(ConstEqCtx *ctx, PetscInt ID);
@@ -148,7 +149,7 @@ PetscScalar getI2Gdt(
 		PetscScalar  dt);       // time step
 
 // evaluate volumetric constitutive equations in control volume
-PetscErrorCode volConstEq(ConstEqCtx *ctx, SolVarBulk *svBulk);
+PetscErrorCode volConstEq(ConstEqCtx *ctx);
 
 // evaluate constitutive equations on the cell
 PetscErrorCode cellConstEq(

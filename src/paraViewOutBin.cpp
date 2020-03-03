@@ -290,7 +290,6 @@ void OutMaskSetDefault(OutMask *omask)
 	omask->phase      = 1;
 	omask->visc_total = 1;
 	omask->visc_creep = 1;
-	omask->visc_plast = 1;
 	omask->velocity   = 1;
 	omask->pressure   = 1;
 }
@@ -303,7 +302,6 @@ PetscInt OutMaskCountActive(OutMask *omask)
 	if(omask->density)        cnt++; // density
 	if(omask->visc_total)     cnt++; // total effective viscosity
 	if(omask->visc_creep)     cnt++; // creep effective viscosity
-	if(omask->visc_plast)     cnt++; // viscoplastic viscosity
 	if(omask->velocity)       cnt++; // velocity
 	if(omask->pressure)       cnt++; // pressure
 	if(omask->eff_press)      cnt++; // effective pressure
@@ -371,7 +369,6 @@ PetscErrorCode PVOutCreate(PVOut *pvout, FB *fb)
 	ierr = getIntParam   (fb, _OPTIONAL_, "out_density",        &omask->density,           1, 1); CHKERRQ(ierr);
 	ierr = getIntParam   (fb, _OPTIONAL_, "out_visc_total",     &omask->visc_total,        1, 1); CHKERRQ(ierr);
 	ierr = getIntParam   (fb, _OPTIONAL_, "out_visc_creep",     &omask->visc_creep,        1, 1); CHKERRQ(ierr);
-	ierr = getIntParam   (fb, _OPTIONAL_, "out_visc_plast",     &omask->visc_plast,        1, 1); CHKERRQ(ierr);
 	ierr = getIntParam   (fb, _OPTIONAL_, "out_velocity",       &omask->velocity,          1, 1); CHKERRQ(ierr);
 	ierr = getIntParam   (fb, _OPTIONAL_, "out_pressure",       &omask->pressure,          1, 1); CHKERRQ(ierr);
 	ierr = getIntParam   (fb, _OPTIONAL_, "out_eff_press",      &omask->eff_press,         1, 1); CHKERRQ(ierr);
@@ -440,7 +437,6 @@ PetscErrorCode PVOutCreate(PVOut *pvout, FB *fb)
 	if(omask->density)        PetscPrintf(PETSC_COMM_WORLD, "   Density                                 @ \n");
 	if(omask->visc_total)     PetscPrintf(PETSC_COMM_WORLD, "   Total effective viscosity               @ \n");
 	if(omask->visc_creep)     PetscPrintf(PETSC_COMM_WORLD, "   Creep effective viscosity               @ \n");
-	if(omask->visc_plast)     PetscPrintf(PETSC_COMM_WORLD, "   Viscoplastic viscosity                  @ \n");
 	if(omask->velocity)       PetscPrintf(PETSC_COMM_WORLD, "   Velocity                                @ \n");
 	if(omask->pressure)       PetscPrintf(PETSC_COMM_WORLD, "   Pressure                                @ \n");
 	if(omask->eff_press)      PetscPrintf(PETSC_COMM_WORLD, "   Effective pressure                      @ \n");
@@ -521,7 +517,6 @@ PetscErrorCode PVOutCreateData(PVOut *pvout)
 	if(omask->density)        OutVecCreate(&pvout->outvecs[iter++], jr, outbuf, "density",        scal->lbl_density,          &PVOutWriteDensity,      1, NULL);
 	if(omask->visc_total)     OutVecCreate(&pvout->outvecs[iter++], jr, outbuf, "visc_total",     scal->lbl_viscosity,        &PVOutWriteViscTotal,    1, NULL);
 	if(omask->visc_creep)     OutVecCreate(&pvout->outvecs[iter++], jr, outbuf, "visc_creep",     scal->lbl_viscosity,        &PVOutWriteViscCreep,    1, NULL);
-	if(omask->visc_plast)     OutVecCreate(&pvout->outvecs[iter++], jr, outbuf, "visc_plast",     scal->lbl_viscosity,        &PVOutWriteViscoPlastic, 1, NULL);
 	if(omask->velocity)       OutVecCreate(&pvout->outvecs[iter++], jr, outbuf, "velocity",       scal->lbl_velocity,         &PVOutWriteVelocity,     3, NULL);
 	if(omask->pressure)       OutVecCreate(&pvout->outvecs[iter++], jr, outbuf, "pressure",       scal->lbl_stress,           &PVOutWritePressure,     1, NULL);
 	if(omask->eff_press)      OutVecCreate(&pvout->outvecs[iter++], jr, outbuf, "eff_press",      scal->lbl_stress,           &PVOutWriteEffPress,     1, NULL);

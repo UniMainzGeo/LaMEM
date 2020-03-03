@@ -386,7 +386,6 @@
 	out_density         = 1
 	out_visc_total      = 1
 	out_visc_creep      = 1
-	out_visc_plast      = 1
 	out_velocity        = 1
 	out_pressure        = 1
 	out_eff_press       = 1

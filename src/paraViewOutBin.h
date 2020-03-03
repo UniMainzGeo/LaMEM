@@ -130,7 +130,6 @@ struct OutMask
 	PetscInt density;        // density
 	PetscInt visc_total;     // total effective viscosity
 	PetscInt visc_creep;     // creep effective viscosity
-	PetscInt visc_plast;     // viscoplastic viscosity
 	PetscInt velocity;       // velocity
 	PetscInt pressure;       // pressure
 	PetscInt eff_press;      // effective pressure

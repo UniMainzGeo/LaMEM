@@ -83,7 +83,6 @@ PetscErrorCode PVOutWritePhaseAgg    (OutVec*);
 PetscErrorCode PVOutWriteDensity     (OutVec*);
 PetscErrorCode PVOutWriteViscTotal   (OutVec*);
 PetscErrorCode PVOutWriteViscCreep   (OutVec*);
-PetscErrorCode PVOutWriteViscoPlastic(OutVec*);
 PetscErrorCode PVOutWriteVelocity    (OutVec*);
 PetscErrorCode PVOutWritePressure    (OutVec*);
 PetscErrorCode PVOutWriteTotalPress  (OutVec*);

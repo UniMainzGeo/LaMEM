@@ -102,7 +102,6 @@ struct SolVarCell
 	PetscScalar  U[3];          // total displacement
 	PetscScalar  ATS;           // accumulated total strain
 	PetscScalar  eta_cr;        // creep viscosity
-	PetscScalar  eta_vp;        // visco-plastic viscosity
 	PetscScalar  DIIdif;        // relative diffusion creep strain rate
 	PetscScalar  DIIdis;        // relative dislocation creep strain rate
 	PetscScalar  DIIprl;        // relative Peierls creep strain rate

@@ -86,7 +86,8 @@ PetscErrorCode setUpConstEq(ConstEqCtx *ctx, JacRes *jr)
 PetscErrorCode setUpCtrlVol(
 		ConstEqCtx  *ctx,    // context
 		PetscScalar *phRat,  // phase ratios in the control volume
-		PetscScalar  APS,    // accumulated plastic strain
+		SolVarDev   *svDev,  // deviatoric variables
+		SolVarBulk  *svBulk, // volumetric variables
 		PetscScalar  p,      // pressure
 		PetscScalar  p_lith, // lithostatic pressure
 		PetscScalar  p_pore, // pore pressure
@@ -99,12 +100,13 @@ PetscErrorCode setUpCtrlVol(
 	PetscFunctionBegin;
 
 	ctx->phRat  = phRat;  // phase ratios in the control volume
+	ctx->svDev  = svDev;  // deviatoric variables
+	ctx->svBulk = svBulk; // volumetric variables
 	ctx->p      = p;      // pressure
 	ctx->p_lith = p_lith; // lithostatic pressure
 	ctx->p_pore = p_pore; // pore pressure
 	ctx->T      = T;      // temperature
 	ctx->DII    = DII;    // effective strain rate
-	ctx->APS    = APS;    // accumulated plastic strain
 
 	// compute depth below the free surface
 	// WARNING! "depth" is loosely defined for large topography variations
@@ -145,7 +147,7 @@ PetscErrorCode setUpPhase(ConstEqCtx *ctx, PetscInt ID)
 	soft   = ctx->soft;
 	ctrl   = ctx->ctrl;
 	Pd     = ctx->Pd;
-	APS    = ctx->APS;
+	APS    = ctx->svDev->APS;
 	dt     = ctx->dt;
 	p      = ctx->p;
 	p_lith = ctx->p_lith;
@@ -324,7 +326,7 @@ PetscErrorCode setUpPhase(ConstEqCtx *ctx, PetscInt ID)
 //---------------------------------------------------------------------------
 #undef __FUNCT__
 #define __FUNCT__ "devConstEq"
-PetscErrorCode devConstEq(ConstEqCtx *ctx, SolVarDev *svDev)
+PetscErrorCode devConstEq(ConstEqCtx *ctx)
 {
 	// evaluate deviatoric constitutive equations in control volume
 
@@ -343,7 +345,6 @@ PetscErrorCode devConstEq(ConstEqCtx *ctx, SolVarDev *svDev)
 	// zero out results
 	ctx->eta    = 0.0; // effective viscosity
 	ctx->eta_cr = 0.0; // creep viscosity
-	ctx->eta_vp = 0.0; // visco-plastic viscosity
 	ctx->DIIdif = 0.0; // diffusion creep strain rate
 	ctx->DIIdis = 0.0; // dislocation creep strain rate
 	ctx->DIIprl = 0.0; // Peierls creep strain rate
@@ -353,11 +354,9 @@ PetscErrorCode devConstEq(ConstEqCtx *ctx, SolVarDev *svDev)
 	// viscous initial guess
 	if(ctrl->initGuess)
 	{
-		svDev->eta    = ctrl->eta_ref;
-		ctx  ->eta    = ctrl->eta_ref;
-		ctx  ->eta_cr = ctrl->eta_ref;
-		ctx  ->eta_vp = ctrl->eta_ref;
-		ctx  ->DIIdif = 1.0;
+		ctx->eta    = ctrl->eta_ref;
+		ctx->eta_cr = ctrl->eta_ref;
+		ctx->DIIdif = 1.0;
 
 		PetscFunctionReturn(0);
 	}
@@ -386,9 +385,6 @@ PetscErrorCode devConstEq(ConstEqCtx *ctx, SolVarDev *svDev)
 		ctx->DIIpl  /= ctx->DII;
 	}
 
-	// store viscosity
-	svDev->eta = ctx->eta + ctrl->eta_min;
-
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
@@ -400,8 +396,8 @@ PetscErrorCode getPhaseVisc(ConstEqCtx *ctx, PetscInt ID)
 
 	Controls    *ctrl;
 	PetscInt    it, conv;
-	PetscScalar eta_min, eta_mean, eta, eta_cr, eta_vp, tauII, taupl, DII;
-	PetscScalar DIIdif, DIImax, DIIdis, DIIprl, DIIpl, DIIvs, DIIvp, phRat;
+	PetscScalar eta_min, eta_mean, eta, eta_cr, tauII, taupl, DII;
+	PetscScalar DIIdif, DIImax, DIIdis, DIIprl, DIIpl, DIIvs, phRat;
 	PetscScalar inv_eta_els, inv_eta_dif, inv_eta_max, inv_eta_dis, inv_eta_prl, inv_eta_min;
 
 	PetscFunctionBegin;
@@ -417,7 +413,6 @@ PetscErrorCode getPhaseVisc(ConstEqCtx *ctx, PetscInt ID)
 	conv   = 1;
 	DIIpl  = 0.0;
 	eta_cr = 0.0;
-	eta_vp = 0.0;
 
 	//===========
 	// PLASTICITY
@@ -494,16 +489,13 @@ PetscErrorCode getPhaseVisc(ConstEqCtx *ctx, PetscInt ID)
 	DIIdis = ctx->A_dis*pow(tauII, ctx->N_dis); // dislocation
 	DIIprl = ctx->A_prl*pow(tauII, ctx->N_prl); // Peierls
 	DIIvs  = DIIdif + DIImax + DIIdis + DIIprl; // viscous (total)
-	DIIvp  = DIIvs + DIIpl;                     // visco-plastic
 
-	// compute viscosities
+	// compute creep viscosity
 	if(DIIvs) eta_cr = tauII/DIIvs/2.0;
-	if(DIIvp) eta_vp = tauII/DIIvp/2.0;
 
 	// update results
 	ctx->eta    += phRat*eta;    // effective viscosity
 	ctx->eta_cr += phRat*eta_cr; // creep viscosity
-	ctx->eta_vp += phRat*eta_vp; // visco-plastic viscosity
 	ctx->DIIdif += phRat*DIIdif; // diffusion creep strain rate
 	ctx->DIIdis += phRat*DIIdis; // dislocation creep strain rate
 	ctx->DIIprl += phRat*DIIprl; // Peierls creep strain rate
@@ -595,12 +587,12 @@ PetscScalar getI2Gdt(
 //---------------------------------------------------------------------------
 #undef __FUNCT__
 #define __FUNCT__ "volConstEq"
-PetscErrorCode volConstEq( ConstEqCtx *ctx, SolVarBulk *svBulk)
+PetscErrorCode volConstEq(ConstEqCtx *ctx)
 {
 	// evaluate volumetric constitutive equations in control volume
-
 	Controls    *ctrl;
 	PData       *Pd;
+	SolVarBulk  *svBulk;
 	Material_t  *mat, *phases;
 	PetscInt     i, numPhases;
 	PetscScalar *phRat, dt, p, depth, T, cf_comp, cf_therm, Kavg, rho;
@@ -610,10 +602,11 @@ PetscErrorCode volConstEq( ConstEqCtx *ctx, SolVarBulk *svBulk)
 
 	// access context
 	ctrl      = ctx->ctrl;
+	Pd        = ctx->Pd;
+	svBulk    = ctx->svBulk;
 	numPhases = ctx->numPhases;
 	phases    = ctx->phases;
 	phRat     = ctx->phRat;
-	Pd        = ctx->Pd;
 	depth     = ctx->depth;
 	dt        = ctx->dt;
 	p         = ctx->p;
@@ -700,9 +693,6 @@ PetscErrorCode volConstEq( ConstEqCtx *ctx, SolVarBulk *svBulk)
 
 	PetscFunctionReturn(0);
 }
-
-
-
 //---------------------------------------------------------------------------
 #undef __FUNCT__
 #define __FUNCT__ "cellConstEq"
@@ -721,25 +711,42 @@ PetscErrorCode cellConstEq(
 	// evaluate constitutive equations on the cell
 
 	SolVarDev   *svDev;
-	PetscScalar  txx, tyy, tzz;
+	SolVarBulk  *svBulk;
+	Controls    *ctrl;
+	PetscScalar  eta_min, ptotal, txx, tyy, tzz;
 
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
 
-	// access deviatoric variables
-	svDev = &svCell->svDev;
-	svDev  = &svCell->svDev;
-//	svBulk = &svCell->svBulk;
+	// access context
+	svDev  = ctx->svDev;
+	svBulk = ctx->svBulk;
+	ctrl   = ctx->ctrl;
 
-	// compute deviatoric stresses
-	svCell->sxx = 2.0*svDev->eta*dxx;
-	svCell->syy = 2.0*svDev->eta*dyy;
-	svCell->szz = 2.0*svDev->eta*dzz;
+	// evaluate deviatoric constitutive equation
+	ierr = devConstEq(ctx); CHKERRQ(ierr);
+
+	// evaluate volumetric constitutive equation
+	ierr = volConstEq(ctx); CHKERRQ(ierr);
+
+	// get stabilization viscosity
+	if(ctrl->initGuess) eta_min = 0.0;
+	else                eta_min = ctrl->eta_min;
+
+	// compute stabilization stresses
+	sxx = 2.0*eta_min*svCell->dxx;
+	syy = 2.0*eta_min*svCell->dyy;
+	szz = 2.0*eta_min*svCell->dzz;
+
+	// compute history shear stress
+	svCell->sxx = 2.0*ctx->eta*dxx;
+	svCell->syy = 2.0*ctx->eta*dyy;
+	svCell->szz = 2.0*ctx->eta*dzz;
 
 	// compute plastic strain-rate components
-//	txx = cfpl*dxx;
-//	tyy = cfpl*dyy;
-//	tzz = cfpl*dzz;
+	txx = ctx->DIIpl*dxx;
+	tyy = ctx->DIIpl*dyy;
+	tzz = ctx->DIIpl*dzz;
 
 	// store contribution to the second invariant of plastic strain-rate
 	svDev->PSR = 0.5*(txx*txx + tyy*tyy + tzz*tzz);
@@ -750,84 +757,43 @@ PetscErrorCode cellConstEq(
 	tzz = svCell->dzz - svDev->I2Gdt*(svCell->szz - svCell->hzz);
 
 	// compute shear heating term contribution
-	svDev->Hr = (txx*svCell->sxx + tyy*svCell->syy + tzz*svCell->szz);
+	svDev->Hr =
+		txx*svCell->sxx + tyy*svCell->syy + tzz*svCell->szz +
+		sxx*svCell->dxx + syy*svCell->dyy + szz*svCell->dzz;
 
+	// compute total viscosity
+	svDev->eta = ctx->eta + eta_min;
 
-/*
-	svDev->eta = ctx->eta + ctrl->eta_min;
+	// get total pressure (effective pressure + pore pressure)
+	ptotal = ctx->p + ctrl->biot*ctx->p_pore;
 
-	// update results
-	ctx->eta    += phRat*eta;    // effective viscosity
-	ctx->eta_cr += phRat*eta_cr; // creep viscosity
-	ctx->eta_vp += phRat*eta_vp; // visco-plastic viscosity
-	ctx->DIIdif += phRat*DIIdif; // diffusion creep strain rate
-	ctx->DIIdis += phRat*DIIdis; // dislocation creep strain rate
-	ctx->DIIprl += phRat*DIIprl; // Peierls creep strain rate
-	ctx->DIIpl  += phRat*DIIpl;  // plastic strain rate
-	ctx->yield  += phRat*taupl;  // plastic yield rate
+	// compute total Cauchy stresses
+	sxx += svCell->sxx - ptotal;
+	syy += svCell->syy - ptotal;
+	szz += svCell->szz - ptotal;
 
+	// save output variables
+	svCell->eta_cr = ctx->eta_cr; // creep viscosity
+	svCell->DIIdif = ctx->DIIdif; // relative diffusion creep strain rate
+	svCell->DIIdis = ctx->DIIdis; // relative dislocation creep strain rate
+	svCell->DIIprl = ctx->DIIprl; // relative Peierls creep strain rate
+	svCell->yield  = ctx->yield;  // average yield stress in control volume
 
-		// access
-		theta = svBulk->theta; // volumetric strain rate
-		rho   = svBulk->rho;   // effective density
-		IKdt  = svBulk->IKdt;  // inverse bulk viscosity
-		alpha = svBulk->alpha; // effective thermal expansion
-		pn    = svBulk->pn;    // pressure history
-		Tn    = svBulk->Tn;    // temperature history
+	// compute volumetric residual
+	if(ctrl->actExp)
+	{
+		gres = -svBulk->IKdt*(ctx->p - svBulk->pn) - svBulk->theta + svBulk->alpha*(ctx->T - svBulk->Tn)/ctx->dt;
+	}
+	else
+	{
+		gres = -svBulk->IKdt*(ctx->p - svBulk->pn) - svBulk->theta;
+	}
 
-	actExp =  jr->ctrl.actExp; // thermal expansion activation flag
-
-		if(actExp)
-		{
-			gc[k][j][i] = -IKdt*(pc - pn) - theta + alpha*(Tc - Tn)/dt;
-		}
-		else
-		{
-			gc[k][j][i] = -IKdt*(pc - pn) - theta;
-		}
-
-
-		// get total pressure (effective pressure, computed by LaMEM, plus pore pressure)
-		ptotal = pc + biot*pc_pore;
-
-		// compute total Cauchy stresses
-		sxx = svCell->sxx - ptotal;
-		syy = svCell->syy - ptotal;
-		szz = svCell->szz - ptotal;
-
-		// evaluate deviatoric constitutive equations
-//		ierr = DevConstEq(svDev, &eta_creep, &eta_vp, numPhases, phases, soft, svCell->phRat, ctrl, pc_lith, pc_pore, dt, pc-pShift, Tc, jr-> Pd); CHKERRQ(ierr);
-
-		// compute stress, plastic strain rate and shear heating term on cell
-//		ierr = GetStressCell(svCell, XX, YY, ZZ); CHKERRQ(ierr);
-
-		// get total pressure (effective pressure, computed by LaMEM, plus pore pressure)
-		ptotal = pc + biot*pc_pore;
-
-		// compute total Cauchy stresses
-		sxx = svCell->sxx - ptotal;
-		syy = svCell->syy - ptotal;
-		szz = svCell->szz - ptotal;
-
-		// evaluate volumetric constitutive equations
-//		ierr = VolConstEq(svBulk, numPhases, phases, svCell->phRat, ctrl, depth, dt, pc-pShift , Tc, jr-> Pd); CHKERRQ(ierr);
-
-		// access
-		theta = svBulk->theta; // volumetric strain rate
-		rho   = svBulk->rho;   // effective density
-		IKdt  = svBulk->IKdt;  // inverse bulk viscosity
-		alpha = svBulk->alpha; // effective thermal expansion
-		pn    = svBulk->pn;    // pressure history
-		Tn    = svBulk->Tn;    // temperature history
-*/
-
+	// store effective density
+	rho = svBulk->rho;
 
 	PetscFunctionReturn(0);
 }
-
-
-
-
 //---------------------------------------------------------------------------
 #undef __FUNCT__
 #define __FUNCT__ "edgeConstEq"
@@ -837,26 +803,29 @@ PetscErrorCode edgeConstEq(
 		PetscScalar  d,      // effective shear strain rate component
 		PetscScalar &s)      // Cauchy stress component
 {
-
 	// evaluate constitutive equations on the edge
 
 	SolVarDev   *svDev;
-
-	PetscScalar  t, sm, sb;
+	PetscScalar  t, eta_min;
 
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
 
-	// access deviatoric variables
+	// access context
 	svDev = &svEdge->svDev;
 
 	// evaluate deviatoric constitutive equation
-	ierr = devConstEq(ctx, svDev); CHKERRQ(ierr);
+	ierr = devConstEq(ctx); CHKERRQ(ierr);
 
-	// compute shear stresses
-	sb = 2.0*ctx->eta*d;
-	sm = 2.0*ctx->ctrl->eta_min*svEdge->d;
-	s  = sb + sm;
+	// get stabilization viscosity
+	if(ctx->ctrl->initGuess) eta_min = 0.0;
+	else                     eta_min = ctx->ctrl->eta_min;
+
+	// compute stabilization stress
+	s = 2.0*eta_min*svEdge->d;
+
+	// compute history shear stress
+	svEdge->s = 2.0*ctx->eta*d;
 
 	// compute plastic strain-rate component
 	t = ctx->DIIpl*d;
@@ -865,13 +834,16 @@ PetscErrorCode edgeConstEq(
 	svDev->PSR = t*t;
 
 	// compute dissipative part of total strain rate (viscous + plastic = total - elastic)
-	t = svEdge->d - svDev->I2Gdt*(sb - svEdge->h);
+	t = svEdge->d - svDev->I2Gdt*(svEdge->s - svEdge->h);
 
 	// compute shear heating term contribution
-	svDev->Hr = 2.0*t*svEdge->s +  2.0*svEdge->d*sm;
+	svDev->Hr = 2.0*t*svEdge->s + 2.0*svEdge->d*s;
 
-	// store history stress (for advection, not for output)
-	svEdge->s = sb;
+	// compute total viscosity
+	svDev->eta = ctx->eta + eta_min;
+
+	// compute total stress
+	s += svEdge->s;
 
 	PetscFunctionReturn(0);
 }

@@ -1112,7 +1112,7 @@ PetscErrorCode JacResGetResidual(JacRes *jr)
 		z = COORD_CELL(k, sz, fs->dsz);
 
 		// setup control volume parameters
-		ierr = setUpCtrlVol(&ctx, svCell->phRat, svCell->svDev.APS, pc, pc_lith, pc_pore, Tc, DII, z); CHKERRQ(ierr);
+		ierr = setUpCtrlVol(&ctx, svCell->phRat, &svCell->svDev, &svCell->svBulk, pc, pc_lith, pc_pore, Tc, DII, z); CHKERRQ(ierr);
 
 		// evaluate constitutive equations on the cell
 		ierr = cellConstEq(&ctx, svCell, XX, YY, ZZ, sxx, syy, szz, gres, rho); CHKERRQ(ierr);
@@ -1238,9 +1238,9 @@ PetscErrorCode JacResGetResidual(JacRes *jr)
 		pc_pore = 0.25*(p_pore[k][j][i] + p_pore[k][j][i-1] + p_pore[k][j-1][i] + p_pore[k][j-1][i-1]);
 
 		// setup control volume parameters
-		ierr = setUpCtrlVol(&ctx, svEdge->phRat, svEdge->svDev.APS, pc, pc_lith, pc_pore, Tc, DII, DBL_MAX); CHKERRQ(ierr);
+		ierr = setUpCtrlVol(&ctx, svEdge->phRat, &svEdge->svDev, NULL, pc, pc_lith, pc_pore, Tc, DII, DBL_MAX); CHKERRQ(ierr);
 
-		// evaluate constitutive equations on the cell
+		// evaluate constitutive equations on the edge
 		ierr = edgeConstEq(&ctx, svEdge, XY, sxy); CHKERRQ(ierr);
 
 		//=========
@@ -1341,9 +1341,9 @@ PetscErrorCode JacResGetResidual(JacRes *jr)
 		pc_pore = 0.25*(p_pore[k][j][i] + p_pore[k][j][i-1] + p_pore[k-1][j][i] + p_pore[k-1][j][i-1]);
 
 		// setup control volume parameters
-		ierr = setUpCtrlVol(&ctx, svEdge->phRat, svEdge->svDev.APS, pc, pc_lith, pc_pore, Tc, DII, DBL_MAX); CHKERRQ(ierr);
+		ierr = setUpCtrlVol(&ctx, svEdge->phRat, &svEdge->svDev, NULL, pc, pc_lith, pc_pore, Tc, DII, DBL_MAX); CHKERRQ(ierr);
 
-		// evaluate constitutive equations on the cell
+		// evaluate constitutive equations on the edge
 		ierr = edgeConstEq(&ctx, svEdge, XZ, sxz); CHKERRQ(ierr);
 
 		//=========
@@ -1444,9 +1444,9 @@ PetscErrorCode JacResGetResidual(JacRes *jr)
 		pc_pore = 0.25*(p_pore[k][j][i] + p_pore[k][j-1][i] + p_pore[k-1][j][i] + p_pore[k-1][j-1][i]);
 
 		// setup control volume parameters
-		ierr = setUpCtrlVol(&ctx, svEdge->phRat, svEdge->svDev.APS, pc, pc_lith, pc_pore, Tc, DII, DBL_MAX); CHKERRQ(ierr);
+		ierr = setUpCtrlVol(&ctx, svEdge->phRat, &svEdge->svDev, NULL, pc, pc_lith, pc_pore, Tc, DII, DBL_MAX); CHKERRQ(ierr);
 
-		// evaluate constitutive equations on the cell
+		// evaluate constitutive equations on the edge
 		ierr = edgeConstEq(&ctx, svEdge, YZ, syz); CHKERRQ(ierr);
 
 		//=========
@@ -1825,7 +1825,6 @@ PetscErrorCode JacResInitLithPres(JacRes *jr, AdvCtx *actx)
 {
 	FDSTAG            *fs;
 	SolVarCell        *svCell;
-	SolVarBulk        *svBulk;
 	ConstEqCtx        ctx;
 	Marker            *P;
 	PetscInt          ID, ii, i, j, k, nx, ny, nz, sx, sy, sz, M, N;
@@ -1873,7 +1872,6 @@ PetscErrorCode JacResInitLithPres(JacRes *jr, AdvCtx *actx)
 		{
 			// access cell variables
 			svCell = &jr->svCell[iter++];
-			svBulk = &svCell->svBulk;
 
 			// access pressure
 			pc = p[k][j][i];
@@ -1885,10 +1883,10 @@ PetscErrorCode JacResInitLithPres(JacRes *jr, AdvCtx *actx)
 			z = COORD_CELL(k, sz, fs->dsz);
 
 			// setup control volume parameters
-			ierr = setUpCtrlVol(&ctx, svCell->phRat, svCell->svDev.APS, pc, 0.0, 0.0, Tc, 0.0, z); CHKERRQ(ierr);
+			ierr = setUpCtrlVol(&ctx, svCell->phRat, NULL, &svCell->svBulk, pc, 0.0, 0.0, Tc, 0.0, z); CHKERRQ(ierr);
 
 			// compute density
-			ierr = volConstEq(&ctx, svBulk); CHKERRQ(ierr);
+			ierr = volConstEq(&ctx); CHKERRQ(ierr);
 
 		}
 		END_STD_LOOP
