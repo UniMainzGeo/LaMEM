@@ -580,34 +580,6 @@ PetscErrorCode JacResFormResidual(JacRes *jr, Vec x, Vec f)
 	// copy residuals to global vector
 	ierr = JacResCopyRes(jr, f); CHKERRQ(ierr);
 
-
-/*
-		// report spectral decomposition failure (to adjust tolerances)
-		if(code == -2)
-		{
-			nSDFail++;
-		}
-
-	}
-	END_STD_LOOP
-
-	if(ISParallel(PETSC_COMM_WORLD))
-	{
-		MPI_Reduce(&nSDFail, &gnSDFail, 1, MPIU_INT, MPI_SUM, 0, PETSC_COMM_WORLD);
-	}
-	else
-	{
-		gnSDFail = nSDFail;
-	}
-
-	if(gnSDFail)
-	{
-		PetscPrintf(PETSC_COMM_WORLD,"*****************************************************************************\n",(LLD)gnSDFail);
-		PetscPrintf(PETSC_COMM_WORLD,"Warning! ISA spectral decomposition failed in %lld points. Adjust tolerances!\n",(LLD)gnSDFail);
-		PetscPrintf(PETSC_COMM_WORLD,"*****************************************************************************\n",(LLD)gnSDFail);
-	}
-*/
-
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
@@ -1500,6 +1472,9 @@ PetscErrorCode JacResGetResidual(JacRes *jr)
 	LOCAL_TO_GLOBAL(fs->DA_X, jr->lfx, jr->gfx)
 	LOCAL_TO_GLOBAL(fs->DA_Y, jr->lfy, jr->gfy)
 	LOCAL_TO_GLOBAL(fs->DA_Z, jr->lfz, jr->gfz)
+
+	// check convergence of constitutive equations
+	ierr = checkConvConstEq(&ctx); CHKERRQ(ierr);
 
 	PetscFunctionReturn(0);
 }

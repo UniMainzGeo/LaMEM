@@ -328,7 +328,7 @@ PetscErrorCode DisplaySpecifiedSolverOptions(PCStokes pc, SNES snes)
 		{
 			PetscPrintf(PETSC_COMM_WORLD, "   Solver package                : %s \n", solver_type);
 		}
-   		
+
 	}
 
 
@@ -343,7 +343,7 @@ PetscErrorCode DisplaySpecifiedSolverOptions(PCStokes pc, SNES snes)
 PetscErrorCode NLSolDestroy(NLSol *nl)
 {
 	PetscErrorCode ierr;
- 	PetscFunctionBegin;
+	PetscFunctionBegin;
 
 	ierr = MatDestroy(&nl->J);    CHKERRQ(ierr);
 	ierr = MatDestroy(&nl->P);    CHKERRQ(ierr);
@@ -403,9 +403,9 @@ PetscErrorCode FormJacobian(SNES snes, Vec x, Mat Amat, Mat Pmat, void *ctx)
 	jr   =  pm->jr;
 	ctrl = &jr->ctrl;
 
-    it_newton = 0;
+	it_newton = 0;
 
-    //========================
+	//========================
 	// Jacobian type selection
 	//========================
 
@@ -413,16 +413,16 @@ PetscErrorCode FormJacobian(SNES snes, Vec x, Mat Amat, Mat Pmat, void *ctx)
 	ierr = SNESGetIterationNumber(snes, &it);     CHKERRQ(ierr);
 	ierr = SNESGetFunction(snes, &r, NULL, NULL); CHKERRQ(ierr);
 	ierr = VecNorm(r, NORM_2, &nrm);              CHKERRQ(ierr);
-    
+
 	if(!nrm) nrm = 1.0;
 
-    // initialize
+	// initialize
 	if(!it)
 	{
 		nl->it     = 0;
 		nl->refRes = nrm;
-        nl->jtype = _PICARD_;
-  	}
+		nl->jtype = _PICARD_;
+	}
 	else if(nl->jtype == _PICARD_)
 	{
 		// Picard case, check to switch to Newton
@@ -663,8 +663,8 @@ PetscErrorCode SNESCoupledTest(
 	PetscFunctionBegin;
 
 	// access context
-   	nl = (NLSol*)cctx;
-   	jr = nl->pc->pm->jr;
+	nl = (NLSol*)cctx;
+	jr = nl->pc->pm->jr;
 
 	// call default convergence test
 	ierr = SNESConvergedDefault(snes, it, xnorm, gnorm, f, reason, NULL); CHKERRQ(ierr);
@@ -675,15 +675,15 @@ PetscErrorCode SNESCoupledTest(
 
 	if(!it) PetscFunctionReturn(0);
 
-    if(jr->ctrl.actTemp)
-    {
-    	ierr = JacResGetTempRes(jr, jr->ts->dt);            CHKERRQ(ierr);
-    	ierr = JacResGetTempMat(jr, jr->ts->dt);            CHKERRQ(ierr);
-    	ierr = KSPSetOperators(jr->tksp, jr->Att, jr->Att); CHKERRQ(ierr);
-    	ierr = KSPSetUp(jr->tksp);                          CHKERRQ(ierr);
-    	ierr = KSPSolve(jr->tksp, jr->ge, jr->dT);          CHKERRQ(ierr);
-    	ierr = JacResUpdateTemp(jr);                        CHKERRQ(ierr);
-     }
+	if(jr->ctrl.actTemp)
+	{
+		ierr = JacResGetTempRes(jr, jr->ts->dt);            CHKERRQ(ierr);
+		ierr = JacResGetTempMat(jr, jr->ts->dt);            CHKERRQ(ierr);
+		ierr = KSPSetOperators(jr->tksp, jr->Att, jr->Att); CHKERRQ(ierr);
+		ierr = KSPSetUp(jr->tksp);                          CHKERRQ(ierr);
+		ierr = KSPSolve(jr->tksp, jr->ge, jr->dT);          CHKERRQ(ierr);
+		ierr = JacResUpdateTemp(jr);                        CHKERRQ(ierr);
+	}
 
 	PetscFunctionReturn(0);
 }

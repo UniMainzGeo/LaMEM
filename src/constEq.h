@@ -171,6 +171,9 @@ PetscErrorCode edgeConstEq(
 		PetscScalar  d,      // effective shear strain rate component
 		PetscScalar &s);     // Cauchy stress component
 
+// check convergence of constitutive equations
+PetscErrorCode checkConvConstEq(ConstEqCtx *ctx);
+
 //---------------------------------------------------------------------------
 //.............................. PHASE DIAGRAM  .............................
 //---------------------------------------------------------------------------

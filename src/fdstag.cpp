@@ -1290,15 +1290,11 @@ PetscErrorCode FDSTAGGetAspectRatio(FDSTAG *fs, PetscScalar *maxAspRat)
 {
 	// compute maximum aspect ratio in the grid
 
-	PetscMPIInt nproc;
 	PetscScalar dx, dy, dz, rt, lrt, grt;
 	PetscInt    i, j, k, nx, ny, nz, sx, sy, sz;
 
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
-
-	// get number of processors
-	ierr = MPI_Comm_size(PETSC_COMM_WORLD, &nproc); CHKERRQ(ierr);
 
 	GET_CELL_RANGE(nx, sx, fs->dsx)
 	GET_CELL_RANGE(ny, sy, fs->dsy)
@@ -1320,7 +1316,7 @@ PetscErrorCode FDSTAGGetAspectRatio(FDSTAG *fs, PetscScalar *maxAspRat)
 	END_STD_LOOP
 
 	// get global aspect ratio
-	if(nproc != 1)
+	if(ISParallel(PETSC_COMM_WORLD))
 	{
 		// exchange
 		ierr = MPI_Allreduce(&lrt, &grt, 1, MPIU_SCALAR, MPI_MAX, PETSC_COMM_WORLD); CHKERRQ(ierr);
