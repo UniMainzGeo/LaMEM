@@ -62,10 +62,11 @@ PetscErrorCode JacResCreate(JacRes *jr, FB *fb)
 	FreeSurf   *surf;
 	Scaling    *scal;
 	Controls   *ctrl;
+	BCCtx      *bc;
 	PetscScalar gx, gy, gz;
 	char        gwtype [_str_len_];
 	PetscInt    i, numPhases;
-	PetscInt    is_elastic, need_RUGC, need_rho_fluid, need_surf, need_gw_type;
+	PetscInt    is_elastic, need_RUGC, need_rho_fluid, need_surf, need_gw_type, need_top_open;
 
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
@@ -74,6 +75,7 @@ PetscErrorCode JacResCreate(JacRes *jr, FB *fb)
 	scal      =  jr->scal;
 	ctrl      = &jr->ctrl;
 	surf      =  jr->surf;
+	bc        =  jr->bc;
 	numPhases =  jr->dbm->numPhases;
 
 	// set defaults
@@ -143,6 +145,7 @@ PetscErrorCode JacResCreate(JacRes *jr, FB *fb)
 	need_rho_fluid = 0;
 	need_gw_type   = 0;
 	need_surf      = 0;
+	need_top_open  = 0;
 
 	for(i = 0; i < numPhases; i++)
 	{
@@ -155,6 +158,15 @@ PetscErrorCode JacResCreate(JacRes *jr, FB *fb)
 		if(m->rp  || m->rho_n)        need_rho_fluid = 1;
 		if(m->rp)                     need_gw_type   = 1;
 		if(m->rho_n)                  need_surf      = 1;
+		if(((m->Vd || m->Vn || m->Vp) && !ctrl->pLithoVisc)
+		||  (m->fr                    && !ctrl->pLithoPlast)
+		||  (m->K || m->beta))        need_top_open  = 1;
+
+	}
+
+	if(need_top_open && !bc->top_open)
+	{
+		SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "True pressure-dependent rheology requires open top boundary (Vd, Vn, Vp, fr, K, beta, p_litho_visc, p_litho_plast, open_top_bound)\n");
 	}
 
 	// fix advection time steps for elasticity or kinematic block BC
