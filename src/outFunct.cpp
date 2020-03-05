@@ -417,7 +417,7 @@ PetscErrorCode PVOutWriteDevStress(OutVec* outvec)
 
 	// get stabilization viscosity
 	if(jr->ctrl.initGuess) eta_min = 0.0;
-	else                   eta_min = jr->ctrl.initGuess;
+	else                   eta_min = jr->ctrl.eta_min;
 
 	// macro to copy deviatoric stress components to buffer
 	#define GET_SXX { svCell = &jr->svCell  [iter++]; buff[k][j][i] = svCell->sxx + 2.0*eta_min*svCell->dxx; }
@@ -455,7 +455,7 @@ PetscErrorCode PVOutWriteJ2DevStress(OutVec* outvec)
 
 	// get stabilization viscosity
 	if(jr->ctrl.initGuess) eta_min = 0.0;
-	else                   eta_min = jr->ctrl.initGuess;
+	else                   eta_min = jr->ctrl.eta_min;
 
 	// macros to copy deviatoric strain rate invariant to buffer
 	#define GET_J2_STRESS_CENTER \
