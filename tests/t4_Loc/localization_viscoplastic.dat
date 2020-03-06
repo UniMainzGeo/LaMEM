@@ -59,7 +59,6 @@
 
 	gravity        = 0.0 0.0 -10.0  # gravity vector
 	FSSA           = 1.0            # free surface stabilization parameter [0 - 1]
-	act_p_shift    = 0              # pressure shift activation flag (zero pressure in the top cell layer)
 	init_guess     = 1              # initial guess flag
 	p_lim_plast    = 0              # limit pressure at first iteration for plasticity
 	eta_min        = 1e16           # viscosity upper bound
@@ -68,7 +67,6 @@
 	min_cohes      = 1e6            # cohesion lower bound
 	min_fric       = 5.0            # friction lower bound
 	tau_ult        = 1e9            # ultimate yield stress
-	quasi_harm_avg = 1              # quasi-harmonic averaging regularization flag (plasticity)
 
 #===============================================================================
 # Solver options

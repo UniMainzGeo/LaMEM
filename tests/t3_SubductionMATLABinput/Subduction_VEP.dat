@@ -79,7 +79,6 @@
 	gravity        = 0.0 0.0 -10.0  # gravity vector
 	FSSA           = 1.0            # free surface stabilization parameter [0 - 1]
 	shear_heat_eff = 0.0            # shear heating efficiency parameter   [0 - 1]
-	act_p_shift    = 0              # pressure shift activation flag (zero pressure in the top cell layer)
 	act_temp_diff  = 1              # temperature diffusion activation flag
 	init_guess     = 1              # initial guess flag
 #	p_lim_plast    = 1              # limit pressure at first iteration for plasticity
@@ -87,7 +86,6 @@
 	eta_max        = 1e24           # viscosity lower limit
 	eta_ref        = 1e22           # reference viscosity (initial guess)
 	DII_ref        = 1e-15          # background (reference) strain-rate
-	quasi_harm_avg = 1              # quasi-harmonic averaging regularization flag (plasticity)
 
 #===============================================================================
 # Model setup & advection

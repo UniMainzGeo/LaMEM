@@ -55,7 +55,6 @@
 
 	gravity        = 0.0 0.0 -1.0   # gravity vector
 	FSSA           = 1.0            # free surface stabilization parameter [0 - 1]
-	act_p_shift    = 0              # pressure shift activation flag (zero pressure in the top cell layer)
 	init_guess     = 0              # initial guess flag
 	eta_min        = 1e-3           # viscosity upper bound
 	eta_max        = 1e12           # viscosity lower limit
