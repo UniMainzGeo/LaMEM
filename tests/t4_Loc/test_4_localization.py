@@ -34,8 +34,8 @@ def test_b():
 
   # Test visco-plastic localization case on 4 cores, using optimized LaMEM
   ranks = 4
-  launch = '../bin/opt/LaMEM -ParamFile ./t4_Loc/localization_viscoplastic.dat' # This must be a relative path with respect to runLaMEM_Tests.py
-  expected_file = 't4_Loc/Loc1_b_MUMPS_VP_opt-p4.expected'
+  launch = '../bin/opt/LaMEM -ParamFile ./t4_Loc/localization_eta_min_reg.dat' # This must be a relative path with respect to runLaMEM_Tests.py
+  expected_file = 't4_Loc/Loc1_b_MUMPS_VEP_Reg_opt-p4.expected'
 
   def comparefunc(unittest):
 
@@ -49,7 +49,7 @@ def test_b():
     unittest.compareFloatingPoint(key,1e-4)
 
   # Create unit test object
-  ex1 = pth.pthUnitTest('Loc1_b_MUMPS_VP_opt',ranks,launch,expected_file)
+  ex1 = pth.pthUnitTest('Loc1_b_MUMPS_VEP_Reg_opt',ranks,launch,expected_file)
   ex1.setVerifyMethod(comparefunc)
   ex1.appendKeywords('@')
 
