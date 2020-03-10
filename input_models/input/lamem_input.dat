@@ -239,7 +239,6 @@
 	eta_ref         = 1e20           # reference viscosity (initial guess)
 	T_ref           = 20.0           # reference temperature
 	RUGC            = 8.31           # universal gas constant (required only for non-dimensional setups)
-	DII_ref         = 1e-15          # background (reference) strain-rate
 	min_cohes       = 2e7            # cohesion lower bound
 	min_fric        = 5.0            # friction lower bound
 	tau_ult         = 1e9            # ultimate yield stress
