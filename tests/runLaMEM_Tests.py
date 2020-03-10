@@ -23,8 +23,8 @@ sys.path.append(os.path.join(os.environ['PWD'], 't10_Compressibility'))
 # add matlab-tests if matlab is available as ENVIRONMENTAL variable MATLAB
 if os.environ.get('MATLAB') != None:
     sys.path.append(os.path.join(os.environ['PWD'], 't3_SubductionMATLABinput'))
-    sys.path.append(os.path.join(os.environ['PWD'], 't6_AdjointGradientScaling'))
-    sys.path.append(os.path.join(os.environ['PWD'], 't7_AdjointGradientInversion'))
+    #sys.path.append(os.path.join(os.environ['PWD'], 't6_AdjointGradientScaling'))
+    #sys.path.append(os.path.join(os.environ['PWD'], 't7_AdjointGradientInversion'))
 else:
     print('MATLAB tests cannot be executed, as the environmental variable $MATLAB is not set')
 
@@ -37,8 +37,8 @@ import test_10_Compressibility as Comp1
 
 if os.environ.get('MATLAB') != None:
   import test_3_Subduction1               as Sub1 # import test that requires MATLAB
-  import test_6_AdjointGradientScaling1   as Adj1 # import test that requires MATLAB
-  import test_7_AdjointGradientInversion1 as Adj2 # import test that requires MATLAB
+  #import test_6_AdjointGradientScaling1   as Adj1 # import test that requires MATLAB
+  #import test_7_AdjointGradientInversion1 as Adj2 # import test that requires MATLAB
 
 def makeLocalPathAbsolute(localRelPath) :
   thisDir = os.path.split(os.path.abspath(__file__))[0]
@@ -58,8 +58,8 @@ def run_tests():
     registeredTests.append(Sub1.test_b());
     registeredTests.append(Sub1.test_c());
     registeredTests.append(Sub1.test_d());
-    registeredTests.append(Adj1.test_a());
-    registeredTests.append(Adj2.test_a());
+    #registeredTests.append(Adj1.test_a());
+    #registeredTests.append(Adj2.test_a());
 
   # Run the tests:
   h = pthharness.Harness(registeredTests)
