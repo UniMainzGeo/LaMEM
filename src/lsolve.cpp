@@ -363,6 +363,9 @@ PetscErrorCode PCStokesBFApply(Mat JP, Vec r, Vec x)
 	PCStokesBF *bf;
 	PMatBlock  *P;
 
+	Mat SMid,C,K;
+	Vec wp0, wp1, wp2, wp3;
+
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
 
@@ -374,6 +377,38 @@ PetscErrorCode PCStokesBFApply(Mat JP, Vec r, Vec x)
 
 	// extract residual blocks
 	ierr = VecScatterBlockToMonolithic(P->rv, P->rp, r, SCATTER_REVERSE); CHKERRQ(ierr);
+
+
+	//=================
+	// compute wBFBT
+	//=================
+	if(bf->type == _BFBT_)
+	{
+		// wv = f
+		ierr = VecCopy(f,P->wv); CHKERRQ(ierr); 	// wv = f
+
+		// wp = B*A⁻1*wv
+		ierr = KSPSolve(bf->vksp, P->wv, wp0); CHKERRQ(ierr);	// wp0 = (A^-1)*wv
+		ierr = MatMult(P->Apv,wp0,P->wp);		CHKERRQ(ierr);	// wp = B*wp0
+
+		// p = S⁻1*wp               S^-1 = (BCB^T)^-1 * BCACB^T * (BCB^T)^-1
+		//							K = BCB^T, SMid = BCACB^T
+		ierr = MatRARt(C,P->Apv,MAT_INITIAL_MATRIX,PETSC_DEFAULT,*K);			CHKERRQ(ierr); // compute K
+		ierr = MatRARt(P->Avv,P->Apv,MAT_INITIAL_MATRIX,PETSC_DEFAULT,*SMid); 	CHKERRQ(ierr); // compute SMid, assume C = I
+
+		// p = (BCB^T)^-1 * BCACB^T * (BCB^T)^-1 * wp
+		ierr = KSPSolve(bf->kksp, P->wp, wp1); CHKERRQ(ierr);	// wp1 = K^-1 * wp   	<=> K*wp1 = wp
+		ierr = MatMult(SMid, wp1, wp2); 	   CHKERRQ(ierr);	// wp2 = SMid * wp1
+		ierr = KSPSolve(bf->kksp, wp2, P->xp); CHKERRQ(ierr);	// xp  = K^-1 * wp2  	<=> K*xp  = wp2
+
+		// u = A⁻1*(wv-B^T*p)
+		ierr = MatMult(P->Avp,P->xp,wp3);		CHKERRQ(ierr);	// wp3 = B^T*p
+		ierr = VecAXPY(P->rv, -1.0, wp3); 		CHKERRQ(ierr);	// rv = wv-wp3
+		ierr = KSPSolve(bf->vksp, P->rv, P->xv); CHKERRQ(ierr);	// xv = (A^-1)*rv
+	}
+
+
+
 
 	if(bf->type == _UPPER_)
 	{
