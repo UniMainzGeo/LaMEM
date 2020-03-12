@@ -19,9 +19,9 @@
 	inc_dt    = 0.1   # time step increment per time step (fraction of unit)
 	CFL       = 0.5   # CFL (Courant-Friedrichs-Lewy) criterion
 	CFLMAX    = 0.8   # CFL criterion for elasticity
-	nstep_max = 5     # maximum allowed number of steps (lower bound: time_end/dt_max)
+	nstep_max = 20     # maximum allowed number of steps (lower bound: time_end/dt_max)
 	nstep_out = 1     # save output every n steps
-
+	
 #===============================================================================
 # Grid & discretization parameters
 #===============================================================================
@@ -35,14 +35,18 @@
 # Coordinates of all segments (including start and end points)
 
 	coord_x = -2000.0 2000.0
-	coord_y = -5.0    5.0
-	coord_z = -660.0  0.0
+	coord_y = -25.0   25.0
+	coord_z = -660.0  140.0
 
 #===============================================================================
 # Free surface
 #===============================================================================
 
-# default
+	surf_use           = 1                # free surface activation flag
+	surf_corr_phase    = 1                # air phase ratio correction flag (due to surface position)
+	surf_level         = 0.0              # initial level
+	surf_air_phase     = 4                # phase ID of sticky air layer
+	surf_max_angle     = 30.0             # maximum angle with horizon (smoothed if larger)
 
 #===============================================================================
 # Boundary conditions
@@ -52,20 +56,26 @@
 
 # Temperature on the top and bottom boundaries
 
-	temp_top = 20.0
+	temp_top = 0.0
 	temp_bot = 1465.0;
+	
+# Free surface top boundary flag
+
+	open_top_bound = 1
 
 #===============================================================================
 # Solution parameters & controls
 #===============================================================================
 
-	gravity     = 0.0 0.0 -10.0  # gravity vector
-#	p_lim_plast = 1              # limit pressure at first iteration for plasticity
-	eta_min     = 2.5e18         # viscosity upper bound
-	eta_max     = 2.5e24         # viscosity lower limit
-	eta_ref     = 1e22           # reference viscosity (initial guess)
-	DII_ref     = 1e-16          # background (reference) strain-rate
-#	init_guess  = 0
+	gravity         = 0.0 0.0 -10.0  # gravity vector
+	FSSA            = 1.0            # free surface stabilization parameter [0 - 1]
+	p_lim_plast     = 1              # limit pressure at first iteration for plasticity
+	eta_min         = 5e18         # viscosity lower limit
+	eta_max         = 2.5e24         # viscosity upper limit
+	eta_ref         = 1e22           # reference viscosity (initial guess)
+	DII_ref         = 1e-16          # background (reference) strain-rate
+	init_guess      = 1              # initial guess flag
+	init_lith_pres  = 1              # initial pressure with lithostatic pressure (stabilizes compressible setups in the first steps)
 
 #===============================================================================
 # Model setup & advection
@@ -75,10 +85,9 @@
 	nmark_x        = 3                 # markers per cell in x-direction
 	nmark_y        = 3                 # ...                 y-direction
 	nmark_z        = 3                 # ...                 z-direction
-	advect         = rk2               # advection scheme
-	new_advect     = 1                 # activate new advection algorithms (temporary)
-	interp         = minmod            # velocity interpolation scheme
-	mark_ctrl      = avd
+	advect         = basic               # advection scheme
+	interp         = stag            # velocity interpolation scheme
+	mark_ctrl      = subgrid
 
 #===============================================================================
 # Output
@@ -105,18 +114,48 @@
 	out_energ_res       = 1
 
 	out_avd             = 1
+	
+# Free surface output options (can be activated only if surface tracking is enabled)
+
+	out_surf            = 1 # activate surface output
+	out_surf_pvd        = 1 # activate writing .pvd file
+	out_surf_velocity   = 1
+	out_surf_topography = 1
+	out_surf_amplitude  = 1
 #===============================================================================
 # Material phase parameters
 #===============================================================================
 
+	# ------------------- sticky Air -------------------
+	<MaterialStart>
+		ID   = 4
+		rho  = 100
+		
+		eta  = 1e18
+		
+		G    = 5e10
+		K    = 8e10
+		
+		ch   = 20e6
+		fr   = 30
+		
+		k    = 3
+		cp   = 1050
+	<MaterialEnd>
+	
 	# ------------------- plastic oceanic crust -------------------
 	<MaterialStart>
 		ID   = 0
 		rho  = 3300
+		
 		eta  = 2.5e23
+		
 		G    = 5e10
+		K    = 8e10
+		
 		ch   = 20e6
-		fr   = 0
+		fr   = 30
+		
 		k    = 3
 		cp   = 1050
 	<MaterialEnd>
@@ -126,6 +165,7 @@
 	<MaterialStart>
 		ID    = 1
 		rho   = 3300
+		
 		Bd    = 1.5e-9
 		Ed    = 375e3
 		Vd    = 3e-6
@@ -133,12 +173,16 @@
 		n     = 3.5
 		En    = 532e3
 		Vn    = 15e-6
+		
+		G     = 5e10
+		K     = 8e10
+		
+		ch    = 20e6
+		fr    = 30
+		
 		k     = 3
 		cp    = 1050
 		alpha = 1e-5
-		G     = 5e10
-		ch    = 20e6
-		fr    = 30
 	<MaterialEnd>
 
 	# ------------------- WeakLayer -------------------
@@ -146,8 +190,16 @@
 	<MaterialStart>
 		ID      = 2
 		rho     = 3300
-		alpha   = 1e-5
+		
 		eta     = 2.5e19
+		
+		G    = 5e10
+		K    = 8e10
+		
+		ch   = 20e6
+		fr   = 30
+		
+		alpha   = 1e-5
 	<MaterialEnd>
 
 	# ------------------- MANTLE -------------------
@@ -155,6 +207,7 @@
 	<MaterialStart>
 		ID    = 3
 		rho   = 3300
+		
 		Bd    = 1.5e-9
 		Ed    = 375e3
 		Vd    = 3e-6
@@ -162,12 +215,16 @@
 		n     = 3.5
 		En    = 532e3
 		Vn    = 15e-6
+		
+		G     = 5e10
+		K     = 8e10
+		
+		ch    = 20e6
+		fr    = 30
+		
 		k     = 3
 		cp    = 1050
 		alpha = 1e-5
-		G     = 5e10
-		ch    = 20e6
-		fr    = 30
 	<MaterialEnd>
 
 #===============================================================================
@@ -183,7 +240,7 @@
 	-snes_atol 1e-4
 	-snes_rtol 1e-3
 	-snes_stol 1e-16
-	-snes_max_it 30
+	-snes_max_it 50
 	-snes_max_funcs 500000
 	-snes_max_linear_solve_fail 10000
 
@@ -194,12 +251,12 @@
 
 	# Linesearch options
 	-snes_linesearch_monitor
-	-snes_linesearch_type basic
+	-snes_linesearch_type l2
 	-snes_linesearch_maxstep 1.0 # very important to prevent the code from "blowing up"
 
 	# Jacobian (linear) outer KSP
 	-js_ksp_type fgmres
-	-js_ksp_max_it 25
+	-js_ksp_max_it 50
 #	-js_ksp_converged_reason
 	-js_ksp_monitor
 	-js_ksp_rtol 1e-5
@@ -207,11 +264,10 @@
 
 	# Matrix type
 	-pcmat_type mono # monolithic matrix [coupled MG solver]
-	-pcmat_no_dev_proj
 
 	# Direct solver with penalty method
 	-pcmat_type   mono
-	-pcmat_pgamma 1e5 # penalty parameter
+	-pcmat_pgamma 1e2 # penalty parameter
 	-jp_type      user
 	-jp_pc_type   lu
 

@@ -96,7 +96,7 @@ ind             =   find(T<1300);
 ThickOP         =   max(depth(ind));
 
 
-z_surface       =   z_bot+H;
+z_surface       =   0;
 z_UC0           =   -ThickCrust;
 z_UC1           =   z_UC0-ThickOP;
 z_UC2           =   z_UC1-ThickWL;
@@ -109,7 +109,7 @@ z_UC2           =   z_UC1-ThickWL;
 %==========================================================================
 
 %%% Mantle
-ind         =   find( Z< z_surface);
+ind         =   find( Z <= z_surface);
 Phase(ind)  =   3;
 
 % Weak Layer
@@ -149,6 +149,9 @@ Poly_z      =   coord(2,:);
 ind         =   find(inpolygon(X,Z,Poly_x,Poly_z));
 Phase(ind)  =   0;
 
+% Air
+ind         = find(Z > z_surface);
+Phase(ind)  = 4;
 
 %==========================================================================
 % TEMPERATURE - in Celcius
@@ -176,6 +179,9 @@ Xc_tran     =   R1*Xc_in;       % rotate points back
 dist        =   -(Xc_tran(2,:)-max(Xc_tran(2,:)));
 Temp(ind)   =   1350.*erf((dist*1000./(2.*sqrt(kappa*ThermalAge))))+ T_surface;
 
+% set Air to 0
+ind         =   find(Z > z_surface);
+Temp(ind)   =   0;
 
 %==========================================================================
 % PREPARE DATA FOR VISUALIZATION/OUTPUT
