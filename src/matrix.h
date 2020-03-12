@@ -146,6 +146,10 @@ struct PMatBlock
 	Vec xv, xp;   // solution blocks
 	Vec wv, wp;   // work vectors
 
+	Mat K;		//
+	Vec C;  	// inverse vector of diagonal entries of weighting viscosity
+	Vec wp0, wp1, wp2, wp3, wp4, wp5, wp6; // additional work vectors
+
 };
 
 //---------------------------------------------------------------------------
