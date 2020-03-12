@@ -71,7 +71,6 @@ enum PCBFType
 enum PCVelType
 {
 	_VEL_MG_,  // Galerkin multigrid
-	//_PRESSURE_MG_, //
 	_VEL_USER_ // user-defined
 
 };

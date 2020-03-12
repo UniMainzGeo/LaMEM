@@ -394,15 +394,13 @@ PetscErrorCode PCStokesBFApply(Mat JP, Vec r, Vec x)
 	// extract residual blocks
 	ierr = VecScatterBlockToMonolithic(P->rv, P->rp, r, SCATTER_REVERSE); CHKERRQ(ierr);
 
-	// create ksp solver
-	// jacrestemp -> copy and change
-
 
 	if(bf->type == _BFBT_)
 	{
 		//===============
 		//    wBFBT
 		//===============
+
 		// rv = f
 		// wp = B*A⁻1*rv
 		ierr = KSPSolve(bf->vksp, P->rv, P->wp0); 	CHKERRQ(ierr);	// wp0 = (A^-1)*rv
@@ -411,7 +409,6 @@ PetscErrorCode PCStokesBFApply(Mat JP, Vec r, Vec x)
 		// p = S⁻1*wp               S^-1 = (BCB^T)^-1 * BCACB^T * (BCB^T)^-1
 		// p = (BCB^T)^-1 * BCACB^T * (BCB^T)^-1 * wp
 		// K = BCB^T
-
 		ierr = KSPSolve(bf->pksp, P->wp, P->wp1); 			CHKERRQ(ierr);	// wp1 = K^-1 * wp   	<=> K*wp1 = wp
 		ierr = MatMult(P->Avp, P->wp1, P->wp2); 			CHKERRQ(ierr);	// wp2 = B^T * wp1	|
 		ierr = VecPointwiseMult(P->wp3, P->C, P->wp2); 		CHKERRQ(ierr);	// wp3 = C * wp2	|
@@ -421,9 +418,10 @@ PetscErrorCode PCStokesBFApply(Mat JP, Vec r, Vec x)
 		ierr = KSPSolve(bf->pksp, P->wp6, P->xp); 			CHKERRQ(ierr);	// xp  = K^-1 * wp6  	<=> K*xp  = wp6
 
 		// u = A⁻1*(wv-B^T*p)
-		ierr = MatMult(P->Avp,P->xp,P->wp6);		CHKERRQ(ierr);	// wp6 = B^T*xp
-		ierr = VecAXPY(P->rv, -1.0, P->wp6); 		CHKERRQ(ierr);	// rv = wv-wp6
-		ierr = KSPSolve(bf->vksp, P->rv, P->xv); 	CHKERRQ(ierr);	// xv = (A^-1)*rv
+		ierr = MatMult(P->Avp,P->xp,P->wp6);				CHKERRQ(ierr);	// wp6 = B^T*xp
+		ierr = VecWAXPY(P->rv, -1.0, P->wp6, P->wv); 		CHKERRQ(ierr);	// rv = wv-wp6
+		ierr = KSPSolve(bf->vksp, P->rv, P->xv); 			CHKERRQ(ierr);	// xv = (A^-1)*rv
+
 	}else if(bf->type == _UPPER_)
 	{
 		//=======================
