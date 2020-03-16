@@ -156,8 +156,8 @@ struct BCCtx
 	DBMat    *dbm;  // material database
 	JacRes   *jr;   // Jacobian-residual context (CROSS-REFERENCE!)
 
-	// boundary conditions vectors (velocity, pressure, temperature)
-	Vec bcvx, bcvy, bcvz, bcp, bcT; // local (ghosted)
+	// boundary conditions vectors (velocity, pressure, temperature, viscosity)
+	Vec bcvx, bcvy, bcvz, bcp, bcT, bcv; // local (ghosted)
 
 	// single-point constraints
 	ShiftType    stype;   // current index shift type

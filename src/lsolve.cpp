@@ -411,7 +411,7 @@ PetscErrorCode PCStokesBFApply(Mat JP, Vec r, Vec x)
 		// K = BCB^T
 		ierr = KSPSolve(bf->pksp, P->wp, P->wp1); 			CHKERRQ(ierr);	// wp1 = K^-1 * wp   	<=> K*wp1 = wp
 		ierr = MatMult(P->Avp, P->wp1, P->wp2); 			CHKERRQ(ierr);	// wp2 = B^T * wp1	|
-		ierr = VecPointwiseMult(P->wp3, P->C, P->wp2); 		CHKERRQ(ierr);	// wp3 = C * wp2	|
+		ierr = VecPointwiseMult(P->wp3, P->C, P->wp2); 		CHKERRQ(ierr);	// wp3 = C * wp2	|	(C is stored as a vector)
 		ierr = MatMult(P->Avv, P->wp3, P->wp4); 			CHKERRQ(ierr);	// wp4 = A * wp3	|	<=> wp6 = BCACB^T * wp1
 		ierr = VecPointwiseMult(P->wp5, P->C, P->wp4); 		CHKERRQ(ierr);	// wp5 = C * wp4	|
 		ierr = MatMult(P->Apv, P->wp5, P->wp6); 			CHKERRQ(ierr);	// wp6 = B * wp5	|

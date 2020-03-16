@@ -2,14 +2,7 @@
 #define SRC_BFBT_H_
 
 
-
-
-
-
-
-
-
-PetscErrorCode JacResGetViscParam(JacRes *jr, PetscScalar *phRat, PetscScalar *visc);
+PetscErrorCode JacResGetViscRes(JacRes *jr, PetscScalar dt);
 
 PetscErrorCode JacResGetViscMat(JacRes *jr, PetscScalar dt);
 
