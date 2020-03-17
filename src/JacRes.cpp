@@ -1814,7 +1814,7 @@ PetscErrorCode JacResInitLithPres(JacRes *jr, AdvCtx *actx)
 	SolVarCell        *svCell;
 	ConstEqCtx        ctx;
 	Marker            *P;
-	PetscInt          ID, ii, i, j, k, nx, ny, nz, sx, sy, sz, M, N;
+	PetscInt          ID, ii, i, j, k, nx, ny, nz, sx, sy, sz;
 	PetscInt          iter, it, maxit, conv;
 	PetscScalar       z, Tc, pc, nprev, norm, lnorm, stop, tol;
 	PetscScalar       ***T, ***p;
@@ -1831,8 +1831,6 @@ PetscErrorCode JacResInitLithPres(JacRes *jr, AdvCtx *actx)
 
 	// access context
 	fs         =  jr->fs;
-	M          =  fs->dsx.ncels;
-	N          =  fs->dsy.ncels;
 
 	// setup constitutive equation evaluation context parameters
 	ierr = setUpConstEq(&ctx, jr); CHKERRQ(ierr);
@@ -1947,9 +1945,6 @@ PetscErrorCode JacResInitLithPres(JacRes *jr, AdvCtx *actx)
 
 		// get consecutive index of the host cell
 		ID = actx->cellnum[ii];
-
-		// get indices of host cell
-		GET_CELL_IJK(ID, i, j, k, M, N);
 
 		// access host cell
 		svCell = &jr->svCell[ID];
