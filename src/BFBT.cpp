@@ -26,72 +26,6 @@
 
 
 //---------------------------------------------------------------------------
-
-//---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "JacResApplyTempBC"
-PetscErrorCode JacResApplyTempBC(JacRes *jr)
-{
-	// apply temperature two-point constraints
-
-	FDSTAG      *fs;
-	BCCtx       *bc;
-	PetscScalar pmdof;
-	PetscScalar ***lT, ***bcT;
-	PetscInt    mcx, mcy, mcz;
-	PetscInt    I, J, K, fi, fj, fk;
-	PetscInt    i, j, k, nx, ny, nz, sx, sy, sz;
-
-	PetscErrorCode ierr;
-	PetscFunctionBegin;
-
-	fs  =  jr->fs;
-	bc  =  jr->bc;
-
-	// initialize maximal index in all directions
-	mcx = fs->dsx.tcels - 1;
-	mcy = fs->dsy.tcels - 1;
-	mcz = fs->dsz.tcels - 1;
-
-	// exchange internal ghost points
-	LOCAL_TO_LOCAL(fs->DA_CEN, jr->lT)
-
-	// access local solution & boundary constraints
-	ierr = DMDAVecGetArray(fs->DA_CEN, jr->lT,  &lT);  CHKERRQ(ierr);
-	ierr = DMDAVecGetArray(fs->DA_CEN, bc->bcT, &bcT); CHKERRQ(ierr);
-
-	GET_CELL_RANGE_GHOST_INT(nx, sx, fs->dsx)
-	GET_CELL_RANGE_GHOST_INT(ny, sy, fs->dsy)
-	GET_CELL_RANGE_GHOST_INT(nz, sz, fs->dsz)
-
-	START_STD_LOOP
-	{
-		pmdof = lT[k][j][i];
-
-		I = i; fi = 0;
-		J = j; fj = 0;
-		K = k; fk = 0;
-
-		if(i == 0)   { fi = 1; I = i-1; SET_TPC(bcT, lT, k, j, I, pmdof) }
-		if(i == mcx) { fi = 1; I = i+1; SET_TPC(bcT, lT, k, j, I, pmdof) }
-		if(j == 0)   { fj = 1; J = j-1; SET_TPC(bcT, lT, k, J, i, pmdof) }
-		if(j == mcy) { fj = 1; J = j+1; SET_TPC(bcT, lT, k, J, i, pmdof) }
-		if(k == 0)   { fk = 1; K = k-1; SET_TPC(bcT, lT, K, j, i, pmdof) }
-		if(k == mcz) { fk = 1; K = k+1; SET_TPC(bcT, lT, K, j, i, pmdof) }
-
-		if(fi && fj)       SET_EDGE_CORNER(n, lT, k, J, I, k, j, i, pmdof)
-		if(fi && fk)       SET_EDGE_CORNER(n, lT, K, j, I, k, j, i, pmdof)
-		if(fj && fk)       SET_EDGE_CORNER(n, lT, K, J, i, k, j, i, pmdof)
-		if(fi && fj && fk) SET_EDGE_CORNER(n, lT, K, J, I, k, j, i, pmdof)
-	}
-	END_STD_LOOP
-
-	// restore access
-	ierr = DMDAVecRestoreArray(fs->DA_CEN, jr->lT,  &lT);  CHKERRQ(ierr);
-	ierr = DMDAVecRestoreArray(fs->DA_CEN, bc->bcT, &bcT); CHKERRQ(ierr);
-
-	PetscFunctionReturn(0);
-}
 //---------------------------------------------------------------------------
 #undef __FUNCT__
 #define __FUNCT__ "JacResGetViscRes"
@@ -113,7 +47,7 @@ PetscErrorCode JacResGetViscRes(JacRes *jr, PetscScalar dt)
 	PetscScalar bdpdx, bdpdy, bdpdz, fdpdx, fdpdy, fdpdz;
  	PetscScalar dx, dy, dz;
 	PetscScalar invdt, Vc, Pc, Hr, Ha;
-	PetscScalar ***ge, ***lV, ***lk, ***hxy, ***hxz, ***hyz, ***buff, *e,***P;;
+	PetscScalar ***vr, ***lV, ***lk, ***hxy, ***hxz, ***hyz, ***buff, *e,***P;;
 	PetscScalar ***vx,***vy,***vz;
 
 
@@ -138,7 +72,7 @@ PetscErrorCode JacResGetViscRes(JacRes *jr, PetscScalar dt)
 	SCATTER_FIELD(fs->DA_CEN, jr->ldxx, GET_VISC_TOTAL)
 
 	// access work vectors
-	ierr = DMDAVecGetArray(jr->DA_V,   jr->ge,   &ge);  CHKERRQ(ierr);
+	ierr = DMDAVecGetArray(jr->DA_V,   jr->vr,   &vr);  CHKERRQ(ierr);
 	ierr = DMDAVecGetArray(fs->DA_CEN, jr->lV,   &lV);  CHKERRQ(ierr);
 	ierr = DMDAVecGetArray(fs->DA_CEN, jr->ldxx, &lk);  CHKERRQ(ierr);
 	ierr = DMDAVecGetArray(fs->DA_XY,  jr->ldxy, &hxy); CHKERRQ(ierr);
@@ -204,12 +138,12 @@ PetscErrorCode JacResGetViscRes(JacRes *jr, PetscScalar dt)
 		// to get positive diagonal in the preconditioner matrix
 		// put right hand side to the left, which gives the following:
 
-		ge[k][j][i] = - (fvx - bvx)/dx - (fvy - bvy)/dy - (fvz - bvz)/dz;
+		vr[k][j][i] = - (fvx - bvx)/dx - (fvy - bvy)/dy - (fvz - bvz)/dz;
 	}
 	END_STD_LOOP
 
 	// restore access
-	ierr = DMDAVecRestoreArray(jr->DA_T,   jr->ge,   &ge);  CHKERRQ(ierr);
+	ierr = DMDAVecRestoreArray(jr->DA_V,   jr->vr,   &vr);  CHKERRQ(ierr);
 	ierr = DMDAVecRestoreArray(fs->DA_CEN, jr->lV,   &lV);  CHKERRQ(ierr);
 	ierr = DMDAVecRestoreArray(fs->DA_CEN, jr->ldxx, &lk);  CHKERRQ(ierr);
 	ierr = DMDAVecRestoreArray(fs->DA_XY,  jr->ldxy, &hxy); CHKERRQ(ierr);

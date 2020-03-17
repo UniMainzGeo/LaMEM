@@ -1228,6 +1228,7 @@ PetscErrorCode PMatBlockCreate(PMat pm)
 	ierr = MatAIJCreate(lnv, lnp, 0, Avp_d_nnz, 0, Avp_o_nnz, &P->Avp);  CHKERRQ(ierr);
 	ierr = MatAIJCreate(lnp, lnv, 0, Apv_d_nnz, 0, Apv_o_nnz, &P->Apv);  CHKERRQ(ierr);
 	ierr = MatAIJCreateDiag(lnp, startp, &P->App);                       CHKERRQ(ierr);
+	ierr = MatAIJCreateDiag(lnp, startp, &P->K);                         CHKERRQ(ierr);
 	ierr = MatAIJCreateDiag(lnp, startp, &P->iS);                        CHKERRQ(ierr);
 
 	ierr = VecCreateMPI(PETSC_COMM_WORLD, lnv, PETSC_DETERMINE, &P->xv); CHKERRQ(ierr);
@@ -1243,7 +1244,7 @@ PetscErrorCode PMatBlockCreate(PMat pm)
 	ierr = VecDuplicate(P->xp, &P->wp4);                                 CHKERRQ(ierr);
 	ierr = VecDuplicate(P->xp, &P->wp5);                                 CHKERRQ(ierr);
 	ierr = VecDuplicate(P->xp, &P->wp6);                                 CHKERRQ(ierr);
-	ierr = VecDuplicate(P->xp, &P->C);                                   CHKERRQ(ierr);
+	ierr = VecDuplicate(P->xv, &P->C);                                   CHKERRQ(ierr);
 
 	// free counter arrays
 	ierr = PetscFree(Avv_d_nnz); CHKERRQ(ierr);
@@ -1583,6 +1584,7 @@ PetscErrorCode PMatBlockAssemble(PMat pm)
 	ierr = MatAIJAssemble(P->Apv, bc->pNumSPC, bc->pSPCList, 0.0); CHKERRQ(ierr);
 	ierr = MatAIJAssemble(P->App, bc->pNumSPC, bc->pSPCList, 1.0); CHKERRQ(ierr);
 	ierr = MatAIJAssemble(P->iS,  bc->pNumSPC, bc->pSPCList, 1.0); CHKERRQ(ierr);
+	ierr = MatAIJAssemble(P->K,   bc->pNumSPC, bc->pSPCList, 1.0); CHKERRQ(ierr);
 
 	PetscFunctionReturn(0);
 }
@@ -1702,6 +1704,7 @@ PetscErrorCode PMatBlockDestroy(PMat pm)
 	ierr = VecDestroy (&P->wp4); CHKERRQ(ierr);
 	ierr = VecDestroy (&P->wp5); CHKERRQ(ierr);
 	ierr = VecDestroy (&P->wp6); CHKERRQ(ierr);
+	ierr = VecDestroy (&P->C);   CHKERRQ(ierr);
 	ierr = PetscFree(P);         CHKERRQ(ierr);
 
 	PetscFunctionReturn(0);
