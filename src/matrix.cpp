@@ -1236,6 +1236,14 @@ PetscErrorCode PMatBlockCreate(PMat pm)
 	ierr = VecDuplicate(P->xv, &P->wv);                                  CHKERRQ(ierr);
 	ierr = VecDuplicate(P->xp, &P->rp);                                  CHKERRQ(ierr);
 	ierr = VecDuplicate(P->xp, &P->wp);                                  CHKERRQ(ierr);
+	ierr = VecDuplicate(P->xp, &P->wp0);                                 CHKERRQ(ierr);
+	ierr = VecDuplicate(P->xp, &P->wp1);                                 CHKERRQ(ierr);
+	ierr = VecDuplicate(P->xp, &P->wp2);                                 CHKERRQ(ierr);
+	ierr = VecDuplicate(P->xp, &P->wp3);                                 CHKERRQ(ierr);
+	ierr = VecDuplicate(P->xp, &P->wp4);                                 CHKERRQ(ierr);
+	ierr = VecDuplicate(P->xp, &P->wp5);                                 CHKERRQ(ierr);
+	ierr = VecDuplicate(P->xp, &P->wp6);                                 CHKERRQ(ierr);
+	ierr = VecDuplicate(P->xp, &P->C);                                   CHKERRQ(ierr);
 
 	// free counter arrays
 	ierr = PetscFree(Avv_d_nnz); CHKERRQ(ierr);
@@ -1679,13 +1687,21 @@ PetscErrorCode PMatBlockDestroy(PMat pm)
 	ierr = MatDestroy (&P->Avp); CHKERRQ(ierr);
 	ierr = MatDestroy (&P->Apv); CHKERRQ(ierr);
 	ierr = MatDestroy (&P->App); CHKERRQ(ierr);
-	ierr = MatDestroy (&P->iS);   CHKERRQ(ierr);
+	ierr = MatDestroy (&P->K);   CHKERRQ(ierr);
+	ierr = MatDestroy (&P->iS);  CHKERRQ(ierr);
 	ierr = VecDestroy (&P->rv);  CHKERRQ(ierr);
 	ierr = VecDestroy (&P->rp);  CHKERRQ(ierr);
 	ierr = VecDestroy (&P->xv);  CHKERRQ(ierr);
 	ierr = VecDestroy (&P->xp);  CHKERRQ(ierr);
 	ierr = VecDestroy (&P->wv);  CHKERRQ(ierr);
 	ierr = VecDestroy (&P->wp);  CHKERRQ(ierr);
+	ierr = VecDestroy (&P->wp0); CHKERRQ(ierr);
+	ierr = VecDestroy (&P->wp1); CHKERRQ(ierr);
+	ierr = VecDestroy (&P->wp2); CHKERRQ(ierr);
+	ierr = VecDestroy (&P->wp3); CHKERRQ(ierr);
+	ierr = VecDestroy (&P->wp4); CHKERRQ(ierr);
+	ierr = VecDestroy (&P->wp5); CHKERRQ(ierr);
+	ierr = VecDestroy (&P->wp6); CHKERRQ(ierr);
 	ierr = PetscFree(P);         CHKERRQ(ierr);
 
 	PetscFunctionReturn(0);
