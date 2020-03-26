@@ -148,7 +148,8 @@ struct PMatBlock
 
 	Mat K;		// K = BCB^T
 	Vec C;  	// inverse vector of diagonal entries of weighting viscosity
-	Vec wp0, wp1, wp2, wp3, wp4, wp5, wp6; // additional work vectors
+	Vec wp0, wp1, wp6; 		// additional work vectors pressure space
+	Vec wv2, wv3, wv4, wv5;	// additional work vectors velocity space
 
 };
 

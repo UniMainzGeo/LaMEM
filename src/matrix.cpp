@@ -1239,10 +1239,10 @@ PetscErrorCode PMatBlockCreate(PMat pm)
 	ierr = VecDuplicate(P->xp, &P->wp);                                  CHKERRQ(ierr);
 	ierr = VecDuplicate(P->xp, &P->wp0);                                 CHKERRQ(ierr);
 	ierr = VecDuplicate(P->xp, &P->wp1);                                 CHKERRQ(ierr);
-	ierr = VecDuplicate(P->xp, &P->wp2);                                 CHKERRQ(ierr);
-	ierr = VecDuplicate(P->xp, &P->wp3);                                 CHKERRQ(ierr);
-	ierr = VecDuplicate(P->xp, &P->wp4);                                 CHKERRQ(ierr);
-	ierr = VecDuplicate(P->xp, &P->wp5);                                 CHKERRQ(ierr);
+	ierr = VecDuplicate(P->xv, &P->wv2);                                 CHKERRQ(ierr);
+	ierr = VecDuplicate(P->xv, &P->wv3);                                 CHKERRQ(ierr);
+	ierr = VecDuplicate(P->xv, &P->wv4);                                 CHKERRQ(ierr);
+	ierr = VecDuplicate(P->xv, &P->wv5);                                 CHKERRQ(ierr);
 	ierr = VecDuplicate(P->xp, &P->wp6);                                 CHKERRQ(ierr);
 	ierr = VecDuplicate(P->xv, &P->C);                                   CHKERRQ(ierr);
 
@@ -1699,10 +1699,10 @@ PetscErrorCode PMatBlockDestroy(PMat pm)
 	ierr = VecDestroy (&P->wp);  CHKERRQ(ierr);
 	ierr = VecDestroy (&P->wp0); CHKERRQ(ierr);
 	ierr = VecDestroy (&P->wp1); CHKERRQ(ierr);
-	ierr = VecDestroy (&P->wp2); CHKERRQ(ierr);
-	ierr = VecDestroy (&P->wp3); CHKERRQ(ierr);
-	ierr = VecDestroy (&P->wp4); CHKERRQ(ierr);
-	ierr = VecDestroy (&P->wp5); CHKERRQ(ierr);
+	ierr = VecDestroy (&P->wv2); CHKERRQ(ierr);
+	ierr = VecDestroy (&P->wv3); CHKERRQ(ierr);
+	ierr = VecDestroy (&P->wv4); CHKERRQ(ierr);
+	ierr = VecDestroy (&P->wv5); CHKERRQ(ierr);
 	ierr = VecDestroy (&P->wp6); CHKERRQ(ierr);
 	ierr = VecDestroy (&P->C);   CHKERRQ(ierr);
 	ierr = PetscFree(P);         CHKERRQ(ierr);
