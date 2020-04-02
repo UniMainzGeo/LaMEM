@@ -385,7 +385,7 @@ PetscErrorCode FormJacobian(SNES snes, Vec x, Mat Amat, Mat Pmat, void *ctx)
 	PCStokes    pc;
 	PMat        pm;
 	JacRes      *jr;
-	PetscInt    it, it_newton;
+	PetscInt    it;
 	Controls   *ctrl;
 	PetscScalar nrm;
 
@@ -403,8 +403,6 @@ PetscErrorCode FormJacobian(SNES snes, Vec x, Mat Amat, Mat Pmat, void *ctx)
 	jr   =  pm->jr;
 	ctrl = &jr->ctrl;
 
-	it_newton = 0;
-
 	//========================
 	// Jacobian type selection
 	//========================
@@ -421,20 +419,22 @@ PetscErrorCode FormJacobian(SNES snes, Vec x, Mat Amat, Mat Pmat, void *ctx)
 	{
 		nl->it     = 0;
 		nl->refRes = nrm;
-		nl->jtype = _PICARD_;
+		nl->jtype  = _PICARD_;
+		nl->it_Nwt = 0;
 	}
 	else if(nl->jtype == _PICARD_)
 	{
 		// Picard case, check to switch to Newton
 		if(nrm < nl->refRes*nl->rtolPic)
 		{
-			nl->jtype = _MFFD_;
+			nl->jtype  = _MFFD_;
+			nl->it_Nwt = 0;
 		}
 	}
 	else if(nl->jtype == _MFFD_)
 	{
 		// Newton case, check to switch to Picard
-		if(nrm > nl->refRes*nl->rtolNwt || it_newton > nl->nNwtIt)
+		if(nrm > nl->refRes*nl->rtolNwt || nl->it_Nwt > (nl->nNwtIt-1))
 		{
 			nl->jtype = _PICARD_;
 		}
@@ -456,7 +456,7 @@ PetscErrorCode FormJacobian(SNES snes, Vec x, Mat Amat, Mat Pmat, void *ctx)
 	else if(nl->jtype == _MFFD_)
 	{
 		PetscPrintf(PETSC_COMM_WORLD,"%3lld MMFD   ||F||/||F0||=%e \n", (LLD)nl->it, nrm/nl->refRes);
-		it_newton++;
+		nl->it_Nwt++;
 	}
 
 	// switch off pressure limit for plasticity after first iteration
