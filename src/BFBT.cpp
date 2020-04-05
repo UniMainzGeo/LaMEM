@@ -167,11 +167,14 @@ PetscErrorCode JacResGetViscRes(JacRes *jr, PetscScalar dt)
 //---------------------------------------------------------------------------
 #undef __FUNCT__
 #define __FUNCT__ "JacResGetViscMat"
-PetscErrorCode JacResGetViscMat(JacRes *jr, PetscScalar dt)
+PetscErrorCode JacResGetViscMat(JacRes *jr, PetscScalar dt, PMat pm)
 {
 	// assemble temperature preconditioner matrix
 	// STEADY STATE solution is activated by setting time step to zero
 	// COMPLETE SINGLE-POINT CONSTRIANT IMLEMENTATION !!!
+
+	PMatBlock   *P;
+	PetscInt	WI, WJ; // Indices of WMat
 
 	FDSTAG     *fs;
 	BCCtx      *bc;
@@ -180,6 +183,7 @@ PetscErrorCode JacResGetViscMat(JacRes *jr, PetscScalar dt)
 	PetscInt    Ip1, Im1, Jp1, Jm1, Kp1, Km1;
 	PetscInt    i, j, k, nx, ny, nz, sx, sy, sz, mx, my, mz;
 	PetscScalar bvx, fvx, bvy, fvy, bvz, fvz;
+	PetscScalar viscx, viscy, viscz, visc_center;
 	PetscScalar bdx, fdx, bdy, fdy, bdz, fdz;
  	PetscScalar dx, dy, dz;
 
@@ -239,11 +243,21 @@ PetscErrorCode JacResGetViscMat(JacRes *jr, PetscScalar dt)
 		bvy = (lk[k][j][i] + lk[k][Jm1][i])/2.0;      fvy = (lk[k][j][i] + lk[k][Jp1][i])/2.0;
 		bvz = (lk[k][j][i] + lk[Km1][j][i])/2.0;      fvz = (lk[k][j][i] + lk[Kp1][j][i])/2.0;
 
-		// inverse viscosity:
+		// inverse viscosities:
 		bvx = 1/sqrt(bvx);  		fvx = 1/sqrt(fvx);
 		bvy = 1/sqrt(bvy);  		fvy = 1/sqrt(fvy);
 		bvz = 1/sqrt(bvz);  		fvz = 1/sqrt(fvz);
-		// store viscosities    <----------------------------------------------------------------------------
+
+		// compute viscosities in cell-center
+		viscx = (fvx+bvx)/2.0;
+		viscy = (fvy+bvy)/2.0;
+		viscz = (fvz+bvz)/2.0;
+		visc_center = (viscx + viscy + viscz)/3.0;     																	 // /3.0 ??
+
+		// store viscosities
+		WI = i + (j-1)*nx + (k-1)*ny*nx; // compute indices of WMat
+		WJ = j + (i-1)*ny + (k-1)*ny*nx;
+		P->WMat[WI][WJ] = visc_center; 	 // weighting matrix
 
 		// get mesh steps
 		bdx = SIZE_NODE(i, sx, fs->dsx);     fdx = SIZE_NODE(i+1, sx, fs->dsx);
@@ -272,13 +286,12 @@ PetscErrorCode JacResGetViscMat(JacRes *jr, PetscScalar dt)
 		v[3] = -fvy/fdy/dy*cf[3];
 		v[4] = -bvz/bdz/dz*cf[4];
 		v[5] = -fvz/fdz/dz*cf[5];
-		v[6] =
-		        (bvx/bdx + fvx/fdx)/dx
-		+       (bvy/bdy + fvy/fdy)/dy
-		+       (bvz/bdz + fvz/fdz)/dz;
+		v[6] =  (bvx/bdx + fvx/fdx)/dx
+			 +  (bvy/bdy + fvy/fdy)/dy
+		     +  (bvz/bdz + fvz/fdz)/dz;
 
 		// set matrix coefficients
-		ierr = MatSetValuesStencil(jr->Att, 1, row, 7, col, v, ADD_VALUES); CHKERRQ(ierr);
+		ierr = MatSetValuesStencil(jr->K, 1, row, 7, col, v, ADD_VALUES); CHKERRQ(ierr);
 
 		// NOTE! since only TPC are active, no SPC modification is necessary
 	}
@@ -288,49 +301,39 @@ PetscErrorCode JacResGetViscMat(JacRes *jr, PetscScalar dt)
 	ierr = DMDAVecRestoreArray(fs->DA_CEN, jr->ldxx, &lk);  CHKERRQ(ierr);
 	ierr = DMDAVecRestoreArray(fs->DA_CEN, bc->bcv, &bcv);  CHKERRQ(ierr);
 
-	// assemble temperature matrix
-	ierr = MatAIJAssemble(jr->Att, num, list, 1.0); CHKERRQ(ierr);
+	// assemble K matrix
+	ierr = MatAIJAssemble(jr->K, num, list, 1.0); CHKERRQ(ierr);
+
+	// assemble C vector
+	ierr = LumpMatrixToVector(pm); CHKERRQ(ierr);
 
 	PetscFunctionReturn(0);
 }
-//---------------------------------------------------------------------------
-/*
-Diffusion term expansion
 
-		bqx = bkx*(Tc - T[k][j][i-1])/bdx;   fqx = fkx*(T[k][j][i+1] - Tc)/fdx;
-		bqy = bky*(Tc - T[k][j-1][i])/bdy;   fqy = fky*(T[k][j+1][i] - Tc)/fdy;
-		bqz = bkz*(Tc - T[k-1][j][i])/bdz;   fqz = fkz*(T[k+1][j][i] - Tc)/fdz;
+#undef __FUNCT__
+#define __FUNCT__ "LumpMatrixToVector"
+PetscErrorCode LumpMatrixToVector(PMat pm)
+{
+	PMatBlock   *P;
+	DOFIndex 	*dof;
 
-[1]
-		-(fqx - bqx)/dx
-		-(fqy - bqy)/dy
-		-(fqz - bqz)/dz
-[2]
-		(bqx - fqx)/dx
-		(bqy - fqy)/dy
-		(bqz - fqz)/dz
-[3]
-		(bkx*(Tc - T[k][j][i-1])/bdx - fkx*(T[k][j][i+1] - Tc)/fdx)/dx
-		(bky*(Tc - T[k][j-1][i])/bdy - fky*(T[k][j+1][i] - Tc)/fdy)/dy
-		(bkz*(Tc - T[k-1][j][i])/bdz - fkz*(T[k+1][j][i] - Tc)/fdz)/dz
-[4]
-		(bkx*(Tc - T[k][j][i-1])/bdx + fkx*(Tc - T[k][j][i+1])/fdx)/dx
-		(bky*(Tc - T[k][j-1][i])/bdy + fky*(Tc - T[k][j+1][i])/fdy)/dy
-		(bkz*(Tc - T[k-1][j][i])/bdz + fkz*(Tc - T[k+1][j][i])/fdz)/dz
-[5]
-		bkx/bdx/dx*(Tc - T[k][j][i-1]) + fkx/fdx/dx*(Tc - T[k][j][i+1])
-		bky/bdy/dy*(Tc - T[k][j-1][i]) + fky/fdy/dy*(Tc - T[k][j+1][i])
-		bkz/bdz/dz*(Tc - T[k-1][j][i]) + fkz/fdz/dz*(Tc - T[k+1][j][i])
-[6]
-		(bkx/bdx/dx + fkx/fdx/dx)*Tc - bkx/bdx/dx*T[k][j][i-1] - fkx/fdx/dx*T[k][j][i+1]
-		(bky/bdy/dy + fky/fdy/dy)*Tc - bky/bdy/dy*T[k][j-1][i] - fky/fdy/dy*T[k][j+1][i]
-		(bkz/bdz/dz + fkz/fdz/dz)*Tc - bkz/bdz/dz*T[k-1][j][i] - fkz/fdz/dz*T[k+1][j][i]
-[7]
+	PetscInt    i, j, sx, sy, nx, ny, lnv;
+	PetscInt	Counter, RowSum;
 
-		(bkx/bdx + fkx/fdx)/dx*Tc - bkx/bdx/dx*T[k][j][i-1] - fkx/fdx/dx*T[k][j][i+1]
-		(bky/bdy + fky/fdy)/dy*Tc - bky/bdy/dy*T[k][j-1][i] - fky/fdy/dy*T[k][j+1][i]
-		(bkz/bdz + fkz/fdz)/dz*Tc - bkz/bdz/dz*T[k-1][j][i] - fkz/fdz/dz*T[k+1][j][i]
-*/
-//---------------------------------------------------------------------------
+	lnv = dof->lnv;
 
+	// lumping
+	for(i=1, i<lnv, i++)
+	{
+		RowSum = 0;
+		for(j=1, j<lnv, j++)
+		{
+			RowSum = RowSum + P->WMat[i][j];
+		}
+		P->C[i] = RowSum;
+	}
+
+	PetscFunctionReturn(0);
+
+}
 
