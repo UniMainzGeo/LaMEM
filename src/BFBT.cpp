@@ -167,14 +167,16 @@ PetscErrorCode JacResGetViscRes(JacRes *jr, PetscScalar dt)
 //---------------------------------------------------------------------------
 #undef __FUNCT__
 #define __FUNCT__ "JacResGetViscMat"
-PetscErrorCode JacResGetViscMat(JacRes *jr, PetscScalar dt, PMat pm)
+PetscErrorCode JacResGetViscMat(PMat pm)
 {
 	// assemble temperature preconditioner matrix
 	// STEADY STATE solution is activated by setting time step to zero
 	// COMPLETE SINGLE-POINT CONSTRIANT IMLEMENTATION !!!
 
+	JacRes 		*jr;
 	PMatBlock   *P;
 	PetscInt	WI, WJ; // Indices of WMat
+
 
 	FDSTAG     *fs;
 	BCCtx      *bc;
@@ -196,14 +198,11 @@ PetscErrorCode JacResGetViscMat(JacRes *jr, PetscScalar dt, PMat pm)
 	PetscFunctionBegin;
 
 	// access residual context variables
+	jr 	 = pm->jr;
 	fs   = jr->fs;
 	bc   = jr->bc;
 	num  = bc->tNumSPC;
 	list = bc->tSPCList;
-
-	// compute inverse time step
-	if(dt) invdt = 1.0/dt;
-	else   invdt = 0.0;
 
 	// initialize maximum cell index in all directions
 	mx = fs->dsx.tcels - 1;
@@ -257,7 +256,7 @@ PetscErrorCode JacResGetViscMat(JacRes *jr, PetscScalar dt, PMat pm)
 		// store viscosities
 		WI = i + (j-1)*nx + (k-1)*ny*nx; // compute indices of WMat
 		WJ = j + (i-1)*ny + (k-1)*ny*nx;
-		P->WMat[WI][WJ] = visc_center; 	 // weighting matrix
+		P->WMat[WI][WJ] = visc_center; 	 // store viscosity of the cell in weighting matrix
 
 		// get mesh steps
 		bdx = SIZE_NODE(i, sx, fs->dsx);     fdx = SIZE_NODE(i+1, sx, fs->dsx);
@@ -316,11 +315,19 @@ PetscErrorCode LumpMatrixToVector(PMat pm)
 {
 	PMatBlock   *P;
 	DOFIndex 	*dof;
+	FDSTAG		*fs;
+	JacRes		*jr;
 
-	PetscInt    i, j, sx, sy, nx, ny, lnv;
-	PetscInt	Counter, RowSum;
+	PetscInt	RowSum, lnv;
+	Vec			C;
+	Mat			WMat;
 
-	lnv = dof->lnv;
+	C 		= P->C;
+	WMat 	= P->WMat;
+
+	fs  	= jr->fs;
+	dof 	= &fs->dof;
+	lnv 	= dof->lnv;
 
 	// lumping
 	for(i=1, i<lnv, i++)
@@ -328,10 +335,12 @@ PetscErrorCode LumpMatrixToVector(PMat pm)
 		RowSum = 0;
 		for(j=1, j<lnv, j++)
 		{
-			RowSum = RowSum + P->WMat[i][j];
+			RowSum = RowSum + WMat[i][j];
 		}
-		P->C[i] = RowSum;
+		C[i] = RowSum;
 	}
+
+	P->C 	= C;
 
 	PetscFunctionReturn(0);
 

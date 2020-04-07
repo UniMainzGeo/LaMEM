@@ -4,7 +4,7 @@
 
 PetscErrorCode JacResGetViscRes(JacRes *jr, PetscScalar dt);
 
-PetscErrorCode JacResGetViscMat(JacRes *jr, PetscScalar dt);
+PetscErrorCode JacResGetViscMat(PMat pm);
 
 PetscErrorCode LumpMatrixToVector(PMat pm);
 

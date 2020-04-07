@@ -48,6 +48,7 @@
 #include "multigrid.h"
 #include "lsolve.h"
 #include "JacRes.h"
+#include "BFBT.h"
 //---------------------------------------------------------------------------
 // * implement preconditioners in PETSc
 // * add default solver options
@@ -232,7 +233,7 @@ PetscErrorCode PCStokesBFCreate(PCStokes pc)
 		ierr = PCShellSetApply(vpc, MGApply);    CHKERRQ(ierr);
 	}
 	// create & set pressure multigrid preconditioner
-	if(bf->vtype == _VEL_MG_)														// _VEL_MG_???????
+	if(bf->vtype == _VEL_MG_)
 	{
 		ierr = MGCreate(&bf->pmg, jr);           CHKERRQ(ierr);
 		ierr = KSPGetPC(bf->pksp, &ppc);         CHKERRQ(ierr);
@@ -398,15 +399,21 @@ PetscErrorCode PCStokesBFApply(Mat JP, Vec r, Vec x)
 	if(bf->type == _BFBT_)
 	{
 		//===============
-		//    wBFBT
+		//    w-BFBT
 		//===============
+
+		PMat *pm;
+		pm = (PMatBlock*) pc->pm;
+
+		// assemble K and C
+		ierr  = JacResGetViscMat(*pm); CHKERRQ(ierr);
 
 		// rv = f
 		// wp = B*A⁻1*rv
-		ierr = KSPSolve(bf->vksp, P->rv, P->wp0); 	CHKERRQ(ierr);	// wp0 = (A^-1)*rv
-		ierr = MatMult(P->Apv,P->wp0,P->wp);		CHKERRQ(ierr);	// wp = B*wp0
+		ierr = KSPSolve(bf->vksp, P->rv, P->wp0); 			CHKERRQ(ierr);	// wp0 = (A^-1)*rv
+		ierr = MatMult(P->Apv,P->wp0,P->wp);				CHKERRQ(ierr);	// wp = B*wp0
 
-		// p = S⁻1*wp               S^-1 = (BCB^T)^-1 * BCACB^T * (BCB^T)^-1
+		// p = S⁻1*wp               				S^-1 = (BCB^T)^-1 * BCACB^T * (BCB^T)^-1
 		// p = (BCB^T)^-1 * BCACB^T * (BCB^T)^-1 * wp
 		// K = BCB^T
 		ierr = KSPSolve(bf->pksp, P->wp, P->wp1); 			CHKERRQ(ierr);	// wp1 = K^-1 * wp   	<=> K*wp1 = wp
