@@ -1186,7 +1186,7 @@ PetscErrorCode PMatBlockCreate(PMat pm)
 	}
 	END_STD_LOOP
 
-	// clear iterator (pressure matrices)
+	// clear iterator (pressure matrix)
 	iter = 0;
 
 	//---------
@@ -1217,6 +1217,7 @@ PetscErrorCode PMatBlockCreate(PMat pm)
 	}
 	END_STD_LOOP
 
+
 	// restore access
 	ierr = DMDAVecRestoreArray(fs->DA_X,   dof->ivx,  &ivx);  CHKERRQ(ierr);
 	ierr = DMDAVecRestoreArray(fs->DA_Y,   dof->ivy,  &ivy);  CHKERRQ(ierr);
@@ -1228,8 +1229,10 @@ PetscErrorCode PMatBlockCreate(PMat pm)
 	ierr = MatAIJCreate(lnv, lnp, 0, Avp_d_nnz, 0, Avp_o_nnz, &P->Avp);  CHKERRQ(ierr);
 	ierr = MatAIJCreate(lnp, lnv, 0, Apv_d_nnz, 0, Apv_o_nnz, &P->Apv);  CHKERRQ(ierr);
 	ierr = MatAIJCreateDiag(lnp, startp, &P->App);                       CHKERRQ(ierr);
-	ierr = MatAIJCreateDiag(lnp, startp, &P->K);                         CHKERRQ(ierr);
 	ierr = MatAIJCreateDiag(lnp, startp, &P->iS);                        CHKERRQ(ierr);
+
+	ierr = MatDuplicate(P->Avv, MAT_DO_NOT_COPY_VALUES, &P->WMat);		 CHKERRQ(ierr);
+	ierr = MatDuplicate(P->App, MAT_DO_NOT_COPY_VALUES, &P->K);			 CHKERRQ(ierr);
 
 	ierr = VecCreateMPI(PETSC_COMM_WORLD, lnv, PETSC_DETERMINE, &P->xv); CHKERRQ(ierr);
 	ierr = VecCreateMPI(PETSC_COMM_WORLD, lnp, PETSC_DETERMINE, &P->xp); CHKERRQ(ierr);
@@ -1689,6 +1692,7 @@ PetscErrorCode PMatBlockDestroy(PMat pm)
 	ierr = MatDestroy (&P->Avp); CHKERRQ(ierr);
 	ierr = MatDestroy (&P->Apv); CHKERRQ(ierr);
 	ierr = MatDestroy (&P->App); CHKERRQ(ierr);
+	ierr = MatDestroy (&P->WMat);CHKERRQ(ierr);
 	ierr = MatDestroy (&P->K);   CHKERRQ(ierr);
 	ierr = MatDestroy (&P->iS);  CHKERRQ(ierr);
 	ierr = VecDestroy (&P->rv);  CHKERRQ(ierr);
