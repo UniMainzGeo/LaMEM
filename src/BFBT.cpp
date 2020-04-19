@@ -35,6 +35,7 @@ PetscErrorCode JacResGetViscMat(PMat pm)
 	JacRes 		*jr;
 	PMatBlock   *P;
 	PetscInt	WI, WJ; // Indices of WMat
+	Mat 		WMat;
 
 	FDSTAG     *fs;
 	BCCtx      *bc;
@@ -47,7 +48,7 @@ PetscErrorCode JacResGetViscMat(PMat pm)
 	PetscScalar bdx, fdx, bdy, fdy, bdz, fdz;
  	PetscScalar dx, dy, dz;
 
- 	PetscScalar v[7], cf[6], invdt;
+ 	PetscScalar v[7], cf[6];
 
 	MatStencil  row[1], col[7];
 	PetscScalar ***lk, ***bcv, ***buff;
@@ -61,6 +62,8 @@ PetscErrorCode JacResGetViscMat(PMat pm)
 	bc   = jr->bc;
 	num  = bc->tNumSPC;
 	list = bc->tSPCList;
+	P 	 = (PMatBlock*) pm->data;
+	WMat = P->WMat;
 
 	// initialize maximum cell index in all directions
 	mx = fs->dsx.tcels - 1;
@@ -114,7 +117,7 @@ PetscErrorCode JacResGetViscMat(PMat pm)
 		// store viscosities
 		WI = i + (j-1)*nx + (k-1)*ny*nx; // compute indices of WMat
 		WJ = j + (i-1)*ny + (k-1)*ny*nx;
-		P->WMat[WI][WJ] = visc_center; 	 // store viscosity of the cell in weighting matrix
+		WMat[WI][WJ] = visc_center; 	 // store viscosity of the cell in weighting matrix
 
 		// get mesh steps
 		bdx = SIZE_NODE(i, sx, fs->dsx);     fdx = SIZE_NODE(i+1, sx, fs->dsx);
@@ -148,7 +151,7 @@ PetscErrorCode JacResGetViscMat(PMat pm)
 		     +  (bvz/bdz + fvz/fdz)/dz;
 
 		// set matrix coefficients
-		ierr = MatSetValuesStencil(jr->K, 1, row, 7, col, v, ADD_VALUES); CHKERRQ(ierr);
+		ierr = MatSetValuesStencil(P->K, 1, row, 7, col, v, ADD_VALUES); CHKERRQ(ierr);
 
 		// NOTE! since only TPC are active, no SPC modification is necessary
 	}
@@ -159,9 +162,10 @@ PetscErrorCode JacResGetViscMat(PMat pm)
 	ierr = DMDAVecRestoreArray(fs->DA_CEN, bc->bcv, &bcv);  CHKERRQ(ierr);
 
 	// assemble K matrix
-	ierr = MatAIJAssemble(jr->K, num, list, 1.0); CHKERRQ(ierr);
+	ierr = MatAIJAssemble(P->K, num, list, 1.0); CHKERRQ(ierr);
 
 	// assemble C vector
+	P->WMat = WMat; // store WMat for further use
 	ierr = LumpMatrixToVector(pm); CHKERRQ(ierr);
 
 	PetscFunctionReturn(0);
@@ -176,22 +180,26 @@ PetscErrorCode LumpMatrixToVector(PMat pm)
 	FDSTAG		*fs;
 	JacRes		*jr;
 
-	PetscInt	RowSum, lnv;
+	PetscInt	RowSum, lnv, i, j;
 	Vec			C;
 	Mat			WMat;
 
-	C 		= P->C;
-	WMat 	= P->WMat;
+	// access residual context variables
+	jr 	 = pm->jr;
+	fs   = jr->fs;
+	P 	 = (PMatBlock*) pm->data;
+	WMat = P->WMat;
+	C 	 = P->C;
 
 	fs  	= jr->fs;
 	dof 	= &fs->dof;
 	lnv 	= dof->lnv;
 
 	// lumping
-	for(i=1, i<lnv, i++)
+	for(i=1; i<lnv; i++)
 	{
 		RowSum = 0;
-		for(j=1, j<lnv, j++)
+		for(j=1; j<lnv; j++)
 		{
 			RowSum = RowSum + WMat[i][j];
 		}

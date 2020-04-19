@@ -402,11 +402,11 @@ PetscErrorCode PCStokesBFApply(Mat JP, Vec r, Vec x)
 		//    w-BFBT
 		//===============
 
-		PMat *pm;
-		pm = (PMatBlock*) pc->pm;
+		PMat pm;
+		pm = pc->pm;
 
 		// assemble K and C
-		ierr  = JacResGetViscMat(*pm); CHKERRQ(ierr);
+		ierr  = JacResGetViscMat(pm); CHKERRQ(ierr);
 
 		// rv = f
 		// wp = B*A⁻1*rv
