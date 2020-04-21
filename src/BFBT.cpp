@@ -35,11 +35,10 @@ PetscErrorCode JacResGetViscMat(PMat pm)
 	JacRes 		*jr;
 	PMatBlock   *P;
 	PetscInt	WI, WJ; // Indices of WMat
-	Mat 		WMat;
 
 	FDSTAG     *fs;
 	BCCtx      *bc;
-	SolVarCell *svCell;
+	//SolVarCell *svCell;
 	PetscInt    iter, num, *list;
 	PetscInt    Ip1, Im1, Jp1, Jm1, Kp1, Km1;
 	PetscInt    i, j, k, nx, ny, nz, sx, sy, sz, mx, my, mz;
@@ -63,7 +62,6 @@ PetscErrorCode JacResGetViscMat(PMat pm)
 	num  = bc->tNumSPC;
 	list = bc->tSPCList;
 	P 	 = (PMatBlock*) pm->data;
-	WMat = P->WMat;
 
 	// initialize maximum cell index in all directions
 	mx = fs->dsx.tcels - 1;
@@ -88,7 +86,7 @@ PetscErrorCode JacResGetViscMat(PMat pm)
 	START_STD_LOOP
 	{
 		// access solution variables
-		svCell = &jr->svCell[iter++];
+		//svCell = &jr->svCell[iter++];
 
 		// check index bounds and TPC multipliers
 		Im1 = i-1; cf[0] = 1.0; if(Im1 < 0)  { Im1++; if(bcv[k][j][i-1] != DBL_MAX) cf[0] = -1.0; }
@@ -117,7 +115,7 @@ PetscErrorCode JacResGetViscMat(PMat pm)
 		// store viscosities
 		WI = i + (j-1)*nx + (k-1)*ny*nx; // compute indices of WMat
 		WJ = j + (i-1)*ny + (k-1)*ny*nx;
-		WMat[WI][WJ] = visc_center; 	 // store viscosity of the cell in weighting matrix
+		//WMat[WI][WJ] = visc_center; 	 // store viscosity of the cell in weighting matrix
 
 		// get mesh steps
 		bdx = SIZE_NODE(i, sx, fs->dsx);     fdx = SIZE_NODE(i+1, sx, fs->dsx);
@@ -152,8 +150,9 @@ PetscErrorCode JacResGetViscMat(PMat pm)
 
 		// set matrix coefficients
 		ierr = MatSetValuesStencil(P->K, 1, row, 7, col, v, ADD_VALUES); CHKERRQ(ierr);
+		ierr = MatSetValues(P->WMat, 1, &WI, 1, &WJ, &visc_center, INSERT_VALUES); CHKERRQ(ierr);
 
-		// NOTE! since only TPC are active, no SPC modification is necessary
+
 	}
 	END_STD_LOOP
 
@@ -165,7 +164,6 @@ PetscErrorCode JacResGetViscMat(PMat pm)
 	ierr = MatAIJAssemble(P->K, num, list, 1.0); CHKERRQ(ierr);
 
 	// assemble C vector
-	P->WMat = WMat; // store WMat for further use
 	ierr = LumpMatrixToVector(pm); CHKERRQ(ierr);
 
 	PetscFunctionReturn(0);
@@ -180,16 +178,17 @@ PetscErrorCode LumpMatrixToVector(PMat pm)
 	FDSTAG		*fs;
 	JacRes		*jr;
 
-	PetscInt	RowSum, lnv, i, j;
-	Vec			C;
-	Mat			WMat;
+	PetscInt	lnv, i;
+	PetscScalar rowSum;
+	Vec			row;
+
+	PetscErrorCode ierr;
+	PetscFunctionBegin;
 
 	// access residual context variables
 	jr 	 = pm->jr;
 	fs   = jr->fs;
 	P 	 = (PMatBlock*) pm->data;
-	WMat = P->WMat;
-	C 	 = P->C;
 
 	fs  	= jr->fs;
 	dof 	= &fs->dof;
@@ -198,15 +197,10 @@ PetscErrorCode LumpMatrixToVector(PMat pm)
 	// lumping
 	for(i=1; i<lnv; i++)
 	{
-		RowSum = 0;
-		for(j=1; j<lnv; j++)
-		{
-			RowSum = RowSum + WMat[i][j];
-		}
-		C[i] = RowSum;
+		ierr = MatGetRow(P->WMat, i, lnv, lnv, &row); 				CHKERRQ(ierr);
+		ierr = VecSum(row, &rowSum); 								CHKERRQ(ierr);
+		ierr = VecSetValues(P->C, 1, &i, &rowSum, INSERT_VALUES); 	CHKERRQ(ierr);
 	}
-
-	P->C 	= C;
 
 	PetscFunctionReturn(0);
 
