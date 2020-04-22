@@ -194,10 +194,17 @@ PetscErrorCode LumpMatrixToVector(PMat pm)
 	dof 	= &fs->dof;
 	lnv 	= dof->lnv;
 
+	// Indexset of the row and values
+	PetscInt *ncols;
+	const PetscInt *cols;
+	ncols = &lnv;
+	const PetscScalar *_row_;
+
 	// lumping
 	for(i=1; i<lnv; i++)
 	{
-		ierr = MatGetRow(P->WMat, i, lnv, lnv, &row); 				CHKERRQ(ierr);
+		ierr = MatGetRow(P->WMat, i, ncols, &cols, &_row_); 		CHKERRQ(ierr);
+		ierr = VecSetValues(row, lnv, cols, _row_, INSERT_VALUES); 	CHKERRQ(ierr);
 		ierr = VecSum(row, &rowSum); 								CHKERRQ(ierr);
 		ierr = VecSetValues(P->C, 1, &i, &rowSum, INSERT_VALUES); 	CHKERRQ(ierr);
 	}
