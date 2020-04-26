@@ -265,6 +265,12 @@ PetscErrorCode PCStokesBFSetFromOptions(PCStokes pc)
 
 	if(flg == PETSC_TRUE)
 	{
+		if(!strcmp(pname, "wbfbt"))
+		{
+			PetscPrintf(PETSC_COMM_WORLD, " Block factorization type       : wbfbt \n");
+
+			bf->type = _wBFBT_;
+		}
 		if(!strcmp(pname, "upper"))
 		{
 			PetscPrintf(PETSC_COMM_WORLD, " Block factorization type       : upper \n");
@@ -396,7 +402,7 @@ PetscErrorCode PCStokesBFApply(Mat JP, Vec r, Vec x)
 	ierr = VecScatterBlockToMonolithic(P->rv, P->rp, r, SCATTER_REVERSE); CHKERRQ(ierr);
 
 
-	if(bf->type == _BFBT_)
+	if(bf->type == _wBFBT_)
 	{
 		//===============
 		//    w-BFBT
