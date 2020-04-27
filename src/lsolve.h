@@ -61,7 +61,7 @@ enum PCBFType
 {
 	_UPPER_,  // upper triangular factorization
 	_LOWER_,  // lower triangular factorization
-	_wBFBT_ 	  // wBFBT
+	_wBFBT_   // wBFBT
 
 };
 
