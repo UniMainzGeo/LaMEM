@@ -189,25 +189,27 @@ PetscErrorCode LumpMatrixToVector(PMat pm)
 	jr 	 = pm->jr;
 	fs   = jr->fs;
 	P 	 = (PMatBlock*) pm->data;
+	dof  = &fs->dof;
+	lnv  = dof->lnv;
 
-	fs  	= jr->fs;
-	dof 	= &fs->dof;
-	lnv 	= dof->lnv;
+	ierr = VecDuplicate(P->xv, &row); CHKERRQ(ierr);
 
 	// Indexset of the row and values
 	PetscInt *ncols;
-	const PetscInt *cols;
 	ncols = &lnv;
-	const PetscScalar *_row_;
+	const PetscInt 		*cols;
+	const PetscScalar 	*rowValues;
 
 	// lumping
 	for(i=1; i<lnv; i++)
 	{
-		ierr = MatGetRow(P->WMat, i, ncols, &cols, &_row_); 		CHKERRQ(ierr);
-		ierr = VecSetValues(row, lnv, cols, _row_, INSERT_VALUES); 	CHKERRQ(ierr);
-		ierr = VecSum(row, &rowSum); 								CHKERRQ(ierr);
-		ierr = VecSetValues(P->C, 1, &i, &rowSum, INSERT_VALUES); 	CHKERRQ(ierr);
+		ierr = MatGetRow(P->WMat, i, ncols, &cols, &rowValues); 		CHKERRQ(ierr); // get the values of a matrix row
+		ierr = VecSetValues(row, lnv, cols, rowValues, INSERT_VALUES); 	CHKERRQ(ierr); // store them in a vector
+		ierr = VecSum(row, &rowSum); 								CHKERRQ(ierr); // sum them all (lump) to rowSum
+		ierr = VecSetValues(P->C, 1, &i, &rowSum, INSERT_VALUES); 	CHKERRQ(ierr); // and store in vector C
 	}
+
+	ierr = VecDestroy (&row); CHKERRQ(ierr);
 
 	PetscFunctionReturn(0);
 
