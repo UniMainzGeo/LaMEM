@@ -38,7 +38,6 @@ PetscErrorCode JacResGetViscMat(PMat pm)
 
 	FDSTAG     *fs;
 	BCCtx      *bc;
-	//SolVarCell *svCell;
 	PetscInt    iter, num, *list;
 	PetscInt    Ip1, Im1, Jp1, Jm1, Kp1, Km1;
 	PetscInt    i, j, k, nx, ny, nz, sx, sy, sz, mx, my, mz;
@@ -48,7 +47,6 @@ PetscErrorCode JacResGetViscMat(PMat pm)
  	PetscScalar dx, dy, dz;
 
  	PetscScalar v[7], cf[6];
-
 	MatStencil  row[1], col[7];
 	PetscScalar ***lk, ***bcv, ***buff;
 
@@ -85,9 +83,6 @@ PetscErrorCode JacResGetViscMat(PMat pm)
 
 	START_STD_LOOP
 	{
-		// access solution variables
-		//svCell = &jr->svCell[iter++];
-
 		// check index bounds and TPC multipliers
 		Im1 = i-1; cf[0] = 1.0; if(Im1 < 0)  { Im1++; if(bcv[k][j][i-1] != DBL_MAX) cf[0] = -1.0; }
 		Ip1 = i+1; cf[1] = 1.0; if(Ip1 > mx) { Ip1--; if(bcv[k][j][i+1] != DBL_MAX) cf[1] = -1.0; }
@@ -112,10 +107,9 @@ PetscErrorCode JacResGetViscMat(PMat pm)
 		viscz = (fvz+bvz)/2.0;
 		visc_center = (viscx + viscy + viscz)/3.0;     																	 // /3.0 ??
 
-		// store viscosities
-		WI = i + (j-1)*nx + (k-1)*ny*nx; // compute indices of WMat
+		// compute indices of WMat
+		WI = i + (j-1)*nx + (k-1)*ny*nx;
 		WJ = j + (i-1)*ny + (k-1)*ny*nx;
-		//WMat[WI][WJ] = visc_center; 	 // store viscosity of the cell in weighting matrix
 
 		// get mesh steps
 		bdx = SIZE_NODE(i, sx, fs->dsx);     fdx = SIZE_NODE(i+1, sx, fs->dsx);
