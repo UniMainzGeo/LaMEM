@@ -1978,6 +1978,7 @@ PetscErrorCode MGDumpMat(MG *mg)
 			ierr = KSPGetOperators(ksp, &A, NULL);   CHKERRQ(ierr);
 			ierr = MatView(A, viewer);               CHKERRQ(ierr);
 
+
 			if(l != 0)
 			{
 				// restriction

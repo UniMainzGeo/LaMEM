@@ -215,6 +215,10 @@ struct JacRes
 	Vec gfx,  gfy, gfz;  // global
 	Vec lfx,  lfy, lfz;  // local (ghosted)
 
+	// viscosity components
+	Vec eta_gfx, eta_gfy, eta_gfz;	// global
+	Vec eta_lfx, eta_lfy, eta_lfz;	// local (ghosted)
+
 	// strain-rate components (also used as buffer vectors)
 	Vec ldxx, ldyy, ldzz, ldxy, ldxz, ldyz; // local (ghosted)
 	Vec                   gdxy, gdxz, gdyz; // global
@@ -260,9 +264,9 @@ struct JacRes
 	KSP tksp; // temperature diffusion solver
 
 	//
-	DM DA_V; // viscosity in cell-center
-	Vec lV;
-	Vec vr; // viscosity residual
+	//DM DA_V; // viscosity in cell-center
+	//Vec lV;
+	//Vec vr; // viscosity residual
 
 	//==========================
 	// 2D integration primitives

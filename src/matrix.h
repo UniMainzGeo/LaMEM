@@ -147,8 +147,7 @@ struct PMatBlock
 	Vec wv, wp;   // work vectors
 
 	Mat K;		// K = BCB^T
-	Mat WMat; 	// inverse Matrix of diagonal entries of weighting viscosity
-	Vec C;  	// lumped matrix WMat in vectorform
+	Vec C;  	// weighting matrix in vectorform
 	Vec wp0, wp1, wp6; 		// additional work vectors pressure space
 	Vec wv2, wv3, wv4, wv5;	// additional work vectors velocity space
 

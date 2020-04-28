@@ -4,6 +4,4 @@
 
 PetscErrorCode JacResGetViscMat(PMat pm);
 
-PetscErrorCode LumpMatrixToVector(PMat pm);
-
 #endif /* SRC_BFBT_H_ */
