@@ -1078,10 +1078,11 @@ PetscErrorCode JacResGetResidual(JacRes *jr)
 	PetscScalar XZ, XZ1, XZ2, XZ3, XZ4;
 	PetscScalar YZ, YZ1, YZ2, YZ3, YZ4;
 	PetscScalar bdx, fdx, bdy, fdy, bdz, fdz;
+	PetscScalar eta;
 	PetscScalar gx, gy, gz, tx, ty, tz, sxx, syy, szz, sxy, sxz, syz;
 	PetscScalar J2Inv, theta, rho, IKdt, Tc, pc, pShift, pn, dt, fssa, *grav;
 	PetscScalar ***fx,  ***fy,  ***fz, ***vx,  ***vy,  ***vz, ***eta_fx, ***eta_fy, ***eta_fz, ***gc, ***bcp;
-	PetscScalar ***dxx, ***dyy, ***dzz, ***dxy, ***dxz, ***dyz, ***p, ***vr, ***T, ***p_lith, ***p_pore;
+	PetscScalar ***dxx, ***dyy, ***dzz, ***dxy, ***dxz, ***dyz, ***p, ***T, ***p_lith, ***p_pore;
 	PetscScalar eta_creep, eta_vp;
 	PetscScalar depth, pc_lith, pc_pore, biot, ptotal, avg_topo;
 	PetscScalar alpha, Tn;
@@ -1271,9 +1272,10 @@ PetscErrorCode JacResGetResidual(JacRes *jr)
 		fz[k][j][i] -= (szz + vz[k][j][i]*tz)/bdz + gz/2.0;   fz[k+1][j][i] += (szz + vz[k+1][j][i]*tz)/fdz - gz/2.0;
 
 		// viscosity
-		eta_fx[k][j][i] -= (sxx + vx[k][j][i]*tx)/bdx + gx/2.0;   eta_fx[k][j][i+1] += (sxx + vx[k][j][i+1]*tx)/fdx - gx/2.0;
-		eta_fy[k][j][i] -= (syy + vy[k][j][i]*ty)/bdy + gy/2.0;   eta_fy[k][j+1][i] += (syy + vy[k][j+1][i]*ty)/fdy - gy/2.0;
-		eta_fz[k][j][i] -= (szz + vz[k][j][i]*tz)/bdz + gz/2.0;   eta_fz[k+1][j][i] += (szz + vz[k+1][j][i]*tz)/fdz - gz/2.0;
+		eta  = jr->svCell[iter].svDev.eta;
+		eta_fx[k][j][i] -= eta/2.0;   eta_fx[k][j][i+1] += eta/2.0;
+		eta_fy[k][j][i] -= eta/2.0;   eta_fy[k][j+1][i] += eta/2.0;
+		eta_fz[k][j][i] -= eta/2.0;   eta_fz[k+1][j][i] += eta/2.0;
 
 		//==============================
 		// PRESSURE BOUNDARY CONSTRAINTS

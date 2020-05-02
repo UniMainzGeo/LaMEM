@@ -271,7 +271,7 @@ PetscErrorCode PCStokesBFSetFromOptions(PCStokes pc)
 
 			bf->type = _wBFBT_;
 		}
-		if(!strcmp(pname, "upper"))
+		else if(!strcmp(pname, "upper"))
 		{
 			PetscPrintf(PETSC_COMM_WORLD, " Block factorization type       : upper \n");
 
@@ -399,8 +399,7 @@ PetscErrorCode PCStokesBFApply(Mat JP, Vec r, Vec x)
 	P  = (PMatBlock*) pc->pm->data;
 
 	// extract residual blocks
-	ierr = VecScatterBlockToMonolithic(P->rv, P->rp, r, SCATTER_REVERSE); CHKERRQ(ierr);
-
+	ierr = VecScatterBlockToMonolithic(P->rv, P->rp, r, SCATTER_REVERSE); CHKERRQ(ierr);  // fehler: r kann nicht gelesen werden
 
 	if(bf->type == _wBFBT_)
 	{

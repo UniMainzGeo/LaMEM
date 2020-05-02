@@ -34,7 +34,6 @@ PetscErrorCode JacResGetViscMat(PMat pm)
 
 	JacRes 		*jr;
 	PMatBlock   *P;
-	PetscInt	WI, WJ; // Indices of WMat
 
 	FDSTAG     *fs;
 	BCCtx      *bc;
