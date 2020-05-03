@@ -398,8 +398,12 @@ PetscErrorCode PCStokesBFApply(Mat JP, Vec r, Vec x)
 	bf = (PCStokesBF*)pc->data;
 	P  = (PMatBlock*) pc->pm->data;
 
+	// copy x,r to P->rblock
+	ierr = VecCopy(r,P->rblock); CHKERRQ(ierr);     // added P->rblock,P->xblock, instead of using r,x now VecScatterBlockToMonolithic
+	ierr = VecCopy(x,P->xblock); CHKERRQ(ierr);		// cause not immediatly an only-read-error of vector r, but after one step...
+
 	// extract residual blocks
-	ierr = VecScatterBlockToMonolithic(P->rv, P->rp, r, SCATTER_REVERSE); CHKERRQ(ierr);  // fehler: r kann nicht gelesen werden
+	ierr = VecScatterBlockToMonolithic(P->rv, P->rp, P->rblock, SCATTER_REVERSE); CHKERRQ(ierr);
 
 	if(bf->type == _wBFBT_)
 	{
@@ -466,7 +470,10 @@ PetscErrorCode PCStokesBFApply(Mat JP, Vec r, Vec x)
 	}
 
 	// compose approximate solution
-	ierr = VecScatterBlockToMonolithic(P->xv, P->xp, x, SCATTER_FORWARD); CHKERRQ(ierr);
+	ierr = VecScatterBlockToMonolithic(P->xv, P->xp, P->xblock, SCATTER_FORWARD); CHKERRQ(ierr);
+
+	ierr = VecCopy(P->rblock,r); CHKERRQ(ierr);
+	ierr = VecCopy(P->xblock,x); CHKERRQ(ierr);
 
 	PetscFunctionReturn(0);
 }

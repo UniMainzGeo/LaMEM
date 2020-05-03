@@ -1235,6 +1235,8 @@ PetscErrorCode PMatBlockCreate(PMat pm)
 
 	ierr = VecCreateMPI(PETSC_COMM_WORLD, lnv, PETSC_DETERMINE, &P->xv); CHKERRQ(ierr);
 	ierr = VecCreateMPI(PETSC_COMM_WORLD, lnp, PETSC_DETERMINE, &P->xp); CHKERRQ(ierr);
+	ierr = VecCreateMPI(PETSC_COMM_WORLD, lnp+lnv, PETSC_DETERMINE, &P->rblock); CHKERRQ(ierr);
+	ierr = VecDuplicate(P->rblock, &P->xblock);                                  CHKERRQ(ierr);
 	ierr = VecDuplicate(P->xv, &P->rv);                                  CHKERRQ(ierr);
 	ierr = VecDuplicate(P->xv, &P->wv);                                  CHKERRQ(ierr);
 	ierr = VecDuplicate(P->xp, &P->rp);                                  CHKERRQ(ierr);
@@ -1695,6 +1697,8 @@ PetscErrorCode PMatBlockDestroy(PMat pm)
 	ierr = MatDestroy (&P->iS);  CHKERRQ(ierr);
 	ierr = VecDestroy (&P->rv);  CHKERRQ(ierr);
 	ierr = VecDestroy (&P->rp);  CHKERRQ(ierr);
+	ierr = VecDestroy (&P->rblock);  CHKERRQ(ierr);
+	ierr = VecDestroy (&P->xblock);  CHKERRQ(ierr);
 	ierr = VecDestroy (&P->xv);  CHKERRQ(ierr);
 	ierr = VecDestroy (&P->xp);  CHKERRQ(ierr);
 	ierr = VecDestroy (&P->wv);  CHKERRQ(ierr);

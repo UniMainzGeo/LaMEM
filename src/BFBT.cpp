@@ -41,7 +41,6 @@ PetscErrorCode JacResGetViscMat(PMat pm)
 	PetscInt    Ip1, Im1, Jp1, Jm1, Kp1, Km1;
 	PetscInt    i, j, k, nx, ny, nz, sx, sy, sz, mx, my, mz;
 	PetscScalar bvx, fvx, bvy, fvy, bvz, fvz;
-	PetscScalar viscx, viscy, viscz, visc_center;
 	PetscScalar bdx, fdx, bdy, fdy, bdz, fdz;
  	PetscScalar dx, dy, dz;
 
@@ -56,8 +55,8 @@ PetscErrorCode JacResGetViscMat(PMat pm)
 	jr 	 = pm->jr;
 	fs   = jr->fs;
 	bc   = jr->bc;
-	num  = bc->tNumSPC;
-	list = bc->tSPCList;
+	num  = bc->pNumSPC;
+	list = bc->pSPCList;
 	P 	 = (PMatBlock*) pm->data;
 
 	// initialize maximum cell index in all directions
@@ -68,13 +67,13 @@ PetscErrorCode JacResGetViscMat(PMat pm)
 	SCATTER_FIELD(fs->DA_CEN, jr->ldxx, GET_VISC_TOTAL);
 
 	// clear matrix coefficients
-	ierr = MatZeroEntries(jr->Att); CHKERRQ(ierr);
+	ierr = MatZeroEntries(P->K); CHKERRQ(ierr);
 
 	// access work vectors
 	ierr = DMDAVecGetArray(fs->DA_CEN, jr->ldxx, &lk);  CHKERRQ(ierr);
-	ierr = DMDAVecGetArray(fs->DA_CEN, bc->bcvx,  &bcvx); CHKERRQ(ierr);
-	ierr = DMDAVecGetArray(fs->DA_CEN, bc->bcvy,  &bcvy); CHKERRQ(ierr);
-	ierr = DMDAVecGetArray(fs->DA_CEN, bc->bcvz,  &bcvz); CHKERRQ(ierr);
+	ierr = DMDAVecGetArray(fs->DA_X, bc->bcvx,  &bcvx); CHKERRQ(ierr);
+	ierr = DMDAVecGetArray(fs->DA_Y, bc->bcvy,  &bcvy); CHKERRQ(ierr);
+	ierr = DMDAVecGetArray(fs->DA_Z, bc->bcvz,  &bcvz); CHKERRQ(ierr);
 
 	//---------------
 	// central points
@@ -85,23 +84,23 @@ PetscErrorCode JacResGetViscMat(PMat pm)
 	START_STD_LOOP
 	{
 		// check index bounds and TPC multipliers
-		Im1 = i-1; cf[0] = 1.0; if(Im1 < 0)  { Im1++; if(bcvx[k][j][i-1] != DBL_MAX) cf[0] = 0.0;
-														if(bcvy[k][j][i-1] != DBL_MAX) cf[0] = 0.0;
-														if(bcvz[k][j][i-1] != DBL_MAX) cf[0] = 0.0;}
-		Ip1 = i+1; cf[1] = 1.0; if(Ip1 > mx) { Ip1--; if(bcvx[k][j][i+1] != DBL_MAX) cf[1] = 0.0;
-														if(bcvy[k][j][i+1] != DBL_MAX) cf[1] = 0.0;
-														if(bcvz[k][j][i+1] != DBL_MAX) cf[1] = 0.0;}
-		Jm1 = j-1; cf[2] = 1.0; if(Jm1 < 0)  { Jm1++; if(bcvx[k][j-1][i] != DBL_MAX) cf[2] = 0.0;
-														if(bcvy[k][j-1][i] != DBL_MAX) cf[2] = 0.0;
-														if(bcvz[k][j-1][i] != DBL_MAX) cf[2] = 0.0;}
-		Jp1 = j+1; cf[3] = 1.0; if(Jp1 > my) { Jp1--; if(bcvx[k][j+1][i] != DBL_MAX) cf[3] = 0.0;
-														if(bcvy[k][j+1][i] != DBL_MAX) cf[3] = 0.0;
-														if(bcvz[k][j+1][i] != DBL_MAX) cf[3] = 0.0;}
-		Km1 = k-1; cf[4] = 1.0; if(Km1 < 0)  { Km1++; if(bcvx[k-1][j][i] != DBL_MAX) cf[4] = 0.0;
-														if(bcvy[k-1][j][i] != DBL_MAX) cf[4] = 0.0;
+		Im1 = i-1; cf[0] = 1.0; if(Im1 < 0)  { Im1++; if(bcvx[k][j][i-1] != DBL_MAX) cf[0] = 0.0;}
+														//if(bcvy[k][j][i-1] != DBL_MAX) cf[0] = 0.0;
+														//if(bcvz[k][j][i-1] != DBL_MAX) cf[0] = 0.0;}
+		Ip1 = i+1; cf[1] = 1.0; if(Ip1 > mx) { Ip1--; if(bcvx[k][j][i+1] != DBL_MAX) cf[1] = 0.0;}
+														//if(bcvy[k][j][i+1] != DBL_MAX) cf[1] = 0.0;
+														//if(bcvz[k][j][i+1] != DBL_MAX) cf[1] = 0.0;}
+		Jm1 = j-1; cf[2] = 1.0; if(Jm1 < 0)  { Jm1++; //if(bcvx[k][j-1][i] != DBL_MAX) cf[2] = 0.0;
+														if(bcvy[k][j-1][i] != DBL_MAX) cf[2] = 0.0;}
+														//if(bcvz[k][j-1][i] != DBL_MAX) cf[2] = 0.0;}
+		Jp1 = j+1; cf[3] = 1.0; if(Jp1 > my) { Jp1--; //if(bcvx[k][j+1][i] != DBL_MAX) cf[3] = 0.0;
+														if(bcvy[k][j+1][i] != DBL_MAX) cf[3] = 0.0;}
+														//if(bcvz[k][j+1][i] != DBL_MAX) cf[3] = 0.0}
+		Km1 = k-1; cf[4] = 1.0; if(Km1 < 0)  { Km1++; //if(bcvx[k-1][j][i] != DBL_MAX) cf[4] = 0.0;
+														//if(bcvy[k-1][j][i] != DBL_MAX) cf[4] = 0.0;
 														if(bcvz[k-1][j][i] != DBL_MAX) cf[4] = 0.0;}
-		Kp1 = k+1; cf[5] = 1.0; if(Kp1 > mz) { Kp1--; if(bcvx[k+1][j][i] != DBL_MAX) cf[5] = 0.0;
-														if(bcvy[k+1][j][i] != DBL_MAX) cf[5] = 0.0;
+		Kp1 = k+1; cf[5] = 1.0; if(Kp1 > mz) { Kp1--; //if(bcvx[k+1][j][i] != DBL_MAX) cf[5] = 0.0;
+														//if(bcvy[k+1][j][i] != DBL_MAX) cf[5] = 0.0;
 														if(bcvz[k+1][j][i] != DBL_MAX) cf[5] = 0.0;}
 
 		// compute average viscosities
@@ -113,12 +112,6 @@ PetscErrorCode JacResGetViscMat(PMat pm)
 		bvx = 1/sqrt(bvx);  		fvx = 1/sqrt(fvx);
 		bvy = 1/sqrt(bvy);  		fvy = 1/sqrt(fvy);
 		bvz = 1/sqrt(bvz);  		fvz = 1/sqrt(fvz);
-
-		// compute viscosities in cell-center
-		viscx = (fvx+bvx)/2.0;
-		viscy = (fvy+bvy)/2.0;
-		viscz = (fvz+bvz)/2.0;
-		visc_center = (viscx + viscy + viscz)/3.0;
 
 		// get mesh steps
 		bdx = SIZE_NODE(i, sx, fs->dsx);     fdx = SIZE_NODE(i+1, sx, fs->dsx);
@@ -160,9 +153,9 @@ PetscErrorCode JacResGetViscMat(PMat pm)
 
 	// restore access
 	ierr = DMDAVecRestoreArray(fs->DA_CEN, jr->ldxx, &lk);  CHKERRQ(ierr);
-	ierr = DMDAVecRestoreArray(fs->DA_CEN, bc->bcvx, &bcvx);  CHKERRQ(ierr);
-	ierr = DMDAVecRestoreArray(fs->DA_CEN, bc->bcvy, &bcvy);  CHKERRQ(ierr);
-	ierr = DMDAVecRestoreArray(fs->DA_CEN, bc->bcvz, &bcvz);  CHKERRQ(ierr);
+	ierr = DMDAVecRestoreArray(fs->DA_X, bc->bcvx, &bcvx);  CHKERRQ(ierr);
+	ierr = DMDAVecRestoreArray(fs->DA_Y, bc->bcvy, &bcvy);  CHKERRQ(ierr);
+	ierr = DMDAVecRestoreArray(fs->DA_Z, bc->bcvz, &bcvz);  CHKERRQ(ierr);
 
 	// assemble K matrix
 	ierr = MatAIJAssemble(P->K, num, list, 1.0); CHKERRQ(ierr);

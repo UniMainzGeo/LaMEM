@@ -143,11 +143,12 @@ struct PMatBlock
 	Mat iS;       // inverse of Schur complement preconditioner
 
 	Vec rv, rp;   // residual blocks
+	Vec xblock, rblock;   // solution/residual blockform
 	Vec xv, xp;   // solution blocks
 	Vec wv, wp;   // work vectors
 
-	Mat K;		// K = BCB^T
-	Vec C;  	// weighting matrix in vectorform
+	Mat K;		// K = BCB^T      					   pressure space
+	Vec C;  	// weighting matrix in vectorform      velocity space
 	Vec wp0, wp1, wp6; 		// additional work vectors pressure space
 	Vec wv2, wv3, wv4, wv5;	// additional work vectors velocity space
 
