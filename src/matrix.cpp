@@ -1231,7 +1231,7 @@ PetscErrorCode PMatBlockCreate(PMat pm)
 	ierr = MatAIJCreateDiag(lnp, startp, &P->App);                       CHKERRQ(ierr);
 	ierr = MatAIJCreateDiag(lnp, startp, &P->iS);                        CHKERRQ(ierr);
 
-	ierr = MatDuplicate(P->App, MAT_DO_NOT_COPY_VALUES, &P->K);			 CHKERRQ(ierr);
+	ierr = MatDuplicate(P->App, MAT_COPY_VALUES, &P->K);			 CHKERRQ(ierr);
 
 	ierr = VecCreateMPI(PETSC_COMM_WORLD, lnv, PETSC_DETERMINE, &P->xv); CHKERRQ(ierr);
 	ierr = VecCreateMPI(PETSC_COMM_WORLD, lnp, PETSC_DETERMINE, &P->xp); CHKERRQ(ierr);

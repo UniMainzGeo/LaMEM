@@ -4,4 +4,6 @@
 
 PetscErrorCode JacResGetViscMat(PMat pm);
 
+PetscErrorCode CopyViscosityToScalingVector(Vec a, Vec b, Vec c, Vec ScalingVec);
+
 #endif /* SRC_BFBT_H_ */

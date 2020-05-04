@@ -84,24 +84,19 @@ PetscErrorCode JacResGetViscMat(PMat pm)
 	START_STD_LOOP
 	{
 		// check index bounds and TPC multipliers
+		//
+		//		-----y_i,j+1-----
+		//		|				|
+		//		x_i,j	i,j		x_i+1,j
+		//		|				|
+		//		-----y_i,j-------
+		//
 		Im1 = i-1; cf[0] = 1.0; if(Im1 < 0)  { Im1++; if(bcvx[k][j][i-1] != DBL_MAX) cf[0] = 0.0;}
-														//if(bcvy[k][j][i-1] != DBL_MAX) cf[0] = 0.0;
-														//if(bcvz[k][j][i-1] != DBL_MAX) cf[0] = 0.0;}
 		Ip1 = i+1; cf[1] = 1.0; if(Ip1 > mx) { Ip1--; if(bcvx[k][j][i+1] != DBL_MAX) cf[1] = 0.0;}
-														//if(bcvy[k][j][i+1] != DBL_MAX) cf[1] = 0.0;
-														//if(bcvz[k][j][i+1] != DBL_MAX) cf[1] = 0.0;}
-		Jm1 = j-1; cf[2] = 1.0; if(Jm1 < 0)  { Jm1++; //if(bcvx[k][j-1][i] != DBL_MAX) cf[2] = 0.0;
-														if(bcvy[k][j-1][i] != DBL_MAX) cf[2] = 0.0;}
-														//if(bcvz[k][j-1][i] != DBL_MAX) cf[2] = 0.0;}
-		Jp1 = j+1; cf[3] = 1.0; if(Jp1 > my) { Jp1--; //if(bcvx[k][j+1][i] != DBL_MAX) cf[3] = 0.0;
-														if(bcvy[k][j+1][i] != DBL_MAX) cf[3] = 0.0;}
-														//if(bcvz[k][j+1][i] != DBL_MAX) cf[3] = 0.0}
-		Km1 = k-1; cf[4] = 1.0; if(Km1 < 0)  { Km1++; //if(bcvx[k-1][j][i] != DBL_MAX) cf[4] = 0.0;
-														//if(bcvy[k-1][j][i] != DBL_MAX) cf[4] = 0.0;
-														if(bcvz[k-1][j][i] != DBL_MAX) cf[4] = 0.0;}
-		Kp1 = k+1; cf[5] = 1.0; if(Kp1 > mz) { Kp1--; //if(bcvx[k+1][j][i] != DBL_MAX) cf[5] = 0.0;
-														//if(bcvy[k+1][j][i] != DBL_MAX) cf[5] = 0.0;
-														if(bcvz[k+1][j][i] != DBL_MAX) cf[5] = 0.0;}
+		Jm1 = j-1; cf[2] = 1.0; if(Jm1 < 0)  { Jm1++; if(bcvy[k][j-1][i] != DBL_MAX) cf[2] = 0.0;}
+		Jp1 = j+1; cf[3] = 1.0; if(Jp1 > my) { Jp1--; if(bcvy[k][j+1][i] != DBL_MAX) cf[3] = 0.0;}
+		Km1 = k-1; cf[4] = 1.0; if(Km1 < 0)  { Km1++; if(bcvz[k-1][j][i] != DBL_MAX) cf[4] = 0.0;}
+		Kp1 = k+1; cf[5] = 1.0; if(Kp1 > mz) { Kp1--; if(bcvz[k+1][j][i] != DBL_MAX) cf[5] = 0.0;}
 
 		// compute average viscosities
 		bvx = (lk[k][j][i] + lk[k][j][Im1])/2.0;      fvx = (lk[k][j][i] + lk[k][j][Ip1])/2.0;
@@ -147,7 +142,6 @@ PetscErrorCode JacResGetViscMat(PMat pm)
 		// set matrix coefficients
 		ierr = MatSetValuesStencil(P->K, 1, row, 7, col, v, ADD_VALUES); CHKERRQ(ierr);
 
-
 	}
 	END_STD_LOOP
 
@@ -162,4 +156,38 @@ PetscErrorCode JacResGetViscMat(PMat pm)
 
 	PetscFunctionReturn(0);
 }
+
+
+#undef __FUNCT__
+#define __FUNCT__ "CopyViscosityToScalingVector"
+PetscErrorCode CopyViscosityToScalingVector(Vec a, Vec b, Vec c, Vec ScalingVec)
+{
+	PetscInt     as,  bs,  cs;
+	PetscScalar *ap, *bp, *cp, *sv;
+
+	PetscErrorCode ierr;
+	PetscFunctionBegin;
+
+	ierr = VecGetLocalSize(a, &as); CHKERRQ(ierr);
+	ierr = VecGetLocalSize(b, &bs); CHKERRQ(ierr);
+	ierr = VecGetLocalSize(c, &cs); CHKERRQ(ierr);
+
+	// access vectors
+	ierr = VecGetArray(a, &ap); CHKERRQ(ierr);
+	ierr = VecGetArray(b, &bp); CHKERRQ(ierr);
+	ierr = VecGetArray(c, &cp); CHKERRQ(ierr);
+	ierr = VecGetArray(ScalingVec, &sv); CHKERRQ(ierr);
+
+	ierr = PetscMemcpy(sv,    	 ap, (size_t)as*sizeof(PetscScalar)); CHKERRQ(ierr);
+	ierr = PetscMemcpy(sv+as, 	 bp, (size_t)bs*sizeof(PetscScalar)); CHKERRQ(ierr);
+	ierr = PetscMemcpy(sv+as+bs, cp, (size_t)cs*sizeof(PetscScalar)); CHKERRQ(ierr);
+
+	ierr = VecRestoreArray(a, &ap); CHKERRQ(ierr);
+	ierr = VecRestoreArray(b, &bp); CHKERRQ(ierr);
+	ierr = VecRestoreArray(c, &cp); CHKERRQ(ierr);
+	ierr = VecRestoreArray(ScalingVec, &sv); CHKERRQ(ierr);
+
+	PetscFunctionReturn(0);
+}
+
 

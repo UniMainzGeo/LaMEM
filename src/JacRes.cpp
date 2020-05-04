@@ -1273,9 +1273,13 @@ PetscErrorCode JacResGetResidual(JacRes *jr)
 
 		// viscosity
 		eta  = jr->svCell[iter].svDev.eta;
-		eta_fx[k][j][i] -= eta/2.0;   eta_fx[k][j][i+1] += eta/2.0;
-		eta_fy[k][j][i] -= eta/2.0;   eta_fy[k][j+1][i] += eta/2.0;
-		eta_fz[k][j][i] -= eta/2.0;   eta_fz[k+1][j][i] += eta/2.0;
+		// get the inverse of the squareroot of the viscosity
+		PetscScalar InvSq_eta;
+		InvSq_eta = 1/sqrt(eta);
+
+		eta_fx[k][j][i] += InvSq_eta/2.0;   eta_fx[k][j][i+1] += InvSq_eta/2.0;
+		eta_fy[k][j][i] += InvSq_eta/2.0;   eta_fy[k][j+1][i] += InvSq_eta/2.0;
+		eta_fz[k][j][i] += InvSq_eta/2.0;   eta_fz[k+1][j][i] += InvSq_eta/2.0;
 
 		//==============================
 		// PRESSURE BOUNDARY CONSTRAINTS

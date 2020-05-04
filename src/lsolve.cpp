@@ -412,10 +412,17 @@ PetscErrorCode PCStokesBFApply(Mat JP, Vec r, Vec x)
 		//===============
 
 		PMat pm;
+		JacRes *jr;
 		pm = pc->pm;
+		jr = pm->jr;
 
-		// assemble K and C
+		// assemble C
+		ierr = CopyViscosityToScalingVector(jr->eta_gfx, jr->eta_gfy, jr->eta_gfz, P->C); CHKERRQ(ierr);
+
+		// assemble K
 		ierr  = JacResGetViscMat(pm); CHKERRQ(ierr);
+
+
 
 		// rv = f
 		// wp = B*A⁻1*rv
