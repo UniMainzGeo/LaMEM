@@ -310,7 +310,7 @@ PetscErrorCode ADVMarkPerturb(AdvCtx *actx)
 PetscErrorCode ADVMarkSave(AdvCtx *actx)
 {
 	int            fd;
-	PetscInt       imark;
+	PetscInt       imark, nfield;
 	Marker         *P;
 	PetscViewer    view_out;
 	PetscLogDouble t;
@@ -321,6 +321,9 @@ PetscErrorCode ADVMarkSave(AdvCtx *actx)
 	PetscFunctionBegin;
 
 	if(actx->advect == ADV_NONE) PetscFunctionReturn(0);
+
+	// fields: 3 coordinates, phase, temperature, APS
+	nfield = 6;
 
 	if(!actx->saveMark) PetscFunctionReturn(0);
 
@@ -349,10 +352,10 @@ PetscErrorCode ADVMarkSave(AdvCtx *actx)
 	header = -1;
 
 	// create write buffer
-	ierr = PetscMalloc((size_t)(5*actx->nummark)*sizeof(PetscScalar), &markbuf); CHKERRQ(ierr);
+	ierr = PetscMalloc((size_t)(nfield*actx->nummark)*sizeof(PetscScalar), &markbuf); CHKERRQ(ierr);
 
 	// copy data from storage into buffer
-	for(imark = 0, markptr = markbuf; imark < actx->nummark; imark++, markptr += 5)
+	for(imark = 0, markptr = markbuf; imark < actx->nummark; imark++, markptr += nfield)
 	{
 		P          =              &actx->markers[imark];
 		markptr[0] =              P->X[0]*chLen;
@@ -360,13 +363,14 @@ PetscErrorCode ADVMarkSave(AdvCtx *actx)
 		markptr[2] =              P->X[2]*chLen;
 		markptr[3] = (PetscScalar)P->phase;
 		markptr[4] =              P->T*chTemp - Tshift;
+		markptr[5] =              P->APS;
 	}
 
 	// write binary output
 	s_nummark = (PetscScalar)actx->nummark;
-	ierr = PetscBinaryWrite(fd, &header,    1,               PETSC_SCALAR, PETSC_FALSE); CHKERRQ(ierr);
-	ierr = PetscBinaryWrite(fd, &s_nummark, 1,               PETSC_SCALAR, PETSC_FALSE); CHKERRQ(ierr);
-	ierr = PetscBinaryWrite(fd, markbuf,    5*actx->nummark, PETSC_SCALAR, PETSC_FALSE); CHKERRQ(ierr);
+	ierr = PetscBinaryWrite(fd, &header,    1,                    PETSC_SCALAR, PETSC_FALSE); CHKERRQ(ierr);
+	ierr = PetscBinaryWrite(fd, &s_nummark, 1,                    PETSC_SCALAR, PETSC_FALSE); CHKERRQ(ierr);
+	ierr = PetscBinaryWrite(fd, markbuf,    nfield*actx->nummark, PETSC_SCALAR, PETSC_FALSE); CHKERRQ(ierr);
 
 	// destroy file handle & file name
 	ierr = PetscViewerDestroy(&view_out); CHKERRQ(ierr);
