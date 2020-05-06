@@ -191,6 +191,7 @@ PetscErrorCode PCStokesDestroy(PCStokes pc)
 #define __FUNCT__ "PCStokesBFCreate"
 PetscErrorCode PCStokesBFCreate(PCStokes pc)
 {
+	PMat 		pm;
 	PC          vpc,ppc;
 	PCStokesBF *bf;
 	JacRes     *jr;
@@ -235,6 +236,8 @@ PetscErrorCode PCStokesBFCreate(PCStokes pc)
 	// create & set pressure multigrid preconditioner
 	if(bf->vtype == _VEL_MG_)
 	{
+		pm = pc->pm;
+		ierr  = JacResGetViscMat(pm); CHKERRQ(ierr);
 		ierr = MGCreate(&bf->pmg, jr);           CHKERRQ(ierr);
 		ierr = KSPGetPC(bf->pksp, &ppc);         CHKERRQ(ierr);
 		ierr = PCSetType(ppc, PCSHELL);          CHKERRQ(ierr);
@@ -399,11 +402,11 @@ PetscErrorCode PCStokesBFApply(Mat JP, Vec r, Vec x)
 	P  = (PMatBlock*) pc->pm->data;
 
 	// copy x,r to P->rblock
-	ierr = VecCopy(r,P->rblock); CHKERRQ(ierr);     // added P->rblock,P->xblock, instead of using r,x now VecScatterBlockToMonolithic
-	ierr = VecCopy(x,P->xblock); CHKERRQ(ierr);		// cause not immediatly an only-read-error of vector r, but after one step...
+	//ierr = VecCopy(r,P->rblock); CHKERRQ(ierr);     // added P->rblock,P->xblock, instead of using r,x now VecScatterBlockToMonolithic
+	//ierr = VecCopy(x,P->xblock); CHKERRQ(ierr);		// cause not immediatly an only-read-error of vector r, but after one step...
 
 	// extract residual blocks
-	ierr = VecScatterBlockToMonolithic(P->rv, P->rp, P->rblock, SCATTER_REVERSE); CHKERRQ(ierr);
+	ierr = VecScatterBlockToMonolithic(P->rv, P->rp, r, SCATTER_REVERSE); CHKERRQ(ierr);
 
 	if(bf->type == _wBFBT_)
 	{
@@ -420,14 +423,12 @@ PetscErrorCode PCStokesBFApply(Mat JP, Vec r, Vec x)
 		ierr = CopyViscosityToScalingVector(jr->eta_gfx, jr->eta_gfy, jr->eta_gfz, P->C); CHKERRQ(ierr);
 
 		// assemble K
-		ierr  = JacResGetViscMat(pm); CHKERRQ(ierr);
-
-
+		//ierr  = JacResGetViscMat(pm); CHKERRQ(ierr);
 
 		// rv = f
 		// wp = B*A⁻1*rv
-		ierr = KSPSolve(bf->vksp, P->rv, P->wp0); 			CHKERRQ(ierr);	// wp0 = (A^-1)*rv
-		ierr = MatMult(P->Apv,P->wp0,P->wp);				CHKERRQ(ierr);	// wp = B*wp0
+		ierr = KSPSolve(bf->vksp, P->rv, P->wv0); 			CHKERRQ(ierr);	// wv0 = (A^-1)*rv
+		ierr = MatMult(P->Apv,P->wv0,P->wp);				CHKERRQ(ierr);	// wp = B*wv0
 
 		// p = S⁻1*wp               				S^-1 = (BCB^T)^-1 * BCACB^T * (BCB^T)^-1
 		// p = (BCB^T)^-1 * BCACB^T * (BCB^T)^-1 * wp
@@ -441,8 +442,8 @@ PetscErrorCode PCStokesBFApply(Mat JP, Vec r, Vec x)
 		ierr = KSPSolve(bf->pksp, P->wp6, P->xp); 			CHKERRQ(ierr);	// xp  = K^-1 * wp6  	<=> K*xp  = wp6
 
 		// u = A⁻1*(wv-B^T*p)
-		ierr = MatMult(P->Avp,P->xp,P->wp6);				CHKERRQ(ierr);	// wp6 = B^T*xp
-		ierr = VecWAXPY(P->rv, -1.0, P->wp6, P->wv); 		CHKERRQ(ierr);	// rv = wv-wp6
+		ierr = MatMult(P->Avp,P->xp,P->wv7);				CHKERRQ(ierr);	// wv7 = B^T*xp
+		ierr = VecWAXPY(P->rv, -1.0, P->wv7, P->wv); 		CHKERRQ(ierr);	// rv = wv-wv7
 		ierr = KSPSolve(bf->vksp, P->rv, P->xv); 			CHKERRQ(ierr);	// xv = (A^-1)*rv
 
 	}else if(bf->type == _UPPER_)
@@ -477,10 +478,10 @@ PetscErrorCode PCStokesBFApply(Mat JP, Vec r, Vec x)
 	}
 
 	// compose approximate solution
-	ierr = VecScatterBlockToMonolithic(P->xv, P->xp, P->xblock, SCATTER_FORWARD); CHKERRQ(ierr);
+	ierr = VecScatterBlockToMonolithic(P->xv, P->xp, x, SCATTER_FORWARD); CHKERRQ(ierr);
 
-	ierr = VecCopy(P->rblock,r); CHKERRQ(ierr);
-	ierr = VecCopy(P->xblock,x); CHKERRQ(ierr);
+	//ierr = VecCopy(P->rblock,r); CHKERRQ(ierr);
+	//ierr = VecCopy(P->xblock,x); CHKERRQ(ierr);
 
 	PetscFunctionReturn(0);
 }

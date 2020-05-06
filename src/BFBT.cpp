@@ -162,8 +162,8 @@ PetscErrorCode JacResGetViscMat(PMat pm)
 #define __FUNCT__ "CopyViscosityToScalingVector"
 PetscErrorCode CopyViscosityToScalingVector(Vec a, Vec b, Vec c, Vec ScalingVec)
 {
-	PetscInt     as,  bs,  cs;
-	PetscScalar *ap, *bp, *cp, *sv;
+	PetscInt     as,  bs,  cs;			// size of the vectors
+	PetscScalar *ap, *bp, *cp, *sv;		// pointer to the vectors
 
 	PetscErrorCode ierr;
 	PetscFunctionBegin;

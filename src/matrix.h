@@ -149,8 +149,8 @@ struct PMatBlock
 
 	Mat K;		// K = BCB^T      					   pressure space
 	Vec C;  	// weighting matrix in vectorform      velocity space
-	Vec wp0, wp1, wp6; 		// additional work vectors pressure space
-	Vec wv2, wv3, wv4, wv5;	// additional work vectors velocity space
+	Vec wp1, wp6; 		// additional work vectors pressure space
+	Vec wv0, wv2, wv3, wv4, wv5, wv7;	// additional work vectors velocity space
 
 };
 
