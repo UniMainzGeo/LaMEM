@@ -795,10 +795,13 @@ PetscErrorCode ADVMarkInitFiles(AdvCtx *actx, FB *fb)
 	PetscLogDouble t;
 	char           *filename, file[_str_len_];
 	PetscScalar    *markbuf, *markptr, header, chTemp, chLen, Tshift, s_nummark;
-	PetscInt       imark, nummark;
+	PetscInt       imark, nummark, nfield;
 
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
+
+	// fields: 3 coordinates, phase, temperature, APS
+	nfield = 6;
 
 	// get file name
 	ierr = getStringParam(fb, _OPTIONAL_, "mark_load_file", file, "./markers/mdb"); CHKERRQ(ierr);
@@ -815,7 +818,7 @@ PetscErrorCode ADVMarkInitFiles(AdvCtx *actx, FB *fb)
 	// read (and ignore) the silent undocumented file header
 	ierr = PetscBinaryRead(fd, &header, 1, PETSC_SCALAR); CHKERRQ(ierr);
 
-	// read number of local of markers
+	// read number of local markers
 	ierr = PetscBinaryRead(fd, &s_nummark, 1, PETSC_SCALAR); CHKERRQ(ierr);
 	nummark = (PetscInt)s_nummark;
 
@@ -826,10 +829,10 @@ PetscErrorCode ADVMarkInitFiles(AdvCtx *actx, FB *fb)
 	actx->nummark = nummark;
 
 	// allocate marker buffer
-	ierr = PetscMalloc((size_t)(5*actx->nummark)*sizeof(PetscScalar), &markbuf); CHKERRQ(ierr);
+	ierr = PetscMalloc((size_t)(nfield*actx->nummark)*sizeof(PetscScalar), &markbuf); CHKERRQ(ierr);
 
 	// read markers into buffer
-	ierr = PetscBinaryRead(fd, markbuf, 5*actx->nummark, PETSC_SCALAR); CHKERRQ(ierr);
+	ierr = PetscBinaryRead(fd, markbuf, nfield*actx->nummark, PETSC_SCALAR); CHKERRQ(ierr);
 
 	// destroy file handle & file name
 	ierr = PetscViewerDestroy(&view_in); CHKERRQ(ierr);
@@ -841,7 +844,7 @@ PetscErrorCode ADVMarkInitFiles(AdvCtx *actx, FB *fb)
 	Tshift = actx->jr->scal->Tshift;
 
 	// copy buffer to marker storage
-	for(imark = 0, markptr = markbuf; imark < actx->nummark; imark++, markptr += 5)
+	for(imark = 0, markptr = markbuf; imark < actx->nummark; imark++, markptr += nfield)
 	{
 		P        =           &actx->markers[imark];
 		P->X[0]  =           markptr[0]/chLen;
@@ -849,6 +852,7 @@ PetscErrorCode ADVMarkInitFiles(AdvCtx *actx, FB *fb)
 		P->X[2]  =           markptr[2]/chLen;
 		P->phase = (PetscInt)markptr[3];
 		P->T     =          (markptr[4] + Tshift)/chTemp;
+		P->APS   =           markptr[5];
 	}
 
 	// free marker buffer
