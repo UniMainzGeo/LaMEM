@@ -69,6 +69,7 @@
 #include "objFunct.h"
 #include "adjoint.h"
 #include "LaMEMLib.h"
+#include "phase_transition.h"
 //---------------------------------------------------------------------------
 #undef __FUNCT__
 #define __FUNCT__ "LaMEMLibMain"
@@ -662,11 +663,16 @@ PetscErrorCode LaMEMLibSolve(LaMEMLib *lm, void *param)
 		// restart if fixed time step is larger than CFLMAX
 		if(restart) continue;
 
+
 		// advect free surface
 		ierr = FreeSurfAdvect(&lm->surf); CHKERRQ(ierr);
 
 		// advect markers
 		ierr = ADVAdvect(&lm->actx); CHKERRQ(ierr);
+
+		PrintStart(&t, "Phase_Transition", NULL);
+		ierr = Phase_Transition(&lm->actx, &lm->jr);CHKERRQ(ierr);
+		PrintDone(t);
 
 		// apply background strain-rate "DWINDLAR" BC (Bob Shaw "Ship of Strangers")
 		ierr = BCStretchGrid(&lm->bc); CHKERRQ(ierr);

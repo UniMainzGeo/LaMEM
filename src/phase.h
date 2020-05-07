@@ -77,6 +77,26 @@ public:
 	PetscScalar A;    // reduction ratio
 
 };
+struct Ph_trans_t
+{
+public:
+
+	PetscInt    ID ;// Phase Transition ID
+	PetscInt    Type ; // Type Constant or Clapeyron
+	PetscInt    Parameter ; // Parameter in Constant
+	PetscInt    neq ;// number of equation
+	PetscScalar value[2] ; // Value (e.g. Temperature: -1 1200, less than 1200 or +1 1200 higher than 1200)
+	// Calpeyron parameter: equation P=(T-T0)*gamma+P0
+	PetscScalar P0[_max_num_eq_] ;
+	PetscScalar T0[_max_num_eq_] ;
+	PetscScalar gamma[_max_num_eq_] ;
+	PetscInt    Ph2Change ; // Phase to change
+	PetscInt    PhIr ; // If it is irreversible or not (e.g., if APS>0.5 imply complete damaged rocks, it changes its primordial phase to the current phase)
+
+};
+
+
+
 
 //---------------------------------------------------------------------------
 //......................   Material parameter table   .......................
@@ -138,6 +158,8 @@ public:
 	char         pdn[_pd_name_sz_];   // Unique phase diagram number
 	char         pdf[_pd_name_sz_];   // Unique phase diagram number
 	PetscInt     Pd_rho;          // density from phase diagram?
+	PetscInt     nPTr;
+	PetscInt     Ph_tr[_max_tr_]; // Vector that contains all phase transition
 };
 
 //---------------------------------------------------------------------------
@@ -184,7 +206,9 @@ struct DBMat
 	PetscInt     numPhases;              // number phases
 	Material_t   phases[_max_num_phases_]; // phase parameters
 	PetscInt     numSoft;                // number material softening laws
+	PetscInt     numPhtr;                // number material softening laws
 	Soft_t       matSoft[_max_num_soft_];  // material softening law parameters
+	Ph_trans_t   matPhtr[_max_num_tr_];   // phase transition properties
 
 };
 
@@ -193,6 +217,9 @@ PetscErrorCode DBMatCreate(DBMat *dbm, FB *fb);
 
 // read single softening law
 PetscErrorCode DBMatReadSoft(DBMat *dbm, FB *fb);
+// read phase transition law
+PetscErrorCode DBMatReadPhaseTr(DBMat *dbm, FB *fb);
+
 
 // read single material phase
 PetscErrorCode DBMatReadPhase(DBMat *dbm, FB *fb);
@@ -223,6 +250,8 @@ PetscErrorCode CorrExpPreFactor(PetscScalar &B, PetscScalar  n, ExpType type, Pe
 
 // correct experimental stress and strain rate parameters to tensor units
 PetscErrorCode CorrExpStressStrainRate(PetscScalar &D, PetscScalar &S, ExpType type, PetscInt MPa);
+
+
 
 //---------------------------------------------------------------------------
 

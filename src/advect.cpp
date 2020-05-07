@@ -77,6 +77,7 @@ Main advection routine
 #define __FUNCT__ "MarkerMerge"
 PetscErrorCode MarkerMerge(Marker &A, Marker &B, Marker &C)
 {
+	PetscInt r;
 	if(A.phase != B.phase)
 	{
 		SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "Attempt to merge markers with different phases");
@@ -100,6 +101,12 @@ PetscErrorCode MarkerMerge(Marker &A, Marker &B, Marker &C)
 	C.U[1]  = (A.U[1] + B.U[1])/2.0;
 	C.U[2]  = (A.U[2] + B.U[2])/2.0;
 
+	if (A.primph != B.primph)
+	{
+		r=rand();
+		if(r==0) C.primph=A.primph;
+		else C.primph=B.primph;
+	}
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------

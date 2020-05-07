@@ -97,6 +97,40 @@ PetscErrorCode DBMatCreate(DBMat *dbm, FB *fb)
 
 	ierr = FBFreeBlocks(fb); CHKERRQ(ierr);
 
+
+	// setup block access mode
+	ierr = FBFindBlocks(fb, _OPTIONAL_, "<PhTransStart>", "<PhTransEnd>"); CHKERRQ(ierr);
+
+	if(fb->nblocks)
+	{
+		// print overview of softening laws from file
+		PetscPrintf(PETSC_COMM_WORLD,"Phase Transition laws: \n");
+
+		// initialize ID for consistency checks
+		for(jj = 0; jj < _max_num_soft_; jj++) dbm->matPhtr[jj].ID = -1;
+
+		// error checking
+		if(fb->nblocks > _max_num_tr_)
+		{
+			SETERRQ1(PETSC_COMM_WORLD, PETSC_ERR_USER, "Too many phase_transition specified! Max allowed: %lld", (LLD)_max_num_tr_);
+		}
+
+		// store actual number of softening laws
+		dbm->numPhtr = fb->nblocks;
+
+		PetscPrintf(PETSC_COMM_WORLD,"--------------------------------------------------------------------------\n");
+
+		// read each individual softening law
+		for(jj = 0; jj < fb->nblocks; jj++)
+		{
+			ierr = DBMatReadPhaseTr(dbm, fb); CHKERRQ(ierr);
+
+			fb->blockID++;
+		}
+	}
+
+	ierr = FBFreeBlocks(fb); CHKERRQ(ierr);
+
 	//================
 	// MATERIAL PHASES
 	//================
@@ -352,6 +386,13 @@ PetscErrorCode DBMatReadPhase(DBMat *dbm, FB *fb)
 	ierr = getScalarParam(fb, _OPTIONAL_, "A",        &m->A,     1, 1.0); CHKERRQ(ierr);
 	ierr = getScalarParam(fb, _OPTIONAL_, "T",        &m->T,     1, 1.0); CHKERRQ(ierr);
 	//=================================================================================
+	ierr = getIntParam   (fb, _OPTIONAL_, "nPTr", &m->nPTr, 1, _max_tr_); CHKERRQ(ierr);
+	if(m->nPTr>0)
+	{
+		ierr = getIntParam   (fb, _REQUIRED_, "Ph_id", m->Ph_tr,   m->nPTr,_max_num_tr_);        CHKERRQ(ierr);
+
+	}
+
 
 	// DEPTH-DEPENDENT
 
@@ -1350,6 +1391,126 @@ PetscErrorCode CorrExpStressStrainRate(PetscScalar &D, PetscScalar &S, ExpType t
 
 	// apply correction from [MPa] to [Pa] if required
 	if(MPa) S *= 1e6;
+
+	PetscFunctionReturn(0);
+}
+//------------------------------------------------------------------
+#undef __FUNCT__
+#define __FUNCT__ "DBMatReadPhaseTr"
+PetscErrorCode DBMatReadPhaseTr(DBMat *dbm, FB *fb)
+{
+	// read softening law from file
+
+	Ph_trans_t   *ph;
+	Scaling      *scal;
+	PetscInt  ID;
+	PetscInt  it;
+
+	PetscErrorCode ierr;
+	PetscFunctionBegin;
+
+	scal = dbm->scal;
+
+	// softening law ID
+	ierr = getIntParam(fb, _REQUIRED_, "ID", &ID, 1, dbm->numPhtr-1); CHKERRQ(ierr);
+
+	// get pointer to specified softening law
+	ph = dbm->matPhtr + ID;
+
+	// check ID
+	if(ph->ID != -1)
+	{
+		 SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "Duplicate phase transition law!");
+	}
+
+	// set ID
+	ph->ID = ID;
+
+	// read and store softening law parameters
+	ierr = getIntParam(fb, _REQUIRED_, "Type", &ph->Type,    1, 2); CHKERRQ(ierr);
+	if (ph->Type==1)
+	{
+		ierr = getIntParam(fb, _REQUIRED_, "Parameter", &ph->Parameter, 1, 4); CHKERRQ(ierr);
+		ierr = getScalarParam(fb, _REQUIRED_, "value", ph->value, 2 ,1.0); CHKERRQ(ierr);
+	}
+	else
+	{
+		ierr = getIntParam(fb, _REQUIRED_, "neq", &ph->neq, 1, 2.0); CHKERRQ(ierr);
+		if (!ph->neq || ph->neq>2)
+		{
+			SETERRQ1(PETSC_COMM_WORLD, PETSC_ERR_USER, "You have to specify the number of equation. And the number of equation is 1 or 2, deal with it", (LLD)ID);
+		}
+		ierr = getScalarParam(fb, _REQUIRED_, "gamma", ph->gamma, ph->neq,1.0); CHKERRQ(ierr);
+		ierr = getScalarParam(fb, _REQUIRED_, "P0", ph->P0, ph->neq,1.0); CHKERRQ(ierr);
+		ierr = getScalarParam(fb, _REQUIRED_, "T0", ph->T0, ph->neq,1.0); CHKERRQ(ierr);
+	}
+	ierr = getIntParam(fb, _REQUIRED_, "Ph2Change", &ph->Ph2Change, 1, _max_num_phases_); CHKERRQ(ierr);
+	ierr = getIntParam(fb, _OPTIONAL_, "PhIr", &ph->PhIr, 1, 1.0); CHKERRQ(ierr);
+
+
+	if(!ph->Ph2Change)
+	{
+		SETERRQ1(PETSC_COMM_WORLD, PETSC_ERR_USER, "you need to specify the final phase of this transition", (LLD)ID);
+	}
+
+	if(ph->Type==1 && (!ph->Parameter || !ph->value))
+	{
+		SETERRQ1(PETSC_COMM_WORLD, PETSC_ERR_USER, "If you are using a constant parameter phase transition you need to specify the parameter (1=Temperautre,2=Pressure, 3=Depth, 4=APS) and its two values (-1 means that looks for value lower then thresshold, and the second value represents the threshold)", (LLD)ID);
+	}
+
+	if(ph->Type==2 && (!ph->gamma || !ph->T0 || !ph->P0 ))
+		{
+			SETERRQ1(PETSC_COMM_WORLD, PETSC_ERR_USER, "If you are using a clapeyron phase transition you need to specify P0, T0, gamma and the number of equation (P=(T-T0)*gamma+(P0)). If you set two clapeyron law, remember that LaMEM change the phase if and only if the current P in the particles is higher of both the two equation!!!", (LLD)ID);
+		}
+
+
+
+	if(ph->Type==1)
+	{
+		if (ph->value[0]>0)
+		{
+			PetscPrintf(PETSC_COMM_WORLD,"   Phase Transition [%lld] : Type = Constant , Parameter = %d (1=Temperature, 2= Pressure, 3= Depth). The phase is changed if the selected parameter is higher than = %g, its addressing phase is %d \n", (LLD)(ph->ID), ph->Parameter, ph->value[1],ph->Ph2Change);
+		}
+		else
+		{
+			PetscPrintf(PETSC_COMM_WORLD,"   Phase Transition [%lld] : Type = Constant , Parameter = %d (1=Temperature, 2= Pressure, 3= Depth). The phase is changed if the selected parameter is lower than = %g and its addressing phase is %d\n", (LLD)(ph->ID), ph->Parameter, ph->value[1],ph->Ph2Change);
+
+		}
+	}
+	if(ph->Type==2)
+	{
+	PetscPrintf(PETSC_COMM_WORLD,"   Phase Transition [%lld] : Type = Clapeyron, gamma = %g, P0 = %g,T0 = %g and addressing phase is %g \n", (LLD)(ph->ID), ph->Type, ph->gamma, ph->P0,ph->T0,ph->Ph2Change);
+	}
+	// Internal Scaling
+	if (ph->Type==1)
+	{
+		if(ph->Parameter==1) //Temperature
+		{
+			ph->value[1]=(ph->value[1] + scal->Tshift)/scal->temperature;
+		}
+		if(ph->Parameter==2)//Pressure
+		{
+			ph->value[1] /= scal->stress_si;
+		}
+		if(ph->Parameter==3)//Depth
+		{
+			ph->value[1]/= scal->length;
+		}
+		if(ph->Parameter==4) // APS
+		{
+			ph->value[1] *= 1.0;
+		}
+	}
+	if (ph->Type==2)
+	{
+		it=0;
+		for(it==0;it< ph->neq;it++)
+		{
+			ph->gamma[it] *= 1e6*(scal->temperature/scal->stress_si);
+			ph->P0[it]/= (scal->stress_si);
+			ph->T0[it]/= (scal->temperature);
+		}
+	}
 
 	PetscFunctionReturn(0);
 }

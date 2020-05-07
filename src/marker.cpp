@@ -54,6 +54,7 @@
 #include "tools.h"
 #include "bc.h"
 #include "surf.h"
+#include "phase_transition.h"
 
 /*
 #START_DOC#
@@ -147,6 +148,7 @@ PetscErrorCode ADVMarkInit(AdvCtx *actx, FB *fb)
 		PetscPrintf(PETSC_COMM_WORLD,"--------------------------------------------------------------------------\n");
 	}
 
+	ierr = PhTr_assign_primPh(actx);
 
 	PetscFunctionReturn(0);
 }

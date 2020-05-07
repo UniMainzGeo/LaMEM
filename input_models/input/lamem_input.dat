@@ -450,6 +450,30 @@
 		APS2 = 1.0 # end of softening APS
 		A    = 0.7 # reduction ratio
 	<SofteningEnd>
+	
+	<PhTransStart>
+		ID   = 0   # Phase_transition law ID
+		Type = Claperyon
+		neq  = 2
+		gamma = -30 1.5
+		P0    =  2e9 2e9
+		T0    =  500 500
+		Ph2Change= 2
+	<PhTransEnd>
+	<PhTransStart>
+		ID   = 1   # Phase_transition law ID
+		Type = Constant
+		neq  = 1
+		Temperature = -1 1200
+		#or
+		Pressure    = +1 2e9
+		#or
+		APS         = +1 0.5
+		#or
+		Depth       = +1 660e3 
+		#or 
+		Ph2Change= 3
+	<PhTransEnd>
 
 # Define material properties for all phases (maximum 32)
 # By default all rheological mechanisms are deactivated
@@ -503,7 +527,8 @@
 		A         = 1e-9   # radiogenic heat production
 		T         = 100.0  # optional temperature to set within the phase
 		rho_ph    = TestPD # name of the phase diagram you want to use (still needs rho to be defined for the initial guess of pressure)
-        rho_ph_dir= 		#in case the phase diagram has a different path provide the path (without the name of the actual PD) here
+		rho_ph_dir = 		#in case the phase diagram has a different path provide the path (without the name of the actual PD) here
+		Ph_trs_id = 1 2 
 	<MaterialEnd>
 
 #===============================================================================
