@@ -895,7 +895,6 @@ PetscErrorCode AdjointComputeGradients(JacRes *jr, AdjGrad *aop, NLSol *nl, SNES
 	// Field sensitivity or 'classic' phase based gradients?
 	if(IOparam->FS == 1)
 	{
-		ierr = DMCreateLocalVector (fs->DA_CEN, &aop->lgradfield);      CHKERRQ(ierr);
 		CurPar   = IOparam->typ[0];
 
 		// Compute residual with the converged Jacobian analytically
@@ -903,6 +902,7 @@ PetscErrorCode AdjointComputeGradients(JacRes *jr, AdjGrad *aop, NLSol *nl, SNES
 		{
 			aop->CurScal   = (scal->velocity)/(scal->density);
 			aop->CurScalst = 1/(scal->density);
+			aop->Perturb   = 1e-6;
 			ierr = AdjointFormResidualFieldFDRho(snes, sol, psi, nl, aop);          CHKERRQ(ierr);
 		}
 		else 
@@ -1850,7 +1850,7 @@ PetscErrorCode AdjointFormResidualFieldFDRho(SNES snes, Vec x, Vec psi, NLSol *n
 	PetscScalar bdx, fdx, bdy, fdy, bdz, fdz;
 	PetscScalar gx, gy, gz, tx, ty, tz, sxx, syy, szz, sxy, sxz, syz;
 	PetscScalar J2Inv, theta, IKdt, Tc, pc, pShift, pn, dt, fssa, *grav;
-	PetscScalar rho, grdt, Perturb, hP;
+	PetscScalar rho, grdt;
 	PetscScalar ***fx,  ***fy,  ***fz, ***vx,  ***vy,  ***vz, ***gc, ***bcp, ***llgradfield;
 	PetscScalar ***dxx, ***dyy, ***dzz, ***dxy, ***dxz, ***dyz, ***p, ***T, ***p_lith, ***p_pore;
 	PetscScalar eta_creep, eta_vp;
@@ -1866,9 +1866,10 @@ PetscErrorCode AdjointFormResidualFieldFDRho(SNES snes, Vec x, Vec psi, NLSol *n
 	// Create stuff
 	ierr = VecDuplicate(jr->gsol, &drdp);	 	 CHKERRQ(ierr);
 	ierr = VecDuplicate(jr->gres, &res);	 	 CHKERRQ(ierr);
-	ierr = VecZeroEntries(aop->lgradfield);	 	 CHKERRQ(ierr);
+	ierr = VecZeroEntries(jr->lgradfield);	 	 CHKERRQ(ierr);
 	ierr = VecDuplicate(jr->gres, &rpl);		 CHKERRQ(ierr);
-	ierr = VecDuplicate(jr->gsol, &Perturb_vec);          CHKERRQ(ierr);
+	ierr = VecDuplicate(jr->gsol, &Perturb_vec); CHKERRQ(ierr);
+	ierr = VecSet(Perturb_vec,aop->Perturb);     CHKERRQ(ierr);
 
 	/*// apply pressure limit at the first visco-plastic timestep and iteration
     if(jr->ts->istep == 1 && jr->ctrl->pLimPlast == PETSC_TRUE)
@@ -1900,13 +1901,12 @@ PetscErrorCode AdjointFormResidualFieldFDRho(SNES snes, Vec x, Vec psi, NLSol *n
 	biot      =  ctrl->biot;         // Biot pressure parameter
 	AirPhase  =  jr->surf->AirPhase; // sticky air phase number
 	avg_topo  =  jr->surf->avg_topo; // average surface topography
-	hP        =  1e-6;
 
 	// Recompute correct strainrates (necessary!!)
 	// ierr =  JacResGetEffStrainRate(jr);
 
 	// access work vectors
-	ierr = DMDAVecGetArray(fs->DA_CEN, aop->lgradfield,&llgradfield);      CHKERRQ(ierr);
+	ierr = DMDAVecGetArray(fs->DA_CEN, jr->lgradfield,&llgradfield);      CHKERRQ(ierr);
 
 	for(PetscInt kk=0;kk<fs->dsx.tcels;kk++)
 	{
@@ -2051,7 +2051,7 @@ PetscErrorCode AdjointFormResidualFieldFDRho(SNES snes, Vec x, Vec psi, NLSol *n
 					if ((i)==ik && (j)==jk && (k)==kk)
 					{
 						// Set perturbation paramter for the finite differences
-						aop->Perturb = hP*rho;
+						// aop->Perturb = hP*rho;
 						rho += aop->Perturb;
 					}
 
@@ -2455,10 +2455,6 @@ PetscErrorCode AdjointFormResidualFieldFDRho(SNES snes, Vec x, Vec psi, NLSol *n
 				// copy residuals to global vector
 				ierr = JacResCopyRes(jr, res); CHKERRQ(ierr);
 
-				// get the actual used perturbation parameter which is 1e-6*parameter
-				Perturb = aop->Perturb;
-				ierr = VecSet(Perturb_vec,Perturb);                   CHKERRQ(ierr);
-
 				ierr = FormResidual(snes, x, rpl, nl);              CHKERRQ(ierr);
 				ierr = VecAYPX(res,-1,rpl);                           CHKERRQ(ierr);
 				ierr = VecPointwiseDivide(drdp,res,Perturb_vec);      CHKERRQ(ierr);
@@ -2489,9 +2485,9 @@ PetscErrorCode AdjointFormResidualFieldFDRho(SNES snes, Vec x, Vec psi, NLSol *n
 	}
 
 	// restore vectors
-	ierr = DMDAVecRestoreArray(fs->DA_CEN, aop->lgradfield,&llgradfield);CHKERRQ(ierr);
+	ierr = DMDAVecRestoreArray(fs->DA_CEN, jr->lgradfield,&llgradfield);CHKERRQ(ierr);
 
-	LOCAL_TO_LOCAL(fs->DA_CEN, aop->lgradfield);
+	LOCAL_TO_LOCAL(fs->DA_CEN, jr->lgradfield);
 
 	// deactivate pressure limit after it has been activated
 	// jr->matLim.presLimFlg = PETSC_FALSE;

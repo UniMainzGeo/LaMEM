@@ -242,6 +242,9 @@ struct JacRes
 	// Phase diagram
 	PData       *Pd;
 
+	// Adjoint field based gradients
+	Vec          lgradfield;
+
 	//=======================
 	// temperature parameters
 	//=======================

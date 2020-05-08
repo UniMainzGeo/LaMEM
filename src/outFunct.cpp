@@ -330,6 +330,20 @@ PetscErrorCode PVOutWritePressure(OutVec* outvec)
 }
 //---------------------------------------------------------------------------
 #undef __FUNCT__
+#define __FUNCT__ "PVOutWriteGradient"
+PetscErrorCode PVOutWriteGradient(OutVec* outvec)
+{
+
+	ACCESS_FUNCTION_HEADER
+
+	cf = scal->unit;
+
+	INTERPOLATE_ACCESS(jr->lgradfield, InterpCenterCorner, 1, 0, 0.0)
+
+	PetscFunctionReturn(0);
+}
+//---------------------------------------------------------------------------
+#undef __FUNCT__
 #define __FUNCT__ "PVOutWriteTotalPress"
 PetscErrorCode PVOutWriteTotalPress(OutVec* outvec)
 {

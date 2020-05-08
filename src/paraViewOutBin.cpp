@@ -306,6 +306,7 @@ PetscInt OutMaskCountActive(OutMask *omask)
 	if(omask->visc_plast)     cnt++; // viscoplastic viscosity
 	if(omask->velocity)       cnt++; // velocity
 	if(omask->pressure)       cnt++; // pressure
+	if(omask->gradient)       cnt++; // adjoint gradient
 	if(omask->eff_press)      cnt++; // effective pressure
 	if(omask->over_press)     cnt++; // overpressure
 	if(omask->litho_press)    cnt++; // lithostatic pressure
@@ -373,6 +374,7 @@ PetscErrorCode PVOutCreate(PVOut *pvout, FB *fb)
 	ierr = getIntParam   (fb, _OPTIONAL_, "out_visc_plast",     &omask->visc_plast,        1, 1); CHKERRQ(ierr);
 	ierr = getIntParam   (fb, _OPTIONAL_, "out_velocity",       &omask->velocity,          1, 1); CHKERRQ(ierr);
 	ierr = getIntParam   (fb, _OPTIONAL_, "out_pressure",       &omask->pressure,          1, 1); CHKERRQ(ierr);
+	ierr = getIntParam   (fb, _OPTIONAL_, "out_gradient",       &omask->gradient,          1, 1); CHKERRQ(ierr);
 	ierr = getIntParam   (fb, _OPTIONAL_, "out_eff_press",      &omask->eff_press,         1, 1); CHKERRQ(ierr);
 	ierr = getIntParam   (fb, _OPTIONAL_, "out_over_press",     &omask->over_press,        1, 1); CHKERRQ(ierr);
 	ierr = getIntParam   (fb, _OPTIONAL_, "out_litho_press",    &omask->litho_press,       1, 1); CHKERRQ(ierr);
@@ -442,6 +444,7 @@ PetscErrorCode PVOutCreate(PVOut *pvout, FB *fb)
 	if(omask->visc_plast)     PetscPrintf(PETSC_COMM_WORLD, "   Viscoplastic viscosity                  @ \n");
 	if(omask->velocity)       PetscPrintf(PETSC_COMM_WORLD, "   Velocity                                @ \n");
 	if(omask->pressure)       PetscPrintf(PETSC_COMM_WORLD, "   Pressure                                @ \n");
+	if(omask->gradient)       PetscPrintf(PETSC_COMM_WORLD, "   Adjoint gradient                        @ \n");
 	if(omask->eff_press)      PetscPrintf(PETSC_COMM_WORLD, "   Effective pressure                      @ \n");
 	if(omask->over_press)     PetscPrintf(PETSC_COMM_WORLD, "   Overpressure                            @ \n");
 	if(omask->litho_press)    PetscPrintf(PETSC_COMM_WORLD, "   Lithostatic pressure                    @ \n");
@@ -523,6 +526,7 @@ PetscErrorCode PVOutCreateData(PVOut *pvout)
 	if(omask->visc_plast)     OutVecCreate(&pvout->outvecs[iter++], jr, outbuf, "visc_plast",     scal->lbl_viscosity,        &PVOutWriteViscoPlastic, 1, NULL);
 	if(omask->velocity)       OutVecCreate(&pvout->outvecs[iter++], jr, outbuf, "velocity",       scal->lbl_velocity,         &PVOutWriteVelocity,     3, NULL);
 	if(omask->pressure)       OutVecCreate(&pvout->outvecs[iter++], jr, outbuf, "pressure",       scal->lbl_stress,           &PVOutWritePressure,     1, NULL);
+	if(omask->gradient)       OutVecCreate(&pvout->outvecs[iter++], jr, outbuf, "gradient",       scal->lbl_unit,             &PVOutWriteGradient,     1, NULL);
 	if(omask->eff_press)      OutVecCreate(&pvout->outvecs[iter++], jr, outbuf, "eff_press",      scal->lbl_stress,           &PVOutWriteEffPress,     1, NULL);
 	if(omask->over_press)     OutVecCreate(&pvout->outvecs[iter++], jr, outbuf, "over_press",     scal->lbl_stress,           &PVOutWriteOverPress,    1, NULL);
 	if(omask->litho_press)    OutVecCreate(&pvout->outvecs[iter++], jr, outbuf, "litho_press",    scal->lbl_stress,           &PVOutWriteLithoPress,   1, NULL);

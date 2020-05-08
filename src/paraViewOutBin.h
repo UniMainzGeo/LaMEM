@@ -133,6 +133,7 @@ struct OutMask
 	PetscInt visc_plast;     // viscoplastic viscosity
 	PetscInt velocity;       // velocity
 	PetscInt pressure;       // pressure
+	PetscInt gradient;       // Adjoint field based gradient
 	PetscInt eff_press;      // effective pressure
 	PetscInt over_press;     // overpressure
 	PetscInt litho_press;    // lithostatic pressure

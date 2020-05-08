@@ -75,7 +75,6 @@ struct AdjGrad
 	Vec              vx, vy, vz, stx, sty, stz;
 	Vec              dphidu;
 	Vec              gradfield;                // Used if gradient at every point is computed (same size as jr->p)
-	Vec              lgradfield;               // local version of gradfield
 };
 
 // Adjoint optimization driving routines

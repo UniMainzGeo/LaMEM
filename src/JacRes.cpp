@@ -64,7 +64,7 @@ PetscErrorCode JacResCreate(JacRes *jr, FB *fb)
 	Controls   *ctrl;
 	PetscScalar input_eta_max, gx, gy, gz;
 	char        gwtype [_str_len_];
-	PetscInt    i, cnt, numPhases;
+	PetscInt    i, cnt, numPhases, temp_int;
 	PetscInt    is_elastic, need_DII_ref, need_RUGC, need_rho_fluid, need_surf, need_gw_type;
 
 	PetscErrorCode ierr;
@@ -316,6 +316,13 @@ PetscErrorCode JacResCreate(JacRes *jr, FB *fb)
 	// set inverse of maximum viscosity
 	if(input_eta_max) ctrl->inv_eta_max = 1.0/input_eta_max;
 
+	// adjoint field based gradient output vector
+	ierr = getIntParam   (fb, _OPTIONAL_, "Inv_FS"        , &temp_int,        1, 1        ); CHKERRQ(ierr);  // Do a field sensitivity test? -> Will do the test for the first InverseParStart that is given!
+	if (temp_int == 1)
+	{
+		ierr = DMCreateLocalVector (jr->fs->DA_CEN, &jr->lgradfield);      CHKERRQ(ierr);
+	}
+
 	// create Jacobian & residual evaluation context
 	ierr = JacResCreateData(jr); CHKERRQ(ierr);
 
@@ -404,7 +411,7 @@ PetscErrorCode JacResCreateData(JacRes *jr)
 
 	// corner buffer
 	ierr = DMCreateLocalVector(fs->DA_COR,  &jr->lbcor); CHKERRQ(ierr);
-
+	
 	//======================================
 	// allocate space for solution variables
 	//======================================
