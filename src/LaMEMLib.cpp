@@ -630,6 +630,10 @@ PetscErrorCode LaMEMLibSolve(LaMEMLib *lm, void *param)
 		// compute elastic parameters
 		ierr = JacResGetI2Gdt(&lm->jr); CHKERRQ(ierr);
 
+//		PrintStart(&t, "Phase_Transition", NULL);
+//				ierr = Phase_Transition(&lm->actx, &lm->jr);CHKERRQ(ierr);
+//		PrintDone(t);
+
 		// solve nonlinear equation system with SNES
 		PetscTime(&t);
 
@@ -670,10 +674,6 @@ PetscErrorCode LaMEMLibSolve(LaMEMLib *lm, void *param)
 		// advect markers
 		ierr = ADVAdvect(&lm->actx); CHKERRQ(ierr);
 
-		PrintStart(&t, "Phase_Transition", NULL);
-		ierr = Phase_Transition(&lm->actx, &lm->jr);CHKERRQ(ierr);
-		PrintDone(t);
-
 		// apply background strain-rate "DWINDLAR" BC (Bob Shaw "Ship of Strangers")
 		ierr = BCStretchGrid(&lm->bc); CHKERRQ(ierr);
 
@@ -688,6 +688,7 @@ PetscErrorCode LaMEMLibSolve(LaMEMLib *lm, void *param)
 
 		// remap markers onto (stretched) grid
 		ierr = ADVRemap(&lm->actx); CHKERRQ(ierr);
+
 
 		// update phase ratios taking into account actual free surface position
 		ierr = FreeSurfGetAirPhaseRatio(&lm->surf); CHKERRQ(ierr);

@@ -9,10 +9,11 @@
 #define phase_transition_h_
 struct Marker;
 struct Ph_trans_t;
+struct JacRes;
 
 PetscErrorCode PhTr_assign_primPh(AdvCtx *actx);
-PetscErrorCode Phase_Transition(AdvCtx *actx, JacRes *jr);
 PetscInt Transition(Ph_trans_t *PhaseTrans, Marker *P, PetscInt id, PetscInt PH);
+PetscErrorCode Phase_Transition(AdvCtx *actx);
 
 
 #endif /* PHASE_TRANSITION_H_ */

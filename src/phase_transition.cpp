@@ -84,47 +84,66 @@ PetscErrorCode PhTr_assign_primPh(AdvCtx *actx)
 // Simple function that assign the primordial phase to the marker
 #undef __FUNCT__
 #define __FUNCT__ "Phase_Transition"
-PetscErrorCode Phase_Transition(AdvCtx *actx, JacRes *jr)
+PetscErrorCode Phase_Transition(AdvCtx *actx)
 {
 	// creates arrays to optimize marker-cell interaction
 	DBMat      *dbm;
 	Material_t *mat;
 	Ph_trans_t *PhaseTrans;
 	Marker *P;
+	JacRes *jr;
 	PetscInt     i, ph, counter,itr,nPtr,id,newPh;
 
+	jr = actx->jr;
 	dbm = jr->dbm;
 	PhaseTrans = jr->dbm->matPhtr;
 	mat = dbm->phases;
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
 
+	// loop over all local particles 		PetscPrintf(PETSC_COMM_WORLD,"PHASE = %d  i = %d, counter = %d\n",P->phase,i,counter);
 
-	// loop over all local particles
 	for(i = 0; i < actx->nummark; i++)
 	{
+		if(P->phase==0)
+		{
+			PetscPrintf(PETSC_COMM_WORLD,"PHASE = %d  i = %d, counter = %d\n",P->phase,i,counter);
+		}
 		P=&actx->markers[i];
+
 		if(mat[P->primph].nPTr)
 		{
+
 			ph=P->primph;
+
 			counter = mat[P->primph].nPTr;
+
 			while (counter!=0)
 			{
 				if(mat[ph].nPTr!=0)
 				{
+
 					nPtr=mat[ph].nPTr;
 
 					for(itr=0;itr<nPtr;itr++)
 					{
+
 						id=mat[ph].Ph_tr[itr];
+
 						newPh = Transition(PhaseTrans, P, id, ph);
+
 						if(newPh != ph)
 						{
+
 							ph=newPh;
 							counter=mat[ph].nPTr;
+
 							break;
 						}
+						else
+						{
 						counter--;
+						}
 					}
 				}
 				else
@@ -132,8 +151,11 @@ PetscErrorCode Phase_Transition(AdvCtx *actx, JacRes *jr)
 				counter = 0;
 				}
 			}
+			P->phase=ph;
+
 		}
-		P->phase=ph;
+
+
 	}
 	ierr = ADVProjHistMarkToGrid(actx);
 
@@ -141,7 +163,6 @@ PetscErrorCode Phase_Transition(AdvCtx *actx, JacRes *jr)
 
 	PetscFunctionReturn(0);
 }
-
 //----------------------------------------------------------------------------------------
 PetscInt Transition(Ph_trans_t *PhaseTrans, Marker *P, PetscInt id,PetscInt PH)
 {
@@ -264,3 +285,165 @@ PetscInt Transition(Ph_trans_t *PhaseTrans, Marker *P, PetscInt id,PetscInt PH)
 	}
 	return NP;
 }
+
+
+
+/*
+ * / Simple function that assign the primordial phase to the marker
+#undef __FUNCT__
+#define __FUNCT__ "Phase_Transition"
+PetscErrorCode Phase_Transition(AdvCtx *actx)
+{
+	// creates arrays to optimize marker-cell interaction
+	DBMat      *dbm;
+	Material_t *mat;
+	Ph_trans_t *PhaseTrans;
+	Marker *P;
+	JacRes *jr;
+	PetscInt     i, ph, counter,itr,nPtr,id,newPh;
+
+	jr = actx->jr;
+	dbm = jr->dbm;
+	PhaseTrans = jr->dbm->matPhtr;
+	mat = dbm->phases;
+	PetscErrorCode ierr;
+	PetscFunctionBegin;
+
+	// loop over all local particles 		PetscPrintf(PETSC_COMM_WORLD,"PHASE = %d  i = %d, counter = %d\n",P->phase,i,counter);
+
+	for(i = 0; i < actx->nummark; i++)
+	{
+		if(P->phase==0)
+		{
+			PetscPrintf(PETSC_COMM_WORLD,"PHASE = %d  i = %d, counter = %d\n",P->phase,i,counter);
+		}
+		P=&actx->markers[i];
+
+		if(mat[P->primph].nPTr)
+		{
+
+			ph=P->primph;
+
+			counter = mat[P->primph].nPTr;
+
+			while (counter!=0)
+			{
+				if(mat[ph].nPTr!=0)
+				{
+
+					nPtr=mat[ph].nPTr;
+
+					for(itr=0;itr<nPtr;itr++)
+					{
+
+						id=mat[ph].Ph_tr[itr];
+
+						newPh = Transition(PhaseTrans, P, id, ph);
+
+						if(newPh != ph)
+						{
+
+							ph=newPh;
+							counter=mat[ph].nPTr;
+
+							break;
+						}
+						else
+						{
+						counter--;
+						}
+					}
+				}
+				else
+				{
+				counter = 0;
+				}
+			}
+
+		}
+
+		P->phase=ph;
+
+	}
+	ierr = ADVProjHistMarkToGrid(actx);
+
+
+
+	PetscFunctionReturn(0);
+}
+#undef __FUNCT__
+#define __FUNCT__ "Phase_Transition"
+PetscErrorCode Phase_Transition(AdvCtx *actx, Marker *P)
+{
+	// creates arrays to optimize marker-cell interaction
+	DBMat      *dbm;
+	Material_t *mat;
+	Ph_trans_t *PhaseTrans;
+	JacRes *jr;
+	PetscInt     i, ph, counter,itr,nPtr,id,newPh,primPh;
+
+	jr = actx->jr;
+	dbm = jr->dbm;
+	PhaseTrans = jr->dbm->matPhtr;
+	mat = dbm->phases;
+	PetscErrorCode ierr;
+	PetscFunctionBegin;
+
+	// loop over all local particles 			PetscPrintf(PETSC_COMM_WORLD,"QU1 \n");	PetscPrintf(PETSC_COMM_WORLD,"PHASE = %d  i = %d, counter = %d\n",P->phase,i,counter);
+		primPh = P->primph;
+
+		nPtr = mat[primPh].nPTr;
+		if(nPtr>0)
+		{
+
+			ph=primPh;
+
+			counter = nPtr;
+
+			while (counter!=0)
+			{
+				if(mat[ph].nPTr!=0)
+				{
+
+					nPtr=mat[ph].nPTr;
+
+					for(itr=0;itr<nPtr;itr++)
+					{
+
+						id=mat[ph].Ph_tr[itr];
+
+						newPh = Transition(PhaseTrans, P, id, ph);
+
+						if(newPh != ph)
+						{
+
+							ph=newPh;
+							counter=mat[ph].nPTr;
+
+							break;
+						}
+						else
+						{
+						counter--;
+						}
+					}
+				}
+				else
+				{
+				counter = 0;
+				}
+			}
+			P->phase=ph;
+		}
+
+
+
+	//ierr = ADVProjHistMarkToGrid(actx);
+
+
+
+	PetscFunctionReturn(0);
+}
+
+ */
+

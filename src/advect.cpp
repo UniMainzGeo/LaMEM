@@ -58,6 +58,7 @@
 #include "cvi.h"
 #include "subgrid.h"
 #include "tools.h"
+#include "phase_transition.h"
 
 /*
 #START_DOC#
@@ -106,6 +107,10 @@ PetscErrorCode MarkerMerge(Marker &A, Marker &B, Marker &C)
 		r=rand();
 		if(r==0) C.primph=A.primph;
 		else C.primph=B.primph;
+	}
+	else
+	{
+		C.primph=A.primph;
 	}
 	PetscFunctionReturn(0);
 }
@@ -571,6 +576,7 @@ PetscErrorCode ADVRemap(AdvCtx *actx)
 
 	if(actx->advect == ADV_NONE)
 	{
+
 		ierr = ADVUpdateHistADVNone(actx); CHKERRQ(ierr);
 
 		PetscFunctionReturn(0);
@@ -597,7 +603,6 @@ PetscErrorCode ADVRemap(AdvCtx *actx)
 	}
 	else if(actx->mctrl == CTRL_AVD)
 	{
-		PetscPrintf(PETSC_COMM_WORLD,"Performing marker control (updated algorithm)\n");
 
 		// check markers and inject/delete if necessary in all control volumes
 		ierr = AVDMarkerControl(actx); CHKERRQ(ierr);
@@ -610,6 +615,7 @@ PetscErrorCode ADVRemap(AdvCtx *actx)
 	else if(actx->mctrl == CTRL_SUB)
 	{
 		PetscPrintf(PETSC_COMM_WORLD,"Performing marker control (subgrid algorithm)\n");
+	//	ierr = Phase_Transition(actx);CHKERRQ(ierr);
 
 		// compute host cells for all the markers received
 		ierr = ADVMapMarkToCells(actx); CHKERRQ(ierr);
@@ -625,6 +631,10 @@ PetscErrorCode ADVRemap(AdvCtx *actx)
 
 	// project advected history from markers back to grid
 	ierr = ADVProjHistMarkToGrid(actx); CHKERRQ(ierr);
+
+	ierr = Phase_Transition(actx);CHKERRQ(ierr);
+
+
 
 	PetscFunctionReturn(0);
 }
@@ -2015,17 +2025,18 @@ PetscErrorCode ADVCheckMarkPhases(AdvCtx *actx)
 	Marker    *P;
 	PetscInt  jj;
 	PetscInt  numPhases;
+	PetscErrorCode ierr;
 
 	PetscFunctionBegin;
 
 	numPhases = actx->dbm->numPhases;
 
-	// scan all markers
+	// scan all markersPetscPrintf(PETSC_COMM_WORLD," i = %d\n",jj);
+
 	for(jj = 0; jj < actx->nummark; jj++)
 	{
 		// access marker
 		P = &actx->markers[jj];
-
 		// check marker phase
 		if ((P->phase < 0) || (P->phase > numPhases-1))
 		{
