@@ -672,7 +672,7 @@ PetscErrorCode MatPropSetFromLibCall(JacRes *jr, ModParam *mod, FB *fb)
 	// overwrite MATERIAL PARAMETERS with model parameters provided by a calling function
 
 	PetscInt 	id, im;
-	PetscScalar eta, eta0, e0;
+	PetscScalar eta, eta0, DII;
 	Material_t *m;
 	Scaling    *scal;
 
@@ -697,6 +697,9 @@ PetscErrorCode MatPropSetFromLibCall(JacRes *jr, ModParam *mod, FB *fb)
 			VecGetArray(mod->P,&mod->val);
 		}
 
+		// get reference strainrate from file  ( this is super unnecessary but unfortunately there is no other way to recompute Bn here)
+		ierr = getScalarParam(fb, _OPTIONAL_, "DII_ref",       &DII,       1, 1.0); CHKERRQ(ierr);
+
 		for(im=0;im<mod->mdN;im++)
 		{
 
@@ -715,11 +718,7 @@ PetscErrorCode MatPropSetFromLibCall(JacRes *jr, ModParam *mod, FB *fb)
 			else if(mod->typ[im] == _ETA0_)
 			{
 				eta0   =  mod->val[im];
-				
-				// get reference strainrate from file  ( this is super unnecessary but unfortunately there is no other way to recompute Bn here)
-				ierr = getScalarParam(fb, _OPTIONAL_, "e0",       &e0,       1, 1.0); CHKERRQ(ierr);
-				
-				m->Bn  =  (pow (2.0*eta0, -m->n)*pow(e0, 1 - m->n)) * pow(scal->stress_si, m->n)*scal->time_si;
+				m->Bn  =  (pow (2.0*eta0, -m->n)*pow(DII, 1 - m->n)) * (pow(scal->stress_si, m->n)*scal->time_si);
 				PetscPrintf(PETSC_COMM_WORLD,"#    eta[%lld] = %g \n",(LLD)id,eta0);
 			}
 			// constant density
@@ -744,14 +743,16 @@ PetscErrorCode MatPropSetFromLibCall(JacRes *jr, ModParam *mod, FB *fb)
 			else if(mod->typ[im] == _N_)
 			{
 				PetscScalar F2;
+				eta0 = (pow(( m->Bn * pow(2,m->n) * pow(DII, m->n-1) *  pow(scal->stress_si, -m->n) )/ scal->time_si , -1/m->n)) ;
 				m->n = mod->val[im];
+
 				// in case of Ranalli dislocation creep
-				F2 = pow(0.5,(m->n-1)/m->n) / pow(3,(m->n+1)/(2*m->n)); //  F2 = 1/2^((n-1)/n)/3^((n+1)/2/n);
-				m->Bn = (pow(2*F2,-m->n) * pow(1e6*pow((m->Bn),-1/m->n),-m->n));
-				m->Bn    *= pow(scal->stress_si, m->n)*scal->time_si;
+				// F2 = pow(0.5,(m->n-1)/m->n) / pow(3,(m->n+1)/(2*m->n)); //  F2 = 1/2^((n-1)/n)/3^((n+1)/2/n);
+				// m->Bn = (pow(2*F2,-m->n) * pow(1e6*pow((m->Bn),-1/m->n),-m->n));
+				// m->Bn    *= pow(scal->stress_si, m->n)*scal->time_si;
 
 				// in caswe of simple powerlaw
-				// m->Bn = (pow (2.0*eta0, -m->n)*pow(e0, 1 - m->n)) * (pow(scal->stress_si, m->n)*scal->time_si);
+				m->Bn = (pow (2.0*eta0, -m->n)*pow(DII, 1 - m->n)) * (pow(scal->stress_si, m->n)*scal->time_si);
 				PetscPrintf(PETSC_COMM_WORLD,"#    n[%lld] = %3.3f \n",(LLD)id,m->n);
 			}
 			// activation energy

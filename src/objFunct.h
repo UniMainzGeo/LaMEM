@@ -105,19 +105,23 @@ struct ModParam
 	PetscInt         count;			// iteration counter
 	PetscInt         mdI;    		// number of indices
 	PetscInt         Ap;        	// 1 = several indices ; 2 = whole domain ; 3 = surface
-	PetscInt         reg;       	// 1 = Tikhonov regularization of the adjoint cost function ; 2 = total variation regularization (TV)
+	PetscInt         FS;            // 1 = pointwise gradient
+	PetscInt         Gr;            // 1 = Grad w.r.t solution; 0 = Grad w.r.t to cost function
 	PetscInt         OFdef;         // Objective function defined by hand?
-	PetscScalar      mfitini; 		// initial misfit value for current model parameters
-	PetscScalar      tol; 		    // tolerance for F/Fini after which code has converged
-	PetscScalar      factor1;   	// factor to multiply the gradients (should be set such that the highest gradient scales around 1/100 of its parameter ; only used without tao)
-	PetscScalar      factor2;   	// factor that increases the convergence velocity (this value is added to itself after every succesful gradient descent ; only used without tao)
-	PetscScalar      maxfactor2;	// limit on the factor (only used without tao)
+	PetscInt         maxit;         // maximum number of inverse iteration
+	PetscInt         maxitLS;       // maximum number of backtracking
+	PetscScalar      Scale_Grad;    // scale parameter update with initial gradient?
+	PetscScalar      mfitini;   	// initial misfit value for current model parameters
+	PetscScalar      tol; 	   	    // tolerance for F/Fini after which code has converged
+	PetscScalar      facLS;      	// factor in the line search that multiplies current line search parameter if GD update was succesful (increases convergence speed)
+	PetscScalar      facB;      	// backtrack factor that multiplies current line search parameter if GD update was not succesful
+	PetscScalar      factor2array[51];  // factor that increases the convergence velocity (this value is added to itself after every succesful gradient descent ; only used without tao)
+	PetscScalar      maxfac;	    // limit on the factor (only used without tao)
 	PetscScalar     *Ax;			// X-coordinates of comparison points
 	PetscScalar     *Ay;			// Y-coordinates of comparison points
 	PetscScalar     *Az;  			// Z-coordinates of comparison points
 	PetscScalar     *Ae;  			// Velocity value of comparison points
-	PetscScalar     *Av;			// Velocity components of comparison points
-	PetscScalar     *W;        		// Array of weights for the regularization
+	PetscInt        *Av;			// Velocity components of comparison points
 };
 
 // observation type
