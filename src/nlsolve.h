@@ -108,6 +108,7 @@ struct NLSol
 
 	JacType     jtype;    // actual type of Jacobian operator
 	PetscInt    it;       // iteration counter
+	PetscInt    it_Nwt;   // newton iteration counter
 	PetscScalar refRes;   // reference residual norm
 	PetscInt    nPicIt;   // number of Picard iteraions before switch to Newton
 	PetscScalar rtolPic;  // relative Picard residual reduction tolerance

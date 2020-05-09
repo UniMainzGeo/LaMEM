@@ -175,26 +175,7 @@ static inline PetscScalar GenInterpLin3D(
 
 	return v;
 }
-//-----------------------------------------------------------------------------
-static inline PetscScalar GenInterpLin2D(
-	PetscScalar A[4],
-	PetscScalar xe,
-	PetscScalar ye)
-{
-	PetscScalar v, xb, yb;
 
-	xb = 1.0 - xe;
-	yb = 1.0 - ye;
-
-	// interpolate & return result
-	v =
-	A[0]*xb*yb +
-	A[1]*xe*yb +
-	A[2]*xb*ye +
-	A[4]*xe*ye;
-
-	return v;
-}
 //-----------------------------------------------------------------------------
 static inline PetscScalar minmod(
 	PetscScalar a,

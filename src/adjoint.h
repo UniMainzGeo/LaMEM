@@ -67,9 +67,10 @@ struct FB;
 struct AdjGrad
 {
 	PetscScalar      Ini;                     // Initial value of perturbed parameter
-	PetscScalar      Ini2;                     // If n is the parameter we need two initials
+	PetscScalar      Ini2;                    // If n is the parameter we need two initials
 	PetscScalar      Perturb;                 // Perturbation parameter for the finite differences
 	PetscScalar      CurScal, CurScalst;
+	PetscScalar      DII_ref;                 // SUPER UNNECESSARY but DII is otherwise not accesible
 	Vec              dF, dFg, dFst;
 	Vec 			 pro, stpro;
 	Vec              vx, vy, vz, stx, sty, stz;

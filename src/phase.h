@@ -134,10 +134,11 @@ public:
 	PetscScalar  k;        // thermal conductivity                       [W/m/k]
 	PetscScalar  A;        // radiogenic heat production                 [W/kg]
 	PetscScalar  T;        // optional temperature to set within the phase
-	// Phase diagram
-	char         pdn[_pd_name_sz_];   // Unique phase diagram number
-	char         pdf[_pd_name_sz_];   // Unique phase diagram number
-	PetscInt     Pd_rho;          // density from phase diagram?
+	// phase diagram
+	char         pdn[_pd_name_sz_]; // Unique phase diagram number
+	char         pdf[_pd_name_sz_]; // Unique phase diagram number
+	PetscInt     pdAct;             // phase diagram activity flag
+	PetscScalar  mfc;               // melt fraction viscosity correction
 };
 
 //---------------------------------------------------------------------------
@@ -181,9 +182,9 @@ struct DBMat
 	Scaling *scal;
 
 	// phase parameters
-	PetscInt     numPhases;              // number phases
+	PetscInt     numPhases;                // number phases
 	Material_t   phases[_max_num_phases_]; // phase parameters
-	PetscInt     numSoft;                // number material softening laws
+	PetscInt     numSoft;                  // number material softening laws
 	Soft_t       matSoft[_max_num_soft_];  // material softening law parameters
 
 };

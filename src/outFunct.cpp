@@ -261,7 +261,7 @@ PetscErrorCode PVOutWriteViscCreep(OutVec* outvec)
 	COPY_FUNCTION_HEADER
 
 	// macro to copy viscosity to buffer
-	#define GET_VISC_CREEP buff[k][j][i] = jr->svCell[iter++].eta_creep;
+	#define GET_VISC_CREEP buff[k][j][i] = jr->svCell[iter++].eta_cr;
 
 	// output viscosity logarithm in GEO-mode
 	// (negative scaling requests logarithmic output)
@@ -269,25 +269,6 @@ PetscErrorCode PVOutWriteViscCreep(OutVec* outvec)
 	else                     cf =  scal->viscosity;
 
 	INTERPOLATE_COPY(fs->DA_CEN, outbuf->lbcen, InterpCenterCorner, GET_VISC_CREEP, 1, 0)
-
-	PetscFunctionReturn(0);
-}
-//---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "PVOutWriteViscoPlastic"
-PetscErrorCode PVOutWriteViscoPlastic(OutVec* outvec)
-{
-	COPY_FUNCTION_HEADER
-
-	// macro to copy viscosity to buffer
-	#define GET_VISC_VISCOPLASTIC buff[k][j][i] = jr->svCell[iter++].eta_vp;
-
-	// output viscosity logarithm in GEO-mode
-	// (negative scaling requests logarithmic output)
-	if(scal->utype == _GEO_) cf = -scal->viscosity;
-	else                     cf =  scal->viscosity;
-
-	INTERPOLATE_COPY(fs->DA_CEN, outbuf->lbcen, InterpCenterCorner, GET_VISC_VISCOPLASTIC, 1, 0)
 
 	PetscFunctionReturn(0);
 }
@@ -347,7 +328,7 @@ PetscErrorCode PVOutWriteGradient(OutVec* outvec)
 #define __FUNCT__ "PVOutWriteTotalPress"
 PetscErrorCode PVOutWriteTotalPress(OutVec* outvec)
 {
-	PetscScalar pShift, biot;
+	PetscScalar biot;
 
 	ACCESS_FUNCTION_HEADER
 
@@ -355,15 +336,12 @@ PetscErrorCode PVOutWriteTotalPress(OutVec* outvec)
 
 	cf  = scal->stress;
 
-	// scale pressure shift
-	pShift = cf*jr->ctrl.pShift;
-
 	ierr = JacResCopyPres(jr, jr->gsol); CHKERRQ(ierr);
 
 	// compute total pressure
 	ierr = VecWAXPY(outbuf->lbcen, biot, jr->lp_pore, jr->lp); CHKERRQ(ierr);
 
-	INTERPOLATE_ACCESS(outbuf->lbcen, InterpCenterCorner, 1, 0, pShift)
+	INTERPOLATE_ACCESS(outbuf->lbcen, InterpCenterCorner, 1, 0, 0.0)
 
 	PetscFunctionReturn(0);
 }
@@ -372,19 +350,14 @@ PetscErrorCode PVOutWriteTotalPress(OutVec* outvec)
 #define __FUNCT__ "PVOutWriteEffPress"
 PetscErrorCode PVOutWriteEffPress(OutVec* outvec)
 {
-	PetscScalar pShift;
-
 	ACCESS_FUNCTION_HEADER
 
 	cf = scal->stress;
 	iflag.use_bound = 1;
 
-	// scale pressure shift
-	pShift = cf*jr->ctrl.pShift;
-
 	ierr = JacResCopyPres(jr, jr->gsol); CHKERRQ(ierr);
 
-	INTERPOLATE_ACCESS(jr->lp, InterpCenterCorner, 1, 0, pShift)
+	INTERPOLATE_ACCESS(jr->lp, InterpCenterCorner, 1, 0, 0.0)
 
 	PetscFunctionReturn(0);
 }
@@ -393,18 +366,13 @@ PetscErrorCode PVOutWriteEffPress(OutVec* outvec)
 #define __FUNCT__ "PVOutWriteOverPress"
 PetscErrorCode PVOutWriteOverPress(OutVec* outvec)
 {
-	PetscScalar pShift;
-
 	ACCESS_FUNCTION_HEADER
 
 	cf = scal->stress;
 
-	// scale pressure shift
-	pShift = cf*jr->ctrl.pShift;
-
 	ierr = JacResGetOverPressure(jr, outbuf->lbcen); CHKERRQ(ierr);
 
-	INTERPOLATE_ACCESS(outbuf->lbcen, InterpCenterCorner, 1, 0, pShift)
+	INTERPOLATE_ACCESS(outbuf->lbcen, InterpCenterCorner, 1, 0, 0.0)
 
 	PetscFunctionReturn(0);
 }
@@ -455,15 +423,23 @@ PetscErrorCode PVOutWriteDevStress(OutVec* outvec)
 {
 	// NOTE! See warning about component ordering scheme above
 
+	SolVarEdge  *svEdge;
+	SolVarCell  *svCell;
+	PetscScalar  eta_min;
+
 	COPY_FUNCTION_HEADER
 
+	// get stabilization viscosity
+	if(jr->ctrl.initGuess) eta_min = 0.0;
+	else                   eta_min = jr->ctrl.eta_min;
+
 	// macro to copy deviatoric stress components to buffer
-	#define GET_SXX buff[k][j][i] = jr->svCell[iter++].sxx;
-	#define GET_SYY buff[k][j][i] = jr->svCell[iter++].syy;
-	#define GET_SZZ buff[k][j][i] = jr->svCell[iter++].szz;
-	#define GET_SXY buff[k][j][i] = jr->svXYEdge[iter++].s;
-	#define GET_SYZ buff[k][j][i] = jr->svYZEdge[iter++].s;
-	#define GET_SXZ buff[k][j][i] = jr->svXZEdge[iter++].s;
+	#define GET_SXX { svCell = &jr->svCell  [iter++]; buff[k][j][i] = svCell->sxx + 2.0*eta_min*svCell->dxx; }
+	#define GET_SYY { svCell = &jr->svCell  [iter++]; buff[k][j][i] = svCell->syy + 2.0*eta_min*svCell->dyy; }
+	#define GET_SZZ { svCell = &jr->svCell  [iter++]; buff[k][j][i] = svCell->szz + 2.0*eta_min*svCell->dzz; }
+	#define GET_SXY { svEdge = &jr->svXYEdge[iter++]; buff[k][j][i] = svEdge->s   + 2.0*eta_min*svEdge->d;   }
+	#define GET_SYZ { svEdge = &jr->svYZEdge[iter++]; buff[k][j][i] = svEdge->s   + 2.0*eta_min*svEdge->d;   }
+	#define GET_SXZ { svEdge = &jr->svXZEdge[iter++]; buff[k][j][i] = svEdge->s   + 2.0*eta_min*svEdge->d;   }
 
 	cf = scal->stress;
 
@@ -485,22 +461,27 @@ PetscErrorCode PVOutWriteDevStress(OutVec* outvec)
 #define __FUNCT__ "PVOutWriteJ2DevStress"
 PetscErrorCode PVOutWriteJ2DevStress(OutVec* outvec)
 {
-	SolVarCell *svCell;
-	PetscScalar s, J2;
+	SolVarCell  *svCell;
+	SolVarEdge  *svEdge;
+	PetscScalar s, J2, eta_min;
 
 	COPY_FUNCTION_HEADER
+
+	// get stabilization viscosity
+	if(jr->ctrl.initGuess) eta_min = 0.0;
+	else                   eta_min = jr->ctrl.eta_min;
 
 	// macros to copy deviatoric strain rate invariant to buffer
 	#define GET_J2_STRESS_CENTER \
 		svCell = &jr->svCell[iter++]; \
-		s = svCell->sxx; J2  = s*s; \
-		s = svCell->syy; J2 += s*s; \
-		s = svCell->szz; J2 += s*s; \
+		s = svCell->sxx + 2.0*eta_min*svCell->dxx; J2  = s*s; \
+		s = svCell->syy + 2.0*eta_min*svCell->dyy; J2 += s*s; \
+		s = svCell->szz + 2.0*eta_min*svCell->dzz; J2 += s*s; \
 		buff[k][j][i] = 0.5*J2;
 
-	#define GET_J2_STRESS_XY_EDGE s = jr->svXYEdge[iter++].s; buff[k][j][i] = s*s;
-	#define GET_J2_STRESS_YZ_EDGE s = jr->svYZEdge[iter++].s; buff[k][j][i] = s*s;
-	#define GET_J2_STRESS_XZ_EDGE s = jr->svXZEdge[iter++].s; buff[k][j][i] = s*s;
+	#define GET_J2_STRESS_XY_EDGE { svEdge = &jr->svXYEdge[iter++]; s = svEdge->s + 2.0*eta_min*svEdge->d; buff[k][j][i] = s*s;}
+	#define GET_J2_STRESS_YZ_EDGE { svEdge = &jr->svYZEdge[iter++]; s = svEdge->s + 2.0*eta_min*svEdge->d; buff[k][j][i] = s*s;}
+	#define GET_J2_STRESS_XZ_EDGE { svEdge = &jr->svXZEdge[iter++]; s = svEdge->s + 2.0*eta_min*svEdge->d; buff[k][j][i] = s*s;}
 
 	cf = scal->stress;
 
@@ -615,7 +596,7 @@ PetscErrorCode PVOutWriteMeltFraction(OutVec* outvec)
 	COPY_FUNCTION_HEADER
 
 	// macros to copy melt fraction to buffer
-	#define GET_MF_CENTER  buff[k][j][i] = jr->svCell[iter++].svDev.mf;
+	#define GET_MF_CENTER  buff[k][j][i] = jr->svCell[iter++].svBulk.mf;
 
 	cf = scal->unit;
 
@@ -672,7 +653,7 @@ PetscErrorCode PVOutWriteTotStrain(OutVec* outvec)
 	COPY_FUNCTION_HEADER
 
 	// macro to copy accumulated total strain (ATS) to buffer
-	#define GET_ATS buff[k][j][i] = jr->svCell[iter++].svDev.ATS;
+	#define GET_ATS buff[k][j][i] = jr->svCell[iter++].ATS;
 
 	cf = scal->unit;
 
@@ -795,41 +776,6 @@ PetscErrorCode PVOutWriteEHmax(OutVec* outvec)
 }
 //---------------------------------------------------------------------------
 #undef __FUNCT__
-#define __FUNCT__ "PVOutWriteISA"
-PetscErrorCode PVOutWriteISA(OutVec* outvec)
-{
-	ACCESS_FUNCTION_HEADER
-
-	cf = scal->unit;
-
-	// compute Infinite Strain Axis (ISA)
-	ierr = JacResGetISA(jr); CHKERRQ(ierr);
-
-	INTERPOLATE_ACCESS(jr->ldxx, InterpCenterCorner, 3, 0, 0.0)
-	INTERPOLATE_ACCESS(jr->ldyy, InterpCenterCorner, 3, 1, 0.0)
-
-	ierr = OutBufZero3DVecComp(outbuf, 3, 2); CHKERRQ(ierr);
-
-	PetscFunctionReturn(0);
-}
-//---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "PVOutWriteGOL"
-PetscErrorCode PVOutWriteGOL(OutVec* outvec)
-{
-	ACCESS_FUNCTION_HEADER
-
-	cf = scal->unit;
-
-	// compute Grain Orientation Lag (GOL) parameter
-	ierr = JacResGetGOL(jr); CHKERRQ(ierr);
-
-	INTERPOLATE_ACCESS(jr->ldxx, InterpCenterCorner, 1, 0, 0.0)
-
-	PetscFunctionReturn(0);
-}
-//---------------------------------------------------------------------------
-#undef __FUNCT__
 #define __FUNCT__ "PVOutWriteYield"
 PetscErrorCode PVOutWriteYield(OutVec* outvec)
 {
@@ -837,7 +783,7 @@ PetscErrorCode PVOutWriteYield(OutVec* outvec)
 
 	// macro to copy yield stress to buffer
 
-	#define GET_YIELD buff[k][j][i] = jr->svCell[iter++].svDev.yield;
+	#define GET_YIELD buff[k][j][i] = jr->svCell[iter++].yield;
 
 	cf = scal->stress;
 
@@ -847,22 +793,58 @@ PetscErrorCode PVOutWriteYield(OutVec* outvec)
 }
 //---------------------------------------------------------------------------
 #undef __FUNCT__
-#define __FUNCT__ "PVOutWriteRelDIId"
-PetscErrorCode PVOutWriteRelDIId(OutVec* outvec)
+#define __FUNCT__ "PVOutWriteRelDIIdif"
+PetscErrorCode PVOutWriteRelDIIdif(OutVec* outvec)
 {
+
 	COPY_FUNCTION_HEADER
 
 	// macro to copy diffusion creep relative strain rate to buffer
 
-	#define GET_DIId buff[k][j][i] = jr->svCell[iter++].svDev.DIId;
+	#define GET_DIIdif buff[k][j][i] = jr->svCell[iter++].DIIdif;
 
 	cf = scal->unit;
 
-	INTERPOLATE_COPY(fs->DA_CEN, outbuf->lbcen, InterpCenterCorner, GET_DIId, 1, 0)
+	INTERPOLATE_COPY(fs->DA_CEN, outbuf->lbcen, InterpCenterCorner, GET_DIIdif, 1, 0)
 
 	PetscFunctionReturn(0);
 }
+//---------------------------------------------------------------------------
+#undef __FUNCT__
+#define __FUNCT__ "PVOutWriteRelDIIdis"
+PetscErrorCode PVOutWriteRelDIIdis(OutVec* outvec)
+{
 
+	COPY_FUNCTION_HEADER
+
+	// macro to copy diffusion creep relative strain rate to buffer
+
+	#define GET_DIIdis buff[k][j][i] = jr->svCell[iter++].DIIdis;
+
+	cf = scal->unit;
+
+	INTERPOLATE_COPY(fs->DA_CEN, outbuf->lbcen, InterpCenterCorner, GET_DIIdis, 1, 0)
+
+	PetscFunctionReturn(0);
+}
+//---------------------------------------------------------------------------
+#undef __FUNCT__
+#define __FUNCT__ "PVOutWriteRelDIIprl"
+PetscErrorCode PVOutWriteRelDIIprl(OutVec* outvec)
+{
+
+	COPY_FUNCTION_HEADER
+
+	// macro to copy diffusion creep relative strain rate to buffer
+
+	#define GET_DIIprl buff[k][j][i] = jr->svCell[iter++].DIIprl;
+
+	cf = scal->unit;
+
+	INTERPOLATE_COPY(fs->DA_CEN, outbuf->lbcen, InterpCenterCorner, GET_DIIprl, 1, 0)
+
+	PetscFunctionReturn(0);
+}
 //---------------------------------------------------------------------------
 // DEBUG VECTORS
 //---------------------------------------------------------------------------

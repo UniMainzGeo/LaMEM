@@ -55,9 +55,7 @@ enum RunMode
 	_NORMAL_,    // start new simulation
 	_RESTART_,   // start from restart database (if available)
 	_DRY_RUN_,   // initialize model, output & stop
-	_SAVE_GRID_, // write parallel grid to a file & stop
-	_REVERSE_    // run simulation with negative timestep
-	
+	_SAVE_GRID_, // write parallel grid to a file & stop	
 
 };
 
@@ -109,8 +107,6 @@ PetscErrorCode LaMEMLibInitGuess(LaMEMLib *lm, SNES snes);
 PetscErrorCode LaMEMLibSolveTemp(LaMEMLib *lm, PetscScalar dt);
 
 PetscErrorCode LaMEMLibDiffuseTemp(LaMEMLib *lm);
-
-PetscErrorCode LaMEMLib_reverse(LaMEMLib *lm);
 
 //---------------------------------------------------------------------------
 #endif

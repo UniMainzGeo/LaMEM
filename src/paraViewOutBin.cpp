@@ -290,7 +290,6 @@ void OutMaskSetDefault(OutMask *omask)
 	omask->phase      = 1;
 	omask->visc_total = 1;
 	omask->visc_creep = 1;
-	omask->visc_plast = 1;
 	omask->velocity   = 1;
 	omask->pressure   = 1;
 }
@@ -303,7 +302,6 @@ PetscInt OutMaskCountActive(OutMask *omask)
 	if(omask->density)        cnt++; // density
 	if(omask->visc_total)     cnt++; // total effective viscosity
 	if(omask->visc_creep)     cnt++; // creep effective viscosity
-	if(omask->visc_plast)     cnt++; // viscoplastic viscosity
 	if(omask->velocity)       cnt++; // velocity
 	if(omask->pressure)       cnt++; // pressure
 	if(omask->gradient)       cnt++; // adjoint gradient
@@ -327,10 +325,11 @@ PetscInt OutMaskCountActive(OutMask *omask)
 	if(omask->tot_displ)      cnt++; // total displacements
 	if(omask->SHmax)          cnt++; // maximum horizontal stress
 	if(omask->EHmax)          cnt++; // maximum horizontal stress
-	if(omask->ISA)            cnt++; // Infinite Strain Axis
-	if(omask->GOL)            cnt++; // Grain Orientation Lag
 	if(omask->yield)          cnt++; // yield stress
-	if(omask->DIId)           cnt++; // diffusion creep relative strain rate
+	if(omask->DIIdif)         cnt++; // diffusion creep relative strain rate
+	if(omask->DIIdis)         cnt++; // dislocation creep relative strain rate
+	if(omask->DIIprl)         cnt++; // Peierls creep relative strain rate
+
 	// === debugging vectors ===============================================
 	if(omask->moment_res)     cnt++; // momentum residual
 	if(omask->cont_res)       cnt++; // continuity residual
@@ -371,7 +370,6 @@ PetscErrorCode PVOutCreate(PVOut *pvout, FB *fb)
 	ierr = getIntParam   (fb, _OPTIONAL_, "out_density",        &omask->density,           1, 1); CHKERRQ(ierr);
 	ierr = getIntParam   (fb, _OPTIONAL_, "out_visc_total",     &omask->visc_total,        1, 1); CHKERRQ(ierr);
 	ierr = getIntParam   (fb, _OPTIONAL_, "out_visc_creep",     &omask->visc_creep,        1, 1); CHKERRQ(ierr);
-	ierr = getIntParam   (fb, _OPTIONAL_, "out_visc_plast",     &omask->visc_plast,        1, 1); CHKERRQ(ierr);
 	ierr = getIntParam   (fb, _OPTIONAL_, "out_velocity",       &omask->velocity,          1, 1); CHKERRQ(ierr);
 	ierr = getIntParam   (fb, _OPTIONAL_, "out_pressure",       &omask->pressure,          1, 1); CHKERRQ(ierr);
 	ierr = getIntParam   (fb, _OPTIONAL_, "out_gradient",       &omask->gradient,          1, 1); CHKERRQ(ierr);
@@ -389,10 +387,10 @@ PetscErrorCode PVOutCreate(PVOut *pvout, FB *fb)
 //	ierr = getIntParam   (fb, _OPTIONAL_, "out_ang_vel_mag",    &omask->ang_vel_mag,       1, 1); CHKERRQ(ierr);
 	ierr = getIntParam   (fb, _OPTIONAL_, "out_shmax",          &omask->SHmax,             1, 1); CHKERRQ(ierr);
 	ierr = getIntParam   (fb, _OPTIONAL_, "out_ehmax",          &omask->EHmax,             1, 1); CHKERRQ(ierr);
-	ierr = getIntParam   (fb, _OPTIONAL_, "out_isa",            &omask->ISA,               1, 1); CHKERRQ(ierr);
-	ierr = getIntParam   (fb, _OPTIONAL_, "out_gol",            &omask->GOL,               1, 1); CHKERRQ(ierr);
 	ierr = getIntParam   (fb, _OPTIONAL_, "out_yield",          &omask->yield,             1, 1); CHKERRQ(ierr);
-	ierr = getIntParam   (fb, _OPTIONAL_, "out_rel_diff_rate",  &omask->DIId,              1, 1); CHKERRQ(ierr);
+	ierr = getIntParam   (fb, _OPTIONAL_, "out_rel_dif_rate",   &omask->DIIdif,            1, 1); CHKERRQ(ierr);
+	ierr = getIntParam   (fb, _OPTIONAL_, "out_rel_dis_rate",   &omask->DIIdis,            1, 1); CHKERRQ(ierr);
+	ierr = getIntParam   (fb, _OPTIONAL_, "out_rel_prl_rate",   &omask->DIIprl,            1, 1); CHKERRQ(ierr);
 	ierr = getIntParam   (fb, _OPTIONAL_, "out_tot_strain",     &omask->tot_strain,        1, 1); CHKERRQ(ierr);
 	ierr = getIntParam   (fb, _OPTIONAL_, "out_plast_strain",   &omask->plast_strain,      1, 1); CHKERRQ(ierr);
 	ierr = getIntParam   (fb, _OPTIONAL_, "out_plast_dissip",   &omask->plast_dissip,      1, 1); CHKERRQ(ierr);
@@ -441,7 +439,6 @@ PetscErrorCode PVOutCreate(PVOut *pvout, FB *fb)
 	if(omask->density)        PetscPrintf(PETSC_COMM_WORLD, "   Density                                 @ \n");
 	if(omask->visc_total)     PetscPrintf(PETSC_COMM_WORLD, "   Total effective viscosity               @ \n");
 	if(omask->visc_creep)     PetscPrintf(PETSC_COMM_WORLD, "   Creep effective viscosity               @ \n");
-	if(omask->visc_plast)     PetscPrintf(PETSC_COMM_WORLD, "   Viscoplastic viscosity                  @ \n");
 	if(omask->velocity)       PetscPrintf(PETSC_COMM_WORLD, "   Velocity                                @ \n");
 	if(omask->pressure)       PetscPrintf(PETSC_COMM_WORLD, "   Pressure                                @ \n");
 	if(omask->gradient)       PetscPrintf(PETSC_COMM_WORLD, "   Adjoint gradient                        @ \n");
@@ -456,10 +453,10 @@ PetscErrorCode PVOutCreate(PVOut *pvout, FB *fb)
 	if(omask->j2_strain_rate) PetscPrintf(PETSC_COMM_WORLD, "   Deviatoric strain rate second invariant @ \n");
 	if(omask->SHmax)          PetscPrintf(PETSC_COMM_WORLD, "   Maximum horizontal stress               @ \n");
 	if(omask->EHmax)          PetscPrintf(PETSC_COMM_WORLD, "   Maximum horizontal extension            @ \n");
-	if(omask->ISA)            PetscPrintf(PETSC_COMM_WORLD, "   Infinite Strain Axis (ISA)              @ \n");
-	if(omask->GOL)            PetscPrintf(PETSC_COMM_WORLD, "   Grain Orientation Lag (GOL)             @ \n");
 	if(omask->yield)          PetscPrintf(PETSC_COMM_WORLD, "   Yield stress                            @ \n");
-	if(omask->DIId)           PetscPrintf(PETSC_COMM_WORLD, "   Diffusion creep relative strain rate    @ \n");
+	if(omask->DIIdif)         PetscPrintf(PETSC_COMM_WORLD, "   Diffusion creep relative strain rate    @ \n");
+	if(omask->DIIdis)         PetscPrintf(PETSC_COMM_WORLD, "   Dislocation creep relative strain rate  @ \n");
+	if(omask->DIIprl)         PetscPrintf(PETSC_COMM_WORLD, "   Peierls creep relative strain rate      @ \n");
 	if(omask->tot_strain)     PetscPrintf(PETSC_COMM_WORLD, "   Accumulated Total Strain (ATS)          @ \n");
 	if(omask->plast_strain)   PetscPrintf(PETSC_COMM_WORLD, "   Accumulated Plastic Strain (APS)        @ \n");
 	if(omask->plast_dissip)   PetscPrintf(PETSC_COMM_WORLD, "   Plastic dissipation                     @ \n");
@@ -523,7 +520,6 @@ PetscErrorCode PVOutCreateData(PVOut *pvout)
 	if(omask->density)        OutVecCreate(&pvout->outvecs[iter++], jr, outbuf, "density",        scal->lbl_density,          &PVOutWriteDensity,      1, NULL);
 	if(omask->visc_total)     OutVecCreate(&pvout->outvecs[iter++], jr, outbuf, "visc_total",     scal->lbl_viscosity,        &PVOutWriteViscTotal,    1, NULL);
 	if(omask->visc_creep)     OutVecCreate(&pvout->outvecs[iter++], jr, outbuf, "visc_creep",     scal->lbl_viscosity,        &PVOutWriteViscCreep,    1, NULL);
-	if(omask->visc_plast)     OutVecCreate(&pvout->outvecs[iter++], jr, outbuf, "visc_plast",     scal->lbl_viscosity,        &PVOutWriteViscoPlastic, 1, NULL);
 	if(omask->velocity)       OutVecCreate(&pvout->outvecs[iter++], jr, outbuf, "velocity",       scal->lbl_velocity,         &PVOutWriteVelocity,     3, NULL);
 	if(omask->pressure)       OutVecCreate(&pvout->outvecs[iter++], jr, outbuf, "pressure",       scal->lbl_stress,           &PVOutWritePressure,     1, NULL);
 	if(omask->gradient)       OutVecCreate(&pvout->outvecs[iter++], jr, outbuf, "gradient",       scal->lbl_unit,             &PVOutWriteGradient,     1, NULL);
@@ -545,10 +541,10 @@ PetscErrorCode PVOutCreateData(PVOut *pvout)
 	if(omask->tot_displ)      OutVecCreate(&pvout->outvecs[iter++], jr, outbuf, "tot_displ",      scal->lbl_length,           &PVOutWriteTotDispl,     3, NULL);
 	if(omask->SHmax)          OutVecCreate(&pvout->outvecs[iter++], jr, outbuf, "SHmax",          scal->lbl_unit,             &PVOutWriteSHmax,        3, NULL);
 	if(omask->EHmax)          OutVecCreate(&pvout->outvecs[iter++], jr, outbuf, "EHmax",          scal->lbl_unit,             &PVOutWriteEHmax,        3, NULL);
-	if(omask->ISA)            OutVecCreate(&pvout->outvecs[iter++], jr, outbuf, "ISA",            scal->lbl_unit,             &PVOutWriteISA,          3, NULL);
-	if(omask->GOL)            OutVecCreate(&pvout->outvecs[iter++], jr, outbuf, "GOL",            scal->lbl_unit,             &PVOutWriteGOL,          1, NULL);
 	if(omask->yield)          OutVecCreate(&pvout->outvecs[iter++], jr, outbuf, "yield",          scal->lbl_stress,           &PVOutWriteYield,        1, NULL);
-	if(omask->DIId)           OutVecCreate(&pvout->outvecs[iter++], jr, outbuf, "rel_diff_rate",  scal->lbl_unit,             &PVOutWriteRelDIId,      1, NULL);
+	if(omask->DIIdif)         OutVecCreate(&pvout->outvecs[iter++], jr, outbuf, "rel_dif_rate",   scal->lbl_unit,             &PVOutWriteRelDIIdif,    1, NULL);
+	if(omask->DIIdis)         OutVecCreate(&pvout->outvecs[iter++], jr, outbuf, "rel_dis_rate",   scal->lbl_unit,             &PVOutWriteRelDIIdis,    1, NULL);
+	if(omask->DIIprl)         OutVecCreate(&pvout->outvecs[iter++], jr, outbuf, "rel_prl_rate",   scal->lbl_unit,             &PVOutWriteRelDIIprl,    1, NULL);
 	// === debugging vectors ===============================================
 	if(omask->melt_fraction)  OutVecCreate(&pvout->outvecs[iter++], jr, outbuf, "melt_fraction",  scal->lbl_unit,             &PVOutWriteMeltFraction, 1, NULL);
 	if(omask->fluid_density)  OutVecCreate(&pvout->outvecs[iter++], jr, outbuf, "fluid_density",  scal->lbl_density,	      &PVOutWriteFluidDensity, 1, NULL);

@@ -290,23 +290,11 @@ PetscErrorCode FDSTAGSaveGrid(FDSTAG *fs);
 // get loop bounds for cell discretization
 #define GET_CELL_RANGE(n, s, ds) { n = ds.ncels; s = ds.pstart; }
 
-// get loop bounds for node discretization (including BOUNDARY ghost points)
-#define GET_NODE_RANGE_GHOST_BND(n, s, ds) { n = ds.nnods; s = ds.pstart; if(ds.grprev == -1) { s--; n++; } if(ds.grnext == -1) n++; }
-
-// get loop bounds for cell discretization (including BOUNDARY ghost points)
-#define GET_CELL_RANGE_GHOST_BND(n, s, ds) { n = ds.ncels; s = ds.pstart; if(ds.grprev == -1) { s--; n++; } if(ds.grnext == -1) n++; }
-
 // get loop bounds for node discretization (including INTERNAL ghost points)
 #define GET_NODE_RANGE_GHOST_INT(n, s, ds) { n = ds.nnods + 2; s = ds.pstart - 1; if(ds.grprev == -1) { s++; n--; } if(ds.grnext == -1) n--; }
 
 // get loop bounds for cell discretization (including INTERNAL ghost points)
 #define GET_CELL_RANGE_GHOST_INT(n, s, ds) { n = ds.ncels + 2; s = ds.pstart - 1; if(ds.grprev == -1) { s++; n--; } if(ds.grnext == -1) n--; }
-
-// get loop bounds for node discretization (including ALL ghost points)
-#define GET_NODE_RANGE_GHOST_ALL(n, s, ds) { n = ds.nnods + 2; s = ds.pstart - 1; }
-
-// get loop bounds for cell discretization (including ALL ghost points)
-#define GET_CELL_RANGE_GHOST_ALL(n, s, ds) { n = ds.ncels + 2; s = ds.pstart - 1; }
 
 //---------------------------------------------------------------------------
 
@@ -321,9 +309,6 @@ PetscErrorCode FDSTAGSaveGrid(FDSTAG *fs);
 
 // get size of i-th NODE control volume (distance between two neighboring cell centers)
 #define SIZE_NODE(i, s, ds) (ds.ccoor[(i-s)] - ds.ccoor[(i-s)-1])
-
-// get interpolation weight for the end of i-th CELL control volume (w_beg = 1 - w_end)
-#define WEIGHT_CELL(i, s, ds) ((ds.ccoor[(i-s)] - ds.ncoor[(i-s)])/(ds.ncoor[(i-s)+1] - ds.ncoor[(i-s)]))
 
 // get interpolation weight for the end of i-th NODE control volume (w_beg = 1 - w_end)
 #define WEIGHT_NODE(i, s, ds) ((ds.ncoor[(i-s)] - ds.ccoor[(i-s)-1])/(ds.ccoor[(i-s)] - ds.ccoor[(i-s)-1]))

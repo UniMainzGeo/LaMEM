@@ -64,18 +64,18 @@ int main(int argc, char **argv)
 
 	ModParam IOparam;
 	FB       *fb;
+	char      str[_str_len_];
 
 	// set default to be a forward run and overwrite it with input file options
 
-	// 0 = forward run
-	// 1 = Neighborhood algorithm (requires NAPlus)
-	// 2 = only compute adjoint gradients
-	// 3 = 'full' adjoint inversion with TAO
-	// 4 = assume this as a forward simulation and save the solution
-
-	IOparam.use = 0;
+	IOparam.use = _none_;
 	ierr = FBLoad(&fb, PETSC_FALSE); CHKERRQ(ierr);
-	ierr = getIntParam (fb, _OPTIONAL_, "Inv_use", &IOparam.use, 1, 4); CHKERRQ(ierr);
+	ierr = getStringParam(fb, _OPTIONAL_, "use", str, NULL); CHKERRQ(ierr);
+	if     (!strcmp(str, "none"))                   IOparam.use = _none_;
+	else if(!strcmp(str, "inversion"))              IOparam.use = _inversion_;
+	else if(!strcmp(str, "adjointgradients"))       IOparam.use = _adjointgradients_;
+	else if(!strcmp(str, "gradientdescent"))        IOparam.use = _gradientdescent_;
+	else if(!strcmp(str, "syntheticforwardrun"))    IOparam.use = _syntheticforwardrun_;
 	
 	if(IOparam.use == 0)
 	{

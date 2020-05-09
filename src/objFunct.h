@@ -66,6 +66,11 @@ enum PTypes// List of model parameter types (30)
 
 };
 
+enum InvTypes// List of inversion types
+{
+	_none_, _inversion_, _adjointgradients_, _gradientdescent_, _syntheticforwardrun_, 
+};
+
 /*
 const char *PTypesName[] ={
 		// -- material model parameter types --
@@ -86,7 +91,7 @@ const char *PTypesName[] ={
 // Structure that holds inversion parameters
 struct ModParam
 {
-	PetscInt         use;  // 0 = NO 1 = Free for other inversion types 2 = Compute gradients 3 = full inversion 4 = save this forward simulation as comparison simulation
+	PetscInt         use;  // Choose one of InvTypes
 	PetscInt         mdN;  // number of model parameters
 	PetscInt         mID;  // current model number
 	PetscInt        *phs;  // model phase number
@@ -117,6 +122,8 @@ struct ModParam
 	PetscScalar      facB;      	// backtrack factor that multiplies current line search parameter if GD update was not succesful
 	PetscScalar      factor2array[51];  // factor that increases the convergence velocity (this value is added to itself after every succesful gradient descent ; only used without tao)
 	PetscScalar      maxfac;	    // limit on the factor (only used without tao)
+	PetscScalar      DII_ref;       // SUPER UNNECESSARY but DII is otherwise not accesible
+	PetscScalar      Coord[3];		// Temp Coordinates of comparison points
 	PetscScalar     *Ax;			// X-coordinates of comparison points
 	PetscScalar     *Ay;			// Y-coordinates of comparison points
 	PetscScalar     *Az;  			// Z-coordinates of comparison points
