@@ -17,8 +17,11 @@ os.system('cd ../src/;  make mode=deb all; cd ../tests')
 sys.path.append(os.path.join(os.environ['PWD'], 't1_FB1_Direct'))
 sys.path.append(os.path.join(os.environ['PWD'], 't2_FB2_MG'))
 sys.path.append(os.path.join(os.environ['PWD'], 't4_Loc'))
+sys.path.append(os.path.join(os.environ['PWD'], 't5_Perm'))
 sys.path.append(os.path.join(os.environ['PWD'], 't9_FB1_Direct_PhaseDiagrams'))
 sys.path.append(os.path.join(os.environ['PWD'], 't10_Compressibility'))
+sys.path.append(os.path.join(os.environ['PWD'], 't11_Subgrid'))
+sys.path.append(os.path.join(os.environ['PWD'], 't12_Temperature_diffusion'))
 
 # add matlab-tests if matlab is available as ENVIRONMENTAL variable MATLAB
 if os.environ.get('MATLAB') != None:
@@ -31,8 +34,11 @@ else:
 import test_1_FB1 as FB1
 import test_2_FB2 as FB2
 import test_4_localization as Loc1
+import test_5_permeability as Permeability
 import test_9_FB_PhaseDiagrams1 as FBPD1
 import test_10_Compressibility as Comp1
+import test_11_SubGrid as Subgrid
+import test_12_TpD as Diffusion
 
 
 if os.environ.get('MATLAB') != None:
@@ -49,7 +55,7 @@ def run_tests():
 
   registeredTests = [ FB1.test_a(),   FB1.test_b(),  FB1.test_c(),  FB1.test_d(),
                       FB2.test_a(),   Loc1.test_a(), Loc1.test_b(), Loc1.test_c(), FBPD1.test_a(),
-                      Comp1.test_a(), Comp1.test_b() ];
+                      Comp1.test_a(), Comp1.test_b(), Subgrid.test_a(), Diffusion.test_1D(), Permeability.test_a() ];
  
 
 # Add matlab tests (There should be a better way to do this for a range of files at the same time)

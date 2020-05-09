@@ -9,8 +9,8 @@ def test_a():
 
   # Test a falling block case on 1 core, using optimized LaMEM
   ranks = 1
-  launch = '../bin/opt/LaMEM -ParamFile ./t2_FB2_MG/FallingBlock_mono_CoupledMG_RedundantCoarse.dat' # This must be a relative path with respect to runLaMEM_Tests.py
-  expected_file = 't2_FB2_MG/FB2_a_CoupledMG_opt-p1.expected'
+  launch = '../bin/opt/LaMEM -ParamFile ./t11_Subgrid/FallingBlock_mono_CoupledMG_RedundantCoarse.dat' # This must be a relative path with respect to runLaMEM_Tests.py
+  expected_file = 't11_Subgrid/t11_Subgrid_opt-p1.expected'
 
   def comparefunc(unittest):
 
@@ -24,7 +24,7 @@ def test_a():
     unittest.compareFloatingPoint(key,1e-4)
 
   # Create unit test object
-  ex1 = pth.pthUnitTest('FB2_a_CoupledMG_opt',ranks,launch,expected_file)
+  ex1 = pth.pthUnitTest('t11_Subgrid_opt',ranks,launch,expected_file)
   ex1.setVerifyMethod(comparefunc)
   ex1.appendKeywords('@')
 

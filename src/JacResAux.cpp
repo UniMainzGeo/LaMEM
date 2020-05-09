@@ -627,9 +627,9 @@ PetscErrorCode JacResGetPermea(JacRes *jr, PetscInt bgPhase, PetscInt step, char
 
 		// Also output this to the screen (for regression testing, for example)
 		PetscPrintf(PETSC_COMM_WORLD,"\n");
-		PetscPrintf(PETSC_COMM_WORLD,"# ==============================================\n");
-		PetscPrintf(PETSC_COMM_WORLD,"# EFFECTIVE PERMEABILITY CONSTANT: %E %s\n", ks*scal->area_si, scal->lbl_area_si);
-		PetscPrintf(PETSC_COMM_WORLD,"# ==============================================\n");
+		PetscPrintf(PETSC_COMM_WORLD,"==========================================================================\n");
+		PetscPrintf(PETSC_COMM_WORLD,"EFFECTIVE PERMEABILITY CONSTANT: %E %s\n", ks*scal->area_si, scal->lbl_area_si);
+		PetscPrintf(PETSC_COMM_WORLD,"==========================================================================\n");
 		
 	}
 
