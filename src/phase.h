@@ -75,6 +75,7 @@ public:
 	PetscScalar APS1; // begin of softening APS
 	PetscScalar APS2; // end of softening APS
 	PetscScalar A;    // reduction ratio
+	PetscScalar Lm;   // material length scale
 
 };
 
@@ -125,6 +126,7 @@ public:
 	// plasticity parameters
 	PetscScalar  fr;       // friction angle                             [deg]
 	PetscScalar  ch;       // cohesion
+	PetscScalar  eta_st;   // stabilization viscosity
 	PetscScalar  rp;       // ratio of pore pressure to overburden stress
 	PetscInt     frSoftID; // friction softening law ID (-1 if not defined)
 	PetscInt     chSoftID; // cohesion softening law ID (-1 if not defined)

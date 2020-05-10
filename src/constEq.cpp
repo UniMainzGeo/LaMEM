@@ -93,7 +93,8 @@ PetscErrorCode setUpCtrlVol(
 		PetscScalar  p_pore, // pore pressure
 		PetscScalar  T,      // temperature
 		PetscScalar  DII,    // effective strain rate
-		PetscScalar  z)     // z-coordinate of control volume
+		PetscScalar  z,      // z-coordinate of control volume
+		PetscScalar  Le)     // characteristic element size
 {
 	// setup control volume parameters
 
@@ -107,6 +108,7 @@ PetscErrorCode setUpCtrlVol(
 	ctx->p_pore = p_pore; // pore pressure
 	ctx->T      = T;      // temperature
 	ctx->DII    = DII;    // effective strain rate
+	ctx->Le     = Le;     // characteristic element size
 
 	// compute depth below the free surface
 	// WARNING! "depth" is loosely defined for large topography variations
@@ -136,7 +138,7 @@ PetscErrorCode setUpPhase(ConstEqCtx *ctx, PetscInt ID)
 	Soft_t      *soft;
 	Controls    *ctrl;
 	PData       *Pd;
-	PetscScalar  APS, dt, p, p_lith, p_pore, T, mf, mfd, mfn;
+	PetscScalar  APS, Le, dt, p, p_lith, p_pore, T, mf, mfd, mfn;
 	PetscScalar  Q, RT, ch, fr, p_visc, p_upper, p_lower, dP, p_total;
 
 	PetscErrorCode ierr;
@@ -148,6 +150,7 @@ PetscErrorCode setUpPhase(ConstEqCtx *ctx, PetscInt ID)
 	ctrl   = ctx->ctrl;
 	Pd     = ctx->Pd;
 	APS    = ctx->svDev->APS;
+	Le     = ctx->Le;
 	dt     = ctx->dt;
 	p      = ctx->p;
 	p_lith = ctx->p_lith;
@@ -271,8 +274,8 @@ PetscErrorCode setUpPhase(ConstEqCtx *ctx, PetscInt ID)
 	}
 
 	// apply strain softening to friction and cohesion
-	ch = applyStrainSoft(soft, mat->chSoftID, APS, mat->ch);
-	fr = applyStrainSoft(soft, mat->frSoftID, APS, mat->fr);
+	ch = applyStrainSoft(soft, mat->chSoftID, APS, Le, mat->ch);
+	fr = applyStrainSoft(soft, mat->frSoftID, APS, Le, mat->fr);
 
 	// fit to limits
 	if(ch < ctrl->minCh) ch = ctrl->minCh;
@@ -332,6 +335,8 @@ PetscErrorCode devConstEq(ConstEqCtx *ctx)
 
 	Controls    *ctrl;
 	PetscScalar *phRat;
+	SolVarDev   *svDev;
+	Material_t  *phases;
 	PetscInt     i, numPhases;
 
 	PetscErrorCode ierr;
@@ -341,6 +346,8 @@ PetscErrorCode devConstEq(ConstEqCtx *ctx)
 	ctrl      = ctx->ctrl;
 	numPhases = ctx->numPhases;
 	phRat     = ctx->phRat;
+	svDev     = ctx->svDev;
+	phases    = ctx->phases;
 
 	// zero out results
 	ctx->eta    = 0.0; // effective viscosity
@@ -350,6 +357,9 @@ PetscErrorCode devConstEq(ConstEqCtx *ctx)
 	ctx->DIIprl = 0.0; // Peierls creep strain rate
 	ctx->DIIpl  = 0.0; // plastic strain rate
 	ctx->yield  = 0.0; // yield stress
+
+	// zero out stabilization viscosity
+	svDev->eta_st = 0.0;
 
 	// viscous initial guess
 	if(ctrl->initGuess)
@@ -373,6 +383,8 @@ PetscErrorCode devConstEq(ConstEqCtx *ctx)
 			// compute phase viscosities and strain rate partitioning
 			ierr = getPhaseVisc(ctx, i); CHKERRQ(ierr);
 
+			// update stabilization viscosity
+			svDev->eta_st += phRat[i]*phases->eta_st;
 		}
 	}
 
@@ -403,10 +415,10 @@ PetscErrorCode getPhaseVisc(ConstEqCtx *ctx, PetscInt ID)
 	PetscFunctionBegin;
 
 	// access context
-	ctrl  = ctx->ctrl;      // global controls
-	phRat = ctx->phRat[ID]; // phase ratio
-	taupl = ctx->taupl;     // plastic yield stress
-	DII   = ctx->DII;       // effective strain rate
+	ctrl   = ctx->ctrl;              // global controls
+	phRat  = ctx->phRat[ID];         // phase ratio
+	taupl  = ctx->taupl;             // plastic yield stress
+	DII    = ctx->DII;               // effective strain rate
 
 	// initialize
 	it     = 1;
@@ -535,26 +547,36 @@ PetscScalar applyStrainSoft(
 		Soft_t      *soft, // material softening laws
 		PetscInt     ID,   // softening law ID
 		PetscScalar  APS,  // accumulated plastic strain
-		PetscScalar  par) // softening parameter
+		PetscScalar  Le,   // characteristic element size
+		PetscScalar  par)  // softening parameter
 {
 	// apply strain softening to a parameter (friction, cohesion)
 
 	PetscScalar  k;
+	PetscScalar  A, APS1, APS2, Lm;
 	Soft_t      *s;
 
 	// check whether softening is defined
 	if(ID == -1) return par;
 
 	// access parameters
-	s = soft + ID;
+	s    = soft + ID;
+	APS1 = s->APS1;
+	APS2 = s->APS2;
+	A    = s->A;
+	Lm   = s->Lm;
+
+	// Fracture Energy Regularization
+	if(Lm)
+	{
+		APS1 *= Le/Lm;
+		APS2 *= Le/Lm;
+	}
 
 	// compute scaling ratio
-	if(APS <= s->APS1)
-		k = 1.0;
-	if(APS > s->APS1 && APS < s->APS2)
-		k = 1.0 - s->A*((APS - s->APS1)/(s->APS2 - s->APS1));
-	if(APS >= s->APS2)
-		k = 1.0 - s->A;
+	if(APS <= APS1)               k = 1.0;
+	if(APS >  APS1 && APS < APS2) k = 1.0 - A*((APS - APS1)/(APS2 - APS1));
+	if(APS >= APS2)               k = 1.0 - A;
 
 	// apply strain softening
 	return par*k;
@@ -713,7 +735,7 @@ PetscErrorCode cellConstEq(
 	SolVarDev   *svDev;
 	SolVarBulk  *svBulk;
 	Controls    *ctrl;
-	PetscScalar  eta_min, ptotal, txx, tyy, tzz;
+	PetscScalar  eta_st, ptotal, txx, tyy, tzz;
 
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
@@ -730,13 +752,13 @@ PetscErrorCode cellConstEq(
 	ierr = volConstEq(ctx); CHKERRQ(ierr);
 
 	// get stabilization viscosity
-	if(ctrl->initGuess) eta_min = 0.0;
-	else                eta_min = ctrl->eta_min;
+	if(ctrl->initGuess) eta_st = 0.0;
+	else                eta_st = svDev->eta_st;
 
 	// compute stabilization stresses
-	sxx = 2.0*eta_min*svCell->dxx;
-	syy = 2.0*eta_min*svCell->dyy;
-	szz = 2.0*eta_min*svCell->dzz;
+	sxx = 2.0*eta_st*svCell->dxx;
+	syy = 2.0*eta_st*svCell->dyy;
+	szz = 2.0*eta_st*svCell->dzz;
 
 	// compute history shear stress
 	svCell->sxx = 2.0*ctx->eta*dxx;
@@ -762,7 +784,7 @@ PetscErrorCode cellConstEq(
 		sxx*svCell->dxx + syy*svCell->dyy + szz*svCell->dzz;
 
 	// compute total viscosity
-	svDev->eta = ctx->eta + eta_min;
+	svDev->eta = ctx->eta + eta_st;
 
 	// get total pressure (effective pressure + pore pressure)
 	ptotal = ctx->p + ctrl->biot*ctx->p_pore;
@@ -806,7 +828,7 @@ PetscErrorCode edgeConstEq(
 	// evaluate constitutive equations on the edge
 
 	SolVarDev   *svDev;
-	PetscScalar  t, eta_min;
+	PetscScalar  t, eta_st;
 
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
@@ -818,11 +840,11 @@ PetscErrorCode edgeConstEq(
 	ierr = devConstEq(ctx); CHKERRQ(ierr);
 
 	// get stabilization viscosity
-	if(ctx->ctrl->initGuess) eta_min = 0.0;
-	else                     eta_min = ctx->ctrl->eta_min;
+	if(ctx->ctrl->initGuess) eta_st = 0.0;
+	else                     eta_st = svDev->eta_st;
 
 	// compute stabilization stress
-	s = 2.0*eta_min*svEdge->d;
+	s = 2.0*eta_st*svEdge->d;
 
 	// compute history shear stress
 	svEdge->s = 2.0*ctx->eta*d;
@@ -840,7 +862,7 @@ PetscErrorCode edgeConstEq(
 	svDev->Hr = 2.0*t*svEdge->s + 2.0*svEdge->d*s;
 
 	// compute total viscosity
-	svDev->eta = ctx->eta + eta_min;
+	svDev->eta = ctx->eta + eta_st;
 
 	// compute total stress
 	s += svEdge->s;

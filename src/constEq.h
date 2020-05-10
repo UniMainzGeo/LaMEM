@@ -82,6 +82,7 @@ struct ConstEqCtx
 	PetscScalar  p_pore; // pore pressure
 	PetscScalar  T;      // temperature
 	PetscScalar  DII;    // effective strain rate
+	PetscScalar  Le;     // characteristic element size
 	PetscScalar  depth;  // depth for depth-dependent density model
 
 	// phase parameters
@@ -120,7 +121,8 @@ PetscErrorCode setUpCtrlVol(
 	PetscScalar  p_pore, // pore pressure
 	PetscScalar  T,      // temperature
 	PetscScalar  DII,    // effective strain rate
-	PetscScalar  z);     // z-coordinate of control volume
+	PetscScalar  z,      // z-coordinate of control volume
+	PetscScalar  Le);    // characteristic element size
 
 // setup phase parameters for deviatoric constitutive equation
 PetscErrorCode setUpPhase(ConstEqCtx *ctx, PetscInt ID);
@@ -139,6 +141,7 @@ PetscScalar applyStrainSoft(
 		Soft_t      *soft, // material softening laws
 		PetscInt     ID,   // softening law ID
 		PetscScalar  APS,  // accumulated plastic strain
+		PetscScalar  Le,   // characteristic element size
 		PetscScalar  par); // softening parameter
 
 // compute inverse elastic parameter in control volume

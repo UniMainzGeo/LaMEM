@@ -62,11 +62,12 @@ struct AdvCtx;
 
 struct SolVarDev
 {
-	PetscScalar  eta;   // effective viscosity
-	PetscScalar  I2Gdt; // inverse elastic parameter (1/2G/dt)
-	PetscScalar  Hr;    // shear heating term contribution
-	PetscScalar  APS;   // accumulated plastic strain
-	PetscScalar  PSR;   // plastic strain-rate contribution
+	PetscScalar  eta;    // total effective viscosity
+	PetscScalar  eta_st; // stabilization viscosity
+	PetscScalar  I2Gdt;  // inverse elastic parameter (1/2G/dt)
+	PetscScalar  Hr;     // shear heating term contribution
+	PetscScalar  APS;    // accumulated plastic strain
+	PetscScalar  PSR;    // plastic strain-rate contribution
 
 };
 
