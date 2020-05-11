@@ -82,8 +82,8 @@ struct Ph_trans_t
 public:
 
 	PetscInt    ID ;// Phase Transition ID
-	PetscInt    Type ; // Type Constant or Clapeyron
-	PetscInt    Parameter ; // Parameter in Constant
+	char    Type[_str_len_] ; // Type Constant or Clapeyron
+	char    Parameter[_str_len_] ; // Parameter in Constant
 	PetscInt    neq ;// number of equation
 	PetscScalar value[2] ; // Value (e.g. Temperature: -1 1200, less than 1200 or +1 1200 higher than 1200)
 	// Calpeyron parameter: equation P=(T-T0)*gamma+P0

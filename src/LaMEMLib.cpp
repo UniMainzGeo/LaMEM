@@ -620,7 +620,9 @@ PetscErrorCode LaMEMLibSolve(LaMEMLib *lm, void *param)
 		//====================================
 		//	NONLINEAR THERMO-MECHANICAL SOLVER
 		//====================================
-
+		PrintStart(&t, "Phase_Transition", NULL);
+		ierr = Phase_Transition(&lm->actx);CHKERRQ(ierr);
+		PrintDone(t);
 		// initialize boundary constraint vectors
 		ierr = BCApply(&lm->bc); CHKERRQ(ierr);
 
@@ -629,10 +631,6 @@ PetscErrorCode LaMEMLibSolve(LaMEMLib *lm, void *param)
 
 		// compute elastic parameters
 		ierr = JacResGetI2Gdt(&lm->jr); CHKERRQ(ierr);
-
-//		PrintStart(&t, "Phase_Transition", NULL);
-//				ierr = Phase_Transition(&lm->actx, &lm->jr);CHKERRQ(ierr);
-//		PrintDone(t);
 
 		// solve nonlinear equation system with SNES
 		PetscTime(&t);

@@ -105,10 +105,6 @@ PetscErrorCode Phase_Transition(AdvCtx *actx)
 
 	for(i = 0; i < actx->nummark; i++)
 	{
-		if(P->phase==0)
-		{
-			PetscPrintf(PETSC_COMM_WORLD,"PHASE = %d  i = %d, counter = %d\n",P->phase,i,counter);
-		}
 		P=&actx->markers[i];
 
 		if(mat[P->primph].nPTr)
@@ -157,8 +153,7 @@ PetscErrorCode Phase_Transition(AdvCtx *actx)
 
 
 	}
-	ierr = ADVProjHistMarkToGrid(actx);
-
+	ierr = ADVInterpMarkToCell(actx);
 
 
 	PetscFunctionReturn(0);
@@ -171,9 +166,9 @@ PetscInt Transition(Ph_trans_t *PhaseTrans, Marker *P, PetscInt id,PetscInt PH)
 	Ph_trans_t *PTr;
 
 	PTr=PhaseTrans+id;
-	if(PTr->Type==1)
+	if(!strcmp(PTr->Type,"Constant"))
 	{
-		if(PTr->Parameter==1)
+		if(!strcmp(PTr->Parameter,"T"))
 		{
 			if(PTr->value[0]>0)
 			{
@@ -200,7 +195,7 @@ PetscInt Transition(Ph_trans_t *PhaseTrans, Marker *P, PetscInt id,PetscInt PH)
 		}
 
 
-		if(PTr->Parameter==2)
+		if(!strcmp(PTr->Parameter,"p"))
 		{
 			if(PTr->value[0]>0)
 			{
@@ -227,7 +222,7 @@ PetscInt Transition(Ph_trans_t *PhaseTrans, Marker *P, PetscInt id,PetscInt PH)
 		}
 
 
-		if(PTr->Parameter==3)
+		if(!strcmp(PTr->Parameter,"Depth"))
 		{
 			if(PTr->value[0]>0)
 			{
@@ -253,7 +248,7 @@ PetscInt Transition(Ph_trans_t *PhaseTrans, Marker *P, PetscInt id,PetscInt PH)
 			}
 		}
 	}
-	else if(PTr->Type==2)
+	else if(!strcmp(PTr->Type,"Clapeyron"))
 	{
 		neq = PTr->neq;
 		for (ip=0;ip<neq;ip++)

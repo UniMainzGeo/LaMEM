@@ -130,6 +130,9 @@
 // maximum number of softening laws
 #define _max_num_soft_ 10
 
+// max char legnth
+#define char_ph_tr 10
+
 // maximum number of phase transition law
 #define _max_num_tr_ 20
 
@@ -137,7 +140,6 @@
 #define _max_num_eq_ 2
 
 // maximum number of phase transition per each phase
-
 #define _max_tr_ 5
 
 // maximum number of phase diagrams

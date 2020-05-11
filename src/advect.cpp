@@ -583,6 +583,7 @@ PetscErrorCode ADVRemap(AdvCtx *actx)
 	}
 	if(actx->mctrl == CTRL_NONE)
 	{
+
 		// compute host cells for all the markers received
 		ierr = ADVMapMarkToCells(actx); CHKERRQ(ierr);
 	}
@@ -615,7 +616,6 @@ PetscErrorCode ADVRemap(AdvCtx *actx)
 	else if(actx->mctrl == CTRL_SUB)
 	{
 		PetscPrintf(PETSC_COMM_WORLD,"Performing marker control (subgrid algorithm)\n");
-	//	ierr = Phase_Transition(actx);CHKERRQ(ierr);
 
 		// compute host cells for all the markers received
 		ierr = ADVMapMarkToCells(actx); CHKERRQ(ierr);
@@ -632,7 +632,6 @@ PetscErrorCode ADVRemap(AdvCtx *actx)
 	// project advected history from markers back to grid
 	ierr = ADVProjHistMarkToGrid(actx); CHKERRQ(ierr);
 
-	ierr = Phase_Transition(actx);CHKERRQ(ierr);
 
 
 

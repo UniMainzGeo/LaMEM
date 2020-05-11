@@ -1416,7 +1416,6 @@ PetscErrorCode DBMatReadPhaseTr(DBMat *dbm, FB *fb)
 
 	// get pointer to specified softening law
 	ph = dbm->matPhtr + ID;
-
 	// check ID
 	if(ph->ID != -1)
 	{
@@ -1426,14 +1425,23 @@ PetscErrorCode DBMatReadPhaseTr(DBMat *dbm, FB *fb)
 	// set ID
 	ph->ID = ID;
 
-	// read and store softening law parameters
-	ierr = getIntParam(fb, _REQUIRED_, "Type", &ph->Type,    1, 2); CHKERRQ(ierr);
-	if (ph->Type==1)
+	ierr = getStringParam(fb, _REQUIRED_, "Type", ph->Type,0);  CHKERRQ(ierr);
+	if (!ph->Type)
 	{
-		ierr = getIntParam(fb, _REQUIRED_, "Parameter", &ph->Parameter, 1, 4); CHKERRQ(ierr);
-		ierr = getScalarParam(fb, _REQUIRED_, "value", ph->value, 2 ,1.0); CHKERRQ(ierr);
+		SETERRQ1(PETSC_COMM_WORLD, PETSC_ERR_USER, "You have not specify the correct phase transition type (Constant) (Clapeyron) ", (LLD)ID);
 	}
-	else
+
+	//ierr = getIntParam(fb, _REQUIRED_, "Type", &ph->Type,    1, 2); CHKERRQ(ierr);
+	if (!strcmp(ph->Type,"Constant"))
+	{
+		ierr = getStringParam(fb, _REQUIRED_, "Parameter", ph->Parameter, "none");  CHKERRQ(ierr);
+		ierr = getScalarParam(fb, _REQUIRED_, "value", ph->value, 2 ,1.0); CHKERRQ(ierr);
+		if((!ph->Parameter || !ph->value))
+		{
+			SETERRQ1(PETSC_COMM_WORLD, PETSC_ERR_USER, "If you are using a constant parameter phase transition you need to specify the parameter (1=Temperautre,2=Pressure, 3=Depth, 4=APS) and its two values (-1 means that looks for value lower then thresshold, and the second value represents the threshold)", (LLD)ID);
+		}
+	}
+	if (!strcmp(ph->Type,"Clapeyron"))
 	{
 		ierr = getIntParam(fb, _REQUIRED_, "neq", &ph->neq, 1, 2.0); CHKERRQ(ierr);
 		if (!ph->neq || ph->neq>2)
@@ -1443,6 +1451,12 @@ PetscErrorCode DBMatReadPhaseTr(DBMat *dbm, FB *fb)
 		ierr = getScalarParam(fb, _REQUIRED_, "gamma", ph->gamma, ph->neq,1.0); CHKERRQ(ierr);
 		ierr = getScalarParam(fb, _REQUIRED_, "P0", ph->P0, ph->neq,1.0); CHKERRQ(ierr);
 		ierr = getScalarParam(fb, _REQUIRED_, "T0", ph->T0, ph->neq,1.0); CHKERRQ(ierr);
+
+		if((!ph->gamma || !ph->T0 || !ph->P0 ))
+		{
+			SETERRQ1(PETSC_COMM_WORLD, PETSC_ERR_USER, "If you are using a clapeyron phase transition you need to specify P0, T0, gamma and the number of equation (P=(T-T0)*gamma+(P0)). If you set two clapeyron law, remember that LaMEM change the phase if and only if the current P in the particles is higher of both the two equation!!!", (LLD)ID);
+		}
+
 	}
 	ierr = getIntParam(fb, _REQUIRED_, "Ph2Change", &ph->Ph2Change, 1, _max_num_phases_); CHKERRQ(ierr);
 	ierr = getIntParam(fb, _OPTIONAL_, "PhIr", &ph->PhIr, 1, 1.0); CHKERRQ(ierr);
@@ -1453,55 +1467,40 @@ PetscErrorCode DBMatReadPhaseTr(DBMat *dbm, FB *fb)
 		SETERRQ1(PETSC_COMM_WORLD, PETSC_ERR_USER, "you need to specify the final phase of this transition", (LLD)ID);
 	}
 
-	if(ph->Type==1 && (!ph->Parameter || !ph->value))
-	{
-		SETERRQ1(PETSC_COMM_WORLD, PETSC_ERR_USER, "If you are using a constant parameter phase transition you need to specify the parameter (1=Temperautre,2=Pressure, 3=Depth, 4=APS) and its two values (-1 means that looks for value lower then thresshold, and the second value represents the threshold)", (LLD)ID);
-	}
-
-	if(ph->Type==2 && (!ph->gamma || !ph->T0 || !ph->P0 ))
-		{
-			SETERRQ1(PETSC_COMM_WORLD, PETSC_ERR_USER, "If you are using a clapeyron phase transition you need to specify P0, T0, gamma and the number of equation (P=(T-T0)*gamma+(P0)). If you set two clapeyron law, remember that LaMEM change the phase if and only if the current P in the particles is higher of both the two equation!!!", (LLD)ID);
-		}
-
-
-
-	if(ph->Type==1)
+	if(!strcmp(ph->Type,"Constant"))
 	{
 		if (ph->value[0]>0)
 		{
-			PetscPrintf(PETSC_COMM_WORLD,"   Phase Transition [%lld] : Type = Constant , Parameter = %d (1=Temperature, 2= Pressure, 3= Depth). The phase is changed if the selected parameter is higher than = %g, its addressing phase is %d \n", (LLD)(ph->ID), ph->Parameter, ph->value[1],ph->Ph2Change);
+			PetscPrintf(PETSC_COMM_WORLD,"   Phase Transition [%lld] : Type = Constant , Parameter = %s . The phase is changed if the selected parameter is higher than = %f, its addressing phase is %d \n", (LLD)(ph->ID), ph->Parameter, ph->value[1],ph->Ph2Change);
 		}
 		else
 		{
-			PetscPrintf(PETSC_COMM_WORLD,"   Phase Transition [%lld] : Type = Constant , Parameter = %d (1=Temperature, 2= Pressure, 3= Depth). The phase is changed if the selected parameter is lower than = %g and its addressing phase is %d\n", (LLD)(ph->ID), ph->Parameter, ph->value[1],ph->Ph2Change);
+			PetscPrintf(PETSC_COMM_WORLD,"   Phase Transition [%lld] : Type = Constant , Parameter = %s . The phase is changed if the selected parameter is lower than = %f and its addressing phase is %d\n", (LLD)(ph->ID), ph->Parameter, ph->value[1],ph->Ph2Change);
 
 		}
 	}
-	if(ph->Type==2)
+	if(!strcmp(ph->Type,"Clapeyron"))
 	{
-	PetscPrintf(PETSC_COMM_WORLD,"   Phase Transition [%lld] : Type = Clapeyron, gamma = %g, P0 = %g,T0 = %g and addressing phase is %g \n", (LLD)(ph->ID), ph->Type, ph->gamma, ph->P0,ph->T0,ph->Ph2Change);
+	PetscPrintf(PETSC_COMM_WORLD,"   Phase Transition [%lld] : Type = Clapeyron, gamma = %2f [MPa], P0 = %f [Pa],T0 = %f [deg C] and addressing phase is %d \n", (LLD)(ph->ID), ph->Type, ph->gamma, ph->P0,ph->T0,ph->Ph2Change);
 	}
 	// Internal Scaling
-	if (ph->Type==1)
+	if (!strcmp(ph->Type,"Constant"))
 	{
-		if(ph->Parameter==1) //Temperature
+		if(!strcmp(ph->Type,"T")) //Temperature
 		{
 			ph->value[1]=(ph->value[1] + scal->Tshift)/scal->temperature;
 		}
-		if(ph->Parameter==2)//Pressure
+		if(!strcmp(ph->Type,"p"))//Pressure
 		{
 			ph->value[1] /= scal->stress_si;
 		}
-		if(ph->Parameter==3)//Depth
+		if(!strcmp(ph->Type,"Depth"))//Depth
 		{
 			ph->value[1]/= scal->length;
 		}
-		if(ph->Parameter==4) // APS
-		{
-			ph->value[1] *= 1.0;
-		}
+
 	}
-	if (ph->Type==2)
+	if (!strcmp(ph->Type,"Clapeyron"))
 	{
 		it=0;
 		for(it==0;it< ph->neq;it++)
