@@ -101,10 +101,14 @@
 	nmark_avd      = 3 3 3             # x-y-z AVD refinement factors (marker control)
 
  	<LayerStart>
- 		phase  =  0
- 		top    = -6.0
- 		bottom =  6.0
+ 		phase  			=  0
+ 		top    			=  4.0
+ 		bottom 			= -4.0
+		
+		Temperature 	= constant 
+		cstTemp     	= 500     	# in Celcius
  	<LayerEnd>
+
 
 #===============================================================================
 # Output
