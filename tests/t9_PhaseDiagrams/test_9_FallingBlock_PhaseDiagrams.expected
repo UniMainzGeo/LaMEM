@@ -1,6 +1,6 @@
 -------------------------------------------------------------------------- 
                    Lithosphere and Mantle Evolution Model                   
-     Compiled: Date: Oct 12 2019 - Time: 23:47:26 	    
+     Compiled: Date: Mar  6 2020 - Time: 14:25:53 	    
 -------------------------------------------------------------------------- 
         STAGGERED-GRID FINITE DIFFERENCE CANONICAL IMPLEMENTATION           
 -------------------------------------------------------------------------- 
@@ -56,12 +56,13 @@ Boundary condition parameters:
 Solution parameters & controls:
    Gravity [gx, gy, gz]                    : [0., 0., -9.81] [m/s^2] 
    Surface stabilization (FSSA)            :  1. 
-   Enforce zero pressure on top boundary   @ 
    Use lithostatic pressure for creep      @ 
    Minimum viscosity                       : 1e+19 [Pa*s] 
    Maximum viscosity                       : 1e+25 [Pa*s] 
    Universal gas constant                  : 8.31446 [J/mol/K] 
-   Background (reference) strain-rate      : 1e-16 [1/s] 
+   Maximum melt fraction (viscosity)       : 0.15    
+   Rheology iteration number               : 25  
+   Rheology iteration tolerance            : 1e-06    
    Ground water level type                 : none 
 --------------------------------------------------------------------------
 Advection parameters:
@@ -73,7 +74,7 @@ Advection parameters:
    Marker distribution type      : uniform
    Background phase ID           : 0 
 --------------------------------------------------------------------------
-Reading geometric primitives ... done (0.000658035 sec)
+Reading geometric primitives ... done (0.000445604 sec)
 --------------------------------------------------------------------------
 Phase Diagrams: 
    Phase 0,     Phase 1,  --------------------------------------------------------------------------
@@ -84,7 +85,6 @@ Output parameters:
    Density                                 @ 
    Total effective viscosity               @ 
    Creep effective viscosity               @ 
-   Viscoplastic viscosity                  @ 
    Velocity                                @ 
    Pressure                                @ 
    Temperature                             @ 
@@ -105,7 +105,7 @@ Solver parameters specified:
    Solver type                   : parallel direct/lu 
    Solver package                : mumps 
 --------------------------------------------------------------------------
-Saving output ... done (0.067874 sec)
+Saving output ... done (0.0412812 sec)
 --------------------------------------------------------------------------
 ================================= STEP 1 =================================
 --------------------------------------------------------------------------
@@ -114,62 +114,66 @@ Tentative time step : 0.00001 [Myr]
 --------------------------------------------------------------------------
   0 SNES Function norm 2.332692371613e+00 
   0 PICARD ||F||/||F0||=1.000000e+00 
+  Linear js_ solve converged due to CONVERGED_RTOL iterations 1
+  1 SNES Function norm 4.880183889037e-02 
+  1 PICARD ||F||/||F0||=2.092082e-02 
   Linear js_ solve converged due to CONVERGED_RTOL iterations 2
-  1 SNES Function norm 1.276911320030e-01 
-  1 PICARD ||F||/||F0||=5.473981e-02 
-  Linear js_ solve converged due to CONVERGED_RTOL iterations 3
-  2 SNES Function norm 7.964118133825e-03 
-  2 MMFD   ||F||/||F0||=3.414131e-03 
-  Linear js_ solve converged due to CONVERGED_RTOL iterations 7
-  3 SNES Function norm 2.787192963849e-04 
-  3 MMFD   ||F||/||F0||=1.194839e-04 
-  Linear js_ solve converged due to CONVERGED_RTOL iterations 7
-  4 SNES Function norm 1.406827916227e-06 
+  2 SNES Function norm 1.459732165623e-03 
+  2 MMFD   ||F||/||F0||=6.257714e-04 
+  Linear js_ solve converged due to CONVERGED_RTOL iterations 6
+  3 SNES Function norm 1.600390227197e-04 
 --------------------------------------------------------------------------
 SNES Convergence Reason : ||F|| < rtol*||F_initial|| 
-Number of iterations    : 4
-SNES solution time      : 10.6858 (sec)
+Number of iterations    : 3
+SNES solution time      : 2.27009 (sec)
 --------------------------------------------------------------------------
 Residual summary: 
    Continuity: 
-      |Div|_inf = 7.882609188906e-14 
-      |Div|_2   = 1.764618096979e-13 
+      |Div|_inf = 4.534342381526e-15 
+      |Div|_2   = 4.859594265322e-14 
    Momentum: 
-      |mRes|_2  = 1.406827916227e-06 
+      |mRes|_2  = 1.600390227197e-04 
 --------------------------------------------------------------------------
 Actual time step : 0.00001 [Myr] 
 --------------------------------------------------------------------------
-Saving output ... done (0.074363 sec)
+Saving output ... done (0.039501 sec)
 --------------------------------------------------------------------------
 ================================= STEP 2 =================================
 --------------------------------------------------------------------------
 Current time        : 0.00001 [Myr] 
 Tentative time step : 0.00001 [Myr] 
 --------------------------------------------------------------------------
-  0 SNES Function norm 1.406827900318e-06 
+  0 SNES Function norm 1.600390227205e-04 
   0 PICARD ||F||/||F0||=1.000000e+00 
   Linear js_ solve converged due to CONVERGED_RTOL iterations 2
-  1 SNES Function norm 2.068276498886e-07 
-  1 PICARD ||F||/||F0||=1.470170e-01 
+  1 SNES Function norm 1.694638442981e-05 
+  1 PICARD ||F||/||F0||=1.058891e-01 
   Linear js_ solve converged due to CONVERGED_RTOL iterations 2
-  2 SNES Function norm 3.368553831204e-08 
+  2 SNES Function norm 3.518174386247e-06 
+  2 PICARD ||F||/||F0||=2.198323e-02 
+  Linear js_ solve converged due to CONVERGED_RTOL iterations 2
+  3 SNES Function norm 8.385391232258e-07 
+  3 MMFD   ||F||/||F0||=5.239592e-03 
+  Linear js_ solve converged due to CONVERGED_RTOL iterations 6
+  4 SNES Function norm 2.195229589335e-08 
 --------------------------------------------------------------------------
 SNES Convergence Reason : ||F|| < atol 
-Number of iterations    : 2
-SNES solution time      : 3.9162 (sec)
+Number of iterations    : 4
+SNES solution time      : 2.47908 (sec)
 --------------------------------------------------------------------------
 Residual summary: 
    Continuity: 
-      |Div|_inf = 7.209652286836e-16 
-      |Div|_2   = 2.237522539205e-15 
+      |Div|_inf = 2.943038309112e-18 
+      |Div|_2   = 1.549596345875e-17 
    Momentum: 
-      |mRes|_2  = 3.368553831204e-08 
+      |mRes|_2  = 2.195229589335e-08 
 --------------------------------------------------------------------------
 Actual time step : 0.00001 [Myr] 
 --------------------------------------------------------------------------
-Saving output ... done (0.0744379 sec)
+Saving output ... done (0.0402765 sec)
 --------------------------------------------------------------------------
 =========================== SOLUTION IS DONE! ============================
 --------------------------------------------------------------------------
-Total solution time : 14.9444 (sec) 
+Total solution time : 5.02929 (sec) 
 --------------------------------------------------------------------------
+

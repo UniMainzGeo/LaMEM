@@ -75,6 +75,7 @@ public:
 	PetscScalar APS1; // begin of softening APS
 	PetscScalar APS2; // end of softening APS
 	PetscScalar A;    // reduction ratio
+	PetscScalar Lm;   // material length scale
 
 };
 struct Ph_trans_t
@@ -145,6 +146,7 @@ public:
 	// plasticity parameters
 	PetscScalar  fr;       // friction angle                             [deg]
 	PetscScalar  ch;       // cohesion
+	PetscScalar  eta_st;   // stabilization viscosity
 	PetscScalar  rp;       // ratio of pore pressure to overburden stress
 	PetscInt     frSoftID; // friction softening law ID (-1 if not defined)
 	PetscInt     chSoftID; // cohesion softening law ID (-1 if not defined)
@@ -154,10 +156,12 @@ public:
 	PetscScalar  k;        // thermal conductivity                       [W/m/k]
 	PetscScalar  A;        // radiogenic heat production                 [W/kg]
 	PetscScalar  T;        // optional temperature to set within the phase
-	// Phase diagram
-	char         pdn[_pd_name_sz_];   // Unique phase diagram number
-	char         pdf[_pd_name_sz_];   // Unique phase diagram number
-	PetscInt     Pd_rho;          // density from phase diagram?
+
+	// phase diagram
+	char         pdn[_pd_name_sz_]; // Unique phase diagram number
+	char         pdf[_pd_name_sz_]; // Unique phase diagram number
+	PetscInt     pdAct;             // phase diagram activity flag
+	PetscScalar  mfc;               // melt fraction viscosity correction
 	PetscInt     nPTr;
 	PetscInt     Ph_tr[_max_tr_]; // Vector that contains all phase transition
 };
@@ -203,12 +207,12 @@ struct DBMat
 	Scaling *scal;
 
 	// phase parameters
-	PetscInt     numPhases;              // number phases
+	PetscInt     numPhases;                // number phases
 	Material_t   phases[_max_num_phases_]; // phase parameters
-	PetscInt     numSoft;                // number material softening laws
-	PetscInt     numPhtr;                // number material softening laws
+	PetscInt     numSoft;                  // number material softening laws
 	Soft_t       matSoft[_max_num_soft_];  // material softening law parameters
 	Ph_trans_t   matPhtr[_max_num_tr_];   // phase transition properties
+	PetscInt     numPhtr;                // number material softening laws
 
 };
 

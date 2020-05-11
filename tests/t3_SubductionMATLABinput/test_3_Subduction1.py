@@ -26,16 +26,16 @@ def test_a():
   def comparefunc(unittest):
 
     key = re.escape("|Div|_inf")
-    unittest.compareFloatingPoint(key,1e-7)
+    unittest.compareFloatingPoint(key,1e-6)
 
     key = re.escape("|Div|_2")
     unittest.compareFloatingPoint(key,1e-5)
 
     key = re.escape("|mRes|_2")
-    unittest.compareFloatingPoint(key,1e-4)
+    unittest.compareFloatingPoint(key,2.5e-4)
 
   # Create unit test object
-  ex1 = pth.pthUnitTest('Sub1_MATLAB_a_Direct_opt',ranks,launch,expected_file)
+  ex1 = pth.pthUnitTest('t3_Sub1_MATLAB_a_Direct_opt',ranks,launch,expected_file)
   ex1.setVerifyMethod(comparefunc)
   ex1.appendKeywords('@')
 
@@ -57,16 +57,16 @@ def test_b():
   def comparefunc(unittest):
 
     key = re.escape("|Div|_inf")
-    unittest.compareFloatingPoint(key,1e-7)
+    unittest.compareFloatingPoint(key,1e-6)
 
     key = re.escape("|Div|_2")
     unittest.compareFloatingPoint(key,1e-5)
 
     key = re.escape("|mRes|_2")
-    unittest.compareFloatingPoint(key,1e-4)
+    unittest.compareFloatingPoint(key,2.5e-4)
 
   # Create unit test object
-  ex1 = pth.pthUnitTest('Sub1_MATLAB_b_SUPERLUDIST_opt',ranks,launch,expected_file)
+  ex1 = pth.pthUnitTest('t3_Sub1_MATLAB_b_SUPERLUDIST_opt',ranks,launch,expected_file)
   ex1.setVerifyMethod(comparefunc)
   ex1.appendKeywords('@')
 
@@ -88,16 +88,16 @@ def test_c():
   def comparefunc(unittest):
 
     key = re.escape("|Div|_inf")
-    unittest.compareFloatingPoint(key,1e-7)
+    unittest.compareFloatingPoint(key,1e-6)
 
     key = re.escape("|Div|_2")
     unittest.compareFloatingPoint(key,1e-5)
 
     key = re.escape("|mRes|_2")
-    unittest.compareFloatingPoint(key,1e-4)
+    unittest.compareFloatingPoint(key,2.5e-4)
 
   # Create unit test object
-  ex1 = pth.pthUnitTest('Sub1_MATLAB_c_SUPERLUDIST_deb',ranks,launch,expected_file)
+  ex1 = pth.pthUnitTest('t3_Sub1_MATLAB_c_SUPERLUDIST_deb',ranks,launch,expected_file)
   ex1.setVerifyMethod(comparefunc)
   ex1.appendKeywords('@')
 
@@ -129,7 +129,7 @@ def test_d():
     unittest.compareFloatingPoint(key,1e-4)
 
   # Create unit test object
-  ex1 = pth.pthUnitTest('Sub1_MATLAB_d_MUMPS_MG_VEP_opt',ranks,launch,expected_file)
+  ex1 = pth.pthUnitTest('t3_Sub1_MATLAB_d_MUMPS_MG_VEP_opt',ranks,launch,expected_file)
   ex1.setVerifyMethod(comparefunc)
   ex1.appendKeywords('@')
 

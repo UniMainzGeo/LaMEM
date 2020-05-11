@@ -73,11 +73,8 @@
 
 	gravity        = 0.0 0.0 -9.81  # gravity vector
 	FSSA           = 1.0            # free surface stabilization parameter [0 - 1]
-	act_p_shift    = 1              # pressure shift activation flag (zero pressure in the top cell layer)
 	init_guess     = 1              # initial guess flag
 	eta_max        = 1e25           # viscosity lower limit
-	act_p_shift    = 1              # pressure shift activation flag (zero pressure in the top cell layer)
-	quasi_harm_avg = 0              # quasi-harmonic averaging regularization flag (plasticity)
 	p_lim_plast    = 1              # limit pressure at first iteration for plasticity
 	eta_min        = 1e19           # viscosity upper bound
 	eta_max        = 1e25           # viscosity lower limit
@@ -176,7 +173,6 @@
 	out_density         = 1
 	out_visc_total      = 1
 	out_visc_creep      = 1
-	out_visc_plast      = 1
 	out_velocity        = 1
 	out_pressure        = 1
 	out_eff_press       = 1

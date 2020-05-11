@@ -115,36 +115,32 @@ PetscErrorCode ADVMarkInit(AdvCtx *actx, FB *fb)
 
 	// Load phase diagrams for the phases where it is required + interpolate the reference density for the first timestep
 	LoadPhaseDiagrams = PETSC_FALSE;
-	for(PetscInt i=0; i<actx->jr->dbm->numPhases; i++){ if(actx->jr->dbm->phases[i].Pd_rho == 1){LoadPhaseDiagrams = PETSC_TRUE;} }
 	
-	if 	(LoadPhaseDiagrams){
+	for(PetscInt i = 0; i < actx->jr->dbm->numPhases; i++)
+	{
+		if(actx->jr->dbm->phases[i].pdAct)
+		{
+			LoadPhaseDiagrams = PETSC_TRUE;
+		}
+	}
+
+	if(LoadPhaseDiagrams)
+	{
 		PetscPrintf(PETSC_COMM_WORLD,"Phase Diagrams: \n");
 	}	
 
 	for(PetscInt i=0; i<actx->jr->dbm->numPhases; i++)
 	{
-		if(actx->jr->dbm->phases[i].Pd_rho == 1)
+		if(actx->jr->dbm->phases[i].pdAct)
 		{
-			PetscPrintf(PETSC_COMM_WORLD,"   Phase %i,  ",i);
+			PetscPrintf(PETSC_COMM_WORLD,"   Phase %i,  ", i);
+
 			ierr = LoadPhaseDiagram(actx, actx->jr->dbm->phases, i); CHKERRQ(ierr);
-			SolVarCell  *svCell;
-			PetscInt     jj;
-
-			// interpolate reference density
-			for(jj = 0; jj < actx->fs->nCells; jj++)
-			{
-				// access solution variable
-				svCell = &actx->jr->svCell[jj];
-
-				svCell->svBulk.rho_pd  	= actx->jr->dbm->phases[i].rho;
-				svCell->svDev.mf  		= 0;
-				svCell->svBulk.mf 		= 0;
-				svCell->svBulk.rho_pf 	= 0;
-			}
 		}
 	}
 
-	if 	(LoadPhaseDiagrams){
+	if(LoadPhaseDiagrams)
+	{
 		PetscPrintf(PETSC_COMM_WORLD,"--------------------------------------------------------------------------\n");
 	}
 
@@ -1520,7 +1516,7 @@ PetscErrorCode LoadPhaseDiagram(AdvCtx *actx, Material_t  *phases, PetscInt i)
 				}
 				if(fl[0] == 4 || fl[0] == 5)
 				{
-					phases[i].Pd_rho = 1;
+					phases[i].pdAct = 1;
 				}
 				fclose(fp);
 				PetscFunctionReturn(0);
@@ -1764,24 +1760,26 @@ void setPhaseCylinder(GeomPrim *cylinder, Marker *P)
 //---------------------------------------------------------------------------
 // geometric primitives temperature functions
 //---------------------------------------------------------------------------
-void computeTemperature(GeomPrim *geom, Marker *P, PetscScalar *T )
+void computeTemperature(GeomPrim *geom, Marker *P, PetscScalar *T)
 {
 	// computes the temperature at the point based on the top of the geometric object
 	
-	if (geom->setTemp==1){
+	if(geom->setTemp == 1)
+	{
 		// constant temperature
-		*T = geom->cstTemp;
+		(*T) = geom->cstTemp;
 	}
 	else if (geom->setTemp==2)
 	{
 		// linear temperature between top & bottom
 		PetscScalar z_top, z_bot, z, T_top, T_bot;
 		
-		z_top 		= 	geom->top;		z_bot =	geom->bot;
-		T_top 		=	geom->topTemp;	T_bot = geom->botTemp;
-		z     		= 	P->X[2];
-
-		*T          =   (z-z_top)*(T_top - T_bot)/(z_top-z_bot) + T_top;	// linear gradient between top & bottom
+		z_top = geom->top;
+		z_bot = geom->bot;
+		T_top = geom->topTemp;
+		T_bot = geom->botTemp;
+		z     = P->X[2];
+		(*T)  = (z-z_top)*(T_top - T_bot)/(z_top-z_bot) + T_top; // linear gradient between top & bottom
 		
 
 	}
@@ -1790,18 +1788,14 @@ void computeTemperature(GeomPrim *geom, Marker *P, PetscScalar *T )
 		// Half space cooling profile
 		PetscScalar z_top, z, T_top, T_bot, kappa, thermalAge;
 
-		z_top 		= 	geom->top;			
-		T_top 		=	geom->topTemp;		T_bot = geom->botTemp;
-		thermalAge 	=   geom->thermalAge;
-		z     		= 	PetscAbs(P->X[2]-z_top);		
-		kappa 		=	geom->kappa;
-
-		*T = (T_bot-T_top)*erf(z/2.0/sqrt(kappa*thermalAge)) + T_top;
-
-
+		z_top      = geom->top;
+		T_top      = geom->topTemp;
+		T_bot      = geom->botTemp;
+		thermalAge = geom->thermalAge;
+		z          = PetscAbs(P->X[2]-z_top);
+		kappa      = geom->kappa;
+		(*T)       = (T_bot-T_top)*erf(z/2.0/sqrt(kappa*thermalAge)) + T_top;
 	}
-
-
 }
 //---------------------------------------------------------------------------
 void HexGetBoundingBox(

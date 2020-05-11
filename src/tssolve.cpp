@@ -160,26 +160,13 @@ PetscInt TSSolIsDone(TSSol *ts)
 	PetscScalar  time_end;
 	PetscInt     done;
 
+	// access context
 	scal = ts->scal;
 
-//  This doesn't seem to be used here
-//	PetscScalar timestep_sign
-//	PetscBool      found;
-//	char           str[_str_len_];
-//	PetscOptionsGetCheckString("-mode", str, &found);
-//	timestep_sign = 1.0;
-//	if(found)
-//	{
-//		if(!strcmp(str, "reverse"))
-//		{
-//			timestep_sign = -1.0; // so we can deal with reverse simulations
-//		}
-//	}
-	
 	// get end time (with tolerance)
 	time_end = ts->time_end - ts->tol*ts->dt_max;
 
-	if(PetscAbs(ts->time)  >= PetscAbs(time_end)
+	if(ts->time  >= time_end
 	|| ts->istep == ts->nstep_max)
 	{
 		PetscPrintf(PETSC_COMM_WORLD, "=========================== SOLUTION IS DONE! ============================\n");
@@ -269,25 +256,12 @@ PetscErrorCode TSSolGetCFLStep(
 	PetscInt    *restart) // time step restart flag
 {
 	Scaling     *scal;
-	PetscScalar  dt_cfl, dt_cfl_max, timestep_sign;
-	PetscBool    found;
-	char         str[_str_len_];
+	PetscScalar  dt_cfl, dt_cfl_max;
 
 	PetscFunctionBegin;
 
 	// get context
 	scal = ts->scal;
-
-	// check if we do a reverse simulation:
-	PetscOptionsGetCheckString("-mode", str, &found); 
-	timestep_sign = 1.0;
-	if(found)
-	{
-		if(!strcmp(str, "reverse")){ 
-			timestep_sign = -1.0;		// so we can deal with reverse simulations
-		}
-	}
-	ts->dt 		  =	PetscAbs(ts->dt);
 
 	// set restart flag
 	(*restart) = 0;
@@ -337,10 +311,6 @@ PetscErrorCode TSSolGetCFLStep(
 
 	// apply immediately if time step is not fixed (otherwise apply in the end of time step)
 	if(!ts->fix_dt) ts->dt = ts->dt_next;
-
-	// deal with reverse simulations	
-	ts->dt 		  =	timestep_sign*ts->dt;  
-	ts->dt_next   = timestep_sign*ts->dt_next;
 
 	// print time step information
 	PetscPrintf(PETSC_COMM_WORLD, "Actual time step : %7.5f %s \n", ts->dt*scal->time, scal->lbl_time);

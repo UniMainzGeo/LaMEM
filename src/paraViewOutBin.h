@@ -130,7 +130,6 @@ struct OutMask
 	PetscInt density;        // density
 	PetscInt visc_total;     // total effective viscosity
 	PetscInt visc_creep;     // creep effective viscosity
-	PetscInt visc_plast;     // viscoplastic viscosity
 	PetscInt velocity;       // velocity
 	PetscInt pressure;       // pressure
 	PetscInt eff_press;      // effective pressure
@@ -153,10 +152,10 @@ struct OutMask
 	PetscInt tot_displ;      // total displacements
 	PetscInt SHmax;          // maximum horizontal stress
 	PetscInt EHmax;          // maximum horizontal extension
-	PetscInt ISA;            // Infinite Strain Axis
-	PetscInt GOL;            // Grain Orientation Lag
 	PetscInt yield;          // yield stress
-	PetscInt DIId;           // diffusion creep relative strain rate
+	PetscInt DIIdif;         // diffusion creep relative strain rate
+	PetscInt DIIdis;         // dislocation creep relative strain rate
+	PetscInt DIIprl;         // Peierls creep relative strain rate
 	PetscInt moment_res;     // momentum residual
 	PetscInt cont_res;       // continuity residual
 	PetscInt energ_res;      // energy residual

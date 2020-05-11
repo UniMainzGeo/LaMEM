@@ -1803,16 +1803,16 @@ PetscErrorCode ADVInterpMarkToCell(AdvCtx *actx)
 		for(ii = 0; ii < numPhases; ii++) svCell->phRat[ii] = 0.0;
 
 		// clear history variables
-		svCell->svBulk.pn = 0.0;
-		svCell->svBulk.Tn = 0.0;
-		svCell->svDev.APS = 0.0;
-		svCell->svDev.ATS = 0.0;
-		svCell->hxx       = 0.0;
-		svCell->hyy       = 0.0;
-		svCell->hzz       = 0.0;
-		svCell->U[0]      = 0.0;
-		svCell->U[1]      = 0.0;
-		svCell->U[2]      = 0.0;
+		svCell->svBulk.pn  = 0.0;
+		svCell->svBulk.Tn  = 0.0;
+		svCell->svDev.APS  = 0.0;
+		svCell->ATS        = 0.0;
+		svCell->hxx        = 0.0;
+		svCell->hyy        = 0.0;
+		svCell->hzz        = 0.0;
+		svCell->U[0]       = 0.0;
+		svCell->U[1]       = 0.0;
+		svCell->U[2]       = 0.0;
 	}
 
 	// scan ALL markers
@@ -1850,7 +1850,7 @@ PetscErrorCode ADVInterpMarkToCell(AdvCtx *actx)
 		svCell->svBulk.pn += w*P->p;
 		svCell->svBulk.Tn += w*P->T;
 		svCell->svDev.APS += w*P->APS;
-		svCell->svDev.ATS += w*P->ATS;
+		svCell->ATS       += w*P->ATS;
 		svCell->hxx       += w*P->S.xx;
 		svCell->hyy       += w*P->S.yy;
 		svCell->hzz       += w*P->S.zz;
@@ -1873,7 +1873,7 @@ PetscErrorCode ADVInterpMarkToCell(AdvCtx *actx)
 		svCell->svBulk.pn /= w;
 		svCell->svBulk.Tn /= w;
 		svCell->svDev.APS /= w;
-		svCell->svDev.ATS /= w;
+		svCell->ATS       /= w;
 		svCell->hxx       /= w;
 		svCell->hyy       /= w;
 		svCell->hzz       /= w;

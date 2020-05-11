@@ -24,7 +24,7 @@ def test_a():
     unittest.compareFloatingPoint(key,1e-6)
 
   # Create unit test object
-  ex1 = pth.pthUnitTest('t9_PhaseDiagrams',ranks,launch,expected_file)
+  ex1 = pth.pthUnitTest('t9_FB1_Direct_PhaseDiagrams',ranks,launch,expected_file)
   ex1.setVerifyMethod(comparefunc)
   ex1.appendKeywords('@')
 

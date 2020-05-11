@@ -79,7 +79,6 @@
 	FSSA           = 1.0            # free surface stabilization parameter [0 - 1]
 	init_guess     = 1              # initial guess flag
 
-	act_p_shift    = 1              # pressure shift activation flag (zero pressure in the top cell layer)
 	p_litho_visc   = 1              # use lithostatic pressure for creep laws
 	p_litho_plast  = 0              # use lithostatic pressure for plasticity
 	p_lim_plast    = 0              # limit pressure at first iteration for plasticity
@@ -92,7 +91,6 @@
 	min_cohes      = 1e5            # ch lower bound
 	min_fric       = 0.0            # fr lower bound
 	tau_ult        = 5e8            # ultimate yield stress
-	quasi_harm_avg = 1              # quasi-harmonic averaging regularization flag (plasticity)
 
 	
 #===============================================================================
@@ -133,7 +131,6 @@
 	out_density         = 1
 	out_visc_total      = 1
 	out_visc_creep      = 1
-	out_visc_plast      = 1
 	out_velocity        = 1
 	out_pressure        = 1
 	out_eff_press       = 1

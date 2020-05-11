@@ -62,17 +62,12 @@ struct AdvCtx;
 
 struct SolVarDev
 {
-	PetscScalar  DII;   // effective strain rate
-	PetscScalar  eta;   // effective tangent viscosity
-	PetscScalar  I2Gdt; // inverse elastic parameter (1/2G/dt)
-	PetscScalar  Hr;    // shear heating term (partial)
-	PetscScalar  DIIpl; // plastic strain rate
-	PetscScalar  APS;   // accumulated plastic strain
-	PetscScalar  ATS;   // accumulated total strain for output
-	PetscScalar  PSR;   // plastic strain-rate contribution
-	PetscScalar  yield; // average yield stress in control volume
-	PetscScalar  mf;    // melt fraction
-	PetscScalar  DIId;  // diffusion creep relative strain rate
+	PetscScalar  eta;    // total effective viscosity
+	PetscScalar  eta_st; // stabilization viscosity
+	PetscScalar  I2Gdt;  // inverse elastic parameter (1/2G/dt)
+	PetscScalar  Hr;     // shear heating term contribution
+	PetscScalar  APS;    // accumulated plastic strain
+	PetscScalar  PSR;    // plastic strain-rate contribution
 
 };
 
@@ -82,15 +77,14 @@ struct SolVarDev
 
 struct SolVarBulk
 {
-	PetscScalar  theta; // volumetric strain rate
-	PetscScalar  rho;   // strain- & temperature-dependent density
-	PetscScalar  IKdt;  // inverse bulk elastic parameter (1/K/dt)
-	PetscScalar  alpha; // effective thermal expansion
-	PetscScalar  Tn;    // history temperature
-	PetscScalar  pn;    // history pressure
-	PetscScalar  rho_pd;// Density from phase diagram
-	PetscScalar  rho_pf;// Fluid Density from phase diagram
-	PetscScalar  mf;    // Melt fraction from phase diagram
+	PetscScalar  theta;  // volumetric strain rate
+	PetscScalar  rho;    // strain- & temperature-dependent density
+	PetscScalar  IKdt;   // inverse bulk elastic parameter (1/K/dt)
+	PetscScalar  alpha;  // effective thermal expansion
+	PetscScalar  Tn;     // history temperature
+	PetscScalar  pn;     // history pressure
+	PetscScalar  rho_pf; // fluid density from phase diagram
+	PetscScalar  mf;     // melt fraction from phase diagram
 
 };
 
@@ -106,9 +100,13 @@ struct SolVarCell
 	PetscScalar  hxx, hyy, hzz; // history stress (elastic)
 	PetscScalar  dxx, dyy, dzz; // total deviatoric strain rate
 	PetscScalar *phRat;         // phase ratios in the control volume
-	PetscScalar  eta_creep;     // effective creep viscosity (output)
-	PetscScalar  eta_vp;        // viscoplastic viscosity (output)
-	PetscScalar  U[3];          // displacement
+	PetscScalar  U[3];          // total displacement
+	PetscScalar  ATS;           // accumulated total strain
+	PetscScalar  eta_cr;        // creep viscosity
+	PetscScalar  DIIdif;        // relative diffusion creep strain rate
+	PetscScalar  DIIdis;        // relative dislocation creep strain rate
+	PetscScalar  DIIprl;        // relative Peierls creep strain rate
+	PetscScalar  yield;         // average yield stress in control volume
 
 };
 
@@ -154,21 +152,17 @@ struct Controls
 	PetscInt    actSteadyTemp;  // steady-state temperature initial guess flag
 	PetscScalar steadyTempStep; // time for (quasi-)steady-state temperature initial guess
 	PetscInt    steadyNumStep;  // number of steps for (quasi-)steady-state temperature initial guess
-	PetscInt    pShiftAct;      // pressure shift activation flag (zero pressure in the top cell layer)
-	PetscScalar pShift;         // pressure shift for plasticity model and output
 	PetscInt    initLithPres;   // set initial pressure to lithostatic pressure
 	PetscInt    initGuess;      // initial guess activation flag
 	PetscInt    pLithoVisc;     // use lithostatic pressure for creep laws
 	PetscInt    pLithoPlast;    // use lithostatic pressure for plasticity
 	PetscInt    pLimPlast;      // limit pressure at first iteration for plasticity
-	PetscInt    quasiHarmAvg;   // use quasi-harmonic averaging regularization for plasticity
 
 	PetscScalar eta_min;        // minimum viscosity
-	PetscScalar inv_eta_max;    // inverse of maximum viscosity
+	PetscScalar eta_max;        // maximum viscosity
 	PetscScalar eta_ref;        // reference viscosity (initial guess)
 	PetscScalar TRef;           // reference temperature
 	PetscScalar Rugc;           // universal gas constant
-	PetscScalar DII_ref;        // background (reference) strain-rate
 	PetscScalar minCh;          // minimum cohesion
 	PetscScalar minFr;          // minimum friction
 	PetscScalar tauUlt;         // ultimate yield stress
@@ -178,7 +172,13 @@ struct Controls
 	PetscScalar gwLevel;        // fixed ground water level
 
 	PetscInt    getPermea;      // effective permeability computation activation flag
-	PetscInt    rescal;         // stensil rescaling flag (for interval constraints)
+	PetscInt    rescal;         // stencil rescaling flag (for interval constraints)
+
+	PetscScalar mfmax;          // maximum melt fraction affecting viscosity reduction
+
+	PetscInt    lmaxit;         // maximum number of local rheology iterations
+	PetscScalar lrtol;          // local rheology iterations relative tolerance
+
 };
 
 //---------------------------------------------------------------------------
@@ -219,6 +219,11 @@ struct JacRes
 	//  In ADVInterpMarkToEdge it's impossible because of assembly operation.
 	//  Really really really need to switch to ghost marker approach!
 	//  Also to get communication pattern independent of number of phases.
+
+	// For almost all the purposes only one center-based array is necessary instead of three
+	// for example - strain rate contributions from centers can be stored in one array
+
+	// IN GENERAL GET RID OF BUFFER VECTORS, USE LOCAL DMGetLocalVector (GET_INIT_LOCAL_VECTOR)
 
 	// pressure
 	Vec gp;      // global
@@ -278,9 +283,6 @@ PetscErrorCode JacResFormResidual(JacRes *jr, Vec x, Vec f);
 // compute effective inverse elastic parameter
 PetscErrorCode JacResGetI2Gdt(JacRes *jr);
 
-// get average pressure near the top surface
-PetscErrorCode JacResGetPressShift(JacRes *jr);
-
 // evaluate effective strain rate components in basic nodes
 PetscErrorCode JacResGetEffStrainRate(JacRes *jr);
 
@@ -317,20 +319,12 @@ PetscErrorCode JacResCopyContinuityRes(JacRes *jr, Vec f);
 PetscErrorCode JacResViewRes(JacRes *jr);
 
 //---------------------------------------------------------------------------
-// Infinite Strain Axis (ISA) computation functions
-//---------------------------------------------------------------------------
 
 // compute velocity gradient and normalized velocities at cell center
 PetscErrorCode getGradientVel(
 	FDSTAG *fs, PetscScalar ***lvx, PetscScalar ***lvy, PetscScalar ***lvz,
 	PetscInt i, PetscInt j, PetscInt k, PetscInt sx, PetscInt sy, PetscInt sz,
 	Tensor2RN *L, PetscScalar *vel, PetscScalar *pvnrm);
-
-// compute Infinite Strain Axis (ISA)
-PetscErrorCode JacResGetISA(JacRes *jr);
-
-// compute Grain Orientation Lag (GOL) parameter
-PetscErrorCode JacResGetGOL(JacRes *jr);
 
 //---------------------------------------------------------------------------
 

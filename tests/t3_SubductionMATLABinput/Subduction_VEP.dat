@@ -65,7 +65,7 @@
 		top   =  20                             # Polygon top coordinate
 	<BCBlockEnd>
 
-#	open_top_bound = 1
+	open_top_bound = 1
 
 # Temperature on the top and bottom boundaries
 
@@ -79,15 +79,12 @@
 	gravity        = 0.0 0.0 -10.0  # gravity vector
 	FSSA           = 1.0            # free surface stabilization parameter [0 - 1]
 	shear_heat_eff = 0.0            # shear heating efficiency parameter   [0 - 1]
-	act_p_shift    = 0              # pressure shift activation flag (zero pressure in the top cell layer)
 	act_temp_diff  = 1              # temperature diffusion activation flag
 	init_guess     = 1              # initial guess flag
 #	p_lim_plast    = 1              # limit pressure at first iteration for plasticity
 	eta_min        = 1e18           # viscosity upper bound
 	eta_max        = 1e24           # viscosity lower limit
 	eta_ref        = 1e22           # reference viscosity (initial guess)
-	DII_ref        = 1e-15          # background (reference) strain-rate
-	quasi_harm_avg = 1              # quasi-harmonic averaging regularization flag (plasticity)
 
 #===============================================================================
 # Model setup & advection
@@ -98,10 +95,9 @@
 	nmark_y        = 3                 # ...                 y-direction
 	nmark_z        = 3                 # ...                 z-direction
 	mark_load_file = ./markers_p8/mdb  # marker input file (extension is .xxxxxxxx.dat)
-	advect         = basic             # advection scheme
-	interp         = stag              # velocity interpolation scheme
-	stagp_a        = 0.7               # STAG_P velocity interpolation parameter
-#	mark_ctrl      = avd               # marker control type
+	advect         = basic               # advection scheme
+	interp         = stag            # velocity interpolation scheme
+	mark_ctrl      = subgrid
 #	nmark_lim      = 16 100            # min/max number per cell
 
 #===============================================================================

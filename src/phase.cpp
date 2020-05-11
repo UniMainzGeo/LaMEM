@@ -174,12 +174,15 @@ PetscErrorCode DBMatCreate(DBMat *dbm, FB *fb)
 PetscErrorCode DBMatReadSoft(DBMat *dbm, FB *fb)
 {
 	// read softening law from file
-
+	Scaling  *scal;
 	Soft_t   *s;
 	PetscInt  ID;
 
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
+
+	// access context
+	scal = dbm->scal;
 
 	// softening law ID
 	ierr = getIntParam(fb, _REQUIRED_, "ID", &ID, 1, dbm->numSoft-1); CHKERRQ(ierr);
@@ -200,13 +203,25 @@ PetscErrorCode DBMatReadSoft(DBMat *dbm, FB *fb)
 	ierr = getScalarParam(fb, _REQUIRED_, "A",    &s->A,    1, 1.0); CHKERRQ(ierr);
 	ierr = getScalarParam(fb, _REQUIRED_, "APS1", &s->APS1, 1, 1.0); CHKERRQ(ierr);
 	ierr = getScalarParam(fb, _REQUIRED_, "APS2", &s->APS2, 1, 1.0); CHKERRQ(ierr);
+	ierr = getScalarParam(fb, _OPTIONAL_, "Lm",   &s->Lm,   1, 1.0); CHKERRQ(ierr);
 
 	if(!s->A || !s->APS1 || !s->APS2)
 	{
-		SETERRQ1(PETSC_COMM_WORLD, PETSC_ERR_USER, "All parameters must be nonzero for softening law %lld", (LLD)ID);
+		SETERRQ1(PETSC_COMM_WORLD, PETSC_ERR_USER, "A, APS1, APS2 parameters must be nonzero for softening law %lld", (LLD)ID);
 	}
 
-	PetscPrintf(PETSC_COMM_WORLD,"   SoftLaw [%lld] : A = %g, APS1 = %g, APS2 = %g \n", (LLD)(s->ID), s->A, s->APS1, s->APS2);
+	if(s->Lm)
+	{
+		PetscPrintf(PETSC_COMM_WORLD,"   SoftLaw [%lld] : A = %g, APS1 = %g, APS2 = %g, Lm = %g\n", (LLD)(s->ID), s->A, s->APS1, s->APS2, s->Lm);
+	}
+	else
+	{
+		PetscPrintf(PETSC_COMM_WORLD,"   SoftLaw [%lld] : A = %g, APS1 = %g, APS2 = %g\n", (LLD)(s->ID), s->A, s->APS1, s->APS2);
+	}
+
+	// SCALE
+
+	s->Lm /= scal->length;
 
 	PetscFunctionReturn(0);
 }
@@ -278,7 +293,7 @@ PetscErrorCode DBMatReadPhase(DBMat *dbm, FB *fb)
 		StringLength = strlen(PhaseDiagram)+3;		// 3, because we will add ".in" to the filename 
 
 		// implies we are loading a phase diagram file from disk
-		m->Pd_rho = 1;
+		m->pdAct = 1;
 		
 		// Get the directory of the phase diagram if specified
 		ierr = getStringParam(fb, _OPTIONAL_, "rho_ph_file", PhaseDiagram_Dir, "none"); CHKERRQ(ierr);
@@ -301,7 +316,7 @@ PetscErrorCode DBMatReadPhase(DBMat *dbm, FB *fb)
 	}
 	else
 	{
-		m->Pd_rho = 0;	// no phase diagram is used
+		m->pdAct = 0;	// no phase diagram is used
 	}
 	
 	//============================================================
@@ -372,11 +387,12 @@ PetscErrorCode DBMatReadPhase(DBMat *dbm, FB *fb)
 	//=================================================================================
 	// plasticity (Drucker-Prager)
 	//=================================================================================
-	ierr = getScalarParam(fb, _OPTIONAL_, "ch",       &m->ch,    1, 1.0); CHKERRQ(ierr);
-	ierr = getScalarParam(fb, _OPTIONAL_, "fr",       &m->fr,    1, 1.0); CHKERRQ(ierr);
-	ierr = getScalarParam(fb, _OPTIONAL_, "rp",       &m->rp,    1, 1.0); CHKERRQ(ierr);
-	ierr = getIntParam   (fb, _OPTIONAL_, "chSoftID", &chSoftID, 1, MSN); CHKERRQ(ierr);
-	ierr = getIntParam   (fb, _OPTIONAL_, "frSoftID", &frSoftID, 1, MSN); CHKERRQ(ierr);
+	ierr = getScalarParam(fb, _OPTIONAL_, "ch",       &m->ch,     1, 1.0); CHKERRQ(ierr);
+	ierr = getScalarParam(fb, _OPTIONAL_, "fr",       &m->fr,     1, 1.0); CHKERRQ(ierr);
+	ierr = getScalarParam(fb, _OPTIONAL_, "eta_st",   &m->eta_st, 1, 1.0); CHKERRQ(ierr);
+	ierr = getScalarParam(fb, _OPTIONAL_, "rp",       &m->rp,     1, 1.0); CHKERRQ(ierr);
+	ierr = getIntParam   (fb, _OPTIONAL_, "chSoftID", &chSoftID,  1, MSN); CHKERRQ(ierr);
+	ierr = getIntParam   (fb, _OPTIONAL_, "frSoftID", &frSoftID,  1, MSN); CHKERRQ(ierr);
 	//=================================================================================
 	// energy
 	//=================================================================================
@@ -386,13 +402,15 @@ PetscErrorCode DBMatReadPhase(DBMat *dbm, FB *fb)
 	ierr = getScalarParam(fb, _OPTIONAL_, "A",        &m->A,     1, 1.0); CHKERRQ(ierr);
 	ierr = getScalarParam(fb, _OPTIONAL_, "T",        &m->T,     1, 1.0); CHKERRQ(ierr);
 	//=================================================================================
+
+	// melt fraction viscosity parametrization
+	//=================================================================================
+	ierr = getScalarParam(fb, _OPTIONAL_, "mfc",      &m->mfc,    1, 1.0); CHKERRQ(ierr);
 	ierr = getIntParam   (fb, _OPTIONAL_, "nPTr", &m->nPTr, 1, _max_tr_); CHKERRQ(ierr);
-	if(m->nPTr>0)
-	{
-		ierr = getIntParam   (fb, _REQUIRED_, "Ph_id", m->Ph_tr,   m->nPTr,_max_num_tr_);        CHKERRQ(ierr);
-
-	}
-
+		if(m->nPTr>0)
+		{
+			ierr = getIntParam   (fb, _REQUIRED_, "Ph_id", m->Ph_tr,   m->nPTr,_max_num_tr_);        CHKERRQ(ierr);
+		}
 
 	// DEPTH-DEPENDENT
 
@@ -544,7 +562,7 @@ PetscErrorCode DBMatReadPhase(DBMat *dbm, FB *fb)
 
 	sprintf(title, "   (dens)   : "); print_title = 1;
 	MatPrintScalParam(m->rho,   "rho",   "[kg/m^3]", scal, title, &print_title);
-	if(m->Pd_rho == 1)
+	if(m->pdAct == 1)
 	{
 		PetscPrintf(PETSC_COMM_WORLD,"- Employing phase diagram: %s", PhaseDiagram);
 	}
@@ -596,9 +614,10 @@ PetscErrorCode DBMatReadPhase(DBMat *dbm, FB *fb)
 	MatPrintScalParam(m->d,     "d",    "[m]",          scal, title, &print_title);
 
 	sprintf(title, "   (plast)  : "); print_title = 1;
-	MatPrintScalParam(m->ch, "ch", "[Pa]",  scal, title, &print_title);
-	MatPrintScalParam(m->fr, "fr", "[deg]", scal, title, &print_title);
-	MatPrintScalParam(m->rp, "rp", "[ ]",   scal, title, &print_title);
+	MatPrintScalParam(m->ch,     "ch",     "[Pa]",   scal, title, &print_title);
+	MatPrintScalParam(m->fr,     "fr",     "[deg]",  scal, title, &print_title);
+	MatPrintScalParam(m->eta_st, "eta_st", "[Pa*s]", scal, title, &print_title);
+	MatPrintScalParam(m->rp,     "rp",     "[ ]",    scal, title, &print_title);
 	if(frSoftID != -1) PetscPrintf(PETSC_COMM_WORLD, "frSoftID = %lld ", (LLD)frSoftID);
 	if(chSoftID != -1) PetscPrintf(PETSC_COMM_WORLD, "chSoftID = %lld ", (LLD)chSoftID);
 
@@ -620,39 +639,40 @@ PetscErrorCode DBMatReadPhase(DBMat *dbm, FB *fb)
 	m->beta   *= scal->stress_si; // [1/Pa]
 
 	// diffusion creep
-	m->Bd    *= scal->viscosity;
-	m->Vd    *= scal->stress_si;
+	m->Bd     *= scal->viscosity;
+	m->Vd     *= scal->stress_si;
 
 	// dislocation creep (power-law)
-	m->Bn    *= pow(scal->stress_si, m->n)*scal->time_si;
-	m->Vn    *= scal->stress_si;
+	m->Bn     *= pow(scal->stress_si, m->n)*scal->time_si;
+	m->Vn     *= scal->stress_si;
 
 	// Peierls creep
-	m->Bp    /=  scal->strain_rate;
-	m->Vp    *=  scal->stress_si;
-	m->taup  /=  scal->stress_si;
+	m->Bp     /=  scal->strain_rate;
+	m->Vp     *=  scal->stress_si;
+	m->taup   /=  scal->stress_si;
 
 	// dc-creep
-	m->Bdc   /=  scal->strain_rate;
-	m->mu    /=  scal->stress_si;
+	m->Bdc    /=  scal->strain_rate;
+	m->mu     /=  scal->stress_si;
 
 	// ps-creep
-	m->Bps  *= scal->viscosity/scal->volume_si/scal->temperature;
-	m->d    /= scal->length_si;
+	m->Bps   *= scal->viscosity/scal->volume_si/scal->temperature;
+	m->d     /= scal->length_si;
 
 	// elasticity
-	m->G     /= scal->stress_si;
-	m->K     /= scal->stress_si;
+	m->G      /= scal->stress_si;
+	m->K      /= scal->stress_si;
 
 	// plasticity
-	m->ch    /= scal->stress_si;
-	m->fr    /= scal->angle;
+	m->ch     /= scal->stress_si;
+	m->fr     /= scal->angle;
+	m->eta_st /= scal->viscosity;
 
 	// temperature
-	m->alpha /= scal->expansivity;
-	m->Cp    /= scal->cpecific_heat;
-	m->k     /= scal->conductivity;
-	m->A     /= scal->heat_production;
+	m->alpha  /= scal->expansivity;
+	m->Cp     /= scal->cpecific_heat;
+	m->k      /= scal->conductivity;
+	m->A      /= scal->heat_production;
 
 	// phase-temperature
 	if(m->T) m->T = (m->T + scal->Tshift)/scal->temperature;
