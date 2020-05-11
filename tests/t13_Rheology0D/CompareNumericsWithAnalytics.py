@@ -272,6 +272,66 @@ def AnalyticalSolution_linearViscous(data):
   return(data);
 #----------------------------------------------------
 
+#----------------------------------------------------
+# Compute the analytical solution for this problem
+def AnalyticalSolution_DislocationCreep(data, FlowLaw):
+   # load required modules for reading data
+  try: 
+    import numpy as np
+  except:
+    print('numpy toolbox not installed; cannot manipulate data')
+
+
+  # Define material properties  
+  if FlowLaw.lower() in ['dryolivine']:
+      AD    = 2.5e-17;   # 1/Pa^n/s, 
+      n     = 3.5;       # dimensionless
+      Ea    = 532000;    # J/mol 
+      R     = 8.314;     # J/mol/K
+
+      # Define correction coefficient F2 
+      # for a strain rate based viscosity formulation
+      F2    = 1/2**((n-1)/n)/3**((n+1)/2/n);
+
+
+  T       = data.T[0];      # average temperature in domain (in Celcius)
+
+  eterm   = np.exp(Ea/n/R/(T+273));
+
+
+  E2nd_anal     = 10**np.arange(np.min(np.log10(data.E2nd_bg)), np.max(np.log10(data.E2nd_bg)), .1)
+  T2nd_anal     = 10**np.arange(np.min(np.log10(data.E2nd_bg)), np.max(np.log10(data.E2nd_bg)), .1)
+
+  # Create arrays with material constants
+  num=0;
+  for E2nd in E2nd_anal:
+    
+    eta_eff         = F2/AD**(1/n)/E2nd**((n-1)/n)*eterm;     # effective viscosity
+
+    T2nd_anal[num]  = 2*eta_eff*E2nd;
+    num             = num+1;
+
+  # Compute analytical solution @ same points as LaMEM solution
+  T2nd_LaMEM_anal  = np.zeros(len(data.E2nd_bg))
+  RMS_err_Numerics = np.zeros(len(data.E2nd_bg))
+  num=0;
+  for E2nd in data.E2nd_bg:
+    eta_eff               = F2/AD**(1/n)/E2nd**((n-1)/n)*eterm;    # effectic viscosity
+
+    T2nd_LaMEM_anal[num]  = 2*eta_eff*E2nd;    # in MPa
+    RMS_err_Numerics[num] = (T2nd_LaMEM_anal[num]/1e6-data.T2nd[num]) #error in MPa 
+    num                   = num+1;
+
+  Error_L2 = np.linalg.norm(RMS_err_Numerics);
+  print('Test: L2 error-norm [MPa] = ',Error_L2)
+
+  # store data
+  data.T2nd_LaMEM_anal    =   T2nd_LaMEM_anal/1e6;
+  data.T2nd_anal          =   T2nd_anal/1e6;
+  data.E2nd_anal          =   E2nd_anal;
+  
+  return(data);
+#----------------------------------------------------
 
 #----------------------------------------------------
 # Plot time-dependent data of LaMEM
