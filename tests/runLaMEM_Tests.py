@@ -58,7 +58,9 @@ def run_tests():
   registeredTests = [ FB1.test_a(),   FB1.test_b(),  FB1.test_c(),  FB1.test_d(),
                       FB2.test_a(),   Loc1.test_a(), Loc1.test_b(), Loc1.test_c(), FBPD1.test_a(),
                       Comp1.test_a(), Comp1.test_b(), Subgrid.test_a(), Diffusion.test_1D(), 
-                      Permeability.test_a(), Rheology0D.ViscoElastic(), Rheology0D.ViscoElastoPlastic() ];
+                      Permeability.test_a(), 
+                      Rheology0D.ViscoElastic(), Rheology0D.ViscoElastoPlastic(), 
+                      Rheology0D.LinearViscous() ];
  
 
 # Add matlab tests (There should be a better way to do this for a range of files at the same time)

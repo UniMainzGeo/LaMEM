@@ -35,7 +35,7 @@ def ViscoElastic():
       data        = LoadTimeDependentData('Rheolog0D_VE');                                  # Load the data using the VTK toolbox
       YieldStress = 1e10;                                                     # large value, to deactivate it
       data        = AnalyticalSolution_VE(data,YieldStress);                  # Compute analytical solution & compute error
-      PlotData(data,'./t13_Rheology0D/t13_ViscoElastic_output.png');          # Create Plot
+      PlotTimeDependentData(data,'./t13_Rheology0D/t13_ViscoElastic_output.png');          # Create Plot
   
       print('Created output figure ./t13_Rheology0D/t13_ViscoElastic_output.png comparing analytics vs. numerics')
     except:
@@ -52,7 +52,7 @@ def ViscoElastic():
 
 # This tests whether Maxwell viscoelastoplasticity works (with von Mises plasticity)
 def ViscoElastoPlastic():
-  # Visco-elasto-plastic rheology
+  # Visco-elasto-plastic rheology with linear viscosity
   
   #==============================================
   # Run the input script wth matlab-generated particles
@@ -77,7 +77,7 @@ def ViscoElastoPlastic():
       data        = LoadTimeDependentData('Rheolog0D_VEP');                                        # Load the data using the VTK toolbox
       YieldStress = 1e7;                                                            # large value, to deactivate it
       data        = AnalyticalSolution_VE(data,YieldStress);                        # Compute analytical solution & compute error
-      PlotData(data,'./t13_Rheology0D/t13_ViscoElastoPlasticMises_output.png');     # Create Plot
+      PlotTimeDependentData(data,'./t13_Rheology0D/t13_ViscoElastoPlasticMises_output.png');     # Create Plot
   
       print('Created output figure ./t13_Rheology0D/t13_ViscoElastoPlasticMises_output.png comparing analytics vs. numerics')
     except:
@@ -89,4 +89,60 @@ def ViscoElastoPlastic():
   ex1.setVerifyMethod(comparefunc)
   ex1.appendKeywords('@')
 
+  return(ex1)
+
+
+
+
+def LinearViscous():
+  # linear viscous rheology
+
+  # This computes a solution for different applied background strainrate values
+  # The analytical solution is simply T2nd = 2*eta*E2nd, where E2nd are the applied strain rate values
+  
+  #==============================================
+  # Run the input script wth matlab-generated particles
+  ranks = 1
+
+  # This runs several executables for different strain rates & renames the directories (such that we can read them later with Python & create a plot)
+  launch = ['../bin/opt/LaMEM -ParamFile ./t13_Rheology0D/Rheology_linearViscous_0D.dat -exx_strain_rates  -1e-13','mv Timestep_00000001_2.00000000e-03 Strainrate_0_13', 
+            '../bin/opt/LaMEM -ParamFile ./t13_Rheology0D/Rheology_linearViscous_0D.dat -exx_strain_rates  -1e-14','mv Timestep_00000001_2.00000000e-03 Strainrate_1_14', 
+            '../bin/opt/LaMEM -ParamFile ./t13_Rheology0D/Rheology_linearViscous_0D.dat -exx_strain_rates  -1e-15','mv Timestep_00000001_2.00000000e-03 Strainrate_2_15', 
+            '../bin/opt/LaMEM -ParamFile ./t13_Rheology0D/Rheology_linearViscous_0D.dat -exx_strain_rates  -1e-16','mv Timestep_00000001_2.00000000e-03 Strainrate_3_16', 
+            '../bin/opt/LaMEM -ParamFile ./t13_Rheology0D/Rheology_linearViscous_0D.dat -exx_strain_rates  -1e-17','mv Timestep_00000001_2.00000000e-03 Strainrate_4_17']
+  
+  
+  # This must be a relative path with respect to runLaMEM_Tests.py
+  expected_file = 't13_Rheology0D/Rheology_linearViscous_0D-p1.expected'
+
+  def comparefunc(unittest):
+
+    key = re.escape("|Div|_inf")
+    unittest.compareFloatingPoint(key,1e-7)
+
+    key = re.escape("|Div|_2")
+    unittest.compareFloatingPoint(key,1e-5)
+
+    key = re.escape("|mRes|_2")
+    unittest.compareFloatingPoint(key,1e-4)
+    #----------------------------  
+
+  
+    try: 
+      # Load the data using the VTK toolbox; compute analtical 
+      data        = LoadStrainrateData('Rheolog0D_linearViscous');     
+      data        = AnalyticalSolution_linearViscous(data);
+      PlotStrainrateData(data,'./t13_Rheology0D/t13_linearViscous_output.png');     # Create Plot
+
+      print('Created output figure ./t13_Rheology0D/t13_linearViscous_output.png comparing analytics vs. numerics')
+    except:
+      print('VTK/MatPlotLib/NumPy toolboxes are not installed; will not create plots')
+    #----------------------------
+
+  # Create unit test object
+  ex1 = pth.pthUnitTest('t13_linearViscous',ranks,launch,expected_file)
+  ex1.setVerifyMethod(comparefunc)
+  ex1.appendKeywords('@')
+
+  
   return(ex1)
