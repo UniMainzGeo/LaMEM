@@ -663,8 +663,8 @@ PetscErrorCode SNESCoupledTest(
 	PetscFunctionBegin;
 
 	// access context
-   	nl = (NLSol*)cctx;
-   	jr = nl->pc->pm->jr;
+	nl = (NLSol*)cctx;
+	jr = nl->pc->pm->jr;
 
 	// call default convergence test
 	ierr = SNESConvergedDefault(snes, it, xnorm, gnorm, f, reason, NULL); CHKERRQ(ierr);
@@ -675,15 +675,15 @@ PetscErrorCode SNESCoupledTest(
 
 	if(!it) PetscFunctionReturn(0);
 
-    if(jr->ctrl.actTemp)
-    {
-    	ierr = JacResGetTempRes(jr, jr->ts->dt);            CHKERRQ(ierr);
-    	ierr = JacResGetTempMat(jr, jr->ts->dt);            CHKERRQ(ierr);
-    	ierr = KSPSetOperators(jr->tksp, jr->Att, jr->Att); CHKERRQ(ierr);
-    	ierr = KSPSetUp(jr->tksp);                          CHKERRQ(ierr);
-    	ierr = KSPSolve(jr->tksp, jr->ge, jr->dT);          CHKERRQ(ierr);
-    	ierr = JacResUpdateTemp(jr);                        CHKERRQ(ierr);
-     }
+	if(jr->ctrl.actTemp)
+	{
+		ierr = JacResGetTempRes(jr, jr->ts->dt);            CHKERRQ(ierr);
+		ierr = JacResGetTempMat(jr, jr->ts->dt);            CHKERRQ(ierr);
+		ierr = KSPSetOperators(jr->tksp, jr->Att, jr->Att); CHKERRQ(ierr);
+		ierr = KSPSetUp(jr->tksp);                          CHKERRQ(ierr);
+		ierr = KSPSolve(jr->tksp, jr->ge, jr->dT);          CHKERRQ(ierr);
+		ierr = JacResUpdateTemp(jr);                        CHKERRQ(ierr);
+	}
 
 	PetscFunctionReturn(0);
 }

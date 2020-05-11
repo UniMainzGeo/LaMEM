@@ -137,7 +137,7 @@ PetscErrorCode ADVMarkInit(AdvCtx *actx, FB *fb)
 			ierr = LoadPhaseDiagram(actx, actx->jr->dbm->phases, i); CHKERRQ(ierr);
 		}
 	}
-	
+
 	if(LoadPhaseDiagrams)
 	{
 		PetscPrintf(PETSC_COMM_WORLD,"--------------------------------------------------------------------------\n");
@@ -1778,7 +1778,7 @@ void computeTemperature(GeomPrim *geom, Marker *P, PetscScalar *T)
 		T_bot = geom->botTemp;
 		z     = P->X[2];
 		(*T)  = (z-z_top)*(T_top - T_bot)/(z_top-z_bot) + T_top; // linear gradient between top & bottom
-				
+		
 
 	}
 	else if (geom->setTemp==3)

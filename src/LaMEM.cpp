@@ -56,7 +56,6 @@ static char help[] = "Solves 3D Stokes equations using multigrid .\n\n";
 #define __FUNCT__ "main"
 int main(int argc, char **argv)
 {
-
 	PetscErrorCode 	ierr;
 
 	// Initialize PETSC
