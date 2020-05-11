@@ -452,27 +452,22 @@
 	<SofteningEnd>
 	
 	<PhTransStart>
-		ID   = 0   # Phase_transition law ID
-		Type = Claperyon
-		neq  = 2
-		gamma = -30 1.5
-		P0    =  2e9 2e9
-		T0    =  500 500
-		Ph2Change= 2
+		ID   = 0          # Phase_transition law ID
+		Type = Clapeyron  # type of phase transition
+		neq  = 2          # number of equations 
+		gamma = -30 1.5   # clapeyron parameter usually listed in MPa
+		                  # P = (T-T0)*gamma + P0
+		P0    =  2e9 2e9  #Pressure (Pa)
+ 		T0    =  500 500  #Temperature (Celsius degree)
+		Ph2Change= 2      # Addressing phase 
 	<PhTransEnd>
+	
 	<PhTransStart>
-		ID   = 1   # Phase_transition law ID
-		Type = Constant
-		neq  = 1
-		Temperature = -1 1200
-		#or
-		Pressure    = +1 2e9
-		#or
-		APS         = +1 0.5
-		#or
-		Depth       = +1 660e3 
-		#or 
-		Ph2Change= 3
+		ID   = 1         # Phase_transition law ID
+		Type = Constant  # Means that it took a constant and change phase whenever a particles has a lower or higher value of certain properties 
+		Parameter = T    # Parameter that you need to specify T(temperature) p(pressure) Depth (z coordinate)
+		Value = -1 1200  # -/+ 1 indicate whetever it takes higher or lower values, the second the actual value 
+		Ph2Change = 3    # tells the addressing phase of the phase transformation
 	<PhTransEnd>
 
 # Define material properties for all phases (maximum 32)
