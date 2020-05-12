@@ -495,7 +495,7 @@
 		q          = 2.0    # stress-dependence parameter
 		ch         = 2e7    # cohesion
 		fr         = 30.0   # friction angle
-		eta_st     = 1e19   # stabiliation viscosity (default is eta_min)
+		eta_st     = 1e19   # stabilization viscosity (default is eta_min)
 		rp         = 0.7    # pore-pressure ratio
 		chSoftID   = 0      # friction softening law ID
 		frSoftID   = 0      # cohesion softening law ID
