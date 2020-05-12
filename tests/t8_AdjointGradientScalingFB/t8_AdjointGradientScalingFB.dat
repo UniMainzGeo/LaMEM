@@ -147,37 +147,39 @@
 	#	Inv_Par = 2   
 	#<InverseParEnd>
 	
-	<InverseParStart>
-	   	Inv_ID  = 0
-		Inv_Typ = n      
-		Inv_Par = 2  
-	<InverseParEnd>
+	<AdjointParameterStart>
+	   	ID  			= 0		# phase of the parameter
+		Type 			= n     # options: [rho0,rhon,rhoc,eta,eta0,n,En] 	
+		InitGuess 	= 2  	# initial guess
+		#LowerBound     = 1		# [optional] lower bound
+		#UpperBound     = 3		# [optional] upper bound
+	<AdjointParameterEnd>
 	       
-	<InverseParStart>  
-		Inv_ID  = 1
-		Inv_Typ = n      
-		Inv_Par = 2    
-	<InverseParEnd>
+	<AdjointParameterStart>  
+		ID  		= 1	
+		Type 		= n   	   
+		InitGuess 	= 2    
+	<AdjointParameterEnd>
 
-	#<InverseParStart>
-	#        Inv_ID  = 0
-	#        Inv_Typ = eta0
-	#        Inv_Par = 1
-	#<InverseParEnd>
+	#<AdjointParameterStart>
+	#	ID  		= 0
+	#	Type 		= eta0
+	#   InitGuess 	= 1
+	#<AdjointParameterEnd>
 
-	#<InverseParStart>
-	#        Inv_ID  = 1
-	#        Inv_Typ = eta0
-	#        Inv_Par = 100
-	#<InverseParEnd>
+	#<AdjointParameterStart>
+	#  	ID  		= 1
+	#   Type 		= eta0
+	#   InitGuess 	= 100
+	#<AdjointParameterEnd>
 
 	# Comparison indices
-	<InverseIndStart>
-		Inv_Coord = 0.5 0.5 0.5					
-		Inv_Av = 3
-		Inv_Ae = -0.04248
-	<InverseIndEnd>
-
+	<AdjointObservationPointStart>
+		Coordinate 			= 0.5 0.5 0.5					
+		VelocityComponent 	= z
+		Value  				= -0.04248
+	<AdjointObservationPointEnd>
+	
 #===============================================================================
 # PETSc options
 #===============================================================================

@@ -165,8 +165,8 @@ PetscErrorCode LaMEMAdjointMain(ModParam *IOparam, FB *fb)
 	Scaling         scal;
 	PetscScalar    *gradar, *Ubar, *Lbar, *Par, *fcconvar, F, ts;
 	Vec             val, Ub, Lb, grad, P;
-	PetscInt        i, ti;
-	char            str[_str_len_];
+	PetscInt        i, ti, ID;
+	char            str[_str_len_], Vel_comp[_str_len_];
 
 	IOparam->count = 1;  // iteration counter for the initial cost function
 	F              = 1e100;
@@ -188,28 +188,29 @@ PetscErrorCode LaMEMAdjointMain(ModParam *IOparam, FB *fb)
 	IOparam->maxit      = 50;
 	IOparam->maxitLS    = 10;
 
-	// Some inputs
+	// Some general Adjoint Gradient parameters:
 	ierr = getIntParam   (fb, _OPTIONAL_, "Adjoint_GradientCalculation"      , &IOparam->Gr,        1, 1        ); CHKERRQ(ierr);  // Calculate Grads with respect to solution (scaling laws etc.) = 1; Calc with respect to cost function (direct fD test) = 0
 	ierr = getIntParam   (fb, _OPTIONAL_, "Adjoint_FieldSensitivity"         , &IOparam->FS,        1, 1        ); CHKERRQ(ierr);  // Do a field sensitivity test? -> Will do the test for the first InverseParStart that is given!
 	ierr = getIntParam   (fb, _OPTIONAL_, "Adjoint_EvaluationPoints"         , &IOparam->Ap,        1, 3        ); CHKERRQ(ierr);  // 1 = several indices ; 2 = the whole domain ; 3 = surface
 	ierr = getIntParam   (fb, _OPTIONAL_, "Adjoint_AdvectPoint"              , &IOparam->Adv,       1, 1        ); CHKERRQ(ierr);  // 1 = advect the point
 	ierr = getIntParam   (fb, _OPTIONAL_, "Adjoint_ObjectiveFunctionDef"     , &IOparam->OFdef,     1, 1        ); CHKERRQ(ierr);  // Objective function defined by hand?
 	
-	ierr = getIntParam   (fb, _OPTIONAL_, "Inv_maxit"     , &IOparam->maxit,     1, 1500     ); CHKERRQ(ierr);  // maximum number of inverse iterations
-	ierr = getIntParam   (fb, _OPTIONAL_, "Inv_maxitLS"   , &IOparam->maxitLS,   1, 1500     ); CHKERRQ(ierr);  // maximum number of backtracking	
-	ierr = getIntParam   (fb, _OPTIONAL_, "Inv_Ab"        , &IOparam->Ab,        1, 1        ); CHKERRQ(ierr);  // Apply bounds?
-	ierr = getIntParam   (fb, _OPTIONAL_, "Inv_Tao"       , &IOparam->Tao,       1, 1        ); CHKERRQ(ierr);  // Use TAO?
-	ierr = getScalarParam(fb, _OPTIONAL_, "Inv_tol"       , &IOparam->tol,       1, 1        ); CHKERRQ(ierr);  // tolerance for F/Fini after which code has converged
-	ierr = getScalarParam(fb, _OPTIONAL_, "Inv_facLS"     , &IOparam->facLS,     1, 1        ); CHKERRQ(ierr);  // factor in the line search that multiplies current line search parameter if GD update was succesful (increases convergence speed)
-	ierr = getScalarParam(fb, _OPTIONAL_, "Inv_facB"      , &IOparam->facB,      1, 1        ); CHKERRQ(ierr);  // backtrack factor that multiplies current line search parameter if GD update was not succesful
-	ierr = getScalarParam(fb, _OPTIONAL_, "Inv_maxfac"    , &IOparam->maxfac,    1, 1        ); CHKERRQ(ierr);  // limit on the factor (only used without tao)
-	ierr = getScalarParam(fb, _OPTIONAL_, "Inv_Scale_Grad", &IOparam->Scale_Grad,1, 1        ); CHKERRQ(ierr);  // Magnitude of initial parameter update (factor_ini = Scale_Grad/Grad)
-	ierr = getScalarParam(fb, _REQUIRED_, "DII"           , &IOparam->DII_ref,   1, 1        ); CHKERRQ(ierr);   // SUPER UNNECESSARY BUT OTHERWISE NOT AVAILABLE
+	// If we do inversion, additional parameters can be specified:
+	ierr = getIntParam   (fb, _OPTIONAL_, "Inversion_maxit"     			, &IOparam->maxit,     1, 1500     ); CHKERRQ(ierr);  // maximum number of inverse iterations
+	ierr = getIntParam   (fb, _OPTIONAL_, "Inversion_maxit_linesearch"   	, &IOparam->maxitLS,   1, 1500     ); CHKERRQ(ierr);  // maximum number of backtracking	
+	ierr = getIntParam   (fb, _OPTIONAL_, "Inversion_Ab"        			, &IOparam->Ab,        1, 1        ); CHKERRQ(ierr);  // Apply bounds?
+	ierr = getIntParam   (fb, _OPTIONAL_, "Inversion_EmployTAO"       		, &IOparam->Tao,       1, 1        ); CHKERRQ(ierr);  // Use TAO?
+	ierr = getScalarParam(fb, _OPTIONAL_, "Inversion_rtol"       			, &IOparam->tol,       1, 1        ); CHKERRQ(ierr);  // tolerance for F/Fini after which code has converged
+	ierr = getScalarParam(fb, _OPTIONAL_, "Inversion_factor_linesearch"     , &IOparam->facLS,     1, 1        ); CHKERRQ(ierr);  // factor in the line search that multiplies current line search parameter if GD update was succesful (increases convergence speed)
+	ierr = getScalarParam(fb, _OPTIONAL_, "Inversion_facB"      			, &IOparam->facB,      1, 1        ); CHKERRQ(ierr);  // backtrack factor that multiplies current line search parameter if GD update was not succesful
+	ierr = getScalarParam(fb, _OPTIONAL_, "Inversion_maxfac"    			, &IOparam->maxfac,    1, 1        ); CHKERRQ(ierr);  // limit on the factor (only used without tao)
+	ierr = getScalarParam(fb, _OPTIONAL_, "Inversion_Scale_Grad"			, &IOparam->Scale_Grad,1, 1        ); CHKERRQ(ierr);  // Magnitude of initial parameter update (factor_ini = Scale_Grad/Grad)
+	ierr = getScalarParam(fb, _REQUIRED_, "DII"           					, &IOparam->DII_ref,   1, 1        ); CHKERRQ(ierr);   // SUPER UNNECESSARY BUT OTHERWISE NOT AVAILABLE
 
 
 
 
-	PetscPrintf(PETSC_COMM_WORLD,"--------------------------------------------------------------------------  \n");
+	PetscPrintf(PETSC_COMM_WORLD,"--------------------------------------------------------------------------- \n");
 	PetscPrintf(PETSC_COMM_WORLD,"                                     LaMEM                                  \n");
 	PetscPrintf(PETSC_COMM_WORLD,"                       Adjoint Gradient Framework Active                    \n");
 	PetscPrintf(PETSC_COMM_WORLD,"--------------------------------------------------------------------------- \n");
@@ -222,32 +223,35 @@ PetscErrorCode LaMEMAdjointMain(ModParam *IOparam, FB *fb)
 		else               { PetscPrintf(PETSC_COMM_WORLD, "   Gradients are computed w.r.t.            : solution      [Adjoint_GradientCalculation = 1]  \n", IOparam->Gr); }
 		PetscPrintf(PETSC_COMM_WORLD, "   Pointwise gradient evaluation            : %d    \n", IOparam->FS);		// No idea
 
-		if 		(IOparam->Ap == 1){PetscPrintf(PETSC_COMM_WORLD, "   Gradient evaluation points               : several indices  [Adjoint_EvaluationPoints = 1]  \n"); }
+		if 		(IOparam->Ap == 1){PetscPrintf(PETSC_COMM_WORLD, "   Gradient evaluation points               : several observation points  [Adjoint_EvaluationPoints = 1]  \n"); }
 		else if (IOparam->Ap == 2){PetscPrintf(PETSC_COMM_WORLD, "   Gradient evaluation points               : whole domain  	 [Adjoint_EvaluationPoints = 2]  \n"); }
 		else if (IOparam->Ap == 3){PetscPrintf(PETSC_COMM_WORLD, "   Gradient evaluation points               : surface          [Adjoint_EvaluationPoints = 3]   \n"); }
 		
 		PetscPrintf(PETSC_COMM_WORLD, "   Advect evaluation points with flow       : %d    \n", IOparam->Adv);
 		
-		
 		PetscPrintf(PETSC_COMM_WORLD, "   Objective function defined in input      : %d    \n", IOparam->OFdef);
 	}
 	else if(IOparam->use == 3) 
 	{
-		PetscPrintf(PETSC_COMM_WORLD, "   Adjoint mode                             : Gradient descent inversion  \n");
+		PetscPrintf(PETSC_COMM_WORLD, "   Adjoint mode                             : Gradient descent (or Quasi-Newton) inversion  \n");
 		PetscPrintf(PETSC_COMM_WORLD, "   Use Tao BLMVM (or LaMEM steepest descent): %d    \n", IOparam->Tao);
-		PetscPrintf(PETSC_COMM_WORLD, "   Index definition                         : %d  (1 = several indices; 2 = whole domain; 3 = surface)  \n", IOparam->Ap);
-		PetscPrintf(PETSC_COMM_WORLD, "   Advect indices                           : %d    \n", IOparam->Adv);
+		if 		(IOparam->Ap == 1){PetscPrintf(PETSC_COMM_WORLD, "   Gradient evaluation points               : several observation points  [Adjoint_EvaluationPoints = 1]  \n"); }
+		else if (IOparam->Ap == 2){PetscPrintf(PETSC_COMM_WORLD, "   Gradient evaluation points               : whole domain  	 [Adjoint_EvaluationPoints = 2]  \n"); }
+		else if (IOparam->Ap == 3){PetscPrintf(PETSC_COMM_WORLD, "   Gradient evaluation points               : surface          [Adjoint_EvaluationPoints = 3]   \n"); }
+		PetscPrintf(PETSC_COMM_WORLD, "   Advect evaluation points with flow       : %d    \n", IOparam->Adv);
 		PetscPrintf(PETSC_COMM_WORLD, "   Objective function defined in input      : %d    \n", IOparam->OFdef);
+
 		PetscPrintf(PETSC_COMM_WORLD, "   Maximum gradient descent iterations      : %d    \n", IOparam->maxit);
 		PetscPrintf(PETSC_COMM_WORLD, "   Maximum linesearch iterations            : %d    \n", IOparam->maxitLS);
 		PetscPrintf(PETSC_COMM_WORLD, "   Apply bounds                             : %d    \n", IOparam->Ab);
 		PetscPrintf(PETSC_COMM_WORLD, "   Tolerance (F/Fini)                       : %.5e  \n", IOparam->tol);
 		if (IOparam->Tao == 0)
 		{
-			PetscPrintf(PETSC_COMM_WORLD, "   Linesearch factor (succesful update)     : %.5e  \n", IOparam->facLS);
-			PetscPrintf(PETSC_COMM_WORLD, "   Linesearch factor (overstep)             : %.5e  \n", IOparam->facB);
-			PetscPrintf(PETSC_COMM_WORLD, "   Maximum linesearch factor                : %.5e  \n", IOparam->maxfac);
-			PetscPrintf(PETSC_COMM_WORLD, "   Scale for initial parameter update       : %.5e  \n", IOparam->Scale_Grad);
+			PetscPrintf(PETSC_COMM_WORLD, "   Not employing TAO, but instead our build-in gradient algorithm, with the following parameters: \n", IOparam->facLS);
+			PetscPrintf(PETSC_COMM_WORLD, "    Linesearch factor (succesful update)     : %.5e  \n", IOparam->facLS);
+			PetscPrintf(PETSC_COMM_WORLD, "    Linesearch factor (overstep)             : %.5e  \n", IOparam->facB);
+			PetscPrintf(PETSC_COMM_WORLD, "    Maximum linesearch factor                : %.5e  \n", IOparam->maxfac);
+			PetscPrintf(PETSC_COMM_WORLD, "    Scale for initial parameter update       : %.5e  \n", IOparam->Scale_Grad);
 		}
 	} 
 	else if (IOparam->use == 4) 
@@ -280,16 +284,16 @@ PetscErrorCode LaMEMAdjointMain(ModParam *IOparam, FB *fb)
 
 	// PARAMETERS
 	// Get parameter / typ / etc.
-	ierr = FBFindBlocks(fb, _OPTIONAL_, "<InverseParStart>", "<InverseParEnd>"); CHKERRQ(ierr);
+	ierr = FBFindBlocks(fb, _OPTIONAL_, "<AdjointParameterStart>", "<AdjointParameterEnd>"); CHKERRQ(ierr);
 
 	// error checking
 	if(fb->nblocks > _MAX_PAR_)
 	{
-		SETERRQ1(PETSC_COMM_WORLD, PETSC_ERR_USER, "Too many inverse parameters specified! Max allowed: %lld", (LLD)_MAX_PAR_);
+		SETERRQ1(PETSC_COMM_WORLD, PETSC_ERR_USER, "Too many adjoint parameters specified! Max allowed: %lld", (LLD)_MAX_PAR_);
 	}
 	if(!fb->nblocks)
 	{
-		SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "You have to define Parameters (mdN) for the inversion. Have a look into the comments in src/LaMEM.cpp");
+		SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "You have to define adjoint Parameters (mdN) for the inversion. Have a look into the comments in src/LaMEM.cpp");
 	}
 
 	// read each individual parameter
@@ -297,18 +301,18 @@ PetscErrorCode LaMEMAdjointMain(ModParam *IOparam, FB *fb)
 	VecGetArray(Ub,&Ubar);
 	VecGetArray(Lb,&Lbar);
 	VecGetArray(grad,&gradar);
-
+	PetscPrintf(PETSC_COMM_WORLD, "\n   Total number of adjoint parameters       : %i   \n", fb->nblocks);
 	for(i = 0; i < fb->nblocks; i++)
 	{
-		ierr = getIntParam   (fb, _OPTIONAL_, "Inv_ID" , &ti, 1, _max_num_phases_); CHKERRQ(ierr);
-		phsar[i]  = ti;                    // PHASE
-		ierr = getScalarParam(fb, _OPTIONAL_, "Inv_Par", &ts, 1, 1 ); CHKERRQ(ierr);
+		ierr = getIntParam   (fb, _OPTIONAL_, "ID" , &ID, 1, _max_num_phases_); CHKERRQ(ierr);		// phase at which it applies
+		phsar[i]  = ID;                    // PHASE
+		ierr = getScalarParam(fb, _OPTIONAL_, "InitGuess", &ts, 1, 1 ); CHKERRQ(ierr);
 		Par[i]    = ts;                    // PARAMETER VALUES
-		ierr = getScalarParam(fb, _OPTIONAL_, "Inv_Uba", &ts, 1, 1 ); CHKERRQ(ierr);
+		ierr = getScalarParam(fb, _OPTIONAL_, "UpperBound", &ts, 1, 1 ); CHKERRQ(ierr);
 		Ubar[i]   = ts;                    // UPPER BOUND
-		ierr = getScalarParam(fb, _OPTIONAL_, "Inv_Lba", &ts, 1, 1 ); CHKERRQ(ierr);
+		ierr = getScalarParam(fb, _OPTIONAL_, "LowerBound", &ts, 1, 1 ); CHKERRQ(ierr);
 		Lbar[i]   = ts;                    // LOWER BOUND
-		ierr = getStringParam(fb, _OPTIONAL_, "Inv_Typ", str, NULL); CHKERRQ(ierr);
+		ierr = getStringParam(fb, _OPTIONAL_, "Type", str, NULL); CHKERRQ(ierr);
 		if     (!strcmp(str, "rho0"))       { ti = _RHO0_; }
 		else if(!strcmp(str, "rhon"))       { ti = _RHON_; }
 		else if(!strcmp(str, "rhoc"))       { ti = _RHOC_; }
@@ -320,9 +324,12 @@ PetscErrorCode LaMEMAdjointMain(ModParam *IOparam, FB *fb)
 		typar[i]     = ti;
 		gradar[i]    = 0;                     // GRADIENTS
 
+		// Print overview
+		PetscPrintf(PETSC_COMM_WORLD, "      %-6s:     ID=%i, Initial Guess=%2.3f Bounds=[%2.3f - %2.3f]   \n",str, ID, Par[i],Lbar[i],Ubar[i]);
+		
 		fb->blockID++;
 	}
-
+	
 	IOparam->phs = phsar;
 	IOparam->typ = typar;
 	IOparam->grd = gradar;
@@ -336,7 +343,7 @@ PetscErrorCode LaMEMAdjointMain(ModParam *IOparam, FB *fb)
 
 	// LOCATIONS
 	// Get location / value / etc.
-	ierr = FBFindBlocks(fb, _OPTIONAL_, "<InverseIndStart>", "<InverseIndEnd>"); CHKERRQ(ierr);
+	ierr = FBFindBlocks(fb, _OPTIONAL_, "<AdjointObservationPointStart>", "<AdjointObservationPointEnd>"); CHKERRQ(ierr);
 
 	// error checking
 	if(fb->nblocks > _MAX_IND_)
@@ -345,10 +352,10 @@ PetscErrorCode LaMEMAdjointMain(ModParam *IOparam, FB *fb)
 	}
 	if(!fb->nblocks && IOparam->Ap == 1)
 	{
-		SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "You have to define indices (mdi) for the inversion. Have a look into the comments in src/LaMEM.cpp");
+		SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "You have to define sample points (mdi) for the inversion. Have a look into the comments in src/LaMEM.cpp");
 	}
 
-	// Catch that if we have scaling none the index values dont go to inf:
+	// Catch that if we have scaling none the index values don't go to inf:
 	if(scal.utype == _NONE_)
 	{
 		scal.length   = 1;
@@ -356,19 +363,40 @@ PetscErrorCode LaMEMAdjointMain(ModParam *IOparam, FB *fb)
 	}
 
 	// read each individual index
+	if (fb->nblocks>0){
+		PetscPrintf(PETSC_COMM_WORLD, "\n   Total number of observation points 	    : %i   \n", fb->nblocks);
+	}	
 	for(i = 0; i < fb->nblocks; i++)
 	{
-		ierr = getScalarParam(fb, _OPTIONAL_, "Inv_Coord",  IOparam->Coord, 3, 1);        CHKERRQ(ierr);
+		// retrieve the coordinates of the sample points	
+		ierr = getScalarParam(fb, _OPTIONAL_, "Coordinate",  IOparam->Coord, 3, 1);        CHKERRQ(ierr);
 		Ax[i] = (IOparam->Coord[0])/scal.length;
 		Ay[i] = (IOparam->Coord[1])/scal.length;
 		Az[i] = (IOparam->Coord[2])/scal.length;
-		ierr = getIntParam   (fb, _OPTIONAL_, "Inv_Av", &ti, 1, 3); CHKERRQ(ierr);
+
+		//ierr = getIntParam   (fb, _OPTIONAL_, "Inv_Av", &ti, 1, 3); CHKERRQ(ierr);
+		
+		ierr = getStringParam(fb, _OPTIONAL_, "VelocityComponent", Vel_comp, NULL); CHKERRQ(ierr);
+		if     	(!strcmp(Vel_comp, "x"))    ti=1;
+		else if (!strcmp(Vel_comp, "y"))    ti=2;
+		else if (!strcmp(Vel_comp, "z"))    ti=3;
+		else{	SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "Choose either [x,y,z] as VelocityComponent");} 
 		Av[i] = ti;                     // VELOCITY COMPONENT
-		ierr = getScalarParam(fb, _OPTIONAL_, "Inv_Ae", &ts, 1, 1 ); CHKERRQ(ierr);
+		
+		
+		
+		ierr = getScalarParam(fb, _OPTIONAL_, "Value", &ts, 1, 1 ); CHKERRQ(ierr);
 		Ae[i] = ts /scal.velocity;     // VELOCITY VALUE
+
+		if (fb->nblocks<6){
+			// Print overview 
+			PetscPrintf(PETSC_COMM_WORLD, "      [%f,%f,%f] should have V%s=%7.5f\n", IOparam->Coord[0],IOparam->Coord[1],IOparam->Coord[0], Vel_comp, ts);
+		}
+
 		fb->blockID++;
 	}
-
+	PetscPrintf(PETSC_COMM_WORLD, "\n");
+	
 	IOparam->Ax = Ax;
 	IOparam->Ay = Ay;
 	IOparam->Az = Az;
@@ -381,7 +409,7 @@ PetscErrorCode LaMEMAdjointMain(ModParam *IOparam, FB *fb)
 	// Error checking
 	if (IOparam->use != 0 && !IOparam->Ap)
 	{
-		SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "You have to define indices (Ap) for the inversion. Have a look into the comments in src/LaMEM.cpp");
+		SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "You have to define observation points (Ap) for the inversion. Have a look into the comments in src/LaMEM.cpp");
 	}
 
 	//===============
@@ -396,7 +424,7 @@ PetscErrorCode LaMEMAdjointMain(ModParam *IOparam, FB *fb)
  		// call LaMEM main library function
  		ierr = LaMEMLibMain(IOparam); CHKERRQ(ierr);
  	}
- 	// compute 'full' adjoint inversion
+ 	// compute 'full' adjoint based gradient inversion
  	else if(IOparam->use == 3)
  	{
  		VecDuplicate(P,&IOparam->P);
@@ -434,10 +462,11 @@ PetscErrorCode LaMEMAdjointMain(ModParam *IOparam, FB *fb)
 
  	 	 	// 3. Solve Tao & view result
  	 	 	ierr = TaoSolve(tao);	 												CHKERRQ(ierr);
- 	 	 	PetscPrintf(PETSC_COMM_WORLD,"------------------------------------------\n");
+ 	 	 	PetscPrintf(PETSC_COMM_WORLD,"--------------------------------------------------------------------------- \n");
+	
  	 	 	TaoView(tao,PETSC_VIEWER_STDOUT_WORLD);
- 	 	 	PetscPrintf(PETSC_COMM_WORLD,"------------------------------------------\n");
-
+ 	 	 	PetscPrintf(PETSC_COMM_WORLD,"--------------------------------------------------------------------------- \n");
+	
  	 	 	// 4. Clean
  	 	 	ierr = TaoDestroy(&tao);
  		}
@@ -447,10 +476,10 @@ PetscErrorCode LaMEMAdjointMain(ModParam *IOparam, FB *fb)
  			ierr = AdjointOptimisation(P, F, grad, IOparam);
  		}
 
- 		PetscPrintf(PETSC_COMM_WORLD,"\n------------------------------------------\n");
- 		PetscPrintf(PETSC_COMM_WORLD,"*         INVERSION RESULT SUMMARY       *\n");
- 		PetscPrintf(PETSC_COMM_WORLD,"------------------------------------------\n");
- 		PetscPrintf(PETSC_COMM_WORLD,"Number of inversion iterations: %d\n",IOparam->count);
+ 		PetscPrintf(PETSC_COMM_WORLD,"--------------------------------------------------------------------------- \n");
+		PetscPrintf(PETSC_COMM_WORLD,"*         				INVERSION RESULT SUMMARY       					* \n");
+		PetscPrintf(PETSC_COMM_WORLD,"--------------------------------------------------------------------------- \n");
+		PetscPrintf(PETSC_COMM_WORLD,"Number of inversion iterations: %d\n",IOparam->count);
  		PetscPrintf(PETSC_COMM_WORLD,"F/Fini:\n");
  		VecGetArray(IOparam->fcconv,&fcconvar);
  		for(i=1;i<IOparam->count;i++)
@@ -467,8 +496,8 @@ PetscErrorCode LaMEMAdjointMain(ModParam *IOparam, FB *fb)
 			PetscPrintf(PETSC_COMM_WORLD,"%.5e\n",Par[i]);
 		}
 		VecRestoreArray(IOparam->P,&Par);
- 		PetscPrintf(PETSC_COMM_WORLD,"------------------------------------------\n\n");
-
+ 		PetscPrintf(PETSC_COMM_WORLD,"--------------------------------------------------------------------------- \n\n");
+		
  	}
  	// this is a forward simulation that we want to save as comparison solution
  	else if(IOparam->use == 4)
@@ -593,7 +622,7 @@ PetscErrorCode AdjointOptimisation(Vec P, PetscScalar F, Vec grad, void *ctx)
 			if(LScount>IOparam->maxitLS)
 			{
 				PetscPrintf(PETSC_COMM_WORLD,"******************************************************\n");
-				PetscPrintf(PETSC_COMM_WORLD,"*             YOUR SOLUTION DIVERGED                 *\n");
+				PetscPrintf(PETSC_COMM_WORLD,"*              SOLUTION DIVERGED                     *\n");
 				PetscPrintf(PETSC_COMM_WORLD,"******************************************************\n\n");
 
 				// Return parameters for final output
@@ -623,7 +652,7 @@ PetscErrorCode AdjointOptimisation(Vec P, PetscScalar F, Vec grad, void *ctx)
 		VecRestoreArray(grad,&gradar);
 		VecRestoreArray(P,&Par);
 
-		PetscPrintf(PETSC_COMM_WORLD,"\n------------------------------------------\n");
+		PetscPrintf(PETSC_COMM_WORLD,"\n--------------------------------------------------------------------------- \n");
 		PetscPrintf(PETSC_COMM_WORLD,"%d. IT INVERSION RESULT: line search its = %d ; F / FINI = %.5e\n\n",IOparam->count,LScount-1,IOparam->mfit/IOparam->mfitini);
 		PetscPrintf(PETSC_COMM_WORLD,"FOLD = %.5e \n   F = %.5e\n\n",Fold,F);
 
@@ -675,7 +704,8 @@ PetscErrorCode AdjointOptimisation(Vec P, PetscScalar F, Vec grad, void *ctx)
 		}
 		VecRestoreArray(P,&Par);
 
-		PetscPrintf(PETSC_COMM_WORLD,"------------------------------------------\n\n");
+		PetscPrintf(PETSC_COMM_WORLD,"---------------------------------------------------------------------------\n\n");
+		
 
 		// Give the updated values to the code  (actually unfortunately necessary here and at the top of this function - need to rearrange that)
 		VecCopy(P,IOparam->P);
