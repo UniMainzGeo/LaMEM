@@ -449,6 +449,7 @@
 		APS1 = 0.1 # begin of softening APS
 		APS2 = 1.0 # end of softening APS
 		A    = 0.7 # reduction ratio
+		Lm   = 0.2 # material length scale (in selected units, e.g. km in geo)
 	<SofteningEnd>
 
 # Define material properties for all phases (maximum 32)
@@ -494,6 +495,7 @@
 		q          = 2.0    # stress-dependence parameter
 		ch         = 2e7    # cohesion
 		fr         = 30.0   # friction angle
+		eta_st     = 1e19   # stabiliation viscosity (default is eta_min)
 		rp         = 0.7    # pore-pressure ratio
 		chSoftID   = 0      # friction softening law ID
 		frSoftID   = 0      # cohesion softening law ID
