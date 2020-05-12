@@ -27,9 +27,9 @@
 
 # Number of cells for all segments
 
-	nel_x = 32
-	nel_y = 32
-	nel_z = 32
+	nel_x = 16
+	nel_y = 16
+	nel_z = 16
 
 # Coordinates of all segments (including start and end points)
 
@@ -57,9 +57,9 @@
 	FSSA           = 1.0            # free surface stabilization parameter [0 - 1]
 	act_p_shift    = 0              # pressure shift activation flag (zero pressure in the top cell layer)
 	init_guess     = 0              # initial guess flag
-	DII_ref        = 1e-6          # background (reference) strain-rate
+	DII            = 1e-6          # background (reference) strain-rate
 	eta_min        = 1e-3           # viscosity upper bound
-	eta_max        = 1e12           # viscosity lower limit
+	eta_max        = 1e6           # viscosity lower limit
 
 #===============================================================================
 # Model setup & advection
@@ -85,6 +85,7 @@
 	out_file_name       = AdjointGradients_test # output file name
 	out_pvd             = 1                     # activate writing .pvd file
 	out_density         = 1
+	#out_gradient        = 1     # print pointwise gradient
 
 # AVD phase viewer output options (requires activation)
 
@@ -98,61 +99,83 @@
 
 	# Define properties of overburden
 	<MaterialStart>
-		ID  = 0 # phase id
-		rho = 1 # density
-		eta0 = 1   # viscosity
-		n = 1      # viscosity
-		e0 = 1e-6  # viscosity
+		ID  = 0 
+		rho = 1
+		eta0 = 1
+		n = 1.2
+		e0 = 1e-6  
 	<MaterialEnd>
 
 	# Define properties of block
 	<MaterialStart>
-		ID  = 1   # phase id
-		rho = 2   # density
-		eta0 = 100   # viscosity
-		n = 1      # viscosity
-		e0 = 1e-6  # viscosity
+		ID  = 1   
+		rho = 2   
+		eta0 = 100
+		n = 1.6
+		e0 = 1e-6  
 	<MaterialEnd>
 	
 #===============================================================================
-# Inverse Part (look into comments in LaMEM.cpp for info)
+# Adjoint Parameters (look into comments in LaMEM.cpp for info)
 #===============================================================================
 	
 	# General
-    Inv_use       = 2
-    Inv_Ap        = 1
+	Adjoint_mode    					= AdjointGradients    	# options: [None; AdjointGradients, GradientDescent; Inversion]
+	Adjoint_EvaluationPoints           	= 1						# options: [1=several points; 2=whole domain; 3=surface]
+	Adjoint_ObjectiveFunctionDef        = 1                     # options: [1-defined by hand; 0??]
+	# Inv_Tao       					= 0
+	Adjoint_GradientCalculation        	= 0						# options [0= w.r.t. Cost function (e.g,);  1= w.r.t. Solution ]
+	# Inv_maxit     = 20
+	Adjoint_FS        					= 0      				# calculate pointwise gradient (activate out_gradient)
     
-    # Parameters
-    <InverseParStart>
-	   	Inv_ID  = 0
-		Inv_Typ = rho0      
-		Inv_Par = 1  
-	<InverseParEnd>
+	# FS based
+	#<InverseParStart>
+	#        Inv_ID  = 0
+	#        Inv_Typ = rho0
+	#<InverseParEnd>
+
+	# Parameters
+	#<InverseParStart>
+	#   	Inv_ID  = 0
+	#	Inv_Typ = rho0      
+	#	Inv_Par = 1  
+	#<InverseParEnd>
 	       
-	<InverseParStart>  
-		Inv_ID  = 1
-		Inv_Typ = rho0      
-		Inv_Par = 2   
-	<InverseParEnd>
+	#<InverseParStart>  
+	#	Inv_ID  = 1
+	#	Inv_Typ = rho0      
+	#	Inv_Par = 2   
+	#<InverseParEnd>
 	
 	<InverseParStart>
 	   	Inv_ID  = 0
-		Inv_Typ = eta0      
-		Inv_Par = 1  
+		Inv_Typ = n      
+		Inv_Par = 2  
 	<InverseParEnd>
 	       
 	<InverseParStart>  
 		Inv_ID  = 1
-		Inv_Typ = eta0      
-		Inv_Par = 100    
+		Inv_Typ = n      
+		Inv_Par = 2    
 	<InverseParEnd>
-	
+
+	#<InverseParStart>
+	#        Inv_ID  = 0
+	#        Inv_Typ = eta0
+	#        Inv_Par = 1
+	#<InverseParEnd>
+
+	#<InverseParStart>
+	#        Inv_ID  = 1
+	#        Inv_Typ = eta0
+	#        Inv_Par = 100
+	#<InverseParEnd>
+
 	# Comparison indices
 	<InverseIndStart>
-		Inv_Ax = 0.5;
-		Inv_Ay = 0.5;
-		Inv_Az = 0.5;
-		Inv_Av = 3;
+		Inv_Coord = 0.5 0.5 0.5					
+		Inv_Av = 3
+		Inv_Ae = -0.04248
 	<InverseIndEnd>
 
 #===============================================================================
@@ -162,15 +185,21 @@
 <PetscOptionsStart>
 
 	# LINEAR & NONLINEAR SOLVER OPTIONS
-	-snes_type ksponly # no nonlinear solver
+	#-snes_type ksponly # no nonlinear solver
 
 	# Jacobian (linear) outer KSP
 	-js_ksp_type gmres
 	-js_ksp_max_it 25
 #	-js_ksp_converged_reason
  	-js_ksp_monitor
-	-js_ksp_rtol 1e-4
-	-js_ksp_atol 1e-10
+	-js_ksp_rtol 1e-10
+	-js_ksp_atol 1e-15
+
+        -snes_max_it 20
+        -snes_atol 1e-10
+        -snes_rtol 1e-20
+        -snes_stol 1e-20
+	#-snes_PicardSwitchToNewton_rtol 1e-20
 
 	# Direct solver with penalty method
 	-pcmat_type    mono

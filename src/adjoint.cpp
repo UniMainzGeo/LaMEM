@@ -26,7 +26,7 @@
  **    along with LaMEM. If not, see <http://www.gnu.org/licenses/>.
  **
  **
- **    Contact:
+ **    General Contact:
  **        Boris Kaus       [kaus@uni-mainz.de]
  **        Anton Popov      [popov@uni-mainz.de]
  **
@@ -34,15 +34,20 @@
  **    Main development team:
  **         Anton Popov      [popov@uni-mainz.de]
  **         Boris Kaus       [kaus@uni-mainz.de]
+ ** 		Georg Reuber
  **         Tobias Baumann
  **         Adina Pusok
  **         Arthur Bauville
  **
+ **     The current framework is developed by Georg Reuber (JGU Mainz)
+ **     
+ **     If you think it is helpful, please cite the following paper:
+ **     Georg S. Reuber, Anton A. Popov, Boris J.P. Kaus, (2018) Deriving scaling laws in geodynamics using adjoint gradients,
+ **      Tectonophysics, Vol. 746, p. 352-363. doi:10.1016/j.tecto.2017.07.017
+ **  
  ** ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~ @*/
 
 // FRAMEWORK CODE FOR LaMEM TO USE ADJOINT GRADIENT (INVERSION)
-// *  developed by Georg Reuber (JGU Mainz)
-// *  publication: Georg S. Reuber, Anton A. Popov, Boris J.P. Kaus, Deriving scaling laws in geodynamics using adjoint gradients, Tectonophysics, 2017
 //---------------------------------------------------------------------------
 // COMPUTATION OF ADJOINT INVERSION
 //---------------------------------------------------------------------------
@@ -148,6 +153,7 @@ PetscInt FindPointInCellAdjoint(
 	}
 	return(L);
 }
+
 //---------------------------------------------------------------------------
 #undef __FUNCT__
 #define __FUNCT__ "LaMEMAdjointMain"
@@ -183,14 +189,15 @@ PetscErrorCode LaMEMAdjointMain(ModParam *IOparam, FB *fb)
 	IOparam->maxitLS    = 10;
 
 	// Some inputs
-	ierr = getIntParam   (fb, _OPTIONAL_, "Adj_FS"        , &IOparam->FS,        1, 1        ); CHKERRQ(ierr);  // Do a field sensitivity test? -> Will do the test for the first InverseParStart that is given!
+	ierr = getIntParam   (fb, _OPTIONAL_, "Adjoint_GradientCalculation"      , &IOparam->Gr,        1, 1        ); CHKERRQ(ierr);  // Calculate Grads with respect to solution (scaling laws etc.) = 1; Calc with respect to cost function (direct fD test) = 0
+	ierr = getIntParam   (fb, _OPTIONAL_, "Adjoint_FieldSensitivity"         , &IOparam->FS,        1, 1        ); CHKERRQ(ierr);  // Do a field sensitivity test? -> Will do the test for the first InverseParStart that is given!
+	ierr = getIntParam   (fb, _OPTIONAL_, "Adjoint_EvaluationPoints"         , &IOparam->Ap,        1, 3        ); CHKERRQ(ierr);  // 1 = several indices ; 2 = the whole domain ; 3 = surface
+	ierr = getIntParam   (fb, _OPTIONAL_, "Adjoint_AdvectPoint"              , &IOparam->Adv,       1, 1        ); CHKERRQ(ierr);  // 1 = advect the point
+	ierr = getIntParam   (fb, _OPTIONAL_, "Adjoint_ObjectiveFunctionDef"     , &IOparam->OFdef,     1, 1        ); CHKERRQ(ierr);  // Objective function defined by hand?
+	
 	ierr = getIntParam   (fb, _OPTIONAL_, "Inv_maxit"     , &IOparam->maxit,     1, 1500     ); CHKERRQ(ierr);  // maximum number of inverse iterations
 	ierr = getIntParam   (fb, _OPTIONAL_, "Inv_maxitLS"   , &IOparam->maxitLS,   1, 1500     ); CHKERRQ(ierr);  // maximum number of backtracking	
-	ierr = getIntParam   (fb, _OPTIONAL_, "Adj_Gr"        , &IOparam->Gr,        1, 1        ); CHKERRQ(ierr);  // Calculate Grads with respect to solution (scaling laws etc.) = 1; Calc with respect to cost function (direct fD test) = 0
 	ierr = getIntParam   (fb, _OPTIONAL_, "Inv_Ab"        , &IOparam->Ab,        1, 1        ); CHKERRQ(ierr);  // Apply bounds?
-	ierr = getIntParam   (fb, _OPTIONAL_, "Adj_Ap"        , &IOparam->Ap,        1, 3        ); CHKERRQ(ierr);  // 1 = several indices ; 2 = the whole domain ; 3 = surface
-	ierr = getIntParam   (fb, _OPTIONAL_, "Adj_Adv"       , &IOparam->Adv,       1, 1        ); CHKERRQ(ierr);  // 1 = advect the point
-	ierr = getIntParam   (fb, _OPTIONAL_, "Adj_OFdef"     , &IOparam->OFdef,     1, 1        ); CHKERRQ(ierr);  // Objective function defined by hand?
 	ierr = getIntParam   (fb, _OPTIONAL_, "Inv_Tao"       , &IOparam->Tao,       1, 1        ); CHKERRQ(ierr);  // Use TAO?
 	ierr = getScalarParam(fb, _OPTIONAL_, "Inv_tol"       , &IOparam->tol,       1, 1        ); CHKERRQ(ierr);  // tolerance for F/Fini after which code has converged
 	ierr = getScalarParam(fb, _OPTIONAL_, "Inv_facLS"     , &IOparam->facLS,     1, 1        ); CHKERRQ(ierr);  // factor in the line search that multiplies current line search parameter if GD update was succesful (increases convergence speed)
@@ -199,22 +206,34 @@ PetscErrorCode LaMEMAdjointMain(ModParam *IOparam, FB *fb)
 	ierr = getScalarParam(fb, _OPTIONAL_, "Inv_Scale_Grad", &IOparam->Scale_Grad,1, 1        ); CHKERRQ(ierr);  // Magnitude of initial parameter update (factor_ini = Scale_Grad/Grad)
 	ierr = getScalarParam(fb, _REQUIRED_, "DII"           , &IOparam->DII_ref,   1, 1        ); CHKERRQ(ierr);   // SUPER UNNECESSARY BUT OTHERWISE NOT AVAILABLE
 
-	PetscPrintf(PETSC_COMM_WORLD,"-------------------------------------------------------------------------- \n");
-	PetscPrintf(PETSC_COMM_WORLD,"                        LAMEM                         \n");
-	PetscPrintf(PETSC_COMM_WORLD,"        ADJOINT GRADIENT CALCULATION ACTIVE           \n");
-	PetscPrintf(PETSC_COMM_WORLD,"-------------------------------------------------------------------------- \n");
+
+
+
+	PetscPrintf(PETSC_COMM_WORLD,"--------------------------------------------------------------------------  \n");
+	PetscPrintf(PETSC_COMM_WORLD,"                                     LaMEM                                  \n");
+	PetscPrintf(PETSC_COMM_WORLD,"                       Adjoint Gradient Framework Active                    \n");
+	PetscPrintf(PETSC_COMM_WORLD,"--------------------------------------------------------------------------- \n");
+	PetscPrintf(PETSC_COMM_WORLD,"Adjoint parameters:  \n");
+	
 	if(IOparam->use == 2) 
 	{
-		PetscPrintf(PETSC_COMM_WORLD, "   Calculate gradients (use = 2)                    \n");
-		PetscPrintf(PETSC_COMM_WORLD, "   Pointwise gradient evaluation            : %d    \n", IOparam->FS);
-		PetscPrintf(PETSC_COMM_WORLD, "   Gradients w.r.t.                         : %d  (0 = cost function; 1 = solution)  \n", IOparam->Gr);
-		PetscPrintf(PETSC_COMM_WORLD, "   Index definition                         : %d  (1 = several indices; 2 = whole domain; 3 = surface)  \n", IOparam->Ap);
-		PetscPrintf(PETSC_COMM_WORLD, "   Advect indices                           : %d    \n", IOparam->Adv);
+		PetscPrintf(PETSC_COMM_WORLD, "   Adjoint mode                             : AdjointGradients  \n");
+		if (IOparam->Gr==0){ PetscPrintf(PETSC_COMM_WORLD, "   Gradients are computed w.r.t.            : cost function [Adjoint_GradientCalculation = 0]  \n", IOparam->Gr); }
+		else               { PetscPrintf(PETSC_COMM_WORLD, "   Gradients are computed w.r.t.            : solution      [Adjoint_GradientCalculation = 1]  \n", IOparam->Gr); }
+		PetscPrintf(PETSC_COMM_WORLD, "   Pointwise gradient evaluation            : %d    \n", IOparam->FS);		// No idea
+
+		if 		(IOparam->Ap == 1){PetscPrintf(PETSC_COMM_WORLD, "   Gradient evaluation points               : several indices  [Adjoint_EvaluationPoints = 1]  \n"); }
+		else if (IOparam->Ap == 2){PetscPrintf(PETSC_COMM_WORLD, "   Gradient evaluation points               : whole domain  	 [Adjoint_EvaluationPoints = 2]  \n"); }
+		else if (IOparam->Ap == 3){PetscPrintf(PETSC_COMM_WORLD, "   Gradient evaluation points               : surface          [Adjoint_EvaluationPoints = 3]   \n"); }
+		
+		PetscPrintf(PETSC_COMM_WORLD, "   Advect evaluation points with flow       : %d    \n", IOparam->Adv);
+		
+		
 		PetscPrintf(PETSC_COMM_WORLD, "   Objective function defined in input      : %d    \n", IOparam->OFdef);
 	}
 	else if(IOparam->use == 3) 
 	{
-		PetscPrintf(PETSC_COMM_WORLD, "   Gradient descent inversion (use = 3)             \n");
+		PetscPrintf(PETSC_COMM_WORLD, "   Adjoint mode                             : Gradient descent inversion  \n");
 		PetscPrintf(PETSC_COMM_WORLD, "   Use Tao BLMVM (or LaMEM steepest descent): %d    \n", IOparam->Tao);
 		PetscPrintf(PETSC_COMM_WORLD, "   Index definition                         : %d  (1 = several indices; 2 = whole domain; 3 = surface)  \n", IOparam->Ap);
 		PetscPrintf(PETSC_COMM_WORLD, "   Advect indices                           : %d    \n", IOparam->Adv);
@@ -233,7 +252,7 @@ PetscErrorCode LaMEMAdjointMain(ModParam *IOparam, FB *fb)
 	} 
 	else if (IOparam->use == 4) 
 	{
-		PetscPrintf(PETSC_COMM_WORLD,"        Saving synthetic forward simulation (debugging purpose) (use = 4)           \n");
+		PetscPrintf(PETSC_COMM_WORLD, "   Adjoint mode                             : SyntheticForwardRun  (saving forward run for debugging purposes)  \n");
 	}
 	else
 	{

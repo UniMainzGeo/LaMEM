@@ -69,12 +69,15 @@ int main(int argc, char **argv)
 
 	IOparam.use = _none_;
 	ierr = FBLoad(&fb, PETSC_FALSE); CHKERRQ(ierr);
-	ierr = getStringParam(fb, _OPTIONAL_, "use", str, NULL); CHKERRQ(ierr);
-	if     (!strcmp(str, "none"))                   IOparam.use = _none_;
-	else if(!strcmp(str, "inversion"))              IOparam.use = _inversion_;
-	else if(!strcmp(str, "adjointgradients"))       IOparam.use = _adjointgradients_;
-	else if(!strcmp(str, "gradientdescent"))        IOparam.use = _gradientdescent_;
-	else if(!strcmp(str, "syntheticforwardrun"))    IOparam.use = _syntheticforwardrun_;
+	ierr = getStringParam(fb, _OPTIONAL_, "Adjoint_mode", str, NULL); CHKERRQ(ierr);
+	if     (!strcmp(str, "None"))                   IOparam.use = _none_;
+	else if(!strcmp(str, "Inversion"))              IOparam.use = _inversion_;
+	else if(!strcmp(str, "AdjointGradients"))       IOparam.use = _adjointgradients_;
+	else if(!strcmp(str, "GradientDescent"))        IOparam.use = _gradientdescent_;
+	else if(!strcmp(str, "SyntheticForwardRun"))    IOparam.use = _syntheticforwardrun_;
+	else{
+		 SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "Unknown parameter for 'Adjoint_use'. Possibilities are [None; Inversion; AdjointGradients; GradientDescent or SyntheticForwardRun]");
+	} 
 	
 	if(IOparam.use == 0)
 	{
