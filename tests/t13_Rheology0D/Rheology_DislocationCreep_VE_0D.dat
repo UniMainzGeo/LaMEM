@@ -15,20 +15,20 @@
 #===============================================================================
 
 	time_end  = 1.0    # simulation end time
-	dt        = 0.002 # time step
-	dt_min    = 0.002  # minimum time step (declare divergence if lower value is attempted)
-	dt_max    = 0.002    # maximum time step
+	dt        = 0.000001 # time step
+	dt_min    = 0.000001  # minimum time step (declare divergence if lower value is attempted)
+	dt_max    = 0.0005    # maximum time step
 	dt_out    = 0.1    # output step (output at least at fixed time intervals)
-	inc_dt    = 0.1    # time step increment per time step (fraction of unit)
+	inc_dt    = 0.05   # time step increment per time step (fraction of unit)
 	CFL       = 0.5    # CFL (Courant-Friedrichs-Lewy) criterion
 	CFLMAX    = 0.8    # CFL criterion for elasticity
-	nstep_max = 20     # maximum allowed number of steps (lower bound: time_end/dt_max)
+	nstep_max = 110     # maximum allowed number of steps (lower bound: time_end/dt_max)
 	nstep_out = 1      # save output every n steps
 
 #===============================================================================
 # Grid & discretization parameters
 #===============================================================================
-# Number of cells for all segments
+# Number of cells for all segments	
 
 	nel_x = 8
 	nel_y = 2
@@ -48,13 +48,13 @@
 
 # Temperature on the top & bottom boundaries
 
-	temp_top = 100
-	temp_bot = 100;
+	temp_top = 900
+	temp_bot = 900;
 
 	init_temp = 0;
 
 	exx_num_periods  = 1      # number intervals of constant strain rate (x-axis)
-	exx_strain_rates = -1e-15  # strain rates for each interval (positive=extension)
+	exx_strain_rates = -1e-14  # strain rates for each interval (positive=extension)
 
 
 #===============================================================================
@@ -63,11 +63,11 @@
 
 	gravity        = 0.0 0.0 0.0  # gravity vector
 	act_temp_diff  = 0              # temperature diffusion activation flag
-	init_guess     = 1              # initial guess flag
+	init_guess     = 0              # initial guess flag
 	p_litho_visc   = 1              # use lithostatic pressure for creep laws
 	p_litho_plast  = 1              # use lithostatic pressure for plasticity
 	p_lim_plast    = 1              # limit pressure at first iteration for plasticity
-	eta_min        = 1e18           # viscosity upper bound
+	eta_min        = 1e16           # viscosity upper bound
 	eta_max        = 1e25           # viscosity lower limit
 	eta_ref        = 1e20           # reference viscosity (initial guess)
 	DII_ref        = 1e-15          # background (reference) strain-rate
@@ -106,7 +106,7 @@
  		bottom 			= -4.0
 		
 		Temperature 	= constant 
-		cstTemp     	= 500     	# in Celcius
+		cstTemp     	= 900     	# in Celcius
  	<LayerEnd>
 
 
@@ -116,7 +116,7 @@
 
 # Grid output options (output is always active)
 
-	out_file_name       = Rheolog0D_VEP # output file name
+	out_file_name       = Rheolog0D_DislocationCreep_VE # output file name
 	out_pvd             = 1      # activate writing .pvd file
 	out_phase           = 1
 	out_density         = 1
@@ -149,15 +149,15 @@
 #===============================================================================
 	# rheology
 	<MaterialStart>
-		ID        = 0
-		rho       = 1000
-		eta       = 1e22		# Viscosity
-		G         = 5e10   		# Shear modulus
-		ch        = 1e7 		# Cohesion
-		fr        = 0  			# Friction angle [degrees]
+		ID        	= 0
+		rho       	= 	3000
+		disl_prof  	=	Dry_Olivine-Ranalli_1995		# Creep law
+		Vd 			=	0.0
 
-		Cp        = 1000		# Specific heat (capacity)
-		k         = 2.5000    	# Thermal conductivity
+		G         	= 5e10   		# Shear modulus
+	
+		Cp        	= 1000		# Specific heat (capacity)
+		k         	= 2.5000    	# Thermal conductivity
 	<MaterialEnd>
 	
 	

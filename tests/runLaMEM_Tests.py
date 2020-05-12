@@ -59,8 +59,8 @@ def run_tests():
                       FB2.test_a(),   Loc1.test_a(), Loc1.test_b(), Loc1.test_c(), FBPD1.test_a(),
                       Comp1.test_a(), Comp1.test_b(), Subgrid.test_a(), Diffusion.test_1D(), 
                       Permeability.test_a(), 
-                      Rheology0D.ViscoElastic(),   Rheology0D.ViscoElastoPlastic(), 
-                      Rheology0D.LinearViscous(),  Rheology0D.DislocationCreeplaw() ];
+                      Rheology0D.ViscoElastic(),   Rheology0D.ViscoElastoPlastic(), Rheology0D.ViscoElastoPlastic_DislocationCreep(),
+                      Rheology0D.LinearViscous(),  Rheology0D.DislocationCreeplaw(), Rheology0D.ViscoElastic_DislocationCreep() ];
  
 
 # Add matlab tests (There should be a better way to do this for a range of files at the same time)

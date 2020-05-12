@@ -92,6 +92,89 @@ def ViscoElastoPlastic():
   return(ex1)
 
 
+# This tests whether Maxwell viscoelastoplasticity works (with von Mises plasticity)
+def ViscoElastoPlastic_DislocationCreep():
+  # Visco-elasto-plastic rheology with nonlinear dislocation creep viscosity
+  
+  #==============================================
+  # Run the input script wth matlab-generated particles
+  ranks = 1
+  launch = '../bin/opt/LaMEM -ParamFile ./t13_Rheology0D/Rheology_DislocationCreep_VEP_0D.dat' # This must be a relative path with respect to runLaMEM_Tests.py
+  expected_file = 't13_Rheology0D/Rheology_DislocationCreep_VEP_0D-p1.expected'
+
+  def comparefunc(unittest):
+
+    key = re.escape("|Div|_inf")
+    unittest.compareFloatingPoint(key,1e-7)
+
+    key = re.escape("|Div|_2")
+    unittest.compareFloatingPoint(key,1e-5)
+
+    key = re.escape("|mRes|_2")
+    unittest.compareFloatingPoint(key,1e-4)
+    #----------------------------  
+    
+  
+    try: 
+      data        = LoadTimeDependentData('Rheolog0D_DislocationCreep_VEP');        # Load the data using the VTK toolbox
+      YieldStress = 15e6;                                                            # large value, to deactivate it
+      data        = AnalyticalSolution_DislocationCreep_VEP(data,YieldStress);      # Compute analytical solution & compute error
+
+      PlotTimeDependentData(data,'./t13_Rheology0D/t13_DislocationCreep_ViscoElastoPlasticMises_output.png');     # Create Plot
+  
+      print('Created output figure ./t13_Rheology0D/t13_DislocationCreep_ViscoElastoPlasticMises_output.png comparing analytics vs. numerics')
+    except:
+      print('VTK/MatPlotLib/NumPy toolboxes are not installed; will not create plots')
+    #----------------------------
+
+  # Create unit test object
+  ex1 = pth.pthUnitTest('t13_ViscoElastoPlastic_DislocationCreep',ranks,launch,expected_file)
+  ex1.setVerifyMethod(comparefunc)
+  ex1.appendKeywords('@')
+
+  return(ex1)
+
+# This tests whether Maxwell viscoelasticity works (with nonlinear creep laws, requiring local iterations)
+def ViscoElastic_DislocationCreep():
+  # Visco-elastic rheology with nonlinear dislocation creep viscosity
+  
+  #==============================================
+  # Run the input script wth matlab-generated particles
+  ranks = 1
+  launch = '../bin/opt/LaMEM -ParamFile ./t13_Rheology0D/Rheology_DislocationCreep_VE_0D.dat' # This must be a relative path with respect to runLaMEM_Tests.py
+  expected_file = 't13_Rheology0D/Rheology_DislocationCreep_VE_0D-p1.expected'
+
+  def comparefunc(unittest):
+
+    key = re.escape("|Div|_inf")
+    unittest.compareFloatingPoint(key,1e-7)
+
+    key = re.escape("|Div|_2")
+    unittest.compareFloatingPoint(key,1e-5)
+
+    key = re.escape("|mRes|_2")
+    unittest.compareFloatingPoint(key,1e-4)
+    #----------------------------  
+    
+  
+    try: 
+      data        = LoadTimeDependentData('Rheolog0D_DislocationCreep_VE');                           # Load the data using the VTK toolbox
+      YieldStress = 1e10;                                                                             # large value, to deactivate it
+      data        = AnalyticalSolution_DislocationCreep_VEP(data,YieldStress);                        # Compute analytical solution & compute error
+
+      PlotTimeDependentData(data,'./t13_Rheology0D/t13_DislocationCreep_ViscoElastic_output.png');    # Create Plot
+  
+      print('Created output figure ./t13_Rheology0D/t13_DislocationCreep_ViscoElastic_output.png comparing analytics vs. numerics')
+    except:
+      print('VTK/MatPlotLib/NumPy toolboxes are not installed; will not create plots')
+    #----------------------------
+
+  # Create unit test object
+  ex1 = pth.pthUnitTest('t13_ViscoElastic_DislocationCreep',ranks,launch,expected_file)
+  ex1.setVerifyMethod(comparefunc)
+  ex1.appendKeywords('@')
+
+  return(ex1)
 
 
 def LinearViscous():
@@ -133,7 +216,7 @@ def LinearViscous():
       data        = LoadStrainrateData('Rheolog0D_linearViscous');     
       data        = AnalyticalSolution_linearViscous(data);
       PlotStrainrateData(data,'./t13_Rheology0D/t13_linearViscous_output.png');     # Create Plot
-
+   
       print('Created output figure ./t13_Rheology0D/t13_linearViscous_output.png comparing analytics vs. numerics')
     except:
       print('VTK/MatPlotLib/NumPy toolboxes are not installed; will not create plots')
@@ -181,14 +264,14 @@ def DislocationCreeplaw():
     unittest.compareFloatingPoint(key,1e-4)
     #----------------------------  
 
-
+    
     try: 
       # Load the data using the VTK toolbox; compute analytical solution & create plot
-      data        = LoadStrainrateData('Rheology0D_DryOlivine');  
+      data        = LoadStrainrateData('Rheolog0D_DryOlivine');  
       data        = AnalyticalSolution_DislocationCreep(data, 'DryOlivine');
       PlotStrainrateData(data,'./t13_Rheology0D/t13_DislocationCreeplaw_DryOlivine_output.png');     # Create Plot
 
-      print('Created output figure ./t13_Rheology0D/t13_DislocationCreeplaw_output.png comparing analytics vs. numerics')
+      print('Created output figure ./t13_Rheology0D/t13_DislocationCreeplaw_DryOlivine_output.png comparing analytics vs. numerics')
     except:
       print('VTK/MatPlotLib/NumPy toolboxes are not installed; will not create plots')
     #----------------------------

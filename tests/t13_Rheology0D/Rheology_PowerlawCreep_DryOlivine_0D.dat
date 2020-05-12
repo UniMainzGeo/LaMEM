@@ -30,9 +30,9 @@
 #===============================================================================
 # Number of cells for all segments
 
-	nel_x = 32
+	nel_x = 8
 	nel_y = 2
-	nel_z = 32
+	nel_z = 8
 
 # Coordinates of all segments (including start and end points)
 
@@ -116,7 +116,7 @@
 
 # Grid output options (output is always active)
 
-	out_file_name       = Rheology0D_DryOlivine # output file name
+	out_file_name       = Rheolog0D_DryOlivine # output file name
 	out_pvd             = 1      # activate writing .pvd file
 	out_phase           = 1
 	out_density         = 1
@@ -152,7 +152,7 @@
 		ID        	= 	0
 		rho       	= 	3000
 		disl_prof  	=	Dry_Olivine-Ranalli_1995		# Creep law
-
+		Vn 			=	0 	#switch off, as Gerya doesn't have this
 		Cp        	= 	1000							# Specific heat (capacity)
 		k         	=	2.5000    						# Thermal conductivity
 	<MaterialEnd>
