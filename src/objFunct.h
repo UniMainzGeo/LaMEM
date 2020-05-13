@@ -45,12 +45,12 @@
 #ifndef __objFunct_h__
 #define __objFunct_h__
 //---------------------------------------------------------------------------
+#include "adjoint.h"    // defines the global variables _MAX_PAR_ and _MAX_OBS_, which we need here
 
 struct FB;
 struct FreeSurf;
 
 //-----------------------------------------------------------------------------
-
 enum PTypes// List of model parameter types (30)
 {
 	// -- material model parameter types --
@@ -91,14 +91,14 @@ const char *PTypesName[] ={
 // Structure that holds inversion parameters
 struct ModParam
 {
-	PetscInt         use;  // Choose one of InvTypes
-	PetscInt         mdN;  // number of model parameters
-	PetscInt         mID;  // current model number
-	PetscInt        *phs;  // model phase number
-	PetscInt        *typ;  // model parameter type
-	PetscScalar     *val;  // model value
-	PetscScalar     *grd;  // gradient value
-	PetscScalar      mfit; // misfit value for current model parameters
+	PetscInt         use;               // Choose one of InvTypes
+	PetscInt         mdN;               // number of model parameters
+	PetscInt         mID;               // current model number
+	PetscInt         phs[_MAX_PAR_];    // model phase number
+	PetscInt         typ[_MAX_PAR_];    // model parameter type
+	PetscScalar      grd[_MAX_PAR_];    // gradient value
+	PetscScalar     *val;               // model value
+	PetscScalar      mfit;              // misfit value for current model parameters
 
 	// Variables additionally needed for the adjoint TAO solver
 	Vec              xini;      	// Comparison velocity field for adjoint inversion
@@ -124,11 +124,11 @@ struct ModParam
 	PetscScalar      maxfac;	    // limit on the factor (only used without tao)
 	PetscScalar      DII_ref;       // SUPER UNNECESSARY but DII is otherwise not accesible
 	PetscScalar      Coord[3];		// Temp Coordinates of comparison points
-	PetscScalar     *Ax;			// X-coordinates of comparison points
-	PetscScalar     *Ay;			// Y-coordinates of comparison points
-	PetscScalar     *Az;  			// Z-coordinates of comparison points
-	PetscScalar     *Ae;  			// Velocity value of comparison points
-	PetscInt        *Av;			// Velocity components of comparison points
+	PetscScalar      Ax[_MAX_OBS_]; // X-coordinates of comparison points
+	PetscScalar      Ay[_MAX_OBS_];	// Y-coordinates of comparison points
+	PetscScalar      Az[_MAX_OBS_]; // Z-coordinates of comparison points
+	PetscScalar      Ae[_MAX_OBS_]; // Velocity value of comparison points
+	PetscInt         Av[_MAX_OBS_];	// Velocity components of comparison points
 };
 
 // observation type

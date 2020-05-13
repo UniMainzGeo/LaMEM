@@ -66,6 +66,7 @@ int main(int argc, char **argv)
 	char      str[_str_len_];
 
 	// set default to be a forward run and overwrite it with input file options
+	ierr = PetscMalloc(sizeof(ModParam), &IOparam); CHKERRQ(ierr);
 
 	IOparam.use = _none_;
 	ierr = FBLoad(&fb, PETSC_FALSE); CHKERRQ(ierr);

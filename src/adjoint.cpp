@@ -128,6 +128,7 @@
 #include "constEq.h"
 #include "parsing.h"
 #include "gravity.h"
+
 //-----------------------------------------------------------------------------
 // A bit stupid that this has to be twice declared, but the original function is only in AVD.cpp and not in a header file anymore ...
 PetscInt FindPointInCellAdjoint(
@@ -158,8 +159,9 @@ PetscInt FindPointInCellAdjoint(
 	}
 	return(L);
 }
+
 //---------------------------------------------------------------------------
-/* This reads the input parameters from theb file/command-line & sets default 
+/* This reads the input parameters from the file/command-line & sets default 
 values. Also performs error-checking
 */
 #undef __FUNCT__
@@ -278,11 +280,11 @@ PetscErrorCode LaMEMAdjointReadInputSetDefaults(ModParam **p_IOparam, FB **p_fb,
 	// TEMPORARY VARIABLES
 	PetscInt		phsar[_MAX_PAR_];
 	PetscInt      	typar[_MAX_PAR_];
-	PetscScalar     Ax[_MAX_IND_];
-	PetscScalar     Ay[_MAX_IND_];
-	PetscScalar     Az[_MAX_IND_];
-	PetscInt        Av[_MAX_IND_];
-	PetscScalar     Ae[_MAX_IND_];
+	PetscScalar     Ax[  _MAX_OBS_];
+	PetscScalar     Ay[  _MAX_OBS_];
+	PetscScalar     Az[  _MAX_OBS_];
+	PetscInt        Av[  _MAX_OBS_];
+	PetscScalar     Ae[  _MAX_OBS_];
 
 	ierr =  ScalingCreate(&scal, fb);
 
@@ -335,9 +337,10 @@ PetscErrorCode LaMEMAdjointReadInputSetDefaults(ModParam **p_IOparam, FB **p_fb,
 		fb->blockID++;
 	}
 	
-	IOparam->phs = phsar;
-	IOparam->typ = typar;
-	IOparam->grd = gradar;
+    ierr  = PetscMemcpy(IOparam->grd, gradar, (size_t)_MAX_PAR_*sizeof(PetscScalar) ); CHKERRQ(ierr);
+    ierr  = PetscMemcpy(IOparam->typ, typar,  (size_t)_MAX_PAR_*sizeof(PetscInt)    ); CHKERRQ(ierr);
+    ierr  = PetscMemcpy(IOparam->phs, phsar,  (size_t)_MAX_PAR_*sizeof(PetscInt)    ); CHKERRQ(ierr);
+
 	VecRestoreArray(Adjoint_Vectors->P,&Par);
 	VecRestoreArray(Adjoint_Vectors->Ub,&Ubar);
 	VecRestoreArray(Adjoint_Vectors->Lb,&Lbar);
@@ -351,9 +354,9 @@ PetscErrorCode LaMEMAdjointReadInputSetDefaults(ModParam **p_IOparam, FB **p_fb,
 	ierr = FBFindBlocks(fb, _OPTIONAL_, "<AdjointObservationPointStart>", "<AdjointObservationPointEnd>"); CHKERRQ(ierr);
 
 	// error checking
-	if(fb->nblocks > _MAX_IND_)
+	if(fb->nblocks >   _MAX_OBS_)
 	{
-		SETERRQ1(PETSC_COMM_WORLD, PETSC_ERR_USER, "Too many inverse indices specified! Max allowed: %lld", (LLD)_MAX_IND_);
+		SETERRQ1(PETSC_COMM_WORLD, PETSC_ERR_USER, "Too many inverse indices specified! Max allowed: %lld", (LLD)  _MAX_OBS_);
 	}
 	if(!fb->nblocks && IOparam->Ap == 1)
 	{
@@ -402,11 +405,11 @@ PetscErrorCode LaMEMAdjointReadInputSetDefaults(ModParam **p_IOparam, FB **p_fb,
 	}
 	PetscPrintf(PETSC_COMM_WORLD, "\n");
 	
-	IOparam->Ax = Ax;
-	IOparam->Ay = Ay;
-	IOparam->Az = Az;
-	IOparam->Av = Av;
-	IOparam->Ae = Ae;
+    ierr  = PetscMemcpy(IOparam->Ax, Ax, (size_t)  _MAX_OBS_*sizeof(PetscScalar)); CHKERRQ(ierr);
+    ierr  = PetscMemcpy(IOparam->Ay, Ay, (size_t)  _MAX_OBS_*sizeof(PetscScalar)); CHKERRQ(ierr);
+    ierr  = PetscMemcpy(IOparam->Az, Az, (size_t)  _MAX_OBS_*sizeof(PetscScalar)); CHKERRQ(ierr);
+    ierr  = PetscMemcpy(IOparam->Av, Av, (size_t)  _MAX_OBS_*sizeof(PetscInt));    CHKERRQ(ierr);
+    ierr  = PetscMemcpy(IOparam->Ae, Ae, (size_t)  _MAX_OBS_*sizeof(PetscScalar)); CHKERRQ(ierr);
 	IOparam->mdI = i;
 
 	ierr = FBFreeBlocks(fb); CHKERRQ(ierr);
@@ -416,8 +419,6 @@ PetscErrorCode LaMEMAdjointReadInputSetDefaults(ModParam **p_IOparam, FB **p_fb,
 	{
 		SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "You have to define observation points (Ap) for the inversion. Have a look into the comments in src/LaMEM.cpp");
 	}
-
-
 
 	PetscFunctionReturn(0);
 }
@@ -440,6 +441,7 @@ PetscErrorCode LaMEMAdjointMain(ModParam *IOparam, FB *fb)
 
 	// Read input parameters
 	ierr = LaMEMAdjointReadInputSetDefaults(&IOparam, &fb, &Adjoint_Vectors); CHKERRQ(ierr);
+    
 
 	//===========================================================
 	// SOLVE ADJOINT (by calling LaMEMLibMain)
@@ -863,7 +865,12 @@ PetscErrorCode AdjointOptimisationTAO(Tao tao, Vec P, PetscReal *F, Vec grad, vo
 
 			// Incorporate projection vector (F = (1/2)*[P*(x-x_ini)' * P*(x-x_ini)])
 			ierr = VecAYPX(xini,-1,jr->gsol);                                       CHKERRQ(ierr);
+
+
+
 			ierr = VecPointwiseMult(xini, xini,aop->pro);                           CHKERRQ(ierr);
+
+            //VecView(xini, 	PETSC_VIEWER_STDOUT_SELF);
 
 			// Compute objective function value (F = (1/2)*[P*(x-x_ini)' * P*(x-x_ini)])
 			ierr 	           = VecDot(xini,xini,&Ad);
@@ -1074,7 +1081,7 @@ PetscErrorCode AdjointComputeGradients(JacRes *jr, AdjGrad *aop, NLSol *nl, SNES
 		ierr = VecDestroy(&res);
 	}
 
-	if(IOparam->mdI<_MAX_IND_ && IOparam->Ap == 1)
+	if(IOparam->mdI<  _MAX_OBS_ && IOparam->Ap == 1)
 	{
 
 		// get the current velocities at comparison point
@@ -1200,8 +1207,7 @@ PetscErrorCode AdjointPointInPro(JacRes *jr, AdjGrad *aop, ModParam *IOparam, Fr
 	VecZeroEntries(lxiniY);
 	VecZeroEntries(lxiniZ);
 
-
-	// If we want only a few indices we need to interpolate
+	// If we want only a few indices we need to interpolate them
 	if(IOparam->Ap == 1)
 	{
 		// Create everything

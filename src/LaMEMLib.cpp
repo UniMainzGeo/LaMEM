@@ -82,7 +82,7 @@ PetscErrorCode LaMEMLibMain(void *param)
 	PetscLogDouble cputime_start, cputime_end;
 
 	PetscErrorCode ierr;
-	PetscFunctionBegin;
+	PetscFunctionBegin;       
 
 	// start code
 	ierr = PetscTime(&cputime_start); CHKERRQ(ierr);
@@ -648,6 +648,7 @@ PetscErrorCode LaMEMLibSolve(LaMEMLib *lm, void *param)
 			if (IOparam->use == _adjointgradients_ || IOparam->use == _gradientdescent_ )
 			{	// Compute adjoint gradients
 				aop.DII_ref = IOparam->DII_ref;
+				
 				ierr = AdjointObjectiveAndGradientFunction(&aop, &lm->jr, &nl, (ModParam *)param, snes, &lm->surf); CHKERRQ(ierr);
 			}
 		}

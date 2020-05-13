@@ -61,7 +61,7 @@ struct FB;
 
 // Some global maxes on parameter and index numbers
 #define _MAX_PAR_ 50
-#define _MAX_IND_ 100
+#define _MAX_OBS_ 100
 
 // Structure that holds paramters for the adjoint gradient computation
 struct AdjGrad
