@@ -57,28 +57,33 @@
 // Adjoint operation     psi       = (J^T)^-1 * dF/dx           // J = converged Jacobain matrix
 // Derivative II         dr/dp     = [r(p+h) - r(p)]/h      // finite difference approximation of derivative of residual r vs parameter
 // Gradients             dF/dp     = -psi^T * dr/dp
-//
+//                      
 // ------------------------------------------------------------
+// **** TO BE MODIFIED TO ACCOUNT FOR NOMENCLATURE CHANGES **:  
+//
 // EXAMPLE IN INPUT FILE:
-//  # General
-//	Inv_use       = 2
+//  # General Adjoint parameters:
+//  Adjoint_mode  = AdjointGradients      # options: [None; AdjointGradients, GradientDescent; Inversion]
 //  Inv_Ap        = 1
 //  Inv_OFdef     = 1
+
+//  # Parameters that are mores specific to inversion cases
 //  Inv_Tao       = 1
 //  # Parameters
-//  <InverseParStart>
-//	   	Inv_ID  = 0
-//		Inv_Typ = rho0
-//		Inv_Par = 1
-//	<InverseParEnd>
-//  # Index
-//	<InverseIndStart>
-//		Inv_Ax = 4.95;
-//		Inv_Ay = 0.05;
-//		Inv_Az = 0.68;
-//		Inv_Av = 3;
-//		Inv_Ae = 1;
-//	<InverseIndEnd>
+//  <AdjointParameterStart>
+//		ID  		= 1		# Phase of the parameter
+//		Type 		= n   	# Type of parameter   
+//		InitGuess 	= 2     # Initial guess of the parameter value
+//		LowerBound  = 1		# [optional] lower bound of parameter (used with TAO)
+//		UpperBound  = 3		# [optional] upper bound of parameter (used with TAO)
+//	<AdjointParameterEnd>
+//
+//  # Define the coordinates of observation points
+//	<AdjointObservationPointStart>
+//		Coordinate 			= 0.5 0.5 0.5					
+//		VelocityComponent 	= z
+//		Value  				= -0.04248
+//	<AdjointObservationPointEnd>
 //
 // ------------------------------------------------------------
 // LINEAR SOLVER:
@@ -428,7 +433,6 @@ PetscErrorCode LaMEMAdjointMain(ModParam *IOparam, FB *fb)
 	PetscScalar    	F, *fcconvar, *Par;
 	PetscInt        i;
 	Adjoint_Vecs    Adjoint_Vectors;
-	//char            str[_str_len_], Vel_comp[_str_len_];
 
 	IOparam->count = 1;  // iteration counter for the initial cost function
 	F              = 1e100;
@@ -437,11 +441,11 @@ PetscErrorCode LaMEMAdjointMain(ModParam *IOparam, FB *fb)
 	// Read input parameters
 	ierr = LaMEMAdjointReadInputSetDefaults(&IOparam, &fb, &Adjoint_Vectors); CHKERRQ(ierr);
 
-	//===============
-	// SOLVE ADJOINT (LaMIMLibMain)
-	//===============
+	//===========================================================
+	// SOLVE ADJOINT (by calling LaMEMLibMain)
+	//===========================================================
 	// only compute the adjoint gradients or simply forward code
-	if(IOparam->use == 2)
+	if(IOparam->use == _adjointgradients_)
  	{
  		VecDuplicate(Adjoint_Vectors.P,&IOparam->P);
  		VecCopy(Adjoint_Vectors.P,IOparam->P);
@@ -449,15 +453,15 @@ PetscErrorCode LaMEMAdjointMain(ModParam *IOparam, FB *fb)
  		// call LaMEM main library function
  		ierr = LaMEMLibMain(IOparam); CHKERRQ(ierr);
  	}
- 	// compute 'full' adjoint based gradient inversion
- 	else if(IOparam->use == 3)
+ 	// compute 'full' adjoint-based gradient inversion
+ 	else if(IOparam->use == _gradientdescent_)
  	{
  		VecDuplicate(Adjoint_Vectors.P,&IOparam->P);
  		VecCopy(Adjoint_Vectors.P,IOparam->P);
 
- 		// if tao is used try the LMVM/BLMVM algorithms
  		if(IOparam->Tao == 1)
  		{
+            // if TAO is employed, try the LMVM/BLMVM algorithms    
  	 		Tao tao;
 			TaoLineSearch ls;
 
@@ -475,18 +479,18 @@ PetscErrorCode LaMEMAdjointMain(ModParam *IOparam, FB *fb)
  	 		}
 
  	 		// 2. Set up Tao
- 	 	 	ierr = TaoSetObjectiveAndGradientRoutine(tao, AdjointOptimisationTAO, IOparam);	 	CHKERRQ(ierr);
- 	 	 	ierr = TaoSetInitialVector(tao,Adjoint_Vectors.P);	 									CHKERRQ(ierr);
- 	 	 	ierr = TaoSetTolerances(tao,1e-30,1e-30,1e-30);	CHKERRQ(ierr);
- 	 	 	ierr = TaoSetFunctionLowerBound(tao,1e-5);CHKERRQ(ierr);
- 	 	 	ierr = TaoSetFromOptions(tao);	 										CHKERRQ(ierr);
+ 	 	 	ierr = TaoSetObjectiveAndGradientRoutine(tao, AdjointOptimisationTAO, IOparam);	 	CHKERRQ(ierr);  // sets the forward routine as well
+ 	 	 	ierr = TaoSetInitialVector(tao,Adjoint_Vectors.P);	 							    CHKERRQ(ierr);
+ 	 	 	ierr = TaoSetTolerances(tao,1e-30,1e-30,1e-30);	                                    CHKERRQ(ierr);
+ 	 	 	ierr = TaoSetFunctionLowerBound(tao,1e-5);                                          CHKERRQ(ierr);
+ 	 	 	ierr = TaoSetFromOptions(tao);	 										            CHKERRQ(ierr);
 			
 			// Line-Search
-			ierr = TaoGetLineSearch(tao, &ls);   CHKERRQ(ierr);
-			ierr = TaoLineSearchSetFromOptions(ls);   CHKERRQ(ierr);
+			ierr = TaoGetLineSearch(tao, &ls);                                                  CHKERRQ(ierr);
+			ierr = TaoLineSearchSetFromOptions(ls);                                             CHKERRQ(ierr);
 
  	 	 	// 3. Solve Tao & view result
- 	 	 	ierr = TaoSolve(tao);	 												CHKERRQ(ierr);
+ 	 	 	ierr = TaoSolve(tao);	 												            CHKERRQ(ierr);
  	 	 	PetscPrintf(PETSC_COMM_WORLD,"--------------------------------------------------------------------------- \n");
 	
  	 	 	TaoView(tao,PETSC_VIEWER_STDOUT_WORLD);
@@ -496,8 +500,8 @@ PetscErrorCode LaMEMAdjointMain(ModParam *IOparam, FB *fb)
  	 	 	ierr = TaoDestroy(&tao);
  		}
  		else
- 		// Without TAO try line search tuned gradient descent
  		{
+            // Without TAO try our own implementation of a line search tuned gradient descent
  			ierr = AdjointOptimisation(Adjoint_Vectors.P, F, Adjoint_Vectors.grad, IOparam);
  		}
 
@@ -525,7 +529,7 @@ PetscErrorCode LaMEMAdjointMain(ModParam *IOparam, FB *fb)
 		
  	}
  	// this is a forward simulation that we want to save as comparison solution
- 	else if(IOparam->use == 4)
+ 	else if(IOparam->use == _syntheticforwardrun_)
  	{
  		// call LaMEM main library function
  		ierr = LaMEMLibMain(IOparam); CHKERRQ(ierr);
@@ -831,7 +835,7 @@ PetscErrorCode AdjointOptimisationTAO(Tao tao, Vec P, PetscReal *F, Vec grad, vo
 	// COMPUTE OBJECTIVE FUNCTION & GRADIENT
 	//========================================
  	// only compute the gradients
- 	if (IOparam->use == 2)
+ 	if (IOparam->use == _adjointgradients_)
  	{
 
  	 	// Create projection vector
@@ -885,7 +889,7 @@ PetscErrorCode AdjointOptimisationTAO(Tao tao, Vec P, PetscReal *F, Vec grad, vo
  		 ierr = VecDestroy(&xini);
  	}
  	// compute 'full' adjoint inversion
- 	else if(IOparam->use == 3)
+ 	else if(IOparam->use == _gradientdescent_)
 	{
  		PetscScalar Ad;
 

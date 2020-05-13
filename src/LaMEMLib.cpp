@@ -645,7 +645,7 @@ PetscErrorCode LaMEMLibSolve(LaMEMLib *lm, void *param)
 			ModParam      *IOparam;
 			IOparam       = (ModParam *)param;
 
-			if (IOparam->use == 2 || IOparam->use == 3 )
+			if (IOparam->use == _adjointgradients_ || IOparam->use == _gradientdescent_ )
 			{	// Compute adjoint gradients
 				aop.DII_ref = IOparam->DII_ref;
 				ierr = AdjointObjectiveAndGradientFunction(&aop, &lm->jr, &nl, (ModParam *)param, snes, &lm->surf); CHKERRQ(ierr);
@@ -712,13 +712,13 @@ PetscErrorCode LaMEMLibSolve(LaMEMLib *lm, void *param)
 		IOparam       = (ModParam *)param;
 
 		/*
-		if(IOparam->use == 3)
+		if(IOparam->use == _gradientdescent_)
 		{	// Compute 'full' adjoint inversion
 	 		ierr = AdjointObjectiveAndGradientFunction(&aop, &lm->jr, &nl, (ModParam *)param, snes, &lm->surf); CHKERRQ(ierr);
 		}
 		*/
 
-		if(IOparam->use == 4)
+		if(IOparam->use == _syntheticforwardrun_)
 		{	// Assume this as a forward simulation and save the solution vector
 	 		VecDuplicate(lm->jr.gsol, &IOparam->xini);
 			VecCopy(lm->jr.gsol, IOparam->xini);
