@@ -52,10 +52,10 @@
 // COMPUTATION OF ADJOINT INVERSION
 //---------------------------------------------------------------------------
 // RECIPE:
-// Objective function    F(x,x(p)) = (1/2)*[P*(x-x_ini)' * P*(x-x_ini)]      // p = parameter ; x = converged solution ; xini = comparison solution (same size as jr->gsol) ; P = Projection vector containing the proportions of solution influence
+// Objective function    F(x,x(p)) = (1/2)*[P*(x-x_ini)' * P*(x-x_ini)]     // p = parameter ; x = converged solution ; xini = comparison solution (same size as jr->gsol) ; P = Projection vector containing the proportions of solution influence
 // Derivative I          dF/dx     = P*x-P*x_ini
-// Adjoint operation     psi       = (J^T)^-1 * dF/dx           // J = converged Jacobain matrix
-// Derivative II         dr/dp     = [r(p+h) - r(p)]/h      // finite difference approximation of derivative of residual r vs parameter
+// Adjoint operation     psi       = (J^T)^-1 * dF/dx                       // J = converged Jacobian matrix
+// Derivative II         dr/dp     = [r(p+h) - r(p)]/h                      // finite difference approximation of derivative of residual r vs. parameter
 // Gradients             dF/dp     = -psi^T * dr/dp
 //                      
 // ------------------------------------------------------------
@@ -198,9 +198,14 @@ PetscErrorCode LaMEMAdjointReadInputSetDefaults(ModParam **p_IOparam, FB **p_fb,
 	IOparam->maxitLS    = 10;
 
 	// Some general Adjoint Gradient parameters:
-	ierr = getIntParam   (fb, _OPTIONAL_, "Adjoint_GradientCalculation"      , &IOparam->Gr,        1, 1        ); CHKERRQ(ierr);  // Calculate Grads with respect to solution (scaling laws etc.) = 1; Calc with respect to cost function (direct fD test) = 0
+	//ierr = getIntParam   (fb, _OPTIONAL_, "Adjoint_GradientCalculation"      , &IOparam->Gr,        1, 1        ); CHKERRQ(ierr);  // Calculate Grads with respect to solution (scaling laws etc.) = 1; Calc with respect to cost function (direct fD test) = 0
+    ierr = getStringParam(fb, _OPTIONAL_, "Adjoint_GradientCalculation", str, NULL); CHKERRQ(ierr);  // must have component
+    if     	(!strcmp(str, "CostFunction"))      IOparam->Gr=0;
+	else if (!strcmp(str, "Solution"))          IOparam->Gr=1;
+	else{	SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "Choose either [Solution; CostFunction] as parameter for Adjoint_GradientCalculation");} 
+
 	ierr = getIntParam   (fb, _OPTIONAL_, "Adjoint_FieldSensitivity"         , &IOparam->FS,        1, 1        ); CHKERRQ(ierr);  // Do a field sensitivity test? -> Will do the test for the first InverseParStart that is given!
-	ierr = getIntParam   (fb, _OPTIONAL_, "Adjoint_EvaluationPoints"         , &IOparam->Ap,        1, 3        ); CHKERRQ(ierr);  // 1 = several indices ; 2 = the whole domain ; 3 = surface
+	ierr = getIntParam   (fb, _OPTIONAL_, "Adjoint_ObservationPoints"        , &IOparam->Ap,        1, 3        ); CHKERRQ(ierr);  // 1 = several indices ; 2 = the whole domain ; 3 = surface
 	ierr = getIntParam   (fb, _OPTIONAL_, "Adjoint_AdvectPoint"              , &IOparam->Adv,       1, 1        ); CHKERRQ(ierr);  // 1 = advect the point
 	ierr = getIntParam   (fb, _OPTIONAL_, "Adjoint_ObjectiveFunctionDef"     , &IOparam->OFdef,     1, 1        ); CHKERRQ(ierr);  // Objective function defined by hand?
 	
@@ -225,9 +230,9 @@ PetscErrorCode LaMEMAdjointReadInputSetDefaults(ModParam **p_IOparam, FB **p_fb,
 	if(IOparam->use == _adjointgradients_ ) 
 	{
 		PetscPrintf(PETSC_COMM_WORLD, "   Adjoint mode                             : AdjointGradients  \n");
-		if (IOparam->Gr==0){ PetscPrintf(PETSC_COMM_WORLD, "   Gradients are computed w.r.t.            : cost function [Adjoint_GradientCalculation = 0]  \n", IOparam->Gr); }
-		else               { PetscPrintf(PETSC_COMM_WORLD, "   Gradients are computed w.r.t.            : solution      [Adjoint_GradientCalculation = 1]  \n", IOparam->Gr); }
-		PetscPrintf(PETSC_COMM_WORLD, "   Pointwise gradient evaluation            : %d    \n", IOparam->FS);		// No idea
+		if (IOparam->Gr==0){ PetscPrintf(PETSC_COMM_WORLD, "   Gradients are computed w.r.t.            : CostFunction \n", IOparam->Gr); }
+		else               { PetscPrintf(PETSC_COMM_WORLD, "   Gradients are computed w.r.t.            : Solution     \n", IOparam->Gr); }
+		PetscPrintf(PETSC_COMM_WORLD, "   Field-based gradient evaluation          : %d    \n", IOparam->FS);		
 
 		if 		(IOparam->Ap == 1){PetscPrintf(PETSC_COMM_WORLD, "   Gradient evaluation points               : several observation points  [Adjoint_EvaluationPoints = 1]  \n"); }
 		else if (IOparam->Ap == 2){PetscPrintf(PETSC_COMM_WORLD, "   Gradient evaluation points               : whole domain  	 [Adjoint_EvaluationPoints = 2]  \n"); }
@@ -311,7 +316,7 @@ PetscErrorCode LaMEMAdjointReadInputSetDefaults(ModParam **p_IOparam, FB **p_fb,
 	PetscPrintf(PETSC_COMM_WORLD, "\n   Total number of adjoint parameters       : %i   \n", fb->nblocks);
 	for(i = 0; i < fb->nblocks; i++)
 	{
-		ierr = getIntParam   (fb, _OPTIONAL_, "ID" , &ID, 1, _max_num_phases_); CHKERRQ(ierr);		// phase at which it applies
+		ierr = getIntParam   (fb, _REQUIRED_, "ID" , &ID, 1, _max_num_phases_); CHKERRQ(ierr);		// phase at which it applies
 		phsar[i]  = ID;                    // PHASE
 		ierr = getScalarParam(fb, _OPTIONAL_, "InitGuess", &ts, 1, 1 ); CHKERRQ(ierr);
 		Par[i]    = ts;                    // PARAMETER VALUES
@@ -371,35 +376,53 @@ PetscErrorCode LaMEMAdjointReadInputSetDefaults(ModParam **p_IOparam, FB **p_fb,
 	}
 
 	// read each individual index
-	if (fb->nblocks>0){
+	if ( (fb->nblocks>0) & (IOparam->Ap==1)){
 		PetscPrintf(PETSC_COMM_WORLD, "\n   Total number of observation points 	    : %i   \n", fb->nblocks);
-	}	
-	for(i = 0; i < fb->nblocks; i++)
+	}
+    else
+    {
+      	PetscPrintf(PETSC_COMM_WORLD, "\n ");
+    }
+    	
+    for(i = 0; i < fb->nblocks; i++)
 	{
 		// retrieve the coordinates of the sample points	
-		ierr = getScalarParam(fb, _OPTIONAL_, "Coordinate",  IOparam->Coord, 3, 1);        CHKERRQ(ierr);
+		ierr = getScalarParam(fb, _OPTIONAL_, "Coordinate",  IOparam->Coord, 3, 1);        CHKERRQ(ierr);       // not required if we compute 
 		Ax[i] = (IOparam->Coord[0])/scal.length;
 		Ay[i] = (IOparam->Coord[1])/scal.length;
 		Az[i] = (IOparam->Coord[2])/scal.length;
 
-		//ierr = getIntParam   (fb, _OPTIONAL_, "Inv_Av", &ti, 1, 3); CHKERRQ(ierr);
-		
-		ierr = getStringParam(fb, _OPTIONAL_, "VelocityComponent", Vel_comp, NULL); CHKERRQ(ierr);
-		if     	(!strcmp(Vel_comp, "x"))    ti=1;
+		ierr = getStringParam(fb, _REQUIRED_, "VelocityComponent", Vel_comp, NULL); CHKERRQ(ierr);  // must have component
+    	if     	(!strcmp(Vel_comp, "x"))    ti=1;
 		else if (!strcmp(Vel_comp, "y"))    ti=2;
 		else if (!strcmp(Vel_comp, "z"))    ti=3;
 		else{	SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "Choose either [x,y,z] as VelocityComponent");} 
 		Av[i] = ti;                     // VELOCITY COMPONENT
 		
-		
-		
-		ierr = getScalarParam(fb, _OPTIONAL_, "Value", &ts, 1, 1 ); CHKERRQ(ierr);
+        if (IOparam->Gr==0){
+		    ierr = getScalarParam(fb, _REQUIRED_, "Value", &ts, 1, 1 ); CHKERRQ(ierr);
+        }
+        else{
+            ierr = getScalarParam(fb, _OPTIONAL_, "Value", &ts, 1, 1 ); CHKERRQ(ierr);
+        }
 		Ae[i] = ts /scal.velocity;     // VELOCITY VALUE
 
-		if (fb->nblocks<6){
-			// Print overview 
-			PetscPrintf(PETSC_COMM_WORLD, "      [%f,%f,%f] should have V%s=%7.5f\n", IOparam->Coord[0],IOparam->Coord[1],IOparam->Coord[0], Vel_comp, ts);
+		if ((fb->nblocks<6) & (IOparam->Ap==1)){
+            // Print overview 
+			if (IOparam->Gr==0){
+                PetscPrintf(PETSC_COMM_WORLD, "      [%f,%f,%f] should have V%s=%7.5f\n", IOparam->Coord[0],IOparam->Coord[1],IOparam->Coord[0], Vel_comp, ts);  // cost function
+            }
+            else{
+                PetscPrintf(PETSC_COMM_WORLD, "      [%f,%f,%f] will compute gradient w.r.t. V%s\n", IOparam->Coord[0],IOparam->Coord[1],IOparam->Coord[0], Vel_comp);  // w.r.t. solution
+            }
 		}
+        if (IOparam->Ap>1){
+            const char *str_vec;
+            if   (IOparam->Ap==2){str_vec="everywhere";}
+            else {str_vec="at the internal free surface";}
+
+            PetscPrintf(PETSC_COMM_WORLD, "   We will compute the gradient %s w.r.t. V%s\n", str_vec, Vel_comp);  // inform where the gradient will be computed, and w.r.t. which component 
+        }
 
 		fb->blockID++;
 	}
@@ -854,32 +877,32 @@ PetscErrorCode AdjointOptimisationTAO(Tao tao, Vec P, PetscReal *F, Vec grad, vo
 		if (IOparam->Gr == 1)
 		{
 			// -------- Only get gradients with respect to the solution --------
- 			ierr = VecCopy(aop->pro,aop->dF); 				CHKERRQ(ierr);
+ 			ierr = VecCopy(aop->pro,aop->dF); 				CHKERRQ(ierr); // dF/dx = P
 		}
 		else if(IOparam->Gr == 0)
 		{
  			// -------- Get gradients with respect of cost function -------------
-			PetscPrintf(PETSC_COMM_WORLD,"******************************************\n      COMPUTATION OF THE COST FUNCTION\n******************************************\n");
-
+			PetscPrintf(PETSC_COMM_WORLD,"**************************************************************************\n");
+            PetscPrintf(PETSC_COMM_WORLD,"                      COMPUTATION OF THE COST FUNCTION                    \n");
+            PetscPrintf(PETSC_COMM_WORLD,"**************************************************************************\n");
+            
 			PetscScalar Ad;
 
 			// Incorporate projection vector (F = (1/2)*[P*(x-x_ini)' * P*(x-x_ini)])
-			ierr = VecAYPX(xini,-1,jr->gsol);                                       CHKERRQ(ierr);
+			ierr = VecAYPX(xini,-1.0,jr->gsol);                                     CHKERRQ(ierr);  // xini = x - xini, where x=jr->gsol
 
-
-
-			ierr = VecPointwiseMult(xini, xini,aop->pro);                           CHKERRQ(ierr);
+			ierr = VecPointwiseMult(xini, xini,aop->pro);                           CHKERRQ(ierr);  // xini = xini*P
 
             //VecView(xini, 	PETSC_VIEWER_STDOUT_SELF);
 
 			// Compute objective function value (F = (1/2)*[P*(x-x_ini)' * P*(x-x_ini)])
-			ierr 	           = VecDot(xini,xini,&Ad);
+			ierr 	           = VecDot(xini,xini,&Ad);                             CHKERRQ(ierr);
 			Ad 		          /= 2;
-			IOparam->mfit 	   = Ad*pow(scal->velocity,2); // Dimensional misfit function
+			IOparam->mfit 	   = Ad*pow(scal->velocity,2);                  // Dimensional misfit function
 
-	 		// Compute it's derivative (dF/dx = P*x-P*x_ini)
-	 		ierr = VecDuplicate(jr->gsol, &aop->dF);        CHKERRQ(ierr);
-	 		ierr = VecCopy(xini,aop->dF); 		            CHKERRQ(ierr);
+	 		// Compute it's derivative (dF/dx = P*x-P*x_ini = P*(x-x_ini))
+	 		ierr = VecDuplicate(jr->gsol, &aop->dF);                                CHKERRQ(ierr);
+	 		ierr = VecCopy(xini,aop->dF); 		                                    CHKERRQ(ierr);
 
 	 		PetscPrintf(PETSC_COMM_WORLD,"Current Cost function = %.10e\n",IOparam->mfit);
 		}
@@ -929,7 +952,10 @@ PetscErrorCode AdjointOptimisationTAO(Tao tao, Vec P, PetscReal *F, Vec grad, vo
  		// Put the proportion into the Projection vector where the user defined the computation coordinates (P) & get the velocities
  		ierr = AdjointPointInPro(jr, aop, IOparam, surf);                       CHKERRQ(ierr);
 
- 		PetscPrintf(PETSC_COMM_WORLD,"******************************************\n      COMPUTATION OF THE COST FUNCTION\n******************************************\n");
+ 		PetscPrintf(PETSC_COMM_WORLD,"**************************************************************************\n");
+        PetscPrintf(PETSC_COMM_WORLD,"                      COMPUTATION OF THE COST FUNCTION                    \n");
+        PetscPrintf(PETSC_COMM_WORLD,"**************************************************************************\n");
+
 
 	 	// Copy temporary comparison solution
 	 	ierr = VecDuplicate(jr->gsol, &xini);                                   CHKERRQ(ierr);
@@ -968,7 +994,10 @@ PetscErrorCode AdjointOptimisationTAO(Tao tao, Vec P, PetscReal *F, Vec grad, vo
 #define __FUNCT__ "AdjointComputeGradients"
 PetscErrorCode AdjointComputeGradients(JacRes *jr, AdjGrad *aop, NLSol *nl, SNES snes, ModParam *IOparam, FreeSurf *surf)
 {
-	PetscPrintf(PETSC_COMM_WORLD,"******************************************\n      COMPUTATION OF THE GRADIENTS\n******************************************\n");
+	PetscPrintf(PETSC_COMM_WORLD,"************************************************************************** \n");
+    PetscPrintf(PETSC_COMM_WORLD,"                      COMPUTATION OF THE GRADIENTS                         \n");
+    PetscPrintf(PETSC_COMM_WORLD,"************************************************************************** \n");
+
 
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
@@ -978,9 +1007,10 @@ PetscErrorCode AdjointComputeGradients(JacRes *jr, AdjGrad *aop, NLSol *nl, SNES
 	KSPConvergedReason  reason;
 	PetscInt            i, j, CurPhase, CurPar, lrank, grank, fd;
 	PetscScalar         dt, grd, Perturb, coord_local[3], *vx, *vy, *vz;
-	Vec 				rpl, sol, psi, drdp, res, Perturb_vec;
+	Vec 				res_pert, sol, psi, drdp, res, Perturb_vec;
 	PC                  ipc;
 	Scaling             *scal;
+    PetscBool           flg;
 
 	fs = jr->fs;
 	dt = jr->ts->dt;
@@ -994,7 +1024,7 @@ PetscErrorCode AdjointComputeGradients(JacRes *jr, AdjGrad *aop, NLSol *nl, SNES
 
 	// Create all needed vectors in the same size as the solution vector
 	ierr = VecDuplicate(jr->gsol, &psi);	 	 CHKERRQ(ierr);
-	ierr = VecDuplicate(jr->gres, &rpl);		 CHKERRQ(ierr);
+	ierr = VecDuplicate(jr->gres, &res_pert);    CHKERRQ(ierr);
 	ierr = VecDuplicate(jr->gres, &res);	 	 CHKERRQ(ierr);
 	ierr = VecDuplicate(jr->gsol, &sol); 		 CHKERRQ(ierr);
 	ierr = VecDuplicate(jr->gsol, &drdp);	 	 CHKERRQ(ierr);
@@ -1016,9 +1046,24 @@ PetscErrorCode AdjointComputeGradients(JacRes *jr, AdjGrad *aop, NLSol *nl, SNES
 	ierr = KSPSolve(ksp,aop->dF,psi);	CHKERRQ(ierr);
 	ierr = KSPGetConvergedReason(ksp,&reason);	CHKERRQ(ierr);
 
-	// Field sensitivity or 'classic' phase based gradients?
-	if(IOparam->FS == 1)
+    // Set the FD step-size for computing dr/dp (or override it with a command-line option, which is more for advanced users/testing)
+    aop->FD_epsilon = 1e-6;
+    ierr = PetscOptionsGetScalar(NULL, NULL,"-FD_epsilon_adjoint",&aop->FD_epsilon,&flg); CHKERRQ(ierr);
+    if (flg)
+    {
+        PetscPrintf(PETSC_COMM_WORLD,"    Finite difference step size for Adjoint dr/dp calculation set to %e \n", aop->FD_epsilon);
+    }
+
+
+	// Field sensitivity (aka geodynamic sensitivity kernels) or 'classic' phase based gradients?
+ 	if(IOparam->FS == 1)
 	{
+        /*  This plots the sensitivity of the solution to incremental changes in the parameter (density here) at 
+             every point in the computational domain. This allows a visual inspection of where changes in density have the largest impact 
+             on say, surface velocity
+        */
+
+
 		CurPar   = IOparam->typ[0];
 
 		// Compute residual with the converged Jacobian analytically
@@ -1026,12 +1071,12 @@ PetscErrorCode AdjointComputeGradients(JacRes *jr, AdjGrad *aop, NLSol *nl, SNES
 		{
 			aop->CurScal   = (scal->velocity)/(scal->density);
 			aop->CurScalst = 1/(scal->density);
-			aop->Perturb   = 1e-6;
+			aop->Perturb   = aop->FD_epsilon;
 			ierr = AdjointFormResidualFieldFDRho(snes, sol, psi, nl, aop);          CHKERRQ(ierr);
 		}
 		else 
 		{
-			PetscPrintf(PETSC_COMM_WORLD,"Field based gradient only for density programmed!");
+			PetscPrintf(PETSC_COMM_WORLD,"Field based gradient only for density programmed! \n");
 		}
 	}
 	else
@@ -1039,30 +1084,26 @@ PetscErrorCode AdjointComputeGradients(JacRes *jr, AdjGrad *aop, NLSol *nl, SNES
 		//=================
 		// PARAMETER LOOP
 		//=================
+        ierr = VecDuplicate(jr->gsol, &Perturb_vec);        CHKERRQ(ierr);
 		for(j = 0; j < IOparam->mdN; j++)
 		{
-			// Get residual since it is overwritten in VecAYPX
-			ierr = VecDuplicate(jr->gres, &res);  	CHKERRQ(ierr);
+			// Get the initial residual since it is overwritten in VecAYPX
 			ierr = VecCopy(jr->gres,res); 			CHKERRQ(ierr);
 
-			// Get current phase and parameter
+			// Get current phase and parameter which is being perturbed
 			CurPhase = IOparam->phs[j];
 			CurPar   = IOparam->typ[j];
 
-			// Set perturbation paramter for the finite differences
-			aop->Perturb = 1e-6;
-
 			// Perturb the current parameter in the current phase
-			ierr = AdjointGradientPerturbParameter(nl, CurPar, CurPhase, aop, scal);   CHKERRQ(ierr);
+    		ierr = AdjointGradientPerturbParameter(nl, CurPar, CurPhase, aop, scal);   CHKERRQ(ierr);
 
-			// get the actual used perturbation parameter which is 1e-6*parameter
-			Perturb = aop->Perturb;
-			ierr = VecDuplicate(jr->gsol, &Perturb_vec);          CHKERRQ(ierr);
-			ierr = VecSet(Perturb_vec,Perturb);                   CHKERRQ(ierr);
+			// get the actual used perturbation parameter which is aop->Perturb*parameter
+			Perturb = aop->Perturb;                                                     // this stores epsilon*parameter
+			ierr = VecSet(Perturb_vec,Perturb);                   CHKERRQ(ierr);        // epsilon (finite difference)        
 
-			ierr = FormResidual(snes, sol, rpl, nl);              CHKERRQ(ierr);
-			ierr = VecAYPX(res,-1,rpl);                           CHKERRQ(ierr);
-			ierr = VecPointwiseDivide(drdp,res,Perturb_vec);      CHKERRQ(ierr);
+			ierr = FormResidual(snes, sol, res_pert, nl);         CHKERRQ(ierr);        // compute the residual with the perturbed parameter
+			ierr = VecAYPX(res,-1,res_pert);                      CHKERRQ(ierr);        // res = (res_perturbed-res)
+			ierr = VecPointwiseDivide(drdp,res,Perturb_vec);      CHKERRQ(ierr);        //
 
 			// Reset perturbed parameter
 			ierr = AdjointGradientResetParameter(nl, CurPar, CurPhase, aop);           CHKERRQ(ierr);
@@ -1070,8 +1111,8 @@ PetscErrorCode AdjointComputeGradients(JacRes *jr, AdjGrad *aop, NLSol *nl, SNES
 			fd += fd;  // Needed to free vectors later
 
 			// Compute the gradient (dF/dp = -psi^T * dr/dp) & Save gradient
-			ierr = VecDot(drdp,psi,&grd);                       CHKERRQ(ierr);
-			IOparam->grd[j] 	= -grd*aop->CurScal;
+			ierr                =   VecDot(drdp,psi,&grd);                       CHKERRQ(ierr);
+			IOparam->grd[j] 	=   -grd*aop->CurScal;
 
 			// Print result
 			PetscPrintf(PETSC_COMM_WORLD,"%D.Gradient (dimensional) = %.10e ; CurPar = %d ; CurPhase = %d\n",j+1, IOparam->grd[j], CurPar, CurPhase);
@@ -1081,10 +1122,10 @@ PetscErrorCode AdjointComputeGradients(JacRes *jr, AdjGrad *aop, NLSol *nl, SNES
 		ierr = VecDestroy(&res);
 	}
 
-	if(IOparam->mdI<  _MAX_OBS_ && IOparam->Ap == 1)
+	if(IOparam->mdI<_MAX_OBS_ && IOparam->Ap == 1)
 	{
 
-		// get the current velocities at comparison point
+		// get the current velocities at the observation point
 		ierr = AdjointPointInPro(jr, aop, IOparam, surf);    CHKERRQ(ierr);
 
 		VecGetArray(aop->vx,&vx);
@@ -1137,11 +1178,8 @@ PetscErrorCode AdjointComputeGradients(JacRes *jr, AdjGrad *aop, NLSol *nl, SNES
 	ierr = VecDestroy(&psi);
 	ierr = VecDestroy(&sol);
 	ierr = VecDestroy(&drdp);
-	ierr = VecDestroy(&rpl);
-	if(fd > 0)
-	{
-		ierr = VecDestroy(&Perturb_vec);
-	}
+	ierr = VecDestroy(&res_pert);
+    ierr = VecDestroy(&Perturb_vec);
 
 	PetscTime(&cputime_end);
 	PetscPrintf(PETSC_COMM_WORLD,"Computation was succesful & took %g s\n******************************************\n",cputime_end - cputime_start);
@@ -1149,6 +1187,10 @@ PetscErrorCode AdjointComputeGradients(JacRes *jr, AdjGrad *aop, NLSol *nl, SNES
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
+/*
+    AdjointPointInPro creates a projection vector which projects the requested velocity component(s) 
+        from the global solution vector to the observation point(s), assuming linear interpolation
+*/
 #undef __FUNCT__
 #define __FUNCT__ "AdjointPointInPro"
 PetscErrorCode AdjointPointInPro(JacRes *jr, AdjGrad *aop, ModParam *IOparam, FreeSurf *surf)
@@ -1207,7 +1249,7 @@ PetscErrorCode AdjointPointInPro(JacRes *jr, AdjGrad *aop, ModParam *IOparam, Fr
 	VecZeroEntries(lxiniY);
 	VecZeroEntries(lxiniZ);
 
-	// If we want only a few indices we need to interpolate them
+	// If we want only a few observation points we need to interpolate velocity from the grid to the observation point
 	if(IOparam->Ap == 1)
 	{
 		// Create everything
@@ -1219,9 +1261,9 @@ PetscErrorCode AdjointPointInPro(JacRes *jr, AdjGrad *aop, ModParam *IOparam, Fr
 		ierr = VecGetArray(aop->vy,&vy); CHKERRQ(ierr);
 		ierr = VecGetArray(aop->vz,&vz); CHKERRQ(ierr);
 
-		//=================
-		// INDEXING LOOP
-		//=================
+		//============================================
+		// INDEXING LOOP OVER ALL OBSERVATION POINTS
+		//============================================
 		for(ii = 0; ii < IOparam->mdI; ii++)
 		{
 			// Create coordinate vector
@@ -1229,7 +1271,7 @@ PetscErrorCode AdjointPointInPro(JacRes *jr, AdjGrad *aop, ModParam *IOparam, Fr
 			coord_local[1] = IOparam->Ay[ii];
 			coord_local[2] = IOparam->Az[ii];
 
-			// get global & local ranks of a marker
+			// get global & local ranks (processor) of the point
 			ierr = FDSTAGGetPointRanks(fs, coord_local, &lrank, &grank); CHKERRQ(ierr);
 
 			// If lrank is not 13 the point is not on this processor
@@ -1264,7 +1306,7 @@ PetscErrorCode AdjointPointInPro(JacRes *jr, AdjGrad *aop, ModParam *IOparam, Fr
 				ierr = DMDAVecGetArray(fs->DA_Y, lproY, &llproY);      CHKERRQ(ierr);
 				ierr = DMDAVecGetArray(fs->DA_Z, lproZ, &llproZ);      CHKERRQ(ierr);
 
-				if(IOparam->Av[ii] == 1)
+				if(IOparam->Av[ii] == 1) // Vx velocity
 				{
 					vx[ii] = InterpLin3D(lvx, I,  JJ, KK, sx, sy, sz, coord_local[0], coord_local[1], coord_local[2], ncx, ccy, ccz);
 					vy[ii] = InterpLin3D(lvy, II, J,  KK, sx, sy, sz, coord_local[0], coord_local[1], coord_local[2], ccx, ncy, ccz);
@@ -1284,7 +1326,7 @@ PetscErrorCode AdjointPointInPro(JacRes *jr, AdjGrad *aop, ModParam *IOparam, Fr
 					llproX[sz+KK+1][sy+JJ+1][sx+I  ] = (xb*ye*ze);   
 					llproX[sz+KK+1][sy+JJ+1][sx+I+1] = (xe*ye*ze); 
 
-					if(IOparam->OFdef == 1 )
+					if(IOparam->OFdef == 1 ) 
 					{
 						ierr = DMDAVecGetArray(fs->DA_X, lxiniX, &llxiniX);      CHKERRQ(ierr);
 
@@ -1309,7 +1351,7 @@ PetscErrorCode AdjointPointInPro(JacRes *jr, AdjGrad *aop, ModParam *IOparam, Fr
 						ierr = DMDAVecRestoreArray(fs->DA_X, lxiniX, &llxiniX);      CHKERRQ(ierr);
 					}
 				}
-				else if(IOparam->Av[ii] == 2)
+				else if(IOparam->Av[ii] == 2) // Vy velocity
 				{
 					vx[ii] = InterpLin3D(lvx, I,  JJ, KK, sx, sy, sz, coord_local[0], coord_local[1], coord_local[2], ncx, ccy, ccz);
 					vy[ii] = InterpLin3D(lvy, II, J,  KK, sx, sy, sz, coord_local[0], coord_local[1], coord_local[2], ccx, ncy, ccz);
@@ -1354,7 +1396,7 @@ PetscErrorCode AdjointPointInPro(JacRes *jr, AdjGrad *aop, ModParam *IOparam, Fr
 						ierr = DMDAVecRestoreArray(fs->DA_Y, lxiniY, &llxiniY);      CHKERRQ(ierr);
 					}
 				}
-				else if(IOparam->Av[ii] == 3)
+				else if(IOparam->Av[ii] == 3) // Vz velocity
 				{
 					
 					vx[ii] = InterpLin3D(lvx, I,  JJ, KK, sx, sy, sz, coord_local[0], coord_local[1], coord_local[2], ncx, ccy, ccz);
@@ -1418,15 +1460,15 @@ PetscErrorCode AdjointPointInPro(JacRes *jr, AdjGrad *aop, ModParam *IOparam, Fr
 	{
 		for(ii = 0; ii < 3; ii++)
 		{
-			if(IOparam->Av[ii] == 1)
+			if(IOparam->Av[ii] == 1)        // vx velocity
 			{
 				ierr = VecSet(lproX,1);
 			}
-			else if(IOparam->Av[ii] == 2)
+			else if(IOparam->Av[ii] == 2)  // vy velocity
 			{
 				ierr = VecSet(lproY,1);
 			}
-			else if(IOparam->Av[ii] == 3)
+			else if(IOparam->Av[ii] == 3)  // Vz velocity
 			{
 				ierr = VecSet(lproZ,1);
 			}
@@ -1673,7 +1715,7 @@ PetscErrorCode AdjointPointInPro(JacRes *jr, AdjGrad *aop, ModParam *IOparam, Fr
 	// If it is 0 we want to keep the initially loaded solution and just ignore copying
 	if(IOparam->OFdef == 1)
 	{
-		ierr = VecCopy(xini,IOparam->xini);       CHKERRQ(ierr);
+		ierr = VecCopy(xini,IOparam->xini);       CHKERRQ(ierr);        // This is a projection vector, whch projects 
 	}
 
 	ierr = VecDestroy(&lproX);
@@ -1703,7 +1745,7 @@ PetscErrorCode AdjointPointInPro(JacRes *jr, AdjGrad *aop, ModParam *IOparam, Fr
 #define __FUNCT__ "AdjointGradientPerturbParameter"
 PetscErrorCode AdjointGradientPerturbParameter(NLSol *nl, PetscInt CurPar, PetscInt CurPhase, AdjGrad *aop, Scaling *scal)
 {
-	PetscScalar         ini, perturb, curscal, curscalst;
+	PetscScalar         ini, perturb, curscal, curscalst, FD_epsilon;
 	Material_t         *mat;
 
 	PetscFunctionBegin;
@@ -1711,15 +1753,15 @@ PetscErrorCode AdjointGradientPerturbParameter(NLSol *nl, PetscInt CurPar, Petsc
 	mat = nl->pc->pm->jr->dbm->phases;
 
 	// Get the perturbation value & scaling
-	perturb   = aop->Perturb;
-	curscal   = aop->CurScal;
-	curscalst = aop->CurScalst;
+    FD_epsilon  = aop->FD_epsilon;
+	curscal     = aop->CurScal;
+	curscalst   = aop->CurScalst;
 
 	// Perturb the current parameter in the current phase (more to be included)
 	if(CurPar==_RHO0_)			// rho
 	{
 		ini = mat[CurPhase].rho;
-		perturb = ini*perturb;
+		perturb = ini*FD_epsilon;
 		mat[CurPhase].rho +=  perturb;
 		curscal   = (scal->velocity)/(scal->density);
 		curscalst = 1/(scal->density);
@@ -1727,7 +1769,7 @@ PetscErrorCode AdjointGradientPerturbParameter(NLSol *nl, PetscInt CurPar, Petsc
 	else if (CurPar==_RHON_)	    // rho_n
 	{
 		ini = mat[CurPhase].rho_n;
-		perturb = ini*perturb;
+		perturb = ini*FD_epsilon;
 		mat[CurPhase].rho_n +=  perturb;
 		curscal   = (scal->velocity)/1;
 		curscalst = 1/1;
@@ -1735,7 +1777,7 @@ PetscErrorCode AdjointGradientPerturbParameter(NLSol *nl, PetscInt CurPar, Petsc
 	else if (CurPar==_RHOC_)	    // rho_c
 	{
 		ini = mat[CurPhase].rho_c;
-		perturb = ini*perturb;
+		perturb = ini*FD_epsilon;
 		mat[CurPhase].rho_c +=  perturb;
 		curscal = (scal->velocity)*(scal->length_si);
 		curscalst = 1/1;
@@ -1743,7 +1785,7 @@ PetscErrorCode AdjointGradientPerturbParameter(NLSol *nl, PetscInt CurPar, Petsc
 	else if (CurPar==_K_)	    // K
 	{
 		ini = mat[CurPhase].K;
-		perturb = ini*perturb;
+		perturb = ini*FD_epsilon;
 		mat[CurPhase].K +=  perturb;
 		curscal   = (scal->velocity)/(scal->stress_si);
 		curscalst = 1/(scal->stress_si);
@@ -1751,7 +1793,7 @@ PetscErrorCode AdjointGradientPerturbParameter(NLSol *nl, PetscInt CurPar, Petsc
 	else if (CurPar==_KP_)	    // Kp
 	{
 		ini = mat[CurPhase].Kp;
-		perturb = ini*perturb;
+		perturb = ini*FD_epsilon;
 		mat[CurPhase].Kp +=  perturb;
 		curscal   = (scal->velocity)/1;
 		curscalst = 1/1;
@@ -1759,7 +1801,7 @@ PetscErrorCode AdjointGradientPerturbParameter(NLSol *nl, PetscInt CurPar, Petsc
 	else if (CurPar==_SHEAR_)	    // G
 	{
 		ini = mat[CurPhase].G;
-		perturb = ini*perturb;
+		perturb = ini*FD_epsilon;
 		mat[CurPhase].G +=  perturb;
 		curscal   = (scal->velocity)/(scal->stress_si);
 		curscalst = 1/(scal->stress_si);
@@ -1769,7 +1811,7 @@ PetscErrorCode AdjointGradientPerturbParameter(NLSol *nl, PetscInt CurPar, Petsc
 		// This kind of perturbs the whole NEWTONIAN viscosity, consider perturbing the parameters directly
 		ini = mat[CurPhase].Bd;
 		PetscScalar BdTemp;
-		perturb = perturb*(1.0/(2*ini));
+		perturb = FD_epsilon*(1.0/(2*ini));
 		BdTemp = (1.0/(2*ini)) + perturb;//(perturb*(1.0/(2*ini)));
 		mat[CurPhase].Bd =  (1.0/(2*BdTemp));
 		curscal   = (scal->velocity)/(scal->viscosity);
@@ -1778,7 +1820,7 @@ PetscErrorCode AdjointGradientPerturbParameter(NLSol *nl, PetscInt CurPar, Petsc
 	else if (CurPar==_ED_)	    // Ed
 	{
 		ini = mat[CurPhase].Ed;
-		perturb = ini*perturb;
+		perturb = ini*FD_epsilon;
 		mat[CurPhase].Ed +=  perturb;
 		curscal   = (scal->velocity)/(1);   // Not sure
 		curscalst = 1/1;
@@ -1786,7 +1828,7 @@ PetscErrorCode AdjointGradientPerturbParameter(NLSol *nl, PetscInt CurPar, Petsc
 	else if (CurPar==_VD_)	// Vd
 	{
 		ini = mat[CurPhase].Vd;
-		perturb = ini*perturb;
+		perturb = ini*FD_epsilon;
 		mat[CurPhase].Vd +=  perturb;
 		curscal   = (scal->velocity)*(scal->stress_si);
 		curscalst = 1*(scal->stress_si);
@@ -1798,7 +1840,7 @@ PetscErrorCode AdjointGradientPerturbParameter(NLSol *nl, PetscInt CurPar, Petsc
 		PetscScalar ViscTemp;
 
 		// -- Uncomment to compute gradient for ETA0 --
-		perturb = perturb* (pow(( mat[CurPhase].Bn * pow(2,mat[CurPhase].n) * pow(aop->DII_ref, mat[CurPhase].n-1) *  pow(scal->stress_si, -mat[CurPhase].n) )/ scal->time_si , -1/mat[CurPhase].n));
+		perturb = FD_epsilon* (pow(( mat[CurPhase].Bn * pow(2,mat[CurPhase].n) * pow(aop->DII_ref, mat[CurPhase].n-1) *  pow(scal->stress_si, -mat[CurPhase].n) )/ scal->time_si , -1/mat[CurPhase].n));
 		ViscTemp = (pow(( mat[CurPhase].Bn * pow(2,mat[CurPhase].n) * pow(aop->DII_ref, mat[CurPhase].n-1) *  pow(scal->stress_si, -mat[CurPhase].n) )/ scal->time_si , -1/mat[CurPhase].n))  + perturb;
 		mat[CurPhase].Bn = pow (2.0*ViscTemp, -mat[CurPhase].n) * pow(aop->DII_ref, 1 - mat[CurPhase].n) * (pow(scal->stress_si, mat[CurPhase].n)*scal->time_si);
 		// -- Uncomment to compute gradient for BN --
@@ -1812,7 +1854,7 @@ PetscErrorCode AdjointGradientPerturbParameter(NLSol *nl, PetscInt CurPar, Petsc
 		ini = mat[CurPhase].n;
 		aop->Ini2 = mat[CurPhase].Bn;
 		PetscScalar ViscTemp = pow( (aop->Ini2 * pow(2,mat[CurPhase].n) * pow(aop->DII_ref, mat[CurPhase].n-1) * pow(scal->stress_si, -mat[CurPhase].n) ) / scal->time_si, -1/mat[CurPhase].n);
-		perturb = ini*perturb;
+		perturb = ini*FD_epsilon;
 		mat[CurPhase].n +=  perturb;
 		// We also accordingly need to perturb the inverse viscosity in this case
 		mat[CurPhase].Bn = (pow(2.0*ViscTemp, -mat[CurPhase].n) * pow(aop->DII_ref, 1 - mat[CurPhase].n)) * (pow(scal->stress_si, mat[CurPhase].n)*scal->time_si);
@@ -1822,7 +1864,7 @@ PetscErrorCode AdjointGradientPerturbParameter(NLSol *nl, PetscInt CurPar, Petsc
 	else if (CurPar==_EN_)	// En
 	{
 		ini = mat[CurPhase].En;
-		perturb = ini*perturb;
+		perturb = ini*FD_epsilon;
 		mat[CurPhase].En +=  perturb;
 		curscal   = (scal->velocity)/(1);    // Not sure
 		curscalst = 1/1;
@@ -1830,7 +1872,7 @@ PetscErrorCode AdjointGradientPerturbParameter(NLSol *nl, PetscInt CurPar, Petsc
 	else if (CurPar==_VN_)	// Vn
 	{
 		ini = mat[CurPhase].Vn;
-		perturb = ini*perturb;
+		perturb = ini*FD_epsilon;
 		mat[CurPhase].Vn +=  perturb;
 		curscal   = (scal->velocity)*(scal->stress_si);
 		curscalst = 1*(scal->stress_si);
@@ -1838,7 +1880,7 @@ PetscErrorCode AdjointGradientPerturbParameter(NLSol *nl, PetscInt CurPar, Petsc
 	else if (CurPar==_TAUP_)	// taup
 	{
 		ini = mat[CurPhase].taup;
-		perturb = ini*perturb;
+		perturb = ini*FD_epsilon;
 		mat[CurPhase].taup +=  perturb;
 		curscal   = (scal->velocity)/(scal->stress_si);
 		curscalst = 1/(scal->stress_si);
@@ -1846,7 +1888,7 @@ PetscErrorCode AdjointGradientPerturbParameter(NLSol *nl, PetscInt CurPar, Petsc
 	else if (CurPar==_GAMMA_)	// gamma
 	{
 		ini = mat[CurPhase].gamma;
-		perturb = ini*perturb;
+		perturb = ini*FD_epsilon;
 		mat[CurPhase].gamma +=  perturb;
 		curscal   = (scal->velocity)/(1);
 		curscalst = 1/1;
@@ -1854,7 +1896,7 @@ PetscErrorCode AdjointGradientPerturbParameter(NLSol *nl, PetscInt CurPar, Petsc
 	else if (CurPar==_Q_)	// q
 	{
 		ini = mat[CurPhase].q;
-		perturb = ini*perturb;
+		perturb = ini*FD_epsilon;
 		mat[CurPhase].q +=  perturb;
 		curscal   = (scal->velocity)/(1);
 		curscalst = 1/1;
@@ -1862,7 +1904,7 @@ PetscErrorCode AdjointGradientPerturbParameter(NLSol *nl, PetscInt CurPar, Petsc
 	else if (CurPar==_FRICTION_)	// fr
 	{
 		ini = mat[CurPhase].fr;
-		perturb = ini*perturb;
+		perturb = ini*FD_epsilon;
 		mat[CurPhase].fr +=  perturb;
 		curscal   = (scal->velocity)/scal->angle;
 		curscalst = 1/scal->angle;
@@ -1870,7 +1912,7 @@ PetscErrorCode AdjointGradientPerturbParameter(NLSol *nl, PetscInt CurPar, Petsc
 	else if (CurPar==_COHESION_)	// ch
 	{
 		ini = mat[CurPhase].ch;
-		perturb = ini*perturb;
+		perturb = ini*FD_epsilon;
 		mat[CurPhase].ch +=  perturb;
 		curscal   = (scal->velocity)/scal->stress_si;
 		curscalst = 1/scal->stress_si;
@@ -1878,7 +1920,7 @@ PetscErrorCode AdjointGradientPerturbParameter(NLSol *nl, PetscInt CurPar, Petsc
 	else if (CurPar==_CP_)	// Cp
 	{
 		ini = mat[CurPhase].Cp;
-		perturb = ini*perturb;
+		perturb = ini*FD_epsilon;
 		mat[CurPhase].Cp +=  perturb;
 		curscal   = (scal->velocity)/scal->cpecific_heat;
 		curscalst = 1/scal->cpecific_heat;
@@ -1886,7 +1928,7 @@ PetscErrorCode AdjointGradientPerturbParameter(NLSol *nl, PetscInt CurPar, Petsc
 	else if (CurPar==_A_)	// A
 	{
 		ini = mat[CurPhase].A;
-		perturb = ini*perturb;
+		perturb = ini*FD_epsilon;
 		mat[CurPhase].A +=  perturb;
 		curscal   = (scal->velocity)/scal->heat_production;
 		curscalst = 1/scal->heat_production;
@@ -1947,7 +1989,7 @@ PetscErrorCode AdjointGradientResetParameter(NLSol *nl, PetscInt CurPar, PetscIn
 #define __FUNCT__ "AdjointFormResidualFieldFDRho"
 PetscErrorCode AdjointFormResidualFieldFDRho(SNES snes, Vec x, Vec psi, NLSol *nl, AdjGrad *aop  )
 {
-
+    // "geodynamic sensitivity kernels" 
 	// ONLY PROGRAMMED FOR DENSITY!!
 	// -> Just a debug function for the field gradient ...
 	// -> This thing produces the negative of the gradient (multiply with minus; or compare abs value)
