@@ -150,7 +150,7 @@
 	<AdjointParameterStart>
 	   	ID  			= 0		# phase of the parameter
 		Type 			= n     # options: [rho0,rhon,rhoc,eta,eta0,n,En] 	
-		InitGuess 	= 2  	# initial guess
+		InitGuess 		= 2  	# initial guess
 		#LowerBound     = 1		# [optional] lower bound
 		#UpperBound     = 3		# [optional] upper bound
 	<AdjointParameterEnd>

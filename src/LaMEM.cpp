@@ -86,7 +86,7 @@ int main(int argc, char **argv)
 	}
 	else
 	{
-		// Inversion or gradient computation
+		// Inversion or adjoint gradient computation
 		ierr = LaMEMAdjointMain(&IOparam, fb); CHKERRQ(ierr);
 	}
 

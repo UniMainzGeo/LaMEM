@@ -153,23 +153,25 @@ PetscInt FindPointInCellAdjoint(
 	}
 	return(L);
 }
-
 //---------------------------------------------------------------------------
+/* This reads the input parameters from theb file/command-line & sets default 
+values. Also performs error-checking
+*/
 #undef __FUNCT__
-#define __FUNCT__ "LaMEMAdjointMain"
-PetscErrorCode LaMEMAdjointMain(ModParam *IOparam, FB *fb)
+#define __FUNCT__ "LaMEMAdjointReadInputSetDefaults"
+PetscErrorCode LaMEMAdjointReadInputSetDefaults(ModParam **p_IOparam, FB **p_fb, Adjoint_Vecs *Adjoint_Vectors)
 {
-	PetscErrorCode ierr;
 	PetscFunctionBegin;
-
-	Scaling         scal;
-	PetscScalar    *gradar, *Ubar, *Lbar, *Par, *fcconvar, F, ts;
-	Vec             val, Ub, Lb, grad, P;
+	PetscErrorCode 	ierr;
+	ModParam 		*IOparam;
+	FB 				*fb;
+	PetscScalar    *gradar, *Ubar, *Lbar, ts, *Par;
 	PetscInt        i, ti, ID;
 	char            str[_str_len_], Vel_comp[_str_len_];
+	Scaling         scal;
 
-	IOparam->count = 1;  // iteration counter for the initial cost function
-	F              = 1e100;
+	IOparam 			= 	*p_IOparam;	// simplifies the code below
+	fb 					=	*p_fb;
 
 	// Some defaults
 	IOparam->FS         = 0;
@@ -207,16 +209,13 @@ PetscErrorCode LaMEMAdjointMain(ModParam *IOparam, FB *fb)
 	ierr = getScalarParam(fb, _OPTIONAL_, "Inversion_Scale_Grad"			, &IOparam->Scale_Grad,1, 1        ); CHKERRQ(ierr);  // Magnitude of initial parameter update (factor_ini = Scale_Grad/Grad)
 	ierr = getScalarParam(fb, _REQUIRED_, "DII"           					, &IOparam->DII_ref,   1, 1        ); CHKERRQ(ierr);   // SUPER UNNECESSARY BUT OTHERWISE NOT AVAILABLE
 
-
-
-
 	PetscPrintf(PETSC_COMM_WORLD,"--------------------------------------------------------------------------- \n");
 	PetscPrintf(PETSC_COMM_WORLD,"                                     LaMEM                                  \n");
 	PetscPrintf(PETSC_COMM_WORLD,"                       Adjoint Gradient Framework Active                    \n");
 	PetscPrintf(PETSC_COMM_WORLD,"--------------------------------------------------------------------------- \n");
 	PetscPrintf(PETSC_COMM_WORLD,"Adjoint parameters:  \n");
 	
-	if(IOparam->use == 2) 
+	if(IOparam->use == _adjointgradients_ ) 
 	{
 		PetscPrintf(PETSC_COMM_WORLD, "   Adjoint mode                             : AdjointGradients  \n");
 		if (IOparam->Gr==0){ PetscPrintf(PETSC_COMM_WORLD, "   Gradients are computed w.r.t.            : cost function [Adjoint_GradientCalculation = 0]  \n", IOparam->Gr); }
@@ -231,7 +230,7 @@ PetscErrorCode LaMEMAdjointMain(ModParam *IOparam, FB *fb)
 		
 		PetscPrintf(PETSC_COMM_WORLD, "   Objective function defined in input      : %d    \n", IOparam->OFdef);
 	}
-	else if(IOparam->use == 3) 
+	else if(IOparam->use == _gradientdescent_) 
 	{
 		PetscPrintf(PETSC_COMM_WORLD, "   Adjoint mode                             : Gradient descent (or Quasi-Newton) inversion  \n");
 		PetscPrintf(PETSC_COMM_WORLD, "   Use Tao BLMVM (or LaMEM steepest descent): %d    \n", IOparam->Tao);
@@ -254,7 +253,7 @@ PetscErrorCode LaMEMAdjointMain(ModParam *IOparam, FB *fb)
 			PetscPrintf(PETSC_COMM_WORLD, "    Scale for initial parameter update       : %.5e  \n", IOparam->Scale_Grad);
 		}
 	} 
-	else if (IOparam->use == 4) 
+	else if (IOparam->use == _syntheticforwardrun_) 
 	{
 		PetscPrintf(PETSC_COMM_WORLD, "   Adjoint mode                             : SyntheticForwardRun  (saving forward run for debugging purposes)  \n");
 	}
@@ -264,11 +263,11 @@ PetscErrorCode LaMEMAdjointMain(ModParam *IOparam, FB *fb)
 	}
 
 	// VECTORS
-	ierr = VecCreateMPI(PETSC_COMM_WORLD, _MAX_PAR_  , PETSC_DETERMINE, &Lb);      CHKERRQ(ierr);
-	ierr = VecCreateMPI(PETSC_COMM_WORLD, _MAX_PAR_  , PETSC_DETERMINE, &Ub);      CHKERRQ(ierr);
-	ierr = VecCreateMPI(PETSC_COMM_WORLD, _MAX_PAR_  , PETSC_DETERMINE, &val);     CHKERRQ(ierr);
-	ierr = VecCreateMPI(PETSC_COMM_WORLD, _MAX_PAR_  , PETSC_DETERMINE, &P);       CHKERRQ(ierr);
-	ierr = VecCreateMPI(PETSC_COMM_WORLD, _MAX_PAR_  , PETSC_DETERMINE, &grad);    CHKERRQ(ierr);
+	ierr = VecCreateMPI(PETSC_COMM_WORLD, _MAX_PAR_  , PETSC_DETERMINE, &Adjoint_Vectors->Lb);      CHKERRQ(ierr);
+	ierr = VecCreateMPI(PETSC_COMM_WORLD, _MAX_PAR_  , PETSC_DETERMINE, &Adjoint_Vectors->Ub);      CHKERRQ(ierr);
+	ierr = VecCreateMPI(PETSC_COMM_WORLD, _MAX_PAR_  , PETSC_DETERMINE, &Adjoint_Vectors->val);     CHKERRQ(ierr);
+	ierr = VecCreateMPI(PETSC_COMM_WORLD, _MAX_PAR_  , PETSC_DETERMINE, &Adjoint_Vectors->P);       CHKERRQ(ierr);
+	ierr = VecCreateMPI(PETSC_COMM_WORLD, _MAX_PAR_  , PETSC_DETERMINE, &Adjoint_Vectors->grad);    CHKERRQ(ierr);
 	ierr = VecCreateMPI(PETSC_COMM_WORLD, IOparam->maxit, PETSC_DETERMINE, &IOparam->fcconv);   CHKERRQ(ierr);   // 1500 is the maximum inversion iterations that are accepted
 
 	// TEMPORARY VARIABLES
@@ -297,10 +296,11 @@ PetscErrorCode LaMEMAdjointMain(ModParam *IOparam, FB *fb)
 	}
 
 	// read each individual parameter
-	VecGetArray(P,&Par);
-	VecGetArray(Ub,&Ubar);
-	VecGetArray(Lb,&Lbar);
-	VecGetArray(grad,&gradar);
+	VecGetArray(Adjoint_Vectors->P,&Par);
+	VecGetArray(Adjoint_Vectors->Ub,&Ubar);
+	VecGetArray(Adjoint_Vectors->Lb,&Lbar);
+	VecGetArray(Adjoint_Vectors->grad,&gradar);
+
 	PetscPrintf(PETSC_COMM_WORLD, "\n   Total number of adjoint parameters       : %i   \n", fb->nblocks);
 	for(i = 0; i < fb->nblocks; i++)
 	{
@@ -333,10 +333,10 @@ PetscErrorCode LaMEMAdjointMain(ModParam *IOparam, FB *fb)
 	IOparam->phs = phsar;
 	IOparam->typ = typar;
 	IOparam->grd = gradar;
-	VecRestoreArray(P,&Par);
-	VecRestoreArray(Ub,&Ubar);
-	VecRestoreArray(Lb,&Lbar);
-	VecRestoreArray(grad,&gradar);
+	VecRestoreArray(Adjoint_Vectors->P,&Par);
+	VecRestoreArray(Adjoint_Vectors->Ub,&Ubar);
+	VecRestoreArray(Adjoint_Vectors->Lb,&Lbar);
+	VecRestoreArray(Adjoint_Vectors->grad,&gradar);
 	IOparam->mdN = i;
 
 	ierr = FBFreeBlocks(fb); CHKERRQ(ierr);
@@ -412,14 +412,39 @@ PetscErrorCode LaMEMAdjointMain(ModParam *IOparam, FB *fb)
 		SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "You have to define observation points (Ap) for the inversion. Have a look into the comments in src/LaMEM.cpp");
 	}
 
+
+
+	PetscFunctionReturn(0);
+}
+
+//---------------------------------------------------------------------------
+#undef __FUNCT__
+#define __FUNCT__ "LaMEMAdjointMain"
+PetscErrorCode LaMEMAdjointMain(ModParam *IOparam, FB *fb)
+{
+	PetscErrorCode ierr;
+	PetscFunctionBegin;
+
+	PetscScalar    	F, *fcconvar, *Par;
+	PetscInt        i;
+	Adjoint_Vecs    Adjoint_Vectors;
+	//char            str[_str_len_], Vel_comp[_str_len_];
+
+	IOparam->count = 1;  // iteration counter for the initial cost function
+	F              = 1e100;
+
+
+	// Read input parameters
+	ierr = LaMEMAdjointReadInputSetDefaults(&IOparam, &fb, &Adjoint_Vectors); CHKERRQ(ierr);
+
 	//===============
 	// SOLVE ADJOINT (LaMIMLibMain)
 	//===============
 	// only compute the adjoint gradients or simply forward code
 	if(IOparam->use == 2)
  	{
- 		VecDuplicate(P,&IOparam->P);
- 		VecCopy(P,IOparam->P);
+ 		VecDuplicate(Adjoint_Vectors.P,&IOparam->P);
+ 		VecCopy(Adjoint_Vectors.P,IOparam->P);
 
  		// call LaMEM main library function
  		ierr = LaMEMLibMain(IOparam); CHKERRQ(ierr);
@@ -427,8 +452,8 @@ PetscErrorCode LaMEMAdjointMain(ModParam *IOparam, FB *fb)
  	// compute 'full' adjoint based gradient inversion
  	else if(IOparam->use == 3)
  	{
- 		VecDuplicate(P,&IOparam->P);
- 		VecCopy(P,IOparam->P);
+ 		VecDuplicate(Adjoint_Vectors.P,&IOparam->P);
+ 		VecCopy(Adjoint_Vectors.P,IOparam->P);
 
  		// if tao is used try the LMVM/BLMVM algorithms
  		if(IOparam->Tao == 1)
@@ -441,7 +466,7 @@ PetscErrorCode LaMEMAdjointMain(ModParam *IOparam, FB *fb)
  	 	 	// 1.Check if bounds are available and sets them
  	 		if (IOparam->Ab == 1)
  	 		{
- 	 	 	 	ierr = TaoSetVariableBounds(tao,Lb,Ub);	 								CHKERRQ(ierr);
+ 	 	 	 	ierr = TaoSetVariableBounds(tao,Adjoint_Vectors.Lb,Adjoint_Vectors.Ub);	 								CHKERRQ(ierr);
  	 	 	 	ierr = TaoSetType(tao,TAOBLMVM);CHKERRQ(ierr);
  	 		}
  	 		else
@@ -451,7 +476,7 @@ PetscErrorCode LaMEMAdjointMain(ModParam *IOparam, FB *fb)
 
  	 		// 2. Set up Tao
  	 	 	ierr = TaoSetObjectiveAndGradientRoutine(tao, AdjointOptimisationTAO, IOparam);	 	CHKERRQ(ierr);
- 	 	 	ierr = TaoSetInitialVector(tao,P);	 									CHKERRQ(ierr);
+ 	 	 	ierr = TaoSetInitialVector(tao,Adjoint_Vectors.P);	 									CHKERRQ(ierr);
  	 	 	ierr = TaoSetTolerances(tao,1e-30,1e-30,1e-30);	CHKERRQ(ierr);
  	 	 	ierr = TaoSetFunctionLowerBound(tao,1e-5);CHKERRQ(ierr);
  	 	 	ierr = TaoSetFromOptions(tao);	 										CHKERRQ(ierr);
@@ -473,7 +498,7 @@ PetscErrorCode LaMEMAdjointMain(ModParam *IOparam, FB *fb)
  		else
  		// Without TAO try line search tuned gradient descent
  		{
- 			ierr = AdjointOptimisation(P, F, grad, IOparam);
+ 			ierr = AdjointOptimisation(Adjoint_Vectors.P, F, Adjoint_Vectors.grad, IOparam);
  		}
 
  		PetscPrintf(PETSC_COMM_WORLD,"--------------------------------------------------------------------------- \n");
@@ -517,9 +542,9 @@ PetscErrorCode LaMEMAdjointMain(ModParam *IOparam, FB *fb)
  	 	PetscPrintf(PETSC_COMM_WORLD,"------------------------------------------\n        Forward Solution succesfully saved\n------------------------------------------\n");
  	}
 
-	ierr = VecDestroy(&P);
-	ierr = VecDestroy(&Ub);
-	ierr = VecDestroy(&Lb);
+	ierr = VecDestroy(&Adjoint_Vectors.P);
+	ierr = VecDestroy(&Adjoint_Vectors.Ub);
+	ierr = VecDestroy(&Adjoint_Vectors.Lb);
 
 	PetscFunctionReturn(0);
 }

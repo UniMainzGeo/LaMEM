@@ -78,10 +78,16 @@ struct AdjGrad
 	Vec              gradfield;                // Used if gradient at every point is computed (same size as jr->p)
 };
 
+// Structure that holds vectors required by TAO
+struct Adjoint_Vecs
+{
+	Vec             val, Ub, Lb, grad, P;
+};
+
 // Adjoint optimization driving routines
 PetscErrorCode AdjointOptimisation(Vec P, PetscScalar F, Vec grad, void *ctx);
 PetscErrorCode AdjointOptimisationTAO(Tao tao, Vec P, PetscReal *F, Vec grad, void *ctx);
-
+PetscErrorCode LaMEMAdjointReadInputSetDefaults(ModParam **p_IOparam, FB **p_fb, Adjoint_Vecs *Adjoint_Vectors);
 PetscErrorCode LaMEMAdjointMain(ModParam *IOparam, FB *fb);
 
 // Compute the gradients for the adjoint inversion
