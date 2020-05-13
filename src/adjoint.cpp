@@ -161,6 +161,55 @@ PetscInt FindPointInCellAdjoint(
 }
 
 //---------------------------------------------------------------------------
+/* This reads the material parameters from the file
+*/
+#undef __FUNCT__
+#define __FUNCT__ "LaMEMAdjointReadMaterialParameters"
+PetscErrorCode LaMEMAdjointReadMaterialParameters(DBMat *dbm, FB  **p_fb)
+{
+    PetscErrorCode  ierr;
+    PetscInt        jj;
+    FB              *fb;
+
+    fb          =	*p_fb;
+
+
+    // print overview of material parameters read from file
+	PetscPrintf(PETSC_COMM_WORLD,"Adjoint: Material parameters: \n");
+
+	// setup block access mode
+	ierr = FBFindBlocks(fb, _REQUIRED_, "<MaterialStart>", "<MaterialEnd>"); CHKERRQ(ierr);
+    PetscPrintf(PETSC_COMM_WORLD,"Adjoint1: Material parameters: found %i blocks \n",fb->nblocks);
+
+/*
+	// initialize ID for consistency checks
+	for(jj = 0; jj < _max_num_phases_; jj++) dbm->phases[jj].ID = -1;
+
+
+	// error checking
+	if(fb->nblocks > _max_num_phases_)
+	{
+		SETERRQ1(PETSC_COMM_WORLD, PETSC_ERR_USER, "Too many material structures specified! Max allowed: %lld", (LLD)_max_num_phases_);
+	}
+
+	// store actual number of phases
+	dbm->numPhases = fb->nblocks;
+    PetscPrintf(PETSC_COMM_WORLD,"Adjoint2: Material parameters: found  \n");
+
+	// read each individual phase
+	for(jj = 0; jj < fb->nblocks; jj++)
+	{
+	//	ierr = DBMatReadPhase(dbm, fb); CHKERRQ(ierr);
+
+//		fb->blockID++;
+
+	}
+*/
+    PetscFunctionReturn(0);
+
+}
+
+//---------------------------------------------------------------------------
 /* This reads the input parameters from the file/command-line & sets default 
 values. Also performs error-checking
 */
@@ -173,9 +222,10 @@ PetscErrorCode LaMEMAdjointReadInputSetDefaults(ModParam **p_IOparam, FB **p_fb,
 	ModParam 		*IOparam;
 	FB 				*fb;
 	PetscScalar    *gradar, *Ubar, *Lbar, ts, *Par;
-	PetscInt        i, ti, ID;
+	PetscInt        i, ti, ID, jj;
 	char            str[_str_len_], Vel_comp[_str_len_];
 	Scaling         scal;
+    DBMat           dbm;
 
 	IOparam 			= 	*p_IOparam;	// simplifies the code below
 	fb 					=	*p_fb;
@@ -202,7 +252,7 @@ PetscErrorCode LaMEMAdjointReadInputSetDefaults(ModParam **p_IOparam, FB **p_fb,
     ierr = getStringParam(fb, _OPTIONAL_, "Adjoint_GradientCalculation", str, NULL); CHKERRQ(ierr);  // must have component
     if     	(!strcmp(str, "CostFunction"))      IOparam->Gr=0;
 	else if (!strcmp(str, "Solution"))          IOparam->Gr=1;
-	else{	SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "Choose either [Solution; CostFunction] as parameter for Adjoint_GradientCalculation");} 
+	else{	SETERRQ1(PETSC_COMM_WORLD, PETSC_ERR_USER, "Choose either [Solution; CostFunction] as parameter for Adjoint_GradientCalculation, not %s",str);} 
 
 	ierr = getIntParam   (fb, _OPTIONAL_, "Adjoint_FieldSensitivity"         , &IOparam->FS,        1, 1        ); CHKERRQ(ierr);  // Do a field sensitivity test? -> Will do the test for the first InverseParStart that is given!
 	ierr = getIntParam   (fb, _OPTIONAL_, "Adjoint_ObservationPoints"        , &IOparam->Ap,        1, 3        ); CHKERRQ(ierr);  // 1 = several indices ; 2 = the whole domain ; 3 = surface
@@ -212,7 +262,7 @@ PetscErrorCode LaMEMAdjointReadInputSetDefaults(ModParam **p_IOparam, FB **p_fb,
 	// If we do inversion, additional parameters can be specified:
 	ierr = getIntParam   (fb, _OPTIONAL_, "Inversion_maxit"     			, &IOparam->maxit,     1, 1500     ); CHKERRQ(ierr);  // maximum number of inverse iterations
 	ierr = getIntParam   (fb, _OPTIONAL_, "Inversion_maxit_linesearch"   	, &IOparam->maxitLS,   1, 1500     ); CHKERRQ(ierr);  // maximum number of backtracking	
-	ierr = getIntParam   (fb, _OPTIONAL_, "Inversion_Ab"        			, &IOparam->Ab,        1, 1        ); CHKERRQ(ierr);  // Apply bounds?
+	ierr = getIntParam   (fb, _OPTIONAL_, "Inversion_ApplyBounds"        	, &IOparam->Ab,        1, 1        ); CHKERRQ(ierr);  // Apply bounds?
 	ierr = getIntParam   (fb, _OPTIONAL_, "Inversion_EmployTAO"       		, &IOparam->Tao,       1, 1        ); CHKERRQ(ierr);  // Use TAO?
 	ierr = getScalarParam(fb, _OPTIONAL_, "Inversion_rtol"       			, &IOparam->tol,       1, 1        ); CHKERRQ(ierr);  // tolerance for F/Fini after which code has converged
 	ierr = getScalarParam(fb, _OPTIONAL_, "Inversion_factor_linesearch"     , &IOparam->facLS,     1, 1        ); CHKERRQ(ierr);  // factor in the line search that multiplies current line search parameter if GD update was succesful (increases convergence speed)
@@ -292,6 +342,37 @@ PetscErrorCode LaMEMAdjointReadInputSetDefaults(ModParam **p_IOparam, FB **p_fb,
 	PetscScalar     Ae[  _MAX_OBS_];
 
 	ierr =  ScalingCreate(&scal, fb);
+    dbm.scal = &scal;
+
+
+    // Read material input parameters from file
+    ierr = FBFindBlocks(fb, _REQUIRED_, "<MaterialStart>", "<MaterialEnd>"); CHKERRQ(ierr);
+    
+	// initialize ID for consistency checks
+	for(jj = 0; jj < _max_num_phases_; jj++) dbm.phases[jj].ID = -1;
+
+	// error checking
+	if(fb->nblocks > _max_num_phases_)
+	{
+		SETERRQ1(PETSC_COMM_WORLD, PETSC_ERR_USER, "Too many material structures specified! Max allowed: %lld", (LLD)_max_num_phases_);
+	}
+
+	// store actual number of phases
+	//dbm->numPhases = fb->nblocks;
+ /*   
+    PetscPrintf(PETSC_COMM_WORLD,"Adjoint2: Material parameters: found  \n");
+
+	// read each individual phase
+    fb->blockID = 0;
+	for(jj = 0; jj < fb->nblocks; jj++)
+	{
+		ierr = DBMatReadPhase(&dbm, fb); CHKERRQ(ierr);
+
+		fb->blockID++;
+	}
+
+*/
+
 
 	// PARAMETERS
 	// Get parameter / typ / etc.
@@ -312,7 +393,7 @@ PetscErrorCode LaMEMAdjointReadInputSetDefaults(ModParam **p_IOparam, FB **p_fb,
 	VecGetArray(Adjoint_Vectors->Ub,&Ubar);
 	VecGetArray(Adjoint_Vectors->Lb,&Lbar);
 	VecGetArray(Adjoint_Vectors->grad,&gradar);
-
+    fb->blockID = 0;
 	PetscPrintf(PETSC_COMM_WORLD, "\n   Total number of adjoint parameters       : %i   \n", fb->nblocks);
 	for(i = 0; i < fb->nblocks; i++)
 	{
@@ -457,12 +538,15 @@ PetscErrorCode LaMEMAdjointMain(ModParam *IOparam, FB *fb)
 	PetscScalar    	F, *fcconvar, *Par;
 	PetscInt        i;
 	Adjoint_Vecs    Adjoint_Vectors;
+    DBMat           dbm;
 
 	IOparam->count = 1;  // iteration counter for the initial cost function
 	F              = 1e100;
 
 
 	// Read input parameters
+    //ierr = LaMEMAdjointReadMaterialParameters(&dbm, &fb); CHKERRQ(ierr);
+
 	ierr = LaMEMAdjointReadInputSetDefaults(&IOparam, &fb, &Adjoint_Vectors); CHKERRQ(ierr);
     
 
@@ -531,7 +615,7 @@ PetscErrorCode LaMEMAdjointMain(ModParam *IOparam, FB *fb)
  		}
 
  		PetscPrintf(PETSC_COMM_WORLD,"--------------------------------------------------------------------------- \n");
-		PetscPrintf(PETSC_COMM_WORLD,"*         				INVERSION RESULT SUMMARY       					* \n");
+		PetscPrintf(PETSC_COMM_WORLD,"*                         INVERSION RESULT SUMMARY                        * \n");
 		PetscPrintf(PETSC_COMM_WORLD,"--------------------------------------------------------------------------- \n");
 		PetscPrintf(PETSC_COMM_WORLD,"Number of inversion iterations: %d\n",IOparam->count);
  		PetscPrintf(PETSC_COMM_WORLD,"F/Fini:\n");
@@ -708,7 +792,7 @@ PetscErrorCode AdjointOptimisation(Vec P, PetscScalar F, Vec grad, void *ctx)
 
 		PetscPrintf(PETSC_COMM_WORLD,"\n--------------------------------------------------------------------------- \n");
 		PetscPrintf(PETSC_COMM_WORLD,"%d. IT INVERSION RESULT: line search its = %d ; F / FINI = %.5e\n\n",IOparam->count,LScount-1,IOparam->mfit/IOparam->mfitini);
-		PetscPrintf(PETSC_COMM_WORLD,"FOLD = %.5e \n   F = %.5e\n\n",Fold,F);
+		PetscPrintf(PETSC_COMM_WORLD,"Fold = %.5e \n   F = %.5e\n\n",Fold,F);
 
 		// BEFORE UPDATING the par vector store the old gradient & Parameter vector (for BFGS)
 		VecCopy(P,Pold);

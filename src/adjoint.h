@@ -59,6 +59,8 @@ struct NLSol;
 struct ModParam;
 struct FB;
 
+#include "phase.h"
+
 // Some global maxes on parameter and index numbers
 #define _MAX_PAR_ 50
 #define _MAX_OBS_ 100
@@ -88,9 +90,10 @@ struct Adjoint_Vecs
 // Adjoint optimization driving routines
 PetscErrorCode AdjointOptimisation(Vec P, PetscScalar F, Vec grad, void *ctx);
 PetscErrorCode AdjointOptimisationTAO(Tao tao, Vec P, PetscReal *F, Vec grad, void *ctx);
+PetscErrorCode LaMEMAdjointReadMaterialParameters(DBMat *dbm, FB  **p_fb);
 PetscErrorCode LaMEMAdjointReadInputSetDefaults(ModParam **p_IOparam, FB **p_fb, Adjoint_Vecs *Adjoint_Vectors);
 PetscErrorCode LaMEMAdjointMain(ModParam *IOparam, FB *fb);
-
+ 
 // Compute the gradients for the adjoint inversion
 PetscErrorCode AdjointObjectiveAndGradientFunction(AdjGrad *aop, JacRes *jr, NLSol *nl, ModParam *IOparam, SNES snes, FreeSurf *surf);
 
