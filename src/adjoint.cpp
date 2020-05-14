@@ -334,7 +334,8 @@ PetscErrorCode LaMEMAdjointReadInputSetDefaults(ModParam **p_IOparam, FB **p_fb,
 
 	// TEMPORARY VARIABLES
 	PetscInt		phsar[_MAX_PAR_];
-	PetscInt      	typar[_MAX_PAR_];
+	PetscInt      	typar[_MAX_PAR_];					// should become obsolete, if we use the name below
+	char 			type_name[_MAX_PAR_][_str_len_];
 	PetscScalar     Ax[  _MAX_OBS_];
 	PetscScalar     Ay[  _MAX_OBS_];
 	PetscScalar     Az[  _MAX_OBS_];
@@ -406,6 +407,12 @@ PetscErrorCode LaMEMAdjointReadInputSetDefaults(ModParam **p_IOparam, FB **p_fb,
 		ierr = getScalarParam(fb, _OPTIONAL_, "LowerBound", &ts, 1, 1 ); CHKERRQ(ierr);
 		Lbar[i]   = ts;                    // LOWER BOUND
 		ierr = getStringParam(fb, _OPTIONAL_, "Type", str, NULL); CHKERRQ(ierr);
+
+		/* 
+			We need a better way to keep track of the parameters we vary, which should be fully consistent with the nomenclature of parameters
+				within LaMEM; as not all parameters have been tested with LaMEM, it is likely a good idea to have a separate subroutine 
+				that checks if this parameters is -in principle- a material parameter that can be varied.
+		*/
 		if     (!strcmp(str, "rho0"))       { ti = _RHO0_; }
 		else if(!strcmp(str, "rhon"))       { ti = _RHON_; }
 		else if(!strcmp(str, "rhoc"))       { ti = _RHOC_; }
@@ -415,17 +422,20 @@ PetscErrorCode LaMEMAdjointReadInputSetDefaults(ModParam **p_IOparam, FB **p_fb,
 		else if(!strcmp(str, "En"))         { ti = _EN_;   }
 		else{ SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "WARNING: inversion parameter type is not yet implemented \n"); }
 		typar[i]     = ti;
-		gradar[i]    = 0;                     // GRADIENTS
+		strcpy(type_name[i], str);
+		gradar[i]    = 0.0;                     // GRADIENTS
 
 		// Print overview
-		PetscPrintf(PETSC_COMM_WORLD, "      %-6s:     ID=%i, Initial Guess=%2.3f Bounds=[%2.3f - %2.3f]   \n",str, ID, Par[i],Lbar[i],Ubar[i]);
-		
+		PetscPrintf(PETSC_COMM_WORLD, "    %+6s[%-2i]: InitialGuess = %-9.4g; Bounds = [%9.4g-%-9.4g]   \n",type_name[i], ID, Par[i],Lbar[i],Ubar[i]);
+
+
 		fb->blockID++;
 	}
 	
-    ierr  = PetscMemcpy(IOparam->grd, gradar, (size_t)_MAX_PAR_*sizeof(PetscScalar) ); CHKERRQ(ierr);
-    ierr  = PetscMemcpy(IOparam->typ, typar,  (size_t)_MAX_PAR_*sizeof(PetscInt)    ); CHKERRQ(ierr);
-    ierr  = PetscMemcpy(IOparam->phs, phsar,  (size_t)_MAX_PAR_*sizeof(PetscInt)    ); CHKERRQ(ierr);
+    ierr  = PetscMemcpy(IOparam->grd,       gradar,     (size_t)_MAX_PAR_*sizeof(PetscScalar) ); CHKERRQ(ierr);
+    ierr  = PetscMemcpy(IOparam->typ,       typar,      (size_t)_MAX_PAR_*sizeof(PetscInt)    ); CHKERRQ(ierr); // will become obsolete
+    ierr  = PetscMemcpy(IOparam->type_name, type_name,  (size_t)_MAX_PAR_*(size_t)_str_len_*sizeof(char)        ); CHKERRQ(ierr);
+    ierr  = PetscMemcpy(IOparam->phs,       phsar,      (size_t)_MAX_PAR_*sizeof(PetscInt)    ); CHKERRQ(ierr);
 
 	VecRestoreArray(Adjoint_Vectors->P,&Par);
 	VecRestoreArray(Adjoint_Vectors->Ub,&Ubar);
@@ -1095,6 +1105,7 @@ PetscErrorCode AdjointComputeGradients(JacRes *jr, AdjGrad *aop, NLSol *nl, SNES
 	PC                  ipc;
 	Scaling             *scal;
     PetscBool           flg;
+    char                CurName[_str_len_];
 
 	fs = jr->fs;
 	dt = jr->ts->dt;
@@ -1165,6 +1176,10 @@ PetscErrorCode AdjointComputeGradients(JacRes *jr, AdjGrad *aop, NLSol *nl, SNES
 	}
 	else
 	{
+        PetscPrintf(PETSC_COMM_WORLD,"\nGradients: \n");
+        PetscPrintf(PETSC_COMM_WORLD,"                   Parameter   |  Gradient (dimensional)  \n");    
+        PetscPrintf(PETSC_COMM_WORLD,"                 -------------   ------------------------ \n");    
+      
 		//=================
 		// PARAMETER LOOP
 		//=================
@@ -1177,6 +1192,7 @@ PetscErrorCode AdjointComputeGradients(JacRes *jr, AdjGrad *aop, NLSol *nl, SNES
 			// Get current phase and parameter which is being perturbed
 			CurPhase = IOparam->phs[j];
 			CurPar   = IOparam->typ[j];
+            strcpy(CurName, IOparam->type_name[j]);
 
 			// Perturb the current parameter in the current phase
     		ierr = AdjointGradientPerturbParameter(nl, CurPar, CurPhase, aop, scal);   CHKERRQ(ierr);
@@ -1192,22 +1208,29 @@ PetscErrorCode AdjointComputeGradients(JacRes *jr, AdjGrad *aop, NLSol *nl, SNES
 			// Reset perturbed parameter
 			ierr = AdjointGradientResetParameter(nl, CurPar, CurPhase, aop);           CHKERRQ(ierr);
 
-			fd += fd;  // Needed to free vectors later
+			fd += fd;  // Needed to free vectors later  [OBSOLOTE]
 
 			// Compute the gradient (dF/dp = -psi^T * dr/dp) & Save gradient
 			ierr                =   VecDot(drdp,psi,&grd);                       CHKERRQ(ierr);
 			IOparam->grd[j] 	=   -grd*aop->CurScal;
 
 			// Print result
-			PetscPrintf(PETSC_COMM_WORLD,"%D.Gradient (dimensional) = %.10e ; CurPar = %d ; CurPhase = %d\n",j+1, IOparam->grd[j], CurPar, CurPhase);
-		}
+            PetscPrintf(PETSC_COMM_WORLD,"         %5d:   %+5s[%2i]           %- 1.6e \n",j+1, CurName, CurPhase, IOparam->grd[j]);
 
+		}
+        PetscPrintf(PETSC_COMM_WORLD,"\n");
 		// Destroy overwritten residual vector
 		ierr = VecDestroy(&res);
 	}
 
 	if(IOparam->mdI<_MAX_OBS_ && IOparam->Ap == 1)
 	{
+
+        PetscPrintf(PETSC_COMM_WORLD,"\nObservation points: \n");
+        PetscPrintf(PETSC_COMM_WORLD,"                                                        Velocity          \n");    
+        PetscPrintf(PETSC_COMM_WORLD,"                      Location            |      Target         Value     \n");    
+        PetscPrintf(PETSC_COMM_WORLD,"      ------------------------------------  -- ------------- ------------- \n");    
+
 
 		// get the current velocities at the observation point
 		ierr = AdjointPointInPro(jr, aop, IOparam, surf);    CHKERRQ(ierr);
@@ -1230,19 +1253,19 @@ PetscErrorCode AdjointComputeGradients(JacRes *jr, AdjGrad *aop, NLSol *nl, SNES
 			// If lrank is not 13 the point is not on this processor
 			if(lrank == 13)
 			{
-				if (IOparam->Av[i] == 1)
-				{
-					PetscPrintf(PETSC_COMM_SELF,"Current Vx = %.5e at Location x = %g , y = %g , z = %g\n",vx[i]*scal->velocity,IOparam->Ax[i]*scal->length,IOparam->Ay[i]*scal->length,IOparam->Az[i]*scal->length);
-				}
-				else if (IOparam->Av[i] == 2)
-				{
-					PetscPrintf(PETSC_COMM_SELF,"Current [Vy] (dimensional) = %.5e at Location x = %g , y = %g , z = %g\n",vy[i]*scal->velocity,IOparam->Ax[i]*scal->length,IOparam->Ay[i]*scal->length,IOparam->Az[i]*scal->length);
-				}
-				else if (IOparam->Av[i] == 3)
-				{
-					// PetscPrintf(PETSC_COMM_SELF,"Current [Vz] (dimensional) = %.5e\n",vz[i]*scal->velocity);
-					PetscPrintf(PETSC_COMM_SELF,"Current [Vz] (dimensional) = %.10e at Location x = %g , y = %g , z = %g\n",vz[i]*scal->velocity,IOparam->Ax[i]*scal->length,IOparam->Ay[i]*scal->length,IOparam->Az[i]*scal->length);
-				}
+                char vel_com[20];
+                PetscScalar vel,x,y,z,CostFunc;
+
+                if (IOparam->Av[i] == 1){strcpy(vel_com, "Vx"); vel = vx[i]*scal->velocity;}
+                if (IOparam->Av[i] == 2){strcpy(vel_com, "Vy"); vel = vy[i]*scal->velocity;}
+                if (IOparam->Av[i] == 3){strcpy(vel_com, "Vz"); vel = vz[i]*scal->velocity;}
+                CostFunc = IOparam->Ae[i]*scal->velocity;
+
+                x  =  IOparam->Ax[i]*scal->length;
+                y  =  IOparam->Ay[i]*scal->length;
+                z  =  IOparam->Az[i]*scal->length;
+                              
+			    PetscPrintf(PETSC_COMM_SELF,"%-4d: [%10.4f; %10.4f; %10.4f]  %s % 8.5e  % 8.5e \n",i,x,y,z, vel_com, CostFunc, vel);
 
 				if (IOparam->Adv == 1)     // advect the point?
 				{
@@ -1257,7 +1280,8 @@ PetscErrorCode AdjointComputeGradients(JacRes *jr, AdjGrad *aop, NLSol *nl, SNES
 		VecRestoreArray(aop->vy,&vy);
 		VecRestoreArray(aop->vz,&vz);
 	}
-
+    PetscPrintf(PETSC_COMM_WORLD,"\n");
+    
 	// Clean
 	ierr = VecDestroy(&psi);
 	ierr = VecDestroy(&sol);
@@ -1266,6 +1290,7 @@ PetscErrorCode AdjointComputeGradients(JacRes *jr, AdjGrad *aop, NLSol *nl, SNES
     ierr = VecDestroy(&Perturb_vec);
 
 	PetscTime(&cputime_end);
+    ierr = MPI_Barrier(PETSC_COMM_WORLD); CHKERRQ(ierr); // because of PETSC_COMM_SELF above
 	PetscPrintf(PETSC_COMM_WORLD,"Computation was succesful & took %g s\n******************************************\n",cputime_end - cputime_start);
 
 	PetscFunctionReturn(0);

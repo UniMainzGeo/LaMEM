@@ -91,44 +91,46 @@ const char *PTypesName[] ={
 // Structure that holds inversion parameters
 struct ModParam
 {
-	PetscInt         use;               // Choose one of InvTypes
-	PetscInt         mdN;               // number of model parameters
-	PetscInt         mID;               // current model number
-	PetscInt         phs[_MAX_PAR_];    // model phase number
-	PetscInt         typ[_MAX_PAR_];    // model parameter type
-	PetscScalar      grd[_MAX_PAR_];    // gradient value
-	PetscScalar     *val;               // model value
-	PetscScalar      mfit;              // misfit value for current model parameters
+	PetscInt         use;                               // Choose one of InvTypes
+	PetscInt         mdN;                               // number of model parameters
+	PetscInt         mID;                               // current model number
+	PetscInt         typ[_MAX_PAR_];  	                // model parameter type
+	char 			 type_name[_MAX_PAR_][_str_len_];   // stores the name of the adjoint parameters
+	PetscInt         phs[_MAX_PAR_];                    // phase number of adjoint parameters
+	PetscScalar      grd[_MAX_PAR_];                    // gradient value
+	PetscScalar     *val;                               // model value
+	PetscScalar      mfit;                              // misfit value for current model parameters
 
 	// Variables additionally needed for the adjoint TAO solver
-	Vec              xini;      	// Comparison velocity field for adjoint inversion
-	Vec              P;				// vector containing parameters
-	Vec              fcconv;        // Vector containing all f/fini values to track convergence
-	PetscInt         Ab;    		// Use adjoint bounds (only works with Tao)?
-	PetscInt         Tao;    		// Use Tao?
-	PetscInt         Adv;      		// Advect the point?
-	PetscInt         count;			// iteration counter
-	PetscInt         mdI;    		// number of indices
-	PetscInt         Ap;        	// 1 = several indices ; 2 = whole domain ; 3 = surface
-	PetscInt         FS;            // 1 = pointwise gradient
-	PetscInt         Gr;            // 1 = Grad w.r.t solution; 0 = Grad w.r.t to cost function
-	PetscInt         OFdef;         // Objective function defined by hand?
-	PetscInt         maxit;         // maximum number of inverse iteration
-	PetscInt         maxitLS;       // maximum number of backtracking
-	PetscScalar      Scale_Grad;    // scale parameter update with initial gradient?
-	PetscScalar      mfitini;   	// initial misfit value for current model parameters
-	PetscScalar      tol; 	   	    // tolerance for F/Fini after which code has converged
-	PetscScalar      facLS;      	// factor in the line search that multiplies current line search parameter if GD update was succesful (increases convergence speed)
-	PetscScalar      facB;      	// backtrack factor that multiplies current line search parameter if GD update was not succesful
-	PetscScalar      factor2array[51];  // factor that increases the convergence velocity (this value is added to itself after every succesful gradient descent ; only used without tao)
-	PetscScalar      maxfac;	    // limit on the factor (only used without tao)
-	PetscScalar      DII_ref;       // SUPER UNNECESSARY but DII is otherwise not accesible
-	PetscScalar      Coord[3];		// Temp Coordinates of comparison points
-	PetscScalar      Ax[_MAX_OBS_]; // X-coordinates of comparison points
-	PetscScalar      Ay[_MAX_OBS_];	// Y-coordinates of comparison points
-	PetscScalar      Az[_MAX_OBS_]; // Z-coordinates of comparison points
-	PetscScalar      Ae[_MAX_OBS_]; // Velocity value of comparison points
-	PetscInt         Av[_MAX_OBS_];	// Velocity components of comparison points
+	Vec              xini;      	                    // Comparison velocity field for adjoint inversion
+	Vec              P;				                    // vector containing parameters
+	Vec              fcconv;                            // Vector containing all f/fini values to track convergence
+	PetscInt         Ab;    		                    // Use adjoint bounds (only works with Tao)?
+	PetscInt         Tao;    		                    // Use Tao?
+	PetscInt         Adv;      		                    // Advect the point?
+	PetscInt         count;			                    // iteration counter
+	PetscInt         mdI;    		                    // number of indices
+	PetscInt         Ap;        	                    // 1 = several indices ; 2 = whole domain ; 3 = surface
+	PetscInt         FS;                                // 1 = pointwise gradient
+	PetscInt         Gr;                                // 1 = Grad w.r.t solution; 0 = Grad w.r.t to cost function
+	PetscInt         OFdef;                             // Objective function defined by hand?
+	PetscInt         maxit;                             // maximum number of inverse iteration
+	PetscInt         maxitLS;                           // maximum number of backtracking
+	PetscScalar      Scale_Grad;                        // scale parameter update with initial gradient?
+	PetscScalar      mfitini;   	                    // initial misfit value for current model parameters
+	PetscScalar      tol; 	   	                        // tolerance for F/Fini after which code has converged
+	PetscScalar      facLS;      	                    // factor in the line search that multiplies current line search parameter if GD update was succesful (increases convergence speed)
+	PetscScalar      facB;      	                    // backtrack factor that multiplies current line search parameter if GD update was not succesful
+	PetscScalar      factor2array[51];                  // factor that increases the convergence velocity (this value is added to itself after every succesful gradient descent ; only used without tao)
+	PetscScalar      maxfac;	                        // limit on the factor (only used without tao)
+	PetscScalar      DII_ref;                           // SUPER UNNECESSARY but DII is otherwise not accesible
+	PetscScalar      Coord[3];		                    // Temp Coordinates of comparison points
+	PetscScalar      Ax[_MAX_OBS_];                     // X-coordinates of comparison points
+	PetscScalar      Ay[_MAX_OBS_];	                    // Y-coordinates of comparison points
+	PetscScalar      Az[_MAX_OBS_];                     // Z-coordinates of comparison points
+	PetscScalar      Ae[_MAX_OBS_];                     // Velocity value of comparison points
+	PetscInt         Av[_MAX_OBS_];	                    // Velocity components of comparison points
+
 };
 
 // observation type

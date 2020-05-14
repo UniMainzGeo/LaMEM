@@ -63,7 +63,7 @@
 #===============================================================================
 # Solver options
 #===============================================================================
-	SolverType 			=	multigrid 	# solver [direct or multigrid]
+	SolverType 			=	direct 	# solver [direct or multigrid]
 	MGLevels 			=	3			# number of MG levels [default=3]
 	MGSweeps 			=	5			# number of MG smoothening steps per level [default=10]
 #	MGSmoother 			=	chebyshev 	# type of smoothener used [chebyshev or jacobi]
@@ -132,7 +132,7 @@
 #===============================================================================
 	
 	# General
-	Adjoint_mode    					= 	GradientDescent #AdjointGradients    	# options: [None; AdjointGradients, GradientDescent; Inversion]
+	Adjoint_mode    					= 	AdjointGradients    	# options: [None; AdjointGradients, GradientDescent; Inversion]
 	Adjoint_ObservationPoints           = 	1						# options: [1=several points; 2=whole domain; 3=surface]
 	Adjoint_ObjectiveFunctionDef        = 	1                     # options: [1-defined by hand; 0??]
 	Adjoint_GradientCalculation        	= 	CostFunction				# options [CostFunction= w.r.t. Cost function (e.g,);  Solution= w.r.t. Solution ]
@@ -156,11 +156,11 @@
 		InitGuess 	= 2    
 	<AdjointParameterEnd>
 
-	#<AdjointParameterStart>
-	#	ID  		= 0
-	#	Type 		= eta0
-	#   InitGuess 	= 1
-	#<AdjointParameterEnd>
+	<AdjointParameterStart>
+		ID  		= 0
+		Type 		= eta0
+	   InitGuess 	= 100
+	<AdjointParameterEnd>
 
 	#<AdjointParameterStart>
 	#  	ID  		= 1
@@ -171,6 +171,12 @@
 	# Comparison indices
 	<AdjointObservationPointStart>
 		Coordinate 			= 0.5 0.5 0.5					
+		VelocityComponent 	= z
+		Value  				= -0.04248
+	<AdjointObservationPointEnd>
+	
+	<AdjointObservationPointStart>
+		Coordinate 			= 0.1 0.1 0.2					
 		VelocityComponent 	= z
 		Value  				= -0.04248
 	<AdjointObservationPointEnd>
