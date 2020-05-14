@@ -473,7 +473,7 @@
 		rho_c      = 1e-4   # depth-dependent density model parameter
 		beta       = 1e-11  # pressure-dependent density model parameter
 		G          = 4e10   # shear modulus
-		K          = 6e10   # bulk modulus
+		Kb         = 6e10   # bulk modulus
 		E          = 6e10   # Young's modulus
 		nu         = 0.25   # Poisson's ratio
 		Kp         = 5.0    # pressure dependence parameter

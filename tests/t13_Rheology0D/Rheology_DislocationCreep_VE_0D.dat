@@ -31,7 +31,7 @@
 # Number of cells for all segments	
 
 	nel_x = 8
-	nel_y = 2
+	nel_y = 1
 	nel_z = 8
 
 # Coordinates of all segments (including start and end points)
@@ -48,8 +48,8 @@
 
 # Temperature on the top & bottom boundaries
 
-	temp_top = 900
-	temp_bot = 900;
+	temp_top = 2000
+	temp_bot = 2000;
 
 	init_temp = 0;
 
@@ -106,7 +106,7 @@
  		bottom 			= -4.0
 		
 		Temperature 	= constant 
-		cstTemp     	= 900     	# in Celcius
+		cstTemp     	= 2000     	# in Celcius
  	<LayerEnd>
 
 
