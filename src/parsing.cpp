@@ -603,10 +603,15 @@ PetscErrorCode getIntParam(
 
 	found = PETSC_FALSE;
 
-	// PETSc options are not checked in block access mode
-	if(!fb->nblocks)
+	// 
 	{
-		asprintf(&dbkey, "-%s", key);
+		if(!fb->nblocks){
+			asprintf(&dbkey, "-%s", key);
+		}
+		else
+		{
+			asprintf(&dbkey, "-%s[%i]", key,fb->ID);
+		}
 
 		nval = num;
 
@@ -667,18 +672,22 @@ PetscErrorCode getScalarParam(
 	if(num < 1) PetscFunctionReturn(0);
 
 	found = PETSC_FALSE;
-
-	if(!fb->nblocks)
 	{
-		asprintf(&dbkey, "-%s", key);
-
+		if(!fb->nblocks){
+			asprintf(&dbkey, "-%s", key);
+		}
+		else
+		{
+			asprintf(&dbkey, "-%s[%i]", key,fb->ID);
+		}
+	
 		nval = num;
 
 		ierr = PetscOptionsGetScalarArray(NULL, NULL, dbkey, val, &nval, &found); CHKERRQ(ierr);
-
+	
 		free(dbkey);
 	}
-
+	
 	if(found != PETSC_TRUE && fb)
 	{
 		ierr = FBGetScalarArray(fb, key, &nval, val, num, &found); CHKERRQ(ierr);
@@ -721,10 +730,16 @@ PetscErrorCode getStringParam(
 	if(_default_) { ierr = PetscStrncpy(str, _default_, _str_len_); CHKERRQ(ierr); }
 	else          { ierr = PetscMemzero(str,            _str_len_); CHKERRQ(ierr); }
 
-	if(!fb->nblocks)
+	
 	{
-		asprintf(&dbkey, "-%s", key);
-
+		if(!fb->nblocks){
+			asprintf(&dbkey, "-%s", key);
+		}
+		else
+		{
+			asprintf(&dbkey, "-%s[%i]", key,fb->ID);
+		}
+	
 		ierr = PetscOptionsGetCheckString(dbkey, str, &found); CHKERRQ(ierr);
 
 		free(dbkey);
