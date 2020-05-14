@@ -192,13 +192,13 @@ struct DBMat
 };
 
 // read material database
-PetscErrorCode DBMatCreate(DBMat *dbm, FB *fb);
+PetscErrorCode DBMatCreate(DBMat *dbm, FB *fb, PetscBool PrintOutput);
 
 // read single softening law
-PetscErrorCode DBMatReadSoft(DBMat *dbm, FB *fb);
+PetscErrorCode DBMatReadSoft(DBMat *dbm, FB *fb, PetscBool PrintOutput);
 
 // read single material phase
-PetscErrorCode DBMatReadPhase(DBMat *dbm, FB *fb);
+PetscErrorCode DBMatReadPhase(DBMat *dbm, FB *fb, PetscBool PrintOutput);
 
 // print single material parameter
 void MatPrintScalParam(

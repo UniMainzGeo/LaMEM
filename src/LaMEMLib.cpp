@@ -189,10 +189,10 @@ PetscErrorCode LaMEMLibCreate(LaMEMLib *lm, void *param )
 	ierr = ScalingCreate(&lm->scal, fb); CHKERRQ(ierr);
 
 	// create time stepping object
-	ierr = TSSolCreate(&lm->ts, fb); CHKERRQ(ierr);
+	ierr = TSSolCreate(&lm->ts, fb); 				CHKERRQ(ierr);
 
 	// create material database
-	ierr = DBMatCreate(&lm->dbm, fb); CHKERRQ(ierr);
+	ierr = DBMatCreate(&lm->dbm, fb, PETSC_TRUE); 	CHKERRQ(ierr);
 
 	// Overwrite material parameters for inverse run
 	ierr = MatPropSetFromLibCall(&lm->jr, (ModParam *)param, fb);

@@ -51,7 +51,7 @@
 //---------------------------------------------------------------------------
 #undef __FUNCT__
 #define __FUNCT__ "DBMatCreate"
-PetscErrorCode DBMatCreate(DBMat *dbm, FB *fb)
+PetscErrorCode DBMatCreate(DBMat *dbm, FB *fb, PetscBool PrintOutput)
 {
 	// read all material phases and softening laws from file
 
@@ -70,8 +70,9 @@ PetscErrorCode DBMatCreate(DBMat *dbm, FB *fb)
 	if(fb->nblocks)
 	{
 		// print overview of softening laws from file
-		PetscPrintf(PETSC_COMM_WORLD,"Softening laws: \n");
-
+		if (PrintOutput){
+			PetscPrintf(PETSC_COMM_WORLD,"Softening laws: \n");
+		}
 		// initialize ID for consistency checks
 		for(jj = 0; jj < _max_num_soft_; jj++) dbm->matSoft[jj].ID = -1;
 
@@ -84,12 +85,13 @@ PetscErrorCode DBMatCreate(DBMat *dbm, FB *fb)
 		// store actual number of softening laws
 		dbm->numSoft = fb->nblocks;
 
-		PetscPrintf(PETSC_COMM_WORLD,"--------------------------------------------------------------------------\n");
-
+		if (PrintOutput){
+			PetscPrintf(PETSC_COMM_WORLD,"--------------------------------------------------------------------------\n");
+		}
 		// read each individual softening law
 		for(jj = 0; jj < fb->nblocks; jj++)
 		{
-			ierr = DBMatReadSoft(dbm, fb); CHKERRQ(ierr);
+			ierr = DBMatReadSoft(dbm, fb, PETSC_TRUE); CHKERRQ(ierr);
 
 			fb->blockID++;
 		}
@@ -100,9 +102,10 @@ PetscErrorCode DBMatCreate(DBMat *dbm, FB *fb)
 	//================
 	// MATERIAL PHASES
 	//================
-
-	// print overview of material parameters read from file
-	PetscPrintf(PETSC_COMM_WORLD,"Material parameters: \n");
+	if (PrintOutput){
+		// print overview of material parameters read from file
+		PetscPrintf(PETSC_COMM_WORLD,"Material parameters: \n");
+	}
 
 	// setup block access mode
 	ierr = FBFindBlocks(fb, _REQUIRED_, "<MaterialStart>", "<MaterialEnd>"); CHKERRQ(ierr);
@@ -122,7 +125,7 @@ PetscErrorCode DBMatCreate(DBMat *dbm, FB *fb)
 	// read each individual phase
 	for(jj = 0; jj < fb->nblocks; jj++)
 	{
-		ierr = DBMatReadPhase(dbm, fb); CHKERRQ(ierr);
+		ierr = DBMatReadPhase(dbm, fb, PETSC_TRUE); CHKERRQ(ierr);
 
 		fb->blockID++;
 
@@ -130,14 +133,16 @@ PetscErrorCode DBMatCreate(DBMat *dbm, FB *fb)
 
 	ierr = FBFreeBlocks(fb); CHKERRQ(ierr);
 
-	PetscPrintf(PETSC_COMM_WORLD,"--------------------------------------------------------------------------\n");
+	if (PrintOutput){
+		PetscPrintf(PETSC_COMM_WORLD,"--------------------------------------------------------------------------\n");
+	}
 
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
 #undef __FUNCT__
 #define __FUNCT__ "DBMatReadSoft"
-PetscErrorCode DBMatReadSoft(DBMat *dbm, FB *fb)
+PetscErrorCode DBMatReadSoft(DBMat *dbm, FB *fb, PetscBool PrintOutput)
 {
 	// read softening law from file
 	Scaling  *scal;
@@ -177,13 +182,15 @@ PetscErrorCode DBMatReadSoft(DBMat *dbm, FB *fb)
 		SETERRQ1(PETSC_COMM_WORLD, PETSC_ERR_USER, "A, APS1, APS2 parameters must be nonzero for softening law %lld", (LLD)ID);
 	}
 
-	if(s->Lm)
-	{
-		PetscPrintf(PETSC_COMM_WORLD,"   SoftLaw [%lld] : A = %g, APS1 = %g, APS2 = %g, Lm = %g\n", (LLD)(s->ID), s->A, s->APS1, s->APS2, s->Lm);
-	}
-	else
-	{
-		PetscPrintf(PETSC_COMM_WORLD,"   SoftLaw [%lld] : A = %g, APS1 = %g, APS2 = %g\n", (LLD)(s->ID), s->A, s->APS1, s->APS2);
+	if (PrintOutput){
+		if(s->Lm)
+		{
+			PetscPrintf(PETSC_COMM_WORLD,"   SoftLaw [%lld] : A = %g, APS1 = %g, APS2 = %g, Lm = %g\n", (LLD)(s->ID), s->A, s->APS1, s->APS2, s->Lm);
+		}
+		else
+		{
+			PetscPrintf(PETSC_COMM_WORLD,"   SoftLaw [%lld] : A = %g, APS1 = %g, APS2 = %g\n", (LLD)(s->ID), s->A, s->APS1, s->APS2);
+		}
 	}
 
 	// SCALE
@@ -195,7 +202,7 @@ PetscErrorCode DBMatReadSoft(DBMat *dbm, FB *fb)
 //---------------------------------------------------------------------------
 #undef __FUNCT__
 #define __FUNCT__ "DBMatReadPhase"
-PetscErrorCode DBMatReadPhase(DBMat *dbm, FB *fb)
+PetscErrorCode DBMatReadPhase(DBMat *dbm, FB *fb, PetscBool PrintOutput)
 {
 	// read material properties from file with error checking
 	Scaling    *scal;
@@ -521,79 +528,81 @@ PetscErrorCode DBMatReadPhase(DBMat *dbm, FB *fb)
 	}
 
 	// PRINT (optional)
-	PetscPrintf(PETSC_COMM_WORLD,"   Phase ID : %lld",(LLD)(m->ID));
+	if (PrintOutput){
+		PetscPrintf(PETSC_COMM_WORLD,"   Phase ID : %lld",(LLD)(m->ID));
 
-	if(strlen(ndiff)) PetscPrintf(PETSC_COMM_WORLD,"    diffusion creep profile  : %s", ndiff);
-	if(strlen(ndisl)) PetscPrintf(PETSC_COMM_WORLD,"    dislocation creep profile: %s", ndisl);
+		if(strlen(ndiff)) PetscPrintf(PETSC_COMM_WORLD,"    diffusion creep profile  : %s", ndiff);
+		if(strlen(ndisl)) PetscPrintf(PETSC_COMM_WORLD,"    dislocation creep profile: %s", ndisl);
 
-	sprintf(title, "   (dens)   : "); print_title = 1;
-	MatPrintScalParam(m->rho,   "rho",   "[kg/m^3]", scal, title, &print_title);
-	if(m->pdAct == 1)
-	{
-		PetscPrintf(PETSC_COMM_WORLD,"- Employing phase diagram: %s", PhaseDiagram);
+		sprintf(title, "   (dens)   : "); print_title = 1;
+		MatPrintScalParam(m->rho,   "rho",   "[kg/m^3]", scal, title, &print_title);
+		if(m->pdAct == 1)
+		{
+			PetscPrintf(PETSC_COMM_WORLD,"- Employing phase diagram: %s", PhaseDiagram);
+		}
+		else
+		MatPrintScalParam(m->rho_n, "rho_n", "[ ]",      scal, title, &print_title);
+		MatPrintScalParam(m->rho_c, "rho_c", "[1/m]",    scal, title, &print_title);
+		MatPrintScalParam(m->beta,  "beta",  "[1/Pa]",   scal, title, &print_title);
+
+		sprintf(title, "   (elast)  : "); print_title = 1;
+		MatPrintScalParam(G,     "G",  "[Pa]",  scal, title, &print_title);
+		MatPrintScalParam(K,     "K",  "[Pa]",  scal, title, &print_title);
+		MatPrintScalParam(E,     "E",  "[Pa]",  scal, title, &print_title);
+		MatPrintScalParam(nu,    "nu", "[ ]",   scal, title, &print_title);
+		MatPrintScalParam(m->Kp, "Kp", "[ ]",   scal, title, &print_title);
+		MatPrintScalParam(Vp,    "Vp", "[m/s]", scal, title, &print_title);
+		MatPrintScalParam(Vs,    "Vs", "[m/s]", scal, title, &print_title);
+
+		sprintf(title, "   (diff)   : "); print_title = 1;
+		MatPrintScalParam(eta,   "eta", "[Pa*s]",    scal, title, &print_title);
+		MatPrintScalParam(m->Bd, "Bd",  "[1/Pa/s]",  scal, title, &print_title);
+		MatPrintScalParam(m->Ed, "Ed",  "[J/mol]",   scal, title, &print_title);
+		MatPrintScalParam(m->Vd, "Vd",  "[m^3/mol]", scal, title, &print_title);
+
+		sprintf(title, "   (disl)   : "); print_title = 1;
+		MatPrintScalParam(eta0,  "eta0", "[Pa*s]",     scal, title, &print_title);
+		MatPrintScalParam(e0,    "e0",   "[1/s]",      scal, title, &print_title);
+		MatPrintScalParam(m->Bn, "Bn",   "[1/Pa^n/s]", scal, title, &print_title);
+		MatPrintScalParam(m->En, "En",   "[J/mol]",    scal, title, &print_title);
+		MatPrintScalParam(m->Vn, "Vn",   "[m^3/mol]",  scal, title, &print_title);
+		MatPrintScalParam(m->n,  "n",    "[ ]",        scal, title, &print_title);
+
+		sprintf(title, "   (peirl)  : "); print_title = 1;
+		MatPrintScalParam(m->Bp,    "Bp",    "[1/s]",     scal, title, &print_title);
+		MatPrintScalParam(m->Ep,    "Ep",    "[J/mol]",   scal, title, &print_title);
+		MatPrintScalParam(m->Vp,    "Vp",    "[m^3/mol]", scal, title, &print_title);
+		MatPrintScalParam(m->taup,  "taup",  "[Pa]",      scal, title, &print_title);
+		MatPrintScalParam(m->gamma, "gamma", "[ ]",       scal, title, &print_title);
+		MatPrintScalParam(m->q,     "q",     "[ ]",       scal, title, &print_title);
+
+		sprintf(title, "   (dc)     : "); print_title = 1;
+		MatPrintScalParam(m->Bdc,   "Bdc",  "[1/s]",   scal, title, &print_title);
+		MatPrintScalParam(m->Edc,   "Edc",  "[J/mol]", scal, title, &print_title);
+		MatPrintScalParam(m->Rdc,   "Rdc",  "[ ]",     scal, title, &print_title);
+		MatPrintScalParam(m->mu,    "mu",   "[Pa]",    scal, title, &print_title);
+
+		sprintf(title, "   (ps)     : "); print_title = 1;
+		MatPrintScalParam(m->Bps,   "Bps",  "[K*m^3/Pa/s]", scal, title, &print_title);
+		MatPrintScalParam(m->Eps,   "Eps",  "[J/mol]",      scal, title, &print_title);
+		MatPrintScalParam(m->d,     "d",    "[m]",          scal, title, &print_title);
+
+		sprintf(title, "   (plast)  : "); print_title = 1;
+		MatPrintScalParam(m->ch,     "ch",     "[Pa]",   scal, title, &print_title);
+		MatPrintScalParam(m->fr,     "fr",     "[deg]",  scal, title, &print_title);
+		MatPrintScalParam(m->eta_st, "eta_st", "[Pa*s]", scal, title, &print_title);
+		MatPrintScalParam(m->rp,     "rp",     "[ ]",    scal, title, &print_title);
+		if(frSoftID != -1) PetscPrintf(PETSC_COMM_WORLD, "frSoftID = %lld ", (LLD)frSoftID);
+		if(chSoftID != -1) PetscPrintf(PETSC_COMM_WORLD, "chSoftID = %lld ", (LLD)chSoftID);
+
+		sprintf(title, "   (temp)   : "); print_title = 1;
+		MatPrintScalParam(m->alpha, "alpha", "[1/K]",    scal, title, &print_title);
+		MatPrintScalParam(m->Cp,    "Cp",    "[J/kg/K]", scal, title, &print_title);
+		MatPrintScalParam(m->k,     "k",     "[W/m/k]",  scal, title, &print_title);
+		MatPrintScalParam(m->A,     "A",     "[W/kg]",   scal, title, &print_title);
+		MatPrintScalParam(m->T,     "T",     "[C]",      scal, title, &print_title);
+		PetscPrintf(PETSC_COMM_WORLD,"\n\n");
 	}
-	else
-	MatPrintScalParam(m->rho_n, "rho_n", "[ ]",      scal, title, &print_title);
-	MatPrintScalParam(m->rho_c, "rho_c", "[1/m]",    scal, title, &print_title);
-	MatPrintScalParam(m->beta,  "beta",  "[1/Pa]",   scal, title, &print_title);
-
-	sprintf(title, "   (elast)  : "); print_title = 1;
-	MatPrintScalParam(G,     "G",  "[Pa]",  scal, title, &print_title);
-	MatPrintScalParam(K,     "K",  "[Pa]",  scal, title, &print_title);
-	MatPrintScalParam(E,     "E",  "[Pa]",  scal, title, &print_title);
-	MatPrintScalParam(nu,    "nu", "[ ]",   scal, title, &print_title);
-	MatPrintScalParam(m->Kp, "Kp", "[ ]",   scal, title, &print_title);
-	MatPrintScalParam(Vp,    "Vp", "[m/s]", scal, title, &print_title);
-	MatPrintScalParam(Vs,    "Vs", "[m/s]", scal, title, &print_title);
-
-	sprintf(title, "   (diff)   : "); print_title = 1;
-	MatPrintScalParam(eta,   "eta", "[Pa*s]",    scal, title, &print_title);
-	MatPrintScalParam(m->Bd, "Bd",  "[1/Pa/s]",  scal, title, &print_title);
-	MatPrintScalParam(m->Ed, "Ed",  "[J/mol]",   scal, title, &print_title);
-	MatPrintScalParam(m->Vd, "Vd",  "[m^3/mol]", scal, title, &print_title);
-
-	sprintf(title, "   (disl)   : "); print_title = 1;
-	MatPrintScalParam(eta0,  "eta0", "[Pa*s]",     scal, title, &print_title);
-	MatPrintScalParam(e0,    "e0",   "[1/s]",      scal, title, &print_title);
-	MatPrintScalParam(m->Bn, "Bn",   "[1/Pa^n/s]", scal, title, &print_title);
-	MatPrintScalParam(m->En, "En",   "[J/mol]",    scal, title, &print_title);
-	MatPrintScalParam(m->Vn, "Vn",   "[m^3/mol]",  scal, title, &print_title);
-	MatPrintScalParam(m->n,  "n",    "[ ]",        scal, title, &print_title);
-
-	sprintf(title, "   (peirl)  : "); print_title = 1;
-	MatPrintScalParam(m->Bp,    "Bp",    "[1/s]",     scal, title, &print_title);
-	MatPrintScalParam(m->Ep,    "Ep",    "[J/mol]",   scal, title, &print_title);
-	MatPrintScalParam(m->Vp,    "Vp",    "[m^3/mol]", scal, title, &print_title);
-	MatPrintScalParam(m->taup,  "taup",  "[Pa]",      scal, title, &print_title);
-	MatPrintScalParam(m->gamma, "gamma", "[ ]",       scal, title, &print_title);
-	MatPrintScalParam(m->q,     "q",     "[ ]",       scal, title, &print_title);
-
-	sprintf(title, "   (dc)     : "); print_title = 1;
-	MatPrintScalParam(m->Bdc,   "Bdc",  "[1/s]",   scal, title, &print_title);
-	MatPrintScalParam(m->Edc,   "Edc",  "[J/mol]", scal, title, &print_title);
-	MatPrintScalParam(m->Rdc,   "Rdc",  "[ ]",     scal, title, &print_title);
-	MatPrintScalParam(m->mu,    "mu",   "[Pa]",    scal, title, &print_title);
-
-	sprintf(title, "   (ps)     : "); print_title = 1;
-	MatPrintScalParam(m->Bps,   "Bps",  "[K*m^3/Pa/s]", scal, title, &print_title);
-	MatPrintScalParam(m->Eps,   "Eps",  "[J/mol]",      scal, title, &print_title);
-	MatPrintScalParam(m->d,     "d",    "[m]",          scal, title, &print_title);
-
-	sprintf(title, "   (plast)  : "); print_title = 1;
-	MatPrintScalParam(m->ch,     "ch",     "[Pa]",   scal, title, &print_title);
-	MatPrintScalParam(m->fr,     "fr",     "[deg]",  scal, title, &print_title);
-	MatPrintScalParam(m->eta_st, "eta_st", "[Pa*s]", scal, title, &print_title);
-	MatPrintScalParam(m->rp,     "rp",     "[ ]",    scal, title, &print_title);
-	if(frSoftID != -1) PetscPrintf(PETSC_COMM_WORLD, "frSoftID = %lld ", (LLD)frSoftID);
-	if(chSoftID != -1) PetscPrintf(PETSC_COMM_WORLD, "chSoftID = %lld ", (LLD)chSoftID);
-
-	sprintf(title, "   (temp)   : "); print_title = 1;
-	MatPrintScalParam(m->alpha, "alpha", "[1/K]",    scal, title, &print_title);
-	MatPrintScalParam(m->Cp,    "Cp",    "[J/kg/K]", scal, title, &print_title);
-	MatPrintScalParam(m->k,     "k",     "[W/m/k]",  scal, title, &print_title);
-	MatPrintScalParam(m->A,     "A",     "[W/kg]",   scal, title, &print_title);
-	MatPrintScalParam(m->T,     "T",     "[C]",      scal, title, &print_title);
-	PetscPrintf(PETSC_COMM_WORLD,"\n\n");
 
 	// SCALE
 
