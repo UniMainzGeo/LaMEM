@@ -119,7 +119,6 @@ PetscErrorCode PCStokesCreate(PCStokes *p_pc, PMat pm)
 	if(pc->type == _STOKES_BF_)
 	{
 		// Block Factorization
-		// this code needs to be modified
 		pc->Create  = PCStokesBFCreate;
 		pc->Setup   = PCStokesBFSetup;
 		pc->Destroy = PCStokesBFDestroy;
@@ -402,11 +401,11 @@ PetscErrorCode PCStokesBFApply(Mat JP, Vec r, Vec x)
 	P  = (PMatBlock*) pc->pm->data;
 
 	// copy x,r to P->rblock
-	//ierr = VecCopy(r,P->rblock); CHKERRQ(ierr);     // added P->rblock,P->xblock, instead of using r,x now VecScatterBlockToMonolithic
-	//ierr = VecCopy(x,P->xblock); CHKERRQ(ierr);		// cause not immediatly an only-read-error of vector r, but after one step...
+	ierr = VecCopy(r,P->rblock); CHKERRQ(ierr);     // added P->rblock,P->xblock, instead of using r,x in VecScatterBlockToMonolithic
+	ierr = VecCopy(x,P->xblock); CHKERRQ(ierr);		// if use r,x theres an Vec is locked read only error
 
 	// extract residual blocks
-	ierr = VecScatterBlockToMonolithic(P->rv, P->rp, r, SCATTER_REVERSE); CHKERRQ(ierr);
+	ierr = VecScatterBlockToMonolithic(P->rv, P->rp, P->rblock, SCATTER_REVERSE); CHKERRQ(ierr);
 
 	if(bf->type == _wBFBT_)
 	{
@@ -422,23 +421,22 @@ PetscErrorCode PCStokesBFApply(Mat JP, Vec r, Vec x)
 		// assemble C
 		ierr = CopyViscosityToScalingVector(jr->eta_gfx, jr->eta_gfy, jr->eta_gfz, P->C); CHKERRQ(ierr);
 
-		// assemble K
-		//ierr  = JacResGetViscMat(pm); CHKERRQ(ierr);
+		// assembled K in PCStokesBFCreate
 
 		// rv = f
 		// wp = B*A⁻1*rv
-		ierr = KSPSolve(bf->vksp, P->rv, P->wv0); 			CHKERRQ(ierr);	// wv0 = (A^-1)*rv
-		ierr = MatMult(P->Apv,P->wv0,P->wp);				CHKERRQ(ierr);	// wp = B*wv0
+		ierr = KSPSolve(bf->vksp, P->rv, P->wv0); 			CHKERRQ(ierr);	// wv0 = (Avv^-1)*rv			A=Avv | B=Apv | B^T=Avp
+		ierr = MatMult(P->Apv,P->wv0,P->wp);				CHKERRQ(ierr);	// wp = Apv*wv0
 
 		// p = S⁻1*wp               				S^-1 = (BCB^T)^-1 * BCACB^T * (BCB^T)^-1
 		// p = (BCB^T)^-1 * BCACB^T * (BCB^T)^-1 * wp
 		// K = BCB^T
 		ierr = KSPSolve(bf->pksp, P->wp, P->wp1); 			CHKERRQ(ierr);	// wp1 = K^-1 * wp   	<=> K*wp1 = wp
-		ierr = MatMult(P->Avp, P->wp1, P->wv2); 			CHKERRQ(ierr);	// wv2 = B^T * wp1	|
+		ierr = MatMult(P->Avp, P->wp1, P->wv2); 			CHKERRQ(ierr);	// wv2 = Avp * wp1	|
 		ierr = VecPointwiseMult(P->wv3, P->C, P->wv2); 		CHKERRQ(ierr);	// wv3 = C * wv2	|	(C is stored as a vector)
-		ierr = MatMult(P->Avv, P->wv3, P->wv4); 			CHKERRQ(ierr);	// wv4 = A * wv3	|	<=> wp6 = BCACB^T * wp1
+		ierr = MatMult(P->Avv, P->wv3, P->wv4); 			CHKERRQ(ierr);	// wv4 = Avv * wv3	|	<=> wp6 = BCACB^T * wp1
 		ierr = VecPointwiseMult(P->wv5, P->C, P->wv4); 		CHKERRQ(ierr);	// wv5 = C * wv4	|
-		ierr = MatMult(P->Apv, P->wv5, P->wp6); 			CHKERRQ(ierr);	// wp6 = B * wv5	|
+		ierr = MatMult(P->Apv, P->wv5, P->wp6); 			CHKERRQ(ierr);	// wp6 = Apv * wv5	|
 		ierr = KSPSolve(bf->pksp, P->wp6, P->xp); 			CHKERRQ(ierr);	// xp  = K^-1 * wp6  	<=> K*xp  = wp6
 
 		// u = A⁻1*(wv-B^T*p)
@@ -478,8 +476,10 @@ PetscErrorCode PCStokesBFApply(Mat JP, Vec r, Vec x)
 	}
 
 	// compose approximate solution
-	ierr = VecScatterBlockToMonolithic(P->xv, P->xp, x, SCATTER_FORWARD); CHKERRQ(ierr);
+	ierr = VecScatterBlockToMonolithic(P->xv, P->xp, P->xblock, SCATTER_FORWARD); CHKERRQ(ierr);
 
+	r = P->rblock;
+	x = P->xblock;
 	//ierr = VecCopy(P->rblock,r); CHKERRQ(ierr);
 	//ierr = VecCopy(P->xblock,x); CHKERRQ(ierr);
 

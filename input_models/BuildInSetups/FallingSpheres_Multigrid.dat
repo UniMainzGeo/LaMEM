@@ -22,8 +22,8 @@
 	inc_dt    = 0.1   # time step increment per time step (fraction of unit)
 	CFL       = 0.5   # CFL (Courant-Friedrichs-Lewy) criterion
 	CFLMAX    = 0.5   # CFL criterion for elasticity
-	nstep_max = 1     # maximum allowed number of steps (lower bound: time_end/dt_max)
-	nstep_out = 19     # save output every n steps
+	nstep_max = 5     # maximum allowed number of steps (lower bound: time_end/dt_max)
+	nstep_out = 1     # save output every n steps
 	nstep_rdb = 0     # save restart database every n steps
 
 
@@ -217,8 +217,8 @@
     -pcmat_type block
     -jp_type bf
     #
-    -bf_type wbfbt #upper
-    #-vs_ 2
+    -bf_type wbfbt
+    #-ksp_view
 
 
 <PetscOptionsEnd>
