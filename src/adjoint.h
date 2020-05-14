@@ -112,6 +112,10 @@ PetscErrorCode AdjointGradientResetParameter(NLSol *nl, PetscInt CurPar, PetscIn
 // Gradient function for field sensitivity for rho (FD approximation)
 PetscErrorCode AdjointFormResidualFieldFDRho(SNES snes, Vec x, Vec psi, NLSol *nl, AdjGrad *aop );
 
+// Add or remove parameters from command-line database
+PetscErrorCode AddMaterialParameterToCommandLineOptions(char *name, PetscInt ID, PetscScalar val);
+PetscErrorCode DeleteMaterialParameterToCommandLineOptions(char *name, PetscInt ID);
+
 // To clear the memory
 PetscErrorCode AdjointDestroy(AdjGrad *aop);
 

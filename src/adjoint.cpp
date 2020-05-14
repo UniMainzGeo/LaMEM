@@ -128,7 +128,7 @@
 #include "constEq.h"
 #include "parsing.h"
 #include "gravity.h"
-
+#include <petscsys.h> 
 //-----------------------------------------------------------------------------
 // A bit stupid that this has to be twice declared, but the original function is only in AVD.cpp and not in a header file anymore ...
 PetscInt FindPointInCellAdjoint(
@@ -223,7 +223,7 @@ PetscErrorCode LaMEMAdjointReadInputSetDefaults(ModParam **p_IOparam, FB **p_fb,
 	FB 				*fb;
 	PetscScalar    *gradar, *Ubar, *Lbar, ts, *Par;
 	PetscInt        i, ti, ID, jj;
-	char            str[_str_len_], Vel_comp[_str_len_];
+	char            str[_str_len_], par_str[_str_len_], Vel_comp[_str_len_];
 	Scaling         scal;
     DBMat           dbm;
 
@@ -275,7 +275,9 @@ PetscErrorCode LaMEMAdjointReadInputSetDefaults(ModParam **p_IOparam, FB **p_fb,
 	PetscPrintf(PETSC_COMM_WORLD,"                                     LaMEM                                  \n");
 	PetscPrintf(PETSC_COMM_WORLD,"                       Adjoint Gradient Framework Active                    \n");
 	PetscPrintf(PETSC_COMM_WORLD,"--------------------------------------------------------------------------- \n");
-	PetscPrintf(PETSC_COMM_WORLD,"Adjoint parameters:  \n");
+
+    
+    PetscPrintf(PETSC_COMM_WORLD,"Adjoint parameters:  \n");
 	
 	if(IOparam->use == _adjointgradients_ ) 
 	{
@@ -358,6 +360,8 @@ PetscErrorCode LaMEMAdjointReadInputSetDefaults(ModParam **p_IOparam, FB **p_fb,
 		SETERRQ1(PETSC_COMM_WORLD, PETSC_ERR_USER, "Too many material structures specified! Max allowed: %lld", (LLD)_max_num_phases_);
 	}
 
+
+
 	// store actual number of phases
 	//dbm->numPhases = fb->nblocks;
  /*   
@@ -389,8 +393,12 @@ PetscErrorCode LaMEMAdjointReadInputSetDefaults(ModParam **p_IOparam, FB **p_fb,
 		SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "You have to define adjoint Parameters (mdN) for the inversion. Have a look into the comments in src/LaMEM.cpp");
 	}
 
+    // temporary strings
+    char        *lb_str, *ub_str, *val_str;
+    PetscScalar par_val;
+
 	// read each individual parameter
-	VecGetArray(Adjoint_Vectors->P,&Par);
+    VecGetArray(Adjoint_Vectors->P,&Par);
 	VecGetArray(Adjoint_Vectors->Ub,&Ubar);
 	VecGetArray(Adjoint_Vectors->Lb,&Lbar);
 	VecGetArray(Adjoint_Vectors->grad,&gradar);
@@ -400,38 +408,79 @@ PetscErrorCode LaMEMAdjointReadInputSetDefaults(ModParam **p_IOparam, FB **p_fb,
 	{
 		ierr = getIntParam   (fb, _REQUIRED_, "ID" , &ID, 1, _max_num_phases_); CHKERRQ(ierr);		// phase at which it applies
 		phsar[i]  = ID;                    // PHASE
-		ierr = getScalarParam(fb, _OPTIONAL_, "InitGuess", &ts, 1, 1 ); CHKERRQ(ierr);
-		Par[i]    = ts;                    // PARAMETER VALUES
-		ierr = getScalarParam(fb, _OPTIONAL_, "UpperBound", &ts, 1, 1 ); CHKERRQ(ierr);
-		Ubar[i]   = ts;                    // UPPER BOUND
-		ierr = getScalarParam(fb, _OPTIONAL_, "LowerBound", &ts, 1, 1 ); CHKERRQ(ierr);
-		Lbar[i]   = ts;                    // LOWER BOUND
-		ierr = getStringParam(fb, _OPTIONAL_, "Type", str, NULL); CHKERRQ(ierr);
 
-		/* 
+        // Parameter value
+        par_val     = 0;
+        ierr        = getScalarParam(fb, _OPTIONAL_, "InitGuess", &par_val, 1, 1); CHKERRQ(ierr);
+        Par[i]      = par_val;                   
+
+        // Upper bound    
+        ts = 0;
+     	ierr = getScalarParam(fb, _OPTIONAL_, "UpperBound", &ts, 1, 1 ); CHKERRQ(ierr);
+        if (ts){
+            asprintf(&ub_str, "%-9.4g", ts);
+            Ubar[i]   = ts;  
+        } 
+        else{
+            asprintf(&ub_str, "%-9s", "-");
+            Ubar[i]   = par_val;  
+        }
+
+        // Lower bound 
+		ts = 0;
+     	ierr = getScalarParam(fb, _OPTIONAL_, "LowerBound", &ts, 1, 1 ); CHKERRQ(ierr);
+        if (ts){
+            asprintf(&lb_str, "%-9.4g", ts);
+            Lbar[i]   = ts;  
+        } 
+        else{
+            asprintf(&lb_str, "%-9s", "-");
+            Lbar[i]   = par_val;  
+        }
+        
+		ierr = getStringParam(fb, _OPTIONAL_, "Type", par_str, NULL); CHKERRQ(ierr);
+        /* 
 			We need a better way to keep track of the parameters we vary, which should be fully consistent with the nomenclature of parameters
 				within LaMEM; as not all parameters have been tested with LaMEM, it is likely a good idea to have a separate subroutine 
 				that checks if this parameters is -in principle- a material parameter that can be varied.
 		*/
-		if     (!strcmp(str, "rho0"))       { ti = _RHO0_; }
-		else if(!strcmp(str, "rhon"))       { ti = _RHON_; }
-		else if(!strcmp(str, "rhoc"))       { ti = _RHOC_; }
-		else if(!strcmp(str, "eta"))        { ti = _ETA_;  }
-		else if(!strcmp(str, "eta0"))       { ti = _ETA0_; }
-		else if(!strcmp(str, "n"))          { ti = _N_;    }
-		else if(!strcmp(str, "En"))         { ti = _EN_;   }
+		if     (!strcmp(par_str, "rho0"))       { ti = _RHO0_; }
+		else if(!strcmp(par_str, "rhon"))       { ti = _RHON_; }
+		else if(!strcmp(par_str, "rhoc"))       { ti = _RHOC_; }
+		else if(!strcmp(par_str, "eta"))        { ti = _ETA_;  }
+		else if(!strcmp(par_str, "eta0"))       { ti = _ETA0_; }
+		else if(!strcmp(par_str, "n"))          { ti = _N_;    }
+		else if(!strcmp(par_str, "En"))         { ti = _EN_;   }
 		else{ SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "WARNING: inversion parameter type is not yet implemented \n"); }
 		typar[i]     = ti;
-		strcpy(type_name[i], str);
+		strcpy(type_name[i], par_str);
 		gradar[i]    = 0.0;                     // GRADIENTS
 
-		// Print overview
-		PetscPrintf(PETSC_COMM_WORLD, "    %+6s[%-2i]: InitialGuess = %-9.4g; Bounds = [%9.4g-%-9.4g]   \n",type_name[i], ID, Par[i],Lbar[i],Ubar[i]);
-
+        // PARAMETER VALUES
+        if (par_val){
+            // Add option to options database
+            ierr = AddMaterialParameterToCommandLineOptions(par_str, ID, par_val); CHKERRQ(ierr);
+            
+            asprintf(&val_str, "%-9.4g", par_val); 
+            //PetscPrintf(PETSC_COMM_WORLD,"Adding parameter to Options Database: %s \n", option);
+        }
+        else{
+            asprintf(&val_str, "%-9s", "-"); 
+        }
+		
+		// Print overview & indicate which parameters are not specified
+		PetscPrintf(PETSC_COMM_WORLD, "    %+6s[%-2i]: InitialGuess = %s; lb= %s; ub= %s]   \n",par_str, ID,val_str,lb_str,ub_str);
 
 		fb->blockID++;
 	}
-	
+
+    // This is how to remove the option again from the database
+    ierr = DeleteMaterialParameterToCommandLineOptions(par_str, ID); CHKERRQ(ierr);
+
+    PetscOptionsView(NULL,PETSC_VIEWER_STDOUT_WORLD);
+   // PetscOptionsClearValue(NULL,option);    // remove option again
+   // PetscOptionsView(NULL,PETSC_VIEWER_STDOUT_WORLD);
+
     ierr  = PetscMemcpy(IOparam->grd,       gradar,     (size_t)_MAX_PAR_*sizeof(PetscScalar) ); CHKERRQ(ierr);
     ierr  = PetscMemcpy(IOparam->typ,       typar,      (size_t)_MAX_PAR_*sizeof(PetscInt)    ); CHKERRQ(ierr); // will become obsolete
     ierr  = PetscMemcpy(IOparam->type_name, type_name,  (size_t)_MAX_PAR_*(size_t)_str_len_*sizeof(char)        ); CHKERRQ(ierr);
@@ -1296,12 +1345,13 @@ PetscErrorCode AdjointComputeGradients(JacRes *jr, AdjGrad *aop, NLSol *nl, SNES
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
+
+#undef __FUNCT__
+#define __FUNCT__ "AdjointPointInPro"
 /*
     AdjointPointInPro creates a projection vector which projects the requested velocity component(s) 
         from the global solution vector to the observation point(s), assuming linear interpolation
 */
-#undef __FUNCT__
-#define __FUNCT__ "AdjointPointInPro"
 PetscErrorCode AdjointPointInPro(JacRes *jr, AdjGrad *aop, ModParam *IOparam, FreeSurf *surf)
 {
 	PetscErrorCode      ierr;
@@ -2731,4 +2781,56 @@ PetscErrorCode AdjointFormResidualFieldFDRho(SNES snes, Vec x, Vec psi, NLSol *n
 
 	PetscFunctionReturn(0);
 
+}
+
+
+
+//---------------------------------------------------------------------------
+#undef __FUNCT__
+#define __FUNCT__ "AddMaterialParameterToCommandLineOptions"
+PetscErrorCode AddMaterialParameterToCommandLineOptions(char *name, PetscInt ID, PetscScalar val)
+{
+    PetscErrorCode  ierr;
+	char            *option, *option_value;
+    PetscBool       PrintOutput;
+    
+    PetscFunctionBegin;
+    
+    asprintf(&option, "-%s[%i]", name, ID); 
+    asprintf(&option_value, "%e", val);
+    ierr = PetscOptionsSetValue(NULL, option, option_value);    CHKERRQ(ierr);   // this
+    
+   // PrintOutput = PETSC_TRUE;
+    PrintOutput = PETSC_FALSE;
+    if (PrintOutput){
+        PetscPrintf(PETSC_COMM_WORLD,"**** Added option %s=%s to the database. **** \n",option,option_value);
+        PetscOptionsView(NULL,PETSC_VIEWER_STDOUT_WORLD);
+    }
+
+    PetscFunctionReturn(0);
+}
+
+
+//---------------------------------------------------------------------------
+#undef __FUNCT__
+#define __FUNCT__ "DeleteMaterialParameterToCommandLineOptions"
+PetscErrorCode DeleteMaterialParameterToCommandLineOptions(char *name, PetscInt ID)
+{
+    PetscErrorCode  ierr;
+	char            *option, *option_value;
+    PetscBool       PrintOutput;
+    
+    PetscFunctionBegin;
+    
+    asprintf(&option, "-%s[%i]", name, ID); 
+    ierr = PetscOptionsClearValue(NULL, option);    CHKERRQ(ierr);  
+    
+  //  PrintOutput = PETSC_TRUE;
+    PrintOutput = PETSC_FALSE;
+    if (PrintOutput){
+        PetscPrintf(PETSC_COMM_WORLD,"**** Deleted option %s from the database. **** \n",option);
+       PetscOptionsView(NULL,PETSC_VIEWER_STDOUT_WORLD);
+    }
+
+    PetscFunctionReturn(0);
 }
