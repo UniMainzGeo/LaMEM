@@ -28,6 +28,7 @@ clean :
 	@rm -f *.bin
 	@rm -f *.xml
 	@rm -rf ./Timestep*
+	@rm -rf ./Strainrate*
 	@rm -rf ./restart
 	@rm -rf ./markers*
 	@find . -name *.pyc -delete

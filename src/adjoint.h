@@ -114,5 +114,5 @@ PetscErrorCode AdjointFormResidualFieldFDRho(SNES snes, Vec x, Vec psi, NLSol *n
 
 // To clear the memory
 PetscErrorCode AdjointDestroy(AdjGrad *aop);
-
+*/
 #endif

@@ -53,10 +53,9 @@
 # Solution parameters & controls
 #===============================================================================
 
-	act_p_shift = 0
 	init_guess  = 0
 	FSSA        = 0.0;
-
+	set_phase = 1
 	get_permea = 1
 
 #===============================================================================
@@ -81,7 +80,6 @@
 	out_file_name  = permea  # output file name
 	out_pvd        = 1       # activate writing .pvd file
 	out_visc_creep = 0
-	out_visc_plast = 0
 	out_moment_res = 1
 	out_cont_res   = 1
 

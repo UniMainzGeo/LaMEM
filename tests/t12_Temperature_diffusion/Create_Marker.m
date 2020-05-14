@@ -32,7 +32,7 @@ RandomNoise             = logical(0);
 
 % Parallel partition file
 
-Parallel_partition     = 'ProcessorPartitioning_1cpu_1.1.1.bin';
+Parallel_partition     = '../ProcessorPartitioning_1cpu_1.1.1.bin';
 
 %==========================================================================
 % DOMAIN PARAMETERS (DIMENSIONAL)

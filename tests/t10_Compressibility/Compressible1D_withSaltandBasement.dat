@@ -77,7 +77,6 @@
 	gravity        = 0.0 0.0 -10.0  # gravity vector
 	act_temp_diff  = 1              # temperature diffusion activation flag
 	act_steady_temp = 1             # steady-state temperature initial guess activation flag   
-	act_p_shift    = 1              # pressure shift activation flag (zero pressure in the top cell layer)
 	init_guess     = 1              # initial guess flag
 	p_litho_visc   = 1              # use lithostatic pressure for creep laws
 	p_litho_plast  = 1              # use lithostatic pressure for plasticity
@@ -153,7 +152,6 @@
 	out_density         = 1
 	out_visc_total      = 1
 	out_visc_creep      = 1
-	out_visc_plast      = 1
 	out_velocity        = 1
 	out_pressure        = 1
 	out_eff_press       = 1
@@ -167,8 +165,6 @@
 	out_j2_strain_rate  = 1
 	out_shmax           = 1
 	out_ehmax           = 1
-	out_isa             = 1
-	out_gol             = 1
 	out_yield           = 1
 	out_plast_strain    = 1
 	out_plast_dissip    = 1

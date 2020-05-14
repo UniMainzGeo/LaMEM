@@ -1,0 +1,132 @@
+-------------------------------------------------------------------------- 
+                   Lithosphere and Mantle Evolution Model                   
+     Compiled: Date: May  9 2020 - Time: 20:31:11 	    
+-------------------------------------------------------------------------- 
+        STAGGERED-GRID FINITE DIFFERENCE CANONICAL IMPLEMENTATION           
+-------------------------------------------------------------------------- 
+Parsing input file : ./t5_Perm/Permea.dat 
+   Adding PETSc option: -snes_type ksponly
+   Adding PETSc option: -js_ksp_type fgmres
+   Adding PETSc option: -js_ksp_max_it 50
+   Adding PETSc option: -js_ksp_monitor
+   Adding PETSc option: -js_ksp_rtol 1e-6
+   Adding PETSc option: -js_ksp_atol 1e-10
+   Adding PETSc option: -pcmat_type mono
+   Adding PETSc option: -pcmat_pgamma 1e5
+   Adding PETSc option: -jp_type user
+   Adding PETSc option: -jp_pc_type lu
+   Adding PETSc option: -objects_dump
+Finished parsing input file : ./t5_Perm/Permea.dat 
+--------------------------------------------------------------------------
+Time stepping parameters:
+   Simulation end time          : 1. [ ] 
+   Maximum number of steps      : 1 
+   Time step                    : 0.2 [ ] 
+   Minimum time step            : 0.02 [ ] 
+   Maximum time step            : 1. [ ] 
+   Time step increase factor    : 0.1 
+   CFL criterion                : 0.5 
+   CFLMAX (fixed time steps)    : 0.8 
+   Output every [n] steps       : 1 
+   Output [n] initial steps     : 1 
+--------------------------------------------------------------------------
+Material parameters: 
+   Phase ID : 0
+   (diff)   : eta = 1. [ ]  Bd = 0.5 [ ]  
+
+   Phase ID : 1
+   (diff)   : eta = 1. [ ]  Bd = 0.5 [ ]  
+
+--------------------------------------------------------------------------
+Grid parameters:
+   Total number of cpu                  : 4 
+   Processor grid  [nx, ny, nz]         : [1, 2, 2]
+   Fine grid cells [nx, ny, nz]         : [16, 16, 16]
+   Number of cells                      :  4096
+   Number of faces                      :  13056
+   Maximum cell aspect ratio            :  1.00000
+   Lower coordinate bounds [bx, by, bz] : [0., 0., 0.]
+   Upper coordinate bounds [ex, ey, ez] : [1., 1., 1.]
+--------------------------------------------------------------------------
+Boundary condition parameters: 
+   No-slip boundary mask [lt rt ft bk bm tp]  : 1 1 0 0 0 0 
+   Fixed phase                                : 0  
+   Top boundary pressure                      : 0. [ ] 
+   Bottom boundary pressure                   : 1. [ ] 
+--------------------------------------------------------------------------
+Solution parameters & controls:
+   Use lithostatic pressure for creep      @ 
+   Maximum melt fraction (viscosity)       : 0.15    
+   Rheology iteration number               : 25  
+   Rheology iteration tolerance            : 1e-06    
+   Ground water level type                 : none 
+--------------------------------------------------------------------------
+Advection parameters:
+   Advection scheme              : Euler 1-st order (basic implementation)
+   Marker setup scheme           : geometric primitives
+   Velocity interpolation scheme : STAG (linear)
+   Marker control type           : no marker control
+   Markers per cell [nx, ny, nz] : [2, 2, 2] 
+   Marker distribution type      : uniform
+   Background phase ID           : 0 
+--------------------------------------------------------------------------
+Reading geometric primitives ... done (0.000106096 sec)
+--------------------------------------------------------------------------
+Output parameters:
+   Output file name                        : permea 
+   Write .pvd file                         : yes 
+   Phase                                   @ 
+   Total effective viscosity               @ 
+   Velocity                                @ 
+   Pressure                                @ 
+   Momentum residual                       @ 
+   Continuity residual                     @ 
+--------------------------------------------------------------------------
+Preconditioner parameters: 
+   Matrix type                   : monolithic
+   Penalty parameter (pgamma)    : 1.000000e+05
+   Preconditioner type           : user-defined
+--------------------------------------------------------------------------
+Solver parameters specified: 
+   Outermost Krylov solver       : fgmres 
+   Solver type                   : parallel direct/lu 
+   Solver package                : petsc default
+--------------------------------------------------------------------------
+Saving output ... done (0.00230289 sec)
+--------------------------------------------------------------------------
+================================= STEP 1 =================================
+--------------------------------------------------------------------------
+Current time        : 0.00000 [ ] 
+Tentative time step : 0.20000 [ ] 
+--------------------------------------------------------------------------
+  0 SNES Function norm 3.620386719675e+02 
+  0 PICARD ||F||/||F0||=1.000000e+00 
+    Residual norms for js_ solve.
+    0 KSP Residual norm 3.620386719675e+02 
+    1 KSP Residual norm 2.611431342556e-04 
+  Linear js_ solve converged due to CONVERGED_RTOL iterations 1
+  1 SNES Function norm 2.611431342556e-04 
+--------------------------------------------------------------------------
+SNES Convergence Reason : maximum iterations reached
+Number of iterations    : 1
+SNES solution time      : 0.594822 (sec)
+--------------------------------------------------------------------------
+Residual summary: 
+   Continuity: 
+      |Div|_inf = 9.687396488770e-06 
+      |Div|_2   = 2.611431342555e-04 
+   Momentum: 
+      |mRes|_2  = 1.882945812547e-10 
+--------------------------------------------------------------------------
+Actual time step : 0.22000 [ ] 
+--------------------------------------------------------------------------
+Saving output ... 
+==========================================================================
+EFFECTIVE PERMEABILITY CONSTANT: 1.464855E-02 [ ]
+==========================================================================
+done (0.00225806 sec)
+--------------------------------------------------------------------------
+=========================== SOLUTION IS DONE! ============================
+--------------------------------------------------------------------------
+Total solution time : 0.626465 (sec) 
+--------------------------------------------------------------------------

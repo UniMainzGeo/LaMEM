@@ -209,7 +209,7 @@ def test_a():
     #----------------------------
 
   # Create unit test object
-  ex1 = pth.pthUnitTest('Compressibility_Direct_opt',ranks,launch,expected_file)
+  ex1 = pth.pthUnitTest('t10_Compressibility_Direct_opt',ranks,launch,expected_file)
   ex1.setVerifyMethod(comparefunc)
   ex1.appendKeywords('@')
 
@@ -245,7 +245,7 @@ def test_b():
     #----------------------------
 
   # Create unit test object
-  ex1 = pth.pthUnitTest('Compressibility_Direct_deb',ranks,launch,expected_file)
+  ex1 = pth.pthUnitTest('t10_Compressibility_Direct_deb',ranks,launch,expected_file)
   ex1.setVerifyMethod(comparefunc)
   ex1.appendKeywords('@')
 

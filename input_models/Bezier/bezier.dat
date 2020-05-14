@@ -238,8 +238,6 @@ top						=	0
     #-out_vorticity  1
     -out_ang_vel_mag 1
     -out_shmax 1
-    -out_isa 1
-    -out_gol 1
     -out_tot_displ 1
     -out_moment_res 1
     -out_cont_res 1
