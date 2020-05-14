@@ -1866,11 +1866,11 @@ PetscErrorCode AdjointGradientPerturbParameter(NLSol *nl, PetscInt CurPar, Petsc
 		curscal = (scal->velocity)*(scal->length_si);
 		curscalst = 1/1;
 	}
-	else if (CurPar==_K_)	    // K
+	else if (CurPar==_BULK_)	   // Kb (bulk modulus)
 	{
-		ini = mat[CurPhase].K;
+		ini = mat[CurPhase].Kb;
 		perturb = ini*FD_epsilon;
-		mat[CurPhase].K +=  perturb;
+		mat[CurPhase].Kb +=  perturb;
 		curscal   = (scal->velocity)/(scal->stress_si);
 		curscalst = 1/(scal->stress_si);
 	}
@@ -2049,7 +2049,7 @@ PetscErrorCode AdjointGradientResetParameter(NLSol *nl, PetscInt CurPar, PetscIn
 	if (CurPar==_RHO0_)        		{phases[CurPhase].rho    = ini;
 	}else if (CurPar==_RHON_)  		{phases[CurPhase].rho_n  = ini;
 	}else if (CurPar==_RHOC_)  		{phases[CurPhase].rho_c  = ini;
-	}else if (CurPar==_K_)  		{phases[CurPhase].K      = ini;
+	}else if (CurPar==_BULK_)  		{phases[CurPhase].Kb     = ini;
 	}else if (CurPar==_KP_)  		{phases[CurPhase].Kp     = ini;
 	}else if (CurPar==_SHEAR_)  	{phases[CurPhase].G      = ini;
 	}else if (CurPar==_ETA_)  		{phases[CurPhase].Bd     = ini;

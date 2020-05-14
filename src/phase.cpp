@@ -151,7 +151,8 @@ PetscErrorCode DBMatReadSoft(DBMat *dbm, FB *fb)
 	scal = dbm->scal;
 
 	// softening law ID
-	ierr = getIntParam(fb, _REQUIRED_, "ID", &ID, 1, dbm->numSoft-1); CHKERRQ(ierr);
+	ierr 	= getIntParam(fb, _REQUIRED_, "ID", &ID, 1, dbm->numSoft-1); CHKERRQ(ierr);
+	fb->ID  = ID;
 
 	// get pointer to specified softening law
 	s = dbm->matSoft + ID;
@@ -201,7 +202,7 @@ PetscErrorCode DBMatReadPhase(DBMat *dbm, FB *fb)
 	Material_t *m;
 	PetscInt    ID = -1, visID = -1, chSoftID, frSoftID, MSN, print_title;
 	size_t 	    StringLength;
-	PetscScalar eta, eta0, e0, K, G, E, nu, Vp, Vs;
+	PetscScalar eta, eta0, e0, K, Kb, G, E, nu, Vp, Vs;
 	char        ndiff[_str_len_], ndisl[_str_len_], npeir[_str_len_], title[_str_len_];
 	char        PhaseDiagram[_str_len_], PhaseDiagram_Dir[_str_len_];
 	
@@ -216,7 +217,8 @@ PetscErrorCode DBMatReadPhase(DBMat *dbm, FB *fb)
 	eta      =  0.0;
 	eta0     =  0.0;
 	e0       =  0.0;
-	K        =  0.0;
+	K        =  0.0;	// note: will be deprecated and renamed to Kb; we spit put an error message for now if we still find it in the input file
+	Kb    	 =  0.0;	// bulk modulus		
 	G        =  0.0;
 	E        =  0.0;
 	nu       =  0.0;
@@ -227,8 +229,9 @@ PetscErrorCode DBMatReadPhase(DBMat *dbm, FB *fb)
 	MSN      =  dbm->numSoft - 1;
 
 	// phase ID
-	ierr = getIntParam(fb, _REQUIRED_, "ID", &ID, 1, dbm->numPhases-1); CHKERRQ(ierr);
-
+	ierr 	 = getIntParam(fb, _REQUIRED_, "ID", &ID, 1, dbm->numPhases-1); CHKERRQ(ierr);
+	fb->ID	 = ID;
+	
 	// get pointer to specified phase
 	m = dbm->phases + ID;
 
@@ -308,7 +311,8 @@ PetscErrorCode DBMatReadPhase(DBMat *dbm, FB *fb)
 	// elasticity
 	//=================================================================================
 	ierr = getScalarParam(fb, _OPTIONAL_, "G",        &G,        1, 1.0); CHKERRQ(ierr);
-	ierr = getScalarParam(fb, _OPTIONAL_, "K",        &K,        1, 1.0); CHKERRQ(ierr);
+	ierr = getScalarParam(fb, _OPTIONAL_, "K",        &K,        1, 1.0); CHKERRQ(ierr); // note-> will be removed (avoid confusion with k)
+	ierr = getScalarParam(fb, _OPTIONAL_, "Kb",       &Kb,       1, 1.0); CHKERRQ(ierr); // note-> will be removed (avoid confusion with k)
 	ierr = getScalarParam(fb, _OPTIONAL_, "E",        &E,        1, 1.0); CHKERRQ(ierr);
 	ierr = getScalarParam(fb, _OPTIONAL_, "nu",       &nu,       1, 1.0); CHKERRQ(ierr);
 	ierr = getScalarParam(fb, _OPTIONAL_, "Kp",       &m->Kp,    1, 1.0); CHKERRQ(ierr);
@@ -472,40 +476,43 @@ PetscErrorCode DBMatReadPhase(DBMat *dbm, FB *fb)
 	}
 
 	// ELASTICITY
-
-	if(!(( G && !K && !E && !nu)   // G
-	||   (!G &&  K && !E && !nu)   // K
-	||   ( G &&  K && !E && !nu)   // G & K
-	||   ( G && !K && !E &&  nu)   // G & nu
-	||   (!G &&  K && !E &&  nu)   // K & nu
-	||   (!G && !K &&  E &&  nu)   // E & nu
-	||   (!G && !K && !E && !nu))) // nothing
-	{
-		SETERRQ1(PETSC_COMM_WORLD, PETSC_ERR_USER, "Unsupported or nonunique combination of elasticity parameters for phase %lld (G, K, G + K, G + nu, K + nu, E + nu)\n", (LLD)ID);
+	if (K){
+		SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "The bulk modulus parameter is now called 'Kb' and no longer 'K'; change your ParamFile accordingly");
 	}
 
-	if(m->Kp && !K)
+	if(!(( G && !Kb && !E && !nu)   // G
+	||   (!G &&  Kb && !E && !nu)   // Kb
+	||   ( G &&  Kb && !E && !nu)   // G & Kb
+	||   ( G && !Kb && !E &&  nu)   // G & nu
+	||   (!G &&  Kb && !E &&  nu)   // Kb & nu
+	||   (!G && !Kb &&  E &&  nu)   // E & nu
+	||   (!G && !Kb && !E && !nu))) // nothing
 	{
-		SETERRQ1(PETSC_COMM_WORLD, PETSC_ERR_USER, "Bulk modulus must be specified for phase %lld (K + Kp)", (LLD)ID);
+		SETERRQ1(PETSC_COMM_WORLD, PETSC_ERR_USER, "Unsupported or nonunique combination of elasticity parameters for phase %lld (G, Kb, G + Kb, G + nu, Kb + nu, E + nu)\n", (LLD)ID);
 	}
 
-	if(m->beta && K)
+	if(m->Kp && !Kb)
 	{
-		SETERRQ1(PETSC_COMM_WORLD, PETSC_ERR_USER, "Density pressure dependence parameters are not unique for phase %lld (beta, K)", (LLD)ID);
+		SETERRQ1(PETSC_COMM_WORLD, PETSC_ERR_USER, "Bulk modulus (Kb) must be specified for phase %lld (Kb + Kp)", (LLD)ID);
+	}
+
+	if(m->beta && Kb)
+	{
+		SETERRQ1(PETSC_COMM_WORLD, PETSC_ERR_USER, "Density pressure dependence parameters are not unique for phase %lld (beta, Kb)", (LLD)ID);
 	}
 
 	// compute elastic parameters
-	if( G  && nu)          K  = 2*G*(1 + nu)/(3*(1 - 2*nu));
-	if( K  && nu)          G  = (3*K*(1 - 2*nu))/(2*(1 + nu));
-	if( E  && nu)        { K  = E/(3*(1 - 2*nu)); G = E/(2*(1 + nu)); }
-	if(!E  && K && G)      E  = 9*K*G/(3*K + G);
-	if(!nu && K && G)      nu = (3*K - 2*G)/(2*(3*K + G));
-	if( K  && G && m->rho) Vp = sqrt((K + 4.0*G/3.0)/m->rho);
-	if( G  && m->rho)      Vs = sqrt((G/m->rho));
+	if( G  && nu)          Kb  = 2*G*(1 + nu)/(3*(1 - 2*nu));
+	if( K  && nu)          G   = (3*Kb*(1 - 2*nu))/(2*(1 + nu));
+	if( E  && nu)        { Kb  = E/(3*(1 - 2*nu)); G = E/(2*(1 + nu)); }
+	if(!E  && Kb && G)      E  = 9*Kb*G/(3*Kb + G);
+	if(!nu && Kb && G)      nu = (3*Kb - 2*G)/(2*(3*Kb + G));
+	if( Kb  && G && m->rho) Vp = sqrt((Kb + 4.0*G/3.0)/m->rho);
+	if( G  && m->rho)       Vs = sqrt((G/m->rho));
 
 	// store elastic moduli
-	m->G = G;
-	m->K = K;
+	m->G  = G;
+	m->Kb = Kb;
 
 	// check that at least one essential deformation mechanism is specified
 	if(!m->Bd && !m->Bn && !m->G && !m->Bdc)
@@ -513,8 +520,7 @@ PetscErrorCode DBMatReadPhase(DBMat *dbm, FB *fb)
 		SETERRQ1(PETSC_COMM_WORLD, PETSC_ERR_USER, "At least one of the parameter (set) Bd (eta), Bn (eta0, e0), Bdc, G must be specified for phase %lld", (LLD)ID);
 	}
 
-	// PRINT
-
+	// PRINT (optional)
 	PetscPrintf(PETSC_COMM_WORLD,"   Phase ID : %lld",(LLD)(m->ID));
 
 	if(strlen(ndiff)) PetscPrintf(PETSC_COMM_WORLD,"    diffusion creep profile  : %s", ndiff);
@@ -621,7 +627,7 @@ PetscErrorCode DBMatReadPhase(DBMat *dbm, FB *fb)
 
 	// elasticity
 	m->G      /= scal->stress_si;
-	m->K      /= scal->stress_si;
+	m->Kb     /= scal->stress_si;
 
 	// plasticity
 	m->ch     /= scal->stress_si;
