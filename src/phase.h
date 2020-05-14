@@ -95,7 +95,7 @@ public:
 	PetscScalar  rho_c;    // depth-dependent density model parameter    [1/m]
 	PetscScalar  beta;     // pressure-dependent density model parameter [1/Pa]
 	// elasticity parameters
-	PetscScalar  K;        // bulk modulus                               [Pa]
+	PetscScalar  Kb;       // bulk modulus                               [Pa]
 	PetscScalar  Kp;       // pressure dependence parameter              [ ]
 	PetscScalar  G;        // shear modulus                              [Pa]
 	// diffusion creep parameters

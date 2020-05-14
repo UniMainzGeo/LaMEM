@@ -267,8 +267,10 @@ def AnalyticalSolution_DislocationCreep_VEP(data, YieldStress):
   SecYear       = 3600*24*365.25;   # sec/year
   time_end      = 0.005*1e6*SecYear; 
   num           = 500;
-
-  T             = data.T[0];      # average temperature in domain (in Celcius)
+  
+  T             = data.T[10];      # average temperature in domain (in Celcius)
+  print('T=',T)
+  T=900
   eterm         = np.exp(Ea/n/R/(T+273.15));
     
   eta_eff       = F2/AD**(1/n)/str**((n-1)/n)*eterm;     # effective viscosity

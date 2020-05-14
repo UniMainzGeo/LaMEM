@@ -65,7 +65,7 @@ PetscErrorCode JacResCreate(JacRes *jr, FB *fb)
 	BCCtx      *bc;
 	PetscScalar gx, gy, gz;
 	char        gwtype [_str_len_];
-	PetscInt    i, numPhases;
+	PetscInt    i, numPhases, temp_int;
 	PetscInt    is_elastic, need_RUGC, need_rho_fluid, need_surf, need_gw_type, need_top_open;
 
 	PetscErrorCode ierr;
@@ -151,7 +151,7 @@ PetscErrorCode JacResCreate(JacRes *jr, FB *fb)
 	{
 		m = jr->dbm->phases + i;
 
-		if(m->G   || m->K)            is_elastic     = 1;
+		if(m->G   || m->Kb)           is_elastic     = 1;
 		if(m->Ed  || m->En || m->Ep
 		|| m->Vd  || m->Vn || m->Vp
 		|| m->Bdc || m->Bps )         need_RUGC      = 1;
@@ -160,7 +160,7 @@ PetscErrorCode JacResCreate(JacRes *jr, FB *fb)
 		if(m->rho_n)                  need_surf      = 1;
 		if(((m->Vd || m->Vn || m->Vp) && !ctrl->pLithoVisc)
 		||  (m->fr                    && !ctrl->pLithoPlast)
-		||  (m->K || m->beta))        need_top_open  = 1;
+		||  (m->Kb || m->beta))       need_top_open  = 1;
 
 		// set default stabilization viscosity
 		if(!m->eta_st) m->eta_st = ctrl->eta_min/scal->viscosity;
@@ -169,7 +169,7 @@ PetscErrorCode JacResCreate(JacRes *jr, FB *fb)
 
 	if(need_top_open && !bc->top_open)
 	{
-		SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "True pressure-dependent rheology requires open top boundary (Vd, Vn, Vp, fr, K, beta, p_litho_visc, p_litho_plast, open_top_bound)\n");
+		SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "True pressure-dependent rheology requires open top boundary (Vd, Vn, Vp, fr, Kb, beta, p_litho_visc, p_litho_plast, open_top_bound)\n");
 	}
 
 	// fix advection time steps for elasticity or kinematic block BC
@@ -309,6 +309,13 @@ PetscErrorCode JacResCreate(JacRes *jr, FB *fb)
 	ctrl->rho_fluid      /=  scal->density;
 	ctrl->gwLevel        /=  scal->length;
 	ctrl->steadyTempStep /=  scal->time;
+
+	// adjoint field based gradient output vector
+	ierr = getIntParam   (fb, _OPTIONAL_, "Adj_FS"        , &temp_int,        1, 1        ); CHKERRQ(ierr);  // Do a field sensitivity test? -> Will do the test for the first InverseParStart that is given!
+	if (temp_int == 1)
+	{
+		ierr = DMCreateLocalVector (jr->fs->DA_CEN, &jr->lgradfield);      CHKERRQ(ierr);
+	}
 
 	// create Jacobian & residual evaluation context
 	ierr = JacResCreateData(jr); CHKERRQ(ierr);
