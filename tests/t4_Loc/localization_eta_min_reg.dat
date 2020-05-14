@@ -201,7 +201,7 @@
 	-pcmat_pgamma 1e2
    		
 	# Newton/picard options
-	-snes_PicardSwitchToNewton_rtol 1e-2   # relative tolerance to switch to Newton (1e-2)
+	-snes_PicardSwitchToNewton_rtol 1e0   # relative tolerance to switch to Newton (1e-2)
 	-snes_NewtonSwitchToPicard_it  	20     # number of Newton iterations after which we switch back to Picard
 
 	# Linesearch options
