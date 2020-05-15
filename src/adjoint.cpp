@@ -179,11 +179,11 @@ PetscErrorCode LaMEMAdjointReadMaterialParameters(DBMat *dbm, FB  **p_fb)
 
 
     // print overview of material parameters read from file
-	PetscPrintf(PETSC_COMM_WORLD,"Adjoint: Material parameters: \n");
+	PetscPrintf(PETSC_COMM_WORLD,"| Adjoint: Material parameters: \n");
 
 	// setup block access mode
 	ierr = FBFindBlocks(fb, _REQUIRED_, "<MaterialStart>", "<MaterialEnd>"); CHKERRQ(ierr);
-    PetscPrintf(PETSC_COMM_WORLD,"Adjoint1: Material parameters: found %i blocks \n",fb->nblocks);
+    PetscPrintf(PETSC_COMM_WORLD,"| Adjoint1: Material parameters: found %i blocks \n",fb->nblocks);
 
 /*
 	// initialize ID for consistency checks
@@ -278,59 +278,59 @@ PetscErrorCode LaMEMAdjointReadInputSetDefaults(ModParam **p_IOparam, Adjoint_Ve
 	ierr = getScalarParam(fb, _OPTIONAL_, "Inversion_Scale_Grad"			, &IOparam->Scale_Grad,1, 1        ); CHKERRQ(ierr);  // Magnitude of initial parameter update (factor_ini = Scale_Grad/Grad)
 	ierr = getScalarParam(fb, _REQUIRED_, "DII"           					, &IOparam->DII_ref,   1, 1        ); CHKERRQ(ierr);   // SUPER UNNECESSARY BUT OTHERWISE NOT AVAILABLE
 
-	PetscPrintf(PETSC_COMM_WORLD,"--------------------------------------------------------------------------- \n");
-	PetscPrintf(PETSC_COMM_WORLD,"                                     LaMEM                                  \n");
-	PetscPrintf(PETSC_COMM_WORLD,"                       Adjoint Gradient Framework Active                    \n");
-	PetscPrintf(PETSC_COMM_WORLD,"--------------------------------------------------------------------------- \n");
+	PetscPrintf(PETSC_COMM_WORLD,"| ------------------------------------------------------------------------- \n");
+	PetscPrintf(PETSC_COMM_WORLD,"|                                      LaMEM                                \n");
+	PetscPrintf(PETSC_COMM_WORLD,"|                        Adjoint Gradient Framework Active                  \n");
+	PetscPrintf(PETSC_COMM_WORLD,"| ------------------------------------------------------------------------- \n");
 
     
     PetscPrintf(PETSC_COMM_WORLD,"Adjoint parameters:  \n");
 	
 	if(IOparam->use == _adjointgradients_ ) 
 	{
-		PetscPrintf(PETSC_COMM_WORLD, "   Adjoint mode                             : AdjointGradients  \n");
-		if (IOparam->Gr==0){ PetscPrintf(PETSC_COMM_WORLD, "   Gradients are computed w.r.t.            : CostFunction \n", IOparam->Gr); }
-		else               { PetscPrintf(PETSC_COMM_WORLD, "   Gradients are computed w.r.t.            : Solution     \n", IOparam->Gr); }
-		PetscPrintf(PETSC_COMM_WORLD, "   Field-based gradient evaluation          : %d    \n", IOparam->FS);		
+		PetscPrintf(PETSC_COMM_WORLD, "|    Adjoint mode                             : AdjointGradients  \n");
+		if (IOparam->Gr==0){ PetscPrintf(PETSC_COMM_WORLD, "|    Gradients are computed w.r.t.            : CostFunction \n", IOparam->Gr); }
+		else               { PetscPrintf(PETSC_COMM_WORLD, "|    Gradients are computed w.r.t.            : Solution     \n", IOparam->Gr); }
+		PetscPrintf(PETSC_COMM_WORLD, "|    Field-based gradient evaluation          : %d    \n", IOparam->FS);		
 
-		if 		(IOparam->Ap == 1){PetscPrintf(PETSC_COMM_WORLD, "   Gradient evaluation points               : several observation points  [Adjoint_EvaluationPoints = 1]  \n"); }
-		else if (IOparam->Ap == 2){PetscPrintf(PETSC_COMM_WORLD, "   Gradient evaluation points               : whole domain  	 [Adjoint_EvaluationPoints = 2]  \n"); }
-		else if (IOparam->Ap == 3){PetscPrintf(PETSC_COMM_WORLD, "   Gradient evaluation points               : surface          [Adjoint_EvaluationPoints = 3]   \n"); }
+		if 		(IOparam->Ap == 1){PetscPrintf(PETSC_COMM_WORLD, "|    Gradient evaluation points               : several observation points  [Adjoint_EvaluationPoints = 1]  \n"); }
+		else if (IOparam->Ap == 2){PetscPrintf(PETSC_COMM_WORLD, "|    Gradient evaluation points               : whole domain  	 [Adjoint_EvaluationPoints = 2]  \n"); }
+		else if (IOparam->Ap == 3){PetscPrintf(PETSC_COMM_WORLD, "|    Gradient evaluation points               : surface          [Adjoint_EvaluationPoints = 3]   \n"); }
 		
-		PetscPrintf(PETSC_COMM_WORLD, "   Advect evaluation points with flow       : %d    \n", IOparam->Adv);
+		PetscPrintf(PETSC_COMM_WORLD, "|    Advect evaluation points with flow       : %d    \n", IOparam->Adv);
 		
-		PetscPrintf(PETSC_COMM_WORLD, "   Objective function defined in input      : %d    \n", IOparam->OFdef);
+		PetscPrintf(PETSC_COMM_WORLD, "|    Objective function defined in input      : %d    \n", IOparam->OFdef);
 	}
 	else if(IOparam->use == _gradientdescent_) 
 	{
-		PetscPrintf(PETSC_COMM_WORLD, "   Adjoint mode                             : Gradient descent (or Quasi-Newton) inversion  \n");
-		PetscPrintf(PETSC_COMM_WORLD, "   Use Tao BLMVM (or LaMEM steepest descent): %d    \n", IOparam->Tao);
-		if 		(IOparam->Ap == 1){PetscPrintf(PETSC_COMM_WORLD, "   Gradient evaluation points               : several observation points  [Adjoint_EvaluationPoints = 1]  \n"); }
-		else if (IOparam->Ap == 2){PetscPrintf(PETSC_COMM_WORLD, "   Gradient evaluation points               : whole domain  	 [Adjoint_EvaluationPoints = 2]  \n"); }
-		else if (IOparam->Ap == 3){PetscPrintf(PETSC_COMM_WORLD, "   Gradient evaluation points               : surface          [Adjoint_EvaluationPoints = 3]   \n"); }
-		PetscPrintf(PETSC_COMM_WORLD, "   Advect evaluation points with flow       : %d    \n", IOparam->Adv);
-		PetscPrintf(PETSC_COMM_WORLD, "   Objective function defined in input      : %d    \n", IOparam->OFdef);
+		PetscPrintf(PETSC_COMM_WORLD, "|    Adjoint mode                             : Gradient descent (or Quasi-Newton) inversion  \n");
+		PetscPrintf(PETSC_COMM_WORLD, "|    Use Tao BLMVM (or LaMEM steepest descent): %d    \n", IOparam->Tao);
+		if 		(IOparam->Ap == 1){PetscPrintf(PETSC_COMM_WORLD, "|    Gradient evaluation points               : several observation points  [Adjoint_EvaluationPoints = 1]  \n"); }
+		else if (IOparam->Ap == 2){PetscPrintf(PETSC_COMM_WORLD, "|    Gradient evaluation points               : whole domain  	 [Adjoint_EvaluationPoints = 2]  \n"); }
+		else if (IOparam->Ap == 3){PetscPrintf(PETSC_COMM_WORLD, "|    Gradient evaluation points               : surface          [Adjoint_EvaluationPoints = 3]   \n"); }
+		PetscPrintf(PETSC_COMM_WORLD, "|    Advect evaluation points with flow       : %d    \n", IOparam->Adv);
+		PetscPrintf(PETSC_COMM_WORLD, "|    Objective function defined in input      : %d    \n", IOparam->OFdef);
 
-		PetscPrintf(PETSC_COMM_WORLD, "   Maximum gradient descent iterations      : %d    \n", IOparam->maxit);
-		PetscPrintf(PETSC_COMM_WORLD, "   Maximum linesearch iterations            : %d    \n", IOparam->maxitLS);
-		PetscPrintf(PETSC_COMM_WORLD, "   Apply bounds                             : %d    \n", IOparam->Ab);
-		PetscPrintf(PETSC_COMM_WORLD, "   Tolerance (F/Fini)                       : %.5e  \n", IOparam->tol);
+		PetscPrintf(PETSC_COMM_WORLD, "|    Maximum gradient descent iterations      : %d    \n", IOparam->maxit);
+		PetscPrintf(PETSC_COMM_WORLD, "|    Maximum linesearch iterations            : %d    \n", IOparam->maxitLS);
+		PetscPrintf(PETSC_COMM_WORLD, "|    Apply bounds                             : %d    \n", IOparam->Ab);
+		PetscPrintf(PETSC_COMM_WORLD, "|    Tolerance (F/Fini)                       : %.5e  \n", IOparam->tol);
 		if (IOparam->Tao == 0)
 		{
-			PetscPrintf(PETSC_COMM_WORLD, "   Not employing TAO, but instead our build-in gradient algorithm, with the following parameters: \n", IOparam->facLS);
-			PetscPrintf(PETSC_COMM_WORLD, "    Linesearch factor (succesful update)     : %.5e  \n", IOparam->facLS);
-			PetscPrintf(PETSC_COMM_WORLD, "    Linesearch factor (overstep)             : %.5e  \n", IOparam->facB);
-			PetscPrintf(PETSC_COMM_WORLD, "    Maximum linesearch factor                : %.5e  \n", IOparam->maxfac);
-			PetscPrintf(PETSC_COMM_WORLD, "    Scale for initial parameter update       : %.5e  \n", IOparam->Scale_Grad);
+			PetscPrintf(PETSC_COMM_WORLD, "|    Not employing TAO, but instead our build-in gradient algorithm, with the following parameters: \n", IOparam->facLS);
+			PetscPrintf(PETSC_COMM_WORLD, "|     Linesearch factor (succesful update)     : %.5e  \n", IOparam->facLS);
+			PetscPrintf(PETSC_COMM_WORLD, "|     Linesearch factor (overstep)             : %.5e  \n", IOparam->facB);
+			PetscPrintf(PETSC_COMM_WORLD, "|     Maximum linesearch factor                : %.5e  \n", IOparam->maxfac);
+			PetscPrintf(PETSC_COMM_WORLD, "|     Scale for initial parameter update       : %.5e  \n", IOparam->Scale_Grad);
 		}
 	} 
 	else if (IOparam->use == _syntheticforwardrun_) 
 	{
-		PetscPrintf(PETSC_COMM_WORLD, "   Adjoint mode                             : SyntheticForwardRun  (saving forward run for debugging purposes)  \n");
+		PetscPrintf(PETSC_COMM_WORLD, "|    Adjoint mode                             : SyntheticForwardRun  (saving forward run for debugging purposes)  \n");
 	}
 	else
 	{
-		SETERRQ1(PETSC_COMM_WORLD, PETSC_ERR_USER, "\nUse = %d not known; should be within [0-4]\n",IOparam->use);
+		SETERRQ1(PETSC_COMM_WORLD, PETSC_ERR_USER, "\n| Use = %d not known; should be within [0-4]\n",IOparam->use);
 	}
 
 	// VECTORS
@@ -388,7 +388,7 @@ PetscErrorCode LaMEMAdjointReadInputSetDefaults(ModParam **p_IOparam, Adjoint_Ve
 	VecGetArray(Adjoint_Vectors->Lb,&Lbar);
 	VecGetArray(Adjoint_Vectors->grad,&gradar);
     fb->blockID = 0;
-	PetscPrintf(PETSC_COMM_WORLD, "\n   Total number of adjoint parameters       : %i   \n", fb->nblocks);
+	PetscPrintf(PETSC_COMM_WORLD, "\n|    Total number of adjoint parameters       : %i   \n", fb->nblocks);
 	for(i = 0; i < fb->nblocks; i++)
 	{
 		ierr = getIntParam   (fb, _REQUIRED_, "ID" , &ID, 1, _max_num_phases_); CHKERRQ(ierr);		// phase at which it applies
@@ -454,7 +454,7 @@ PetscErrorCode LaMEMAdjointReadInputSetDefaults(ModParam **p_IOparam, Adjoint_Ve
         }
 		
 		// Print overview & indicate which parameters are not specified
-		PetscPrintf(PETSC_COMM_WORLD, "    %+6s[%-2i]: InitialGuess = %s; lb= %s; ub= %s]   \n",par_str, ID,val_str,lb_str,ub_str);
+		PetscPrintf(PETSC_COMM_WORLD, "|   %+6s[%-2i]: InitialGuess = %s; lb= %s; ub= %s]   \n",par_str, ID,val_str,lb_str,ub_str);
 
 		fb->blockID++;
 	}
@@ -500,7 +500,7 @@ PetscErrorCode LaMEMAdjointReadInputSetDefaults(ModParam **p_IOparam, Adjoint_Ve
 
 	// read each individual index
 	if ( (fb->nblocks>0) & (IOparam->Ap==1)){
-		PetscPrintf(PETSC_COMM_WORLD, "\n   Total number of observation points 	    : %i   \n", fb->nblocks);
+		PetscPrintf(PETSC_COMM_WORLD, "\n|    Total number of observation points 	    : %i   \n", fb->nblocks);
 	}
     else
     {
@@ -533,10 +533,10 @@ PetscErrorCode LaMEMAdjointReadInputSetDefaults(ModParam **p_IOparam, Adjoint_Ve
 		if ((fb->nblocks<6) & (IOparam->Ap==1)){
             // Print overview 
 			if (IOparam->Gr==0){
-                PetscPrintf(PETSC_COMM_WORLD, "      [%f,%f,%f] has target velocity V%s=%7.5f\n", IOparam->Coord[0],IOparam->Coord[1],IOparam->Coord[0], Vel_comp, ts);  // cost function
+                PetscPrintf(PETSC_COMM_WORLD, "|       [%f,%f,%f] has target velocity V%s=%7.5f\n", IOparam->Coord[0],IOparam->Coord[1],IOparam->Coord[0], Vel_comp, ts);  // cost function
             }
             else{
-                PetscPrintf(PETSC_COMM_WORLD, "      [%f,%f,%f] will compute gradient w.r.t. V%s\n", IOparam->Coord[0],IOparam->Coord[1],IOparam->Coord[0], Vel_comp);  // w.r.t. solution
+                PetscPrintf(PETSC_COMM_WORLD, "|       [%f,%f,%f] will compute gradient w.r.t. V%s\n", IOparam->Coord[0],IOparam->Coord[1],IOparam->Coord[0], Vel_comp);  // w.r.t. solution
             }
 		}
         if (IOparam->Ap>1){
@@ -544,7 +544,7 @@ PetscErrorCode LaMEMAdjointReadInputSetDefaults(ModParam **p_IOparam, Adjoint_Ve
             if   (IOparam->Ap==2){str_vec="everywhere";}
             else {str_vec="at the internal free surface";}
 
-            PetscPrintf(PETSC_COMM_WORLD, "   We will compute the gradient %s w.r.t. V%s\n", str_vec, Vel_comp);  // inform where the gradient will be computed, and w.r.t. which component 
+            PetscPrintf(PETSC_COMM_WORLD, "|    We will compute the gradient %s w.r.t. V%s\n", str_vec, Vel_comp);  // inform where the gradient will be computed, and w.r.t. which component 
         }
 
 		fb->blockID++;
@@ -642,10 +642,10 @@ PetscErrorCode LaMEMAdjointMain(ModParam *IOparam)
 
  	 	 	// 3. Solve Tao & view result
  	 	 	ierr = TaoSolve(tao);	 												            CHKERRQ(ierr);
- 	 	 	PetscPrintf(PETSC_COMM_WORLD,"--------------------------------------------------------------------------- \n");
+ 	 	 	PetscPrintf(PETSC_COMM_WORLD,"| ------------------------------------------------------------------------- \n");
 	
  	 	 	TaoView(tao,PETSC_VIEWER_STDOUT_WORLD);
- 	 	 	PetscPrintf(PETSC_COMM_WORLD,"--------------------------------------------------------------------------- \n");
+ 	 	 	PetscPrintf(PETSC_COMM_WORLD,"| ------------------------------------------------------------------------- \n");
 	
  	 	 	// 4. Clean
  	 	 	ierr = TaoDestroy(&tao);
@@ -656,27 +656,27 @@ PetscErrorCode LaMEMAdjointMain(ModParam *IOparam)
  			ierr = AdjointOptimisation(Adjoint_Vectors.P, F, Adjoint_Vectors.grad, IOparam);
  		}
 
- 		PetscPrintf(PETSC_COMM_WORLD,"--------------------------------------------------------------------------- \n");
-		PetscPrintf(PETSC_COMM_WORLD,"*                         INVERSION RESULT SUMMARY                        * \n");
-		PetscPrintf(PETSC_COMM_WORLD,"--------------------------------------------------------------------------- \n");
-		PetscPrintf(PETSC_COMM_WORLD,"Number of inversion iterations: %d\n",IOparam->count);
- 		PetscPrintf(PETSC_COMM_WORLD,"F/Fini:\n");
+ 		PetscPrintf(PETSC_COMM_WORLD,"| ------------------------------------------------------------------------- \n");
+		PetscPrintf(PETSC_COMM_WORLD,"| *                         INVERSION RESULT SUMMARY                      * \n");
+		PetscPrintf(PETSC_COMM_WORLD,"| ------------------------------------------------------------------------- \n");
+		PetscPrintf(PETSC_COMM_WORLD,"| Number of inversion iterations: %d\n",IOparam->count);
+ 		PetscPrintf(PETSC_COMM_WORLD,"| F/Fini:\n");
  		VecGetArray(IOparam->fcconv,&fcconvar);
  		for(i=1;i<IOparam->count;i++)
  		{
- 			PetscPrintf(PETSC_COMM_WORLD,"%.5e\n",fcconvar[i]);
+ 			PetscPrintf(PETSC_COMM_WORLD,"| %.5e\n",fcconvar[i]);
  		}
  		VecRestoreArray(IOparam->fcconv,&fcconvar);
- 		PetscPrintf(PETSC_COMM_WORLD,"\nFinal cost function:\n");
- 		PetscPrintf(PETSC_COMM_WORLD,"%.5e\n",IOparam->mfit);
- 		PetscPrintf(PETSC_COMM_WORLD,"\nFinal Parameters:\n");
+ 		PetscPrintf(PETSC_COMM_WORLD,"| \n| Final cost function:\n");
+ 		PetscPrintf(PETSC_COMM_WORLD,"| %.5e\n",IOparam->mfit);
+ 		PetscPrintf(PETSC_COMM_WORLD,"| \n| Final Parameters:\n");
 		VecGetArray(IOparam->P,&Par);
 		for(i=0;i<IOparam->mdN;i++)
 		{
-			PetscPrintf(PETSC_COMM_WORLD,"%.5e\n",Par[i]);
+			PetscPrintf(PETSC_COMM_WORLD,"| %.5e\n",Par[i]);
 		}
 		VecRestoreArray(IOparam->P,&Par);
- 		PetscPrintf(PETSC_COMM_WORLD,"--------------------------------------------------------------------------- \n\n");
+ 		PetscPrintf(PETSC_COMM_WORLD,"| ------------------------------------------------------------------------- \n\n");
 		
  	}
  	// this is a forward simulation that we want to save as comparison solution
@@ -694,7 +694,7 @@ PetscErrorCode LaMEMAdjointMain(ModParam *IOparam)
  	 	VecView(IOparam->xini,viewerVel);
  	 	PetscViewerDestroy(&viewerVel);
 
- 	 	PetscPrintf(PETSC_COMM_WORLD,"------------------------------------------\n        Forward Solution succesfully saved\n------------------------------------------\n");
+ 	 	PetscPrintf(PETSC_COMM_WORLD,"| ------------------------------------------\n|         Forward Solution succesfully saved\n| ------------------------------------------\n");
  	}
 
 	ierr = VecDestroy(&Adjoint_Vectors.P);
@@ -768,8 +768,8 @@ PetscErrorCode AdjointOptimisation(Vec P, PetscScalar F, Vec grad, void *ctx)
 		// If cost function in this timestep is larger then before perform bisection line search
 		while(F>Fold)
 		{
-			PetscPrintf(PETSC_COMM_WORLD,"\n- - - - - - - - - - - - - - - - - - - - - - - - - - - \n");
-			PetscPrintf(PETSC_COMM_WORLD,"              LINE SEARCH IT %d                       \n",LScount);
+			PetscPrintf(PETSC_COMM_WORLD,"\n| - - - - - - - - - - - - - - - - - - - - - - - - - - - \n");
+			PetscPrintf(PETSC_COMM_WORLD,"|               LINE SEARCH IT %d                       \n",LScount);
 
 			VecGetArray(P,&Par);
 			VecGetArray(Pold,&Paroldar);
@@ -806,9 +806,9 @@ PetscErrorCode AdjointOptimisation(Vec P, PetscScalar F, Vec grad, void *ctx)
 			LScount+=1;
 			if(LScount>IOparam->maxitLS)
 			{
-				PetscPrintf(PETSC_COMM_WORLD,"******************************************************\n");
-				PetscPrintf(PETSC_COMM_WORLD,"*              SOLUTION DIVERGED                     *\n");
-				PetscPrintf(PETSC_COMM_WORLD,"******************************************************\n\n");
+				PetscPrintf(PETSC_COMM_WORLD,"| ******************************************************\n");
+				PetscPrintf(PETSC_COMM_WORLD,"| *              SOLUTION DIVERGED                     *\n");
+				PetscPrintf(PETSC_COMM_WORLD,"| ******************************************************\n\n");
 
 				// Return parameters for final output
 				VecCopy(P,IOparam->P);
@@ -837,9 +837,9 @@ PetscErrorCode AdjointOptimisation(Vec P, PetscScalar F, Vec grad, void *ctx)
 		VecRestoreArray(grad,&gradar);
 		VecRestoreArray(P,&Par);
 
-		PetscPrintf(PETSC_COMM_WORLD,"\n--------------------------------------------------------------------------- \n");
-		PetscPrintf(PETSC_COMM_WORLD,"%d. IT INVERSION RESULT: line search its = %d ; F / FINI = %.5e\n\n",IOparam->count,LScount-1,IOparam->mfit/IOparam->mfitini);
-		PetscPrintf(PETSC_COMM_WORLD,"Fold = %.5e \n   F = %.5e\n\n",Fold,F);
+		PetscPrintf(PETSC_COMM_WORLD,"\n| ------------------------------------------------------------------------ \n");
+		PetscPrintf(PETSC_COMM_WORLD,"| %d. IT INVERSION RESULT: line search its = %d ; F / FINI = %.5e\n| \n",IOparam->count,LScount-1,IOparam->mfit/IOparam->mfitini);
+		PetscPrintf(PETSC_COMM_WORLD,"| Fold = %.5e \n|    F = %.5e\n| \n",Fold,F);
 
 		// BEFORE UPDATING the par vector store the old gradient & Parameter vector (for BFGS)
 		VecCopy(P,Pold);
@@ -857,17 +857,17 @@ PetscErrorCode AdjointOptimisation(Vec P, PetscScalar F, Vec grad, void *ctx)
 			{
 				IOparam->factor2array[i] = IOparam->maxfac;
 			}
-			PetscPrintf(PETSC_COMM_WORLD,"LS factor for %d.Parameter = %.5e\n",i+1,IOparam->factor2array[i]);
+			PetscPrintf(PETSC_COMM_WORLD,"| LS factor for %d.Parameter = %.5e\n",i+1,IOparam->factor2array[i]);
 		}	
-		PetscPrintf(PETSC_COMM_WORLD,"\n");
+		PetscPrintf(PETSC_COMM_WORLD,"| \n");
 
 		// Display the current state of the parameters
 		for(j = 0; j < IOparam->mdN; j++)
 		{
-			PetscPrintf(PETSC_COMM_WORLD,"%D. Diff parameter value = %.5e\n",j+1,dPtemp[j]);
+			PetscPrintf(PETSC_COMM_WORLD,"| %D. Diff parameter value = %.5e\n",j+1,dPtemp[j]);
 		}
 
-		PetscPrintf(PETSC_COMM_WORLD,"\n");
+		PetscPrintf(PETSC_COMM_WORLD,"| \n");
 
 
 		// Update parameter
@@ -890,12 +890,12 @@ PetscErrorCode AdjointOptimisation(Vec P, PetscScalar F, Vec grad, void *ctx)
 		VecGetArray(P,&Par);
 		for(j = 0; j < IOparam->mdN; j++)
 		{
-			PetscPrintf(PETSC_COMM_WORLD,"%D. Parameter value = %.5e\n",j+1,Par[j]);
+			PetscPrintf(PETSC_COMM_WORLD,"| %D. Parameter value = %.5e\n",j+1,Par[j]);
 		}
 		VecRestoreArray(P,&Par);
 
 
-		PetscPrintf(PETSC_COMM_WORLD,"---------------------------------------------------------------------------\n\n");
+		PetscPrintf(PETSC_COMM_WORLD,"| -------------------------------------------------------------------------\n\n");
 		
 
 		// Give the updated values to the code  (actually unfortunately necessary here and at the top of this function - need to rearrange that)
@@ -909,7 +909,7 @@ PetscErrorCode AdjointOptimisation(Vec P, PetscScalar F, Vec grad, void *ctx)
 		IOparam->count += 1;
 		if(IOparam->count>IOparam->maxit)
 		{
-			PetscPrintf(PETSC_COMM_WORLD,"\n\nMaximum number of invere iterations reached\n\n");
+			PetscPrintf(PETSC_COMM_WORLD,"\n\n| Maximum number of invere iterations reached\n\n");
 			break;
 		}
 	}
@@ -946,7 +946,7 @@ PetscErrorCode AdjointOptimisationTAO(Tao tao, Vec P, PetscReal *F, Vec grad, vo
 		CurVal   =	Par[j];						// value of parameter
         strcpy(CurName, IOparam->type_name[j]);	// name
 
-		PetscPrintf(PETSC_COMM_WORLD,"*** AdjointOptimisationTAO: Current parameter %s[%i]=%f \n",CurName,CurPhase,CurVal);
+		PetscPrintf(PETSC_COMM_WORLD,"| *** AdjointOptimisationTAO: Current parameter %s[%i]=%f \n",CurName,CurPhase,CurVal);
 	//	ierr = DeleteMaterialParameterToCommandLineOptions(CurName, CurPhase); 		CHKERRQ(ierr);
 	//	ierr = AddMaterialParameterToCommandLineOptions(CurName, CurPhase, CurVal); 	CHKERRQ(ierr);
     	//ierr = CreateModifiedMaterialDatabase(&IOparam, &fb);     		CHKERRQ(ierr);
@@ -984,7 +984,7 @@ PetscErrorCode AdjointOptimisationTAO(Tao tao, Vec P, PetscReal *F, Vec grad, vo
 		CurVal   =	Par[j];						// value of parameter
         strcpy(CurName, IOparam->type_name[j]);	// name
 
-		PetscPrintf(PETSC_COMM_WORLD,"%D. Parameter value, %s[%i] = %.5e\n",j+1,CurName,CurPhase,Par[j]);
+		PetscPrintf(PETSC_COMM_WORLD,"| %D. Parameter value, %s[%i] = %.5e\n",j+1,CurName,CurPhase,Par[j]);
 		
 		ierr = DeleteMaterialParameterToCommandLineOptions(CurName, CurPhase); 		CHKERRQ(ierr);
 		ierr = AddMaterialParameterToCommandLineOptions(CurName, CurPhase, CurVal); 	CHKERRQ(ierr);
@@ -992,7 +992,7 @@ PetscErrorCode AdjointOptimisationTAO(Tao tao, Vec P, PetscReal *F, Vec grad, vo
 	VecRestoreArray(P,&Par);
 
 	// Relative cost function
-	PetscPrintf(PETSC_COMM_WORLD,"mfit / mfit0 = %.5e\n------------------------------------------\n\n",IOparam->mfit/IOparam->mfitini);
+	PetscPrintf(PETSC_COMM_WORLD,"| mfit / mfit0 = %.5e\n| ------------------------------------------\n\n",IOparam->mfit/IOparam->mfitini);
 
 	VecGetArray(IOparam->fcconv,&fcconvar);
 	fcconvar[IOparam->count] = IOparam->mfit/IOparam->mfitini;
@@ -1002,7 +1002,7 @@ PetscErrorCode AdjointOptimisationTAO(Tao tao, Vec P, PetscReal *F, Vec grad, vo
 	IOparam->count += 1;
 	if(IOparam->count>1500)
 	{
-		PetscPrintf(PETSC_COMM_WORLD,"\n\n\nEXCEEDED 1500 FUNCTION EVALUATIONS (consider changing inversion options)\n\n\n");
+		PetscPrintf(PETSC_COMM_WORLD,"\n\n\n| EXCEEDED 1500 FUNCTION EVALUATIONS (consider changing inversion options)\n\n\n");
 		PetscFunctionReturn(0);
 	}
 
@@ -1048,9 +1048,9 @@ PetscErrorCode AdjointOptimisationTAO(Tao tao, Vec P, PetscReal *F, Vec grad, vo
 		else if(IOparam->Gr == 0)
 		{
  			// -------- Get gradients with respect of cost function -------------
-			PetscPrintf(PETSC_COMM_WORLD,"**************************************************************************\n");
-            PetscPrintf(PETSC_COMM_WORLD,"                      COMPUTATION OF THE COST FUNCTION                    \n");
-            PetscPrintf(PETSC_COMM_WORLD,"**************************************************************************\n");
+			PetscPrintf(PETSC_COMM_WORLD,"| **************************************************************************\n");
+            PetscPrintf(PETSC_COMM_WORLD,"|                       COMPUTATION OF THE COST FUNCTION                    \n");
+            PetscPrintf(PETSC_COMM_WORLD,"| **************************************************************************\n");
             
 			PetscScalar Ad;
 	
@@ -1075,11 +1075,11 @@ PetscErrorCode AdjointOptimisationTAO(Tao tao, Vec P, PetscReal *F, Vec grad, vo
 	 		ierr = VecDuplicate(jr->gsol, &aop->dF);                                CHKERRQ(ierr);
 	 		ierr = VecCopy(xini,aop->dF); 		                                    CHKERRQ(ierr);
 
-	 		PetscPrintf(PETSC_COMM_WORLD,"Current Cost function = %.10e\n",IOparam->mfit);
+	 		PetscPrintf(PETSC_COMM_WORLD,"| Current Cost function = %.10e\n",IOparam->mfit);
 		}
 		else
 		{
-			PetscPrintf(PETSC_COMM_WORLD,"ERROR choose Inv_Gr = 0 or = 1\n");
+			PetscPrintf(PETSC_COMM_WORLD,"| ERROR choose Inv_Gr = 0 or = 1\n");
 		}
 		
 
@@ -1115,7 +1115,7 @@ PetscErrorCode AdjointOptimisationTAO(Tao tao, Vec P, PetscReal *F, Vec grad, vo
  	 	 	 	PetscViewerBinaryOpen(PETSC_COMM_WORLD,"Forward_Solution_Vel.bin",FILE_MODE_READ,&viewerVel);
  	 	 	 	ierrp = VecLoad(IOparam->xini,viewerVel);                           CHKERRQ(ierrp);
 
- 	 	 	 	if (ierrp){PetscPrintf(PETSC_COMM_WORLD,"ADJOINT ERROR: Could not load the initial solution (xini)\n");PetscFunctionReturn(1);}
+ 	 	 	 	if (ierrp){PetscPrintf(PETSC_COMM_WORLD,"| ADJOINT ERROR: Could not load the initial solution (xini)\n");PetscFunctionReturn(1);}
 
  	 	 	    // Destroy
  	 	 	  	PetscViewerDestroy(&viewerVel);
@@ -1126,9 +1126,9 @@ PetscErrorCode AdjointOptimisationTAO(Tao tao, Vec P, PetscReal *F, Vec grad, vo
  		// Put the proportion into the Projection vector where the user defined the computation coordinates (P) & get the velocities
  		ierr = AdjointPointInPro(jr, aop, IOparam, surf);                       CHKERRQ(ierr);
 
- 		PetscPrintf(PETSC_COMM_WORLD,"||**************************************************************************\n");
-        PetscPrintf(PETSC_COMM_WORLD,"||                      COMPUTATION OF THE COST FUNCTION                    \n");
-        PetscPrintf(PETSC_COMM_WORLD,"||**************************************************************************\n");
+ 		PetscPrintf(PETSC_COMM_WORLD,"| ************************************************************************\n");
+        PetscPrintf(PETSC_COMM_WORLD,"|                       COMPUTATION OF THE COST FUNCTION                    \n");
+        PetscPrintf(PETSC_COMM_WORLD,"| ************************************************************************\n");
 
 
 	 	// Copy temporary comparison solution
@@ -1148,7 +1148,7 @@ PetscErrorCode AdjointOptimisationTAO(Tao tao, Vec P, PetscReal *F, Vec grad, vo
 		ierr = VecDuplicate(jr->gsol, &aop->dF);        CHKERRQ(ierr);
 		ierr = VecCopy(xini,aop->dF); 		            CHKERRQ(ierr);
 		
- 		PetscPrintf(PETSC_COMM_WORLD,"Current Cost function = %.5e\n",IOparam->mfit);
+ 		PetscPrintf(PETSC_COMM_WORLD,"| Current Cost function = %.5e\n",IOparam->mfit);
 
  		// Get the gradients
  		ierr = AdjointComputeGradients(jr, aop, nl, snes, IOparam, surf);        CHKERRQ(ierr);
@@ -1158,7 +1158,7 @@ PetscErrorCode AdjointOptimisationTAO(Tao tao, Vec P, PetscReal *F, Vec grad, vo
 	}
  	else
  	{
- 	 	PetscPrintf(PETSC_COMM_WORLD,"ADJOINT ERROR: ComputeAdjointGradient value is not defined ; Choose between [1-2]\n");
+ 	 	PetscPrintf(PETSC_COMM_WORLD,"| ADJOINT ERROR: ComputeAdjointGradient value is not defined ; Choose between [1-2]\n");
  	 	PetscFunctionReturn(1);
  	}
 
@@ -1169,9 +1169,9 @@ PetscErrorCode AdjointOptimisationTAO(Tao tao, Vec P, PetscReal *F, Vec grad, vo
 #define __FUNCT__ "AdjointComputeGradients"
 PetscErrorCode AdjointComputeGradients(JacRes *jr, AdjGrad *aop, NLSol *nl, SNES snes, ModParam *IOparam, FreeSurf *surf)
 {
-	PetscPrintf(PETSC_COMM_WORLD,"************************************************************************** \n");
-    PetscPrintf(PETSC_COMM_WORLD,"                      COMPUTATION OF THE GRADIENTS                         \n");
-    PetscPrintf(PETSC_COMM_WORLD,"************************************************************************** \n");
+	PetscPrintf(PETSC_COMM_WORLD,"| ************************************************************************ \n");
+    PetscPrintf(PETSC_COMM_WORLD,"|                       COMPUTATION OF THE GRADIENTS                       \n");
+    PetscPrintf(PETSC_COMM_WORLD,"| ************************************************************************ \n| ");
 
 
 	PetscErrorCode ierr;
@@ -1228,7 +1228,7 @@ PetscErrorCode AdjointComputeGradients(JacRes *jr, AdjGrad *aop, NLSol *nl, SNES
     ierr = PetscOptionsGetScalar(NULL, NULL,"-FD_epsilon_adjoint",&aop->FD_epsilon,&flg); CHKERRQ(ierr);
     if (flg)
     {
-        PetscPrintf(PETSC_COMM_WORLD,"    Finite difference step size for Adjoint dr/dp calculation set to %e \n", aop->FD_epsilon);
+        PetscPrintf(PETSC_COMM_WORLD,"|     Finite difference step size for Adjoint dr/dp calculation set to %e \n", aop->FD_epsilon);
     }
 
 
@@ -1253,14 +1253,14 @@ PetscErrorCode AdjointComputeGradients(JacRes *jr, AdjGrad *aop, NLSol *nl, SNES
 		}
 		else 
 		{
-			PetscPrintf(PETSC_COMM_WORLD,"Field based gradient only for density programmed! \n");
+			PetscPrintf(PETSC_COMM_WORLD,"| Field based gradient only for density programmed! \n");
 		}
 	}
 	else // Phase based gradients
 	{
-        PetscPrintf(PETSC_COMM_WORLD,"\nGradients: \n");
-        PetscPrintf(PETSC_COMM_WORLD,"                   Parameter   |  Gradient (dimensional)  \n");    
-        PetscPrintf(PETSC_COMM_WORLD,"                 -------------   ------------------------ \n");    
+        PetscPrintf(PETSC_COMM_WORLD,"\n| Gradients: \n");
+        PetscPrintf(PETSC_COMM_WORLD,"|                    Parameter   |  Gradient (dimensional)  \n");    
+        PetscPrintf(PETSC_COMM_WORLD,"|                  -------------   ------------------------ \n");    
       
 		//=================
 		// PARAMETER LOOP
@@ -1313,11 +1313,11 @@ PetscErrorCode AdjointComputeGradients(JacRes *jr, AdjGrad *aop, NLSol *nl, SNES
 			IOparam->grd[j] 	=   -grd*aop->CurScal;
 
 			// Print result
-            PetscPrintf(PETSC_COMM_WORLD,"         %5d:   %+5s[%2i]           %- 1.6e \n",j+1, CurName, CurPhase, IOparam->grd[j]);
+            PetscPrintf(PETSC_COMM_WORLD,"|          %5d:   %+5s[%2i]           %- 1.6e \n",j+1, CurName, CurPhase, IOparam->grd[j]);
 
 		}
 		
-        PetscPrintf(PETSC_COMM_WORLD,"\n");
+        PetscPrintf(PETSC_COMM_WORLD,"| \n| ");
 		VecRestoreArray(IOparam->P,&Par);
 		// Destroy overwritten residual vector
 		ierr = VecDestroy(&res);
@@ -1326,10 +1326,10 @@ PetscErrorCode AdjointComputeGradients(JacRes *jr, AdjGrad *aop, NLSol *nl, SNES
 	if(IOparam->mdI<_MAX_OBS_ && IOparam->Ap == 1)
 	{
 
-        PetscPrintf(PETSC_COMM_WORLD,"\nObservation points: \n");
-        PetscPrintf(PETSC_COMM_WORLD,"                                                        Velocity          \n");    
-        PetscPrintf(PETSC_COMM_WORLD,"                      Location            |      Target         Value     \n");    
-        PetscPrintf(PETSC_COMM_WORLD,"      ------------------------------------  -- ------------- ------------- \n");    
+        PetscPrintf(PETSC_COMM_WORLD,"\n| Observation points: \n");
+        PetscPrintf(PETSC_COMM_WORLD,"|                                                         Velocity          \n");    
+        PetscPrintf(PETSC_COMM_WORLD,"|                       Location            |      Target         Value     \n");    
+        PetscPrintf(PETSC_COMM_WORLD,"|       ------------------------------------  -- ------------- ------------- \n");    
 
 
 		// get the current velocities at the observation point
@@ -1365,7 +1365,7 @@ PetscErrorCode AdjointComputeGradients(JacRes *jr, AdjGrad *aop, NLSol *nl, SNES
                 y  =  IOparam->Ay[i]*scal->length;
                 z  =  IOparam->Az[i]*scal->length;
                               
-			    PetscPrintf(PETSC_COMM_SELF,"%-4d: [%10.4f; %10.4f; %10.4f]  %s % 8.5e  % 8.5e \n",i,x,y,z, vel_com, CostFunc, vel);
+			    PetscPrintf(PETSC_COMM_SELF,"| %-4d: [%10.4f; %10.4f; %10.4f]  %s % 8.5e  % 8.5e \n",i,x,y,z, vel_com, CostFunc, vel);
 
 				if (IOparam->Adv == 1)     // advect the point?
 				{
@@ -1380,7 +1380,7 @@ PetscErrorCode AdjointComputeGradients(JacRes *jr, AdjGrad *aop, NLSol *nl, SNES
 		VecRestoreArray(aop->vy,&vy);
 		VecRestoreArray(aop->vz,&vz);
 	}
-    PetscPrintf(PETSC_COMM_WORLD,"\n");
+    PetscPrintf(PETSC_COMM_WORLD,"| \n| ");
     
 	// Clean
 	ierr = VecDestroy(&psi);
@@ -1391,7 +1391,7 @@ PetscErrorCode AdjointComputeGradients(JacRes *jr, AdjGrad *aop, NLSol *nl, SNES
 
 	PetscTime(&cputime_end);
     ierr = MPI_Barrier(PETSC_COMM_WORLD); CHKERRQ(ierr); // because of PETSC_COMM_SELF above
-	PetscPrintf(PETSC_COMM_WORLD,"Computation was succesful & took %g s\n******************************************\n",cputime_end - cputime_start);
+	PetscPrintf(PETSC_COMM_WORLD,"| Computation was succesful & took %g s\n| ******************************************\n",cputime_end - cputime_start);
 
 	PetscFunctionReturn(0);
 }
@@ -2152,7 +2152,7 @@ PetscErrorCode AdjointGradientPerturbParameter(NLSol *nl, PetscInt CurPar, Petsc
 	}
 	else
 	{
-		PetscPrintf(PETSC_COMM_WORLD,"ADJOINT ERROR: Definition of the current parameter is not defined ; Choose between [0-15]\n");
+		PetscPrintf(PETSC_COMM_WORLD,"| ADJOINT ERROR: Definition of the current parameter is not defined ; Choose between [0-15]\n");
 		PetscFunctionReturn(1);
 	}
 
@@ -2860,7 +2860,7 @@ PetscErrorCode AddMaterialParameterToCommandLineOptions(char *name, PetscInt ID,
     
     //PrintOutput = PETSC_TRUE;
     if (PrintOutput){
-        PetscPrintf(PETSC_COMM_WORLD,"**** Added option %s=%s to the database. **** \n",option,option_value);
+        PetscPrintf(PETSC_COMM_WORLD,"| **** Added option %s=%s to the database. **** \n",option,option_value);
         PetscOptionsView(NULL,PETSC_VIEWER_STDOUT_WORLD);
     }
 
@@ -2884,7 +2884,7 @@ PetscErrorCode DeleteMaterialParameterToCommandLineOptions(char *name, PetscInt 
     
   //  PrintOutput = PETSC_TRUE;
     if (PrintOutput){
-    	PetscPrintf(PETSC_COMM_WORLD,"**** Deleted option %s from the database. **** \n",option);
+    	PetscPrintf(PETSC_COMM_WORLD,"| **** Deleted option %s from the database. **** \n",option);
        	PetscOptionsView(NULL,PETSC_VIEWER_STDOUT_WORLD);
     }
 
@@ -2924,7 +2924,7 @@ PetscErrorCode CreateModifiedMaterialDatabase(ModParam **p_IOparam)
 
     //PrintOutput = PETSC_TRUE;
     if (PrintOutput){
-        PetscPrintf(PETSC_COMM_WORLD,"**** Created Modified material database **** \n");
+        PetscPrintf(PETSC_COMM_WORLD,"| **** Created Modified material database **** \n");
     }
 
     PetscFunctionReturn(0);
