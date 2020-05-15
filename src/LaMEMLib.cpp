@@ -195,7 +195,7 @@ PetscErrorCode LaMEMLibCreate(LaMEMLib *lm, void *param )
 	ierr = DBMatCreate(&lm->dbm, fb, PETSC_TRUE); 	CHKERRQ(ierr);
 
 	// Overwrite material parameters for inverse run
-	ierr = MatPropSetFromLibCall(&lm->jr, (ModParam *)param, fb);
+	// ierr = MatPropSetFromLibCall(&lm->jr, (ModParam *)param, fb);
 
 	// create parallel grid
 	ierr = FDSTAGCreate(&lm->fs, fb); CHKERRQ(ierr);

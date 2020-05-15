@@ -160,9 +160,9 @@ PetscInt FindPointInCellAdjoint(
 	return(L);
 }
 //---------------------------------------------------------------------------
-void swapStruct(struct DBMat **A, struct DBMat *B){
-    struct DBMat temp = **A;
-    **A = *B;
+void swapStruct(struct Material_t *A, struct Material_t *B){
+    struct Material_t temp = *A;
+    *A = *B;
     *B = temp;
 }
 //---------------------------------------------------------------------------
@@ -1269,7 +1269,7 @@ PetscErrorCode AdjointComputeGradients(JacRes *jr, AdjGrad *aop, NLSol *nl, SNES
 			CurPar   = IOparam->typ[j];
 			CurVal 	 = Par[j];
             strcpy(CurName, IOparam->type_name[j]);
-#if 1
+#if 0
 			// Perturb the current parameter in the current phase
     		ierr = AdjointGradientPerturbParameter(nl, CurPar, CurPhase, aop, scal);   CHKERRQ(ierr);
 
@@ -1297,7 +1297,14 @@ PetscErrorCode AdjointComputeGradients(JacRes *jr, AdjGrad *aop, NLSol *nl, SNES
 
 			ierr 	= CreateModifiedMaterialDatabase(&IOparam);     			CHKERRQ(ierr);		// update LaMEM material DB
 
-			swapStruct(&nl->pc->pm->jr->dbm,&IOparam->dbm_modified);
+			//struct DBMat temp = **A;
+			//**A = *B;
+			//*B = temp;
+			PetscPrintf(PETSC_COMM_WORLD,"DEBUGDEBUGDEBUGDEBUG a = %.20f; \n",nl->pc->pm->jr->dbm->phases[0].n);
+			PetscPrintf(PETSC_COMM_WORLD,"DEBUGDEBUGDEBUGDEBUG a = %.20f;\n\n",IOparam->dbm_modified.phases[0].n);
+			swapStruct(&nl->pc->pm->jr->dbm->phases[0],&IOparam->dbm_modified.phases[0]);
+			PetscPrintf(PETSC_COMM_WORLD,"DEBUGDEBUGDEBUGDEBUG a = %.20f; \n",nl->pc->pm->jr->dbm->phases[0].n);
+			PetscPrintf(PETSC_COMM_WORLD,"DEBUGDEBUGDEBUGDEBUG a = %.20f;\n\n",IOparam->dbm_modified.phases[0].n);
 
 			// Copy modified material DB to LaMEM structure
 			//ierr  = PetscMemcpy(&nl->pc->pm->jr->dbm,       IOparam->dbm_modified,     size_t(nl->pc->pm->jr->dbm->numPhases)*sizeof(DBMat) ); 		CHKERRQ(ierr);
@@ -2934,7 +2941,6 @@ PetscErrorCode CreateModifiedMaterialDatabase(ModParam **p_IOparam)
 
     // Call material database with modified parameters
     ierr = DBMatCreate(&IOparam->dbm_modified, fb, PETSC_TRUE); 	CHKERRQ(ierr);  
-
 
     PrintOutput = PETSC_TRUE;
     if (PrintOutput){
