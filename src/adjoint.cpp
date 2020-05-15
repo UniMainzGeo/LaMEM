@@ -214,7 +214,7 @@ values. Also performs error-checking
 */
 #undef __FUNCT__
 #define __FUNCT__ "LaMEMAdjointReadInputSetDefaults"
-PetscErrorCode LaMEMAdjointReadInputSetDefaults(ModParam **p_IOparam, FB **p_fb, Adjoint_Vecs *Adjoint_Vectors)
+PetscErrorCode LaMEMAdjointReadInputSetDefaults(ModParam **p_IOparam, Adjoint_Vecs *Adjoint_Vectors)
 {
 	PetscFunctionBegin;
 	PetscErrorCode 	ierr;
@@ -226,8 +226,9 @@ PetscErrorCode LaMEMAdjointReadInputSetDefaults(ModParam **p_IOparam, FB **p_fb,
 	Scaling         scal;
     DBMat           dbm;
 
-	IOparam 			= 	*p_IOparam;	// simplifies the code below
-	fb 					=	*p_fb;
+	IOparam 			= 	*p_IOparam;		// simplifies the code below
+	fb 					=	IOparam->fb;	// filebuffer
+
 
 	// Some defaults
 	IOparam->FS         = 0;
@@ -566,7 +567,7 @@ PetscErrorCode LaMEMAdjointReadInputSetDefaults(ModParam **p_IOparam, FB **p_fb,
 //---------------------------------------------------------------------------
 #undef __FUNCT__
 #define __FUNCT__ "LaMEMAdjointMain"
-PetscErrorCode LaMEMAdjointMain(ModParam *IOparam, FB *fb)
+PetscErrorCode LaMEMAdjointMain(ModParam *IOparam)
 {
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
@@ -577,18 +578,14 @@ PetscErrorCode LaMEMAdjointMain(ModParam *IOparam, FB *fb)
 	Scaling         scal;
     FB              *fb1;
     
+
 	IOparam->count = 1;  // iteration counter for the initial cost function
 	F              = 1e100;
 
 
 	// Read input parameters
-    ierr = LaMEMAdjointReadInputSetDefaults(&IOparam, &fb, &Adjoint_Vectors); CHKERRQ(ierr);
-	
-	// DEBUGGING: Add a parameter, modify a copy of the Material database, and remove the parameter again
-	//ierr = AddMaterialParameterToCommandLineOptions("rho", 0, 5); 	CHKERRQ(ierr);
-    //ierr = CreateModifiedMaterialDatabase(&IOparam, &fb);     		CHKERRQ(ierr);
-	//ierr = DeleteMaterialParameterToCommandLineOptions("rho", 0); 	CHKERRQ(ierr);
-    //PetscOptionsView(NULL,PETSC_VIEWER_STDOUT_WORLD);
+    ierr = LaMEMAdjointReadInputSetDefaults(&IOparam, &Adjoint_Vectors); CHKERRQ(ierr);
+
 
 	//===========================================================
 	// SOLVE ADJOINT (by calling LaMEMLibMain)
@@ -1117,9 +1114,9 @@ PetscErrorCode AdjointOptimisationTAO(Tao tao, Vec P, PetscReal *F, Vec grad, vo
  		// Put the proportion into the Projection vector where the user defined the computation coordinates (P) & get the velocities
  		ierr = AdjointPointInPro(jr, aop, IOparam, surf);                       CHKERRQ(ierr);
 
- 		PetscPrintf(PETSC_COMM_WORLD,"**************************************************************************\n");
-        PetscPrintf(PETSC_COMM_WORLD,"                      COMPUTATION OF THE COST FUNCTION                    \n");
-        PetscPrintf(PETSC_COMM_WORLD,"**************************************************************************\n");
+ 		PetscPrintf(PETSC_COMM_WORLD,"||**************************************************************************\n");
+        PetscPrintf(PETSC_COMM_WORLD,"||                      COMPUTATION OF THE COST FUNCTION                    \n");
+        PetscPrintf(PETSC_COMM_WORLD,"||**************************************************************************\n");
 
 
 	 	// Copy temporary comparison solution
@@ -1172,7 +1169,7 @@ PetscErrorCode AdjointComputeGradients(JacRes *jr, AdjGrad *aop, NLSol *nl, SNES
 	KSP                 ksp;
 	KSPConvergedReason  reason;
 	PetscInt            i, j, CurPhase, CurPar, lrank, grank, fd;
-	PetscScalar         dt, grd, Perturb, coord_local[3], *vx, *vy, *vz;
+	PetscScalar         dt, grd, Perturb, coord_local[3], *vx, *vy, *vz, *Par, CurVal;
 	Vec 				res_pert, sol, psi, drdp, res, Perturb_vec;
 	PC                  ipc;
 	Scaling             *scal;
@@ -1256,6 +1253,7 @@ PetscErrorCode AdjointComputeGradients(JacRes *jr, AdjGrad *aop, NLSol *nl, SNES
 		// PARAMETER LOOP
 		//=================
         ierr = VecDuplicate(jr->gsol, &Perturb_vec);        CHKERRQ(ierr);
+		VecGetArray(IOparam->P,&Par);
 		for(j = 0; j < IOparam->mdN; j++)
 		{
 			// Get the initial residual since it is overwritten in VecAYPX
@@ -1264,8 +1262,9 @@ PetscErrorCode AdjointComputeGradients(JacRes *jr, AdjGrad *aop, NLSol *nl, SNES
 			// Get current phase and parameter which is being perturbed
 			CurPhase = IOparam->phs[j];
 			CurPar   = IOparam->typ[j];
+			CurVal 	 = Par[j];
             strcpy(CurName, IOparam->type_name[j]);
-
+#if 1
 			// Perturb the current parameter in the current phase
     		ierr = AdjointGradientPerturbParameter(nl, CurPar, CurPhase, aop, scal);   CHKERRQ(ierr);
 
@@ -1280,6 +1279,40 @@ PetscErrorCode AdjointComputeGradients(JacRes *jr, AdjGrad *aop, NLSol *nl, SNES
 			// Reset perturbed parameter
 			ierr = AdjointGradientResetParameter(nl, CurPar, CurPhase, aop);           CHKERRQ(ierr);
 
+#endif
+#if 0
+			// Perturb parameter
+			Perturb = aop->FD_epsilon*CurVal;
+			ierr 	= VecSet(Perturb_vec,Perturb);                   									CHKERRQ(ierr);        // epsilon (finite difference)      
+
+			PetscPrintf(PETSC_COMM_WORLD,"*** dr/dp: Perturbing parameter %s[%i]=%f to value %f \n",CurName,CurPhase,CurVal, CurVal + Perturb);
+			// Set as command-line option & create updated material database
+			ierr 	= DeleteMaterialParameterToCommandLineOptions(CurName, CurPhase); 					CHKERRQ(ierr);
+			ierr 	= AddMaterialParameterToCommandLineOptions(CurName, CurPhase, CurVal + Perturb); 	CHKERRQ(ierr);
+
+			ierr 	= CreateModifiedMaterialDatabase(&IOparam);     			CHKERRQ(ierr);		// update LaMEM material DB
+
+			// Copy modified material DB to LaMEM structure
+			//ierr  = PetscMemcpy(&nl->pc->pm->jr->dbm,       IOparam->dbm_modified,     size_t(nl->pc->pm->jr->dbm->numPhases)*sizeof(DBMat) ); 		CHKERRQ(ierr);
+			//*nl->pc->pm->jr->dbm = IOparam->dbm_modified;
+
+			ierr = FormResidual(snes, sol, res_pert, nl);         CHKERRQ(ierr);        // compute the residual with the perturbed parameter
+			ierr = VecAYPX(res,-1,res_pert);                      CHKERRQ(ierr);        // res = (res_perturbed-res)
+			ierr = VecPointwiseDivide(drdp,res,Perturb_vec);      CHKERRQ(ierr);        //
+
+			// Reset parameter again
+			ierr 	= DeleteMaterialParameterToCommandLineOptions(CurName, CurPhase); 					CHKERRQ(ierr);
+			ierr 	= AddMaterialParameterToCommandLineOptions(CurName, CurPhase, CurVal ); 			CHKERRQ(ierr);
+		
+		//	ierr 	= CreateModifiedMaterialDatabase(&IOparam); 
+		//	*nl->pc->pm->jr->dbm = IOparam->dbm_modified;
+		//	ierr  = PetscMemcpy(nl->pc->pm->jr->dbm,       &IOparam->dbm_modified,     sizeof(DBMat) ); 		CHKERRQ(ierr);
+
+#endif
+
+
+
+
 			fd += fd;  // Needed to free vectors later  [OBSOLOTE]
 
 			// Compute the gradient (dF/dp = -psi^T * dr/dp) & Save gradient
@@ -1291,6 +1324,7 @@ PetscErrorCode AdjointComputeGradients(JacRes *jr, AdjGrad *aop, NLSol *nl, SNES
 
 		}
         PetscPrintf(PETSC_COMM_WORLD,"\n");
+		VecRestoreArray(IOparam->P,&Par);
 		// Destroy overwritten residual vector
 		ierr = VecDestroy(&res);
 	}
@@ -2871,8 +2905,7 @@ PetscErrorCode DeleteMaterialParameterToCommandLineOptions(char *name, PetscInt 
 */
 #undef __FUNCT__
 #define __FUNCT__ "CreateModifiedMaterialDatabase"
-PetscErrorCode CreateModifiedMaterialDatabase(ModParam **p_IOparam, FB **p_fb)
-
+PetscErrorCode CreateModifiedMaterialDatabase(ModParam **p_IOparam)
 {
     PetscErrorCode  ierr;
 	PetscBool       PrintOutput=PETSC_FALSE;
@@ -2881,9 +2914,10 @@ PetscErrorCode CreateModifiedMaterialDatabase(ModParam **p_IOparam, FB **p_fb)
     ModParam        *IOparam;
     PetscFunctionBegin;
 
-    fb          = *p_fb;
+   
     IOparam     = *p_IOparam;
-    
+    fb          = IOparam->fb;
+
     // Create scaling object
 	ierr = ScalingCreate(&scal, fb); CHKERRQ(ierr);
 

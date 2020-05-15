@@ -45,6 +45,7 @@
 #ifndef __objFunct_h__
 #define __objFunct_h__
 //---------------------------------------------------------------------------
+#include "parsing.h"	// filebuffer
 #include "adjoint.h"    // defines the global variables _MAX_PAR_ and _MAX_OBS_, which we need here
 
 struct FB;
@@ -101,6 +102,7 @@ struct ModParam
 	PetscScalar     *val;                               // model value
 	PetscScalar      mfit;                              // misfit value for current model parameters
     DBMat            dbm_modified;                      // holds the (modified) LaMEM material database
+	FB 				*fb;								// holds a copy of the filebuffer	
 
 	// Variables additionally needed for the adjoint TAO solver
 	Vec              xini;      	                    // Comparison velocity field for adjoint inversion

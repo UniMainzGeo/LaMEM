@@ -69,8 +69,8 @@ int main(int argc, char **argv)
 	ierr = PetscMalloc(sizeof(ModParam), &IOparam); CHKERRQ(ierr);
 
 	IOparam.use = _none_;
-	ierr = FBLoad(&fb, PETSC_FALSE); CHKERRQ(ierr);
-	ierr = getStringParam(fb, _OPTIONAL_, "Adjoint_mode", str, "None"); CHKERRQ(ierr);
+	ierr = FBLoad(&IOparam.fb, PETSC_FALSE); CHKERRQ(ierr);
+	ierr = getStringParam(IOparam.fb, _OPTIONAL_, "Adjoint_mode", str, "None"); CHKERRQ(ierr);
 	if     (!strcmp(str, "None"))                   IOparam.use = _none_;
 	else if(!strcmp(str, "Inversion"))              IOparam.use = _inversion_;
 	else if(!strcmp(str, "AdjointGradients"))       IOparam.use = _adjointgradients_;
@@ -82,17 +82,17 @@ int main(int argc, char **argv)
 	
 	if(IOparam.use == 0)
 	{
-		// Forward simulation
+		// Forward simulation	
 		ierr = LaMEMLibMain(NULL); CHKERRQ(ierr);
 	}
 	else
 	{
 		// Inversion or adjoint gradient computation
-		ierr = LaMEMAdjointMain(&IOparam, fb); CHKERRQ(ierr);
+		ierr = LaMEMAdjointMain(&IOparam); CHKERRQ(ierr);
 	}
 
 	// destroy file buffer
-	ierr = FBDestroy(&fb); CHKERRQ(ierr);
+	ierr = FBDestroy(&IOparam.fb); CHKERRQ(ierr);
 
 	ierr = PetscMemzero(&IOparam, sizeof(ModParam)); CHKERRQ(ierr);
 

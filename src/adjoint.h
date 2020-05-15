@@ -91,8 +91,8 @@ struct Adjoint_Vecs
 PetscErrorCode AdjointOptimisation(Vec P, PetscScalar F, Vec grad, void *ctx);
 PetscErrorCode AdjointOptimisationTAO(Tao tao, Vec P, PetscReal *F, Vec grad, void *ctx);
 PetscErrorCode LaMEMAdjointReadMaterialParameters(DBMat *dbm, FB  **p_fb);
-PetscErrorCode LaMEMAdjointReadInputSetDefaults(ModParam **p_IOparam, FB **p_fb, Adjoint_Vecs *Adjoint_Vectors);
-PetscErrorCode LaMEMAdjointMain(ModParam *IOparam, FB *fb);
+PetscErrorCode LaMEMAdjointReadInputSetDefaults(ModParam **p_IOparam, Adjoint_Vecs *Adjoint_Vectors);
+PetscErrorCode LaMEMAdjointMain(ModParam *IOparam);
  
 // Compute the gradients for the adjoint inversion
 PetscErrorCode AdjointObjectiveAndGradientFunction(AdjGrad *aop, JacRes *jr, NLSol *nl, ModParam *IOparam, SNES snes, FreeSurf *surf);
@@ -115,7 +115,7 @@ PetscErrorCode AdjointFormResidualFieldFDRho(SNES snes, Vec x, Vec psi, NLSol *n
 // Add or remove parameters from command-line database & update material DB
 PetscErrorCode AddMaterialParameterToCommandLineOptions(char *name, PetscInt ID, PetscScalar val);
 PetscErrorCode DeleteMaterialParameterToCommandLineOptions(char *name, PetscInt ID);
-PetscErrorCode CreateModifiedMaterialDatabase(ModParam **p_IOparam, FB **p_fb);
+PetscErrorCode CreateModifiedMaterialDatabase(ModParam **IOparam);
 
 // To clear the memory
 PetscErrorCode AdjointDestroy(AdjGrad *aop);
