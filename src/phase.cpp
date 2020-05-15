@@ -91,7 +91,7 @@ PetscErrorCode DBMatCreate(DBMat *dbm, FB *fb, PetscBool PrintOutput)
 		// read each individual softening law
 		for(jj = 0; jj < fb->nblocks; jj++)
 		{
-			ierr = DBMatReadSoft(dbm, fb, PETSC_TRUE); CHKERRQ(ierr);
+			ierr = DBMatReadSoft(dbm, fb, PrintOutput); CHKERRQ(ierr);
 
 			fb->blockID++;
 		}
@@ -125,7 +125,7 @@ PetscErrorCode DBMatCreate(DBMat *dbm, FB *fb, PetscBool PrintOutput)
 	// read each individual phase
 	for(jj = 0; jj < fb->nblocks; jj++)
 	{
-		ierr = DBMatReadPhase(dbm, fb, PETSC_TRUE); CHKERRQ(ierr);
+		ierr = DBMatReadPhase(dbm, fb, PrintOutput); CHKERRQ(ierr);
 
 		fb->blockID++;
 

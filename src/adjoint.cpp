@@ -725,12 +725,13 @@ PetscErrorCode AdjointOptimisation(Vec P, PetscScalar F, Vec grad, void *ctx)
 	PetscFunctionBegin;
 
 	// initialize
-	PetscInt 		i, j, LScount;
+	PetscInt 		i, j, LScount, CurPhase;
 	PetscScalar 	*Par, *Paroldar, *gradar, *dPtemp, *fcconvar;
 	PetscScalar   	Fold;
 	ModParam    	*IOparam;
 	IOparam     	= (ModParam*)ctx;
 	Vec         	dP,dgrad,Pold,gradold,r;
+	char 			CurName[_str_len_];
 
 	// get parameter values
 	VecDuplicate(IOparam->P,&dP);
@@ -785,6 +786,10 @@ PetscErrorCode AdjointOptimisation(Vec P, PetscScalar F, Vec grad, void *ctx)
 			for(i=0;i<IOparam->mdN;i++)
 			{
 				Par[i] = Paroldar[i] + dPtemp[i];
+
+				CurPhase = IOparam->phs[i];
+				strcpy(CurName, IOparam->type_name[i]);
+				ierr = AddMaterialParameterToCommandLineOptions(CurName, CurPhase, Par[i]); CHKERRQ(ierr);
 			}
 			VecRestoreArray(P,&Par);
 			VecRestoreArray(Pold,&Paroldar);
@@ -864,12 +869,17 @@ PetscErrorCode AdjointOptimisation(Vec P, PetscScalar F, Vec grad, void *ctx)
 
 		PetscPrintf(PETSC_COMM_WORLD,"\n");
 
+
 		// Update parameter
 		for(i=0;i<IOparam->mdN;i++)
 		{
 			if(F>IOparam->tol)
 			{
 				Par[i] = Par[i] + dPtemp[i];
+
+				CurPhase = IOparam->phs[i];
+				strcpy(CurName, IOparam->type_name[i]);
+				ierr = AddMaterialParameterToCommandLineOptions(CurName, CurPhase, Par[i]); CHKERRQ(ierr);
 			}
 		}
 		VecRestoreArray(grad,&gradar);
@@ -881,9 +891,6 @@ PetscErrorCode AdjointOptimisation(Vec P, PetscScalar F, Vec grad, void *ctx)
 		for(j = 0; j < IOparam->mdN; j++)
 		{
 			PetscPrintf(PETSC_COMM_WORLD,"%D. Parameter value = %.5e\n",j+1,Par[j]);
-
-
-
 		}
 		VecRestoreArray(P,&Par);
 
@@ -1261,18 +1268,6 @@ PetscErrorCode AdjointComputeGradients(JacRes *jr, AdjGrad *aop, NLSol *nl, SNES
 
         ierr = VecDuplicate(jr->gsol, &Perturb_vec);        CHKERRQ(ierr);
 		VecGetArray(IOparam->P,&Par);
-
-#if 1
-		// Reset all parameters to the parameters P   // TEMPORARY CODEy
-		for(i = 0; i < IOparam->mdN; i++)
-		{
-			CurPhasetemp = IOparam->phs[i];
-			CurValtemp = Par[i];
-			strcpy(CurNametemp, IOparam->type_name[i]);
-			ierr = AddMaterialParameterToCommandLineOptions(CurNametemp, CurPhasetemp, CurValtemp); CHKERRQ(ierr);
-		}
-#endif
-
 		for(j = 0; j < IOparam->mdN; j++)
 		{
 			// Get the initial residual since it is overwritten in VecAYPX
@@ -1283,67 +1278,35 @@ PetscErrorCode AdjointComputeGradients(JacRes *jr, AdjGrad *aop, NLSol *nl, SNES
 			CurPar   = IOparam->typ[j];
 			CurVal 	 = Par[j];
             strcpy(CurName, IOparam->type_name[j]);
-#if 0
-			// Perturb the current parameter in the current phase
-    		ierr = AdjointGradientPerturbParameter(nl, CurPar, CurPhase, aop, scal);   CHKERRQ(ierr);
 
-			// get the actual used perturbation parameter which is aop->Perturb*parameter
-			Perturb = aop->Perturb;                                                     // this stores epsilon*parameter
-			ierr = VecSet(Perturb_vec,Perturb);                   CHKERRQ(ierr);        // epsilon (finite difference)        
-
-			ierr = FormResidual(snes, sol, res_pert, nl);         CHKERRQ(ierr);        // compute the residual with the perturbed parameter
-			ierr = VecAYPX(res,-1,res_pert);                      CHKERRQ(ierr);        // res = (res_perturbed-res)
-			ierr = VecPointwiseDivide(drdp,res,Perturb_vec);      CHKERRQ(ierr);        //
-
-			// Reset perturbed parameter
-			ierr = AdjointGradientResetParameter(nl, CurPar, CurPhase, aop);           CHKERRQ(ierr);
-
-#endif
-#if 1
 			// Perturb parameter
 			Perturb = aop->FD_epsilon*CurVal;
 			ierr 	= VecSet(Perturb_vec,Perturb);                   									CHKERRQ(ierr);        // epsilon (finite difference)   
 			aop->CurScal = (scal->velocity)/(1);       // TEMPORARY CODE (should be automatized, necessary?)
 
-			PetscPrintf(PETSC_COMM_WORLD,"*** dr/dp: Perturbing parameter %s[%i]=%f to value %f \n",CurName,CurPhase,CurVal, CurVal + Perturb);
+			//PetscPrintf(PETSC_COMM_WORLD,"*** dr/dp: Perturbing parameter %s[%i]=%f to value %f \n",CurName,CurPhase,CurVal, CurVal + Perturb);
+
 			// Set as command-line option & create updated material database
 			ierr 	= DeleteMaterialParameterToCommandLineOptions(CurName, CurPhase); 					CHKERRQ(ierr);
 			ierr 	= AddMaterialParameterToCommandLineOptions(CurName, CurPhase, CurVal + Perturb); 	CHKERRQ(ierr);
 
-			ierr 	= CreateModifiedMaterialDatabase(&IOparam);     			CHKERRQ(ierr);		// update LaMEM material DB
+			ierr 	= CreateModifiedMaterialDatabase(&IOparam);     									CHKERRQ(ierr);		// update LaMEM material DB
 
-			PetscPrintf(PETSC_COMM_WORLD,"DEBUGDEBUGDEBUGDEBUG a = %.20f; \n",nl->pc->pm->jr->dbm->phases[0].n);
-			PetscPrintf(PETSC_COMM_WORLD,"DEBUGDEBUGDEBUGDEBUG a = %.20f;\n\n",IOparam->dbm_modified.phases[0].n);
-			PetscPrintf(PETSC_COMM_WORLD,"DEBUGDEBUGDEBUGDEBUG a = %.20f; \n",nl->pc->pm->jr->dbm->phases[1].n);
-			PetscPrintf(PETSC_COMM_WORLD,"DEBUGDEBUGDEBUGDEBUG a = %.20f;\n\n",IOparam->dbm_modified.phases[1].n);
-			PetscPrintf(PETSC_COMM_WORLD,"DEBUGDEBUGDEBUGDEBUG a = %.20f; \n",nl->pc->pm->jr->dbm->phases[IOparam->phs[j]].n);
-			PetscPrintf(PETSC_COMM_WORLD,"DEBUGDEBUGDEBUGDEBUG a = %.20f;\n\n",IOparam->dbm_modified.phases[IOparam->phs[j]].n);
-			// swapStruct(&nl->pc->pm->jr->dbm->phases[IOparam->phs[j]],&IOparam->dbm_modified.phases[IOparam->phs[j]]);
-			swapStruct(&nl->pc->pm->jr->dbm->phases[0],&IOparam->dbm_modified.phases[0]);
-			swapStruct(&nl->pc->pm->jr->dbm->phases[1],&IOparam->dbm_modified.phases[1]);
-			PetscPrintf(PETSC_COMM_WORLD,"DEBUGDEBUGDEBUGDEBUG a = %.20f; \n",nl->pc->pm->jr->dbm->phases[0].n);
-			PetscPrintf(PETSC_COMM_WORLD,"DEBUGDEBUGDEBUGDEBUG a = %.20f;\n\n",IOparam->dbm_modified.phases[0].n);
-			PetscPrintf(PETSC_COMM_WORLD,"DEBUGDEBUGDEBUGDEBUG a = %.20f; \n",nl->pc->pm->jr->dbm->phases[1].n);
-			PetscPrintf(PETSC_COMM_WORLD,"DEBUGDEBUGDEBUGDEBUG a = %.20f;\n\n",IOparam->dbm_modified.phases[1].n);
-			PetscPrintf(PETSC_COMM_WORLD,"DEBUGDEBUGDEBUGDEBUG a = %.20f; \n",nl->pc->pm->jr->dbm->phases[IOparam->phs[j]].n);
-			PetscPrintf(PETSC_COMM_WORLD,"DEBUGDEBUGDEBUGDEBUG a = %.20f;\n\n",IOparam->dbm_modified.phases[IOparam->phs[j]].n);
-
-			ierr = FormResidual(snes, sol, res_pert, nl);         CHKERRQ(ierr);        // compute the residual with the perturbed parameter
-			ierr = VecAYPX(res,-1,res_pert);                      CHKERRQ(ierr);        // res = (res_perturbed-res)
-			ierr = VecPointwiseDivide(drdp,res,Perturb_vec);      CHKERRQ(ierr);        //
+			// Swap material structure of phase with that of LaMEM Material DB
+			swapStruct(&nl->pc->pm->jr->dbm->phases[CurPhase], &IOparam->dbm_modified.phases[CurPhase]);  
+			
+			ierr = FormResidual(snes, sol, res_pert, nl);         										CHKERRQ(ierr);        // compute the residual with the perturbed parameter
+			ierr = VecAYPX(res,-1,res_pert);                      										CHKERRQ(ierr);        // res = (res_perturbed-res)
+			ierr = VecPointwiseDivide(drdp,res,Perturb_vec);      										CHKERRQ(ierr);        //
 
 			// Reset parameter again
 			ierr 	= DeleteMaterialParameterToCommandLineOptions(CurName, CurPhase); 					CHKERRQ(ierr);
 			ierr 	= AddMaterialParameterToCommandLineOptions(CurName, CurPhase, CurVal ); 			CHKERRQ(ierr);
 
-			swapStruct(&IOparam->dbm_modified.phases[IOparam->phs[j]],&nl->pc->pm->jr->dbm->phases[IOparam->phs[j]]);  // TEMPORARY CODE
-
-#endif
+			swapStruct(&IOparam->dbm_modified.phases[CurPhase],&nl->pc->pm->jr->dbm->phases[CurPhase]);  // Swap material DB back again
 
 
-
-
-			fd += fd;  // Needed to free vectors later  [OBSOLOTE]
+			fd += fd;  // Needed to free vectors later  [OBSOLETE?]
 
 			// Compute the gradient (dF/dp = -psi^T * dr/dp) & Save gradient
 			ierr                =   VecDot(drdp,psi,&grd);                       CHKERRQ(ierr);
@@ -2957,9 +2920,9 @@ PetscErrorCode CreateModifiedMaterialDatabase(ModParam **p_IOparam)
     IOparam->dbm_modified.scal = &scal;
 
     // Call material database with modified parameters
-    ierr = DBMatCreate(&IOparam->dbm_modified, fb, PETSC_TRUE); 	CHKERRQ(ierr);  
+    ierr = DBMatCreate(&IOparam->dbm_modified, fb, PETSC_FALSE); 	CHKERRQ(ierr);  
 
-    PrintOutput = PETSC_TRUE;
+    //PrintOutput = PETSC_TRUE;
     if (PrintOutput){
         PetscPrintf(PETSC_COMM_WORLD,"**** Created Modified material database **** \n");
     }
