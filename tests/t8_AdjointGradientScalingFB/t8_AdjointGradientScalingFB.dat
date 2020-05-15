@@ -132,14 +132,14 @@
 #===============================================================================
 	
 	# General
-	Adjoint_mode    					= 	AdjointGradients #GradientDescent #AdjointGradients    	# options: [None; AdjointGradients, GradientDescent; Inversion]
+	Adjoint_mode    					= 	GradientDescent #AdjointGradients    	# options: [None; AdjointGradients, GradientDescent; Inversion]
 	Adjoint_ObservationPoints           = 	1						# options: [1=several points; 2=whole domain; 3=surface]
 	Adjoint_ObjectiveFunctionDef        = 	1                     # options: [1-defined by hand; 0??]
 	Adjoint_GradientCalculation        	= 	CostFunction				# options [CostFunction= w.r.t. Cost function (e.g,);  Solution= w.r.t. Solution ]
 	Adjoint_FieldSensitivity    		= 	0      				# calculate Field-based =1 (aka. geodynamic sensity kernels), or Phase Based [=0]
 
 	# Inversion parameters
-	Inversion_EmployTAO 				=	1    
+	Inversion_EmployTAO 				=	0    
 	Inversion_rtol						=	1e-11
 
 	<AdjointParameterStart>

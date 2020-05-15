@@ -438,7 +438,7 @@ PetscErrorCode LaMEMAdjointReadInputSetDefaults(ModParam **p_IOparam, FB **p_fb,
         // PARAMETER VALUES
         if (par_val){
             // Add option to options database
-            ierr = AddMaterialParameterToCommandLineOptions(par_str, ID, par_val); CHKERRQ(ierr);
+            //ierr = AddMaterialParameterToCommandLineOptions(par_str, ID, par_val); CHKERRQ(ierr);
             
             asprintf(&val_str, "%-9.4g", par_val); 
             //PetscPrintf(PETSC_COMM_WORLD,"Adding parameter to Options Database: %s \n", option);
