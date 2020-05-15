@@ -797,10 +797,10 @@ PetscErrorCode MatPropSetFromLibCall(JacRes *jr, ModParam *mod, FB *fb)
 				//m->Bn = (pow(2*F2,-m->n) * pow(1e6*pow((m->Bn),-1/m->n),-m->n));
 				//m->Bn    *= pow(scal->stress_si, m->n)*scal->time_si;
 
-				// in caswe of simple powerlaw
+				// in case of simple powerlaw
 				m->Bn = (pow (2.0*eta0, -m->n)*pow(DII, 1 - m->n)) * (pow(scal->stress_si, m->n)*scal->time_si);
 				// m->Bn = (pow (2.0*eta0, -m->n)*pow(e0, 1 - m->n)) * (pow(scal->stress_si, m->n)*scal->time_si);
-				PetscPrintf(PETSC_COMM_WORLD,"#    n[%lld] = %3.3f, m-Bn= %3.3f eta0=%f, m_modified->Bn=%f \n",(LLD)id,m->n,m->Bn, eta0, m_modified->Bn);
+				PetscPrintf(PETSC_COMM_WORLD,"#    n[%lld] = %f, m-Bn= %f eta0=%f, m_modified->Bn=%f m_modified->n=%f\n",(LLD)id,m->n,m->Bn, eta0, m_modified->Bn, m_modified->n);
 
 			}
 			// activation energy

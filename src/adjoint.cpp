@@ -585,10 +585,10 @@ PetscErrorCode LaMEMAdjointMain(ModParam *IOparam, FB *fb)
     ierr = LaMEMAdjointReadInputSetDefaults(&IOparam, &fb, &Adjoint_Vectors); CHKERRQ(ierr);
 	
 	// DEBUGGING: Add a parameter, modify a copy of the Material database, and remove the parameter again
-	ierr = AddMaterialParameterToCommandLineOptions("rho", 0, 5); 	CHKERRQ(ierr);
-    ierr = CreateModifiedMaterialDatabase(&IOparam, &fb);     		CHKERRQ(ierr);
-	ierr = DeleteMaterialParameterToCommandLineOptions("rho", 0); 	CHKERRQ(ierr);
-    PetscOptionsView(NULL,PETSC_VIEWER_STDOUT_WORLD);
+	//ierr = AddMaterialParameterToCommandLineOptions("rho", 0, 5); 	CHKERRQ(ierr);
+    //ierr = CreateModifiedMaterialDatabase(&IOparam, &fb);     		CHKERRQ(ierr);
+	//ierr = DeleteMaterialParameterToCommandLineOptions("rho", 0); 	CHKERRQ(ierr);
+    //PetscOptionsView(NULL,PETSC_VIEWER_STDOUT_WORLD);
 
 	//===========================================================
 	// SOLVE ADJOINT (by calling LaMEMLibMain)
@@ -879,8 +879,12 @@ PetscErrorCode AdjointOptimisation(Vec P, PetscScalar F, Vec grad, void *ctx)
 		for(j = 0; j < IOparam->mdN; j++)
 		{
 			PetscPrintf(PETSC_COMM_WORLD,"%D. Parameter value = %.5e\n",j+1,Par[j]);
+
+
+
 		}
 		VecRestoreArray(P,&Par);
+
 
 		PetscPrintf(PETSC_COMM_WORLD,"---------------------------------------------------------------------------\n\n");
 		
@@ -912,14 +916,34 @@ PetscErrorCode AdjointOptimisationTAO(Tao tao, Vec P, PetscReal *F, Vec grad, vo
 	PetscFunctionBegin;
 
 	// initialize
-	PetscInt j;
-	PetscScalar *Par, *gradar, *fcconvar;
+	PetscInt j, CurPhase, CurPar;
+	PetscScalar *Par, *gradar, *fcconvar, CurVal;
 	ModParam    *IOparam;
-	IOparam     = (ModParam*)ctx;
+	char		CurName[_str_len_];
+	
+	
+	IOparam    =  (ModParam*)ctx;
 
 	// get parameter values
 	VecDuplicate(P,&IOparam->P);
 	VecCopy(P,IOparam->P);
+
+	VecGetArray(P,&Par);
+
+	// Set parameters as command-line options
+	for(j = 0; j < IOparam->mdN; j++){
+		CurPhase = 	IOparam->phs[j];			// phase of the parameter
+		CurPar   = 	IOparam->typ[j];			// Type 	
+		CurVal   =	Par[j];						// value of parameter
+        strcpy(CurName, IOparam->type_name[j]);	// name
+
+		PetscPrintf(PETSC_COMM_WORLD,"*** AdjointOptimisationTAO: Current parameter %s[%i]=%f \n",CurName,CurPhase,CurVal);
+	//	ierr = DeleteMaterialParameterToCommandLineOptions(CurName, CurPhase); 		CHKERRQ(ierr);
+	//	ierr = AddMaterialParameterToCommandLineOptions(CurName, CurPhase, CurVal); 	CHKERRQ(ierr);
+    	//ierr = CreateModifiedMaterialDatabase(&IOparam, &fb);     		CHKERRQ(ierr);
+	
+	}
+	VecRestoreArray(P,&Par);
 
 	// call LaMEM main library function
 	ierr = LaMEMLibMain(IOparam); CHKERRQ(ierr);
@@ -938,14 +962,23 @@ PetscErrorCode AdjointOptimisationTAO(Tao tao, Vec P, PetscReal *F, Vec grad, vo
 
 	*F = IOparam->mfit;
 
-	// Save intial cost function
+	// Save initial cost function
 	if(IOparam->count==1){IOparam->mfitini = IOparam->mfit;}
 
 	// Display the current state of the parameters
 	VecGetArray(P,&Par);
 	for(j = 0; j < IOparam->mdN; j++)
 	{
-		PetscPrintf(PETSC_COMM_WORLD,"%D. Parameter value = %.5e\n",j+1,Par[j]);
+
+		CurPhase = 	IOparam->phs[j];			// phase of the parameter
+		CurPar   = 	IOparam->typ[j];			// Type 	
+		CurVal   =	Par[j];						// value of parameter
+        strcpy(CurName, IOparam->type_name[j]);	// name
+
+		PetscPrintf(PETSC_COMM_WORLD,"%D. Parameter value, %s[%i] = %.5e\n",j+1,CurName,CurPhase,Par[j]);
+		
+		ierr = DeleteMaterialParameterToCommandLineOptions(CurName, CurPhase); 		CHKERRQ(ierr);
+		ierr = AddMaterialParameterToCommandLineOptions(CurName, CurPhase, CurVal); 	CHKERRQ(ierr);
 	}
 	VecRestoreArray(P,&Par);
 
@@ -1213,7 +1246,7 @@ PetscErrorCode AdjointComputeGradients(JacRes *jr, AdjGrad *aop, NLSol *nl, SNES
 			PetscPrintf(PETSC_COMM_WORLD,"Field based gradient only for density programmed! \n");
 		}
 	}
-	else
+	else // Phase based gradients
 	{
         PetscPrintf(PETSC_COMM_WORLD,"\nGradients: \n");
         PetscPrintf(PETSC_COMM_WORLD,"                   Parameter   |  Gradient (dimensional)  \n");    
