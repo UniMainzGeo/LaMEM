@@ -56,10 +56,10 @@
 	gravity        = 0.0 0.0 -1.0   # gravity vector
 	FSSA           = 1.0            # free surface stabilization parameter [0 - 1]
 	init_guess     = 0              # initial guess flag
-	DII            = 1e-6          # background (reference) strain-rate
+	DII	           = 1e-6          # background (reference) strain-rate
 	eta_min        = 1e-3           # viscosity upper bound
 	eta_max        = 1e6           # viscosity lower limit
-
+		
 #===============================================================================
 # Solver options
 #===============================================================================
@@ -132,7 +132,7 @@
 #===============================================================================
 	
 	# General
-	Adjoint_mode    					= 	AdjointGradients    	# options: [None; AdjointGradients, GradientDescent; Inversion]
+	Adjoint_mode    					= 	GradientDescent #AdjointGradients    	# options: [None; AdjointGradients, GradientDescent; Inversion]
 	Adjoint_ObservationPoints           = 	1						# options: [1=several points; 2=whole domain; 3=surface]
 	Adjoint_ObjectiveFunctionDef        = 	1                     # options: [1-defined by hand; 0??]
 	Adjoint_GradientCalculation        	= 	CostFunction				# options [CostFunction= w.r.t. Cost function (e.g,);  Solution= w.r.t. Solution ]
@@ -156,11 +156,11 @@
 		InitGuess 	= 2    
 	<AdjointParameterEnd>
 
-	<AdjointParameterStart>
-		ID  		= 0
-		Type 		= eta0
-	   InitGuess 	= 100
-	<AdjointParameterEnd>
+#	<AdjointParameterStart>
+#		ID  		= 0
+#		Type 		= eta0
+#	   InitGuess 	= 100
+#	<AdjointParameterEnd>
 
 	#<AdjointParameterStart>
 	#  	ID  		= 1
