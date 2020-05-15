@@ -444,7 +444,7 @@ PetscErrorCode LaMEMAdjointReadInputSetDefaults(ModParam **p_IOparam, Adjoint_Ve
         // PARAMETER VALUES
         if (par_val){
             // Add option to options database
-            //ierr = AddMaterialParameterToCommandLineOptions(par_str, ID, par_val); CHKERRQ(ierr);
+            ierr = AddMaterialParameterToCommandLineOptions(par_str, ID, par_val); CHKERRQ(ierr);
             
             asprintf(&val_str, "%-9.4g", par_val); 
             //PetscPrintf(PETSC_COMM_WORLD,"Adding parameter to Options Database: %s \n", option);
@@ -1175,11 +1175,12 @@ PetscErrorCode AdjointComputeGradients(JacRes *jr, AdjGrad *aop, NLSol *nl, SNES
 	KSPConvergedReason  reason;
 	PetscInt            i, j, CurPhase, CurPar, lrank, grank, fd;
 	PetscScalar         dt, grd, Perturb, coord_local[3], *vx, *vy, *vz, *Par, CurVal;
+	PetscScalar         CurPhasetemp,CurValtemp;
 	Vec 				res_pert, sol, psi, drdp, res, Perturb_vec;
 	PC                  ipc;
 	Scaling             *scal;
     PetscBool           flg;
-    char                CurName[_str_len_];
+    char                CurName[_str_len_],CurNametemp[_str_len_];
 
 	fs = jr->fs;
 	dt = jr->ts->dt;
@@ -1257,8 +1258,21 @@ PetscErrorCode AdjointComputeGradients(JacRes *jr, AdjGrad *aop, NLSol *nl, SNES
 		//=================
 		// PARAMETER LOOP
 		//=================
+
         ierr = VecDuplicate(jr->gsol, &Perturb_vec);        CHKERRQ(ierr);
 		VecGetArray(IOparam->P,&Par);
+
+#if 1
+		// Reset all parameters to the parameters P   // TEMPORARY CODEy
+		for(i = 0; i < IOparam->mdN; i++)
+		{
+			CurPhasetemp = IOparam->phs[i];
+			CurValtemp = Par[i];
+			strcpy(CurNametemp, IOparam->type_name[i]);
+			ierr = AddMaterialParameterToCommandLineOptions(CurNametemp, CurPhasetemp, CurValtemp); CHKERRQ(ierr);
+		}
+#endif
+
 		for(j = 0; j < IOparam->mdN; j++)
 		{
 			// Get the initial residual since it is overwritten in VecAYPX
@@ -1285,10 +1299,11 @@ PetscErrorCode AdjointComputeGradients(JacRes *jr, AdjGrad *aop, NLSol *nl, SNES
 			ierr = AdjointGradientResetParameter(nl, CurPar, CurPhase, aop);           CHKERRQ(ierr);
 
 #endif
-// #if 0
+#if 1
 			// Perturb parameter
 			Perturb = aop->FD_epsilon*CurVal;
-			ierr 	= VecSet(Perturb_vec,Perturb);                   									CHKERRQ(ierr);        // epsilon (finite difference)      
+			ierr 	= VecSet(Perturb_vec,Perturb);                   									CHKERRQ(ierr);        // epsilon (finite difference)   
+			aop->CurScal = (scal->velocity)/(1);       // TEMPORARY CODE (should be automatized, necessary?)
 
 			PetscPrintf(PETSC_COMM_WORLD,"*** dr/dp: Perturbing parameter %s[%i]=%f to value %f \n",CurName,CurPhase,CurVal, CurVal + Perturb);
 			// Set as command-line option & create updated material database
@@ -1297,18 +1312,21 @@ PetscErrorCode AdjointComputeGradients(JacRes *jr, AdjGrad *aop, NLSol *nl, SNES
 
 			ierr 	= CreateModifiedMaterialDatabase(&IOparam);     			CHKERRQ(ierr);		// update LaMEM material DB
 
-			//struct DBMat temp = **A;
-			//**A = *B;
-			//*B = temp;
 			PetscPrintf(PETSC_COMM_WORLD,"DEBUGDEBUGDEBUGDEBUG a = %.20f; \n",nl->pc->pm->jr->dbm->phases[0].n);
 			PetscPrintf(PETSC_COMM_WORLD,"DEBUGDEBUGDEBUGDEBUG a = %.20f;\n\n",IOparam->dbm_modified.phases[0].n);
+			PetscPrintf(PETSC_COMM_WORLD,"DEBUGDEBUGDEBUGDEBUG a = %.20f; \n",nl->pc->pm->jr->dbm->phases[1].n);
+			PetscPrintf(PETSC_COMM_WORLD,"DEBUGDEBUGDEBUGDEBUG a = %.20f;\n\n",IOparam->dbm_modified.phases[1].n);
+			PetscPrintf(PETSC_COMM_WORLD,"DEBUGDEBUGDEBUGDEBUG a = %.20f; \n",nl->pc->pm->jr->dbm->phases[IOparam->phs[j]].n);
+			PetscPrintf(PETSC_COMM_WORLD,"DEBUGDEBUGDEBUGDEBUG a = %.20f;\n\n",IOparam->dbm_modified.phases[IOparam->phs[j]].n);
+			// swapStruct(&nl->pc->pm->jr->dbm->phases[IOparam->phs[j]],&IOparam->dbm_modified.phases[IOparam->phs[j]]);
 			swapStruct(&nl->pc->pm->jr->dbm->phases[0],&IOparam->dbm_modified.phases[0]);
+			swapStruct(&nl->pc->pm->jr->dbm->phases[1],&IOparam->dbm_modified.phases[1]);
 			PetscPrintf(PETSC_COMM_WORLD,"DEBUGDEBUGDEBUGDEBUG a = %.20f; \n",nl->pc->pm->jr->dbm->phases[0].n);
 			PetscPrintf(PETSC_COMM_WORLD,"DEBUGDEBUGDEBUGDEBUG a = %.20f;\n\n",IOparam->dbm_modified.phases[0].n);
-
-			// Copy modified material DB to LaMEM structure
-			//ierr  = PetscMemcpy(&nl->pc->pm->jr->dbm,       IOparam->dbm_modified,     size_t(nl->pc->pm->jr->dbm->numPhases)*sizeof(DBMat) ); 		CHKERRQ(ierr);
-			//*nl->pc->pm->jr->dbm = IOparam->dbm_modified;
+			PetscPrintf(PETSC_COMM_WORLD,"DEBUGDEBUGDEBUGDEBUG a = %.20f; \n",nl->pc->pm->jr->dbm->phases[1].n);
+			PetscPrintf(PETSC_COMM_WORLD,"DEBUGDEBUGDEBUGDEBUG a = %.20f;\n\n",IOparam->dbm_modified.phases[1].n);
+			PetscPrintf(PETSC_COMM_WORLD,"DEBUGDEBUGDEBUGDEBUG a = %.20f; \n",nl->pc->pm->jr->dbm->phases[IOparam->phs[j]].n);
+			PetscPrintf(PETSC_COMM_WORLD,"DEBUGDEBUGDEBUGDEBUG a = %.20f;\n\n",IOparam->dbm_modified.phases[IOparam->phs[j]].n);
 
 			ierr = FormResidual(snes, sol, res_pert, nl);         CHKERRQ(ierr);        // compute the residual with the perturbed parameter
 			ierr = VecAYPX(res,-1,res_pert);                      CHKERRQ(ierr);        // res = (res_perturbed-res)
@@ -1317,12 +1335,10 @@ PetscErrorCode AdjointComputeGradients(JacRes *jr, AdjGrad *aop, NLSol *nl, SNES
 			// Reset parameter again
 			ierr 	= DeleteMaterialParameterToCommandLineOptions(CurName, CurPhase); 					CHKERRQ(ierr);
 			ierr 	= AddMaterialParameterToCommandLineOptions(CurName, CurPhase, CurVal ); 			CHKERRQ(ierr);
-		
-		//	ierr 	= CreateModifiedMaterialDatabase(&IOparam); 
-		//	*nl->pc->pm->jr->dbm = IOparam->dbm_modified;
-		//	ierr  = PetscMemcpy(nl->pc->pm->jr->dbm,       &IOparam->dbm_modified,     sizeof(DBMat) ); 		CHKERRQ(ierr);
 
-// #endif
+			swapStruct(&IOparam->dbm_modified.phases[IOparam->phs[j]],&nl->pc->pm->jr->dbm->phases[IOparam->phs[j]]);  // TEMPORARY CODE
+
+#endif
 
 
 
@@ -1337,6 +1353,7 @@ PetscErrorCode AdjointComputeGradients(JacRes *jr, AdjGrad *aop, NLSol *nl, SNES
             PetscPrintf(PETSC_COMM_WORLD,"         %5d:   %+5s[%2i]           %- 1.6e \n",j+1, CurName, CurPhase, IOparam->grd[j]);
 
 		}
+		
         PetscPrintf(PETSC_COMM_WORLD,"\n");
 		VecRestoreArray(IOparam->P,&Par);
 		// Destroy overwritten residual vector
