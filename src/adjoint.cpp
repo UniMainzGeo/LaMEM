@@ -159,7 +159,12 @@ PetscInt FindPointInCellAdjoint(
 	}
 	return(L);
 }
-
+//---------------------------------------------------------------------------
+void swapStruct(struct DBMat **A, struct DBMat *B){
+    struct DBMat temp = **A;
+    **A = *B;
+    *B = temp;
+}
 //---------------------------------------------------------------------------
 /* This reads the material parameters from the file
 */
@@ -1280,7 +1285,7 @@ PetscErrorCode AdjointComputeGradients(JacRes *jr, AdjGrad *aop, NLSol *nl, SNES
 			ierr = AdjointGradientResetParameter(nl, CurPar, CurPhase, aop);           CHKERRQ(ierr);
 
 #endif
-#if 0
+// #if 0
 			// Perturb parameter
 			Perturb = aop->FD_epsilon*CurVal;
 			ierr 	= VecSet(Perturb_vec,Perturb);                   									CHKERRQ(ierr);        // epsilon (finite difference)      
@@ -1291,6 +1296,8 @@ PetscErrorCode AdjointComputeGradients(JacRes *jr, AdjGrad *aop, NLSol *nl, SNES
 			ierr 	= AddMaterialParameterToCommandLineOptions(CurName, CurPhase, CurVal + Perturb); 	CHKERRQ(ierr);
 
 			ierr 	= CreateModifiedMaterialDatabase(&IOparam);     			CHKERRQ(ierr);		// update LaMEM material DB
+
+			swapStruct(&nl->pc->pm->jr->dbm,&IOparam->dbm_modified);
 
 			// Copy modified material DB to LaMEM structure
 			//ierr  = PetscMemcpy(&nl->pc->pm->jr->dbm,       IOparam->dbm_modified,     size_t(nl->pc->pm->jr->dbm->numPhases)*sizeof(DBMat) ); 		CHKERRQ(ierr);
@@ -1308,7 +1315,7 @@ PetscErrorCode AdjointComputeGradients(JacRes *jr, AdjGrad *aop, NLSol *nl, SNES
 		//	*nl->pc->pm->jr->dbm = IOparam->dbm_modified;
 		//	ierr  = PetscMemcpy(nl->pc->pm->jr->dbm,       &IOparam->dbm_modified,     sizeof(DBMat) ); 		CHKERRQ(ierr);
 
-#endif
+// #endif
 
 
 
