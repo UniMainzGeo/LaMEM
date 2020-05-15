@@ -168,7 +168,6 @@ PetscInt FindPointInCellAdjoint(
 PetscErrorCode LaMEMAdjointReadMaterialParameters(DBMat *dbm, FB  **p_fb)
 {
     PetscErrorCode  ierr;
-    PetscInt        jj;
     FB              *fb;
 
     fb          =	*p_fb;
@@ -247,8 +246,10 @@ PetscErrorCode LaMEMAdjointReadInputSetDefaults(ModParam **p_IOparam, FB **p_fb,
 	IOparam->maxit      = 50;
 	IOparam->maxitLS    = 10;
 
+    // Create scaling object
+	ierr = ScalingCreate(&scal, fb); CHKERRQ(ierr);
+
 	// Some general Adjoint Gradient parameters:
-	//ierr = getIntParam   (fb, _OPTIONAL_, "Adjoint_GradientCalculation"      , &IOparam->Gr,        1, 1        ); CHKERRQ(ierr);  // Calculate Grads with respect to solution (scaling laws etc.) = 1; Calc with respect to cost function (direct fD test) = 0
     ierr = getStringParam(fb, _OPTIONAL_, "Adjoint_GradientCalculation", str, NULL); CHKERRQ(ierr);  // must have component
     if     	(!strcmp(str, "CostFunction"))      IOparam->Gr=0;
 	else if (!strcmp(str, "Solution"))          IOparam->Gr=1;
@@ -344,10 +345,7 @@ PetscErrorCode LaMEMAdjointReadInputSetDefaults(ModParam **p_IOparam, FB **p_fb,
 	PetscInt        Av[  _MAX_OBS_];
 	PetscScalar     Ae[  _MAX_OBS_];
 
-	ierr =  ScalingCreate(&scal, fb);
-    dbm.scal = &scal;
-
-
+	
     // Read material input parameters from file
     ierr = FBFindBlocks(fb, _REQUIRED_, "<MaterialStart>", "<MaterialEnd>"); CHKERRQ(ierr);
     
@@ -359,25 +357,6 @@ PetscErrorCode LaMEMAdjointReadInputSetDefaults(ModParam **p_IOparam, FB **p_fb,
 	{
 		SETERRQ1(PETSC_COMM_WORLD, PETSC_ERR_USER, "Too many material structures specified! Max allowed: %lld", (LLD)_max_num_phases_);
 	}
-
-
-
-	// store actual number of phases
-	//dbm->numPhases = fb->nblocks;
- /*   
-    PetscPrintf(PETSC_COMM_WORLD,"Adjoint2: Material parameters: found  \n");
-
-	// read each individual phase
-    fb->blockID = 0;
-	for(jj = 0; jj < fb->nblocks; jj++)
-	{
-		ierr = DBMatReadPhase(&dbm, fb); CHKERRQ(ierr);
-
-		fb->blockID++;
-	}
-
-*/
-
 
 	// PARAMETERS
 	// Get parameter / typ / etc.
@@ -475,11 +454,9 @@ PetscErrorCode LaMEMAdjointReadInputSetDefaults(ModParam **p_IOparam, FB **p_fb,
 	}
 
     // This is how to remove the option again from the database
-    ierr = DeleteMaterialParameterToCommandLineOptions(par_str, ID); CHKERRQ(ierr);
-
+    //ierr = DeleteMaterialParameterToCommandLineOptions(par_str, ID); CHKERRQ(ierr);
     PetscOptionsView(NULL,PETSC_VIEWER_STDOUT_WORLD);
-   // PetscOptionsClearValue(NULL,option);    // remove option again
-   // PetscOptionsView(NULL,PETSC_VIEWER_STDOUT_WORLD);
+   
 
     ierr  = PetscMemcpy(IOparam->grd,       gradar,     (size_t)_MAX_PAR_*sizeof(PetscScalar) ); CHKERRQ(ierr);
     ierr  = PetscMemcpy(IOparam->typ,       typar,      (size_t)_MAX_PAR_*sizeof(PetscInt)    ); CHKERRQ(ierr); // will become obsolete
@@ -550,7 +527,7 @@ PetscErrorCode LaMEMAdjointReadInputSetDefaults(ModParam **p_IOparam, FB **p_fb,
 		if ((fb->nblocks<6) & (IOparam->Ap==1)){
             // Print overview 
 			if (IOparam->Gr==0){
-                PetscPrintf(PETSC_COMM_WORLD, "      [%f,%f,%f] should have V%s=%7.5f\n", IOparam->Coord[0],IOparam->Coord[1],IOparam->Coord[0], Vel_comp, ts);  // cost function
+                PetscPrintf(PETSC_COMM_WORLD, "      [%f,%f,%f] has target velocity V%s=%7.5f\n", IOparam->Coord[0],IOparam->Coord[1],IOparam->Coord[0], Vel_comp, ts);  // cost function
             }
             else{
                 PetscPrintf(PETSC_COMM_WORLD, "      [%f,%f,%f] will compute gradient w.r.t. V%s\n", IOparam->Coord[0],IOparam->Coord[1],IOparam->Coord[0], Vel_comp);  // w.r.t. solution
@@ -567,12 +544,12 @@ PetscErrorCode LaMEMAdjointReadInputSetDefaults(ModParam **p_IOparam, FB **p_fb,
 		fb->blockID++;
 	}
 	PetscPrintf(PETSC_COMM_WORLD, "\n");
-	
-    ierr  = PetscMemcpy(IOparam->Ax, Ax, (size_t)  _MAX_OBS_*sizeof(PetscScalar)); CHKERRQ(ierr);
-    ierr  = PetscMemcpy(IOparam->Ay, Ay, (size_t)  _MAX_OBS_*sizeof(PetscScalar)); CHKERRQ(ierr);
-    ierr  = PetscMemcpy(IOparam->Az, Az, (size_t)  _MAX_OBS_*sizeof(PetscScalar)); CHKERRQ(ierr);
-    ierr  = PetscMemcpy(IOparam->Av, Av, (size_t)  _MAX_OBS_*sizeof(PetscInt));    CHKERRQ(ierr);
-    ierr  = PetscMemcpy(IOparam->Ae, Ae, (size_t)  _MAX_OBS_*sizeof(PetscScalar)); CHKERRQ(ierr);
+
+    ierr  = PetscMemcpy(IOparam->Ax, Ax, (size_t)_MAX_OBS_*sizeof(PetscScalar)); CHKERRQ(ierr);
+    ierr  = PetscMemcpy(IOparam->Ay, Ay, (size_t)_MAX_OBS_*sizeof(PetscScalar)); CHKERRQ(ierr);
+    ierr  = PetscMemcpy(IOparam->Az, Az, (size_t)_MAX_OBS_*sizeof(PetscScalar)); CHKERRQ(ierr);
+    ierr  = PetscMemcpy(IOparam->Av, Av, (size_t)_MAX_OBS_*sizeof(PetscInt));    CHKERRQ(ierr);
+    ierr  = PetscMemcpy(IOparam->Ae, Ae, (size_t)_MAX_OBS_*sizeof(PetscScalar)); CHKERRQ(ierr);
 	IOparam->mdI = i;
 
 	ierr = FBFreeBlocks(fb); CHKERRQ(ierr);
@@ -597,17 +574,21 @@ PetscErrorCode LaMEMAdjointMain(ModParam *IOparam, FB *fb)
 	PetscScalar    	F, *fcconvar, *Par;
 	PetscInt        i;
 	Adjoint_Vecs    Adjoint_Vectors;
-    DBMat           dbm;
-
+	Scaling         scal;
+    FB              *fb1;
+    
 	IOparam->count = 1;  // iteration counter for the initial cost function
 	F              = 1e100;
 
 
 	// Read input parameters
-    //ierr = LaMEMAdjointReadMaterialParameters(&dbm, &fb); CHKERRQ(ierr);
-
-	ierr = LaMEMAdjointReadInputSetDefaults(&IOparam, &fb, &Adjoint_Vectors); CHKERRQ(ierr);
-    
+    ierr = LaMEMAdjointReadInputSetDefaults(&IOparam, &fb, &Adjoint_Vectors); CHKERRQ(ierr);
+	
+	// DEBUGGING: Add a parameter, modify a copy of the Material database, and remove the parameter again
+	ierr = AddMaterialParameterToCommandLineOptions("rho", 0, 5); 	CHKERRQ(ierr);
+    ierr = CreateModifiedMaterialDatabase(&IOparam, &fb);     		CHKERRQ(ierr);
+	ierr = DeleteMaterialParameterToCommandLineOptions("rho", 0); 	CHKERRQ(ierr);
+    PetscOptionsView(NULL,PETSC_VIEWER_STDOUT_WORLD);
 
 	//===========================================================
 	// SOLVE ADJOINT (by calling LaMEMLibMain)
@@ -1008,14 +989,14 @@ PetscErrorCode AdjointOptimisationTAO(Tao tao, Vec P, PetscReal *F, Vec grad, vo
 
  	 	// Create projection vector
  	 	ierr = VecDuplicate(jr->gsol, &aop->pro);	 	CHKERRQ(ierr);
- 	 	ierr = VecDuplicate(jr->gsol, &IOparam->xini);  CHKERRQ(ierr);
+ 	 	ierr = VecDuplicate(jr->gsol, &IOparam->xini);  CHKERRQ(ierr);  // create a new one
  	 	ierr = VecDuplicate(jr->gsol, &xini);           CHKERRQ(ierr);
- 	 	ierr = VecDuplicate(jr->gsol, &aop->dF);           CHKERRQ(ierr);
+ 	 	ierr = VecDuplicate(jr->gsol, &aop->dF);         CHKERRQ(ierr);
 
  		// Put the proportion into the Projection vector where the user defined the computation coordinates (P) & get the velocities
  		ierr = AdjointPointInPro(jr, aop, IOparam, surf); 	CHKERRQ(ierr);
 
- 		ierr = VecCopy(IOparam->xini,xini);                                     CHKERRQ(ierr);
+ 		ierr = VecCopy(IOparam->xini,xini);                  CHKERRQ(ierr);
 
 		if (IOparam->Gr == 1)
 		{
@@ -1030,14 +1011,19 @@ PetscErrorCode AdjointOptimisationTAO(Tao tao, Vec P, PetscReal *F, Vec grad, vo
             PetscPrintf(PETSC_COMM_WORLD,"**************************************************************************\n");
             
 			PetscScalar Ad;
+	
+
 
 			// Incorporate projection vector (F = (1/2)*[P*(x-x_ini)' * P*(x-x_ini)])
 			ierr = VecAYPX(xini,-1.0,jr->gsol);                                     CHKERRQ(ierr);  // xini = x - xini, where x=jr->gsol
 
+		//	VecView(aop->pro, 	PETSC_VIEWER_STDOUT_SELF);
+
 			ierr = VecPointwiseMult(xini, xini,aop->pro);                           CHKERRQ(ierr);  // xini = xini*P
 
-            //VecView(xini, 	PETSC_VIEWER_STDOUT_SELF);
 
+	
+            
 			// Compute objective function value (F = (1/2)*[P*(x-x_ini)' * P*(x-x_ini)])
 			ierr 	           = VecDot(xini,xini,&Ad);                             CHKERRQ(ierr);
 			Ad 		          /= 2;
@@ -1059,7 +1045,10 @@ PetscErrorCode AdjointOptimisationTAO(Tao tao, Vec P, PetscReal *F, Vec grad, vo
  		ierr = AdjointComputeGradients(jr, aop, nl, snes, IOparam, surf);        CHKERRQ(ierr);
 
  		// Destroy
- 		 ierr = VecDestroy(&xini);
+ 		//ierr = VecDestroy(&aop->pro);	 	CHKERRQ(ierr);
+ 	 	// /ierr = VecDestroy(&IOparam->xini);  CHKERRQ(ierr);
+ 	 	ierr = VecDestroy(&xini);           CHKERRQ(ierr);
+ 	 	
  	}
  	// compute 'full' adjoint inversion
  	else if(IOparam->use == _gradientdescent_)
@@ -1107,6 +1096,7 @@ PetscErrorCode AdjointOptimisationTAO(Tao tao, Vec P, PetscReal *F, Vec grad, vo
  		// Incorporate projection vector (F = (1/2)*[P*(x-x_ini)' * P*(x-x_ini)])
  		ierr = VecAYPX(xini,-1,jr->gsol);                                       CHKERRQ(ierr);
  		ierr = VecPointwiseMult(xini, xini,aop->pro);                           CHKERRQ(ierr);
+		 
  		// Compute objective function value (F = (1/2)*[P*(x-x_ini)' * P*(x-x_ini)])
  		ierr 	           = VecDot(xini,xini,&Ad);
  		Ad 		          /= 2;
@@ -1369,8 +1359,12 @@ PetscErrorCode AdjointPointInPro(JacRes *jr, AdjGrad *aop, ModParam *IOparam, Fr
 
 	fs = jr->fs;
 
+	// create vectors with correct layout (doesn't copy values!)
  	ierr = VecDuplicate(jr->gsol, &pro);             CHKERRQ(ierr);
  	ierr = VecDuplicate(jr->gsol, &xini);            CHKERRQ(ierr);
+	VecZeroEntries(pro);
+	VecZeroEntries(xini);
+	
 
 	// Access the local velocities
 	ierr = DMDAVecGetArray(fs->DA_X, jr->lvx, &lvx); CHKERRQ(ierr);
@@ -1600,6 +1594,9 @@ PetscErrorCode AdjointPointInPro(JacRes *jr, AdjGrad *aop, ModParam *IOparam, Fr
 
 						ierr = DMDAVecRestoreArray(fs->DA_Z, lxiniZ, &llxiniZ);      CHKERRQ(ierr);
 					}
+				}
+				else{
+					SETERRQ(PETSC_COMM_SELF, PETSC_ERR_USER, "Unknown velocity component ");
 				}
 
 				ierr = DMDAVecRestoreArray(fs->DA_X, lproX, &llproX);      CHKERRQ(ierr);
@@ -2792,7 +2789,7 @@ PetscErrorCode AddMaterialParameterToCommandLineOptions(char *name, PetscInt ID,
 {
     PetscErrorCode  ierr;
 	char            *option, *option_value;
-    PetscBool       PrintOutput;
+    PetscBool       PrintOutput=PETSC_FALSE;
     
     PetscFunctionBegin;
     
@@ -2800,8 +2797,7 @@ PetscErrorCode AddMaterialParameterToCommandLineOptions(char *name, PetscInt ID,
     asprintf(&option_value, "%e", val);
     ierr = PetscOptionsSetValue(NULL, option, option_value);    CHKERRQ(ierr);   // this
     
-   // PrintOutput = PETSC_TRUE;
-    PrintOutput = PETSC_FALSE;
+    //PrintOutput = PETSC_TRUE;
     if (PrintOutput){
         PetscPrintf(PETSC_COMM_WORLD,"**** Added option %s=%s to the database. **** \n",option,option_value);
         PetscOptionsView(NULL,PETSC_VIEWER_STDOUT_WORLD);
@@ -2817,8 +2813,8 @@ PetscErrorCode AddMaterialParameterToCommandLineOptions(char *name, PetscInt ID,
 PetscErrorCode DeleteMaterialParameterToCommandLineOptions(char *name, PetscInt ID)
 {
     PetscErrorCode  ierr;
-	char            *option, *option_value;
-    PetscBool       PrintOutput;
+	char            *option;
+    PetscBool       PrintOutput=PETSC_FALSE;
     
     PetscFunctionBegin;
     
@@ -2826,11 +2822,52 @@ PetscErrorCode DeleteMaterialParameterToCommandLineOptions(char *name, PetscInt 
     ierr = PetscOptionsClearValue(NULL, option);    CHKERRQ(ierr);  
     
   //  PrintOutput = PETSC_TRUE;
-    PrintOutput = PETSC_FALSE;
     if (PrintOutput){
-        PetscPrintf(PETSC_COMM_WORLD,"**** Deleted option %s from the database. **** \n",option);
-       PetscOptionsView(NULL,PETSC_VIEWER_STDOUT_WORLD);
+    	PetscPrintf(PETSC_COMM_WORLD,"**** Deleted option %s from the database. **** \n",option);
+       	PetscOptionsView(NULL,PETSC_VIEWER_STDOUT_WORLD);
     }
 
     PetscFunctionReturn(0);
 }
+
+
+/*---------------------------------------------------------------------------
+	This will re-compute the Material options DB, based on the latest command-line 
+	parameters and store the result in IOparam->dbm_modified, which is passed to 
+	LaMEM @ can be used there 
+*/
+#undef __FUNCT__
+#define __FUNCT__ "CreateModifiedMaterialDatabase"
+PetscErrorCode CreateModifiedMaterialDatabase(ModParam **p_IOparam, FB **p_fb)
+
+{
+    PetscErrorCode  ierr;
+	PetscBool       PrintOutput=PETSC_FALSE;
+    Scaling         scal;
+    FB              *fb;
+    ModParam        *IOparam;
+    PetscFunctionBegin;
+
+    fb          = *p_fb;
+    IOparam     = *p_IOparam;
+    
+    // Create scaling object
+	ierr = ScalingCreate(&scal, fb); CHKERRQ(ierr);
+
+    // Initialize material database 
+    ierr = PetscMemzero(&IOparam->dbm_modified, sizeof(DBMat));   CHKERRQ(ierr);
+    IOparam->dbm_modified.scal = &scal;
+
+    // Call material database with modified parameters
+    ierr = DBMatCreate(&IOparam->dbm_modified, fb, PETSC_TRUE); 	CHKERRQ(ierr);  
+
+
+    PrintOutput = PETSC_TRUE;
+    if (PrintOutput){
+        PetscPrintf(PETSC_COMM_WORLD,"**** Created Modified material database **** \n");
+    }
+
+    PetscFunctionReturn(0);
+}
+
+ 

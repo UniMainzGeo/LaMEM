@@ -100,6 +100,7 @@ struct ModParam
 	PetscScalar      grd[_MAX_PAR_];                    // gradient value
 	PetscScalar     *val;                               // model value
 	PetscScalar      mfit;                              // misfit value for current model parameters
+    DBMat            dbm_modified;                      // holds the (modified) LaMEM material database
 
 	// Variables additionally needed for the adjoint TAO solver
 	Vec              xini;      	                    // Comparison velocity field for adjoint inversion
