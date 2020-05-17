@@ -195,34 +195,34 @@ PetscErrorCode LaMEMLibCreate(LaMEMLib *lm, void *param )
 	ierr = DBMatCreate(&lm->dbm, fb, PETSC_TRUE); 	CHKERRQ(ierr);
 
 	// Overwrite material parameters for inverse run
-	// ierr = MatPropSetFromLibCall(&lm->jr, (ModParam *)param, fb);
+	//ierr = MatPropSetFromLibCall(&lm->jr, (ModParam *)param, fb);
 
 	// create parallel grid
-	ierr = FDSTAGCreate(&lm->fs, fb); CHKERRQ(ierr);
+	ierr = FDSTAGCreate(&lm->fs, fb); 				CHKERRQ(ierr);
 
 	// create free surface grid
-	ierr = FreeSurfCreate(&lm->surf, fb); CHKERRQ(ierr);
+	ierr = FreeSurfCreate(&lm->surf, fb); 			CHKERRQ(ierr);
 
 	// create boundary condition context
-	ierr = BCCreate(&lm->bc, fb); CHKERRQ(ierr);
+	ierr = BCCreate(&lm->bc, fb); 					CHKERRQ(ierr);
 
 	// create residual & Jacobian evaluation context
-	ierr = JacResCreate(&lm->jr, fb); CHKERRQ(ierr);
+	ierr = JacResCreate(&lm->jr, fb); 				CHKERRQ(ierr);
 
 	// create advection context
-	ierr = ADVCreate(&lm->actx, fb); CHKERRQ(ierr);
+	ierr = ADVCreate(&lm->actx, fb); 				CHKERRQ(ierr);
 
 	// create output object for all requested output variables
-	ierr = PVOutCreate(&lm->pvout, fb); CHKERRQ(ierr);
+	ierr = PVOutCreate(&lm->pvout, fb); 			CHKERRQ(ierr);
 
 	// create output object for the free surface
-	ierr = PVSurfCreate(&lm->pvsurf, fb); CHKERRQ(ierr);
+	ierr = PVSurfCreate(&lm->pvsurf, fb); 			CHKERRQ(ierr);
 
 	// create output object for the markers - for debugging
-	ierr = PVMarkCreate(&lm->pvmark, fb); CHKERRQ(ierr);
+	ierr = PVMarkCreate(&lm->pvmark, fb); 			CHKERRQ(ierr);
 
 	// AVD output driver
-	ierr = PVAVDCreate(&lm->pvavd, fb); CHKERRQ(ierr);
+	ierr = PVAVDCreate(&lm->pvavd, fb); 			CHKERRQ(ierr);
 
 	// destroy file buffer
 	ierr = FBDestroy(&fb); CHKERRQ(ierr);
@@ -647,8 +647,9 @@ PetscErrorCode LaMEMLibSolve(LaMEMLib *lm, void *param)
 
 			if (IOparam->use == _adjointgradients_ || IOparam->use == _gradientdescent_ )
 			{	// Compute adjoint gradients
-				aop.DII_ref = IOparam->DII_ref;
+				aop.DII_ref = IOparam->DII_ref;  // likely obsolete (to be checked..)
 				
+				// Compute the adjoint gradients 
 				ierr = AdjointObjectiveAndGradientFunction(&aop, &lm->jr, &nl, (ModParam *)param, snes, &lm->surf); CHKERRQ(ierr);
 			}
 		}

@@ -139,21 +139,23 @@
 	Adjoint_FieldSensitivity    		= 	0      				# calculate Field-based =1 (aka. geodynamic sensity kernels), or Phase Based [=0]
 
 	# Inversion parameters
-	Inversion_EmployTAO 				=	0    
+	Inversion_EmployTAO 				=	1    
 	Inversion_rtol						=	1e-11
 
 	<AdjointParameterStart>
 	   	ID  			= 0		# phase of the parameter
 		Type 			= n     # options: [rho0,rhon,rhoc,eta,eta0,n,En] 	
 		InitGuess 		= 3  	# initial guess
-		#LowerBound     = 1		# [optional] lower bound
-		#UpperBound     = 3		# [optional] upper bound
+		LowerBound     = 0.1		# [optional] lower bound
+		UpperBound     = 4		# [optional] upper bound
 	<AdjointParameterEnd>
 	       
 	<AdjointParameterStart>  
 		ID  		= 1	
 		Type 		= n   	   
 		InitGuess 	= 2    
+		LowerBound     = 0.1		# [optional] lower bound
+		UpperBound     = 4		# [optional] upper bound
 	<AdjointParameterEnd>
 
 #	<AdjointParameterStart>
