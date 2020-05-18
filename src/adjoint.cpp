@@ -186,6 +186,7 @@ PetscErrorCode LaMEMAdjointReadInputSetDefaults(ModParam **p_IOparam, Adjoint_Ve
 	IOparam 	        = 	*p_IOparam;		// simplifies the code below
 	fb 					=	IOparam->fb;	// filebuffer
 
+
 	// Some defaults
 	IOparam->FS         = 0;
 	IOparam->Gr         = 1;
@@ -1313,6 +1314,7 @@ PetscErrorCode AdjointComputeGradients(JacRes *jr, AdjGrad *aop, NLSol *nl, SNES
 			IOparam->grd[j]	=   -grd*aop->CurScal;							// gradient
 
 			// Print result
+			strcpy(CurName, IOparam->type_name[j]);	// name
             PetscPrintf(PETSC_COMM_WORLD,"|          %5d:   %+5s[%2i]           %- 1.6e \n",j+1, CurName, CurPhase, IOparam->grd[j]);
 		}
 		
