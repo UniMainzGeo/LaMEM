@@ -94,8 +94,8 @@ PetscErrorCode LaMEMAdjointReadInputSetDefaults(ModParam **p_IOparam, Adjoint_Ve
 PetscErrorCode LaMEMAdjointMain(ModParam *IOparam);
 
 // Create & Destroy Adjoint_Vectors object
-PetscErrorCode AdjointVectorsCreate(Adjoint_Vecs *Adjoint_vectors);
-PetscErrorCode AdjointVectorsDestroy(Adjoint_Vecs *Adjoint_vectors);
+PetscErrorCode AdjointVectorsCreate(Adjoint_Vecs *Adjoint_vectors, ModParam *IOparam);
+PetscErrorCode AdjointVectorsDestroy(Adjoint_Vecs *Adjoint_vectors, ModParam *IOparam);
  
 // Compute the gradients for the adjoint inversion
 PetscErrorCode AdjointObjectiveAndGradientFunction(AdjGrad *aop, JacRes *jr, NLSol *nl, ModParam *IOparam, SNES snes, FreeSurf *surf);
@@ -123,6 +123,6 @@ PetscErrorCode CopyParameterToLaMEMCommandLine(ModParam *IOparam, PetscScalar Cu
 
 // Create & Destroy aop object
 PetscErrorCode AdjointCreate(AdjGrad *aop, JacRes *jr, ModParam *IOparam);
-PetscErrorCode AdjointDestroy(AdjGrad *aop);
+PetscErrorCode AdjointDestroy(AdjGrad *aop, ModParam *IOparam);
 
 #endif

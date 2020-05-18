@@ -724,20 +724,22 @@ PetscErrorCode LaMEMLibSolve(LaMEMLib *lm, void *param)
 
 		if(IOparam->use == _syntheticforwardrun_)
 		{	// Assume this as a forward simulation and save the solution vector
-	 		VecDuplicate(lm->jr.gsol, &IOparam->xini);
+	 		//VecDuplicate(lm->jr.gsol, &IOparam->xini);
 			VecCopy(lm->jr.gsol, IOparam->xini);
 		}
+
+		ierr = AdjointDestroy (&aop,  IOparam);  	CHKERRQ(ierr);
+
 	}
 
 	// delete restart database
 	ierr = LaMEMLibDeleteRestart(); CHKERRQ(ierr);
 
 	// destroy objects
-	ierr = PCStokesDestroy(pc);    CHKERRQ(ierr);
-	ierr = PMatDestroy    (pm);    CHKERRQ(ierr);
-	ierr = SNESDestroy    (&snes); CHKERRQ(ierr);
-	ierr = NLSolDestroy   (&nl);   CHKERRQ(ierr);
-	ierr = AdjointDestroy (&aop);  CHKERRQ(ierr);
+	ierr = PCStokesDestroy(pc);    			CHKERRQ(ierr);
+	ierr = PMatDestroy    (pm);    			CHKERRQ(ierr);
+	ierr = SNESDestroy    (&snes); 			CHKERRQ(ierr);
+	ierr = NLSolDestroy   (&nl);   			CHKERRQ(ierr);
 
 	// save marker database
 	ierr = ADVMarkSave(&lm->actx); CHKERRQ(ierr);
