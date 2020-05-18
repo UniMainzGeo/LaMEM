@@ -74,10 +74,9 @@ struct AdjGrad
 	PetscScalar      Perturb;                 // Perturbation parameter for the finite differences
 	PetscScalar      CurScal, CurScalst;
 	PetscScalar      DII_ref;                 // SUPER UNNECESSARY but DII is otherwise not accesible
-	Vec              dF, dFg, dFst;
-	Vec 			 pro, stpro;
-	Vec              vx, vy, vz, stx, sty, stz;
-	Vec              dphidu;
+	Vec              dF;
+	Vec 			 pro;
+	Vec              vx, vy, vz;
 	Vec              gradfield;                // Used if gradient at every point is computed (same size as jr->p)
 };
 
@@ -93,6 +92,10 @@ PetscErrorCode AdjointOptimisationTAO(Tao tao, Vec P, PetscReal *F, Vec grad, vo
 PetscErrorCode LaMEMAdjointReadMaterialParameters(DBMat *dbm, FB  **p_fb);
 PetscErrorCode LaMEMAdjointReadInputSetDefaults(ModParam **p_IOparam, Adjoint_Vecs *Adjoint_Vectors);
 PetscErrorCode LaMEMAdjointMain(ModParam *IOparam);
+
+// Create & Destroy Adjoint_Vectors object
+PetscErrorCode AdjointVectorsCreate(Adjoint_Vecs *Adjoint_vectors);
+PetscErrorCode AdjointVectorsDestroy(Adjoint_Vecs *Adjoint_vectors);
  
 // Compute the gradients for the adjoint inversion
 PetscErrorCode AdjointObjectiveAndGradientFunction(AdjGrad *aop, JacRes *jr, NLSol *nl, ModParam *IOparam, SNES snes, FreeSurf *surf);
@@ -118,8 +121,8 @@ PetscErrorCode DeleteMaterialParameterToCommandLineOptions(char *name, PetscInt 
 PetscErrorCode CreateModifiedMaterialDatabase(ModParam **IOparam);
 PetscErrorCode CopyParameterToLaMEMCommandLine(ModParam *IOparam, PetscScalar CurVal, PetscInt j);
 
-
-// To clear the memory
+// Create & Destroy aop object
+PetscErrorCode AdjointCreate(AdjGrad *aop, JacRes *jr, ModParam *IOparam);
 PetscErrorCode AdjointDestroy(AdjGrad *aop);
 
 #endif

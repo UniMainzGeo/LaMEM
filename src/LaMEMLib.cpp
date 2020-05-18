@@ -645,6 +645,8 @@ PetscErrorCode LaMEMLibSolve(LaMEMLib *lm, void *param)
 			ModParam      *IOparam;
 			IOparam       = (ModParam *)param;
 
+			ierr =  AdjointCreate(&aop, &lm->jr, (ModParam *)param);
+
 			if (IOparam->use == _adjointgradients_ || IOparam->use == _gradientdescent_ )
 			{	// Compute adjoint gradients
 				aop.DII_ref = IOparam->DII_ref;  // likely obsolete (to be checked..)
@@ -735,6 +737,7 @@ PetscErrorCode LaMEMLibSolve(LaMEMLib *lm, void *param)
 	ierr = PMatDestroy    (pm);    CHKERRQ(ierr);
 	ierr = SNESDestroy    (&snes); CHKERRQ(ierr);
 	ierr = NLSolDestroy   (&nl);   CHKERRQ(ierr);
+	ierr = AdjointDestroy (&aop);  CHKERRQ(ierr);
 
 	// save marker database
 	ierr = ADVMarkSave(&lm->actx); CHKERRQ(ierr);

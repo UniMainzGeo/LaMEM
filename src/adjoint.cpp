@@ -225,12 +225,12 @@ PetscErrorCode LaMEMAdjointReadInputSetDefaults(ModParam **p_IOparam, Adjoint_Ve
 	PetscErrorCode 	ierr;
 	ModParam 		*IOparam;
 	FB 				*fb;
-	PetscScalar    *gradar, *Ubar, *Lbar, ts, *Par;
-	PetscInt        i, ti, ID;
-	char            str[_str_len_], par_str[_str_len_], Vel_comp[_str_len_];
-	Scaling         scal;
+	PetscScalar     *gradar, *Ubar, *Lbar, ts, *Par;
+	PetscInt         i, ti, ID;
+	char             str[_str_len_], par_str[_str_len_], Vel_comp[_str_len_];
+	Scaling          scal;
 
-	IOparam 			= 	*p_IOparam;		// simplifies the code below
+	IOparam 	        = 	*p_IOparam;		// simplifies the code below
 	fb 					=	IOparam->fb;	// filebuffer
 
 
@@ -332,12 +332,7 @@ PetscErrorCode LaMEMAdjointReadInputSetDefaults(ModParam **p_IOparam, Adjoint_Ve
 		SETERRQ1(PETSC_COMM_WORLD, PETSC_ERR_USER, "\n| Use = %d not known; should be within [0-4]\n",IOparam->use);
 	}
 
-	// VECTORS
-	ierr = VecCreateMPI(PETSC_COMM_WORLD, _MAX_PAR_  , PETSC_DETERMINE, &Adjoint_Vectors->Lb);      CHKERRQ(ierr);
-	ierr = VecCreateMPI(PETSC_COMM_WORLD, _MAX_PAR_  , PETSC_DETERMINE, &Adjoint_Vectors->Ub);      CHKERRQ(ierr);
-	ierr = VecCreateMPI(PETSC_COMM_WORLD, _MAX_PAR_  , PETSC_DETERMINE, &Adjoint_Vectors->val);     CHKERRQ(ierr);
-	ierr = VecCreateMPI(PETSC_COMM_WORLD, _MAX_PAR_  , PETSC_DETERMINE, &Adjoint_Vectors->P);       CHKERRQ(ierr);
-	ierr = VecCreateMPI(PETSC_COMM_WORLD, _MAX_PAR_  , PETSC_DETERMINE, &Adjoint_Vectors->grad);    CHKERRQ(ierr);
+	ierr = AdjointVectorsCreate(Adjoint_Vectors);      CHKERRQ(ierr);
 	ierr = VecCreateMPI(PETSC_COMM_WORLD, IOparam->maxit, PETSC_DETERMINE, &IOparam->fcconv);   CHKERRQ(ierr);   // 1500 is the maximum inversion iterations that are accepted
 
 	// TEMPORARY VARIABLES
@@ -585,11 +580,10 @@ PetscErrorCode LaMEMAdjointMain(ModParam *IOparam)
 	IOparam->count = 1;  // iteration counter for the initial cost function
 	F              = 1e100;
 
-
 	// Read input parameters
     ierr = LaMEMAdjointReadInputSetDefaults(&IOparam, &Adjoint_Vectors); 			CHKERRQ(ierr);
 	ierr = VecDuplicate(Adjoint_Vectors.P,&IOparam->P);								CHKERRQ(ierr);
- 	
+
 	// Copy adjoint parameters to command-line	options
 	VecCopy(Adjoint_Vectors.P,IOparam->P);
 	VecGetArray(IOparam->P,&Par);
@@ -598,7 +592,6 @@ PetscErrorCode LaMEMAdjointMain(ModParam *IOparam)
 		ierr	=	CopyParameterToLaMEMCommandLine(IOparam,  Par[i], i);			CHKERRQ(ierr);
     }
 	VecRestoreArray(IOparam->P,&Par);
-
 
 	//===========================================================
 	// SOLVE ADJOINT (by calling LaMEMLibMain)
@@ -701,9 +694,59 @@ PetscErrorCode LaMEMAdjointMain(ModParam *IOparam)
  	 	PetscPrintf(PETSC_COMM_WORLD,"| ------------------------------------------\n|         Forward Solution succesfully saved\n| ------------------------------------------\n");
  	}
 
-	ierr = VecDestroy(&Adjoint_Vectors.P);
-	ierr = VecDestroy(&Adjoint_Vectors.Ub);
-	ierr = VecDestroy(&Adjoint_Vectors.Lb);
+	ierr = AdjointVectorsDestroy(&Adjoint_Vectors); CHKERRQ(ierr);
+
+	PetscFunctionReturn(0);
+}
+//---------------------------------------------------------------------------
+#undef __FUNCT__
+#define __FUNCT__ "AdjointVectorsCreate"
+PetscErrorCode AdjointVectorsCreate(Adjoint_Vecs *Adjoint_Vectors)
+{
+	PetscErrorCode ierr;
+	PetscFunctionBegin;
+
+		// VECTORS
+	ierr = VecCreateMPI(PETSC_COMM_WORLD, _MAX_PAR_  , PETSC_DETERMINE, &Adjoint_Vectors->Lb);      CHKERRQ(ierr);
+	ierr = VecCreateMPI(PETSC_COMM_WORLD, _MAX_PAR_  , PETSC_DETERMINE, &Adjoint_Vectors->Ub);      CHKERRQ(ierr);
+	ierr = VecCreateMPI(PETSC_COMM_WORLD, _MAX_PAR_  , PETSC_DETERMINE, &Adjoint_Vectors->val);     CHKERRQ(ierr);
+	ierr = VecCreateMPI(PETSC_COMM_WORLD, _MAX_PAR_  , PETSC_DETERMINE, &Adjoint_Vectors->P);       CHKERRQ(ierr);
+	ierr = VecCreateMPI(PETSC_COMM_WORLD, _MAX_PAR_  , PETSC_DETERMINE, &Adjoint_Vectors->grad);    CHKERRQ(ierr);
+
+	PetscFunctionReturn(0);
+}
+//---------------------------------------------------------------------------
+#undef __FUNCT__
+#define __FUNCT__ "AdjointVectorsDestroy"
+PetscErrorCode AdjointVectorsDestroy(Adjoint_Vecs *Adjoint_Vectors)
+{
+	PetscErrorCode ierr;
+	PetscFunctionBegin;
+
+	ierr = VecDestroy(&Adjoint_Vectors->Lb);      CHKERRQ(ierr);
+	ierr = VecDestroy(&Adjoint_Vectors->Ub);      CHKERRQ(ierr);
+	ierr = VecDestroy(&Adjoint_Vectors->val);     CHKERRQ(ierr);
+	ierr = VecDestroy(&Adjoint_Vectors->P);       CHKERRQ(ierr);
+	ierr = VecDestroy(&Adjoint_Vectors->grad);    CHKERRQ(ierr);
+
+	PetscFunctionReturn(0);
+}
+//---------------------------------------------------------------------------
+#undef __FUNCT__
+#define __FUNCT__ "AdjointCreate"
+PetscErrorCode AdjointCreate(AdjGrad *aop, JacRes *jr, ModParam *IOparam)
+{
+	PetscErrorCode ierr;
+	PetscFunctionBegin;
+
+	// Create everything
+	ierr = VecCreateMPI(PETSC_COMM_WORLD, IOparam->mdI, PETSC_DETERMINE, &aop->vx); CHKERRQ(ierr);
+	ierr = VecCreateMPI(PETSC_COMM_WORLD, IOparam->mdI, PETSC_DETERMINE, &aop->vy); CHKERRQ(ierr);
+	ierr = VecCreateMPI(PETSC_COMM_WORLD, IOparam->mdI, PETSC_DETERMINE, &aop->vz); CHKERRQ(ierr);
+	ierr = DMCreateLocalVector (jr->fs->DA_CEN, &aop->gradfield);      CHKERRQ(ierr);
+
+	ierr = VecDuplicate(jr->gsol, &aop->dF);              CHKERRQ(ierr);
+	ierr = VecDuplicate(jr->gsol, &aop->pro);             CHKERRQ(ierr);
 
 	PetscFunctionReturn(0);
 }
@@ -715,8 +758,15 @@ PetscErrorCode AdjointDestroy(AdjGrad *aop)
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
 
+	ierr = VecDestroy(&aop->dF);        CHKERRQ(ierr);
+	ierr = VecDestroy(&aop->pro);       CHKERRQ(ierr);
+	ierr = VecDestroy(&aop->vx);        CHKERRQ(ierr);
+	ierr = VecDestroy(&aop->vy);        CHKERRQ(ierr);
+	ierr = VecDestroy(&aop->vz);        CHKERRQ(ierr);
+	ierr = VecDestroy(&aop->gradfield); CHKERRQ(ierr);
+
 	// Destroy the Adjoint gradients structures
-	ierr = PetscMemzero(aop, sizeof(AdjGrad)); CHKERRQ(ierr);
+	// ierr = PetscMemzero(aop, sizeof(AdjGrad)); CHKERRQ(ierr);
 
 	PetscFunctionReturn(0);
 }
@@ -824,11 +874,7 @@ PetscErrorCode AdjointOptimisation(Vec P, PetscScalar F, Vec grad, void *ctx)
 			}
 		}
 
-		// Zero out perturbation
-		//VecDuplicate(IOparam->P,&dP);
-
 		// restore parameter values
-		//VecDuplicate(IOparam->P,&P);
 		VecCopy(IOparam->P,P);
 
 		VecGetArray(P,&Par);
@@ -963,7 +1009,7 @@ PetscErrorCode AdjointOptimisationTAO(Tao tao, Vec P, PetscReal *F, Vec grad, vo
 	ierr = LaMEMLibMain(IOparam); CHKERRQ(ierr);
 
 	// restore parameter values
-	//VecDuplicate(IOparam->P,&P);		// NOT NEEDED, AS P is passed in 
+	VecDuplicate(IOparam->P,&P);		// NOT NEEDED, AS P is passed in 
 	VecCopy(IOparam->P,P);
 
 	// Store the gradient & misfit
@@ -1023,6 +1069,10 @@ PetscErrorCode AdjointOptimisationTAO(Tao tao, Vec P, PetscReal *F, Vec grad, vo
 
  	scal = jr->scal;
 
+	// Create projection vector
+	ierr = VecDuplicate(jr->gsol, &IOparam->xini);  CHKERRQ(ierr);  // create a new one
+	ierr = VecDuplicate(jr->gsol, &xini);           CHKERRQ(ierr);
+
 	//========================================
 	// COMPUTE OBJECTIVE FUNCTION & GRADIENT
 	//========================================
@@ -1054,8 +1104,6 @@ PetscErrorCode AdjointOptimisationTAO(Tao tao, Vec P, PetscReal *F, Vec grad, vo
             PetscPrintf(PETSC_COMM_WORLD,"| **************************************************************************\n");
             
 			PetscScalar Ad;
-	
-
 
 			// Incorporate projection vector (F = (1/2)*[P*(x-x_ini)' * P*(x-x_ini)])
 			ierr = VecAYPX(xini,-1.0,jr->gsol);                                     CHKERRQ(ierr);  // xini = x - xini, where x=jr->gsol
@@ -1064,16 +1112,12 @@ PetscErrorCode AdjointOptimisationTAO(Tao tao, Vec P, PetscReal *F, Vec grad, vo
 
 			ierr = VecPointwiseMult(xini, xini,aop->pro);                           CHKERRQ(ierr);  // xini = xini*P
 
-
-	
-            
 			// Compute objective function value (F = (1/2)*[P*(x-x_ini)' * P*(x-x_ini)])
 			ierr 	           = VecDot(xini,xini,&Ad);                             CHKERRQ(ierr);
 			Ad 		          /= 2;
 			IOparam->mfit 	   = Ad*pow(scal->velocity,2);                  // Dimensional misfit function
 
 	 		// Compute it's derivative (dF/dx = P*x-P*x_ini = P*(x-x_ini))
-	 		ierr = VecDuplicate(jr->gsol, &aop->dF);                                CHKERRQ(ierr);
 	 		ierr = VecCopy(xini,aop->dF); 		                                    CHKERRQ(ierr); 
 	 		PetscPrintf(PETSC_COMM_WORLD,"| Current Cost function = %.10e\n",IOparam->mfit);
 		}
@@ -1085,11 +1129,6 @@ PetscErrorCode AdjointOptimisationTAO(Tao tao, Vec P, PetscReal *F, Vec grad, vo
 
  		// Get the gradients
  		ierr = AdjointComputeGradients(jr, aop, nl, snes, IOparam, surf);        CHKERRQ(ierr);
-
- 		// Destroy
- 		//ierr = VecDestroy(&aop->pro);	 	CHKERRQ(ierr);
- 	 	// /ierr = VecDestroy(&IOparam->xini);  CHKERRQ(ierr);
- 	 	ierr = VecDestroy(&xini);           CHKERRQ(ierr);
  	 	
  	}
  	// compute 'full' adjoint inversion
@@ -1097,15 +1136,10 @@ PetscErrorCode AdjointOptimisationTAO(Tao tao, Vec P, PetscReal *F, Vec grad, vo
 	{
  		PetscScalar Ad;
 
- 	 	// Create projection vector
- 	 	ierr = VecDuplicate(jr->gsol, &aop->pro);                                CHKERRQ(ierr);
-
  	 	if(IOparam->count == 1)
  	 	{
  	 		// We need to read the comparison solution
  	 	 	PetscErrorCode  ierrp;
-
- 	 	 	ierr = VecDuplicate(jr->gsol, &IOparam->xini);                       CHKERRQ(ierr);
 
  	 	 	if(IOparam->OFdef != 1)
  	 	 	{
@@ -1132,7 +1166,6 @@ PetscErrorCode AdjointOptimisationTAO(Tao tao, Vec P, PetscReal *F, Vec grad, vo
 
 
 	 	// Copy temporary comparison solution
-	 	ierr = VecDuplicate(jr->gsol, &xini);                                   CHKERRQ(ierr);
 	 	ierr = VecCopy(IOparam->xini,xini);                                     CHKERRQ(ierr);
 		
  		// Incorporate projection vector (F = (1/2)*[P*(x-x_ini)' * P*(x-x_ini)])
@@ -1144,17 +1177,13 @@ PetscErrorCode AdjointOptimisationTAO(Tao tao, Vec P, PetscReal *F, Vec grad, vo
  		Ad 		          /= 2;
  		IOparam->mfit 	   = Ad*pow(scal->velocity,2); // Dimensional misfit function
 
-		 // Compute it's derivative (dF/dx = P*x-P*x_ini)
-		ierr = VecDuplicate(jr->gsol, &aop->dF);        CHKERRQ(ierr);
+		// Compute it's derivative (dF/dx = P*x-P*x_ini)
 		ierr = VecCopy(xini,aop->dF); 		            CHKERRQ(ierr);
 		
  		PetscPrintf(PETSC_COMM_WORLD,"| Current Cost function = %.5e\n",IOparam->mfit);
 
  		// Get the gradients
  		ierr = AdjointComputeGradients(jr, aop, nl, snes, IOparam, surf);        CHKERRQ(ierr);
-
- 		// Destroy
- 		ierr = VecDestroy(&xini);
 	}
  	else
  	{
@@ -1162,6 +1191,8 @@ PetscErrorCode AdjointOptimisationTAO(Tao tao, Vec P, PetscReal *F, Vec grad, vo
  	 	PetscFunctionReturn(1);
  	}
 
+	// Destroy
+	 ierr = VecDestroy(&xini);
 
  	PetscFunctionReturn(0);
  }
@@ -1205,6 +1236,7 @@ PetscErrorCode AdjointComputeGradients(JacRes *jr, AdjGrad *aop, NLSol *nl, SNES
 	ierr = VecDuplicate(jr->gres, &res);	 	 CHKERRQ(ierr);
 	ierr = VecDuplicate(jr->gsol, &sol); 		 CHKERRQ(ierr);
 	ierr = VecDuplicate(jr->gsol, &drdp);	 	 CHKERRQ(ierr);
+	ierr = VecDuplicate(jr->gsol, &Perturb_vec); CHKERRQ(ierr);
 	ierr = VecCopy(jr->gsol,sol); 				 CHKERRQ(ierr);
 	ierr = VecCopy(jr->gres,res); 				 CHKERRQ(ierr);
 
@@ -1266,7 +1298,6 @@ PetscErrorCode AdjointComputeGradients(JacRes *jr, AdjGrad *aop, NLSol *nl, SNES
 		// PARAMETER LOOP
 		//=================
 
-        ierr = VecDuplicate(jr->gsol, &Perturb_vec);        CHKERRQ(ierr);
 		VecGetArray(IOparam->P,&Par);
 		for(j = 0; j < IOparam->mdN; j++)
 		{
@@ -1383,6 +1414,7 @@ PetscErrorCode AdjointComputeGradients(JacRes *jr, AdjGrad *aop, NLSol *nl, SNES
 	ierr = VecDestroy(&sol);
 	ierr = VecDestroy(&drdp);
 	ierr = VecDestroy(&res_pert);
+	ierr = VecDestroy(&res);
     ierr = VecDestroy(&Perturb_vec);
 
 	PetscTime(&cputime_end);
@@ -1462,11 +1494,6 @@ PetscErrorCode AdjointPointInPro(JacRes *jr, AdjGrad *aop, ModParam *IOparam, Fr
 	// If we want only a few observation points we need to interpolate velocity from the grid to the observation point
 	if(IOparam->Ap == 1)
 	{
-		// Create everything
-	 	ierr = VecCreateMPI(PETSC_COMM_WORLD, IOparam->mdI, PETSC_DETERMINE, &aop->vx); CHKERRQ(ierr);
-	 	ierr = VecCreateMPI(PETSC_COMM_WORLD, IOparam->mdI, PETSC_DETERMINE, &aop->vy); CHKERRQ(ierr);
-	 	ierr = VecCreateMPI(PETSC_COMM_WORLD, IOparam->mdI, PETSC_DETERMINE, &aop->vz); CHKERRQ(ierr);
-
 		ierr = VecGetArray(aop->vx,&vx); CHKERRQ(ierr);
 		ierr = VecGetArray(aop->vy,&vy); CHKERRQ(ierr);
 		ierr = VecGetArray(aop->vz,&vz); CHKERRQ(ierr);
@@ -1833,8 +1860,6 @@ PetscErrorCode AdjointPointInPro(JacRes *jr, AdjGrad *aop, ModParam *IOparam, Fr
 			
 				// scan all free surface local points
 				ierr = DMDAGetCorners(fs->DA_COR, &sx, &sy, &sz, &nx, &ny, NULL); CHKERRQ(ierr);
-				
-				
 			
 				START_PLANE_LOOP
 				{
@@ -2825,6 +2850,9 @@ PetscErrorCode AdjointFormResidualFieldFDRho(SNES snes, Vec x, Vec psi, NLSol *n
 	ierr = DMDAVecRestoreArray(fs->DA_CEN, jr->lgradfield,&llgradfield);CHKERRQ(ierr);
 
 	LOCAL_TO_LOCAL(fs->DA_CEN, jr->lgradfield);
+
+	// give it back to the adjoint context
+	ierr = VecCopy(jr->lgradfield,aop->gradfield);
 
 	// deactivate pressure limit after it has been activated
 	// jr->matLim.presLimFlg = PETSC_FALSE;
