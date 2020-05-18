@@ -89,7 +89,6 @@ struct Adjoint_Vecs
 // Adjoint optimization driving routines
 PetscErrorCode AdjointOptimisation(Vec P, PetscScalar F, Vec grad, void *ctx);
 PetscErrorCode AdjointOptimisationTAO(Tao tao, Vec P, PetscReal *F, Vec grad, void *ctx);
-PetscErrorCode LaMEMAdjointReadMaterialParameters(DBMat *dbm, FB  **p_fb);
 PetscErrorCode LaMEMAdjointReadInputSetDefaults(ModParam **p_IOparam, Adjoint_Vecs *Adjoint_Vectors);
 PetscErrorCode LaMEMAdjointMain(ModParam *IOparam);
 

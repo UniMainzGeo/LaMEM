@@ -609,6 +609,12 @@ PetscErrorCode LaMEMLibSolve(LaMEMLib *lm, void *param)
 
 	ierr = LaMEMLibInitGuess(lm, snes); CHKERRQ(ierr);
 
+
+	if (param)
+	{
+		ierr =  AdjointCreate(&aop, &lm->jr, (ModParam *)param);
+	}
+
 	//===============
 	// TIME STEP LOOP
 	//===============
@@ -642,14 +648,12 @@ PetscErrorCode LaMEMLibSolve(LaMEMLib *lm, void *param)
 		// Compute adjoint gradients every TS
 		if (param)
 		{
+			
 			ModParam      *IOparam;
-			IOparam       = (ModParam *)param;
-
-			ierr =  AdjointCreate(&aop, &lm->jr, (ModParam *)param);
-
+			IOparam       = (ModParam *)param;	
 			if (IOparam->use == _adjointgradients_ || IOparam->use == _gradientdescent_ )
 			{	// Compute adjoint gradients
-				aop.DII_ref = IOparam->DII_ref;  // likely obsolete (to be checked..)
+				//aop.DII_ref = IOparam->DII_ref;  // likely obsolete (to be checked..)
 				
 				// Compute the adjoint gradients 
 				ierr = AdjointObjectiveAndGradientFunction(&aop, &lm->jr, &nl, (ModParam *)param, snes, &lm->surf); CHKERRQ(ierr);
@@ -725,7 +729,7 @@ PetscErrorCode LaMEMLibSolve(LaMEMLib *lm, void *param)
 		if(IOparam->use == _syntheticforwardrun_)
 		{	// Assume this as a forward simulation and save the solution vector
 	 		//VecDuplicate(lm->jr.gsol, &IOparam->xini);
-			VecCopy(lm->jr.gsol, IOparam->xini);
+			//VecCopy(lm->jr.gsol, IOparam->xini);
 		}
 
 		ierr = AdjointDestroy (&aop,  IOparam);  	CHKERRQ(ierr);

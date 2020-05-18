@@ -165,53 +165,6 @@ void swapStruct(struct Material_t *A, struct Material_t *B){
     *A = *B;
     *B = temp;
 }
-//---------------------------------------------------------------------------
-/* This reads the material parameters from the file
-*/
-#undef __FUNCT__
-#define __FUNCT__ "LaMEMAdjointReadMaterialParameters"
-PetscErrorCode LaMEMAdjointReadMaterialParameters(DBMat *dbm, FB  **p_fb)
-{
-    PetscErrorCode  ierr;
-    FB              *fb;
-
-    fb          =	*p_fb;
-
-
-    // print overview of material parameters read from file
-	PetscPrintf(PETSC_COMM_WORLD,"| Adjoint: Material parameters: \n");
-
-	// setup block access mode
-	ierr = FBFindBlocks(fb, _REQUIRED_, "<MaterialStart>", "<MaterialEnd>"); CHKERRQ(ierr);
-    PetscPrintf(PETSC_COMM_WORLD,"| Adjoint1: Material parameters: found %i blocks \n",fb->nblocks);
-
-/*
-	// initialize ID for consistency checks
-	for(jj = 0; jj < _max_num_phases_; jj++) dbm->phases[jj].ID = -1;
-
-
-	// error checking
-	if(fb->nblocks > _max_num_phases_)
-	{
-		SETERRQ1(PETSC_COMM_WORLD, PETSC_ERR_USER, "Too many material structures specified! Max allowed: %lld", (LLD)_max_num_phases_);
-	}
-
-	// store actual number of phases
-	dbm->numPhases = fb->nblocks;
-    PetscPrintf(PETSC_COMM_WORLD,"Adjoint2: Material parameters: found  \n");
-
-	// read each individual phase
-	for(jj = 0; jj < fb->nblocks; jj++)
-	{
-	//	ierr = DBMatReadPhase(dbm, fb); CHKERRQ(ierr);
-
-//		fb->blockID++;
-
-	}
-*/
-    PetscFunctionReturn(0);
-
-}
 
 //---------------------------------------------------------------------------
 /* This reads the input parameters from the file/command-line & sets default 
@@ -232,7 +185,6 @@ PetscErrorCode LaMEMAdjointReadInputSetDefaults(ModParam **p_IOparam, Adjoint_Ve
 
 	IOparam 	        = 	*p_IOparam;		// simplifies the code below
 	fb 					=	IOparam->fb;	// filebuffer
-
 
 	// Some defaults
 	IOparam->FS         = 0;
@@ -813,7 +765,6 @@ PetscErrorCode AdjointOptimisation(Vec P, PetscScalar F, Vec grad, void *ctx)
 	F 		= 1e100;
 	Fold 	= 1e100;
 
-
 	while(F>IOparam->tol)
 	{
 		
@@ -872,7 +823,7 @@ PetscErrorCode AdjointOptimisation(Vec P, PetscScalar F, Vec grad, void *ctx)
 			VecCopy(P,IOparam->P);  // obsolete with new method to set parameters
 
 			// call LaMEM main library function
-	//		ierr = LaMEMLibMain(IOparam); CHKERRQ(ierr);
+			ierr = LaMEMLibMain(IOparam); CHKERRQ(ierr);
 
 			F = IOparam->mfit;
 
@@ -885,6 +836,12 @@ PetscErrorCode AdjointOptimisation(Vec P, PetscScalar F, Vec grad, void *ctx)
 
 				// Return parameters for final output
 				VecCopy(P,IOparam->P);
+
+				VecDestroy(&dP);
+				VecDestroy(&Pold);
+				VecDestroy(&gradold);
+				VecDestroy(&dgrad);
+				VecDestroy(&r);
 
 				PetscFunctionReturn(0);
 			}
@@ -1008,7 +965,6 @@ PetscErrorCode AdjointOptimisationTAO(Tao tao, Vec P, PetscReal *F, Vec grad, vo
 	IOparam    =  (ModParam*)ctx;
 
 	// get parameter values
-	//VecDuplicate(P,&IOparam->P);
 	VecCopy(P,IOparam->P);
 
 	VecGetArray(IOparam->P,&Par);
@@ -1026,7 +982,6 @@ PetscErrorCode AdjointOptimisationTAO(Tao tao, Vec P, PetscReal *F, Vec grad, vo
 	ierr = LaMEMLibMain(IOparam); CHKERRQ(ierr);
 
 	// restore parameter values
-	VecDuplicate(IOparam->P,&P);		// NOT NEEDED, AS P is passed in 
 	VecCopy(IOparam->P,P);
 
 	// Store the gradient & misfit
@@ -1079,7 +1034,7 @@ PetscErrorCode AdjointOptimisationTAO(Tao tao, Vec P, PetscReal *F, Vec grad, vo
  {
 
 	Scaling             *scal;
-	Vec                  xini, projection;
+	Vec                  xini;
 
  	PetscErrorCode ierr;
  	PetscFunctionBegin;
@@ -1087,7 +1042,6 @@ PetscErrorCode AdjointOptimisationTAO(Tao tao, Vec P, PetscReal *F, Vec grad, vo
  	scal = jr->scal;
 
 	// Create projection vector
-//	ierr = VecDuplicate(jr->gsol, &IOparam->xini);  CHKERRQ(ierr);  // create a new one
 	ierr = VecDuplicate(jr->gsol, &xini);           CHKERRQ(ierr);
 
 	//========================================
@@ -1203,7 +1157,6 @@ PetscErrorCode AdjointOptimisationTAO(Tao tao, Vec P, PetscReal *F, Vec grad, vo
 
 	// Destroy
 	ierr = VecDestroy(&xini);
-	ierr = VecDestroy(&IOparam->xini);  CHKERRQ(ierr); 
 
 
  	PetscFunctionReturn(0);
@@ -1222,12 +1175,14 @@ PetscErrorCode AdjointComputeGradients(JacRes *jr, AdjGrad *aop, NLSol *nl, SNES
 	PetscFunctionBegin;
 
 	FDSTAG              *fs;
-	KSP                 ksp;
+	SNES 				snes_as;
+	KSP                 ksp_as;
 	KSPConvergedReason  reason;
 	PetscInt            i, j, CurPhase, CurPar, lrank, grank, fd;
 	PetscScalar         dt, grd, Perturb, coord_local[3], *vx, *vy, *vz, *Par, CurVal;
 	Vec 				res_pert, sol, psi, drdp, res, Perturb_vec;
-	PC                  ipc;
+	PC                  ipc_as;
+	PCStokes 			pc_as;
 	Scaling             *scal;
     PetscBool           flg;
     char                CurName[_str_len_];
@@ -1258,14 +1213,21 @@ PetscErrorCode AdjointComputeGradients(JacRes *jr, AdjGrad *aop, NLSol *nl, SNES
 	// Solve the adjoint equation (psi = J^-T * dF/dx)
 	// (A side note that I figured out, ksp still sometimes results in a > 0 gradient even if cost function is zero.. possibly really bad condition number?)
 
-	ierr = SNESGetKSP(snes, &ksp);         		CHKERRQ(ierr);
-	ierr = KSPSetOptionsPrefix(ksp,"as_"); 		CHKERRQ(ierr);
-	ierr = KSPSetFromOptions(ksp);         		CHKERRQ(ierr);
-	ierr = KSPGetPC(ksp, &ipc);            		CHKERRQ(ierr);
-	ierr = PCSetType(ipc, PCMAT);          		CHKERRQ(ierr);
-	ierr = KSPSetOperators(ksp,nl->J,nl->P);	CHKERRQ(ierr);
-	ierr = KSPSolve(ksp,aop->dF,psi);	CHKERRQ(ierr);
-	ierr = KSPGetConvergedReason(ksp,&reason);	CHKERRQ(ierr);
+	ierr = SNESCreate(PETSC_COMM_WORLD, &snes_as);                     CHKERRQ(ierr);
+	ierr = SNESSetType(snes_as, SNESNEWTONLS);                         CHKERRQ(ierr);
+	ierr = SNESSetFunction(snes_as, jr->gres, &FormResidual, nl);      CHKERRQ(ierr);
+	ierr = SNESSetJacobian(snes_as, nl->J, nl->P, &FormJacobian, nl);  CHKERRQ(ierr);
+	ierr = SNESSetFromOptions(snes_as);                                CHKERRQ(ierr);
+	ierr = SNESGetKSP(snes_as, &ksp_as);         		CHKERRQ(ierr);
+	ierr = KSPSetOptionsPrefix(ksp_as,"as_"); 		CHKERRQ(ierr);
+	ierr = KSPSetFromOptions(ksp_as);         		CHKERRQ(ierr);
+	ierr = KSPGetPC(ksp_as, &ipc_as);           	CHKERRQ(ierr);
+	ierr = PCSetType(ipc_as, PCMAT);          		CHKERRQ(ierr);
+	ierr = KSPSetOperators(ksp_as,nl->J,nl->P);		CHKERRQ(ierr);
+	ierr = KSPSolve(ksp_as,aop->dF,psi);			CHKERRQ(ierr);
+	ierr = KSPGetConvergedReason(ksp_as,&reason);	CHKERRQ(ierr);
+
+	ierr = SNESDestroy(&snes_as);
 
 
     // Set the FD step-size for computing dr/dp (or override it with a command-line option, which is more for advanced users/testing)
@@ -1346,9 +1308,6 @@ PetscErrorCode AdjointComputeGradients(JacRes *jr, AdjGrad *aop, NLSol *nl, SNES
 
 			swapStruct(&IOparam->dbm_modified.phases[CurPhase],&nl->pc->pm->jr->dbm->phases[CurPhase]);  // Swap material DB back again
 
-
-			fd += fd;  // Needed to free vectors later  [OBSOLETE?]
-
 			// Compute the gradient (dF/dp = -psi^T * dr/dp) & Save gradient
 			ierr          	=   VecDot(drdp,psi,&grd);                       CHKERRQ(ierr);
 			IOparam->grd[j]	=   -grd*aop->CurScal;							// gradient
@@ -1359,10 +1318,6 @@ PetscErrorCode AdjointComputeGradients(JacRes *jr, AdjGrad *aop, NLSol *nl, SNES
 		
         PetscPrintf(PETSC_COMM_WORLD,"| \n| ");
 		VecRestoreArray(IOparam->P,&Par);
-	
-		// Destroy overwritten residual vector
-		ierr = VecDestroy(&drdp);
-
 	}
 
 	if(IOparam->mdI<_MAX_OBS_ && IOparam->Ap == 1)
@@ -1423,8 +1378,7 @@ PetscErrorCode AdjointComputeGradients(JacRes *jr, AdjGrad *aop, NLSol *nl, SNES
 		VecRestoreArray(aop->vz,&vz);
 	}
     PetscPrintf(PETSC_COMM_WORLD,"| \n| ");
-    
-
+ 
 
 	// Clean
 	ierr = VecDestroy(&psi);
@@ -2282,9 +2236,10 @@ PetscErrorCode AdjointFormResidualFieldFDRho(SNES snes, Vec x, Vec psi, NLSol *n
 	// Create stuff
 	ierr = VecDuplicate(jr->gsol, &drdp);	 	 CHKERRQ(ierr);
 	ierr = VecDuplicate(jr->gres, &res);	 	 CHKERRQ(ierr);
-	ierr = VecZeroEntries(jr->lgradfield);	 	 CHKERRQ(ierr);
 	ierr = VecDuplicate(jr->gres, &rpl);		 CHKERRQ(ierr);
 	ierr = VecDuplicate(jr->gsol, &Perturb_vec); CHKERRQ(ierr);
+	
+	ierr = VecZeroEntries(jr->lgradfield);	 	 CHKERRQ(ierr);
 	ierr = VecSet(Perturb_vec,aop->Perturb);     CHKERRQ(ierr);
 
 	/*// apply pressure limit at the first visco-plastic timestep and iteration
