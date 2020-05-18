@@ -202,7 +202,7 @@ PetscErrorCode LaMEMAdjointReadInputSetDefaults(ModParam **p_IOparam, Adjoint_Ve
 	IOparam->maxfac     = 100;
 	IOparam->Scale_Grad = 0.1;
 	IOparam->maxit      = 50;
-	IOparam->maxitLS    = 10;
+	IOparam->maxitLS    = 20;
 
     // Create scaling object
 	ierr = ScalingCreate(&scal, fb); CHKERRQ(ierr);
@@ -290,7 +290,6 @@ PetscErrorCode LaMEMAdjointReadInputSetDefaults(ModParam **p_IOparam, Adjoint_Ve
 
 	// TEMPORARY VARIABLES
 	PetscInt		phsar[_MAX_PAR_];
-	PetscInt      	typar[_MAX_PAR_];					// should become obsolete, if we use the name below
 	char 			type_name[_MAX_PAR_][_str_len_];
 	PetscScalar     Ax[  _MAX_OBS_];
 	PetscScalar     Ay[  _MAX_OBS_];
@@ -373,21 +372,8 @@ PetscErrorCode LaMEMAdjointReadInputSetDefaults(ModParam **p_IOparam, Adjoint_Ve
         }
         
 		ierr = getStringParam(fb, _OPTIONAL_, "Type", par_str, NULL); CHKERRQ(ierr);
-        /* 
-			We need a better way to keep track of the parameters we vary, which should be fully consistent with the nomenclature of parameters
-				within LaMEM; as not all parameters have been tested with LaMEM, it is likely a good idea to have a separate subroutine 
-				that checks if this parameters is -in principle- a material parameter that can be varied.
-		*/
-		if     (!strcmp(par_str, "rho0"))       { ti = _RHO0_; }
-		else if(!strcmp(par_str, "rhon"))       { ti = _RHON_; }
-		else if(!strcmp(par_str, "rhoc"))       { ti = _RHOC_; }
-		else if(!strcmp(par_str, "eta"))        { ti = _ETA_;  }
-		else if(!strcmp(par_str, "eta0"))       { ti = _ETA0_; }
-		else if(!strcmp(par_str, "n"))          { ti = _N_;    }
-		else if(!strcmp(par_str, "En"))         { ti = _EN_;   }
-		else{ SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "WARNING: inversion parameter type is not yet implemented \n"); }
-		typar[i]     = ti;
-		strcpy(type_name[i], par_str);
+        strcpy(type_name[i], par_str);
+		
 		gradar[i]    = 0.0;                     // GRADIENTS
 
         // PARAMETER VALUES
@@ -414,7 +400,6 @@ PetscErrorCode LaMEMAdjointReadInputSetDefaults(ModParam **p_IOparam, Adjoint_Ve
    
 
     ierr  = PetscMemcpy(IOparam->grd,       gradar,     (size_t)_MAX_PAR_*sizeof(PetscScalar) ); CHKERRQ(ierr);
-    ierr  = PetscMemcpy(IOparam->typ,       typar,      (size_t)_MAX_PAR_*sizeof(PetscInt)    ); CHKERRQ(ierr); // will become obsolete
     ierr  = PetscMemcpy(IOparam->type_name, type_name,  (size_t)_MAX_PAR_*(size_t)_str_len_*sizeof(char)        ); CHKERRQ(ierr);
     ierr  = PetscMemcpy(IOparam->phs,       phsar,      (size_t)_MAX_PAR_*sizeof(PetscInt)    ); CHKERRQ(ierr);
 
@@ -619,11 +604,19 @@ PetscErrorCode LaMEMAdjointMain(ModParam *IOparam)
  		VecRestoreArray(IOparam->fcconv,&fcconvar);
  		PetscPrintf(PETSC_COMM_WORLD,"| \n| Final cost function:\n");
  		PetscPrintf(PETSC_COMM_WORLD,"| %.5e\n",IOparam->mfit);
- 		PetscPrintf(PETSC_COMM_WORLD,"| \n| Final Parameters:\n");
+ 		PetscPrintf(PETSC_COMM_WORLD,"| \n| Final Parameters: \n");
 		VecGetArray(IOparam->P,&Par);
 		for(i=0;i<IOparam->mdN;i++)
 		{
-			PetscPrintf(PETSC_COMM_WORLD,"| %.5e\n",Par[i]);
+			
+			
+			PetscInt 		CurPhase;
+			char 			CurName[_str_len_];
+	
+			CurPhase = 	IOparam->phs[i];			// phase of the parameter
+    		strcpy(CurName, IOparam->type_name[i]);	// name
+
+			PetscPrintf(PETSC_COMM_WORLD,"| %s[%i] = %.5e\n",CurName, CurPhase, Par[i]);
 		}
 		VecRestoreArray(IOparam->P,&Par);
  		PetscPrintf(PETSC_COMM_WORLD,"| ------------------------------------------------------------------------- \n\n");
@@ -746,13 +739,12 @@ PetscErrorCode AdjointOptimisation(Vec P, PetscScalar F, Vec grad, void *ctx)
 	PetscFunctionBegin;
 
 	// initialize
-	PetscInt 		i, j, LScount, CurPhase;
+	PetscInt 		i, j, LScount;
 	PetscScalar 	*Par, *Paroldar, *gradar, *dPtemp, *fcconvar;
 	PetscScalar   	Fold;
 	ModParam    	*IOparam;
 	IOparam     	= (ModParam*)ctx;
 	Vec         	dP,dgrad,Pold,gradold,r;
-	char 			CurName[_str_len_];
 
 	// get parameter values
 	VecDuplicate(IOparam->P,&dP);
@@ -958,8 +950,8 @@ PetscErrorCode AdjointOptimisationTAO(Tao tao, Vec P, PetscReal *F, Vec grad, vo
 	PetscFunctionBegin;
 
 	// initialize
-	PetscInt j, CurPhase, CurPar;
-	PetscScalar *Par, *gradar, *fcconvar, CurVal;
+	PetscInt j;
+	PetscScalar *Par, *gradar, *fcconvar;
 	ModParam    *IOparam;
 	char		CurName[_str_len_];
 	
@@ -1179,18 +1171,16 @@ PetscErrorCode AdjointComputeGradients(JacRes *jr, AdjGrad *aop, NLSol *nl, SNES
 	SNES 				snes_as;
 	KSP                 ksp_as;
 	KSPConvergedReason  reason;
-	PetscInt            i, j, CurPhase, CurPar, lrank, grank, fd;
+	PetscInt            i, j, CurPhase, lrank, grank;
 	PetscScalar         dt, grd, Perturb, coord_local[3], *vx, *vy, *vz, *Par, CurVal;
 	Vec 				res_pert, sol, psi, drdp, res, Perturb_vec;
 	PC                  ipc_as;
-	PCStokes 			pc_as;
 	Scaling             *scal;
     PetscBool           flg;
     char                CurName[_str_len_];
 
 	fs = jr->fs;
 	dt = jr->ts->dt;
-	fd = 0;          // Counts FD approximations
 
 	// Profile time
 	PetscLogDouble     cputime_start, cputime_end;
@@ -1248,11 +1238,15 @@ PetscErrorCode AdjointComputeGradients(JacRes *jr, AdjGrad *aop, NLSol *nl, SNES
              on say, surface velocity
         */
 
-
-		CurPar   = IOparam->typ[0];
-
 		// Compute residual with the converged Jacobian analytically
-		if (CurPar==_RHO0_)
+		
+	
+    	strcpy(CurName, IOparam->type_name[0]);	// name of the parameter
+		if (IOparam->mdN>1){
+			SETERRQ(PETSC_COMM_WORLD,PETSC_ERR_USER,"| Field-based gradients can currently only be computed for a single parameter \n");		// error check
+		}
+		PetscStrcmp(CurName,"rho0",&flg);		// check name 
+		if (flg)		// we need some way to ensure that we do this for one field at a time only
 		{
 			aop->CurScal   = (scal->velocity)/(scal->density);
 			aop->CurScalst = 1/(scal->density);
@@ -1283,8 +1277,9 @@ PetscErrorCode AdjointComputeGradients(JacRes *jr, AdjGrad *aop, NLSol *nl, SNES
 
 			// Get current phase and parameter which is being perturbed
 			CurPhase 		= 	IOparam->phs[j];
-			//CurPar   		= 	IOparam->typ[j];
 			CurVal 	 		= 	Par[j];
+			strcpy(CurName, IOparam->type_name[j]);	// name
+			
 
 			// Perturb parameter
 			Perturb 		= 	aop->FD_epsilon*CurVal;
@@ -1314,7 +1309,6 @@ PetscErrorCode AdjointComputeGradients(JacRes *jr, AdjGrad *aop, NLSol *nl, SNES
 			IOparam->grd[j]	=   -grd*aop->CurScal;							// gradient
 
 			// Print result
-			strcpy(CurName, IOparam->type_name[j]);	// name
             PetscPrintf(PETSC_COMM_WORLD,"|          %5d:   %+5s[%2i]           %- 1.6e \n",j+1, CurName, CurPhase, IOparam->grd[j]);
 		}
 		
@@ -1353,7 +1347,7 @@ PetscErrorCode AdjointComputeGradients(JacRes *jr, AdjGrad *aop, NLSol *nl, SNES
 			if(lrank == 13)
 			{
                 char vel_com[20];
-                PetscScalar vel,x,y,z,CostFunc;
+                PetscScalar vel=0,x,y,z,CostFunc;
 
                 if (IOparam->Av[i] == 1){strcpy(vel_com, "Vx"); vel = vx[i]*scal->velocity;}
                 if (IOparam->Av[i] == 2){strcpy(vel_com, "Vy"); vel = vy[i]*scal->velocity;}
@@ -1392,7 +1386,9 @@ PetscErrorCode AdjointComputeGradients(JacRes *jr, AdjGrad *aop, NLSol *nl, SNES
 
 	PetscTime(&cputime_end);
     ierr = MPI_Barrier(PETSC_COMM_WORLD); CHKERRQ(ierr); // because of PETSC_COMM_SELF above
-	PetscPrintf(PETSC_COMM_WORLD,"| Computation was succesful & took %g s\n| ******************************************\n",cputime_end - cputime_start);
+	PetscPrintf(PETSC_COMM_WORLD,"| Computation was succesful & took %g s                                    \n",cputime_end - cputime_start);
+	PetscPrintf(PETSC_COMM_WORLD,"| ************************************************************************ \n| ");
+
 
 	PetscFunctionReturn(0);
 }

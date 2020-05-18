@@ -62,7 +62,6 @@ int main(int argc, char **argv)
 	ierr = PetscInitialize(&argc,&argv,(char *)0, help); CHKERRQ(ierr);
 
 	ModParam IOparam;
-	FB       *fb;
 	char      str[_str_len_];
 
 	// set default to be a forward run and overwrite it with input file options

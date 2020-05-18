@@ -95,9 +95,9 @@ struct ModParam
 	PetscInt         use;                               // Choose one of InvTypes
 	PetscInt         mdN;                               // number of model parameters
 	PetscInt         mID;                               // current model number
-	PetscInt         typ[_MAX_PAR_];  	                // model parameter type
 	char 			 type_name[_MAX_PAR_][_str_len_];   // stores the name of the adjoint parameters
-	PetscInt         phs[_MAX_PAR_];                    // phase number of adjoint parameters
+	PetscBool 		 FD_gradient[_MAX_PAR_];			// Compute gradient via (brute force) finite differences, or with
+    PetscInt      	 phs[_MAX_PAR_];                    // phase of the parameter
 	PetscScalar      grd[_MAX_PAR_];                    // gradient value
 	PetscScalar     *val;                               // model value
 	PetscScalar      mfit;                              // misfit value for current model parameters
