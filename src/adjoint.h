@@ -116,6 +116,8 @@ PetscErrorCode AdjointFormResidualFieldFDRho(SNES snes, Vec x, Vec psi, NLSol *n
 PetscErrorCode AddMaterialParameterToCommandLineOptions(char *name, PetscInt ID, PetscScalar val);
 PetscErrorCode DeleteMaterialParameterToCommandLineOptions(char *name, PetscInt ID);
 PetscErrorCode CreateModifiedMaterialDatabase(ModParam **IOparam);
+PetscErrorCode CopyParameterToLaMEMCommandLine(ModParam *IOparam, PetscScalar CurVal, PetscInt j);
+
 
 // To clear the memory
 PetscErrorCode AdjointDestroy(AdjGrad *aop);

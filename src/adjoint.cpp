@@ -587,7 +587,17 @@ PetscErrorCode LaMEMAdjointMain(ModParam *IOparam)
 
 
 	// Read input parameters
-    ierr = LaMEMAdjointReadInputSetDefaults(&IOparam, &Adjoint_Vectors); CHKERRQ(ierr);
+    ierr = LaMEMAdjointReadInputSetDefaults(&IOparam, &Adjoint_Vectors); 			CHKERRQ(ierr);
+	ierr = VecDuplicate(Adjoint_Vectors.P,&IOparam->P);								CHKERRQ(ierr);
+ 	
+	// Copy adjoint parameters to command-line	options
+	VecCopy(Adjoint_Vectors.P,IOparam->P);
+	VecGetArray(IOparam->P,&Par);
+	for(i=0;i<IOparam->mdN;i++)
+	{
+		ierr	=	CopyParameterToLaMEMCommandLine(IOparam,  Par[i], i);			CHKERRQ(ierr);
+    }
+	VecRestoreArray(IOparam->P,&Par);
 
 
 	//===========================================================
@@ -596,18 +606,12 @@ PetscErrorCode LaMEMAdjointMain(ModParam *IOparam)
 	// only compute the adjoint gradients or simply forward code
 	if(IOparam->use == _adjointgradients_)
  	{
- 		//VecDuplicate(Adjoint_Vectors.P,&IOparam->P);
- 		VecCopy(Adjoint_Vectors.P,IOparam->P);
-
  		// call LaMEM main library function
  		ierr = LaMEMLibMain(IOparam); CHKERRQ(ierr);
  	}
  	// compute 'full' adjoint-based gradient inversion
  	else if(IOparam->use == _gradientdescent_)
  	{
- 		VecDuplicate(Adjoint_Vectors.P,&IOparam->P);
- 		VecCopy(Adjoint_Vectors.P,IOparam->P);
-
  		if(IOparam->Tao == 1)
  		{
             // if TAO is employed, try the LMVM/BLMVM algorithms    
@@ -748,7 +752,13 @@ PetscErrorCode AdjointOptimisation(Vec P, PetscScalar F, Vec grad, void *ctx)
 	while(F>IOparam->tol)
 	{
 		// Give the updated values to the code
-		VecCopy(P,IOparam->P);
+		VecCopy(P,IOparam->P);		
+		VecGetArray(P,&Par);
+		for(i=0;i<IOparam->mdN;i++)
+		{
+			ierr	=	CopyParameterToLaMEMCommandLine(IOparam,  Par[i], i);			CHKERRQ(ierr);
+    	}
+		VecRestoreArray(P,&Par);
 
 		// Reset line search counter
 		LScount = 1;
@@ -785,12 +795,9 @@ PetscErrorCode AdjointOptimisation(Vec P, PetscScalar F, Vec grad, void *ctx)
 			// Update parameter
 			for(i=0;i<IOparam->mdN;i++)
 			{
-				Par[i] = Paroldar[i] + dPtemp[i];
-
-				CurPhase = IOparam->phs[i];
-				strcpy(CurName, IOparam->type_name[i]);
-				ierr = AddMaterialParameterToCommandLineOptions(CurName, CurPhase, Par[i]); CHKERRQ(ierr);
-			}
+				Par[i] 	= 	Paroldar[i] + dPtemp[i];
+				ierr	=	CopyParameterToLaMEMCommandLine(IOparam,  Par[i], i);			CHKERRQ(ierr);
+    		}
 			VecRestoreArray(P,&Par);
 			VecRestoreArray(Pold,&Paroldar);
 			VecRestoreArray(dP,&dPtemp);
@@ -875,12 +882,9 @@ PetscErrorCode AdjointOptimisation(Vec P, PetscScalar F, Vec grad, void *ctx)
 		{
 			if(F>IOparam->tol)
 			{
-				Par[i] = Par[i] + dPtemp[i];
-
-				CurPhase = IOparam->phs[i];
-				strcpy(CurName, IOparam->type_name[i]);
-				ierr = AddMaterialParameterToCommandLineOptions(CurName, CurPhase, Par[i]); CHKERRQ(ierr);
-			}
+				Par[i] 	= 	Par[i] + dPtemp[i];
+				ierr	=	CopyParameterToLaMEMCommandLine(IOparam,  Par[i], i);			CHKERRQ(ierr);
+    		}
 		}
 		VecRestoreArray(grad,&gradar);
 		VecRestoreArray(P,&Par);
@@ -909,7 +913,7 @@ PetscErrorCode AdjointOptimisation(Vec P, PetscScalar F, Vec grad, void *ctx)
 		IOparam->count += 1;
 		if(IOparam->count>IOparam->maxit)
 		{
-			PetscPrintf(PETSC_COMM_WORLD,"\n\n| Maximum number of invere iterations reached\n\n");
+			PetscPrintf(PETSC_COMM_WORLD,"\n\n| Maximum number of inverse iterations reached\n\n");
 			break;
 		}
 	}
@@ -938,26 +942,22 @@ PetscErrorCode AdjointOptimisationTAO(Tao tao, Vec P, PetscReal *F, Vec grad, vo
 	ModParam    *IOparam;
 	char		CurName[_str_len_];
 	
-	
 	IOparam    =  (ModParam*)ctx;
 
 	// get parameter values
 	VecDuplicate(P,&IOparam->P);
 	VecCopy(P,IOparam->P);
 
-	VecGetArray(P,&Par);
+	VecGetArray(IOparam->P,&Par);
 	// Set parameters as command-line options
 	for(j = 0; j < IOparam->mdN; j++){
-		CurPhase = 	IOparam->phs[j];			// phase of the parameter
-		CurPar   = 	IOparam->typ[j];			// Type 	
-		CurVal   =	Par[j];						// value of parameter
-        strcpy(CurName, IOparam->type_name[j]);	// name
-
-		PetscPrintf(PETSC_COMM_WORLD,"| *** AdjointOptimisationTAO: Current parameter %s[%i]=%10.10f \n",CurName,CurPhase,CurVal);
-		ierr = DeleteMaterialParameterToCommandLineOptions(CurName, CurPhase); 		CHKERRQ(ierr);
-		ierr = AddMaterialParameterToCommandLineOptions(CurName, CurPhase, CurVal); 	CHKERRQ(ierr);
-    }
-	VecRestoreArray(P,&Par);
+	
+		ierr	=	CopyParameterToLaMEMCommandLine(IOparam,  Par[j], j);					CHKERRQ(ierr);
+    
+	    strcpy(CurName, IOparam->type_name[j]);	// name
+		PetscPrintf(PETSC_COMM_WORLD,"| *** AdjointOptimisationTAO: Current parameter %s[%i]=%10.10f \n",CurName,IOparam->phs[j],Par[j]);
+	}
+	VecRestoreArray(IOparam->P,&Par);
 
 	// call LaMEM main library function
 	ierr = LaMEMLibMain(IOparam); CHKERRQ(ierr);
@@ -985,15 +985,10 @@ PetscErrorCode AdjointOptimisationTAO(Tao tao, Vec P, PetscReal *F, Vec grad, vo
 	VecGetArray(P,&Par);
 	for(j = 0; j < IOparam->mdN; j++)
 	{
-		CurPhase = 	IOparam->phs[j];			// phase of the parameter
-		CurPar   = 	IOparam->typ[j];			// Type 	
-		CurVal   =	Par[j];						// value of parameter
-        strcpy(CurName, IOparam->type_name[j]);	// name
+		ierr	=	CopyParameterToLaMEMCommandLine(IOparam,  Par[j], j);					CHKERRQ(ierr);
 
-		PetscPrintf(PETSC_COMM_WORLD,"| %D. Parameter value, %s[%i] = %5.10e\n",j+1,CurName,CurPhase,Par[j]);
-		
-		ierr = DeleteMaterialParameterToCommandLineOptions(CurName, CurPhase); 			CHKERRQ(ierr);
-		ierr = AddMaterialParameterToCommandLineOptions(CurName, CurPhase, CurVal); 	CHKERRQ(ierr);
+		strcpy(CurName, IOparam->type_name[j]);	// name
+		PetscPrintf(PETSC_COMM_WORLD,"| %D. Parameter value, %s[%i] = %5.10e\n",j+1,CurName,IOparam->phs[j],Par[j]);
 	}
 	VecRestoreArray(P,&Par);
 
@@ -1279,34 +1274,30 @@ PetscErrorCode AdjointComputeGradients(JacRes *jr, AdjGrad *aop, NLSol *nl, SNES
 			ierr = VecCopy(jr->gres,res); 			CHKERRQ(ierr);
 
 			// Get current phase and parameter which is being perturbed
-			CurPhase = IOparam->phs[j];
-			CurPar   = IOparam->typ[j];
-			CurVal 	 = Par[j];
-            strcpy(CurName, IOparam->type_name[j]);
+			CurPhase 		= 	IOparam->phs[j];
+			//CurPar   		= 	IOparam->typ[j];
+			CurVal 	 		= 	Par[j];
 
 			// Perturb parameter
-			Perturb = aop->FD_epsilon*CurVal;
-			ierr 	= VecSet(Perturb_vec,Perturb);                   									CHKERRQ(ierr);        // epsilon (finite difference)   
-			aop->CurScal = (scal->velocity)/(1);       // TEMPORARY CODE (should be automatized, necessary?)
+			Perturb 		= 	aop->FD_epsilon*CurVal;
+			ierr 			= 	VecSet(Perturb_vec,Perturb);                   							CHKERRQ(ierr);        // epsilon (finite difference)   
+			aop->CurScal 	= 	(scal->velocity)/(1);       // TEMPORARY CODE (should be automatized, necessary?)
 
 			//PetscPrintf(PETSC_COMM_WORLD,"*** dr/dp: Perturbing parameter %s[%i]=%f to value %f \n",CurName,CurPhase,CurVal, CurVal + Perturb);
 
 			// Set as command-line option & create updated material database
-			ierr 	= DeleteMaterialParameterToCommandLineOptions(CurName, CurPhase); 					CHKERRQ(ierr);
-			ierr 	= AddMaterialParameterToCommandLineOptions(CurName, CurPhase, CurVal + Perturb); 	CHKERRQ(ierr);
-
-			ierr 	= CreateModifiedMaterialDatabase(&IOparam);     									CHKERRQ(ierr);		// update LaMEM material DB
+			ierr 			=	CopyParameterToLaMEMCommandLine(IOparam,  CurVal + Perturb, j);			CHKERRQ(ierr);
+			ierr 			= 	CreateModifiedMaterialDatabase(&IOparam);     							CHKERRQ(ierr);			// update LaMEM material DB (to call directly call the LaMEM residual routine)
 
 			// Swap material structure of phase with that of LaMEM Material DB
 			swapStruct(&nl->pc->pm->jr->dbm->phases[CurPhase], &IOparam->dbm_modified.phases[CurPhase]);  
 			
-			ierr = FormResidual(snes, sol, res_pert, nl);         										CHKERRQ(ierr);        // compute the residual with the perturbed parameter
-			ierr = VecAYPX(res,-1,res_pert);                      										CHKERRQ(ierr);        // res = (res_perturbed-res)
-			ierr = VecPointwiseDivide(drdp,res,Perturb_vec);      										CHKERRQ(ierr);        //
+			ierr 			= 	FormResidual(snes, sol, res_pert, nl);         							CHKERRQ(ierr);        // compute the residual with the perturbed parameter
+			ierr 			=	VecAYPX(res,-1,res_pert);                      							CHKERRQ(ierr);        // res = (res_perturbed-res)
+			ierr 			= 	VecPointwiseDivide(drdp,res,Perturb_vec);      							CHKERRQ(ierr);        //
 
 			// Reset parameter again
-			ierr 	= DeleteMaterialParameterToCommandLineOptions(CurName, CurPhase); 					CHKERRQ(ierr);
-			ierr 	= AddMaterialParameterToCommandLineOptions(CurName, CurPhase, CurVal ); 			CHKERRQ(ierr);
+			ierr 			=	CopyParameterToLaMEMCommandLine(IOparam,  CurVal, j);					CHKERRQ(ierr);
 
 			swapStruct(&IOparam->dbm_modified.phases[CurPhase],&nl->pc->pm->jr->dbm->phases[CurPhase]);  // Swap material DB back again
 
@@ -1314,8 +1305,8 @@ PetscErrorCode AdjointComputeGradients(JacRes *jr, AdjGrad *aop, NLSol *nl, SNES
 			fd += fd;  // Needed to free vectors later  [OBSOLETE?]
 
 			// Compute the gradient (dF/dp = -psi^T * dr/dp) & Save gradient
-			ierr                =   VecDot(drdp,psi,&grd);                       CHKERRQ(ierr);
-			IOparam->grd[j] 	=   -grd*aop->CurScal;							// gradient
+			ierr          	=   VecDot(drdp,psi,&grd);                       CHKERRQ(ierr);
+			IOparam->grd[j]	=   -grd*aop->CurScal;							// gradient
 
 			// Print result
             PetscPrintf(PETSC_COMM_WORLD,"|          %5d:   %+5s[%2i]           %- 1.6e \n",j+1, CurName, CurPhase, IOparam->grd[j]);
@@ -1963,6 +1954,7 @@ PetscErrorCode AdjointPointInPro(JacRes *jr, AdjGrad *aop, ModParam *IOparam, Fr
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
+// Obsolete, once the new method had been succesfully tested
 #undef __FUNCT__
 #define __FUNCT__ "AdjointGradientPerturbParameter"
 PetscErrorCode AdjointGradientPerturbParameter(NLSol *nl, PetscInt CurPar, PetscInt CurPhase, AdjGrad *aop, Scaling *scal)
@@ -2874,6 +2866,34 @@ PetscErrorCode AddMaterialParameterToCommandLineOptions(char *name, PetscInt ID,
 
 
 //---------------------------------------------------------------------------
+// Copies a parameter to the LaMEM command-line database
+#undef __FUNCT__
+#define __FUNCT__ "CopyParameterToLaMEMCommandLine"
+PetscErrorCode CopyParameterToLaMEMCommandLine(ModParam *IOparam, PetscScalar CurVal, PetscInt j)
+{
+    PetscErrorCode  ierr;
+    PetscBool       PrintOutput=PETSC_FALSE;
+	PetscInt 		CurPhase;
+	char 			CurName[_str_len_];
+	
+    PetscFunctionBegin;
+
+	CurPhase = 	IOparam->phs[j];			// phase of the parameter
+    strcpy(CurName, IOparam->type_name[j]);	// name
+
+	ierr = DeleteMaterialParameterToCommandLineOptions(CurName, CurPhase); 		CHKERRQ(ierr);
+	ierr = AddMaterialParameterToCommandLineOptions(CurName, CurPhase, CurVal); 	CHKERRQ(ierr);
+
+	//PrintOutput=PETSC_TRUE;
+	if (PrintOutput){
+		PetscPrintf(PETSC_COMM_WORLD,"| *** Added parameter %s[%i]=%10.10f to the LaMEM database \n",CurName,CurPhase,CurVal);
+	}
+
+    PetscFunctionReturn(0);
+}
+
+
+//---------------------------------------------------------------------------
 #undef __FUNCT__
 #define __FUNCT__ "DeleteMaterialParameterToCommandLineOptions"
 PetscErrorCode DeleteMaterialParameterToCommandLineOptions(char *name, PetscInt ID)
@@ -2935,4 +2955,5 @@ PetscErrorCode CreateModifiedMaterialDatabase(ModParam **p_IOparam)
     PetscFunctionReturn(0);
 }
 
+ 
  
