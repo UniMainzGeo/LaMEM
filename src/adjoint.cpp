@@ -982,7 +982,7 @@ PetscErrorCode AdjointOptimisationTAO(Tao tao, Vec P, PetscReal *F, Vec grad, vo
 	if(IOparam->count==1){IOparam->mfitini = IOparam->mfit;}
 
 	// Display the current state of the parameters
-	VecGetArray(P,&Par);
+	VecGetArray(IOparam->P,&Par);
 	for(j = 0; j < IOparam->mdN; j++)
 	{
 		ierr	=	CopyParameterToLaMEMCommandLine(IOparam,  Par[j], j);					CHKERRQ(ierr);
@@ -990,7 +990,7 @@ PetscErrorCode AdjointOptimisationTAO(Tao tao, Vec P, PetscReal *F, Vec grad, vo
 		strcpy(CurName, IOparam->type_name[j]);	// name
 		PetscPrintf(PETSC_COMM_WORLD,"| %D. Parameter value, %s[%i] = %5.10e\n",j+1,CurName,IOparam->phs[j],Par[j]);
 	}
-	VecRestoreArray(P,&Par);
+	VecRestoreArray(IOparam->P,&Par);
 
 	// Relative cost function
 	PetscPrintf(PETSC_COMM_WORLD,"| mfit / mfit0 = %.5e\n| ------------------------------------------\n\n",IOparam->mfit/IOparam->mfitini);
