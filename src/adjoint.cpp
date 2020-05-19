@@ -1383,6 +1383,10 @@ PetscErrorCode AdjointComputeGradients(JacRes *jr, AdjGrad *aop, NLSol *nl, SNES
 				CurPhase 		= 	IOparam->phs[j];
 				CurVal 	 		= 	Par[j];
 				strcpy(CurName, IOparam->type_name[j]);	// name
+
+				// Clear material structure (otherwise Bn is still taken from previous read)
+				ierr =   PetscMemzero(&nl->pc->pm->jr->dbm->phases[CurPhase],sizeof(nl->pc->pm->jr->dbm->phases[CurPhase]));   CHKERRQ(ierr);
+				ierr =   PetscMemzero(&IOparam->dbm_modified.phases[CurPhase],sizeof(IOparam->dbm_modified.phases[CurPhase]));   CHKERRQ(ierr);
 			
 				// Perturb parameter
 				Perturb 		= 	aop->FD_epsilon*CurVal;
@@ -1405,6 +1409,10 @@ PetscErrorCode AdjointComputeGradients(JacRes *jr, AdjGrad *aop, NLSol *nl, SNES
 
 				// Reset parameter again
 				ierr 			=	CopyParameterToLaMEMCommandLine(IOparam,  CurVal, j);					CHKERRQ(ierr);
+
+				// Swap material structure of phase with that of LaMEM Material DB back
+				swapStruct(&IOparam->dbm_modified.phases[0], &nl->pc->pm->jr->dbm->phases[0]);  
+				swapStruct(&IOparam->dbm_modified.phases[1], &nl->pc->pm->jr->dbm->phases[1]);  
 
 				// Compute the gradient (dF/dp = -psi^T * dr/dp) & Save gradient
 				ierr          	=   VecDot(drdp,psi,&grd);                       CHKERRQ(ierr);
