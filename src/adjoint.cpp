@@ -546,14 +546,14 @@ PetscErrorCode LaMEMAdjointMain(ModParam *IOparam)
 	// only compute the adjoint gradients or simply forward code
 	if(IOparam->use == _adjointgradients_)
  	{
+		/* 	FD gradients: call the FD gradient routine (& LaMEM many times) for those parameters for which we request it 
+			Note: should be computed first, before computing adjoint to ensure that the cost function is computed for the standard (and nt perturbed) parameters
+		*/
+		ierr = AdjointFiniteDifferenceGradients(Adjoint_Vectors.P, F, Adjoint_Vectors.grad, IOparam);	CHKERRQ(ierr);
 
-		
-
- 		// Adjoint gradients: Call LaMEM main library function once (computes gradients @ the end)
+	 	// Adjoint gradients: Call LaMEM main library function once (computes gradients @ the end)
  		ierr = LaMEMLibMain(IOparam); 														CHKERRQ(ierr);
 
-		// FD gradients: call the FD gradient routine (& LaMEM many times)
-		//ierr = FiniteDifferenceGradients(Adjoint_Vectors.P, F, Adjoint_Vectors.grad, IOparam);	CHKERRQ(ierr);
 
 		// Print overview of cost function & gradients 
 		ierr = PrintCostFunction(IOparam);					CHKERRQ(ierr);
@@ -1176,15 +1176,15 @@ PetscErrorCode AdjointOptimisationTAO(Tao tao, Vec P, PetscReal *F, Vec grad, vo
 	Brute Force finite difference computation of the gradient, by calling LaMEM twice & perturbing the parameter 
 */
 #undef __FUNCT__
-#define __FUNCT__ "FiniteDifferenceGradients"
-PetscErrorCode FiniteDifferenceGradients(Vec P, PetscScalar F, Vec grad, void *ctx)
+#define __FUNCT__ "AdjointFiniteDifferenceGradients"
+PetscErrorCode AdjointFiniteDifferenceGradients(Vec P, PetscScalar F, Vec grad, void *ctx)
 {
 	PetscErrorCode 	ierr;
 	PetscInt 		j;
 	PetscScalar 	*Par, Perturb, Misfit_ref, Misfit_pert, FD_gradients_eps=1e-6, Grad; 
 	char 			CurName[_str_len_];
 	ModParam    	*IOparam;
-	PetscBool 		flg;
+	PetscBool 		flg, FD_Adjoint = PETSC_FALSE;
 	IOparam     	= (ModParam*)ctx;
 
 	IOparam    =  (ModParam*)ctx;
@@ -1205,52 +1205,66 @@ PetscErrorCode FiniteDifferenceGradients(Vec P, PetscScalar F, Vec grad, void *c
     }
 	VecRestoreArray(IOparam->P,&Par);
 
-	// Call LaMEM
-	ierr 		= 	LaMEMLibMain(IOparam); CHKERRQ(ierr);		// call LaMEM
-	Misfit_ref	=	IOparam->mfit;
-	
-	PetscPrintf(PETSC_COMM_WORLD,"| ************************************************************************ \n");
-    PetscPrintf(PETSC_COMM_WORLD,"|                       FINITE DIFFERENCE GRADIENTS                        \n");
-    PetscPrintf(PETSC_COMM_WORLD,"| ************************************************************************ \n");
-    PetscPrintf(PETSC_COMM_WORLD,"| Reference objective function: %2.5e \n",IOparam->mfit);
-
-
-	// 2) Loop over all parameters & compute a solution  with the perturbed parameters
-	
-	// Set parameters as command-line options
-	VecGetArray(IOparam->P,&Par);
+	// check if we actually need to compute FD gradients
 	for(j = 0; j < IOparam->mdN; j++){
-		PetscInt 	CurPhase;
-		PetscScalar CurVal;
+		if (IOparam->FD_gradient[j]>0){	// only if we want to compute a FD gradient for this paramater
+			FD_Adjoint = PETSC_TRUE;
+		}
+	}
 
-		CurPhase 		= 	IOparam->phs[j];
-		CurVal 	 		= 	Par[j];
-		strcpy(CurName, IOparam->type_name[j]);	// name
+	if (FD_Adjoint){
 
-		// Only execute this for those parameters for which we want to know the FD gradient (to be added here)
+		// Call LaMEM
+		ierr 		= 	LaMEMLibMain(IOparam); CHKERRQ(ierr);		// call LaMEM
+		Misfit_ref	=	IOparam->mfit;
+		
+		PetscPrintf(PETSC_COMM_WORLD,"| ************************************************************************ \n");
+		PetscPrintf(PETSC_COMM_WORLD,"|                       FINITE DIFFERENCE GRADIENTS                        \n");
+		PetscPrintf(PETSC_COMM_WORLD,"| ************************************************************************ \n");
+		PetscPrintf(PETSC_COMM_WORLD,"| Reference objective function: %2.5e \n",IOparam->mfit);
 
-		Perturb 	= 	CurVal*FD_gradients_eps;
 
-		ierr		=	CopyParameterToLaMEMCommandLine(IOparam, CurVal + Perturb, j);		CHKERRQ(ierr);
-    
-		// Compute solution with updated parameter
-		ierr 		= 	LaMEMLibMain(IOparam); 												CHKERRQ(ierr);
-		Misfit_pert = 	IOparam->mfit;
+		// 2) Loop over all parameters & compute a solution  with the perturbed parameters
+		
+		// Set parameters as command-line options
+		VecGetArray(IOparam->P,&Par);
+		for(j = 0; j < IOparam->mdN; j++){
+			PetscInt 	CurPhase;
+			PetscScalar CurVal;
 
-		// FD gradient
-		Grad 		=	(Misfit_pert-Misfit_ref)/Perturb;
+			if (IOparam->FD_gradient[j]>0){	// only if we want to compute a FD gradient for this paramater
+					
+				CurPhase 		= 	IOparam->phs[j];
+				CurVal 	 		= 	Par[j];
+				strcpy(CurName, IOparam->type_name[j]);	// name
 
-		// Set back parameter
-		ierr		=	CopyParameterToLaMEMCommandLine(IOparam,  CurVal, j);		CHKERRQ(ierr);
-	
-		PetscPrintf(PETSC_COMM_WORLD,"|   Brute force Finite difference gradient for %+5s[%2i] = %f \n", CurName, CurPhase, Grad);
+				// Only execute this for those parameters for which we want to know the FD gradient (to be added here)
+				Perturb 	= 	CurVal*FD_gradients_eps;
 
+				ierr		=	CopyParameterToLaMEMCommandLine(IOparam, CurVal + Perturb, j);		CHKERRQ(ierr);
+			
+				// Compute solution with updated parameter
+				ierr 		= 	LaMEMLibMain(IOparam); 												CHKERRQ(ierr);
+				Misfit_pert = 	IOparam->mfit;
+
+				// FD gradient
+				Grad 			=	(Misfit_pert-Misfit_ref)/Perturb;
+				IOparam->grd[j] = 	Grad;									// store gradient
+
+				// Set back parameter
+				ierr			=	CopyParameterToLaMEMCommandLine(IOparam,  CurVal, j);		CHKERRQ(ierr);
+			
+				PetscPrintf(PETSC_COMM_WORLD,"|   Brute force Finite difference gradient for %+5s[%2i] = %f \n", CurName, CurPhase, Grad);
+
+			}
+
+
+		}
+		VecRestoreArray(IOparam->P,&Par);
+
+		IOparam->mfit = Misfit_ref; // reset value, just in case it is overwritten by a perturbed value
 
 	}
-	VecRestoreArray(IOparam->P,&Par);
-
-
-
 
 
  	PetscFunctionReturn(0);
@@ -1362,41 +1376,43 @@ PetscErrorCode AdjointComputeGradients(JacRes *jr, AdjGrad *aop, NLSol *nl, SNES
 		VecGetArray(IOparam->P,&Par);
 		for(j = 0; j < IOparam->mdN; j++)
 		{
-			// Get the initial residual since it is overwritten in VecAYPX
-			ierr = VecCopy(jr->gres,res); 			CHKERRQ(ierr);
+			if (IOparam->FD_gradient[j]==0){	// only if we want to compute an adjoint gradient for this paramater
 
-			// Get current phase and parameter which is being perturbed
-			CurPhase 		= 	IOparam->phs[j];
-			CurVal 	 		= 	Par[j];
-			strcpy(CurName, IOparam->type_name[j]);	// name
+				// Get the initial residual since it is overwritten in VecAYPX
+				ierr = VecCopy(jr->gres,res); 			CHKERRQ(ierr);
+
+				// Get current phase and parameter which is being perturbed
+				CurPhase 		= 	IOparam->phs[j];
+				CurVal 	 		= 	Par[j];
+				strcpy(CurName, IOparam->type_name[j]);	// name
+			
+				// Perturb parameter
+				Perturb 		= 	aop->FD_epsilon*CurVal;
+				ierr 			= 	VecSet(Perturb_vec,Perturb);                   							CHKERRQ(ierr);        // epsilon (finite difference)   
+				aop->CurScal 	= 	(scal->velocity)/(1);       // TEMPORARY CODE (should be automatized, necessary?)
+
+				//PetscPrintf(PETSC_COMM_WORLD,"*** dr/dp: Perturbing parameter %s[%i]=%f to value %f \n",CurName,CurPhase,CurVal, CurVal + Perturb);
+
+				// Set as command-line option & create updated material database
+				ierr 			=	CopyParameterToLaMEMCommandLine(IOparam,  CurVal + Perturb, j);			CHKERRQ(ierr);
+				ierr 			= 	CreateModifiedMaterialDatabase(&IOparam);     							CHKERRQ(ierr);			// update LaMEM material DB (to call directly call the LaMEM residual routine)
+
+				// Swap material structure of phase with that of LaMEM Material DB
+				swapStruct(&nl->pc->pm->jr->dbm->phases[CurPhase], &IOparam->dbm_modified.phases[CurPhase]);  
 		
-			// Perturb parameter
-			Perturb 		= 	aop->FD_epsilon*CurVal;
-			ierr 			= 	VecSet(Perturb_vec,Perturb);                   							CHKERRQ(ierr);        // epsilon (finite difference)   
-			aop->CurScal 	= 	(scal->velocity)/(1);       // TEMPORARY CODE (should be automatized, necessary?)
+				ierr 			= 	FormResidual(snes, sol, res_pert, nl);         							CHKERRQ(ierr);        // compute the residual with the perturbed parameter
+				ierr 			=	VecAYPX(res,-1,res_pert);                      							CHKERRQ(ierr);        // res = (res_perturbed-res)
+				ierr 			= 	VecPointwiseDivide(drdp,res,Perturb_vec);      							CHKERRQ(ierr);        //
 
-			//PetscPrintf(PETSC_COMM_WORLD,"*** dr/dp: Perturbing parameter %s[%i]=%f to value %f \n",CurName,CurPhase,CurVal, CurVal + Perturb);
+				// Reset parameter again
+				ierr 			=	CopyParameterToLaMEMCommandLine(IOparam,  CurVal, j);					CHKERRQ(ierr);
 
-			// Set as command-line option & create updated material database
-			ierr 			=	CopyParameterToLaMEMCommandLine(IOparam,  CurVal + Perturb, j);			CHKERRQ(ierr);
-			ierr 			= 	CreateModifiedMaterialDatabase(&IOparam);     							CHKERRQ(ierr);			// update LaMEM material DB (to call directly call the LaMEM residual routine)
+				swapStruct(&IOparam->dbm_modified.phases[CurPhase],&nl->pc->pm->jr->dbm->phases[CurPhase]);  // Swap material DB back again
 
-			// Swap material structure of phase with that of LaMEM Material DB
-			swapStruct(&nl->pc->pm->jr->dbm->phases[CurPhase], &IOparam->dbm_modified.phases[CurPhase]);  
-	
-			ierr 			= 	FormResidual(snes, sol, res_pert, nl);         							CHKERRQ(ierr);        // compute the residual with the perturbed parameter
-			ierr 			=	VecAYPX(res,-1,res_pert);                      							CHKERRQ(ierr);        // res = (res_perturbed-res)
-			ierr 			= 	VecPointwiseDivide(drdp,res,Perturb_vec);      							CHKERRQ(ierr);        //
-
-			// Reset parameter again
-			ierr 			=	CopyParameterToLaMEMCommandLine(IOparam,  CurVal, j);					CHKERRQ(ierr);
-
-			swapStruct(&IOparam->dbm_modified.phases[CurPhase],&nl->pc->pm->jr->dbm->phases[CurPhase]);  // Swap material DB back again
-
-			// Compute the gradient (dF/dp = -psi^T * dr/dp) & Save gradient
-			ierr          	=   VecDot(drdp,psi,&grd);                       CHKERRQ(ierr);
-			IOparam->grd[j]	=   -grd*aop->CurScal;							// gradient
-
+				// Compute the gradient (dF/dp = -psi^T * dr/dp) & Save gradient
+				ierr          	=   VecDot(drdp,psi,&grd);                       CHKERRQ(ierr);
+				IOparam->grd[j]	=   -grd*aop->CurScal;							// gradient
+			}
 		}
 		VecRestoreArray(IOparam->P,&Par);
 

@@ -134,9 +134,9 @@
 	# General
 	Adjoint_mode    					= 	AdjointGradients #GradientDescent #AdjointGradients    	# options: [None; AdjointGradients, GradientDescent; Inversion]
 	Adjoint_ObservationPoints           = 	1						# options: [1=several points; 2=whole domain; 3=surface]
-	Adjoint_ObjectiveFunctionDef        = 	1                     # options: [1-defined by hand; 0??]
-	Adjoint_GradientCalculation        	= 	CostFunction				# options [CostFunction= w.r.t. Cost function (e.g,);  Solution= w.r.t. Solution ]
-	Adjoint_FieldSensitivity    		= 	0      				# calculate Field-based =1 (aka. geodynamic sensity kernels), or Phase Based [=0]
+	Adjoint_ObjectiveFunctionDef        = 	1                     	# options: [1-defined by hand; 0??]
+	Adjoint_GradientCalculation        	= 	CostFunction			# options [CostFunction= w.r.t. Cost function (e.g,);  Solution= w.r.t. Solution ]
+	Adjoint_FieldSensitivity    		= 	0      					# calculate Field-based =1 (aka. geodynamic sensity kernels), or Phase Based [=0]
 
 	# Inversion parameters
 	Inversion_EmployTAO 				=	0   
@@ -147,7 +147,7 @@
 		Type 			= n     	# options: [rho0,rhon,rhoc,eta,eta0,n,En] 	
 		InitGuess 		= 3  		# initial guess
 		LowerBound     	= 0.1		# [optional] lower bound
-		UpperBound     	= 4			# [optional] upper bound
+		UpperBound      = 4			# [optional] upper bound
 #		FD_gradient 	= 1		
 	<AdjointParameterEnd>
 	       
@@ -157,7 +157,27 @@
 		InitGuess 	= 2    
 		LowerBound     = 0.1		# [optional] lower bound
 		UpperBound     = 4		# [optional] upper bound
+#		FD_gradient 	= 1		
 	<AdjointParameterEnd>
+
+	<AdjointParameterStart>
+	   	ID  			= 0			# phase of the parameter
+		Type 			= n     	# options: [rho0,rhon,rhoc,eta,eta0,n,En] 	
+		InitGuess 		= 3  		# initial guess
+		LowerBound     	= 0.1		# [optional] lower bound
+		UpperBound      = 4			# [optional] upper bound
+		FD_gradient 	= 1		
+	<AdjointParameterEnd>
+	       
+	<AdjointParameterStart>  
+		ID  		= 1	
+		Type 		= n   	   
+		InitGuess 	= 2    
+		LowerBound     = 0.1		# [optional] lower bound
+		UpperBound     = 4		# [optional] upper bound
+		FD_gradient 	= 1		
+	<AdjointParameterEnd>
+
 
 #	<AdjointParameterStart>
 #		ID  		= 0
