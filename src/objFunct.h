@@ -131,8 +131,10 @@ struct ModParam
 	PetscScalar      Ax[_MAX_OBS_];                     // X-coordinates of comparison points
 	PetscScalar      Ay[_MAX_OBS_];	                    // Y-coordinates of comparison points
 	PetscScalar      Az[_MAX_OBS_];                     // Z-coordinates of comparison points
-	PetscScalar      Ae[_MAX_OBS_];                     // Velocity value of comparison points
-	PetscInt         Av[_MAX_OBS_];	                    // Velocity components of comparison points
+	PetscScalar      Ae[_MAX_OBS_];                     // Velocity target value of comparison points
+	PetscInt         Av[_MAX_OBS_];	                    // Velocity components [x/y/z] of comparison points
+	PetscScalar      Avel_num[_MAX_OBS_];             	// Numerically computed velocity at the comparison points
+	PetscBool        Apoint_on_proc[_MAX_OBS_];         // Is the observation point on the current processor or not (simplified printing)?
 
 };
 
