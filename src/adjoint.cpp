@@ -3131,10 +3131,10 @@ PetscErrorCode CreateModifiedMaterialDatabase(ModParam *IOparam)
 
     // Create scaling object
 	ierr = ScalingCreate(&scal, fb); CHKERRQ(ierr);
+	IOparam->dbm_modified.scal    = &scal;
 
     // Call material database with modified parameters
     ierr = DBMatCreate(&IOparam->dbm_modified, fb, PETSC_FALSE); 	CHKERRQ(ierr);  
-	IOparam->dbm_modified.scal    = &scal;
 
     //PrintOutput = PETSC_TRUE;
     if (PrintOutput){
