@@ -103,6 +103,7 @@ PetscErrorCode AdjointObjectiveAndGradientFunction(AdjGrad *aop, JacRes *jr, NLS
 PetscErrorCode AdjointComputeGradients(JacRes *jr, AdjGrad *aop, NLSol *nl, SNES snes, ModParam *IOparam, FreeSurf *surf);
 PetscErrorCode FiniteDifferenceGradients(Vec P, PetscScalar F, Vec grad, void *ctx);				
 PetscErrorCode PrintGradientsAndObservationPoints(ModParam *IOparam);
+PetscErrorCode PrintCostFunction(ModParam *IOparam);
 
 // Interpolate the adjoint points and include them into the projection vector
 PetscErrorCode AdjointPointInPro(JacRes *jr, AdjGrad *aop, ModParam *IOparam, FreeSurf *surf);

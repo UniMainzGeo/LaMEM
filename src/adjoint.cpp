@@ -520,7 +520,10 @@ PetscErrorCode LaMEMAdjointMain(ModParam *IOparam)
 	PetscScalar    	F, *fcconvar, *Par;
 	PetscInt        i;
 	Adjoint_Vecs    Adjoint_Vectors;
-	
+	PetscLogDouble  cputime_start, cputime_end;
+
+	PetscTime(&cputime_start);
+
 	IOparam->count = 1;  // iteration counter for the initial cost function
 	F              = 1e100;
 
@@ -543,13 +546,17 @@ PetscErrorCode LaMEMAdjointMain(ModParam *IOparam)
 	// only compute the adjoint gradients or simply forward code
 	if(IOparam->use == _adjointgradients_)
  	{
+
+		
+
  		// Adjoint gradients: Call LaMEM main library function once (computes gradients @ the end)
  		ierr = LaMEMLibMain(IOparam); 														CHKERRQ(ierr);
 
 		// FD gradients: call the FD gradient routine (& LaMEM many times)
 		//ierr = FiniteDifferenceGradients(Adjoint_Vectors.P, F, Adjoint_Vectors.grad, IOparam);	CHKERRQ(ierr);
 
-		// Print overview of gradients (if requested @ this stage)
+		// Print overview of cost function & gradients 
+		ierr = PrintCostFunction(IOparam);					CHKERRQ(ierr);
 		ierr = PrintGradientsAndObservationPoints(IOparam); CHKERRQ(ierr);
 	
  	}
@@ -653,6 +660,11 @@ PetscErrorCode LaMEMAdjointMain(ModParam *IOparam)
  	}
 
 	ierr = AdjointVectorsDestroy(&Adjoint_Vectors, IOparam); CHKERRQ(ierr);
+
+	PetscTime(&cputime_end);
+    PetscPrintf(PETSC_COMM_WORLD,"| Adjoint computation was succesful & took %g s                         	 \n",cputime_end - cputime_start);
+	PetscPrintf(PETSC_COMM_WORLD,"| ************************************************************************ \n");
+
 
 	PetscFunctionReturn(0);
 }
@@ -1069,10 +1081,6 @@ PetscErrorCode AdjointOptimisationTAO(Tao tao, Vec P, PetscReal *F, Vec grad, vo
 		else if(IOparam->Gr == 0)
 		{
  			// -------- Get gradients with respect of cost function -------------
-			PetscPrintf(PETSC_COMM_WORLD,"| ************************************************************************\n");
-            PetscPrintf(PETSC_COMM_WORLD,"|                       COMPUTATION OF THE COST FUNCTION                    \n");
-            PetscPrintf(PETSC_COMM_WORLD,"| ************************************************************************\n");
-            
 			PetscScalar Ad;
 
 			// Incorporate projection vector (F = (1/2)*[P*(x-x_ini)' * P*(x-x_ini)])
@@ -1087,7 +1095,9 @@ PetscErrorCode AdjointOptimisationTAO(Tao tao, Vec P, PetscReal *F, Vec grad, vo
 
 	 		// Compute it's derivative (dF/dx = P*x-P*x_ini = P*(x-x_ini))
 	 		ierr = VecCopy(xini,aop->dF); 		                                    CHKERRQ(ierr); 
-	 		PetscPrintf(PETSC_COMM_WORLD,"| Current Cost function = %.10e\n",IOparam->mfit);
+	 		
+			//PrintCostFunction(IOparam);
+
 		}
 		else
 		{
@@ -1127,10 +1137,6 @@ PetscErrorCode AdjointOptimisationTAO(Tao tao, Vec P, PetscReal *F, Vec grad, vo
  		// Put the proportion into the Projection vector where the user defined the computation coordinates (P) & get the velocities
  		ierr = AdjointPointInPro(jr, aop, IOparam, surf);                       CHKERRQ(ierr);
 
- 		PetscPrintf(PETSC_COMM_WORLD,"| ************************************************************************\n");
-        PetscPrintf(PETSC_COMM_WORLD,"|                       COMPUTATION OF THE COST FUNCTION                    \n");
-        PetscPrintf(PETSC_COMM_WORLD,"| ************************************************************************\n");
-
 	 	// Copy temporary comparison solution
 	 	ierr = VecCopy(IOparam->xini,xini);                                     CHKERRQ(ierr);
 		
@@ -1145,11 +1151,12 @@ PetscErrorCode AdjointOptimisationTAO(Tao tao, Vec P, PetscReal *F, Vec grad, vo
 
 		// Compute it's derivative (dF/dx = P*x-P*x_ini)
 		ierr = VecCopy(xini,aop->dF); 		            CHKERRQ(ierr);
-		
- 		PetscPrintf(PETSC_COMM_WORLD,"| Current Cost function = %.5e\n",IOparam->mfit);
+	
+		 //PrintCostFunction(IOparam);
 
  		// Get the gradients
  		ierr = AdjointComputeGradients(jr, aop, nl, snes, IOparam, surf);        CHKERRQ(ierr);
+
 	}
  	else
  	{
@@ -1274,10 +1281,6 @@ PetscErrorCode AdjointComputeGradients(JacRes *jr, AdjGrad *aop, NLSol *nl, SNES
 
 	fs = jr->fs;
 	dt = jr->ts->dt;
-
-	// Profile time
-	PetscLogDouble     cputime_start, cputime_end;
-	PetscTime(&cputime_start);
 
 	scal = jr->scal;
 
@@ -1430,14 +1433,13 @@ PetscErrorCode AdjointComputeGradients(JacRes *jr, AdjGrad *aop, NLSol *nl, SNES
 			if(lrank == 13)
 			{
                 char vel_com[20];
-                PetscScalar vel=0,x,y,z,CostFunc;
+                PetscScalar vel=0;
 	
 	
                 if (IOparam->Av[i] == 1){strcpy(vel_com, "Vx"); vel = vx[i]*scal->velocity;}
                 if (IOparam->Av[i] == 2){strcpy(vel_com, "Vy"); vel = vy[i]*scal->velocity;}
                 if (IOparam->Av[i] == 3){strcpy(vel_com, "Vz"); vel = vz[i]*scal->velocity;}
-                CostFunc = IOparam->Ae[i]*scal->velocity;
-				IOparam->Apoint_on_proc[i]=PETSC_TRUE;
+               IOparam->Apoint_on_proc[i]=PETSC_TRUE;
 
 				IOparam->Avel_num[i]  = vel;
 
@@ -1467,11 +1469,22 @@ PetscErrorCode AdjointComputeGradients(JacRes *jr, AdjGrad *aop, NLSol *nl, SNES
 	ierr = VecDestroy(&res);
     ierr = VecDestroy(&Perturb_vec);
 
-	PetscTime(&cputime_end);
-    ierr = MPI_Barrier(PETSC_COMM_WORLD); CHKERRQ(ierr); // because of PETSC_COMM_SELF above
-	PetscPrintf(PETSC_COMM_WORLD,"| Computation was succesful & took %g s                                    \n",cputime_end - cputime_start);
-	PetscPrintf(PETSC_COMM_WORLD,"| ************************************************************************ \n");
+	PetscFunctionReturn(0);
+}
 
+//---------------------------------------------------------------------------
+#undef __FUNCT__
+#define __FUNCT__ "PrintCostFunction"
+/*
+    This prints the current value of the objective function
+*/
+PetscErrorCode PrintCostFunction(ModParam *IOparam)
+{
+	PetscPrintf(PETSC_COMM_WORLD,"| ************************************************************************\n");
+    PetscPrintf(PETSC_COMM_WORLD,"|                       COMPUTATION OF THE COST FUNCTION                    \n");
+    PetscPrintf(PETSC_COMM_WORLD,"| ************************************************************************\n");
+
+	PetscPrintf(PETSC_COMM_WORLD,"| Current Cost function = %.5e\n",IOparam->mfit);
 
 	PetscFunctionReturn(0);
 }
@@ -1486,8 +1499,8 @@ PetscErrorCode PrintGradientsAndObservationPoints(ModParam *IOparam)
 {
 	PetscErrorCode 	ierr;
 	char 			*CurName1, CurName[_str_len_];
-	PetscInt 		j, CurPhase, lrank;
-	PetscScalar 	CurVal,*Par, coord_local[3];
+	PetscInt 		j, CurPhase;
+	PetscScalar 	*Par;
 	Scaling	 		scal;
 
 	// retrieve some of the required data
@@ -1535,8 +1548,6 @@ PetscErrorCode PrintGradientsAndObservationPoints(ModParam *IOparam)
 		for (j=0; j<IOparam->mdI; j++)
 		{
 
-			
-
 			if(IOparam->Apoint_on_proc[j])
 			{
                 char vel_com[20];
@@ -1558,10 +1569,9 @@ PetscErrorCode PrintGradientsAndObservationPoints(ModParam *IOparam)
 		}
 	  	PetscPrintf(PETSC_COMM_WORLD,"| \n");
  
-
-
 	}
-
+	ierr = MPI_Barrier(PETSC_COMM_WORLD); CHKERRQ(ierr); // because of PETSC_COMM_SELF above
+	
 	PetscFunctionReturn(0);
 }
 
