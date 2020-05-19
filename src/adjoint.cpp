@@ -172,18 +172,16 @@ values. Also performs error-checking
 */
 #undef __FUNCT__
 #define __FUNCT__ "LaMEMAdjointReadInputSetDefaults"
-PetscErrorCode LaMEMAdjointReadInputSetDefaults(ModParam **p_IOparam, Adjoint_Vecs *Adjoint_Vectors)
+PetscErrorCode LaMEMAdjointReadInputSetDefaults(ModParam *IOparam, Adjoint_Vecs *Adjoint_Vectors)
 {
 	PetscFunctionBegin;
 	PetscErrorCode 	ierr;
-	ModParam 		*IOparam;
 	FB 				*fb;
 	PetscScalar     *gradar, *Ubar, *Lbar, ts, *Par;
 	PetscInt         i, ti, ID;
 	char             str[_str_len_], par_str[_str_len_], Vel_comp[_str_len_];
 	Scaling          scal;
 
-	IOparam 	        = 	*p_IOparam;		// simplifies the code below
 	fb 					=	IOparam->fb;	// filebuffer
 
 
@@ -528,7 +526,7 @@ PetscErrorCode LaMEMAdjointMain(ModParam *IOparam)
 	F              = 1e100;
 
 	// Read input parameters
-    ierr = LaMEMAdjointReadInputSetDefaults(&IOparam, &Adjoint_Vectors); 			CHKERRQ(ierr);
+    ierr = LaMEMAdjointReadInputSetDefaults(IOparam, &Adjoint_Vectors); 			CHKERRQ(ierr);
 
 	// Copy adjoint parameters to command-line	options
 	VecCopy(Adjoint_Vectors.P,IOparam->P);
@@ -1395,11 +1393,12 @@ PetscErrorCode AdjointComputeGradients(JacRes *jr, AdjGrad *aop, NLSol *nl, SNES
 
 				// Set as command-line option & create updated material database
 				ierr 			=	CopyParameterToLaMEMCommandLine(IOparam,  CurVal + Perturb, j);			CHKERRQ(ierr);
-				ierr 			= 	CreateModifiedMaterialDatabase(&IOparam);     							CHKERRQ(ierr);			// update LaMEM material DB (to call directly call the LaMEM residual routine)
+				ierr 			= 	CreateModifiedMaterialDatabase(IOparam);     							CHKERRQ(ierr);			// update LaMEM material DB (to call directly call the LaMEM residual routine)
 
 				// Swap material structure of phase with that of LaMEM Material DB
-				swapStruct(&nl->pc->pm->jr->dbm->phases[CurPhase], &IOparam->dbm_modified.phases[CurPhase]);  
-		
+				swapStruct(&nl->pc->pm->jr->dbm->phases[0], &IOparam->dbm_modified.phases[0]);  
+				swapStruct(&nl->pc->pm->jr->dbm->phases[1], &IOparam->dbm_modified.phases[1]);  
+
 				ierr 			= 	FormResidual(snes, sol, res_pert, nl);         							CHKERRQ(ierr);        // compute the residual with the perturbed parameter
 				ierr 			=	VecAYPX(res,-1,res_pert);                      							CHKERRQ(ierr);        // res = (res_perturbed-res)
 				ierr 			= 	VecPointwiseDivide(drdp,res,Perturb_vec);      							CHKERRQ(ierr);        //
@@ -1407,11 +1406,10 @@ PetscErrorCode AdjointComputeGradients(JacRes *jr, AdjGrad *aop, NLSol *nl, SNES
 				// Reset parameter again
 				ierr 			=	CopyParameterToLaMEMCommandLine(IOparam,  CurVal, j);					CHKERRQ(ierr);
 
-				swapStruct(&IOparam->dbm_modified.phases[CurPhase],&nl->pc->pm->jr->dbm->phases[CurPhase]);  // Swap material DB back again
-
 				// Compute the gradient (dF/dp = -psi^T * dr/dp) & Save gradient
 				ierr          	=   VecDot(drdp,psi,&grd);                       CHKERRQ(ierr);
 				IOparam->grd[j]	=   -grd*aop->CurScal;							// gradient
+
 			}
 		}
 		VecRestoreArray(IOparam->P,&Par);
@@ -3121,28 +3119,22 @@ PetscErrorCode DeleteMaterialParameterToCommandLineOptions(char *name, PetscInt 
 */
 #undef __FUNCT__
 #define __FUNCT__ "CreateModifiedMaterialDatabase"
-PetscErrorCode CreateModifiedMaterialDatabase(ModParam **p_IOparam)
+PetscErrorCode CreateModifiedMaterialDatabase(ModParam *IOparam)
 {
     PetscErrorCode  ierr;
 	PetscBool       PrintOutput=PETSC_FALSE;
     Scaling         scal;
-    FB              *fb;
-    ModParam        *IOparam;
+    FB             *fb;
     PetscFunctionBegin;
 
-   
-    IOparam     = *p_IOparam;
     fb          = IOparam->fb;
 
     // Create scaling object
 	ierr = ScalingCreate(&scal, fb); CHKERRQ(ierr);
 
-    // Initialize material database 
-    ierr = PetscMemzero(&IOparam->dbm_modified, sizeof(DBMat));   CHKERRQ(ierr);
-    IOparam->dbm_modified.scal = &scal;
-
     // Call material database with modified parameters
     ierr = DBMatCreate(&IOparam->dbm_modified, fb, PETSC_FALSE); 	CHKERRQ(ierr);  
+	IOparam->dbm_modified.scal    = &scal;
 
     //PrintOutput = PETSC_TRUE;
     if (PrintOutput){

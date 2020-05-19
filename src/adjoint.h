@@ -89,7 +89,7 @@ struct Adjoint_Vecs
 // Adjoint optimization driving routines
 PetscErrorCode AdjointOptimisation(Vec P, PetscScalar F, Vec grad, void *ctx);
 PetscErrorCode AdjointOptimisationTAO(Tao tao, Vec P, PetscReal *F, Vec grad, void *ctx);
-PetscErrorCode LaMEMAdjointReadInputSetDefaults(ModParam **p_IOparam, Adjoint_Vecs *Adjoint_Vectors);
+PetscErrorCode LaMEMAdjointReadInputSetDefaults(ModParam *IOparam, Adjoint_Vecs *Adjoint_Vectors);
 PetscErrorCode LaMEMAdjointMain(ModParam *IOparam);
 
 // Create & Destroy Adjoint_Vectors object
@@ -120,7 +120,7 @@ PetscErrorCode AdjointFormResidualFieldFDRho(SNES snes, Vec x, Vec psi, NLSol *n
 // Add or remove parameters from command-line database & update material DB
 PetscErrorCode AddMaterialParameterToCommandLineOptions(char *name, PetscInt ID, PetscScalar val);
 PetscErrorCode DeleteMaterialParameterToCommandLineOptions(char *name, PetscInt ID);
-PetscErrorCode CreateModifiedMaterialDatabase(ModParam **IOparam);
+PetscErrorCode CreateModifiedMaterialDatabase(ModParam *IOparam);
 PetscErrorCode CopyParameterToLaMEMCommandLine(ModParam *IOparam, PetscScalar CurVal, PetscInt j);
 
 // Create & Destroy aop object
