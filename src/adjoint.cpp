@@ -1252,7 +1252,7 @@ PetscErrorCode AdjointFiniteDifferenceGradients(Vec P, PetscScalar F, Vec grad, 
 				// Set back parameter
 				ierr			=	CopyParameterToLaMEMCommandLine(IOparam,  CurVal, j);		CHKERRQ(ierr);
 			
-				PetscPrintf(PETSC_COMM_WORLD,"|   Brute force Finite difference gradient for %+5s[%2i] = %f \n", CurName, CurPhase, Grad);
+				PetscPrintf(PETSC_COMM_WORLD,"|   Brute force Finite difference gradient for %+5s[%2i] = %e \n", CurName, CurPhase, Grad);
 
 			}
 
@@ -1280,10 +1280,9 @@ PetscErrorCode AdjointComputeGradients(JacRes *jr, AdjGrad *aop, NLSol *nl, SNES
 	PetscFunctionBegin;
 
 	FDSTAG              *fs;
-	SNES 				snes_as;
 	KSP                 ksp_as;
 	KSPConvergedReason  reason;
-	PetscInt            i, j, CurPhase, lrank, grank;
+	PetscInt            i, j, CurPhase=0, lrank, grank;
 	PetscScalar         dt, grd, Perturb, coord_local[3], *vx, *vy, *vz, *Par, CurVal;
 	Vec 				res_pert, sol, psi, drdp, res, Perturb_vec;
 	PC                  ipc_as;
@@ -1311,13 +1310,7 @@ PetscErrorCode AdjointComputeGradients(JacRes *jr, AdjGrad *aop, NLSol *nl, SNES
 	//========
 	// Solve the adjoint equation (psi = J^-T * dF/dx)
 	// (A side note that I figured out, ksp still sometimes results in a > 0 gradient even if cost function is zero.. possibly really bad condition number?)
-
-	ierr = SNESCreate(PETSC_COMM_WORLD, &snes_as);                     CHKERRQ(ierr);
-	ierr = SNESSetType(snes_as, SNESNEWTONLS);                         CHKERRQ(ierr);
-	ierr = SNESSetFunction(snes_as, jr->gres, &FormResidual, nl);      CHKERRQ(ierr);
-	ierr = SNESSetJacobian(snes_as, nl->J, nl->P, &FormJacobian, nl);  CHKERRQ(ierr);
-	ierr = SNESSetFromOptions(snes_as);                                CHKERRQ(ierr);
-	ierr = SNESGetKSP(snes_as, &ksp_as);         		CHKERRQ(ierr);
+	ierr = SNESGetKSP(snes, &ksp_as);         		CHKERRQ(ierr);
 	ierr = KSPSetOptionsPrefix(ksp_as,"as_"); 		CHKERRQ(ierr);
 	ierr = KSPSetFromOptions(ksp_as);         		CHKERRQ(ierr);
 	ierr = KSPGetPC(ksp_as, &ipc_as);           	CHKERRQ(ierr);
@@ -1325,9 +1318,6 @@ PetscErrorCode AdjointComputeGradients(JacRes *jr, AdjGrad *aop, NLSol *nl, SNES
 	ierr = KSPSetOperators(ksp_as,nl->J,nl->P);		CHKERRQ(ierr);
 	ierr = KSPSolve(ksp_as,aop->dF,psi);			CHKERRQ(ierr);
 	ierr = KSPGetConvergedReason(ksp_as,&reason);	CHKERRQ(ierr);
-
-	ierr = SNESDestroy(&snes_as);
-
 
     // Set the FD step-size for computing dr/dp (or override it with a command-line option, which is more for advanced users/testing)
     aop->FD_epsilon = 1e-6;
@@ -1374,7 +1364,7 @@ PetscErrorCode AdjointComputeGradients(JacRes *jr, AdjGrad *aop, NLSol *nl, SNES
 		VecGetArray(IOparam->P,&Par);
 		for(j = 0; j < IOparam->mdN; j++)
 		{
-			if (IOparam->FD_gradient[j]==0){	// only if we want to compute an adjoint gradient for this paramater
+			if (!IOparam->FD_gradient[j]){	// only if we want to compute an adjoint gradient for this paramater
 
 				// Get the initial residual since it is overwritten in VecAYPX
 				ierr = VecCopy(jr->gres,res); 			CHKERRQ(ierr);
@@ -1384,24 +1374,22 @@ PetscErrorCode AdjointComputeGradients(JacRes *jr, AdjGrad *aop, NLSol *nl, SNES
 				CurVal 	 		= 	Par[j];
 				strcpy(CurName, IOparam->type_name[j]);	// name
 
-				// Clear material structure (otherwise Bn is still taken from previous read)
-				ierr =   PetscMemzero(&nl->pc->pm->jr->dbm->phases[CurPhase],sizeof(nl->pc->pm->jr->dbm->phases[CurPhase]));   CHKERRQ(ierr);
-				ierr =   PetscMemzero(&IOparam->dbm_modified.phases[CurPhase],sizeof(IOparam->dbm_modified.phases[CurPhase]));   CHKERRQ(ierr);
-			
 				// Perturb parameter
 				Perturb 		= 	aop->FD_epsilon*CurVal;
 				ierr 			= 	VecSet(Perturb_vec,Perturb);                   							CHKERRQ(ierr);        // epsilon (finite difference)   
 				aop->CurScal 	= 	(scal->velocity)/(1);       // TEMPORARY CODE (should be automatized, necessary?)
 
-				//PetscPrintf(PETSC_COMM_WORLD,"*** dr/dp: Perturbing parameter %s[%i]=%f to value %f \n",CurName,CurPhase,CurVal, CurVal + Perturb);
+				//PetscPrintf(PETSC_COMM_WORLD,"*** dr/dp: Perturbing parameter %s[%i]=%f to value %f -> Scaling.density = %f \n",CurName,CurPhase,CurVal, CurVal + Perturb, scal->density);
 
 				// Set as command-line option & create updated material database
 				ierr 			=	CopyParameterToLaMEMCommandLine(IOparam,  CurVal + Perturb, j);			CHKERRQ(ierr);
 				ierr 			= 	CreateModifiedMaterialDatabase(IOparam);     							CHKERRQ(ierr);			// update LaMEM material DB (to call directly call the LaMEM residual routine)
 
 				// Swap material structure of phase with that of LaMEM Material DB
-				swapStruct(&nl->pc->pm->jr->dbm->phases[0], &IOparam->dbm_modified.phases[0]);  
-				swapStruct(&nl->pc->pm->jr->dbm->phases[1], &IOparam->dbm_modified.phases[1]);  
+				for (i=0; i < IOparam->mdN; i++){
+					ierr =   PetscMemzero(&nl->pc->pm->jr->dbm->phases[i],  sizeof(Material_t));   CHKERRQ(ierr);
+					swapStruct(&nl->pc->pm->jr->dbm->phases[i], &IOparam->dbm_modified.phases[i]);  
+				}
 
 				ierr 			= 	FormResidual(snes, sol, res_pert, nl);         							CHKERRQ(ierr);        // compute the residual with the perturbed parameter
 				ierr 			=	VecAYPX(res,-1,res_pert);                      							CHKERRQ(ierr);        // res = (res_perturbed-res)
@@ -1409,15 +1397,14 @@ PetscErrorCode AdjointComputeGradients(JacRes *jr, AdjGrad *aop, NLSol *nl, SNES
 
 				// Reset parameter again
 				ierr 			=	CopyParameterToLaMEMCommandLine(IOparam,  CurVal, j);					CHKERRQ(ierr);
+				ierr 			= 	CreateModifiedMaterialDatabase(IOparam);     							CHKERRQ(ierr);			// update LaMEM material DB (to call directly call the LaMEM residual routine)
 
 				// Swap material structure of phase with that of LaMEM Material DB back
-				swapStruct(&IOparam->dbm_modified.phases[0], &nl->pc->pm->jr->dbm->phases[0]);  
-				swapStruct(&IOparam->dbm_modified.phases[1], &nl->pc->pm->jr->dbm->phases[1]);  
-
-				// Clear material structure (otherwise Bn is still taken from previous read)
-				ierr =   PetscMemzero(&nl->pc->pm->jr->dbm->phases[CurPhase],sizeof(nl->pc->pm->jr->dbm->phases[CurPhase]));   CHKERRQ(ierr);
-				ierr =   PetscMemzero(&IOparam->dbm_modified.phases[CurPhase],sizeof(IOparam->dbm_modified.phases[CurPhase]));   CHKERRQ(ierr);
-
+				for (i=0; i < IOparam->mdN; i++){
+					ierr =   PetscMemzero(&nl->pc->pm->jr->dbm->phases[i],  sizeof(Material_t));   CHKERRQ(ierr);
+					swapStruct(&nl->pc->pm->jr->dbm->phases[i], &IOparam->dbm_modified.phases[i]);  
+				}
+				
 				// Compute the gradient (dF/dp = -psi^T * dr/dp) & Save gradient
 				ierr          	=   VecDot(drdp,psi,&grd);                       CHKERRQ(ierr);
 				IOparam->grd[j]	=   -grd*aop->CurScal;							// gradient
@@ -1524,7 +1511,7 @@ PetscErrorCode PrintCostFunction(ModParam *IOparam)
 PetscErrorCode PrintGradientsAndObservationPoints(ModParam *IOparam)
 {
 	PetscErrorCode 	ierr;
-	char 			*CurName1, CurName[_str_len_];
+	char 			CurName[_str_len_];
 	PetscInt 		j, CurPhase;
 	PetscScalar 	*Par;
 	Scaling	 		scal;
@@ -1547,15 +1534,16 @@ PetscErrorCode PrintGradientsAndObservationPoints(ModParam *IOparam)
 		// Get current phase and parameter which is being perturbed
 		CurPhase 		= 	IOparam->phs[j];
 		strcpy(CurName, IOparam->type_name[j]);	// name
-		if (IOparam->FD_gradient[j]>0){
-			asprintf(&CurName1, "FD: %s", CurName); 
-		}
-		else{
-			asprintf(&CurName1, "%s", CurName); 
-		}
+	
 
 		// Print result
-        PetscPrintf(PETSC_COMM_WORLD,"|          %5d:   %+5s[%2i]           %- 1.6e \n",j+1, CurName1, CurPhase, IOparam->grd[j]);
+		if (IOparam->FD_gradient[j]>0){
+        	PetscPrintf(PETSC_COMM_WORLD,"|  adjoint %5d:   %+5s[%2i]           %- 1.6e \n",j+1, CurName, CurPhase, IOparam->grd[j]);
+		}
+		else{
+			PetscPrintf(PETSC_COMM_WORLD,"|       FD %5d:   %+5s[%2i]           %- 1.6e \n",j+1, CurName, CurPhase, IOparam->grd[j]);
+		}
+
 	}
 	VecRestoreArray(IOparam->P,&Par);
 	PetscPrintf(PETSC_COMM_WORLD,"| \n| ");

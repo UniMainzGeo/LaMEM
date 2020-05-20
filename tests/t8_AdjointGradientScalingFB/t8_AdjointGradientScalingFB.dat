@@ -113,18 +113,20 @@
 	<MaterialStart>
 		ID  = 0 
 		rho = 1
-		eta0 = 1
-		n = 1.2
-		e0 = 1e-6  
+		eta = 1
+#		eta0 = 1
+#		n = 1.2
+#		e0 = 1e-6  
 	<MaterialEnd>
 
 	# Define properties of block
 	<MaterialStart>
 		ID  = 1   
 		rho = 2   
-		eta0 = 100
-		n = 1.6
-		e0 = 1e-6  
+		eta = 100
+#		eta0 = 100
+#		n = 1.6
+#		e0 = 1e-6  
 	<MaterialEnd>
 	
 #===============================================================================
@@ -144,37 +146,37 @@
 
 	<AdjointParameterStart>
 	   	ID  			= 0			# phase of the parameter
-		Type 			= n     	# options: [rho0,rhon,rhoc,eta,eta0,n,En] 	
-		InitGuess 		= 3  		# initial guess
-		LowerBound     	= 0.1		# [optional] lower bound
-		UpperBound      = 4			# [optional] upper bound
+		Type 			= rho     	# options: [rho0,rhon,rhoc,eta,eta0,n,En] 	
+		InitGuess 		= 2 		# initial guess
+#		LowerBound     	= 0.1		# [optional] lower bound
+#		UpperBound      = 4			# [optional] upper bound
 #		FD_gradient 	= 1		
 	<AdjointParameterEnd>
 	       
 	<AdjointParameterStart>  
 		ID  		= 1	
-		Type 		= n   	   
-		InitGuess 	= 2    
-		LowerBound     = 0.1		# [optional] lower bound
-		UpperBound     = 4		# [optional] upper bound
+		Type 		= rho   	   
+		InitGuess 	= 3    
+#		LowerBound     = 0.1		# [optional] lower bound
+#		UpperBound     = 4		# [optional] upper bound
 #		FD_gradient 	= 1		
 	<AdjointParameterEnd>
 
 	<AdjointParameterStart>
 	   	ID  			= 0			# phase of the parameter
-		Type 			= n     	# options: [rho0,rhon,rhoc,eta,eta0,n,En] 	
-		InitGuess 		= 3  		# initial guess
-		LowerBound     	= 0.1		# [optional] lower bound
-		UpperBound      = 4			# [optional] upper bound
+		Type 			= rho     	# options: [rho0,rhon,rhoc,eta,eta0,n,En] 	
+		InitGuess 		= 2  		# initial guess
+#		LowerBound     	= 0.1		# [optional] lower bound
+#		UpperBound      = 4			# [optional] upper bound
 		FD_gradient 	= 1		
 	<AdjointParameterEnd>
 	       
 	<AdjointParameterStart>  
 		ID  		= 1	
-		Type 		= n   	   
-		InitGuess 	= 2    
-		LowerBound     = 0.1		# [optional] lower bound
-		UpperBound     = 4		# [optional] upper bound
+		Type 		= rho   	   
+		InitGuess 	= 3   
+#		LowerBound     = 0.1		# [optional] lower bound
+#		UpperBound     = 4		# [optional] upper bound
 		FD_gradient 	= 1		
 	<AdjointParameterEnd>
 
