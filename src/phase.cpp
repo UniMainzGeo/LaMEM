@@ -133,6 +133,11 @@ PetscErrorCode DBMatCreate(DBMat *dbm, FB *fb, PetscBool PrintOutput)
 
 	ierr = FBFreeBlocks(fb); CHKERRQ(ierr);
 
+    //=================================================
+	// OVERWRITE MATERIAL PARAMETERS WITH GLOBAL VARIABLES
+	//=================================================
+    ierr = DBMatOverwriteWithGlobalVariables(dbm, fb, PrintOutput); CHKERRQ(ierr);
+
 	if (PrintOutput){
 		PetscPrintf(PETSC_COMM_WORLD,"--------------------------------------------------------------------------\n");
 	}
@@ -209,7 +214,7 @@ PetscErrorCode DBMatReadPhase(DBMat *dbm, FB *fb, PetscBool PrintOutput)
 	Material_t *m;
 	PetscInt    ID = -1, visID = -1, chSoftID, frSoftID, MSN, print_title;
 	size_t 	    StringLength;
-	PetscScalar eta, eta0, e0, K, Kb, G, E, nu, Vp, Vs, eta_min;
+	PetscScalar eta, eta0, e0, K, Kb, G, E, nu, Vp, Vs, eta_min, eta_st;
 	char        ndiff[_str_len_], ndisl[_str_len_], npeir[_str_len_], title[_str_len_];
 	char        PhaseDiagram[_str_len_], PhaseDiagram_Dir[_str_len_];
 	
@@ -231,6 +236,7 @@ PetscErrorCode DBMatReadPhase(DBMat *dbm, FB *fb, PetscBool PrintOutput)
 	nu       =  0.0;
 	Vp       =  0.0;
 	Vs       =  0.0;
+    eta_st   =  0.0;
 	chSoftID = -1;
 	frSoftID = -1;
 	MSN      =  dbm->numSoft - 1;
@@ -366,7 +372,7 @@ PetscErrorCode DBMatReadPhase(DBMat *dbm, FB *fb, PetscBool PrintOutput)
 	//=================================================================================
 	ierr = getScalarParam(fb, _OPTIONAL_, "ch",       &m->ch,     1, 1.0); CHKERRQ(ierr);
 	ierr = getScalarParam(fb, _OPTIONAL_, "fr",       &m->fr,     1, 1.0); CHKERRQ(ierr);
-	ierr = getScalarParam(fb, _OPTIONAL_, "eta_st",   &m->eta_st, 1, 1.0); CHKERRQ(ierr);
+	ierr = getScalarParam(fb, _OPTIONAL_, "eta_st",   &eta_st,    1, 1.0); CHKERRQ(ierr);
 	ierr = getScalarParam(fb, _OPTIONAL_, "rp",       &m->rp,     1, 1.0); CHKERRQ(ierr);
 	ierr = getIntParam   (fb, _OPTIONAL_, "chSoftID", &chSoftID,  1, MSN); CHKERRQ(ierr);
 	ierr = getIntParam   (fb, _OPTIONAL_, "frSoftID", &frSoftID,  1, MSN); CHKERRQ(ierr);
@@ -413,8 +419,8 @@ PetscErrorCode DBMatReadPhase(DBMat *dbm, FB *fb, PetscBool PrintOutput)
 		SETERRQ1(PETSC_COMM_WORLD, PETSC_ERR_USER, "Cohesion must be specified for phase %lld (chSoftID + ch)", (LLD)ID);
 	}
 
-    ierr = getScalarParam(fb, _OPTIONAL_, "eta_min",         &eta_min,        1, 1.0); CHKERRQ(ierr);
-
+    m->eta_st   = eta_st;
+   
 	// set softening law IDs
 	m->chSoftID = chSoftID;
 	m->frSoftID = frSoftID;
@@ -645,7 +651,7 @@ PetscErrorCode DBMatReadPhase(DBMat *dbm, FB *fb, PetscBool PrintOutput)
 	m->ch     /= scal->stress_si;
 	m->fr     /= scal->angle;
 
-	if(!m->eta_st) m->eta_st = eta_min; // set default stabilization viscosity if not defined
+
     m->eta_st /= scal->viscosity;
     
 	// temperature
@@ -1463,8 +1469,6 @@ PetscErrorCode MatPropSetFromCL(JacRes *jr)
 PetscErrorCode PrintMatProp(Material_t *MatProp)
 {
 	// Prints an overview of the material properties specified for a certain phase (for debugging)
-	PetscErrorCode 	ierr;
-
 	PetscFunctionBegin;
 
 	PetscPrintf(PETSC_COMM_WORLD,">>> Material properties for phase %i with visId=%i : \n",MatProp->ID, MatProp->visID);
@@ -1484,3 +1488,37 @@ PetscErrorCode PrintMatProp(Material_t *MatProp)
   
 	PetscFunctionReturn(0);
 }
+
+//---------------------------------------------------------------------------
+#undef __FUNCT__
+#define __FUNCT__ "DBMatOverwriteWithGlobalVariables"
+PetscErrorCode DBMatOverwriteWithGlobalVariables(DBMat *dbm, FB *fb, PetscBool PrintOutput)
+{
+    PetscFunctionBegin;
+
+    PetscErrorCode  ierr;
+    PetscScalar     eta_min;
+    PetscInt        ID;
+    Material_t      *m;
+    Scaling         *scal;
+	PetscFunctionBegin;
+
+	// access context
+	scal    = dbm->scal;
+
+    eta_min = 0;
+    ierr    = getScalarParam(fb, _OPTIONAL_, "eta_min",         &eta_min,        1, 1.0); CHKERRQ(ierr);
+
+	for(ID = 0; ID < dbm->numPhases; ID++)
+	{   
+    	// get pointer to specified phase
+        m = &dbm->phases[ID];
+      
+        // Plasticity stabilization viscosity: set to eta_min, if not defined 
+        if(!m->eta_st) m->eta_st = eta_min/scal->viscosity; // set default stabilization viscosity if not defined    
+        
+	}
+
+	PetscFunctionReturn(0);
+}
+//---------------------------------------------------------------------------
