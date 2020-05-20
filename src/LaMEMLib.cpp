@@ -716,12 +716,11 @@ PetscErrorCode LaMEMLibSolve(LaMEMLib *lm, void *param)
 		ModParam      *IOparam;
 		IOparam       = (ModParam *)param;
 
-		/*
+
 		if(IOparam->use == _gradientdescent_)
 		{	// Compute 'full' adjoint inversion
 	 		ierr = AdjointObjectiveAndGradientFunction(&aop, &lm->jr, &nl, (ModParam *)param, snes, &lm->surf); CHKERRQ(ierr);
 		}
-		*/
 
 		if(IOparam->use == _syntheticforwardrun_)
 		{	// Assume this as a forward simulation and save the solution vector

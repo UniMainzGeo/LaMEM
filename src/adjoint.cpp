@@ -529,7 +529,7 @@ PetscErrorCode LaMEMAdjointMain(ModParam *IOparam)
     ierr = LaMEMAdjointReadInputSetDefaults(IOparam, &Adjoint_Vectors); 			CHKERRQ(ierr);
 
 	// Copy adjoint parameters to command-line	options
-	VecCopy(Adjoint_Vectors.P,IOparam->P);
+	VecCopy(Adjoint_Vectors.P,IOparam->P);		// Copy 
 	VecGetArray(IOparam->P,&Par);
 	for(i=0;i<IOparam->mdN;i++)
 	{
@@ -544,19 +544,9 @@ PetscErrorCode LaMEMAdjointMain(ModParam *IOparam)
 	// only compute the adjoint gradients or simply forward code
 	if(IOparam->use == _adjointgradients_)
  	{
-		/* 	FD gradients: call the FD gradient routine (& LaMEM many times) for those parameters for which we request it 
-			Note: should be computed first, before computing adjoint to ensure that the cost function is computed for the standard (and nt perturbed) parameters
-		*/
-		ierr = AdjointFiniteDifferenceGradients(Adjoint_Vectors.P, F, Adjoint_Vectors.grad, IOparam);	CHKERRQ(ierr);
+		// Compute Gradients 
+		ierr = ComputeGradientsAndObjectiveFunction(Adjoint_Vectors.P, F, Adjoint_Vectors.grad, IOparam);	CHKERRQ(ierr);
 
-	 	// Adjoint gradients: Call LaMEM main library function once (computes gradients @ the end)
- 		ierr = LaMEMLibMain(IOparam); 														CHKERRQ(ierr);
-
-
-		// Print overview of cost function & gradients 
-		ierr = PrintCostFunction(IOparam);					CHKERRQ(ierr);
-		ierr = PrintGradientsAndObservationPoints(IOparam); CHKERRQ(ierr);
-	
  	}
  	// compute 'full' adjoint-based gradient inversion
  	else if(IOparam->use == _gradientdescent_)
@@ -704,8 +694,6 @@ PetscErrorCode AdjointVectorsDestroy(Adjoint_Vecs *Adjoint_Vectors, ModParam *IO
 	ierr = VecDestroy(&IOparam->P);					CHKERRQ(ierr);
 	ierr = VecDestroy(&IOparam->fcconv);			CHKERRQ(ierr);
 
-
-
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
@@ -752,6 +740,55 @@ PetscErrorCode AdjointDestroy(AdjGrad *aop, ModParam *IOparam)
 
 	PetscFunctionReturn(0);
 }
+
+//---------------------------------------------------------------------------
+#undef __FUNCT__
+#define __FUNCT__ "ComputeGradientsAndObjectiveFunction"
+PetscErrorCode ComputeGradientsAndObjectiveFunction(Vec Parameters, PetscScalar ObjectiveValue, Vec Gradient, ModParam *IOparam)
+{
+	/* 
+		This computes the objective & gradients (either adjoint or finite difference 
+		or a combination of both)
+	*/
+	PetscErrorCode 	ierr;
+	PetscScalar 	*Par, *Grad;
+	PetscInt 		i;
+
+	PetscFunctionBegin;
+
+	// Copy adjoint parameters to command-line	options
+	VecCopy(Parameters,IOparam->P);		// Copy 
+	VecGetArray(IOparam->P,&Par);
+	for(i=0;i<IOparam->mdN;i++)
+	{
+		ierr	=	CopyParameterToLaMEMCommandLine(IOparam,  Par[i], i);			CHKERRQ(ierr);
+    }
+	VecRestoreArray(IOparam->P,&Par);
+
+	/* 	FD gradients: call the FD gradient routine (& LaMEM many times) for those parameters for which we request it 
+		Note: should be computed first, before computing adjoint to ensure that the cost function is computed for the standard (and nt perturbed) parameters
+	*/
+	ierr = AdjointFiniteDifferenceGradients(IOparam);	CHKERRQ(ierr);
+
+	// Adjoint gradients: Call LaMEM main library function once (computes gradients @ the end)
+ 	ierr = LaMEMLibMain(IOparam); 															CHKERRQ(ierr);
+
+	// Print overview of cost function & gradients 
+	ierr = PrintCostFunction(IOparam);					CHKERRQ(ierr);
+	ierr = PrintGradientsAndObservationPoints(IOparam); CHKERRQ(ierr);
+
+	// Copy back gradients from IOparam   
+	// Gradient info is thus in IOparam & as vectors
+	VecGetArray(Gradient,&Grad);
+	for(i=0;i<IOparam->mdN;i++){
+		Grad[i] = IOparam->grd[i];		// Gradient
+	}
+	VecRestoreArray(Gradient,&Grad);
+
+	ObjectiveValue = IOparam->mfit;		// Objective function
+
+	PetscFunctionReturn(0);
+}
 //---------------------------------------------------------------------------
 #undef __FUNCT__
 #define __FUNCT__ "AdjointOptimisation"
@@ -775,6 +812,7 @@ PetscErrorCode AdjointOptimisation(Vec P, PetscScalar F, Vec grad, void *ctx)
 	VecDuplicate(grad,&dgrad);
 	VecDuplicate(grad,&r);
 	VecCopy(P,IOparam->P);
+
 
 	// Initialize cost functions
 	F 		= 1e100;
@@ -807,6 +845,8 @@ PetscErrorCode AdjointOptimisation(Vec P, PetscScalar F, Vec grad, void *ctx)
 		// Save cost function
 		F = IOparam->mfit;
 
+		PetscPrintf(PETSC_COMM_WORLD,"AdjointOptimisation: Gradients. [0]=%e, [1]=%e \n", IOparam->grd[0], IOparam->grd[1]);
+		
 		// If cost function in this timestep is larger then before perform bisection line search
 		while(F>Fold)
 		{
@@ -1047,6 +1087,7 @@ PetscErrorCode AdjointOptimisationTAO(Tao tao, Vec P, PetscReal *F, Vec grad, vo
  #define __FUNCT__ "AdjointObjectiveAndGradientFunction"
  PetscErrorCode AdjointObjectiveAndGradientFunction(AdjGrad *aop, JacRes *jr, NLSol *nl, ModParam *IOparam, SNES snes, FreeSurf *surf)
  {
+	// This computes the objective function and adjoint graidients (not the 'brute-force' FD gradients)
 
 	Scaling             *scal;
 	Vec                  xini;
@@ -1175,17 +1216,14 @@ PetscErrorCode AdjointOptimisationTAO(Tao tao, Vec P, PetscReal *F, Vec grad, vo
 */
 #undef __FUNCT__
 #define __FUNCT__ "AdjointFiniteDifferenceGradients"
-PetscErrorCode AdjointFiniteDifferenceGradients(Vec P, PetscScalar F, Vec grad, void *ctx)
+PetscErrorCode AdjointFiniteDifferenceGradients(ModParam *IOparam)
 {
 	PetscErrorCode 	ierr;
 	PetscInt 		j;
 	PetscScalar 	*Par, Perturb, Misfit_ref, Misfit_pert, FD_gradients_eps=1e-6, Grad; 
 	char 			CurName[_str_len_];
-	ModParam    	*IOparam;
 	PetscBool 		flg, FD_Adjoint = PETSC_FALSE;
-	IOparam     	= (ModParam*)ctx;
 
-	IOparam    =  (ModParam*)ctx;
 
 	// 0) Retrieve (optional) command-line parameters
 	ierr = PetscOptionsGetScalar(NULL, NULL,"-FD_gradients_eps",&FD_gradients_eps,&flg); CHKERRQ(ierr);
@@ -1194,8 +1232,6 @@ PetscErrorCode AdjointFiniteDifferenceGradients(Vec P, PetscScalar F, Vec grad, 
     }
 
 	// 1) Compute 'reference' state using LaMEM & the current set of parameters
-	VecCopy(P,IOparam->P);
-	
 	// Set parameters as command-line options
 	VecGetArray(IOparam->P,&Par);
 	for(j = 0; j < IOparam->mdN; j++){
@@ -1275,14 +1311,13 @@ PetscErrorCode AdjointFiniteDifferenceGradients(Vec P, PetscScalar F, Vec grad, 
 PetscErrorCode AdjointComputeGradients(JacRes *jr, AdjGrad *aop, NLSol *nl, SNES snes, ModParam *IOparam, FreeSurf *surf)
 {
 	
-
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
 
 	FDSTAG              *fs;
 	KSP                 ksp_as;
 	KSPConvergedReason  reason;
-	PetscInt            i, j, CurPhase=0, lrank, grank;
+	PetscInt            i, j, CurPhase, lrank, grank;
 	PetscScalar         dt, grd, Perturb, coord_local[3], *vx, *vy, *vz, *Par, CurVal;
 	Vec 				res_pert, sol, psi, drdp, res, Perturb_vec;
 	PC                  ipc_as;
@@ -1538,10 +1573,10 @@ PetscErrorCode PrintGradientsAndObservationPoints(ModParam *IOparam)
 
 		// Print result
 		if (IOparam->FD_gradient[j]>0){
-        	PetscPrintf(PETSC_COMM_WORLD,"|  adjoint %5d:   %+5s[%2i]           %- 1.6e \n",j+1, CurName, CurPhase, IOparam->grd[j]);
+        	PetscPrintf(PETSC_COMM_WORLD,"|       FD %5d:   %+5s[%2i]           %- 1.6e \n",j+1, CurName, CurPhase, IOparam->grd[j]);
 		}
 		else{
-			PetscPrintf(PETSC_COMM_WORLD,"|       FD %5d:   %+5s[%2i]           %- 1.6e \n",j+1, CurName, CurPhase, IOparam->grd[j]);
+			PetscPrintf(PETSC_COMM_WORLD,"|  adjoint %5d:   %+5s[%2i]           %- 1.6e \n",j+1, CurName, CurPhase, IOparam->grd[j]);
 		}
 
 	}

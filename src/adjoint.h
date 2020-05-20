@@ -100,8 +100,13 @@ PetscErrorCode AdjointVectorsDestroy(Adjoint_Vecs *Adjoint_vectors, ModParam *IO
 PetscErrorCode AdjointObjectiveAndGradientFunction(AdjGrad *aop, JacRes *jr, NLSol *nl, ModParam *IOparam, SNES snes, FreeSurf *surf);
 
 // Compute the gradients for the adjoint inversion
+PetscErrorCode ComputeGradientsAndObjectiveFunction(Vec Parameters, PetscScalar ObjectiveValue, Vec Gradient, ModParam *IOparam);
+
+// Adjoint Gradients
 PetscErrorCode AdjointComputeGradients(JacRes *jr, AdjGrad *aop, NLSol *nl, SNES snes, ModParam *IOparam, FreeSurf *surf);
-PetscErrorCode AdjointFiniteDifferenceGradients(Vec P, PetscScalar F, Vec grad, void *ctx);				
+
+// 'Brute-force' finite difference gradients
+PetscErrorCode AdjointFiniteDifferenceGradients(ModParam *IOparam);				
 PetscErrorCode PrintGradientsAndObservationPoints(ModParam *IOparam);
 PetscErrorCode PrintCostFunction(ModParam *IOparam);
 
