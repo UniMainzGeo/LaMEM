@@ -229,8 +229,11 @@ PetscErrorCode CorrExpStressStrainRate(PetscScalar &D, PetscScalar &S, ExpType t
 
 //---------------------------------------------------------------------------
 
-// read phases from command line
+// read phases from command line [Note: this is now directly possible]
 // PetscErrorCode MatPropSetFromCL(JacRes *jr);
+
+// Print overview (for debugging purposes only)
+PetscErrorCode PrintMatProp(Material_t *MatProp);
 
 //---------------------------------------------------------------------------
 #endif
