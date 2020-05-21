@@ -100,7 +100,7 @@ PetscErrorCode AdjointVectorsDestroy(Adjoint_Vecs *Adjoint_vectors, ModParam *IO
 PetscErrorCode AdjointObjectiveAndGradientFunction(AdjGrad *aop, JacRes *jr, NLSol *nl, ModParam *IOparam, SNES snes, FreeSurf *surf);
 
 // Compute the gradients for the adjoint inversion
-PetscErrorCode ComputeGradientsAndObjectiveFunction(Vec Parameters, PetscScalar ObjectiveValue, Vec Gradient, ModParam *IOparam);
+PetscErrorCode ComputeGradientsAndObjectiveFunction(Vec Parameters, PetscScalar *ObjectiveValue, Vec Gradient, ModParam *IOparam);
 
 // Adjoint Gradients
 PetscErrorCode AdjointComputeGradients(JacRes *jr, AdjGrad *aop, NLSol *nl, SNES snes, ModParam *IOparam, FreeSurf *surf);

@@ -545,7 +545,7 @@ PetscErrorCode LaMEMAdjointMain(ModParam *IOparam)
 	if(IOparam->use == _adjointgradients_)
  	{
 		// Compute Gradients 
-		ierr = ComputeGradientsAndObjectiveFunction(Adjoint_Vectors.P, F, Adjoint_Vectors.grad, IOparam);	CHKERRQ(ierr);
+		ierr = ComputeGradientsAndObjectiveFunction(Adjoint_Vectors.P, &F, Adjoint_Vectors.grad, IOparam);	CHKERRQ(ierr);
 
  	}
  	// compute 'full' adjoint-based gradient inversion
@@ -744,7 +744,7 @@ PetscErrorCode AdjointDestroy(AdjGrad *aop, ModParam *IOparam)
 //---------------------------------------------------------------------------
 #undef __FUNCT__
 #define __FUNCT__ "ComputeGradientsAndObjectiveFunction"
-PetscErrorCode ComputeGradientsAndObjectiveFunction(Vec Parameters, PetscScalar ObjectiveValue, Vec Gradient, ModParam *IOparam)
+PetscErrorCode ComputeGradientsAndObjectiveFunction(Vec Parameters, PetscScalar *ObjectiveValue, Vec Gradient, ModParam *IOparam)
 {
 	/* 
 		This computes the objective & gradients (either adjoint or finite difference 
@@ -785,7 +785,7 @@ PetscErrorCode ComputeGradientsAndObjectiveFunction(Vec Parameters, PetscScalar 
 	}
 	VecRestoreArray(Gradient,&Grad);
 
-	ObjectiveValue = IOparam->mfit;		// Objective function
+	*ObjectiveValue = IOparam->mfit;		// Objective function
 
 	PetscFunctionReturn(0);
 }
@@ -812,7 +812,7 @@ PetscErrorCode AdjointOptimisation(Vec P, PetscScalar F, Vec grad, void *ctx)
 	VecDuplicate(grad,&dgrad);
 	VecDuplicate(grad,&r);
 	VecCopy(P,IOparam->P);
-
+	VecCopy(P,Pold);
 
 	// Initialize cost functions
 	F 		= 1e100;
@@ -823,19 +823,20 @@ PetscErrorCode AdjointOptimisation(Vec P, PetscScalar F, Vec grad, void *ctx)
 		
 		// Give the updated values to the code
 		VecCopy(P,IOparam->P);		
-		VecGetArray(P,&Par);
-		for(i=0;i<IOparam->mdN;i++)
-		{
-			ierr	=	CopyParameterToLaMEMCommandLine(IOparam,  Par[i], i);			CHKERRQ(ierr);
-    	}
-		VecRestoreArray(P,&Par);
+		//VecGetArray(P,&Par);
+		//for(i=0;i<IOparam->mdN;i++)
+		//{
+		//	ierr	=	CopyParameterToLaMEMCommandLine(IOparam,  Par[i], i);			CHKERRQ(ierr);
+    	//}
+		//VecRestoreArray(P,&Par);
 
 		// Reset line search counter
 		LScount = 1;
 
 		// call LaMEM main library function
-		ierr = LaMEMLibMain(IOparam); CHKERRQ(ierr);
-
+		//ierr = LaMEMLibMain(IOparam); CHKERRQ(ierr);
+		ierr = ComputeGradientsAndObjectiveFunction(P, &F, dP, IOparam);	CHKERRQ(ierr);
+				
 		// Save initial cost function & create initial Hessian
 		if(IOparam->count==1)
 		{
@@ -868,19 +869,19 @@ PetscErrorCode AdjointOptimisation(Vec P, PetscScalar F, Vec grad, void *ctx)
 			for(i=0;i<IOparam->mdN;i++)
 			{
 				Par[i] 	= 	Paroldar[i] + dPtemp[i];
-				ierr	=	CopyParameterToLaMEMCommandLine(IOparam,  Par[i], i);			CHKERRQ(ierr);
+			//	ierr	=	CopyParameterToLaMEMCommandLine(IOparam,  Par[i], i);			CHKERRQ(ierr);
     		}
 			VecRestoreArray(P,&Par);
 			VecRestoreArray(Pold,&Paroldar);
 			VecRestoreArray(dP,&dPtemp);
 
-			// Store the updated values
-			VecCopy(P,IOparam->P);  
+			// Store the updated values (now done inside the routine below)
+			//VecCopy(P,IOparam->P);  
 
 			// call LaMEM main library function
-			ierr 	= LaMEMLibMain(IOparam); CHKERRQ(ierr);
-
-			F 		= IOparam->mfit;
+			ierr = ComputeGradientsAndObjectiveFunction(P, &F, grad, IOparam);	CHKERRQ(ierr);
+			//ierr 	= LaMEMLibMain(IOparam); CHKERRQ(ierr);
+			//F 		= IOparam->mfit;
 
 			LScount+=1;
 			if(LScount>IOparam->maxitLS)
@@ -1013,7 +1014,7 @@ PetscErrorCode AdjointOptimisationTAO(Tao tao, Vec P, PetscReal *F, Vec grad, vo
 
 	// initialize
 	PetscInt j;
-	PetscScalar *Par, *gradar, *fcconvar;
+	PetscScalar *Par, *gradar, *fcconvar, Fmisfit;
 	ModParam    *IOparam;
 	char		CurName[_str_len_];
 	
@@ -1022,51 +1023,62 @@ PetscErrorCode AdjointOptimisationTAO(Tao tao, Vec P, PetscReal *F, Vec grad, vo
 	// get parameter values
 	VecCopy(P,IOparam->P);
 
+	// Print parameters
+	PetscPrintf(PETSC_COMM_WORLD,"| \n");
+	PetscPrintf(PETSC_COMM_WORLD,"| *************************************************************************\n");
+	PetscPrintf(PETSC_COMM_WORLD,"| TAO start iteration %i: \n", IOparam->count);
+	PetscPrintf(PETSC_COMM_WORLD,"| Currently employed parameters: \n");
 	VecGetArray(IOparam->P,&Par);
-	// Set parameters as command-line options
 	for(j = 0; j < IOparam->mdN; j++){
 	
-		ierr	=	CopyParameterToLaMEMCommandLine(IOparam,  Par[j], j);					CHKERRQ(ierr);
+		//ierr	=	CopyParameterToLaMEMCommandLine(IOparam,  Par[j], j);					CHKERRQ(ierr);
     
 	    strcpy(CurName, IOparam->type_name[j]);	// name
-		PetscPrintf(PETSC_COMM_WORLD,"| *** AdjointOptimisationTAO: Current parameter %s[%i]=%10.10f \n",CurName,IOparam->phs[j],Par[j]);
+		PetscPrintf(PETSC_COMM_WORLD,"|  %s[%i]=%10.10f \n",CurName,IOparam->phs[j],Par[j]);
 	}
 	VecRestoreArray(IOparam->P,&Par);
+	PetscPrintf(PETSC_COMM_WORLD,"| \n");
 
-	// call LaMEM main library function
-	ierr = LaMEMLibMain(IOparam); CHKERRQ(ierr);
+	// Compute gradient & objective function for the parameters P
+	ierr = ComputeGradientsAndObjectiveFunction(P, &Fmisfit, grad, IOparam);	CHKERRQ(ierr);
+		
+	//ierr = LaMEMLibMain(IOparam); CHKERRQ(ierr);
 
-	// restore parameter values
-	VecCopy(IOparam->P,P);
-
-	// Store the gradient & misfit
-	VecGetArray(grad,&gradar);
+	// Print the gradient & misfit
 	for(j = 0; j < IOparam->mdN; j++)
 	{
-		gradar[j] = IOparam->grd[j];
-		PetscPrintf(PETSC_COMM_WORLD,"| *** AdjointOptimisationTAO %D. gradient = %2.10e;  mfit=%f \n",j+1,gradar[j],IOparam->mfit);
+	//	gradar[j] = IOparam->grd[j];
 		
 	}
-	VecRestoreArray(grad,&gradar);
 
 	*F = IOparam->mfit;  // objective function
 
 	// Save initial cost function
 	if(IOparam->count==1){IOparam->mfitini = IOparam->mfit;}
 
-	// Display the current state of the parameters
+	// Display the current state of the parameters and gradient
+	PetscPrintf(PETSC_COMM_WORLD,"| *************************************************************************\n");
+	PetscPrintf(PETSC_COMM_WORLD,"| TAO results of iteration %i: \n", IOparam->count);
+	PetscPrintf(PETSC_COMM_WORLD,"| \n");
+	PetscPrintf(PETSC_COMM_WORLD,"| Parameter values: \n");
+	
 	VecGetArray(IOparam->P,&Par);
+	VecGetArray(grad,&gradar);
 	for(j = 0; j < IOparam->mdN; j++)
 	{
-		ierr	=	CopyParameterToLaMEMCommandLine(IOparam,  Par[j], j);					CHKERRQ(ierr);
+	//	ierr	=	CopyParameterToLaMEMCommandLine(IOparam,  Par[j], j);					CHKERRQ(ierr);
 
 		strcpy(CurName, IOparam->type_name[j]);	// name
-		PetscPrintf(PETSC_COMM_WORLD,"| %D. Parameter value, %s[%i] = %5.10e\n",j+1,CurName,IOparam->phs[j],Par[j]);
+		PetscPrintf(PETSC_COMM_WORLD,"|   %D. %s[%i] = %5.10e, gradient=%5.10e\n",j+1,CurName,IOparam->phs[j],Par[j],gradar[j]);
+		
 	}
+	VecRestoreArray(grad,&gradar);
 	VecRestoreArray(IOparam->P,&Par);
 
-	// Relative cost function
-	PetscPrintf(PETSC_COMM_WORLD,"| mfit / mfit0 = %.5e\n| ------------------------------------------\n\n",IOparam->mfit/IOparam->mfitini);
+	// Print cost function 
+	PetscPrintf(PETSC_COMM_WORLD,"| \n");
+	PetscPrintf(PETSC_COMM_WORLD,"| misfit           = %2.8e, %2.8e \n",IOparam->mfit, Fmisfit);
+	PetscPrintf(PETSC_COMM_WORLD,"| misfit / misfit0 = %2.8e\n| ------------------------------------------\n\n",IOparam->mfit/IOparam->mfitini);
 
 	VecGetArray(IOparam->fcconv,&fcconvar);
 	fcconvar[IOparam->count] = IOparam->mfit/IOparam->mfitini;
@@ -1114,13 +1126,23 @@ PetscErrorCode AdjointOptimisationTAO(Tao tao, Vec P, PetscReal *F, Vec grad, vo
 
 		if (IOparam->Gr == 1)
 		{
+			PetscScalar value;
+
 			// -------- Only get gradients with respect to the solution --------
  			ierr = VecCopy(aop->pro,aop->dF); 				CHKERRQ(ierr); // dF/dx = P
+
+			ierr = VecDot(aop->pro, jr->gsol,&value);     	CHKERRQ(ierr);
+			IOparam->mfit 	   = value;                  	
+
+
 		}
 		else if(IOparam->Gr == 0)
 		{
  			// -------- Get gradients with respect of cost function -------------
-			PetscScalar Ad;
+			PetscScalar Ad, sum; 
+			
+			VecSum(aop->pro, &sum);
+			PetscPrintf(PETSC_COMM_WORLD,"| ** SUM of projection vector = %1.10e \n",sum);
 
 			// Incorporate projection vector (F = (1/2)*[P*(x-x_ini)' * P*(x-x_ini)])
 			ierr = VecAYPX(xini,-1.0,jr->gsol);                                     CHKERRQ(ierr);  // xini = x - xini, where x=jr->gsol
@@ -1129,7 +1151,7 @@ PetscErrorCode AdjointOptimisationTAO(Tao tao, Vec P, PetscReal *F, Vec grad, vo
 
 			// Compute objective function value (F = (1/2)*[P*(x-x_ini)' * P*(x-x_ini)])
 			ierr 	           = VecDot(xini,xini,&Ad);                             CHKERRQ(ierr);
-			Ad 		          /= 2;
+			Ad 		           = Ad/2;
 			IOparam->mfit 	   = Ad*pow(scal->velocity,2);                  // Dimensional misfit function
 
 	 		// Compute it's derivative (dF/dx = P*x-P*x_ini = P*(x-x_ini))
@@ -1532,7 +1554,7 @@ PetscErrorCode PrintCostFunction(ModParam *IOparam)
     PetscPrintf(PETSC_COMM_WORLD,"|                       COMPUTATION OF THE COST FUNCTION                    \n");
     PetscPrintf(PETSC_COMM_WORLD,"| ************************************************************************\n");
 
-	PetscPrintf(PETSC_COMM_WORLD,"| Current Cost function = %.5e\n",IOparam->mfit);
+	PetscPrintf(PETSC_COMM_WORLD,"| Current Cost function = %2.10e\n",IOparam->mfit);
 
 	PetscFunctionReturn(0);
 }
@@ -2176,7 +2198,7 @@ PetscErrorCode AdjointPointInPro(JacRes *jr, AdjGrad *aop, ModParam *IOparam, Fr
 	ierr = DMDAVecRestoreArray(fs->DA_X, jr->lvx, &lvx); CHKERRQ(ierr);
 	ierr = DMDAVecRestoreArray(fs->DA_Y, jr->lvy, &lvy); CHKERRQ(ierr);
 	ierr = DMDAVecRestoreArray(fs->DA_Z, jr->lvz, &lvz); CHKERRQ(ierr);
-
+	
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
@@ -3082,7 +3104,7 @@ PetscErrorCode AddMaterialParameterToCommandLineOptions(char *name, PetscInt ID,
     PetscFunctionBegin;
     
     asprintf(&option, "-%s[%i]", name, ID); 
-    asprintf(&option_value, "%e", val);
+    asprintf(&option_value, "%10.20e", val);
     ierr = PetscOptionsSetValue(NULL, option, option_value);    CHKERRQ(ierr);   // this
     
     //PrintOutput = PETSC_TRUE;
@@ -3116,7 +3138,7 @@ PetscErrorCode CopyParameterToLaMEMCommandLine(ModParam *IOparam, PetscScalar Cu
 
 	//PrintOutput=PETSC_TRUE;
 	if (PrintOutput){
-		PetscPrintf(PETSC_COMM_WORLD,"| *** Added parameter %s[%i]=%10.10f to the LaMEM database \n",CurName,CurPhase,CurVal);
+		PetscPrintf(PETSC_COMM_WORLD,"| *** Added parameter %s[%i]=%10.20e to the LaMEM database \n",CurName,CurPhase,CurVal);
 	}
 
     PetscFunctionReturn(0);
