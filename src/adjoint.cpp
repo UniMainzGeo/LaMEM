@@ -846,7 +846,7 @@ PetscErrorCode AdjointOptimisation(Vec P, PetscScalar F, Vec grad, void *ctx)
 		// Save cost function
 		F = IOparam->mfit;
 
-		PetscPrintf(PETSC_COMM_WORLD,"AdjointOptimisation: Gradients. [0]=%e, [1]=%e \n", IOparam->grd[0], IOparam->grd[1]);
+		PetscPrintf(PETSC_COMM_WORLD,"| AdjointOptimisation: Gradients. [0]=%e, [1]=%e \n", IOparam->grd[0], IOparam->grd[1]);
 		
 		// If cost function in this timestep is larger then before perform bisection line search
 		while(F>Fold)
@@ -1139,21 +1139,24 @@ PetscErrorCode AdjointOptimisationTAO(Tao tao, Vec P, PetscReal *F, Vec grad, vo
 		else if(IOparam->Gr == 0)
 		{
  			// -------- Get gradients with respect of cost function -------------
-			PetscScalar Ad, sum; 
+			PetscScalar Ad, vel_scale; 
 			
-			VecSum(aop->pro, &sum);
-			PetscPrintf(PETSC_COMM_WORLD,"| ** SUM of projection vector = %1.10e \n",sum);
-
 			// Incorporate projection vector (F = (1/2)*[P*(x-x_ini)' * P*(x-x_ini)])
 			ierr = VecAYPX(xini,-1.0,jr->gsol);                                     CHKERRQ(ierr);  // xini = x - xini, where x=jr->gsol
 
 			ierr = VecPointwiseMult(xini, xini,aop->pro);                           CHKERRQ(ierr);  // xini = xini*P
 
+			// normalize over typical value
+			//vel_scale 	=	1e-2;
+			//VecScale(xini,1/vel_scale);
+		
 			// Compute objective function value (F = (1/2)*[P*(x-x_ini)' * P*(x-x_ini)])
 			ierr 	           = VecDot(xini,xini,&Ad);                             CHKERRQ(ierr);
 			Ad 		           = Ad/2;
+		
 			IOparam->mfit 	   = Ad*pow(scal->velocity,2);                  // Dimensional misfit function
 
+		
 	 		// Compute it's derivative (dF/dx = P*x-P*x_ini = P*(x-x_ini))
 	 		ierr = VecCopy(xini,aop->dF); 		                                    CHKERRQ(ierr); 
 	 		
@@ -1172,7 +1175,7 @@ PetscErrorCode AdjointOptimisationTAO(Tao tao, Vec P, PetscReal *F, Vec grad, vo
  	// compute 'full' adjoint inversion
  	else if(IOparam->use == _gradientdescent_)
 	{
- 		PetscScalar Ad;
+ 		PetscScalar Ad,vel_scale;
 
  	 	if(IOparam->count == 1)
  	 	{
@@ -1200,9 +1203,12 @@ PetscErrorCode AdjointOptimisationTAO(Tao tao, Vec P, PetscReal *F, Vec grad, vo
 
 	 	// Copy temporary comparison solution
 	 	ierr = VecCopy(IOparam->xini,xini);                                     CHKERRQ(ierr);
-		
+	
  		// Incorporate projection vector (F = (1/2)*[P*(x-x_ini)' * P*(x-x_ini)])
  		ierr = VecAYPX(xini,-1,jr->gsol);                                       CHKERRQ(ierr);
+
+		//VecScale(xini,1/2.4e-2);
+
  		ierr = VecPointwiseMult(xini, xini,aop->pro);                           CHKERRQ(ierr);
 		 
  		// Compute objective function value (F = (1/2)*[P*(x-x_ini)' * P*(x-x_ini)])
@@ -1210,13 +1216,17 @@ PetscErrorCode AdjointOptimisationTAO(Tao tao, Vec P, PetscReal *F, Vec grad, vo
  		Ad 		          /= 2;
  		IOparam->mfit 	   = Ad*pow(scal->velocity,2); // Dimensional misfit function
 
-		// Compute it's derivative (dF/dx = P*x-P*x_ini)
-		ierr = VecCopy(xini,aop->dF); 		            CHKERRQ(ierr);
-	
-		 //PrintCostFunction(IOparam);
+		// normalize over typical value
+		//vel_scale 	=	1e-2;
+		//VecScale(xini,1/vel_scale);
 
+		// Compute it's derivative (dF/dx = P*x-P*x_ini)
+		ierr = VecCopy(xini,aop->dF); 		           							CHKERRQ(ierr);
+
+		 //PrintCostFunction(IOparam);
+		
  		// Get the gradients
- 		ierr = AdjointComputeGradients(jr, aop, nl, snes, IOparam, surf);        CHKERRQ(ierr);
+ 		ierr = AdjointComputeGradients(jr, aop, nl, snes, IOparam, surf);    	CHKERRQ(ierr);
 
 	}
  	else
@@ -1340,7 +1350,7 @@ PetscErrorCode AdjointComputeGradients(JacRes *jr, AdjGrad *aop, NLSol *nl, SNES
 	KSP                 ksp_as;
 	KSPConvergedReason  reason;
 	PetscInt            i, j, CurPhase, lrank, grank;
-	PetscScalar         dt, grd, Perturb, coord_local[3], *vx, *vy, *vz, *Par, CurVal;
+	PetscScalar         dt, grd, Perturb, coord_local[3], *vx, *vy, *vz, *Par, CurVal, vel_scale;
 	Vec 				res_pert, sol, psi, drdp, res, Perturb_vec;
 	PC                  ipc_as;
 	Scaling             *scal;
@@ -1450,8 +1460,9 @@ PetscErrorCode AdjointComputeGradients(JacRes *jr, AdjGrad *aop, NLSol *nl, SNES
 
 				ierr 			= 	FormResidual(snes, sol, res_pert, nl);         							CHKERRQ(ierr);        // compute the residual with the perturbed parameter
 				ierr 			=	VecAYPX(res,-1,res_pert);                      							CHKERRQ(ierr);        // res = (res_perturbed-res)
-				ierr 			= 	VecPointwiseDivide(drdp,res,Perturb_vec);      							CHKERRQ(ierr);        //
-
+				ierr 			=	VecScale(res,1/Perturb);                      							CHKERRQ(ierr);        // res = (res_perturbed-res)/Perturb
+				ierr 			=	VecCopy(res,drdp);														CHKERRQ(ierr);        
+				
 				// Reset parameter again
 				ierr 			=	CopyParameterToLaMEMCommandLine(IOparam,  CurVal, j);					CHKERRQ(ierr);
 				ierr 			= 	CreateModifiedMaterialDatabase(IOparam);     							CHKERRQ(ierr);			// update LaMEM material DB (to call directly call the LaMEM residual routine)
@@ -1464,6 +1475,7 @@ PetscErrorCode AdjointComputeGradients(JacRes *jr, AdjGrad *aop, NLSol *nl, SNES
 				
 				// Compute the gradient (dF/dp = -psi^T * dr/dp) & Save gradient
 				ierr          	=   VecDot(drdp,psi,&grd);                       CHKERRQ(ierr);
+
 				IOparam->grd[j]	=   -grd*aop->CurScal;							// gradient
 
 			}
@@ -1584,7 +1596,6 @@ PetscErrorCode PrintGradientsAndObservationPoints(ModParam *IOparam)
    	PetscPrintf(PETSC_COMM_WORLD,"\n| Gradients: \n");
    	PetscPrintf(PETSC_COMM_WORLD,"|                    Parameter   |  Gradient (dimensional)  \n");    
     PetscPrintf(PETSC_COMM_WORLD,"|                  -------------   ------------------------ \n");    
-
 
 	VecGetArray(IOparam->P,&Par);
 	for(j = 0; j < IOparam->mdN; j++){

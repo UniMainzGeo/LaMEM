@@ -649,10 +649,11 @@ PetscErrorCode LaMEMLibSolve(LaMEMLib *lm, void *param)
 			ModParam      *IOparam;
 			IOparam       = (ModParam *)param;	
 			if (IOparam->use == _adjointgradients_ || IOparam->use == _gradientdescent_ )
-			{	// Compute adjoint gradients
-				//aop.DII_ref = IOparam->DII_ref;  // likely obsolete (to be checked..)
-				
-				// Compute the adjoint gradients 
+			{	/* 	Compute the adjoint gradients 
+				 	
+					This is done here, as the adjoint should be cmputed with the current residual that does not take advection etc.
+					into account. It does compute it every dt; one can perhaps only activate it for the last dt.
+				*/
 				ierr = AdjointObjectiveAndGradientFunction(&aop, &lm->jr, &nl, (ModParam *)param, snes, &lm->surf); CHKERRQ(ierr);
 			}
 		}
@@ -715,12 +716,6 @@ PetscErrorCode LaMEMLibSolve(LaMEMLib *lm, void *param)
 
 		ModParam      *IOparam;
 		IOparam       = (ModParam *)param;
-
-
-		if(IOparam->use == _gradientdescent_)
-		{	// Compute 'full' adjoint inversion
-	 		ierr = AdjointObjectiveAndGradientFunction(&aop, &lm->jr, &nl, (ModParam *)param, snes, &lm->surf); CHKERRQ(ierr);
-		}
 
 		if(IOparam->use == _syntheticforwardrun_)
 		{	// Assume this as a forward simulation and save the solution vector
