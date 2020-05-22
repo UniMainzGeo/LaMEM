@@ -1198,7 +1198,7 @@ PetscErrorCode AdjointOptimisationTAO(Tao tao, Vec P, PetscReal *F, Vec grad, vo
 		ierr = VecCopy(aop->pro,aop->dF); 				CHKERRQ(ierr); // dF/dx = P
 
 		ierr = VecDot(aop->pro, jr->gsol,&value);     	CHKERRQ(ierr);
-		IOparam->mfit 	   = value;                  	
+		IOparam->mfit 	   = value*scal->velocity;                  	
 
 	}
 	else if(IOparam->Gr == 0)
@@ -1473,7 +1473,15 @@ PetscErrorCode AdjointComputeGradients(JacRes *jr, AdjGrad *aop, NLSol *nl, SNES
 				// Compute the gradient (dF/dp = -psi^T * dr/dp) & Save gradient
 				ierr          	=   VecDot(drdp,psi,&grd);                       CHKERRQ(ierr);
 
-				IOparam->grd[j]	=   -grd*scal->velocity;						// gradient
+				if (IOparam->Gr == 1)	
+				{
+					aop->CurScal = scal->velocity;
+				}
+				else if (IOparam->Gr == 0)	
+				{
+					aop->CurScal = pow(scal->velocity,2);
+				}
+				IOparam->grd[j]	=   -grd*aop->CurScal;						// gradient
 
 			}
 		}
