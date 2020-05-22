@@ -105,6 +105,9 @@ PetscErrorCode ComputeGradientsAndObjectiveFunction(Vec Parameters, PetscScalar 
 // Adjoint Gradients
 PetscErrorCode AdjointComputeGradients(JacRes *jr, AdjGrad *aop, NLSol *nl, SNES snes, ModParam *IOparam, FreeSurf *surf);
 
+// Cost function
+ PetscErrorCode AdjointObjectiveFunction(AdjGrad *aop, JacRes *jr, ModParam *IOparam, FreeSurf *surf);
+
 // 'Brute-force' finite difference gradients
 PetscErrorCode AdjointFiniteDifferenceGradients(ModParam *IOparam);				
 PetscErrorCode PrintGradientsAndObservationPoints(ModParam *IOparam);
