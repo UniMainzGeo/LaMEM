@@ -496,6 +496,14 @@ PetscErrorCode LaMEMAdjointReadInputSetDefaults(ModParam *IOparam, Adjoint_Vecs 
     ierr  = PetscMemcpy(IOparam->Ae, Ae, (size_t)_MAX_OBS_*sizeof(PetscScalar)); CHKERRQ(ierr);
 	IOparam->mdI = i;
 
+	// Calculate mean of observations for scaling of the cost function
+	IOparam->vel_scale = 0;
+	for(i=0;i<IOparam->mdI;i++)
+	{
+			IOparam->vel_scale += IOparam->Ae[i];
+	}
+	IOparam->vel_scale = abs(IOparam->vel_scale)/IOparam->mdI;
+
 	ierr = FBFreeBlocks(fb); CHKERRQ(ierr);
 
 	// Error checking
@@ -1146,8 +1154,7 @@ PetscErrorCode AdjointOptimisationTAO(Tao tao, Vec P, PetscReal *F, Vec grad, vo
 	
 			// Incorporate projection vector (F = (1/2)*[P*(x-x_ini)' * P*(x-x_ini)])
 			ierr = VecAYPX(xini,-1,jr->gsol);                                       CHKERRQ(ierr);
-
-			//VecScale(xini,1/2.4e-2);
+			//ierr = VecScale(xini,1/IOparam->vel_scale);                             CHKERRQ(ierr);
 
 			ierr =  VecSqrtAbs(protemp);  CHKERRQ(ierr);
 
@@ -1158,14 +1165,11 @@ PetscErrorCode AdjointOptimisationTAO(Tao tao, Vec P, PetscReal *F, Vec grad, vo
 			Ad 		          /= 2;
 			IOparam->mfit 	   = Ad*pow(scal->velocity,2); // Dimensional misfit function
 
-			// normalize over typical value
-			//vel_scale 	=	1e-2;
-			//VecScale(xini,1/vel_scale);
-
 			ierr = VecCopy(IOparam->xini,xini);             	CHKERRQ(ierr);
 	
 			// Incorporate projection vector (F = (1/2)*[P*(x-x_ini)' * P*(x-x_ini)])
 			ierr = VecAYPX(xini,-1,jr->gsol);                                       CHKERRQ(ierr);
+			//ierr = VecScale(xini,1/IOparam->vel_scale);                             CHKERRQ(ierr);
 			ierr = VecPointwiseMult(xini, xini,aop->pro);                           CHKERRQ(ierr);
 
 			// Compute it's derivative (dF/dx = P*x-P*x_ini)
@@ -1184,7 +1188,6 @@ PetscErrorCode AdjointOptimisationTAO(Tao tao, Vec P, PetscReal *F, Vec grad, vo
  	// compute 'full' adjoint inversion
  	else if(IOparam->use == _gradientdescent_)
 	{
- 		PetscScalar Ad,vel_scale;
 
  	 	if(IOparam->count == 1)
  	 	{
@@ -1213,26 +1216,30 @@ PetscErrorCode AdjointOptimisationTAO(Tao tao, Vec P, PetscReal *F, Vec grad, vo
 	 	// Copy temporary comparison solution
 	 	ierr = VecCopy(IOparam->xini,xini);                                     CHKERRQ(ierr);
 	
- 		// Incorporate projection vector (F = (1/2)*[P*(x-x_ini)' * P*(x-x_ini)])
- 		ierr = VecAYPX(xini,-1,jr->gsol);                                       CHKERRQ(ierr);
+		ierr = VecCopy(aop->pro,protemp);             	CHKERRQ(ierr);
 
-		//VecScale(xini,1/2.4e-2);
+		// Incorporate projection vector (F = (1/2)*[P*(x-x_ini)' * P*(x-x_ini)])
+		ierr = VecAYPX(xini,-1,jr->gsol);                                       CHKERRQ(ierr);
+		//ierr = VecScale(xini,1/IOparam->vel_scale);                             CHKERRQ(ierr);
 
- 		ierr = VecPointwiseMult(xini, xini,aop->pro);                           CHKERRQ(ierr);
-		 
- 		// Compute objective function value (F = (1/2)*[P*(x-x_ini)' * P*(x-x_ini)])
- 		ierr 	           = VecDot(xini,xini,&Ad);
- 		Ad 		          /= 2;
- 		IOparam->mfit 	   = Ad*pow(scal->velocity,2); // Dimensional misfit function
+		ierr =  VecSqrtAbs(protemp);  CHKERRQ(ierr);
 
-		// normalize over typical value
-		//vel_scale 	=	1e-2;
-		//VecScale(xini,1/vel_scale);
+		ierr = VecPointwiseMult(xini, xini,protemp);                           CHKERRQ(ierr);
+		
+		// Compute objective function value (F = (1/2)*[P*(x-x_ini)' * P*(x-x_ini)])
+		ierr 	           = VecDot(xini,xini,&Ad);
+		Ad 		          /= 2;
+		IOparam->mfit 	   = Ad*pow(scal->velocity,2); // Dimensional misfit function
+
+		ierr = VecCopy(IOparam->xini,xini);             	CHKERRQ(ierr);
+
+		// Incorporate projection vector (F = (1/2)*[P*(x-x_ini)' * P*(x-x_ini)])
+		ierr = VecAYPX(xini,-1,jr->gsol);                                       CHKERRQ(ierr);
+		//ierr = VecScale(xini,1/IOparam->vel_scale);                             CHKERRQ(ierr);
+		ierr = VecPointwiseMult(xini, xini,aop->pro);                           CHKERRQ(ierr);
 
 		// Compute it's derivative (dF/dx = P*x-P*x_ini)
-		ierr = VecCopy(xini,aop->dF); 		           							CHKERRQ(ierr);
-
-		 //PrintCostFunction(IOparam);
+		ierr = VecCopy(xini,aop->dF); 	
 		
  		// Get the gradients
  		ierr = AdjointComputeGradients(jr, aop, nl, snes, IOparam, surf);    	CHKERRQ(ierr);
@@ -1361,7 +1368,7 @@ PetscErrorCode AdjointComputeGradients(JacRes *jr, AdjGrad *aop, NLSol *nl, SNES
 	KSP                 ksp_as;
 	KSPConvergedReason  reason;
 	PetscInt            i, j, CurPhase, lrank, grank;
-	PetscScalar         dt, grd, Perturb, coord_local[3], *vx, *vy, *vz, *Par, CurVal, vel_scale;
+	PetscScalar         dt, grd, Perturb, coord_local[3], *vx, *vy, *vz, *Par, CurVal;
 	Vec 				res_pert, sol, psi, drdp, res, Perturb_vec;
 	PC                  ipc_as;
 	Scaling             *scal;

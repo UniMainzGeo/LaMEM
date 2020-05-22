@@ -126,6 +126,7 @@ struct ModParam
 	PetscScalar      facB;      	                    // backtrack factor that multiplies current line search parameter if GD update was not succesful
 	PetscScalar      factor2array[51];                  // factor that increases the convergence velocity (this value is added to itself after every succesful gradient descent ; only used without tao)
 	PetscScalar      maxfac;	                        // limit on the factor (only used without tao)
+	PetscScalar      vel_scale;                         // normalization of the observation (currently mean; classically the variance)
 	PetscScalar      DII_ref;                           // SUPER UNNECESSARY but DII is otherwise not accesible
 	PetscScalar      Coord[3];		                    // Temp Coordinates of comparison points
 	PetscScalar      Ax[_MAX_OBS_];                     // X-coordinates of comparison points
