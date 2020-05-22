@@ -112,6 +112,7 @@ struct ModParam
 	PetscInt         Tao;    		                    // Use Tao?
 	PetscInt         Adv;      		                    // Advect the point?
 	PetscInt         count;			                    // iteration counter
+	PetscInt         SCF;                               // Scale cost function?
 	PetscInt         mdI;    		                    // number of indices
 	PetscInt         Ap;        	                    // 1 = several indices ; 2 = whole domain ; 3 = surface
 	PetscInt         FS;                                // 1 = pointwise gradient
