@@ -1102,7 +1102,8 @@ PetscErrorCode AdjointOptimisationTAO(Tao tao, Vec P, PetscReal *F, Vec grad, vo
 	// This computes the objective function and adjoint gradients (not the 'brute-force' FD gradients)
 
 	Scaling             *scal;
-	Vec                  xini;
+	Vec                  xini, protemp;
+	PetscScalar Ad;
 
  	PetscErrorCode ierr;
  	PetscFunctionBegin;
@@ -1111,6 +1112,7 @@ PetscErrorCode AdjointOptimisationTAO(Tao tao, Vec P, PetscReal *F, Vec grad, vo
 
 	// Create projection vector
 	ierr = VecDuplicate(jr->gsol, &xini);           CHKERRQ(ierr);
+	ierr = VecDuplicate(jr->gsol, &protemp);           CHKERRQ(ierr);
 
 	//========================================
 	// COMPUTE OBJECTIVE FUNCTION & GRADIENT
@@ -1139,33 +1141,35 @@ PetscErrorCode AdjointOptimisationTAO(Tao tao, Vec P, PetscReal *F, Vec grad, vo
 		}
 		else if(IOparam->Gr == 0)
 		{
- 			// -------- Get gradients with respect of cost function -------------
-			PetscScalar F, vel_scale, sum; 
-			Vec         P_times_x, P_times_xini, P_sum;
 
-			// Create vectors
-			VecDuplicate(xini,&P_times_x);					//P*x
-			VecDuplicate(xini,&P_times_xini);				//P*xini
-			VecDuplicate(xini,&P_sum);						// (P*x-P*xini)
-			
-			ierr = VecPointwiseMult(P_times_x, aop->pro, 	jr->gsol);          	CHKERRQ(ierr);  ////P*x
-			ierr = VecPointwiseMult(P_times_xini, aop->pro, xini);            		CHKERRQ(ierr);  ////P*xini
-			ierr = VecAXPBYPCZ(P_sum,1.0,-1.0,1.0,P_times_x,P_times_xini); 			CHKERRQ(ierr);  ////P_sum = P*x - P*xini
-
+			ierr = VecCopy(aop->pro,protemp);             	CHKERRQ(ierr);
+	
 			// Incorporate projection vector (F = (1/2)*[P*(x-x_ini)' * P*(x-x_ini)])
-			ierr 	           = 	VecSum(P_sum, &sum); 							CHKERRQ(ierr);		// Note: we have to sum FIRST before quaring
-			F 				   = 	(sum*sum)/2.0;
-			IOparam->mfit 	   = 	F*pow(scal->velocity,2);                  							// Dimensional misfit function
-		
-	 		// Compute it's derivative (dF/dx = P*x-P*x_ini = P*(x-x_ini))
-	 		ierr 				= 	VecCopy(P_sum,aop->dF); 		        		CHKERRQ(ierr); 
-	 		
-			//PrintCostFunction(IOparam);
+			ierr = VecAYPX(xini,-1,jr->gsol);                                       CHKERRQ(ierr);
 
-			// cleanup
-			ierr = VecDestroy(&P_times_x);		CHKERRQ(ierr); 
-			ierr = VecDestroy(&P_times_xini);	CHKERRQ(ierr); 
-			ierr = VecDestroy(&P_sum); 			CHKERRQ(ierr); 
+			//VecScale(xini,1/2.4e-2);
+
+			ierr =  VecSqrtAbs(protemp);  CHKERRQ(ierr);
+
+			ierr = VecPointwiseMult(xini, xini,protemp);                           CHKERRQ(ierr);
+			
+			// Compute objective function value (F = (1/2)*[P*(x-x_ini)' * P*(x-x_ini)])
+			ierr 	           = VecDot(xini,xini,&Ad);
+			Ad 		          /= 2;
+			IOparam->mfit 	   = Ad*pow(scal->velocity,2); // Dimensional misfit function
+
+			// normalize over typical value
+			//vel_scale 	=	1e-2;
+			//VecScale(xini,1/vel_scale);
+
+			ierr = VecCopy(IOparam->xini,xini);             	CHKERRQ(ierr);
+	
+			// Incorporate projection vector (F = (1/2)*[P*(x-x_ini)' * P*(x-x_ini)])
+			ierr = VecAYPX(xini,-1,jr->gsol);                                       CHKERRQ(ierr);
+			ierr = VecPointwiseMult(xini, xini,aop->pro);                           CHKERRQ(ierr);
+
+			// Compute it's derivative (dF/dx = P*x-P*x_ini)
+			ierr = VecCopy(xini,aop->dF); 	
 
 		}
 		else
