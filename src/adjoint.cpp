@@ -1136,8 +1136,6 @@ PetscErrorCode AdjointOptimisationTAO(Tao tao, Vec P, PetscReal *F, Vec grad, vo
  {
 	// This computes the objective function and adjoint gradients (not the 'brute-force' FD gradients)
 
-	PetscScalar Ad;
-
  	PetscErrorCode ierr;
  	PetscFunctionBegin;
 
@@ -1145,7 +1143,7 @@ PetscErrorCode AdjointOptimisationTAO(Tao tao, Vec P, PetscReal *F, Vec grad, vo
 	// COMPUTE OBJECTIVE FUNCTION & GRADIENT
 	//========================================
 
-	// et the cost function and derivative
+	// Get the cost function and derivative
 	 ierr = AdjointObjectiveFunction(aop, jr, IOparam, surf); CHKERRQ(ierr);
 
  	// Get the adjoint gradients
