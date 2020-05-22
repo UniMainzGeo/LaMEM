@@ -177,7 +177,7 @@ PetscErrorCode LaMEMAdjointReadInputSetDefaults(ModParam *IOparam, Adjoint_Vecs 
 	PetscFunctionBegin;
 	PetscErrorCode 	ierr;
 	FB 				*fb;
-	PetscScalar     *gradar, *Ubar, *Lbar, ts, *Par, mean, var;
+	PetscScalar     *gradar, *Ubar, *Lbar, ts, *Par, mean, var, scaling;
 	PetscInt         i, ti, ID;
 	char             str[_str_len_], par_str[_str_len_], Vel_comp[_str_len_];
 	Scaling          scal;
@@ -229,8 +229,8 @@ PetscErrorCode LaMEMAdjointReadInputSetDefaults(ModParam *IOparam, Adjoint_Vecs 
 	ierr = getIntParam   (fb, _OPTIONAL_, "Inversion_ApplyBounds"        	, &IOparam->Ab,        1, 1        ); CHKERRQ(ierr);  // Apply bounds?
 	ierr = getIntParam   (fb, _OPTIONAL_, "Inversion_EmployTAO"       		, &IOparam->Tao,       1, 1        ); CHKERRQ(ierr);  // Use TAO?
 	ierr = getScalarParam(fb, _OPTIONAL_, "Inversion_rtol"       			, &IOparam->tol,       1, 1        ); CHKERRQ(ierr);  // tolerance for F/Fini after which code has converged
-	ierr = getScalarParam(fb, _OPTIONAL_, "Inversion_factor_linesearch"     , &IOparam->facLS,     1, 1        ); CHKERRQ(ierr);  // factor in the line search that multiplies current line search parameter if GD update was succesful (increases convergence speed)
-	ierr = getScalarParam(fb, _OPTIONAL_, "Inversion_facB"      			, &IOparam->facB,      1, 1        ); CHKERRQ(ierr);  // backtrack factor that multiplies current line search parameter if GD update was not succesful
+	ierr = getScalarParam(fb, _OPTIONAL_, "Inversion_factor_linesearch"     , &IOparam->facLS,     1, 1        ); CHKERRQ(ierr);  // factor in the line search that multiplies current line search parameter if GD update was successful (increases convergence speed)
+	ierr = getScalarParam(fb, _OPTIONAL_, "Inversion_facB"      			, &IOparam->facB,      1, 1        ); CHKERRQ(ierr);  // backtrack factor that multiplies current line search parameter if GD update was not successful
 	ierr = getScalarParam(fb, _OPTIONAL_, "Inversion_maxfac"    			, &IOparam->maxfac,    1, 1        ); CHKERRQ(ierr);  // limit on the factor (only used without tao)
 	ierr = getScalarParam(fb, _OPTIONAL_, "Inversion_Scale_Grad"			, &IOparam->Scale_Grad,1, 1        ); CHKERRQ(ierr);  // Magnitude of initial parameter update (factor_ini = Scale_Grad/Grad)
 
@@ -274,7 +274,7 @@ PetscErrorCode LaMEMAdjointReadInputSetDefaults(ModParam *IOparam, Adjoint_Vecs 
 		if (IOparam->Tao == 0)
 		{
 			PetscPrintf(PETSC_COMM_WORLD, "|    Not employing TAO, but instead our build-in gradient algorithm, with the following parameters: \n", IOparam->facLS);
-			PetscPrintf(PETSC_COMM_WORLD, "|     Linesearch factor (succesful update)     : %.5e  \n", IOparam->facLS);
+			PetscPrintf(PETSC_COMM_WORLD, "|     Linesearch factor (successful update)    : %.5e  \n", IOparam->facLS);
 			PetscPrintf(PETSC_COMM_WORLD, "|     Linesearch factor (overstep)             : %.5e  \n", IOparam->facB);
 			PetscPrintf(PETSC_COMM_WORLD, "|     Maximum linesearch factor                : %.5e  \n", IOparam->maxfac);
 			PetscPrintf(PETSC_COMM_WORLD, "|     Scale for initial parameter update       : %.5e  \n", IOparam->Scale_Grad);
@@ -301,6 +301,8 @@ PetscErrorCode LaMEMAdjointReadInputSetDefaults(ModParam *IOparam, Adjoint_Vecs 
 	PetscScalar     Az[  _MAX_OBS_];
 	PetscInt        Av[  _MAX_OBS_];
 	PetscScalar     Ae[  _MAX_OBS_];
+	PetscScalar     ParScaling[  _MAX_OBS_];
+
 
 	
     // Read material input parameters from file
@@ -379,8 +381,11 @@ PetscErrorCode LaMEMAdjointReadInputSetDefaults(ModParam *IOparam, Adjoint_Vecs 
 		ierr = getStringParam(fb, _OPTIONAL_, "Type", par_str, NULL); CHKERRQ(ierr);
         strcpy(type_name[i], par_str);
 		
+
+		// Retrieve scaling for the parameter
+		ierr = Parameter_ScalingDifferencing(&FDgrad[i], &ParScaling[i], par_str, &scal);	CHKERRQ(ierr);
+
 		// Compute gradient by finite differences (optional)?
-		FDgrad[i]=0;
 		ierr 	= getIntParam(fb, _OPTIONAL_, "FD_gradient", &FDgrad[i], 1,1); CHKERRQ(ierr);  // must have component
 		if (FDgrad[i]>0){
 			FDgrad[i] = 1;
@@ -406,10 +411,12 @@ PetscErrorCode LaMEMAdjointReadInputSetDefaults(ModParam *IOparam, Adjoint_Vecs 
 		fb->blockID++;
 	}
 
-    ierr  = PetscMemcpy(IOparam->grd,       	gradar,     (size_t)_MAX_PAR_*sizeof(PetscScalar) ); 					CHKERRQ(ierr);
-    ierr  = PetscMemcpy(IOparam->type_name, 	type_name,  (size_t)_MAX_PAR_*(size_t)_str_len_*sizeof(char)        ); 	CHKERRQ(ierr);
-    ierr  = PetscMemcpy(IOparam->phs,       	phsar,      (size_t)_MAX_PAR_*sizeof(PetscInt)    ); 					CHKERRQ(ierr);
-    ierr  = PetscMemcpy(IOparam->FD_gradient, 	FDgrad,      (size_t)_MAX_PAR_*sizeof(PetscInt)    ); 					CHKERRQ(ierr);
+    ierr  = PetscMemcpy(IOparam->grd,       	gradar,      (size_t)_MAX_PAR_*sizeof(PetscScalar) ); 				CHKERRQ(ierr);
+    ierr  = PetscMemcpy(IOparam->type_name, 	type_name,   (size_t)_MAX_PAR_*(size_t)_str_len_*sizeof(char) ); 	CHKERRQ(ierr);
+    ierr  = PetscMemcpy(IOparam->phs,       	phsar,       (size_t)_MAX_PAR_*sizeof(PetscInt)     ); 				CHKERRQ(ierr);
+    ierr  = PetscMemcpy(IOparam->FD_gradient, 	FDgrad,      (size_t)_MAX_PAR_*sizeof(PetscInt)    ); 				CHKERRQ(ierr);
+    ierr  = PetscMemcpy(IOparam->ScalingValue, 	ParScaling,  (size_t)_MAX_PAR_*sizeof(PetscScalar) ); 				CHKERRQ(ierr);
+
 
 	VecRestoreArray(Adjoint_Vectors->P,&Par);
 	VecRestoreArray(Adjoint_Vectors->Ub,&Ubar);
@@ -500,6 +507,9 @@ PetscErrorCode LaMEMAdjointReadInputSetDefaults(ModParam *IOparam, Adjoint_Vecs 
     ierr  = PetscMemcpy(IOparam->Az, Az, (size_t)_MAX_OBS_*sizeof(PetscScalar)); CHKERRQ(ierr);
     ierr  = PetscMemcpy(IOparam->Av, Av, (size_t)_MAX_OBS_*sizeof(PetscInt));    CHKERRQ(ierr);
     ierr  = PetscMemcpy(IOparam->Ae, Ae, (size_t)_MAX_OBS_*sizeof(PetscScalar)); CHKERRQ(ierr);
+
+
+
 	IOparam->mdI = i;
 
 	// Create the scaling for the cost function with the statistics of the observations
@@ -678,13 +688,13 @@ PetscErrorCode LaMEMAdjointMain(ModParam *IOparam)
  	 	VecView(IOparam->xini,viewerVel);
  	 	PetscViewerDestroy(&viewerVel);
 
- 	 	PetscPrintf(PETSC_COMM_WORLD,"| ------------------------------------------\n|         Forward Solution succesfully saved\n| ------------------------------------------\n");
+ 	 	PetscPrintf(PETSC_COMM_WORLD,"| ------------------------------------------\n|         Forward Solution successfully saved\n| ------------------------------------------\n");
  	}
 
 	ierr = AdjointVectorsDestroy(&Adjoint_Vectors, IOparam); CHKERRQ(ierr);
 
 	PetscTime(&cputime_end);
-    PetscPrintf(PETSC_COMM_WORLD,"| Adjoint computation was succesful & took %g s                         	 \n",cputime_end - cputime_start);
+    PetscPrintf(PETSC_COMM_WORLD,"| Adjoint computation was successful & took %g s                         	 \n",cputime_end - cputime_start);
 	PetscPrintf(PETSC_COMM_WORLD,"| ************************************************************************ \n");
 
 
@@ -1432,9 +1442,8 @@ PetscErrorCode AdjointComputeGradients(JacRes *jr, AdjGrad *aop, NLSol *nl, SNES
 				// Perturb parameter
 				Perturb 		= 	aop->FD_epsilon*CurVal;
 				ierr 			= 	VecSet(Perturb_vec,Perturb);                   							CHKERRQ(ierr);        // epsilon (finite difference)   
-				aop->CurScal 	= 	(scal->velocity)/(1);       // TEMPORARY CODE (should be automatized, necessary?)
 
-				PetscPrintf(PETSC_COMM_WORLD,"*** dr/dp: Perturbing parameter %s[%i]=%e to value %e -> Scaling.density = %e \n",CurName,CurPhase,CurVal, CurVal + Perturb, scal->density);
+				//PetscPrintf(PETSC_COMM_WORLD,"| *** dr/dp: Perturbing parameter %s[%i]=%e to value %e -> Scaling.density = %e \n",CurName,CurPhase,CurVal, CurVal + Perturb, scal->density);
 
 				// Set as command-line option & create updated material database
 				ierr 			=	CopyParameterToLaMEMCommandLine(IOparam,  CurVal + Perturb, j);			CHKERRQ(ierr);
@@ -1464,7 +1473,7 @@ PetscErrorCode AdjointComputeGradients(JacRes *jr, AdjGrad *aop, NLSol *nl, SNES
 				// Compute the gradient (dF/dp = -psi^T * dr/dp) & Save gradient
 				ierr          	=   VecDot(drdp,psi,&grd);                       CHKERRQ(ierr);
 
-				IOparam->grd[j]	=   -grd*aop->CurScal;							// gradient
+				IOparam->grd[j]	=   -grd*scal->velocity;						// gradient
 
 			}
 		}
@@ -1632,7 +1641,7 @@ PetscErrorCode PrintGradientsAndObservationPoints(ModParam *IOparam)
 				y = IOparam->Ay[j]*scal.length;
 				z = IOparam->Az[j]*scal.length;
 		
-				PetscPrintf(PETSC_COMM_SELF,"| %-4d: [%10.4f; %10.4f; %10.4f]  %s % 8.5e  % 8.5e \n",j,x,y,z, vel_com, CostFunc, IOparam->Avel_num[j]*scal.velocity);
+				PetscPrintf(PETSC_COMM_SELF,"| %-4d: [%10.4f; %10.4f; %10.4f]  %s % 8.5e  % 8.5e \n",j,x,y,z, vel_com, CostFunc, IOparam->Avel_num[j]);
 
 			}
 
@@ -2201,7 +2210,7 @@ PetscErrorCode AdjointPointInPro(JacRes *jr, AdjGrad *aop, ModParam *IOparam, Fr
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
-// Obsolete, once the new method had been succesfully tested
+// Obsolete, once the new method had been successfully tested
 #undef __FUNCT__
 #define __FUNCT__ "AdjointGradientPerturbParameter"
 PetscErrorCode AdjointGradientPerturbParameter(NLSol *nl, PetscInt CurPar, PetscInt CurPhase, AdjGrad *aop, Scaling *scal)
@@ -2301,9 +2310,9 @@ PetscErrorCode AdjointGradientPerturbParameter(NLSol *nl, PetscInt CurPar, Petsc
 		PetscScalar ViscTemp;
 
 		// -- Uncomment to compute gradient for ETA0 --
-		perturb = FD_epsilon* (pow(( mat[CurPhase].Bn * pow(2,mat[CurPhase].n) * pow(aop->DII_ref, mat[CurPhase].n-1) *  pow(scal->stress_si, -mat[CurPhase].n) )/ scal->time_si , -1/mat[CurPhase].n));
-		ViscTemp = (pow(( mat[CurPhase].Bn * pow(2,mat[CurPhase].n) * pow(aop->DII_ref, mat[CurPhase].n-1) *  pow(scal->stress_si, -mat[CurPhase].n) )/ scal->time_si , -1/mat[CurPhase].n))  + perturb;
-		mat[CurPhase].Bn = pow (2.0*ViscTemp, -mat[CurPhase].n) * pow(aop->DII_ref, 1 - mat[CurPhase].n) * (pow(scal->stress_si, mat[CurPhase].n)*scal->time_si);
+	//	perturb = FD_epsilon* (pow(( mat[CurPhase].Bn * pow(2,mat[CurPhase].n) * pow(aop->DII_ref, mat[CurPhase].n-1) *  pow(scal->stress_si, -mat[CurPhase].n) )/ scal->time_si , -1/mat[CurPhase].n));
+	//	ViscTemp = (pow(( mat[CurPhase].Bn * pow(2,mat[CurPhase].n) * pow(aop->DII_ref, mat[CurPhase].n-1) *  pow(scal->stress_si, -mat[CurPhase].n) )/ scal->time_si , -1/mat[CurPhase].n))  + perturb;
+	//	mat[CurPhase].Bn = pow (2.0*ViscTemp, -mat[CurPhase].n) * pow(aop->DII_ref, 1 - mat[CurPhase].n) * (pow(scal->stress_si, mat[CurPhase].n)*scal->time_si);
 		// -- Uncomment to compute gradient for BN --
 		// perturb = ini*perturb;
 		// mat[CurPhase].Bn +=  perturb;
@@ -2314,11 +2323,11 @@ PetscErrorCode AdjointGradientPerturbParameter(NLSol *nl, PetscInt CurPar, Petsc
 	{
 		ini = mat[CurPhase].n;
 		aop->Ini2 = mat[CurPhase].Bn;
-		PetscScalar ViscTemp = pow( (aop->Ini2 * pow(2,mat[CurPhase].n) * pow(aop->DII_ref, mat[CurPhase].n-1) * pow(scal->stress_si, -mat[CurPhase].n) ) / scal->time_si, -1/mat[CurPhase].n);
+	//	PetscScalar ViscTemp = pow( (aop->Ini2 * pow(2,mat[CurPhase].n) * pow(aop->DII_ref, mat[CurPhase].n-1) * pow(scal->stress_si, -mat[CurPhase].n) ) / scal->time_si, -1/mat[CurPhase].n);
 		perturb = ini*FD_epsilon;
 		mat[CurPhase].n +=  perturb;
 		// We also accordingly need to perturb the inverse viscosity in this case
-		mat[CurPhase].Bn = (pow(2.0*ViscTemp, -mat[CurPhase].n) * pow(aop->DII_ref, 1 - mat[CurPhase].n)) * (pow(scal->stress_si, mat[CurPhase].n)*scal->time_si);
+	//	mat[CurPhase].Bn = (pow(2.0*ViscTemp, -mat[CurPhase].n) * pow(aop->DII_ref, 1 - mat[CurPhase].n)) * (pow(scal->stress_si, mat[CurPhase].n)*scal->time_si);
 		curscal   = (scal->velocity)/(1);
 		curscalst = 1/1;
 	}
@@ -3202,3 +3211,68 @@ PetscErrorCode CreateModifiedMaterialDatabase(ModParam *IOparam)
 
  
  
+/*---------------------------------------------------------------------------
+	This computes the scaling and sets a default FD method (adjoi nt or not) 
+	for a material parameter
+*/
+#undef __FUNCT__
+#define __FUNCT__ "Parameter_ScalingDifferencing"
+PetscErrorCode Parameter_ScalingDifferencing(PetscInt *FD_grad, PetscScalar *scl, char *name, Scaling *scal)
+{
+ 	PetscFunctionBegin;
+	PetscBool PrintOutput=PETSC_FALSE;
+
+	*scl 		= 1.0;
+	*FD_grad 	= 1;
+
+	// density
+	if		 (!strcmp("rho",name))		{ *FD_grad=0; *scl = scal->density;	}
+	else if  (!strcmp("rho_c",name))	{ *FD_grad=0; *scl = 1/scal->length_si;	}
+	else if  (!strcmp("beta",name))		{ *FD_grad=0; *scl = 1/scal->stress_si;	}
+	
+	// diffusion creep
+	else if  (!strcmp("eta",name))		{ *FD_grad=0; *scl = scal->viscosity;	}
+	else if  (!strcmp("Bd",name))		{ *FD_grad=0; *scl = 1/scal->viscosity;	}
+	else if  (!strcmp("Vd",name))		{ *FD_grad=0; *scl = 1/scal->stress_si;	}
+	
+	// dislocation creep (power-law)
+	//else if  (!strcmp("Bn",name))		{ *FD_grad=0; *scl = 1/(pow(scal->stress_si, m->n)*scal->time_si);	} 	// more tricky as we need to know n
+	else if  (!strcmp("Vn",name))		{ *FD_grad=0; *scl = 1/(scal->stress_si);	}
+	
+	// Peierls creep
+	else if  (!strcmp("Bp",name))		{ *FD_grad=0; *scl = scal->strain_rate;	}
+	else if  (!strcmp("Vp",name))		{ *FD_grad=0; *scl = 1/scal->stress_si;	}
+	else if  (!strcmp("taup",name))		{ *FD_grad=0; *scl = scal->stress_si;	}
+
+	// dc-creep
+	else if  (!strcmp("Bdc",name))		{ *FD_grad=0; *scl = scal->strain_rate;	}
+	else if  (!strcmp("mu",name))		{ *FD_grad=0; *scl = scal->stress_si;	}
+
+	// ps-creep
+	else if  (!strcmp("Bps",name))		{ *FD_grad=0; *scl = 1/(scal->viscosity/scal->volume_si/scal->temperature);	}
+	else if  (!strcmp("d",name))		{ *FD_grad=0; *scl = scal->length_si;	}
+
+	// elasticity
+	else if  (!strcmp("G",name))		{ *FD_grad=0; *scl = scal->stress_si;	}
+	else if  (!strcmp("Kb",name))		{ *FD_grad=0; *scl = scal->stress_si;	}
+	
+	// plasticity
+	else if  (!strcmp("ch",name))		{ *FD_grad=1; *scl = scal->stress_si;	}
+	else if  (!strcmp("fr",name))		{ *FD_grad=1; *scl = scal->angle;		}
+	else if  (!strcmp("eta_st",name))	{ *FD_grad=1; *scl = scal->viscosity;	}
+	
+	// temperature
+	else if  (!strcmp("alpha",name))	{ *FD_grad=1; *scl = scal->expansivity;	}
+	else if  (!strcmp("Cp",name))		{ *FD_grad=1; *scl = scal->cpecific_heat;	}
+	else if  (!strcmp("k",name))		{ *FD_grad=1; *scl = scal->conductivity;	}
+	else if  (!strcmp("A",name))		{ *FD_grad=1; *scl = scal->heat_production;	}
+	
+
+	PrintOutput=PETSC_TRUE;
+	if (PrintOutput){
+		PetscPrintf(PETSC_COMM_WORLD,"| Parameter %s has scaling %e and FD_gradient=%i \n", name, *scl,  *FD_grad);
+	}
+
+	
+	PetscFunctionReturn(0);
+}

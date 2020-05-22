@@ -100,6 +100,7 @@ struct ModParam
     PetscInt      	 phs[_MAX_PAR_];                    // phase of the parameter
 	PetscScalar      grd[_MAX_PAR_];                    // gradient value
 	PetscScalar     *val;                               // model value
+	PetscScalar 	 ScalingValue[_MAX_PAR_]; 			// Dimensional scaling value for the parameter [like Pa*s for viscosity]	
 	PetscScalar      mfit;                              // misfit value for current model parameters
     DBMat            dbm_modified;                      // holds the (modified) LaMEM material database
 	FB 				*fb;								// holds a copy of the filebuffer	
@@ -123,9 +124,9 @@ struct ModParam
 	PetscScalar      Scale_Grad;                        // scale parameter update with initial gradient?
 	PetscScalar      mfitini;   	                    // initial misfit value for current model parameters
 	PetscScalar      tol; 	   	                        // tolerance for F/Fini after which code has converged
-	PetscScalar      facLS;      	                    // factor in the line search that multiplies current line search parameter if GD update was succesful (increases convergence speed)
-	PetscScalar      facB;      	                    // backtrack factor that multiplies current line search parameter if GD update was not succesful
-	PetscScalar      factor2array[51];                  // factor that increases the convergence velocity (this value is added to itself after every succesful gradient descent ; only used without tao)
+	PetscScalar      facLS;      	                    // factor in the line search that multiplies current line search parameter if GD update was successful (increases convergence speed)
+	PetscScalar      facB;      	                    // backtrack factor that multiplies current line search parameter if GD update was not successful
+	PetscScalar      factor2array[51];                  // factor that increases the convergence velocity (this value is added to itself after every successful gradient descent ; only used without tao)
 	PetscScalar      maxfac;	                        // limit on the factor (only used without tao)
 	PetscScalar      vel_scale;                         // normalization of the observation (currently mean; classically the variance)
 	PetscScalar      DII_ref;                           // SUPER UNNECESSARY but DII is otherwise not accesible

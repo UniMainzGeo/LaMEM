@@ -65,7 +65,7 @@ struct FB;
 #define _MAX_PAR_ 50
 #define _MAX_OBS_ 100
 
-// Structure that holds paramters for the adjoint gradient computation
+// Structure that holds parameters for the adjoint gradient computation
 struct AdjGrad
 {
 	PetscScalar      Ini;                     // Initial value of perturbed parameter
@@ -73,7 +73,6 @@ struct AdjGrad
 	PetscScalar 	 FD_epsilon;			  // Epsilon, employed for finite difference calculation of dres/dp			  	
 	PetscScalar      Perturb;                 // Perturbation parameter for the finite differences
 	PetscScalar      CurScal, CurScalst;
-	PetscScalar      DII_ref;                 // SUPER UNNECESSARY but DII is otherwise not accesible
 	Vec              dF;
 	Vec 			 pro;
 	Vec              vx, vy, vz;
@@ -130,6 +129,8 @@ PetscErrorCode AddMaterialParameterToCommandLineOptions(char *name, PetscInt ID,
 PetscErrorCode DeleteMaterialParameterToCommandLineOptions(char *name, PetscInt ID);
 PetscErrorCode CreateModifiedMaterialDatabase(ModParam *IOparam);
 PetscErrorCode CopyParameterToLaMEMCommandLine(ModParam *IOparam, PetscScalar CurVal, PetscInt j);
+
+PetscErrorCode Parameter_ScalingDifferencing(PetscInt *FD_grad, PetscScalar *scl, char *name, Scaling *scal);
 
 // Create & Destroy aop object
 PetscErrorCode AdjointCreate(AdjGrad *aop, JacRes *jr, ModParam *IOparam);
