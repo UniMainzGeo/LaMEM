@@ -1099,7 +1099,7 @@ PetscErrorCode AdjointOptimisationTAO(Tao tao, Vec P, PetscReal *F, Vec grad, vo
  #define __FUNCT__ "AdjointObjectiveAndGradientFunction"
  PetscErrorCode AdjointObjectiveAndGradientFunction(AdjGrad *aop, JacRes *jr, NLSol *nl, ModParam *IOparam, SNES snes, FreeSurf *surf)
  {
-	// This computes the objective function and adjoint graidients (not the 'brute-force' FD gradients)
+	// This computes the objective function and adjoint gradients (not the 'brute-force' FD gradients)
 
 	Scaling             *scal;
 	Vec                  xini;
@@ -1123,8 +1123,9 @@ PetscErrorCode AdjointOptimisationTAO(Tao tao, Vec P, PetscReal *F, Vec grad, vo
  		ierr = AdjointPointInPro(jr, aop, IOparam, surf); 	CHKERRQ(ierr);
 
  		ierr = VecCopy(IOparam->xini,xini);             	CHKERRQ(ierr);
-
-		if (IOparam->Gr == 1)
+		 
+	
+		if (IOparam->Gr == 1)	
 		{
 			PetscScalar value;
 
@@ -1139,28 +1140,32 @@ PetscErrorCode AdjointOptimisationTAO(Tao tao, Vec P, PetscReal *F, Vec grad, vo
 		else if(IOparam->Gr == 0)
 		{
  			// -------- Get gradients with respect of cost function -------------
-			PetscScalar Ad, vel_scale; 
+			PetscScalar F, vel_scale, sum; 
+			Vec         P_times_x, P_times_xini, P_sum;
+
+			// Create vectors
+			VecDuplicate(xini,&P_times_x);					//P*x
+			VecDuplicate(xini,&P_times_xini);				//P*xini
+			VecDuplicate(xini,&P_sum);						// (P*x-P*xini)
 			
+			ierr = VecPointwiseMult(P_times_x, aop->pro, 	jr->gsol);          	CHKERRQ(ierr);  ////P*x
+			ierr = VecPointwiseMult(P_times_xini, aop->pro, xini);            		CHKERRQ(ierr);  ////P*xini
+			ierr = VecAXPBYPCZ(P_sum,1.0,-1.0,1.0,P_times_x,P_times_xini); 			CHKERRQ(ierr);  ////P_sum = P*x - P*xini
+
 			// Incorporate projection vector (F = (1/2)*[P*(x-x_ini)' * P*(x-x_ini)])
-			ierr = VecAYPX(xini,-1.0,jr->gsol);                                     CHKERRQ(ierr);  // xini = x - xini, where x=jr->gsol
-
-			ierr = VecPointwiseMult(xini, xini,aop->pro);                           CHKERRQ(ierr);  // xini = xini*P
-
-			// normalize over typical value
-			//vel_scale 	=	1e-2;
-			//VecScale(xini,1/vel_scale);
-		
-			// Compute objective function value (F = (1/2)*[P*(x-x_ini)' * P*(x-x_ini)])
-			ierr 	           = VecDot(xini,xini,&Ad);                             CHKERRQ(ierr);
-			Ad 		           = Ad/2;
-		
-			IOparam->mfit 	   = Ad*pow(scal->velocity,2);                  // Dimensional misfit function
-
+			ierr 	           = 	VecSum(P_sum, &sum); 							CHKERRQ(ierr);		// Note: we have to sum FIRST before quaring
+			F 				   = 	(sum*sum)/2.0;
+			IOparam->mfit 	   = 	F*pow(scal->velocity,2);                  							// Dimensional misfit function
 		
 	 		// Compute it's derivative (dF/dx = P*x-P*x_ini = P*(x-x_ini))
-	 		ierr = VecCopy(xini,aop->dF); 		                                    CHKERRQ(ierr); 
+	 		ierr 				= 	VecCopy(P_sum,aop->dF); 		        		CHKERRQ(ierr); 
 	 		
 			//PrintCostFunction(IOparam);
+
+			// cleanup
+			ierr = VecDestroy(&P_times_x);		CHKERRQ(ierr); 
+			ierr = VecDestroy(&P_times_xini);	CHKERRQ(ierr); 
+			ierr = VecDestroy(&P_sum); 			CHKERRQ(ierr); 
 
 		}
 		else
@@ -1241,6 +1246,8 @@ PetscErrorCode AdjointOptimisationTAO(Tao tao, Vec P, PetscReal *F, Vec grad, vo
 
  	PetscFunctionReturn(0);
  }
+
+
 
 //---------------------------------------------------------------------------
 /* 
