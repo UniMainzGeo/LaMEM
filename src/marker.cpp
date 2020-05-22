@@ -900,6 +900,15 @@ PetscErrorCode ADVMarkInitGeom(AdvCtx *actx, FB *fb)
 		ierr = getScalarParam(fb, _REQUIRED_, "top",    &layer->top,    1, chLen);      CHKERRQ(ierr);
 		ierr = getScalarParam(fb, _REQUIRED_, "bottom", &layer->bot,    1, chLen);      CHKERRQ(ierr);
 
+		// optional sinusoidal perturbation of layer interface:
+		//  (adds amplitude*sin(2*pi/wavelength*x) to the interface)
+		layer->cosine = 0;
+		ierr = getIntParam   (fb, _OPTIONAL_, "cosine",  &layer->cosine,  1, maxPhaseID); CHKERRQ(ierr);
+		if (layer->cosine==1){
+			ierr = getScalarParam   (fb, _REQUIRED_, "wavelength",  &layer->wavelength,  1, maxPhaseID); CHKERRQ(ierr);
+			ierr = getScalarParam   (fb, _REQUIRED_, "amplitude",   &layer->amplitude,   1, maxPhaseID); CHKERRQ(ierr);
+		}
+
 		// Optional temperature options:
 		layer->setTemp = 0;
 		ierr = getStringParam(fb, _OPTIONAL_, "Temperature",     TemperatureStructure,       NULL ); CHKERRQ(ierr);
@@ -1680,7 +1689,20 @@ void setPhaseBox(GeomPrim *box, Marker *P)
 //---------------------------------------------------------------------------
 void setPhaseLayer(GeomPrim *layer, Marker *P)
 {
-	if(P->X[2] >= layer->bot && P->X[2] <= layer->top)
+	PetscScalar bot, top,pert;
+
+
+	bot = layer->bot; 
+	top = layer->top;
+	if (layer->cosine==1){
+		// Add sinusoidal perturbation
+		pert 	= 	-layer->amplitude*PetscCosReal(2*PETSC_PI/layer->wavelength*P->X[0]);	
+		bot 	= 	bot + pert;
+		top 	= 	top + pert;
+	}
+
+
+	if(P->X[2] >= bot && P->X[2] <= top)
 	{
 		P->phase = layer->phase;
 		if (layer->setTemp>0)

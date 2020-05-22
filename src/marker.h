@@ -91,6 +91,9 @@ struct GeomPrim
 	// layer
 	PetscScalar top;
 	PetscScalar bot;
+	PetscInt    cosine; 	
+	PetscScalar amplitude;
+	PetscScalar wavelength;
 	// temperature
 	PetscInt    setTemp;
 	PetscScalar cstTemp;
