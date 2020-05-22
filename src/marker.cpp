@@ -893,6 +893,7 @@ PetscErrorCode ADVMarkInitGeom(AdvCtx *actx, FB *fb)
 
 	for(jj = 0; jj < fb->nblocks; jj++)
 	{
+		fb->ID  = jj;								// allows command-line parsing
 		GET_GEOM(layer, geom, ngeom, _max_geom_);
 
 		ierr = getIntParam   (fb, _REQUIRED_, "phase",  &layer->phase,  1, maxPhaseID); CHKERRQ(ierr);
@@ -941,8 +942,10 @@ PetscErrorCode ADVMarkInitGeom(AdvCtx *actx, FB *fb)
 
 	for(jj = 0; jj < fb->nblocks; jj++)
 	{
+		fb->ID  = jj;								// allows command-line parsing
+		
 		GET_GEOM(sphere, geom, ngeom, _max_geom_);
-
+		
 		ierr = getIntParam   (fb, _REQUIRED_, "phase",  &sphere->phase,  1, maxPhaseID); CHKERRQ(ierr);
 		ierr = getScalarParam(fb, _REQUIRED_, "radius", &sphere->radius, 1, chLen);      CHKERRQ(ierr);
 		ierr = getScalarParam(fb, _REQUIRED_, "center",  sphere->center, 3, chLen);      CHKERRQ(ierr);
@@ -975,6 +978,7 @@ PetscErrorCode ADVMarkInitGeom(AdvCtx *actx, FB *fb)
 
 	for(jj = 0; jj < fb->nblocks; jj++)
 	{
+		fb->ID  = jj;								// allows command-line parsing
 		GET_GEOM(box, geom, ngeom, _max_geom_);
 
 		box->setTemp = 0;	//default is no	
@@ -1019,6 +1023,7 @@ PetscErrorCode ADVMarkInitGeom(AdvCtx *actx, FB *fb)
 
 	for(jj = 0; jj < fb->nblocks; jj++)
 	{
+		fb->ID  = jj;								// allows command-line parsing
 		GET_GEOM(hex, geom, ngeom, _max_geom_);
 
 		ierr = getIntParam   (fb, _REQUIRED_, "phase",  &hex->phase, 1,  maxPhaseID); CHKERRQ(ierr);
@@ -1042,6 +1047,7 @@ PetscErrorCode ADVMarkInitGeom(AdvCtx *actx, FB *fb)
 
 	for(jj = 0; jj < fb->nblocks; jj++)
 	{
+		fb->ID  = jj;								// allows command-line parsing
 		GET_GEOM(cylinder, geom, ngeom, _max_geom_);
 
 		ierr = getIntParam   (fb, _REQUIRED_, "phase",   &cylinder->phase,  1, maxPhaseID); CHKERRQ(ierr);
