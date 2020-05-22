@@ -233,7 +233,6 @@ PetscErrorCode LaMEMAdjointReadInputSetDefaults(ModParam *IOparam, Adjoint_Vecs 
 	ierr = getScalarParam(fb, _OPTIONAL_, "Inversion_facB"      			, &IOparam->facB,      1, 1        ); CHKERRQ(ierr);  // backtrack factor that multiplies current line search parameter if GD update was not succesful
 	ierr = getScalarParam(fb, _OPTIONAL_, "Inversion_maxfac"    			, &IOparam->maxfac,    1, 1        ); CHKERRQ(ierr);  // limit on the factor (only used without tao)
 	ierr = getScalarParam(fb, _OPTIONAL_, "Inversion_Scale_Grad"			, &IOparam->Scale_Grad,1, 1        ); CHKERRQ(ierr);  // Magnitude of initial parameter update (factor_ini = Scale_Grad/Grad)
-	ierr = getScalarParam(fb, _REQUIRED_, "DII"           					, &IOparam->DII_ref,   1, 1        ); CHKERRQ(ierr);   // SUPER UNNECESSARY BUT OTHERWISE NOT AVAILABLE
 
 	PetscPrintf(PETSC_COMM_WORLD,"| ------------------------------------------------------------------------- \n");
 	PetscPrintf(PETSC_COMM_WORLD,"|                                      LaMEM                                \n");
@@ -1199,7 +1198,7 @@ PetscErrorCode AdjointOptimisationTAO(Tao tao, Vec P, PetscReal *F, Vec grad, vo
 
 		// Incorporate projection vector (F = (1/2)*[P*(x-x_ini)' * P*(x-x_ini)])
 		ierr = VecAYPX(xini,-1,jr->gsol);                                       CHKERRQ(ierr);
-		ierr = VecScale(xini,sqrt(1/IOparam->vel_scale));                             CHKERRQ(ierr);
+		ierr = VecScale(xini,sqrt(1/IOparam->vel_scale));                   	CHKERRQ(ierr);
 
 		ierr =  VecSqrtAbs(sqrtpro);  CHKERRQ(ierr);
 
@@ -1435,14 +1434,14 @@ PetscErrorCode AdjointComputeGradients(JacRes *jr, AdjGrad *aop, NLSol *nl, SNES
 				ierr 			= 	VecSet(Perturb_vec,Perturb);                   							CHKERRQ(ierr);        // epsilon (finite difference)   
 				aop->CurScal 	= 	(scal->velocity)/(1);       // TEMPORARY CODE (should be automatized, necessary?)
 
-				//PetscPrintf(PETSC_COMM_WORLD,"*** dr/dp: Perturbing parameter %s[%i]=%f to value %f -> Scaling.density = %f \n",CurName,CurPhase,CurVal, CurVal + Perturb, scal->density);
+				PetscPrintf(PETSC_COMM_WORLD,"*** dr/dp: Perturbing parameter %s[%i]=%e to value %e -> Scaling.density = %e \n",CurName,CurPhase,CurVal, CurVal + Perturb, scal->density);
 
 				// Set as command-line option & create updated material database
 				ierr 			=	CopyParameterToLaMEMCommandLine(IOparam,  CurVal + Perturb, j);			CHKERRQ(ierr);
 				ierr 			= 	CreateModifiedMaterialDatabase(IOparam);     							CHKERRQ(ierr);			// update LaMEM material DB (to call directly call the LaMEM residual routine)
 
 				// Swap material structure of phase with that of LaMEM Material DB
-				for (i=0; i < IOparam->mdN; i++){
+				for (i=0; i < nl->pc->pm->jr->dbm->numPhases; i++){
 					ierr =   PetscMemzero(&nl->pc->pm->jr->dbm->phases[i],  sizeof(Material_t));   CHKERRQ(ierr);
 					swapStruct(&nl->pc->pm->jr->dbm->phases[i], &IOparam->dbm_modified.phases[i]);  
 				}
@@ -1457,7 +1456,7 @@ PetscErrorCode AdjointComputeGradients(JacRes *jr, AdjGrad *aop, NLSol *nl, SNES
 				ierr 			= 	CreateModifiedMaterialDatabase(IOparam);     							CHKERRQ(ierr);			// update LaMEM material DB (to call directly call the LaMEM residual routine)
 
 				// Swap material structure of phase with that of LaMEM Material DB back
-				for (i=0; i < IOparam->mdN; i++){
+				for (i=0; i < nl->pc->pm->jr->dbm->numPhases; i++){
 					ierr =   PetscMemzero(&nl->pc->pm->jr->dbm->phases[i],  sizeof(Material_t));   CHKERRQ(ierr);
 					swapStruct(&nl->pc->pm->jr->dbm->phases[i], &IOparam->dbm_modified.phases[i]);  
 				}
