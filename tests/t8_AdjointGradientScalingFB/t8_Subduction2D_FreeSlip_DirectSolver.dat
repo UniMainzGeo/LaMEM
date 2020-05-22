@@ -10,7 +10,7 @@
 	units            = geo		# geological units 
 	
 	unit_temperature = 1000
-	unit_length      = 1e3
+	unit_length      = 1e4
 	unit_viscosity   = 1e20
 	unit_stress      = 1e9
 	
@@ -175,18 +175,18 @@
 	# Define properties of slab
 	<MaterialStart>
 		ID  = 1       # phase id
-		rho = 3300    # density
-		eta = 1e23    # viscosity
+		rho = 3220    # density
+		eta = 1e21    # viscosity
 	<MaterialEnd>
 
 	# Define properties of plastic crust
 	<MaterialStart>
 		ID  	=  2       # phase id
-		rho 	=  3300    # density
-		eta 	=  1e23    # viscosity
+		rho 	=  3220    # density
+		eta 	=  1e21    # viscosity
 		
-		ch		=	5e6			# cohesion [MPa]
-		fr 		=	5			# friction angle	
+#		ch		=	5e6			# cohesion [MPa]
+#		fr 		=	5			# friction angle	
 	<MaterialEnd>
 	
 	
@@ -200,7 +200,7 @@
 	Adjoint_mode    					= 	AdjointGradients #GradientDescent	 #AdjointGradients    	# options: [None; AdjointGradients, GradientDescent; Inversion]
 	Adjoint_ObservationPoints           = 	1						# options: [1=several points; 2=whole domain; 3=surface]
 	Adjoint_ObjectiveFunctionDef        = 	1                     	# options: [1-defined by hand; 0??]
-	Adjoint_GradientCalculation        	= 	Solution				# options [CostFunction= w.r.t. Cost function (e.g,);  Solution= w.r.t. Solution ]
+	Adjoint_GradientCalculation        	= 	Solution #CostFunction			# options [CostFunction= w.r.t. Cost function (e.g,);  Solution= w.r.t. Solution ]
 	Adjoint_FieldSensitivity    		= 	0      					# calculate Field-based =1 (aka. geodynamic sensity kernels), or Phase Based [=0]
 	Adjoint_ScaleCostFunction 			=	None
 	
@@ -211,12 +211,12 @@
 #	Inversion_maxit_linesearch 			= 	10
 
 	<AdjointParameterStart>
-	   	ID  			= 0		# phase of the parameter
-		Type 			= eta   # options: [rho0,rhon,rhoc,eta,eta0,n,En] 	
-		InitGuess 		= 1e23  # initial guess
+	   	ID  			= 1		# phase of the parameter
+		Type 			= rho   # options: [rho0,rhon,rhoc,eta,eta0,n,En] 	
+		InitGuess 		= 3220  # initial guess
 #		LowerBound     	= 0.1	# [optional] lower bound
 #		UpperBound     	= 2		# [optional] upper bound
-		FD_gradient 	= 1		
+		FD_gradient 	= 0		
 	<AdjointParameterEnd>
 	       
 	#<AdjointParameterStart>
