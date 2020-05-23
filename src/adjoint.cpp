@@ -374,7 +374,8 @@ PetscErrorCode LaMEMAdjointReadInputSetDefaults(ModParam *IOparam, Adjoint_Vecs 
 	IOparam->Scale_Grad = 0.1;
 	IOparam->maxit      = 50;
 	IOparam->maxitLS    = 20;
-
+	IOparam->ScalLaws   = 0;
+	
     // Create scaling object
 	ierr = ScalingCreate(&scal, fb, PETSC_FALSE); CHKERRQ(ierr);
 
@@ -394,7 +395,10 @@ PetscErrorCode LaMEMAdjointReadInputSetDefaults(ModParam *IOparam, Adjoint_Vecs 
 	ierr = getIntParam   (fb, _OPTIONAL_, "Adjoint_ObservationPoints"        , &IOparam->Ap,        1, 3        ); CHKERRQ(ierr);  // 1 = several indices ; 2 = the whole domain ; 3 = surface
 	ierr = getIntParam   (fb, _OPTIONAL_, "Adjoint_AdvectPoint"              , &IOparam->Adv,       1, 1        ); CHKERRQ(ierr);  // 1 = advect the point
 	ierr = getIntParam   (fb, _OPTIONAL_, "Adjoint_ObjectiveFunctionDef"     , &IOparam->OFdef,     1, 1        ); CHKERRQ(ierr);  // Objective function defined by hand?
-	
+	ierr = getIntParam   (fb, _OPTIONAL_, "Adjoint_PrintScalingLaws"     	 , &IOparam->ScalLaws,  1, 1        ); CHKERRQ(ierr);  // Print scaling laws (combined with AdjointGradients)
+	ierr = getStringParam(fb, _OPTIONAL_, "Adjoint_ScalingLawFilename"     	 , str,  "ScalingLaw.dat"  ); 		   CHKERRQ(ierr);  // Scaling law filename
+	ierr  = PetscMemcpy(IOparam->ScalLawFilename, 	str,   (size_t)_str_len_*sizeof(char) ); 		  	 		   CHKERRQ(ierr); 
+   
 	// If we do inversion, additional parameters can be specified:
 	ierr = getIntParam   (fb, _OPTIONAL_, "Inversion_maxit"     			, &IOparam->maxit,     1, 1500     ); CHKERRQ(ierr);  // maximum number of inverse iterations
 	ierr = getIntParam   (fb, _OPTIONAL_, "Inversion_maxit_linesearch"   	, &IOparam->maxitLS,   1, 1500     ); CHKERRQ(ierr);  // maximum number of backtracking	
@@ -402,7 +406,7 @@ PetscErrorCode LaMEMAdjointReadInputSetDefaults(ModParam *IOparam, Adjoint_Vecs 
 	ierr = getIntParam   (fb, _OPTIONAL_, "Inversion_EmployTAO"       		, &IOparam->Tao,       1, 1        ); CHKERRQ(ierr);  // Use TAO?
 	ierr = getScalarParam(fb, _OPTIONAL_, "Inversion_rtol"       			, &IOparam->tol,       1, 1        ); CHKERRQ(ierr);  // tolerance for F/Fini after which code has converged
 	ierr = getScalarParam(fb, _OPTIONAL_, "Inversion_factor_linesearch"     , &IOparam->facLS,     1, 1        ); CHKERRQ(ierr);  // factor in the line search that multiplies current line search parameter if GD update was successful (increases convergence speed)
-	ierr = getScalarParam(fb, _OPTIONAL_, "Inversion_facB"      			, &IOparam->facB,      1, 1        ); CHKERRQ(ierr);  // backtrack factor that multiplies current line search parameter if GD update was not successful
+	ierr = getScalarParam(fb, _OPTIONAL_, "InverOsion_facB"      			, &IOparam->facB,      1, 1        ); CHKERRQ(ierr);  // backtrack factor that multiplies current line search parameter if GD update was not successful
 	ierr = getScalarParam(fb, _OPTIONAL_, "Inversion_maxfac"    			, &IOparam->maxfac,    1, 1        ); CHKERRQ(ierr);  // limit on the factor (only used without tao)
 	ierr = getScalarParam(fb, _OPTIONAL_, "Inversion_Scale_Grad"			, &IOparam->Scale_Grad,1, 1        ); CHKERRQ(ierr);  // Magnitude of initial parameter update (factor_ini = Scale_Grad/Grad)
 
@@ -779,6 +783,8 @@ PetscErrorCode LaMEMAdjointMain(ModParam *IOparam)
 		// Compute Gradients 
 		ierr = ComputeGradientsAndObjectiveFunction(Adjoint_Vectors.P, &F, Adjoint_Vectors.grad, IOparam);	CHKERRQ(ierr);
 
+		// Print scaling laws
+		ierr = PrintScalingLaws(IOparam);	CHKERRQ(ierr);
  	}
  	// compute 'full' adjoint-based gradient inversion
  	else if(IOparam->use == _gradientdescent_)
@@ -1835,7 +1841,7 @@ PetscErrorCode PrintGradientsAndObservationPoints(ModParam *IOparam)
 				y = IOparam->Ay[j]*scal.length;
 				z = IOparam->Az[j]*scal.length;
 		
-				PetscPrintf(PETSC_COMM_SELF,"| %-4d: [%10.4f; %10.4f; %10.4f]  %s % 8.5e  % 8.5e \n",j,x,y,z, vel_com, CostFunc, IOparam->Avel_num[j]);
+				PetscPrintf(PETSC_COMM_SELF,"| %-4d: [%10.4f; %10.4f; %10.4f]  %s % 8.5e  % 8.5e \n",j+1,x,y,z, vel_com, CostFunc, IOparam->Avel_num[j]);
 
 			}
 
@@ -3480,5 +3486,135 @@ PetscErrorCode Parameter_SetFDgrad_Option(PetscInt *FD_grad, char *name)
 	}
 
 	
+	PetscFunctionReturn(0);
+}
+
+/*---------------------------------------------------------------------------
+	This prints scaling laws
+*/
+#undef __FUNCT__
+#define __FUNCT__ "PrintScalingLaws"
+PetscErrorCode PrintScalingLaws(ModParam *IOparam)
+{
+ 	PetscFunctionBegin;
+	FILE        	*db;
+	PetscInt 		j, k, CurPhase, idx[IOparam->mdN], maxNum=10;
+	PetscScalar 	Exponent[IOparam->mdN], ExpMag[IOparam->mdN], P, grad, *Par, F, A, Vel_check, b;
+	char 			CurName[_str_len_];
+
+	if (!IOparam->ScalLaws){ PetscFunctionReturn(0);}  // do we want to print them?
+	
+	// Should be adjoint Gradients
+	if (!(IOparam->use == _adjointgradients_ )) { PetscFunctionReturn(0);}  // do we want to print them?
+
+	// Should be vs. Cost function
+	if (IOparam->Gr==0){
+		SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, " Scaling laws require: Adjoint_GradientCalculation = Solution");
+	}
+
+	PetscPrintf(PETSC_COMM_WORLD,"| \n");
+	PetscPrintf(PETSC_COMM_WORLD,"| -------------------------------------------------------------------------\n");
+	PetscPrintf(PETSC_COMM_WORLD,"| \n");
+	PetscPrintf(PETSC_COMM_WORLD,"| Scaling laws: \n");
+	PetscPrintf(PETSC_COMM_WORLD,"| \n");
+	PetscPrintf(PETSC_COMM_WORLD,"|   Assumption: \n");
+	PetscPrintf(PETSC_COMM_WORLD,"|              Vel = A * p[0]^b[0] * p[1]^b[1] * p[2]^b[2] * ... \n");
+	PetscPrintf(PETSC_COMM_WORLD,"|                where \n");
+	PetscPrintf(PETSC_COMM_WORLD,"|                      Vel - velocity;   p[] - parameter \n");
+	PetscPrintf(PETSC_COMM_WORLD,"|                      b[] - exponent;   A   - prefactor \n");
+	PetscPrintf(PETSC_COMM_WORLD,"|       \n");
+
+	if (IOparam->mdN<10){	PetscPrintf(PETSC_COMM_WORLD,"|   Results: \n"); maxNum = IOparam->mdN;	}
+	else{					PetscPrintf(PETSC_COMM_WORLD,"|   Results (10 most important): \n"); 	}
+	/* 	Compute exponents of scaling laws
+	 	We assume that velocity is given by
+			Vz = A * p[0]^b[0] * p[1]^b[1] * p[2]^b[2] * ..
+		with 
+				p[0] - parameters	
+				b[0] - exponent
+				A    - prefactor of scaling law
+	*/
+	F = IOparam->mfit;		// velocity value
+	A = F;
+	VecGetArray(IOparam->P,&Par);
+	for(j = 0; j < IOparam->mdN; j++){
+		grad 		= 	IOparam->grd[j];					// gradient
+		P    		= 	Par[j];								// parameter value	
+		Exponent[j] = 	grad*P/F;							// b value
+		ExpMag[j] 	=	-PetscAbs(Exponent[j]); 			// magnitude of exponent (for sorting later)
+		idx[j] 		=	j;
+		A           =   A*1/(PetscPowReal(P,Exponent[j]));	// prefactor
+	}
+	VecRestoreArray(IOparam->P,&Par);
+
+	// Sort according to magnitude
+	PetscSortRealWithPermutation(IOparam->mdN,ExpMag,idx);
+
+	
+	PetscPrintf(PETSC_COMM_WORLD,"|                 Parameter     |    Exponent b[] \n");
+	PetscPrintf(PETSC_COMM_WORLD,"|             -----------------  -----------------  \n");
+	for(j = 0; j < maxNum; j++){
+		k 				= idx[j];
+		CurPhase 		= 	IOparam->phs[k];
+		strcpy(CurName, IOparam->type_name[k]);	// name
+
+		PetscPrintf(PETSC_COMM_WORLD,"|               %+5s[%2i]              %- 1.3f \n",CurName, CurPhase, Exponent[k]);
+		
+	}
+	PetscPrintf(PETSC_COMM_WORLD,"|       \n");
+	PetscPrintf(PETSC_COMM_WORLD,"|   Prefactor A              : %2.8e \n",A);
+	
+	// Check that velocity is indeed computed
+	Vel_check = A;
+	VecGetArray(IOparam->P,&Par);
+	for(j = 0; j < IOparam->mdN; j++){
+		P    		= 	Par[j];								
+		b 			=	Exponent[j];
+		Vel_check	*=  PetscPowReal(P,b);
+	}
+	VecRestoreArray(IOparam->P,&Par);
+	PetscPrintf(PETSC_COMM_WORLD,"|   Velocity check           : %2.8e \n",Vel_check);
+		
+
+	// Save output to file
+	
+	if(ISRankZero(PETSC_COMM_WORLD))
+	{
+		char filename[_str_len_];
+		strcpy(filename, "ScalingLaw.dat");	// name
+		if (IOparam->ScalLawFilename){
+			
+			PetscMemcpy(filename, IOparam->ScalLawFilename,   (size_t)_str_len_*sizeof(char) ); 		
+
+		}
+
+		db = fopen(filename, "w");
+
+		fprintf(db,"# Scaling Law, computed on %s %s  \n",__DATE__,__TIME__);
+		fprintf(db,"#  \n");
+		fprintf(db,"#   Vel = A * p[0]^b[0] * p[1]^b[1] * p[2]^b[2] * ... \n");
+		fprintf(db,"#  \n");
+		fprintf(db,"# Prefactor A %- 1.8e  \n",A);
+		fprintf(db,"# Parameter p[]    Phase          Exponent b[]         Value p[]  \n");
+		fprintf(db,"# --------------  -------     ------------------  ------------------ \n");
+		
+		VecGetArray(IOparam->P,&Par);
+		for(j = 0; j < IOparam->mdN; j++){
+			CurPhase 		= 	IOparam->phs[j];
+			strcpy(CurName, IOparam->type_name[j]);	// name
+
+			fprintf(db,"  %s            %2i             %- 1.8f      %- 1.8e\n",CurName, CurPhase, Exponent[j], Par[j]);
+		
+		}
+		VecRestoreArray(IOparam->P,&Par);
+		fclose(db);
+		PetscPrintf(PETSC_COMM_WORLD,"|   Scaling law data saved to: %s \n",IOparam->ScalLawFilename);
+		
+	}
+	PetscPrintf(PETSC_COMM_WORLD,"|       \n");
+	PetscPrintf(PETSC_COMM_WORLD,"| -------------------------------------------------------------------------\n");
+
+
+
 	PetscFunctionReturn(0);
 }

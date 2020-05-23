@@ -146,6 +146,8 @@
 	Adjoint_GradientCalculation        	= 	Solution #CostFunction			# options [CostFunction= w.r.t. Cost function (e.g,);  Solution= w.r.t. Solution ]
 	Adjoint_FieldSensitivity    		= 	0      					# calculate Field-based =1 (aka. geodynamic sensity kernels), or Phase Based [=0]
 	Adjoint_ScaleCostFunction 			=	None
+	Adjoint_PrintScalingLaws			=	1						# Output scaling laws?
+	#Adjoint_ScalingLawFilename 		=   ScalingLaw_Test.dat
 	
 	# Inversion parameters
 	Inversion_EmployTAO 				=	0  

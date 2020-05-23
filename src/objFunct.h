@@ -110,6 +110,7 @@ struct ModParam
 	Vec              fcconv;                            // Vector containing all f/fini values to track convergence
 	PetscInt         Ab;    		                    // Use adjoint bounds (only works with Tao)?
 	PetscInt         Tao;    		                    // Use Tao?
+    PetscInt         ScalLaws;                          // Print scaling laws?
 	PetscInt         Adv;      		                    // Advect the point?
 	PetscInt         count;			                    // iteration counter
 	PetscInt         SCF;                               // Scale cost function?
@@ -137,7 +138,7 @@ struct ModParam
 	PetscInt         Av[_MAX_OBS_];	                    // Velocity components [x/y/z] of comparison points
 	PetscScalar      Avel_num[_MAX_OBS_];             	// Numerically computed velocity at the comparison points
 	PetscBool        Apoint_on_proc[_MAX_OBS_];         // Is the observation point on the current processor or not (simplified printing)?
-
+    char   			 ScalLawFilename[_str_len_];		// Name of scaling law file
 };
 
 // observation type

@@ -88,8 +88,12 @@ struct Adjoint_Vecs
 // Adjoint optimization driving routines
 PetscErrorCode AdjointOptimisation(Vec P, PetscScalar F, Vec grad, void *ctx);
 PetscErrorCode AdjointOptimisationTAO(Tao tao, Vec P, PetscReal *F, Vec grad, void *ctx);
-PetscErrorCode LaMEMAdjointReadInputSetDefaults(ModParam *IOparam, Adjoint_Vecs *Adjoint_Vectors);
 PetscErrorCode LaMEMAdjointMain(ModParam *IOparam);
+
+// Initialize & read input
+PetscErrorCode LaMEMAdjointReadInputSetDefaults(ModParam *IOparam, Adjoint_Vecs *Adjoint_Vectors);
+PetscErrorCode Adjoint_ScanForMaterialParameters(FB*, Scaling*, PetscInt*, char, PetscInt* ,PetscScalar*,PetscInt*);
+
 
 // Create & Destroy Adjoint_Vectors object
 PetscErrorCode AdjointVectorsCreate(Adjoint_Vecs *Adjoint_vectors, ModParam *IOparam);
@@ -131,6 +135,9 @@ PetscErrorCode CreateModifiedMaterialDatabase(ModParam *IOparam);
 PetscErrorCode CopyParameterToLaMEMCommandLine(ModParam *IOparam, PetscScalar CurVal, PetscInt j);
 
 PetscErrorCode Parameter_SetFDgrad_Option(PetscInt *FD_grad, char *name);
+
+// Print scaling laws
+PetscErrorCode PrintScalingLaws(ModParam *IO_param);
 
 // Create & Destroy aop object
 PetscErrorCode AdjointCreate(AdjGrad *aop, JacRes *jr, ModParam *IOparam);
