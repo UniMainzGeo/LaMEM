@@ -186,7 +186,7 @@ PetscErrorCode LaMEMLibCreate(LaMEMLib *lm, void *param )
 	ierr = FBLoad(&fb, PETSC_TRUE); CHKERRQ(ierr);
 
 	// create scaling object
-	ierr = ScalingCreate(&lm->scal, fb); CHKERRQ(ierr);
+	ierr = ScalingCreate(&lm->scal, fb, PETSC_TRUE);CHKERRQ(ierr);
 
 	// create time stepping object
 	ierr = TSSolCreate(&lm->ts, fb); 				CHKERRQ(ierr);
@@ -240,7 +240,7 @@ PetscErrorCode LaMEMLibSaveGrid(LaMEMLib *lm)
 	ierr = FBLoad(&fb, PETSC_TRUE); CHKERRQ(ierr);
 
 	// create scaling object
-	ierr = ScalingCreate(&lm->scal, fb); CHKERRQ(ierr);
+	ierr = ScalingCreate(&lm->scal, fb, PETSC_TRUE); CHKERRQ(ierr);
 
 	// create parallel grid
 	ierr = FDSTAGCreate(&lm->fs, fb); CHKERRQ(ierr);

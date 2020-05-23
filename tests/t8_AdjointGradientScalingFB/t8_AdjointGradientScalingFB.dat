@@ -119,18 +119,20 @@
 	<MaterialStart>
 		ID  = 0 
 		rho = 1
-		eta0 = 1
-		n = 1.2
-		e0 = 1e-6  
+		eta = 1
+#		eta0 = 1
+#		n = 1.2
+#		e0 = 1e-6  
 	<MaterialEnd>
 
 	# Define properties of block
 	<MaterialStart>
 		ID  = 1   
 		rho = 2   
-		eta0 = 100
-		n = 1.6
-		e0 = 1e-6  
+		eta = 100
+#		eta0 = 100
+#		n = 1.6
+#		e0 = 1e-6  
 	<MaterialEnd>
 	
 #===============================================================================
@@ -138,10 +140,10 @@
 #===============================================================================
 	
 	# General
-	Adjoint_mode    					= 	GradientDescent	 #AdjointGradients    	# options: [None; AdjointGradients, GradientDescent; Inversion]
+	Adjoint_mode    					= 	AdjointGradients #GradientDescent	 #AdjointGradients    	# options: [None; AdjointGradients, GradientDescent; Inversion]
 	Adjoint_ObservationPoints           = 	1						# options: [1=several points; 2=whole domain; 3=surface]
 	Adjoint_ObjectiveFunctionDef        = 	1                     	# options: [1-defined by hand; 0??]
-	Adjoint_GradientCalculation        	= 	CostFunction			# options [CostFunction= w.r.t. Cost function (e.g,);  Solution= w.r.t. Solution ]
+	Adjoint_GradientCalculation        	= 	Solution #CostFunction			# options [CostFunction= w.r.t. Cost function (e.g,);  Solution= w.r.t. Solution ]
 	Adjoint_FieldSensitivity    		= 	0      					# calculate Field-based =1 (aka. geodynamic sensity kernels), or Phase Based [=0]
 	Adjoint_ScaleCostFunction 			=	None
 	
@@ -151,23 +153,29 @@
 #	Inversion_maxit 					= 	2
 #	Inversion_maxit_linesearch 			= 	10
 
+
 	<AdjointParameterStart>
-	   	ID  			= 0		# phase of the parameter
-		Type 			= n   # options: [rho0,rhon,rhoc,eta,eta0,n,En] 	
-		InitGuess 		= 2  	# initial guess
-#		LowerBound     	= 0.1	# [optional] lower bound
-#		UpperBound     	= 2		# [optional] upper bound
-		FD_gradient 	= 0		
+		Type 			= AllMaterialParameters   	
 	<AdjointParameterEnd>
 	       
-	<AdjointParameterStart>  
-		ID  			= 1	
-		Type 			= n   	   
-		InitGuess 		= 2    
+	       
+#	<AdjointParameterStart>
+#	   	ID  			= 0		# phase of the parameter
+#		Type 			= n   # options: [rho0,rhon,rhoc,eta,eta0,n,En] 	
+#		InitGuess 		= 2  	# initial guess
+#		LowerBound     	= 0.1	# [optional] lower bound
+#		UpperBound     	= 2		# [optional] upper bound
+#		FD_gradient 	= 0		
+#	<AdjointParameterEnd>
+	       
+#	<AdjointParameterStart>  
+#		ID  			= 1	
+#		Type 			= n   	   
+#		InitGuess 		= 2    
 #		LowerBound     	= 1		# [optional] lower bound
 #		UpperBound     	= 3		# [optional] upper bound
-		FD_gradient 	= 0		
-	<AdjointParameterEnd>
+#		FD_gradient 	= 0		
+#	<AdjointParameterEnd>
 
 #	<AdjointParameterStart>  
 #		ID  			= 0	

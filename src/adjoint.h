@@ -130,7 +130,7 @@ PetscErrorCode DeleteMaterialParameterToCommandLineOptions(char *name, PetscInt 
 PetscErrorCode CreateModifiedMaterialDatabase(ModParam *IOparam);
 PetscErrorCode CopyParameterToLaMEMCommandLine(ModParam *IOparam, PetscScalar CurVal, PetscInt j);
 
-PetscErrorCode Parameter_SetFDgrad_Option(PetscInt *FD_grad, char *name, Scaling *scal);
+PetscErrorCode Parameter_SetFDgrad_Option(PetscInt *FD_grad, char *name);
 
 // Create & Destroy aop object
 PetscErrorCode AdjointCreate(AdjGrad *aop, JacRes *jr, ModParam *IOparam);
