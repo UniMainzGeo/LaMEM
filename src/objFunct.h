@@ -100,7 +100,6 @@ struct ModParam
     PetscInt      	 phs[_MAX_PAR_];                    // phase of the parameter
 	PetscScalar      grd[_MAX_PAR_];                    // gradient value
 	PetscScalar     *val;                               // model value
-	PetscScalar 	 ScalingValue[_MAX_PAR_]; 			// Dimensional scaling value for the parameter [like Pa*s for viscosity]	
 	PetscScalar      mfit;                              // misfit value for current model parameters
     DBMat            dbm_modified;                      // holds the (modified) LaMEM material database
 	FB 				*fb;								// holds a copy of the filebuffer	
