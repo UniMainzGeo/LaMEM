@@ -17,7 +17,7 @@
 	CFL       = 0.5   # CFL (Courant-Friedrichs-Lewy) criterion
 	CFLMAX    = 0.5   # CFL criterion for elasticity
 	nstep_max = 1     # maximum allowed number of steps (lower bound: time_end/dt_max)
-	nstep_out = 1     # save output every n steps
+	nstep_out = 10    # save output every n steps
 	nstep_rdb = 0     # save restart database every n steps
 
 
@@ -63,12 +63,12 @@
 #===============================================================================
 # Solver options
 #===============================================================================
-	SolverType 			=	direct 	# solver [direct or multigrid]
+	SolverType 			=	multigrid 	# solver [direct or multigrid]
 	MGLevels 			=	3			# number of MG levels [default=3]
 	MGSweeps 			=	5			# number of MG smoothening steps per level [default=10]
-#	MGSmoother 			=	chebyshev 	# type of smoothener used [chebyshev or jacobi]
-#	MGJacobiDamp 		=	0.5			# Dampening parameter [only employed for Jacobi smoothener; default=0.6]
-#	MGCoarseSolver 		=	direct 		# coarse grid solver [direct/mumps/superlu_dist or redundant - more options specifiable through the command-line options -crs_ksp_type & -crs_pc_type]
+	MGSmoother 			=	chebyshev 	# type of smoothener used [chebyshev or jacobi]
+	MGJacobiDamp 		=	0.5			# Dampening parameter [only employed for Jacobi smoothener; default=0.6]
+	MGCoarseSolver 		=	mumps 		# coarse grid solver [direct/mumps/superlu_dist or redundant - more options specifiable through the command-line options -crs_ksp_type & -crs_pc_type]
 #	MGRedundantNum 		=	4			# How many times do we copy the coarse grid? [only employed for redundant solver; default is 4]
 #	MGRedundantSolver	= 	mumps		# The coarse grid solver for each of the redundant solves [only employed for redundant; options are mumps/superlu_dist with default superlu_dist]
 	
@@ -78,10 +78,11 @@
 #===============================================================================
 
 	msetup         = geom             # setup type
-	nmark_x        = 3                 # markers per cell in x-direction
-	nmark_y        = 3                 # ...                 y-direction
-	nmark_z        = 3                 # ...                 z-direction
+	nmark_x        = 5                 # markers per cell in x-direction
+	nmark_y        = 5                 # ...                 y-direction
+	nmark_z        = 5                 # ...                 z-direction
 	bg_phase       = 0                 # background phase ID
+	rand_noise      = 1
 
 	#<BoxStart>
 	#	phase  = 1
@@ -90,7 +91,7 @@
 	
 	<SphereStart>
 		phase       = 1
-		radius      = 0.2
+		radius      = 0.1
 		center      = 0.5 0.5 0.5
 	<SphereEnd>
 
@@ -119,7 +120,7 @@
 	<MaterialStart>
 		Name 	= Matrix
 		ID  	= 0 
-		rho 	= 1
+		rho 	= 0
 		eta 	= 1
 #		eta0 	= 1
 #		n 		= 1.2
@@ -130,8 +131,8 @@
 	<MaterialStart>
 		Name 	= FallingSphere
 		ID  	= 1   
-		rho 	= 2   
-		eta 	= 100
+		rho 	= 1   
+		eta 	= 1e4
 #		eta0 	= 100
 #		n 		= 1.6
 #		e0 		= 1e-6  
@@ -163,14 +164,13 @@
 	<AdjointParameterEnd>
 	       
 	       
-#	<AdjointParameterStart>
-#	   	ID  			= 0		# phase of the parameter
-#		Type 			= n   # options: [rho0,rhon,rhoc,eta,eta0,n,En] 	
-#		InitGuess 		= 2  	# initial guess
-#		LowerBound     	= 0.1	# [optional] lower bound
-#		UpperBound     	= 2		# [optional] upper bound
-#		FD_gradient 	= 0		
-#	<AdjointParameterEnd>
+	<AdjointParameterStart>
+	   	ID  			= 0		     # phase of the parameter
+		Type 			= radius     # options: [rho0,rhon,rhoc,eta,eta0,n,En] 	
+		InitGuess 		= 0.1  	     # initial guess
+		FD_gradient 	= 1	
+		FD_eps 			= 0.156	 # stepsize for FD calculation for this parameter 	
+	<AdjointParameterEnd>
 	       
 #	<AdjointParameterStart>  
 #		ID  			= 1	
@@ -189,33 +189,6 @@
 #	<AdjointParameterEnd>
 	
 	
-#	<AdjointParameterStart>
-#	   	ID  			= 0		# phase of the parameter
-#		Type 			= rho     # options: [rho0,rhon,rhoc,eta,eta0,n,En] 	
-#		InitGuess 		= 1  	# initial guess
-#		#LowerBound     = 1		# [optional] lower bound
-#		#UpperBound     = 3		# [optional] upper bound
-#		FD_gradient 	= 1		
-#	<AdjointParameterEnd>
-	       
-#	<AdjointParameterStart>  
-#		ID  		= 1	
-#		Type 		= rho   	   
-#		InitGuess 	= 2    
-#		FD_gradient 	= 1		
-#	<AdjointParameterEnd>
-
-	#<AdjointParameterStart>
-	#	ID  		= 0
-	#	Type 		= eta0
-	#   InitGuess 	= 1
-	#<AdjointParameterEnd>
-
-	#<AdjointParameterStart>
-	#  	ID  		= 1
-	#   Type 		= eta0
-	#   InitGuess 	= 100
-	#<AdjointParameterEnd>
 
 	# Comparison indices
 	#<AdjointObservationPointStart>
@@ -225,7 +198,7 @@
 	#<AdjointObservationPointEnd>
 	
 	<AdjointObservationPointStart>
-		Coordinate 			= 0.4375 0.4375 0.5					
+		Coordinate 			= 0.5 0.5 0.5					
 		VelocityComponent 	= z
 		Value  				= -0.04248
 	<AdjointObservationPointEnd>
@@ -239,18 +212,18 @@
 <PetscOptionsStart>
 
 	# LINEAR & NONLINEAR SOLVER OPTIONS
-	#-snes_type ksponly # no nonlinear solver
+	-snes_type ksponly # no nonlinear solver
 
 	# Jacobian (linear) outer KSP
 	-js_ksp_type gmres
-	-js_ksp_max_it 25
+	-js_ksp_max_it 50
 #	-js_ksp_converged_reason
- #	-js_ksp_monitor
+ 	-js_ksp_monitor
 	-js_ksp_rtol 1e-10
 	-js_ksp_atol 1e-15
 
         -snes_max_it 20
-        -snes_atol 1e-10
+        -snes_atol 1e-12
         -snes_rtol 1e-20
         -snes_stol 1e-20
 	#-snes_PicardSwitchToNewton_rtol 1e-20
