@@ -1015,10 +1015,12 @@ PetscErrorCode ComputeGradientsAndObjectiveFunction(Vec Parameters, PetscScalar 
 	/* 	FD gradients: call the FD gradient routine (& LaMEM many times) for those parameters for which we request it 
 		Note: should be computed first, before computing adjoint to ensure that the cost function is computed for the standard (and nt perturbed) parameters
 	*/
+	IOparam->BruteForce_FD = PETSC_TRUE;
 	ierr = AdjointFiniteDifferenceGradients(IOparam);	CHKERRQ(ierr);
 
 	// Adjoint gradients: Call LaMEM main library function once (computes gradients @ the end)
- 	ierr = LaMEMLibMain(IOparam); 															CHKERRQ(ierr);
+ 	IOparam->BruteForce_FD = PETSC_FALSE;
+	ierr = LaMEMLibMain(IOparam); 															CHKERRQ(ierr);
 
 	// Print overview of cost function & gradients 
 	ierr = PrintCostFunction(IOparam);					CHKERRQ(ierr);
@@ -1357,6 +1359,8 @@ PetscErrorCode AdjointOptimisationTAO(Tao tao, Vec P, PetscReal *F, Vec grad, vo
 
 	// Get the cost function and derivative
 	ierr = AdjointObjectiveFunction(aop, jr, IOparam, surf); CHKERRQ(ierr);
+
+	if (IOparam->BruteForce_FD){PetscFunctionReturn(0); }	// in case we compute Brute force FD, we can return at this stage
 
  	// Get the adjoint gradients
  	ierr = AdjointComputeGradients(jr, aop, nl, snes, IOparam, surf);        CHKERRQ(ierr);
@@ -1828,7 +1832,8 @@ PetscErrorCode PrintGradientsAndObservationPoints(ModParam *IOparam)
 	PetscPrintf(PETSC_COMM_WORLD,"| \n| ");
 	
 
-
+	ierr = MPI_Barrier(PETSC_COMM_WORLD); CHKERRQ(ierr); // because of PETSC_COMM_SELF below
+	
 	if(IOparam->mdI<_MAX_OBS_ && IOparam->Ap == 1)
 	{
 
@@ -3559,7 +3564,7 @@ PetscErrorCode PrintScalingLaws(ModParam *IOparam)
 		Exponent[j] = 	grad*P/F;							// b value
 		ExpMag[j] 	=	-PetscAbs(Exponent[j]); 			// magnitude of exponent (for sorting later)
 		idx[j] 		=	j;
-		if (PetscAbs(P)>0){ // only non-zero parameters contribute
+		if (P!=0){ // only non-zero parameters contribute
 			A           =   A*1.0/(PetscPowScalar(P,Exponent[j]));	// prefactor
 		}
 	}
@@ -3590,7 +3595,7 @@ PetscErrorCode PrintScalingLaws(ModParam *IOparam)
 	for(j = 0; j < IOparam->mdN; j++){
 		P    		= 	Par[j];								
 		b 			=	Exponent[j];
-		if (PetscAbs(P)>0){ 
+		if (P!=0){ 
 			Vel_check	*=  PetscPowScalar(P,b);
 		}
 	}

@@ -100,6 +100,7 @@ struct ModParam
     PetscScalar      FD_eps[_MAX_PAR_];                 // Perturbation for this parameter if using (brute force) FD; can override default value
 	PetscInt      	 phs[_MAX_PAR_];                    // phase of the parameter
 	PetscScalar      grd[_MAX_PAR_];                    // gradient value
+	PetscBool 		 BruteForce_FD;						// indicate whether we compute Brute force FD or not
 
 	PetscScalar     *val;                               // model value
 	PetscScalar      mfit;                              // misfit value for current model parameters
