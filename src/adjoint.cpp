@@ -172,12 +172,14 @@ void AddParamToList(PetscInt ID, PetscScalar value, const char par_str[_str_len_
 		char type_name[][_str_len_],
 		PetscInt 	*phsar,
 		PetscScalar *Par,
-		PetscInt    *FDgrad)
+		PetscInt    *FDgrad,
+		PetscScalar *FDeps)
 {
 	strcpy(type_name[iP], par_str);
 	phsar[iP] 		=  	ID;
 	Par[iP] 		=  	value;
 	Parameter_SetFDgrad_Option(&FDgrad[iP], type_name[iP]);	
+	FDeps[iP] 		=	0.0;
 }
 
 //---------------------------------------------------------------------------
@@ -191,7 +193,8 @@ PetscErrorCode Adjoint_ScanForMaterialParameters(FB *fb, Scaling *scal, PetscInt
 		char type_name[][_str_len_],
 		PetscInt 	*phsar,
 		PetscScalar *Par,
-		PetscInt    *FDgrad)
+		PetscInt    *FDgrad,
+		PetscScalar *FDeps)
 {
 	PetscFunctionBegin;
 	PetscErrorCode 	ierr;
@@ -202,8 +205,6 @@ PetscErrorCode Adjoint_ScanForMaterialParameters(FB *fb, Scaling *scal, PetscInt
 	Material_t 		m;
 
 	
-
-
 	ierr = FBFindBlocks(fb, _OPTIONAL_, "<AdjointParameterStart>", "<AdjointParameterEnd>"); CHKERRQ(ierr);
 
 	// error checking
@@ -273,7 +274,7 @@ PetscErrorCode Adjoint_ScanForMaterialParameters(FB *fb, Scaling *scal, PetscInt
 						value 	= 	(PetscScalar)strtod(ptr, NULL);
 						
 						// ADD them to the database
-						AddParamToList(ID, value, par_str, *iP, type_name, phsar, Par, FDgrad);
+						AddParamToList(ID, value, par_str, *iP, type_name, phsar, Par, FDgrad, FDeps);
 						
 						*iP             =  *iP + 1;
 
@@ -290,10 +291,10 @@ PetscErrorCode Adjoint_ScanForMaterialParameters(FB *fb, Scaling *scal, PetscInt
 			ierr = PetscMalloc((size_t)_str_len_*sizeof(char), par_str); CHKERRQ(ierr);
 
 			// Set parameters 
-			strcpy(par_str,"Bn"); AddParamToList(ID, m.Bn, par_str, *iP, type_name, phsar, Par, FDgrad); ++*iP;
-			strcpy(par_str,"n");  AddParamToList(ID, m.n,  par_str, *iP, type_name, phsar, Par, FDgrad); ++*iP;
-			strcpy(par_str,"En"); AddParamToList(ID, m.En, par_str, *iP, type_name, phsar, Par, FDgrad); ++*iP;
-			strcpy(par_str,"Vn"); AddParamToList(ID, m.Vn, par_str, *iP, type_name, phsar, Par, FDgrad); ++*iP;
+			strcpy(par_str,"Bn"); AddParamToList(ID, m.Bn, par_str, *iP, type_name, phsar, Par, FDgrad, FDeps); ++*iP;
+			strcpy(par_str,"n");  AddParamToList(ID, m.n,  par_str, *iP, type_name, phsar, Par, FDgrad, FDeps); ++*iP;
+			strcpy(par_str,"En"); AddParamToList(ID, m.En, par_str, *iP, type_name, phsar, Par, FDgrad, FDeps); ++*iP;
+			strcpy(par_str,"Vn"); AddParamToList(ID, m.Vn, par_str, *iP, type_name, phsar, Par, FDgrad, FDeps); ++*iP;
 		}
 
 		ierr = GetProfileName(fb, scal, ndiff, "diff_prof"); 	CHKERRQ(ierr);
@@ -302,9 +303,9 @@ PetscErrorCode Adjoint_ScanForMaterialParameters(FB *fb, Scaling *scal, PetscInt
 			ierr = PetscMalloc((size_t)_str_len_*sizeof(char), par_str); CHKERRQ(ierr);
 
 			// Set parameters 	
-			strcpy(par_str,"Bd"); AddParamToList(ID, m.Bd, par_str, *iP, type_name, phsar, Par, FDgrad); ++*iP;
-			strcpy(par_str,"Ed"); AddParamToList(ID, m.Ed, par_str, *iP, type_name, phsar, Par, FDgrad); ++*iP;
-			strcpy(par_str,"Vd"); AddParamToList(ID, m.Vd, par_str, *iP, type_name, phsar, Par, FDgrad); ++*iP;
+			strcpy(par_str,"Bd"); AddParamToList(ID, m.Bd, par_str, *iP, type_name, phsar, Par, FDgrad, FDeps); ++*iP;
+			strcpy(par_str,"Ed"); AddParamToList(ID, m.Ed, par_str, *iP, type_name, phsar, Par, FDgrad, FDeps); ++*iP;
+			strcpy(par_str,"Vd"); AddParamToList(ID, m.Vd, par_str, *iP, type_name, phsar, Par, FDgrad, FDeps); ++*iP;
 		}
 
 		ierr = GetProfileName(fb, scal, npeir, "peir_prof"); 	CHKERRQ(ierr);
@@ -313,12 +314,12 @@ PetscErrorCode Adjoint_ScanForMaterialParameters(FB *fb, Scaling *scal, PetscInt
 			ierr = PetscMalloc((size_t)_str_len_*sizeof(char), &par_str); CHKERRQ(ierr);
 
 			// Set parameters 	
-			strcpy(par_str,"Bp"); 		AddParamToList(ID, m.Bp, par_str, *iP, type_name, phsar, Par, FDgrad); ++*iP;
-			strcpy(par_str,"Ep"); 		AddParamToList(ID, m.Ep, 	par_str, *iP, type_name, phsar, Par, FDgrad); ++*iP;
-			strcpy(par_str,"Vp"); 		AddParamToList(ID, m.Vp, 	par_str, *iP, type_name, phsar, Par, FDgrad); ++*iP;
-			strcpy(par_str,"taup"); 	AddParamToList(ID, m.taup, 	par_str, *iP, type_name, phsar, Par, FDgrad); ++*iP;
-			strcpy(par_str,"gamma"); 	AddParamToList(ID, m.gamma, par_str, *iP, type_name, phsar, Par, FDgrad); ++*iP;
-			strcpy(par_str,"q"); 		AddParamToList(ID, m.q, 	par_str, *iP, type_name, phsar, Par, FDgrad); ++*iP;
+			strcpy(par_str,"Bp"); 		AddParamToList(ID, m.Bp,    par_str, *iP, type_name, phsar, Par, FDgrad, FDeps); ++*iP;
+			strcpy(par_str,"Ep"); 		AddParamToList(ID, m.Ep, 	par_str, *iP, type_name, phsar, Par, FDgrad, FDeps); ++*iP;
+			strcpy(par_str,"Vp"); 		AddParamToList(ID, m.Vp, 	par_str, *iP, type_name, phsar, Par, FDgrad, FDeps); ++*iP;
+			strcpy(par_str,"taup"); 	AddParamToList(ID, m.taup, 	par_str, *iP, type_name, phsar, Par, FDgrad, FDeps); ++*iP;
+			strcpy(par_str,"gamma"); 	AddParamToList(ID, m.gamma, par_str, *iP, type_name, phsar, Par, FDgrad, FDeps); ++*iP;
+			strcpy(par_str,"q"); 		AddParamToList(ID, m.q, 	par_str, *iP, type_name, phsar, Par, FDgrad, FDeps); ++*iP;
 		}
 
 		fb->blockID++;
@@ -472,6 +473,7 @@ PetscErrorCode LaMEMAdjointReadInputSetDefaults(ModParam *IOparam, Adjoint_Vecs 
 	// TEMPORARY VARIABLES
 	PetscInt		phsar[_MAX_PAR_];
 	PetscInt		FDgrad[_MAX_PAR_];
+	PetscScalar 	FDeps[_MAX_PAR_];
 	char 			type_name[_MAX_PAR_][_str_len_];
 	PetscScalar     Ax[  _MAX_OBS_];
 	PetscScalar     Ay[  _MAX_OBS_];
@@ -497,7 +499,7 @@ PetscErrorCode LaMEMAdjointReadInputSetDefaults(ModParam *IOparam, Adjoint_Vecs 
 
 	// 1) Check whether we want to take ALL material parameters into account
 	iStart 	= 0;
-	ierr 	= Adjoint_ScanForMaterialParameters(fb, &scal, &iStart, type_name, phsar, Par, FDgrad); CHKERRQ(ierr);
+	ierr 	= Adjoint_ScanForMaterialParameters(fb, &scal, &iStart, type_name, phsar, Par, FDgrad, FDeps); CHKERRQ(ierr);
 
 
 	// 2) Check the AdjointParameter blocks for additional parameters
@@ -517,6 +519,7 @@ PetscErrorCode LaMEMAdjointReadInputSetDefaults(ModParam *IOparam, Adjoint_Vecs 
     // temporary strings
     char        *lb_str, *ub_str, *val_str;
     PetscScalar par_val;
+	PetscInt 	grad;
 
 
 	// Read parameters which we will use in the inversion, or for which we will compute gradients
@@ -570,16 +573,21 @@ PetscErrorCode LaMEMAdjointReadInputSetDefaults(ModParam *IOparam, Adjoint_Vecs 
 				Lbar[i]   = par_val;  
 			}
 			
-			
-
-			// Retrieve scaling for the parameter
-			ierr = Parameter_SetFDgrad_Option(&FDgrad[i], par_str);	CHKERRQ(ierr);
-
-			// Compute gradient by finite differences (optional)?
-			ierr 	= getIntParam(fb, _OPTIONAL_, "FD_gradient", &FDgrad[i], 1,1); CHKERRQ(ierr);  // must have component
-			if (FDgrad[i]>0){
-				FDgrad[i] = 1;
+			// Compute gradient by finite differences (optional)
+			grad = -1;
+			ierr = getIntParam(fb, _OPTIONAL_, "FD_gradient", &grad, 1,1); CHKERRQ(ierr);  // must have component
+			if (grad<0){
+				// Retrieve scaling for the parameter
+				ierr = Parameter_SetFDgrad_Option(&FDgrad[i], par_str);	CHKERRQ(ierr);
 			}
+			else{
+				FDgrad[i] = grad;
+			}
+		
+
+			ts 		= 0;
+			ierr 	= getScalarParam(fb, _OPTIONAL_, "FD_eps", &ts, 1, 1 ); CHKERRQ(ierr);	// eps for brute force FD gradients
+			FDeps[i] = ts;
 
 			gradar[i]    = 0.0;                     // GRADIENTS
 
@@ -608,8 +616,8 @@ PetscErrorCode LaMEMAdjointReadInputSetDefaults(ModParam *IOparam, Adjoint_Vecs 
     ierr  = PetscMemcpy(IOparam->type_name, 	type_name,   (size_t)_MAX_PAR_*(size_t)_str_len_*sizeof(char) ); 	CHKERRQ(ierr);
     ierr  = PetscMemcpy(IOparam->phs,       	phsar,       (size_t)_MAX_PAR_*sizeof(PetscInt)     ); 				CHKERRQ(ierr);
     ierr  = PetscMemcpy(IOparam->FD_gradient, 	FDgrad,      (size_t)_MAX_PAR_*sizeof(PetscInt)    ); 				CHKERRQ(ierr);
+    ierr  = PetscMemcpy(IOparam->FD_eps,       	FDeps,       (size_t)_MAX_PAR_*sizeof(PetscScalar) ); 				CHKERRQ(ierr);
     
-
 	VecRestoreArray(Adjoint_Vectors->P,&Par);
 	VecRestoreArray(Adjoint_Vectors->Ub,&Ubar);
 	VecRestoreArray(Adjoint_Vectors->Lb,&Lbar);
@@ -1444,7 +1452,7 @@ PetscErrorCode AdjointFiniteDifferenceGradients(ModParam *IOparam)
 {
 	PetscErrorCode 	ierr;
 	PetscInt 		j;
-	PetscScalar 	*Par, Perturb, Misfit_ref, Misfit_pert, FD_gradients_eps=1e-6, Grad; 
+	PetscScalar 	*Par, Perturb, Misfit_ref, Misfit_pert, FD_gradients_eps=1e-6, FD_eps, Grad; 
 	char 			CurName[_str_len_];
 	PetscBool 		flg, FD_Adjoint = PETSC_FALSE;
 
@@ -1494,10 +1502,14 @@ PetscErrorCode AdjointFiniteDifferenceGradients(ModParam *IOparam)
 					
 				CurPhase 		= 	IOparam->phs[j];
 				CurVal 	 		= 	Par[j];
+				FD_eps 			=	IOparam->FD_eps[j];
+				if (FD_eps==0.0){
+					FD_eps 		=	FD_gradients_eps;	// use default value
+				}
 				strcpy(CurName, IOparam->type_name[j]);	// name
 
 				// Only execute this for those parameters for which we want to know the FD gradient (to be added here)
-				Perturb 	= 	CurVal*FD_gradients_eps;
+				Perturb 	= 	CurVal*FD_eps;
 
 				ierr		=	CopyParameterToLaMEMCommandLine(IOparam, CurVal + Perturb, j);		CHKERRQ(ierr);
 			
@@ -1512,7 +1524,7 @@ PetscErrorCode AdjointFiniteDifferenceGradients(ModParam *IOparam)
 				// Set back parameter
 				ierr			=	CopyParameterToLaMEMCommandLine(IOparam,  CurVal, j);		CHKERRQ(ierr);
 			
-				PetscPrintf(PETSC_COMM_WORLD,"|   Brute force Finite difference gradient for %+5s[%2i] = %e \n", CurName, CurPhase, Grad);
+				PetscPrintf(PETSC_COMM_WORLD,"|  Brute force FD gradient %+5s[%2i] = %e, with eps=%1.4e \n", CurName, CurPhase, Grad, FD_eps);
 
 			}
 
@@ -3546,7 +3558,9 @@ PetscErrorCode PrintScalingLaws(ModParam *IOparam)
 		Exponent[j] = 	grad*P/F;							// b value
 		ExpMag[j] 	=	-PetscAbs(Exponent[j]); 			// magnitude of exponent (for sorting later)
 		idx[j] 		=	j;
-		A           =   A*1/(PetscPowReal(P,Exponent[j]));	// prefactor
+		if (PetscAbs(P)>0){ // only non-zero parameters contribute
+			A           =   A*1.0/(PetscPowScalar(P,Exponent[j]));	// prefactor
+		}
 	}
 	VecRestoreArray(IOparam->P,&Par);
 
@@ -3575,7 +3589,9 @@ PetscErrorCode PrintScalingLaws(ModParam *IOparam)
 	for(j = 0; j < IOparam->mdN; j++){
 		P    		= 	Par[j];								
 		b 			=	Exponent[j];
-		Vel_check	*=  PetscPowReal(P,b);
+		if (PetscAbs(P)>0){ 
+			Vel_check	*=  PetscPowScalar(P,b);
+		}
 	}
 	VecRestoreArray(IOparam->P,&Par);
 	PetscPrintf(PETSC_COMM_WORLD,"|   Velocity check           : %2.8e \n",Vel_check);
@@ -3609,7 +3625,7 @@ PetscErrorCode PrintScalingLaws(ModParam *IOparam)
 			strcpy(CurName, IOparam->type_name[j]);	// name
 			strcpy(PhaseDescription, IOparam->dbm_modified.phases[CurPhase].Name);	// name
 		
-			fprintf(db,"  %s              %3i        %- 3.11e   %- 1.8e     %s \n",CurName, CurPhase+9, Exponent[j], Par[j], PhaseDescription);
+			fprintf(db,"  %s              %3i        %- 3.11e   %- 1.8e     %s \n",CurName, CurPhase, Exponent[j], Par[j], PhaseDescription);
 		
 		}
 		VecRestoreArray(IOparam->P,&Par);
