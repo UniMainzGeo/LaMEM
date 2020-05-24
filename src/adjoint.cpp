@@ -1356,7 +1356,7 @@ PetscErrorCode AdjointOptimisationTAO(Tao tao, Vec P, PetscReal *F, Vec grad, vo
 	//========================================
 
 	// Get the cost function and derivative
-	 ierr = AdjointObjectiveFunction(aop, jr, IOparam, surf); CHKERRQ(ierr);
+	ierr = AdjointObjectiveFunction(aop, jr, IOparam, surf); CHKERRQ(ierr);
 
  	// Get the adjoint gradients
  	ierr = AdjointComputeGradients(jr, aop, nl, snes, IOparam, surf);        CHKERRQ(ierr);
@@ -1438,6 +1438,7 @@ PetscErrorCode AdjointOptimisationTAO(Tao tao, Vec P, PetscReal *F, Vec grad, vo
 
 	// Destroy
 	ierr = VecDestroy(&xini);
+	ierr = VecDestroy(&sqrtpro);
 
 
  	PetscFunctionReturn(0);
