@@ -117,22 +117,24 @@
 
 	# Define properties of overburden
 	<MaterialStart>
-		ID  = 0 
-		rho = 1
-		eta = 1
-#		eta0 = 1
-#		n = 1.2
-#		e0 = 1e-6  
+		Name 	= Matrix
+		ID  	= 0 
+		rho 	= 1
+		eta 	= 1
+#		eta0 	= 1
+#		n 		= 1.2
+#		e0 		= 1e-6  
 	<MaterialEnd>
 
-	# Define properties of block
+	# Define properties of sphere
 	<MaterialStart>
-		ID  = 1   
-		rho = 2   
-		eta = 100
-#		eta0 = 100
-#		n = 1.6
-#		e0 = 1e-6  
+		Name 	= FallingSphere
+		ID  	= 1   
+		rho 	= 2   
+		eta 	= 100
+#		eta0 	= 100
+#		n 		= 1.6
+#		e0 		= 1e-6  
 	<MaterialEnd>
 	
 #===============================================================================

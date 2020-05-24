@@ -216,7 +216,7 @@ PetscErrorCode DBMatReadPhase(DBMat *dbm, FB *fb, PetscBool PrintOutput)
 	size_t 	    StringLength;
 	PetscScalar eta, eta0, e0, K, Kb, G, E, nu, Vp, Vs, eta_st;
 	char        ndiff[_str_len_], ndisl[_str_len_], npeir[_str_len_], title[_str_len_];
-	char        PhaseDiagram[_str_len_], PhaseDiagram_Dir[_str_len_];
+	char        PhaseDiagram[_str_len_], PhaseDiagram_Dir[_str_len_], Name[_str_len_];
 	
 
 	PetscErrorCode ierr;
@@ -262,6 +262,13 @@ PetscErrorCode DBMatReadPhase(DBMat *dbm, FB *fb, PetscBool PrintOutput)
 
 	if(visID != -1) m->visID = visID;
 	else            m->visID = ID;
+
+	// Name of the phase (mostly for visualization purposes)
+	ierr = getStringParam(fb, _OPTIONAL_, "Name", Name, "none"); CHKERRQ(ierr);
+	if(strcmp(Name, "none"))
+	{
+		strcpy(m->Name, Name);
+	}
 
 	//============================================================
 	// density & phase diagram info

@@ -261,6 +261,7 @@ PetscErrorCode Adjoint_ScanForMaterialParameters(FB *fb, Scaling *scal, PetscInt
 					else if (!(strcmp(par_str,"disl_prof")))	{AddParamToGradient = PETSC_FALSE;	}
 					else if (!(strcmp(par_str,"diff_prof")))	{AddParamToGradient = PETSC_FALSE;	}
 					else if (!(strcmp(par_str,"peir_prof")))	{AddParamToGradient = PETSC_FALSE;	}
+					else if (!(strcmp(par_str,"Name")))			{AddParamToGradient = PETSC_FALSE;	}
 						
 					// And some parameters, in particular creep laws, actually set a few other parameters (such as powerlaw exponent). 
 					// It would be good to automatically add th
@@ -3497,13 +3498,15 @@ PetscErrorCode Parameter_SetFDgrad_Option(PetscInt *FD_grad, char *name)
 PetscErrorCode PrintScalingLaws(ModParam *IOparam)
 {
  	PetscFunctionBegin;
+	PetscErrorCode 	ierr;
 	FILE        	*db;
 	PetscInt 		j, k, CurPhase, idx[IOparam->mdN], maxNum=10;
 	PetscScalar 	Exponent[IOparam->mdN], ExpMag[IOparam->mdN], P, grad, *Par, F, A, Vel_check, b;
-	char 			CurName[_str_len_];
+	char 			CurName[_str_len_], PhaseDescription[_str_len_];
 
 	if (!IOparam->ScalLaws){ PetscFunctionReturn(0);}  // do we want to print them?
-	
+
+	ierr 			= 	CreateModifiedMaterialDatabase(IOparam); CHKERRQ(ierr);			// to retrieve phase descriptions
 	// Should be adjoint Gradients
 	if (!(IOparam->use == _adjointgradients_ )) { PetscFunctionReturn(0);}  // do we want to print them?
 
@@ -3551,14 +3554,16 @@ PetscErrorCode PrintScalingLaws(ModParam *IOparam)
 	PetscSortRealWithPermutation(IOparam->mdN,ExpMag,idx);
 
 	
-	PetscPrintf(PETSC_COMM_WORLD,"|                 Parameter     |    Exponent b[] \n");
-	PetscPrintf(PETSC_COMM_WORLD,"|             -----------------  -----------------  \n");
+	PetscPrintf(PETSC_COMM_WORLD,"|           Parameter     |    Exponent b[]  |  Phase Description    \n");
+	PetscPrintf(PETSC_COMM_WORLD,"|       -----------------  -----------------  ---------------------------- \n");
 	for(j = 0; j < maxNum; j++){
 		k 				= idx[j];
 		CurPhase 		= 	IOparam->phs[k];
 		strcpy(CurName, IOparam->type_name[k]);	// name
-
-		PetscPrintf(PETSC_COMM_WORLD,"|               %+5s[%2i]              %- 1.3f \n",CurName, CurPhase, Exponent[k]);
+		strcpy(PhaseDescription, IOparam->dbm_modified.phases[CurPhase].Name);	// name
+		if (!strlen(PhaseDescription)){strcpy(PhaseDescription, "-");} 			// if no name is indicated in input file	
+		
+		PetscPrintf(PETSC_COMM_WORLD,"|         %+5s[%2i]              %- 1.3f         %s\n",CurName, CurPhase, Exponent[k],PhaseDescription);
 		
 	}
 	PetscPrintf(PETSC_COMM_WORLD,"|       \n");
@@ -3595,15 +3600,16 @@ PetscErrorCode PrintScalingLaws(ModParam *IOparam)
 		fprintf(db,"#   Vel = A * p[0]^b[0] * p[1]^b[1] * p[2]^b[2] * ... \n");
 		fprintf(db,"#  \n");
 		fprintf(db,"# Prefactor A %- 1.8e  \n",A);
-		fprintf(db,"# Parameter p[]    Phase          Exponent b[]         Value p[]  \n");
-		fprintf(db,"# --------------  -------     ------------------  ------------------ \n");
+		fprintf(db,"# Parameter p[]    Phase          Exponent b[]         Value p[]       Phase Description   \n");
+		fprintf(db,"# --------------  -------     -------------------  ------------------ --------------------\n");
 		
 		VecGetArray(IOparam->P,&Par);
 		for(j = 0; j < IOparam->mdN; j++){
 			CurPhase 		= 	IOparam->phs[j];
 			strcpy(CurName, IOparam->type_name[j]);	// name
-
-			fprintf(db,"  %s            %2i             %- 1.8f      %- 1.8e\n",CurName, CurPhase, Exponent[j], Par[j]);
+			strcpy(PhaseDescription, IOparam->dbm_modified.phases[CurPhase].Name);	// name
+		
+			fprintf(db,"  %s              %3i        %- 3.11e   %- 1.8e     %s \n",CurName, CurPhase+9, Exponent[j], Par[j], PhaseDescription);
 		
 		}
 		VecRestoreArray(IOparam->P,&Par);
