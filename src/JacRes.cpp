@@ -311,10 +311,11 @@ PetscErrorCode JacResCreate(JacRes *jr, FB *fb)
 	ctrl->steadyTempStep /=  scal->time;
 
 	// adjoint field based gradient output vector
-	ierr = getIntParam   (fb, _OPTIONAL_, "Adj_FS"        , &temp_int,        1, 1        ); CHKERRQ(ierr);  // Do a field sensitivity test? -> Will do the test for the first InverseParStart that is given!
+	ierr = getIntParam   (fb, _OPTIONAL_, "Adjoint_FieldSensitivity"        , &temp_int,        1, 1        ); CHKERRQ(ierr);  // Do a field sensitivity test? -> Will do the test for the first InverseParStart that is given!
 	if (temp_int == 1)
 	{
 		ierr = DMCreateLocalVector (jr->fs->DA_CEN, &jr->lgradfield);      CHKERRQ(ierr);
+		ierr = VecZeroEntries(jr->lgradfield); CHKERRQ(ierr);
 	}
 
 	// create Jacobian & residual evaluation context

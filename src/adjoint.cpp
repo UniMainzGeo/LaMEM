@@ -1560,7 +1560,7 @@ PetscErrorCode AdjointComputeGradients(JacRes *jr, AdjGrad *aop, NLSol *nl, SNES
 	KSPConvergedReason  reason;
 	PetscInt            i, j, lrank, grank;
 	PetscScalar         dt, grd, Perturb, coord_local[3], *vx, *vy, *vz, *Par, CurVal;
-	Vec 				res_pert, sol, psi, drdp, res, Perturb_vec;
+	Vec 				res_pert, sol, psi, drdp, res;
 	PC                  ipc_as;
 	Scaling             *scal;
     PetscBool           flg;
@@ -1577,7 +1577,6 @@ PetscErrorCode AdjointComputeGradients(JacRes *jr, AdjGrad *aop, NLSol *nl, SNES
 	ierr = VecDuplicate(jr->gres, &res);	 	 CHKERRQ(ierr);
 	ierr = VecDuplicate(jr->gsol, &sol); 		 CHKERRQ(ierr);
 	ierr = VecDuplicate(jr->gsol, &drdp);	 	 CHKERRQ(ierr);
-	ierr = VecDuplicate(jr->gsol, &Perturb_vec); CHKERRQ(ierr);
 	ierr = VecCopy(jr->gsol,sol); 				 CHKERRQ(ierr);
 	ierr = VecCopy(jr->gres,res); 				 CHKERRQ(ierr);
 
@@ -1619,12 +1618,10 @@ PetscErrorCode AdjointComputeGradients(JacRes *jr, AdjGrad *aop, NLSol *nl, SNES
 		if (IOparam->mdN>1){
 			SETERRQ(PETSC_COMM_WORLD,PETSC_ERR_USER,"| Field-based gradients can currently only be computed for a single parameter \n");		// error check
 		}
-		PetscStrcmp(CurName,"rho0",&flg);		// check name 
+		PetscStrcmp(CurName,"rho",&flg);		// check name 
 		if (flg)		// we need some way to ensure that we do this for one field at a time only
 		{
-			aop->CurScal   = (scal->velocity)/(scal->density);
-			aop->CurScalst = 1/(scal->density);
-			aop->Perturb   = aop->FD_epsilon;
+			aop->CurScal   = (scal->velocity)/(1);
 			ierr = AdjointFormResidualFieldFDRho(snes, sol, psi, nl, aop);          CHKERRQ(ierr);
 		}
 		else 
@@ -1652,7 +1649,6 @@ PetscErrorCode AdjointComputeGradients(JacRes *jr, AdjGrad *aop, NLSol *nl, SNES
 
 				// Perturb parameter
 				Perturb 		= 	aop->FD_epsilon*CurVal;
-				ierr 			= 	VecSet(Perturb_vec,Perturb);                   							CHKERRQ(ierr);        // epsilon (finite difference)   
 
 				//PetscPrintf(PETSC_COMM_WORLD,"| *** dr/dp: Perturbing parameter %s[%i]=%e to value %e -> Scaling.density = %e \n",CurName,CurPhase,CurVal, CurVal + Perturb, scal->density);
 
@@ -1661,7 +1657,8 @@ PetscErrorCode AdjointComputeGradients(JacRes *jr, AdjGrad *aop, NLSol *nl, SNES
 				ierr 			= 	CreateModifiedMaterialDatabase(IOparam);     							CHKERRQ(ierr);			// update LaMEM material DB (to call directly call the LaMEM residual routine)
 
 				// Swap material structure of phase with that of LaMEM Material DB
-				for (i=0; i < nl->pc->pm->jr->dbm->numPhases; i++){
+				for (i=0; i < nl->pc->pm->jr->dbm->numPhases; i++)
+				{
 					ierr =   PetscMemzero(&nl->pc->pm->jr->dbm->phases[i],  sizeof(Material_t));   CHKERRQ(ierr);
 					swapStruct(&nl->pc->pm->jr->dbm->phases[i], &IOparam->dbm_modified.phases[i]);  
 				}
@@ -1676,7 +1673,8 @@ PetscErrorCode AdjointComputeGradients(JacRes *jr, AdjGrad *aop, NLSol *nl, SNES
 				ierr 			= 	CreateModifiedMaterialDatabase(IOparam);     							CHKERRQ(ierr);			// update LaMEM material DB (to call directly call the LaMEM residual routine)
 
 				// Swap material structure of phase with that of LaMEM Material DB back
-				for (i=0; i < nl->pc->pm->jr->dbm->numPhases; i++){
+				for (i=0; i < nl->pc->pm->jr->dbm->numPhases; i++)
+				{
 					ierr =   PetscMemzero(&nl->pc->pm->jr->dbm->phases[i],  sizeof(Material_t));   CHKERRQ(ierr);
 					swapStruct(&nl->pc->pm->jr->dbm->phases[i], &IOparam->dbm_modified.phases[i]);  
 				}
@@ -1765,7 +1763,6 @@ PetscErrorCode AdjointComputeGradients(JacRes *jr, AdjGrad *aop, NLSol *nl, SNES
 	ierr = VecDestroy(&drdp);
 	ierr = VecDestroy(&res_pert);
 	ierr = VecDestroy(&res);
-    ierr = VecDestroy(&Perturb_vec);
 
 	PetscFunctionReturn(0);
 }
@@ -2703,7 +2700,7 @@ PetscErrorCode AdjointFormResidualFieldFDRho(SNES snes, Vec x, Vec psi, NLSol *n
 	PetscScalar grdt;
 	PetscScalar ***fx,  ***fy,  ***fz, ***vx,  ***vy,  ***vz, ***gc, ***bcp, ***llgradfield;
 	PetscScalar ***dxx, ***dyy, ***dzz, ***dxy, ***dxz, ***dyz, ***p, ***T, ***p_lith, ***p_pore;
-	Vec         drdp, rpl, Perturb_vec, res;
+	Vec         rpl, res;
 
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
@@ -2712,13 +2709,10 @@ PetscErrorCode AdjointFormResidualFieldFDRho(SNES snes, Vec x, Vec psi, NLSol *n
 	jr = nl->pc->pm->jr;
 
 	// Create stuff
-	ierr = VecDuplicate(jr->gsol, &drdp);	 	 CHKERRQ(ierr);
 	ierr = VecDuplicate(jr->gres, &res);	 	 CHKERRQ(ierr);
 	ierr = VecDuplicate(jr->gres, &rpl);		 CHKERRQ(ierr);
-	ierr = VecDuplicate(jr->gsol, &Perturb_vec); CHKERRQ(ierr);
 	
 	ierr = VecZeroEntries(jr->lgradfield);	 	 CHKERRQ(ierr);
-	ierr = VecSet(Perturb_vec,aop->Perturb);     CHKERRQ(ierr);
 
 	/*// apply pressure limit at the first visco-plastic timestep and iteration
     if(jr->ts->istep == 1 && jr->ctrl->pLimPlast == PETSC_TRUE)
@@ -2866,11 +2860,11 @@ PetscErrorCode AdjointFormResidualFieldFDRho(SNES snes, Vec x, Vec psi, NLSol *n
 					if ((i)==ik && (j)==jk && (k)==kk)
 					{
 						// Set perturbation paramter for the finite differences
-						// aop->Perturb = hP*rho;
+						aop->Perturb = rho*aop->FD_epsilon;
 						rho += aop->Perturb;
 					}
 
-					// compute gravity terms
+					// compute gravity terms 
 					gx = rho*grav[0];
 					gy = rho*grav[1];
 					gz = rho*grav[2];
@@ -3265,14 +3259,14 @@ PetscErrorCode AdjointFormResidualFieldFDRho(SNES snes, Vec x, Vec psi, NLSol *n
 				ierr = checkConvConstEq(&ctx); CHKERRQ(ierr);
 
 				// copy residuals to global vector
-				ierr = JacResCopyRes(jr, res); CHKERRQ(ierr);
+				ierr = JacResCopyRes(jr, rpl); CHKERRQ(ierr);
 
-				ierr = FormResidual(snes, x, rpl, nl);              CHKERRQ(ierr);
+				ierr = FormResidual(snes, x, res, nl);              CHKERRQ(ierr);
 				ierr = VecAYPX(res,-1,rpl);                           CHKERRQ(ierr);
-				ierr = VecPointwiseDivide(drdp,res,Perturb_vec);      CHKERRQ(ierr);
+				ierr = VecScale(res,1/aop->Perturb);                      							CHKERRQ(ierr);        // res = (res_perturbed-res)/Perturb
 
 				// Compute the gradient
-				ierr = VecDot(drdp,psi,&grdt);    CHKERRQ(ierr);
+				ierr = VecDot(res,psi,&grdt);    CHKERRQ(ierr);
 
 				GET_CELL_RANGE(nx, sx, fs->dsx)
 				GET_CELL_RANGE(ny, sy, fs->dsy)
@@ -3307,10 +3301,8 @@ PetscErrorCode AdjointFormResidualFieldFDRho(SNES snes, Vec x, Vec psi, NLSol *n
 	// deactivate pressure limit after it has been activated
 	// jr->matLim.presLimFlg = PETSC_FALSE;
 
-	ierr = VecDestroy(&drdp);   CHKERRQ(ierr);
 	ierr = VecDestroy(&rpl);   CHKERRQ(ierr);
 	ierr = VecDestroy(&res);   CHKERRQ(ierr);
-	ierr = VecDestroy(&Perturb_vec);   CHKERRQ(ierr);
 
 	PetscFunctionReturn(0);
 
