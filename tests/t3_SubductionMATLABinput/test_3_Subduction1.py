@@ -32,7 +32,7 @@ def test_a():
     unittest.compareFloatingPoint(key,1e-5)
 
     key = re.escape("|mRes|_2")
-    unittest.compareFloatingPoint(key,2.5e-4)
+    unittest.compareFloatingPoint(key,5e-4)
 
   # Create unit test object
   ex1 = pth.pthUnitTest('t3_Sub1_MATLAB_a_Direct_opt',ranks,launch,expected_file)

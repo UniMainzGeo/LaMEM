@@ -1,3 +1,5 @@
+import matplotlib
+matplotlib.use('Agg')
 
 import os
 import pyTestHarness.unittest as pth
@@ -9,21 +11,27 @@ import subprocess
 
 #----------------------------------------------------
 # Read data from disk
-def LoadData(dir):
-
+def LoadData(path):
   # load required modules for reading data
   try: 
     from vtk import vtkXMLPRectilinearGridReader
     from vtk.util import numpy_support as VN
     import numpy as np
+    import glob
+    import shutil
   except:
     print('VTK toolboxes are not installed; cannot load data')
 
+  # get list of timesteps
+  dirlist  = glob.glob(os.path.join(path,'Timestep*'))
+  # sort Tiemsteps (last one first)
+  dirlist.sort(reverse=True)
+  # get last timestep
+  step = dirlist[0]
 
   file_in =  'output.pvtr'
   filesep = '/'
-  filename = dir+filesep+file_in
-  print ('Load ', filename)
+  filename = step+filesep+file_in
   reader = vtkXMLPRectilinearGridReader()
   reader.SetFileName(filename)
   reader.Update()
@@ -51,12 +59,15 @@ def LoadData(dir):
   data.Tyy      =   np.reshape(T[:,4],(nz,ny,nx));     data.Tyz = np.reshape(T[:,5],(nz,ny,nx)); data.Tzz = np.reshape(T[:,8],(nz,ny,nx));
   
   # Compute required stresses, etc.
-  data.Sxx  = -(-(data.P) + data.Txx);        # change sign, to be consistent with analytics later
-  data.Syy  = -(-(data.P) + data.Tyy);       
-  data.Szz  = -(-(data.P) + data.Tzz);
+  data.Sxx  = -(-(data.P) + data.Txx)        # change sign, to be consistent with analytics later
+  data.Syy  = -(-(data.P) + data.Tyy)       
+  data.Szz  = -(-(data.P) + data.Tzz)
+  
+  # clean up
+  for dir in dirlist:
+    shutil.rmtree(dir)
 
-
-  return(data);
+  return(data)
 
 #----------------------------------------------------
 
@@ -72,32 +83,32 @@ def AnalyticalSolution(data):
 
   # Define material properties for each of the phases 
   #  This should obviously be the same as in the input file
-  biot    = 1.0;
-  rho_w   = 1000;                                 # density of water
-  p_fac   = np.array([0, 0.1, 0.1, 0.3]);            # pore fluid factor 
-  rho     = data.rho[:,1,1];       # Density
-  v_vec   = np.array([0.4999, 0.27, 0.4999, 0.27]);  # Poissons Ratio
+  biot    = 1.0
+  rho_w   = 1000                                    # density of water
+  p_fac   = np.array([0, 0.1, 0.1, 0.3])            # pore fluid factor 
+  rho     = data.rho[:,1,1]                         # Density
+  v_vec   = np.array([0.4999, 0.27, 0.4999, 0.27])  # Poissons Ratio
 
-  phase_vec     = data.phase[:,1,1];
-  nz            = np.size(phase_vec);
-  rp            = np.empty_like(phase_vec);
-  v             = np.empty_like(phase_vec);
+  phase_vec     = data.phase[:,1,1]
+  nz            = np.size(phase_vec)
+  rp            = np.empty_like(phase_vec)
+  v             = np.empty_like(phase_vec)
   
-  Sv_anal       = np.empty_like(phase_vec);  # vertical stress
-  P_hydro       = np.empty_like(phase_vec);  # 
-  Pf_anal       = np.empty_like(phase_vec);  # pore fluid
+  Sv_anal       = np.empty_like(phase_vec)  # vertical stress
+  P_hydro       = np.empty_like(phase_vec)  # 
+  Pf_anal       = np.empty_like(phase_vec)  # pore fluid
 
   # Create arrays with material constants
   for i in range(nz-1,-1,-1):
-    phase     = int( phase_vec[i] );
-    v[i]      =   v_vec[int( phase_vec[i] )];
-    rp[i]     =   p_fac[int( phase_vec[i] )];
-    P_hydro[i]=  -rho_w*10*data.z[i]*1e3;    
+    phase     = int( phase_vec[i] )
+    v[i]      =   v_vec[int( phase_vec[i] )]
+    rp[i]     =   p_fac[int( phase_vec[i] )]
+    P_hydro[i]=  -rho_w*10*data.z[i]*1e3    
 
-  P_hydro[P_hydro<0] = 0;
+  P_hydro[P_hydro<0] = 0
 
   # Compute vertical stress 
-  Sv_anal[nz-1] = 0;
+  Sv_anal[nz-1] = 0
   for i in range(nz-2,-1,-1):
     rho_mean = (rho[i+1] + rho[i])/2.0;
     dz       = (data.z[i+1] - data.z[i])*1000;    # in m
@@ -177,13 +188,15 @@ def PlotData(data,plotName):
 
 # This tests whether elastic compressibility works, and creates plots if possible
 def test_a():
-# Tests are performed on 1 and 4 cores, using opt/deb
+# Tests are performed on 1 and 2 cores, using opt/deb
 
   
   #==============================================
   # Run the input script wth matlab-generated particles
   ranks = 1
-  launch = '../bin/opt/LaMEM -ParamFile ./t10_Compressibility/Compressible1D_withSaltandBasement.dat' # This must be a relative path with respect to runLaMEM_Tests.py
+  launch = ['rm -r Timestep*',
+            '../bin/opt/LaMEM -ParamFile ./t10_Compressibility/Compressible1D_withSaltandBasement.dat',
+            'mv Timestep* ./t10_Compressibility/Out1Core'] # This must be a relative path with respect to runLaMEM_Tests.py
   expected_file = 't10_Compressibility/test_10_Compressibility_opt-p1.expected'
 
   def comparefunc(unittest):
@@ -199,9 +212,9 @@ def test_a():
 
     #----------------------------  
     try: 
-      data = LoadData('Timestep_00000020_5.72749995e-02');    # Load the data using the VTK toolbox
-      data = AnalyticalSolution(data);                        # Compute analytical solution
-      PlotData(data,'./t10_Compressibility/Compressible1D_output.png');             # Create Plot
+      data = LoadData('./t10_Compressibility/Out1Core')      # Load the data using the VTK toolbox
+      data = AnalyticalSolution(data)                        # Compute analytical solution
+      PlotData(data,'./t10_Compressibility/Compressible1D_output.png')            # Create Plot
 
       print('Created output figure ./t10_Compressibility/Compressible1D_output.png comparing analytics vs. numerics')
     except:
@@ -217,9 +230,10 @@ def test_a():
 
 
 def test_b():
-  # Test visco-elasto-plastic localization case on 1 core, using optimized LaMEM
+  # Test visco-elasto-plastic localization case on 2 cores, using debug LaMEM
   ranks = 2
-  launch = '../bin/deb/LaMEM -ParamFile ./t10_Compressibility/Compressible1D_withSaltandBasement.dat' # This must be a relative path with respect to runLaMEM_Tests.py
+  launch = ['../bin/deb/LaMEM -ParamFile ./t10_Compressibility/Compressible1D_withSaltandBasement.dat',
+            'mv Timestep* ./t10_Compressibility/Out2Core 2>/dev/null'] # This must be a relative path with respect to runLaMEM_Tests.py
   expected_file = 't10_Compressibility/Compressibility_Direct_deb-p2.expected'
 
   def comparefunc(unittest):
@@ -235,9 +249,9 @@ def test_b():
 
     #----------------------------  
     try: 
-      data = LoadData('Timestep_00000020_5.72749995e-02');    # Load the data using the VTK toolbox
-      data = AnalyticalSolution(data);                        # Compute analytical solution
-      PlotData(data,'./t10_Compressibility/Compressible1D_2Cores_output.png');             # Create Plot
+      data = LoadData('./t10_Compressibility/Out2Core')      # Load the data using the VTK toolbox
+      data = AnalyticalSolution(data)                        # Compute analytical solution
+      PlotData(data,'./t10_Compressibility/Compressible1D_2Cores_output.png')             # Create Plot
     
       print('Created output figure ./t10_Compressibility/Compressible1D_2Cores_output.png comparing analytics vs. numerics')
     except:
