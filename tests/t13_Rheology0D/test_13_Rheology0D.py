@@ -16,6 +16,7 @@ def ViscoElastic():
   # Run the input script wth matlab-generated particles
   ranks = 1
   launch = ['rm -r Timestep*',
+            'rm -rf ./t13_Rheology0D/Out_VE_0D; mkdir ./t13_Rheology0D/Out_VE_0D',
             '../bin/opt/LaMEM -ParamFile ./t13_Rheology0D/Rheology_VE_0D.dat',
             'mv Timestep* ./t13_Rheology0D/Out_VE_0D'] # This must be a relative path with respect to runLaMEM_Tests.py
   expected_file = 't13_Rheology0D/Rheology_VE_0D-p1.expected'
@@ -59,7 +60,8 @@ def ViscoElastoPlastic():
   #==============================================
   # Run the input script wth matlab-generated particles
   ranks = 1
-  launch = ['../bin/opt/LaMEM -ParamFile ./t13_Rheology0D/Rheology_VEP_0D.dat',
+  launch = ['rm -rf ./t13_Rheology0D/Out_VEP_0D; mkdir ./t13_Rheology0D/Out_VEP_0D',
+            '../bin/opt/LaMEM -ParamFile ./t13_Rheology0D/Rheology_VEP_0D.dat',
              'mv Timestep* ./t13_Rheology0D/Out_VEP_0D'] # This must be a relative path with respect to runLaMEM_Tests.py
   expected_file = 't13_Rheology0D/Rheology_VEP_0D-p1.expected'
 
@@ -102,7 +104,8 @@ def ViscoElastoPlastic_DislocationCreep():
   #==============================================
   # Run the input script wth matlab-generated particles
   ranks = 1
-  launch = ['../bin/opt/LaMEM -ParamFile ./t13_Rheology0D/Rheology_DislocationCreep_VEP_0D.dat',
+  launch = ['rm -rf ./t13_Rheology0D/Out_DisCreep_VEP_0D; mkdir ./t13_Rheology0D/Out_DisCreep_VEP_0D',
+            '../bin/opt/LaMEM -ParamFile ./t13_Rheology0D/Rheology_DislocationCreep_VEP_0D.dat',
             'mv Timestep* ./t13_Rheology0D/Out_DisCreep_VEP_0D'] # This must be a relative path with respect to runLaMEM_Tests.py
   expected_file = 't13_Rheology0D/Rheology_DislocationCreep_VEP_0D-p1.expected'
 
@@ -145,7 +148,8 @@ def ViscoElastic_DislocationCreep():
   #==============================================
   # Run the input script wth matlab-generated particles
   ranks = 1
-  launch = ['../bin/opt/LaMEM -ParamFile ./t13_Rheology0D/Rheology_DislocationCreep_VE_0D.dat',
+  launch = ['rm -rf ./t13_Rheology0D/Out_DisCreep_VE_0D; mkdir ./t13_Rheology0D/Out_DisCreep_VE_0D',
+            '../bin/opt/LaMEM -ParamFile ./t13_Rheology0D/Rheology_DislocationCreep_VE_0D.dat',
             'mv Timestep* ./t13_Rheology0D/Out_DisCreep_VE_0D'] # This must be a relative path with respect to runLaMEM_Tests.py
   expected_file = 't13_Rheology0D/Rheology_DislocationCreep_VE_0D-p1.expected'
 
@@ -193,7 +197,8 @@ def LinearViscous():
   ranks = 1
 
   # This runs several executables for different strain rates & renames the directories (such that we can read them later with Python & create a plot)
-  launch = ['../bin/opt/LaMEM -ParamFile ./t13_Rheology0D/Rheology_linearViscous_0D.dat -exx_strain_rates  -1e-13','mv Timestep_00000001_2.00000000e-03 ./t13_Rheology0D/Out_LV/Strainrate_0_13', 
+  launch = ['rm -rf ./t13_Rheology0D/Out_LV; mkdir ./t13_Rheology0D/Out_LV',
+            '../bin/opt/LaMEM -ParamFile ./t13_Rheology0D/Rheology_linearViscous_0D.dat -exx_strain_rates  -1e-13','mv Timestep_00000001_2.00000000e-03 ./t13_Rheology0D/Out_LV/Strainrate_0_13', 
             '../bin/opt/LaMEM -ParamFile ./t13_Rheology0D/Rheology_linearViscous_0D.dat -exx_strain_rates  -1e-14','mv Timestep_00000001_2.00000000e-03 ./t13_Rheology0D/Out_LV/Strainrate_1_14', 
             '../bin/opt/LaMEM -ParamFile ./t13_Rheology0D/Rheology_linearViscous_0D.dat -exx_strain_rates  -1e-15','mv Timestep_00000001_2.00000000e-03 ./t13_Rheology0D/Out_LV/Strainrate_2_15', 
             '../bin/opt/LaMEM -ParamFile ./t13_Rheology0D/Rheology_linearViscous_0D.dat -exx_strain_rates  -1e-16','mv Timestep_00000001_2.00000000e-03 ./t13_Rheology0D/Out_LV/Strainrate_3_16', 
@@ -247,7 +252,8 @@ def DislocationCreeplaw():
   ranks = 1
 
   # This runs several executables for different strain rates & renames the directories (such that we can read them later with Python & create a plot)
-  launch = ['../bin/opt/LaMEM -ParamFile ./t13_Rheology0D/Rheology_PowerlawCreep_DryOlivine_0D.dat -exx_strain_rates  -1e-13','mv Timestep_00000001_2.00000000e-03 ./t13_Rheology0D/Out_DisCr/Strainrate_0_13', 
+  launch = ['rm -rf ./t13_Rheology0D/Out_DisCr; mkdir ./t13_Rheology0D/Out_DisCr',
+            '../bin/opt/LaMEM -ParamFile ./t13_Rheology0D/Rheology_PowerlawCreep_DryOlivine_0D.dat -exx_strain_rates  -1e-13','mv Timestep_00000001_2.00000000e-03 ./t13_Rheology0D/Out_DisCr/Strainrate_0_13', 
             '../bin/opt/LaMEM -ParamFile ./t13_Rheology0D/Rheology_PowerlawCreep_DryOlivine_0D.dat -exx_strain_rates  -1e-14','mv Timestep_00000001_2.00000000e-03 ./t13_Rheology0D/Out_DisCr/Strainrate_1_14', 
             '../bin/opt/LaMEM -ParamFile ./t13_Rheology0D/Rheology_PowerlawCreep_DryOlivine_0D.dat -exx_strain_rates  -1e-15','mv Timestep_00000001_2.00000000e-03 ./t13_Rheology0D/Out_DisCr/Strainrate_2_15', 
             '../bin/opt/LaMEM -ParamFile ./t13_Rheology0D/Rheology_PowerlawCreep_DryOlivine_0D.dat -exx_strain_rates  -1e-16','mv Timestep_00000001_2.00000000e-03 ./t13_Rheology0D/Out_DisCr/Strainrate_3_16', 

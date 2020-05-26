@@ -110,21 +110,21 @@ def AnalyticalSolution(data):
   # Compute vertical stress 
   Sv_anal[nz-1] = 0
   for i in range(nz-2,-1,-1):
-    rho_mean = (rho[i+1] + rho[i])/2.0;
-    dz       = (data.z[i+1] - data.z[i])*1000;    # in m
-    Sv_anal[i] = Sv_anal[i+1] + dz*10*rho_mean;
+    rho_mean = (rho[i+1] + rho[i])/2.0
+    dz       = (data.z[i+1] - data.z[i])*1000    # in m
+    Sv_anal[i] = Sv_anal[i+1] + dz*10*rho_mean
 
-  Pf_anal = P_hydro + rp*(Sv_anal-P_hydro); 
+  Pf_anal = P_hydro + rp*(Sv_anal-P_hydro) 
   
-  Sh_anal = (v/(1-v))*(Sv_anal-biot*Pf_anal) + biot*Pf_anal;
+  Sh_anal = (v/(1-v))*(Sv_anal-biot*Pf_anal) + biot*Pf_anal
 
   # store data
-  data.Sv_anal    =   Sv_anal/1e6;
-  data.Pf_anal    =   Pf_anal/1e6;
-  data.P_hydro    =   P_hydro/1e6;
-  data.Sh_anal    =   Sh_anal/1e6;
+  data.Sv_anal    =   Sv_anal/1e6
+  data.Pf_anal    =   Pf_anal/1e6
+  data.P_hydro    =   P_hydro/1e6
+  data.Sh_anal    =   Sh_anal/1e6
   
-  return(data);
+  return(data)
 #----------------------------------------------------
 
 #----------------------------------------------------
@@ -138,49 +138,49 @@ def PlotData(data,plotName):
     print('matplotlib toolbox not installed; cannot plot data')
 
   # Time and date stamp on title
-  title_str = datetime.datetime.now().strftime("Test performed %H:%M on %B %d, %Y");
+  title_str = datetime.datetime.now().strftime("Test performed %H:%M on %B %d, %Y")
 
   fig1 = plt.figure()
 
 
   ax1 = fig1.add_subplot(121)
-  ax1.plot(data.Sv_anal*10, data.z,'r-');   # Vertical stress analytically
-  ax1.plot(data.Pf_anal*10, data.z,'b-');   # Pore fluid pressure analytically
-  ax1.plot(data.P_hydro*10, data.z,'b--');  # Hydrostatic Pore fluid pressure
-  ax1.plot(data.Sh_anal*10, data.z,'g-');   # Horizontal stress analytically
+  ax1.plot(data.Sv_anal*10, data.z,'r-')   # Vertical stress analytically
+  ax1.plot(data.Pf_anal*10, data.z,'b-')   # Pore fluid pressure analytically
+  ax1.plot(data.P_hydro*10, data.z,'b--')  # Hydrostatic Pore fluid pressure
+  ax1.plot(data.Sh_anal*10, data.z,'g-')   # Horizontal stress analytically
   
-  ax1.plot(data.Pf[:,1,1]*10, data.z,'b.');    # pore pressure LaMEM
-  ax1.plot(data.Szz[:,1,1]*10, data.z,'r+');   # Vertical stress LaMEM
-  ax1.plot(data.Sxx[:,1,1]*10, data.z,'g+');   # Horizonal stress LaMEM
+  ax1.plot(data.Pf[:,1,1]*10, data.z,'b.')    # pore pressure LaMEM
+  ax1.plot(data.Szz[:,1,1]*10, data.z,'r+')   # Vertical stress LaMEM
+  ax1.plot(data.Sxx[:,1,1]*10, data.z,'g+')   # Horizonal stress LaMEM
 
   ax1.legend(['$S_v$ analytical','$P_{fluid}$ analytical','$P_{hydrostatic}$','$S_h$ analytical',
               '$S_v$ LaMEM','$P_{fluid}$ LaMEM','$S_h$ LaMEM'            ],fontsize='x-small')  
-  ax1.set_ylabel('Depth [km]');
-  ax1.set_xlabel('Pressure & Stress [bar]');
+  ax1.set_ylabel('Depth [km]')
+  ax1.set_xlabel('Pressure & Stress [bar]')
   ax1.axis([0, 1250, -5, 1.0])
 
-  title_str = 'Elastic compressible setup : LaMEM vs. analytics \n ' + title_str;
+  title_str = 'Elastic compressible setup : LaMEM vs. analytics \n ' + title_str
   plt.title(title_str,fontsize='xx-small')
 
   ax2 = fig1.add_subplot(122)
-  ax2.plot(data.T2nd[:,1,1], data.z,'k+-');     # 2nd invariant of deviatoric stress tensor, LaMEM
+  ax2.plot(data.T2nd[:,1,1], data.z,'k+-')     # 2nd invariant of deviatoric stress tensor, LaMEM
   ax2.axis([0, 20, -5, 1.0])
 
-  ax2.set_xlabel('T2nd [MPa]');
+  ax2.set_xlabel('T2nd [MPa]')
 
   ax3 = ax2.twiny() 
 
   #ax3 = fig1.add_subplot(133)
-  ax3.plot(data.rho[:,1,1], data.z,'r-+');     # density (should be depth-depend)
+  ax3.plot(data.rho[:,1,1], data.z,'r-+')     # density (should be depth-depend)
   ax3.axis([0, 2500, -5, 1.0])
 
-  ax3.set_xlabel('Density [kg/m3]',color='r');
+  ax3.set_xlabel('Density [kg/m3]',color='r')
   ax3.tick_params(axis='x', labelcolor='r')
 
 
   fig1.savefig(plotName,dpi=360)    # save figure to disk
 
-  return();
+  return()
 
 #----------------------------------------------------
 
@@ -195,6 +195,7 @@ def test_a():
   # Run the input script wth matlab-generated particles
   ranks = 1
   launch = ['rm -r Timestep*',
+            'rm -rf ./t10_Compressibility/Out1Core; mkdir ./t10_Compressibility/Out1Core',
             '../bin/opt/LaMEM -ParamFile ./t10_Compressibility/Compressible1D_withSaltandBasement.dat',
             'mv Timestep* ./t10_Compressibility/Out1Core'] # This must be a relative path with respect to runLaMEM_Tests.py
   expected_file = 't10_Compressibility/test_10_Compressibility_opt-p1.expected'
@@ -232,7 +233,9 @@ def test_a():
 def test_b():
   # Test visco-elasto-plastic localization case on 2 cores, using debug LaMEM
   ranks = 2
-  launch = ['../bin/deb/LaMEM -ParamFile ./t10_Compressibility/Compressible1D_withSaltandBasement.dat',
+  launch = ['rm -r Timestep* 2>/dev/null',
+            'rm -rf ./t10_Compressibility/Out2Core; mkdir ./t10_Compressibility/Out2Core',
+            '../bin/deb/LaMEM -ParamFile ./t10_Compressibility/Compressible1D_withSaltandBasement.dat',
             'mv Timestep* ./t10_Compressibility/Out2Core 2>/dev/null'] # This must be a relative path with respect to runLaMEM_Tests.py
   expected_file = 't10_Compressibility/Compressibility_Direct_deb-p2.expected'
 

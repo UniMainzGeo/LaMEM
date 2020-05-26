@@ -1,4 +1,6 @@
 ## test 14 1D Strength Envelope
+import matplotlib
+matplotlib.use('Agg')
 
 import os
 import pyTestHarness.unittest as pth
@@ -258,8 +260,9 @@ def makePlot(Runs):
 def test_a():
   ranks         = 1
   launch        = ['rm -r Timestep*',
+                   'rm -rf ./t14_1DStrengthEnvelope/OutVP; mkdir ./t14_1DStrengthEnvelope/OutVP',
                    '../bin/opt/LaMEM -ParamFile ./t14_1DStrengthEnvelope/1D_VP.dat',
-                   'mv Timestep* t14_1DStrengthEnvelope/OutVP/']
+                   'mv Timestep* ./t14_1DStrengthEnvelope/OutVP/']
   expected_file = 't14_1DStrengthEnvelope/t14_1D_VP_Direct_opt-p1.expected'
 
   def comparefunc(unittest):
@@ -283,7 +286,8 @@ def test_a():
 # 2nd test runs visco-elasto-plastic setup with dt = 5 ka
 def test_b():
   ranks         = 1
-  launch        = ['../bin/opt/LaMEM -ParamFile ./t14_1DStrengthEnvelope/1D_VEP5.dat',
+  launch        = ['rm -rf ./t14_1DStrengthEnvelope/OutVEP5; mkdir ./t14_1DStrengthEnvelope/OutVEP5',
+                   '../bin/opt/LaMEM -ParamFile ./t14_1DStrengthEnvelope/1D_VEP5.dat',
                    'mv Timestep* t14_1DStrengthEnvelope/OutVEP5/']
   expected_file = 't14_1DStrengthEnvelope/t14_1D_VEP5_Direct_opt-p2.expected'
 
@@ -308,7 +312,8 @@ def test_b():
 # 3rd test runs visco-elasto-plastic setup with dt = 10 ka
 def test_c():
   ranks         = 1
-  launch        = ['../bin/opt/LaMEM -ParamFile ./t14_1DStrengthEnvelope/1D_VEP10.dat',
+  launch        = ['rm -rf ./t14_1DStrengthEnvelope/OutVEP10; mkdir ./t14_1DStrengthEnvelope/OutVEP10',
+                   '../bin/opt/LaMEM -ParamFile ./t14_1DStrengthEnvelope/1D_VEP10.dat',
                    'mv Timestep* t14_1DStrengthEnvelope/OutVEP10/']
   expected_file = 't14_1DStrengthEnvelope/t14_1D_VEP10_Direct_opt-p3.expected'
 
@@ -330,10 +335,11 @@ def test_c():
  
   return(ex1)
 
-# 4th test runs visco-plastic setup with dt = 10 ka
+# 4th test runs visco-plastic setup with dt = 50 ka
 def test_d():
   ranks         = 2
-  launch        = ['../bin/opt/LaMEM -ParamFile ./t14_1DStrengthEnvelope/1D_VEP50.dat',
+  launch        = ['rm -rf ./t14_1DStrengthEnvelope/OutVEP50; mkdir ./t14_1DStrengthEnvelope/OutVEP50',
+                   '../bin/opt/LaMEM -ParamFile ./t14_1DStrengthEnvelope/1D_VEP50.dat',
                    'mv Timestep* t14_1DStrengthEnvelope/OutVEP50/ 2>/dev/null']
   expected_file = 't14_1DStrengthEnvelope/t14_1D_VEP50_Direct_opt-p4.expected'
 
