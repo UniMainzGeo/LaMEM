@@ -1,0 +1,1063 @@
+-------------------------------------------------------------------------- 
+                   Lithosphere and Mantle Evolution Model                   
+     Compiled: Date: May 25 2020 - Time: 20:04:20 	    
+-------------------------------------------------------------------------- 
+        STAGGERED-GRID FINITE DIFFERENCE CANONICAL IMPLEMENTATION           
+-------------------------------------------------------------------------- 
+Parsing input file : ./t15_RTI/t15_RTI.dat 
+   Adding PETSc option: -FreeSurf_AmplCos 0.001
+   Adding PETSc option: -FreeSurf_AmplNoise 0.0
+   Adding PETSc option: -snes_type ksponly
+   Adding PETSc option: -js_ksp_type gmres
+   Adding PETSc option: -js_ksp_max_it 50
+   Adding PETSc option: -js_ksp_monitor
+   Adding PETSc option: -js_ksp_rtol 1e-10
+   Adding PETSc option: -js_ksp_atol 1e-15
+   Adding PETSc option: -snes_max_it 20
+   Adding PETSc option: -snes_atol 1e-12
+   Adding PETSc option: -snes_rtol 1e-20
+   Adding PETSc option: -snes_stol 1e-20
+   Adding PETSc option: -objects_dump
+Finished parsing input file : ./t15_RTI/t15_RTI.dat 
+--------------------------------------------------------------------------
+Time stepping parameters:
+   Simulation end time          : 1000. [ ] 
+   Maximum number of steps      : 1 
+   Time step                    : 1. [ ] 
+   Minimum time step            : 1e-05 [ ] 
+   Maximum time step            : 100. [ ] 
+   Time step increase factor    : 0.1 
+   CFL criterion                : 0.5 
+   CFLMAX (fixed time steps)    : 0.5 
+   Output time step             : 200. [ ] 
+   Output every [n] steps       : 1 
+   Output [n] initial steps     : 1 
+--------------------------------------------------------------------------
+Material parameters: 
+   Phase ID : 1
+   (diff)   : eta = 1. [ ]  Bd = 0.5 [ ]  
+
+   Phase ID : 0
+   (dens)   : rho = 1. [ ]  
+   (diff)   : eta = 1. [ ]  Bd = 0.5 [ ]  
+
+--------------------------------------------------------------------------
+Grid parameters:
+   Total number of cpu                  : 1 
+   Processor grid  [nx, ny, nz]         : [1, 1, 1]
+   Fine grid cells [nx, ny, nz]         : [64, 2, 64]
+   Number of cells                      :  8192
+   Number of faces                      :  28928
+   Maximum cell aspect ratio            :  4.00000
+   Lower coordinate bounds [bx, by, bz] : [-0.125, -0.01, 0.]
+   Upper coordinate bounds [ex, ey, ez] : [0.125, 0.01, 1.]
+--------------------------------------------------------------------------
+Free surface parameters: 
+   Sticky air phase ID       : 0 
+   Initial surface level     : 0.5 [ ] 
+   Erosion model             : none
+   Sedimentation model       : none
+   Correct marker phases     @ 
+--------------------------------------------------------------------------
+Boundary condition parameters: 
+   No-slip boundary mask [lt rt ft bk bm tp]  : 0 0 0 0 1 1 
+--------------------------------------------------------------------------
+Solution parameters & controls:
+   Gravity [gx, gy, gz]                    : [0., 0., -1.] [ ] 
+   Surface stabilization (FSSA)            :  1. 
+   Use lithostatic pressure for creep      @ 
+   Minimum viscosity                       : 0.001 [ ] 
+   Maximum viscosity                       : 1e+06 [ ] 
+   Maximum melt fraction (viscosity)       : 0.15    
+   Rheology iteration number               : 25  
+   Rheology iteration tolerance            : 1e-06    
+   Ground water level type                 : none 
+--------------------------------------------------------------------------
+Advection parameters:
+   Advection scheme              : Euler 1-st order (basic implementation)
+   Marker setup scheme           : geometric primitives
+   Velocity interpolation scheme : STAG (linear)
+   Marker control type           : no marker control
+   Markers per cell [nx, ny, nz] : [5, 5, 5] 
+   Marker distribution type      : random noise
+   Background phase ID           : 1 
+--------------------------------------------------------------------------
+Reading geometric primitives ... done (0.01594 sec)
+--------------------------------------------------------------------------
+Output parameters:
+   Output file name                        : RTI_test 
+   Write .pvd file                         : yes 
+   Phase                                   @ 
+   Density                                 @ 
+   Total effective viscosity               @ 
+   Creep effective viscosity               @ 
+   Velocity                                @ 
+   Pressure                                @ 
+--------------------------------------------------------------------------
+Surface output parameters:
+   Write .pvd file : yes 
+   Velocity        @ 
+   Topography      @ 
+   Amplitude       @ 
+--------------------------------------------------------------------------
+Preconditioner parameters: 
+   Matrix type                   : monolithic
+   Preconditioner type           : user-defined
+--------------------------------------------------------------------------
+Solver parameters specified: 
+   Outermost Krylov solver       : gmres 
+   Solver type                   : serial direct/lu 
+   Solver package                : petsc 
+--------------------------------------------------------------------------
+Saving output ... done (0.00876999 sec)
+--------------------------------------------------------------------------
+================================= STEP 1 =================================
+--------------------------------------------------------------------------
+Current time        : 0.00000 [ ] 
+Tentative time step : 1.00000 [ ] 
+--------------------------------------------------------------------------
+  0 SNES Function norm 6.322639131590e+01 
+  0 PICARD ||F||/||F0||=1.000000e+00 
+    Residual norms for js_ solve.
+    0 KSP Residual norm 7.005455298976e+00 
+    1 KSP Residual norm 3.158754852243e+00 
+    2 KSP Residual norm 1.976590888352e-01 
+    3 KSP Residual norm 1.188922162296e-05 
+    4 KSP Residual norm 1.678275228229e-08 
+    5 KSP Residual norm 2.808795464209e-09 
+    6 KSP Residual norm 8.714050033502e-12 
+  Linear js_ solve converged due to CONVERGED_RTOL iterations 6
+  1 SNES Function norm 1.283847002516e-09 
+--------------------------------------------------------------------------
+SNES Convergence Reason : maximum iterations reached
+Number of iterations    : 1
+SNES solution time      : 1.59969 (sec)
+--------------------------------------------------------------------------
+Residual summary: 
+   Continuity: 
+      |Div|_inf = 1.577909096130e-12 
+      |Div|_2   = 4.020842172993e-11 
+   Momentum: 
+      |mRes|_2  = 1.283217210254e-09 
+--------------------------------------------------------------------------
+Actual time step : 1.10000 [ ] 
+--------------------------------------------------------------------------
+Saving output ... done (0.00736809 sec)
+--------------------------------------------------------------------------
+=========================== SOLUTION IS DONE! ============================
+--------------------------------------------------------------------------
+Total solution time : 3.51132 (sec) 
+--------------------------------------------------------------------------
+-------------------------------------------------------------------------- 
+                   Lithosphere and Mantle Evolution Model                   
+     Compiled: Date: May 25 2020 - Time: 20:04:20 	    
+-------------------------------------------------------------------------- 
+        STAGGERED-GRID FINITE DIFFERENCE CANONICAL IMPLEMENTATION           
+-------------------------------------------------------------------------- 
+Parsing input file : ./t15_RTI/t15_RTI.dat 
+   Adding PETSc option: -FreeSurf_AmplCos 0.001
+   Adding PETSc option: -FreeSurf_AmplNoise 0.0
+   Adding PETSc option: -snes_type ksponly
+   Adding PETSc option: -js_ksp_type gmres
+   Adding PETSc option: -js_ksp_max_it 50
+   Adding PETSc option: -js_ksp_monitor
+   Adding PETSc option: -js_ksp_rtol 1e-10
+   Adding PETSc option: -js_ksp_atol 1e-15
+   Adding PETSc option: -snes_max_it 20
+   Adding PETSc option: -snes_atol 1e-12
+   Adding PETSc option: -snes_rtol 1e-20
+   Adding PETSc option: -snes_stol 1e-20
+   Adding PETSc option: -objects_dump
+Finished parsing input file : ./t15_RTI/t15_RTI.dat 
+--------------------------------------------------------------------------
+Time stepping parameters:
+   Simulation end time          : 1000. [ ] 
+   Maximum number of steps      : 1 
+   Time step                    : 1. [ ] 
+   Minimum time step            : 1e-05 [ ] 
+   Maximum time step            : 100. [ ] 
+   Time step increase factor    : 0.1 
+   CFL criterion                : 0.5 
+   CFLMAX (fixed time steps)    : 0.5 
+   Output time step             : 200. [ ] 
+   Output every [n] steps       : 1 
+   Output [n] initial steps     : 1 
+--------------------------------------------------------------------------
+Material parameters: 
+   Phase ID : 1
+   (diff)   : eta = 1. [ ]  Bd = 0.5 [ ]  
+
+   Phase ID : 0
+   (dens)   : rho = 1. [ ]  
+   (diff)   : eta = 1. [ ]  Bd = 0.5 [ ]  
+
+--------------------------------------------------------------------------
+Grid parameters:
+   Total number of cpu                  : 1 
+   Processor grid  [nx, ny, nz]         : [1, 1, 1]
+   Fine grid cells [nx, ny, nz]         : [64, 2, 64]
+   Number of cells                      :  8192
+   Number of faces                      :  28928
+   Maximum cell aspect ratio            :  2.00000
+   Lower coordinate bounds [bx, by, bz] : [-0.25, -0.01, 0.]
+   Upper coordinate bounds [ex, ey, ez] : [0.25, 0.01, 1.]
+--------------------------------------------------------------------------
+Free surface parameters: 
+   Sticky air phase ID       : 0 
+   Initial surface level     : 0.5 [ ] 
+   Erosion model             : none
+   Sedimentation model       : none
+   Correct marker phases     @ 
+--------------------------------------------------------------------------
+Boundary condition parameters: 
+   No-slip boundary mask [lt rt ft bk bm tp]  : 0 0 0 0 1 1 
+--------------------------------------------------------------------------
+Solution parameters & controls:
+   Gravity [gx, gy, gz]                    : [0., 0., -1.] [ ] 
+   Surface stabilization (FSSA)            :  1. 
+   Use lithostatic pressure for creep      @ 
+   Minimum viscosity                       : 0.001 [ ] 
+   Maximum viscosity                       : 1e+06 [ ] 
+   Maximum melt fraction (viscosity)       : 0.15    
+   Rheology iteration number               : 25  
+   Rheology iteration tolerance            : 1e-06    
+   Ground water level type                 : none 
+--------------------------------------------------------------------------
+Advection parameters:
+   Advection scheme              : Euler 1-st order (basic implementation)
+   Marker setup scheme           : geometric primitives
+   Velocity interpolation scheme : STAG (linear)
+   Marker control type           : no marker control
+   Markers per cell [nx, ny, nz] : [5, 5, 5] 
+   Marker distribution type      : random noise
+   Background phase ID           : 1 
+--------------------------------------------------------------------------
+Reading geometric primitives ... done (0.0113609 sec)
+--------------------------------------------------------------------------
+Output parameters:
+   Output file name                        : RTI_test 
+   Write .pvd file                         : yes 
+   Phase                                   @ 
+   Density                                 @ 
+   Total effective viscosity               @ 
+   Creep effective viscosity               @ 
+   Velocity                                @ 
+   Pressure                                @ 
+--------------------------------------------------------------------------
+Surface output parameters:
+   Write .pvd file : yes 
+   Velocity        @ 
+   Topography      @ 
+   Amplitude       @ 
+--------------------------------------------------------------------------
+Preconditioner parameters: 
+   Matrix type                   : monolithic
+   Preconditioner type           : user-defined
+--------------------------------------------------------------------------
+Solver parameters specified: 
+   Outermost Krylov solver       : gmres 
+   Solver type                   : serial direct/lu 
+   Solver package                : petsc 
+--------------------------------------------------------------------------
+Saving output ... done (0.00437212 sec)
+--------------------------------------------------------------------------
+================================= STEP 1 =================================
+--------------------------------------------------------------------------
+Current time        : 0.00000 [ ] 
+Tentative time step : 1.00000 [ ] 
+--------------------------------------------------------------------------
+  0 SNES Function norm 6.322639131590e+01 
+  0 PICARD ||F||/||F0||=1.000000e+00 
+    Residual norms for js_ solve.
+    0 KSP Residual norm 7.005456308806e+00 
+    1 KSP Residual norm 3.158754944800e+00 
+    2 KSP Residual norm 1.976630899557e-01 
+    3 KSP Residual norm 1.901091423658e-05 
+    4 KSP Residual norm 3.144768324117e-06 
+    5 KSP Residual norm 2.002293123544e-08 
+    6 KSP Residual norm 8.733092170907e-11 
+  Linear js_ solve converged due to CONVERGED_RTOL iterations 6
+  1 SNES Function norm 5.423503138445e-10 
+--------------------------------------------------------------------------
+SNES Convergence Reason : maximum iterations reached
+Number of iterations    : 1
+SNES solution time      : 1.11709 (sec)
+--------------------------------------------------------------------------
+Residual summary: 
+   Continuity: 
+      |Div|_inf = 9.215364546115e-12 
+      |Div|_2   = 1.283874264567e-10 
+   Momentum: 
+      |mRes|_2  = 5.269350355167e-10 
+--------------------------------------------------------------------------
+Actual time step : 1.10000 [ ] 
+--------------------------------------------------------------------------
+Saving output ... done (0.00455999 sec)
+--------------------------------------------------------------------------
+=========================== SOLUTION IS DONE! ============================
+--------------------------------------------------------------------------
+Total solution time : 2.39602 (sec) 
+--------------------------------------------------------------------------
+-------------------------------------------------------------------------- 
+                   Lithosphere and Mantle Evolution Model                   
+     Compiled: Date: May 25 2020 - Time: 20:04:20 	    
+-------------------------------------------------------------------------- 
+        STAGGERED-GRID FINITE DIFFERENCE CANONICAL IMPLEMENTATION           
+-------------------------------------------------------------------------- 
+Parsing input file : ./t15_RTI/t15_RTI.dat 
+   Adding PETSc option: -FreeSurf_AmplCos 0.001
+   Adding PETSc option: -FreeSurf_AmplNoise 0.0
+   Adding PETSc option: -snes_type ksponly
+   Adding PETSc option: -js_ksp_type gmres
+   Adding PETSc option: -js_ksp_max_it 50
+   Adding PETSc option: -js_ksp_monitor
+   Adding PETSc option: -js_ksp_rtol 1e-10
+   Adding PETSc option: -js_ksp_atol 1e-15
+   Adding PETSc option: -snes_max_it 20
+   Adding PETSc option: -snes_atol 1e-12
+   Adding PETSc option: -snes_rtol 1e-20
+   Adding PETSc option: -snes_stol 1e-20
+   Adding PETSc option: -objects_dump
+Finished parsing input file : ./t15_RTI/t15_RTI.dat 
+--------------------------------------------------------------------------
+Time stepping parameters:
+   Simulation end time          : 1000. [ ] 
+   Maximum number of steps      : 1 
+   Time step                    : 1. [ ] 
+   Minimum time step            : 1e-05 [ ] 
+   Maximum time step            : 100. [ ] 
+   Time step increase factor    : 0.1 
+   CFL criterion                : 0.5 
+   CFLMAX (fixed time steps)    : 0.5 
+   Output time step             : 200. [ ] 
+   Output every [n] steps       : 1 
+   Output [n] initial steps     : 1 
+--------------------------------------------------------------------------
+Material parameters: 
+   Phase ID : 1
+   (diff)   : eta = 1. [ ]  Bd = 0.5 [ ]  
+
+   Phase ID : 0
+   (dens)   : rho = 1. [ ]  
+   (diff)   : eta = 1. [ ]  Bd = 0.5 [ ]  
+
+--------------------------------------------------------------------------
+Grid parameters:
+   Total number of cpu                  : 1 
+   Processor grid  [nx, ny, nz]         : [1, 1, 1]
+   Fine grid cells [nx, ny, nz]         : [64, 2, 64]
+   Number of cells                      :  8192
+   Number of faces                      :  28928
+   Maximum cell aspect ratio            :  1.56250
+   Lower coordinate bounds [bx, by, bz] : [-0.5, -0.01, 0.]
+   Upper coordinate bounds [ex, ey, ez] : [0.5, 0.01, 1.]
+--------------------------------------------------------------------------
+Free surface parameters: 
+   Sticky air phase ID       : 0 
+   Initial surface level     : 0.5 [ ] 
+   Erosion model             : none
+   Sedimentation model       : none
+   Correct marker phases     @ 
+--------------------------------------------------------------------------
+Boundary condition parameters: 
+   No-slip boundary mask [lt rt ft bk bm tp]  : 0 0 0 0 1 1 
+--------------------------------------------------------------------------
+Solution parameters & controls:
+   Gravity [gx, gy, gz]                    : [0., 0., -1.] [ ] 
+   Surface stabilization (FSSA)            :  1. 
+   Use lithostatic pressure for creep      @ 
+   Minimum viscosity                       : 0.001 [ ] 
+   Maximum viscosity                       : 1e+06 [ ] 
+   Maximum melt fraction (viscosity)       : 0.15    
+   Rheology iteration number               : 25  
+   Rheology iteration tolerance            : 1e-06    
+   Ground water level type                 : none 
+--------------------------------------------------------------------------
+Advection parameters:
+   Advection scheme              : Euler 1-st order (basic implementation)
+   Marker setup scheme           : geometric primitives
+   Velocity interpolation scheme : STAG (linear)
+   Marker control type           : no marker control
+   Markers per cell [nx, ny, nz] : [5, 5, 5] 
+   Marker distribution type      : random noise
+   Background phase ID           : 1 
+--------------------------------------------------------------------------
+Reading geometric primitives ... done (0.0103371 sec)
+--------------------------------------------------------------------------
+Output parameters:
+   Output file name                        : RTI_test 
+   Write .pvd file                         : yes 
+   Phase                                   @ 
+   Density                                 @ 
+   Total effective viscosity               @ 
+   Creep effective viscosity               @ 
+   Velocity                                @ 
+   Pressure                                @ 
+--------------------------------------------------------------------------
+Surface output parameters:
+   Write .pvd file : yes 
+   Velocity        @ 
+   Topography      @ 
+   Amplitude       @ 
+--------------------------------------------------------------------------
+Preconditioner parameters: 
+   Matrix type                   : monolithic
+   Preconditioner type           : user-defined
+--------------------------------------------------------------------------
+Solver parameters specified: 
+   Outermost Krylov solver       : gmres 
+   Solver type                   : serial direct/lu 
+   Solver package                : petsc 
+--------------------------------------------------------------------------
+Saving output ... done (0.00510883 sec)
+--------------------------------------------------------------------------
+================================= STEP 1 =================================
+--------------------------------------------------------------------------
+Current time        : 0.00000 [ ] 
+Tentative time step : 1.00000 [ ] 
+--------------------------------------------------------------------------
+  0 SNES Function norm 6.322639131590e+01 
+  0 PICARD ||F||/||F0||=1.000000e+00 
+    Residual norms for js_ solve.
+    0 KSP Residual norm 7.005457756465e+00 
+    1 KSP Residual norm 3.158755512481e+00 
+    2 KSP Residual norm 1.976662818577e-01 
+    3 KSP Residual norm 1.749326217955e-04 
+    4 KSP Residual norm 7.154352597862e-06 
+    5 KSP Residual norm 3.453051128772e-07 
+    6 KSP Residual norm 2.189872843563e-08 
+    7 KSP Residual norm 1.772835338514e-10 
+  Linear js_ solve converged due to CONVERGED_RTOL iterations 7
+  1 SNES Function norm 8.269351473024e-10 
+--------------------------------------------------------------------------
+SNES Convergence Reason : maximum iterations reached
+Number of iterations    : 1
+SNES solution time      : 1.22739 (sec)
+--------------------------------------------------------------------------
+Residual summary: 
+   Continuity: 
+      |Div|_inf = 1.047404942489e-11 
+      |Div|_2   = 2.633117373345e-10 
+   Momentum: 
+      |mRes|_2  = 7.838932751503e-10 
+--------------------------------------------------------------------------
+Actual time step : 1.10000 [ ] 
+--------------------------------------------------------------------------
+Saving output ... done (0.00532794 sec)
+--------------------------------------------------------------------------
+=========================== SOLUTION IS DONE! ============================
+--------------------------------------------------------------------------
+Total solution time : 2.6575 (sec) 
+--------------------------------------------------------------------------
+-------------------------------------------------------------------------- 
+                   Lithosphere and Mantle Evolution Model                   
+     Compiled: Date: May 25 2020 - Time: 20:04:20 	    
+-------------------------------------------------------------------------- 
+        STAGGERED-GRID FINITE DIFFERENCE CANONICAL IMPLEMENTATION           
+-------------------------------------------------------------------------- 
+Parsing input file : ./t15_RTI/t15_RTI.dat 
+   Adding PETSc option: -FreeSurf_AmplCos 0.001
+   Adding PETSc option: -FreeSurf_AmplNoise 0.0
+   Adding PETSc option: -snes_type ksponly
+   Adding PETSc option: -js_ksp_type gmres
+   Adding PETSc option: -js_ksp_max_it 50
+   Adding PETSc option: -js_ksp_monitor
+   Adding PETSc option: -js_ksp_rtol 1e-10
+   Adding PETSc option: -js_ksp_atol 1e-15
+   Adding PETSc option: -snes_max_it 20
+   Adding PETSc option: -snes_atol 1e-12
+   Adding PETSc option: -snes_rtol 1e-20
+   Adding PETSc option: -snes_stol 1e-20
+   Adding PETSc option: -objects_dump
+Finished parsing input file : ./t15_RTI/t15_RTI.dat 
+--------------------------------------------------------------------------
+Time stepping parameters:
+   Simulation end time          : 1000. [ ] 
+   Maximum number of steps      : 1 
+   Time step                    : 1. [ ] 
+   Minimum time step            : 1e-05 [ ] 
+   Maximum time step            : 100. [ ] 
+   Time step increase factor    : 0.1 
+   CFL criterion                : 0.5 
+   CFLMAX (fixed time steps)    : 0.5 
+   Output time step             : 200. [ ] 
+   Output every [n] steps       : 1 
+   Output [n] initial steps     : 1 
+--------------------------------------------------------------------------
+Material parameters: 
+   Phase ID : 1
+   (diff)   : eta = 1. [ ]  Bd = 0.5 [ ]  
+
+   Phase ID : 0
+   (dens)   : rho = 1. [ ]  
+   (diff)   : eta = 1. [ ]  Bd = 0.5 [ ]  
+
+--------------------------------------------------------------------------
+Grid parameters:
+   Total number of cpu                  : 1 
+   Processor grid  [nx, ny, nz]         : [1, 1, 1]
+   Fine grid cells [nx, ny, nz]         : [64, 2, 64]
+   Number of cells                      :  8192
+   Number of faces                      :  28928
+   Maximum cell aspect ratio            :  1.95312
+   Lower coordinate bounds [bx, by, bz] : [-0.625, -0.01, 0.]
+   Upper coordinate bounds [ex, ey, ez] : [0.625, 0.01, 1.]
+--------------------------------------------------------------------------
+Free surface parameters: 
+   Sticky air phase ID       : 0 
+   Initial surface level     : 0.5 [ ] 
+   Erosion model             : none
+   Sedimentation model       : none
+   Correct marker phases     @ 
+--------------------------------------------------------------------------
+Boundary condition parameters: 
+   No-slip boundary mask [lt rt ft bk bm tp]  : 0 0 0 0 1 1 
+--------------------------------------------------------------------------
+Solution parameters & controls:
+   Gravity [gx, gy, gz]                    : [0., 0., -1.] [ ] 
+   Surface stabilization (FSSA)            :  1. 
+   Use lithostatic pressure for creep      @ 
+   Minimum viscosity                       : 0.001 [ ] 
+   Maximum viscosity                       : 1e+06 [ ] 
+   Maximum melt fraction (viscosity)       : 0.15    
+   Rheology iteration number               : 25  
+   Rheology iteration tolerance            : 1e-06    
+   Ground water level type                 : none 
+--------------------------------------------------------------------------
+Advection parameters:
+   Advection scheme              : Euler 1-st order (basic implementation)
+   Marker setup scheme           : geometric primitives
+   Velocity interpolation scheme : STAG (linear)
+   Marker control type           : no marker control
+   Markers per cell [nx, ny, nz] : [5, 5, 5] 
+   Marker distribution type      : random noise
+   Background phase ID           : 1 
+--------------------------------------------------------------------------
+Reading geometric primitives ... done (0.00962806 sec)
+--------------------------------------------------------------------------
+Output parameters:
+   Output file name                        : RTI_test 
+   Write .pvd file                         : yes 
+   Phase                                   @ 
+   Density                                 @ 
+   Total effective viscosity               @ 
+   Creep effective viscosity               @ 
+   Velocity                                @ 
+   Pressure                                @ 
+--------------------------------------------------------------------------
+Surface output parameters:
+   Write .pvd file : yes 
+   Velocity        @ 
+   Topography      @ 
+   Amplitude       @ 
+--------------------------------------------------------------------------
+Preconditioner parameters: 
+   Matrix type                   : monolithic
+   Preconditioner type           : user-defined
+--------------------------------------------------------------------------
+Solver parameters specified: 
+   Outermost Krylov solver       : gmres 
+   Solver type                   : serial direct/lu 
+   Solver package                : petsc 
+--------------------------------------------------------------------------
+Saving output ... done (0.00602007 sec)
+--------------------------------------------------------------------------
+================================= STEP 1 =================================
+--------------------------------------------------------------------------
+Current time        : 0.00000 [ ] 
+Tentative time step : 1.00000 [ ] 
+--------------------------------------------------------------------------
+  0 SNES Function norm 6.322639131590e+01 
+  0 PICARD ||F||/||F0||=1.000000e+00 
+    Residual norms for js_ solve.
+    0 KSP Residual norm 7.005458753607e+00 
+    1 KSP Residual norm 3.158756129416e+00 
+    2 KSP Residual norm 1.976679315401e-01 
+    3 KSP Residual norm 2.534702065532e-04 
+    4 KSP Residual norm 7.774712060705e-06 
+    5 KSP Residual norm 1.176147466377e-06 
+    6 KSP Residual norm 2.702821759472e-08 
+    7 KSP Residual norm 5.371756199651e-10 
+  Linear js_ solve converged due to CONVERGED_RTOL iterations 7
+  1 SNES Function norm 1.006762583069e-09 
+--------------------------------------------------------------------------
+SNES Convergence Reason : maximum iterations reached
+Number of iterations    : 1
+SNES solution time      : 1.20841 (sec)
+--------------------------------------------------------------------------
+Residual summary: 
+   Continuity: 
+      |Div|_inf = 4.109215008448e-11 
+      |Div|_2   = 7.296327493113e-10 
+   Momentum: 
+      |mRes|_2  = 6.936908171513e-10 
+--------------------------------------------------------------------------
+Actual time step : 1.10000 [ ] 
+--------------------------------------------------------------------------
+Saving output ... done (0.011328 sec)
+--------------------------------------------------------------------------
+=========================== SOLUTION IS DONE! ============================
+--------------------------------------------------------------------------
+Total solution time : 2.65027 (sec) 
+--------------------------------------------------------------------------
+-------------------------------------------------------------------------- 
+                   Lithosphere and Mantle Evolution Model                   
+     Compiled: Date: May 25 2020 - Time: 20:04:20 	    
+-------------------------------------------------------------------------- 
+        STAGGERED-GRID FINITE DIFFERENCE CANONICAL IMPLEMENTATION           
+-------------------------------------------------------------------------- 
+Parsing input file : ./t15_RTI/t15_RTI.dat 
+   Adding PETSc option: -FreeSurf_AmplCos 0.001
+   Adding PETSc option: -FreeSurf_AmplNoise 0.0
+   Adding PETSc option: -snes_type ksponly
+   Adding PETSc option: -js_ksp_type gmres
+   Adding PETSc option: -js_ksp_max_it 50
+   Adding PETSc option: -js_ksp_monitor
+   Adding PETSc option: -js_ksp_rtol 1e-10
+   Adding PETSc option: -js_ksp_atol 1e-15
+   Adding PETSc option: -snes_max_it 20
+   Adding PETSc option: -snes_atol 1e-12
+   Adding PETSc option: -snes_rtol 1e-20
+   Adding PETSc option: -snes_stol 1e-20
+   Adding PETSc option: -objects_dump
+Finished parsing input file : ./t15_RTI/t15_RTI.dat 
+--------------------------------------------------------------------------
+Time stepping parameters:
+   Simulation end time          : 1000. [ ] 
+   Maximum number of steps      : 1 
+   Time step                    : 1. [ ] 
+   Minimum time step            : 1e-05 [ ] 
+   Maximum time step            : 100. [ ] 
+   Time step increase factor    : 0.1 
+   CFL criterion                : 0.5 
+   CFLMAX (fixed time steps)    : 0.5 
+   Output time step             : 200. [ ] 
+   Output every [n] steps       : 1 
+   Output [n] initial steps     : 1 
+--------------------------------------------------------------------------
+Material parameters: 
+   Phase ID : 1
+   (diff)   : eta = 1. [ ]  Bd = 0.5 [ ]  
+
+   Phase ID : 0
+   (dens)   : rho = 1. [ ]  
+   (diff)   : eta = 1. [ ]  Bd = 0.5 [ ]  
+
+--------------------------------------------------------------------------
+Grid parameters:
+   Total number of cpu                  : 1 
+   Processor grid  [nx, ny, nz]         : [1, 1, 1]
+   Fine grid cells [nx, ny, nz]         : [64, 2, 64]
+   Number of cells                      :  8192
+   Number of faces                      :  28928
+   Maximum cell aspect ratio            :  2.34375
+   Lower coordinate bounds [bx, by, bz] : [-0.75, -0.01, 0.]
+   Upper coordinate bounds [ex, ey, ez] : [0.75, 0.01, 1.]
+--------------------------------------------------------------------------
+Free surface parameters: 
+   Sticky air phase ID       : 0 
+   Initial surface level     : 0.5 [ ] 
+   Erosion model             : none
+   Sedimentation model       : none
+   Correct marker phases     @ 
+--------------------------------------------------------------------------
+Boundary condition parameters: 
+   No-slip boundary mask [lt rt ft bk bm tp]  : 0 0 0 0 1 1 
+--------------------------------------------------------------------------
+Solution parameters & controls:
+   Gravity [gx, gy, gz]                    : [0., 0., -1.] [ ] 
+   Surface stabilization (FSSA)            :  1. 
+   Use lithostatic pressure for creep      @ 
+   Minimum viscosity                       : 0.001 [ ] 
+   Maximum viscosity                       : 1e+06 [ ] 
+   Maximum melt fraction (viscosity)       : 0.15    
+   Rheology iteration number               : 25  
+   Rheology iteration tolerance            : 1e-06    
+   Ground water level type                 : none 
+--------------------------------------------------------------------------
+Advection parameters:
+   Advection scheme              : Euler 1-st order (basic implementation)
+   Marker setup scheme           : geometric primitives
+   Velocity interpolation scheme : STAG (linear)
+   Marker control type           : no marker control
+   Markers per cell [nx, ny, nz] : [5, 5, 5] 
+   Marker distribution type      : random noise
+   Background phase ID           : 1 
+--------------------------------------------------------------------------
+Reading geometric primitives ... done (0.0106192 sec)
+--------------------------------------------------------------------------
+Output parameters:
+   Output file name                        : RTI_test 
+   Write .pvd file                         : yes 
+   Phase                                   @ 
+   Density                                 @ 
+   Total effective viscosity               @ 
+   Creep effective viscosity               @ 
+   Velocity                                @ 
+   Pressure                                @ 
+--------------------------------------------------------------------------
+Surface output parameters:
+   Write .pvd file : yes 
+   Velocity        @ 
+   Topography      @ 
+   Amplitude       @ 
+--------------------------------------------------------------------------
+Preconditioner parameters: 
+   Matrix type                   : monolithic
+   Preconditioner type           : user-defined
+--------------------------------------------------------------------------
+Solver parameters specified: 
+   Outermost Krylov solver       : gmres 
+   Solver type                   : serial direct/lu 
+   Solver package                : petsc 
+--------------------------------------------------------------------------
+Saving output ... done (0.0035789 sec)
+--------------------------------------------------------------------------
+================================= STEP 1 =================================
+--------------------------------------------------------------------------
+Current time        : 0.00000 [ ] 
+Tentative time step : 1.00000 [ ] 
+--------------------------------------------------------------------------
+  0 SNES Function norm 6.322639131590e+01 
+  0 PICARD ||F||/||F0||=1.000000e+00 
+    Residual norms for js_ solve.
+    0 KSP Residual norm 7.005459918725e+00 
+    1 KSP Residual norm 3.158756886676e+00 
+    2 KSP Residual norm 1.976693580174e-01 
+    3 KSP Residual norm 2.848309391495e-04 
+    4 KSP Residual norm 9.861053359215e-06 
+    5 KSP Residual norm 2.150102717615e-06 
+    6 KSP Residual norm 3.108907765301e-08 
+    7 KSP Residual norm 2.123214713318e-09 
+    8 KSP Residual norm 3.541361382432e-10 
+  Linear js_ solve converged due to CONVERGED_RTOL iterations 8
+  1 SNES Function norm 1.635928802295e-09 
+--------------------------------------------------------------------------
+SNES Convergence Reason : maximum iterations reached
+Number of iterations    : 1
+SNES solution time      : 0.942411 (sec)
+--------------------------------------------------------------------------
+Residual summary: 
+   Continuity: 
+      |Div|_inf = 1.403951522536e-11 
+      |Div|_2   = 4.518133705264e-10 
+   Momentum: 
+      |mRes|_2  = 1.572300138139e-09 
+--------------------------------------------------------------------------
+Actual time step : 1.10000 [ ] 
+--------------------------------------------------------------------------
+Saving output ... done (0.00427794 sec)
+--------------------------------------------------------------------------
+=========================== SOLUTION IS DONE! ============================
+--------------------------------------------------------------------------
+Total solution time : 2.18647 (sec) 
+--------------------------------------------------------------------------
+-------------------------------------------------------------------------- 
+                   Lithosphere and Mantle Evolution Model                   
+     Compiled: Date: May 25 2020 - Time: 20:04:20 	    
+-------------------------------------------------------------------------- 
+        STAGGERED-GRID FINITE DIFFERENCE CANONICAL IMPLEMENTATION           
+-------------------------------------------------------------------------- 
+Parsing input file : ./t15_RTI/t15_RTI.dat 
+   Adding PETSc option: -FreeSurf_AmplCos 0.001
+   Adding PETSc option: -FreeSurf_AmplNoise 0.0
+   Adding PETSc option: -snes_type ksponly
+   Adding PETSc option: -js_ksp_type gmres
+   Adding PETSc option: -js_ksp_max_it 50
+   Adding PETSc option: -js_ksp_monitor
+   Adding PETSc option: -js_ksp_rtol 1e-10
+   Adding PETSc option: -js_ksp_atol 1e-15
+   Adding PETSc option: -snes_max_it 20
+   Adding PETSc option: -snes_atol 1e-12
+   Adding PETSc option: -snes_rtol 1e-20
+   Adding PETSc option: -snes_stol 1e-20
+   Adding PETSc option: -objects_dump
+Finished parsing input file : ./t15_RTI/t15_RTI.dat 
+--------------------------------------------------------------------------
+Time stepping parameters:
+   Simulation end time          : 1000. [ ] 
+   Maximum number of steps      : 1 
+   Time step                    : 1. [ ] 
+   Minimum time step            : 1e-05 [ ] 
+   Maximum time step            : 100. [ ] 
+   Time step increase factor    : 0.1 
+   CFL criterion                : 0.5 
+   CFLMAX (fixed time steps)    : 0.5 
+   Output time step             : 200. [ ] 
+   Output every [n] steps       : 1 
+   Output [n] initial steps     : 1 
+--------------------------------------------------------------------------
+Material parameters: 
+   Phase ID : 1
+   (diff)   : eta = 1. [ ]  Bd = 0.5 [ ]  
+
+   Phase ID : 0
+   (dens)   : rho = 1. [ ]  
+   (diff)   : eta = 1. [ ]  Bd = 0.5 [ ]  
+
+--------------------------------------------------------------------------
+Grid parameters:
+   Total number of cpu                  : 1 
+   Processor grid  [nx, ny, nz]         : [1, 1, 1]
+   Fine grid cells [nx, ny, nz]         : [64, 2, 64]
+   Number of cells                      :  8192
+   Number of faces                      :  28928
+   Maximum cell aspect ratio            :  3.12500
+   Lower coordinate bounds [bx, by, bz] : [-1., -0.01, 0.]
+   Upper coordinate bounds [ex, ey, ez] : [1., 0.01, 1.]
+--------------------------------------------------------------------------
+Free surface parameters: 
+   Sticky air phase ID       : 0 
+   Initial surface level     : 0.5 [ ] 
+   Erosion model             : none
+   Sedimentation model       : none
+   Correct marker phases     @ 
+--------------------------------------------------------------------------
+Boundary condition parameters: 
+   No-slip boundary mask [lt rt ft bk bm tp]  : 0 0 0 0 1 1 
+--------------------------------------------------------------------------
+Solution parameters & controls:
+   Gravity [gx, gy, gz]                    : [0., 0., -1.] [ ] 
+   Surface stabilization (FSSA)            :  1. 
+   Use lithostatic pressure for creep      @ 
+   Minimum viscosity                       : 0.001 [ ] 
+   Maximum viscosity                       : 1e+06 [ ] 
+   Maximum melt fraction (viscosity)       : 0.15    
+   Rheology iteration number               : 25  
+   Rheology iteration tolerance            : 1e-06    
+   Ground water level type                 : none 
+--------------------------------------------------------------------------
+Advection parameters:
+   Advection scheme              : Euler 1-st order (basic implementation)
+   Marker setup scheme           : geometric primitives
+   Velocity interpolation scheme : STAG (linear)
+   Marker control type           : no marker control
+   Markers per cell [nx, ny, nz] : [5, 5, 5] 
+   Marker distribution type      : random noise
+   Background phase ID           : 1 
+--------------------------------------------------------------------------
+Reading geometric primitives ... done (0.0101042 sec)
+--------------------------------------------------------------------------
+Output parameters:
+   Output file name                        : RTI_test 
+   Write .pvd file                         : yes 
+   Phase                                   @ 
+   Density                                 @ 
+   Total effective viscosity               @ 
+   Creep effective viscosity               @ 
+   Velocity                                @ 
+   Pressure                                @ 
+--------------------------------------------------------------------------
+Surface output parameters:
+   Write .pvd file : yes 
+   Velocity        @ 
+   Topography      @ 
+   Amplitude       @ 
+--------------------------------------------------------------------------
+Preconditioner parameters: 
+   Matrix type                   : monolithic
+   Preconditioner type           : user-defined
+--------------------------------------------------------------------------
+Solver parameters specified: 
+   Outermost Krylov solver       : gmres 
+   Solver type                   : serial direct/lu 
+   Solver package                : petsc 
+--------------------------------------------------------------------------
+Saving output ... done (0.00682402 sec)
+--------------------------------------------------------------------------
+================================= STEP 1 =================================
+--------------------------------------------------------------------------
+Current time        : 0.00000 [ ] 
+Tentative time step : 1.00000 [ ] 
+--------------------------------------------------------------------------
+  0 SNES Function norm 6.322639131590e+01 
+  0 PICARD ||F||/||F0||=1.000000e+00 
+    Residual norms for js_ solve.
+    0 KSP Residual norm 7.005462293897e+00 
+    1 KSP Residual norm 3.158758342716e+00 
+    2 KSP Residual norm 1.976705749788e-01 
+    3 KSP Residual norm 2.424951623186e-04 
+    4 KSP Residual norm 1.601550592820e-05 
+    5 KSP Residual norm 3.015894981572e-06 
+    6 KSP Residual norm 6.924251904617e-08 
+    7 KSP Residual norm 1.171963920230e-08 
+    8 KSP Residual norm 1.057096159248e-09 
+    9 KSP Residual norm 3.807799635033e-10 
+  Linear js_ solve converged due to CONVERGED_RTOL iterations 9
+  1 SNES Function norm 7.102515727988e-09 
+--------------------------------------------------------------------------
+SNES Convergence Reason : maximum iterations reached
+Number of iterations    : 1
+SNES solution time      : 1.41834 (sec)
+--------------------------------------------------------------------------
+Residual summary: 
+   Continuity: 
+      |Div|_inf = 2.117011859936e-11 
+      |Div|_2   = 5.561769228197e-10 
+   Momentum: 
+      |mRes|_2  = 7.080705960343e-09 
+--------------------------------------------------------------------------
+Actual time step : 1.10000 [ ] 
+--------------------------------------------------------------------------
+Saving output ... done (0.00560498 sec)
+--------------------------------------------------------------------------
+=========================== SOLUTION IS DONE! ============================
+--------------------------------------------------------------------------
+Total solution time : 2.67141 (sec) 
+--------------------------------------------------------------------------
+-------------------------------------------------------------------------- 
+                   Lithosphere and Mantle Evolution Model                   
+     Compiled: Date: May 25 2020 - Time: 20:04:20 	    
+-------------------------------------------------------------------------- 
+        STAGGERED-GRID FINITE DIFFERENCE CANONICAL IMPLEMENTATION           
+-------------------------------------------------------------------------- 
+Parsing input file : ./t15_RTI/t15_RTI.dat 
+   Adding PETSc option: -FreeSurf_AmplCos 0.001
+   Adding PETSc option: -FreeSurf_AmplNoise 0.0
+   Adding PETSc option: -snes_type ksponly
+   Adding PETSc option: -js_ksp_type gmres
+   Adding PETSc option: -js_ksp_max_it 50
+   Adding PETSc option: -js_ksp_monitor
+   Adding PETSc option: -js_ksp_rtol 1e-10
+   Adding PETSc option: -js_ksp_atol 1e-15
+   Adding PETSc option: -snes_max_it 20
+   Adding PETSc option: -snes_atol 1e-12
+   Adding PETSc option: -snes_rtol 1e-20
+   Adding PETSc option: -snes_stol 1e-20
+   Adding PETSc option: -objects_dump
+Finished parsing input file : ./t15_RTI/t15_RTI.dat 
+--------------------------------------------------------------------------
+Time stepping parameters:
+   Simulation end time          : 1000. [ ] 
+   Maximum number of steps      : 1 
+   Time step                    : 1. [ ] 
+   Minimum time step            : 1e-05 [ ] 
+   Maximum time step            : 100. [ ] 
+   Time step increase factor    : 0.1 
+   CFL criterion                : 0.5 
+   CFLMAX (fixed time steps)    : 0.5 
+   Output time step             : 200. [ ] 
+   Output every [n] steps       : 1 
+   Output [n] initial steps     : 1 
+--------------------------------------------------------------------------
+Material parameters: 
+   Phase ID : 1
+   (diff)   : eta = 1. [ ]  Bd = 0.5 [ ]  
+
+   Phase ID : 0
+   (dens)   : rho = 1. [ ]  
+   (diff)   : eta = 1. [ ]  Bd = 0.5 [ ]  
+
+--------------------------------------------------------------------------
+Grid parameters:
+   Total number of cpu                  : 1 
+   Processor grid  [nx, ny, nz]         : [1, 1, 1]
+   Fine grid cells [nx, ny, nz]         : [64, 2, 64]
+   Number of cells                      :  8192
+   Number of faces                      :  28928
+   Maximum cell aspect ratio            :  6.25000
+   Lower coordinate bounds [bx, by, bz] : [-2., -0.01, 0.]
+   Upper coordinate bounds [ex, ey, ez] : [2., 0.01, 1.]
+--------------------------------------------------------------------------
+Free surface parameters: 
+   Sticky air phase ID       : 0 
+   Initial surface level     : 0.5 [ ] 
+   Erosion model             : none
+   Sedimentation model       : none
+   Correct marker phases     @ 
+--------------------------------------------------------------------------
+Boundary condition parameters: 
+   No-slip boundary mask [lt rt ft bk bm tp]  : 0 0 0 0 1 1 
+--------------------------------------------------------------------------
+Solution parameters & controls:
+   Gravity [gx, gy, gz]                    : [0., 0., -1.] [ ] 
+   Surface stabilization (FSSA)            :  1. 
+   Use lithostatic pressure for creep      @ 
+   Minimum viscosity                       : 0.001 [ ] 
+   Maximum viscosity                       : 1e+06 [ ] 
+   Maximum melt fraction (viscosity)       : 0.15    
+   Rheology iteration number               : 25  
+   Rheology iteration tolerance            : 1e-06    
+   Ground water level type                 : none 
+--------------------------------------------------------------------------
+Advection parameters:
+   Advection scheme              : Euler 1-st order (basic implementation)
+   Marker setup scheme           : geometric primitives
+   Velocity interpolation scheme : STAG (linear)
+   Marker control type           : no marker control
+   Markers per cell [nx, ny, nz] : [5, 5, 5] 
+   Marker distribution type      : random noise
+   Background phase ID           : 1 
+--------------------------------------------------------------------------
+Reading geometric primitives ... done (0.014221 sec)
+--------------------------------------------------------------------------
+Output parameters:
+   Output file name                        : RTI_test 
+   Write .pvd file                         : yes 
+   Phase                                   @ 
+   Density                                 @ 
+   Total effective viscosity               @ 
+   Creep effective viscosity               @ 
+   Velocity                                @ 
+   Pressure                                @ 
+--------------------------------------------------------------------------
+Surface output parameters:
+   Write .pvd file : yes 
+   Velocity        @ 
+   Topography      @ 
+   Amplitude       @ 
+--------------------------------------------------------------------------
+Preconditioner parameters: 
+   Matrix type                   : monolithic
+   Preconditioner type           : user-defined
+--------------------------------------------------------------------------
+Solver parameters specified: 
+   Outermost Krylov solver       : gmres 
+   Solver type                   : serial direct/lu 
+   Solver package                : petsc 
+--------------------------------------------------------------------------
+Saving output ... done (0.00627995 sec)
+--------------------------------------------------------------------------
+================================= STEP 1 =================================
+--------------------------------------------------------------------------
+Current time        : 0.00000 [ ] 
+Tentative time step : 1.00000 [ ] 
+--------------------------------------------------------------------------
+  0 SNES Function norm 6.322639131590e+01 
+  0 PICARD ||F||/||F0||=1.000000e+00 
+    Residual norms for js_ solve.
+    0 KSP Residual norm 7.005467653353e+00 
+    1 KSP Residual norm 3.158760901274e+00 
+    2 KSP Residual norm 1.976689455327e-01 
+    3 KSP Residual norm 5.515627542082e-05 
+    4 KSP Residual norm 1.609463118488e-05 
+    5 KSP Residual norm 4.618862997283e-06 
+    6 KSP Residual norm 9.277555633733e-07 
+    7 KSP Residual norm 1.938017531767e-07 
+    8 KSP Residual norm 1.028272399184e-08 
+    9 KSP Residual norm 2.131248451365e-09 
+   10 KSP Residual norm 1.128971370118e-09 
+   11 KSP Residual norm 7.065501960721e-10 
+   12 KSP Residual norm 4.124800178414e-10 
+  Linear js_ solve converged due to CONVERGED_RTOL iterations 12
+  1 SNES Function norm 3.368728160716e-08 
+--------------------------------------------------------------------------
+SNES Convergence Reason : maximum iterations reached
+Number of iterations    : 1
+SNES solution time      : 1.5559 (sec)
+--------------------------------------------------------------------------
+Residual summary: 
+   Continuity: 
+      |Div|_inf = 4.380373846129e-11 
+      |Div|_2   = 7.961803069752e-10 
+   Momentum: 
+      |mRes|_2  = 3.367787165185e-08 
+--------------------------------------------------------------------------
+Actual time step : 1.10000 [ ] 
+--------------------------------------------------------------------------
+Saving output ... done (0.00658894 sec)
+--------------------------------------------------------------------------
+=========================== SOLUTION IS DONE! ============================
+--------------------------------------------------------------------------
+Total solution time : 3.10666 (sec) 
+--------------------------------------------------------------------------

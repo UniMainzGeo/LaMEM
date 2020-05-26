@@ -909,6 +909,10 @@ PetscErrorCode ADVMarkInitGeom(AdvCtx *actx, FB *fb)
 			ierr = getScalarParam   (fb, _REQUIRED_, "amplitude",   &layer->amplitude,   1, maxPhaseID); CHKERRQ(ierr);
 		}
 
+		// random noise
+		layer->rand_amplitude = 0.0;
+		ierr = getScalarParam   (fb, _OPTIONAL_, "rand_ampl",  &layer->rand_amplitude,  1, maxPhaseID); CHKERRQ(ierr);
+
 		// Optional temperature options:
 		layer->setTemp = 0;
 		ierr = getStringParam(fb, _OPTIONAL_, "Temperature",     TemperatureStructure,       NULL ); CHKERRQ(ierr);
@@ -1689,18 +1693,22 @@ void setPhaseBox(GeomPrim *box, Marker *P)
 //---------------------------------------------------------------------------
 void setPhaseLayer(GeomPrim *layer, Marker *P)
 {
-	PetscScalar bot, top,pert;
+	PetscScalar bot, top,pert,pert_random;
 
 
 	bot = layer->bot; 
 	top = layer->top;
 	if (layer->cosine==1){
 		// Add sinusoidal perturbation
-		pert 	= 	-layer->amplitude*PetscCosReal(2*PETSC_PI/layer->wavelength*P->X[0]);	
+		pert 	= 	-layer->amplitude*PetscCosScalar(2*PETSC_PI/layer->wavelength*P->X[0]);	
 		bot 	= 	bot + pert;
 		top 	= 	top + pert;
 	}
 
+	// add random noise
+	pert_random 	= (rand()/PetscScalar(RAND_MAX)-0.5)*layer->rand_amplitude;
+	bot 			= 	bot + pert_random;
+	top 			= 	top + pert_random;
 
 	if(P->X[2] >= bot && P->X[2] <= top)
 	{
