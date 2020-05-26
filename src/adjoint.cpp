@@ -365,9 +365,9 @@ PetscErrorCode LaMEMAdjointReadInputSetDefaults(ModParam *IOparam, Adjoint_Vecs 
 	IOparam->SCF        = 0;
 	IOparam->mdI        = 0;
 	IOparam->Ab         = 0;
-	IOparam->Ap         = 2;
+	IOparam->Ap         = 1;
 	IOparam->Adv        = 0;
-	IOparam->OFdef      = 0;
+	IOparam->OFdef      = 1;
 	IOparam->Tao        = 1;
 	IOparam->tol        = 1e-10;
 	IOparam->facLS      = 2;
@@ -3320,8 +3320,8 @@ PetscErrorCode AddMaterialParameterToCommandLineOptions(char *name, PetscInt ID,
     PetscBool       PrintOutput=PETSC_FALSE;
     
     PetscFunctionBegin;
-    
-    asprintf(&option, "-%s[%i]", name, ID); 
+    if (ID<0){	asprintf(&option, "-%s", name); }
+	else{ 		asprintf(&option, "-%s[%i]", name, ID); }
     asprintf(&option_value, "%10.20e", val);
     ierr = PetscOptionsSetValue(NULL, option, option_value);    CHKERRQ(ierr);   // this
     
@@ -3574,8 +3574,12 @@ PetscErrorCode PrintScalingLaws(ModParam *IOparam)
 		strcpy(CurName, IOparam->type_name[k]);	// name
 		strcpy(PhaseDescription, IOparam->dbm_modified.phases[CurPhase].Name);	// name
 		if (!strlen(PhaseDescription)){strcpy(PhaseDescription, "-");} 			// if no name is indicated in input file	
-		
-		PetscPrintf(PETSC_COMM_WORLD,"|         %+5s[%2i]              %- 1.3f         %s\n",CurName, CurPhase, Exponent[k],PhaseDescription);
+		if (CurPhase<0){
+			PetscPrintf(PETSC_COMM_WORLD,"|         %+5s             %- 1.3f          %s\n",CurName, Exponent[k],PhaseDescription);		
+		}
+		else{
+			PetscPrintf(PETSC_COMM_WORLD,"|         %+5s[%2i]              %- 1.3f         %s\n",CurName, CurPhase, Exponent[k],PhaseDescription);
+		}
 		
 	}
 	PetscPrintf(PETSC_COMM_WORLD,"|       \n");
