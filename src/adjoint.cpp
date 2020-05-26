@@ -684,10 +684,10 @@ PetscErrorCode LaMEMAdjointReadInputSetDefaults(ModParam *IOparam, Adjoint_Vecs 
 		if ((fb->nblocks<6) & (IOparam->Ap==1)){
             // Print overview 
 			if (IOparam->Gr==0){
-                PetscPrintf(PETSC_COMM_WORLD, "|       [%f,%f,%f] has target velocity V%s=%7.5f\n", IOparam->Coord[0],IOparam->Coord[1],IOparam->Coord[0], Vel_comp, ts);  // cost function
+                PetscPrintf(PETSC_COMM_WORLD, "|       [%f,%f,%f] has target velocity V%s=%7.5f\n", IOparam->Coord[0],IOparam->Coord[1],IOparam->Coord[2], Vel_comp, ts);  // cost function
             }
             else{
-                PetscPrintf(PETSC_COMM_WORLD, "|       [%f,%f,%f] will compute gradient w.r.t. V%s\n", IOparam->Coord[0],IOparam->Coord[1],IOparam->Coord[0], Vel_comp);  // w.r.t. solution
+                PetscPrintf(PETSC_COMM_WORLD, "|       [%f,%f,%f] will compute gradient w.r.t. V%s\n", IOparam->Coord[0],IOparam->Coord[1],IOparam->Coord[2], Vel_comp);  // w.r.t. solution
             }
 		}
         if (IOparam->Ap>1){
@@ -1621,8 +1621,12 @@ PetscErrorCode AdjointComputeGradients(JacRes *jr, AdjGrad *aop, NLSol *nl, SNES
 		PetscStrcmp(CurName,"rho",&flg);		// check name 
 		if (flg)		// we need some way to ensure that we do this for one field at a time only
 		{
+			PetscPrintf(PETSC_COMM_WORLD,"| Starting computation of Field-based gradients for rho.  \n");	
 			aop->CurScal   = (scal->velocity)/(1);
 			ierr = AdjointFormResidualFieldFDRho(snes, sol, psi, nl, aop);          CHKERRQ(ierr);
+
+			PetscPrintf(PETSC_COMM_WORLD,"| Finished gradient computation & added it to VTK\n");
+			PetscPrintf(PETSC_COMM_WORLD,"| Add '-out_gradient = 1' to your parameter file. \n");
 		}
 		else 
 		{
@@ -1805,27 +1809,34 @@ PetscErrorCode PrintGradientsAndObservationPoints(ModParam *IOparam)
     PetscPrintf(PETSC_COMM_WORLD,"|                       COMPUTATION OF THE GRADIENTS                       \n");
     PetscPrintf(PETSC_COMM_WORLD,"| ************************************************************************ \n| ");
 
+
    	PetscPrintf(PETSC_COMM_WORLD,"\n| Gradients: \n");
-   	PetscPrintf(PETSC_COMM_WORLD,"|                    Parameter   |  Gradient (dimensional)  \n");    
-    PetscPrintf(PETSC_COMM_WORLD,"|                  -------------   ------------------------ \n");    
+   	
+	if (IOparam->FS==0){   
+		PetscPrintf(PETSC_COMM_WORLD,"|                    Parameter   |  Gradient (dimensional)  \n");    
+		PetscPrintf(PETSC_COMM_WORLD,"|                  -------------   ------------------------ \n");    
 
-	VecGetArray(IOparam->P,&Par);
-	for(j = 0; j < IOparam->mdN; j++){
-		// Get current phase and parameter which is being perturbed
-		CurPhase 		= 	IOparam->phs[j];
-		strcpy(CurName, IOparam->type_name[j]);	// name
-	
+		VecGetArray(IOparam->P,&Par);
+		for(j = 0; j < IOparam->mdN; j++){
+			// Get current phase and parameter which is being perturbed
+			CurPhase 		= 	IOparam->phs[j];
+			strcpy(CurName, IOparam->type_name[j]);	// name
+		
 
-		// Print result
-		if (IOparam->FD_gradient[j]>0){
-        	PetscPrintf(PETSC_COMM_WORLD,"|       FD %5d:   %+5s[%2i]           %- 1.6e \n",j+1, CurName, CurPhase, IOparam->grd[j]);
+			// Print result
+			if (IOparam->FD_gradient[j]>0){
+				PetscPrintf(PETSC_COMM_WORLD,"|       FD %5d:   %+5s[%2i]           %- 1.6e \n",j+1, CurName, CurPhase, IOparam->grd[j]);
+			}
+			else{
+				PetscPrintf(PETSC_COMM_WORLD,"|  adjoint %5d:   %+5s[%2i]           %- 1.6e \n",j+1, CurName, CurPhase, IOparam->grd[j]);
+			}
+
 		}
-		else{
-			PetscPrintf(PETSC_COMM_WORLD,"|  adjoint %5d:   %+5s[%2i]           %- 1.6e \n",j+1, CurName, CurPhase, IOparam->grd[j]);
-		}
-
+		VecRestoreArray(IOparam->P,&Par);
 	}
-	VecRestoreArray(IOparam->P,&Par);
+	else{
+		PetscPrintf(PETSC_COMM_WORLD,"|    Computed field-based gradients \n");    
+	}
 	PetscPrintf(PETSC_COMM_WORLD,"| \n| ");
 	
 

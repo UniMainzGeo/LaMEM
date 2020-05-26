@@ -63,7 +63,7 @@
 #===============================================================================
 # Solver options
 #===============================================================================
-	SolverType 			=	multigrid 	# solver [direct or multigrid]
+	SolverType 			=	direct #multigrid 	# solver [direct or multigrid]
 	MGLevels 			=	3			# number of MG levels [default=3]
 	MGSweeps 			=	5			# number of MG smoothening steps per level [default=10]
 	MGSmoother 			=	chebyshev 	# type of smoothener used [chebyshev or jacobi]
@@ -91,7 +91,7 @@
 	
 	<SphereStart>
 		phase       = 1
-		radius      = 0.1
+		radius      = 0.2
 		center      = 0.5 0.5 0.5
 	<SphereEnd>
 
@@ -104,7 +104,7 @@
 	out_file_name       = AdjointGradients_test # output file name
 	out_pvd             = 1                     # activate writing .pvd file
 	out_density         = 1
-	#out_gradient        = 1     # print pointwise gradient
+	out_gradient        = 1     				# print pointwise gradient
 
 # AVD phase viewer output options (requires activation)
 
@@ -116,11 +116,11 @@
 # Material phase parameters
 #===============================================================================
 
-	# Define properties of overburden
+	# Define properties of matrix
 	<MaterialStart>
 		Name 	= Matrix
 		ID  	= 0 
-		rho 	= 0
+		rho 	= 1
 		eta 	= 1
 #		eta0 	= 1
 #		n 		= 1.2
@@ -131,8 +131,8 @@
 	<MaterialStart>
 		Name 	= FallingSphere
 		ID  	= 1   
-		rho 	= 1   
-		eta 	= 1e4
+		rho 	= 2   
+		eta 	= 1e2
 #		eta0 	= 100
 #		n 		= 1.6
 #		e0 		= 1e-6  
@@ -146,11 +146,12 @@
 	Adjoint_mode    					= 	AdjointGradients #GradientDescent	 #AdjointGradients    	# options: [None; AdjointGradients, GradientDescent; Inversion]
 	Adjoint_ObservationPoints           = 	1						# options: [1=several points; 2=whole domain; 3=surface]
 	Adjoint_ObjectiveFunctionDef        = 	1                     	# options: [1-defined by hand; 0??]
-	Adjoint_GradientCalculation        	= 	Solution #CostFunction			# options [CostFunction= w.r.t. Cost function (e.g,);  Solution= w.r.t. Solution ]
-	Adjoint_FieldSensitivity    		= 	0      					# calculate Field-based =1 (aka. geodynamic sensity kernels), or Phase Based [=0]
+	Adjoint_GradientCalculation        	= 	CostFunction #Solution #CostFunction			# options [CostFunction= w.r.t. Cost function (e.g,);  Solution= w.r.t. Solution ]
+	Adjoint_FieldSensitivity    		= 	1      					# calculate Field-based =1 (aka. geodynamic sensity kernels), or Phase Based [=0]
 	Adjoint_ScaleCostFunction 			=	None
-	Adjoint_PrintScalingLaws			=	1						# Output scaling laws?
+	Adjoint_PrintScalingLaws			=	0						# Output scaling laws?
 	#Adjoint_ScalingLawFilename 		=   ScalingLaw_Test.dat
+	#out_gradient = 1
 	
 	# Inversion parameters
 	Inversion_EmployTAO 				=	0  
@@ -159,46 +160,22 @@
 #	Inversion_maxit_linesearch 			= 	10
 
 
-	<AdjointParameterStart>
-		Type 			= AllMaterialParameters   	
-	<AdjointParameterEnd>
+#	<AdjointParameterStart>
+#		Type 			= AllMaterialParameters   	
+#	<AdjointParameterEnd>
 	       
 	       
 	<AdjointParameterStart>
 	   	ID  			= 0		     # phase of the parameter
-		Type 			= radius     # options: [rho0,rhon,rhoc,eta,eta0,n,En] 	
-		InitGuess 		= 0.1  	     # initial guess
-		FD_gradient 	= 1	
-		FD_eps 			= 0.156	 # stepsize for FD calculation for this parameter 	
+		Type 			= rho     # options: [rho0,rhon,rhoc,eta,eta0,n,En] 	
+		InitGuess 		= 1  	     # initial guess
+	#	FD_gradient 	= 1	
+	#	FD_eps 			= 0.156	 # stepsize for FD calculation for this parameter 	
 	<AdjointParameterEnd>
 	       
-#	<AdjointParameterStart>  
-#		ID  			= 1	
-#		Type 			= n   	   
-#		InitGuess 		= 2    
-#		LowerBound     	= 1		# [optional] lower bound
-#		UpperBound     	= 3		# [optional] upper bound
-#		FD_gradient 	= 0		
-#	<AdjointParameterEnd>
-
-#	<AdjointParameterStart>  
-#		ID  			= 0	
-#		Type 			= radius   	   
-#		InitGuess 		= 0.3    
-#		FD_gradient 	= 1	
-#	<AdjointParameterEnd>
-	
-	
-
-	# Comparison indices
-	#<AdjointObservationPointStart>
-	#	Coordinate 			= 0.0.4375 0.5 0.5					
-	#	VelocityComponent 	= z
-	#	Value  				= -0.04248
-	#<AdjointObservationPointEnd>
 	
 	<AdjointObservationPointStart>
-		Coordinate 			= 0.5 0.5 0.5					
+		Coordinate 			= 0.5 0.5 0.9					
 		VelocityComponent 	= z
 		Value  				= -0.04248
 	<AdjointObservationPointEnd>
