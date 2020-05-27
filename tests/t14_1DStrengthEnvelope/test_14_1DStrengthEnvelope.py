@@ -182,6 +182,7 @@ def interpRuns(*args):
   nn       = 65
   Z        = np.zeros((nn,numRuns,numSteps))
   Tau      = np.zeros((nn,numRuns,numSteps))
+  Temp     = np.zeros((nn,numRuns,numSteps))
   TauF     = np.zeros(( 1,numRuns,numSteps))
 
   #ipdb.set_trace()
@@ -191,6 +192,7 @@ def interpRuns(*args):
     for iEl in range(0,nn):
       Z[iEl,iRun,:]    = np.interp(Time,np.squeeze(Run["Time"]),np.squeeze(Run["Z"][iEl,:]))
       Tau[iEl,iRun,:]  = np.interp(Time,np.squeeze(Run["Time"]),np.squeeze(Run["Tau"][iEl,:]))
+      Temp[iEl,iRun,:] = np.interp(Time,np.squeeze(Run["Time"]),np.squeeze(Run["Temp"][iEl,:]))
     TauF[0,iRun,:]     = np.sum(np.squeeze(Tau[:,iRun,:]),0)
 
   # combine in dict
@@ -198,7 +200,8 @@ def interpRuns(*args):
     "Time": Time,
     "Z": Z,
     "Tau": Tau,
-    "TauF": TauF
+    "TauF": TauF,
+    "Temp": Temp
     }
 
   return(Runs)
@@ -215,44 +218,71 @@ def makePlot(Runs):
   Z    = Runs["Z"]
   Tau  = Runs["Tau"]
   TauF = Runs["TauF"]
+  Temp = Runs["Temp"]
 
   numSteps = len(Time)
 
-  fig, axs = plt.subplots(2,1, gridspec_kw={'height_ratios': [3,1]})
+  # figure 1
+  fig1, axs = plt.subplots(1,2, gridspec_kw={'width_ratios': [1,1]})
   
   p0, = axs[0].plot(np.squeeze(Tau[:,0,numSteps-1]),np.squeeze(Z[:,0,numSteps-1]),'m',label='VP')
-  axs[1].plot(Time,np.squeeze(TauF[0,0,:]),'m')
+  axs[1].plot(np.squeeze(Temp[:,0,numSteps-1]),np.squeeze(Z[:,0,numSteps-1]),'m')
   
-  p4, = axs[0].plot(np.squeeze(Tau[:,4,numSteps-1]),np.squeeze(Z[:,0,numSteps-1]),'k--',label='Analytical Sol.')
-  axs[1].plot(Time,np.squeeze(TauF[0,4,:]),'k--')
+  p4, = axs[0].plot(np.squeeze(Tau[:,4,numSteps-1]),np.squeeze(Z[:,4,numSteps-1]),'k--',label='Analytical Sol.')
+  axs[1].plot(np.squeeze(Temp[:,4,numSteps-1]),np.squeeze(Z[:,4,numSteps-1]),'k--')
   
   p1, = axs[0].plot(np.squeeze(Tau[:,1,numSteps-1]),np.squeeze(Z[:,1,numSteps-1]),'gs',label='VEP_5ka')
-  axs[1].plot(Time,np.squeeze(TauF[0,1,:]),'gs')
+  axs[1].plot(np.squeeze(Temp[:,1,numSteps-1]),np.squeeze(Z[:,1,numSteps-1]),'gs')
   
   p2, = axs[0].plot(np.squeeze(Tau[:,2,numSteps-1]),np.squeeze(Z[:,2,numSteps-1]),'r*',label='VEP_10ka')
-  axs[1].plot(Time,np.squeeze(TauF[0,2,:]),'r*')
+  axs[1].plot(np.squeeze(Temp[:,2,numSteps-1]),np.squeeze(Z[:,2,numSteps-1]),'r*')
   
   p3, = axs[0].plot(np.squeeze(Tau[:,3,numSteps-1]),np.squeeze(Z[:,3,numSteps-1]),'b+',label='VEP_50ka')
-  axs[1].plot(Time,np.squeeze(TauF[0,3,:]),'b+')
+  axs[1].plot(np.squeeze(Temp[:,3,numSteps-1]),np.squeeze(Z[:,3,numSteps-1]),'b+')
   
-  axs[0].legend(handles=[p0,p1,p2,p3,p4])
+  # add legend
+  axs[1].legend(handles=[p0,p1,p2,p3,p4])
   
+  # axis labels
   axs[0].set_xlabel(r'$\tau_{II}$ [MPa]', fontsize=14)
   axs[0].set_ylabel('Depth [km]', fontsize=14)
   axs[0].tick_params(axis='both', which='major', labelsize=12)
+  axs[1].set_xlabel(r'Temp $[^{\circ}C]$', fontsize=14)
+  axs[1].set_yticks([],[])
   
-  # Time and date stamp on title
+  # time and date stamp on title
   title_str = datetime.datetime.now().strftime("Test performed %H:%M on %B %d, %Y")
   title_str = '1D Strength profile: \n ' + title_str
   axs[0].set_title(title_str,fontsize=10)
+
+  # save figure
+  fig1 = plt.gcf()
+  fig1.savefig('./t14_1DStrengthEnvelope/1D_StrengthEnvelope.png',dpi=360)
+  print('Created figure: ./t14_1DStrengthEnvelope/1D_StrengthEnvelope.png \n')
+
   
-  axs[1].set_xlabel('time [Ma]', fontsize=14)
-  axs[1].set_ylabel(r'$\sum \tau_{II}$ [MPa]', fontsize=14)
-  axs[1].tick_params(axis='both', which='major', labelsize=12)
-  
-  fig = plt.gcf()
-  fig.tight_layout(pad=1.0)
-  fig.savefig('./t14_1DStrengthEnvelope/1D_StrengthEnvelope.png',dpi=360)
+  # figure 2
+  fig2 = plt.figure(figsize=(5,3))
+  axs2 = fig2.add_subplot(111)
+  p0,  = axs2.plot(Time,np.squeeze(TauF[0,0,:]),'m',label='VP')
+  p4,  = axs2.plot(Time,np.squeeze(TauF[0,4,:]),'k--',label='Analytical Sol.')
+  p1,  = axs2.plot(Time,np.squeeze(TauF[0,1,:]),'gs',label='VEP_5ka')
+  p2,  = axs2.plot(Time,np.squeeze(TauF[0,2,:]),'r*',label='VEP_10ka')
+  p3,  = axs2.plot(Time,np.squeeze(TauF[0,3,:]),'b+',label='VEP_50ka')
+
+  # add legend
+  axs2.legend(handles=[p0,p1,p2,p3,p4])
+
+  # axis labels
+  axs2.set_xlabel('time [Ma]', fontsize=14)
+  axs2.set_ylabel(r'$\sum \tau_{II}$ [MPa]', fontsize=14)
+  axs2.tick_params(axis='both', which='major', labelsize=12)
+
+  # save figure
+  fig2 = plt.gcf()
+  fig2.tight_layout(pad=1.0)
+  fig2.savefig('./t14_1DStrengthEnvelope/1D_StressBuild.png',dpi=360)
+  print('Created figure: ./t14_1DStrengthEnvelope/1D_StressBuild.png \n')
 
 #----------------------------------------------------
 
