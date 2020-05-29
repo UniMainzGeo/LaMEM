@@ -214,7 +214,7 @@ PetscErrorCode DBMatReadPhase(DBMat *dbm, FB *fb, PetscBool PrintOutput)
 	Material_t *m;
 	PetscInt    ID = -1, visID = -1, chSoftID, frSoftID, MSN, print_title;
 	size_t 	    StringLength;
-	PetscScalar eta, eta0, e0, K, Kb, G, E, nu, Vp, Vs, eta_st;
+	PetscScalar eta, eta0, e0, Kb, G, E, nu, Vp, Vs, eta_st;
 	char        ndiff[_str_len_], ndisl[_str_len_], npeir[_str_len_], title[_str_len_];
 	char        PhaseDiagram[_str_len_], PhaseDiagram_Dir[_str_len_], Name[_str_len_];
 	
@@ -229,7 +229,7 @@ PetscErrorCode DBMatReadPhase(DBMat *dbm, FB *fb, PetscBool PrintOutput)
 	eta      =  0.0;
 	eta0     =  0.0;
 	e0       =  0.0;
-	K        =  0.0;	// note: will be deprecated and renamed to Kb; we spit put an error message for now if we still find it in the input file
+	//K        =  0.0;	// note: will be deprecated and renamed to Kb; we spit put an error message for now if we still find it in the input file
 	Kb    	 =  0.0;	// bulk modulus		
 	G        =  0.0;
 	E        =  0.0;
@@ -331,8 +331,8 @@ PetscErrorCode DBMatReadPhase(DBMat *dbm, FB *fb, PetscBool PrintOutput)
 	// elasticity
 	//=================================================================================
 	ierr = getScalarParam(fb, _OPTIONAL_, "G",        &G,        1, 1.0); CHKERRQ(ierr);
-	ierr = getScalarParam(fb, _OPTIONAL_, "K",        &K,        1, 1.0); CHKERRQ(ierr); // note-> will be removed (avoid confusion with k)
-	ierr = getScalarParam(fb, _OPTIONAL_, "Kb",       &Kb,       1, 1.0); CHKERRQ(ierr); // note-> will be removed (avoid confusion with k)
+//	ierr = getScalarParam(fb, _OPTIONAL_, "K",        &K,        1, 1.0); CHKERRQ(ierr); // note-> will be removed (avoid confusion with k)
+	ierr = getScalarParam(fb, _OPTIONAL_, "Kb",       &Kb,       1, 1.0); CHKERRQ(ierr); // note-> new nomenclature of bulk modulus (avoid confusion with k)
 	ierr = getScalarParam(fb, _OPTIONAL_, "E",        &E,        1, 1.0); CHKERRQ(ierr);
 	ierr = getScalarParam(fb, _OPTIONAL_, "nu",       &nu,       1, 1.0); CHKERRQ(ierr);
 	ierr = getScalarParam(fb, _OPTIONAL_, "Kp",       &m->Kp,    1, 1.0); CHKERRQ(ierr);
@@ -498,9 +498,10 @@ PetscErrorCode DBMatReadPhase(DBMat *dbm, FB *fb, PetscBool PrintOutput)
 	}
 
 	// ELASTICITY
-	if (K){
-		SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "The bulk modulus parameter is now called 'Kb' and no longer 'K'; change your ParamFile accordingly");
-	}
+	// I'm taking out this warning message as it interfers with Adjoint and defining k (conductivity) from the command-line
+	//if (K){
+	//	SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "The bulk modulus parameter is now called 'Kb' and no longer 'K'; change your ParamFile accordingly");
+	//}
 
 	if(!(( G && !Kb && !E && !nu)   // G
 	||   (!G &&  Kb && !E && !nu)   // Kb
@@ -525,7 +526,7 @@ PetscErrorCode DBMatReadPhase(DBMat *dbm, FB *fb, PetscBool PrintOutput)
 
 	// compute elastic parameters
 	if( G  && nu)          Kb  = 2*G*(1 + nu)/(3*(1 - 2*nu));
-	if( K  && nu)          G   = (3*Kb*(1 - 2*nu))/(2*(1 + nu));
+	if( Kb && nu)          G   = (3*Kb*(1 - 2*nu))/(2*(1 + nu));
 	if( E  && nu)        { Kb  = E/(3*(1 - 2*nu)); G = E/(2*(1 + nu)); }
 	if(!E  && Kb && G)      E  = 9*Kb*G/(3*Kb + G);
 	if(!nu && Kb && G)      nu = (3*Kb - 2*G)/(2*(3*Kb + G));
@@ -563,7 +564,7 @@ PetscErrorCode DBMatReadPhase(DBMat *dbm, FB *fb, PetscBool PrintOutput)
 
 		sprintf(title, "   (elast)  : "); print_title = 1;
 		MatPrintScalParam(G,     "G",  "[Pa]",  scal, title, &print_title);
-		MatPrintScalParam(K,     "K",  "[Pa]",  scal, title, &print_title);
+		MatPrintScalParam(Kb,    "Kb",  "[Pa]",  scal, title, &print_title);
 		MatPrintScalParam(E,     "E",  "[Pa]",  scal, title, &print_title);
 		MatPrintScalParam(nu,    "nu", "[ ]",   scal, title, &print_title);
 		MatPrintScalParam(m->Kp, "Kp", "[ ]",   scal, title, &print_title);

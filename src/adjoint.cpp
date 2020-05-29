@@ -331,8 +331,16 @@ PetscErrorCode Adjoint_ScanForMaterialParameters(FB *fb, Scaling *scal, PetscInt
 	// Print overview & indicate which parameters are not specified
 	for(jj = 0; jj < *iP; jj++){
 		strcpy(par_str, type_name[jj]);
-		PetscPrintf(PETSC_COMM_WORLD, "|  %-2i: %+6s[%-2i]: InitialGuess = %-9.4g   \n",jj,par_str,phsar[jj],Par[jj]);
-			
+		if (FDgrad[jj]){
+			PetscPrintf(PETSC_COMM_WORLD, "|  %-2i: FD: %+6s[%-2i]: InitialGuess = %-9.4g   \n",jj,par_str,phsar[jj],Par[jj]);
+		}
+		else{
+			PetscPrintf(PETSC_COMM_WORLD, "|  %-2i:     %+6s[%-2i]: InitialGuess = %-9.4g   \n",jj,par_str,phsar[jj],Par[jj]);
+		}
+	}
+
+	if (*iP>_MAX_PAR_){
+		SETERRQ1(PETSC_COMM_WORLD, PETSC_ERR_USER, "Too many inverse parameters specified! Max allowed: %lld", (LLD)  _MAX_PAR_);
 	}
 	
 
@@ -3485,6 +3493,7 @@ PetscErrorCode Parameter_SetFDgrad_Option(PetscInt *FD_grad, char *name)
 	// elasticity
 	else if  (!strcmp("G",name))		{ found=PETSC_TRUE; *FD_grad=0; }
 	else if  (!strcmp("Kb",name))		{ found=PETSC_TRUE; *FD_grad=0; }
+	else if  (!strcmp("nu",name))		{ found=PETSC_TRUE; *FD_grad=0; }
 	
 	// plasticity
 	else if  (!strcmp("ch",name))		{ found=PETSC_TRUE; *FD_grad=1; }
