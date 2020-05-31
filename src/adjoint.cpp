@@ -360,7 +360,7 @@ PetscErrorCode LaMEMAdjointReadInputSetDefaults(ModParam *IOparam, Adjoint_Vecs 
 	PetscErrorCode 	ierr;
 	FB 				*fb;
 	PetscScalar     *gradar, *Ubar, *Lbar, ts, *Par, mean, var;
-	PetscInt         i, j, ti, ID, iStart;
+	PetscInt         i, j, ti, ID, iStart, p;
 	char             str[_str_len_], par_str[_str_len_], Vel_comp[_str_len_];
 	Scaling          scal;
 
@@ -419,7 +419,7 @@ PetscErrorCode LaMEMAdjointReadInputSetDefaults(ModParam *IOparam, Adjoint_Vecs 
 	ierr = getIntParam   (fb, _OPTIONAL_, "Inversion_EmployTAO"       		, &IOparam->Tao,       1, 1        ); CHKERRQ(ierr);  // Use TAO?
 	ierr = getScalarParam(fb, _OPTIONAL_, "Inversion_rtol"       			, &IOparam->tol,       1, 1        ); CHKERRQ(ierr);  // tolerance for F/Fini after which code has converged
 	ierr = getScalarParam(fb, _OPTIONAL_, "Inversion_factor_linesearch"     , &IOparam->facLS,     1, 1        ); CHKERRQ(ierr);  // factor in the line search that multiplies current line search parameter if GD update was successful (increases convergence speed)
-	ierr = getScalarParam(fb, _OPTIONAL_, "InverOsion_facB"      			, &IOparam->facB,      1, 1        ); CHKERRQ(ierr);  // backtrack factor that multiplies current line search parameter if GD update was not successful
+	ierr = getScalarParam(fb, _OPTIONAL_, "Inversion_facB"      			, &IOparam->facB,      1, 1        ); CHKERRQ(ierr);  // backtrack factor that multiplies current line search parameter if GD update was not successful
 	ierr = getScalarParam(fb, _OPTIONAL_, "Inversion_maxfac"    			, &IOparam->maxfac,    1, 1        ); CHKERRQ(ierr);  // limit on the factor (only used without tao)
 	ierr = getScalarParam(fb, _OPTIONAL_, "Inversion_Scale_Grad"			, &IOparam->Scale_Grad,1, 1        ); CHKERRQ(ierr);  // Magnitude of initial parameter update (factor_ini = Scale_Grad/Grad)
 
@@ -485,6 +485,7 @@ PetscErrorCode LaMEMAdjointReadInputSetDefaults(ModParam *IOparam, Adjoint_Vecs 
 	PetscInt		phsar[_MAX_PAR_];
 	PetscInt		FDgrad[_MAX_PAR_];
 	PetscScalar 	FDeps[_MAX_PAR_];
+	PetscInt 		vec_log10[_MAX_PAR_];
 	char 			type_name[_MAX_PAR_][_str_len_];
 	PetscScalar     Ax[  _MAX_OBS_];
 	PetscScalar     Ay[  _MAX_OBS_];
@@ -594,7 +595,11 @@ PetscErrorCode LaMEMAdjointReadInputSetDefaults(ModParam *IOparam, Adjoint_Vecs 
 			else{
 				FDgrad[i] = grad;
 			}
-		
+
+			// do we cpmpute with the log10(param) internally (implying that the parameter value )
+			p 		=	0;
+			ierr 	= getIntParam(fb, _OPTIONAL_, "log10", &p, 1, 1 ); CHKERRQ(ierr);	// eps for brute force FD gradients
+			vec_log10[j] = p;
 
 			ts 		= 0;
 			ierr 	= getScalarParam(fb, _OPTIONAL_, "FD_eps", &ts, 1, 1 ); CHKERRQ(ierr);	// eps for brute force FD gradients
@@ -628,7 +633,9 @@ PetscErrorCode LaMEMAdjointReadInputSetDefaults(ModParam *IOparam, Adjoint_Vecs 
     ierr  = PetscMemcpy(IOparam->phs,       	phsar,       (size_t)_MAX_PAR_*sizeof(PetscInt)     ); 				CHKERRQ(ierr);
     ierr  = PetscMemcpy(IOparam->FD_gradient, 	FDgrad,      (size_t)_MAX_PAR_*sizeof(PetscInt)    ); 				CHKERRQ(ierr);
     ierr  = PetscMemcpy(IOparam->FD_eps,       	FDeps,       (size_t)_MAX_PAR_*sizeof(PetscScalar) ); 				CHKERRQ(ierr);
-    
+    ierr  = PetscMemcpy(IOparam->par_log10,     vec_log10,   (size_t)_MAX_PAR_*sizeof(PetscInt) ); 					CHKERRQ(ierr);
+
+
 	VecRestoreArray(Adjoint_Vectors->P,&Par);
 	VecRestoreArray(Adjoint_Vectors->Ub,&Ubar);
 	VecRestoreArray(Adjoint_Vectors->Lb,&Lbar);
@@ -1665,7 +1672,7 @@ PetscErrorCode AdjointComputeGradients(JacRes *jr, AdjGrad *aop, NLSol *nl, SNES
 				// Perturb parameter
 				Perturb 		= 	aop->FD_epsilon*CurVal;
 
-				//PetscPrintf(PETSC_COMM_WORLD,"| *** dr/dp: Perturbing parameter %s[%i]=%e to value %e -> Scaling.density = %e \n",CurName,CurPhase,CurVal, CurVal + Perturb, scal->density);
+				PetscPrintf(PETSC_COMM_WORLD,"| *** dr/dp: Perturbing parameter %s[%i]=%e to value %e  \n",CurName,CurVal, CurVal + Perturb);
 
 				// Set as command-line option & create updated material database
 				ierr 			=	CopyParameterToLaMEMCommandLine(IOparam,  CurVal + Perturb, j);			CHKERRQ(ierr);
@@ -1680,7 +1687,8 @@ PetscErrorCode AdjointComputeGradients(JacRes *jr, AdjGrad *aop, NLSol *nl, SNES
 
 				ierr 			= 	FormResidual(snes, sol, res_pert, nl);         							CHKERRQ(ierr);        // compute the residual with the perturbed parameter
 				ierr 			=	VecAYPX(res,-1,res_pert);                      							CHKERRQ(ierr);        // res = (res_perturbed-res)
-				ierr 			=	VecScale(res,1/Perturb);                      							CHKERRQ(ierr);        // res = (res_perturbed-res)/Perturb
+				ierr 			=	VecScale(res,1/Perturb);                      					CHKERRQ(ierr);        // res = (res_perturbed-res)/Perturb
+				
 				ierr 			=	VecCopy(res,drdp);														CHKERRQ(ierr);        
 				
 				// Reset parameter again
@@ -3339,13 +3347,15 @@ PetscErrorCode AddMaterialParameterToCommandLineOptions(char *name, PetscInt ID,
 {
     PetscErrorCode  ierr;
 	char            *option, *option_value;
+	PetscScalar 	value;
     PetscBool       PrintOutput=PETSC_FALSE;
     
     PetscFunctionBegin;
     if (ID<0){	asprintf(&option, "-%s", name); }
 	else{ 		asprintf(&option, "-%s[%i]", name, ID); }
-    asprintf(&option_value, "%10.20e", val);
-    ierr = PetscOptionsSetValue(NULL, option, option_value);    CHKERRQ(ierr);   // this
+	asprintf(&option_value, "%10.20e", val);
+
+	ierr = PetscOptionsSetValue(NULL, option, option_value);    CHKERRQ(ierr);   // this
     
     //PrintOutput = PETSC_TRUE;
     if (PrintOutput){
@@ -3366,6 +3376,7 @@ PetscErrorCode CopyParameterToLaMEMCommandLine(ModParam *IOparam, PetscScalar Cu
     PetscErrorCode  ierr;
     PetscBool       PrintOutput=PETSC_FALSE;
 	PetscInt 		CurPhase;
+	PetscScalar 	val;
 	char 			CurName[_str_len_];
 	
     PetscFunctionBegin;
@@ -3374,8 +3385,15 @@ PetscErrorCode CopyParameterToLaMEMCommandLine(ModParam *IOparam, PetscScalar Cu
     strcpy(CurName, IOparam->type_name[j]);	// name
 
 	ierr = DeleteMaterialParameterToCommandLineOptions(CurName, CurPhase); 		CHKERRQ(ierr);
-	ierr = AddMaterialParameterToCommandLineOptions(CurName, CurPhase, CurVal); 	CHKERRQ(ierr);
 
+	if (IOparam->par_log10[j]==1){
+		val = pow(10,CurVal);
+		ierr = AddMaterialParameterToCommandLineOptions(CurName, CurPhase, val); 	CHKERRQ(ierr);
+	}
+	else{
+		ierr = AddMaterialParameterToCommandLineOptions(CurName, CurPhase, CurVal); 	CHKERRQ(ierr);
+	}
+	
 	//PrintOutput=PETSC_TRUE;
 	if (PrintOutput){
 		PetscPrintf(PETSC_COMM_WORLD,"| *** Added parameter %s[%i]=%10.20e to the LaMEM database \n",CurName,CurPhase,CurVal);
@@ -3533,7 +3551,7 @@ PetscErrorCode PrintScalingLaws(ModParam *IOparam)
  	PetscFunctionBegin;
 	PetscErrorCode 	ierr;
 	FILE        	*db;
-	PetscInt 		j, k, CurPhase, idx[IOparam->mdN], maxNum=10;
+	PetscInt 		j, k=0, CurPhase, idx[IOparam->mdN], maxNum=10;
 	PetscScalar 	Exponent[IOparam->mdN], ExpMag[IOparam->mdN], P, grad, *Par, F, A, Vel_check, b;
 	char 			CurName[_str_len_], PhaseDescription[_str_len_];
 	PetscBool 		isRhoParam=PETSC_FALSE;
@@ -3576,7 +3594,7 @@ PetscErrorCode PrintScalingLaws(ModParam *IOparam)
 	VecGetArray(IOparam->P,&Par);
 	for(j = 0; j < IOparam->mdN; j++){
 		grad 		= 	IOparam->grd[j];					// gradient
-		strcpy(CurName, IOparam->type_name[k]);	// name
+		strcpy(CurName, IOparam->type_name[j]);	// name
 		P    		= 	Par[j];								// parameter value	
 		if (!strcmp("rho",CurName)){
 			P = P - IOparam->ReferenceDensity;				// Compute with density difference

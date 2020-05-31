@@ -99,6 +99,7 @@ struct ModParam
 	PetscInt 		 FD_gradient[_MAX_PAR_];			// Compute gradient via (brute force) finite differences
     PetscScalar      FD_eps[_MAX_PAR_];                 // Perturbation for this parameter if using (brute force) FD; can override default value
 	PetscInt      	 phs[_MAX_PAR_];                    // phase of the parameter
+	PetscInt 		 par_log10[_MAX_PAR_];				// Is the value indicated log10(par)
 	PetscScalar      grd[_MAX_PAR_];                    // gradient value
 	PetscBool 		 BruteForce_FD;						// indicate whether we compute Brute force FD or not
 
