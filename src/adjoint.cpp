@@ -368,23 +368,24 @@ PetscErrorCode LaMEMAdjointReadInputSetDefaults(ModParam *IOparam, Adjoint_Vecs 
 
 
 	// Some defaults
-	IOparam->FS         = 0;
-	IOparam->Gr         = 1;
-	IOparam->SCF        = 0;
-	IOparam->mdI        = 0;
-	IOparam->Ab         = 0;
-	IOparam->Ap         = 1;
-	IOparam->Adv        = 0;
-	IOparam->OFdef      = 1;
-	IOparam->Tao        = 1;
-	IOparam->tol        = 1e-10;
-	IOparam->facLS      = 2;
-	IOparam->facB       = 0.5;
-	IOparam->maxfac     = 100;
-	IOparam->Scale_Grad = 0.1;
-	IOparam->maxit      = 50;
-	IOparam->maxitLS    = 20;
-	IOparam->ScalLaws   = 0;
+	IOparam->FS         		= 0;
+	IOparam->Gr         		= 1;
+	IOparam->SCF        		= 0;
+	IOparam->mdI        		= 0;
+	IOparam->Ab         		= 0;
+	IOparam->Ap         		= 1;
+	IOparam->Adv        		= 0;
+	IOparam->OFdef      		= 1;
+	IOparam->Tao        		= 1;
+	IOparam->tol        		= 1e-10;
+	IOparam->facLS      		= 2;
+	IOparam->facB       		= 0.5;
+	IOparam->maxfac     		= 100;
+	IOparam->Scale_Grad 		= 0.1;
+	IOparam->maxit     	 		= 50;
+	IOparam->maxitLS    		= 20;
+	IOparam->ScalLaws   		= 0;
+	IOparam->ReferenceDensity 	= 0;
 	
     // Create scaling object
 	ierr = ScalingCreate(&scal, fb, PETSC_FALSE); CHKERRQ(ierr);
@@ -409,6 +410,8 @@ PetscErrorCode LaMEMAdjointReadInputSetDefaults(ModParam *IOparam, Adjoint_Vecs 
 	ierr = getStringParam(fb, _OPTIONAL_, "Adjoint_ScalingLawFilename"     	 , str,  "ScalingLaw.dat"  ); 		   CHKERRQ(ierr);  // Scaling law filename
 	ierr  = PetscMemcpy(IOparam->ScalLawFilename, 	str,   (size_t)_str_len_*sizeof(char) ); 		  	 		   CHKERRQ(ierr); 
    
+  	ierr = getScalarParam(fb, _OPTIONAL_, "Adjoint_ReferenceDensity"       	 , &IOparam->ReferenceDensity, 1, 1 ); CHKERRQ(ierr);  // Reference density (density parameters are computed w.r.t. this)
+	
 	// If we do inversion, additional parameters can be specified:
 	ierr = getIntParam   (fb, _OPTIONAL_, "Inversion_maxit"     			, &IOparam->maxit,     1, 1500     ); CHKERRQ(ierr);  // maximum number of inverse iterations
 	ierr = getIntParam   (fb, _OPTIONAL_, "Inversion_maxit_linesearch"   	, &IOparam->maxitLS,   1, 1500     ); CHKERRQ(ierr);  // maximum number of backtracking	
@@ -3533,6 +3536,7 @@ PetscErrorCode PrintScalingLaws(ModParam *IOparam)
 	PetscInt 		j, k, CurPhase, idx[IOparam->mdN], maxNum=10;
 	PetscScalar 	Exponent[IOparam->mdN], ExpMag[IOparam->mdN], P, grad, *Par, F, A, Vel_check, b;
 	char 			CurName[_str_len_], PhaseDescription[_str_len_];
+	PetscBool 		isRhoParam=PETSC_FALSE;
 
 	if (!IOparam->ScalLaws){ PetscFunctionReturn(0);}  // do we want to print them?
 
@@ -3554,7 +3558,7 @@ PetscErrorCode PrintScalingLaws(ModParam *IOparam)
 	PetscPrintf(PETSC_COMM_WORLD,"|              Vel = A * p[0]^b[0] * p[1]^b[1] * p[2]^b[2] * ... \n");
 	PetscPrintf(PETSC_COMM_WORLD,"|                where \n");
 	PetscPrintf(PETSC_COMM_WORLD,"|                      Vel - velocity;   p[] - parameter \n");
-	PetscPrintf(PETSC_COMM_WORLD,"|                      b[] - exponent;   A   - prefactor \n");
+	PetscPrintf(PETSC_COMM_WORLD,"|                      b[] - exponent;   A   - prefactor (computed for p>0) \n");
 	PetscPrintf(PETSC_COMM_WORLD,"|       \n");
 
 	if (IOparam->mdN<10){	PetscPrintf(PETSC_COMM_WORLD,"|   Results: \n"); maxNum = IOparam->mdN;	}
@@ -3572,12 +3576,29 @@ PetscErrorCode PrintScalingLaws(ModParam *IOparam)
 	VecGetArray(IOparam->P,&Par);
 	for(j = 0; j < IOparam->mdN; j++){
 		grad 		= 	IOparam->grd[j];					// gradient
+		strcpy(CurName, IOparam->type_name[k]);	// name
 		P    		= 	Par[j];								// parameter value	
+		if (!strcmp("rho",CurName)){
+			P = P - IOparam->ReferenceDensity;				// Compute with density difference
+			isRhoParam=PETSC_TRUE;
+		}	
+
 		Exponent[j] = 	grad*P/F;							// b value
-		ExpMag[j] 	=	-PetscAbs(Exponent[j]); 			// magnitude of exponent (for sorting later)
+		if (PetscIsInfOrNanScalar(Exponent[j])){
+			ExpMag[j] 	=	0; 			
+		}
+		else{
+			ExpMag[j] 	=	-PetscAbs(Exponent[j]); 			// magnitude of exponent (for sorting later)
+		}
+
 		idx[j] 		=	j;
-		if (P!=0){ // only non-zero parameters contribute
-			A           =   A*1.0/(PetscPowScalar(P,Exponent[j]));	// prefactor
+		if (P>0){ // only non-zero positive parameters contribute
+			if (!isnan(grad)){
+				A 	=   A*1.0/(PetscPowScalar(P,Exponent[j]));	// prefactor
+			}
+			else{
+				PetscPrintf(PETSC_COMM_WORLD,"Detected nan for parameter %s A=%f\n", CurName,A);
+			}
 		}
 	}
 	VecRestoreArray(IOparam->P,&Par);
@@ -3587,36 +3608,48 @@ PetscErrorCode PrintScalingLaws(ModParam *IOparam)
 
 	
 	PetscPrintf(PETSC_COMM_WORLD,"|           Parameter     |    Exponent b[]  |  Phase Description    \n");
-	PetscPrintf(PETSC_COMM_WORLD,"|       -----------------  -----------------  ---------------------------- \n");
+	PetscPrintf(PETSC_COMM_WORLD,"|     -------------------  -----------------  ---------------------------- \n");
 	for(j = 0; j < maxNum; j++){
 		k 				= idx[j];
 		CurPhase 		= 	IOparam->phs[k];
 		strcpy(CurName, IOparam->type_name[k]);	// name
+		if (!strcmp("rho",CurName) & (IOparam->ReferenceDensity!=0.0)){
+			char *Name;	
+			asprintf(&Name, "delta(%s)", CurName);	// w compute w.r.t. Reference Density
+			strcpy(CurName, Name);	// name
+		}
 		strcpy(PhaseDescription, IOparam->dbm_modified.phases[CurPhase].Name);	// name
 		if (!strlen(PhaseDescription)){strcpy(PhaseDescription, "-");} 			// if no name is indicated in input file	
 		if (CurPhase<0){
-			PetscPrintf(PETSC_COMM_WORLD,"|         %+5s             %- 1.3f          %s\n",CurName, Exponent[k],PhaseDescription);		
+			PetscPrintf(PETSC_COMM_WORLD,"|      %10s          %- 8.3f          %s\n",CurName, Exponent[k],PhaseDescription);		
 		}
 		else{
-			PetscPrintf(PETSC_COMM_WORLD,"|         %+5s[%2i]              %- 1.3f         %s\n",CurName, CurPhase, Exponent[k],PhaseDescription);
+			PetscPrintf(PETSC_COMM_WORLD,"|      %10s[%3i]         %- 8.3f         %s\n",CurName, CurPhase, Exponent[k],PhaseDescription);
 		}
 		
 	}
 	PetscPrintf(PETSC_COMM_WORLD,"|       \n");
-	PetscPrintf(PETSC_COMM_WORLD,"|   Prefactor A              : %2.8e \n",A);
-	
+	PetscPrintf(PETSC_COMM_WORLD,"|   Prefactor A               : %- 2.8e \n",A);
+	if (isRhoParam){
+		PetscPrintf(PETSC_COMM_WORLD,"|   Reference Density         : %- 2.2f  \n",IOparam->ReferenceDensity);
+	}
+
 	// Check that velocity is indeed computed
 	Vel_check = A;
 	VecGetArray(IOparam->P,&Par);
 	for(j = 0; j < IOparam->mdN; j++){
-		P    		= 	Par[j];								
+		P    		= 	Par[j];	
+		strcpy(CurName, IOparam->type_name[j]);	// name
+		if (!strcmp("rho",CurName) ){
+			P = P - IOparam->ReferenceDensity;				// Compute with density difference
+		}							
 		b 			=	Exponent[j];
-		if (P!=0){ 
+		if (P>0){ 
 			Vel_check	*=  PetscPowScalar(P,b);
 		}
 	}
 	VecRestoreArray(IOparam->P,&Par);
-	PetscPrintf(PETSC_COMM_WORLD,"|   Velocity check           : %2.8e \n",Vel_check);
+	PetscPrintf(PETSC_COMM_WORLD,"|   Velocity check            : %2.8e \n",Vel_check);
 		
 
 	// Save output to file
@@ -3637,22 +3670,33 @@ PetscErrorCode PrintScalingLaws(ModParam *IOparam)
 		fprintf(db,"#  \n");
 		fprintf(db,"#   Vel = A * p[0]^b[0] * p[1]^b[1] * p[2]^b[2] * ... \n");
 		fprintf(db,"#  \n");
-		fprintf(db,"# Prefactor A %- 1.8e  \n",A);
-		fprintf(db,"# Parameter p[]    Phase          Exponent b[]         Value p[]       Phase Description   \n");
-		fprintf(db,"# --------------  -------     -------------------  ------------------ --------------------\n");
+		fprintf(db,"# Prefactor A       : %- 10.8e  \n",A);
+		fprintf(db,"# Reference Density : %- 10.8f  \n",IOparam->ReferenceDensity);
+		fprintf(db,"#  \n");
 		
+		fprintf(db,"# Parameter       Phase          Exponent b[]         Value p[]       Phase Description   \n");
+		fprintf(db,"# --------------  -------     -------------------  ------------------ --------------------\n");
 		VecGetArray(IOparam->P,&Par);
 		for(j = 0; j < IOparam->mdN; j++){
 			CurPhase 		= 	IOparam->phs[j];
 			strcpy(CurName, IOparam->type_name[j]);	// name
 			strcpy(PhaseDescription, IOparam->dbm_modified.phases[CurPhase].Name);	// name
-		
-			fprintf(db,"  %s              %3i        %- 3.11e   %- 1.8e     %s \n",CurName, CurPhase, Exponent[j], Par[j], PhaseDescription);
-		
+
+			P = Par[j];
+			if (!strcmp("rho",CurName) & (IOparam->ReferenceDensity!=0.0)){
+				char *Name;	
+				P = P - IOparam->ReferenceDensity;				// Compute with density difference
+				asprintf(&Name, "delta(%s)", CurName);			// clarify that we compute w.r.t. Reference Density
+				strcpy(CurName, Name);							// name
+			}	
+
+
+			fprintf(db,"  %13s    %3i         %- 18.9e   %- 18.9e %s \n",CurName, CurPhase, Exponent[j],P, PhaseDescription);
+
 		}
 		VecRestoreArray(IOparam->P,&Par);
 		fclose(db);
-		PetscPrintf(PETSC_COMM_WORLD,"|   Scaling law data saved to: %s \n",IOparam->ScalLawFilename);
+		PetscPrintf(PETSC_COMM_WORLD,"|   Scaling law data saved to : %s \n",IOparam->ScalLawFilename);
 		
 	}
 	PetscPrintf(PETSC_COMM_WORLD,"|       \n");

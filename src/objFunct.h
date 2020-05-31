@@ -106,7 +106,8 @@ struct ModParam
 	PetscScalar      mfit;                              // misfit value for current model parameters
     DBMat            dbm_modified;                      // holds the (modified) LaMEM material database
 	FB 				*fb;								// holds a copy of the filebuffer	
-
+	PetscScalar 	 ReferenceDensity;		  			// Reference density (perturbations are computed w.r.t. this value)
+	
 	// Variables additionally needed for the adjoint TAO solver
 	Vec              xini;      	                    // Comparison velocity field for adjoint inversion
 	Vec              P;				                    // vector containing parameters
