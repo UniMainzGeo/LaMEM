@@ -391,6 +391,7 @@ PetscErrorCode LaMEMAdjointReadInputSetDefaults(ModParam *IOparam, Adjoint_Vecs 
 	IOparam->maxitLS    		= 20;
 	IOparam->ScalLaws   		= 0;
 	IOparam->ReferenceDensity 	= 0;
+	IOparam->SCF 				= 0; 		
 	
     // Create scaling object
 	ierr = ScalingCreate(&scal, fb, PETSC_FALSE); CHKERRQ(ierr);
@@ -867,7 +868,7 @@ PetscErrorCode LaMEMAdjointMain(ModParam *IOparam)
  	 	 	ierr = TaoSetObjectiveAndGradientRoutine(tao, AdjointOptimisationTAO, IOparam);	 	CHKERRQ(ierr);  // sets the forward routine as well
  	 	 	ierr = TaoSetInitialVector(tao,Adjoint_Vectors.P);	 							    CHKERRQ(ierr);
  	 	 	ierr = TaoSetTolerances(tao,1e-30,1e-30,1e-30);	                                    CHKERRQ(ierr);
- 	 	 	ierr = TaoSetFunctionLowerBound(tao,1e-5);                                          CHKERRQ(ierr);
+ 	 	 	ierr = TaoSetFunctionLowerBound(tao,1e-10);                                          CHKERRQ(ierr);
  	 	 	ierr = TaoSetFromOptions(tao);	 										            CHKERRQ(ierr);
 			
 			// Line-Search
@@ -1070,6 +1071,8 @@ PetscErrorCode ComputeGradientsAndObjectiveFunction(Vec Parameters, PetscScalar 
 	ierr = PrintCostFunction(IOparam);					CHKERRQ(ierr);
 	ierr = PrintGradientsAndObservationPoints(IOparam); CHKERRQ(ierr);
 
+	ierr = MPI_Barrier(PETSC_COMM_WORLD); CHKERRQ(ierr); 
+
 	// Copy back gradients from IOparam   
 	// Gradient info is thus in IOparam & as vectors
 	VecGetArray(Gradient,&Grad);
@@ -1172,8 +1175,8 @@ PetscErrorCode AdjointOptimisation(Vec P, PetscScalar F, Vec grad, void *ctx)
 			//VecCopy(P,IOparam->P);  
 
 			// call LaMEM main library function
-			ierr = ComputeGradientsAndObjectiveFunction(P, &F, grad, IOparam);	CHKERRQ(ierr);
 			//ierr 	= LaMEMLibMain(IOparam); CHKERRQ(ierr);
+			ierr = ComputeGradientsAndObjectiveFunction(P, &F, grad, IOparam);	CHKERRQ(ierr);
 			//F 		= IOparam->mfit;
 
 			LScount+=1;
@@ -1194,6 +1197,10 @@ PetscErrorCode AdjointOptimisation(Vec P, PetscScalar F, Vec grad, void *ctx)
 
 				PetscFunctionReturn(0);
 			}
+
+			PetscPrintf(PETSC_COMM_WORLD,"|    F = %10.6e,  Fold = %10.6e                      \n",F,Fold);
+			PetscPrintf(PETSC_COMM_WORLD,"\n| - - - - - - - - - - - - - - - - - - - - - - - - - - - \n");
+
 		}
 
 		// restore parameter values
@@ -1363,7 +1370,7 @@ PetscErrorCode AdjointOptimisationTAO(Tao tao, Vec P, PetscReal *F, Vec grad, vo
 
 		strcpy(CurName, IOparam->type_name[j]);	// name
 
-		PetscPrintf(PETSC_COMM_WORLD,"|   %D. %s[%i] = %5.10e, gradient=%5.10e\n",j+1,CurName,IOparam->phs[j],Par[j],gradar[j]);
+		PetscPrintf(PETSC_COMM_WORLD,"|   %D. %s[%i] = %- 10.5e, gradient=%- 10.5e\n",j+1,CurName,IOparam->phs[j],Par[j],gradar[j]);
 		
 	}
 	VecRestoreArray(grad,&gradar);
@@ -1816,7 +1823,9 @@ PetscErrorCode AdjointComputeGradients(JacRes *jr, AdjGrad *aop, NLSol *nl, SNES
 			// send from all processors -> rank 0
 			MPI_Reduce( IOparam->Avel_num, rbuf, _MAX_PAR_, MPIU_SCALAR, MPI_SUM, 0, PETSC_COMM_WORLD);
    			
-			ierr  = PetscMemcpy(IOparam->Avel_num,   rbuf,  (size_t)_MAX_PAR_*sizeof(PetscScalar) ); CHKERRQ(ierr);		// copy array to correct point
+			if ( rank == 0) { 
+				ierr  = PetscMemcpy(IOparam->Avel_num,   rbuf,  (size_t)_MAX_PAR_*sizeof(PetscScalar) ); CHKERRQ(ierr);		// copy array to correct point
+			}
 
 			// send from rank 0 to all other processors
 			MPI_Bcast(IOparam->Avel_num, _MAX_PAR_, MPIU_SCALAR, 0, PETSC_COMM_WORLD);	
@@ -1922,9 +1931,9 @@ PetscErrorCode PrintGradientsAndObservationPoints(ModParam *IOparam)
 	{
 
         PetscPrintf(PETSC_COMM_WORLD,"\n| Observation points: \n");
-        PetscPrintf(PETSC_COMM_WORLD,"|                                                     Velocity %s       \n",scal.lbl_velocity);    
-        PetscPrintf(PETSC_COMM_WORLD,"|                       Location            |      Target         Value     \n");    
-        PetscPrintf(PETSC_COMM_WORLD,"|       ------------------------------------  -- ------------- ------------- \n");    
+        PetscPrintf(PETSC_COMM_WORLD,"|                                                   Velocity %s       \n",scal.lbl_velocity);    
+        PetscPrintf(PETSC_COMM_WORLD,"|                       Location         |      Target         Value     \n");    
+        PetscPrintf(PETSC_COMM_WORLD,"|       ---------------------------------  -- ------------- ------------- \n");    
 
 		// Print the solution variable at the user defined index (if there are sufficiently few)
 		for (j=0; j<IOparam->mdI; j++)
@@ -1944,7 +1953,7 @@ PetscErrorCode PrintGradientsAndObservationPoints(ModParam *IOparam)
 				y = IOparam->Ay[j]*scal.length;
 				z = IOparam->Az[j]*scal.length;
 		
-				PetscPrintf(PETSC_COMM_SELF,"| %-4d: [%10.4f; %10.4f; %10.4f]  %s % 8.5e  % 8.5e \n",j+1,x,y,z, vel_com, CostFunc, IOparam->Avel_num[j]);
+				PetscPrintf(PETSC_COMM_SELF,"| %-4d: [%9.3f; %9.3f; %9.3f]  %s % 8.5e  % 8.5e \n",j+1,x,y,z, vel_com, CostFunc, IOparam->Avel_num[j]);
 
 			}
 
@@ -1952,6 +1961,7 @@ PetscErrorCode PrintGradientsAndObservationPoints(ModParam *IOparam)
 	  	PetscPrintf(PETSC_COMM_WORLD,"| \n");
  
 	}
+	
 	ierr = MPI_Barrier(PETSC_COMM_WORLD); CHKERRQ(ierr); // because of PETSC_COMM_SELF above
 	
 	PetscFunctionReturn(0);
