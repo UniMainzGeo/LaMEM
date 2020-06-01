@@ -1801,6 +1801,34 @@ PetscErrorCode AdjointComputeGradients(JacRes *jr, AdjGrad *aop, NLSol *nl, SNES
 		VecRestoreArray(aop->vx,&vx);
 		VecRestoreArray(aop->vy,&vy);
 		VecRestoreArray(aop->vz,&vz);
+
+		// Send velocity array to rank 0 (sum over all arrays), to deal with points residing on different processors
+		{
+			PetscMPIInt    rank;
+			PetscScalar    *rbuf;
+
+			MPI_Comm_rank(PETSC_COMM_WORLD,&rank);
+
+			if ( rank == 0) { 
+       			rbuf = (PetscScalar *)malloc(_MAX_PAR_*sizeof(PetscScalar)); 
+       		} 
+
+			// send from all processors -> rank 0
+			MPI_Reduce( IOparam->Avel_num, rbuf, _MAX_PAR_, MPIU_SCALAR, MPI_SUM, 0, PETSC_COMM_WORLD);
+   			
+			ierr  = PetscMemcpy(IOparam->Avel_num,   rbuf,  (size_t)_MAX_PAR_*sizeof(PetscScalar) ); CHKERRQ(ierr);		// copy array to correct point
+
+			// send from rank 0 to all other processors
+			MPI_Bcast(IOparam->Avel_num, _MAX_PAR_, MPIU_SCALAR, 0, PETSC_COMM_WORLD);	
+
+			if ( rank == 0) { 
+				free(rbuf);
+			}
+		}
+
+
+
+
 	}
  
 
@@ -3701,7 +3729,7 @@ PetscErrorCode PrintScalingLaws(ModParam *IOparam)
 		}
 	}
 	VecRestoreArray(IOparam->P,&Par);
-	PetscPrintf(PETSC_COMM_WORLD,"|   Velocity check            : %2.8e \n",Vel_check);
+	PetscPrintf(PETSC_COMM_WORLD,"|   Velocity check            : %- 2.8e \n",Vel_check);
 		
 
 	// Save output to file
@@ -3772,7 +3800,7 @@ PetscErrorCode PrintScalingLaws(ModParam *IOparam)
 		}
 		VecRestoreArray(IOparam->P,&Par);
 		fclose(db);
-		PetscPrintf(PETSC_COMM_WORLD,"|   Scaling law data saved to : %s \n",IOparam->ScalLawFilename);
+		PetscPrintf(PETSC_COMM_WORLD,"|   Scaling law data saved to :  %s \n",IOparam->ScalLawFilename);
 		
 	}
 	PetscPrintf(PETSC_COMM_WORLD,"|       \n");
