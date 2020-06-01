@@ -189,8 +189,8 @@
 		rho 	=  	3220    # density
 		eta 	=  	1e23    # viscosity
 		
-		ch		=	5e6		# cohesion [MPa]
-		fr 		=	5		# friction angle	
+#		ch		=	5e6		# cohesion [MPa]
+#		fr 		=	5		# friction angle	
 	<MaterialEnd>
 	
 	
@@ -201,10 +201,10 @@
 #===============================================================================
 	
 	# General
-	Adjoint_mode    					= 	GradientDescent	 #AdjointGradients    	# options: [None; AdjointGradients, GradientDescent; Inversion]
+	Adjoint_mode    					= 	AdjointGradients #GradientDescent	 #AdjointGradients    	# options: [None; AdjointGradients, GradientDescent; Inversion]
 	Adjoint_ObservationPoints           = 	1						# options: [1=several points; 2=whole domain; 3=surface]
 	Adjoint_ObjectiveFunctionDef        = 	1                     	# options: [1-defined by hand; 0??]
-	Adjoint_GradientCalculation        	= 	CostFunction			# options [CostFunction= w.r.t. Cost function (e.g,);  Solution= w.r.t. Solution ]
+	Adjoint_GradientCalculation        	= 	Solution #CostFunction			# options [CostFunction= w.r.t. Cost function (e.g,);  Solution= w.r.t. Solution ]
 	Adjoint_FieldSensitivity    		= 	0      					# calculate Field-based =1 (aka. geodynamic sensity kernels), or Phase Based [=0]
 	Adjoint_ScaleCostFunction 			=	None
 	Adjoint_PrintScalingLaws			=	1						# Output scaling laws?
@@ -218,9 +218,9 @@
 	Inversion_maxit_linesearch 			= 	100
 	Inversion_factor_linesearch 		=	1
 
-#	<AdjointParameterStart>
-#		Type 			= AllMaterialParameters   	
-#	<AdjointParameterEnd>
+	<AdjointParameterStart>
+		Type 			= AllMaterialParameters   	
+	<AdjointParameterEnd>
 	 
 	 
 #	<AdjointParameterStart>
@@ -242,14 +242,22 @@
 	<AdjointParameterStart>
 	  	ID  		=	 0
 	    Type 		= 	eta
-	    InitGuess 	= 	21
+    	InitGuess 	= 	21
 		log10 		=	1
+		FD_gradient 	= 1	
+	<AdjointParameterEnd>
+
+	<AdjointParameterStart>
+	  	ID  		=	 0
+	    Type 		= 	eta
+	    InitGuess 	= 	1e21
+		log10 		=	0
 	<AdjointParameterEnd>
 
 	<AdjointParameterStart>
 	  	ID  		= 1
 	    Type 		= rho
-	    InitGuess 	= 3250
+	    InitGuess 	= 3220
 	<AdjointParameterEnd>
 
 	# Comparison indices
