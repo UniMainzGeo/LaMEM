@@ -754,9 +754,6 @@ PetscErrorCode LaMEMAdjointReadInputSetDefaults(ModParam *IOparam, Adjoint_Vecs 
     ierr  = PetscMemcpy(IOparam->Az, Az, (size_t)_MAX_OBS_*sizeof(PetscScalar)); CHKERRQ(ierr);
     ierr  = PetscMemcpy(IOparam->Av, Av, (size_t)_MAX_OBS_*sizeof(PetscInt));    CHKERRQ(ierr);
     ierr  = PetscMemcpy(IOparam->Ae, Ae, (size_t)_MAX_OBS_*sizeof(PetscScalar)); CHKERRQ(ierr);
-
-
-
 	IOparam->mdI = i;
 
 	// Create the scaling for the cost function with the statistics of the observations
@@ -3585,7 +3582,7 @@ PetscErrorCode PrintScalingLaws(ModParam *IOparam)
 	FILE        	*db;
 	PetscInt 		j, k=0, CurPhase, idx[IOparam->mdN], maxNum=10;
 	PetscScalar 	Exponent[IOparam->mdN], ExpMag[IOparam->mdN], P, grad, *Par, F, A, Vel_check, b;
-	char 			CurName[_str_len_], PhaseDescription[_str_len_], logstr[_str_len_], adjointstr[_str_len_];
+	char 			CurName[_str_len_], PhaseDescription[_str_len_], logstr[_str_len_], adjointstr[_str_len_], comp_str[_str_len_];
 	PetscBool 		isRhoParam=PETSC_FALSE;
 
 	if (!IOparam->ScalLaws){ PetscFunctionReturn(0);}  // do we want to print them?
@@ -3728,7 +3725,26 @@ PetscErrorCode PrintScalingLaws(ModParam *IOparam)
 		fprintf(db,"# Prefactor A       : %- 10.8e  \n",A);
 		fprintf(db,"# Reference Density : %- 10.8f  \n",IOparam->ReferenceDensity);
 		fprintf(db,"#  \n");
+		fprintf(db,"# Observation points:  \n",IOparam->ReferenceDensity);
 		
+		fprintf(db,"#     x              y              z               Component   Measured value   \n");
+		fprintf(db,"# --- -------------- -------------- --------------  ----------  --------------- \n");
+		
+		// Print observation points info
+		for(j = 0; j < IOparam->mdI; j++){
+			if 		(IOparam->Av[j]==1){strcpy(comp_str, "Vx");	}
+			else if (IOparam->Av[j]==2){strcpy(comp_str, "Vy");	}
+			else if (IOparam->Av[j]==3){strcpy(comp_str, "Vz");	}
+		
+			fprintf(db,"# %3i %- 14.5f %- 14.5f %- 14.5f   %s         %- 14.5e\n",j+1, IOparam->Ax[j], IOparam->Ay[j], IOparam->Az[j], comp_str, IOparam->Avel_num[j]);
+		}
+		fprintf(db,"#  \n");
+		fprintf(db,"#  \n");
+		
+
+
+		// Print Scaling laws info
+		fprintf(db,"# Scaling law parameters:\n");
 		fprintf(db,"# Parameter             Phase    Exponent b[]       Value p[]          Type     Phase Description   \n");
 		fprintf(db,"# --------------------  -------  -----------------  -----------------  -------  --------------------\n");
 		VecGetArray(IOparam->P,&Par);
