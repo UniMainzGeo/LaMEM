@@ -1782,6 +1782,8 @@ PetscErrorCode AdjointComputeGradients(JacRes *jr, AdjGrad *aop, NLSol *nl, SNES
 			// get global & local ranks of a marker
 			ierr = FDSTAGGetPointRanks(fs, coord_local, &lrank, &grank); CHKERRQ(ierr);
 
+			IOparam->Avel_num[i]	= 0.0;
+			
 			// If lrank is not 13 the point is not on this processor
 			if(lrank == 13)
 			{
@@ -1954,6 +1956,10 @@ PetscErrorCode PrintGradientsAndObservationPoints(ModParam *IOparam)
 				z = IOparam->Az[j]*scal.length;
 		
 				PetscPrintf(PETSC_COMM_SELF,"| %-4d: [%9.3f; %9.3f; %9.3f]  %s % 8.5e  % 8.5e \n",j+1,x,y,z, vel_com, CostFunc, IOparam->Avel_num[j]);
+
+				PetscScalar misfit;
+				misfit = 0.5*pow(IOparam->Avel_num[j]-CostFunc, 2);
+				//PetscPrintf(PETSC_COMM_SELF,"| Debugging: Velocity misfit =  % 15.8e \n",misfit);
 
 			}
 
