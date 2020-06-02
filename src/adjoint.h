@@ -73,9 +73,9 @@ struct AdjGrad
 	PetscScalar 	 FD_epsilon;			  // Epsilon, employed for finite difference calculation of dres/dp			  	
 	PetscScalar      Perturb;                 // Perturbation parameter for the finite differences
 	PetscScalar      CurScal, CurScalst;
-	Vec              dF;
+	Vec              dF, dphidu;
 	Vec 			 pro;
-	Vec              vx, vy, vz;
+	Vec              vx, vy, vz, sty;
 	Vec              gradfield;                // Used if gradient at every point is computed (same size as jr->p)
 };
 
@@ -121,6 +121,9 @@ PetscErrorCode AdjointPointInPro(JacRes *jr, AdjGrad *aop, ModParam *IOparam, Fr
 
 // Perturb the input parameters within the gradient computation
 PetscErrorCode AdjointGradientPerturbParameter(NLSol *nl, PetscInt CurPar, PetscInt CurPhase, AdjGrad *aop, Scaling *scal);
+
+// PSD calculations
+PetscErrorCode AdjointGetStressAngleDerivatives(JacRes *jr, AdjGrad *aop, ModParam *IOparam);
 
 // reset the perturbed input parameter within the gradient computation
 PetscErrorCode AdjointGradientResetParameter(NLSol *nl, PetscInt CurPar, PetscInt CurPhase, AdjGrad *aop);

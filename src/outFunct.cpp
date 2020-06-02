@@ -325,6 +325,22 @@ PetscErrorCode PVOutWriteGradient(OutVec* outvec)
 }
 //---------------------------------------------------------------------------
 #undef __FUNCT__
+#define __FUNCT__ "PVOutWriteStAngle"
+PetscErrorCode PVOutWriteStAngle(OutVec* outvec)
+{
+	COPY_FUNCTION_HEADER
+
+	// macro to copy PSD angle to buffer
+	#define GET_STANGLE buff[k][j][i] = jr->svCell[iter++].svBulk.phi;
+
+	cf = scal->unit;
+
+	INTERPOLATE_COPY(fs->DA_CEN, outbuf->lbcen, InterpCenterCorner, GET_STANGLE, 1, 0)
+
+	PetscFunctionReturn(0);
+}
+//---------------------------------------------------------------------------
+#undef __FUNCT__
 #define __FUNCT__ "PVOutWriteTotalPress"
 PetscErrorCode PVOutWriteTotalPress(OutVec* outvec)
 {

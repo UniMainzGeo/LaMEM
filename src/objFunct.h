@@ -104,7 +104,7 @@ struct ModParam
 	PetscBool 		 BruteForce_FD;						// indicate whether we compute Brute force FD or not
 
 	PetscScalar     *val;                               // model value
-	PetscScalar      mfit;                              // misfit value for current model parameters
+	PetscScalar      mfit, mfitPSD;                     // misfit value for current model parameters
     DBMat            dbm_modified;                      // holds the (modified) LaMEM material database
 	FB 				*fb;								// holds a copy of the filebuffer	
 	PetscScalar 	 ReferenceDensity;		  			// Reference density (perturbations are computed w.r.t. this value)
@@ -126,6 +126,7 @@ struct ModParam
 	PetscInt         OFdef;                             // Objective function defined by hand?
 	PetscInt         maxit;                             // maximum number of inverse iteration
 	PetscInt         maxitLS;                           // maximum number of backtracking
+	PetscInt         MfitType;                          // What observable? 0 = Vel; 1 = PSD 
 	PetscScalar      Scale_Grad;                        // scale parameter update with initial gradient?
 	PetscScalar      mfitini;   	                    // initial misfit value for current model parameters
 	PetscScalar      tol; 	   	                        // tolerance for F/Fini after which code has converged

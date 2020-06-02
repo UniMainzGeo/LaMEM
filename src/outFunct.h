@@ -106,6 +106,7 @@ PetscErrorCode PVOutWritePlastStrain (OutVec*);
 PetscErrorCode PVOutWritePlastDissip (OutVec*);
 PetscErrorCode PVOutWriteTotDispl    (OutVec*);
 PetscErrorCode PVOutWriteSHmax       (OutVec*);
+PetscErrorCode PVOutWriteStAngle     (OutVec*);
 PetscErrorCode PVOutWriteEHmax       (OutVec*);
 PetscErrorCode PVOutWriteYield       (OutVec*);
 PetscErrorCode PVOutWriteRelDIIdif   (OutVec*);

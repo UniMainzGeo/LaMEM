@@ -152,6 +152,7 @@ struct OutMask
 	PetscInt plast_dissip;   // plastic dissipation
 	PetscInt tot_displ;      // total displacements
 	PetscInt SHmax;          // maximum horizontal stress
+	PetscInt StAngle;        // Principal stress direction angle
 	PetscInt EHmax;          // maximum horizontal extension
 	PetscInt yield;          // yield stress
 	PetscInt DIIdif;         // diffusion creep relative strain rate
