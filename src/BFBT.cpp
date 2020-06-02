@@ -41,6 +41,7 @@ PetscErrorCode JacResGetViscMat(PMat pm)
 	PetscInt    Ip1, Im1, Jp1, Jm1, Kp1, Km1;
 	PetscInt    i, j, k, nx, ny, nz, sx, sy, sz, mx, my, mz;
 	PetscScalar bvx, fvx, bvy, fvy, bvz, fvz;
+	PetscScalar i_bvx, i_fvx, i_bvy, i_fvy, i_bvz, i_fvz;
 	PetscScalar bdx, fdx, bdy, fdy, bdz, fdz;
  	PetscScalar dx, dy, dz;
 
@@ -103,10 +104,13 @@ PetscErrorCode JacResGetViscMat(PMat pm)
 		bvy = (lk[k][j][i] + lk[k][Jm1][i])/2.0;      fvy = (lk[k][j][i] + lk[k][Jp1][i])/2.0;
 		bvz = (lk[k][j][i] + lk[Km1][j][i])/2.0;      fvz = (lk[k][j][i] + lk[Kp1][j][i])/2.0;
 
-		// inverse viscosities:
-		bvx = 1/sqrt(bvx);  		fvx = 1/sqrt(fvx);
-		bvy = 1/sqrt(bvy);  		fvy = 1/sqrt(fvy);
-		bvz = 1/sqrt(bvz);  		fvz = 1/sqrt(fvz);
+		// compute inverse squareroot of viscosities
+		i_bvx = 0; if(bvx > 0){i_bvx = 1/sqrt(bvx);};
+		i_fvx = 0; if(fvx > 0){i_fvx = 1/sqrt(fvx);};
+		i_bvy = 0; if(bvy > 0){i_bvy = 1/sqrt(bvy);};
+		i_fvy = 0; if(fvy > 0){i_fvy = 1/sqrt(fvy);};
+		i_bvz = 0; if(bvz > 0){i_bvz = 1/sqrt(bvz);};
+		i_fvz = 0; if(fvz > 0){i_fvz = 1/sqrt(fvz);};
 
 		// get mesh steps
 		bdx = SIZE_NODE(i, sx, fs->dsx);     fdx = SIZE_NODE(i+1, sx, fs->dsx);
@@ -129,15 +133,15 @@ PetscErrorCode JacResGetViscMat(PMat pm)
 		col[6].k = k;   col[6].j = j;   col[6].i = i;   col[6].c = 0;
 
 		// set values including TPC multipliers
-		v[0] = -bvx/bdx/dx*cf[0];
-		v[1] = -fvx/fdx/dx*cf[1];
-		v[2] = -bvy/bdy/dy*cf[2];
-		v[3] = -fvy/fdy/dy*cf[3];
-		v[4] = -bvz/bdz/dz*cf[4];
-		v[5] = -fvz/fdz/dz*cf[5];
-		v[6] =  (bvx/bdx + fvx/fdx)/dx
-			 +  (bvy/bdy + fvy/fdy)/dy
-		     +  (bvz/bdz + fvz/fdz)/dz;
+		v[0] = -i_bvx/bdx/dx*cf[0];
+		v[1] = -i_fvx/fdx/dx*cf[1];
+		v[2] = -i_bvy/bdy/dy*cf[2];
+		v[3] = -i_fvy/fdy/dy*cf[3];
+		v[4] = -i_bvz/bdz/dz*cf[4];
+		v[5] = -i_fvz/fdz/dz*cf[5];
+		v[6] =  (i_bvx/bdx + fvx/fdx)/dx
+			 +  (i_bvy/bdy + fvy/fdy)/dy
+		     +  (i_bvz/bdz + fvz/fdz)/dz;
 
 		// set matrix coefficients
 		ierr = MatSetValuesStencil(P->K, 1, row, 7, col, v, ADD_VALUES); CHKERRQ(ierr);

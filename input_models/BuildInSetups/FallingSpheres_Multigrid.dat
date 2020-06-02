@@ -22,7 +22,7 @@
 	inc_dt    = 0.1   # time step increment per time step (fraction of unit)
 	CFL       = 0.5   # CFL (Courant-Friedrichs-Lewy) criterion
 	CFLMAX    = 0.5   # CFL criterion for elasticity
-	nstep_max = 5     # maximum allowed number of steps (lower bound: time_end/dt_max)
+	nstep_max = 1     # maximum allowed number of steps (lower bound: time_end/dt_max)
 	nstep_out = 1     # save output every n steps
 	nstep_rdb = 0     # save restart database every n steps
 
@@ -218,7 +218,27 @@
     -jp_type bf
     #
     -bf_type wbfbt
-    #-ksp_view
+    #-vs_ 2
+    -vs_ksp_type fgmres
+	-vs_ksp_rtol 1.0e-6 (for StokesSolver 2)
+	-vs_ksp_max_it 500  (for StokesSolver 2)
+	-vs_ksp_rtol 1.0e-3 (for StokesSolver 3)
+	-vs_ksp_max_it 100  (for StokesSolver 3)
+	-vs_pc_type mg
+	-vs_pc_mg_levels 2
+	-vs_pc_mg_galerkin
+	-vs_pc_mg_type multiplicative
+	-vs_pc_mg_cycle_type v
+	-vs_mg_levels_ksp_type gmres
+	-vs_mg_levels_ksp_max_it 4
+	-vs_mg_levels_pc_type fieldsplit
+	-vs_mg_levels_pc_fieldsplit_type ADDITIVE
+	-vs_mg_levels_pc_fieldsplit_block_size 3
+	-vs_mg_coarse_ksp_type preonly
+	-vs_mg_coarse_pc_type lu                                   (for sequential mode) 
+	-vs_mg_coarse_pc_type redundant                            (for parallel mode)
+	-vs_mg_coarse_pc_redundant_number 2                        (for parallel mode)
+	-vs_mg_coarse_redundant_pc_factor_mat_solver_package mumps (for parallel mode)
 
 
 <PetscOptionsEnd>
