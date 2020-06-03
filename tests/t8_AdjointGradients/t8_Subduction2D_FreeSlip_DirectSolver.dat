@@ -72,7 +72,7 @@
 	gravity        = 0.0 0.0 -9.81  # gravity vector
 	FSSA           = 1.0            # free surface stabilization parameter [0 - 1]
 	init_guess     = 1              # initial guess flag
-	eta_min        = 1e18           # viscosity upper bound
+	eta_min        = 1e17           # viscosity upper bound
 	eta_ref 	   = 1e20			# reference viscosity for initial guess	
 	eta_max        = 1e23           # viscosity lower limit	
 	p_litho_visc   = 1              # use lithostatic pressure for creep laws
@@ -201,10 +201,10 @@
 #===============================================================================
 	
 	# General
-	Adjoint_mode    					= 	AdjointGradients #GradientDescent	 #AdjointGradients    	# options: [None; AdjointGradients, GradientDescent; Inversion]
+	Adjoint_mode    					= 	GradientDescent	 #AdjointGradients    	# options: [None; AdjointGradients, GradientDescent; Inversion]
 	Adjoint_ObservationPoints           = 	1						# options: [1=several points; 2=whole domain; 3=surface]
 	Adjoint_ObjectiveFunctionDef        = 	1                     	# options: [1-defined by hand; 0??]
-	Adjoint_GradientCalculation        	= 	Solution #CostFunction			# options [CostFunction= w.r.t. Cost function (e.g,);  Solution= w.r.t. Solution ]
+	Adjoint_GradientCalculation        	= 	CostFunction			# options [CostFunction= w.r.t. Cost function (e.g,);  Solution= w.r.t. Solution ]
 	Adjoint_FieldSensitivity    		= 	0      					# calculate Field-based =1 (aka. geodynamic sensity kernels), or Phase Based [=0]
 	Adjoint_ScaleCostFunction 			=	None
 	Adjoint_PrintScalingLaws			=	1						# Output scaling laws?
@@ -213,14 +213,16 @@
 	
 	# Inversion parameters
 	Inversion_EmployTAO 				=	0  
-	Inversion_rtol						=	1e-16
+	Inversion_rtol						=	1e-10
 	Inversion_maxit 					= 	200
 	Inversion_maxit_linesearch 			= 	100
-	Inversion_factor_linesearch 		=	1
+	Inversion_factor_linesearch 		=	1.1
+	Inversion_maxfac 					= 	5
+	Inversion_facB 						=	0.4
 
-	<AdjointParameterStart>
-		Type 			= AllMaterialParameters   	
-	<AdjointParameterEnd>
+#	<AdjointParameterStart>
+#		Type 			= AllMaterialParameters   	
+#	<AdjointParameterEnd>
 	 
 	 
 #	<AdjointParameterStart>
@@ -242,35 +244,53 @@
 	<AdjointParameterStart>
 	  	ID  		=	 0
 	    Type 		= 	eta
-    	InitGuess 	= 	21
+   		InitGuess 	= 	21
 		log10 		=	1
-		FD_gradient 	= 1	
+		FD_gradient = 0	
 	<AdjointParameterEnd>
 
-	<AdjointParameterStart>
-	  	ID  		=	 0
-	    Type 		= 	eta
-	    InitGuess 	= 	1e21
-		log10 		=	0
-	<AdjointParameterEnd>
+#	<AdjointParameterStart>
+#	  	ID  		=	0
+#	    Type 		= 	eta
+#	    InitGuess 	= 	1e21
+#		log10 		=	0
+#		FD_gradient 	= 0	
+#	<AdjointParameterEnd>
+
+#	<AdjointParameterStart>
+#	  	ID  		=	1
+#	    Type 		= 	eta
+#	    InitGuess 	= 	1e23
+#		log10 		=	0
+#		FD_gradient 	= 0	
+#	<AdjointParameterEnd>
+
+#	<AdjointParameterStart>
+#	  	ID  		=	2
+#	    Type 		= 	eta
+#	    InitGuess 	= 	1e23
+#		log10 		=	0
+#		FD_gradient 	= 0	
+#	<AdjointParameterEnd>
 
 	<AdjointParameterStart>
 	  	ID  		= 1
 	    Type 		= rho
 	    InitGuess 	= 3220
+		FD_gradient 	= 0	
 	<AdjointParameterEnd>
 
 	# Comparison indices
 	#<AdjointObservationPointStart>
-	#	Coordinate 			= 0.0.4375 0.5 0.5					
+	#	Coordinate 			= -200 0 -200					
 	#	VelocityComponent 	= z
-	#	Value  				= -0.04248
+	#	Value  				= -1
 	#<AdjointObservationPointEnd>
 	
 	<AdjointObservationPointStart>
-		Coordinate 			= -200 0 -200					
-		VelocityComponent 	= z
-		Value  				= -1
+		Coordinate 			=  600 0 -20					
+		VelocityComponent 	= x
+		Value  				= -0.36
 	<AdjointObservationPointEnd>
 	
 	
