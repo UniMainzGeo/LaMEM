@@ -18,6 +18,7 @@ sys.path.append(os.path.join(os.environ['PWD'], 't1_FB1_Direct'))
 sys.path.append(os.path.join(os.environ['PWD'], 't2_FB2_MG'))
 sys.path.append(os.path.join(os.environ['PWD'], 't4_Loc'))
 sys.path.append(os.path.join(os.environ['PWD'], 't5_Perm'))
+sys.path.append(os.path.join(os.environ['PWD'], 't6_AdjointGradientScaling'))
 sys.path.append(os.path.join(os.environ['PWD'], 't9_FB1_Direct_PhaseDiagrams'))
 sys.path.append(os.path.join(os.environ['PWD'], 't10_Compressibility'))
 sys.path.append(os.path.join(os.environ['PWD'], 't11_Subgrid'))
@@ -37,6 +38,7 @@ import test_1_FB1 as FB1
 import test_2_FB2 as FB2
 import test_4_localization as Loc1
 import test_5_permeability as Permeability
+import test_6_AdjointGradientScalingLaws  as Adj1 
 import test_9_FB_PhaseDiagrams1 as FBPD1
 import test_10_Compressibility as Comp1
 import test_11_SubGrid as Subgrid
@@ -47,7 +49,6 @@ import test_15_RTI as RTI
 
 if os.environ.get('MATLAB') != None:
   import test_3_Subduction1               as Sub1 # import test that requires MATLAB
-  #import test_6_AdjointGradientScaling1   as Adj1 # import test that requires MATLAB
   #import test_7_AdjointGradientInversion1 as Adj2 # import test that requires MATLAB
 
 def makeLocalPathAbsolute(localRelPath) :
@@ -60,6 +61,7 @@ def run_tests():
   registeredTests = [ FB1.test_a(),   FB1.test_b(),  FB1.test_c(),  FB1.test_d(),
                       FB2.test_a(),   Loc1.test_a(), Loc1.test_b(), Loc1.test_c(), FBPD1.test_a(),
                       Comp1.test_a(), Comp1.test_b(), Subgrid.test_a(), Diffusion.test_1D(), 
+                      Adj1.test_RTI_1(), Adj1.test_RTI_2(),
                       Permeability.test_a(), 
                       Rheology0D.ViscoElastic(),   Rheology0D.ViscoElastoPlastic(), Rheology0D.ViscoElastoPlastic_DislocationCreep(),
                       Rheology0D.LinearViscous(),  Rheology0D.DislocationCreeplaw(), Rheology0D.ViscoElastic_DislocationCreep(),

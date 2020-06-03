@@ -13,7 +13,7 @@
 | 
 | Adjoint: using all listed material parameters to compute gradients:   
 |   1 : adjoint          rho[0 ] = 1           
-|   2 : adjoint          eta[0 ] = 0.01        
+|   2 : adjoint          eta[0 ] = 10          
 |   3 : adjoint          rho[1 ] = 0           
 |   4 : adjoint          eta[1 ] = 1           
 |   Total number of adjoint gradients      : 4   
@@ -51,23 +51,23 @@ Time stepping parameters:
 Material parameters: 
    Phase ID : 0
    (dens)   : rho = 1. [ ]  
-   (diff)   : eta = 0.01 [ ]  Bd = 50. [ ]  
+   (diff)   : eta = 10. [ ]  Bd = 0.05 [ ]  
 
    Phase ID : 1
    (diff)   : eta = 1. [ ]  Bd = 0.5 [ ]  
 
 --------------------------------------------------------------------------
 Grid parameters:
-   Total number of cpu                  : 2 
-   Processor grid  [nx, ny, nz]         : [1, 1, 2]
+   Total number of cpu                  : 1 
+   Processor grid  [nx, ny, nz]         : [1, 1, 1]
    Fine grid cells [nx, ny, nz]         : [32, 1, 64]
    Number of cells                      :  2048
    Number of faces                      :  8288
-   Maximum cell aspect ratio            :  15.62500
-   Lower coordinate bounds [bx, by, bz] : [-0.5, -0.001, 0.]
-   Upper coordinate bounds [ex, ey, ez] : [0.5, 0.001, 1.]
+   Maximum cell aspect ratio            :  12.50000
+   Lower coordinate bounds [bx, by, bz] : [-0.4, -0.001, 0.]
+   Upper coordinate bounds [ex, ey, ez] : [0.4, 0.001, 1.]
 --------------------------------------------------------------------------
- Don't expect any magic with this aspect ratio 15.625 ...
+ Don't expect any magic with this aspect ratio 12.5 ...
 Free surface parameters: 
    Sticky air phase ID       : 0 
    Initial surface level     : 0.1 [ ] 
@@ -98,7 +98,7 @@ Advection parameters:
    Marker distribution type      : random noise
    Background phase ID           : 1 
 --------------------------------------------------------------------------
-Reading geometric primitives ... done (0.000494003 sec)
+Reading geometric primitives ... done (0.000701189 sec)
 --------------------------------------------------------------------------
 Output parameters:
    Output file name                        : RTI_test 
@@ -122,10 +122,10 @@ Preconditioner parameters:
 --------------------------------------------------------------------------
 Solver parameters specified: 
    Outermost Krylov solver       : gmres 
-   Solver type                   : parallel direct/lu 
-   Solver package                : superlu_dist 
+   Solver type                   : serial direct/lu 
+   Solver package                : petsc 
 --------------------------------------------------------------------------
-Saving output ... done (0.005265 sec)
+Saving output ... done (0.00394297 sec)
 --------------------------------------------------------------------------
 ================================= STEP 1 =================================
 --------------------------------------------------------------------------
@@ -134,32 +134,32 @@ Tentative time step : 100.00000 [ ]
 --------------------------------------------------------------------------
   0 SNES Function norm 4.270119966917e+01 
   0 PICARD ||F||/||F0||=1.000000e+00 
-  Linear js_ solve converged due to CONVERGED_RTOL iterations 8
-  1 SNES Function norm 5.051588359505e-08 
+  Linear js_ solve converged due to CONVERGED_RTOL iterations 20
+  1 SNES Function norm 7.291075981173e-09 
 --------------------------------------------------------------------------
 SNES Convergence Reason : maximum iterations reached
 Number of iterations    : 1
-SNES solution time      : 0.356309 (sec)
+SNES solution time      : 0.150572 (sec)
 --------------------------------------------------------------------------
 Residual summary: 
    Continuity: 
-      |Div|_inf = 5.636097127226e-09 
-      |Div|_2   = 5.051583127151e-08 
+      |Div|_inf = 1.150149788692e-11 
+      |Div|_2   = 6.267429358727e-11 
    Momentum: 
-      |mRes|_2  = 7.270719520010e-11 
+      |mRes|_2  = 7.290806601204e-09 
 --------------------------------------------------------------------------
 Actual time step : 110.00000 [ ] 
 --------------------------------------------------------------------------
-Saving output ... done (0.00569892 sec)
+Saving output ... done (0.00307322 sec)
 --------------------------------------------------------------------------
 =========================== SOLUTION IS DONE! ============================
 --------------------------------------------------------------------------
-Total solution time : 0.87088 (sec) 
+Total solution time : 0.334518 (sec) 
 --------------------------------------------------------------------------
 | ************************************************************************
 |                       COMPUTATION OF THE COST FUNCTION                    
 | ************************************************************************
-| Current Cost function = 5.9328970697e-06
+| Current Cost function = 6.5270073813e-07
 | ************************************************************************ 
 |                       COMPUTATION OF THE GRADIENTS                       
 | ************************************************************************ 
@@ -167,18 +167,18 @@ Total solution time : 0.87088 (sec)
 | Gradients: 
 |                    Parameter             |  Gradient (dimensional)  
 |                  -----------------------   ------------------------ 
-|  adjoint     1:          rho[ 0]            5.925987e-06 
-|  adjoint     2:          eta[ 0]           -4.645325e-06 
+|  adjoint     1:          rho[ 0]            6.525158e-07 
+|  adjoint     2:          eta[ 0]           -4.462657e-08 
 |  adjoint     3:          rho[ 1]           nan 
-|  adjoint     4:          eta[ 1]           -5.868922e-06 
+|  adjoint     4:          eta[ 1]           -2.059947e-07 
 | 
 | 
 | Observation points: 
 |                                                   Velocity [ ]       
 |                       Location         |      Target         Value     
 |       ---------------------------------  -- ------------- ------------- 
+| 1   : [    0.000;     0.000;     0.500]  Vz -4.24800e-02   6.52701e-07 
 | 
-| 1   : [    0.000;     0.000;     0.500]  Vz -4.24800e-02   5.93290e-06 
 | 
 | -------------------------------------------------------------------------
 | 
@@ -193,16 +193,16 @@ Total solution time : 0.87088 (sec)
 |   Results: 
 |            Parameter      |    Exponent b[]  |  Phase Description    
 |     ----------------------  -----------------  ----------------------- 
-|                  rho[  0]       0.999           Upper
-|                  eta[  1]      -0.989           Lower
-|                  eta[  0]      -0.008           Upper
+|                  rho[  0]       1.000           Upper
+|                  eta[  0]      -0.684           Upper
+|                  eta[  1]      -0.316           Lower
 |                  rho[  1]      nan              Lower
 |       
-|   Prefactor A               :  5.72278280e-06 
+|   Prefactor A               :  3.15090928e-06 
 |   Reference Density         :  0.00  
-|   Velocity check            :  5.93289707e-06 
+|   Velocity check            :  6.52700738e-07 
 |   Scaling law data saved to :  ScalingLaw.dat 
 |       
 | -------------------------------------------------------------------------
-| Adjoint computation was successful & took 0.875024 s                         	 
+| Adjoint computation was successful & took 0.335622 s                         	 
 | ************************************************************************ 
