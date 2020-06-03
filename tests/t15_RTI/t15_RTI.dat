@@ -36,7 +36,7 @@
 # Number of cells for all segments
 
 	nel_x = 64
-	nel_y = 2
+	nel_y = 1
 	nel_z = 64
 
 # Coordinates of all segments (including start and end points)
@@ -127,19 +127,21 @@
 
 	# Define properties of overburden
 	<MaterialStart>
+		Name 	= Upper
+		ID  	= 0   
+		rho 	= 1   
+		eta 	= 1
+	<MaterialEnd>
+
+	
+	# Define properties of lower layer 
+	<MaterialStart>
 		Name 	= Lower
 		ID  	= 1 
 		rho 	= 0
 		eta 	= 1 
 	<MaterialEnd>
 
-	# Define properties of sphere
-	<MaterialStart>
-		Name 	= Upper
-		ID  	= 0   
-		rho 	= 1   
-		eta 	= 1
-	<MaterialEnd>
 
 	
 #===============================================================================
@@ -161,8 +163,8 @@
 	-js_ksp_max_it 50
 #	-js_ksp_converged_reason
  	-js_ksp_monitor
-	-js_ksp_rtol 1e-10
-	-js_ksp_atol 1e-15
+	-js_ksp_rtol 1e-20
+	-js_ksp_atol 1e-19
 
         -snes_max_it 20
         -snes_atol 1e-12
