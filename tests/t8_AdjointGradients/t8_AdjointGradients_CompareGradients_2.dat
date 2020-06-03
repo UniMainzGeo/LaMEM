@@ -1,0 +1,262 @@
+# This compares FD and adjoint gradient for a ND setup, with nonlinear materials
+# to illustrate that the accuracy of the SNES solver matters 
+
+#===============================================================================
+# Scaling
+#===============================================================================
+
+	units = none
+
+#===============================================================================
+# Time stepping parameters
+#===============================================================================
+
+	time_end  = 1.0   # simulation end time
+	dt        = 1e-2  # time step
+	dt_min    = 1e-5  # minimum time step (declare divergence if lower value is attempted)
+	dt_max    = 0.1   # maximum time step
+	dt_out    = 0.2   # output step (output at least at fixed time intervals)
+	inc_dt    = 0.1   # time step increment per time step (fraction of unit)
+	CFL       = 0.5   # CFL (Courant-Friedrichs-Lewy) criterion
+	CFLMAX    = 0.5   # CFL criterion for elasticity
+	nstep_max = 1     # maximum allowed number of steps (lower bound: time_end/dt_max)
+	nstep_out = 10    # save output every n steps
+	nstep_rdb = 0     # save restart database every n steps
+
+
+#===============================================================================
+# Grid & discretization parameters
+#===============================================================================
+
+# Number of cells for all segments
+
+	nel_x = 8
+	nel_y = 8
+	nel_z = 8
+
+# Coordinates of all segments (including start and end points)
+
+	coord_x = 0.0 1.0
+	coord_y = 0.0 1.0
+	coord_z = 0.0 1.0
+
+#===============================================================================
+# Free surface
+#===============================================================================
+
+# Default
+
+#===============================================================================
+# Boundary conditions
+#===============================================================================
+
+# Default
+
+#===============================================================================
+# Solution parameters & controls
+#===============================================================================
+
+	gravity        = 0.0 0.0 -1.0   # gravity vector
+	FSSA           = 1.0            # free surface stabilization parameter [0 - 1]
+	init_guess     = 0              # initial guess flag
+	DII	           = 1e-6          # background (reference) strain-rate
+	eta_min        = 1e-3           # viscosity upper bound
+	eta_max        = 1e6           # viscosity lower limit
+		
+#===============================================================================
+# Solver options
+#===============================================================================
+	SolverType 			=	direct #multigrid 	# solver [direct or multigrid]
+	MGLevels 			=	3			# number of MG levels [default=3]
+	MGSweeps 			=	5			# number of MG smoothening steps per level [default=10]
+	MGSmoother 			=	chebyshev 	# type of smoothener used [chebyshev or jacobi]
+	MGJacobiDamp 		=	0.5			# Dampening parameter [only employed for Jacobi smoothener; default=0.6]
+	MGCoarseSolver 		=	mumps 		# coarse grid solver [direct/mumps/superlu_dist or redundant - more options specifiable through the command-line options -crs_ksp_type & -crs_pc_type]
+#	MGRedundantNum 		=	4			# How many times do we copy the coarse grid? [only employed for redundant solver; default is 4]
+#	MGRedundantSolver	= 	mumps		# The coarse grid solver for each of the redundant solves [only employed for redundant; options are mumps/superlu_dist with default superlu_dist]
+	
+	
+#===============================================================================
+# Model setup & advection
+#===============================================================================
+
+	msetup         = geom             # setup type
+	nmark_x        = 5                 # markers per cell in x-direction
+	nmark_y        = 5                 # ...                 y-direction
+	nmark_z        = 5                 # ...                 z-direction
+	bg_phase       = 0                 # background phase ID
+	rand_noise      = 1
+
+	#<BoxStart>
+	#	phase  = 1
+	#	bounds = 0.25 0.75 0.25 0.75 0.25 0.75  # (left, right, front, back, bottom, top)
+	#<BoxEnd>
+	
+	<SphereStart>
+		phase       = 1
+		radius      = 0.2
+		center      = 0.5 0.5 0.5
+	<SphereEnd>
+
+#===============================================================================
+# Output
+#===============================================================================
+
+# Grid output options (output is always active)
+
+	out_file_name       = AdjointGradients_test # output file name
+	out_pvd             = 1                     # activate writing .pvd file
+	out_density         = 1
+
+# AVD phase viewer output options (requires activation)
+
+	out_avd     = 1 # activate AVD phase output
+	out_avd_pvd = 1 # activate writing .pvd file
+	out_avd_ref = 3 # AVD grid refinement factor
+
+#===============================================================================
+# Material phase parameters
+#===============================================================================
+
+	# Define properties of matrix
+	<MaterialStart>
+		Name 	= Matrix
+		ID  	= 0 
+		rho 	= 1
+		#eta 	= 2
+		eta0 	= 2e0
+		n       = 2
+		e0      = 1e-6
+	<MaterialEnd>
+
+	# Define properties of sphere
+	<MaterialStart>
+		Name 	= FallingSphere
+		ID  	= 1   
+		rho 	= 2   
+		#eta 	= 1e3
+
+		eta0 	= 1e3
+		n       = 2
+		e0      = 1e-6
+	<MaterialEnd>
+	
+#===============================================================================
+# Adjoint Parameters 
+#===============================================================================
+	
+	# General
+	Adjoint_mode    					= 	AdjointGradients    	# options: [None; AdjointGradients, GradientDescent; Inversion]
+	Adjoint_ObservationPoints           = 	1						# options: [1=several points; 2=whole domain; 3=surface]
+	Adjoint_ObjectiveFunctionDef        = 	1                     	# options: [1-defined by hand; 0??]
+	Adjoint_GradientCalculation        	= 	Solution			# options [CostFunction= w.r.t. Cost function (e.g,);  Solution= w.r.t. Solution ]
+	Adjoint_FieldSensitivity    		= 	0      					# calculate Field-based =1 (aka. geodynamic sensity kernels), or Phase Based [=0]
+	Adjoint_ScaleCostFunction 			=	None
+	Adjoint_PrintScalingLaws			=	1						# Output scaling laws?
+	Adjoint_ScalingLawFilename 			=   ScalingLaw_Test.dat
+	Adjoint_ReferenceDensity 			=	1						# Reference density 
+	
+
+#	<AdjointParameterStart>
+#		Type 			= AllMaterialParameters   	
+#	<AdjointParameterEnd>
+	       
+#	<AdjointParameterStart>
+#	   	ID  			= 0		     	# phase of the parameter
+#		Type 			= rho     		# options: [rho0,rhon,rhoc,eta,eta0,n,En] 	
+#		InitGuess 		= 1  	     	# initial guess
+#		FD_gradient 	= 1
+#	<AdjointParameterEnd>
+	       
+#	<AdjointParameterStart>
+#	   	ID  			= 0		     	# phase of the parameter
+#		Type 			= rho     		# options: [rho0,rhon,rhoc,eta,eta0,n,En] 	
+#		InitGuess 		= 1  	     	# initial guess
+#		FD_gradient 	= 0
+#	<AdjointParameterEnd>
+	
+#	<AdjointParameterStart>
+#	   	ID  			= 1		     	# phase of the parameter
+#		Type 			= rho     		# options: [rho0,rhon,rhoc,eta,eta0,n,En] 	
+#		InitGuess 		= 2  	     	# initial guess
+#		FD_gradient 	= 1
+#	<AdjointParameterEnd>
+	       
+#	<AdjointParameterStart>
+#	   	ID  			= 1		     	# phase of the parameter
+#		Type 			= rho     		# options: [rho0,rhon,rhoc,eta,eta0,n,En] 	
+#		InitGuess 		= 2  	     	# initial guess
+#		FD_gradient 	= 0
+#	<AdjointParameterEnd>
+	
+#	<AdjointParameterStart>
+#	   	ID  			= 1		     	# phase of the parameter
+#		Type 			= eta     		# options: [rho0,rhon,rhoc,eta,eta0,n,En] 	
+#		InitGuess 		= 1e3  	     	# initial guess
+#		FD_gradient 	= 1
+#		log10 			=	0
+#	<AdjointParameterEnd>
+	       
+#	<AdjointParameterStart>
+#	   	ID  			= 	1		     	# phase of the parameter
+#		Type 			= 	eta     		# options: [rho0,rhon,rhoc,eta,eta0,n,En] 	
+#		InitGuess 		= 	1e3  	     	# initial guess
+#		FD_gradient 	= 	0
+#		log10 			=	0
+#	<AdjointParameterEnd>
+
+	<AdjointParameterStart>
+	   	ID  			= 0		     	# phase of the parameter
+		Type 			= n     		# options: [rho0,rhon,rhoc,eta,eta0,n,En] 	
+		InitGuess 		= 2e0  	     	# initial guess
+		FD_gradient 	= 1
+		FD_eps          = 1e-3
+		log10 			=	0
+	<AdjointParameterEnd>
+	       
+	<AdjointParameterStart>
+	   	ID  			= 	0		     	# phase of the parameter
+		Type 			= 	n     			# options: [rho0,rhon,rhoc,eta,eta0,n,En] 	
+		InitGuess 		= 	2e0  	     	# initial guess
+		FD_gradient 	= 	0
+		log10 			=	0
+	<AdjointParameterEnd>
+
+	<AdjointObservationPointStart>
+		Coordinate 			= 0.5 0.5 0.5					
+		VelocityComponent 	= z
+		Value  				= -0.04248
+	<AdjointObservationPointEnd>
+	
+
+	
+#===============================================================================
+# PETSc options
+#===============================================================================
+
+<PetscOptionsStart>
+
+	# LINEAR & NONLINEAR SOLVER OPTIONS
+#	-snes_type ksponly # no nonlinear solver
+
+	# LINEAR & NONLINEAR SOLVER OPTIONS
+	-snes_monitor
+	-snes_atol 1e-13   # 1e-12
+	-snes_rtol 1e-14
+	-snes_stol 1e-60
+	-snes_max_it 100
+	-snes_max_funcs 50000
+
+	# Jacobian (linear) outer KSP
+	-js_ksp_type gmres
+	-js_ksp_max_it 50
+	-js_ksp_converged_reason
+# 	-js_ksp_monitor
+	-js_ksp_rtol 1e-16
+	-js_ksp_atol 1e-14
+
+	
+
+<PetscOptionsEnd>
+
+#===============================================================================
