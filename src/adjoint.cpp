@@ -183,7 +183,7 @@ void AddParamToList(PetscInt ID, PetscScalar value, const char par_str[_str_len_
 	
 	// Check if there is a command-line option & use that instead
 	asprintf(&dbkey, "-%s[%i]", par_str,ID);
-	PetscOptionsGetScalarArray(NULL, NULL, dbkey, &val, &nval, &found);
+	PetscOptionsGetScalar(NULL, NULL, dbkey, &val, &found);
 	if (found){
 		value = val;	// found a command-line option
 	}
