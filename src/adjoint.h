@@ -119,9 +119,6 @@ PetscErrorCode PrintCostFunction(ModParam *IOparam);
 // Interpolate the adjoint points and include them into the projection vector
 PetscErrorCode AdjointPointInPro(JacRes *jr, AdjGrad *aop, ModParam *IOparam, FreeSurf *surf);
 
-// Perturb the input parameters within the gradient computation
-PetscErrorCode AdjointGradientPerturbParameter(NLSol *nl, PetscInt CurPar, PetscInt CurPhase, AdjGrad *aop, Scaling *scal);
-
 // PSD calculations
 PetscErrorCode AdjointGetStressAngleDerivatives(JacRes *jr, AdjGrad *aop, ModParam *IOparam);
 
@@ -133,7 +130,7 @@ PetscErrorCode AdjointFormResidualFieldFDRho(SNES snes, Vec x, Vec psi, NLSol *n
 
 // Add or remove parameters from command-line database & update material DB
 PetscErrorCode AddMaterialParameterToCommandLineOptions(char *name, PetscInt ID, PetscScalar val);
-PetscErrorCode DeleteMaterialParameterToCommandLineOptions(char *name, PetscInt ID);
+PetscErrorCode DeleteMaterialParameterFromCommandLineOptions(char *name, PetscInt ID);
 PetscErrorCode CreateModifiedMaterialDatabase(ModParam *IOparam);
 PetscErrorCode CopyParameterToLaMEMCommandLine(ModParam *IOparam, PetscScalar CurVal, PetscInt j);
 

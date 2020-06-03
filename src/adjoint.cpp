@@ -173,8 +173,22 @@ void AddParamToList(PetscInt ID, PetscScalar value, const char par_str[_str_len_
 		PetscInt    *FDgrad,
 		PetscScalar *FDeps)
 {
+	PetscInt 	nval;
+	PetscScalar val;
+	PetscBool 	found;	
+	char     	*dbkey;
+
 	strcpy(type_name[iP], par_str);
 	phsar[iP] 		=  	ID;
+	
+	// Check if there is a command-line option & use that instead
+	asprintf(&dbkey, "-%s[%i]", par_str,ID);
+	PetscOptionsGetScalarArray(NULL, NULL, dbkey, &val, &nval, &found);
+	if (found){
+		value = val;	// found a command-line option
+	}
+
+
 	Par[iP] 		=  	value;
 	Parameter_SetFDgrad_Option(&FDgrad[iP], type_name[iP]);	
 	FDeps[iP] 		=	0.0;
@@ -2634,214 +2648,6 @@ PetscErrorCode AdjointPointInPro(JacRes *jr, AdjGrad *aop, ModParam *IOparam, Fr
 	
 	PetscFunctionReturn(0);
 }
-//---------------------------------------------------------------------------
-// Obsolete, once the new method had been successfully tested
-#undef __FUNCT__
-#define __FUNCT__ "AdjointGradientPerturbParameter"
-PetscErrorCode AdjointGradientPerturbParameter(NLSol *nl, PetscInt CurPar, PetscInt CurPhase, AdjGrad *aop, Scaling *scal)
-{
-	PetscScalar         ini, perturb=0, curscal, curscalst, FD_epsilon;
-	Material_t         *mat;
-
-	PetscFunctionBegin;
-
-	mat = nl->pc->pm->jr->dbm->phases;
-
-	// Get the perturbation value & scaling
-    FD_epsilon  = aop->FD_epsilon;
-	curscal     = aop->CurScal;
-	curscalst   = aop->CurScalst;
-
-	// Perturb the current parameter in the current phase (more to be included)
-	if(CurPar==_RHO0_)			// rho
-	{
-		ini = mat[CurPhase].rho;
-		perturb = ini*FD_epsilon;
-		mat[CurPhase].rho +=  perturb;
-		curscal   = (scal->velocity)/(scal->density);
-		curscalst = 1/(scal->density);
-	}
-	else if (CurPar==_RHON_)	    // rho_n
-	{
-		ini = mat[CurPhase].rho_n;
-		perturb = ini*FD_epsilon;
-		mat[CurPhase].rho_n +=  perturb;
-		curscal   = (scal->velocity)/1;
-		curscalst = 1/1;
-	}
-	else if (CurPar==_RHOC_)	    // rho_c
-	{
-		ini = mat[CurPhase].rho_c;
-		perturb = ini*FD_epsilon;
-		mat[CurPhase].rho_c +=  perturb;
-		curscal = (scal->velocity)*(scal->length_si);
-		curscalst = 1/1;
-	}
-	else if (CurPar==_BULK_)	   // Kb (bulk modulus)
-	{
-		ini = mat[CurPhase].Kb;
-		perturb = ini*FD_epsilon;
-		mat[CurPhase].Kb +=  perturb;
-		curscal   = (scal->velocity)/(scal->stress_si);
-		curscalst = 1/(scal->stress_si);
-	}
-	else if (CurPar==_KP_)	    // Kp
-	{
-		ini = mat[CurPhase].Kp;
-		perturb = ini*FD_epsilon;
-		mat[CurPhase].Kp +=  perturb;
-		curscal   = (scal->velocity)/1;
-		curscalst = 1/1;
-	}
-	else if (CurPar==_SHEAR_)	    // G
-	{
-		ini = mat[CurPhase].G;
-		perturb = ini*FD_epsilon;
-		mat[CurPhase].G +=  perturb;
-		curscal   = (scal->velocity)/(scal->stress_si);
-		curscalst = 1/(scal->stress_si);
-	}
-	else if (CurPar==_ETA_)	    // Bd
-	{
-		// This kind of perturbs the whole NEWTONIAN viscosity, consider perturbing the parameters directly
-		ini = mat[CurPhase].Bd;
-		PetscScalar BdTemp;
-		perturb = FD_epsilon*(1.0/(2*ini));
-		BdTemp = (1.0/(2*ini)) + perturb;//(perturb*(1.0/(2*ini)));
-		mat[CurPhase].Bd =  (1.0/(2*BdTemp));
-		curscal   = (scal->velocity)/(scal->viscosity);
-		curscalst = 1/(scal->viscosity);
-	}
-	else if (CurPar==_ED_)	    // Ed
-	{
-		ini = mat[CurPhase].Ed;
-		perturb = ini*FD_epsilon;
-		mat[CurPhase].Ed +=  perturb;
-		curscal   = (scal->velocity)/(1);   // Not sure
-		curscalst = 1/1;
-	}
-	else if (CurPar==_VD_)	// Vd
-	{
-		ini = mat[CurPhase].Vd;
-		perturb = ini*FD_epsilon;
-		mat[CurPhase].Vd +=  perturb;
-		curscal   = (scal->velocity)*(scal->stress_si);
-		curscalst = 1*(scal->stress_si);
-	}
-	else if (CurPar==_ETA0_)	// Bn
-	{
-		// This kind of perturbs the whole DISLOCATION viscosity, consider perturbing the parameters directly
-		ini = mat[CurPhase].Bn;
-
-		// -- Uncomment to compute gradient for ETA0 --
-	//	perturb = FD_epsilon* (pow(( mat[CurPhase].Bn * pow(2,mat[CurPhase].n) * pow(aop->DII_ref, mat[CurPhase].n-1) *  pow(scal->stress_si, -mat[CurPhase].n) )/ scal->time_si , -1/mat[CurPhase].n));
-	//	ViscTemp = (pow(( mat[CurPhase].Bn * pow(2,mat[CurPhase].n) * pow(aop->DII_ref, mat[CurPhase].n-1) *  pow(scal->stress_si, -mat[CurPhase].n) )/ scal->time_si , -1/mat[CurPhase].n))  + perturb;
-	//	mat[CurPhase].Bn = pow (2.0*ViscTemp, -mat[CurPhase].n) * pow(aop->DII_ref, 1 - mat[CurPhase].n) * (pow(scal->stress_si, mat[CurPhase].n)*scal->time_si);
-		// -- Uncomment to compute gradient for BN --
-		// perturb = ini*perturb;
-		// mat[CurPhase].Bn +=  perturb;
-		curscal   = (scal->velocity)/(scal->viscosity);
-		curscalst = 1/(scal->viscosity);
-	}
-	else if (CurPar== _N_)	// n
-	{
-		ini = mat[CurPhase].n;
-		aop->Ini2 = mat[CurPhase].Bn;
-	//	PetscScalar ViscTemp = pow( (aop->Ini2 * pow(2,mat[CurPhase].n) * pow(aop->DII_ref, mat[CurPhase].n-1) * pow(scal->stress_si, -mat[CurPhase].n) ) / scal->time_si, -1/mat[CurPhase].n);
-		perturb = ini*FD_epsilon;
-		mat[CurPhase].n +=  perturb;
-		// We also accordingly need to perturb the inverse viscosity in this case
-	//	mat[CurPhase].Bn = (pow(2.0*ViscTemp, -mat[CurPhase].n) * pow(aop->DII_ref, 1 - mat[CurPhase].n)) * (pow(scal->stress_si, mat[CurPhase].n)*scal->time_si);
-		curscal   = (scal->velocity)/(1);
-		curscalst = 1/1;
-	}
-	else if (CurPar==_EN_)	// En
-	{
-		ini = mat[CurPhase].En;
-		perturb = ini*FD_epsilon;
-		mat[CurPhase].En +=  perturb;
-		curscal   = (scal->velocity)/(1);    // Not sure
-		curscalst = 1/1;
-	}
-	else if (CurPar==_VN_)	// Vn
-	{
-		ini = mat[CurPhase].Vn;
-		perturb = ini*FD_epsilon;
-		mat[CurPhase].Vn +=  perturb;
-		curscal   = (scal->velocity)*(scal->stress_si);
-		curscalst = 1*(scal->stress_si);
-	}
-	else if (CurPar==_TAUP_)	// taup
-	{
-		ini = mat[CurPhase].taup;
-		perturb = ini*FD_epsilon;
-		mat[CurPhase].taup +=  perturb;
-		curscal   = (scal->velocity)/(scal->stress_si);
-		curscalst = 1/(scal->stress_si);
-	}
-	else if (CurPar==_GAMMA_)	// gamma
-	{
-		ini = mat[CurPhase].gamma;
-		perturb = ini*FD_epsilon;
-		mat[CurPhase].gamma +=  perturb;
-		curscal   = (scal->velocity)/(1);
-		curscalst = 1/1;
-	}
-	else if (CurPar==_Q_)	// q
-	{
-		ini = mat[CurPhase].q;
-		perturb = ini*FD_epsilon;
-		mat[CurPhase].q +=  perturb;
-		curscal   = (scal->velocity)/(1);
-		curscalst = 1/1;
-	}
-	else if (CurPar==_FRICTION_)	// fr
-	{
-		ini = mat[CurPhase].fr;
-		perturb = ini*FD_epsilon;
-		mat[CurPhase].fr +=  perturb;
-		curscal   = (scal->velocity)/scal->angle;
-		curscalst = 1/scal->angle;
-	}
-	else if (CurPar==_COHESION_)	// ch
-	{
-		ini = mat[CurPhase].ch;
-		perturb = ini*FD_epsilon;
-		mat[CurPhase].ch +=  perturb;
-		curscal   = (scal->velocity)/scal->stress_si;
-		curscalst = 1/scal->stress_si;
-	}
-	else if (CurPar==_CP_)	// Cp
-	{
-		ini = mat[CurPhase].Cp;
-		perturb = ini*FD_epsilon;
-		mat[CurPhase].Cp +=  perturb;
-		curscal   = (scal->velocity)/scal->cpecific_heat;
-		curscalst = 1/scal->cpecific_heat;
-	}
-	else if (CurPar==_A_)	// A
-	{
-		ini = mat[CurPhase].A;
-		perturb = ini*FD_epsilon;
-		mat[CurPhase].A +=  perturb;
-		curscal   = (scal->velocity)/scal->heat_production;
-		curscalst = 1/scal->heat_production;
-	}
-	else
-	{
-		PetscPrintf(PETSC_COMM_WORLD,"| ADJOINT ERROR: Definition of the current parameter is not defined ; Choose between [0-15]\n");
-		PetscFunctionReturn(1);
-	}
-
-	// Store initial value of current parameter & scaling
-	aop->Ini 		= ini;
-	aop->CurScal 	= curscal;
-	aop->CurScalst  = curscalst;
-	aop->Perturb    = perturb;
-
-	PetscFunctionReturn(0);
-}
-//---------------------------------------------------------------------------
 #undef __FUNCT__
 #define __FUNCT__ "AdjointGradientResetParameter"
 PetscErrorCode AdjointGradientResetParameter(NLSol *nl, PetscInt CurPar, PetscInt CurPhase, AdjGrad *aop)
@@ -3529,7 +3335,7 @@ PetscErrorCode AddMaterialParameterToCommandLineOptions(char *name, PetscInt ID,
     PetscBool       PrintOutput=PETSC_FALSE;
     
     PetscFunctionBegin;
-    if (ID<0){	asprintf(&option, "-%s", name); }
+    if (ID<0){	asprintf(&option, "-%s ", name); }
 	else{ 		asprintf(&option, "-%s[%i]", name, ID); }
 	asprintf(&option_value, "%10.20e", val);
 
@@ -3562,7 +3368,7 @@ PetscErrorCode CopyParameterToLaMEMCommandLine(ModParam *IOparam, PetscScalar Cu
 	CurPhase = 	IOparam->phs[j];			// phase of the parameter
     strcpy(CurName, IOparam->type_name[j]);	// name
 
-	ierr = DeleteMaterialParameterToCommandLineOptions(CurName, CurPhase); 		CHKERRQ(ierr);
+	ierr = DeleteMaterialParameterFromCommandLineOptions(CurName, CurPhase); 		CHKERRQ(ierr);
 
 	if (IOparam->par_log10[j]==1){
 		val = pow(10,CurVal);
@@ -3583,8 +3389,8 @@ PetscErrorCode CopyParameterToLaMEMCommandLine(ModParam *IOparam, PetscScalar Cu
 
 //---------------------------------------------------------------------------
 #undef __FUNCT__
-#define __FUNCT__ "DeleteMaterialParameterToCommandLineOptions"
-PetscErrorCode DeleteMaterialParameterToCommandLineOptions(char *name, PetscInt ID)
+#define __FUNCT__ "DeleteMaterialParameterFromCommandLineOptions"
+PetscErrorCode DeleteMaterialParameterFromCommandLineOptions(char *name, PetscInt ID)
 {
     PetscErrorCode  ierr;
 	char            *option;
