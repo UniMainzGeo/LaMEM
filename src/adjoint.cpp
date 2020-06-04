@@ -1775,9 +1775,17 @@ PetscErrorCode AdjointComputeGradients(JacRes *jr, AdjGrad *aop, NLSol *nl, SNES
 		if (flg)		// we need some way to ensure that we do this for one field at a time only
 		{
 			PetscPrintf(PETSC_COMM_WORLD,"| Starting computation of Field-based gradients for rho.  \n");	
-			aop->CurScal   = (scal->velocity)/(1);
-			ierr = AdjointFormResidualFieldFDRho(snes, sol, psi, nl, aop);          CHKERRQ(ierr);
-
+			// Compute the gradient
+			if(IOparam->MfitType == 0)
+			{
+				aop->CurScal   = (scal->velocity)/(1);
+				ierr = AdjointFormResidualFieldFDRho(snes, sol, psi, nl, aop);          CHKERRQ(ierr);
+			}
+			else if(IOparam->MfitType == 1)
+			{
+				aop->CurScal   = (1)/(1);
+				ierr = AdjointFormResidualFieldFDRho(snes, sol, psiphi, nl, aop);          CHKERRQ(ierr);
+			}
 			PetscPrintf(PETSC_COMM_WORLD,"| Finished gradient computation & added it to VTK\n");
 			PetscPrintf(PETSC_COMM_WORLD,"| Add '-out_gradient = 1' to your parameter file. \n");
 		}
@@ -2707,7 +2715,7 @@ PetscErrorCode AdjointFormResidualFieldFDRho(SNES snes, Vec x, Vec psi, NLSol *n
 	BCCtx      *bc;
 	SolVarCell *svCell;
 	SolVarEdge *svEdge;
-	PetscInt    iter, lrank;
+	PetscInt    iter, temprank;
 	PetscInt    I1, I2, J1, J2, K1, K2;
 	PetscInt    i, j, k, nx, ny, nz, sx, sy, sz, mx, my, mz, mcx, mcy, mcz;
 	PetscScalar XX, XX1, XX2, XX3, XX4;
@@ -2722,7 +2730,7 @@ PetscErrorCode AdjointFormResidualFieldFDRho(SNES snes, Vec x, Vec psi, NLSol *n
 	PetscScalar grdt;
 	PetscScalar ***fx,  ***fy,  ***fz, ***vx,  ***vy,  ***vz, ***gc, ***bcp, ***llgradfield;
 	PetscScalar ***dxx, ***dyy, ***dzz, ***dxy, ***dxz, ***dyz, ***p, ***T, ***p_lith, ***p_pore;
-	Vec         rpl, res;
+	Vec         rpl, res, drdp, Perturb;
 
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
@@ -2733,6 +2741,8 @@ PetscErrorCode AdjointFormResidualFieldFDRho(SNES snes, Vec x, Vec psi, NLSol *n
 	// Create stuff
 	ierr = VecDuplicate(jr->gres, &res);	 	 CHKERRQ(ierr);
 	ierr = VecDuplicate(jr->gres, &rpl);		 CHKERRQ(ierr);
+	ierr = VecDuplicate(jr->gsol, &drdp);	 	 CHKERRQ(ierr);
+	ierr = VecDuplicate(jr->gsol, &Perturb);	 	 CHKERRQ(ierr);
 	
 	ierr = VecZeroEntries(jr->lgradfield);	 	 CHKERRQ(ierr);
 
@@ -2771,6 +2781,7 @@ PetscErrorCode AdjointFormResidualFieldFDRho(SNES snes, Vec x, Vec psi, NLSol *n
 		{
 			for(PetscInt ik=0;ik<fs->dsz.tcels;ik++)
 			{
+
 				// setup constitutive equation evaluation context parameters
 				ierr = setUpConstEq(&ctx, jr); CHKERRQ(ierr);
 
@@ -2879,9 +2890,10 @@ PetscErrorCode AdjointFormResidualFieldFDRho(SNES snes, Vec x, Vec psi, NLSol *n
 					// evaluate constitutive equations on the cell
 					ierr = cellConstEq(&ctx, svCell, XX, YY, ZZ, sxx, syy, szz, gres, rho); CHKERRQ(ierr);
 
+					// Set perturbation paramter for the finite differences
+					aop->Perturb = 1;
 					if ((i)==ik && (j)==jk && (k)==kk)
 					{
-						// Set perturbation paramter for the finite differences
 						aop->Perturb = rho*aop->FD_epsilon;
 						rho += aop->Perturb;
 					}
@@ -3284,8 +3296,11 @@ PetscErrorCode AdjointFormResidualFieldFDRho(SNES snes, Vec x, Vec psi, NLSol *n
 				ierr = JacResCopyRes(jr, rpl); CHKERRQ(ierr);
 
 				ierr = FormResidual(snes, x, res, nl);              CHKERRQ(ierr);
+
 				ierr = VecAYPX(res,-1,rpl);                           CHKERRQ(ierr);
-				ierr = VecScale(res,1/aop->Perturb);                      							CHKERRQ(ierr);        // res = (res_perturbed-res)/Perturb
+				ierr = VecScale(res,1/aop->Perturb);   CHKERRQ(ierr);
+				// ierr = VecSet(Perturb,1/aop->Perturb);   CHKERRQ(ierr);
+				// ierr = VecPointwiseMult(drdp, res, Perturb); CHKERRQ(ierr);
 
 				// Compute the gradient
 				ierr = VecDot(res,psi,&grdt);    CHKERRQ(ierr);
@@ -3296,15 +3311,15 @@ PetscErrorCode AdjointFormResidualFieldFDRho(SNES snes, Vec x, Vec psi, NLSol *n
 
 				if (ik >= sx && ik < sx+nx && jk >= sy && jk < sy+ny && kk >= sz && kk < sz+nz)
 				{
-					lrank = 13;
+					temprank = 13;
 				}
 				else
 				{
-					lrank = 100;
+					temprank = 100;
 				}
 
-				// If lrank is not 13 the point is not on this processor
-				if(lrank == 13)
+				// If temprank is not 13 the point is not on this processor
+				if(temprank == 13)
 				{
 					llgradfield[kk][jk][ik] = -grdt*aop->CurScal;
 				}
@@ -3325,6 +3340,9 @@ PetscErrorCode AdjointFormResidualFieldFDRho(SNES snes, Vec x, Vec psi, NLSol *n
 
 	ierr = VecDestroy(&rpl);   CHKERRQ(ierr);
 	ierr = VecDestroy(&res);   CHKERRQ(ierr);
+	ierr = VecDestroy(&drdp);   CHKERRQ(ierr);
+	ierr = VecDestroy(&Perturb);   CHKERRQ(ierr);
+
 
 	PetscFunctionReturn(0);
 
@@ -3969,7 +3987,7 @@ PetscErrorCode AdjointGetStressAngleDerivatives(JacRes *jr, AdjGrad *aop, ModPar
 						dphidu_local = 1;    // -> use this for sens Kernel
 
 						// Just give back norm of solution at the points
-						mfitPSD += (phival)*(phival);
+						mfitPSD += (phival);
 					}
 
 					Cons = -1 * (1/(pow(XX-YY,2)+4*pow(XY,2)));   // See up there that if phival < 0 -> dphi = - & if phival > 0 -> dphi = - as well
