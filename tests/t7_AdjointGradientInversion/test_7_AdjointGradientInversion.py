@@ -18,22 +18,22 @@ def SubductionInversion_GD():
   def comparefunc(unittest):
 
     key = re.escape("| Fold =")
-    unittest.compareFloatingPoint(key,1e-9)
+    unittest.compareFloatingPoint(key,1e-5)
 
     key = re.escape("|    F =")
-    unittest.compareFloatingPoint(key,1e-9)
+    unittest.compareFloatingPoint(key,1e-5)
 
     key = re.escape("| 1. Diff parameter value =")
-    unittest.compareFloatingPoint(key,1e-8)
+    unittest.compareFloatingPoint(key,1e-5)
 
     key = re.escape("| 2. Diff parameter value =")
-    unittest.compareFloatingPoint(key,1e-8)
+    unittest.compareFloatingPoint(key,1e-5)
 
     key = re.escape("| 1. Parameter value =")
-    unittest.compareFloatingPoint(key,1e-3)
+    unittest.compareFloatingPoint(key,1e-5)
 
     key = re.escape("| 2. Parameter value =")
-    unittest.compareFloatingPoint(key,1e-3)
+    unittest.compareFloatingPoint(key,1e-5)
 
   # Create unit test object
   ex1 = pth.pthUnitTest('t7_AdjointGradientInversion_1',ranks,launch,expected_file)
@@ -53,22 +53,22 @@ def SubductionInversion_TAO():
   def comparefunc(unittest):
 
     key = re.escape("| misfit           =")
-    unittest.compareFloatingPoint(key,1e-9)
+    unittest.compareFloatingPoint(key,1e-5)
 
     key = re.escape("| misfit / misfit0 =")
-    unittest.compareFloatingPoint(key,1e-9)
+    unittest.compareFloatingPoint(key,1e-5)
 
     key = re.escape("|   1. eta[0] =")
-    unittest.compareFloatingPoint(key,1e-8)
+    unittest.compareFloatingPoint(key,1e-5)
 
     key = re.escape("|   2. rho[1] =")
-    unittest.compareFloatingPoint(key,1e-8)
+    unittest.compareFloatingPoint(key,1e-5)
 
     key = re.escape("|  adjoint     1:   log10  eta[ 0]")
-    unittest.compareFloatingPoint(key,1e-6)
+    unittest.compareFloatingPoint(key,1e-5)
 
     key = re.escape("|  adjoint     2:          rho[ 1]")
-    unittest.compareFloatingPoint(key,1e-6)
+    unittest.compareFloatingPoint(key,1e-5)
 
   # Create unit test object
   ex1 = pth.pthUnitTest('t7_AdjointGradientInversion_2',ranks,launch,expected_file)
@@ -89,22 +89,22 @@ def SubductionInversion_FD_TAO():
   def comparefunc(unittest):
 
     key = re.escape("| misfit           =")
-    unittest.compareFloatingPoint(key,1e-9)
+    unittest.compareFloatingPoint(key,1e-5)
 
     key = re.escape("| misfit / misfit0 =")
-    unittest.compareFloatingPoint(key,1e-9)
+    unittest.compareFloatingPoint(key,1e-5)
 
     key = re.escape("|   1. eta[0] =")
-    unittest.compareFloatingPoint(key,1e-8)
+    unittest.compareFloatingPoint(key,1e-5)
 
     key = re.escape("|   2. rho[1] =")
-    unittest.compareFloatingPoint(key,1e-8)
+    unittest.compareFloatingPoint(key,1e-5)
 
-    key = re.escape("|  adjoint     1:   log10  eta[ 0]")
-    unittest.compareFloatingPoint(key,1e-6)
+    key = re.escape("|       FD     1:   log10  eta[ 0]")
+    unittest.compareFloatingPoint(key,1e-5)
 
-    key = re.escape("|  adjoint     2:          rho[ 1]")
-    unittest.compareFloatingPoint(key,1e-6)
+    key = re.escape("|       FD     2:          rho[ 1]")
+    unittest.compareFloatingPoint(key,1e-5)
 
   # Create unit test object
   ex1 = pth.pthUnitTest('t7_AdjointGradientInversion_3',ranks,launch,expected_file)
