@@ -90,7 +90,7 @@ def SubductionInversion_FD_TAO():
 
     key = re.escape("| misfit / misfit0 =")
     unittest.compareFloatingPoint(key,1e-3)
-    
+
     key = re.escape("|   1. eta[0] =")
     unittest.compareFloatingPoint(key,1e-3)
 
