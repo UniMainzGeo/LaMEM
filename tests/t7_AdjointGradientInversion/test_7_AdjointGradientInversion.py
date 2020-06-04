@@ -17,11 +17,8 @@ def SubductionInversion_GD():
 
   def comparefunc(unittest):
 
-    key = re.escape("| Fold =")
-    unittest.compareFloatingPoint(key,1e-5)
-
-    key = re.escape("|    F =")
-    unittest.compareFloatingPoint(key,1e-5)
+    key = re.escape("F / FINI =")
+    unittest.compareFloatingPoint(key,1e-6)
 
     key = re.escape("| 1. Diff parameter value =")
     unittest.compareFloatingPoint(key,1e-5)
@@ -47,7 +44,7 @@ def SubductionInversion_TAO():
 
   # Note that we run this at a low resolution to speed up testing & that we only compare the 
   ranks = 1
-  launch = '../bin/opt/LaMEM -ParamFile t7_AdjointGradientInversion/t7_Subduction2D_FreeSlip_Inversion.dat -nel_z 16 -nel_x 64 -Inversion_EmployTAO 1 | grep "| "'
+  launch = '../bin/opt/LaMEM -ParamFile t7_AdjointGradientInversion/t7_Subduction2D_FreeSlip_Inversion.dat -tao_fmin 1e-6 -nel_z 16 -nel_x 64 -Inversion_EmployTAO 1 | grep "| "'
   expected_file = 't7_AdjointGradientInversion/t7_AdjointGradientInversion_2.expected'
 
   def comparefunc(unittest):
@@ -83,7 +80,7 @@ def SubductionInversion_FD_TAO():
 
   # Note that we run this at a low resolution to speed up testing & that we only compare the 
   ranks = 1
-  launch = '../bin/opt/LaMEM -ParamFile t7_AdjointGradientInversion/t7_Subduction2D_FreeSlip_Inversion_FD.dat -nel_z 16 -nel_x 32 | grep "| "'
+  launch = '../bin/opt/LaMEM -ParamFile t7_AdjointGradientInversion/t7_Subduction2D_FreeSlip_Inversion_FD.dat -tao_fmin 1e-6 -nel_z 16 -nel_x 32 | grep "| "'
   expected_file = 't7_AdjointGradientInversion/t7_AdjointGradientInversion_3.expected'
 
   def comparefunc(unittest):

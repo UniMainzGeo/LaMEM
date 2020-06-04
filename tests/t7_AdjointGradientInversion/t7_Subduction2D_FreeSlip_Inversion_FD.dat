@@ -213,7 +213,7 @@
 	
 	# Inversion parameters
 	Inversion_EmployTAO 				=	1  
-	Inversion_rtol						=	1e-8
+	Inversion_rtol						=	1e-7
 	Inversion_maxit 					= 	200
 	Inversion_maxit_linesearch 			= 	100
 	Inversion_factor_linesearch 		=	1.1
@@ -260,7 +260,8 @@
 	# LINEAR & NONLINEAR SOLVER OPTIONS
 	-snes_ksp_ew
 
-
+	
+	
 	-js_ksp_monitor # display how the inner iterations converge
 
 
