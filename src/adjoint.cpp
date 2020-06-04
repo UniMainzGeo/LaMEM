@@ -377,8 +377,8 @@ PetscErrorCode LaMEMAdjointReadInputSetDefaults(ModParam *IOparam, Adjoint_Vecs 
 	PetscErrorCode 	ierr;
 	FB 				*fb;
 	PetscScalar     *gradar, *Ubar, *Lbar, ts, *Par, mean, var;
-	PetscInt         i, j, ti, ID, iStart, p;
-	char             str[_str_len_], par_str[_str_len_], Vel_comp[_str_len_];
+	PetscInt         i, j, ti, ID, iStart, p, ct1, ct2;
+	char             str[_str_len_], par_str[_str_len_], Vel_comp[_str_len_], ParType[_str_len_];
 	Scaling          scal;
 
 	fb 					=	IOparam->fb;	// filebuffer
@@ -413,8 +413,6 @@ PetscErrorCode LaMEMAdjointReadInputSetDefaults(ModParam *IOparam, Adjoint_Vecs 
     if     	(!strcmp(str, "CostFunction"))      IOparam->Gr=0;
 	else if (!strcmp(str, "Solution"))          IOparam->Gr=1;
 	else{	SETERRQ1(PETSC_COMM_WORLD, PETSC_ERR_USER, "Choose either [Solution; CostFunction] as parameter for Adjoint_GradientCalculation, not %s",str);} 
-
-	ierr = getIntParam   (fb, _OPTIONAL_, "Adjoint_CostFunction"         , &IOparam->MfitType,        1, 1        ); CHKERRQ(ierr);  // What observation? 0 = Vel; 1 = PSD
 
 	ierr = getStringParam(fb, _OPTIONAL_, "Adjoint_ScaleCostFunction", str, NULL); CHKERRQ(ierr);  // must have component
     if     	(!strcmp(str, "None"))      IOparam->SCF=0;
@@ -720,7 +718,9 @@ PetscErrorCode LaMEMAdjointReadInputSetDefaults(ModParam *IOparam, Adjoint_Vecs 
     {
       	PetscPrintf(PETSC_COMM_WORLD, "| \n ");
     }
-    	
+
+	ct1 = 0;
+	ct2 = 0;   // used to check that only one observation type is used    	
     for(i = 0; i < fb->nblocks; i++)
 	{
 		// retrieve the coordinates of the sample points	
@@ -728,6 +728,13 @@ PetscErrorCode LaMEMAdjointReadInputSetDefaults(ModParam *IOparam, Adjoint_Vecs 
 		Ax[i] 	= (IOparam->Coord[0])/scal.length;
 		Ay[i] 	= (IOparam->Coord[1])/scal.length;
 		Az[i] 	= (IOparam->Coord[2])/scal.length;
+
+		// Determine what cost function type is used
+		ierr 	= getStringParam(fb, _REQUIRED_, "Parameter", ParType, NULL); CHKERRQ(ierr);  // must have component
+		if     	(!strcmp(ParType, "Vel")){    IOparam->MfitType = 0;  ct1++;}
+		else if	(!strcmp(ParType, "PSD")){    IOparam->MfitType = 1;  ct2++;}
+		else{	SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "Choose either [Vel,PSD] as Parameter\n");} 
+		if (ct1 > 0 && ct2 > 0)  SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "Only one Parameter for observation is allowed [Vel,PSD]\n");
 	
 		if (IOparam->MfitType == 0)
 		{

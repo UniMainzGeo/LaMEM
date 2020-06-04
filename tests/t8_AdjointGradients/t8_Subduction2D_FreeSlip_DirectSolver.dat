@@ -288,7 +288,8 @@
 	#<AdjointObservationPointEnd>
 	
 	<AdjointObservationPointStart>
-		Coordinate 			=  600 0 -20					
+		Coordinate 			=  600 0 -20	
+		Parameter           = Vel
 		VelocityComponent 	= x
 		Value  				= -0.36
 	<AdjointObservationPointEnd>

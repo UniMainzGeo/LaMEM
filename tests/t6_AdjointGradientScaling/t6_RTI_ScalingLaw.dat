@@ -176,7 +176,8 @@
 #	<AdjointParameterEnd>
 
 	<AdjointObservationPointStart>
-		Coordinate 			= 0.0 0 0.5					
+		Coordinate 			= 0.0 0 0.5	
+		Parameter           = Vel
 		VelocityComponent 	= z
 		Value  				= -0.04248
 	<AdjointObservationPointEnd>
