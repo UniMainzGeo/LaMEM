@@ -164,9 +164,6 @@ def SubductionSetup_Dimensional():
     key = re.escape("|mRes|_2")
     unittest.compareFloatingPoint(key,1e-8)
 
-    key = re.escape("|   Prefactor A               : ")
-    unittest.compareFloatingPoint(key,1e-8)
-
     key = re.escape("|                  eta[  0]")
     unittest.compareFloatingPoint(key,1e-8)
 
