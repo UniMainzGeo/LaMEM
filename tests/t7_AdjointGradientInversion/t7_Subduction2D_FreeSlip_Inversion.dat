@@ -213,7 +213,7 @@
 	
 	# Inversion parameters
 	Inversion_EmployTAO 				=	0  
-	Inversion_rtol						=	1e-10
+	Inversion_rtol						=	1e-8
 	Inversion_maxit 					= 	200
 	Inversion_maxit_linesearch 			= 	100
 	Inversion_factor_linesearch 		=	1.1

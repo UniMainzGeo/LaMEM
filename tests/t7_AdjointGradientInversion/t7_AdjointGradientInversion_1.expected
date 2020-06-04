@@ -12,7 +12,7 @@
 |    Maximum gradient descent iterations      : 200    
 |    Maximum linesearch iterations            : 100    
 |    Apply bounds                             : 0    
-|    Tolerance (F/Fini)                       : 1.00000e-10  
+|    Tolerance (F/Fini)                       : 1.00000e-08  
 |    Not employing TAO, but instead our build-in gradient algorithm, with the following parameters: 
 |     Linesearch factor (successful update)    : 1.10000e+00  
 |     Linesearch factor (overstep)             : 4.00000e-01  
@@ -1059,5 +1059,5 @@ SNES Convergence Reason : ||F|| < rtol*||F_initial||
 | eta[0] = 2.03213e+01
 | rho[1] = 3.22001e+03
 | ------------------------------------------------------------------------- 
-| Adjoint computation was successful & took 11.1238 s                         	 
+| Adjoint computation was successful & took 14.0083 s                         	 
 | ************************************************************************ 
