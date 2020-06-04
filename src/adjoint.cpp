@@ -2730,7 +2730,7 @@ PetscErrorCode AdjointFormResidualFieldFDRho(SNES snes, Vec x, Vec psi, NLSol *n
 	PetscScalar grdt;
 	PetscScalar ***fx,  ***fy,  ***fz, ***vx,  ***vy,  ***vz, ***gc, ***bcp, ***llgradfield;
 	PetscScalar ***dxx, ***dyy, ***dzz, ***dxy, ***dxz, ***dyz, ***p, ***T, ***p_lith, ***p_pore;
-	Vec         rpl, res, drdp, Perturb;
+	Vec         rpl, res;
 
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
@@ -2741,8 +2741,6 @@ PetscErrorCode AdjointFormResidualFieldFDRho(SNES snes, Vec x, Vec psi, NLSol *n
 	// Create stuff
 	ierr = VecDuplicate(jr->gres, &res);	 	 CHKERRQ(ierr);
 	ierr = VecDuplicate(jr->gres, &rpl);		 CHKERRQ(ierr);
-	ierr = VecDuplicate(jr->gsol, &drdp);	 	 CHKERRQ(ierr);
-	ierr = VecDuplicate(jr->gsol, &Perturb);	 	 CHKERRQ(ierr);
 	
 	ierr = VecZeroEntries(jr->lgradfield);	 	 CHKERRQ(ierr);
 
@@ -2790,6 +2788,8 @@ PetscErrorCode AdjointFormResidualFieldFDRho(SNES snes, Vec x, Vec psi, NLSol *n
 				ierr = VecZeroEntries(jr->lfy); CHKERRQ(ierr);
 				ierr = VecZeroEntries(jr->lfz); CHKERRQ(ierr);
 				ierr = VecZeroEntries(jr->gc);  CHKERRQ(ierr);
+				temprank = 100;
+				aop->Perturb = 1;
 
 				// access work vectors
 				ierr = DMDAVecGetArray(fs->DA_CEN, jr->gc,      &gc);     CHKERRQ(ierr);
@@ -2891,7 +2891,6 @@ PetscErrorCode AdjointFormResidualFieldFDRho(SNES snes, Vec x, Vec psi, NLSol *n
 					ierr = cellConstEq(&ctx, svCell, XX, YY, ZZ, sxx, syy, szz, gres, rho); CHKERRQ(ierr);
 
 					// Set perturbation paramter for the finite differences
-					aop->Perturb = 1;
 					if ((i)==ik && (j)==jk && (k)==kk)
 					{
 						aop->Perturb = rho*aop->FD_epsilon;
@@ -3299,8 +3298,6 @@ PetscErrorCode AdjointFormResidualFieldFDRho(SNES snes, Vec x, Vec psi, NLSol *n
 
 				ierr = VecAYPX(res,-1,rpl);                           CHKERRQ(ierr);
 				ierr = VecScale(res,1/aop->Perturb);   CHKERRQ(ierr);
-				// ierr = VecSet(Perturb,1/aop->Perturb);   CHKERRQ(ierr);
-				// ierr = VecPointwiseMult(drdp, res, Perturb); CHKERRQ(ierr);
 
 				// Compute the gradient
 				ierr = VecDot(res,psi,&grdt);    CHKERRQ(ierr);
@@ -3340,8 +3337,6 @@ PetscErrorCode AdjointFormResidualFieldFDRho(SNES snes, Vec x, Vec psi, NLSol *n
 
 	ierr = VecDestroy(&rpl);   CHKERRQ(ierr);
 	ierr = VecDestroy(&res);   CHKERRQ(ierr);
-	ierr = VecDestroy(&drdp);   CHKERRQ(ierr);
-	ierr = VecDestroy(&Perturb);   CHKERRQ(ierr);
 
 
 	PetscFunctionReturn(0);
