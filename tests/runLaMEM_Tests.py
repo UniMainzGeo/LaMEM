@@ -39,7 +39,7 @@ import test_2_FB2 as FB2
 import test_4_localization as Loc1
 import test_5_permeability as Permeability
 import test_6_AdjointGradientScalingLaws  as Adj1 
-#import test_6_AdjointGradientScalingLaws  as Adj1 
+import test_7_AdjointGradientInversion  as Adj2 
 import test_8_AdjointGradients  as Adj3 
 import test_9_FB_PhaseDiagrams1 as FBPD1
 import test_10_Compressibility as Comp1
@@ -63,8 +63,9 @@ def run_tests():
                       FB2.test_a(),   Loc1.test_a(), Loc1.test_b(), Loc1.test_c(), FBPD1.test_a(),
                       Comp1.test_a(), Comp1.test_b(), Subgrid.test_a(), Diffusion.test_1D(), 
                       Adj1.test_RTI_1(), Adj1.test_RTI_2(),
+                      Adj2.SubductionInversion_GD(), Adj2.SubductionInversion_TAO(), Adj2.SubductionInversion_FD_TAO(),
                       Adj3.rho_SensitivityKernel(), Adj3.FallingSphere_ND_all(), Adj3.FallingSphere_ND_CompareGradients_1(),
-                      Adj3.FallingSphere_ND_CompareGradients_2(),
+                      Adj3.FallingSphere_ND_CompareGradients_2(), Adj3.SubductionSetup_Dimensional(),
                       Permeability.test_a(), 
                       Rheology0D.ViscoElastic(),   Rheology0D.ViscoElastoPlastic(), Rheology0D.ViscoElastoPlastic_DislocationCreep(),
                       Rheology0D.LinearViscous(),  Rheology0D.DislocationCreeplaw(), Rheology0D.ViscoElastic_DislocationCreep(),

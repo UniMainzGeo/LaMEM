@@ -143,3 +143,49 @@ def FallingSphere_ND_CompareGradients_2():
   ex1.appendKeywords('@')
 
   return(ex1)
+
+
+# Compute gradients and scaling laws for a free-slip subduction setup with plasticity 
+def SubductionSetup_Dimensional():
+
+  # Run the input script wth matlab-generated particles
+  ranks = 1
+  launch = '../bin/opt/LaMEM -ParamFile ./t8_AdjointGradients/t8_Subduction2D_FreeSlip_DirectSolver.dat'
+  expected_file = 't8_AdjointGradients/t8_Subduction2D_FreeSlip_DirectSolver_p1.expected'
+
+  def comparefunc(unittest):
+
+    key = re.escape("|Div|_inf")
+    unittest.compareFloatingPoint(key,1e-7)
+
+    key = re.escape("|Div|_2")
+    unittest.compareFloatingPoint(key,1e-8)
+
+    key = re.escape("|mRes|_2")
+    unittest.compareFloatingPoint(key,1e-8)
+
+    key = re.escape("|   Prefactor A               : ")
+    unittest.compareFloatingPoint(key,1e-8)
+
+    key = re.escape("|                  eta[  0]")
+    unittest.compareFloatingPoint(key,1e-8)
+
+    key = re.escape("|           delta(rho)[  1]")
+    unittest.compareFloatingPoint(key,1e-8)
+
+    key = re.escape("|           delta(rho)[  2]")
+    unittest.compareFloatingPoint(key,1e-8)
+
+    key = re.escape("|                  eta[  2]")
+    unittest.compareFloatingPoint(key,1e-8)
+    
+    key = re.escape(" |                  eta[  1]")
+    unittest.compareFloatingPoint(key,1e-8)
+    
+
+  # Create unit test object
+  ex1 = pth.pthUnitTest('t8_Adjoint_Subduction2D_FreeSlip',ranks,launch,expected_file)
+  ex1.setVerifyMethod(comparefunc)
+  ex1.appendKeywords('@')
+
+  return(ex1)
