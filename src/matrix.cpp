@@ -1015,6 +1015,8 @@ PetscErrorCode PMatBlockCreate(PMat pm)
 	PetscInt    *Apv_d_nnz, *Apv_o_nnz;
 	PetscScalar ***ivx, ***ivy, ***ivz, ***ip;
 
+	//PetscInt 	*K_d_nnz, *K_o_nnz; //
+
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
 
@@ -1046,6 +1048,9 @@ PetscErrorCode PMatBlockCreate(PMat pm)
 
 	ierr = makeIntArray(&Apv_d_nnz, NULL, lnp); CHKERRQ(ierr);
 	ierr = makeIntArray(&Apv_o_nnz, NULL, lnp); CHKERRQ(ierr);
+
+	//ierr = makeIntArray(&K_d_nnz, NULL, lnp); CHKERRQ(ierr);
+	//ierr = makeIntArray(&K_o_nnz, NULL, lnp); CHKERRQ(ierr);
 
 	// access index vectors
 	ierr = DMDAVecGetArray(fs->DA_X,   dof->ivx,  &ivx);  CHKERRQ(ierr);
@@ -1231,7 +1236,10 @@ PetscErrorCode PMatBlockCreate(PMat pm)
 	ierr = MatAIJCreateDiag(lnp, startp, &P->App);                       CHKERRQ(ierr);
 	ierr = MatAIJCreateDiag(lnp, startp, &P->iS);                        CHKERRQ(ierr);
 
-	ierr = MatDuplicate(P->App, MAT_COPY_VALUES, &P->K);			 CHKERRQ(ierr);
+	//ierr = MatDuplicate(P->App, MAT_DO_NOT_COPY_VALUES, &P->K);			 CHKERRQ(ierr);
+	//ierr = MatAIJCreate(lnp,lnp,0,K_d_nnz,0,K_o_nnz,&P->K);				 CHKERRQ(ierr);
+	//ierr = MatAIJCreate(lnp,lnp,0,NULL,0,NULL,&P->K);				 		 CHKERRQ(ierr);
+	ierr = DMCreateMatrix(fs->DA_CEN, &P->K); CHKERRQ(ierr);
 
 	ierr = VecCreateMPI(PETSC_COMM_WORLD, lnv, PETSC_DETERMINE, &P->xv); CHKERRQ(ierr);
 	ierr = VecCreateMPI(PETSC_COMM_WORLD, lnp, PETSC_DETERMINE, &P->xp); CHKERRQ(ierr);
@@ -1258,6 +1266,8 @@ PetscErrorCode PMatBlockCreate(PMat pm)
 	ierr = PetscFree(Avp_o_nnz); CHKERRQ(ierr);
 	ierr = PetscFree(Apv_d_nnz); CHKERRQ(ierr);
 	ierr = PetscFree(Apv_o_nnz); CHKERRQ(ierr);
+	//ierr = PetscFree(K_d_nnz); CHKERRQ(ierr);
+	//ierr = PetscFree(K_o_nnz); CHKERRQ(ierr);
 
 	// attach near null space
 	ierr = MatAIJSetNullSpace(P->Avv, dof); CHKERRQ(ierr);
