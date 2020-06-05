@@ -89,10 +89,10 @@ v#==============================================================================
 		bounds = 0.25 0.5 0.25 0.75 0.25 0.75  # (left, right, front, back, bottom, top)
 	<BoxEnd>
 
-        <BoxStart>
-                phase  = 2
-                bounds = 0.5 0.75 0.25 0.75 0.25 0.75  # (left, right, front, back, bottom, top)
-        <BoxEnd>
+    <BoxStart>
+        phase  = 2
+    	bounds = 0.5 0.75 0.25 0.75 0.25 0.75  # (left, right, front, back, bottom, top)
+    <BoxEnd>
 	
 	#<SphereStart>
 	#	phase       = 1
@@ -110,8 +110,10 @@ v#==============================================================================
 	out_pvd             = 1                     # activate writing .pvd file
 	out_density         = 1
 	out_shmax           = 1
-	out_stangle         = 1
+	out_stangle         = 1		# print gradient due to principal stress direction
 #	out_gradient        = 1     # print pointwise gradient
+	out_dev_stress      = 1		# dev stress tensor
+	out_strain_rate     = 1
 
 # AVD phase viewer output options (requires activation)
 
@@ -127,7 +129,7 @@ v#==============================================================================
 	<MaterialStart>
 		Name 	= Matrix
 		ID  	= 0 
-		rho 	= 0
+		rho 	= 1
 		eta 	= 1
 #		eta0 	= 1
 #		n 		= 1.2
@@ -138,8 +140,8 @@ v#==============================================================================
 	<MaterialStart>
 		Name 	= LeftBlock
 		ID  	= 1   
-		rho 	= 1   
-		eta 	= 1e3
+		rho 	= 2   
+		eta 	= 1
 #		eta0 	= 100
 #		n 		= 1.6
 #		e0 		= 1e-6  
@@ -149,8 +151,8 @@ v#==============================================================================
         <MaterialStart>
                 Name    = RightBlock
                 ID      = 2
-                rho     = 1
-                eta     = 1
+                rho     = 2
+                eta     = 1000
 #               eta0    = 100
 #               n               = 1.6
 #               e0              = 1e-6
@@ -164,12 +166,13 @@ v#==============================================================================
 	Adjoint_mode    					= 	AdjointGradients #GradientDescent	 #AdjointGradients    	# options: [None; AdjointGradients, GradientDescent; Inversion]
 	Adjoint_ObservationPoints           = 	1						# options: [1=several points; 2=whole domain; 3=surface]
 	Adjoint_ObjectiveFunctionDef        = 	1                     	# options: [1-defined by hand; 0??]
-	Adjoint_GradientCalculation        	= 	CostFunction			# options [CostFunction= w.r.t. Cost function (e.g,);  Solution= w.r.t. Solution ]
+	Adjoint_GradientCalculation        	= 	Solution			# options [CostFunction= w.r.t. Cost function (e.g,);  Solution= w.r.t. Solution ]
 	Adjoint_FieldSensitivity    		= 	0     					# calculate Field-based =1 (aka. geodynamic sensity kernels), or Phase Based [=0]
 	Adjoint_ScaleCostFunction 			=	None
 	Adjoint_PrintScalingLaws			=	0						# Output scaling laws?
 	#Adjoint_ScalingLawFilename 		=   ScalingLaw_Test.dat
-	
+	Adjoint_ReferenceDensity 			=	0
+
 	# Inversion parameters
 	Inversion_EmployTAO 				=	0  
 	Inversion_rtol						=	1e-16
@@ -186,16 +189,16 @@ v#==============================================================================
 	<AdjointParameterStart>  
 		ID  			= 2	
 		Type 			= rho   	   
-		InitGuess 		= 1
+		InitGuess 		= 2
 #		FD_eps = 1e-5
 #		FD_gradient 	= 1	
 	<AdjointParameterEnd>
-
-        <AdjointParameterStart>
+#
+       <AdjointParameterStart>
                 ID                      = 2
                 Type                    = rho
-                InitGuess               = 1
-                FD_eps = 1e-6
+                InitGuess     	= 2
+                FD_eps 			= 1e-6
                 FD_gradient     = 1
         <AdjointParameterEnd>
 
@@ -215,10 +218,9 @@ v#==============================================================================
 #	<AdjointObservationPointEnd>
 	
 	<AdjointObservationPointStart>
-		Coordinate 			= 0.15 0.3 0.95
-		#VelocityComponent 	= z
-		Parameter = PSD
-		PSDValue  				= 90
+		Coordinate 			= 0.15 0.3 0.9
+		Parameter 			= PSD
+		Value  				= 90
 	<AdjointObservationPointEnd>
 	
 

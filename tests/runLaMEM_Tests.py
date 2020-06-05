@@ -65,7 +65,7 @@ def run_tests():
                       Adj1.test_RTI_1(), Adj1.test_RTI_2(),
                       Adj2.SubductionInversion_GD(), Adj2.SubductionInversion_TAO(), Adj2.SubductionInversion_FD_TAO(),
                       Adj3.rho_SensitivityKernel(), Adj3.FallingSphere_ND_all(), Adj3.FallingSphere_ND_CompareGradients_1(),
-                      Adj3.FallingSphere_ND_CompareGradients_2(), Adj3.SubductionSetup_Dimensional(),
+                      Adj3.FallingSphere_ND_CompareGradients_2(), Adj3.SubductionSetup_Dimensional(),Adj3.PSD_ND(),
                       Permeability.test_a(), 
                       Rheology0D.ViscoElastic(),   Rheology0D.ViscoElastoPlastic(), Rheology0D.ViscoElastoPlastic_DislocationCreep(),
                       Rheology0D.LinearViscous(),  Rheology0D.DislocationCreeplaw(), Rheology0D.ViscoElastic_DislocationCreep(),

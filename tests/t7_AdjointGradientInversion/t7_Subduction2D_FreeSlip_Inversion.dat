@@ -283,14 +283,13 @@
 	# Comparison indices
 	#<AdjointObservationPointStart>
 	#	Coordinate 			= -200 0 -200					
-	#	VelocityComponent 	= z
+	#	Parameter 			= Vz
 	#	Value  				= -1
 	#<AdjointObservationPointEnd>
 	
 	<AdjointObservationPointStart>
 		Coordinate 			=  600 0 -20	
-		Parameter           = Vel
-		VelocityComponent 	= x
+		Parameter           = Vx
 		Value  				= -0.36
 	<AdjointObservationPointEnd>
 	

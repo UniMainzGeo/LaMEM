@@ -142,9 +142,10 @@ struct ModParam
 	PetscScalar      Az[_MAX_OBS_];                     // Z-coordinates of comparison points
 	PetscScalar      Ae[_MAX_OBS_];                     // Velocity target value of comparison points
 	PetscInt         Av[_MAX_OBS_];	                    // Velocity components [x/y/z] of comparison points
+	char 		 	 ObsName[_MAX_OBS_][5];				// Type of the current observation we compare with
 	PetscScalar      Avel_num[_MAX_OBS_];             	// Numerically computed velocity at the comparison points
 	PetscBool        Apoint_on_proc[_MAX_OBS_];         // Is the observation point on the current processor or not (simplified printing)?
-    char   			 ScalLawFilename[_str_len_];		// Name of scaling law file
+	char   			 ScalLawFilename[_str_len_];		// Name of scaling law file
 };
 
 // observation type

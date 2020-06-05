@@ -186,3 +186,32 @@ def SubductionSetup_Dimensional():
   ex1.appendKeywords('@')
 
   return(ex1)
+
+
+
+# Compute FD and adjoint gradients for principal stress directions
+def PSD_ND():
+
+  # Run the input script wth matlab-generated particles
+  ranks = 1
+  launch = '../bin/opt/LaMEM -ParamFile ./t8_AdjointGradients/t8_FB_PSDTest.dat -nel_x 8 -nel_y 8 -nel_z 8  | grep "| "'
+  expected_file = 't8_AdjointGradients/t8_FB_PSDTest_p1.expected'
+
+  def comparefunc(unittest):
+
+    key = re.escape("|  adjoint     1:          rho[ 2]")
+    unittest.compareFloatingPoint(key,1e-6)
+
+    key = re.escape("|       FD     2:          rho[ 2]")
+    unittest.compareFloatingPoint(key,1e-6)
+
+    key = re.escape("| Current Cost function = ")
+    unittest.compareFloatingPoint(key,1e-6)
+
+
+  # Create unit test object
+  ex1 = pth.pthUnitTest('t8_Adjoint_PSD',ranks,launch,expected_file)
+  ex1.setVerifyMethod(comparefunc)
+  ex1.appendKeywords('@')
+
+  return(ex1)
