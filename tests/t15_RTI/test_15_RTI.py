@@ -43,15 +43,13 @@ def RTI_isovisous_NoSlip():
     unittest.compareFloatingPoint(key,1e-4)
     #----------------------------  
 
-    
-    # Load the data using the VTK toolbox; compute analytical solution & create plot
-    data = LoadRTI_Data('RTI_test_surf_p00000000');
-    AnalyticalSolution_FreeSlip(data);
-    PlotRT_Data(data,'t15_RTI_isovisous_NoSlip');
-
     try: 
    
-    
+      # Load the data using the VTK toolbox; compute analytical solution & create plot
+      data = LoadRTI_Data('RTI_test_surf_p00000000');
+      AnalyticalSolution_FreeSlip(data);
+      PlotRT_Data(data,'t15_RTI_isovisous_NoSlip');
+
       print('Created output figure t15_RTI_isovisous_NoSlip.png comparing analytics vs. numerics')
     except:
       print('VTK/MatPlotLib/NumPy toolboxes are not installed; will not create plots')
