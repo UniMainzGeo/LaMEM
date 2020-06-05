@@ -1803,8 +1803,9 @@ PetscErrorCode AdjointComputeGradients(JacRes *jr, AdjGrad *aop, NLSol *nl, SNES
 			}
 			else if(IOparam->MfitType == 1)
 			{
-				aop->CurScal   = (1)/(1);
+				aop->CurScal   = (1.0)/(1.0);
 				ierr = AdjointFormResidualFieldFDRho(snes, sol, psiPar, nl, aop);          CHKERRQ(ierr);
+				
 			}
 			PetscPrintf(PETSC_COMM_WORLD,"| Finished gradient computation & added it to VTK\n");
 			PetscPrintf(PETSC_COMM_WORLD,"| Add '-out_gradient = 1' to your parameter file. \n");
@@ -1849,8 +1850,8 @@ PetscErrorCode AdjointComputeGradients(JacRes *jr, AdjGrad *aop, NLSol *nl, SNES
 				}
 
 				ierr 			= 	FormResidual(snes, sol, res_pert, nl);         							CHKERRQ(ierr);        // compute the residual with the perturbed parameter
-				ierr 			=	VecAYPX(res,-1,res_pert);                      							CHKERRQ(ierr);        // res = (res_perturbed-res)
-				ierr 			=	VecScale(res,1/Perturb);                      					CHKERRQ(ierr);        // res = (res_perturbed-res)/Perturb
+				ierr 			=	VecAYPX(res,-1.0,res_pert);                      							CHKERRQ(ierr);        // res = (res_perturbed-res)
+				ierr 			=	VecScale(res,1.0/Perturb);                      					CHKERRQ(ierr);        // res = (res_perturbed-res)/Perturb
 				
 				ierr 			=	VecCopy(res,drdp);														CHKERRQ(ierr);        
 				
