@@ -1514,12 +1514,14 @@ PetscErrorCode AdjointOptimisationTAO(Tao tao, Vec P, PetscReal *F, Vec grad, vo
 	ierr = VecCopy(IOparam->xini,xini);             	CHKERRQ(ierr);
 		
 
-	if (IOparam->Gr == 1)	
+	if (IOparam->Gr == 1)		// Gradients w.r.t. Solution
 	{
 		PetscScalar value;
 
 		if(IOparam->MfitType == 0)
 		{
+			// Velocity
+
 			// -------- Only get gradients with respect to the solution --------
 			ierr = VecCopy(aop->pro,aop->dF); 				CHKERRQ(ierr); // dF/dx = P
 
@@ -1528,11 +1530,12 @@ PetscErrorCode AdjointOptimisationTAO(Tao tao, Vec P, PetscReal *F, Vec grad, vo
 		}
 		else if(IOparam->MfitType == 1)
 		{
-			ierr = AdjointGetStressAngleDerivatives(jr, aop, IOparam);                       CHKERRQ(ierr);
-			IOparam->mfit 	   = IOparam->mfitPSD;   
+			// principal stress direction
+			ierr 				= AdjointGetStressAngleDerivatives(jr, aop, IOparam);                       CHKERRQ(ierr);
+			IOparam->mfit 	   	= IOparam->mfitPSD;   
 		}
 	}
-	else if(IOparam->Gr == 0)
+	else if(IOparam->Gr == 0)	// Gradients w.r.t. CostFunction
 	{
 
 		if(IOparam->MfitType == 0)
@@ -1564,8 +1567,8 @@ PetscErrorCode AdjointOptimisationTAO(Tao tao, Vec P, PetscReal *F, Vec grad, vo
 		}
 		if(IOparam->MfitType == 1)
 		{
-			ierr = AdjointGetStressAngleDerivatives(jr, aop, IOparam);                       CHKERRQ(ierr);
-			IOparam->mfit 	  = IOparam->mfitPSD; // stress angle is nondimensional
+			ierr 				= 	AdjointGetStressAngleDerivatives(jr, aop, IOparam);                       CHKERRQ(ierr);
+			IOparam->mfit 	  	= 	IOparam->mfitPSD; // stress angle is nondimensional
 		}
 	}
 	else
@@ -3780,7 +3783,8 @@ PetscErrorCode PrintScalingLaws(ModParam *IOparam)
 #define __FUNCT__ "AdjointGetStressAngleDerivatives"
 PetscErrorCode AdjointGetStressAngleDerivatives(JacRes *jr, AdjGrad *aop, ModParam *IOparam)
 {
-	// Compute derivative of stress objective function with respect to the solution (dF/du) (dF/dst = (P*st-P*st_ini) * dphi/de * de/du)       // dphi/de = (1/(2*pow(exx-eyy,2)) * (-2*exy,2exy,exx-eyy)); e = deviatoric strainrate
+	// Compute derivative of stress objective function with respect to the solution (dF/du) (dF/dst = (P*st-P*st_ini) * dphi/de * de/du)       
+	// dphi/de = (1/(2*pow(exx-eyy,2)) * (-2*exy,2exy,exx-eyy)); e = deviatoric strainrate
 
 	FDSTAG     *fs;
 	SolVarCell *svCell;
@@ -3790,14 +3794,14 @@ PetscErrorCode AdjointGetStressAngleDerivatives(JacRes *jr, AdjGrad *aop, ModPar
 	PetscScalar *ncx, *ncy, *ncz;
 	PetscScalar XX, YY, XY;
 	PetscScalar bdx, bdy, fdx, fdy, dx, dy;
-	PetscScalar phival;
-	PetscScalar *tempphi,  *tempdphidu;
+	PetscScalar phival, Parameter, Param_local, mfitParam;
+	PetscScalar *tempPar,  *tempdPardu;
 	PetscScalar ***dxx, ***dyy, ***dzz, ***dxy, ***vx,  ***vy,  ***vz;
-	Vec         gxphi, gyphi, gzphi, gxdphidu, gydphidu, gzdphidu;
-	Vec         lxphi, lyphi, lzphi, lxdphidu, lydphidu, lzdphidu;
-	PetscScalar *dggxphi, *dggyphi, *dggzphi, *dggxdphidu, *dggydphidu, *dggzdphidu, *iter, *sty;
-	PetscScalar ***xphi, ***yphi, ***zphi, ***xdphidu, ***ydphidu, ***zdphidu;
-	PetscScalar dphidu_local;
+	Vec         gxPar, gyPar, gzPar, gxdPardu, gydPardu, gzdPardu;
+	Vec         lxPar, lyPar, lzPar, lxdPardu, lydPardu, lzdPardu;
+	PetscScalar *dggxPar, *dggyPar, *dggzPar, *dggxdPardu, *dggydPardu, *dggzdPardu, *iter, *sty;
+	PetscScalar ***xPar, ***yPar, ***zPar, ***xdPardu, ***ydPardu, ***zdPardu;
+	PetscScalar dPardu_local;
 	PetscScalar coord_local[3], minu, Cons;
 	PetscInt    As_Ind[IOparam->mdI+1];
 	PetscScalar mfitPSD;
@@ -3812,10 +3816,15 @@ PetscErrorCode AdjointGetStressAngleDerivatives(JacRes *jr, AdjGrad *aop, ModPar
 	ierr = VecZeroEntries(aop->sty);         CHKERRQ(ierr);
 
 	// Initialize the cost function
-	IOparam->mfitPSD = 0;
-	mfitPSD = 0;
+	IOparam->mfitPSD 	= 0;
+	mfitPSD 			= 0;
+	mfitParam 			= 0.0;
 
-	// For the cost function figure out in which cell there are observations
+	/* 
+		For the cost function,  determine in which FDSTAG cell the observation are made.
+		Note: we compute the parameters only at the center of the FDSTAG cell & interpolate
+		values such as Exy from edges->center
+	*/
 	for(ii = 0; ii < IOparam->mdI; ii++)
 	{
 		// Create coordinate vector
@@ -3825,7 +3834,7 @@ PetscErrorCode AdjointGetStressAngleDerivatives(JacRes *jr, AdjGrad *aop, ModPar
 
 		ierr = FDSTAGGetPointRanks(fs, coord_local, &lrank, &grank); CHKERRQ(ierr);
 
-		if(lrank == 13)
+		if(lrank == 13) // point is located on the current processor
 		{
 			// starting indices & number of cells
 			nx = fs->dsx.ncels;
@@ -3867,57 +3876,57 @@ PetscErrorCode AdjointGetStressAngleDerivatives(JacRes *jr, AdjGrad *aop, ModPar
 	ierr = VecZeroEntries(jr->phi);         CHKERRQ(ierr);
 	ierr = VecZeroEntries(aop->dphidu); CHKERRQ(ierr);
 
-	ierr = DMCreateGlobalVector(fs->DA_X, &gxphi);   CHKERRQ(ierr);
-	ierr = DMCreateGlobalVector(fs->DA_Y, &gyphi);   CHKERRQ(ierr);
-	ierr = DMCreateGlobalVector(fs->DA_Z, &gzphi);   CHKERRQ(ierr);
+	ierr = DMCreateGlobalVector(fs->DA_X, &gxPar);   CHKERRQ(ierr);
+	ierr = DMCreateGlobalVector(fs->DA_Y, &gyPar);   CHKERRQ(ierr);
+	ierr = DMCreateGlobalVector(fs->DA_Z, &gzPar);   CHKERRQ(ierr);
 
-	ierr = DMCreateLocalVector (fs->DA_X, &lxphi);   CHKERRQ(ierr);
-	ierr = DMCreateLocalVector (fs->DA_Y, &lyphi);   CHKERRQ(ierr);
-	ierr = DMCreateLocalVector (fs->DA_Z, &lzphi);   CHKERRQ(ierr);
+	ierr = DMCreateLocalVector (fs->DA_X, &lxPar);   CHKERRQ(ierr);
+	ierr = DMCreateLocalVector (fs->DA_Y, &lyPar);   CHKERRQ(ierr);
+	ierr = DMCreateLocalVector (fs->DA_Z, &lzPar);   CHKERRQ(ierr);
 
-	VecZeroEntries(gxphi);
-	VecZeroEntries(gyphi);
-	VecZeroEntries(gzphi);
+	VecZeroEntries(gxPar);
+	VecZeroEntries(gyPar);
+	VecZeroEntries(gzPar);
 
-	VecZeroEntries(lxphi);
-	VecZeroEntries(lyphi);
-	VecZeroEntries(lzphi);
+	VecZeroEntries(lxPar);
+	VecZeroEntries(lyPar);
+	VecZeroEntries(lzPar);
 
-	ierr = DMCreateGlobalVector(fs->DA_X, &gxdphidu);   CHKERRQ(ierr);
-	ierr = DMCreateGlobalVector(fs->DA_Y, &gydphidu);   CHKERRQ(ierr);
-	ierr = DMCreateGlobalVector(fs->DA_Z, &gzdphidu);   CHKERRQ(ierr);
+	ierr = DMCreateGlobalVector(fs->DA_X, &gxdPardu);   CHKERRQ(ierr);
+	ierr = DMCreateGlobalVector(fs->DA_Y, &gydPardu);   CHKERRQ(ierr);
+	ierr = DMCreateGlobalVector(fs->DA_Z, &gzdPardu);   CHKERRQ(ierr);
 
-	ierr = DMCreateLocalVector (fs->DA_X, &lxdphidu);   CHKERRQ(ierr);
-	ierr = DMCreateLocalVector (fs->DA_Y, &lydphidu);   CHKERRQ(ierr);
-	ierr = DMCreateLocalVector (fs->DA_Z, &lzdphidu);   CHKERRQ(ierr);
+	ierr = DMCreateLocalVector (fs->DA_X, &lxdPardu);   CHKERRQ(ierr);
+	ierr = DMCreateLocalVector (fs->DA_Y, &lydPardu);   CHKERRQ(ierr);
+	ierr = DMCreateLocalVector (fs->DA_Z, &lzdPardu);   CHKERRQ(ierr);
 
-	VecZeroEntries(gxdphidu);
-	VecZeroEntries(gydphidu);
-	VecZeroEntries(gzdphidu);
+	VecZeroEntries(gxdPardu);
+	VecZeroEntries(gydPardu);
+	VecZeroEntries(gzdPardu);
 
-	VecZeroEntries(lxdphidu);
-	VecZeroEntries(lydphidu);
-	VecZeroEntries(lzdphidu);
+	VecZeroEntries(lxdPardu);
+	VecZeroEntries(lydPardu);
+	VecZeroEntries(lzdPardu);
 
 	// Recompute correct strainrates (necessary!!)
 	ierr =  JacResGetEffStrainRate(jr);
 
 	// access work vectors
-	ierr = DMDAVecGetArray(fs->DA_CEN, jr->ldxx,    &dxx);    CHKERRQ(ierr);
-	ierr = DMDAVecGetArray(fs->DA_CEN, jr->ldyy,    &dyy);    CHKERRQ(ierr);
-	ierr = DMDAVecGetArray(fs->DA_CEN, jr->ldzz,    &dzz);    CHKERRQ(ierr);
-	ierr = DMDAVecGetArray(fs->DA_XY,  jr->ldxy,    &dxy);    CHKERRQ(ierr);
-	ierr = DMDAVecGetArray(fs->DA_X,   jr->lvx,     &vx);     CHKERRQ(ierr);
-	ierr = DMDAVecGetArray(fs->DA_Y,   jr->lvy,     &vy);     CHKERRQ(ierr);
-	ierr = DMDAVecGetArray(fs->DA_Z,   jr->lvz,     &vz);     CHKERRQ(ierr);
+	ierr = DMDAVecGetArray(fs->DA_CEN, jr->ldxx,    &dxx);    	CHKERRQ(ierr);
+	ierr = DMDAVecGetArray(fs->DA_CEN, jr->ldyy,    &dyy);    	CHKERRQ(ierr);
+	ierr = DMDAVecGetArray(fs->DA_CEN, jr->ldzz,    &dzz);    	CHKERRQ(ierr);
+	ierr = DMDAVecGetArray(fs->DA_XY,  jr->ldxy,    &dxy);    	CHKERRQ(ierr);
+	ierr = DMDAVecGetArray(fs->DA_X,   jr->lvx,     &vx); 		CHKERRQ(ierr);
+	ierr = DMDAVecGetArray(fs->DA_Y,   jr->lvy,     &vy); 		CHKERRQ(ierr);
+	ierr = DMDAVecGetArray(fs->DA_Z,   jr->lvz,     &vz); 		CHKERRQ(ierr);
 
-	ierr = DMDAVecGetArray(fs->DA_X, lxphi,    &xphi);    CHKERRQ(ierr);
-	ierr = DMDAVecGetArray(fs->DA_Y, lyphi,    &yphi);    CHKERRQ(ierr);
-	ierr = DMDAVecGetArray(fs->DA_Z, lzphi,    &zphi);    CHKERRQ(ierr);
+	ierr = DMDAVecGetArray(fs->DA_X, lxPar,    &xPar);    		CHKERRQ(ierr);
+	ierr = DMDAVecGetArray(fs->DA_Y, lyPar,    &yPar);    		CHKERRQ(ierr);
+	ierr = DMDAVecGetArray(fs->DA_Z, lzPar,    &zPar);    		CHKERRQ(ierr);
 
-	ierr = DMDAVecGetArray(fs->DA_X, lxdphidu, &xdphidu); CHKERRQ(ierr);
-	ierr = DMDAVecGetArray(fs->DA_Y, lydphidu, &ydphidu); CHKERRQ(ierr);
-	ierr = DMDAVecGetArray(fs->DA_Z, lzdphidu, &zdphidu); CHKERRQ(ierr);
+	ierr = DMDAVecGetArray(fs->DA_X, lxdPardu, &xdPardu); 		CHKERRQ(ierr);
+	ierr = DMDAVecGetArray(fs->DA_Y, lydPardu, &ydPardu); 		CHKERRQ(ierr);
+	ierr = DMDAVecGetArray(fs->DA_Z, lzdPardu, &zdPardu); 		CHKERRQ(ierr);
 
 	ierr = VecGetArray(aop->sty,&sty); CHKERRQ(ierr);
 
@@ -3933,7 +3942,7 @@ PetscErrorCode AdjointGetStressAngleDerivatives(JacRes *jr, AdjGrad *aop, ModPar
 		svCell = &jr->svCell[iterat++];
 		svBulk = &svCell->svBulk;
 
-		// access strain rates
+		// access strain rates for the current cell
 		XX = dxx[k][j][i];
 		YY = dyy[k][j][i];
 
@@ -3944,13 +3953,25 @@ PetscErrorCode AdjointGetStressAngleDerivatives(JacRes *jr, AdjGrad *aop, ModPar
 		bdx = SIZE_NODE(i, sx, fs->dsx);   fdx = SIZE_NODE(i+1, sx, fs->dsx);
 		bdy = SIZE_NODE(j, sy, fs->dsy);   fdy = SIZE_NODE(j+1, sy, fs->dsy);
 
-		// angle
-		minu = 1;
-		phival = 0.5*atan(((2*XY)/(XX-YY)));
-		if(phival<0) {phival = -phival; minu = -1;} else phival = ((3.14159265359/4 - phival) + 3.14159265359/4);    // minu could be set to -1 here to mimic the discontiunuity in the ambuigity of phival in the gradient
+		// Perform the adjoint computation for PSD:
+		minu 	= 1;
+		phival 	= 0.5*atan(((2*XY)/(XX-YY)));
+		if(phival<0) {
+			phival = -phival; minu = -1;
+		} 
+		else{
+			phival = ((3.14159265359/4 - phival) + 3.14159265359/4);    // minu could be set to -1 here to mimic the discontiunuity in the ambuigity of phival in the gradient
+		} 
 		if(XY>0) phival = phival + 3.14159265359/2;
-		svBulk->phi  = phival * (180/3.14159265359);
+		svBulk->phi  	= phival * (180/3.14159265359);
+		Parameter       = phival;
 
+		// Perform adjoint computation for strainrate components
+		//Parameter 		=	XX;
+		//Parameter 		=	YY;
+		//Parameter 		=	dxy[k][j][i];		// Exy @ lower left edge
+		//Parameter 		=	dxy[k][j][i+1];		// Exy @ lower right edge
+	
 		// Loop over observations
 		for(ii = 0; ii < IOparam->mdI; ii++)
 		{
@@ -3967,41 +3988,87 @@ PetscErrorCode AdjointGetStressAngleDerivatives(JacRes *jr, AdjGrad *aop, ModPar
 				if(lrank == 13)
 				{
 
+					/* If we perform the computation for PSD */	
+#if 1					
 					// Compute objective function derivative (dFdu = P*(st-st_ini))
-					dphidu_local = 0;
+					dPardu_local = 0;
 					if (IOparam->Gr == 0)
 					{
 						// dphidu_local = svBulk->phi-IOparam->Ae[ii];
-						dphidu_local = phival-IOparam->Ae[ii]; 
+						dPardu_local = phival-IOparam->Ae[ii]; 
 
 						// Compute objective function value (F += (1/2)*[P*(st-st_ini)' * P*(st-st_ini)])
-						mfitPSD += (phival-IOparam->Ae[ii])*(phival-IOparam->Ae[ii]);
+						mfitParam += (phival-IOparam->Ae[ii])*(phival-IOparam->Ae[ii]);
 					}
 					else if (IOparam->Gr == 1)
 					{
-						dphidu_local = 1;    // -> use this for sens Kernel
+						dPardu_local = 1;    // -> use this for sens Kernel
 
 						// Just give back norm of solution at the points
-						mfitPSD += (phival);
+						mfitParam += (phival);
 					}
 
 					Cons = -1 * (1/(pow(XX-YY,2)+4*pow(XY,2)));   // See up there that if phival < 0 -> dphi = - & if phival > 0 -> dphi = - as well
-					xdphidu[k][j  ][i  ] += dphidu_local * (Cons*(-XY)*(-1/dx) + Cons*( XY)*( 0   ) + Cons*(XX-YY)*( 1/bdy-1/fdy)*(1/8));	// 1
-					xdphidu[k][j  ][i+1] += dphidu_local * (Cons*(-XY)*( 1/dx) + Cons*( XY)*( 0   ) + Cons*(XX-YY)*( 1/bdy-1/fdy)*(1/8));	// 2
-					xdphidu[k][j-1][i  ] += dphidu_local * (Cons*(-XY)*( 0   ) + Cons*( XY)*( 0   ) + Cons*(XX-YY)*(-1/bdy      )*(1/8));   // 5
-					xdphidu[k][j-1][i+1] += dphidu_local * (Cons*(-XY)*( 0   ) + Cons*( XY)*( 0   ) + Cons*(XX-YY)*(-1/bdy      )*(1/8));	// 6
-					xdphidu[k][j+1][i  ] += dphidu_local * (Cons*(-XY)*( 0   ) + Cons*( XY)*( 0   ) + Cons*(XX-YY)*( 1/fdy      )*(1/8));	// 7
-					xdphidu[k][j+1][i+1] += dphidu_local * (Cons*(-XY)*( 0   ) + Cons*( XY)*( 0   ) + Cons*(XX-YY)*( 1/fdy      )*(1/8));	// 8
+					xdPardu[k][j  ][i  ] += dPardu_local * (Cons*(-XY)*(-1.0/dx) + Cons*( XY)*( 0   ) + Cons*(XX-YY)*( 1.0/bdy-1.0/fdy)*(1.0/8.0));	// 1
+					xdPardu[k][j  ][i+1] += dPardu_local * (Cons*(-XY)*( 1.0/dx) + Cons*( XY)*( 0   ) + Cons*(XX-YY)*( 1.0/bdy-1.0/fdy)*(1.0/8.0));	// 2
+					xdPardu[k][j-1][i  ] += dPardu_local * (Cons*(-XY)*( 0     ) + Cons*( XY)*( 0   ) + Cons*(XX-YY)*(-1.0/bdy      )*(1.0/8.0));   // 5
+					xdPardu[k][j-1][i+1] += dPardu_local * (Cons*(-XY)*( 0     ) + Cons*( XY)*( 0   ) + Cons*(XX-YY)*(-1.0/bdy      )*(1.0/8.0));	// 6
+					xdPardu[k][j+1][i  ] += dPardu_local * (Cons*(-XY)*( 0     ) + Cons*( XY)*( 0   ) + Cons*(XX-YY)*( 1.0/fdy      )*(1.0/8.0));	// 7
+					xdPardu[k][j+1][i+1] += dPardu_local * (Cons*(-XY)*( 0     ) + Cons*( XY)*( 0   ) + Cons*(XX-YY)*( 1.0/fdy      )*(1.0/8.0));	// 8
 
-					ydphidu[k][j  ][i  ] += dphidu_local * (Cons*(-XY)*( 0   ) + Cons*( XY)*(-1/dy) + Cons*(XX-YY)*( 1/bdx-1/fdx)*(1/8));	// 3
-					ydphidu[k][j+1][i  ] += dphidu_local * (Cons*(-XY)*( 0   ) + Cons*( XY)*( 1/dy) + Cons*(XX-YY)*( 1/bdx-1/fdx)*(1/8));	// 4
-					ydphidu[k][j  ][i-1] += dphidu_local * (Cons*(-XY)*( 0   ) + Cons*( XY)*( 0   ) + Cons*(XX-YY)*(-1/bdx      )*(1/8));	// 9
-					ydphidu[k][j+1][i-1] += dphidu_local * (Cons*(-XY)*( 0   ) + Cons*( XY)*( 0   ) + Cons*(XX-YY)*(-1/bdx      )*(1/8));	// 10
-					ydphidu[k][j  ][i+1] += dphidu_local * (Cons*(-XY)*( 0   ) + Cons*( XY)*( 0   ) + Cons*(XX-YY)*( 1/fdx      )*(1/8));	// 11
-					ydphidu[k][j+1][i+1] += dphidu_local * (Cons*(-XY)*( 0   ) + Cons*( XY)*( 0   ) + Cons*(XX-YY)*( 1/fdx      )*(1/8));	// 12
+					ydPardu[k][j  ][i  ] += dPardu_local * (Cons*(-XY)*( 0   ) + Cons*( XY)*(-1.0/dy) + Cons*(XX-YY)*( 1.0/bdx-1.0/fdx)*(1.0/8.0));	// 3
+					ydPardu[k][j+1][i  ] += dPardu_local * (Cons*(-XY)*( 0   ) + Cons*( XY)*( 1.0/dy) + Cons*(XX-YY)*( 1.0/bdx-1.0/fdx)*(1.0/8.0));	// 4
+					ydPardu[k][j  ][i-1] += dPardu_local * (Cons*(-XY)*( 0   ) + Cons*( XY)*( 0     ) + Cons*(XX-YY)*(-1.0/bdx        )*(1.0/8.0));	// 9
+					ydPardu[k][j+1][i-1] += dPardu_local * (Cons*(-XY)*( 0   ) + Cons*( XY)*( 0     ) + Cons*(XX-YY)*(-1.0/bdx        )*(1.0/8.0));	// 10
+					ydPardu[k][j  ][i+1] += dPardu_local * (Cons*(-XY)*( 0   ) + Cons*( XY)*( 0     ) + Cons*(XX-YY)*( 1.0/fdx        )*(1.0/8.0));	// 11
+					ydPardu[k][j+1][i+1] += dPardu_local * (Cons*(-XY)*( 0   ) + Cons*( XY)*( 0     ) + Cons*(XX-YY)*( 1.0/fdx        )*(1.0/8.0));	// 12
 
 					// Store observation
 					sty[ii] = phival * (180/3.14159265359);
+#endif
+
+#if 0
+					/* Perform computation for strainrate tensor components */
+					dPardu_local = 0;
+					if (IOparam->Gr == 0)
+					{
+						// dphidu_local = svBulk->phi-IOparam->Ae[ii];
+						Param_local = Parameter-IOparam->Ae[ii]; 
+
+						// Compute objective function value (F += (1/2)*[P*(st-st_ini)' * P*(st-st_ini)])
+						mfitParam += (Parameter-IOparam->Ae[ii])*(Parameter-IOparam->Ae[ii]);
+					}
+					else if (IOparam->Gr == 1)
+					{
+						Param_local = 1;    // -> use this for sens Kernel
+
+						// Just give back norm of solution at the points
+						mfitParam += (Parameter);
+					}
+
+					// derivative of Exx vs Vx:
+					//xdPardu[k][j  ][i  ] += Param_local * (-1.0/dx);	// 1
+					//xdPardu[k][j  ][i+1] += Param_local * ( 1.0/dx);	// 2
+
+					// derivative of Eyy vs Vy:
+					//ydPardu[k][j  ][i  ] += Param_local * (-1.0/dy) ;	// 3
+					//ydPardu[k][j+1][i  ] += Param_local * ( 1.0/dy) ;	// 4
+
+					// derivative of Exy (@ lower-left corner) vs Vx & Vy:
+					//xdPardu[k][j  ][i  ] += Param_local * (1.0/2.0) * (  1.0/bdy);	// 1
+					//xdPardu[k][j-1][i  ] += Param_local * (1.0/2.0) * (-1.0/bdy);	// 5
+					//ydPardu[k][j  ][i  ] += Param_local * (1.0/2.0) * ( 1.0/bdx);	// 3
+					//ydPardu[k][j  ][i-1] += Param_local * (1.0/2.0) * (-1.0/bdx);	// 9
+
+					// derivative of Exy (@ lower-right corner) vs Vx & Vy:
+					xdPardu[k][j  ][i+1] += Param_local * (1.0/2.0) * ( 1.0/bdy);	// 2
+					xdPardu[k][j-1][i+1] += Param_local * (1.0/2.0) * (-1.0/bdy);	// 6
+					ydPardu[k][j  ][i+1] += Param_local * (1.0/2.0) * ( 1.0/fdx);	// 11
+					ydPardu[k][j  ][i  ] += Param_local * (1.0/2.0) * (-1.0/fdx);	// 3
+#endif
+
+
+
 
 					// PetscPrintf(PETSC_COMM_SELF,"DEBUGDEBUGDEBUGDEBUG %.10f, %.10f, %.10f, %.10f; %.10f %d %d %d %d\n\n",svBulk->phi,IOparam->Ae[ii],dphidu_local,mfitPSD,xdphidu[k][j  ][i  ],i,j,k,ii);
 				}
@@ -4014,102 +4081,102 @@ PetscErrorCode AdjointGetStressAngleDerivatives(JacRes *jr, AdjGrad *aop, ModPar
 	ierr = PetscBarrier((PetscObject)aop->sty); CHKERRQ(ierr);
 	if(ISParallel(PETSC_COMM_WORLD))
 	{
-		ierr = MPI_Allreduce(&mfitPSD, &IOparam->mfitPSD, 1, MPIU_SCALAR, MPI_SUM, PETSC_COMM_WORLD); CHKERRQ(ierr);
+		ierr = MPI_Allreduce(&mfitParam, &IOparam->mfitPSD, 1, MPIU_SCALAR, MPI_SUM, PETSC_COMM_WORLD); CHKERRQ(ierr);
 	}
 	else
 	{
-		IOparam->mfitPSD = mfitPSD;
+		IOparam->mfitPSD = mfitParam;
 	}
 	if (IOparam->Gr == 0)
 	{
-		IOparam->mfitPSD /= 2;
+		IOparam->mfitPSD /= 2.0;
 	}
 
 	// restore vectors
-	ierr = DMDAVecRestoreArray(fs->DA_CEN, jr->ldxx,    &dxx);    CHKERRQ(ierr);
-	ierr = DMDAVecRestoreArray(fs->DA_CEN, jr->ldyy,    &dyy);    CHKERRQ(ierr);
-	ierr = DMDAVecRestoreArray(fs->DA_CEN, jr->ldzz,    &dzz);    CHKERRQ(ierr);
-	ierr = DMDAVecRestoreArray(fs->DA_XY,  jr->ldxy,    &dxy);    CHKERRQ(ierr);
-	ierr = DMDAVecRestoreArray(fs->DA_X,   jr->lvx,     &vx);     CHKERRQ(ierr);
-	ierr = DMDAVecRestoreArray(fs->DA_Y,   jr->lvy,     &vy);     CHKERRQ(ierr);
-	ierr = DMDAVecRestoreArray(fs->DA_Z,   jr->lvz,     &vz);     CHKERRQ(ierr);
+	ierr = DMDAVecRestoreArray(fs->DA_CEN, jr->ldxx,    &dxx);    	CHKERRQ(ierr);
+	ierr = DMDAVecRestoreArray(fs->DA_CEN, jr->ldyy,    &dyy);    	CHKERRQ(ierr);
+	ierr = DMDAVecRestoreArray(fs->DA_CEN, jr->ldzz,    &dzz);    	CHKERRQ(ierr);
+	ierr = DMDAVecRestoreArray(fs->DA_XY,  jr->ldxy,    &dxy);    	CHKERRQ(ierr);
+	ierr = DMDAVecRestoreArray(fs->DA_X,   jr->lvx,     &vx);     	CHKERRQ(ierr);
+	ierr = DMDAVecRestoreArray(fs->DA_Y,   jr->lvy,     &vy);     	CHKERRQ(ierr);
+	ierr = DMDAVecRestoreArray(fs->DA_Z,   jr->lvz,     &vz);     	CHKERRQ(ierr);
 
-	ierr = DMDAVecRestoreArray(fs->DA_X, lxphi,    &xphi);    CHKERRQ(ierr);
-	ierr = DMDAVecRestoreArray(fs->DA_Y, lyphi,    &yphi);    CHKERRQ(ierr);
-	ierr = DMDAVecRestoreArray(fs->DA_Z, lzphi,    &zphi);    CHKERRQ(ierr);
+	ierr = DMDAVecRestoreArray(fs->DA_X, lxPar,    &xPar);    		CHKERRQ(ierr);
+	ierr = DMDAVecRestoreArray(fs->DA_Y, lyPar,    &yPar);    		CHKERRQ(ierr);
+	ierr = DMDAVecRestoreArray(fs->DA_Z, lzPar,    &zPar);    		CHKERRQ(ierr);
 
-	ierr = DMDAVecRestoreArray(fs->DA_X, lxdphidu, &xdphidu); CHKERRQ(ierr);
-	ierr = DMDAVecRestoreArray(fs->DA_Y, lydphidu, &ydphidu); CHKERRQ(ierr);
-	ierr = DMDAVecRestoreArray(fs->DA_Z, lzdphidu, &zdphidu); CHKERRQ(ierr);
+	ierr = DMDAVecRestoreArray(fs->DA_X, lxdPardu, &xdPardu); 		CHKERRQ(ierr);
+	ierr = DMDAVecRestoreArray(fs->DA_Y, lydPardu, &ydPardu); 		CHKERRQ(ierr);
+	ierr = DMDAVecRestoreArray(fs->DA_Z, lzdPardu, &zdPardu); 		CHKERRQ(ierr);
 
-	LOCAL_TO_GLOBAL(fs->DA_X, lxphi, gxphi);
-	LOCAL_TO_GLOBAL(fs->DA_Y, lyphi, gyphi);
-	LOCAL_TO_GLOBAL(fs->DA_Z, lzphi, gzphi);
+	LOCAL_TO_GLOBAL(fs->DA_X, lxPar, gxPar);
+	LOCAL_TO_GLOBAL(fs->DA_Y, lyPar, gyPar);
+	LOCAL_TO_GLOBAL(fs->DA_Z, lzPar, gzPar);
 
-	ierr = VecGetArray(gxphi, &dggxphi);      CHKERRQ(ierr);
-	ierr = VecGetArray(gyphi, &dggyphi);      CHKERRQ(ierr);
-	ierr = VecGetArray(gzphi, &dggzphi);      CHKERRQ(ierr);
+	ierr = VecGetArray(gxPar, &dggxPar);      CHKERRQ(ierr);
+	ierr = VecGetArray(gyPar, &dggyPar);      CHKERRQ(ierr);
+	ierr = VecGetArray(gzPar, &dggzPar);      CHKERRQ(ierr);
 
-	ierr = VecGetArray(jr->phi, &tempphi);        CHKERRQ(ierr);
-	iter = tempphi;
+	ierr = VecGetArray(jr->phi, &tempPar);        CHKERRQ(ierr);
+	iter = tempPar;
 
-	ierr  = PetscMemcpy(iter, dggxphi, (size_t)fs->nXFace*sizeof(PetscScalar)); CHKERRQ(ierr);
+	ierr  = PetscMemcpy(iter, dggxPar, (size_t)fs->nXFace*sizeof(PetscScalar)); CHKERRQ(ierr);
 	iter += fs->nXFace;
 
-	ierr  = PetscMemcpy(iter, dggyphi, (size_t)fs->nYFace*sizeof(PetscScalar)); CHKERRQ(ierr);
+	ierr  = PetscMemcpy(iter, dggyPar, (size_t)fs->nYFace*sizeof(PetscScalar)); CHKERRQ(ierr);
 	iter += fs->nYFace;
 
-	ierr  = PetscMemcpy(iter, dggzphi, (size_t)fs->nZFace*sizeof(PetscScalar)); CHKERRQ(ierr);
+	ierr  = PetscMemcpy(iter, dggzPar, (size_t)fs->nZFace*sizeof(PetscScalar)); CHKERRQ(ierr);
 	iter += fs->nZFace;
 
-	ierr = VecRestoreArray(jr->phi, &tempphi);         CHKERRQ(ierr);
+	ierr = VecRestoreArray(jr->phi, &tempPar);         CHKERRQ(ierr);
 
-	ierr = VecRestoreArray(gxphi, &dggxphi);      CHKERRQ(ierr);
-	ierr = VecRestoreArray(gyphi, &dggyphi);      CHKERRQ(ierr);
-	ierr = VecRestoreArray(gzphi, &dggzphi);      CHKERRQ(ierr);
+	ierr = VecRestoreArray(gxPar, &dggxPar);      CHKERRQ(ierr);
+	ierr = VecRestoreArray(gyPar, &dggyPar);      CHKERRQ(ierr);
+	ierr = VecRestoreArray(gzPar, &dggzPar);      CHKERRQ(ierr);
 
-	LOCAL_TO_GLOBAL(fs->DA_X, lxdphidu, gxdphidu);
-	LOCAL_TO_GLOBAL(fs->DA_Y, lydphidu, gydphidu);
-	LOCAL_TO_GLOBAL(fs->DA_Z, lzdphidu, gzdphidu);
+	LOCAL_TO_GLOBAL(fs->DA_X, lxdPardu, gxdPardu);
+	LOCAL_TO_GLOBAL(fs->DA_Y, lydPardu, gydPardu);
+	LOCAL_TO_GLOBAL(fs->DA_Z, lzdPardu, gzdPardu);
 
-	ierr = VecGetArray(gxdphidu, &dggxdphidu);      CHKERRQ(ierr);
-	ierr = VecGetArray(gydphidu, &dggydphidu);      CHKERRQ(ierr);
-	ierr = VecGetArray(gzdphidu, &dggzdphidu);      CHKERRQ(ierr);
+	ierr = VecGetArray(gxdPardu, &dggxdPardu);      CHKERRQ(ierr);
+	ierr = VecGetArray(gydPardu, &dggydPardu);      CHKERRQ(ierr);
+	ierr = VecGetArray(gzdPardu, &dggzdPardu);      CHKERRQ(ierr);
 
-	ierr = VecGetArray(aop->dphidu, &tempdphidu);        CHKERRQ(ierr);
-	iter = tempdphidu;
+	ierr = VecGetArray(aop->dphidu, &tempdPardu);        CHKERRQ(ierr);
+	iter = tempdPardu;
 
-	ierr  = PetscMemcpy(iter, dggxdphidu, (size_t)fs->nXFace*sizeof(PetscScalar)); CHKERRQ(ierr);
+	ierr  = PetscMemcpy(iter, dggxdPardu, (size_t)fs->nXFace*sizeof(PetscScalar)); CHKERRQ(ierr);
 	iter += fs->nXFace;
 
-	ierr  = PetscMemcpy(iter, dggydphidu, (size_t)fs->nYFace*sizeof(PetscScalar)); CHKERRQ(ierr);
+	ierr  = PetscMemcpy(iter, dggydPardu, (size_t)fs->nYFace*sizeof(PetscScalar)); CHKERRQ(ierr);
 	iter += fs->nYFace;
 
-	ierr  = PetscMemcpy(iter, dggzdphidu, (size_t)fs->nZFace*sizeof(PetscScalar)); CHKERRQ(ierr);
+	ierr  = PetscMemcpy(iter, dggzdPardu, (size_t)fs->nZFace*sizeof(PetscScalar)); CHKERRQ(ierr);
 	iter += fs->nZFace;
 
-	ierr = VecRestoreArray(aop->dphidu, &tempdphidu);         CHKERRQ(ierr);
+	ierr = VecRestoreArray(aop->dphidu, &tempdPardu);         CHKERRQ(ierr);
 
-	ierr = VecRestoreArray(gxdphidu, &dggxdphidu);      CHKERRQ(ierr);
-	ierr = VecRestoreArray(gydphidu, &dggydphidu);      CHKERRQ(ierr);
-	ierr = VecRestoreArray(gzdphidu, &dggzdphidu);      CHKERRQ(ierr);
+	ierr = VecRestoreArray(gxdPardu, &dggxdPardu);      CHKERRQ(ierr);
+	ierr = VecRestoreArray(gydPardu, &dggydPardu);      CHKERRQ(ierr);
+	ierr = VecRestoreArray(gzdPardu, &dggzdPardu);      CHKERRQ(ierr);
 
 	// Destroy
-	ierr = VecDestroy(&gxphi);   CHKERRQ(ierr);
-	ierr = VecDestroy(&gyphi);   CHKERRQ(ierr);
-	ierr = VecDestroy(&gzphi);   CHKERRQ(ierr);
+	ierr = VecDestroy(&gxPar);   CHKERRQ(ierr);
+	ierr = VecDestroy(&gyPar);   CHKERRQ(ierr);
+	ierr = VecDestroy(&gzPar);   CHKERRQ(ierr);
 
-	ierr = VecDestroy(&lxphi);   CHKERRQ(ierr);
-	ierr = VecDestroy(&lyphi);   CHKERRQ(ierr);
-	ierr = VecDestroy(&lzphi);   CHKERRQ(ierr);
+	ierr = VecDestroy(&lxPar);   CHKERRQ(ierr);
+	ierr = VecDestroy(&lyPar);   CHKERRQ(ierr);
+	ierr = VecDestroy(&lzPar);   CHKERRQ(ierr);
 
-	ierr = VecDestroy(&gxdphidu);   CHKERRQ(ierr);
-	ierr = VecDestroy(&gydphidu);   CHKERRQ(ierr);
-	ierr = VecDestroy(&gzdphidu);   CHKERRQ(ierr);
+	ierr = VecDestroy(&gxdPardu);   CHKERRQ(ierr);
+	ierr = VecDestroy(&gydPardu);   CHKERRQ(ierr);
+	ierr = VecDestroy(&gzdPardu);   CHKERRQ(ierr);
 
-	ierr = VecDestroy(&lxdphidu);   CHKERRQ(ierr);
-	ierr = VecDestroy(&lydphidu);   CHKERRQ(ierr);
-	ierr = VecDestroy(&lzdphidu);   CHKERRQ(ierr);
+	ierr = VecDestroy(&lxdPardu);   CHKERRQ(ierr);
+	ierr = VecDestroy(&lydPardu);   CHKERRQ(ierr);
+	ierr = VecDestroy(&lzdPardu);   CHKERRQ(ierr);
 
 	PetscFunctionReturn(0);
 }
