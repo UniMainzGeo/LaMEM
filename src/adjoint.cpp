@@ -425,6 +425,7 @@ PetscErrorCode LaMEMAdjointReadInputSetDefaults(ModParam *IOparam, Adjoint_Vecs 
 	ierr = getIntParam   (fb, _OPTIONAL_, "Adjoint_ObjectiveFunctionDef"     , &IOparam->OFdef,     1, 1        ); CHKERRQ(ierr);  // Objective function defined by hand?
 	ierr = getIntParam   (fb, _OPTIONAL_, "Adjoint_PrintScalingLaws"     	 , &IOparam->ScalLaws,  1, 1        ); CHKERRQ(ierr);  // Print scaling laws (combined with AdjointGradients)
 	ierr = getStringParam(fb, _OPTIONAL_, "Adjoint_ScalingLawFilename"     	 , str,  "ScalingLaw.dat"  ); 		   CHKERRQ(ierr);  // Scaling law filename
+	ierr = getScalarParam(fb, _OPTIONAL_, "Adjoint_DII_ref"       			 , &IOparam->DII_ref,   1, 1        ); CHKERRQ(ierr);  // Reference strainrate needed for direct FD for pointwise kernels for powerlaw viscosity (very unflexible so far)
 	ierr  = PetscMemcpy(IOparam->ScalLawFilename, 	str,   (size_t)_str_len_*sizeof(char) ); 		  	 		   CHKERRQ(ierr); 
    
   	ierr = getScalarParam(fb, _OPTIONAL_, "Adjoint_ReferenceDensity"       	 , &IOparam->ReferenceDensity, 1, 1 ); CHKERRQ(ierr);  // Reference density (density parameters are computed w.r.t. this)
@@ -1529,7 +1530,6 @@ PetscErrorCode AdjointOptimisationTAO(Tao tao, Vec P, PetscReal *F, Vec grad, vo
 	ierr = AdjointPointInPro(jr, aop, IOparam, surf); 	CHKERRQ(ierr);
 
 	ierr = VecCopy(IOparam->xini,xini);             	CHKERRQ(ierr);
-		
 
 	if (IOparam->Gr == 1)		// Gradients w.r.t. Solution
 	{
@@ -1686,15 +1686,10 @@ PetscErrorCode AdjointFiniteDifferenceGradients(ModParam *IOparam)
 				ierr			=	CopyParameterToLaMEMCommandLine(IOparam,  CurVal, j);		CHKERRQ(ierr);
 			
 				PetscPrintf(PETSC_COMM_WORLD,"|  Brute force FD gradient %+5s[%2i] = %e, with eps=%1.4e \n", CurName, CurPhase, Grad, FD_eps);
-
 			}
-
-
 		}
 		VecRestoreArray(IOparam->P,&Par);
-
 		IOparam->mfit = Misfit_ref; // reset value, just in case it is overwritten by a perturbed value
-
 	}
 
 
@@ -1737,7 +1732,7 @@ PetscErrorCode AdjointComputeGradients(JacRes *jr, AdjGrad *aop, NLSol *nl, SNES
 	ierr = VecDuplicate(jr->gsol, &sol); 		 CHKERRQ(ierr);
 	ierr = VecDuplicate(jr->gsol, &drdp);	 	 CHKERRQ(ierr);
 	ierr = VecCopy(jr->gsol,sol); 				 CHKERRQ(ierr);
-	ierr = VecCopy(jr->gres,res); 				 CHKERRQ(ierr);
+	ierr = VecCopy(jr->gres,res); 				 CHKERRQ(ierr);;
 
 	//========
 	// SOLVE
@@ -1786,33 +1781,31 @@ PetscErrorCode AdjointComputeGradients(JacRes *jr, AdjGrad *aop, NLSol *nl, SNES
 
 		// Compute residual with the converged Jacobian analytically
 		
-	
     	strcpy(CurName, IOparam->type_name[0]);	// name of the parameter
-		if (IOparam->mdN>1){
+		if (IOparam->mdN>1)
+		{
 			SETERRQ(PETSC_COMM_WORLD,PETSC_ERR_USER,"| Field-based gradients can currently only be computed for a single parameter \n");		// error check
 		}
-		PetscStrcmp(CurName,"rho",&flg);		// check name 
-		if (flg)		// we need some way to ensure that we do this for one field at a time only
+		if (!strcmp(CurName,"rho") | !strcmp(CurName,"eta") | !strcmp(CurName,"n"))		// we need some way to ensure that we do this for one field at a time only
 		{
-			PetscPrintf(PETSC_COMM_WORLD,"| Starting computation of Field-based gradients for rho.  \n");	
+			PetscPrintf(PETSC_COMM_WORLD,"| Starting computation of Field-based gradients.  \n");	
 			// Compute the gradient
 			if(IOparam->MfitType == 0)
 			{
 				aop->CurScal   = (scal->velocity)/(1);
-				ierr = AdjointFormResidualFieldFDRho(snes, sol, psi, nl, aop);          CHKERRQ(ierr);
+				ierr = AdjointFormResidualFieldFD(snes, sol, psi, nl, aop, IOparam);          CHKERRQ(ierr);
 			}
 			else if(IOparam->MfitType == 1)
 			{
 				aop->CurScal   = (1.0)/(1.0);
-				ierr = AdjointFormResidualFieldFDRho(snes, sol, psiPar, nl, aop);          CHKERRQ(ierr);
-				
+				ierr = AdjointFormResidualFieldFD(snes, sol, psiPar, nl, aop, IOparam);          CHKERRQ(ierr);
 			}
 			PetscPrintf(PETSC_COMM_WORLD,"| Finished gradient computation & added it to VTK\n");
 			PetscPrintf(PETSC_COMM_WORLD,"| Add '-out_gradient = 1' to your parameter file. \n");
 		}
 		else 
 		{
-			PetscPrintf(PETSC_COMM_WORLD,"| Field based gradient only for density programmed! \n");
+			PetscPrintf(PETSC_COMM_WORLD,"| Field based gradient only for [rho,eta,n] programmed not for %s! \n",CurName);
 		}
 	}
 	else // Phase based gradients
@@ -2111,7 +2104,8 @@ PetscErrorCode PrintGradientsAndObservationPoints(ModParam *IOparam)
 					x = IOparam->Ax[j]*scal.length;
 					y = IOparam->Ay[j]*scal.length;
 					z = IOparam->Az[j]*scal.length;
-					if (!strcmp(IOparam->ObsName[j],"PSD")){
+					if (!strcmp(IOparam->ObsName[j],"PSD"))
+					{
 						CostFunc = 	CostFunc*(180/3.14159265359);		// transfer to degrees
 					}
 
@@ -2725,8 +2719,8 @@ PetscErrorCode AdjointGradientResetParameter(NLSol *nl, PetscInt CurPar, PetscIn
 }
 //---------------------------------------------------------------------------
 #undef __FUNCT__
-#define __FUNCT__ "AdjointFormResidualFieldFDRho"
-PetscErrorCode AdjointFormResidualFieldFDRho(SNES snes, Vec x, Vec psi, NLSol *nl, AdjGrad *aop  )
+#define __FUNCT__ "AdjointFormResidualFieldFD"
+PetscErrorCode AdjointFormResidualFieldFD(SNES snes, Vec x, Vec psi, NLSol *nl, AdjGrad *aop, ModParam *IOparam  )
 {
     // "geodynamic sensitivity kernels" 
 	// ONLY PROGRAMMED FOR DENSITY!!
@@ -2755,6 +2749,7 @@ PetscErrorCode AdjointFormResidualFieldFDRho(SNES snes, Vec x, Vec psi, NLSol *n
 	PetscScalar ***fx,  ***fy,  ***fz, ***vx,  ***vy,  ***vz, ***gc, ***bcp, ***llgradfield;
 	PetscScalar ***dxx, ***dyy, ***dzz, ***dxy, ***dxz, ***dyz, ***p, ***T, ***p_lith, ***p_pore;
 	Vec         rpl, res;
+	char 		CurName[_str_len_];
 
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
@@ -2767,6 +2762,8 @@ PetscErrorCode AdjointFormResidualFieldFDRho(SNES snes, Vec x, Vec psi, NLSol *n
 	ierr = VecDuplicate(jr->gres, &rpl);		 CHKERRQ(ierr);
 	
 	ierr = VecZeroEntries(jr->lgradfield);	 	 CHKERRQ(ierr);
+
+	strcpy(CurName, IOparam->type_name[0]);	// name
 
 	/*// apply pressure limit at the first visco-plastic timestep and iteration
     if(jr->ts->istep == 1 && jr->ctrl->pLimPlast == PETSC_TRUE)
@@ -2845,6 +2842,7 @@ PetscErrorCode AdjointFormResidualFieldFDRho(SNES snes, Vec x, Vec psi, NLSol *n
 
 				START_STD_LOOP
 				{
+
 					// access solution variables
 					svCell = &jr->svCell[iter++];
 
@@ -2912,15 +2910,18 @@ PetscErrorCode AdjointFormResidualFieldFDRho(SNES snes, Vec x, Vec psi, NLSol *n
 					ierr = setUpCtrlVol(&ctx, svCell->phRat, &svCell->svDev, &svCell->svBulk, pc, pc_lith, pc_pore, Tc, DII, z, Le); CHKERRQ(ierr);
 
 					// evaluate constitutive equations on the cell
-					ierr = cellConstEq(&ctx, svCell, XX, YY, ZZ, sxx, syy, szz, gres, rho); CHKERRQ(ierr);
+					ierr = cellConstEqFD(&ctx, svCell, XX, YY, ZZ, sxx, syy, szz, gres, rho, aop, IOparam,  i,  j,  k,  ik,  jk,  kk); CHKERRQ(ierr);
 
 					// Set perturbation paramter for the finite differences
-					if ((i)==ik && (j)==jk && (k)==kk)
+					if (!strcmp(CurName,"rho"))
 					{
-						aop->Perturb = rho*aop->FD_epsilon;
-						rho += aop->Perturb;
+						if ((i)==ik && (j)==jk && (k)==kk)
+						{
+							aop->Perturb = rho*aop->FD_epsilon;
+							rho += aop->Perturb;
+						}
 					}
-
+					
 					// compute gravity terms 
 					gx = rho*grav[0];
 					gy = rho*grav[1];
@@ -2952,6 +2953,7 @@ PetscErrorCode AdjointFormResidualFieldFDRho(SNES snes, Vec x, Vec psi, NLSol *n
 					if(j == mcy && bcp[k][j+1][i] != DBL_MAX) fy[k][j+1][i] -= -p[k][j+1][i]/fdy;
 					if(k == 0   && bcp[k-1][j][i] != DBL_MAX) fz[k][j][i]   += -p[k-1][j][i]/bdz;
 					if(k == mcz && bcp[k+1][j][i] != DBL_MAX) fz[k+1][j][i] -= -p[k+1][j][i]/fdz;
+					
 
 					// mass (volume)
 					gc[k][j][i] = gres;
@@ -3052,7 +3054,8 @@ PetscErrorCode AdjointFormResidualFieldFDRho(SNES snes, Vec x, Vec psi, NLSol *n
 
 
 					// evaluate constitutive equations on the edge
-					ierr = edgeConstEq(&ctx, svEdge, XY, sxy); CHKERRQ(ierr);
+					ierr = edgeConstEqFD(&ctx, svEdge, XY, sxy, aop, IOparam,  i,  j,  k,  ik,  jk,  kk); CHKERRQ(ierr);
+					// ierr = edgeConstEq(&ctx, svEdge, XY, sxy); CHKERRQ(ierr);
 
 					//=========
 					// RESIDUAL
@@ -3161,7 +3164,8 @@ PetscErrorCode AdjointFormResidualFieldFDRho(SNES snes, Vec x, Vec psi, NLSol *n
 					ierr = setUpCtrlVol(&ctx, svEdge->phRat, &svEdge->svDev, NULL, pc, pc_lith, pc_pore, Tc, DII, DBL_MAX, Le); CHKERRQ(ierr);
 
 					// evaluate constitutive equations on the edge
-					ierr = edgeConstEq(&ctx, svEdge, XZ, sxz); CHKERRQ(ierr);
+					ierr = edgeConstEqFD(&ctx, svEdge, XZ, sxz, aop, IOparam,  i,  j,  k,  ik,  jk,  kk); CHKERRQ(ierr);
+					// ierr = edgeConstEq(&ctx, svEdge, XZ, sxz); CHKERRQ(ierr);
 
 					//=========
 					// RESIDUAL
@@ -3270,7 +3274,8 @@ PetscErrorCode AdjointFormResidualFieldFDRho(SNES snes, Vec x, Vec psi, NLSol *n
 					ierr = setUpCtrlVol(&ctx, svEdge->phRat, &svEdge->svDev, NULL, pc, pc_lith, pc_pore, Tc, DII, DBL_MAX, Le); CHKERRQ(ierr);
 
 					// evaluate constitutive equations on the edge
-					ierr = edgeConstEq(&ctx, svEdge, YZ, syz); CHKERRQ(ierr);
+					ierr = edgeConstEqFD(&ctx, svEdge, YZ, syz, aop, IOparam,  i,  j,  k,  ik,  jk,  kk); CHKERRQ(ierr);
+					// ierr = edgeConstEq(&ctx, svEdge, YZ, syz); CHKERRQ(ierr);
 
 					//=========
 					// RESIDUAL
@@ -3366,9 +3371,6 @@ PetscErrorCode AdjointFormResidualFieldFDRho(SNES snes, Vec x, Vec psi, NLSol *n
 	PetscFunctionReturn(0);
 
 }
-
-
-
 //---------------------------------------------------------------------------
 #undef __FUNCT__
 #define __FUNCT__ "AddMaterialParameterToCommandLineOptions"
@@ -3929,8 +3931,8 @@ PetscErrorCode AdjointGet_F_dFdu_Center(JacRes *jr, AdjGrad *aop, ModParam *IOpa
 	VecZeroEntries(lydPardu);
 	VecZeroEntries(lzdPardu);
 
-	// Recompute correct strainrates (necessary!!)
-	ierr =  JacResGetEffStrainRate(jr);
+	// Recompute correct strainrates 
+	// ierr =  JacResGetEffStrainRate(jr);
 
 	// access work vectors
 	ierr = DMDAVecGetArray(fs->DA_CEN, jr->ldxx,    &dxx);    	CHKERRQ(ierr);
@@ -3993,13 +3995,29 @@ PetscErrorCode AdjointGet_F_dFdu_Center(JacRes *jr, AdjGrad *aop, ModParam *IOpa
 		bdy = SIZE_NODE(j, sy, fs->dsy);   fdy = SIZE_NODE(j+1, sy, fs->dsy);
 		bdz = SIZE_NODE(k, sz, fs->dsz);   fdz = SIZE_NODE(k+1, sz, fs->dsz);
 
+		// if PSD is chosen we first have to calculate it at every point  TAKE CARE HERE THIS NEEDS TO BE CHANGED TO BE MORE FLEXIBLE -> ONLY CHECKS FIRST OBS
+		if (!strcmp(IOparam->ObsName[0],"PSD"))
+		{			
+			// Perform the adjoint computation for PSD:
+			phival 	= 0.5*atan(((2*XY)/(XX-YY)));
+			// PetscPrintf(PETSC_COMM_WORLD,"%.20f %.20f %.20f\n   ",XY,XX,YY);
+			if(phival<0) 
+			{
+				phival = -phival;
+			} 
+			else
+			{
+				phival = ((3.14159265359/4 - phival) + 3.14159265359/4);    // minu could be set to -1 here to mimic the discontiunuity in the ambuigity of phival in the gradient
+			} 
+			if(XY>0) phival = phival + 3.14159265359/2;
+			svBulk->phi  	= phival * (180/3.14159265359);
+		}
 
 		// Loop over observations
 		for(ii = 0; ii < IOparam->mdI; ii++)
 		{
 			if (As_Ind[ii] == iterat-1)
 			{
-
 				// Create coordinate vector
 				coord_local[0] = IOparam->Ax[ii];
 				coord_local[1] = IOparam->Ay[ii];
@@ -4009,20 +4027,7 @@ PetscErrorCode AdjointGet_F_dFdu_Center(JacRes *jr, AdjGrad *aop, ModParam *IOpa
 				if(lrank == 13)
 				{
 					/* Retrieve parameter */
-					if (!strcmp(IOparam->ObsName[ii],"PSD"))
-					{			
-						// Perform the adjoint computation for PSD:
-						phival 	= 0.5*atan(((2*XY)/(XX-YY)));
-						if(phival<0) {
-							phival = -phival;
-						} 
-						else{
-							phival = ((3.14159265359/4 - phival) + 3.14159265359/4);    // minu could be set to -1 here to mimic the discontiunuity in the ambuigity of phival in the gradient
-						} 
-						if(XY>0) phival = phival + 3.14159265359/2;
-						svBulk->phi  	= phival * (180/3.14159265359);
-						Parameter       = phival;
-					}
+					if (!strcmp(IOparam->ObsName[ii],"PSD")) {Parameter       = phival;}
 					// Perform adjoint computation for strainrate components
 					else if (!strcmp(IOparam->ObsName[ii],"Exx")) {	Parameter =	XX;		}
 					else if (!strcmp(IOparam->ObsName[ii],"Eyy")) {	Parameter =	YY;		}
@@ -4033,7 +4038,8 @@ PetscErrorCode AdjointGet_F_dFdu_Center(JacRes *jr, AdjGrad *aop, ModParam *IOpa
 					else if (!strcmp(IOparam->ObsName[ii],"E2nd")){	Parameter =	E2;		}
 
 
-					if (!strcmp(IOparam->ObsName[ii],"PSD")){					
+					if (!strcmp(IOparam->ObsName[ii],"PSD"))
+					{					
 						/* If we perform the computation for PSD (Principal Stress Direction) */	
 						// Compute objective function derivative (dFdu = P*(st-st_ini))
 						dPardu_local = 0;
@@ -4072,9 +4078,10 @@ PetscErrorCode AdjointGet_F_dFdu_Center(JacRes *jr, AdjGrad *aop, ModParam *IOpa
 						sty[ii] = phival * (180/3.14159265359);
 					}
 					else if (!strcmp(IOparam->ObsName[ii],"Exx") | !strcmp(IOparam->ObsName[ii],"Eyy") | !strcmp(IOparam->ObsName[ii],"Ezz") | 
-							 !strcmp(IOparam->ObsName[ii],"Exy") | !strcmp(IOparam->ObsName[ii],"Eyz") | !strcmp(IOparam->ObsName[ii],"Exz") | !strcmp(IOparam->ObsName[ii],"E2nd")){		
+							 !strcmp(IOparam->ObsName[ii],"Exy") | !strcmp(IOparam->ObsName[ii],"Eyz") | !strcmp(IOparam->ObsName[ii],"Exz") | !strcmp(IOparam->ObsName[ii],"E2nd"))
+					{		
 
-						/* Perform computation for strainrate tensor components */
+						// Perform computation for strainrate tensor components 
 						dPardu_local = 0;
 						if (IOparam->Gr == 0)
 						{
@@ -4092,22 +4099,26 @@ PetscErrorCode AdjointGet_F_dFdu_Center(JacRes *jr, AdjGrad *aop, ModParam *IOpa
 							mfitParam += (Parameter);
 						}
 
-						if 		(!strcmp(IOparam->ObsName[ii],"Exx")){
+						if 		(!strcmp(IOparam->ObsName[ii],"Exx"))
+						{
 							// derivative of Exx vs Vx:
 							xdPardu[k][j  ][i  ] += Param_local * (-1.0/dx);	// 1
 							xdPardu[k][j  ][i+1] += Param_local * ( 1.0/dx);	// 2
 						}
-						else if (!strcmp(IOparam->ObsName[ii],"Eyy")){
+						else if (!strcmp(IOparam->ObsName[ii],"Eyy"))
+						{
 							// derivative of Eyy vs Vy:
 							ydPardu[k][j  ][i  ] += Param_local * (-1.0/dy) ;	// 3
 							ydPardu[k][j+1][i  ] += Param_local * ( 1.0/dy) ;	// 4
 						}
-						else if (!strcmp(IOparam->ObsName[ii],"Ezz")){
+						else if (!strcmp(IOparam->ObsName[ii],"Ezz"))
+						{
 							// derivative of Ezz vs Vz:
 							zdPardu[k  ][j  ][i  ] += Param_local * (-1.0/dz) ;	
 							zdPardu[k+1][j  ][i  ] += Param_local * ( 1.0/dz) ;	
 						}
-						else if (!strcmp(IOparam->ObsName[ii],"Exy")){
+						else if (!strcmp(IOparam->ObsName[ii],"Exy"))
+						{
 							// derivative of Exy (@ lower-left corner) vs Vx & Vy:
 							xdPardu[k][j  ][i  ] += Param_local * (1.0/8.0) * ( 1.0/bdy);	// 1
 							xdPardu[k][j-1][i  ] += Param_local * (1.0/8.0) * (-1.0/bdy);	// 5
@@ -4132,7 +4143,8 @@ PetscErrorCode AdjointGet_F_dFdu_Center(JacRes *jr, AdjGrad *aop, ModParam *IOpa
 							ydPardu[k][j+1][i  ] += Param_local * (1.0/8.0) * ( 1.0/bdx);	// 4
 							ydPardu[k][j+1][i-1] += Param_local * (1.0/8.0) * (-1.0/bdx);	// 10
 						}
-						else if (!strcmp(IOparam->ObsName[ii],"Exz")){
+						else if (!strcmp(IOparam->ObsName[ii],"Exz"))
+						{
 							// derivative of Exz (@ bottom-left corner) vs Vx & Vz:
 							xdPardu[k  ][j][i  ] += Param_local * (1.0/8.0) * ( 1.0/bdz);	// 
 							xdPardu[k-1][j][i  ] += Param_local * (1.0/8.0) * (-1.0/bdz);	// 
@@ -4157,7 +4169,8 @@ PetscErrorCode AdjointGet_F_dFdu_Center(JacRes *jr, AdjGrad *aop, ModParam *IOpa
 							zdPardu[k+1][j][i+1] += Param_local * (1.0/8.0) * ( 1.0/fdx);	// 
 							zdPardu[k+1][j][i  ] += Param_local * (1.0/8.0) * (-1.0/fdx);	// 
 						}
-						else if (!strcmp(IOparam->ObsName[ii],"Eyz")){
+						else if (!strcmp(IOparam->ObsName[ii],"Eyz"))
+						{
 							// derivative of Eyz (@ bottom-front corner) vs Vy & Vz:
 							ydPardu[k  ][j  ][i] += Param_local * (1.0/8.0) * ( 1.0/bdz);	 
 							ydPardu[k-1][j  ][i] += Param_local * (1.0/8.0) * (-1.0/bdz);	 
@@ -4182,11 +4195,11 @@ PetscErrorCode AdjointGet_F_dFdu_Center(JacRes *jr, AdjGrad *aop, ModParam *IOpa
 							zdPardu[k+1][j+1][i] += Param_local * (1.0/8.0) * ( 1.0/fdy);	 
 							zdPardu[k+1][j  ][i] += Param_local * (1.0/8.0) * (-1.0/fdy);	
 						}
-						else if (!strcmp(IOparam->ObsName[ii],"E2nd")){
+						else if (!strcmp(IOparam->ObsName[ii],"E2nd"))
+						{
 							// not yet implemented!
 						}
-						
-
+					
 						// Store observation
 						sty[ii] = Parameter;
 
@@ -4305,6 +4318,490 @@ PetscErrorCode AdjointGet_F_dFdu_Center(JacRes *jr, AdjGrad *aop, ModParam *IOpa
 	ierr = VecDestroy(&lxdPardu);   CHKERRQ(ierr);
 	ierr = VecDestroy(&lydPardu);   CHKERRQ(ierr);
 	ierr = VecDestroy(&lzdPardu);   CHKERRQ(ierr);
+
+	PetscFunctionReturn(0);
+}
+//---------------------------------------------------------------------------
+#undef __FUNCT__
+#define __FUNCT__ "cellConstEqFD"
+PetscErrorCode cellConstEqFD(
+		ConstEqCtx  *ctx,    // evaluation context
+		SolVarCell  *svCell, // solution variables
+		PetscScalar  dxx,    // effective normal strain rate components
+		PetscScalar  dyy,    // ...
+		PetscScalar  dzz,    // ...
+		PetscScalar &sxx,    // Cauchy stress components
+		PetscScalar &syy,    // ...
+		PetscScalar &szz,    // ...
+		PetscScalar &gres,   // volumetric residual
+		PetscScalar &rho,    // effective density
+		AdjGrad *aop,
+		ModParam *IOparam,
+		PetscInt ii, 
+		PetscInt jj, 
+		PetscInt k, 
+		PetscInt ik, 
+		PetscInt jk, 
+		PetscInt kk)
+{
+	// evaluate constitutive equations on the cell
+
+	SolVarDev   *svDev;
+	SolVarBulk  *svBulk;
+	Controls    *ctrl;
+	PetscScalar  eta_st, ptotal, txx, tyy, tzz;
+
+	PetscErrorCode ierr;
+	PetscFunctionBegin;
+
+	// access context
+	svDev  = ctx->svDev;
+	svBulk = ctx->svBulk;
+	ctrl   = ctx->ctrl;
+
+	// evaluate deviatoric constitutive equation
+	ierr = devConstEqFD(ctx, aop, IOparam,  ii,  jj,  k,  ik,  jk,  kk); CHKERRQ(ierr);
+
+	// evaluate volumetric constitutive equation
+	ierr = volConstEq(ctx); CHKERRQ(ierr);
+
+	// get stabilization viscosity
+	if(ctrl->initGuess) eta_st = 0.0;
+	else                eta_st = svDev->eta_st;
+
+	// compute stabilization stresses
+	sxx = 2.0*eta_st*svCell->dxx;
+	syy = 2.0*eta_st*svCell->dyy;
+	szz = 2.0*eta_st*svCell->dzz;
+
+	// compute history shear stress
+	svCell->sxx = 2.0*ctx->eta*dxx;
+	svCell->syy = 2.0*ctx->eta*dyy;
+	svCell->szz = 2.0*ctx->eta*dzz;
+
+	// compute plastic strain-rate components
+	txx = ctx->DIIpl*dxx;
+	tyy = ctx->DIIpl*dyy;
+	tzz = ctx->DIIpl*dzz;
+
+	// store contribution to the second invariant of plastic strain-rate
+	svDev->PSR = 0.5*(txx*txx + tyy*tyy + tzz*tzz);
+
+	// compute dissipative part of total strain rate (viscous + plastic = total - elastic)
+	txx = svCell->dxx - svDev->I2Gdt*(svCell->sxx - svCell->hxx);
+	tyy = svCell->dyy - svDev->I2Gdt*(svCell->syy - svCell->hyy);
+	tzz = svCell->dzz - svDev->I2Gdt*(svCell->szz - svCell->hzz);
+
+	// compute shear heating term contribution
+	svDev->Hr =
+		txx*svCell->sxx + tyy*svCell->syy + tzz*svCell->szz +
+		sxx*svCell->dxx + syy*svCell->dyy + szz*svCell->dzz;
+
+	// compute total viscosity
+	svDev->eta = ctx->eta + eta_st;
+
+	// get total pressure (effective pressure + pore pressure)
+	ptotal = ctx->p + ctrl->biot*ctx->p_pore;
+
+	// compute total Cauchy stresses
+	sxx += svCell->sxx - ptotal;
+	syy += svCell->syy - ptotal;
+	szz += svCell->szz - ptotal;
+
+	// save output variables
+	svCell->eta_cr = ctx->eta_cr; // creep viscosity
+	svCell->DIIdif = ctx->DIIdif; // relative diffusion creep strain rate
+	svCell->DIIdis = ctx->DIIdis; // relative dislocation creep strain rate
+	svCell->DIIprl = ctx->DIIprl; // relative Peierls creep strain rate
+	svCell->yield  = ctx->yield;  // average yield stress in control volume
+
+	// compute volumetric residual
+	if(ctrl->actExp)
+	{
+		gres = -svBulk->IKdt*(ctx->p - svBulk->pn) - svBulk->theta + svBulk->alpha*(ctx->T - svBulk->Tn)/ctx->dt;
+	}
+	else
+	{
+		gres = -svBulk->IKdt*(ctx->p - svBulk->pn) - svBulk->theta;
+	}
+
+	// store effective density
+	rho = svBulk->rho;
+
+	PetscFunctionReturn(0);
+}
+//---------------------------------------------------------------------------
+#undef __FUNCT__
+#define __FUNCT__ "setUpPhaseFD"
+PetscErrorCode setUpPhaseFD(ConstEqCtx *ctx, PetscInt ID, AdjGrad *aop, ModParam *IOparam, PetscInt ii, PetscInt jj, PetscInt k, PetscInt ik, PetscInt jk, PetscInt kk)
+{
+	// setup phase parameters for deviatoric constitutive equation
+	// evaluate dependence on constant parameters (pressure, temperature)
+
+	Material_t  *mat;
+	Soft_t      *soft;
+	Controls    *ctrl;
+	PData       *Pd;
+	PetscScalar  APS, Le, dt, p, p_lith, p_pore, T, mf, mfd, mfn;
+	PetscScalar  Q, RT, ch, fr, p_visc, p_upper, p_lower, dP, p_total;
+	PetscScalar  Inin,Inieta,ViscTemp;
+
+
+	PetscErrorCode ierr;
+	PetscFunctionBegin;
+
+	// access context
+	mat    = ctx->phases + ID;
+	soft   = ctx->soft;
+	ctrl   = ctx->ctrl;
+	Pd     = ctx->Pd;
+	APS    = ctx->svDev->APS;
+	Le     = ctx->Le;
+	dt     = ctx->dt;
+	p      = ctx->p;
+	p_lith = ctx->p_lith;
+	p_pore = ctx->p_pore;
+	T      = ctx->T;
+	mf     = 0.0;
+
+	if(mat->pdAct == 1)
+	{
+		// compute melt fraction from phase diagram
+		ierr = setDataPhaseDiagram(Pd, p, T, mat->pdn); CHKERRQ(ierr);
+
+		// store melt fraction
+		mf = Pd->mf;
+	}
+
+	// set RT
+	RT         =  ctrl->Rugc*T;
+	if(!RT) RT = -1.0;
+
+	// initialize phase parameters
+	ctx->A_els = 0.0; // elasticity constant
+	ctx->A_dif = 0.0; // diffusion constant
+	ctx->A_max = 0.0; // upper bound constant
+	ctx->A_dis = 0.0; // dislocation constant
+	ctx->N_dis = 1.0; // dislocation exponent
+	ctx->A_prl = 0.0; // Peierls constant
+	ctx->N_prl = 1.0; // Peierls exponent
+	ctx->taupl = 0.0; // plastic yield stress
+
+	// MELT FRACTION
+	mfd = 1.0;
+	mfn = 1.0;
+
+	if(!strcmp(IOparam->type_name[0],"eta"))
+	{
+		if ((ii)==ik && (jj)==jk && (k)==kk)
+		{
+			ViscTemp = (pow((mat->Bn * pow(2,mat->n) * pow(IOparam->DII_ref, mat->n-1)) , -1/mat->n));
+			Inieta = ViscTemp;
+			aop->Perturb = ViscTemp*aop->FD_epsilon;
+			ViscTemp += aop->Perturb;
+			mat->Bn = pow (2.0*ViscTemp, -mat->n) * pow(IOparam->DII_ref, 1.0 - mat->n);
+		}
+	}
+
+	if(mf)
+	{
+		// limit melt fraction
+		if(mf > ctrl->mfmax) mf = ctrl->mfmax;
+
+		// compute corrections factors for diffusion & dislocation creep
+		mfd = exp(mat->mfc*mf);
+		mfn = exp(mat->mfc*mf*mat->n);
+	}
+
+	// PRESSURE
+
+	// pore pressure
+	if(ctrl->gwType == _GW_NONE_) p_pore = 0.0;
+
+	// total pressure
+	p_total = p + ctrl->biot*p_pore;
+
+	// assign pressure for viscous laws
+	if(ctrl->pLithoVisc)  p_visc = p_lith;
+	else                  p_visc = p_total;
+
+	// ELASTICITY
+	if(mat->G)
+	{
+		// Elasticity correction can only DECREASE the viscosity.
+		// eta/G << dt (viscous regime)  eta*(dt/(dt + eta/G)) -> eta
+		// eta/G >> dt (elastic regime)  eta*(dt/(dt + eta/G)) -> G*dt < eta
+		// Elasticity doesn't normally interact with the bottom viscosity limit,
+		// instead it rather acts as a smooth limiter for maximum viscosity.
+
+		ctx->A_els = 1.0/(mat->G*dt)/2.0;
+	}
+
+	// LINEAR DIFFUSION CREEP (NEWTONIAN)
+	if(mat->Bd)
+	{
+		Q          = (mat->Ed + p_visc*mat->Vd)/RT;
+		ctx->A_dif =  mat->Bd*exp(-Q)*mfd;
+	}
+
+	// PS-CREEP
+	else if(mat->Bps && T)
+	{
+		Q          = mat->Eps/RT;
+		ctx->A_dif = mat->Bps*exp(-Q)/T/pow(mat->d, 3.0);
+	}
+
+	// UPPER BOUND CREEP
+	if(ctrl->eta_max)
+	{
+		ctx->A_max = 1.0/(ctrl->eta_max)/2.0;
+	}
+
+	// DISLOCATION CREEP (POWER LAW)
+	if(mat->Bn)
+	{
+		Q          = (mat->En + p_visc*mat->Vn)/RT;
+		if(!strcmp(IOparam->type_name[0],"n"))
+		{
+			if ((ii)==ik && (jj)==jk && (k)==kk)
+			{
+				ViscTemp = (pow((mat->Bn * pow(2,mat->n) * pow(IOparam->DII_ref, mat->n-1)) , -1/mat->n));
+				Inin = mat->n;
+				aop->Perturb = mat->n*aop->FD_epsilon;
+				mat->n += aop->Perturb;
+				mat->Bn = pow (2.0*ViscTemp, -mat->n) * pow(IOparam->DII_ref, 1.0 - mat->n);
+			}
+		}
+		ctx->N_dis =  mat->n;
+		ctx->A_dis =  mat->Bn*exp(-Q)*mfn;
+	}
+
+	// DC-CREEP
+	else if(mat->Bdc && T)
+	{
+		Q          = mat->Edc/RT;
+		ctx->N_dis = Q;
+		ctx->A_dis = mat->Bdc*exp(-Q*log(mat->Rdc))*pow(mat->mu, -Q);
+	}
+
+	// PEIERLS CREEP (LOW TEMPERATURE RATE-DEPENDENT PLASTICITY, POWER-LAW APPROXIMATION)
+	if(mat->Bp && T)
+	{
+		Q           = (mat->Ep + p_visc*mat->Vp)/RT;
+		ctx->N_prl =  Q*pow(1.0-mat->gamma, mat->q-1.0)*mat->q*mat->gamma;
+		ctx->A_prl =  mat->Bp/pow(mat->gamma*mat->taup, ctx->N_prl)*exp(-Q*pow(1.0-mat->gamma, mat->q));
+	}
+
+	if(!strcmp(IOparam->type_name[0],"n"))
+	{
+		if ((ii)==ik && (jj)==jk && (k)==kk)
+		{
+			mat->n = Inin;
+			mat->Bn = pow (2.0*ViscTemp, -mat->n) * pow(IOparam->DII_ref, 1.0 - mat->n);
+		}
+	}
+	if(!strcmp(IOparam->type_name[0],"eta"))
+	{
+		if ((ii)==ik && (jj)==jk && (k)==kk)
+		{
+			mat->Bn = pow (2.0*Inieta, -mat->n) * pow(IOparam->DII_ref, 1.0 - mat->n);
+		}
+	}
+
+	if(PetscIsInfOrNanScalar(ctx->A_dif)) ctx->A_dif = 0.0;
+	if(PetscIsInfOrNanScalar(ctx->A_dis)) ctx->A_dis = 0.0;
+	if(PetscIsInfOrNanScalar(ctx->A_prl)) ctx->A_prl = 0.0;
+
+	// PLASTICITY
+	if(!mat->ch && !mat->fr)
+	{
+		PetscFunctionReturn(0); // return if no plasticity is set
+	}
+
+	// apply strain softening to friction and cohesion
+	ch = applyStrainSoft(soft, mat->chSoftID, APS, Le, mat->ch);
+	fr = applyStrainSoft(soft, mat->frSoftID, APS, Le, mat->fr);
+
+	// fit to limits
+	if(ch < ctrl->minCh) ch = ctrl->minCh;
+	if(fr < ctrl->minFr) fr = ctrl->minFr;
+
+	// override total pressure with lithostatic if requested
+	if(ctrl->pLithoPlast)
+	{
+		// Use lithostatic, rather than dynamic pressure to evaluate yield stress
+		// This converges better, but does not result in localization of deformation & shear banding,
+		// so only apply it for large-scale simulations where plasticity does not matter much
+
+		p_total = p_lith;
+	}
+	else if(ctrl->pLimPlast)
+	{
+		// apply pressure limits
+
+		// yielding surface: (S1-S3)/2 = (S1+S3)/2*sin(phi) + C*cos(phi)
+		// pressure can be written as: P = (S1+S2+S3)/3 and P~=S2,then P=(S1+S3)/2
+		// so the yield surface can be rewritten as:
+		// P-S3=P*sin(phi) + C*cos(phi)   --> compression
+		// S1-P=P*sin(phi) + C*cos(phi)   --> extension
+		// under pure shear compression, S3=P_Lithos and S1=P_Lithos when extension
+		// P = -( S3+C*cos(phi))/(sin(phi)-1)  --> compression
+		// P = -(-S1+C*cos(phi))/(sin(phi)+1)  --> extension
+
+		p_upper = -( p_lith + ch * cos(fr))/(sin(fr) - 1.0); // compression
+		p_lower = -(-p_lith + ch * cos(fr))/(sin(fr) + 1.0); // extension
+
+		if(p_total > p_upper) p_total = p_upper;
+		if(p_total < p_lower) p_total = p_lower;
+	}
+
+	// compute cohesion and friction coefficient
+	ch = cos(fr)*ch;
+	fr = sin(fr);
+
+	// compute effective mean stress
+	dP = (p_total - p_pore);
+
+	// compute yield stress
+	if(dP < 0.0) ctx->taupl =         ch; // Von-Mises model for extension
+	else         ctx->taupl = dP*fr + ch; // Drucker-Prager model for compression
+
+	// correct for ultimate yield stress (if defined)
+	if(ctrl->tauUlt) { if(ctx->taupl > ctrl->tauUlt) ctx->taupl = ctrl->tauUlt; }
+
+	PetscFunctionReturn(0);
+}
+//---------------------------------------------------------------------------
+#undef __FUNCT__
+#define __FUNCT__ "devConstEqFD"
+PetscErrorCode devConstEqFD(ConstEqCtx *ctx, AdjGrad *aop, ModParam *IOparam, PetscInt ii, PetscInt jj, PetscInt k, PetscInt ik, PetscInt jk, PetscInt kk)
+{
+	// evaluate deviatoric constitutive equations in control volume
+
+	Controls    *ctrl;
+	PetscScalar *phRat;
+	SolVarDev   *svDev;
+	Material_t  *phases;
+	PetscInt     i, numPhases;
+
+	PetscErrorCode ierr;
+	PetscFunctionBegin;
+
+	// access context
+	ctrl      = ctx->ctrl;
+	numPhases = ctx->numPhases;
+	phRat     = ctx->phRat;
+	svDev     = ctx->svDev;
+	phases    = ctx->phases;
+
+	// zero out results
+	ctx->eta    = 0.0; // effective viscosity
+	ctx->eta_cr = 0.0; // creep viscosity
+	ctx->DIIdif = 0.0; // diffusion creep strain rate
+	ctx->DIIdis = 0.0; // dislocation creep strain rate
+	ctx->DIIprl = 0.0; // Peierls creep strain rate
+	ctx->DIIpl  = 0.0; // plastic strain rate
+	ctx->yield  = 0.0; // yield stress
+
+	// zero out stabilization viscosity
+	svDev->eta_st = 0.0;
+
+	// viscous initial guess
+	if(ctrl->initGuess)
+	{
+		ctx->eta    = ctrl->eta_ref;
+		ctx->eta_cr = ctrl->eta_ref;
+		ctx->DIIdif = 1.0;
+
+		PetscFunctionReturn(0);
+	}
+
+	// scan all phases
+	for(i = 0; i < numPhases; i++)
+	{
+		// update present phases only
+		if(phRat[i])
+		{
+			// setup phase parameters
+			ierr = setUpPhaseFD(ctx, i, aop, IOparam,  ii,  jj,  k,  ik,  jk,  kk); CHKERRQ(ierr);
+
+			// compute phase viscosities and strain rate partitioning
+			ierr = getPhaseVisc(ctx, i); CHKERRQ(ierr);
+
+			// update stabilization viscosity
+			svDev->eta_st += phRat[i]*phases->eta_st;
+		}
+	}
+
+	// normalize strain rates
+	if(ctx->DII)
+	{
+		ctx->DIIdif /= ctx->DII;
+		ctx->DIIdis /= ctx->DII;
+		ctx->DIIprl /= ctx->DII;
+		ctx->DIIpl  /= ctx->DII;
+	}
+
+	PetscFunctionReturn(0);
+}
+//---------------------------------------------------------------------------
+#undef __FUNCT__
+#define __FUNCT__ "edgeConstEqFD"
+PetscErrorCode edgeConstEqFD(
+		ConstEqCtx  *ctx,    // evaluation context
+		SolVarEdge  *svEdge, // solution variables
+		PetscScalar  d,      // effective shear strain rate component
+		PetscScalar &s,
+		AdjGrad *aop,
+		ModParam *IOparam,
+		PetscInt ii, 
+		PetscInt jj, 
+		PetscInt k, 
+		PetscInt ik, 
+		PetscInt jk, 
+		PetscInt kk)      // Cauchy stress component
+{
+	// evaluate constitutive equations on the edge
+
+	SolVarDev   *svDev;
+	PetscScalar  t, eta_st;
+
+	PetscErrorCode ierr;
+	PetscFunctionBegin;
+
+	// access context
+	svDev = &svEdge->svDev;
+
+	// evaluate deviatoric constitutive equation
+	ierr = devConstEqFD(ctx, aop, IOparam,  ii,  jj,  k,  ik,  jk,  kk); CHKERRQ(ierr);
+
+	// get stabilization viscosity
+	if(ctx->ctrl->initGuess) eta_st = 0.0;
+	else                     eta_st = svDev->eta_st;
+
+	// compute stabilization stress
+	s = 2.0*eta_st*svEdge->d;
+
+	// compute history shear stress
+	svEdge->s = 2.0*ctx->eta*d;
+
+	// compute plastic strain-rate component
+	t = ctx->DIIpl*d;
+
+	// store contribution to the second invariant of plastic strain-rate
+	svDev->PSR = t*t;
+
+	// compute dissipative part of total strain rate (viscous + plastic = total - elastic)
+	t = svEdge->d - svDev->I2Gdt*(svEdge->s - svEdge->h);
+
+	// compute shear heating term contribution
+	svDev->Hr = 2.0*t*svEdge->s + 2.0*svEdge->d*s;
+
+	// compute total viscosity
+	svDev->eta = ctx->eta + eta_st;
+
+	// compute total stress
+	s += svEdge->s;
 
 	PetscFunctionReturn(0);
 }

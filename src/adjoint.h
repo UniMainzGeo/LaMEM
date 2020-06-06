@@ -58,6 +58,9 @@ struct Controls;
 struct NLSol;
 struct ModParam;
 struct FB;
+struct ConstEqCtx;
+struct SolVarCell;
+struct SolVarEdge;
 
 #include "phase.h"
 
@@ -126,7 +129,7 @@ PetscErrorCode AdjointGet_F_dFdu_Center(JacRes *jr, AdjGrad *aop, ModParam *IOpa
 PetscErrorCode AdjointGradientResetParameter(NLSol *nl, PetscInt CurPar, PetscInt CurPhase, AdjGrad *aop);
 
 // Gradient function for field sensitivity for rho (FD approximation)
-PetscErrorCode AdjointFormResidualFieldFDRho(SNES snes, Vec x, Vec psi, NLSol *nl, AdjGrad *aop );
+PetscErrorCode AdjointFormResidualFieldFD(SNES snes, Vec x, Vec psi, NLSol *nl, AdjGrad *aop, ModParam *IOparam );
 
 // Add or remove parameters from command-line database & update material DB
 PetscErrorCode AddMaterialParameterToCommandLineOptions(char *name, PetscInt ID, PetscScalar val);
@@ -142,5 +145,11 @@ PetscErrorCode PrintScalingLaws(ModParam *IO_param);
 // Create & Destroy aop object
 PetscErrorCode AdjointCreate(AdjGrad *aop, JacRes *jr, ModParam *IOparam);
 PetscErrorCode AdjointDestroy(AdjGrad *aop, ModParam *IOparam);
+
+// Code chain to the constitutive context for direct FD pointwise
+PetscErrorCode devConstEqFD(ConstEqCtx *ctx, AdjGrad *aop, ModParam *IOparam, PetscInt ii, PetscInt jj, PetscInt k, PetscInt ik, PetscInt jk, PetscInt kk);
+PetscErrorCode cellConstEqFD(ConstEqCtx  *ctx,  SolVarCell  *svCell, PetscScalar  dxx,    PetscScalar  dyy,  PetscScalar  dzz, PetscScalar &sxx,  PetscScalar &syy,PetscScalar &szz,PetscScalar &gres,PetscScalar &rho, AdjGrad *aop,ModParam *IOparam,PetscInt ii, PetscInt jj, PetscInt k, PetscInt ik, PetscInt jk, PetscInt kk);
+PetscErrorCode setUpPhaseFD(ConstEqCtx *ctx, PetscInt ID, AdjGrad *aop, ModParam *IOparam, PetscInt ii, PetscInt jj, PetscInt k, PetscInt ik, PetscInt jk, PetscInt kk);
+PetscErrorCode edgeConstEqFD(ConstEqCtx  *ctx,    SolVarEdge  *svEdge, PetscScalar  d,      PetscScalar &s,AdjGrad *aop,ModParam *IOparam,PetscInt ii, PetscInt jj, PetscInt k, PetscInt ik, PetscInt jk, PetscInt kk);     
 
 #endif
