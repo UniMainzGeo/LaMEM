@@ -3767,11 +3767,12 @@ PetscErrorCode PrintScalingLaws(ModParam *IOparam)
 		VecGetArray(IOparam->P,&Par);
 		for(j = 0; j < IOparam->mdN; j++)
 		{
-			CurPhase 		= 	IOparam->phs[j];
-			strcpy(CurName, IOparam->type_name[j]);	// name
+			k 				= 	idx[j];	
+			CurPhase 		= 	IOparam->phs[k];
+			strcpy(CurName, IOparam->type_name[k]);	// name
 			strcpy(PhaseDescription, IOparam->dbm_modified.phases[CurPhase].Name);	// name
 
-			P = Par[j];
+			P = Par[k];
 			if (!strcmp("rho",CurName) & (IOparam->ReferenceDensity!=0.0))
 			{
 				char *Name;	
@@ -3780,13 +3781,13 @@ PetscErrorCode PrintScalingLaws(ModParam *IOparam)
 				strcpy(CurName, Name);							// name
 			}	
 
-			if (IOparam->par_log10[j]==1){strcpy(logstr, "log10"); }
+			if (IOparam->par_log10[k]==1){strcpy(logstr, "log10"); }
 			else{strcpy(logstr, "     "); }
-			if (IOparam->FD_gradient[j]==0){strcpy(adjointstr, "adjoint"); }
+			if (IOparam->FD_gradient[k]==0){strcpy(adjointstr, "adjoint"); }
 			else{strcpy(adjointstr, "FD     "); }
 		
 
-			fprintf(db,"  %s %13s    %3i     %- 18.9e %- 18.9e %s  %s \n",logstr, CurName, CurPhase, Exponent[j],P, adjointstr, PhaseDescription);
+			fprintf(db,"  %s %13s    %3i     %- 18.9e %- 18.9e %s  %s \n",logstr, CurName, CurPhase, Exponent[k],P, adjointstr, PhaseDescription);
 
 		}
 		VecRestoreArray(IOparam->P,&Par);
