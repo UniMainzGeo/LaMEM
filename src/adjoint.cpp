@@ -1179,7 +1179,7 @@ PetscErrorCode AdjointOptimisation(Vec P, PetscScalar F, Vec grad, void *ctx)
 
 	// initialize
 	PetscInt 		i, j, LScount;
-	PetscScalar 	*Par, *Paroldar, *gradar, *dPtemp, *fcconvar;
+	PetscScalar 	*Par, *Paroldar, *gradar, *gradoldar, *dPtemp, *fcconvar;
 	PetscScalar   	Fold;
 	ModParam    	*IOparam;
 	IOparam     	= (ModParam*)ctx;
@@ -1198,6 +1198,11 @@ PetscErrorCode AdjointOptimisation(Vec P, PetscScalar F, Vec grad, void *ctx)
 	F 		= 1e100;
 	Fold 	= 1e100;
 
+	for(j = 0; j < IOparam->mdN; j++)
+	{
+		IOparam->factor2array[j] = 1;
+	}
+
 	while(F>IOparam->tol)
 	{
 		
@@ -1215,7 +1220,7 @@ PetscErrorCode AdjointOptimisation(Vec P, PetscScalar F, Vec grad, void *ctx)
 
 		// call LaMEM main library function
 		//ierr = LaMEMLibMain(IOparam); CHKERRQ(ierr);
-		ierr = ComputeGradientsAndObjectiveFunction(P, &F, dP, IOparam);	CHKERRQ(ierr);
+		ierr = ComputeGradientsAndObjectiveFunction(P, &F, grad, IOparam);	CHKERRQ(ierr);
 				
 		// Save initial cost function & create initial Hessian
 		if(IOparam->count==1)
@@ -1226,34 +1231,58 @@ PetscErrorCode AdjointOptimisation(Vec P, PetscScalar F, Vec grad, void *ctx)
 		// Save cost function
 		F = IOparam->mfit;
 
+		VecGetArray(P,&Par);
+		VecGetArray(grad,&gradar);
+		for(j = 0; j < IOparam->mdN; j++)
+		{
+			gradar[j] = IOparam->grd[j];
+			if (IOparam->count==1)
+			{
+				IOparam->factor2array[j] = fabs((IOparam->Scale_Grad*Par[j])/fabs(gradar[j]));
+			}
+		}
+		VecRestoreArray(grad,&gradar);
+		VecRestoreArray(P,&Par);
+
 		PetscPrintf(PETSC_COMM_WORLD,"| AdjointOptimisation: Gradients. [0]=%e, [1]=%e \n", IOparam->grd[0], IOparam->grd[1]);
 		
-		// If cost function in this timestep is larger then before perform bisection line search
+		// If cost function in this timestep is larger then before perform bisection line search (striclty speacking we only require to evaluate the cost function during LS..)
 		while(F>Fold)
 		{
+
+			// Reduce line search alpha
+			for(j = 0; j < IOparam->mdN; j++)
+			{
+				IOparam->factor2array[j] *= IOparam->facB;
+			}
+
 			PetscPrintf(PETSC_COMM_WORLD,"\n| - - - - - - - - - - - - - - - - - - - - - - - - - - - \n");
 			PetscPrintf(PETSC_COMM_WORLD,"|               LINE SEARCH IT %d                       \n",LScount);
 
 			VecGetArray(P,&Par);
 			VecGetArray(Pold,&Paroldar);
-			VecGetArray(dP,&dPtemp);
+			VecGetArray(gradold,&gradoldar);
+
+			/*VecGetArray(dP,&dPtemp);
 			for(i=0;i<IOparam->mdN;i++)
 			{
 				for(j=0;j<IOparam->mdN;j++)
 				{
-					dPtemp[i] = dPtemp[i]*IOparam->facB;
+					dPtemp[i] = dPtemp[i]*LSalpha;
 				}
 			}
+			*/
 
 			// Update parameter
 			for(i=0;i<IOparam->mdN;i++)
 			{
-				Par[i] 	= 	Paroldar[i] + dPtemp[i];
+				Par[i] 	= 	Paroldar[i] - gradoldar[i] * IOparam->factor2array[i] ;
 			//	ierr	=	CopyParameterToLaMEMCommandLine(IOparam,  Par[i], i);			CHKERRQ(ierr);
     		}
 			VecRestoreArray(P,&Par);
 			VecRestoreArray(Pold,&Paroldar);
-			VecRestoreArray(dP,&dPtemp);
+			VecRestoreArray(gradold,&gradoldar);
+			//VecRestoreArray(dP,&dPtemp);
 
 			// Store the updated values (now done inside the routine below)
 			//VecCopy(P,IOparam->P);  
@@ -1287,50 +1316,23 @@ PetscErrorCode AdjointOptimisation(Vec P, PetscScalar F, Vec grad, void *ctx)
 
 		}
 
-		// restore parameter values
-		VecCopy(IOparam->P,P);
-
-		VecGetArray(P,&Par);
-		VecGetArray(grad,&gradar);
-		for(j = 0; j < IOparam->mdN; j++)
-		{
-			gradar[j] = IOparam->grd[j];
-			if (IOparam->count==1)
-			{
-				IOparam->factor2array[j] = fabs((IOparam->Scale_Grad*Par[j])/gradar[j]);
-			}
-		}
-		VecRestoreArray(grad,&gradar);
-		VecRestoreArray(P,&Par);
-
 		PetscPrintf(PETSC_COMM_WORLD,"\n| ------------------------------------------------------------------------ \n");
 		PetscPrintf(PETSC_COMM_WORLD,"| %d. IT INVERSION RESULT: line search its = %d ; F / FINI = %.5e\n| \n",IOparam->count,LScount-1,IOparam->mfit/IOparam->mfitini);
 		PetscPrintf(PETSC_COMM_WORLD,"| Fold = %.5e \n|    F = %.5e\n| \n",Fold,F);
 
-		// BEFORE UPDATING the par vector store the old gradient & Parameter vector (for BFGS)
+		VecGetArray(grad,&gradar);
+		VecGetArray(P,&Par);
+		// VecGetArray(dP,&dPtemp);
+
+		// Store old values in case we overshoot next time
 		VecCopy(P,Pold);
 		VecCopy(grad,gradold);
 		Fold = F;
 
-		VecGetArray(grad,&gradar);
-		VecGetArray(P,&Par);
-		VecGetArray(dP,&dPtemp);
-		for(i=0;	i<IOparam->mdN;	i++)
-		{
-			dPtemp[i] = - (dPtemp[i] + (gradar[i])) * IOparam->factor2array[i];
-			IOparam->factor2array[i] *= IOparam->facLS;
-			if(IOparam->factor2array[i]>IOparam->maxfac)
-			{
-				IOparam->factor2array[i] = IOparam->maxfac;
-			}
-			PetscPrintf(PETSC_COMM_WORLD,"| LS factor for %d.Parameter = %.5e\n",i+1,IOparam->factor2array[i]);
-		}	
-		PetscPrintf(PETSC_COMM_WORLD,"| \n");
-
 		// Display the current state of the parameters
 		for(j = 0; j < IOparam->mdN; j++)
 		{
-			PetscPrintf(PETSC_COMM_WORLD,"| %D. Diff parameter value = %.5e\n",j+1,dPtemp[j]);
+			PetscPrintf(PETSC_COMM_WORLD,"| %D. Diff parameter value = %.5e\n",j+1,-gradar[j] * IOparam->factor2array[j]);
 		}
 
 		PetscPrintf(PETSC_COMM_WORLD,"| \n");
@@ -1341,13 +1343,13 @@ PetscErrorCode AdjointOptimisation(Vec P, PetscScalar F, Vec grad, void *ctx)
 		{
 			if(F>IOparam->tol)
 			{
-				Par[i] 	= 	Par[i] + dPtemp[i];
+				Par[i] 	= 	Par[i] -gradar[i] * IOparam->factor2array[i];
 				ierr	=	CopyParameterToLaMEMCommandLine(IOparam,  Par[i], i);			CHKERRQ(ierr);
     		}
 		}
 		VecRestoreArray(grad,&gradar);
 		VecRestoreArray(P,&Par);
-		VecRestoreArray(dP,&dPtemp);
+		// VecRestoreArray(dP,&dPtemp);
 
 		// Display the current state of the parameters
 		VecGetArray(P,&Par);
@@ -1367,6 +1369,19 @@ PetscErrorCode AdjointOptimisation(Vec P, PetscScalar F, Vec grad, void *ctx)
 		VecGetArray(IOparam->fcconv,&fcconvar);
 		fcconvar[IOparam->count] = IOparam->mfit/IOparam->mfitini;
 		VecRestoreArray(IOparam->fcconv,&fcconvar);
+
+		// Increase line search alpha after succesful iteration
+		for(i=0;	i<IOparam->mdN;	i++)
+		{
+			// dPtemp[i] = - (dPtemp[i] + (gradar[i])) * IOparam->factor2array[i];
+			IOparam->factor2array[i] *= IOparam->facLS;
+			if(IOparam->factor2array[i]>IOparam->maxfac)
+			{
+				IOparam->factor2array[i] = IOparam->maxfac;
+			}
+			PetscPrintf(PETSC_COMM_WORLD,"| LS factor for %d.Parameter = %.5e\n",i+1,IOparam->factor2array[i]);
+		}	
+		PetscPrintf(PETSC_COMM_WORLD,"| \n");
 
 		// count
 		IOparam->count += 1;
