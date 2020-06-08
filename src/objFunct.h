@@ -104,7 +104,7 @@ struct ModParam
 	PetscBool 		 BruteForce_FD;						// indicate whether we compute Brute force FD or not
 
 	PetscScalar     *val;                               // model value
-	PetscScalar      mfit, mfitPSD;                     // misfit value for current model parameters
+	PetscScalar      mfit, mfitCenter;                  // misfit value for current model parameters
     DBMat            dbm_modified;                      // holds the (modified) LaMEM material database
 	FB 				*fb;								// holds a copy of the filebuffer	
 	PetscScalar 	 ReferenceDensity;		  			// Reference density (perturbations are computed w.r.t. this value)

@@ -775,7 +775,7 @@ PetscErrorCode LaMEMAdjointReadInputSetDefaults(ModParam *IOparam, Adjoint_Vecs 
 				}
 				else
 				{
-					PetscPrintf(PETSC_COMM_WORLD, "|       [%f,%f,%f] will compute gradient w.r.t. V%s\n", IOparam->Coord[0],IOparam->Coord[1],IOparam->Coord[2], ParType);  // w.r.t. solution
+					PetscPrintf(PETSC_COMM_WORLD, "|       [%f,%f,%f] will compute gradient w.r.t. %s\n", IOparam->Coord[0],IOparam->Coord[1],IOparam->Coord[2], ParType);  // w.r.t. solution
 				}
 			}
 
@@ -1549,7 +1549,16 @@ PetscErrorCode AdjointOptimisationTAO(Tao tao, Vec P, PetscReal *F, Vec grad, vo
 		{
 			// principal stress direction
 			ierr 				= AdjointGet_F_dFdu_Center(jr, aop, IOparam);                       CHKERRQ(ierr);
-			IOparam->mfit 	   	= IOparam->mfitPSD;   
+
+			if (!strcmp(IOparam->ObsName[0],"PSD")){
+				IOparam->mfit 	  	= 	IOparam->mfitCenter; 						// stress angle is nondimensional
+			}
+			else{
+				IOparam->mfit 	  	= 	IOparam->mfitCenter*(1.0/scal->time_si); 	// strain rate is dimensional [SI]
+			}
+			PetscPrintf(PETSC_COMM_WORLD,"| IOparam->mfit = %e \n",IOparam->mfit);
+		
+
 		}
 	}
 	else if(IOparam->Gr == 0)	// Gradients w.r.t. CostFunction
@@ -1585,7 +1594,13 @@ PetscErrorCode AdjointOptimisationTAO(Tao tao, Vec P, PetscReal *F, Vec grad, vo
 		if(IOparam->MfitType == 1)
 		{
 			ierr 				= 	AdjointGet_F_dFdu_Center(jr, aop, IOparam);                       CHKERRQ(ierr);
-			IOparam->mfit 	  	= 	IOparam->mfitPSD; // stress angle is nondimensional
+			if (!strcmp(IOparam->ObsName[0],"PSD")){
+				IOparam->mfit 	  	= 	IOparam->mfitCenter; 								// stress angle is nondimensional
+			}
+			else{
+				IOparam->mfit 	  	= 	IOparam->mfitCenter*pow(1.0/scal->time_si,2.0); 	// strain rate is dimensional [SI]
+			}
+			PetscPrintf(PETSC_COMM_WORLD,"| IOparam->mfit = %e \n",IOparam->mfit);
 		}
 	}
 	else
@@ -1645,7 +1660,7 @@ PetscErrorCode AdjointFiniteDifferenceGradients(ModParam *IOparam)
 		PetscPrintf(PETSC_COMM_WORLD,"| ************************************************************************ \n");
 		PetscPrintf(PETSC_COMM_WORLD,"|                       FINITE DIFFERENCE GRADIENTS                        \n");
 		PetscPrintf(PETSC_COMM_WORLD,"| ************************************************************************ \n");
-		PetscPrintf(PETSC_COMM_WORLD,"| Reference objective function: %2.5e \n",IOparam->mfit);
+		PetscPrintf(PETSC_COMM_WORLD,"| Reference objective function: %- 2.6e \n",IOparam->mfit);
 
 
 		// 2) Loop over all parameters & compute a solution  with the perturbed parameters
@@ -1685,6 +1700,7 @@ PetscErrorCode AdjointFiniteDifferenceGradients(ModParam *IOparam)
 				// Set back parameter
 				ierr			=	CopyParameterToLaMEMCommandLine(IOparam,  CurVal, j);		CHKERRQ(ierr);
 			
+				PetscPrintf(PETSC_COMM_WORLD,"|  Perturbed Misfit value     : %- 2.6e \n", Misfit_pert);
 				PetscPrintf(PETSC_COMM_WORLD,"|  Brute force FD gradient %+5s[%2i] = %e, with eps=%1.4e \n", CurName, CurPhase, Grad, FD_eps);
 			}
 		}
@@ -1755,7 +1771,7 @@ PetscErrorCode AdjointComputeGradients(JacRes *jr, AdjGrad *aop, NLSol *nl, SNES
  		ierr = SNESGetKSP(snes, &ksp_as);         		CHKERRQ(ierr);
  		ierr = KSPSetOptionsPrefix(ksp_as,"as_"); 		CHKERRQ(ierr);
  		ierr = KSPSetFromOptions(ksp_as);         		CHKERRQ(ierr);
- 		ierr = KSPGetPC(ksp_as, &ipc_as);            		CHKERRQ(ierr);
+ 		ierr = KSPGetPC(ksp_as, &ipc_as);            	CHKERRQ(ierr);
  		ierr = PCSetType(ipc_as, PCMAT);          		CHKERRQ(ierr);
  		ierr = KSPSetOperators(ksp_as,nl->J,nl->P);	CHKERRQ(ierr);
  		ierr = KSPSolve(ksp_as,aop->dPardu,psiPar);	CHKERRQ(ierr);
@@ -1797,7 +1813,15 @@ PetscErrorCode AdjointComputeGradients(JacRes *jr, AdjGrad *aop, NLSol *nl, SNES
 			}
 			else if(IOparam->MfitType == 1)
 			{
-				aop->CurScal   = (1.0)/(1.0);
+				if (!strcmp(IOparam->ObsName[0],"PSD")){
+					// PSD is dimensionless
+					aop->CurScal    =   1.0;
+				}
+				else{
+					// if NOT PSD, it should be strain rate and have units of 1/s. 
+					aop->CurScal =    (1.0/scal->time_si);	
+				}
+
 				ierr = AdjointFormResidualFieldFD(snes, sol, psiPar, nl, aop, IOparam);          CHKERRQ(ierr);
 			}
 			PetscPrintf(PETSC_COMM_WORLD,"| Finished gradient computation & added it to VTK\n");
@@ -1816,7 +1840,7 @@ PetscErrorCode AdjointComputeGradients(JacRes *jr, AdjGrad *aop, NLSol *nl, SNES
 		VecGetArray(IOparam->P,&Par);
 		for(j = 0; j < IOparam->mdN; j++)
 		{
-			if (!IOparam->FD_gradient[j]){	// only if we want to compute an adjoint gradient for this paramater
+			if (!IOparam->FD_gradient[j]){	// only if we want to compute an adjoint gradient for this parameter
 
 				// Get the initial residual since it is overwritten in VecAYPX
 				ierr = VecCopy(jr->gres,res); 			CHKERRQ(ierr);
@@ -1872,10 +1896,21 @@ PetscErrorCode AdjointComputeGradients(JacRes *jr, AdjGrad *aop, NLSol *nl, SNES
 						aop->CurScal = pow(scal->velocity,2);
 					}
 				}
-				else if (IOparam->MfitType == 1)
+				else if (IOparam->MfitType == 1)		// PSD or strainrate 
 				{
 					ierr          	=   VecDot(drdp,psiPar,&grd);                       CHKERRQ(ierr);
-					aop->CurScal = 1;
+				
+					if (!strcmp(IOparam->ObsName[0],"PSD")){
+						// PSD is dimensionless
+						aop->CurScal    =   1.0;
+					}
+					else{
+						// if NOT PSD, it should be strain rate and have units of 1/s. 
+						// if we later add other variables at the center points (e.g., stress, this needs to be expanded)
+						if	 	(IOparam->Gr == 1){		aop->CurScal =    (1.0/scal->time_si);		}
+						else if (IOparam->Gr == 0){		aop->CurScal = pow(1.0/scal->time_si,2.0);	}
+					}
+					PetscPrintf(PETSC_COMM_WORLD,"| grad=%e, aop->CurScal=%e vel-scale =%e\n",grd, aop->CurScal, scal->length);
 				}
 					
 				IOparam->grd[j]	=   -grd*aop->CurScal;						// gradient
@@ -3828,18 +3863,20 @@ PetscErrorCode AdjointGet_F_dFdu_Center(JacRes *jr, AdjGrad *aop, ModParam *IOpa
 	PetscScalar dPardu_local;
 	PetscScalar coord_local[3],  Cons;
 	PetscInt    As_Ind[IOparam->mdI+1];
+	Scaling 	*scal;
 
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
 
 	// access context
-	fs = jr->fs;
+	fs 		= jr->fs;
+	scal 	= jr->scal;
 
 	// Initialize vector to store observations:
 	ierr = VecZeroEntries(aop->sty);         CHKERRQ(ierr);
 
 	// Initialize the cost function
-	IOparam->mfitPSD 	= 	0.0;
+	IOparam->mfitCenter = 	0.0;
 	mfitParam 			= 	0.0;
 	Param_local 		= 	0.0;
 	Parameter 			=	0.0;
@@ -4202,14 +4239,14 @@ PetscErrorCode AdjointGet_F_dFdu_Center(JacRes *jr, AdjGrad *aop, ModParam *IOpa
 						}
 					
 						// Store observation
-						sty[ii] = Parameter;
-
+						sty[ii] = Parameter*(1.0/scal->time_si);
+						
 					}
 
 
 
 
-					// PetscPrintf(PETSC_COMM_SELF,"DEBUGDEBUGDEBUGDEBUG %.10f, %.10f, %.10f, %.10f; %.10f %d %d %d %d\n\n",svBulk->phi,IOparam->Ae[ii],dphidu_local,mfitPSD,xdphidu[k][j  ][i  ],i,j,k,ii);
+					// PetscPrintf(PETSC_COMM_SELF,"DEBUGDEBUGDEBUGDEBUG %.10f, %.10f, %.10f, %.10f; %.10f %d %d %d %d\n\n",svBulk->phi,IOparam->Ae[ii],dphidu_local,mfitCenter,xdphidu[k][j  ][i  ],i,j,k,ii);
 				}
 			}
 		}
@@ -4220,15 +4257,15 @@ PetscErrorCode AdjointGet_F_dFdu_Center(JacRes *jr, AdjGrad *aop, ModParam *IOpa
 	ierr = PetscBarrier((PetscObject)aop->sty); CHKERRQ(ierr);
 	if(ISParallel(PETSC_COMM_WORLD))
 	{
-		ierr = MPI_Allreduce(&mfitParam, &IOparam->mfitPSD, 1, MPIU_SCALAR, MPI_SUM, PETSC_COMM_WORLD); CHKERRQ(ierr);
+		ierr = MPI_Allreduce(&mfitParam, &IOparam->mfitCenter, 1, MPIU_SCALAR, MPI_SUM, PETSC_COMM_WORLD); CHKERRQ(ierr);
 	}
 	else
 	{
-		IOparam->mfitPSD = mfitParam;
+		IOparam->mfitCenter = mfitParam;
 	}
 	if (IOparam->Gr == 0)
 	{
-		IOparam->mfitPSD /= 2.0;
+		IOparam->mfitCenter /= 2.0;
 	}
 
 	// restore vectors
