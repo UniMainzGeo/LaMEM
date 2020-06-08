@@ -1015,7 +1015,7 @@ PetscErrorCode PMatBlockCreate(PMat pm)
 	PetscInt    *Apv_d_nnz, *Apv_o_nnz;
 	PetscScalar ***ivx, ***ivy, ***ivz, ***ip;
 
-	//PetscInt 	*K_d_nnz, *K_o_nnz; //
+	PetscInt 	*K_d_nnz, *K_o_nnz; //
 
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
@@ -1049,8 +1049,8 @@ PetscErrorCode PMatBlockCreate(PMat pm)
 	ierr = makeIntArray(&Apv_d_nnz, NULL, lnp); CHKERRQ(ierr);
 	ierr = makeIntArray(&Apv_o_nnz, NULL, lnp); CHKERRQ(ierr);
 
-	//ierr = makeIntArray(&K_d_nnz, NULL, lnp); CHKERRQ(ierr);
-	//ierr = makeIntArray(&K_o_nnz, NULL, lnp); CHKERRQ(ierr);
+	ierr = makeIntArray(&K_d_nnz, NULL, lnp); CHKERRQ(ierr);
+	ierr = makeIntArray(&K_o_nnz, NULL, lnp); CHKERRQ(ierr);
 
 	// access index vectors
 	ierr = DMDAVecGetArray(fs->DA_X,   dof->ivx,  &ivx);  CHKERRQ(ierr);
@@ -1218,6 +1218,18 @@ PetscErrorCode PMatBlockCreate(PMat pm)
 		// update counters
 		Apv_d_nnz[iter] = nd;
 		Apv_o_nnz[iter] = no;
+		// K
+		nd = 0;
+		no = 0;
+		// pressure
+		ind = (PetscInt) ip[k-1][j][i];    CHECK_DOF(ind, startp, lnp, nd, no);
+		ind = (PetscInt) ip[k][j-1][i];    CHECK_DOF(ind, startp, lnp, nd, no);
+		ind = (PetscInt) ip[k][j][i-1];    CHECK_DOF(ind, startp, lnp, nd, no);
+		ind = (PetscInt) ip[k][j][i];      CHECK_DOF(ind, startp, lnp, nd, no);
+		// update counters
+		K_d_nnz[iter] = nd;
+		K_o_nnz[iter] = no;
+
 		iter++;
 	}
 	END_STD_LOOP
@@ -1239,7 +1251,7 @@ PetscErrorCode PMatBlockCreate(PMat pm)
 	//ierr = MatDuplicate(P->App, MAT_DO_NOT_COPY_VALUES, &P->K);			 CHKERRQ(ierr);
 	//ierr = MatAIJCreate(lnp,lnp,0,K_d_nnz,0,K_o_nnz,&P->K);				 CHKERRQ(ierr);
 	//ierr = MatAIJCreate(lnp,lnp,0,NULL,0,NULL,&P->K);				 		 CHKERRQ(ierr);
-	ierr = DMCreateMatrix(fs->DA_CEN, &P->K); CHKERRQ(ierr);
+	ierr = DMCreateMatrix(fs->DA_CEN, &P->K); 							CHKERRQ(ierr);
 
 	ierr = VecCreateMPI(PETSC_COMM_WORLD, lnv, PETSC_DETERMINE, &P->xv); CHKERRQ(ierr);
 	ierr = VecCreateMPI(PETSC_COMM_WORLD, lnp, PETSC_DETERMINE, &P->xp); CHKERRQ(ierr);
@@ -1266,8 +1278,8 @@ PetscErrorCode PMatBlockCreate(PMat pm)
 	ierr = PetscFree(Avp_o_nnz); CHKERRQ(ierr);
 	ierr = PetscFree(Apv_d_nnz); CHKERRQ(ierr);
 	ierr = PetscFree(Apv_o_nnz); CHKERRQ(ierr);
-	//ierr = PetscFree(K_d_nnz); CHKERRQ(ierr);
-	//ierr = PetscFree(K_o_nnz); CHKERRQ(ierr);
+	ierr = PetscFree(K_d_nnz); CHKERRQ(ierr);
+	ierr = PetscFree(K_o_nnz); CHKERRQ(ierr);
 
 	// attach near null space
 	ierr = MatAIJSetNullSpace(P->Avv, dof); CHKERRQ(ierr);

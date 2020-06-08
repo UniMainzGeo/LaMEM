@@ -139,9 +139,9 @@ PetscErrorCode JacResGetViscMat(PMat pm)
 		v[3] = -i_fvy/fdy/dy*cf[3];
 		v[4] = -i_bvz/bdz/dz*cf[4];
 		v[5] = -i_fvz/fdz/dz*cf[5];
-		v[6] =  (i_bvx/bdx + fvx/fdx)/dx
-			 +  (i_bvy/bdy + fvy/fdy)/dy
-		     +  (i_bvz/bdz + fvz/fdz)/dz;
+		v[6] =  (i_bvx/bdx + i_fvx/fdx)/dx
+			 +  (i_bvy/bdy + i_fvy/fdy)/dy
+		     +  (i_bvz/bdz + i_fvz/fdz)/dz;
 
 		// set matrix coefficients
 		ierr = MatSetValuesStencil(P->K, 1, row, 7, col, v, ADD_VALUES); CHKERRQ(ierr);

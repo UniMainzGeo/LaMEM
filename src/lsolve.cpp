@@ -338,7 +338,7 @@ PetscErrorCode PCStokesBFDestroy(PCStokes pc)
 	ierr = KSPDestroy(&bf->vksp);  CHKERRQ(ierr);
 	ierr = KSPDestroy(&bf->pksp);  CHKERRQ(ierr);
 
-	if(bf->vtype == _VEL_MG_)
+	//if(bf->vtype == _VEL_MG_)
 	{
 		ierr = MGDestroy(&bf->vmg); CHKERRQ(ierr);
 		ierr = MGDestroy(&bf->pmg); CHKERRQ(ierr);
@@ -366,10 +366,10 @@ PetscErrorCode PCStokesBFSetup(PCStokes pc)
 	ierr = KSPSetOperators(bf->vksp, P->Avv, P->Avv); 	CHKERRQ(ierr);
 	ierr = KSPSetOperators(bf->pksp, P->K, P->K); 		CHKERRQ(ierr);
 
-	if(bf->vtype == _VEL_MG_)
+	//if(bf->vtype == _VEL_MG_)
 	{
 		ierr = MGSetup(&bf->vmg, P->Avv); 	CHKERRQ(ierr);
-		ierr = MGSetup(&bf->pmg, P->K); 	CHKERRQ(ierr);
+		ierr = MGSetup(&bf->pmg, P->K); 	CHKERRQ(ierr); //object sizes
 	}
 
 	ierr = KSPSetUp(bf->vksp); CHKERRQ(ierr);
