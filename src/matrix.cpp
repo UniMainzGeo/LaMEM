@@ -1251,7 +1251,11 @@ PetscErrorCode PMatBlockCreate(PMat pm)
 	//ierr = MatDuplicate(P->App, MAT_DO_NOT_COPY_VALUES, &P->K);			 CHKERRQ(ierr);
 	//ierr = MatAIJCreate(lnp,lnp,0,K_d_nnz,0,K_o_nnz,&P->K);				 CHKERRQ(ierr);
 	//ierr = MatAIJCreate(lnp,lnp,0,NULL,0,NULL,&P->K);				 		 CHKERRQ(ierr);
-	ierr = DMCreateMatrix(fs->DA_CEN, &P->K); 							CHKERRQ(ierr);
+	ierr = DMCreateMatrix(fs->DA_CEN, &P->K); CHKERRQ(ierr);
+	ierr = MatSetOption(P->K, MAT_NEW_NONZERO_ALLOCATION_ERR, PETSC_TRUE); CHKERRQ(ierr);
+	ierr = MatSetOption(P->K, MAT_NEW_NONZERO_LOCATION_ERR, PETSC_TRUE);   CHKERRQ(ierr);
+	ierr = MatSetOption(P->K, MAT_KEEP_NONZERO_PATTERN, PETSC_TRUE);       CHKERRQ(ierr);
+	ierr = MatSetOption(P->K, MAT_NO_OFF_PROC_ZERO_ROWS, PETSC_TRUE);      CHKERRQ(ierr);
 
 	ierr = VecCreateMPI(PETSC_COMM_WORLD, lnv, PETSC_DETERMINE, &P->xv); CHKERRQ(ierr);
 	ierr = VecCreateMPI(PETSC_COMM_WORLD, lnp, PETSC_DETERMINE, &P->xp); CHKERRQ(ierr);
