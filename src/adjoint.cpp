@@ -3812,8 +3812,8 @@ PetscErrorCode PrintScalingLaws(ModParam *IOparam)
 
 		// Print Scaling laws info
 		fprintf(db,"# Scaling law parameters:\n");
-		fprintf(db,"# Parameter             Phase    Exponent b[]       Value p[]          Type     Phase Description   \n");
-		fprintf(db,"# --------------------  -------  -----------------  -----------------  -------  --------------------\n");
+		fprintf(db,"# Parameter             Phase    Exponent b[]       Value p[]          Type     Gradient           Phase Description   \n");
+		fprintf(db,"# --------------------  -------  -----------------  -----------------  -------  -----------------  --------------------\n");
 		VecGetArray(IOparam->P,&Par);
 		for(j = 0; j < IOparam->mdN; j++)
 		{
@@ -3837,7 +3837,7 @@ PetscErrorCode PrintScalingLaws(ModParam *IOparam)
 			else{strcpy(adjointstr, "FD     "); }
 		
 
-			fprintf(db,"  %s %13s    %3i     %- 18.9e %- 18.9e %s  %s \n",logstr, CurName, CurPhase, Exponent[k],P, adjointstr, PhaseDescription);
+			fprintf(db,"  %s %13s    %3i     %- 18.9e %- 18.9e  %s %- 18.9e %s \n",logstr, CurName, CurPhase, Exponent[k],P, IOparam->grd[k], adjointstr, PhaseDescription);
 
 		}
 		VecRestoreArray(IOparam->P,&Par);
