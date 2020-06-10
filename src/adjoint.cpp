@@ -1749,12 +1749,15 @@ PetscErrorCode AdjointComputeGradients(JacRes *jr, AdjGrad *aop, NLSol *nl, SNES
     char                CurName[_str_len_];
 	PetscMPIInt    		rank;
 	PetscScalar    		*rbuf1=PETSC_NULL;
+	BCCtx 				*bc;
+	
 
 	fs = jr->fs;
 	dt = jr->ts->dt;
+	bc = jr->bc;
 
 	scal = jr->scal;
-
+	
 	// Create all needed vectors in the same size as the solution vector
 	ierr = VecDuplicate(jr->gsol, &psi);	 	 CHKERRQ(ierr);
 	ierr = VecDuplicate(jr->gsol, &psiPar);	 	 CHKERRQ(ierr);
@@ -1772,6 +1775,9 @@ PetscErrorCode AdjointComputeGradients(JacRes *jr, AdjGrad *aop, NLSol *nl, SNES
 	// (A side note that I figured out, ksp still sometimes results in a > 0 gradient even if cost function is zero.. possibly really bad condition number?)
 	if(IOparam->MfitType == 0)
 	{
+
+		ierr = Adjoint_ApplyBCs(aop->dF, bc);			CHKERRQ(ierr);		// apply BC's to dF vector
+
 		ierr = SNESGetKSP(snes, &ksp_as);         		CHKERRQ(ierr);
 		ierr = KSPSetOptionsPrefix(ksp_as,"as_"); 		CHKERRQ(ierr);
 		ierr = KSPSetFromOptions(ksp_as);         		CHKERRQ(ierr);
@@ -4858,3 +4864,45 @@ PetscErrorCode edgeConstEqFD(
 
 	PetscFunctionReturn(0);
 }
+
+//---------------------------------------------------------------------------
+#undef __FUNCT__
+#define __FUNCT__ "Adjoint_ApplyBCs"
+PetscErrorCode Adjoint_ApplyBCs(Vec dF, BCCtx* bc)
+
+{
+	PetscScalar 	*sol, *vals, *dF_vec;
+	PetscInt  		i, num, *list;
+	PetscErrorCode ierr;
+	
+	PetscFunctionBegin;
+	
+	// Apply BC's to dF vector
+	ierr = VecGetArray(dF, &dF_vec); CHKERRQ(ierr);
+
+	//============================================
+	// enforce single point constraints (velocity)
+	//============================================
+
+	num   = bc->vNumSPC;
+	list  = bc->vSPCList;
+	vals  = bc->vSPCVals;
+
+	// I believe it has to be put to zero, but just in case, 
+	// I comment the earlier expression out
+	for(i = 0; i < num; i++) dF_vec[list[i]] = 0.0; //vals[i];		
+
+	//============================================
+	// enforce single point constraints (pressure)
+	//============================================
+
+	num   = bc->pNumSPC;
+	list  = bc->pSPCList;
+	vals  = bc->pSPCVals;
+
+	for(i = 0; i < num; i++) dF_vec[list[i]] = 0; //vals[i];
+
+	ierr = VecRestoreArray(dF, &dF_vec); CHKERRQ(ierr);
+
+	PetscFunctionReturn(0);
+}	

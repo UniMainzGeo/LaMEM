@@ -63,6 +63,7 @@ struct SolVarCell;
 struct SolVarEdge;
 
 #include "phase.h"
+#include "bc.h"
 
 // Some global maxes on parameter and index numbers
 #define _MAX_PAR_ 100
@@ -110,6 +111,7 @@ PetscErrorCode ComputeGradientsAndObjectiveFunction(Vec Parameters, PetscScalar 
 
 // Adjoint Gradients
 PetscErrorCode AdjointComputeGradients(JacRes *jr, AdjGrad *aop, NLSol *nl, SNES snes, ModParam *IOparam, FreeSurf *surf);
+PetscErrorCode Adjoint_ApplyBCs(Vec dF, BCCtx* bc);
 
 // Cost function
  PetscErrorCode AdjointObjectiveFunction(AdjGrad *aop, JacRes *jr, ModParam *IOparam, FreeSurf *surf);
@@ -151,5 +153,7 @@ PetscErrorCode devConstEqFD(ConstEqCtx *ctx, AdjGrad *aop, ModParam *IOparam, Pe
 PetscErrorCode cellConstEqFD(ConstEqCtx  *ctx,  SolVarCell  *svCell, PetscScalar  dxx,    PetscScalar  dyy,  PetscScalar  dzz, PetscScalar &sxx,  PetscScalar &syy,PetscScalar &szz,PetscScalar &gres,PetscScalar &rho, AdjGrad *aop,ModParam *IOparam,PetscInt ii, PetscInt jj, PetscInt k, PetscInt ik, PetscInt jk, PetscInt kk);
 PetscErrorCode setUpPhaseFD(ConstEqCtx *ctx, PetscInt ID, AdjGrad *aop, ModParam *IOparam, PetscInt ii, PetscInt jj, PetscInt k, PetscInt ik, PetscInt jk, PetscInt kk);
 PetscErrorCode edgeConstEqFD(ConstEqCtx  *ctx,    SolVarEdge  *svEdge, PetscScalar  d,      PetscScalar &s,AdjGrad *aop,ModParam *IOparam,PetscInt ii, PetscInt jj, PetscInt k, PetscInt ik, PetscInt jk, PetscInt kk);     
+
+
 
 #endif
