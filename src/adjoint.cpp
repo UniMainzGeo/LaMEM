@@ -1823,7 +1823,7 @@ PetscErrorCode AdjointComputeGradients(JacRes *jr, AdjGrad *aop, NLSol *nl, SNES
 		{
 			SETERRQ(PETSC_COMM_WORLD,PETSC_ERR_USER,"| Field-based gradients can currently only be computed for a single parameter \n");		// error check
 		}
-		if (!strcmp(CurName,"rho") | !strcmp(CurName,"eta") | !strcmp(CurName,"n"))		// we need some way to ensure that we do this for one field at a time only
+		if (!strcmp(CurName,"rho") | !strcmp(CurName,"eta0") | !strcmp(CurName,"n"))		// we need some way to ensure that we do this for one field at a time only
 		{
 			PetscPrintf(PETSC_COMM_WORLD,"| Starting computation of Field-based gradients.  \n");	
 			// Compute the gradient
@@ -1850,7 +1850,7 @@ PetscErrorCode AdjointComputeGradients(JacRes *jr, AdjGrad *aop, NLSol *nl, SNES
 		}
 		else 
 		{
-			PetscPrintf(PETSC_COMM_WORLD,"| Field based gradient only for [rho,eta,n] programmed not for %s! \n",CurName);
+			PetscPrintf(PETSC_COMM_WORLD,"| Field based gradient only for [rho,eta0,n] programmed not for %s! \n",CurName);
 		}
 	}
 	else // Phase based gradients
@@ -2801,7 +2801,7 @@ PetscErrorCode AdjointFormResidualFieldFD(SNES snes, Vec x, Vec psi, NLSol *nl, 
 	PetscScalar bdx, fdx, bdy, fdy, bdz, fdz, dx, dy, dz, Le;
 	PetscScalar gx, gy, gz, tx, ty, tz, sxx, syy, szz, sxy, sxz, syz, gres;
 	PetscScalar J2Inv, DII, z, rho, Tc, pc, pc_lith, pc_pore, dt, fssa, *grav;
-	PetscScalar grdt;
+	PetscScalar grdt, nrm;
 	PetscScalar ***fx,  ***fy,  ***fz, ***vx,  ***vy,  ***vz, ***gc, ***bcp, ***llgradfield;
 	PetscScalar ***dxx, ***dyy, ***dzz, ***dxy, ***dxz, ***dyz, ***p, ***T, ***p_lith, ***p_pore;
 	Vec         rpl, res;
@@ -3416,6 +3416,10 @@ PetscErrorCode AdjointFormResidualFieldFD(SNES snes, Vec x, Vec psi, NLSol *nl, 
 
 	// give it back to the adjoint context
 	ierr = VecCopy(jr->lgradfield,aop->gradfield);
+
+	// display norm (partly also for testing purposes)
+	ierr = VecNorm(aop->gradfield, NORM_1, &nrm); CHKERRQ(ierr);
+	ierr = PetscPrintf(PETSC_COMM_WORLD,"|   Norm of field gradient vector : %2.15e \n",nrm); CHKERRQ(ierr);
 
 	// deactivate pressure limit after it has been activated
 	// jr->matLim.presLimFlg = PETSC_FALSE;
@@ -4550,7 +4554,7 @@ PetscErrorCode setUpPhaseFD(ConstEqCtx *ctx, PetscInt ID, AdjGrad *aop, ModParam
 	mfd = 1.0;
 	mfn = 1.0;
 
-	if(!strcmp(IOparam->type_name[0],"eta"))
+	if(!strcmp(IOparam->type_name[0],"eta0"))
 	{
 		if ((ii)==ik && (jj)==jk && (k)==kk)
 		{
@@ -4659,7 +4663,7 @@ PetscErrorCode setUpPhaseFD(ConstEqCtx *ctx, PetscInt ID, AdjGrad *aop, ModParam
 			mat->Bn = pow (2.0*ViscTemp, -mat->n) * pow(IOparam->DII_ref, 1.0 - mat->n);
 		}
 	}
-	if(!strcmp(IOparam->type_name[0],"eta"))
+	if(!strcmp(IOparam->type_name[0],"eta0"))
 	{
 		if ((ii)==ik && (jj)==jk && (k)==kk)
 		{
