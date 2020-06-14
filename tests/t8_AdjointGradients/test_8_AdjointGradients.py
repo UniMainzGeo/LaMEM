@@ -248,3 +248,47 @@ def rho_SensitivityKernel_PSD():
   ex1.appendKeywords('@')
 
   return(ex1)
+
+
+
+
+# Compute geodynamic sensitivity kernel for n & PSD from Georg's paper (at lower res)
+def n_SensitivityKernelPaper_PSD():
+
+  # Run the input script wth matlab-generated particles
+  ranks = 1
+  launch = '../bin/opt/LaMEM -ParamFile ./t8_AdjointGradients/t8_PSDKernelPaper.dat  -nel_x 8  -nel_y 8 -nel_z 8 | grep "| "'
+  expected_file = 't8_AdjointGradients/t8_Adjoint_n_SensitivityKernelPaper_PSD.expected'
+
+  def comparefunc(unittest):
+
+    key = re.escape("|   Norm of field gradient vector :")
+    unittest.compareFloatingPoint(key,5e-1)
+
+  # Create unit test object
+  ex1 = pth.pthUnitTest('t8_Adjoint_n_SensitivityKernel_PSD',ranks,launch,expected_file)
+  ex1.setVerifyMethod(comparefunc)
+  ex1.appendKeywords('@')
+
+  return(ex1)
+
+# Compute geodynamic sensitivity kernel for eta0 & PSD from Georg's paper (at lower res)
+def eta0_SensitivityKernelPaper_PSD():
+
+  # Run the input script wth matlab-generated particles
+  ranks = 1
+  launch = '../bin/opt/LaMEM -ParamFile ./t8_AdjointGradients/t8_PSDKernelPaper.dat  -nel_x 8  -nel_y 8 -nel_z 8 -Type[0] eta0 | grep "| "'
+  expected_file = 't8_AdjointGradients/t8_Adjoint_eta0_SensitivityKernelPaper_PSD.expected'
+
+  def comparefunc(unittest):
+
+    key = re.escape("|   Norm of field gradient vector :")
+    unittest.compareFloatingPoint(key,5e-1)
+
+  # Create unit test object
+  ex1 = pth.pthUnitTest('t8_Adjoint_eta0_SensitivityKernel_PSD',ranks,launch,expected_file)
+  ex1.setVerifyMethod(comparefunc)
+  ex1.appendKeywords('@')
+
+  return(ex1)
+

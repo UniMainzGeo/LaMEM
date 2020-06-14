@@ -67,7 +67,7 @@ def run_tests():
                       Adj2.PSD_Paper_GD_Nonlinear(), Adj2.PSD_Paper_GD_Linear(),
                       Adj3.rho_SensitivityKernel(), Adj3.FallingSphere_ND_all(), Adj3.FallingSphere_ND_CompareGradients_1(),
                       Adj3.FallingSphere_ND_CompareGradients_2(), Adj3.SubductionSetup_Dimensional(),Adj3.PSD_ND(), 
-                      Adj3.rho_SensitivityKernel_PSD(), 
+                      Adj3.rho_SensitivityKernel_PSD(), Adj3.n_SensitivityKernelPaper_PSD(), Adj3.eta0_SensitivityKernelPaper_PSD(), 
                       Permeability.test_a(), 
                       Rheology0D.ViscoElastic(),   Rheology0D.ViscoElastoPlastic(), Rheology0D.ViscoElastoPlastic_DislocationCreep(),
                       Rheology0D.LinearViscous(),  Rheology0D.DislocationCreeplaw(), Rheology0D.ViscoElastic_DislocationCreep(),
