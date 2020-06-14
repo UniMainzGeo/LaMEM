@@ -22,7 +22,7 @@
 # 		mpiexec -n 1 ../../bin/opt/LaMEM -ParamFile t8_PSDInversionPaper.dat -n[0] 1 -n[1] 1 -n[2] 1 | grep "| " 
 #
 #	Fig. 9b, eta0: comment the lines with AdjointParameterStart/End related to 'rho' below and uncomment the ones with eta0
-#   	mpiexec -n 1 ../../bin/opt/LaMEM -ParamFile t8_PSDInversionPaper.dat n[0] 1 -n[1] 1 -n[2] 1 | grep "| " 
+#   	mpiexec -n 1 ../../bin/opt/LaMEM -ParamFile t8_PSDInversionPaper.dat -n[0] 1 -n[1] 1 -n[2] 1 | grep "| " 
 
 #===============================================================================
 # Scaling
@@ -92,8 +92,8 @@
 #===============================================================================
 # Solver options
 #===============================================================================
-	SolverType 			=	direct 	# solver [direct or multigrid]
-
+	SolverType 		=	direct 	# solver [direct or multigrid]
+	DirectSolver	=	mumps
 	
 #===============================================================================
 # Model setup & advection

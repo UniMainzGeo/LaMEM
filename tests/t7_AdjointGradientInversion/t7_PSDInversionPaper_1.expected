@@ -28,7 +28,7 @@
 SNES Convergence Reason : ||F|| < atol 
 SNES Convergence Reason : ||F|| < atol 
 | IOparam->mfit = 4.662541e-02 
-| grad=1.889799e-02, aop->CurScal=1.000000e+00 vel-scale =1.000000e+00
+| grad=1.889610e-02, aop->CurScal=1.000000e+00 vel-scale =1.000000e+00
 | ************************************************************************
 |                       COMPUTATION OF THE COST FUNCTION                    
 | ************************************************************************
@@ -40,7 +40,7 @@ SNES Convergence Reason : ||F|| < atol
 | Gradients: 
 |                    Parameter             |  Gradient (dimensional)  
 |                  -----------------------   ------------------------ 
-|  adjoint     1:          rho[ 1]           -1.889799e-02 
+|  adjoint     1:          rho[ 1]           -1.889610e-02 
 | 
 | 
 | Observation points: 
@@ -49,7 +49,7 @@ SNES Convergence Reason : ||F|| < atol
 |       --------------------------------- --- ------------- ------------- 
 | 
 | 1   : [    0.600;     0.500;     0.990] PSD   1.57113e+02   1.74609e+02
-| AdjointOptimisation: Gradients. [0]=-1.889799e-02, [1]=0.000000e+00 
+| AdjointOptimisation: Gradients. [0]=-1.889610e-02, [1]=0.000000e+00 
 | ------------------------------------------------------------------------ 
 | 1. IT INVERSION RESULT: line search its = 0 ; F / FINI = 1.00000e+00
 | 
@@ -60,12 +60,12 @@ SNES Convergence Reason : ||F|| < atol
 | 
 | 1. Parameter value = 1.10000e+00
 | -------------------------------------------------------------------------
-| LS factor for 1.Parameter = 1.05831e+01
+| LS factor for 1.Parameter = 1.05842e+01
 | 
 SNES Convergence Reason : ||F|| < atol 
 SNES Convergence Reason : ||F|| < atol 
 | IOparam->mfit = 4.503170e-02 
-| grad=1.606557e-02, aop->CurScal=1.000000e+00 vel-scale =1.000000e+00
+| grad=1.606395e-02, aop->CurScal=1.000000e+00 vel-scale =1.000000e+00
 | ************************************************************************
 |                       COMPUTATION OF THE COST FUNCTION                    
 | ************************************************************************
@@ -77,7 +77,7 @@ SNES Convergence Reason : ||F|| < atol
 | Gradients: 
 |                    Parameter             |  Gradient (dimensional)  
 |                  -----------------------   ------------------------ 
-|  adjoint     1:          rho[ 1]           -1.606557e-02 
+|  adjoint     1:          rho[ 1]           -1.606395e-02 
 | 
 | 
 | Observation points: 
@@ -86,7 +86,7 @@ SNES Convergence Reason : ||F|| < atol
 |       --------------------------------- --- ------------- ------------- 
 | 
 | 1   : [    0.600;     0.500;     0.990] PSD   1.57113e+02   1.74308e+02
-| AdjointOptimisation: Gradients. [0]=-1.606557e-02, [1]=0.000000e+00 
+| AdjointOptimisation: Gradients. [0]=-1.606395e-02, [1]=0.000000e+00 
 | ------------------------------------------------------------------------ 
 | 2. IT INVERSION RESULT: line search its = 0 ; F / FINI = 9.65819e-01
 | 
@@ -97,7 +97,7 @@ SNES Convergence Reason : ||F|| < atol
 | 
 | 1. Parameter value = 1.10000e+00
 | -------------------------------------------------------------------------
-| LS factor for 1.Parameter = 2.11663e+01
+| LS factor for 1.Parameter = 2.11684e+01
 | 
 | ------------------------------------------------------------------------- 
 | *                         INVERSION RESULT SUMMARY                      * 
@@ -113,5 +113,5 @@ SNES Convergence Reason : ||F|| < atol
 | Final Parameters: 
 | rho[1] = 1.10000e+00
 | ------------------------------------------------------------------------- 
-| Adjoint computation was successful & took 79.1127 s                         	 
+| Adjoint computation was successful & took 77.9026 s                         	 
 | ************************************************************************ 
