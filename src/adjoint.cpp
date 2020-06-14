@@ -426,6 +426,10 @@ PetscErrorCode LaMEMAdjointReadInputSetDefaults(ModParam *IOparam, Adjoint_Vecs 
 	ierr = getIntParam   (fb, _OPTIONAL_, "Adjoint_PrintScalingLaws"     	 , &IOparam->ScalLaws,  1, 1        ); CHKERRQ(ierr);  // Print scaling laws (combined with AdjointGradients)
 	ierr = getStringParam(fb, _OPTIONAL_, "Adjoint_ScalingLawFilename"     	 , str,  "ScalingLaw.dat"  ); 		   CHKERRQ(ierr);  // Scaling law filename
 	ierr = getScalarParam(fb, _OPTIONAL_, "Adjoint_DII_ref"       			 , &IOparam->DII_ref,   1, 1        ); CHKERRQ(ierr);  // Reference strainrate needed for direct FD for pointwise kernels for powerlaw viscosity (very unflexible so far)
+	if (IOparam->DII_ref==0.0 && IOparam->FS)
+	{
+		SETERRQ1(PETSC_COMM_WORLD, PETSC_ERR_USER, "%d For Kernel calculation you have to explicitly set DII_ref (equal to the one in forward LaMEM) with 'Adjoint_DII_ref'",1);
+	}
 	ierr  = PetscMemcpy(IOparam->ScalLawFilename, 	str,   (size_t)_str_len_*sizeof(char) ); 		  	 		   CHKERRQ(ierr); 
    
   	ierr = getScalarParam(fb, _OPTIONAL_, "Adjoint_ReferenceDensity"       	 , &IOparam->ReferenceDensity, 1, 1 ); CHKERRQ(ierr);  // Reference density (density parameters are computed w.r.t. this)
