@@ -28,7 +28,7 @@
 SNES Convergence Reason : ||F|| < atol 
 SNES Convergence Reason : ||F|| < atol 
 | IOparam->mfit = 1.762770e-01 
-| grad=5.931047e-02, aop->CurScal=1.000000e+00 vel-scale =1.000000e+00
+| grad=5.931049e-02, aop->CurScal=1.000000e+00 vel-scale =1.000000e+00
 | ************************************************************************
 |                       COMPUTATION OF THE COST FUNCTION                    
 | ************************************************************************
@@ -40,16 +40,16 @@ SNES Convergence Reason : ||F|| < atol
 | Gradients: 
 |                    Parameter             |  Gradient (dimensional)  
 |                  -----------------------   ------------------------ 
-|  adjoint     1:          rho[ 1]           -5.931047e-02 
+|  adjoint     1:          rho[ 1]           -5.931049e-02 
 | 
 | 
 | Observation points: 
 |                                                    Center values         
 |                       Location         |      Target         Value     
 |       --------------------------------- --- ------------- ------------- 
-| 
 | 1   : [    0.600;     0.500;     0.990] PSD   1.35000e+02   1.69020e+02
-| AdjointOptimisation: Gradients. [0]=-5.931047e-02, [1]=0.000000e+00 
+| 
+| AdjointOptimisation: Gradients. [0]=-5.931049e-02, [1]=0.000000e+00 
 | ------------------------------------------------------------------------ 
 | 1. IT INVERSION RESULT: line search its = 0 ; F / FINI = 1.00000e+00
 | 
@@ -60,7 +60,7 @@ SNES Convergence Reason : ||F|| < atol
 | 
 | 1. Parameter value = 1.10000e+00
 | -------------------------------------------------------------------------
-| LS factor for 1.Parameter = 3.37209e+00
+| LS factor for 1.Parameter = 3.37208e+00
 | 
 SNES Convergence Reason : ||F|| < atol 
 SNES Convergence Reason : ||F|| < atol 
@@ -84,8 +84,8 @@ SNES Convergence Reason : ||F|| < atol
 |                                                    Center values         
 |                       Location         |      Target         Value     
 |       --------------------------------- --- ------------- ------------- 
-| 
 | 1   : [    0.600;     0.500;     0.990] PSD   1.35000e+02   1.68389e+02
+| 
 | AdjointOptimisation: Gradients. [0]=-7.058522e-02, [1]=0.000000e+00 
 | ------------------------------------------------------------------------ 
 | 2. IT INVERSION RESULT: line search its = 0 ; F / FINI = 9.63258e-01
@@ -106,7 +106,7 @@ SNES Convergence Reason : ||F|| < atol
 | ************************************************************************
 |                       COMPUTATION OF THE COST FUNCTION                    
 | ************************************************************************
-| Current Cost function = 1.4844623781e-01
+| Current Cost function = 1.4844624876e-01
 | ************************************************************************ 
 |                       COMPUTATION OF THE GRADIENTS                       
 | ************************************************************************ 
@@ -121,8 +121,8 @@ SNES Convergence Reason : ||F|| < atol
 |                                                    Center values         
 |                       Location         |      Target         Value     
 |       --------------------------------- --- ------------- ------------- 
-| 
 | 1   : [    0.600;     0.500;     0.990] PSD   1.35000e+02   1.66219e+02
+| 
 | AdjointOptimisation: Gradients. [0]=-1.135855e-01, [1]=0.000000e+00 
 | ------------------------------------------------------------------------ 
 | 3. IT INVERSION RESULT: line search its = 0 ; F / FINI = 8.42119e-01
@@ -136,14 +136,14 @@ SNES Convergence Reason : ||F|| < atol
 | -------------------------------------------------------------------------
 | LS factor for 1.Parameter = 1.34883e+01
 | 
+SNES Convergence Reason : Newton computed step size small; || delta x || < stol || x ||
 SNES Convergence Reason : ||F|| < atol 
-SNES Convergence Reason : ||F|| < atol 
-| IOparam->mfit = 2.545114e-02 
-| grad=-4.609145e-01, aop->CurScal=1.000000e+00 vel-scale =1.000000e+00
+| IOparam->mfit = 2.545091e-02 
+| grad=-4.609130e-01, aop->CurScal=1.000000e+00 vel-scale =1.000000e+00
 | ************************************************************************
 |                       COMPUTATION OF THE COST FUNCTION                    
 | ************************************************************************
-| Current Cost function = 2.5451144914e-02
+| Current Cost function = 2.5450911749e-02
 | ************************************************************************ 
 |                       COMPUTATION OF THE GRADIENTS                       
 | ************************************************************************ 
@@ -151,36 +151,36 @@ SNES Convergence Reason : ||F|| < atol
 | Gradients: 
 |                    Parameter             |  Gradient (dimensional)  
 |                  -----------------------   ------------------------ 
-|  adjoint     1:          rho[ 1]            4.609145e-01 
+|  adjoint     1:          rho[ 1]            4.609130e-01 
 | 
 | 
 | Observation points: 
 |                                                    Center values         
 |                       Location         |      Target         Value     
 |       --------------------------------- --- ------------- ------------- 
-| 
 | 1   : [    0.600;     0.500;     0.990] PSD   1.35000e+02   1.22073e+02
-| AdjointOptimisation: Gradients. [0]=4.609145e-01, [1]=0.000000e+00 
+| 
+| AdjointOptimisation: Gradients. [0]=4.609130e-01, [1]=0.000000e+00 
 | ------------------------------------------------------------------------ 
-| 4. IT INVERSION RESULT: line search its = 0 ; F / FINI = 1.44382e-01
+| 4. IT INVERSION RESULT: line search its = 0 ; F / FINI = 1.44380e-01
 | 
 | Fold = 1.48446e-01 
-|    F = 2.54511e-02
+|    F = 2.54509e-02
 | 
-| 1. Diff parameter value = -6.21697e+00
+| 1. Diff parameter value = -6.21695e+00
 | 
-| 1. Parameter value = -4.11291e+00
+| 1. Parameter value = -4.11289e+00
 | -------------------------------------------------------------------------
 | LS factor for 1.Parameter = 2.69767e+01
 | 
 SNES Convergence Reason : ||F|| < atol 
 SNES Convergence Reason : ||F|| < atol 
 | IOparam->mfit = 2.329039e-01 
-| grad=2.199647e-03, aop->CurScal=1.000000e+00 vel-scale =1.000000e+00
+| grad=2.199670e-03, aop->CurScal=1.000000e+00 vel-scale =1.000000e+00
 | ************************************************************************
 |                       COMPUTATION OF THE COST FUNCTION                    
 | ************************************************************************
-| Current Cost function = 2.3290390241e-01
+| Current Cost function = 2.3290385913e-01
 | ************************************************************************ 
 |                       COMPUTATION OF THE GRADIENTS                       
 | ************************************************************************ 
@@ -188,26 +188,26 @@ SNES Convergence Reason : ||F|| < atol
 | Gradients: 
 |                    Parameter             |  Gradient (dimensional)  
 |                  -----------------------   ------------------------ 
-|  adjoint     1:          rho[ 1]           -2.199647e-03 
+|  adjoint     1:          rho[ 1]           -2.199670e-03 
 | 
 | 
 | Observation points: 
 |                                                    Center values         
 |                       Location         |      Target         Value     
 |       --------------------------------- --- ------------- ------------- 
-| 
 | 1   : [    0.600;     0.500;     0.990] PSD   1.35000e+02   1.74104e+02
-| AdjointOptimisation: Gradients. [0]=-2.199647e-03, [1]=0.000000e+00 
+| 
+| AdjointOptimisation: Gradients. [0]=-2.199670e-03, [1]=0.000000e+00 
 | - - - - - - - - - - - - - - - - - - - - - - - - - - - 
 |               LINE SEARCH IT 1                       
 SNES Convergence Reason : ||F|| < atol 
 SNES Convergence Reason : ||F|| < atol 
-| IOparam->mfit = 2.140812e-01 
-| grad=1.247626e-02, aop->CurScal=1.000000e+00 vel-scale =1.000000e+00
+| IOparam->mfit = 2.140811e-01 
+| grad=1.247635e-02, aop->CurScal=1.000000e+00 vel-scale =1.000000e+00
 | ************************************************************************
 |                       COMPUTATION OF THE COST FUNCTION                    
 | ************************************************************************
-| Current Cost function = 2.1408122569e-01
+| Current Cost function = 2.1408112310e-01
 | ************************************************************************ 
 |                       COMPUTATION OF THE GRADIENTS                       
 | ************************************************************************ 
@@ -215,27 +215,27 @@ SNES Convergence Reason : ||F|| < atol
 | Gradients: 
 |                    Parameter             |  Gradient (dimensional)  
 |                  -----------------------   ------------------------ 
-|  adjoint     1:          rho[ 1]           -1.247626e-02 
+|  adjoint     1:          rho[ 1]           -1.247635e-02 
 | 
 | 
 | Observation points: 
 |                                                    Center values         
 |                       Location         |      Target         Value     
 |       --------------------------------- --- ------------- ------------- 
-| 
 | 1   : [    0.600;     0.500;     0.990] PSD   1.35000e+02   1.72491e+02
-|    F = 2.140812e-01,  Fold = 2.545114e-02                      
+| 
+|    F = 2.140811e-01,  Fold = 2.545091e-02                      
 | - - - - - - - - - - - - - - - - - - - - - - - - - - - 
 | - - - - - - - - - - - - - - - - - - - - - - - - - - - 
 |               LINE SEARCH IT 2                       
+SNES Convergence Reason : Newton computed step size small; || delta x || < stol || x ||
 SNES Convergence Reason : ||F|| < atol 
-SNES Convergence Reason : ||F|| < atol 
-| IOparam->mfit = 1.057396e-01 
-| grad=2.184584e-01, aop->CurScal=1.000000e+00 vel-scale =1.000000e+00
+| IOparam->mfit = 1.057394e-01 
+| grad=2.184591e-01, aop->CurScal=1.000000e+00 vel-scale =1.000000e+00
 | ************************************************************************
 |                       COMPUTATION OF THE COST FUNCTION                    
 | ************************************************************************
-| Current Cost function = 1.0573964984e-01
+| Current Cost function = 1.0573937943e-01
 | ************************************************************************ 
 |                       COMPUTATION OF THE GRADIENTS                       
 | ************************************************************************ 
@@ -243,27 +243,27 @@ SNES Convergence Reason : ||F|| < atol
 | Gradients: 
 |                    Parameter             |  Gradient (dimensional)  
 |                  -----------------------   ------------------------ 
-|  adjoint     1:          rho[ 1]           -2.184584e-01 
+|  adjoint     1:          rho[ 1]           -2.184591e-01 
 | 
 | 
 | Observation points: 
 |                                                    Center values         
 |                       Location         |      Target         Value     
 |       --------------------------------- --- ------------- ------------- 
-| 
 | 1   : [    0.600;     0.500;     0.990] PSD   1.35000e+02   1.61349e+02
-|    F = 1.057396e-01,  Fold = 2.545114e-02                      
+| 
+|    F = 1.057394e-01,  Fold = 2.545091e-02                      
 | - - - - - - - - - - - - - - - - - - - - - - - - - - - 
 | - - - - - - - - - - - - - - - - - - - - - - - - - - - 
 |               LINE SEARCH IT 3                       
 SNES Convergence Reason : ||F|| < atol 
 SNES Convergence Reason : ||F|| < atol 
-| IOparam->mfit = 4.899323e-05 
-| grad=-2.142885e-02, aop->CurScal=1.000000e+00 vel-scale =1.000000e+00
+| IOparam->mfit = 4.898985e-05 
+| grad=-2.142811e-02, aop->CurScal=1.000000e+00 vel-scale =1.000000e+00
 | ************************************************************************
 |                       COMPUTATION OF THE COST FUNCTION                    
 | ************************************************************************
-| Current Cost function = 4.8993228986e-05
+| Current Cost function = 4.8989851547e-05
 | ************************************************************************ 
 |                       COMPUTATION OF THE GRADIENTS                       
 | ************************************************************************ 
@@ -271,24 +271,24 @@ SNES Convergence Reason : ||F|| < atol
 | Gradients: 
 |                    Parameter             |  Gradient (dimensional)  
 |                  -----------------------   ------------------------ 
-|  adjoint     1:          rho[ 1]            2.142885e-02 
+|  adjoint     1:          rho[ 1]            2.142811e-02 
 | 
 | 
 | Observation points: 
 |                                                    Center values         
 |                       Location         |      Target         Value     
 |       --------------------------------- --- ------------- ------------- 
-| 
 | 1   : [    0.600;     0.500;     0.990] PSD   1.35000e+02   1.34433e+02
-|    F = 4.899323e-05,  Fold = 2.545114e-02                      
+| 
+|    F = 4.898985e-05,  Fold = 2.545091e-02                      
 | - - - - - - - - - - - - - - - - - - - - - - - - - - - 
 | ------------------------------------------------------------------------ 
-| 5. IT INVERSION RESULT: line search its = 3 ; F / FINI = 2.77933e-04
+| 5. IT INVERSION RESULT: line search its = 3 ; F / FINI = 2.77914e-04
 | 
-| Fold = 2.54511e-02 
-|    F = 4.89932e-05
+| Fold = 2.54509e-02 
+|    F = 4.89899e-05
 | 
-| 1. Diff parameter value = -4.62463e-03
+| 1. Diff parameter value = -4.62447e-03
 | 
 | 1. Parameter value = 1.99996e+00
 | -------------------------------------------------------------------------
@@ -296,12 +296,12 @@ SNES Convergence Reason : ||F|| < atol
 | 
 SNES Convergence Reason : ||F|| < atol 
 SNES Convergence Reason : ||F|| < atol 
-| IOparam->mfit = 3.069482e-09 
-| grad=1.684298e-04, aop->CurScal=1.000000e+00 vel-scale =1.000000e+00
+| IOparam->mfit = 3.068995e-09 
+| grad=1.684165e-04, aop->CurScal=1.000000e+00 vel-scale =1.000000e+00
 | ************************************************************************
 |                       COMPUTATION OF THE COST FUNCTION                    
 | ************************************************************************
-| Current Cost function = 3.0694815812e-09
+| Current Cost function = 3.0689953235e-09
 | ************************************************************************ 
 |                       COMPUTATION OF THE GRADIENTS                       
 | ************************************************************************ 
@@ -309,36 +309,36 @@ SNES Convergence Reason : ||F|| < atol
 | Gradients: 
 |                    Parameter             |  Gradient (dimensional)  
 |                  -----------------------   ------------------------ 
-|  adjoint     1:          rho[ 1]           -1.684298e-04 
+|  adjoint     1:          rho[ 1]           -1.684165e-04 
 | 
 | 
 | Observation points: 
 |                                                    Center values         
 |                       Location         |      Target         Value     
 |       --------------------------------- --- ------------- ------------- 
-| 
 | 1   : [    0.600;     0.500;     0.990] PSD   1.35000e+02   1.35004e+02
-| AdjointOptimisation: Gradients. [0]=-1.684298e-04, [1]=0.000000e+00 
+| 
+| AdjointOptimisation: Gradients. [0]=-1.684165e-04, [1]=0.000000e+00 
 | ------------------------------------------------------------------------ 
-| 6. IT INVERSION RESULT: line search its = 0 ; F / FINI = 1.74128e-08
+| 6. IT INVERSION RESULT: line search its = 0 ; F / FINI = 1.74101e-08
 | 
-| Fold = 4.89932e-05 
-|    F = 3.06948e-09
+| Fold = 4.89899e-05 
+|    F = 3.06900e-09
 | 
-| 1. Diff parameter value = 7.26989e-05
+| 1. Diff parameter value = 7.26931e-05
 | 
 | 1. Parameter value = 2.00004e+00
 | -------------------------------------------------------------------------
 | LS factor for 1.Parameter = 8.63254e-01
 | 
+SNES Convergence Reason : Newton computed step size small; || delta x || < stol || x ||
 SNES Convergence Reason : ||F|| < atol 
-SNES Convergence Reason : ||F|| < atol 
-| IOparam->mfit = 3.040810e-09 
-| grad=-1.677652e-04, aop->CurScal=1.000000e+00 vel-scale =1.000000e+00
+| IOparam->mfit = 3.040323e-09 
+| grad=-1.677518e-04, aop->CurScal=1.000000e+00 vel-scale =1.000000e+00
 | ************************************************************************
 |                       COMPUTATION OF THE COST FUNCTION                    
 | ************************************************************************
-| Current Cost function = 3.0408100915e-09
+| Current Cost function = 3.0403229875e-09
 | ************************************************************************ 
 |                       COMPUTATION OF THE GRADIENTS                       
 | ************************************************************************ 
@@ -346,23 +346,23 @@ SNES Convergence Reason : ||F|| < atol
 | Gradients: 
 |                    Parameter             |  Gradient (dimensional)  
 |                  -----------------------   ------------------------ 
-|  adjoint     1:          rho[ 1]            1.677652e-04 
+|  adjoint     1:          rho[ 1]            1.677518e-04 
 | 
 | 
 | Observation points: 
 |                                                    Center values         
 |                       Location         |      Target         Value     
 |       --------------------------------- --- ------------- ------------- 
-| 
 | 1   : [    0.600;     0.500;     0.990] PSD   1.35000e+02   1.34996e+02
-| AdjointOptimisation: Gradients. [0]=1.677652e-04, [1]=0.000000e+00 
+| 
+| AdjointOptimisation: Gradients. [0]=1.677518e-04, [1]=0.000000e+00 
 | ------------------------------------------------------------------------ 
-| 7. IT INVERSION RESULT: line search its = 0 ; F / FINI = 1.72502e-08
+| 7. IT INVERSION RESULT: line search its = 0 ; F / FINI = 1.72474e-08
 | 
-| Fold = 3.06948e-09 
-|    F = 3.04081e-09
+| Fold = 3.06900e-09 
+|    F = 3.04032e-09
 | 
-| 1. Diff parameter value = -1.44824e-04
+| 1. Diff parameter value = -1.44812e-04
 | 
 | 1. Parameter value = 1.99989e+00
 | -------------------------------------------------------------------------
@@ -370,12 +370,12 @@ SNES Convergence Reason : ||F|| < atol
 | 
 SNES Convergence Reason : ||F|| < atol 
 SNES Convergence Reason : ||F|| < atol 
-| IOparam->mfit = 2.724654e-08 
-| grad=5.017594e-04, aop->CurScal=1.000000e+00 vel-scale =1.000000e+00
+| IOparam->mfit = 2.724216e-08 
+| grad=5.017189e-04, aop->CurScal=1.000000e+00 vel-scale =1.000000e+00
 | ************************************************************************
 |                       COMPUTATION OF THE COST FUNCTION                    
 | ************************************************************************
-| Current Cost function = 2.7246536249e-08
+| Current Cost function = 2.7242160969e-08
 | ************************************************************************ 
 |                       COMPUTATION OF THE GRADIENTS                       
 | ************************************************************************ 
@@ -383,26 +383,26 @@ SNES Convergence Reason : ||F|| < atol
 | Gradients: 
 |                    Parameter             |  Gradient (dimensional)  
 |                  -----------------------   ------------------------ 
-|  adjoint     1:          rho[ 1]           -5.017594e-04 
+|  adjoint     1:          rho[ 1]           -5.017189e-04 
 | 
 | 
 | Observation points: 
 |                                                    Center values         
 |                       Location         |      Target         Value     
 |       --------------------------------- --- ------------- ------------- 
-| 
 | 1   : [    0.600;     0.500;     0.990] PSD   1.35000e+02   1.35013e+02
-| AdjointOptimisation: Gradients. [0]=-5.017594e-04, [1]=0.000000e+00 
+| 
+| AdjointOptimisation: Gradients. [0]=-5.017189e-04, [1]=0.000000e+00 
 | - - - - - - - - - - - - - - - - - - - - - - - - - - - 
 |               LINE SEARCH IT 1                       
 SNES Convergence Reason : ||F|| < atol 
 SNES Convergence Reason : ||F|| < atol 
-| IOparam->mfit = 1.085412e-09 
-| grad=1.001598e-04, aop->CurScal=1.000000e+00 vel-scale =1.000000e+00
+| IOparam->mfit = 1.085238e-09 
+| grad=1.001518e-04, aop->CurScal=1.000000e+00 vel-scale =1.000000e+00
 | ************************************************************************
 |                       COMPUTATION OF THE COST FUNCTION                    
 | ************************************************************************
-| Current Cost function = 1.0854124683e-09
+| Current Cost function = 1.0852377156e-09
 | ************************************************************************ 
 |                       COMPUTATION OF THE GRADIENTS                       
 | ************************************************************************ 
@@ -410,24 +410,24 @@ SNES Convergence Reason : ||F|| < atol
 | Gradients: 
 |                    Parameter             |  Gradient (dimensional)  
 |                  -----------------------   ------------------------ 
-|  adjoint     1:          rho[ 1]           -1.001598e-04 
+|  adjoint     1:          rho[ 1]           -1.001518e-04 
 | 
 | 
 | Observation points: 
 |                                                    Center values         
 |                       Location         |      Target         Value     
 |       --------------------------------- --- ------------- ------------- 
-| 
 | 1   : [    0.600;     0.500;     0.990] PSD   1.35000e+02   1.35003e+02
-|    F = 1.085412e-09,  Fold = 3.040810e-09                      
+| 
+|    F = 1.085238e-09,  Fold = 3.040323e-09                      
 | - - - - - - - - - - - - - - - - - - - - - - - - - - - 
 | ------------------------------------------------------------------------ 
-| 8. IT INVERSION RESULT: line search its = 1 ; F / FINI = 6.15743e-09
+| 8. IT INVERSION RESULT: line search its = 1 ; F / FINI = 6.15643e-09
 | 
-| Fold = 3.04081e-09 
-|    F = 1.08541e-09
+| Fold = 3.04032e-09 
+|    F = 1.08524e-09
 | 
-| 1. Diff parameter value = 3.45853e-05
+| 1. Diff parameter value = 3.45825e-05
 | 
 | 1. Parameter value = 2.00001e+00
 | -------------------------------------------------------------------------
@@ -435,12 +435,12 @@ SNES Convergence Reason : ||F|| < atol
 | 
 SNES Convergence Reason : ||F|| < atol 
 SNES Convergence Reason : ||F|| < atol 
-| IOparam->mfit = 3.859177e-10 
-| grad=-5.976402e-05, aop->CurScal=1.000000e+00 vel-scale =1.000000e+00
+| IOparam->mfit = 3.858556e-10 
+| grad=-5.975924e-05, aop->CurScal=1.000000e+00 vel-scale =1.000000e+00
 | ************************************************************************
 |                       COMPUTATION OF THE COST FUNCTION                    
 | ************************************************************************
-| Current Cost function = 3.8591765847e-10
+| Current Cost function = 3.8585564724e-10
 | ************************************************************************ 
 |                       COMPUTATION OF THE GRADIENTS                       
 | ************************************************************************ 
@@ -448,36 +448,36 @@ SNES Convergence Reason : ||F|| < atol
 | Gradients: 
 |                    Parameter             |  Gradient (dimensional)  
 |                  -----------------------   ------------------------ 
-|  adjoint     1:          rho[ 1]            5.976402e-05 
+|  adjoint     1:          rho[ 1]            5.975924e-05 
 | 
 | 
 | Observation points: 
 |                                                    Center values         
 |                       Location         |      Target         Value     
 |       --------------------------------- --- ------------- ------------- 
-| 
 | 1   : [    0.600;     0.500;     0.990] PSD   1.35000e+02   1.34998e+02
-| AdjointOptimisation: Gradients. [0]=5.976402e-05, [1]=0.000000e+00 
+| 
+| AdjointOptimisation: Gradients. [0]=5.975924e-05, [1]=0.000000e+00 
 | ------------------------------------------------------------------------ 
-| 9. IT INVERSION RESULT: line search its = 0 ; F / FINI = 2.18927e-09
+| 9. IT INVERSION RESULT: line search its = 0 ; F / FINI = 2.18892e-09
 | 
-| Fold = 1.08541e-09 
-|    F = 3.85918e-10
+| Fold = 1.08524e-09 
+|    F = 3.85856e-10
 | 
-| 1. Diff parameter value = -4.12732e-05
+| 1. Diff parameter value = -4.12699e-05
 | 
 | 1. Parameter value = 1.99997e+00
 | -------------------------------------------------------------------------
 | LS factor for 1.Parameter = 1.38121e+00
 | 
+SNES Convergence Reason : Newton computed step size small; || delta x || < stol || x ||
 SNES Convergence Reason : ||F|| < atol 
-SNES Convergence Reason : ||F|| < atol 
-| IOparam->mfit = 1.858893e-09 
-| grad=1.310747e-04, aop->CurScal=1.000000e+00 vel-scale =1.000000e+00
+| IOparam->mfit = 1.858595e-09 
+| grad=1.310642e-04, aop->CurScal=1.000000e+00 vel-scale =1.000000e+00
 | ************************************************************************
 |                       COMPUTATION OF THE COST FUNCTION                    
 | ************************************************************************
-| Current Cost function = 1.8588927983e-09
+| Current Cost function = 1.8585945904e-09
 | ************************************************************************ 
 |                       COMPUTATION OF THE GRADIENTS                       
 | ************************************************************************ 
@@ -485,26 +485,26 @@ SNES Convergence Reason : ||F|| < atol
 | Gradients: 
 |                    Parameter             |  Gradient (dimensional)  
 |                  -----------------------   ------------------------ 
-|  adjoint     1:          rho[ 1]           -1.310747e-04 
+|  adjoint     1:          rho[ 1]           -1.310642e-04 
 | 
 | 
 | Observation points: 
 |                                                    Center values         
 |                       Location         |      Target         Value     
 |       --------------------------------- --- ------------- ------------- 
-| 
 | 1   : [    0.600;     0.500;     0.990] PSD   1.35000e+02   1.35003e+02
-| AdjointOptimisation: Gradients. [0]=-1.310747e-04, [1]=0.000000e+00 
+| 
+| AdjointOptimisation: Gradients. [0]=-1.310642e-04, [1]=0.000000e+00 
 | - - - - - - - - - - - - - - - - - - - - - - - - - - - 
 |               LINE SEARCH IT 1                       
+SNES Convergence Reason : Newton computed step size small; || delta x || < stol || x ||
 SNES Convergence Reason : ||F|| < atol 
-SNES Convergence Reason : ||F|| < atol 
-| IOparam->mfit = 2.980653e-11 
-| grad=1.659829e-05, aop->CurScal=1.000000e+00 vel-scale =1.000000e+00
+| IOparam->mfit = 2.980177e-11 
+| grad=1.659697e-05, aop->CurScal=1.000000e+00 vel-scale =1.000000e+00
 | ************************************************************************
 |                       COMPUTATION OF THE COST FUNCTION                    
 | ************************************************************************
-| Current Cost function = 2.9806532135e-11
+| Current Cost function = 2.9801766945e-11
 | ************************************************************************ 
 |                       COMPUTATION OF THE GRADIENTS                       
 | ************************************************************************ 
@@ -512,37 +512,37 @@ SNES Convergence Reason : ||F|| < atol
 | Gradients: 
 |                    Parameter             |  Gradient (dimensional)  
 |                  -----------------------   ------------------------ 
-|  adjoint     1:          rho[ 1]           -1.659829e-05 
+|  adjoint     1:          rho[ 1]           -1.659697e-05 
 | 
 | 
 | Observation points: 
 |                                                    Center values         
 |                       Location         |      Target         Value     
 |       --------------------------------- --- ------------- ------------- 
-| 
 | 1   : [    0.600;     0.500;     0.990] PSD   1.35000e+02   1.35000e+02
-|    F = 2.980653e-11,  Fold = 3.859177e-10                      
+| 
+|    F = 2.980177e-11,  Fold = 3.858556e-10                      
 | - - - - - - - - - - - - - - - - - - - - - - - - - - - 
 | ------------------------------------------------------------------------ 
-| 10. IT INVERSION RESULT: line search its = 1 ; F / FINI = 1.69089e-10
+| 10. IT INVERSION RESULT: line search its = 1 ; F / FINI = 1.69062e-10
 | 
-| Fold = 3.85918e-10 
-|    F = 2.98065e-11
+| Fold = 3.85856e-10 
+|    F = 2.98018e-11
 | 
-| 1. Diff parameter value = 4.58513e-06
+| 1. Diff parameter value = 4.58477e-06
 | 
 | 1. Parameter value = 2.00000e+00
 | -------------------------------------------------------------------------
-| LS factor for 1.Parameter = 5.52483e-01
+| LS factor for 1.Parameter = 5.52482e-01
 | 
 SNES Convergence Reason : ||F|| < atol 
 SNES Convergence Reason : ||F|| < atol 
-| IOparam->mfit = 2.288078e-12 
-| grad=-4.601722e-06, aop->CurScal=1.000000e+00 vel-scale =1.000000e+00
+| IOparam->mfit = 2.287711e-12 
+| grad=-4.601352e-06, aop->CurScal=1.000000e+00 vel-scale =1.000000e+00
 | ************************************************************************
 |                       COMPUTATION OF THE COST FUNCTION                    
 | ************************************************************************
-| Current Cost function = 2.2880782952e-12
+| Current Cost function = 2.2877111840e-12
 | ************************************************************************ 
 |                       COMPUTATION OF THE GRADIENTS                       
 | ************************************************************************ 
@@ -550,36 +550,36 @@ SNES Convergence Reason : ||F|| < atol
 | Gradients: 
 |                    Parameter             |  Gradient (dimensional)  
 |                  -----------------------   ------------------------ 
-|  adjoint     1:          rho[ 1]            4.601722e-06 
+|  adjoint     1:          rho[ 1]            4.601352e-06 
 | 
 | 
 | Observation points: 
 |                                                    Center values         
 |                       Location         |      Target         Value     
 |       --------------------------------- --- ------------- ------------- 
-| 
 | 1   : [    0.600;     0.500;     0.990] PSD   1.35000e+02   1.35000e+02
-| AdjointOptimisation: Gradients. [0]=4.601722e-06, [1]=0.000000e+00 
+| 
+| AdjointOptimisation: Gradients. [0]=4.601352e-06, [1]=0.000000e+00 
 | ------------------------------------------------------------------------ 
-| 11. IT INVERSION RESULT: line search its = 0 ; F / FINI = 1.29800e-11
+| 11. IT INVERSION RESULT: line search its = 0 ; F / FINI = 1.29779e-11
 | 
-| Fold = 2.98065e-11 
-|    F = 2.28808e-12
+| Fold = 2.98018e-11 
+|    F = 2.28771e-12
 | 
-| 1. Diff parameter value = -2.54237e-06
+| 1. Diff parameter value = -2.54217e-06
 | 
 | 1. Parameter value = 2.00000e+00
 | -------------------------------------------------------------------------
-| LS factor for 1.Parameter = 1.10497e+00
+| LS factor for 1.Parameter = 1.10496e+00
 | 
+SNES Convergence Reason : Newton computed step size small; || delta x || < stol || x ||
 SNES Convergence Reason : ||F|| < atol 
-SNES Convergence Reason : ||F|| < atol 
-| IOparam->mfit = 5.538060e-12 
-| grad=7.154639e-06, aop->CurScal=1.000000e+00 vel-scale =1.000000e+00
+| IOparam->mfit = 5.537163e-12 
+| grad=7.154059e-06, aop->CurScal=1.000000e+00 vel-scale =1.000000e+00
 | ************************************************************************
 |                       COMPUTATION OF THE COST FUNCTION                    
 | ************************************************************************
-| Current Cost function = 5.5380601839e-12
+| Current Cost function = 5.5371632863e-12
 | ************************************************************************ 
 |                       COMPUTATION OF THE GRADIENTS                       
 | ************************************************************************ 
@@ -587,26 +587,26 @@ SNES Convergence Reason : ||F|| < atol
 | Gradients: 
 |                    Parameter             |  Gradient (dimensional)  
 |                  -----------------------   ------------------------ 
-|  adjoint     1:          rho[ 1]           -7.154639e-06 
+|  adjoint     1:          rho[ 1]           -7.154059e-06 
 | 
 | 
 | Observation points: 
 |                                                    Center values         
 |                       Location         |      Target         Value     
 |       --------------------------------- --- ------------- ------------- 
-| 
 | 1   : [    0.600;     0.500;     0.990] PSD   1.35000e+02   1.35000e+02
-| AdjointOptimisation: Gradients. [0]=-7.154639e-06, [1]=0.000000e+00 
+| 
+| AdjointOptimisation: Gradients. [0]=-7.154059e-06, [1]=0.000000e+00 
 | - - - - - - - - - - - - - - - - - - - - - - - - - - - 
 |               LINE SEARCH IT 1                       
+SNES Convergence Reason : Newton computed step size small; || delta x || < stol || x ||
 SNES Convergence Reason : ||F|| < atol 
-SNES Convergence Reason : ||F|| < atol 
-| IOparam->mfit = 1.138481e-15 
-| grad=1.025824e-07, aop->CurScal=1.000000e+00 vel-scale =1.000000e+00
+| IOparam->mfit = 1.138252e-15 
+| grad=1.025721e-07, aop->CurScal=1.000000e+00 vel-scale =1.000000e+00
 | ************************************************************************
 |                       COMPUTATION OF THE COST FUNCTION                    
 | ************************************************************************
-| Current Cost function = 1.1384814795e-15
+| Current Cost function = 1.1382517188e-15
 | ************************************************************************ 
 |                       COMPUTATION OF THE GRADIENTS                       
 | ************************************************************************ 
@@ -614,37 +614,37 @@ SNES Convergence Reason : ||F|| < atol
 | Gradients: 
 |                    Parameter             |  Gradient (dimensional)  
 |                  -----------------------   ------------------------ 
-|  adjoint     1:          rho[ 1]           -1.025824e-07 
+|  adjoint     1:          rho[ 1]           -1.025721e-07 
 | 
 | 
 | Observation points: 
 |                                                    Center values         
 |                       Location         |      Target         Value     
 |       --------------------------------- --- ------------- ------------- 
-| 
 | 1   : [    0.600;     0.500;     0.990] PSD   1.35000e+02   1.35000e+02
-|    F = 1.138481e-15,  Fold = 2.288078e-12                      
+| 
+|    F = 1.138252e-15,  Fold = 2.287711e-12                      
 | - - - - - - - - - - - - - - - - - - - - - - - - - - - 
 | ------------------------------------------------------------------------ 
-| 12. IT INVERSION RESULT: line search its = 1 ; F / FINI = 6.45848e-15
+| 12. IT INVERSION RESULT: line search its = 1 ; F / FINI = 6.45718e-15
 | 
-| Fold = 2.28808e-12 
-|    F = 1.13848e-15
+| Fold = 2.28771e-12 
+|    F = 1.13825e-15
 | 
-| 1. Diff parameter value = 2.26700e-08
+| 1. Diff parameter value = 2.26677e-08
 | 
 | 1. Parameter value = 2.00000e+00
 | -------------------------------------------------------------------------
 | LS factor for 1.Parameter = 4.41986e-01
 | 
+SNES Convergence Reason : Newton computed step size small; || delta x || < stol || x ||
 SNES Convergence Reason : ||F|| < atol 
-SNES Convergence Reason : ||F|| < atol 
-| IOparam->mfit = 5.340992e-19 
-| grad=-2.223286e-09, aop->CurScal=1.000000e+00 vel-scale =1.000000e+00
+| IOparam->mfit = 5.340459e-19 
+| grad=-2.223175e-09, aop->CurScal=1.000000e+00 vel-scale =1.000000e+00
 | ************************************************************************
 |                       COMPUTATION OF THE COST FUNCTION                    
 | ************************************************************************
-| Current Cost function = 5.3409917056e-19
+| Current Cost function = 5.3404592991e-19
 | ************************************************************************ 
 |                       COMPUTATION OF THE GRADIENTS                       
 | ************************************************************************ 
@@ -652,23 +652,23 @@ SNES Convergence Reason : ||F|| < atol
 | Gradients: 
 |                    Parameter             |  Gradient (dimensional)  
 |                  -----------------------   ------------------------ 
-|  adjoint     1:          rho[ 1]            2.223286e-09 
+|  adjoint     1:          rho[ 1]            2.223175e-09 
 | 
 | 
 | Observation points: 
 |                                                    Center values         
 |                       Location         |      Target         Value     
 |       --------------------------------- --- ------------- ------------- 
-| 
 | 1   : [    0.600;     0.500;     0.990] PSD   1.35000e+02   1.35000e+02
-| AdjointOptimisation: Gradients. [0]=2.223286e-09, [1]=0.000000e+00 
+| 
+| AdjointOptimisation: Gradients. [0]=2.223175e-09, [1]=0.000000e+00 
 | ------------------------------------------------------------------------ 
-| 13. IT INVERSION RESULT: line search its = 0 ; F / FINI = 3.02989e-18
+| 13. IT INVERSION RESULT: line search its = 0 ; F / FINI = 3.02958e-18
 | 
-| Fold = 1.13848e-15 
-|    F = 5.34099e-19
+| Fold = 1.13825e-15 
+|    F = 5.34046e-19
 | 
-| 1. Diff parameter value = -9.82661e-10
+| 1. Diff parameter value = -9.82612e-10
 | 
 | 1. Parameter value = 2.00000e+00
 | -------------------------------------------------------------------------
@@ -682,22 +682,22 @@ SNES Convergence Reason : ||F|| < atol
 | 1.00000e+00
 | 9.63258e-01
 | 8.42119e-01
-| 1.44382e-01
-| 2.77933e-04
-| 1.74128e-08
-| 1.72502e-08
-| 6.15743e-09
-| 2.18927e-09
-| 1.69089e-10
-| 1.29800e-11
-| 6.45848e-15
-| 3.02989e-18
+| 1.44380e-01
+| 2.77914e-04
+| 1.74101e-08
+| 1.72474e-08
+| 6.15643e-09
+| 2.18892e-09
+| 1.69062e-10
+| 1.29779e-11
+| 6.45718e-15
+| 3.02958e-18
 | 
 | Final cost function:
-| 5.34099e-19
+| 5.34046e-19
 | 
 | Final Parameters: 
 | rho[1] = 2.00000e+00
 | ------------------------------------------------------------------------- 
-| Adjoint computation was successful & took 9.66743 s                         	 
+| Adjoint computation was successful & took 4.62245 s                         	 
 | ************************************************************************ 

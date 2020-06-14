@@ -57,7 +57,7 @@ v#==============================================================================
 	FSSA           = 1.0            # free surface stabilization parameter [0 - 1]
 	init_guess     = 0              # initial guess flag
 	DII	           = 1e-6          # background (reference) strain-rate
-	eta_min        = 1e-3           # viscosity upper bound
+	eta_min        = 1e-4           # viscosity upper bound
 	eta_max        = 1e6           # viscosity lower limit
 		
 #===============================================================================

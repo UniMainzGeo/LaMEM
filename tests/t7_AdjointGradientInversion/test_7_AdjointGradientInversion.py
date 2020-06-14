@@ -116,7 +116,7 @@ def SubductionInversion_FD_TAO():
 def PSD_Paper_GD_Nonlinear():
 
   # Note that we run this at a low resolution to speed up testing & that we only compare the 
-  ranks = 4
+  ranks = 2
   launch = '../bin/opt/LaMEM -ParamFile t7_AdjointGradientInversion/t7_PSDInversionPaper.dat -Inversion_rtol 4.6e-2 | grep "| "'
   expected_file = 't7_AdjointGradientInversion/t7_PSDInversionPaper_1.expected'
 
@@ -143,7 +143,7 @@ def PSD_Paper_GD_Nonlinear():
 def PSD_Paper_GD_Linear():
 
   # Note that we run this at a low resolution to speed up testing & that we only compare the 
-  ranks = 4
+  ranks = 1
   launch = '../bin/opt/LaMEM -ParamFile t7_AdjointGradientInversion/t7_PSDInversionPaper.dat  -nel_x 8 -nel_y 8 -nel_z 8  -n[0] 1 -n[1] 1 -n[2] 1  -Value[0] 135 | grep "| "'
   expected_file = 't7_AdjointGradientInversion/t7_PSDInversionPaper_2.expected'
 
