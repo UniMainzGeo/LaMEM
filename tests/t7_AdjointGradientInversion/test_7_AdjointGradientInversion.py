@@ -112,4 +112,55 @@ def SubductionInversion_FD_TAO():
 
 
 
-# falling sphere ND test
+# PSD paper inversion for nonlinear materials:
+def PSD_Paper_GD_Nonlinear():
+
+  # Note that we run this at a low resolution to speed up testing & that we only compare the 
+  ranks = 4
+  launch = '../bin/opt/LaMEM -ParamFile t7_AdjointGradientInversion/t7_PSDInversionPaper.dat -Inversion_rtol 4.6e-2 | grep "| "'
+  expected_file = 't7_AdjointGradientInversion/t7_PSDInversionPaper_1.expected'
+
+  def comparefunc(unittest):
+
+    key = re.escape("| LS factor for 1.Parameter = ")
+    unittest.compareFloatingPoint(key,1e-3)
+    
+    key = re.escape("|    F =")
+    unittest.compareFloatingPoint(key,1e-3)
+
+    key = re.escape("| 1. Parameter value = ")
+    unittest.compareFloatingPoint(key,1e-5)
+
+  # Create unit test object
+  ex1 = pth.pthUnitTest('t7_PSDInversion_1',ranks,launch,expected_file)
+  ex1.setVerifyMethod(comparefunc)
+  ex1.appendKeywords('@')
+
+  return(ex1)
+
+
+# PSD paper inversion for linear materials:
+def PSD_Paper_GD_Linear():
+
+  # Note that we run this at a low resolution to speed up testing & that we only compare the 
+  ranks = 4
+  launch = '../bin/opt/LaMEM -ParamFile t7_AdjointGradientInversion/t7_PSDInversionPaper.dat  -nel_x 8 -nel_y 8 -nel_z 8  -n[0] 1 -n[1] 1 -n[2] 1  -Value[0] 135 | grep "| "'
+  expected_file = 't7_AdjointGradientInversion/t7_PSDInversionPaper_2.expected'
+
+  def comparefunc(unittest):
+
+    key = re.escape("| LS factor for 1.Parameter = ")
+    unittest.compareFloatingPoint(key,1e-3)
+    
+    key = re.escape("|    F =")
+    unittest.compareFloatingPoint(key,1e-3)
+
+    key = re.escape("| 1. Parameter value = ")
+    unittest.compareFloatingPoint(key,1e-5)
+
+  # Create unit test object
+  ex1 = pth.pthUnitTest('t7_PSDInversion_2',ranks,launch,expected_file)
+  ex1.setVerifyMethod(comparefunc)
+  ex1.appendKeywords('@')
+
+  return(ex1)

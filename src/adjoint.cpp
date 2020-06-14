@@ -1789,6 +1789,7 @@ PetscErrorCode AdjointComputeGradients(JacRes *jr, AdjGrad *aop, NLSol *nl, SNES
 	}
 	else if(IOparam->MfitType == 1)
  	{
+		ierr = Adjoint_ApplyBCs(aop->dPardu, bc);		CHKERRQ(ierr);		// apply BC's to dF vector 
  		ierr = SNESGetKSP(snes, &ksp_as);         		CHKERRQ(ierr);
  		ierr = KSPSetOptionsPrefix(ksp_as,"as_"); 		CHKERRQ(ierr);
  		ierr = KSPSetFromOptions(ksp_as);         		CHKERRQ(ierr);
@@ -2845,7 +2846,7 @@ PetscErrorCode AdjointFormResidualFieldFD(SNES snes, Vec x, Vec psi, NLSol *nl, 
 	dt     =  jr->ts->dt;    // time step
 
 	// Recompute correct strainrates (necessary!!)
-	// ierr =  JacResGetEffStrainRate(jr);
+	ierr =  JacResGetEffStrainRate(jr);
 
 	// access work vectors
 	ierr = DMDAVecGetArray(fs->DA_CEN, jr->lgradfield,&llgradfield);      CHKERRQ(ierr);
@@ -4894,7 +4895,7 @@ PetscErrorCode Adjoint_ApplyBCs(Vec dF, BCCtx* bc)
 
 	// I believe it has to be put to zero, but just in case, 
 	// I comment the earlier expression out
-	for(i = 0; i < num; i++) dF_vec[list[i]] = 0.0; //vals[i];		
+	for(i = 0; i < num; i++) dF_vec[list[i]] = vals[i];		
 
 	//============================================
 	// enforce single point constraints (pressure)
@@ -4904,7 +4905,7 @@ PetscErrorCode Adjoint_ApplyBCs(Vec dF, BCCtx* bc)
 	list  = bc->pSPCList;
 	vals  = bc->pSPCVals;
 
-	for(i = 0; i < num; i++) dF_vec[list[i]] = 0; //vals[i];
+	//for(i = 0; i < num; i++) dF_vec[list[i]] = 0; //vals[i];
 
 	ierr = VecRestoreArray(dF, &dF_vec); CHKERRQ(ierr);
 

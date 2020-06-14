@@ -64,6 +64,7 @@ def run_tests():
                       Comp1.test_a(), Comp1.test_b(), Subgrid.test_a(), Diffusion.test_1D(), 
                       Adj1.test_RTI_1(), Adj1.test_RTI_2(),
                       Adj2.SubductionInversion_GD(), Adj2.SubductionInversion_TAO(), Adj2.SubductionInversion_FD_TAO(),
+                      Adj2.PSD_Paper_GD_Nonlinear(), Adj2.PSD_Paper_GD_Linear(),
                       Adj3.rho_SensitivityKernel(), Adj3.FallingSphere_ND_all(), Adj3.FallingSphere_ND_CompareGradients_1(),
                       Adj3.FallingSphere_ND_CompareGradients_2(), Adj3.SubductionSetup_Dimensional(),Adj3.PSD_ND(), 
                       Adj3.rho_SensitivityKernel_PSD(), 
