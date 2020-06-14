@@ -402,7 +402,8 @@ PetscErrorCode LaMEMAdjointReadInputSetDefaults(ModParam *IOparam, Adjoint_Vecs 
 	IOparam->maxitLS    		= 20;
 	IOparam->ScalLaws   		= 0;
 	IOparam->ReferenceDensity 	= 0;
-	IOparam->SCF 				= 0; 		
+	IOparam->SCF 				= 0; 	
+	IOparam->DII_ref 			= 0.0;	
 	
     // Create scaling object
 	ierr = ScalingCreate(&scal, fb, PETSC_FALSE); CHKERRQ(ierr);
