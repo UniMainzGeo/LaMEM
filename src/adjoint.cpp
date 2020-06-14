@@ -1179,7 +1179,7 @@ PetscErrorCode AdjointOptimisation(Vec P, PetscScalar F, Vec grad, void *ctx)
 
 	// initialize
 	PetscInt 		i, j, LScount;
-	PetscScalar 	*Par, *Paroldar, *gradar, *gradoldar, *dPtemp, *fcconvar;
+	PetscScalar 	*Par, *Paroldar, *gradar, *gradoldar, *fcconvar;
 	PetscScalar   	Fold;
 	ModParam    	*IOparam;
 	IOparam     	= (ModParam*)ctx;
@@ -3848,7 +3848,7 @@ PetscErrorCode PrintScalingLaws(ModParam *IOparam)
 			else{strcpy(adjointstr, "FD     "); }
 		
 
-			fprintf(db,"  %s %13s    %3i     %- 18.9e %- 18.9e  %s %- 18.9e %s \n",logstr, CurName, CurPhase, Exponent[k],P, IOparam->grd[k], adjointstr, PhaseDescription);
+			fprintf(db,"  %s %13s    %3i     %- 18.9e %- 18.9e  %s %- 18.9e %s \n",logstr, CurName, CurPhase, Exponent[k],P, adjointstr, IOparam->grd[k], PhaseDescription);
 
 		}
 		VecRestoreArray(IOparam->P,&Par);
@@ -3871,6 +3871,7 @@ PetscErrorCode AdjointGet_F_dFdu_Center(JacRes *jr, AdjGrad *aop, ModParam *IOpa
 	// Compute derivative of stress objective function with respect to the solution (dF/du) (dF/dst = (P*st-P*st_ini) * dphi/de * de/du)       
 	// dphi/de = (1/(2*pow(exx-eyy,2)) * (-2*exy,2exy,exx-eyy)); e = deviatoric strainrate
 
+
 	FDSTAG     *fs;
 	SolVarCell *svCell;
 	SolVarBulk *svBulk;
@@ -3879,7 +3880,7 @@ PetscErrorCode AdjointGet_F_dFdu_Center(JacRes *jr, AdjGrad *aop, ModParam *IOpa
 	PetscScalar *ncx, *ncy, *ncz;
 	PetscScalar XX, YY, ZZ, XY, XZ, YZ, XY2, XZ2, YZ2, E2;
 	PetscScalar bdx, bdy, bdz, fdx, fdy, fdz, dx, dy, dz;
-	PetscScalar phival, Parameter, Param_local, mfitParam;
+	PetscScalar phival=0.0, Parameter, Param_local, mfitParam;
 	PetscScalar *tempPar,  *tempdPardu;
 	PetscScalar ***dxx, ***dyy, ***dzz, ***dxy, ***dxz, ***dyz, ***vx,  ***vy,  ***vz;
 	Vec         gxPar, gyPar, gzPar, gxdPardu, gydPardu, gzdPardu;
@@ -4508,7 +4509,7 @@ PetscErrorCode setUpPhaseFD(ConstEqCtx *ctx, PetscInt ID, AdjGrad *aop, ModParam
 	PData       *Pd;
 	PetscScalar  APS, Le, dt, p, p_lith, p_pore, T, mf, mfd, mfn;
 	PetscScalar  Q, RT, ch, fr, p_visc, p_upper, p_lower, dP, p_total;
-	PetscScalar  Inin,Inieta,ViscTemp;
+	PetscScalar  Inin=1.0,Inieta=1.0,ViscTemp=1.0;
 
 
 	PetscErrorCode ierr;
@@ -4876,7 +4877,7 @@ PetscErrorCode edgeConstEqFD(
 PetscErrorCode Adjoint_ApplyBCs(Vec dF, BCCtx* bc)
 
 {
-	PetscScalar 	*sol, *vals, *dF_vec;
+	PetscScalar 	*vals, *dF_vec;
 	PetscInt  		i, num, *list;
 	PetscErrorCode ierr;
 	
