@@ -214,6 +214,8 @@
 
 	<AdjointParameterStart>
 		Type 			= AllMaterialParameters   	
+		ExcludePhase 	= ch[2]						# this excludes "ch" of phase 2 
+		#ExcludePhase 	= eta[1]					# this excludes "eta" of phase 1 
 	<AdjointParameterEnd>
 	 
 	 

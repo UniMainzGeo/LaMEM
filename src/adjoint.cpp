@@ -213,6 +213,8 @@ PetscErrorCode Adjoint_ScanForMaterialParameters(FB *fb, Scaling *scal, PetscInt
 	PetscBool 		ReadAllMatParams=PETSC_FALSE, AddParamToGradient;
 	char 			par_str[_str_len_], adjointstr[_str_len_];
 	char        	ndiff[_str_len_], ndisl[_str_len_], npeir[_str_len_];
+	char            ExcludedPhaseName[_MAX_PAR_][_str_len_];
+	PetscInt 		ExcludedPhase[_MAX_PAR_], numExcludedPhases=0;
 	Material_t 		m;
 
 	
@@ -232,7 +234,54 @@ PetscErrorCode Adjoint_ScanForMaterialParameters(FB *fb, Scaling *scal, PetscInt
 	for(i = 0; i < fb->nblocks; i++)
 	{
 		ierr = getStringParam(fb, _OPTIONAL_, "Type", par_str, NULL); CHKERRQ(ierr);
-		if (!strcmp(par_str,"AllMaterialParameters")){ ReadAllMatParams=PETSC_TRUE;	}
+		if (!strcmp(par_str,"AllMaterialParameters")){ 
+			ReadAllMatParams=PETSC_TRUE;	
+			
+
+			/* if we have a block in which we specify AllMaterialParameters, check if we indicate phases to be excluded */
+			char     	*ptr, *line, **lines, *par_str, *pch, par_val[_str_len_];
+			PetscInt  	i, lnbeg, lnend;
+
+			// Go through the lines in this block & check whether we have excluded phases  
+			line  	= fb->lbuf;
+			lines 	= FBGetLineRanges(fb, &lnbeg, &lnend);
+			for(i = lnbeg; i < lnend; i++)
+			{
+				strcpy(line, lines[i]);					// copy line for parsing
+				ptr 	= strtok(line, " ");
+				par_str = ptr;	
+				if (par_str){						// name of the parameter
+					if (!(strcmp(par_str,"ExcludePhase"))	){							// if not empty
+						ptr		= 	strtok(NULL, " ");	// Space before equal sign
+						ptr   	= 	strtok(NULL, " ");	// Space after equal sign
+						par_str = 	ptr;
+						
+						// In most cases, this is a parameter of the type eta[1 ], 
+						// where the number between the brackets is the phase number and all before is the name
+						pch		=	strchr(par_str,'['); 	
+						size_t len_start = pch - par_str+1;
+						pch		=	strchr(par_str,']'); 	
+						if (!pch){
+							SETERRQ1(PETSC_COMM_WORLD, PETSC_ERR_USER, "Error in the ExcludedPhase with name %s; Cannot have spaces between [ ]! ", par_str);
+						}
+						size_t len_end = pch - par_str;
+
+						// copy name over to separate string
+						ierr = PetscStrncpy(ExcludedPhaseName[numExcludedPhases], par_str, 		  		len_start);				CHKERRQ(ierr);
+						ierr = PetscStrncpy(par_val, par_str+len_start,   len_end-len_start+1);	CHKERRQ(ierr);
+					
+						// extract integer of the phase & store it
+						ExcludedPhase[numExcludedPhases] = strtol(par_val, NULL, 10);
+
+						//PetscPrintf(PETSC_COMM_WORLD,"|    Excluding parameter: %- 5s of phase %i \n", ExcludedPhaseName[numExcludedPhases], ExcludedPhase[numExcludedPhases]);
+						
+						numExcludedPhases++;
+					}
+				}
+			}
+			
+		}
+
 	}
 	ierr = FBFreeBlocks(fb); CHKERRQ(ierr);
 
@@ -249,7 +298,7 @@ PetscErrorCode Adjoint_ScanForMaterialParameters(FB *fb, Scaling *scal, PetscInt
 	for(jj = 0; jj < fb->nblocks; jj++)
 	{
 		char     	*ptr, *line, **lines, *par_str;
-		PetscInt  	i, lnbeg, lnend;
+		PetscInt  	i, j, lnbeg, lnend;
 		PetscScalar value;
 			
 		ierr 	= getIntParam(fb, _REQUIRED_, "ID", &ID, 1, _max_num_phases_); CHKERRQ(ierr); // phase ID
@@ -275,6 +324,15 @@ PetscErrorCode Adjoint_ScanForMaterialParameters(FB *fb, Scaling *scal, PetscInt
 					else if (!(strcmp(par_str,"peir_prof")))	{AddParamToGradient = PETSC_FALSE;	}
 					else if (!(strcmp(par_str,"Name")))			{AddParamToGradient = PETSC_FALSE;	}
 						
+					// Check if the parameter is among the list of "ExcludedPhase"
+					for (j=0; j<numExcludedPhases; j++){
+						if 	((!strcmp(par_str,ExcludedPhaseName[j]) & (ExcludedPhase[j]==ID)) ){
+							AddParamToGradient = PETSC_FALSE;
+							PetscPrintf(PETSC_COMM_WORLD,"|   Excluding parameter: %- 5s[%i] \n", par_str, ExcludedPhase[j]);
+						}		
+					}
+
+
 					// And some parameters, in particular creep laws, actually set a few other parameters (such as powerlaw exponent). 
 					// It would be good to automatically add th
 					if (AddParamToGradient){
