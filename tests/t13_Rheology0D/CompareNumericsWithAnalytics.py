@@ -1,55 +1,43 @@
+import matplotlib
+matplotlib.use('Agg')
 
 import os
 import re
 import subprocess
 
-
 #----------------------------------------------------
 # Read data from disk
-def LoadTimeDependentData(fname):
-
+def LoadTimeDependentData(path,fname):
   # load required modules for reading data
   try: 
     from vtk import vtkXMLPRectilinearGridReader
     from vtk.util import numpy_support as VN
     import numpy as np
-    from pathlib import Path
+    import glob
+    import shutil
   except:
     print('VTK toolboxes are not installed; cannot load data')
 
-
-  # extract directory name and times
-  time_vec  = np.zeros(200)
-  dir_vec   = np.empty(200,dtype='object')
-  num       = 0
-  fu        = [f.path for f in os.scandir('.') if f.is_dir()];
-  
-  for dirname in fu:
-    if (dirname.startswith('./Timestep') ):
-      number            = int(dirname[11:19]);
-      time_vec[number]  = float(dirname[20:]);    # Time 
-      dir_vec[number]   = dirname
-      num               = num+1;                  # number
-      #print(dirname)
-      #print(number)
-      #print(float(dirname[18:]))
-
+  # get list of timesteps
+  dirlist  = glob.glob(os.path.join(path,'Timestep*'))
+  # sort Tiemsteps
+  dirlist.sort()
+  numSteps = len(dirlist)
   
   #Initialize values
-  T2nd = np.empty(num);
-  P    = np.empty(num);
-  T    = np.empty(num);
-  E2nd = np.empty(num);
-  Time = np.empty(num);
+  T2nd = np.empty(numSteps)
+  P    = np.empty(numSteps)
+  T    = np.empty(numSteps)
+  E2nd = np.empty(numSteps)
+  Time = np.empty(numSteps)
 
   # Loop over all timestep directories
-  for i in range(num):
-    dir = dir_vec[i]
+  for i in range(numSteps):
+    dir = dirlist[i]
     
     file_in =  fname+'.pvtr'
     filesep = '/'
     filename = dir+filesep+file_in
-    #print ('Loading LaMEM output from directory ', filename)
 
     reader = vtkXMLPRectilinearGridReader()
     reader.SetFileName(filename)
@@ -64,76 +52,76 @@ def LoadTimeDependentData(fname):
     # dimensions
     nx = np.size(data.x); ny = np.size(data.y); nz = np.size(data.z)
 
+    # Read Time
+    stepName      = dir.split('/')
+    stepName      = stepName[3]
+    time          = stepName.split('_')
+    t             = float(time[2])
+    Time[i]       = t
+
     # load data from VTK file & reshape them to 3D arrays
-    T2nd_v        =   VN.vtk_to_numpy(data.GetPointData().GetArray('j2_dev_stress [MPa]')); 
-    E2nd_v        =   VN.vtk_to_numpy(data.GetPointData().GetArray('j2_strain_rate [1/s]')); 
-    Pres_v        =   VN.vtk_to_numpy(data.GetPointData().GetArray('pressure [MPa]')); 
-    Temp_v        =   VN.vtk_to_numpy(data.GetPointData().GetArray('temperature [C]')); 
+    T2nd_v        =   VN.vtk_to_numpy(data.GetPointData().GetArray('j2_dev_stress [MPa]'))
+    E2nd_v        =   VN.vtk_to_numpy(data.GetPointData().GetArray('j2_strain_rate [1/s]'))
+    Pres_v        =   VN.vtk_to_numpy(data.GetPointData().GetArray('pressure [MPa]'))
+    Temp_v        =   VN.vtk_to_numpy(data.GetPointData().GetArray('temperature [C]'))
 
     # Compute average value of T2nd 
-    T2nd[i] = np.average(T2nd_v);
-    E2nd[i] = np.average(E2nd_v);
-    P[i]    = np.average(Pres_v);
-    T[i]    = np.average(Temp_v);
-    Time[i] = time_vec[i];
+    T2nd[i]       = np.average(T2nd_v)
+    E2nd[i]       = np.average(E2nd_v)
+    P[i]          = np.average(Pres_v)
+    T[i]          = np.average(Temp_v)
 
 
   # save data
-  data.T2nd = T2nd;
-  data.P    = P;
-  data.T    = T;
-  data.E2nd = E2nd;
-  data.Time = Time;
+  data.T2nd = T2nd
+  data.P    = P
+  data.T    = T
+  data.E2nd = E2nd
+  data.Time = Time
 
-  return(data);
+  # remove output
+  for dir in dirlist:
+    shutil.rmtree(dir)
+
+  return(data)
 
 #----------------------------------------------------
 
 #----------------------------------------------------
 # Read data from disk
-def LoadStrainrateData(fname):
-
+def LoadStrainrateData(path,fname):
   # load required modules for reading data
   try: 
     from vtk import vtkXMLPRectilinearGridReader
     from vtk.util import numpy_support as VN
     import numpy as np
-    from pathlib import Path
+    import glob
+    import shutil
   except:
     print('VTK toolboxes are not installed; cannot load data')
 
-
-  # extract directory name and times
-  E2nd_vec  = np.zeros(100)
-  dir_vec   = np.empty(5,dtype='object')
-  num       = 0
-  fu        = [f.path for f in os.scandir('.') if f.is_dir()];
-
-  for dirname in fu:
-    if (dirname.startswith('./Strainrate_') ):
-      number            = int(dirname[13]);
-      E2nd_vec[number]  = 10**(-float(dirname[15:]))
-      dir_vec[number]   = dirname
-      num               = num+1;                  # number
-     
+  # get list of timesteps
+  dirlist  = glob.glob(os.path.join(path,'Strainrate*'))
+  # sort Timesteps
+  dirlist.sort()
+  numSteps = len(dirlist)   
 
   #Initialize values
-  T2nd    = np.empty(num);
-  P       = np.empty(num);
-  T       = np.empty(num);
-  E2nd    = np.empty(num);
-  E2nd_bg = np.empty(num);
-  Eta_eff = np.empty(num);
+  T2nd    = np.empty(numSteps)
+  P       = np.empty(numSteps)
+  T       = np.empty(numSteps)
+  E2nd    = np.empty(numSteps)
+  E2nd_bg = np.empty(numSteps)
+  Eta_eff = np.empty(numSteps)
   
 
   # Loop over all timestep directories
-  for i in range(num):
-    dir     =   dir_vec[i]
+  for i in range(numSteps):
+    dir     =   dirlist[i]
     file_in =   fname+'.pvtr'
     filesep =   '/'
 
     filename = dir+filesep+file_in
-    #print ('Loading LaMEM output from directory ', filename)
 
     reader = vtkXMLPRectilinearGridReader()
     reader.SetFileName(filename)
@@ -148,29 +136,39 @@ def LoadStrainrateData(fname):
     # dimensions
     nx = np.size(data.x); ny = np.size(data.y); nz = np.size(data.z)
 
+    # Extract exponent
+    stepName      = dir.split('/')
+    stepName      = stepName[3]
+    expo          = stepName.split('_')
+    expo          = float(expo[2])
+    E2nd_bg[i]    = 10**(-float(expo))
+
     # load data from VTK file & reshape them to 3D arrays
-    T2nd_v        =   VN.vtk_to_numpy(data.GetPointData().GetArray('j2_dev_stress [MPa]')); 
-    E2nd_v        =   VN.vtk_to_numpy(data.GetPointData().GetArray('j2_strain_rate [1/s]')); 
-    Pres_v        =   VN.vtk_to_numpy(data.GetPointData().GetArray('pressure [MPa]')); 
-    Temp_v        =   VN.vtk_to_numpy(data.GetPointData().GetArray('temperature [C]')); 
+    T2nd_v        =   VN.vtk_to_numpy(data.GetPointData().GetArray('j2_dev_stress [MPa]'))
+    E2nd_v        =   VN.vtk_to_numpy(data.GetPointData().GetArray('j2_strain_rate [1/s]'))
+    Pres_v        =   VN.vtk_to_numpy(data.GetPointData().GetArray('pressure [MPa]'))
+    Temp_v        =   VN.vtk_to_numpy(data.GetPointData().GetArray('temperature [C]'))
 
     # Compute average value of T2nd 
-    T2nd[i]       = np.average(T2nd_v);
-    E2nd[i]       = np.average(E2nd_v);
-    P[i]          = np.average(Pres_v);
-    T[i]          = np.average(Temp_v);
-    E2nd_bg[i]    = E2nd_vec[i];
-    Eta_eff[i]    = T2nd[i]*1e6/2/(E2nd[i]);
+    T2nd[i]       = np.average(T2nd_v)
+    E2nd[i]       = np.average(E2nd_v)
+    P[i]          = np.average(Pres_v)
+    T[i]          = np.average(Temp_v)
+    Eta_eff[i]    = T2nd[i]*1e6/2/(E2nd[i])
 
   # save data for the different strainrate components
-  data.T2nd     = T2nd;
-  data.P        = P;
-  data.T        = T;
-  data.E2nd     = E2nd;
-  data.E2nd_bg  = E2nd_bg;
-  data.Eta_eff  = Eta_eff;
+  data.T2nd       = T2nd
+  data.P          = P
+  data.T          = T
+  data.E2nd       = E2nd
+  data.E2nd_bg    = E2nd_bg
+  data.Eta_eff    = Eta_eff
 
-  return(data);
+  # remove output
+  for dir in dirlist:
+    shutil.rmtree(dir)
+
+  return(data)
 
 #----------------------------------------------------
 
@@ -267,10 +265,8 @@ def AnalyticalSolution_DislocationCreep_VEP(data, YieldStress):
   SecYear       = 3600*24*365.25;   # sec/year
   time_end      = 0.005*1e6*SecYear; 
   num           = 500;
-  
-  T             = data.T[10];      # average temperature in domain (in Celcius)
-  print('T=',T)
-  T=900
+
+  T             = data.T[0];      # average temperature in domain (in Celcius)
   eterm         = np.exp(Ea/n/R/(T+273.15));
     
   eta_eff       = F2/AD**(1/n)/str**((n-1)/n)*eterm;     # effective viscosity
@@ -465,7 +461,9 @@ def AnalyticalSolution_DislocationCreep(data, FlowLaw):
 # Plot time-dependent data of LaMEM
 def PlotTimeDependentData(data,plotName):
   # load required modules for reading data
-  try: 
+  try:
+    import matplotlib
+    matplotlib.use('agg')
     import matplotlib.pyplot as plt
     import datetime 
   except:
@@ -505,6 +503,8 @@ def PlotTimeDependentData(data,plotName):
 def PlotStrainrateData(data,plotName):
   # load required modules for reading data
   try: 
+    import matplotlib
+    matplotlib.use('agg')
     import matplotlib.pyplot as plt
     import datetime 
   except:
