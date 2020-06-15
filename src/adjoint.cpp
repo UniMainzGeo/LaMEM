@@ -2749,9 +2749,12 @@ PetscErrorCode AdjointPointInPro(JacRes *jr, AdjGrad *aop, ModParam *IOparam, Fr
 PetscErrorCode AdjointFormResidualFieldFD(SNES snes, Vec x, Vec psi, NLSol *nl, AdjGrad *aop, ModParam *IOparam  )
 {
     // "geodynamic sensitivity kernels" 
-	// ONLY PROGRAMMED FOR DENSITY!!
+	// Currentkly only implemented for n, eta0 and rho
 	// -> Just a debug function for the field gradient ...
 	// -> This thing produces the negative of the gradient (multiply with minus; or compare abs value)
+
+	// WARNING: as of now, the routine appears to have a bug if ran in parallel, or with nel_x != nel_y != nel_z
+	//  some more work is thus required.
 
 	ConstEqCtx  ctx;
 	JacRes     *jr;
@@ -2762,6 +2765,7 @@ PetscErrorCode AdjointFormResidualFieldFD(SNES snes, Vec x, Vec psi, NLSol *nl, 
 	PetscInt    iter, temprank;
 	PetscInt    I1, I2, J1, J2, K1, K2;
 	PetscInt    i, j, k, nx, ny, nz, sx, sy, sz, mx, my, mz, mcx, mcy, mcz;
+	PetscInt 	kk, jk, ik;
 	PetscScalar XX, XX1, XX2, XX3, XX4;
 	PetscScalar YY, YY1, YY2, YY3, YY4;
 	PetscScalar ZZ, ZZ1, ZZ2, ZZ3, ZZ4;
@@ -2791,6 +2795,7 @@ PetscErrorCode AdjointFormResidualFieldFD(SNES snes, Vec x, Vec psi, NLSol *nl, 
 
 	strcpy(CurName, IOparam->type_name[0]);	// name
 
+
 	/*// apply pressure limit at the first visco-plastic timestep and iteration
     if(jr->ts->istep == 1 && jr->ctrl->pLimPlast == PETSC_TRUE)
     {
@@ -2814,22 +2819,25 @@ PetscErrorCode AdjointFormResidualFieldFD(SNES snes, Vec x, Vec psi, NLSol *nl, 
 	grav   =  jr->ctrl.grav; // gravity acceleration
 	dt     =  jr->ts->dt;    // time step
 
+	// recompute residual (necessary to correctly initialize fields; also copies global->local vectors!!)
+	ierr = FormResidual(snes, x, res, nl);              CHKERRQ(ierr);
+
 	// Recompute correct strainrates (necessary!!)
 	ierr =  JacResGetEffStrainRate(jr);					CHKERRQ(ierr);
-
-
-	// recompute residual (necessary to correctly initialize fields!!)
-	ierr = FormResidual(snes, x, res, nl);              CHKERRQ(ierr);
 
 	// access work vectors
 	ierr = DMDAVecGetArray(fs->DA_CEN, jr->lgradfield,&llgradfield);      CHKERRQ(ierr);
 
-	for(PetscInt kk=0;kk<fs->dsx.tcels;kk++)
+	for(kk=0;kk<fs->dsx.tcels;kk++)
 	{
-		for(PetscInt jk=0;jk<fs->dsy.tcels;jk++)
+		for(jk=0;jk<fs->dsy.tcels;jk++)
 		{
-			for(PetscInt ik=0;ik<fs->dsz.tcels;ik++)
+			for(ik=0;ik<fs->dsz.tcels;ik++)
 			{
+
+				// compute global residual again		
+				ierr = FormResidual(snes, x, res, nl);              CHKERRQ(ierr);
+			
 
 				// setup constitutive equation evaluation context parameters
 				ierr = setUpConstEq(&ctx, jr); CHKERRQ(ierr);
@@ -2841,6 +2849,10 @@ PetscErrorCode AdjointFormResidualFieldFD(SNES snes, Vec x, Vec psi, NLSol *nl, 
 				ierr = VecZeroEntries(jr->gc);  CHKERRQ(ierr);
 				temprank = 100;
 				aop->Perturb = 1;
+
+
+
+
 
 				// access work vectors
 				ierr = DMDAVecGetArray(fs->DA_CEN, jr->gc,      &gc);     CHKERRQ(ierr);
@@ -3353,8 +3365,8 @@ PetscErrorCode AdjointFormResidualFieldFD(SNES snes, Vec x, Vec psi, NLSol *nl, 
 				// copy residuals to global vector
 				ierr = JacResCopyRes(jr, rpl); CHKERRQ(ierr);
 
-				ierr = FormResidual(snes, x, res, nl);              CHKERRQ(ierr);
-
+			//	ierr = FormResidual(snes, x, res, nl);              CHKERRQ(ierr);
+				
 				ierr = VecAYPX(res,-1,rpl);                           CHKERRQ(ierr);
 				ierr = VecScale(res,1/aop->Perturb);   CHKERRQ(ierr);
 
@@ -3379,6 +3391,8 @@ PetscErrorCode AdjointFormResidualFieldFD(SNES snes, Vec x, Vec psi, NLSol *nl, 
 				{
 					llgradfield[kk][jk][ik] = -grdt*aop->CurScal;
 				}
+				
+				ierr = MPI_Barrier(PETSC_COMM_WORLD);
 			}
 		}
 	}
