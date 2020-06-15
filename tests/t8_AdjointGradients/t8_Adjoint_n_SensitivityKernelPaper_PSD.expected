@@ -20,7 +20,7 @@
 SNES Convergence Reason : ||F|| < atol 
 | IOparam->mfit = 2.780205e+00 
 | Starting computation of Field-based gradients.  
-|   Norm of field gradient vector : 4.332150337557210e+03 
+|   Norm of field gradient vector : 5.323697786077980e+01 
 | Finished gradient computation & added it to VTK
 | Add '-out_gradient = 1' to your parameter file. 
 | ************************************************************************
@@ -41,5 +41,5 @@ SNES Convergence Reason : ||F|| < atol
 |       --------------------------------- --- ------------- ------------- 
 | 1   : [    0.600;     0.500;     0.990] PSD   9.00000e+01   1.59294e+02
 | 
-| Adjoint computation was successful & took 0.870453 s                         	 
+| Adjoint computation was successful & took 0.910996 s                         	 
 | ************************************************************************ 

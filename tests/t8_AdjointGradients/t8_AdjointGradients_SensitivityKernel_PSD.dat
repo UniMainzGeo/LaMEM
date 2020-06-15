@@ -161,6 +161,7 @@
 	Adjoint_GradientCalculation        	= 	CostFunction 			# options [CostFunction= w.r.t. Cost function (e.g,);  Solution= w.r.t. Solution ]
 	Adjoint_FieldSensitivity    		= 	1      					# calculate Field-based =1 (aka. geodynamic sensity kernels), or Phase Based [=0]
 	Adjoint_ScaleCostFunction 			=	None
+	Adjoint_DII_ref 					=	1e-6
 	out_gradient 						= 	1						# save gradients in paraview output file
 	out_shmax           				= 	1
 	out_stangle         				= 	1		# print gradient due to principal stress direction

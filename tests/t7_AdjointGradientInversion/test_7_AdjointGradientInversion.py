@@ -123,7 +123,7 @@ def PSD_Paper_GD_Nonlinear():
   def comparefunc(unittest):
 
     key = re.escape("| LS factor for 1.Parameter = ")
-    unittest.compareFloatingPoint(key,1e-3)
+    unittest.compareFloatingPoint(key,1e-1)
     
     key = re.escape("|    F =")
     unittest.compareFloatingPoint(key,1e-3)
