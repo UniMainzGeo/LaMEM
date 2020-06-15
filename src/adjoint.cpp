@@ -2743,42 +2743,6 @@ PetscErrorCode AdjointPointInPro(JacRes *jr, AdjGrad *aop, ModParam *IOparam, Fr
 	
 	PetscFunctionReturn(0);
 }
-#undef __FUNCT__
-#define __FUNCT__ "AdjointGradientResetParameter"
-PetscErrorCode AdjointGradientResetParameter(NLSol *nl, PetscInt CurPar, PetscInt CurPhase, AdjGrad *aop)
-{
-	PetscScalar  ini;
-	Material_t  *phases;
-
-	PetscFunctionBegin;
-
-	// Get initial value of currently perturbed parameter
-	ini    = aop->Ini;
-	phases = nl->pc->pm->jr->dbm->phases;
-
-	// Set the current parameter back to its original value
-	if (CurPar==_RHO0_)        		{phases[CurPhase].rho    = ini;
-	}else if (CurPar==_RHON_)  		{phases[CurPhase].rho_n  = ini;
-	}else if (CurPar==_RHOC_)  		{phases[CurPhase].rho_c  = ini;
-	}else if (CurPar==_BULK_)  		{phases[CurPhase].Kb     = ini;
-	}else if (CurPar==_KP_)  		{phases[CurPhase].Kp     = ini;
-	}else if (CurPar==_SHEAR_)  	{phases[CurPhase].G      = ini;
-	}else if (CurPar==_ETA_)  		{phases[CurPhase].Bd     = ini;
-	}else if (CurPar==_ED_)  		{phases[CurPhase].Ed     = ini;
-	}else if (CurPar==_VD_) 		{phases[CurPhase].Vd     = ini;
-	}else if (CurPar==_ETA0_) 		{phases[CurPhase].Bn     = ini;
-	}else if (CurPar==_N_) 			{phases[CurPhase].n      = ini;   phases[CurPhase].Bn = aop->Ini2;
-	}else if (CurPar==_EN_) 		{phases[CurPhase].En     = ini;
-	}else if (CurPar==_VN_) 		{phases[CurPhase].Vn     = ini;
-	}else if (CurPar==_TAUP_) 		{phases[CurPhase].taup   = ini;
-	}else if (CurPar==_GAMMA_) 		{phases[CurPhase].gamma  = ini;
-	}else if (CurPar==_Q_) 			{phases[CurPhase].q      = ini;
-	}else if (CurPar==_FRICTION_) 	{phases[CurPhase].fr 	 = ini;
-	}else if (CurPar==_COHESION_) 	{phases[CurPhase].ch 	 = ini;
-	}else if (CurPar==_CP_) 	    {phases[CurPhase].Cp     = ini;
-	}else if (CurPar==_A_) 			{phases[CurPhase].A      = ini;}
-	PetscFunctionReturn(0);
-}
 //---------------------------------------------------------------------------
 #undef __FUNCT__
 #define __FUNCT__ "AdjointFormResidualFieldFD"
@@ -2851,7 +2815,11 @@ PetscErrorCode AdjointFormResidualFieldFD(SNES snes, Vec x, Vec psi, NLSol *nl, 
 	dt     =  jr->ts->dt;    // time step
 
 	// Recompute correct strainrates (necessary!!)
-	ierr =  JacResGetEffStrainRate(jr);
+	ierr =  JacResGetEffStrainRate(jr);					CHKERRQ(ierr);
+
+
+	// recompute residual (necessary to correctly initialize fields!!)
+	ierr = FormResidual(snes, x, res, nl);              CHKERRQ(ierr);
 
 	// access work vectors
 	ierr = DMDAVecGetArray(fs->DA_CEN, jr->lgradfield,&llgradfield);      CHKERRQ(ierr);

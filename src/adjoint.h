@@ -72,8 +72,6 @@ struct SolVarEdge;
 // Structure that holds parameters for the adjoint gradient computation
 struct AdjGrad
 {
-	PetscScalar      Ini;                     // Initial value of perturbed parameter
-	PetscScalar      Ini2;                    // If n is the parameter we need two initials
 	PetscScalar 	 FD_epsilon;			  // Epsilon, employed for finite difference calculation of dres/dp			  	
 	PetscScalar      Perturb;                 // Perturbation parameter for the finite differences
 	PetscScalar      CurScal, CurScalst;
