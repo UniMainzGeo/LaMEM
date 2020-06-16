@@ -68,6 +68,7 @@ def run_tests():
                       Adj2.SubductionInversion_GD(), Adj2.SubductionInversion_TAO(), Adj2.SubductionInversion_FD_TAO(),
                       Adj2.PSD_Paper_GD_Nonlinear(), Adj2.PSD_Paper_GD_Linear(),
                       Adj3.rho_SensitivityKernel(), Adj3.FallingSphere_ND_all(), Adj3.FallingSphere_ND_CompareGradients_1(),
+                      Adj3.FallingSphere_GEO_CompareGradients_1(),
                       Adj3.FallingSphere_ND_CompareGradients_2(), Adj3.SubductionSetup_Dimensional(),Adj3.PSD_ND(), 
                       Adj3.rho_SensitivityKernel_PSD(), Adj3.n_SensitivityKernelPaper_PSD(), Adj3.eta0_SensitivityKernelPaper_PSD(), 
                       Permeability.test_a(), 

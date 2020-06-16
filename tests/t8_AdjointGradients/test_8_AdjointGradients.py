@@ -109,6 +109,41 @@ def FallingSphere_ND_CompareGradients_1():
 
   return(ex1)
 
+
+# Compute gradients for a falling sphere setup using ND units and both adjoint & FD
+def FallingSphere_GEO_CompareGradients_1():
+
+  # Run the input script wth matlab-generated particles
+  ranks = 2
+  launch = '../bin/opt/LaMEM -ParamFile ./t8_AdjointGradients/t8_AdjointGradients_CompareGradients_geo.dat | grep "| "'
+  expected_file = 't8_AdjointGradients/t8_AdjointGradients_CompareGradients_geo.expected'
+
+  def comparefunc(unittest):
+
+
+    key = re.escape("|       FD     1:          eta[ 1]")
+    unittest.compareFloatingPoint(key,1e-30)
+
+    key = re.escape("|  adjoint     2:          eta[ 1]")
+    unittest.compareFloatingPoint(key,1e-30)
+
+    key = re.escape("|       FD     3:          eta[ 0]")
+    unittest.compareFloatingPoint(key,1e-28)
+
+    key = re.escape("|  adjoint     4:          eta[ 0]")
+    unittest.compareFloatingPoint(key,1e-28)
+
+    key = re.escape("|           delta(rho)[  1]")
+    unittest.compareFloatingPoint(key,1e-3)
+
+
+  # Create unit test object
+  ex1 = pth.pthUnitTest('t8_AdjointGradients_CompareGradients_geo',ranks,launch,expected_file)
+  ex1.setVerifyMethod(comparefunc)
+  ex1.appendKeywords('@')
+
+  return(ex1)
+
 # Compute gradients for a falling sphere setup with nonlinear rheology using ND units and both adjoint & FD
 def FallingSphere_ND_CompareGradients_2():
 
@@ -150,7 +185,7 @@ def SubductionSetup_Dimensional():
 
   # Run the input script wth matlab-generated particles
   ranks = 1
-  launch = '../bin/opt/LaMEM -ParamFile ./t8_AdjointGradients/t8_Subduction2D_FreeSlip_DirectSolver.dat'
+  launch = '../bin/opt/LaMEM -ParamFile ./t8_AdjointGradients/t8_Subduction2D_FreeSlip_DirectSolver.dat -nel_y 1 '
   expected_file = 't8_AdjointGradients/t8_Subduction2D_FreeSlip_DirectSolver_p1.expected'
 
   def comparefunc(unittest):
@@ -179,7 +214,13 @@ def SubductionSetup_Dimensional():
     key = re.escape(" |                  eta[  1]")
     unittest.compareFloatingPoint(key,1e-8)
     
-
+    key = re.escape(" |      log10       eta[  0]")
+    unittest.compareFloatingPoint(key,1e-8)
+    
+    key = re.escape(" |       FD     7:           fr[ 2]")
+    unittest.compareFloatingPoint(key,1e-8)
+    
+  
   # Create unit test object
   ex1 = pth.pthUnitTest('t8_Adjoint_Subduction2D_FreeSlip',ranks,launch,expected_file)
   ex1.setVerifyMethod(comparefunc)
