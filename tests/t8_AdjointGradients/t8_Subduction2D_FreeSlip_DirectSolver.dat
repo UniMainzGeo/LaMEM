@@ -27,7 +27,7 @@
 	CFL       = 0.5   # CFL (Courant-Friedrichs-Lewy) criterion
 	CFLMAX    = 0.5   # CFL criterion for elasticity
 	nstep_max = 1  	  # maximum allowed number of steps (lower bound: time_end/dt_max)
-	nstep_out = 1     # save output every n steps
+	nstep_out = 51     # save output every n steps
 	nstep_rdb = 0     # save restart database every n steps
 
 
@@ -83,7 +83,7 @@
 #===============================================================================
 	SolverType 		=	direct 			# solver [direct or multigrid]
 	DirectSolver 	=	mumps			# mumps/superlu_dist/pastix	
-	DirectPenalty 	=	1e5
+#	DirectPenalty 	=	1e5
 
 		
 #===============================================================================
@@ -219,20 +219,44 @@
 	<AdjointParameterEnd>
 	 
 	 
-#	<AdjointParameterStart>
-#	   	ID  			= 2		# phase of the parameter
-#		Type 			= fr   # options: [rho0,rhon,rhoc,eta,eta0,n,En] 	
-#		InitGuess 		= 5  # initial guess
-#		LowerBound     	= 0.1	# [optional] lower bound
-#		UpperBound     	= 2		# [optional] upper bound
-#		FD_gradient 	= 1		
-#	<AdjointParameterEnd>
+	<AdjointParameterStart>
+	   	ID  			= 0		# phase of the parameter
+		Type 			= eta   # options: [rho0,rhon,rhoc,eta,eta0,n,En] 	
+		InitGuess 		= 1e21 	# initial guess
+		FD_gradient 	= 0		
+		log10 			= 0
+	<AdjointParameterEnd>
 
 
+	<AdjointParameterStart>
+	   	ID  			= 1		# phase of the parameter
+		Type 			= rho   # options: [rho0,rhon,rhoc,eta,eta0,n,En] 	
+		InitGuess 		= 3220 	# initial guess
+		FD_gradient 	= 1		
+		FD_eps 			= 1e-6
+	<AdjointParameterEnd>
+
+	<AdjointParameterStart>
+	   	ID  			= 0		# phase of the parameter
+		Type 			= eta   # options: [rho0,rhon,rhoc,eta,eta0,n,En] 	
+		InitGuess 		= 21 	# initial guess
+		FD_gradient 	= 0		
+		log10 			= 1
+	<AdjointParameterEnd>
+
+	<AdjointParameterStart>
+	   	ID  			= 0		# phase of the parameter
+		Type 			= eta   # options: [rho0,rhon,rhoc,eta,eta0,n,En] 	
+		InitGuess 		= 21 	# initial guess
+		FD_gradient 	= 1		
+		FD_eps 			= 1e-6
+		log10			= 1
+	<AdjointParameterEnd>
+	
 	# Comparison indices
 	
 	<AdjointObservationPointStart>
-		Coordinate 			=  600 0 -20	
+		Coordinate 			= 600 0 -20	
 		Parameter           = Vx
 		Value  				= -0.36
 	<AdjointObservationPointEnd>
@@ -245,8 +269,10 @@
 <PetscOptionsStart>
 
 	# LINEAR & NONLINEAR SOLVER OPTIONS
-	#-snes_ksp_ew
-
+    -snes_max_it 20
+    -snes_atol 1e-12
+	-snes_rtol 1e-20
+    -snes_stol 1e-20
 
 	-js_ksp_monitor # display how the inner iterations converge
 
