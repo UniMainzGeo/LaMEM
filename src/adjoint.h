@@ -152,6 +152,8 @@ PetscErrorCode cellConstEqFD(ConstEqCtx  *ctx,  SolVarCell  *svCell, PetscScalar
 PetscErrorCode setUpPhaseFD(ConstEqCtx *ctx, PetscInt ID, AdjGrad *aop, ModParam *IOparam, PetscInt ii, PetscInt jj, PetscInt k, PetscInt ik, PetscInt jk, PetscInt kk);
 PetscErrorCode edgeConstEqFD(ConstEqCtx  *ctx,    SolVarEdge  *svEdge, PetscScalar  d,      PetscScalar &s,AdjGrad *aop,ModParam *IOparam,PetscInt ii, PetscInt jj, PetscInt k, PetscInt ik, PetscInt jk, PetscInt kk);     
 
+// Helper functions
+PetscErrorCode swapStruct(struct Material_t *A, struct Material_t *B);
 
 
 #endif

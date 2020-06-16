@@ -261,16 +261,21 @@ PetscErrorCode LaMEMLibSaveGrid(LaMEMLib *lm)
 #define __FUNCT__ "LaMEMLibLoadRestart"
 PetscErrorCode LaMEMLibLoadRestart(LaMEMLib *lm)
 {
-	FILE           *fp;
-	PetscMPIInt    rank;
-	char           *fileName;
-	PetscLogDouble t;
+	FILE            *fp;
+	PetscMPIInt     rank;
+	char            *fileName;
+	PetscLogDouble  t;
+	FB              *fb;
+    DBMat           dbm_modified;
+	PetscInt        i;
+    Scaling         scal;
 
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
 
 	PrintStart(&t, "Loading restart database", NULL);
 
+	
 	// get MPI processor rank
 	MPI_Comm_rank(PETSC_COMM_WORLD, &rank);
 
@@ -314,6 +319,32 @@ PetscErrorCode LaMEMLibLoadRestart(LaMEMLib *lm)
 
 	// close temporary restart file
 	fclose(fp);
+
+
+	// Read info from file/command-line & overwrite 'restart' data (necessary for adjoint)
+
+	// load input file 
+	ierr = FBLoad(&fb, PETSC_TRUE); 											CHKERRQ(ierr);
+
+	// Create scaling object
+	ierr 				= ScalingCreate(&scal, fb, PETSC_FALSE); 				CHKERRQ(ierr);
+	dbm_modified.scal   = &scal;
+	for (i=0; i < lm->dbm.numPhases; i++){
+		ierr =   PetscMemzero(&dbm_modified.phases[i],  sizeof(Material_t));   	CHKERRQ(ierr);
+	}
+
+    // Store Material DB in intermediate structure (for use with Adjoint)
+	ierr = DBMatCreate(&dbm_modified, fb, PETSC_TRUE); 							CHKERRQ(ierr);
+
+	// swap material structure with the one from file (for adjoint)
+	for (i=0; i < lm->dbm.numPhases; i++)
+	{
+		swapStruct(&lm->dbm.phases[i], &dbm_modified.phases[i]);  
+		//PrintMatProp(&lm->dbm.phases[i]);
+	}
+
+	// update time stepping object
+	ierr = TSSolCreate(&lm->ts, fb); 				CHKERRQ(ierr);
 
 	// free space
 	free(fileName);
@@ -726,9 +757,6 @@ PetscErrorCode LaMEMLibSolve(LaMEMLib *lm, void *param)
 		ierr = AdjointDestroy (&aop,  IOparam);  	CHKERRQ(ierr);
 
 	}
-
-	// delete restart database
-	ierr = LaMEMLibDeleteRestart(); CHKERRQ(ierr);
 
 	// destroy objects
 	ierr = PCStokesDestroy(pc);    			CHKERRQ(ierr);

@@ -160,10 +160,15 @@ PetscInt FindPointInCellAdjoint(
 	return(L);
 }
 //---------------------------------------------------------------------------
-void swapStruct(struct Material_t *A, struct Material_t *B){
-    struct Material_t temp = *A;
+#undef __FUNCT__
+#define __FUNCT__ "swapStruct"
+PetscErrorCode swapStruct(struct Material_t *A, struct Material_t *B){
+    PetscFunctionBegin;
+	struct Material_t temp = *A;
     *A = *B;
     *B = temp;
+
+	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
 void AddParamToList(PetscInt ID, PetscScalar value, const char par_str[_str_len_], PetscInt iP, 
