@@ -49,6 +49,7 @@
 #include "bc.h"
 #include "JacRes.h"
 #include "tools.h"
+#include "BFBT.h"
 
 //---------------------------------------------------------------------------
 // * pressure Schur complement preconditioners
@@ -1237,6 +1238,20 @@ PetscErrorCode PMatBlockCreate(PMat pm)
 	ierr = VecDuplicate(P->xp, &P->rp);                                  CHKERRQ(ierr);
 	ierr = VecDuplicate(P->xp, &P->wp);                                  CHKERRQ(ierr);
 
+	//wBFBT stuff
+	ierr = VecDuplicate(P->xv, &P->wv0);                                  CHKERRQ(ierr);
+	ierr = VecDuplicate(P->xv, &P->wv2);                                  CHKERRQ(ierr);
+	ierr = VecDuplicate(P->xv, &P->wv3);                                  CHKERRQ(ierr);
+	ierr = VecDuplicate(P->xv, &P->wv4);                                  CHKERRQ(ierr);
+	ierr = VecDuplicate(P->xv, &P->wv5);                                  CHKERRQ(ierr);
+	ierr = VecDuplicate(P->xv, &P->wv7);                                  CHKERRQ(ierr);
+	ierr = VecDuplicate(P->xv, &P->C);                                  CHKERRQ(ierr);
+	ierr = VecDuplicate(P->xp, &P->wp1);                                  CHKERRQ(ierr);
+	ierr = VecDuplicate(P->xp, &P->wp6);                                  CHKERRQ(ierr);
+	ierr = DMCreateMatrix(fs->DA_X,&P->test);							  CHKERRQ(ierr);
+	//ierr = DMCreateMatrix(fs->DA_CEN,&P->K);	CHKERRQ(ierr);
+	//ierr = MatDuplicate(P->App, MAT_DO_NOT_COPY_VALUES, &P->K);	CHKERRQ(ierr);
+
 	// free counter arrays
 	ierr = PetscFree(Avv_d_nnz); CHKERRQ(ierr);
 	ierr = PetscFree(Avv_o_nnz); CHKERRQ(ierr);
@@ -1247,6 +1262,7 @@ PetscErrorCode PMatBlockCreate(PMat pm)
 
 	// attach near null space
 	ierr = MatAIJSetNullSpace(P->Avv, dof); CHKERRQ(ierr);
+	//ierr = MatAIJSetNullSpace(P->K, dof); CHKERRQ(ierr);
 
 	PetscFunctionReturn(0);
 }
@@ -1309,6 +1325,9 @@ PetscErrorCode PMatBlockAssemble(PMat pm)
 	ierr = MatZeroEntries(P->Avv); CHKERRQ(ierr);
 	ierr = MatZeroEntries(P->Avp); CHKERRQ(ierr);
 	ierr = MatZeroEntries(P->Apv); CHKERRQ(ierr);
+
+	ierr = MatZeroEntries(P->K); CHKERRQ(ierr);
+	ierr = MatZeroEntries(P->test); CHKERRQ(ierr);
 
 	// access index vectors
 	ierr = DMDAVecGetArray(fs->DA_X,   dof->ivx,  &ivx); CHKERRQ(ierr);
@@ -1558,6 +1577,8 @@ PetscErrorCode PMatBlockAssemble(PMat pm)
 	}
 	END_STD_LOOP
 
+	//JacResGetViscMat(pm); CHKERRQ(ierr);
+
 	// restore access
 	ierr = DMDAVecRestoreArray(fs->DA_X,   dof->ivx,  &ivx); CHKERRQ(ierr);
 	ierr = DMDAVecRestoreArray(fs->DA_Y,   dof->ivy,  &ivy); CHKERRQ(ierr);
@@ -1575,6 +1596,8 @@ PetscErrorCode PMatBlockAssemble(PMat pm)
 	ierr = MatAIJAssemble(P->Apv, bc->pNumSPC, bc->pSPCList, 0.0); CHKERRQ(ierr);
 	ierr = MatAIJAssemble(P->App, bc->pNumSPC, bc->pSPCList, 1.0); CHKERRQ(ierr);
 	ierr = MatAIJAssemble(P->iS,  bc->pNumSPC, bc->pSPCList, 1.0); CHKERRQ(ierr);
+
+	//ierr = MatAIJAssemble(P->K,  bc->pNumSPC, bc->pSPCList, 1.0); CHKERRQ(ierr);
 
 	PetscFunctionReturn(0);
 }
@@ -1686,6 +1709,21 @@ PetscErrorCode PMatBlockDestroy(PMat pm)
 	ierr = VecDestroy (&P->xp);  CHKERRQ(ierr);
 	ierr = VecDestroy (&P->wv);  CHKERRQ(ierr);
 	ierr = VecDestroy (&P->wp);  CHKERRQ(ierr);
+
+	// wBFBT stuff
+	ierr = MatDestroy (&P->K); 	 CHKERRQ(ierr);
+	ierr = MatDestroy (&P->test);CHKERRQ(ierr);
+	ierr = VecDestroy (&P->C); 	 CHKERRQ(ierr);
+	ierr = VecDestroy (&P->wv0); CHKERRQ(ierr);
+	ierr = VecDestroy (&P->wp1); CHKERRQ(ierr);
+	ierr = VecDestroy (&P->wv2); CHKERRQ(ierr);
+	ierr = VecDestroy (&P->wv3); CHKERRQ(ierr);
+	ierr = VecDestroy (&P->wv4); CHKERRQ(ierr);
+	ierr = VecDestroy (&P->wv5); CHKERRQ(ierr);
+	ierr = VecDestroy (&P->wp6); CHKERRQ(ierr);
+	ierr = VecDestroy (&P->wv7); CHKERRQ(ierr);
+
+
 	ierr = PetscFree(P);         CHKERRQ(ierr);
 
 	PetscFunctionReturn(0);

@@ -48,6 +48,7 @@
 #include "multigrid.h"
 #include "lsolve.h"
 #include "JacRes.h"
+#include "BFBT.h"
 //---------------------------------------------------------------------------
 // * implement preconditioners in PETSc
 // * add default solver options
@@ -190,9 +191,10 @@ PetscErrorCode PCStokesDestroy(PCStokes pc)
 #define __FUNCT__ "PCStokesBFCreate"
 PetscErrorCode PCStokesBFCreate(PCStokes pc)
 {
-	PC          vpc;
+	PC          vpc, ppc;
 	PCStokesBF *bf;
 	JacRes     *jr;
+	PMat	   pm;
 
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
@@ -210,12 +212,20 @@ PetscErrorCode PCStokesBFCreate(PCStokes pc)
 	ierr = PCStokesBFSetFromOptions(pc); CHKERRQ(ierr);
 
 	// access context
+	pm = pc->pm;
 	jr = pc->pm->jr;
 
 	// create velocity solver
 	ierr = KSPCreate(PETSC_COMM_WORLD, &bf->vksp); CHKERRQ(ierr);
 	ierr = KSPSetOptionsPrefix(bf->vksp,"vs_");    CHKERRQ(ierr);
 	ierr = KSPSetFromOptions(bf->vksp);            CHKERRQ(ierr);
+
+	ierr = CreateViscMat(pm); CHKERRQ(ierr);// ------------------------------------
+
+	// create pressure solver
+	ierr = KSPCreate(PETSC_COMM_WORLD, &bf->pksp); CHKERRQ(ierr); // ----------------------------------------------
+	ierr = KSPSetOptionsPrefix(bf->pksp,"ps_");    CHKERRQ(ierr);
+	ierr = KSPSetFromOptions(bf->pksp);            CHKERRQ(ierr);
 
 	// create & set velocity multigrid preconditioner
 	if(bf->vtype == _VEL_MG_)
@@ -225,6 +235,17 @@ PetscErrorCode PCStokesBFCreate(PCStokes pc)
 		ierr = PCSetType(vpc, PCSHELL);          CHKERRQ(ierr);
 		ierr = PCShellSetContext(vpc, &bf->vmg); CHKERRQ(ierr);
 		ierr = PCShellSetApply(vpc, MGApply);    CHKERRQ(ierr);
+	}
+
+	// create & set pressure multigrid preconditioner
+	if(bf->ptype == _P_MG_)
+	{
+		ierr = GetViscMat(pm); 					 CHKERRQ(ierr); // fill K
+		ierr = MGCreate(&bf->pmg, jr);           CHKERRQ(ierr);
+		ierr = KSPGetPC(bf->pksp, &ppc);         CHKERRQ(ierr);
+		ierr = PCSetType(ppc, PCSHELL);          CHKERRQ(ierr); // -------------------
+		ierr = PCShellSetContext(ppc, &bf->pmg); CHKERRQ(ierr);
+		ierr = PCShellSetApply(ppc, MGApply);    CHKERRQ(ierr);
 	}
 
 	PetscFunctionReturn(0);
@@ -250,7 +271,13 @@ PetscErrorCode PCStokesBFSetFromOptions(PCStokes pc)
 
 	if(flg == PETSC_TRUE)
 	{
-		if(!strcmp(pname, "upper"))
+		if(!strcmp(pname, "wbfbt"))
+		{
+			PetscPrintf(PETSC_COMM_WORLD, " Block factorization type       : wbfbt \n");
+
+			bf->type = _wBFBT_;
+		}
+		else if(!strcmp(pname, "upper"))
 		{
 			PetscPrintf(PETSC_COMM_WORLD, " Block factorization type       : upper \n");
 
@@ -296,6 +323,7 @@ PetscErrorCode PCStokesBFSetFromOptions(PCStokes pc)
 
 		bf->vtype = _VEL_USER_;
 	}
+	bf->ptype = _P_MG_;
 
 	PetscFunctionReturn(0);
 }
@@ -313,10 +341,15 @@ PetscErrorCode PCStokesBFDestroy(PCStokes pc)
 	bf = (PCStokesBF*)pc->data;
 
 	ierr = KSPDestroy(&bf->vksp);  CHKERRQ(ierr);
+	ierr = KSPDestroy(&bf->pksp);  CHKERRQ(ierr);
 
 	if(bf->vtype == _VEL_MG_)
 	{
 		ierr = MGDestroy(&bf->vmg); CHKERRQ(ierr);
+	}
+	if(bf->ptype == _P_MG_)
+	{
+		ierr = MGDestroy(&bf->pmg); CHKERRQ(ierr);
 	}
 
 	ierr = PetscFree(bf); CHKERRQ(ierr);
@@ -339,13 +372,19 @@ PetscErrorCode PCStokesBFSetup(PCStokes pc)
 	P  = (PMatBlock*) pc->pm->data;
 
 	ierr = KSPSetOperators(bf->vksp, P->Avv, P->Avv); CHKERRQ(ierr);
+	ierr = KSPSetOperators(bf->pksp, P->K, P->K); CHKERRQ(ierr);
 
 	if(bf->vtype == _VEL_MG_)
 	{
 		ierr = MGSetup(&bf->vmg, P->Avv); CHKERRQ(ierr);
 	}
+	if(bf->ptype == _P_MG_)
+	{
+		ierr = MGSetup(&bf->pmg, P->K); CHKERRQ(ierr);
+	}
 
 	ierr = KSPSetUp(bf->vksp); CHKERRQ(ierr);
+	ierr = KSPSetUp(bf->pksp); CHKERRQ(ierr);
 
 	PetscFunctionReturn(0);
 }
@@ -375,7 +414,42 @@ PetscErrorCode PCStokesBFApply(Mat JP, Vec r, Vec x)
 	// extract residual blocks
 	ierr = VecScatterBlockToMonolithic(P->rv, P->rp, r, SCATTER_REVERSE); CHKERRQ(ierr);
 
-	if(bf->type == _UPPER_)
+
+	if(bf->type == _wBFBT_)
+	{
+		//=======================
+		// BLOCK w-BFBT
+		//=======================
+
+		PMat pm;
+		pm = pc->pm;
+
+		//assemble C
+		//
+
+		// rv = f
+		// wp = B*A⁻1*rv
+		ierr = KSPSolve(bf->vksp, P->rv, P->wv0); 		CHKERRQ(ierr); // wv0 = (Avv⁻1)*rv     | A=Avv | B=Apv | B^T=Avp
+		ierr = MatMult(P->Apv, P->wv0, P->wp); 			CHKERRQ(ierr); // wp  = Apv*wv0
+
+		// p = S⁻1*wp        S⁻1 = (BCB^T)⁻1 * BCACB^T * (BCB^T)⁻1 = K⁻1 * BCACB^T * K⁻1
+		// K = BCB^T
+		ierr = KSPSolve(bf->pksp, P->wp, P->wp1); 		CHKERRQ(ierr); // wp1 = K⁻1*wp     <=> K*wp1 = wp
+		ierr = MatMult(P->Avp, P->wp1, P->wv2); 		CHKERRQ(ierr); // wv2 = Avp*wp1
+		ierr = VecPointwiseMult(P->wv3, P->C, P->wv2); 	CHKERRQ(ierr); // wv3 = C*wv2
+		ierr = MatMult(P->Avv, P->wv3, P->wv4); 		CHKERRQ(ierr); // wv4 = Avv * wv3
+		ierr = VecPointwiseMult(P->wv5, P->C, P->wv4); 	CHKERRQ(ierr); // wv5 = C*wv4
+		ierr = MatMult(P->Apv, P->wv5, P->wp6); 		CHKERRQ(ierr); // wp6 = Apv*wv5
+		ierr = KSPSolve(bf->pksp, P->wp6, P->xp); 		CHKERRQ(ierr); // xp  = K⁻1*wp6     <=> K*xp = wp6
+
+		// u = A⁻1*(wv-B^T*p)
+		ierr = MatMult(P->Avp, P->xp, P->wv7); 			CHKERRQ(ierr); // wv7 = B^T*xp
+		ierr = VecWAXPY(P->rv, -1.0, P->wv7, P->wv); 	CHKERRQ(ierr); // rv  = wv-wv7
+		ierr = KSPSolve(bf->vksp, P->rv, P->xv); 		CHKERRQ(ierr); // xv  = (A⁻1)*rv
+
+
+	}
+	else if(bf->type == _UPPER_)
 	{
 		//=======================
 		// BLOCK UPPER TRIANGULAR

@@ -213,6 +213,10 @@
 
 	-js_ksp_monitor 		# display how the inner iterations converge
 	-js_ksp_rtol 1e-6
+    
+    -pcmat_type block
+    -jp_type bf
+    -bf_type upper
 
 <PetscOptionsEnd>
 

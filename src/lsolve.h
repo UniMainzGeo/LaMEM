@@ -59,6 +59,7 @@ enum PCStokesType
 // Stokes preconditioner type
 enum PCBFType
 {
+	_wBFBT_,
 	_UPPER_,  // upper triangular factorization
 	_LOWER_   // lower triangular factorization
 
@@ -72,6 +73,12 @@ enum PCVelType
 	_VEL_MG_,  // Galerkin multigrid
 	_VEL_USER_ // user-defined
 
+};
+
+// pressure block preconditioner (K) ---------------------------------------hkuhukhk
+enum PCPType
+{
+	_P_MG_
 };
 //---------------------------------------------------------------------------
 
@@ -113,6 +120,10 @@ struct PCStokesBF
 	KSP       vksp;  // velocity solver
 	MG        vmg;   // velocity multigrid context
 	PCBFType  type;  // factorization type
+
+	PCPType   ptype;
+	KSP 	  pksp;
+	MG	      pmg;
 
 };
 
