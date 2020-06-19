@@ -679,7 +679,7 @@ PetscErrorCode LaMEMLibSolve(LaMEMLib *lm, void *param)
 			
 			ModParam      *IOparam;
 			IOparam       = (ModParam *)param;	
-			if (IOparam->use == _adjointgradients_ || IOparam->use == _gradientdescent_ )
+			if (IOparam->use == _adjointgradients_ || IOparam->use == _gradientdescent_ || IOparam->use == _inversion_ )
 			{	/* 	Compute the adjoint gradients 
 				 	
 					This is done here, as the adjoint should be cmputed with the current residual that does not take advection etc.

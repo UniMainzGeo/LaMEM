@@ -114,8 +114,9 @@ struct ModParam
 	Vec              P;				                    // vector containing parameters
 	Vec              fcconv;                            // Vector containing all f/fini values to track convergence
 	PetscInt         Ab;    		                    // Use adjoint bounds (only works with Tao)?
-	PetscInt         Tao;    		                    // Use Tao?
+	PetscInt         Tao;    		                    // Use TAO?
     PetscInt         ScalLaws;                          // Print scaling laws?
+	PetscInt 		 SetInitAdjParam;					// Use AdjointParameterStart/End InitialGuess as initial parameter or not?
 	PetscInt         Adv;      		                    // Advect the point?
 	PetscInt         count;			                    // iteration counter
 	PetscInt         SCF;                               // Scale cost function?
