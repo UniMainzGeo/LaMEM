@@ -216,7 +216,7 @@
     
     -pcmat_type block
     -jp_type bf
-    -bf_type upper
+    -bf_type wbfbt
 
 <PetscOptionsEnd>
 

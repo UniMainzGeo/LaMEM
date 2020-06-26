@@ -100,6 +100,8 @@ PetscErrorCode GetViscMat(PMat pm)
 	PetscInt    Ip1, Im1, Jp1, Jm1, Kp1, Km1;
 	PetscInt    i, j, k, nx, ny, nz, sx, sy, sz, mx, my, mz;
 	PetscScalar bvx, fvx, bvy, fvy, bvz, fvz;
+	PetscScalar sbvx, sfvx, sbvy, sfvy, sbvz, sfvz;
+	PetscScalar ibvx, ifvx, ibvy, ifvy, ibvz, ifvz;
 	PetscScalar bdx, fdx, bdy, fdy, bdz, fdz;
  	PetscScalar dx, dy, dz;
 
@@ -158,6 +160,16 @@ PetscErrorCode GetViscMat(PMat pm)
 		bvy = (lk[k][j][i] + lk[k][Jm1][i])/2.0;      fvy = (lk[k][j][i] + lk[k][Jp1][i])/2.0;
 		bvz = (lk[k][j][i] + lk[Km1][j][i])/2.0;      fvz = (lk[k][j][i] + lk[Kp1][j][i])/2.0;
 
+		// compute squareroot of the viscosity
+		sbvx = sqrt(bvx);	sfvx = sqrt(fvx);
+		sbvy = sqrt(bvy);	sfvy = sqrt(fvy);
+		sbvz = sqrt(bvz);	sfvz = sqrt(fvz);
+
+		// compute inverse of the suareroot
+		ibvx = 1/sbvx;		ifvx = 1/sfvx;
+		ibvy = 1/sbvy;		ifvy = 1/sfvy;
+		ibvz = 1/sbvz;		ifvz = 1/sfvz;
+
 		// get mesh steps
 		bdx = SIZE_NODE(i, sx, fs->dsx);     fdx = SIZE_NODE(i+1, sx, fs->dsx);
 		bdy = SIZE_NODE(j, sy, fs->dsy);     fdy = SIZE_NODE(j+1, sy, fs->dsy);
@@ -179,19 +191,19 @@ PetscErrorCode GetViscMat(PMat pm)
 		col[6].k = k;   col[6].j = j;   col[6].i = i;   col[6].c = 0;
 
 		// set values including TPC multipliers
-		v[0] = -bvx/bdx/dx*cf[0];
-		v[1] = -fvx/fdx/dx*cf[1];
-		v[2] = -bvy/bdy/dy*cf[2];
-		v[3] = -fvy/fdy/dy*cf[3];
-		v[4] = -bvz/bdz/dz*cf[4];
-		v[5] = -fvz/fdz/dz*cf[5];
-		v[6] =  (bvx/bdx + fvx/fdx)/dx
-		+       (bvy/bdy + fvy/fdy)/dy
-		+       (bvz/bdz + fvz/fdz)/dz;
+		v[0] = -ibvx/bdx/dx*cf[0];
+		v[1] = -ifvx/fdx/dx*cf[1];
+		v[2] = -ibvy/bdy/dy*cf[2];
+		v[3] = -ifvy/fdy/dy*cf[3];
+		v[4] = -ibvz/bdz/dz*cf[4];
+		v[5] = -ifvz/fdz/dz*cf[5];
+		v[6] =  (ibvx/bdx + ifvx/fdx)/dx
+		+       (ibvy/bdy + ifvy/fdy)/dy
+		+       (ibvz/bdz + ifvz/fdz)/dz;
 
 		// set matrix coefficients
 		//ierr = MatSetValuesStencil(P->K, 1, row, 7, col, v, ADD_VALUES); CHKERRQ(ierr);
-		ierr = MatSetValuesStencil(P->K, 1, row, 1, col, v, ADD_VALUES); CHKERRQ(ierr);
+		ierr = MatSetValuesStencil(P->K, 1, row, 7, col, v, ADD_VALUES); CHKERRQ(ierr);
 
 		// NOTE! since only TPC are active, no SPC modification is necessary
 	}

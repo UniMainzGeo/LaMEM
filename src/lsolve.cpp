@@ -220,7 +220,7 @@ PetscErrorCode PCStokesBFCreate(PCStokes pc)
 	ierr = KSPSetOptionsPrefix(bf->vksp,"vs_");    CHKERRQ(ierr);
 	ierr = KSPSetFromOptions(bf->vksp);            CHKERRQ(ierr);
 
-	ierr = CreateViscMat(pm); CHKERRQ(ierr);// ------------------------------------
+	//ierr = CreateViscMat(pm); CHKERRQ(ierr);// ------------------------------------
 
 	// create pressure solver
 	ierr = KSPCreate(PETSC_COMM_WORLD, &bf->pksp); CHKERRQ(ierr); // ----------------------------------------------
@@ -378,10 +378,10 @@ PetscErrorCode PCStokesBFSetup(PCStokes pc)
 	{
 		ierr = MGSetup(&bf->vmg, P->Avv); CHKERRQ(ierr);
 	}
-	if(bf->ptype == _P_MG_)
-	{
-		ierr = MGSetup(&bf->pmg, P->K); CHKERRQ(ierr);
-	}
+	//if(bf->ptype == _P_MG_)
+	//{
+	//	ierr = MGSetup(&bf->pmg, P->K); CHKERRQ(ierr);
+	//}
 
 	ierr = KSPSetUp(bf->vksp); CHKERRQ(ierr);
 	ierr = KSPSetUp(bf->pksp); CHKERRQ(ierr);
@@ -411,8 +411,12 @@ PetscErrorCode PCStokesBFApply(Mat JP, Vec r, Vec x)
 	bf = (PCStokesBF*)pc->data;
 	P  = (PMatBlock*) pc->pm->data;
 
+	// copy x,y to P->...
+	ierr = VecCopy(r,P->rblock); CHKERRQ(ierr);
+	ierr = VecCopy(x,P->xblock); CHKERRQ(ierr);
+
 	// extract residual blocks
-	ierr = VecScatterBlockToMonolithic(P->rv, P->rp, r, SCATTER_REVERSE); CHKERRQ(ierr);
+	ierr = VecScatterBlockToMonolithic(P->rv, P->rp, P->rblock, SCATTER_REVERSE); CHKERRQ(ierr);
 
 
 	if(bf->type == _wBFBT_)
@@ -479,6 +483,9 @@ PetscErrorCode PCStokesBFApply(Mat JP, Vec r, Vec x)
 		// Schur complement already contains negative sign (no negative sign here)
 		ierr = MatMult(P->iS, P->rp, P->xp);     CHKERRQ(ierr); // xp = (S^-1)*rp
 	}
+
+	r = P->rblock;
+	x = P->xblock;
 
 	// compose approximate solution
 	ierr = VecScatterBlockToMonolithic(P->xv, P->xp, x, SCATTER_FORWARD); CHKERRQ(ierr);

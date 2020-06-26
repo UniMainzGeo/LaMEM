@@ -147,6 +147,7 @@ struct PMatBlock
 	Vec wv, wp;   // work vectors
 
 	// wBFBT stuff:
+	Vec rblock,xblock;
 	DM  DA_P;
 	Mat K;
 	Mat test;

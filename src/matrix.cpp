@@ -1239,6 +1239,8 @@ PetscErrorCode PMatBlockCreate(PMat pm)
 	ierr = VecDuplicate(P->xp, &P->wp);                                  CHKERRQ(ierr);
 
 	//wBFBT stuff
+	ierr = VecCreateMPI(PETSC_COMM_WORLD, lnp+lnv, PETSC_DETERMINE, &P->xblock); CHKERRQ(ierr);
+	ierr = VecDuplicate(P->xblock, &P->rblock);                                  CHKERRQ(ierr);
 	ierr = VecDuplicate(P->xv, &P->wv0);                                  CHKERRQ(ierr);
 	ierr = VecDuplicate(P->xv, &P->wv2);                                  CHKERRQ(ierr);
 	ierr = VecDuplicate(P->xv, &P->wv3);                                  CHKERRQ(ierr);
@@ -1249,8 +1251,8 @@ PetscErrorCode PMatBlockCreate(PMat pm)
 	ierr = VecDuplicate(P->xp, &P->wp1);                                  CHKERRQ(ierr);
 	ierr = VecDuplicate(P->xp, &P->wp6);                                  CHKERRQ(ierr);
 	ierr = DMCreateMatrix(fs->DA_X,&P->test);							  CHKERRQ(ierr);
-	//ierr = DMCreateMatrix(fs->DA_CEN,&P->K);	CHKERRQ(ierr);
-	//ierr = MatDuplicate(P->App, MAT_DO_NOT_COPY_VALUES, &P->K);	CHKERRQ(ierr);
+	ierr = DMCreateMatrix(fs->DA_CEN,&P->K);	CHKERRQ(ierr);
+	//ierr = MatDuplicate(P->Avv, MAT_DO_NOT_COPY_VALUES, &P->K);	CHKERRQ(ierr);
 
 	// free counter arrays
 	ierr = PetscFree(Avv_d_nnz); CHKERRQ(ierr);
@@ -1262,7 +1264,7 @@ PetscErrorCode PMatBlockCreate(PMat pm)
 
 	// attach near null space
 	ierr = MatAIJSetNullSpace(P->Avv, dof); CHKERRQ(ierr);
-	//ierr = MatAIJSetNullSpace(P->K, dof); CHKERRQ(ierr);
+	ierr = MatAIJSetNullSpace(P->K, dof); CHKERRQ(ierr);
 
 	PetscFunctionReturn(0);
 }
@@ -1722,6 +1724,8 @@ PetscErrorCode PMatBlockDestroy(PMat pm)
 	ierr = VecDestroy (&P->wv5); CHKERRQ(ierr);
 	ierr = VecDestroy (&P->wp6); CHKERRQ(ierr);
 	ierr = VecDestroy (&P->wv7); CHKERRQ(ierr);
+	ierr = VecDestroy (&P->rblock); CHKERRQ(ierr);
+	ierr = VecDestroy (&P->xblock); CHKERRQ(ierr);
 
 
 	ierr = PetscFree(P);         CHKERRQ(ierr);
