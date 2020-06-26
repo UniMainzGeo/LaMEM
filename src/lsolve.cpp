@@ -238,15 +238,15 @@ PetscErrorCode PCStokesBFCreate(PCStokes pc)
 	}
 
 	// create & set pressure multigrid preconditioner
-	if(bf->ptype == _P_MG_)
-	{
-		ierr = GetViscMat(pm); 					 CHKERRQ(ierr); // fill K
-		ierr = MGCreate(&bf->pmg, jr);           CHKERRQ(ierr);
-		ierr = KSPGetPC(bf->pksp, &ppc);         CHKERRQ(ierr);
-		ierr = PCSetType(ppc, PCSHELL);          CHKERRQ(ierr); // -------------------
-		ierr = PCShellSetContext(ppc, &bf->pmg); CHKERRQ(ierr);
-		ierr = PCShellSetApply(ppc, MGApply);    CHKERRQ(ierr);
-	}
+	//if(bf->ptype == _P_MG_)
+	//{
+	//	ierr = GetViscMat(pm); 					 CHKERRQ(ierr); // fill K
+	//	ierr = MGCreate(&bf->pmg, jr);           CHKERRQ(ierr);
+	//	ierr = KSPGetPC(bf->pksp, &ppc);         CHKERRQ(ierr);
+	//	ierr = PCSetType(ppc, PCSHELL);          CHKERRQ(ierr); // -------------------
+	//	ierr = PCShellSetContext(ppc, &bf->pmg); CHKERRQ(ierr);
+	//	ierr = PCShellSetApply(ppc, MGApply);    CHKERRQ(ierr);
+	//}
 
 	PetscFunctionReturn(0);
 }
@@ -426,10 +426,12 @@ PetscErrorCode PCStokesBFApply(Mat JP, Vec r, Vec x)
 		//=======================
 
 		PMat pm;
+		JacRes *jr;
 		pm = pc->pm;
+		jr = pm->jr;
 
 		//assemble C
-		//
+		ierr = CopyViscosityToScalingVector(jr->eta_gfx, jr->eta_gfy, jr->eta_gfz, P->C); CHKERRQ(ierr);
 
 		// rv = f
 		// wp = B*A⁻1*rv

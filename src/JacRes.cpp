@@ -1064,7 +1064,7 @@ PetscErrorCode JacResGetResidual(JacRes *jr)
 	PetscScalar bdx, fdx, bdy, fdy, bdz, fdz;
 	PetscScalar gx, gy, gz, tx, ty, tz, sxx, syy, szz, sxy, sxz, syz;
 	PetscScalar J2Inv, theta, rho, IKdt, Tc, pc, pShift, pn, dt, fssa, *grav;
-	PetscScalar ***fx,  ***fy,  ***fz, ***vx,  ***vy,  ***vz, ***gc, ***bcp;
+	PetscScalar ***fx,  ***fy,  ***fz, ***vx,  ***vy,  ***vz, ***gc, ***bcp, ***eta_fx,  ***eta_fy,  ***eta_fz;
 	PetscScalar ***dxx, ***dyy, ***dzz, ***dxy, ***dxz, ***dyz, ***p, ***T, ***p_lith, ***p_pore;
 	PetscScalar eta_creep, eta_vp;
 	PetscScalar depth, pc_lith, pc_pore, biot, ptotal, avg_topo;
@@ -1125,6 +1125,15 @@ PetscErrorCode JacResGetResidual(JacRes *jr)
 	ierr = DMDAVecGetArray(fs->DA_CEN, jr->lp_lith, &p_lith); CHKERRQ(ierr);
 	ierr = DMDAVecGetArray(fs->DA_CEN, jr->lp_pore, &p_pore); CHKERRQ(ierr);
 	ierr = DMDAVecGetArray(fs->DA_CEN, bc->bcp,     &bcp);    CHKERRQ(ierr);
+
+
+	//-------------------------------------------asdasd
+	ierr = VecZeroEntries(jr->eta_lfx); CHKERRQ(ierr);
+	ierr = VecZeroEntries(jr->eta_lfy); CHKERRQ(ierr);
+	ierr = VecZeroEntries(jr->eta_lfz); CHKERRQ(ierr);
+	ierr = DMDAVecGetArray(fs->DA_X,   jr->eta_lfx,     &eta_fx);     CHKERRQ(ierr);
+	ierr = DMDAVecGetArray(fs->DA_Y,   jr->eta_lfy,     &eta_fy);     CHKERRQ(ierr);
+	ierr = DMDAVecGetArray(fs->DA_Z,   jr->eta_lfz,     &eta_fz);     CHKERRQ(ierr);
 
 	//-------------------------------
 	// central points
@@ -1620,6 +1629,17 @@ PetscErrorCode JacResGetResidual(JacRes *jr)
 	ierr = DMDAVecRestoreArray(fs->DA_CEN, jr->lp_lith, &p_lith); CHKERRQ(ierr);
 	ierr = DMDAVecRestoreArray(fs->DA_CEN, jr->lp_pore, &p_pore); CHKERRQ(ierr);
 	ierr = DMDAVecRestoreArray(fs->DA_CEN, bc->bcp,     &bcp);    CHKERRQ(ierr);
+
+	//--------------------------
+	ierr = DMDAVecRestoreArray(fs->DA_X,   jr->eta_lfx,     &eta_fx);     CHKERRQ(ierr);
+	ierr = DMDAVecRestoreArray(fs->DA_Y,   jr->eta_lfy,     &eta_fy);     CHKERRQ(ierr);
+	ierr = DMDAVecRestoreArray(fs->DA_Z,   jr->eta_lfz,     &eta_fz);     CHKERRQ(ierr);
+
+	LOCAL_TO_GLOBAL(fs->DA_X, jr->eta_lfx, jr->eta_gfx)
+	LOCAL_TO_GLOBAL(fs->DA_Y, jr->eta_lfy, jr->eta_gfy)
+	LOCAL_TO_GLOBAL(fs->DA_Z, jr->eta_lfz, jr->eta_gfz)
+
+
 
 	// assemble global residuals from local contributions
 	LOCAL_TO_GLOBAL(fs->DA_X, jr->lfx, jr->gfx)
@@ -2129,6 +2149,7 @@ PetscErrorCode JacResCopyRes(JacRes *jr, Vec f)
 	BCCtx       *bc;
 	PetscInt    i, num, *list;
 	PetscScalar *fx, *fy, *fz, *c, *res, *iter;
+	PetscScalar *eta_fx, *eta_fy, *eta_fz, *eta_iter;
 
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
@@ -2143,6 +2164,11 @@ PetscErrorCode JacResCopyRes(JacRes *jr, Vec f)
 	ierr = VecGetArray(jr->gc,  &c);  CHKERRQ(ierr);
 	ierr = VecGetArray(f, &res);      CHKERRQ(ierr);
 
+	//---------------------
+	ierr = VecGetArray(jr->eta_gfx, &eta_fx); CHKERRQ(ierr);
+	ierr = VecGetArray(jr->eta_gfy, &eta_fy); CHKERRQ(ierr);
+	ierr = VecGetArray(jr->eta_gfz, &eta_fz); CHKERRQ(ierr);
+
 	// copy vectors component-wise
 	iter = res;
 
@@ -2156,6 +2182,21 @@ PetscErrorCode JacResCopyRes(JacRes *jr, Vec f)
 	iter += fs->nZFace;
 
 	ierr  = PetscMemcpy(iter, c,  (size_t)fs->nCells*sizeof(PetscScalar)); CHKERRQ(ierr);
+
+
+
+
+	// ----------------------------------------
+	eta_iter = res;
+
+	ierr  = PetscMemcpy(eta_iter, eta_fx, (size_t)fs->nXFace*sizeof(PetscScalar)); CHKERRQ(ierr);
+	iter += fs->nXFace;
+
+	ierr  = PetscMemcpy(eta_iter, eta_fy, (size_t)fs->nYFace*sizeof(PetscScalar)); CHKERRQ(ierr);
+	iter += fs->nYFace;
+
+	ierr  = PetscMemcpy(eta_iter, eta_fz, (size_t)fs->nZFace*sizeof(PetscScalar)); CHKERRQ(ierr);
+	iter += fs->nZFace;
 
 	// zero out constrained residuals (velocity)
 	num   = bc->vNumSPC;
@@ -2175,6 +2216,10 @@ PetscErrorCode JacResCopyRes(JacRes *jr, Vec f)
 	ierr = VecRestoreArray(jr->gfz,  &fz); CHKERRQ(ierr);
 	ierr = VecRestoreArray(jr->gc,   &c);  CHKERRQ(ierr);
 	ierr = VecRestoreArray(f, &res);       CHKERRQ(ierr);
+
+	ierr = VecRestoreArray(jr->eta_gfx,  &eta_fx); CHKERRQ(ierr);
+	ierr = VecRestoreArray(jr->eta_gfy,  &eta_fy); CHKERRQ(ierr);
+	ierr = VecRestoreArray(jr->eta_gfz,  &eta_fz); CHKERRQ(ierr);
 
 	PetscFunctionReturn(0);
 }

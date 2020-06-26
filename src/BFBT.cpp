@@ -220,3 +220,36 @@ PetscErrorCode GetViscMat(PMat pm)
 
 	PetscFunctionReturn(0);
 }
+
+
+#undef __FUNCT__
+#define __FUNCT__ "CopyViscosityToScalingVector"
+PetscErrorCode CopyViscosityToScalingVector(Vec a, Vec b, Vec c, Vec ScalingVec)
+{
+	PetscInt as, bs, cs;
+	PetscScalar *ap, *bp, *cp, *sv;
+
+	PetscErrorCode ierr;
+	PetscFunctionBegin;
+
+	ierr = VecGetLocalSize(a, &as); CHKERRQ(ierr);
+	ierr = VecGetLocalSize(b, &bs); CHKERRQ(ierr);
+	ierr = VecGetLocalSize(c, &cs); CHKERRQ(ierr);
+
+	ierr = VecGetArray(a, &ap); CHKERRQ(ierr);
+	ierr = VecGetArray(b, &bp); CHKERRQ(ierr);
+	ierr = VecGetArray(c, &cp); CHKERRQ(ierr);
+	ierr = VecGetArray(ScalingVec, &sv); CHKERRQ(ierr);
+
+	ierr = PetscMemcpy(sv, 		ap, (size_t)as*sizeof(PetscScalar)); CHKERRQ(ierr);
+	ierr = PetscMemcpy(sv+as, 	bp, (size_t)bs*sizeof(PetscScalar)); CHKERRQ(ierr);
+	ierr = PetscMemcpy(sv+as+bs,cp, (size_t)cs*sizeof(PetscScalar)); CHKERRQ(ierr);
+
+	ierr = VecRestoreArray(a, &ap); CHKERRQ(ierr);
+	ierr = VecRestoreArray(b, &bp); CHKERRQ(ierr);
+	ierr = VecRestoreArray(c, &cp); CHKERRQ(ierr);
+	ierr = VecRestoreArray(ScalingVec, &sv); CHKERRQ(ierr);
+
+	PetscFunctionReturn(0);
+
+}

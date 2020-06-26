@@ -215,6 +215,10 @@ struct JacRes
 	Vec gfx,  gfy, gfz;  // global
 	Vec lfx,  lfy, lfz;  // local (ghosted)
 
+	// ----------------------------viscosity
+	Vec eta_gfx,  eta_gfy, eta_gfz;  // global
+	Vec eta_lfx,  eta_lfy, eta_lfz;  // local (ghosted)
+
 	// strain-rate components (also used as buffer vectors)
 	Vec ldxx, ldyy, ldzz, ldxy, ldxz, ldyz; // local (ghosted)
 	Vec                   gdxy, gdxz, gdyz; // global
@@ -386,6 +390,23 @@ PetscErrorCode JacResGetTempRes(JacRes *jr, PetscScalar dt);
 
 // assemble temperature preconditioner matrix
 PetscErrorCode JacResGetTempMat(JacRes *jr, PetscScalar dt);
+
+// ------------------------------------------------------------------------------
+// BFBT
+// ------------------------------------------------------------------------------
+PetscErrorCode JacResGetBFBTParam(
+	JacRes      *jr,
+	PetscScalar *phRat,
+	PetscScalar *mu_visc);      // viscosity
+
+// assemble BFBT preconditioner matrix
+PetscErrorCode JacResGetBFBTMat(JacRes *jr, PetscScalar dt);
+
+
+
+
+
+
 
 //---------------------------------------------------------------------------
 //......................   INTEGRATION FUNCTIONS   ..........................

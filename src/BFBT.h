@@ -13,5 +13,7 @@ PetscErrorCode GetViscMat(PMat pm);
 
 PetscErrorCode CreateViscMat(PMat pm);
 
+PetscErrorCode CopyViscosityToScalingVector(Vec a, Vec b, Vec c, Vec ScalingVec);
+
 
 #endif /* SRC_BFBT_H_ */
