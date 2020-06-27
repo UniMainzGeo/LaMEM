@@ -61,7 +61,8 @@ enum PCBFType
 {
 	_wBFBT_,
 	_UPPER_,  // upper triangular factorization
-	_LOWER_   // lower triangular factorization
+	_LOWER_,  // lower triangular factorization
+	_wBFBT_   // wBFBT
 
 };
 
@@ -118,7 +119,9 @@ struct PCStokesBF
 {
 	PCVelType vtype; // velocity solver type
 	KSP       vksp;  // velocity solver
+	KSP 	  pksp;  // pressure solver
 	MG        vmg;   // velocity multigrid context
+	MG		  pmg; 	 // pressure multigrid context
 	PCBFType  type;  // factorization type
 
 	PCPType   ptype;

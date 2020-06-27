@@ -218,6 +218,15 @@
     -jp_type bf
     -bf_type wbfbt
 
+    -pcmat_type block
+    -jp_type bf
+    #
+    -bf_type wbfbt
+    #-bf_vtype
+    #-VelocitySolver 2
+
+
+
 <PetscOptionsEnd>
 
 #===============================================================================

@@ -576,6 +576,7 @@ PetscErrorCode JacResGetTempMat(JacRes *jr, PetscScalar dt)
 	PetscScalar bkx, fkx, bky, fky, bkz, fkz;
 	PetscScalar bdx, fdx, bdy, fdy, bdz, fdz;
  	PetscScalar dx, dy, dz;
+
 	PetscScalar v[7], cf[6], kc, rho_Cp, invdt;
 	MatStencil  row[1], col[7];
 	PetscScalar ***lk, ***bcT, ***buff;
