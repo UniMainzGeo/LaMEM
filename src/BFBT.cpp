@@ -36,6 +36,7 @@
 
 
 //---------------------------------------------------------------------------
+// actually not used
 #undef __FUNCT__
 #define __FUNCT__ "CreateViscMat"
 PetscErrorCode CreateViscMat(PMat pm)
@@ -86,9 +87,6 @@ PetscErrorCode CreateViscMat(PMat pm)
 #define __FUNCT__ "GetViscMat"
 PetscErrorCode GetViscMat(PMat pm)
 {
-	// assemble temperature preconditioner matrix
-	// STEADY STATE solution is activated by setting time step to zero
-	// COMPLETE SINGLE-POINT CONSTRIANT IMLEMENTATION !!!
 
 	PMatBlock *P;
 	JacRes 	  *jr;
@@ -144,8 +142,6 @@ PetscErrorCode GetViscMat(PMat pm)
 
 	START_STD_LOOP
 	{
-		// access solution variables
-		//svCell = &jr->svCell[iter++];
 
 		// check index bounds and TPC multipliers
 		Im1 = i-1; cf[0] = 1.0; if(Im1 < 0)  { Im1++; if(bcvx[k][j][i-1] != DBL_MAX) cf[0] = 0.0; }

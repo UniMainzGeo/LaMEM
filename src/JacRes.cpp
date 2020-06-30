@@ -405,7 +405,7 @@ PetscErrorCode JacResCreateData(JacRes *jr)
 	ierr = DMCreateLocalVector (fs->DA_Y, &jr->lfy); CHKERRQ(ierr);
 	ierr = DMCreateLocalVector (fs->DA_Z, &jr->lfz); CHKERRQ(ierr);
 
-	// -----------------------------------------------asdjieifj
+	// -----------------------------------------------viscosity
 	ierr = DMCreateGlobalVector(fs->DA_X, &jr->eta_gfx); CHKERRQ(ierr);
 	ierr = DMCreateGlobalVector(fs->DA_Y, &jr->eta_gfy); CHKERRQ(ierr);
 	ierr = DMCreateGlobalVector(fs->DA_Z, &jr->eta_gfz); CHKERRQ(ierr);
@@ -545,6 +545,14 @@ PetscErrorCode JacResDestroy(JacRes *jr)
 	ierr = VecDestroy(&jr->gfx);     CHKERRQ(ierr);
 	ierr = VecDestroy(&jr->gfy);     CHKERRQ(ierr);
 	ierr = VecDestroy(&jr->gfz);     CHKERRQ(ierr);
+
+	ierr = VecDestroy(&jr->eta_gfx);     CHKERRQ(ierr);//--
+	ierr = VecDestroy(&jr->eta_gfy);     CHKERRQ(ierr);
+	ierr = VecDestroy(&jr->eta_gfz);     CHKERRQ(ierr);
+
+	ierr = VecDestroy(&jr->eta_lfx);     CHKERRQ(ierr);
+	ierr = VecDestroy(&jr->eta_lfy);     CHKERRQ(ierr);
+	ierr = VecDestroy(&jr->eta_lfz);     CHKERRQ(ierr);//--
 
 	ierr = VecDestroy(&jr->lfx);     CHKERRQ(ierr);
 	ierr = VecDestroy(&jr->lfy);     CHKERRQ(ierr);
@@ -1135,7 +1143,7 @@ PetscErrorCode JacResGetResidual(JacRes *jr)
 	ierr = DMDAVecGetArray(fs->DA_CEN, bc->bcp,     &bcp);    CHKERRQ(ierr);
 
 
-	//-------------------------------------------asdasd
+	//-------------------------------------------viscosity
 	ierr = VecZeroEntries(jr->eta_lfx); CHKERRQ(ierr);
 	ierr = VecZeroEntries(jr->eta_lfy); CHKERRQ(ierr);
 	ierr = VecZeroEntries(jr->eta_lfz); CHKERRQ(ierr);
@@ -1267,6 +1275,18 @@ PetscErrorCode JacResGetResidual(JacRes *jr)
 		fx[k][j][i] -= (sxx + vx[k][j][i]*tx)/bdx + gx/2.0;   fx[k][j][i+1] += (sxx + vx[k][j][i+1]*tx)/fdx - gx/2.0;
 		fy[k][j][i] -= (syy + vy[k][j][i]*ty)/bdy + gy/2.0;   fy[k][j+1][i] += (syy + vy[k][j+1][i]*ty)/fdy - gy/2.0;
 		fz[k][j][i] -= (szz + vz[k][j][i]*tz)/bdz + gz/2.0;   fz[k+1][j][i] += (szz + vz[k+1][j][i]*tz)/fdz - gz/2.0;
+
+		PetscScalar eta,s_eta,i_eta;
+		eta = svDev->eta;
+
+		// compute the inverse of the squareroot of the viscosity
+		s_eta = sqrt(eta);
+		i_eta = 1.0/s_eta;
+
+		// viscosity
+		eta_fx[k][j][i] += i_eta/2.0;   eta_fx[k][j][i+1] += i_eta/2.0;
+		eta_fy[k][j][i] += i_eta/2.0;   eta_fy[k][j+1][i] += i_eta/2.0;
+		eta_fz[k][j][i] += i_eta/2.0;   eta_fz[k+1][j][i] += i_eta/2.0;
 
 		//==============================
 		// PRESSURE BOUNDARY CONSTRAINTS

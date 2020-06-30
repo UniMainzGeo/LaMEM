@@ -240,9 +240,9 @@ PetscErrorCode PCStokesBFCreate(PCStokes pc)
 	// create & set pressure multigrid preconditioner
 	//if(bf->ptype == _P_MG_)
 	//{
-	//	ierr = GetViscMat(pm); 					 CHKERRQ(ierr); // fill K
+		ierr = GetViscMat(pm); 					 CHKERRQ(ierr); // fill K
 	//	ierr = MGCreate(&bf->pmg, jr);           CHKERRQ(ierr);
-	//	ierr = KSPGetPC(bf->pksp, &ppc);         CHKERRQ(ierr);
+		ierr = KSPGetPC(bf->pksp, &ppc);         CHKERRQ(ierr);
 	//	ierr = PCSetType(ppc, PCSHELL);          CHKERRQ(ierr); // -------------------
 	//	ierr = PCShellSetContext(ppc, &bf->pmg); CHKERRQ(ierr);
 	//	ierr = PCShellSetApply(ppc, MGApply);    CHKERRQ(ierr);
@@ -371,10 +371,6 @@ PetscErrorCode PCStokesBFSetup(PCStokes pc)
 	bf = (PCStokesBF*)pc->data;
 	P  = (PMatBlock*) pc->pm->data;
 
-	PMat pm;
-	pm = pc->pm;
-	ierr = GetViscMat(pm); 					 CHKERRQ(ierr); // fill K
-
 	ierr = KSPSetOperators(bf->vksp, P->Avv, P->Avv); CHKERRQ(ierr);
 	ierr = KSPSetOperators(bf->pksp, P->K, P->K); CHKERRQ(ierr);
 
@@ -434,7 +430,7 @@ PetscErrorCode PCStokesBFApply(Mat JP, Vec r, Vec x)
 		pm = pc->pm;
 		jr = pm->jr;
 
-		//assemble C                                           (like residual in JacRes)
+		//assemble C                                           (get global viscosity like residual in JacRes)
 		ierr = CopyViscosityToScalingVector(jr->eta_gfx, jr->eta_gfy, jr->eta_gfz, P->C); CHKERRQ(ierr);
 
 		// rv = f
@@ -456,7 +452,6 @@ PetscErrorCode PCStokesBFApply(Mat JP, Vec r, Vec x)
 		ierr = MatMult(P->Avp, P->xp, P->wv7); 			CHKERRQ(ierr); // wv7 = B^T*xp
 		ierr = VecWAXPY(P->rv, -1.0, P->wv7, P->wv); 	CHKERRQ(ierr); // rv  = wv-wv7
 		ierr = KSPSolve(bf->vksp, P->rv, P->xv); 		CHKERRQ(ierr); // xv  = (A⁻1)*rv
-
 
 	}
 	else if(bf->type == _UPPER_)
@@ -490,7 +485,7 @@ PetscErrorCode PCStokesBFApply(Mat JP, Vec r, Vec x)
 		ierr = MatMult(P->iS, P->rp, P->xp);     CHKERRQ(ierr); // xp = (S^-1)*rp
 	}
 
-	r = P->rblock;
+	//r = P->rblock;
 	x = P->xblock;
 
 	// compose approximate solution
