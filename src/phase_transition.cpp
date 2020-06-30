@@ -110,8 +110,8 @@ PetscErrorCode Transition(Ph_trans_t *PhaseTrans, ConstEqCtx  *ctx, PetscInt id)
 			{
 				if(ctx->T>PTr->value[1])
 				{
-					 //ctx->visc_inc=PTr->visc_inc;
-					 ctx->rho_inc=PTr->rho_inc;
+					ctx->visc_inc=PTr->visc_inc;
+					ctx->rho_inc=PTr->rho_inc;
 				}
 
 			}
@@ -119,7 +119,7 @@ PetscErrorCode Transition(Ph_trans_t *PhaseTrans, ConstEqCtx  *ctx, PetscInt id)
 			{
 				if(ctx->T<PTr->value[1])
 				{
-					//ctx->visc_inc=PTr->visc_inc;
+					ctx->visc_inc=PTr->visc_inc;
 					ctx->rho_inc=PTr->rho_inc;
 				}
 
@@ -133,7 +133,7 @@ PetscErrorCode Transition(Ph_trans_t *PhaseTrans, ConstEqCtx  *ctx, PetscInt id)
 			{
 				if(ctx->p_lith >PTr->value[1])
 				{
-					//ctx->visc_inc=PTr->visc_inc;
+					ctx->visc_inc=PTr->visc_inc;
 					ctx->rho_inc=PTr->rho_inc;
 				}
 			}
@@ -141,7 +141,7 @@ PetscErrorCode Transition(Ph_trans_t *PhaseTrans, ConstEqCtx  *ctx, PetscInt id)
 			{
 				if(ctx->p_lith<PTr->value[1])
 				{
-					//ctx->visc_inc=PTr->visc_inc;
+					ctx->visc_inc=PTr->visc_inc;
 					ctx->rho_inc=PTr->rho_inc;
 				}
 			}
@@ -162,7 +162,7 @@ PetscErrorCode Transition(Ph_trans_t *PhaseTrans, ConstEqCtx  *ctx, PetscInt id)
 			{
 				if(ctx->depth<PTr->value[1])
 				{
-					//ctx->visc_inc=PTr->visc_inc;
+					ctx->visc_inc=PTr->visc_inc;
 					ctx->rho_inc=PTr->rho_inc;
 				}
 			}
@@ -179,7 +179,7 @@ PetscErrorCode Transition(Ph_trans_t *PhaseTrans, ConstEqCtx  *ctx, PetscInt id)
 		{
 			if(ctx->p_lith>Pres[0])
 			{
-				//ctx->visc_inc=PTr->visc_inc;
+				ctx->visc_inc=PTr->visc_inc;
 				ctx->rho_inc=PTr->rho_inc;
 			}
 		}
@@ -187,7 +187,7 @@ PetscErrorCode Transition(Ph_trans_t *PhaseTrans, ConstEqCtx  *ctx, PetscInt id)
 		{
 			if(ctx->p_lith>Pres[0] && ctx->p>Pres[1])
 			{
-				//ctx->visc_inc=PTr->visc_inc;
+				ctx->visc_inc=PTr->visc_inc;
 				ctx->rho_inc=PTr->rho_inc;
 			}
 		}

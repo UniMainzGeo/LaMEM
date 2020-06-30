@@ -142,7 +142,7 @@ PetscErrorCode setUpPhase(ConstEqCtx *ctx, PetscInt ID)
 	Controls    *ctrl;
 	PData       *Pd;
 	PetscScalar  APS, Le, dt, p, p_lith, p_pore, T, mf, mfd, mfn;
-	PetscScalar  Q, RT, ch, fr, p_visc, p_upper, p_lower, dP, p_total;
+	PetscScalar  Q, RT, ch, fr, p_visc, p_upper, p_lower, dP, p_total,visc_incr;
 
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
@@ -184,6 +184,7 @@ PetscErrorCode setUpPhase(ConstEqCtx *ctx, PetscInt ID)
 	ctx->A_prl = 0.0; // Peierls constant
 	ctx->N_prl = 1.0; // Peierls exponent
 	ctx->taupl = 0.0; // plastic yield stress
+	visc_incr  = 1/(ctx->visc_inc); // linear viscous term to handle phase changes
 
 	// MELT FRACTION
 	mfd = 1.0;
@@ -227,14 +228,14 @@ PetscErrorCode setUpPhase(ConstEqCtx *ctx, PetscInt ID)
 	if(mat->Bd)
 	{
 		Q          = (mat->Ed + p_visc*mat->Vd)/RT;
-		ctx->A_dif =  mat->Bd*exp(-Q)*mfd;
+		ctx->A_dif =  visc_incr*mat->Bd*exp(-Q)*mfd;
 	}
 
 	// PS-CREEP
 	else if(mat->Bps && T)
 	{
 		Q          = mat->Eps/RT;
-		ctx->A_dif = mat->Bps*exp(-Q)/T/pow(mat->d, 3.0);
+		ctx->A_dif = visc_incr*mat->Bps*exp(-Q)/T/pow(mat->d, 3.0);
 	}
 
 	// UPPER BOUND CREEP
@@ -248,7 +249,7 @@ PetscErrorCode setUpPhase(ConstEqCtx *ctx, PetscInt ID)
 	{
 		Q          = (mat->En + p_visc*mat->Vn)/RT;
 		ctx->N_dis =  mat->n;
-		ctx->A_dis =  mat->Bn*exp(-Q)*mfn;
+		ctx->A_dis =  visc_incr*mat->Bn*exp(-Q)*mfn;
 	}
 
 	// DC-CREEP
@@ -256,7 +257,7 @@ PetscErrorCode setUpPhase(ConstEqCtx *ctx, PetscInt ID)
 	{
 		Q          = mat->Edc/RT;
 		ctx->N_dis = Q;
-		ctx->A_dis = mat->Bdc*exp(-Q*log(mat->Rdc))*pow(mat->mu, -Q);
+		ctx->A_dis = visc_incr*mat->Bdc*exp(-Q*log(mat->Rdc))*pow(mat->mu, -Q);
 	}
 
 	// PEIERLS CREEP (LOW TEMPERATURE RATE-DEPENDENT PLASTICITY, POWER-LAW APPROXIMATION)
@@ -264,7 +265,7 @@ PetscErrorCode setUpPhase(ConstEqCtx *ctx, PetscInt ID)
 	{
 		Q           = (mat->Ep + p_visc*mat->Vp)/RT;
 		ctx->N_prl =  Q*pow(1.0-mat->gamma, mat->q-1.0)*mat->q*mat->gamma;
-		ctx->A_prl =  mat->Bp/pow(mat->gamma*mat->taup, ctx->N_prl)*exp(-Q*pow(1.0-mat->gamma, mat->q));
+		ctx->A_prl =  visc_incr*mat->Bp/pow(mat->gamma*mat->taup, ctx->N_prl)*exp(-Q*pow(1.0-mat->gamma, mat->q));
 	}
 
 	if(PetscIsInfOrNanScalar(ctx->A_dif)) ctx->A_dif = 0.0;
@@ -378,9 +379,12 @@ PetscErrorCode devConstEq(ConstEqCtx *ctx)
 	// scan all phases
 	for(i = 0; i < numPhases; i++)
 	{
+		ctx->visc_inc=1.0;
 		// update present phases only
 		if(phRat[i])
 		{
+			ierr = Phase_Transition(ctx,i); CHKERRQ(ierr);
+
 			// setup phase parameters
 			ierr = setUpPhase(ctx, i); CHKERRQ(ierr);
 

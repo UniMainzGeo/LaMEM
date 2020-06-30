@@ -109,6 +109,8 @@ struct ConstEqCtx
 	PetscScalar  yield;  // yield stress
 
 	PetscScalar  rho_inc;
+	PetscScalar  visc_inc;
+
 
 };
 
