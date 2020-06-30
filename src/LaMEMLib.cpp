@@ -621,9 +621,7 @@ PetscErrorCode LaMEMLibSolve(LaMEMLib *lm, void *param)
 		//====================================
 		//	NONLINEAR THERMO-MECHANICAL SOLVER
 		//====================================
-		PrintStart(&t, "Phase_Transition", NULL);
-		ierr = Phase_Transition(&lm->actx);CHKERRQ(ierr);
-		PrintDone(t);
+
 		// initialize boundary constraint vectors
 		ierr = BCApply(&lm->bc); CHKERRQ(ierr);
 
@@ -687,7 +685,6 @@ PetscErrorCode LaMEMLibSolve(LaMEMLib *lm, void *param)
 
 		// remap markers onto (stretched) grid
 		ierr = ADVRemap(&lm->actx); CHKERRQ(ierr);
-
 
 		// update phase ratios taking into account actual free surface position
 		ierr = FreeSurfGetAirPhaseRatio(&lm->surf); CHKERRQ(ierr);

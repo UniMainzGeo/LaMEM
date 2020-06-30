@@ -91,9 +91,10 @@ public:
 	PetscScalar P0[_max_num_eq_] ;
 	PetscScalar T0[_max_num_eq_] ;
 	PetscScalar gamma[_max_num_eq_] ;
-	PetscInt    Ph2Change ; // Phase to change
-	PetscInt    PhIr ; // If it is irreversible or not (e.g., if APS>0.5 imply complete damaged rocks, it changes its primordial phase to the current phase)
-
+	PetscScalar    visc_inc ; // Phase to change
+	PetscScalar    rho_inc ;
+	PetscInt    visual ;
+	PetscInt     vis_id;
 };
 
 

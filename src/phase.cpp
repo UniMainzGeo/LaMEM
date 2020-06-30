@@ -1478,11 +1478,13 @@ PetscErrorCode DBMatReadPhaseTr(DBMat *dbm, FB *fb)
 		}
 
 	}
-	ierr = getIntParam(fb, _REQUIRED_, "Ph2Change", &ph->Ph2Change, 1, _max_num_phases_); CHKERRQ(ierr);
-	ierr = getIntParam(fb, _OPTIONAL_, "PhIr", &ph->PhIr, 1, 1.0); CHKERRQ(ierr);
+	ierr = getIntParam(fb, _REQUIRED_, "vis_id", &ph->vis_id,1 , _max_num_tr_); CHKERRQ(ierr);
+	ierr = getScalarParam(fb, _OPTIONAL_, "rho_inc", &ph->rho_inc,1 ,1.0); CHKERRQ(ierr);
+	ierr = getScalarParam(fb, _OPTIONAL_, "visc_inc", &ph->visc_inc,1, 1.0); CHKERRQ(ierr);
+	ierr = getIntParam(fb, _OPTIONAL_, "visual", &ph->visual,1 , 1.0); CHKERRQ(ierr);
 
 
-	if(!ph->Ph2Change)
+	if(!ph->vis_id)
 	{
 		SETERRQ1(PETSC_COMM_WORLD, PETSC_ERR_USER, "you need to specify the final phase of this transition", (LLD)ID);
 	}
@@ -1491,17 +1493,17 @@ PetscErrorCode DBMatReadPhaseTr(DBMat *dbm, FB *fb)
 	{
 		if (ph->value[0]>0)
 		{
-			PetscPrintf(PETSC_COMM_WORLD,"   Phase Transition [%lld] : Type = Constant , Parameter = %s . The phase is changed if the selected parameter is higher than = %f, its addressing phase is %d \n", (LLD)(ph->ID), ph->Parameter, ph->value[1],ph->Ph2Change);
+			PetscPrintf(PETSC_COMM_WORLD,"   Phase Transition [%lld] : Type = Constant , Parameter = %s . The phase is changed if the selected parameter is higher than = %f\n", (LLD)(ph->ID), ph->Parameter, ph->value[1]);
 		}
 		else
 		{
-			PetscPrintf(PETSC_COMM_WORLD,"   Phase Transition [%lld] : Type = Constant , Parameter = %s . The phase is changed if the selected parameter is lower than = %f and its addressing phase is %d\n", (LLD)(ph->ID), ph->Parameter, ph->value[1],ph->Ph2Change);
+			PetscPrintf(PETSC_COMM_WORLD,"   Phase Transition [%lld] : Type = Constant , Parameter = %s . The phase is changed if the selected parameter is lower than = %f \n", (LLD)(ph->ID), ph->Parameter, ph->value[1]);
 
 		}
 	}
 	if(!strcmp(ph->Type,"Clapeyron"))
 	{
-	PetscPrintf(PETSC_COMM_WORLD,"   Phase Transition [%lld] : Type = Clapeyron, gamma = %2f [MPa], P0 = %f [Pa],T0 = %f [deg C] and addressing phase is %d \n", (LLD)(ph->ID), ph->Type, ph->gamma, ph->P0,ph->T0,ph->Ph2Change);
+	PetscPrintf(PETSC_COMM_WORLD,"   Phase Transition [%lld] : Type = Clapeyron, gamma = %2f [MPa], P0 = %f [Pa],T0 = %f [deg C] \n", (LLD)(ph->ID), ph->Type, ph->gamma, ph->P0,ph->T0);
 	}
 	// Internal Scaling
 	if (!strcmp(ph->Type,"Constant"))
@@ -1533,6 +1535,7 @@ PetscErrorCode DBMatReadPhaseTr(DBMat *dbm, FB *fb)
 
 	PetscFunctionReturn(0);
 }
+//--------------------------------------------------------------------------
 
 /*
 //---------------------------------------------------------------------------

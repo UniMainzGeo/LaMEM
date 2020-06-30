@@ -60,26 +60,143 @@
 #include "tools.h"
 #include "phase_transition.h"
 #include "phase.h"
-//---------------------------------------------------------------------------
-// Simple function that assign the primordial phase to the marker
-#undef __FUNCT__
-#define __FUNCT__ "PhTr_assign_primPh"
-PetscErrorCode PhTr_assign_primPh(AdvCtx *actx)
-{
-	// creates arrays to optimize marker-cell interaction
-	PetscInt     i;
+#include "constEq.h"
 
+#undef __FUNCT__
+#define __FUNCT__ "Phase_Transition"
+PetscErrorCode Phase_Transition(ConstEqCtx  *ctx,PetscInt ph)
+{
+	Material_t *mat;
+	Ph_trans_t *PhaseTrans;
+	PetscInt    itr,nPtr,id;
+	PetscErrorCode ierr;
+	PetscFunctionBegin;
+	if(ctx->ctrl->initGuess==1 || ctx->ctrl->Phasetrans==0 ) PetscFunctionReturn(0);
+	PhaseTrans=ctx->PhaseTrans;
+	mat = &ctx->phases[ph];
+	nPtr=mat->nPTr;
+
+	itr = 0;
+	for(itr=0;itr<nPtr;itr++)
+		{
+			id=mat->Ph_tr[itr];
+
+
+			ierr = Transition(PhaseTrans, ctx, id); CHKERRQ(ierr);
+
+		}
+	PetscFunctionReturn(0);
+
+}
+
+#undef __FUNCT__
+#define __FUNCT__ "Transition"
+PetscErrorCode Transition(Ph_trans_t *PhaseTrans, ConstEqCtx  *ctx, PetscInt id)
+{
+	PetscInt    neq, ip;
+	PetscScalar Pres[2];
+	Ph_trans_t *PTr;
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
 
-	// loop over all local particles
-	for(i = 0; i < actx->nummark; i++)
-	{
-		actx->markers[i].primph = actx->markers[i].phase;
+	PTr=PhaseTrans+id;
+	if(PTr->visual==1) 	PetscFunctionReturn(0);
 
+	if(!strcmp(PTr->Type,"Constant"))
+	{
+		if(!strcmp(PTr->Parameter,"T"))
+		{
+			if(PTr->value[0]>0)
+			{
+				if(ctx->T>PTr->value[1])
+				{
+					 //ctx->visc_inc=PTr->visc_inc;
+					 ctx->rho_inc=PTr->rho_inc;
+				}
+
+			}
+			else
+			{
+				if(ctx->T<PTr->value[1])
+				{
+					//ctx->visc_inc=PTr->visc_inc;
+					ctx->rho_inc=PTr->rho_inc;
+				}
+
+			}
+		}
+
+
+		if(!strcmp(PTr->Parameter,"p"))
+		{
+			if(PTr->value[0]>0)
+			{
+				if(ctx->p_lith >PTr->value[1])
+				{
+					//ctx->visc_inc=PTr->visc_inc;
+					ctx->rho_inc=PTr->rho_inc;
+				}
+			}
+			else
+			{
+				if(ctx->p_lith<PTr->value[1])
+				{
+					//ctx->visc_inc=PTr->visc_inc;
+					ctx->rho_inc=PTr->rho_inc;
+				}
+			}
+		}
+
+
+		if(!strcmp(PTr->Parameter,"Depth"))
+		{
+			if(PTr->value[0]>0)
+			{
+				if(ctx->depth>PTr->value[1])
+				{
+					//ctx->visc_inc=PTr->visc_inc;
+					ctx->rho_inc=PTr->rho_inc;
+				}
+			}
+			else
+			{
+				if(ctx->depth<PTr->value[1])
+				{
+					//ctx->visc_inc=PTr->visc_inc;
+					ctx->rho_inc=PTr->rho_inc;
+				}
+			}
+		}
+	}
+	else if(!strcmp(PTr->Type,"Clapeyron"))
+	{
+		neq = PTr->neq;
+		for (ip=0;ip<neq;ip++)
+		{
+			Pres[ip]=(ctx->T-PTr->T0[ip])*PTr->gamma[ip]+PTr->P0[ip];
+		}
+		if(neq==1)
+		{
+			if(ctx->p_lith>Pres[0])
+			{
+				//ctx->visc_inc=PTr->visc_inc;
+				ctx->rho_inc=PTr->rho_inc;
+			}
+		}
+		else
+		{
+			if(ctx->p_lith>Pres[0] && ctx->p>Pres[1])
+			{
+				//ctx->visc_inc=PTr->visc_inc;
+				ctx->rho_inc=PTr->rho_inc;
+			}
+		}
 	}
 	PetscFunctionReturn(0);
 }
+
+
+/*
 //---------------------------------------------------------------------------
 // Simple function that assign the primordial phase to the marker
 #undef __FUNCT__
@@ -159,131 +276,11 @@ PetscErrorCode Phase_Transition(AdvCtx *actx)
 	PetscFunctionReturn(0);
 }
 //----------------------------------------------------------------------------------------
-PetscInt Transition(Ph_trans_t *PhaseTrans, Marker *P, PetscInt id,PetscInt PH)
-{
-	PetscInt    neq, ip,NP;
-	PetscScalar Pres[2];
-	Ph_trans_t *PTr;
-
-	PTr=PhaseTrans+id;
-	if(!strcmp(PTr->Type,"Constant"))
-	{
-		if(!strcmp(PTr->Parameter,"T"))
-		{
-			if(PTr->value[0]>0)
-			{
-				if(P->T>PTr->value[1])
-				{
-					 NP = PTr->Ph2Change;
-				}
-				else
-				{
-					 NP= PH;
-				}
-			}
-			else
-			{
-				if(P->T<PTr->value[1])
-				{
-					NP = PTr->Ph2Change;
-				}
-				else
-				{
-					 NP = PH;
-				}
-			}
-		}
-
-
-		if(!strcmp(PTr->Parameter,"p"))
-		{
-			if(PTr->value[0]>0)
-			{
-				if(P->p>PTr->value[1])
-				{
-					 NP = PTr->Ph2Change;
-				}
-				else
-				{
-					 NP= PH;
-				}
-			}
-			else
-			{
-				if(P->p<PTr->value[1])
-				{
-					 NP = PTr->Ph2Change;
-				}
-				else
-				{
-					 NP = PH;
-				}
-			}
-		}
-
-
-		if(!strcmp(PTr->Parameter,"Depth"))
-		{
-			if(PTr->value[0]>0)
-			{
-				if(P->X[2]>PTr->value[1])
-				{
-					NP = PhaseTrans->Ph2Change;
-				}
-				else
-				{
-					 NP= PH;
-				}
-			}
-			else
-			{
-				if(P->X[2]<PTr->value[1])
-				{
-					 NP = PTr->Ph2Change;
-				}
-				else
-				{
-					 NP = PH;
-				}
-			}
-		}
-	}
-	else if(!strcmp(PTr->Type,"Clapeyron"))
-	{
-		neq = PTr->neq;
-		for (ip=0;ip<neq;ip++)
-		{
-			Pres[ip]=(P->T-PTr->T0[ip])*PTr->gamma[ip]+PTr->P0[ip];
-		}
-		if(neq==1)
-		{
-			if(P->p>Pres[0])
-			{
-				NP=PTr->Ph2Change;
-			}
-			else
-			{
-				 NP = PH;
-			}
-		}
-		else
-		{
-			if(P->p>Pres[0] && P->p>Pres[1])
-			{
-				 NP=PTr->Ph2Change;
-			}
-			else
-			{
-				 NP = PH;
-			}
-		}
-	}
-	return NP;
-}
 
 
 
-/*
+
+
  * / Simple function that assign the primordial phase to the marker
 #undef __FUNCT__
 #define __FUNCT__ "Phase_Transition"

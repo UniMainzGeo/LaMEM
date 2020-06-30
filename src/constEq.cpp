@@ -50,6 +50,7 @@
 #include "phase.h"
 #include "JacRes.h"
 #include "tools.h"
+#include "phase_transition.h"
 
 //---------------------------------------------------------------------------
 #undef __FUNCT__
@@ -66,6 +67,7 @@ PetscErrorCode setUpConstEq(ConstEqCtx *ctx, JacRes *jr)
 	ctx->ctrl      = &jr->ctrl;           // control parameters
 	ctx->Pd        =  jr-> Pd;            // phase diagram data
 	ctx->dt        =  jr->ts->dt;         // time step
+	ctx->PhaseTrans = jr->dbm->matPhtr;   // phase transition
 	ctx->stats[0]  =  0.0;                // total number of [starts, ...
 	ctx->stats[1]  =  0.0;                //  ... successes,
 	ctx->stats[2]  =  0.0;                // ... iterations]
@@ -109,6 +111,7 @@ PetscErrorCode setUpCtrlVol(
 	ctx->T      = T;      // temperature
 	ctx->DII    = DII;    // effective strain rate
 	ctx->Le     = Le;     // characteristic element size
+
 
 	// compute depth below the free surface
 	// WARNING! "depth" is loosely defined for large topography variations
@@ -157,6 +160,7 @@ PetscErrorCode setUpPhase(ConstEqCtx *ctx, PetscInt ID)
 	p_pore = ctx->p_pore;
 	T      = ctx->T;
 	mf     = 0.0;
+
 
 	if(mat->pdAct == 1)
 	{
@@ -617,7 +621,7 @@ PetscErrorCode volConstEq(ConstEqCtx *ctx)
 	SolVarBulk  *svBulk;
 	Material_t  *mat, *phases;
 	PetscInt     i, numPhases;
-	PetscScalar *phRat, dt, p, depth, T, cf_comp, cf_therm, Kavg, rho;
+	PetscScalar *phRat, dt, p, depth, T, cf_comp, cf_therm, Kavg, rho, rho_phtr;
 
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
@@ -634,6 +638,8 @@ PetscErrorCode volConstEq(ConstEqCtx *ctx)
 	p         = ctx->p;
 	T         = ctx->T;
 
+//
+
 	// initialize effective density, thermal expansion & inverse bulk elastic parameter
 	svBulk->rho    = 0.0;
 	svBulk->alpha  = 0.0;
@@ -645,11 +651,21 @@ PetscErrorCode volConstEq(ConstEqCtx *ctx)
 	// scan all phases
 	for(i = 0; i < numPhases; i++)
 	{
+		ctx->rho_inc = 0.0;
+
 		// update present phases only
 		if(phRat[i])
 		{
+
+			if (i==2 && ctx->ctrl->initGuess == 0)
+							{
+//PetscPrintf(PETSC_COMM_WORLD,"PHASE ");
+
+							}
 			// get reference to material parameters table
 			mat = &phases[i];
+			ierr = Phase_Transition(ctx,i); CHKERRQ(ierr);
+
 
 			if(mat->pdAct == 1)
 			{
@@ -702,7 +718,8 @@ PetscErrorCode volConstEq(ConstEqCtx *ctx)
 			else
 			{
 				// temperature & pressure-dependent density
-				rho = mat->rho*cf_comp*cf_therm;
+				rho_phtr = mat->rho+mat->rho*ctx->rho_inc;
+				rho = rho_phtr*cf_comp*cf_therm;
 			}
 
 			// update density, thermal expansion & inverse bulk elastic parameter

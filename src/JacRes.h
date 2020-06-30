@@ -178,6 +178,7 @@ struct Controls
 
 	PetscInt    lmaxit;         // maximum number of local rheology iterations
 	PetscScalar lrtol;          // local rheology iterations relative tolerance
+	PetscInt     Phasetrans;    // Phase transition routines activaction
 
 };
 

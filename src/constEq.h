@@ -57,6 +57,8 @@ struct SolVarCell;
 struct SolVarEdge;
 struct PData;
 struct JacRes;
+struct Ph_trans_t;
+struct DBMat;
 
 //---------------------------------------------------------------------------
 
@@ -67,6 +69,8 @@ struct ConstEqCtx
 	PetscInt     numPhases; // number phases
 	Material_t  *phases;    // phase parameters
 	Soft_t      *soft;      // material softening laws
+	Ph_trans_t  *PhaseTrans;     // material transition laws
+	DBMat       *dbm;
 	Controls    *ctrl;      // parameters and controls
 	PData       *Pd;        // phase diagram data
 	PetscScalar  dt;        // time step
@@ -103,6 +107,8 @@ struct ConstEqCtx
 	PetscScalar  DIIprl; // Peierls creep strain rate
 	PetscScalar  DIIpl;  // plastic strain rate
 	PetscScalar  yield;  // yield stress
+
+	PetscScalar  rho_inc;
 
 };
 

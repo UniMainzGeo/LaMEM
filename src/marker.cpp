@@ -144,7 +144,6 @@ PetscErrorCode ADVMarkInit(AdvCtx *actx, FB *fb)
 		PetscPrintf(PETSC_COMM_WORLD,"--------------------------------------------------------------------------\n");
 	}
 
-	ierr = PhTr_assign_primPh(actx);
 
 	PetscFunctionReturn(0);
 }
