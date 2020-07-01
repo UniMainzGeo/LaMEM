@@ -928,7 +928,7 @@ PetscErrorCode PMatMonoAssemble(PMat pm)
 	// dump preconditioning matrices to disk to inspect them with MATLAB (mainly for debugging)
 	PetscViewer viewer;
 	PetscBool   flg, flg_name;
-	char        name[_str_len_], name_A[_str_len_], name_M[_str_len_];
+	char        name[100], name_A[_str_len_], name_M[_str_len_];
 
 	ierr = PetscOptionsHasName(NULL, NULL, "-dump_precondition_matrixes", &flg); CHKERRQ(ierr);
 
