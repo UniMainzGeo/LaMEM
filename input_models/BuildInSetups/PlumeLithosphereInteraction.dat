@@ -79,7 +79,10 @@
 	eta_ref 	   = 1e20			# reference viscosity for initial guess	
 	eta_max        = 1e25           # viscosity lower limit
 	DII_ref        = 1e-15          # background (reference) strain-rate
-	
+	p_litho_visc   = 1              # use lithostatic pressure for creep laws
+	p_litho_plast  = 1              # use lithostatic pressure for plasticity
+	p_lim_plast    = 1              # limit pressure at first iteration for plasticity
+
 #===============================================================================
 # Solver options
 #===============================================================================
