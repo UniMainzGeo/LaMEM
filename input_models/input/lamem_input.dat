@@ -452,24 +452,36 @@
 	<SofteningEnd>
 	
 	<PhTransStart>
-		ID   = 0          # Phase_transition law ID
-		Type = Clapeyron  # type of phase transition
-		neq  = 2          # number of equations 
-		gamma = -30 1.5   # clapeyron parameter usually listed in MPa
-		                  # P = (T-T0)*gamma + P0
-		P0    =  2e9 2e9  #Pressure (Pa)
- 		T0    =  500 500  #Temperature (Celsius degree)
-		Ph2Change= 2      # Addressing phase 
+		ID   = 0   # Phase_transition law ID
+		Type = Clapeyron   # Type of phase transition
+		neq  = 2           # In Clapeyron it is possible to define the phase boundaries with two equation
+		gamma = -30 1.5    # Clapeyron slop
+		P0    =  2e9 2e9   # Intercept in pressure axis
+		T0    =  500 500   # Intercept in temperature axis 
+		vis_id = 1         # visualization phase = Ph_id+(tot_number_phase-1)*id
+		rho_inc = 0.16     # rho_ref=rho_ref*(1+0.16)
+		visc_inc = 1.2     # multiply the creep viscosity by a factor spanning between 1 to 1000, it weakens to but 0.0 are not valuable
+	<PhTransEnd>
+	#Mantle 2 Lower Mantle	
+	<PhTransStart>
+		ID   = 1          # Phase_transition law ID
+		Type = Constant   # Type constant: take a depth, pressure or temperature to trigger the phase transition
+		Parameter = depth # Parameter to take into account
+		gamma = -1 660e3  # The first parameter tell that temperature/depth/pressure must be lower (-1) or higher(+1) than the designed parameter
+		vis_id = 2        # visualization phase = Ph_id+(tot_number_phase-1)*id
+		rho_inc = 0.08    # rho_ref=rho_ref*(1+0.16)
+		visc_inc = 2         
+	<PhTransEnd>
+	<PhTransStart>
+		ID   = 2   # Phase_transition law ID
+		Type = Constant
+		Parameter = T
+		value = -1 1200
+		vis_id = 3
+		visual = 1 # this option is only to highlight the lithosphere phase transition.Since Lithosphere is only for a visualization purpoise 
+		# it can been applied to the other e.g. : vis_id = ph_id+(num_phase-1)*id+(num_phase-1)*vis_id(lithos)
 	<PhTransEnd>
 	
-	<PhTransStart>
-		ID   = 1         # Phase_transition law ID
-		Type = Constant  # Means that it took a constant and change phase whenever a particles has a lower or higher value of certain properties 
-		Parameter = T    # Parameter that you need to specify T(temperature) p(pressure) Depth (z coordinate)
-		Value = -1 1200  # -/+ 1 indicate whetever it takes higher or lower values, the second the actual value 
-		Ph2Change = 3    # tells the addressing phase of the phase transformation
-	<PhTransEnd>
-
 # Define material properties for all phases (maximum 32)
 # By default all rheological mechanisms are deactivated
 # List only active parameters in the material data block

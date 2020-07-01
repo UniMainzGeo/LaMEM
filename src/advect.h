@@ -64,7 +64,6 @@ struct DBMat;
 struct Marker
 {
 	PetscInt    phase; // phase identifier
-	PetscInt    primph; // primordial phase (phase transition)
 	PetscScalar X[3];  // global coordinates
 	PetscScalar p;     // pressure
 	PetscScalar T;     // temperature

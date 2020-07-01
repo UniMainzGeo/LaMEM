@@ -102,16 +102,6 @@ PetscErrorCode MarkerMerge(Marker &A, Marker &B, Marker &C)
 	C.U[1]  = (A.U[1] + B.U[1])/2.0;
 	C.U[2]  = (A.U[2] + B.U[2])/2.0;
 
-	if (A.primph != B.primph)
-	{
-		r=rand();
-		if(r==0) C.primph=A.primph;
-		else C.primph=B.primph;
-	}
-	else
-	{
-		C.primph=A.primph;
-	}
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
