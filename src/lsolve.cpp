@@ -323,7 +323,6 @@ PetscErrorCode PCStokesBFSetFromOptions(PCStokes pc)
 
 		bf->vtype = _VEL_USER_;
 	}
-	bf->ptype = _P_MG_;
 
 	PetscFunctionReturn(0);
 }
@@ -346,10 +345,6 @@ PetscErrorCode PCStokesBFDestroy(PCStokes pc)
 	if(bf->vtype == _VEL_MG_)
 	{
 		ierr = MGDestroy(&bf->vmg); CHKERRQ(ierr);
-	}
-	if(bf->ptype == _P_MG_)
-	{
-		ierr = MGDestroy(&bf->pmg); CHKERRQ(ierr);
 	}
 
 	ierr = PetscFree(bf); CHKERRQ(ierr);
@@ -378,10 +373,6 @@ PetscErrorCode PCStokesBFSetup(PCStokes pc)
 	{
 		ierr = MGSetup(&bf->vmg, P->Avv); CHKERRQ(ierr);
 	}
-	//if(bf->ptype == _P_MG_)
-	//{
-	//	ierr = MGSetup(&bf->pmg, P->K); CHKERRQ(ierr);
-	//}
 
 	ierr = KSPSetUp(bf->vksp); CHKERRQ(ierr);
 	ierr = KSPSetUp(bf->pksp); CHKERRQ(ierr);

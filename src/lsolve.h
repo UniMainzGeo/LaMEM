@@ -74,12 +74,6 @@ enum PCVelType
 	_VEL_USER_ // user-defined
 
 };
-
-// pressure block preconditioner (K) ---------------------------------------hkuhukhk
-enum PCPType
-{
-	_P_MG_
-};
 //---------------------------------------------------------------------------
 
 typedef struct _p_PCStokes *PCStokes;
@@ -121,7 +115,6 @@ struct PCStokesBF
 	MG        vmg;   // velocity multigrid context
 	PCBFType  type;  // factorization type
 
-	PCPType   ptype;
 	KSP 	  pksp;
 	MG	      pmg;
 
