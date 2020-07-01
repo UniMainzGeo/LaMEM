@@ -1510,7 +1510,10 @@ PetscErrorCode ADVCheckCorners(AdvCtx *actx)
 	lx[0] = -1;
 	lx[1] = 0;
 	lx[2] = 1;
-
+	xp[0] = 0.0;
+	xp[1] = 0.0;
+	xp[2] = 0.0;
+	
 	// allocate memory for new markers
 	actx->nrecv = ninj;
 	ierr = PetscMalloc((size_t)actx->nrecv*sizeof(Marker), &actx->recvbuf); CHKERRQ(ierr);
