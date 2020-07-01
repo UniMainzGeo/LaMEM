@@ -276,7 +276,7 @@ PetscErrorCode Adjoint_ScanForMaterialParameters(FB *fb, Scaling *scal, PetscInt
 						ierr = PetscStrncpy(par_val, par_str+len_start,   len_end-len_start+1);	CHKERRQ(ierr);
 					
 						// extract integer of the phase & store it
-						ExcludedPhase[numExcludedPhases] = strtol(par_val, NULL, 10);
+						ExcludedPhase[numExcludedPhases] = PetscInt(strtol(par_val, NULL, 10));
 
 						//PetscPrintf(PETSC_COMM_WORLD,"|    Excluding parameter: %- 5s of phase %i \n", ExcludedPhaseName[numExcludedPhases], ExcludedPhase[numExcludedPhases]);
 						
@@ -1623,7 +1623,7 @@ PetscErrorCode AdjointOptimisationTAO(Tao tao, Vec P, PetscReal *F, Vec grad, vo
 	if (IOparam->BruteForce_FD){PetscFunctionReturn(0); }	// in case we compute Brute force FD (or if we only compute the misfit), we can return at this stage
 
  	// Get the adjoint gradients
- 	ierr = AdjointComputeGradients(jr, aop, nl, snes, IOparam, surf);        CHKERRQ(ierr);
+ 	ierr = AdjointComputeGradients(jr, aop, nl, snes, IOparam);        CHKERRQ(ierr);
 
  	PetscFunctionReturn(0);
  }
@@ -1940,7 +1940,7 @@ PetscErrorCode AdjointFiniteDifferenceGradients(ModParam *IOparam)
 //---------------------------------------------------------------------------
 #undef __FUNCT__
 #define __FUNCT__ "AdjointComputeGradients"
-PetscErrorCode AdjointComputeGradients(JacRes *jr, AdjGrad *aop, NLSol *nl, SNES snes, ModParam *IOparam, FreeSurf *surf)
+PetscErrorCode AdjointComputeGradients(JacRes *jr, AdjGrad *aop, NLSol *nl, SNES snes, ModParam *IOparam)
 {
 	
 	PetscErrorCode ierr;

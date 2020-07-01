@@ -208,7 +208,7 @@ void MatPrintScalParam(
 		Scaling    *scal, const char title[], PetscInt   *print_title);
 
 // Overwrite material phase parameters with global values 
-PetscErrorCode DBMatOverwriteWithGlobalVariables(DBMat *dbm, FB *fb, PetscBool PrintOutput);		
+PetscErrorCode DBMatOverwriteWithGlobalVariables(DBMat *dbm, FB *fb);		
 
 //---------------------------------------------------------------------------
 //............ PREDEFINED RHEOLOGICAL PROFILES (from literature) ............
