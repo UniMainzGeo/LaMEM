@@ -136,6 +136,9 @@ PetscErrorCode FreeSurfAppSedimentation(FreeSurf *surf);
 // Set topography from file
 PetscErrorCode FreeSurfSetTopoFromFile(FreeSurf *surf, FB *fb);
 
+// Set initial perturbation
+PetscErrorCode FreeSurfSetInitialPerturbation(FreeSurf *surf, FB *fb);
+
 //---------------------------------------------------------------------------
 // SERVICE FUNCTIONS
 //---------------------------------------------------------------------------

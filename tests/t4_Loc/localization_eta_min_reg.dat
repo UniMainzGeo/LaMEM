@@ -153,7 +153,7 @@
 		rho        = 2700  # density - if dimensional [kg/m3]
 		eta        = 1e21  # Viscosity - dimensional [Pa.s]
 		G          =  5e10
-		K          =  8e10
+		Kb         =  8e10
 		ch         =  50e6
 		fr         =  30
 		frSoftID   =  0    # softening ID
@@ -167,7 +167,7 @@
 		rho       =  2700 # density - if dimensional [kg/m3]
 		eta       =  1e24 # Viscosity - dimensional [Pa.s]
 		G         =  5e10
-		K         =  8e10
+		Kb        =  8e10
 		ch        =  50e6
 		fr        =  30
 		frSoftID  =  0     # softening ID
@@ -180,7 +180,7 @@
 		rho        = 100    # density - if dimensional [kg/m3]
 		eta        = 1e21   # Viscosity - dimensional [Pa.s]
 		G          =  5e10
-		K          =  8e10
+		Kb         =  8e10
 		ch         =  50e6
 		fr         =  30
 		frSoftID   =  0     # softening ID
@@ -201,7 +201,7 @@
 	-pcmat_pgamma 1e2
    		
 	# Newton/picard options
-	-snes_PicardSwitchToNewton_rtol 1e-2   # relative tolerance to switch to Newton (1e-2)
+	-snes_PicardSwitchToNewton_rtol 1e0   # relative tolerance to switch to Newton (1e-2)
 	-snes_NewtonSwitchToPicard_it  	20     # number of Newton iterations after which we switch back to Picard
 
 	# Linesearch options

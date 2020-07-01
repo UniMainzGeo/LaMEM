@@ -328,7 +328,7 @@ PetscErrorCode DisplaySpecifiedSolverOptions(PCStokes pc, SNES snes)
 		{
 			PetscPrintf(PETSC_COMM_WORLD, "   Solver package                : %s \n", solver_type);
 		}
-
+   		
 	}
 
 
@@ -343,7 +343,7 @@ PetscErrorCode DisplaySpecifiedSolverOptions(PCStokes pc, SNES snes)
 PetscErrorCode NLSolDestroy(NLSol *nl)
 {
 	PetscErrorCode ierr;
-	PetscFunctionBegin;
+ 	PetscFunctionBegin;
 
 	ierr = MatDestroy(&nl->J);    CHKERRQ(ierr);
 	ierr = MatDestroy(&nl->P);    CHKERRQ(ierr);
@@ -403,7 +403,7 @@ PetscErrorCode FormJacobian(SNES snes, Vec x, Mat Amat, Mat Pmat, void *ctx)
 	jr   =  pm->jr;
 	ctrl = &jr->ctrl;
 
-	//========================
+    //========================
 	// Jacobian type selection
 	//========================
 
@@ -411,17 +411,17 @@ PetscErrorCode FormJacobian(SNES snes, Vec x, Mat Amat, Mat Pmat, void *ctx)
 	ierr = SNESGetIterationNumber(snes, &it);     CHKERRQ(ierr);
 	ierr = SNESGetFunction(snes, &r, NULL, NULL); CHKERRQ(ierr);
 	ierr = VecNorm(r, NORM_2, &nrm);              CHKERRQ(ierr);
-
+    
 	if(!nrm) nrm = 1.0;
 
-	// initialize
+    // initialize
 	if(!it)
 	{
 		nl->it     = 0;
 		nl->refRes = nrm;
 		nl->jtype  = _PICARD_;
 		nl->it_Nwt = 0;
-	}
+  	}
 	else if(nl->jtype == _PICARD_)
 	{
 		// Picard case, check to switch to Newton

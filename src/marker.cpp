@@ -894,11 +894,25 @@ PetscErrorCode ADVMarkInitGeom(AdvCtx *actx, FB *fb)
 
 	for(jj = 0; jj < fb->nblocks; jj++)
 	{
+		fb->ID  = jj;								// allows command-line parsing
 		GET_GEOM(layer, geom, ngeom, _max_geom_);
 
 		ierr = getIntParam   (fb, _REQUIRED_, "phase",  &layer->phase,  1, maxPhaseID); CHKERRQ(ierr);
 		ierr = getScalarParam(fb, _REQUIRED_, "top",    &layer->top,    1, chLen);      CHKERRQ(ierr);
 		ierr = getScalarParam(fb, _REQUIRED_, "bottom", &layer->bot,    1, chLen);      CHKERRQ(ierr);
+
+		// optional sinusoidal perturbation of layer interface:
+		//  (adds amplitude*sin(2*pi/wavelength*x) to the interface)
+		layer->cosine = 0;
+		ierr = getIntParam   (fb, _OPTIONAL_, "cosine",  &layer->cosine,  1, maxPhaseID); CHKERRQ(ierr);
+		if (layer->cosine==1){
+			ierr = getScalarParam   (fb, _REQUIRED_, "wavelength",  &layer->wavelength,  1, maxPhaseID); CHKERRQ(ierr);
+			ierr = getScalarParam   (fb, _REQUIRED_, "amplitude",   &layer->amplitude,   1, maxPhaseID); CHKERRQ(ierr);
+		}
+
+		// random noise
+		layer->rand_amplitude = 0.0;
+		ierr = getScalarParam   (fb, _OPTIONAL_, "rand_ampl",  &layer->rand_amplitude,  1, maxPhaseID); CHKERRQ(ierr);
 
 		// Optional temperature options:
 		layer->setTemp = 0;
@@ -942,8 +956,10 @@ PetscErrorCode ADVMarkInitGeom(AdvCtx *actx, FB *fb)
 
 	for(jj = 0; jj < fb->nblocks; jj++)
 	{
+		fb->ID  = jj;								// allows command-line parsing
+		
 		GET_GEOM(sphere, geom, ngeom, _max_geom_);
-
+		
 		ierr = getIntParam   (fb, _REQUIRED_, "phase",  &sphere->phase,  1, maxPhaseID); CHKERRQ(ierr);
 		ierr = getScalarParam(fb, _REQUIRED_, "radius", &sphere->radius, 1, chLen);      CHKERRQ(ierr);
 		ierr = getScalarParam(fb, _REQUIRED_, "center",  sphere->center, 3, chLen);      CHKERRQ(ierr);
@@ -976,6 +992,7 @@ PetscErrorCode ADVMarkInitGeom(AdvCtx *actx, FB *fb)
 
 	for(jj = 0; jj < fb->nblocks; jj++)
 	{
+		fb->ID  = jj;								// allows command-line parsing
 		GET_GEOM(box, geom, ngeom, _max_geom_);
 
 		box->setTemp = 0;	//default is no	
@@ -1020,6 +1037,7 @@ PetscErrorCode ADVMarkInitGeom(AdvCtx *actx, FB *fb)
 
 	for(jj = 0; jj < fb->nblocks; jj++)
 	{
+		fb->ID  = jj;								// allows command-line parsing
 		GET_GEOM(hex, geom, ngeom, _max_geom_);
 
 		ierr = getIntParam   (fb, _REQUIRED_, "phase",  &hex->phase, 1,  maxPhaseID); CHKERRQ(ierr);
@@ -1043,6 +1061,7 @@ PetscErrorCode ADVMarkInitGeom(AdvCtx *actx, FB *fb)
 
 	for(jj = 0; jj < fb->nblocks; jj++)
 	{
+		fb->ID  = jj;								// allows command-line parsing
 		GET_GEOM(cylinder, geom, ngeom, _max_geom_);
 
 		ierr = getIntParam   (fb, _REQUIRED_, "phase",   &cylinder->phase,  1, maxPhaseID); CHKERRQ(ierr);
@@ -1675,7 +1694,24 @@ void setPhaseBox(GeomPrim *box, Marker *P)
 //---------------------------------------------------------------------------
 void setPhaseLayer(GeomPrim *layer, Marker *P)
 {
-	if(P->X[2] >= layer->bot && P->X[2] <= layer->top)
+	PetscScalar bot, top,pert,pert_random;
+
+
+	bot = layer->bot; 
+	top = layer->top;
+	if (layer->cosine==1){
+		// Add sinusoidal perturbation
+		pert 	= 	-layer->amplitude*PetscCosScalar(2*PETSC_PI/layer->wavelength*P->X[0]);	
+		bot 	= 	bot + pert;
+		top 	= 	top + pert;
+	}
+
+	// add random noise
+	pert_random 	= (rand()/PetscScalar(RAND_MAX)-0.5)*layer->rand_amplitude;
+	bot 			= 	bot + pert_random;
+	top 			= 	top + pert_random;
+
+	if(P->X[2] >= bot && P->X[2] <= top)
 	{
 		P->phase = layer->phase;
 		if (layer->setTemp>0)

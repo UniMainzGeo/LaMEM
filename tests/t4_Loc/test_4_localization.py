@@ -9,7 +9,7 @@ def test_a():
 
   # Test visco-elasto-plastic localization case on 4 cores, using optimized LaMEM
   ranks = 4
-  launch = '../bin/opt/LaMEM -ParamFile ./t4_Loc/localization.dat' # This must be a relative path with respect to runLaMEM_Tests.py
+  launch = '../bin/opt/LaMEM -ParamFile ./t4_Loc/localization.dat -nstep_max 20' # This must be a relative path with respect to runLaMEM_Tests.py
   expected_file = 't4_Loc/Loc1_a_MUMPS_VEP_opt-p4.expected'
 
   def comparefunc(unittest):
@@ -34,7 +34,7 @@ def test_b():
 
   # Test visco-plastic localization case with regulariation on 4 cores, using optimized LaMEM
   ranks = 4
-  launch = '../bin/opt/LaMEM -ParamFile ./t4_Loc/localization_eta_min_reg.dat' # This must be a relative path with respect to runLaMEM_Tests.py
+  launch = '../bin/opt/LaMEM -ParamFile ./t4_Loc/localization_eta_min_reg.dat -nstep_max 20' # This must be a relative path with respect to runLaMEM_Tests.py
   expected_file = 't4_Loc/Loc1_b_MUMPS_VEP_Reg_opt-p4.expected'
 
   def comparefunc(unittest):
@@ -60,7 +60,7 @@ def test_c():
 
   # Test visco-elasto-plastic localization case on 1 core, using optimized LaMEM
   ranks = 1
-  launch = '../bin/opt/LaMEM -ParamFile ./t4_Loc/localization.dat' # This must be a relative path with respect to runLaMEM_Tests.py
+  launch = '../bin/opt/LaMEM -ParamFile ./t4_Loc/localization.dat -nstep_max 20' # This must be a relative path with respect to runLaMEM_Tests.py
   expected_file = 't4_Loc/Loc1_c_Direct_VEP_opt-p1.expected'
 
   def comparefunc(unittest):

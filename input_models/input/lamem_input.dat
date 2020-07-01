@@ -357,6 +357,9 @@
 		phase       = 1
 		top         = 5.0
 		bottom      = 3.0
+        cosine      = 0         # optional: add a cosine perturbation on top of the interface (if 1)
+		wavelength  = 1         # required if cosine: wavelength in x-direction
+		amplitude   = 0.1       # required if cosine: amplitude of perturbation         
 		Temperature = halfspace # optional: Temperature structure. possibilities: [constant, linear, halfspace]
 		cstTemp     = 1000      # required in case of [constant]: temperature value [in Celcius in case of GEO units]
 		topTemp     = 0         # required in case of [linear,halfspace]: temperature @ top [in Celcius in case of GEO units]
@@ -449,6 +452,7 @@
 		APS1 = 0.1 # begin of softening APS
 		APS2 = 1.0 # end of softening APS
 		A    = 0.7 # reduction ratio
+		Lm   = 0.2 # material length scale (in selected units, e.g. km in geo)
 	<SofteningEnd>
 	
 	<PhTransStart>
@@ -494,6 +498,7 @@
 
 	<MaterialStart>
 		ID         = 1      # material phase ID
+		Name       = Slab   # description of the phase
 		visID      = 10     # material ID for phase visualization (default is ID)
 		diff_prof  = Dry_Olivine_diff_creep-Hirth_Kohlstedt_2003 # DIFFUSION creep profile
 		disl_prof  = Granite-Tirel_et_al_2008                    # DISLOCATION creep profile
@@ -503,7 +508,7 @@
 		rho_c      = 1e-4   # depth-dependent density model parameter
 		beta       = 1e-11  # pressure-dependent density model parameter
 		G          = 4e10   # shear modulus
-		K          = 6e10   # bulk modulus
+		Kb         = 6e10   # bulk modulus
 		E          = 6e10   # Young's modulus
 		nu         = 0.25   # Poisson's ratio
 		Kp         = 5.0    # pressure dependence parameter
@@ -525,6 +530,7 @@
 		q          = 2.0    # stress-dependence parameter
 		ch         = 2e7    # cohesion
 		fr         = 30.0   # friction angle
+		eta_st     = 1e19   # stabilization viscosity (default is eta_min)
 		rp         = 0.7    # pore-pressure ratio
 		chSoftID   = 0      # friction softening law ID
 		frSoftID   = 0      # cohesion softening law ID

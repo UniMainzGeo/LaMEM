@@ -51,7 +51,7 @@
 //---------------------------------------------------------------------------
 #undef __FUNCT__
 #define __FUNCT__ "DBMatCreate"
-PetscErrorCode DBMatCreate(DBMat *dbm, FB *fb)
+PetscErrorCode DBMatCreate(DBMat *dbm, FB *fb, PetscBool PrintOutput)
 {
 	// read all material phases and softening laws from file
 
@@ -70,8 +70,9 @@ PetscErrorCode DBMatCreate(DBMat *dbm, FB *fb)
 	if(fb->nblocks)
 	{
 		// print overview of softening laws from file
-		PetscPrintf(PETSC_COMM_WORLD,"Softening laws: \n");
-
+		if (PrintOutput){
+			PetscPrintf(PETSC_COMM_WORLD,"Softening laws: \n");
+		}
 		// initialize ID for consistency checks
 		for(jj = 0; jj < _max_num_soft_; jj++) dbm->matSoft[jj].ID = -1;
 
@@ -84,12 +85,13 @@ PetscErrorCode DBMatCreate(DBMat *dbm, FB *fb)
 		// store actual number of softening laws
 		dbm->numSoft = fb->nblocks;
 
-		PetscPrintf(PETSC_COMM_WORLD,"--------------------------------------------------------------------------\n");
-
+		if (PrintOutput){
+			PetscPrintf(PETSC_COMM_WORLD,"--------------------------------------------------------------------------\n");
+		}
 		// read each individual softening law
 		for(jj = 0; jj < fb->nblocks; jj++)
 		{
-			ierr = DBMatReadSoft(dbm, fb); CHKERRQ(ierr);
+			ierr = DBMatReadSoft(dbm, fb, PrintOutput); CHKERRQ(ierr);
 
 			fb->blockID++;
 		}
@@ -134,9 +136,10 @@ PetscErrorCode DBMatCreate(DBMat *dbm, FB *fb)
 	//================
 	// MATERIAL PHASES
 	//================
-
-	// print overview of material parameters read from file
-	PetscPrintf(PETSC_COMM_WORLD,"Material parameters: \n");
+	if (PrintOutput){
+		// print overview of material parameters read from file
+		PetscPrintf(PETSC_COMM_WORLD,"Material parameters: \n");
+	}
 
 	// setup block access mode
 	ierr = FBFindBlocks(fb, _REQUIRED_, "<MaterialStart>", "<MaterialEnd>"); CHKERRQ(ierr);
@@ -156,7 +159,7 @@ PetscErrorCode DBMatCreate(DBMat *dbm, FB *fb)
 	// read each individual phase
 	for(jj = 0; jj < fb->nblocks; jj++)
 	{
-		ierr = DBMatReadPhase(dbm, fb); CHKERRQ(ierr);
+		ierr = DBMatReadPhase(dbm, fb, PrintOutput); CHKERRQ(ierr);
 
 		fb->blockID++;
 
@@ -164,14 +167,21 @@ PetscErrorCode DBMatCreate(DBMat *dbm, FB *fb)
 
 	ierr = FBFreeBlocks(fb); CHKERRQ(ierr);
 
-	PetscPrintf(PETSC_COMM_WORLD,"--------------------------------------------------------------------------\n");
+    //=================================================
+	// OVERWRITE MATERIAL PARAMETERS WITH GLOBAL VARIABLES
+	//=================================================
+    ierr = DBMatOverwriteWithGlobalVariables(dbm, fb, PrintOutput); CHKERRQ(ierr);
+
+	if (PrintOutput){
+		PetscPrintf(PETSC_COMM_WORLD,"--------------------------------------------------------------------------\n");
+	}
 
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------
 #undef __FUNCT__
 #define __FUNCT__ "DBMatReadSoft"
-PetscErrorCode DBMatReadSoft(DBMat *dbm, FB *fb)
+PetscErrorCode DBMatReadSoft(DBMat *dbm, FB *fb, PetscBool PrintOutput)
 {
 	// read softening law from file
 	Scaling  *scal;
@@ -185,7 +195,8 @@ PetscErrorCode DBMatReadSoft(DBMat *dbm, FB *fb)
 	scal = dbm->scal;
 
 	// softening law ID
-	ierr = getIntParam(fb, _REQUIRED_, "ID", &ID, 1, dbm->numSoft-1); CHKERRQ(ierr);
+	ierr 	= getIntParam(fb, _REQUIRED_, "ID", &ID, 1, dbm->numSoft-1); CHKERRQ(ierr);
+	fb->ID  = ID;
 
 	// get pointer to specified softening law
 	s = dbm->matSoft + ID;
@@ -210,13 +221,15 @@ PetscErrorCode DBMatReadSoft(DBMat *dbm, FB *fb)
 		SETERRQ1(PETSC_COMM_WORLD, PETSC_ERR_USER, "A, APS1, APS2 parameters must be nonzero for softening law %lld", (LLD)ID);
 	}
 
-	if(s->Lm)
-	{
-		PetscPrintf(PETSC_COMM_WORLD,"   SoftLaw [%lld] : A = %g, APS1 = %g, APS2 = %g, Lm = %g\n", (LLD)(s->ID), s->A, s->APS1, s->APS2, s->Lm);
-	}
-	else
-	{
-		PetscPrintf(PETSC_COMM_WORLD,"   SoftLaw [%lld] : A = %g, APS1 = %g, APS2 = %g\n", (LLD)(s->ID), s->A, s->APS1, s->APS2);
+	if (PrintOutput){
+		if(s->Lm)
+		{
+			PetscPrintf(PETSC_COMM_WORLD,"   SoftLaw [%lld] : A = %g, APS1 = %g, APS2 = %g, Lm = %g\n", (LLD)(s->ID), s->A, s->APS1, s->APS2, s->Lm);
+		}
+		else
+		{
+			PetscPrintf(PETSC_COMM_WORLD,"   SoftLaw [%lld] : A = %g, APS1 = %g, APS2 = %g\n", (LLD)(s->ID), s->A, s->APS1, s->APS2);
+		}
 	}
 
 	// SCALE
@@ -228,16 +241,16 @@ PetscErrorCode DBMatReadSoft(DBMat *dbm, FB *fb)
 //---------------------------------------------------------------------------
 #undef __FUNCT__
 #define __FUNCT__ "DBMatReadPhase"
-PetscErrorCode DBMatReadPhase(DBMat *dbm, FB *fb)
+PetscErrorCode DBMatReadPhase(DBMat *dbm, FB *fb, PetscBool PrintOutput)
 {
 	// read material properties from file with error checking
 	Scaling    *scal;
 	Material_t *m;
 	PetscInt    ID = -1, visID = -1, chSoftID, frSoftID, MSN, print_title;
 	size_t 	    StringLength;
-	PetscScalar eta, eta0, e0, K, G, E, nu, Vp, Vs;
+	PetscScalar eta, eta0, e0, Kb, G, E, nu, Vp, Vs, eta_st;
 	char        ndiff[_str_len_], ndisl[_str_len_], npeir[_str_len_], title[_str_len_];
-	char        PhaseDiagram[_str_len_], PhaseDiagram_Dir[_str_len_];
+	char        PhaseDiagram[_str_len_], PhaseDiagram_Dir[_str_len_], Name[_str_len_];
 	
 
 	PetscErrorCode ierr;
@@ -250,19 +263,22 @@ PetscErrorCode DBMatReadPhase(DBMat *dbm, FB *fb)
 	eta      =  0.0;
 	eta0     =  0.0;
 	e0       =  0.0;
-	K        =  0.0;
+	//K        =  0.0;	// note: will be deprecated and renamed to Kb; we spit put an error message for now if we still find it in the input file
+	Kb    	 =  0.0;	// bulk modulus		
 	G        =  0.0;
 	E        =  0.0;
 	nu       =  0.0;
 	Vp       =  0.0;
 	Vs       =  0.0;
+    eta_st   =  0.0;
 	chSoftID = -1;
 	frSoftID = -1;
 	MSN      =  dbm->numSoft - 1;
 
 	// phase ID
-	ierr = getIntParam(fb, _REQUIRED_, "ID", &ID, 1, dbm->numPhases-1); CHKERRQ(ierr);
-
+	ierr 	 = getIntParam(fb, _REQUIRED_, "ID", &ID, 1, dbm->numPhases-1); CHKERRQ(ierr);
+	fb->ID	 = ID;
+	
 	// get pointer to specified phase
 	m = dbm->phases + ID;
 
@@ -280,6 +296,13 @@ PetscErrorCode DBMatReadPhase(DBMat *dbm, FB *fb)
 
 	if(visID != -1) m->visID = visID;
 	else            m->visID = ID;
+
+	// Name of the phase (mostly for visualization purposes)
+	ierr = getStringParam(fb, _OPTIONAL_, "Name", Name, "none"); CHKERRQ(ierr);
+	if(strcmp(Name, "none"))
+	{
+		strcpy(m->Name, Name);
+	}
 
 	//============================================================
 	// density & phase diagram info
@@ -342,7 +365,8 @@ PetscErrorCode DBMatReadPhase(DBMat *dbm, FB *fb)
 	// elasticity
 	//=================================================================================
 	ierr = getScalarParam(fb, _OPTIONAL_, "G",        &G,        1, 1.0); CHKERRQ(ierr);
-	ierr = getScalarParam(fb, _OPTIONAL_, "K",        &K,        1, 1.0); CHKERRQ(ierr);
+//	ierr = getScalarParam(fb, _OPTIONAL_, "K",        &K,        1, 1.0); CHKERRQ(ierr); // note-> will be removed (avoid confusion with k)
+	ierr = getScalarParam(fb, _OPTIONAL_, "Kb",       &Kb,       1, 1.0); CHKERRQ(ierr); // note-> new nomenclature of bulk modulus (avoid confusion with k)
 	ierr = getScalarParam(fb, _OPTIONAL_, "E",        &E,        1, 1.0); CHKERRQ(ierr);
 	ierr = getScalarParam(fb, _OPTIONAL_, "nu",       &nu,       1, 1.0); CHKERRQ(ierr);
 	ierr = getScalarParam(fb, _OPTIONAL_, "Kp",       &m->Kp,    1, 1.0); CHKERRQ(ierr);
@@ -389,7 +413,7 @@ PetscErrorCode DBMatReadPhase(DBMat *dbm, FB *fb)
 	//=================================================================================
 	ierr = getScalarParam(fb, _OPTIONAL_, "ch",       &m->ch,     1, 1.0); CHKERRQ(ierr);
 	ierr = getScalarParam(fb, _OPTIONAL_, "fr",       &m->fr,     1, 1.0); CHKERRQ(ierr);
-	ierr = getScalarParam(fb, _OPTIONAL_, "eta_st",   &m->eta_st, 1, 1.0); CHKERRQ(ierr);
+	ierr = getScalarParam(fb, _OPTIONAL_, "eta_st",   &eta_st,    1, 1.0); CHKERRQ(ierr);
 	ierr = getScalarParam(fb, _OPTIONAL_, "rp",       &m->rp,     1, 1.0); CHKERRQ(ierr);
 	ierr = getIntParam   (fb, _OPTIONAL_, "chSoftID", &chSoftID,  1, MSN); CHKERRQ(ierr);
 	ierr = getIntParam   (fb, _OPTIONAL_, "frSoftID", &frSoftID,  1, MSN); CHKERRQ(ierr);
@@ -442,6 +466,8 @@ PetscErrorCode DBMatReadPhase(DBMat *dbm, FB *fb)
 		SETERRQ1(PETSC_COMM_WORLD, PETSC_ERR_USER, "Cohesion must be specified for phase %lld (chSoftID + ch)", (LLD)ID);
 	}
 
+    m->eta_st   = eta_st;
+   
 	// set softening law IDs
 	m->chSoftID = chSoftID;
 	m->frSoftID = frSoftID;
@@ -512,40 +538,45 @@ PetscErrorCode DBMatReadPhase(DBMat *dbm, FB *fb)
 	}
 
 	// ELASTICITY
+	// I'm taking out this warning message as it interfers with Adjoint and defining k (conductivity) from the command-line
+	//if (K){
+	//	SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "The bulk modulus parameter is now called 'Kb' and no longer 'K'; change your ParamFile accordingly");
+	//}
 
-	if(!(( G && !K && !E && !nu)   // G
-	||   (!G &&  K && !E && !nu)   // K
-	||   ( G &&  K && !E && !nu)   // G & K
-	||   ( G && !K && !E &&  nu)   // G & nu
-	||   (!G &&  K && !E &&  nu)   // K & nu
-	||   (!G && !K &&  E &&  nu)   // E & nu
-	||   (!G && !K && !E && !nu))) // nothing
+	if(!(( G && !Kb && !E && !nu)   // G
+	||   (!G &&  Kb && !E && !nu)   // Kb
+	||   ( G &&  Kb && !E && !nu)   // G & Kb
+	||   ( G && !Kb && !E &&  nu)   // G & nu
+	||   (!G &&  Kb && !E &&  nu)   // Kb & nu
+	||   (!G && !Kb &&  E &&  nu)   // E & nu
+	||   (!G && !Kb && !E && !nu))) // nothing
 	{
-		SETERRQ1(PETSC_COMM_WORLD, PETSC_ERR_USER, "Unsupported or nonunique combination of elasticity parameters for phase %lld (G, K, G + K, G + nu, K + nu, E + nu)\n", (LLD)ID);
+		SETERRQ1(PETSC_COMM_WORLD, PETSC_ERR_USER, "Unsupported or nonunique combination of elasticity parameters for phase %lld (G, Kb, G + Kb, G + nu, Kb + nu, E + nu)\n", (LLD)ID);
 	}
 
-	if(m->Kp && !K)
+	if(m->Kp && !Kb)
 	{
-		SETERRQ1(PETSC_COMM_WORLD, PETSC_ERR_USER, "Bulk modulus must be specified for phase %lld (K + Kp)", (LLD)ID);
+		SETERRQ1(PETSC_COMM_WORLD, PETSC_ERR_USER, "Bulk modulus (Kb) must be specified for phase %lld (Kb + Kp)", (LLD)ID);
 	}
 
-	if(m->beta && K)
+	if(m->beta && Kb)
 	{
-		SETERRQ1(PETSC_COMM_WORLD, PETSC_ERR_USER, "Density pressure dependence parameters are not unique for phase %lld (beta, K)", (LLD)ID);
+		SETERRQ1(PETSC_COMM_WORLD, PETSC_ERR_USER, "Density pressure dependence parameters are not unique for phase %lld (beta, Kb)", (LLD)ID);
 	}
 
 	// compute elastic parameters
-	if( G  && nu)          K  = 2*G*(1 + nu)/(3*(1 - 2*nu));
-	if( K  && nu)          G  = (3*K*(1 - 2*nu))/(2*(1 + nu));
-	if( E  && nu)        { K  = E/(3*(1 - 2*nu)); G = E/(2*(1 + nu)); }
-	if(!E  && K && G)      E  = 9*K*G/(3*K + G);
-	if(!nu && K && G)      nu = (3*K - 2*G)/(2*(3*K + G));
-	if( K  && G && m->rho) Vp = sqrt((K + 4.0*G/3.0)/m->rho);
-	if( G  && m->rho)      Vs = sqrt((G/m->rho));
+	if( G  && nu)          Kb  = 2*G*(1 + nu)/(3*(1 - 2*nu));
+	if( Kb && nu)          G   = (3*Kb*(1 - 2*nu))/(2*(1 + nu));
+	if( E  && nu)        { Kb  = E/(3*(1 - 2*nu)); G = E/(2*(1 + nu)); }
+	if(!E  && Kb && G)      E  = 9*Kb*G/(3*Kb + G);
+	if(!nu && Kb && G)      nu = (3*Kb - 2*G)/(2*(3*Kb + G));
+	if( Kb  && G && m->rho) Vp = sqrt((Kb + 4.0*G/3.0)/m->rho);
+	if( G  && m->rho)       Vs = sqrt((G/m->rho));
 
 	// store elastic moduli
-	m->G = G;
-	m->K = K;
+	m->G  = G;
+	m->Kb = Kb;
+
 
 	// check that at least one essential deformation mechanism is specified
 	if(!m->Bd && !m->Bn && !m->G && !m->Bdc)
@@ -553,81 +584,82 @@ PetscErrorCode DBMatReadPhase(DBMat *dbm, FB *fb)
 		SETERRQ1(PETSC_COMM_WORLD, PETSC_ERR_USER, "At least one of the parameter (set) Bd (eta), Bn (eta0, e0), Bdc, G must be specified for phase %lld", (LLD)ID);
 	}
 
-	// PRINT
+	// PRINT (optional)
+	if (PrintOutput){
+		PetscPrintf(PETSC_COMM_WORLD,"   Phase ID : %lld",(LLD)(m->ID));
 
-	PetscPrintf(PETSC_COMM_WORLD,"   Phase ID : %lld",(LLD)(m->ID));
+		if(strlen(ndiff)) PetscPrintf(PETSC_COMM_WORLD,"\n   diffusion creep profile  : %s", ndiff);
+		if(strlen(ndisl)) PetscPrintf(PETSC_COMM_WORLD,"\n   dislocation creep profile: %s", ndisl);
 
-	if(strlen(ndiff)) PetscPrintf(PETSC_COMM_WORLD,"    diffusion creep profile  : %s", ndiff);
-	if(strlen(ndisl)) PetscPrintf(PETSC_COMM_WORLD,"    dislocation creep profile: %s", ndisl);
+		sprintf(title, "   (dens)   : "); print_title = 1;
+		MatPrintScalParam(m->rho,   "rho",   "[kg/m^3]", scal, title, &print_title);
+		if(m->pdAct == 1)
+		{
+			PetscPrintf(PETSC_COMM_WORLD,"- Employing phase diagram: %s", PhaseDiagram);
+		}
+		else
+		MatPrintScalParam(m->rho_n, "rho_n", "[ ]",      scal, title, &print_title);
+		MatPrintScalParam(m->rho_c, "rho_c", "[1/m]",    scal, title, &print_title);
+		MatPrintScalParam(m->beta,  "beta",  "[1/Pa]",   scal, title, &print_title);
 
-	sprintf(title, "   (dens)   : "); print_title = 1;
-	MatPrintScalParam(m->rho,   "rho",   "[kg/m^3]", scal, title, &print_title);
-	if(m->pdAct == 1)
-	{
-		PetscPrintf(PETSC_COMM_WORLD,"- Employing phase diagram: %s", PhaseDiagram);
+		sprintf(title, "   (elast)  : "); print_title = 1;
+		MatPrintScalParam(G,     "G",  "[Pa]",  scal, title, &print_title);
+		MatPrintScalParam(Kb,    "Kb",  "[Pa]",  scal, title, &print_title);
+		MatPrintScalParam(E,     "E",  "[Pa]",  scal, title, &print_title);
+		MatPrintScalParam(nu,    "nu", "[ ]",   scal, title, &print_title);
+		MatPrintScalParam(m->Kp, "Kp", "[ ]",   scal, title, &print_title);
+		MatPrintScalParam(Vp,    "Vp", "[m/s]", scal, title, &print_title);
+		MatPrintScalParam(Vs,    "Vs", "[m/s]", scal, title, &print_title);
+
+		sprintf(title, "   (diff)   : "); print_title = 1;
+		MatPrintScalParam(eta,   "eta", "[Pa*s]",    scal, title, &print_title);
+		MatPrintScalParam(m->Bd, "Bd",  "[1/Pa/s]",  scal, title, &print_title);
+		MatPrintScalParam(m->Ed, "Ed",  "[J/mol]",   scal, title, &print_title);
+		MatPrintScalParam(m->Vd, "Vd",  "[m^3/mol]", scal, title, &print_title);
+
+		sprintf(title, "   (disl)   : "); print_title = 1;
+		MatPrintScalParam(eta0,  "eta0", "[Pa*s]",     scal, title, &print_title);
+		MatPrintScalParam(e0,    "e0",   "[1/s]",      scal, title, &print_title);
+		MatPrintScalParam(m->Bn, "Bn",   "[1/Pa^n/s]", scal, title, &print_title);
+		MatPrintScalParam(m->En, "En",   "[J/mol]",    scal, title, &print_title);
+		MatPrintScalParam(m->Vn, "Vn",   "[m^3/mol]",  scal, title, &print_title);
+		MatPrintScalParam(m->n,  "n",    "[ ]",        scal, title, &print_title);
+
+		sprintf(title, "   (peirl)  : "); print_title = 1;
+		MatPrintScalParam(m->Bp,    "Bp",    "[1/s]",     scal, title, &print_title);
+		MatPrintScalParam(m->Ep,    "Ep",    "[J/mol]",   scal, title, &print_title);
+		MatPrintScalParam(m->Vp,    "Vp",    "[m^3/mol]", scal, title, &print_title);
+		MatPrintScalParam(m->taup,  "taup",  "[Pa]",      scal, title, &print_title);
+		MatPrintScalParam(m->gamma, "gamma", "[ ]",       scal, title, &print_title);
+		MatPrintScalParam(m->q,     "q",     "[ ]",       scal, title, &print_title);
+
+		sprintf(title, "   (dc)     : "); print_title = 1;
+		MatPrintScalParam(m->Bdc,   "Bdc",  "[1/s]",   scal, title, &print_title);
+		MatPrintScalParam(m->Edc,   "Edc",  "[J/mol]", scal, title, &print_title);
+		MatPrintScalParam(m->Rdc,   "Rdc",  "[ ]",     scal, title, &print_title);
+		MatPrintScalParam(m->mu,    "mu",   "[Pa]",    scal, title, &print_title);
+
+		sprintf(title, "   (ps)     : "); print_title = 1;
+		MatPrintScalParam(m->Bps,   "Bps",  "[K*m^3/Pa/s]", scal, title, &print_title);
+		MatPrintScalParam(m->Eps,   "Eps",  "[J/mol]",      scal, title, &print_title);
+		MatPrintScalParam(m->d,     "d",    "[m]",          scal, title, &print_title);
+
+		sprintf(title, "   (plast)  : "); print_title = 1;
+		MatPrintScalParam(m->ch,     "ch",     "[Pa]",   scal, title, &print_title);
+		MatPrintScalParam(m->fr,     "fr",     "[deg]",  scal, title, &print_title);
+		MatPrintScalParam(m->eta_st, "eta_st", "[Pa*s]", scal, title, &print_title);
+		MatPrintScalParam(m->rp,     "rp",     "[ ]",    scal, title, &print_title);
+		if(frSoftID != -1) PetscPrintf(PETSC_COMM_WORLD, "frSoftID = %lld ", (LLD)frSoftID);
+		if(chSoftID != -1) PetscPrintf(PETSC_COMM_WORLD, "chSoftID = %lld ", (LLD)chSoftID);
+
+		sprintf(title, "   (temp)   : "); print_title = 1;
+		MatPrintScalParam(m->alpha, "alpha", "[1/K]",    scal, title, &print_title);
+		MatPrintScalParam(m->Cp,    "Cp",    "[J/kg/K]", scal, title, &print_title);
+		MatPrintScalParam(m->k,     "k",     "[W/m/k]",  scal, title, &print_title);
+		MatPrintScalParam(m->A,     "A",     "[W/kg]",   scal, title, &print_title);
+		MatPrintScalParam(m->T,     "T",     "[C]",      scal, title, &print_title);
+		PetscPrintf(PETSC_COMM_WORLD,"\n\n");
 	}
-	else
-	MatPrintScalParam(m->rho_n, "rho_n", "[ ]",      scal, title, &print_title);
-	MatPrintScalParam(m->rho_c, "rho_c", "[1/m]",    scal, title, &print_title);
-	MatPrintScalParam(m->beta,  "beta",  "[1/Pa]",   scal, title, &print_title);
-
-	sprintf(title, "   (elast)  : "); print_title = 1;
-	MatPrintScalParam(G,     "G",  "[Pa]",  scal, title, &print_title);
-	MatPrintScalParam(K,     "K",  "[Pa]",  scal, title, &print_title);
-	MatPrintScalParam(E,     "E",  "[Pa]",  scal, title, &print_title);
-	MatPrintScalParam(nu,    "nu", "[ ]",   scal, title, &print_title);
-	MatPrintScalParam(m->Kp, "Kp", "[ ]",   scal, title, &print_title);
-	MatPrintScalParam(Vp,    "Vp", "[m/s]", scal, title, &print_title);
-	MatPrintScalParam(Vs,    "Vs", "[m/s]", scal, title, &print_title);
-
-	sprintf(title, "   (diff)   : "); print_title = 1;
-	MatPrintScalParam(eta,   "eta", "[Pa*s]",    scal, title, &print_title);
-	MatPrintScalParam(m->Bd, "Bd",  "[1/Pa/s]",  scal, title, &print_title);
-	MatPrintScalParam(m->Ed, "Ed",  "[J/mol]",   scal, title, &print_title);
-	MatPrintScalParam(m->Vd, "Vd",  "[m^3/mol]", scal, title, &print_title);
-
-	sprintf(title, "   (disl)   : "); print_title = 1;
-	MatPrintScalParam(eta0,  "eta0", "[Pa*s]",     scal, title, &print_title);
-	MatPrintScalParam(e0,    "e0",   "[1/s]",      scal, title, &print_title);
-	MatPrintScalParam(m->Bn, "Bn",   "[1/Pa^n/s]", scal, title, &print_title);
-	MatPrintScalParam(m->En, "En",   "[J/mol]",    scal, title, &print_title);
-	MatPrintScalParam(m->Vn, "Vn",   "[m^3/mol]",  scal, title, &print_title);
-	MatPrintScalParam(m->n,  "n",    "[ ]",        scal, title, &print_title);
-
-	sprintf(title, "   (peirl)  : "); print_title = 1;
-	MatPrintScalParam(m->Bp,    "Bp",    "[1/s]",     scal, title, &print_title);
-	MatPrintScalParam(m->Ep,    "Ep",    "[J/mol]",   scal, title, &print_title);
-	MatPrintScalParam(m->Vp,    "Vp",    "[m^3/mol]", scal, title, &print_title);
-	MatPrintScalParam(m->taup,  "taup",  "[Pa]",      scal, title, &print_title);
-	MatPrintScalParam(m->gamma, "gamma", "[ ]",       scal, title, &print_title);
-	MatPrintScalParam(m->q,     "q",     "[ ]",       scal, title, &print_title);
-
-	sprintf(title, "   (dc)     : "); print_title = 1;
-	MatPrintScalParam(m->Bdc,   "Bdc",  "[1/s]",   scal, title, &print_title);
-	MatPrintScalParam(m->Edc,   "Edc",  "[J/mol]", scal, title, &print_title);
-	MatPrintScalParam(m->Rdc,   "Rdc",  "[ ]",     scal, title, &print_title);
-	MatPrintScalParam(m->mu,    "mu",   "[Pa]",    scal, title, &print_title);
-
-	sprintf(title, "   (ps)     : "); print_title = 1;
-	MatPrintScalParam(m->Bps,   "Bps",  "[K*m^3/Pa/s]", scal, title, &print_title);
-	MatPrintScalParam(m->Eps,   "Eps",  "[J/mol]",      scal, title, &print_title);
-	MatPrintScalParam(m->d,     "d",    "[m]",          scal, title, &print_title);
-
-	sprintf(title, "   (plast)  : "); print_title = 1;
-	MatPrintScalParam(m->ch,     "ch",     "[Pa]",   scal, title, &print_title);
-	MatPrintScalParam(m->fr,     "fr",     "[deg]",  scal, title, &print_title);
-	MatPrintScalParam(m->eta_st, "eta_st", "[Pa*s]", scal, title, &print_title);
-	MatPrintScalParam(m->rp,     "rp",     "[ ]",    scal, title, &print_title);
-	if(frSoftID != -1) PetscPrintf(PETSC_COMM_WORLD, "frSoftID = %lld ", (LLD)frSoftID);
-	if(chSoftID != -1) PetscPrintf(PETSC_COMM_WORLD, "chSoftID = %lld ", (LLD)chSoftID);
-
-	sprintf(title, "   (temp)   : "); print_title = 1;
-	MatPrintScalParam(m->alpha, "alpha", "[1/K]",    scal, title, &print_title);
-	MatPrintScalParam(m->Cp,    "Cp",    "[J/kg/K]", scal, title, &print_title);
-	MatPrintScalParam(m->k,     "k",     "[W/m/k]",  scal, title, &print_title);
-	MatPrintScalParam(m->A,     "A",     "[W/kg]",   scal, title, &print_title);
-	MatPrintScalParam(m->T,     "T",     "[C]",      scal, title, &print_title);
-	PetscPrintf(PETSC_COMM_WORLD,"\n\n");
 
 	// SCALE
 
@@ -661,13 +693,15 @@ PetscErrorCode DBMatReadPhase(DBMat *dbm, FB *fb)
 
 	// elasticity
 	m->G      /= scal->stress_si;
-	m->K      /= scal->stress_si;
+	m->Kb     /= scal->stress_si;
 
 	// plasticity
 	m->ch     /= scal->stress_si;
 	m->fr     /= scal->angle;
-	m->eta_st /= scal->viscosity;
 
+
+    m->eta_st /= scal->viscosity;
+    
 	// temperature
 	m->alpha  /= scal->expansivity;
 	m->Cp     /= scal->cpecific_heat;
@@ -721,119 +755,6 @@ PetscErrorCode GetProfileName(FB *fb, Scaling *scal, char name[], const char key
 	if(strlen(name) && scal->utype == _NONE_)
 	{
 		SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "Predefined creep profile is not supported for non-dimensional setup");
-	}
-
-	PetscFunctionReturn(0);
-}
-//---------------------------------------------------------------------------
-#undef __FUNCT__
-#define __FUNCT__ "MatPropSetFromLibCall"
-PetscErrorCode MatPropSetFromLibCall(JacRes *jr, ModParam *mod, FB *fb)
-{
-	// overwrite MATERIAL PARAMETERS with model parameters provided by a calling function
-
-	PetscInt 	id, im;
-	PetscScalar eta, eta0, e0;
-	Material_t *m;
-	Scaling    *scal;
-
-
-	PetscErrorCode ierr;
-	PetscFunctionBegin;
-
-	scal = jr->scal;
-
-	if(mod == NULL) PetscFunctionReturn(0);
-
-	// does a calling function provide model parameters?
-	if(mod->use == 0 || mod->use == 2 || mod->use == 4) PetscFunctionReturn(0);
-
-	// set material properties
-	if(mod->use == 1 || mod->use == 3) {
-		PetscPrintf(PETSC_COMM_WORLD,"# ------------------------------------------------------------------------\n");
-		PetscPrintf(PETSC_COMM_WORLD,"# Material properties set from calling function: \n");
-
-		if(mod->use == 3)
-		{
-			VecGetArray(mod->P,&mod->val);
-		}
-
-		for(im=0;im<mod->mdN;im++)
-		{
-
-			id = mod->phs[im];
-			// get pointer to specified phase
-			m = jr->dbm->phases + id;
-
-			// linear viscosity
-			if(mod->typ[im] == _ETA_)
-			{
-				eta    =  mod->val[im];
-				m->Bd  =  (1.0/(2.0*eta)) * scal->viscosity;
-				PetscPrintf(PETSC_COMM_WORLD,"#    eta[%lld] = %g \n",(LLD)id,eta);	
-			}
-			// powerlaw viscosity
-			else if(mod->typ[im] == _ETA0_)
-			{
-				eta0   =  mod->val[im];
-				
-				// get reference strainrate from file  ( this is super unnecessary but unfortunately there is no other way to recompute Bn here)
-				ierr = getScalarParam(fb, _OPTIONAL_, "e0",       &e0,       1, 1.0); CHKERRQ(ierr);
-				
-				m->Bn  =  (pow (2.0*eta0, -m->n)*pow(e0, 1 - m->n)) * pow(scal->stress_si, m->n)*scal->time_si;
-				PetscPrintf(PETSC_COMM_WORLD,"#    eta[%lld] = %g \n",(LLD)id,eta0);
-			}
-			// constant density
-			else if(mod->typ[im] == _RHO0_) 
-			{
-				m->rho = mod->val[im] / scal->density;
-				PetscPrintf(PETSC_COMM_WORLD,"#    rho0[%lld] = %5.5f \n",(LLD)id,m->rho * scal->density);
-			}
-			// depth dependent density
-			else if(mod->typ[im] == _RHON_)
-			{
-				m->rho_n = mod->val[im];
-				PetscPrintf(PETSC_COMM_WORLD,"#    rho_n[%lld] = %3.5f \n",(LLD)id,m->rho_n);
-			}
-			// depth dependent density
-			else if(mod->typ[im] == _RHOC_)
-			{
-				m->rho_c = mod->val[im] / scal->length_si;
-				PetscPrintf(PETSC_COMM_WORLD,"#    rho_c[%lld] = %3.5f \n",(LLD)id,m->rho_c * scal->length_si);
-			}
-			// powerlaw exponent
-			else if(mod->typ[im] == _N_)
-			{
-				PetscScalar F2;
-				m->n = mod->val[im];
-				// in case of Ranalli dislocation creep
-				F2 = pow(0.5,(m->n-1)/m->n) / pow(3,(m->n+1)/(2*m->n)); //  F2 = 1/2^((n-1)/n)/3^((n+1)/2/n);
-				m->Bn = (pow(2*F2,-m->n) * pow(1e6*pow((m->Bn),-1/m->n),-m->n));
-				m->Bn    *= pow(scal->stress_si, m->n)*scal->time_si;
-
-				// in caswe of simple powerlaw
-				// m->Bn = (pow (2.0*eta0, -m->n)*pow(e0, 1 - m->n)) * (pow(scal->stress_si, m->n)*scal->time_si);
-				PetscPrintf(PETSC_COMM_WORLD,"#    n[%lld] = %3.3f \n",(LLD)id,m->n);
-			}
-			// activation energy
-			else if(mod->typ[im] == _EN_)
-			{
-				m->En = mod->val[im];
-				PetscPrintf(PETSC_COMM_WORLD,"#    En[%lld] = %7.2f \n",(LLD)id,m->En);
-			}
-			else
-			{
-				PetscPrintf(PETSC_COMM_WORLD,"WARNING: inversion parameter type is not yet implemented \n");
-			}
-
-		}
-
-		if(mod->use == 3)
-		{
-			VecRestoreArray(mod->P,&mod->val);
-		}
-
-		PetscPrintf(PETSC_COMM_WORLD,"# ------------------------------------------------------------------------\n");
 	}
 
 	PetscFunctionReturn(0);
@@ -1712,3 +1633,62 @@ PetscErrorCode MatPropSetFromCL(JacRes *jr)
 }
 //---------------------------------------------------------------------------
 */
+//---------------------------------------------------------------------------
+#undef __FUNCT__
+#define __FUNCT__ "PrintMatProp"
+PetscErrorCode PrintMatProp(Material_t *MatProp)
+{
+	// Prints an overview of the material properties specified for a certain phase (for debugging)
+	PetscFunctionBegin;
+
+	PetscPrintf(PETSC_COMM_WORLD,">>> Material properties for phase %i with visId=%i : \n",MatProp->ID, MatProp->visID);
+	PetscPrintf(PETSC_COMM_WORLD,">>> Density:          rho   = %1.7e,  rho_n = %1.7e,    rho_c = %1.7e,   beta = %1.7e \n",  MatProp->rho,MatProp->rho_c, MatProp->rho_c, MatProp->beta);
+	PetscPrintf(PETSC_COMM_WORLD,">>> Elasticity:       Kb    = %1.7e,  Kp    = %1.7e,    G     = %1.7e \n",                MatProp->Kb, MatProp->Kp, MatProp->G);
+	PetscPrintf(PETSC_COMM_WORLD,">>> Diffusion Cr.:    Bd    = %1.7e,  Ed    = %1.7e,    Vd    = %1.7e \n",                MatProp->Bd, MatProp->Ed, MatProp->Vd);
+	PetscPrintf(PETSC_COMM_WORLD,">>> Dislocation Cr.:  Bn    = %1.7e,  n     = %1.7e,    Vn    = %1.7e,    En  = %1.7e \n", MatProp->Bn, MatProp->n, MatProp->Vn, MatProp->En);
+	PetscPrintf(PETSC_COMM_WORLD,">>> Peierls Cr.:      Bp    = %1.7e,  Ep    = %1.7e,    Vp    = %1.7e,    taup= %1.7e,    gamma  = %1.7e,     q        = %1.7e \n", MatProp->Bp, MatProp->Ep, MatProp->Vp, MatProp->taup, MatProp->gamma, MatProp->q);
+	PetscPrintf(PETSC_COMM_WORLD,">>> dc Cr.:           Bdc   = %1.7e,  Edc   = %1.7e,    Rdc   = %1.7e,    mu  = %1.7e \n", MatProp->Bdc, MatProp->Edc, MatProp->Rdc, MatProp->mu);
+    PetscPrintf(PETSC_COMM_WORLD,">>> ps Cr.:           Bps   = %1.7e,  Eps   = %1.7e,    d     = %1.7e,    \n", MatProp->Bps, MatProp->Eps, MatProp->d);
+    
+    PetscPrintf(PETSC_COMM_WORLD,">>> Plasticity:       fr    = %1.7e,  ch    = %1.7e,    eta_st= %1.7e,    rp= %1.7e,    frSoftID = %i,                chSoftID = %i \n", MatProp->fr, MatProp->ch, MatProp->eta_st, MatProp->rp, MatProp->frSoftID, MatProp->chSoftID);
+	PetscPrintf(PETSC_COMM_WORLD,">>> Thermal:          alpha = %1.7e,  Cp    = %1.7e,    k     = %1.7e,    A = %1.7e,    T        = %1.7e \n", MatProp->alpha, MatProp->Cp, MatProp->k, MatProp->A, MatProp->T);
+
+	PetscPrintf(PETSC_COMM_WORLD," \n");
+
+  
+	PetscFunctionReturn(0);
+}
+
+//---------------------------------------------------------------------------
+#undef __FUNCT__
+#define __FUNCT__ "DBMatOverwriteWithGlobalVariables"
+PetscErrorCode DBMatOverwriteWithGlobalVariables(DBMat *dbm, FB *fb, PetscBool PrintOutput)
+{
+    PetscFunctionBegin;
+
+    PetscErrorCode  ierr;
+    PetscScalar     eta_min;
+    PetscInt        ID;
+    Material_t      *m;
+    Scaling         *scal;
+	PetscFunctionBegin;
+
+	// access context
+	scal    = dbm->scal;
+
+    eta_min = 0;
+    ierr    = getScalarParam(fb, _OPTIONAL_, "eta_min",         &eta_min,        1, 1.0); CHKERRQ(ierr);
+
+	for(ID = 0; ID < dbm->numPhases; ID++)
+	{   
+    	// get pointer to specified phase
+        m = &dbm->phases[ID];
+      
+        // Plasticity stabilization viscosity: set to eta_min, if not defined 
+        if(!m->eta_st) m->eta_st = eta_min/scal->viscosity; // set default stabilization viscosity if not defined    
+        
+	}
+
+	PetscFunctionReturn(0);
+}
+//---------------------------------------------------------------------------

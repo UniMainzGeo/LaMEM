@@ -304,6 +304,7 @@ PetscInt OutMaskCountActive(OutMask *omask)
 	if(omask->visc_creep)     cnt++; // creep effective viscosity
 	if(omask->velocity)       cnt++; // velocity
 	if(omask->pressure)       cnt++; // pressure
+	if(omask->gradient)       cnt++; // adjoint gradient
 	if(omask->eff_press)      cnt++; // effective pressure
 	if(omask->over_press)     cnt++; // overpressure
 	if(omask->litho_press)    cnt++; // lithostatic pressure
@@ -323,6 +324,7 @@ PetscInt OutMaskCountActive(OutMask *omask)
 	if(omask->plast_dissip)   cnt++; // plastic dissipation
 	if(omask->tot_displ)      cnt++; // total displacements
 	if(omask->SHmax)          cnt++; // maximum horizontal stress
+	if(omask->StAngle)        cnt++; // Stress angle
 	if(omask->EHmax)          cnt++; // maximum horizontal stress
 	if(omask->yield)          cnt++; // yield stress
 	if(omask->DIIdif)         cnt++; // diffusion creep relative strain rate
@@ -371,6 +373,7 @@ PetscErrorCode PVOutCreate(PVOut *pvout, FB *fb)
 	ierr = getIntParam   (fb, _OPTIONAL_, "out_visc_creep",     &omask->visc_creep,        1, 1); CHKERRQ(ierr);
 	ierr = getIntParam   (fb, _OPTIONAL_, "out_velocity",       &omask->velocity,          1, 1); CHKERRQ(ierr);
 	ierr = getIntParam   (fb, _OPTIONAL_, "out_pressure",       &omask->pressure,          1, 1); CHKERRQ(ierr);
+	ierr = getIntParam   (fb, _OPTIONAL_, "out_gradient",       &omask->gradient,          1, 1); CHKERRQ(ierr);
 	ierr = getIntParam   (fb, _OPTIONAL_, "out_eff_press",      &omask->eff_press,         1, 1); CHKERRQ(ierr);
 	ierr = getIntParam   (fb, _OPTIONAL_, "out_over_press",     &omask->over_press,        1, 1); CHKERRQ(ierr);
 	ierr = getIntParam   (fb, _OPTIONAL_, "out_litho_press",    &omask->litho_press,       1, 1); CHKERRQ(ierr);
@@ -384,6 +387,7 @@ PetscErrorCode PVOutCreate(PVOut *pvout, FB *fb)
 //	ierr = getIntParam   (fb, _OPTIONAL_, "out_vorticity",      &omask->vorticity,         1, 1); CHKERRQ(ierr);
 //	ierr = getIntParam   (fb, _OPTIONAL_, "out_ang_vel_mag",    &omask->ang_vel_mag,       1, 1); CHKERRQ(ierr);
 	ierr = getIntParam   (fb, _OPTIONAL_, "out_shmax",          &omask->SHmax,             1, 1); CHKERRQ(ierr);
+	ierr = getIntParam   (fb, _OPTIONAL_, "out_stangle",        &omask->StAngle,           1, 1); CHKERRQ(ierr);
 	ierr = getIntParam   (fb, _OPTIONAL_, "out_ehmax",          &omask->EHmax,             1, 1); CHKERRQ(ierr);
 	ierr = getIntParam   (fb, _OPTIONAL_, "out_yield",          &omask->yield,             1, 1); CHKERRQ(ierr);
 	ierr = getIntParam   (fb, _OPTIONAL_, "out_rel_dif_rate",   &omask->DIIdif,            1, 1); CHKERRQ(ierr);
@@ -439,6 +443,7 @@ PetscErrorCode PVOutCreate(PVOut *pvout, FB *fb)
 	if(omask->visc_creep)     PetscPrintf(PETSC_COMM_WORLD, "   Creep effective viscosity               @ \n");
 	if(omask->velocity)       PetscPrintf(PETSC_COMM_WORLD, "   Velocity                                @ \n");
 	if(omask->pressure)       PetscPrintf(PETSC_COMM_WORLD, "   Pressure                                @ \n");
+	if(omask->gradient)       PetscPrintf(PETSC_COMM_WORLD, "   Adjoint gradient                        @ \n");
 	if(omask->eff_press)      PetscPrintf(PETSC_COMM_WORLD, "   Effective pressure                      @ \n");
 	if(omask->over_press)     PetscPrintf(PETSC_COMM_WORLD, "   Overpressure                            @ \n");
 	if(omask->litho_press)    PetscPrintf(PETSC_COMM_WORLD, "   Lithostatic pressure                    @ \n");
@@ -449,6 +454,7 @@ PetscErrorCode PVOutCreate(PVOut *pvout, FB *fb)
 	if(omask->strain_rate)    PetscPrintf(PETSC_COMM_WORLD, "   Deviatoric strain rate tensor           @ \n");
 	if(omask->j2_strain_rate) PetscPrintf(PETSC_COMM_WORLD, "   Deviatoric strain rate second invariant @ \n");
 	if(omask->SHmax)          PetscPrintf(PETSC_COMM_WORLD, "   Maximum horizontal stress               @ \n");
+	if(omask->StAngle)        PetscPrintf(PETSC_COMM_WORLD, "   Principal stress angle                  @ \n");
 	if(omask->EHmax)          PetscPrintf(PETSC_COMM_WORLD, "   Maximum horizontal extension            @ \n");
 	if(omask->yield)          PetscPrintf(PETSC_COMM_WORLD, "   Yield stress                            @ \n");
 	if(omask->DIIdif)         PetscPrintf(PETSC_COMM_WORLD, "   Diffusion creep relative strain rate    @ \n");
@@ -519,6 +525,7 @@ PetscErrorCode PVOutCreateData(PVOut *pvout)
 	if(omask->visc_creep)     OutVecCreate(&pvout->outvecs[iter++], jr, outbuf, "visc_creep",     scal->lbl_viscosity,        &PVOutWriteViscCreep,    1, NULL);
 	if(omask->velocity)       OutVecCreate(&pvout->outvecs[iter++], jr, outbuf, "velocity",       scal->lbl_velocity,         &PVOutWriteVelocity,     3, NULL);
 	if(omask->pressure)       OutVecCreate(&pvout->outvecs[iter++], jr, outbuf, "pressure",       scal->lbl_stress,           &PVOutWritePressure,     1, NULL);
+	if(omask->gradient)       OutVecCreate(&pvout->outvecs[iter++], jr, outbuf, "gradient",       scal->lbl_unit,             &PVOutWriteGradient,     1, NULL);
 	if(omask->eff_press)      OutVecCreate(&pvout->outvecs[iter++], jr, outbuf, "eff_press",      scal->lbl_stress,           &PVOutWriteEffPress,     1, NULL);
 	if(omask->over_press)     OutVecCreate(&pvout->outvecs[iter++], jr, outbuf, "over_press",     scal->lbl_stress,           &PVOutWriteOverPress,    1, NULL);
 	if(omask->litho_press)    OutVecCreate(&pvout->outvecs[iter++], jr, outbuf, "litho_press",    scal->lbl_stress,           &PVOutWriteLithoPress,   1, NULL);
@@ -536,6 +543,7 @@ PetscErrorCode PVOutCreateData(PVOut *pvout)
 	if(omask->plast_dissip)   OutVecCreate(&pvout->outvecs[iter++], jr, outbuf, "plast_dissip",   scal->lbl_dissipation_rate, &PVOutWritePlastDissip,  1, NULL);
 	if(omask->tot_displ)      OutVecCreate(&pvout->outvecs[iter++], jr, outbuf, "tot_displ",      scal->lbl_length,           &PVOutWriteTotDispl,     3, NULL);
 	if(omask->SHmax)          OutVecCreate(&pvout->outvecs[iter++], jr, outbuf, "SHmax",          scal->lbl_unit,             &PVOutWriteSHmax,        3, NULL);
+	if(omask->StAngle)        OutVecCreate(&pvout->outvecs[iter++], jr, outbuf, "StAngle",        scal->lbl_unit,             &PVOutWriteStAngle,      1, NULL);
 	if(omask->EHmax)          OutVecCreate(&pvout->outvecs[iter++], jr, outbuf, "EHmax",          scal->lbl_unit,             &PVOutWriteEHmax,        3, NULL);
 	if(omask->yield)          OutVecCreate(&pvout->outvecs[iter++], jr, outbuf, "yield",          scal->lbl_stress,           &PVOutWriteYield,        1, NULL);
 	if(omask->DIIdif)         OutVecCreate(&pvout->outvecs[iter++], jr, outbuf, "rel_dif_rate",   scal->lbl_unit,             &PVOutWriteRelDIIdif,    1, NULL);

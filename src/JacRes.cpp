@@ -65,7 +65,7 @@ PetscErrorCode JacResCreate(JacRes *jr, FB *fb)
 	BCCtx      *bc;
 	PetscScalar gx, gy, gz;
 	char        gwtype [_str_len_];
-	PetscInt    i, numPhases;
+	PetscInt    i, numPhases, temp_int;
 	PetscInt    is_elastic, need_RUGC, need_rho_fluid, need_surf, need_gw_type, need_top_open;
 
 	PetscErrorCode ierr;
@@ -126,7 +126,7 @@ PetscErrorCode JacResCreate(JacRes *jr, FB *fb)
 	ierr = getIntParam   (fb, _OPTIONAL_, "get_permea",      &ctrl->getPermea,      1, 1);   CHKERRQ(ierr);
 	ierr = getIntParam   (fb, _OPTIONAL_, "rescal",          &ctrl->rescal,         1, 1);   CHKERRQ(ierr);
 	ierr = getScalarParam(fb, _OPTIONAL_, "mfmax",           &ctrl->mfmax,          1, 1.0); CHKERRQ(ierr);
-	ierr = getIntParam   (fb, _OPTIONAL_, "lmaxit",          &ctrl->lmaxit,         1, 1);   CHKERRQ(ierr);
+	ierr = getIntParam   (fb, _OPTIONAL_, "lmaxit",          &ctrl->lmaxit,         1, 1000);   CHKERRQ(ierr);
 	ierr = getScalarParam(fb, _OPTIONAL_, "lrtol",           &ctrl->lrtol,          1, 1.0); CHKERRQ(ierr);
 	ierr = getIntParam   (fb, _OPTIONAL_, "Phasetrans",      &ctrl->Phasetrans,         1, 1);   CHKERRQ(ierr);
 
@@ -152,7 +152,7 @@ PetscErrorCode JacResCreate(JacRes *jr, FB *fb)
 	{
 		m = jr->dbm->phases + i;
 
-		if(m->G   || m->K)            is_elastic     = 1;
+		if(m->G   || m->Kb)           is_elastic     = 1;
 		if(m->Ed  || m->En || m->Ep
 		|| m->Vd  || m->Vn || m->Vp
 		|| m->Bdc || m->Bps )         need_RUGC      = 1;
@@ -161,16 +161,16 @@ PetscErrorCode JacResCreate(JacRes *jr, FB *fb)
 		if(m->rho_n)                  need_surf      = 1;
 		if(((m->Vd || m->Vn || m->Vp) && !ctrl->pLithoVisc)
 		||  (m->fr                    && !ctrl->pLithoPlast)
-		||  (m->K || m->beta))        need_top_open  = 1;
+		||  (m->Kb || m->beta))       need_top_open  = 1;
 
 		// set default stabilization viscosity
-		if(!m->eta_st) m->eta_st = ctrl->eta_min/scal->viscosity;
+		//if(!m->eta_st) m->eta_st = ctrl->eta_min/scal->viscosity;
 
 	}
 
 	if(need_top_open && !bc->top_open)
 	{
-		SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "True pressure-dependent rheology requires open top boundary (Vd, Vn, Vp, fr, K, beta, p_litho_visc, p_litho_plast, open_top_bound)\n");
+		SETERRQ(PETSC_COMM_WORLD, PETSC_ERR_USER, "True pressure-dependent rheology requires open top boundary (Vd, Vn, Vp, fr, Kb, beta, p_litho_visc, p_litho_plast, open_top_bound)\n");
 	}
 
 	// fix advection time steps for elasticity or kinematic block BC
@@ -312,6 +312,14 @@ PetscErrorCode JacResCreate(JacRes *jr, FB *fb)
 	ctrl->gwLevel        /=  scal->length;
 	ctrl->steadyTempStep /=  scal->time;
 
+	// adjoint field based gradient output vector
+	ierr = getIntParam   (fb, _OPTIONAL_, "Adjoint_FieldSensitivity"        , &temp_int,        1, 1        ); CHKERRQ(ierr);  // Do a field sensitivity test? -> Will do the test for the first InverseParStart that is given!
+	if (temp_int == 1)
+	{
+		ierr = DMCreateLocalVector (jr->fs->DA_CEN, &jr->lgradfield);      CHKERRQ(ierr);
+		ierr = VecZeroEntries(jr->lgradfield); CHKERRQ(ierr);
+	}
+
 	// create Jacobian & residual evaluation context
 	ierr = JacResCreateData(jr); CHKERRQ(ierr);
 
@@ -394,6 +402,10 @@ PetscErrorCode JacResCreateData(JacRes *jr)
 	ierr = DMCreateLocalVector (fs->DA_CEN, &jr->lp);      CHKERRQ(ierr);
 	ierr = DMCreateLocalVector (fs->DA_CEN, &jr->lp_lith); CHKERRQ(ierr);
 	ierr = DMCreateLocalVector (fs->DA_CEN, &jr->lp_pore); CHKERRQ(ierr);
+
+	// PSD (adjoint paper)
+	ierr = VecDuplicate(jr->gsol, &jr->phi);               CHKERRQ(ierr);
+	ierr = VecSet(jr->phi, 0.0); CHKERRQ(ierr);
 
 	// continuity residual
 	ierr = DMCreateGlobalVector(fs->DA_CEN, &jr->gc); CHKERRQ(ierr);
@@ -532,6 +544,8 @@ PetscErrorCode JacResDestroy(JacRes *jr)
 	ierr = VecDestroy(&jr->lp_pore); CHKERRQ(ierr);
 
 	ierr = VecDestroy(&jr->gc);      CHKERRQ(ierr);
+
+	ierr = VecDestroy(&jr->phi);     CHKERRQ(ierr);
 
 	ierr = VecDestroy(&jr->lbcor);   CHKERRQ(ierr);
 

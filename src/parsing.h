@@ -99,6 +99,7 @@ struct FB
 	PetscInt  *blBeg;   // starting lines of blocks
 	PetscInt  *blEnd;   // ending lines of blocks
 
+    PetscInt   ID;      // ID of the current phase or softening law 
 };
 
 //-----------------------------------------------------------------------------
