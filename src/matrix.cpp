@@ -148,7 +148,7 @@ PetscErrorCode MatAIJSetNullSpace(Mat P, DOFIndex *dof)
 	Vec          nullsp_vecs[_max_nullsp_sz_]; // near null space vectors
 	PetscScalar *v;
 	PetscBool    set_nullsp;
-	PetscInt     i, j, sz, ln, iter, nullsp_sz, lbsz[_max_nullsp_sz_];
+	PetscInt     i, j, sz, ln=0, iter, nullsp_sz=0, lbsz[_max_nullsp_sz_];
 
 	PetscErrorCode ierr;
 	PetscFunctionBegin;

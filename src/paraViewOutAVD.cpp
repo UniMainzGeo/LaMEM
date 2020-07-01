@@ -682,7 +682,7 @@ void AVD3DUpdateChain(AVD3D A, const PetscInt p_i)
 #define __FUNCT__ "PVAVDCreate"
 PetscErrorCode PVAVDCreate(PVAVD *pvavd, FB *fb)
 {
-	char filename[_str_len_];
+	char filename[_str_len_-6];
 
 	PetscErrorCode ierr;
 	PetscFunctionBegin;

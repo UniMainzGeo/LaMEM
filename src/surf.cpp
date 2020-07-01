@@ -967,7 +967,7 @@ PetscErrorCode FreeSurfAppSedimentation(FreeSurf *surf)
 	JacRes      *jr;
 	FDSTAG      *fs;
 	PetscScalar ***topo;
-	PetscScalar dt, time, rate, zbot, ztop, z,zprop,zpropn, dz, dr, x,y;
+	PetscScalar dt, time, rate, zbot, ztop, z,zprop=0.0,zpropn=0.0, dz, dr, x,y;
 	PetscScalar rsq, rsqn, t0, t0n, l[2], aE[2], aO[2],ln[2], aEn[2], aOn[2], b[2],c[2],d,dn;
 	PetscInt    L, jj, phase;
 	PetscInt    i, j, nx, ny, sx, sy, sz;
