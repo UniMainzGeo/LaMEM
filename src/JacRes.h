@@ -85,6 +85,7 @@ struct SolVarBulk
 	PetscScalar  pn;     // history pressure
 	PetscScalar  rho_pf; // fluid density from phase diagram
 	PetscScalar  mf;     // melt fraction from phase diagram
+	PetscScalar  phi;    // PSD angle
 
 };
 
@@ -249,6 +250,7 @@ struct JacRes
 
 	// Adjoint field based gradients
 	Vec          lgradfield;
+	Vec          phi; // PSD context
 
 	//=======================
 	// temperature parameters

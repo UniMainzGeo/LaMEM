@@ -153,6 +153,9 @@ PetscErrorCode FreeSurfCreate(FreeSurf *surf, FB *fb)
 	// initialize topography from file if provided
 	ierr = FreeSurfSetTopoFromFile(surf, fb); CHKERRQ(ierr);
 
+	// set initial perturbation on topography
+	ierr = FreeSurfSetInitialPerturbation(surf, fb); 
+
 	// compute & store average topography
 	ierr = FreeSurfGetAvgTopo(surf); CHKERRQ(ierr);
 
@@ -1231,6 +1234,85 @@ PetscErrorCode FreeSurfAppSedimentation(FreeSurf *surf)
 	}
 
 	
+	PetscFunctionReturn(0);
+}
+//---------------------------------------------------------------------------
+#undef __FUNCT__
+#define __FUNCT__ "FreeSurfSetInitialPerturbation"
+PetscErrorCode FreeSurfSetInitialPerturbation(FreeSurf *surf, FB *fb)
+{
+	FDSTAG         	*fs;
+	PetscInt       	i, j, nx, ny, sx, sy, sz, level, RandNoiseSeed;
+	PetscScalar    	***topo;
+	PetscScalar    	xp, yp,  bx, by, ex, ey, leng;
+	PetscScalar    	wavel, ampl_cos, ampl_noise, rnd;	
+	PetscRandom 	rctx;
+
+	PetscErrorCode ierr;
+	PetscFunctionBegin;
+	
+	// retrieve parameters
+	wavel 		= 0.0;		//
+	PetscOptionsGetScalar(NULL,0,"-FreeSurf_Wavelength",&wavel,0);
+
+	ampl_cos	= 0;
+	PetscOptionsGetScalar(NULL,0,"-FreeSurf_AmplCos",&ampl_cos,0);
+
+	ampl_noise  = 0.0;
+	PetscOptionsGetScalar(NULL,0,"-FreeSurf_AmplNoise",&ampl_noise,0);
+
+	RandNoiseSeed = 12345678;
+	PetscOptionsGetInt(NULL,0,"-FreeSurf_NoiseSeed",&RandNoiseSeed,0);		// use the same seed
+
+	if (!wavel & !ampl_cos & !ampl_noise){ PetscFunctionReturn(0);}
+
+	// Create random context - if we use the same seed
+	ierr = PetscRandomCreate(PETSC_COMM_SELF,&rctx); 	 CHKERRQ(ierr);
+	ierr = PetscRandomSetInterval(rctx,-1.0,1.0);		 CHKERRQ(ierr);
+	ierr = PetscRandomSetSeed(rctx,RandNoiseSeed);			 CHKERRQ(ierr);
+	ierr = PetscRandomSeed(rctx);						 CHKERRQ(ierr);
+
+	// access context
+	fs    = surf->jr->fs;
+	level = fs->dsz.rank;
+	leng  = surf->jr->scal->length;
+
+	// get mesh extents
+	ierr = FDSTAGGetGlobalBox(fs, &bx, &by, 0, &ex, &ey, 0); CHKERRQ(ierr);
+
+	// access topography vector
+	ierr = DMDAVecGetArray(surf->DA_SURF, surf->gtopo,  &topo);  CHKERRQ(ierr);
+
+	// scan all free surface local points
+	ierr = DMDAGetCorners(fs->DA_COR, &sx, &sy, &sz, &nx, &ny, NULL); CHKERRQ(ierr);
+
+	// runs over all LaMEM nodes
+	START_PLANE_LOOP
+	{
+		// get node coordinate
+		xp = COORD_NODE(i, sx, fs->dsx);
+		yp = COORD_NODE(j, sy, fs->dsy);
+
+		// interpolate topography from input grid onto LaMEM nodes
+		PetscRandomGetValueReal(rctx,&rnd);
+
+		topo[level][j][i] = topo[level][j][i] + 
+				  ampl_cos  * (PetscCosScalar(2*PETSC_PI/wavel*xp))/leng
+				+ ampl_noise* rnd;
+		
+
+	}
+	END_PLANE_LOOP
+
+	// restore access
+	ierr = DMDAVecRestoreArray(surf->DA_SURF, surf->gtopo, &topo);  CHKERRQ(ierr);
+
+	//
+	ierr = PetscRandomDestroy(&rctx);	 CHKERRQ(ierr);
+
+	// compute ghosted version of the advected surface topography
+	GLOBAL_TO_LOCAL(surf->DA_SURF, surf->gtopo, surf->ltopo);
+
 	PetscFunctionReturn(0);
 }
 //---------------------------------------------------------------------------

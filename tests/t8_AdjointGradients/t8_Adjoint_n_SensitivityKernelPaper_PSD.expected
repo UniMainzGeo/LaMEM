@@ -1,0 +1,45 @@
+| ------------------------------------------------------------------------- 
+|                                      LaMEM                                
+|                        Adjoint Gradient Framework Active                  
+| ------------------------------------------------------------------------- 
+| Adjoint parameters:  
+|    Adjoint mode                             : AdjointGradients  
+|    Gradients are computed w.r.t.            : Solution     
+|    Field-based gradient evaluation          : 1    
+|    Gradient evaluation points               : several observation points 
+|    Advect evaluation points with flow       : 0    
+|    Objective function type                  : 0    
+|    Objective function defined in input      : 1    
+|   1 : adjoint            n[0 ] = 1        ; bnd=[-        ; -        ]   
+|   Total number of adjoint gradients      : 1   
+|   Total number of FD gradients           : 0   
+| 
+|   Total number of observation points     : 1   
+|       [0.600000,0.500000,0.990000] will compute gradient w.r.t. PSD 
+| 
+SNES Convergence Reason : ||F|| < atol 
+| IOparam->mfit = 2.780205e+00 
+| Starting computation of Field-based gradients.  
+|   Norm of field gradient vector : 5.323697786077980e+01 
+| Finished gradient computation & added it to VTK
+| Add '-out_gradient = 1' to your parameter file. 
+| ************************************************************************
+|                       COMPUTATION OF THE COST FUNCTION                    
+| ************************************************************************
+| Current Cost function = 2.7802050407e+00
+| ************************************************************************ 
+|                       COMPUTATION OF THE GRADIENTS                       
+| ************************************************************************ 
+| 
+| Gradients: 
+|    Computed field-based gradients 
+| 
+| 
+| Observation points: 
+|                                                    Center values         
+|                       Location         |      Target         Value     
+|       --------------------------------- --- ------------- ------------- 
+| 1   : [    0.600;     0.500;     0.990] PSD   9.00000e+01   1.59294e+02
+| 
+| Adjoint computation was successful & took 0.910996 s                         	 
+| ************************************************************************ 

@@ -1,0 +1,328 @@
+| ------------------------------------------------------------------------- 
+|                                      LaMEM                                
+|                        Adjoint Gradient Framework Active                  
+| ------------------------------------------------------------------------- 
+| Adjoint parameters:  
+|    Adjoint mode                             : Gradient descent (or Quasi-Newton) inversion  
+|    Use Tao BLMVM (or LaMEM steepest descent): 1    
+|    Gradient evaluation points               : several observation points  
+|    Advect evaluation points with flow       : 0    
+|    Objective function type                  : 0    
+|    Objective function defined in input      : 1    
+|    Maximum gradient descent iterations      : 200    
+|    Maximum linesearch iterations            : 100    
+|    Apply bounds                             : 0    
+|    Tolerance (F/Fini)                       : 1.00000e-08  
+|   1 : adjoint log10    eta[0 ] = 21       ; bnd=[-        ; -        ]   
+|   2 : adjoint          rho[1 ] = 3220     ; bnd=[-        ; -        ]   
+|   Total number of adjoint gradients      : 2   
+|   Total number of FD gradients           : 0   
+| 
+|   Total number of observation points     : 1   
+|       [600.000000,0.000000,-20.000000] has target velocity Vx=-0.36000
+| 
+| TAO: IOparam->Ab bounds = 0 
+| 
+| *************************************************************************
+| TAO start iteration 1: 
+| Currently employed parameters: 
+|  eta[0]=2.1000000000e+01 
+|  rho[1]=3.2200000000e+03 
+| 
+SNES Convergence Reason : ||F|| < atol 
+SNES Convergence Reason : ||F|| < rtol*||F_initial|| 
+| ************************************************************************
+|                       COMPUTATION OF THE COST FUNCTION                    
+| ************************************************************************
+| Current Cost function = 3.1782342166e-02
+| ************************************************************************ 
+|                       COMPUTATION OF THE GRADIENTS                       
+| ************************************************************************ 
+| 
+| Gradients: 
+|                    Parameter             |  Gradient (dimensional)  
+|                  -----------------------   ------------------------ 
+|  adjoint     1:   log10  eta[ 0]            5.324045e-02 
+|  adjoint     2:          rho[ 1]           -1.027798e-03 
+| 
+| 
+| Observation points: 
+|                                                   Velocity [cm/yr]       
+|                       Location         |      Target         Value     
+|       ---------------------------------  -- ------------- ------------- 
+| 1   : [  600.000;     0.000;   -20.000]  Vx -3.60000e-01  -1.05957e-01 
+| 
+| *************************************************************************
+| TAO results of iteration 1: 
+| 
+| Parameter values: 
+|   1. eta[0] =  2.10000e+01, gradient= 5.32404e-02
+|   2. rho[1] =  3.22000e+03, gradient=-1.02780e-03
+| 
+| misfit           = 3.17823422e-02 
+| misfit / misfit0 = 1.00000000e+00
+| ------------------------------------------
+| 
+| *************************************************************************
+| TAO start iteration 2: 
+| Currently employed parameters: 
+|  eta[0]=1.9806527593e+01 
+|  rho[1]=3.2200230398e+03 
+| 
+SNES Convergence Reason : ||F|| < atol 
+SNES Convergence Reason : ||F|| < rtol*||F_initial|| 
+| ************************************************************************
+|                       COMPUTATION OF THE COST FUNCTION                    
+| ************************************************************************
+| Current Cost function = 5.0755754804e-02
+| ************************************************************************ 
+|                       COMPUTATION OF THE GRADIENTS                       
+| ************************************************************************ 
+| 
+| Gradients: 
+|                    Parameter             |  Gradient (dimensional)  
+|                  -----------------------   ------------------------ 
+|  adjoint     1:   log10  eta[ 0]           -2.010997e-01 
+|  adjoint     2:          rho[ 1]            8.175625e-03 
+| 
+| 
+| Observation points: 
+|                                                   Velocity [cm/yr]       
+|                       Location         |      Target         Value     
+|       ---------------------------------  -- ------------- ------------- 
+| 1   : [  600.000;     0.000;   -20.000]  Vx -3.60000e-01  -6.81049e-01 
+| 
+| *************************************************************************
+| TAO results of iteration 2: 
+| 
+| Parameter values: 
+|   1. eta[0] =  1.98065e+01, gradient=-2.01100e-01
+|   2. rho[1] =  3.22002e+03, gradient= 8.17563e-03
+| 
+| misfit           = 5.07557548e-02 
+| misfit / misfit0 = 1.59697969e+00
+| ------------------------------------------
+| 
+| *************************************************************************
+| TAO start iteration 3: 
+| Currently employed parameters: 
+|  eta[0]=2.0442932698e+01 
+|  rho[1]=3.2200107541e+03 
+| 
+SNES Convergence Reason : ||F|| < atol 
+SNES Convergence Reason : ||F|| < rtol*||F_initial|| 
+| ************************************************************************
+|                       COMPUTATION OF THE COST FUNCTION                    
+| ************************************************************************
+| Current Cost function = 1.9701504717e-03
+| ************************************************************************ 
+|                       COMPUTATION OF THE GRADIENTS                       
+| ************************************************************************ 
+| 
+| Gradients: 
+|                    Parameter             |  Gradient (dimensional)  
+|                  -----------------------   ------------------------ 
+|  adjoint     1:   log10  eta[ 0]            3.041897e-02 
+|  adjoint     2:          rho[ 1]           -7.067886e-04 
+| 
+| 
+| Observation points: 
+|                                                   Velocity [cm/yr]       
+|                       Location         |      Target         Value     
+|       ---------------------------------  -- ------------- ------------- 
+| 1   : [  600.000;     0.000;   -20.000]  Vx -3.60000e-01  -2.96748e-01 
+| 
+| *************************************************************************
+| TAO results of iteration 3: 
+| 
+| Parameter values: 
+|   1. eta[0] =  2.04429e+01, gradient= 3.04190e-02
+|   2. rho[1] =  3.22001e+03, gradient=-7.06789e-04
+| 
+| misfit           = 1.97015047e-03 
+| misfit / misfit0 = 6.19888384e-02
+| ------------------------------------------
+| 
+| *************************************************************************
+| TAO start iteration 4: 
+| Currently employed parameters: 
+|  eta[0]=1.9700368532e+01 
+|  rho[1]=3.2200313449e+03 
+| 
+SNES Convergence Reason : ||F|| < atol 
+SNES Convergence Reason : ||F|| < rtol*||F_initial|| 
+| ************************************************************************
+|                       COMPUTATION OF THE COST FUNCTION                    
+| ************************************************************************
+| Current Cost function = 7.3940868774e-02
+| ************************************************************************ 
+|                       COMPUTATION OF THE GRADIENTS                       
+| ************************************************************************ 
+| 
+| Gradients: 
+|                    Parameter             |  Gradient (dimensional)  
+|                  -----------------------   ------------------------ 
+|  adjoint     1:   log10  eta[ 0]           -2.319515e-01 
+|  adjoint     2:          rho[ 1]            1.082111e-02 
+| 
+| 
+| Observation points: 
+|                                                   Velocity [cm/yr]       
+|                       Location         |      Target         Value     
+|       ---------------------------------  -- ------------- ------------- 
+| 1   : [  600.000;     0.000;   -20.000]  Vx -3.60000e-01  -7.47499e-01 
+| 
+| *************************************************************************
+| TAO results of iteration 4: 
+| 
+| Parameter values: 
+|   1. eta[0] =  1.97004e+01, gradient=-2.31951e-01
+|   2. rho[1] =  3.22003e+03, gradient= 1.08211e-02
+| 
+| misfit           = 7.39408688e-02 
+| misfit / misfit0 = 2.32647639e+00
+| ------------------------------------------
+| 
+| *************************************************************************
+| TAO start iteration 5: 
+| Currently employed parameters: 
+|  eta[0]=2.0351825617e+01 
+|  rho[1]=3.2200132804e+03 
+| 
+SNES Convergence Reason : ||F|| < atol 
+SNES Convergence Reason : ||F|| < rtol*||F_initial|| 
+| ************************************************************************
+|                       COMPUTATION OF THE COST FUNCTION                    
+| ************************************************************************
+| Current Cost function = 1.3490875875e-04
+| ************************************************************************ 
+|                       COMPUTATION OF THE GRADIENTS                       
+| ************************************************************************ 
+| 
+| Gradients: 
+|                    Parameter             |  Gradient (dimensional)  
+|                  -----------------------   ------------------------ 
+|  adjoint     1:   log10  eta[ 0]            8.726923e-03 
+|  adjoint     2:          rho[ 1]           -2.137341e-04 
+| 
+| 
+| Observation points: 
+|                                                   Velocity [cm/yr]       
+|                       Location         |      Target         Value     
+|       ---------------------------------  -- ------------- ------------- 
+| 1   : [  600.000;     0.000;   -20.000]  Vx -3.60000e-01  -3.43448e-01 
+| 
+| *************************************************************************
+| TAO results of iteration 5: 
+| 
+| Parameter values: 
+|   1. eta[0] =  2.03518e+01, gradient= 8.72692e-03
+|   2. rho[1] =  3.22001e+03, gradient=-2.13734e-04
+| 
+| misfit           = 1.34908759e-04 
+| misfit / misfit0 = 4.24477082e-03
+| ------------------------------------------
+| 
+| *************************************************************************
+| TAO start iteration 6: 
+| Currently employed parameters: 
+|  eta[0]=2.0315178360e+01 
+|  rho[1]=3.2200146397e+03 
+| 
+SNES Convergence Reason : ||F|| < atol 
+SNES Convergence Reason : ||F|| < rtol*||F_initial|| 
+| ************************************************************************
+|                       COMPUTATION OF THE COST FUNCTION                    
+| ************************************************************************
+| Current Cost function = 5.7461445102e-06
+| ************************************************************************ 
+|                       COMPUTATION OF THE GRADIENTS                       
+| ************************************************************************ 
+| 
+| Gradients: 
+|                    Parameter             |  Gradient (dimensional)  
+|                  -----------------------   ------------------------ 
+|  adjoint     1:   log10  eta[ 0]           -1.860355e-03 
+|  adjoint     2:          rho[ 1]            4.664859e-05 
+| 
+| 
+| Observation points: 
+|                                                   Velocity [cm/yr]       
+|                       Location         |      Target         Value     
+|       ---------------------------------  -- ------------- ------------- 
+| 1   : [  600.000;     0.000;   -20.000]  Vx -3.60000e-01  -3.63416e-01 
+| 
+| *************************************************************************
+| TAO results of iteration 6: 
+| 
+| Parameter values: 
+|   1. eta[0] =  2.03152e+01, gradient=-1.86036e-03
+|   2. rho[1] =  3.22001e+03, gradient= 4.66486e-05
+| 
+| misfit           = 5.74614451e-06 
+| misfit / misfit0 = 1.80796761e-04
+| ------------------------------------------
+| 
+| *************************************************************************
+| TAO start iteration 7: 
+| Currently employed parameters: 
+|  eta[0]=2.0321617500e+01 
+|  rho[1]=3.2200143811e+03 
+| 
+SNES Convergence Reason : ||F|| < atol 
+SNES Convergence Reason : ||F|| < rtol*||F_initial|| 
+| ************************************************************************
+|                       COMPUTATION OF THE COST FUNCTION                    
+| ************************************************************************
+| Current Cost function = 9.5680583365e-09
+| ************************************************************************ 
+|                       COMPUTATION OF THE GRADIENTS                       
+| ************************************************************************ 
+| 
+| Gradients: 
+|                    Parameter             |  Gradient (dimensional)  
+|                  -----------------------   ------------------------ 
+|  adjoint     1:   log10  eta[ 0]            7.549775e-05 
+|  adjoint     2:          rho[ 1]           -1.885103e-06 
+| 
+| 
+| Observation points: 
+|                                                   Velocity [cm/yr]       
+|                       Location         |      Target         Value     
+|       ---------------------------------  -- ------------- ------------- 
+| 1   : [  600.000;     0.000;   -20.000]  Vx -3.60000e-01  -3.59861e-01 
+| 
+| *************************************************************************
+| TAO results of iteration 7: 
+| 
+| Parameter values: 
+|   1. eta[0] =  2.03216e+01, gradient= 7.54978e-05
+|   2. rho[1] =  3.22001e+03, gradient=-1.88510e-06
+| 
+| misfit           = 9.56805834e-09 
+| misfit / misfit0 = 3.01049504e-07
+| ------------------------------------------
+| ------------------------------------------------------------------------- 
+| ------------------------------------------------------------------------- 
+| ------------------------------------------------------------------------- 
+| *                         INVERSION RESULT SUMMARY                      * 
+| ------------------------------------------------------------------------- 
+| Number of inversion iterations: 8
+| F/Fini:
+| 1.00000e+00
+| 1.59698e+00
+| 6.19888e-02
+| 2.32648e+00
+| 4.24477e-03
+| 1.80797e-04
+| 3.01050e-07
+| 
+| Final cost function:
+| 9.56806e-09
+| 
+| Final Parameters: 
+| eta[0] = 2.03216e+01
+| rho[1] = 3.22001e+03
+| ------------------------------------------------------------------------- 
+| Adjoint computation was successful & took 3.29105 s                         	 
+| ************************************************************************ 

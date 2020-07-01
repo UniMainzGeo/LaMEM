@@ -82,7 +82,7 @@ PetscErrorCode LaMEMLibMain(void *param)
 	PetscLogDouble cputime_start, cputime_end;
 
 	PetscErrorCode ierr;
-	PetscFunctionBegin;
+	PetscFunctionBegin;       
 
 	// start code
 	ierr = PetscTime(&cputime_start); CHKERRQ(ierr);
@@ -186,7 +186,7 @@ PetscErrorCode LaMEMLibCreate(LaMEMLib *lm, void *param )
 	ierr = FBLoad(&fb, PETSC_TRUE); CHKERRQ(ierr);
 
 	// create scaling object
-	ierr = ScalingCreate(&lm->scal, fb); CHKERRQ(ierr);
+	ierr = ScalingCreate(&lm->scal, fb, PETSC_TRUE);CHKERRQ(ierr);
 
 	// create time stepping object
 	ierr = TSSolCreate(&lm->ts, fb); 				CHKERRQ(ierr);
@@ -194,35 +194,32 @@ PetscErrorCode LaMEMLibCreate(LaMEMLib *lm, void *param )
 	// create material database
 	ierr = DBMatCreate(&lm->dbm, fb, PETSC_TRUE); 	CHKERRQ(ierr);
 
-	// Overwrite material parameters for inverse run
-	ierr = MatPropSetFromLibCall(&lm->jr, (ModParam *)param, fb);
-
 	// create parallel grid
-	ierr = FDSTAGCreate(&lm->fs, fb); CHKERRQ(ierr);
+	ierr = FDSTAGCreate(&lm->fs, fb); 				CHKERRQ(ierr);
 
 	// create free surface grid
-	ierr = FreeSurfCreate(&lm->surf, fb); CHKERRQ(ierr);
+	ierr = FreeSurfCreate(&lm->surf, fb); 			CHKERRQ(ierr);
 
 	// create boundary condition context
-	ierr = BCCreate(&lm->bc, fb); CHKERRQ(ierr);
+	ierr = BCCreate(&lm->bc, fb); 					CHKERRQ(ierr);
 
 	// create residual & Jacobian evaluation context
-	ierr = JacResCreate(&lm->jr, fb); CHKERRQ(ierr);
+	ierr = JacResCreate(&lm->jr, fb); 				CHKERRQ(ierr);
 
 	// create advection context
-	ierr = ADVCreate(&lm->actx, fb); CHKERRQ(ierr);
+	ierr = ADVCreate(&lm->actx, fb); 				CHKERRQ(ierr);
 
 	// create output object for all requested output variables
-	ierr = PVOutCreate(&lm->pvout, fb); CHKERRQ(ierr);
+	ierr = PVOutCreate(&lm->pvout, fb); 			CHKERRQ(ierr);
 
 	// create output object for the free surface
-	ierr = PVSurfCreate(&lm->pvsurf, fb); CHKERRQ(ierr);
+	ierr = PVSurfCreate(&lm->pvsurf, fb); 			CHKERRQ(ierr);
 
 	// create output object for the markers - for debugging
-	ierr = PVMarkCreate(&lm->pvmark, fb); CHKERRQ(ierr);
+	ierr = PVMarkCreate(&lm->pvmark, fb); 			CHKERRQ(ierr);
 
 	// AVD output driver
-	ierr = PVAVDCreate(&lm->pvavd, fb); CHKERRQ(ierr);
+	ierr = PVAVDCreate(&lm->pvavd, fb); 			CHKERRQ(ierr);
 
 	// destroy file buffer
 	ierr = FBDestroy(&fb); CHKERRQ(ierr);
@@ -243,7 +240,7 @@ PetscErrorCode LaMEMLibSaveGrid(LaMEMLib *lm)
 	ierr = FBLoad(&fb, PETSC_TRUE); CHKERRQ(ierr);
 
 	// create scaling object
-	ierr = ScalingCreate(&lm->scal, fb); CHKERRQ(ierr);
+	ierr = ScalingCreate(&lm->scal, fb, PETSC_TRUE); CHKERRQ(ierr);
 
 	// create parallel grid
 	ierr = FDSTAGCreate(&lm->fs, fb); CHKERRQ(ierr);
@@ -264,16 +261,21 @@ PetscErrorCode LaMEMLibSaveGrid(LaMEMLib *lm)
 #define __FUNCT__ "LaMEMLibLoadRestart"
 PetscErrorCode LaMEMLibLoadRestart(LaMEMLib *lm)
 {
-	FILE           *fp;
-	PetscMPIInt    rank;
-	char           *fileName;
-	PetscLogDouble t;
+	FILE            *fp;
+	PetscMPIInt     rank;
+	char            *fileName;
+	PetscLogDouble  t;
+	FB              *fb;
+    DBMat           dbm_modified;
+	PetscInt        i;
+    Scaling         scal;
 
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
 
 	PrintStart(&t, "Loading restart database", NULL);
 
+	
 	// get MPI processor rank
 	MPI_Comm_rank(PETSC_COMM_WORLD, &rank);
 
@@ -317,6 +319,32 @@ PetscErrorCode LaMEMLibLoadRestart(LaMEMLib *lm)
 
 	// close temporary restart file
 	fclose(fp);
+
+
+	// Read info from file/command-line & overwrite 'restart' data (necessary for adjoint)
+
+	// load input file 
+	ierr = FBLoad(&fb, PETSC_TRUE); 											CHKERRQ(ierr);
+
+	// Create scaling object
+	ierr 				= ScalingCreate(&scal, fb, PETSC_FALSE); 				CHKERRQ(ierr);
+	dbm_modified.scal   = &scal;
+	for (i=0; i < lm->dbm.numPhases; i++){
+		ierr =   PetscMemzero(&dbm_modified.phases[i],  sizeof(Material_t));   	CHKERRQ(ierr);
+	}
+
+    // Store Material DB in intermediate structure (for use with Adjoint)
+	ierr = DBMatCreate(&dbm_modified, fb, PETSC_TRUE); 							CHKERRQ(ierr);
+
+	// swap material structure with the one from file (for adjoint)
+	for (i=0; i < lm->dbm.numPhases; i++)
+	{
+		swapStruct(&lm->dbm.phases[i], &dbm_modified.phases[i]);  
+		//PrintMatProp(&lm->dbm.phases[i]);
+	}
+
+	// update time stepping object
+	ierr = TSSolCreate(&lm->ts, fb); 				CHKERRQ(ierr);
 
 	// free space
 	free(fileName);
@@ -590,15 +618,13 @@ PetscErrorCode LaMEMLibSolve(LaMEMLib *lm, void *param)
 	PMat           pm;     // preconditioner matrix    (to be removed!)
 	PCStokes       pc;     // Stokes preconditioner    (to be removed!)
 	NLSol          nl;     // nonlinear solver context (to be removed!)
-//	AdjGrad        aop;    // Adjoint options          (to be removed!)
+ 	AdjGrad        aop;    // Adjoint options          (to be removed!)
 	SNES           snes;   // PETSc nonlinear solver
 	PetscInt       restart;
 	PetscLogDouble t;
 
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
-
-	if(param) param = NULL;
 
 	// create Stokes preconditioner, matrix and nonlinear solver
 	ierr = PMatCreate(&pm, &lm->jr);    CHKERRQ(ierr);
@@ -610,6 +636,12 @@ PetscErrorCode LaMEMLibSolve(LaMEMLib *lm, void *param)
 	//==============
 
 	ierr = LaMEMLibInitGuess(lm, snes); CHKERRQ(ierr);
+
+
+	if (param)
+	{
+		ierr =  AdjointCreate(&aop, &lm->jr, (ModParam *)param);
+	}
 
 	//===============
 	// TIME STEP LOOP
@@ -641,17 +673,21 @@ PetscErrorCode LaMEMLibSolve(LaMEMLib *lm, void *param)
 		// view nonlinear residual
 		ierr = JacResViewRes(&lm->jr); CHKERRQ(ierr);
 
-//		// Compute adjoint gradients every TS
-//		if(param)
-//		{
-//			ModParam *IOparam;
-//			IOparam  = (ModParam *)param;
-//
-//			if(IOparam->use == 2)
-//			{	// Compute adjoint gradients
-//				ierr = AdjointObjectiveAndGradientFunction(&aop, &lm->jr, &nl, (ModParam *)param, snes, &lm->surf); CHKERRQ(ierr);
-//			}
-//		}
+		// Compute adjoint gradients every TS
+		if (param)
+		{
+			
+			ModParam      *IOparam;
+			IOparam       = (ModParam *)param;	
+			if (IOparam->use == _adjointgradients_ || IOparam->use == _gradientdescent_ || IOparam->use == _inversion_ )
+			{	/* 	Compute the adjoint gradients 
+				 	
+					This is done here, as the adjoint should be cmputed with the current residual that does not take advection etc.
+					into account. It does compute it every dt; one can perhaps only activate it for the last dt.
+				*/
+				ierr = AdjointObjectiveAndGradientFunction(&aop, &lm->jr, &nl, (ModParam *)param, snes, &lm->surf); CHKERRQ(ierr);
+			}
+		}
 
 		//==========================================
 		// MARKER & FREE SURFACE ADVECTION + EROSION
@@ -706,33 +742,27 @@ PetscErrorCode LaMEMLibSolve(LaMEMLib *lm, void *param)
 	// END OF TIME STEP LOOP
 	//======================
 
-//	if(param)
-//	{
-//		ModParam *IOparam;
-//		IOparam  = (ModParam *)param;
-//
-//		if(IOparam->use == 3)
-//		{	// Compute 'full' adjoint inversion
-//
-//	 		ierr = AdjointObjectiveAndGradientFunction(&aop, &lm->jr, &nl, (ModParam *)param, snes, &lm->surf); CHKERRQ(ierr);
-//		}
-//
-//		if(IOparam->use == 4)
-//		{
-//			// Assume this as a forward simulation and save the solution vector
-//	 		VecDuplicate(lm->jr.gsol, &IOparam->xini);
-//			VecCopy(lm->jr.gsol, IOparam->xini);
-//		}
-//	}
+	if (param)
+	{
 
-	// delete restart database
-	ierr = LaMEMLibDeleteRestart(); CHKERRQ(ierr);
+		ModParam      *IOparam;
+		IOparam       = (ModParam *)param;
+
+		if(IOparam->use == _syntheticforwardrun_)
+		{	// Assume this as a forward simulation and save the solution vector
+	 		//VecDuplicate(lm->jr.gsol, &IOparam->xini);
+			//VecCopy(lm->jr.gsol, IOparam->xini);
+		}
+
+		ierr = AdjointDestroy (&aop,  IOparam);  	CHKERRQ(ierr);
+
+	}
 
 	// destroy objects
-	ierr = PCStokesDestroy(pc);    CHKERRQ(ierr);
-	ierr = PMatDestroy    (pm);    CHKERRQ(ierr);
-	ierr = SNESDestroy    (&snes); CHKERRQ(ierr);
-	ierr = NLSolDestroy   (&nl);   CHKERRQ(ierr);
+	ierr = PCStokesDestroy(pc);    			CHKERRQ(ierr);
+	ierr = PMatDestroy    (pm);    			CHKERRQ(ierr);
+	ierr = SNESDestroy    (&snes); 			CHKERRQ(ierr);
+	ierr = NLSolDestroy   (&nl);   			CHKERRQ(ierr);
 
 	// save marker database
 	ierr = ADVMarkSave(&lm->actx); CHKERRQ(ierr);

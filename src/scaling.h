@@ -167,7 +167,7 @@ struct Scaling
 //---------------------------------------------------------------------------
 // scaling routines
 
-PetscErrorCode ScalingCreate(Scaling *scal, FB *fb);
+PetscErrorCode ScalingCreate(Scaling *scal, FB *fb, PetscBool PrintOutput);
 
 //---------------------------------------------------------------------------
 #endif

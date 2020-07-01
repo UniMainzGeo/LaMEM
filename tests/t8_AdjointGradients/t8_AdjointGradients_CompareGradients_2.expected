@@ -1,0 +1,598 @@
+| ------------------------------------------------------------------------- 
+|                                      LaMEM                                
+|                        Adjoint Gradient Framework Active                  
+| ------------------------------------------------------------------------- 
+| Adjoint parameters:  
+|    Adjoint mode                             : AdjointGradients  
+|    Gradients are computed w.r.t.            : Solution     
+|    Field-based gradient evaluation          : 0    
+|    Gradient evaluation points               : several observation points 
+|    Advect evaluation points with flow       : 0    
+|    Objective function type                  : 0    
+|    Objective function defined in input      : 1    
+|   1 : FD                 n[0 ] = 2        ; bnd=[-        ; -        ]   
+|   2 : adjoint            n[0 ] = 2        ; bnd=[-        ; -        ]   
+|   Total number of adjoint gradients      : 1   
+|   Total number of FD gradients           : 1   
+| 
+|   Total number of observation points     : 1   
+|       [0.500000,0.500000,0.500000] will compute gradient w.r.t. Vz
+| 
+-------------------------------------------------------------------------- 
+                   Lithosphere and Mantle Evolution Model                   
+     Compiled: Date: Jun  3 2020 - Time: 12:29:01 	    
+-------------------------------------------------------------------------- 
+        STAGGERED-GRID FINITE DIFFERENCE CANONICAL IMPLEMENTATION           
+-------------------------------------------------------------------------- 
+Parsing input file : ./t8_AdjointGradients/t8_AdjointGradients_CompareGradients_2.dat 
+   Adding PETSc option: -snes_monitor
+   Adding PETSc option: -snes_atol 1e-13
+   Adding PETSc option: -snes_rtol 1e-14
+   Adding PETSc option: -snes_stol 1e-60
+   Adding PETSc option: -snes_max_it 100
+   Adding PETSc option: -snes_max_funcs 50000
+   Adding PETSc option: -js_ksp_type gmres
+   Adding PETSc option: -js_ksp_max_it 50
+   Adding PETSc option: -js_ksp_converged_reason
+   Adding PETSc option: -js_ksp_rtol 1e-16
+   Adding PETSc option: -js_ksp_atol 1e-14
+Finished parsing input file : ./t8_AdjointGradients/t8_AdjointGradients_CompareGradients_2.dat 
+--------------------------------------------------------------------------
+Time stepping parameters:
+   Simulation end time          : 1. [ ] 
+   Maximum number of steps      : 1 
+   Time step                    : 0.01 [ ] 
+   Minimum time step            : 1e-05 [ ] 
+   Maximum time step            : 0.1 [ ] 
+   Time step increase factor    : 0.1 
+   CFL criterion                : 0.5 
+   CFLMAX (fixed time steps)    : 0.5 
+   Output time step             : 0.2 [ ] 
+   Output every [n] steps       : 10 
+   Output [n] initial steps     : 1 
+--------------------------------------------------------------------------
+Material parameters: 
+   Phase ID : 0
+   (dens)   : rho = 1. [ ]  
+   (disl)   : eta0 = 2. [ ]  e0 = 1e-06 [ ]  Bn = 62500. [ ]  n = 2. [ ]  
+
+   Phase ID : 1
+   (dens)   : rho = 2. [ ]  
+   (disl)   : eta0 = 1000. [ ]  e0 = 1e-06 [ ]  Bn = 0.25 [ ]  n = 2. [ ]  
+
+--------------------------------------------------------------------------
+Grid parameters:
+   Total number of cpu                  : 1 
+   Processor grid  [nx, ny, nz]         : [1, 1, 1]
+   Fine grid cells [nx, ny, nz]         : [8, 8, 8]
+   Number of cells                      :  512
+   Number of faces                      :  1728
+   Maximum cell aspect ratio            :  1.00000
+   Lower coordinate bounds [bx, by, bz] : [0., 0., 0.]
+   Upper coordinate bounds [ex, ey, ez] : [1., 1., 1.]
+--------------------------------------------------------------------------
+Boundary condition parameters: 
+   No-slip boundary mask [lt rt ft bk bm tp]  : 0 0 0 0 0 0 
+--------------------------------------------------------------------------
+Solution parameters & controls:
+   Gravity [gx, gy, gz]                    : [0., 0., -1.] [ ] 
+   Surface stabilization (FSSA)            :  1. 
+   Use lithostatic pressure for creep      @ 
+   Minimum viscosity                       : 0.001 [ ] 
+   Maximum viscosity                       : 1e+06 [ ] 
+   Maximum melt fraction (viscosity)       : 0.15    
+   Rheology iteration number               : 25  
+   Rheology iteration tolerance            : 1e-06    
+   Ground water level type                 : none 
+--------------------------------------------------------------------------
+Advection parameters:
+   Advection scheme              : Euler 1-st order (basic implementation)
+   Marker setup scheme           : geometric primitives
+   Velocity interpolation scheme : STAG (linear)
+   Marker control type           : no marker control
+   Markers per cell [nx, ny, nz] : [5, 5, 5] 
+   Marker distribution type      : random noise
+   Background phase ID           : 0 
+--------------------------------------------------------------------------
+Reading geometric primitives ... done (0.00143194 sec)
+--------------------------------------------------------------------------
+Output parameters:
+   Output file name                        : AdjointGradients_test 
+   Write .pvd file                         : yes 
+   Phase                                   @ 
+   Density                                 @ 
+   Total effective viscosity               @ 
+   Creep effective viscosity               @ 
+   Velocity                                @ 
+   Pressure                                @ 
+--------------------------------------------------------------------------
+AVD output parameters:
+   Write .pvd file       : yes 
+   AVD refinement factor : 3 
+--------------------------------------------------------------------------
+Preconditioner parameters: 
+   Matrix type                   : monolithic
+   Preconditioner type           : user-defined
+--------------------------------------------------------------------------
+Solver parameters specified: 
+   Outermost Krylov solver       : gmres 
+   Solver type                   : serial direct/lu 
+   Solver package                : petsc 
+--------------------------------------------------------------------------
+Saving output ... done (0.0773652 sec)
+--------------------------------------------------------------------------
+================================= STEP 1 =================================
+--------------------------------------------------------------------------
+Current time        : 0.00000 [ ] 
+Tentative time step : 0.01000 [ ] 
+--------------------------------------------------------------------------
+  0 SNES Function norm 2.216817144984e+01 
+  0 PICARD ||F||/||F0||=1.000000e+00 
+  Linear js_ solve converged due to CONVERGED_ATOL iterations 3
+  1 SNES Function norm 2.511360755454e+00 
+  1 PICARD ||F||/||F0||=1.132868e-01 
+  Linear js_ solve converged due to CONVERGED_ATOL iterations 28
+  2 SNES Function norm 4.789891161829e+00 
+  2 PICARD ||F||/||F0||=2.160706e-01 
+  Linear js_ solve converged due to CONVERGED_ATOL iterations 28
+  3 SNES Function norm 4.436680435391e+00 
+  3 PICARD ||F||/||F0||=2.001374e-01 
+  Linear js_ solve converged due to CONVERGED_ATOL iterations 26
+  4 SNES Function norm 3.501345162163e+00 
+  4 PICARD ||F||/||F0||=1.579447e-01 
+  Linear js_ solve converged due to CONVERGED_ATOL iterations 28
+  5 SNES Function norm 2.166738160297e+00 
+  5 PICARD ||F||/||F0||=9.774095e-02 
+  Linear js_ solve converged due to CONVERGED_ATOL iterations 27
+  6 SNES Function norm 1.083851861247e+00 
+  6 PICARD ||F||/||F0||=4.889225e-02 
+  Linear js_ solve converged due to CONVERGED_ATOL iterations 27
+  7 SNES Function norm 4.518950724986e-01 
+  7 PICARD ||F||/||F0||=2.038486e-02 
+  Linear js_ solve converged due to CONVERGED_ATOL iterations 26
+  8 SNES Function norm 1.656696008325e-01 
+  8 MMFD   ||F||/||F0||=7.473309e-03 
+  Linear js_ solve did not converge due to DIVERGED_ITS iterations 50
+  9 SNES Function norm 2.535247064771e-03 
+  9 MMFD   ||F||/||F0||=1.143643e-04 
+  Linear js_ solve converged due to CONVERGED_ATOL iterations 22
+ 10 SNES Function norm 4.271884027754e-07 
+ 10 MMFD   ||F||/||F0||=1.927035e-08 
+  Linear js_ solve converged due to CONVERGED_ATOL iterations 13
+ 11 SNES Function norm 6.727652285441e-13 
+ 11 MMFD   ||F||/||F0||=3.034825e-14 
+  Linear js_ solve converged due to CONVERGED_ATOL iterations 1
+ 12 SNES Function norm 2.702392078894e-13 
+ 12 MMFD   ||F||/||F0||=1.219041e-14 
+  Linear js_ solve converged due to CONVERGED_ATOL iterations 1
+ 13 SNES Function norm 2.799004153394e-13 
+ 13 MMFD   ||F||/||F0||=1.262623e-14 
+  Linear js_ solve converged due to CONVERGED_ATOL iterations 1
+ 14 SNES Function norm 2.688410587298e-13 
+ 14 MMFD   ||F||/||F0||=1.212734e-14 
+  Linear js_ solve converged due to CONVERGED_ATOL iterations 1
+ 15 SNES Function norm 3.319043589741e-13 
+ 15 MMFD   ||F||/||F0||=1.497211e-14 
+  Linear js_ solve converged due to CONVERGED_ATOL iterations 1
+ 16 SNES Function norm 2.136569954088e-13 
+--------------------------------------------------------------------------
+SNES Convergence Reason : ||F|| < rtol*||F_initial|| 
+Number of iterations    : 16
+SNES solution time      : 0.354132 (sec)
+--------------------------------------------------------------------------
+Residual summary: 
+   Continuity: 
+      |Div|_inf = 1.465494392505e-14 
+      |Div|_2   = 7.417231676771e-14 
+   Momentum: 
+      |mRes|_2  = 2.003691071808e-13 
+--------------------------------------------------------------------------
+Actual time step : 0.01100 [ ] 
+--------------------------------------------------------------------------
+Saving output ... done (0.0709889 sec)
+--------------------------------------------------------------------------
+=========================== SOLUTION IS DONE! ============================
+--------------------------------------------------------------------------
+Total solution time : 0.553977 (sec) 
+--------------------------------------------------------------------------
+| ************************************************************************ 
+|                       FINITE DIFFERENCE GRADIENTS                        
+| ************************************************************************ 
+| Reference objective function: -7.20147e-01 
+-------------------------------------------------------------------------- 
+                   Lithosphere and Mantle Evolution Model                   
+     Compiled: Date: Jun  3 2020 - Time: 12:29:01 	    
+-------------------------------------------------------------------------- 
+        STAGGERED-GRID FINITE DIFFERENCE CANONICAL IMPLEMENTATION           
+-------------------------------------------------------------------------- 
+Parsing input file : ./t8_AdjointGradients/t8_AdjointGradients_CompareGradients_2.dat 
+   Adding PETSc option: -snes_monitor
+   Adding PETSc option: -snes_atol 1e-13
+   Adding PETSc option: -snes_rtol 1e-14
+   Adding PETSc option: -snes_stol 1e-60
+   Adding PETSc option: -snes_max_it 100
+   Adding PETSc option: -snes_max_funcs 50000
+   Adding PETSc option: -js_ksp_type gmres
+   Adding PETSc option: -js_ksp_max_it 50
+   Adding PETSc option: -js_ksp_converged_reason
+   Adding PETSc option: -js_ksp_rtol 1e-16
+   Adding PETSc option: -js_ksp_atol 1e-14
+Finished parsing input file : ./t8_AdjointGradients/t8_AdjointGradients_CompareGradients_2.dat 
+--------------------------------------------------------------------------
+Time stepping parameters:
+   Simulation end time          : 1. [ ] 
+   Maximum number of steps      : 1 
+   Time step                    : 0.01 [ ] 
+   Minimum time step            : 1e-05 [ ] 
+   Maximum time step            : 0.1 [ ] 
+   Time step increase factor    : 0.1 
+   CFL criterion                : 0.5 
+   CFLMAX (fixed time steps)    : 0.5 
+   Output time step             : 0.2 [ ] 
+   Output every [n] steps       : 10 
+   Output [n] initial steps     : 1 
+--------------------------------------------------------------------------
+Material parameters: 
+   Phase ID : 0
+   (dens)   : rho = 1. [ ]  
+   (disl)   : eta0 = 2. [ ]  e0 = 1e-06 [ ]  Bn = 64073.1 [ ]  n = 2.002 [ ]  
+
+   Phase ID : 1
+   (dens)   : rho = 2. [ ]  
+   (disl)   : eta0 = 1000. [ ]  e0 = 1e-06 [ ]  Bn = 0.25 [ ]  n = 2. [ ]  
+
+--------------------------------------------------------------------------
+Grid parameters:
+   Total number of cpu                  : 1 
+   Processor grid  [nx, ny, nz]         : [1, 1, 1]
+   Fine grid cells [nx, ny, nz]         : [8, 8, 8]
+   Number of cells                      :  512
+   Number of faces                      :  1728
+   Maximum cell aspect ratio            :  1.00000
+   Lower coordinate bounds [bx, by, bz] : [0., 0., 0.]
+   Upper coordinate bounds [ex, ey, ez] : [1., 1., 1.]
+--------------------------------------------------------------------------
+Boundary condition parameters: 
+   No-slip boundary mask [lt rt ft bk bm tp]  : 0 0 0 0 0 0 
+--------------------------------------------------------------------------
+Solution parameters & controls:
+   Gravity [gx, gy, gz]                    : [0., 0., -1.] [ ] 
+   Surface stabilization (FSSA)            :  1. 
+   Use lithostatic pressure for creep      @ 
+   Minimum viscosity                       : 0.001 [ ] 
+   Maximum viscosity                       : 1e+06 [ ] 
+   Maximum melt fraction (viscosity)       : 0.15    
+   Rheology iteration number               : 25  
+   Rheology iteration tolerance            : 1e-06    
+   Ground water level type                 : none 
+--------------------------------------------------------------------------
+Advection parameters:
+   Advection scheme              : Euler 1-st order (basic implementation)
+   Marker setup scheme           : geometric primitives
+   Velocity interpolation scheme : STAG (linear)
+   Marker control type           : no marker control
+   Markers per cell [nx, ny, nz] : [5, 5, 5] 
+   Marker distribution type      : random noise
+   Background phase ID           : 0 
+--------------------------------------------------------------------------
+Reading geometric primitives ... done (0.000808954 sec)
+--------------------------------------------------------------------------
+Output parameters:
+   Output file name                        : AdjointGradients_test 
+   Write .pvd file                         : yes 
+   Phase                                   @ 
+   Density                                 @ 
+   Total effective viscosity               @ 
+   Creep effective viscosity               @ 
+   Velocity                                @ 
+   Pressure                                @ 
+--------------------------------------------------------------------------
+AVD output parameters:
+   Write .pvd file       : yes 
+   AVD refinement factor : 3 
+--------------------------------------------------------------------------
+Preconditioner parameters: 
+   Matrix type                   : monolithic
+   Preconditioner type           : user-defined
+--------------------------------------------------------------------------
+Solver parameters specified: 
+   Outermost Krylov solver       : gmres 
+   Solver type                   : serial direct/lu 
+   Solver package                : petsc 
+--------------------------------------------------------------------------
+Saving output ... done (0.0654342 sec)
+--------------------------------------------------------------------------
+================================= STEP 1 =================================
+--------------------------------------------------------------------------
+Current time        : 0.00000 [ ] 
+Tentative time step : 0.01000 [ ] 
+--------------------------------------------------------------------------
+  0 SNES Function norm 2.216817144984e+01 
+  0 PICARD ||F||/||F0||=1.000000e+00 
+  Linear js_ solve converged due to CONVERGED_ATOL iterations 3
+  1 SNES Function norm 2.511360670698e+00 
+  1 PICARD ||F||/||F0||=1.132868e-01 
+  Linear js_ solve converged due to CONVERGED_ATOL iterations 28
+  2 SNES Function norm 4.788767463607e+00 
+  2 PICARD ||F||/||F0||=2.160200e-01 
+  Linear js_ solve converged due to CONVERGED_ATOL iterations 28
+  3 SNES Function norm 4.437941124497e+00 
+  3 PICARD ||F||/||F0||=2.001943e-01 
+  Linear js_ solve converged due to CONVERGED_ATOL iterations 26
+  4 SNES Function norm 3.504156271844e+00 
+  4 PICARD ||F||/||F0||=1.580715e-01 
+  Linear js_ solve converged due to CONVERGED_ATOL iterations 28
+  5 SNES Function norm 2.169422288478e+00 
+  5 PICARD ||F||/||F0||=9.786203e-02 
+  Linear js_ solve converged due to CONVERGED_ATOL iterations 27
+  6 SNES Function norm 1.085068486053e+00 
+  6 PICARD ||F||/||F0||=4.894714e-02 
+  Linear js_ solve converged due to CONVERGED_ATOL iterations 27
+  7 SNES Function norm 4.519616146118e-01 
+  7 PICARD ||F||/||F0||=2.038786e-02 
+  Linear js_ solve converged due to CONVERGED_ATOL iterations 26
+  8 SNES Function norm 1.654027771692e-01 
+  8 MMFD   ||F||/||F0||=7.461273e-03 
+  Linear js_ solve did not converge due to DIVERGED_ITS iterations 50
+  9 SNES Function norm 2.523966399159e-03 
+  9 MMFD   ||F||/||F0||=1.138554e-04 
+  Linear js_ solve converged due to CONVERGED_ATOL iterations 22
+ 10 SNES Function norm 4.224084754190e-07 
+ 10 MMFD   ||F||/||F0||=1.905473e-08 
+  Linear js_ solve converged due to CONVERGED_ATOL iterations 13
+ 11 SNES Function norm 6.701276488287e-13 
+ 11 MMFD   ||F||/||F0||=3.022927e-14 
+  Linear js_ solve converged due to CONVERGED_ATOL iterations 1
+ 12 SNES Function norm 3.078174041746e-13 
+ 12 MMFD   ||F||/||F0||=1.388556e-14 
+  Linear js_ solve converged due to CONVERGED_ATOL iterations 1
+ 13 SNES Function norm 2.763842579577e-13 
+ 13 MMFD   ||F||/||F0||=1.246762e-14 
+  Linear js_ solve converged due to CONVERGED_ATOL iterations 1
+ 14 SNES Function norm 5.024358821016e-13 
+ 14 MMFD   ||F||/||F0||=2.266474e-14 
+  Linear js_ solve converged due to CONVERGED_ATOL iterations 0
+ 15 SNES Function norm 5.024358821016e-13 
+--------------------------------------------------------------------------
+SNES Convergence Reason : Newton computed step size small; || delta x || < stol || x ||
+Number of iterations    : 15
+SNES solution time      : 0.345753 (sec)
+--------------------------------------------------------------------------
+Residual summary: 
+   Continuity: 
+      |Div|_inf = 2.264854970235e-14 
+      |Div|_2   = 8.698466783288e-14 
+   Momentum: 
+      |mRes|_2  = 4.948489498678e-13 
+--------------------------------------------------------------------------
+Actual time step : 0.01100 [ ] 
+--------------------------------------------------------------------------
+Saving output ... done (0.063802 sec)
+--------------------------------------------------------------------------
+=========================== SOLUTION IS DONE! ============================
+--------------------------------------------------------------------------
+Total solution time : 0.517151 (sec) 
+--------------------------------------------------------------------------
+|  Brute force FD gradient     n[ 0] = -1.979498e+00, with eps=1.0000e-03 
+-------------------------------------------------------------------------- 
+                   Lithosphere and Mantle Evolution Model                   
+     Compiled: Date: Jun  3 2020 - Time: 12:29:01 	    
+-------------------------------------------------------------------------- 
+        STAGGERED-GRID FINITE DIFFERENCE CANONICAL IMPLEMENTATION           
+-------------------------------------------------------------------------- 
+Parsing input file : ./t8_AdjointGradients/t8_AdjointGradients_CompareGradients_2.dat 
+   Adding PETSc option: -snes_monitor
+   Adding PETSc option: -snes_atol 1e-13
+   Adding PETSc option: -snes_rtol 1e-14
+   Adding PETSc option: -snes_stol 1e-60
+   Adding PETSc option: -snes_max_it 100
+   Adding PETSc option: -snes_max_funcs 50000
+   Adding PETSc option: -js_ksp_type gmres
+   Adding PETSc option: -js_ksp_max_it 50
+   Adding PETSc option: -js_ksp_converged_reason
+   Adding PETSc option: -js_ksp_rtol 1e-16
+   Adding PETSc option: -js_ksp_atol 1e-14
+Finished parsing input file : ./t8_AdjointGradients/t8_AdjointGradients_CompareGradients_2.dat 
+--------------------------------------------------------------------------
+Time stepping parameters:
+   Simulation end time          : 1. [ ] 
+   Maximum number of steps      : 1 
+   Time step                    : 0.01 [ ] 
+   Minimum time step            : 1e-05 [ ] 
+   Maximum time step            : 0.1 [ ] 
+   Time step increase factor    : 0.1 
+   CFL criterion                : 0.5 
+   CFLMAX (fixed time steps)    : 0.5 
+   Output time step             : 0.2 [ ] 
+   Output every [n] steps       : 10 
+   Output [n] initial steps     : 1 
+--------------------------------------------------------------------------
+Material parameters: 
+   Phase ID : 0
+   (dens)   : rho = 1. [ ]  
+   (disl)   : eta0 = 2. [ ]  e0 = 1e-06 [ ]  Bn = 62500. [ ]  n = 2. [ ]  
+
+   Phase ID : 1
+   (dens)   : rho = 2. [ ]  
+   (disl)   : eta0 = 1000. [ ]  e0 = 1e-06 [ ]  Bn = 0.25 [ ]  n = 2. [ ]  
+
+--------------------------------------------------------------------------
+Grid parameters:
+   Total number of cpu                  : 1 
+   Processor grid  [nx, ny, nz]         : [1, 1, 1]
+   Fine grid cells [nx, ny, nz]         : [8, 8, 8]
+   Number of cells                      :  512
+   Number of faces                      :  1728
+   Maximum cell aspect ratio            :  1.00000
+   Lower coordinate bounds [bx, by, bz] : [0., 0., 0.]
+   Upper coordinate bounds [ex, ey, ez] : [1., 1., 1.]
+--------------------------------------------------------------------------
+Boundary condition parameters: 
+   No-slip boundary mask [lt rt ft bk bm tp]  : 0 0 0 0 0 0 
+--------------------------------------------------------------------------
+Solution parameters & controls:
+   Gravity [gx, gy, gz]                    : [0., 0., -1.] [ ] 
+   Surface stabilization (FSSA)            :  1. 
+   Use lithostatic pressure for creep      @ 
+   Minimum viscosity                       : 0.001 [ ] 
+   Maximum viscosity                       : 1e+06 [ ] 
+   Maximum melt fraction (viscosity)       : 0.15    
+   Rheology iteration number               : 25  
+   Rheology iteration tolerance            : 1e-06    
+   Ground water level type                 : none 
+--------------------------------------------------------------------------
+Advection parameters:
+   Advection scheme              : Euler 1-st order (basic implementation)
+   Marker setup scheme           : geometric primitives
+   Velocity interpolation scheme : STAG (linear)
+   Marker control type           : no marker control
+   Markers per cell [nx, ny, nz] : [5, 5, 5] 
+   Marker distribution type      : random noise
+   Background phase ID           : 0 
+--------------------------------------------------------------------------
+Reading geometric primitives ... done (0.000648975 sec)
+--------------------------------------------------------------------------
+Output parameters:
+   Output file name                        : AdjointGradients_test 
+   Write .pvd file                         : yes 
+   Phase                                   @ 
+   Density                                 @ 
+   Total effective viscosity               @ 
+   Creep effective viscosity               @ 
+   Velocity                                @ 
+   Pressure                                @ 
+--------------------------------------------------------------------------
+AVD output parameters:
+   Write .pvd file       : yes 
+   AVD refinement factor : 3 
+--------------------------------------------------------------------------
+Preconditioner parameters: 
+   Matrix type                   : monolithic
+   Preconditioner type           : user-defined
+--------------------------------------------------------------------------
+Solver parameters specified: 
+   Outermost Krylov solver       : gmres 
+   Solver type                   : serial direct/lu 
+   Solver package                : petsc 
+--------------------------------------------------------------------------
+Saving output ... done (0.058357 sec)
+--------------------------------------------------------------------------
+================================= STEP 1 =================================
+--------------------------------------------------------------------------
+Current time        : 0.00000 [ ] 
+Tentative time step : 0.01000 [ ] 
+--------------------------------------------------------------------------
+  0 SNES Function norm 2.216817144984e+01 
+  0 PICARD ||F||/||F0||=1.000000e+00 
+  Linear js_ solve converged due to CONVERGED_ATOL iterations 3
+  1 SNES Function norm 2.511360755454e+00 
+  1 PICARD ||F||/||F0||=1.132868e-01 
+  Linear js_ solve converged due to CONVERGED_ATOL iterations 28
+  2 SNES Function norm 4.789891161829e+00 
+  2 PICARD ||F||/||F0||=2.160706e-01 
+  Linear js_ solve converged due to CONVERGED_ATOL iterations 28
+  3 SNES Function norm 4.436680435391e+00 
+  3 PICARD ||F||/||F0||=2.001374e-01 
+  Linear js_ solve converged due to CONVERGED_ATOL iterations 26
+  4 SNES Function norm 3.501345162163e+00 
+  4 PICARD ||F||/||F0||=1.579447e-01 
+  Linear js_ solve converged due to CONVERGED_ATOL iterations 28
+  5 SNES Function norm 2.166738160297e+00 
+  5 PICARD ||F||/||F0||=9.774095e-02 
+  Linear js_ solve converged due to CONVERGED_ATOL iterations 27
+  6 SNES Function norm 1.083851861247e+00 
+  6 PICARD ||F||/||F0||=4.889225e-02 
+  Linear js_ solve converged due to CONVERGED_ATOL iterations 27
+  7 SNES Function norm 4.518950724986e-01 
+  7 PICARD ||F||/||F0||=2.038486e-02 
+  Linear js_ solve converged due to CONVERGED_ATOL iterations 26
+  8 SNES Function norm 1.656696008325e-01 
+  8 MMFD   ||F||/||F0||=7.473309e-03 
+  Linear js_ solve did not converge due to DIVERGED_ITS iterations 50
+  9 SNES Function norm 2.535247064771e-03 
+  9 MMFD   ||F||/||F0||=1.143643e-04 
+  Linear js_ solve converged due to CONVERGED_ATOL iterations 22
+ 10 SNES Function norm 4.271884027754e-07 
+ 10 MMFD   ||F||/||F0||=1.927035e-08 
+  Linear js_ solve converged due to CONVERGED_ATOL iterations 13
+ 11 SNES Function norm 6.727652285441e-13 
+ 11 MMFD   ||F||/||F0||=3.034825e-14 
+  Linear js_ solve converged due to CONVERGED_ATOL iterations 1
+ 12 SNES Function norm 2.702392078894e-13 
+ 12 MMFD   ||F||/||F0||=1.219041e-14 
+  Linear js_ solve converged due to CONVERGED_ATOL iterations 1
+ 13 SNES Function norm 2.799004153394e-13 
+ 13 MMFD   ||F||/||F0||=1.262623e-14 
+  Linear js_ solve converged due to CONVERGED_ATOL iterations 1
+ 14 SNES Function norm 2.688410587298e-13 
+ 14 MMFD   ||F||/||F0||=1.212734e-14 
+  Linear js_ solve converged due to CONVERGED_ATOL iterations 1
+ 15 SNES Function norm 3.319043589741e-13 
+ 15 MMFD   ||F||/||F0||=1.497211e-14 
+  Linear js_ solve converged due to CONVERGED_ATOL iterations 1
+ 16 SNES Function norm 2.136569954088e-13 
+--------------------------------------------------------------------------
+SNES Convergence Reason : ||F|| < rtol*||F_initial|| 
+Number of iterations    : 16
+SNES solution time      : 0.321941 (sec)
+--------------------------------------------------------------------------
+Residual summary: 
+   Continuity: 
+      |Div|_inf = 1.465494392505e-14 
+      |Div|_2   = 7.417231676771e-14 
+   Momentum: 
+      |mRes|_2  = 2.003691071808e-13 
+--------------------------------------------------------------------------
+Actual time step : 0.01100 [ ] 
+--------------------------------------------------------------------------
+Saving output ... done (0.0582449 sec)
+--------------------------------------------------------------------------
+=========================== SOLUTION IS DONE! ============================
+--------------------------------------------------------------------------
+Total solution time : 0.515196 (sec) 
+--------------------------------------------------------------------------
+| ************************************************************************
+|                       COMPUTATION OF THE COST FUNCTION                    
+| ************************************************************************
+| Current Cost function = -7.2014704390e-01
+| ************************************************************************ 
+|                       COMPUTATION OF THE GRADIENTS                       
+| ************************************************************************ 
+| 
+| Gradients: 
+|                    Parameter             |  Gradient (dimensional)  
+|                  -----------------------   ------------------------ 
+|       FD     1:            n[ 0]           -1.979498e+00 
+|  adjoint     2:            n[ 0]           -1.915477e+00 
+| 
+| 
+| Observation points: 
+|                                                   Velocity [ ]       
+|                       Location         |      Target         Value     
+|       ---------------------------------  -- ------------- ------------- 
+| 1   : [    0.500;     0.500;     0.500]  Vz -4.24800e-02  -7.20147e-01 
+| 
+| 
+| -------------------------------------------------------------------------
+| 
+| Scaling laws: 
+| 
+|   Assumption: 
+|              Vel = A * p[0]^b[0] * p[1]^b[1] * p[2]^b[2] * ... 
+|                where 
+|                      Vel - velocity;   p[] - parameter 
+|                      b[] - exponent;   A   - prefactor (computed for p>0) 
+|       
+|   Results: 
+|            Parameter      |    Exponent b[]  |  Phase Description    
+|     ----------------------  -----------------  ----------------------- 
+|                    n[  0]       5.497           Matrix
+|                    n[  0]       5.320           Matrix
+|       
+|   Prefactor A               : -3.99144339e-04 
+|   Velocity check            : -7.20147044e-01 
+|   Scaling law data saved to :  ScalingLaw_Test.dat 
+|       
+| -------------------------------------------------------------------------
+| Adjoint computation was successful & took 1.58768 s                         	 
+| ************************************************************************ 

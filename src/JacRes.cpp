@@ -126,7 +126,7 @@ PetscErrorCode JacResCreate(JacRes *jr, FB *fb)
 	ierr = getIntParam   (fb, _OPTIONAL_, "get_permea",      &ctrl->getPermea,      1, 1);   CHKERRQ(ierr);
 	ierr = getIntParam   (fb, _OPTIONAL_, "rescal",          &ctrl->rescal,         1, 1);   CHKERRQ(ierr);
 	ierr = getScalarParam(fb, _OPTIONAL_, "mfmax",           &ctrl->mfmax,          1, 1.0); CHKERRQ(ierr);
-	ierr = getIntParam   (fb, _OPTIONAL_, "lmaxit",          &ctrl->lmaxit,         1, 1);   CHKERRQ(ierr);
+	ierr = getIntParam   (fb, _OPTIONAL_, "lmaxit",          &ctrl->lmaxit,         1, 1000);   CHKERRQ(ierr);
 	ierr = getScalarParam(fb, _OPTIONAL_, "lrtol",           &ctrl->lrtol,          1, 1.0); CHKERRQ(ierr);
 
 	if     (!strcmp(gwtype, "none"))  ctrl->gwType = _GW_NONE_;
@@ -163,7 +163,7 @@ PetscErrorCode JacResCreate(JacRes *jr, FB *fb)
 		||  (m->Kb || m->beta))       need_top_open  = 1;
 
 		// set default stabilization viscosity
-		if(!m->eta_st) m->eta_st = ctrl->eta_min/scal->viscosity;
+		//if(!m->eta_st) m->eta_st = ctrl->eta_min/scal->viscosity;
 
 	}
 
@@ -311,10 +311,11 @@ PetscErrorCode JacResCreate(JacRes *jr, FB *fb)
 	ctrl->steadyTempStep /=  scal->time;
 
 	// adjoint field based gradient output vector
-	ierr = getIntParam   (fb, _OPTIONAL_, "Adj_FS"        , &temp_int,        1, 1        ); CHKERRQ(ierr);  // Do a field sensitivity test? -> Will do the test for the first InverseParStart that is given!
+	ierr = getIntParam   (fb, _OPTIONAL_, "Adjoint_FieldSensitivity"        , &temp_int,        1, 1        ); CHKERRQ(ierr);  // Do a field sensitivity test? -> Will do the test for the first InverseParStart that is given!
 	if (temp_int == 1)
 	{
 		ierr = DMCreateLocalVector (jr->fs->DA_CEN, &jr->lgradfield);      CHKERRQ(ierr);
+		ierr = VecZeroEntries(jr->lgradfield); CHKERRQ(ierr);
 	}
 
 	// create Jacobian & residual evaluation context
@@ -399,6 +400,10 @@ PetscErrorCode JacResCreateData(JacRes *jr)
 	ierr = DMCreateLocalVector (fs->DA_CEN, &jr->lp);      CHKERRQ(ierr);
 	ierr = DMCreateLocalVector (fs->DA_CEN, &jr->lp_lith); CHKERRQ(ierr);
 	ierr = DMCreateLocalVector (fs->DA_CEN, &jr->lp_pore); CHKERRQ(ierr);
+
+	// PSD (adjoint paper)
+	ierr = VecDuplicate(jr->gsol, &jr->phi);               CHKERRQ(ierr);
+	ierr = VecSet(jr->phi, 0.0); CHKERRQ(ierr);
 
 	// continuity residual
 	ierr = DMCreateGlobalVector(fs->DA_CEN, &jr->gc); CHKERRQ(ierr);
@@ -537,6 +542,8 @@ PetscErrorCode JacResDestroy(JacRes *jr)
 	ierr = VecDestroy(&jr->lp_pore); CHKERRQ(ierr);
 
 	ierr = VecDestroy(&jr->gc);      CHKERRQ(ierr);
+
+	ierr = VecDestroy(&jr->phi);     CHKERRQ(ierr);
 
 	ierr = VecDestroy(&jr->lbcor);   CHKERRQ(ierr);
 

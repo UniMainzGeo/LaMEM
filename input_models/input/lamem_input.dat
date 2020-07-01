@@ -357,6 +357,9 @@
 		phase       = 1
 		top         = 5.0
 		bottom      = 3.0
+        cosine      = 0         # optional: add a cosine perturbation on top of the interface (if 1)
+		wavelength  = 1         # required if cosine: wavelength in x-direction
+		amplitude   = 0.1       # required if cosine: amplitude of perturbation         
 		Temperature = halfspace # optional: Temperature structure. possibilities: [constant, linear, halfspace]
 		cstTemp     = 1000      # required in case of [constant]: temperature value [in Celcius in case of GEO units]
 		topTemp     = 0         # required in case of [linear,halfspace]: temperature @ top [in Celcius in case of GEO units]
@@ -464,6 +467,7 @@
 
 	<MaterialStart>
 		ID         = 1      # material phase ID
+		Name       = Slab   # description of the phase
 		visID      = 10     # material ID for phase visualization (default is ID)
 		diff_prof  = Dry_Olivine_diff_creep-Hirth_Kohlstedt_2003 # DIFFUSION creep profile
 		disl_prof  = Granite-Tirel_et_al_2008                    # DISLOCATION creep profile

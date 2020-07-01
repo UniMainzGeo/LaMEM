@@ -87,55 +87,57 @@ struct Material_t
 {
 public:
 
-	PetscInt     ID;       // material ID
-	PetscInt     visID;    // visualization ID
+	PetscInt     ID;                // material ID
+	PetscInt     visID;             // visualization ID
+    char         Name[_str_len_];   // name (description) of the phase
+
 	// density parameters
-	PetscScalar  rho;      // reference density                          [kg/m^3]
-	PetscScalar  rho_n;    // depth-dependent density model parameter    [ ]
-	PetscScalar  rho_c;    // depth-dependent density model parameter    [1/m]
-	PetscScalar  beta;     // pressure-dependent density model parameter [1/Pa]
+	PetscScalar  rho;               // reference density                          [kg/m^3]
+	PetscScalar  rho_n;             // depth-dependent density model parameter    [ ]
+	PetscScalar  rho_c;             // depth-dependent density model parameter    [1/m]
+	PetscScalar  beta;              // pressure-dependent density model parameter [1/Pa]
 	// elasticity parameters
-	PetscScalar  Kb;       // bulk modulus                               [Pa]
-	PetscScalar  Kp;       // pressure dependence parameter              [ ]
-	PetscScalar  G;        // shear modulus                              [Pa]
+	PetscScalar  Kb;                // bulk modulus                               [Pa]
+	PetscScalar  Kp;                // pressure dependence parameter              [ ]
+	PetscScalar  G;                 // shear modulus                              [Pa]
 	// diffusion creep parameters
-	PetscScalar  Bd;       // pre-exponential constant                   [1/Pa/s]
-	PetscScalar  Ed;       // activation energy                          [J/mol]
-	PetscScalar  Vd;       // activation volume                          [m^3/mol]
+	PetscScalar  Bd;                // pre-exponential constant                   [1/Pa/s]
+	PetscScalar  Ed;                // activation energy                          [J/mol]
+	PetscScalar  Vd;                // activation volume                          [m^3/mol]
 	// dislocation creep parameters
-	PetscScalar  Bn;       // pre-exponential constant                   [1/Pa^n/s]
-	PetscScalar  n;        // power law exponent                         [ ]
-	PetscScalar  En;       // activation energy                          [J/mol]
-	PetscScalar  Vn;       // activation volume                          [m^3/mol]
+	PetscScalar  Bn;                // pre-exponential constant                   [1/Pa^n/s]
+	PetscScalar  n;                 // power law exponent                         [ ]
+	PetscScalar  En;                // activation energy                          [J/mol]
+	PetscScalar  Vn;                // activation volume                          [m^3/mol]
 	// Peierls creep parameters
-	PetscScalar  Bp;       // pre-exponential constant                   [1/s]
-	PetscScalar  Ep;       // activation energy                          [J/mol]
-	PetscScalar  Vp;       // activation volume                          [m^3/mol]
-	PetscScalar  taup;     // scaling stress                             [Pa]
-	PetscScalar  gamma;    // approximation parameter                    [ ]
-	PetscScalar  q;        // stress-dependence parameter                [ ]
+	PetscScalar  Bp;                // pre-exponential constant                   [1/s]
+	PetscScalar  Ep;                // activation energy                          [J/mol]
+	PetscScalar  Vp;                // activation volume                          [m^3/mol]
+	PetscScalar  taup;              // scaling stress                             [Pa]
+	PetscScalar  gamma;             // approximation parameter                    [ ]
+	PetscScalar  q;                 // stress-dependence parameter                [ ]
 	// dc-creep
-	PetscScalar  Bdc;      // pre-exponential constant                   [1/s]
-	PetscScalar  Edc;      // activation energy                          [J/mol]
-	PetscScalar  Rdc;      // stress/shear modulus ratio at abs. zero    []
-	PetscScalar  mu;       // average shear modulus                      [Pa]
+	PetscScalar  Bdc;               // pre-exponential constant                   [1/s]
+	PetscScalar  Edc;               // activation energy                          [J/mol]
+	PetscScalar  Rdc;               // stress/shear modulus ratio at abs. zero    []
+	PetscScalar  mu;                // average shear modulus                      [Pa]
 	// ps-creep
-	PetscScalar  Bps;      // pre-exponential constant                   [K*m^3/Pa/s]
-	PetscScalar  Eps;      // activation energy                          [J/mol]
-	PetscScalar  d;        // grain size                                 [m]
+	PetscScalar  Bps;               // pre-exponential constant                   [K*m^3/Pa/s]
+	PetscScalar  Eps;               // activation energy                          [J/mol]
+	PetscScalar  d;                 // grain size                                 [m]
 	// plasticity parameters
-	PetscScalar  fr;       // friction angle                             [deg]
-	PetscScalar  ch;       // cohesion
-	PetscScalar  eta_st;   // stabilization viscosity
-	PetscScalar  rp;       // ratio of pore pressure to overburden stress
-	PetscInt     frSoftID; // friction softening law ID (-1 if not defined)
-	PetscInt     chSoftID; // cohesion softening law ID (-1 if not defined)
+	PetscScalar  fr;                // friction angle                             [deg]
+	PetscScalar  ch;                // cohesion
+	PetscScalar  eta_st;            // stabilization viscosity
+	PetscScalar  rp;                // ratio of pore pressure to overburden stress
+	PetscInt     frSoftID;          // friction softening law ID (-1 if not defined)
+	PetscInt     chSoftID;          // cohesion softening law ID (-1 if not defined)
 	// thermal parameters
-	PetscScalar  alpha;    // thermal expansivity                        [1/K]
-	PetscScalar  Cp;       // cpecific heat (capacity)                   [J/kg/K]
-	PetscScalar  k;        // thermal conductivity                       [W/m/k]
-	PetscScalar  A;        // radiogenic heat production                 [W/kg]
-	PetscScalar  T;        // optional temperature to set within the phase
+	PetscScalar  alpha;             // thermal expansivity                        [1/K]
+	PetscScalar  Cp;                // cpecific heat (capacity)                   [J/kg/K]
+	PetscScalar  k;                 // thermal conductivity                       [W/m/k]
+	PetscScalar  A;                 // radiogenic heat production                 [W/kg]
+	PetscScalar  T;                 // optional temperature to set within the phase
 	// phase diagram
 	char         pdn[_pd_name_sz_]; // Unique phase diagram number
 	char         pdf[_pd_name_sz_]; // Unique phase diagram number
@@ -205,6 +207,9 @@ void MatPrintScalParam(
 		PetscScalar par,  const char key[],   const char label[],
 		Scaling    *scal, const char title[], PetscInt   *print_title);
 
+// Overwrite material phase parameters with global values 
+PetscErrorCode DBMatOverwriteWithGlobalVariables(DBMat *dbm, FB *fb, PetscBool PrintOutput);		
+
 //---------------------------------------------------------------------------
 //............ PREDEFINED RHEOLOGICAL PROFILES (from literature) ............
 //---------------------------------------------------------------------------
@@ -229,11 +234,11 @@ PetscErrorCode CorrExpStressStrainRate(PetscScalar &D, PetscScalar &S, ExpType t
 
 //---------------------------------------------------------------------------
 
-// read phases from command line
+// read phases from command line [Note: this is now directly possible]
 // PetscErrorCode MatPropSetFromCL(JacRes *jr);
 
-// assign phases from calling function
-PetscErrorCode MatPropSetFromLibCall(JacRes *jr, ModParam *mod, FB *fb);
+// Print overview (for debugging purposes only)
+PetscErrorCode PrintMatProp(Material_t *MatProp);
 
 //---------------------------------------------------------------------------
 #endif

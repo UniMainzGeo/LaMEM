@@ -1,0 +1,249 @@
+# This is the setup used in 
+# 	Reuber, Holbach, Popov, Hanke &* Kaus (2020) Inferring rheology and geometry 
+#    of subsurface structures by adjoint-based inversion of principal stress 
+#    directions. Geophysical Journal International
+#
+# This particular script is used to reproduce the inversions of Figs. 8 & 9, as follows:
+#  Note that in the actual paper, we employed a 32^3 resolution (note that you have to uncomment the appropriate PSD Value for that).
+#  Also note that for regression testing, we employ 16^3 resolution, but reduce the tolerance for convergence
+#  Also note that the observation point is not the actual location where the computations are performed. The reason is that PSD 
+#   calculations are performed at the center of the FDSTAG cell in which the ObservationPoint is located 
+#   and thus not at the point itself. The location of this center is different @ different resolutions.
+#
+# NONLINEAR TESTS:
+#  	Fig. 9a, rho
+#   	mpiexec -n 1 ../../bin/opt/LaMEM -ParamFile t8_PSDInversionPaper.dat | grep "| " 
+#
+#	Fig. 9b, eta0: comment the lines with AdjointParameterStart/End related to 'rho' below and uncomment the ones with eta0
+#   	mpiexec -n 1 ../../bin/opt/LaMEM -ParamFile t8_PSDInversionPaper.dat  | grep "| " 
+#
+# LINEAR TESTS:
+#   Fig. 8a, rho: 
+# 		mpiexec -n 1 ../../bin/opt/LaMEM -ParamFile t8_PSDInversionPaper.dat -n[0] 1 -n[1] 1 -n[2] 1 | grep "| " 
+#
+#	Fig. 9b, eta0: comment the lines with AdjointParameterStart/End related to 'rho' below and uncomment the ones with eta0
+#   	mpiexec -n 1 ../../bin/opt/LaMEM -ParamFile t8_PSDInversionPaper.dat -n[0] 1 -n[1] 1 -n[2] 1 | grep "| " 
+
+#===============================================================================
+# Scaling
+#===============================================================================
+
+	units = none
+
+#===============================================================================
+# Time stepping parameters
+#===============================================================================
+
+	time_end  = 1.0   # simulation end time
+	dt        = 1e-2  # time step
+	dt_min    = 1e-5  # minimum time step (declare divergence if lower value is attempted)
+	dt_max    = 0.1   # maximum time step
+	dt_out    = 0.2   # output step (output at least at fixed time intervals)
+	inc_dt    = 0.1   # time step increment per time step (fraction of unit)
+	CFL       = 0.5   # CFL (Courant-Friedrichs-Lewy) criterion
+	CFLMAX    = 0.5   # CFL criterion for elasticity
+	nstep_max = 1     # maximum allowed number of steps (lower bound: time_end/dt_max)
+	nstep_out = 10    # save output every n steps
+	nstep_rdb = 0     # save restart database every n steps
+
+
+#===============================================================================
+# Grid & discretization parameters
+#===============================================================================
+
+# Number of cells for all segments (note that we employ 32^3 for the paper)
+
+	nel_x = 16
+	nel_y = 16
+	nel_z = 16
+
+# Coordinates of all segments (including start and end points)
+
+	coord_x = 0.0 1.0
+	coord_y = 0.0 1.0
+	coord_z = 0.0 1.0
+
+#===============================================================================
+# Free surface
+#===============================================================================
+
+# Default
+
+#===============================================================================
+# Boundary conditions
+#===============================================================================
+
+# Default
+
+# No-slip boundary flag mask (left right front back bottom top)
+
+#===============================================================================
+# Solution parameters & controls
+#===============================================================================
+
+	gravity        = 0.0 0.0 -1.0   # gravity vector
+	FSSA           = 1.0            # free surface stabilization parameter [0 - 1]
+	init_guess     = 1              # initial guess flag
+	DII	           = 1e-6          # background (reference) strain-rate
+	eta_min        = 1e-3           # viscosity upper bound
+	eta_max        = 1e6           # viscosity lower limit
+	eta_ref 	   = 10
+
+#===============================================================================
+# Solver options
+#===============================================================================
+	SolverType 		=	direct 	# solver [direct or multigrid]
+	DirectSolver	=	mumps
+	
+#===============================================================================
+# Model setup & advection
+#===============================================================================
+
+	msetup         = geom             # setup type
+	nmark_x        = 5                 # markers per cell in x-direction
+	nmark_y        = 5                 # ...                 y-direction
+	nmark_z        = 5                 # ...                 z-direction
+	bg_phase       = 0                 # background phase ID
+	rand_noise      = 0
+
+	<BoxStart>
+		phase  = 2
+		bounds = 0.25 0.5 0.25 0.75 0.25 0.75  # (left, right, front, back, bottom, top)
+	<BoxEnd>
+
+	<BoxStart>
+    	phase  = 1
+		bounds = 0.5 0.75 0.25 0.75 0.25 0.75  # (left, right, front, back, bottom, top)
+	<BoxEnd>
+
+
+#===============================================================================
+# Output
+#===============================================================================
+
+# Grid output options (output is always active)
+	out_file_name       = AdjointInversion_Fig9 # output file name
+	out_pvd             = 1                     # activate writing .pvd file
+	out_density         = 1
+	out_shmax           = 1
+	out_stangle         = 1
+	out_gradient        = 0     				# print pointwise gradient
+	out_strain_rate  	= 1
+
+# AVD phase viewer output options (requires activation)
+
+	out_avd     = 1 # activate AVD phase output
+	out_avd_pvd = 1 # activate writing .pvd file
+	out_avd_ref = 3 # AVD grid refinement factor
+
+#===============================================================================
+# Material phase parameters
+#===============================================================================
+
+	# Define properties of overburden
+	<MaterialStart>
+		Name 	= Matrix
+		ID  	= 0 
+		rho 	= 1
+		eta0 	= 1
+		n 		= 2
+		e0 		= 1e-6  
+	<MaterialEnd>
+
+	# Define properties of left block
+	<MaterialStart>
+		Name 	= Block1
+		ID  	= 1   
+		rho 	= 2  
+		eta0 	= 1e2
+		n 		= 2
+		e0 		= 1e-6  
+	<MaterialEnd>
+	
+	# Define properties of right block
+    <MaterialStart>
+    	Name    = Block2
+    	ID      = 2
+      	rho     = 2
+   		eta0    = 1e2
+    	n    	= 2
+  		e0		= 1e-6
+ 	<MaterialEnd>
+
+#===============================================================================
+# Adjoint Parameters (look into comments in LaMEM.cpp for info)
+#===============================================================================
+	
+	# General
+	Adjoint_mode    					= 	GradientDescent	 #AdjointGradients    	# options: [None; AdjointGradients, GradientDescent; Inversion]
+	Adjoint_ObservationPoints           = 	1						# options: [1=several points; 2=whole domain; 3=surface]
+	Adjoint_ObjectiveFunctionDef        = 	1                     	# options: [1-defined by hand; 0??]
+	Adjoint_GradientCalculation        	= 	CostFunction			# options [CostFunction= w.r.t. Cost function (e.g,);  Solution= w.r.t. Solution ]
+	Adjoint_FieldSensitivity    		= 	0     					# calculate Field-based =1 (aka. geodynamic sensity kernels), or Phase Based [=0]
+	Adjoint_ScaleCostFunction 			=	None
+
+	# Inversion parameters
+	Inversion_EmployTAO 				=	0 
+	Inversion_rtol						=	1e-16
+	Inversion_maxit 					= 	200
+	Inversion_maxit_linesearch 			= 	100
+	Inversion_factor_linesearch 		=	2
+	Inversion_maxfac 					= 	1e30
+	Inversion_facB 						=	0.2
+
+    <AdjointParameterStart>
+   		ID              = 1
+        Type            = rho
+        InitGuess       = 1
+        FD_gradient     = 0
+    <AdjointParameterEnd>
+
+#   <AdjointParameterStart>
+#		ID     			= 1
+#    	Type     		= eta0
+#   	InitGuess   	= 10
+#     	FD_gradient     = 0
+#  	<AdjointParameterEnd>
+
+	# observation for nonlinear setup (Fig. 9):
+	<AdjointObservationPointStart>
+		Coordinate 	= 	0.6 0.5 0.99
+		Parameter 	= 	PSD
+	#	Value  		=  	1.65961401241191254030e+02		# employ this for 32^3 resolution
+		Value 		=	1.57113e+02						# for 16^3 resolution
+	<AdjointObservationPointEnd>
+	
+	# observation for linear setup (Fig. 8):
+	#<AdjointObservationPointStart>
+	#	Coordinate 	= 	0.6 0.5 0.99
+	#	Parameter 	= 	PSD
+	#	Value  		=  	1.64483e+02 					# employ this for 32^3 resolution 
+	#	Value 		=	1.52578e+02						# for 16^3 resolution
+	#	Value 		=	1.35000e+02						# for 8^3 resolution
+	#<AdjointObservationPointEnd>
+	
+
+#===============================================================================
+# PETSc options
+#===============================================================================
+
+<PetscOptionsStart>
+
+
+	# Jacobian (linear) outer KSP
+	-js_ksp_type gmres
+	-js_ksp_max_it 50
+#	-js_ksp_converged_reason
+# 	-js_ksp_monitor
+	-js_ksp_rtol 1e-10
+	-js_ksp_atol 1e-15
+
+  	-snes_max_it 20
+    -snes_atol 1e-12
+    -snes_rtol 1e-20
+    -snes_stol 1e-20
+	#-snes_PicardSwitchToNewton_rtol 1e-20
+
+<PetscOptionsEnd>
+
+#===============================================================================

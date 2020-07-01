@@ -48,7 +48,7 @@
 //---------------------------------------------------------------------------
 #undef __FUNCT__
 #define __FUNCT__ "ScalingCreate"
-PetscErrorCode ScalingCreate(Scaling *scal, FB *fb)
+PetscErrorCode ScalingCreate(Scaling *scal, FB *fb, PetscBool PrintOutput)
 {
 	// characteristic values must ALWAYS be given in SI units
 
@@ -139,19 +139,21 @@ PetscErrorCode ScalingCreate(Scaling *scal, FB *fb)
 	ierr = getScalarParam(fb, _OPTIONAL_, "unit_density",     &density,     1, 1.0);  CHKERRQ(ierr);
 
 	// print summary
-	PetscPrintf(PETSC_COMM_WORLD, "Scaling parameters:\n");
-	PetscPrintf(PETSC_COMM_WORLD,"   Temperature : %g [C/K] \n",    temperature);
-	PetscPrintf(PETSC_COMM_WORLD,"   Length      : %g [m] \n",      length);
-	PetscPrintf(PETSC_COMM_WORLD,"   Viscosity   : %g [Pa*s] \n",   viscosity);
-	PetscPrintf(PETSC_COMM_WORLD,"   Stress      : %g [Pa] \n",     stress);
+	if (PrintOutput){
+		PetscPrintf(PETSC_COMM_WORLD, "Scaling parameters:\n");
+		PetscPrintf(PETSC_COMM_WORLD,"   Temperature : %g [C/K] \n",    temperature);
+		PetscPrintf(PETSC_COMM_WORLD,"   Length      : %g [m] \n",      length);
+		PetscPrintf(PETSC_COMM_WORLD,"   Viscosity   : %g [Pa*s] \n",   viscosity);
+		PetscPrintf(PETSC_COMM_WORLD,"   Stress      : %g [Pa] \n",     stress);
 
-	if(density)
-	{
-		PetscPrintf(PETSC_COMM_WORLD,"   Density     : %g [kg/m^3] \n", density);
-		PetscPrintf(PETSC_COMM_WORLD,"   WRNING! Unconventional scaling is employed");
+		if(density)
+		{
+			PetscPrintf(PETSC_COMM_WORLD,"   Density     : %g [kg/m^3] \n", density);
+			PetscPrintf(PETSC_COMM_WORLD,"   WRNING! Unconventional scaling is employed");
+		}
+
+		PetscPrintf(PETSC_COMM_WORLD,"--------------------------------------------------------------------------\n");
 	}
-
-	PetscPrintf(PETSC_COMM_WORLD,"--------------------------------------------------------------------------\n");
 
 	// compute additional units
 	angle  = 180.0/M_PI;
