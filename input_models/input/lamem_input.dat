@@ -471,7 +471,7 @@
 		ID   = 1          # Phase_transition law ID
 		Type = Constant   # Type constant: take a depth, pressure or temperature to trigger the phase transition
 		Parameter = Depth # Parameter to take into account
-		value = -1 660e3  # The first parameter tell that temperature/depth/pressure must be lower (-1) or higher(+1) than the designed parameter
+		value = -1 660  # The first parameter tell that temperature/depth/pressure must be lower (-1) or higher(+1) than the designed parameter
 		vis_id = 2        # visualization phase = Ph_id+(tot_number_phase-1)*id
 		rho_inc = 0.08    # rho_ref=rho_ref*(1+0.16)
 		visc_inc = 2         

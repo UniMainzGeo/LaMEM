@@ -154,7 +154,7 @@ PetscErrorCode Transition(Ph_trans_t *PhaseTrans, ConstEqCtx  *ctx, PetscInt id)
 			{
 				if(ctx->depth>PTr->value[1])
 				{
-					//ctx->visc_inc=PTr->visc_inc;
+					ctx->visc_inc=PTr->visc_inc;
 					ctx->rho_inc=PTr->rho_inc;
 				}
 			}
