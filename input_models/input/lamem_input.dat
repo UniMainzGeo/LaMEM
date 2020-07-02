@@ -461,6 +461,39 @@
 		A    = 0.7 # reduction ratio
 		Lm   = 0.2 # material length scale (in selected units, e.g. km in geo)
 	<SofteningEnd>
+	
+	#Mafic Crust 2 Eclogite
+	<PhTransStart>
+		ID   = 0   # Phase_transition law ID
+		Type = Clapeyron
+		neq  = 2
+		gamma = -30 1.5
+		P0    =  2e9 2e9
+		T0    =  500 500
+		vis_id = 1           # visualization phase = Ph_id+(tot_number_phase-1)*id
+		rho_inc = 0.16       #  rho_ref=rho_ref*(1+0.16)
+		visc_inc = 1.2      # multiply the creep viscosity by a factor spanning between 1 to 1000, it weakens to but 0.0 are not valuable
+		####### The increment of the thermal properties would be an other to do list: since the thermal solver is not suitable 
+	<PhTransEnd>
+	#Mantle 2 Lower Mantle	
+	<PhTransStart>
+		ID   = 1   # Phase_transition law ID
+		Type = Constant
+		Parameter = Depth
+		value = 1 660
+		vis_id = 2           # visualization phase = Ph_id+(tot_number_phase-1)*id
+		rho_inc = 0.08       #  rho_ref=rho_ref*(1+0.16)
+		visc_inc = 2 
+	<PhTransEnd>
+	<PhTransStart>
+		ID   = 2   # Phase_transition law ID
+		Type = Constant
+		Parameter = T
+		value = -1 1200
+		vis_id = 3
+		visual = 1 # this option is only to highlight the lithosphere phase transition.Since Lithosphere is only for a visualization purpoise 
+		# it can been applied to the other e.g. : vis_id = ph_id+(num_phase-1)*id+(num_phase-1)*vis_id(lithos)
+	<PhTransEnd>
 
 # Define material properties for all phases (maximum 32)
 # By default all rheological mechanisms are deactivated
