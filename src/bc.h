@@ -236,6 +236,10 @@ struct BCCtx
 	PetscScalar  Tbot, Ttop;
 	PetscInt     initTemp;
 
+	// optional gaussian temperature perturbation @ bottom
+	PetscInt 	Tbot_gauss;
+	PetscScalar Tbot_gauss_x0, Tbot_gauss_y0, Tbot_gauss_width, Tbot_gauss_maxT;
+
 	//=====================
 	// PRESSURE CONSTRAINTS
 	//=====================

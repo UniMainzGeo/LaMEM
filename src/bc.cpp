@@ -353,9 +353,16 @@ PetscErrorCode BCCreate(BCCtx *bc, FB *fb)
 	// TEMPERATURE CONSTRAINTS
 	//========================
 
-	ierr = getScalarParam(fb, _OPTIONAL_, "temp_bot",  &bc->Tbot,     1, 1.0); CHKERRQ(ierr);
-	ierr = getScalarParam(fb, _OPTIONAL_, "temp_top",  &bc->Ttop,     1, 1.0); CHKERRQ(ierr);
-	ierr = getIntParam   (fb, _OPTIONAL_, "init_temp", &bc->initTemp, 1, -1);  CHKERRQ(ierr);
+	ierr = getScalarParam(fb, _OPTIONAL_, "temp_bot",   &bc->Tbot,     1, 1.0); CHKERRQ(ierr);
+	ierr = getScalarParam(fb, _OPTIONAL_, "temp_top",   &bc->Ttop,     1, 1.0); CHKERRQ(ierr);
+	ierr = getIntParam   (fb, _OPTIONAL_, "init_temp",  &bc->initTemp, 1, -1);  CHKERRQ(ierr);
+
+	// optional gaussian temperature perturbation @ bottom
+	ierr = getIntParam   (fb, _OPTIONAL_, "temp_bot_gauss",         &bc->Tbot_gauss,      1, 0);            CHKERRQ(ierr);
+    ierr = getScalarParam(fb, _OPTIONAL_, "temp_bot_gauss_x0",      &bc->Tbot_gauss_x0,   1, 1.0);          CHKERRQ(ierr);
+    ierr = getScalarParam(fb, _OPTIONAL_, "temp_bot_gauss_y0",      &bc->Tbot_gauss_y0,   1, 1.0);          CHKERRQ(ierr);
+    ierr = getScalarParam(fb, _OPTIONAL_, "temp_bot_gauss_width",   &bc->Tbot_gauss_width,1, 1.0);          CHKERRQ(ierr);
+    ierr = getScalarParam(fb, _OPTIONAL_, "temp_bot_gauss_maxT",    &bc->Tbot_gauss_maxT, 1, 1.0); CHKERRQ(ierr);
 
 	//=====================
 	// PRESSURE CONSTRAINTS
@@ -395,17 +402,28 @@ PetscErrorCode BCCreate(BCCtx *bc, FB *fb)
 	if(bc->fixPhase != -1)   PetscPrintf(PETSC_COMM_WORLD, "   Fixed phase                                : %lld  \n", (LLD)bc->fixPhase);
 	if(bc->Ttop     != -1.0) PetscPrintf(PETSC_COMM_WORLD, "   Top boundary temperature                   : %g %s \n", bc->Ttop, scal->lbl_temperature);
 	if(bc->Tbot     != -1.0) PetscPrintf(PETSC_COMM_WORLD, "   Bottom boundary temperature                : %g %s \n", bc->Tbot, scal->lbl_temperature);
+    if(bc->Tbot_gauss == 1){
+                            PetscPrintf(PETSC_COMM_WORLD, "   Adding gaussian bottom T perturbation      @ \n");
+                            PetscPrintf(PETSC_COMM_WORLD, "      Location of center                      : [%g, %g] %s \n", bc->Tbot_gauss_x0, bc->Tbot_gauss_y0, scal->lbl_length);
+                            PetscPrintf(PETSC_COMM_WORLD, "      Halfwidth of perturbation               : %g %s \n", bc->Tbot_gauss_width, scal->lbl_length);
+                            PetscPrintf(PETSC_COMM_WORLD, "      Maximum temperature of perturbation     : %g %s \n", bc->Tbot_gauss_maxT, scal->lbl_temperature);
+    }
+    
 	if(bc->ptop     != -1.0) PetscPrintf(PETSC_COMM_WORLD, "   Top boundary pressure                      : %g %s \n", bc->ptop, scal->lbl_stress);
 	if(bc->pbot     != -1.0) PetscPrintf(PETSC_COMM_WORLD, "   Bottom boundary pressure                   : %g %s \n", bc->pbot, scal->lbl_stress);
 
 	PetscPrintf(PETSC_COMM_WORLD,"--------------------------------------------------------------------------\n");
 
 	// nondimensionalize temperature & pressure
-	if(bc->Ttop != -1.0)  bc->Ttop  = (bc->Ttop + scal->Tshift)/scal->temperature;
-	if(bc->Tbot != -1.0)  bc->Tbot  = (bc->Tbot + scal->Tshift)/scal->temperature;
-	if(bc->ptop != -1.0)  bc->ptop /= scal->stress;
-	if(bc->pbot != -1.0)  bc->pbot /= scal->stress;
-
+	if(bc->Ttop != -1.0)                        bc->Ttop  = (bc->Ttop + scal->Tshift)/scal->temperature;
+	if(bc->Tbot != -1.0)                        bc->Tbot  = (bc->Tbot + scal->Tshift)/scal->temperature;
+    if(bc->Tbot_gauss_x0    != 0.0) bc->Tbot_gauss_x0    /= scal->length;
+    if(bc->Tbot_gauss_y0    != 0.0) bc->Tbot_gauss_y0    /= scal->length;
+    if(bc->Tbot_gauss_width != 0.0) bc->Tbot_gauss_width /= scal->length;
+    if(bc->Tbot_gauss_maxT  != 0.0) bc->Tbot_gauss_maxT   = (bc->Tbot_gauss_maxT + scal->Tshift)/scal->temperature;
+	if(bc->ptop != -1.0)                        bc->ptop /= scal->stress;
+	if(bc->pbot != -1.0)                        bc->pbot /= scal->stress;
+    
 	// allocate vectors and arrays
 	ierr = BCCreateData(bc); CHKERRQ(ierr);
 
@@ -833,6 +851,24 @@ PetscErrorCode BCApplyTemp(BCCtx *bc)
 			// negative will set zero-flux BC automatically
 			if(Tbot >= 0.0 && k == 0)   { bcT[k-1][j][i] = Tbot; }
 			if(Ttop >= 0.0 && k == mcz) { bcT[k+1][j][i] = Ttop; }
+
+            // add gaussian perturbation @ bottom
+            if(bc->Tbot_gauss == 1 && k==0){
+                PetscScalar x,y,w,maxT,T;
+
+                x       = COORD_CELL(i, sx, fs->dsx);
+			    y       = COORD_CELL(j, sy, fs->dsy);
+                w       = bc->Tbot_gauss_width;
+                maxT    = bc->Tbot_gauss_maxT;
+
+                T       = (maxT-Tbot)* PetscExpScalar(-(x*x + y*y)/(w*w)) + Tbot;
+
+                bcT[k-1][j][i] = T;
+
+            }
+
+
+		
 		}
 		END_STD_LOOP
 	}
