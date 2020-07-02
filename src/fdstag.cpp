@@ -836,7 +836,7 @@ PetscErrorCode DOFIndexDestroy(DOFIndex *dof)
 #define __FUNCT__ "DOFIndexCompute"
 PetscErrorCode DOFIndexCompute(DOFIndex *dof, idxtype idxmod)
 {
-	PetscInt    i, j, k, nx, ny, nz, sx, sy, sz, stv, stp;
+	PetscInt    i, j, k, nx, ny, nz, sx, sy, sz, stv=0, stp=0;
 	PetscScalar ***ivx, ***ivy, ***ivz, ***ip;
 
 	PetscErrorCode ierr;
@@ -1088,6 +1088,10 @@ PetscErrorCode FDSTAGReadRestart(FDSTAG *fs, FILE *fp)
 	Pz = fs->dsz.nproc;
 
 	// get number cells per processor
+	lx = PETSC_NULL;
+	ly = PETSC_NULL;
+	lz = PETSC_NULL;
+	
 	ierr = Discret1DGetNumCells(&fs->dsx, &lx); CHKERRQ(ierr);
 	ierr = Discret1DGetNumCells(&fs->dsy, &ly); CHKERRQ(ierr);
 	ierr = Discret1DGetNumCells(&fs->dsz, &lz); CHKERRQ(ierr);

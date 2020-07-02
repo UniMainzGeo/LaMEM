@@ -154,7 +154,7 @@ PetscErrorCode FreeSurfCreate(FreeSurf *surf, FB *fb)
 	ierr = FreeSurfSetTopoFromFile(surf, fb); CHKERRQ(ierr);
 
 	// set initial perturbation on topography
-	ierr = FreeSurfSetInitialPerturbation(surf, fb); 
+	ierr = FreeSurfSetInitialPerturbation(surf); 
 
 	// compute & store average topography
 	ierr = FreeSurfGetAvgTopo(surf); CHKERRQ(ierr);
@@ -967,7 +967,7 @@ PetscErrorCode FreeSurfAppSedimentation(FreeSurf *surf)
 	JacRes      *jr;
 	FDSTAG      *fs;
 	PetscScalar ***topo;
-	PetscScalar dt, time, rate, zbot, ztop, z,zprop,zpropn, dz, dr, x,y;
+	PetscScalar dt, time, rate, zbot, ztop, z,zprop=0.0,zpropn=0.0, dz, dr, x,y;
 	PetscScalar rsq, rsqn, t0, t0n, l[2], aE[2], aO[2],ln[2], aEn[2], aOn[2], b[2],c[2],d,dn;
 	PetscInt    L, jj, phase;
 	PetscInt    i, j, nx, ny, sx, sy, sz;
@@ -1239,12 +1239,12 @@ PetscErrorCode FreeSurfAppSedimentation(FreeSurf *surf)
 //---------------------------------------------------------------------------
 #undef __FUNCT__
 #define __FUNCT__ "FreeSurfSetInitialPerturbation"
-PetscErrorCode FreeSurfSetInitialPerturbation(FreeSurf *surf, FB *fb)
+PetscErrorCode FreeSurfSetInitialPerturbation(FreeSurf *surf)
 {
 	FDSTAG         	*fs;
 	PetscInt       	i, j, nx, ny, sx, sy, sz, level, RandNoiseSeed;
 	PetscScalar    	***topo;
-	PetscScalar    	xp, yp,  bx, by, ex, ey, leng;
+	PetscScalar    	xp,  bx, by, ex, ey, leng;
 	PetscScalar    	wavel, ampl_cos, ampl_noise, rnd;	
 	PetscRandom 	rctx;
 
@@ -1291,7 +1291,6 @@ PetscErrorCode FreeSurfSetInitialPerturbation(FreeSurf *surf, FB *fb)
 	{
 		// get node coordinate
 		xp = COORD_NODE(i, sx, fs->dsx);
-		yp = COORD_NODE(j, sy, fs->dsy);
 
 		// interpolate topography from input grid onto LaMEM nodes
 		PetscRandomGetValueReal(rctx,&rnd);

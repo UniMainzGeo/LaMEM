@@ -76,6 +76,8 @@
 	init_guess     = 1              # initial guess flag
 	eta_max        = 1e25           # viscosity lower limit
 	p_lim_plast    = 1              # limit pressure at first iteration for plasticity
+#	p_litho_visc    = 1              # use lithostatic pressure for creep laws
+	p_litho_plast   = 1              # use lithostatic pressure for plasticity
 	eta_min        = 1e19           # viscosity upper bound
 	eta_max        = 1e25           # viscosity lower limit
 	eta_ref        = 1e22           # reference viscosity (initial guess)

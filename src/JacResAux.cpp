@@ -447,7 +447,7 @@ PetscErrorCode JacResGetPorePressure(JacRes *jr)
 	Controls    *ctrl;
 	Material_t  *phases, *mat;
 	PetscScalar ***lp_pore, ***lp_lith, *phRat;
-	PetscScalar ztop, g, gwLevel, rho_fluid, depth, p_hydro, rp_cv, rp;
+	PetscScalar ztop, g, gwLevel=0.0, rho_fluid, depth, p_hydro, rp_cv, rp;
 	PetscInt    numPhases, i, j, k, iter, iphase, sx, sy, sz, nx, ny, nz;
 
 	PetscErrorCode ierr;

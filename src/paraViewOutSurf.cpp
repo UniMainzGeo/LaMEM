@@ -56,7 +56,7 @@
 #define __FUNCT__ "PVSurfCreate"
 PetscErrorCode PVSurfCreate(PVSurf *pvsurf, FB *fb)
 {
-	char filename[_str_len_];
+	char filename[_str_len_-5];
 
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
@@ -274,6 +274,7 @@ PetscErrorCode PVSurfWriteVTS(PVSurf *pvsurf, const char *dirName)
 	fs   = pvsurf->surf->jr->fs;
 	scal = pvsurf->surf->jr->scal;
 
+	fp = PETSC_NULL;
 	// only ranks zero in z direction generate this file
 	if(!fs->dsz.rank)
 	{
