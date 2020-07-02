@@ -170,7 +170,7 @@ PetscErrorCode DBMatCreate(DBMat *dbm, FB *fb, PetscBool PrintOutput)
     //=================================================
 	// OVERWRITE MATERIAL PARAMETERS WITH GLOBAL VARIABLES
 	//=================================================
-    ierr = DBMatOverwriteWithGlobalVariables(dbm, fb, PrintOutput); CHKERRQ(ierr);
+    ierr = DBMatOverwriteWithGlobalVariables(dbm, fb); CHKERRQ(ierr);
 
 	if (PrintOutput){
 		PetscPrintf(PETSC_COMM_WORLD,"--------------------------------------------------------------------------\n");
@@ -1662,7 +1662,7 @@ PetscErrorCode PrintMatProp(Material_t *MatProp)
 //---------------------------------------------------------------------------
 #undef __FUNCT__
 #define __FUNCT__ "DBMatOverwriteWithGlobalVariables"
-PetscErrorCode DBMatOverwriteWithGlobalVariables(DBMat *dbm, FB *fb, PetscBool PrintOutput)
+PetscErrorCode DBMatOverwriteWithGlobalVariables(DBMat *dbm, FB *fb)
 {
     PetscFunctionBegin;
 

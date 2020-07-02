@@ -148,7 +148,7 @@ PetscErrorCode MatAIJSetNullSpace(Mat P, DOFIndex *dof)
 	Vec          nullsp_vecs[_max_nullsp_sz_]; // near null space vectors
 	PetscScalar *v;
 	PetscBool    set_nullsp;
-	PetscInt     i, j, sz, ln, iter, nullsp_sz, lbsz[_max_nullsp_sz_];
+	PetscInt     i, j, sz, ln=0, iter, nullsp_sz=0, lbsz[_max_nullsp_sz_];
 
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
@@ -928,7 +928,7 @@ PetscErrorCode PMatMonoAssemble(PMat pm)
 	// dump preconditioning matrices to disk to inspect them with MATLAB (mainly for debugging)
 	PetscViewer viewer;
 	PetscBool   flg, flg_name;
-	char        name[_str_len_], name_A[_str_len_], name_M[_str_len_];
+	char        name[100], name_A[_str_len_], name_M[_str_len_];
 
 	ierr = PetscOptionsHasName(NULL, NULL, "-dump_precondition_matrixes", &flg); CHKERRQ(ierr);
 

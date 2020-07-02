@@ -86,7 +86,7 @@ PetscErrorCode ObjFunctCreate(ObjFunct *objf, ModParam *IOparam, FreeSurf *surf,
 	PetscInt       sx, sy, nx, ny;
 	PetscInt       gnx,gny;
 	PetscScalar    header[2 + _max_num_obs_];
-	PetscInt       Fsize,L,k,i,j,cnt,startf,startq,indf,indq;
+	PetscInt       Fsize=0,L,k,i,j,cnt,startf,startq,indf,indq;
 	PetscScalar   *readbuff;
 	PetscInt       buffsize;
 	int            fd;

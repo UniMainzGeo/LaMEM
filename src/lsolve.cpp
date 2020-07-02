@@ -114,7 +114,7 @@ PetscErrorCode PCStokesCreate(PCStokes *p_pc, PMat pm)
 
 	// read options
 	ierr = PCStokesSetFromOptions(pc); CHKERRQ(ierr);
-
+	pm_type = _BLOCK_;
 	if(pc->type == _STOKES_BF_)
 	{
 		// Block Factorization

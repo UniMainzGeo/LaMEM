@@ -697,7 +697,7 @@ PetscErrorCode BCShiftIndices(BCCtx *bc, ShiftType stype)
 {
 	FDSTAG   *fs;
 	DOFIndex *dof;
-	PetscInt i, vShift, pShift;
+	PetscInt i, vShift=0, pShift=0;
 
 	PetscInt vNumSPC, pNumSPC, *vSPCList, *pSPCList;
 

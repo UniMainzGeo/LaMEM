@@ -62,7 +62,7 @@
 #define __FUNCT__ "MGLevelCreate"
 PetscErrorCode MGLevelCreate(MGLevel *lvl, MGLevel *fine, FDSTAG *fs, BCCtx *bc)
 {
-	PetscInt         i, ln, lnfine, refine_y;
+	PetscInt         i, ln=0, lnfine=0, refine_y;
 	PetscInt         Nx,   Ny,   Nz;
 	PetscInt         Px,   Py,   Pz;
 	const PetscInt  *plx, *ply, *plz;

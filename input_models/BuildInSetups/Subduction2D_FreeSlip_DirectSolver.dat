@@ -71,7 +71,9 @@
 	eta_min        = 1e18           # viscosity upper bound
 	eta_ref 	   = 1e20			# reference viscosity for initial guess	
 	eta_max        = 1e23           # viscosity lower limit	
-	
+	p_litho_visc    = 1              # use lithostatic pressure for creep laws
+	p_litho_plast   = 1              # use lithostatic pressure for plasticity
+
 #===============================================================================
 # Solver options
 #===============================================================================
