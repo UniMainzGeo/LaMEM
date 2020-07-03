@@ -89,17 +89,21 @@ public:
 
 	PetscInt    ID ;// Phase Transition ID
 	char    Type[_str_len_] ; // Type Constant or Clapeyron
-	char    Parameter[_str_len_] ; // Parameter in Constant
-	PetscInt    neq ;// number of equation
-	PetscScalar value[2] ; // Value (e.g. Temperature: -1 1200, less than 1200 or +1 1200 higher than 1200)
+	char    Parameter_transition[_str_len_] ; // Parameter in Constant
+	char    Name_clapeyron[_str_len_] ; // Type Constant or Clapeyron
+	PetscScalar ConstantValue ; // Value (e.g. Temperature: -1 1200, less than 1200 or +1 1200 higher than 1200)
 	// Calpeyron parameter: equation P=(T-T0)*gamma+P0
-	PetscScalar P0[_max_num_eq_] ;
-	PetscScalar T0[_max_num_eq_] ;
-	PetscScalar gamma[_max_num_eq_] ;
-	PetscScalar    visc_inc ; // Phase to change
-	PetscScalar    rho_inc ;
-	PetscInt    visual ;
-	PetscInt     vis_id;
+
+	PetscInt    neq ;// number of equation
+	PetscScalar P0_clapeyron[_max_num_eq_] ;
+	PetscScalar T0_clapeyron[_max_num_eq_] ;
+	PetscScalar clapeyron_slope[_max_num_eq_] ;
+
+	PetscInt    PhaseBelow[_max_tr_];
+	PetscInt    PhaseAbove[_max_tr_];
+	PetscInt    DensityAbove[_max_tr_];
+	PetscInt    DensityBelow[_max_tr_];
+
 };
 
 //---------------------------------------------------------------------------
@@ -225,8 +229,6 @@ PetscErrorCode DBMatCreate(DBMat *dbm, FB *fb, PetscBool PrintOutput);
 
 // read single softening law
 PetscErrorCode DBMatReadSoft(DBMat *dbm, FB *fb, PetscBool PrintOutput);
-// read phase transition law
-PetscErrorCode DBMatReadPhaseTr(DBMat *dbm, FB *fb);
 
 // read single material phase
 PetscErrorCode DBMatReadPhase(DBMat *dbm, FB *fb, PetscBool PrintOutput);
