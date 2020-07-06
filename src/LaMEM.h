@@ -140,7 +140,7 @@
 #define _max_num_eq_ 2
 
 // maximum number of phase transition per each phase
-#define _max_tr_ 5
+#define _max_tr_ 32
 
 // maximum number of phase diagrams
 #define _max_num_pd_ 8

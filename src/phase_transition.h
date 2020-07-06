@@ -10,13 +10,18 @@
 struct Ph_trans_t;
 struct JacRes;
 struct ConstEqCtx;
+struct Marker;
 
 // read phase transition law
 PetscErrorCode DBMatReadPhaseTr(DBMat *dbm, FB *fb);
 PetscErrorCode Set_Constant_Phase_Transition(Ph_trans_t   *ph, DBMat *dbm, FB *fb,PetscInt ID);
 PetscErrorCode Set_Clapeyron_Phase_Transition(Ph_trans_t   *ph, DBMat *dbm, FB *fb, PetscInt ID);
 PetscErrorCode SetClapeyron_Eq(Ph_trans_t *ph);
-PetscErrorCode Phase_Transition(ConstEqCtx  *ctx,PetscInt ph);
-PetscErrorCode Transition(Ph_trans_t *PhaseTrans, ConstEqCtx  *ctx, PetscInt id);
+PetscErrorCode Phase_Transition(AdvCtx *actx);
+PetscErrorCode Transition(Ph_trans_t *PhaseTrans, Marker *P, PetscInt PH1,PetscInt PH2,PetscInt ID);
+PetscInt Check_Phase_above_below(PetscInt *phase_array, Marker *P);
+PetscInt Check_Constant_Phase_Transition(Ph_trans_t *PhaseTrans,Marker *P,PetscInt PH1, PetscInt PH2,PetscInt ID);
+PetscInt Check_Clapeyron_Phase_Transition(Ph_trans_t *PhaseTrans,Marker *P,PetscInt PH1, PetscInt PH2,PetscInt ID);// softening parameter
+
 
 #endif /* PHASE_TRANSITION_H_ */

@@ -48,6 +48,7 @@
 #include "scaling.h"
 #include "objFunct.h"
 #include "JacRes.h"
+#include "phase_transition.h"
 //---------------------------------------------------------------------------
 #undef __FUNCT__
 #define __FUNCT__ "DBMatCreate"
@@ -101,7 +102,7 @@ PetscErrorCode DBMatCreate(DBMat *dbm, FB *fb, PetscBool PrintOutput)
 
 
 	// setup block access mode
-	ierr = FBFindBlocks(fb, _OPTIONAL_, "<PhTransStart>", "<PhTransEnd>"); CHKERRQ(ierr);
+	ierr = FBFindBlocks(fb, _OPTIONAL_, "<PhaseTransitionStart>", "<PhaseTransitionEnd>"); CHKERRQ(ierr);
 
 	if(fb->nblocks)
 	{
@@ -117,7 +118,7 @@ PetscErrorCode DBMatCreate(DBMat *dbm, FB *fb, PetscBool PrintOutput)
 			SETERRQ1(PETSC_COMM_WORLD, PETSC_ERR_USER, "Too many phase_transition specified! Max allowed: %lld", (LLD)_max_num_tr_);
 		}
 
-		// store actual number of softening laws
+		// store actual number of Phase Transition laws
 		dbm->numPhtr = fb->nblocks;
 
 		PetscPrintf(PETSC_COMM_WORLD,"--------------------------------------------------------------------------\n");

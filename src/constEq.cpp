@@ -184,7 +184,6 @@ PetscErrorCode setUpPhase(ConstEqCtx *ctx, PetscInt ID)
 	ctx->A_prl = 0.0; // Peierls constant
 	ctx->N_prl = 1.0; // Peierls exponent
 	ctx->taupl = 0.0; // plastic yield stress
-	visc_incr  = 1/(ctx->visc_inc); // linear viscous term to handle phase changes
 
 	// MELT FRACTION
 	mfd = 1.0;
@@ -249,7 +248,7 @@ PetscErrorCode setUpPhase(ConstEqCtx *ctx, PetscInt ID)
 	{
 		Q          = (mat->En + p_visc*mat->Vn)/RT;
 		ctx->N_dis =  mat->n;
-		ctx->A_dis =  visc_incr*mat->Bn*exp(-Q)*mfn;
+		ctx->A_dis =  mat->Bn*exp(-Q)*mfn;
 	}
 
 	// DC-CREEP
@@ -257,7 +256,7 @@ PetscErrorCode setUpPhase(ConstEqCtx *ctx, PetscInt ID)
 	{
 		Q          = mat->Edc/RT;
 		ctx->N_dis = Q;
-		ctx->A_dis = visc_incr*mat->Bdc*exp(-Q*log(mat->Rdc))*pow(mat->mu, -Q);
+		ctx->A_dis = mat->Bdc*exp(-Q*log(mat->Rdc))*pow(mat->mu, -Q);
 	}
 
 	// PEIERLS CREEP (LOW TEMPERATURE RATE-DEPENDENT PLASTICITY, POWER-LAW APPROXIMATION)
@@ -265,7 +264,7 @@ PetscErrorCode setUpPhase(ConstEqCtx *ctx, PetscInt ID)
 	{
 		Q           = (mat->Ep + p_visc*mat->Vp)/RT;
 		ctx->N_prl =  Q*pow(1.0-mat->gamma, mat->q-1.0)*mat->q*mat->gamma;
-		ctx->A_prl =  visc_incr*mat->Bp/pow(mat->gamma*mat->taup, ctx->N_prl)*exp(-Q*pow(1.0-mat->gamma, mat->q));
+		ctx->A_prl =  mat->Bp/pow(mat->gamma*mat->taup, ctx->N_prl)*exp(-Q*pow(1.0-mat->gamma, mat->q));
 	}
 
 	if(PetscIsInfOrNanScalar(ctx->A_dif)) ctx->A_dif = 0.0;
@@ -379,12 +378,9 @@ PetscErrorCode devConstEq(ConstEqCtx *ctx)
 	// scan all phases
 	for(i = 0; i < numPhases; i++)
 	{
-		ctx->visc_inc=1.0;
 		// update present phases only
 		if(phRat[i])
 		{
-			ierr = Phase_Transition(ctx,i); CHKERRQ(ierr);
-
 			// setup phase parameters
 			ierr = setUpPhase(ctx, i); CHKERRQ(ierr);
 
@@ -625,7 +621,7 @@ PetscErrorCode volConstEq(ConstEqCtx *ctx)
 	SolVarBulk  *svBulk;
 	Material_t  *mat, *phases;
 	PetscInt     i, numPhases;
-	PetscScalar *phRat, dt, p, depth, T, cf_comp, cf_therm, Kavg, rho, rho_phtr;
+	PetscScalar *phRat, dt, p, depth, T, cf_comp, cf_therm, Kavg, rho;
 
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
@@ -655,8 +651,6 @@ PetscErrorCode volConstEq(ConstEqCtx *ctx)
 	// scan all phases
 	for(i = 0; i < numPhases; i++)
 	{
-		ctx->rho_inc = 0.0;
-
 		// update present phases only
 		if(phRat[i])
 		{
@@ -668,8 +662,6 @@ PetscErrorCode volConstEq(ConstEqCtx *ctx)
 							}
 			// get reference to material parameters table
 			mat = &phases[i];
-			ierr = Phase_Transition(ctx,i); CHKERRQ(ierr);
-
 
 			if(mat->pdAct == 1)
 			{
@@ -722,8 +714,7 @@ PetscErrorCode volConstEq(ConstEqCtx *ctx)
 			else
 			{
 				// temperature & pressure-dependent density
-				rho_phtr = mat->rho+mat->rho*ctx->rho_inc;
-				rho = rho_phtr*cf_comp*cf_therm;
+				rho = mat->rho*cf_comp*cf_therm;
 			}
 
 			// update density, thermal expansion & inverse bulk elastic parameter

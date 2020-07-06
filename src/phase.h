@@ -91,8 +91,7 @@ public:
 	char    Type[_str_len_] ; // Type Constant or Clapeyron
 	char    Parameter_transition[_str_len_] ; // Parameter in Constant
 	char    Name_clapeyron[_str_len_] ; // Type Constant or Clapeyron
-	PetscScalar ConstantValue ; // Value (e.g. Temperature: -1 1200, less than 1200 or +1 1200 higher than 1200)
-	// Calpeyron parameter: equation P=(T-T0)*gamma+P0
+	PetscScalar ConstantValue ; //
 
 	PetscInt    neq ;// number of equation
 	PetscScalar P0_clapeyron[_max_num_eq_] ;

@@ -57,6 +57,8 @@
 #include "phase_transition.h"
 #include "phase.h"
 #include "constEq.h"
+#include "parsing.h"
+#include "objFunct.h"
 //-----------------------------------------------------------------//
 #undef __FUNCT__
 #define __FUNCT__ "DBMatReadPhaseTr"
@@ -93,15 +95,27 @@ PetscErrorCode DBMatReadPhaseTr(DBMat *dbm, FB *fb)
 		SETERRQ1(PETSC_COMM_WORLD, PETSC_ERR_USER, "You have not specify the correct phase transition type (Constant) (Clapeyron) ", (LLD)ID);
 	}
 
+	if(!strcmp(ph->Type,"Constant"))
+	{
+		ierr= Set_Constant_Phase_Transition(ph, dbm, fb,ID); CHKERRQ(ierr);
+	}
+	if(!strcmp(ph->Type,"Clapeyron"))
+	{
+		ierr= Set_Clapeyron_Phase_Transition(ph, dbm, fb,ID); CHKERRQ(ierr);
+	}
+
+	ierr = getIntParam(fb, _OPTIONAL_, "PhaseBelow", ph->PhaseBelow,1 , _max_tr_); CHKERRQ(ierr);
+	ierr = getIntParam(fb, _OPTIONAL_, "PhaseAbove", ph->PhaseAbove,1 , _max_tr_); CHKERRQ(ierr);
+	ierr = getIntParam(fb, _OPTIONAL_, "DensityBelow", ph->DensityBelow,1 , _max_tr_); CHKERRQ(ierr);
+	ierr = getIntParam(fb, _OPTIONAL_, "DensityAbove", ph->DensityAbove,1 , _max_tr_); CHKERRQ(ierr);
+
 	if (!ph->PhaseAbove || !ph->PhaseBelow)
 	{
 		SETERRQ1(PETSC_COMM_WORLD, PETSC_ERR_USER, "You have not specify the correct phase transition type (Constant) (Clapeyron) ", (LLD)ID);
 	}
 
-	ierr = getIntParam(fb, _REQUIRED_, "PhaseBelow", &ph->PhaseBelow,1 , _max_num_tr_); CHKERRQ(ierr);
-	ierr = getIntParam(fb, _REQUIRED_, "PhaseAbove", &ph->PhaseAbove,1 , _max_num_tr_); CHKERRQ(ierr);
-	ierr = getIntParam(fb, _OPTIONAL_, "PhaseBelow", &ph->DensityBelow,1 , _max_num_tr_); CHKERRQ(ierr);
-	ierr = getIntParam(fb, _OPTIONAL_, "PhaseAbove", &ph->DensityAbove,1 , _max_num_tr_); CHKERRQ(ierr);
+	PetscPrintf(PETSC_COMM_WORLD,"   Phase Above %d \n", (LLD)(ph->ID), ph->PhaseAbove);
+	PetscPrintf(PETSC_COMM_WORLD,"   Phase Below %d \n", (LLD)(ph->ID), ph->PhaseBelow);
 
 
 	PetscFunctionReturn(0);
@@ -118,8 +132,8 @@ PetscErrorCode  Set_Constant_Phase_Transition(Ph_trans_t   *ph, DBMat *dbm, FB *
 	scal = dbm -> scal;
 
 	ierr = getStringParam(fb, _REQUIRED_, "Parameter_transition", ph->Parameter_transition, "none");  CHKERRQ(ierr);
-	ierr = getScalarParam(fb, _REQUIRED_, "ConstantValue", ph->ConstantValue, 1,1.0); CHKERRQ(ierr);
-	if((!ph->Parameter || !ph->value))
+	ierr = getScalarParam(fb, _REQUIRED_, "ConstantValue",&ph->ConstantValue, 1,1.0); CHKERRQ(ierr);
+	if((!ph->Parameter_transition || !ph->ConstantValue))
 	{
 		SETERRQ1(PETSC_COMM_WORLD, PETSC_ERR_USER, "If you are using a constant parameter phase transition you need to specify the parameter: p = Pressure, T = temperature, z = depth", (LLD)ID);
 	}
@@ -165,10 +179,10 @@ PetscErrorCode  Set_Clapeyron_Phase_Transition(Ph_trans_t   *ph, DBMat *dbm, FB 
 
 	ierr = getIntParam(fb, _OPTIONAL_, "numberofequation", &ph->neq, 1, 2.0); CHKERRQ(ierr);
 	ierr = getScalarParam(fb, _OPTIONAL_, "clapeyron_slope", ph->clapeyron_slope, ph->neq,1.0); CHKERRQ(ierr);
-	ierr = getScalarParam(fb, _OPTIONAL_, "P0_clapeyron", ph->P0_clapeyron, ph->neq,1.0); CHKERRQ(ierr);
+	ierr = getScalarParam(fb, _OPTIONAL_, "clapeyron_slope", ph->P0_clapeyron, ph->neq,1.0); CHKERRQ(ierr);
 	ierr = getScalarParam(fb, _OPTIONAL_, "T0_clapeyron", ph->T0_clapeyron, ph->neq,1.0); CHKERRQ(ierr);
 
-	if((!ph->gamma || !ph->T0 || !ph->P0||!ph->Name_clapeyron))
+	if((!ph->clapeyron_slope || !ph->T0_clapeyron || !ph->clapeyron_slope||!ph->Name_clapeyron))
 	{
 		SETERRQ1(PETSC_COMM_WORLD, PETSC_ERR_USER, "If you are using any clapeyron phase transition avaiable you need to specify P0, T0, gamma and the number of equation (P=(T-T0)*gamma+(P0)).", (LLD)ID);
 	}
@@ -178,7 +192,6 @@ PetscErrorCode  Set_Clapeyron_Phase_Transition(Ph_trans_t   *ph, DBMat *dbm, FB 
 	{
 	PetscPrintf(PETSC_COMM_WORLD,"   Phase Transition [%lld] : Type = Clapeyron, gamma = %2f [MPa], P0 = %f [Pa],T0 = %f [deg C] \n", (LLD)(ph->ID), ph->Type, ph->clapeyron_slope, ph->P0_clapeyron,ph->T0_clapeyron);
 	}
-
 	for(it==0;it< ph->neq;it++)
 	{
 		ph->clapeyron_slope[it] *= 1e6*(scal->temperature/scal->stress_si);
@@ -234,137 +247,190 @@ PetscErrorCode SetClapeyron_Eq(Ph_trans_t *ph)
 
 	PetscFunctionReturn(0);
 }
-
 //===========================================================================================================//
 #undef __FUNCT__
 #define __FUNCT__ "Phase_Transition"
-PetscErrorCode Phase_Transition(ConstEqCtx  *ctx,PetscInt ph)
+PetscErrorCode Phase_Transition(AdvCtx *actx)
 {
+	// creates arrays to optimize marker-cell interaction
+	DBMat      *dbm;
 	Material_t *mat;
 	Ph_trans_t *PhaseTrans;
-	PetscInt    itr,nPtr,id;
+	Marker *P;
+	JacRes *jr;
+	PetscInt     i, ph, counter,itr,nPtr,id,newPh, numPhTrn,below,above;
+	PetscInt     *Phase_above,*Phase_below,PH1,PH2,PHASE;
+
+	jr = actx->jr;
+	dbm = jr->dbm;
+	mat = dbm->phases;
+	numPhTrn= dbm->numPhtr;
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
-	if(ctx->ctrl->initGuess==1 || ctx->ctrl->Phasetrans==0 ) PetscFunctionReturn(0);
-	PhaseTrans=ctx->PhaseTrans;
-	mat = &ctx->phases[ph];
-	nPtr=mat->nPTr;
 
-	itr = 0;
-	for(itr=0;itr<nPtr;itr++)
+	// loop over all local particles 		PetscPrintf(PETSC_COMM_WORLD,"PHASE = %d  i = %d, counter = %d\n",P->phase,i,counter);
+	nPtr=0;
+	for(nPtr=0;nPtr<numPhTrn;nPtr++)
+	{
+		PhaseTrans = jr->dbm->matPhtr+nPtr;
+
+		for(i = 0; i < actx->nummark; i++)
 		{
-			id=mat->Ph_tr[itr];
+			P=&actx->markers[i];
+			Phase_above=PhaseTrans->PhaseAbove;
+			Phase_below=PhaseTrans->PhaseBelow;
+			below  = Check_Phase_above_below(Phase_below,P);
+			above  = Check_Phase_above_below(Phase_above,P);
+			if(below >= 0 || above >= 0)
+			{
+				if(below>=0)
+				{
+					PH1 = Phase_below[below];
+					PH2 = Phase_above[below];
+				}
+				else if (above >=0)
+				{
+					PH1 = Phase_below[above];
+					PH2 = Phase_above[above];
+				}
+				ph = Transition(PhaseTrans, P, PH1, PH2,nPtr);
+//				if (ph != P->phase)
+	//			{
+		//			PetscPrintf(PETSC_COMM_WORLD,"PHASE = %d  i = %d\n",ph);
+			//	}
+				P->phase=ph;
+
+			}
 
 
-			ierr = Transition(PhaseTrans, ctx, id); CHKERRQ(ierr);
 
+			}
+		ierr = ADVInterpMarkToCell(actx);
 		}
-	PetscFunctionReturn(0);
 
+
+	PetscFunctionReturn(0);
+}
+//----------------------------------------------------------------------------------------
+PetscInt Transition(Ph_trans_t *PhaseTrans, Marker *P, PetscInt PH1,PetscInt PH2,PetscInt ID)
+{
+	PetscInt ph;
+
+	if(!strcmp(PhaseTrans->Type,"Constant"))
+	{
+		ph = Check_Constant_Phase_Transition(PhaseTrans,P,PH1,PH2,ID);
+		return ph;
+	}
+	else if(!strcmp(PhaseTrans->Type,"Clapeyron"))
+	{
+		ph = Check_Clapeyron_Phase_Transition(PhaseTrans,P,PH1,PH2,ID);
+	}
+	return ph;
 }
 
-#undef __FUNCT__
-#define __FUNCT__ "Transition"
-PetscErrorCode Transition(Ph_trans_t *PhaseTrans, ConstEqCtx  *ctx, PetscInt id)
+//===========================================================================================================//
+PetscInt Check_Constant_Phase_Transition(Ph_trans_t *PhaseTrans,Marker *P,PetscInt PH1, PetscInt PH2,PetscInt ID) // softening parameter
 {
-	PetscInt    neq, ip;
+	PetscInt ph;
+	Ph_trans_t *Ptr;
+
+	Ptr = PhaseTrans+ID;
+
+	if(!strcmp(PhaseTrans->Parameter_transition,"T"))
+		{
+			if(P->T>=PhaseTrans->ConstantValue)
+			{
+				ph = PH2;
+			}
+			else
+			{
+				ph = PH2;
+			}
+		}
+
+	if(!strcmp(PhaseTrans->Parameter_transition,"p"))
+		{
+			if(P->p>=PhaseTrans->ConstantValue)
+			{
+				ph = PH2;
+			}
+			else
+			{
+				ph = PH2;
+			}
+		}
+
+	if(!strcmp(PhaseTrans->Parameter_transition,"Depth"))
+		{
+			if(P->X[2]>=PhaseTrans->ConstantValue)
+			{
+				ph = PH2;
+			}
+			else
+			{
+				ph = PH2;
+			}
+		}
+
+	return ph;
+}
+//==================================================================================================================//
+PetscInt Check_Clapeyron_Phase_Transition(Ph_trans_t *PhaseTrans,Marker *P,PetscInt PH1, PetscInt PH2,PetscInt ID) // softening parameter
+{
+	PetscInt ph,ip,neq;
 	PetscScalar Pres[2];
-	Ph_trans_t *PTr;
-	PetscErrorCode ierr;
-	PetscFunctionBegin;
 
-	PTr=PhaseTrans+id;
-	if(PTr->visual==1) 	PetscFunctionReturn(0);
+	Ph_trans_t *Ptr;
 
-	if(!strcmp(PTr->Type,"Constant"))
+	Ptr = PhaseTrans+ID;
+
+	neq = PhaseTrans->neq;
+	for (ip=0;ip<neq;ip++)
 	{
-		if(!strcmp(PTr->Parameter,"T"))
-		{
-			if(PTr->value[0]>0)
-			{
-				if(ctx->T>PTr->value[1])
-				{
-					ctx->visc_inc=PTr->visc_inc;
-					ctx->rho_inc=PTr->rho_inc;
-				}
-
-			}
-			else
-			{
-				if(ctx->T<PTr->value[1])
-				{
-					ctx->visc_inc=PTr->visc_inc;
-					ctx->rho_inc=PTr->rho_inc;
-				}
-
-			}
-		}
-
-
-		if(!strcmp(PTr->Parameter,"p"))
-		{
-			if(PTr->value[0]>0)
-			{
-				if(ctx->p_lith >PTr->value[1])
-				{
-					ctx->visc_inc=PTr->visc_inc;
-					ctx->rho_inc=PTr->rho_inc;
-				}
-			}
-			else
-			{
-				if(ctx->p_lith<PTr->value[1])
-				{
-					ctx->visc_inc=PTr->visc_inc;
-					ctx->rho_inc=PTr->rho_inc;
-				}
-			}
-		}
-
-
-		if(!strcmp(PTr->Parameter,"Depth"))
-		{
-			if(PTr->value[0]>0)
-			{
-				if(ctx->depth>PTr->value[1])
-				{
-					ctx->visc_inc=PTr->visc_inc;
-					ctx->rho_inc=PTr->rho_inc;
-				}
-			}
-			else
-			{
-				if(ctx->depth<PTr->value[1])
-				{
-					ctx->visc_inc=PTr->visc_inc;
-					ctx->rho_inc=PTr->rho_inc;
-				}
-			}
-		}
+		Pres[ip]=(P->T-PhaseTrans->T0_clapeyron[ip])*PhaseTrans->clapeyron_slope[ip]+PhaseTrans->P0_clapeyron[ip];
 	}
-	else if(!strcmp(PTr->Type,"Clapeyron"))
+	if(neq==1)
 	{
-		neq = PTr->neq;
-		for (ip=0;ip<neq;ip++)
+		if(P->p>=Pres[0])
 		{
-			Pres[ip]=(ctx->T-PTr->T0[ip])*PTr->gamma[ip]+PTr->P0[ip];
-		}
-		if(neq==1)
-		{
-			if(ctx->p_lith>Pres[0])
-			{
-				ctx->visc_inc=PTr->visc_inc;
-				ctx->rho_inc=PTr->rho_inc;
-			}
+			ph=PH2;
 		}
 		else
 		{
-			if(ctx->p_lith>Pres[0] && ctx->p>Pres[1])
-			{
-				ctx->visc_inc=PTr->visc_inc;
-				ctx->rho_inc=PTr->rho_inc;
-			}
+			 ph=PH1;
 		}
 	}
-	PetscFunctionReturn(0);
+	else
+	{
+		if(P->p>=Pres[0] && P->p>=Pres[1])
+		{
+			ph=PH2;
+		}
+		else
+		{
+			ph=PH1;
+		}
+	}
+
+	return ph;
+}
+// ========================================================================================================== //
+PetscInt Check_Phase_above_below(PetscInt *phase_array, Marker *P)
+{
+	PetscInt n,it,size;
+	size = sizeof(phase_array);
+	// apply strain softening to a parameter (friction, cohesion)
+	it=0;
+	for(it=0;it<size;it++)
+	{
+		n=-1;
+		if(P->phase==phase_array[it])
+		{
+			n=it;
+			break;
+		}
+	}
+
+	// apply strain softening
+	return n;
 }
