@@ -344,7 +344,7 @@ PetscInt Check_Constant_Phase_Transition(Ph_trans_t *PhaseTrans,Marker *P,PetscI
 			}
 			else
 			{
-				ph = PH2;
+				ph = PH1;
 			}
 		}
 
@@ -356,7 +356,7 @@ PetscInt Check_Constant_Phase_Transition(Ph_trans_t *PhaseTrans,Marker *P,PetscI
 			}
 			else
 			{
-				ph = PH2;
+				ph = PH1;
 			}
 		}
 
@@ -368,7 +368,7 @@ PetscInt Check_Constant_Phase_Transition(Ph_trans_t *PhaseTrans,Marker *P,PetscI
 			}
 			else
 			{
-				ph = PH2;
+				ph = PH1;
 			}
 		}
 
