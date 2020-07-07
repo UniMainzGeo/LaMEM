@@ -104,10 +104,11 @@ PetscErrorCode DBMatReadPhaseTr(DBMat *dbm, FB *fb)
 		ierr= Set_Clapeyron_Phase_Transition(ph, dbm, fb,ID); CHKERRQ(ierr);
 	}
 
-	ierr = getIntParam(fb, _OPTIONAL_, "PhaseBelow", ph->PhaseBelow,1 , _max_tr_); CHKERRQ(ierr);
-	ierr = getIntParam(fb, _OPTIONAL_, "PhaseAbove", ph->PhaseAbove,1 , _max_tr_); CHKERRQ(ierr);
-	ierr = getIntParam(fb, _OPTIONAL_, "DensityBelow", ph->DensityBelow,1 , _max_tr_); CHKERRQ(ierr);
-	ierr = getIntParam(fb, _OPTIONAL_, "DensityAbove", ph->DensityAbove,1 , _max_tr_); CHKERRQ(ierr);
+	ierr = getIntParam(fb, _OPTIONAL_, "number_phases", &ph->number_phases,1 , _max_num_tr_); CHKERRQ(ierr);
+	ierr = getIntParam(fb, _OPTIONAL_, "PhaseBelow", ph->PhaseBelow,ph->number_phases , _max_num_phases_); CHKERRQ(ierr);
+	ierr = getIntParam(fb, _OPTIONAL_, "PhaseAbove", ph->PhaseAbove,ph->number_phases , _max_num_phases_); CHKERRQ(ierr);
+	ierr = getIntParam(fb, _OPTIONAL_, "DensityBelow", ph->DensityBelow,ph->number_phases , _max_num_phases_); CHKERRQ(ierr);
+	ierr = getIntParam(fb, _OPTIONAL_, "DensityAbove", ph->DensityAbove,ph->number_phases, _max_num_phases_); CHKERRQ(ierr);
 
 	if (!ph->PhaseAbove || !ph->PhaseBelow)
 	{
@@ -273,9 +274,9 @@ PetscErrorCode Phase_Transition(AdvCtx *actx)
 	for(nPtr=0;nPtr<numPhTrn;nPtr++)
 	{
 		PhaseTrans = jr->dbm->matPhtr+nPtr;
-
 		for(i = 0; i < actx->nummark; i++)
 		{
+			ph = 0;
 			P=&actx->markers[i];
 			Phase_above=PhaseTrans->PhaseAbove;
 			Phase_below=PhaseTrans->PhaseBelow;
@@ -294,10 +295,7 @@ PetscErrorCode Phase_Transition(AdvCtx *actx)
 					PH2 = Phase_above[above];
 				}
 				ph = Transition(PhaseTrans, P, PH1, PH2,nPtr);
-//				if (ph != P->phase)
-	//			{
-		//			PetscPrintf(PETSC_COMM_WORLD,"PHASE = %d  i = %d\n",ph);
-			//	}
+
 				P->phase=ph;
 
 			}
