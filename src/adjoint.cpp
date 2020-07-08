@@ -734,12 +734,16 @@ PetscErrorCode LaMEMAdjointReadInputSetDefaults(ModParam *IOparam, Adjoint_Vecs 
 			else{strcpy(logstr, "     "); }
 			if (FDgrad[i]==0){strcpy(adjointstr, "adjoint"); }
 			else{strcpy(adjointstr, "FD     "); }
-			
-
+		
 
 			
 			// Print overview & indicate which parameters are not specified
-			PetscPrintf(PETSC_COMM_WORLD, "|   %-2i: %s %s %+6s[%-2i] = %s; bnd=[%s; %s]   \n",i+1,adjointstr,logstr,par_str, ID,val_str,lb_str,ub_str);
+			if (ID<0){
+				PetscPrintf(PETSC_COMM_WORLD, "|   %-2i: %s %s %+6s  = %s; bnd=[%s; %s]   \n",i+1,adjointstr,logstr,par_str,val_str,lb_str,ub_str);
+			}
+			else{
+				PetscPrintf(PETSC_COMM_WORLD, "|   %-2i: %s %s %+6s[%-2i] = %s; bnd=[%s; %s]   \n",i+1,adjointstr,logstr,par_str, ID,val_str,lb_str,ub_str);
+			}
 			
 			i = i+1;
 		}
@@ -2220,7 +2224,12 @@ PetscErrorCode PrintGradientsAndObservationPoints(ModParam *IOparam)
 
 				// Print result
 				if (IOparam->FD_gradient[j]>0){
-					PetscPrintf(PETSC_COMM_WORLD,"|       FD %5d:   %+5s%+5s[%2i]           %- 1.6e \n",j+1, logstr, CurName, CurPhase, IOparam->grd[j]);
+					if (CurPhase<0){
+						PetscPrintf(PETSC_COMM_WORLD,"|       FD %5d:   %+5s%+5s           %- 1.6e \n",j+1, logstr, CurName, IOparam->grd[j]);
+					}
+					else{
+						PetscPrintf(PETSC_COMM_WORLD,"|       FD %5d:   %+5s%+5s[%2i]           %- 1.6e \n",j+1, logstr, CurName, CurPhase, IOparam->grd[j]);
+					}
 				}
 				else{
 					PetscPrintf(PETSC_COMM_WORLD,"|  adjoint %5d:   %+5s%+5s[%2i]           %- 1.6e \n",j+1, logstr, CurName, CurPhase, IOparam->grd[j]);
