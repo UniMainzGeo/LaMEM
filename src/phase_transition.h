@@ -19,7 +19,7 @@ PetscErrorCode Set_Clapeyron_Phase_Transition(Ph_trans_t   *ph, DBMat *dbm, FB *
 PetscErrorCode SetClapeyron_Eq(Ph_trans_t *ph);
 PetscErrorCode Phase_Transition(AdvCtx *actx);
 PetscErrorCode Transition(Ph_trans_t *PhaseTrans, Marker *P, PetscInt PH1,PetscInt PH2,PetscInt ID);
-PetscInt Check_Phase_above_below(PetscInt *phase_array, Marker *P);
+PetscInt Check_Phase_above_below(PetscInt *phase_array, Marker *P,PetscInt num_phas);
 PetscInt Check_Constant_Phase_Transition(Ph_trans_t *PhaseTrans,Marker *P,PetscInt PH1, PetscInt PH2,PetscInt ID);
 PetscInt Check_Clapeyron_Phase_Transition(Ph_trans_t *PhaseTrans,Marker *P,PetscInt PH1, PetscInt PH2,PetscInt ID);// softening parameter
 

@@ -259,8 +259,8 @@ PetscErrorCode Phase_Transition(AdvCtx *actx)
 	Ph_trans_t *PhaseTrans;
 	Marker *P;
 	JacRes *jr;
-	PetscInt     i, ph, counter,itr,nPtr,id,newPh, numPhTrn,below,above;
-	PetscInt     *Phase_above,*Phase_below,PH1,PH2,PHASE;
+	PetscInt     i, ph,nPtr, numPhTrn,below,above,num_phas;
+	PetscInt     *Phase_above,*Phase_below,PH1,PH2;
 
 	jr = actx->jr;
 	dbm = jr->dbm;
@@ -276,23 +276,29 @@ PetscErrorCode Phase_Transition(AdvCtx *actx)
 		PhaseTrans = jr->dbm->matPhtr+nPtr;
 		for(i = 0; i < actx->nummark; i++)
 		{
-			ph = 0;
+
 			P=&actx->markers[i];
-			Phase_above=PhaseTrans->PhaseAbove;
-			Phase_below=PhaseTrans->PhaseBelow;
-			below  = Check_Phase_above_below(Phase_below,P);
-			above  = Check_Phase_above_below(Phase_above,P);
+
+			if(P->phase==0)
+			{
+				num_phas=PhaseTrans->number_phases;
+
+			}
+
+			num_phas=PhaseTrans->number_phases;
+			below  = Check_Phase_above_below(PhaseTrans->PhaseBelow,P,num_phas);
+			above  = Check_Phase_above_below(PhaseTrans->PhaseAbove,P,num_phas);
 			if(below >= 0 || above >= 0)
 			{
 				if(below>=0)
 				{
-					PH1 = Phase_below[below];
-					PH2 = Phase_above[below];
+					PH1 = PhaseTrans->PhaseBelow[below];
+					PH2 = PhaseTrans->PhaseAbove[below];
 				}
 				else if (above >=0)
 				{
-					PH1 = Phase_below[above];
-					PH2 = Phase_above[above];
+					PH1 = PhaseTrans->PhaseBelow[above];
+					PH2 = PhaseTrans->PhaseAbove[above];
 				}
 				ph = Transition(PhaseTrans, P, PH1, PH2,nPtr);
 
@@ -330,9 +336,7 @@ PetscInt Transition(Ph_trans_t *PhaseTrans, Marker *P, PetscInt PH1,PetscInt PH2
 PetscInt Check_Constant_Phase_Transition(Ph_trans_t *PhaseTrans,Marker *P,PetscInt PH1, PetscInt PH2,PetscInt ID) // softening parameter
 {
 	PetscInt ph;
-	Ph_trans_t *Ptr;
 
-	Ptr = PhaseTrans+ID;
 
 	if(!strcmp(PhaseTrans->Parameter_transition,"T"))
 		{
@@ -378,9 +382,7 @@ PetscInt Check_Clapeyron_Phase_Transition(Ph_trans_t *PhaseTrans,Marker *P,Petsc
 	PetscInt ph,ip,neq;
 	PetscScalar Pres[2];
 
-	Ph_trans_t *Ptr;
 
-	Ptr = PhaseTrans+ID;
 
 	neq = PhaseTrans->neq;
 	for (ip=0;ip<neq;ip++)
@@ -413,10 +415,10 @@ PetscInt Check_Clapeyron_Phase_Transition(Ph_trans_t *PhaseTrans,Marker *P,Petsc
 	return ph;
 }
 // ========================================================================================================== //
-PetscInt Check_Phase_above_below(PetscInt *phase_array, Marker *P)
+PetscInt Check_Phase_above_below(PetscInt *phase_array, Marker *P,PetscInt num_phas)
 {
 	PetscInt n,it,size;
-	size = sizeof(phase_array);
+	size = num_phas;
 	// apply strain softening to a parameter (friction, cohesion)
 	it=0;
 	for(it=0;it<size;it++)
