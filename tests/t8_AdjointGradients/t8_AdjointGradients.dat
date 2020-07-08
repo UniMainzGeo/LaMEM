@@ -154,13 +154,13 @@
 	<AdjointParameterEnd>
 	       
 	       
-	<AdjointParameterStart>
-		ID  			= -1		     	# phase of the parameter
-		Type 			= radius[0]    		
-		InitGuess 		= .4  	     		# initial guess
-		FD_gradient 	= 1
-		FD_eps 			= 1e-2
-	<AdjointParameterEnd>
+	#<AdjointParameterStart>
+	#	ID  			= -1		     	# phase of the parameter
+	#	Type 			= radius[0]    		
+	#	InitGuess 		= .4  	     		# initial guess
+	#	FD_gradient 	= 1
+	#	FD_eps 			= 1e-2
+	#<AdjointParameterEnd>
 	       
 	
 	<AdjointObservationPointStart>
