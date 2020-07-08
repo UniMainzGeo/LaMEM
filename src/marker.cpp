@@ -1479,6 +1479,8 @@ PetscErrorCode ADVMarkReadCtrlPoly(FB *fb, CtrlP *CtrlPoly, PetscInt &VolID, Pet
 	// loop over blocks
 	for(jj = 0; jj < nCP; jj++)
 	{
+		fb->ID  = jj;								// allows command-line parsing
+
 		ierr = getIntParam   (fb, _REQUIRED_, "PolyID",  &CtrlPoly->ID[jj],    1, 0);   CHKERRQ(ierr);
 		ierr = getIntParam   (fb, _REQUIRED_, "VolID",   &CtrlPoly->VolID[jj], 1, 0);   CHKERRQ(ierr);
 		ierr = getIntParam   (fb, _REQUIRED_, "PolyPos", &CtrlPoly->Pos[jj],   1, 0);   CHKERRQ(ierr);
