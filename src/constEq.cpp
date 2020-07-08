@@ -142,7 +142,7 @@ PetscErrorCode setUpPhase(ConstEqCtx *ctx, PetscInt ID)
 	Controls    *ctrl;
 	PData       *Pd;
 	PetscScalar  APS, Le, dt, p, p_lith, p_pore, T, mf, mfd, mfn;
-	PetscScalar  Q, RT, ch, fr, p_visc, p_upper, p_lower, dP, p_total,visc_incr;
+	PetscScalar  Q, RT, ch, fr, p_visc, p_upper, p_lower, dP, p_total;
 
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
@@ -227,14 +227,14 @@ PetscErrorCode setUpPhase(ConstEqCtx *ctx, PetscInt ID)
 	if(mat->Bd)
 	{
 		Q          = (mat->Ed + p_visc*mat->Vd)/RT;
-		ctx->A_dif =  visc_incr*mat->Bd*exp(-Q)*mfd;
+		ctx->A_dif = mat->Bd*exp(-Q)*mfd;
 	}
 
 	// PS-CREEP
 	else if(mat->Bps && T)
 	{
 		Q          = mat->Eps/RT;
-		ctx->A_dif = visc_incr*mat->Bps*exp(-Q)/T/pow(mat->d, 3.0);
+		ctx->A_dif = mat->Bps*exp(-Q)/T/pow(mat->d, 3.0);
 	}
 
 	// UPPER BOUND CREEP
