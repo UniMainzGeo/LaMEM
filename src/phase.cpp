@@ -101,38 +101,6 @@ PetscErrorCode DBMatCreate(DBMat *dbm, FB *fb, PetscBool PrintOutput)
 	ierr = FBFreeBlocks(fb); CHKERRQ(ierr);
 
 
-	// setup block access mode
-	ierr = FBFindBlocks(fb, _OPTIONAL_, "<PhaseTransitionStart>", "<PhaseTransitionEnd>"); CHKERRQ(ierr);
-
-	if(fb->nblocks)
-	{
-		// print overview of softening laws from file
-		PetscPrintf(PETSC_COMM_WORLD,"Phase Transition laws: \n");
-
-		// initialize ID for consistency checks
-		for(jj = 0; jj < _max_num_soft_; jj++) dbm->matPhtr[jj].ID = -1;
-
-		// error checking
-		if(fb->nblocks > _max_num_tr_)
-		{
-			SETERRQ1(PETSC_COMM_WORLD, PETSC_ERR_USER, "Too many phase_transition specified! Max allowed: %lld", (LLD)_max_num_tr_);
-		}
-
-		// store actual number of Phase Transition laws
-		dbm->numPhtr = fb->nblocks;
-
-		PetscPrintf(PETSC_COMM_WORLD,"--------------------------------------------------------------------------\n");
-
-		// read each individual softening law
-		for(jj = 0; jj < fb->nblocks; jj++)
-		{
-			ierr = DBMatReadPhaseTr(dbm, fb); CHKERRQ(ierr);
-
-			fb->blockID++;
-		}
-	}
-
-	ierr = FBFreeBlocks(fb); CHKERRQ(ierr);
 
 	//================
 	// MATERIAL PHASES
@@ -167,6 +135,42 @@ PetscErrorCode DBMatCreate(DBMat *dbm, FB *fb, PetscBool PrintOutput)
 	}
 
 	ierr = FBFreeBlocks(fb); CHKERRQ(ierr);
+
+
+	// setup block access mode
+		ierr = FBFindBlocks(fb, _OPTIONAL_, "<PhaseTransitionStart>", "<PhaseTransitionEnd>"); CHKERRQ(ierr);
+
+		if(fb->nblocks)
+		{
+			// print overview of softening laws from file
+			PetscPrintf(PETSC_COMM_WORLD,"Phase Transition laws: \n");
+
+			// initialize ID for consistency checks
+			for(jj = 0; jj < _max_num_soft_; jj++) dbm->matPhtr[jj].ID = -1;
+
+			// error checking
+			if(fb->nblocks > _max_num_tr_)
+			{
+				SETERRQ1(PETSC_COMM_WORLD, PETSC_ERR_USER, "Too many phase_transition specified! Max allowed: %lld", (LLD)_max_num_tr_);
+			}
+
+			// store actual number of Phase Transition laws
+			dbm->numPhtr = fb->nblocks;
+
+			PetscPrintf(PETSC_COMM_WORLD,"--------------------------------------------------------------------------\n");
+
+			// read each individual softening law
+			for(jj = 0; jj < fb->nblocks; jj++)
+			{
+				ierr = DBMatReadPhaseTr(dbm, fb); CHKERRQ(ierr);
+
+				fb->blockID++;
+			}
+		}
+
+		ierr = FBFreeBlocks(fb); CHKERRQ(ierr);
+
+		ierr = Overwrite_density(dbm);CHKERRQ(ierr);
 
     //=================================================
 	// OVERWRITE MATERIAL PARAMETERS WITH GLOBAL VARIABLES

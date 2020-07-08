@@ -107,8 +107,8 @@ PetscErrorCode DBMatReadPhaseTr(DBMat *dbm, FB *fb)
 	ierr = getIntParam(fb, _OPTIONAL_, "number_phases", &ph->number_phases,1 , _max_num_tr_); CHKERRQ(ierr);
 	ierr = getIntParam(fb, _OPTIONAL_, "PhaseBelow", ph->PhaseBelow,ph->number_phases , _max_num_phases_); CHKERRQ(ierr);
 	ierr = getIntParam(fb, _OPTIONAL_, "PhaseAbove", ph->PhaseAbove,ph->number_phases , _max_num_phases_); CHKERRQ(ierr);
-	ierr = getIntParam(fb, _OPTIONAL_, "DensityBelow", ph->DensityBelow,ph->number_phases , _max_num_phases_); CHKERRQ(ierr);
-	ierr = getIntParam(fb, _OPTIONAL_, "DensityAbove", ph->DensityAbove,ph->number_phases, _max_num_phases_); CHKERRQ(ierr);
+	ierr = getScalarParam(fb, _OPTIONAL_, "DensityBelow", ph->DensityBelow,ph->number_phases , 1.0); CHKERRQ(ierr);
+	ierr = getScalarParam(fb, _OPTIONAL_, "DensityAbove", ph->DensityAbove,ph->number_phases, 1.0); CHKERRQ(ierr);
 
 	if (!ph->PhaseAbove || !ph->PhaseBelow)
 	{
@@ -203,6 +203,50 @@ PetscErrorCode  Set_Clapeyron_Phase_Transition(Ph_trans_t   *ph, DBMat *dbm, FB 
 
 }
 
+// ---------------------------------------------------------------------------------------------------------- //
+#undef __FUNCT__
+#define __FUNCT__ "Overwrite_Density"
+PetscErrorCode  Overwrite_density(DBMat *dbm)
+{
+	Scaling      *scal;
+	Ph_trans_t    *ph;
+	Material_t   *mat;
+	PetscInt    numPhTrn, nPtr,num_phases,iter, jj1, jj2;
+	PetscScalar rho_above,rho_below,rho_scal;
+
+	PetscErrorCode ierr;
+	scal = dbm->scal;
+	rho_scal = scal->density;
+	mat = dbm->phases;
+	numPhTrn= dbm->numPhtr;
+
+
+	for(nPtr=0;nPtr<numPhTrn;nPtr++)
+	{
+		ph = dbm->matPhtr+nPtr;
+		num_phases = ph->number_phases;
+		for(iter=0;iter<num_phases;iter++)
+		{
+			rho_above = ph->DensityAbove[iter];
+			rho_below = ph->DensityBelow[iter];
+			if(rho_above > 0 && rho_below >0)
+			{
+				jj1 =ph->PhaseBelow[iter];
+				mat[jj1].rho= rho_below/rho_scal;
+				PetscPrintf(PETSC_COMM_WORLD,"PHASE = %d  density is  %2f\n",jj1,rho_below);
+				jj2 =ph->PhaseAbove[iter];
+				mat[jj2].rho= rho_above/rho_scal;
+				PetscPrintf(PETSC_COMM_WORLD,"PHASE = %d  density is  %2f\n",jj2,rho_above);
+
+			}
+
+		}
+	}
+
+	PetscFunctionBegin;
+
+	PetscFunctionReturn(0);
+}
 //-----------------------------------------------------------------------------------------------------------//
 #undef __FUNCT__
 #define __FUNCT__ "SetClapeyron_Eq"
@@ -222,21 +266,21 @@ PetscErrorCode SetClapeyron_Eq(Ph_trans_t *ph)
 		ph->clapeyron_slope[1] = -30;
 	}
 	else if(!strcmp(ph->Name_clapeyron,"Mantle_Transition_410km"))
-		{
-			// Source Faccenda and Dal Zilio et al 2017 [Olivine-Wadseylite Phase transition anhydrous Pyrolite+H2O Litasov and Ohtani (2003)]
-			ph->neq = 1;
-			ph->P0_clapeyron[0] = 13.5e9;
-			ph->T0_clapeyron[0] = 1537;
-			ph->clapeyron_slope[0]= 5;
-		}
+	{
+		// Source Faccenda and Dal Zilio et al 2017 [Olivine-Wadseylite Phase transition anhydrous Pyrolite+H2O Litasov and Ohtani (2003)]
+		ph->neq = 1;
+		ph->P0_clapeyron[0] = 13.5e9;
+		ph->T0_clapeyron[0] = 1537;
+		ph->clapeyron_slope[0]= 5;
+	}
 	else if(!strcmp(ph->Name_clapeyron,"Mantle_Transition_510km"))
-		{
-			// Source Faccenda and Dal Zilio et al 2017 [WadsleyiteRingwooditePhase transition anhydrous Fo100(theoretical) Hernandez et al 2015]
-			ph->neq = 1;
-			ph->P0_clapeyron[0] = 18e9;
-			ph->T0_clapeyron[0] = 1597;
-			ph->clapeyron_slope[0]=3.5;
-		}
+	{
+		// Source Faccenda and Dal Zilio et al 2017 [WadsleyiteRingwooditePhase transition anhydrous Fo100(theoretical) Hernandez et al 2015]
+		ph->neq = 1;
+		ph->P0_clapeyron[0] = 18e9;
+		ph->T0_clapeyron[0] = 1597;
+		ph->clapeyron_slope[0]=3.5;
+	}
 	else if(!strcmp(ph->Name_clapeyron,"Mantle_Transition_660km"))
 	{
 		// Source Faccenda and Dal Zilio et al 2017 [Post Spinel Phase transition anhydrous Pyrolite Ye et al 2014]
@@ -255,16 +299,14 @@ PetscErrorCode Phase_Transition(AdvCtx *actx)
 {
 	// creates arrays to optimize marker-cell interaction
 	DBMat      *dbm;
-	Material_t *mat;
 	Ph_trans_t *PhaseTrans;
 	Marker *P;
 	JacRes *jr;
 	PetscInt     i, ph,nPtr, numPhTrn,below,above,num_phas;
-	PetscInt     *Phase_above,*Phase_below,PH1,PH2;
+	PetscInt     PH1,PH2;
 
 	jr = actx->jr;
 	dbm = jr->dbm;
-	mat = dbm->phases;
 	numPhTrn= dbm->numPhtr;
 	PetscErrorCode ierr;
 	PetscFunctionBegin;
@@ -305,10 +347,7 @@ PetscErrorCode Phase_Transition(AdvCtx *actx)
 				P->phase=ph;
 
 			}
-
-
-
-			}
+		}
 		ierr = ADVInterpMarkToCell(actx);
 		}
 
@@ -419,7 +458,6 @@ PetscInt Check_Phase_above_below(PetscInt *phase_array, Marker *P,PetscInt num_p
 {
 	PetscInt n,it,size;
 	size = num_phas;
-	// apply strain softening to a parameter (friction, cohesion)
 	it=0;
 	for(it=0;it<size;it++)
 	{
@@ -431,6 +469,5 @@ PetscInt Check_Phase_above_below(PetscInt *phase_array, Marker *P,PetscInt num_p
 		}
 	}
 
-	// apply strain softening
 	return n;
 }

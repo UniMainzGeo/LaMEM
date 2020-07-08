@@ -17,6 +17,7 @@ PetscErrorCode DBMatReadPhaseTr(DBMat *dbm, FB *fb);
 PetscErrorCode Set_Constant_Phase_Transition(Ph_trans_t   *ph, DBMat *dbm, FB *fb,PetscInt ID);
 PetscErrorCode Set_Clapeyron_Phase_Transition(Ph_trans_t   *ph, DBMat *dbm, FB *fb, PetscInt ID);
 PetscErrorCode SetClapeyron_Eq(Ph_trans_t *ph);
+PetscErrorCode Overwrite_density(DBMat *dbm);
 PetscErrorCode Phase_Transition(AdvCtx *actx);
 PetscErrorCode Transition(Ph_trans_t *PhaseTrans, Marker *P, PetscInt PH1,PetscInt PH2,PetscInt ID);
 PetscInt Check_Phase_above_below(PetscInt *phase_array, Marker *P,PetscInt num_phas);
