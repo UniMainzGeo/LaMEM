@@ -3857,7 +3857,7 @@ PetscErrorCode PrintScalingLaws(ModParam *IOparam)
 		if (!strlen(PhaseDescription)){strcpy(PhaseDescription, "-");} 			// if no name is indicated in input file	
 		if (CurPhase<0)
 		{
-			PetscPrintf(PETSC_COMM_WORLD,"|      %-5s%10s       %- 8.3f          %s\n",logstr, CurName, Exponent[k],PhaseDescription);		
+			PetscPrintf(PETSC_COMM_WORLD,"|      %-5s%10s          %- 8.3f          %s\n",logstr, CurName, Exponent[k],PhaseDescription);		
 		}
 		else
 		{
